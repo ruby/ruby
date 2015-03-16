@@ -1,8 +1,9 @@
 require "rss/1.0"
 
 module RSS
-
+  # The prefix for the Syndication XML namespace.
   SY_PREFIX = 'sy'
+  # The URI of the Syndication specification.
   SY_URI = "http://purl.org/rss/1.0/modules/syndication/"
 
   RDF.install_ns(SY_PREFIX, SY_URI)

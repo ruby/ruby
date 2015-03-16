@@ -1,6 +1,8 @@
 module Gem
+  DEFAULT_HOST = "https://rubygems.org"
 
   @post_install_hooks   ||= []
+  @done_installing_hooks  ||= []
   @post_uninstall_hooks ||= []
   @pre_uninstall_hooks  ||= []
   @pre_install_hooks    ||= []
@@ -9,7 +11,15 @@ module Gem
   # An Array of the default sources that come with RubyGems
 
   def self.default_sources
-    %w[http://rubygems.org/]
+    %w[https://rubygems.org/]
+  end
+
+  ##
+  # Default spec directory path to be used if an alternate value is not
+  # specified in the environment
+
+  def self.default_spec_cache_dir
+    File.join Gem.user_home, '.gem', 'specs'
   end
 
   ##
@@ -17,41 +27,80 @@ module Gem
   # specified in the environment
 
   def self.default_dir
-    if defined? RUBY_FRAMEWORK_VERSION then
-      File.join File.dirname(ConfigMap[:sitedir]), 'Gems',
-                ConfigMap[:ruby_version]
-    elsif ConfigMap[:rubylibprefix] then
-      File.join(ConfigMap[:rubylibprefix], 'gems',
-                ConfigMap[:ruby_version])
-    else
-      File.join(ConfigMap[:libdir], ruby_engine, 'gems',
-                ConfigMap[:ruby_version])
-    end
+    path = if defined? RUBY_FRAMEWORK_VERSION then
+             [
+               File.dirname(RbConfig::CONFIG['sitedir']),
+               'Gems',
+               RbConfig::CONFIG['ruby_version']
+             ]
+           elsif RbConfig::CONFIG['rubylibprefix'] then
+             [
+              RbConfig::CONFIG['rubylibprefix'],
+              'gems',
+              RbConfig::CONFIG['ruby_version']
+             ]
+           else
+             [
+               RbConfig::CONFIG['libdir'],
+               ruby_engine,
+               'gems',
+               RbConfig::CONFIG['ruby_version']
+             ]
+           end
+
+    @default_dir ||= File.join(*path)
+  end
+
+  ##
+  # Returns binary extensions dir for specified RubyGems base dir or nil
+  # if such directory cannot be determined.
+  #
+  # By default, the binary extensions are located side by side with their
+  # Ruby counterparts, therefore nil is returned
+
+  def self.default_ext_dir_for base_dir
+    nil
+  end
+
+  ##
+  # Paths where RubyGems' .rb files and bin files are installed
+
+  def self.default_rubygems_dirs
+    nil # default to standard layout
   end
 
   ##
   # Path for gems in the user's home directory
 
   def self.user_dir
-    File.join Gem.user_home, '.gem', ruby_engine, ConfigMap[:ruby_version]
+    parts = [Gem.user_home, '.gem', ruby_engine]
+    parts << RbConfig::CONFIG['ruby_version'] unless RbConfig::CONFIG['ruby_version'].empty?
+    File.join parts
+  end
+
+  ##
+  # How String Gem paths should be split.  Overridable for esoteric platforms.
+
+  def self.path_separator
+    File::PATH_SEPARATOR
   end
 
   ##
   # Default gem load path
 
   def self.default_path
-    if File.exist? Gem.user_home then
-      [user_dir, default_dir]
-    else
-      [default_dir]
-    end
+    path = []
+    path << user_dir if user_home && File.exist?(user_home)
+    path << default_dir
+    path << vendor_dir if vendor_dir and File.directory? vendor_dir
+    path
   end
 
   ##
   # Deduce Ruby's --program-prefix and --program-suffix from its install name
 
   def self.default_exec_format
-    exec_format = ConfigMap[:ruby_install_name].sub('ruby', '%s') rescue '%s'
+    exec_format = RbConfig::CONFIG['ruby_install_name'].sub('ruby', '%s') rescue '%s'
 
     unless exec_format =~ /%s/ then
       raise Gem::Exception,
@@ -68,22 +117,8 @@ module Gem
     if defined? RUBY_FRAMEWORK_VERSION then # mac framework support
       '/usr/bin'
     else # generic install
-      ConfigMap[:bindir]
+      RbConfig::CONFIG['bindir']
     end
-  end
-
-  ##
-  # The default system-wide source info cache directory
-
-  def self.default_system_source_cache_dir
-    File.join Gem.dir, 'source_cache'
-  end
-
-  ##
-  # The default user-specific source info cache directory
-
-  def self.default_user_source_cache_dir
-    File.join Gem.user_home, '.gem', 'source_cache'
   end
 
   ##
@@ -97,5 +132,46 @@ module Gem
     end
   end
 
-end
+  ##
+  # The default signing key path
 
+  def self.default_key_path
+    File.join Gem.user_home, ".gem", "gem-private_key.pem"
+  end
+
+  ##
+  # The default signing certificate chain path
+
+  def self.default_cert_path
+    File.join Gem.user_home, ".gem", "gem-public_cert.pem"
+  end
+
+  ##
+  # Whether to expect full paths in default gems - true for non-MRI
+  # ruby implementations
+  def self.default_gems_use_full_paths?
+    ruby_engine != 'ruby'
+  end
+
+  ##
+  # Install extensions into lib as well as into the extension directory.
+
+  def self.install_extension_in_lib # :nodoc:
+    true
+  end
+
+  ##
+  # Directory where vendor gems are installed.
+
+  def self.vendor_dir # :nodoc:
+    if vendor_dir = ENV['GEM_VENDOR'] then
+      return vendor_dir.dup
+    end
+
+    return nil unless RbConfig::CONFIG.key? 'vendordir'
+
+    File.join RbConfig::CONFIG['vendordir'], 'gems',
+              RbConfig::CONFIG['ruby_version']
+  end
+
+end

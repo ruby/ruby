@@ -41,12 +41,12 @@ else
   fnt = ['courier', '-12']
 end
 
-console = TkTextIO.new(top, :mode=>:console, 
-                       :width=>80).pack(:side=>:left, 
+console = TkTextIO.new(top, :mode=>:console,
+                       :width=>80).pack(:side=>:left,
                                         :expand=>true, :fill=>:both)
-console.yscrollbar(TkScrollbar.new(top, :width=>10).pack(:before=>console, 
-                                                         :side=>:right, 
-                                                         :expand=>false, 
+console.yscrollbar(TkScrollbar.new(top, :width=>10).pack(:before=>console,
+                                                         :side=>:right,
+                                                         :expand=>false,
                                                          :fill=>:y))
 
 # save original I/O

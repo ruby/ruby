@@ -2,7 +2,7 @@
 /* $Id$ */
 
 #include "digest.h"
-#if defined(HAVE_OPENSSL_RIPEMD_H)
+#if defined(RMD160_USE_OPENSSL)
 #include "rmd160ossl.h"
 #else
 #include "rmd160.h"
@@ -24,17 +24,22 @@ static const rb_digest_metadata_t rmd160 = {
  * Bosselaers, and Bart Preneel.
  */
 void
-Init_rmd160()
+Init_rmd160(void)
 {
     VALUE mDigest, cDigest_Base, cDigest_RMD160;
 
     rb_require("digest");
 
+#if 0
+    mDigest = rb_define_module("Digest"); /* let rdoc know */
+#endif
     mDigest = rb_path2class("Digest");
     cDigest_Base = rb_path2class("Digest::Base");
 
     cDigest_RMD160 = rb_define_class_under(mDigest, "RMD160", cDigest_Base);
 
-    rb_ivar_set(cDigest_RMD160, rb_intern("metadata"),
-      Data_Wrap_Struct(rb_cObject, 0, 0, (void *)&rmd160));
+#undef RUBY_UNTYPED_DATA_WARNING
+#define RUBY_UNTYPED_DATA_WARNING 0
+    rb_iv_set(cDigest_RMD160, "metadata",
+	      Data_Wrap_Struct(0, 0, 0, (void *)&rmd160));
 }

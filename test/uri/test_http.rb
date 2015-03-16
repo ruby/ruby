@@ -47,6 +47,7 @@ class TestHTTP < Test::Unit::TestCase
     assert_equal('/?abc=def', URI.parse('http://a.b.c/?abc=def').request_uri)
     assert_equal('/',         URI.parse('http://a.b.c').request_uri)
     assert_equal('/?abc=def', URI.parse('http://a.b.c?abc=def').request_uri)
+    assert_equal(nil,         URI.parse('http:foo').request_uri)
   end
 
   def test_select

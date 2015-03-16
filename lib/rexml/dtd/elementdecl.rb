@@ -4,8 +4,8 @@ module REXML
     class ElementDecl < Child
       START = "<!ELEMENT"
       START_RE = /^\s*#{START}/um
-      PATTERN_RE = /^\s*(#{START}.*?)>/um
-      PATTERN_RE = /^\s*#{START}\s+((?:[:\w_][-\.\w_]*:)?[-!\*\.\w_]*)(.*?)>/
+      # PATTERN_RE = /^\s*(#{START}.*?)>/um
+      PATTERN_RE = /^\s*#{START}\s+((?:[:\w][-\.\w]*:)?[-!\*\.\w]*)(.*?)>/
       #\s*((((["']).*?\5)|[^\/'">]*)*?)(\/)?>/um, true)
 
       def initialize match

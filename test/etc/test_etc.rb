@@ -4,7 +4,9 @@ require "etc"
 class TestEtc < Test::Unit::TestCase
   def test_getlogin
     s = Etc.getlogin
-    assert(s.is_a?(String) || s == nil, "getlogin must return a String or nil")
+    return if s == nil
+    assert(s.is_a?(String), "getlogin must return a String or nil")
+    assert_predicate(s, :valid_encoding?, "login name should be a valid string")
   end
 
   def test_passwd
@@ -28,17 +30,26 @@ class TestEtc < Test::Unit::TestCase
   end
 
   def test_getpwuid
-    passwd = {}
-    Etc.passwd {|s| passwd[s.uid] ||= s }
-    passwd.each_value do |s|
-      assert_equal(s, Etc.getpwuid(s.uid))
-      assert_equal(s, Etc.getpwuid) if Process.euid == s.uid
+    # password database is not unique on UID, and which entry will be
+    # returned by getpwuid() is not specified.
+    passwd = Hash.new {[]}
+    # on MacOSX, same entries are returned from /etc/passwd and Open
+    # Directory.
+    Etc.passwd {|s| passwd[s.uid] |= [s]}
+    passwd.each_pair do |uid, s|
+      assert_include(s, Etc.getpwuid(uid))
+    end
+    s = passwd[Process.euid]
+    unless s.empty?
+      assert_include(s, Etc.getpwuid)
     end
   end
 
   def test_getpwnam
     passwd = {}
-    Etc.passwd {|s| passwd[s.name] ||= s }
+    Etc.passwd do |s|
+      passwd[s.name] ||= s unless /\A\+/ =~ s.name
+    end
     passwd.each_value do |s|
       assert_equal(s, Etc.getpwnam(s.name))
     end
@@ -67,23 +78,30 @@ class TestEtc < Test::Unit::TestCase
   end
 
   def test_getgrgid
-    groups = {}
-    Etc.group do |s|
-      groups[s.gid] ||= s
+    # group database is not unique on GID, and which entry will be
+    # returned by getgrgid() is not specified.
+    groups = Hash.new {[]}
+    # on MacOSX, same entries are returned from /etc/group and Open
+    # Directory.
+    Etc.group {|s| groups[s.gid] |= [[s.name, s.gid]]}
+    groups.each_pair do |gid, s|
+      g = Etc.getgrgid(gid)
+      assert_include(s, [g.name, g.gid])
     end
-    groups.each_value do |s|
-      assert_equal(s, Etc.getgrgid(s.gid))
-      assert_equal(s, Etc.getgrgid) if Process.egid == s.gid
+    s = groups[Process.egid]
+    unless s.empty?
+      g = Etc.getgrgid
+      assert_include(s, [g.name, g.gid])
     end
   end
 
   def test_getgrnam
     groups = {}
     Etc.group do |s|
-      groups[s.name] ||= s
+      groups[s.name] ||= s.gid unless /\A\+/ =~ s.name
     end
-    groups.each_value do |s|
-      assert_equal(s, Etc.getgrnam(s.name))
+    groups.each_pair do |n, s|
+      assert_equal(s, Etc.getgrnam(n).gid)
     end
   end
 
@@ -98,4 +116,56 @@ class TestEtc < Test::Unit::TestCase
     Etc.endgrent
     assert_equal(a, b)
   end
+
+  def test_uname
+    begin
+      uname = Etc.uname
+    rescue NotImplementedError
+      return
+    end
+    assert_kind_of(Hash, uname)
+    [:sysname, :nodename, :release, :version, :machine].each {|sym|
+      assert_operator(uname, :has_key?, sym)
+      assert_kind_of(String, uname[sym])
+    }
+  end
+
+  def test_sysconf
+    begin
+      Etc.sysconf
+    rescue NotImplementedError
+      return
+    rescue ArgumentError
+    end
+    assert_kind_of(Integer, Etc.sysconf(Etc::SC_CLK_TCK))
+  end if defined?(Etc::SC_CLK_TCK)
+
+  def test_confstr
+    begin
+      Etc.confstr
+    rescue NotImplementedError
+      return
+    rescue ArgumentError
+    end
+    assert_kind_of(String, Etc.confstr(Etc::CS_PATH))
+  end if defined?(Etc::CS_PATH)
+
+  def test_pathconf
+    begin
+      Etc.confstr
+    rescue NotImplementedError
+      return
+    rescue ArgumentError
+    end
+    IO.pipe {|r, w|
+      val = w.pathconf(Etc::PC_PIPE_BUF)
+      assert(val.nil? || val.kind_of?(Integer))
+    }
+  end if defined?(Etc::PC_PIPE_BUF)
+
+  def test_nprocessors
+    n = Etc.nprocessors
+    assert_operator(1, :<=, n)
+  end
+
 end

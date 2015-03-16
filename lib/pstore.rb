@@ -7,10 +7,7 @@
 #
 # See PStore for documentation.
 
-
-require "fileutils"
 require "digest/md5"
-require "thread"
 
 #
 # PStore implements a file based persistence mechanism based on a Hash.  User
@@ -94,10 +91,9 @@ require "thread"
 # Needless to say, if you're storing valuable data with PStore, then you should
 # backup the PStore files from time to time.
 class PStore
-  binmode = defined?(File::BINARY) ? File::BINARY : 0
-  RDWR_ACCESS = File::RDWR | File::CREAT | binmode
-  RD_ACCESS = File::RDONLY | binmode
-  WR_ACCESS = File::WRONLY | File::CREAT | File::TRUNC | binmode
+  RDWR_ACCESS = {mode: IO::RDWR | IO::CREAT | IO::BINARY, encoding: Encoding::ASCII_8BIT}.freeze
+  RD_ACCESS = {mode: IO::RDONLY | IO::BINARY, encoding: Encoding::ASCII_8BIT}.freeze
+  WR_ACCESS = {mode: IO::WRONLY | IO::CREAT | IO::TRUNC | IO::BINARY, encoding: Encoding::ASCII_8BIT}.freeze
 
   # The error type thrown by all PStore methods.
   class Error < StandardError
@@ -127,28 +123,23 @@ class PStore
     if File::exist? file and not File::readable? file
       raise PStore::Error, format("file %s not readable", file)
     end
-    @transaction = false
     @filename = file
     @abort = false
     @ultra_safe = false
     @thread_safe = thread_safe
-    if @thread_safe
-      @lock = Mutex.new
-    else
-      @lock = DummyMutex.new
-    end
+    @lock = Mutex.new
   end
 
   # Raises PStore::Error if the calling code is not in a PStore#transaction.
   def in_transaction
-    raise PStore::Error, "not in transaction" unless @transaction
+    raise PStore::Error, "not in transaction" unless @lock.locked?
   end
   #
   # Raises PStore::Error if the calling code is not in a PStore#transaction or
   # if the code is in a read-only PStore#transaction.
   #
-  def in_transaction_wr()
-    in_transaction()
+  def in_transaction_wr
+    in_transaction
     raise PStore::Error, "in read-only transaction" if @rdonly
   end
   private :in_transaction, :in_transaction_wr
@@ -206,7 +197,7 @@ class PStore
   # be read-only.  It will raise PStore::Error if called at any other time.
   #
   def []=(name, value)
-    in_transaction_wr()
+    in_transaction_wr
     @table[name] = value
   end
   #
@@ -216,7 +207,7 @@ class PStore
   # be read-only.  It will raise PStore::Error if called at any other time.
   #
   def delete(name)
-    in_transaction_wr()
+    in_transaction_wr
     @table.delete name
   end
 
@@ -316,12 +307,19 @@ class PStore
   #
   # Note that PStore does not support nested transactions.
   #
-  def transaction(read_only = false, &block)  # :yields:  pstore
+  def transaction(read_only = false)  # :yields:  pstore
     value = nil
-    raise PStore::Error, "nested transaction" if @transaction
-    @lock.synchronize do
+    if !@thread_safe
+      raise PStore::Error, "nested transaction" unless @lock.try_lock
+    else
+      begin
+        @lock.lock
+      rescue ThreadError
+        raise PStore::Error, "nested transaction"
+      end
+    end
+    begin
       @rdonly = read_only
-      @transaction = true
       @abort = false
       file = open_and_lock_file(@filename, read_only)
       if file
@@ -345,10 +343,10 @@ class PStore
           value = yield(self)
         end
       end
+    ensure
+      @lock.unlock
     end
     value
-  ensure
-    @transaction = false
   end
 
   private
@@ -356,12 +354,6 @@ class PStore
   EMPTY_STRING = ""
   EMPTY_MARSHAL_DATA = Marshal.dump({})
   EMPTY_MARSHAL_CHECKSUM = Digest::MD5.digest(EMPTY_MARSHAL_DATA)
-
-  class DummyMutex
-    def synchronize
-      yield
-    end
-  end
 
   #
   # Open the specified filename (either in read-only mode or in
@@ -401,9 +393,7 @@ class PStore
     if read_only
       begin
         table = load(file)
-        if !table.is_a?(Hash)
-          raise Error, "PStore file seems to be corrupted."
-        end
+        raise Error, "PStore file seems to be corrupted." unless table.is_a?(Hash)
       rescue EOFError
         # This seems to be a newly-created file.
         table = {}
@@ -415,14 +405,12 @@ class PStore
         # This seems to be a newly-created file.
         table = {}
         checksum = empty_marshal_checksum
-        size = empty_marshal_data.size
+        size = empty_marshal_data.bytesize
       else
         table = load(data)
         checksum = Digest::MD5.digest(data)
-        size = data.size
-        if !table.is_a?(Hash)
-          raise Error, "PStore file seems to be corrupted."
-        end
+        size = data.bytesize
+        raise Error, "PStore file seems to be corrupted." unless table.is_a?(Hash)
       end
       data.replace(EMPTY_STRING)
       [table, checksum, size]
@@ -430,43 +418,17 @@ class PStore
   end
 
   def on_windows?
-    is_windows = RUBY_PLATFORM =~ /mswin/  ||
-                 RUBY_PLATFORM =~ /mingw/  ||
-                 RUBY_PLATFORM =~ /bccwin/ ||
-                 RUBY_PLATFORM =~ /wince/
+    is_windows = RUBY_PLATFORM =~ /mswin|mingw|bccwin|wince/
     self.class.__send__(:define_method, :on_windows?) do
       is_windows
     end
     is_windows
   end
 
-  # Check whether Marshal.dump supports the 'canonical' option. This option
-  # makes sure that Marshal.dump always dumps data structures in the same order.
-  # This is important because otherwise, the checksums that we generate may differ.
-  def marshal_dump_supports_canonical_option?
-    begin
-      Marshal.dump(nil, -1, true)
-      result = true
-    rescue
-      result = false
-    end
-    self.class.__send__(:define_method, :marshal_dump_supports_canonical_option?) do
-      result
-    end
-    result
-  end
-
   def save_data(original_checksum, original_file_size, file)
-    # We only want to save the new data if the size or checksum has changed.
-    # This results in less filesystem calls, which is good for performance.
-    if marshal_dump_supports_canonical_option?
-      new_data = Marshal.dump(@table, -1, true)
-    else
-      new_data = dump(@table)
-    end
-    new_checksum = Digest::MD5.digest(new_data)
+    new_data = dump(@table)
 
-    if new_data.size != original_file_size || new_checksum != original_checksum
+    if new_data.bytesize != original_file_size || Digest::MD5.digest(new_data) != original_checksum
       if @ultra_safe && !on_windows?
         # Windows doesn't support atomic file renames.
         save_data_with_atomic_file_rename_strategy(new_data, file)
@@ -496,8 +458,8 @@ class PStore
 
   def save_data_with_fast_strategy(data, file)
     file.rewind
-    file.truncate(0)
     file.write(data)
+    file.truncate(data.bytesize)
   end
 
 
@@ -518,27 +480,5 @@ class PStore
   end
   def empty_marshal_checksum
     EMPTY_MARSHAL_CHECKSUM
-  end
-end
-
-# :enddoc:
-
-if __FILE__ == $0
-  db = PStore.new("/tmp/foo")
-  db.transaction do
-    p db.roots
-    ary = db["root"] = [1,2,3,4]
-    ary[1] = [1,1.5]
-  end
-
-  1000.times do
-    db.transaction do
-      db["root"][0] += 1
-      p db["root"][0]
-    end
-  end
-
-  db.transaction(true) do
-    p db["root"]
   end
 end

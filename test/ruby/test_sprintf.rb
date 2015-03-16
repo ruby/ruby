@@ -148,6 +148,31 @@ class TestSprintf < Test::Unit::TestCase
     assert_equal(" Inf", sprintf("% e", inf), '[ruby-dev:34002]')
   end
 
+  def test_rational
+    assert_match(/\A0\.10+\z/, sprintf("%.60f", 0.1r))
+    assert_match(/\A0\.010+\z/, sprintf("%.60f", 0.01r))
+    assert_match(/\A0\.0010+\z/, sprintf("%.60f", 0.001r))
+    assert_match(/\A0\.3+\z/, sprintf("%.60f", 1/3r))
+    assert_match(/\A1\.20+\z/, sprintf("%.60f", 1.2r))
+
+    0.upto(9) do |len|
+      -1.upto(9) do |prec|
+        ['', '+', '-', ' ', '0', '+0', '-0', ' 0', '+ ', '- ', '+ 0', '- 0'].each do |flags|
+          fmt = "%#{flags}#{len > 0 ? len : ''}#{prec >= 0 ? ".#{prec}" : ''}f"
+          [0, 0.1, 0.01, 0.001, 1.001, 100.0, 100.001, 10000000000.0, 0.00000000001, 1/3r, 2/3r, 1.2r, 10r].each do |num|
+            assert_equal(sprintf(fmt, num.to_f), sprintf(fmt, num.to_r), "sprintf(#{fmt.inspect}, #{num.inspect}.to_r)")
+            assert_equal(sprintf(fmt, -num.to_f), sprintf(fmt, -num.to_r), "sprintf(#{fmt.inspect}, #{(-num).inspect}.to_r)") if num > 0
+          end
+        end
+      end
+    end
+  end
+
+  def test_hash
+    options = {:capture=>/\d+/}
+    assert_equal("with options {:capture=>/\\d+/}", sprintf("with options %p" % options))
+  end
+
   def test_invalid
     # Star precision before star width:
     assert_raise(ArgumentError, "[ruby-core:11569]") {sprintf("%.**d", 5, 10, 1)}
@@ -179,6 +204,10 @@ class TestSprintf < Test::Unit::TestCase
     assert_raise(ArgumentError) { sprintf("%!", 1) }
     assert_raise(ArgumentError) { sprintf("%1$1$d", 1) }
     assert_raise(ArgumentError) { sprintf("%0%") }
+
+    assert_raise_with_message(ArgumentError, /unnumbered\(1\) mixed with numbered/) { sprintf("%1$*d", 3) }
+    assert_raise_with_message(ArgumentError, /unnumbered\(1\) mixed with numbered/) { sprintf("%1$.*d", 3) }
+
     verbose, $VERBOSE = $VERBOSE, nil
     assert_nothing_raised { sprintf("", 1) }
   ensure
@@ -189,6 +218,10 @@ class TestSprintf < Test::Unit::TestCase
     assert_equal("36893488147419111424",
                  sprintf("%20.0f", 36893488147419107329.0))
     assert_equal(" Inf", sprintf("% 0e", 1.0/0.0), "moved from btest/knownbug")
+    assert_equal("       -0.", sprintf("%#10.0f", -0.5), "[ruby-dev:42552]")
+    # out of spec
+    #assert_equal("0x1p+2",   sprintf('%.0a', Float('0x1.fp+1')),   "[ruby-dev:42551]")
+    #assert_equal("-0x1.0p+2", sprintf('%.1a', Float('-0x1.ffp+1')), "[ruby-dev:42551]")
   end
 
   def test_float_hex
@@ -204,6 +237,36 @@ class TestSprintf < Test::Unit::TestCase
     assert_equal("Inf", sprintf("%E", Float::INFINITY))
     assert_equal("NaN", sprintf("%e", Float::NAN))
     assert_equal("NaN", sprintf("%E", Float::NAN))
+
+    assert_equal("   -0x1p+0", sprintf("%10a", -1))
+    assert_equal(" -0x1.8p+0", sprintf("%10a", -1.5))
+    assert_equal(" -0x1.4p+0", sprintf("%10a", -1.25))
+    assert_equal(" -0x1.2p+0", sprintf("%10a", -1.125))
+    assert_equal(" -0x1.1p+0", sprintf("%10a", -1.0625))
+    assert_equal("-0x1.08p+0", sprintf("%10a", -1.03125))
+
+    bug3962 = '[ruby-core:32841]'
+    assert_equal("-0x0001p+0", sprintf("%010a", -1), bug3962)
+    assert_equal("-0x01.8p+0", sprintf("%010a", -1.5), bug3962)
+    assert_equal("-0x01.4p+0", sprintf("%010a", -1.25), bug3962)
+    assert_equal("-0x01.2p+0", sprintf("%010a", -1.125), bug3962)
+    assert_equal("-0x01.1p+0", sprintf("%010a", -1.0625), bug3962)
+    assert_equal("-0x1.08p+0", sprintf("%010a", -1.03125), bug3962)
+
+    bug3964 = '[ruby-core:32848]'
+    assert_equal("0x000000000000000p+0", sprintf("%020a",  0), bug3964)
+    assert_equal("0x000000000000001p+0", sprintf("%020a", 1), bug3964)
+    assert_equal("-0x00000000000001p+0", sprintf("%020a", -1), bug3964)
+    assert_equal("0x00000000000000.p+0", sprintf("%#020a",  0), bug3964)
+
+    bug3965 = '[ruby-dev:42431]'
+    assert_equal("0x1.p+0", sprintf("%#.0a",  1), bug3965)
+    assert_equal("0x00000000000000.p+0", sprintf("%#020a",  0), bug3965)
+    assert_equal("0x0000.0000000000p+0", sprintf("%#020.10a",  0), bug3965)
+
+    bug3979 = '[ruby-dev:42453]'
+    assert_equal("          0x0.000p+0", sprintf("%20.3a",  0), bug3979)
+    assert_equal("          0x1.000p+0", sprintf("%20.3a",  1), bug3979)
   end
 
   BSIZ = 120
@@ -271,6 +334,12 @@ class TestSprintf < Test::Unit::TestCase
 
   def test_star
     assert_equal("-1 ", sprintf("%*d", -3, -1))
+    assert_raise_with_message(ArgumentError, /width too big/) {
+      sprintf("%*999999999999999999999999999999999999999999999999999999999999$d", 1)
+    }
+    assert_raise_with_message(ArgumentError, /prec too big/) {
+      sprintf("%.*999999999999999999999999999999999999999999999999999999999999$d", 1)
+    }
   end
 
   def test_escape
@@ -287,15 +356,57 @@ class TestSprintf < Test::Unit::TestCase
     s2 = sprintf("%0x", -0x40000001)
     b1 = (/\.\./ =~ s1) != nil
     b2 = (/\.\./ =~ s2) != nil
-    assert(b1 == b2, "[ruby-dev:33224]")
+    assert_equal(b1, b2, "[ruby-dev:33224]")
   end
 
-  def test_named
+  def test_named_untyped
     assert_equal("value", sprintf("%<key>s", :key => "value"))
-    assert_raise(ArgumentError) {sprintf("%1$<key2>s", :key => "value")}
-    assert_raise(ArgumentError) {sprintf("%<key><key2>s", :key => "value")}
+    assert_raise_with_message(ArgumentError, "named<key2> after numbered") {sprintf("%1$<key2>s", :key => "value")}
+    assert_raise_with_message(ArgumentError, "named<key2> after unnumbered(2)") {sprintf("%s%s%<key2>s", "foo", "bar", :key => "value")}
+    assert_raise_with_message(ArgumentError, "named<key2> after <key>") {sprintf("%<key><key2>s", :key => "value")}
+    assert_raise_with_message(KeyError, "key<key> not found") {sprintf("%<key>s", {})}
+  end
+
+  def test_named_untyped_enc
+    key = "\u{3012}"
+    [Encoding::UTF_8, Encoding::EUC_JP].each do |enc|
+      k = key.encode(enc)
+      e = assert_raise_with_message(ArgumentError, "named<#{k}> after numbered") {sprintf("%1$<#{k}>s", key: "value")}
+      assert_equal(enc, e.message.encoding)
+      e = assert_raise_with_message(ArgumentError, "named<#{k}> after unnumbered(2)") {sprintf("%s%s%<#{k}>s", "foo", "bar", key: "value")}
+      assert_equal(enc, e.message.encoding)
+      e = assert_raise_with_message(ArgumentError, "named<#{k}> after <key>") {sprintf("%<key><#{k}>s", key: "value")}
+      assert_equal(enc, e.message.encoding)
+      e = assert_raise_with_message(ArgumentError, "named<key> after <#{k}>") {sprintf("%<#{k}><key>s", k.to_sym => "value")}
+      assert_equal(enc, e.message.encoding)
+      e = assert_raise_with_message(KeyError, "key<#{k}> not found") {sprintf("%<#{k}>s", {})}
+      assert_equal(enc, e.message.encoding)
+    end
+  end
+
+  def test_named_typed
     assert_equal("value", sprintf("%{key}", :key => "value"))
-    assert_raise(ArgumentError) {sprintf("%1${key2}", :key => "value")}
+    assert_raise_with_message(ArgumentError, "named{key2} after numbered") {sprintf("%1${key2}", :key => "value")}
+    assert_raise_with_message(ArgumentError, "named{key2} after unnumbered(2)") {sprintf("%s%s%{key2}", "foo", "bar", :key => "value")}
+    assert_raise_with_message(ArgumentError, "named{key2} after <key>") {sprintf("%<key>{key2}", :key => "value")}
     assert_equal("value{key2}", sprintf("%{key}{key2}", :key => "value"))
+    assert_raise_with_message(KeyError, "key{key} not found") {sprintf("%{key}", {})}
+  end
+
+  def test_named_typed_enc
+    key = "\u{3012}"
+    [Encoding::UTF_8, Encoding::EUC_JP].each do |enc|
+      k = key.encode(enc)
+      e = assert_raise_with_message(ArgumentError, "named{#{k}} after numbered") {sprintf("%1${#{k}}s", key: "value")}
+      assert_equal(enc, e.message.encoding)
+      e = assert_raise_with_message(ArgumentError, "named{#{k}} after unnumbered(2)") {sprintf("%s%s%{#{k}}s", "foo", "bar", key: "value")}
+      assert_equal(enc, e.message.encoding)
+      e = assert_raise_with_message(ArgumentError, "named{#{k}} after <key>") {sprintf("%<key>{#{k}}s", key: "value")}
+      assert_equal(enc, e.message.encoding)
+      e = assert_raise_with_message(ArgumentError, "named{key} after <#{k}>") {sprintf("%<#{k}>{key}s", k.to_sym => "value")}
+      assert_equal(enc, e.message.encoding)
+      e = assert_raise_with_message(KeyError, "key{#{k}} not found") {sprintf("%{#{k}}", {})}
+      assert_equal(enc, e.message.encoding)
+    end
   end
 end

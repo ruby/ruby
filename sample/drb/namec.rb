@@ -1,6 +1,6 @@
 =begin
  distributed Ruby --- NamedObject Sample Client
- 	Copyright (c) 2000-2001 Masatoshi SEKI 
+ 	Copyright (c) 2000-2001 Masatoshi SEKI
 =end
 
 require 'drb/drb'

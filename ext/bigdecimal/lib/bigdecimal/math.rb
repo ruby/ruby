@@ -7,8 +7,6 @@ require 'bigdecimal'
 #   sin (x, prec)
 #   cos (x, prec)
 #   atan(x, prec)  Note: |x|<1, x=0.9999 may not converge.
-#   exp (x, prec)
-#   log (x, prec)
 #   PI  (prec)
 #   E   (prec) == exp(1.0,prec)
 #
@@ -22,30 +20,40 @@ require 'bigdecimal'
 #
 # Example:
 #
-#   require "bigdecimal"
 #   require "bigdecimal/math"
 #
 #   include BigMath
 #
 #   a = BigDecimal((PI(100)/2).to_s)
-#   puts sin(a,100) # -> 0.10000000000000000000......E1
+#   puts sin(a,100) # => 0.10000000000000000000......E1
 #
 module BigMath
   module_function
 
-  # Computes the square root of x to the specified number of digits of
-  # precision.
+  # call-seq:
+  #   sqrt(decimal, numeric) -> BigDecimal
   #
-  # BigDecimal.new('2').sqrt(16).to_s
-  #  -> "0.14142135623730950488016887242096975E1"
+  # Computes the square root of +decimal+ to the specified number of digits of
+  # precision, +numeric+.
   #
-  def sqrt(x,prec)
+  #   BigMath.sqrt(BigDecimal.new('2'), 16).to_s
+  #   #=> "0.1414213562373095048801688724E1"
+  #
+  def sqrt(x, prec)
     x.sqrt(prec)
   end
 
-  # Computes the sine of x to the specified number of digits of precision.
+  # call-seq:
+  #   sin(decimal, numeric) -> BigDecimal
   #
-  # If x is infinite or NaN, returns NaN.
+  # Computes the sine of +decimal+ to the specified number of digits of
+  # precision, +numeric+.
+  #
+  # If +decimal+ is Infinity or NaN, returns NaN.
+  #
+  #   BigMath.sin(BigMath.PI(5)/4, 5).to_s
+  #   #=> "0.70710678118654752440082036563292800375E0"
+  #
   def sin(x, prec)
     raise ArgumentError, "Zero or negative precision for sin" if prec <= 0
     return BigDecimal("NaN") if x.infinite? || x.nan?
@@ -79,9 +87,17 @@ module BigMath
     neg ? -y : y
   end
 
-  # Computes the cosine of x to the specified number of digits of precision.
+  # call-seq:
+  #   cos(decimal, numeric) -> BigDecimal
   #
-  # If x is infinite or NaN, returns NaN.
+  # Computes the cosine of +decimal+ to the specified number of digits of
+  # precision, +numeric+.
+  #
+  # If +decimal+ is Infinity or NaN, returns NaN.
+  #
+  #   BigMath.cos(BigMath.PI(4), 16).to_s
+  #   #=> "-0.999999999999999999999999999999856613163740061349E0"
+  #
   def cos(x, prec)
     raise ArgumentError, "Zero or negative precision for cos" if prec <= 0
     return BigDecimal("NaN") if x.infinite? || x.nan?
@@ -115,9 +131,17 @@ module BigMath
     y
   end
 
-  # Computes the arctangent of x to the specified number of digits of precision.
+  # call-seq:
+  #   atan(decimal, numeric) -> BigDecimal
   #
-  # If x is NaN, returns NaN.
+  # Computes the arctangent of +decimal+ to the specified number of digits of
+  # precision, +numeric+.
+  #
+  # If +decimal+ is NaN, returns NaN.
+  #
+  #   BigMath.atan(BigDecimal.new('-1'), 16).to_s
+  #   #=> "-0.785398163397448309615660845819878471907514682065E0"
+  #
   def atan(x, prec)
     raise ArgumentError, "Zero or negative precision for atan" if prec <= 0
     return BigDecimal("NaN") if x.nan?
@@ -146,85 +170,17 @@ module BigMath
     y
   end
 
-  # Computes the value of e (the base of natural logarithms) raised to the
-  # power of x, to the specified number of digits of precision.
+  # call-seq:
+  #   PI(numeric) -> BigDecimal
   #
-  # If x is infinite or NaN, returns NaN.
+  # Computes the value of pi to the specified number of digits of precision,
+  # +numeric+.
   #
-  # BigMath::exp(BigDecimal.new('1'), 10).to_s
-  # -> "0.271828182845904523536028752390026306410273E1"
-  def exp(x, prec)
-    raise ArgumentError, "Zero or negative precision for exp" if prec <= 0
-    if x.infinite?
-      if x < 0
-        return BigDecimal("0", prec)
-      else
-        return BigDecimal("+Infinity", prec)
-      end
-    elsif x.nan?
-      return BigDecimal("NaN", prec)
-    end
-    n    = prec + BigDecimal.double_fig
-    one  = BigDecimal("1")
-    x = -x if neg = x < 0
-    x1 = one
-    y  = one
-    d  = y
-    z  = one
-    i  = 0
-    while d.nonzero? && ((m = n - (y.exponent - d.exponent).abs) > 0)
-      m = BigDecimal.double_fig if m < BigDecimal.double_fig
-      x1  = x1.mult(x,n)
-      i += 1
-      z *= i
-      d  = x1.div(z,m)
-      y += d
-    end
-    if neg
-      one.div(y, prec)
-    else
-      y.round(prec - y.exponent)
-    end
-  end
-
-  # Computes the natural logarithm of x to the specified number of digits
-  # of precision.
+  #   BigMath.PI(10).to_s
+  #   #=> "0.3141592653589793238462643388813853786957412E1"
   #
-  # Returns x if x is infinite or NaN.
-  #
-  def log(x, prec)
-    raise ArgumentError, "Zero or negative argument for log" if x <= 0 || prec <= 0
-    return x if x.infinite? || x.nan?
-    one = BigDecimal("1")
-    two = BigDecimal("2")
-    n  = prec + BigDecimal.double_fig
-    if (expo = x.exponent) < 0 || expo >= 3
-      x = x.mult(BigDecimal("1E#{-expo}"), n)
-    else
-      expo = nil
-    end
-    x  = (x - one).div(x + one,n)
-    x2 = x.mult(x,n)
-    y  = x
-    d  = y
-    i = one
-    while d.nonzero? && ((m = n - (y.exponent - d.exponent).abs) > 0)
-      m = BigDecimal.double_fig if m < BigDecimal.double_fig
-      x  = x2.mult(x,n)
-      i += two
-      d  = x.div(i,m)
-      y += d
-    end
-    y *= two
-    if expo
-      y += log(BigDecimal("10"),prec) * BigDecimal(expo.to_s)
-    end
-    y
-  end
-
-  # Computes the value of pi to the specified number of digits of precision.
   def PI(prec)
-    raise ArgumentError, "Zero or negative argument for PI" if prec <= 0
+    raise ArgumentError, "Zero or negative precision for PI" if prec <= 0
     n      = prec + BigDecimal.double_fig
     zero   = BigDecimal("0")
     one    = BigDecimal("1")
@@ -237,7 +193,6 @@ module BigMath
 
     d = one
     k = one
-    w = one
     t = BigDecimal("-80")
     while d.nonzero? && ((m = n - (pi.exponent - d.exponent).abs) > 0)
       m = BigDecimal.double_fig if m < BigDecimal.double_fig
@@ -249,7 +204,6 @@ module BigMath
 
     d = one
     k = one
-    w = one
     t = BigDecimal("956")
     while d.nonzero? && ((m = n - (pi.exponent - d.exponent).abs) > 0)
       m = BigDecimal.double_fig if m < BigDecimal.double_fig
@@ -261,23 +215,17 @@ module BigMath
     pi
   end
 
+  # call-seq:
+  #   E(numeric) -> BigDecimal
+  #
   # Computes e (the base of natural logarithms) to the specified number of
-  # digits of precision.
+  # digits of precision, +numeric+.
+  #
+  #   BigMath.E(10).to_s
+  #   #=> "0.271828182845904523536028752390026306410273E1"
+  #
   def E(prec)
     raise ArgumentError, "Zero or negative precision for E" if prec <= 0
-    n    = prec + BigDecimal.double_fig
-    one  = BigDecimal("1")
-    y  = one
-    d  = y
-    z  = one
-    i  = 0
-    while d.nonzero? && ((m = n - (y.exponent - d.exponent).abs) > 0)
-      m = BigDecimal.double_fig if m < BigDecimal.double_fig
-      i += 1
-      z *= i
-      d  = one.div(z,m)
-      y += d
-    end
-    y
+    BigMath.exp(1, prec)
   end
 end

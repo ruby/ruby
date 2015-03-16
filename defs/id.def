@@ -1,0 +1,122 @@
+# -*- mode: ruby; coding: us-ascii -*-
+firstline, predefined = __LINE__+1, %[\
+  freeze
+  inspect
+  intern
+  object_id
+  const_missing
+  method_missing                                        MethodMissing
+  method_added
+  singleton_method_added
+  method_removed
+  singleton_method_removed
+  method_undefined
+  singleton_method_undefined
+  length
+  size
+  gets
+  succ
+  each
+  proc
+  lambda
+  send
+  __send__
+  __attached__
+  initialize
+  initialize_copy
+  initialize_clone
+  initialize_dup
+  to_int
+  to_ary
+  to_str
+  to_sym
+  to_hash
+  to_proc
+  to_io
+  to_a
+  to_s
+  to_i
+  bt
+  bt_locations
+  call
+  mesg
+  exception
+
+  _                                                     UScore
+  "/*NULL*/"                                            NULL
+  empty?
+  eql?
+  respond_to?                                           Respond_to
+  respond_to_missing?                                   Respond_to_missing
+  <IFUNC>
+  <CFUNC>
+  core#set_method_alias
+  core#set_variable_alias
+  core#undef_method
+  core#define_method
+  core#define_singleton_method
+  core#set_postexe
+  core#hash_from_ary
+  core#hash_merge_ary
+  core#hash_merge_ptr
+  core#hash_merge_kwd
+]
+
+class KeywordError < RuntimeError
+  def self.raise(mesg, line)
+    super(self, mesg, ["#{__FILE__}:#{line}", *caller])
+  end
+end
+
+predefined_ids = {}
+preserved_ids = []
+local_ids = []
+instance_ids = []
+global_ids = []
+const_ids = []
+class_ids = []
+attrset_ids = []
+names = {}
+predefined.split(/^/).each_with_index do |line, num|
+  next if /^#/ =~ line
+  line.sub!(/\s+#.*/, '')
+  name, token = line.split
+  next unless name
+  token ||= name
+  if /#/ =~ token
+    token = "_#{token.gsub(/\W+/, '_')}"
+  else
+    token = token.sub(/\?/, 'P').sub(/\A[a-z]/) {$&.upcase}
+    token.sub!(/\A\$/, "_G_")
+    token.sub!(/\A@@/, "_C_")
+    token.sub!(/\A@/, "_I_")
+    token.gsub!(/\W+/, "")
+  end
+  if prev = names[name]
+    KeywordError.raise("#{name} is already registered at line #{prev+firstline}", firstline+num)
+  end
+  if prev = predefined_ids[token]
+    KeywordError.raise("#{token} is already used for #{prev} at line #{names[prev]+firstline}", firstline+num)
+  end
+  names[name] = num
+  case name
+  when /\A[A-Z]\w*\z/; const_ids
+  when /\A(?!\d)\w+\z/; local_ids
+  when /\A\$(?:\d+|(?!\d)\w+)\z/; global_ids
+  when /\A@@(?!\d)\w+\z/; class_ids
+  when /\A@(?!\d)\w+\z/; instance_ids
+  when /\A((?!\d)\w+)=\z/; attrset_ids
+  else preserved_ids
+  end << token
+  predefined_ids[token] = name
+end
+{
+  "LOCAL" => local_ids,
+  "INSTANCE" => instance_ids,
+  "GLOBAL" => global_ids,
+  "CONST" => const_ids,
+  "CLASS" => class_ids,
+  "ATTRSET" => attrset_ids,
+  :preserved => preserved_ids,
+  :predefined => predefined_ids,
+}

@@ -1,10 +1,6 @@
 require 'rubygems/command'
-require 'rubygems/gem_path_searcher'
 
 class Gem::Commands::WhichCommand < Gem::Command
-
-  EXT = %w[.rb .rbw .so .dll .bundle] # HACK
-
   def initialize
     super 'which', 'Find the location of a library file you can require',
           :search_gems_first => false, :show_all => false
@@ -27,30 +23,43 @@ class Gem::Commands::WhichCommand < Gem::Command
     "--no-gems-first --no-all"
   end
 
-  def execute
-    searcher = Gem::GemPathSearcher.new
+  def description # :nodoc:
+    <<-EOF
+The which command is like the shell which command and shows you where
+the file you wish to require lives.
 
-    found = false
+You can use the which command to help determine why you are requiring a
+version you did not expect or to look at the content of a file you are
+requiring to see why it does not behave as you expect.
+    EOF
+  end
+
+  def execute
+    found = true
 
     options[:args].each do |arg|
+      arg = arg.sub(/#{Regexp.union(*Gem.suffixes)}$/, '')
       dirs = $LOAD_PATH
-      spec = searcher.find arg
+
+      spec = Gem::Specification.find_by_path arg
 
       if spec then
         if options[:search_gems_first] then
-          dirs = gem_paths(spec) + $LOAD_PATH
+          dirs = spec.full_require_paths + $LOAD_PATH
         else
-          dirs = $LOAD_PATH + gem_paths(spec)
+          dirs = $LOAD_PATH + spec.full_require_paths
         end
       end
 
+      # TODO: this is totally redundant and stupid
       paths = find_paths arg, dirs
 
       if paths.empty? then
         alert_error "Can't find ruby library file or shared library #{arg}"
+
+        found &&= false
       else
         say paths
-        found = true
       end
     end
 
@@ -61,9 +70,9 @@ class Gem::Commands::WhichCommand < Gem::Command
     result = []
 
     dirs.each do |dir|
-      EXT.each do |ext|
+      Gem.suffixes.each do |ext|
         full_path = File.join dir, "#{package_name}#{ext}"
-        if File.exist? full_path then
+        if File.exist? full_path and not File.directory? full_path then
           result << full_path
           return result unless options[:show_all]
         end
@@ -71,10 +80,6 @@ class Gem::Commands::WhichCommand < Gem::Command
     end
 
     result
-  end
-
-  def gem_paths(spec)
-    spec.require_paths.collect { |d| File.join spec.full_gem_path, d }
   end
 
   def usage # :nodoc:

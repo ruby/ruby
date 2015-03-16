@@ -56,6 +56,6 @@ end
 i = 1
 max = NUM+1
 while i < max
-  i+=1
+  i += 1
   some_function(i+1)
 end

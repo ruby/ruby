@@ -6,7 +6,6 @@
 
 require 'delegate'
 require 'tmpdir'
-require 'thread'
 
 # A utility class for managing temporary files. When you create a Tempfile
 # object, it will create a temporary file with a unique filename. A Tempfile
@@ -39,7 +38,7 @@ require 'thread'
 # that's it's unnecessary to explicitly delete a Tempfile after use, though
 # it's good practice to do so: not explicitly deleting unused Tempfiles can
 # potentially leave behind large amounts of tempfiles on the filesystem
-# until they're garbage collected. The existance of these temp files can make
+# until they're garbage collected. The existence of these temp files can make
 # it harder to determine a new Tempfile filename.
 #
 # Therefore, one should always call #unlink or close in an ensure block, like
@@ -79,9 +78,6 @@ require 'thread'
 # same Tempfile object from multiple threads then you should protect it with a
 # mutex.
 class Tempfile < DelegateClass(File)
-  MAX_TRY = 10  # :nodoc:
-  include Dir::Tmpname
-
   # call-seq:
   #    new(basename, [tmpdir = Dir.tmpdir], [options])
   #
@@ -96,11 +92,11 @@ class Tempfile < DelegateClass(File)
   # element, and end with the second element. For example:
   #
   #   file = Tempfile.new('hello')
-  #   file.path  # => something like: "/tmp/foo2843-8392-92849382--0"
+  #   file.path  # => something like: "/tmp/hello2843-8392-92849382--0"
   #
   #   # Use the Array form to enforce an extension in the filename:
   #   file = Tempfile.new(['hello', '.jpg'])
-  #   file.path  # => something like: "/tmp/foo2843-8392-92849382--0.jpg"
+  #   file.path  # => something like: "/tmp/hello2843-8392-92849382--0.jpg"
   #
   # The temporary file will be placed in the directory as specified
   # by the +tmpdir+ parameter. By default, this is +Dir.tmpdir+.
@@ -110,7 +106,7 @@ class Tempfile < DelegateClass(File)
   # come from environment variables (e.g. <tt>$TMPDIR</tt>).
   #
   #   file = Tempfile.new('hello', '/home/aisaka')
-  #   file.path  # => something like: "/home/aisaka/foo2843-8392-92849382--0"
+  #   file.path  # => something like: "/home/aisaka/hello2843-8392-92849382--0"
   #
   # You can also pass an options hash. Under the hood, Tempfile creates
   # the temporary file using +File.open+. These options will be passed to
@@ -126,31 +122,21 @@ class Tempfile < DelegateClass(File)
   #
   # If Tempfile.new cannot find a unique filename within a limited
   # number of tries, then it will raise an exception.
-  def initialize(basename, *rest)
+  def initialize(basename="", tmpdir=nil, mode: 0, **options)
+    if block_given?
+      warn "Tempfile.new doesn't call the given block."
+    end
     @data = []
     @clean_proc = Remover.new(@data)
     ObjectSpace.define_finalizer(self, @clean_proc)
 
-    create(basename, *rest) do |tmpname, n, opts|
-      lock = tmpname + '.lock'
-      mode = File::RDWR|File::CREAT|File::EXCL
-      perm = 0600
-      if opts
-        mode |= opts.delete(:mode) || 0
-        opts[:perm] = perm
-        perm = nil
-      else
-        opts = perm
-      end
-      self.class.mkdir(lock)
-      begin
-        @data[1] = @tmpfile = File.open(tmpname, mode, opts)
-        @data[0] = @tmpname = tmpname
-      ensure
-        self.class.rmdir(lock)
-      end
+    ::Dir::Tmpname.create(basename, tmpdir, options) do |tmpname, n, opts|
+      mode |= File::RDWR|File::CREAT|File::EXCL
+      opts[:perm] = 0600
+      @data[1] = @tmpfile = File.open(tmpname, mode, opts)
+      @data[0] = @tmpname = tmpname
       @mode = mode & ~(File::CREAT|File::EXCL)
-      perm or opts.freeze
+      opts.freeze
       @opts = opts
     end
 
@@ -165,10 +151,13 @@ class Tempfile < DelegateClass(File)
     __setobj__(@tmpfile)
   end
 
-  def _close	# :nodoc:
-    @tmpfile.close if @tmpfile
-    @tmpfile = nil
-    @data[1] = nil if @data
+  def _close    # :nodoc:
+    begin
+      @tmpfile.close if @tmpfile
+    ensure
+      @tmpfile = nil
+      @data[1] = nil if @data
+    end
   end
   protected :_close
 
@@ -191,7 +180,6 @@ class Tempfile < DelegateClass(File)
   def close!
     _close
     unlink
-    ObjectSpace.undefine_finalizer(self)
   end
 
   # Unlinks (deletes) the file from the filesystem. One should always unlink
@@ -228,18 +216,18 @@ class Tempfile < DelegateClass(File)
   #                    # to do so again.
   #   end
   def unlink
-    # keep this order for thread safeness
     return unless @tmpname
     begin
-      if File.exist?(@tmpname)
-        File.unlink(@tmpname)
-      end
-      # remove tmpname from remover
-      @data[0] = @data[2] = nil
-      @tmpname = nil
+      File.unlink(@tmpname)
+    rescue Errno::ENOENT
     rescue Errno::EACCES
       # may not be able to unlink on Windows; just ignore
+      return
     end
+    # remove tmpname from remover
+    @data[0] = @data[1] = nil
+    @tmpname = nil
+    ObjectSpace.undefine_finalizer(self)
   end
   alias delete unlink
 
@@ -264,6 +252,14 @@ class Tempfile < DelegateClass(File)
   alias length size
 
   # :stopdoc:
+  def inspect
+    if closed?
+      "#<#{self.class}:#{path} (closed)>"
+    else
+      "#<#{self.class}:#{path}>"
+    end
+  end
+
   class Remover
     def initialize(data)
       @pid = $$
@@ -271,32 +267,35 @@ class Tempfile < DelegateClass(File)
     end
 
     def call(*args)
-      if @pid == $$
-        path, tmpfile = *@data
+      return if @pid != $$
 
-        STDERR.print "removing ", path, "..." if $DEBUG
+      path, tmpfile = @data
 
-        tmpfile.close if tmpfile
+      STDERR.print "removing ", path, "..." if $DEBUG
 
-        # keep this order for thread safeness
-        if path
-          File.unlink(path) if File.exist?(path)
+      tmpfile.close if tmpfile
+
+      if path
+        begin
+          File.unlink(path)
+        rescue Errno::ENOENT
         end
-
-        STDERR.print "done\n" if $DEBUG
       end
+
+      STDERR.print "done\n" if $DEBUG
     end
   end
-  # :startdoc:
 
   class << self
+    # :startdoc:
+
     # Creates a new Tempfile.
     #
     # If no block is given, this is a synonym for Tempfile.new.
     #
     # If a block is given, then a Tempfile object will be constructed,
     # and the block is run with said object as argument. The Tempfile
-    # oject will be automatically closed after the block terminates.
+    # object will be automatically closed after the block terminates.
     # The call returns the value of the block.
     #
     # In any case, all arguments (+*args+) will be passed to Tempfile.new.
@@ -316,31 +315,53 @@ class Tempfile < DelegateClass(File)
       tempfile = new(*args)
 
       if block_given?
-	begin
-	  yield(tempfile)
-	ensure
-	  tempfile.close
-	end
+        begin
+          yield(tempfile)
+        ensure
+          tempfile.close
+        end
       else
-	tempfile
+        tempfile
       end
-    end
-
-    def mkdir(*args)
-      Dir.mkdir(*args)
-    end
-    def rmdir(*args)
-      Dir.rmdir(*args)
     end
   end
 end
 
-if __FILE__ == $0
-#  $DEBUG = true
-  f = Tempfile.new("foo")
-  f.print("foo\n")
-  f.close
-  f.open
-  p f.gets # => "foo\n"
-  f.close!
+# Creates a temporally file as usual File object (not Tempfile).
+# It don't use finalizer and delegation.
+#
+# If no block is given, this is similar to Tempfile.new except
+# creating File instead of Tempfile.
+# The created file is not removed automatically.
+# You should use File.unlink to remove it.
+#
+# If a block is given, then a File object will be constructed,
+# and the block is invoked with the object as the argument.
+# The File object will be automatically closed and
+# the temporally file is removed after the block terminates.
+# The call returns the value of the block.
+#
+# In any case, all arguments (+*args+) will be treated as Tempfile.new.
+#
+#   Tempfile.create('foo', '/home/temp') do |f|
+#      ... do something with f ...
+#   end
+#
+def Tempfile.create(basename, tmpdir=nil, mode: 0, **options)
+  tmpfile = nil
+  Dir::Tmpname.create(basename, tmpdir, options) do |tmpname, n, opts|
+    mode |= File::RDWR|File::CREAT|File::EXCL
+    opts[:perm] = 0600
+    tmpfile = File.open(tmpname, mode, opts)
+  end
+  if block_given?
+    begin
+      yield tmpfile
+    ensure
+      tmpfile.close if !tmpfile.closed?
+      File.unlink tmpfile
+    end
+  else
+    tmpfile
+  end
 end

@@ -1,5 +1,4 @@
 require 'test/unit'
-require_relative 'envutil.rb'
 
 class TestCase < Test::Unit::TestCase
   def test_case
@@ -83,5 +82,43 @@ class TestCase < Test::Unit::TestCase
     assert_in_out_err(['-e', <<-EOS], '', %w[42], [])
       class Fixnum; undef ===; def ===(o); p 42; true; end; end; case 1; when 1; end
     EOS
+  end
+
+  def test_optimization
+    case 1
+    when 0.9, 1.1
+      assert(false)
+    when 1.0
+      assert(true)
+    else
+      assert(false)
+    end
+    case 536870912
+    when 536870911.9, 536870912.1
+      assert(false)
+    when 536870912.0
+      assert(true)
+    else
+      assert(false)
+    end
+  end
+
+  def test_method_missing
+    flag = false
+
+    case 1
+    when Class.new(BasicObject) { def method_missing(*) true end }.new
+      flag = true
+    end
+
+    assert(flag)
+  end
+
+  def test_nomethoderror
+    assert_raise(NoMethodError) {
+      case 1
+      when Class.new(BasicObject) { }.new
+      end
+    }
   end
 end

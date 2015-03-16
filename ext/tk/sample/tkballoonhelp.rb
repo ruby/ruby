@@ -64,8 +64,8 @@ class Tk::RbWidget::BalloonHelp<TkLabel
     _balloon_binding(@interval)
 
     # @label = TkLabel.new(@frame, 'background'=>'bisque').pack
-    @label = TkLabel.new(@frame, 
-                         'foreground'=>DEFAULT_FOREGROUND, 
+    @label = TkLabel.new(@frame,
+                         'foreground'=>DEFAULT_FOREGROUND,
                          'background'=>DEFAULT_BACKGROUND).pack
     @label.configure(_symbolkey2str(keys)) unless keys.empty?
     @path = @label
@@ -147,7 +147,7 @@ if __FILE__ == $0
   }
   TkButton.new('text'=>'This button has another balloon help') {|b|
     pack('fill'=>'x')
-    Tk::RbWidget::BalloonHelp.new(b, 
+    Tk::RbWidget::BalloonHelp.new(b,
                         'text'=>"CONFIGURED MESSAGE\nchange colors, and so on",
                         'interval'=>200, 'font'=>'courier',
                         'background'=>'gray', 'foreground'=>'red')

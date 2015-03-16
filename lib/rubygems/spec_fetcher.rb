@@ -1,9 +1,8 @@
-require 'zlib'
-require 'fileutils'
-
 require 'rubygems/remote_fetcher'
 require 'rubygems/user_interaction'
 require 'rubygems/errors'
+require 'rubygems/text'
+require 'rubygems/name_tuple'
 
 ##
 # SpecFetcher handles metadata updates from remote gem repositories.
@@ -11,16 +10,17 @@ require 'rubygems/errors'
 class Gem::SpecFetcher
 
   include Gem::UserInteraction
-
-  ##
-  # The SpecFetcher cache dir.
-
-  attr_reader :dir # :nodoc:
+  include Gem::Text
 
   ##
   # Cache of latest specs
 
   attr_reader :latest_specs # :nodoc:
+
+  ##
+  # Sources for this SpecFetcher
+
+  attr_reader :sources # :nodoc:
 
   ##
   # Cache of all released specs
@@ -34,6 +34,10 @@ class Gem::SpecFetcher
 
   @fetcher = nil
 
+  ##
+  # Default fetcher instance.  Use this instead of ::new to reduce object
+  # allocation.
+
   def self.fetcher
     @fetcher ||= new
   end
@@ -42,99 +46,74 @@ class Gem::SpecFetcher
     @fetcher = fetcher
   end
 
-  def initialize
-    @dir = File.join Gem.user_home, '.gem', 'specs'
-    @update_cache = File.stat(Gem.user_home).uid == Process.uid
+  ##
+  # Creates a new SpecFetcher.  Ordinarily you want to use the default fetcher
+  # from Gem::SpecFetcher::fetcher which uses the Gem.sources.
+  #
+  # If you need to retrieve specifications from a different +source+, you can
+  # send it as an argument.
+
+  def initialize sources = nil
+    @sources = sources || Gem.sources
+
+    @update_cache =
+      begin
+        File.stat(Gem.user_home).uid == Process.uid
+      rescue Errno::EACCES, Errno::ENOENT
+        false
+      end
 
     @specs = {}
     @latest_specs = {}
     @prerelease_specs = {}
 
+    @caches = {
+      :latest => @latest_specs,
+      :prerelease => @prerelease_specs,
+      :released => @specs,
+    }
+
     @fetcher = Gem::RemoteFetcher.fetcher
   end
 
   ##
-  # Returns the local directory to write +uri+ to.
+  #
+  # Find and fetch gem name tuples that match +dependency+.
+  #
+  # If +matching_platform+ is false, gems for all platforms are returned.
 
-  def cache_dir(uri)
-    File.join @dir, "#{uri.host}%#{uri.port}", File.dirname(uri.path)
-  end
-
-  ##
-  # Fetch specs matching +dependency+.  If +all+ is true, all matching
-  # (released) versions are returned.  If +matching_platform+ is
-  # false, all platforms are returned. If +prerelease+ is true,
-  # prerelease versions are included.
-
-  def fetch_with_errors(dependency, all = false, matching_platform = true, prerelease = false)
-    specs_and_sources, errors = find_matching_with_errors dependency, all, matching_platform, prerelease
-
-    ss = specs_and_sources.map do |spec_tuple, source_uri|
-      [fetch_spec(spec_tuple, URI.parse(source_uri)), source_uri]
-    end
-
-    return [ss, errors]
-
-  rescue Gem::RemoteFetcher::FetchError => e
-    raise unless warn_legacy e do
-      require 'rubygems/source_info_cache'
-
-      return [Gem::SourceInfoCache.search_with_source(dependency,
-                                                     matching_platform, all), nil]
-    end
-  end
-
-  def fetch(*args)
-    fetch_with_errors(*args).first
-  end
-
-  def fetch_spec(spec, source_uri)
-    spec = spec - [nil, 'ruby', '']
-    spec_file_name = "#{spec.join '-'}.gemspec"
-
-    uri = source_uri + "#{Gem::MARSHAL_SPEC_DIR}#{spec_file_name}"
-
-    cache_dir = cache_dir uri
-
-    local_spec = File.join cache_dir, spec_file_name
-
-    if File.exist? local_spec then
-      spec = Gem.read_binary local_spec
-    else
-      uri.path << '.rz'
-
-      spec = @fetcher.fetch_path uri
-      spec = Gem.inflate spec
-
-      if @update_cache then
-        FileUtils.mkdir_p cache_dir
-
-        open local_spec, 'wb' do |io|
-          io.write spec
-        end
-      end
-    end
-
-    # TODO: Investigate setting Gem::Specification#loaded_from to a URI
-    Marshal.load spec
-  end
-
-  ##
-  # Find spec names that match +dependency+.  If +all+ is true, all
-  # matching released versions are returned.  If +matching_platform+
-  # is false, gems for all platforms are returned.
-
-  def find_matching_with_errors(dependency, all = false, matching_platform = true, prerelease = false)
+  def search_for_dependency(dependency, matching_platform=true)
     found = {}
 
     rejected_specs = {}
 
-    list(all, prerelease).each do |source_uri, specs|
-      found[source_uri] = specs.select do |spec_name, version, spec_platform|
-        if dependency.match?(spec_name, version)
-          if matching_platform and !Gem::Platform.match(spec_platform)
-            pm = (rejected_specs[dependency] ||= Gem::PlatformMismatch.new(spec_name, version))
-            pm.add_platform spec_platform
+    if dependency.prerelease?
+      if dependency.specific?
+        type = :complete
+      else
+        type = :abs_latest
+      end
+    elsif dependency.latest_version?
+      type = :latest
+    else
+      type = :released
+    end
+
+    list, errors = available_specs(type)
+    list.each do |source, specs|
+      if dependency.name.is_a?(String) && specs.respond_to?(:bsearch)
+        start_index = (0 ... specs.length).bsearch{ |i| specs[i].name >= dependency.name }
+        end_index   = (0 ... specs.length).bsearch{ |i| specs[i].name > dependency.name }
+        specs = specs[start_index ... end_index] if start_index && end_index
+      end
+
+      found[source] = specs.select do |tup|
+        if dependency.match?(tup)
+          if matching_platform and !Gem::Platform.match(tup.platform)
+            pm = (
+              rejected_specs[dependency] ||= \
+                Gem::PlatformMismatch.new(tup.name, tup.version))
+            pm.add_platform tup.platform
             false
           else
             true
@@ -143,157 +122,147 @@ class Gem::SpecFetcher
       end
     end
 
-    errors = rejected_specs.values
+    errors += rejected_specs.values
 
-    specs_and_sources = []
+    tuples = []
 
-    found.each do |source_uri, specs|
-      uri_str = source_uri.to_s
-      specs_and_sources.push(*specs.map { |spec| [spec, uri_str] })
-    end
-
-    [specs_and_sources, errors]
-  end
-
-  def find_matching(*args)
-    find_matching_with_errors(*args).first
-  end
-
-  ##
-  # Returns Array of gem repositories that were generated with RubyGems less
-  # than 1.2.
-
-  def legacy_repos
-    Gem.sources.reject do |source_uri|
-      source_uri = URI.parse source_uri
-      spec_path = source_uri + "specs.#{Gem.marshal_version}.gz"
-
-      begin
-        @fetcher.fetch_size spec_path
-      rescue Gem::RemoteFetcher::FetchError
-        begin
-          @fetcher.fetch_size(source_uri + 'yaml') # re-raise if non-repo
-        rescue Gem::RemoteFetcher::FetchError
-          alert_error "#{source_uri} does not appear to be a repository"
-          raise
-        end
-        false
+    found.each do |source, specs|
+      specs.each do |s|
+        tuples << [s, source]
       end
     end
+
+    tuples = tuples.sort_by { |x| x[0] }
+
+    return [tuples, errors]
+  end
+
+
+  ##
+  # Return all gem name tuples who's names match +obj+
+
+  def detect(type=:complete)
+    tuples = []
+
+    list, _ = available_specs(type)
+    list.each do |source, specs|
+      specs.each do |tup|
+        if yield(tup)
+          tuples << [tup, source]
+        end
+      end
+    end
+
+    tuples
+  end
+
+
+  ##
+  # Find and fetch specs that match +dependency+.
+  #
+  # If +matching_platform+ is false, gems for all platforms are returned.
+
+  def spec_for_dependency(dependency, matching_platform=true)
+    tuples, errors = search_for_dependency(dependency, matching_platform)
+
+    specs = []
+    tuples.each do |tup, source|
+      begin
+        spec = source.fetch_spec(tup)
+      rescue Gem::RemoteFetcher::FetchError => e
+        errors << Gem::SourceFetchProblem.new(source, e)
+      else
+        specs << [spec, source]
+      end
+    end
+
+    return [specs, errors]
   end
 
   ##
-  # Returns a list of gems available for each source in Gem::sources.  If
-  # +all+ is true, all released versions are returned instead of only latest
-  # versions. If +prerelease+ is true, include prerelease versions.
+  # Suggests gems based on the supplied +gem_name+. Returns an array of
+  # alternative gem names.
 
-  def list(all = false, prerelease = false)
-    # TODO: make type the only argument
-    type = if all
-             :all
-           elsif prerelease
-             :prerelease
-           else
-             :latest
-           end
+  def suggest_gems_from_name gem_name
+    gem_name        = gem_name.downcase.tr('_-', '')
+    max             = gem_name.size / 2
+    names           = available_specs(:latest).first.values.flatten(1)
 
+    matches = names.map { |n|
+      next unless n.match_platform?
+
+      distance = levenshtein_distance gem_name, n.name.downcase.tr('_-', '')
+
+      next if distance >= max
+
+      return [n.name] if distance == 0
+
+      [n.name, distance]
+    }.compact
+
+    matches = matches.uniq.sort_by { |name, dist| dist }
+
+    matches.first(5).map { |name, dist| name }
+  end
+
+  ##
+  # Returns a list of gems available for each source in Gem::sources.
+  #
+  # +type+ can be one of 3 values:
+  # :released   => Return the list of all released specs
+  # :complete   => Return the list of all specs
+  # :latest     => Return the list of only the highest version of each gem
+  # :prerelease => Return the list of all prerelease only specs
+  #
+
+  def available_specs(type)
+    errors = []
     list = {}
 
-    file = { :latest => 'latest_specs',
-      :prerelease => 'prerelease_specs',
-      :all => 'specs' }[type]
-
-    cache = { :latest => @latest_specs,
-      :prerelease => @prerelease_specs,
-      :all => @specs }[type]
-
-    Gem.sources.each do |source_uri|
-      source_uri = URI.parse source_uri
-
-      unless cache.include? source_uri
-        cache[source_uri] = load_specs source_uri, file
-      end
-
-      list[source_uri] = cache[source_uri]
-    end
-
-    if type == :all
-      list.values.map do |gems|
-        gems.reject! { |g| !g[1] || g[1].prerelease? }
-      end
-    end
-
-    list
-  end
-
-  ##
-  # Loads specs in +file+, fetching from +source_uri+ if the on-disk cache is
-  # out of date.
-
-  def load_specs(source_uri, file)
-    file_name  = "#{file}.#{Gem.marshal_version}"
-    spec_path  = source_uri + "#{file_name}.gz"
-    cache_dir  = cache_dir spec_path
-    local_file = File.join(cache_dir, file_name)
-    loaded     = false
-
-    if File.exist? local_file then
-      spec_dump = @fetcher.fetch_path spec_path, File.mtime(local_file)
-
-      if spec_dump.nil? then
-        spec_dump = Gem.read_binary local_file
-      else
-        loaded = true
-      end
-    else
-      spec_dump = @fetcher.fetch_path spec_path
-      loaded = true
-    end
-
-    specs = begin
-              Marshal.load spec_dump
-            rescue ArgumentError
-              spec_dump = @fetcher.fetch_path spec_path
-              loaded = true
-
-              Marshal.load spec_dump
-            end
-
-    if loaded and @update_cache then
+    @sources.each_source do |source|
       begin
-        FileUtils.mkdir_p cache_dir
+        names = case type
+                when :latest
+                  tuples_for source, :latest
+                when :released
+                  tuples_for source, :released
+                when :complete
+                  names =
+                    tuples_for(source, :prerelease, true) +
+                    tuples_for(source, :released)
 
-        open local_file, 'wb' do |io|
-          io << spec_dump
-        end
-      rescue
+                  names.sort
+                when :abs_latest
+                  names =
+                    tuples_for(source, :prerelease, true) +
+                    tuples_for(source, :latest)
+
+                  names.sort
+                when :prerelease
+                  tuples_for(source, :prerelease)
+                else
+                  raise Gem::Exception, "Unknown type - :#{type}"
+                end
+      rescue Gem::RemoteFetcher::FetchError => e
+        errors << Gem::SourceFetchProblem.new(source, e)
+      else
+        list[source] = names
       end
     end
 
-    specs
+    [list, errors]
   end
 
   ##
-  # Warn about legacy repositories if +exception+ indicates only legacy
-  # repositories are available, and yield to the block.  Returns false if the
-  # exception indicates some other FetchError.
+  # Retrieves NameTuples from +source+ of the given +type+ (:prerelease,
+  # etc.).  If +gracefully_ignore+ is true, errors are ignored.
 
-  def warn_legacy(exception)
-    uri = exception.uri.to_s
-    if uri =~ /specs\.#{Regexp.escape Gem.marshal_version}\.gz$/ then
-      alert_warning <<-EOF
-RubyGems 1.2+ index not found for:
-\t#{legacy_repos.join "\n\t"}
-
-RubyGems will revert to legacy indexes degrading performance.
-      EOF
-
-      yield
-
-      return true
-    end
-
-    false
+  def tuples_for(source, type, gracefully_ignore=false) # :nodoc:
+    @caches[type][source.uri] ||=
+      source.load_specs(type).sort_by { |tup| tup.name }
+  rescue Gem::RemoteFetcher::FetchError
+    raise unless gracefully_ignore
+    []
   end
 
 end

@@ -1,12 +1,12 @@
 =begin
  distributed Ruby --- NamedObject Sample
- 	Copyright (c) 2000-2001 Masatoshi SEKI 
+ 	Copyright (c) 2000-2001 Masatoshi SEKI
 =end
 
 =begin
 How to play.
 
-* start server 
+* start server
  Terminal 1
  | % ruby name.rb druby://yourhost:7640
  | druby://yourhost:7640
@@ -28,9 +28,9 @@ How to play.
  | druby://yourhost:7640
  | [return] to exit
 
-* continue client 
+* continue client
  Terminal 2
- type [return] 
+ type [return]
  | 1
  | 2
 =end
@@ -44,7 +44,7 @@ module DRbNamedObject
 
   def drb_name=(name)
     @drb_name = name
-    Thread.exclusive do 
+    Thread.exclusive do
       raise(IndexError, name) if DRbNAMEDICT[name]
       DRbNAMEDICT[name] = self
     end
@@ -62,7 +62,7 @@ class DRbNamedIdConv < DRb::DRbIdConv
 
   def to_id(obj)
     if obj.kind_of? DRbNamedObject
-      return obj.drb_name 
+      return obj.drb_name
     else
       return super
     end
@@ -98,7 +98,7 @@ class Front
     @name['seq'] = seq
     @name['mutex'] = mutex
   end
-    
+
   def [](k)
     @name[k]
   end
@@ -108,7 +108,7 @@ if __FILE__ == $0
   uri = ARGV.shift
 
   name_conv = DRbNamedIdConv.new
-  
+
   DRb.install_id_conv(name_conv)
   DRb.start_service(uri, Front.new)
   puts DRb.uri

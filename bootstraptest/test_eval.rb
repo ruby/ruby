@@ -137,7 +137,7 @@ assert_equal %q{C}, %q{
   }
   C.new.m
 }
-assert_equal %q{C}, %q{
+assert_equal %q{top}, %q{
   Const = :top
   class C
     Const = :C
@@ -264,24 +264,18 @@ assert_equal 'ok', %q{
 }, '[ruby-core:16794]'
 
 assert_equal 'ok', %q{
-  begin
-    nil.instance_eval {
-      def a() :a end
-    }
-  rescue TypeError
-    :ok
-  end
-}, '[ruby-core:16796]'
+  nil.instance_eval {
+    def defd_using_instance_eval() :ok end
+  }
+  nil.defd_using_instance_eval
+}, '[ruby-core:28324]'
 
 assert_equal 'ok', %q{
-  begin
-    nil.instance_exec {
-      def a() :a end
-    }
-  rescue TypeError
-    :ok
-  end
-}, '[ruby-core:16796]'
+  nil.instance_exec {
+    def defd_using_instance_exec() :ok end
+  }
+  nil.defd_using_instance_exec
+}, '[ruby-core:28324]'
 
 assert_normal_exit %q{
   eval("", method(:proc).call {}.binding)
@@ -316,6 +310,15 @@ assert_normal_exit %q{
   end
   begin
     eval "class C; @@h = #{hash.inspect}; end"
-  rescue SystemStackError
   end
 }, '[ruby-core:25714]'
+
+assert_normal_exit %q{
+  begin
+    eval("# encoding:utf-16le\nfoo")
+  rescue Exception => e
+    p e
+    RubyVM::InstructionSequence.compile("p:hello")
+  end
+}, 'check escaping the internal value th->base_block'
+

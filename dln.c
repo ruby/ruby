@@ -47,6 +47,7 @@ void *xcalloc();
 void *xrealloc();
 #endif
 
+#undef free
 #define free(x) xfree(x)
 
 #include <stdio.h>
@@ -57,7 +58,7 @@ void *xrealloc();
 #include <sys/stat.h>
 
 #ifndef S_ISDIR
-#   define S_ISDIR(m) ((m & S_IFMT) == S_IFDIR)
+#   define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
 #endif
 
 #ifdef HAVE_SYS_PARAM_H
@@ -75,7 +76,7 @@ void *xrealloc();
 char *getenv();
 #endif
 
-#if defined(__APPLE__) && defined(__MACH__)   /* Mac OS X */
+#ifdef __APPLE__
 # if defined(HAVE_DLOPEN)
    /* Mac OS X with dlopen (10.3 or later) */
 #  define MACOSX_DLOPEN
@@ -107,44 +108,47 @@ dln_loaderror(const char *format, ...)
 
 #ifndef FUNCNAME_PATTERN
 # if defined(__hp9000s300) || ((defined(__NetBSD__) || defined(__FreeBSD__) || defined(__OpenBSD__)) && !defined(__ELF__)) || defined(__BORLANDC__) || defined(NeXT) || defined(__WATCOMC__) || defined(MACOSX_DYLD)
-#  define FUNCNAME_PATTERN "_Init_%s"
+#  define FUNCNAME_PREFIX "_Init_"
 # else
-#  define FUNCNAME_PATTERN "Init_%s"
+#  define FUNCNAME_PREFIX "Init_"
 # endif
 #endif
 
+#if defined __CYGWIN__ || defined DOSISH
+#define isdirsep(x) ((x) == '/' || (x) == '\\')
+#else
+#define isdirsep(x) ((x) == '/')
+#endif
+
 static size_t
-init_funcname_len(char **buf, const char *file)
+init_funcname_len(const char **file)
 {
-    char *p;
-    const char *slash;
-    size_t len;
+    const char *p = *file, *base, *dot = NULL;
 
     /* Load the file as an object one */
-    for (slash = file-1; *file; file++) /* Find position of last '/' */
-	if (*file == '/') slash = file;
-
-    len = strlen(FUNCNAME_PATTERN) + strlen(slash + 1);
-    *buf = xmalloc(len);
-    snprintf(*buf, len, FUNCNAME_PATTERN, slash + 1);
-    for (p = *buf; *p; p++) {         /* Delete suffix if it exists */
-	if (*p == '.') {
-	    *p = '\0'; break;
-	}
+    for (base = p; *p; p++) { /* Find position of last '/' */
+	if (*p == '.' && !dot) dot = p;
+	if (isdirsep(*p)) base = p+1, dot = NULL;
     }
-    return p - *buf;
+    *file = base;
+    /* Delete suffix if it exists */
+    return (dot ? dot : p) - base;
 }
 
+static const char funcname_prefix[sizeof(FUNCNAME_PREFIX) - 1] = FUNCNAME_PREFIX;
+
 #define init_funcname(buf, file) do {\
-    size_t len = init_funcname_len(buf, file);\
-    char *tmp = ALLOCA_N(char, len+1);\
+    const char *base = (file);\
+    const size_t flen = init_funcname_len(&base);\
+    const size_t plen = sizeof(funcname_prefix);\
+    char *const tmp = ALLOCA_N(char, plen+flen+1);\
     if (!tmp) {\
-	free(*buf);\
 	dln_memerror();\
     }\
-    strlcpy(tmp, *buf, len + 1);\
-    free(*buf);\
-    *buf = tmp;\
+    memcpy(tmp, funcname_prefix, plen);\
+    memcpy(tmp+plen, base, flen);\
+    tmp[plen+flen] = '\0';\
+    *(buf) = tmp;\
 } while (0)
 
 #ifdef USE_DLN_A_OUT
@@ -225,7 +229,7 @@ load_header(int fd, struct exec *hdrp, long disp)
 #define RELOC_TARGET_SIZE(r)		((r)->r_length)
 #endif
 
-#if defined(sun) && defined(sparc)
+#if defined(__sun) && defined(__sparc)
 /* Sparc (Sun 4) macros */
 #  undef relocation_info
 #  define relocation_info reloc_info_sparc
@@ -527,7 +531,7 @@ reloc_undef(int no, struct undef *undef, struct reloc_arg *arg)
 {
     int datum;
     char *address;
-#if defined(sun) && defined(sparc)
+#if defined(__sun) && defined(__sparc)
     unsigned int mask = 0;
 #endif
 
@@ -536,7 +540,7 @@ reloc_undef(int no, struct undef *undef, struct reloc_arg *arg)
     datum = arg->value;
 
     if (R_PCREL(&(undef->reloc))) datum -= undef->base;
-#if defined(sun) && defined(sparc)
+#if defined(__sun) && defined(__sparc)
     datum += undef->reloc.r_addend;
     datum >>= R_RIGHTSHIFT(&(undef->reloc));
     mask = (1 << R_BITSIZE(&(undef->reloc))) - 1;
@@ -760,11 +764,11 @@ load_1(int fd, long disp, const char *need_init)
 	while (rel < rel_end) {
 	    char *address = (char*)(rel->r_address + block);
 	    long datum = 0;
-#if defined(sun) && defined(sparc)
+#if defined(__sun) && defined(__sparc)
 	    unsigned int mask = 0;
 #endif
 
-	    if(rel >= rel_beg)
+	    if (rel >= rel_beg)
 		address += hdr.a_text;
 
 	    if (rel->r_extern) { /* Look it up in symbol-table */
@@ -795,7 +799,7 @@ load_1(int fd, long disp, const char *need_init)
 	    } /* end .. is static */
 	    if (R_PCREL(rel)) datum -= block;
 
-#if defined(sun) && defined(sparc)
+#if defined(__sun) && defined(__sparc)
 	    datum += rel->r_addend;
 	    datum >>= R_RIGHTSHIFT(rel);
 	    mask = (1 << R_BITSIZE(rel)) - 1;
@@ -1127,10 +1131,12 @@ dln_strerror(char *message, size_t size)
     char *p = message;
     size_t len = snprintf(message, size, "%d: ", error);
 
-    FormatMessage(
-	FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-	NULL, error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-	message + len, size - len, NULL);
+#define format_message(sublang) FormatMessage(\
+	FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,	\
+	NULL, error, MAKELANGID(LANG_NEUTRAL, (sublang)),		\
+	message + len, size - len, NULL)
+    if (format_message(SUBLANG_ENGLISH_US) == 0)
+	format_message(SUBLANG_DEFAULT);
     for (p = message + len; *p; p++) {
 	if (*p == '\n' || *p == '\r')
 	    *p = ' ';
@@ -1173,25 +1179,26 @@ dln_strerror(void)
 static void
 aix_loaderror(const char *pathname)
 {
-  char *message[1024], errbuf[1024];
-  int i;
-#define ERRBUF_APPEND(s) strncat(errbuf, s, sizeof(errbuf)-strlen(errbuf)-1)
-  snprintf(errbuf, sizeof(errbuf), "load failed - %s. ", pathname);
+    char *message[1024], errbuf[1024];
+    int i;
+#define ERRBUF_APPEND(s) strlcat(errbuf, (s), sizeof(errbuf))
+    snprintf(errbuf, sizeof(errbuf), "load failed - %s. ", pathname);
 
-  if (loadquery(L_GETMESSAGES, &message[0], sizeof(message)) != -1) {
-    ERRBUF_APPEND("Please issue below command for detailed reasons:\n\t");
-    ERRBUF_APPEND("/usr/sbin/execerror ruby ");
-    for (i=0; message[i]; i++) {
-      ERRBUF_APPEND("\"");
-      ERRBUF_APPEND(message[i]);
-      ERRBUF_APPEND("\" ");
+    if (loadquery(L_GETMESSAGES, &message[0], sizeof(message)) != -1) {
+	ERRBUF_APPEND("Please issue below command for detailed reasons:\n\t");
+	ERRBUF_APPEND("/usr/sbin/execerror ruby ");
+	for (i=0; message[i]; i++) {
+	    ERRBUF_APPEND("\"");
+	    ERRBUF_APPEND(message[i]);
+	    ERRBUF_APPEND("\" ");
+	}
+	ERRBUF_APPEND("\n");
     }
-    ERRBUF_APPEND("\n");
-  } else {
-    ERRBUF_APPEND(strerror(errno));
-    ERRBUF_APPEND("[loadquery failed]");
-  }
-  dln_loaderror("%s", errbuf);
+    else {
+	ERRBUF_APPEND(strerror(errno));
+	ERRBUF_APPEND("[loadquery failed]");
+    }
+    dln_loaderror("%s", errbuf);
 }
 #endif
 
@@ -1209,15 +1216,18 @@ rb_w32_check_imported(HMODULE ext, HMODULE mine)
     while (desc->Name) {
 	PIMAGE_THUNK_DATA pint = (PIMAGE_THUNK_DATA)((char *)ext + desc->Characteristics);
 	PIMAGE_THUNK_DATA piat = (PIMAGE_THUNK_DATA)((char *)ext + desc->FirstThunk);
-	while (piat->u1.Function) {
-	    PIMAGE_IMPORT_BY_NAME pii = (PIMAGE_IMPORT_BY_NAME)((char *)ext + (size_t)pint->u1.AddressOfData);
+	for (; piat->u1.Function; piat++, pint++) {
 	    static const char prefix[] = "rb_";
-	    if (strncmp(pii->Name, prefix, sizeof(prefix) - 1) == 0) {
-		FARPROC addr = GetProcAddress(mine, pii->Name);
+	    PIMAGE_IMPORT_BY_NAME pii;
+	    const char *name;
+
+	    if (IMAGE_SNAP_BY_ORDINAL(pint->u1.Ordinal)) continue;
+	    pii = (PIMAGE_IMPORT_BY_NAME)((char *)ext + (size_t)pint->u1.AddressOfData);
+	    name = (const char *)pii->Name;
+	    if (strncmp(name, prefix, sizeof(prefix) - 1) == 0) {
+		FARPROC addr = GetProcAddress(mine, name);
 		if (addr) return (FARPROC)piat->u1.Function == addr;
 	    }
-	    piat++;
-	    pint++;
 	}
 	desc++;
     }
@@ -1231,7 +1241,7 @@ rb_w32_check_imported(HMODULE ext, HMODULE mine)
 	do { \
 	    *p++ = ((c = *file++) == '/') ? DLN_NEEDS_ALT_SEPARATOR : c; \
 	} while (c); \
-	src = tmp; \
+	(src) = tmp; \
     } while (0)
 #else
 #define translit_separator(str) (void)(str)
@@ -1247,20 +1257,25 @@ dln_load(const char *file)
 
 #if defined _WIN32 && !defined __CYGWIN__
     HINSTANCE handle;
-    char winfile[MAXPATHLEN];
+    WCHAR *winfile;
     char message[1024];
     void (*init_fct)();
     char *buf;
 
-    if (strlen(file) >= MAXPATHLEN) dln_loaderror("filename too long");
-
     /* Load the file as an object one */
     init_funcname(&buf, file);
 
-    strlcpy(winfile, file, sizeof(winfile));
+    /* Convert the file path to wide char */
+    winfile = rb_w32_mbstr_to_wstr(CP_UTF8, file, -1, NULL);
+    if (!winfile) {
+	dln_memerror();
+    }
 
     /* Load file */
-    if ((handle = LoadLibrary(winfile)) == NULL) {
+    handle = LoadLibraryW(winfile);
+    free(winfile);
+
+    if (!handle) {
 	error = dln_strerror();
 	goto failed;
     }
@@ -1317,11 +1332,6 @@ dln_load(const char *file)
 	}
 
 	init_fct = (void(*)())(VALUE)dlsym(handle, buf);
-#if defined __SYMBIAN32__
-	if (init_fct == NULL) {
-	    init_fct = (void(*)())dlsym(handle, "1"); /* Some Symbian versions do not support symbol table in DLL, ordinal numbers only */
-	}
-#endif
 	if (init_fct == NULL) {
 	    error = DLN_ERROR();
 	    dlclose(handle);
@@ -1377,7 +1387,7 @@ dln_load(const char *file)
     }
 #endif /* _AIX */
 
-#if defined(NeXT) || defined(MACOSX_DYLD)
+#if defined(MACOSX_DYLD)
 #define DLN_DEFINED
 /*----------------------------------------------------
    By SHIROYAMA Takayuki Psi@fortune.nest.or.jp
@@ -1388,43 +1398,6 @@ dln_load(const char *file)
     sunshine@sunshineco.com,
     and... Miss ARAI Akino(^^;)
  ----------------------------------------------------*/
-#if defined(NeXT) && (NS_TARGET_MAJOR < 4)/* NeXTSTEP rld functions */
-
-    {
-        NXStream* s;
-	unsigned long init_address;
-	char *object_files[2] = {NULL, NULL};
-
-	void (*init_fct)();
-
-	object_files[0] = (char*)file;
-
-	s = NXOpenFile(2,NX_WRITEONLY);
-
-	/* Load object file, if return value ==0 ,  load failed*/
-	if(rld_load(s, NULL, object_files, NULL) == 0) {
-	    NXFlush(s);
-	    NXClose(s);
-	    dln_loaderror("Failed to load %.200s", file);
-	}
-
-	/* lookup the initial function */
-	if(rld_lookup(s, buf, &init_address) == 0) {
-	    NXFlush(s);
-	    NXClose(s);
-	    dln_loaderror("Failed to lookup Init function %.200s", file);
-	}
-
-	NXFlush(s);
-	NXClose(s);
-
-	/* Cannot call *init_address directory, so copy this value to
-	   function pointer */
-	init_fct = (void(*)())init_address;
-	(*init_fct)();
-	return (void*)init_address;
-    }
-#else/* OPENSTEP dyld functions */
     {
 	int dyld_result;
 	NSObjectFileImage obj_file; /* handle, but not use it */
@@ -1443,7 +1416,7 @@ dln_load(const char *file)
 	NSLinkModule(obj_file, file, NSLINKMODULE_OPTION_BINDNOW);
 
 	/* lookup the initial function */
-	if(!NSIsSymbolNameDefined(buf)) {
+	if (!NSIsSymbolNameDefined(buf)) {
 	    dln_loaderror("Failed to lookup Init function %.200s",file);
 	}
 	init_fct = NSAddressOfSymbol(NSLookupAndBindSymbol(buf));
@@ -1451,7 +1424,6 @@ dln_load(const char *file)
 
 	return (void*)init_fct;
     }
-#endif /* rld or dyld */
 #endif
 
 #if defined(__BEOS__) || defined(__HAIKU__)

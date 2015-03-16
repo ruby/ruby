@@ -94,11 +94,31 @@ class TestFind < Test::Unit::TestCase
     skip "no meaning test on Windows" if /mswin|mingw/ =~ RUBY_PLATFORM
     Dir.mktmpdir {|d|
       Dir.mkdir(dir = "#{d}/dir")
-      File.open(file = "#{dir}/foo", "w"){}
+      File.open("#{dir}/foo", "w"){}
       begin
         File.chmod(0300, dir)
         a = []
         Find.find(d) {|f| a << f }
+        assert_equal([d, dir], a)
+
+        a = []
+        Find.find(d, ignore_error: true) {|f| a << f }
+        assert_equal([d, dir], a)
+
+        a = []
+        Find.find(d, ignore_error: true).each {|f| a << f }
+        assert_equal([d, dir], a)
+
+        a = []
+        assert_raise_with_message(Errno::EACCES, /#{Regexp.quote(dir)}/) do
+          Find.find(d, ignore_error: false) {|f| a << f }
+        end
+        assert_equal([d, dir], a)
+
+        a = []
+        assert_raise_with_message(Errno::EACCES, /#{Regexp.quote(dir)}/) do
+          Find.find(d, ignore_error: false).each {|f| a << f }
+        end
         assert_equal([d, dir], a)
       ensure
         File.chmod(0700, dir)
@@ -115,7 +135,28 @@ class TestFind < Test::Unit::TestCase
         a = []
         Find.find(d) {|f| a << f }
         assert_equal([d, dir, file], a)
+
+        a = []
+        Find.find(d, ignore_error: true) {|f| a << f }
+        assert_equal([d, dir, file], a)
+
+        a = []
+        Find.find(d, ignore_error: true).each {|f| a << f }
+        assert_equal([d, dir, file], a)
+
         skip "no meaning test on Windows" if /mswin|mingw/ =~ RUBY_PLATFORM
+        a = []
+        assert_raise_with_message(Errno::EACCES, /#{Regexp.quote(file)}/) do
+          Find.find(d, ignore_error: false) {|f| a << f }
+        end
+        assert_equal([d, dir, file], a)
+
+        a = []
+        assert_raise_with_message(Errno::EACCES, /#{Regexp.quote(file)}/) do
+          Find.find(d, ignore_error: false).each {|f| a << f }
+        end
+        assert_equal([d, dir, file], a)
+
         assert_raise(Errno::EACCES) { File.lstat(file) }
       ensure
         File.chmod(0700, dir)
@@ -157,7 +198,7 @@ class TestFind < Test::Unit::TestCase
       File.open(file_b = "#{dir_1}/b", "w"){}
       File.open(file_c = "#{dir_1}/c", "w"){}
       Dir.mkdir(dir_d = "#{dir_1}/d")
-      File.open(file_de = "#{dir_d}/e", "w"){}
+      File.open("#{dir_d}/e", "w"){}
       dir_2 = "#{d}/d2"
       a = []
       Find.find(d) {|f|
@@ -178,7 +219,7 @@ class TestFind < Test::Unit::TestCase
       File.open(file_b = "#{dir_1}/b", "w"){}
       File.open(file_c = "#{dir_1}/c", "w"){}
       Dir.mkdir(dir_d = "#{dir_1}/d")
-      File.open(file_de = "#{dir_d}/e", "w"){}
+      File.open("#{dir_d}/e", "w"){}
       dir_2 = "#{d}/d2"
       a = []
       Find.find(d) {|f|
@@ -207,6 +248,40 @@ class TestFind < Test::Unit::TestCase
       a = []
       e.each {|f| a << f }
       assert_equal([d, "#{d}/a", "#{d}/b", "#{d}/b/a", "#{d}/b/b", "#{d}/c"], a)
+    }
+  end
+
+  def test_encoding_ascii
+    Dir.mktmpdir {|d|
+      File.open("#{d}/a", "w"){}
+      Dir.mkdir("#{d}/b")
+      a = []
+      Find.find(d.encode(Encoding::US_ASCII)) {|f| a << f }
+      a.each do |i|
+        assert(Encoding.compatible?(d.encode(Encoding.find('filesystem')), i))
+      end
+    }
+  end
+
+  def test_encoding_non_ascii
+    Dir.mktmpdir {|d|
+      File.open("#{d}/a", "w"){}
+      Dir.mkdir("#{d}/b")
+      euc_jp = Encoding::EUC_JP
+      win_31j = Encoding::Windows_31J
+      utf_8 = Encoding::UTF_8
+      a = []
+      Find.find(d.encode(euc_jp), d.encode(win_31j), d.encode(utf_8)) {|f| a << [f, f.encoding] }
+      assert_equal([[d, euc_jp], ["#{d}/a", euc_jp], ["#{d}/b", euc_jp],
+                    [d, win_31j], ["#{d}/a", win_31j], ["#{d}/b", win_31j],
+                    [d, utf_8], ["#{d}/a", utf_8], ["#{d}/b", utf_8]],
+                   a)
+      if /mswin|mingw/ =~ RUBY_PLATFORM
+        a = []
+        Dir.mkdir("#{d}/\u{2660}")
+        Find.find("#{d}".encode(utf_8)) {|f| a << [f, f.encoding] }
+        assert_equal([[d, utf_8], ["#{d}/a", utf_8], ["#{d}/b", utf_8], ["#{d}/\u{2660}", utf_8]], a)
+      end
     }
   end
 

@@ -1,4 +1,4 @@
-# keramik.tcl - 
+# keramik.tcl -
 #
 # A sample pixmap theme for the tile package.
 #
@@ -48,12 +48,12 @@ namespace eval tile::theme::keramik {
             ;
 
         style map . -foreground [list disabled $colors(-disabledfg)]
-                
+
         # -----------------------------------------------------------------
         # Button elements
         #  - the button has a large rounded border and needs a bit of
         #    horizontal padding.
-        #  - the checkbutton and radiobutton have the focus drawn around 
+        #  - the checkbutton and radiobutton have the focus drawn around
         #    the whole widget - hence the new layouts.
         #
         style layout TButton {
@@ -125,7 +125,7 @@ namespace eval tile::theme::keramik {
         #    one at the top.
         #
         style layout Vertical.TScrollbar {
-            Scrollbar.background 
+            Scrollbar.background
             Scrollbar.trough -children {
                 Scrollbar.uparrow -side top
                 Scrollbar.downarrow -side bottom
@@ -133,9 +133,9 @@ namespace eval tile::theme::keramik {
                 Vertical.Scrollbar.thumb -side top -expand true -sticky ns
             }
         }
-        
+
         style layout Horizontal.TScrollbar {
-            Scrollbar.background 
+            Scrollbar.background
             Scrollbar.trough -children {
                 Scrollbar.leftarrow -side left
                 Scrollbar.rightarrow -side right
@@ -149,26 +149,26 @@ namespace eval tile::theme::keramik {
         style element create Horizontal.Scrollbar.thumb image $I(hsb-n) \
             -border {6 4} -width 15 -height 16 -sticky news \
             -map [list {pressed !disabled} $I(hsb-p)]
-        
+
         style element create Vertical.Scrollbar.thumb image $I(vsb-n) \
             -border {4 6} -width 16 -height 15 -sticky news \
             -map [list {pressed !disabled} $I(vsb-p)]
-        
+
         style element create Scale.slider image $I(hslider-n) \
             -border 3
-        
+
         style element create Vertical.Scale.slider image $I(vslider-n) \
             -border 3
-        
+
         style element create Horizontal.Progress.bar image $I(hsb-n) \
             -border {6 4}
-        
+
         style element create Vertical.Progress.bar image $I(vsb-n) \
             -border {4 6}
-        
+
         style element create uparrow image $I(arrowup-n) \
             -map [list {pressed !disabled} $I(arrowup-p)]
-                  
+
         style element create downarrow image $I(arrowdown-n) \
             -map [list {pressed !disabled} $I(arrowdown-p)]
 
@@ -177,7 +177,7 @@ namespace eval tile::theme::keramik {
 
         style element create leftarrow image $I(arrowleft-n) \
             -map [list {pressed !disabled} $I(arrowleft-p)]
-        
+
         # -----------------------------------------------------------------
         # Notebook elements
         #

@@ -19,17 +19,69 @@ require 'digest/sha1'
 
 module WEBrick
   module HTTPAuth
+
+    ##
+    # RFC 2617 Digest Access Authentication for WEBrick
+    #
+    # Use this class to add digest authentication to a WEBrick servlet.
+    #
+    # Here is an example of how to set up DigestAuth:
+    #
+    #   config = { :Realm => 'DigestAuth example realm' }
+    #
+    #   htdigest = WEBrick::HTTPAuth::Htdigest.new 'my_password_file'
+    #   htdigest.set_passwd config[:Realm], 'username', 'password'
+    #   htdigest.flush
+    #
+    #   config[:UserDB] = htdigest
+    #
+    #   digest_auth = WEBrick::HTTPAuth::DigestAuth.new config
+    #
+    # When using this as with a servlet be sure not to create a new DigestAuth
+    # object in the servlet's #initialize.  By default WEBrick creates a new
+    # servlet instance for every request and the DigestAuth object must be
+    # used across requests.
+
     class DigestAuth
       include Authenticator
 
-      AuthScheme = "Digest"
-      OpaqueInfo = Struct.new(:time, :nonce, :nc)
-      attr_reader :algorithm, :qop
+      AuthScheme = "Digest" # :nodoc:
+
+      ##
+      # Struct containing the opaque portion of the digest authentication
+
+      OpaqueInfo = Struct.new(:time, :nonce, :nc) # :nodoc:
+
+      ##
+      # Digest authentication algorithm
+
+      attr_reader :algorithm
+
+      ##
+      # Quality of protection.  RFC 2617 defines "auth" and "auth-int"
+
+      attr_reader :qop
+
+      ##
+      # Used by UserDB to create a digest password entry
 
       def self.make_passwd(realm, user, pass)
         pass ||= ""
         Digest::MD5::hexdigest([user, realm, pass].join(":"))
       end
+
+      ##
+      # Creates a new DigestAuth instance.  Be sure to use the same DigestAuth
+      # instance for multiple requests as it saves state between requests in
+      # order to perform authentication.
+      #
+      # See WEBrick::Config::DigestAuth for default configuration entries
+      #
+      # You must supply the following configuration entries:
+      #
+      # :Realm:: The name of the realm being protected.
+      # :UserDB:: A database of usernames and passwords.
+      #           A WEBrick::HTTPAuth::Htdigest instance should be used.
 
       def initialize(config, default=Config::DigestAuth)
         check_init(config)
@@ -44,7 +96,6 @@ module WEBrick
         @nonce_expire_period    = @config[:NonceExpirePeriod]
         @nonce_expire_delta     = @config[:NonceExpireDelta]
         @internet_explorer_hack = @config[:InternetExplorerHack]
-        @opera_hack             = @config[:OperaHack]
 
         case @algorithm
         when 'MD5','MD5-sess'
@@ -62,6 +113,10 @@ module WEBrick
         @mutex = Mutex.new
       end
 
+      ##
+      # Authenticates a +req+ and returns a 401 Unauthorized using +res+ if
+      # the authentication was not correct.
+
       def authenticate(req, res)
         unless result = @mutex.synchronize{ _authenticate(req, res) }
           challenge(req, res)
@@ -71,6 +126,10 @@ module WEBrick
         end
         return true
       end
+
+      ##
+      # Returns a challenge response which asks for for authentication
+      # information
 
       def challenge(req, res, stale=false)
         nonce = generate_next_nonce(req)
@@ -95,6 +154,8 @@ module WEBrick
       end
 
       private
+
+      # :stopdoc:
 
       MustParams = ['username','realm','nonce','uri','response']
       MustParamsAuth = ['cnonce','nc']
@@ -128,8 +189,7 @@ module WEBrick
         end
 
         auth_req['algorithm'] ||= 'MD5'
-        if auth_req['algorithm'] != @algorithm &&
-           (@opera_hack && auth_req['algorithm'] != @algorithm.upcase)
+        if auth_req['algorithm'].upcase != @algorithm.upcase
           error('%s: algorithm unmatch. "%s" for "%s"',
                 auth_req['username'], auth_req['algorithm'], @algorithm)
           return false
@@ -144,7 +204,7 @@ module WEBrick
 
         password = @userdb.get_passwd(@realm, auth_req['username'], @reload_db)
         unless password
-          error('%s: the user is not allowd.', auth_req['username'])
+          error('%s: the user is not allowed.', auth_req['username'])
           return false
         end
 
@@ -165,8 +225,7 @@ module WEBrick
           nonce_is_invalid = true
         end
 
-        if /-sess$/ =~ auth_req['algorithm'] ||
-           (@opera_hack && /-SESS$/ =~ auth_req['algorithm'])
+        if /-sess$/i =~ auth_req['algorithm']
           ha1 = hexdigest(password, auth_req['nonce'], auth_req['cnonce'])
         else
           ha1 = password
@@ -331,12 +390,17 @@ module WEBrick
         @h.hexdigest(args.join(":"))
       end
 
+      # :startdoc:
     end
+
+    ##
+    # Digest authentication for proxy servers.  See DigestAuth for details.
 
     class ProxyDigestAuth < DigestAuth
       include ProxyAuthenticator
 
-      def check_uri(req, auth_req)
+      private
+      def check_uri(req, auth_req) # :nodoc:
         return true
       end
     end

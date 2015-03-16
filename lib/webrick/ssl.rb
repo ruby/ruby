@@ -12,6 +12,53 @@ module WEBrick
   module Config
     svrsoft = General[:ServerSoftware]
     osslv = ::OpenSSL::OPENSSL_VERSION.split[1]
+
+    ##
+    # Default SSL server configuration.
+    #
+    # WEBrick can automatically create a self-signed certificate if
+    # <code>:SSLCertName</code> is set.  For more information on the various
+    # SSL options see OpenSSL::SSL::SSLContext.
+    #
+    # :ServerSoftware       ::
+    #   The server software name used in the Server: header.
+    # :SSLEnable            :: false,
+    #   Enable SSL for this server.  Defaults to false.
+    # :SSLCertificate       ::
+    #   The SSL certificate for the server.
+    # :SSLPrivateKey        ::
+    #   The SSL private key for the server certificate.
+    # :SSLClientCA          :: nil,
+    #   Array of certificates that will be sent to the client.
+    # :SSLExtraChainCert    :: nil,
+    #   Array of certificates that will be added to the certificate chain
+    # :SSLCACertificateFile :: nil,
+    #   Path to a CA certificate file
+    # :SSLCACertificatePath :: nil,
+    #   Path to a directory containing CA certificates
+    # :SSLCertificateStore  :: nil,
+    #   OpenSSL::X509::Store used for certificate validation of the client
+    # :SSLTmpDhCallback     :: nil,
+    #   Callback invoked when DH parameters are required.
+    # :SSLVerifyClient      ::
+    #   Sets whether the client is verified.  This defaults to VERIFY_NONE
+    #   which is typical for an HTTPS server.
+    # :SSLVerifyDepth       ::
+    #   Number of CA certificates to walk when verifying a certificate chain
+    # :SSLVerifyCallback    ::
+    #   Custom certificate verification callback
+    # :SSLTimeout           ::
+    #   Maximum session lifetime
+    # :SSLOptions           ::
+    #   Various SSL options
+    # :SSLStartImmediately  ::
+    #   Immediately start SSL upon connection?  Defaults to true
+    # :SSLCertName          ::
+    #   SSL certificate name.  Must be set to enable automatic certificate
+    #   creation.
+    # :SSLCertComment       ::
+    #   Comment used during automatic certificate creation.
+
     SSL = {
       :ServerSoftware       => "#{svrsoft} OpenSSL/#{osslv}",
       :SSLEnable            => false,
@@ -22,6 +69,7 @@ module WEBrick
       :SSLCACertificateFile => nil,
       :SSLCACertificatePath => nil,
       :SSLCertificateStore  => nil,
+      :SSLTmpDhCallback     => nil,
       :SSLVerifyClient      => ::OpenSSL::SSL::VERIFY_NONE,
       :SSLVerifyDepth       => nil,
       :SSLVerifyCallback    => nil,   # custom verification
@@ -36,6 +84,10 @@ module WEBrick
   end
 
   module Utils
+    ##
+    # Creates a self-signed certificate with the given number of +bits+,
+    # the issuer +cn+ and a +comment+ to be stored in the certificate.
+
     def create_self_signed_cert(bits, cn, comment)
       rsa = OpenSSL::PKey::RSA.new(bits){|p, n|
         case p
@@ -78,14 +130,26 @@ module WEBrick
     module_function :create_self_signed_cert
   end
 
+  ##
+  #--
+  # Updates WEBrick::GenericServer with SSL functionality
+
   class GenericServer
-    def ssl_context
+
+    ##
+    # SSL context for the server when run in SSL mode
+
+    def ssl_context # :nodoc:
       @ssl_context ||= nil
     end
 
     undef listen
-    def listen(address, port)
-      listeners = Utils::create_listeners(address, port, @logger)
+
+    ##
+    # Updates +listen+ to enable SSL when the SSL configuration is active.
+
+    def listen(address, port) # :nodoc:
+      listeners = Utils::create_listeners(address, port)
       if @config[:SSLEnable]
         unless ssl_context
           @ssl_context = setup_ssl_context(@config)
@@ -98,9 +162,13 @@ module WEBrick
         }
       end
       @listeners += listeners
+      setup_shutdown_pipe
     end
 
-    def setup_ssl_context(config)
+    ##
+    # Sets up an SSL context for +config+
+
+    def setup_ssl_context(config) # :nodoc:
       unless config[:SSLCertificate]
         cn = config[:SSLCertName]
         comment = config[:SSLCertComment]
@@ -116,6 +184,7 @@ module WEBrick
       ctx.ca_file = config[:SSLCACertificateFile]
       ctx.ca_path = config[:SSLCACertificatePath]
       ctx.cert_store = config[:SSLCertificateStore]
+      ctx.tmp_dh_callback = config[:SSLTmpDhCallback]
       ctx.verify_mode = config[:SSLVerifyClient]
       ctx.verify_depth = config[:SSLVerifyDepth]
       ctx.verify_callback = config[:SSLVerifyCallback]

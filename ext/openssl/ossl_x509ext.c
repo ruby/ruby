@@ -11,30 +11,30 @@
 #include "ossl.h"
 
 #define WrapX509Ext(klass, obj, ext) do { \
-    if (!ext) { \
+    if (!(ext)) { \
 	ossl_raise(rb_eRuntimeError, "EXT wasn't initialized!"); \
     } \
-    obj = Data_Wrap_Struct(klass, 0, X509_EXTENSION_free, ext); \
+    (obj) = TypedData_Wrap_Struct((klass), &ossl_x509ext_type, (ext)); \
 } while (0)
 #define GetX509Ext(obj, ext) do { \
-    Data_Get_Struct(obj, X509_EXTENSION, ext); \
-    if (!ext) { \
+    TypedData_Get_Struct((obj), X509_EXTENSION, &ossl_x509ext_type, (ext)); \
+    if (!(ext)) { \
 	ossl_raise(rb_eRuntimeError, "EXT wasn't initialized!"); \
     } \
 } while (0)
 #define SafeGetX509Ext(obj, ext) do { \
-    OSSL_Check_Kind(obj, cX509Ext); \
-    GetX509Ext(obj, ext); \
+    OSSL_Check_Kind((obj), cX509Ext); \
+    GetX509Ext((obj), (ext)); \
 } while (0)
 #define MakeX509ExtFactory(klass, obj, ctx) do { \
-    if (!(ctx = OPENSSL_malloc(sizeof(X509V3_CTX)))) \
+    if (!((ctx) = OPENSSL_malloc(sizeof(X509V3_CTX)))) \
         ossl_raise(rb_eRuntimeError, "CTX wasn't allocated!"); \
-    X509V3_set_ctx(ctx, NULL, NULL, NULL, NULL, 0); \
-    obj = Data_Wrap_Struct(klass, 0, ossl_x509extfactory_free, ctx); \
+    X509V3_set_ctx((ctx), NULL, NULL, NULL, NULL, 0); \
+    (obj) = TypedData_Wrap_Struct((klass), &ossl_x509extfactory_type, (ctx)); \
 } while (0)
 #define GetX509ExtFactory(obj, ctx) do { \
-    Data_Get_Struct(obj, X509V3_CTX, ctx); \
-    if (!ctx) { \
+    TypedData_Get_Struct((obj), X509V3_CTX, &ossl_x509extfactory_type, (ctx)); \
+    if (!(ctx)) { \
 	ossl_raise(rb_eRuntimeError, "CTX wasn't initialized!"); \
     } \
 } while (0)
@@ -45,6 +45,20 @@
 VALUE cX509Ext;
 VALUE cX509ExtFactory;
 VALUE eX509ExtError;
+
+static void
+ossl_x509ext_free(void *ptr)
+{
+    X509_EXTENSION_free(ptr);
+}
+
+static const rb_data_type_t ossl_x509ext_type = {
+    "OpenSSL/X509/EXTENSION",
+    {
+	0, ossl_x509ext_free,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+};
 
 /*
  * Public
@@ -98,10 +112,18 @@ DupX509ExtPtr(VALUE obj)
  * Ext factory
  */
 static void
-ossl_x509extfactory_free(X509V3_CTX *ctx)
+ossl_x509extfactory_free(void *ctx)
 {
     OPENSSL_free(ctx);
 }
+
+static const rb_data_type_t ossl_x509extfactory_type = {
+    "OpenSSL/X509/EXTENSION/Factory",
+    {
+	0, ossl_x509extfactory_free,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+};
 
 static VALUE
 ossl_x509extfactory_alloc(VALUE klass)
@@ -178,7 +200,7 @@ ossl_x509extfactory_set_config(VALUE self, VALUE config)
     return config;
 }
 #else
-#define rb_f_fork rb_f_notimplement
+#define ossl_x509extfactory_set_config rb_f_notimplement
 #endif
 
 static VALUE
@@ -270,6 +292,18 @@ ossl_x509ext_alloc(VALUE klass)
     return obj;
 }
 
+/*
+ * call-seq:
+ *    OpenSSL::X509::Extension.new asn1
+ *    OpenSSL::X509::Extension.new name, value
+ *    OpenSSL::X509::Extension.new name, value, critical
+ *
+ * Creates an X509 extension.
+ *
+ * The extension may be created from +asn1+ data or from an extension +name+
+ * and +value+.  The +name+ may be either an OID or an extension name.  If
+ * +critical+ is true the extension is marked critical.
+ */
 static VALUE
 ossl_x509ext_initialize(int argc, VALUE *argv, VALUE self)
 {
@@ -328,7 +362,7 @@ ossl_x509ext_set_value(VALUE self, VALUE data)
 	OPENSSL_free(s);
 	ossl_raise(eX509ExtError, NULL);
     }
-    if(!M_ASN1_OCTET_STRING_set(asn1s, s, RSTRING_LEN(data))){
+    if(!M_ASN1_OCTET_STRING_set(asn1s, s, RSTRING_LENINT(data))){
 	OPENSSL_free(s);
 	ASN1_OCTET_STRING_free(asn1s);
 	ossl_raise(eX509ExtError, NULL);
@@ -424,7 +458,7 @@ ossl_x509ext_to_der(VALUE obj)
  * INIT
  */
 void
-Init_ossl_x509ext()
+Init_ossl_x509ext(void)
 {
     eX509ExtError = rb_define_class_under(mX509, "ExtensionError", eOSSLError);
 

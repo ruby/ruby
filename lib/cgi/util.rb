@@ -1,26 +1,29 @@
-class CGI
+class CGI; module Util; end; extend Util; end
+module CGI::Util
   @@accept_charset="UTF-8" unless defined?(@@accept_charset)
   # URL-encode a string.
   #   url_encoded_string = CGI::escape("'Stop!' said Fred")
   #      # => "%27Stop%21%27+said+Fred"
-  def CGI::escape(string)
-    string.gsub(/([^ a-zA-Z0-9_.-]+)/) do
-      '%' + $1.unpack('H2' * $1.bytesize).join('%').upcase
-    end.tr(' ', '+')
+  def escape(string)
+    encoding = string.encoding
+    string.b.gsub(/([^ a-zA-Z0-9_.-]+)/) do |m|
+      '%' + m.unpack('H2' * m.bytesize).join('%').upcase
+    end.tr(' ', '+').force_encoding(encoding)
   end
-
 
   # URL-decode a string with encoding(optional).
   #   string = CGI::unescape("%27Stop%21%27+said+Fred")
   #      # => "'Stop!' said Fred"
-  def CGI::unescape(string,encoding=@@accept_charset)
-    str=string.tr('+', ' ').gsub(/((?:%[0-9a-fA-F]{2})+)/) do
-      [$1.delete('%')].pack('H*')
+  def unescape(string,encoding=@@accept_charset)
+    str=string.tr('+', ' ').b.gsub(/((?:%[0-9a-fA-F]{2})+)/) do |m|
+      [m.delete('%')].pack('H*')
     end.force_encoding(encoding)
     str.valid_encoding? ? str : str.force_encoding(string.encoding)
   end
 
+  # The set of special characters and their escaped values
   TABLE_FOR_ESCAPE_HTML__ = {
+    "'" => '&#39;',
     '&' => '&amp;',
     '"' => '&quot;',
     '<' => '&lt;',
@@ -30,19 +33,20 @@ class CGI
   # Escape special characters in HTML, namely &\"<>
   #   CGI::escapeHTML('Usage: foo "bar" <baz>')
   #      # => "Usage: foo &quot;bar&quot; &lt;baz&gt;"
-  def CGI::escapeHTML(string)
-    string.gsub(/[&\"<>]/, TABLE_FOR_ESCAPE_HTML__)
+  def escapeHTML(string)
+    string.gsub(/['&\"<>]/, TABLE_FOR_ESCAPE_HTML__)
   end
-
 
   # Unescape a string that has been HTML-escaped
   #   CGI::unescapeHTML("Usage: foo &quot;bar&quot; &lt;baz&gt;")
   #      # => "Usage: foo \"bar\" <baz>"
-  def CGI::unescapeHTML(string)
+  def unescapeHTML(string)
+    return string unless string.include? '&'
     enc = string.encoding
-    if [Encoding::UTF_16BE, Encoding::UTF_16LE, Encoding::UTF_32BE, Encoding::UTF_32LE].include?(enc)
-      return string.gsub(Regexp.new('&(amp|quot|gt|lt|#[0-9]+|#x[0-9A-Fa-f]+);'.encode(enc))) do
-        case $1.encode("US-ASCII")
+    if enc != Encoding::UTF_8 && [Encoding::UTF_16BE, Encoding::UTF_16LE, Encoding::UTF_32BE, Encoding::UTF_32LE].include?(enc)
+      return string.gsub(Regexp.new('&(apos|amp|quot|gt|lt|#[0-9]+|#x[0-9A-Fa-f]+);'.encode(enc))) do
+        case $1.encode(Encoding::US_ASCII)
+        when 'apos'                then "'".encode(enc)
         when 'amp'                 then '&'.encode(enc)
         when 'quot'                then '"'.encode(enc)
         when 'gt'                  then '>'.encode(enc)
@@ -53,9 +57,10 @@ class CGI
       end
     end
     asciicompat = Encoding.compatible?(string, "a")
-    string.gsub(/&(amp|quot|gt|lt|\#[0-9]+|\#x[0-9A-Fa-f]+);/) do
+    string.gsub(/&(apos|amp|quot|gt|lt|\#[0-9]+|\#[xX][0-9A-Fa-f]+);/) do
       match = $1.dup
       case match
+      when 'apos'                then "'"
       when 'amp'                 then '&'
       when 'quot'                then '"'
       when 'gt'                  then '>'
@@ -83,12 +88,12 @@ class CGI
       end
     end
   end
-  def CGI::escape_html(str)
-    escapeHTML(str)
-  end
-  def CGI::unescape_html(str)
-    unescapeHTML(str)
-  end
+
+  # Synonym for CGI::escapeHTML(str)
+  alias escape_html escapeHTML
+
+  # Synonym for CGI::unescapeHTML(str)
+  alias unescape_html unescapeHTML
 
   # Escape only the tags of certain HTML elements in +string+.
   #
@@ -103,7 +108,7 @@ class CGI
   #
   #   print CGI::escapeElement('<BR><A HREF="url"></A>', ["A", "IMG"])
   #     # "<BR>&lt;A HREF=&quot;url&quot;&gt;&lt;/A&gt"
-  def CGI::escapeElement(string, *elements)
+  def escapeElement(string, *elements)
     elements = elements[0] if elements[0].kind_of?(Array)
     unless elements.empty?
       string.gsub(/<\/?(?:#{elements.join("|")})(?!\w)(?:.|\n)*?>/i) do
@@ -114,7 +119,6 @@ class CGI
     end
   end
 
-
   # Undo escaping such as that done by CGI::escapeElement()
   #
   #   print CGI::unescapeElement(
@@ -124,22 +128,22 @@ class CGI
   #   print CGI::unescapeElement(
   #           CGI::escapeHTML('<BR><A HREF="url"></A>'), ["A", "IMG"])
   #     # "&lt;BR&gt;<A HREF="url"></A>"
-  def CGI::unescapeElement(string, *elements)
+  def unescapeElement(string, *elements)
     elements = elements[0] if elements[0].kind_of?(Array)
     unless elements.empty?
       string.gsub(/&lt;\/?(?:#{elements.join("|")})(?!\w)(?:.|\n)*?&gt;/i) do
-        CGI::unescapeHTML($&)
+        unescapeHTML($&)
       end
     else
       string
     end
   end
-  def CGI::escape_element(str)
-    escapeElement(str)
-  end
-  def CGI::unescape_element(str)
-    unescapeElement(str)
-  end
+
+  # Synonym for CGI::escapeElement(str)
+  alias escape_element escapeElement
+
+  # Synonym for CGI::unescapeElement(str)
+  alias unescape_element unescapeElement
 
   # Abbreviated day-of-week names specified by RFC 822
   RFC822_DAYS = %w[ Sun Mon Tue Wed Thu Fri Sat ]
@@ -151,11 +155,11 @@ class CGI
   #
   #   CGI::rfc1123_date(Time.now)
   #     # Sat, 01 Jan 2000 00:00:00 GMT
-  def CGI::rfc1123_date(time)
+  def rfc1123_date(time)
     t = time.clone.gmtime
     return format("%s, %.2d %s %.4d %.2d:%.2d:%.2d GMT",
-                RFC822_DAYS[t.wday], t.day, RFC822_MONTHS[t.month-1], t.year,
-                t.hour, t.min, t.sec)
+                  RFC822_DAYS[t.wday], t.day, RFC822_MONTHS[t.month-1], t.year,
+                  t.hour, t.min, t.sec)
   end
 
   # Prettify (indent) an HTML string.
@@ -175,7 +179,7 @@ class CGI
   #     #         </BODY>
   #     # </HTML>
   #
-  def CGI::pretty(string, shift = "  ")
+  def pretty(string, shift = "  ")
     lines = string.gsub(/(?!\A)<.*?>/m, "\n\\0").gsub(/<.*?>(?!\n)/m, "\\0\n")
     end_pos = 0
     while end_pos = lines.index(/^<\/(\w+)/, end_pos)
@@ -185,4 +189,6 @@ class CGI
     end
     lines.gsub(/^((?:#{Regexp::quote(shift)})*)__(?=<\/?\w)/, '\1')
   end
+
+  alias h escapeHTML
 end

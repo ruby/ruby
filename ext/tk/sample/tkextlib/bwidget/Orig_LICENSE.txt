@@ -2,8 +2,8 @@
   ######################################################################
   ###  The following text is the original 'LICENSE.txt' of BWidget   ###
   ###  extension.                                                    ###
-  ###  Original Tcl source files are not include in this directry,   ###
-  ###  because of all of them are rewrited to Ruby files.            ###
+  ###  Original Tcl source files are not include in this directory,  ###
+  ###  because of all of them are rewritten to Ruby files.           ###
   ###  However, the bitmap data files ('bwidgtet.xbm' and 'x1.xbm')  ###
   ###  included in this directory are quoted from BWidget source     ###
   ###  archive. So, those bitmaps are under the following license.   ###
@@ -11,8 +11,8 @@
 
 
 BWidget ToolKit
-Copyright (c) 1998-1999 UNIFIX. 
-Copyright (c) 2001-2002 ActiveState Corp. 
+Copyright (c) 1998-1999 UNIFIX.
+Copyright (c) 2001-2002 ActiveState Corp.
 
 The following terms apply to all files associated with the software
 unless explicitly disclaimed in individual files.
@@ -42,7 +42,7 @@ MODIFICATIONS.
 
 GOVERNMENT USE: If you are acquiring this software on behalf of the
 U.S. government, the Government shall have only "Restricted Rights"
-in the software and related documentation as defined in the Federal 
+in the software and related documentation as defined in the Federal
 Acquisition Regulations (FARs) in Clause 52.227.19 (c) (2).  If you
 are acquiring the software on behalf of the Department of Defense, the
 software shall be classified as "Commercial Computer Software" and the
@@ -50,4 +50,4 @@ Government shall have only "Restricted Rights" as defined in Clause
 252.227-7013 (c) (1) of DFARs.  Notwithstanding the foregoing, the
 authors grant the U.S. Government and others acting in its behalf
 permission to use and distribute the software in accordance with the
-terms specified in this license. 
+terms specified in this license.

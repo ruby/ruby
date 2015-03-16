@@ -15,13 +15,16 @@
  * Classes
  */
 VALUE cConfig;
+/* Document-class: OpenSSL::ConfigError
+ *
+ * General error for openssl library configuration files. Including formatting,
+ * parsing errors, etc.
+ */
 VALUE eConfigError;
 
 /*
  * Public
  */
-
-static CONF *parse_config(VALUE, CONF*);
 
 /*
  * GetConfigPtr is a public C-level function for getting OpenSSL CONF struct
@@ -57,12 +60,16 @@ GetConfigPtr(VALUE obj)
     return conf;
 }
 
+/* Document-const: DEFAULT_CONFIG_FILE
+ *
+ * The default system configuration file for openssl
+ */
 
 /*
  * INIT
  */
 void
-Init_ossl_config()
+Init_ossl_config(void)
 {
     char *default_config_file;
     eConfigError = rb_define_class_under(mOSSL, "ConfigError", eOSSLError);

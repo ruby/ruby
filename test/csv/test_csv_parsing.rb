@@ -7,10 +7,9 @@
 #  Copyright 2005 James Edward Gray II. You can redistribute or modify this code
 #  under the terms of Ruby's license.
 
-require "test/unit"
 require "timeout"
 
-require "csv"
+require_relative "base"
 
 #
 # Following tests are my interpretation of the
@@ -18,7 +17,9 @@ require "csv"
 # document in one place (intentionally) and that is to make the default row
 # separator <tt>$/</tt>.
 #
-class TestCSVParsing < Test::Unit::TestCase
+class TestCSV::Parsing < TestCSV
+  extend DifferentOFS
+
   BIG_DATA = "123456789\n" * 1024
 
   def test_mastering_regex_example
@@ -190,7 +191,7 @@ class TestCSVParsing < Test::Unit::TestCase
         assert_send([csv.lineno, :<, 4])
       end
     rescue CSV::MalformedCSVError
-      assert_equal("Illegal quoting on line 4.", $!.message)
+      assert_equal("Illegal quoting in line 4.", $!.message)
     end
   end
 

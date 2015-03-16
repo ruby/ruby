@@ -9,9 +9,8 @@
 
 **********************************************************************/
 
-#include "ruby/ruby.h"
+#include "internal.h"
 #include "ruby/st.h"
-#include "ruby/encoding.h"
 #include "vm_core.h"
 
 #include <stdio.h>
@@ -20,17 +19,44 @@
 #include <stdlib.h>
 #endif
 #include <errno.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
 #ifndef EXIT_SUCCESS
 #define EXIT_SUCCESS 0
 #endif
 
+#ifndef WIFEXITED
+#define WIFEXITED(status) 1
+#endif
+
+#ifndef WEXITSTATUS
+#define WEXITSTATUS(status) (status)
+#endif
+
+VALUE rb_eEAGAIN;
+VALUE rb_eEWOULDBLOCK;
+VALUE rb_eEINPROGRESS;
+
 extern const char ruby_description[];
+
+static const char REPORTBUG_MSG[] =
+	"[NOTE]\n" \
+	"You may have encountered a bug in the Ruby interpreter" \
+	" or extension libraries.\n" \
+	"Bug reports are welcome.\n" \
+	""
+#if defined __APPLE__
+	"Don't forget to include the above Crash Report log file.\n"
+#endif
+	"For details: http://www.ruby-lang.org/bugreport.html\n\n" \
+    ;
 
 static const char *
 rb_strerrno(int err)
 {
-#define defined_error(name, num) if (err == num) return name;
+#define defined_error(name, num) if (err == (num)) return (name);
 #define undefined_error(name)
 #include "known_errors.inc"
 #undef defined_error
@@ -52,84 +78,110 @@ err_position_0(char *buf, long len, const char *file, int line)
     }
 }
 
-static int
-err_position(char *buf, long len)
+static VALUE
+compile_snprintf(rb_encoding *enc, const char *pre, const char *file, int line, const char *fmt, va_list args)
 {
-    return err_position_0(buf, len, rb_sourcefile(), rb_sourceline());
+    VALUE str = rb_enc_str_new(0, 0, enc);
+
+    if (file) {
+	rb_str_cat2(str, file);
+	if (line) rb_str_catf(str, ":%d", line);
+	rb_str_cat2(str, ": ");
+    }
+    if (pre) rb_str_cat2(str, pre);
+    rb_str_vcatf(str, fmt, args);
+    return str;
 }
 
 static void
-err_snprintf(char *buf, long len, const char *fmt, va_list args)
+compile_err_append(VALUE mesg)
 {
-    long n;
+    rb_thread_t *th = GET_THREAD();
+    VALUE err = th->errinfo;
+    rb_block_t *prev_base_block = th->base_block;
+    th->base_block = 0;
+    /* base_block should be zero while normal Ruby execution */
+    /* after this line, any Ruby code *can* run */
 
-    n = err_position(buf, len);
-    if (len > n) {
-	vsnprintf((char*)buf+n, len-n, fmt, args);
+    if (th->mild_compile_error) {
+	if (RTEST(err)) {
+	    VALUE str = rb_obj_as_string(err);
+
+	    rb_str_cat2(str, "\n");
+	    rb_str_append(str, mesg);
+	    mesg = str;
+	}
+	err = rb_exc_new3(rb_eSyntaxError, mesg);
+	th->errinfo = err;
     }
+    else {
+	if (!RTEST(err)) {
+	    err = rb_exc_new2(rb_eSyntaxError, "compile error");
+	    th->errinfo = err;
+	}
+	rb_str_cat2(mesg, "\n");
+	rb_write_error_str(mesg);
+    }
+
+    /* returned to the parser world */
+    th->base_block = prev_base_block;
 }
 
-static void
-compile_snprintf(char *buf, long len, const char *file, int line, const char *fmt, va_list args)
+void
+rb_compile_error_with_enc(const char *file, int line, void *enc, const char *fmt, ...)
 {
-    long n;
+    va_list args;
+    VALUE str;
 
-    n = err_position_0(buf, len, file, line);
-    if (len > n) {
-	vsnprintf((char*)buf+n, len-n, fmt, args);
-    }
+    va_start(args, fmt);
+    str = compile_snprintf(enc, NULL, file, line, fmt, args);
+    va_end(args);
+    compile_err_append(str);
 }
-
-static void err_append(const char*);
 
 void
 rb_compile_error(const char *file, int line, const char *fmt, ...)
 {
     va_list args;
-    char buf[BUFSIZ];
+    VALUE str;
 
     va_start(args, fmt);
-    compile_snprintf(buf, BUFSIZ, file, line, fmt, args);
+    str = compile_snprintf(NULL, NULL, file, line, fmt, args);
     va_end(args);
-    err_append(buf);
+    compile_err_append(str);
 }
 
 void
 rb_compile_error_append(const char *fmt, ...)
 {
     va_list args;
-    char buf[BUFSIZ];
+    VALUE str;
 
     va_start(args, fmt);
-    vsnprintf(buf, BUFSIZ, fmt, args);
+    str = rb_vsprintf(fmt, args);
     va_end(args);
-    err_append(buf);
+    compile_err_append(str);
 }
 
 static void
 compile_warn_print(const char *file, int line, const char *fmt, va_list args)
 {
-    char buf[BUFSIZ];
-    int len;
+    VALUE str;
 
-    compile_snprintf(buf, BUFSIZ, file, line, fmt, args);
-    len = (int)strlen(buf);
-    buf[len++] = '\n';
-    rb_write_error2(buf, len);
+    str = compile_snprintf(NULL, "warning: ", file, line, fmt, args);
+    rb_str_cat2(str, "\n");
+    rb_write_error_str(str);
 }
 
 void
 rb_compile_warn(const char *file, int line, const char *fmt, ...)
 {
-    char buf[BUFSIZ];
     va_list args;
 
     if (NIL_P(ruby_verbose)) return;
 
-    snprintf(buf, BUFSIZ, "warning: %s", fmt);
-
     va_start(args, fmt);
-    compile_warn_print(file, line, buf, args);
+    compile_warn_print(file, line, fmt, args);
     va_end(args);
 }
 
@@ -137,121 +189,244 @@ rb_compile_warn(const char *file, int line, const char *fmt, ...)
 void
 rb_compile_warning(const char *file, int line, const char *fmt, ...)
 {
-    char buf[BUFSIZ];
     va_list args;
 
     if (!RTEST(ruby_verbose)) return;
 
-    snprintf(buf, BUFSIZ, "warning: %s", fmt);
-
     va_start(args, fmt);
-    compile_warn_print(file, line, buf, args);
+    compile_warn_print(file, line, fmt, args);
     va_end(args);
 }
 
-static void
-warn_print(const char *fmt, va_list args)
+static VALUE
+warning_string(rb_encoding *enc, const char *fmt, va_list args)
 {
-    char buf[BUFSIZ];
-    int len;
+    VALUE str = rb_enc_str_new(0, 0, enc);
+    VALUE file = rb_sourcefilename();
 
-    err_snprintf(buf, BUFSIZ, fmt, args);
-    len = (int)strlen(buf);
-    buf[len++] = '\n';
-    rb_write_error2(buf, len);
+    if (!NIL_P(file)) {
+	int line = rb_sourceline();
+	str = rb_str_append(str, file);
+	if (line) rb_str_catf(str, ":%d", line);
+	rb_str_cat2(str, ": ");
+    }
+
+    rb_str_cat2(str, "warning: ");
+    rb_str_vcatf(str, fmt, args);
+    rb_str_cat2(str, "\n");
+    return str;
 }
 
 void
 rb_warn(const char *fmt, ...)
 {
-    char buf[BUFSIZ];
+    VALUE mesg;
     va_list args;
 
     if (NIL_P(ruby_verbose)) return;
 
-    snprintf(buf, BUFSIZ, "warning: %s", fmt);
+    va_start(args, fmt);
+    mesg = warning_string(0, fmt, args);
+    va_end(args);
+    rb_write_error_str(mesg);
+}
+
+#if 0
+void
+rb_enc_warn(rb_encoding *enc, const char *fmt, ...)
+{
+    VALUE mesg;
+    va_list args;
+
+    if (NIL_P(ruby_verbose)) return;
 
     va_start(args, fmt);
-    warn_print(buf, args);
+    mesg = warning_string(enc, fmt, args);
     va_end(args);
+    rb_write_error_str(mesg);
 }
+#endif
 
 /* rb_warning() reports only in verbose mode */
 void
 rb_warning(const char *fmt, ...)
 {
-    char buf[BUFSIZ];
+    VALUE mesg;
     va_list args;
 
     if (!RTEST(ruby_verbose)) return;
 
-    snprintf(buf, BUFSIZ, "warning: %s", fmt);
+    va_start(args, fmt);
+    mesg = warning_string(0, fmt, args);
+    va_end(args);
+    rb_write_error_str(mesg);
+}
+
+#if 0
+void
+rb_enc_warning(rb_encoding *enc, const char *fmt, ...)
+{
+    VALUE mesg;
+    va_list args;
+
+    if (!RTEST(ruby_verbose)) return;
 
     va_start(args, fmt);
-    warn_print(buf, args);
+    mesg = warning_string(enc, fmt, args);
     va_end(args);
+    rb_write_error_str(mesg);
 }
+#endif
 
 /*
  * call-seq:
- *    warn(msg)   -> nil
+ *    warn(msg, ...)   -> nil
  *
- * Display the given message (followed by a newline) on STDERR unless
- * warnings are disabled (for example with the <code>-W0</code> flag).
+ * Displays each of the given messages followed by a record separator on
+ * STDERR unless warnings have been disabled (for example with the
+ * <code>-W0</code> flag).
+ *
+ *    warn("warning 1", "warning 2")
+ *
+ *  <em>produces:</em>
+ *
+ *    warning 1
+ *    warning 2
  */
 
 static VALUE
-rb_warn_m(VALUE self, VALUE mesg)
+rb_warn_m(int argc, VALUE *argv, VALUE exc)
 {
-    if (!NIL_P(ruby_verbose)) {
-	rb_io_write(rb_stderr, mesg);
-	rb_io_write(rb_stderr, rb_default_rs);
+    if (!NIL_P(ruby_verbose) && argc > 0) {
+	rb_io_puts(argc, argv, rb_stderr);
     }
     return Qnil;
 }
 
-void rb_vm_bugreport(void);
+#define MAX_BUG_REPORTERS 0x100
 
-static void
-report_bug(const char *file, int line, const char *fmt, va_list args)
+static struct bug_reporters {
+    void (*func)(FILE *out, void *data);
+    void *data;
+} bug_reporters[MAX_BUG_REPORTERS];
+
+static int bug_reporters_size;
+
+int
+rb_bug_reporter_add(void (*func)(FILE *, void *), void *data)
 {
-    char buf[BUFSIZ];
+    struct bug_reporters *reporter;
+    if (bug_reporters_size >= MAX_BUG_REPORTERS) {
+	return 0; /* failed to register */
+    }
+    reporter = &bug_reporters[bug_reporters_size++];
+    reporter->func = func;
+    reporter->data = data;
+
+    return 1;
+}
+
+/* SIGSEGV handler might have a very small stack. Thus we need to use it carefully. */
+#define REPORT_BUG_BUFSIZ 256
+static FILE *
+bug_report_file(const char *file, int line)
+{
+    char buf[REPORT_BUG_BUFSIZ];
     FILE *out = stderr;
-    int len = err_position_0(buf, BUFSIZ, file, line);
+    int len = err_position_0(buf, sizeof(buf), file, line);
 
     if ((ssize_t)fwrite(buf, 1, len, out) == (ssize_t)len ||
 	(ssize_t)fwrite(buf, 1, len, (out = stdout)) == (ssize_t)len) {
-
-	fputs("[BUG] ", out);
-	vfprintf(out, fmt, args);
-	fprintf(out, "\n%s\n\n", ruby_description);
-
-	rb_vm_bugreport();
-
-	fprintf(out,
-		"[NOTE]\n"
-		"You may have encountered a bug in the Ruby interpreter"
-		" or extension libraries.\n"
-		"Bug reports are welcome.\n"
-		"For details: http://www.ruby-lang.org/bugreport.html\n\n");
+	return out;
     }
+    return NULL;
 }
 
-void
-rb_bug(const char *fmt, ...)
+static void
+bug_report_begin(FILE *out, const char *fmt, va_list args)
 {
-    va_list args;
+    char buf[REPORT_BUG_BUFSIZ];
 
-    va_start(args, fmt);
-    report_bug(rb_sourcefile(), rb_sourceline(), fmt, args);
-    va_end(args);
+    fputs("[BUG] ", out);
+    vsnprintf(buf, sizeof(buf), fmt, args);
+    fputs(buf, out);
+    snprintf(buf, sizeof(buf), "\n%s\n\n", ruby_description);
+    fputs(buf, out);
+}
 
-#if defined(_WIN32) && defined(RT_VER) && RT_VER >= 80
+#define bug_report_begin(out, fmt) do { \
+    va_list args; \
+    va_start(args, fmt); \
+    bug_report_begin(out, fmt, args); \
+    va_end(args); \
+} while (0)
+
+static void
+bug_report_end(FILE *out)
+{
+    /* call additional bug reporters */
+    {
+	int i;
+	for (i=0; i<bug_reporters_size; i++) {
+	    struct bug_reporters *reporter = &bug_reporters[i];
+	    (*reporter->func)(out, reporter->data);
+	}
+    }
+    fprintf(out, REPORTBUG_MSG);
+}
+
+#define report_bug(file, line, fmt, ctx) do { \
+    FILE *out = bug_report_file(file, line); \
+    if (out) { \
+	bug_report_begin(out, fmt); \
+	rb_vm_bugreport(ctx); \
+	bug_report_end(out); \
+    } \
+} while (0) \
+
+NORETURN(static void die(void));
+static void
+die(void)
+{
+#if defined(_WIN32) && defined(RUBY_MSVCRT_VERSION) && RUBY_MSVCRT_VERSION >= 80
     _set_abort_behavior( 0, _CALL_REPORTFAULT);
 #endif
 
     abort();
 }
+
+void
+rb_bug(const char *fmt, ...)
+{
+    const char *file = NULL;
+    int line = 0;
+
+    if (GET_THREAD()) {
+	file = rb_sourcefile();
+	line = rb_sourceline();
+    }
+
+    report_bug(file, line, fmt, NULL);
+
+    die();
+}
+
+void
+rb_bug_context(const void *ctx, const char *fmt, ...)
+{
+    const char *file = NULL;
+    int line = 0;
+
+    if (GET_THREAD()) {
+	file = rb_sourcefile();
+	line = rb_sourceline();
+    }
+
+    report_bug(file, line, fmt, ctx);
+
+    die();
+}
+
 
 void
 rb_bug_errno(const char *mesg, int errno_arg)
@@ -267,53 +442,118 @@ rb_bug_errno(const char *mesg, int errno_arg)
     }
 }
 
+/*
+ * this is safe to call inside signal handler and timer thread
+ * (which isn't a Ruby Thread object)
+ */
+#define write_or_abort(fd, str, len) (write((fd), (str), (len)) < 0 ? abort() : (void)0)
+#define WRITE_CONST(fd,str) write_or_abort((fd),(str),sizeof(str) - 1)
+
+void
+rb_async_bug_errno(const char *mesg, int errno_arg)
+{
+    WRITE_CONST(2, "[ASYNC BUG] ");
+    write_or_abort(2, mesg, strlen(mesg));
+    WRITE_CONST(2, "\n");
+
+    if (errno_arg == 0) {
+	WRITE_CONST(2, "errno == 0 (NOERROR)\n");
+    }
+    else {
+	const char *errno_str = rb_strerrno(errno_arg);
+
+	if (!errno_str)
+	    errno_str = "undefined errno";
+	write_or_abort(2, errno_str, strlen(errno_str));
+    }
+    WRITE_CONST(2, "\n\n");
+    write_or_abort(2, ruby_description, strlen(ruby_description));
+    WRITE_CONST(2, "\n\n");
+    WRITE_CONST(2, REPORTBUG_MSG);
+    abort();
+}
+
 void
 rb_compile_bug(const char *file, int line, const char *fmt, ...)
 {
-    va_list args;
-
-    va_start(args, fmt);
-    report_bug(file, line, fmt, args);
-    va_end(args);
+    report_bug(file, line, fmt, NULL);
 
     abort();
 }
 
-static const struct types {
-    int type;
-    const char *name;
-} builtin_types[] = {
-    {T_NIL,	"nil"},
-    {T_OBJECT,	"Object"},
-    {T_CLASS,	"Class"},
-    {T_ICLASS,	"iClass"},	/* internal use: mixed-in module holder */
-    {T_MODULE,	"Module"},
-    {T_FLOAT,	"Float"},
-    {T_STRING,	"String"},
-    {T_REGEXP,	"Regexp"},
-    {T_ARRAY,	"Array"},
-    {T_FIXNUM,	"Fixnum"},
-    {T_HASH,	"Hash"},
-    {T_STRUCT,	"Struct"},
-    {T_BIGNUM,	"Bignum"},
-    {T_FILE,	"File"},
-    {T_RATIONAL,"Rational"},
-    {T_COMPLEX, "Complex"},
-    {T_TRUE,	"true"},
-    {T_FALSE,	"false"},
-    {T_SYMBOL,	"Symbol"},	/* :symbol */
-    {T_DATA,	"Data"},	/* internal use: wrapped C pointers */
-    {T_MATCH,	"MatchData"},	/* data of $~ */
-    {T_NODE,	"Node"},	/* internal use: syntax tree node */
-    {T_UNDEF,	"undef"},	/* internal use: #undef; should not happen */
+static const char builtin_types[][10] = {
+    "", 			/* 0x00, */
+    "Object",
+    "Class",
+    "Module",
+    "Float",
+    "String",
+    "Regexp",
+    "Array",
+    "Hash",
+    "Struct",
+    "Bignum",
+    "File",
+    "Data",			/* internal use: wrapped C pointers */
+    "MatchData",		/* data of $~ */
+    "Complex",
+    "Rational",
+    "",				/* 0x10 */
+    "nil",
+    "true",
+    "false",
+    "Symbol",			/* :symbol */
+    "Fixnum",
+    "",				/* 0x16 */
+    "",				/* 0x17 */
+    "",				/* 0x18 */
+    "",				/* 0x19 */
+    "",				/* 0x1a */
+    "undef",			/* internal use: #undef; should not happen */
+    "Node",			/* internal use: syntax tree node */
+    "iClass",			/* internal use: mixed-in module holder */
 };
+
+const char *
+rb_builtin_type_name(int t)
+{
+    const char *name;
+    if ((unsigned int)t >= numberof(builtin_types)) return 0;
+    name = builtin_types[t];
+    if (*name) return name;
+    return 0;
+}
+
+#define builtin_class_name rb_builtin_class_name
+const char *
+rb_builtin_class_name(VALUE x)
+{
+    const char *etype;
+
+    if (NIL_P(x)) {
+	etype = "nil";
+    }
+    else if (FIXNUM_P(x)) {
+	etype = "Fixnum";
+    }
+    else if (SYMBOL_P(x)) {
+	etype = "Symbol";
+    }
+    else if (RB_TYPE_P(x, T_TRUE)) {
+	etype = "true";
+    }
+    else if (RB_TYPE_P(x, T_FALSE)) {
+	etype = "false";
+    }
+    else {
+	etype = rb_obj_classname(x);
+    }
+    return etype;
+}
 
 void
 rb_check_type(VALUE x, int t)
 {
-    const struct types *type = builtin_types;
-    const struct types *const typeend = builtin_types +
-	sizeof(builtin_types) / sizeof(builtin_types[0]);
     int xt;
 
     if (x == Qundef) {
@@ -322,31 +562,15 @@ rb_check_type(VALUE x, int t)
 
     xt = TYPE(x);
     if (xt != t || (xt == T_DATA && RTYPEDDATA_P(x))) {
-	while (type < typeend) {
-	    if (type->type == t) {
-		const char *etype;
-
-		if (NIL_P(x)) {
-		    etype = "nil";
-		}
-		else if (FIXNUM_P(x)) {
-		    etype = "Fixnum";
-		}
-		else if (SYMBOL_P(x)) {
-		    etype = "Symbol";
-		}
-		else if (rb_special_const_p(x)) {
-		    etype = RSTRING_PTR(rb_obj_as_string(x));
-		}
-		else {
-		    etype = rb_obj_classname(x);
-		}
-		rb_raise(rb_eTypeError, "wrong argument type %s (expected %s)",
-			 etype, type->name);
-	    }
-	    type++;
+	const char *tname = rb_builtin_type_name(t);
+	if (tname) {
+	    rb_raise(rb_eTypeError, "wrong argument type %s (expected %s)",
+		     builtin_class_name(x), tname);
 	}
-	rb_bug("unknown type 0x%x (0x%x given)", t, TYPE(x));
+	if (xt > T_MASK && xt <= 0x3f) {
+	    rb_fatal("unknown type 0x%x (0x%x given, probably comes from extension library for ruby 1.8)", t, xt);
+	}
+	rb_bug("unknown type 0x%x (0x%x given)", t, xt);
     }
 }
 
@@ -363,7 +587,7 @@ rb_typeddata_inherited_p(const rb_data_type_t *child, const rb_data_type_t *pare
 int
 rb_typeddata_is_kind_of(VALUE obj, const rb_data_type_t *data_type)
 {
-    if (SPECIAL_CONST_P(obj) || BUILTIN_TYPE(obj) != T_DATA ||
+    if (!RB_TYPE_P(obj, T_DATA) ||
 	!RTYPEDDATA_P(obj) || !rb_typeddata_inherited_p(RTYPEDDATA_TYPE(obj), data_type)) {
 	return 0;
     }
@@ -376,8 +600,9 @@ rb_check_typeddata(VALUE obj, const rb_data_type_t *data_type)
     const char *etype;
     static const char mesg[] = "wrong argument type %s (expected %s)";
 
-    if (SPECIAL_CONST_P(obj) || BUILTIN_TYPE(obj) != T_DATA) {
-	Check_Type(obj, T_DATA);
+    if (!RB_TYPE_P(obj, T_DATA)) {
+	etype = builtin_class_name(obj);
+	rb_raise(rb_eTypeError, mesg, etype, data_type->wrap_struct_name);
     }
     if (!RTYPEDDATA_P(obj)) {
 	etype = rb_obj_classname(obj);
@@ -420,25 +645,33 @@ VALUE rb_eSystemCallError;
 VALUE rb_mErrno;
 static VALUE rb_eNOERROR;
 
-#undef rb_exc_new2
+static ID id_new, id_cause, id_message, id_backtrace;
+static ID id_name, id_args, id_Errno, id_errno, id_i_path;
+extern ID ruby_static_id_status;
+#define id_bt idBt
+#define id_bt_locations idBt_locations
+#define id_mesg idMesg
+#define id_status ruby_static_id_status
+
+#undef rb_exc_new_cstr
 
 VALUE
 rb_exc_new(VALUE etype, const char *ptr, long len)
 {
-    return rb_funcall(etype, rb_intern("new"), 1, rb_str_new(ptr, len));
+    return rb_funcall(etype, id_new, 1, rb_str_new(ptr, len));
 }
 
 VALUE
-rb_exc_new2(VALUE etype, const char *s)
+rb_exc_new_cstr(VALUE etype, const char *s)
 {
     return rb_exc_new(etype, s, strlen(s));
 }
 
 VALUE
-rb_exc_new3(VALUE etype, VALUE str)
+rb_exc_new_str(VALUE etype, VALUE str)
 {
     StringValue(str);
-    return rb_funcall(etype, rb_intern("new"), 1, str);
+    return rb_funcall(etype, id_new, 1, str);
 }
 
 /*
@@ -455,8 +688,8 @@ exc_initialize(int argc, VALUE *argv, VALUE exc)
     VALUE arg;
 
     rb_scan_args(argc, argv, "01", &arg);
-    rb_iv_set(exc, "mesg", arg);
-    rb_iv_set(exc, "bt", Qnil);
+    rb_ivar_set(exc, id_mesg, arg);
+    rb_ivar_set(exc, id_bt, Qnil);
 
     return exc;
 }
@@ -498,11 +731,10 @@ exc_exception(int argc, VALUE *argv, VALUE self)
 static VALUE
 exc_to_s(VALUE exc)
 {
-    VALUE mesg = rb_attr_get(exc, rb_intern("mesg"));
+    VALUE mesg = rb_attr_get(exc, idMesg);
 
     if (NIL_P(mesg)) return rb_class_name(CLASS_OF(exc));
-    if (OBJ_TAINTED(exc)) OBJ_TAINT(mesg);
-    return mesg;
+    return rb_String(mesg);
 }
 
 /*
@@ -518,14 +750,14 @@ exc_to_s(VALUE exc)
 static VALUE
 exc_message(VALUE exc)
 {
-    return rb_funcall(exc, rb_intern("to_s"), 0, 0);
+    return rb_funcallv(exc, idTo_s, 0, 0);
 }
 
 /*
  * call-seq:
  *   exception.inspect   -> string
  *
- * Return this exception's class name an message
+ * Return this exception's class name and message
  */
 
 static VALUE
@@ -581,10 +813,38 @@ exc_inspect(VALUE exc)
 static VALUE
 exc_backtrace(VALUE exc)
 {
-    ID bt;
+    VALUE obj;
 
-    CONST_ID(bt, "bt");
-    return rb_attr_get(exc, bt);
+    obj = rb_attr_get(exc, id_bt);
+
+    if (rb_backtrace_p(obj)) {
+	obj = rb_backtrace_to_str_ary(obj);
+	/* rb_ivar_set(exc, id_bt, obj); */
+    }
+
+    return obj;
+}
+
+/*
+ *  call-seq:
+ *     exception.backtrace_locations    -> array
+ *
+ *  Returns any backtrace associated with the exception. This method is
+ *  similar to Exception#backtrace, but the backtrace is an array of
+ *   Thread::Backtrace::Location.
+ *
+ *  Now, this method is not affected by Exception#set_backtrace().
+ */
+static VALUE
+exc_backtrace_locations(VALUE exc)
+{
+    VALUE obj;
+
+    obj = rb_attr_get(exc, id_bt_locations);
+    if (!NIL_P(obj)) {
+	obj = rb_backtrace_to_location_ary(obj);
+    }
+    return obj;
 }
 
 VALUE
@@ -594,14 +854,14 @@ rb_check_backtrace(VALUE bt)
     static const char err[] = "backtrace must be Array of String";
 
     if (!NIL_P(bt)) {
-	int t = TYPE(bt);
-
-	if (t == T_STRING) return rb_ary_new3(1, bt);
-	if (t != T_ARRAY) {
+	if (RB_TYPE_P(bt, T_STRING)) return rb_ary_new3(1, bt);
+	if (rb_backtrace_p(bt)) return bt;
+	if (!RB_TYPE_P(bt, T_ARRAY)) {
 	    rb_raise(rb_eTypeError, err);
 	}
 	for (i=0;i<RARRAY_LEN(bt);i++) {
-	    if (TYPE(RARRAY_PTR(bt)[i]) != T_STRING) {
+	    VALUE e = RARRAY_AREF(bt, i);
+	    if (!RB_TYPE_P(e, T_STRING)) {
 		rb_raise(rb_eTypeError, err);
 	    }
 	}
@@ -611,18 +871,45 @@ rb_check_backtrace(VALUE bt)
 
 /*
  *  call-seq:
- *     exc.set_backtrace(array)   ->  array
+ *     exc.set_backtrace(backtrace)   ->  array
  *
- *  Sets the backtrace information associated with <i>exc</i>. The
- *  argument must be an array of <code>String</code> objects in the
- *  format described in <code>Exception#backtrace</code>.
+ *  Sets the backtrace information associated with +exc+. The +backtrace+ must
+ *  be an array of String objects or a single String in the format described
+ *  in Exception#backtrace.
  *
  */
 
 static VALUE
 exc_set_backtrace(VALUE exc, VALUE bt)
 {
-    return rb_iv_set(exc, "bt", rb_check_backtrace(bt));
+    return rb_ivar_set(exc, id_bt, rb_check_backtrace(bt));
+}
+
+VALUE
+rb_exc_set_backtrace(VALUE exc, VALUE bt)
+{
+    return exc_set_backtrace(exc, bt);
+}
+
+/*
+ * call-seq:
+ *   exception.cause   -> an_exception or nil
+ *
+ * Returns the previous exception ($!) at the time this exception was raised.
+ * This is useful for wrapping exceptions and retaining the original exception
+ * information.
+ */
+
+VALUE
+exc_cause(VALUE exc)
+{
+    return rb_attr_get(exc, id_cause);
+}
+
+static VALUE
+try_convert_to_exception(VALUE obj)
+{
+    return rb_check_funcall(obj, idException, 0, 0);
 }
 
 /*
@@ -638,16 +925,18 @@ static VALUE
 exc_equal(VALUE exc, VALUE obj)
 {
     VALUE mesg, backtrace;
-    ID id_mesg;
 
     if (exc == obj) return Qtrue;
-    CONST_ID(id_mesg, "mesg");
 
     if (rb_obj_class(exc) != rb_obj_class(obj)) {
-	ID id_message, id_backtrace;
-	CONST_ID(id_message, "message");
-	CONST_ID(id_backtrace, "backtrace");
+	int status = 0;
 
+	obj = rb_protect(try_convert_to_exception, obj, &status);
+	if (status || obj == Qundef) {
+	    rb_set_errinfo(Qnil);
+	    return Qfalse;
+	}
+	if (rb_obj_class(exc) != rb_obj_class(obj)) return Qfalse;
 	mesg = rb_check_funcall(obj, id_message, 0, 0);
 	if (mesg == Qundef) return Qfalse;
 	backtrace = rb_check_funcall(obj, id_backtrace, 0, 0);
@@ -667,21 +956,55 @@ exc_equal(VALUE exc, VALUE obj)
 
 /*
  * call-seq:
- *   SystemExit.new(status=0)   -> system_exit
+ *   SystemExit.new              -> system_exit
+ *   SystemExit.new(status)      -> system_exit
+ *   SystemExit.new(status, msg) -> system_exit
+ *   SystemExit.new(msg)         -> system_exit
  *
- * Create a new +SystemExit+ exception with the given status.
+ * Create a new +SystemExit+ exception with the given status and message.
+ * Status is true, false, or an integer.
+ * If status is not given, true is used.
  */
 
 static VALUE
 exit_initialize(int argc, VALUE *argv, VALUE exc)
 {
-    VALUE status = INT2FIX(EXIT_SUCCESS);
-    if (argc > 0 && FIXNUM_P(argv[0])) {
-	status = *argv++;
-	--argc;
+    VALUE status;
+    if (argc > 0) {
+	status = *argv;
+
+	switch (status) {
+	  case Qtrue:
+	    status = INT2FIX(EXIT_SUCCESS);
+	    ++argv;
+	    --argc;
+	    break;
+	  case Qfalse:
+	    status = INT2FIX(EXIT_FAILURE);
+	    ++argv;
+	    --argc;
+	    break;
+	  default:
+	    status = rb_check_to_int(status);
+	    if (NIL_P(status)) {
+		status = INT2FIX(EXIT_SUCCESS);
+	    }
+	    else {
+#if EXIT_SUCCESS != 0
+		if (status == INT2FIX(0))
+		    status = INT2FIX(EXIT_SUCCESS);
+#endif
+		++argv;
+		--argc;
+	    }
+	    break;
+	}
+    }
+    else {
+	status = INT2FIX(EXIT_SUCCESS);
     }
     rb_call_super(argc, argv);
-    rb_iv_set(exc, "status", status);
+    rb_ivar_set(exc, id_status, status);
     return exc;
 }
 
@@ -696,7 +1019,7 @@ exit_initialize(int argc, VALUE *argv, VALUE exc)
 static VALUE
 exit_status(VALUE exc)
 {
-    return rb_attr_get(exc, rb_intern("status"));
+    return rb_attr_get(exc, id_status);
 }
 
 
@@ -710,9 +1033,15 @@ exit_status(VALUE exc)
 static VALUE
 exit_success_p(VALUE exc)
 {
-    VALUE status = rb_attr_get(exc, rb_intern("status"));
-    if (NIL_P(status)) return Qtrue;
-    if (status == INT2FIX(EXIT_SUCCESS)) return Qtrue;
+    VALUE status_val = rb_attr_get(exc, id_status);
+    int status;
+
+    if (NIL_P(status_val))
+	return Qtrue;
+    status = NUM2INT(status_val);
+    if (WIFEXITED(status) && WEXITSTATUS(status) == EXIT_SUCCESS)
+	return Qtrue;
+
     return Qfalse;
 }
 
@@ -727,6 +1056,21 @@ rb_name_error(ID id, const char *fmt, ...)
     va_end(args);
 
     argv[1] = ID2SYM(id);
+    exc = rb_class_new_instance(2, argv, rb_eNameError);
+    rb_exc_raise(exc);
+}
+
+void
+rb_name_error_str(VALUE str, const char *fmt, ...)
+{
+    VALUE exc, argv[2];
+    va_list args;
+
+    va_start(args, fmt);
+    argv[0] = rb_vsprintf(fmt, args);
+    va_end(args);
+
+    argv[1] = str;
     exc = rb_class_new_instance(2, argv, rb_eNameError);
     rb_exc_raise(exc);
 }
@@ -747,7 +1091,7 @@ name_err_initialize(int argc, VALUE *argv, VALUE self)
 
     name = (argc > 1) ? argv[--argc] : Qnil;
     rb_call_super(argc, argv);
-    rb_iv_set(self, "name", name);
+    rb_ivar_set(self, id_name, name);
     return self;
 }
 
@@ -761,29 +1105,7 @@ name_err_initialize(int argc, VALUE *argv, VALUE self)
 static VALUE
 name_err_name(VALUE self)
 {
-    return rb_attr_get(self, rb_intern("name"));
-}
-
-/*
- * call-seq:
- *  name_error.to_s   -> string
- *
- * Produce a nicely-formatted string representing the +NameError+.
- */
-
-static VALUE
-name_err_to_s(VALUE exc)
-{
-    VALUE mesg = rb_attr_get(exc, rb_intern("mesg"));
-    VALUE str = mesg;
-
-    if (NIL_P(mesg)) return rb_class_name(CLASS_OF(exc));
-    StringValue(str);
-    if (str != mesg) {
-	rb_iv_set(exc, "mesg", mesg = str);
-    }
-    if (OBJ_TAINTED(exc)) OBJ_TAINT(mesg);
-    return mesg;
+    return rb_attr_get(self, id_name);
 }
 
 /*
@@ -801,7 +1123,7 @@ nometh_err_initialize(int argc, VALUE *argv, VALUE self)
 {
     VALUE args = (argc > 2) ? argv[--argc] : Qnil;
     name_err_initialize(argc, argv, self);
-    rb_iv_set(self, "args", args);
+    rb_ivar_set(self, id_args, args);
     return self;
 }
 
@@ -830,6 +1152,7 @@ static const rb_data_type_t name_err_mesg_data_type = {
 	name_err_mesg_free,
 	name_err_mesg_memsize,
     },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 /* :nodoc: */
@@ -881,20 +1204,23 @@ name_err_mesg_to_str(VALUE obj)
     else {
 	const char *desc = 0;
 	VALUE d = 0, args[NAME_ERR_MESG_COUNT];
+	int state = 0;
 
 	obj = ptr[1];
-	switch (TYPE(obj)) {
-	  case T_NIL:
+	switch (obj) {
+	  case Qnil:
 	    desc = "nil";
 	    break;
-	  case T_TRUE:
+	  case Qtrue:
 	    desc = "true";
 	    break;
-	  case T_FALSE:
+	  case Qfalse:
 	    desc = "false";
 	    break;
 	  default:
-	    d = rb_protect(rb_inspect, obj, 0);
+	    d = rb_protect(rb_inspect, obj, &state);
+	    if (state)
+		rb_set_errinfo(Qnil);
 	    if (NIL_P(d) || RSTRING_LEN(d) > 65) {
 		d = rb_any_to_s(obj);
 	    }
@@ -904,15 +1230,21 @@ name_err_mesg_to_str(VALUE obj)
 	if (desc && desc[0] != '#') {
 	    d = d ? rb_str_dup(d) : rb_str_new2(desc);
 	    rb_str_cat2(d, ":");
-	    rb_str_cat2(d, rb_obj_classname(obj));
+	    rb_str_append(d, rb_class_name(CLASS_OF(obj)));
 	}
 	args[0] = mesg;
 	args[1] = ptr[2];
 	args[2] = d;
 	mesg = rb_f_sprintf(NAME_ERR_MESG_COUNT, args);
     }
-    if (OBJ_TAINTED(obj)) OBJ_TAINT(mesg);
     return mesg;
+}
+
+/* :nodoc: */
+static VALUE
+name_err_mesg_dump(VALUE obj, VALUE limit)
+{
+    return name_err_mesg_to_str(obj);
 }
 
 /* :nodoc: */
@@ -933,15 +1265,15 @@ name_err_mesg_load(VALUE klass, VALUE str)
 static VALUE
 nometh_err_args(VALUE self)
 {
-    return rb_attr_get(self, rb_intern("args"));
+    return rb_attr_get(self, id_args);
 }
 
 void
 rb_invalid_str(const char *str, const char *type)
 {
-    VALUE s = rb_str_inspect(rb_str_new2(str));
+    VALUE s = rb_str_new2(str);
 
-    rb_raise(rb_eArgError, "invalid value for %s: %s", type, RSTRING_PTR(s));
+    rb_raise(rb_eArgError, "invalid value for %s: %+"PRIsVALUE, type, s);
 }
 
 /*
@@ -980,10 +1312,28 @@ static st_table *syserr_tbl;
 static VALUE
 set_syserr(int n, const char *name)
 {
-    VALUE error;
+    st_data_t error;
 
     if (!st_lookup(syserr_tbl, n, &error)) {
 	error = rb_define_class_under(rb_mErrno, name, rb_eSystemCallError);
+
+	/* capture nonblock errnos for WaitReadable/WaitWritable subclasses */
+	switch (n) {
+	  case EAGAIN:
+	    rb_eEAGAIN = error;
+
+#if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
+	    break;
+	  case EWOULDBLOCK:
+#endif
+
+	    rb_eEWOULDBLOCK = error;
+	    break;
+	  case EINPROGRESS:
+	    rb_eEINPROGRESS = error;
+	    break;
+	}
+
 	rb_define_const(error, "Errno", INT2NUM(n));
 	st_add_direct(syserr_tbl, n, error);
     }
@@ -996,7 +1346,7 @@ set_syserr(int n, const char *name)
 static VALUE
 get_syserr(int n)
 {
-    VALUE error;
+    st_data_t error;
 
     if (!st_lookup(syserr_tbl, n, &error)) {
 	char name[8];	/* some Windows' errno have 5 digits. */
@@ -1025,40 +1375,43 @@ syserr_initialize(int argc, VALUE *argv, VALUE self)
     char *strerror();
 #endif
     const char *err;
-    VALUE mesg, error;
+    VALUE mesg, error, func, errmsg;
     VALUE klass = rb_obj_class(self);
 
     if (klass == rb_eSystemCallError) {
-	rb_scan_args(argc, argv, "11", &mesg, &error);
+	st_data_t data = (st_data_t)klass;
+	rb_scan_args(argc, argv, "12", &mesg, &error, &func);
 	if (argc == 1 && FIXNUM_P(mesg)) {
 	    error = mesg; mesg = Qnil;
 	}
-	if (!NIL_P(error) && st_lookup(syserr_tbl, NUM2LONG(error), &klass)) {
+	if (!NIL_P(error) && st_lookup(syserr_tbl, NUM2LONG(error), &data)) {
+	    klass = (VALUE)data;
 	    /* change class */
-	    if (TYPE(self) != T_OBJECT) { /* insurance to avoid type crash */
+	    if (!RB_TYPE_P(self, T_OBJECT)) { /* insurance to avoid type crash */
 		rb_raise(rb_eTypeError, "invalid instance type");
 	    }
-	    RBASIC(self)->klass = klass;
+	    RBASIC_SET_CLASS(self, klass);
 	}
     }
     else {
-	rb_scan_args(argc, argv, "01", &mesg);
-	error = rb_const_get(klass, rb_intern("Errno"));
+	rb_scan_args(argc, argv, "02", &mesg, &func);
+	error = rb_const_get(klass, id_Errno);
     }
     if (!NIL_P(error)) err = strerror(NUM2INT(error));
     else err = "unknown error";
-    if (!NIL_P(mesg)) {
-	VALUE str = mesg;
 
-	StringValue(str);
-	mesg = rb_sprintf("%s - %.*s", err,
-			  (int)RSTRING_LEN(str), RSTRING_PTR(str));
+    errmsg = rb_enc_str_new_cstr(err, rb_locale_encoding());
+    if (!NIL_P(mesg)) {
+	VALUE str = StringValue(mesg);
+
+	if (!NIL_P(func)) rb_str_catf(errmsg, " @ %"PRIsVALUE, func);
+	rb_str_catf(errmsg, " - %"PRIsVALUE, str);
+	OBJ_INFECT(errmsg, mesg);
     }
-    else {
-	mesg = rb_str_new2(err);
-    }
+    mesg = errmsg;
+
     rb_call_super(1, &mesg);
-    rb_iv_set(self, "errno", error);
+    rb_ivar_set(self, id_errno, error);
     return self;
 }
 
@@ -1072,7 +1425,7 @@ syserr_initialize(int argc, VALUE *argv, VALUE self)
 static VALUE
 syserr_errno(VALUE self)
 {
-    return rb_attr_get(self, rb_intern("errno"));
+    return rb_attr_get(self, id_errno);
 }
 
 /*
@@ -1087,20 +1440,17 @@ static VALUE
 syserr_eqq(VALUE self, VALUE exc)
 {
     VALUE num, e;
-    ID en;
-
-    CONST_ID(en, "errno");
 
     if (!rb_obj_is_kind_of(exc, rb_eSystemCallError)) {
-	if (!rb_respond_to(exc, en)) return Qfalse;
+	if (!rb_respond_to(exc, id_errno)) return Qfalse;
     }
     else if (self == rb_eSystemCallError) return Qtrue;
 
-    num = rb_attr_get(exc, rb_intern("errno"));
+    num = rb_attr_get(exc, id_errno);
     if (NIL_P(num)) {
-	num = rb_funcall(exc, en, 0, 0);
+	num = rb_funcallv(exc, id_errno, 0, 0);
     }
-    e = rb_const_get(self, rb_intern("Errno"));
+    e = rb_const_get(self, id_Errno);
     if (FIXNUM_P(num) ? num == e : rb_equal(num, e))
 	return Qtrue;
     return Qfalse;
@@ -1142,6 +1492,7 @@ syserr_eqq(VALUE self, VALUE exc)
  *
  *     begin
  *       Process.kill('HUP',Process.pid)
+ *       sleep # wait for receiver to handle signal sent by Process.kill
  *     rescue SignalException => e
  *       puts "received Exception #{e}"
  *     end
@@ -1183,7 +1534,7 @@ syserr_eqq(VALUE self, VALUE exc)
  *
  *  <em>raises the exception:</em>
  *
- *     TypeError: can't convert String into Integer
+ *     TypeError: no implicit conversion of String into Integer
  *
  */
 
@@ -1336,7 +1687,7 @@ syserr_eqq(VALUE self, VALUE exc)
  *
  *  <em>raises the exception:</em>
  *
- *     RuntimeError: can't modify frozen array
+ *     RuntimeError: can't modify frozen Array
  *
  *  Kernel.raise will raise a RuntimeError if no Exception class is
  *  specified.
@@ -1356,14 +1707,14 @@ syserr_eqq(VALUE self, VALUE exc)
  *
  *     foo = "bar"
  *     proc = Proc.new do
- *       $SAFE = 4
- *       foo.gsub! "a", "*"
+ *       $SAFE = 3
+ *       foo.untaint
  *     end
  *     proc.call
  *
  *  <em>raises the exception:</em>
  *
- *     SecurityError: Insecure: can't modify string
+ *     SecurityError: Insecure: Insecure operation `untaint' at level 3
  */
 
 /*
@@ -1389,6 +1740,12 @@ syserr_eqq(VALUE self, VALUE exc)
  */
 
 /*
+ * Document-class: EncodingError
+ *
+ * EncodingError is the base class for encoding errors.
+ */
+
+/*
  *  Document-class: Encoding::CompatibilityError
  *
  *  Raised by Encoding and String methods when the source encoding is
@@ -1396,14 +1753,92 @@ syserr_eqq(VALUE self, VALUE exc)
  */
 
 /*
- *  Descendants of class <code>Exception</code> are used to communicate
- *  between <code>raise</code> methods and <code>rescue</code>
- *  statements in <code>begin/end</code> blocks. <code>Exception</code>
- *  objects carry information about the exception---its type (the
- *  exception's class name), an optional descriptive string, and
- *  optional traceback information. Programs may subclass
- *  <code>Exception</code>, or more typically <code>StandardError</code>
- *  to provide custom classes and add additional information.
+ * Document-class: fatal
+ *
+ * fatal is an Exception that is raised when ruby has encountered a fatal
+ * error and must exit.  You are not able to rescue fatal.
+ */
+
+/*
+ * Document-class: NameError::message
+ * :nodoc:
+ */
+
+/*
+ *  Descendants of class Exception are used to communicate between
+ *  Kernel#raise and +rescue+ statements in <code>begin ... end</code> blocks.
+ *  Exception objects carry information about the exception -- its type (the
+ *  exception's class name), an optional descriptive string, and optional
+ *  traceback information.  Exception subclasses may add additional
+ *  information like NameError#name.
+ *
+ *  Programs may make subclasses of Exception, typically of StandardError or
+ *  RuntimeError, to provide custom classes and add additional information.
+ *  See the subclass list below for defaults for +raise+ and +rescue+.
+ *
+ *  When an exception has been raised but not yet handled (in +rescue+,
+ *  +ensure+, +at_exit+ and +END+ blocks) the global variable <code>$!</code>
+ *  will contain the current exception and <code>$@</code> contains the
+ *  current exception's backtrace.
+ *
+ *  It is recommended that a library should have one subclass of StandardError
+ *  or RuntimeError and have specific exception types inherit from it.  This
+ *  allows the user to rescue a generic exception type to catch all exceptions
+ *  the library may raise even if future versions of the library add new
+ *  exception subclasses.
+ *
+ *  For example:
+ *
+ *    class MyLibrary
+ *      class Error < RuntimeError
+ *      end
+ *
+ *      class WidgetError < Error
+ *      end
+ *
+ *      class FrobError < Error
+ *      end
+ *
+ *    end
+ *
+ *  To handle both WidgetError and FrobError the library user can rescue
+ *  MyLibrary::Error.
+ *
+ *  The built-in subclasses of Exception are:
+ *
+ *  * NoMemoryError
+ *  * ScriptError
+ *    * LoadError
+ *    * NotImplementedError
+ *    * SyntaxError
+ *  * SecurityError
+ *  * SignalException
+ *    * Interrupt
+ *  * StandardError -- default for +rescue+
+ *    * ArgumentError
+ *      * UncaughtThrowError
+ *    * EncodingError
+ *    * FiberError
+ *    * IOError
+ *      * EOFError
+ *    * IndexError
+ *      * KeyError
+ *      * StopIteration
+ *    * LocalJumpError
+ *    * NameError
+ *      * NoMethodError
+ *    * RangeError
+ *      * FloatDomainError
+ *    * RegexpError
+ *    * RuntimeError -- default for +raise+
+ *    * SystemCallError
+ *      * Errno::*
+ *    * ThreadError
+ *    * TypeError
+ *    * ZeroDivisionError
+ *  * SystemExit
+ *  * SystemStackError
+ *  * fatal -- impossible to rescue
  */
 
 void
@@ -1418,7 +1853,9 @@ Init_Exception(void)
     rb_define_method(rb_eException, "message", exc_message, 0);
     rb_define_method(rb_eException, "inspect", exc_inspect, 0);
     rb_define_method(rb_eException, "backtrace", exc_backtrace, 0);
+    rb_define_method(rb_eException, "backtrace_locations", exc_backtrace_locations, 0);
     rb_define_method(rb_eException, "set_backtrace", exc_set_backtrace, 1);
+    rb_define_method(rb_eException, "cause", exc_cause, 0);
 
     rb_eSystemExit  = rb_define_class("SystemExit", rb_eException);
     rb_define_method(rb_eSystemExit, "initialize", exit_initialize, -1);
@@ -1438,18 +1875,21 @@ Init_Exception(void)
 
     rb_eScriptError = rb_define_class("ScriptError", rb_eException);
     rb_eSyntaxError = rb_define_class("SyntaxError", rb_eScriptError);
+
     rb_eLoadError   = rb_define_class("LoadError", rb_eScriptError);
+    /* the path failed to load */
+    rb_attr(rb_eLoadError, rb_intern_const("path"), 1, 0, Qfalse);
+
     rb_eNotImpError = rb_define_class("NotImplementedError", rb_eScriptError);
 
     rb_eNameError     = rb_define_class("NameError", rb_eStandardError);
     rb_define_method(rb_eNameError, "initialize", name_err_initialize, -1);
     rb_define_method(rb_eNameError, "name", name_err_name, 0);
-    rb_define_method(rb_eNameError, "to_s", name_err_to_s, 0);
     rb_cNameErrorMesg = rb_define_class_under(rb_eNameError, "message", rb_cData);
     rb_define_singleton_method(rb_cNameErrorMesg, "!", rb_name_err_mesg_new, NAME_ERR_MESG_COUNT);
     rb_define_method(rb_cNameErrorMesg, "==", name_err_mesg_equal, 1);
     rb_define_method(rb_cNameErrorMesg, "to_str", name_err_mesg_to_str, 0);
-    rb_define_method(rb_cNameErrorMesg, "_dump", name_err_mesg_to_str, 1);
+    rb_define_method(rb_cNameErrorMesg, "_dump", name_err_mesg_dump, 1);
     rb_define_singleton_method(rb_cNameErrorMesg, "_load", name_err_mesg_load, 1);
     rb_eNoMethodError = rb_define_class("NoMethodError", rb_eNameError);
     rb_define_method(rb_eNoMethodError, "initialize", nometh_err_initialize, -1);
@@ -1469,7 +1909,30 @@ Init_Exception(void)
 
     rb_mErrno = rb_define_module("Errno");
 
-    rb_define_global_function("warn", rb_warn_m, 1);
+    rb_define_global_function("warn", rb_warn_m, -1);
+
+    id_new = rb_intern_const("new");
+    id_cause = rb_intern_const("cause");
+    id_message = rb_intern_const("message");
+    id_backtrace = rb_intern_const("backtrace");
+    id_name = rb_intern_const("name");
+    id_args = rb_intern_const("args");
+    id_Errno = rb_intern_const("Errno");
+    id_errno = rb_intern_const("errno");
+    id_i_path = rb_intern_const("@path");
+}
+
+void
+rb_enc_raise(rb_encoding *enc, VALUE exc, const char *fmt, ...)
+{
+    va_list args;
+    VALUE mesg;
+
+    va_start(args, fmt);
+    mesg = rb_enc_vsprintf(enc, fmt, args);
+    va_end(args);
+
+    rb_exc_raise(rb_exc_new3(exc, mesg));
 }
 
 void
@@ -1484,6 +1947,16 @@ rb_raise(VALUE exc, const char *fmt, ...)
     rb_exc_raise(rb_exc_new3(exc, mesg));
 }
 
+NORETURN(static void raise_loaderror(VALUE path, VALUE mesg));
+
+static void
+raise_loaderror(VALUE path, VALUE mesg)
+{
+    VALUE err = rb_exc_new3(rb_eLoadError, mesg);
+    rb_ivar_set(err, id_i_path, path);
+    rb_exc_raise(err);
+}
+
 void
 rb_loaderror(const char *fmt, ...)
 {
@@ -1493,15 +1966,27 @@ rb_loaderror(const char *fmt, ...)
     va_start(args, fmt);
     mesg = rb_enc_vsprintf(rb_locale_encoding(), fmt, args);
     va_end(args);
-    rb_exc_raise(rb_exc_new3(rb_eLoadError, mesg));
+    raise_loaderror(Qnil, mesg);
+}
+
+void
+rb_loaderror_with_path(VALUE path, const char *fmt, ...)
+{
+    va_list args;
+    VALUE mesg;
+
+    va_start(args, fmt);
+    mesg = rb_enc_vsprintf(rb_locale_encoding(), fmt, args);
+    va_end(args);
+    raise_loaderror(path, mesg);
 }
 
 void
 rb_notimplement(void)
 {
     rb_raise(rb_eNotImpError,
-	     "%s() function is unimplemented on this machine",
-	     rb_id2name(rb_frame_this_func()));
+	     "%"PRIsVALUE"() function is unimplemented on this machine",
+	     rb_id2str(rb_frame_this_func()));
 }
 
 void
@@ -1521,15 +2006,52 @@ static VALUE
 make_errno_exc(const char *mesg)
 {
     int n = errno;
-    VALUE arg;
 
     errno = 0;
     if (n == 0) {
 	rb_bug("rb_sys_fail(%s) - errno == 0", mesg ? mesg : "");
     }
+    return rb_syserr_new(n, mesg);
+}
 
+static VALUE
+make_errno_exc_str(VALUE mesg)
+{
+    int n = errno;
+
+    errno = 0;
+    if (!mesg) mesg = Qnil;
+    if (n == 0) {
+	const char *s = !NIL_P(mesg) ? RSTRING_PTR(mesg) : "";
+	rb_bug("rb_sys_fail_str(%s) - errno == 0", s);
+    }
+    return rb_syserr_new_str(n, mesg);
+}
+
+VALUE
+rb_syserr_new(int n, const char *mesg)
+{
+    VALUE arg;
     arg = mesg ? rb_str_new2(mesg) : Qnil;
+    return rb_syserr_new_str(n, arg);
+}
+
+VALUE
+rb_syserr_new_str(int n, VALUE arg)
+{
     return rb_class_new_instance(1, &arg, get_syserr(n));
+}
+
+void
+rb_syserr_fail(int e, const char *mesg)
+{
+    rb_exc_raise(rb_syserr_new(e, mesg));
+}
+
+void
+rb_syserr_fail_str(int e, VALUE mesg)
+{
+    rb_exc_raise(rb_syserr_new_str(e, mesg));
 }
 
 void
@@ -1537,6 +2059,40 @@ rb_sys_fail(const char *mesg)
 {
     rb_exc_raise(make_errno_exc(mesg));
 }
+
+void
+rb_sys_fail_str(VALUE mesg)
+{
+    rb_exc_raise(make_errno_exc_str(mesg));
+}
+
+#ifdef RUBY_FUNCTION_NAME_STRING
+void
+rb_sys_fail_path_in(const char *func_name, VALUE path)
+{
+    int n = errno;
+
+    errno = 0;
+    rb_syserr_fail_path_in(func_name, n, path);
+}
+
+void
+rb_syserr_fail_path_in(const char *func_name, int n, VALUE path)
+{
+    VALUE args[2];
+
+    if (!path) path = Qnil;
+    if (n == 0) {
+	const char *s = !NIL_P(path) ? RSTRING_PTR(path) : "";
+	if (!func_name) func_name = "(null)";
+	rb_bug("rb_sys_fail_path_in(%s, %s) - errno == 0",
+	       func_name, s);
+    }
+    args[0] = path;
+    args[1] = rb_str_new_cstr(func_name);
+    rb_exc_raise(rb_class_new_instance(2, args, get_syserr(n)));
+}
+#endif
 
 void
 rb_mod_sys_fail(VALUE mod, const char *mesg)
@@ -1547,9 +2103,33 @@ rb_mod_sys_fail(VALUE mod, const char *mesg)
 }
 
 void
+rb_mod_sys_fail_str(VALUE mod, VALUE mesg)
+{
+    VALUE exc = make_errno_exc_str(mesg);
+    rb_extend_object(exc, mod);
+    rb_exc_raise(exc);
+}
+
+void
+rb_mod_syserr_fail(VALUE mod, int e, const char *mesg)
+{
+    VALUE exc = rb_syserr_new(e, mesg);
+    rb_extend_object(exc, mod);
+    rb_exc_raise(exc);
+}
+
+void
+rb_mod_syserr_fail_str(VALUE mod, int e, VALUE mesg)
+{
+    VALUE exc = rb_syserr_new_str(e, mesg);
+    rb_extend_object(exc, mod);
+    rb_exc_raise(exc);
+}
+
+void
 rb_sys_warning(const char *fmt, ...)
 {
-    char buf[BUFSIZ];
+    VALUE mesg;
     va_list args;
     int errno_save;
 
@@ -1557,19 +2137,42 @@ rb_sys_warning(const char *fmt, ...)
 
     if (!RTEST(ruby_verbose)) return;
 
-    snprintf(buf, BUFSIZ, "warning: %s", fmt);
-    snprintf(buf+strlen(buf), BUFSIZ-strlen(buf), ": %s", strerror(errno_save));
-
     va_start(args, fmt);
-    warn_print(buf, args);
+    mesg = warning_string(0, fmt, args);
     va_end(args);
+    rb_str_set_len(mesg, RSTRING_LEN(mesg)-1);
+    rb_str_catf(mesg, ": %s\n", strerror(errno_save));
+    rb_write_error_str(mesg);
     errno = errno_save;
 }
 
 void
-rb_load_fail(const char *path)
+rb_sys_enc_warning(rb_encoding *enc, const char *fmt, ...)
 {
-    rb_loaderror("%s -- %s", strerror(errno), path);
+    VALUE mesg;
+    va_list args;
+    int errno_save;
+
+    errno_save = errno;
+
+    if (!RTEST(ruby_verbose)) return;
+
+    va_start(args, fmt);
+    mesg = warning_string(enc, fmt, args);
+    va_end(args);
+    rb_str_set_len(mesg, RSTRING_LEN(mesg)-1);
+    rb_str_catf(mesg, ": %s\n", strerror(errno_save));
+    rb_write_error_str(mesg);
+    errno = errno_save;
+}
+
+void
+rb_load_fail(VALUE path, const char *err)
+{
+    VALUE mesg = rb_str_buf_new_cstr(err);
+    rb_str_cat2(mesg, " -- ");
+    rb_str_append(mesg, path);	/* should be ASCII compatible */
+    raise_loaderror(path, mesg);
 }
 
 void
@@ -1579,47 +2182,51 @@ rb_error_frozen(const char *what)
 }
 
 void
+rb_error_frozen_object(VALUE frozen_obj)
+{
+    rb_raise(rb_eRuntimeError, "can't modify frozen %"PRIsVALUE,
+	     CLASS_OF(frozen_obj));
+}
+
+#undef rb_check_frozen
+void
 rb_check_frozen(VALUE obj)
 {
-    if (OBJ_FROZEN(obj)) rb_error_frozen(rb_obj_classname(obj));
+    rb_check_frozen_internal(obj);
+}
+
+void
+rb_error_untrusted(VALUE obj)
+{
+}
+
+#undef rb_check_trusted
+void
+rb_check_trusted(VALUE obj)
+{
+}
+
+void
+rb_check_copyable(VALUE obj, VALUE orig)
+{
+    if (!FL_ABLE(obj)) return;
+    rb_check_frozen_internal(obj);
+    if (!FL_ABLE(orig)) return;
+    if ((~RBASIC(obj)->flags & RBASIC(orig)->flags) & FL_TAINT) {
+	if (rb_safe_level() > 0) {
+	    rb_raise(rb_eSecurityError, "Insecure: can't modify %"PRIsVALUE,
+		     RBASIC(obj)->klass);
+	}
+    }
 }
 
 void
 Init_syserr(void)
 {
     rb_eNOERROR = set_syserr(0, "NOERROR");
-#define defined_error(name, num) set_syserr(num, name);
-#define undefined_error(name) set_syserr(0, name);
+#define defined_error(name, num) set_syserr((num), (name));
+#define undefined_error(name) set_syserr(0, (name));
 #include "known_errors.inc"
 #undef defined_error
 #undef undefined_error
-}
-
-static void
-err_append(const char *s)
-{
-    rb_thread_t *th = GET_THREAD();
-    VALUE err = th->errinfo;
-
-    if (th->mild_compile_error) {
-	if (!RTEST(err)) {
-	    err = rb_exc_new2(rb_eSyntaxError, s);
-	    th->errinfo = err;
-	}
-	else {
-	    VALUE str = rb_obj_as_string(err);
-
-	    rb_str_cat2(str, "\n");
-	    rb_str_cat2(str, s);
-	    th->errinfo = rb_exc_new3(rb_eSyntaxError, str);
-	}
-    }
-    else {
-	if (!RTEST(err)) {
-	    err = rb_exc_new2(rb_eSyntaxError, "compile error");
-	    th->errinfo = err;
-	}
-	rb_write_error(s);
-	rb_write_error("\n");
-    }
 }

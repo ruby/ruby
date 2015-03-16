@@ -1,15 +1,15 @@
-# -*- coding: euc-jp -*-
+# -*- coding: utf-8 -*-
 #
 # canvas item types widget demo (called by 'widget')
 #
 
-# toplevel widget ¤¬Â¸ºß¤¹¤ì¤Ðºï½ü¤¹¤ë
+# toplevel widget ãŒå­˜åœ¨ã™ã‚Œã°å‰Šé™¤ã™ã‚‹
 if defined?($items_demo) && $items_demo
   $items_demo.destroy
   $items_demo = nil
 end
 
-# demo ÍÑ¤Î toplevel widget ¤òÀ¸À®
+# demo ç”¨ã® toplevel widget ã‚’ç”Ÿæˆ
 $items_demo = TkToplevel.new {|w|
   title("Canvas Item Demonstration")
   iconname("Items")
@@ -18,19 +18,19 @@ $items_demo = TkToplevel.new {|w|
 
 base_frame = TkFrame.new($items_demo).pack(:fill=>:both, :expand=>true)
 
-# label À¸À®
+# label ç”Ÿæˆ
 TkLabel.new(base_frame) {
   font $font
   wraplength '5i'
   justify 'left'
-  text "¤³¤Î¥¦¥£¥ó¥É¥¦¤Ë¤Ï¥­¥ã¥ó¥Ð¥¹ widget ¤¬Æþ¤Ã¤Æ¤ª¤ê¡¢¤½¤ÎÃæ¤Ë¤Ï¥­¥ã¥ó¥Ð¥¹ widget ¤¬¥µ¥Ý¡¼¥È¤¹¤ëÍÍ¡¹¤Ê¥¿¥¤¥×¤Î¥¢¥¤¥Æ¥à¤ÎÎã¤¬Æþ¤Ã¤Æ¤¤¤Þ¤¹¡£¼¡¤Î¤è¤¦¤ÊÁàºî¤¬¤Ç¤­¤Þ¤¹¡£\n  ¥Ü¥¿¥ó-1 ¥É¥é¥Ã¥°:\t¥¢¥¤¥Æ¥à¤òÆ°¤«¤¹¡£\n  ¥Ü¥¿¥ó-2 ¥É¥é¥Ã¥°:\t¸«¤¨¤Æ¤¤¤ëÉôÊ¬¤ò¤º¤é¤¹¡£\n  ¥Ü¥¿¥ó-3 ¥É¥é¥Ã¥°:\tÎÎ°è¤ò°Ï¤¦¡£\n  ¥³¥ó¥È¥í¡¼¥ë-F:\tÎÎ°è¤Î²¼¤Î¥¢¥¤¥Æ¥à¤òÉ½¼¨¤¹¤ë¡£"
+  text "ã“ã®ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã«ã¯ã‚­ãƒ£ãƒ³ãƒã‚¹ widget ãŒå…¥ã£ã¦ãŠã‚Šã€ãã®ä¸­ã«ã¯ã‚­ãƒ£ãƒ³ãƒã‚¹ widget ãŒã‚µãƒãƒ¼ãƒˆã™ã‚‹æ§˜ã€…ãªã‚¿ã‚¤ãƒ—ã®ã‚¢ã‚¤ãƒ†ãƒ ã®ä¾‹ãŒå…¥ã£ã¦ã„ã¾ã™ã€‚æ¬¡ã®ã‚ˆã†ãªæ“ä½œãŒã§ãã¾ã™ã€‚\n  ãƒœã‚¿ãƒ³-1 ãƒ‰ãƒ©ãƒƒã‚°:\tã‚¢ã‚¤ãƒ†ãƒ ã‚’å‹•ã‹ã™ã€‚\n  ãƒœã‚¿ãƒ³-2 ãƒ‰ãƒ©ãƒƒã‚°:\tè¦‹ãˆã¦ã„ã‚‹éƒ¨åˆ†ã‚’ãšã‚‰ã™ã€‚\n  ãƒœã‚¿ãƒ³-3 ãƒ‰ãƒ©ãƒƒã‚°:\té ˜åŸŸã‚’å›²ã†ã€‚\n  ã‚³ãƒ³ãƒˆãƒ­ãƒ¼ãƒ«-F:\té ˜åŸŸã®ä¸‹ã®ã‚¢ã‚¤ãƒ†ãƒ ã‚’è¡¨ç¤ºã™ã‚‹ã€‚"
 }.pack('side'=>'top')
 
-# frame À¸À®
+# frame ç”Ÿæˆ
 TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
-    #text 'Î»²ò'
-    text 'ÊÄ¤¸¤ë'
+    #text 'äº†è§£'
+    text 'é–‰ã˜ã‚‹'
     command proc{
       tmppath = $items_demo
       $items_demo = nil
@@ -39,15 +39,15 @@ TkFrame.new(base_frame) {|frame|
   }.pack('side'=>'left', 'expand'=>'yes')
 
   TkButton.new(frame) {
-    text '¥³¡¼¥É»²¾È'
+    text 'ã‚³ãƒ¼ãƒ‰å‚ç…§'
     command proc{showCode 'items'}
   }.pack('side'=>'left', 'expand'=>'yes')
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
-# frame À¸À®
+# frame ç”Ÿæˆ
 cvs = nil
 TkFrame.new(base_frame) {|cf|
-  # canvas À¸À®
+  # canvas ç”Ÿæˆ
   cvs = TkCanvas.new(cf) {|c|
     focus
     scrollregion '0c 0c 30c 24c'
@@ -113,11 +113,11 @@ else
   green  = 'black'
 end
 
-# tag ¥ª¥Ö¥¸¥§¥¯¥È¤òÀ¸À®
+# tag ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã‚’ç”Ÿæˆ
 $tag_item = TkcGroup.new(cvs)
 
 # Set up demos within each of the areas of the grid.
-TkcText.new(cvs, '5c', '.2c', 'text'=>'¥é¥¤¥ó', 'anchor'=>'n')
+TkcText.new(cvs, '5c', '.2c', 'text'=>'ãƒ©ã‚¤ãƒ³', 'anchor'=>'n')
 TkcLine.new(cvs, '1c', '1c', '3c', '1c', '1c', '4c', '3c', '4c',
             'width'=>2, 'fill'=>blue, 'capstyle'=>'butt',
             'join'=>'miter', 'tags'=>$tag_item )
@@ -136,7 +136,7 @@ TkcLine.new(cvs, '1c','7c','1.75c','5.8c','2.5c','7c','3.25c','5.8c','4c','7c',
             'tags'=>$tag_item )
 
 TkcText.new(cvs, '15c', '.2c',
-            'text'=>'¶ÊÀþ (³ê¤é¤«¤Ë¤Ä¤Ê¤¤¤ÀÄ¾Àþ)', 'anchor'=>'n')
+            'text'=>'æ›²ç·š (æ»‘ã‚‰ã‹ã«ã¤ãªã„ã ç›´ç·š)', 'anchor'=>'n')
 TkcLine.new(cvs, '11c','4c','11.5c','1c','13.5c','1c','14c','4c',
             'smooth'=>'on', 'fill'=>blue, 'tags'=>$tag_item )
 TkcLine.new(cvs, '15.5c','1c','19.5c','1.5c','15.5c','4.5c','19.5c','4c',
@@ -148,7 +148,7 @@ TkcLine.new(cvs, '12c','6c','13.5c','4.5c','16.5c','7.5c','18c','6c',
                             'images', 'gray25.xbm'].join(File::Separator),
             'fill'=>red, 'tags'=>$tag_item )
 
-TkcText.new(cvs, '25c', '.2c', 'text'=>'Â¿³Ñ·Á', 'anchor'=>'n')
+TkcText.new(cvs, '25c', '.2c', 'text'=>'å¤šè§’å½¢', 'anchor'=>'n')
 TkcPolygon.new(cvs, '21c','1.0c','22.5c','1.75c','24c','1.0c','23.25c','2.5c',
                '24c','4.0c','22.5c','3.25c','21c','4.0c','21.75c','2.5c',
                'fill'=>'green', 'outline'=>'black', 'width'=>4,
@@ -163,7 +163,7 @@ TkcPolygon.new(cvs, '22c','4.5c','25c','4.5c','25c','6.75c','28c','6.75c',
                                  'images', 'gray25.xbm'].join(File::Separator),
                'outline'=>'black', 'tags'=>$tag_item )
 
-TkcText.new(cvs, '5c', '8.2c', 'text'=>'¶ë·Á', 'anchor'=>'n')
+TkcText.new(cvs, '5c', '8.2c', 'text'=>'çŸ©å½¢', 'anchor'=>'n')
 TkcRectangle.new(cvs, '1c','9.5c','4c','12.5c',
                  'outline'=>red, 'width'=>'3m', 'tags'=>$tag_item)
 TkcRectangle.new(cvs, '0.5c','13.5c','4.5c','15.5c',
@@ -173,7 +173,7 @@ TkcRectangle.new(cvs, '6c','10c','9c','15c', 'outline'=>'',
                                  'images','gray25.xbm'].join(File::Separator),
                  'fill'=>blue, 'tags'=>$tag_item )
 
-TkcText.new(cvs, '15c', '8.2c', 'text'=>'ÂÊ±ß', 'anchor'=>'n')
+TkcText.new(cvs, '15c', '8.2c', 'text'=>'æ¥•å††', 'anchor'=>'n')
 TkcOval.new(cvs, '11c','9.5c','14c','12.5c',
                  'outline'=>red, 'width'=>'3m', 'tags'=>$tag_item)
 TkcOval.new(cvs, '10.5c','13.5c','14.5c','15.5c',
@@ -183,13 +183,13 @@ TkcOval.new(cvs, '16c','10c','19c','15c', 'outline'=>'',
                                  'images','gray25.xbm'].join(File::Separator),
                  'fill'=>blue, 'tags'=>$tag_item )
 
-TkcText.new(cvs, '25c', '8.2c', 'text'=>'¥Æ¥­¥¹¥È', 'anchor'=>'n')
+TkcText.new(cvs, '25c', '8.2c', 'text'=>'ãƒ†ã‚­ã‚¹ãƒˆ', 'anchor'=>'n')
 TkcRectangle.new(cvs, '22.4c','8.9c','22.6c','9.1c')
 TkcText.new(cvs, '22.5c', '9c', 'anchor'=>'n', 'font'=>font1, 'width'=>'4c',
-            'text'=>'Ã»¤¤¥Æ¥­¥¹¥È¡£¥ï¡¼¥É¥é¥Ã¥×¡¢º¸Â·¤¨¡¢¥¢¥ó¥«¡¼¤ÏËÌ(¾å)¡£¢¢¤Ï³Æ¥Æ¥­¥¹¥È¤Î¥¢¥ó¥«¡¼¥Ý¥¤¥ó¥È¤ò¼¨¤¹¡£', 'tags'=>$tag_item )
+            'text'=>'çŸ­ã„ãƒ†ã‚­ã‚¹ãƒˆã€‚ãƒ¯ãƒ¼ãƒ‰ãƒ©ãƒƒãƒ—ã€å·¦æƒãˆã€ã‚¢ãƒ³ã‚«ãƒ¼ã¯åŒ—(ä¸Š)ã€‚â–¡ã¯å„ãƒ†ã‚­ã‚¹ãƒˆã®ã‚¢ãƒ³ã‚«ãƒ¼ãƒã‚¤ãƒ³ãƒˆã‚’ç¤ºã™ã€‚', 'tags'=>$tag_item )
 TkcRectangle.new(cvs, '25.4c','10.9c','25.6c','11.1c')
 TkcText.new(cvs, '25.5c', '11c', 'anchor'=>'w', 'font'=>font1, 'fill'=>blue,
-            'text'=>"¤¤¤¯¤Ä¤«¤Î¹Ô¡£\n¤½¤ì¤¾¤ìÆÈÎ©¤Ë\n¹ÔÂ·¤¨¡£\nÁ´¤Æº¸Ã¼¤¬¥¢¥ó¥«¡¼¤µ¤ì¤Æ¤¤¤ë¡£", 'justify'=>'center', 'tags'=>$tag_item )
+            'text'=>"ã„ãã¤ã‹ã®è¡Œã€‚\nãã‚Œãžã‚Œç‹¬ç«‹ã«\nè¡Œæƒãˆã€‚\nå…¨ã¦å·¦ç«¯ãŒã‚¢ãƒ³ã‚«ãƒ¼ã•ã‚Œã¦ã„ã‚‹ã€‚", 'justify'=>'center', 'tags'=>$tag_item )
 TkcRectangle.new(cvs, '24.9c','13.9c','25.1c','14.1c')
 if $tk_version =~ /^4\.[01]/
   TkcText.new(cvs, '25c', '14c', 'anchor'=>'c', 'font'=>font2, 'fill'=>red,
@@ -202,7 +202,7 @@ else
               'tags'=>$tag_item )
 end
 
-TkcText.new(cvs, '5c', '16.2c', 'text'=>'¸Ì', 'anchor'=>'n')
+TkcText.new(cvs, '5c', '16.2c', 'text'=>'å¼§', 'anchor'=>'n')
 TkcArc.new(cvs, '0.5c','17c','7c','20c', 'fill'=>green, 'outline'=>'black',
            'start'=>45, 'extent'=>270, 'style'=>'pieslice', 'tags'=>$tag_item)
 #TkcArc.new(cvs, '6.5c','17c','9.5c','20c', 'width'=>'4m', 'style'=>'arc',
@@ -221,7 +221,7 @@ TkcArc.new(cvs, '5.5c','20.5c','9.5c','23.5c', 'width'=>'4m', 'style'=>'chord',
            'fill'=>blue, 'outline'=>'', 'start'=>45, 'extent'=>270,
            'tags'=>$tag_item)
 
-TkcText.new(cvs, '15c', '16.2c', 'text'=>'¥Ó¥Ã¥È¥Þ¥Ã¥×', 'anchor'=>'n')
+TkcText.new(cvs, '15c', '16.2c', 'text'=>'ãƒ“ãƒƒãƒˆãƒžãƒƒãƒ—', 'anchor'=>'n')
 #TkcBitmap.new(cvs, '13c','20c',
 #             'bitmap'=>'@' + ['images', 'face'].join(File::Separator),
 #             'tags'=>$tag_item)
@@ -239,7 +239,7 @@ TkcBitmap.new(cvs, '17c','18.5c',
 #TkcBitmap.new(cvs, '17c','21.5c',
 #             'bitmap'=>'@' + ['images', 'letters'].join(File::Separator),
 #             'tags'=>$tag_item)
-# ¢­¤Î·Á¼°¤Ç¤â²ÄÇ½
+# â†“ã®å½¢å¼ã§ã‚‚å¯èƒ½
 TkcBitmap.new(cvs, '17c','21.5c') {
   bitmap '@' + [$demo_dir, '..', 'images', 'letters.xbm'].join(File::Separator)
   tags $tag_item
@@ -249,15 +249,15 @@ TkcBitmap.new(cvs, '17c','21.5c') {
 #  tags $tag_item
 #}
 
-TkcText.new(cvs, '25c', '16.2c', 'text'=>'¥¦¥£¥ó¥É¥¦', 'anchor'=>'n')
+TkcText.new(cvs, '25c', '16.2c', 'text'=>'ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦', 'anchor'=>'n')
 TkButton.new(cvs) {|b|
-  text '²¡¤·¤Æ¤Í'
+  text 'æŠ¼ã—ã¦ã­'
   command proc{butPress cvs, red}
   TkcWindow.new(cvs, '21c','18c',
                 'window'=>b, 'anchor'=>'nw', 'tags'=>$tag_item)
 }
 TkEntry.new(cvs, 'width'=>20, 'relief'=>'sunken') {|e|
-  insert 'end', 'ÊÔ½¸¤·¤Æ¤Í'
+  insert 'end', 'ç·¨é›†ã—ã¦ã­'
   TkcWindow.new(cvs, '21c','21c',
                 'window'=>e, 'anchor'=>'nw', 'tags'=>$tag_item)
 }
@@ -266,9 +266,9 @@ TkScale.new(cvs, 'from'=>0, 'to'=>100, 'length'=>'6c', 'sliderlength'=>'.4c',
   TkcWindow.new(cvs, '28.5c','17.5c',
                 'window'=>scl, 'anchor'=>'n', 'tags'=>$tag_item)
 }
-TkcText.new(cvs, '21c', '17.9c', 'text'=>'¥Ü¥¿¥ó:', 'anchor'=>'sw')
-TkcText.new(cvs, '21c', '20.9c', 'text'=>'¥¨¥ó¥È¥ê:', 'anchor'=>'sw')
-TkcText.new(cvs, '28.5c', '17.4c', 'text'=>'¥¹¥±¡¼¥ë:', 'anchor'=>'s')
+TkcText.new(cvs, '21c', '17.9c', 'text'=>'ãƒœã‚¿ãƒ³:', 'anchor'=>'sw')
+TkcText.new(cvs, '21c', '20.9c', 'text'=>'ã‚¨ãƒ³ãƒˆãƒª:', 'anchor'=>'sw')
+TkcText.new(cvs, '28.5c', '17.4c', 'text'=>'ã‚¹ã‚±ãƒ¼ãƒ«:', 'anchor'=>'s')
 
 # Set up event bindings for canvas:
 cvs.itembind($tag_item, 'Any-Enter', proc{itemEnter cvs})
@@ -374,6 +374,6 @@ end
 
 def butPress(w,color)
   i = TkcText.new(w, '25c', '18.1c',
-                  'text'=>'¤¤¤Æ¤Æ!!', 'fill'=>color, 'anchor'=>'n')
+                  'text'=>'ã„ã¦ã¦!!', 'fill'=>color, 'anchor'=>'n')
   Tk.after(500, proc{w.delete i})
 end

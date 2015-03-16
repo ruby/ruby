@@ -27,7 +27,7 @@ module REXML
             break
           when :end_doctype
             context = context[1]
-          when :start_element, :doctype
+          when :start_element, :start_doctype
             context << event
             event[1,0] = [context]
             context = event
@@ -42,10 +42,10 @@ module REXML
     end
 
     # An element is an array.  The array contains:
-    #  0			The parent element
-    #  1			The tag name
-    #  2			A hash of attributes
-    #  3..-1	The child elements
+    #  0                        The parent element
+    #  1                        The tag name
+    #  2                        A hash of attributes
+    #  3..-1    The child elements
     # An element is an array of size > 3
     # Text is a String
     # PIs are [ :processing_instruction, target, data ]

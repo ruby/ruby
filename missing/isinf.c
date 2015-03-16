@@ -27,7 +27,7 @@ isinf(double n)
 #include <ieeefp.h>
 #endif
 
-/* 
+/*
  * isinf may be provided only as a macro.
  * ex. HP-UX, Solaris 10
  * http://www.gnu.org/software/automake/manual/autoconf/Function-Portability.html

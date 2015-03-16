@@ -1,26 +1,45 @@
 require 'rbconfig'
-exit if CROSS_COMPILING
+
+src_testdir = File.dirname(File.realpath(__FILE__))
+$LOAD_PATH << src_testdir
+$LOAD_PATH.unshift "#{src_testdir}/lib"
 
 require 'test/unit'
 
-src_testdir = File.dirname(File.expand_path(__FILE__))
-srcdir = File.dirname(src_testdir)
+module Gem
+end
+class Gem::TestCase < MiniTest::Unit::TestCase
+  @@project_dir = File.dirname($LOAD_PATH.last)
+end
 
-tests = Test::Unit.new {|files|
-  if files.empty?
-    [src_testdir]
-  else
-    files.map {|f|
-      if File.exist? "#{src_testdir}/#{f}"
-        "#{src_testdir}/#{f}"
-      elsif File.exist? "#{srcdir}/#{f}"
-        "#{srcdir}/#{f}"
-      elsif File.exist? f
-        f
-      else
-        raise ArgumentError, "not found: #{f}"
-      end
-    }
+ENV["GEM_SKIP"] = ENV["GEM_HOME"] = ENV["GEM_PATH"] = "".freeze
+
+require_relative 'lib/profile_test_all' if ENV.has_key?('RUBY_TEST_ALL_PROFILE')
+require_relative 'lib/tracepointchecker'
+
+module Test::Unit
+  module ZombieHunter
+    def after_teardown
+      super
+      assert_empty(Process.waitall)
+    end
   end
-}
-exit tests.run(ARGV) || true
+
+  class TestCase
+    include ZombieHunter
+  end
+end
+
+if ENV['COVERAGE']
+  $LOAD_PATH.unshift "#{src_testdir}/../coverage/simplecov/lib"
+  require 'simplecov'
+  SimpleCov.start
+end
+
+begin
+  exit Test::Unit::AutoRunner.run(true, src_testdir)
+rescue NoMemoryError
+  system("cat /proc/meminfo") if File.exist?("/proc/meminfo")
+  system("ps x -opid,args,%cpu,%mem,nlwp,rss,vsz,wchan,stat,start,time,etime,blocked,caught,ignored,pending,f") if File.exist?("/bin/ps")
+  raise
+end

@@ -20,4 +20,4 @@ smime0 = PKCS7::write_smime(p7sig)
 
 rcpt  = X509::Certificate.new(File::read(rcpt_file))
 p7enc = PKCS7::encrypt([rcpt], smime0)
-print PKCS7::write_smime(p7enc)   
+print PKCS7::write_smime(p7enc)

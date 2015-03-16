@@ -77,7 +77,7 @@ class Tk::Canvas<TkWindow
     if tag.kind_of?(TkcItem) || tag.kind_of?(TkcTag)
       tag.id
     else
-      tag  # maybe an Array of configure paramters
+      tag  # maybe an Array of configure parameters
     end
   end
   private :tagid
@@ -85,9 +85,15 @@ class Tk::Canvas<TkWindow
 
   # create a canvas item without creating a TkcItem object
   def create(type, *args)
+    if type.kind_of?(Class) && type < TkcItem
+      # do nothing
+    elsif TkcItem.type2class(type.to_s)
+      type = TkcItem.type2class(type.to_s)
+    else
+      fail ArgumentError, "type must a subclass of TkcItem class, or a string in CItemTypeToClass"
+    end
     type.create(self, *args)
   end
-
 
   def addtag(tag, mode, *args)
     mode = mode.to_s
@@ -602,6 +608,30 @@ class Tk::Canvas<TkWindow
 
   def itemtype(tag)
     TkcItem.type2class(tk_send('type', tagid(tag)))
+  end
+
+  def create_itemobj_from_id(idnum)
+    id = TkcItem.id2obj(self, idnum.to_i)
+    return id if id.kind_of?(TkcItem)
+
+    typename = tk_send('type', id)
+    unless type = TkcItem.type2class(typename)
+      (itemclass = typename.dup)[0,1] = typename[0,1].upcase
+      type = TkcItem.const_set(itemclass, Class.new(TkcItem))
+      type.const_set("CItemTypeName", typename.freeze)
+      TkcItem::CItemTypeToClass[typename] = type
+    end
+
+    canvas = self
+    (obj = type.allocate).instance_eval{
+      @parent = @c = canvas
+      @path = canvas.path
+      @id = id
+      TkcItem::CItemID_TBL.mutex.synchronize{
+        TkcItem::CItemID_TBL[@path] = {} unless TkcItem::CItemID_TBL[@path]
+        TkcItem::CItemID_TBL[@path][@id] = self
+      }
+    }
   end
 end
 

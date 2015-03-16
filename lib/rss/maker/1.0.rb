@@ -32,7 +32,7 @@ module RSS
             _not_set_required_variables = not_set_required_variables
             if _not_set_required_variables.empty?
               channel = RDF::Channel.new(@about)
-              set = setup_values(channel)
+              setup_values(channel)
               channel.dc_dates.clear
               rss.channel = channel
               set_parent(channel, rss)

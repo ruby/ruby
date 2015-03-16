@@ -1,3 +1,10 @@
+V = 0
+Q1 = $(V:1=)
+Q = $(Q1:0=@)
+n=$(NULLCMD)
+ECHO1 = $(V:1=@$n)
+ECHO = $(ECHO1:0=@echo)
+
 encsrcdir = @srcdir@
 topdir = .
 prefix = @prefix@
@@ -13,11 +20,12 @@ ENCSODIR = $(EXTOUT)/$(arch)/enc
 TRANSSODIR = $(ENCSODIR)/trans
 DLEXT = @DLEXT@
 OBJEXT = @OBJEXT@
+LIBEXT = @LIBEXT@
 
-BUILTIN_ENCS	= ascii.c us_ascii.c\
-		  unicode.c utf_8.c
+BUILTIN_ENCS	= enc/ascii.c enc/us_ascii.c\
+		  enc/unicode.c enc/utf_8.c
 
-BUILTIN_TRANSES	= newline.trans
+BUILTIN_TRANSES	= enc/trans/newline.trans
 
 RUBY_SO_NAME = @RUBY_SO_NAME@
 LIBRUBY = @LIBRUBY@
@@ -25,7 +33,10 @@ LIBRUBYARG_SHARED = @LIBRUBYARG_SHARED@
 LIBRUBYARG_STATIC = $(LIBRUBYARG_SHARED)
 
 empty =
+AR = @AR@
 CC = @CC@
+ARFLAGS = @ARFLAGS@$(empty)
+RANLIB = @RANLIB@
 OUTFLAG = @OUTFLAG@$(empty)
 COUTFLAG = @COUTFLAG@$(empty)
 CFLAGS = $(CCDLFLAGS) @CFLAGS@ @ARCH_FLAG@
@@ -41,12 +52,17 @@ LDFLAGS = @LDFLAGS@
 LDSHARED = @LDSHARED@
 ldflags  = $(LDFLAGS)
 dldflags = @DLDFLAGS@
+extdldflags = @EXTDLDFLAGS@
 archflag = @ARCH_FLAG@
-DLDFLAGS = $(ldflags) $(dldflags) $(archflag)
+DLDFLAGS = $(ldflags) $(dldflags) $(extdldflags) $(archflag)
 RUBY     = $(MINIRUBY)
+TARGET_NAME_ = $(@F) # BSD make seems unable to deal with @F with substitution
+TARGET_NAME = $(TARGET_NAME_:.@DLEXT@=)
+TARGET_ENTRY = @EXPORT_PREFIX@Init_$(TARGET_NAME)
 
-WORKDIRS = $(ENCSODIR) $(TRANSSODIR) enc enc/trans
+WORKDIRS = @WORKDIRS@
 
+NULLCMD = @NULLCMD@
 RM = @RM@
 RMDIR = @RMDIR@
 RMDIRS = @RMDIRS@
@@ -57,9 +73,10 @@ MAKEDIRS = @MAKEDIRS@
 all: make-workdir
 
 make-workdir:
-	$(MAKEDIRS) $(WORKDIRS)
+	$(Q)$(MAKEDIRS) $(WORKDIRS)
 
 clean:
 
-distclean: clean clean-srcs
-	@$(RM) enc.mk
+distclean: clean
+	$(Q)$(RM) enc.mk
+realclean: distclean clean-srcs

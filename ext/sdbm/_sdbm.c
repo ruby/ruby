@@ -7,12 +7,7 @@
  * core routines
  */
 
-#ifndef lint
-/*char sdbm_rcsid[] = "$Id$";*/
-#endif
-
-#include "ruby/config.h"
-#include "ruby/defines.h"
+#include "ruby/ruby.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -30,18 +25,23 @@
 
 #ifdef BSD42
 #define SEEK_SET	L_SET
-#define	memset(s,c,n)	bzero(s, n)		/* only when c is zero */
-#define	memcpy(s1,s2,n)	bcopy(s2, s1, n)
-#define	memcmp(s1,s2,n)	bcmp(s1,s2,n)
+#define	memset(s,c,n)	bzero((s), (n))		/* only when c is zero */
+#define	memcpy(s1,s2,n)	bcopy((s2), (s1), (n))
+#define	memcmp(s1,s2,n)	bcmp((s1),(s2),(n))
 #endif
 
 /*
  * important tuning parms (hah)
  */
 
-#define SEEDUPS		/* always detect duplicates */
-#define BADMESS		/* generate a message for worst case:
+#ifndef SEEDUPS
+#define SEEDUPS 1	/* always detect duplicates */
+#endif
+#ifndef BADMESS
+#define BADMESS 1	/* generate a message for worst case:
 			   cannot make room after SPLTMAX splits */
+#endif
+
 /*
  * misc
  */
@@ -55,8 +55,8 @@
 #define GET_SHORT(p, i)	(((unsigned)((unsigned char *)(p))[(i)*2] << 8) + (((unsigned char *)(p))[(i)*2 + 1]))
 #define PUT_SHORT(p, i, s) (((unsigned char *)(p))[(i)*2] = (unsigned char)((s) >> 8), ((unsigned char *)(p))[(i)*2 + 1] = (unsigned char)(s))
 #else
-#define GET_SHORT(p, i)	((p)[i])
-#define PUT_SHORT(p, i, s)	((p)[i] = (s))
+#define GET_SHORT(p, i)	((p)[(i)])
+#define PUT_SHORT(p, i, s)	((p)[(i)] = (s))
 #endif
 
 /*#include "pair.h"*/
@@ -67,7 +67,7 @@ static int   delpair proto((char *, datum));
 static int   chkpage proto((char *));
 static datum getnkey proto((char *, int));
 static void  splpage proto((char *, char *, long));
-#ifdef SEEDUPS
+#if SEEDUPS
 static int   duppair proto((char *, datum));
 #endif
 
@@ -105,7 +105,7 @@ static int   duppair proto((char *, datum));
 /*
  * externals
  */
-#if !defined sun && !defined _WIN32 && !defined __CYGWIN__ && !defined(errno)
+#if !defined(__sun) && !defined(_WIN32) && !defined(__CYGWIN__) && !defined(errno)
 extern int errno;
 #endif
 
@@ -150,16 +150,16 @@ sdbm_open(register char *file, register int flags, register int mode)
 	register DBM *db;
 	register char *dirname;
 	register char *pagname;
-	register int n;
+	register size_t n;
 
 	if (file == NULL || !*file)
 		return errno = EINVAL, (DBM *) NULL;
 /*
- * need space for two seperate filenames
+ * need space for two separate filenames
  */
 	n = strlen(file) * 2 + strlen(DIRFEXT) + strlen(PAGFEXT) + 2;
 
-	if ((dirname = malloc((unsigned) n)) == NULL)
+	if ((dirname = malloc(n)) == NULL)
 		return errno = ENOMEM, (DBM *) NULL;
 /*
  * build the file names
@@ -173,6 +173,29 @@ sdbm_open(register char *file, register int flags, register int mode)
 	return db;
 }
 
+static int
+fd_set_cloexec(int fd)
+{
+  /* MinGW don't have F_GETFD and FD_CLOEXEC.  [ruby-core:40281] */
+#ifdef F_GETFD
+    int flags, ret;
+    flags = fcntl(fd, F_GETFD); /* should not fail except EBADF. */
+    if (flags == -1) {
+        return -1;
+    }
+    if (2 < fd) {
+        if (!(flags & FD_CLOEXEC)) {
+            flags |= FD_CLOEXEC;
+            ret = fcntl(fd, F_SETFD, flags);
+            if (ret == -1) {
+                return -1;
+            }
+        }
+    }
+#endif
+    return 0;
+}
+
 DBM *
 sdbm_prep(char *dirname, char *pagname, int flags, int mode)
 {
@@ -182,6 +205,8 @@ sdbm_prep(char *dirname, char *pagname, int flags, int mode)
 	if ((db = (DBM *) malloc(sizeof(DBM))) == NULL)
 		return errno = ENOMEM, (DBM *) NULL;
 
+        db->pagf = -1;
+        db->dirf = -1;
         db->flags = 0;
         db->hmask = 0;
         db->blkptr = 0;
@@ -200,31 +225,38 @@ sdbm_prep(char *dirname, char *pagname, int flags, int mode)
  * If we fail anywhere, undo everything, return NULL.
  */
 	flags |= O_BINARY;
-	if ((db->pagf = open(pagname, flags, mode)) > -1) {
-		if ((db->dirf = open(dirname, flags, mode)) > -1) {
+#ifdef O_CLOEXEC
+        flags |= O_CLOEXEC;
+#endif
+
+	if ((db->pagf = open(pagname, flags, mode)) == -1) goto err;
+        if (fd_set_cloexec(db->pagf) == -1) goto err;
+        if ((db->dirf = open(dirname, flags, mode)) == -1) goto err;
+        if (fd_set_cloexec(db->dirf) == -1) goto err;
 /*
  * need the dirfile size to establish max bit number.
  */
-			if (fstat(db->dirf, &dstat) == 0) {
+        if (fstat(db->dirf, &dstat) == -1) goto err;
 /*
  * zero size: either a fresh database, or one with a single,
  * unsplit data page: dirpage is all zeros.
  */
-				db->dirbno = (!dstat.st_size) ? 0 : -1;
-				db->pagbno = -1;
-				db->maxbno = dstat.st_size * (long) BYTESIZ;
+        db->dirbno = (!dstat.st_size) ? 0 : -1;
+        db->pagbno = -1;
+        db->maxbno = dstat.st_size * (long) BYTESIZ;
 
-				(void) memset(db->pagbuf, 0, PBLKSIZ);
-				(void) memset(db->dirbuf, 0, DBLKSIZ);
-			/*
-			 * success
-			 */
-				return db;
-			}
-			(void) close(db->dirf);
-		}
-		(void) close(db->pagf);
-	}
+        (void) memset(db->pagbuf, 0, PBLKSIZ);
+        (void) memset(db->dirbuf, 0, DBLKSIZ);
+/*
+ * success
+ */
+        return db;
+
+    err:
+        if (db->pagf != -1)
+                (void) close(db->pagf);
+        if (db->dirf != -1)
+                (void) close(db->dirf);
 	free((char *) db);
 	return (DBM *) NULL;
 }
@@ -302,7 +334,7 @@ sdbm_store(register DBM *db, datum key, datum val, int flags)
  */
 		if (flags == DBM_REPLACE)
 			(void) delpair(db->pagbuf, key);
-#ifdef SEEDUPS
+#if SEEDUPS
 		else if (duppair(db->pagbuf, key))
 			return 1;
 #endif
@@ -359,7 +391,7 @@ makroom(register DBM *db, long int hash, int need)
 		newp = (hash & db->hmask) | (db->hmask + 1);
 		debug(("newp: %ld\n", newp));
 /*
- * write delay, read avoidence/cache shuffle:
+ * write delay, read avoidance/cache shuffle:
  * select the page for incoming pair: if key is to go to the new page,
  * write out the previous one, and copy the new one over, thus making
  * it the current page. If not, simply write the new page, and we are
@@ -421,8 +453,8 @@ makroom(register DBM *db, long int hash, int need)
  * if we are here, this is real bad news. After SPLTMAX splits,
  * we still cannot fit the key. say goodnight.
  */
-#ifdef BADMESS
-	(void) write(2, "sdbm: cannot insert after SPLTMAX attempts.\n", 44);
+#if BADMESS
+	(void) (write(2, "sdbm: cannot insert after SPLTMAX attempts.\n", 44) < 0);
 #endif
 	return 0;
 
@@ -474,7 +506,7 @@ getpage(register DBM *db, register long int hash)
 	while (dbit < db->maxbno && getdbit(db, dbit))
 		dbit = 2 * dbit + ((hash & ((long) 1 << hbit++)) ? 2 : 1);
 
-	debug(("dbit: %d...", dbit));
+	debug(("dbit: %ld...", dbit));
 
 	db->curbit = dbit;
 	db->hmask = masks[hbit];
@@ -499,7 +531,7 @@ getpage(register DBM *db, register long int hash)
 		}
 		db->pagbno = pagb;
 
-		debug(("pag read: %d\n", pagb));
+		debug(("pag read: %ld\n", pagb));
 	}
 	return 1;
 }
@@ -519,7 +551,7 @@ getdbit(register DBM *db, register long int dbit)
 			return 0;
 		db->dirbno = dirb;
 
-		debug(("dir read: %d\n", dirb));
+		debug(("dir read: %ld\n", dirb));
 	}
 
 	return db->dirbuf[c % DBLKSIZ] & (1 << (dbit % BYTESIZ));
@@ -540,7 +572,7 @@ setdbit(register DBM *db, register long int dbit)
 			return 0;
 		db->dirbno = dirb;
 
-		debug(("dir read: %d\n", dirb));
+		debug(("dir read: %ld\n", dirb));
 	}
 
 	db->dirbuf[c % DBLKSIZ] |= (1 << (dbit % BYTESIZ));
@@ -599,10 +631,6 @@ getnext(register DBM *db)
  * page-level routines
  */
 
-#ifndef lint
-/*char pair_rcsid[] = "$Id$";*/
-#endif
-
 #ifndef BSD42
 /*#include <memory.h>*/
 #endif
@@ -643,8 +671,8 @@ fitpair(char *pag, int need)
 	register short *ino = (short *) pag;
 
 	off = ((n = GET_SHORT(ino,0)) > 0) ? GET_SHORT(ino,n) : PBLKSIZ;
-	free = off - (n + 1) * sizeof(short);
-	need += 2 * sizeof(short);
+	free = off - (n + 1) * (int)sizeof(short);
+	need += 2 * (int)sizeof(short);
 
 	debug(("free %d need %d\n", free, need));
 
@@ -698,7 +726,7 @@ getpair(char *pag, datum key)
 	return val;
 }
 
-#ifdef SEEDUPS
+#if SEEDUPS
 static int
 duppair(char *pag, datum key)
 {
@@ -750,9 +778,9 @@ delpair(char *pag, datum key)
 		register int m;
 		register char *dst = pag + (i == 1 ? PBLKSIZ : GET_SHORT(ino,i - 1));
 		register char *src = pag + GET_SHORT(ino,i + 1);
-		register int   zoo = dst - src;
+		register ptrdiff_t   zoo = dst - src;
 
-		debug(("free-up %d ", zoo));
+		debug(("free-up %"PRIdPTRDIFF" ", zoo));
 /*
  * shift data/keys down
  */
@@ -774,7 +802,7 @@ delpair(char *pag, datum key)
 		}
 #else
 #ifdef MEMMOVE
-		memmove(dst, src, m);
+		memmove(dst-m, src-m, m);
 #else
 		while (m--)
 			*--dst = *--src;

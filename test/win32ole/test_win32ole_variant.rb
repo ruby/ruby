@@ -4,14 +4,17 @@ rescue LoadError
 end
 require "test/unit"
 
-$MSGS = []
-def add_skip_message(msg)
-  $MSGS.push msg
-end
-
 if defined?(WIN32OLE_VARIANT)
 
   class TestWIN32OLE_VARIANT < Test::Unit::TestCase
+    def setup
+      @orglocale = WIN32OLE.locale
+      WIN32OLE.locale = 0x0409 # set locale  US-Eng
+    end
+
+    def teardown
+      WIN32OLE.locale = @orglocale
+    end
 
     def test_s_new
       obj = WIN32OLE_VARIANT.new('foo')
@@ -24,10 +27,18 @@ if defined?(WIN32OLE_VARIANT)
       }
     end
 
+    def test_s_new_ary
+      obj = WIN32OLE_VARIANT.new([1])
+      assert_instance_of(WIN32OLE_VARIANT, obj)
+      assert_raise(TypeError) {
+        WIN32OLE_VARIANT.new([/foo/])
+      }
+    end
+
     def test_s_new_no_argument
       ex = nil
       begin
-        obj = WIN32OLE_VARIANT.new
+        WIN32OLE_VARIANT.new
       rescue ArgumentError
         ex = $!
       end
@@ -38,7 +49,7 @@ if defined?(WIN32OLE_VARIANT)
     def test_s_new_one_argument
       ex = nil
       begin
-        obj = WIN32OLE_VARIANT.new('foo')
+        WIN32OLE_VARIANT.new('foo')
       rescue
         ex = $!
       end
@@ -252,28 +263,16 @@ if defined?(WIN32OLE_VARIANT)
       assert_equal(WIN32OLE::VARIANT::VT_UINT|WIN32OLE::VARIANT::VT_BYREF, obj.vartype)
     end
 
-    # This test is failed in cygwin.
-    # The tagVARIANT definition has no union member pllVal in cygwin.
     def test_s_new_with_i8_byref
-      if defined?(WIN32OLE::VARIANT::VT_I8) && /mswin/ =~ RUBY_PLATFORM
-        obj = WIN32OLE_VARIANT.new(-123456789012345, WIN32OLE::VARIANT::VT_I8|WIN32OLE::VARIANT::VT_BYREF)
-        assert_equal(-123456789012345, obj.value)
-        assert_equal(WIN32OLE::VARIANT::VT_I8|WIN32OLE::VARIANT::VT_BYREF, obj.vartype)
-      else
-        STDERR.puts("\n#{__FILE__}:#{__LINE__}:#{self.class.name}.test_s_new_with_i8_byref is skipped")
-      end
+      obj = WIN32OLE_VARIANT.new(-123456789012345, WIN32OLE::VARIANT::VT_I8|WIN32OLE::VARIANT::VT_BYREF)
+      assert_equal(-123456789012345, obj.value)
+      assert_equal(WIN32OLE::VARIANT::VT_I8|WIN32OLE::VARIANT::VT_BYREF, obj.vartype)
     end
 
-    # This test is failed in cygwin.
-    # The tagVARIANT definition has no union member pullVal in cygwin.
     def test_s_new_with_ui8_byref
-      if defined?(WIN32OLE::VARIANT::VT_UI8) && /mswin/ =~ RUBY_PLATFORM
-        obj = WIN32OLE_VARIANT.new(123456789012345, WIN32OLE::VARIANT::VT_UI8|WIN32OLE::VARIANT::VT_BYREF)
-        assert_equal(123456789012345, obj.value)
-        assert_equal(WIN32OLE::VARIANT::VT_UI8|WIN32OLE::VARIANT::VT_BYREF, obj.vartype)
-      else
-        STDERR.puts("\n#{__FILE__}:#{__LINE__}:#{self.class.name}.test_s_new_with_ui8_byref is skipped.")
-      end
+      obj = WIN32OLE_VARIANT.new(123456789012345, WIN32OLE::VARIANT::VT_UI8|WIN32OLE::VARIANT::VT_BYREF)
+      assert_equal(123456789012345, obj.value)
+      assert_equal(WIN32OLE::VARIANT::VT_UI8|WIN32OLE::VARIANT::VT_BYREF, obj.vartype)
     end
 
     def test_value
@@ -310,6 +309,13 @@ if defined?(WIN32OLE_VARIANT)
       assert_equal(ar, ar2.value)
     end
 
+    def test_s_new_vt_record_exc
+      # VT_RECORD (= 36) should not be allowed in WIN32OLE_VARIANT#new
+      assert_raise(ArgumentError) {
+        WIN32OLE_VARIANT.new(nil, 36)
+      }
+    end
+
     def test_s_array
       obj = WIN32OLE_VARIANT.array([2,3], WIN32OLE::VARIANT::VT_I4)
       assert_instance_of(WIN32OLE_VARIANT, obj)
@@ -344,7 +350,7 @@ if defined?(WIN32OLE_VARIANT)
 
     def test_s_array_exc
       assert_raise(TypeError) {
-        obj = WIN32OLE_VARIANT.array(2, WIN32OLE::VARIANT::VT_I4)
+        WIN32OLE_VARIANT.array(2, WIN32OLE::VARIANT::VT_I4)
       }
     end
 
@@ -382,8 +388,42 @@ if defined?(WIN32OLE_VARIANT)
       assert_equal(dt, obj.value)
     end
 
+    def test_conversion_dbl2date_with_msec
+      # Date is "2014/8/27 12:34:56.789"
+      obj = WIN32OLE_VARIANT.new(41878.524268391200167, WIN32OLE::VARIANT::VT_DATE)
+      t = obj.value
+      assert_equal("2014-08-27 12:34:56", t.strftime('%Y-%m-%d %H:%M:%S'))
+      assert_in_delta(0.789, t.nsec / 1000000000.0, 0.001)
+    end
+
+    def test_conversion_time2date_with_msec
+      t0 = Time.new(2014, 8, 27, 12, 34, 56)
+      t0 += 0.789
+      t1 = WIN32OLE_VARIANT.new(t0).value
+
+      # The t0.nsec is 789000000 and t1.nsec is 789000465
+      # because of error range by conversion Time between VT_DATE Variant.
+      # So check t1 and t0 are in error by less than one millisecond.
+      msg = "Expected:#{t0.strftime('%Y-%m-%dT%H:%M:%S.%N')} but was:#{t1.strftime('%Y-%m-%dT%H:%M:%S.%N')}"
+      assert_in_delta(t0, t1, 0.001, msg)
+
+      t0 = Time.new(2014, 8, 27, 12, 34, 56)
+      t0 += 0.999999999
+      t1 = WIN32OLE_VARIANT.new(t0).value
+      msg = "Expected:#{t0.strftime('%Y-%m-%dT%H:%M:%S.%N')} but was:#{t1.strftime('%Y-%m-%dT%H:%M:%S.%N')}"
+
+      # The t0 is "2014/08/27 12:34.56.999999999" and
+      # the t1 is "2014/08/27 12:34:57.000000628"
+      assert_in_delta(t0, t1, 0.001, msg)
+
+      t0 = Time.now
+      t1 = WIN32OLE_VARIANT.new(t0).value
+      msg = "Expected:#{t0.strftime('%Y-%m-%dT%H:%M:%S.%N')} but was:#{t1.strftime('%Y-%m-%dT%H:%M:%S.%N')}"
+      assert_in_delta(t0, t1, 0.001, msg)
+    end
+
     # this test failed because of VariantTimeToSystemTime
-    # and SystemTimeToVariantTime API ignores wMilliseconds 
+    # and SystemTimeToVariantTime API ignores wMilliseconds
     # member of SYSTEMTIME  struct.
     #
     # def test_conversion_time_nsec2date
@@ -395,17 +435,13 @@ if defined?(WIN32OLE_VARIANT)
 
     def test_conversion_str2cy
       begin
-        begin
-          WIN32OLE.locale = 0x0411 # set locale Japanese
-        rescue WIN32OLERuntimeError
-          STDERR.puts("\n#{__FILE__}:#{__LINE__}:#{self.class.name}.test_conversion_str2cy is skipped(Japanese locale is not installed)")
-        end
-        if WIN32OLE.locale == 0x0411
-          obj = WIN32OLE_VARIANT.new("\\10,000", WIN32OLE::VARIANT::VT_CY)
-          assert_equal("10000", obj.value)
-        end
-      ensure
-        WIN32OLE.locale = WIN32OLE::LOCALE_SYSTEM_DEFAULT
+        WIN32OLE.locale = 0x0411 # set locale Japanese
+      rescue WIN32OLERuntimeError
+        skip("Japanese locale is not installed")
+      end
+      if WIN32OLE.locale == 0x0411
+        obj = WIN32OLE_VARIANT.new("\\10,000", WIN32OLE::VARIANT::VT_CY)
+        assert_equal("10000", obj.value)
       end
     end
 
@@ -490,7 +526,7 @@ if defined?(WIN32OLE_VARIANT)
 
     def test_create_vt_array_exc
       exc = assert_raise(TypeError) {
-        obj = WIN32OLE_VARIANT.new(1, WIN32OLE::VARIANT::VT_ARRAY);
+        WIN32OLE_VARIANT.new(1, WIN32OLE::VARIANT::VT_ARRAY);
       }
       assert_match(/wrong argument type Fixnum \(expected Array\)/, exc.message)
     end
@@ -654,6 +690,34 @@ if defined?(WIN32OLE_VARIANT)
 
     def test_c_null
       assert_nil(WIN32OLE_VARIANT::Null.value)
+    end
+
+    def test_c_noparam
+      # DISP_E_PARAMNOTFOUND
+      assert_equal(-2147352572, WIN32OLE_VARIANT::NoParam.value)
+    end
+
+    def test_vt_error_noparam
+      v = WIN32OLE_VARIANT.new(-1, WIN32OLE::VARIANT::VT_ERROR)
+      assert_equal(-1, v.value)
+      fso = WIN32OLE.new("Scripting.FileSystemObject")
+      exc = assert_raise(WIN32OLERuntimeError) {
+        fso.openTextFile("NonExistingFile", v, false)
+      }
+      assert_match(/Type mismatch/i, exc.message)
+      exc = assert_raise(WIN32OLERuntimeError) {
+        fso.openTextFile("NonExistingFile", WIN32OLE_VARIANT::NoParam, false)
+      }
+      # 800A0035 is 'file not found' error.
+      assert_match(/800A0035/, exc.message)
+
+      # -2147352572 is DISP_E_PARAMNOTFOUND
+      v = WIN32OLE_VARIANT.new(-2147352572, WIN32OLE::VARIANT::VT_ERROR)
+      exc = assert_raise(WIN32OLERuntimeError) {
+        fso.openTextFile("NonExistingFile", WIN32OLE_VARIANT::NoParam, false)
+      }
+      # 800A0035 is 'file not found' error code.
+      assert_match(/800A0035/, exc.message)
     end
 
   end

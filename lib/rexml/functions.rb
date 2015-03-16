@@ -28,6 +28,7 @@ module REXML
       end
     end
 
+    # Returns the last node of the given list of nodes.
     def Functions::last( )
       @@context[:size]
     end
@@ -36,6 +37,7 @@ module REXML
       @@context[:index]
     end
 
+    # Returns the size of the given list of nodes.
     def Functions::count( node_set )
       node_set.size
     end
@@ -129,6 +131,11 @@ module REXML
       end
     end
 
+    # A node-set is converted to a string by
+    # returning the concatenation of the string-value
+    # of each of the children of the node in the
+    # node-set that is first in document order.
+    # If the node-set is empty, an empty string is returned.
     def Functions::string_value( o )
       rv = ""
       o.children.each { |e|
@@ -170,7 +177,6 @@ module REXML
     # Kouhei fixed this too
     def Functions::substring_after( string, test )
       ruby_string = string(string)
-      test_string = string(test)
       return $1 if ruby_string =~ /#{test}(.*)/
       ""
     end
@@ -357,7 +363,7 @@ module REXML
 
     def Functions::sum( nodes )
       nodes = [nodes] unless nodes.kind_of? Array
-      nodes.inject(0) { |r,n| r += number(string(n)) }
+      nodes.inject(0) { |r,n| r + number(string(n)) }
     end
 
     def Functions::floor( number )

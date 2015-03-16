@@ -1,3 +1,4 @@
+# coding: US-ASCII
 require 'test/unit'
 
 class TestPack < Test::Unit::TestCase
@@ -70,73 +71,88 @@ class TestPack < Test::Unit::TestCase
     assert_equal [1,1,1], "\000\000\000\001\000\000\000\001\000\000\000\001".unpack('N*')
   end
 
+  def _integer_big_endian(mod='')
+    assert_equal("\x01\x02", [0x0102].pack("s"+mod))
+    assert_equal("\x01\x02", [0x0102].pack("S"+mod))
+    assert_equal("\x01\x02\x03\x04", [0x01020304].pack("l"+mod))
+    assert_equal("\x01\x02\x03\x04", [0x01020304].pack("L"+mod))
+    assert_equal("\x01\x02\x03\x04\x05\x06\x07\x08", [0x0102030405060708].pack("q"+mod))
+    assert_equal("\x01\x02\x03\x04\x05\x06\x07\x08", [0x0102030405060708].pack("Q"+mod))
+    assert_match(/\A\x00*\x01\x02\z/, [0x0102].pack("s!"+mod))
+    assert_match(/\A\x00*\x01\x02\z/, [0x0102].pack("S!"+mod))
+    assert_match(/\A\x00*\x01\x02\x03\x04\z/, [0x01020304].pack("i"+mod))
+    assert_match(/\A\x00*\x01\x02\x03\x04\z/, [0x01020304].pack("I"+mod))
+    assert_match(/\A\x00*\x01\x02\x03\x04\z/, [0x01020304].pack("i!"+mod))
+    assert_match(/\A\x00*\x01\x02\x03\x04\z/, [0x01020304].pack("I!"+mod))
+    assert_match(/\A\x00*\x01\x02\x03\x04\z/, [0x01020304].pack("l!"+mod))
+    assert_match(/\A\x00*\x01\x02\x03\x04\z/, [0x01020304].pack("L!"+mod))
+    %w[s S l L q Q s! S! i I i! I! l! L!].each {|fmt|
+      fmt += mod
+      nuls = [0].pack(fmt)
+      v = 0
+      s = "".force_encoding("ascii-8bit")
+      nuls.bytesize.times {|i|
+        j = i + 40
+        v = v * 256 + j
+        s << [j].pack("C")
+      }
+      assert_equal(s, [v].pack(fmt), "[#{v}].pack(#{fmt.dump})")
+      assert_equal([v], s.unpack(fmt), "#{s.dump}.unpack(#{fmt.dump})")
+      s2 = s+s
+      fmt2 = fmt+"*"
+      assert_equal([v,v], s2.unpack(fmt2), "#{s2.dump}.unpack(#{fmt2.dump})")
+    }
+  end
+
+  def _integer_little_endian(mod='')
+    assert_equal("\x02\x01", [0x0102].pack("s"+mod))
+    assert_equal("\x02\x01", [0x0102].pack("S"+mod))
+    assert_equal("\x04\x03\x02\x01", [0x01020304].pack("l"+mod))
+    assert_equal("\x04\x03\x02\x01", [0x01020304].pack("L"+mod))
+    assert_equal("\x08\x07\x06\x05\x04\x03\x02\x01", [0x0102030405060708].pack("q"+mod))
+    assert_equal("\x08\x07\x06\x05\x04\x03\x02\x01", [0x0102030405060708].pack("Q"+mod))
+    assert_match(/\A\x02\x01\x00*\z/, [0x0102].pack("s!"+mod))
+    assert_match(/\A\x02\x01\x00*\z/, [0x0102].pack("S!"+mod))
+    assert_match(/\A\x04\x03\x02\x01\x00*\z/, [0x01020304].pack("i"+mod))
+    assert_match(/\A\x04\x03\x02\x01\x00*\z/, [0x01020304].pack("I"+mod))
+    assert_match(/\A\x04\x03\x02\x01\x00*\z/, [0x01020304].pack("i!"+mod))
+    assert_match(/\A\x04\x03\x02\x01\x00*\z/, [0x01020304].pack("I!"+mod))
+    assert_match(/\A\x04\x03\x02\x01\x00*\z/, [0x01020304].pack("l!"+mod))
+    assert_match(/\A\x04\x03\x02\x01\x00*\z/, [0x01020304].pack("L!"+mod))
+    %w[s S l L q Q s! S! i I i! I! l! L!].each {|fmt|
+      fmt += mod
+      nuls = [0].pack(fmt)
+      v = 0
+      s = "".force_encoding("ascii-8bit")
+      nuls.bytesize.times {|i|
+        j = i+40
+        v = v * 256 + j
+        s << [j].pack("C")
+      }
+      s.reverse!
+      assert_equal(s, [v].pack(fmt), "[#{v}].pack(#{fmt.dump})")
+      assert_equal([v], s.unpack(fmt), "#{s.dump}.unpack(#{fmt.dump})")
+      s2 = s+s
+      fmt2 = fmt+"*"
+      assert_equal([v,v], s2.unpack(fmt2), "#{s2.dump}.unpack(#{fmt2.dump})")
+    }
+  end
+
   def test_integer_endian
     s = [1].pack("s")
-    assert_includes(["\0\1", "\1\0"], s)
+    assert_include(["\0\1", "\1\0"], s)
     if s == "\0\1"
-      # big endian
-      assert_equal("\x01\x02", [0x0102].pack("s"))
-      assert_equal("\x01\x02", [0x0102].pack("S"))
-      assert_equal("\x01\x02\x03\x04", [0x01020304].pack("l"))
-      assert_equal("\x01\x02\x03\x04", [0x01020304].pack("L"))
-      assert_equal("\x01\x02\x03\x04\x05\x06\x07\x08", [0x0102030405060708].pack("q"))
-      assert_equal("\x01\x02\x03\x04\x05\x06\x07\x08", [0x0102030405060708].pack("Q"))
-      assert_match(/\A\x00*\x01\x02\z/, [0x0102].pack("s!"))
-      assert_match(/\A\x00*\x01\x02\z/, [0x0102].pack("S!"))
-      assert_match(/\A\x00*\x01\x02\x03\x04\z/, [0x01020304].pack("i"))
-      assert_match(/\A\x00*\x01\x02\x03\x04\z/, [0x01020304].pack("I"))
-      assert_match(/\A\x00*\x01\x02\x03\x04\z/, [0x01020304].pack("i!"))
-      assert_match(/\A\x00*\x01\x02\x03\x04\z/, [0x01020304].pack("I!"))
-      assert_match(/\A\x00*\x01\x02\x03\x04\z/, [0x01020304].pack("l!"))
-      assert_match(/\A\x00*\x01\x02\x03\x04\z/, [0x01020304].pack("L!"))
-      %w[s S l L q Q s! S! i I i! I! l! L!].each {|fmt|
-        nuls = [0].pack(fmt)
-        v = 0
-        s = "".force_encoding("ascii-8bit")
-        nuls.bytesize.times {|i|
-          j = i + 40
-          v = v * 256 + j
-          s << [j].pack("C")
-        }
-        assert_equal(s, [v].pack(fmt), "[#{v}].pack(#{fmt.dump})")
-        assert_equal([v], s.unpack(fmt), "#{s.dump}.unpack(#{fmt.dump})")
-        s2 = s+s
-        fmt2 = fmt+"*"
-        assert_equal([v,v], s2.unpack(fmt2), "#{s2.dump}.unpack(#{fmt2.dump})")
-      }
+      _integer_big_endian()
     else
-      # little endian
-      assert_equal("\x02\x01", [0x0102].pack("s"))
-      assert_equal("\x02\x01", [0x0102].pack("S"))
-      assert_equal("\x04\x03\x02\x01", [0x01020304].pack("l"))
-      assert_equal("\x04\x03\x02\x01", [0x01020304].pack("L"))
-      assert_equal("\x08\x07\x06\x05\x04\x03\x02\x01", [0x0102030405060708].pack("q"))
-      assert_equal("\x08\x07\x06\x05\x04\x03\x02\x01", [0x0102030405060708].pack("Q"))
-      assert_match(/\A\x02\x01\x00*\z/, [0x0102].pack("s!"))
-      assert_match(/\A\x02\x01\x00*\z/, [0x0102].pack("S!"))
-      assert_match(/\A\x04\x03\x02\x01\x00*\z/, [0x01020304].pack("i"))
-      assert_match(/\A\x04\x03\x02\x01\x00*\z/, [0x01020304].pack("I"))
-      assert_match(/\A\x04\x03\x02\x01\x00*\z/, [0x01020304].pack("i!"))
-      assert_match(/\A\x04\x03\x02\x01\x00*\z/, [0x01020304].pack("I!"))
-      assert_match(/\A\x04\x03\x02\x01\x00*\z/, [0x01020304].pack("l!"))
-      assert_match(/\A\x04\x03\x02\x01\x00*\z/, [0x01020304].pack("L!"))
-      %w[s S l L q Q s! S! i I i! I! l! L!].each {|fmt|
-        nuls = [0].pack(fmt)
-        v = 0
-        s = "".force_encoding("ascii-8bit")
-        nuls.bytesize.times {|i|
-          j = i+40
-          v = v * 256 + j
-          s << [j].pack("C")
-        }
-        s.reverse!
-        assert_equal(s, [v].pack(fmt), "[#{v}].pack(#{fmt.dump})")
-        assert_equal([v], s.unpack(fmt), "#{s.dump}.unpack(#{fmt.dump})")
-        s2 = s+s
-        fmt2 = fmt+"*"
-        assert_equal([v,v], s2.unpack(fmt2), "#{s2.dump}.unpack(#{fmt2.dump})")
-      }
+      _integer_little_endian()
     end
+    assert_equal("\x01\x02\x02\x01", [0x0102,0x0102].pack("s>s<"))
+    assert_equal([0x0102,0x0102], "\x01\x02\x02\x01".unpack("s>s<"))
+  end
+
+  def test_integer_endian_explicit
+      _integer_big_endian('>')
+      _integer_little_endian('<')
   end
 
   def test_pack_U
@@ -165,6 +181,7 @@ class TestPack < Test::Unit::TestCase
     assert_equal a[0], a.pack("p").unpack("p")[0]
     assert_equal a, a.pack("p").freeze.unpack("p*")
     assert_raise(ArgumentError) { (a.pack("p") + "").unpack("p*") }
+    assert_equal a, (a.pack("p") << "d").unpack("p*")
   end
 
   def test_format_string_modified
@@ -265,6 +282,9 @@ class TestPack < Test::Unit::TestCase
     assert_equal(["1"], "\x80".unpack("B1"))
     assert_equal(["10"], "\x80".unpack("B2"))
     assert_equal(["100"], "\x80".unpack("B3"))
+
+    assert_equal(Encoding::US_ASCII, "\xff\x00".unpack("b*")[0].encoding)
+    assert_equal(Encoding::US_ASCII, "\xff\x00".unpack("B*")[0].encoding)
   end
 
   def test_pack_unpack_hH
@@ -305,6 +325,9 @@ class TestPack < Test::Unit::TestCase
     assert_equal(["10e"], "\x10\xef".unpack("H3"))
     assert_equal(["10ef"], "\x10\xef".unpack("H4"))
     assert_equal(["10ef"], "\x10\xef".unpack("H5"))
+
+    assert_equal(Encoding::US_ASCII, "\x10\xef".unpack("h*")[0].encoding)
+    assert_equal(Encoding::US_ASCII, "\x10\xef".unpack("H*")[0].encoding)
   end
 
   def test_pack_unpack_cC
@@ -381,8 +404,17 @@ class TestPack < Test::Unit::TestCase
     assert_equal([578437695752307201, -506097522914230529], s2.unpack("q*"))
     assert_equal([578437695752307201, 17940646550795321087], s1.unpack("Q*"))
 
+    # Note: q! and Q! should not work on platform which has no long long type.
+    # Is there a such platform now?
+    s1 = [578437695752307201, -506097522914230529].pack("q!*")
+    s2 = [578437695752307201, 17940646550795321087].pack("Q!*")
+    assert_equal([578437695752307201, -506097522914230529], s2.unpack("q!*"))
+    assert_equal([578437695752307201, 17940646550795321087], s1.unpack("Q!*"))
+
     assert_equal(8, [1].pack("q").bytesize)
     assert_equal(8, [1].pack("Q").bytesize)
+    assert_operator(8, :<=, [1].pack("q!").bytesize)
+    assert_operator(8, :<=, [1].pack("Q!").bytesize)
   end
 
   def test_pack_unpack_nN
@@ -414,7 +446,7 @@ class TestPack < Test::Unit::TestCase
       %w(f d e E g G).each do |f|
         v = [x].pack(f).unpack(f)
         if x.nan?
-          assert(v.first.nan?)
+          assert_predicate(v.first, :nan?)
         else
           assert_equal([x], v)
         end
@@ -481,6 +513,10 @@ class TestPack < Test::Unit::TestCase
     assert_equal("M86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A\n!80``\n", ["a"*46].pack("u0"))
     assert_equal("M86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A\n!80``\n", ["a"*46].pack("u1"))
     assert_equal("M86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A\n!80``\n", ["a"*46].pack("u2"))
+    assert_equal(<<EXPECTED, ["a"*80].pack("u68"))
+_86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A
+186%A86%A86%A86%A86%A86$`
+EXPECTED
 
     assert_equal([""], "".unpack("u"))
     assert_equal(["a"], "!80``\n".unpack("u"))
@@ -489,6 +525,11 @@ class TestPack < Test::Unit::TestCase
     assert_equal(["a"*45], "M86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A\n".unpack("u"))
     assert_equal(["a"*46], "M86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A86%A\n!80``\n".unpack("u"))
     assert_equal(["abcdefghi"], "&86)C9&5F\n#9VAI\n".unpack("u"))
+
+    assert_equal(["abcdef"], "#86)C\n#9&5F\n".unpack("u"))
+    assert_equal(["abcdef"], "#86)CX\n#9&5FX\n".unpack("u")) # X is a (dummy) checksum.
+    assert_equal(["abcdef"], "#86)C\r\n#9&5F\r\n".unpack("u"))
+    assert_equal(["abcdef"], "#86)CX\r\n#9&5FX\r\n".unpack("u")) # X is a (dummy) checksum.
 
     assert_equal(["\x00"], "\"\n".unpack("u"))
     assert_equal(["\x00"], "! \r \n".unpack("u"))
@@ -510,6 +551,18 @@ class TestPack < Test::Unit::TestCase
     assert_equal(["\377"], "/w==\n".unpack("m"))
     assert_equal(["\377\377"], "//8=\n".unpack("m"))
     assert_equal(["\377\377\377"], "////\n".unpack("m"))
+    assert_equal([""], "A\n".unpack("m"))
+    assert_equal(["\0"], "AA\n".unpack("m"))
+    assert_equal(["\0"], "AA=\n".unpack("m"))
+    assert_equal(["\0\0"], "AAA\n".unpack("m"))
+
+    bug10019 = '[ruby-core:63604] [Bug #10019]'
+    size = ((4096-4)/4*3+1)
+    assert_separately(%W[- #{size} #{bug10019}], <<-'end;')
+      size = ARGV.shift.to_i
+      bug = ARGV.shift
+      assert_equal(size, ["a"*size].pack("m#{size+2}").unpack("m")[0].size, bug)
+    end;
   end
 
   def test_pack_unpack_m0
@@ -553,8 +606,18 @@ class TestPack < Test::Unit::TestCase
     assert_equal(["a"*1023], (("a"*73+"=\n")*14+"a=\n").unpack("M"))
     assert_equal(["\x0a"], "=0a=\n".unpack("M"))
     assert_equal(["\x0a"], "=0A=\n".unpack("M"))
-    assert_equal([""], "=0Z=\n".unpack("M"))
+    assert_equal(["=0Z=\n"], "=0Z=\n".unpack("M"))
     assert_equal([""], "=\r\n".unpack("M"))
+    assert_equal(["\xC6\xF7"], "=C6=F7".unpack('M*'))
+
+    assert_equal(["pre123after"], "pre=31=32=33after".unpack("M"))
+    assert_equal(["preafter"], "pre=\nafter".unpack("M"))
+    assert_equal(["preafter"], "pre=\r\nafter".unpack("M"))
+    assert_equal(["pre="], "pre=".unpack("M"))
+    assert_equal(["pre=\r"], "pre=\r".unpack("M"))
+    assert_equal(["pre=hoge"], "pre=hoge".unpack("M"))
+    assert_equal(["pre==31after"], "pre==31after".unpack("M"))
+    assert_equal(["pre===31after"], "pre===31after".unpack("M"))
   end
 
   def test_pack_unpack_P2
@@ -595,16 +658,6 @@ class TestPack < Test::Unit::TestCase
     assert_equal([0x100000000], "\220\200\200\200\000".unpack("w"), [0x100000000])
   end
 
-  def test_modify_under_safe4
-    s = "foo"
-    assert_raise(SecurityError) do
-      Thread.new do
-        $SAFE = 4
-        s.clear
-      end.join
-    end
-  end
-
   def test_length_too_big
     assert_raise(RangeError) { [].pack("C100000000000000000000") }
   end
@@ -613,6 +666,65 @@ class TestPack < Test::Unit::TestCase
     %w[n N v V s S i I l L q Q s! S! i! I! l! l!].each {|fmt|
       str = [1].pack(fmt)
       assert_equal([1,nil], str.unpack("#{fmt}2"))
+    }
+  end
+
+  def test_short_with_block
+    bug4059 = '[ruby-core:33193]'
+    result = :ok
+    assert_nil("".unpack("i") {|x| result = x}, bug4059)
+    assert_equal(:ok, result)
+  end
+
+  def test_pack_garbage
+    verbose = $VERBOSE
+    $VERBOSE = false
+
+    assert_silent do
+      assert_equal "\000", [0].pack("*U")
+    end
+
+    $VERBOSE = true
+
+    _, err = capture_io do
+      assert_equal "\000", [0].pack("*U")
+    end
+
+    assert_match %r%unknown pack directive '\*' in '\*U'$%, err
+  ensure
+    $VERBOSE = verbose
+  end
+
+  def test_unpack_garbage
+    verbose = $VERBOSE
+    $VERBOSE = false
+
+    assert_silent do
+      assert_equal [0], "\000".unpack("*U")
+    end
+
+    $VERBOSE = true
+
+    _, err = capture_io do
+      assert_equal [0], "\000".unpack("*U")
+    end
+
+    assert_match %r%unknown unpack directive '\*' in '\*U'$%, err
+  ensure
+    $VERBOSE = verbose
+  end
+
+  def test_invalid_warning
+    assert_warning(/unknown pack directive ',' in ','/) {
+      [].pack(",")
+    }
+    assert_warning(/\A[ -~]+\Z/) {
+      [].pack("\x7f")
+    }
+    assert_warning(/\A(.* in '\u{3042}'\n)+\z/) {
+      EnvUtil.with_default_external(Encoding::UTF_8) {
+        [].pack("\u{3042}")
+      }
     }
   end
 end

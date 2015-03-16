@@ -55,12 +55,13 @@ class TestPrime < Test::Unit::TestCase
   end
 
   def test_new
-    buf = StringIO.new('', 'w')
-    orig, $stderr = $stderr, buf
+    orig_stderr, orig_verbose = $stderr, $VERBOSE
+
+    $stderr = buf = StringIO.new('', 'w')
+    $VERBOSE = false
 
     enum = Prime.new
-    assert !buf.string.empty?
-    $stderr = orig
+    assert_match("obsolete", buf.string)
 
     assert enum.respond_to?(:each)
     assert enum.kind_of?(Enumerable)
@@ -68,7 +69,8 @@ class TestPrime < Test::Unit::TestCase
 
     assert Prime === enum
   ensure
-    $stderr = orig
+    $stderr = orig_stderr
+    $VERBOSE = orig_verbose
   end
 
   def test_enumerator_succ
@@ -139,8 +141,8 @@ class TestPrime < Test::Unit::TestCase
 
       # negative
       assert !-1.prime?
-      assert(-2.prime?)
-      assert(-3.prime?)
+      assert !-2.prime?
+      assert !-3.prime?
       assert !-4.prime?
     end
   end
@@ -152,7 +154,7 @@ class TestPrime < Test::Unit::TestCase
       # simulates that Timeout.timeout interrupts Prime::EratosthenesSieve#extend_table
       def sieve.Integer(n)
         n = super(n)
-        sleep 10 if /extend_table/ =~ caller.first
+        sleep 10 if /compute_primes/ =~ caller.first
         return n
       end
 
@@ -167,6 +169,6 @@ class TestPrime < Test::Unit::TestCase
       end
     end
 
-    refute_includes Prime.each(7*37).to_a, 7*37, "[ruby-dev:39465]"
+    assert_not_include Prime.each(7*37).to_a, 7*37, "[ruby-dev:39465]"
   end
 end

@@ -1,4 +1,4 @@
-# -*- coding: euc-jp -*-
+# -*- coding: utf-8 -*-
 #
 # radio3.rb
 #
@@ -28,7 +28,7 @@ msg = TkLabel.new(base_frame) {
   font $font
   wraplength '5i'
   justify 'left'
-  text '²¼¤Ë¤Ï3¤Ä¤Î¥é¥¸¥ª¥Ü¥¿¥ó¥°¥ë¡¼¥×¤¬É½¼¨¤µ¤ì¤Æ¤¤¤Þ¤¹¡£¥Ü¥¿¥ó¤ò¥¯¥ê¥Ã¥¯¤¹¤ë¤È¡¢¤½¤Î¥°¥ë¡¼¥×¤ËÂ°¤¹¤ë¤¹¤Ù¤Æ¤Î¥Ü¥¿¥ó¤ÎÃæ¤Ç¥¯¥ê¥Ã¥¯¤·¤¿¥Ü¥¿¥ó¤À¤±¤¬ÁªÂò¤µ¤ì¤¿¾õÂÖ¤Ë¤Ê¤ê¤Þ¤¹¡£³Æ¥°¥ë¡¼¥×¤Ë¤Ï¡¢¤½¤Î¥°¥ë¡¼¥×¤ÎÃæ¤Î¤É¤Î¥Ü¥¿¥ó¤¬ÁªÂò¤µ¤ì¤Æ¤¤¤ë¤«¤ò¼¨¤¹ÊÑ¿ô¤¬³ä¤êÅö¤Æ¤é¤ì¤Æ¤¤¤Þ¤¹¡£¡Ö¥È¥é¥¤¥¹¥Æ¡¼¥È¡×¥Ü¥¿¥ó¤¬²¡¤µ¤ì¤¿¤È¤­¤Ë¤Ï¡¢¥é¥¸¥ª¥Ü¥¿¥ó¤ÎÉ½¼¨¤¬¥È¥é¥¤¥¹¥Æ¡¼¥È¥â¡¼¥É¤Ë¤Ê¤ê¤Þ¤¹¡£¤¤¤º¤ì¤«¤Î¥Ü¥¿¥ó¤òÁªÂò¤¹¤ì¤Ð¡¢¥Ü¥¿¥ó¤Î¾õÂÖ¤Ï¸µ¤Î¤è¤¦¤Ë¸Ä¡¹¤Î¥Ü¥¿¥ó¤Îon/off¾õÂÖ¤ò¼¨¤¹¤è¤¦¤Ë¤Ê¤ê¤Þ¤¹¡£¸½ºß¤ÎÊÑ¿ô¤ÎÃÍ¤ò¸«¤ë¤Ë¤Ï¡ÖÊÑ¿ô»²¾È¡×¥Ü¥¿¥ó¤ò¥¯¥ê¥Ã¥¯¤·¤Æ¤¯¤À¤µ¤¤¡£'
+  text 'ä¸‹ã«ã¯3ã¤ã®ãƒ©ã‚¸ã‚ªãƒœã‚¿ãƒ³ã‚°ãƒ«ãƒ¼ãƒ—ãŒè¡¨ç¤ºã•ã‚Œã¦ã„ã¾ã™ã€‚ãƒœã‚¿ãƒ³ã‚’ã‚¯ãƒªãƒƒã‚¯ã™ã‚‹ã¨ã€ãã®ã‚°ãƒ«ãƒ¼ãƒ—ã«å±žã™ã‚‹ã™ã¹ã¦ã®ãƒœã‚¿ãƒ³ã®ä¸­ã§ã‚¯ãƒªãƒƒã‚¯ã—ãŸãƒœã‚¿ãƒ³ã ã‘ãŒé¸æŠžã•ã‚ŒãŸçŠ¶æ…‹ã«ãªã‚Šã¾ã™ã€‚å„ã‚°ãƒ«ãƒ¼ãƒ—ã«ã¯ã€ãã®ã‚°ãƒ«ãƒ¼ãƒ—ã®ä¸­ã®ã©ã®ãƒœã‚¿ãƒ³ãŒé¸æŠžã•ã‚Œã¦ã„ã‚‹ã‹ã‚’ç¤ºã™å¤‰æ•°ãŒå‰²ã‚Šå½“ã¦ã‚‰ã‚Œã¦ã„ã¾ã™ã€‚ã€Œãƒˆãƒ©ã‚¤ã‚¹ãƒ†ãƒ¼ãƒˆã€ãƒœã‚¿ãƒ³ãŒæŠ¼ã•ã‚ŒãŸã¨ãã«ã¯ã€ãƒ©ã‚¸ã‚ªãƒœã‚¿ãƒ³ã®è¡¨ç¤ºãŒãƒˆãƒ©ã‚¤ã‚¹ãƒ†ãƒ¼ãƒˆãƒ¢ãƒ¼ãƒ‰ã«ãªã‚Šã¾ã™ã€‚ã„ãšã‚Œã‹ã®ãƒœã‚¿ãƒ³ã‚’é¸æŠžã™ã‚Œã°ã€ãƒœã‚¿ãƒ³ã®çŠ¶æ…‹ã¯å…ƒã®ã‚ˆã†ã«å€‹ã€…ã®ãƒœã‚¿ãƒ³ã®on/offçŠ¶æ…‹ã‚’ç¤ºã™ã‚ˆã†ã«ãªã‚Šã¾ã™ã€‚ç¾åœ¨ã®å¤‰æ•°ã®å€¤ã‚’è¦‹ã‚‹ã«ã¯ã€Œå¤‰æ•°å‚ç…§ã€ãƒœã‚¿ãƒ³ã‚’ã‚¯ãƒªãƒƒã‚¯ã—ã¦ãã ã•ã„ã€‚'
 }
 msg.grid(:row=>0, :column=>0, :columnspan=>3, :sticky=>'nsew')
 
@@ -42,16 +42,16 @@ TkFrame.new(base_frame) {|frame|
   TkGrid(TkFrame.new(frame, :height=>2, :relief=>:sunken, :bd=>2),
          :columnspan=>4, :row=>0, :sticky=>'ew', :pady=>2)
   TkGrid('x',
-         TkButton.new(frame, :text=>'ÊÑ¿ô»²¾È',
+         TkButton.new(frame, :text=>'å¤‰æ•°å‚ç…§',
                       :image=>$image['view'], :compound=>:left,
                       :command=>proc{
                         showVars(base_frame, ['size', size],
                                  ['color', color], ['compound', align])
                       }),
-         TkButton.new(frame, :text=>'¥³¡¼¥É»²¾È',
+         TkButton.new(frame, :text=>'ã‚³ãƒ¼ãƒ‰å‚ç…§',
                       :image=>$image['view'], :compound=>:left,
                       :command=>proc{showCode 'radio3'}),
-         TkButton.new(frame, :text=>'ÊÄ¤¸¤ë',
+         TkButton.new(frame, :text=>'é–‰ã˜ã‚‹',
                       :image=>$image['delete'], :compound=>:left,
                       :command=>proc{
                         tmppath = $radio3_demo
@@ -65,17 +65,17 @@ TkFrame.new(base_frame) {|frame|
 }
 
 # frame
-f_left  = TkLabelFrame.new(base_frame, 'text'=>'Ê¸»ú¥µ¥¤¥º',
+f_left  = TkLabelFrame.new(base_frame, 'text'=>'æ–‡å­—ã‚µã‚¤ã‚º',
                            'pady'=>2, 'padx'=>2)
-f_mid   = TkLabelFrame.new(base_frame, 'text'=>'¿§',
+f_mid   = TkLabelFrame.new(base_frame, 'text'=>'è‰²',
                            'pady'=>2, 'padx'=>2)
-f_right = TkLabelFrame.new(base_frame, 'text'=>'¥Ó¥Ã¥È¥Þ¥Ã¥×ÇÛÃÖ',
+f_right = TkLabelFrame.new(base_frame, 'text'=>'ãƒ“ãƒƒãƒˆãƒžãƒƒãƒ—é…ç½®',
                            'pady'=>2, 'padx'=>2)
 f_left .grid('column'=>0, 'row'=>1, 'pady'=>'.5c', 'padx'=>'.5c', 'rowspan'=>2)
 f_mid  .grid('column'=>1, 'row'=>1, 'pady'=>'.5c', 'padx'=>'.5c', 'rowspan'=>2)
 f_right.grid('column'=>2, 'row'=>1, 'pady'=>'.5c', 'padx'=>'.5c')
 
-TkButton.new(base_frame, 'text'=>'¥È¥é¥¤¥¹¥Æ¡¼¥È',
+TkButton.new(base_frame, 'text'=>'ãƒˆãƒ©ã‚¤ã‚¹ãƒ†ãƒ¼ãƒˆ',
              'command'=>proc{size.value = 'multi'; color.value = 'multi'}){
   grid('column'=>2, 'row'=>2, 'pady'=>'.5c', 'padx'=>'.5c')
 }
@@ -83,7 +83,7 @@ TkButton.new(base_frame, 'text'=>'¥È¥é¥¤¥¹¥Æ¡¼¥È',
 # radiobutton
 [10, 12, 14, 18, 24].each {|sz|
   TkRadioButton.new(f_left) {
-    text "¥Ý¥¤¥ó¥È¥µ¥¤¥º #{sz}"
+    text "ãƒã‚¤ãƒ³ãƒˆã‚µã‚¤ã‚º #{sz}"
     variable size
     relief 'flat'
     value sz
@@ -103,8 +103,8 @@ TkButton.new(base_frame, 'text'=>'¥È¥é¥¤¥¹¥Æ¡¼¥È',
   }.pack('side'=>'top', 'pady'=>2, 'fill'=>'x')
 }
 
-# label = TkLabel.new(f_right, 'text'=>'¥é¥Ù¥ë', 'bitmap'=>'questhead',
-label = Tk::Label.new(f_right, 'text'=>'¥é¥Ù¥ë', 'bitmap'=>'questhead',
+# label = TkLabel.new(f_right, 'text'=>'ãƒ©ãƒ™ãƒ«', 'bitmap'=>'questhead',
+label = Tk::Label.new(f_right, 'text'=>'ãƒ©ãƒ™ãƒ«', 'bitmap'=>'questhead',
                     'compound'=>'left')
 label.configure('width'=>TkWinfo.reqwidth(label), 'compound'=>'top')
 label.height(TkWinfo.reqheight(label))

@@ -1,15 +1,10 @@
-begin
-  require "openssl"
-rescue LoadError
-end
-require "digest/md5"
-require "test/unit"
+require_relative 'utils'
 
-if defined?(OpenSSL)
+if defined?(OpenSSL::TestUtils)
 
 class OpenSSL::TestDigest < Test::Unit::TestCase
   def setup
-    @d1 = OpenSSL::Digest::Digest::new("MD5")
+    @d1 = OpenSSL::Digest.new("MD5")
     @d2 = OpenSSL::Digest::MD5.new
     @md = Digest::MD5.new
     @data = "DATA"
@@ -61,6 +56,23 @@ class OpenSSL::TestDigest < Test::Unit::TestCase
     assert_equal(dig1, dig2, "reset")
   end
 
+  def test_digest_constants
+    algs = %w(DSS1 MD4 MD5 RIPEMD160 SHA SHA1)
+    if OpenSSL::OPENSSL_VERSION_NUMBER > 0x00908000
+      algs += %w(SHA224 SHA256 SHA384 SHA512)
+    end
+    algs.each do |alg|
+      assert_not_nil(OpenSSL::Digest.new(alg))
+      klass = OpenSSL::Digest.const_get(alg)
+      assert_not_nil(klass.new)
+    end
+  end
+
+  def test_digest_by_oid_and_name
+    check_digest(OpenSSL::ASN1::ObjectId.new("MD5"))
+    check_digest(OpenSSL::ASN1::ObjectId.new("SHA1"))
+  end
+
   if OpenSSL::OPENSSL_VERSION_NUMBER > 0x00908000
     def encode16(str)
       str.unpack("H*").first
@@ -82,6 +94,32 @@ class OpenSSL::TestDigest < Test::Unit::TestCase
       assert_equal(sha384_a, encode16(OpenSSL::Digest::SHA384.digest("a")))
       assert_equal(sha512_a, encode16(OpenSSL::Digest::SHA512.digest("a")))
     end
+
+    def test_digest_by_oid_and_name_sha2
+      check_digest(OpenSSL::ASN1::ObjectId.new("SHA224"))
+      check_digest(OpenSSL::ASN1::ObjectId.new("SHA256"))
+      check_digest(OpenSSL::ASN1::ObjectId.new("SHA384"))
+      check_digest(OpenSSL::ASN1::ObjectId.new("SHA512"))
+    end
+  end
+
+  def test_openssl_digest
+    assert_equal OpenSSL::Digest::MD5, OpenSSL::Digest("MD5")
+
+    assert_raises NameError do
+      OpenSSL::Digest("no such digest")
+    end
+  end
+
+  private
+
+  def check_digest(oid)
+    d = OpenSSL::Digest.new(oid.sn)
+    assert_not_nil(d)
+    d = OpenSSL::Digest.new(oid.ln)
+    assert_not_nil(d)
+    d = OpenSSL::Digest.new(oid.oid)
+    assert_not_nil(d)
   end
 end
 

@@ -69,7 +69,7 @@ class CountFrame < TkFrame
   def initialize(parent=nil,keys=nil)
     super(parent,keys)
     @counter = TkLabel.new(self,
-			   'text'=>$time, 
+			   'text'=>$time,
 			   'relief'=>'raised')
     @counter.pack('fill'=>'both')
     self

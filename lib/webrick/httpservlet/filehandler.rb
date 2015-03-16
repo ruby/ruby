@@ -18,11 +18,28 @@ require 'webrick/httpstatus'
 module WEBrick
   module HTTPServlet
 
+    ##
+    # Servlet for serving a single file.  You probably want to use the
+    # FileHandler servlet instead as it handles directories and fancy indexes.
+    #
+    # Example:
+    #
+    #   server.mount('/my_page.txt', WEBrick::HTTPServlet::DefaultFileHandler,
+    #                '/path/to/my_page.txt')
+    #
+    # This servlet handles If-Modified-Since and Range requests.
+
     class DefaultFileHandler < AbstractServlet
+
+      ##
+      # Creates a DefaultFileHandler instance for the file at +local_path+.
+
       def initialize(server, local_path)
         super(server, local_path)
         @local_path = local_path
       end
+
+      # :stopdoc:
 
       def do_GET(req, res)
         st = File::stat(@local_path)
@@ -123,18 +140,45 @@ module WEBrick
         last = filesize - 1 if last >= filesize
         return first, last
       end
+
+      # :startdoc:
     end
 
+    ##
+    # Serves a directory including fancy indexing and a variety of other
+    # options.
+    #
+    # Example:
+    #
+    #   server.mount '/assets', WEBrick::FileHandler, '/path/to/assets'
+
     class FileHandler < AbstractServlet
-      HandlerTable = Hash.new
+      HandlerTable = Hash.new # :nodoc:
+
+      ##
+      # Allow custom handling of requests for files with +suffix+ by class
+      # +handler+
 
       def self.add_handler(suffix, handler)
         HandlerTable[suffix] = handler
       end
 
+      ##
+      # Remove custom handling of requests for files with +suffix+
+
       def self.remove_handler(suffix)
         HandlerTable.delete(suffix)
       end
+
+      ##
+      # Creates a FileHandler servlet on +server+ that serves files starting
+      # at directory +root+
+      #
+      # +options+ may be a Hash containing keys from
+      # WEBrick::Config::FileHandler or +true+ or +false+.
+      #
+      # If +options+ is true or false then +:FancyIndexing+ is enabled or
+      # disabled respectively.
 
       def initialize(server, root, options={}, default=Config::FileHandler)
         @config = server.config
@@ -145,6 +189,8 @@ module WEBrick
         end
         @options = default.dup.update(options)
       end
+
+      # :stopdoc:
 
       def service(req, res)
         # if this class is mounted on "/" and /~username is requested.
@@ -378,11 +424,18 @@ module WEBrick
         }
         list.compact!
 
-        if    d0 = req.query["N"]; idx = 0
-        elsif d0 = req.query["M"]; idx = 1
-        elsif d0 = req.query["S"]; idx = 2
-        else  d0 = "A"           ; idx = 0
+        query = req.query
+
+        d0 = nil
+        idx = nil
+        %w[N M S].each_with_index do |q, i|
+          if d = query.delete(q)
+            idx ||= i
+            d0 ||= d
+          end
         end
+        d0 ||= "A"
+        idx ||= 0
         d1 = (d0 == "A") ? "D" : "A"
 
         if d0 == "A"
@@ -391,38 +444,66 @@ module WEBrick
           list.sort!{|a,b| b[idx] <=> a[idx] }
         end
 
-        res['content-type'] = "text/html"
+        namewidth = query["NameWidth"]
+        if namewidth == "*"
+          namewidth = nil
+        elsif !namewidth or (namewidth = namewidth.to_i) < 2
+          namewidth = 25
+        end
+        query = query.inject('') {|s, (k, v)| s << '&' << HTMLUtils::escape("#{k}=#{v}")}
 
+        type = "text/html"
+        case enc = Encoding.find('filesystem')
+        when Encoding::US_ASCII, Encoding::ASCII_8BIT
+        else
+          type << "; charset=\"#{enc.name}\""
+        end
+        res['content-type'] = type
+
+        title = "Index of #{HTMLUtils::escape(req.path)}"
         res.body = <<-_end_of_html_
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 <HTML>
-  <HEAD><TITLE>Index of #{HTMLUtils::escape(req.path)}</TITLE></HEAD>
+  <HEAD>
+    <TITLE>#{title}</TITLE>
+    <style type="text/css">
+    <!--
+    .name, .mtime { text-align: left; }
+    .size { text-align: right; }
+    td { text-overflow: ellipsis; white-space: nowrap; overflow: hidden; }
+    table { border-collapse: collapse; }
+    tr th { border-bottom: 2px groove; }
+    //-->
+    </style>
+  </HEAD>
   <BODY>
-    <H1>Index of #{HTMLUtils::escape(req.path)}</H1>
+    <H1>#{title}</H1>
         _end_of_html_
 
-        res.body << "<PRE>\n"
-        res.body << " <A HREF=\"?N=#{d1}\">Name</A>                          "
-        res.body << "<A HREF=\"?M=#{d1}\">Last modified</A>         "
-        res.body << "<A HREF=\"?S=#{d1}\">Size</A>\n"
-        res.body << "<HR>\n"
+        res.body << "<TABLE width=\"100%\"><THEAD><TR>\n"
+        res.body << "<TH class=\"name\"><A HREF=\"?N=#{d1}#{query}\">Name</A></TH>"
+        res.body << "<TH class=\"mtime\"><A HREF=\"?M=#{d1}#{query}\">Last modified</A></TH>"
+        res.body << "<TH class=\"size\"><A HREF=\"?S=#{d1}#{query}\">Size</A></TH>\n"
+        res.body << "</TR></THEAD>\n"
+        res.body << "<TBODY>\n"
 
+        query.sub!(/\A&/, '?')
         list.unshift [ "..", File::mtime(local_path+"/.."), -1 ]
         list.each{ |name, time, size|
           if name == ".."
             dname = "Parent Directory"
-          elsif name.bytesize > 25
-            dname = name.sub(/^(.{23})(?:.*)/, '\1..')
+          elsif namewidth and name.size > namewidth
+            dname = name[0...(namewidth - 2)] << '..'
           else
             dname = name
           end
-          s =  " <A HREF=\"#{HTTPUtils::escape(name)}\">#{HTMLUtils::escape(dname)}</A>"
-          s << " " * (30 - dname.bytesize)
-          s << (time ? time.strftime("%Y/%m/%d %H:%M      ") : " " * 22)
-          s << (size >= 0 ? size.to_s : "-") << "\n"
+          s =  "<TR><TD class=\"name\"><A HREF=\"#{HTTPUtils::escape(name)}#{query if name.end_with?('/')}\">#{HTMLUtils::escape(dname)}</A></TD>"
+          s << "<TD class=\"mtime\">" << (time ? time.strftime("%Y/%m/%d %H:%M") : "") << "</TD>"
+          s << "<TD class=\"size\">" << (size >= 0 ? size.to_s : "-") << "</TD></TR>\n"
           res.body << s
         }
-        res.body << "</PRE><HR>"
+        res.body << "</TBODY></TABLE>"
+        res.body << "<HR>"
 
         res.body << <<-_end_of_html_
     <ADDRESS>
@@ -434,6 +515,7 @@ module WEBrick
         _end_of_html_
       end
 
+      # :startdoc:
     end
   end
 end

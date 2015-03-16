@@ -1,11 +1,9 @@
-require 'rdoc/parser'
-require 'rdoc/parser/ruby'
-require 'rdoc/known_classes'
+require 'tsort'
 
 ##
-# We attempt to parse C extension files. Basically we look for
+# RDoc::Parser::C attempts to parse C extension files.  It looks for
 # the standard patterns that you find in extensions: <tt>rb_define_class,
-# rb_define_method</tt> and so on. We also try to find the corresponding
+# rb_define_method</tt> and so on.  It tries to find the corresponding
 # C source for the methods and extract comments, but if we fail
 # we don't worry too much.
 #
@@ -49,16 +47,45 @@ require 'rdoc/known_classes'
 #
 # The comment blocks may include special directives:
 #
-# [Document-class: <i>name</i>]
-#   This comment block is documentation for the given class. Use this
-#   when the <tt>Init_xxx</tt> method is not named after the class.
+# [Document-class: +name+]
+#   Documentation for the named class.
 #
-# [Document-method: <i>name</i>]
-#   This comment documents the named method. Use when RDoc cannot
-#   automatically find the method from it's declaration
+# [Document-module: +name+]
+#   Documentation for the named module.
+#
+# [Document-const: +name+]
+#   Documentation for the named +rb_define_const+.
+#
+#   Constant values can be supplied on the first line of the comment like so:
+#
+#     /* 300: The highest possible score in bowling */
+#     rb_define_const(cFoo, "PERFECT", INT2FIX(300));
+#
+#   The value can contain internal colons so long as they are escaped with a \
+#
+# [Document-global: +name+]
+#   Documentation for the named +rb_define_global_const+
+#
+# [Document-variable: +name+]
+#   Documentation for the named +rb_define_variable+
+#
+# [Document-method: +method_name+]
+#   Documentation for the named method.  Use this when the method name is
+#   unambiguous.
+#
+# [Document-method: <tt>ClassName::method_name<tt>]
+#   Documentation for a singleton method in the given class.  Use this when
+#   the method name alone is ambiguous.
+#
+# [Document-method: <tt>ClassName#method_name<tt>]
+#   Documentation for a instance method in the given class.  Use this when the
+#   method name alone is ambiguous.
+#
+# [Document-attr: +name+]
+#   Documentation for the named attribute.
 #
 # [call-seq:  <i>text up to an empty line</i>]
-#   Because C source doesn't give descripive names to Ruby-level parameters,
+#   Because C source doesn't give descriptive names to Ruby-level parameters,
 #   you need to document the calling sequence explicitly
 #
 # In addition, RDoc assumes by default that the C method implementing a
@@ -96,116 +123,341 @@ class RDoc::Parser::C < RDoc::Parser
   include RDoc::Text
 
   ##
+  # Maps C variable names to names of Ruby classes or modules
+
+  attr_reader :classes
+
+  ##
   # C file the parser is parsing
 
   attr_accessor :content
 
   ##
-  # Resets cross-file state.  Call when parsing different projects that need
-  # separate documentation.
+  # Dependencies from a missing enclosing class to the classes in
+  # missing_dependencies that depend upon it.
 
-  def self.reset
-    @@enclosure_classes = {}
-    @@known_bodies = {}
-  end
-
-  reset
+  attr_reader :enclosure_dependencies
 
   ##
-  # Prepare to parse a C file
+  # Maps C variable names to names of Ruby classes (and singleton classes)
 
-  def initialize(top_level, file_name, content, options, stats)
+  attr_reader :known_classes
+
+  ##
+  # Classes found while parsing the C file that were not yet registered due to
+  # a missing enclosing class.  These are processed by do_missing
+
+  attr_reader :missing_dependencies
+
+  ##
+  # Maps C variable names to names of Ruby singleton classes
+
+  attr_reader :singleton_classes
+
+  ##
+  # The TopLevel items in the parsed file belong to
+
+  attr_reader :top_level
+
+  ##
+  # Prepares for parsing a C file.  See RDoc::Parser#initialize for details on
+  # the arguments.
+
+  def initialize top_level, file_name, content, options, stats
     super
 
     @known_classes = RDoc::KNOWN_CLASSES.dup
-    @content = handle_tab_width handle_ifdefs_in(@content)
-    @classes = Hash.new
-    @file_dir = File.dirname(@file_name)
+    @content = handle_tab_width handle_ifdefs_in @content
+    @file_dir = File.dirname @file_name
+
+    @classes           = load_variable_map :c_class_variables
+    @singleton_classes = load_variable_map :c_singleton_class_variables
+
+    # class_variable => { function => [method, ...] }
+    @methods = Hash.new { |h, f| h[f] = Hash.new { |i, m| i[m] = [] } }
+
+    # missing variable => [handle_class_module arguments]
+    @missing_dependencies = {}
+
+    # missing enclosure variable => [dependent handle_class_module arguments]
+    @enclosure_dependencies = Hash.new { |h, k| h[k] = [] }
+    @enclosure_dependencies.instance_variable_set :@missing_dependencies,
+                                                  @missing_dependencies
+
+    @enclosure_dependencies.extend TSort
+
+    def @enclosure_dependencies.tsort_each_node &block
+      each_key(&block)
+    rescue TSort::Cyclic => e
+      cycle_vars = e.message.scan(/"(.*?)"/).flatten
+
+      cycle = cycle_vars.sort.map do |var_name|
+        delete var_name
+
+        var_name, type, mod_name, = @missing_dependencies[var_name]
+
+        "#{type} #{mod_name} (#{var_name})"
+      end.join ', '
+
+      warn "Unable to create #{cycle} due to a cyclic class or module creation"
+
+      retry
+    end
+
+    def @enclosure_dependencies.tsort_each_child node, &block
+      fetch(node, []).each(&block)
+    end
   end
+
+  ##
+  # Removes duplicate call-seq entries for methods using the same
+  # implementation.
+
+  def deduplicate_call_seq
+    @methods.each do |var_name, functions|
+      class_name = @known_classes[var_name]
+      class_obj  = find_class var_name, class_name
+
+      functions.each_value do |method_names|
+        next if method_names.length == 1
+
+        method_names.each do |method_name|
+          deduplicate_method_name class_obj, method_name
+        end
+      end
+    end
+  end
+
+  ##
+  # If two ruby methods share a C implementation (and comment) this
+  # deduplicates the examples in the call_seq for the method to reduce
+  # confusion in the output.
+
+  def deduplicate_method_name class_obj, method_name # :nodoc:
+    return unless
+      method = class_obj.method_list.find { |m| m.name == method_name }
+    return unless call_seq = method.call_seq
+
+    method_name = method_name[0, 1] if method_name =~ /\A\[/
+
+    entries = call_seq.split "\n"
+
+    matching = entries.select do |entry|
+      entry =~ /^\w*\.?#{Regexp.escape method_name}/ or
+        entry =~ /\s#{Regexp.escape method_name}\s/
+    end
+
+    method.call_seq = matching.join "\n"
+  end
+
+  ##
+  # Scans #content for rb_define_alias
 
   def do_aliases
-    @content.scan(%r{rb_define_alias\s*\(\s*(\w+),\s*"([^"]+)",\s*"([^"]+)"\s*\)}m) do
-      |var_name, new_name, old_name|
-      class_name = @known_classes[var_name] || var_name
-      class_obj  = find_class(var_name, class_name)
+    @content.scan(/rb_define_alias\s*\(
+                   \s*(\w+),
+                   \s*"(.+?)",
+                   \s*"(.+?)"
+                   \s*\)/xm) do |var_name, new_name, old_name|
+      class_name = @known_classes[var_name]
 
-      as = class_obj.add_alias RDoc::Alias.new("", old_name, new_name, "")
+      unless class_name then
+        @options.warn "Enclosing class or module %p for alias %s %s is not known" % [
+          var_name, new_name, old_name]
+        next
+      end
 
-      @stats.add_alias as
+      class_obj = find_class var_name, class_name
+
+      al = RDoc::Alias.new '', old_name, new_name, ''
+      al.singleton = @singleton_classes.key? var_name
+
+      comment = find_alias_comment var_name, new_name, old_name
+
+      comment.normalize
+
+      al.comment = comment
+
+      al.record_location @top_level
+
+      class_obj.add_alias al
+      @stats.add_alias al
     end
   end
 
-  def do_classes
-    @content.scan(/(\w+)\s* = \s*rb_define_module\s*\(\s*"(\w+)"\s*\)/mx) do
-      |var_name, class_name|
-      handle_class_module(var_name, "module", class_name, nil, nil)
+  ##
+  # Scans #content for rb_attr and rb_define_attr
+
+  def do_attrs
+    @content.scan(/rb_attr\s*\(
+                   \s*(\w+),
+                   \s*([\w"()]+),
+                   \s*([01]),
+                   \s*([01]),
+                   \s*\w+\);/xm) do |var_name, attr_name, read, write|
+      handle_attr var_name, attr_name, read, write
     end
 
+    @content.scan(%r%rb_define_attr\(
+                             \s*([\w\.]+),
+                             \s*"([^"]+)",
+                             \s*(\d+),
+                             \s*(\d+)\s*\);
+                %xm) do |var_name, attr_name, read, write|
+      handle_attr var_name, attr_name, read, write
+    end
+  end
+
+  ##
+  # Scans #content for boot_defclass
+
+  def do_boot_defclass
+    @content.scan(/(\w+)\s*=\s*boot_defclass\s*\(\s*"(\w+?)",\s*(\w+?)\s*\)/) do
+      |var_name, class_name, parent|
+      parent = nil if parent == "0"
+      handle_class_module(var_name, :class, class_name, parent, nil)
+    end
+  end
+
+  ##
+  # Scans #content for rb_define_class, boot_defclass, rb_define_class_under
+  # and rb_singleton_class
+
+  def do_classes
+    do_boot_defclass
+    do_define_class
+    do_define_class_under
+    do_singleton_class
+    do_struct_define_without_accessor
+  end
+
+  ##
+  # Scans #content for rb_define_variable, rb_define_readonly_variable,
+  # rb_define_const and rb_define_global_const
+
+  def do_constants
+    @content.scan(%r%\Wrb_define_
+                   ( variable          |
+                     readonly_variable |
+                     const             |
+                     global_const        )
+               \s*\(
+                 (?:\s*(\w+),)?
+                 \s*"(\w+)",
+                 \s*(.*?)\s*\)\s*;
+                 %xm) do |type, var_name, const_name, definition|
+      var_name = "rb_cObject" if !var_name or var_name == "rb_mKernel"
+      handle_constants type, var_name, const_name, definition
+    end
+
+    @content.scan(%r%
+                  \Wrb_curses_define_const
+                  \s*\(
+                    \s*
+                    (\w+)
+                    \s*
+                  \)
+                  \s*;%xm) do |consts|
+      const = consts.first
+
+      handle_constants 'const', 'mCurses', const, "UINT2NUM(#{const})"
+    end
+
+    @content.scan(%r%
+                  \Wrb_file_const
+                  \s*\(
+                    \s*
+                    "([^"]+)",
+                    \s*
+                    (.*?)
+                    \s*
+                  \)
+                  \s*;%xm) do |name, value|
+      handle_constants 'const', 'rb_mFConst', name, value
+    end
+  end
+
+  ##
+  # Scans #content for rb_define_class
+
+  def do_define_class
     # The '.' lets us handle SWIG-generated files
     @content.scan(/([\w\.]+)\s* = \s*rb_define_class\s*
               \(
                  \s*"(\w+)",
                  \s*(\w+)\s*
               \)/mx) do |var_name, class_name, parent|
-      handle_class_module(var_name, "class", class_name, parent, nil)
+      handle_class_module(var_name, :class, class_name, parent, nil)
     end
+  end
 
-    @content.scan(/(\w+)\s*=\s*boot_defclass\s*\(\s*"(\w+?)",\s*(\w+?)\s*\)/) do
-      |var_name, class_name, parent|
-      parent = nil if parent == "0"
-      handle_class_module(var_name, "class", class_name, parent, nil)
+  ##
+  # Scans #content for rb_define_class_under
+
+  def do_define_class_under
+    @content.scan(/([\w\.]+)\s* =                  # var_name
+                   \s*rb_define_class_under\s*
+                   \(
+                     \s* (\w+),                    # under
+                     \s* "(\w+)",                  # class_name
+                     \s*
+                     (?:
+                       ([\w\*\s\(\)\.\->]+) |      # parent_name
+                       rb_path2class\("([\w:]+)"\) # path
+                     )
+                     \s*
+                   \)
+                  /mx) do |var_name, under, class_name, parent_name, path|
+      parent = path || parent_name
+
+      handle_class_module var_name, :class, class_name, parent, under
     end
+  end
 
+  ##
+  # Scans #content for rb_define_module
+
+  def do_define_module
+    @content.scan(/(\w+)\s* = \s*rb_define_module\s*\(\s*"(\w+)"\s*\)/mx) do
+      |var_name, class_name|
+      handle_class_module(var_name, :module, class_name, nil, nil)
+    end
+  end
+
+  ##
+  # Scans #content for rb_define_module_under
+
+  def do_define_module_under
     @content.scan(/(\w+)\s* = \s*rb_define_module_under\s*
               \(
                  \s*(\w+),
                  \s*"(\w+)"
               \s*\)/mx) do |var_name, in_module, class_name|
-      handle_class_module(var_name, "module", class_name, nil, in_module)
-    end
-
-    @content.scan(/([\w\.]+)\s* = \s*rb_define_class_under\s*
-              \(
-                 \s*(\w+),
-                 \s*"(\w+)",
-                 \s*([\w\*\s\(\)\.\->]+)\s*  # for SWIG
-              \s*\)/mx) do |var_name, in_module, class_name, parent|
-      handle_class_module(var_name, "class", class_name, parent, in_module)
-    end
-  end
-
-  def do_constants
-    @content.scan(%r{\Wrb_define_
-                   ( variable          |
-                     readonly_variable |
-                     const             |
-                     global_const      | )
-               \s*\(
-                 (?:\s*(\w+),)?
-                 \s*"(\w+)",
-                 \s*(.*?)\s*\)\s*;
-                 }xm) do |type, var_name, const_name, definition|
-      var_name = "rb_cObject" if !var_name or var_name == "rb_mKernel"
-      handle_constants type, var_name, const_name, definition
+      handle_class_module(var_name, :module, class_name, nil, in_module)
     end
   end
 
   ##
-  # Look for includes of the form:
-  #
-  #   rb_include_module(rb_cArray, rb_mEnumerable);
+  # Scans #content for rb_include_module
 
   def do_includes
     @content.scan(/rb_include_module\s*\(\s*(\w+?),\s*(\w+?)\s*\)/) do |c,m|
-      if cls = @classes[c]
-        m = @known_classes[m] || m
-        cls.add_include RDoc::Include.new(m, "")
-      end
+      next unless cls = @classes[c]
+      m = @known_classes[m] || m
+
+      comment = RDoc::Comment.new '', @top_level
+      incl = cls.add_include RDoc::Include.new(m, comment)
+      incl.record_location @top_level
     end
   end
 
+  ##
+  # Scans #content for rb_define_method, rb_define_singleton_method,
+  # rb_define_module_function, rb_define_private_method,
+  # rb_define_global_function and define_filetest_function
+
   def do_methods
-    @content.scan(%r{rb_define_
+    @content.scan(%r%rb_define_
                    (
                       singleton_method |
                       method           |
@@ -214,84 +466,162 @@ class RDoc::Parser::C < RDoc::Parser
                    )
                    \s*\(\s*([\w\.]+),
                      \s*"([^"]+)",
-                     \s*(?:RUBY_METHOD_FUNC\(|VALUEFUNC\()?(\w+)\)?,
+                     \s*(?:RUBY_METHOD_FUNC\(|VALUEFUNC\(|\(METHOD\))?(\w+)\)?,
                      \s*(-?\w+)\s*\)
-                   (?:;\s*/[*/]\s+in\s+(\w+?\.[cy]))?
-                 }xm) do
-      |type, var_name, meth_name, meth_body, param_count, source_file|
+                   (?:;\s*/[*/]\s+in\s+(\w+?\.(?:cpp|c|y)))?
+                 %xm) do |type, var_name, meth_name, function, param_count, source_file|
 
       # Ignore top-object and weird struct.c dynamic stuff
       next if var_name == "ruby_top_self"
       next if var_name == "nstr"
-      next if var_name == "envtbl"
-      next if var_name == "argf"   # it'd be nice to handle this one
 
       var_name = "rb_cObject" if var_name == "rb_mKernel"
-      handle_method(type, var_name, meth_name, meth_body, param_count,
+      handle_method(type, var_name, meth_name, function, param_count,
                     source_file)
     end
 
-    @content.scan(%r{rb_define_attr\(
-                             \s*([\w\.]+),
-                             \s*"([^"]+)",
-                             \s*(\d+),
-                             \s*(\d+)\s*\);
-                }xm) do |var_name, attr_name, attr_reader, attr_writer|
-      #var_name = "rb_cObject" if var_name == "rb_mKernel"
-      handle_attr(var_name, attr_name,
-                  attr_reader.to_i != 0,
-                  attr_writer.to_i != 0)
-    end
-
-    @content.scan(%r{rb_define_global_function\s*\(
+    @content.scan(%r%rb_define_global_function\s*\(
                              \s*"([^"]+)",
                              \s*(?:RUBY_METHOD_FUNC\(|VALUEFUNC\()?(\w+)\)?,
                              \s*(-?\w+)\s*\)
                 (?:;\s*/[*/]\s+in\s+(\w+?\.[cy]))?
-                }xm) do |meth_name, meth_body, param_count, source_file|
-      handle_method("method", "rb_mKernel", meth_name,
-                    meth_body, param_count, source_file)
+                %xm) do |meth_name, function, param_count, source_file|
+      handle_method("method", "rb_mKernel", meth_name, function, param_count,
+                    source_file)
     end
 
     @content.scan(/define_filetest_function\s*\(
-                             \s*"([^"]+)",
-                             \s*(?:RUBY_METHOD_FUNC\(|VALUEFUNC\()?(\w+)\)?,
-                             \s*(-?\w+)\s*\)/xm) do
-      |meth_name, meth_body, param_count|
+                     \s*"([^"]+)",
+                     \s*(?:RUBY_METHOD_FUNC\(|VALUEFUNC\()?(\w+)\)?,
+                     \s*(-?\w+)\s*\)/xm) do |meth_name, function, param_count|
 
-      handle_method("method", "rb_mFileTest", meth_name, meth_body, param_count)
-      handle_method("singleton_method", "rb_cFile", meth_name, meth_body, param_count)
+      handle_method("method", "rb_mFileTest", meth_name, function, param_count)
+      handle_method("singleton_method", "rb_cFile", meth_name, function,
+                    param_count)
     end
   end
 
-  def find_attr_comment(attr_name)
-    if @content =~ %r{((?>/\*.*?\*/\s+))
-                   rb_define_attr\((?:\s*(\w+),)?\s*"#{attr_name}"\s*,.*?\)\s*;}xmi
-      $1
-    elsif @content =~ %r{Document-attr:\s#{attr_name}\s*?\n((?>.*?\*/))}m
-      $1
-    else
-      ''
+  ##
+  # Creates classes and module that were missing were defined due to the file
+  # order being different than the declaration order.
+
+  def do_missing
+    return if @missing_dependencies.empty?
+
+    @enclosure_dependencies.tsort.each do |in_module|
+      arguments = @missing_dependencies.delete in_module
+
+      next unless arguments # dependency on existing class
+
+      handle_class_module(*arguments)
     end
+  end
+
+  ##
+  # Scans #content for rb_define_module and rb_define_module_under
+
+  def do_modules
+    do_define_module
+    do_define_module_under
+  end
+
+  ##
+  # Scans #content for rb_singleton_class
+
+  def do_singleton_class
+    @content.scan(/([\w\.]+)\s* = \s*rb_singleton_class\s*
+                  \(
+                    \s*(\w+)
+                  \s*\)/mx) do |sclass_var, class_var|
+      handle_singleton sclass_var, class_var
+    end
+  end
+
+  ##
+  # Scans #content for struct_define_without_accessor
+
+  def do_struct_define_without_accessor
+    @content.scan(/([\w\.]+)\s* = \s*rb_struct_define_without_accessor\s*
+              \(
+                 \s*"(\w+)",  # Class name
+                 \s*(\w+),    # Parent class
+                 \s*\w+,      # Allocation function
+                 (\s*"\w+",)* # Attributes
+                 \s*NULL
+              \)/mx) do |var_name, class_name, parent|
+      handle_class_module(var_name, :class, class_name, parent, nil)
+    end
+  end
+
+  ##
+  # Finds the comment for an alias on +class_name+ from +new_name+ to
+  # +old_name+
+
+  def find_alias_comment class_name, new_name, old_name
+    content =~ %r%((?>/\*.*?\*/\s+))
+                  rb_define_alias\(\s*#{Regexp.escape class_name}\s*,
+                                   \s*"#{Regexp.escape new_name}"\s*,
+                                   \s*"#{Regexp.escape old_name}"\s*\);%xm
+
+    RDoc::Comment.new($1 || '', @top_level)
+  end
+
+  ##
+  # Finds a comment for rb_define_attr, rb_attr or Document-attr.
+  #
+  # +var_name+ is the C class variable the attribute is defined on.
+  # +attr_name+ is the attribute's name.
+  #
+  # +read+ and +write+ are the read/write flags ('1' or '0').  Either both or
+  # neither must be provided.
+
+  def find_attr_comment var_name, attr_name, read = nil, write = nil
+    attr_name = Regexp.escape attr_name
+
+    rw = if read and write then
+           /\s*#{read}\s*,\s*#{write}\s*/xm
+         else
+           /.*?/m
+         end
+
+    comment = if @content =~ %r%((?>/\*.*?\*/\s+))
+                                rb_define_attr\((?:\s*#{var_name},)?\s*
+                                                "#{attr_name}"\s*,
+                                                #{rw}\)\s*;%xm then
+                $1
+              elsif @content =~ %r%((?>/\*.*?\*/\s+))
+                                   rb_attr\(\s*#{var_name}\s*,
+                                            \s*#{attr_name}\s*,
+                                            #{rw},.*?\)\s*;%xm then
+                $1
+              elsif @content =~ %r%(/\*.*?(?:\s*\*\s*)?)
+                                   Document-attr:\s#{attr_name}\s*?\n
+                                   ((?>(.|\n)*?\*/))%x then
+                "#{$1}\n#{$2}"
+              else
+                ''
+              end
+
+    RDoc::Comment.new comment, @top_level
   end
 
   ##
   # Find the C code corresponding to a Ruby method
 
-  def find_body(class_name, meth_name, meth_obj, body, quiet = false)
-    case body
-    when %r"((?>/\*.*?\*/\s*))((?:(?:static|SWIGINTERN)\s+)?(?:intern\s+)?VALUE\s+#{meth_name}
-            \s*(\([^)]*\))([^;]|$))"xm
-      comment = $1
-      body_text = $2
-      params = $3
+  def find_body class_name, meth_name, meth_obj, file_content, quiet = false
+    case file_content
+    when %r%((?>/\*.*?\*/\s*)?)
+            ((?:(?:\w+)\s+)?
+             (?:intern\s+)?VALUE\s+#{meth_name}
+             \s*(\([^)]*\))([^;]|$))%xm then
+      comment = RDoc::Comment.new $1, @top_level
+      body = $2
+      offset, = $~.offset(2)
 
-      remove_private_comments comment if comment
+      comment.remove_private if comment
 
-      # see if we can find the whole body
-
-      re = Regexp.escape(body_text) + '[^(]*^\{.*?^\}'
-      body_text = $& if /#{re}/m =~ body
+      # try to find the whole body
+      body = $& if /#{Regexp.escape body}[^(]*?\{.*?^\}/m =~ file_content
 
       # The comment block may have been overridden with a 'Document-method'
       # block. This happens in the interpreter when multiple methods are
@@ -299,47 +629,69 @@ class RDoc::Parser::C < RDoc::Parser
       # distinct (for example Kernel.hash and Kernel.object_id share the same
       # implementation
 
-      override_comment = find_override_comment class_name, meth_obj.name
+      override_comment = find_override_comment class_name, meth_obj
       comment = override_comment if override_comment
 
+      comment.normalize
       find_modifiers comment, meth_obj if comment
 
       #meth_obj.params = params
       meth_obj.start_collecting_tokens
       tk = RDoc::RubyToken::Token.new nil, 1, 1
-      tk.set_text body_text
+      tk.set_text body
       meth_obj.add_token tk
-      meth_obj.comment = strip_stars comment
-    when %r{((?>/\*.*?\*/\s*))^\s*(\#\s*define\s+#{meth_name}\s+(\w+))}m
-      comment = $1
-      body_text = $2
-      find_body class_name, $3, meth_obj, body, true
+      meth_obj.comment = comment
+      meth_obj.offset  = offset
+      meth_obj.line    = file_content[0, offset].count("\n") + 1
+
+      body
+    when %r%((?>/\*.*?\*/\s*))^\s*(\#\s*define\s+#{meth_name}\s+(\w+))%m then
+      comment = RDoc::Comment.new $1, @top_level
+      body = $2
+      offset = $~.offset(2).first
+
+      find_body class_name, $3, meth_obj, file_content, true
+
+      comment.normalize
       find_modifiers comment, meth_obj
 
       meth_obj.start_collecting_tokens
       tk = RDoc::RubyToken::Token.new nil, 1, 1
-      tk.set_text body_text
+      tk.set_text body
       meth_obj.add_token tk
-      meth_obj.comment = strip_stars(comment) + meth_obj.comment.to_s
-    when %r{^\s*\#\s*define\s+#{meth_name}\s+(\w+)}m
-      unless find_body(class_name, $1, meth_obj, body, true)
-        warn "No definition for #{meth_name}" unless @options.quiet
-        return false
-      end
-    else
-      # No body, but might still have an override comment
-      comment = find_override_comment(class_name, meth_obj.name)
+      meth_obj.comment = comment
+      meth_obj.offset  = offset
+      meth_obj.line    = file_content[0, offset].count("\n") + 1
 
-      if comment
-        find_modifiers(comment, meth_obj)
-        meth_obj.comment = strip_stars comment
+      body
+    when %r%^\s*\#\s*define\s+#{meth_name}\s+(\w+)%m then
+      # with no comment we hope the aliased definition has it and use it's
+      # definition
+
+      body = find_body(class_name, $1, meth_obj, file_content, true)
+
+      return body if body
+
+      @options.warn "No definition for #{meth_name}"
+      false
+    else # No body, but might still have an override comment
+      comment = find_override_comment class_name, meth_obj
+
+      if comment then
+        comment.normalize
+        find_modifiers comment, meth_obj
+        meth_obj.comment = comment
+
+        ''
       else
-        warn "No definition for #{meth_name}" unless @options.quiet
-        return false
+        @options.warn "No definition for #{meth_name}"
+        false
       end
     end
-    true
   end
+
+  ##
+  # Finds a RDoc::NormalClass or RDoc::NormalModule for +raw_name+
 
   def find_class(raw_name, name)
     unless @classes[raw_name]
@@ -381,155 +733,190 @@ class RDoc::Parser::C < RDoc::Parser
   #    */
   #   VALUE cFoo = rb_define_class("Foo", rb_cObject);
 
-  def find_class_comment(class_name, class_mod)
+  def find_class_comment class_name, class_mod
     comment = nil
 
-    if @content =~ %r{
+    if @content =~ %r%
         ((?>/\*.*?\*/\s+))
         (static\s+)?
         void\s+
-        Init_#{class_name}\s*(?:_\(\s*)?\(\s*(?:void\s*)?\)}xmi then # )
+        Init_#{class_name}\s*(?:_\(\s*)?\(\s*(?:void\s*)?\)%xmi then
+      comment = $1.sub(%r%Document-(?:class|module):\s+#{class_name}%, '')
+    elsif @content =~ %r%Document-(?:class|module):\s+#{class_name}\s*?
+                         (?:<\s+[:,\w]+)?\n((?>.*?\*/))%xm then
+      comment = "/*\n#{$1}"
+    elsif @content =~ %r%((?>/\*.*?\*/\s+))
+                         ([\w\.\s]+\s* = \s+)?rb_define_(class|module)[\t (]*?"(#{class_name})"%xm then
       comment = $1
-    elsif @content =~ %r{Document-(?:class|module):\s+#{class_name}\s*?(?:<\s+[:,\w]+)?\n((?>.*?\*/))}m then
+    elsif @content =~ %r%((?>/\*.*?\*/\s+))
+                         ([\w\. \t]+ = \s+)?rb_define_(class|module)_under[\t\w, (]*?"(#{class_name.split('::').last})"%xm then
       comment = $1
-    elsif @content =~ %r{((?>/\*.*?\*/\s+))
-                         ([\w\.\s]+\s* = \s+)?rb_define_(class|module).*?"(#{class_name})"}xm then # "
-      comment = $1
+    else
+      comment = ''
     end
 
-    return unless comment
+    comment = RDoc::Comment.new comment, @top_level
+    comment.normalize
 
-    comment = strip_stars comment
+    look_for_directives_in class_mod, comment
 
-    comment = look_for_directives_in class_mod, comment
-
-    class_mod.comment = comment
+    class_mod.add_comment comment, @top_level
   end
 
   ##
   # Finds a comment matching +type+ and +const_name+ either above the
   # comment or in the matching Document- section.
 
-  def find_const_comment(type, const_name)
-    if @content =~ %r{((?>^\s*/\*.*?\*/\s+))
-                   rb_define_#{type}\((?:\s*(\w+),)?\s*"#{const_name}"\s*,.*?\)\s*;}xmi
-      $1
-    elsif @content =~ %r{Document-(?:const|global|variable):\s#{const_name}\s*?\n((?>.*?\*/))}m
-      $1
-    else
-      ''
-    end
+  def find_const_comment(type, const_name, class_name = nil)
+    comment = if @content =~ %r%((?>^\s*/\*.*?\*/\s+))
+                             rb_define_#{type}\((?:\s*(\w+),)?\s*
+                                                "#{const_name}"\s*,
+                                                .*?\)\s*;%xmi then
+                $1
+              elsif class_name and
+                    @content =~ %r%Document-(?:const|global|variable):\s
+                                   #{class_name}::#{const_name}
+                                   \s*?\n((?>.*?\*/))%xm then
+                "/*\n#{$1}"
+              elsif @content =~ %r%Document-(?:const|global|variable):
+                                   \s#{const_name}
+                                   \s*?\n((?>.*?\*/))%xm then
+                "/*\n#{$1}"
+              else
+                ''
+              end
+
+    RDoc::Comment.new comment, @top_level
   end
 
   ##
-  # If the comment block contains a section that looks like:
-  #
-  #    call-seq:
-  #        Array.new
-  #        Array.new(10)
-  #
-  # use it for the parameters.
+  # Handles modifiers in +comment+ and updates +meth_obj+ as appropriate.
 
-  def find_modifiers(comment, meth_obj)
-    if comment.sub!(/:nodoc:\s*^\s*\*?\s*$/m, '') or
-       comment.sub!(/\A\/\*\s*:nodoc:\s*\*\/\Z/, '')
-      meth_obj.document_self = false
-    end
-    if comment.sub!(/call-seq:(.*?)^\s*\*?\s*$/m, '') or
-       comment.sub!(/\A\/\*\s*call-seq:(.*?)\*\/\Z/, '')
-      seq = $1
-      seq.gsub!(/^\s*\*\s*/, '')
-      meth_obj.call_seq = seq
-    end
+  def find_modifiers comment, meth_obj
+    comment.normalize
+    comment.extract_call_seq meth_obj
+
+    look_for_directives_in meth_obj, comment
   end
 
-  def find_override_comment(class_name, meth_name)
-    name = Regexp.escape(meth_name)
-    if @content =~ %r{Document-method:\s+#{class_name}(?:\.|::|#)#{name}\s*?\n((?>.*?\*/))}m then
-      $1
-    elsif @content =~ %r{Document-method:\s#{name}\s*?\n((?>.*?\*/))}m then
-      $1
-    end
+  ##
+  # Finds a <tt>Document-method</tt> override for +meth_obj+ on +class_name+
+
+  def find_override_comment class_name, meth_obj
+    name = Regexp.escape meth_obj.name
+    prefix = Regexp.escape meth_obj.name_prefix
+
+    comment = if @content =~ %r%Document-method:
+                                \s+#{class_name}#{prefix}#{name}
+                                \s*?\n((?>.*?\*/))%xm then
+                "/*#{$1}"
+              elsif @content =~ %r%Document-method:
+                                   \s#{name}\s*?\n((?>.*?\*/))%xm then
+                "/*#{$1}"
+              end
+
+    return unless comment
+
+    RDoc::Comment.new comment, @top_level
   end
 
-  def handle_attr(var_name, attr_name, reader, writer)
+  ##
+  # Creates a new RDoc::Attr +attr_name+ on class +var_name+ that is either
+  # +read+, +write+ or both
+
+  def handle_attr(var_name, attr_name, read, write)
     rw = ''
-    rw << 'R' if reader
-    rw << 'W' if writer
+    rw << 'R' if '1' == read
+    rw << 'W' if '1' == write
 
     class_name = @known_classes[var_name]
 
     return unless class_name
 
-    class_obj = find_class(var_name, class_name)
+    class_obj = find_class var_name, class_name
 
-    if class_obj
-      comment = find_attr_comment(attr_name)
-      comment = strip_stars comment
-      att = RDoc::Attr.new '', attr_name, rw, comment
-      @stats.add_method att
-      class_obj.add_attribute(att)
-    end
+    return unless class_obj
+
+    comment = find_attr_comment var_name, attr_name
+    comment.normalize
+
+    name = attr_name.gsub(/rb_intern\("([^"]+)"\)/, '\1')
+
+    attr = RDoc::Attr.new '', name, rw, comment
+
+    attr.record_location @top_level
+    class_obj.add_attribute attr
+    @stats.add_attribute attr
   end
+
+  ##
+  # Creates a new RDoc::NormalClass or RDoc::NormalModule based on +type+
+  # named +class_name+ in +parent+ which was assigned to the C +var_name+.
 
   def handle_class_module(var_name, type, class_name, parent, in_module)
     parent_name = @known_classes[parent] || parent
 
     if in_module then
-      enclosure = @classes[in_module] || @@enclosure_classes[in_module]
+      enclosure = @classes[in_module] || @store.find_c_enclosure(in_module)
 
       if enclosure.nil? and enclosure = @known_classes[in_module] then
-        type = /^rb_m/ =~ in_module ? "module" : "class"
-        handle_class_module in_module, type, enclosure, nil, nil
+        enc_type = /^rb_m/ =~ in_module ? :module : :class
+        handle_class_module in_module, enc_type, enclosure, nil, nil
         enclosure = @classes[in_module]
       end
 
       unless enclosure then
-        warn "Enclosing class/module '#{in_module}' for #{type} #{class_name} not known"
+        @enclosure_dependencies[in_module] << var_name
+        @missing_dependencies[var_name] =
+          [var_name, type, class_name, parent, in_module]
+
         return
       end
     else
       enclosure = @top_level
     end
 
-    if type == "class" then
+    if type == :class then
       full_name = if RDoc::ClassModule === enclosure then
                     enclosure.full_name + "::#{class_name}"
                   else
                     class_name
                   end
 
-      if @content =~ %r{Document-class:\s+#{full_name}\s*<\s+([:,\w]+)} then
+      if @content =~ %r%Document-class:\s+#{full_name}\s*<\s+([:,\w]+)% then
         parent_name = $1
       end
 
       cm = enclosure.add_class RDoc::NormalClass, class_name, parent_name
-
-      @stats.add_class cm
     else
       cm = enclosure.add_module RDoc::NormalModule, class_name
-      @stats.add_module cm
     end
 
     cm.record_location enclosure.top_level
 
     find_class_comment cm.full_name, cm
 
+    case cm
+    when RDoc::NormalClass
+      @stats.add_class cm
+    when RDoc::NormalModule
+      @stats.add_module cm
+    end
+
     @classes[var_name] = cm
-    @@enclosure_classes[var_name] = cm
     @known_classes[var_name] = cm.full_name
+    @store.add_c_enclosure var_name, cm
   end
 
   ##
-  # Adds constant comments.  By providing some_value: at the start ofthe
-  # comment you can override the C value of the comment to give a friendly
-  # definition.
+  # Adds constants.  By providing some_value: at the start of the comment you
+  # can override the C value of the comment to give a friendly definition.
   #
   #   /* 300: The perfect score in bowling */
   #   rb_define_const(cFoo, "PERFECT", INT2FIX(300);
   #
-  # Will override +INT2FIX(300)+ with the value +300+ in the output RDoc.
-  # Values may include quotes and escaped colons (\:).
+  # Will override <tt>INT2FIX(300)</tt> with the value +300+ in the output
+  # RDoc.  Values may include quotes and escaped colons (\:).
 
   def handle_constants(type, var_name, const_name, definition)
     class_name = @known_classes[var_name]
@@ -539,25 +926,20 @@ class RDoc::Parser::C < RDoc::Parser
     class_obj = find_class var_name, class_name
 
     unless class_obj then
-      warn "Enclosing class/module #{const_name.inspect} not known"
+      @options.warn 'Enclosing class or module %p is not known' % [const_name]
       return
     end
 
-    comment = find_const_comment type, const_name
-    comment = strip_stars comment
-    comment = normalize_comment comment
+    comment = find_const_comment type, const_name, class_name
+    comment.normalize
 
     # In the case of rb_define_const, the definition and comment are in
     # "/* definition: comment */" form.  The literal ':' and '\' characters
     # can be escaped with a backslash.
     if type.downcase == 'const' then
-      elements = comment.split ':'
+      no_match, new_definition, new_comment = comment.text.split(/(\A.*):/)
 
-      if elements.nil? or elements.empty? then
-        con = RDoc::Constant.new const_name, definition, comment
-      else
-        new_definition = elements[0..-2].join(':')
-
+      if no_match and no_match.empty? then
         if new_definition.empty? then # Default to literal C definition
           new_definition = definition
         else
@@ -567,18 +949,19 @@ class RDoc::Parser::C < RDoc::Parser
 
         new_definition.sub!(/\A(\s+)/, '')
 
-        new_comment = if $1.nil? then
-                        elements.last.lstrip
-                      else
-                        "#{$1}#{elements.last.lstrip}"
-                      end
+        new_comment = "#{$1}#{new_comment.lstrip}"
+
+        new_comment = RDoc::Comment.new new_comment, @top_level
 
         con = RDoc::Constant.new const_name, new_definition, new_comment
+      else
+        con = RDoc::Constant.new const_name, definition, comment
       end
     else
       con = RDoc::Constant.new const_name, definition, comment
     end
 
+    con.record_location @top_level
     @stats.add_constant con
     class_obj.add_constant con
   end
@@ -590,46 +973,61 @@ class RDoc::Parser::C < RDoc::Parser
     body.gsub(/^#ifdef HAVE_PROTOTYPES.*?#else.*?\n(.*?)#endif.*?\n/m, '\1')
   end
 
-  def handle_method(type, var_name, meth_name, meth_body, param_count,
+  ##
+  # Adds an RDoc::AnyMethod +meth_name+ defined on a class or module assigned
+  # to +var_name+.  +type+ is the type of method definition function used.
+  # +singleton_method+ and +module_function+ create a singleton method.
+
+  def handle_method(type, var_name, meth_name, function, param_count,
                     source_file = nil)
     class_name = @known_classes[var_name]
+    singleton  = @singleton_classes.key? var_name
+
+    @methods[var_name][function] << meth_name
 
     return unless class_name
 
     class_obj = find_class var_name, class_name
 
     if class_obj then
-      if meth_name == "initialize" then
-        meth_name = "new"
-        type = "singleton_method"
+      if meth_name == 'initialize' then
+        meth_name = 'new'
+        singleton = true
+        type = 'method' # force public
       end
 
       meth_obj = RDoc::AnyMethod.new '', meth_name
-      meth_obj.singleton = %w[singleton_method module_function].include? type
+      meth_obj.c_function = function
+      meth_obj.singleton =
+        singleton || %w[singleton_method module_function].include?(type)
 
       p_count = Integer(param_count) rescue -1
-
-      if p_count < 0 then
-        meth_obj.params = "(...)"
-      elsif p_count == 0
-        meth_obj.params = "()"
-      else
-        meth_obj.params = "(" + (1..p_count).map{|i| "p#{i}"}.join(", ") + ")"
-      end
 
       if source_file then
         file_name = File.join @file_dir, source_file
 
         if File.exist? file_name then
-          body = (@@known_bodies[file_name] ||= File.read(file_name))
+          file_content = File.read file_name
         else
-          warn "unknown source #{source_file} for #{meth_name} in #{@file_name}"
+          @options.warn "unknown source #{source_file} for #{meth_name} in #{@file_name}"
         end
       else
-        body = @content
+        file_content = @content
       end
 
-      if find_body(class_name, meth_body, meth_obj, body) and meth_obj.document_self then
+      body = find_body class_name, function, meth_obj, file_content
+
+      if body and meth_obj.document_self then
+        meth_obj.params = if p_count < -1 then # -2 is Array
+                            '(*args)'
+                          elsif p_count == -1 then # argc, argv
+                            rb_scan_args body
+                          else
+                            "(#{(1..p_count).map { |i| "p#{i}" }.join ', '})"
+                          end
+
+
+        meth_obj.record_location @top_level
         class_obj.add_method meth_obj
         @stats.add_method meth_obj
         meth_obj.visibility = :private if 'private_method' == type
@@ -637,16 +1035,55 @@ class RDoc::Parser::C < RDoc::Parser
     end
   end
 
+  ##
+  # Registers a singleton class +sclass_var+ as a singleton of +class_var+
+
+  def handle_singleton sclass_var, class_var
+    class_name = @known_classes[class_var]
+
+    @known_classes[sclass_var]     = class_name
+    @singleton_classes[sclass_var] = class_name
+  end
+
+  ##
+  # Normalizes tabs in +body+
+
   def handle_tab_width(body)
     if /\t/ =~ body
       tab_width = @options.tab_width
       body.split(/\n/).map do |line|
-        1 while line.gsub!(/\t+/) { ' ' * (tab_width*$&.length - $`.length % tab_width)}  && $~ #`
+        1 while line.gsub!(/\t+/) do
+          ' ' * (tab_width * $&.length - $`.length % tab_width)
+        end && $~
         line
-      end .join("\n")
+      end.join "\n"
     else
       body
     end
+  end
+
+  ##
+  # Loads the variable map with the given +name+ from the RDoc::Store, if
+  # present.
+
+  def load_variable_map map_name
+    return {} unless files = @store.cache[map_name]
+    return {} unless name_map = files[@file_name]
+
+    class_map = {}
+
+    name_map.each do |variable, name|
+      next unless mod = @store.find_class_or_module(name)
+
+      class_map[variable] = if map_name == :c_class_variables then
+                              mod
+                            else
+                              name
+                            end
+      @known_classes[variable] = name
+    end
+
+    class_map
   end
 
   ##
@@ -656,48 +1093,135 @@ class RDoc::Parser::C < RDoc::Parser
   #    * :title: My Awesome Project
   #    */
   #
-  # This routine modifies it's parameter
+  # This method modifies the +comment+
 
-  def look_for_directives_in(context, comment)
-    preprocess = RDoc::Markup::PreProcess.new @file_name, @options.rdoc_include
-
-    preprocess.handle comment, context do |directive, param|
+  def look_for_directives_in context, comment
+    @preprocess.handle comment, context do |directive, param|
       case directive
       when 'main' then
         @options.main_page = param
         ''
       when 'title' then
-        @options.title = param
+        @options.default_title = param if @options.respond_to? :default_title=
         ''
       end
     end
 
     comment
   end
+
+  ##
+  # Extracts parameters from the +method_body+ and returns a method
+  # parameter string.  Follows 1.9.3dev's scan-arg-spec, see README.EXT
+
+  def rb_scan_args method_body
+    method_body =~ /rb_scan_args\((.*?)\)/m
+    return '(*args)' unless $1
+
+    $1.split(/,/)[2] =~ /"(.*?)"/ # format argument
+    format = $1.split(//)
+
+    lead = opt = trail = 0
+
+    if format.first =~ /\d/ then
+      lead = $&.to_i
+      format.shift
+      if format.first =~ /\d/ then
+        opt = $&.to_i
+        format.shift
+        if format.first =~ /\d/ then
+          trail = $&.to_i
+          format.shift
+          block_arg = true
+        end
+      end
+    end
+
+    if format.first == '*' and not block_arg then
+      var = true
+      format.shift
+      if format.first =~ /\d/ then
+        trail = $&.to_i
+        format.shift
+      end
+    end
+
+    if format.first == ':' then
+      hash = true
+      format.shift
+    end
+
+    if format.first == '&' then
+      block = true
+      format.shift
+    end
+
+    # if the format string is not empty there's a bug in the C code, ignore it
+
+    args = []
+    position = 1
+
+    (1...(position + lead)).each do |index|
+      args << "p#{index}"
+    end
+
+    position += lead
+
+    (position...(position + opt)).each do |index|
+      args << "p#{index} = v#{index}"
+    end
+
+    position += opt
+
+    if var then
+      args << '*args'
+      position += 1
+    end
+
+    (position...(position + trail)).each do |index|
+      args << "p#{index}"
+    end
+
+    position += trail
+
+    if hash then
+      args << "p#{position} = {}"
+    end
+
+    args << '&block' if block
+
+    "(#{args.join ', '})"
+  end
+
   ##
   # Removes lines that are commented out that might otherwise get picked up
   # when scanning for classes and methods
 
   def remove_commented_out_lines
-    @content.gsub!(%r{//.*rb_define_}, '//')
-  end
-
-  def remove_private_comments(comment)
-    comment.gsub!(/\/?\*--\n(.*?)\/?\*\+\+/m, '')
-    comment.sub!(/\/?\*--\n.*/m, '')
+    @content.gsub!(%r%//.*rb_define_%, '//')
   end
 
   ##
-  # Extract the classes/modules and methods from a C file and return the
-  # corresponding top-level object
+  # Extracts the classes, modules, methods, attributes, constants and aliases
+  # from a C file and returns an RDoc::TopLevel for this file
 
   def scan
     remove_commented_out_lines
+
+    do_modules
     do_classes
+    do_missing
+
     do_constants
     do_methods
     do_includes
     do_aliases
+    do_attrs
+
+    deduplicate_call_seq
+
+    @store.add_c_variables self
+
     @top_level
   end
 

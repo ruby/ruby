@@ -1,7 +1,7 @@
 require "erb"
 
 require "test/unit"
-require 'rss-assertions'
+require_relative 'rss-assertions'
 
 require "rss"
 
@@ -186,7 +186,7 @@ EORSS
         elems = ["<link>#{res}</link>"]
         elems << "<title>title of #{res}</title>"
         elems = elems.join("\n")
-        item = "<item>\n#{elems}\n</item>"
+        "<item>\n#{elems}\n</item>"
       end.join("\n")
     end
 

@@ -16,6 +16,12 @@ class Addrinfo
       raise ArgumentError, "no address specified"
     elsif Addrinfo === args.first
       raise ArgumentError, "too many arguments" if args.length != 1
+      addrinfo = args.first
+      if (self.pfamily != addrinfo.pfamily) ||
+         (self.socktype != addrinfo.socktype)
+        raise ArgumentError, "Addrinfo type mismatch"
+      end
+      addrinfo
     elsif self.ip?
       raise ArgumentError, "IP address needs host and port but #{args.length} arguments given" if args.length != 2
       host, port = args
@@ -29,30 +35,67 @@ class Addrinfo
     end
   end
 
-  def connect_internal(local_addrinfo)
+  # creates a new Socket connected to the address of +local_addrinfo+.
+  #
+  # If _local_addrinfo_ is nil, the address of the socket is not bound.
+  #
+  # The _timeout_ specify the seconds for timeout.
+  # Errno::ETIMEDOUT is raised when timeout occur.
+  #
+  # If a block is given the created socket is yielded for each address.
+  #
+  def connect_internal(local_addrinfo, timeout=nil) # :yields: socket
     sock = Socket.new(self.pfamily, self.socktype, self.protocol)
     begin
       sock.ipv6only! if self.ipv6?
       sock.bind local_addrinfo if local_addrinfo
-      sock.connect(self)
-      if block_given?
-        yield sock
+      if timeout
+        begin
+          sock.connect_nonblock(self)
+        rescue IO::WaitWritable
+          if !IO.select(nil, [sock], nil, timeout)
+            raise Errno::ETIMEDOUT, 'user specified timeout'
+          end
+          begin
+            sock.connect_nonblock(self) # check connection failure
+          rescue Errno::EISCONN
+          end
+        end
       else
-        sock
+        sock.connect(self)
       end
-    ensure
-      sock.close if !sock.closed? && (block_given? || $!)
+    rescue Exception
+      sock.close
+      raise
+    end
+    if block_given?
+      begin
+        yield sock
+      ensure
+        sock.close if !sock.closed?
+      end
+    else
+      sock
     end
   end
   private :connect_internal
 
+  # :call-seq:
+  #   addrinfo.connect_from([local_addr_args], [opts]) {|socket| ... }
+  #   addrinfo.connect_from([local_addr_args], [opts])
+  #
   # creates a socket connected to the address of self.
   #
   # If one or more arguments given as _local_addr_args_,
   # it is used as the local address of the socket.
   # _local_addr_args_ is given for family_addrinfo to obtain actual address.
   #
-  # If no arguments given, the local address of the socket is not bound.
+  # If _local_addr_args_ is not given, the local address of the socket is not bound.
+  #
+  # The optional last argument _opts_ is options represented by a hash.
+  # _opts_ may have following options:
+  #
+  # [:timeout] specify the timeout in seconds.
   #
   # If a block is given, it is called with the socket and the value of the block is returned.
   # The socket is returned otherwise.
@@ -68,11 +111,22 @@ class Addrinfo
   #     puts s.read
   #   }
   #
-  def connect_from(*local_addr_args, &block)
-    connect_internal(family_addrinfo(*local_addr_args), &block)
+  def connect_from(*args, &block)
+    opts = Hash === args.last ? args.pop : {}
+    local_addr_args = args
+    connect_internal(family_addrinfo(*local_addr_args), opts[:timeout], &block)
   end
 
+  # :call-seq:
+  #   addrinfo.connect([opts]) {|socket| ... }
+  #   addrinfo.connect([opts])
+  #
   # creates a socket connected to the address of self.
+  #
+  # The optional argument _opts_ is options represented by a hash.
+  # _opts_ may have following options:
+  #
+  # [:timeout] specify the timeout in seconds.
   #
   # If a block is given, it is called with the socket and the value of the block is returned.
   # The socket is returned otherwise.
@@ -82,11 +136,20 @@ class Addrinfo
   #     puts s.read
   #   }
   #
-  def connect(&block)
-    connect_internal(nil, &block)
+  def connect(opts={}, &block)
+    connect_internal(nil, opts[:timeout], &block)
   end
 
+  # :call-seq:
+  #   addrinfo.connect_to([remote_addr_args], [opts]) {|socket| ... }
+  #   addrinfo.connect_to([remote_addr_args], [opts])
+  #
   # creates a socket connected to _remote_addr_args_ and bound to self.
+  #
+  # The optional last argument _opts_ is options represented by a hash.
+  # _opts_ may have following options:
+  #
+  # [:timeout] specify the timeout in seconds.
   #
   # If a block is given, it is called with the socket and the value of the block is returned.
   # The socket is returned otherwise.
@@ -96,9 +159,11 @@ class Addrinfo
   #     puts s.read
   #   }
   #
-  def connect_to(*remote_addr_args, &block)
+  def connect_to(*args, &block)
+    opts = Hash === args.last ? args.pop : {}
+    remote_addr_args = args
     remote_addrinfo = family_addrinfo(*remote_addr_args)
-    remote_addrinfo.send(:connect_internal, self, &block)
+    remote_addrinfo.send(:connect_internal, self, opts[:timeout], &block)
   end
 
   # creates a socket bound to self.
@@ -117,31 +182,41 @@ class Addrinfo
       sock.ipv6only! if self.ipv6?
       sock.setsockopt(:SOCKET, :REUSEADDR, 1)
       sock.bind(self)
-      if block_given?
+    rescue Exception
+      sock.close
+      raise
+    end
+    if block_given?
+      begin
         yield sock
-      else
-        sock
+      ensure
+        sock.close if !sock.closed?
       end
-    ensure
-      sock.close if !sock.closed? && (block_given? || $!)
+    else
+      sock
     end
   end
 
   # creates a listening socket bound to self.
-  def listen(backlog=5)
+  def listen(backlog=Socket::SOMAXCONN)
     sock = Socket.new(self.pfamily, self.socktype, self.protocol)
     begin
       sock.ipv6only! if self.ipv6?
       sock.setsockopt(:SOCKET, :REUSEADDR, 1)
       sock.bind(self)
       sock.listen(backlog)
-      if block_given?
+    rescue Exception
+      sock.close
+      raise
+    end
+    if block_given?
+      begin
         yield sock
-      else
-        sock
+      ensure
+        sock.close if !sock.closed?
       end
-    ensure
-      sock.close if !sock.closed? && (block_given? || $!)
+    else
+      sock
     end
   end
 
@@ -210,10 +285,19 @@ class Socket < BasicSocket
     end
   end
 
+  # :call-seq:
+  #   Socket.tcp(host, port, local_host=nil, local_port=nil, [opts]) {|socket| ... }
+  #   Socket.tcp(host, port, local_host=nil, local_port=nil, [opts])
+  #
   # creates a new socket object connected to host:port using TCP/IP.
   #
   # If local_host:local_port is given,
   # the socket is bound to it.
+  #
+  # The optional last argument _opts_ is options represented by a hash.
+  # _opts_ may have following options:
+  #
+  # [:connect_timeout] specify the timeout in seconds.
   #
   # If a block is given, the block is called with the socket.
   # The value of the block is returned.
@@ -227,9 +311,14 @@ class Socket < BasicSocket
   #     puts sock.read
   #   }
   #
-  def self.tcp(host, port, local_host=nil, local_port=nil) # :yield: socket
+  def self.tcp(host, port, *rest) # :yield: socket
+    opts = Hash === rest.last ? rest.pop : {}
+    raise ArgumentError, "wrong number of arguments (#{rest.length} for 2)" if 2 < rest.length
+    local_host, local_port = rest
     last_error = nil
     ret = nil
+
+    connect_timeout = opts[:connect_timeout]
 
     local_addr_list = nil
     if local_host != nil || local_port != nil
@@ -244,7 +333,9 @@ class Socket < BasicSocket
         local_addr = nil
       end
       begin
-        sock = local_addr ? ai.connect_from(local_addr) : ai.connect
+        sock = local_addr ?
+          ai.connect_from(local_addr, :timeout => connect_timeout) :
+          ai.connect(:timeout => connect_timeout)
       rescue SystemCallError
         last_error = $!
         next
@@ -272,8 +363,9 @@ class Socket < BasicSocket
 
   # :stopdoc:
   def self.ip_sockets_port0(ai_list, reuseaddr)
+    sockets = []
     begin
-      sockets = []
+      sockets.clear
       port = nil
       ai_list.each {|ai|
         begin
@@ -294,14 +386,13 @@ class Socket < BasicSocket
         end
       }
     rescue Errno::EADDRINUSE
-      sockets.each {|s|
-        s.close
-      }
+      sockets.each {|s| s.close }
       retry
+    rescue Exception
+      sockets.each {|s| s.close }
+      raise
     end
     sockets
-  ensure
-    sockets.each {|s| s.close if !s.closed? } if $!
   end
   class << self
     private :ip_sockets_port0
@@ -310,12 +401,15 @@ class Socket < BasicSocket
   def self.tcp_server_sockets_port0(host)
     ai_list = Addrinfo.getaddrinfo(host, 0, nil, :STREAM, nil, Socket::AI_PASSIVE)
     sockets = ip_sockets_port0(ai_list, true)
-    sockets.each {|s|
-      s.listen(5)
-    }
+    begin
+      sockets.each {|s|
+        s.listen(Socket::SOMAXCONN)
+      }
+    rescue Exception
+      sockets.each {|s| s.close }
+      raise
+    end
     sockets
-  ensure
-    sockets.each {|s| s.close if !s.closed? } if $! && sockets
   end
   class << self
     private :tcp_server_sockets_port0
@@ -332,7 +426,7 @@ class Socket < BasicSocket
   # The value of the block is returned.
   # The socket is closed when this method returns.
   #
-  # If _port_ is 0, actual port number is choosen dynamically.
+  # If _port_ is 0, actual port number is chosen dynamically.
   # However all sockets in the result has same port number.
   #
   #   # tcp_server_sockets returns two sockets.
@@ -344,7 +438,7 @@ class Socket < BasicSocket
   #   #=> #<Addrinfo: [::]:1296 TCP>
   #   #   #<Addrinfo: 0.0.0.0:1296 TCP>
   #
-  #   # IPv6 and IPv4 socket has same port number, 53114, even if it is choosen dynamically.
+  #   # IPv6 and IPv4 socket has same port number, 53114, even if it is chosen dynamically.
   #   sockets = Socket.tcp_server_sockets(0)
   #   sockets.each {|s| p s.local_address }
   #   #=> #<Addrinfo: [::]:53114 TCP>
@@ -359,9 +453,9 @@ class Socket < BasicSocket
     if port == 0
       sockets = tcp_server_sockets_port0(host)
     else
+      last_error = nil
+      sockets = []
       begin
-        last_error = nil
-        sockets = []
         Addrinfo.foreach(host, port, nil, :STREAM, nil, Socket::AI_PASSIVE) {|ai|
           begin
             s = ai.listen
@@ -374,8 +468,9 @@ class Socket < BasicSocket
         if sockets.empty?
           raise last_error
         end
-      ensure
-        sockets.each {|s| s.close if !s.closed? } if $!
+      rescue Exception
+        sockets.each {|s| s.close }
+        raise
       end
     end
     if block_given?
@@ -474,8 +569,8 @@ class Socket < BasicSocket
   # The value of the block is returned.
   # The sockets are closed when this method returns.
   #
-  # If _port_ is zero, some port is choosen.
-  # But the choosen port is used for the all sockets.
+  # If _port_ is zero, some port is chosen.
+  # But the chosen port is used for the all sockets.
   #
   #   # UDP/IP echo server
   #   Socket.udp_server_sockets(0) {|sockets|
@@ -535,12 +630,10 @@ class Socket < BasicSocket
       end
     end
 
-    pktinfo_sockets = {}
     sockets.each {|s|
       ai = s.local_address
       if ipv6_recvpktinfo && ai.ipv6? && ai.ip_address == "::"
         s.setsockopt(:IPV6, ipv6_recvpktinfo, 1)
-        pktinfo_sockets[s] = true
       end
     }
 
@@ -639,17 +732,28 @@ class Socket < BasicSocket
 
   # UDP/IP address information used by Socket.udp_server_loop.
   class UDPSource
+    # +remote_address+ is an Addrinfo object.
+    #
+    # +local_address+ is an Addrinfo object.
+    #
+    # +reply_proc+ is a Proc used to send reply back to the source.
     def initialize(remote_address, local_address, &reply_proc)
       @remote_address = remote_address
       @local_address = local_address
       @reply_proc = reply_proc
     end
-    attr_reader :remote_address, :local_address
 
-    def inspect
+    # Address of the source
+    attr_reader :remote_address
+
+    # Local address
+    attr_reader :local_address
+
+    def inspect # :nodoc:
       "\#<#{self.class}: #{@remote_address.inspect_sockaddr} to #{@local_address.inspect_sockaddr}>"
     end
 
+    # Sends the String +msg+ to the source
     def reply(msg)
       @reply_proc.call msg
     end
@@ -701,12 +805,14 @@ class Socket < BasicSocket
   #   }
   #
   def self.unix_server_socket(path)
-    begin
-      st = File.lstat(path)
-    rescue Errno::ENOENT
-    end
-    if st && st.socket? && st.owned?
-      File.unlink path
+    if !unix_socket_abstract_name?(path)
+      begin
+        st = File.lstat(path)
+      rescue Errno::ENOENT
+      end
+      if st && st.socket? && st.owned?
+        File.unlink path
+      end
     end
     s = Addrinfo.unix(path).listen
     if block_given?
@@ -714,10 +820,20 @@ class Socket < BasicSocket
         yield s
       ensure
         s.close if !s.closed?
-        File.unlink path
+        if !unix_socket_abstract_name?(path)
+          File.unlink path
+        end
       end
     else
       s
+    end
+  end
+
+  class << self
+    private
+
+    def unix_socket_abstract_name?(path)
+      /linux/ =~ RUBY_PLATFORM && /\A(\0|\z)/ =~ path
     end
   end
 

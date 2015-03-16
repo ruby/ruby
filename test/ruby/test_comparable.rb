@@ -17,8 +17,18 @@ class TestComparable < Test::Unit::TestCase
     assert_equal(true, @o == nil)
     cmp->(x) do 1; end
     assert_equal(false, @o == nil)
-    cmp->(x) do raise; end
+    cmp->(x) do nil; end
     assert_equal(false, @o == nil)
+
+    cmp->(x) do raise NotImplementedError, "Not a RuntimeError" end
+    assert_raise(NotImplementedError) { @o == nil }
+
+    bug7688 = 'Comparable#== should not silently rescue' \
+              'any Exception [ruby-core:51389] [Bug #7688]'
+    cmp->(x) do raise StandardError end
+    assert_raise(StandardError, bug7688) { @o == nil }
+    cmp->(x) do "bad value"; end
+    assert_raise(ArgumentError, bug7688) { @o == nil }
   end
 
   def test_gt
@@ -68,5 +78,23 @@ class TestComparable < Test::Unit::TestCase
   def test_err
     assert_raise(ArgumentError) { 1.0 < nil }
     assert_raise(ArgumentError) { 1.0 < Object.new }
+    e = EnvUtil.labeled_class("E\u{30a8 30e9 30fc}")
+    assert_raise_with_message(ArgumentError, /E\u{30a8 30e9 30fc}/) {
+      1.0 < e.new
+    }
+  end
+
+  def test_inversed_compare
+    bug7870 = '[ruby-core:52305] [Bug #7870]'
+    assert_nothing_raised(SystemStackError, bug7870) {
+      assert_nil(Time.new <=> "")
+    }
+  end
+
+  def test_no_cmp
+    bug9003 = '[ruby-core:57736] [Bug #9003]'
+    assert_nothing_raised(SystemStackError, bug9003) {
+      @o <=> @o.dup
+    }
   end
 end

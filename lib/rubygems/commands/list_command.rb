@@ -8,27 +8,32 @@ require 'rubygems/commands/query_command'
 class Gem::Commands::ListCommand < Gem::Commands::QueryCommand
 
   def initialize
-    super 'list', 'Display gems whose name starts with STRING'
+    super 'list', 'Display local gems whose name matches REGEXP'
 
     remove_option('--name-matches')
   end
 
   def arguments # :nodoc:
-    "STRING        start of gem name to look for"
+    "REGEXP        regexp to look for in gem name"
   end
 
   def defaults_str # :nodoc:
     "--local --no-details"
   end
 
-  def usage # :nodoc:
-    "#{program_name} [STRING]"
+  def description # :nodoc:
+    <<-EOF
+The list command is used to view the gems you have installed locally.
+
+The --details option displays additional details including the summary, the
+homepage, the author, the locations of different versions of the gem.
+
+To search for remote gems use the search command.
+    EOF
   end
 
-  def execute
-    string = get_one_optional_argument || ''
-    options[:name] = /^#{string}/i
-    super
+  def usage # :nodoc:
+    "#{program_name} [STRING ...]"
   end
 
 end

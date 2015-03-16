@@ -72,7 +72,9 @@ module Psych
     end
 
     def scalar value, anchor, tag, plain, quoted, style
-      @last.children << Nodes::Scalar.new(value,anchor,tag,plain,quoted,style)
+      s = Nodes::Scalar.new(value,anchor,tag,plain,quoted,style)
+      @last.children << s
+      s
     end
 
     def alias anchor

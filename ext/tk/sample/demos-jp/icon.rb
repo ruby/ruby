@@ -1,15 +1,15 @@
-# -*- coding: euc-jp -*-
+# -*- coding: utf-8 -*-
 #
 # iconic button widget demo (called by 'widget')
 #
 
-# toplevel widget ¤¬Â¸ºß¤¹¤ì¤Ðºï½ü¤¹¤ë
+# toplevel widget ãŒå­˜åœ¨ã™ã‚Œã°å‰Šé™¤ã™ã‚‹
 if defined?($icon_demo) && $icon_demo
   $icon_demo.destroy
   $icon_demo = nil
 end
 
-# demo ÍÑ¤Î toplevel widget ¤òÀ¸À®
+# demo ç”¨ã® toplevel widget ã‚’ç”Ÿæˆ
 $icon_demo = TkToplevel.new {|w|
   title("Iconic Button Demonstration")
   iconname("icon")
@@ -18,20 +18,20 @@ $icon_demo = TkToplevel.new {|w|
 
 base_frame = TkFrame.new($icon_demo).pack(:fill=>:both, :expand=>true)
 
-# label À¸À®
+# label ç”Ÿæˆ
 msg = TkLabel.new(base_frame) {
   font $font
   wraplength '5i'
   justify 'left'
-  text "¤³¤Î¥¦¥£¥ó¥É¥¦¤Ë¤Ï¥é¥¸¥ª¥Ü¥¿¥ó¤È¥Á¥§¥Ã¥¯¥Ü¥¿¥ó¾å¤Ë¥Ó¥Ã¥È¥Þ¥Ã¥×¤ä²èÁü¤òÉ½¼¨¤¹¤ë 3 ¤Ä¤ÎÊýË¡¤ò¼¨¤·¤Æ¤¤¤Þ¤¹¡£º¸¤Ë¤¢¤ë¤Î¤Ï2¤Ä¤Î¥é¥¸¥ª¥Ü¥¿¥ó¤Ç¡¢¤½¤ì¤¾¤ì¤¬¡¢¥Ó¥Ã¥È¥Þ¥Ã¥×¤ÈÁªÂò¤ò¼¨¤¹¥¤¥ó¥¸¥±¡¼¥¿¤Ç¤Ç¤­¤Æ¤¤¤Þ¤¹¡£Ãæ±û¤Ë¤¢¤ë¤Î¤Ï¡¢ÁªÂòºÑ¤ß¤«¤É¤¦¤«¤Ë¤è¤Ã¤Æ°Û¤Ê¤ë²èÁü¤òÉ½¼¨¤¹¤ë¥Á¥§¥Ã¥¯¥Ü¥¿¥ó¤Ç¤¹¡£±¦Â¦¤Ë¤¢¤ë¤Î¤ÏÁªÂòºÑ¤ß¤«¤É¤¦¤«¤Ë¤è¤Ã¤ÆÇØ·Ê¿§¤¬ÊÑ¤ï¤ë¥Ó¥Ã¥È¥Þ¥Ã¥×¤òÉ½¼¨¤¹¤ë¥Á¥§¥Ã¥¯¥Ü¥¿¥ó¤Ç¤¹¡£"
+  text "ã“ã®ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã«ã¯ãƒ©ã‚¸ã‚ªãƒœã‚¿ãƒ³ã¨ãƒã‚§ãƒƒã‚¯ãƒœã‚¿ãƒ³ä¸Šã«ãƒ“ãƒƒãƒˆãƒžãƒƒãƒ—ã‚„ç”»åƒã‚’è¡¨ç¤ºã™ã‚‹ 3 ã¤ã®æ–¹æ³•ã‚’ç¤ºã—ã¦ã„ã¾ã™ã€‚å·¦ã«ã‚ã‚‹ã®ã¯2ã¤ã®ãƒ©ã‚¸ã‚ªãƒœã‚¿ãƒ³ã§ã€ãã‚Œãžã‚ŒãŒã€ãƒ“ãƒƒãƒˆãƒžãƒƒãƒ—ã¨é¸æŠžã‚’ç¤ºã™ã‚¤ãƒ³ã‚¸ã‚±ãƒ¼ã‚¿ã§ã§ãã¦ã„ã¾ã™ã€‚ä¸­å¤®ã«ã‚ã‚‹ã®ã¯ã€é¸æŠžæ¸ˆã¿ã‹ã©ã†ã‹ã«ã‚ˆã£ã¦ç•°ãªã‚‹ç”»åƒã‚’è¡¨ç¤ºã™ã‚‹ãƒã‚§ãƒƒã‚¯ãƒœã‚¿ãƒ³ã§ã™ã€‚å³å´ã«ã‚ã‚‹ã®ã¯é¸æŠžæ¸ˆã¿ã‹ã©ã†ã‹ã«ã‚ˆã£ã¦èƒŒæ™¯è‰²ãŒå¤‰ã‚ã‚‹ãƒ“ãƒƒãƒˆãƒžãƒƒãƒ—ã‚’è¡¨ç¤ºã™ã‚‹ãƒã‚§ãƒƒã‚¯ãƒœã‚¿ãƒ³ã§ã™ã€‚"
 }
 msg.pack('side'=>'top')
 
-# frame À¸À®
+# frame ç”Ÿæˆ
 TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
-    #text 'Î»²ò'
-    text 'ÊÄ¤¸¤ë'
+    #text 'äº†è§£'
+    text 'é–‰ã˜ã‚‹'
     command proc{
       tmppath = $icon_demo
       $icon_demo = nil
@@ -40,13 +40,13 @@ TkFrame.new(base_frame) {|frame|
   }.pack('side'=>'left', 'expand'=>'yes')
 
   TkButton.new(frame) {
-    text '¥³¡¼¥É»²¾È'
+    text 'ã‚³ãƒ¼ãƒ‰å‚ç…§'
     command proc{showCode 'icon'}
   }.pack('side'=>'left', 'expand'=>'yes')
 
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
-# image À¸À®
+# image ç”Ÿæˆ
 flagup = \
 TkBitmapImage.new('file'=>[$demo_dir,'..',
                            'images','flagup.xbm'].join(File::Separator),
@@ -59,10 +59,10 @@ TkBitmapImage.new('file'=>[$demo_dir,'..',
                   [$demo_dir,'..',
                     'images','flagdown.xbm'].join(File::Separator))
 
-# ÊÑ¿ôÀ¸À®
+# å¤‰æ•°ç”Ÿæˆ
 letters = TkVariable.new
 
-# frame À¸À®
+# frame ç”Ÿæˆ
 TkFrame.new(base_frame, 'borderwidth'=>10){|w|
   TkFrame.new(w) {|f|
     # TkRadioButton.new(f){

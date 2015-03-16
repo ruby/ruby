@@ -3,7 +3,7 @@
 #                               by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)
 #
 #   * Part of tcllib extension
-#   * chatwidget - Provides a multi-paned view suitable for display of 
+#   * chatwidget - Provides a multi-paned view suitable for display of
 #                  chat room or irc channel information
 #
 
@@ -92,7 +92,7 @@ class Tk::Tcllib::ChatWidget
 
   def hook_add(type, *args, &blk) # args -> [prior, cmd], [prior], [cmd]
     #type -> 'message', 'post', 'names_group', 'names_nick', 'chatstate', 'url'
-    
+
     if prior = args.shift
       if !prior.kind_of?(Numeric)
         cmd = prior

@@ -7,12 +7,13 @@
 #  Copyright 2005 James Edward Gray II. You can redistribute or modify this code
 #  under the terms of Ruby's license.
 
-require "test/unit"
+require_relative "base"
 
-require "csv"
+class TestCSV::Headers < TestCSV
+  extend DifferentOFS
 
-class TestCSVHeaders < Test::Unit::TestCase
   def setup
+    super
     @data = <<-END_CSV.gsub(/^\s+/, "")
     first,second,third
     A,B,C
@@ -84,8 +85,8 @@ class TestCSVHeaders < Test::Unit::TestCase
     assert_not_nil(row)
     assert_instance_of(CSV::Row, row)
     assert_equal([["my", :my], ["new", :new], ["headers", :headers]], row.to_a)
-    assert(row.header_row?)
-    assert(!row.field_row?)
+    assert_predicate(row, :header_row?)
+    assert_not_predicate(row, :field_row?)
   end
 
   def test_csv_header_string
@@ -126,8 +127,8 @@ class TestCSVHeaders < Test::Unit::TestCase
     assert_not_nil(row)
     assert_instance_of(CSV::Row, row)
     assert_equal([[:my, "my"], [:new, "new"], [:headers, "headers"]], row.to_a)
-    assert(row.header_row?)
-    assert(!row.field_row?)
+    assert_predicate(row, :header_row?)
+    assert_not_predicate(row, :field_row?)
   end
 
   def test_csv_header_string_inherits_separators
@@ -158,24 +159,24 @@ class TestCSVHeaders < Test::Unit::TestCase
     assert_instance_of(CSV::Row, row)
     assert_equal( [%w{first first}, %w{second second}, %w{third third}],
                   row.to_a )
-    assert(row.header_row?)
-    assert(!row.field_row?)
+    assert_predicate(row, :header_row?)
+    assert_not_predicate(row, :field_row?)
 
     # first data row - skipping headers
     row = csv[1]
     assert_not_nil(row)
     assert_instance_of(CSV::Row, row)
     assert_equal([%w{first A}, %w{second B}, %w{third C}], row.to_a)
-    assert(!row.header_row?)
-    assert(row.field_row?)
+    assert_not_predicate(row, :header_row?)
+    assert_predicate(row, :field_row?)
 
     # second data row
     row = csv[2]
     assert_not_nil(row)
     assert_instance_of(CSV::Row, row)
     assert_equal([%w{first 1}, %w{second 2}, %w{third 3}], row.to_a)
-    assert(!row.header_row?)
-    assert(row.field_row?)
+    assert_not_predicate(row, :header_row?)
+    assert_predicate(row, :field_row?)
 
     # empty
     assert_nil(csv[3])
@@ -216,10 +217,18 @@ class TestCSVHeaders < Test::Unit::TestCase
   end
 
   def test_builtin_symbol_converter
-    csv = CSV.parse( "One,TWO Three", headers:           true,
-                                      return_headers:    true,
-                                      header_converters: :symbol )
+    # Note that the trailing space is intentional
+    csv = CSV.parse( "One,TWO Three ", headers:           true,
+                                       return_headers:    true,
+                                       header_converters: :symbol )
     assert_equal([:one, :two_three], csv.headers)
+  end
+
+  def test_builtin_converters_with_blank_header
+    csv = CSV.parse( "one,,three", headers:           true,
+                                   return_headers:    true,
+                                   header_converters: [:downcase, :symbol] )
+    assert_equal([:one, nil, :three], csv.headers)
   end
 
   def test_custom_converter

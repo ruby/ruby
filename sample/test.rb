@@ -4,9 +4,103 @@
 $testnum=0
 $ntest=0
 $failed = 0
+class Progress
+  def initialize
+    @color = nil
+    @tty = nil
+    @quiet = nil
+    @verbose = nil
+    ARGV.each do |arg|
+      case arg
+      when /\A--color(?:=(?:always|(auto)|(never)|(.*)))?\z/
+        warn "unknown --color argument: #$3" if $3
+        @color = $1 ? nil : !$2
+      when /\A--tty(=(?:yes|(no)|(.*)))?\z/
+        warn "unknown --tty argument: #$3" if $3
+        @tty = !$1 || !$2
+        true
+      when /\A-(q|-quiet)\z/
+        @quiet = true
+      when /\A-(v|-verbose)\z/
+        @verbose = true
+      end
+    end
+    @tty = STDERR.tty? && !STDOUT.tty? && /dumb/ !~ ENV["TERM"] if @tty.nil?
+    @eol = @tty && !@verbose ? "\r\e[K\r" : "\n"
+    case @color
+    when nil
+      @color = @tty
+    end
+    if @color
+      # dircolors-like style
+      colors = (colors = ENV['TEST_COLORS']) ? Hash[colors.scan(/(\w+)=([^:]*)/)] : {}
+      @passed = "\e[#{colors["pass"] || "32"}m"
+      @failed = "\e[#{colors["fail"] || "31"}m"
+      @reset = "\e[m"
+    else
+      @passed = @failed = @reset = ""
+    end
+    extend(Rotator) if @tty
+  end
+
+  def passed_string
+    "."
+  end
+  def failed_string
+    "#{@failed}F#{@reset}"
+  end
+  def init_string
+  end
+  def finish_string
+    if @quiet
+      @eol
+    else
+      "#{@passed}#{@ok ? 'OK' : ''} #{$testnum}#{@reset}#{@eol}"
+    end
+  end
+  def pass
+    STDERR.print passed_string
+  end
+  def fail
+    @ok = false
+    STDERR.print failed_string
+  end
+  def init
+    @ok = true
+    STDERR.print init_string
+  end
+  def finish
+    STDERR.print finish_string
+  end
+
+  module Rotator
+    ROTATOR = %w[- \\ | /]
+    BS = "\b" * ROTATOR[0].size
+    def passed_string
+      "#{BS}#{ROTATOR[(@count += 1) % ROTATOR.size]}"
+    end
+    def failed_string
+      "#{BS}#{super}#{ROTATOR[@count % ROTATOR.size]}"
+    end
+    def init_string
+      @count = 0
+      " "
+    end
+    def finish_string
+      s = "#{BS}#{' ' * BS.size}#{BS}#{super}"
+      s.gsub!(/\n/, "\r\e[2K\r") if @quiet
+      s
+    end
+  end
+end
+PROGRESS = Progress.new
 
 def test_check(what)
-  STDERR.print "\nsample/test.rb:#{what} "
+  unless $ntest.zero?
+    PROGRESS.finish
+  end
+  STDERR.print "sample/test.rb:#{what} "
+  PROGRESS.init
   $what = what
   $testnum = 0
 end
@@ -16,12 +110,12 @@ def test_ok(cond,n=1)
   $ntest+=1
   where = (st = caller(n)) ? st[0] : "caller error! (n=#{n}, trace=#{caller(0).join(', ')}"
   if cond
-    STDERR.print "."
+    PROGRESS.pass
     printf "ok %d (%s)\n", $testnum, where
   else
-    STDERR.print "F"
+    PROGRESS.fail
     printf "not ok %s %d -- %s\n", $what, $testnum, where
-    $failed+=1 
+    $failed+=1
   end
   STDOUT.flush
   STDERR.flush
@@ -551,7 +645,8 @@ end
 
 test_check "while/until";
 
-tmp = open("while_tmp", "w")
+while_tmp = "while_tmp.#{$$}"
+tmp = open(while_tmp, "w")
 tmp.print "tvi925\n";
 tmp.print "tvi920\n";
 tmp.print "vt100\n";
@@ -561,7 +656,7 @@ tmp.close
 
 # test break
 
-tmp = open("while_tmp", "r")
+tmp = open(while_tmp, "r")
 test_ok(tmp.kind_of?(File))
 
 while line = tmp.gets()
@@ -573,7 +668,7 @@ tmp.close
 
 # test next
 $bad = false
-tmp = open("while_tmp", "r")
+tmp = open(while_tmp, "r")
 while line = tmp.gets()
   next if /vt100/ =~ line
   $bad = 1 if /vt100/ =~ line
@@ -583,7 +678,7 @@ tmp.close
 
 # test redo
 $bad = false
-tmp = open("while_tmp", "r")
+tmp = open(while_tmp, "r")
 while line = tmp.gets()
   lastline = line
   line = line.gsub(/vt100/, 'VT100')
@@ -609,7 +704,7 @@ test_ok(sum == 220)
 
 # test interval
 $bad = false
-tmp = open("while_tmp", "r")
+tmp = open(while_tmp, "r")
 while line = tmp.gets()
   break if 3
   case line
@@ -620,8 +715,8 @@ end
 test_ok(!$bad)
 tmp.close
 
-File.unlink "while_tmp" or `/bin/rm -f "while_tmp"`
-test_ok(!File.exist?("while_tmp"))
+File.unlink while_tmp or `/bin/rm -f "#{while_tmp}"`
+test_ok(!File.exist?(while_tmp))
 
 i = 0
 until i>4
@@ -657,7 +752,7 @@ $string = "this must be handled no.3"
 begin
   begin
     raise "exception in rescue clause"
-  rescue 
+  rescue
     raise $string
   end
   test_ok(false)
@@ -671,7 +766,7 @@ end
 begin
   begin
     raise "this must be handled no.4"
-  ensure 
+  ensure
     raise "exception in ensure clause"
   end
   test_ok(false)
@@ -718,7 +813,7 @@ test_ok(catch(:foo) {
 	 break
        end
        break
-       test_ok(false)			# should no reach here
+       test_ok(false)			# should not reach here
      end
      false
    })
@@ -741,7 +836,7 @@ test_ok($x[1,3] == [1, 2, 3])
 
 $x[0, 2] = 10
 test_ok($x[0] == 10 && $x[1] == 2)
-  
+
 $x[0, 0] = -1
 test_ok($x[0] == -1 && $x[1] == 10)
 
@@ -817,7 +912,7 @@ $x = {1=>2, 2=>4, 3=>6}
 
 test_ok($x[1] == 2)
 
-test_ok(begin   
+test_ok(begin
      for k,v in $x
        raise if k*2 != v
      end
@@ -1164,7 +1259,7 @@ def proc_return4
 end
 test_ok(proc_return4() == 42)
 
-def ljump_test(state, proc, *args) 
+def ljump_test(state, proc, *args)
   x = state
   begin
     proc.call(*args)
@@ -1362,7 +1457,7 @@ class ITER_TEST4 < ITER_TEST3
   end
 end
 
-ITER_TEST4.new.foo(44){55}   
+ITER_TEST4.new.foo(44){55}
 
 class ITER_TEST5
    def tt(aa)
@@ -1628,8 +1723,8 @@ test_ok(-265419172580680477752431643787347.to_s(36) == "-justanotherrubyhacker")
 
 a = []
 (0..255).each {|n|
-  ch = [n].pack("C")                     
-  a.push ch if /a#{Regexp.quote ch}b/x =~ "ab" 
+  ch = [n].pack("C")
+  a.push ch if /a#{Regexp.quote ch}b/x =~ "ab"
 }
 test_ok(a.size == 0)
 
@@ -1875,21 +1970,22 @@ test_check "system"
 test_ok(`echo foobar` == "foobar\n")
 test_ok(`./miniruby -e 'print "foobar"'` == 'foobar')
 
-tmp = open("script_tmp", "w")
+script_tmp = "script_tmp.#{$$}"
+tmp = open(script_tmp, "w")
 tmp.print "print $zzz\n";
 tmp.close
 
-test_ok(`./miniruby -s script_tmp -zzz` == 'true')
-test_ok(`./miniruby -s script_tmp -zzz=555` == '555')
+test_ok(`./miniruby -s #{script_tmp} -zzz` == 'true')
+test_ok(`./miniruby -s #{script_tmp} -zzz=555` == '555')
 
-tmp = open("script_tmp", "w")
+tmp = open(script_tmp, "w")
 tmp.print "#! /usr/local/bin/ruby -s\n";
 tmp.print "print $zzz\n";
 tmp.close
 
-test_ok(`./miniruby script_tmp -zzz=678` == '678')
+test_ok(`./miniruby #{script_tmp} -zzz=678` == '678')
 
-tmp = open("script_tmp", "w")
+tmp = open(script_tmp, "w")
 tmp.print "this is a leading junk\n";
 tmp.print "#! /usr/local/bin/ruby -s\n";
 tmp.print "print $zzz\n";
@@ -1897,18 +1993,18 @@ tmp.print "__END__\n";
 tmp.print "this is a trailing junk\n";
 tmp.close
 
-test_ok(`./miniruby -x script_tmp` == '')
-test_ok(`./miniruby -x script_tmp -zzz=555` == '555')
+test_ok(`./miniruby -x #{script_tmp}` == '')
+test_ok(`./miniruby -x #{script_tmp} -zzz=555` == '555')
 
-tmp = open("script_tmp", "w")
+tmp = open(script_tmp, "w")
 for i in 1..5
   tmp.print i, "\n"
 end
 tmp.close
 
-`./miniruby -i.bak -pe '$_.sub!(/^[0-9]+$/){$&.to_i * 5}' script_tmp`
+`./miniruby -i.bak -pe '$_.sub!(/^[0-9]+$/){$&.to_i * 5}' #{script_tmp}`
 done = true
-tmp = open("script_tmp", "r")
+tmp = open(script_tmp, "r")
 while tmp.gets
   if $_.to_i % 5 != 0
     done = false
@@ -1918,8 +2014,8 @@ end
 tmp.close
 test_ok(done)
 
-File.unlink "script_tmp" or `/bin/rm -f "script_tmp"`
-File.unlink "script_tmp.bak" or `/bin/rm -f "script_tmp.bak"`
+File.unlink script_tmp or `/bin/rm -f "#{script_tmp}"`
+File.unlink "#{script_tmp}.bak" or `/bin/rm -f "#{script_tmp}.bak"`
 
 test_check "const"
 TEST1 = 1
@@ -1960,7 +2056,7 @@ end
 
 test_ok(bar.test2 == "test2")
 test_ok(bar.test == "test")
-test_ok(foo.test == "test")  
+test_ok(foo.test == "test")
 
 begin
   foo.test2
@@ -2054,7 +2150,7 @@ class Gods
 
   def self.ruler1		# <= per method definition style
     @@rule
-  end		   
+  end
   class << self			# <= multiple method definition style
     def ruler2
       @@rule
@@ -2259,6 +2355,7 @@ ObjectSpace.each_object{|o|
 
 test_ok true   # reach here or dumps core
 
+PROGRESS.finish
 if $failed > 0
   printf "not ok/test: %d failed %d\n", $ntest, $failed
 else

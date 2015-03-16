@@ -12,66 +12,98 @@
 #ifndef RUBY_COMPILE_H
 #define RUBY_COMPILE_H
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility push(default)
-#endif
+RUBY_SYMBOL_EXPORT_BEGIN
 
 /* compile.c */
 VALUE rb_iseq_compile_node(VALUE self, NODE *node);
 int rb_iseq_translate_threaded_code(rb_iseq_t *iseq);
-VALUE rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE locals, VALUE args,
+VALUE *rb_iseq_original_iseq(rb_iseq_t *iseq);
+VALUE rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc,
+			     VALUE locals, VALUE args,
 			     VALUE exception, VALUE body);
 
 /* iseq.c */
+void rb_iseq_add_mark_object(rb_iseq_t *iseq, VALUE obj);
 VALUE rb_iseq_load(VALUE data, VALUE parent, VALUE opt);
+VALUE rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc);
 struct st_table *ruby_insn_make_insn_table(void);
+unsigned int rb_iseq_line_no(const rb_iseq_t *iseq, size_t pos);
 
-#define ISEQ_TYPE_TOP    INT2FIX(1)
-#define ISEQ_TYPE_METHOD INT2FIX(2)
-#define ISEQ_TYPE_BLOCK  INT2FIX(3)
-#define ISEQ_TYPE_CLASS  INT2FIX(4)
-#define ISEQ_TYPE_RESCUE INT2FIX(5)
-#define ISEQ_TYPE_ENSURE INT2FIX(6)
-#define ISEQ_TYPE_EVAL   INT2FIX(7)
-#define ISEQ_TYPE_MAIN   INT2FIX(8)
-#define ISEQ_TYPE_DEFINED_GUARD INT2FIX(9)
+int rb_iseq_line_trace_each(VALUE iseqval, int (*func)(int line, rb_event_flag_t *events_ptr, void *d), void *data);
+VALUE rb_iseq_line_trace_all(VALUE iseqval);
+VALUE rb_iseq_line_trace_specify(VALUE iseqval, VALUE pos, VALUE set);
 
-#define CATCH_TYPE_RESCUE ((int)INT2FIX(1))
-#define CATCH_TYPE_ENSURE ((int)INT2FIX(2))
-#define CATCH_TYPE_RETRY  ((int)INT2FIX(3))
-#define CATCH_TYPE_BREAK  ((int)INT2FIX(4))
-#define CATCH_TYPE_REDO   ((int)INT2FIX(5))
-#define CATCH_TYPE_NEXT   ((int)INT2FIX(6))
+/* proc.c */
+rb_iseq_t *rb_method_get_iseq(VALUE body);
+rb_iseq_t *rb_proc_get_iseq(VALUE proc, int *is_proc);
 
-struct iseq_insn_info_entry {
-    unsigned short position;
-    unsigned short line_no;
-    unsigned short sp;
+struct rb_compile_option_struct {
+    int inline_const_cache;
+    int peephole_optimization;
+    int tailcall_optimization;
+    int specialized_instruction;
+    int operands_unification;
+    int instructions_unification;
+    int stack_caching;
+    int trace_instruction;
+    int debug_level;
+};
+
+struct iseq_line_info_entry {
+    unsigned int position;
+    unsigned int line_no;
 };
 
 struct iseq_catch_table_entry {
-    VALUE type;
+    enum catch_type {
+	CATCH_TYPE_RESCUE = INT2FIX(1),
+	CATCH_TYPE_ENSURE = INT2FIX(2),
+	CATCH_TYPE_RETRY  = INT2FIX(3),
+	CATCH_TYPE_BREAK  = INT2FIX(4),
+	CATCH_TYPE_REDO   = INT2FIX(5),
+	CATCH_TYPE_NEXT   = INT2FIX(6)
+    } type;
     VALUE iseq;
-    unsigned long start;
-    unsigned long end;
-    unsigned long cont;
-    unsigned long sp;
+    unsigned int start;
+    unsigned int end;
+    unsigned int cont;
+    unsigned int sp;
 };
+
+PACKED_STRUCT_UNALIGNED(struct iseq_catch_table {
+    int size;
+    struct iseq_catch_table_entry entries[1]; /* flexible array */
+});
+
+static inline int
+iseq_catch_table_bytes(int n)
+{
+    enum {
+	catch_table_entries_max = (INT_MAX - sizeof(struct iseq_catch_table)) / sizeof(struct iseq_catch_table_entry)
+    };
+    if (n > catch_table_entries_max) rb_fatal("too large iseq_catch_table - %d", n);
+    return (int)(sizeof(struct iseq_catch_table) +
+		 (n - 1) * sizeof(struct iseq_catch_table_entry));
+}
 
 #define INITIAL_ISEQ_COMPILE_DATA_STORAGE_BUFF_SIZE (512)
 
 struct iseq_compile_data_storage {
     struct iseq_compile_data_storage *next;
-    unsigned long pos;
-    unsigned long size;
-    char *buff;
+    unsigned int pos;
+    unsigned int size;
+    char buff[1]; /* flexible array */
 };
+
+/* account for flexible array */
+#define SIZEOF_ISEQ_COMPILE_DATA_STORAGE \
+    (sizeof(struct iseq_compile_data_storage) - 1)
 
 struct iseq_compile_data {
     /* GC is needed */
-    VALUE err_info;
+    const VALUE err_info;
     VALUE mark_ary;
-    VALUE catch_table_ary;	/* Array */
+    const VALUE catch_table_ary;	/* Array */
 
     /* GC is not needed */
     struct iseq_label_data *start_label;
@@ -87,26 +119,38 @@ struct iseq_compile_data {
     struct iseq_compile_data_storage *storage_current;
     int last_line;
     int last_coverable_line;
-    int flip_cnt;
     int label_no;
     int node_level;
     const rb_compile_option_t *option;
+#if SUPPORT_JOKE
+    st_table *labels_table;
+#endif
 };
 
 /* defined? */
-#define DEFINED_IVAR   INT2FIX(1)
-#define DEFINED_IVAR2  INT2FIX(2)
-#define DEFINED_GVAR   INT2FIX(3)
-#define DEFINED_CVAR   INT2FIX(4)
-#define DEFINED_CONST  INT2FIX(5)
-#define DEFINED_METHOD INT2FIX(6)
-#define DEFINED_YIELD  INT2FIX(7)
-#define DEFINED_REF    INT2FIX(8)
-#define DEFINED_ZSUPER INT2FIX(9)
-#define DEFINED_FUNC   INT2FIX(10)
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility pop
-#endif
+enum defined_type {
+    DEFINED_NIL = 1,
+    DEFINED_IVAR,
+    DEFINED_LVAR,
+    DEFINED_GVAR,
+    DEFINED_CVAR,
+    DEFINED_CONST,
+    DEFINED_METHOD,
+    DEFINED_YIELD,
+    DEFINED_ZSUPER,
+    DEFINED_SELF,
+    DEFINED_TRUE,
+    DEFINED_FALSE,
+    DEFINED_ASGN,
+    DEFINED_EXPR,
+    DEFINED_IVAR2,
+    DEFINED_REF,
+    DEFINED_FUNC
+};
+
+VALUE rb_iseq_defined_string(enum defined_type type);
+
+RUBY_SYMBOL_EXPORT_END
 
 #endif /* RUBY_COMPILE_H */

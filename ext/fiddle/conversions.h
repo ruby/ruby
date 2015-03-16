@@ -5,6 +5,8 @@
 
 typedef union
 {
+    ffi_arg  fffi_arg;     /* rvalue smaller than unsigned long */
+    ffi_sarg fffi_sarg;    /* rvalue smaller than signed long */
     unsigned char uchar;   /* ffi_type_uchar */
     signed char   schar;   /* ffi_type_schar */
     unsigned short ushort; /* ffi_type_sshort */
@@ -16,7 +18,8 @@ typedef union
     float ffloat;          /* ffi_type_float */
     double ddouble;        /* ffi_type_double */
 #if HAVE_LONG_LONG
-    unsigned LONG_LONG long_long; /* ffi_type_uint64 */
+    unsigned LONG_LONG ulong_long; /* ffi_type_ulong_long */
+    signed LONG_LONG slong_long; /* ffi_type_ulong_long */
 #endif
     void * pointer;        /* ffi_type_pointer */
 } fiddle_generic;
@@ -25,9 +28,9 @@ ffi_type * int_to_ffi_type(int type);
 void value_to_generic(int type, VALUE src, fiddle_generic * dst);
 VALUE generic_to_value(VALUE rettype, fiddle_generic retval);
 
-#define VALUE2GENERIC(_type, _src, _dst) value_to_generic(_type, _src, _dst)
+#define VALUE2GENERIC(_type, _src, _dst) value_to_generic((_type), (_src), (_dst))
 #define INT2FFI_TYPE(_type) int_to_ffi_type(_type)
-#define GENERIC2VALUE(_type, _retval) generic_to_value(_type, _retval)
+#define GENERIC2VALUE(_type, _retval) generic_to_value((_type), (_retval))
 
 #if SIZEOF_VOIDP == SIZEOF_LONG
 # define PTR2NUM(x)   (ULONG2NUM((unsigned long)(x)))

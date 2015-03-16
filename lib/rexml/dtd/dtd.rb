@@ -24,23 +24,18 @@ module REXML
           case input
           when ElementDecl.PATTERN_RE
             match = $&
-            source = $'
             contents << ElementDecl.new( match )
           when AttlistDecl.PATTERN_RE
             matchdata = $~
-            source = $'
             contents << AttlistDecl.new( matchdata )
           when EntityDecl.PATTERN_RE
             matchdata = $~
-            source = $'
             contents << EntityDecl.new( matchdata )
           when Comment.PATTERN_RE
             matchdata = $~
-            source = $'
             contents << Comment.new( matchdata )
           when NotationDecl.PATTERN_RE
             matchdata = $~
-            source = $'
             contents << NotationDecl.new( matchdata )
           end
         end

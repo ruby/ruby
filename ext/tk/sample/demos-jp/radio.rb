@@ -1,15 +1,15 @@
-# -*- coding: euc-jp -*-
+# -*- coding: utf-8 -*-
 #
 # radiobutton widget demo (called by 'widget')
 #
 
-# toplevel widget ¤¬Â¸ºß¤¹¤ì¤Ğºï½ü¤¹¤ë
+# toplevel widget ãŒå­˜åœ¨ã™ã‚Œã°å‰Šé™¤ã™ã‚‹
 if defined?($radio_demo) && $radio_demo
   $radio_demo.destroy
   $radio_demo = nil
 end
 
-# demo ÍÑ¤Î toplevel widget ¤òÀ¸À®
+# demo ç”¨ã® toplevel widget ã‚’ç”Ÿæˆ
 $radio_demo = TkToplevel.new {|w|
   title("Radiobutton Demonstration")
   iconname("radio")
@@ -18,24 +18,24 @@ $radio_demo = TkToplevel.new {|w|
 
 base_frame = TkFrame.new($radio_demo).pack(:fill=>:both, :expand=>true)
 
-# label À¸À®
+# label ç”Ÿæˆ
 msg = TkLabel.new(base_frame) {
   font $font
   wraplength '4i'
   justify 'left'
-  text "²¼¤Ë¤Ï2¤Ä¤Î¥é¥¸¥ª¥Ü¥¿¥ó¥°¥ë¡¼¥×¤¬É½¼¨¤µ¤ì¤Æ¤¤¤Ş¤¹¡£¥Ü¥¿¥ó¤ò¥¯¥ê¥Ã¥¯¤¹¤ë¤È¡¢¤½¤Î¥Ü¥¿¥ó¤À¤±¤¬¤½¤Î¥°¥ë¡¼¥×¤ÎÃæ¤ÇÁªÂò¤µ¤ì¤Ş¤¹¡£³Æ¥°¥ë¡¼¥×¤ËÂĞ¤·¤Æ¤½¤Î¥°¥ë¡¼¥×¤ÎÃæ¤Î¤É¤Î¥Ü¥¿¥ó¤¬ÁªÂò¤µ¤ì¤Æ¤¤¤ë¤«¤ò¼¨¤¹ÊÑ¿ô¤¬³ä¤êÅö¤Æ¤é¤ì¤Æ¤¤¤Ş¤¹¡£¸½ºß¤ÎÊÑ¿ô¤ÎÃÍ¤ò¸«¤ë¤Ë¤Ï¡ÖÊÑ¿ô»²¾È¡×¥Ü¥¿¥ó¤ò¥¯¥ê¥Ã¥¯¤·¤Æ¤¯¤À¤µ¤¤¡£"
+  text "ä¸‹ã«ã¯2ã¤ã®ãƒ©ã‚¸ã‚ªãƒœã‚¿ãƒ³ã‚°ãƒ«ãƒ¼ãƒ—ãŒè¡¨ç¤ºã•ã‚Œã¦ã„ã¾ã™ã€‚ãƒœã‚¿ãƒ³ã‚’ã‚¯ãƒªãƒƒã‚¯ã™ã‚‹ã¨ã€ãã®ãƒœã‚¿ãƒ³ã ã‘ãŒãã®ã‚°ãƒ«ãƒ¼ãƒ—ã®ä¸­ã§é¸æŠã•ã‚Œã¾ã™ã€‚å„ã‚°ãƒ«ãƒ¼ãƒ—ã«å¯¾ã—ã¦ãã®ã‚°ãƒ«ãƒ¼ãƒ—ã®ä¸­ã®ã©ã®ãƒœã‚¿ãƒ³ãŒé¸æŠã•ã‚Œã¦ã„ã‚‹ã‹ã‚’ç¤ºã™å¤‰æ•°ãŒå‰²ã‚Šå½“ã¦ã‚‰ã‚Œã¦ã„ã¾ã™ã€‚ç¾åœ¨ã®å¤‰æ•°ã®å€¤ã‚’è¦‹ã‚‹ã«ã¯ã€Œå¤‰æ•°å‚ç…§ã€ãƒœã‚¿ãƒ³ã‚’ã‚¯ãƒªãƒƒã‚¯ã—ã¦ãã ã•ã„ã€‚"
 }
 msg.pack('side'=>'top')
 
-# ÊÑ¿ôÀ¸À®
+# å¤‰æ•°ç”Ÿæˆ
 size = TkVariable.new
 color = TkVariable.new
 
-# frame À¸À®
+# frame ç”Ÿæˆ
 TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
-    #text 'Î»²ò'
-    text 'ÊÄ¤¸¤ë'
+    #text 'äº†è§£'
+    text 'é–‰ã˜ã‚‹'
     command proc{
       tmppath = $radio_demo
       $radio_demo = nil
@@ -45,35 +45,35 @@ TkFrame.new(base_frame) {|frame|
   }.pack('side'=>'left', 'expand'=>'yes')
 
   TkButton.new(frame) {
-    text '¥³¡¼¥É»²¾È'
+    text 'ã‚³ãƒ¼ãƒ‰å‚ç…§'
     command proc{showCode 'radio'}
   }.pack('side'=>'left', 'expand'=>'yes')
 
   TkButton.new(frame) {
-    text 'ÊÑ¿ô»²¾È'
+    text 'å¤‰æ•°å‚ç…§'
     command proc{
       showVars(base_frame, ['size', size], ['color', color])
     }
   }.pack('side'=>'left', 'expand'=>'yes')
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
-# frame À¸À®
+# frame ç”Ÿæˆ
 f_left = TkFrame.new(base_frame)
 f_right = TkFrame.new(base_frame)
 f_left.pack('side'=>'left', 'expand'=>'yes', 'padx'=>'.5c', 'pady'=>'.5c')
 f_right.pack('side'=>'left', 'expand'=>'yes', 'padx'=>'.5c', 'pady'=>'.5c')
 
-# radiobutton À¸À®
+# radiobutton ç”Ÿæˆ
 [10, 12, 18, 24].each {|sz|
   TkRadioButton.new(f_left) {
-    text "¥İ¥¤¥ó¥È¥µ¥¤¥º #{sz}"
+    text "ãƒã‚¤ãƒ³ãƒˆã‚µã‚¤ã‚º #{sz}"
     variable size
     relief 'flat'
     value sz
   }.pack('side'=>'top', 'pady'=>2, 'anchor'=>'w')
 }
 
-['ÀÖ', 'ÎĞ', 'ÀÄ', '²«', 'Üô', '»ç'].each {|col|
+['èµ¤', 'ç·‘', 'é’', 'é»„', 'æ©™', 'ç´«'].each {|col|
   TkRadioButton.new(f_right) {
     text col
     variable color

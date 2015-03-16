@@ -1,11 +1,11 @@
-require_relative 'gemutilities'
+require 'rubygems/test_case'
 require 'rubygems/command'
 
 class Gem::Command
   public :parser
 end
 
-class TestGemCommand < RubyGemTestCase
+class TestGemCommand < Gem::TestCase
 
   def setup
     super
@@ -87,7 +87,7 @@ class TestGemCommand < RubyGemTestCase
     assert done
   end
 
-  def test_invode_with_bad_options
+  def test_invoke_with_bad_options
     use_ui @ui do
       @cmd.when_invoked do true end
 
@@ -107,6 +107,16 @@ class TestGemCommand < RubyGemTestCase
     end
 
     assert @xopt, "Should have done xopt"
+  end
+
+  def test_invoke_with_build_args
+    @cmd.when_invoked { true }
+
+    use_ui @ui do
+      @cmd.invoke_with_build_args ["-x"], ["--awesome=true"]
+    end
+
+    assert_equal ["--awesome=true"], @cmd.options[:build_args]
   end
 
   # Returning false from the command handler invokes the usage output.
@@ -172,6 +182,61 @@ class TestGemCommand < RubyGemTestCase
     args = ['-h', 'command']
     @cmd.handles?(args)
     assert_equal ['-h', 'command'], args
+  end
+
+  def test_show_lookup_failure_suggestions_local
+    correct    = "non_existent_with_hint"
+    misspelled = "nonexistent_with_hint"
+
+    spec_fetcher do |fetcher|
+      fetcher.spec correct, 2
+    end
+
+    use_ui @ui do
+      @cmd.show_lookup_failure misspelled, Gem::Requirement.default, [], :local
+    end
+
+    expected = <<-EXPECTED
+ERROR:  Could not find a valid gem 'nonexistent_with_hint' (>= 0) in any repository
+    EXPECTED
+
+    assert_equal expected, @ui.error
+  end
+
+  def test_show_lookup_failure_suggestions_none
+    spec_fetcher do |fetcher|
+      fetcher.spec 'correct', 2
+    end
+
+    use_ui @ui do
+      @cmd.show_lookup_failure 'other', Gem::Requirement.default, [], :remote
+    end
+
+    expected = <<-EXPECTED
+ERROR:  Could not find a valid gem 'other' (>= 0) in any repository
+    EXPECTED
+
+    assert_equal expected, @ui.error
+  end
+
+  def test_show_lookup_failure_suggestions_remote
+    correct    = "non_existent_with_hint"
+    misspelled = "nonexistent_with_hint"
+
+    spec_fetcher do |fetcher|
+      fetcher.spec correct, 2
+    end
+
+    use_ui @ui do
+      @cmd.show_lookup_failure misspelled, Gem::Requirement.default, [], :remote
+    end
+
+    expected = <<-EXPECTED
+ERROR:  Could not find a valid gem 'nonexistent_with_hint' (>= 0) in any repository
+ERROR:  Possible alternatives: non_existent_with_hint
+    EXPECTED
+
+    assert_equal expected, @ui.error
   end
 
 end

@@ -1,24 +1,99 @@
-require 'rdoc/markup'
-
 ##
 # Base class for RDoc markup formatters
 #
-# Formatters use a visitor pattern to convert content into output.
+# Formatters are a visitor that converts an RDoc::Markup tree (from a comment)
+# into some kind of output.  RDoc ships with formatters for converting back to
+# rdoc, ANSI text, HTML, a Table of Contents and other formats.
+#
+# If you'd like to write your own Formatter use
+# RDoc::Markup::FormatterTestCase.  If you're writing a text-output formatter
+# use RDoc::Markup::TextFormatterTestCase which provides extra test cases.
 
 class RDoc::Markup::Formatter
+
+  ##
+  # Tag for inline markup containing a +bit+ for the bitmask and the +on+ and
+  # +off+ triggers.
 
   InlineTag = Struct.new(:bit, :on, :off)
 
   ##
+  # Converts a target url to one that is relative to a given path
+
+  def self.gen_relative_url path, target
+    from        = File.dirname path
+    to, to_file = File.split target
+
+    from = from.split "/"
+    to   = to.split "/"
+
+    from.delete '.'
+    to.delete '.'
+
+    while from.size > 0 and to.size > 0 and from[0] == to[0] do
+      from.shift
+      to.shift
+    end
+
+    from.fill ".."
+    from.concat to
+    from << to_file
+    File.join(*from)
+  end
+
+  ##
   # Creates a new Formatter
 
-  def initialize
-    @markup = RDoc::Markup.new
-    @am = @markup.attribute_manager
+  def initialize options, markup = nil
+    @options = options
+
+    @markup = markup || RDoc::Markup.new
+    @am     = @markup.attribute_manager
+    @am.add_special(/<br>/, :HARD_BREAK)
+
+    @attributes = @am.attributes
+
     @attr_tags = []
 
     @in_tt = 0
-    @tt_bit = RDoc::Markup::Attribute.bitmap_for :TT
+    @tt_bit = @attributes.bitmap_for :TT
+
+    @hard_break = ''
+    @from_path = '.'
+  end
+
+  ##
+  # Adds +document+ to the output
+
+  def accept_document document
+    document.parts.each do |item|
+      case item
+      when RDoc::Markup::Document then # HACK
+        accept_document item
+      else
+        item.accept self
+      end
+    end
+  end
+
+  ##
+  # Adds a special for links of the form rdoc-...:
+
+  def add_special_RDOCLINK
+    @markup.add_special(/rdoc-[a-z]+:[^\s\]]+/, :RDOCLINK)
+  end
+
+  ##
+  # Adds a special for links of the form {<text>}[<url>] and <word>[<url>]
+
+  def add_special_TIDYLINK
+    @markup.add_special(/(?:
+                          \{.*?\} |    # multi-word label
+                          \b[^\s{}]+? # single-word label
+                         )
+
+                         \[\S+?\]     # link target
+                        /x, :TIDYLINK)
   end
 
   ##
@@ -26,7 +101,7 @@ class RDoc::Markup::Formatter
   # tags for flexibility
 
   def add_tag(name, start, stop)
-    attr = RDoc::Markup::Attribute.bitmap_for name
+    attr = @attributes.bitmap_for name
     @attr_tags << InlineTag.new(attr, start, stop)
   end
 
@@ -40,7 +115,7 @@ class RDoc::Markup::Formatter
   ##
   # Marks up +content+
 
-  def convert(content)
+  def convert content
     @markup.convert content, self
   end
 
@@ -70,10 +145,12 @@ class RDoc::Markup::Formatter
   ##
   # Converts added specials.  See RDoc::Markup#add_special
 
-  def convert_special(special)
+  def convert_special special
+    return special.text if in_tt?
+
     handled = false
 
-    RDoc::Markup::Attribute.each_name_of special.type do |name|
+    @attributes.each_name_of special.type do |name|
       method_name = "handle_special_#{name}"
 
       if respond_to? method_name then
@@ -82,7 +159,11 @@ class RDoc::Markup::Formatter
       end
     end
 
-    raise "Unhandled special: #{special}" unless handled
+    unless handled then
+      special_name = @attributes.as_string special.type
+
+      raise RDoc::Error, "Unhandled special #{special_name}: #{special}"
+    end
 
     special.text
   end
@@ -95,11 +176,25 @@ class RDoc::Markup::Formatter
   end
 
   ##
+  # Use ignore in your subclass to ignore the content of a node.
+  #
+  #   ##
+  #   # We don't support raw nodes in ToNoRaw
+  #
+  #   alias accept_raw ignore
+
+  def ignore *node
+  end
+
+  ##
   # Are we currently inside tt tags?
 
   def in_tt?
     @in_tt > 0
   end
+
+  ##
+  # Turns on tags for +item+ on +res+
 
   def on_tags res, item
     attr_mask = item.turn_on
@@ -112,6 +207,9 @@ class RDoc::Markup::Formatter
       end
     end
   end
+
+  ##
+  # Turns off tags for +item+ on +res+
 
   def off_tags res, item
     attr_mask = item.turn_off
@@ -126,6 +224,36 @@ class RDoc::Markup::Formatter
   end
 
   ##
+  # Extracts and a scheme, url and an anchor id from +url+ and returns them.
+
+  def parse_url url
+    case url
+    when /^rdoc-label:([^:]*)(?::(.*))?/ then
+      scheme = 'link'
+      path   = "##{$1}"
+      id     = " id=\"#{$2}\"" if $2
+    when /([A-Za-z]+):(.*)/ then
+      scheme = $1.downcase
+      path   = $2
+    when /^#/ then
+    else
+      scheme = 'http'
+      path   = url
+      url    = url
+    end
+
+    if scheme == 'link' then
+      url = if path[0, 1] == '#' then # is this meaningful?
+              path
+            else
+              self.class.gen_relative_url @from_path, path
+            end
+    end
+
+    [scheme, url, id]
+  end
+
+  ##
   # Is +tag+ a tt tag?
 
   def tt? tag
@@ -134,10 +262,3 @@ class RDoc::Markup::Formatter
 
 end
 
-class RDoc::Markup
-  autoload :ToAnsi,         'rdoc/markup/to_ansi'
-  autoload :ToBs,           'rdoc/markup/to_bs'
-  autoload :ToHtml,         'rdoc/markup/to_html'
-  autoload :ToHtmlCrossref, 'rdoc/markup/to_html_crossref'
-  autoload :ToRdoc,         'rdoc/markup/to_rdoc'
-end

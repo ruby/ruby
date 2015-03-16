@@ -86,13 +86,13 @@ module TestEOF
   def test_eof_2
     open_file("") {|f|
       assert_equal("", f.read)
-      assert(f.eof?)
+      assert_predicate(f, :eof?)
     }
   end
 
   def test_eof_3
     open_file("") {|f|
-      assert(f.eof?)
+      assert_predicate(f, :eof?)
     }
   end
 

@@ -45,21 +45,39 @@ module Net # :nodoc:
   class ProtoRetriableError    < ProtocolError; end
   ProtocRetryError = ProtoRetriableError
 
+  ##
+  # OpenTimeout, a subclass of Timeout::Error, is raised if a connection cannot
+  # be created within the open_timeout.
+
+  class OpenTimeout            < Timeout::Error; end
+
+  ##
+  # ReadTimeout, a subclass of Timeout::Error, is raised if a chunk of the
+  # response cannot be read within the read_timeout.
+
+  class ReadTimeout            < Timeout::Error; end
+
 
   class BufferedIO   #:nodoc: internal use only
     def initialize(io)
       @io = io
       @read_timeout = 60
+      @continue_timeout = nil
       @debug_output = nil
       @rbuf = ''
     end
 
     attr_reader :io
     attr_accessor :read_timeout
+    attr_accessor :continue_timeout
     attr_accessor :debug_output
 
     def inspect
       "#<#{self.class} io=#{@io}>"
+    end
+
+    def eof?
+      @io.eof?
     end
 
     def closed?
@@ -137,7 +155,7 @@ module Net # :nodoc:
         if IO.select([@io], nil, nil, @read_timeout)
           retry
         else
-          raise Timeout::Error
+          raise Net::ReadTimeout
         end
       rescue IO::WaitWritable
         # OpenSSL::Buffering#read_nonblock may fail with IO::WaitWritable.
@@ -145,7 +163,7 @@ module Net # :nodoc:
         if IO.select(nil, [@io], nil, @read_timeout)
           retry
         else
-          raise Timeout::Error
+          raise Net::ReadTimeout
         end
       end
     end
@@ -167,6 +185,8 @@ module Net # :nodoc:
         write0 str
       }
     end
+
+    alias << write
 
     def writeline(str)
       writing {
@@ -247,7 +267,7 @@ module Net # :nodoc:
     def write_message_0(src)
       prev = @written_bytes
       each_crlf_line(src) do |line|
-        write0 line.sub(/\A\./, '..')
+        write0 dot_stuff(line)
       end
       @written_bytes - prev
     end
@@ -288,11 +308,15 @@ module Net # :nodoc:
 
     private
 
+    def dot_stuff(s)
+      s.sub(/\A\./, '..')
+    end
+
     def using_each_crlf_line
       @wbuf = ''
       yield
       if not @wbuf.empty?   # unterminated last line
-        write0 @wbuf.chomp + "\r\n"
+        write0 dot_stuff(@wbuf.chomp) + "\r\n"
       elsif @written_bytes == 0   # empty src
         write0 "\r\n"
       end
@@ -302,7 +326,7 @@ module Net # :nodoc:
 
     def each_crlf_line(src)
       buffer_filling(@wbuf, src) do
-        while line = @wbuf.slice!(/\A.*(?:\n|\r\n|\r(?!\z))/n)
+        while line = @wbuf.slice!(/\A[^\r\n]*(?:\n|\r(?:\n|(?!\z)))/)
           yield line.chomp("\n") + "\r\n"
         end
       end

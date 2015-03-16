@@ -100,7 +100,7 @@ assert_equal %q{ok}, %q{
   def m
     yield
   end
-  
+
   m{
     begin
     ensure
@@ -190,7 +190,7 @@ assert_equal %q{100}, %q{
       $i = 100
     end
   end
-  
+
   def iter
     yield
   end
@@ -216,7 +216,7 @@ assert_equal %q{1}, %q{
       return 1
     end
   end
-  
+
   m
 }
 assert_equal %q{1}, %q{
@@ -227,7 +227,7 @@ assert_equal %q{1}, %q{
       return 1
     end
   end
-  
+
   m
 }
 assert_equal 'ok', %q{

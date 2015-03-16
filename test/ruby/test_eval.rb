@@ -1,5 +1,4 @@
 require 'test/unit'
-require_relative 'envutil'
 
 class TestEval < Test::Unit::TestCase
 
@@ -127,72 +126,77 @@ class TestEval < Test::Unit::TestCase
     }
   end
 
-  def forall_TYPE(mid)
-    objects = [Object.new, [], nil, true, false, 77, :sym] # TODO: check
+  def forall_TYPE
+    objects = [Object.new, [], nil, true, false] # TODO: check
     objects.each do |obj|
-      obj.instance_variable_set :@ivar, 12
-      send mid, obj
+      obj.instance_variable_set :@ivar, 12 unless obj.frozen?
+      yield obj
     end
   end
 
   def test_instance_eval_string_basic
-    forall_TYPE :instance_eval_string_basic_i
-  end
+    forall_TYPE do |o|
+      assert_equal nil,   o.instance_eval("nil")
+      assert_equal true,  o.instance_eval("true")
+      assert_equal false, o.instance_eval("false")
+      assert_equal o,     o.instance_eval("self")
+      assert_equal 1,     o.instance_eval("1")
+      assert_equal :sym,  o.instance_eval(":sym")
 
-  def instance_eval_string_basic_i(o)
-    assert_equal nil,   o.instance_eval("nil")
-    assert_equal true,  o.instance_eval("true")
-    assert_equal false, o.instance_eval("false")
-    assert_equal o,     o.instance_eval("self")
-    assert_equal 1,     o.instance_eval("1")
-    assert_equal :sym,  o.instance_eval(":sym")
+      assert_equal 11,    o.instance_eval("11")
+      assert_equal 12,    o.instance_eval("@ivar") unless o.frozen?
+      assert_equal 13,    o.instance_eval("@@cvar")
+      assert_equal 14,    o.instance_eval("$gvar__eval")
+      assert_equal 15,    o.instance_eval("Const")
+      assert_equal 16,    o.instance_eval("7 + 9")
+      assert_equal 17,    o.instance_eval("17.to_i")
+      assert_equal "18",  o.instance_eval(%q("18"))
+      assert_equal "19",  o.instance_eval(%q("1#{9}"))
 
-    assert_equal 11,    o.instance_eval("11")
-    assert_equal 12,    o.instance_eval("@ivar")
-    assert_equal 13,    o.instance_eval("@@cvar")
-    assert_equal 14,    o.instance_eval("$gvar__eval")
-    assert_equal 15,    o.instance_eval("Const")
-    assert_equal 16,    o.instance_eval("7 + 9")
-    assert_equal 17,    o.instance_eval("17.to_i")
-    assert_equal "18",  o.instance_eval(%q("18"))
-    assert_equal "19",  o.instance_eval(%q("1#{9}"))
-
-    1.times {
-      assert_equal 12,  o.instance_eval("@ivar")
-      assert_equal 13,  o.instance_eval("@@cvar")
-      assert_equal 14,  o.instance_eval("$gvar__eval")
-      assert_equal 15,  o.instance_eval("Const")
-    }
+      1.times {
+        assert_equal 12,  o.instance_eval("@ivar") unless o.frozen?
+        assert_equal 13,  o.instance_eval("@@cvar")
+        assert_equal 14,  o.instance_eval("$gvar__eval")
+        assert_equal 15,  o.instance_eval("Const")
+      }
+    end
   end
 
   def test_instance_eval_block_basic
-    forall_TYPE :instance_eval_block_basic_i
+    forall_TYPE do |o|
+      assert_equal nil,   o.instance_eval { nil }
+      assert_equal true,  o.instance_eval { true }
+      assert_equal false, o.instance_eval { false }
+      assert_equal o,     o.instance_eval { self }
+      assert_equal 1,     o.instance_eval { 1 }
+      assert_equal :sym,  o.instance_eval { :sym }
+
+      assert_equal 11,    o.instance_eval { 11 }
+      assert_equal 12,    o.instance_eval { @ivar } unless o.frozen?
+      assert_equal 13,    o.instance_eval { @@cvar }
+      assert_equal 14,    o.instance_eval { $gvar__eval }
+      assert_equal 15,    o.instance_eval { Const }
+      assert_equal 16,    o.instance_eval { 7 + 9 }
+      assert_equal 17,    o.instance_eval { 17.to_i }
+      assert_equal "18",  o.instance_eval { "18" }
+      assert_equal "19",  o.instance_eval { "1#{9}" }
+
+      1.times {
+        assert_equal 12,  o.instance_eval { @ivar } unless o.frozen?
+        assert_equal 13,  o.instance_eval { @@cvar }
+        assert_equal 14,  o.instance_eval { $gvar__eval }
+        assert_equal 15,  o.instance_eval { Const }
+      }
+    end
   end
 
-  def instance_eval_block_basic_i(o)
-    assert_equal nil,   o.instance_eval { nil }
-    assert_equal true,  o.instance_eval { true }
-    assert_equal false, o.instance_eval { false }
-    assert_equal o,     o.instance_eval { self }
-    assert_equal 1,     o.instance_eval { 1 }
-    assert_equal :sym,  o.instance_eval { :sym }
-
-    assert_equal 11,    o.instance_eval { 11 }
-    assert_equal 12,    o.instance_eval { @ivar }
-    assert_equal 13,    o.instance_eval { @@cvar }
-    assert_equal 14,    o.instance_eval { $gvar__eval }
-    assert_equal 15,    o.instance_eval { Const }
-    assert_equal 16,    o.instance_eval { 7 + 9 }
-    assert_equal 17,    o.instance_eval { 17.to_i }
-    assert_equal "18",  o.instance_eval { "18" }
-    assert_equal "19",  o.instance_eval { "1#{9}" }
-
-    1.times {
-      assert_equal 12,  o.instance_eval { @ivar }
-      assert_equal 13,  o.instance_eval { @@cvar }
-      assert_equal 14,  o.instance_eval { $gvar__eval }
-      assert_equal 15,  o.instance_eval { Const }
-    }
+  def test_instance_eval_block_self
+    # instance_eval(&block)'s self must not be sticky (jruby/jruby#2060)
+    pr = proc { self }
+    assert_equal self, pr.call
+    o = Object.new
+    assert_equal o, o.instance_eval(&pr)
+    assert_equal self, pr.call
   end
 
   def test_instance_eval_cvar
@@ -204,11 +208,45 @@ class TestEval < Test::Unit::TestCase
     end
   end
 
+  def test_instance_eval_method
+    bug2788 = '[ruby-core:28324]'
+    [Object.new, [], nil, true, false].each do |o|
+      assert_nothing_raised(TypeError, "#{bug2788} (#{o.inspect})") do
+        o.instance_eval {
+          def defd_using_instance_eval() :ok end
+        }
+      end
+      assert_equal(:ok, o.defd_using_instance_eval)
+      class << o
+        remove_method :defd_using_instance_eval
+      end
+    end
+  end
+
+  def test_instance_eval_on_argf_singleton_class
+    bug8188 = '[ruby-core:53839] [Bug #8188]'
+    assert_warning('', bug8188) do
+      ARGF.singleton_class.instance_eval{}
+    end
+  end
+
+  class Foo
+    Bar = 2
+  end
+
+  def test_instance_eval_const
+    bar = nil
+    assert_nothing_raised(NameError) do
+      bar = Foo.new.instance_eval("Bar")
+    end
+    assert_equal(2, bar)
+  end
+
   #
   # From ruby/test/ruby/test_eval.rb
   #
 
-  def test_ev
+  def make_test_binding
     local1 = "local1"
     lambda {
       local2 = "local2"
@@ -218,9 +256,9 @@ class TestEval < Test::Unit::TestCase
 
   def test_eval_orig
     assert_nil(eval(""))
-    $bad=false
-    eval 'while false; $bad = true; print "foo\n" end'
-    assert(!$bad)
+    bad=false
+    eval 'while false; bad = true; print "foo\n" end'
+    assert(!bad)
 
     assert(eval('TRUE'))
     assert(eval('true'))
@@ -243,34 +281,34 @@ class TestEval < Test::Unit::TestCase
     assert_equal(5, eval("i"))
     assert(eval("defined? i"))
 
-    $x = test_ev
-    assert_equal("local1", eval("local1", $x)) # normal local var
-    assert_equal("local2", eval("local2", $x)) # nested local var
-    $bad = true
+    x = make_test_binding
+    assert_equal("local1", eval("local1", x)) # normal local var
+    assert_equal("local2", eval("local2", x)) # nested local var
+    bad = true
     begin
       p eval("local1")
     rescue NameError		# must raise error
-      $bad = false
+      bad = false
     end
-    assert(!$bad)
+    assert(!bad)
 
     # !! use class_eval to avoid nested definition
-    self.class.class_eval %q(
+    x = self.class.class_eval %q(
       module EvTest
 	EVTEST1 = 25
 	evtest2 = 125
-	$x = binding
+	binding
       end
     )
-    assert_equal(25, eval("EVTEST1", $x))	# constant in module
-    assert_equal(125, eval("evtest2", $x))	# local var in module
-    $bad = true
+    assert_equal(25, eval("EVTEST1", x))	# constant in module
+    assert_equal(125, eval("evtest2", x))	# local var in module
+    bad = true
     begin
       eval("EVTEST1")
     rescue NameError		# must raise error
-      $bad = false
+      bad = false
     end
-    assert(!$bad)
+    assert(!bad)
 
     if false
       # Ruby 2.0 doesn't see Proc as Binding
@@ -280,10 +318,10 @@ class TestEval < Test::Unit::TestCase
       x = proc{proc{}}.call
       eval "i4 = 22", x
       assert_equal(22, eval("i4", x))
-      $x = []
+      t = []
       x = proc{proc{}}.call
-      eval "(0..9).each{|i5| $x[i5] = proc{i5*2}}", x
-      assert_equal(8, $x[4].call)
+      eval "(0..9).each{|i5| t[i5] = proc{i5*2}}", x
+      assert_equal(8, t[4].call)
     end
 
     x = binding
@@ -292,10 +330,10 @@ class TestEval < Test::Unit::TestCase
     x = proc{binding}.call
     eval "i = 22", x
     assert_equal(22, eval("i", x))
-    $x = []
+    t = []
     x = proc{binding}.call
-    eval "(0..9).each{|i5| $x[i5] = proc{i5*2}}", x
-    assert_equal(8, $x[4].call)
+    eval "(0..9).each{|i5| t[i5] = proc{i5*2}}", x
+    assert_equal(8, t[4].call)
     x = proc{binding}.call
     eval "for i6 in 1..1; j6=i6; end", x
     assert(eval("defined? i6", x))
@@ -384,22 +422,30 @@ class TestEval < Test::Unit::TestCase
     assert_equal("ok", x)
   end
 
+  def test_define_method_toplevel
+    feature6609 = '[ruby-core:45715]'
+    main = eval("self", TOPLEVEL_BINDING)
+    assert_nothing_raised(NoMethodError, feature6609) do
+      main.instance_eval do
+        define_method("feature6609_block") {feature6609}
+      end
+    end
+    assert_equal(feature6609, feature6609_block)
+
+    assert_nothing_raised(NoMethodError, feature6609) do
+      main.instance_eval do
+        define_method("feature6609_method", Object.instance_method(:feature6609_block))
+      end
+    end
+    assert_equal(feature6609, feature6609_method)
+  end
+
   def test_eval_using_integer_as_binding
     assert_raise(TypeError) { eval("", 1) }
   end
 
   def test_eval_raise
     assert_raise(RuntimeError) { eval("raise ''") }
-  end
-
-  def test_eval_using_untainted_binding_under_safe4
-    assert_raise(SecurityError) do
-      Thread.new do
-        b = binding
-        $SAFE = 4
-        eval("", b)
-      end.join
-    end
   end
 
   def test_eval_with_toplevel_binding # [ruby-dev:37142]
@@ -414,5 +460,51 @@ class TestEval < Test::Unit::TestCase
     assert_raise(ArgumentError) {eval("__ENCODING__".encode("utf-16le"))}
     assert_raise(ArgumentError) {eval("__ENCODING__".encode("utf-32be"))}
     assert_raise(ArgumentError) {eval("__ENCODING__".encode("utf-32le"))}
+  end
+
+  def test_instance_eval_method_proc
+    bug3860 = Class.new do
+      def initialize(a);
+        @a=a
+      end
+      def get(*args)
+        @a
+      end
+    end
+    foo = bug3860.new 1
+    foo_pr = foo.method(:get).to_proc
+    result = foo.instance_eval(&foo_pr)
+    assert_equal(1, result, 'Bug #3786, Bug #3860, [ruby-core:32501]')
+  end
+
+  def test_file_encoding
+    fname = "\u{3042}".encode("euc-jp")
+    assert_equal(fname, eval("__FILE__", nil, fname, 1))
+  end
+
+  def test_eval_location_fstring
+    o = Object.new
+    o.instance_eval "def foo() end", "generated code"
+    o.instance_eval "def bar() end", "generated code"
+
+    a, b = o.method(:foo).source_location[0],
+           o.method(:bar).source_location[0]
+
+    assert_same a, b
+  end
+
+  def test_gced_binding_block
+    assert_normal_exit %q{
+      def m
+        binding
+      end
+      GC.stress = true
+      b = nil
+      tap do
+        b = m {}
+      end
+      0.times.to_a
+      b.eval('yield')
+    }, '[Bug #10368]'
   end
 end

@@ -1,17 +1,19 @@
 require 'test/unit'
 require 'cgi'
+require_relative 'update_env'
 
 
 class CGIModrubyTest < Test::Unit::TestCase
+  include UpdateEnv
 
 
   def setup
-    @environ = {
+    @environ = {}
+    update_env(
       'SERVER_PROTOCOL' => 'HTTP/1.1',
       'REQUEST_METHOD'  => 'GET',
       #'QUERY_STRING'    => 'a=foo&b=bar',
-    }
-    ENV.update(@environ)
+    )
     CGI.class_eval { const_set(:MOD_RUBY, true) }
     Apache._reset()
     #@cgi = CGI.new
@@ -20,7 +22,7 @@ class CGIModrubyTest < Test::Unit::TestCase
 
 
   def teardown
-    @environ.each do |key, val| ENV.delete(key) end
+    ENV.update(@environ)
     CGI.class_eval { remove_const(:MOD_RUBY) }
   end
 
@@ -30,7 +32,7 @@ class CGIModrubyTest < Test::Unit::TestCase
     cgi = CGI.new
     assert(req._setup_cgi_env_invoked?)
     assert(! req._send_http_header_invoked?)
-    actual = cgi.header
+    actual = cgi.http_header
     assert_equal('', actual)
     assert_equal('text/html', req.content_type)
     assert(req._send_http_header_invoked?)
@@ -51,7 +53,7 @@ class CGIModrubyTest < Test::Unit::TestCase
     }
     assert(req._setup_cgi_env_invoked?)
     assert(! req._send_http_header_invoked?)
-    actual = cgi.header(options)
+    actual = cgi.http_header(options)
     assert_equal('', actual)
     assert_equal('image/gif', req.content_type)
     assert_equal('403 Forbidden', req.status_line)
@@ -71,7 +73,7 @@ class CGIModrubyTest < Test::Unit::TestCase
       'status'   => '200 OK',
       'location' => 'http://www.example.com/',
     }
-    actual = cgi.header(options)
+    cgi.http_header(options)
     assert_equal('200 OK', req.status_line)  # should be '302 Found' ?
     assert_equal(302, req.status)
     assert_equal('http://www.example.com/', req.headers_out['location'])
@@ -113,6 +115,7 @@ class Apache  #:nodoc:
       def hash.add(name, value)
         (self[name] ||= []) << value
       end
+      @http_header = nil
       @headers_out  = hash
       @status_line  = nil
       @status       = nil

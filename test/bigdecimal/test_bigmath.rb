@@ -61,28 +61,20 @@ class TestBigMath < Test::Unit::TestCase
                  atan(BigDecimal("1.08"), 72).round(72), '[ruby-dev:41257]')
   end
 
-  def test_exp
-    assert_in_epsilon(Math::E, exp(BigDecimal("1"), N))
-    assert_in_epsilon(Math.exp(N), exp(BigDecimal("20"), N))
-    assert_in_epsilon(Math.exp(40), exp(BigDecimal("40"), N))
-    assert_in_epsilon(Math.exp(-N), exp(BigDecimal("-20"), N))
-    assert_in_epsilon(Math.exp(-40), exp(BigDecimal("-40"), N))
-    begin
-      old_mode = BigDecimal.mode(BigDecimal::EXCEPTION_INFINITY)
-      BigDecimal.mode(BigDecimal::EXCEPTION_INFINITY, false)
-      assert(exp(BigDecimal::INFINITY, N).infinite?, "exp(INFINITY) is not an infinity")
-    ensure
-      #BigDecimal.mode(BigDecimal::EXCEPTION_INFINITY, old_mode)
-    end
-    assert_equal(0.0, exp(-BigDecimal::INFINITY, N))
-  end
-
   def test_log
-    assert_in_delta(0.0, log(BigDecimal("1"), N))
-    assert_in_delta(1.0, log(E(N), N))
-    assert_in_delta(Math.log(2.0), log(BigDecimal("2"), N))
-    assert_in_delta(2.0, log(E(N)*E(N), N))
-    assert_in_delta(Math.log(42.0), log(BigDecimal("42"), N))
-    assert_in_delta(Math.log(1e-42), log(BigDecimal("1e-42"), N))
+    assert_equal(0, BigMath.log(BigDecimal("1.0"), 10))
+    assert_in_epsilon(Math.log(10)*1000, BigMath.log(BigDecimal("1e1000"), 10))
+    assert_raise(Math::DomainError) {BigMath.log(BigDecimal("0"), 10)}
+    assert_raise(Math::DomainError) {BigMath.log(BigDecimal("-1"), 10)}
+    assert_separately(%w[-rbigdecimal], <<-SRC)
+    begin
+      x = BigMath.log(BigDecimal("1E19999999999999"), 10)
+    rescue FloatDomainError
+    else
+      unless x.infinite?
+        assert_in_epsilon(Math.log(10)*19999999999999, x)
+      end
+    end
+    SRC
   end
 end

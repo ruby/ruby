@@ -13,7 +13,7 @@ namespace eval ::tkmsgcat_demo {
 }
 
 
-# followings are same to original file included into Tk8.5a1's widget demos. 
+# followings are same to original file included into Tk8.5a1's widget demos.
 
 ## Messages for the Greek (Hellenic - "el") language.
 ## Please report any changes/suggestions to:

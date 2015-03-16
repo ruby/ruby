@@ -58,7 +58,7 @@ layout_proc = proc{|parent, mbtn|
 =end
 
 menubar = TkMenubar.new(nil, menu_spec,
-                        'layout_proc'=>layout_proc, 
+                        'layout_proc'=>layout_proc,
                         'tearoff'=>false,
                         'foreground'=>'grey40',
                         'activeforeground'=>'red',

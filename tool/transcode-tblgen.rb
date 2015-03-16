@@ -397,7 +397,7 @@ class ActionMap
   end
 
   def inspect
-    "\#<#{self.class}:" + 
+    "\#<#{self.class}:" +
     @tree.inspect +
     ">"
   end
@@ -704,14 +704,20 @@ def citrus_decode_mapsrc(ces, csid, mapsrcs)
   mapsrcs.split(',').each do |mapsrc|
     path = [$srcdir]
     mode = nil
-    if mapsrc.rindex('UCS', 0)
+    if mapsrc.rindex(/UCS(?:@[A-Z]+)?/, 0)
       mode = :from_ucs
-      from = mapsrc[4..-1]
+      from = mapsrc[$&.size+1..-1]
       path << SUBDIR.find{|x| from.rindex(x, 0) }
     else
       mode = :to_ucs
       path << SUBDIR.find{|x| mapsrc.rindex(x, 0) }
     end
+    if /\bUCS@(BMP|SMP|SIP|TIP|SSP)\b/ =~ mapsrc
+      plane = {"BMP"=>0, "SMP"=>1, "SIP"=>2, "TIP"=>3, "SSP"=>14}[$1]
+    else
+      plane = 0
+    end
+    plane <<= 16
     path << mapsrc.gsub(':', '@')
     path = File.join(*path)
     path << ".src"
@@ -730,14 +736,14 @@ def citrus_decode_mapsrc(ces, csid, mapsrcs)
           when /0x(\w+)\s*-\s*0x(\w+)\s*=\s*INVALID/
             # Citrus OOB_MODE
           when /(0x\w+)\s*=\s*(0x\w+)/
-            table.push << [$1.hex, citrus_cstomb(ces, csid, $2.hex)]
+            table.push << [plane | $1.hex, citrus_cstomb(ces, csid, $2.hex)]
           else
             raise "unknown notation '%s'"% l
           end
         when :to_ucs
           case l
           when /(0x\w+)\s*=\s*(0x\w+)/
-            table.push << [citrus_cstomb(ces, csid, $1.hex), $2.hex]
+            table.push << [citrus_cstomb(ces, csid, $1.hex), plane | $2.hex]
           else
             raise "unknown notation '%s'"% l
           end
@@ -746,6 +752,27 @@ def citrus_decode_mapsrc(ces, csid, mapsrcs)
     end
   end
   return table
+end
+
+def import_ucm(path)
+  to_ucs = []
+  from_ucs = []
+  File.foreach(File.join($srcdir, "ucm", path)) do |line|
+    uc, bs, fb = nil
+    if /^<U([0-9a-fA-F]+)>\s*([\+0-9a-fA-Fx\\]+)\s*\|(\d)/ =~ line
+      uc = $1.hex
+      bs = $2.delete('x\\')
+      fb = $3.to_i
+      next if uc < 128 && uc == bs.hex
+    elsif /^([<U0-9a-fA-F>+]+)\s*([\+0-9a-fA-Fx\\]+)\s*\|(\d)/ =~ line
+      uc = $1.scan(/[0-9a-fA-F]+>/).map(&:hex).pack("U*").unpack("H*")[0]
+      bs = $2.delete('x\\')
+      fb = $3.to_i
+    end
+    to_ucs << [bs, uc] if fb == 0 || fb == 3
+    from_ucs << [uc, bs] if fb == 0 || fb == 1
+  end
+  [to_ucs, from_ucs]
 end
 
 def encode_utf8(map)
@@ -870,51 +897,55 @@ UnitLength = {
 UnitLength.default = 1
 
 ValidEncoding = {
-  '1byte'       => '{00-ff}',
-  '2byte'       => '{00-ff}{00-ff}',
-  '4byte'       => '{00-ff}{00-ff}{00-ff}{00-ff}',
-  'US-ASCII'    => '{00-7f}',
-  'UTF-8'       => '{00-7f}
-                    {c2-df}{80-bf}
-                         e0{a0-bf}{80-bf}
-                    {e1-ec}{80-bf}{80-bf}
-                         ed{80-9f}{80-bf}
-                    {ee-ef}{80-bf}{80-bf}
-                         f0{90-bf}{80-bf}{80-bf}
-                    {f1-f3}{80-bf}{80-bf}{80-bf}
-                         f4{80-8f}{80-bf}{80-bf}',
-  'UTF-16BE'    => '{00-d7,e0-ff}{00-ff}
-                    {d8-db}{00-ff}{dc-df}{00-ff}',
-  'UTF-16LE'    => '{00-ff}{00-d7,e0-ff}
-                    {00-ff}{d8-db}{00-ff}{dc-df}',
-  'UTF-32BE'    => '0000{00-d7,e0-ff}{00-ff}
-                    00{01-10}{00-ff}{00-ff}',
-  'UTF-32LE'    => '{00-ff}{00-d7,e0-ff}0000
-                    {00-ff}{00-ff}{01-10}00',
-  'EUC-JP'      => '{00-7f}
-                    {a1-fe}{a1-fe}
-                    8e{a1-fe}
-                    8f{a1-fe}{a1-fe}',
-  'CP51932'     => '{00-7f}
-                    {a1-fe}{a1-fe}
-                    8e{a1-fe}',
-  'Shift_JIS'   => '{00-7f}
-                    {81-9f,e0-fc}{40-7e,80-fc}
-                    {a1-df}',
-  'EUC-KR'      => '{00-7f}
-                    {a1-fe}{a1-fe}',
-  'CP949'       => '{00-7f}
-                    {81-fe}{41-5a,61-7a,81-fe}',
-  'Big5'        => '{00-7f}
-                    {81-fe}{40-7e,a1-fe}',
-  'EUC-TW'      => '{00-7f}
-                    {a1-fe}{a1-fe}
-                    8e{a1-b0}{a1-fe}{a1-fe}',
-  'GBK'         => '{00-80}
-                    {81-fe}{40-7e,80-fe}',
-  'GB18030'     => '{00-7f}
-                    {81-fe}{40-7e,80-fe}
-                    {81-fe}{30-39}{81-fe}{30-39}',
+  '1byte'        => '{00-ff}',
+  '2byte'        => '{00-ff}{00-ff}',
+  '4byte'        => '{00-ff}{00-ff}{00-ff}{00-ff}',
+  'US-ASCII'     => '{00-7f}',
+  'UTF-8'        => '{00-7f}
+                     {c2-df}{80-bf}
+                          e0{a0-bf}{80-bf}
+                     {e1-ec}{80-bf}{80-bf}
+                          ed{80-9f}{80-bf}
+                     {ee-ef}{80-bf}{80-bf}
+                          f0{90-bf}{80-bf}{80-bf}
+                     {f1-f3}{80-bf}{80-bf}{80-bf}
+                          f4{80-8f}{80-bf}{80-bf}',
+  'UTF-16BE'     => '{00-d7,e0-ff}{00-ff}
+                     {d8-db}{00-ff}{dc-df}{00-ff}',
+  'UTF-16LE'     => '{00-ff}{00-d7,e0-ff}
+                     {00-ff}{d8-db}{00-ff}{dc-df}',
+  'UTF-32BE'     => '0000{00-d7,e0-ff}{00-ff}
+                     00{01-10}{00-ff}{00-ff}',
+  'UTF-32LE'     => '{00-ff}{00-d7,e0-ff}0000
+                     {00-ff}{00-ff}{01-10}00',
+  'EUC-JP'       => '{00-7f}
+                     {a1-fe}{a1-fe}
+                     8e{a1-fe}
+                     8f{a1-fe}{a1-fe}',
+  'CP51932'      => '{00-7f}
+                     {a1-fe}{a1-fe}
+                     8e{a1-fe}',
+  'EUC-JIS-2004' => '{00-7f}
+                     {a1-fe}{a1-fe}
+                     8e{a1-fe}
+                     8f{a1-fe}{a1-fe}',
+  'Shift_JIS'    => '{00-7f}
+                     {81-9f,e0-fc}{40-7e,80-fc}
+                     {a1-df}',
+  'EUC-KR'       => '{00-7f}
+                     {a1-fe}{a1-fe}',
+  'CP949'        => '{00-7f}
+                     {81-fe}{41-5a,61-7a,81-fe}',
+  'Big5'         => '{00-7f}
+                     {81-fe}{40-7e,a1-fe}',
+  'EUC-TW'       => '{00-7f}
+                     {a1-fe}{a1-fe}
+                     8e{a1-b0}{a1-fe}{a1-fe}',
+  'GBK'          => '{00-80}
+                     {81-fe}{40-7e,80-fe}',
+  'GB18030'      => '{00-7f}
+                     {81-fe}{40-7e,80-fe}
+                     {81-fe}{30-39}{81-fe}{30-39}',
 }
 
 def ValidEncoding(enc)

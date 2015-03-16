@@ -1,9 +1,7 @@
-require 'yaml'
 require 'rubygems/command'
 require 'rubygems/local_remote_options'
 require 'rubygems/version_option'
-require 'rubygems/source_info_cache'
-require 'rubygems/format'
+require 'rubygems/package'
 
 class Gem::Commands::SpecificationCommand < Gem::Command
 
@@ -11,12 +9,15 @@ class Gem::Commands::SpecificationCommand < Gem::Command
   include Gem::VersionOption
 
   def initialize
+    Gem.load_yaml
+
     super 'specification', 'Display gem specification (in yaml)',
           :domain => :local, :version => Gem::Requirement.default,
           :format => :yaml
 
     add_version_option('examine')
     add_platform_option
+    add_prerelease_option
 
     add_option('--all', 'Output specifications for all versions of',
                'the gem') do |value, options|
@@ -27,7 +28,7 @@ class Gem::Commands::SpecificationCommand < Gem::Command
       options[:format] = :ruby
     end
 
-    add_option('--yaml', 'Output RUBY format') do |value, options|
+    add_option('--yaml', 'Output YAML format') do |value, options|
       options[:format] = :yaml
     end
 
@@ -49,6 +50,22 @@ FIELD         name of gemspec field to show
     "--local --version '#{Gem::Requirement.default}' --yaml"
   end
 
+  def description # :nodoc:
+    <<-EOF
+The specification command allows you to extract the specification from
+a gem for examination.
+
+The specification can be output in YAML, ruby or Marshal formats.
+
+Specific fields in the specification can be extracted in YAML format:
+
+  $ gem spec rake summary
+  --- Ruby based make-like utility.
+  ...
+
+    EOF
+  end
+
   def usage # :nodoc:
     "#{program_name} [GEMFILE] [FIELD]"
   end
@@ -62,45 +79,58 @@ FIELD         name of gemspec field to show
             "Please specify a gem name or file on the command line"
     end
 
-    dep = Gem::Dependency.new gem, options[:version]
+    case v = options[:version]
+    when String
+      req = Gem::Requirement.create v
+    when Gem::Requirement
+      req = v
+    else
+      raise Gem::CommandLineError, "Unsupported version type: '#{v}'"
+    end
+
+    if !req.none? and options[:all]
+      alert_error "Specify --all or -v, not both"
+      terminate_interaction 1
+    end
+
+    if options[:all]
+      dep = Gem::Dependency.new gem
+    else
+      dep = Gem::Dependency.new gem, req
+    end
 
     field = get_one_optional_argument
 
-    if field then
-      field = field.intern
-
-      if options[:format] == :ruby then
-        raise Gem::CommandLineError, "--ruby and FIELD are mutually exclusive"
-      end
-
-      unless Gem::Specification.attribute_names.include? field then
-        raise Gem::CommandLineError,
-              "no field %p on Gem::Specification" % field.to_s
-      end
-    end
+    raise Gem::CommandLineError, "--ruby and FIELD are mutually exclusive" if
+      field and options[:format] == :ruby
 
     if local? then
       if File.exist? gem then
-        specs << Gem::Format.from_file_by_path(gem).spec rescue nil
+        specs << Gem::Package.new(gem).spec rescue nil
       end
 
       if specs.empty? then
-        specs.push(*Gem.source_index.search(dep))
+        specs.push(*dep.matching_specs)
       end
     end
 
     if remote? then
-      found = Gem::SpecFetcher.fetcher.fetch dep
+      dep.prerelease = options[:prerelease]
+      found, _ = Gem::SpecFetcher.fetcher.spec_for_dependency dep
 
       specs.push(*found.map { |spec,| spec })
     end
 
     if specs.empty? then
-      alert_error "Unknown gem '#{gem}'"
+      alert_error "No gem matching '#{dep}' found"
       terminate_interaction 1
     end
 
-    output = lambda do |s|
+    unless options[:all] then
+      specs = [specs.max_by { |s| s.version }]
+    end
+
+    specs.each do |s|
       s = s.send field if field
 
       say case options[:format]
@@ -111,14 +141,5 @@ FIELD         name of gemspec field to show
 
       say "\n"
     end
-
-    if options[:all] then
-      specs.each(&output)
-    else
-      spec = specs.sort_by { |s| s.version }.last
-      output[spec]
-    end
   end
-
 end
-

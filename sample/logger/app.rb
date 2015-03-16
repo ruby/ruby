@@ -41,6 +41,6 @@ end
 status = MyApp.new(1, 2, 3).start
 
 if status != 0
-  puts 'Some error(s) occured.'
+  puts 'Some error(s) occurred.'
   puts 'See "app.log".'
 end

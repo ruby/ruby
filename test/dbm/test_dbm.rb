@@ -10,17 +10,13 @@ if defined? DBM
   require 'tmpdir'
   require 'fileutils'
 
-  class TestDBM < Test::Unit::TestCase
-    def TestDBM.uname_s
+  class TestDBM_RDONLY < Test::Unit::TestCase
+    def TestDBM_RDONLY.uname_s
       require 'rbconfig'
       case RbConfig::CONFIG['target_os']
       when 'cygwin'
-        require 'Win32API'
-        uname = Win32API.new('cygwin1', 'uname', 'P', 'I')
-        utsname = ' ' * 100
-        raise 'cannot get system name' if uname.call(utsname) == -1
-
-        utsname.unpack('A20' * 5)[0]
+	require 'etc'
+	Etc.uname[:sysname]
       else
         RbConfig::CONFIG['target_os']
       end
@@ -31,7 +27,6 @@ if defined? DBM
       @tmpdir = Dir.mktmpdir("tmptest_dbm")
       @prefix = "tmptest_dbm_#{$$}"
       @path = "#{@tmpdir}/#{@prefix}_"
-      assert_instance_of(DBM, @dbm = DBM.new(@path))
 
       # prepare to make readonly DBM file
       DBM.open("#{@tmpdir}/#{@prefix}_rdonly") {|dbm|
@@ -43,8 +38,41 @@ if defined? DBM
       assert_instance_of(DBM, @dbm_rdonly = DBM.new("#{@tmpdir}/#{@prefix}_rdonly", nil))
     end
     def teardown
-      assert_nil(@dbm.close)
       assert_nil(@dbm_rdonly.close)
+      ObjectSpace.each_object(DBM) do |obj|
+        obj.close unless obj.closed?
+      end
+      FileUtils.remove_entry_secure @tmpdir
+    end
+
+    def test_delete_rdonly
+      if /^CYGWIN_9/ !~ SYSTEM
+        assert_raise(DBMError) {
+          @dbm_rdonly.delete("foo")
+        }
+
+        assert_nil(@dbm_rdonly.delete("bar"))
+      end
+    end
+
+    def test_fetch_not_found
+      notfound = nil
+      result = Object.new
+      assert_same(result, @dbm_rdonly.fetch("bar") {|k| notfound = k; result})
+      assert_equal("bar", notfound)
+      assert_predicate(notfound, :tainted?)
+    end
+  end
+
+  class TestDBM < Test::Unit::TestCase
+    def setup
+      @tmpdir = Dir.mktmpdir("tmptest_dbm")
+      @prefix = "tmptest_dbm_#{$$}"
+      @path = "#{@tmpdir}/#{@prefix}_"
+      assert_instance_of(DBM, @dbm = DBM.new(@path))
+    end
+    def teardown
+      assert_nil(@dbm.close) unless @dbm.closed?
       ObjectSpace.each_object(DBM) do |obj|
         obj.close unless obj.closed?
       end
@@ -63,12 +91,55 @@ if defined? DBM
       end
     end
 
-    def have_fork?
-      begin
-        fork{}
-        true
-      rescue NotImplementedError
-        false
+    def test_dbmfile_suffix
+      @dbm.close
+      prefix = File.basename(@path)
+      suffixes = Dir.entries(@tmpdir).grep(/\A#{Regexp.escape prefix}/) { $' }.sort
+      pagname = "#{@path}.pag"
+      dirname = "#{@path}.dir"
+      dbname = "#{@path}.db"
+      case DBM::VERSION
+      when /\bNDBM\b/
+        assert_equal(%w[.dir .pag], suffixes)
+        assert(File.zero?(pagname))
+        assert(File.zero?(dirname))
+      when /\bGDBM\b/
+        assert_equal(%w[.dir .pag], suffixes)
+        assert(!File.zero?(pagname))
+        assert(!File.zero?(dirname))
+        pag = File.binread(pagname, 16)
+        pag_magics = [
+          0x13579ace, # GDBM_OMAGIC
+          0x13579acd, # GDBM_MAGIC32
+          0x13579acf, # GDBM_MAGIC64
+        ]
+        assert_operator(pag_magics, :include?,
+                        pag.unpack("i")[0]) # native endian, native int.
+        if !File.identical?(pagname, dirname)
+          dir = File.binread(dirname, 16)
+          assert_equal("GDBM", dir[0, 4])
+        end
+      when /\bBerkeley DB\b/
+        assert_equal(%w[.db], suffixes)
+        assert(!File.zero?(dbname))
+        db = File.binread(dbname, 16)
+        assert(db[0,4].unpack("N") == [0x00061561] || # Berkeley DB 1
+               db[12,4].unpack("L") == [0x00061561]) # Berkeley DBM 2 or later.
+      when /\bQDBM\b/
+        assert_equal(%w[.dir .pag], suffixes)
+        assert(!File.zero?(pagname))
+        assert(!File.zero?(dirname))
+        dir = File.binread(dirname, 16)
+        assert_equal("[depot]\0\v", dir[0, 9])
+        pag = File.binread(pagname, 16)
+        if [1].pack("s") == "\x00\x01" # big endian
+          assert_equal("[DEPOT]\n\f", pag[0, 9])
+        else # little endian
+          assert_equal("[depot]\n\f", pag[0, 9])
+        end
+      end
+      if suffixes == %w[.db]
+        assert_match(/\bBerkeley DB\b/, DBM::VERSION)
       end
     end
 
@@ -79,11 +150,14 @@ if defined? DBM
       assert_equal(foo, true)
       assert_nil(dbm.close)
     end
+
     def test_s_open_no_create
+      skip "dbm_open() is broken on libgdbm 1.8.0 or prior (#{DBM::VERSION})" if /GDBM version 1\.(?:[0-7]\b|8\.0)/ =~ DBM::VERSION
       assert_nil(dbm = DBM.open("#{@tmpdir}/#{@prefix}", nil))
     ensure
       dbm.close if dbm
     end
+
     def test_s_open_with_block
       assert_equal(DBM.open("#{@tmpdir}/#{@prefix}") { :foo }, :foo)
     end
@@ -322,15 +396,8 @@ if defined? DBM
       assert_equal(2, @dbm.size)
 
       assert_nil(@dbm.delete(key))
-
-      if /^CYGWIN_9/ !~ SYSTEM
-        assert_raise(DBMError) {
-          @dbm_rdonly.delete("foo")
-        }
-
-        assert_nil(@dbm_rdonly.delete("bar"))
-      end
     end
+
     def test_delete_with_block
       key = 'no called block'
       @dbm[key] = 'foo'
@@ -380,7 +447,7 @@ if defined? DBM
           n+=1
           true
         }
-      rescue
+      rescue RuntimeError
       end
       assert_equal(51, n)
       check_size(49, @dbm)
@@ -502,6 +569,10 @@ if defined? DBM
       FileUtils.remove_entry_secure @tmproot if File.directory?(@tmproot)
     end
 
+    def test_version
+      assert_instance_of(String, DBM::VERSION)
+    end
+
     def test_reader_open_notexist
       assert_raise(Errno::ENOENT) {
         DBM.open("#{@tmproot}/a", 0666, DBM::READER)
@@ -509,6 +580,7 @@ if defined? DBM
     end
 
     def test_writer_open_notexist
+      skip "dbm_open() is broken on libgdbm 1.8.0 or prior (#{DBM::VERSION})" if /GDBM version 1\.(?:[0-7]\b|8\.0)/ =~ DBM::VERSION
       assert_raise(Errno::ENOENT) {
         DBM.open("#{@tmproot}/a", 0666, DBM::WRITER)
       }

@@ -71,6 +71,10 @@
 #include <socks.h>
 #endif
 
+#ifndef HAVE_TYPE_SOCKLEN_T
+typedef int socklen_t;
+#endif
+
 #include "addrinfo.h"
 #include "sockport.h"
 
@@ -114,9 +118,6 @@ static struct afd {
 #define ENI_FAMILY	5
 #define ENI_SALEN	6
 
-#ifdef __HAIKU__
-#define HAVE_INET_NTOP
-#endif
 #ifndef HAVE_INET_NTOP
 static const char *
 inet_ntop(int af, const void *addr, char *numaddr, size_t numaddr_len)
@@ -154,8 +155,8 @@ getnameinfo(const struct sockaddr *sa, socklen_t salen, char *host, socklen_t ho
 	if (sa == NULL)
 		return ENI_NOSOCKET;
 
-	len = SA_LEN(sa);
-	if (len != salen) return ENI_SALEN;
+	if (!VALIDATE_SOCKLEN(sa, salen)) return ENI_SALEN;
+        len = salen;
 
 	family = sa->sa_family;
 	for (i = 0; afdl[i].a_af; i++)

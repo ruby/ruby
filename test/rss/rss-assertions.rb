@@ -332,7 +332,7 @@ EOA
       _wrap_assertion do
         [nil, "text", "html"].each do |type|
           attr = ""
-          attr = " type=\"#{type}\""if type
+          attr = " type=\"#{type}\"" if type
           assert_parse(generator.call(<<-EOA), :nothing_raised)
   <#{tag_name}#{attr}/>
 EOA
@@ -972,7 +972,7 @@ EOA
                                      feed_readers) do |maker|
             yield maker
             targets = chain_reader(maker, maker_readers)
-            target = targets.new_child
+            targets.new_child
           end
         end
 
@@ -1070,7 +1070,7 @@ EOA
             target.uri = "http://example.com/~me/"
             target.email = "me@example.com"
 
-            target = targets.new_child
+            targets.new_child
           end
         end
       end

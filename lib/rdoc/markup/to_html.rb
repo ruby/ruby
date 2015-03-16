@@ -1,23 +1,24 @@
-require 'rdoc/markup/formatter'
-require 'rdoc/markup/inline'
-
 require 'cgi'
 
 ##
-# Outputs RDoc markup as HTML
+# Outputs RDoc markup as HTML.
 
 class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
+
+  include RDoc::Text
+
+  # :section: Utilities
 
   ##
   # Maps RDoc::Markup::Parser::LIST_TOKENS types to HTML tags
 
   LIST_TYPE_TO_HTML = {
-    :BULLET => ['<ul>', '</ul>'],
-    :LABEL  => ['<dl>', '</dl>'],
-    :LALPHA => ['<ol style="display: lower-alpha">', '</ol>'],
-    :NOTE   => ['<table>', '</table>'],
-    :NUMBER => ['<ol>', '</ol>'],
-    :UALPHA => ['<ol style="display: upper-alpha">', '</ol>'],
+    :BULLET => ['<ul>',                                      '</ul>'],
+    :LABEL  => ['<dl class="rdoc-list label-list">',         '</dl>'],
+    :LALPHA => ['<ol style="list-style-type: lower-alpha">', '</ol>'],
+    :NOTE   => ['<dl class="rdoc-list note-list">',          '</dl>'],
+    :NUMBER => ['<ol>',                                      '</ol>'],
+    :UALPHA => ['<ol style="list-style-type: upper-alpha">', '</ol>'],
   }
 
   attr_reader :res # :nodoc:
@@ -25,145 +26,131 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
   attr_reader :list # :nodoc:
 
   ##
-  # Converts a target url to one that is relative to a given path
+  # The RDoc::CodeObject HTML is being generated for.  This is used to
+  # generate namespaced URI fragments
 
-  def self.gen_relative_url(path, target)
-    from        = File.dirname path
-    to, to_file = File.split target
+  attr_accessor :code_object
 
-    from = from.split "/"
-    to   = to.split "/"
+  ##
+  # Path to this document for relative links
 
-    from.delete '.'
-    to.delete '.'
+  attr_accessor :from_path
 
-    while from.size > 0 and to.size > 0 and from[0] == to[0] do
-      from.shift
-      to.shift
-    end
+  # :section:
 
-    from.fill ".."
-    from.concat to
-    from << to_file
-    File.join(*from)
-  end
+  ##
+  # Creates a new formatter that will output HTML
 
-  def initialize
+  def initialize options, markup = nil
     super
 
-    @th = nil
+    @code_object = nil
+    @from_path = ''
     @in_list_entry = nil
     @list = nil
+    @th = nil
+    @hard_break = "<br>\n"
 
-    # external hyperlinks
-    @markup.add_special(/((link:|https?:|mailto:|ftp:|www\.)\S+\w)/, :HYPERLINK)
+    # external links
+    @markup.add_special(/(?:link:|https?:|mailto:|ftp:|irc:|www\.)\S+\w/,
+                        :HYPERLINK)
 
-    # and links of the form  <text>[<url>]
-    @markup.add_special(/(((\{.*?\})|\b\S+?)\[\S+?\.\S+?\])/, :TIDYLINK)
+    add_special_RDOCLINK
+    add_special_TIDYLINK
 
     init_tags
   end
 
-  ##
-  # Maps attributes to HTML tags
+  # :section: Special Handling
+  #
+  # These methods handle special markup added by RDoc::Markup#add_special.
 
-  def init_tags
-    add_tag :BOLD, "<b>",  "</b>"
-    add_tag :TT,   "<tt>", "</tt>"
-    add_tag :EM,   "<em>", "</em>"
-  end
+  def handle_RDOCLINK url # :nodoc:
+    case url
+    when /^rdoc-ref:/
+      $'
+    when /^rdoc-label:/
+      text = $'
 
-  ##
-  # Generate a hyperlink for url, labeled with text. Handle the
-  # special cases for img: and link: described under handle_special_HYPERLINK
+      text = case text
+             when /\Alabel-/    then $'
+             when /\Afootmark-/ then $'
+             when /\Afoottext-/ then $'
+             else                    text
+             end
 
-  def gen_url(url, text)
-    if url =~ /([A-Za-z]+):(.*)/ then
-      type = $1
-      path = $2
+      gen_url url, text
+    when /^rdoc-image:/
+      "<img src=\"#{$'}\">"
     else
-      type = "http"
-      path = url
-      url  = "http://#{url}"
-    end
+      url =~ /\Ardoc-[a-z]+:/
 
-    if type == "link" then
-      url = if path[0, 1] == '#' then # is this meaningful?
-              path
-            else
-              self.class.gen_relative_url @from_path, path
-            end
-    end
-
-    if (type == "http" or type == "link") and
-       url =~ /\.(gif|png|jpg|jpeg|bmp)$/ then
-      "<img src=\"#{url}\" />"
-    else
-      "<a href=\"#{url}\">#{text.sub(%r{^#{type}:/*}, '')}</a>"
+      $'
     end
   end
 
   ##
-  # And we're invoked with a potential external hyperlink mailto:
-  # just gets inserted. http: links are checked to see if they
-  # reference an image. If so, that image gets inserted using an
-  # <img> tag. Otherwise a conventional <a href> is used.  We also
-  # support a special type of hyperlink, link:, which is a reference
-  # to a local file whose path is relative to the --op directory.
+  # +special+ is a <code><br></code>
+
+  def handle_special_HARD_BREAK special
+    '<br>'
+  end
+
+  ##
+  # +special+ is a potential link.  The following schemes are handled:
+  #
+  # <tt>mailto:</tt>::
+  #   Inserted as-is.
+  # <tt>http:</tt>::
+  #   Links are checked to see if they reference an image. If so, that image
+  #   gets inserted using an <tt><img></tt> tag. Otherwise a conventional
+  #   <tt><a href></tt> is used.
+  # <tt>link:</tt>::
+  #   Reference to a local file relative to the output directory.
 
   def handle_special_HYPERLINK(special)
     url = special.text
+
     gen_url url, url
   end
 
   ##
-  # Here's a hypedlink where the label is different to the URL
-  #  <label>[url] or {long label}[url]
+  # +special+ is an rdoc-schemed link that will be converted into a hyperlink.
+  #
+  # For the +rdoc-ref+ scheme the named reference will be returned without
+  # creating a link.
+  #
+  # For the +rdoc-label+ scheme the footnote and label prefixes are stripped
+  # when creating a link.  All other contents will be linked verbatim.
+
+  def handle_special_RDOCLINK special
+    handle_RDOCLINK special.text
+  end
+
+  ##
+  # This +special+ is a link where the label is different from the URL
+  # <tt>label[url]</tt> or <tt>{long label}[url]</tt>
 
   def handle_special_TIDYLINK(special)
     text = special.text
 
-    return text unless text =~ /\{(.*?)\}\[(.*?)\]/ or text =~ /(\S+)\[(.*?)\]/
+    return text unless
+      text =~ /^\{(.*)\}\[(.*?)\]$/ or text =~ /^(\S+)\[(.*?)\]$/
 
     label = $1
     url   = $2
+
+    label = handle_RDOCLINK label if /^rdoc-image:/ =~ label
+
     gen_url url, label
   end
 
-  ##
-  # This is a higher speed (if messier) version of wrap
-
-  def wrap(txt, line_len = 76)
-    res = []
-    sp = 0
-    ep = txt.length
-
-    while sp < ep
-      # scan back for a space
-      p = sp + line_len - 1
-      if p >= ep
-        p = ep
-      else
-        while p > sp and txt[p] != ?\s
-          p -= 1
-        end
-        if p <= sp
-          p = sp + line_len
-          while p < ep and txt[p] != ?\s
-            p += 1
-          end
-        end
-      end
-      res << txt[sp...p] << "\n"
-      sp = p
-      sp += 1 while sp < ep and txt[sp] == ?\s
-    end
-
-    res.join
-  end
-
-  ##
   # :section: Visitor
+  #
+  # These methods implement the HTML visitor.
+
+  ##
+  # Prepares the visitor for HTML generation
 
   def start_accepting
     @res = []
@@ -171,173 +158,240 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
     @list = []
   end
 
+  ##
+  # Returns the generated output
+
   def end_accepting
     @res.join
   end
 
-  def accept_paragraph(paragraph)
-    @res << annotate("<p>") + "\n"
-    @res << wrap(convert_flow(@am.flow(paragraph.text)))
-    @res << annotate("</p>") + "\n"
+  ##
+  # Adds +block_quote+ to the output
+
+  def accept_block_quote block_quote
+    @res << "\n<blockquote>"
+
+    block_quote.parts.each do |part|
+      part.accept self
+    end
+
+    @res << "</blockquote>\n"
   end
 
-  def accept_verbatim(verbatim)
-    @res << annotate("<pre>") << "\n"
-    @res << CGI.escapeHTML(verbatim.text)
-    @res << annotate("</pre>") << "\n"
+  ##
+  # Adds +paragraph+ to the output
+
+  def accept_paragraph paragraph
+    @res << "\n<p>"
+    text = paragraph.text @hard_break
+    text = text.gsub(/\r?\n/, ' ')
+    @res << wrap(to_html(text))
+    @res << "</p>\n"
   end
 
-  def accept_rule(rule)
-    size = rule.weight
-    size = 10 if size > 10
-    @res << "<hr style=\"height: #{size}px\"></hr>"
+  ##
+  # Adds +verbatim+ to the output
+
+  def accept_verbatim verbatim
+    text = verbatim.text.rstrip
+
+    klass = nil
+
+    content = if verbatim.ruby? or parseable? text then
+                begin
+                  tokens = RDoc::RubyLex.tokenize text, @options
+                  klass  = ' class="ruby"'
+
+                  RDoc::TokenStream.to_html tokens
+                rescue RDoc::RubyLex::Error
+                  CGI.escapeHTML text
+                end
+              else
+                CGI.escapeHTML text
+              end
+
+    if @options.pipe then
+      @res << "\n<pre><code>#{CGI.escapeHTML text}</code></pre>\n"
+    else
+      @res << "\n<pre#{klass}>#{content}</pre>\n"
+    end
   end
+
+  ##
+  # Adds +rule+ to the output
+
+  def accept_rule rule
+    @res << "<hr>\n"
+  end
+
+  ##
+  # Prepares the visitor for consuming +list+
 
   def accept_list_start(list)
     @list << list.type
-    @res << html_list_name(list.type, true) << "\n"
+    @res << html_list_name(list.type, true)
     @in_list_entry.push false
   end
+
+  ##
+  # Finishes consumption of +list+
 
   def accept_list_end(list)
     @list.pop
     if tag = @in_list_entry.pop
-      @res << annotate(tag) << "\n"
+      @res << tag
     end
     @res << html_list_name(list.type, false) << "\n"
   end
 
+  ##
+  # Prepares the visitor for consuming +list_item+
+
   def accept_list_item_start(list_item)
     if tag = @in_list_entry.last
-      @res << annotate(tag) << "\n"
+      @res << tag
     end
 
     @res << list_item_start(list_item, @list.last)
   end
 
+  ##
+  # Finishes consumption of +list_item+
+
   def accept_list_item_end(list_item)
     @in_list_entry[-1] = list_end_for(@list.last)
   end
+
+  ##
+  # Adds +blank_line+ to the output
 
   def accept_blank_line(blank_line)
     # @res << annotate("<p />") << "\n"
   end
 
-  def accept_heading(heading)
-    @res << convert_heading(heading.level, @am.flow(heading.text))
+  ##
+  # Adds +heading+ to the output.  The headings greater than 6 are trimmed to
+  # level 6.
+
+  def accept_heading heading
+    level = [6, heading.level].min
+
+    label = heading.label @code_object
+
+    @res << if @options.output_decoration
+              "\n<h#{level} id=\"#{label}\">"
+            else
+              "\n<h#{level}>"
+            end
+    @res << to_html(heading.text)
+    unless @options.pipe then
+      @res << "<span><a href=\"##{label}\">&para;</a>"
+      @res << " <a href=\"#top\">&uarr;</a></span>"
+    end
+    @res << "</h#{level}>\n"
   end
+
+  ##
+  # Adds +raw+ to the output
 
   def accept_raw raw
     @res << raw.parts.join("\n")
   end
 
-  private
+  # :section: Utilities
 
   ##
-  # Converts string +item+
+  # CGI-escapes +text+
 
-  def convert_string(item)
-    in_tt? ? convert_string_simple(item) : convert_string_fancy(item)
+  def convert_string(text)
+    CGI.escapeHTML text
   end
 
   ##
-  # Escapes HTML in +item+
+  # Generate a link to +url+ with content +text+.  Handles the special cases
+  # for img: and link: described under handle_special_HYPERLINK
 
-  def convert_string_simple(item)
-    CGI.escapeHTML item
+  def gen_url url, text
+    scheme, url, id = parse_url url
+
+    if %w[http https link].include?(scheme) and
+       url =~ /\.(gif|png|jpg|jpeg|bmp)$/ then
+      "<img src=\"#{url}\" />"
+    else
+      text = text.sub %r%^#{scheme}:/*%i, ''
+      text = text.sub %r%^[*\^](\d+)$%,   '\1'
+
+      link = "<a#{id} href=\"#{url}\">#{text}</a>"
+
+      link = "<sup>#{link}</sup>" if /"foot/ =~ id
+
+      link
+    end
   end
 
   ##
-  # Converts ampersand, dashes, elipsis, quotes, copyright and registered
-  # trademark symbols to HTML escaped Unicode.
-
-  def convert_string_fancy(item)
-    # convert ampersand before doing anything else
-    item.gsub(/&/, '&amp;').
-
-    # convert -- to em-dash, (-- to en-dash)
-      gsub(/---?/, '&#8212;'). #gsub(/--/, '&#8211;').
-
-    # convert ... to elipsis (and make sure .... becomes .<elipsis>)
-      gsub(/\.\.\.\./, '.&#8230;').gsub(/\.\.\./, '&#8230;').
-
-    # convert single closing quote
-      gsub(%r{([^ \t\r\n\[\{\(])\'}, '\1&#8217;'). # }
-      gsub(%r{\'(?=\W|s\b)}, '&#8217;').
-
-    # convert single opening quote
-      gsub(/'/, '&#8216;').
-
-    # convert double closing quote
-      gsub(%r{([^ \t\r\n\[\{\(])\"(?=\W)}, '\1&#8221;'). # }
-
-    # convert double opening quote
-      gsub(/"/, '&#8220;').
-
-    # convert copyright
-      gsub(/\(c\)/, '&#169;').
-
-    # convert registered trademark
-      gsub(/\(r\)/, '&#174;')
-  end
-
-  ##
-  # Converts headings to hN elements
-
-  def convert_heading(level, flow)
-    [annotate("<h#{level}>"),
-     convert_flow(flow),
-     annotate("</h#{level}>\n")].join
-  end
-
-  ##
-  # Determins the HTML list element for +list_type+ and +open_tag+
+  # Determines the HTML list element for +list_type+ and +open_tag+
 
   def html_list_name(list_type, open_tag)
     tags = LIST_TYPE_TO_HTML[list_type]
     raise RDoc::Error, "Invalid list type: #{list_type.inspect}" unless tags
-    annotate tags[open_tag ? 0 : 1]
+    tags[open_tag ? 0 : 1]
   end
 
   ##
-  # Starts a list item
+  # Maps attributes to HTML tags
+
+  def init_tags
+    add_tag :BOLD, "<strong>", "</strong>"
+    add_tag :TT,   "<code>",   "</code>"
+    add_tag :EM,   "<em>",     "</em>"
+  end
+
+  ##
+  # Returns the HTML tag for +list_type+, possible using a label from
+  # +list_item+
 
   def list_item_start(list_item, list_type)
     case list_type
     when :BULLET, :LALPHA, :NUMBER, :UALPHA then
-      annotate("<li>")
-
-    when :LABEL then
-      annotate("<dt>") +
-        convert_flow(@am.flow(list_item.label)) +
-        annotate("</dt>") +
-        annotate("<dd>")
-
-    when :NOTE then
-      annotate("<tr>") +
-        annotate("<td valign=\"top\">") +
-        convert_flow(@am.flow(list_item.label)) +
-        annotate("</td>") +
-        annotate("<td>")
+      "<li>"
+    when :LABEL, :NOTE then
+      Array(list_item.label).map do |label|
+        "<dt>#{to_html label}\n"
+      end.join << "<dd>"
     else
       raise RDoc::Error, "Invalid list type: #{list_type.inspect}"
     end
   end
 
   ##
-  # Ends a list item
+  # Returns the HTML end-tag for +list_type+
 
   def list_end_for(list_type)
     case list_type
     when :BULLET, :LALPHA, :NUMBER, :UALPHA then
       "</li>"
-    when :LABEL then
+    when :LABEL, :NOTE then
       "</dd>"
-    when :NOTE then
-      "</td></tr>"
     else
       raise RDoc::Error, "Invalid list type: #{list_type.inspect}"
     end
+  end
+
+  ##
+  # Returns true if text is valid ruby syntax
+
+  def parseable? text
+    eval("BEGIN {return true}\n#{text}")
+  rescue SyntaxError
+    false
+  end
+
+  ##
+  # Converts +item+ to HTML using RDoc::Text#to_html
+
+  def to_html item
+    super convert_flow @am.flow item
   end
 
 end

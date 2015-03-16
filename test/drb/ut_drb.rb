@@ -2,6 +2,8 @@ require 'drb/drb'
 require 'drb/extserv'
 require 'timeout'
 
+module DRbTests
+
 class XArray < Array
   def initialize(ary)
     ary.each do |x|
@@ -32,6 +34,8 @@ class DRbEx
   class UError < RuntimeError; end
 
   def initialize
+    @xary2_hash = nil
+    @hash = nil
     @hello = 'hello'
   end
   attr_reader :hello
@@ -145,6 +149,8 @@ class DRbEx
   end
 end
 
+end
+
 if __FILE__ == $0
   def ARGV.shift
     it = super()
@@ -154,7 +160,8 @@ if __FILE__ == $0
 
   DRb::DRbServer.default_argc_limit(8)
   DRb::DRbServer.default_load_limit(4096)
-  DRb.start_service('druby://localhost:0', DRbEx.new)
+  DRb.start_service('druby://localhost:0', DRbTests::DRbEx.new)
   es = DRb::ExtServ.new(ARGV.shift, ARGV.shift)
   DRb.thread.join
+  es.stop_service if es.alive?
 end

@@ -43,6 +43,7 @@
   transcode_tblgen_singlebyte "ISO-8859-13"
   transcode_tblgen_singlebyte "ISO-8859-14"
   transcode_tblgen_singlebyte "ISO-8859-15"
+  transcode_tblgen_singlebyte "ISO-8859-16"
   transcode_tblgen_singlebyte "WINDOWS-874"
   transcode_tblgen_singlebyte "WINDOWS-1250"
   transcode_tblgen_singlebyte "WINDOWS-1251"
@@ -54,6 +55,7 @@
   transcode_tblgen_singlebyte "WINDOWS-1257"
   transcode_tblgen_singlebyte "IBM437"
   transcode_tblgen_singlebyte "IBM775"
+  transcode_tblgen_singlebyte "IBM737"
   transcode_tblgen_singlebyte "IBM852"
   transcode_tblgen_singlebyte "IBM855"
   transcode_tblgen_singlebyte "IBM857"
@@ -82,8 +84,7 @@
 
 <%= transcode_generated_code %>
 
-void
-Init_single_byte(void)
+TRANS_INIT(single_byte)
 {
 <%= transcode_register_code %>
 }

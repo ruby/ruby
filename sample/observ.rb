@@ -8,10 +8,10 @@ class Tick
   def initialize
     Thread.start do
       loop do
-	sleep 0.999
-	now = Time.now
-	changed
-	notify_observers(now.hour, now.min, now.sec)
+        sleep 0.999
+        now = Time.now
+        changed
+        notify_observers(now.hour, now.min, now.sec)
       end
     end
   end

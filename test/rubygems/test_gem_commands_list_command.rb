@@ -1,16 +1,16 @@
-require_relative 'gemutilities'
+require 'rubygems/test_case'
 require 'rubygems/commands/list_command'
 
-class TestGemCommandsListCommand < RubyGemTestCase
+class TestGemCommandsListCommand < Gem::TestCase
 
   def setup
     super
 
     @cmd = Gem::Commands::ListCommand.new
 
-    util_setup_fake_fetcher
-
-    @si = util_setup_spec_fetcher @a1, @a2, @pl1
+    spec_fetcher do |fetcher|
+      fetcher.spec 'c', 1
+    end
 
     @fetcher.data["#{@gem_repo}Marshal.#{Gem.marshal_version}"] = proc do
       raise Gem::RemoteFetcher::FetchError
@@ -20,16 +20,13 @@ class TestGemCommandsListCommand < RubyGemTestCase
   def test_execute_installed
     @cmd.handle_options %w[c --installed]
 
-    e = assert_raises Gem::SystemExitException do
+    assert_raises Gem::MockGemUi::SystemExitException do
       use_ui @ui do
         @cmd.execute
       end
     end
 
-    assert_equal 0, e.exit_code
-
     assert_equal "true\n", @ui.output
-
     assert_equal '', @ui.error
   end
 

@@ -2,18 +2,15 @@
 
 #Win32API
 #bigdecimal
-#curses
 #dbm
 #digest
 #digest/md5
 #digest/rmd160
 #digest/sha1
 #digest/sha2
-#dl
 #etc
 #fcntl
 #gdbm
-#iconv
 #io/wait
 #nkf
 #openssl
@@ -25,7 +22,6 @@
 #socket
 #stringio
 #strscan
-#syck
 #syslog
 #tk
 #win32ole

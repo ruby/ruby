@@ -1,9 +1,9 @@
-require 'rdoc/context'
-
 ##
 # A TopLevel context is a representation of the contents of a single file
 
 class RDoc::TopLevel < RDoc::Context
+
+  MARSHAL_VERSION = 0 # :nodoc:
 
   ##
   # This TopLevel's File::Stat struct
@@ -20,159 +20,115 @@ class RDoc::TopLevel < RDoc::Context
 
   attr_accessor :absolute_name
 
-  attr_accessor :diagram
+  ##
+  # All the classes or modules that were declared in
+  # this file. These are assigned to either +#classes_hash+
+  # or +#modules_hash+ once we know what they really are.
+
+  attr_reader :classes_or_modules
+
+  attr_accessor :diagram # :nodoc:
 
   ##
-  # The parser that processed this file
+  # The parser class that processed this file
 
   attr_accessor :parser
 
   ##
-  # Returns all classes and modules discovered by RDoc
+  # Creates a new TopLevel for the file at +absolute_name+.  If documentation
+  # is being generated outside the source dir +relative_name+ is relative to
+  # the source directory.
 
-  def self.all_classes_and_modules
-    classes_hash.values + modules_hash.values
-  end
-
-  ##
-  # Returns all classes discovered by RDoc
-
-  def self.classes
-    classes_hash.values
-  end
-
-  ##
-  # Hash of all classes known to RDoc
-
-  def self.classes_hash
-    @all_classes
-  end
-
-  ##
-  # All TopLevels known to RDoc
-
-  def self.files
-    @all_files.values
-  end
-
-  ##
-  # Hash of all files known to RDoc
-
-  def self.files_hash
-    @all_files
-  end
-
-  ##
-  # Finds the class with +name+ in all discovered classes
-
-  def self.find_class_named(name)
-    classes_hash[name]
-  end
-
-  ##
-  # Finds the class with +name+ starting in namespace +from+
-
-  def self.find_class_named_from name, from
-    from = find_class_named from unless RDoc::Context === from
-
-    until RDoc::TopLevel === from do
-      return nil unless from
-
-      klass = from.find_class_named name
-      return klass if klass
-
-      from = from.parent
-    end
-
-    find_class_named name
-  end
-
-  ##
-  # Finds the class or module with +name+
-
-  def self.find_class_or_module(name)
-    name =~ /^::/
-    name = $' || name
-
-    RDoc::TopLevel.classes_hash[name] || RDoc::TopLevel.modules_hash[name]
-  end
-
-  ##
-  # Finds the file with +name+ in all discovered files
-
-  def self.find_file_named(name)
-    @all_files[name]
-  end
-
-  ##
-  # Finds the module with +name+ in all discovered modules
-
-  def self.find_module_named(name)
-    modules_hash[name]
-  end
-
-  ##
-  # Returns all modules discovered by RDoc
-
-  def self.modules
-    modules_hash.values
-  end
-
-  ##
-  # Hash of all modules known to RDoc
-
-  def self.modules_hash
-    @all_modules
-  end
-
-  ##
-  # Empties RDoc of stored class, module and file information
-
-  def self.reset
-    @all_classes = {}
-    @all_modules = {}
-    @all_files   = {}
-  end
-
-  reset
-
-  ##
-  # Creates a new TopLevel for +file_name+
-
-  def initialize(file_name)
+  def initialize absolute_name, relative_name = absolute_name
     super()
     @name = nil
-    @relative_name = file_name
-    @absolute_name = file_name
-    @file_stat     = File.stat(file_name) rescue nil # HACK for testing
+    @absolute_name = absolute_name
+    @relative_name = relative_name
+    @file_stat     = File.stat(absolute_name) rescue nil # HACK for testing
     @diagram       = nil
     @parser        = nil
 
-    RDoc::TopLevel.files_hash[file_name] = self
+    @classes_or_modules = []
   end
 
   ##
-  # Adds +method+ to Object instead of RDoc::TopLevel
+  # An RDoc::TopLevel is equal to another with the same relative_name
+
+  def == other
+    self.class === other and @relative_name == other.relative_name
+  end
+
+  alias eql? ==
+
+  ##
+  # Adds +an_alias+ to +Object+ instead of +self+.
+
+  def add_alias(an_alias)
+    object_class.record_location self
+    return an_alias unless @document_self
+    object_class.add_alias an_alias
+  end
+
+  ##
+  # Adds +constant+ to +Object+ instead of +self+.
+
+  def add_constant constant
+    object_class.record_location self
+    return constant unless @document_self
+    object_class.add_constant constant
+  end
+
+  ##
+  # Adds +include+ to +Object+ instead of +self+.
+
+  def add_include(include)
+    object_class.record_location self
+    return include unless @document_self
+    object_class.add_include include
+  end
+
+  ##
+  # Adds +method+ to +Object+ instead of +self+.
 
   def add_method(method)
-    object = self.class.find_class_named 'Object'
-    object = add_class RDoc::NormalClass, 'Object' unless object
+    object_class.record_location self
+    return method unless @document_self
+    object_class.add_method method
+  end
 
-    object.add_method method
+  ##
+  # Adds class or module +mod+. Used in the building phase
+  # by the Ruby parser.
+
+  def add_to_classes_or_modules mod
+    @classes_or_modules << mod
   end
 
   ##
   # Base name of this file
 
   def base_name
-    File.basename @absolute_name
+    File.basename @relative_name
+  end
+
+  alias name base_name
+
+  ##
+  # Only a TopLevel that contains text file) will be displayed.  See also
+  # RDoc::CodeObject#display?
+
+  def display?
+    text? and super
   end
 
   ##
-  # See RDoc::TopLevel.find_class_or_module
+  # See RDoc::TopLevel::find_class_or_module
+  #--
+  # TODO Why do we search through all classes/modules found, not just the
+  #       ones of this instance?
 
   def find_class_or_module name
-    RDoc::TopLevel.find_class_or_module name
+    @store.find_class_or_module name
   end
 
   ##
@@ -186,14 +142,22 @@ class RDoc::TopLevel < RDoc::Context
   # Finds a module or class with +name+
 
   def find_module_named(name)
-    find_class_or_module(name) || find_enclosing_module_named(name)
+    find_class_or_module(name)
   end
 
   ##
-  # The name of this file
+  # Returns the relative name of this file
 
   def full_name
     @relative_name
+  end
+
+  ##
+  # An RDoc::TopLevel has the same hash as another with the same
+  # relative_name
+
+  def hash
+    @relative_name.hash
   end
 
   ##
@@ -215,22 +179,64 @@ class RDoc::TopLevel < RDoc::Context
   end
 
   ##
-  # Date this file was last modified, if known
+  # Time this file was last modified, if known
 
   def last_modified
-    @file_stat ? file_stat.mtime.to_s : 'Unknown'
+    @file_stat ? file_stat.mtime : nil
   end
 
   ##
-  # Base name of this file
+  # Dumps this TopLevel for use by ri.  See also #marshal_load
 
-  alias name base_name
+  def marshal_dump
+    [
+      MARSHAL_VERSION,
+      @relative_name,
+      @parser,
+      parse(@comment),
+    ]
+  end
 
   ##
-  # Path to this file
+  # Loads this TopLevel from +array+.
+
+  def marshal_load array # :nodoc:
+    initialize array[1]
+
+    @parser  = array[2]
+    @comment = array[3]
+
+    @file_stat          = nil
+  end
+
+  ##
+  # Returns the NormalClass "Object", creating it if not found.
+  #
+  # Records +self+ as a location in "Object".
+
+  def object_class
+    @object_class ||= begin
+      oc = @store.find_class_named('Object') || add_class(RDoc::NormalClass, 'Object')
+      oc.record_location self
+      oc
+    end
+  end
+
+  ##
+  # Base name of this file without the extension
+
+  def page_name
+    basename = File.basename @relative_name
+    basename =~ /\.(rb|rdoc|txt|md)$/i
+
+    $` || basename
+  end
+
+  ##
+  # Path to this file for use with HTML generator output.
 
   def path
-    http_url RDoc::RDoc.current.generator.file_dir
+    http_url @store.rdoc.generator.file_dir
   end
 
   def pretty_print q # :nodoc:
@@ -239,9 +245,37 @@ class RDoc::TopLevel < RDoc::Context
       q.breakable
 
       items = @modules.map { |n,m| m }
-      items.push(*@modules.map { |n,c| c })
+      items.concat @modules.map { |n,c| c }
       q.seplist items do |mod| q.pp mod end
     end
+  end
+
+  ##
+  # Search record used by RDoc::Generator::JsonIndex
+
+  def search_record
+    return unless @parser < RDoc::Parser::Text
+
+    [
+      page_name,
+      '',
+      page_name,
+      '',
+      path,
+      '',
+      snippet(@comment),
+    ]
+  end
+
+  ##
+  # Is this TopLevel from a text file instead of a source code file?
+
+  def text?
+    @parser and @parser.ancestors.include? RDoc::Parser::Text
+  end
+
+  def to_s # :nodoc:
+    "file #{full_name}"
   end
 
 end

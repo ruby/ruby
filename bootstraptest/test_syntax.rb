@@ -110,7 +110,7 @@ assert_equal %q{100}, %q{
     end
     return arg
   end
-  
+
   test(100)
 }
 assert_equal %q{ok}, %q{
@@ -169,7 +169,7 @@ assert_equal %q{[:false, :false, :false, :false, :false, :false, :false, :false,
       res
     end
   end
-  
+
   def each_test
     conds = make_perm(['fv', 'tv'], 3)
     bangs = make_perm(['', '!'], 3)
@@ -184,10 +184,10 @@ assert_equal %q{[:false, :false, :false, :false, :false, :false, :false, :false,
       }
     }
   end
-  
+
   fv = false
   tv = true
-  
+
   $ans = []
   each_test{|syn, conds, bangs, exprs|
     c1, c2, c3 = conds
@@ -376,6 +376,8 @@ assert_equal %q{1}, %q{1 or 2 or 3 or 4}
 assert_equal %q{1}, %q{1 or false or 3 or 4}
 assert_equal %q{2}, %q{nil or 2 or 3 or 4}
 assert_equal %q{2}, %q{false or 2 or 3 or 4}
+assert_equal %q{1}, %q{if true && ""; then 1; end}
+assert_equal %q{1}, %q{if nil || true; then 1; end}
 assert_equal %q{false}, %q{nil or false or nil or false}
 assert_equal %q{elseng}, %q{
   case
@@ -529,7 +531,7 @@ def assert_syntax_error expected, code, message = ''
 end
 assert_syntax_error "unterminated string meets end of file", '().."', '[ruby-dev:29732]'
 assert_equal %q{[]}, %q{$&;[]}, '[ruby-dev:31068]'
-assert_syntax_error "syntax error, unexpected tSTAR, expecting '}'", %q{{*0}}, '[ruby-dev:31072]'
+assert_syntax_error "syntax error, unexpected *, expecting '}'", %q{{*0}}, '[ruby-dev:31072]'
 assert_syntax_error "`@0' is not allowed as an instance variable name", %q{@0..0}, '[ruby-dev:31095]'
 assert_syntax_error "identifier $00 is not valid to get", %q{$00..0}, '[ruby-dev:31100]'
 assert_syntax_error "identifier $00 is not valid to set", %q{0..$00=1}
@@ -541,7 +543,7 @@ assert_equal %q{1}, %q{
 assert_syntax_error "Can't set variable $1", %q{0..$1=1}, '[ruby-dev:31118]'
 assert_valid_syntax %q{1.times{1+(1&&next)}}, '[ruby-dev:31119]'
 assert_valid_syntax %q{x=-1;loop{x+=1&&redo if (x+=1).zero?}}, '[ruby-dev:31119]'
-assert_syntax_error %q{syntax error, unexpected $end}, %q{!}, '[ruby-dev:31243]'
+assert_syntax_error %q{syntax error, unexpected end-of-input}, %q{!}, '[ruby-dev:31243]'
 assert_equal %q{[nil]}, %q{[()]}, '[ruby-dev:31252]'
 assert_equal %q{true}, %q{!_=()}, '[ruby-dev:31263]'
 assert_equal 'ok', %q{while true; redo; end if 1 == 2; :ok}, '[ruby-dev:31360]'
@@ -695,7 +697,7 @@ assert_equal 'ok', %q{
   while true
     counter -= 1
     break if counter == 0
-    next 
+    next
     redo
   end
   :ok
@@ -706,7 +708,7 @@ assert_equal 'ok', %q{
   while true
     counter -= 1
     break if counter == 0
-    next 
+    next
     "#{ redo }"
   end
   :ok

@@ -38,7 +38,7 @@ end
 STDERR.print "conntecting to #{host} port #{port}\n"
 c = TCPSocket.new(host, port)
 dest = Socket.getnameinfo(c.getpeername,
-		Socket::NI_NUMERICHOST|Socket::NI_NUMERICSERV)
+    Socket::NI_NUMERICHOST|Socket::NI_NUMERICSERV)
 STDERR.print "conntected to #{dest[0]} port #{dest[1]}\n"
 c.print "GET #{path} HTTP/1.0\n"
 c.print "Host: #{host}\n"

@@ -23,7 +23,7 @@ TkButton.new(page2CS, :text=>'Button Two').pack
 # Select the first page of the tabnotebook.
 nb.select(0)
 
-# Create the scrollbar and associate teh scrollbar
+# Create the scrollbar and associate the scrollbar
 # and the notebook together, then pack the scrollbar
 nb.scrollbar(TkScrollbar.new).pack(:fill=>:y, :expand=>true, :pady=>10)
 

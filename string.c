@@ -11,13 +11,14 @@
 
 **********************************************************************/
 
-#include "ruby/ruby.h"
+#include "internal.h"
 #include "ruby/re.h"
-#include "ruby/encoding.h"
+#include "probes.h"
+#include "gc.h"
 #include <assert.h>
 
-#define BEG(no) regs->beg[no]
-#define END(no) regs->end[no]
+#define BEG(no) (regs->beg[(no)])
+#define END(no) (regs->end[(no)])
 
 #include <math.h>
 #include <ctype.h>
@@ -26,48 +27,40 @@
 #include <unistd.h>
 #endif
 
-#define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
+#define STRING_ENUMERATORS_WANTARRAY 0 /* next major */
 
+#undef rb_str_new
+#undef rb_usascii_str_new
+#undef rb_utf8_str_new
+#undef rb_enc_str_new
 #undef rb_str_new_cstr
 #undef rb_tainted_str_new_cstr
 #undef rb_usascii_str_new_cstr
+#undef rb_utf8_str_new_cstr
+#undef rb_enc_str_new_cstr
 #undef rb_external_str_new_cstr
 #undef rb_locale_str_new_cstr
-#undef rb_str_new2
-#undef rb_str_new3
-#undef rb_str_new4
-#undef rb_str_new5
-#undef rb_tainted_str_new2
-#undef rb_usascii_str_new2
 #undef rb_str_dup_frozen
 #undef rb_str_buf_new_cstr
-#undef rb_str_buf_new2
+#undef rb_str_buf_cat
 #undef rb_str_buf_cat2
 #undef rb_str_cat2
+#undef rb_str_cat_cstr
+
+static VALUE rb_str_clear(VALUE str);
 
 VALUE rb_cString;
 VALUE rb_cSymbol;
 
 #define RUBY_MAX_CHAR_LEN 16
 #define STR_TMPLOCK FL_USER7
-#define STR_NOEMBED FL_USER1
-#define STR_SHARED  FL_USER2 /* = ELTS_SHARED */
-#define STR_ASSOC   FL_USER3
-#define STR_SHARED_P(s) FL_ALL(s, STR_NOEMBED|ELTS_SHARED)
-#define STR_ASSOC_P(s)  FL_ALL(s, STR_NOEMBED|STR_ASSOC)
-#define STR_NOCAPA  (STR_NOEMBED|ELTS_SHARED|STR_ASSOC)
-#define STR_NOCAPA_P(s) (FL_TEST(s,STR_NOEMBED) && FL_ANY(s,ELTS_SHARED|STR_ASSOC))
-#define STR_UNSET_NOCAPA(s) do {\
-    if (FL_TEST(s,STR_NOEMBED)) FL_UNSET(s,(ELTS_SHARED|STR_ASSOC));\
-} while (0)
-
+#define STR_NOFREE FL_USER18
 
 #define STR_SET_NOEMBED(str) do {\
-    FL_SET(str, STR_NOEMBED);\
-    STR_SET_EMBED_LEN(str, 0);\
+    FL_SET((str), STR_NOEMBED);\
+    STR_SET_EMBED_LEN((str), 0);\
 } while (0)
-#define STR_SET_EMBED(str) FL_UNSET(str, STR_NOEMBED)
-#define STR_EMBED_P(str) (!FL_TEST(str, STR_NOEMBED))
+#define STR_SET_EMBED(str) FL_UNSET((str), STR_NOEMBED)
 #define STR_SET_EMBED_LEN(str, n) do { \
     long tmp_n = (n);\
     RBASIC(str)->flags &= ~RSTRING_EMBED_LEN_MASK;\
@@ -76,7 +69,7 @@ VALUE rb_cSymbol;
 
 #define STR_SET_LEN(str, n) do { \
     if (STR_EMBED_P(str)) {\
-	STR_SET_EMBED_LEN(str, n);\
+	STR_SET_EMBED_LEN((str), (n));\
     }\
     else {\
 	RSTRING(str)->as.heap.len = (n);\
@@ -87,35 +80,229 @@ VALUE rb_cSymbol;
     if (STR_EMBED_P(str)) {\
 	long n = RSTRING_LEN(str);\
 	n--;\
-	STR_SET_EMBED_LEN(str, n);\
+	STR_SET_EMBED_LEN((str), n);\
     }\
     else {\
 	RSTRING(str)->as.heap.len--;\
     }\
 } while (0)
 
+#define TERM_LEN(str) rb_enc_mbminlen(rb_enc_get(str))
+#define TERM_FILL(ptr, termlen) do {\
+    char *const term_fill_ptr = (ptr);\
+    const int term_fill_len = (termlen);\
+    *term_fill_ptr = '\0';\
+    if (UNLIKELY(term_fill_len > 1))\
+	memset(term_fill_ptr, 0, term_fill_len);\
+} while (0)
+
 #define RESIZE_CAPA(str,capacity) do {\
+    const int termlen = TERM_LEN(str);\
+    RESIZE_CAPA_TERM(str,capacity,termlen);\
+} while (0)
+#define RESIZE_CAPA_TERM(str,capacity,termlen) do {\
     if (STR_EMBED_P(str)) {\
 	if ((capacity) > RSTRING_EMBED_LEN_MAX) {\
-	    char *tmp = ALLOC_N(char, capacity+1);\
-	    memcpy(tmp, RSTRING_PTR(str), RSTRING_LEN(str));\
+	    char *const tmp = ALLOC_N(char, (capacity)+termlen);\
+	    const long tlen = RSTRING_LEN(str);\
+	    memcpy(tmp, RSTRING_PTR(str), tlen);\
 	    RSTRING(str)->as.heap.ptr = tmp;\
-	    RSTRING(str)->as.heap.len = RSTRING_LEN(str);\
+	    RSTRING(str)->as.heap.len = tlen;\
             STR_SET_NOEMBED(str);\
 	    RSTRING(str)->as.heap.aux.capa = (capacity);\
 	}\
     }\
     else {\
-	REALLOC_N(RSTRING(str)->as.heap.ptr, char, (capacity)+1);\
-	if (!STR_NOCAPA_P(str))\
-	    RSTRING(str)->as.heap.aux.capa = (capacity);\
+	assert(!FL_TEST((str), STR_SHARED)); \
+	REALLOC_N(RSTRING(str)->as.heap.ptr, char, (capacity)+termlen);\
+	RSTRING(str)->as.heap.aux.capa = (capacity);\
     }\
 } while (0)
 
-#define is_ascii_string(str) (rb_enc_str_coderange(str) == ENC_CODERANGE_7BIT)
-#define is_broken_string(str) (rb_enc_str_coderange(str) == ENC_CODERANGE_BROKEN)
+#define STR_SET_SHARED(str, shared_str) do { \
+    RB_OBJ_WRITE((str), &RSTRING(str)->as.heap.aux.shared, (shared_str)); \
+    FL_SET((str), STR_SHARED); \
+} while (0)
 
-#define STR_ENC_GET(str) rb_enc_from_index(ENCODING_GET(str))
+#define STR_HEAP_PTR(str)  (RSTRING(str)->as.heap.ptr)
+#define STR_HEAP_SIZE(str) (RSTRING(str)->as.heap.aux.capa + TERM_LEN(str))
+
+#define STR_ENC_GET(str) get_encoding(str)
+
+#if !defined SHARABLE_MIDDLE_SUBSTRING
+# define SHARABLE_MIDDLE_SUBSTRING 0
+#endif
+#if !SHARABLE_MIDDLE_SUBSTRING
+#define SHARABLE_SUBSTRING_P(beg, len, end) ((beg) + (len) == (end))
+#else
+#define SHARABLE_SUBSTRING_P(beg, len, end) 1
+#endif
+
+static rb_encoding *
+get_actual_encoding(const int encidx, VALUE str)
+{
+    const unsigned char *q;
+
+    switch (encidx) {
+      case ENCINDEX_UTF_16:
+	if (RSTRING_LEN(str) < 2) break;
+	q = (const unsigned char *)RSTRING_PTR(str);
+	if (q[0] == 0xFE && q[1] == 0xFF) {
+	    return rb_enc_get_from_index(ENCINDEX_UTF_16BE);
+	}
+	if (q[0] == 0xFF && q[1] == 0xFE) {
+	    return rb_enc_get_from_index(ENCINDEX_UTF_16LE);
+	}
+	return rb_ascii8bit_encoding();
+      case ENCINDEX_UTF_32:
+	if (RSTRING_LEN(str) < 4) break;
+	q = (const unsigned char *)RSTRING_PTR(str);
+	if (q[0] == 0 && q[1] == 0 && q[2] == 0xFE && q[3] == 0xFF) {
+	    return rb_enc_get_from_index(ENCINDEX_UTF_32BE);
+	}
+	if (q[3] == 0 && q[2] == 0 && q[1] == 0xFE && q[0] == 0xFF) {
+	    return rb_enc_get_from_index(ENCINDEX_UTF_32LE);
+	}
+	return rb_ascii8bit_encoding();
+    }
+    return rb_enc_from_index(encidx);
+}
+
+static rb_encoding *
+get_encoding(VALUE str)
+{
+    return get_actual_encoding(ENCODING_GET(str), str);
+}
+
+static void
+mustnot_broken(VALUE str)
+{
+    if (is_broken_string(str)) {
+	rb_raise(rb_eArgError, "invalid byte sequence in %s", rb_enc_name(STR_ENC_GET(str)));
+    }
+}
+
+static void
+mustnot_wchar(VALUE str)
+{
+    rb_encoding *enc = STR_ENC_GET(str);
+    if (rb_enc_mbminlen(enc) > 1) {
+	rb_raise(rb_eArgError, "wide char encoding: %s", rb_enc_name(enc));
+    }
+}
+
+static int fstring_cmp(VALUE a, VALUE b);
+
+/* in case we restart MVM development, this needs to be per-VM */
+static st_table* frozen_strings;
+
+static inline st_table*
+rb_vm_fstring_table(void)
+{
+    return frozen_strings;
+}
+
+static const struct st_hash_type fstring_hash_type = {
+    fstring_cmp,
+    rb_str_hash,
+};
+
+static int
+fstr_update_callback(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
+{
+    VALUE *fstr = (VALUE *)arg;
+    VALUE str = (VALUE)*key;
+
+    if (existing) {
+	/* because of lazy sweep, str may be unmarked already and swept
+	 * at next time */
+
+	if (rb_objspace_garbage_object_p(str)) {
+	    *fstr = Qundef;
+	    return ST_DELETE;
+	}
+
+	*fstr = str;
+	return ST_STOP;
+    }
+    else {
+	if (STR_SHARED_P(str)) { /* str should not be shared */
+	    str = rb_enc_str_new(RSTRING_PTR(str), RSTRING_LEN(str), STR_ENC_GET(str));
+	    OBJ_FREEZE(str);
+	}
+	else {
+	    str = rb_str_new_frozen(str);
+	}
+	RBASIC(str)->flags |= RSTRING_FSTR;
+
+	*key = *value = *fstr = str;
+	return ST_CONTINUE;
+    }
+}
+
+VALUE
+rb_fstring(VALUE str)
+{
+    VALUE ret;
+
+    Check_Type(str, T_STRING);
+
+    if (FL_TEST(str, RSTRING_FSTR))
+	return str;
+
+    do {
+	ret = str;
+	st_update(rb_vm_fstring_table(), (st_data_t)str,
+		    fstr_update_callback, (st_data_t)&ret);
+    } while (ret == Qundef);
+
+    return ret;
+}
+
+static VALUE
+setup_fake_str(struct RString *fake_str, const char *name, long len, int encidx)
+{
+    fake_str->basic.flags = T_STRING|RSTRING_NOEMBED|STR_NOFREE;
+    /* SHARED to be allocated by the callback */
+
+    ENCODING_SET_INLINED((VALUE)fake_str, encidx);
+
+    RBASIC_SET_CLASS_RAW((VALUE)fake_str, rb_cString);
+    fake_str->as.heap.len = len;
+    fake_str->as.heap.ptr = (char *)name;
+    fake_str->as.heap.aux.capa = len;
+    return (VALUE)fake_str;
+}
+
+VALUE
+rb_setup_fake_str(struct RString *fake_str, const char *name, long len, rb_encoding *enc)
+{
+    return setup_fake_str(fake_str, name, len, rb_enc_to_index(enc));
+}
+
+VALUE
+rb_fstring_new(const char *ptr, long len)
+{
+    struct RString fake_str;
+    return rb_fstring(setup_fake_str(&fake_str, ptr, len, ENCINDEX_US_ASCII));
+}
+
+static int
+fstring_set_class_i(st_data_t key, st_data_t val, st_data_t arg)
+{
+    RBASIC_SET_CLASS((VALUE)key, (VALUE)arg);
+    return ST_CONTINUE;
+}
+
+static int
+fstring_cmp(VALUE a, VALUE b)
+{
+    int cmp = rb_str_hash_cmp(a, b);
+    if (cmp != 0) {
+	return cmp;
+    }
+    return ENCODING_GET(b) - ENCODING_GET(a);
+}
 
 static inline int
 single_byte_optimizable(VALUE str)
@@ -140,22 +327,22 @@ VALUE rb_fs;
 static inline const char *
 search_nonascii(const char *p, const char *e)
 {
-#if SIZEOF_VALUE == 8
+#if SIZEOF_VOIDP == 8
 # define NONASCII_MASK 0x8080808080808080ULL
-#elif SIZEOF_VALUE == 4
+#elif SIZEOF_VOIDP == 4
 # define NONASCII_MASK 0x80808080UL
 #endif
 #ifdef NONASCII_MASK
-    if ((int)sizeof(VALUE) * 2 < e - p) {
-        const VALUE *s, *t;
-        const VALUE lowbits = sizeof(VALUE) - 1;
-        s = (const VALUE*)(~lowbits & ((VALUE)p + lowbits));
+    if ((int)SIZEOF_VOIDP * 2 < e - p) {
+        const uintptr_t *s, *t;
+        const uintptr_t lowbits = SIZEOF_VOIDP - 1;
+        s = (const uintptr_t*)(~lowbits & ((uintptr_t)p + lowbits));
         while (p < (const char *)s) {
             if (!ISASCII(*p))
                 return p;
             p++;
         }
-        t = (const VALUE*)(~lowbits & (VALUE)e);
+        t = (const uintptr_t*)(~lowbits & (uintptr_t)e);
         while (s < t) {
             if (*s & NONASCII_MASK) {
                 t = s;
@@ -179,7 +366,7 @@ coderange_scan(const char *p, long len, rb_encoding *enc)
 {
     const char *e = p + len;
 
-    if (rb_enc_to_index(enc) == 0) {
+    if (rb_enc_to_index(enc) == rb_ascii8bit_encindex()) {
         /* enc is ASCII-8BIT.  ASCII-8BIT string never be broken. */
         p = search_nonascii(p, e);
         return p ? ENC_CODERANGE_VALID : ENC_CODERANGE_7BIT;
@@ -187,38 +374,22 @@ coderange_scan(const char *p, long len, rb_encoding *enc)
 
     if (rb_enc_asciicompat(enc)) {
         p = search_nonascii(p, e);
-        if (!p) {
-            return ENC_CODERANGE_7BIT;
+        if (!p) return ENC_CODERANGE_7BIT;
+        for (;;) {
+            int ret = rb_enc_precise_mbclen(p, e, enc);
+            if (!MBCLEN_CHARFOUND_P(ret)) return ENC_CODERANGE_BROKEN;
+            p += MBCLEN_CHARFOUND_LEN(ret);
+            if (p == e) break;
+            p = search_nonascii(p, e);
+            if (!p) break;
         }
+    }
+    else {
         while (p < e) {
             int ret = rb_enc_precise_mbclen(p, e, enc);
-            if (!MBCLEN_CHARFOUND_P(ret)) {
-                return ENC_CODERANGE_BROKEN;
-            }
+            if (!MBCLEN_CHARFOUND_P(ret)) return ENC_CODERANGE_BROKEN;
             p += MBCLEN_CHARFOUND_LEN(ret);
-            if (p < e) {
-                p = search_nonascii(p, e);
-                if (!p) {
-                    return ENC_CODERANGE_VALID;
-                }
-            }
         }
-        if (e < p) {
-            return ENC_CODERANGE_BROKEN;
-        }
-        return ENC_CODERANGE_VALID;
-    }
-
-    while (p < e) {
-        int ret = rb_enc_precise_mbclen(p, e, enc);
-
-        if (!MBCLEN_CHARFOUND_P(ret)) {
-            return ENC_CODERANGE_BROKEN;
-        }
-        p += MBCLEN_CHARFOUND_LEN(ret);
-    }
-    if (e < p) {
-        return ENC_CODERANGE_BROKEN;
     }
     return ENC_CODERANGE_VALID;
 }
@@ -231,10 +402,11 @@ rb_str_coderange_scan_restartable(const char *s, const char *e, rb_encoding *enc
     if (*cr == ENC_CODERANGE_BROKEN)
 	return e - s;
 
-    if (rb_enc_to_index(enc) == 0) {
+    if (rb_enc_to_index(enc) == rb_ascii8bit_encindex()) {
 	/* enc is ASCII-8BIT.  ASCII-8BIT string never be broken. */
+	if (*cr == ENC_CODERANGE_VALID) return e - s;
 	p = search_nonascii(p, e);
-	*cr = (!p && *cr != ENC_CODERANGE_VALID) ? ENC_CODERANGE_7BIT : ENC_CODERANGE_VALID;
+        *cr = p ? ENC_CODERANGE_VALID : ENC_CODERANGE_7BIT;
 	return e - s;
     }
     else if (rb_enc_asciicompat(enc)) {
@@ -243,23 +415,17 @@ rb_str_coderange_scan_restartable(const char *s, const char *e, rb_encoding *enc
 	    if (*cr != ENC_CODERANGE_VALID) *cr = ENC_CODERANGE_7BIT;
 	    return e - s;
 	}
-	while (p < e) {
+	for (;;) {
 	    int ret = rb_enc_precise_mbclen(p, e, enc);
 	    if (!MBCLEN_CHARFOUND_P(ret)) {
 		*cr = MBCLEN_INVALID_P(ret) ? ENC_CODERANGE_BROKEN: ENC_CODERANGE_UNKNOWN;
 		return p - s;
 	    }
 	    p += MBCLEN_CHARFOUND_LEN(ret);
-	    if (p < e) {
-		p = search_nonascii(p, e);
-		if (!p) {
-		    *cr = ENC_CODERANGE_VALID;
-		    return e - s;
-		}
-	    }
+	    if (p == e) break;
+	    p = search_nonascii(p, e);
+	    if (!p) break;
 	}
-	*cr = e < p ? ENC_CODERANGE_BROKEN: ENC_CODERANGE_VALID;
-	return p - s;
     }
     else {
 	while (p < e) {
@@ -270,9 +436,9 @@ rb_str_coderange_scan_restartable(const char *s, const char *e, rb_encoding *enc
 	    }
 	    p += MBCLEN_CHARFOUND_LEN(ret);
 	}
-	*cr = e < p ? ENC_CODERANGE_BROKEN: ENC_CODERANGE_VALID;
-	return p - s;
     }
+    *cr = ENC_CODERANGE_VALID;
+    return e - s;
 }
 
 static inline void
@@ -288,6 +454,13 @@ rb_enc_cr_str_copy_for_substr(VALUE dest, VALUE src)
      * from src to new string "dest" which is made from the part of src.
      */
     str_enc_copy(dest, src);
+    if (RSTRING_LEN(dest) == 0) {
+	if (!rb_enc_asciicompat(STR_ENC_GET(src)))
+	    ENC_CODERANGE_SET(dest, ENC_CODERANGE_VALID);
+	else
+	    ENC_CODERANGE_SET(dest, ENC_CODERANGE_7BIT);
+	return;
+    }
     switch (ENC_CODERANGE(src)) {
       case ENC_CODERANGE_7BIT:
 	ENC_CODERANGE_SET(dest, ENC_CODERANGE_7BIT);
@@ -300,12 +473,6 @@ rb_enc_cr_str_copy_for_substr(VALUE dest, VALUE src)
 	    ENC_CODERANGE_SET(dest, ENC_CODERANGE_7BIT);
 	break;
       default:
-	if (RSTRING_LEN(dest) == 0) {
-	    if (!rb_enc_asciicompat(STR_ENC_GET(src)))
-		ENC_CODERANGE_SET(dest, ENC_CODERANGE_VALID);
-	    else
-		ENC_CODERANGE_SET(dest, ENC_CODERANGE_7BIT);
-	}
 	break;
     }
 }
@@ -323,8 +490,15 @@ rb_enc_str_coderange(VALUE str)
     int cr = ENC_CODERANGE(str);
 
     if (cr == ENC_CODERANGE_UNKNOWN) {
-	rb_encoding *enc = STR_ENC_GET(str);
-        cr = coderange_scan(RSTRING_PTR(str), RSTRING_LEN(str), enc);
+	int encidx = ENCODING_GET(str);
+	rb_encoding *enc = rb_enc_from_index(encidx);
+	if (rb_enc_mbminlen(enc) > 1 && rb_enc_dummy_p(enc)) {
+	    cr = ENC_CODERANGE_BROKEN;
+	}
+	else {
+	    cr = coderange_scan(RSTRING_PTR(str), RSTRING_LEN(str),
+				get_actual_encoding(encidx, str));
+	}
         ENC_CODERANGE_SET(str, cr);
     }
     return cr;
@@ -350,21 +524,13 @@ str_mod_check(VALUE s, const char *p, long len)
     }
 }
 
-static inline void
-str_frozen_check(VALUE s)
-{
-    if (OBJ_FROZEN(s)) {
-	rb_raise(rb_eRuntimeError, "string frozen");
-    }
-}
-
 size_t
 rb_str_capacity(VALUE str)
 {
     if (STR_EMBED_P(str)) {
 	return RSTRING_EMBED_LEN_MAX;
     }
-    else if (STR_NOCAPA_P(str)) {
+    else if (FL_TEST(str, STR_SHARED|STR_NOFREE)) {
 	return RSTRING(str)->as.heap.len;
     }
     else {
@@ -372,21 +538,32 @@ rb_str_capacity(VALUE str)
     }
 }
 
+static inline void
+must_not_null(const char *ptr)
+{
+    if (!ptr) {
+	rb_raise(rb_eArgError, "NULL pointer given");
+    }
+}
+
 static inline VALUE
 str_alloc(VALUE klass)
 {
-    NEWOBJ(str, struct RString);
-    OBJSETUP(str, klass, T_STRING);
-
-    str->as.heap.ptr = 0;
-    str->as.heap.len = 0;
-    str->as.heap.aux.capa = 0;
-
+    NEWOBJ_OF(str, struct RString, klass, T_STRING | (RGENGC_WB_PROTECTED_STRING ? FL_WB_PROTECTED : 0));
     return (VALUE)str;
 }
 
+static inline VALUE
+empty_str_alloc(VALUE klass)
+{
+    if (RUBY_DTRACE_STRING_CREATE_ENABLED()) {
+	RUBY_DTRACE_STRING_CREATE(0, rb_sourcefile(), rb_sourceline());
+    }
+    return str_alloc(klass);
+}
+
 static VALUE
-str_new(VALUE klass, const char *ptr, long len)
+str_new0(VALUE klass, const char *ptr, long len, int termlen)
 {
     VALUE str;
 
@@ -394,10 +571,14 @@ str_new(VALUE klass, const char *ptr, long len)
 	rb_raise(rb_eArgError, "negative string size (or size too big)");
     }
 
+    if (RUBY_DTRACE_STRING_CREATE_ENABLED()) {
+	RUBY_DTRACE_STRING_CREATE(len, rb_sourcefile(), rb_sourceline());
+    }
+
     str = str_alloc(klass);
     if (len > RSTRING_EMBED_LEN_MAX) {
 	RSTRING(str)->as.heap.aux.capa = len;
-	RSTRING(str)->as.heap.ptr = ALLOC_N(char,len+1);
+	RSTRING(str)->as.heap.ptr = ALLOC_N(char, len + termlen);
 	STR_SET_NOEMBED(str);
     }
     else if (len == 0) {
@@ -407,8 +588,14 @@ str_new(VALUE klass, const char *ptr, long len)
 	memcpy(RSTRING_PTR(str), ptr, len);
     }
     STR_SET_LEN(str, len);
-    RSTRING_PTR(str)[len] = '\0';
+    TERM_FILL(RSTRING_PTR(str) + len, termlen);
     return str;
+}
+
+static VALUE
+str_new(VALUE klass, const char *ptr, long len)
+{
+    return str_new0(klass, ptr, len, 1);
 }
 
 VALUE
@@ -426,9 +613,21 @@ rb_usascii_str_new(const char *ptr, long len)
 }
 
 VALUE
+rb_utf8_str_new(const char *ptr, long len)
+{
+    VALUE str = str_new(rb_cString, ptr, len);
+    rb_enc_associate_index(str, rb_utf8_encindex());
+    return str;
+}
+
+VALUE
 rb_enc_str_new(const char *ptr, long len, rb_encoding *enc)
 {
-    VALUE str = rb_str_new(ptr, len);
+    VALUE str;
+
+    if (!enc) return rb_str_new(ptr, len);
+
+    str = str_new0(rb_cString, ptr, len, rb_enc_mbminlen(enc));
     rb_enc_associate(str, enc);
     return str;
 }
@@ -436,25 +635,86 @@ rb_enc_str_new(const char *ptr, long len, rb_encoding *enc)
 VALUE
 rb_str_new_cstr(const char *ptr)
 {
-    if (!ptr) {
-	rb_raise(rb_eArgError, "NULL pointer given");
-    }
+    must_not_null(ptr);
     return rb_str_new(ptr, strlen(ptr));
 }
-
-RUBY_ALIAS_FUNCTION(rb_str_new2(const char *ptr), rb_str_new_cstr, (ptr))
-#define rb_str_new2 rb_str_new_cstr
 
 VALUE
 rb_usascii_str_new_cstr(const char *ptr)
 {
-    VALUE str = rb_str_new2(ptr);
+    VALUE str = rb_str_new_cstr(ptr);
     ENCODING_CODERANGE_SET(str, rb_usascii_encindex(), ENC_CODERANGE_7BIT);
     return str;
 }
 
-RUBY_ALIAS_FUNCTION(rb_usascii_str_new2(const char *ptr), rb_usascii_str_new_cstr, (ptr))
-#define rb_usascii_str_new2 rb_usascii_str_new_cstr
+VALUE
+rb_utf8_str_new_cstr(const char *ptr)
+{
+    VALUE str = rb_str_new_cstr(ptr);
+    rb_enc_associate_index(str, rb_utf8_encindex());
+    return str;
+}
+
+VALUE
+rb_enc_str_new_cstr(const char *ptr, rb_encoding *enc)
+{
+    must_not_null(ptr);
+    if (rb_enc_mbminlen(enc) != 1) {
+	rb_raise(rb_eArgError, "wchar encoding given");
+    }
+    return rb_enc_str_new(ptr, strlen(ptr), enc);
+}
+
+static VALUE
+str_new_static(VALUE klass, const char *ptr, long len, int encindex)
+{
+    VALUE str;
+
+    if (len < 0) {
+	rb_raise(rb_eArgError, "negative string size (or size too big)");
+    }
+
+    if (!ptr) {
+	str = str_new(klass, ptr, len);
+    }
+    else {
+	if (RUBY_DTRACE_STRING_CREATE_ENABLED()) {
+	    RUBY_DTRACE_STRING_CREATE(len, rb_sourcefile(), rb_sourceline());
+	}
+	str = str_alloc(klass);
+	RSTRING(str)->as.heap.len = len;
+	RSTRING(str)->as.heap.ptr = (char *)ptr;
+	RSTRING(str)->as.heap.aux.capa = len;
+	STR_SET_NOEMBED(str);
+	RBASIC(str)->flags |= STR_NOFREE;
+    }
+    rb_enc_associate_index(str, encindex);
+    return str;
+}
+
+VALUE
+rb_str_new_static(const char *ptr, long len)
+{
+    return str_new_static(rb_cString, ptr, len, 0);
+}
+
+VALUE
+rb_usascii_str_new_static(const char *ptr, long len)
+{
+    return str_new_static(rb_cString, ptr, len, ENCINDEX_US_ASCII);
+}
+
+VALUE
+rb_utf8_str_new_static(const char *ptr, long len)
+{
+    return str_new_static(rb_cString, ptr, len, ENCINDEX_UTF_8);
+}
+
+VALUE
+rb_enc_str_new_static(const char *ptr, long len, rb_encoding *enc)
+{
+    return str_new_static(rb_cString, ptr, len, rb_enc_to_index(enc));
+}
 
 VALUE
 rb_tainted_str_new(const char *ptr, long len)
@@ -468,28 +728,28 @@ rb_tainted_str_new(const char *ptr, long len)
 VALUE
 rb_tainted_str_new_cstr(const char *ptr)
 {
-    VALUE str = rb_str_new2(ptr);
+    VALUE str = rb_str_new_cstr(ptr);
 
     OBJ_TAINT(str);
     return str;
 }
-
-RUBY_ALIAS_FUNCTION(rb_tainted_str_new2(const char *ptr), rb_tainted_str_new_cstr, (ptr))
-#define rb_tainted_str_new2 rb_tainted_str_new_cstr
 
 VALUE
 rb_str_conv_enc_opts(VALUE str, rb_encoding *from, rb_encoding *to, int ecflags, VALUE ecopts)
 {
     rb_econv_t *ec;
     rb_econv_result_t ret;
-    long len;
+    long len, olen;
+    VALUE econv_wrapper;
     VALUE newstr;
-    const unsigned char *sp;
-    unsigned char *dp;
+    const unsigned char *start, *sp;
+    unsigned char *dest, *dp;
+    size_t converted_output = 0;
 
     if (!to) return str;
+    if (!from) from = rb_enc_get(str);
     if (from == to) return str;
-    if ((rb_enc_asciicompat(to) && ENC_CODERANGE(str) == ENC_CODERANGE_7BIT) ||
+    if ((rb_enc_asciicompat(to) && is_ascii_string(str)) ||
 	to == rb_ascii8bit_encoding()) {
 	if (STR_ENC_GET(str) != to) {
 	    str = rb_str_dup(str);
@@ -500,23 +760,40 @@ rb_str_conv_enc_opts(VALUE str, rb_encoding *from, rb_encoding *to, int ecflags,
 
     len = RSTRING_LEN(str);
     newstr = rb_str_new(0, len);
+    OBJ_INFECT(newstr, str);
+    olen = len;
 
-  retry:
+    econv_wrapper = rb_obj_alloc(rb_cEncodingConverter);
+    RBASIC_CLEAR_CLASS(econv_wrapper);
     ec = rb_econv_open_opts(from->name, to->name, ecflags, ecopts);
     if (!ec) return str;
+    DATA_PTR(econv_wrapper) = ec;
 
     sp = (unsigned char*)RSTRING_PTR(str);
-    dp = (unsigned char*)RSTRING_PTR(newstr);
-    ret = rb_econv_convert(ec, &sp, (unsigned char*)RSTRING_END(str),
-			   &dp, (unsigned char*)RSTRING_END(newstr), 0);
-    rb_econv_close(ec);
-    switch (ret) {
-      case econv_destination_buffer_full:
+    start = sp;
+    while ((dest = (unsigned char*)RSTRING_PTR(newstr)),
+	   (dp = dest + converted_output),
+	   (ret = rb_econv_convert(ec, &sp, start + len, &dp, dest + olen, 0)),
+	   ret == econv_destination_buffer_full) {
 	/* destination buffer short */
-	len = len < 2 ? 2 : len * 2;
-	rb_str_resize(newstr, len);
-	goto retry;
-
+	size_t converted_input = sp - start;
+	size_t rest = len - converted_input;
+	converted_output = dp - dest;
+	rb_str_set_len(newstr, converted_output);
+	if (converted_input && converted_output &&
+	    rest < (LONG_MAX / converted_output)) {
+	    rest = (rest * converted_output) / converted_input;
+	}
+	else {
+	    rest = olen;
+	}
+	olen += rest < 2 ? 2 : rest;
+	rb_str_resize(newstr, olen);
+    }
+    DATA_PTR(econv_wrapper) = 0;
+    rb_econv_close(ec);
+    rb_gc_force_recycle(econv_wrapper);
+    switch (ret) {
       case econv_finished:
 	len = dp - (unsigned char*)RSTRING_PTR(newstr);
 	rb_str_set_len(newstr, len);
@@ -541,6 +818,12 @@ rb_external_str_new_with_enc(const char *ptr, long len, rb_encoding *eenc)
     VALUE str;
 
     str = rb_tainted_str_new(ptr, len);
+    return rb_external_str_with_enc(str, eenc);
+}
+
+VALUE
+rb_external_str_with_enc(VALUE str, rb_encoding *eenc)
+{
     if (eenc == rb_usascii_encoding() &&
 	rb_enc_str_coderange(str) != ENC_CODERANGE_7BIT) {
 	rb_enc_associate(str, rb_ascii8bit_encoding());
@@ -605,7 +888,7 @@ rb_str_export_to_enc(VALUE str, rb_encoding *enc)
 }
 
 static VALUE
-str_replace_shared(VALUE str2, VALUE str)
+str_replace_shared_without_enc(VALUE str2, VALUE str)
 {
     if (RSTRING_LEN(str) <= RSTRING_EMBED_LEN_MAX) {
 	STR_SET_EMBED(str2);
@@ -617,11 +900,16 @@ str_replace_shared(VALUE str2, VALUE str)
 	FL_SET(str2, STR_NOEMBED);
 	RSTRING(str2)->as.heap.len = RSTRING_LEN(str);
 	RSTRING(str2)->as.heap.ptr = RSTRING_PTR(str);
-	RSTRING(str2)->as.heap.aux.shared = str;
-	FL_SET(str2, ELTS_SHARED);
+	STR_SET_SHARED(str2, str);
     }
-    rb_enc_cr_str_exact_copy(str2, str);
+    return str2;
+}
 
+static VALUE
+str_replace_shared(VALUE str2, VALUE str)
+{
+    str_replace_shared_without_enc(str2, str);
+    rb_enc_cr_str_exact_copy(str2, str);
     return str2;
 }
 
@@ -631,44 +919,11 @@ str_new_shared(VALUE klass, VALUE str)
     return str_replace_shared(str_alloc(klass), str);
 }
 
-static VALUE
-str_new3(VALUE klass, VALUE str)
-{
-    return str_new_shared(klass, str);
-}
-
 VALUE
 rb_str_new_shared(VALUE str)
 {
-    VALUE str2 = str_new3(rb_obj_class(str), str);
+    VALUE str2 = str_new_shared(rb_obj_class(str), str);
 
-    OBJ_INFECT(str2, str);
-    return str2;
-}
-
-RUBY_ALIAS_FUNCTION(rb_str_new3(VALUE str), rb_str_new_shared, (str))
-#define rb_str_new3 rb_str_new_shared
-
-static VALUE
-str_new4(VALUE klass, VALUE str)
-{
-    VALUE str2;
-
-    str2 = str_alloc(klass);
-    STR_SET_NOEMBED(str2);
-    RSTRING(str2)->as.heap.len = RSTRING_LEN(str);
-    RSTRING(str2)->as.heap.ptr = RSTRING_PTR(str);
-    if (STR_SHARED_P(str)) {
-	VALUE shared = RSTRING(str)->as.heap.aux.shared;
-	assert(OBJ_FROZEN(shared));
-	FL_SET(str2, ELTS_SHARED);
-	RSTRING(str2)->as.heap.aux.shared = shared;
-    }
-    else {
-	FL_SET(str, ELTS_SHARED);
-	RSTRING(str)->as.heap.aux.shared = str2;
-    }
-    rb_enc_cr_str_exact_copy(str2, str);
     OBJ_INFECT(str2, str);
     return str2;
 }
@@ -679,42 +934,48 @@ rb_str_new_frozen(VALUE orig)
     VALUE klass, str;
 
     if (OBJ_FROZEN(orig)) return orig;
+
     klass = rb_obj_class(orig);
-    if (STR_SHARED_P(orig) && (str = RSTRING(orig)->as.heap.aux.shared)) {
-	long ofs;
-	assert(OBJ_FROZEN(str));
-	ofs = RSTRING_LEN(str) - RSTRING_LEN(orig);
-	if ((ofs > 0) || (klass != RBASIC(str)->klass) ||
-	    (!OBJ_TAINTED(str) && OBJ_TAINTED(orig)) ||
-	    ENCODING_GET(str) != ENCODING_GET(orig)) {
-	    str = str_new3(klass, str);
-	    RSTRING(str)->as.heap.ptr += ofs;
-	    RSTRING(str)->as.heap.len -= ofs;
-	    rb_enc_cr_str_exact_copy(str, orig);
-	    OBJ_INFECT(str, orig);
-	}
-    }
-    else if (STR_EMBED_P(orig)) {
+
+    if (STR_EMBED_P(orig)) {
 	str = str_new(klass, RSTRING_PTR(orig), RSTRING_LEN(orig));
-	rb_enc_cr_str_exact_copy(str, orig);
-	OBJ_INFECT(str, orig);
-    }
-    else if (STR_ASSOC_P(orig)) {
-	VALUE assoc = RSTRING(orig)->as.heap.aux.shared;
-	FL_UNSET(orig, STR_ASSOC);
-	str = str_new4(klass, orig);
-	FL_SET(str, STR_ASSOC);
-	RSTRING(str)->as.heap.aux.shared = assoc;
     }
     else {
-	str = str_new4(klass, orig);
+	if (FL_TEST(orig, STR_SHARED)) {
+	    VALUE shared = RSTRING(orig)->as.heap.aux.shared;
+	    long ofs = RSTRING_PTR(orig) - RSTRING_PTR(shared);
+	    long rest = RSTRING_LEN(shared) - ofs - RSTRING_LEN(orig);
+	    assert(OBJ_FROZEN(shared));
+
+	    if ((ofs > 0) || (rest > 0) ||
+		(klass != RBASIC(shared)->klass) ||
+		((RBASIC(shared)->flags ^ RBASIC(orig)->flags) & FL_TAINT) ||
+		ENCODING_GET(shared) != ENCODING_GET(orig)) {
+		str = str_new_shared(klass, shared);
+		RSTRING(str)->as.heap.ptr += ofs;
+		RSTRING(str)->as.heap.len -= ofs + rest;
+	    }
+	    else {
+		return shared;
+	    }
+	}
+	else {
+	    str = str_alloc(klass);
+	    STR_SET_NOEMBED(str);
+	    RSTRING(str)->as.heap.len = RSTRING_LEN(orig);
+	    RSTRING(str)->as.heap.ptr = RSTRING_PTR(orig);
+	    RSTRING(str)->as.heap.aux.capa = RSTRING(orig)->as.heap.aux.capa;
+	    RBASIC(str)->flags |= RBASIC(orig)->flags & STR_NOFREE;
+	    RBASIC(orig)->flags &= ~STR_NOFREE;
+	    STR_SET_SHARED(orig, str);
+	}
     }
+
+    rb_enc_cr_str_exact_copy(str, orig);
+    OBJ_INFECT(str, orig);
     OBJ_FREEZE(str);
     return str;
 }
-
-RUBY_ALIAS_FUNCTION(rb_str_new4(VALUE orig), rb_str_new_frozen, (orig))
-#define rb_str_new4 rb_str_new_frozen
 
 VALUE
 rb_str_new_with_class(VALUE obj, const char *ptr, long len)
@@ -722,14 +983,11 @@ rb_str_new_with_class(VALUE obj, const char *ptr, long len)
     return str_new(rb_obj_class(obj), ptr, len);
 }
 
-RUBY_ALIAS_FUNCTION(rb_str_new5(VALUE obj, const char *ptr, long len),
-	   rb_str_new_with_class, (obj, ptr, len))
-#define rb_str_new5 rb_str_new_with_class
-
 static VALUE
 str_new_empty(VALUE str)
 {
-    VALUE v = rb_str_new5(str, 0, 0);
+    VALUE v = rb_str_new_with_class(str, 0, 0);
+    rb_enc_copy(v, str);
     OBJ_INFECT(v, str);
     return v;
 }
@@ -764,28 +1022,46 @@ rb_str_buf_new_cstr(const char *ptr)
     return str;
 }
 
-RUBY_ALIAS_FUNCTION(rb_str_buf_new2(const char *ptr), rb_str_buf_new_cstr, (ptr))
-#define rb_str_buf_new2 rb_str_buf_new_cstr
-
 VALUE
 rb_str_tmp_new(long len)
 {
     return str_new(0, 0, len);
 }
 
+void *
+rb_alloc_tmp_buffer(volatile VALUE *store, long len)
+{
+    VALUE s = rb_str_tmp_new(len);
+    *store = s;
+    return RSTRING_PTR(s);
+}
+
+void
+rb_free_tmp_buffer(volatile VALUE *store)
+{
+    VALUE s = *store;
+    *store = 0;
+    if (s) rb_str_clear(s);
+}
+
 void
 rb_str_free(VALUE str)
 {
-    if (!STR_EMBED_P(str) && !STR_SHARED_P(str)) {
-	xfree(RSTRING(str)->as.heap.ptr);
+    if (FL_TEST(str, RSTRING_FSTR)) {
+	st_data_t fstr = (st_data_t)str;
+	st_delete(rb_vm_fstring_table(), &fstr, NULL);
+    }
+
+    if (!STR_EMBED_P(str) && !FL_TEST(str, STR_SHARED|STR_NOFREE)) {
+	ruby_sized_xfree(STR_HEAP_PTR(str), STR_HEAP_SIZE(str));
     }
 }
 
 RUBY_FUNC_EXPORTED size_t
 rb_str_memsize(VALUE str)
 {
-    if (!STR_EMBED_P(str) && !STR_SHARED_P(str)) {
-	return RSTRING(str)->as.heap.aux.capa;
+    if (FL_TEST(str, STR_NOEMBED|STR_SHARED|STR_NOFREE) == STR_NOEMBED) {
+	return STR_HEAP_SIZE(str);
     }
     else {
 	return 0;
@@ -810,30 +1086,35 @@ rb_str_shared_replace(VALUE str, VALUE str2)
     cr = ENC_CODERANGE(str2);
     str_discard(str);
     OBJ_INFECT(str, str2);
+
     if (RSTRING_LEN(str2) <= RSTRING_EMBED_LEN_MAX) {
 	STR_SET_EMBED(str);
 	memcpy(RSTRING_PTR(str), RSTRING_PTR(str2), RSTRING_LEN(str2)+1);
 	STR_SET_EMBED_LEN(str, RSTRING_LEN(str2));
         rb_enc_associate(str, enc);
         ENC_CODERANGE_SET(str, cr);
-	return;
-    }
-    STR_SET_NOEMBED(str);
-    STR_UNSET_NOCAPA(str);
-    RSTRING(str)->as.heap.ptr = RSTRING_PTR(str2);
-    RSTRING(str)->as.heap.len = RSTRING_LEN(str2);
-    if (STR_NOCAPA_P(str2)) {
-	FL_SET(str, RBASIC(str2)->flags & STR_NOCAPA);
-	RSTRING(str)->as.heap.aux.shared = RSTRING(str2)->as.heap.aux.shared;
     }
     else {
-	RSTRING(str)->as.heap.aux.capa = RSTRING(str2)->as.heap.aux.capa;
+	STR_SET_NOEMBED(str);
+	FL_UNSET(str, STR_SHARED);
+	RSTRING(str)->as.heap.ptr = RSTRING_PTR(str2);
+	RSTRING(str)->as.heap.len = RSTRING_LEN(str2);
+
+	if (FL_TEST(str2, STR_SHARED)) {
+	    VALUE shared = RSTRING(str2)->as.heap.aux.shared;
+	    STR_SET_SHARED(str, shared);
+	}
+	else {
+	    RSTRING(str)->as.heap.aux.capa = RSTRING(str2)->as.heap.aux.capa;
+	}
+
+	/* abandon str2 */
+	STR_SET_EMBED(str2);
+	RSTRING_PTR(str2)[0] = 0;
+	STR_SET_EMBED_LEN(str2, 0);
+	rb_enc_associate(str, enc);
+	ENC_CODERANGE_SET(str, cr);
     }
-    STR_SET_EMBED(str2);	/* abandon str2 */
-    RSTRING_PTR(str2)[0] = 0;
-    STR_SET_EMBED_LEN(str2, 0);
-    rb_enc_associate(str, enc);
-    ENC_CODERANGE_SET(str, cr);
 }
 
 static ID id_to_s;
@@ -843,11 +1124,11 @@ rb_obj_as_string(VALUE obj)
 {
     VALUE str;
 
-    if (TYPE(obj) == T_STRING) {
+    if (RB_TYPE_P(obj, T_STRING)) {
 	return obj;
     }
     str = rb_funcall(obj, id_to_s, 0);
-    if (TYPE(str) != T_STRING)
+    if (!RB_TYPE_P(str, T_STRING))
 	return rb_any_to_s(obj);
     if (OBJ_TAINTED(obj)) OBJ_TAINT(str);
     return str;
@@ -859,18 +1140,13 @@ str_replace(VALUE str, VALUE str2)
     long len;
 
     len = RSTRING_LEN(str2);
-    if (STR_ASSOC_P(str2)) {
-	str2 = rb_str_new4(str2);
-    }
     if (STR_SHARED_P(str2)) {
 	VALUE shared = RSTRING(str2)->as.heap.aux.shared;
 	assert(OBJ_FROZEN(shared));
 	STR_SET_NOEMBED(str);
 	RSTRING(str)->as.heap.len = len;
 	RSTRING(str)->as.heap.ptr = RSTRING_PTR(str2);
-	FL_SET(str, ELTS_SHARED);
-	FL_UNSET(str, STR_ASSOC);
-	RSTRING(str)->as.heap.aux.shared = shared;
+	STR_SET_SHARED(str, shared);
     }
     else {
 	str_replace_shared(str, str2);
@@ -898,7 +1174,11 @@ rb_str_dup(VALUE str)
 VALUE
 rb_str_resurrect(VALUE str)
 {
-    return str_replace(str_alloc(rb_cString), str);
+    if (RUBY_DTRACE_STRING_CREATE_ENABLED()) {
+	RUBY_DTRACE_STRING_CREATE(RSTRING_LEN(str),
+				  rb_sourcefile(), rb_sourceline());
+    }
+    return str_duplicate(rb_cString, str);
 }
 
 /*
@@ -918,6 +1198,42 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
     return str;
 }
 
+#ifdef NONASCII_MASK
+#define is_utf8_lead_byte(c) (((c)&0xC0) != 0x80)
+
+/*
+ * UTF-8 leading bytes have either 0xxxxxxx or 11xxxxxx
+ * bit representation. (see http://en.wikipedia.org/wiki/UTF-8)
+ * Therefore, the following pseudocode can detect UTF-8 leading bytes.
+ *
+ * if (!(byte & 0x80))
+ *   byte |= 0x40;          // turn on bit6
+ * return ((byte>>6) & 1);  // bit6 represent whether this byte is leading or not.
+ *
+ * This function calculates whether a byte is leading or not for all bytes
+ * in the argument word by concurrently using the above logic, and then
+ * adds up the number of leading bytes in the word.
+ */
+static inline uintptr_t
+count_utf8_lead_bytes_with_word(const uintptr_t *s)
+{
+    uintptr_t d = *s;
+
+    /* Transform so that bit0 indicates whether we have a UTF-8 leading byte or not. */
+    d |= ~(d>>1);
+    d >>= 6;
+    d &= NONASCII_MASK >> 7;
+
+    /* Gather all bytes. */
+    d += (d>>8);
+    d += (d>>16);
+#if SIZEOF_VOIDP == 8
+    d += (d>>32);
+#endif
+    return (d&0xF);
+}
+#endif
+
 static inline long
 enc_strlen(const char *p, const char *e, rb_encoding *enc, int cr)
 {
@@ -927,6 +1243,31 @@ enc_strlen(const char *p, const char *e, rb_encoding *enc, int cr)
     if (rb_enc_mbmaxlen(enc) == rb_enc_mbminlen(enc)) {
         return (e - p + rb_enc_mbminlen(enc) - 1) / rb_enc_mbminlen(enc);
     }
+#ifdef NONASCII_MASK
+    else if (cr == ENC_CODERANGE_VALID && enc == rb_utf8_encoding()) {
+	uintptr_t len = 0;
+	if ((int)sizeof(uintptr_t) * 2 < e - p) {
+	    const uintptr_t *s, *t;
+	    const uintptr_t lowbits = sizeof(uintptr_t) - 1;
+	    s = (const uintptr_t*)(~lowbits & ((uintptr_t)p + lowbits));
+	    t = (const uintptr_t*)(~lowbits & (uintptr_t)e);
+	    while (p < (const char *)s) {
+		if (is_utf8_lead_byte(*p)) len++;
+		p++;
+	    }
+	    while (s < t) {
+		len += count_utf8_lead_bytes_with_word(s);
+		s++;
+	    }
+	    p = (const char *)s;
+	}
+	while (p < e) {
+	    if (is_utf8_lead_byte(*p)) len++;
+	    p++;
+	}
+	return (long)len;
+    }
+#endif
     else if (rb_enc_asciicompat(enc)) {
         c = 0;
 	if (cr == ENC_CODERANGE_7BIT || cr == ENC_CODERANGE_VALID) {
@@ -970,6 +1311,9 @@ rb_enc_strlen(const char *p, const char *e, rb_encoding *enc)
     return enc_strlen(p, e, enc, ENC_CODERANGE_UNKNOWN);
 }
 
+/* To get strlen with cr
+ * Note that given cr is not used.
+ */
 long
 rb_enc_strlen_cr(const char *p, const char *e, rb_encoding *enc, int *cr)
 {
@@ -1026,29 +1370,11 @@ rb_enc_strlen_cr(const char *p, const char *e, rb_encoding *enc, int *cr)
     return c;
 }
 
-#ifdef NONASCII_MASK
-#define is_utf8_lead_byte(c) (((c)&0xC0) != 0x80)
-static inline VALUE
-count_utf8_lead_bytes_with_word(const VALUE *s)
-{
-    VALUE d = *s;
-    d |= ~(d>>1);
-    d >>= 6;
-    d &= NONASCII_MASK >> 7;
-    d += (d>>8);
-    d += (d>>16);
-#if SIZEOF_VALUE == 8
-    d += (d>>32);
-#endif
-    return (d&0xF);
-}
-#endif
-
+/* enc must be str's enc or rb_enc_check(str, str2) */
 static long
 str_strlen(VALUE str, rb_encoding *enc)
 {
     const char *p, *e;
-    long n;
     int cr;
 
     if (single_byte_optimizable(str)) return RSTRING_LEN(str);
@@ -1056,44 +1382,21 @@ str_strlen(VALUE str, rb_encoding *enc)
     p = RSTRING_PTR(str);
     e = RSTRING_END(str);
     cr = ENC_CODERANGE(str);
-#ifdef NONASCII_MASK
-    if (ENC_CODERANGE(str) == ENC_CODERANGE_VALID &&
-        enc == rb_utf8_encoding()) {
 
-	VALUE len = 0;
-	if ((int)sizeof(VALUE) * 2 < e - p) {
-	    const VALUE *s, *t;
-	    const VALUE lowbits = sizeof(VALUE) - 1;
-	    s = (const VALUE*)(~lowbits & ((VALUE)p + lowbits));
-	    t = (const VALUE*)(~lowbits & (VALUE)e);
-	    while (p < (const char *)s) {
-		if (is_utf8_lead_byte(*p)) len++;
-		p++;
-	    }
-	    while (s < t) {
-		len += count_utf8_lead_bytes_with_word(s);
-		s++;
-	    }
-	    p = (const char *)s;
-	}
-	while (p < e) {
-	    if (is_utf8_lead_byte(*p)) len++;
-	    p++;
-	}
-	return (long)len;
+    if (cr == ENC_CODERANGE_UNKNOWN) {
+	long n = rb_enc_strlen_cr(p, e, enc, &cr);
+	if (cr) ENC_CODERANGE_SET(str, cr);
+	return n;
     }
-#endif
-    n = rb_enc_strlen_cr(p, e, enc, &cr);
-    if (cr) {
-        ENC_CODERANGE_SET(str, cr);
+    else {
+	return enc_strlen(p, e, enc, cr);
     }
-    return n;
 }
 
 long
 rb_str_strlen(VALUE str)
 {
-    return str_strlen(str, STR_ENC_GET(str));
+    return str_strlen(str, NULL);
 }
 
 /*
@@ -1107,23 +1410,23 @@ rb_str_strlen(VALUE str)
 VALUE
 rb_str_length(VALUE str)
 {
-    long len;
-
-    len = str_strlen(str, STR_ENC_GET(str));
-    return LONG2NUM(len);
+    return LONG2NUM(str_strlen(str, NULL));
 }
 
 /*
  *  call-seq:
  *     str.bytesize  -> integer
  *
- *  Returns the length of <i>str</i> in bytes.
+ *  Returns the length of +str+ in bytes.
+ *
+ *    "\x80\u3042".bytesize  #=> 4
+ *    "hello".bytesize       #=> 5
  */
 
 static VALUE
 rb_str_bytesize(VALUE str)
 {
-    return INT2NUM(RSTRING_LEN(str));
+    return LONG2NUM(RSTRING_LEN(str));
 }
 
 /*
@@ -1133,6 +1436,7 @@ rb_str_bytesize(VALUE str)
  *  Returns <code>true</code> if <i>str</i> has a length of zero.
  *
  *     "hello".empty?   #=> false
+ *     " ".empty?       #=> false
  *     "".empty?        #=> true
  */
 
@@ -1159,19 +1463,25 @@ rb_str_plus(VALUE str1, VALUE str2)
 {
     VALUE str3;
     rb_encoding *enc;
+    char *ptr1, *ptr2, *ptr3;
+    long len1, len2;
 
     StringValue(str2);
     enc = rb_enc_check(str1, str2);
-    str3 = rb_str_new(0, RSTRING_LEN(str1)+RSTRING_LEN(str2));
-    memcpy(RSTRING_PTR(str3), RSTRING_PTR(str1), RSTRING_LEN(str1));
-    memcpy(RSTRING_PTR(str3) + RSTRING_LEN(str1),
-	   RSTRING_PTR(str2), RSTRING_LEN(str2));
-    RSTRING_PTR(str3)[RSTRING_LEN(str3)] = '\0';
+    RSTRING_GETMEM(str1, ptr1, len1);
+    RSTRING_GETMEM(str2, ptr2, len2);
+    str3 = rb_str_new(0, len1+len2);
+    ptr3 = RSTRING_PTR(str3);
+    memcpy(ptr3, ptr1, len1);
+    memcpy(ptr3+len1, ptr2, len2);
+    TERM_FILL(&ptr3[len1+len2], rb_enc_mbminlen(enc));
 
     if (OBJ_TAINTED(str1) || OBJ_TAINTED(str2))
 	OBJ_TAINT(str3);
     ENCODING_CODERANGE_SET(str3, rb_enc_to_index(enc),
 			   ENC_CODERANGE_AND(ENC_CODERANGE(str1), ENC_CODERANGE(str2)));
+    RB_GC_GUARD(str1);
+    RB_GC_GUARD(str2);
     return str3;
 }
 
@@ -1179,10 +1489,11 @@ rb_str_plus(VALUE str1, VALUE str2)
  *  call-seq:
  *     str * integer   -> new_str
  *
- *  Copy---Returns a new <code>String</code> containing <i>integer</i> copies of
- *  the receiver.
+ *  Copy --- Returns a new String containing +integer+ copies of the receiver.
+ *  +integer+ must be greater than or equal to 0.
  *
  *     "Ho! " * 3   #=> "Ho! Ho! Ho! "
+ *     "Ho! " * 0   #=> ""
  */
 
 VALUE
@@ -1191,6 +1502,7 @@ rb_str_times(VALUE str, VALUE times)
     VALUE str2;
     long n, len;
     char *ptr2;
+    int termlen;
 
     len = NUM2LONG(times);
     if (len < 0) {
@@ -1200,7 +1512,9 @@ rb_str_times(VALUE str, VALUE times)
 	rb_raise(rb_eArgError, "argument too big");
     }
 
-    str2 = rb_str_new5(str, 0, len *= RSTRING_LEN(str));
+    len *= RSTRING_LEN(str);
+    termlen = TERM_LEN(str);
+    str2 = rb_str_new_with_class(str, 0, (len + termlen - 1));
     ptr2 = RSTRING_PTR(str2);
     if (len) {
         n = RSTRING_LEN(str);
@@ -1211,7 +1525,8 @@ rb_str_times(VALUE str, VALUE times)
         }
         memcpy(ptr2 + n, ptr2, len-n);
     }
-    ptr2[RSTRING_LEN(str2)] = '\0';
+    STR_SET_LEN(str2, len);
+    TERM_FILL(&ptr2[len], termlen);
     OBJ_INFECT(str2, str);
     rb_enc_cr_str_copy_for_substr(str2, str);
 
@@ -1224,21 +1539,24 @@ rb_str_times(VALUE str, VALUE times)
  *
  *  Format---Uses <i>str</i> as a format specification, and returns the result
  *  of applying it to <i>arg</i>. If the format specification contains more than
- *  one substitution, then <i>arg</i> must be an <code>Array</code> containing
- *  the values to be substituted. See <code>Kernel::sprintf</code> for details
- *  of the format string.
+ *  one substitution, then <i>arg</i> must be an <code>Array</code> or <code>Hash</code>
+ *  containing the values to be substituted. See <code>Kernel::sprintf</code> for
+ *  details of the format string.
  *
  *     "%05d" % 123                              #=> "00123"
  *     "%-5s: %08x" % [ "ID", self.object_id ]   #=> "ID   : 200e14d6"
+ *     "foo = %{foo}" % { :foo => 'bar' }        #=> "foo = bar"
  */
 
 static VALUE
 rb_str_format_m(VALUE str, VALUE arg)
 {
-    volatile VALUE tmp = rb_check_array_type(arg);
+    VALUE tmp = rb_check_array_type(arg);
 
     if (!NIL_P(tmp)) {
-	return rb_str_format(RARRAY_LENINT(tmp), RARRAY_PTR(tmp), str);
+	VALUE rv = rb_str_format(RARRAY_LENINT(tmp), RARRAY_CONST_PTR(tmp), str);
+	RB_GC_GUARD(tmp);
+	return rv;
     }
     return rb_str_format(1, &arg, str);
 }
@@ -1249,18 +1567,19 @@ str_modifiable(VALUE str)
     if (FL_TEST(str, STR_TMPLOCK)) {
 	rb_raise(rb_eRuntimeError, "can't modify string; temporarily locked");
     }
-    if (OBJ_FROZEN(str)) rb_error_frozen("string");
-    if (!OBJ_UNTRUSTED(str) && rb_safe_level() >= 4)
-	rb_raise(rb_eSecurityError, "Insecure: can't modify string");
+    rb_check_frozen(str);
 }
 
 static inline int
 str_independent(VALUE str)
 {
     str_modifiable(str);
-    if (!STR_SHARED_P(str)) return 1;
-    if (STR_EMBED_P(str)) return 1;
-    return 0;
+    if (STR_EMBED_P(str) || !FL_TEST(str, STR_SHARED|STR_NOFREE)) {
+	return 1;
+    }
+    else {
+	return 0;
+    }
 }
 
 static void
@@ -1268,22 +1587,33 @@ str_make_independent_expand(VALUE str, long expand)
 {
     char *ptr;
     long len = RSTRING_LEN(str);
+    const int termlen = TERM_LEN(str);
     long capa = len + expand;
 
     if (len > capa) len = capa;
-    ptr = ALLOC_N(char, capa + 1);
+
+    if (capa + termlen - 1 <= RSTRING_EMBED_LEN_MAX && !STR_EMBED_P(str)) {
+	ptr = RSTRING(str)->as.heap.ptr;
+	STR_SET_EMBED(str);
+	memcpy(RSTRING(str)->as.ary, ptr, len);
+	TERM_FILL(RSTRING(str)->as.ary + len, termlen);
+	STR_SET_EMBED_LEN(str, len);
+	return;
+    }
+
+    ptr = ALLOC_N(char, capa + termlen);
     if (RSTRING_PTR(str)) {
 	memcpy(ptr, RSTRING_PTR(str), len);
     }
     STR_SET_NOEMBED(str);
-    STR_UNSET_NOCAPA(str);
-    ptr[len] = 0;
+    FL_UNSET(str, STR_SHARED|STR_NOFREE);
+    TERM_FILL(ptr + len, termlen);
     RSTRING(str)->as.heap.ptr = ptr;
     RSTRING(str)->as.heap.len = len;
     RSTRING(str)->as.heap.aux.capa = capa;
 }
 
-#define str_make_independent(str) str_make_independent_expand(str, 0L)
+#define str_make_independent(str) str_make_independent_expand((str), 0L)
 
 void
 rb_str_modify(VALUE str)
@@ -1299,11 +1629,20 @@ rb_str_modify_expand(VALUE str, long expand)
     if (expand < 0) {
 	rb_raise(rb_eArgError, "negative expanding string size");
     }
-    if (!str_independent(str) ||
-	(expand > 0 &&
-	 (!STR_EMBED_P(str) ||
-	  RSTRING_LEN(str) + expand > RSTRING_EMBED_LEN_MAX))) {
+    if (!str_independent(str)) {
 	str_make_independent_expand(str, expand);
+    }
+    else if (expand > 0) {
+	long len = RSTRING_LEN(str);
+	long capa = len + expand;
+	int termlen = TERM_LEN(str);
+	if (!STR_EMBED_P(str)) {
+	    REALLOC_N(RSTRING(str)->as.heap.ptr, char, capa + termlen);
+	    RSTRING(str)->as.heap.aux.capa = capa;
+	}
+	else if (capa + termlen > RSTRING_EMBED_LEN_MAX + 1) {
+	    str_make_independent_expand(str, expand);
+	}
     }
     ENC_CODERANGE_CLEAR(str);
 }
@@ -1323,59 +1662,27 @@ static inline void
 str_discard(VALUE str)
 {
     str_modifiable(str);
-    if (!STR_SHARED_P(str) && !STR_EMBED_P(str)) {
-	xfree(RSTRING_PTR(str));
+    if (!STR_EMBED_P(str) && !FL_TEST(str, STR_SHARED|STR_NOFREE)) {
+	ruby_sized_xfree(STR_HEAP_PTR(str), STR_HEAP_SIZE(str));
 	RSTRING(str)->as.heap.ptr = 0;
 	RSTRING(str)->as.heap.len = 0;
     }
 }
 
 void
-rb_str_associate(VALUE str, VALUE add)
+rb_must_asciicompat(VALUE str)
 {
-    /* sanity check */
-    if (OBJ_FROZEN(str)) rb_error_frozen("string");
-    if (STR_ASSOC_P(str)) {
-	/* already associated */
-	rb_ary_concat(RSTRING(str)->as.heap.aux.shared, add);
+    rb_encoding *enc = rb_enc_get(str);
+    if (!rb_enc_asciicompat(enc)) {
+	rb_raise(rb_eEncCompatError, "ASCII incompatible encoding: %s", rb_enc_name(enc));
     }
-    else {
-	if (STR_SHARED_P(str)) {
-	    VALUE assoc = RSTRING(str)->as.heap.aux.shared;
-	    str_make_independent(str);
-	    if (STR_ASSOC_P(assoc)) {
-		assoc = RSTRING(assoc)->as.heap.aux.shared;
-		rb_ary_concat(assoc, add);
-		add = assoc;
-	    }
-	}
-	else if (STR_EMBED_P(str)) {
-	    str_make_independent(str);
-	}
-	else if (RSTRING(str)->as.heap.aux.capa != RSTRING_LEN(str)) {
-	    RESIZE_CAPA(str, RSTRING_LEN(str));
-	}
-	FL_SET(str, STR_ASSOC);
-	RBASIC(add)->klass = 0;
-	RSTRING(str)->as.heap.aux.shared = add;
-    }
-}
-
-VALUE
-rb_str_associated(VALUE str)
-{
-    if (STR_SHARED_P(str)) str = RSTRING(str)->as.heap.aux.shared;
-    if (STR_ASSOC_P(str)) {
-	return RSTRING(str)->as.heap.aux.shared;
-    }
-    return Qfalse;
 }
 
 VALUE
 rb_string_value(volatile VALUE *ptr)
 {
     VALUE s = *ptr;
-    if (TYPE(s) != T_STRING) {
+    if (!RB_TYPE_P(s, T_STRING)) {
 	s = rb_str_to_str(s);
 	*ptr = s;
     }
@@ -1389,18 +1696,76 @@ rb_string_value_ptr(volatile VALUE *ptr)
     return RSTRING_PTR(str);
 }
 
+static int
+zero_filled(const char *s, int n)
+{
+    for (; n > 0; --n) {
+	if (*s++) return 0;
+    }
+    return 1;
+}
+
+static const char *
+str_null_char(const char *s, long len, const int minlen, rb_encoding *enc)
+{
+    const char *e = s + len;
+
+    for (; s + minlen <= e; s += rb_enc_mbclen(s, e, enc)) {
+	if (zero_filled(s, minlen)) return s;
+    }
+    return 0;
+}
+
+static char *
+str_fill_term(VALUE str, char *s, long len, int oldtermlen, int termlen)
+{
+    long capa = rb_str_capacity(str) + 1;
+
+    if (capa < len + termlen) {
+	rb_str_modify_expand(str, termlen);
+    }
+    else if (!str_independent(str)) {
+	if (zero_filled(s + len, termlen)) return s;
+	str_make_independent(str);
+    }
+    s = RSTRING_PTR(str);
+    TERM_FILL(s + len, termlen);
+    return s;
+}
+
 char *
 rb_string_value_cstr(volatile VALUE *ptr)
 {
     VALUE str = rb_string_value(ptr);
     char *s = RSTRING_PTR(str);
     long len = RSTRING_LEN(str);
+    rb_encoding *enc = rb_enc_get(str);
+    const int minlen = rb_enc_mbminlen(enc);
 
+    if (minlen > 1) {
+	if (str_null_char(s, len, minlen, enc)) {
+	    rb_raise(rb_eArgError, "string contains null char");
+	}
+	return str_fill_term(str, s, len, minlen, minlen);
+    }
     if (!s || memchr(s, 0, len)) {
 	rb_raise(rb_eArgError, "string contains null byte");
     }
-    if (s[len]) rb_str_modify(str);
+    if (s[len]) {
+	rb_str_modify(str);
+	s = RSTRING_PTR(str);
+	s[RSTRING_LEN(str)] = 0;
+    }
     return s;
+}
+
+void
+rb_str_fill_terminator(VALUE str, const int newminlen)
+{
+    char *s = RSTRING_PTR(str);
+    long len = RSTRING_LEN(str);
+    rb_encoding *enc = rb_enc_get(str);
+    str_fill_term(str, s, len, rb_enc_mbminlen(enc), newminlen);
 }
 
 VALUE
@@ -1427,9 +1792,10 @@ rb_str_s_try_convert(VALUE dummy, VALUE str)
     return rb_check_string_type(str);
 }
 
-char*
-rb_enc_nth(const char *p, const char *e, long nth, rb_encoding *enc)
+static char*
+str_nth_len(const char *p, const char *e, long *nthp, rb_encoding *enc)
 {
+    long nth = *nthp;
     if (rb_enc_mbmaxlen(enc) == 1) {
         p += nth;
     }
@@ -1442,12 +1808,17 @@ rb_enc_nth(const char *p, const char *e, long nth, rb_encoding *enc)
 
         while (p < e && 0 < nth) {
             e2 = p + nth;
-            if (e < e2)
+            if (e < e2) {
+                *nthp = nth;
                 return (char *)e;
+            }
             if (ISASCII(*p)) {
                 p2 = search_nonascii(p, e2);
-                if (!p2)
+                if (!p2) {
+		    nth -= e2 - p;
+		    *nthp = nth;
                     return (char *)e2;
+                }
                 nth -= p2 - p;
                 p = p2;
             }
@@ -1455,17 +1826,26 @@ rb_enc_nth(const char *p, const char *e, long nth, rb_encoding *enc)
             p += n;
             nth--;
         }
-        if (nth != 0)
+        *nthp = nth;
+        if (nth != 0) {
             return (char *)e;
+        }
         return (char *)p;
     }
     else {
-        while (p<e && nth--) {
+        while (p < e && nth--) {
             p += rb_enc_mbclen(p, e, enc);
         }
     }
     if (p > e) p = e;
+    *nthp = nth;
     return (char*)p;
+}
+
+char*
+rb_enc_nth(const char *p, const char *e, long nth, rb_encoding *enc)
+{
+    return str_nth_len(p, e, &nth, enc);
 }
 
 static char*
@@ -1474,7 +1854,7 @@ str_nth(const char *p, const char *e, long nth, rb_encoding *enc, int singlebyte
     if (singlebyte)
 	p += nth;
     else {
-	p = rb_enc_nth(p, e, nth, enc);
+	p = str_nth_len(p, e, &nth, enc);
     }
     if (!p) return 0;
     if (p > e) p = e;
@@ -1499,13 +1879,14 @@ rb_str_offset(VALUE str, long pos)
 
 #ifdef NONASCII_MASK
 static char *
-str_utf8_nth(const char *p, const char *e, long nth)
+str_utf8_nth(const char *p, const char *e, long *nthp)
 {
-    if ((int)SIZEOF_VALUE < e - p && (int)SIZEOF_VALUE * 2 < nth) {
-	const VALUE *s, *t;
-	const VALUE lowbits = sizeof(VALUE) - 1;
-	s = (const VALUE*)(~lowbits & ((VALUE)p + lowbits));
-	t = (const VALUE*)(~lowbits & (VALUE)e);
+    long nth = *nthp;
+    if ((int)SIZEOF_VOIDP * 2 < e - p && (int)SIZEOF_VOIDP * 2 < nth) {
+	const uintptr_t *s, *t;
+	const uintptr_t lowbits = SIZEOF_VOIDP - 1;
+	s = (const uintptr_t*)(~lowbits & ((uintptr_t)p + lowbits));
+	t = (const uintptr_t*)(~lowbits & (uintptr_t)e);
 	while (p < (const char *)s) {
 	    if (is_utf8_lead_byte(*p)) nth--;
 	    p++;
@@ -1513,7 +1894,7 @@ str_utf8_nth(const char *p, const char *e, long nth)
 	do {
 	    nth -= count_utf8_lead_bytes_with_word(s);
 	    s++;
-	} while (s < t && (int)sizeof(VALUE) <= nth);
+	} while (s < t && (int)SIZEOF_VOIDP <= nth);
 	p = (char *)s;
     }
     while (p < e) {
@@ -1523,13 +1904,14 @@ str_utf8_nth(const char *p, const char *e, long nth)
 	}
 	p++;
     }
+    *nthp = nth;
     return (char *)p;
 }
 
 static long
 str_utf8_offset(const char *p, const char *e, long nth)
 {
-    const char *pp = str_utf8_nth(p, e, nth);
+    const char *pp = str_utf8_nth(p, e, &nth);
     return pp - p;
 }
 #endif
@@ -1551,13 +1933,16 @@ rb_str_subseq(VALUE str, long beg, long len)
 {
     VALUE str2;
 
-    if (RSTRING_LEN(str) == beg + len &&
-        RSTRING_EMBED_LEN_MAX < len) {
-        str2 = rb_str_new_shared(rb_str_new_frozen(str));
-        rb_str_drop_bytes(str2, beg);
+    if (RSTRING_EMBED_LEN_MAX < len && SHARABLE_SUBSTRING_P(beg, len, RSTRING_LEN(str))) {
+	long olen;
+	str2 = rb_str_new_shared(rb_str_new_frozen(str));
+	RSTRING(str2)->as.heap.ptr += beg;
+	olen = RSTRING(str2)->as.heap.len;
+	if (olen > len) RSTRING(str2)->as.heap.len = len;
     }
     else {
-        str2 = rb_str_new5(str, RSTRING_PTR(str)+beg, len);
+        str2 = rb_str_new_with_class(str, RSTRING_PTR(str)+beg, len);
+	RB_GC_GUARD(str);
     }
 
     rb_enc_cr_str_copy_for_substr(str2, str);
@@ -1566,32 +1951,30 @@ rb_str_subseq(VALUE str, long beg, long len)
     return str2;
 }
 
-VALUE
-rb_str_substr(VALUE str, long beg, long len)
+char *
+rb_str_subpos(VALUE str, long beg, long *lenp)
 {
+    long len = *lenp;
+    long slen = -1L;
+    long blen = RSTRING_LEN(str);
     rb_encoding *enc = STR_ENC_GET(str);
-    VALUE str2;
-    char *p, *s = RSTRING_PTR(str), *e = s + RSTRING_LEN(str);
+    char *p, *s = RSTRING_PTR(str), *e = s + blen;
 
-    if (len < 0) return Qnil;
-    if (!RSTRING_LEN(str)) {
+    if (len < 0) return 0;
+    if (!blen) {
 	len = 0;
     }
     if (single_byte_optimizable(str)) {
-	if (beg > RSTRING_LEN(str)) return Qnil;
+	if (beg > blen) return 0;
 	if (beg < 0) {
-	    beg += RSTRING_LEN(str);
-	    if (beg < 0) return Qnil;
+	    beg += blen;
+	    if (beg < 0) return 0;
 	}
-	if (beg + len > RSTRING_LEN(str))
-	    len = RSTRING_LEN(str) - beg;
-	if (len <= 0) {
-	    len = 0;
-	    p = 0;
-	}
-	else
-	    p = s + beg;
-	goto sub;
+	if (beg + len > blen)
+	    len = blen - beg;
+	if (len < 0) return 0;
+	p = s + beg;
+	goto end;
     }
     if (beg < 0) {
 	if (len > -beg) len = -beg;
@@ -1599,27 +1982,32 @@ rb_str_substr(VALUE str, long beg, long len)
 	    beg = -beg;
 	    while (beg-- > len && (e = rb_enc_prev_char(s, e, e, enc)) != 0);
 	    p = e;
-	    if (!p) return Qnil;
+	    if (!p) return 0;
 	    while (len-- > 0 && (p = rb_enc_prev_char(s, p, e, enc)) != 0);
-	    if (!p) return Qnil;
+	    if (!p) return 0;
 	    len = e - p;
-	    goto sub;
+	    goto end;
 	}
 	else {
-	    beg += str_strlen(str, enc);
-	    if (beg < 0) return Qnil;
+	    slen = str_strlen(str, enc);
+	    beg += slen;
+	    if (beg < 0) return 0;
+	    p = s + beg;
+	    if (len == 0) goto end;
 	}
     }
-    else if (beg > 0 && beg > str_strlen(str, enc)) {
-	return Qnil;
+    else if (beg > 0 && beg > RSTRING_LEN(str)) {
+	return 0;
     }
     if (len == 0) {
-	p = 0;
+	if (beg > str_strlen(str, enc)) return 0; /* str's enc */
+	p = s + beg;
     }
 #ifdef NONASCII_MASK
     else if (ENC_CODERANGE(str) == ENC_CODERANGE_VALID &&
         enc == rb_utf8_encoding()) {
-        p = str_utf8_nth(s, e, beg);
+        p = str_utf8_nth(s, e, &beg);
+        if (beg > 0) return 0;
         len = str_utf8_offset(p, e, len);
     }
 #endif
@@ -1628,32 +2016,46 @@ rb_str_substr(VALUE str, long beg, long len)
 
 	p = s + beg * char_sz;
 	if (p > e) {
-	    p = e;
-	    len = 0;
+	    return 0;
 	}
         else if (len * char_sz > e - p)
             len = e - p;
         else
 	    len *= char_sz;
     }
-    else if ((p = str_nth(s, e, beg, enc, 0)) == e) {
+    else if ((p = str_nth_len(s, e, &beg, enc)) == e) {
+	if (beg > 0) return 0;
 	len = 0;
     }
     else {
 	len = str_offset(p, e, len, enc, 0);
     }
-  sub:
-    if (len > RSTRING_EMBED_LEN_MAX && beg + len == RSTRING_LEN(str)) {
-	str2 = rb_str_new4(str);
-	str2 = str_new3(rb_obj_class(str2), str2);
-	RSTRING(str2)->as.heap.ptr += RSTRING(str2)->as.heap.len - len;
+  end:
+    *lenp = len;
+    RB_GC_GUARD(str);
+    return p;
+}
+
+VALUE
+rb_str_substr(VALUE str, long beg, long len)
+{
+    VALUE str2;
+    char *p = rb_str_subpos(str, beg, &len);
+
+    if (!p) return Qnil;
+    if (len > RSTRING_EMBED_LEN_MAX && SHARABLE_SUBSTRING_P(p, len, RSTRING_END(str))) {
+	long ofs = p - RSTRING_PTR(str);
+	str2 = rb_str_new_frozen(str);
+	str2 = str_new_shared(rb_obj_class(str2), str2);
+	RSTRING(str2)->as.heap.ptr += ofs;
 	RSTRING(str2)->as.heap.len = len;
     }
     else {
-	str2 = rb_str_new5(str, p, len);
-	rb_enc_cr_str_copy_for_substr(str2, str);
+	str2 = rb_str_new_with_class(str, p, len);
 	OBJ_INFECT(str2, str);
+	RB_GC_GUARD(str);
     }
+    rb_enc_cr_str_copy_for_substr(str2, str);
 
     return str2;
 }
@@ -1661,10 +2063,8 @@ rb_str_substr(VALUE str, long beg, long len)
 VALUE
 rb_str_freeze(VALUE str)
 {
-    if (STR_ASSOC_P(str)) {
-	VALUE ary = RSTRING(str)->as.heap.aux.shared;
-	OBJ_FREEZE(ary);
-    }
+    if (OBJ_FROZEN(str)) return str;
+    rb_str_resize(str, RSTRING_LEN(str));
     return rb_obj_freeze(str);
 }
 
@@ -1691,20 +2091,28 @@ rb_str_unlocktmp(VALUE str)
     return str;
 }
 
+VALUE
+rb_str_locktmp_ensure(VALUE str, VALUE (*func)(VALUE), VALUE arg)
+{
+    rb_str_locktmp(str);
+    return rb_ensure(func, arg, rb_str_unlocktmp, str);
+}
+
 void
 rb_str_set_len(VALUE str, long len)
 {
     long capa;
+    const int termlen = TERM_LEN(str);
 
     str_modifiable(str);
     if (STR_SHARED_P(str)) {
 	rb_raise(rb_eRuntimeError, "can't set length of shared string");
     }
-    if (len > (capa = (long)rb_str_capacity(str))) {
+    if (len + termlen - 1 > (capa = (long)rb_str_capacity(str))) {
 	rb_bug("probable buffer overflow: %ld for %ld", len, capa);
     }
     STR_SET_LEN(str, len);
-    RSTRING_PTR(str)[len] = '\0';
+    TERM_FILL(&RSTRING_PTR(str)[len], termlen);
 }
 
 VALUE
@@ -1720,36 +2128,41 @@ rb_str_resize(VALUE str, long len)
     independent = str_independent(str);
     ENC_CODERANGE_CLEAR(str);
     slen = RSTRING_LEN(str);
-    if (len != slen) {
+
+    {
+	long capa;
+	const int termlen = TERM_LEN(str);
 	if (STR_EMBED_P(str)) {
-	    if (len <= RSTRING_EMBED_LEN_MAX) {
+	    if (len == slen) return str;
+	    if (len + termlen <= RSTRING_EMBED_LEN_MAX + 1) {
 		STR_SET_EMBED_LEN(str, len);
-		RSTRING(str)->as.ary[len] = '\0';
+		TERM_FILL(RSTRING(str)->as.ary + len, termlen);
 		return str;
 	    }
 	    str_make_independent_expand(str, len - slen);
-	    STR_SET_NOEMBED(str);
 	}
-	else if (len <= RSTRING_EMBED_LEN_MAX) {
-	    char *ptr = RSTRING(str)->as.heap.ptr;
+	else if (len + termlen <= RSTRING_EMBED_LEN_MAX + 1) {
+	    char *ptr = STR_HEAP_PTR(str);
 	    STR_SET_EMBED(str);
-	    if (slen > 0) MEMCPY(RSTRING(str)->as.ary, ptr, char, len);
-	    RSTRING(str)->as.ary[len] = '\0';
+	    if (slen > len) slen = len;
+	    if (slen > 0) MEMCPY(RSTRING(str)->as.ary, ptr, char, slen);
+	    TERM_FILL(RSTRING(str)->as.ary + len, termlen);
 	    STR_SET_EMBED_LEN(str, len);
-	    if (independent) xfree(ptr);
+	    if (independent) ruby_xfree(ptr);
 	    return str;
 	}
 	else if (!independent) {
+	    if (len == slen) return str;
 	    str_make_independent_expand(str, len - slen);
 	}
-	else if (slen < len || slen - len > 1024) {
-	    REALLOC_N(RSTRING(str)->as.heap.ptr, char, len+1);
-	}
-	if (!STR_NOCAPA_P(str)) {
+	else if ((capa = RSTRING(str)->as.heap.aux.capa) < len ||
+		 (capa - len) > (len < 1024 ? len : 1024)) {
+	    REALLOC_N(RSTRING(str)->as.heap.ptr, char, len + termlen);
 	    RSTRING(str)->as.heap.aux.capa = len;
 	}
+	else if (len == slen) return str;
 	RSTRING(str)->as.heap.len = len;
-	RSTRING(str)->as.heap.ptr[len] = '\0';	/* sentinel */
+	TERM_FILL(RSTRING(str)->as.heap.ptr + len, termlen); /* sentinel */
     }
     return str;
 }
@@ -1757,51 +2170,55 @@ rb_str_resize(VALUE str, long len)
 static VALUE
 str_buf_cat(VALUE str, const char *ptr, long len)
 {
-    long capa, total, off = -1;
+    long capa, total, olen, off = -1;
+    char *sptr;
+    const int termlen = TERM_LEN(str);
 
-    if (ptr >= RSTRING_PTR(str) && ptr <= RSTRING_END(str)) {
-        off = ptr - RSTRING_PTR(str);
+    RSTRING_GETMEM(str, sptr, olen);
+    if (ptr >= sptr && ptr <= sptr + olen) {
+        off = ptr - sptr;
     }
     rb_str_modify(str);
     if (len == 0) return 0;
-    if (STR_ASSOC_P(str)) {
-	FL_UNSET(str, STR_ASSOC);
-	capa = RSTRING(str)->as.heap.aux.capa = RSTRING_LEN(str);
-    }
-    else if (STR_EMBED_P(str)) {
+    if (STR_EMBED_P(str)) {
 	capa = RSTRING_EMBED_LEN_MAX;
+	sptr = RSTRING(str)->as.ary;
+	olen = RSTRING_EMBED_LEN(str);
     }
     else {
 	capa = RSTRING(str)->as.heap.aux.capa;
+	sptr = RSTRING(str)->as.heap.ptr;
+	olen = RSTRING(str)->as.heap.len;
     }
-    if (RSTRING_LEN(str) >= LONG_MAX - len) {
+    if (olen >= LONG_MAX - len) {
 	rb_raise(rb_eArgError, "string sizes too big");
     }
-    total = RSTRING_LEN(str)+len;
+    total = olen + len;
     if (capa <= total) {
 	while (total > capa) {
-	    if (capa + 1 >= LONG_MAX / 2) {
-		capa = (total + 4095) / 4096;
+	    if (capa > LONG_MAX / 2) {
+		capa = (total + 4095) / 4096 * 4096;
 		break;
 	    }
-	    capa = (capa + 1) * 2;
+	    capa = 2 * capa;
 	}
-	RESIZE_CAPA(str, capa);
+	RESIZE_CAPA_TERM(str, capa, termlen);
+	sptr = RSTRING_PTR(str);
     }
     if (off != -1) {
-        ptr = RSTRING_PTR(str) + off;
+        ptr = sptr + off;
     }
-    memcpy(RSTRING_PTR(str) + RSTRING_LEN(str), ptr, len);
+    memcpy(sptr + olen, ptr, len);
     STR_SET_LEN(str, total);
-    RSTRING_PTR(str)[total] = '\0'; /* sentinel */
+    TERM_FILL(sptr + total, termlen); /* sentinel */
 
     return str;
 }
 
-#define str_buf_cat2(str, ptr) str_buf_cat(str, (ptr), strlen(ptr))
+#define str_buf_cat2(str, ptr) str_buf_cat((str), (ptr), strlen(ptr))
 
 VALUE
-rb_str_buf_cat(VALUE str, const char *ptr, long len)
+rb_str_cat(VALUE str, const char *ptr, long len)
 {
     if (len == 0) return str;
     if (len < 0) {
@@ -1811,35 +2228,15 @@ rb_str_buf_cat(VALUE str, const char *ptr, long len)
 }
 
 VALUE
-rb_str_buf_cat2(VALUE str, const char *ptr)
+rb_str_cat_cstr(VALUE str, const char *ptr)
 {
+    must_not_null(ptr);
     return rb_str_buf_cat(str, ptr, strlen(ptr));
 }
 
-VALUE
-rb_str_cat(VALUE str, const char *ptr, long len)
-{
-    if (len < 0) {
-	rb_raise(rb_eArgError, "negative string size (or size too big)");
-    }
-    if (STR_ASSOC_P(str)) {
-	char *p;
-	rb_str_modify_expand(str, len);
-	p = RSTRING(str)->as.heap.ptr;
-	memcpy(p + RSTRING(str)->as.heap.len, ptr, len);
-	len = RSTRING(str)->as.heap.len += len;
-	p[len] = '\0'; /* sentinel */
-	return str;
-    }
-
-    return rb_str_buf_cat(str, ptr, len);
-}
-
-VALUE
-rb_str_cat2(VALUE str, const char *ptr)
-{
-    return rb_str_cat(str, ptr, strlen(ptr));
-}
+RUBY_ALIAS_FUNCTION(rb_str_buf_cat(VALUE str, const char *ptr, long len), rb_str_cat, (str, ptr, len))
+RUBY_ALIAS_FUNCTION(rb_str_buf_cat2(VALUE str, const char *ptr), rb_str_cat_cstr, (str, ptr))
+RUBY_ALIAS_FUNCTION(rb_str_cat2(VALUE str, const char *ptr), rb_str_cat_cstr, (str, ptr))
 
 static VALUE
 rb_enc_cr_str_buf_cat(VALUE str, const char *ptr, long len,
@@ -1848,23 +2245,18 @@ rb_enc_cr_str_buf_cat(VALUE str, const char *ptr, long len,
     int str_encindex = ENCODING_GET(str);
     int res_encindex;
     int str_cr, res_cr;
-    int str_a8 = ENCODING_IS_ASCII8BIT(str);
-    int ptr_a8 = ptr_encindex == 0;
+    rb_encoding *str_enc, *ptr_enc;
 
-    str_cr = ENC_CODERANGE(str);
+    str_cr = RSTRING_LEN(str) ? ENC_CODERANGE(str) : ENC_CODERANGE_7BIT;
 
     if (str_encindex == ptr_encindex) {
-        if (str_cr == ENC_CODERANGE_UNKNOWN ||
-            (ptr_a8 && str_cr != ENC_CODERANGE_7BIT)) {
-            ptr_cr = ENC_CODERANGE_UNKNOWN;
-        }
-        else if (ptr_cr == ENC_CODERANGE_UNKNOWN) {
+	if (str_cr != ENC_CODERANGE_UNKNOWN && ptr_cr == ENC_CODERANGE_UNKNOWN) {
             ptr_cr = coderange_scan(ptr, len, rb_enc_from_index(ptr_encindex));
         }
     }
     else {
-        rb_encoding *str_enc = rb_enc_from_index(str_encindex);
-        rb_encoding *ptr_enc = rb_enc_from_index(ptr_encindex);
+	str_enc = rb_enc_from_index(str_encindex);
+	ptr_enc = rb_enc_from_index(ptr_encindex);
         if (!rb_enc_asciicompat(str_enc) || !rb_enc_asciicompat(ptr_enc)) {
             if (len == 0)
                 return str;
@@ -1879,7 +2271,7 @@ rb_enc_cr_str_buf_cat(VALUE str, const char *ptr, long len,
 	    ptr_cr = coderange_scan(ptr, len, ptr_enc);
 	}
         if (str_cr == ENC_CODERANGE_UNKNOWN) {
-            if (str_a8 || ptr_cr != ENC_CODERANGE_7BIT) {
+            if (ENCODING_IS_ASCII8BIT(str) || ptr_cr != ENC_CODERANGE_7BIT) {
                 str_cr = rb_enc_str_coderange(str);
             }
         }
@@ -1890,10 +2282,11 @@ rb_enc_cr_str_buf_cat(VALUE str, const char *ptr, long len,
     if (str_encindex != ptr_encindex &&
         str_cr != ENC_CODERANGE_7BIT &&
         ptr_cr != ENC_CODERANGE_7BIT) {
+	str_enc = rb_enc_from_index(str_encindex);
+	ptr_enc = rb_enc_from_index(ptr_encindex);
       incompatible:
         rb_raise(rb_eEncCompatError, "incompatible character encodings: %s and %s",
-            rb_enc_name(rb_enc_from_index(str_encindex)),
-            rb_enc_name(rb_enc_from_index(ptr_encindex)));
+		 rb_enc_name(str_enc), rb_enc_name(ptr_enc));
     }
 
     if (str_cr == ENC_CODERANGE_UNKNOWN) {
@@ -1902,7 +2295,7 @@ rb_enc_cr_str_buf_cat(VALUE str, const char *ptr, long len,
     }
     else if (str_cr == ENC_CODERANGE_7BIT) {
         if (ptr_cr == ENC_CODERANGE_7BIT) {
-            res_encindex = !str_a8 ? str_encindex : ptr_encindex;
+            res_encindex = str_encindex;
             res_cr = ENC_CODERANGE_7BIT;
         }
         else {
@@ -1912,7 +2305,10 @@ rb_enc_cr_str_buf_cat(VALUE str, const char *ptr, long len,
     }
     else if (str_cr == ENC_CODERANGE_VALID) {
         res_encindex = str_encindex;
-        res_cr = str_cr;
+	if (ptr_cr == ENC_CODERANGE_7BIT || ptr_cr == ENC_CODERANGE_VALID)
+	    res_cr = str_cr;
+	else
+	    res_cr = ptr_cr;
     }
     else { /* str_cr == ENC_CODERANGE_BROKEN */
         res_encindex = str_encindex;
@@ -1978,28 +2374,9 @@ rb_str_buf_append(VALUE str, VALUE str2)
 VALUE
 rb_str_append(VALUE str, VALUE str2)
 {
-    rb_encoding *enc;
-    int cr, cr2;
-    long len2;
-
     StringValue(str2);
-    if ((len2 = RSTRING_LEN(str2)) > 0 && STR_ASSOC_P(str)) {
-        long len = RSTRING_LEN(str) + len2;
-        enc = rb_enc_check(str, str2);
-        cr = ENC_CODERANGE(str);
-        if ((cr2 = ENC_CODERANGE(str2)) > cr) cr = cr2;
-        rb_str_modify_expand(str, len2);
-        memcpy(RSTRING(str)->as.heap.ptr + RSTRING(str)->as.heap.len,
-               RSTRING_PTR(str2), len2+1);
-        RSTRING(str)->as.heap.len = len;
-        rb_enc_associate(str, enc);
-        ENC_CODERANGE_SET(str, cr);
-        OBJ_INFECT(str, str2);
-        return str;
-    }
     return rb_str_buf_append(str, str2);
 }
-
 
 /*
  *  call-seq:
@@ -2020,46 +2397,83 @@ rb_str_append(VALUE str, VALUE str2)
 VALUE
 rb_str_concat(VALUE str1, VALUE str2)
 {
-    SIGNED_VALUE lc;
+    unsigned int code;
+    rb_encoding *enc = STR_ENC_GET(str1);
 
-    if (FIXNUM_P(str2)) {
-	lc = FIX2LONG(str2);
-	if (lc < 0)
-	    rb_raise(rb_eRangeError, "negative argument");
-    }
-    else if (TYPE(str2) == T_BIGNUM) {
-	if (!RBIGNUM_SIGN(str2))
-	    rb_raise(rb_eRangeError, "negative argument");
-	lc = rb_big2ulong(str2);
+    if (FIXNUM_P(str2) || RB_TYPE_P(str2, T_BIGNUM)) {
+	if (rb_num_to_uint(str2, &code) == 0) {
+	}
+	else if (FIXNUM_P(str2)) {
+	    rb_raise(rb_eRangeError, "%ld out of char range", FIX2LONG(str2));
+	}
+	else {
+	    rb_raise(rb_eRangeError, "bignum out of char range");
+	}
     }
     else {
 	return rb_str_append(str1, str2);
     }
-#if SIZEOF_INT < SIZEOF_VALUE
-    if ((VALUE)lc > UINT_MAX) {
-	rb_raise(rb_eRangeError, "%"PRIuVALUE" out of char range", lc);
+
+    if (enc == rb_usascii_encoding()) {
+	/* US-ASCII automatically extended to ASCII-8BIT */
+	char buf[1];
+	buf[0] = (char)code;
+	if (code > 0xFF) {
+	    rb_raise(rb_eRangeError, "%u out of char range", code);
+	}
+	rb_str_cat(str1, buf, 1);
+	if (code > 127) {
+	    rb_enc_associate(str1, rb_ascii8bit_encoding());
+	    ENC_CODERANGE_SET(str1, ENC_CODERANGE_VALID);
+	}
     }
-#endif
-    {
-	rb_encoding *enc = STR_ENC_GET(str1);
+    else {
 	long pos = RSTRING_LEN(str1);
 	int cr = ENC_CODERANGE(str1);
-	int c, len;
+	int len;
+	char *buf;
 
-	if ((len = rb_enc_codelen(c = (int)lc, enc)) <= 0) {
-	    rb_raise(rb_eRangeError, "%u invalid char", c);
+	switch (len = rb_enc_codelen(code, enc)) {
+	  case ONIGERR_INVALID_CODE_POINT_VALUE:
+	    rb_raise(rb_eRangeError, "invalid codepoint 0x%X in %s", code, rb_enc_name(enc));
+	    break;
+	  case ONIGERR_TOO_BIG_WIDE_CHAR_VALUE:
+	  case 0:
+	    rb_raise(rb_eRangeError, "%u out of char range", code);
+	    break;
+	}
+	buf = ALLOCA_N(char, len + 1);
+	rb_enc_mbcput(code, buf, enc);
+	if (rb_enc_precise_mbclen(buf, buf + len + 1, enc) != len) {
+	    rb_raise(rb_eRangeError, "invalid codepoint 0x%X in %s", code, rb_enc_name(enc));
 	}
 	rb_str_resize(str1, pos+len);
-	rb_enc_mbcput(c, RSTRING_PTR(str1)+pos, enc);
+	memcpy(RSTRING_PTR(str1) + pos, buf, len);
+	if (cr == ENC_CODERANGE_7BIT && code > 127)
+	    cr = ENC_CODERANGE_VALID;
 	ENC_CODERANGE_SET(str1, cr);
-	return str1;
     }
+    return str1;
 }
 
-st_index_t
-rb_memhash(const void *ptr, long len)
+/*
+ *  call-seq:
+ *     str.prepend(other_str)  -> str
+ *
+ *  Prepend---Prepend the given string to <i>str</i>.
+ *
+ *     a = "world"
+ *     a.prepend("hello ") #=> "hello world"
+ *     a                   #=> "hello world"
+ */
+
+static VALUE
+rb_str_prepend(VALUE str, VALUE str2)
 {
-    return st_hash(ptr, len, rb_hash_start(0));
+    StringValue(str2);
+    StringValue(str);
+    rb_str_update(str, 0L, 0L, str2);
+    return str;
 }
 
 st_index_t
@@ -2089,7 +2503,9 @@ rb_str_hash_cmp(VALUE str1, VALUE str2)
  * call-seq:
  *    str.hash   -> fixnum
  *
- * Return a hash based on the string's length and content.
+ * Return a hash based on the string's length, content and encoding.
+ *
+ * See also Object#hash.
  */
 
 static VALUE
@@ -2167,20 +2583,27 @@ str_eql(const VALUE str1, const VALUE str2)
 	return Qtrue;
     return Qfalse;
 }
+
 /*
  *  call-seq:
- *     str == obj   -> true or false
+ *     str == obj    -> true or false
+ *     str === obj   -> true or false
  *
- *  Equality---If <i>obj</i> is not a <code>String</code>, returns
- *  <code>false</code>. Otherwise, returns <code>true</code> if <i>str</i>
- *  <code><=></code> <i>obj</i> returns zero.
+ *  === Equality
+ *
+ *  Returns whether +str+ == +obj+, similar to Object#==.
+ *
+ *  If +obj+ is not an instance of String but responds to +to_str+, then the
+ *  two strings are compared using case equality Object#===.
+ *
+ *  Otherwise, returns similarly to String#eql?, comparing length and content.
  */
 
 VALUE
 rb_str_equal(VALUE str1, VALUE str2)
 {
     if (str1 == str2) return Qtrue;
-    if (TYPE(str2) != T_STRING) {
+    if (!RB_TYPE_P(str2, T_STRING)) {
 	if (!rb_respond_to(str2, rb_intern("to_str"))) {
 	    return Qfalse;
 	}
@@ -2200,59 +2623,54 @@ static VALUE
 rb_str_eql(VALUE str1, VALUE str2)
 {
     if (str1 == str2) return Qtrue;
-    if (TYPE(str2) != T_STRING) return Qfalse;
+    if (!RB_TYPE_P(str2, T_STRING)) return Qfalse;
     return str_eql(str1, str2);
 }
 
 /*
  *  call-seq:
- *     str <=> other_str   -> -1, 0, +1 or nil
+ *     string <=> other_string   -> -1, 0, +1 or nil
  *
- *  Comparison---Returns -1 if <i>other_str</i> is greater than, 0 if
- *  <i>other_str</i> is equal to, and +1 if <i>other_str</i> is less than
- *  <i>str</i>. If the strings are of different lengths, and the strings are
- *  equal when compared up to the shortest length, then the longer string is
- *  considered greater than the shorter one. In older versions of Ruby, setting
- *  <code>$=</code> allowed case-insensitive comparisons; this is now deprecated
- *  in favor of using <code>String#casecmp</code>.
+ *
+ *  Comparison---Returns -1, 0, +1 or nil depending on whether +string+ is less
+ *  than, equal to, or greater than +other_string+.
+ *
+ *  +nil+ is returned if the two values are incomparable.
+ *
+ *  If the strings are of different lengths, and the strings are equal when
+ *  compared up to the shortest length, then the longer string is considered
+ *  greater than the shorter one.
  *
  *  <code><=></code> is the basis for the methods <code><</code>,
- *  <code><=</code>, <code>></code>, <code>>=</code>, and <code>between?</code>,
- *  included from module <code>Comparable</code>.  The method
- *  <code>String#==</code> does not use <code>Comparable#==</code>.
+ *  <code><=</code>, <code>></code>, <code>>=</code>, and
+ *  <code>between?</code>, included from module Comparable. The method
+ *  String#== does not use Comparable#==.
  *
  *     "abcdef" <=> "abcde"     #=> 1
  *     "abcdef" <=> "abcdef"    #=> 0
  *     "abcdef" <=> "abcdefg"   #=> -1
  *     "abcdef" <=> "ABCDEF"    #=> 1
+ *     "abcdef" <=> 1           #=> nil
  */
 
 static VALUE
 rb_str_cmp_m(VALUE str1, VALUE str2)
 {
-    long result;
+    int result;
 
-    if (TYPE(str2) != T_STRING) {
-	if (!rb_respond_to(str2, rb_intern("to_str"))) {
-	    return Qnil;
-	}
-	else if (!rb_respond_to(str2, rb_intern("<=>"))) {
-	    return Qnil;
+    if (!RB_TYPE_P(str2, T_STRING)) {
+	VALUE tmp = rb_check_funcall(str2, rb_intern("to_str"), 0, 0);
+	if (RB_TYPE_P(tmp, T_STRING)) {
+	    result = rb_str_cmp(str1, tmp);
 	}
 	else {
-	    VALUE tmp = rb_funcall(str2, rb_intern("<=>"), 1, str1);
-
-	    if (NIL_P(tmp)) return Qnil;
-	    if (!FIXNUM_P(tmp)) {
-		return rb_funcall(LONG2FIX(0), '-', 1, tmp);
-	    }
-	    result = -FIX2LONG(tmp);
+	    return rb_invcmp(str1, str2);
 	}
     }
     else {
 	result = rb_str_cmp(str1, str2);
     }
-    return LONG2NUM(result);
+    return INT2FIX(result);
 }
 
 /*
@@ -2325,29 +2743,31 @@ rb_str_casecmp(VALUE str1, VALUE str2)
     return INT2FIX(-1);
 }
 
+#define rb_str_index(str, sub, offset) rb_strseq_index(str, sub, offset, 0)
+
 static long
-rb_str_index(VALUE str, VALUE sub, long offset)
+rb_strseq_index(VALUE str, VALUE sub, long offset, int in_byte)
 {
-    long pos;
-    char *s, *sptr, *e;
-    long len, slen;
+    const char *s, *sptr, *e;
+    long pos, len, slen;
+    int single_byte = single_byte_optimizable(str);
     rb_encoding *enc;
 
     enc = rb_enc_check(str, sub);
-    if (is_broken_string(sub)) {
-	return -1;
-    }
-    len = str_strlen(str, enc);
-    slen = str_strlen(sub, enc);
+    if (is_broken_string(sub)) return -1;
+
+    len = (in_byte || single_byte) ? RSTRING_LEN(str) : str_strlen(str, enc); /* rb_enc_check */
+    slen = in_byte ? RSTRING_LEN(sub) : str_strlen(sub, enc); /* rb_enc_check */
     if (offset < 0) {
 	offset += len;
 	if (offset < 0) return -1;
     }
     if (len - offset < slen) return -1;
+
     s = RSTRING_PTR(str);
-    e = s + RSTRING_LEN(str);
+    e = RSTRING_END(str);
     if (offset) {
-	offset = str_offset(s, RSTRING_END(str), offset, enc, single_byte_optimizable(str));
+	if (!in_byte) offset = str_offset(s, e, offset, enc, single_byte);
 	s += offset;
     }
     if (slen == 0) return offset;
@@ -2356,12 +2776,13 @@ rb_str_index(VALUE str, VALUE sub, long offset)
     slen = RSTRING_LEN(sub);
     len = RSTRING_LEN(str) - offset;
     for (;;) {
-	char *t;
+	const char *t;
 	pos = rb_memsearch(sptr, slen, s, len, enc);
 	if (pos < 0) return pos;
 	t = rb_enc_right_char_head(s, s+pos, e, enc);
 	if (t == s + pos) break;
-	if ((len -= t - s) <= 0) return -1;
+	len -= t - s;
+	if (len <= 0) return -1;
 	offset += t - s;
 	s = t;
     }
@@ -2400,18 +2821,19 @@ rb_str_index_m(int argc, VALUE *argv, VALUE str)
 	pos = 0;
     }
     if (pos < 0) {
-	pos += str_strlen(str, STR_ENC_GET(str));
+	pos += str_strlen(str, NULL);
 	if (pos < 0) {
-	    if (TYPE(sub) == T_REGEXP) {
+	    if (RB_TYPE_P(sub, T_REGEXP)) {
 		rb_backref_set(Qnil);
 	    }
 	    return Qnil;
 	}
     }
 
-    switch (TYPE(sub)) {
+    if (SPECIAL_CONST_P(sub)) goto generic;
+    switch (BUILTIN_TYPE(sub)) {
       case T_REGEXP:
-	if (pos > str_strlen(str, STR_ENC_GET(str)))
+	if (pos > str_strlen(str, NULL))
 	    return Qnil;
 	pos = str_offset(RSTRING_PTR(str), RSTRING_END(str), pos,
 			 rb_enc_check(str, sub), single_byte_optimizable(str));
@@ -2420,6 +2842,7 @@ rb_str_index_m(int argc, VALUE *argv, VALUE str)
 	pos = rb_str_sublen(str, pos);
 	break;
 
+      generic:
       default: {
 	VALUE tmp;
 
@@ -2441,42 +2864,93 @@ rb_str_index_m(int argc, VALUE *argv, VALUE str)
     return LONG2NUM(pos);
 }
 
+#ifdef HAVE_MEMRCHR
 static long
-rb_str_rindex(VALUE str, VALUE sub, long pos)
+str_rindex(VALUE str, VALUE sub, const char *s, long pos, rb_encoding *enc)
 {
-    long len, slen;
-    char *s, *sbeg, *e, *t;
-    rb_encoding *enc;
-    int singlebyte = single_byte_optimizable(str);
+    char *hit, *adjusted;
+    int c;
+    long slen, searchlen;
+    char *sbeg, *e, *t;
 
-    enc = rb_enc_check(str, sub);
-    if (is_broken_string(sub)) {
-	return -1;
-    }
-    len = str_strlen(str, enc);
-    slen = str_strlen(sub, enc);
-    /* substring longer than string */
-    if (len < slen) return -1;
-    if (len - pos < slen) {
-	pos = len - slen;
-    }
-    if (len == 0) {
-	return pos;
-    }
+    slen = RSTRING_LEN(sub);
+    if (slen == 0) return pos;
+    sbeg = RSTRING_PTR(str);
+    e = RSTRING_END(str);
+    t = RSTRING_PTR(sub);
+    c = *t & 0xff;
+    searchlen = s - sbeg + 1;
+
+    do {
+	hit = memrchr(sbeg, c, searchlen);
+	if (!hit) break;
+	adjusted = rb_enc_left_char_head(sbeg, hit, e, enc);
+	if (hit != adjusted) {
+	    searchlen = adjusted - sbeg;
+	    continue;
+	}
+	if (memcmp(hit, t, slen) == 0)
+	    return rb_str_sublen(str, hit - sbeg);
+	searchlen = adjusted - sbeg;
+    } while (searchlen > 0);
+
+    return -1;
+}
+#else
+static long
+str_rindex(VALUE str, VALUE sub, const char *s, long pos, rb_encoding *enc)
+{
+    long slen;
+    char *sbeg, *e, *t;
+
     sbeg = RSTRING_PTR(str);
     e = RSTRING_END(str);
     t = RSTRING_PTR(sub);
     slen = RSTRING_LEN(sub);
-    for (;;) {
-	s = str_nth(sbeg, e, pos, enc, singlebyte);
-	if (!s) return -1;
+
+    while (s) {
 	if (memcmp(s, t, slen) == 0) {
 	    return pos;
 	}
 	if (pos == 0) break;
 	pos--;
+	s = rb_enc_prev_char(sbeg, s, e, enc);
     }
+
     return -1;
+}
+#endif
+
+static long
+rb_str_rindex(VALUE str, VALUE sub, long pos)
+{
+    long len, slen;
+    char *sbeg, *s;
+    rb_encoding *enc;
+    int singlebyte;
+
+    enc = rb_enc_check(str, sub);
+    if (is_broken_string(sub)) return -1;
+    singlebyte = single_byte_optimizable(str);
+    len = singlebyte ? RSTRING_LEN(str) : str_strlen(str, enc); /* rb_enc_check */
+    slen = str_strlen(sub, enc); /* rb_enc_check */
+
+    /* substring longer than string */
+    if (len < slen) return -1;
+    if (len - pos < slen) pos = len - slen;
+    if (len == 0) return pos;
+
+    sbeg = RSTRING_PTR(str);
+
+    if (pos == 0) {
+	if (memcmp(sbeg, RSTRING_PTR(sub), RSTRING_LEN(sub)) == 0)
+	    return 0;
+	else
+	    return -1;
+    }
+
+    s = str_nth(sbeg, RSTRING_END(str), pos, enc, singlebyte);
+    return str_rindex(str, sub, s, pos, enc);
 }
 
 
@@ -2504,14 +2978,14 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
     VALUE sub;
     VALUE vpos;
     rb_encoding *enc = STR_ENC_GET(str);
-    long pos, len = str_strlen(str, enc);
+    long pos, len = str_strlen(str, enc); /* str's enc */
 
     if (rb_scan_args(argc, argv, "11", &sub, &vpos) == 2) {
 	pos = NUM2LONG(vpos);
 	if (pos < 0) {
 	    pos += len;
 	    if (pos < 0) {
-		if (TYPE(sub) == T_REGEXP) {
+		if (RB_TYPE_P(sub, T_REGEXP)) {
 		    rb_backref_set(Qnil);
 		}
 		return Qnil;
@@ -2523,11 +2997,12 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
 	pos = len;
     }
 
-    switch (TYPE(sub)) {
+    if (SPECIAL_CONST_P(sub)) goto generic;
+    switch (BUILTIN_TYPE(sub)) {
       case T_REGEXP:
 	/* enc = rb_get_check(str, sub); */
 	pos = str_offset(RSTRING_PTR(str), RSTRING_END(str), pos,
-			 STR_ENC_GET(str), single_byte_optimizable(str));
+			 enc, single_byte_optimizable(str));
 
 	if (!RREGEXP(sub)->ptr || RREGEXP_SRC_LEN(sub)) {
 	    pos = rb_reg_search(sub, str, pos, 1);
@@ -2536,6 +3011,7 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
 	if (pos >= 0) return LONG2NUM(pos);
 	break;
 
+      generic:
       default: {
 	VALUE tmp;
 
@@ -2563,7 +3039,11 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
  *  against <i>str</i>,and returns the position the match starts, or
  *  <code>nil</code> if there is no match. Otherwise, invokes
  *  <i>obj.=~</i>, passing <i>str</i> as an argument. The default
- *  <code>=~</code> in <code>Object</code> returns <code>false</code>.
+ *  <code>=~</code> in <code>Object</code> returns <code>nil</code>.
+ *
+ *  Note: <code>str =~ regexp</code> is not the same as
+ *  <code>regexp =~ str</code>. Strings captured from named capture groups
+ *  are assigned to local variables only in the second case.
  *
  *     "cat o' 9 tails" =~ /\d/   #=> 7
  *     "cat o' 9 tails" =~ 9      #=> nil
@@ -2572,20 +3052,22 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
 static VALUE
 rb_str_match(VALUE x, VALUE y)
 {
-    switch (TYPE(y)) {
+    if (SPECIAL_CONST_P(y)) goto generic;
+    switch (BUILTIN_TYPE(y)) {
       case T_STRING:
 	rb_raise(rb_eTypeError, "type mismatch: String given");
 
       case T_REGEXP:
 	return rb_reg_match(y, x);
 
+      generic:
       default:
 	return rb_funcall(y, rb_intern("=~"), 1, x);
     }
 }
 
 
-static VALUE get_pat(VALUE, int);
+static VALUE get_pat(VALUE);
 
 
 /*
@@ -2597,8 +3079,6 @@ static VALUE get_pat(VALUE, int);
  *  then invokes its <code>match</code> method on <i>str</i>.  If the second
  *  parameter is present, it specifies the position in the string to begin the
  *  search.
- *  If the second parameter is present, it specifies the position in the string
- *  to begin the search.
  *
  *     'hello'.match('(.)\1')      #=> #<MatchData "ll" 1:"l">
  *     'hello'.match('(.)\1')[0]   #=> "ll"
@@ -2624,10 +3104,10 @@ rb_str_match_m(int argc, VALUE *argv, VALUE str)
 {
     VALUE re, result;
     if (argc < 1)
-       rb_raise(rb_eArgError, "wrong number of arguments (%d for 1..2)", argc);
+	rb_check_arity(argc, 1, 2);
     re = argv[0];
     argv[0] = str;
-    result = rb_funcall2(get_pat(re, 0), rb_intern("match"), argc, argv);
+    result = rb_funcall2(get_pat(re), rb_intern("match"), argc, argv);
     if (!NIL_P(result) && rb_block_given_p()) {
 	return rb_yield(result);
     }
@@ -2645,6 +3125,24 @@ enc_succ_char(char *p, long len, rb_encoding *enc)
 {
     long i;
     int l;
+
+    if (rb_enc_mbminlen(enc) > 1) {
+	/* wchar, trivial case */
+	int r = rb_enc_precise_mbclen(p, p + len, enc), c;
+	if (!MBCLEN_CHARFOUND_P(r)) {
+	    return NEIGHBOR_NOT_CHAR;
+	}
+	c = rb_enc_mbc_to_codepoint(p, p + len, enc) + 1;
+	l = rb_enc_code_to_mbclen(c, enc);
+	if (!l) return NEIGHBOR_NOT_CHAR;
+	if (l != len) return NEIGHBOR_WRAPPED;
+	rb_enc_mbcput(c, p, enc);
+	r = rb_enc_precise_mbclen(p, p + len, enc);
+	if (!MBCLEN_CHARFOUND_P(r)) {
+	    return NEIGHBOR_NOT_CHAR;
+	}
+	return NEIGHBOR_FOUND;
+    }
     while (1) {
         for (i = len-1; 0 <= i && (unsigned char)p[i] == 0xff; i--)
             p[i] = '\0';
@@ -2679,6 +3177,25 @@ enc_pred_char(char *p, long len, rb_encoding *enc)
 {
     long i;
     int l;
+    if (rb_enc_mbminlen(enc) > 1) {
+	/* wchar, trivial case */
+	int r = rb_enc_precise_mbclen(p, p + len, enc), c;
+	if (!MBCLEN_CHARFOUND_P(r)) {
+	    return NEIGHBOR_NOT_CHAR;
+	}
+	c = rb_enc_mbc_to_codepoint(p, p + len, enc);
+	if (!c) return NEIGHBOR_NOT_CHAR;
+	--c;
+	l = rb_enc_code_to_mbclen(c, enc);
+	if (!l) return NEIGHBOR_NOT_CHAR;
+	if (l != len) return NEIGHBOR_WRAPPED;
+	rb_enc_mbcput(c, p, enc);
+	r = rb_enc_precise_mbclen(p, p + len, enc);
+	if (!MBCLEN_CHARFOUND_P(r)) {
+	    return NEIGHBOR_NOT_CHAR;
+	}
+	return NEIGHBOR_FOUND;
+    }
     while (1) {
         for (i = len-1; 0 <= i && (unsigned char)p[i] == 0; i--)
             p[i] = '\xff';
@@ -2774,6 +3291,8 @@ enc_succ_alnum_char(char *p, long len, rb_encoding *enc, char *carry)
 }
 
 
+static VALUE str_succ(VALUE str);
+
 /*
  *  call-seq:
  *     str.succ   -> new_str
@@ -2802,23 +3321,30 @@ enc_succ_alnum_char(char *p, long len, rb_encoding *enc, char *carry)
 VALUE
 rb_str_succ(VALUE orig)
 {
-    rb_encoding *enc;
     VALUE str;
+    str = rb_str_new_with_class(orig, RSTRING_PTR(orig), RSTRING_LEN(orig));
+    rb_enc_cr_str_copy_for_substr(str, orig);
+    OBJ_INFECT(str, orig);
+    return str_succ(str);
+}
+
+static VALUE
+str_succ(VALUE str)
+{
+    rb_encoding *enc;
     char *sbeg, *s, *e, *last_alnum = 0;
     int c = -1;
-    long l;
+    long l, slen;
     char carry[ONIGENC_CODE_TO_MBC_MAXLEN] = "\1";
     long carry_pos = 0, carry_len = 1;
     enum neighbor_char neighbor = NEIGHBOR_FOUND;
 
-    str = rb_str_new5(orig, RSTRING_PTR(orig), RSTRING_LEN(orig));
-    rb_enc_cr_str_copy_for_substr(str, orig);
-    OBJ_INFECT(str, orig);
-    if (RSTRING_LEN(str) == 0) return str;
+    slen = RSTRING_LEN(str);
+    if (slen == 0) return str;
 
-    enc = STR_ENC_GET(orig);
+    enc = STR_ENC_GET(str);
     sbeg = RSTRING_PTR(str);
-    s = e = sbeg + RSTRING_LEN(str);
+    s = e = sbeg + slen;
 
     while ((s = rb_enc_prev_char(sbeg, s, e, enc)) != 0) {
 	if (neighbor == NEIGHBOR_NOT_CHAR && last_alnum) {
@@ -2828,7 +3354,9 @@ rb_str_succ(VALUE orig)
 		break;
 	    }
 	}
-	if ((l = rb_enc_precise_mbclen(s, e, enc)) <= 0) continue;
+	l = rb_enc_precise_mbclen(s, e, enc);
+	if (!ONIGENC_MBCLEN_CHARFOUND_P(l)) continue;
+	l = ONIGENC_MBCLEN_CHARFOUND_LEN(l);
         neighbor = enc_succ_alnum_char(s, l, enc, carry);
         switch (neighbor) {
 	  case NEIGHBOR_NOT_CHAR:
@@ -2847,10 +3375,23 @@ rb_str_succ(VALUE orig)
 	s = e;
 	while ((s = rb_enc_prev_char(sbeg, s, e, enc)) != 0) {
             enum neighbor_char neighbor;
-            if ((l = rb_enc_precise_mbclen(s, e, enc)) <= 0) continue;
-            neighbor = enc_succ_char(s, l, enc);
-            if (neighbor == NEIGHBOR_FOUND)
+	    char tmp[ONIGENC_CODE_TO_MBC_MAXLEN];
+	    l = rb_enc_precise_mbclen(s, e, enc);
+	    if (!ONIGENC_MBCLEN_CHARFOUND_P(l)) continue;
+	    l = ONIGENC_MBCLEN_CHARFOUND_LEN(l);
+	    MEMCPY(tmp, s, char, l);
+	    neighbor = enc_succ_char(tmp, l, enc);
+	    switch (neighbor) {
+	      case NEIGHBOR_FOUND:
+		MEMCPY(s, tmp, char, l);
                 return str;
+		break;
+	      case NEIGHBOR_WRAPPED:
+		MEMCPY(s, tmp, char, l);
+		break;
+	      case NEIGHBOR_NOT_CHAR:
+		break;
+	    }
             if (rb_enc_precise_mbclen(s, s+l, enc) != l) {
                 /* wrapped to \0...\0.  search next valid char. */
                 enc_succ_char(s, l, enc);
@@ -2862,12 +3403,14 @@ rb_str_succ(VALUE orig)
             carry_pos = s - sbeg;
 	}
     }
-    RESIZE_CAPA(str, RSTRING_LEN(str) + carry_len);
-    s = RSTRING_PTR(str) + carry_pos;
-    memmove(s + carry_len, s, RSTRING_LEN(str) - carry_pos);
+    RESIZE_CAPA(str, slen + carry_len);
+    sbeg = RSTRING_PTR(str);
+    s = sbeg + carry_pos;
+    memmove(s + carry_len, s, slen - carry_pos);
     memmove(s, carry, carry_len);
-    STR_SET_LEN(str, RSTRING_LEN(str) + carry_len);
-    RSTRING_PTR(str)[RSTRING_LEN(str)] = '\0';
+    slen += carry_len;
+    STR_SET_LEN(str, slen);
+    TERM_FILL(&sbeg[slen], rb_enc_mbminlen(enc));
     rb_enc_str_coderange(str);
     return str;
 }
@@ -2885,8 +3428,8 @@ rb_str_succ(VALUE orig)
 static VALUE
 rb_str_succ_bang(VALUE str)
 {
-    rb_str_shared_replace(str, rb_str_succ(str));
-
+    rb_str_modify(str);
+    str_succ(str);
     return str;
 }
 
@@ -2991,7 +3534,7 @@ rb_str_upto(int argc, VALUE *argv, VALUE beg)
 	    while (rb_funcall(b, op, 1, e)) {
 		args[1] = b;
 		rb_yield(rb_str_format(numberof(args), args, fmt));
-		b = rb_funcall(b, succ, 0, 0);
+		b = rb_funcallv(b, succ, 0, 0);
 	    }
 	}
 	return beg;
@@ -3001,12 +3544,12 @@ rb_str_upto(int argc, VALUE *argv, VALUE beg)
     n = rb_str_cmp(beg, end);
     if (n > 0 || (excl && n == 0)) return beg;
 
-    after_end = rb_funcall(end, succ, 0, 0);
+    after_end = rb_funcallv(end, succ, 0, 0);
     current = rb_str_dup(beg);
     while (!rb_str_equal(current, after_end)) {
 	VALUE next = Qnil;
 	if (excl || !rb_str_equal(current, end))
-	    next = rb_funcall(current, succ, 0, 0);
+	    next = rb_funcallv(current, succ, 0, 0);
 	rb_yield(current);
 	if (NIL_P(next)) break;
 	current = next;
@@ -3035,15 +3578,17 @@ rb_str_aref(VALUE str, VALUE indx)
 {
     long idx;
 
-    switch (TYPE(indx)) {
-      case T_FIXNUM:
+    if (FIXNUM_P(indx)) {
 	idx = FIX2LONG(indx);
 
       num_index:
 	str = rb_str_substr(str, idx, 1);
 	if (!NIL_P(str) && RSTRING_LEN(str) == 0) return Qnil;
 	return str;
+    }
 
+    if (SPECIAL_CONST_P(indx)) goto generic;
+    switch (BUILTIN_TYPE(indx)) {
       case T_REGEXP:
 	return rb_str_subpat(str, indx, INT2FIX(0));
 
@@ -3052,13 +3597,14 @@ rb_str_aref(VALUE str, VALUE indx)
 	    return rb_str_dup(indx);
 	return Qnil;
 
+      generic:
       default:
 	/* check if indx is Range */
 	{
 	    long beg, len;
 	    VALUE tmp;
 
-	    len = str_strlen(str, STR_ENC_GET(str));
+	    len = str_strlen(str, NULL);
 	    switch (rb_range_beg_len(indx, &beg, &len, len, 0)) {
 	      case Qfalse:
 		break;
@@ -3072,54 +3618,76 @@ rb_str_aref(VALUE str, VALUE indx)
 	idx = NUM2LONG(indx);
 	goto num_index;
     }
-    return Qnil;		/* not reached */
+
+    UNREACHABLE;
 }
 
 
 /*
  *  call-seq:
- *     str[fixnum]                 -> new_str or nil
- *     str[fixnum, fixnum]         -> new_str or nil
- *     str[range]                  -> new_str or nil
- *     str[regexp]                 -> new_str or nil
- *     str[regexp, fixnum]         -> new_str or nil
- *     str[other_str]              -> new_str or nil
- *     str.slice(fixnum)           -> new_str or nil
- *     str.slice(fixnum, fixnum)   -> new_str or nil
- *     str.slice(range)            -> new_str or nil
- *     str.slice(regexp)           -> new_str or nil
- *     str.slice(regexp, fixnum)   -> new_str or nil
- *     str.slice(regexp, capname)  -> new_str or nil
- *     str.slice(other_str)        -> new_str or nil
+ *     str[index]                 -> new_str or nil
+ *     str[start, length]         -> new_str or nil
+ *     str[range]                 -> new_str or nil
+ *     str[regexp]                -> new_str or nil
+ *     str[regexp, capture]       -> new_str or nil
+ *     str[match_str]             -> new_str or nil
+ *     str.slice(index)           -> new_str or nil
+ *     str.slice(start, length)   -> new_str or nil
+ *     str.slice(range)           -> new_str or nil
+ *     str.slice(regexp)          -> new_str or nil
+ *     str.slice(regexp, capture) -> new_str or nil
+ *     str.slice(match_str)       -> new_str or nil
  *
- *  Element Reference---If passed a single <code>Fixnum</code>, returns a
- *  substring of one character at that position. If passed two <code>Fixnum</code>
- *  objects, returns a substring starting at the offset given by the first, and
- *  a length given by the second. If given a range, a substring containing
- *  characters at offsets given by the range is returned. In all three cases, if
- *  an offset is negative, it is counted from the end of <i>str</i>. Returns
- *  <code>nil</code> if the initial offset falls outside the string, the length
- *  is negative, or the beginning of the range is greater than the end.
+ *  Element Reference --- If passed a single +index+, returns a substring of
+ *  one character at that index. If passed a +start+ index and a +length+,
+ *  returns a substring containing +length+ characters starting at the
+ *  +index+. If passed a +range+, its beginning and end are interpreted as
+ *  offsets delimiting the substring to be returned.
  *
- *  If a <code>Regexp</code> is supplied, the matching portion of <i>str</i> is
- *  returned. If a numeric or name parameter follows the regular expression, that
- *  component of the <code>MatchData</code> is returned instead. If a
- *  <code>String</code> is given, that string is returned if it occurs in
- *  <i>str</i>. In both cases, <code>nil</code> is returned if there is no
- *  match.
+ *  In these three cases, if an index is negative, it is counted from the end
+ *  of the string.  For the +start+ and +range+ cases the starting index
+ *  is just before a character and an index matching the string's size.
+ *  Additionally, an empty string is returned when the starting index for a
+ *  character range is at the end of the string.
+ *
+ *  Returns +nil+ if the initial index falls outside the string or the length
+ *  is negative.
+ *
+ *  If a +Regexp+ is supplied, the matching portion of the string is
+ *  returned.  If a +capture+ follows the regular expression, which may be a
+ *  capture group index or name, follows the regular expression that component
+ *  of the MatchData is returned instead.
+ *
+ *  If a +match_str+ is given, that string is returned if it occurs in
+ *  the string.
+ *
+ *  Returns +nil+ if the regular expression does not match or the match string
+ *  cannot be found.
  *
  *     a = "hello there"
+ *
  *     a[1]                   #=> "e"
- *     a[1,3]                 #=> "ell"
- *     a[1..3]                #=> "ell"
- *     a[-3,2]                #=> "er"
+ *     a[2, 3]                #=> "llo"
+ *     a[2..3]                #=> "ll"
+ *
+ *     a[-3, 2]               #=> "er"
+ *     a[7..-2]               #=> "her"
  *     a[-4..-2]              #=> "her"
- *     a[12..-1]              #=> nil
  *     a[-2..-4]              #=> ""
+ *
+ *     a[11, 0]               #=> ""
+ *     a[11]                  #=> nil
+ *     a[12, 0]               #=> nil
+ *     a[12..-1]              #=> nil
+ *
  *     a[/[aeiou](.)\1/]      #=> "ell"
  *     a[/[aeiou](.)\1/, 0]   #=> "ell"
  *     a[/[aeiou](.)\1/, 1]   #=> "l"
  *     a[/[aeiou](.)\1/, 2]   #=> nil
+ *
+ *     a[/(?<vowel>[aeiou])(?<non_vowel>[^aeiou])/, "non_vowel"] #=> "l"
+ *     a[/(?<vowel>[aeiou])(?<non_vowel>[^aeiou])/, "vowel"]     #=> "e"
+ *
  *     a["lo"]                #=> "lo"
  *     a["bye"]               #=> nil
  */
@@ -3128,14 +3696,12 @@ static VALUE
 rb_str_aref_m(int argc, VALUE *argv, VALUE str)
 {
     if (argc == 2) {
-	if (TYPE(argv[0]) == T_REGEXP) {
+	if (RB_TYPE_P(argv[0], T_REGEXP)) {
 	    return rb_str_subpat(str, argv[0], argv[1]);
 	}
 	return rb_str_substr(str, NUM2LONG(argv[0]), NUM2LONG(argv[1]));
     }
-    if (argc != 1) {
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for 1..2)", argc);
-    }
+    rb_check_arity(argc, 1, 2);
     return rb_str_aref(str, argv[0]);
 }
 
@@ -3150,7 +3716,7 @@ rb_str_drop_bytes(VALUE str, long len)
     nlen = olen - len;
     if (nlen <= RSTRING_EMBED_LEN_MAX) {
 	char *oldptr = ptr;
-	int fl = (int)(RBASIC(str)->flags & (STR_NOEMBED|ELTS_SHARED));
+	int fl = (int)(RBASIC(str)->flags & (STR_NOEMBED|STR_SHARED|STR_NOFREE));
 	STR_SET_EMBED(str);
 	STR_SET_EMBED_LEN(str, nlen);
 	ptr = RSTRING(str)->as.ary;
@@ -3158,7 +3724,7 @@ rb_str_drop_bytes(VALUE str, long len)
 	if (fl == STR_NOEMBED) xfree(oldptr);
     }
     else {
-	if (!STR_SHARED_P(str)) rb_str_new4(str);
+	if (!STR_SHARED_P(str)) rb_str_new_frozen(str);
 	ptr = RSTRING(str)->as.heap.ptr += len;
 	RSTRING(str)->as.heap.len = nlen;
     }
@@ -3170,38 +3736,42 @@ rb_str_drop_bytes(VALUE str, long len)
 static void
 rb_str_splice_0(VALUE str, long beg, long len, VALUE val)
 {
-    if (beg == 0 && RSTRING_LEN(val) == 0) {
+    char *sptr;
+    long slen, vlen = RSTRING_LEN(val);
+
+    if (beg == 0 && vlen == 0) {
 	rb_str_drop_bytes(str, len);
 	OBJ_INFECT(str, val);
 	return;
     }
 
     rb_str_modify(str);
-    if (len < RSTRING_LEN(val)) {
+    RSTRING_GETMEM(str, sptr, slen);
+    if (len < vlen) {
 	/* expand string */
-	RESIZE_CAPA(str, RSTRING_LEN(str) + RSTRING_LEN(val) - len + 1);
+	RESIZE_CAPA(str, slen + vlen - len);
+	sptr = RSTRING_PTR(str);
     }
 
-    if (RSTRING_LEN(val) != len) {
-	memmove(RSTRING_PTR(str) + beg + RSTRING_LEN(val),
-		RSTRING_PTR(str) + beg + len,
-		RSTRING_LEN(str) - (beg + len));
+    if (vlen != len) {
+	memmove(sptr + beg + vlen,
+		sptr + beg + len,
+		slen - (beg + len));
     }
-    if (RSTRING_LEN(val) < beg && len < 0) {
-	MEMZERO(RSTRING_PTR(str) + RSTRING_LEN(str), char, -len);
+    if (vlen < beg && len < 0) {
+	MEMZERO(sptr + slen, char, -len);
     }
-    if (RSTRING_LEN(val) > 0) {
-	memmove(RSTRING_PTR(str)+beg, RSTRING_PTR(val), RSTRING_LEN(val));
+    if (vlen > 0) {
+	memmove(sptr + beg, RSTRING_PTR(val), vlen);
     }
-    STR_SET_LEN(str, RSTRING_LEN(str) + RSTRING_LEN(val) - len);
-    if (RSTRING_PTR(str)) {
-	RSTRING_PTR(str)[RSTRING_LEN(str)] = '\0';
-    }
+    slen += vlen - len;
+    STR_SET_LEN(str, slen);
+    TERM_FILL(&sptr[slen], TERM_LEN(str));
     OBJ_INFECT(str, val);
 }
 
-static void
-rb_str_splice(VALUE str, long beg, long len, VALUE val)
+void
+rb_str_update(VALUE str, long beg, long len, VALUE val)
 {
     long slen;
     char *p, *e;
@@ -3213,7 +3783,7 @@ rb_str_splice(VALUE str, long beg, long len, VALUE val)
 
     StringValue(val);
     enc = rb_enc_check(str, val);
-    slen = str_strlen(str, enc);
+    slen = str_strlen(str, enc); /* rb_enc_check */
 
     if (slen < beg) {
       out_of_range:
@@ -3243,11 +3813,7 @@ rb_str_splice(VALUE str, long beg, long len, VALUE val)
 	ENC_CODERANGE_SET(str, cr);
 }
 
-void
-rb_str_update(VALUE str, long beg, long len, VALUE val)
-{
-    rb_str_splice(str, beg, len, val);
-}
+#define rb_str_splice(str, beg, len, val) rb_str_update(str, beg, len, val)
 
 static void
 rb_str_subpat_set(VALUE str, VALUE re, VALUE backref, VALUE val)
@@ -3292,13 +3858,15 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
 {
     long idx, beg;
 
-    switch (TYPE(indx)) {
-      case T_FIXNUM:
+    if (FIXNUM_P(indx)) {
 	idx = FIX2LONG(indx);
       num_index:
 	rb_str_splice(str, idx, 1, val);
 	return val;
+    }
 
+    if (SPECIAL_CONST_P(indx)) goto generic;
+    switch (TYPE(indx)) {
       case T_REGEXP:
 	rb_str_subpat_set(str, indx, INT2FIX(0), val);
 	return val;
@@ -3309,14 +3877,15 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
 	    rb_raise(rb_eIndexError, "string not matched");
 	}
 	beg = rb_str_sublen(str, beg);
-	rb_str_splice(str, beg, str_strlen(indx, 0), val);
+	rb_str_splice(str, beg, str_strlen(indx, NULL), val);
 	return val;
 
+      generic:
       default:
 	/* check if indx is Range */
 	{
 	    long beg, len;
-	    if (rb_range_beg_len(indx, &beg, &len, str_strlen(str, 0), 2)) {
+	    if (rb_range_beg_len(indx, &beg, &len, str_strlen(str, NULL), 2)) {
 		rb_str_splice(str, beg, len, val);
 		return val;
 	    }
@@ -3348,14 +3917,14 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
  *  <code>Fixnum</code> will raise an <code>IndexError</code> if the value is
  *  out of range; the <code>Range</code> form will raise a
  *  <code>RangeError</code>, and the <code>Regexp</code> and <code>String</code>
- *  forms will silently ignore the assignment.
+ *  will raise an <code>IndexError</code> on negative match.
  */
 
 static VALUE
 rb_str_aset_m(int argc, VALUE *argv, VALUE str)
 {
     if (argc == 3) {
-	if (TYPE(argv[0]) == T_REGEXP) {
+	if (RB_TYPE_P(argv[0], T_REGEXP)) {
 	    rb_str_subpat_set(str, argv[0], argv[1], argv[2]);
 	}
 	else {
@@ -3363,9 +3932,7 @@ rb_str_aset_m(int argc, VALUE *argv, VALUE str)
 	}
 	return argv[2];
     }
-    if (argc != 2) {
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for 2..3)", argc);
-    }
+    rb_check_arity(argc, 2, 3);
     return rb_str_aset(str, argv[0], argv[1]);
 }
 
@@ -3404,7 +3971,7 @@ rb_str_insert(VALUE str, VALUE idx, VALUE str2)
 
 /*
  *  call-seq:
- *     str.slice!(fixnum)           -> fixnum or nil
+ *     str.slice!(fixnum)           -> new_str or nil
  *     str.slice!(fixnum, fixnum)   -> new_str or nil
  *     str.slice!(range)            -> new_str or nil
  *     str.slice!(regexp)           -> new_str or nil
@@ -3428,27 +3995,26 @@ rb_str_slice_bang(int argc, VALUE *argv, VALUE str)
     VALUE buf[3];
     int i;
 
-    if (argc < 1 || 2 < argc) {
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for 1..2)", argc);
-    }
+    rb_check_arity(argc, 1, 2);
     for (i=0; i<argc; i++) {
 	buf[i] = argv[i];
     }
     str_modify_keep_cr(str);
-    buf[i] = rb_str_new(0,0);
     result = rb_str_aref_m(argc, buf, str);
     if (!NIL_P(result)) {
+	buf[i] = rb_str_new(0,0);
 	rb_str_aset_m(argc+1, buf, str);
     }
     return result;
 }
 
 static VALUE
-get_pat(VALUE pat, int quote)
+get_pat(VALUE pat)
 {
     VALUE val;
 
-    switch (TYPE(pat)) {
+    if (SPECIAL_CONST_P(pat)) goto to_string;
+    switch (BUILTIN_TYPE(pat)) {
       case T_REGEXP:
 	return pat;
 
@@ -3456,6 +4022,7 @@ get_pat(VALUE pat, int quote)
 	break;
 
       default:
+      to_string:
 	val = rb_check_string_type(pat);
 	if (NIL_P(val)) {
 	    Check_Type(pat, T_REGEXP);
@@ -3463,11 +4030,58 @@ get_pat(VALUE pat, int quote)
 	pat = val;
     }
 
-    if (quote) {
-	pat = rb_reg_quote(pat);
-    }
-
     return rb_reg_regcomp(pat);
+}
+
+static VALUE
+get_pat_quoted(VALUE pat, int check)
+{
+    VALUE val;
+
+    if (SPECIAL_CONST_P(pat)) goto to_string;
+    switch (BUILTIN_TYPE(pat)) {
+      case T_REGEXP:
+	return pat;
+
+      case T_STRING:
+	break;
+
+      default:
+      to_string:
+	val = rb_check_string_type(pat);
+	if (NIL_P(val)) {
+	    Check_Type(pat, T_REGEXP);
+	}
+	pat = val;
+    }
+    if (check && is_broken_string(pat)) {
+	rb_exc_raise(rb_reg_check_preprocess(pat));
+    }
+    return pat;
+}
+
+static long
+rb_pat_search(VALUE pat, VALUE str, long pos, int set_backref_str)
+{
+    if (BUILTIN_TYPE(pat) == T_STRING) {
+	pos = rb_strseq_index(str, pat, pos, 1);
+	if (set_backref_str) {
+	    if (pos >= 0) {
+		VALUE match;
+		str = rb_str_new_frozen(str);
+		rb_backref_set_string(str, pos, RSTRING_LEN(pat));
+		match = rb_backref_get();
+		OBJ_INFECT(match, pat);
+	    }
+	    else {
+		rb_backref_set(Qnil);
+	    }
+	}
+	return pos;
+    }
+    else {
+	return rb_reg_search0(pat, str, pos, 0, set_backref_str);
+    }
 }
 
 
@@ -3476,9 +4090,10 @@ get_pat(VALUE pat, int quote)
  *     str.sub!(pattern, replacement)          -> str or nil
  *     str.sub!(pattern) {|match| block }      -> str or nil
  *
- *  Performs the substitutions of <code>String#sub</code> in place,
- *  returning <i>str</i>, or <code>nil</code> if no substitutions were
- *  performed.
+ *  Performs the same substitution as String#sub in-place.
+ *
+ *  Returns +str+ if a substitution was performed or +nil+ if no substitution
+ *  was performed.
  */
 
 static VALUE
@@ -3487,53 +4102,66 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
     VALUE pat, repl, hash = Qnil;
     int iter = 0;
     int tainted = 0;
-    int untrusted = 0;
     long plen;
+    int min_arity = rb_block_given_p() ? 1 : 2;
+    long beg;
 
-    if (argc == 1 && rb_block_given_p()) {
+    rb_check_arity(argc, min_arity, 2);
+    if (argc == 1) {
 	iter = 1;
     }
-    else if (argc == 2) {
+    else {
 	repl = argv[1];
-	hash = rb_check_convert_type(argv[1], T_HASH, "Hash", "to_hash");
+	hash = rb_check_hash_type(argv[1]);
 	if (NIL_P(hash)) {
 	    StringValue(repl);
 	}
 	if (OBJ_TAINTED(repl)) tainted = 1;
-	if (OBJ_UNTRUSTED(repl)) untrusted = 1;
-    }
-    else {
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for 1..2)", argc);
     }
 
-    pat = get_pat(argv[0], 1);
+    pat = get_pat_quoted(argv[0], 1);
+
     str_modifiable(str);
-    if (rb_reg_search(pat, str, 0, 0) >= 0) {
+    beg = rb_pat_search(pat, str, 0, 1);
+    if (beg >= 0) {
 	rb_encoding *enc;
 	int cr = ENC_CODERANGE(str);
-	VALUE match = rb_backref_get();
-	struct re_registers *regs = RMATCH_REGS(match);
-	long beg0 = BEG(0);
-	long end0 = END(0);
+	long beg0, end0;
+	VALUE match, match0 = Qnil;
+	struct re_registers *regs;
 	char *p, *rp;
 	long len, rlen;
+
+	match = rb_backref_get();
+	regs = RMATCH_REGS(match);
+	if (RB_TYPE_P(pat, T_STRING)) {
+	    beg0 = beg;
+	    end0 = beg0 + RSTRING_LEN(pat);
+	    match0 = pat;
+	}
+	else {
+	    beg0 = BEG(0);
+	    end0 = END(0);
+	    if (iter) match0 = rb_reg_nth_match(0, match);
+	}
 
 	if (iter || !NIL_P(hash)) {
 	    p = RSTRING_PTR(str); len = RSTRING_LEN(str);
 
             if (iter) {
-                repl = rb_obj_as_string(rb_yield(rb_reg_nth_match(0, match)));
+                repl = rb_obj_as_string(rb_yield(match0));
             }
             else {
                 repl = rb_hash_aref(hash, rb_str_subseq(str, beg0, end0 - beg0));
                 repl = rb_obj_as_string(repl);
             }
 	    str_mod_check(str, p, len);
-	    str_frozen_check(str);
+	    rb_check_frozen(str);
 	}
 	else {
-	    repl = rb_reg_regsub(repl, str, regs, pat);
+	    repl = rb_reg_regsub(repl, str, regs, RB_TYPE_P(pat, T_STRING) ? Qnil : pat);
 	}
+
         enc = rb_enc_compatible(str, repl);
         if (!enc) {
             rb_encoding *str_enc = STR_ENC_GET(str);
@@ -3549,7 +4177,6 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
 	rb_str_modify(str);
 	rb_enc_associate(str, enc);
 	if (OBJ_TAINTED(repl)) tainted = 1;
-	if (OBJ_UNTRUSTED(repl)) untrusted = 1;
 	if (ENC_CODERANGE_UNKNOWN < cr && cr < ENC_CODERANGE_BROKEN) {
 	    int cr2 = ENC_CODERANGE(repl);
             if (cr2 == ENC_CODERANGE_BROKEN ||
@@ -3571,10 +4198,9 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
 	memcpy(p + beg0, rp, rlen);
 	len += rlen - plen;
 	STR_SET_LEN(str, len);
-	RSTRING_PTR(str)[len] = '\0';
+	TERM_FILL(&RSTRING_PTR(str)[len], TERM_LEN(str));
 	ENC_CODERANGE_SET(str, cr);
 	if (tainted) OBJ_TAINT(str);
-	if (untrusted) OBJ_UNTRUST(str);
 
 	return str;
     }
@@ -3588,23 +4214,22 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
  *     str.sub(pattern, hash)                -> new_str
  *     str.sub(pattern) {|match| block }     -> new_str
  *
- *  Returns a copy of <i>str</i> with the <em>first</em> occurrence of
- *  <i>pattern</i> substituted for the second argument. The <i>pattern</i> is
- *  typically a <code>Regexp</code>; if given as a <code>String</code>, any
- *  regular expression metacharacters it contains will be interpreted
- *  literally, e.g. <code>'\\\d'</code> will match a backlash followed by 'd',
- *  instead of a digit.
+ *  Returns a copy of +str+ with the _first_ occurrence of +pattern+
+ *  replaced by the second argument. The +pattern+ is typically a Regexp; if
+ *  given as a String, any regular expression metacharacters it contains will
+ *  be interpreted literally, e.g. <code>'\\\d'</code> will match a backlash
+ *  followed by 'd', instead of a digit.
  *
- *  If <i>replacement</i> is a <code>String</code> it will be substituted for
- *  the matched text. It may contain back-references to the pattern's capture
- *  groups of the form <code>\\\d</code>, where <i>d</i> is a group number, or
- *  <code>\\\k<n></code>, where <i>n</i> is a group name. If it is a
+ *  If +replacement+ is a String it will be substituted for the matched text.
+ *  It may contain back-references to the pattern's capture groups of the form
+ *  <code>"\\d"</code>, where <i>d</i> is a group number, or
+ *  <code>"\\k<n>"</code>, where <i>n</i> is a group name. If it is a
  *  double-quoted string, both back-references must be preceded by an
- *  additional backslash. However, within <i>replacement</i> the special match
+ *  additional backslash. However, within +replacement+ the special match
  *  variables, such as <code>&$</code>, will not refer to the current match.
  *
- *  If the second argument is a <code>Hash</code>, and the matched text is one
- *  of its keys, the corresponding value is the replacement string.
+ *  If the second argument is a Hash, and the matched text is one of its keys,
+ *  the corresponding value is the replacement string.
  *
  *  In the block form, the current match string is passed in as a parameter,
  *  and variables such as <code>$1</code>, <code>$2</code>, <code>$`</code>,
@@ -3633,35 +4258,39 @@ rb_str_sub(int argc, VALUE *argv, VALUE str)
 static VALUE
 str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 {
-    VALUE pat, val, repl, match, dest, hash = Qnil;
+    VALUE pat, val = Qnil, repl, match, match0 = Qnil, dest, hash = Qnil;
     struct re_registers *regs;
     long beg, n;
     long beg0, end0;
     long offset, blen, slen, len, last;
-    int iter = 0;
+    enum {STR, ITER, MAP} mode = STR;
     char *sp, *cp;
     int tainted = 0;
+    int need_backref = -1;
     rb_encoding *str_enc;
 
     switch (argc) {
       case 1:
 	RETURN_ENUMERATOR(str, argc, argv);
-	iter = 1;
+	mode = ITER;
 	break;
       case 2:
 	repl = argv[1];
-	hash = rb_check_convert_type(argv[1], T_HASH, "Hash", "to_hash");
+	hash = rb_check_hash_type(argv[1]);
 	if (NIL_P(hash)) {
 	    StringValue(repl);
+	}
+	else {
+	    mode = MAP;
 	}
 	if (OBJ_TAINTED(repl)) tainted = 1;
 	break;
       default:
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for 1..2)", argc);
+	rb_check_arity(argc, 1, 2);
     }
 
-    pat = get_pat(argv[0], 1);
-    beg = rb_reg_search(pat, str, 0, 0);
+    pat = get_pat_quoted(argv[0], 1);
+    beg = rb_pat_search(pat, str, 0, need_backref);
     if (beg < 0) {
 	if (bang) return Qnil;	/* no match, no substitution */
 	return rb_str_dup(str);
@@ -3675,19 +4304,31 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
     slen = RSTRING_LEN(str);
     cp = sp;
     str_enc = STR_ENC_GET(str);
+    rb_enc_associate(dest, str_enc);
+    ENC_CODERANGE_SET(dest, rb_enc_asciicompat(str_enc) ? ENC_CODERANGE_7BIT : ENC_CODERANGE_VALID);
 
     do {
 	n++;
+
 	match = rb_backref_get();
 	regs = RMATCH_REGS(match);
-	beg0 = BEG(0);
-	end0 = END(0);
-	if (iter || !NIL_P(hash)) {
-            if (iter) {
-                val = rb_obj_as_string(rb_yield(rb_reg_nth_match(0, match)));
+	if (RB_TYPE_P(pat, T_STRING)) {
+	    beg0 = beg;
+	    end0 = beg0 + RSTRING_LEN(pat);
+	    match0 = pat;
+	}
+	else {
+	    beg0 = BEG(0);
+	    end0 = END(0);
+	    if (mode == ITER) match0 = rb_reg_nth_match(0, match);
+	}
+
+	if (mode) {
+            if (mode == ITER) {
+                val = rb_obj_as_string(rb_yield(match0));
             }
             else {
-                val = rb_hash_aref(hash, rb_str_subseq(str, BEG(0), END(0) - BEG(0)));
+                val = rb_hash_aref(hash, rb_str_subseq(str, beg0, end0 - beg0));
                 val = rb_obj_as_string(val);
             }
 	    str_mod_check(str, sp, slen);
@@ -3695,13 +4336,20 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 		rb_raise(rb_eRuntimeError, "block should not cheat");
 	    }
 	}
-	else {
-	    val = rb_reg_regsub(repl, str, regs, pat);
+	else if (need_backref) {
+	    val = rb_reg_regsub(repl, str, regs, RB_TYPE_P(pat, T_STRING) ? Qnil : pat);
+	    if (need_backref < 0) {
+		need_backref = val != repl;
+	    }
 	}
+	else {
+	    val = repl;
+	}
+
 
 	if (OBJ_TAINTED(val)) tainted = 1;
 
-	len = beg - offset;	/* copy pre-match substr */
+	len = beg0 - offset;	/* copy pre-match substr */
         if (len) {
             rb_enc_str_buf_cat(dest, cp, len, str_enc);
         }
@@ -3722,17 +4370,17 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 	}
 	cp = RSTRING_PTR(str) + offset;
 	if (offset > RSTRING_LEN(str)) break;
-	beg = rb_reg_search(pat, str, offset, 0);
+	beg = rb_pat_search(pat, str, offset, need_backref);
     } while (beg >= 0);
     if (RSTRING_LEN(str) > offset) {
         rb_enc_str_buf_cat(dest, cp, RSTRING_LEN(str) - offset, str_enc);
     }
-    rb_reg_search(pat, str, last, 0);
+    rb_pat_search(pat, str, last, 1);
     if (bang) {
         rb_str_shared_replace(str, dest);
     }
     else {
-	RBASIC(dest)->klass = rb_obj_class(str);
+	RBASIC_SET_CLASS(dest, rb_obj_class(str));
 	OBJ_INFECT(dest, str);
 	str = dest;
     }
@@ -3781,7 +4429,7 @@ rb_str_gsub_bang(int argc, VALUE *argv, VALUE str)
  *  <code>\\\k<n></code>, where <i>n</i> is a group name. If it is a
  *  double-quoted string, both back-references must be preceded by an
  *  additional backslash. However, within <i>replacement</i> the special match
- *  variables, such as <code>&$</code>, will not refer to the current match.
+ *  variables, such as <code>$&</code>, will not refer to the current match.
  *
  *  If the second argument is a <code>Hash</code>, and the matched text is one
  *  of its keys, the corresponding value is the replacement string.
@@ -3894,9 +4542,9 @@ rb_str_getbyte(VALUE str, VALUE index)
 
 /*
  *  call-seq:
- *     str.setbyte(index, int) -> int
+ *     str.setbyte(index, integer) -> integer
  *
- *  modifies the <i>index</i>th byte as <i>int</i>.
+ *  modifies the <i>index</i>th byte as <i>integer</i>.
  */
 static VALUE
 rb_str_setbyte(VALUE str, VALUE index, VALUE value)
@@ -3914,6 +4562,128 @@ rb_str_setbyte(VALUE str, VALUE index, VALUE value)
     RSTRING_PTR(str)[pos] = byte;
 
     return value;
+}
+
+static VALUE
+str_byte_substr(VALUE str, long beg, long len)
+{
+    char *p, *s = RSTRING_PTR(str);
+    long n = RSTRING_LEN(str);
+    VALUE str2;
+
+    if (beg > n || len < 0) return Qnil;
+    if (beg < 0) {
+	beg += n;
+	if (beg < 0) return Qnil;
+    }
+    if (beg + len > n)
+	len = n - beg;
+    if (len <= 0) {
+	len = 0;
+	p = 0;
+    }
+    else
+	p = s + beg;
+
+    if (len > RSTRING_EMBED_LEN_MAX && SHARABLE_SUBSTRING_P(beg, len, n)) {
+	str2 = rb_str_new_frozen(str);
+	str2 = str_new_shared(rb_obj_class(str2), str2);
+	RSTRING(str2)->as.heap.ptr += beg;
+	RSTRING(str2)->as.heap.len = len;
+    }
+    else {
+	str2 = rb_str_new_with_class(str, p, len);
+    }
+
+    str_enc_copy(str2, str);
+
+    if (RSTRING_LEN(str2) == 0) {
+	if (!rb_enc_asciicompat(STR_ENC_GET(str)))
+	    ENC_CODERANGE_SET(str2, ENC_CODERANGE_VALID);
+	else
+	    ENC_CODERANGE_SET(str2, ENC_CODERANGE_7BIT);
+    }
+    else {
+	switch (ENC_CODERANGE(str)) {
+	  case ENC_CODERANGE_7BIT:
+	    ENC_CODERANGE_SET(str2, ENC_CODERANGE_7BIT);
+	    break;
+	  default:
+	    ENC_CODERANGE_SET(str2, ENC_CODERANGE_UNKNOWN);
+	    break;
+	}
+    }
+
+    OBJ_INFECT(str2, str);
+
+    return str2;
+}
+
+static VALUE
+str_byte_aref(VALUE str, VALUE indx)
+{
+    long idx;
+    switch (TYPE(indx)) {
+      case T_FIXNUM:
+	idx = FIX2LONG(indx);
+
+      num_index:
+	str = str_byte_substr(str, idx, 1);
+	if (NIL_P(str) || RSTRING_LEN(str) == 0) return Qnil;
+	return str;
+
+      default:
+	/* check if indx is Range */
+	{
+	    long beg, len = RSTRING_LEN(str);
+
+	    switch (rb_range_beg_len(indx, &beg, &len, len, 0)) {
+	      case Qfalse:
+		break;
+	      case Qnil:
+		return Qnil;
+	      default:
+		return str_byte_substr(str, beg, len);
+	    }
+	}
+	idx = NUM2LONG(indx);
+	goto num_index;
+    }
+
+    UNREACHABLE;
+}
+
+/*
+ *  call-seq:
+ *     str.byteslice(fixnum)           -> new_str or nil
+ *     str.byteslice(fixnum, fixnum)   -> new_str or nil
+ *     str.byteslice(range)            -> new_str or nil
+ *
+ *  Byte Reference---If passed a single <code>Fixnum</code>, returns a
+ *  substring of one byte at that position. If passed two <code>Fixnum</code>
+ *  objects, returns a substring starting at the offset given by the first, and
+ *  a length given by the second. If given a <code>Range</code>, a substring containing
+ *  bytes at offsets given by the range is returned. In all three cases, if
+ *  an offset is negative, it is counted from the end of <i>str</i>. Returns
+ *  <code>nil</code> if the initial offset falls outside the string, the length
+ *  is negative, or the beginning of the range is greater than the end.
+ *  The encoding of the resulted string keeps original encoding.
+ *
+ *     "hello".byteslice(1)     #=> "e"
+ *     "hello".byteslice(-1)    #=> "o"
+ *     "hello".byteslice(1, 2)  #=> "el"
+ *     "\x80\u3042".byteslice(1, 3) #=> "\u3042"
+ *     "\x03\u3042\xff".byteslice(1..3) #=> "\u3042"
+ */
+
+static VALUE
+rb_str_byteslice(int argc, VALUE *argv, VALUE str)
+{
+    if (argc == 2) {
+	return str_byte_substr(str, NUM2LONG(argv[0]), NUM2LONG(argv[1]));
+    }
+    rb_check_arity(argc, 1, 2);
+    return str_byte_aref(str, argv[0]);
 }
 
 /*
@@ -3935,7 +4705,7 @@ rb_str_reverse(VALUE str)
 
     if (RSTRING_LEN(str) <= 1) return rb_str_dup(str);
     enc = STR_ENC_GET(str);
-    rev = rb_str_new5(str, 0, RSTRING_LEN(str));
+    rev = rb_str_new_with_class(str, 0, RSTRING_LEN(str));
     s = RSTRING_PTR(str); e = RSTRING_END(str);
     p = RSTRING_END(rev);
 
@@ -4049,7 +4819,7 @@ rb_str_include(VALUE str, VALUE arg)
  *  integer base <i>base</i> (between 2 and 36). Extraneous characters past the
  *  end of a valid number are ignored. If there is not a valid number at the
  *  start of <i>str</i>, <code>0</code> is returned. This method never raises an
- *  exception.
+ *  exception when <i>base</i> is valid.
  *
  *     "12345".to_i             #=> 12345
  *     "99 red balloons".to_i   #=> 99
@@ -4107,7 +4877,9 @@ rb_str_to_f(VALUE str)
  *     str.to_s     -> str
  *     str.to_str   -> str
  *
- *  Returns the receiver.
+ *  Returns +self+.
+ *
+ *  If called on a subclass of String, converts the receiver to a String object.
  */
 
 static VALUE
@@ -4181,7 +4953,8 @@ rb_str_buf_cat_escaped_char(VALUE result, unsigned int c, int unicode_p)
 VALUE
 rb_str_inspect(VALUE str)
 {
-    rb_encoding *enc = STR_ENC_GET(str);
+    int encidx = ENCODING_GET(str);
+    rb_encoding *enc = rb_enc_from_index(encidx), *actenc;
     const char *p, *pend, *prev;
     char buf[CHAR_ESC_LEN + 1];
     VALUE result = rb_str_buf_new(0);
@@ -4196,6 +4969,11 @@ rb_str_inspect(VALUE str)
 
     p = RSTRING_PTR(str); pend = RSTRING_END(str);
     prev = p;
+    actenc = get_actual_encoding(encidx, str);
+    if (actenc != enc) {
+	enc = actenc;
+	if (unicode_p) unicode_p = rb_enc_unicode_p(enc);
+    }
     while (p < pend) {
 	unsigned int c, cc;
 	int n;
@@ -4216,16 +4994,19 @@ rb_str_inspect(VALUE str)
         n = MBCLEN_CHARFOUND_LEN(n);
 	c = rb_enc_mbc_to_codepoint(p, pend, enc);
 	p += n;
-	if (c == '"'|| c == '\\' ||
+	if ((asciicompat || unicode_p) &&
+	  (c == '"'|| c == '\\' ||
 	    (c == '#' &&
              p < pend &&
              MBCLEN_CHARFOUND_P(rb_enc_precise_mbclen(p,pend,enc)) &&
              (cc = rb_enc_codepoint(p,pend,enc),
-              (cc == '$' || cc == '@' || cc == '{')))) {
+              (cc == '$' || cc == '@' || cc == '{'))))) {
 	    if (p - n > prev) str_buf_cat(result, prev, p - n - prev);
 	    str_buf_cat2(result, "\\");
-	    prev = p - n;
-	    continue;
+	    if (asciicompat || enc == resenc) {
+		prev = p - n;
+		continue;
+	    }
 	}
 	switch (c) {
 	  case '\n': cc = 'n'; break;
@@ -4270,8 +5051,10 @@ rb_str_inspect(VALUE str)
  *  call-seq:
  *     str.dump   -> new_str
  *
- *  Produces a version of <i>str</i> with all nonprinting characters replaced by
+ *  Produces a version of +str+ with all non-printing characters replaced by
  *  <code>\nnn</code> notation and all special characters escaped.
+ *
+ *    "hello \n ''".dump  #=> "\"hello \\n ''\"
  */
 
 VALUE
@@ -4305,13 +5088,12 @@ rb_str_dump(VALUE str)
 		len++;
 	    }
 	    else {
-		if (u8) {	/* \u{NN} */
-		    char buf[32];
+		if (u8 && c > 0x7F) {	/* \u{NN} */
 		    int n = rb_enc_precise_mbclen(p-1, pend, enc);
 		    if (MBCLEN_CHARFOUND_P(n)) {
-			int cc = rb_enc_mbc_to_codepoint(p-1, pend, enc);
-			sprintf(buf, "%x", cc);
-			len += strlen(buf)+4;
+			unsigned int cc = rb_enc_mbc_to_codepoint(p-1, pend, enc);
+			while (cc >>= 4) len++;
+			len += 5;
 			p += MBCLEN_CHARFOUND_LEN(n)-1;
 			break;
 		    }
@@ -4326,7 +5108,7 @@ rb_str_dump(VALUE str)
 	len += strlen(enc->name);
     }
 
-    result = rb_str_new5(str, 0, len);
+    result = rb_str_new_with_class(str, 0, len);
     p = RSTRING_PTR(str); pend = p + RSTRING_LEN(str);
     q = RSTRING_PTR(result); qend = q + len + 1;
 
@@ -4655,7 +5437,7 @@ rb_str_capitalize(VALUE str)
 
 /*
  *  call-seq:
-*     str.swapcase!   -> str or nil
+ *     str.swapcase!   -> str or nil
  *
  *  Equivalent to <code>String#swapcase</code>, but modifies the receiver in
  *  place, returning <i>str</i>, or <code>nil</code> if no changes were made.
@@ -4730,14 +5512,15 @@ trnext(struct tr *t, rb_encoding *enc)
 
     for (;;) {
 	if (!t->gen) {
+nextpart:
 	    if (t->p == t->pend) return -1;
-	    if (t->p < t->pend - 1 && *t->p == '\\') {
-		t->p++;
+	    if (rb_enc_ascget(t->p, t->pend, &n, enc) == '\\' && t->p + n < t->pend) {
+		t->p += n;
 	    }
 	    t->now = rb_enc_codepoint_len(t->p, t->pend, &n, enc);
 	    t->p += n;
-	    if (t->p < t->pend - 1 && *t->p == '-') {
-		t->p++;
+	    if (rb_enc_ascget(t->p, t->pend, &n, enc) == '-' && t->p + n < t->pend) {
+		t->p += n;
 		if (t->p < t->pend) {
 		    unsigned int c = rb_enc_codepoint_len(t->p, t->pend, &n, enc);
 		    t->p += n;
@@ -4758,12 +5541,20 @@ trnext(struct tr *t, rb_encoding *enc)
 	    }
 	    return t->now;
 	}
-	else if (++t->now < t->max) {
-	    return t->now;
-	}
 	else {
-	    t->gen = 0;
-	    return t->max;
+	    while (ONIGENC_CODE_TO_MBCLEN(enc, ++t->now) <= 0) {
+		if (t->now == t->max) {
+		    t->gen = 0;
+		    goto nextpart;
+		}
+	    }
+	    if (t->now < t->max) {
+		return t->now;
+	    }
+	    else {
+		t->gen = 0;
+		return t->max;
+	    }
 	}
     }
 }
@@ -4778,8 +5569,8 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
     rb_encoding *enc, *e1, *e2;
     struct tr trsrc, trrepl;
     int cflag = 0;
-    unsigned int c, c0;
-    int last = 0, modify = 0, i, l;
+    unsigned int c, c0, last = 0;
+    int modify = 0, i, l;
     char *s, *send;
     VALUE hash = 0;
     int singlebyte = single_byte_optimizable(str);
@@ -4919,7 +5710,10 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 	    CHECK_IF_ASCII(c);
 	    t += tlen;
 	}
-	*t = '\0';
+	if (!STR_EMBED_P(str)) {
+	    ruby_sized_xfree(STR_HEAP_PTR(str), STR_HEAP_SIZE(str));
+	}
+	TERM_FILL(t, rb_enc_mbminlen(enc));
 	RSTRING(str)->as.heap.ptr = buf;
 	RSTRING(str)->as.heap.len = t - buf;
 	STR_SET_NOEMBED(str);
@@ -4966,7 +5760,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 		else c = NUM2INT(tmp);
 	    }
 	    else {
-		c = errc;
+		c = cflag ? last : errc;
 	    }
 	    if (c != errc) {
 		tlen = rb_enc_codelen(c, enc);
@@ -4993,9 +5787,9 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 	    t += tlen;
 	}
 	if (!STR_EMBED_P(str)) {
-	    xfree(RSTRING(str)->as.heap.ptr);
+	    ruby_sized_xfree(STR_HEAP_PTR(str), STR_HEAP_SIZE(str));
 	}
-	*t = '\0';
+	TERM_FILL(t, rb_enc_mbminlen(enc));
 	RSTRING(str)->as.heap.ptr = buf;
 	RSTRING(str)->as.heap.len = t - buf;
 	STR_SET_NOEMBED(str);
@@ -5030,19 +5824,37 @@ rb_str_tr_bang(VALUE str, VALUE src, VALUE repl)
 
 /*
  *  call-seq:
- *     str.tr(from_str, to_str)   -> new_str
+ *     str.tr(from_str, to_str)   => new_str
  *
- *  Returns a copy of <i>str</i> with the characters in <i>from_str</i> replaced
- *  by the corresponding characters in <i>to_str</i>. If <i>to_str</i> is
- *  shorter than <i>from_str</i>, it is padded with its last character. Both
- *  strings may use the c1--c2 notation to denote ranges of characters, and
- *  <i>from_str</i> may start with a <code>^</code>, which denotes all
- *  characters except those listed.
+ *  Returns a copy of +str+ with the characters in +from_str+ replaced by the
+ *  corresponding characters in +to_str+.  If +to_str+ is shorter than
+ *  +from_str+, it is padded with its last character in order to maintain the
+ *  correspondence.
  *
- *     "hello".tr('aeiou', '*')    #=> "h*ll*"
- *     "hello".tr('^aeiou', '*')   #=> "*e**o"
  *     "hello".tr('el', 'ip')      #=> "hippo"
+ *     "hello".tr('aeiou', '*')    #=> "h*ll*"
+ *     "hello".tr('aeiou', 'AA*')  #=> "hAll*"
+ *
+ *  Both strings may use the <code>c1-c2</code> notation to denote ranges of
+ *  characters, and +from_str+ may start with a <code>^</code>, which denotes
+ *  all characters except those listed.
+ *
  *     "hello".tr('a-y', 'b-z')    #=> "ifmmp"
+ *     "hello".tr('^aeiou', '*')   #=> "*e**o"
+ *
+ *  The backslash character <code>\</code> can be used to escape
+ *  <code>^</code> or <code>-</code> and is otherwise ignored unless it
+ *  appears at the end of a range or the end of the +from_str+ or +to_str+:
+ *
+ *     "hello^world".tr("\\^aeiou", "*") #=> "h*ll**w*rld"
+ *     "hello-world".tr("a\\-eo", "*")   #=> "h*ll**w*rld"
+ *
+ *     "hello\r\nworld".tr("\r", "")   #=> "hello\nworld"
+ *     "hello\r\nworld".tr("\\r", "")  #=> "hello\r\nwold"
+ *     "hello\r\nworld".tr("\\\r", "") #=> "hello\nworld"
+ *
+ *     "X['\\b']".tr("X\\", "")   #=> "['b']"
+ *     "X['\\b']".tr("X-\\]", "") #=> "'b'"
  */
 
 static VALUE
@@ -5053,8 +5865,9 @@ rb_str_tr(VALUE str, VALUE src, VALUE repl)
     return str;
 }
 
+#define TR_TABLE_SIZE 257
 static void
-tr_setup_table(VALUE str, char stable[256], int first,
+tr_setup_table(VALUE str, char stable[TR_TABLE_SIZE], int first,
 	       VALUE *tablep, VALUE *ctablep, rb_encoding *enc)
 {
     const unsigned int errc = -1;
@@ -5075,6 +5888,10 @@ tr_setup_table(VALUE str, char stable[256], int first,
 	for (i=0; i<256; i++) {
 	    stable[i] = 1;
 	}
+	stable[256] = cflag;
+    }
+    else if (stable[256] && !cflag) {
+	stable[256] = 0;
     }
     for (i=0; i<256; i++) {
 	buf[i] = cflag;
@@ -5087,18 +5904,19 @@ tr_setup_table(VALUE str, char stable[256], int first,
 	else {
 	    VALUE key = UINT2NUM(c);
 
-	    if (!table) {
-		table = rb_hash_new();
+	    if (!table && (first || *tablep || stable[256])) {
 		if (cflag) {
 		    ptable = *ctablep;
+		    table = ptable ? ptable : rb_hash_new();
 		    *ctablep = table;
 		}
 		else {
+		    table = rb_hash_new();
 		    ptable = *tablep;
 		    *tablep = table;
 		}
 	    }
-	    if (!ptable || !NIL_P(rb_hash_aref(ptable, key))) {
+	    if (table && (!ptable || (cflag ^ !NIL_P(rb_hash_aref(ptable, key))))) {
 		rb_hash_aset(table, key, Qtrue);
 	    }
 	}
@@ -5106,11 +5924,14 @@ tr_setup_table(VALUE str, char stable[256], int first,
     for (i=0; i<256; i++) {
 	stable[i] = stable[i] && buf[i];
     }
+    if (!table && !cflag) {
+	*tablep = 0;
+    }
 }
 
 
 static int
-tr_find(unsigned int c, char table[256], VALUE del, VALUE nodel)
+tr_find(unsigned int c, const char table[TR_TABLE_SIZE], VALUE del, VALUE nodel)
 {
     if (c < 256) {
 	return table[c] != 0;
@@ -5118,12 +5939,16 @@ tr_find(unsigned int c, char table[256], VALUE del, VALUE nodel)
     else {
 	VALUE v = UINT2NUM(c);
 
-	if (del && !NIL_P(rb_hash_lookup(del, v))) {
-	    if (!nodel || NIL_P(rb_hash_lookup(nodel, v))) {
+	if (del) {
+	    if (!NIL_P(rb_hash_lookup(del, v)) &&
+		    (!nodel || NIL_P(rb_hash_lookup(nodel, v)))) {
 		return TRUE;
 	    }
 	}
-	return FALSE;
+	else if (nodel && !NIL_P(rb_hash_lookup(nodel, v))) {
+	    return FALSE;
+	}
+	return table[256] ? TRUE : FALSE;
     }
 }
 
@@ -5138,7 +5963,7 @@ tr_find(unsigned int c, char table[256], VALUE del, VALUE nodel)
 static VALUE
 rb_str_delete_bang(int argc, VALUE *argv, VALUE str)
 {
-    char squeez[256];
+    char squeez[TR_TABLE_SIZE];
     rb_encoding *enc = 0;
     char *s, *send, *t;
     VALUE del = 0, nodel = 0;
@@ -5146,9 +5971,7 @@ rb_str_delete_bang(int argc, VALUE *argv, VALUE str)
     int i, ascompat, cr;
 
     if (RSTRING_LEN(str) == 0 || !RSTRING_PTR(str)) return Qnil;
-    if (argc < 1) {
-	rb_raise(rb_eArgError, "wrong number of arguments (at least 1)");
-    }
+    rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
     for (i=0; i<argc; i++) {
 	VALUE s = argv[i];
 
@@ -5190,7 +6013,7 @@ rb_str_delete_bang(int argc, VALUE *argv, VALUE str)
 	    s += clen;
 	}
     }
-    *t = '\0';
+    TERM_FILL(t, TERM_LEN(str));
     STR_SET_LEN(str, t - RSTRING_PTR(str));
     ENC_CODERANGE_SET(str, cr);
 
@@ -5233,7 +6056,7 @@ rb_str_delete(int argc, VALUE *argv, VALUE str)
 static VALUE
 rb_str_squeeze_bang(int argc, VALUE *argv, VALUE str)
 {
-    char squeez[256];
+    char squeez[TR_TABLE_SIZE];
     rb_encoding *enc = 0;
     VALUE del = 0, nodel = 0;
     char *s, *send, *t;
@@ -5270,7 +6093,8 @@ rb_str_squeeze_bang(int argc, VALUE *argv, VALUE str)
 	        *t++ = save = c;
 	    }
 	}
-    } else {
+    }
+    else {
 	while (s < send) {
 	    unsigned int c;
 	    int clen;
@@ -5294,7 +6118,7 @@ rb_str_squeeze_bang(int argc, VALUE *argv, VALUE str)
 	}
     }
 
-    *t = '\0';
+    TERM_FILL(t, TERM_LEN(str));
     if (t - RSTRING_PTR(str) != RSTRING_LEN(str)) {
 	STR_SET_LEN(str, t - RSTRING_PTR(str));
 	modify = 1;
@@ -5370,40 +6194,53 @@ rb_str_tr_s(VALUE str, VALUE src, VALUE repl)
  *  call-seq:
  *     str.count([other_str]+)   -> fixnum
  *
- *  Each <i>other_str</i> parameter defines a set of characters to count.  The
- *  intersection of these sets defines the characters to count in
- *  <i>str</i>. Any <i>other_str</i> that starts with a caret (^) is
- *  negated. The sequence c1--c2 means all characters between c1 and c2.
+ *  Each +other_str+ parameter defines a set of characters to count.  The
+ *  intersection of these sets defines the characters to count in +str+.  Any
+ *  +other_str+ that starts with a caret <code>^</code> is negated.  The
+ *  sequence <code>c1-c2</code> means all characters between c1 and c2.  The
+ *  backslash character <code>\\</code> can be used to escape <code>^</code> or
+ *  <code>-</code> and is otherwise ignored unless it appears at the end of a
+ *  sequence or the end of a +other_str+.
  *
  *     a = "hello world"
- *     a.count "lo"            #=> 5
- *     a.count "lo", "o"       #=> 2
- *     a.count "hello", "^l"   #=> 4
- *     a.count "ej-m"          #=> 4
+ *     a.count "lo"                   #=> 5
+ *     a.count "lo", "o"              #=> 2
+ *     a.count "hello", "^l"          #=> 4
+ *     a.count "ej-m"                 #=> 4
+ *
+ *     "hello^world".count "\\^aeiou" #=> 4
+ *     "hello-world".count "a\\-eo"   #=> 4
+ *
+ *     c = "hello world\\r\\n"
+ *     c.count "\\"                   #=> 2
+ *     c.count "\\A"                  #=> 0
+ *     c.count "X-\\w"                #=> 3
  */
 
 static VALUE
 rb_str_count(int argc, VALUE *argv, VALUE str)
 {
-    char table[256];
+    char table[TR_TABLE_SIZE];
     rb_encoding *enc = 0;
-    VALUE del = 0, nodel = 0;
+    VALUE del = 0, nodel = 0, tstr;
     char *s, *send;
     int i;
     int ascompat;
 
-    if (argc < 1) {
-	rb_raise(rb_eArgError, "wrong number of arguments (at least 1)");
-    }
-    for (i=0; i<argc; i++) {
-	VALUE tstr = argv[i];
-	unsigned char c;
+    rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
 
-	StringValue(tstr);
-	enc = rb_enc_check(str, tstr);
-	if (argc == 1 && RSTRING_LEN(tstr) == 1 && rb_enc_asciicompat(enc) &&
-	    (c = RSTRING_PTR(tstr)[0]) < 0x80 && !is_broken_string(str)) {
+    tstr = argv[0];
+    StringValue(tstr);
+    enc = rb_enc_check(str, tstr);
+    if (argc == 1) {
+	const char *ptstr;
+	if (RSTRING_LEN(tstr) == 1 && rb_enc_asciicompat(enc) &&
+	    (ptstr = RSTRING_PTR(tstr),
+	     ONIGENC_IS_ALLOWED_REVERSE_MATCH(enc, (const unsigned char *)ptstr, (const unsigned char *)ptstr+1)) &&
+	    !is_broken_string(str)) {
 	    int n = 0;
+	    int clen;
+	    unsigned char c = rb_enc_codepoint_len(ptstr, ptstr+1, &clen, enc);
 
 	    s = RSTRING_PTR(str);
 	    if (!s || RSTRING_LEN(str) == 0) return INT2FIX(0);
@@ -5413,7 +6250,14 @@ rb_str_count(int argc, VALUE *argv, VALUE str)
 	    }
 	    return INT2NUM(n);
 	}
-	tr_setup_table(tstr, table, i==0, &del, &nodel, enc);
+    }
+
+    tr_setup_table(tstr, table, TRUE, &del, &nodel, enc);
+    for (i=1; i<argc; i++) {
+	tstr = argv[i];
+	StringValue(tstr);
+	enc = rb_enc_check(str, tstr);
+	tr_setup_table(tstr, table, FALSE, &del, &nodel, enc);
     }
 
     s = RSTRING_PTR(str);
@@ -5423,16 +6267,15 @@ rb_str_count(int argc, VALUE *argv, VALUE str)
     i = 0;
     while (s < send) {
 	unsigned int c;
-	int clen;
 
 	if (ascompat && (c = *(unsigned char*)s) < 0x80) {
-	    clen = 1;
 	    if (table[c]) {
 		i++;
 	    }
 	    s++;
 	}
 	else {
+	    int clen;
 	    c = rb_enc_codepoint_len(s, send, &clen, enc);
 	    if (tr_find(c, table, del, nodel)) {
 		i++;
@@ -5493,6 +6336,9 @@ static const char isspacetable[256] = {
  *  limit to the number of fields returned, and trailing null fields are not
  *  suppressed.
  *
+ *  When the input +str+ is empty an empty Array is returned as the string is
+ *  considered to have no fields to split.
+ *
  *     " now's  the time".split        #=> ["now's", "the", "time"]
  *     " now's  the time".split(' ')   #=> ["now's", "the", "time"]
  *     " now's  the time".split(/ /)   #=> ["", "now's", "", "the", "time"]
@@ -5505,6 +6351,8 @@ static const char isspacetable[256] = {
  *     "1,2,,3,4,,".split(',')         #=> ["1", "2", "", "3", "4"]
  *     "1,2,,3,4,,".split(',', 4)      #=> ["1", "2", "", "3,4,,"]
  *     "1,2,,3,4,,".split(',', -4)     #=> ["1", "2", "", "3", "4", "", ""]
+ *
+ *     "".split(',', -1)               #=> []
  */
 
 static VALUE
@@ -5539,9 +6387,11 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
     }
     else {
       fs_set:
-	if (TYPE(spat) == T_STRING) {
+	spat = get_pat_quoted(spat, 0);
+	if (BUILTIN_TYPE(spat) == T_STRING) {
 	    rb_encoding *enc2 = STR_ENC_GET(spat);
 
+	    mustnot_broken(spat);
 	    split_type = string;
 	    if (RSTRING_LEN(spat) == 0) {
 		/* Special case - split into chars */
@@ -5562,7 +6412,6 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 	    }
 	}
 	else {
-	    spat = get_pat(spat, 1);
 	    split_type = regexp;
 	}
     }
@@ -5636,12 +6485,7 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 	char *sptr = RSTRING_PTR(spat);
 	long slen = RSTRING_LEN(spat);
 
-	if (is_broken_string(str)) {
-	    rb_raise(rb_eArgError, "invalid byte sequence in %s", rb_enc_name(STR_ENC_GET(str)));
-	}
-	if (is_broken_string(spat)) {
-	    rb_raise(rb_eArgError, "invalid byte sequence in %s", rb_enc_name(STR_ENC_GET(spat)));
-	}
+	mustnot_broken(str);
 	enc = rb_enc_check(str, spat);
 	while (ptr < eptr &&
 	       (end = rb_memsearch(sptr, slen, ptr, eptr - ptr, enc)) >= 0) {
@@ -5715,7 +6559,7 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
     if (NIL_P(limit) && lim == 0) {
 	long len;
 	while ((len = RARRAY_LEN(result)) > 0 &&
-	       (tmp = RARRAY_PTR(result)[len-1], RSTRING_LEN(tmp) == 0))
+	       (tmp = RARRAY_AREF(result, len-1), RSTRING_LEN(tmp) == 0))
 	    rb_ary_pop(result);
     }
 
@@ -5728,23 +6572,135 @@ rb_str_split(VALUE str, const char *sep0)
     VALUE sep;
 
     StringValue(str);
-    sep = rb_str_new2(sep0);
+    sep = rb_str_new_cstr(sep0);
     return rb_str_split_m(1, &sep, str);
 }
 
+
+static VALUE
+rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, int wantarray)
+{
+    rb_encoding *enc;
+    VALUE line, rs, orig = str;
+    const char *ptr, *pend, *subptr, *subend, *rsptr, *hit, *adjusted;
+    long pos, len, rslen;
+    int paragraph_mode = 0;
+
+    VALUE UNINITIALIZED_VAR(ary);
+
+    if (argc == 0)
+	rs = rb_rs;
+    else
+	rb_scan_args(argc, argv, "01", &rs);
+
+    if (rb_block_given_p()) {
+	if (wantarray) {
+#if STRING_ENUMERATORS_WANTARRAY
+	    rb_warn("given block not used");
+	    ary = rb_ary_new();
+#else
+	    rb_warning("passing a block to String#lines is deprecated");
+	    wantarray = 0;
+#endif
+	}
+    }
+    else {
+	if (wantarray)
+	    ary = rb_ary_new();
+	else
+	    RETURN_ENUMERATOR(str, argc, argv);
+    }
+
+    if (NIL_P(rs)) {
+	if (wantarray) {
+	    rb_ary_push(ary, str);
+	    return ary;
+	}
+	else {
+	    rb_yield(str);
+	    return orig;
+	}
+    }
+
+    str = rb_str_new_frozen(str);
+    ptr = subptr = RSTRING_PTR(str);
+    pend = RSTRING_END(str);
+    len = RSTRING_LEN(str);
+    StringValue(rs);
+    rslen = RSTRING_LEN(rs);
+
+    if (rs == rb_default_rs)
+	enc = rb_enc_get(str);
+    else
+	enc = rb_enc_check(str, rs);
+
+    if (rslen == 0) {
+	rsptr = "\n\n";
+	rslen = 2;
+	paragraph_mode = 1;
+    }
+    else {
+	rsptr = RSTRING_PTR(rs);
+    }
+
+    if ((rs == rb_default_rs || paragraph_mode) && !rb_enc_asciicompat(enc)) {
+	rs = rb_str_new(rsptr, rslen);
+	rs = rb_str_encode(rs, rb_enc_from_encoding(enc), 0, Qnil);
+	rsptr = RSTRING_PTR(rs);
+	rslen = RSTRING_LEN(rs);
+    }
+
+    while (subptr < pend) {
+	pos = rb_memsearch(rsptr, rslen, subptr, pend - subptr, enc);
+	if (pos < 0) break;
+	hit = subptr + pos;
+	adjusted = rb_enc_right_char_head(subptr, hit, pend, enc);
+	if (hit != adjusted) {
+	    subptr = adjusted;
+	    continue;
+	}
+	subend = hit + rslen;
+	if (paragraph_mode) {
+	    while (subend < pend && rb_enc_is_newline(subend, pend, enc)) {
+		subend += rb_enc_mbclen(subend, pend, enc);
+	    }
+	}
+	line = rb_str_subseq(str, subptr - ptr, subend - subptr);
+	if (wantarray) {
+	    rb_ary_push(ary, line);
+	}
+	else {
+	    rb_yield(line);
+	    str_mod_check(str, ptr, len);
+	}
+	subptr = subend;
+    }
+
+    if (subptr != pend) {
+	line = rb_str_subseq(str, subptr - ptr, pend - subptr);
+	if (wantarray)
+	    rb_ary_push(ary, line);
+	else
+	    rb_yield(line);
+	RB_GC_GUARD(str);
+    }
+
+    if (wantarray)
+	return ary;
+    else
+	return orig;
+}
 
 /*
  *  call-seq:
  *     str.each_line(separator=$/) {|substr| block }   -> str
  *     str.each_line(separator=$/)                     -> an_enumerator
  *
- *     str.lines(separator=$/) {|substr| block }       -> str
- *     str.lines(separator=$/)                         -> an_enumerator
- *
- *  Splits <i>str</i> using the supplied parameter as the record separator
- *  (<code>$/</code> by default), passing each substring in turn to the supplied
- *  block. If a zero-length record separator is supplied, the string is split
- *  into paragraphs delimited by multiple successive newlines.
+ *  Splits <i>str</i> using the supplied parameter as the record
+ *  separator (<code>$/</code> by default), passing each substring in
+ *  turn to the supplied block.  If a zero-length record separator is
+ *  supplied, the string is split into paragraphs delimited by
+ *  multiple successive newlines.
  *
  *  If no block is given, an enumerator is returned instead.
  *
@@ -5773,111 +6729,76 @@ rb_str_split(VALUE str, const char *sep0)
 static VALUE
 rb_str_each_line(int argc, VALUE *argv, VALUE str)
 {
-    rb_encoding *enc;
-    VALUE rs;
-    unsigned int newline;
-    const char *p, *pend, *s, *ptr;
-    long len, rslen;
-    VALUE line;
-    int n;
-    VALUE orig = str;
-
-    if (argc == 0) {
-	rs = rb_rs;
-    }
-    else {
-	rb_scan_args(argc, argv, "01", &rs);
-    }
-    RETURN_ENUMERATOR(str, argc, argv);
-    if (NIL_P(rs)) {
-	rb_yield(str);
-	return orig;
-    }
-    str = rb_str_new4(str);
-    ptr = p = s = RSTRING_PTR(str);
-    pend = p + RSTRING_LEN(str);
-    len = RSTRING_LEN(str);
-    StringValue(rs);
-    if (rs == rb_default_rs) {
-	enc = rb_enc_get(str);
-	while (p < pend) {
-	    char *p0;
-
-	    p = memchr(p, '\n', pend - p);
-	    if (!p) break;
-	    p0 = rb_enc_left_char_head(s, p, pend, enc);
-	    if (!rb_enc_is_newline(p0, pend, enc)) {
-		p++;
-		continue;
-	    }
-	    p = p0 + rb_enc_mbclen(p0, pend, enc);
-	    line = rb_str_new5(str, s, p - s);
-	    OBJ_INFECT(line, str);
-	    rb_enc_cr_str_copy_for_substr(line, str);
-	    rb_yield(line);
-	    str_mod_check(str, ptr, len);
-	    s = p;
-	}
-	goto finish;
-    }
-
-    enc = rb_enc_check(str, rs);
-    rslen = RSTRING_LEN(rs);
-    if (rslen == 0) {
-	newline = '\n';
-    }
-    else {
-	newline = rb_enc_codepoint(RSTRING_PTR(rs), RSTRING_END(rs), enc);
-    }
-
-    while (p < pend) {
-	unsigned int c = rb_enc_codepoint_len(p, pend, &n, enc);
-
-      again:
-	if (rslen == 0 && c == newline) {
-	    p += n;
-	    if (p < pend && (c = rb_enc_codepoint_len(p, pend, &n, enc)) != newline) {
-		goto again;
-	    }
-	    while (p < pend && rb_enc_codepoint(p, pend, enc) == newline) {
-		p += n;
-	    }
-	    p -= n;
-	}
-	if (c == newline &&
-	    (rslen <= 1 || memcmp(RSTRING_PTR(rs), p, rslen) == 0)) {
-	    line = rb_str_new5(str, s, p - s + (rslen ? rslen : n));
-	    OBJ_INFECT(line, str);
-	    rb_enc_cr_str_copy_for_substr(line, str);
-	    rb_yield(line);
-	    str_mod_check(str, ptr, len);
-	    s = p + (rslen ? rslen : n);
-	}
-	p += n;
-    }
-
-  finish:
-    if (s != pend) {
-	line = rb_str_new5(str, s, pend - s);
-	OBJ_INFECT(line, str);
-	rb_enc_cr_str_copy_for_substr(line, str);
-	rb_yield(line);
-    }
-
-    return orig;
+    return rb_str_enumerate_lines(argc, argv, str, 0);
 }
-
 
 /*
  *  call-seq:
- *     str.bytes {|fixnum| block }        -> str
- *     str.bytes                          -> an_enumerator
+ *     str.lines(separator=$/)  -> an_array
  *
+ *  Returns an array of lines in <i>str</i> split using the supplied
+ *  record separator (<code>$/</code> by default).  This is a
+ *  shorthand for <code>str.each_line(separator).to_a</code>.
+ *
+ *  If a block is given, which is a deprecated form, works the same as
+ *  <code>each_line</code>.
+ */
+
+static VALUE
+rb_str_lines(int argc, VALUE *argv, VALUE str)
+{
+    return rb_str_enumerate_lines(argc, argv, str, 1);
+}
+
+static VALUE
+rb_str_each_byte_size(VALUE str, VALUE args, VALUE eobj)
+{
+    return LONG2FIX(RSTRING_LEN(str));
+}
+
+static VALUE
+rb_str_enumerate_bytes(VALUE str, int wantarray)
+{
+    long i;
+    VALUE UNINITIALIZED_VAR(ary);
+
+    if (rb_block_given_p()) {
+	if (wantarray) {
+#if STRING_ENUMERATORS_WANTARRAY
+	    rb_warn("given block not used");
+	    ary = rb_ary_new();
+#else
+	    rb_warning("passing a block to String#bytes is deprecated");
+	    wantarray = 0;
+#endif
+	}
+    }
+    else {
+	if (wantarray)
+	    ary = rb_ary_new2(RSTRING_LEN(str));
+	else
+	    RETURN_SIZED_ENUMERATOR(str, 0, 0, rb_str_each_byte_size);
+    }
+
+    for (i=0; i<RSTRING_LEN(str); i++) {
+	if (wantarray)
+	    rb_ary_push(ary, INT2FIX(RSTRING_PTR(str)[i] & 0xff));
+	else
+	    rb_yield(INT2FIX(RSTRING_PTR(str)[i] & 0xff));
+    }
+    if (wantarray)
+	return ary;
+    else
+	return str;
+}
+
+/*
+ *  call-seq:
  *     str.each_byte {|fixnum| block }    -> str
  *     str.each_byte                      -> an_enumerator
  *
- *  Passes each byte in <i>str</i> to the given block, or returns
- *  an enumerator if no block is given.
+ *  Passes each byte in <i>str</i> to the given block, or returns an
+ *  enumerator if no block is given.
  *
  *     "hello".each_byte {|c| print c, ' ' }
  *
@@ -5889,21 +6810,96 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
 static VALUE
 rb_str_each_byte(VALUE str)
 {
-    long i;
-
-    RETURN_ENUMERATOR(str, 0, 0);
-    for (i=0; i<RSTRING_LEN(str); i++) {
-	rb_yield(INT2FIX(RSTRING_PTR(str)[i] & 0xff));
-    }
-    return str;
+    return rb_str_enumerate_bytes(str, 0);
 }
-
 
 /*
  *  call-seq:
- *     str.chars {|cstr| block }        -> str
- *     str.chars                        -> an_enumerator
+ *     str.bytes    -> an_array
  *
+ *  Returns an array of bytes in <i>str</i>.  This is a shorthand for
+ *  <code>str.each_byte.to_a</code>.
+ *
+ *  If a block is given, which is a deprecated form, works the same as
+ *  <code>each_byte</code>.
+ */
+
+static VALUE
+rb_str_bytes(VALUE str)
+{
+    return rb_str_enumerate_bytes(str, 1);
+}
+
+static VALUE
+rb_str_each_char_size(VALUE str, VALUE args, VALUE eobj)
+{
+    return rb_str_length(str);
+}
+
+static VALUE
+rb_str_enumerate_chars(VALUE str, int wantarray)
+{
+    VALUE orig = str;
+    VALUE substr;
+    long i, len, n;
+    const char *ptr;
+    rb_encoding *enc;
+    VALUE UNINITIALIZED_VAR(ary);
+
+    str = rb_str_new_frozen(str);
+    ptr = RSTRING_PTR(str);
+    len = RSTRING_LEN(str);
+    enc = rb_enc_get(str);
+
+    if (rb_block_given_p()) {
+	if (wantarray) {
+#if STRING_ENUMERATORS_WANTARRAY
+	    rb_warn("given block not used");
+	    ary = rb_ary_new_capa(str_strlen(str, enc)); /* str's enc*/
+#else
+	    rb_warning("passing a block to String#chars is deprecated");
+	    wantarray = 0;
+#endif
+	}
+    }
+    else {
+	if (wantarray)
+	    ary = rb_ary_new_capa(str_strlen(str, enc)); /* str's enc*/
+	else
+	    return SIZED_ENUMERATOR(str, 0, 0, rb_str_each_char_size);
+    }
+
+    switch (ENC_CODERANGE(str)) {
+      case ENC_CODERANGE_VALID:
+      case ENC_CODERANGE_7BIT:
+	for (i = 0; i < len; i += n) {
+	    n = rb_enc_fast_mbclen(ptr + i, ptr + len, enc);
+	    substr = rb_str_subseq(str, i, n);
+	    if (wantarray)
+		rb_ary_push(ary, substr);
+	    else
+		rb_yield(substr);
+	}
+	break;
+      default:
+	for (i = 0; i < len; i += n) {
+	    n = rb_enc_mbclen(ptr + i, ptr + len, enc);
+	    substr = rb_str_subseq(str, i, n);
+	    if (wantarray)
+		rb_ary_push(ary, substr);
+	    else
+		rb_yield(substr);
+	}
+    }
+    RB_GC_GUARD(str);
+    if (wantarray)
+	return ary;
+    else
+	return orig;
+}
+
+/*
+ *  call-seq:
  *     str.each_char {|cstr| block }    -> str
  *     str.each_char                    -> an_enumerator
  *
@@ -5920,38 +6916,80 @@ rb_str_each_byte(VALUE str)
 static VALUE
 rb_str_each_char(VALUE str)
 {
-    VALUE orig = str;
-    long i, len, n;
-    const char *ptr;
-    rb_encoding *enc;
-
-    RETURN_ENUMERATOR(str, 0, 0);
-    str = rb_str_new4(str);
-    ptr = RSTRING_PTR(str);
-    len = RSTRING_LEN(str);
-    enc = rb_enc_get(str);
-    switch (ENC_CODERANGE(str)) {
-      case ENC_CODERANGE_VALID:
-      case ENC_CODERANGE_7BIT:
-	for (i = 0; i < len; i += n) {
-	    n = rb_enc_fast_mbclen(ptr + i, ptr + len, enc);
-	    rb_yield(rb_str_subseq(str, i, n));
-	}
-	break;
-      default:
-	for (i = 0; i < len; i += n) {
-	    n = rb_enc_mbclen(ptr + i, ptr + len, enc);
-	    rb_yield(rb_str_subseq(str, i, n));
-	}
-    }
-    return orig;
+    return rb_str_enumerate_chars(str, 0);
 }
 
 /*
  *  call-seq:
- *     str.codepoints {|integer| block }        -> str
- *     str.codepoints                           -> an_enumerator
+ *     str.chars    -> an_array
  *
+ *  Returns an array of characters in <i>str</i>.  This is a shorthand
+ *  for <code>str.each_char.to_a</code>.
+ *
+ *  If a block is given, which is a deprecated form, works the same as
+ *  <code>each_char</code>.
+ */
+
+static VALUE
+rb_str_chars(VALUE str)
+{
+    return rb_str_enumerate_chars(str, 1);
+}
+
+
+static VALUE
+rb_str_enumerate_codepoints(VALUE str, int wantarray)
+{
+    VALUE orig = str;
+    int n;
+    unsigned int c;
+    const char *ptr, *end;
+    rb_encoding *enc;
+    VALUE UNINITIALIZED_VAR(ary);
+
+    if (single_byte_optimizable(str))
+	return rb_str_enumerate_bytes(str, wantarray);
+
+    str = rb_str_new_frozen(str);
+    ptr = RSTRING_PTR(str);
+    end = RSTRING_END(str);
+    enc = STR_ENC_GET(str);
+
+    if (rb_block_given_p()) {
+	if (wantarray) {
+#if STRING_ENUMERATORS_WANTARRAY
+	    rb_warn("given block not used");
+	    ary = rb_ary_new_capa(str_strlen(str, enc)); /* str's enc*/
+#else
+	    rb_warning("passing a block to String#codepoints is deprecated");
+	    wantarray = 0;
+#endif
+	}
+    }
+    else {
+	if (wantarray)
+	    ary = rb_ary_new_capa(str_strlen(str, enc)); /* str's enc*/
+	else
+	    RETURN_SIZED_ENUMERATOR(str, 0, 0, rb_str_each_char_size);
+    }
+
+    while (ptr < end) {
+	c = rb_enc_codepoint_len(ptr, end, &n, enc);
+	if (wantarray)
+	    rb_ary_push(ary, UINT2NUM(c));
+	else
+	    rb_yield(UINT2NUM(c));
+	ptr += n;
+    }
+    RB_GC_GUARD(str);
+    if (wantarray)
+	return ary;
+    else
+	return orig;
+}
+
+/*
+ *  call-seq:
  *     str.each_codepoint {|integer| block }    -> str
  *     str.each_codepoint                       -> an_enumerator
  *
@@ -5971,27 +7009,27 @@ rb_str_each_char(VALUE str)
 static VALUE
 rb_str_each_codepoint(VALUE str)
 {
-    VALUE orig = str;
-    long len;
-    int n;
-    unsigned int c;
-    const char *ptr, *end;
-    rb_encoding *enc;
-
-    if (single_byte_optimizable(str)) return rb_str_each_byte(str);
-    RETURN_ENUMERATOR(str, 0, 0);
-    str = rb_str_new4(str);
-    ptr = RSTRING_PTR(str);
-    len = RSTRING_LEN(str);
-    end = RSTRING_END(str);
-    enc = STR_ENC_GET(str);
-    while (ptr < end) {
-	c = rb_enc_codepoint_len(ptr, end, &n, enc);
-	rb_yield(UINT2NUM(c));
-	ptr += n;
-    }
-    return orig;
+    return rb_str_enumerate_codepoints(str, 0);
 }
+
+/*
+ *  call-seq:
+ *     str.codepoints   -> an_array
+ *
+ *  Returns an array of the <code>Integer</code> ordinals of the
+ *  characters in <i>str</i>.  This is a shorthand for
+ *  <code>str.each_codepoint.to_a</code>.
+ *
+ *  If a block is given, which is a deprecated form, works the same as
+ *  <code>each_codepoint</code>.
+ */
+
+static VALUE
+rb_str_codepoints(VALUE str)
+{
+    return rb_str_enumerate_codepoints(str, 1);
+}
+
 
 static long
 chopped_length(VALUE str)
@@ -6028,7 +7066,7 @@ rb_str_chop_bang(VALUE str)
 	long len;
 	len = chopped_length(str);
 	STR_SET_LEN(str, len);
-	RSTRING_PTR(str)[len] = '\0';
+	TERM_FILL(&RSTRING_PTR(str)[len], TERM_LEN(str));
 	if (ENC_CODERANGE(str) != ENC_CODERANGE_7BIT) {
 	    ENC_CODERANGE_CLEAR(str);
 	}
@@ -6058,12 +7096,122 @@ rb_str_chop_bang(VALUE str)
 static VALUE
 rb_str_chop(VALUE str)
 {
-    VALUE str2 = rb_str_new5(str, RSTRING_PTR(str), chopped_length(str));
-    rb_enc_cr_str_copy_for_substr(str2, str);
-    OBJ_INFECT(str2, str);
-    return str2;
+    return rb_str_subseq(str, 0, chopped_length(str));
 }
 
+
+static long
+chompped_length(VALUE str, VALUE rs)
+{
+    rb_encoding *enc;
+    int newline;
+    char *pp, *e, *rsptr;
+    long rslen;
+    char *const p = RSTRING_PTR(str);
+    long len = RSTRING_LEN(str);
+
+    if (len == 0) return 0;
+    e = p + len;
+    if (rs == rb_default_rs) {
+      smart_chomp:
+	enc = rb_enc_get(str);
+	if (rb_enc_mbminlen(enc) > 1) {
+	    pp = rb_enc_left_char_head(p, e-rb_enc_mbminlen(enc), e, enc);
+	    if (rb_enc_is_newline(pp, e, enc)) {
+		e = pp;
+	    }
+	    pp = e - rb_enc_mbminlen(enc);
+	    if (pp >= p) {
+		pp = rb_enc_left_char_head(p, pp, e, enc);
+		if (rb_enc_ascget(pp, e, 0, enc) == '\r') {
+		    e = pp;
+		}
+	    }
+	}
+	else {
+	    switch (*(e-1)) { /* not e[-1] to get rid of VC bug */
+	      case '\n':
+		if (--e > p && *(e-1) == '\r') {
+		    --e;
+		}
+		break;
+	      case '\r':
+		--e;
+		break;
+	    }
+	}
+	return e - p;
+    }
+
+    enc = rb_enc_get(str);
+    RSTRING_GETMEM(rs, rsptr, rslen);
+    if (rslen == 0) {
+	if (rb_enc_mbminlen(enc) > 1) {
+	    while (e > p) {
+		pp = rb_enc_left_char_head(p, e-rb_enc_mbminlen(enc), e, enc);
+		if (!rb_enc_is_newline(pp, e, enc)) break;
+		e = pp;
+		pp -= rb_enc_mbminlen(enc);
+		if (pp >= p) {
+		    pp = rb_enc_left_char_head(p, pp, e, enc);
+		    if (rb_enc_ascget(pp, e, 0, enc) == '\r') {
+			e = pp;
+		    }
+		}
+	    }
+	}
+	else {
+	    while (e > p && *(e-1) == '\n') {
+		--e;
+		if (e > p && *(e-1) == '\r')
+		    --e;
+	    }
+	}
+	return e - p;
+    }
+    if (rslen > len) return len;
+
+    enc = rb_enc_get(rs);
+    newline = rsptr[rslen-1];
+    if (rslen == rb_enc_mbminlen(enc)) {
+	if (rslen == 1) {
+	    if (newline == '\n')
+		goto smart_chomp;
+	}
+	else {
+	    if (rb_enc_is_newline(rsptr, rsptr+rslen, enc))
+		goto smart_chomp;
+	}
+    }
+
+    enc = rb_enc_check(str, rs);
+    if (is_broken_string(rs)) {
+	return len;
+    }
+    pp = e - rslen;
+    if (p[len-1] == newline &&
+	(rslen <= 1 ||
+	 memcmp(rsptr, pp, rslen) == 0)) {
+	if (rb_enc_left_char_head(p, pp, e, enc) == pp)
+	    return len - rslen;
+	RB_GC_GUARD(rs);
+    }
+    return len;
+}
+
+static VALUE
+chomp_rs(int argc, const VALUE *argv)
+{
+    rb_check_arity(argc, 0, 1);
+    if (argc > 0) {
+	VALUE rs = argv[0];
+	if (!NIL_P(rs)) StringValue(rs);
+	return rs;
+    }
+    else {
+	return rb_rs;
+    }
+}
 
 /*
  *  call-seq:
@@ -6076,99 +7224,20 @@ rb_str_chop(VALUE str)
 static VALUE
 rb_str_chomp_bang(int argc, VALUE *argv, VALUE str)
 {
-    rb_encoding *enc;
     VALUE rs;
-    int newline;
-    char *p, *pp, *e;
-    long len, rslen;
-
+    long olen;
     str_modify_keep_cr(str);
-    len = RSTRING_LEN(str);
-    if (len == 0) return Qnil;
-    p = RSTRING_PTR(str);
-    e = p + len;
-    if (argc == 0) {
-	rs = rb_rs;
-	if (rs == rb_default_rs) {
-	  smart_chomp:
-	    enc = rb_enc_get(str);
-	    if (rb_enc_mbminlen(enc) > 1) {
-		pp = rb_enc_left_char_head(p, e-rb_enc_mbminlen(enc), e, enc);
-		if (rb_enc_is_newline(pp, e, enc)) {
-		    e = pp;
-		}
-		pp = e - rb_enc_mbminlen(enc);
-		if (pp >= p) {
-		    pp = rb_enc_left_char_head(p, pp, e, enc);
-		    if (rb_enc_ascget(pp, e, 0, enc) == '\r') {
-			e = pp;
-		    }
-		}
-		if (e == RSTRING_END(str)) {
-		    return Qnil;
-		}
-		len = e - RSTRING_PTR(str);
-		STR_SET_LEN(str, len);
-	    }
-	    else {
-		if (RSTRING_PTR(str)[len-1] == '\n') {
-		    STR_DEC_LEN(str);
-		    if (RSTRING_LEN(str) > 0 &&
-			RSTRING_PTR(str)[RSTRING_LEN(str)-1] == '\r') {
-			STR_DEC_LEN(str);
-		    }
-		}
-		else if (RSTRING_PTR(str)[len-1] == '\r') {
-		    STR_DEC_LEN(str);
-		}
-		else {
-		    return Qnil;
-		}
-	    }
-	    RSTRING_PTR(str)[RSTRING_LEN(str)] = '\0';
-	    return str;
-	}
-    }
-    else {
-	rb_scan_args(argc, argv, "01", &rs);
-    }
-    if (NIL_P(rs)) return Qnil;
-    StringValue(rs);
-    rslen = RSTRING_LEN(rs);
-    if (rslen == 0) {
-	while (len>0 && p[len-1] == '\n') {
-	    len--;
-	    if (len>0 && p[len-1] == '\r')
-		len--;
-	}
-	if (len < RSTRING_LEN(str)) {
+    if ((olen = RSTRING_LEN(str)) > 0 && !NIL_P(rs = chomp_rs(argc, argv))) {
+	long len;
+	len = chompped_length(str, rs);
+	if (len < olen) {
 	    STR_SET_LEN(str, len);
-	    RSTRING_PTR(str)[len] = '\0';
+	    TERM_FILL(&RSTRING_PTR(str)[len], TERM_LEN(str));
+	    if (ENC_CODERANGE(str) != ENC_CODERANGE_7BIT) {
+		ENC_CODERANGE_CLEAR(str);
+	    }
 	    return str;
 	}
-	return Qnil;
-    }
-    if (rslen > len) return Qnil;
-    newline = RSTRING_PTR(rs)[rslen-1];
-    if (rslen == 1 && newline == '\n')
-	goto smart_chomp;
-
-    enc = rb_enc_check(str, rs);
-    if (is_broken_string(rs)) {
-	return Qnil;
-    }
-    pp = e - rslen;
-    if (p[len-1] == newline &&
-	(rslen <= 1 ||
-	 memcmp(RSTRING_PTR(rs), pp, rslen) == 0)) {
-	if (rb_enc_left_char_head(p, pp, e, enc) != pp)
-	    return Qnil;
-	if (ENC_CODERANGE(str) != ENC_CODERANGE_7BIT) {
-	    ENC_CODERANGE_CLEAR(str);
-	}
-	STR_SET_LEN(str, RSTRING_LEN(str) - rslen);
-	RSTRING_PTR(str)[RSTRING_LEN(str)] = '\0';
-	return str;
     }
     return Qnil;
 }
@@ -6182,23 +7251,43 @@ rb_str_chomp_bang(int argc, VALUE *argv, VALUE str)
  *  from the end of <i>str</i> (if present). If <code>$/</code> has not been
  *  changed from the default Ruby record separator, then <code>chomp</code> also
  *  removes carriage return characters (that is it will remove <code>\n</code>,
- *  <code>\r</code>, and <code>\r\n</code>).
+ *  <code>\r</code>, and <code>\r\n</code>). If <code>$/</code> is an empty string,
+ *  it will remove all trailing newlines from the string.
  *
- *     "hello".chomp            #=> "hello"
- *     "hello\n".chomp          #=> "hello"
- *     "hello\r\n".chomp        #=> "hello"
- *     "hello\n\r".chomp        #=> "hello\n"
- *     "hello\r".chomp          #=> "hello"
- *     "hello \n there".chomp   #=> "hello \n there"
- *     "hello".chomp("llo")     #=> "he"
+ *     "hello".chomp                #=> "hello"
+ *     "hello\n".chomp              #=> "hello"
+ *     "hello\r\n".chomp            #=> "hello"
+ *     "hello\n\r".chomp            #=> "hello\n"
+ *     "hello\r".chomp              #=> "hello"
+ *     "hello \n there".chomp       #=> "hello \n there"
+ *     "hello".chomp("llo")         #=> "he"
+ *     "hello\r\n\r\n".chomp('')    #=> "hello"
+ *     "hello\r\n\r\r\n".chomp('')  #=> "hello\r\n\r"
  */
 
 static VALUE
 rb_str_chomp(int argc, VALUE *argv, VALUE str)
 {
-    str = rb_str_dup(str);
-    rb_str_chomp_bang(argc, argv, str);
-    return str;
+    VALUE rs = chomp_rs(argc, argv);
+    if (NIL_P(rs)) return rb_str_dup(str);
+    return rb_str_subseq(str, 0, chompped_length(str, rs));
+}
+
+static long
+lstrip_offset(VALUE str, const char *s, const char *e, rb_encoding *enc)
+{
+    const char *const start = s;
+
+    if (!s || s >= e) return 0;
+    /* remove spaces at head */
+    while (s < e) {
+	int n;
+	unsigned int cc = rb_enc_codepoint_len(s, e, &n, enc);
+
+	if (!rb_isspace(cc)) break;
+	s += n;
+    }
+    return s - start;
 }
 
 /*
@@ -6209,6 +7298,8 @@ rb_str_chomp(int argc, VALUE *argv, VALUE str)
  *  change was made. See also <code>String#rstrip!</code> and
  *  <code>String#strip!</code>.
  *
+ *  Refer to <code>strip</code> for the definition of whitespace.
+ *
  *     "  hello  ".lstrip   #=> "hello  "
  *     "hello".lstrip!      #=> nil
  */
@@ -6217,26 +7308,21 @@ static VALUE
 rb_str_lstrip_bang(VALUE str)
 {
     rb_encoding *enc;
-    char *s, *t, *e;
+    char *start, *s;
+    long olen, loffset;
 
     str_modify_keep_cr(str);
     enc = STR_ENC_GET(str);
-    s = RSTRING_PTR(str);
-    if (!s || RSTRING_LEN(str) == 0) return Qnil;
-    e = t = RSTRING_END(str);
-    /* remove spaces at head */
-    while (s < e) {
-	int n;
-	unsigned int cc = rb_enc_codepoint_len(s, e, &n, enc);
-
-	if (!rb_isspace(cc)) break;
-	s += n;
-    }
-
-    if (s > RSTRING_PTR(str)) {
-	STR_SET_LEN(str, t-s);
-	memmove(RSTRING_PTR(str), s, RSTRING_LEN(str));
-	RSTRING_PTR(str)[RSTRING_LEN(str)] = '\0';
+    RSTRING_GETMEM(str, start, olen);
+    loffset = lstrip_offset(str, start, start+olen, enc);
+    if (loffset > 0) {
+	long len = olen-loffset;
+	s = start + loffset;
+	memmove(start, s, len);
+	STR_SET_LEN(str, len);
+#if !SHARABLE_MIDDLE_SUBSTRING
+	TERM_FILL(start+len, rb_enc_mbminlen(enc));
+#endif
 	return str;
     }
     return Qnil;
@@ -6250,6 +7336,8 @@ rb_str_lstrip_bang(VALUE str)
  *  Returns a copy of <i>str</i> with leading whitespace removed. See also
  *  <code>String#rstrip</code> and <code>String#strip</code>.
  *
+ *  Refer to <code>strip</code> for the definition of whitespace.
+ *
  *     "  hello  ".lstrip   #=> "hello  "
  *     "hello".lstrip       #=> "hello"
  */
@@ -6257,36 +7345,22 @@ rb_str_lstrip_bang(VALUE str)
 static VALUE
 rb_str_lstrip(VALUE str)
 {
-    str = rb_str_dup(str);
-    rb_str_lstrip_bang(str);
-    return str;
+    char *start;
+    long len, loffset;
+    RSTRING_GETMEM(str, start, len);
+    loffset = lstrip_offset(str, start, start+len, STR_ENC_GET(str));
+    if (loffset <= 0) return rb_str_dup(str);
+    return rb_str_subseq(str, loffset, len - loffset);
 }
 
-
-/*
- *  call-seq:
- *     str.rstrip!   -> self or nil
- *
- *  Removes trailing whitespace from <i>str</i>, returning <code>nil</code> if
- *  no change was made. See also <code>String#lstrip!</code> and
- *  <code>String#strip!</code>.
- *
- *     "  hello  ".rstrip   #=> "  hello"
- *     "hello".rstrip!      #=> nil
- */
-
-static VALUE
-rb_str_rstrip_bang(VALUE str)
+static long
+rstrip_offset(VALUE str, const char *s, const char *e, rb_encoding *enc)
 {
-    rb_encoding *enc;
-    char *s, *t, *e;
+    const char *t;
 
-    str_modify_keep_cr(str);
-    enc = STR_ENC_GET(str);
     rb_str_check_dummy_enc(enc);
-    s = RSTRING_PTR(str);
-    if (!s || RSTRING_LEN(str) == 0) return Qnil;
-    t = e = RSTRING_END(str);
+    if (!s || s >= e) return 0;
+    t = e;
 
     /* remove trailing spaces or '\0's */
     if (single_byte_optimizable(str)) {
@@ -6302,11 +7376,41 @@ rb_str_rstrip_bang(VALUE str)
 	    t = tp;
 	}
     }
-    if (t < e) {
-	long len = t-RSTRING_PTR(str);
+    return e - t;
+}
+
+/*
+ *  call-seq:
+ *     str.rstrip!   -> self or nil
+ *
+ *  Removes trailing whitespace from <i>str</i>, returning <code>nil</code> if
+ *  no change was made. See also <code>String#lstrip!</code> and
+ *  <code>String#strip!</code>.
+ *
+ *  Refer to <code>strip</code> for the definition of whitespace.
+ *
+ *     "  hello  ".rstrip   #=> "  hello"
+ *     "hello".rstrip!      #=> nil
+ */
+
+static VALUE
+rb_str_rstrip_bang(VALUE str)
+{
+    rb_encoding *enc;
+    char *start;
+    long olen, roffset;
+
+    str_modify_keep_cr(str);
+    enc = STR_ENC_GET(str);
+    RSTRING_GETMEM(str, start, olen);
+    roffset = rstrip_offset(str, start, start+olen, enc);
+    if (roffset > 0) {
+	long len = olen - roffset;
 
 	STR_SET_LEN(str, len);
-	RSTRING_PTR(str)[len] = '\0';
+#if !SHARABLE_MIDDLE_SUBSTRING
+	TERM_FILL(start+len, rb_enc_mbminlen(enc));
+#endif
 	return str;
     }
     return Qnil;
@@ -6320,6 +7424,8 @@ rb_str_rstrip_bang(VALUE str)
  *  Returns a copy of <i>str</i> with trailing whitespace removed. See also
  *  <code>String#lstrip</code> and <code>String#strip</code>.
  *
+ *  Refer to <code>strip</code> for the definition of whitespace.
+ *
  *     "  hello  ".rstrip   #=> "  hello"
  *     "hello".rstrip       #=> "hello"
  */
@@ -6327,9 +7433,16 @@ rb_str_rstrip_bang(VALUE str)
 static VALUE
 rb_str_rstrip(VALUE str)
 {
-    str = rb_str_dup(str);
-    rb_str_rstrip_bang(str);
-    return str;
+    rb_encoding *enc;
+    char *start;
+    long olen, roffset;
+
+    enc = STR_ENC_GET(str);
+    RSTRING_GETMEM(str, start, olen);
+    roffset = rstrip_offset(str, start, start+olen, enc);
+
+    if (roffset <= 0) return rb_str_dup(str);
+    return rb_str_subseq(str, 0, olen-roffset);
 }
 
 
@@ -6339,16 +7452,36 @@ rb_str_rstrip(VALUE str)
  *
  *  Removes leading and trailing whitespace from <i>str</i>. Returns
  *  <code>nil</code> if <i>str</i> was not altered.
+ *
+ *  Refer to <code>strip</code> for the definition of whitespace.
  */
 
 static VALUE
 rb_str_strip_bang(VALUE str)
 {
-    VALUE l = rb_str_lstrip_bang(str);
-    VALUE r = rb_str_rstrip_bang(str);
+    char *start;
+    long olen, loffset, roffset;
+    rb_encoding *enc;
 
-    if (NIL_P(l) && NIL_P(r)) return Qnil;
-    return str;
+    str_modify_keep_cr(str);
+    enc = STR_ENC_GET(str);
+    RSTRING_GETMEM(str, start, olen);
+    loffset = lstrip_offset(str, start, start+olen, enc);
+    roffset = rstrip_offset(str, start+loffset, start+olen, enc);
+
+    if (loffset > 0 || roffset > 0) {
+	long len = olen-roffset;
+	if (loffset > 0) {
+	    len -= loffset;
+	    memmove(start, start + loffset, len);
+	}
+	STR_SET_LEN(str, len);
+#if !SHARABLE_MIDDLE_SUBSTRING
+	TERM_FILL(start+len, rb_enc_mbminlen(enc));
+#endif
+	return str;
+    }
+    return Qnil;
 }
 
 
@@ -6358,16 +7491,27 @@ rb_str_strip_bang(VALUE str)
  *
  *  Returns a copy of <i>str</i> with leading and trailing whitespace removed.
  *
+ *  Whitespace is defined as any of the following characters:
+ *  null, horizontal tab, line feed, vertical tab, form feed, carriage return, space.
+ *
  *     "    hello    ".strip   #=> "hello"
  *     "\tgoodbye\r\n".strip   #=> "goodbye"
+ *     "\x00\t\n\v\f\r ".strip #=> ""
  */
 
 static VALUE
 rb_str_strip(VALUE str)
 {
-    str = rb_str_dup(str);
-    rb_str_strip_bang(str);
-    return str;
+    char *start;
+    long olen, loffset, roffset;
+    rb_encoding *enc = STR_ENC_GET(str);
+
+    RSTRING_GETMEM(str, start, olen);
+    loffset = lstrip_offset(str, start, start+olen, enc);
+    roffset = rstrip_offset(str, start+loffset, start+olen, enc);
+
+    if (loffset <= 0 && roffset <= 0) return rb_str_dup(str);
+    return rb_str_subseq(str, loffset, olen-loffset-roffset);
 }
 
 static VALUE
@@ -6377,7 +7521,7 @@ scan_once(VALUE str, VALUE pat, long *start)
     struct re_registers *regs;
     int i;
 
-    if (rb_reg_search(pat, str, *start, 0) >= 0) {
+    if (rb_pat_search(pat, str, *start, 1) >= 0) {
 	match = rb_backref_get();
 	regs = RMATCH_REGS(match);
 	if (BEG(0) == END(0)) {
@@ -6447,7 +7591,8 @@ rb_str_scan(VALUE str, VALUE pat)
     long last = -1, prev = 0;
     char *p = RSTRING_PTR(str); long len = RSTRING_LEN(str);
 
-    pat = get_pat(pat, 1);
+    pat = get_pat_quoted(pat, 1);
+    mustnot_broken(str);
     if (!rb_block_given_p()) {
 	VALUE ary = rb_ary_new();
 
@@ -6456,7 +7601,7 @@ rb_str_scan(VALUE str, VALUE pat)
 	    prev = start;
 	    rb_ary_push(ary, result);
 	}
-	if (last >= 0) rb_reg_search(pat, str, last, 0);
+	if (last >= 0) rb_pat_search(pat, str, last, 1);
 	return ary;
     }
 
@@ -6466,7 +7611,7 @@ rb_str_scan(VALUE str, VALUE pat)
 	rb_yield(result);
 	str_mod_check(str, p, len);
     }
-    if (last >= 0) rb_reg_search(pat, str, last, 0);
+    if (last >= 0) rb_pat_search(pat, str, last, 1);
     return str;
 }
 
@@ -6488,11 +7633,6 @@ rb_str_scan(VALUE str, VALUE pat)
 static VALUE
 rb_str_hex(VALUE str)
 {
-    rb_encoding *enc = rb_enc_get(str);
-
-    if (!rb_enc_asciicompat(enc)) {
-	rb_raise(rb_eEncCompatError, "ASCII incompatible encoding: %s", rb_enc_name(enc));
-    }
     return rb_str_to_inum(str, 16, FALSE);
 }
 
@@ -6514,23 +7654,25 @@ rb_str_hex(VALUE str)
 static VALUE
 rb_str_oct(VALUE str)
 {
-    rb_encoding *enc = rb_enc_get(str);
-
-    if (!rb_enc_asciicompat(enc)) {
-	rb_raise(rb_eEncCompatError, "ASCII incompatible encoding: %s", rb_enc_name(enc));
-    }
     return rb_str_to_inum(str, -8, FALSE);
 }
 
 
 /*
  *  call-seq:
- *     str.crypt(other_str)   -> new_str
+ *     str.crypt(salt_str)   -> new_str
  *
- *  Applies a one-way cryptographic hash to <i>str</i> by invoking the standard
- *  library function <code>crypt</code>. The argument is the salt string, which
- *  should be two characters long, each character drawn from
- *  <code>[a-zA-Z0-9./]</code>.
+ *  Applies a one-way cryptographic hash to <i>str</i> by invoking the
+ *  standard library function <code>crypt(3)</code> with the given
+ *  salt string.  While the format and the result are system and
+ *  implementation dependent, using a salt matching the regular
+ *  expression <code>\A[a-zA-Z0-9./]{2}</code> should be valid and
+ *  safe on any platform, in which only the first two characters are
+ *  significant.
+ *
+ *  This method is for use in system specific scripts, so if you want
+ *  a cross-platform hash function consider using Digest or OpenSSL
+ *  instead.
  */
 
 static VALUE
@@ -6539,17 +7681,23 @@ rb_str_crypt(VALUE str, VALUE salt)
     extern char *crypt(const char *, const char *);
     VALUE result;
     const char *s, *saltp;
+    char *res;
 #ifdef BROKEN_CRYPT
     char salt_8bit_clean[3];
 #endif
 
     StringValue(salt);
-    if (RSTRING_LEN(salt) < 2)
+    mustnot_wchar(str);
+    mustnot_wchar(salt);
+    if (RSTRING_LEN(salt) < 2) {
+      short_salt:
 	rb_raise(rb_eArgError, "salt too short (need >=2 bytes)");
+    }
 
     s = RSTRING_PTR(str);
     if (!s) s = "";
     saltp = RSTRING_PTR(salt);
+    if (!saltp[0] || !saltp[1]) goto short_salt;
 #ifdef BROKEN_CRYPT
     if (!ISASCII((unsigned char)saltp[0]) || !ISASCII((unsigned char)saltp[1])) {
 	salt_8bit_clean[0] = saltp[0] & 0x7f;
@@ -6558,41 +7706,14 @@ rb_str_crypt(VALUE str, VALUE salt)
 	saltp = salt_8bit_clean;
     }
 #endif
-    result = rb_str_new2(crypt(s, saltp));
+    res = crypt(s, saltp);
+    if (!res) {
+	rb_sys_fail("crypt");
+    }
+    result = rb_str_new_cstr(res);
     OBJ_INFECT(result, str);
     OBJ_INFECT(result, salt);
     return result;
-}
-
-
-/*
- *  call-seq:
- *     str.intern   -> symbol
- *     str.to_sym   -> symbol
- *
- *  Returns the <code>Symbol</code> corresponding to <i>str</i>, creating the
- *  symbol if it did not previously exist. See <code>Symbol#id2name</code>.
- *
- *     "Koala".intern         #=> :Koala
- *     s = 'cat'.to_sym       #=> :cat
- *     s == :cat              #=> true
- *     s = '@cat'.to_sym      #=> :@cat
- *     s == :@cat             #=> true
- *
- *  This can also be used to create symbols that cannot be represented using the
- *  <code>:xxx</code> notation.
- *
- *     'cat and dog'.to_sym   #=> :"cat and dog"
- */
-
-VALUE
-rb_str_intern(VALUE s)
-{
-    VALUE str = RB_GC_GUARD(s);
-    ID id;
-
-    id = rb_intern_str(str);
-    return ID2SYM(id);
 }
 
 
@@ -6619,7 +7740,7 @@ rb_str_ord(VALUE s)
  *
  *  Returns a basic <em>n</em>-bit checksum of the characters in <i>str</i>,
  *  where <em>n</em> is the optional <code>Fixnum</code> parameter, defaulting
- *  to 16. The result is simply the sum of the binary value of each character in
+ *  to 16. The result is simply the sum of the binary value of each byte in
  *  <i>str</i> modulo <code>2**n - 1</code>. This is not a particularly good
  *  checksum.
  */
@@ -6640,6 +7761,8 @@ rb_str_sum(int argc, VALUE *argv, VALUE str)
     else {
 	rb_scan_args(argc, argv, "01", &vbits);
 	bits = NUM2INT(vbits);
+        if (bits < 0)
+            bits = 0;
     }
     ptr = p = RSTRING_PTR(str);
     len = RSTRING_LEN(str);
@@ -6703,13 +7826,13 @@ rb_str_justify(int argc, VALUE *argv, VALUE str, char jflag)
 	enc = rb_enc_check(str, pad);
 	f = RSTRING_PTR(pad);
 	flen = RSTRING_LEN(pad);
-	fclen = str_strlen(pad, enc);
+	fclen = str_strlen(pad, enc); /* rb_enc_check */
 	singlebyte = single_byte_optimizable(pad);
 	if (flen == 0 || fclen == 0) {
 	    rb_raise(rb_eArgError, "zero width padding");
 	}
     }
-    len = str_strlen(str, enc);
+    len = str_strlen(str, enc); /* rb_enc_check */
     if (width < 0 || len >= width) return rb_str_dup(str);
     n = width - len;
     llen = (jflag == 'l') ? 0 : ((jflag == 'r') ? n : n/2);
@@ -6726,7 +7849,7 @@ rb_str_justify(int argc, VALUE *argv, VALUE str, char jflag)
        rb_raise(rb_eArgError, "argument too big");
     }
     len += size;
-    res = rb_str_new5(str, 0, len);
+    res = rb_str_new_with_class(str, 0, len);
     p = RSTRING_PTR(res);
     if (flen <= 1) {
        memset(p, *f, llen);
@@ -6760,7 +7883,7 @@ rb_str_justify(int argc, VALUE *argv, VALUE str, char jflag)
            p += rlen2;
 	}
     }
-    *p = '\0';
+    TERM_FILL(p, rb_enc_mbminlen(enc));
     STR_SET_LEN(res, p-RSTRING_PTR(res));
     OBJ_INFECT(res, str);
     if (!NIL_P(pad)) OBJ_INFECT(res, pad);
@@ -6815,11 +7938,11 @@ rb_str_rjust(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.center(integer, padstr)   -> new_str
+ *     str.center(width, padstr=' ')   -> new_str
  *
- *  If <i>integer</i> is greater than the length of <i>str</i>, returns a new
- *  <code>String</code> of length <i>integer</i> with <i>str</i> centered and
- *  padded with <i>padstr</i>; otherwise, returns <i>str</i>.
+ *  Centers +str+ in +width+.  If +width+ is greater than the length of +str+,
+ *  returns a new String of length +width+ with +str+ centered and padded with
+ *  +padstr+; otherwise, returns +str+.
  *
  *     "hello".center(4)         #=> "hello"
  *     "hello".center(20)        #=> "       hello        "
@@ -6851,30 +7974,20 @@ static VALUE
 rb_str_partition(VALUE str, VALUE sep)
 {
     long pos;
-    int regex = FALSE;
 
-    if (TYPE(sep) == T_REGEXP) {
+    sep = get_pat_quoted(sep, 0);
+    if (RB_TYPE_P(sep, T_REGEXP)) {
 	pos = rb_reg_search(sep, str, 0, 0);
-	regex = TRUE;
-    }
-    else {
-	VALUE tmp;
-
-	tmp = rb_check_string_type(sep);
-	if (NIL_P(tmp)) {
-	    rb_raise(rb_eTypeError, "type mismatch: %s given",
-		     rb_obj_classname(sep));
+	if (pos < 0) {
+	  failed:
+	    return rb_ary_new3(3, str, str_new_empty(str), str_new_empty(str));
 	}
-	sep = tmp;
-	pos = rb_str_index(str, sep, 0);
-    }
-    if (pos < 0) {
-      failed:
-	return rb_ary_new3(3, str, str_new_empty(str), str_new_empty(str));
-    }
-    if (regex) {
 	sep = rb_str_subpat(str, sep, INT2FIX(0));
 	if (pos == 0 && RSTRING_LEN(sep) == 0) goto failed;
+    }
+    else {
+	pos = rb_str_index(str, sep, 0);
+	if (pos < 0) goto failed;
     }
     return rb_ary_new3(3, rb_str_subseq(str, 0, pos),
 		          sep,
@@ -6903,7 +8016,7 @@ rb_str_rpartition(VALUE str, VALUE sep)
     long pos = RSTRING_LEN(str);
     int regex = FALSE;
 
-    if (TYPE(sep) == T_REGEXP) {
+    if (RB_TYPE_P(sep, T_REGEXP)) {
 	pos = rb_reg_search(sep, str, pos, 1);
 	regex = TRUE;
     }
@@ -6925,25 +8038,26 @@ rb_str_rpartition(VALUE str, VALUE sep)
     if (regex) {
 	sep = rb_reg_nth_match(0, rb_backref_get());
     }
-    return rb_ary_new3(3, rb_str_substr(str, 0, pos),
+    else {
+	pos = rb_str_offset(str, pos);
+    }
+    return rb_ary_new3(3, rb_str_subseq(str, 0, pos),
 		          sep,
-		          rb_str_substr(str,pos+str_strlen(sep,STR_ENC_GET(sep)),RSTRING_LEN(str)));
+		          rb_str_subseq(str, pos+RSTRING_LEN(sep),
+					RSTRING_LEN(str)-pos-RSTRING_LEN(sep)));
 }
 
 /*
  *  call-seq:
- *     str.start_with?([prefix]+)   -> true or false
+ *     str.start_with?([prefixes]+)   -> true or false
  *
- *  Returns true if <i>str</i> starts with a prefix given.
+ *  Returns true if +str+ starts with one of the +prefixes+ given.
  *
- *    p "hello".start_with?("hell")               #=> true
+ *    "hello".start_with?("hell")               #=> true
  *
- *    # returns true if one of prefix matches.
- *    p "hello".start_with?("heaven", "hell")     #=> true
- *    p "hello".start_with?("heaven", "paradice") #=> false
- *
- *
- *
+ *    # returns true if one of the prefixes matches.
+ *    "hello".start_with?("heaven", "hell")     #=> true
+ *    "hello".start_with?("heaven", "paradise") #=> false
  */
 
 static VALUE
@@ -6952,8 +8066,8 @@ rb_str_start_with(int argc, VALUE *argv, VALUE str)
     int i;
 
     for (i=0; i<argc; i++) {
-	VALUE tmp = rb_check_string_type(argv[i]);
-	if (NIL_P(tmp)) continue;
+	VALUE tmp = argv[i];
+	StringValue(tmp);
 	rb_enc_check(str, tmp);
 	if (RSTRING_LEN(str) < RSTRING_LEN(tmp)) continue;
 	if (memcmp(RSTRING_PTR(str), RSTRING_PTR(tmp), RSTRING_LEN(tmp)) == 0)
@@ -6964,9 +8078,9 @@ rb_str_start_with(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.end_with?([suffix]+)   -> true or false
+ *     str.end_with?([suffixes]+)   -> true or false
  *
- *  Returns true if <i>str</i> ends with a suffix given.
+ *  Returns true if +str+ ends with one of the +suffixes+ given.
  */
 
 static VALUE
@@ -6977,8 +8091,8 @@ rb_str_end_with(int argc, VALUE *argv, VALUE str)
     rb_encoding *enc;
 
     for (i=0; i<argc; i++) {
-	VALUE tmp = rb_check_string_type(argv[i]);
-	if (NIL_P(tmp)) continue;
+	VALUE tmp = argv[i];
+	StringValue(tmp);
 	enc = rb_enc_check(str, tmp);
 	if (RSTRING_LEN(str) < RSTRING_LEN(tmp)) continue;
 	p = RSTRING_PTR(str);
@@ -6995,8 +8109,8 @@ rb_str_end_with(int argc, VALUE *argv, VALUE str)
 void
 rb_str_setter(VALUE val, ID id, VALUE *var)
 {
-    if (!NIL_P(val) && TYPE(val) != T_STRING) {
-	rb_raise(rb_eTypeError, "value of %s must be String", rb_id2name(id));
+    if (!NIL_P(val) && !RB_TYPE_P(val, T_STRING)) {
+	rb_raise(rb_eTypeError, "value of %"PRIsVALUE" must be String", rb_id2str(id));
     }
     *var = val;
 }
@@ -7016,6 +8130,23 @@ rb_str_force_encoding(VALUE str, VALUE enc)
     rb_enc_associate(str, rb_to_encoding(enc));
     ENC_CODERANGE_CLEAR(str);
     return str;
+}
+
+/*
+ *  call-seq:
+ *     str.b   -> str
+ *
+ *  Returns a copied string whose encoding is ASCII-8BIT.
+ */
+
+static VALUE
+rb_str_b(VALUE str)
+{
+    VALUE str2 = str_alloc(rb_cString);
+    str_replace_shared_without_enc(str2, str);
+    OBJ_INFECT(str2, str);
+    ENC_CODERANGE_CLEAR(str2);
+    return str2;
 }
 
 /*
@@ -7053,6 +8184,369 @@ rb_str_is_ascii_only_p(VALUE str)
     int cr = rb_enc_str_coderange(str);
 
     return cr == ENC_CODERANGE_7BIT ? Qtrue : Qfalse;
+}
+
+/**
+ * Shortens _str_ and adds three dots, an ellipsis, if it is longer
+ * than _len_ characters.
+ *
+ * \param str	the string to ellipsize.
+ * \param len	the maximum string length.
+ * \return	the ellipsized string.
+ * \pre 	_len_ must not be negative.
+ * \post	the length of the returned string in characters is less than or equal to _len_.
+ * \post	If the length of _str_ is less than or equal _len_, returns _str_ itself.
+ * \post	the encoding of returned string is equal to the encoding of _str_.
+ * \post	the class of returned string is equal to the class of _str_.
+ * \note	the length is counted in characters.
+ */
+VALUE
+rb_str_ellipsize(VALUE str, long len)
+{
+    static const char ellipsis[] = "...";
+    const long ellipsislen = sizeof(ellipsis) - 1;
+    rb_encoding *const enc = rb_enc_get(str);
+    const long blen = RSTRING_LEN(str);
+    const char *const p = RSTRING_PTR(str), *e = p + blen;
+    VALUE estr, ret = 0;
+
+    if (len < 0) rb_raise(rb_eIndexError, "negative length %ld", len);
+    if (len * rb_enc_mbminlen(enc) >= blen ||
+	(e = rb_enc_nth(p, e, len, enc)) - p == blen) {
+	ret = str;
+    }
+    else if (len <= ellipsislen ||
+	     !(e = rb_enc_step_back(p, e, e, len = ellipsislen, enc))) {
+	if (rb_enc_asciicompat(enc)) {
+	    ret = rb_str_new_with_class(str, ellipsis, len);
+	    rb_enc_associate(ret, enc);
+	}
+	else {
+	    estr = rb_usascii_str_new(ellipsis, len);
+	    ret = rb_str_encode(estr, rb_enc_from_encoding(enc), 0, Qnil);
+	}
+    }
+    else if (ret = rb_str_subseq(str, 0, e - p), rb_enc_asciicompat(enc)) {
+	rb_str_cat(ret, ellipsis, ellipsislen);
+    }
+    else {
+	estr = rb_str_encode(rb_usascii_str_new(ellipsis, ellipsislen),
+			     rb_enc_from_encoding(enc), 0, Qnil);
+	rb_str_append(ret, estr);
+    }
+    return ret;
+}
+
+static VALUE
+str_compat_and_valid(VALUE str, rb_encoding *enc)
+{
+    int cr;
+    str = StringValue(str);
+    cr = rb_enc_str_coderange(str);
+    if (cr == ENC_CODERANGE_BROKEN) {
+	rb_raise(rb_eArgError, "replacement must be valid byte sequence '%+"PRIsVALUE"'", str);
+    }
+    else if (cr == ENC_CODERANGE_7BIT) {
+	rb_encoding *e = STR_ENC_GET(str);
+	if (!rb_enc_asciicompat(enc)) {
+	    rb_raise(rb_eEncCompatError, "incompatible character encodings: %s and %s",
+		    rb_enc_name(enc), rb_enc_name(e));
+	}
+    }
+    else { /* ENC_CODERANGE_VALID */
+	rb_encoding *e = STR_ENC_GET(str);
+	if (enc != e) {
+	    rb_raise(rb_eEncCompatError, "incompatible character encodings: %s and %s",
+		    rb_enc_name(enc), rb_enc_name(e));
+	}
+    }
+    return str;
+}
+
+/**
+ * @param str the string to be scrubbed
+ * @param repl the replacement character
+ * @return If given string is invalid, returns a new string. Otherwise, returns Qnil.
+ */
+VALUE
+rb_str_scrub(VALUE str, VALUE repl)
+{
+    int cr = ENC_CODERANGE(str);
+    rb_encoding *enc;
+    int encidx;
+
+    if (cr == ENC_CODERANGE_7BIT || cr == ENC_CODERANGE_VALID)
+	return Qnil;
+
+    enc = STR_ENC_GET(str);
+    if (!NIL_P(repl)) {
+	repl = str_compat_and_valid(repl, enc);
+    }
+
+    if (rb_enc_dummy_p(enc)) {
+	return Qnil;
+    }
+    encidx = rb_enc_to_index(enc);
+
+#define DEFAULT_REPLACE_CHAR(str) do { \
+	static const char replace[sizeof(str)-1] = str; \
+	rep = replace; replen = (int)sizeof(replace); \
+    } while (0)
+
+    if (rb_enc_asciicompat(enc)) {
+	const char *p = RSTRING_PTR(str);
+	const char *e = RSTRING_END(str);
+	const char *p1 = p;
+	const char *rep;
+	long replen;
+	int rep7bit_p;
+	VALUE buf = Qnil;
+	if (rb_block_given_p()) {
+	    rep = NULL;
+	    replen = 0;
+	    rep7bit_p = FALSE;
+	}
+	else if (!NIL_P(repl)) {
+	    rep = RSTRING_PTR(repl);
+	    replen = RSTRING_LEN(repl);
+	    rep7bit_p = (ENC_CODERANGE(repl) == ENC_CODERANGE_7BIT);
+	}
+	else if (encidx == rb_utf8_encindex()) {
+	    DEFAULT_REPLACE_CHAR("\xEF\xBF\xBD");
+	    rep7bit_p = FALSE;
+	}
+	else {
+	    DEFAULT_REPLACE_CHAR("?");
+	    rep7bit_p = TRUE;
+	}
+	cr = ENC_CODERANGE_7BIT;
+
+	p = search_nonascii(p, e);
+	if (!p) {
+	    p = e;
+	}
+	while (p < e) {
+	    int ret = rb_enc_precise_mbclen(p, e, enc);
+	    if (MBCLEN_NEEDMORE_P(ret)) {
+		break;
+	    }
+	    else if (MBCLEN_CHARFOUND_P(ret)) {
+		cr = ENC_CODERANGE_VALID;
+		p += MBCLEN_CHARFOUND_LEN(ret);
+	    }
+	    else if (MBCLEN_INVALID_P(ret)) {
+		/*
+		 * p1~p: valid ascii/multibyte chars
+		 * p ~e: invalid bytes + unknown bytes
+		 */
+		long clen = rb_enc_mbmaxlen(enc);
+		if (NIL_P(buf)) buf = rb_str_buf_new(RSTRING_LEN(str));
+		if (p > p1) {
+		    rb_str_buf_cat(buf, p1, p - p1);
+		}
+
+		if (e - p < clen) clen = e - p;
+		if (clen <= 2) {
+		    clen = 1;
+		}
+		else {
+		    const char *q = p;
+		    clen--;
+		    for (; clen > 1; clen--) {
+			ret = rb_enc_precise_mbclen(q, q + clen, enc);
+			if (MBCLEN_NEEDMORE_P(ret)) break;
+			if (MBCLEN_INVALID_P(ret)) continue;
+			UNREACHABLE;
+		    }
+		}
+		if (rep) {
+		    rb_str_buf_cat(buf, rep, replen);
+		    if (!rep7bit_p) cr = ENC_CODERANGE_VALID;
+		}
+		else {
+		    repl = rb_yield(rb_enc_str_new(p, clen, enc));
+		    repl = str_compat_and_valid(repl, enc);
+		    rb_str_buf_cat(buf, RSTRING_PTR(repl), RSTRING_LEN(repl));
+		    if (ENC_CODERANGE(repl) == ENC_CODERANGE_VALID)
+			cr = ENC_CODERANGE_VALID;
+		}
+		p += clen;
+		p1 = p;
+		p = search_nonascii(p, e);
+		if (!p) {
+		    p = e;
+		    break;
+		}
+	    }
+	    else {
+		UNREACHABLE;
+	    }
+	}
+	if (NIL_P(buf)) {
+	    if (p == e) {
+		ENC_CODERANGE_SET(str, cr);
+		return Qnil;
+	    }
+	    buf = rb_str_buf_new(RSTRING_LEN(str));
+	}
+	if (p1 < p) {
+	    rb_str_buf_cat(buf, p1, p - p1);
+	}
+	if (p < e) {
+	    if (rep) {
+		rb_str_buf_cat(buf, rep, replen);
+		if (!rep7bit_p) cr = ENC_CODERANGE_VALID;
+	    }
+	    else {
+		repl = rb_yield(rb_enc_str_new(p, e-p, enc));
+		repl = str_compat_and_valid(repl, enc);
+		rb_str_buf_cat(buf, RSTRING_PTR(repl), RSTRING_LEN(repl));
+		if (ENC_CODERANGE(repl) == ENC_CODERANGE_VALID)
+		    cr = ENC_CODERANGE_VALID;
+	    }
+	}
+	ENCODING_CODERANGE_SET(buf, rb_enc_to_index(enc), cr);
+	return buf;
+    }
+    else {
+	/* ASCII incompatible */
+	const char *p = RSTRING_PTR(str);
+	const char *e = RSTRING_END(str);
+	const char *p1 = p;
+	VALUE buf = Qnil;
+	const char *rep;
+	long replen;
+	long mbminlen = rb_enc_mbminlen(enc);
+	if (!NIL_P(repl)) {
+	    rep = RSTRING_PTR(repl);
+	    replen = RSTRING_LEN(repl);
+	}
+	else if (encidx == ENCINDEX_UTF_16BE) {
+	    DEFAULT_REPLACE_CHAR("\xFF\xFD");
+	}
+	else if (encidx == ENCINDEX_UTF_16LE) {
+	    DEFAULT_REPLACE_CHAR("\xFD\xFF");
+	}
+	else if (encidx == ENCINDEX_UTF_32BE) {
+	    DEFAULT_REPLACE_CHAR("\x00\x00\xFF\xFD");
+	}
+	else if (encidx == ENCINDEX_UTF_32LE) {
+	    DEFAULT_REPLACE_CHAR("\xFD\xFF\x00\x00");
+	}
+	else {
+	    DEFAULT_REPLACE_CHAR("?");
+	}
+
+	while (p < e) {
+	    int ret = rb_enc_precise_mbclen(p, e, enc);
+	    if (MBCLEN_NEEDMORE_P(ret)) {
+		break;
+	    }
+	    else if (MBCLEN_CHARFOUND_P(ret)) {
+		p += MBCLEN_CHARFOUND_LEN(ret);
+	    }
+	    else if (MBCLEN_INVALID_P(ret)) {
+		const char *q = p;
+		long clen = rb_enc_mbmaxlen(enc);
+		if (NIL_P(buf)) buf = rb_str_buf_new(RSTRING_LEN(str));
+		if (p > p1) rb_str_buf_cat(buf, p1, p - p1);
+
+		if (e - p < clen) clen = e - p;
+		if (clen <= mbminlen * 2) {
+		    clen = mbminlen;
+		}
+		else {
+		    clen -= mbminlen;
+		    for (; clen > mbminlen; clen-=mbminlen) {
+			ret = rb_enc_precise_mbclen(q, q + clen, enc);
+			if (MBCLEN_NEEDMORE_P(ret)) break;
+			if (MBCLEN_INVALID_P(ret)) continue;
+			UNREACHABLE;
+		    }
+		}
+		if (rep) {
+		    rb_str_buf_cat(buf, rep, replen);
+		}
+		else {
+		    repl = rb_yield(rb_enc_str_new(p, e-p, enc));
+		    repl = str_compat_and_valid(repl, enc);
+		    rb_str_buf_cat(buf, RSTRING_PTR(repl), RSTRING_LEN(repl));
+		}
+		p += clen;
+		p1 = p;
+	    }
+	    else {
+		UNREACHABLE;
+	    }
+	}
+	if (NIL_P(buf)) {
+	    if (p == e) {
+		ENC_CODERANGE_SET(str, ENC_CODERANGE_VALID);
+		return Qnil;
+	    }
+	    buf = rb_str_buf_new(RSTRING_LEN(str));
+	}
+	if (p1 < p) {
+	    rb_str_buf_cat(buf, p1, p - p1);
+	}
+	if (p < e) {
+	    if (rep) {
+		rb_str_buf_cat(buf, rep, replen);
+	    }
+	    else {
+		repl = rb_yield(rb_enc_str_new(p, e-p, enc));
+		repl = str_compat_and_valid(repl, enc);
+		rb_str_buf_cat(buf, RSTRING_PTR(repl), RSTRING_LEN(repl));
+	    }
+	}
+	ENCODING_CODERANGE_SET(buf, rb_enc_to_index(enc), ENC_CODERANGE_VALID);
+	return buf;
+    }
+}
+
+/*
+ *  call-seq:
+ *    str.scrub -> new_str
+ *    str.scrub(repl) -> new_str
+ *    str.scrub{|bytes|} -> new_str
+ *
+ *  If the string is invalid byte sequence then replace invalid bytes with given replacement
+ *  character, else returns self.
+ *  If block is given, replace invalid bytes with returned value of the block.
+ *
+ *     "abc\u3042\x81".scrub #=> "abc\u3042\uFFFD"
+ *     "abc\u3042\x81".scrub("*") #=> "abc\u3042*"
+ *     "abc\u3042\xE3\x80".scrub{|bytes| '<'+bytes.unpack('H*')[0]+'>' } #=> "abc\u3042<e380>"
+ */
+static VALUE
+str_scrub(int argc, VALUE *argv, VALUE str)
+{
+    VALUE repl = argc ? (rb_check_arity(argc, 0, 1), argv[0]) : Qnil;
+    VALUE new = rb_str_scrub(str, repl);
+    return NIL_P(new) ? rb_str_dup(str): new;
+}
+
+/*
+ *  call-seq:
+ *    str.scrub! -> str
+ *    str.scrub!(repl) -> str
+ *    str.scrub!{|bytes|} -> str
+ *
+ *  If the string is invalid byte sequence then replace invalid bytes with given replacement
+ *  character, else returns self.
+ *  If block is given, replace invalid bytes with returned value of the block.
+ *
+ *     "abc\u3042\x81".scrub! #=> "abc\u3042\uFFFD"
+ *     "abc\u3042\x81".scrub!("*") #=> "abc\u3042*"
+ *     "abc\u3042\xE3\x80".scrub!{|bytes| '<'+bytes.unpack('H*')[0]+'>' } #=> "abc\u3042<e380>"
+ */
+static VALUE
+str_scrub_bang(int argc, VALUE *argv, VALUE str)
+{
+    VALUE repl = argc ? (rb_check_arity(argc, 0, 1), argv[0]) : Qnil;
+    VALUE new = rb_str_scrub(str, repl);
+    if (!NIL_P(new)) rb_str_replace(str, new);
+    return str;
 }
 
 /**********************************************************************
@@ -7097,25 +8591,68 @@ rb_str_is_ascii_only_p(VALUE str)
  *  symbol, returns <code>true</code>.
  */
 
-static VALUE
-sym_equal(VALUE sym1, VALUE sym2)
-{
-    if (sym1 == sym2) return Qtrue;
-    return Qfalse;
-}
-
+#define sym_equal rb_obj_equal
 
 static int
 sym_printable(const char *s, const char *send, rb_encoding *enc)
 {
     while (s < send) {
 	int n;
-	int c = rb_enc_codepoint_len(s, send, &n, enc);
+	int c = rb_enc_precise_mbclen(s, send, enc);
 
+	if (!MBCLEN_CHARFOUND_P(c)) return FALSE;
+	n = MBCLEN_CHARFOUND_LEN(c);
+	c = rb_enc_mbc_to_codepoint(s, send, enc);
 	if (!rb_enc_isprint(c, enc)) return FALSE;
 	s += n;
     }
     return TRUE;
+}
+
+int
+rb_str_symname_p(VALUE sym)
+{
+    rb_encoding *enc;
+    const char *ptr;
+    long len;
+    rb_encoding *resenc = rb_default_internal_encoding();
+
+    if (resenc == NULL) resenc = rb_default_external_encoding();
+    enc = STR_ENC_GET(sym);
+    ptr = RSTRING_PTR(sym);
+    len = RSTRING_LEN(sym);
+    if ((resenc != enc && !rb_str_is_ascii_only_p(sym)) || len != (long)strlen(ptr) ||
+	!rb_enc_symname_p(ptr, enc) || !sym_printable(ptr, ptr + len, enc)) {
+	return FALSE;
+    }
+    return TRUE;
+}
+
+VALUE
+rb_str_quote_unprintable(VALUE str)
+{
+    rb_encoding *enc;
+    const char *ptr;
+    long len;
+    rb_encoding *resenc;
+
+    Check_Type(str, T_STRING);
+    resenc = rb_default_internal_encoding();
+    if (resenc == NULL) resenc = rb_default_external_encoding();
+    enc = STR_ENC_GET(str);
+    ptr = RSTRING_PTR(str);
+    len = RSTRING_LEN(str);
+    if ((resenc != enc && !rb_str_is_ascii_only_p(str)) ||
+	!sym_printable(ptr, ptr + len, enc)) {
+	return rb_str_inspect(str);
+    }
+    return str;
+}
+
+VALUE
+rb_id_quote_unprintable(ID id)
+{
+    return rb_str_quote_unprintable(rb_id2str(id));
 }
 
 /*
@@ -7131,20 +8668,12 @@ static VALUE
 sym_inspect(VALUE sym)
 {
     VALUE str;
-    ID id = SYM2ID(sym);
-    rb_encoding *enc;
     const char *ptr;
     long len;
     char *dest;
-    rb_encoding *resenc = rb_default_internal_encoding();
 
-    if (resenc == NULL) resenc = rb_default_external_encoding();
-    sym = rb_id2str(id);
-    enc = STR_ENC_GET(sym);
-    ptr = RSTRING_PTR(sym);
-    len = RSTRING_LEN(sym);
-    if ((resenc != enc && !rb_str_is_ascii_only_p(sym)) || len != (long)strlen(ptr) ||
-	!rb_enc_symname_p(ptr, enc) || !sym_printable(ptr, ptr + len, enc)) {
+    sym = rb_sym2str(sym);
+    if (!rb_str_symname_p(sym)) {
 	str = rb_str_inspect(sym);
 	len = RSTRING_LEN(str);
 	rb_str_resize(str, len + 1);
@@ -7153,7 +8682,9 @@ sym_inspect(VALUE sym)
 	dest[0] = ':';
     }
     else {
-	char *dest;
+	rb_encoding *enc = STR_ENC_GET(sym);
+	ptr = RSTRING_PTR(sym);
+	len = RSTRING_LEN(sym);
 	str = rb_enc_str_new(0, len + 1, enc);
 	dest = RSTRING_PTR(str);
 	dest[0] = ':';
@@ -7177,9 +8708,7 @@ sym_inspect(VALUE sym)
 VALUE
 rb_sym_to_s(VALUE sym)
 {
-    ID id = SYM2ID(sym);
-
-    return str_new3(rb_cString, rb_id2str(id));
+    return str_new_shared(rb_cString, rb_sym2str(sym));
 }
 
 
@@ -7200,7 +8729,7 @@ sym_to_sym(VALUE sym)
 }
 
 static VALUE
-sym_call(VALUE args, VALUE sym, int argc, VALUE *argv)
+sym_call(VALUE args, VALUE sym, int argc, VALUE *argv, VALUE passed_proc)
 {
     VALUE obj;
 
@@ -7208,7 +8737,7 @@ sym_call(VALUE args, VALUE sym, int argc, VALUE *argv)
 	rb_raise(rb_eArgError, "no receiver given");
     }
     obj = argv[0];
-    return rb_funcall3(obj, (ID)sym, argc - 1, argv + 1);
+    return rb_funcall_with_block(obj, (ID)sym, argc - 1, argv + 1, passed_proc);
 }
 
 /*
@@ -7244,6 +8773,7 @@ sym_to_proc(VALUE sym)
     }
     else {
 	proc = rb_proc_new(sym_call, (VALUE)id);
+	rb_block_clear_env_self(proc);
 	aryp[index] = sym;
 	aryp[index + 1] = proc;
 	return proc;
@@ -7261,15 +8791,21 @@ sym_to_proc(VALUE sym)
 static VALUE
 sym_succ(VALUE sym)
 {
-    return rb_str_intern(rb_str_succ(rb_sym_to_s(sym)));
+    return rb_str_intern(rb_str_succ(rb_sym2str(sym)));
 }
 
 /*
  * call-seq:
  *
- *   str <=> other       -> -1, 0, +1 or nil
+ *   symbol <=> other_symbol       -> -1, 0, +1 or nil
  *
- * Compares _sym_ with _other_ in string form.
+ * Compares +symbol+ with +other_symbol+ after calling #to_s on each of the
+ * symbols. Returns -1, 0, +1 or nil depending on whether +symbol+ is less
+ * than, equal to, or greater than +other_symbol+.
+ *
+ *  +nil+ is returned if the two values are incomparable.
+ *
+ * See String#<=> for more information.
  */
 
 static VALUE
@@ -7278,7 +8814,7 @@ sym_cmp(VALUE sym, VALUE other)
     if (!SYMBOL_P(other)) {
 	return Qnil;
     }
-    return rb_str_cmp_m(rb_sym_to_s(sym), rb_sym_to_s(other));
+    return rb_str_cmp_m(rb_sym2str(sym), rb_sym2str(other));
 }
 
 /*
@@ -7295,12 +8831,13 @@ sym_casecmp(VALUE sym, VALUE other)
     if (!SYMBOL_P(other)) {
 	return Qnil;
     }
-    return rb_str_casecmp(rb_sym_to_s(sym), rb_sym_to_s(other));
+    return rb_str_casecmp(rb_sym2str(sym), rb_sym2str(other));
 }
 
 /*
  * call-seq:
  *   sym =~ obj   -> fixnum or nil
+ *   sym.match(obj)   -> fixnum or nil
  *
  * Returns <code>sym.to_s =~ obj</code>.
  */
@@ -7308,13 +8845,15 @@ sym_casecmp(VALUE sym, VALUE other)
 static VALUE
 sym_match(VALUE sym, VALUE other)
 {
-    return rb_str_match(rb_sym_to_s(sym), other);
+    return rb_str_match(rb_sym2str(sym), other);
 }
 
 /*
  * call-seq:
  *   sym[idx]      -> char
- *   sym[b, n]     -> char
+ *   sym[b, n]     -> string
+ *   sym.slice(idx)      -> char
+ *   sym.slice(b, n)     -> string
  *
  * Returns <code>sym.to_s[]</code>.
  */
@@ -7322,12 +8861,13 @@ sym_match(VALUE sym, VALUE other)
 static VALUE
 sym_aref(int argc, VALUE *argv, VALUE sym)
 {
-    return rb_str_aref_m(argc, argv, rb_sym_to_s(sym));
+    return rb_str_aref_m(argc, argv, rb_sym2str(sym));
 }
 
 /*
  * call-seq:
  *   sym.length    -> integer
+ *   sym.size    -> integer
  *
  * Same as <code>sym.to_s.length</code>.
  */
@@ -7335,7 +8875,7 @@ sym_aref(int argc, VALUE *argv, VALUE sym)
 static VALUE
 sym_length(VALUE sym)
 {
-    return rb_str_length(rb_id2str(SYM2ID(sym)));
+    return rb_str_length(rb_sym2str(sym));
 }
 
 /*
@@ -7348,7 +8888,7 @@ sym_length(VALUE sym)
 static VALUE
 sym_empty(VALUE sym)
 {
-    return rb_str_empty(rb_id2str(SYM2ID(sym)));
+    return rb_str_empty(rb_sym2str(sym));
 }
 
 /*
@@ -7361,7 +8901,7 @@ sym_empty(VALUE sym)
 static VALUE
 sym_upcase(VALUE sym)
 {
-    return rb_str_intern(rb_str_upcase(rb_id2str(SYM2ID(sym))));
+    return rb_str_intern(rb_str_upcase(rb_sym2str(sym)));
 }
 
 /*
@@ -7374,7 +8914,7 @@ sym_upcase(VALUE sym)
 static VALUE
 sym_downcase(VALUE sym)
 {
-    return rb_str_intern(rb_str_downcase(rb_id2str(SYM2ID(sym))));
+    return rb_str_intern(rb_str_downcase(rb_sym2str(sym)));
 }
 
 /*
@@ -7387,7 +8927,7 @@ sym_downcase(VALUE sym)
 static VALUE
 sym_capitalize(VALUE sym)
 {
-    return rb_str_intern(rb_str_capitalize(rb_id2str(SYM2ID(sym))));
+    return rb_str_intern(rb_str_capitalize(rb_sym2str(sym)));
 }
 
 /*
@@ -7400,7 +8940,7 @@ sym_capitalize(VALUE sym)
 static VALUE
 sym_swapcase(VALUE sym)
 {
-    return rb_str_intern(rb_str_swapcase(rb_id2str(SYM2ID(sym))));
+    return rb_str_intern(rb_str_swapcase(rb_sym2str(sym)));
 }
 
 /*
@@ -7413,32 +8953,41 @@ sym_swapcase(VALUE sym)
 static VALUE
 sym_encoding(VALUE sym)
 {
-    return rb_obj_encoding(rb_id2str(SYM2ID(sym)));
+    return rb_obj_encoding(rb_sym2str(sym));
+}
+
+static VALUE
+string_for_symbol(VALUE name)
+{
+    if (!RB_TYPE_P(name, T_STRING)) {
+	VALUE tmp = rb_check_string_type(name);
+	if (NIL_P(tmp)) {
+	    rb_raise(rb_eTypeError, "%+"PRIsVALUE" is not a symbol",
+		     name);
+	}
+	name = tmp;
+    }
+    return name;
 }
 
 ID
 rb_to_id(VALUE name)
 {
-    VALUE tmp;
-    ID id;
-
-    switch (TYPE(name)) {
-      default:
-	tmp = rb_check_string_type(name);
-	if (NIL_P(tmp)) {
-	    tmp = rb_inspect(name);
-	    rb_raise(rb_eTypeError, "%s is not a symbol",
-		     RSTRING_PTR(tmp));
-	}
-	name = tmp;
-	/* fall through */
-      case T_STRING:
-	name = rb_str_intern(name);
-	/* fall through */
-      case T_SYMBOL:
+    if (SYMBOL_P(name)) {
 	return SYM2ID(name);
     }
-    return id;
+    name = string_for_symbol(name);
+    return rb_intern_str(name);
+}
+
+VALUE
+rb_to_symbol(VALUE name)
+{
+    if (SYMBOL_P(name)) {
+	return name;
+    }
+    name = string_for_symbol(name);
+    return rb_str_intern(name);
 }
 
 /*
@@ -7462,7 +9011,7 @@ Init_String(void)
 
     rb_cString  = rb_define_class("String", rb_cObject);
     rb_include_module(rb_cString, rb_mComparable);
-    rb_define_alloc_func(rb_cString, str_alloc);
+    rb_define_alloc_func(rb_cString, empty_str_alloc);
     rb_define_singleton_method(rb_cString, "try_convert", rb_str_s_try_convert, 1);
     rb_define_method(rb_cString, "initialize", rb_str_init, -1);
     rb_define_method(rb_cString, "initialize_copy", rb_str_replace, 1);
@@ -7496,6 +9045,10 @@ Init_String(void)
     rb_define_method(rb_cString, "chr", rb_str_chr, 0);
     rb_define_method(rb_cString, "getbyte", rb_str_getbyte, 1);
     rb_define_method(rb_cString, "setbyte", rb_str_setbyte, 2);
+    rb_define_method(rb_cString, "byteslice", rb_str_byteslice, -1);
+    rb_define_method(rb_cString, "scrub", str_scrub, -1);
+    rb_define_method(rb_cString, "scrub!", str_scrub_bang, -1);
+    rb_define_method(rb_cString, "freeze", rb_obj_freeze, 0);
 
     rb_define_method(rb_cString, "to_i", rb_str_to_i, -1);
     rb_define_method(rb_cString, "to_f", rb_str_to_f, 0);
@@ -7517,17 +9070,18 @@ Init_String(void)
     rb_define_method(rb_cString, "hex", rb_str_hex, 0);
     rb_define_method(rb_cString, "oct", rb_str_oct, 0);
     rb_define_method(rb_cString, "split", rb_str_split_m, -1);
-    rb_define_method(rb_cString, "lines", rb_str_each_line, -1);
-    rb_define_method(rb_cString, "bytes", rb_str_each_byte, 0);
-    rb_define_method(rb_cString, "chars", rb_str_each_char, 0);
-    rb_define_method(rb_cString, "codepoints", rb_str_each_codepoint, 0);
+    rb_define_method(rb_cString, "lines", rb_str_lines, -1);
+    rb_define_method(rb_cString, "bytes", rb_str_bytes, 0);
+    rb_define_method(rb_cString, "chars", rb_str_chars, 0);
+    rb_define_method(rb_cString, "codepoints", rb_str_codepoints, 0);
     rb_define_method(rb_cString, "reverse", rb_str_reverse, 0);
     rb_define_method(rb_cString, "reverse!", rb_str_reverse_bang, 0);
     rb_define_method(rb_cString, "concat", rb_str_concat, 1);
     rb_define_method(rb_cString, "<<", rb_str_concat, 1);
+    rb_define_method(rb_cString, "prepend", rb_str_prepend, 1);
     rb_define_method(rb_cString, "crypt", rb_str_crypt, 1);
-    rb_define_method(rb_cString, "intern", rb_str_intern, 0);
-    rb_define_method(rb_cString, "to_sym", rb_str_intern, 0);
+    rb_define_method(rb_cString, "intern", rb_str_intern, 0); /* in symbol.c */
+    rb_define_method(rb_cString, "to_sym", rb_str_intern, 0); /* in symbol.c */
     rb_define_method(rb_cString, "ord", rb_str_ord, 0);
 
     rb_define_method(rb_cString, "include?", rb_str_include, 1);
@@ -7582,6 +9136,7 @@ Init_String(void)
 
     rb_define_method(rb_cString, "encoding", rb_obj_encoding, 0); /* in encoding.c */
     rb_define_method(rb_cString, "force_encoding", rb_str_force_encoding, 1);
+    rb_define_method(rb_cString, "b", rb_str_b, 0);
     rb_define_method(rb_cString, "valid_encoding?", rb_str_valid_encoding_p, 0);
     rb_define_method(rb_cString, "ascii_only?", rb_str_is_ascii_only_p, 0);
 
@@ -7595,7 +9150,7 @@ Init_String(void)
     rb_include_module(rb_cSymbol, rb_mComparable);
     rb_undef_alloc_func(rb_cSymbol);
     rb_undef_method(CLASS_OF(rb_cSymbol), "new");
-    rb_define_singleton_method(rb_cSymbol, "all_symbols", rb_sym_all_symbols, 0); /* in parse.y */
+    rb_define_singleton_method(rb_cSymbol, "all_symbols", rb_sym_all_symbols, 0); /* in symbol.c */
 
     rb_define_method(rb_cSymbol, "==", sym_equal, 1);
     rb_define_method(rb_cSymbol, "===", sym_equal, 1);
@@ -7625,4 +9180,14 @@ Init_String(void)
     rb_define_method(rb_cSymbol, "swapcase", sym_swapcase, 0);
 
     rb_define_method(rb_cSymbol, "encoding", sym_encoding, 0);
+
+    assert(rb_vm_fstring_table());
+    st_foreach(rb_vm_fstring_table(), fstring_set_class_i, rb_cString);
+}
+
+void
+Init_frozen_strings(void)
+{
+    assert(!frozen_strings);
+    frozen_strings = st_init_table_with_size(&fstring_hash_type, 1000);
 }

@@ -11,20 +11,20 @@
 #include "ossl.h"
 
 #define WrapX509Req(klass, obj, req) do { \
-    if (!req) { \
+    if (!(req)) { \
 	ossl_raise(rb_eRuntimeError, "Req wasn't initialized!"); \
     } \
-    obj = Data_Wrap_Struct(klass, 0, X509_REQ_free, req); \
+    (obj) = TypedData_Wrap_Struct((klass), &ossl_x509req_type, (req)); \
 } while (0)
 #define GetX509Req(obj, req) do { \
-    Data_Get_Struct(obj, X509_REQ, req); \
-    if (!req) { \
+    TypedData_Get_Struct((obj), X509_REQ, &ossl_x509req_type, (req)); \
+    if (!(req)) { \
 	ossl_raise(rb_eRuntimeError, "Req wasn't initialized!"); \
     } \
 } while (0)
 #define SafeGetX509Req(obj, req) do { \
-    OSSL_Check_Kind(obj, cX509Req); \
-    GetX509Req(obj, req); \
+    OSSL_Check_Kind((obj), cX509Req); \
+    GetX509Req((obj), (req)); \
 } while (0)
 
 /*
@@ -32,6 +32,20 @@
  */
 VALUE cX509Req;
 VALUE eX509ReqError;
+
+static void
+ossl_x509req_free(void *ptr)
+{
+    X509_REQ_free(ptr);
+}
+
+static const rb_data_type_t ossl_x509req_type = {
+    "OpenSSL/X509/REQ",
+    {
+	0, ossl_x509req_free,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+};
 
 /*
  * Public functions
@@ -110,7 +124,7 @@ ossl_x509req_initialize(int argc, VALUE *argv, VALUE self)
     req = PEM_read_bio_X509_REQ(in, &x, NULL, NULL);
     DATA_PTR(self) = x;
     if (!req) {
-	(void)BIO_reset(in);
+	OSSL_BIO_reset(in);
 	req = d2i_X509_REQ_bio(in, &x);
 	DATA_PTR(self) = x;
     }
@@ -171,7 +185,7 @@ ossl_x509req_to_der(VALUE self)
 
     GetX509Req(self, req);
     if ((len = i2d_X509_REQ(req, NULL)) <= 0)
-	ossl_raise(eX509CertError, NULL);
+	ossl_raise(eX509ReqError, NULL);
     str = rb_str_new(0, len);
     p = (unsigned char *)RSTRING_PTR(str);
     if (i2d_X509_REQ(req, &p) <= 0)
@@ -438,7 +452,7 @@ ossl_x509req_add_attribute(VALUE self, VALUE attr)
  * X509_REQUEST init
  */
 void
-Init_ossl_x509req()
+Init_ossl_x509req(void)
 {
     eX509ReqError = rb_define_class_under(mX509, "RequestError", eOSSLError);
 

@@ -1,43 +1,80 @@
 ;;
 ;; rdoc-mode.el
 ;; Major mode for RDoc editing
-;; 
+;;
 
 ;; Created: Fri Sep 18 09:04:49 JST 2009
 
 ;; License: Ruby's
 
 (require 'derived)
+
+;;;###autoload
 (define-derived-mode rdoc-mode text-mode "RDoc"
   "Major mode for RD editing.
 \\{rdoc-mode-map}"
   (make-local-variable 'paragraph-separate)
-  (setq paragraph-separate "^\\(=+\\|\\*+\\)\\s \\|^\\s *$")
+  (setq paragraph-separate "^\\(=+\\|\\*+\\)[ \t\v\f]*\\|^\\s *$")
   (make-local-variable 'paragraph-start)
   (setq paragraph-start paragraph-separate)
-  (make-local-variable 'require-final-newline)  
+  (make-local-variable 'require-final-newline)
   (setq require-final-newline t)
   (make-local-variable 'font-lock-defaults)
   (setq font-lock-defaults '((rdoc-font-lock-keywords) t nil))
   (make-local-variable 'font-lock-keywords)
   (setq font-lock-keywords rdoc-font-lock-keywords)
   (make-local-variable 'outline-regexp)
-  (setq outline-regexp "^\\(=+\\)\\s ")
+  (setq outline-regexp "^\\(=+\\)[ \t\v\f]*")
   (outline-minor-mode t)
+  (setq show-trailing-whitespace t)
   (rdoc-setup-keys)
   (setq indent-tabs-mode nil)
   (run-hooks 'rdoc-mode-hook)
   )
 
-(defun rdoc-fill-paragraph (&rest args)
+(defun rdoc-fill-paragraph (&optional justify region)
   "Fills paragraph, except for cited region"
   (interactive (progn
 		 (barf-if-buffer-read-only)
 		 (list (if current-prefix-arg 'full))))
   (save-excursion
     (beginning-of-line)
-    (unless (looking-at "^ +")
-      (apply 'fill-paragraph args))))
+    (save-restriction
+      (let ((pos (point)) beg end indent hanging)
+	(cond
+	 ((looking-at "^ +\\(\\*\\s *\\)")
+	  (setq indent (- (match-end 0) (match-beginning 0))
+		hanging (- (match-end 1) (match-beginning 1))))
+	 ((looking-at "^ +")
+	  (setq indent (- (match-end 0) (match-beginning 0)))
+	  (when (and (re-search-backward "^[^ ]\\|^\\( *\\(\\* *\\)\\)" nil t)
+		     (match-beginning 1)
+		     (= indent (- (match-end 1) (match-beginning 1))))
+	    (setq hanging (- (match-end 2) (match-beginning 2)))
+	    (setq beg (match-beginning 1))))
+	 ((setq beg t)))
+	(when beg
+	  (when indent
+	    (goto-char pos)
+	    (while (progn (beginning-of-line 2)
+			  (and (looking-at "^\\( +\\)\\S ")
+			       (= indent (- (match-end 1) (match-beginning 1))))))
+	    (setq end (point))
+	    (when (and beg (not region))
+	      (setq region (list beg end))
+	      (narrow-to-region beg end)
+	      ))
+	  (goto-char pos)
+	  (fill-paragraph justify region)
+	  (when (and indent
+		     (or (goto-char beg) t)
+		     (or (beginning-of-line 2) t)
+		     (looking-at "^\\( +\\)")
+		     (= (- indent hanging) (- (match-end 0) (match-beginning 0))))
+	    (insert-char ?\s hanging)
+	    (beginning-of-line)
+	    (narrow-to-region (point) end)
+	    (fill-paragraph justify (list (point) end))))))))
 
 (defun rdoc-setup-keys ()
   (interactive)
@@ -55,19 +92,19 @@
 
 (defvar rdoc-font-lock-keywords
   (list
-   (list "^= .*$"
+   (list "^=([^=\r\n].*)?$"
 	 0 rdoc-heading1-face)
-   (list "^== .*$"
+   (list "^==([^=\r\n].*)?$"
 	 0 rdoc-heading2-face)
-   (list "^=== .*$"
+   (list "^===([^=\r\n].*)?$"
 	 0 rdoc-heading3-face)
-   (list "^=====* .*$"
+   (list "^====+.*$"
 	 0 rdoc-heading4-face)
-   (list "\\(^\\|\\s \\)\\(\\*\\(\\sw\\|[-_:]\\)+\\*\\)\\($\\|\\s \\)"
+   (list "\\(^\\|[ \t\v\f]\\)\\(\\*\\(\\sw\\|[-_:]\\)+\\*\\)\\($\\|[ \t\v\f]\\)"
 	 2 rdoc-bold-face)		; *bold*
-   (list "\\(^\\|\\s \\)\\(_\\(\\sw\\|[-_:]\\)+_\\)\\($\\|\\s \\)"
+   (list "\\(^\\|[ \t\v\f]\\)\\(_\\(\\sw\\|[-_:]\\)+_\\)\\($\\|[ \t\v\f]\\)"
 	 2 rdoc-emphasis-face)		; _emphasis_
-   (list "\\(^\\|\\s \\)\\(\\+\\(\\sw\\|[-_:]\\)+\\+\\)\\($\\|\\s \\)"
+   (list "\\(^\\|[ \t\v\f]\\)\\(\\+\\(\\sw\\|[-_:]\\)+\\+\\)\\($\\|[ \t\v\f]\\)"
 	 2 rdoc-code-face)		; +code+
    (list "<em>[^<>]*</em>" 0 rdoc-emphasis-face)
    (list "<i>[^<>]*</i>" 0 rdoc-emphasis-face)
@@ -76,7 +113,54 @@
    (list "<code>[^<>]*</code>" 0 rdoc-code-face)
    (list "^\\([-*]\\|[0-9]+\\.\\|[A-Za-z]\\.\\)\\s "
 	 1 rdoc-description-face) ; bullet | numbered | alphabetically numbered
-   (list "^\\[[^\]]*\\]\\|\\S .*::\\)\\(\\s \\|$\\)"
+   (list "^\\[[^\]]*\\]\\|\\S .*::\\)\\([ \t\v\f]\\|$\\)"
 	 1 rdoc-description-face)	; labeled | node
-   ;(list "^\\s +\\(.*\\)" 1 rdoc-verbatim-face)
+   ;(list "^[ \t\v\f]+\\(.*\\)" 1 rdoc-verbatim-face)
    ))
+
+(defun rdoc-imenu-create-index ()
+  (let ((root '(nil . nil))
+        cur-alist
+        (cur-level 0)
+        (pattern (concat outline-regexp "\\(.*?\\)[ \t\v\f]*$"))
+        (empty-heading "-")
+        (self-heading ".")
+        pos level heading alist)
+    (save-excursion
+      (goto-char (point-min))
+      (while (re-search-forward pattern (point-max) t)
+        (setq heading (match-string-no-properties 2)
+              level (min 6 (length (match-string-no-properties 1)))
+              pos (match-beginning 1))
+        (if (= (length heading) 0)
+            (setq heading empty-heading))
+        (setq alist (list (cons heading pos)))
+        (cond
+         ((= cur-level level)		; new sibling
+          (setcdr cur-alist alist)
+          (setq cur-alist alist))
+         ((< cur-level level)		; first child
+          (dotimes (i (- level cur-level 1))
+            (setq alist (list (cons empty-heading alist))))
+          (if cur-alist
+              (let* ((parent (car cur-alist))
+                     (self-pos (cdr parent)))
+                (setcdr parent (cons (cons self-heading self-pos) alist)))
+            (setcdr root alist))	; primogenitor
+          (setq cur-alist alist
+                cur-level level))
+         (t				; new sibling of an ancestor
+          (let ((sibling-alist (last (cdr root))))
+            (dotimes (i (1- level))
+              (setq sibling-alist (last (cdar sibling-alist))))
+            (setcdr sibling-alist alist)
+            (setq cur-alist alist
+                  cur-level level))))))
+    (cdr root)))
+
+(defun rdoc-set-imenu-create-index-function ()
+  (setq imenu-create-index-function 'rdoc-imenu-create-index))
+
+(add-hook 'rdoc-mode-hook 'rdoc-set-imenu-create-index-function)
+
+(provide 'rdoc-mode)

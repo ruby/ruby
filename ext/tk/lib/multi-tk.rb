@@ -40,64 +40,6 @@ end
 
 
 ################################################
-# use pseudo-toplevel feature of MultiTkIp ?
-if (!defined?(Use_PseudoToplevel_Feature_of_MultiTkIp) ||
-      Use_PseudoToplevel_Feature_of_MultiTkIp)
-  module MultiTkIp_PseudoToplevel_Evaluable
-    #def pseudo_toplevel_eval(body = Proc.new)
-    #  Thread.current[:TOPLEVEL] = self
-    #  begin
-    #    body.call
-    #  ensure
-    #    Thread.current[:TOPLEVEL] = nil
-    #  end
-    #end
-
-    def pseudo_toplevel_evaluable?
-      @pseudo_toplevel_evaluable
-    end
-
-    def pseudo_toplevel_evaluable=(mode)
-      @pseudo_toplevel_evaluable = (mode)? true: false
-    end
-
-    def self.extended(mod)
-      mod.__send__(:extend_object, mod)
-      mod.instance_variable_set('@pseudo_toplevel_evaluable', true)
-    end
-  end
-
-  class Object
-    alias __method_missing_alias_for_MultiTkIp__ method_missing
-    private :__method_missing_alias_for_MultiTkIp__
-
-    def method_missing(id, *args)
-      begin
-        has_top = (top = MultiTkIp.__getip.__pseudo_toplevel) &&
-          top.respond_to?(:pseudo_toplevel_evaluable?) &&
-          top.pseudo_toplevel_evaluable? &&
-          top.respond_to?(id)
-      rescue Exception => e
-        has_top = false
-      end
-
-      if has_top
-        top.__send__(id, *args)
-      else
-        __method_missing_alias_for_MultiTkIp__(id, *args)
-      end
-    end
-  end
-else
-  # dummy
-  module MultiTkIp_PseudoToplevel_Evaluable
-    def pseudo_toplevel_evaluable?
-      false
-    end
-  end
-end
-
-################################################
 # exceptiopn to treat the return value from IP
 class MultiTkIp_OK < Exception
   def self.send(thread, ret=nil)
@@ -206,7 +148,7 @@ class MultiTkIp
       end
 
       def delete(idx, &blk)
-        # if gets an entry, is permited to delete
+        # if gets an entry, is permitted to delete
         if self[idx]
           @tbl.delete(idx)
         elsif blk
@@ -832,7 +774,7 @@ class MultiTkIp
 
         ensure
           # interp must be deleted before the thread for interp is dead.
-          # If not, raise Tcl_Panic on Tcl_AsyncDelete because async handler 
+          # If not, raise Tcl_Panic on Tcl_AsyncDelete because async handler
           # deleted by the wrong thread.
           interp.delete
         end
@@ -841,7 +783,18 @@ class MultiTkIp
         Thread.pass
       end
       # INTERP_THREAD.run
+      raise @interp_thread[:interp] if @interp_thread[:interp].kind_of? Exception
       @interp = @interp_thread[:interp]
+
+      # delete the interpreter and kill the eventloop thread at exit
+      interp = @interp
+      interp_thread = @interp_thread
+      END{
+        if interp_thread.alive?
+          interp.delete
+          interp_thread.kill
+        end
+      }
 
       def self.mainloop(check_root = true)
         begin
@@ -1980,7 +1933,7 @@ class MultiTkIp
   end
 =end
   def cb_eval(cmd, *args)
-    self.eval_callback(*args, 
+    self.eval_callback(*args,
                        &_proc_on_safelevel{|*params|
                          TkComm._get_eval_string(TkUtil.eval_cmd(cmd, *params))
                        })
@@ -2086,10 +2039,71 @@ class MultiTkIp
   end
 end
 
+
+################################################
+# use pseudo-toplevel feature of MultiTkIp ?
+if (!defined?(Use_PseudoToplevel_Feature_of_MultiTkIp) ||
+      Use_PseudoToplevel_Feature_of_MultiTkIp)
+  module MultiTkIp_PseudoToplevel_Evaluable
+    #def pseudo_toplevel_eval(body = Proc.new)
+    #  Thread.current[:TOPLEVEL] = self
+    #  begin
+    #    body.call
+    #  ensure
+    #    Thread.current[:TOPLEVEL] = nil
+    #  end
+    #end
+
+    def pseudo_toplevel_evaluable?
+      @pseudo_toplevel_evaluable
+    end
+
+    def pseudo_toplevel_evaluable=(mode)
+      @pseudo_toplevel_evaluable = (mode)? true: false
+    end
+
+    def self.extended(mod)
+      mod.__send__(:extend_object, mod)
+      mod.instance_variable_set('@pseudo_toplevel_evaluable', true)
+    end
+  end
+
+  class Object
+    alias __method_missing_alias_for_MultiTkIp__ method_missing
+    private :__method_missing_alias_for_MultiTkIp__
+
+    def method_missing(id, *args)
+      begin
+        has_top = (top = MultiTkIp.__getip.__pseudo_toplevel) &&
+          top.respond_to?(:pseudo_toplevel_evaluable?) &&
+          top.pseudo_toplevel_evaluable? &&
+          top.respond_to?(id)
+      rescue Exception => e
+        has_top = false
+      end
+
+      if has_top
+        top.__send__(id, *args)
+      else
+        __method_missing_alias_for_MultiTkIp__(id, *args)
+      end
+    end
+  end
+else
+  # dummy
+  module MultiTkIp_PseudoToplevel_Evaluable
+    def pseudo_toplevel_evaluable?
+      false
+    end
+  end
+end
+
+
+################################################
 # evaluate a procedure on the proper interpreter
 class MultiTkIp
   # instance & class method
-  def _proc_on_safelevel(cmd=nil, &blk) # require a block for eval
+  def _proc_on_safelevel(cmd=nil) # require a block for eval
     if cmd
       if cmd.kind_of?(Method)
         _proc_on_safelevel{|*args| cmd.call(*args)}
@@ -2107,7 +2121,7 @@ class MultiTkIp
           end
           err
         }
-        $SAFE=safe if $SAFE < safe; 
+        $SAFE=safe if $SAFE < safe;
         begin
           yield(*args)
         rescue Exception => e
@@ -2286,7 +2300,7 @@ end
         current[:callback_ip] = backup_ip
       end
     else
-      eval_proc_core(true, 
+      eval_proc_core(true,
                      proc{|safe, *params|
                        Thread.new{cmd.call(safe, *params)}.value
                      },

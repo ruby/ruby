@@ -44,7 +44,7 @@ udp_init(int argc, VALUE *argv, VALUE sock)
 
 struct udp_arg
 {
-    struct addrinfo *res;
+    struct rb_addrinfo *res;
     int fd;
 };
 
@@ -54,15 +54,13 @@ udp_connect_internal(struct udp_arg *arg)
     int fd = arg->fd;
     struct addrinfo *res;
 
-    for (res = arg->res; res; res = res->ai_next) {
+    for (res = arg->res->ai; res; res = res->ai_next) {
 	if (rsock_connect(fd, res->ai_addr, res->ai_addrlen, 0) >= 0) {
 	    return Qtrue;
 	}
     }
     return Qfalse;
 }
-
-VALUE rsock_freeaddrinfo(struct addrinfo *addr);
 
 /*
  * call-seq:
@@ -93,7 +91,7 @@ udp_connect(VALUE sock, VALUE host, VALUE port)
     arg.fd = fptr->fd;
     ret = rb_ensure(udp_connect_internal, (VALUE)&arg,
 		    rsock_freeaddrinfo, (VALUE)arg.res);
-    if (!ret) rb_sys_fail("connect(2)");
+    if (!ret) rsock_sys_fail_host_port("connect(2)", host, port);
     return INT2FIX(0);
 }
 
@@ -113,20 +111,23 @@ static VALUE
 udp_bind(VALUE sock, VALUE host, VALUE port)
 {
     rb_io_t *fptr;
-    struct addrinfo *res0, *res;
+    struct rb_addrinfo *res0;
+    struct addrinfo *res;
 
     rb_secure(3);
     res0 = rsock_addrinfo(host, port, SOCK_DGRAM, 0);
     GetOpenFile(sock, fptr);
-    for (res = res0; res; res = res->ai_next) {
+    for (res = res0->ai; res; res = res->ai_next) {
 	if (bind(fptr->fd, res->ai_addr, res->ai_addrlen) < 0) {
 	    continue;
 	}
-	freeaddrinfo(res0);
+	rb_freeaddrinfo(res0);
 	return INT2FIX(0);
     }
-    freeaddrinfo(res0);
-    rb_sys_fail("bind(2)");
+    rb_freeaddrinfo(res0);
+
+    rsock_sys_fail_host_port("bind(2)", host, port);
+
     return INT2FIX(0);
 }
 
@@ -158,13 +159,13 @@ udp_send(int argc, VALUE *argv, VALUE sock)
     VALUE flags, host, port;
     rb_io_t *fptr;
     int n;
-    struct addrinfo *res0, *res;
+    struct rb_addrinfo *res0;
+    struct addrinfo *res;
     struct rsock_send_arg arg;
 
     if (argc == 2 || argc == 3) {
 	return rsock_bsock_send(argc, argv, sock);
     }
-    rb_secure(4);
     rb_scan_args(argc, argv, "4", &arg.mesg, &flags, &host, &port);
 
     StringValue(arg.mesg);
@@ -172,29 +173,29 @@ udp_send(int argc, VALUE *argv, VALUE sock)
     GetOpenFile(sock, fptr);
     arg.fd = fptr->fd;
     arg.flags = NUM2INT(flags);
-    for (res = res0; res; res = res->ai_next) {
+    for (res = res0->ai; res; res = res->ai_next) {
       retry:
 	arg.to = res->ai_addr;
 	arg.tolen = res->ai_addrlen;
-	rb_thread_fd_writable(arg.fd);
-	n = (int)BLOCKING_REGION(rsock_sendto_blocking, &arg);
+	rsock_maybe_fd_writable(arg.fd);
+	n = (int)BLOCKING_REGION_FD(rsock_sendto_blocking, &arg);
 	if (n >= 0) {
-	    freeaddrinfo(res0);
+	    rb_freeaddrinfo(res0);
 	    return INT2FIX(n);
 	}
 	if (rb_io_wait_writable(fptr->fd)) {
 	    goto retry;
 	}
     }
-    freeaddrinfo(res0);
-    rb_sys_fail("sendto(2)");
+    rb_freeaddrinfo(res0);
+    rsock_sys_fail_host_port("sendto(2)", host, port);
     return INT2FIX(n);
 }
 
 /*
  * call-seq:
- * 	udpsocket.recvfrom_nonblock(maxlen) => [mesg, sender_inet_addr]
- * 	udpsocket.recvfrom_nonblock(maxlen, flags) => [mesg, sender_inet_addr]
+ *   udpsocket.recvfrom_nonblock(maxlen) => [mesg, sender_inet_addr]
+ *   udpsocket.recvfrom_nonblock(maxlen, flags) => [mesg, sender_inet_addr]
  *
  * Receives up to _maxlen_ bytes from +udpsocket+ using recvfrom(2) after
  * O_NONBLOCK is set for the underlying file descriptor.
@@ -246,14 +247,15 @@ udp_recvfrom_nonblock(int argc, VALUE *argv, VALUE sock)
     return rsock_s_recvfrom_nonblock(sock, argc, argv, RECV_IP);
 }
 
-/*
- * Document-class: ::UDPSocket < IPSocket
- *
- * UDPSocket represents a UDP/IP socket.
- */
 void
 rsock_init_udpsocket(void)
 {
+    /*
+     * Document-class: UDPSocket < IPSocket
+     *
+     * UDPSocket represents a UDP/IP socket.
+     *
+     */
     rb_cUDPSocket = rb_define_class("UDPSocket", rb_cIPSocket);
     rb_define_method(rb_cUDPSocket, "initialize", udp_init, -1);
     rb_define_method(rb_cUDPSocket, "connect", udp_connect, 2);

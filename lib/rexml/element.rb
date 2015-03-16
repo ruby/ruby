@@ -20,7 +20,7 @@ module REXML
   class Element < Parent
     include Namespace
 
-    UNDEFINED = "UNDEFINED";		# The default name
+    UNDEFINED = "UNDEFINED";            # The default name
 
     # Mechanisms for accessing attributes and child elements of this
     # element.
@@ -31,17 +31,17 @@ module REXML
 
     # Constructor
     # arg::
-    # 	if not supplied, will be set to the default value.
-    # 	If a String, the name of this object will be set to the argument.
-    # 	If an Element, the object will be shallowly cloned; name,
-    # 	attributes, and namespaces will be copied.  Children will +not+ be
-    # 	copied.
+    #   if not supplied, will be set to the default value.
+    #   If a String, the name of this object will be set to the argument.
+    #   If an Element, the object will be shallowly cloned; name,
+    #   attributes, and namespaces will be copied.  Children will +not+ be
+    #   copied.
     # parent::
-    # 	if supplied, must be a Parent, and will be used as
-    # 	the parent of this object.
+    #   if supplied, must be a Parent, and will be used as
+    #   the parent of this object.
     # context::
-    # 	If supplied, must be a hash containing context items.  Context items
-    # 	include:
+    #   If supplied, must be a hash containing context items.  Context items
+    #   include:
     # * <tt>:respect_whitespace</tt> the value of this is :+all+ or an array of
     #   strings being the names of the elements to respect
     #   whitespace for.  Defaults to :+all+.
@@ -206,7 +206,7 @@ module REXML
       return namespaces
     end
 
-    # Evalutas to the URI for a prefix, or the empty string if no such
+    # Evaluates to the URI for a prefix, or the empty string if no such
     # namespace is declared for this element. Evaluates recursively for
     # ancestors.  Returns the default namespace, if there is one.
     # prefix::
@@ -297,7 +297,7 @@ module REXML
       el = @elements.add(element)
       attrs.each do |key, value|
         el.attributes[key]=value
-      end	if attrs.kind_of? Hash
+      end       if attrs.kind_of? Hash
       el
     end
 
@@ -667,7 +667,7 @@ module REXML
     #
     # Writes out this element, and recursively, all children.
     # output::
-    #	  output an object which supports '<< string'; this is where the
+    #     output an object which supports '<< string'; this is where the
     #   document will be written.
     # indent::
     #   An integer.  If -1, no indenting will be used; otherwise, the
@@ -678,11 +678,8 @@ module REXML
     #   pretty-printed in such a way that the added whitespace does not affect
     #   the parse tree of the document
     # ie_hack::
-    #   Internet Explorer is the worst piece of crap to have ever been
-    #   written, with the possible exception of Windows itself.  Since IE is
-    #   unable to parse proper XML, we have to provide a hack to generate XML
-    #   that IE's limited abilities can handle.  This hack inserts a space
-    #   before the /> on empty tags.  Defaults to false
+    #   This hack inserts a space before the /> on empty tags to address
+    #   a limitation of Internet Explorer.  Defaults to false
     #
     #  out = ''
     #  doc.write( out )     #-> doc is written to the string 'out'
@@ -778,7 +775,7 @@ module REXML
       else
         return XPath::first( @element, index )
         #{ |element|
-        #	return element if element.kind_of? Element
+        #       return element if element.kind_of? Element
         #}
         #return nil
       end
@@ -874,7 +871,6 @@ module REXML
     #  a.elements.add(Element.new('b'))  #-> <a><b/></a>
     #  a.elements.add('c')               #-> <a><b/><c/></a>
     def add element=nil
-      rv = nil
       if element.nil?
         Element.new("", self, @element.context)
       elsif not element.kind_of?(Element)
@@ -896,17 +892,17 @@ module REXML
     #   that XPaths are automatically filtered for Elements, so that
     #   non-Element children will not be yielded
     #  doc = Document.new '<a><b/><c/><d/>sean<b/><c/><d/></a>'
-    #  doc.root.each {|e|p e}       #-> Yields b, c, d, b, c, d elements
-    #  doc.root.each('b') {|e|p e}  #-> Yields b, b elements
-    #  doc.root.each('child::node()')  {|e|p e}
+    #  doc.root.elements.each {|e|p e}       #-> Yields b, c, d, b, c, d elements
+    #  doc.root.elements.each('b') {|e|p e}  #-> Yields b, b elements
+    #  doc.root.elements.each('child::node()')  {|e|p e}
     #  #-> Yields <b/>, <c/>, <d/>, <b/>, <c/>, <d/>
     #  XPath.each(doc.root, 'child::node()', &block)
     #  #-> Yields <b/>, <c/>, <d/>, sean, <b/>, <c/>, <d/>
-    def each( xpath=nil, &block)
+    def each( xpath=nil )
       XPath::each( @element, xpath ) {|e| yield e if e.kind_of? Element }
     end
 
-    def collect( xpath=nil, &block )
+    def collect( xpath=nil )
       collection = []
       XPath::each( @element, xpath ) {|e|
         collection << yield(e)  if e.kind_of?(Element)
@@ -914,7 +910,7 @@ module REXML
       collection
     end
 
-    def inject( xpath=nil, initial=nil, &block )
+    def inject( xpath=nil, initial=nil )
       first = true
       XPath::each( @element, xpath ) {|e|
         if (e.kind_of? Element)
@@ -991,7 +987,7 @@ module REXML
     end
 
     def to_a
-      values.flatten
+      enum_for(:each_attribute).to_a
     end
 
     # Returns the number of attributes the owning Element contains.
@@ -1087,12 +1083,12 @@ module REXML
     #  doc.root.attributes['foo'] = '4'
     #  doc.root.attributes['x:foo'] = nil
     def []=( name, value )
-      if value.nil?		# Delete the named attribute
+      if value.nil?             # Delete the named attribute
         attr = get_attribute(name)
         delete attr
         return
       end
-      element_document = @element.document
+
       unless value.kind_of? Attribute
         if @element.document and @element.document.doctype
           value = Text::normalize( value, @element.document.doctype )
@@ -1117,8 +1113,8 @@ module REXML
           value.prefix != "xmlns" and old_attr.prefix != "xmlns" and
           @element.namespace( old_attr.prefix ) ==
             @element.namespace( value.prefix )
-          store value.name, { old_attr.prefix	=> old_attr,
-            value.prefix		=> value }
+          store value.name, { old_attr.prefix   => old_attr,
+            value.prefix                => value }
       else
         store value.name, value
       end
@@ -1185,9 +1181,8 @@ module REXML
         prefix = '' unless prefix
       end
       old = fetch(name, nil)
-      attr = nil
       if old.kind_of? Hash # the supplied attribute is one of many
-        attr = old.delete(prefix)
+        old.delete(prefix)
         if old.size == 1
           repl = nil
           old.each_value{|v| repl = v}
@@ -1196,8 +1191,7 @@ module REXML
       elsif old.nil?
         return @element
       else # the supplied attribute is a top-level one
-        attr = old
-        res = super(name)
+        super(name)
       end
       @element
     end

@@ -2,8 +2,8 @@
   #######################################################################
   ###  The following text is the original 'license.txt' of tktable    ###
   ###  extension.                                                     ###
-  ###  Original Tcl source files are not include in this directry,    ###
-  ###  because of all of them are rewrited to Ruby files.             ###
+  ###  Original Tcl source files are not include in this directory,   ###
+  ###  because of all of them are rewritten to Ruby files.            ###
   ###  However, the image data file is quoted from iwidgets source    ###
   ###  archive.                                                       ###
   #######################################################################

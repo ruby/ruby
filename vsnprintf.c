@@ -95,7 +95,7 @@
 #  ifdef HAVE_LIMITS_H
 #   include <limits.h>
 #  else
-    /* assuming 32bit(2's compliment) long */
+    /* assuming 32bit(2's complement) long */
 #   define LONG_MAX 2147483647
 #  endif
 # endif
@@ -177,6 +177,7 @@ typedef	struct __sFILE {
 	struct	__sbuf _bf;	/* the buffer (at least 1 byte, if !NULL) */
 	size_t	_lbfsize;	/* 0 or -_bf._size, for inline putc */
 	int	(*vwrite)(/* struct __sFILE*, struct __suio * */);
+	char	*(*vextra)(/* struct __sFILE*, size_t, void*, long*, int */);
 } FILE;
 
 
@@ -200,20 +201,20 @@ typedef	struct __sFILE {
 #define	EOF	(-1)
 
 
-#define	__sfeof(p)	(((p)->_flags & __SEOF) != 0)
-#define	__sferror(p)	(((p)->_flags & __SERR) != 0)
-#define	__sclearerr(p)	((void)((p)->_flags &= ~(__SERR|__SEOF)))
-#define	__sfileno(p)	((p)->_file)
+#define	BSD__sfeof(p)	(((p)->_flags & __SEOF) != 0)
+#define	BSD__sferror(p)	(((p)->_flags & __SERR) != 0)
+#define	BSD__sclearerr(p)	((void)((p)->_flags &= ~(__SERR|__SEOF)))
+#define	BSD__sfileno(p)	((p)->_file)
 
 #undef feof
 #undef ferror
 #undef clearerr
-#define	feof(p)		__sfeof(p)
-#define	ferror(p)	__sferror(p)
-#define	clearerr(p)	__sclearerr(p)
+#define	feof(p)		BSD__sfeof(p)
+#define	ferror(p)	BSD__sferror(p)
+#define	clearerr(p)	BSD__sclearerr(p)
 
 #ifndef _ANSI_SOURCE
-#define	fileno(p)	__sfileno(p)
+#define	fileno(p)	BSD__sfileno(p)
 #endif
 
 
@@ -236,9 +237,8 @@ struct __suio {
  * This routine is large and unsightly, but most of the ugliness due
  * to the three different kinds of output buffering is handled here.
  */
-static int BSD__sfvwrite(fp, uio)
-	register FILE *fp;
-	register struct __suio *uio;
+static int
+BSD__sfvwrite(register FILE *fp, register struct __suio *uio)
 {
 	register size_t len;
 	register const char *p;
@@ -362,7 +362,7 @@ static char *
 BSD__uqtoa(register u_quad_t val, char *endp, int base, int octzero, const char *xdigs)
 {
 	register char *cp = endp;
-	register long sval;
+	register quad_t sval;
 
 	/*
 	 * Handle the three cases separately, in the hope of getting
@@ -483,21 +483,26 @@ BSD__ultoa(register u_long val, char *endp, int base, int octzero, const char *x
 
 #ifdef FLOATING_POINT
 #include <math.h>
+#include <float.h>
 /* #include "floatio.h" */
 
 #ifndef MAXEXP
-# define MAXEXP 1024
+# if DBL_MAX_10_EXP > -DBL_MIN_10_EXP
+#   define MAXEXP (DBL_MAX_10_EXP)
+# else
+#   define MAXEXP (-DBL_MIN_10_EXP)
+# endif
 #endif
 
 #ifndef MAXFRACT
-# define MAXFRACT 64
+# define MAXFRACT (MAXEXP*10/3)
 #endif
 
 #define	BUF		(MAXEXP+MAXFRACT+1)	/* + decimal point */
 #define	DEFPREC		6
 
-static char *cvt __P((double, int, int, char *, int *, int, int *, char *));
-static int exponent __P((char *, int, int));
+static char *cvt(double, int, int, char *, int *, int, int *, char *);
+static int exponent(char *, int, int);
 
 #else /* no FLOATING_POINT */
 
@@ -505,6 +510,12 @@ static int exponent __P((char *, int, int));
 
 #endif /* FLOATING_POINT */
 
+#ifndef lower_hexdigits
+# define lower_hexdigits "0123456789abcdef"
+#endif
+#ifndef upper_hexdigits
+# define upper_hexdigits "0123456789ABCDEF"
+#endif
 
 /*
  * Flags used during conversion.
@@ -541,11 +552,12 @@ BSD_vfprintf(FILE *fp, const char *fmt0, va_list ap)
 	int expt;		/* integer value of exponent */
 	int expsize = 0;	/* character count for expstr */
 	int ndig = 0;		/* actual number of digits returned by cvt */
+	int fprec = 0;		/* floating point precision */
 	char expstr[7];		/* buffer for exponent string */
 #endif
-	u_long	ulval;		/* integer arguments %[diouxX] */
+	u_long UNINITIALIZED_VAR(ulval); /* integer arguments %[diouxX] */
 #ifdef _HAVE_SANE_QUAD_
-	u_quad_t uqval;		/* %q integers */
+	u_quad_t UNINITIALIZED_VAR(uqval); /* %q integers */
 #endif /* _HAVE_SANE_QUAD_ */
 	int base;		/* base for [diouxX] conversion */
 	int dprec;		/* a copy of prec if [diouxX], 0 otherwise */
@@ -591,10 +603,10 @@ BSD_vfprintf(FILE *fp, const char *fmt0, va_list ap)
 #define	PAD(howmany, with) { \
 	if ((n = (howmany)) > 0) { \
 		while (n > PADSIZE) { \
-			PRINT(with, PADSIZE); \
+			PRINT((with), PADSIZE); \
 			n -= PADSIZE; \
 		} \
-		PRINT(with, n); \
+		PRINT((with), n); \
 	} \
 }
 #if SIZEOF_LONG > SIZEOF_INT
@@ -605,10 +617,10 @@ BSD_vfprintf(FILE *fp, const char *fmt0, va_list ap)
 	    errno = ENOMEM; \
 	    goto error; \
 	} \
-	if (ln > 0) PAD((int)ln, with); \
+	if (ln > 0) PAD((int)ln, (with)); \
 }
 #else
-#define PAD_L(howmany, with) PAD(howmany, with)
+#define PAD_L(howmany, with) PAD((howmany), (with))
 #endif
 #define	FLUSH() { \
 	if (uio.uio_resid && BSD__sprint(fp, &uio)) \
@@ -739,7 +751,16 @@ reswitch:	switch (ch) {
 		case 'z':
 #endif
 		case 'l':
+#ifdef _HAVE_SANE_QUAD_
+			if (*fmt == 'l') {
+				fmt++;
+				flags |= QUADINT;
+			} else {
+				flags |= LONGINT;
+			}
+#else
 			flags |= LONGINT;
+#endif
 			goto rflag;
 #ifdef _HAVE_SANE_QUAD_
 #if SIZEOF_PTRDIFF_T == SIZEOF_LONG_LONG
@@ -752,17 +773,80 @@ reswitch:	switch (ch) {
 			flags |= QUADINT;
 			goto rflag;
 #endif /* _HAVE_SANE_QUAD_ */
+#ifdef _WIN32
+		case 'I':
+			if (*fmt == '3' && *(fmt + 1) == '2') {
+			    fmt += 2;
+			    flags |= LONGINT;
+			}
+#ifdef _HAVE_SANE_QUAD_
+			else if (*fmt == '6' && *(fmt + 1) == '4') {
+			    fmt += 2;
+			    flags |= QUADINT;
+			}
+#endif
+			else
+#if defined(_HAVE_SANE_QUAD_) && SIZEOF_SIZE_T == SIZEOF_LONG_LONG
+			    flags |= QUADINT;
+#else
+			    flags |= LONGINT;
+#endif
+			goto rflag;
+#endif
 		case 'c':
 			cp = buf;
 			*buf = (char)va_arg(ap, int);
 			size = 1;
 			sign = '\0';
 			break;
+		case 'i':
+#ifdef _HAVE_SANE_QUAD_
+# define INTPTR_MASK (QUADINT|LONGINT|SHORTINT)
+#else
+# define INTPTR_MASK (LONGINT|SHORTINT)
+#endif
+#if defined _HAVE_SANE_QUAD_ && SIZEOF_VOIDP == SIZEOF_LONG_LONG
+# define INTPTR_FLAG QUADINT
+#elif SIZEOF_VOIDP == SIZEOF_LONG
+# define INTPTR_FLAG LONGINT
+#else
+# define INTPTR_FLAG 0
+#endif
+#ifdef PRI_EXTRA_MARK
+# define PRI_EXTRA_MARK_LEN (sizeof(PRI_EXTRA_MARK)-1)
+# define IS_PRI_EXTRA_MARK(s) \
+	(PRI_EXTRA_MARK_LEN < 1 || \
+	 (*(s) == PRI_EXTRA_MARK[0] && \
+	  (PRI_EXTRA_MARK_LEN == 1 || \
+	   strncmp((s)+1, PRI_EXTRA_MARK+1, \
+		   PRI_EXTRA_MARK_LEN-1) == 0)))
+#else
+# define PRI_EXTRA_MARK_LEN 0
+# define IS_PRI_EXTRA_MARK(s) 1
+#endif
+			if (fp->vextra && (flags & INTPTR_MASK) == INTPTR_FLAG &&
+			    IS_PRI_EXTRA_MARK(fmt)) {
+				fmt += PRI_EXTRA_MARK_LEN;
+				FLUSH();
+#if defined _HAVE_SANE_QUAD_ && SIZEOF_VOIDP == SIZEOF_LONG_LONG
+				uqval = va_arg(ap, u_quad_t);
+				cp = (*fp->vextra)(fp, sizeof(uqval), &uqval, &fieldsz, sign);
+#else
+				ulval = va_arg(ap, u_long);
+				cp = (*fp->vextra)(fp, sizeof(ulval), &ulval, &fieldsz, sign);
+#endif
+				sign = '\0';
+				if (!cp) goto error;
+				if (prec < 0) goto long_len;
+				size = fieldsz < prec ? (int)fieldsz : prec;
+				break;
+			}
+			goto decimal;
 		case 'D':
 			flags |= LONGINT;
 			/*FALLTHROUGH*/
 		case 'd':
-		case 'i':
+		decimal:
 #ifdef _HAVE_SANE_QUAD_
 			if (flags & QUADINT) {
 				uqval = va_arg(ap, quad_t);
@@ -784,15 +868,18 @@ reswitch:	switch (ch) {
 #ifdef FLOATING_POINT
 		case 'a':
 		case 'A':
-			if (prec >= 0)
+			if (prec > 0) {
+				flags |= ALT;
 				prec++;
+				fprec = prec;
+			}
 			goto fp_begin;
 		case 'e':		/* anomalous precision */
 		case 'E':
 			if (prec != 0)
 				flags |= ALT;
 			prec = (prec == -1) ?
-				DEFPREC + 1 : prec + 1;
+				DEFPREC + 1 : (fprec = prec + 1);
 			/* FALLTHROUGH */
 			goto fp_begin;
 		case 'f':		/* always print trailing zeroes */
@@ -802,6 +889,8 @@ reswitch:	switch (ch) {
 		case 'G':
 			if (prec == -1)
 				prec = DEFPREC;
+			else
+				fprec = prec;
 fp_begin:		_double = va_arg(ap, double);
 			/* do this before tricky precision changes */
 			if (isinf(_double)) {
@@ -817,7 +906,7 @@ fp_begin:		_double = va_arg(ap, double);
 				break;
 			}
 			flags |= FPT;
-			cp = cvt(_double, prec, flags, &softsign,
+			cp = cvt(_double, (prec < MAXFRACT ? prec : MAXFRACT), flags, &softsign,
 				&expt, ch, &ndig, buf);
 			if (ch == 'g' || ch == 'G') {
 				if (expt <= -4 || (expt > prec && expt > 1))
@@ -826,16 +915,20 @@ fp_begin:		_double = va_arg(ap, double);
 					ch = 'g';
 			}
 			if (ch == 'a' || ch == 'A') {
+				flags |= HEXPREFIX;
 				--expt;
 				expsize = exponent(expstr, expt, ch + 'p' - 'a');
+				ch += 'x' - 'a';
 				size = expsize + ndig;
+				if (ndig > 1 || flags & ALT)
+					++size; /* floating point */
 			}
 			else if (ch <= 'e') {	/* 'e' or 'E' fmt */
 				--expt;
 				expsize = exponent(expstr, expt, ch);
 				size = expsize + ndig;
 				if (ndig > 1 || flags & ALT)
-					++size;
+					++fprec, ++size;
 			} else if (ch == 'f') {		/* f fmt */
 				if (expt > 0) {
 					size = expt;
@@ -843,6 +936,8 @@ fp_begin:		_double = va_arg(ap, double);
 						size += prec + 1;
 				} else if (!prec) { /* "0" */
 					size = 1;
+					if (flags & ALT)
+						size += 1;
 				} else	/* "0.X" */
 					size = prec + 2;
 			} else if (expt >= ndig) {	/* fixed g fmt */
@@ -893,7 +988,7 @@ fp_begin:		_double = va_arg(ap, double);
 			 */
 			prec = (int)(sizeof(void*)*CHAR_BIT/4);
 #ifdef _HAVE_LLP64_
-			uqval = (u_long)va_arg(ap, void *);
+			uqval = (u_quad_t)va_arg(ap, void *);
 			flags = (flags) | QUADINT | HEXPREFIX;
 #else
 			ulval = (u_long)va_arg(ap, void *);
@@ -904,7 +999,7 @@ fp_begin:		_double = va_arg(ap, double);
 #endif /* _HAVE_SANE_QUAD_ */
 #endif
 			base = 16;
-			xdigs = "0123456789abcdef";
+			xdigs = lower_hexdigits;
 			ch = 'x';
 			goto nosign;
 		case 's':
@@ -918,7 +1013,7 @@ fp_begin:		_double = va_arg(ap, double);
 				 */
 				const char *p = (char *)memchr(cp, 0, prec);
 
-				if (p != NULL && (p - cp) > prec)
+				if (p != NULL && (p - cp) < prec)
 					size = (int)(p - cp);
 				else
 					size = prec;
@@ -942,10 +1037,10 @@ fp_begin:		_double = va_arg(ap, double);
 			base = 10;
 			goto nosign;
 		case 'X':
-			xdigs = "0123456789ABCDEF";
+			xdigs = upper_hexdigits;
 			goto hex;
 		case 'x':
-			xdigs = "0123456789abcdef";
+			xdigs = lower_hexdigits;
 hex:
 #ifdef _HAVE_SANE_QUAD_
 			if (flags & QUADINT)
@@ -979,6 +1074,7 @@ number:			if ((dprec = prec) >= 0)
 			 * explicit precision of zero is no characters.''
 			 *	-- ANSI X3J11
 			 */
+			cp = ebuf;
 #ifdef _HAVE_SANE_QUAD_
 			if (flags & QUADINT) {
 				if (uqval != 0 || prec != 0)
@@ -1023,7 +1119,7 @@ number:			if ((dprec = prec) >= 0)
 long_len:
 		if (sign)
 			fieldsz++;
-		else if (flags & HEXPREFIX)
+		if (flags & HEXPREFIX)
 			fieldsz += 2;
 		realsz = dprec > fieldsz ? dprec : fieldsz;
 
@@ -1034,7 +1130,8 @@ long_len:
 		/* prefix */
 		if (sign) {
 			PRINT(&sign, 1);
-		} else if (flags & HEXPREFIX) {
+		}
+		if (flags & HEXPREFIX) {
 			ox[0] = '0';
 			ox[1] = ch;
 			PRINT(ox, 2);
@@ -1048,7 +1145,7 @@ long_len:
 		PAD_L(dprec - fieldsz, zeroes);
 		if (sign)
 			fieldsz--;
-		else if (flags & HEXPREFIX)
+		if (flags & HEXPREFIX)
 			fieldsz -= 2;
 
 		/* the string or number proper */
@@ -1056,17 +1153,15 @@ long_len:
 		if ((flags & FPT) == 0) {
 			PRINT(cp, fieldsz);
 		} else {	/* glue together f_p fragments */
-			if (ch == 'a' || ch == 'A') {
-				ox[0] = '0';
-				ox[1] = ch + ('x' - 'a');
-				PRINT(ox, 2);
+			if (flags & HEXPREFIX) {
 				if (ndig > 1 || flags & ALT) {
 					ox[2] = *cp++;
 					ox[3] = '.';
 					PRINT(ox+2, 2);
-					PRINT(cp, ndig-1);
+					if (ndig > 0) PRINT(cp, ndig-1);
 				} else	/* XpYYY */
 					PRINT(cp, 1);
+				PAD(fprec-ndig, zeroes);
 				PRINT(expstr, expsize);
 			}
 			else if (ch >= 'f') {	/* 'f' or 'g' */
@@ -1077,7 +1172,8 @@ long_len:
 						PRINT("0", 1);
 					} else {
 						PRINT("0.", 2);
-						PAD(ndig - 1, zeroes);
+						PAD((ndig >= fprec ? ndig - 1 : fprec - (ch != 'f')),
+						    zeroes);
 					}
 				} else if (expt == 0 && ndig == 0 && (flags & ALT) == 0) {
 					PRINT("0", 1);
@@ -1085,6 +1181,8 @@ long_len:
 					PRINT("0.", 2);
 					PAD(-expt, zeroes);
 					PRINT(cp, ndig);
+					if (flags & ALT)
+						PAD(fprec - ndig + (ch == 'f' ? expt : 0), zeroes);
 				} else if (expt >= ndig) {
 					PRINT(cp, ndig);
 					PAD(expt - ndig, zeroes);
@@ -1095,6 +1193,8 @@ long_len:
 					cp += expt;
 					PRINT(".", 1);
 					PRINT(cp, ndig-expt);
+					if (flags & ALT)
+						PAD(fprec - ndig + (ch == 'f' ? expt : 0), zeroes);
 				}
 			} else {	/* 'e' or 'E' */
 				if (ndig > 1 || flags & ALT) {
@@ -1106,6 +1206,7 @@ long_len:
 					} else	/* 0.[0..] */
 						/* __dtoa irregularity */
 						PAD(ndig - 1, zeroes);
+					if (flags & ALT) PAD(fprec - ndig - 1, zeroes);
 				} else	/* XeYYY */
 					PRINT(cp, 1);
 				PRINT(expstr, expsize);
@@ -1126,20 +1227,17 @@ long_len:
 done:
 	FLUSH();
 error:
-	return (__sferror(fp) ? EOF : ret);
+	return (BSD__sferror(fp) ? EOF : ret);
 	/* NOTREACHED */
 }
 
 #ifdef FLOATING_POINT
 
-extern char *BSD__dtoa __P((double, int, int, int *, int *, char **));
+extern char *BSD__dtoa(double, int, int, int *, int *, char **);
 extern char *BSD__hdtoa(double, const char *, int, int *, int *, char **);
 
 static char *
-cvt(value, ndigits, flags, sign, decpt, ch, length, buf)
-	double value;
-	int ndigits, flags, *decpt, ch, *length;
-	char *sign, *buf;
+cvt(double value, int ndigits, int flags, char *sign, int *decpt, int ch, int *length, char *buf)
 {
 	int mode, dsgn;
 	char *digits, *bp, *rve;
@@ -1159,12 +1257,13 @@ cvt(value, ndigits, flags, sign, decpt, ch, length, buf)
 	}
 	if (ch == 'a' || ch =='A') {
 	    digits = BSD__hdtoa(value,
-		    ch == 'a' ? "0123456789abcdef" : "0123456789ABCDEF",
+		    ch == 'a' ? lower_hexdigits : upper_hexdigits,
 		    ndigits, decpt, &dsgn, &rve);
 	}
 	else {
 	    digits = BSD__dtoa(value, mode, ndigits, decpt, &dsgn, &rve);
 	}
+	buf[0] = 0; /* rve - digits may be 0 */
 	memcpy(buf, digits, rve - digits);
 	xfree(digits);
 	rve = buf + (rve - digits);
@@ -1176,8 +1275,6 @@ cvt(value, ndigits, flags, sign, decpt, ch, length, buf)
 				*decpt = -ndigits + 1;
 			bp += *decpt;
 		}
-		if (value == 0)	/* kludge for __dtoa irregularity */
-			rve = bp;
 		while (rve < bp)
 			*rve++ = '0';
 	}
@@ -1186,12 +1283,10 @@ cvt(value, ndigits, flags, sign, decpt, ch, length, buf)
 }
 
 static int
-exponent(p0, exp, fmtch)
-	char *p0;
-	int exp, fmtch;
+exponent(char *p0, int exp, int fmtch)
 {
 	register char *p, *t;
-	char expbuf[MAXEXP];
+	char expbuf[2 + (MAXEXP < 1000 ? 3 : MAXEXP < 10000 ? 4 : 5)]; /* >= 2 + ceil(log10(MAXEXP)) */
 
 	p = p0;
 	*p++ = fmtch;
@@ -1201,13 +1296,13 @@ exponent(p0, exp, fmtch)
 	}
 	else
 		*p++ = '+';
-	t = expbuf + MAXEXP;
+	t = expbuf + sizeof(expbuf);
 	if (exp > 9) {
 		do {
 			*--t = to_char(exp % 10);
 		} while ((exp /= 10) > 9);
 		*--t = to_char(exp);
-		for (; t < expbuf + MAXEXP; *p++ = *t++);
+		for (; t < expbuf + sizeof(expbuf); *p++ = *t++);
 	}
 	else {
 		if (fmtch & 15) *p++ = '0'; /* other than p or P */
@@ -1216,41 +1311,3 @@ exponent(p0, exp, fmtch)
 	return (int)(p - p0);
 }
 #endif /* FLOATING_POINT */
-
-int
-ruby_vsnprintf(char *str, size_t n, const char *fmt, va_list ap)
-{
-	int ret;
-	FILE f;
-
-	if ((int)n < 1)
-		return (EOF);
-	f._flags = __SWR | __SSTR;
-	f._bf._base = f._p = (unsigned char *)str;
-	f._bf._size = f._w = n - 1;
-	f.vwrite = BSD__sfvwrite;
-	ret = (int)BSD_vfprintf(&f, fmt, ap);
-	*f._p = 0;
-	return (ret);
-}
-
-int
-ruby_snprintf(char *str, size_t n, char const *fmt, ...)
-{
-	int ret;
-	va_list ap;
-	FILE f;
-
-	if ((int)n < 1)
-		return (EOF);
-
-	va_start(ap, fmt);
-	f._flags = __SWR | __SSTR;
-	f._bf._base = f._p = (unsigned char *)str;
-	f._bf._size = f._w = n - 1;
-	f.vwrite = BSD__sfvwrite;
-	ret = (int)BSD_vfprintf(&f, fmt, ap);
-	*f._p = 0;
-	va_end(ap);
-	return (ret);
-}

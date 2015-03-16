@@ -1,32 +1,41 @@
 #
-# Defines ParserWriterChooseMixin, which makes it possible to choose a
-# different XML writer and/or XML parser then the default one.
-# The Mixin is used in client.rb (class Client) and server.rb (class
-# BasicServer)
-#
 # Copyright (C) 2001, 2002, 2003 by Michael Neumann (mneumann@ntecs.de)
 #
 # $Id$
 #
+module XMLRPC # :nodoc:
 
-module XMLRPC
 
-  #
   # This module enables a user-class to be marshalled
   # by XML-RPC for Ruby into a Hash, with one additional
-  # key/value pair "___class___" => ClassName
+  # key/value pair <code>___class___ => ClassName</code>
   #
   module Marshallable
   end
 
 
+  # Defines ParserWriterChooseMixin, which makes it possible to choose a
+  # different XMLWriter and/or XMLParser then the default one.
+  #
+  # The Mixin is used in client.rb (class XMLRPC::Client)
+  # and server.rb (class XMLRPC::BasicServer)
   module ParserWriterChooseMixin
 
+    # Sets the XMLWriter to use for generating XML output.
+    #
+    # Should be an instance of a class from module XMLRPC::XMLWriter.
+    #
+    # If this method is not called, then XMLRPC::Config::DEFAULT_WRITER is used.
     def set_writer(writer)
       @create = Create.new(writer)
       self
     end
 
+    # Sets the XMLParser to use for parsing XML documents.
+    #
+    # Should be an instance of a class from module XMLRPC::XMLParser.
+    #
+    # If this method is not called, then XMLRPC::Config::DEFAULT_PARSER is used.
     def set_parser(parser)
       @parser = parser
       self
@@ -55,11 +64,8 @@ module XMLRPC
 
   module Service
 
-  #
-  # base class for Service Interface definitions, used
-  # by BasicServer#add_handler
-  #
-
+  # Base class for XMLRPC::Service::Interface definitions, used
+  # by XMLRPC::BasicServer#add_handler
   class BasicInterface
     attr_reader :prefix, :methods
 
@@ -82,7 +88,7 @@ module XMLRPC
       @methods << [mname, meth_name || mname, sig, help]
     end
 
-    private # ---------------------------------
+    private
 
     def parse_sig(sig)
       # sig is a String
@@ -99,8 +105,8 @@ module XMLRPC
   end # class BasicInterface
 
   #
-  # class which wraps a Service Interface definition, used
-  # by BasicServer#add_handler
+  # Class which wraps a XMLRPC::Service::Interface definition, used
+  # by XMLRPC::BasicServer#add_handler
   #
   class Interface < BasicInterface
     def initialize(prefix, &p)
@@ -116,7 +122,7 @@ module XMLRPC
       }
     end
 
-    private # ---------------------------------
+    private
 
     def meth(*a)
       add_method(*a)
@@ -142,13 +148,13 @@ module XMLRPC
 
 
   #
-  # short-form to create a Service::Interface
+  # Short-form to create a XMLRPC::Service::Interface
   #
   def self.interface(prefix, &p)
     Service::Interface.new(prefix, &p)
   end
 
-  # short-cut for creating a PublicInstanceMethodsInterface
+  # Short-cut for creating a XMLRPC::Service::PublicInstanceMethodsInterface
   def self.iPIMethods(prefix)
     Service::PublicInstanceMethodsInterface.new(prefix)
   end

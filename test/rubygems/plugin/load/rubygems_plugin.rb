@@ -1,1 +1,3 @@
-TestGem::TEST_PLUGIN_LOAD = :loaded
+class TestGem
+  TEST_PLUGIN_LOAD = :loaded
+end

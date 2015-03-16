@@ -1,12 +1,16 @@
 ##############################################
 # configure options for Ruby/Tk
-# release date:  2009-07-28
+# release date:  2011-06-05
 ##############################################
 with tk-old-extconf
 with ActiveTcl
 with tk-shlib-search-path
 enable tcltk-stubs
 with tcltkversion
+enable tcl-h-ver-check
+enable tk-h-ver-check
+with tcl-build-dir
+with tk-build-dir
 with tcl-config
 with tk-config
 with tclConfig-dir

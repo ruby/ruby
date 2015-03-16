@@ -75,7 +75,7 @@ Module Methods:
 
 	Example:
 	  Syslog.crit("the sky is falling in %d seconds!", 5)
- 
+
    mask
    mask=(mask)
 
@@ -86,7 +86,7 @@ Module Methods:
 	Example:
 	  Syslog.mask = Syslog::LOG_UPTO(Syslog::LOG_ERR)
 
-   close 
+   close
 
 	Closes syslog.
 

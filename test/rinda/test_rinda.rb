@@ -2,8 +2,9 @@ require 'test/unit'
 
 require 'drb/drb'
 require 'drb/eq'
+require 'rinda/ring'
 require 'rinda/tuplespace'
-
+require 'timeout'
 require 'singleton'
 
 module Rinda
@@ -36,7 +37,6 @@ class MockClock
   def _forward(n=nil)
     now ,= @ts.take([nil, :now])
     @now = now + n
-    n = @reso if n.nil?
     @ts.write([@now, :now])
   end
 
@@ -49,7 +49,7 @@ class MockClock
   end
 
   def rewind
-    now ,= @ts.take([nil, :now])
+    @ts.take([nil, :now])
     @ts.write([@inf, :now])
     @ts.take([nil, :now])
     @now = 2
@@ -75,7 +75,7 @@ module Time
   module_function :at
 
   def now
-    @m ? @m.now : 2
+    defined?(@m) && @m ? @m.now : 2
   end
   module_function :now
 
@@ -94,7 +94,7 @@ end
 
 class TupleSpace
   def sleep(n)
-    Time.sleep(n)
+    Kernel.sleep(n * 0.01)
   end
 end
 
@@ -150,7 +150,7 @@ module TupleSpaceTestModule
     assert(!tmpl.match({"message"=>"Hello", "no_name"=>"Foo"}))
 
     assert_raise(Rinda::InvalidHashTupleKey) do
-      tmpl = Rinda::Template.new({:message=>String, "name"=>String})
+      Rinda::Template.new({:message=>String, "name"=>String})
     end
     tmpl = Rinda::Template.new({"name"=>String})
     assert_equal(1, tmpl.size)
@@ -262,154 +262,81 @@ module TupleSpaceTestModule
   end
 
   def test_core_01
-    5.times do |n|
+    5.times do
       @ts.write([:req, 2])
     end
 
     assert_equal([[:req, 2], [:req, 2], [:req, 2], [:req, 2], [:req, 2]],
 		 @ts.read_all([nil, nil]))
 
-    taker = Thread.new do
+    taker = Thread.new(5) do |count|
       s = 0
-      while true
-	begin
-	  tuple = @ts.take([:req, Integer], 1)
-	  assert_equal(2, tuple[1])
-	  s += tuple[1]
-	rescue Rinda::RequestExpiredError
-	  break
-	end
+      count.times do
+        tuple = @ts.take([:req, Integer])
+        assert_equal(2, tuple[1])
+        s += tuple[1]
       end
       @ts.write([:ans, s])
       s
     end
 
     assert_equal(10, thread_join(taker))
-    tuple = @ts.take([:ans, nil])
-    assert_equal(10, tuple[1])
+    assert_equal([:ans, 10], @ts.take([:ans, 10]))
+    assert_equal([], @ts.read_all([nil, nil]))
   end
 
   def test_core_02
-    taker = Thread.new do
+    taker = Thread.new(5) do |count|
       s = 0
-      while true
-	begin
-	  tuple = @ts.take([:req, Integer], 1)
-	  assert_equal(2, tuple[1])
-	  s += tuple[1]
-	rescue Rinda::RequestExpiredError
-	  break
-	end
+      count.times do
+        tuple = @ts.take([:req, Integer])
+        assert_equal(2, tuple[1])
+        s += tuple[1]
       end
       @ts.write([:ans, s])
       s
     end
 
-    5.times do |n|
+    5.times do
       @ts.write([:req, 2])
     end
 
     assert_equal(10, thread_join(taker))
-    tuple = @ts.take([:ans, nil])
-    assert_equal(10, tuple[1])
+    assert_equal([:ans, 10], @ts.take([:ans, 10]))
     assert_equal([], @ts.read_all([nil, nil]))
   end
 
   def test_core_03_notify
     notify1 = @ts.notify(nil, [:req, Integer])
-    notify2 = @ts.notify(nil, [:ans, Integer], 8)
-    notify3 = @ts.notify(nil, {"message"=>String, "name"=>String}, 8)
+    notify2 = @ts.notify(nil, {"message"=>String, "name"=>String})
 
-    @ts.write({"message"=>"first", "name"=>"3"}, 3)
-    @ts.write({"message"=>"second", "name"=>"1"}, 1)
-    @ts.write({"message"=>"third", "name"=>"0"})
-    @ts.take({"message"=>"third", "name"=>"0"})
-
-    listener1 = Thread.new do
-      lv = 0
-      n = 0
-      notify1.each  do |ev, tuple|
-	n += 1
-	if ev == 'write'
-	  lv = lv + 1
-	elsif ev == 'take'
-	  lv = lv - 1
-	else
-	  break
-	end
-	assert(lv >= 0)
-	assert_equal([:req, 2], tuple)
-      end
-      [lv, n]
-    end
-
-    listener2 = Thread.new do
-      result = nil
-      lv = 0
-      n = 0
-      notify2.each do |ev, tuple|
-	n += 1
-	if ev == 'write'
-	  lv = lv + 1
-	elsif ev == 'take'
-	  lv = lv - 1
-	elsif ev == 'close'
-	  result = [lv, n]
-	  break
-	end
-	assert(lv >= 0)
-	assert_equal([:ans, 10], tuple)
-      end
-      result
-    end
-
-    taker = Thread.new do
-      s = 0
-      while true
-	begin
-	  tuple = @ts.take([:req, Integer], 1)
-	  s += tuple[1]
-	rescue Rinda::RequestExpiredError
-	  break
-	end
-      end
-      @ts.write([:ans, s])
-      s
-    end
-
-    5.times do |n|
+    5.times do
       @ts.write([:req, 2])
     end
 
+    5.times do
+      tuple = @ts.take([:req, Integer])
+      assert_equal(2, tuple[1])
+    end
+
+    5.times do
+      assert_equal(['write', [:req, 2]], notify1.pop)
+    end
+    5.times do
+      assert_equal(['take', [:req, 2]], notify1.pop)
+    end
+
+    @ts.write({"message"=>"first", "name"=>"3"})
+    @ts.write({"message"=>"second", "name"=>"1"})
+    @ts.write({"message"=>"third", "name"=>"0"})
+    @ts.take({"message"=>"third", "name"=>"0"})
     @ts.take({"message"=>"first", "name"=>"3"})
 
-    sleep(4)
-    assert_equal(10, thread_join(taker))
-    # notify2 must not expire until this @ts.take.
-    # sleep(4) might be short enough for the timeout of notify2 (8 secs)
-    tuple = @ts.take([:ans, nil])
-    assert_equal(10, tuple[1])
-    assert_equal([], @ts.read_all([nil, nil]))
-
-    notify1.cancel
-    sleep(7) # notify2 expired (sleep(4)+sleep(7) > 8)
-
-    assert_equal([0, 11], thread_join(listener1))
-    assert_equal([0, 3], thread_join(listener2))
-
-    ary = []
-    ary.push(["write", {"message"=>"first", "name"=>"3"}])
-    ary.push(["write", {"message"=>"second", "name"=>"1"}])
-    ary.push(["write", {"message"=>"third", "name"=>"0"}])
-    ary.push(["take", {"message"=>"third", "name"=>"0"}])
-    ary.push(["take", {"message"=>"first", "name"=>"3"}])
-    ary.push(["delete", {"message"=>"second", "name"=>"1"}])
-    ary.push(["close"])
-
-    notify3.each do |ev|
-      assert_equal(ary.shift, ev)
-    end
-    assert_equal([], ary)
+    assert_equal(["write", {"message"=>"first", "name"=>"3"}], notify2.pop)
+    assert_equal(["write", {"message"=>"second", "name"=>"1"}], notify2.pop)
+    assert_equal(["write", {"message"=>"third", "name"=>"0"}], notify2.pop)
+    assert_equal(["take", {"message"=>"third", "name"=>"0"}], notify2.pop)
+    assert_equal(["take", {"message"=>"first", "name"=>"3"}], notify2.pop)
   end
 
   def test_cancel_01
@@ -521,7 +448,12 @@ class TupleSpaceTest < Test::Unit::TestCase
   end
   def teardown
     # implementation-dependent
-    @ts.instance_eval{@keeper.kill if @keeper}
+    @ts.instance_eval{
+      if th = @keeper
+        th.kill
+        th.join
+      end
+    }
   end
 end
 
@@ -535,18 +467,343 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
   end
   def teardown
     # implementation-dependent
-    @ts_base.instance_eval{@keeper.kill if @keeper}
+    @ts_base.instance_eval{
+      if th = @keeper
+        th.kill
+        th.join
+      end
+    }
   end
 
   def test_remote_array_and_hash
-    @ts.write(DRbObject.new([1, 2, 3]))
+    # Don't remove ary/hsh local variables.
+    # These are necessary to protect objects from GC.
+    ary = [1, 2, 3]
+    @ts.write(DRbObject.new(ary))
     assert_equal([1, 2, 3], @ts.take([1, 2, 3], 0))
-    @ts.write(DRbObject.new({'head' => 1, 'tail' => 2}))
+    hsh = {'head' => 1, 'tail' => 2}
+    @ts.write(DRbObject.new(hsh))
     assert_equal({'head' => 1, 'tail' => 2},
                  @ts.take({'head' => 1, 'tail' => 2}, 0))
   end
 
+  def test_take_bug_8215
+    service = DRb.start_service(nil, @ts_base)
+
+    uri = service.uri
+
+    args = [EnvUtil.rubybin, *%W[-rdrb/drb -rdrb/eq -rrinda/ring -rrinda/tuplespace -e]]
+
+    take = spawn(*args, <<-'end;', uri)
+      uri = ARGV[0]
+      DRb.start_service
+      ro = DRbObject.new_with_uri(uri)
+      ts = Rinda::TupleSpaceProxy.new(ro)
+      th = Thread.new do
+        ts.take([:test_take, nil])
+      end
+      Kernel.sleep(0.1)
+      th.raise(Interrupt) # causes loss of the taken tuple
+      ts.write([:barrier, :continue])
+      Kernel.sleep
+    end;
+
+    @ts_base.take([:barrier, :continue])
+
+    write = spawn(*args, <<-'end;', uri)
+      uri = ARGV[0]
+      DRb.start_service
+      ro = DRbObject.new_with_uri(uri)
+      ts = Rinda::TupleSpaceProxy.new(ro)
+      ts.write([:test_take, 42])
+    end;
+
+    status = Process.wait(write)
+
+    assert_equal([[:test_take, 42]], @ts_base.read_all([:test_take, nil]),
+                 '[bug:8215] tuple lost')
+  ensure
+    service.stop_service if service
+    signal = /mswin|mingw/ =~ RUBY_PLATFORM ? "KILL" : "TERM"
+    Process.kill(signal, write) if write && status.nil?
+    Process.kill(signal, take)  if take
+    Process.wait(write) if write && status.nil?
+    Process.wait(take)  if take
+  end
+
   @server = DRb.primary_server || DRb.start_service
+end
+
+module RingIPv6
+  def prepare_ipv6(r)
+    begin
+      Socket.getifaddrs.each do |ifaddr|
+        next unless ifaddr.addr
+        next unless ifaddr.addr.ipv6_linklocal?
+        next if ifaddr.name[0, 2] == "lo"
+        r.multicast_interface = ifaddr.ifindex
+        return ifaddr
+      end
+    rescue NotImplementedError
+      # ifindex() function may not be implemented on Windows.
+      return if
+        Socket.ip_address_list.any? { |addrinfo| addrinfo.ipv6? }
+    end
+    skip 'IPv6 not available'
+  end
+end
+
+class TestRingServer < Test::Unit::TestCase
+
+  def setup
+    @port = Rinda::Ring_PORT
+
+    @ts = Rinda::TupleSpace.new
+    @rs = Rinda::RingServer.new(@ts, [], @port)
+  end
+  def teardown
+    # implementation-dependent
+    @ts.instance_eval{
+      if th = @keeper
+        th.kill
+        th.join
+      end
+    }
+    @rs.shutdown
+  end
+
+  def test_do_reply
+    with_timeout(10) {_test_do_reply}
+  end
+
+  def _test_do_reply
+    called = nil
+
+    callback = proc { |ts|
+      called = ts
+    }
+
+    callback = DRb::DRbObject.new callback
+
+    @ts.write [:lookup_ring, callback]
+
+    @rs.do_reply
+
+    wait_for(10) {called}
+
+    assert_same @ts, called
+  end
+
+  def test_do_reply_local
+    with_timeout(10) {_test_do_reply_local}
+  end
+
+  def _test_do_reply_local
+    called = nil
+
+    callback = proc { |ts|
+      called = ts
+    }
+
+    @ts.write [:lookup_ring, callback]
+
+    @rs.do_reply
+
+    wait_for(10) {called}
+
+    assert_same @ts, called
+  end
+
+  def test_make_socket_unicast
+    v4 = @rs.make_socket('127.0.0.1')
+
+    assert_equal('127.0.0.1', v4.local_address.ip_address)
+    assert_equal(@port,       v4.local_address.ip_port)
+  end
+
+  def test_make_socket_ipv4_multicast
+    v4mc = @rs.make_socket('239.0.0.1')
+
+    if Socket.const_defined?(:SO_REUSEPORT) then
+      assert(v4mc.getsockopt(:SOCKET, :SO_REUSEPORT).bool)
+    else
+      assert(v4mc.getsockopt(:SOCKET, :SO_REUSEADDR).bool)
+    end
+
+    assert_equal('0.0.0.0', v4mc.local_address.ip_address)
+    assert_equal(@port,     v4mc.local_address.ip_port)
+  end
+
+  def test_make_socket_ipv6_multicast
+    skip 'IPv6 not available' unless
+      Socket.ip_address_list.any? { |addrinfo| addrinfo.ipv6? }
+
+    begin
+      v6mc = @rs.make_socket('ff02::1')
+    rescue Errno::EADDRNOTAVAIL
+      return # IPv6 address for multicast not available
+    end
+
+    if Socket.const_defined?(:SO_REUSEPORT) then
+      assert v6mc.getsockopt(:SOCKET, :SO_REUSEPORT).bool
+    else
+      assert v6mc.getsockopt(:SOCKET, :SO_REUSEADDR).bool
+    end
+
+    assert_equal('::1', v6mc.local_address.ip_address)
+    assert_equal(@port, v6mc.local_address.ip_port)
+  end
+
+  def test_ring_server_ipv4_multicast
+    @rs.shutdown
+    @rs = Rinda::RingServer.new(@ts, [['239.0.0.1', '0.0.0.0']], @port)
+    v4mc = @rs.instance_variable_get('@sockets').first
+
+    if Socket.const_defined?(:SO_REUSEPORT) then
+      assert(v4mc.getsockopt(:SOCKET, :SO_REUSEPORT).bool)
+    else
+      assert(v4mc.getsockopt(:SOCKET, :SO_REUSEADDR).bool)
+    end
+
+    assert_equal('0.0.0.0', v4mc.local_address.ip_address)
+    assert_equal(@port,     v4mc.local_address.ip_port)
+  end
+
+  def test_ring_server_ipv6_multicast
+    skip 'IPv6 not available' unless
+      Socket.ip_address_list.any? { |addrinfo| addrinfo.ipv6? }
+
+    @rs.shutdown
+    begin
+      @rs = Rinda::RingServer.new(@ts, [['ff02::1', '::1', 0]], @port)
+    rescue Errno::EADDRNOTAVAIL
+      return # IPv6 address for multicast not available
+    end
+
+    v6mc = @rs.instance_variable_get('@sockets').first
+
+    if Socket.const_defined?(:SO_REUSEPORT) then
+      assert v6mc.getsockopt(:SOCKET, :SO_REUSEPORT).bool
+    else
+      assert v6mc.getsockopt(:SOCKET, :SO_REUSEADDR).bool
+    end
+
+    assert_equal('::1', v6mc.local_address.ip_address)
+    assert_equal(@port, v6mc.local_address.ip_port)
+  end
+
+  def test_shutdown
+    @rs.shutdown
+
+    assert_nil(@rs.do_reply, 'otherwise should hang forever')
+  end
+
+  private
+
+  def with_timeout(n)
+    aoe = Thread.abort_on_exception
+    Thread.abort_on_exception = true
+    tl0 = Thread.list
+    tl = nil
+    th = Thread.new(Thread.current) do |mth|
+      sleep n
+      (tl = Thread.list - tl0).each {|t|t.raise(Timeout::Error)}
+      mth.raise(Timeout::Error)
+    end
+    tl0 << th
+  rescue Timeout::Error => e
+    if tl
+      bt = e.backtrace
+      tl.each do |t|
+        begin
+          t.value
+        rescue Timeout::Error => e
+          bt.unshift("")
+          bt[0, 0] = e.backtrace
+        end
+      end
+    end
+    raise Timeout::Error, "timeout", bt
+  ensure
+    if th
+      th.kill
+      th.join
+    end
+    Thread.abort_on_exception = aoe
+  end
+
+  def wait_for(n)
+    t = n + Process.clock_gettime(Process::CLOCK_MONOTONIC, :second)
+    until yield
+      if t < Process.clock_gettime(Process::CLOCK_MONOTONIC, :second)
+        flunk "timeout during waiting call"
+      end
+      sleep 0.1
+    end
+  end
+end
+
+class TestRingFinger < Test::Unit::TestCase
+  include RingIPv6
+
+  def setup
+    @rf = Rinda::RingFinger.new
+  end
+
+  def test_make_socket_unicast
+    v4 = @rf.make_socket('127.0.0.1')
+
+    assert(v4.getsockopt(:SOL_SOCKET, :SO_BROADCAST).bool)
+  ensure
+    v4.close if v4
+  end
+
+  def test_make_socket_ipv4_multicast
+    v4mc = @rf.make_socket('239.0.0.1')
+
+    assert_equal(1, v4mc.getsockopt(:IPPROTO_IP, :IP_MULTICAST_LOOP).ipv4_multicast_loop)
+    assert_equal(1, v4mc.getsockopt(:IPPROTO_IP, :IP_MULTICAST_TTL).ipv4_multicast_ttl)
+  ensure
+    v4mc.close if v4mc
+  end
+
+  def test_make_socket_ipv6_multicast
+    ifaddr = prepare_ipv6(@rf)
+    begin
+      v6mc = @rf.make_socket("ff02::1")
+    rescue Errno::EINVAL
+      # somehow Debian 6.0.7 needs ifname
+      v6mc = @rf.make_socket("ff02::1%#{ifaddr.name}")
+    end
+
+    assert_equal(1, v6mc.getsockopt(:IPPROTO_IPV6, :IPV6_MULTICAST_LOOP).int)
+    assert_equal(1, v6mc.getsockopt(:IPPROTO_IPV6, :IPV6_MULTICAST_HOPS).int)
+  ensure
+    v6mc.close if v6mc
+  end
+
+  def test_make_socket_ipv4_multicast_hops
+    @rf.multicast_hops = 2
+    v4mc = @rf.make_socket('239.0.0.1')
+    assert_equal(2, v4mc.getsockopt(:IPPROTO_IP, :IP_MULTICAST_TTL).ipv4_multicast_ttl)
+  ensure
+    v4mc.close if v4mc
+  end
+
+  def test_make_socket_ipv6_multicast_hops
+    ifaddr = prepare_ipv6(@rf)
+    @rf.multicast_hops = 2
+    begin
+      v6mc = @rf.make_socket("ff02::1")
+    rescue Errno::EINVAL
+      # somehow Debian 6.0.7 needs ifname
+      v6mc = @rf.make_socket("ff02::1%#{ifaddr.name}")
+    end
+    assert_equal(2, v6mc.getsockopt(:IPPROTO_IPV6, :IPV6_MULTICAST_HOPS).int)
+  ensure
+    v6mc.close if v6mc
+  end
+
 end
 
 end

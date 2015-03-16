@@ -1,21 +1,23 @@
-# Copyright 2003, 2004, 2005, 2006, 2007, 2008 by Jim Weirich (jim@weirichhouse.org)
+# Copyright 2003-2010 by Jim Weirich (jim.weirich@gmail.com)
 # All rights reserved.
 
-# Permission is granted for use, copying, modification, distribution,
-# and distribution of modified versions of this work as long as the
-# above copyright notice is included.
+# :stopdoc:
 
 # Configuration information about an upload host system.
-# * name   :: Name of host system.
-# * webdir :: Base directory for the web information for the
-#             application.  The application name (APP) is appended to
-#             this directory before using.
-# * pkgdir :: Directory on the host system where packages can be
-#             placed.
+# name   :: Name of host system.
+# webdir :: Base directory for the web information for the
+#           application.  The application name (APP) is appended to
+#           this directory before using.
+# pkgdir :: Directory on the host system where packages can be
+#           placed.
 HostInfo = Struct.new(:name, :webdir, :pkgdir)
 
+# :startdoc:
+
+# TODO: Move to contrib/sshpublisher
+#--
 # Manage several publishers as a single entity.
-class CompositePublisher
+class CompositePublisher # :nodoc:
   def initialize
     @publishers = []
   end
@@ -31,9 +33,11 @@ class CompositePublisher
   end
 end
 
+# TODO: Remove in Rake 11, duplicated
+#--
 # Publish an entire directory to an existing remote directory using
 # SSH.
-class SshDirPublisher
+class SshDirPublisher # :nodoc: all
   def initialize(host, remote_dir, local_dir)
     @host = host
     @remote_dir = remote_dir
@@ -45,8 +49,10 @@ class SshDirPublisher
   end
 end
 
+# TODO: Remove in Rake 11, duplicated
+#--
 # Publish an entire directory to a fresh remote directory using SSH.
-class SshFreshDirPublisher < SshDirPublisher
+class SshFreshDirPublisher < SshDirPublisher # :nodoc: all
   def upload
     run %{ssh #{@host} rm -rf #{@remote_dir}} rescue nil
     run %{ssh #{@host} mkdir #{@remote_dir}}
@@ -54,8 +60,10 @@ class SshFreshDirPublisher < SshDirPublisher
   end
 end
 
+# TODO: Remove in Rake 11, duplicated
+#--
 # Publish a list of files to an existing remote directory.
-class SshFilePublisher
+class SshFilePublisher # :nodoc: all
   # Create a publisher using the give host information.
   def initialize(host, remote_dir, local_dir, *files)
     @host = host

@@ -5,12 +5,11 @@
 
 require 'date'
 require 'net/ftp'
+require 'rake/file_list'
 
 module Rake # :nodoc:
 
-  ####################################################################
-  # <b>Note:</b> <em> Not released for general use.</em>
-  class FtpFile
+  class FtpFile # :nodoc: all
     attr_reader :name, :size, :owner, :group, :time
 
     def self.date
@@ -23,7 +22,7 @@ module Rake # :nodoc:
 
     def initialize(path, entry)
       @path = path
-      @mode, line, @owner, @group, size, d1, d2, d3, @name = entry.split(' ')
+      @mode, _, @owner, @group, size, d1, d2, d3, @name = entry.split(' ')
       @size = size.to_i
       @time = determine_time(d1, d2, d3)
     end
@@ -49,40 +48,27 @@ module Rake # :nodoc:
     def parse_mode(m)
       result = 0
       (1..9).each do |i|
-        result = 2*result + ((m[i]==?-) ? 0 : 1)
+        result = 2 * result + ((m[i] == ?-) ? 0 : 1)
       end
       result
     end
 
     def determine_time(d1, d2, d3)
       now = self.class.time.now
-      if /:/ =~ d3
-        h, m = d3.split(':')
-        result = Time.parse("#{d1} #{d2} #{now.year} #{d3}")
-        if result > now
-          result = Time.parse("#{d1} #{d2} #{now.year-1} #{d3}")
-        end
-      else
+      if /:/ !~ d3
         result = Time.parse("#{d1} #{d2} #{d3}")
+      else
+        result = Time.parse("#{d1} #{d2} #{now.year} #{d3}")
+        result = Time.parse("#{d1} #{d2} #{now.year - 1} #{d3}") if
+          result > now
       end
       result
-#       elements = ParseDate.parsedate("#{d1} #{d2} #{d3}")
-#       if elements[0].nil?
-#         today = self.class.date.today
-#         if elements[1] > today.month
-#           elements[0] = today.year - 1
-#         else
-#           elements[0] = today.year
-#         end
-#       end
-#       elements = elements.collect { |el| el.nil? ? 0 : el }
-#       Time.mktime(*elements[0,7])
     end
   end
 
-  ####################################################################
+  ##
   # Manage the uploading of files to an FTP account.
-  class FtpUploader
+  class FtpUploader # :nodoc:
 
     # Log uploads to standard output when true.
     attr_accessor :verbose
@@ -100,7 +86,7 @@ module Rake # :nodoc:
       end
     end
 
-    # Create an FTP uploader targetting the directory +path+ on +host+
+    # Create an FTP uploader targeting the directory +path+ on +host+
     # using the given account and password.  +path+ will be the root
     # path of the uploader.
     def initialize(path, host, account, password)
@@ -119,7 +105,7 @@ module Rake # :nodoc:
         current_dir = File.join(route)
         if @created[current_dir].nil?
           @created[current_dir] = true
-          puts "Creating Directory  #{current_dir}" if @verbose
+          $stderr.puts "Creating Directory  #{current_dir}" if @verbose
           @ftp.mkdir(current_dir) rescue nil
         end
       end
@@ -128,7 +114,7 @@ module Rake # :nodoc:
     # Upload all files matching +wildcard+ to the uploader's root
     # path.
     def upload_files(wildcard)
-      Dir[wildcard].each do |fn|
+      FileList.glob(wildcard).each do |fn|
         upload(fn)
       end
     end
@@ -142,7 +128,7 @@ module Rake # :nodoc:
 
     # Upload a single file to the uploader's root path.
     def upload(file)
-      puts "Uploading #{file}" if @verbose
+      $stderr.puts "Uploading #{file}" if @verbose
       dir = File.dirname(file)
       makedirs(dir)
       @ftp.putbinaryfile(file, file) unless File.directory?(file)

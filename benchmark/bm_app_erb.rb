@@ -5,7 +5,7 @@
 require 'erb'
 
 data = DATA.read
-max = 5_000
+max = 15_000
 title = "hello world!"
 content = "hello world!\n" * 10
 

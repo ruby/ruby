@@ -1,6 +1,7 @@
 require 'rubygems/command'
 require 'rubygems/version_option'
-require 'rubygems/doc_manager'
+require 'rubygems/rdoc'
+require 'fileutils'
 
 class Gem::Commands::RdocCommand < Gem::Command
   include Gem::VersionOption
@@ -8,7 +9,7 @@ class Gem::Commands::RdocCommand < Gem::Command
   def initialize
     super 'rdoc', 'Generates RDoc for pre-installed gems',
           :version => Gem::Requirement.default,
-          :include_rdoc => true, :include_ri => true, :overwrite => false
+          :include_rdoc => false, :include_ri => true, :overwrite => false
 
     add_option('--all',
                'Generate RDoc/RI documentation for all',
@@ -39,13 +40,17 @@ class Gem::Commands::RdocCommand < Gem::Command
   end
 
   def defaults_str # :nodoc:
-    "--version '#{Gem::Requirement.default}' --rdoc --ri --no-overwrite"
+    "--version '#{Gem::Requirement.default}' --ri --no-overwrite"
   end
 
   def description # :nodoc:
     <<-DESC
-The rdoc command builds RDoc and RI documentation for installed gems.  Use
---overwrite to force rebuilding of documentation.
+The rdoc command builds documentation for installed gems.  By default
+only documentation is built using rdoc, but additional types of
+documentation may be built through rubygems plugins and the
+Gem.post_installs hook.
+
+Use --overwrite to force rebuilding of documentation.
     DESC
   end
 
@@ -54,37 +59,37 @@ The rdoc command builds RDoc and RI documentation for installed gems.  Use
   end
 
   def execute
-    if options[:all] then
-      specs = Gem::SourceIndex.from_installed_gems.collect { |name, spec|
-        spec
-      }
-    else
-      gem_name = get_one_gem_name
-      dep = Gem::Dependency.new gem_name, options[:version]
-      specs = Gem::SourceIndex.from_installed_gems.search dep
+    specs = if options[:all] then
+              Gem::Specification.to_a
+            else
+              get_all_gem_names.map do |name|
+                Gem::Specification.find_by_name name, options[:version]
+              end.flatten.uniq
+            end
+
+    if specs.empty? then
+      alert_error 'No matching gems found'
+      terminate_interaction 1
     end
 
-    if specs.empty?
-      raise "Failed to find gem #{gem_name} to generate RDoc for #{options[:version]}"
-    end
+    specs.each do |spec|
+      doc = Gem::RDoc.new spec, options[:include_rdoc], options[:include_ri]
 
-    if options[:include_ri]
-      specs.sort.each do |spec|
-        doc = Gem::DocManager.new(spec)
-        doc.generate_ri if options[:overwrite] || !doc.ri_installed?
+      doc.force = options[:overwrite]
+
+      if options[:overwrite] then
+        FileUtils.rm_rf File.join(spec.doc_dir, 'ri')
+        FileUtils.rm_rf File.join(spec.doc_dir, 'rdoc')
       end
 
-      Gem::DocManager.update_ri_cache
-    end
-
-    if options[:include_rdoc]
-      specs.sort.each do |spec|
-        doc = Gem::DocManager.new(spec)
-        doc.generate_rdoc if options[:overwrite] || !doc.rdoc_installed?
+      begin
+        doc.generate
+      rescue Errno::ENOENT => e
+        e.message =~ / - /
+        alert_error "Unable to document #{spec.full_name}, #{$'} is missing, skipping"
+        terminate_interaction 1 if specs.length == 1
       end
     end
-
-    true
   end
 
 end

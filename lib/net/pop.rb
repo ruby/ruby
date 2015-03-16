@@ -42,8 +42,6 @@ module Net
   class POPBadResponse < POPError; end
 
   #
-  # = Net::POP3
-  #
   # == What is This Library?
   #
   # This library provides functionality for retrieving
@@ -196,12 +194,14 @@ module Net
   #
   class POP3 < Protocol
 
+    # svn revision of this library
     Revision = %q$Revision$.split[1]
 
     #
     # Class Parameters
     #
 
+    # returns the port for POP3
     def POP3.default_port
       default_pop3_port()
     end
@@ -324,7 +324,7 @@ module Net
 
     @ssl_params = nil
 
-    # call-seq:
+    # :call-seq:
     #    Net::POP.enable_ssl(params = {})
     #
     # Enable SSL for all new instances.
@@ -333,6 +333,7 @@ module Net
       @ssl_params = create_ssl_params(*args)
     end
 
+    # Constructs proper parameters from arguments
     def POP3.create_ssl_params(verify_or_params = {}, certs = nil)
       begin
         params = verify_or_params.to_hash
@@ -355,18 +356,24 @@ module Net
       @ssl_params = nil
     end
 
+    # returns the SSL Parameters
+    #
+    # see also POP3.enable_ssl
     def POP3.ssl_params
       return @ssl_params
     end
 
+    # returns +true+ if POP3.ssl_params is set
     def POP3.use_ssl?
       return !@ssl_params.nil?
     end
 
+    # returns whether verify_mode is enable from POP3.ssl_params
     def POP3.verify
       return @ssl_params[:verify_mode]
     end
 
+    # returns the :ca_file or :ca_path from POP3.ssl_params
     def POP3.certs
       return @ssl_params[:ca_file] || @ssl_params[:ca_path]
     end
@@ -435,7 +442,7 @@ module Net
       return !@ssl_params.nil?
     end
 
-    # call-seq:
+    # :call-seq:
     #    Net::POP#enable_ssl(params = {})
     #
     # Enables SSL for this instance.  Must be called before the connection is
@@ -452,6 +459,7 @@ module Net
       end
     end
 
+    # Disable SSL for all new instances.
     def disable_ssl
       @ssl_params = nil
     end
@@ -488,12 +496,12 @@ module Net
 
     # Seconds to wait until a connection is opened.
     # If the POP3 object cannot open a connection within this time,
-    # it raises a TimeoutError exception.
+    # it raises a Net::OpenTimeout exception. The default value is 30 seconds.
     attr_accessor :open_timeout
 
     # Seconds to wait until reading one block (by one read(1) call).
     # If the POP3 object cannot complete a read() within this time,
-    # it raises a TimeoutError exception.
+    # it raises a Net::ReadTimeout exception. The default value is 60 seconds.
     attr_reader :read_timeout
 
     # Set the read timeout.
@@ -530,8 +538,11 @@ module Net
       end
     end
 
-    def do_start(account, password)
-      s = timeout(@open_timeout) { TCPSocket.open(@address, port) }
+    # internal method for Net::POP3.start
+    def do_start(account, password) # :nodoc:
+      s = Timeout.timeout(@open_timeout, Net::OpenTimeout) do
+        TCPSocket.open(@address, port)
+      end
       if use_ssl?
         raise 'openssl library not installed' unless defined?(OpenSSL)
         context = OpenSSL::SSL::SSLContext.new
@@ -565,7 +576,8 @@ module Net
     end
     private :do_start
 
-    def on_connect
+    # Does nothing
+    def on_connect # :nodoc:
     end
     private :on_connect
 
@@ -575,7 +587,12 @@ module Net
       do_finish
     end
 
-    def do_finish
+    # nil's out the:
+    # - mails
+    # - number counter for mails
+    # - number counter for bytes
+    # - quits the current command, if any
+    def do_finish # :nodoc:
       @mails = nil
       @n_mails = nil
       @n_bytes = nil
@@ -588,7 +605,10 @@ module Net
     end
     private :do_finish
 
-    def command
+    # Returns the current command.
+    #
+    # Raises IOError if there is no active socket
+    def command # :nodoc:
       raise IOError, 'POP session not opened yet' \
                                       if not @socket or @socket.closed?
       @command
@@ -687,6 +707,7 @@ module Net
       @mails.each {|m| m.uid = uidl[m.number] }
     end
 
+    # debugging output for +msg+
     def logging(msg)
       @debug_output << msg + "\n" if @debug_output
     end
@@ -694,9 +715,9 @@ module Net
   end   # class POP3
 
   # class aliases
-  POP = POP3
-  POPSession  = POP3
-  POP3Session = POP3
+  POP = POP3 # :nodoc:
+  POPSession  = POP3 # :nodoc:
+  POP3Session = POP3 # :nodoc:
 
   #
   # This class is equivalent to POP3, except that it uses APOP authentication.
@@ -868,7 +889,7 @@ module Net
 
     def initialize(sock)
       @socket = sock
-      @error_occured = false
+      @error_occurred = false
       res = check_response(critical { recv_response() })
       @apop_stamp = res.slice(/<[!-~]+@[!-~]+>/)
     end
@@ -986,11 +1007,11 @@ module Net
     end
 
     def critical
-      return '+OK dummy ok response' if @error_occured
+      return '+OK dummy ok response' if @error_occurred
       begin
         return yield()
       rescue Exception
-        @error_occured = true
+        @error_occurred = true
         raise
       end
     end

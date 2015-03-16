@@ -3,11 +3,15 @@ require 'rss/dublincore'
 
 module RSS
 
+  # The prefix for the Image XML namespace.
   IMAGE_PREFIX = 'image'
+  # The URI for the Image specification.
   IMAGE_URI = 'http://purl.org/rss/1.0/modules/image/'
 
   RDF.install_ns(IMAGE_PREFIX, IMAGE_URI)
 
+  # This constant holds strings which contain the names of
+  # image elements, with the appropriate prefix.
   IMAGE_ELEMENTS = []
 
   %w(item favicon).each do |name|

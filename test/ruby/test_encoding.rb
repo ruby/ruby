@@ -1,5 +1,4 @@
 require 'test/unit'
-require_relative 'envutil'
 
 class TestEncoding < Test::Unit::TestCase
 
@@ -13,6 +12,7 @@ class TestEncoding < Test::Unit::TestCase
       assert_equal(e, Encoding.find(e.name.upcase))
       assert_equal(e, Encoding.find(e.name.capitalize))
       assert_equal(e, Encoding.find(e.name.downcase))
+      assert_equal(e, Encoding.find(e))
     end
   end
 
@@ -21,7 +21,7 @@ class TestEncoding < Test::Unit::TestCase
     aliases.each do |a, en|
       e = Encoding.find(a)
       assert_equal(e.name, en)
-      assert(e.names.include?(a))
+      assert_include(e.names, a)
     end
   end
 
@@ -41,7 +41,7 @@ class TestEncoding < Test::Unit::TestCase
     assert_nothing_raised{Encoding.find("locale")}
     assert_nothing_raised{Encoding.find("filesystem")}
 
-    if /(?:ms|dar)win/ !~ RUBY_PLATFORM
+    if /(?:ms|dar)win|mingw/ !~ RUBY_PLATFORM
       # Unix's filesystem encoding is default_external
       assert_ruby_status(%w[-EUTF-8:EUC-JP], <<-'EOS')
         exit Encoding.find("filesystem") == Encoding::UTF_8
@@ -49,6 +49,9 @@ class TestEncoding < Test::Unit::TestCase
         exit Encoding.find("filesystem") == Encoding::EUC_JP
       EOS
     end
+
+    bug5150 = '[ruby-dev:44327]'
+    assert_raise(TypeError, bug5150) {Encoding.find(1)}
   end
 
   def test_replicate
@@ -81,8 +84,8 @@ class TestEncoding < Test::Unit::TestCase
   def test_aliases
     assert_instance_of(Hash, Encoding.aliases)
     Encoding.aliases.each do |k, v|
-      assert(Encoding.name_list.include?(k))
-      assert(Encoding.name_list.include?(v))
+      assert_include(Encoding.name_list, k)
+      assert_include(Encoding.name_list, v)
       assert_instance_of(String, k)
       assert_instance_of(String, v)
     end
@@ -94,5 +97,27 @@ class TestEncoding < Test::Unit::TestCase
     assert_equal(str, str2)
     str2 = Marshal.load(Marshal.dump(str2))
     assert_equal(str, str2, '[ruby-dev:38596]')
+  end
+
+  def test_compatible_p
+    ua = "abc".force_encoding(Encoding::UTF_8)
+    assert_equal(Encoding::UTF_8, Encoding.compatible?(ua, :abc))
+    assert_equal(nil, Encoding.compatible?(ua, 1))
+    bin = "a".force_encoding(Encoding::ASCII_8BIT)
+    asc = "b".force_encoding(Encoding::US_ASCII)
+    assert_equal(Encoding::ASCII_8BIT, Encoding.compatible?(bin, asc))
+    bin = "\xff".force_encoding(Encoding::ASCII_8BIT).to_sym
+    asc = "b".force_encoding(Encoding::ASCII_8BIT)
+    assert_equal(Encoding::ASCII_8BIT, Encoding.compatible?(bin, asc))
+    assert_equal(Encoding::UTF_8, Encoding.compatible?("\u{3042}".to_sym, ua.to_sym))
+  end
+
+  def test_errinfo_after_autoload
+    bug9038 = '[ruby-core:57949] [Bug #9038]'
+    assert_separately(%w[--disable=gems], <<-"end;")
+      assert_raise_with_message(SyntaxError, /unknown regexp option - Q/, #{bug9038.dump}) {
+        eval("/regexp/sQ")
+      }
+    end;
   end
 end

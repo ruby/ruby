@@ -15,8 +15,7 @@
 #include <windows.h>
 #include <sys/cygwin.h>
 #endif
-#include "ruby/ruby.h"
-#include "ruby/encoding.h"
+#include "internal.h"
 #include "eval_intern.h"
 #include "dln.h"
 #include <stdio.h>
@@ -51,11 +50,14 @@
 char *getenv();
 #endif
 
-VALUE rb_parser_get_yydebug(VALUE);
-VALUE rb_parser_set_yydebug(VALUE, VALUE);
-
-const char *ruby_get_inplace_mode(void);
-void ruby_set_inplace_mode(const char *);
+#ifndef DISABLE_RUBYGEMS
+# define DISABLE_RUBYGEMS 0
+#endif
+#if DISABLE_RUBYGEMS
+#define DEFAULT_RUBYGEMS_ENABLED "disabled"
+#else
+#define DEFAULT_RUBYGEMS_ENABLED "enabled"
+#endif
 
 #define DISABLE_BIT(bit) (1U << disable_##bit)
 enum disable_flag_bits {
@@ -67,8 +69,10 @@ enum disable_flag_bits {
 #define DUMP_BIT(bit) (1U << dump_##bit)
 enum dump_flag_bits {
     dump_version,
+    dump_version_v,
     dump_copyright,
     dump_usage,
+    dump_help,
     dump_yydebug,
     dump_syntax,
     dump_parsetree,
@@ -111,105 +115,97 @@ cmdline_options_init(struct cmdline_options *opt)
     opt->src.enc.index = src_encoding_index;
     opt->ext.enc.index = -1;
     opt->intern.enc.index = -1;
+#if DISABLE_RUBYGEMS
+    opt->disable |= DISABLE_BIT(gems);
+#endif
     return opt;
 }
 
-static NODE *load_file(VALUE, const char *, int, struct cmdline_options *);
+static NODE *load_file(VALUE, VALUE, int, struct cmdline_options *);
 static void forbid_setid(const char *, struct cmdline_options *);
-#define forbid_setid(s) forbid_setid(s, opt)
+#define forbid_setid(s) forbid_setid((s), opt)
 
 static struct {
     int argc;
     char **argv;
-#if !defined(PSTAT_SETCMD) && !defined(HAVE_SETPROCTITLE)
-    size_t len;
-#endif
 } origarg;
 
 static void
-usage(const char *name)
+usage(const char *name, int help)
 {
     /* This message really ought to be max 23 lines.
      * Removed -h because the user already knows that option. Others? */
 
-    static const char *const usage_msg[] = {
-	"-0[octal]       specify record separator (\\0, if no argument)",
-	"-a              autosplit mode with -n or -p (splits $_ into $F)",
-	"-c              check syntax only",
-	"-Cdirectory     cd to directory, before executing your script",
-	"-d              set debugging flags (set $DEBUG to true)",
-	"-e 'command'    one line of script. Several -e's allowed. Omit [programfile]",
-	"-Eex[:in]       specify the default external and internal character encodings",
-	"-Fpattern       split() pattern for autosplit (-a)",
-	"-i[extension]   edit ARGV files in place (make backup if extension supplied)",
-	"-Idirectory     specify $LOAD_PATH directory (may be used more than once)",
-	"-l              enable line ending processing",
-	"-n              assume 'while gets(); ... end' loop around your script",
-	"-p              assume loop like -n but print line also like sed",
-	"-rlibrary       require the library, before executing your script",
-	"-s              enable some switch parsing for switches after script name",
-	"-S              look for the script using PATH environment variable",
-	"-T[level=1]     turn on tainting checks",
-	"-v              print version number, then turn on verbose mode",
-	"-w              turn warnings on for your script",
-	"-W[level=2]     set warning level; 0=silence, 1=medium, 2=verbose",
-	"-x[directory]   strip off text before #!ruby line and perhaps cd to directory",
-	"--copyright     print the copyright",
-	"--version       print the version",
-	NULL
+    struct message {
+	const char *str;
+	unsigned short namelen, secondlen;
     };
-    const char *const *p = usage_msg;
+#define M(shortopt, longopt, desc) { \
+    shortopt " " longopt " " desc, \
+    (unsigned short)sizeof(shortopt), \
+    (unsigned short)sizeof(longopt), \
+}
+    static const struct message usage_msg[] = {
+	M("-0[octal]",	   "",			   "specify record separator (\\0, if no argument)"),
+	M("-a",		   "",			   "autosplit mode with -n or -p (splits $_ into $F)"),
+	M("-c",		   "",			   "check syntax only"),
+	M("-Cdirectory",   "",			   "cd to directory before executing your script"),
+	M("-d",		   ", --debug",		   "set debugging flags (set $DEBUG to true)"),
+	M("-e 'command'",  "",			   "one line of script. Several -e's allowed. Omit [programfile]"),
+	M("-Eex[:in]",     ", --encoding=ex[:in]", "specify the default external and internal character encodings"),
+	M("-Fpattern",	   "",			   "split() pattern for autosplit (-a)"),
+	M("-i[extension]", "",			   "edit ARGV files in place (make backup if extension supplied)"),
+	M("-Idirectory",   "",			   "specify $LOAD_PATH directory (may be used more than once)"),
+	M("-l",		   "",			   "enable line ending processing"),
+	M("-n",		   "",			   "assume 'while gets(); ... end' loop around your script"),
+	M("-p",		   "",			   "assume loop like -n but print line also like sed"),
+	M("-rlibrary",	   "",			   "require the library before executing your script"),
+	M("-s",		   "",			   "enable some switch parsing for switches after script name"),
+	M("-S",		   "",			   "look for the script using PATH environment variable"),
+	M("-T[level=1]",   "",			   "turn on tainting checks"),
+	M("-v",		   ", --verbose",	   "print version number, then turn on verbose mode"),
+	M("-w",		   "",			   "turn warnings on for your script"),
+	M("-W[level=2]",   "",			   "set warning level; 0=silence, 1=medium, 2=verbose"),
+	M("-x[directory]", "",			   "strip off text before #!ruby line and perhaps cd to directory"),
+	M("-h",		   "",			   "show this message, --help for more info"),
+    };
+    static const struct message help_msg[] = {
+	M("--copyright",                   "", "print the copyright"),
+	M("--enable=feature[,...]",	   ", --disable=feature[,...]",
+	  "enable or disable features"),
+	M("--external-encoding=encoding",  ", --internal-encoding=encoding",
+	  "specify the default external or internal character encoding"),
+	M("--version",                     "", "print the version"),
+	M("--help",			   "", "show this message, -h for short message"),
+    };
+    static const struct message features[] = {
+	M("gems",    "",        "rubygems (default: "DEFAULT_RUBYGEMS_ENABLED")"),
+	M("rubyopt", "",        "RUBYOPT environment variable (default: enabled)"),
+    };
+    int i, w = 16, num = numberof(usage_msg) - (help ? 1 : 0);
+#define SHOW(m) do { \
+	int wrap = help && (m).namelen + (m).secondlen - 2 > w; \
+	printf("  %.*s%-*.*s%-*s%s\n", (m).namelen-1, (m).str, \
+	       (wrap ? 0 : w - (m).namelen + 1), \
+	       (help ? (m).secondlen-1 : 0), (m).str + (m).namelen, \
+	       (wrap ? w + 3 : 0), (wrap ? "\n" : ""), \
+	       (m).str + (m).namelen + (m).secondlen); \
+    } while (0)
 
     printf("Usage: %s [switches] [--] [programfile] [arguments]\n", name);
-    while (*p)
-	printf("  %s\n", *p++);
+    for (i = 0; i < num; ++i)
+	SHOW(usage_msg[i]);
+
+    if (!help) return;
+
+    for (i = 0; i < numberof(help_msg); ++i)
+	SHOW(help_msg[i]);
+    puts("Features:");
+    for (i = 0; i < numberof(features); ++i)
+	SHOW(features[i]);
 }
 
-VALUE rb_get_load_path(void);
-
-#ifdef MANGLED_PATH
-static VALUE
-rubylib_mangled_path(const char *s, unsigned int l)
-{
-    static char *newp, *oldp;
-    static int newl, oldl, notfound;
-    char *ptr;
-    VALUE ret;
-
-    if (!newp && !notfound) {
-	newp = getenv("RUBYLIB_PREFIX");
-	if (newp) {
-	    oldp = newp = strdup(newp);
-	    while (*newp && !ISSPACE(*newp) && *newp != ';') {
-		newp = CharNext(newp);	/* Skip digits. */
-	    }
-	    oldl = newp - oldp;
-	    while (*newp && (ISSPACE(*newp) || *newp == ';')) {
-		newp = CharNext(newp);	/* Skip whitespace. */
-	    }
-	    newl = strlen(newp);
-	    if (newl == 0 || oldl == 0) {
-		rb_fatal("malformed RUBYLIB_PREFIX");
-	    }
-	    translit_char(newp, '\\', '/');
-	}
-	else {
-	    notfound = 1;
-	}
-    }
-    if (!newp || l < oldl || STRNCASECMP(oldp, s, oldl) != 0) {
-	return rb_str_new(s, l);
-    }
-    ret = rb_str_new(0, l + newl - oldl);
-    ptr = RSTRING_PTR(ret);
-    memcpy(ptr, newp, newl);
-    memcpy(ptr + newl, s + oldl, l - oldl);
-    ptr[l + newl - oldl] = 0;
-    return ret;
-}
-#else
-#define rubylib_mangled_path rb_str_new
-#endif
+#define rubylib_path_new rb_str_new
 
 static void
 push_include(const char *path, VALUE (*filter)(VALUE))
@@ -224,7 +220,7 @@ push_include(const char *path, VALUE (*filter)(VALUE))
 	    p++;
 	if (!*p) break;
 	for (s = p; *s && *s != sep; s = CharNext(s));
-	rb_ary_push(load_path, (*filter)(rubylib_mangled_path(p, s - p)));
+	rb_ary_push(load_path, (*filter)(rubylib_path_new(p, s - p)));
 	p = s;
     }
 }
@@ -255,7 +251,13 @@ push_include_cygwin(const char *path, VALUE (*filter)(VALUE))
 		p = strncpy(RSTRING_PTR(buf), p, len);
 	    }
 	}
-	if (cygwin_conv_to_posix_path(p, rubylib) == 0)
+#ifdef HAVE_CYGWIN_CONV_PATH
+#define CONV_TO_POSIX_PATH(p, lib) \
+	cygwin_conv_path(CCP_WIN_A_TO_POSIX|CCP_RELATIVE, (p), (lib), sizeof(lib))
+#else
+# error no cygwin_conv_path
+#endif
+	if (CONV_TO_POSIX_PATH(p, rubylib) == 0)
 	    p = rubylib;
 	push_include(p, filter);
 	if (!*s) break;
@@ -309,6 +311,7 @@ ruby_incpush_expand(const char *path)
     ruby_push_include(path, expand_include_path);
 }
 
+#undef UTF8_PATH
 #if defined _WIN32 || defined __CYGWIN__
 static HMODULE libruby;
 
@@ -325,6 +328,32 @@ rb_libruby_handle(void)
 {
     return libruby;
 }
+
+static inline void
+translit_char_bin(char *p, int from, int to)
+{
+    while (*p) {
+	if ((unsigned char)*p == from)
+	    *p = to;
+	p++;
+    }
+}
+
+# define UTF8_PATH 1
+#endif
+
+#ifndef UTF8_PATH
+# define UTF8_PATH 0
+#endif
+
+#if UTF8_PATH
+static VALUE
+str_conv_enc(VALUE str, rb_encoding *from, rb_encoding *to)
+{
+    return rb_str_conv_enc_opts(str, from, to,
+				ECONV_UNDEF_REPLACE|ECONV_INVALID_REPLACE,
+				Qnil);
+}
 #endif
 
 void ruby_init_loadpath_safe(int safe_level);
@@ -335,15 +364,40 @@ ruby_init_loadpath(void)
     ruby_init_loadpath_safe(0);
 }
 
+#if defined(LOAD_RELATIVE) && defined(HAVE_DLADDR)
+static VALUE
+dladdr_path(const void* addr)
+{
+    Dl_info dli;
+    VALUE fname, path;
+
+    if (!dladdr(addr, &dli)) {
+	return rb_str_new(0, 0);
+    }
+#ifdef __linux__
+    else if (dli.dli_fname == origarg.argv[0]) {
+	VALUE rb_readlink(VALUE);
+	fname = rb_str_new_cstr("/proc/self/exe");
+	path = rb_readlink(fname);
+    }
+#endif
+    else {
+	fname = rb_str_new_cstr(dli.dli_fname);
+	path = rb_realpath_internal(Qnil, fname, 1);
+    }
+    rb_str_resize(fname, 0);
+    return path;
+}
+#endif
+
 void
 ruby_init_loadpath_safe(int safe_level)
 {
     VALUE load_path;
     ID id_initial_load_path_mark;
-    extern const char ruby_initial_load_paths[];
     const char *paths = ruby_initial_load_paths;
 #if defined LOAD_RELATIVE
-# if defined HAVE_DLADDR || (defined __CYGWIN__ && defined CCP_WIN_A_TO_POSIX)
+# if defined HAVE_DLADDR || defined __CYGWIN__ || defined _WIN32
 #   define VARIABLE_LIBPATH 1
 # else
 #   define VARIABLE_LIBPATH 0
@@ -358,28 +412,13 @@ ruby_init_loadpath_safe(int safe_level)
     char *p;
 
 #if defined _WIN32 || defined __CYGWIN__
-# if VARIABLE_LIBPATH
     sopath = rb_str_new(0, MAXPATHLEN);
     libpath = RSTRING_PTR(sopath);
     GetModuleFileName(libruby, libpath, MAXPATHLEN);
-# else
-    GetModuleFileName(libruby, libpath, sizeof libpath);
-# endif
 #elif defined(__EMX__)
     _execname(libpath, sizeof(libpath) - 1);
 #elif defined(HAVE_DLADDR)
-    Dl_info dli;
-    if (dladdr((void *)(VALUE)expand_include_path, &dli)) {
-	VALUE rb_realpath_internal(VALUE basedir, VALUE path, int strict);
-	char fbuf[MAXPATHLEN];
-	char *f = dln_find_file_r(dli.dli_fname, getenv(PATH_ENV), fbuf, sizeof(fbuf));
-	VALUE fname = rb_str_new_cstr(f);
-	rb_str_freeze(fname);
-	sopath = rb_realpath_internal(Qnil, fname, 1);
-    }
-    else {
-	sopath = rb_str_new(0, 0);
-    }
+    sopath = dladdr_path((void *)(VALUE)expand_include_path);
     libpath = RSTRING_PTR(sopath);
 #endif
 
@@ -390,7 +429,6 @@ ruby_init_loadpath_safe(int safe_level)
     translit_char(libpath, '\\', '/');
 #elif defined __CYGWIN__
     {
-# if VARIABLE_LIBPATH
 	const int win_to_posix = CCP_WIN_A_TO_POSIX | CCP_RELATIVE;
 	size_t newsize = cygwin_conv_path(win_to_posix, libpath, 0, 0);
 	if (newsize > 0) {
@@ -402,20 +440,44 @@ ruby_init_loadpath_safe(int safe_level)
 		libpath = p;
 	    }
 	}
-# else
-	char rubylib[FILENAME_MAX];
-	cygwin_conv_to_posix_path(libpath, rubylib);
-	strncpy(libpath, rubylib, sizeof(libpath));
-# endif
     }
 #endif
     p = strrchr(libpath, '/');
     if (p) {
-	*p = 0;
-	if (p - libpath > 3 && !(STRCASECMP(p - 4, "/bin") && strcmp(p - 4, "/lib"))) {
-	    p -= 4;
-	    *p = 0;
+	static const char bindir[] = "/bin";
+#ifdef LIBDIR_BASENAME
+	static const char libdir[] = "/"LIBDIR_BASENAME;
+#else
+	static const char libdir[] = "/lib";
+#endif
+	const ptrdiff_t bindir_len = (ptrdiff_t)sizeof(bindir) - 1;
+	const ptrdiff_t libdir_len = (ptrdiff_t)sizeof(libdir) - 1;
+
+#ifdef ENABLE_MULTIARCH
+	char *p2 = NULL;
+
+      multiarch:
+#endif
+	if (p - libpath >= bindir_len && !STRNCASECMP(p - bindir_len, bindir, bindir_len)) {
+	    p -= bindir_len;
 	}
+	else if (p - libpath >= libdir_len && !strncmp(p - libdir_len, libdir, libdir_len)) {
+	    p -= libdir_len;
+	}
+#ifdef ENABLE_MULTIARCH
+	else if (p2) {
+	    p = p2;
+	}
+	else {
+	    p2 = p;
+	    p = rb_enc_path_last_separator(libpath, p, rb_ascii8bit_encoding());
+	    if (p) goto multiarch;
+	    p = p2;
+	}
+#endif
+#if !VARIABLE_LIBPATH
+	*p = 0;
+#endif
     }
 #if !VARIABLE_LIBPATH
     else {
@@ -433,11 +495,11 @@ ruby_init_loadpath_safe(int safe_level)
 
 #define BASEPATH() rb_str_buf_cat(rb_str_buf_new(baselen+len), libpath, baselen)
 
-#define RUBY_RELATIVE(path, len) rb_str_buf_cat(BASEPATH(), path, len)
+#define RUBY_RELATIVE(path, len) rb_str_buf_cat(BASEPATH(), (path), (len))
 #else
-    static const char exec_prefix[] = RUBY_EXEC_PREFIX;
-#define RUBY_RELATIVE(path, len) rubylib_mangled_path(path, len)
-#define PREFIX_PATH() RUBY_RELATIVE(exec_prefix, sizeof(exec_prefix)-1)
+    const size_t exec_prefix_len = strlen(ruby_exec_prefix);
+#define RUBY_RELATIVE(path, len) rubylib_path_new((path), (len))
+#define PREFIX_PATH() RUBY_RELATIVE(ruby_exec_prefix, exec_prefix_len)
 #endif
     load_path = GET_VM()->load_path;
 
@@ -462,38 +524,50 @@ static void
 add_modules(VALUE *req_list, const char *mod)
 {
     VALUE list = *req_list;
+    VALUE feature;
 
     if (!list) {
 	*req_list = list = rb_ary_new();
-	RBASIC(list)->klass = 0;
+	RBASIC_CLEAR_CLASS(list);
     }
-    rb_ary_push(list, rb_obj_freeze(rb_str_new2(mod)));
+    feature = rb_str_new2(mod);
+    RBASIC_CLEAR_CLASS(feature);
+    rb_ary_push(list, feature);
 }
-
-extern void Init_ext(void);
-extern VALUE rb_vm_top_self(void);
 
 static void
 require_libraries(VALUE *req_list)
 {
     VALUE list = *req_list;
+    VALUE self = rb_vm_top_self();
     ID require;
     rb_thread_t *th = GET_THREAD();
-    rb_block_t *prev_base_block = th->base_block;
+    rb_encoding *extenc = rb_default_external_encoding();
     int prev_parse_in_eval = th->parse_in_eval;
-    th->base_block = 0;
     th->parse_in_eval = 0;
 
-    Init_ext();		/* should be called here for some reason :-( */
     CONST_ID(require, "require");
     while (list && RARRAY_LEN(list) > 0) {
 	VALUE feature = rb_ary_shift(list);
-	rb_funcall2(rb_vm_top_self(), require, 1, &feature);
+	rb_enc_associate(feature, extenc);
+	RBASIC_SET_CLASS_RAW(feature, rb_cString);
+	OBJ_FREEZE(feature);
+	rb_funcall2(self, require, 1, &feature);
     }
     *req_list = 0;
 
     th->parse_in_eval = prev_parse_in_eval;
-    th->base_block = prev_base_block;
+}
+
+static rb_env_t*
+toplevel_context(VALUE toplevel_binding)
+{
+    rb_env_t *env;
+    rb_binding_t *bind;
+
+    GetBindingPtr(toplevel_binding, bind);
+    GetEnvPtr(bind->env, env);
+    return env;
 }
 
 static void
@@ -501,11 +575,11 @@ process_sflag(int *sflag)
 {
     if (*sflag > 0) {
 	long n;
-	VALUE *args;
+	const VALUE *args;
 	VALUE argv = rb_argv;
 
 	n = RARRAY_LEN(argv);
-	args = RARRAY_PTR(argv);
+	args = RARRAY_CONST_PTR(argv);
 	while (n > 0) {
 	    VALUE v = *args++;
 	    char *s = StringValuePtr(v);
@@ -560,8 +634,6 @@ process_sflag(int *sflag)
     }
 }
 
-NODE *rb_parser_append_print(VALUE, NODE *);
-NODE *rb_parser_while_loop(VALUE, NODE *, int, int);
 static long proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt);
 
 static void
@@ -612,16 +684,16 @@ moreswitches(const char *s, struct cmdline_options *opt, int envopt)
 }
 
 #define NAME_MATCH_P(name, str, len) \
-    ((len) < (int)sizeof(name) && strncmp((str), name, (len)) == 0)
+    ((len) < (int)sizeof(name) && strncmp((str), (name), (len)) == 0)
 
 #define UNSET_WHEN(name, bit, str, len)	\
-    if (NAME_MATCH_P(name, str, len)) { \
+    if (NAME_MATCH_P((name), (str), (len))) { \
 	*(unsigned int *)arg &= ~(bit); \
 	return;				\
     }
 
 #define SET_WHEN(name, bit, str, len)	\
-    if (NAME_MATCH_P(name, str, len)) { \
+    if (NAME_MATCH_P((name), (str), (len))) { \
 	*(unsigned int *)arg |= (bit);	\
 	return;				\
     }
@@ -659,6 +731,7 @@ dump_option(const char *str, int len, void *arg)
     SET_WHEN_DUMP(version);
     SET_WHEN_DUMP(copyright);
     SET_WHEN_DUMP(usage);
+    SET_WHEN_DUMP(help);
     SET_WHEN_DUMP(yydebug);
     SET_WHEN_DUMP(syntax);
     SET_WHEN_DUMP(parsetree);
@@ -679,17 +752,17 @@ set_option_encoding_once(const char *type, VALUE *name, const char *e, long elen
     if (*name &&
 	rb_funcall(ename, rb_intern("casecmp"), 1, *name) != INT2FIX(0)) {
 	rb_raise(rb_eRuntimeError,
-		 "%s already set to %s", type, RSTRING_PTR(*name));
+		 "%s already set to %"PRIsVALUE, type, *name);
     }
     *name = ename;
 }
 
 #define set_internal_encoding_once(opt, e, elen) \
-    set_option_encoding_once("default_internal", &opt->intern.enc.name, e, elen)
+    set_option_encoding_once("default_internal", &(opt)->intern.enc.name, (e), (elen))
 #define set_external_encoding_once(opt, e, elen) \
-    set_option_encoding_once("default_external", &opt->ext.enc.name, e, elen)
+    set_option_encoding_once("default_external", &(opt)->ext.enc.name, (e), (elen))
 #define set_source_encoding_once(opt, e, elen) \
-    set_option_encoding_once("source", &opt->src.enc.name, e, elen)
+    set_option_encoding_once("source", &(opt)->src.enc.name, (e), (elen))
 
 static long
 proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
@@ -702,7 +775,7 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
 
     for (argc--, argv++; argc > 0; argc--, argv++) {
 	const char *const arg = argv[0];
-	if (arg[0] != '-' || !arg[1])
+	if (!arg || arg[0] != '-' || !arg[1])
 	    break;
 
 	s = arg + 1;
@@ -741,7 +814,7 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
 		s++;
 		goto reswitch;
 	    }
-	    ruby_show_version();
+	    opt->dump |= DUMP_BIT(version_v);
 	    opt->verbose = 1;
 	  case 'w':
 	    ruby_verbose = Qtrue;
@@ -809,11 +882,9 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
 	    if (envopt) goto noenvopt;
 	    forbid_setid("-e");
 	    if (!*++s) {
-		s = argv[1];
-		argc--, argv++;
-	    }
-	    if (!s) {
-		rb_raise(rb_eRuntimeError, "no code specified for -e");
+		if (!--argc)
+		    rb_raise(rb_eRuntimeError, "no code specified for -e");
+		s = *++argv;
 	    }
 	    if (!opt->e_script) {
 		opt->e_script = rb_str_new(0, 0);
@@ -829,7 +900,7 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
 	    if (*++s) {
 		add_modules(&opt->req_list, s);
 	    }
-	    else if (argv[1]) {
+	    else if (argc > 1) {
 		add_modules(&opt->req_list, argv[1]);
 		argc--, argv++;
 	    }
@@ -853,12 +924,7 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
 	  case 'C':
 	  case 'X':
 	    if (envopt) goto noenvopt;
-	    s++;
-	    if (!*s) {
-		s = argv[1];
-		argc--, argv++;
-	    }
-	    if (!s || !*s) {
+	    if (!*++s && (!--argc || !(s = *++argv) || !*s)) {
 		rb_fatal("Can't chdir");
 	    }
 	    if (chdir(s) < 0) {
@@ -929,7 +995,7 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
 	    forbid_setid("-I");
 	    if (*++s)
 		ruby_incpush_expand(s);
-	    else if (argv[1]) {
+	    else if (argc > 1) {
 		ruby_incpush_expand(argv[1]);
 		argc--, argv++;
 	    }
@@ -964,17 +1030,20 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
 	    s++;
 
 #	define is_option_end(c, allow_hyphen) \
-	    (!(c) || (allow_hyphen && (c) == '-') || (c) == '=')
+	    (!(c) || ((allow_hyphen) && (c) == '-') || (c) == '=')
 #	define check_envopt(name, allow_envopt) \
-	    ((allow_envopt || !envopt) ? (void)0 : \
+	    (((allow_envopt) || !envopt) ? (void)0 : \
 	     rb_raise(rb_eRuntimeError, "invalid switch in RUBYOPT: --" name))
-#	define need_argument(name, s) \
-	    ((*s++ ? !*s : (!--argc || !(s = *++argv))) ?		\
+#	define need_argument(name, s, needs_arg) \
+	    ((*(s)++ ? !*(s) : (!--argc || !((s) = *++argv))) && (needs_arg) ? \
 	     rb_raise(rb_eRuntimeError, "missing argument for --" name) \
 	     : (void)0)
-#	define is_option_with_arg(name, allow_hyphen, allow_envopt) \
-	    (strncmp(name, s, n = sizeof(name) - 1) == 0 && is_option_end(s[n], allow_hyphen) ? \
-	     (check_envopt(name, allow_envopt), s += n, need_argument(name, s), 1) : 0)
+#	define is_option_with_arg(name, allow_hyphen, allow_envopt)	\
+	    is_option_with_optarg(name, allow_hyphen, allow_envopt, Qtrue)
+#	define is_option_with_optarg(name, allow_hyphen, allow_envopt, needs_arg) \
+	    (strncmp((name), s, n = sizeof(name) - 1) == 0 && is_option_end(s[n], (allow_hyphen)) ? \
+	     (check_envopt(name, (allow_envopt)), s += n, \
+		need_argument(name, s, needs_arg), 1) : 0)
 
 	    if (strcmp("copyright", s) == 0) {
 		if (envopt) goto noenvopt_long;
@@ -1006,7 +1075,7 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
 		    if (!*(s = ++p)) break;
 		    set_encoding_part(internal);
 		    if (!*(s = ++p)) break;
-#if ALLOW_DEFAULT_SOURCE_ENCODING
+#if defined ALLOW_DEFAULT_SOURCE_ENCODING && ALLOW_DEFAULT_SOURCE_ENCODING
 		    set_encoding_part(source);
 		    if (!*(s = ++p)) break;
 #endif
@@ -1021,7 +1090,7 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
 	    else if (is_option_with_arg("external-encoding", Qfalse, Qtrue)) {
 		set_external_encoding_once(opt, s, 0);
 	    }
-#if ALLOW_DEFAULT_SOURCE_ENCODING
+#if defined ALLOW_DEFAULT_SOURCE_ENCODING && ALLOW_DEFAULT_SOURCE_ENCODING
 	    else if (is_option_with_arg("source-encoding", Qfalse, Qtrue)) {
 		set_source_encoding_once(opt, s, 0);
 	    }
@@ -1043,7 +1112,7 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
 	    }
 	    else if (strcmp("help", s) == 0) {
 		if (envopt) goto noenvopt_long;
-		opt->dump |= DUMP_BIT(usage);
+		opt->dump |= DUMP_BIT(help);
 		goto switch_end;
 	    }
 	    else {
@@ -1086,6 +1155,7 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
 #	undef check_envopt
 #	undef need_argument
 #	undef is_option_with_arg
+#	undef is_option_with_optarg
 	}
     }
 
@@ -1093,12 +1163,9 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
     return argc0 - argc;
 }
 
-void Init_prelude(void);
-
 static void
-ruby_init_gems(int enable)
+ruby_init_prelude(void)
 {
-    if (enable) rb_define_module("Gem");
     Init_prelude();
     rb_const_remove(rb_cObject, rb_intern_const("TMP_RUBY_PREFIX"));
 }
@@ -1118,7 +1185,8 @@ opt_enc_index(VALUE enc_name)
     return i;
 }
 
-#define rb_progname (GET_VM()->progname)
+#define rb_progname      (GET_VM()->progname)
+#define rb_orig_progname (GET_VM()->orig_progname)
 VALUE rb_argv0;
 
 static VALUE
@@ -1142,7 +1210,7 @@ uscore_get(void)
     VALUE line;
 
     line = rb_lastline_get();
-    if (TYPE(line) != T_STRING) {
+    if (!RB_TYPE_P(line, T_STRING)) {
 	rb_raise(rb_eTypeError, "$_ value need to be String (%s given)",
 		 NIL_P(line) ? "nil" : rb_obj_classname(line));
     }
@@ -1152,7 +1220,7 @@ uscore_get(void)
 /*
  *  call-seq:
  *     sub(pattern, replacement)   -> $_
- *     sub(pattern) { block }      -> $_
+ *     sub(pattern) {|...| block } -> $_
  *
  *  Equivalent to <code>$_.sub(<i>args</i>)</code>, except that
  *  <code>$_</code> will be updated if substitution occurs.
@@ -1160,39 +1228,35 @@ uscore_get(void)
  */
 
 static VALUE
-rb_f_sub(argc, argv)
-    int argc;
-    VALUE *argv;
+rb_f_sub(int argc, VALUE *argv)
 {
-    VALUE str = rb_funcall3(uscore_get(), rb_intern("sub"), argc, argv);
+    VALUE str = rb_funcall_passing_block(uscore_get(), rb_intern("sub"), argc, argv);
     rb_lastline_set(str);
     return str;
 }
 
 /*
  *  call-seq:
- *     gsub(pattern, replacement)    -> string
- *     gsub(pattern) {|...| block }  -> string
+ *     gsub(pattern, replacement)    -> $_
+ *     gsub(pattern) {|...| block }  -> $_
  *
  *  Equivalent to <code>$_.gsub...</code>, except that <code>$_</code>
- *  receives the modified result.
+ *  will be updated if substitution occurs.
  *  Available only when -p/-n command line option specified.
  *
  */
 
 static VALUE
-rb_f_gsub(argc, argv)
-    int argc;
-    VALUE *argv;
+rb_f_gsub(int argc, VALUE *argv)
 {
-    VALUE str = rb_funcall3(uscore_get(), rb_intern("gsub"), argc, argv);
+    VALUE str = rb_funcall_passing_block(uscore_get(), rb_intern("gsub"), argc, argv);
     rb_lastline_set(str);
     return str;
 }
 
 /*
  *  call-seq:
- *     chop   -> string
+ *     chop   -> $_
  *
  *  Equivalent to <code>($_.dup).chop!</code>, except <code>nil</code>
  *  is never returned. See <code>String#chop!</code>.
@@ -1203,7 +1267,7 @@ rb_f_gsub(argc, argv)
 static VALUE
 rb_f_chop(void)
 {
-    VALUE str = rb_funcall3(uscore_get(), rb_intern("chop"), 0, 0);
+    VALUE str = rb_funcall_passing_block(uscore_get(), rb_intern("chop"), 0, 0);
     rb_lastline_set(str);
     return str;
 }
@@ -1221,18 +1285,12 @@ rb_f_chop(void)
  */
 
 static VALUE
-rb_f_chomp(argc, argv)
-    int argc;
-    VALUE *argv;
+rb_f_chomp(int argc, VALUE *argv)
 {
-    VALUE str = rb_funcall3(uscore_get(), rb_intern("chomp"), argc, argv);
+    VALUE str = rb_funcall_passing_block(uscore_get(), rb_intern("chomp"), argc, argv);
     rb_lastline_set(str);
     return str;
 }
-
-void rb_stdio_set_default_encoding(void);
-VALUE rb_parser_dump_tree(NODE *node, int comment);
-VALUE rb_realpath_internal(VALUE basedir, VALUE path, int strict);
 
 static VALUE
 process_options(int argc, char **argv, struct cmdline_options *opt)
@@ -1245,13 +1303,13 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
     char fbuf[MAXPATHLEN];
     int i = (int)proc_options(argc, argv, opt, 0);
     rb_thread_t *th = GET_THREAD();
-    rb_env_t *env = 0;
+    VALUE toplevel_binding = Qundef;
 
     argc -= i;
     argv += i;
 
-    if (opt->dump & DUMP_BIT(usage)) {
-	usage(origarg.argv[0]);
+    if (opt->dump & (DUMP_BIT(usage)|DUMP_BIT(help))) {
+	usage(origarg.argv[0], (opt->dump & DUMP_BIT(help)));
 	return Qtrue;
     }
 
@@ -1271,17 +1329,15 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 	    opt->intern.enc.name = int_enc_name;
     }
 
-    if (opt->dump & DUMP_BIT(version)) {
+    if (opt->src.enc.name)
+	rb_warning("-K is specified; it is for 1.8 compatibility and may cause odd behavior");
+
+    if (opt->dump & (DUMP_BIT(version) | DUMP_BIT(version_v))) {
 	ruby_show_version();
-	return Qtrue;
+	if (opt->dump & DUMP_BIT(version)) return Qtrue;
     }
     if (opt->dump & DUMP_BIT(copyright)) {
 	ruby_show_copyright();
-    }
-
-    if (opt->safe_level >= 4) {
-	OBJ_TAINT(rb_argv);
-	OBJ_TAINT(GET_VM()->load_path);
     }
 
     if (!opt->e_script) {
@@ -1292,7 +1348,7 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 	}
 	else {
 	    opt->script = argv[0];
-	    if (opt->script[0] == '\0') {
+	    if (!opt->script || opt->script[0] == '\0') {
 		opt->script = "-";
 	    }
 	    else if (opt->do_search) {
@@ -1315,15 +1371,19 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 
     opt->script_name = rb_str_new_cstr(opt->script);
     opt->script = RSTRING_PTR(opt->script_name);
-#if defined DOSISH || defined __CYGWIN__
+
+#if _WIN32
+    translit_char_bin(RSTRING_PTR(opt->script_name), '\\', '/');
+#elif defined DOSISH
     translit_char(RSTRING_PTR(opt->script_name), '\\', '/');
 #endif
-    rb_obj_freeze(opt->script_name);
 
+    ruby_gc_set_params(opt->safe_level);
     ruby_init_loadpath_safe(opt->safe_level);
-    rb_enc_find_index("encdb");
+    Init_enc();
     lenc = rb_locale_encoding();
     rb_enc_associate(rb_progname, lenc);
+    rb_obj_freeze(rb_progname);
     parser = rb_parser_new();
     if (opt->dump & DUMP_BIT(yydebug)) {
 	rb_parser_set_yydebug(parser, Qtrue);
@@ -1351,27 +1411,32 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 	opt->intern.enc.index = -1;
     }
     rb_enc_associate(opt->script_name, lenc);
+    rb_obj_freeze(opt->script_name);
     {
 	long i;
 	VALUE load_path = GET_VM()->load_path;
 	for (i = 0; i < RARRAY_LEN(load_path); ++i) {
-	    rb_enc_associate(RARRAY_PTR(load_path)[i], lenc);
+	    VALUE path = RARRAY_AREF(load_path, i);
+	    path = rb_enc_associate(rb_str_dup(path), lenc);
+	    RARRAY_ASET(load_path, i, path);
 	}
     }
-    ruby_init_gems(!(opt->disable & DISABLE_BIT(gems)));
+    Init_ext();		/* load statically linked extensions before rubygems */
+    if (!(opt->disable & DISABLE_BIT(gems))) {
+	rb_define_module("Gem");
+    }
+    ruby_init_prelude();
+#if UTF8_PATH
+    opt->script_name = str_conv_enc(opt->script_name, rb_utf8_encoding(), lenc);
+    opt->script = RSTRING_PTR(opt->script_name);
+#endif
     ruby_set_argv(argc, argv);
     process_sflag(&opt->sflag);
 
-    {
-	/* set eval context */
-	VALUE toplevel_binding = rb_const_get(rb_cObject, rb_intern("TOPLEVEL_BINDING"));
-	rb_binding_t *bind;
-
-	GetBindingPtr(toplevel_binding, bind);
-	GetEnvPtr(bind->env, env);
-    }
+    toplevel_binding = rb_const_get(rb_cObject, rb_intern("TOPLEVEL_BINDING"));
 
 #define PREPARE_PARSE_MAIN(expr) do { \
+    rb_env_t *env = toplevel_context(toplevel_binding); \
     th->parse_in_eval--; \
     th->base_block = &env->block; \
     expr; \
@@ -1389,9 +1454,11 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 	    eenc = lenc;
 	}
 	rb_enc_associate(opt->e_script, eenc);
-	rb_vm_set_progname(rb_progname = opt->script_name);
-	require_libraries(&opt->req_list);
-	rb_vm_set_progname(rb_progname = progname);
+	if (!(opt->dump & ~DUMP_BIT(version_v))) {
+	    ruby_set_script_name(opt->script_name);
+	    require_libraries(&opt->req_list);
+	}
+        ruby_set_script_name(progname);
 
 	PREPARE_PARSE_MAIN({
 	    tree = rb_parser_compile_string(parser, opt->script, opt->e_script, 1);
@@ -1403,11 +1470,10 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 	}
 
 	PREPARE_PARSE_MAIN({
-	    tree = load_file(parser, opt->script, 1, opt);
+	    tree = load_file(parser, opt->script_name, 1, opt);
 	});
     }
-    rb_progname = opt->script_name;
-    rb_vm_set_progname(rb_progname);
+    ruby_set_script_name(opt->script_name);
     if (opt->dump & DUMP_BIT(yydebug)) return Qtrue;
 
     if (opt->ext.enc.index >= 0) {
@@ -1431,11 +1497,6 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 
     process_sflag(&opt->sflag);
     opt->xflag = 0;
-
-    if (opt->safe_level >= 4) {
-	FL_UNSET(rb_argv, FL_TAINT);
-	FL_UNSET(GET_VM()->load_path, FL_TAINT);
-    }
 
     if (opt->dump & DUMP_BIT(syntax)) {
 	printf("Syntax OK\n");
@@ -1465,8 +1526,9 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 
     PREPARE_PARSE_MAIN({
 	VALUE path = Qnil;
-	if (!opt->e_script && strcmp(opt->script, "-"))
+	if (!opt->e_script && strcmp(opt->script, "-")) {
 	    path = rb_realpath_internal(Qnil, opt->script_name, 1);
+	}
 	iseq = rb_iseq_new_main(tree, opt->script_name, path);
     });
 
@@ -1487,46 +1549,27 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 
 struct load_file_arg {
     VALUE parser;
-    const char *fname;
+    VALUE fname;
     int script;
+    int xflag;
     struct cmdline_options *opt;
+    VALUE f;
 };
 
 static VALUE
-load_file_internal(VALUE arg)
+load_file_internal2(VALUE argp_v)
 {
-    extern VALUE rb_stdin;
-    struct load_file_arg *argp = (struct load_file_arg *)arg;
+    struct load_file_arg *argp = (struct load_file_arg *)argp_v;
     VALUE parser = argp->parser;
-    const char *fname = argp->fname;
+    VALUE orig_fname = argp->fname;
     int script = argp->script;
     struct cmdline_options *opt = argp->opt;
-    VALUE f;
+    VALUE f = argp->f;
     int line_start = 1;
     NODE *tree = 0;
     rb_encoding *enc;
     ID set_encoding;
-
-    if (!fname)
-	rb_load_fail(fname);
-    if (strcmp(fname, "-") == 0) {
-	f = rb_stdin;
-    }
-    else {
-	int fd, mode = O_RDONLY;
-#if defined DOSISH || defined __CYGWIN__
-	{
-	    const char *ext = strrchr(fname, '.');
-	    if (ext && STRCASECMP(ext, ".exe") == 0)
-		mode |= O_BINARY;
-	}
-#endif
-	if ((fd = open(fname, mode)) < 0) {
-	    rb_load_fail(fname);
-	}
-
-	f = rb_io_fdopen(fd, mode, fname);
-    }
+    int xflag = argp->xflag;
 
     CONST_ID(set_encoding, "set_encoding");
     if (script) {
@@ -1540,7 +1583,8 @@ load_file_internal(VALUE arg)
 	enc = rb_ascii8bit_encoding();
 	rb_funcall(f, set_encoding, 1, rb_enc_from_encoding(enc));
 
-	if (opt->xflag) {
+	if (xflag || opt->xflag) {
+	    line_start--;
 	  search_shebang:
 	    forbid_setid("-x");
 	    opt->xflag = FALSE;
@@ -1554,7 +1598,7 @@ load_file_internal(VALUE arg)
 		    }
 		}
 	    }
-	    rb_raise(rb_eLoadError, "no Ruby script found in input");
+	    rb_loaderror("no Ruby script found in input");
 	}
 
 	c = rb_io_getbyte(f);
@@ -1604,8 +1648,10 @@ load_file_internal(VALUE arg)
 	    if (f != rb_stdin) rb_io_close(f);
 	    f = Qnil;
 	}
-	rb_vm_set_progname(rb_progname = opt->script_name);
-	require_libraries(&opt->req_list);	/* Why here? unnatural */
+	if (!(opt->dump & ~DUMP_BIT(version_v))) {
+	    ruby_set_script_name(opt->script_name);
+	    require_libraries(&opt->req_list);	/* Why here? unnatural */
+	}
     }
     if (opt->src.enc.index >= 0) {
 	enc = rb_enc_from_index(opt->src.enc.index);
@@ -1614,17 +1660,88 @@ load_file_internal(VALUE arg)
 	enc = rb_locale_encoding();
     }
     else {
-	enc = rb_usascii_encoding();
+	enc = rb_utf8_encoding();
     }
     if (NIL_P(f)) {
 	f = rb_str_new(0, 0);
 	rb_enc_associate(f, enc);
-	return (VALUE)rb_parser_compile_string(parser, fname, f, line_start);
+	return (VALUE)rb_parser_compile_string_path(parser, orig_fname, f, line_start);
     }
     rb_funcall(f, set_encoding, 2, rb_enc_from_encoding(enc), rb_str_new_cstr("-"));
-    tree = rb_parser_compile_file(parser, fname, f, line_start);
+    tree = rb_parser_compile_file_path(parser, orig_fname, f, line_start);
     rb_funcall(f, set_encoding, 1, rb_parser_encoding(parser));
+    return (VALUE)tree;
+}
+
+static VALUE
+load_file_internal(VALUE arg)
+{
+    extern VALUE rb_stdin;
+    struct load_file_arg *argp = (struct load_file_arg *)arg;
+    VALUE parser = argp->parser;
+    VALUE orig_fname = argp->fname;
+    VALUE fname_v = rb_str_encode_ospath(orig_fname);
+    const char *fname = StringValueCStr(fname_v);
+    int script = argp->script;
+    VALUE f;
+    NODE *tree;
+    int xflag = 0;
+    int state;
+
+    if (strcmp(fname, "-") == 0) {
+	f = rb_stdin;
+    }
+    else {
+	int fd, mode = O_RDONLY;
+#if defined DOSISH || defined __CYGWIN__
+	{
+	    const char *ext = strrchr(fname, '.');
+	    if (ext && STRCASECMP(ext, ".exe") == 0) {
+		mode |= O_BINARY;
+		xflag = 1;
+	    }
+	}
+#endif
+	if ((fd = rb_cloexec_open(fname, mode, 0)) < 0) {
+	    rb_load_fail(fname_v, strerror(errno));
+	}
+        rb_update_max_fd(fd);
+#if !defined DOSISH && !defined __CYGWIN__
+	{
+	    struct stat st;
+	    if (fstat(fd, &st) != 0)
+		rb_load_fail(fname_v, strerror(errno));
+	    if (S_ISDIR(st.st_mode)) {
+		errno = EISDIR;
+		rb_load_fail(fname_v, strerror(EISDIR));
+	    }
+	}
+#endif
+	f = rb_io_fdopen(fd, mode, fname);
+    }
+
+    argp->f = f;
+    argp->xflag = xflag;
+    tree = (NODE *)rb_protect(load_file_internal2, (VALUE)argp, &state);
+    if (state) {
+        if (f != rb_stdin)
+            rb_io_close(f);
+        rb_jump_tag(state);
+    }
+
     if (script && tree && rb_parser_end_seen_p(parser)) {
+	/*
+	 * DATA is a File that contains the data section of the executed file.
+	 * To create a data section use <tt>__END__</tt>:
+	 *
+	 *   $ cat t.rb
+	 *   puts DATA.gets
+	 *   __END__
+	 *   hello world!
+	 *
+	 *   $ ruby t.rb
+	 *   hello world!
+	 */
 	rb_define_global_const("DATA", f);
     }
     else if (f != rb_stdin) {
@@ -1640,7 +1757,7 @@ restore_lineno(VALUE lineno)
 }
 
 static NODE *
-load_file(VALUE parser, const char *fname, int script, struct cmdline_options *opt)
+load_file(VALUE parser, VALUE fname, int script, struct cmdline_options *opt)
 {
     struct load_file_arg arg;
     arg.parser = parser;
@@ -1653,124 +1770,105 @@ load_file(VALUE parser, const char *fname, int script, struct cmdline_options *o
 void *
 rb_load_file(const char *fname)
 {
+    VALUE fname_v = rb_str_new_cstr(fname);
+    return rb_load_file_str(fname_v);
+}
+
+void *
+rb_load_file_str(VALUE fname_v)
+{
     struct cmdline_options opt;
 
-    return load_file(rb_parser_new(), fname, 0, cmdline_options_init(&opt));
+    return load_file(rb_parser_new(), fname_v, 0, cmdline_options_init(&opt));
 }
 
-#if !defined(PSTAT_SETCMD) && !defined(HAVE_SETPROCTITLE)
-#if !defined(_WIN32)
-#define USE_ENVSPACE_FOR_ARG0
-#endif
+/*
+ *  call-seq:
+ *     Process.argv0  -> frozen_string
+ *
+ *  Returns the name of the script being executed.  The value is not
+ *  affected by assigning a new value to $0.
+ *
+ *  This method first appeared in Ruby 2.1 to serve as a global
+ *  variable free means to get the script name.
+ */
 
-#ifdef USE_ENVSPACE_FOR_ARG0
-extern char **environ;
-#endif
-
-static size_t
-get_arglen(int argc, char **argv)
+static VALUE
+proc_argv0(VALUE process)
 {
-    char *s = argv[0];
-    int i;
-
-    if (!argc) return 0;
-    s += strlen(s);
-    /* See if all the arguments are contiguous in memory */
-    for (i = 1; i < argc; i++) {
-	if (argv[i] == s + 1) {
-	    s++;
-	    s += strlen(s);	/* this one is ok too */
-	}
-	else {
-	    break;
-	}
-    }
-#if defined(USE_ENVSPACE_FOR_ARG0)
-    if (environ && (s+1 == environ[0])) {
-	s++;
-	s += strlen(s);
-	for (i = 1; environ[i]; i++) {
-	    if (environ[i] == s + 1) {
-		s++;
-		s += strlen(s);	/* this one is ok too */
-	    }
-	}
-# if defined(HAVE_SETENV) && defined(HAVE_UNSETENV)
-	{
-	    char *t = malloc(s - environ[0] + 1);
-	    for (i = 0; environ[i]; i++) {
-		size_t len = strlen(environ[i]) + 1;
-		memcpy(t, environ[i], len);
-		environ[i] = t;
-		t += len;
-	    }
-	}
-# else
-	ruby_setenv("", NULL); /* duplicate environ vars */
-# endif
-    }
-#endif
-    return s - argv[0];
+    return rb_orig_progname;
 }
-#endif
+
+/*
+ *  call-seq:
+ *     Process.setproctitle(string)  -> string
+ *
+ *  Sets the process title that appears on the ps(1) command.  Not
+ *  necessarily effective on all platforms.  No exception will be
+ *  raised regardless of the result, nor will NotImplementedError be
+ *  raised even if the platform does not support the feature.
+ *
+ *  Calling this method does not affect the value of $0.
+ *
+ *     Process.setproctitle('myapp: worker #%d' % worker_id)
+ *
+ *  This method first appeared in Ruby 2.1 to serve as a global
+ *  variable free means to change the process title.
+ */
+
+static VALUE
+proc_setproctitle(VALUE process, VALUE title)
+{
+    StringValue(title);
+
+    setproctitle("%.*s", RSTRING_LENINT(title), RSTRING_PTR(title));
+
+    return title;
+}
 
 static void
 set_arg0(VALUE val, ID id)
 {
-    char *s;
-    long i;
-
     if (origarg.argv == 0)
 	rb_raise(rb_eRuntimeError, "$0 not initialized");
-    StringValue(val);
-    s = RSTRING_PTR(val);
-    i = RSTRING_LEN(val);
-#if defined(PSTAT_SETCMD)
-    if (i > PST_CLEN) {
-	union pstun un;
-	char buf[PST_CLEN + 1];	/* PST_CLEN is 64 (HP-UX 11.23) */
-	strlcpy(buf, s, sizeof(buf));
-	un.pst_command = buf;
-	pstat(PSTAT_SETCMD, un, PST_CLEN, 0, 0);
-    }
-    else {
-	union pstun un;
-	un.pst_command = s;
-	pstat(PSTAT_SETCMD, un, i, 0, 0);
-    }
-#elif defined(HAVE_SETPROCTITLE)
-    setproctitle("%.*s", (int)i, s);
-#else
 
-    if ((size_t)i > origarg.len - origarg.argc) {
-	i = (long)(origarg.len - origarg.argc);
-    }
-
-    memcpy(origarg.argv[0], s, i);
-
-    {
-	int j;
-	char *t = origarg.argv[0] + i;
-	*t = '\0';
-
-	if ((size_t)(i + 1) < origarg.len) {
-	    memset(t + 1, '\0', origarg.len - i - 1);
-	}
-	for (j = 1; j < origarg.argc; j++) {
-	    origarg.argv[j] = t;
-	}
-    }
-#endif
-    rb_progname = rb_obj_freeze(rb_external_str_new(s, i));
+    rb_progname = rb_str_new_frozen(proc_setproctitle(rb_mProcess, val));
 }
 
+static inline VALUE
+external_str_new_cstr(const char *p)
+{
+#if UTF8_PATH
+    VALUE str = rb_utf8_str_new_cstr(p);
+    return str_conv_enc(str, NULL, rb_default_external_encoding());
+#else
+    return rb_external_str_new_cstr(p);
+#endif
+}
+
+/*! Sets the current script name to this value.
+ *
+ * This is similar to <code>$0 = name</code> in Ruby level but also affects
+ * <code>Method#location</code> and others.
+ */
 void
 ruby_script(const char *name)
 {
     if (name) {
-	rb_progname = rb_obj_freeze(rb_external_str_new(name, strlen(name)));
+	rb_orig_progname = rb_progname = external_str_new_cstr(name);
 	rb_vm_set_progname(rb_progname);
     }
+}
+
+/*! Sets the current script name to this value.
+ *
+ * Same as ruby_script() but accepts a VALUE.
+ */
+void
+ruby_set_script_name(VALUE name)
+{
+    rb_orig_progname = rb_progname = rb_str_dup(name);
+    rb_vm_set_progname(rb_progname);
 }
 
 static void
@@ -1818,10 +1916,12 @@ opt_W_getter(ID id, void *data)
 	return INT2FIX(1);
       case Qtrue:
 	return INT2FIX(2);
+      default:
+	return Qnil;
     }
-    return Qnil;		/* not reached */
 }
 
+/*! Defines built-in variables */
 void
 ruby_prog_init(void)
 {
@@ -1835,6 +1935,16 @@ ruby_prog_init(void)
     rb_define_hooked_variable("$0", &rb_progname, 0, set_arg0);
     rb_define_hooked_variable("$PROGRAM_NAME", &rb_progname, 0, set_arg0);
 
+    rb_define_module_function(rb_mProcess, "argv0", proc_argv0, 0);
+    rb_define_module_function(rb_mProcess, "setproctitle", proc_setproctitle, 1);
+
+    /*
+     * ARGV contains the command line arguments used to run ruby with the
+     * first value containing the name of the executable.
+     *
+     * A library like OptionParser can be used to process command-line
+     * arguments.
+     */
     rb_define_global_const("ARGV", rb_argv);
 }
 
@@ -1852,7 +1962,7 @@ ruby_set_argv(int argc, char **argv)
 #endif
     rb_ary_clear(av);
     for (i = 0; i < argc; i++) {
-	VALUE arg = rb_external_str_new(argv[i], strlen(argv[i]));
+	VALUE arg = external_str_new_cstr(argv[i]);
 
 	OBJ_FREEZE(arg);
 	rb_ary_push(av, arg);
@@ -1864,14 +1974,56 @@ ruby_process_options(int argc, char **argv)
 {
     struct cmdline_options opt;
     VALUE iseq;
+    const char *script_name = (argc > 0 && argv[0]) ? argv[0] : "ruby";
 
-    ruby_script(argv[0]);  /* for the time being */
+    ruby_script(script_name);  /* for the time being */
     rb_argv0 = rb_str_new4(rb_progname);
     rb_gc_register_mark_object(rb_argv0);
     iseq = process_options(argc, argv, cmdline_options_init(&opt));
+
+#ifndef HAVE_SETPROCTITLE
+    ruby_init_setproctitle(argc, argv);
+#endif
+
     return (void*)(struct RData*)iseq;
 }
 
+static void
+fill_standard_fds(void)
+{
+    int f0, f1, f2, fds[2];
+    struct stat buf;
+    f0 = fstat(0, &buf) == -1 && errno == EBADF;
+    f1 = fstat(1, &buf) == -1 && errno == EBADF;
+    f2 = fstat(2, &buf) == -1 && errno == EBADF;
+    if (f0) {
+        if (pipe(fds) == 0) {
+            close(fds[1]);
+            if (fds[0] != 0) {
+                dup2(fds[0], 0);
+                close(fds[0]);
+            }
+        }
+    }
+    if (f1 || f2) {
+        if (pipe(fds) == 0) {
+            close(fds[0]);
+            if (f1 && fds[1] != 1)
+                dup2(fds[1], 1);
+            if (f2 && fds[1] != 2)
+                dup2(fds[1], 2);
+            if (fds[1] != 1 && fds[1] != 2)
+                close(fds[1]);
+        }
+    }
+}
+
+/*! Initializes the process for ruby(1).
+ *
+ * This function assumes this process is ruby(1) and it has just started.
+ * Usually programs that embeds CRuby interpreter should not call this function,
+ * and should do their own initialization.
+ */
 void
 ruby_sysinit(int *argc, char ***argv)
 {
@@ -1881,10 +2033,8 @@ ruby_sysinit(int *argc, char ***argv)
 #endif
     origarg.argc = *argc;
     origarg.argv = *argv;
-#if !defined(PSTAT_SETCMD) && !defined(HAVE_SETPROCTITLE)
-    origarg.len = get_arglen(origarg.argc, origarg.argv);
-#endif
 #if defined(USE_DLN_A_OUT)
     dln_argv0 = origarg.argv[0];
 #endif
+    fill_standard_fds();
 }

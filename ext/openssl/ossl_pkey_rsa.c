@@ -13,8 +13,8 @@
 #include "ossl.h"
 
 #define GetPKeyRSA(obj, pkey) do { \
-    GetPKey(obj, pkey); \
-    if (EVP_PKEY_type(pkey->type) != EVP_PKEY_RSA) { /* PARANOIA? */ \
+    GetPKey((obj), (pkey)); \
+    if (EVP_PKEY_type((pkey)->type) != EVP_PKEY_RSA) { /* PARANOIA? */ \
 	ossl_raise(rb_eRuntimeError, "THIS IS NOT A RSA!") ; \
     } \
 } while (0)
@@ -76,22 +76,87 @@ ossl_rsa_new(EVP_PKEY *pkey)
 /*
  * Private
  */
-static RSA *
-rsa_generate(int size, int exp)
+#if defined(HAVE_RSA_GENERATE_KEY_EX) && HAVE_BN_GENCB
+struct rsa_blocking_gen_arg {
+    RSA *rsa;
+    BIGNUM *e;
+    int size;
+    BN_GENCB *cb;
+    int result;
+};
+
+static void *
+rsa_blocking_gen(void *arg)
 {
-    return RSA_generate_key(size, exp,
-	    rb_block_given_p() ? ossl_generate_cb : NULL,
-	    NULL);
+    struct rsa_blocking_gen_arg *gen = (struct rsa_blocking_gen_arg *)arg;
+    gen->result = RSA_generate_key_ex(gen->rsa, gen->size, gen->e, gen->cb);
+    return 0;
+}
+#endif
+
+static RSA *
+rsa_generate(int size, unsigned long exp)
+{
+#if defined(HAVE_RSA_GENERATE_KEY_EX) && HAVE_BN_GENCB
+    int i;
+    BN_GENCB cb;
+    struct ossl_generate_cb_arg cb_arg;
+    struct rsa_blocking_gen_arg gen_arg;
+    RSA *rsa = RSA_new();
+    BIGNUM *e = BN_new();
+
+    if (!rsa || !e) {
+	if (e) BN_free(e);
+	if (rsa) RSA_free(rsa);
+	return 0;
+    }
+    for (i = 0; i < (int)sizeof(exp) * 8; ++i) {
+	if (exp & (1UL << i)) {
+	    if (BN_set_bit(e, i) == 0) {
+		BN_free(e);
+		RSA_free(rsa);
+		return 0;
+	    }
+	}
+    }
+
+    memset(&cb_arg, 0, sizeof(struct ossl_generate_cb_arg));
+    if (rb_block_given_p())
+	cb_arg.yield = 1;
+    BN_GENCB_set(&cb, ossl_generate_cb_2, &cb_arg);
+    gen_arg.rsa = rsa;
+    gen_arg.e = e;
+    gen_arg.size = size;
+    gen_arg.cb = &cb;
+    if (cb_arg.yield == 1) {
+	/* we cannot release GVL when callback proc is supplied */
+	rsa_blocking_gen(&gen_arg);
+    } else {
+	/* there's a chance to unblock */
+	rb_thread_call_without_gvl(rsa_blocking_gen, &gen_arg, ossl_generate_cb_stop, &cb_arg);
+    }
+    if (!gen_arg.result) {
+	BN_free(e);
+	RSA_free(rsa);
+	if (cb_arg.state) rb_jump_tag(cb_arg.state);
+	return 0;
+    }
+
+    BN_free(e);
+    return rsa;
+#else
+    return RSA_generate_key(size, exp, rb_block_given_p() ? ossl_generate_cb : NULL, NULL);
+#endif
 }
 
 /*
- *  call-seq:
- *     RSA.generate(size [, exponent]) -> rsa
+ * call-seq:
+ *   RSA.generate(size)           => RSA instance
+ *   RSA.generate(size, exponent) => RSA instance
  *
- *  === Parameters
- *  * +size+ is an integer representing the desired key size.  Keys smaller than 1024 should be considered insecure.
- *  * +exponent+ is an odd number normally 3, 17, or 65537.
- *
+ * Generates an RSA keypair.  +size+ is an integer representing the desired key
+ * size.  Keys smaller than 1024 should be considered insecure.  +exponent+ is
+ * an odd number normally 3, 17, or 65537.
  */
 static VALUE
 ossl_rsa_s_generate(int argc, VALUE *argv, VALUE klass)
@@ -103,7 +168,7 @@ ossl_rsa_s_generate(int argc, VALUE *argv, VALUE klass)
 
     rb_scan_args(argc, argv, "11", &size, &exp);
 
-    rsa = rsa_generate(NUM2INT(size), NIL_P(exp) ? RSA_F4 : NUM2INT(exp)); /* err handled by rsa_instance */
+    rsa = rsa_generate(NUM2INT(size), NIL_P(exp) ? RSA_F4 : NUM2ULONG(exp)); /* err handled by rsa_instance */
     obj = rsa_instance(klass, rsa);
 
     if (obj == Qfalse) {
@@ -115,18 +180,24 @@ ossl_rsa_s_generate(int argc, VALUE *argv, VALUE klass)
 }
 
 /*
- *  call-seq:
- *     RSA.new([size | encoded_key] [, pass]) -> rsa
+ * call-seq:
+ *   RSA.new(key_size)                 => RSA instance
+ *   RSA.new(encoded_key)              => RSA instance
+ *   RSA.new(encoded_key, pass_phrase) => RSA instance
  *
- *  === Parameters
- *  * +size+ is an integer representing the desired key size.
- *  * +encoded_key+ is a string containing PEM or DER encoded key.
- *  * +pass+ is an optional string with the password to decrypt the encoded key.
+ * Generates or loads an RSA keypair.  If an integer +key_size+ is given it
+ * represents the desired key size.  Keys less than 1024 bits should be
+ * considered insecure.
  *
- *  === Examples
- *  * RSA.new(2048) -> rsa
- *  * RSA.new(File.read("rsa.pem")) -> rsa
- *  * RSA.new(File.read("rsa.pem"), "mypassword") -> rsa
+ * A key can instead be loaded from an +encoded_key+ which must be PEM or DER
+ * encoded.  A +pass_phrase+ can be used to decrypt the key.  If none is given
+ * OpenSSL will prompt for the pass phrase.
+ *
+ * = Examples
+ *
+ *   OpenSSL::PKey::RSA.new 2048
+ *   OpenSSL::PKey::RSA.new File.read 'rsa.pem'
+ *   OpenSSL::PKey::RSA.new File.read('rsa.pem'), 'my pass phrase'
  */
 static VALUE
 ossl_rsa_initialize(int argc, VALUE *argv, VALUE self)
@@ -142,7 +213,7 @@ ossl_rsa_initialize(int argc, VALUE *argv, VALUE self)
 	rsa = RSA_new();
     }
     else if (FIXNUM_P(arg)) {
-	rsa = rsa_generate(FIX2INT(arg), NIL_P(pass) ? RSA_F4 : NUM2INT(pass));
+	rsa = rsa_generate(FIX2INT(arg), NIL_P(pass) ? RSA_F4 : NUM2ULONG(pass));
 	if (!rsa) ossl_raise(eRSAError, NULL);
     }
     else {
@@ -151,27 +222,29 @@ ossl_rsa_initialize(int argc, VALUE *argv, VALUE self)
 	in = ossl_obj2bio(arg);
 	rsa = PEM_read_bio_RSAPrivateKey(in, NULL, ossl_pem_passwd_cb, passwd);
 	if (!rsa) {
-	    (void)BIO_reset(in);
-	    rsa = PEM_read_bio_RSAPublicKey(in, NULL, NULL, NULL);
-	}
-	if (!rsa) {
-	    (void)BIO_reset(in);
+	    OSSL_BIO_reset(in);
 	    rsa = PEM_read_bio_RSA_PUBKEY(in, NULL, NULL, NULL);
 	}
 	if (!rsa) {
-	    (void)BIO_reset(in);
+	    OSSL_BIO_reset(in);
 	    rsa = d2i_RSAPrivateKey_bio(in, NULL);
 	}
 	if (!rsa) {
-	    (void)BIO_reset(in);
-	    rsa = d2i_RSAPublicKey_bio(in, NULL);
-	}
-	if (!rsa) {
-	    (void)BIO_reset(in);
+	    OSSL_BIO_reset(in);
 	    rsa = d2i_RSA_PUBKEY_bio(in, NULL);
 	}
+	if (!rsa) {
+	    OSSL_BIO_reset(in);
+	    rsa = PEM_read_bio_RSAPublicKey(in, NULL, NULL, NULL);
+	}
+	if (!rsa) {
+	    OSSL_BIO_reset(in);
+	    rsa = d2i_RSAPublicKey_bio(in, NULL);
+	}
 	BIO_free(in);
-	if (!rsa) ossl_raise(eRSAError, "Neither PUB key nor PRIV key:");
+	if (!rsa) {
+	    ossl_raise(eRSAError, "Neither PUB key nor PRIV key");
+	}
     }
     if (!EVP_PKEY_assign_RSA(pkey, rsa)) {
 	RSA_free(rsa);
@@ -182,11 +255,11 @@ ossl_rsa_initialize(int argc, VALUE *argv, VALUE self)
 }
 
 /*
- *  call-seq:
- *     rsa.public? -> true
+ * call-seq:
+ *   rsa.public? => true
  *
- *  The return value is always true since every private key is also a public key.
- *
+ * The return value is always true since every private key is also a public
+ * key.
  */
 static VALUE
 ossl_rsa_is_public(VALUE self)
@@ -201,9 +274,10 @@ ossl_rsa_is_public(VALUE self)
 }
 
 /*
- *  call-seq:
- *     rsa.private? -> true | false
+ * call-seq:
+ *   rsa.private? => true | false
  *
+ * Does this keypair contain a private key?
  */
 static VALUE
 ossl_rsa_is_private(VALUE self)
@@ -216,16 +290,14 @@ ossl_rsa_is_private(VALUE self)
 }
 
 /*
- *  call-seq:
- *     rsa.to_pem([cipher, pass]) -> aString
+ * call-seq:
+ *   rsa.export([cipher, pass_phrase]) => PEM-format String
+ *   rsa.to_pem([cipher, pass_phrase]) => PEM-format String
+ *   rsa.to_s([cipher, pass_phrase]) => PEM-format String
  *
- *  === Parameters
- *  * +cipher+ is a Cipher object.
- *  * +pass+ is a string.
- *
- *  === Examples
- *  * rsa.to_pem -> aString
- *  * rsa.to_pem(cipher, pass) -> aString
+ * Outputs this keypair in PEM encoding.  If +cipher+ and +pass_phrase+ are
+ * given they will be used to encrypt the key.  +cipher+ must be an
+ * OpenSSL::Cipher::Cipher instance.
  */
 static VALUE
 ossl_rsa_export(int argc, VALUE *argv, VALUE self)
@@ -243,7 +315,10 @@ ossl_rsa_export(int argc, VALUE *argv, VALUE self)
     if (!NIL_P(cipher)) {
 	ciph = GetCipherPtr(cipher);
 	if (!NIL_P(pass)) {
-	    passwd = StringValuePtr(pass);
+	    StringValue(pass);
+	    if (RSTRING_LENINT(pass) < OSSL_MIN_PWD_LEN)
+		ossl_raise(eOSSLError, "OpenSSL requires passwords to be at least four characters long");
+	    passwd = RSTRING_PTR(pass);
 	}
     }
     if (!(out = BIO_new(BIO_s_mem()))) {
@@ -256,7 +331,7 @@ ossl_rsa_export(int argc, VALUE *argv, VALUE self)
 	    ossl_raise(eRSAError, NULL);
 	}
     } else {
-	if (!PEM_write_bio_RSAPublicKey(out, pkey->pkey.rsa)) {
+	if (!PEM_write_bio_RSA_PUBKEY(out, pkey->pkey.rsa)) {
 	    BIO_free(out);
 	    ossl_raise(eRSAError, NULL);
 	}
@@ -267,9 +342,10 @@ ossl_rsa_export(int argc, VALUE *argv, VALUE self)
 }
 
 /*
- *  call-seq:
- *     rsa.to_der -> aString
+ * call-seq:
+ *   rsa.to_der => DER-format String
  *
+ * Outputs this keypair in DER encoding.
  */
 static VALUE
 ossl_rsa_to_der(VALUE self)
@@ -284,7 +360,7 @@ ossl_rsa_to_der(VALUE self)
     if(RSA_HAS_PRIVATE(pkey->pkey.rsa))
 	i2d_func = i2d_RSAPrivateKey;
     else
-	i2d_func = i2d_RSAPublicKey;
+	i2d_func = (int (*)(const RSA*, unsigned char**))i2d_RSA_PUBKEY;
     if((len = i2d_func(pkey->pkey.rsa, NULL)) <= 0)
 	ossl_raise(eRSAError, NULL);
     str = rb_str_new(0, len);
@@ -299,9 +375,12 @@ ossl_rsa_to_der(VALUE self)
 #define ossl_rsa_buf_size(pkey) (RSA_size((pkey)->pkey.rsa)+16)
 
 /*
- *  call-seq:
- *     rsa.public_encrypt(string [, padding]) -> aString
+ * call-seq:
+ *   rsa.public_encrypt(string)          => String
+ *   rsa.public_encrypt(string, padding) => String
  *
+ * Encrypt +string+ with the public key.  +padding+ defaults to PKCS1_PADDING.
+ * The encrypted string output can be decrypted using #private_decrypt.
  */
 static VALUE
 ossl_rsa_public_encrypt(int argc, VALUE *argv, VALUE self)
@@ -315,7 +394,7 @@ ossl_rsa_public_encrypt(int argc, VALUE *argv, VALUE self)
     pad = (argc == 1) ? RSA_PKCS1_PADDING : NUM2INT(padding);
     StringValue(buffer);
     str = rb_str_new(0, ossl_rsa_buf_size(pkey));
-    buf_len = RSA_public_encrypt(RSTRING_LEN(buffer), (unsigned char *)RSTRING_PTR(buffer),
+    buf_len = RSA_public_encrypt(RSTRING_LENINT(buffer), (unsigned char *)RSTRING_PTR(buffer),
 				 (unsigned char *)RSTRING_PTR(str), pkey->pkey.rsa,
 				 pad);
     if (buf_len < 0) ossl_raise(eRSAError, NULL);
@@ -325,9 +404,12 @@ ossl_rsa_public_encrypt(int argc, VALUE *argv, VALUE self)
 }
 
 /*
- *  call-seq:
- *     rsa.public_decrypt(string [, padding]) -> aString
+ * call-seq:
+ *   rsa.public_decrypt(string)          => String
+ *   rsa.public_decrypt(string, padding) => String
  *
+ * Decrypt +string+, which has been encrypted with the private key, with the
+ * public key.  +padding+ defaults to PKCS1_PADDING.
  */
 static VALUE
 ossl_rsa_public_decrypt(int argc, VALUE *argv, VALUE self)
@@ -341,7 +423,7 @@ ossl_rsa_public_decrypt(int argc, VALUE *argv, VALUE self)
     pad = (argc == 1) ? RSA_PKCS1_PADDING : NUM2INT(padding);
     StringValue(buffer);
     str = rb_str_new(0, ossl_rsa_buf_size(pkey));
-    buf_len = RSA_public_decrypt(RSTRING_LEN(buffer), (unsigned char *)RSTRING_PTR(buffer),
+    buf_len = RSA_public_decrypt(RSTRING_LENINT(buffer), (unsigned char *)RSTRING_PTR(buffer),
 				 (unsigned char *)RSTRING_PTR(str), pkey->pkey.rsa,
 				 pad);
     if (buf_len < 0) ossl_raise(eRSAError, NULL);
@@ -351,9 +433,12 @@ ossl_rsa_public_decrypt(int argc, VALUE *argv, VALUE self)
 }
 
 /*
- *  call-seq:
- *     rsa.private_encrypt(string [, padding]) -> aString
+ * call-seq:
+ *   rsa.private_encrypt(string)          => String
+ *   rsa.private_encrypt(string, padding) => String
  *
+ * Encrypt +string+ with the private key.  +padding+ defaults to PKCS1_PADDING.
+ * The encrypted string output can be decrypted using #public_decrypt.
  */
 static VALUE
 ossl_rsa_private_encrypt(int argc, VALUE *argv, VALUE self)
@@ -370,7 +455,7 @@ ossl_rsa_private_encrypt(int argc, VALUE *argv, VALUE self)
     pad = (argc == 1) ? RSA_PKCS1_PADDING : NUM2INT(padding);
     StringValue(buffer);
     str = rb_str_new(0, ossl_rsa_buf_size(pkey));
-    buf_len = RSA_private_encrypt(RSTRING_LEN(buffer), (unsigned char *)RSTRING_PTR(buffer),
+    buf_len = RSA_private_encrypt(RSTRING_LENINT(buffer), (unsigned char *)RSTRING_PTR(buffer),
 				  (unsigned char *)RSTRING_PTR(str), pkey->pkey.rsa,
 				  pad);
     if (buf_len < 0) ossl_raise(eRSAError, NULL);
@@ -379,11 +464,13 @@ ossl_rsa_private_encrypt(int argc, VALUE *argv, VALUE self)
     return str;
 }
 
-
 /*
- *  call-seq:
- *     rsa.private_decrypt(string [, padding]) -> aString
+ * call-seq:
+ *   rsa.private_decrypt(string)          => String
+ *   rsa.private_decrypt(string, padding) => String
  *
+ * Decrypt +string+, which has been encrypted with the public key, with the
+ * private key.  +padding+ defaults to PKCS1_PADDING.
  */
 static VALUE
 ossl_rsa_private_decrypt(int argc, VALUE *argv, VALUE self)
@@ -400,7 +487,7 @@ ossl_rsa_private_decrypt(int argc, VALUE *argv, VALUE self)
     pad = (argc == 1) ? RSA_PKCS1_PADDING : NUM2INT(padding);
     StringValue(buffer);
     str = rb_str_new(0, ossl_rsa_buf_size(pkey));
-    buf_len = RSA_private_decrypt(RSTRING_LEN(buffer), (unsigned char *)RSTRING_PTR(buffer),
+    buf_len = RSA_private_decrypt(RSTRING_LENINT(buffer), (unsigned char *)RSTRING_PTR(buffer),
 				  (unsigned char *)RSTRING_PTR(str), pkey->pkey.rsa,
 				  pad);
     if (buf_len < 0) ossl_raise(eRSAError, NULL);
@@ -410,12 +497,15 @@ ossl_rsa_private_decrypt(int argc, VALUE *argv, VALUE self)
 }
 
 /*
- *  call-seq:
- *     rsa.params -> hash
+ * call-seq:
+ *   rsa.params => hash
  *
- * Stores all parameters of key to the hash
- * INSECURE: PRIVATE INFORMATIONS CAN LEAK OUT!!!
- * Don't use :-)) (I's up to you)
+ * THIS METHOD IS INSECURE, PRIVATE INFORMATION CAN LEAK OUT!!!
+ *
+ * Stores all parameters of key to the hash.  The hash has keys 'n', 'e', 'd',
+ * 'p', 'q', 'dmp1', 'dmq1', 'iqmp'.
+ *
+ * Don't use :-)) (It's up to you)
  */
 static VALUE
 ossl_rsa_get_params(VALUE self)
@@ -440,11 +530,13 @@ ossl_rsa_get_params(VALUE self)
 }
 
 /*
- *  call-seq:
- *     rsa.to_text -> aString
+ * call-seq:
+ *   rsa.to_text => String
  *
- * Prints all parameters of key to buffer
- * INSECURE: PRIVATE INFORMATIONS CAN LEAK OUT!!!
+ * THIS METHOD IS INSECURE, PRIVATE INFORMATION CAN LEAK OUT!!!
+ *
+ * Dumps all parameters of a keypair to a String
+ *
  * Don't use :-)) (It's up to you)
  */
 static VALUE
@@ -468,10 +560,10 @@ ossl_rsa_to_text(VALUE self)
 }
 
 /*
- *  call-seq:
- *     rsa.public_key -> aRSA
+ * call-seq:
+ *    rsa.public_key -> RSA
  *
- * Makes new instance RSA PUBLIC_KEY from PRIVATE_KEY
+ * Makes new RSA instance containing the public key from the private key.
  */
 static VALUE
 ossl_rsa_to_public_key(VALUE self)
@@ -534,15 +626,31 @@ OSSL_PKEY_BN(rsa, iqmp)
 #define DefRSAConst(x) rb_define_const(cRSA, #x,INT2FIX(RSA_##x))
 
 void
-Init_ossl_rsa()
+Init_ossl_rsa(void)
 {
-#if 0 /* let rdoc know about mOSSL and mPKey */
-    mOSSL = rb_define_module("OpenSSL");
+#if 0
+    mOSSL = rb_define_module("OpenSSL"); /* let rdoc know about mOSSL and mPKey */
     mPKey = rb_define_module_under(mOSSL, "PKey");
 #endif
 
+    /* Document-class: OpenSSL::PKey::RSAError
+     *
+     * Generic exception that is raised if an operation on an RSA PKey
+     * fails unexpectedly or in case an instantiation of an instance of RSA
+     * fails due to non-conformant input data.
+     */
     eRSAError = rb_define_class_under(mPKey, "RSAError", ePKeyError);
 
+    /* Document-class: OpenSSL::PKey::RSA
+     *
+     * RSA is an asymmetric public key algorithm that has been formalized in
+     * RFC 3447. It is in widespread use in public key infrastuctures (PKI)
+     * where certificates (cf. OpenSSL::X509::Certificate) often are issued
+     * on the basis of a public/private RSA key pair. RSA is used in a wide
+     * field of applications such as secure (symmetric) key exchange, e.g.
+     * when establishing a secure TLS/SSL connection. It is also used in
+     * various digital signature schemes.
+     */
     cRSA = rb_define_class_under(mPKey, "RSA", cPKey);
 
     rb_define_singleton_method(cRSA, "generate", ossl_rsa_s_generate, -1);
@@ -586,7 +694,7 @@ Init_ossl_rsa()
 
 #else /* defined NO_RSA */
 void
-Init_ossl_rsa()
+Init_ossl_rsa(void)
 {
 }
 #endif /* NO_RSA */

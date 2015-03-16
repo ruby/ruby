@@ -22,26 +22,17 @@ extern "C" {
 #include <stdarg.h>
 #include "ruby/oniguruma.h"
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility push(default)
-#endif
+RUBY_SYMBOL_EXPORT_BEGIN
 
-#define ENCODING_INLINE_MAX 1023
+#define ENCODING_INLINE_MAX 127
 #define ENCODING_SHIFT (FL_USHIFT+10)
-#define ENCODING_MASK (((VALUE)ENCODING_INLINE_MAX)<<ENCODING_SHIFT)
+#define ENCODING_MASK (((VALUE)ENCODING_INLINE_MAX)<<ENCODING_SHIFT) /* FL_USER10|FL_USER11|FL_USER12|FL_USER13|FL_USER14|FL_USER15|FL_USER16 */
 
 #define ENCODING_SET_INLINED(obj,i) do {\
     RBASIC(obj)->flags &= ~ENCODING_MASK;\
     RBASIC(obj)->flags |= (VALUE)(i) << ENCODING_SHIFT;\
 } while (0)
-#define ENCODING_SET(obj,i) do {\
-    VALUE rb_encoding_set_obj = (obj); \
-    int encoding_set_enc_index = (i); \
-    if (encoding_set_enc_index < ENCODING_INLINE_MAX) \
-        ENCODING_SET_INLINED(rb_encoding_set_obj, encoding_set_enc_index); \
-    else \
-        rb_enc_set_index(rb_encoding_set_obj, encoding_set_enc_index); \
-} while (0)
+#define ENCODING_SET(obj,i) rb_enc_set_index((obj), (i))
 
 #define ENCODING_GET_INLINED(obj) (int)((RBASIC(obj)->flags & ENCODING_MASK)>>ENCODING_SHIFT)
 #define ENCODING_GET(obj) \
@@ -62,12 +53,12 @@ extern "C" {
 #define ENC_CODERANGE_ASCIIONLY(obj) (ENC_CODERANGE(obj) == ENC_CODERANGE_7BIT)
 #define ENC_CODERANGE_SET(obj,cr) (RBASIC(obj)->flags = \
 				   (RBASIC(obj)->flags & ~ENC_CODERANGE_MASK) | (cr))
-#define ENC_CODERANGE_CLEAR(obj) ENC_CODERANGE_SET(obj,0)
+#define ENC_CODERANGE_CLEAR(obj) ENC_CODERANGE_SET((obj),0)
 
 /* assumed ASCII compatibility */
 #define ENC_CODERANGE_AND(a, b) \
-    (a == ENC_CODERANGE_7BIT ? b : \
-     a == ENC_CODERANGE_VALID ? (b == ENC_CODERANGE_7BIT ? ENC_CODERANGE_VALID : b) : \
+    ((a) == ENC_CODERANGE_7BIT ? (b) : \
+     (a) == ENC_CODERANGE_VALID ? ((b) == ENC_CODERANGE_7BIT ? ENC_CODERANGE_VALID : (b)) : \
      ENC_CODERANGE_UNKNOWN)
 
 #define ENCODING_CODERANGE_SET(obj, encindex, cr) \
@@ -77,26 +68,30 @@ extern "C" {
         ENC_CODERANGE_SET(rb_encoding_coderange_obj, (cr)); \
     } while (0)
 
-typedef OnigEncodingType rb_encoding;
+typedef const OnigEncodingType rb_encoding;
 
 int rb_char_to_option_kcode(int c, int *option, int *kcode);
 
 int rb_enc_replicate(const char *, rb_encoding *);
 int rb_define_dummy_encoding(const char *);
-#define rb_enc_to_index(enc) ((enc) ? ENC_TO_ENCINDEX(enc) : 0)
+int rb_enc_dummy_p(rb_encoding *enc);
+int rb_enc_to_index(rb_encoding *enc);
 int rb_enc_get_index(VALUE obj);
 void rb_enc_set_index(VALUE obj, int encindex);
 int rb_enc_find_index(const char *name);
 int rb_to_encoding_index(VALUE);
-rb_encoding* rb_to_encoding(VALUE);
-rb_encoding* rb_enc_get(VALUE);
-rb_encoding* rb_enc_compatible(VALUE,VALUE);
-rb_encoding* rb_enc_check(VALUE,VALUE);
+rb_encoding *rb_to_encoding(VALUE);
+rb_encoding *rb_find_encoding(VALUE);
+rb_encoding *rb_enc_get(VALUE);
+rb_encoding *rb_enc_compatible(VALUE,VALUE);
+rb_encoding *rb_enc_check(VALUE,VALUE);
 VALUE rb_enc_associate_index(VALUE, int);
 VALUE rb_enc_associate(VALUE, rb_encoding*);
 void rb_enc_copy(VALUE dst, VALUE src);
 
 VALUE rb_enc_str_new(const char*, long, rb_encoding*);
+VALUE rb_enc_str_new_cstr(const char*, rb_encoding*);
+VALUE rb_enc_str_new_static(const char*, long, rb_encoding*);
 VALUE rb_enc_reg_new(const char*, long, rb_encoding*, int);
 PRINTF_ARGS(VALUE rb_enc_sprintf(rb_encoding *, const char*, ...), 2, 3);
 VALUE rb_enc_vsprintf(rb_encoding *, const char*, va_list);
@@ -104,17 +99,35 @@ long rb_enc_strlen(const char*, const char*, rb_encoding*);
 char* rb_enc_nth(const char*, const char*, long, rb_encoding*);
 VALUE rb_obj_encoding(VALUE);
 VALUE rb_enc_str_buf_cat(VALUE str, const char *ptr, long len, rb_encoding *enc);
+VALUE rb_enc_uint_chr(unsigned int code, rb_encoding *enc);
 
 VALUE rb_external_str_new_with_enc(const char *ptr, long len, rb_encoding *);
 VALUE rb_str_export_to_enc(VALUE, rb_encoding *);
 VALUE rb_str_conv_enc(VALUE str, rb_encoding *from, rb_encoding *to);
 VALUE rb_str_conv_enc_opts(VALUE str, rb_encoding *from, rb_encoding *to, int ecflags, VALUE ecopts);
 
+#if defined(__GNUC__) && !defined(__PCC__)
+#define rb_enc_str_new(str, len, enc) __extension__ ( \
+{					       \
+    (__builtin_constant_p(str) && __builtin_constant_p(len)) ? \
+	rb_enc_str_new_static((str), (len), (enc)) : \
+	rb_enc_str_new((str), (len), (enc)); \
+})
+#define rb_enc_str_new_cstr(str, enc) __extension__ (	\
+{					       \
+    (__builtin_constant_p(str)) ?	       \
+	rb_enc_str_new_static((str), (long)strlen(str), (enc)) : \
+	rb_enc_str_new_cstr((str), (enc)); \
+})
+#endif
+
+PRINTF_ARGS(NORETURN(void rb_enc_raise(rb_encoding *, VALUE, const char*, ...)), 3, 4);
+
 /* index -> rb_encoding */
-rb_encoding* rb_enc_from_index(int idx);
+rb_encoding *rb_enc_from_index(int idx);
 
 /* name -> rb_encoding */
-rb_encoding * rb_enc_find(const char *name);
+rb_encoding *rb_enc_find(const char *name);
 
 /* rb_encoding * -> name */
 #define rb_enc_name(enc) (enc)->name
@@ -148,33 +161,37 @@ unsigned int rb_enc_codepoint_len(const char *p, const char *e, int *len, rb_enc
 unsigned int rb_enc_codepoint(const char *p, const char *e, rb_encoding *enc);
 /* overriding macro */
 #define rb_enc_codepoint(p,e,enc) rb_enc_codepoint_len((p),(e),0,(enc))
-#define rb_enc_mbc_to_codepoint(p, e, enc) ONIGENC_MBC_TO_CODE(enc,(UChar*)(p),(UChar*)(e))
+#define rb_enc_mbc_to_codepoint(p, e, enc) ONIGENC_MBC_TO_CODE((enc),(UChar*)(p),(UChar*)(e))
 
 /* -> codelen>0 or raise exception */
 int rb_enc_codelen(int code, rb_encoding *enc);
+/* -> 0 for invalid codepoint */
+int rb_enc_code_to_mbclen(int code, rb_encoding *enc);
+#define rb_enc_code_to_mbclen(c, enc) ONIGENC_CODE_TO_MBCLEN((enc), (c));
 
 /* code,ptr,encoding -> write buf */
-#define rb_enc_mbcput(c,buf,enc) ONIGENC_CODE_TO_MBC(enc,c,(UChar*)(buf))
+#define rb_enc_mbcput(c,buf,enc) ONIGENC_CODE_TO_MBC((enc),(c),(UChar*)(buf))
 
 /* start, ptr, end, encoding -> prev_char */
-#define rb_enc_prev_char(s,p,e,enc) (char *)onigenc_get_prev_char_head(enc,(UChar*)(s),(UChar*)(p),(UChar*)(e))
+#define rb_enc_prev_char(s,p,e,enc) ((char *)onigenc_get_prev_char_head((enc),(UChar*)(s),(UChar*)(p),(UChar*)(e)))
 /* start, ptr, end, encoding -> next_char */
-#define rb_enc_left_char_head(s,p,e,enc) (char *)onigenc_get_left_adjust_char_head(enc,(UChar*)(s),(UChar*)(p),(UChar*)(e))
-#define rb_enc_right_char_head(s,p,e,enc) (char *)onigenc_get_right_adjust_char_head(enc,(UChar*)(s),(UChar*)(p),(UChar*)(e))
+#define rb_enc_left_char_head(s,p,e,enc) ((char *)onigenc_get_left_adjust_char_head((enc),(UChar*)(s),(UChar*)(p),(UChar*)(e)))
+#define rb_enc_right_char_head(s,p,e,enc) ((char *)onigenc_get_right_adjust_char_head((enc),(UChar*)(s),(UChar*)(p),(UChar*)(e)))
+#define rb_enc_step_back(s,p,e,n,enc) ((char *)onigenc_step_back((enc),(UChar*)(s),(UChar*)(p),(UChar*)(e),(int)(n)))
 
 /* ptr, ptr, encoding -> newline_or_not */
-#define rb_enc_is_newline(p,end,enc)  ONIGENC_IS_MBC_NEWLINE(enc,(UChar*)(p),(UChar*)(end))
+#define rb_enc_is_newline(p,end,enc)  ONIGENC_IS_MBC_NEWLINE((enc),(UChar*)(p),(UChar*)(end))
 
-#define rb_enc_isctype(c,t,enc) ONIGENC_IS_CODE_CTYPE(enc,c,t)
+#define rb_enc_isctype(c,t,enc) ONIGENC_IS_CODE_CTYPE((enc),(c),(t))
 #define rb_enc_isascii(c,enc) ONIGENC_IS_CODE_ASCII(c)
-#define rb_enc_isalpha(c,enc) ONIGENC_IS_CODE_ALPHA(enc,c)
-#define rb_enc_islower(c,enc) ONIGENC_IS_CODE_LOWER(enc,c)
-#define rb_enc_isupper(c,enc) ONIGENC_IS_CODE_UPPER(enc,c)
-#define rb_enc_ispunct(c,enc) ONIGENC_IS_CODE_PUNCT(enc,c)
-#define rb_enc_isalnum(c,enc) ONIGENC_IS_CODE_ALNUM(enc,c)
-#define rb_enc_isprint(c,enc) ONIGENC_IS_CODE_PRINT(enc,c)
-#define rb_enc_isspace(c,enc) ONIGENC_IS_CODE_SPACE(enc,c)
-#define rb_enc_isdigit(c,enc) ONIGENC_IS_CODE_DIGIT(enc,c)
+#define rb_enc_isalpha(c,enc) ONIGENC_IS_CODE_ALPHA((enc),(c))
+#define rb_enc_islower(c,enc) ONIGENC_IS_CODE_LOWER((enc),(c))
+#define rb_enc_isupper(c,enc) ONIGENC_IS_CODE_UPPER((enc),(c))
+#define rb_enc_ispunct(c,enc) ONIGENC_IS_CODE_PUNCT((enc),(c))
+#define rb_enc_isalnum(c,enc) ONIGENC_IS_CODE_ALNUM((enc),(c))
+#define rb_enc_isprint(c,enc) ONIGENC_IS_CODE_PRINT((enc),(c))
+#define rb_enc_isspace(c,enc) ONIGENC_IS_CODE_SPACE((enc),(c))
+#define rb_enc_isdigit(c,enc) ONIGENC_IS_CODE_DIGIT((enc),(c))
 
 #define rb_enc_asciicompat(enc) (rb_enc_mbminlen(enc)==1 && !rb_enc_dummy_p(enc))
 
@@ -198,9 +215,15 @@ rb_encoding *rb_locale_encoding(void);
 rb_encoding *rb_filesystem_encoding(void);
 rb_encoding *rb_default_external_encoding(void);
 rb_encoding *rb_default_internal_encoding(void);
+#ifndef rb_ascii8bit_encindex
 int rb_ascii8bit_encindex(void);
+#endif
+#ifndef rb_utf8_encindex
 int rb_utf8_encindex(void);
+#endif
+#ifndef rb_usascii_encindex
 int rb_usascii_encindex(void);
+#endif
 int rb_locale_encindex(void);
 int rb_filesystem_encindex(void);
 VALUE rb_enc_default_external(void);
@@ -209,21 +232,16 @@ void rb_enc_set_default_external(VALUE encoding);
 void rb_enc_set_default_internal(VALUE encoding);
 VALUE rb_locale_charmap(VALUE klass);
 long rb_memsearch(const void*,long,const void*,long,rb_encoding*);
+char *rb_enc_path_next(const char *,const char *,rb_encoding*);
+char *rb_enc_path_skip_prefix(const char *,const char *,rb_encoding*);
+char *rb_enc_path_last_separator(const char *,const char *,rb_encoding*);
+char *rb_enc_path_end(const char *,const char *,rb_encoding*);
+const char *ruby_enc_find_basename(const char *name, long *baselen, long *alllen, rb_encoding *enc);
+const char *ruby_enc_find_extname(const char *name, long *len, rb_encoding *enc);
+ID rb_check_id_cstr(const char *ptr, long len, rb_encoding *enc);
+VALUE rb_check_symbol_cstr(const char *ptr, long len, rb_encoding *enc);
 
 RUBY_EXTERN VALUE rb_cEncoding;
-#define ENC_DUMMY_FLAG (1<<24)
-#define ENC_INDEX_MASK (~(~0U<<24))
-
-#define ENC_TO_ENCINDEX(enc) (int)((enc)->ruby_encoding_index & ENC_INDEX_MASK)
-
-#define ENC_DUMMY_P(enc) ((enc)->ruby_encoding_index & ENC_DUMMY_FLAG)
-#define ENC_SET_DUMMY(enc) ((enc)->ruby_encoding_index |= ENC_DUMMY_FLAG)
-
-static inline int
-rb_enc_dummy_p(rb_encoding *enc)
-{
-    return ENC_DUMMY_P(enc) != 0;
-}
 
 /* econv stuff */
 
@@ -242,6 +260,7 @@ typedef struct rb_econv_t rb_econv_t;
 VALUE rb_str_encode(VALUE str, VALUE to, int ecflags, VALUE ecopts);
 int rb_econv_has_convpath_p(const char* from_encoding, const char* to_encoding);
 
+int rb_econv_prepare_options(VALUE opthash, VALUE *ecopts, int ecflags);
 int rb_econv_prepare_opts(VALUE opthash, VALUE *ecopts);
 
 rb_econv_t *rb_econv_open(const char *source_encoding, const char *destination_encoding, int ecflags);
@@ -286,6 +305,7 @@ VALUE rb_econv_str_convert(rb_econv_t *ec, VALUE src, int flags);
 VALUE rb_econv_substr_convert(rb_econv_t *ec, VALUE src, long byteoff, long bytesize, int flags);
 VALUE rb_econv_str_append(rb_econv_t *ec, VALUE src, VALUE dst, int flags);
 VALUE rb_econv_substr_append(rb_econv_t *ec, VALUE src, long byteoff, long bytesize, VALUE dst, int flags);
+VALUE rb_econv_append(rb_econv_t *ec, const char *bytesrc, long bytesize, VALUE dst, int flags);
 
 void rb_econv_binmode(rb_econv_t *ec);
 
@@ -301,6 +321,9 @@ void rb_econv_binmode(rb_econv_t *ec);
 #define ECONV_UNDEF_HEX_CHARREF                 0x00000030
 
 #define ECONV_DECORATOR_MASK                    0x0000ff00
+#define ECONV_NEWLINE_DECORATOR_MASK            0x00003f00
+#define ECONV_NEWLINE_DECORATOR_READ_MASK       0x00000f00
+#define ECONV_NEWLINE_DECORATOR_WRITE_MASK      0x00003000
 
 #define ECONV_UNIVERSAL_NEWLINE_DECORATOR       0x00000100
 #define ECONV_CRLF_NEWLINE_DECORATOR            0x00001000
@@ -311,6 +334,12 @@ void rb_econv_binmode(rb_econv_t *ec);
 #define ECONV_STATEFUL_DECORATOR_MASK           0x00f00000
 #define ECONV_XML_ATTR_QUOTE_DECORATOR          0x00100000
 
+#if defined(RUBY_TEST_CRLF_ENVIRONMENT) || defined(_WIN32)
+#define ECONV_DEFAULT_NEWLINE_DECORATOR ECONV_CRLF_NEWLINE_DECORATOR
+#else
+#define ECONV_DEFAULT_NEWLINE_DECORATOR 0
+#endif
+
 /* end of flags for rb_econv_open */
 
 /* flags for rb_econv_convert */
@@ -318,9 +347,7 @@ void rb_econv_binmode(rb_econv_t *ec);
 #define ECONV_AFTER_OUTPUT                      0x00020000
 /* end of flags for rb_econv_convert */
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility pop
-#endif
+RUBY_SYMBOL_EXPORT_END
 
 #if defined(__cplusplus)
 #if 0

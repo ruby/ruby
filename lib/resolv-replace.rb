@@ -19,7 +19,7 @@ class TCPSocket < IPSocket
   alias original_resolv_initialize initialize
   # :startdoc:
   def initialize(host, serv, *rest)
-    rest[0] = IPSocket.getaddress(rest[0]) unless rest.empty?
+    rest[0] = IPSocket.getaddress(rest[0]) if rest[0]
     original_resolv_initialize(IPSocket.getaddress(host), serv, *rest)
   end
 end
@@ -51,7 +51,6 @@ class UDPSocket < IPSocket
       rescue Resolv::ResolvError
         raise SocketError, "Hostname not known: #{host}"
       end
-      err = nil
       addrs[0...-1].each {|addr|
         begin
           return original_resolv_send(mesg, flags, addr, port)

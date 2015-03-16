@@ -1,4 +1,4 @@
-# -*- coding: euc-jp -*-
+# -*- coding: utf-8 -*-
 #
 # bitmap widget demo (called by 'widget')
 #
@@ -25,13 +25,13 @@ def bitmapRow(w,*args)
   }
 end
 
-# toplevel widget ¤¬Â¸ºß¤¹¤ì¤Ðºï½ü¤¹¤ë
+# toplevel widget ãŒå­˜åœ¨ã™ã‚Œã°å‰Šé™¤ã™ã‚‹
 if defined?($bitmap_demo) && $bitmap_demo
   $bitmap_demo.destroy
   $bitmap_demo = nil
 end
 
-# demo ÍÑ¤Î toplevel widget ¤òÀ¸À®
+# demo ç”¨ã® toplevel widget ã‚’ç”Ÿæˆ
 $bitmap_demo = TkToplevel.new {|w|
   title("Bitmap Demonstration")
   iconname("bitmap")
@@ -40,17 +40,17 @@ $bitmap_demo = TkToplevel.new {|w|
 
 base_frame = TkFrame.new($bitmap_demo).pack(:fill=>:both, :expand=>true)
 
-# label À¸À®
+# label ç”Ÿæˆ
 TkLabel.new(base_frame,'font'=>$font,'wraplength'=>'4i','justify'=>'left',
-            'text'=>"¤³¤Î¥¦¥£¥ó¥É¥¦¤Ë¤Ï¡¢Tk ¤ËÁÈ¤ß¹þ¤Þ¤ì¤¿¤¹¤Ù¤Æ¤Î¥Ó¥Ã¥È¥Þ¥Ã¥×¤¬¡¢¤½¤ì¤é¤ÎÌ¾Á°¤È¶¦¤ËÉ½¼¨¤µ¤ì¤Æ¤¤¤Þ¤¹¡£Tcl ¤Î¥¹¥¯¥ê¥×¥ÈÃæ¤Ç¤Ï¡¢¤½¤ì¤¾¤ì¤ÎÌ¾Á°¤òÍÑ¤¤¤Æ»²¾È¤·¤Þ¤¹¡£"){
+            'text'=>"ã“ã®ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã«ã¯ã€Tk ã«çµ„ã¿è¾¼ã¾ã‚ŒãŸã™ã¹ã¦ã®ãƒ“ãƒƒãƒˆãƒžãƒƒãƒ—ãŒã€ãã‚Œã‚‰ã®åå‰ã¨å…±ã«è¡¨ç¤ºã•ã‚Œã¦ã„ã¾ã™ã€‚Tcl ã®ã‚¹ã‚¯ãƒªãƒ—ãƒˆä¸­ã§ã¯ã€ãã‚Œãžã‚Œã®åå‰ã‚’ç”¨ã„ã¦å‚ç…§ã—ã¾ã™ã€‚"){
   pack('side'=>'top')
 }
 
-# frame À¸À®
+# frame ç”Ÿæˆ
 $bitmap_buttons = TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
-    #text 'Î»²ò'
-    text 'ÊÄ¤¸¤ë'
+    #text 'äº†è§£'
+    text 'é–‰ã˜ã‚‹'
     command proc{
       tmppath = $bitmap_demo
       $bitmap_demo = nil
@@ -59,13 +59,13 @@ $bitmap_buttons = TkFrame.new(base_frame) {|frame|
   }.pack('side'=>'left', 'expand'=>'yes')
 
   TkButton.new(frame) {
-    text '¥³¡¼¥É»²¾È'
+    text 'ã‚³ãƒ¼ãƒ‰å‚ç…§'
     command proc{showCode 'bitmap'}
   }.pack('side'=>'left', 'expand'=>'yes')
 }
 $bitmap_buttons.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
-# frame ÀßÄê
+# frame è¨­å®š
 TkFrame.new(base_frame){|f|
   bitmapRow(f,'error','gray25','gray50','hourglass')
   bitmapRow(f,'info','question','questhead','warning')

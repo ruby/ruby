@@ -6,6 +6,8 @@ module REXML
     include Functions
     include XMLTokens
 
+    # A base Hash object to be used when initializing a
+    # default empty namespaces set.
     EMPTY_HASH = {}
 
     def QuickPath::first element, path, namespaces=EMPTY_HASH
@@ -33,7 +35,6 @@ module REXML
         results = filter(element.to_a, path)
       when /^[\[!\w:]/u
         # match on child
-        matches = []
         children = element.to_a
         results = filter(children, path)
       else
@@ -48,22 +49,20 @@ module REXML
     def QuickPath::filter elements, path
       return elements if path.nil? or path == '' or elements.size == 0
       case path
-      when /^\/\//u											# Descendant
+      when /^\/\//u                                                                                     # Descendant
         return axe( elements, "descendant-or-self", $' )
-      when /^\/?\b(\w[-\w]*)\b::/u							# Axe
-        axe_name = $1
-        rest = $'
+      when /^\/?\b(\w[-\w]*)\b::/u                                                      # Axe
         return axe( elements, $1, $' )
-      when /^\/(?=\b([:!\w][-\.\w]*:)?[-!\*\.\w]*\b([^:(]|$)|\*)/u	# Child
+      when /^\/(?=\b([:!\w][-\.\w]*:)?[-!\*\.\w]*\b([^:(]|$)|\*)/u      # Child
         rest = $'
         results = []
         elements.each do |element|
           results |= filter( element.to_a, rest )
         end
         return results
-      when /^\/?(\w[-\w]*)\(/u							# / Function
+      when /^\/?(\w[-\w]*)\(/u                                                  # / Function
         return function( elements, $1, $' )
-      when Namespace::NAMESPLIT		# Element name
+      when Namespace::NAMESPLIT         # Element name
         name = $2
         ns = $1
         rest = $'
@@ -80,22 +79,22 @@ module REXML
           matches |= predicate( element.to_a, path[1..-1] ) if element.kind_of? Element
         end
         return matches
-      when /^\[/u												# Predicate
+      when /^\[/u                                                                                               # Predicate
         return predicate( elements, path )
-      when /^\/?\.\.\./u										# Ancestor
+      when /^\/?\.\.\./u                                                                                # Ancestor
         return axe( elements, "ancestor", $' )
-      when /^\/?\.\./u											# Parent
+      when /^\/?\.\./u                                                                                  # Parent
         return filter( elements.collect{|e|e.parent}, $' )
-      when /^\/?\./u												# Self
+      when /^\/?\./u                                                                                            # Self
         return filter( elements, $' )
-      when /^\*/u													# Any
+      when /^\*/u                                                                                                       # Any
         results = []
         elements.each do |element|
           results |= filter( [element], $' ) if element.kind_of? Element
           #if element.kind_of? Element
-          #	children = element.to_a
-          #	children.delete_if { |child| !child.kind_of?(Element) }
-          #	results |= filter( children, $' )
+          #     children = element.to_a
+          #     children.delete_if { |child| !child.kind_of?(Element) }
+          #     results |= filter( children, $' )
           #end
         end
         return results

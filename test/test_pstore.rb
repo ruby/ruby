@@ -1,9 +1,10 @@
 require 'test/unit'
 require 'pstore'
+require 'tmpdir'
 
 class PStoreTest < Test::Unit::TestCase
   def setup
-    @pstore_file = "pstore.tmp.#{Process.pid}"
+    @pstore_file = File.join(Dir.tmpdir, "pstore.tmp.#{Process.pid}")
     @pstore = PStore.new(@pstore_file)
   end
 
@@ -70,5 +71,74 @@ class PStoreTest < Test::Unit::TestCase
         @pstore[:foo] = "bar"
       end
     end
+  end
+
+  def test_thread_safe
+    assert_raise(PStore::Error) do
+      flag = false
+      th = Thread.new do
+        @pstore.transaction do
+          @pstore[:foo] = "bar"
+          flag = true
+          sleep 1
+        end
+      end
+      begin
+        sleep 0.1 until flag
+        @pstore.transaction {}
+      ensure
+        th.join
+      end
+    end
+    begin
+      pstore = PStore.new(second_file, true)
+      flag = false
+      th = Thread.new do
+        pstore.transaction do
+          pstore[:foo] = "bar"
+          flag = true
+          sleep 1
+        end
+      end
+      begin
+        sleep 0.1 until flag
+        assert_equal("bar", pstore.transaction { pstore[:foo] })
+      ensure
+        th.join
+      end
+    end
+  ensure
+    File.unlink(second_file) rescue nil
+  end
+
+  def test_nested_transaction_raises_error
+    assert_raise(PStore::Error) do
+      @pstore.transaction { @pstore.transaction { } }
+    end
+    pstore = PStore.new(second_file, true)
+    assert_raise(PStore::Error) do
+      pstore.transaction { pstore.transaction { } }
+    end
+  ensure
+    File.unlink(second_file) rescue nil
+  end
+
+  # Test that PStore's file operations do not blow up when default encodings are set
+  def test_pstore_files_are_accessed_as_binary_files
+    bug5311 = '[ruby-core:39503]'
+    n = 128
+    assert_in_out_err(["-Eutf-8:utf-8", "-rpstore", "-", @pstore_file], <<-SRC, [bug5311], [], bug5311, timeout: 15)
+      @pstore = PStore.new(ARGV[0])
+      (1..#{n}).each do |i|
+        @pstore.transaction {@pstore["Key\#{i}"] = "value \#{i}"}
+      end
+      @pstore.transaction {@pstore["Bug5311"] = '#{bug5311}'}
+      puts @pstore.transaction {@pstore["Bug5311"]}
+    SRC
+    assert_equal(bug5311, @pstore.transaction {@pstore["Bug5311"]}, bug5311)
+  end
+
+  def second_file
+    File.join(Dir.tmpdir, "pstore.tmp2.#{Process.pid}")
   end
 end

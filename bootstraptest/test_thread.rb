@@ -10,7 +10,8 @@ assert_equal %q{ok}, %q{
     :ok
   }.value
 }
-assert_equal %q{20100}, %q{
+assert_equal %q{ok}, %q{
+begin
   v = 0
   (1..200).map{|i|
     Thread.new{
@@ -19,7 +20,10 @@ assert_equal %q{20100}, %q{
   }.each{|t|
     v += t.value
   }
-  v
+  v == 20100 ? :ok : v
+rescue ThreadError => e
+  :ok if /can't create Thread/ =~ e.message
+end
 }
 assert_equal %q{5000}, %q{
   5000.times{|e|
@@ -41,13 +45,17 @@ assert_equal %q{5000}, %q{
     }
   }
 }
-assert_equal %q{5000}, %q{
-  5000.times{
+assert_equal %q{ok}, %q{
+begin
+  :ok if 5000 == 5000.times{
     t = Thread.new{}
     while t.alive?
       Thread.pass
     end
   }
+rescue NoMemoryError
+  :ok
+end
 }
 assert_equal %q{100}, %q{
   100.times{
@@ -77,7 +85,7 @@ assert_equal %q{ok}, %q{
       ans = :ok
     end
   }
-  Thread.pass
+  Thread.pass until t.stop?
   t.kill
   t.join
   ans
@@ -189,18 +197,18 @@ assert_equal %q{11}, %q{
   }.value + Thread.current[:a]
 }
 assert_normal_exit %q{
-begin
-  100.times do |i|
-    begin
-      th = Thread.start(Thread.current) {|u| u.raise }
-      raise
-    rescue
-    ensure
-      th.join
+  begin
+    100.times do |i|
+      begin
+        th = Thread.start(Thread.current) {|u| u.raise }
+        raise
+      rescue
+      ensure
+        th.join
+      end
     end
+  rescue
   end
-rescue
-end
 }, '[ruby-dev:31371]'
 
 assert_equal 'true', %{
@@ -233,16 +241,16 @@ assert_equal 'ok', %{
 }
 
 assert_finish 3, %{
-  th = Thread.new {sleep 2}
-  th.join(1)
+  th = Thread.new {sleep 0.2}
+  th.join(0.1)
   th.join
 }
 
 assert_finish 3, %{
   require 'timeout'
-  th = Thread.new {sleep 2}
+  th = Thread.new {sleep 0.2}
   begin
-    Timeout.timeout(1) {th.join}
+    Timeout.timeout(0.1) {th.join}
   rescue Timeout::Error
   end
   th.join
@@ -267,8 +275,8 @@ assert_normal_exit %q{
 
 assert_equal 'ok', %q{
   def m
-    t = Thread.new { while true do // =~ "" end }
-    sleep 0.1
+    t = Thread.new { while true; // =~ "" end }
+    sleep 0.01
     10.times {
       if /((ab)*(ab)*)*(b)/ =~ "ab"*7
         return :ng if !$4
@@ -332,8 +340,9 @@ assert_equal 'ok', %q{
 assert_equal 'ok', %q{
   begin
     m1, m2 = Mutex.new, Mutex.new
-    Thread.new { m1.lock; sleep 1; m2.lock }
-    m2.lock; sleep 1; m1.lock
+    f1 = f2 = false
+    Thread.new { m1.lock; f2 = true; sleep 0.001 until f1; m2.lock }
+    m2.lock; f1 = true; sleep 0.001 until f2; m1.lock
     :ng
   rescue Exception
     :ok
@@ -342,7 +351,7 @@ assert_equal 'ok', %q{
 
 assert_equal 'ok', %q{
   m = Mutex.new
-  Thread.new { m.lock }; sleep 1; m.lock
+  Thread.new { m.lock }; sleep 0.1; m.lock
   :ok
 }
 
@@ -360,15 +369,15 @@ assert_equal 'ok', %q{
 
 assert_equal 'ok', %q{
   m = Mutex.new
-  Thread.new { m.lock; sleep 2 }
-  sleep 1; m.lock
+  Thread.new { m.lock; sleep 0.2 }
+  sleep 0.1; m.lock
   :ok
 }
 
 assert_equal 'ok', %q{
   m = Mutex.new
-  Thread.new { m.lock; sleep 2; m.unlock }
-  sleep 1; m.lock
+  Thread.new { m.lock; sleep 0.2; m.unlock }
+  sleep 0.1; m.lock
   :ok
 }
 
@@ -380,7 +389,9 @@ assert_equal 'ok', %q{
 
 assert_equal 'ok', %q{
   begin
-    10000.times { Thread.new(true) {|x| x == false } }
+    100.times{
+      (1..100).map{ Thread.new(true) {|x| x == false } }.each{|th| th.join}
+    }
   rescue NoMemoryError, StandardError
   end
   :ok
@@ -388,19 +399,20 @@ assert_equal 'ok', %q{
 
 assert_equal 'ok', %{
   open("zzz.rb", "w") do |f|
-    f.puts <<-END
+    f.puts <<-'end;' # do
       begin
         m = Mutex.new
-        Thread.new { m.lock; sleep 1 }
-        sleep 0.3
         parent = Thread.current
+        th1 = Thread.new { m.lock; sleep }
+        sleep 0.01 until th1.stop?
         Thread.new do
-          sleep 0.3
+          sleep 0.01 until parent.stop?
           begin
             fork { GC.start }
           rescue Exception
             parent.raise $!
           end
+          th1.run
         end
         m.lock
         pid, status = Process.wait2
@@ -408,7 +420,7 @@ assert_equal 'ok', %{
       rescue NotImplementedError
         $result = :ok
       end
-    END
+    end;
   end
   require "./zzz.rb"
   $result
@@ -438,17 +450,27 @@ assert_finish 3, %q{
 
 assert_equal 'ok', %q{
   begin
-    Process.waitpid2(fork {sleep 1})[1].success? ? 'ok' : 'ng'
+    Process.waitpid2(fork {})[1].success? ? 'ok' : 'ng'
   rescue NotImplementedError
     'ok'
   end
 }
 
 assert_equal 'foo', %q{
-  f = proc {|s| /#{ sleep 1; s }/o }
-  [ Thread.new {            f.call("foo"); nil },
-    Thread.new { sleep 0.5; f.call("bar"); nil },
-  ].each {|t| t.join }
+  i = 0
+  Thread.start {sleep 1; exit!}
+  f = proc {|s, c| /#{c.call; s}/o }
+  th2 = Thread.new {
+    sleep 0.01 until i == 1
+    i = 2
+    f.call("bar", proc {sleep 2});
+    nil
+  }
+  th1 = Thread.new {
+    f.call("foo", proc {i = 1; sleep 0.01 until i == 2; sleep 0.01})
+    nil
+  }
+  [th1, th2].each {|t| t.join }
   GC.start
   f.call.source
 }

@@ -1,7 +1,6 @@
 require 'test/unit'
-require 'continuation'
+EnvUtil.suppress_warning {require 'continuation'}
 require 'fiber'
-require_relative 'envutil'
 
 class TestContinuation < Test::Unit::TestCase
   def test_create
@@ -77,5 +76,59 @@ class TestContinuation < Test::Unit::TestCase
     }, '[ruby-dev:34802]'
   end
 
+  def tracing_with_set_trace_func
+    orig_thread = Thread.current
+    cont = nil
+    func = lambda do |*args|
+      if orig_thread == Thread.current
+        if cont
+          @memo += 1
+          c = cont
+          cont = nil
+          c.call(nil)
+        end
+      end
+    end
+    cont = callcc { |cc| cc }
+    if cont
+      set_trace_func(func)
+    else
+      set_trace_func(nil)
+    end
+  end
+
+  def test_tracing_with_set_trace_func
+    @memo = 0
+    tracing_with_set_trace_func
+    tracing_with_set_trace_func
+    tracing_with_set_trace_func
+    assert_equal 3, @memo
+  end
+
+  def tracing_with_thread_set_trace_func
+    cont = nil
+    func = lambda do |*args|
+      if cont
+        @memo += 1
+        c = cont
+        cont = nil
+        c.call(nil)
+      end
+    end
+    cont = callcc { |cc| cc }
+    if cont
+      Thread.current.set_trace_func(func)
+    else
+      Thread.current.set_trace_func(nil)
+    end
+  end
+
+  def test_tracing_with_thread_set_trace_func
+    @memo = 0
+    tracing_with_thread_set_trace_func
+    tracing_with_thread_set_trace_func
+    tracing_with_thread_set_trace_func
+    assert_equal 3, @memo
+  end
 end
 

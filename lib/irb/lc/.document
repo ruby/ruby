@@ -1,0 +1,4 @@
+# hide help-message files which contain usage information
+error.rb
+ja/encoding_aliases.rb
+ja/error.rb

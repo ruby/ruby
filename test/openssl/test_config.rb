@@ -1,7 +1,4 @@
-require 'openssl'
-require "test/unit"
-require 'tempfile'
-require File.join(File.dirname(__FILE__), "utils.rb")
+require_relative 'utils'
 
 class OpenSSL::TestConfig < Test::Unit::TestCase
   def setup
@@ -15,13 +12,20 @@ dir = ./demoCA
 certs                =                  ./certs
 __EOD__
     file.close
+    @tmpfile = file
     @it = OpenSSL::Config.new(file.path)
+  end
+
+  def teardown
+    @tmpfile.close!
   end
 
   def test_constants
     assert(defined?(OpenSSL::Config::DEFAULT_CONFIG_FILE))
+    config_file = OpenSSL::Config::DEFAULT_CONFIG_FILE
+    skip "DEFAULT_CONFIG_FILE may return a wrong path on your platforms. [Bug #6830]" unless File.readable?(config_file)
     assert_nothing_raised do
-      OpenSSL::Config.load(OpenSSL::Config::DEFAULT_CONFIG_FILE)
+      OpenSSL::Config.load(config_file)
     end
   end
 
@@ -117,11 +121,12 @@ __EOC__
     assert_equal("", c.to_s)
     assert_equal([], c.sections)
     #
-    file = Tempfile.open("openssl.cnf")
-    file.close
-    c = OpenSSL::Config.load(file.path)
-    assert_equal("[ default ]\n\n", c.to_s)
-    assert_equal(['default'], c.sections)
+    Tempfile.create("openssl.cnf") {|file|
+      file.close
+      c = OpenSSL::Config.load(file.path)
+      assert_equal("[ default ]\n\n", c.to_s)
+      assert_equal(['default'], c.sections)
+    }
   end
 
   def test_initialize
@@ -131,11 +136,12 @@ __EOC__
   end
 
   def test_initialize_with_empty_file
-    file = Tempfile.open("openssl.cnf")
-    file.close
-    c = OpenSSL::Config.new(file.path)
-    assert_equal("[ default ]\n\n", c.to_s)
-    assert_equal(['default'], c.sections)
+    Tempfile.create("openssl.cnf") {|file|
+      file.close
+      c = OpenSSL::Config.new(file.path)
+      assert_equal("[ default ]\n\n", c.to_s)
+      assert_equal(['default'], c.sections)
+    }
   end
 
   def test_initialize_with_example_file
@@ -265,11 +271,12 @@ __EOC__
     c['foo'] = [['key', 'value']]
     c.freeze
 
-    # [ruby-core:18377]
+    bug = '[ruby-core:18377]'
     # RuntimeError for 1.9, TypeError for 1.8
-    assert_raise(TypeError, /frozen/) do
+    e = assert_raise(TypeError, bug) do
       c['foo'] = [['key', 'wrong']]
     end
+    assert_match(/can't modify/, e.message, bug)
   end
 
   def test_dup
@@ -287,4 +294,4 @@ __EOC__
     @it['newsection'] = {'a' => 'b'}
     assert_not_equal(@it.sections.sort, c.sections.sort)
   end
-end
+end if defined?(OpenSSL::TestUtils)

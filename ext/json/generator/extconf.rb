@@ -1,4 +1,4 @@
 require 'mkmf'
-require 'rbconfig'
 
+$defs << "-DJSON_GENERATOR"
 create_makefile 'json/ext/generator'

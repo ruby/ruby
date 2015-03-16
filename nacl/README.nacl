@@ -1,0 +1,51 @@
+=begin
+= Native Client port of Ruby
+
+= How to build
+== Prerequisites
+You need to install the following things before building NaCl port of Ruby.
+* Ruby 1.9.3 or later
+* Python 2.6 or later
+* NativeClient SDK pepper 37 or later
+* GNU make
+
+== Steps
+(1) Extract all files from the tarball:
+     $ tar xzf ruby-X.Y.Z.tar.gz
+(2) Set NACL_SDK_ROOT environment variable to the path to the Native Client SDK you installed:
+     $ export NACL_SDK_ROOT=/home/yugui/src/nacl_sdk/pepper_37
+(3) Configure
+     $ ./configure --prefix=/tmp/nacl-ruby --host=x86_64-nacl --with-baseruby=/path/to/ruby-1.9.3-or-later
+(4) Make
+     $ make
+     $ make package
+
+Now you have ruby.nexe. You can run it by sel_ldr in NaCl SDK.
+
+"make package" installs "pepper-ruby.nexe", an example Pepper application that
+embeds Ruby", and libraries to $prefix. You can run it by the following steps:
+(5) Publish the $prefix directory on a web server
+(6) Visit the example.html on the web server by a browser that implements Pepper 18 or later.
+   -- e.g., Chrome 18 implements Pepper 18, Chrome 19 implements Pepper 19, ...
+
+=== Example Configurations
+* x86_32 Native Client
+   $ ./configure --prefix=/tmp/nacl-ruby \
+     --host=i686-nacl \
+     --with-baseruby=/path/to/ruby-1.9.3-or-later
+* arm Native Client
+   $ ./configure --prefix=/tmp/nacl-ruby \
+     --host=arm-nacl \
+     --with-newlib \
+     --with-baseruby=/path/to/ruby-1.9.3-or-later
+* Portable Native Client
+   $ ./configure --prefix=/tmp/nacl-ruby \
+     --host=le32-nacl \
+     --with-newlib \
+     --with-static-linked-ext \
+     --with-baseruby=/path/to/ruby-1.9.3-or-later
+
+= Copyright
+* Copyright 2012 Google Inc. All Rights Reserved.
+* Author: yugui@google.com (Yugui Sonoda)
+=end

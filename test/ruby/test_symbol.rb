@@ -3,21 +3,25 @@ require 'test/unit'
 class TestSymbol < Test::Unit::TestCase
   # [ruby-core:3573]
 
-  def assert_eval_inspected(sym)
+  def assert_eval_inspected(sym, valid = true)
     n = sym.inspect
+    if valid
+      bug5136 = '[ruby-dev:44314]'
+      assert_not_match(/\A:"/, n, bug5136)
+    end
     assert_nothing_raised(SyntaxError) {assert_equal(sym, eval(n))}
   end
 
   def test_inspect_invalid
     # 2) Symbol#inspect sometimes returns invalid symbol representations:
     assert_eval_inspected(:"!")
-    assert_eval_inspected(:"=")
-    assert_eval_inspected(:"0")
+    assert_eval_inspected(:"=", false)
+    assert_eval_inspected(:"0", false)
     assert_eval_inspected(:"$1")
-    assert_eval_inspected(:"@1")
-    assert_eval_inspected(:"@@1")
-    assert_eval_inspected(:"@")
-    assert_eval_inspected(:"@@")
+    assert_eval_inspected(:"@1", false)
+    assert_eval_inspected(:"@@1", false)
+    assert_eval_inspected(:"@", false)
+    assert_eval_inspected(:"@@", false)
   end
 
   def assert_inspect_evaled(n)
@@ -29,7 +33,7 @@ class TestSymbol < Test::Unit::TestCase
     assert_inspect_evaled(':foo')
     assert_inspect_evaled(':foo!')
     assert_inspect_evaled(':bar?')
-    assert_inspect_evaled(':<<')
+    assert_inspect_evaled(":<<")
     assert_inspect_evaled(':>>')
     assert_inspect_evaled(':<=')
     assert_inspect_evaled(':>=')
@@ -60,11 +64,10 @@ class TestSymbol < Test::Unit::TestCase
 
   def test_inspect_dollar
     # 4) :$- always treats next character literally:
-    sym = "$-".intern
-    assert_nothing_raised(SyntaxError) {assert_equal(sym, eval(':$-'))}
-    assert_nothing_raised(SyntaxError) {assert_equal(sym, eval(":$-\n"))}
-    assert_nothing_raised(SyntaxError) {assert_equal(sym, eval(":$- "))}
-    assert_nothing_raised(SyntaxError) {assert_equal(sym, eval(":$-#"))}
+    assert_raise(SyntaxError) {eval ':$-'}
+    assert_raise(SyntaxError) {eval ":$-\n"}
+    assert_raise(SyntaxError) {eval ":$- "}
+    assert_raise(SyntaxError) {eval ":$-#"}
     assert_raise(SyntaxError) {eval ':$-('}
   end
 
@@ -73,6 +76,19 @@ class TestSymbol < Test::Unit::TestCase
     # latter isn't.
     assert_inspect_evaled(':$0')
     assert_inspect_evaled(':$1')
+  end
+
+  def test_inspect
+    valid = %W{$a @a @@a < << <= <=> > >> >= =~ == === * ** + +@ - -@
+    | ^ & / % ~ \` [] []= ! != !~ a a? a! a= A A? A! A=}
+    valid.each do |sym|
+      assert_equal(':' + sym, sym.intern.inspect)
+    end
+
+    invalid = %w{$a? $a! $a= @a? @a! @a= @@a? @@a! @@a= =}
+    invalid.each do |sym|
+      assert_equal(':"' + sym + '"', sym.intern.inspect)
+    end
   end
 
   def test_to_proc
@@ -96,6 +112,33 @@ class TestSymbol < Test::Unit::TestCase
 
     assert_equal(3, :foo.to_proc.call(o, 1, 2))
     assert_raise(ArgumentError) { :foo.to_proc.call }
+  end
+
+  def m_block_given?
+    block_given?
+  end
+
+  def m2_block_given?(m = nil)
+    if m
+      [block_given?, m.call(self)]
+    else
+      block_given?
+    end
+  end
+
+  def test_block_given_to_proc
+    bug8531 = '[Bug #8531]'
+    m = :m_block_given?.to_proc
+    assert(!m.call(self), "#{bug8531} without block")
+    assert(m.call(self) {}, "#{bug8531} with block")
+    assert(!m.call(self), "#{bug8531} without block second")
+  end
+
+  def test_block_persist_between_calls
+    bug8531 = '[Bug #8531]'
+    m2 = :m2_block_given?.to_proc
+    assert_equal([true, false], m2.call(self, m2) {}, "#{bug8531} nested with block")
+    assert_equal([false, false], m2.call(self, m2), "#{bug8531} nested without block")
   end
 
   def test_succ
@@ -143,5 +186,56 @@ class TestSymbol < Test::Unit::TestCase
       assert_equal(':"abc"', "abc".encode(e).to_sym.inspect)
       assert_equal(':"\\u3042\\u3044\\u3046"', "\u3042\u3044\u3046".encode(e).to_sym.inspect)
     end
+  end
+
+  def test_symbol_encoding
+    assert_equal(Encoding::US_ASCII, "$-A".force_encoding("iso-8859-15").intern.encoding)
+    assert_equal(Encoding::US_ASCII, "foobar~!".force_encoding("iso-8859-15").intern.encoding)
+    assert_equal(Encoding::UTF_8, "\u{2192}".intern.encoding)
+    assert_raise(EncodingError) {"\xb0a".force_encoding("utf-8").intern}
+  end
+
+  def test_singleton_method
+    assert_raise(TypeError) { a = :foo; def a.foo; end }
+  end
+
+  def test_frozen_symbol
+    assert_equal(true, :foo.frozen?)
+    assert_equal(true, :each.frozen?)
+    assert_equal(true, :+.frozen?)
+    assert_equal(true, "foo#{Time.now.to_i}".to_sym.frozen?)
+    assert_equal(true, :foo.to_sym.frozen?)
+  end
+
+  def test_symbol_gc_1
+    assert_normal_exit('".".intern;GC.start(immediate_sweep:false);eval %[GC.start;".".intern]',
+                       '',
+                       child_env: '--disable-gems')
+    assert_normal_exit('".".intern;GC.start(immediate_sweep:false);eval %[GC.start;:"."]',
+                       '',
+                       child_env: '--disable-gems')
+    assert_normal_exit('".".intern;GC.start(immediate_sweep:false);eval %[GC.start;%i"."]',
+                       '',
+                       child_env: '--disable-gems')
+    assert_normal_exit('tap{".".intern};GC.start(immediate_sweep:false);' +
+                       'eval %[syms=Symbol.all_symbols;GC.start;syms.each(&:to_sym)]',
+                       '',
+                       child_env: '--disable-gems')
+  end
+
+  def test_dynamic_attrset_id
+    bug10259 = '[ruby-dev:48559] [Bug #10259]'
+    class << (obj = Object.new)
+      attr_writer :unagi
+    end
+    assert_nothing_raised(NoMethodError, bug10259) {obj.send("unagi=".intern, 1)}
+  end
+
+  def test_symbol_fstr_leak
+    bug10686 = '[ruby-core:67268] [Bug #10686]'
+    x = 0
+    assert_no_memory_leak([], '', <<-"end;", bug10686, limit: 1.71)
+      200_000.times { |i| i.to_s.to_sym }
+    end;
   end
 end

@@ -27,6 +27,10 @@ class TestFTP < Test::Unit::TestCase
     assert_equal('pass', url.password)
   end
 
+  def test_parse_invalid
+    assert_raise(InvalidURIError){URI.parse('ftp:example')}
+  end
+
   def test_paths
     # If you think what's below is wrong, please read RubyForge bug 2055,
     # RFC 1738 section 3.2.2, and RFC 2396.

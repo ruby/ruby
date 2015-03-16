@@ -21,7 +21,7 @@ class TestWhileuntil < Test::Unit::TestCase
         break if /vt100/ =~ line
       end
 
-      assert(!tmp.eof?)
+      assert_not_predicate(tmp, :eof?)
       assert_match(/vt100/, line)
       tmp.close
 
@@ -30,7 +30,7 @@ class TestWhileuntil < Test::Unit::TestCase
         next if /vt100/ =~ line
         assert_no_match(/vt100/, line)
       end
-      assert(tmp.eof?)
+      assert_predicate(tmp, :eof?)
       assert_no_match(/vt100/, line)
       tmp.close
 
@@ -45,7 +45,7 @@ class TestWhileuntil < Test::Unit::TestCase
         assert_no_match(/vt100/, line)
         assert_no_match(/VT100/, line)
       end
-      assert(tmp.eof?)
+      assert_predicate(tmp, :eof?)
       tmp.close
 
       sum=0
@@ -68,7 +68,7 @@ class TestWhileuntil < Test::Unit::TestCase
       tmp.close
 
       File.unlink tmpfilename or `/bin/rm -f "#{tmpfilename}"`
-      assert(!File.exist?(tmpfilename))
+      assert_file.not_exist?(tmpfilename)
     }
   end
 
@@ -77,6 +77,6 @@ class TestWhileuntil < Test::Unit::TestCase
     until i>4
       i+=1
     end
-    assert(i>4)
+    assert_operator(i, :>, 4)
   end
 end

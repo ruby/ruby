@@ -11,7 +11,8 @@ class ERB
       return nil if self.empty?
       arg = self.shift
       return nil if arg == '--'
-      if arg =~ /^-(.)(.*)/
+      case arg
+      when /\A-(.)(.*)/
         if $1 == '-'
           arg, @maybe_arg = arg.split(/=/, 2)
           return arg
@@ -24,6 +25,8 @@ class ERB
           @maybe_arg = nil
         end
         "-#{$1}"
+      when /\A(\w+)=/
+        arg
       else
         self.unshift arg
         nil
@@ -54,6 +57,7 @@ class ERB
     def run(factory=ERB)
       trim_mode = 0
       disable_percent = false
+      variables = {}
       begin
         while switch = ARGV.switch
           case switch
@@ -72,7 +76,7 @@ class ERB
             require ARGV.req_arg
           when '-S'                        # security level
             arg = ARGV.req_arg
-            raise "invalid safe_level #{arg.dump}" unless arg =~ /^[0-4]$/
+            raise "invalid safe_level #{arg.dump}" unless arg =~ /\A[0-3]\z/
             safe_level = arg.to_i
           when '-T'                        # trim mode
             arg = ARGV.req_arg
@@ -80,7 +84,7 @@ class ERB
               trim_mode = arg
               next
             end
-            raise "invalid trim mode #{arg.dump}" unless arg =~ /^[0-2]$/
+            raise "invalid trim mode #{arg.dump}" unless arg =~ /\A[0-2]\z/
             trim_mode = arg.to_i
           when '-E', '--encoding'
             arg = ARGV.req_arg
@@ -91,25 +95,29 @@ class ERB
             disable_percent = true
           when '--help'
             raise "print this help"
-          else
+          when /\A-/
             raise "unknown switch #{switch.dump}"
+          else
+            var, val = *switch.split('=', 2)
+            (variables ||= {})[var] = val
           end
         end
       rescue                               # usage
         STDERR.puts $!.to_s
         STDERR.puts File.basename($0) +
-          " [switches] [inputfile]"
+          " [switches] [var=value...] [inputfile]"
         STDERR.puts <<EOU
   -x               print ruby script
   -n               print ruby script with line number
   -v               enable verbose mode
   -d               set $DEBUG to true
   -r library       load a library
-  -S safe_level    set $SAFE (0..4)
+  -S safe_level    set $SAFE (0..3)
   -E ex[:in]       set default external/internal encodings
   -U               set default encoding to UTF-8.
   -T trim_mode     specify trim_mode (0..2, -)
   -P               ignore lines which start with "%"
+  var=value        set variable
 EOU
         exit 1
       end
@@ -130,15 +138,23 @@ EOU
           puts erb.src
         end
       else
-        erb.run(TOPLEVEL_BINDING.taint)
+        bind = TOPLEVEL_BINDING.taint
+        if variables
+          enc = erb.encoding
+          for var, val in variables do
+            val = val.encode(enc) if val
+            bind.local_variable_set(var, val)
+          end
+        end
+        erb.run(bind)
       end
     end
     module_function :run
 
     def set_encoding(extern, intern = nil)
       verbose, $VERBOSE = $VERBOSE, nil
-      Encoding.default_external = extern unless extern.nil? || extern.empty?
-      Encoding.default_internal = intern unless intern.nil? || intern.empty?
+      Encoding.default_external = extern unless extern.nil? || extern == ""
+      Encoding.default_internal = intern unless intern.nil? || intern == ""
       [$stdin, $stdout, $stderr].each do |io|
         io.set_encoding(extern, intern)
       end

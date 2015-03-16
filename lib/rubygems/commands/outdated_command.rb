@@ -15,19 +15,18 @@ class Gem::Commands::OutdatedCommand < Gem::Command
     add_platform_option
   end
 
-  def execute
-    locals = Gem::SourceIndex.from_installed_gems
+  def description # :nodoc:
+    <<-EOF
+The outdated command lists gems you may wish to upgrade to a newer version.
 
-    locals.outdated.sort.each do |name|
-      local = locals.find_name(name).last
-
-      dep = Gem::Dependency.new local.name, ">= #{local.version}"
-      remotes = Gem::SpecFetcher.fetcher.fetch dep
-      remote = remotes.last.first
-
-      say "#{local.name} (#{local.version} < #{remote.version})"
-    end
+You can check for dependency mismatches using the dependency command and
+update the gems with the update or install commands.
+    EOF
   end
 
+  def execute
+    Gem::Specification.outdated_and_latest_version.each do |spec, remote_version|
+      say "#{spec.name} (#{spec.version} < #{remote_version})"
+    end
+  end
 end
-

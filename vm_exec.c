@@ -11,26 +11,36 @@
 
 #include <math.h>
 
+#if VM_COLLECT_USAGE_DETAILS
+static void vm_analysis_insn(int insn);
+#endif
+
 #if VMDEBUG > 0
 #define DECL_SC_REG(type, r, reg) register type reg_##r
 
-#elif __GNUC__ && __x86_64__ && !__clang__
+#elif defined(__GNUC__) && defined(__x86_64__)
 #define DECL_SC_REG(type, r, reg) register type reg_##r __asm__("r" reg)
 
-#elif __GNUC__ && __i386__ && !__clang__
+#elif defined(__GNUC__) && defined(__i386__)
 #define DECL_SC_REG(type, r, reg) register type reg_##r __asm__("e" reg)
+
+#elif defined(__GNUC__) && defined(__powerpc64__)
+#define DECL_SC_REG(type, r, reg) register type reg_##r __asm__("r" reg)
 
 #else
 #define DECL_SC_REG(type, r, reg) register type reg_##r
 #endif
 /* #define DECL_SC_REG(r, reg) VALUE reg_##r */
 
-#if OPT_STACK_CACHING
-static VALUE finish_insn_seq[1] = { BIN(finish_SC_ax_ax) };
-#elif OPT_CALL_THREADED_CODE
-static VALUE const finish_insn_seq[1] = { 0 };
-#else
-static VALUE finish_insn_seq[1] = { BIN(finish) };
+#if VM_DEBUG_STACKOVERFLOW
+NORETURN(static void vm_stack_overflow_for_insn(void));
+static void
+vm_stack_overflow_for_insn(void)
+{
+    rb_bug("CHECK_VM_STACK_OVERFLOW_FOR_INSN: should not overflow here. "
+	   "Please contact ruby-core/dev with your (a part of) script. "
+	   "This check will be removed soon.");
+}
 #endif
 
 #if !OPT_CALL_THREADED_CODE
@@ -40,7 +50,7 @@ vm_exec_core(rb_thread_t *th, VALUE initial)
 
 #if OPT_STACK_CACHING
 #if 0
-#elif __GNUC__ && __x86_64
+#elif __GNUC__ && __x86_64__ && !defined(__native_client__)
     DECL_SC_REG(VALUE, a, "12");
     DECL_SC_REG(VALUE, b, "13");
 #else
@@ -49,12 +59,21 @@ vm_exec_core(rb_thread_t *th, VALUE initial)
 #endif
 #endif
 
-#if __GNUC__ && __i386__
+#if defined(__GNUC__) && defined(__i386__)
     DECL_SC_REG(VALUE *, pc, "di");
     DECL_SC_REG(rb_control_frame_t *, cfp, "si");
 #define USE_MACHINE_REGS 1
 
-#elif __GNUC__ && __x86_64__
+#elif defined(__GNUC__) && defined(__x86_64__)
+    DECL_SC_REG(VALUE *, pc, "14");
+# if defined(__native_client__)
+    DECL_SC_REG(rb_control_frame_t *, cfp, "13");
+# else
+    DECL_SC_REG(rb_control_frame_t *, cfp, "15");
+# endif
+#define USE_MACHINE_REGS 1
+
+#elif defined(__GNUC__) && defined(__powerpc64__)
     DECL_SC_REG(VALUE *, pc, "14");
     DECL_SC_REG(rb_control_frame_t *, cfp, "15");
 #define USE_MACHINE_REGS 1
@@ -84,11 +103,6 @@ vm_exec_core(rb_thread_t *th, VALUE initial)
 #if OPT_TOKEN_THREADED_CODE || OPT_DIRECT_THREADED_CODE
 #include "vmtc.inc"
     if (UNLIKELY(th == 0)) {
-#if OPT_STACK_CACHING
-	finish_insn_seq[0] = (VALUE)&&LABEL (finish_SC_ax_ax);
-#else
-	finish_insn_seq[0] = (VALUE)&&LABEL (finish);
-#endif
 	return (VALUE)insns_address_table;
     }
 #endif
@@ -118,39 +132,39 @@ rb_vm_get_insns_address_table(void)
     return (const void **)vm_exec_core(0, 0);
 }
 
-#else
+#else /* OPT_CALL_THREADED_CODE */
 
 #include "vm.inc"
 #include "vmtc.inc"
 
-const void *const *
+const void **
 rb_vm_get_insns_address_table(void)
 {
-    return insns_address_table;
+    return (const void **)insns_address_table;
 }
 
 static VALUE
 vm_exec_core(rb_thread_t *th, VALUE initial)
 {
     register rb_control_frame_t *reg_cfp = th->cfp;
-    VALUE ret;
 
-    while (*GET_PC()) {
+    while (1) {
 	reg_cfp = ((rb_insn_func_t) (*GET_PC()))(th, reg_cfp);
 
-	if (reg_cfp == 0) {
-	    VALUE err = th->errinfo;
-	    th->errinfo = Qnil;
-	    return err;
+	if (UNLIKELY(reg_cfp == 0)) {
+	    break;
 	}
     }
 
-    if (VM_FRAME_TYPE(th->cfp) != VM_FRAME_MAGIC_FINISH) {
-	rb_bug("cfp consistency error");
+    if (th->retval != Qundef) {
+	VALUE ret = th->retval;
+	th->retval = Qundef;
+	return ret;
     }
-
-    ret = *(th->cfp->sp-1); /* pop */
-    th->cfp++; /* pop cf */
-    return ret;
+    else {
+	VALUE err = th->errinfo;
+	th->errinfo = Qnil;
+	return err;
+    }
 }
 #endif

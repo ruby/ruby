@@ -1,6 +1,8 @@
 require 'mkmf'
 
-if /mswin|mingw|bccwin/ !~ RUBY_PLATFORM
+$INCFLAGS << " -I$(topdir) -I$(top_srcdir)"
+
+if /mswin|mingw|bccwin|nacl/ !~ RUBY_PLATFORM
   have_header("sys/stropts.h")
   have_func("setresuid")
   have_header("libutil.h")

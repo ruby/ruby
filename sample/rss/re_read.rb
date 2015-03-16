@@ -24,7 +24,7 @@ ARGV.each do |fname|
   File.open(fname) do |f|
     source = f.read
   end
-  
+
   rss = nil
   read = false
   begin
@@ -44,7 +44,7 @@ ARGV.each do |fname|
   rescue RSS::Error
     error($!) if verbose
   end
-  
+
   if rss.nil?
     puts "Invalid feed: #{fname}"
   elsif !read

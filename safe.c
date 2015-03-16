@@ -1,6 +1,6 @@
 /**********************************************************************
 
-  eval.c -
+  safe.c -
 
   $Author$
   created at: Tue Sep 23 09:44:32 JST 2008
@@ -14,15 +14,24 @@
    1 - no dangerous operation by tainted value
    2 - process/file operations prohibited
    3 - all generated objects are tainted
-   4 - no global (non-tainted) variable modification/no direct output
 */
 
-#define SAFE_LEVEL_MAX 4
+#define SAFE_LEVEL_MAX RUBY_SAFE_LEVEL_MAX
 
 #include "ruby/ruby.h"
 #include "vm_core.h"
 
 /* $SAFE accessor */
+
+#undef rb_secure
+#undef rb_set_safe_level
+#undef ruby_safe_level_4_warning
+
+int
+ruby_safe_level_4_warning(void)
+{
+    return 4;
+}
 
 int
 rb_safe_level(void)
@@ -43,7 +52,7 @@ rb_set_safe_level(int level)
 
     if (level > th->safe_level) {
 	if (level > SAFE_LEVEL_MAX) {
-	    level = SAFE_LEVEL_MAX;
+	    rb_raise(rb_eArgError, "$SAFE=4 is obsolete");
 	}
 	th->safe_level = level;
     }
@@ -67,10 +76,10 @@ safe_setter(VALUE val)
 		 th->safe_level, level);
     }
     if (level == 3) {
-	rb_warning("$SAFE=3 does no sandboxing; you might want to use $SAFE=4");
+	rb_warning("$SAFE=3 does no sandboxing");
     }
     if (level > SAFE_LEVEL_MAX) {
-	level = SAFE_LEVEL_MAX;
+	rb_raise(rb_eArgError, "$SAFE=4 is obsolete");
     }
     th->safe_level = level;
 }
@@ -79,9 +88,10 @@ void
 rb_secure(int level)
 {
     if (level <= rb_safe_level()) {
-	if (rb_frame_callee()) {
-	    rb_raise(rb_eSecurityError, "Insecure operation `%s' at level %d",
-		     rb_id2name(rb_frame_callee()), rb_safe_level());
+	ID caller_name = rb_frame_callee();
+	if (caller_name) {
+	    rb_raise(rb_eSecurityError, "Insecure operation `%"PRIsVALUE"' at level %d",
+		     rb_id2str(caller_name), rb_safe_level());
 	}
 	else {
 	    rb_raise(rb_eSecurityError, "Insecure operation at level %d",
@@ -93,16 +103,15 @@ rb_secure(int level)
 void
 rb_secure_update(VALUE obj)
 {
-    if (!OBJ_TAINTED(obj))
-	rb_secure(4);
 }
 
 void
 rb_insecure_operation(void)
 {
-    if (rb_frame_callee()) {
-	rb_raise(rb_eSecurityError, "Insecure operation - %s",
-		 rb_id2name(rb_frame_callee()));
+    ID caller_name = rb_frame_callee();
+    if (caller_name) {
+	rb_raise(rb_eSecurityError, "Insecure operation - %"PRIsVALUE,
+		 rb_id2str(caller_name));
     }
     else {
 	rb_raise(rb_eSecurityError, "Insecure operation: -r");
@@ -114,17 +123,6 @@ rb_check_safe_obj(VALUE x)
 {
     if (rb_safe_level() > 0 && OBJ_TAINTED(x)) {
 	rb_insecure_operation();
-    }
-    rb_secure(4);
-}
-
-void
-rb_check_safe_str(VALUE x)
-{
-    rb_check_safe_obj(x);
-    if (TYPE(x) != T_STRING) {
-	rb_raise(rb_eTypeError, "wrong argument type %s (expected String)",
-		 rb_obj_classname(x));
     }
 }
 

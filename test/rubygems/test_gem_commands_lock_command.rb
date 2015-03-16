@@ -1,7 +1,7 @@
-require_relative 'gemutilities'
+require 'rubygems/test_case'
 require 'rubygems/commands/lock_command'
 
-class TestGemCommandsLockCommand < RubyGemTestCase
+class TestGemCommandsLockCommand < Gem::TestCase
 
   def setup
     super
@@ -45,7 +45,7 @@ gem 'a', '= 1'
     expected = <<-EXPECTED
 require 'rubygems'
 gem 'd', '= 1'
-# Unable to satisfy 'z (>= 0, runtime)' from currently installed gems
+# Unable to satisfy 'z (>= 0)' from currently installed gems
     EXPECTED
 
     assert_equal expected, @ui.output

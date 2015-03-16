@@ -7,12 +7,13 @@
 #  Copyright 2005 James Edward Gray II. You can redistribute or modify this code
 #  under the terms of Ruby's license.
 
-require "test/unit"
+require_relative "base"
 
-require "csv"
+class TestCSV::Table < TestCSV
+  extend DifferentOFS
 
-class TestCSVTable < Test::Unit::TestCase
   def setup
+    super
     @rows  = [ CSV::Row.new(%w{A B C}, [1, 2, 3]),
                CSV::Row.new(%w{A B C}, [4, 5, 6]),
                CSV::Row.new(%w{A B C}, [7, 8, 9]) ]
@@ -51,6 +52,11 @@ class TestCSVTable < Test::Unit::TestCase
 
   def test_headers
     assert_equal(@rows.first.headers, @table.headers)
+  end
+
+  def test_headers_empty
+    t = CSV::Table.new([])
+    assert_equal Array.new, t.headers
   end
 
   def test_index
@@ -189,6 +195,14 @@ class TestCSVTable < Test::Unit::TestCase
     assert_raise(TypeError) { @table["Extra"] = nil }
   end
 
+  def test_set_by_col_with_header_row
+    r  = [ CSV::Row.new(%w{X Y Z}, [97, 98, 99], true) ]
+    t = CSV::Table.new(r)
+    t.by_col!
+    t['A'] = [42]
+    assert_equal(['A'], t['A'])
+  end
+
   def test_each
     ######################
     ### Mixed/Row Mode ###
@@ -253,7 +267,7 @@ class TestCSVTable < Test::Unit::TestCase
     # with options
     assert_equal( csv.gsub(",", "|").gsub("\n", "\r\n"),
                   @table.to_csv(col_sep: "|", row_sep: "\r\n") )
-    assert_equal( csv.lines.to_a[1..-1].join,
+    assert_equal( csv.lines.to_a[1..-1].join(''),
                   @table.to_csv(:write_headers => false) )
 
     # with headers
@@ -272,7 +286,7 @@ class TestCSVTable < Test::Unit::TestCase
     assert_equal(CSV::Row.new(%w[A B C], [13, 14, 15]), @table[-1])
   end
 
-  def test_delete
+  def test_delete_mixed
     ##################
     ### Mixed Mode ###
     ##################
@@ -288,11 +302,12 @@ class TestCSVTable < Test::Unit::TestCase
     2,3
     8,9
     END_RESULT
+  end
 
+  def test_delete_column
     ###################
     ### Column Mode ###
     ###################
-    setup
     @table.by_col!
 
     assert_equal(@rows.map { |row| row[0] }, @table.delete(0))
@@ -305,11 +320,12 @@ class TestCSVTable < Test::Unit::TestCase
     5
     8
     END_RESULT
+  end
 
+  def test_delete_row
     ################
     ### Row Mode ###
     ################
-    setup
     @table.by_row!
 
     assert_equal(@rows[1], @table.delete(1))
@@ -328,8 +344,8 @@ class TestCSVTable < Test::Unit::TestCase
     table = CSV.parse(data, :headers => true)
     assert_equal(["ra2", nil, "rb2"], table.delete("col2"))
   end
-  
-  def test_delete_if
+
+  def test_delete_if_row
     ######################
     ### Mixed/Row Mode ###
     ######################
@@ -341,11 +357,12 @@ class TestCSVTable < Test::Unit::TestCase
     A,B,C
     4,5,6
     END_RESULT
+  end
 
+  def test_delete_if_column
     ###################
     ### Column Mode ###
     ###################
-    setup
     @table.by_col!
 
     assert_equal(@table, @table.delete_if { |h, v| h > "A" })
@@ -394,23 +411,24 @@ class TestCSVTable < Test::Unit::TestCase
   end
 
   def test_array_delegation
-    assert(!@table.empty?, "Table was empty.")
+    assert_not_empty(@table, "Table was empty.")
 
     assert_equal(@rows.size, @table.size)
   end
 
   def test_inspect_shows_current_mode
     str = @table.inspect
-    assert(str.include?("mode:#{@table.mode}"), "Mode not shown.")
+    assert_include(str, "mode:#{@table.mode}", "Mode not shown.")
 
     @table.by_col!
     str = @table.inspect
-    assert(str.include?("mode:#{@table.mode}"), "Mode not shown.")
+    assert_include(str, "mode:#{@table.mode}", "Mode not shown.")
   end
 
   def test_inspect_encoding_is_ascii_compatible
-    assert( Encoding.compatible?( Encoding.find("US-ASCII"),
-                                  @table.inspect.encoding ),
+    assert_send([Encoding, :compatible?,
+                 Encoding.find("US-ASCII"),
+                 @table.inspect.encoding],
             "inspect() was not ASCII compatible." )
   end
 end

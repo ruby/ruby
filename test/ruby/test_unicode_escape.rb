@@ -47,7 +47,8 @@ EOS
     # \u in %x strings
     assert_match(/^("?)A\1$/, `echo "\u0041"`) #"
     assert_match(/^("?)A\1$/, %x{echo "\u0041"}) #"
-    assert_match(/^("?)ü\1$/, `echo "\u{FC}"`.force_encoding("utf-8")) #"
+    assert_match(/^("?)ü\1$/,
+      `#{EnvUtil.rubybin} -e "#coding:utf-8\nputs \\"\\u{FC}\\""`.force_encoding("utf-8")) #"
 
     # \u in quoted symbols
     assert_equal(:A, :"\u0041")

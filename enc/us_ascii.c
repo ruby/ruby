@@ -3,9 +3,9 @@
 static int
 us_ascii_mbc_enc_len(const UChar* p, const UChar* e, OnigEncoding enc)
 {
-    if (*p & 0x80)
-        return ONIGENC_CONSTRUCT_MBCLEN_INVALID();
-    return ONIGENC_CONSTRUCT_MBCLEN_CHARFOUND(1);
+  if (*p & 0x80)
+    return ONIGENC_CONSTRUCT_MBCLEN_INVALID();
+  return ONIGENC_CONSTRUCT_MBCLEN_CHARFOUND(1);
 }
 
 OnigEncodingDefine(us_ascii, US_ASCII) = {
@@ -24,7 +24,9 @@ OnigEncodingDefine(us_ascii, US_ASCII) = {
   onigenc_ascii_is_code_ctype,
   onigenc_not_support_get_ctype_code_range,
   onigenc_single_byte_left_adjust_char_head,
-  onigenc_always_true_is_allowed_reverse_match
+  onigenc_always_true_is_allowed_reverse_match,
+  0,
+  ONIGENC_FLAG_NONE,
 };
 ENC_ALIAS("ASCII", "US-ASCII")
 ENC_ALIAS("ANSI_X3.4-1968", "US-ASCII")

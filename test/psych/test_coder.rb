@@ -85,8 +85,45 @@ module Psych
       end
 
       def encode_with coder
-        coder.represent_map self.class.name, { 'a' => 'b' }
+        coder.represent_map self.class.name, { "string" => 'a', :symbol => 'b' }
       end
+    end
+
+    class RepresentWithObject
+      def encode_with coder
+        coder.represent_object self.class.name, 20
+      end
+    end
+
+    class Referential
+      attr_reader :a
+
+      def initialize
+        @a = self
+      end
+
+      def encode_with(c)
+        c['a'] = @a
+      end
+
+      def init_with(c)
+        @a = c['a']
+      end
+    end
+
+    def test_self_referential
+      x = Referential.new
+      copy = Psych.load Psych.dump x
+      assert_equal copy, copy.a
+    end
+
+    def test_represent_with_object
+      thing = Psych.load(Psych.dump(RepresentWithObject.new))
+      assert_equal 20, thing
+    end
+
+    def test_json_dump_exclude_tag
+      refute_match('TestCoder::InitApi', Psych.to_json(InitApi.new))
     end
 
     def test_map_takes_block
@@ -116,7 +153,7 @@ module Psych
 
     def test_represent_map
       thing = Psych.load(Psych.dump(RepresentWithMap.new))
-      assert_equal({ 'a' => 'b' }, thing.map)
+      assert_equal({ "string" => 'a', :symbol => 'b' }, thing.map)
     end
 
     def test_represent_sequence

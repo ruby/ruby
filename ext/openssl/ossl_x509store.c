@@ -11,37 +11,37 @@
 #include "ossl.h"
 
 #define WrapX509Store(klass, obj, st) do { \
-    if (!st) { \
+    if (!(st)) { \
 	ossl_raise(rb_eRuntimeError, "STORE wasn't initialized!"); \
     } \
-    obj = Data_Wrap_Struct(klass, 0, X509_STORE_free, st); \
+    (obj) = TypedData_Wrap_Struct((klass), &ossl_x509store_type, (st)); \
 } while (0)
 #define GetX509Store(obj, st) do { \
-    Data_Get_Struct(obj, X509_STORE, st); \
-    if (!st) { \
+    TypedData_Get_Struct((obj), X509_STORE, &ossl_x509store_type, (st)); \
+    if (!(st)) { \
 	ossl_raise(rb_eRuntimeError, "STORE wasn't initialized!"); \
     } \
 } while (0)
 #define SafeGetX509Store(obj, st) do { \
-    OSSL_Check_Kind(obj, cX509Store); \
-    GetX509Store(obj, st); \
+    OSSL_Check_Kind((obj), cX509Store); \
+    GetX509Store((obj), (st)); \
 } while (0)
 
 #define WrapX509StCtx(klass, obj, ctx) do { \
-    if (!ctx) { \
+    if (!(ctx)) { \
 	ossl_raise(rb_eRuntimeError, "STORE_CTX wasn't initialized!"); \
     } \
-    obj = Data_Wrap_Struct(klass, 0, ossl_x509stctx_free, ctx); \
+    (obj) = TypedData_Wrap_Struct((klass), &ossl_x509stctx_type, (ctx)); \
 } while (0)
 #define GetX509StCtx(obj, ctx) do { \
-    Data_Get_Struct(obj, X509_STORE_CTX, ctx); \
-    if (!ctx) { \
+    TypedData_Get_Struct((obj), X509_STORE_CTX, &ossl_x509stctx_type, (ctx)); \
+    if (!(ctx)) { \
 	ossl_raise(rb_eRuntimeError, "STORE_CTX is out of scope!"); \
     } \
 } while (0)
 #define SafeGetX509StCtx(obj, storep) do { \
-    OSSL_Check_Kind(obj, cX509StoreContext); \
-    GetX509Store(obj, ctx); \
+    OSSL_Check_Kind((obj), cX509StoreContext); \
+    GetX509Store((obj), (ctx)); \
 } while (0)
 
 /*
@@ -50,6 +50,20 @@
 VALUE cX509Store;
 VALUE cX509StoreContext;
 VALUE eX509StoreError;
+
+static void
+ossl_x509store_free(void *ptr)
+{
+    X509_STORE_free(ptr);
+}
+
+static const rb_data_type_t ossl_x509store_type = {
+    "OpenSSL/X509/STORE",
+    {
+	0, ossl_x509store_free,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+};
 
 /*
  * Public functions
@@ -135,9 +149,9 @@ ossl_x509store_initialize(int argc, VALUE *argv, VALUE self)
     ossl_x509store_set_vfy_cb(self, Qnil);
 
 #if (OPENSSL_VERSION_NUMBER < 0x00907000L)
-    rb_iv_set(self, "@flags", INT2NUM(0));
-    rb_iv_set(self, "@purpose", INT2NUM(0));
-    rb_iv_set(self, "@trust", INT2NUM(0));
+    rb_iv_set(self, "@flags", INT2FIX(0));
+    rb_iv_set(self, "@purpose", INT2FIX(0));
+    rb_iv_set(self, "@trust", INT2FIX(0));
 #endif
 
     /* last verification status */
@@ -170,7 +184,7 @@ ossl_x509store_set_purpose(VALUE self, VALUE purpose)
 {
 #if (OPENSSL_VERSION_NUMBER >= 0x00907000L)
     X509_STORE *store;
-    long p = NUM2LONG(purpose);
+    int p = NUM2INT(purpose);
 
     GetX509Store(self, store);
     X509_STORE_set_purpose(store, p);
@@ -186,7 +200,7 @@ ossl_x509store_set_trust(VALUE self, VALUE trust)
 {
 #if (OPENSSL_VERSION_NUMBER >= 0x00907000L)
     X509_STORE *store;
-    long t = NUM2LONG(trust);
+    int t = NUM2INT(trust);
 
     GetX509Store(self, store);
     X509_STORE_set_trust(store, t);
@@ -203,6 +217,15 @@ ossl_x509store_set_time(VALUE self, VALUE time)
     rb_iv_set(self, "@time", time);
     return time;
 }
+
+/*
+ * call-seq:
+ *   store.add_file(file) -> store
+ *
+ *
+ * Adds the certificates in +file+ to the certificate store.  The +file+ can
+ * contain multiple PEM-encoded certificates.
+ */
 
 static VALUE
 ossl_x509store_add_file(VALUE self, VALUE file)
@@ -246,6 +269,16 @@ ossl_x509store_add_path(VALUE self, VALUE dir)
     return self;
 }
 
+/*
+ * call-seq:
+ *   store.set_default_paths
+ *
+ * Adds the default certificates to the certificate store.  These certificates
+ * are loaded from the default configuration directory which can usually be
+ * determined by:
+ *
+ *   File.dirname OpenSSL::Config::DEFAULT_CONFIG_FILE
+ */
 static VALUE
 ossl_x509store_set_default_paths(VALUE self)
 {
@@ -258,6 +291,13 @@ ossl_x509store_set_default_paths(VALUE self)
 
     return Qnil;
 }
+
+/*
+ * call-seq:
+ *   store.add_cert(cert)
+ *
+ * Adds the OpenSSL::X509::Certificate +cert+ to the certificate store.
+ */
 
 static VALUE
 ossl_x509store_add_cert(VALUE self, VALUE arg)
@@ -316,7 +356,17 @@ ossl_x509store_verify(int argc, VALUE *argv, VALUE self)
 /*
  * Public Functions
  */
-static void ossl_x509stctx_free(X509_STORE_CTX*);
+static void ossl_x509stctx_free(void*);
+
+
+static const rb_data_type_t ossl_x509stctx_type = {
+    "OpenSSL/X509/STORE_CTX",
+    {
+	0, ossl_x509stctx_free,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+};
+
 
 VALUE
 ossl_x509stctx_new(X509_STORE_CTX *ctx)
@@ -341,8 +391,9 @@ ossl_x509stctx_clear_ptr(VALUE obj)
  * Private functions
  */
 static void
-ossl_x509stctx_free(X509_STORE_CTX *ctx)
+ossl_x509stctx_free(void *ptr)
 {
+    X509_STORE_CTX *ctx = ptr;
     if(ctx->untrusted)
 	sk_X509_pop_free(ctx->untrusted, X509_free);
     if(ctx->cert)
@@ -511,17 +562,6 @@ ossl_x509stctx_get_curr_crl(VALUE self)
 }
 
 static VALUE
-ossl_x509stctx_cleanup(VALUE self)
-{
-    X509_STORE_CTX *ctx;
-
-    GetX509StCtx(self, ctx);
-    X509_STORE_CTX_cleanup(ctx);
-
-    return self;
-}
-
-static VALUE
 ossl_x509stctx_set_flags(VALUE self, VALUE flags)
 {
     X509_STORE_CTX *store;
@@ -537,7 +577,7 @@ static VALUE
 ossl_x509stctx_set_purpose(VALUE self, VALUE purpose)
 {
     X509_STORE_CTX *store;
-    long p = NUM2LONG(purpose);
+    int p = NUM2INT(purpose);
 
     GetX509StCtx(self, store);
     X509_STORE_CTX_set_purpose(store, p);
@@ -549,7 +589,7 @@ static VALUE
 ossl_x509stctx_set_trust(VALUE self, VALUE trust)
 {
     X509_STORE_CTX *store;
-    long t = NUM2LONG(trust);
+    int t = NUM2INT(trust);
 
     GetX509StCtx(self, store);
     X509_STORE_CTX_set_trust(store, t);
@@ -578,11 +618,50 @@ ossl_x509stctx_set_time(VALUE self, VALUE time)
  * INIT
  */
 void
-Init_ossl_x509store()
+Init_ossl_x509store(void)
 {
     VALUE x509stctx;
 
+#if 0
+    mOSSL = rb_define_module("OpenSSL"); /* let rdoc know about mOSSL */
+    mX509 = rb_define_module_under(mOSSL, "X509");
+#endif
+
     eX509StoreError = rb_define_class_under(mX509, "StoreError", eOSSLError);
+
+    /* Document-class: OpenSSL::X509::Store
+     *
+     * The X509 certificate store holds trusted CA certificates used to verify
+     * peer certificates.
+     *
+     * The easiest way to create a useful certificate store is:
+     *
+     *   cert_store = OpenSSL::X509::Store.new
+     *   cert_store.set_default_paths
+     *
+     * This will use your system's built-in certificates.
+     *
+     * If your system does not have a default set of certificates you can
+     * obtain a set from Mozilla here: http://curl.haxx.se/docs/caextract.html
+     * (Note that this set does not have an HTTPS download option so you may
+     * wish to use the firefox-db2pem.sh script to extract the certificates
+     * from a local install to avoid man-in-the-middle attacks.)
+     *
+     * After downloading or generating a cacert.pem from the above link you
+     * can create a certificate store from the pem file like this:
+     *
+     *   cert_store = OpenSSL::X509::Store.new
+     *   cert_store.add_file 'cacert.pem'
+     *
+     * The certificate store can be used with an SSLSocket like this:
+     *
+     *   ssl_context = OpenSSL::SSL::SSLContext.new
+     *   ssl_context.cert_store = cert_store
+     *
+     *   tcp_socket = TCPSocket.open 'example.com', 443
+     *
+     *   ssl_socket = OpenSSL::SSL::SSLSocket.new tcp_socket, ssl_context
+     */
 
     cX509Store = rb_define_class_under(mX509, "Store", rb_cObject);
     rb_attr(cX509Store, rb_intern("verify_callback"), 1, 0, Qfalse);
@@ -615,7 +694,6 @@ Init_ossl_x509store()
     rb_define_method(x509stctx,"error_depth", ossl_x509stctx_get_err_depth, 0);
     rb_define_method(x509stctx,"current_cert",ossl_x509stctx_get_curr_cert, 0);
     rb_define_method(x509stctx,"current_crl", ossl_x509stctx_get_curr_crl, 0);
-    rb_define_method(x509stctx,"cleanup",     ossl_x509stctx_cleanup, 0);
     rb_define_method(x509stctx,"flags=",      ossl_x509stctx_set_flags, 1);
     rb_define_method(x509stctx,"purpose=",    ossl_x509stctx_set_purpose, 1);
     rb_define_method(x509stctx,"trust=",      ossl_x509stctx_set_trust, 1);

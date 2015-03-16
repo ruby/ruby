@@ -1,12 +1,12 @@
 =begin
  distributed Ruby --- chat client
- 	Copyright (c) 1999-2000 Masatoshi SEKI 
+ 	Copyright (c) 1999-2000 Masatoshi SEKI
 =end
 
 require 'drb/drb'
 
 class ChatClient
-  include DRbUndumped  
+  include DRbUndumped
 
   def initialize(name)
     @name = name

@@ -18,16 +18,17 @@ ossl_obj2bio(VALUE obj)
 {
     BIO *bio;
 
-    if (TYPE(obj) == T_FILE) {
+    if (RB_TYPE_P(obj, T_FILE)) {
 	rb_io_t *fptr;
 	FILE *fp;
 	int fd;
 
 	GetOpenFile(obj, fptr);
 	rb_io_check_readable(fptr);
-	if ((fd = dup(FPTR_TO_FD(fptr))) < 0){
+	if ((fd = rb_cloexec_dup(FPTR_TO_FD(fptr))) < 0){
 	    rb_sys_fail(0);
 	}
+        rb_update_max_fd(fd);
 	if (!(fp = fdopen(fd, "r"))){
 	    close(fd);
 	    rb_sys_fail(0);
@@ -39,7 +40,7 @@ ossl_obj2bio(VALUE obj)
     }
     else {
 	StringValue(obj);
-	bio = BIO_new_mem_buf(RSTRING_PTR(obj), RSTRING_LEN(obj));
+	bio = BIO_new_mem_buf(RSTRING_PTR(obj), RSTRING_LENINT(obj));
 	if (!bio) ossl_raise(eOSSLError, NULL);
     }
 

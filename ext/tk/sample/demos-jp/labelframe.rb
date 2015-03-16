@@ -1,4 +1,4 @@
-# -*- coding: euc-jp -*-
+# -*- coding: utf-8 -*-
 #
 # labelframe.rb
 #
@@ -25,28 +25,28 @@ base_frame = TkFrame.new($labelframe_demo).pack(:fill=>:both, :expand=>true)
 TkLabel.new(base_frame,
             :font=>$font, :wraplength=>'4i', :justify=>:left,
             :text=><<EOL).pack(:side=>:top)
-TkLabelFrame ¥¦¥£¥¸¥§¥Ã¥È¤Ï´ØÏ¢¤¹¤ë widget
-·²¤ò¤Þ¤È¤á¤Æ¼è¤ê°·¤¦¤¿¤á¤ËÍÑ¤¤¤é¤ì¤Þ¤¹¡£¥é
-¥Ù¥ë¤ÏÄÌ¾ï¤ÎÊ¸»úÎó¤Ç¤â²¿¤é¤«¤Î¥¦¥£¥¸¥§¥Ã¥È
-¤Ç¤â¤«¤Þ¤¤¤Þ¤»¤ó¡£¤â¤·¤¢¤Ê¤¿¤¬»È¤Ã¤Æ¤¤¤ë
-Ruby ¤Ë¥ê¥ó¥¯¤µ¤ì¤Æ¤¤¤ë Tk ¥é¥¤¥Ö¥é¥ê¤¬
-labelframe ¥¦¥£¥¸¥§¥Ã¥È¤ò¼ÂÁõ¤·¤Æ¤¤¤Ê¤¤
-¾ì¹ç¡¢¤³¤Î¥Ç¥â¤Ï¤¦¤Þ¤¯Æ°¤«¤Ê¤¤¤Ï¤º¤Ç¤¹¡£
-¤½¤Î¾ì¹ç¤Ë¤Ï labelframe ¥¦¥£¥¸¥§¥Ã¥È¤¬¼ÂÁõ
-¤µ¤ì¤Æ¤¤¤ë¤è¤¦¤Ê¤è¤ê¿·¤·¤¤¥Ð¡¼¥¸¥ç¥ó¤Î Tk
-¤òÁÈ¤ß¹ç¤ï¤»¤Æ»î¤¹¤è¤¦¤Ë¤·¤Æ¤¯¤À¤µ¤¤¡£
+TkLabelFrame ã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆã¯é–¢é€£ã™ã‚‹ widget
+ç¾¤ã‚’ã¾ã¨ã‚ã¦å–ã‚Šæ‰±ã†ãŸã‚ã«ç”¨ã„ã‚‰ã‚Œã¾ã™ã€‚ãƒ©
+ãƒ™ãƒ«ã¯é€šå¸¸ã®æ–‡å­—åˆ—ã§ã‚‚ä½•ã‚‰ã‹ã®ã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆ
+ã§ã‚‚ã‹ã¾ã„ã¾ã›ã‚“ã€‚ã‚‚ã—ã‚ãªãŸãŒä½¿ã£ã¦ã„ã‚‹
+Ruby ã«ãƒªãƒ³ã‚¯ã•ã‚Œã¦ã„ã‚‹ Tk ãƒ©ã‚¤ãƒ–ãƒ©ãƒªãŒ
+labelframe ã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆã‚’å®Ÿè£…ã—ã¦ã„ãªã„
+å ´åˆã€ã“ã®ãƒ‡ãƒ¢ã¯ã†ã¾ãå‹•ã‹ãªã„ã¯ãšã§ã™ã€‚
+ãã®å ´åˆã«ã¯ labelframe ã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆãŒå®Ÿè£…
+ã•ã‚Œã¦ã„ã‚‹ã‚ˆã†ãªã‚ˆã‚Šæ–°ã—ã„ãƒãƒ¼ã‚¸ãƒ§ãƒ³ã® Tk
+ã‚’çµ„ã¿åˆã‚ã›ã¦è©¦ã™ã‚ˆã†ã«ã—ã¦ãã ã•ã„ã€‚
 EOL
 
 # The bottom buttons
 TkFrame.new(base_frame){|f|
   pack(:side=>:bottom, :fill=>:x, :pady=>'2m')
 
-  TkButton.new(f, :text=>'ÊÄ¤¸¤ë', :width=>15, :command=>proc{
+  TkButton.new(f, :text=>'é–‰ã˜ã‚‹', :width=>15, :command=>proc{
                  $labelframe_demo.destroy
                  $labelframe_demo = nil
                }).pack(:side=>:left, :expand=>true)
 
-  TkButton.new(f, :text=>'¥³¡¼¥É»²¾È', :width=>15, :command=>proc{
+  TkButton.new(f, :text=>'ã‚³ãƒ¼ãƒ‰å‚ç…§', :width=>15, :command=>proc{
                  showCode 'labelframe'
                }).pack(:side=>:left, :expand=>true)
 }
@@ -56,7 +56,7 @@ w = TkFrame.new(base_frame).pack(:side=>:bottom, :fill=>:both,
                                        :expand=>true)
 
 # A group of radiobuttons in a labelframe
-TkLabelFrame.new(w, :text=>'ÁªÂòÃÍ',
+TkLabelFrame.new(w, :text=>'é¸æŠžå€¤',
                  :padx=>2, :pady=>2) {|f|
   grid(:row=>0, :column=>0, :pady=>'2m', :padx=>'2m')
 
@@ -86,13 +86,13 @@ end
 
 TkLabelFrame.new(w, :pady=>2, :padx=>2){|f|
   TkCheckButton.new(f, :widgetname=>'cb', :variable=>$lfdummy,
-                    :text=>"¥ª¥×¥·¥ç¥ó¤ò»ÈÍÑ", :padx=>0) {|cb|
+                    :text=>"ã‚ªãƒ—ã‚·ãƒ§ãƒ³ã‚’ä½¿ç”¨", :padx=>0) {|cb|
     command proc{lfEnableButtons(f)}
     f.labelwidget(cb)
   }
   grid(:row=>0, :column=>1, :pady=>'2m', :padx=>'2m')
 
-  %w(¥ª¥×¥·¥ç¥ó1 ¥ª¥×¥·¥ç¥ó2 ¥ª¥×¥·¥ç¥ó3).each{|str|
+  %w(ã‚ªãƒ—ã‚·ãƒ§ãƒ³1 ã‚ªãƒ—ã‚·ãƒ§ãƒ³2 ã‚ªãƒ—ã‚·ãƒ§ãƒ³3).each{|str|
     TkCheckbutton.new(f, :text=>str).pack(:side=>:top, :fill=>:x, :pady=>2)
   }
 

@@ -10,42 +10,74 @@
 #ifndef SOCKPORT_H
 #define SOCKPORT_H
 
-#ifdef SA_LEN
-#  define SS_LEN(ss) (ss)->ss_len
+#ifdef HAVE_STRUCT_SOCKADDR_SA_LEN
+# define VALIDATE_SOCKLEN(addr, len) ((addr)->sa_len == (len))
 #else
-# ifdef HAVE_SA_LEN
-#  define SA_LEN(sa) (sa)->sa_len
-#  define SS_LEN(ss) (ss)->ss_len
-# else
-#  ifdef AF_INET6
-#   define SA_LEN(sa) \
-	(((sa)->sa_family == AF_INET6) ? sizeof(struct sockaddr_in6) \
-				       : sizeof(struct sockaddr))
-#   define SS_LEN(ss) \
-	(((ss)->ss_family == AF_INET6) ? sizeof(struct sockaddr_in6) \
-				       : sizeof(struct sockaddr))
-#  else
-    /* by tradition, sizeof(struct sockaddr) covers most of the sockaddrs */
-#   define SA_LEN(sa)	(sizeof(struct sockaddr))
-#   define SS_LEN(ss)	(sizeof(struct sockaddr))
-#  endif
-# endif
+# define VALIDATE_SOCKLEN(addr, len) ((void)(addr), (void)(len), 1)
 #endif
 
-#ifdef HAVE_SA_LEN
+#ifdef HAVE_STRUCT_SOCKADDR_SA_LEN
 # define SET_SA_LEN(sa, len) (void)((sa)->sa_len = (len))
-# define SET_SS_LEN(ss, len) (void)((ss)->ss_len = (len))
 #else
 # define SET_SA_LEN(sa, len) (void)(len)
-# define SET_SS_LEN(ss, len) (void)(len)
 #endif
 
-#ifdef HAVE_SIN_LEN
-# define SIN_LEN(si) (si)->sin_len
-# define SET_SIN_LEN(si,len) (si)->sin_len = (len)
+/* for strict-aliasing rule */
+#ifdef HAVE_STRUCT_SOCKADDR_IN_SIN_LEN
+# define SET_SIN_LEN(sa, len) (void)((sa)->sin_len = (len))
 #else
-# define SIN_LEN(si) sizeof(struct sockaddr_in)
-# define SET_SIN_LEN(si,len)
+# define SET_SIN_LEN(sa, len) SET_SA_LEN((struct sockaddr *)(sa), (len))
+#endif
+
+#ifdef HAVE_STRUCT_SOCKADDR_IN6_SIN6_LEN
+# define SET_SIN6_LEN(sa, len) (void)((sa)->sin6_len = (len))
+#else
+# define SET_SIN6_LEN(sa, len) SET_SA_LEN((struct sockaddr *)(sa), (len))
+#endif
+
+#define INIT_SOCKADDR(addr, family, len) \
+  do { \
+    struct sockaddr *init_sockaddr_ptr = (addr); \
+    socklen_t init_sockaddr_len = (len); \
+    memset(init_sockaddr_ptr, 0, init_sockaddr_len); \
+    init_sockaddr_ptr->sa_family = (family); \
+    SET_SA_LEN(init_sockaddr_ptr, init_sockaddr_len); \
+  } while (0)
+
+#define INIT_SOCKADDR_IN(addr, len) \
+  do { \
+    struct sockaddr_in *init_sockaddr_ptr = (addr); \
+    socklen_t init_sockaddr_len = (len); \
+    memset(init_sockaddr_ptr, 0, init_sockaddr_len); \
+    init_sockaddr_ptr->sin_family = AF_INET; \
+    SET_SIN_LEN(init_sockaddr_ptr, init_sockaddr_len); \
+  } while (0)
+
+#define INIT_SOCKADDR_IN6(addr, len) \
+  do { \
+    struct sockaddr_in6 *init_sockaddr_ptr = (addr); \
+    socklen_t init_sockaddr_len = (len); \
+    memset(init_sockaddr_ptr, 0, init_sockaddr_len); \
+    init_sockaddr_ptr->sin6_family = AF_INET6; \
+    SET_SIN6_LEN(init_sockaddr_ptr, init_sockaddr_len); \
+  } while (0)
+
+
+/* for strict-aliasing rule */
+#ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
+#  ifdef HAVE_STRUCT_SOCKADDR_IN_SUN_LEN
+#    define SET_SUN_LEN(sa, len) (void)((sa)->sun_len = (len))
+#  else
+#    define SET_SUN_LEN(sa, len) SET_SA_LEN((struct sockaddr *)(sa), (len))
+#  endif
+#  define INIT_SOCKADDR_UN(addr, len) \
+     do { \
+         struct sockaddr_un *init_sockaddr_ptr = (addr); \
+         socklen_t init_sockaddr_len = (len); \
+         memset(init_sockaddr_ptr, 0, init_sockaddr_len); \
+         init_sockaddr_ptr->sun_family = AF_UNIX; \
+         SET_SUN_LEN(init_sockaddr_ptr, init_sockaddr_len); \
+     } while (0)
 #endif
 
 #ifndef IN_MULTICAST

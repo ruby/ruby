@@ -1,71 +1,50 @@
-# -*- mode: ruby; ruby-indent-level: 2; indent-tabs-mode: t; tab-width: 2 -*- vim: sw=2 ts=2
+# coding: US-ASCII
 module REXML
   module Encoding
-    @encoding_methods = {}
-    def self.register(enc, &block)
-      @encoding_methods[enc] = block
-    end
-    def self.apply(obj, enc)
-      @encoding_methods[enc][obj]
-    end
-    def self.encoding_method(enc)
-      @encoding_methods[enc]
-    end
-
-    # Native, default format is UTF-8, so it is declared here rather than in
-    # an encodings/ definition.
-    UTF_8 = 'UTF-8'
-    UTF_16 = 'UTF-16'
-    UNILE = 'UNILE'
-
     # ID ---> Encoding name
     attr_reader :encoding
-    def encoding=( enc )
-      old_verbosity = $VERBOSE
-      begin
-        $VERBOSE = false
-        enc = enc.nil? ? nil : enc.upcase
-        return false if defined? @encoding and enc == @encoding
-        if enc and enc != UTF_8
-          @encoding = enc
-          raise ArgumentError, "Bad encoding name #@encoding" unless @encoding =~ /^[\w-]+$/
-          @encoding.untaint
-          begin
-            require 'rexml/encodings/ICONV.rb'
-            Encoding.apply(self, "ICONV")
-          rescue LoadError, Exception
-            begin
-              enc_file = File.join( "rexml", "encodings", "#@encoding.rb" )
-              require enc_file
-              Encoding.apply(self, @encoding)
-            rescue LoadError => err
-              puts err.message
-              raise ArgumentError, "No decoder found for encoding #@encoding.  Please install iconv."
-            end
-          end
-        else
-          @encoding = UTF_8
-          require 'rexml/encodings/UTF-8.rb'
-          Encoding.apply(self, @encoding)
+    def encoding=(encoding)
+      encoding = encoding.name if encoding.is_a?(Encoding)
+      if encoding.is_a?(String)
+        original_encoding = encoding
+        encoding = find_encoding(encoding)
+        unless encoding
+          raise ArgumentError, "Bad encoding name #{original_encoding}"
         end
-      ensure
-        $VERBOSE = old_verbosity
+      end
+      return false if defined?(@encoding) and encoding == @encoding
+      if encoding
+        @encoding = encoding.upcase
+      else
+        @encoding = 'UTF-8'
       end
       true
     end
 
-    def check_encoding str
-      # We have to recognize UTF-16, LSB UTF-16, and UTF-8
-      if str[0,2] == "\xfe\xff"
-        str[0,2] = ""
-        return UTF_16
-      elsif str[0,2] == "\xff\xfe"
-        str[0,2] = ""
-        return UNILE
+    def encode(string)
+      string.encode(@encoding)
+    end
+
+    def decode(string)
+      string.encode(::Encoding::UTF_8, @encoding)
+    end
+
+    private
+    def find_encoding(name)
+      case name
+      when /\Ashift-jis\z/i
+        return "SHIFT_JIS"
+      when /\ACP-(\d+)\z/
+        name = "CP#{$1}"
+      when /\AUTF-8\z/i
+        return name
       end
-      str =~ /^\s*<\?xml\s+version\s*=\s*(['"]).*?\1\s+encoding\s*=\s*(["'])(.*?)\2/m
-      return $3.upcase if $3
-      return UTF_8
+      begin
+        ::Encoding::Converter.search_convpath(name, 'UTF-8')
+      rescue ::Encoding::ConverterNotFoundError
+        return nil
+      end
+      name
     end
   end
 end

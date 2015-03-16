@@ -1,7 +1,7 @@
-# -*- encoding: euc-jp -*-
+# -*- coding: utf-8 -*-
 =begin
  distributed Ruby --- dRuby Sample Client -- chasen client
- 	Copyright (c) 1999-2001 Masatoshi SEKI 
+ 	Copyright (c) 1999-2001 Masatoshi SEKI
 =end
 
 require 'drb/drb'
@@ -10,5 +10,5 @@ there = ARGV.shift || raise("usage: #{$0} <server_uri>")
 DRb.start_service
 dhasen = DRbObject.new(nil, there)
 
-print dhasen.sparse("ËÜÆü¤Ï¡¢À²Å·¤Ê¤ê¡£", "-F", '(%BB %m %M)\n', "-j")
-print dhasen.sparse("ËÜÆü¤Ï¡¢À²Å·¤Ê¤ê¡£", "-F", '(%m %M)\n')
+print dhasen.sparse("æœ¬æ—¥ã¯ã€æ™´å¤©ãªã‚Šã€‚", "-F", '(%BB %m %M)\n', "-j")
+print dhasen.sparse("æœ¬æ—¥ã¯ã€æ™´å¤©ãªã‚Šã€‚", "-F", '(%m %M)\n')

@@ -1,11 +1,6 @@
-begin
-  require "openssl"
-  require_relative "utils"
-rescue LoadError
-end
-require "test/unit"
+require_relative "utils"
 
-if defined?(OpenSSL)
+if defined?(OpenSSL::TestUtils)
 
 class OpenSSL::TestX509CRL < Test::Unit::TestCase
   def setup
@@ -106,7 +101,6 @@ class OpenSSL::TestX509CRL < Test::Unit::TestCase
     assert_equal(false, revoked[3].extensions[0].critical?)
     assert_equal(false, revoked[4].extensions[0].critical?)
 
-    crl = OpenSSL::X509::CRL.new(crl.to_der)
     assert_equal("Key Compromise", revoked[0].extensions[0].value)
     assert_equal("CA Compromise", revoked[1].extensions[0].value)
     assert_equal("Affiliation Changed", revoked[2].extensions[0].value)
@@ -203,9 +197,9 @@ class OpenSSL::TestX509CRL < Test::Unit::TestCase
     assert_equal(false, crl.verify(@rsa2048))
 
     cert = issue_cert(@ca, @dsa512, 1, Time.now, Time.now+3600, [],
-                      nil, nil, OpenSSL::Digest::DSS1.new)
+                      nil, nil, OpenSSL::TestUtils::DSA_SIGNATURE_DIGEST.new)
     crl = issue_crl([], 1, Time.now, Time.now+1600, [],
-                    cert, @dsa512, OpenSSL::Digest::DSS1.new)
+                    cert, @dsa512, OpenSSL::TestUtils::DSA_SIGNATURE_DIGEST.new)
     assert_equal(false, crl_error_returns_false { crl.verify(@rsa1024) })
     assert_equal(false, crl_error_returns_false { crl.verify(@rsa2048) })
     assert_equal(false, crl.verify(@dsa256))
@@ -213,9 +207,9 @@ class OpenSSL::TestX509CRL < Test::Unit::TestCase
     crl.version = 0
     assert_equal(false, crl.verify(@dsa512))
   end
-  
+
   private
-  
+
   def crl_error_returns_false
     yield
   rescue OpenSSL::X509::CRLError

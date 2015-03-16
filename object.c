@@ -11,7 +11,7 @@
 
 **********************************************************************/
 
-#include "ruby/ruby.h"
+#include "internal.h"
 #include "ruby/st.h"
 #include "ruby/util.h"
 #include <stdio.h>
@@ -19,6 +19,9 @@
 #include <ctype.h>
 #include <math.h>
 #include <float.h>
+#include "constant.h"
+#include "id.h"
+#include "probes.h"
 
 VALUE rb_cBasicObject;
 VALUE rb_mKernel;
@@ -31,16 +34,53 @@ VALUE rb_cNilClass;
 VALUE rb_cTrueClass;
 VALUE rb_cFalseClass;
 
-static ID id_eq, id_eql, id_match, id_inspect;
-static ID id_init_copy, id_init_clone, id_init_dup;
+#define id_eq               idEq
+#define id_eql              idEqlP
+#define id_match            idEqTilde
+#define id_inspect          idInspect
+#define id_init_copy        idInitialize_copy
+#define id_init_clone       idInitialize_clone
+#define id_init_dup         idInitialize_dup
+#define id_const_missing    idConst_missing
+
+#define CLASS_OR_MODULE_P(obj) \
+    (!SPECIAL_CONST_P(obj) && \
+     (BUILTIN_TYPE(obj) == T_CLASS || BUILTIN_TYPE(obj) == T_MODULE))
+
+VALUE
+rb_obj_hide(VALUE obj)
+{
+    if (!SPECIAL_CONST_P(obj)) {
+	RBASIC_CLEAR_CLASS(obj);
+    }
+    return obj;
+}
+
+VALUE
+rb_obj_reveal(VALUE obj, VALUE klass)
+{
+    if (!SPECIAL_CONST_P(obj)) {
+	RBASIC_SET_CLASS(obj, klass);
+    }
+    return obj;
+}
+
+VALUE
+rb_obj_setup(VALUE obj, VALUE klass, VALUE type)
+{
+    RBASIC(obj)->flags = type;
+    RBASIC_SET_CLASS(obj, klass);
+    if (rb_safe_level() >= 3) FL_SET((obj), FL_TAINT);
+    return obj;
+}
 
 /*
  *  call-seq:
  *     obj === other   -> true or false
  *
- *  Case Equality---For class <code>Object</code>, effectively the same
- *  as calling  <code>#==</code>, but typically overridden by descendants
- *  to provide meaningful semantics in <code>case</code> statements.
+ *  Case Equality -- For class Object, effectively the same as calling
+ *  <code>#==</code>, but typically overridden by descendants to provide
+ *  meaningful semantics in +case+ statements.
  */
 
 VALUE
@@ -66,23 +106,30 @@ rb_eql(VALUE obj1, VALUE obj2)
  *     obj.equal?(other)   -> true or false
  *     obj.eql?(other)     -> true or false
  *
- *  Equality---At the <code>Object</code> level, <code>==</code> returns
- *  <code>true</code> only if <i>obj</i> and <i>other</i> are the
- *  same object. Typically, this method is overridden in descendant
- *  classes to provide class-specific meaning.
+ *  Equality --- At the <code>Object</code> level, <code>==</code> returns
+ *  <code>true</code> only if +obj+ and +other+ are the same object.
+ *  Typically, this method is overridden in descendant classes to provide
+ *  class-specific meaning.
  *
  *  Unlike <code>==</code>, the <code>equal?</code> method should never be
- *  overridden by subclasses: it is used to determine object identity
- *  (that is, <code>a.equal?(b)</code> iff <code>a</code> is the same
- *  object as <code>b</code>).
+ *  overridden by subclasses as it is used to determine object identity
+ *  (that is, <code>a.equal?(b)</code> if and only if <code>a</code> is the
+ *  same object as <code>b</code>):
  *
- *  The <code>eql?</code> method returns <code>true</code> if
- *  <i>obj</i> and <i>anObject</i> have the same value. Used by
- *  <code>Hash</code> to test members for equality.  For objects of
- *  class <code>Object</code>, <code>eql?</code> is synonymous with
- *  <code>==</code>. Subclasses normally continue this tradition, but
- *  there are exceptions. <code>Numeric</code> types, for example,
- *  perform type conversion across <code>==</code>, but not across
+ *    obj = "a"
+ *    other = obj.dup
+ *
+ *    obj == other      #=> true
+ *    obj.equal? other  #=> false
+ *    obj.equal? obj    #=> true
+ *
+ *  The <code>eql?</code> method returns <code>true</code> if +obj+ and
+ *  +other+ refer to the same hash key.  This is used by Hash to test members
+ *  for equality.  For objects of class <code>Object</code>, <code>eql?</code>
+ *  is synonymous with <code>==</code>.  Subclasses normally continue this
+ *  tradition by aliasing <code>eql?</code> to their overridden <code>==</code>
+ *  method, but there are exceptions.  <code>Numeric</code> types, for
+ *  example, perform type conversion across <code>==</code>, but not across
  *  <code>eql?</code>, so:
  *
  *     1 == 1.0     #=> true
@@ -96,12 +143,34 @@ rb_obj_equal(VALUE obj1, VALUE obj2)
     return Qfalse;
 }
 
+/*
+ * call-seq:
+ *    obj.hash    -> fixnum
+ *
+ * Generates a Fixnum hash value for this object.  This function must have the
+ * property that <code>a.eql?(b)</code> implies <code>a.hash == b.hash</code>.
+ *
+ * The hash value is used along with #eql? by the Hash class to determine if
+ * two objects reference the same hash key.  Any hash value that exceeds the
+ * capacity of a Fixnum will be truncated before being used.
+ *
+ * The hash value for an object may not be identical across invocations or
+ * implementations of Ruby.  If you need a stable identifier across Ruby
+ * invocations and implementations you will need to generate one with a custom
+ * method.
+ */
 VALUE
 rb_obj_hash(VALUE obj)
 {
     VALUE oid = rb_obj_id(obj);
-    st_index_t h = rb_hash_end(rb_hash_start(NUM2LONG(oid)));
-    return LONG2FIX(h);
+#if SIZEOF_LONG == SIZEOF_VOIDP
+    st_index_t index = NUM2LONG(oid);
+#elif SIZEOF_LONG_LONG == SIZEOF_VOIDP
+    st_index_t index = NUM2LL(oid);
+#else
+# error not supported
+#endif
+    return LONG2FIX(rb_objid_hash(index));
 }
 
 /*
@@ -134,9 +203,8 @@ rb_obj_not_equal(VALUE obj1, VALUE obj2)
 VALUE
 rb_class_real(VALUE cl)
 {
-    if (cl == 0)
-        return 0;
-    while ((RBASIC(cl)->flags & FL_SINGLETON) || BUILTIN_TYPE(cl) == T_ICLASS) {
+    while (cl &&
+        ((RBASIC(cl)->flags & FL_SINGLETON) || BUILTIN_TYPE(cl) == T_ICLASS)) {
 	cl = RCLASS_SUPER(cl);
     }
     return cl;
@@ -146,9 +214,7 @@ rb_class_real(VALUE cl)
  *  call-seq:
  *     obj.class    -> class
  *
- *  Returns the class of <i>obj</i>, now preferred over
- *  <code>Object#type</code>, as an object's type in Ruby is only
- *  loosely tied to that object's class. This method must always be
+ *  Returns the class of <i>obj</i>. This method must always be
  *  called with an explicit receiver, as <code>class</code> is also a
  *  reserved word in Ruby.
  *
@@ -167,7 +233,7 @@ rb_obj_class(VALUE obj)
  *     obj.singleton_class    -> class
  *
  *  Returns the singleton class of <i>obj</i>.  This method creates
- *  a new singleton class if <i>obj</i> does not have it.
+ *  a new singleton class if <i>obj</i> does not have one.
  *
  *  If <i>obj</i> is <code>nil</code>, <code>true</code>, or
  *  <code>false</code>, it returns NilClass, TrueClass, or FalseClass,
@@ -185,6 +251,33 @@ rb_obj_singleton_class(VALUE obj)
     return rb_singleton_class(obj);
 }
 
+void
+rb_obj_copy_ivar(VALUE dest, VALUE obj)
+{
+    if (!(RBASIC(dest)->flags & ROBJECT_EMBED) && ROBJECT_IVPTR(dest)) {
+	xfree(ROBJECT_IVPTR(dest));
+	ROBJECT(dest)->as.heap.ivptr = 0;
+	ROBJECT(dest)->as.heap.numiv = 0;
+	ROBJECT(dest)->as.heap.iv_index_tbl = 0;
+    }
+    if (RBASIC(obj)->flags & ROBJECT_EMBED) {
+	MEMCPY(ROBJECT(dest)->as.ary, ROBJECT(obj)->as.ary, VALUE, ROBJECT_EMBED_LEN_MAX);
+	RBASIC(dest)->flags |= ROBJECT_EMBED;
+    }
+    else {
+	long len = ROBJECT(obj)->as.heap.numiv;
+	VALUE *ptr = 0;
+	if (len > 0) {
+	    ptr = ALLOC_N(VALUE, len);
+	    MEMCPY(ptr, ROBJECT(obj)->as.heap.ivptr, VALUE, len);
+	}
+	ROBJECT(dest)->as.heap.ivptr = ptr;
+	ROBJECT(dest)->as.heap.numiv = len;
+	ROBJECT(dest)->as.heap.iv_index_tbl = ROBJECT(obj)->as.heap.iv_index_tbl;
+	RBASIC(dest)->flags &= ~ROBJECT_EMBED;
+    }
+}
+
 static void
 init_copy(VALUE dest, VALUE obj)
 {
@@ -192,41 +285,12 @@ init_copy(VALUE dest, VALUE obj)
         rb_raise(rb_eTypeError, "[bug] frozen object (%s) allocated", rb_obj_classname(dest));
     }
     RBASIC(dest)->flags &= ~(T_MASK|FL_EXIVAR);
-    RBASIC(dest)->flags |= RBASIC(obj)->flags & (T_MASK|FL_EXIVAR|FL_TAINT|FL_UNTRUSTED);
+    RBASIC(dest)->flags |= RBASIC(obj)->flags & (T_MASK|FL_EXIVAR|FL_TAINT);
+    rb_copy_wb_protected_attribute(dest, obj);
     rb_copy_generic_ivar(dest, obj);
     rb_gc_copy_finalizer(dest, obj);
-    switch (TYPE(obj)) {
-      case T_OBJECT:
-        if (!(RBASIC(dest)->flags & ROBJECT_EMBED) && ROBJECT_IVPTR(dest)) {
-            xfree(ROBJECT_IVPTR(dest));
-            ROBJECT(dest)->as.heap.ivptr = 0;
-            ROBJECT(dest)->as.heap.numiv = 0;
-            ROBJECT(dest)->as.heap.iv_index_tbl = 0;
-        }
-        if (RBASIC(obj)->flags & ROBJECT_EMBED) {
-            MEMCPY(ROBJECT(dest)->as.ary, ROBJECT(obj)->as.ary, VALUE, ROBJECT_EMBED_LEN_MAX);
-            RBASIC(dest)->flags |= ROBJECT_EMBED;
-        }
-        else {
-            long len = ROBJECT(obj)->as.heap.numiv;
-            VALUE *ptr = ALLOC_N(VALUE, len);
-            MEMCPY(ptr, ROBJECT(obj)->as.heap.ivptr, VALUE, len);
-            ROBJECT(dest)->as.heap.ivptr = ptr;
-            ROBJECT(dest)->as.heap.numiv = len;
-            ROBJECT(dest)->as.heap.iv_index_tbl = ROBJECT(obj)->as.heap.iv_index_tbl;
-            RBASIC(dest)->flags &= ~ROBJECT_EMBED;
-        }
-        break;
-      case T_CLASS:
-      case T_MODULE:
-	if (RCLASS_IV_TBL(dest)) {
-	    st_free_table(RCLASS_IV_TBL(dest));
-	    RCLASS_IV_TBL(dest) = 0;
-	}
-	if (RCLASS_IV_TBL(obj)) {
-	    RCLASS_IV_TBL(dest) = st_copy(RCLASS_IV_TBL(obj));
-	}
-        break;
+    if (RB_TYPE_P(obj, T_OBJECT)) {
+	rb_obj_copy_ivar(dest, obj);
     }
 }
 
@@ -235,9 +299,9 @@ init_copy(VALUE dest, VALUE obj)
  *     obj.clone -> an_object
  *
  *  Produces a shallow copy of <i>obj</i>---the instance variables of
- *  <i>obj</i> are copied, but not the objects they reference. Copies
- *  the frozen and tainted state of <i>obj</i>. See also the discussion
- *  under <code>Object#dup</code>.
+ *  <i>obj</i> are copied, but not the objects they reference.
+ *  <code>clone</code> copies the frozen and tainted state of <i>obj</i>.
+ *  See also the discussion under <code>Object#dup</code>.
  *
  *     class Klass
  *        attr_accessor :str
@@ -258,13 +322,21 @@ VALUE
 rb_obj_clone(VALUE obj)
 {
     VALUE clone;
+    VALUE singleton;
 
     if (rb_special_const_p(obj)) {
         rb_raise(rb_eTypeError, "can't clone %s", rb_obj_classname(obj));
     }
     clone = rb_obj_alloc(rb_obj_class(obj));
-    RBASIC(clone)->klass = rb_singleton_class_clone(obj);
-    RBASIC(clone)->flags = (RBASIC(obj)->flags | FL_TEST(clone, FL_TAINT) | FL_TEST(clone, FL_UNTRUSTED)) & ~(FL_FREEZE|FL_FINALIZE|FL_MARK);
+    RBASIC(clone)->flags &= (FL_TAINT);
+    RBASIC(clone)->flags |= RBASIC(obj)->flags & ~(FL_PROMOTED0|FL_PROMOTED1|FL_FREEZE|FL_FINALIZE);
+
+    singleton = rb_singleton_class_clone_and_attach(obj, clone);
+    RBASIC_SET_CLASS(clone, singleton);
+    if (FL_TEST(singleton, FL_SINGLETON)) {
+	rb_singleton_class_attached(singleton, clone);
+    }
+
     init_copy(clone, obj);
     rb_funcall(clone, id_init_clone, 1, obj);
     RBASIC(clone)->flags |= RBASIC(obj)->flags & FL_FREEZE;
@@ -278,16 +350,41 @@ rb_obj_clone(VALUE obj)
  *
  *  Produces a shallow copy of <i>obj</i>---the instance variables of
  *  <i>obj</i> are copied, but not the objects they reference.
- *  <code>dup</code> copies the tainted state of <i>obj</i>. See also
- *  the discussion under <code>Object#clone</code>. In general,
- *  <code>clone</code> and <code>dup</code> may have different semantics
- *  in descendant classes. While <code>clone</code> is used to duplicate
- *  an object, including its internal state, <code>dup</code> typically
- *  uses the class of the descendant object to create the new instance.
+ *  <code>dup</code> copies the tainted state of <i>obj</i>.
  *
  *  This method may have class-specific behavior.  If so, that
  *  behavior will be documented under the #+initialize_copy+ method of
  *  the class.
+ *
+ *  === on dup vs clone
+ *
+ *  In general, <code>clone</code> and <code>dup</code> may have different
+ *  semantics in descendant classes. While <code>clone</code> is used to
+ *  duplicate an object, including its internal state, <code>dup</code>
+ *  typically uses the class of the descendant object to create the new
+ *  instance.
+ *
+ *  When using #dup, any modules that the object has been extended with will not
+ *  be copied.
+ *
+ *	class Klass
+ *	  attr_accessor :str
+ *	end
+ *
+ *	module Foo
+ *	  def foo; 'foo'; end
+ *	end
+ *
+ *	s1 = Klass.new #=> #<Klass:0x401b3a38>
+ *	s1.extend(Foo) #=> #<Klass:0x401b3a38>
+ *	s1.foo #=> "foo"
+ *
+ *	s2 = s1.clone #=> #<Klass:0x401b3a38>
+ *	s2.foo #=> "foo"
+ *
+ *	s3 = s1.dup #=> #<Klass:0x401b3a38>
+ *	s3.foo #=> NoMethodError: undefined method `foo' for #<Klass:0x401b3a38>
+ *
  */
 
 VALUE
@@ -305,12 +402,30 @@ rb_obj_dup(VALUE obj)
     return dup;
 }
 
+/*
+ *  call-seq:
+ *     obj.itself -> an_object
+ *
+ *  Returns <i>obj</i>.
+ *
+ *	string = 'my string' #=> "my string"
+ *	string.itself.object_id == string.object_id #=> true
+ *
+ */
+
+static VALUE
+rb_obj_itself(VALUE obj)
+{
+    return obj;
+}
+
 /* :nodoc: */
 VALUE
 rb_obj_init_copy(VALUE obj, VALUE orig)
 {
     if (obj == orig) return obj;
     rb_check_frozen(obj);
+    rb_check_trusted(obj);
     if (TYPE(obj) != TYPE(orig) || rb_obj_class(obj) != rb_obj_class(orig)) {
 	rb_raise(rb_eTypeError, "initialize_copy should take same class object");
     }
@@ -332,32 +447,48 @@ rb_obj_init_dup_clone(VALUE obj, VALUE orig)
  *  Returns a string representing <i>obj</i>. The default
  *  <code>to_s</code> prints the object's class and an encoding of the
  *  object id. As a special case, the top-level object that is the
- *  initial execution context of Ruby programs returns ``main.''
+ *  initial execution context of Ruby programs returns ``main''.
  */
 
 VALUE
 rb_any_to_s(VALUE obj)
 {
-    const char *cname = rb_obj_classname(obj);
     VALUE str;
+    VALUE cname = rb_class_name(CLASS_OF(obj));
 
-    str = rb_sprintf("#<%s:%p>", cname, (void*)obj);
+    str = rb_sprintf("#<%"PRIsVALUE":%p>", cname, (void*)obj);
     OBJ_INFECT(str, obj);
 
     return str;
 }
 
+/*
+ * If the default external encoding is ASCII compatible, the encoding of
+ * the inspected result must be compatible with it.
+ * If the default external encoding is ASCII incompatible,
+ * the result must be ASCII only.
+ */
 VALUE
 rb_inspect(VALUE obj)
 {
-    return rb_obj_as_string(rb_funcall(obj, id_inspect, 0, 0));
+    VALUE str = rb_obj_as_string(rb_funcallv(obj, id_inspect, 0, 0));
+    rb_encoding *ext = rb_default_external_encoding();
+    if (!rb_enc_asciicompat(ext)) {
+	if (!rb_enc_str_asciionly_p(str))
+	    rb_raise(rb_eEncCompatError, "inspected result must be ASCII only if default external encoding is ASCII incompatible");
+	return str;
+    }
+    if (rb_enc_get(str) != ext && !rb_enc_str_asciionly_p(str))
+	rb_raise(rb_eEncCompatError, "inspected result must be ASCII only or use the default external encoding");
+    return str;
 }
 
 static int
-inspect_i(ID id, VALUE value, VALUE str)
+inspect_i(st_data_t k, st_data_t v, st_data_t a)
 {
-    VALUE str2;
-    const char *ivname;
+    ID id = (ID)k;
+    VALUE value = (VALUE)v;
+    VALUE str = (VALUE)a;
 
     /* need not to show internal data */
     if (CLASS_OF(value) == 0) return ST_CONTINUE;
@@ -369,12 +500,8 @@ inspect_i(ID id, VALUE value, VALUE str)
     else {
 	rb_str_cat2(str, ", ");
     }
-    ivname = rb_id2name(id);
-    rb_str_cat2(str, ivname);
-    rb_str_cat2(str, "=");
-    str2 = rb_inspect(value);
-    rb_str_append(str, str2);
-    OBJ_INFECT(str, str2);
+    rb_str_catf(str, "%"PRIsVALUE"=%+"PRIsVALUE,
+		rb_id2str(id), value);
 
     return ST_CONTINUE;
 }
@@ -399,46 +526,63 @@ inspect_obj(VALUE obj, VALUE str, int recur)
  *  call-seq:
  *     obj.inspect   -> string
  *
- *  Returns a string containing a human-readable representation of
- *  <i>obj</i>. If not overridden and no instance variables, uses the
- *  <code>to_s</code> method to generate the string.
- *  <i>obj</i>.  If not overridden, uses the <code>to_s</code> method to
- *  generate the string.
+ * Returns a string containing a human-readable representation of <i>obj</i>.
+ * The default <code>inspect</code> shows the object's class name,
+ * an encoding of the object id, and a list of the instance variables and
+ * their values (by calling #inspect on each of them).
+ * User defined classes should override this method to provide a better
+ * representation of <i>obj</i>.  When overriding this method, it should
+ * return a string whose encoding is compatible with the default external
+ * encoding.
  *
  *     [ 1, 2, 3..4, 'five' ].inspect   #=> "[1, 2, 3..4, \"five\"]"
  *     Time.new.inspect                 #=> "2008-03-08 19:43:39 +0900"
+ *
+ *     class Foo
+ *     end
+ *     Foo.new.inspect                  #=> "#<Foo:0x0300c868>"
+ *
+ *     class Bar
+ *       def initialize
+ *         @bar = 1
+ *       end
+ *     end
+ *     Bar.new.inspect                  #=> "#<Bar:0x0300c868 @bar=1>"
  */
 
 static VALUE
 rb_obj_inspect(VALUE obj)
 {
-    extern int rb_obj_basic_to_s_p(VALUE);
+    if (rb_ivar_count(obj) > 0) {
+	VALUE str;
+	VALUE c = rb_class_name(CLASS_OF(obj));
 
-    if (TYPE(obj) == T_OBJECT && rb_obj_basic_to_s_p(obj)) {
-        int has_ivar = 0;
-        VALUE *ptr = ROBJECT_IVPTR(obj);
-        long len = ROBJECT_NUMIV(obj);
-        long i;
-
-        for (i = 0; i < len; i++) {
-            if (ptr[i] != Qundef) {
-                has_ivar = 1;
-                break;
-            }
-        }
-
-        if (has_ivar) {
-            VALUE str;
-            const char *c = rb_obj_classname(obj);
-
-            str = rb_sprintf("-<%s:%p", c, (void*)obj);
-            return rb_exec_recursive(inspect_obj, obj, str);
-        }
+	str = rb_sprintf("-<%"PRIsVALUE":%p", c, (void*)obj);
+	return rb_exec_recursive(inspect_obj, obj, str);
+    }
+    else {
 	return rb_any_to_s(obj);
     }
-    return rb_funcall(obj, rb_intern("to_s"), 0, 0);
 }
 
+static VALUE
+class_or_module_required(VALUE c)
+{
+    if (SPECIAL_CONST_P(c)) goto not_class;
+    switch (BUILTIN_TYPE(c)) {
+      case T_MODULE:
+      case T_CLASS:
+      case T_ICLASS:
+	break;
+
+      default:
+      not_class:
+	rb_raise(rb_eTypeError, "class or module required");
+    }
+    return c;
+}
+
+static VALUE class_search_ancestor(VALUE cl, VALUE c);
 
 /*
  *  call-seq:
@@ -446,20 +590,21 @@ rb_obj_inspect(VALUE obj)
  *
  *  Returns <code>true</code> if <i>obj</i> is an instance of the given
  *  class. See also <code>Object#kind_of?</code>.
+ *
+ *     class A;     end
+ *     class B < A; end
+ *     class C < B; end
+ *
+ *     b = B.new
+ *     b.instance_of? A   #=> false
+ *     b.instance_of? B   #=> true
+ *     b.instance_of? C   #=> false
  */
 
 VALUE
 rb_obj_is_instance_of(VALUE obj, VALUE c)
 {
-    switch (TYPE(c)) {
-      case T_MODULE:
-      case T_CLASS:
-      case T_ICLASS:
-	break;
-      default:
-	rb_raise(rb_eTypeError, "class or module required");
-    }
-
+    c = class_or_module_required(c);
     if (rb_obj_class(obj) == c) return Qtrue;
     return Qfalse;
 }
@@ -480,11 +625,13 @@ rb_obj_is_instance_of(VALUE obj, VALUE c)
  *     end
  *     class B < A; end
  *     class C < B; end
+ *
  *     b = B.new
- *     b.instance_of? A   #=> false
- *     b.instance_of? B   #=> true
- *     b.instance_of? C   #=> false
- *     b.instance_of? M   #=> false
+ *     b.is_a? A          #=> true
+ *     b.is_a? B          #=> true
+ *     b.is_a? C          #=> false
+ *     b.is_a? M          #=> true
+ *
  *     b.kind_of? A       #=> true
  *     b.kind_of? B       #=> true
  *     b.kind_of? C       #=> false
@@ -496,37 +643,41 @@ rb_obj_is_kind_of(VALUE obj, VALUE c)
 {
     VALUE cl = CLASS_OF(obj);
 
-    switch (TYPE(c)) {
-      case T_MODULE:
-      case T_CLASS:
-      case T_ICLASS:
-	break;
-
-      default:
-	rb_raise(rb_eTypeError, "class or module required");
-    }
-
-    while (cl) {
-	if (cl == c || RCLASS_M_TBL(cl) == RCLASS_M_TBL(c))
-	    return Qtrue;
-	cl = RCLASS_SUPER(cl);
-    }
-    return Qfalse;
+    c = class_or_module_required(c);
+    return class_search_ancestor(cl, RCLASS_ORIGIN(c)) ? Qtrue : Qfalse;
 }
 
+static VALUE
+class_search_ancestor(VALUE cl, VALUE c)
+{
+    while (cl) {
+	if (cl == c || RCLASS_M_TBL(cl) == RCLASS_M_TBL(c))
+	    return cl;
+	cl = RCLASS_SUPER(cl);
+    }
+    return 0;
+}
+
+VALUE
+rb_class_search_ancestor(VALUE cl, VALUE c)
+{
+    cl = class_or_module_required(cl);
+    c = class_or_module_required(c);
+    return class_search_ancestor(cl, RCLASS_ORIGIN(c));
+}
 
 /*
  *  call-seq:
  *     obj.tap{|x|...}    -> obj
  *
- *  Yields <code>x</code> to the block, and then returns <code>x</code>.
+ *  Yields self to the block, and then returns self.
  *  The primary purpose of this method is to "tap into" a method chain,
  *  in order to perform operations on intermediate results within the chain.
  *
  *	(1..10)                .tap {|x| puts "original: #{x.inspect}"}
  *	  .to_a                .tap {|x| puts "array: #{x.inspect}"}
  *	  .select {|x| x%2==0} .tap {|x| puts "evens: #{x.inspect}"}
- *	  .map { |x| x*x }     .tap {|x| puts "squares: #{x.inspect}"}
+ *	  .map {|x| x*x}       .tap {|x| puts "squares: #{x.inspect}"}
  *
  */
 
@@ -549,9 +700,9 @@ rb_obj_tap(VALUE obj)
  * Example:
  *
  *    class Foo
- *       def self.inherited(subclass)
- *          puts "New subclass: #{subclass}"
- *       end
+ *      def self.inherited(subclass)
+ *        puts "New subclass: #{subclass}"
+ *      end
  *    end
  *
  *    class Bar < Foo
@@ -560,10 +711,58 @@ rb_obj_tap(VALUE obj)
  *    class Baz < Bar
  *    end
  *
- * produces:
+ * <em>produces:</em>
  *
  *    New subclass: Bar
  *    New subclass: Baz
+ */
+
+/* Document-method: method_added
+ *
+ * call-seq:
+ *   method_added(method_name)
+ *
+ * Invoked as a callback whenever an instance method is added to the
+ * receiver.
+ *
+ *   module Chatty
+ *     def self.method_added(method_name)
+ *       puts "Adding #{method_name.inspect}"
+ *     end
+ *     def self.some_class_method() end
+ *     def some_instance_method() end
+ *   end
+ *
+ * <em>produces:</em>
+ *
+ *   Adding :some_instance_method
+ *
+ */
+
+/* Document-method: method_removed
+ *
+ * call-seq:
+ *   method_removed(method_name)
+ *
+ * Invoked as a callback whenever an instance method is removed from the
+ * receiver.
+ *
+ *   module Chatty
+ *     def self.method_removed(method_name)
+ *       puts "Removing #{method_name.inspect}"
+ *     end
+ *     def self.some_class_method() end
+ *     def some_instance_method() end
+ *     class << self
+ *       remove_method :some_class_method
+ *     end
+ *     remove_method :some_instance_method
+ *   end
+ *
+ * <em>produces:</em>
+ *
+ *   Removing :some_instance_method
+ *
  */
 
 /*
@@ -644,12 +843,30 @@ rb_obj_tap(VALUE obj)
  *     Undefining one
  */
 
+/*
+ * Document-method: extended
+ *
+ * call-seq:
+ *    extended(othermod)
+ *
+ * The equivalent of <tt>included</tt>, but for extended modules.
+ *
+ *        module A
+ *          def self.extended(mod)
+ *            puts "#{self} extended in #{mod}"
+ *          end
+ *        end
+ *        module Enumerable
+ *          extend A
+ *        end
+ *         # => prints "A extended in Enumerable"
+ */
 
 /*
  * Document-method: included
  *
  * call-seq:
- *    included( othermod )
+ *    included(othermod)
  *
  * Callback invoked whenever the receiver is included in another
  * module or class. This should be used in preference to
@@ -664,15 +881,35 @@ rb_obj_tap(VALUE obj)
  *        module Enumerable
  *          include A
  *        end
+ *         # => prints "A included in Enumerable"
+ */
+
+/*
+ * Document-method: prepended
+ *
+ * call-seq:
+ *    prepended(othermod)
+ *
+ * The equivalent of <tt>included</tt>, but for prepended modules.
+ *
+ *        module A
+ *          def self.prepended(mod)
+ *            puts "#{self} prepended to #{mod}"
+ *          end
+ *        end
+ *        module Enumerable
+ *          prepend A
+ *        end
+ *         # => prints "A prepended to Enumerable"
  */
 
 /*
  * Document-method: initialize
  *
  * call-seq:
- *    BasicObject.new( *args )
+ *    BasicObject.new
  *
- * Returns a new BasicObject. Arguments are ignored.
+ * Returns a new BasicObject.
  */
 
 /*
@@ -689,7 +926,9 @@ rb_obj_dummy(void)
  *  call-seq:
  *     obj.tainted?    -> true or false
  *
- *  Returns <code>true</code> if the object is tainted.
+ *  Returns true if the object is tainted.
+ *
+ *  See #taint for more information.
  */
 
 VALUE
@@ -704,19 +943,27 @@ rb_obj_tainted(VALUE obj)
  *  call-seq:
  *     obj.taint -> obj
  *
- *  Marks <i>obj</i> as tainted---if the <code>$SAFE</code> level is
- *  set appropriately, many method calls which might alter the running
- *  programs environment will refuse to accept tainted strings.
+ *  Mark the object as tainted.
+ *
+ *  Objects that are marked as tainted will be restricted from various built-in
+ *  methods. This is to prevent insecure data, such as command-line arguments
+ *  or strings read from Kernel#gets, from inadvertently compromising the user's
+ *  system.
+ *
+ *  To check whether an object is tainted, use #tainted?.
+ *
+ *  You should only untaint a tainted object if your code has inspected it and
+ *  determined that it is safe. To do so use #untaint.
+ *
+ *  In $SAFE level 3, all newly created objects are tainted and you can't untaint
+ *  objects.
  */
 
 VALUE
 rb_obj_taint(VALUE obj)
 {
-    rb_secure(4);
-    if (!OBJ_TAINTED(obj)) {
-	if (OBJ_FROZEN(obj)) {
-	    rb_error_frozen("object");
-	}
+    if (!OBJ_TAINTED(obj) && OBJ_TAINTABLE(obj)) {
+	rb_check_frozen(obj);
 	OBJ_TAINT(obj);
     }
     return obj;
@@ -727,7 +974,9 @@ rb_obj_taint(VALUE obj)
  *  call-seq:
  *     obj.untaint    -> obj
  *
- *  Removes the taint from <i>obj</i>.
+ *  Removes the tainted mark from the object.
+ *
+ *  See #taint for more information.
  */
 
 VALUE
@@ -735,9 +984,7 @@ rb_obj_untaint(VALUE obj)
 {
     rb_secure(3);
     if (OBJ_TAINTED(obj)) {
-	if (OBJ_FROZEN(obj)) {
-	    rb_error_frozen("object");
-	}
+	rb_check_frozen(obj);
 	FL_UNSET(obj, FL_TAINT);
     }
     return obj;
@@ -747,35 +994,28 @@ rb_obj_untaint(VALUE obj)
  *  call-seq:
  *     obj.untrusted?    -> true or false
  *
- *  Returns <code>true</code> if the object is untrusted.
+ *  Deprecated method that is equivalent to #tainted?.
  */
 
 VALUE
 rb_obj_untrusted(VALUE obj)
 {
-    if (OBJ_UNTRUSTED(obj))
-	return Qtrue;
-    return Qfalse;
+    rb_warning("untrusted? is deprecated and its behavior is same as tainted?");
+    return rb_obj_tainted(obj);
 }
 
 /*
  *  call-seq:
  *     obj.untrust -> obj
  *
- *  Marks <i>obj</i> as untrusted.
+ *  Deprecated method that is equivalent to #taint.
  */
 
 VALUE
 rb_obj_untrust(VALUE obj)
 {
-    rb_secure(4);
-    if (!OBJ_UNTRUSTED(obj)) {
-	if (OBJ_FROZEN(obj)) {
-	    rb_error_frozen("object");
-	}
-	OBJ_UNTRUST(obj);
-    }
-    return obj;
+    rb_warning("untrust is deprecated and its behavior is same as taint");
+    return rb_obj_taint(obj);
 }
 
 
@@ -783,20 +1023,14 @@ rb_obj_untrust(VALUE obj)
  *  call-seq:
  *     obj.trust    -> obj
  *
- *  Removes the untrusted mark from <i>obj</i>.
+ *  Deprecated method that is equivalent to #untaint.
  */
 
 VALUE
 rb_obj_trust(VALUE obj)
 {
-    rb_secure(3);
-    if (OBJ_UNTRUSTED(obj)) {
-	if (OBJ_FROZEN(obj)) {
-	    rb_error_frozen("object");
-	}
-	FL_UNSET(obj, FL_UNTRUSTED);
-    }
-    return obj;
+    rb_warning("trust is deprecated and its behavior is same as untaint");
+    return rb_obj_untaint(obj);
 }
 
 void
@@ -804,8 +1038,6 @@ rb_obj_infect(VALUE obj1, VALUE obj2)
 {
     OBJ_INFECT(obj1, obj2);
 }
-
-static st_table *immediate_frozen_tbl = 0;
 
 /*
  *  call-seq:
@@ -824,23 +1056,20 @@ static st_table *immediate_frozen_tbl = 0;
  *
  *  <em>produces:</em>
  *
- *     prog.rb:3:in `<<': can't modify frozen array (RuntimeError)
+ *     prog.rb:3:in `<<': can't modify frozen Array (RuntimeError)
  *     	from prog.rb:3
+ *
+ *  Objects of the following classes are always frozen: Fixnum,
+ *  Bignum, Float, Symbol.
  */
 
 VALUE
 rb_obj_freeze(VALUE obj)
 {
     if (!OBJ_FROZEN(obj)) {
-	if (rb_safe_level() >= 4 && !OBJ_UNTRUSTED(obj)) {
-	    rb_raise(rb_eSecurityError, "Insecure: can't freeze object");
-	}
 	OBJ_FREEZE(obj);
 	if (SPECIAL_CONST_P(obj)) {
-	    if (!immediate_frozen_tbl) {
-		immediate_frozen_tbl = st_init_numtable();
-	    }
-	    st_insert(immediate_frozen_tbl, obj, (st_data_t)Qtrue);
+	    rb_bug("special consts should be frozen.");
 	}
     }
     return obj;
@@ -860,12 +1089,7 @@ rb_obj_freeze(VALUE obj)
 VALUE
 rb_obj_frozen_p(VALUE obj)
 {
-    if (OBJ_FROZEN(obj)) return Qtrue;
-    if (SPECIAL_CONST_P(obj)) {
-	if (!immediate_frozen_tbl) return Qfalse;
-	if (st_lookup(immediate_frozen_tbl, obj, 0)) return Qtrue;
-    }
-    return Qfalse;
+    return OBJ_FROZEN(obj) ? Qtrue : Qfalse;
 }
 
 
@@ -937,6 +1161,23 @@ nil_to_a(VALUE obj)
 }
 
 /*
+ * Document-method: to_h
+ *
+ *  call-seq:
+ *     nil.to_h    -> {}
+ *
+ *  Always returns an empty hash.
+ *
+ *     nil.to_h   #=> {}
+ */
+
+static VALUE
+nil_to_h(VALUE obj)
+{
+    return rb_hash_new();
+}
+
+/*
  *  call-seq:
  *    nil.inspect  -> "nil"
  *
@@ -991,7 +1232,7 @@ true_and(VALUE obj, VALUE obj2)
  *  call-seq:
  *     true | obj   -> true
  *
- *  Or---Returns <code>true</code>. As <i>anObject</i> is an argument to
+ *  Or---Returns <code>true</code>. As <i>obj</i> is an argument to
  *  a method call, it is always evaluated; there is no short-circuit
  *  evaluation in this case.
  *
@@ -1101,7 +1342,7 @@ false_xor(VALUE obj, VALUE obj2)
 }
 
 /*
- * call_seq:
+ * call-seq:
  *   nil.nil?               -> true
  *
  * Only the object <i>nil</i> responds <code>true</code> to <code>nil?</code>.
@@ -1114,11 +1355,13 @@ rb_true(VALUE obj)
 }
 
 /*
- * call_seq:
- *   nil.nil?               -> true
- *   <anything_else>.nil?   -> false
+ * call-seq:
+ *   obj.nil?               -> true or false
  *
  * Only the object <i>nil</i> responds <code>true</code> to <code>nil?</code>.
+ *
+ *    Object.new.nil?   #=> false
+ *    nil.nil?          #=> true
  */
 
 
@@ -1164,7 +1407,19 @@ rb_obj_not_match(VALUE obj1, VALUE obj2)
  *  call-seq:
  *     obj <=> other -> 0 or nil
  *
- *  Returns 0 if obj === other, otherwise nil.
+ *  Returns 0 if +obj+ and +other+ are the same object
+ *  or <code>obj == other</code>, otherwise nil.
+ *
+ *  The <code><=></code> is used by various methods to compare objects, for example
+ *  Enumerable#sort, Enumerable#max etc.
+ *
+ *  Your implementation of <code><=></code> should return one of the following values: -1, 0,
+ *  1 or nil. -1 means self is smaller than other. 0 means self is equal to other.
+ *  1 means self is bigger than other. Nil means the two values could not be
+ *  compared.
+ *
+ *  When you define <code><=></code>, you can include Comparable to gain the methods
+ *  <code><=</code>, <code><</code>, <code>==</code>, <code>>=</code>, <code>></code> and <code>between?</code>.
  */
 static VALUE
 rb_obj_cmp(VALUE obj1, VALUE obj2)
@@ -1183,7 +1438,7 @@ rb_obj_cmp(VALUE obj1, VALUE obj2)
  *  Instance methods appear as methods in a class when the module is
  *  included, module methods do not. Conversely, module methods may be
  *  called without creating an encapsulating object, while instance
- *  methods may not. (See <code>Module#module_function</code>)
+ *  methods may not. (See <code>Module#module_function</code>.)
  *
  *  In the descriptions that follow, the parameter <i>sym</i> refers
  *  to a symbol, which is either a quoted string or a
@@ -1206,7 +1461,7 @@ rb_obj_cmp(VALUE obj1, VALUE obj2)
  * call-seq:
  *   mod.to_s   -> string
  *
- * Return a string representing this module or class. For basic
+ * Returns a string representing this module or class. For basic
  * classes and modules, this is the name. For singletons, we
  * show information on the thing we're attached to as well.
  */
@@ -1214,21 +1469,33 @@ rb_obj_cmp(VALUE obj1, VALUE obj2)
 static VALUE
 rb_mod_to_s(VALUE klass)
 {
-    if (FL_TEST(klass, FL_SINGLETON)) {
-	VALUE s = rb_usascii_str_new2("#<");
-	VALUE v = rb_iv_get(klass, "__attached__");
+    ID id_defined_at;
+    VALUE refined_class, defined_at;
 
-	rb_str_cat2(s, "Class:");
-	switch (TYPE(v)) {
-	  case T_CLASS: case T_MODULE:
+    if (FL_TEST(klass, FL_SINGLETON)) {
+	VALUE s = rb_usascii_str_new2("#<Class:");
+	VALUE v = rb_ivar_get(klass, id__attached__);
+
+	if (CLASS_OR_MODULE_P(v)) {
 	    rb_str_append(s, rb_inspect(v));
-	    break;
-	  default:
+	}
+	else {
 	    rb_str_append(s, rb_any_to_s(v));
-	    break;
 	}
 	rb_str_cat2(s, ">");
 
+	return s;
+    }
+    refined_class = rb_refinement_module_get_refined_class(klass);
+    if (!NIL_P(refined_class)) {
+	VALUE s = rb_usascii_str_new2("#<refinement:");
+
+	rb_str_concat(s, rb_inspect(refined_class));
+	rb_str_cat2(s, "@");
+	CONST_ID(id_defined_at, "__defined_at__");
+	defined_at = rb_attr_get(klass, id_defined_at);
+	rb_str_concat(s, rb_inspect(defined_at));
+	rb_str_cat2(s, ">");
 	return s;
     }
     return rb_str_dup(rb_class_name(klass));
@@ -1254,7 +1521,7 @@ rb_mod_freeze(VALUE mod)
  *  call-seq:
  *     mod === obj    -> true or false
  *
- *  Case Equality---Returns <code>true</code> if <i>anObject</i> is an
+ *  Case Equality---Returns <code>true</code> if <i>obj</i> is an
  *  instance of <i>mod</i> or one of <i>mod</i>'s descendants. Of
  *  limited use for modules, but can be used in <code>case</code>
  *  statements to classify objects by class.
@@ -1274,7 +1541,7 @@ rb_mod_eqq(VALUE mod, VALUE arg)
  * is the same as <i>other</i>. Returns
  * <code>nil</code> if there's no relationship between the two.
  * (Think of the relationship in terms of the class definition:
- * "class A<B" implies "A<B").
+ * "class A<B" implies "A<B".)
  *
  */
 
@@ -1284,23 +1551,16 @@ rb_class_inherited_p(VALUE mod, VALUE arg)
     VALUE start = mod;
 
     if (mod == arg) return Qtrue;
-    switch (TYPE(arg)) {
-      case T_MODULE:
-      case T_CLASS:
-	break;
-      default:
+    if (!CLASS_OR_MODULE_P(arg) && !RB_TYPE_P(arg, T_ICLASS)) {
 	rb_raise(rb_eTypeError, "compared with non class/module");
     }
-    while (mod) {
-	if (RCLASS_M_TBL(mod) == RCLASS_M_TBL(arg))
-	    return Qtrue;
-	mod = RCLASS_SUPER(mod);
+    arg = RCLASS_ORIGIN(arg);
+    if (class_search_ancestor(mod, arg)) {
+	return Qtrue;
     }
     /* not mod < arg; check if mod > arg */
-    while (arg) {
-	if (RCLASS_M_TBL(arg) == RCLASS_M_TBL(start))
-	    return Qfalse;
-	arg = RCLASS_SUPER(arg);
+    if (class_search_ancestor(arg, start)) {
+	return Qfalse;
     }
     return Qnil;
 }
@@ -1312,7 +1572,7 @@ rb_class_inherited_p(VALUE mod, VALUE arg)
  * Returns true if <i>mod</i> is a subclass of <i>other</i>. Returns
  * <code>nil</code> if there's no relationship between the two.
  * (Think of the relationship in terms of the class definition:
- * "class A<B" implies "A<B").
+ * "class A<B" implies "A<B".)
  *
  */
 
@@ -1332,18 +1592,14 @@ rb_mod_lt(VALUE mod, VALUE arg)
  * two modules are the same. Returns
  * <code>nil</code> if there's no relationship between the two.
  * (Think of the relationship in terms of the class definition:
- * "class A<B" implies "B>A").
+ * "class A<B" implies "B>A".)
  *
  */
 
 static VALUE
 rb_mod_ge(VALUE mod, VALUE arg)
 {
-    switch (TYPE(arg)) {
-      case T_MODULE:
-      case T_CLASS:
-	break;
-      default:
+    if (!CLASS_OR_MODULE_P(arg)) {
 	rb_raise(rb_eTypeError, "compared with non class/module");
     }
 
@@ -1357,7 +1613,7 @@ rb_mod_ge(VALUE mod, VALUE arg)
  * Returns true if <i>mod</i> is an ancestor of <i>other</i>. Returns
  * <code>nil</code> if there's no relationship between the two.
  * (Think of the relationship in terms of the class definition:
- * "class A<B" implies "B>A").
+ * "class A<B" implies "B>A".)
  *
  */
 
@@ -1370,13 +1626,14 @@ rb_mod_gt(VALUE mod, VALUE arg)
 
 /*
  *  call-seq:
- *     mod <=> other_mod   -> -1, 0, +1, or nil
+ *     module <=> other_module   -> -1, 0, +1, or nil
  *
- *  Comparison---Returns -1 if <i>mod</i> includes <i>other_mod</i>, 0 if
- *  <i>mod</i> is the same as <i>other_mod</i>, and +1 if <i>mod</i> is
- *  included by <i>other_mod</i>. Returns <code>nil</code> if <i>mod</i>
- *  has no relationship with <i>other_mod</i> or if <i>other_mod</i> is
- *  not a module.
+ *  Comparison---Returns -1, 0, +1 or nil depending on whether +module+
+ *  includes +other_module+, they are the same, or if +module+ is included by
+ *  +other_module+. This is the basis for the tests in Comparable.
+ *
+ *  Returns +nil+ if +module+ has no relationship with +other_module+, if
+ *  +other_module+ is not a module, or if the two values are incomparable.
  */
 
 static VALUE
@@ -1385,11 +1642,7 @@ rb_mod_cmp(VALUE mod, VALUE arg)
     VALUE cmp;
 
     if (mod == arg) return INT2FIX(0);
-    switch (TYPE(arg)) {
-      case T_MODULE:
-      case T_CLASS:
-	break;
-      default:
+    if (!CLASS_OR_MODULE_P(arg)) {
 	return Qnil;
     }
 
@@ -1406,7 +1659,7 @@ rb_module_s_alloc(VALUE klass)
 {
     VALUE mod = rb_module_new();
 
-    RBASIC(mod)->klass = klass;
+    RBASIC_SET_CLASS(mod, klass);
     return mod;
 }
 
@@ -1425,7 +1678,7 @@ rb_class_s_alloc(VALUE klass)
  *  the module object, and the block is evaluated in the context of this
  *  module using <code>module_eval</code>.
  *
- *     Fred = Module.new do
+ *     fred = Module.new do
  *       def meth1
  *         "hello"
  *       end
@@ -1434,30 +1687,62 @@ rb_class_s_alloc(VALUE klass)
  *       end
  *     end
  *     a = "my string"
- *     a.extend(Fred)   #=> "my string"
+ *     a.extend(fred)   #=> "my string"
  *     a.meth1          #=> "hello"
  *     a.meth2          #=> "bye"
+ *
+ *  Assign the module to a constant (name starting uppercase) if you
+ *  want to treat it like a regular module.
  */
 
 static VALUE
 rb_mod_initialize(VALUE module)
 {
-    extern VALUE rb_mod_module_exec(int argc, VALUE *argv, VALUE mod);
-
     if (rb_block_given_p()) {
 	rb_mod_module_exec(1, &module, module);
     }
     return Qnil;
 }
 
+/* :nodoc: */
+static VALUE
+rb_mod_initialize_clone(VALUE clone, VALUE orig)
+{
+    VALUE ret;
+    ret = rb_obj_init_dup_clone(clone, orig);
+    if (OBJ_FROZEN(orig))
+        rb_class_name(clone);
+    return ret;
+}
+
 /*
  *  call-seq:
- *     Class.new(super_class=Object)   ->    a_class
+ *     Class.new(super_class=Object)               -> a_class
+ *     Class.new(super_class=Object) { |mod| ... } -> a_class
  *
  *  Creates a new anonymous (unnamed) class with the given superclass
  *  (or <code>Object</code> if no parameter is given). You can give a
  *  class a name by assigning the class object to a constant.
  *
+ *  If a block is given, it is passed the class object, and the block
+ *  is evaluated in the context of this class using
+ *  <code>class_eval</code>.
+ *
+ *     fred = Class.new do
+ *       def meth1
+ *         "hello"
+ *       end
+ *       def meth2
+ *         "bye"
+ *       end
+ *     end
+ *
+ *     a = fred.new     #=> #<#<Class:0x100381890>:0x100376b98>
+ *     a.meth1          #=> "hello"
+ *     a.meth2          #=> "bye"
+ *
+ *  Assign the class to a constant (name starting uppercase) if you
+ *  want to treat it like a regular class.
  */
 
 static VALUE
@@ -1474,8 +1759,11 @@ rb_class_initialize(int argc, VALUE *argv, VALUE klass)
     else {
 	rb_scan_args(argc, argv, "01", &super);
 	rb_check_inheritable(super);
+	if (super != rb_cBasicObject && !RCLASS_SUPER(super)) {
+	    rb_raise(rb_eTypeError, "can't inherit uninitialized class");
+	}
     }
-    RCLASS_SUPER(klass) = super;
+    RCLASS_SET_SUPER(klass, super);
     rb_make_metaclass(klass, RBASIC(super)->klass);
     rb_class_inherited(super, klass);
     rb_mod_initialize(klass);
@@ -1509,6 +1797,7 @@ VALUE
 rb_obj_alloc(VALUE klass)
 {
     VALUE obj;
+    rb_alloc_func_t allocator;
 
     if (RCLASS_SUPER(klass) == 0 && klass != rb_cBasicObject) {
 	rb_raise(rb_eTypeError, "can't instantiate uninitialized class");
@@ -1516,7 +1805,23 @@ rb_obj_alloc(VALUE klass)
     if (FL_TEST(klass, FL_SINGLETON)) {
 	rb_raise(rb_eTypeError, "can't create instance of singleton class");
     }
-    obj = rb_funcall(klass, ID_ALLOCATOR, 0, 0);
+    allocator = rb_get_alloc_func(klass);
+    if (!allocator) {
+	rb_raise(rb_eTypeError, "allocator undefined for %"PRIsVALUE,
+		 klass);
+    }
+
+#if !defined(DTRACE_PROBES_DISABLED) || !DTRACE_PROBES_DISABLED
+    if (RUBY_DTRACE_OBJECT_CREATE_ENABLED()) {
+        const char * file = rb_sourcefile();
+        RUBY_DTRACE_OBJECT_CREATE(rb_class2name(klass),
+				  file ? file : "",
+				  rb_sourceline());
+    }
+#endif
+
+    obj = (*allocator)(klass);
+
     if (rb_obj_class(obj) != rb_class_real(klass)) {
 	rb_raise(rb_eTypeError, "wrong instance allocation");
     }
@@ -1526,8 +1831,7 @@ rb_obj_alloc(VALUE klass)
 static VALUE
 rb_class_allocate_instance(VALUE klass)
 {
-    NEWOBJ(obj, struct RObject);
-    OBJSETUP(obj, klass, T_OBJECT);
+    NEWOBJ_OF(obj, struct RObject, klass, T_OBJECT | (RGENGC_WB_PROTECTED_OBJECT ? FL_WB_PROTECTED : 0));
     return (VALUE)obj;
 }
 
@@ -1544,7 +1848,7 @@ rb_class_allocate_instance(VALUE klass)
  */
 
 VALUE
-rb_class_new_instance(int argc, VALUE *argv, VALUE klass)
+rb_class_new_instance(int argc, const VALUE *argv, VALUE klass)
 {
     VALUE obj;
 
@@ -1567,13 +1871,13 @@ rb_class_new_instance(int argc, VALUE *argv, VALUE klass)
  *     class Bar < Foo; end
  *     Bar.superclass           #=> Foo
  *
- *  returns nil when the given class hasn't a parent class:
+ *  Returns nil when the given class does not have a parent class:
  *
  *     BasicObject.superclass   #=> nil
  *
  */
 
-static VALUE
+VALUE
 rb_class_superclass(VALUE klass)
 {
     VALUE super = RCLASS_SUPER(klass);
@@ -1582,7 +1886,7 @@ rb_class_superclass(VALUE klass)
 	if (klass == rb_cBasicObject) return Qnil;
 	rb_raise(rb_eTypeError, "uninitialized class");
     }
-    while (TYPE(super) == T_ICLASS) {
+    while (RB_TYPE_P(super, T_ICLASS)) {
 	super = RCLASS_SUPER(super);
     }
     if (!super) {
@@ -1591,14 +1895,85 @@ rb_class_superclass(VALUE klass)
     return super;
 }
 
+VALUE
+rb_class_get_superclass(VALUE klass)
+{
+    return RCLASS(klass)->super;
+}
+
+#define id_for_setter(name, type, message) \
+    check_setter_id(name, rb_is_##type##_sym, rb_is_##type##_name, message)
+static ID
+check_setter_id(VALUE name, int (*valid_sym_p)(VALUE), int (*valid_name_p)(VALUE),
+		const char *message)
+{
+    ID id;
+    if (SYMBOL_P(name)) {
+	if (!valid_sym_p(name)) {
+	    rb_name_error_str(name, message, QUOTE(rb_sym2str(name)));
+	}
+	id = SYM2ID(name);
+    }
+    else {
+	VALUE str = rb_check_string_type(name);
+	if (NIL_P(str)) {
+	    rb_raise(rb_eTypeError, "% "PRIsVALUE" is not a symbol or string",
+		     name);
+	}
+	if (!valid_name_p(str)) {
+	    rb_name_error_str(str, message, QUOTE(str));
+	}
+	id = rb_intern_str(str);
+    }
+    return id;
+}
+
+static int
+rb_is_attr_id(ID id)
+{
+    return rb_is_local_id(id) || rb_is_const_id(id);
+}
+
+static int
+rb_is_attr_name(VALUE name)
+{
+    return rb_is_local_name(name) || rb_is_const_name(name);
+}
+
+static int
+rb_is_attr_sym(VALUE sym)
+{
+    return rb_is_local_sym(sym) || rb_is_const_sym(sym);
+}
+
+static const char invalid_attribute_name[] = "invalid attribute name `%"PRIsVALUE"'";
+
+static ID
+id_for_attr(VALUE name)
+{
+    return id_for_setter(name, attr, invalid_attribute_name);
+}
+
+ID
+rb_check_attr_id(ID id)
+{
+    if (!rb_is_attr_id(id)) {
+	rb_name_error_str(id, invalid_attribute_name, QUOTE_ID(id));
+    }
+    return id;
+}
+
 /*
  *  call-seq:
- *     attr_reader(symbol, ...)    -> nil
- *     attr(symbol, ...)             -> nil
+ *     attr_reader(symbol, ...)  -> nil
+ *     attr(symbol, ...)         -> nil
+ *     attr_reader(string, ...)  -> nil
+ *     attr(string, ...)         -> nil
  *
  *  Creates instance variables and corresponding methods that return the
  *  value of each instance variable. Equivalent to calling
  *  ``<code>attr</code><i>:name</i>'' on each name in turn.
+ *  String arguments are converted to symbols.
  */
 
 static VALUE
@@ -1607,7 +1982,7 @@ rb_mod_attr_reader(int argc, VALUE *argv, VALUE klass)
     int i;
 
     for (i=0; i<argc; i++) {
-	rb_attr(klass, rb_to_id(argv[i]), TRUE, FALSE, TRUE);
+	rb_attr(klass, id_for_attr(argv[i]), TRUE, FALSE, TRUE);
     }
     return Qnil;
 }
@@ -1617,7 +1992,7 @@ rb_mod_attr(int argc, VALUE *argv, VALUE klass)
 {
     if (argc == 2 && (argv[1] == Qtrue || argv[1] == Qfalse)) {
 	rb_warning("optional boolean argument is obsoleted");
-	rb_attr(klass, rb_to_id(argv[0]), 1, RTEST(argv[1]), TRUE);
+	rb_attr(klass, id_for_attr(argv[0]), 1, RTEST(argv[1]), TRUE);
 	return Qnil;
     }
     return rb_mod_attr_reader(argc, argv, klass);
@@ -1626,9 +2001,11 @@ rb_mod_attr(int argc, VALUE *argv, VALUE klass)
 /*
  *  call-seq:
  *      attr_writer(symbol, ...)    -> nil
+ *      attr_writer(string, ...)    -> nil
  *
  *  Creates an accessor method to allow assignment to the attribute
- *  <i>aSymbol</i><code>.id2name</code>.
+ *  <i>symbol</i><code>.id2name</code>.
+ *  String arguments are converted to symbols.
  */
 
 static VALUE
@@ -1637,7 +2014,7 @@ rb_mod_attr_writer(int argc, VALUE *argv, VALUE klass)
     int i;
 
     for (i=0; i<argc; i++) {
-	rb_attr(klass, rb_to_id(argv[i]), FALSE, TRUE, TRUE);
+	rb_attr(klass, id_for_attr(argv[i]), FALSE, TRUE, TRUE);
     }
     return Qnil;
 }
@@ -1645,11 +2022,13 @@ rb_mod_attr_writer(int argc, VALUE *argv, VALUE klass)
 /*
  *  call-seq:
  *     attr_accessor(symbol, ...)    -> nil
+ *     attr_accessor(string, ...)    -> nil
  *
  *  Defines a named attribute for this module, where the name is
  *  <i>symbol.</i><code>id2name</code>, creating an instance variable
  *  (<code>@name</code>) and a corresponding access method to read it.
  *  Also creates a method called <code>name=</code> to set the attribute.
+ *  String arguments are converted to symbols.
  *
  *     module Mod
  *       attr_accessor(:one, :two)
@@ -1663,7 +2042,7 @@ rb_mod_attr_accessor(int argc, VALUE *argv, VALUE klass)
     int i;
 
     for (i=0; i<argc; i++) {
-	rb_attr(klass, rb_to_id(argv[i]), TRUE, TRUE, TRUE);
+	rb_attr(klass, id_for_attr(argv[i]), TRUE, TRUE, TRUE);
     }
     return Qnil;
 }
@@ -1671,38 +2050,137 @@ rb_mod_attr_accessor(int argc, VALUE *argv, VALUE klass)
 /*
  *  call-seq:
  *     mod.const_get(sym, inherit=true)    -> obj
+ *     mod.const_get(str, inherit=true)    -> obj
  *
- *  Returns the value of the named constant in <i>mod</i>.
+ *  Checks for a constant with the given name in <i>mod</i>.
+ *  If +inherit+ is set, the lookup will also search
+ *  the ancestors (and +Object+ if <i>mod</i> is a +Module+).
+ *
+ *  The value of the constant is returned if a definition is found,
+ *  otherwise a +NameError+ is raised.
  *
  *     Math.const_get(:PI)   #=> 3.14159265358979
  *
- *  If the constant is not defined or is defined by the ancestors and
- *  +inherit+ is false, +NameError+ will be raised.
+ *  This method will recursively look up constant names if a namespaced
+ *  class name is provided.  For example:
+ *
+ *     module Foo; class Bar; end end
+ *     Object.const_get 'Foo::Bar'
+ *
+ *  The +inherit+ flag is respected on each lookup.  For example:
+ *
+ *     module Foo
+ *       class Bar
+ *         VAL = 10
+ *       end
+ *
+ *       class Baz < Bar; end
+ *     end
+ *
+ *     Object.const_get 'Foo::Baz::VAL'         # => 10
+ *     Object.const_get 'Foo::Baz::VAL', false  # => NameError
+ *
+ *  If the argument is not a valid constant name a +NameError+ will be
+ *  raised with a warning "wrong constant name".
+ *
+ *	Object.const_get 'foobar' #=> NameError: wrong constant name foobar
+ *
  */
 
 static VALUE
 rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
 {
     VALUE name, recur;
+    rb_encoding *enc;
+    const char *pbeg, *p, *path, *pend;
     ID id;
 
-    if (argc == 1) {
-	name = argv[0];
-	recur = Qtrue;
+    rb_check_arity(argc, 1, 2);
+    name = argv[0];
+    recur = (argc == 1) ? Qtrue : argv[1];
+
+    if (SYMBOL_P(name)) {
+	if (!rb_is_const_sym(name)) goto wrong_name;
+	id = rb_check_id(&name);
+	if (!id) return rb_const_missing(mod, name);
+	return RTEST(recur) ? rb_const_get(mod, id) : rb_const_get_at(mod, id);
     }
-    else {
-	rb_scan_args(argc, argv, "11", &name, &recur);
+
+    path = StringValuePtr(name);
+    enc = rb_enc_get(name);
+
+    if (!rb_enc_asciicompat(enc)) {
+	rb_raise(rb_eArgError, "invalid class path encoding (non ASCII)");
     }
-    id = rb_to_id(name);
-    if (!rb_is_const_id(id)) {
-	rb_name_error(id, "wrong constant name %s", rb_id2name(id));
+
+    pbeg = p = path;
+    pend = path + RSTRING_LEN(name);
+
+    if (p >= pend || !*p) {
+      wrong_name:
+	rb_name_error_str(name, "wrong constant name % "PRIsVALUE, name);
     }
-    return RTEST(recur) ? rb_const_get(mod, id) : rb_const_get_at(mod, id);
+
+    if (p + 2 < pend && p[0] == ':' && p[1] == ':') {
+	mod = rb_cObject;
+	p += 2;
+	pbeg = p;
+    }
+
+    while (p < pend) {
+	VALUE part;
+	long len, beglen;
+
+	while (p < pend && *p != ':') p++;
+
+	if (pbeg == p) goto wrong_name;
+
+	id = rb_check_id_cstr(pbeg, len = p-pbeg, enc);
+	beglen = pbeg-path;
+
+	if (p < pend && p[0] == ':') {
+	    if (p + 2 >= pend || p[1] != ':') goto wrong_name;
+	    p += 2;
+	    pbeg = p;
+	}
+
+	if (!RB_TYPE_P(mod, T_MODULE) && !RB_TYPE_P(mod, T_CLASS)) {
+	    rb_raise(rb_eTypeError, "%"PRIsVALUE" does not refer to class/module",
+		     QUOTE(name));
+	}
+
+	if (!id) {
+	    part = rb_str_subseq(name, beglen, len);
+	    OBJ_FREEZE(part);
+	    if (!ISUPPER(*pbeg) || !rb_is_const_name(part)) {
+		rb_name_error_str(part, "wrong constant name %"PRIsVALUE,
+				  QUOTE(part));
+	    }
+	    else if (!rb_method_basic_definition_p(CLASS_OF(mod), id_const_missing)) {
+		part = rb_str_intern(part);
+		mod = rb_const_missing(mod, part);
+		continue;
+	    }
+	    else {
+		rb_name_error_str(part, "uninitialized constant %"PRIsVALUE"% "PRIsVALUE,
+				  rb_str_subseq(name, 0, beglen),
+				  part);
+	    }
+	}
+	if (!rb_is_const_id(id)) {
+	    rb_name_error(id, "wrong constant name %"PRIsVALUE,
+			  QUOTE_ID(id));
+	}
+	mod = RTEST(recur) ? rb_const_get(mod, id) : rb_const_get_at(mod, id);
+    }
+
+    return mod;
 }
 
 /*
  *  call-seq:
  *     mod.const_set(sym, obj)    -> obj
+ *     mod.const_set(str, obj)    -> obj
  *
  *  Sets the named constant to the given object, returning that object.
  *  Creates a new constant if no constant with the given name previously
@@ -1710,16 +2188,18 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
  *
  *     Math.const_set("HIGH_SCHOOL_PI", 22.0/7.0)   #=> 3.14285714285714
  *     Math::HIGH_SCHOOL_PI - Math::PI              #=> 0.00126448926734968
+ *
+ *  If +sym+ or +str+ is not a valid constant name a +NameError+ will be
+ *  raised with a warning "wrong constant name".
+ *
+ *	Object.const_set('foobar', 42) #=> NameError: wrong constant name foobar
+ *
  */
 
 static VALUE
 rb_mod_const_set(VALUE mod, VALUE name, VALUE value)
 {
-    ID id = rb_to_id(name);
-
-    if (!rb_is_const_id(id)) {
-	rb_name_error(id, "wrong constant name %s", rb_id2name(id));
-    }
+    ID id = id_for_setter(name, const, "wrong constant name %"PRIsVALUE);
     rb_const_set(mod, id, value);
     return value;
 }
@@ -1727,49 +2207,148 @@ rb_mod_const_set(VALUE mod, VALUE name, VALUE value)
 /*
  *  call-seq:
  *     mod.const_defined?(sym, inherit=true)   -> true or false
+ *     mod.const_defined?(str, inherit=true)   -> true or false
  *
- *  Returns <code>true</code> if a constant with the given name is
- *  defined by <i>mod</i>, or its ancestors if +inherit+ is not false.
+ *  Says whether _mod_ or its ancestors have a constant with the given name:
  *
- *     Math.const_defined? "PI"   #=> true
- *     IO.const_defined? "SYNC"   #=> true
- *     IO.const_defined? "SYNC", false   #=> false
+ *    Float.const_defined?(:EPSILON)      #=> true, found in Float itself
+ *    Float.const_defined?("String")      #=> true, found in Object (ancestor)
+ *    BasicObject.const_defined?(:Hash)   #=> false
+ *
+ *  If _mod_ is a +Module+, additionally +Object+ and its ancestors are checked:
+ *
+ *    Math.const_defined?(:String)   #=> true, found in Object
+ *
+ *  In each of the checked classes or modules, if the constant is not present
+ *  but there is an autoload for it, +true+ is returned directly without
+ *  autoloading:
+ *
+ *    module Admin
+ *      autoload :User, 'admin/user'
+ *    end
+ *    Admin.const_defined?(:User)   #=> true
+ *
+ *  If the constant is not found the callback +const_missing+ is *not* called
+ *  and the method returns +false+.
+ *
+ *  If +inherit+ is false, the lookup only checks the constants in the receiver:
+ *
+ *    IO.const_defined?(:SYNC)          #=> true, found in File::Constants (ancestor)
+ *    IO.const_defined?(:SYNC, false)   #=> false, not found in IO itself
+ *
+ *  In this case, the same logic for autoloading applies.
+ *
+ *  If the argument is not a valid constant name a +NameError+ is raised with the
+ *  message "wrong constant name _name_":
+ *
+ *    Hash.const_defined? 'foobar'   #=> NameError: wrong constant name foobar
+ *
  */
 
 static VALUE
 rb_mod_const_defined(int argc, VALUE *argv, VALUE mod)
 {
     VALUE name, recur;
+    rb_encoding *enc;
+    const char *pbeg, *p, *path, *pend;
     ID id;
 
-    if (argc == 1) {
-	name = argv[0];
-	recur = Qtrue;
-    }
-    else {
-	rb_scan_args(argc, argv, "11", &name, &recur);
-    }
-    id = rb_to_id(name);
-    if (!rb_is_const_id(id)) {
-	rb_name_error(id, "wrong constant name %s", rb_id2name(id));
-    }
-    return RTEST(recur) ? rb_const_defined(mod, id) : rb_const_defined_at(mod, id);
-}
+    rb_check_arity(argc, 1, 2);
+    name = argv[0];
+    recur = (argc == 1) ? Qtrue : argv[1];
 
-VALUE rb_obj_methods(int argc, VALUE *argv, VALUE obj);
-VALUE rb_obj_protected_methods(int argc, VALUE *argv, VALUE obj);
-VALUE rb_obj_private_methods(int argc, VALUE *argv, VALUE obj);
-VALUE rb_obj_public_methods(int argc, VALUE *argv, VALUE obj);
+    if (SYMBOL_P(name)) {
+	if (!rb_is_const_sym(name)) goto wrong_name;
+	id = rb_check_id(&name);
+	if (!id) return Qfalse;
+	return RTEST(recur) ? rb_const_defined(mod, id) : rb_const_defined_at(mod, id);
+    }
+
+    path = StringValuePtr(name);
+    enc = rb_enc_get(name);
+
+    if (!rb_enc_asciicompat(enc)) {
+	rb_raise(rb_eArgError, "invalid class path encoding (non ASCII)");
+    }
+
+    pbeg = p = path;
+    pend = path + RSTRING_LEN(name);
+
+    if (p >= pend || !*p) {
+      wrong_name:
+	rb_name_error_str(name, "wrong constant name % "PRIsVALUE, name);
+    }
+
+    if (p + 2 < pend && p[0] == ':' && p[1] == ':') {
+	mod = rb_cObject;
+	p += 2;
+	pbeg = p;
+    }
+
+    while (p < pend) {
+	VALUE part;
+	long len, beglen;
+
+	while (p < pend && *p != ':') p++;
+
+	if (pbeg == p) goto wrong_name;
+
+	id = rb_check_id_cstr(pbeg, len = p-pbeg, enc);
+	beglen = pbeg-path;
+
+	if (p < pend && p[0] == ':') {
+	    if (p + 2 >= pend || p[1] != ':') goto wrong_name;
+	    p += 2;
+	    pbeg = p;
+	}
+
+	if (!id) {
+	    part = rb_str_subseq(name, beglen, len);
+	    OBJ_FREEZE(part);
+	    if (!ISUPPER(*pbeg) || !rb_is_const_name(part)) {
+		rb_name_error_str(part, "wrong constant name %"PRIsVALUE,
+				  QUOTE(part));
+	    }
+	    else {
+		return Qfalse;
+	    }
+	}
+	if (!rb_is_const_id(id)) {
+	    rb_name_error(id, "wrong constant name %"PRIsVALUE,
+			  QUOTE_ID(id));
+	}
+	if (RTEST(recur)) {
+	    if (!rb_const_defined(mod, id))
+		return Qfalse;
+	    mod = rb_const_get(mod, id);
+	}
+	else {
+	    if (!rb_const_defined_at(mod, id))
+		return Qfalse;
+	    mod = rb_const_get_at(mod, id);
+	}
+	recur = Qfalse;
+
+	if (p < pend && !RB_TYPE_P(mod, T_MODULE) && !RB_TYPE_P(mod, T_CLASS)) {
+	    rb_raise(rb_eTypeError, "%"PRIsVALUE" does not refer to class/module",
+		     QUOTE(name));
+	}
+    }
+
+    return Qtrue;
+}
 
 /*
  *  call-seq:
  *     obj.instance_variable_get(symbol)    -> obj
+ *     obj.instance_variable_get(string)    -> obj
  *
  *  Returns the value of the given instance variable, or nil if the
  *  instance variable is not set. The <code>@</code> part of the
  *  variable name should be included for regular instance
  *  variables. Throws a <code>NameError</code> exception if the
  *  supplied symbol is not valid as an instance variable name.
+ *  String arguments are converted to symbols.
  *
  *     class Fred
  *       def initialize(p1, p2)
@@ -1784,10 +2363,20 @@ VALUE rb_obj_public_methods(int argc, VALUE *argv, VALUE obj);
 static VALUE
 rb_obj_ivar_get(VALUE obj, VALUE iv)
 {
-    ID id = rb_to_id(iv);
+    ID id = rb_check_id(&iv);
 
+    if (!id) {
+	if (rb_is_instance_name(iv)) {
+	    return Qnil;
+	}
+	else {
+	    rb_name_error_str(iv, "`%"PRIsVALUE"' is not allowed as an instance variable name",
+			      QUOTE(iv));
+	}
+    }
     if (!rb_is_instance_id(id)) {
-	rb_name_error(id, "`%s' is not allowed as an instance variable name", rb_id2name(id));
+	rb_name_error(id, "`%"PRIsVALUE"' is not allowed as an instance variable name",
+		      QUOTE_ID(id));
     }
     return rb_ivar_get(obj, id);
 }
@@ -1795,11 +2384,14 @@ rb_obj_ivar_get(VALUE obj, VALUE iv)
 /*
  *  call-seq:
  *     obj.instance_variable_set(symbol, obj)    -> obj
+ *     obj.instance_variable_set(string, obj)    -> obj
  *
- *  Sets the instance variable names by <i>symbol</i> to
- *  <i>object</i>, thereby frustrating the efforts of the class's
+ *  Sets the instance variable named by <i>symbol</i> to the given
+ *  object, thereby frustrating the efforts of the class's
  *  author to attempt to provide proper encapsulation. The variable
- *  did not have to exist prior to this call.
+ *  does not have to exist prior to this call.
+ *  If the instance variable name is passed as a string, that string
+ *  is converted to a symbol.
  *
  *     class Fred
  *       def initialize(p1, p2)
@@ -1815,20 +2407,18 @@ rb_obj_ivar_get(VALUE obj, VALUE iv)
 static VALUE
 rb_obj_ivar_set(VALUE obj, VALUE iv, VALUE val)
 {
-    ID id = rb_to_id(iv);
-
-    if (!rb_is_instance_id(id)) {
-	rb_name_error(id, "`%s' is not allowed as an instance variable name", rb_id2name(id));
-    }
+    ID id = id_for_setter(iv, instance, "`%"PRIsVALUE"' is not allowed as an instance variable name");
     return rb_ivar_set(obj, id, val);
 }
 
 /*
  *  call-seq:
  *     obj.instance_variable_defined?(symbol)    -> true or false
+ *     obj.instance_variable_defined?(string)    -> true or false
  *
  *  Returns <code>true</code> if the given instance variable is
  *  defined in <i>obj</i>.
+ *  String arguments are converted to symbols.
  *
  *     class Fred
  *       def initialize(p1, p2)
@@ -1844,10 +2434,20 @@ rb_obj_ivar_set(VALUE obj, VALUE iv, VALUE val)
 static VALUE
 rb_obj_ivar_defined(VALUE obj, VALUE iv)
 {
-    ID id = rb_to_id(iv);
+    ID id = rb_check_id(&iv);
 
+    if (!id) {
+	if (rb_is_instance_name(iv)) {
+	    return Qfalse;
+	}
+	else {
+	    rb_name_error_str(iv, "`%"PRIsVALUE"' is not allowed as an instance variable name",
+			      QUOTE(iv));
+	}
+    }
     if (!rb_is_instance_id(id)) {
-	rb_name_error(id, "`%s' is not allowed as an instance variable name", rb_id2name(id));
+	rb_name_error(id, "`%"PRIsVALUE"' is not allowed as an instance variable name",
+		      QUOTE_ID(id));
     }
     return rb_ivar_defined(obj, id);
 }
@@ -1855,10 +2455,12 @@ rb_obj_ivar_defined(VALUE obj, VALUE iv)
 /*
  *  call-seq:
  *     mod.class_variable_get(symbol)    -> obj
+ *     mod.class_variable_get(string)    -> obj
  *
  *  Returns the value of the given class variable (or throws a
  *  <code>NameError</code> exception). The <code>@@</code> part of the
- *  variable name should be included for regular class variables
+ *  variable name should be included for regular class variables.
+ *  String arguments are converted to symbols.
  *
  *     class Fred
  *       @@foo = 99
@@ -1869,10 +2471,21 @@ rb_obj_ivar_defined(VALUE obj, VALUE iv)
 static VALUE
 rb_mod_cvar_get(VALUE obj, VALUE iv)
 {
-    ID id = rb_to_id(iv);
+    ID id = rb_check_id(&iv);
 
+    if (!id) {
+	if (rb_is_class_name(iv)) {
+	    rb_name_error_str(iv, "uninitialized class variable %"PRIsVALUE" in %"PRIsVALUE"",
+			      iv, rb_class_name(obj));
+	}
+	else {
+	    rb_name_error_str(iv, "`%"PRIsVALUE"' is not allowed as a class variable name",
+			      QUOTE(iv));
+	}
+    }
     if (!rb_is_class_id(id)) {
-	rb_name_error(id, "`%s' is not allowed as a class variable name", rb_id2name(id));
+	rb_name_error(id, "`%"PRIsVALUE"' is not allowed as a class variable name",
+		      QUOTE_ID(id));
     }
     return rb_cvar_get(obj, id);
 }
@@ -1880,9 +2493,12 @@ rb_mod_cvar_get(VALUE obj, VALUE iv)
 /*
  *  call-seq:
  *     obj.class_variable_set(symbol, obj)    -> obj
+ *     obj.class_variable_set(string, obj)    -> obj
  *
- *  Sets the class variable names by <i>symbol</i> to
- *  <i>object</i>.
+ *  Sets the class variable named by <i>symbol</i> to the given
+ *  object.
+ *  If the class variable name is passed as a string, that string
+ *  is converted to a symbol.
  *
  *     class Fred
  *       @@foo = 99
@@ -1897,11 +2513,7 @@ rb_mod_cvar_get(VALUE obj, VALUE iv)
 static VALUE
 rb_mod_cvar_set(VALUE obj, VALUE iv, VALUE val)
 {
-    ID id = rb_to_id(iv);
-
-    if (!rb_is_class_id(id)) {
-	rb_name_error(id, "`%s' is not allowed as a class variable name", rb_id2name(id));
-    }
+    ID id = id_for_setter(iv, class, "`%"PRIsVALUE"' is not allowed as a class variable name");
     rb_cvar_set(obj, id, val);
     return val;
 }
@@ -1909,9 +2521,11 @@ rb_mod_cvar_set(VALUE obj, VALUE iv, VALUE val)
 /*
  *  call-seq:
  *     obj.class_variable_defined?(symbol)    -> true or false
+ *     obj.class_variable_defined?(string)    -> true or false
  *
  *  Returns <code>true</code> if the given class variable is defined
  *  in <i>obj</i>.
+ *  String arguments are converted to symbols.
  *
  *     class Fred
  *       @@foo = 99
@@ -1923,29 +2537,63 @@ rb_mod_cvar_set(VALUE obj, VALUE iv, VALUE val)
 static VALUE
 rb_mod_cvar_defined(VALUE obj, VALUE iv)
 {
-    ID id = rb_to_id(iv);
+    ID id = rb_check_id(&iv);
 
+    if (!id) {
+	if (rb_is_class_name(iv)) {
+	    return Qfalse;
+	}
+	else {
+	    rb_name_error_str(iv, "`%"PRIsVALUE"' is not allowed as a class variable name",
+			      QUOTE(iv));
+	}
+    }
     if (!rb_is_class_id(id)) {
-	rb_name_error(id, "`%s' is not allowed as a class variable name", rb_id2name(id));
+	rb_name_error(id, "`%"PRIsVALUE"' is not allowed as a class variable name",
+		      QUOTE_ID(id));
     }
     return rb_cvar_defined(obj, id);
 }
 
-static struct conv_method_tbl {
-    const char *method;
+/*
+ *  call-seq:
+ *     mod.singleton_class?    -> true or false
+ *
+ *  Returns <code>true</code> if <i>mod</i> is a singleton class or
+ *  <code>false</code> if it is an ordinary class or module.
+ *
+ *     class C
+ *     end
+ *     C.singleton_class?                  #=> false
+ *     C.singleton_class.singleton_class?  #=> true
+ */
+
+static VALUE
+rb_mod_singleton_p(VALUE klass)
+{
+    if (RB_TYPE_P(klass, T_CLASS) && FL_TEST(klass, FL_SINGLETON))
+	return Qtrue;
+    return Qfalse;
+}
+
+static const struct conv_method_tbl {
+    const char method[8];
     ID id;
 } conv_method_names[] = {
-    {"to_int", 0},
-    {"to_ary", 0},
-    {"to_str", 0},
-    {"to_sym", 0},
-    {"to_hash", 0},
-    {"to_proc", 0},
-    {"to_io", 0},
-    {"to_a", 0},
-    {"to_s", 0},
-    {NULL, 0}
+#define M(n) {"to_"#n, idTo_##n}
+    M(int),
+    M(ary),
+    M(str),
+    M(sym),
+    M(hash),
+    M(proc),
+    M(io),
+    M(a),
+    M(s),
+    M(i),
+#undef M
 };
+#define IMPLICIT_CONVERSIONS 7
 
 static VALUE
 convert_type(VALUE val, const char *tname, const char *method, int raise)
@@ -1954,7 +2602,7 @@ convert_type(VALUE val, const char *tname, const char *method, int raise)
     int i;
     VALUE r;
 
-    for (i=0; conv_method_names[i].method; i++) {
+    for (i=0; i < numberof(conv_method_names); i++) {
 	if (conv_method_names[i].method[0] == method[0] &&
 	    strcmp(conv_method_names[i].method, method) == 0) {
 	    m = conv_method_names[i].id;
@@ -1965,16 +2613,31 @@ convert_type(VALUE val, const char *tname, const char *method, int raise)
     r = rb_check_funcall(val, m, 0, 0);
     if (r == Qundef) {
 	if (raise) {
-	    rb_raise(rb_eTypeError, "can't convert %s into %s",
-		     NIL_P(val) ? "nil" :
-		     val == Qtrue ? "true" :
-		     val == Qfalse ? "false" :
-		     rb_obj_classname(val),
+	    const char *msg = i < IMPLICIT_CONVERSIONS ?
+		"no implicit conversion of" : "can't convert";
+	    const char *cname = NIL_P(val) ? "nil" :
+		val == Qtrue ? "true" :
+		val == Qfalse ? "false" :
+		NULL;
+	    if (cname)
+		rb_raise(rb_eTypeError, "%s %s into %s", msg, cname, tname);
+	    rb_raise(rb_eTypeError, "%s %"PRIsVALUE" into %s", msg,
+		     rb_obj_class(val),
 		     tname);
 	}
 	return Qnil;
     }
     return r;
+}
+
+NORETURN(static void conversion_mismatch(VALUE, const char *, const char *, VALUE));
+static void
+conversion_mismatch(VALUE val, const char *tname, const char *method, VALUE result)
+{
+    VALUE cname = rb_obj_class(val);
+    rb_raise(rb_eTypeError,
+	     "can't convert %"PRIsVALUE" to %s (%"PRIsVALUE"#%s gives %"PRIsVALUE")",
+	     cname, tname, cname, method, rb_obj_class(result));
 }
 
 VALUE
@@ -1985,9 +2648,7 @@ rb_convert_type(VALUE val, int type, const char *tname, const char *method)
     if (TYPE(val) == type) return val;
     v = convert_type(val, tname, method, TRUE);
     if (TYPE(v) != type) {
-	const char *cname = rb_obj_classname(val);
-	rb_raise(rb_eTypeError, "can't convert %s to %s (%s#%s gives %s)",
-		 cname, tname, cname, method, rb_obj_classname(v));
+	conversion_mismatch(val, tname, method, v);
     }
     return v;
 }
@@ -2002,9 +2663,7 @@ rb_check_convert_type(VALUE val, int type, const char *tname, const char *method
     v = convert_type(val, tname, method, FALSE);
     if (NIL_P(v)) return Qnil;
     if (TYPE(v) != type) {
-	const char *cname = rb_obj_classname(val);
-	rb_raise(rb_eTypeError, "can't convert %s to %s (%s#%s gives %s)",
-		 cname, tname, cname, method, rb_obj_classname(v));
+	conversion_mismatch(val, tname, method, v);
     }
     return v;
 }
@@ -2016,12 +2675,10 @@ rb_to_integer(VALUE val, const char *method)
     VALUE v;
 
     if (FIXNUM_P(val)) return val;
-    if (TYPE(val) == T_BIGNUM) return val;
+    if (RB_TYPE_P(val, T_BIGNUM)) return val;
     v = convert_type(val, "Integer", method, TRUE);
     if (!rb_obj_is_kind_of(v, rb_cInteger)) {
-	const char *cname = rb_obj_classname(val);
-	rb_raise(rb_eTypeError, "can't convert %s to Integer (%s#%s gives %s)",
-		 cname, cname, method, rb_obj_classname(v));
+	conversion_mismatch(val, "Integer", method, v);
     }
     return v;
 }
@@ -2032,7 +2689,7 @@ rb_check_to_integer(VALUE val, const char *method)
     VALUE v;
 
     if (FIXNUM_P(val)) return val;
-    if (TYPE(val) == T_BIGNUM) return val;
+    if (RB_TYPE_P(val, T_BIGNUM)) return val;
     v = convert_type(val, "Integer", method, FALSE);
     if (!rb_obj_is_kind_of(v, rb_cInteger)) {
 	return Qnil;
@@ -2044,6 +2701,12 @@ VALUE
 rb_to_int(VALUE val)
 {
     return rb_to_integer(val, "to_int");
+}
+
+VALUE
+rb_check_to_int(VALUE val)
+{
+    return rb_check_to_integer(val, "to_int");
 }
 
 static VALUE
@@ -2099,24 +2762,26 @@ rb_Integer(VALUE val)
 
 /*
  *  call-seq:
- *     Integer(arg,base=0)    -> integer
+ *     Integer(arg, base=0)    -> integer
  *
  *  Converts <i>arg</i> to a <code>Fixnum</code> or <code>Bignum</code>.
  *  Numeric types are converted directly (with floating point numbers
- *  being truncated).    <i>base</i> (0, or between 2 and 36) is a base for
+ *  being truncated).  <i>base</i> (0, or between 2 and 36) is a base for
  *  integer string representation.  If <i>arg</i> is a <code>String</code>,
- *  when <i>base</i> is omitted or equals to zero, radix indicators
+ *  when <i>base</i> is omitted or equals zero, radix indicators
  *  (<code>0</code>, <code>0b</code>, and <code>0x</code>) are honored.
  *  In any case, strings should be strictly conformed to numeric
  *  representation. This behavior is different from that of
- *  <code>String#to_i</code>.  Non string values will be converted using
- *  <code>to_int</code>, and <code>to_i</code>.
+ *  <code>String#to_i</code>.  Non string values will be converted by first
+ *  trying <code>to_int</code>, then <code>to_i</code>. Passing <code>nil</code>
+ *  raises a TypeError.
  *
  *     Integer(123.999)    #=> 123
  *     Integer("0x1a")     #=> 26
  *     Integer(Time.new)   #=> 1204973019
  *     Integer("0930", 10) #=> 930
  *     Integer("111", 2)   #=> 7
+ *     Integer(nil)        #=> TypeError
  */
 
 static VALUE
@@ -2227,6 +2892,8 @@ rb_str_to_dbl(VALUE str, int badcheck)
 {
     char *s;
     long len;
+    double ret;
+    VALUE v = 0;
 
     StringValue(str);
     s = RSTRING_PTR(str);
@@ -2236,14 +2903,16 @@ rb_str_to_dbl(VALUE str, int badcheck)
 	    rb_raise(rb_eArgError, "string for Float contains null byte");
 	}
 	if (s[len]) {		/* no sentinel somehow */
-	    char *p = ALLOCA_N(char, len+1);
-
+	    char *p =  ALLOCV(v, len);
 	    MEMCPY(p, s, char, len);
 	    p[len] = '\0';
 	    s = p;
 	}
     }
-    return rb_cstr_to_dbl(s, badcheck);
+    ret = rb_cstr_to_dbl(s, badcheck);
+    if (v)
+	ALLOCV_END(v);
+    return ret;
 }
 
 VALUE
@@ -2269,6 +2938,8 @@ rb_Float(VALUE val)
       default:
 	return rb_convert_type(val, T_FLOAT, "Float", "to_f");
     }
+
+    UNREACHABLE;
 }
 
 /*
@@ -2276,8 +2947,8 @@ rb_Float(VALUE val)
  *     Float(arg)    -> float
  *
  *  Returns <i>arg</i> converted to a float. Numeric types are converted
- *  directly, the rest are converted using <i>arg</i>.to_f. As of Ruby
- *  1.8, converting <code>nil</code> generates a <code>TypeError</code>.
+ *  directly, the rest are converted using <i>arg</i>.to_f.
+ *  Converting <code>nil</code> generates a <code>TypeError</code>.
  *
  *     Float(1)           #=> 1.0
  *     Float("123.456")   #=> 123.456
@@ -2292,7 +2963,7 @@ rb_f_float(VALUE obj, VALUE arg)
 VALUE
 rb_to_float(VALUE val)
 {
-    if (TYPE(val) == T_FLOAT) return val;
+    if (RB_TYPE_P(val, T_FLOAT)) return val;
     if (!rb_obj_is_kind_of(val, rb_cNumeric)) {
 	rb_raise(rb_eTypeError, "can't convert %s into Float",
 		 NIL_P(val) ? "nil" :
@@ -2306,7 +2977,7 @@ rb_to_float(VALUE val)
 VALUE
 rb_check_to_float(VALUE val)
 {
-    if (TYPE(val) == T_FLOAT) return val;
+    if (RB_TYPE_P(val, T_FLOAT)) return val;
     if (!rb_obj_is_kind_of(val, rb_cNumeric)) {
 	return Qnil;
     }
@@ -2338,7 +3009,10 @@ rb_num2dbl(VALUE val)
 VALUE
 rb_String(VALUE val)
 {
-    return rb_convert_type(val, T_STRING, "String", "to_s");
+    VALUE tmp = rb_check_string_type(val);
+    if (NIL_P(tmp))
+	tmp = rb_convert_type(val, T_STRING, "String", "to_s");
+    return tmp;
 }
 
 
@@ -2346,8 +3020,9 @@ rb_String(VALUE val)
  *  call-seq:
  *     String(arg)   -> string
  *
- *  Converts <i>arg</i> to a <code>String</code> by calling its
- *  <code>to_s</code> method.
+ *  Returns <i>arg</i> as a <code>String</code>.
+ *
+ *  First tries to call its <code>to_str</code> method, then its <code>to_s</code> method.
  *
  *     String(self)        #=> "main"
  *     String(self.class)  #=> "Object"
@@ -2378,8 +3053,9 @@ rb_Array(VALUE val)
  *  call-seq:
  *     Array(arg)    -> array
  *
- *  Returns <i>arg</i> as an <code>Array</code>. First tries to call
- *  <i>arg</i><code>.to_ary</code>, then <i>arg</i><code>.to_a</code>.
+ *  Returns +arg+ as an Array.
+ *
+ *  First tries to call <code>to_ary</code> on +arg+, then <code>to_a</code>.
  *
  *     Array(1..5)   #=> [1, 2, 3, 4, 5]
  */
@@ -2390,34 +3066,73 @@ rb_f_array(VALUE obj, VALUE arg)
     return rb_Array(arg);
 }
 
+VALUE
+rb_Hash(VALUE val)
+{
+    VALUE tmp;
+
+    if (NIL_P(val)) return rb_hash_new();
+    tmp = rb_check_hash_type(val);
+    if (NIL_P(tmp)) {
+	if (RB_TYPE_P(val, T_ARRAY) && RARRAY_LEN(val) == 0)
+	    return rb_hash_new();
+	rb_raise(rb_eTypeError, "can't convert %s into Hash", rb_obj_classname(val));
+    }
+    return tmp;
+}
+
+/*
+ *  call-seq:
+ *     Hash(arg)    -> hash
+ *
+ *  Converts <i>arg</i> to a <code>Hash</code> by calling
+ *  <i>arg</i><code>.to_hash</code>. Returns an empty <code>Hash</code> when
+ *  <i>arg</i> is <tt>nil</tt> or <tt>[]</tt>.
+ *
+ *     Hash([])          #=> {}
+ *     Hash(nil)         #=> {}
+ *     Hash(key: :value) #=> {:key => :value}
+ *     Hash([1, 2, 3])   #=> TypeError
+ */
+
+static VALUE
+rb_f_hash(VALUE obj, VALUE arg)
+{
+    return rb_Hash(arg);
+}
+
 /*
  *  Document-class: Class
  *
  *  Classes in Ruby are first-class objects---each is an instance of
  *  class <code>Class</code>.
  *
- *  When a new class is created (typically using <code>class Name ...
- *  end</code>), an object of type <code>Class</code> is created and
- *  assigned to a global constant (<code>Name</code> in this case). When
- *  <code>Name.new</code> is called to create a new object, the
+ *  Typically, you create a new class by using:
+ *
+ *    class Name
+ *     # some code describing the class behavior
+ *    end
+ *
+ *  When a new class is created, an object of type Class is initialized and
+ *  assigned to a global constant (<code>Name</code> in this case).
+ *
+ *  When <code>Name.new</code> is called to create a new object, the
  *  <code>new</code> method in <code>Class</code> is run by default.
  *  This can be demonstrated by overriding <code>new</code> in
  *  <code>Class</code>:
  *
  *     class Class
- *        alias oldNew  new
- *        def new(*args)
- *          print "Creating a new ", self.name, "\n"
- *          oldNew(*args)
- *        end
- *      end
+ *       alias old_new new
+ *       def new(*args)
+ *         print "Creating a new ", self.name, "\n"
+ *         old_new(*args)
+ *       end
+ *     end
  *
+ *     class Name
+ *     end
  *
- *      class Name
- *      end
- *
- *
- *      n = Name.new
+ *     n = Name.new
  *
  *  <em>produces:</em>
  *
@@ -2425,7 +3140,7 @@ rb_f_array(VALUE obj, VALUE arg)
  *
  *  Classes, modules, and objects are interrelated. In the diagram
  *  that follows, the vertical arrows represent inheritance, and the
- *  parentheses meta-classes. All metaclasses are instances
+ *  parentheses metaclasses. All metaclasses are instances
  *  of the class `Class'.
  *                             +---------+             +-...
  *                             |         |             |
@@ -2467,37 +3182,95 @@ rb_f_array(VALUE obj, VALUE arg)
  * \ingroup class
  */
 
-/*
+/*  Document-class: BasicObject
  *
- *  <code>BasicObject</code> is the parent class of all classes in Ruby.
- *  It's an explicit blank class.  <code>Object</code>, the root of Ruby's
- *  class hierarchy is a direct subclass of <code>BasicObject</code>.  Its
- *  methods are therefore available to all objects unless explicitly
- *  overridden.
+ *  BasicObject is the parent class of all classes in Ruby.  It's an explicit
+ *  blank class.
  *
- *  <code>Object</code> mixes in the <code>Kernel</code> module, making
- *  the built-in kernel functions globally accessible. Although the
- *  instance methods of <code>Object</code> are defined by the
- *  <code>Kernel</code> module, we have chosen to document them here for
- *  clarity.
+ *  BasicObject can be used for creating object hierarchies independent of
+ *  Ruby's object hierarchy, proxy objects like the Delegator class, or other
+ *  uses where namespace pollution from Ruby's methods and classes must be
+ *  avoided.
+ *
+ *  To avoid polluting BasicObject for other users an appropriately named
+ *  subclass of BasicObject should be created instead of directly modifying
+ *  BasicObject:
+ *
+ *    class MyObjectSystem < BasicObject
+ *    end
+ *
+ *  BasicObject does not include Kernel (for methods like +puts+) and
+ *  BasicObject is outside of the namespace of the standard library so common
+ *  classes will not be found without using a full class path.
+ *
+ *  A variety of strategies can be used to provide useful portions of the
+ *  standard library to subclasses of BasicObject.  A subclass could
+ *  <code>include Kernel</code> to obtain +puts+, +exit+, etc.  A custom
+ *  Kernel-like module could be created and included or delegation can be used
+ *  via #method_missing:
+ *
+ *    class MyObjectSystem < BasicObject
+ *      DELEGATE = [:puts, :p]
+ *
+ *      def method_missing(name, *args, &block)
+ *        super unless DELEGATE.include? name
+ *        ::Kernel.send(name, *args, &block)
+ *      end
+ *
+ *      def respond_to_missing?(name, include_private = false)
+ *        DELEGATE.include?(name) or super
+ *      end
+ *    end
+ *
+ *  Access to classes and modules from the Ruby standard library can be
+ *  obtained in a BasicObject subclass by referencing the desired constant
+ *  from the root like <code>::File</code> or <code>::Enumerator</code>.
+ *  Like #method_missing, #const_missing can be used to delegate constant
+ *  lookup to +Object+:
+ *
+ *    class MyObjectSystem < BasicObject
+ *      def self.const_missing(name)
+ *        ::Object.const_get(name)
+ *      end
+ *    end
+ */
+
+/*  Document-class: Object
+ *
+ *  Object is the default root of all Ruby objects.  Object inherits from
+ *  BasicObject which allows creating alternate object hierarchies.  Methods
+ *  on Object are available to all classes unless explicitly overridden.
+ *
+ *  Object mixes in the Kernel module, making the built-in kernel functions
+ *  globally accessible.  Although the instance methods of Object are defined
+ *  by the Kernel module, we have chosen to document them here for clarity.
+ *
+ *  When referencing constants in classes inheriting from Object you do not
+ *  need to use the full namespace.  For example, referencing +File+ inside
+ *  +YourClass+ will find the top-level File class.
  *
  *  In the descriptions of Object's methods, the parameter <i>symbol</i> refers
- *  to a symbol, which is either a quoted string or a
- *  <code>Symbol</code> (such as <code>:name</code>).
+ *  to a symbol, which is either a quoted string or a Symbol (such as
+ *  <code>:name</code>).
  */
 
 void
 Init_Object(void)
 {
-    extern void Init_class_hierarchy(void);
-    int i;
-
     Init_class_hierarchy();
+
+#if 0
+    // teach RDoc about these classes
+    rb_cBasicObject = rb_define_class("BasicObject", Qnil);
+    rb_cObject = rb_define_class("Object", rb_cBasicObject);
+    rb_cModule = rb_define_class("Module", rb_cObject);
+    rb_cClass =  rb_define_class("Class",  rb_cModule);
+#endif
 
 #undef rb_intern
 #define rb_intern(str) rb_intern_const(str)
 
-    rb_define_private_method(rb_cBasicObject, "initialize", rb_obj_dummy, -1);
+    rb_define_private_method(rb_cBasicObject, "initialize", rb_obj_dummy, 0);
     rb_define_alloc_func(rb_cBasicObject, rb_class_allocate_instance);
     rb_define_method(rb_cBasicObject, "==", rb_obj_equal, 1);
     rb_define_method(rb_cBasicObject, "equal?", rb_obj_equal, 1);
@@ -2508,11 +3281,24 @@ Init_Object(void)
     rb_define_private_method(rb_cBasicObject, "singleton_method_removed", rb_obj_dummy, 1);
     rb_define_private_method(rb_cBasicObject, "singleton_method_undefined", rb_obj_dummy, 1);
 
+    /* Document-module: Kernel
+     *
+     * The Kernel module is included by class Object, so its methods are
+     * available in every Ruby object.
+     *
+     * The Kernel instance methods are documented in class Object while the
+     * module methods are documented here.  These methods are called without a
+     * receiver and thus can be called in functional form:
+     *
+     *   sprintf "%.1f", 1.234 #=> "1.2"
+     *
+     */
     rb_mKernel = rb_define_module("Kernel");
     rb_include_module(rb_cObject, rb_mKernel);
     rb_define_private_method(rb_cClass, "inherited", rb_obj_dummy, 1);
     rb_define_private_method(rb_cModule, "included", rb_obj_dummy, 1);
     rb_define_private_method(rb_cModule, "extended", rb_obj_dummy, 1);
+    rb_define_private_method(rb_cModule, "prepended", rb_obj_dummy, 1);
     rb_define_private_method(rb_cModule, "method_added", rb_obj_dummy, 1);
     rb_define_private_method(rb_cModule, "method_removed", rb_obj_dummy, 1);
     rb_define_private_method(rb_cModule, "method_undefined", rb_obj_dummy, 1);
@@ -2529,6 +3315,7 @@ Init_Object(void)
     rb_define_method(rb_mKernel, "singleton_class", rb_obj_singleton_class, 0);
     rb_define_method(rb_mKernel, "clone", rb_obj_clone, 0);
     rb_define_method(rb_mKernel, "dup", rb_obj_dup, 0);
+    rb_define_method(rb_mKernel, "itself", rb_obj_itself, 0);
     rb_define_method(rb_mKernel, "initialize_copy", rb_obj_init_copy, 1);
     rb_define_method(rb_mKernel, "initialize_dup", rb_obj_init_dup_clone, 1);
     rb_define_method(rb_mKernel, "initialize_clone", rb_obj_init_dup_clone, 1);
@@ -2544,17 +3331,17 @@ Init_Object(void)
 
     rb_define_method(rb_mKernel, "to_s", rb_any_to_s, 0);
     rb_define_method(rb_mKernel, "inspect", rb_obj_inspect, 0);
-    rb_define_method(rb_mKernel, "methods", rb_obj_methods, -1);
+    rb_define_method(rb_mKernel, "methods", rb_obj_methods, -1); /* in class.c */
     rb_define_method(rb_mKernel, "singleton_methods", rb_obj_singleton_methods, -1); /* in class.c */
-    rb_define_method(rb_mKernel, "protected_methods", rb_obj_protected_methods, -1);
-    rb_define_method(rb_mKernel, "private_methods", rb_obj_private_methods, -1);
-    rb_define_method(rb_mKernel, "public_methods", rb_obj_public_methods, -1);
+    rb_define_method(rb_mKernel, "protected_methods", rb_obj_protected_methods, -1); /* in class.c */
+    rb_define_method(rb_mKernel, "private_methods", rb_obj_private_methods, -1); /* in class.c */
+    rb_define_method(rb_mKernel, "public_methods", rb_obj_public_methods, -1); /* in class.c */
     rb_define_method(rb_mKernel, "instance_variables", rb_obj_instance_variables, 0); /* in variable.c */
     rb_define_method(rb_mKernel, "instance_variable_get", rb_obj_ivar_get, 1);
     rb_define_method(rb_mKernel, "instance_variable_set", rb_obj_ivar_set, 2);
     rb_define_method(rb_mKernel, "instance_variable_defined?", rb_obj_ivar_defined, 1);
-    rb_define_private_method(rb_mKernel, "remove_instance_variable",
-			     rb_obj_remove_instance_variable, 1); /* in variable.c */
+    rb_define_method(rb_mKernel, "remove_instance_variable",
+		     rb_obj_remove_instance_variable, 1); /* in variable.c */
 
     rb_define_method(rb_mKernel, "instance_of?", rb_obj_is_instance_of, 1);
     rb_define_method(rb_mKernel, "kind_of?", rb_obj_is_kind_of, 1);
@@ -2569,12 +3356,14 @@ Init_Object(void)
 
     rb_define_global_function("String", rb_f_string, 1);
     rb_define_global_function("Array", rb_f_array, 1);
+    rb_define_global_function("Hash", rb_f_hash, 1);
 
     rb_cNilClass = rb_define_class("NilClass", rb_cObject);
     rb_define_method(rb_cNilClass, "to_i", nil_to_i, 0);
     rb_define_method(rb_cNilClass, "to_f", nil_to_f, 0);
     rb_define_method(rb_cNilClass, "to_s", nil_to_s, 0);
     rb_define_method(rb_cNilClass, "to_a", nil_to_a, 0);
+    rb_define_method(rb_cNilClass, "to_h", nil_to_h, 0);
     rb_define_method(rb_cNilClass, "inspect", nil_inspect, 0);
     rb_define_method(rb_cNilClass, "&", false_and, 1);
     rb_define_method(rb_cNilClass, "|", false_or, 1);
@@ -2583,6 +3372,9 @@ Init_Object(void)
     rb_define_method(rb_cNilClass, "nil?", rb_true, 0);
     rb_undef_alloc_func(rb_cNilClass);
     rb_undef_method(CLASS_OF(rb_cNilClass), "new");
+    /*
+     * An alias of +nil+
+     */
     rb_define_global_const("NIL", Qnil);
 
     rb_define_method(rb_cModule, "freeze", rb_mod_freeze, 0);
@@ -2595,6 +3387,7 @@ Init_Object(void)
     rb_define_method(rb_cModule, ">=", rb_mod_ge, 1);
     rb_define_method(rb_cModule, "initialize_copy", rb_mod_init_copy, 1); /* in class.c */
     rb_define_method(rb_cModule, "to_s", rb_mod_to_s, 0);
+    rb_define_alias(rb_cModule, "inspect", "to_s");
     rb_define_method(rb_cModule, "included_modules", rb_mod_included_modules, 0); /* in class.c */
     rb_define_method(rb_cModule, "include?", rb_mod_include_p, 1); /* in class.c */
     rb_define_method(rb_cModule, "name", rb_mod_name, 0);  /* in variable.c */
@@ -2607,6 +3400,7 @@ Init_Object(void)
 
     rb_define_alloc_func(rb_cModule, rb_module_s_alloc);
     rb_define_method(rb_cModule, "initialize", rb_mod_initialize, 0);
+    rb_define_method(rb_cModule, "initialize_clone", rb_mod_initialize_clone, 1);
     rb_define_method(rb_cModule, "instance_methods", rb_class_instance_methods, -1); /* in class.c */
     rb_define_method(rb_cModule, "public_instance_methods",
 		     rb_class_public_instance_methods, -1);    /* in class.c */
@@ -2624,52 +3418,57 @@ Init_Object(void)
     rb_define_method(rb_cModule, "const_missing",
 		     rb_mod_const_missing, 1); /* in variable.c */
     rb_define_method(rb_cModule, "class_variables",
-		     rb_mod_class_variables, 0); /* in variable.c */
+		     rb_mod_class_variables, -1); /* in variable.c */
     rb_define_method(rb_cModule, "remove_class_variable",
 		     rb_mod_remove_cvar, 1); /* in variable.c */
     rb_define_method(rb_cModule, "class_variable_get", rb_mod_cvar_get, 1);
     rb_define_method(rb_cModule, "class_variable_set", rb_mod_cvar_set, 2);
     rb_define_method(rb_cModule, "class_variable_defined?", rb_mod_cvar_defined, 1);
+    rb_define_method(rb_cModule, "public_constant", rb_mod_public_constant, -1); /* in variable.c */
+    rb_define_method(rb_cModule, "private_constant", rb_mod_private_constant, -1); /* in variable.c */
+    rb_define_method(rb_cModule, "singleton_class?", rb_mod_singleton_p, 0);
 
     rb_define_method(rb_cClass, "allocate", rb_obj_alloc, 0);
     rb_define_method(rb_cClass, "new", rb_class_new_instance, -1);
     rb_define_method(rb_cClass, "initialize", rb_class_initialize, -1);
-    rb_define_method(rb_cClass, "initialize_copy", rb_class_init_copy, 1); /* in class.c */
     rb_define_method(rb_cClass, "superclass", rb_class_superclass, 0);
     rb_define_alloc_func(rb_cClass, rb_class_s_alloc);
     rb_undef_method(rb_cClass, "extend_object");
     rb_undef_method(rb_cClass, "append_features");
+    rb_undef_method(rb_cClass, "prepend_features");
 
+    /*
+     * Document-class: Data
+     *
+     * This is a recommended base class for C extensions using Data_Make_Struct
+     * or Data_Wrap_Struct, see README.EXT for details.
+     */
     rb_cData = rb_define_class("Data", rb_cObject);
     rb_undef_alloc_func(rb_cData);
 
     rb_cTrueClass = rb_define_class("TrueClass", rb_cObject);
     rb_define_method(rb_cTrueClass, "to_s", true_to_s, 0);
+    rb_define_alias(rb_cTrueClass, "inspect", "to_s");
     rb_define_method(rb_cTrueClass, "&", true_and, 1);
     rb_define_method(rb_cTrueClass, "|", true_or, 1);
     rb_define_method(rb_cTrueClass, "^", true_xor, 1);
     rb_undef_alloc_func(rb_cTrueClass);
     rb_undef_method(CLASS_OF(rb_cTrueClass), "new");
+    /*
+     * An alias of +true+
+     */
     rb_define_global_const("TRUE", Qtrue);
 
     rb_cFalseClass = rb_define_class("FalseClass", rb_cObject);
     rb_define_method(rb_cFalseClass, "to_s", false_to_s, 0);
+    rb_define_alias(rb_cFalseClass, "inspect", "to_s");
     rb_define_method(rb_cFalseClass, "&", false_and, 1);
     rb_define_method(rb_cFalseClass, "|", false_or, 1);
     rb_define_method(rb_cFalseClass, "^", false_xor, 1);
     rb_undef_alloc_func(rb_cFalseClass);
     rb_undef_method(CLASS_OF(rb_cFalseClass), "new");
+    /*
+     * An alias of +false+
+     */
     rb_define_global_const("FALSE", Qfalse);
-
-    id_eq = rb_intern("==");
-    id_eql = rb_intern("eql?");
-    id_match = rb_intern("=~");
-    id_inspect = rb_intern("inspect");
-    id_init_copy = rb_intern("initialize_copy");
-    id_init_clone = rb_intern("initialize_clone");
-    id_init_dup = rb_intern("initialize_dup");
-
-    for (i=0; conv_method_names[i].method; i++) {
-	conv_method_names[i].id = rb_intern(conv_method_names[i].method);
-    }
 }

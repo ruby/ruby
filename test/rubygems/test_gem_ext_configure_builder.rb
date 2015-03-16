@@ -1,12 +1,13 @@
-require_relative 'gemutilities'
+require 'rubygems/test_case'
 require 'rubygems/ext'
 
-class TestGemExtConfigureBuilder < RubyGemTestCase
+class TestGemExtConfigureBuilder < Gem::TestCase
 
   def setup
     super
 
-    @makefile_body =  "all:\n\t@echo ok\ninstall:\n\t@echo ok"
+    @makefile_body =
+      "clean:\n\t@echo ok\nall:\n\t@echo ok\ninstall:\n\t@echo ok"
 
     @ext = File.join @tempdir, 'ext'
     @dest_path = File.join @tempdir, 'prefix'
@@ -30,9 +31,11 @@ class TestGemExtConfigureBuilder < RubyGemTestCase
 
     assert_equal "sh ./configure --prefix=#{@dest_path}", output.shift
     assert_equal "", output.shift
-    assert_equal make_command, output.shift
+    assert_contains_make_command 'clean', output.shift
     assert_match(/^ok$/m, output.shift)
-    assert_equal make_command + " install", output.shift
+    assert_contains_make_command '', output.shift
+    assert_match(/^ok$/m, output.shift)
+    assert_contains_make_command 'install', output.shift
     assert_match(/^ok$/m, output.shift)
   end
 
@@ -46,16 +49,10 @@ class TestGemExtConfigureBuilder < RubyGemTestCase
       end
     end
 
-    shell_error_msg = %r{(\./configure: .*)|(Can't open \./configure(?:: No such file or directory)?)}
+    shell_error_msg = %r{(\./configure: .*)|((?:Can't|cannot) open \./configure(?:: No such file or directory)?)}
     sh_prefix_configure = "sh ./configure --prefix="
 
-    expected = %r(configure failed:
-
-#{Regexp.escape sh_prefix_configure}#{Regexp.escape @dest_path}
-.*?: #{shell_error_msg}
-)
-
-    assert_match expected, error.message
+    assert_match 'configure failed', error.message
 
     assert_equal "#{sh_prefix_configure}#{@dest_path}", output.shift
     assert_match %r(#{shell_error_msg}), output.shift
@@ -76,8 +73,9 @@ class TestGemExtConfigureBuilder < RubyGemTestCase
       Gem::Ext::ConfigureBuilder.build nil, nil, @dest_path, output
     end
 
-    assert_equal make_command, output[0]
-    assert_equal "#{make_command} install", output[2]
+    assert_contains_make_command 'clean', output[0]
+    assert_contains_make_command '', output[2]
+    assert_contains_make_command 'install', output[4]
   end
 
 end

@@ -10,6 +10,7 @@
 #
 require "e2mmap"
 
+# :stopdoc:
 module IRB
   # exceptions
   extend Exception2MessageMapper
@@ -23,5 +24,7 @@ module IRB
   def_exception :CantShiftToMultiIrbMode, 'multi-irb modeに移れません.'
   def_exception :CantChangeBinding, 'バインディング(%s)に変更できません.'
   def_exception :UndefinedPromptMode, 'プロンプトモード(%s)は定義されていません.'
+  def_exception :IllegalRCNameGenerator, 'RC_NAME_GENERATORが正しく定義されていません.'
 end
+# :startdoc:
 # vim:fileencoding=utf-8

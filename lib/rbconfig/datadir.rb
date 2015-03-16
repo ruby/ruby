@@ -4,17 +4,10 @@
 # See LICENSE.txt for permissions.
 #++
 
-module RbConfig
+# N.B. This file is used by Config.datadir in rubygems.rb, and must not be
+# removed before that require is removed. I require to avoid warning more than
+# once.
 
-  ##
-  # Return the path to the data directory associated with the given package
-  # name.  Normally this is just
-  # "#{RbConfig::CONFIG['datadir']}/#{package_name}", but may be modified by
-  # packages like RubyGems to handle versioned data directories.
-
-  def self.datadir(package_name)
-    File.join(CONFIG['datadir'], package_name)
-  end unless RbConfig.respond_to?(:datadir)
-
-end
-
+warn 'rbconfig/datadir.rb and {Rb}Config.datadir is being deprecated from '\
+ 'RubyGems. It will be removed completely on or after June 2011. If you '\
+ 'wish to rely on a datadir, please use Gem.datadir.'

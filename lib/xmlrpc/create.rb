@@ -1,6 +1,4 @@
 #
-# Creates XML-RPC call/response documents
-#
 # Copyright (C) 2001, 2002, 2003 by Michael Neumann (mneumann@ntecs.de)
 #
 # $Id$
@@ -9,7 +7,7 @@
 require "date"
 require "xmlrpc/base64"
 
-module XMLRPC
+module XMLRPC # :nodoc:
 
   module XMLWriter
 
@@ -100,6 +98,8 @@ module XMLRPC
 
   end # module XMLWriter
 
+  # Creates XML-RPC call/response documents
+  #
   class Create
 
     def initialize(xml_writer = nil)
@@ -132,14 +132,14 @@ module XMLRPC
 
 
     #
-    # generates a XML-RPC methodResponse document
+    # Generates a XML-RPC methodResponse document
     #
-    # if is_ret == false then the params array must
+    # When +is_ret+ is +false+ then the +params+ array must
     # contain only one element, which is a structure
     # of a fault return-value.
     #
-    # if is_ret == true then a normal
-    # return-value of all the given params is created.
+    # When +is_ret+ is +true+ then a normal
+    # return-value of all the given +params+ is created.
     #
     def methodResponse(is_ret, *params)
 
@@ -167,21 +167,16 @@ module XMLRPC
 
 
 
-    #####################################
     private
-    #####################################
 
     #
-    # converts a Ruby object into
-    # a XML-RPC <value> tag
+    # Converts a Ruby object into a XML-RPC <code><value></code> tag
     #
-    def conv2value(param)
+    def conv2value(param) # :doc:
 
         val = case param
-        when Fixnum
-          @writer.tag("i4", param.to_s)
-
-        when Bignum
+        when Fixnum, Bignum
+          # XML-RPC's int is 32bit int, and Fixnum also may be beyond 32bit
           if Config::ENABLE_BIGINT
             @writer.tag("i4", param.to_s)
           else
@@ -208,6 +203,7 @@ module XMLRPC
           end
 
         when Float
+          raise "Wrong value #{param}. Not allowed!" unless param.finite?
           @writer.tag("double", param.to_s)
 
         when Struct

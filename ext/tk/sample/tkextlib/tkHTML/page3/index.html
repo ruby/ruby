@@ -218,7 +218,7 @@
 <h2 align="center">How To Compile Under Unix Without Installing Tcl</h2>
 <p><p>Specify the *.a file directly:</p>
   <blockquote><pre>
-  $ gcc -I../tcl8.2.2/generic hello.c \ 
+  $ gcc -I../tcl8.2.2/generic hello.c \
       ../tcl8.2.2/unix/libtcl8.2.a -lm -ldl
   $ strip a.out
   $ ./a.out
@@ -226,7 +226,7 @@
 
   <p>Or, tell the C compiler where to look for *.a files:</p>
   <blockquote><pre>
-  $ gcc -I../tcl8.2.2/generic hello.c \ 
+  $ gcc -I../tcl8.2.2/generic hello.c \
       -L../tcl8.2.2/unix -ltcl -lm -ldl
   $ strip a.out
   $ ./a.out
@@ -982,7 +982,7 @@ int&nbsp;main(int&nbsp;argc,&nbsp;char&nbsp;**argv){<br>
 <br clear="both"><p><hr></p>
 <h2 align="center">Linkage From Tcl To C</h2>
 <p><p align="center"><img src="image4"></p></p><p><ul><li>3rd parameter of Tcl_CreateCommand() is a pointer to the C subroutine
- that implements the command.</li></ul><ul><li>4th parameter to Tcl_CreateCommand() becomes the 1st parameter to 
+ that implements the command.</li></ul><ul><li>4th parameter to Tcl_CreateCommand() becomes the 1st parameter to
  the C routine whenever the Tcl command is executed.</li></ul><ul><li>1st parameter to Tcl_CreateCommand() must be a valid Tcl interpreter.
  The same pointer appears as the second parameter to the C routine
  whenever the Tcl command is executed.</li></ul></p>
@@ -990,7 +990,7 @@ int&nbsp;main(int&nbsp;argc,&nbsp;char&nbsp;**argv){<br>
 <br clear="both"><p><hr></p>
 <h2 align="center">Linkage From Tcl To C</h2>
 <p><p align="center"><img src="image5"></p></p><p><ul><li>5th parameter of Tcl_CreateCommand() is a pointer to the C subroutine
- that is called when the Tcl command is deleted.</li></ul><ul><li>4th parameter to Tcl_CreateCommand() becomes the 1st parameter to 
+ that is called when the Tcl command is deleted.</li></ul><ul><li>4th parameter to Tcl_CreateCommand() becomes the 1st parameter to
  the C routine.</li></ul></p>
 
 <br clear="both"><p><hr></p>
@@ -1035,7 +1035,7 @@ pack&nbsp;.b</tt></small></td>
 
 <br clear="both"><p><hr></p>
 <h2 align="center">Linkage From Tcl To C</h2>
-<p>The <tt>argc</tt> and <tt>argv</tt> parameters work just like in 
+<p>The <tt>argc</tt> and <tt>argv</tt> parameters work just like in
  <tt>main()</tt></p><p>
 <table cellspacing="0" cellpadding="0" border="0">
 <tr><td valign="center">
@@ -1139,7 +1139,7 @@ pack&nbsp;.b</tt></small></td>
 <td></td><td></td><td></td><td></td>
 </tr>
 </table>
-<p><ul><li>Result should be the text of an error message if you 
+<p><ul><li>Result should be the text of an error message if you
   return TCL_ERROR.</li></ul><ul><li>3rd argument to Tcl_SetResult() can be TCL_STATIC,
   TCL_DYNAMIC, TCL_VOLATILE, or a function pointer.</li></ul><ul><li>Also consider using Tcl_AppendResult().</li></ul><ul><li>Direct access to <tt>interp->result</tt> is deprecated.</li></ul><ul><li>See the man pages for details.</li></ul></p>
 
@@ -1443,7 +1443,7 @@ int&nbsp;main(int&nbsp;argc,&nbsp;char&nbsp;**argv){<br>
 <h2 align="center">Initialization Scripts</h2>
 <p><ul><li>Run the mini TCLSH implemented above and execute the <tt>parray</tt> command</li></ul><ul><li>It doesn't work!  What's wrong? </p></li></li></ul><ul><li><tt>parray</tt> is really a Tcl proc that is read in when the
  interpreter is initialized. </p></li></li></ul><ul><li><tt>parray</tt> (and several other commands) are stored in a
-  handful of &quot;Initialization Scripts&quot; </p></li></li></ul><ul><li>All the initialization scripts are stored in the 
+  handful of &quot;Initialization Scripts&quot; </p></li></li></ul><ul><li>All the initialization scripts are stored in the
  &quot;Tcl Library&quot; - a directory on the host
  computer. </p></li></li></ul><table><tr><td valign="top"><img src="image3"></td>
 <td valign="top"><b>Invoke the Tcl_Init() function to locate and read the
@@ -1668,8 +1668,8 @@ int&nbsp;main(int&nbsp;argc,&nbsp;char&nbsp;**argv){<br>
   </ul></li></ul><ul><li>Allows us to implement a virtual filesystem that overlays the
   real filesystem.</li></ul><ul><li>The virtual filesystem contains all the initialization scripts
   as compiled-in strings.  The initialization scripts look like
-  they are resident on disk even though they are built in.</li></ul><ul><li>These functions first appeared in Tcl8.0.3.  
-  Presumably to support TclPro Wrapper.</li></ul><ul><li>The only documentation is comments on the code. 
+  they are resident on disk even though they are built in.</li></ul><ul><li>These functions first appeared in Tcl8.0.3.
+  Presumably to support TclPro Wrapper.</li></ul><ul><li>The only documentation is comments on the code.
   See the Tcl source file <tt>generic/tclIOUtil.c</tt></li></ul></p>
 <br clear="both"><p><hr></p>
 <h2 align="center">The <tt>TclStatInsertProc()</tt> Function</h2>
@@ -1997,7 +1997,7 @@ int&nbsp;main(int&nbsp;argc,&nbsp;char&nbsp;**argv){<br>
 <h2 align="center">Compiling "Hello, World!" For Tk</h2>
 <p><p><b>Unix:</b></p>
   <blockquote><pre>
-  $ gcc hello.c -ltk -L/usr/X11R6/lib \ 
+  $ gcc hello.c -ltk -L/usr/X11R6/lib \
         -lX11 -ltcl -lm -ldl
   $ ./a.out</pre></blockquote>
 
@@ -2008,7 +2008,7 @@ int&nbsp;main(int&nbsp;argc,&nbsp;char&nbsp;**argv){<br>
 
   <p><b>Windows using Mingw32:</b></p>
   <blockquote><pre>
-  C:> gcc -mno-cygwin hello.c -mwindows \ 
+  C:> gcc -mno-cygwin hello.c -mwindows \
            -ltk82 -ltcl82 -lm
   C:> a.exe</pre></blockquote></p>
 <br clear="both"><p><hr></p>
@@ -2162,7 +2162,7 @@ int&nbsp;main(int&nbsp;argc,&nbsp;char&nbsp;**argv){<br>
   <li> FreeWrap - http://www.albany.net/~dlabelle/freewrap/freewrap.html </li>
   <li> Wrap - http://members1.chello.nl/~j.nijtmans/wrap.html </li>
   </ul></li></ul><ul><li>No C compiler required!</li></ul><ul><li>TclPro will convert Tcl script into bytecode so that it cannot be
-  easily read by the end user.  FreeWrap encrypts the scripts.</li></ul><ul><li>FreeWrap uses compression on its executable. 
+  easily read by the end user.  FreeWrap encrypts the scripts.</li></ul><ul><li>FreeWrap uses compression on its executable.
   Wrap uses compression on both the executable and on the bundled script files.</li></ul><ul><li>Usually include extensions like winico and/or BLT</li></ul></p></td></tr></table>
 
 <br clear="both"><p><hr></p>
@@ -2170,8 +2170,8 @@ int&nbsp;main(int&nbsp;argc,&nbsp;char&nbsp;**argv){<br>
 <table><tr><td valign="top"><img src="image9"></td>
 <td valign="top"><p><ul><li>Mix C/C++ with Tcl/Tk into a standalone binary</li></ul>
 <ul><li><tt>mktclapp</tt> generates an application initialization file
-  that contains Tcl scripts as strings and makes all necessary calls 
-  to <tt>Tcl_Init</tt>, <tt>Tcl_CreateCommand</tt>, 
+  that contains Tcl scripts as strings and makes all necessary calls
+  to <tt>Tcl_Init</tt>, <tt>Tcl_CreateCommand</tt>,
   <tt>Tcl</tt>*<tt>InsertProc</tt>, etc.</li></ul><ul><li>Features to make it easier to write new Tcl command in C</li></ul><ul><li><tt>xmktclapp.tcl</tt> provides a GUI interface to <tt>mktclapp</tt></li></ul><ul><li>http://www.hwaci.com/sw/mktclapp/</li></ul></p></td></tr></table>
 
 <br clear="both"><p><hr></p>
@@ -2400,7 +2400,7 @@ int&nbsp;ET_OBJCOMMAND_add2(ET_OBJARGS){<br>
 <h2 align="center">Locations Of Libraries</h2>
 <table><tr><td valign="top"><img src="image13"></td>
 <td valign="top"><p><ul><li>Tells mktclapp where to look for script libraries.</li></ul><ul><li>All Tcl scripts in the indicated directories are
-  compiled into the <tt>appinit.c</tt> file.</li></ul><ul><li>Comments and extra white-space are removed. 
+  compiled into the <tt>appinit.c</tt> file.</li></ul><ul><li>Comments and extra white-space are removed.
   There is no way to turn this off.</li></ul></p></td></tr></table>
 
 <br clear="both"><p><hr></p>
@@ -2607,10 +2607,10 @@ int&nbsp;main(int&nbsp;argc,&nbsp;char&nbsp;**argv){</tt></small></td>
 
 <br clear="both"><p><hr></p>
 <h2 align="center">Mktclapp Initialization Sequence</h2>
-<p><ul><li>Initialization starts when the <tt>Et_Init()</tt> 
+<p><ul><li>Initialization starts when the <tt>Et_Init()</tt>
   function is called either by client code or by
   the <tt>main()</tt> that mktclapp generates</li></ul><ul><li>Create the main Tcl interpreter</li></ul><ul><li>Construct the virtual filesystem overlay by redefining
-  the <tt>source</tt> command and by using the 
+  the <tt>source</tt> command and by using the
   <tt>Tcl</tt>*<tt>InsertProc()</tt> functions</li></ul><ul><li>Call <tt>Et_PreInit()</tt> if the client defines it</li></ul><ul><li>Call <tt>Tcl_Init()</tt> and <tt>Tk_Init()</tt></li></ul><ul><li>Call <tt>Tcl_CreateCommand()</tt> and <tt>Tcl_CreateObjCommand()</tt>
   for every <tt>ET_COMMAND_</tt>* and <tt>ET_OBJCOMMAND_</tt>* function
   in the client code</li></ul><ul><li>Call <tt>Et_AppInit()</tt> if the client defines it</li></ul><ul><li>Run the main Tcl script if there is one</li></ul><ul><li>Call <tt>Et_CustomMainLoop()</tt> if defined by client code or
@@ -2680,7 +2680,7 @@ void&nbsp;ErrMsg(char&nbsp;*zMsg){<br>
   <ul><li>
   The command that gets executed is:
   <pre>
-    tk_messageBox -icon error -msg \ 
+    tk_messageBox -icon error -msg \
         {Syntax error near "}"} -type ok
   </pre>
   </li></ul>
@@ -2708,7 +2708,7 @@ void&nbsp;ErrMsg(char&nbsp;*zMsg){<br>
 <p><ul><li>The <tt></tt> puts a backslash before all characters that
   are special to Tcl</li></ul><ul><li>The Tcl command becomes:
   <pre>
-    tk_messageBox -icon error -msg \ 
+    tk_messageBox -icon error -msg \
         "Syntax error near \"\}\"" -type ok
   </pre></li></ul></p>
 

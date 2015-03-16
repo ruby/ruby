@@ -5,12 +5,18 @@
 #++
 
 require 'tsort'
+require 'rubygems/deprecate'
 
 ##
 # Gem::DependencyList is used for installing and uninstalling gems in the
 # correct order to avoid conflicts.
+#--
+# TODO: It appears that all but topo-sort functionality is being duplicated
+# (or is planned to be duplicated) elsewhere in rubygems.  Is the majority of
+# this class necessary anymore?  Especially #ok?, #why_not_ok?
 
 class Gem::DependencyList
+  attr_reader :specs
 
   include Enumerable
   include TSort
@@ -21,15 +27,11 @@ class Gem::DependencyList
   attr_accessor :development
 
   ##
-  # Creates a DependencyList from a Gem::SourceIndex +source_index+
+  # Creates a DependencyList from the current specs.
 
-  def self.from_source_index(source_index)
+  def self.from_specs
     list = new
-
-    source_index.each do |full_name, spec|
-      list.add spec
-    end
-
+    list.add(*Gem::Specification.to_a)
     list
   end
 
@@ -47,7 +49,11 @@ class Gem::DependencyList
   # Adds +gemspecs+ to the dependency list.
 
   def add(*gemspecs)
-    @specs.push(*gemspecs)
+    @specs.concat gemspecs
+  end
+
+  def clear
+    @specs.clear
   end
 
   ##
@@ -104,11 +110,26 @@ class Gem::DependencyList
   # Are all the dependencies in the list satisfied?
 
   def ok?
-    @specs.all? do |spec|
-      spec.runtime_dependencies.all? do |dep|
-        @specs.find { |s| s.satisfies_requirement? dep }
+    why_not_ok?(:quick).empty?
+  end
+
+  def why_not_ok? quick = false
+    unsatisfied = Hash.new { |h,k| h[k] = [] }
+    each do |spec|
+      spec.runtime_dependencies.each do |dep|
+        inst = Gem::Specification.any? { |installed_spec|
+          dep.name == installed_spec.name and
+            dep.requirement.satisfied_by? installed_spec.version
+        }
+
+        unless inst or @specs.find { |s| s.satisfies_requirement? dep } then
+          unsatisfied[spec.name] << dep
+          return unsatisfied if quick
+        end
       end
     end
+
+    unsatisfied
   end
 
   ##
@@ -117,7 +138,7 @@ class Gem::DependencyList
   # If removing the gemspec creates breaks a currently ok dependency, then it
   # is NOT ok to remove the gemspec.
 
-  def ok_to_remove?(full_name)
+  def ok_to_remove?(full_name, check_dev=true)
     gem_to_remove = find_name full_name
 
     siblings = @specs.find_all { |s|
@@ -128,7 +149,9 @@ class Gem::DependencyList
     deps = []
 
     @specs.each do |spec|
-      spec.dependencies.each do |dep|
+      check = check_dev ? spec.dependencies : spec.runtime_dependencies
+
+      check.each do |dep|
         deps << dep if gem_to_remove.satisfies_requirement?(dep)
       end
     end
@@ -137,6 +160,18 @@ class Gem::DependencyList
       siblings.any? { |s|
         s.satisfies_requirement? dep
       }
+    }
+  end
+
+  ##
+  # Remove everything in the DependencyList that matches but doesn't
+  # satisfy items in +dependencies+ (a hash of gem names to arrays of
+  # dependencies).
+
+  def remove_specs_unsatisfied_by dependencies
+    specs.reject! { |spec|
+      dep = dependencies[spec.name]
+      dep and not dep.requirement.satisfied_by? spec.version
     }
   end
 
@@ -175,7 +210,7 @@ class Gem::DependencyList
     @specs.each(&block)
   end
 
-  def tsort_each_child(node, &block)
+  def tsort_each_child(node)
     specs = @specs.sort.reverse
 
     dependencies = node.runtime_dependencies
@@ -184,10 +219,7 @@ class Gem::DependencyList
     dependencies.each do |dep|
       specs.each do |spec|
         if spec.satisfies_requirement? dep then
-          begin
-            yield spec
-          rescue TSort::Cyclic
-          end
+          yield spec
           break
         end
       end
@@ -201,13 +233,7 @@ class Gem::DependencyList
   # +ignored+.
 
   def active_count(specs, ignored)
-    result = 0
-
-    specs.each do |spec|
-      result += 1 unless ignored[spec.full_name]
-    end
-
-    result
+    specs.count { |spec| ignored[spec.full_name].nil? }
   end
 
 end

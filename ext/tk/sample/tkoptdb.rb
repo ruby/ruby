@@ -13,7 +13,7 @@ if __FILE__ == $0 || !TkCore::INTERP.safe?
     # read Japanese resource
     TkOptionDB.read_with_encoding(File.expand_path('resource.ja',
                                                    File.dirname(__FILE__)),
-                                  'euc-jp')
+                                  'utf-8')
   else
     # read English resource
     TkOptionDB.readfile(File.expand_path('resource.en',

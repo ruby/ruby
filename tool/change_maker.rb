@@ -3,7 +3,11 @@
 def diff2index(cmd, *argv)
   lines = []
   path = nil
-  `#{cmd} #{argv.join(" ")}`.split(/\n/).each do |line|
+  output = `#{cmd} #{argv.join(" ")}`
+  if defined? Encoding::BINARY
+    output.force_encoding Encoding::BINARY
+  end
+  output.each_line do |line|
     case line
     when /^Index: (\S*)/, /^diff --git [a-z]\/(\S*) [a-z]\/\1/
       path = $1
@@ -18,7 +22,7 @@ def diff2index(cmd, *argv)
   lines.empty? ? nil : lines
 end
 
-if File.directory?(".svn")
+if `svnversion` =~ /^\d+/
   cmd = "svn diff --diff-cmd=diff -x-pU0"
   change = diff2index(cmd, ARGV)
 elsif File.directory?(".git")

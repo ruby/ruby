@@ -33,8 +33,8 @@ def bm file
   bm_name = $1
   puts '-----------------------------------------------------------' unless $rubyonly || $matzrubyonly
   puts "#{bm_name}: "
-  
-  
+
+
 puts <<EOS unless $matzrubyonly || $rubyonly
 #{prog}
 --
@@ -93,7 +93,7 @@ if $0 == __FILE__
   ARGV.delete_if{|arg|
     /\A-/ =~ arg
   }
-  
+
   puts "MatzRuby:"
   system("#{$matzruby_program} -v")
   puts "Ruby:"

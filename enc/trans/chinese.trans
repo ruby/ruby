@@ -25,8 +25,7 @@
 
 <%= transcode_generated_code %>
 
-void
-Init_chinese(void)
+TRANS_INIT(chinese)
 {
 <%= transcode_register_code %>
 }

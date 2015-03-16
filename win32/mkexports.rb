@@ -7,6 +7,8 @@ module RbConfig
 end
 
 class Exports
+  PrivateNames = /(?:Init_|ruby_static_id_|.*_threadptr_|DllMain\b)/
+
   @@subclass = []
   def self.inherited(klass)
     @@subclass << [/#{klass.name.sub(/.*::/, '').downcase}/i, klass]
@@ -36,12 +38,21 @@ class Exports
   def initialize(objs)
     syms = {}
     winapis = {}
+    syms["ruby_sysinit_real"] = "ruby_sysinit"
     each_export(objs) do |internal, export|
       syms[internal] = export
       winapis[$1] = internal if /^_?(rb_w32_\w+)(?:@\d+)?$/ =~ internal
     end
-    win32h = File.join(File.dirname(File.dirname(__FILE__)), "include/ruby/win32.h")
-    IO.foreach(win32h) do |line|
+    incdir = File.join(File.dirname(File.dirname(__FILE__)), "include/ruby")
+    read_substitution(incdir+"/win32.h", syms, winapis)
+    read_substitution(incdir+"/subst.h", syms, winapis)
+    syms["rb_w32_vsnprintf"] ||= "ruby_vsnprintf"
+    syms["rb_w32_snprintf"] ||= "ruby_snprintf"
+    @syms = syms
+  end
+
+  def read_substitution(header, syms, winapis)
+    IO.foreach(header) do |line|
       if /^#define (\w+)\((.*?)\)\s+(?:\(void\))?(rb_w32_\w+)\((.*?)\)\s*$/ =~ line and
           $2.delete(" ") == $4.delete(" ")
         export, internal = $1, $3
@@ -50,10 +61,6 @@ class Exports
         end
       end
     end
-    syms["NtInitialize"] ||= "ruby_sysinit" if syms["ruby_sysinit"]
-    syms["rb_w32_vsnprintf"] ||= "ruby_vsnprintf"
-    syms["rb_w32_snprintf"] ||= "ruby_snprintf"
-    @syms = syms
   end
 
   def exports(name = $name, library = $library, description = $description)
@@ -110,7 +117,8 @@ class Exports::Mswin < Exports
           next unless l.sub!(/.*?\s(\(\)\s+)?External\s+\|\s+/, '')
           is_data = !$1
           if noprefix or /^[@_]/ =~ l
-            next if /(?!^)@.*@/ =~ l || /@[[:xdigit:]]{8,16}$/ =~ l || /^_DllMain@/ =~ l
+            next if /(?!^)@.*@/ =~ l || /@[[:xdigit:]]{8,32}$/ =~ l ||
+                    /^_?#{PrivateNames}/o =~ l
             l.sub!(/^[@_]/, '') if /@\d+$/ !~ l
           elsif !l.sub!(/^(\S+) \([^@?\`\']*\)$/, '\1')
             next
@@ -142,9 +150,12 @@ class Exports::Cygwin < Exports
   end
 
   def each_export(objs)
+    symprefix = RbConfig::CONFIG["SYMBOL_PREFIX"]
+    symprefix.strip! if symprefix
+    re = /\s(?:(T)|[[:upper:]])\s#{symprefix}((?!#{PrivateNames}).*)$/
     objdump(objs) do |l|
       next if /@.*@/ =~ l
-      yield $2, !$1 if /\s(?:(T)|[[:upper:]])\s_((?!Init_|.*_threadptr_|DllMain@).*)$/ =~ l
+      yield $2, !$1 if re =~ l
     end
   end
 end

@@ -15,10 +15,8 @@ module REXML
     end
 
     def add( object )
-      #puts "PARENT GOTS #{size} CHILDREN"
       object.parent = self
       @children << object
-      #puts "PARENT NOW GOTS #{size} CHILDREN"
       object
     end
 

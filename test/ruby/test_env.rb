@@ -96,13 +96,17 @@ class TestEnv < Test::Unit::TestCase
     assert_raise(ArgumentError) { ENV["foo\0bar"] }
     ENV[PATH_ENV] = ""
     assert_equal("", ENV[PATH_ENV])
+    assert_nil(ENV[""])
   end
 
   def test_fetch
     ENV["test"] = "foo"
     assert_equal("foo", ENV.fetch("test"))
     ENV.delete("test")
-    assert_raise(KeyError) { ENV.fetch("test") }
+    feature8649 = '[ruby-core:56062] [Feature #8649]'
+    assert_raise_with_message(KeyError, 'key not found: "test"', feature8649) do
+      ENV.fetch("test")
+    end
     assert_equal("foo", ENV.fetch("test", "foo"))
     assert_equal("bar", ENV.fetch("test") { "bar" })
     assert_equal("bar", ENV.fetch("test", "foo") { "bar" })
@@ -113,30 +117,27 @@ class TestEnv < Test::Unit::TestCase
   end
 
   def test_aset
-    assert_raise(SecurityError) do
-      Thread.new do
-        $SAFE = 4
-        ENV["test"] = "foo"
-      end.join
-    end
     assert_nothing_raised { ENV["test"] = nil }
     assert_equal(nil, ENV["test"])
     assert_raise(ArgumentError) { ENV["foo\0bar"] = "test" }
     assert_raise(ArgumentError) { ENV["test"] = "foo\0bar" }
-    if /netbsd/ =~ RUBY_PLATFORM
+
+    begin
+      # setenv(3) allowed the name includes '=',
+      # but POSIX.1-2001 says it should fail with EINVAL.
+      # see also http://togetter.com/li/22380
       ENV["foo=bar"] = "test"
       assert_equal("test", ENV["foo=bar"])
       assert_equal("test", ENV["foo"])
-    else
-      assert_raise(Errno::EINVAL) { ENV["foo=bar"] = "test" }
+    rescue Errno::EINVAL
     end
+
     ENV[PATH_ENV] = "/tmp/".taint
     assert_equal("/tmp/", ENV[PATH_ENV])
   end
 
   def test_keys
-    a = nil
-    assert_block { a = ENV.keys }
+    a = ENV.keys
     assert_kind_of(Array, a)
     a.each {|k| assert_kind_of(String, k) }
   end
@@ -146,8 +147,7 @@ class TestEnv < Test::Unit::TestCase
   end
 
   def test_values
-    a = nil
-    assert_block { a = ENV.values }
+    a = ENV.values
     assert_kind_of(Array, a)
     a.each {|k| assert_kind_of(String, k) }
   end
@@ -267,15 +267,15 @@ class TestEnv < Test::Unit::TestCase
 
   def test_empty_p
     ENV.clear
-    assert(ENV.empty?)
+    assert_predicate(ENV, :empty?)
     ENV["test"] = "foo"
-    assert(!ENV.empty?)
+    assert_not_predicate(ENV, :empty?)
   end
 
   def test_has_key
-    assert(!ENV.has_key?("test"))
+    assert_not_send([ENV, :has_key?, "test"])
     ENV["test"] = "foo"
-    assert(ENV.has_key?("test"))
+    assert_send([ENV, :has_key?, "test"])
     assert_raise(ArgumentError) { ENV.has_key?("foo\0bar") }
   end
 
@@ -295,9 +295,9 @@ class TestEnv < Test::Unit::TestCase
 
   def test_has_value2
     ENV.clear
-    assert(!ENV.has_value?("foo"))
+    assert_not_send([ENV, :has_value?, "foo"])
     ENV["test"] = "foo"
-    assert(ENV.has_value?("foo"))
+    assert_send([ENV, :has_value?, "foo"])
   end
 
   def test_rassoc
@@ -320,6 +320,10 @@ class TestEnv < Test::Unit::TestCase
     h = {}
     ENV.each {|k, v| h[k] = v }
     assert_equal(h, ENV.to_hash)
+  end
+
+  def test_to_h
+    assert_equal(ENV.to_hash, ENV.to_h)
   end
 
   def test_reject
@@ -373,5 +377,176 @@ class TestEnv < Test::Unit::TestCase
     ENV["baz"] = "qux"
     ENV.update({"baz"=>"quux","a"=>"b"}) {|k, v1, v2| v1 ? k + "_" + v1 + "_" + v2 : v2 }
     check(ENV.to_hash.to_a, [%w(foo bar), %w(baz baz_qux_quux), %w(a b)])
+  end
+
+  def test_huge_value
+    huge_value = "bar" * 40960
+    ENV["foo"] = "bar"
+    if /mswin|mingw/ =~ RUBY_PLATFORM
+      assert_raise(Errno::EINVAL) { ENV["foo"] = huge_value }
+      assert_equal("bar", ENV["foo"])
+    else
+      assert_nothing_raised { ENV["foo"] = huge_value }
+      assert_equal(huge_value, ENV["foo"])
+    end
+  end
+
+  if /mswin|mingw/ =~ RUBY_PLATFORM
+    def test_win32_blocksize
+      keys = []
+      len = 32767 - ENV.to_a.flatten.inject(0) {|r,e| r + e.bytesize + 1}
+      val = "bar" * 1000
+      key = nil
+      while (len -= val.size + (key="foo#{len}").size + 2) > 0
+        keys << key
+        ENV[key] = val
+      end
+      1.upto(12) {|i|
+        assert_raise(Errno::EINVAL) { ENV[key] = val }
+      }
+    ensure
+      keys.each {|k| ENV.delete(k)}
+    end
+  end
+
+  def test_frozen
+    ENV[PATH_ENV] = "/"
+    ENV.each do |k, v|
+      assert_predicate(k, :frozen?)
+      assert_predicate(v, :frozen?)
+    end
+    ENV.each_key do |k|
+      assert_predicate(k, :frozen?)
+    end
+    ENV.each_value do |v|
+      assert_predicate(v, :frozen?)
+    end
+    ENV.each_key do |k|
+      assert_predicate(ENV[k], :frozen?, "[#{k.dump}]")
+      assert_predicate(ENV.fetch(k), :frozen?, "fetch(#{k.dump})")
+    end
+  end
+
+  def test_taint_aref
+    assert_raise(SecurityError) do
+      proc do
+        $SAFE = 2
+        ENV["FOO".taint]
+      end.call
+    end
+  end
+
+  def test_taint_fetch
+    assert_raise(SecurityError) do
+      proc do
+        $SAFE = 2
+        ENV.fetch("FOO".taint)
+      end.call
+    end
+  end
+
+  def test_taint_assoc
+    assert_raise(SecurityError) do
+      proc do
+        $SAFE = 2
+        ENV.assoc("FOO".taint)
+      end.call
+    end
+  end
+
+  def test_taint_rassoc
+    assert_raise(SecurityError) do
+      proc do
+        $SAFE = 2
+        ENV.rassoc("FOO".taint)
+      end.call
+    end
+  end
+
+  def test_taint_key
+    assert_raise(SecurityError) do
+      proc do
+        $SAFE = 2
+        ENV.key("FOO".taint)
+      end.call
+    end
+  end
+
+  def test_taint_key_p
+    assert_raise(SecurityError) do
+      proc do
+        $SAFE = 2
+        ENV.key?("FOO".taint)
+      end.call
+    end
+  end
+
+  def test_taint_value_p
+    assert_raise(SecurityError) do
+      proc do
+        $SAFE = 2
+        ENV.value?("FOO".taint)
+      end.call
+    end
+  end
+
+  def test_taint_aset_value
+    assert_raise(SecurityError) do
+      proc do
+        $SAFE = 2
+        ENV["FOO"] = "BAR".taint
+      end.call
+    end
+  end
+
+  def test_taint_aset_key
+    assert_raise(SecurityError) do
+      proc do
+        $SAFE = 2
+        ENV["FOO".taint] = "BAR"
+      end.call
+    end
+  end
+
+  if RUBY_PLATFORM =~ /bccwin|mswin|mingw/
+    def test_memory_leak_aset
+      bug9977 = '[ruby-dev:48323] [Bug #9977]'
+      assert_no_memory_leak([], <<-'end;', "5_000.times(&doit)", bug9977, limit: 2.0)
+        ENV.clear
+        k = 'FOO'
+        v = (ENV[k] = 'bar'*5000 rescue 'bar'*1500)
+        doit = proc {ENV[k] = v}
+        500.times(&doit)
+      end;
+    end
+
+    def test_memory_leak_select
+      bug9978 = '[ruby-dev:48325] [Bug #9978]'
+      assert_no_memory_leak([], <<-'end;', "5_000.times(&doit)", bug9978, limit: 2.0)
+        ENV.clear
+        k = 'FOO'
+        (ENV[k] = 'bar'*5000 rescue 'bar'*1500)
+        doit = proc {ENV.select {break}}
+        500.times(&doit)
+      end;
+    end
+
+    def test_memory_crash_select
+      assert_normal_exit(<<-'end;')
+        1000.times {ENV["FOO#{i}"] = 'bar'}
+        ENV.select {ENV.clear}
+      end;
+    end
+
+    def test_memory_leak_shift
+      bug9983 = '[ruby-dev:48332] [Bug #9983]'
+      assert_no_memory_leak([], <<-'end;', "5_000.times(&doit)", bug9983, limit: 2.0)
+        ENV.clear
+        k = 'FOO'
+        v = (ENV[k] = 'bar'*5000 rescue 'bar'*1500)
+        doit = proc {ENV[k] = v; ENV.shift}
+        500.times(&doit)
+      end;
+    end
   end
 end

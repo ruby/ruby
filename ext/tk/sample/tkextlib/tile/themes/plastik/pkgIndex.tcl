@@ -4,7 +4,7 @@
 # or we don't have the right version of Tcl/Tk
 #
 # To use this automatically within tile, the tile-using application should
-# use tile::availableThemes and tile::setTheme 
+# use tile::availableThemes and tile::setTheme
 #
 # $Id$
 

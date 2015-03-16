@@ -6,18 +6,18 @@
 #include "ossl.h"
 
 #define WrapPKCS12(klass, obj, p12) do { \
-    if(!p12) ossl_raise(rb_eRuntimeError, "PKCS12 wasn't initialized."); \
-    obj = Data_Wrap_Struct(klass, 0, PKCS12_free, p12); \
+    if(!(p12)) ossl_raise(rb_eRuntimeError, "PKCS12 wasn't initialized."); \
+    (obj) = TypedData_Wrap_Struct((klass), &ossl_pkcs12_type, (p12)); \
 } while (0)
 
 #define GetPKCS12(obj, p12) do { \
-    Data_Get_Struct(obj, PKCS12, p12); \
-    if(!p12) ossl_raise(rb_eRuntimeError, "PKCS12 wasn't initialized."); \
+    TypedData_Get_Struct((obj), PKCS12, &ossl_pkcs12_type, (p12)); \
+    if(!(p12)) ossl_raise(rb_eRuntimeError, "PKCS12 wasn't initialized."); \
 } while (0)
 
 #define SafeGetPKCS12(obj, p12) do { \
-    OSSL_Check_Kind(obj, cPKCS12); \
-    GetPKCS12(obj, p12); \
+    OSSL_Check_Kind((obj), cPKCS12); \
+    GetPKCS12((obj), (p12)); \
 } while (0)
 
 #define ossl_pkcs12_set_key(o,v)      rb_iv_set((o), "@key", (v))
@@ -36,6 +36,20 @@ VALUE ePKCS12Error;
 /*
  * Private
  */
+static void
+ossl_pkcs12_free(void *ptr)
+{
+    PKCS12_free(ptr);
+}
+
+static const rb_data_type_t ossl_pkcs12_type = {
+    "OpenSSL/PKCS12",
+    {
+	0, ossl_pkcs12_free,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+};
+
 static VALUE
 ossl_pkcs12_s_allocate(VALUE klass)
 {
@@ -91,11 +105,11 @@ ossl_pkcs12_s_create(int argc, VALUE *argv, VALUE self)
 /* TODO: make a VALUE to nid function */
     if (!NIL_P(key_nid)) {
         if ((nkey = OBJ_txt2nid(StringValuePtr(key_nid))) == NID_undef)
-            rb_raise(rb_eArgError, "Unknown PBE algorithm %s", StringValuePtr(key_nid));
+            ossl_raise(rb_eArgError, "Unknown PBE algorithm %s", StringValuePtr(key_nid));
     }
     if (!NIL_P(cert_nid)) {
         if ((ncert = OBJ_txt2nid(StringValuePtr(cert_nid))) == NID_undef)
-            rb_raise(rb_eArgError, "Unknown PBE algorithm %s", StringValuePtr(cert_nid));
+            ossl_raise(rb_eArgError, "Unknown PBE algorithm %s", StringValuePtr(cert_nid));
     }
     if (!NIL_P(key_iter))
         kiter = NUM2INT(key_iter);
@@ -192,7 +206,7 @@ ossl_pkcs12_to_der(VALUE self)
 }
 
 void
-Init_ossl_pkcs12()
+Init_ossl_pkcs12(void)
 {
     /*
      * Defines a file format commonly used to store private keys with

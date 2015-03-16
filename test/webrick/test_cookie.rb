@@ -34,6 +34,7 @@ class TestWEBrickCookie < Test::Unit::TestCase
     data << 'Part_Number="Rocket_Launcher_0001"; $Path="/acme"; '
     data << 'Shipping="FedEx"; $Path="/acme"'
     cookies = WEBrick::Cookie.parse(data)
+    assert_equal(3, cookies.size)
     assert_equal(1, cookies[0].version)
     assert_equal("Customer", cookies[0].name)
     assert_equal("WILE_E_COYOTE", cookies[0].value)
@@ -52,6 +53,32 @@ class TestWEBrickCookie < Test::Unit::TestCase
     assert_equal("moge", cookies[0].value)
     assert_equal("__div__session", cookies[1].name)
     assert_equal("9865ecfd514be7f7", cookies[1].value)
+  end
+
+  def test_parse_no_whitespace
+    data = [
+      '$Version="1"; ',
+      'Customer="WILE_E_COYOTE";$Path="/acme";', # no SP between cookie-string
+      'Part_Number="Rocket_Launcher_0001";$Path="/acme";', # no SP between cookie-string
+      'Shipping="FedEx";$Path="/acme"'
+    ].join
+    cookies = WEBrick::Cookie.parse(data)
+    assert_equal(1, cookies.size)
+  end
+
+  def test_parse_too_much_whitespaces
+    # According to RFC6265,
+    #   cookie-string = cookie-pair *( ";" SP cookie-pair )
+    # So single 0x20 is needed after ';'. We allow multiple spaces here for
+    # compatibility with older WEBrick versions.
+    data = [
+      '$Version="1"; ',
+      'Customer="WILE_E_COYOTE";$Path="/acme";     ', # no SP between cookie-string
+      'Part_Number="Rocket_Launcher_0001";$Path="/acme";     ', # no SP between cookie-string
+      'Shipping="FedEx";$Path="/acme"'
+    ].join
+    cookies = WEBrick::Cookie.parse(data)
+    assert_equal(3, cookies.size)
   end
 
   def test_parse_set_cookie

@@ -8,6 +8,7 @@
 #
 
 
+#--
 # == Developer Documentation (not for RDoc output)
 #
 # === Class tree
@@ -42,6 +43,8 @@
 #                         | all instances)|
 #                         +---------------+
 #
+#++
+#
 # == OptionParser
 #
 # === Introduction
@@ -60,7 +63,8 @@
 # 4. Arguments can be automatically converted to a specified class.
 # 5. Arguments can be restricted to a certain set.
 #
-# All of these features are demonstrated in the examples below.
+# All of these features are demonstrated in the examples below.  See
+# #make_switch for full documentation.
 #
 # === Minimal example
 #
@@ -78,6 +82,155 @@
 #   p options
 #   p ARGV
 #
+# === Generating Help
+#
+# OptionParser can be used to automatically generate help for the commands you
+# write:
+#
+#   require 'optparse'
+#
+#   Options = Struct.new(:name)
+#
+#   class Parser
+#     def self.parse(options)
+#       args = Options.new("world")
+#
+#       opt_parser = OptionParser.new do |opts|
+#         opts.banner = "Usage: example.rb [options]"
+#
+#         opts.on("-nNAME", "--name=NAME", "Name to say hello to") do |n|
+#           args.name = n
+#         end
+#
+#         opts.on("-h", "--help", "Prints this help") do
+#           puts opts
+#           exit
+#         end
+#       end
+#
+#       opt_parser.parse!(options)
+#       return args
+#     end
+#   end
+#   options = Parser.parse %w[--help]
+#
+#   #=>
+#      # Usage: example.rb [options]
+#      #     -n, --name=NAME                  Name to say hello to
+#      #     -h, --help                       Prints this help
+#
+# === Required Arugments
+#
+# For options that require an argument, option specification strings may include an
+# option name in all caps. If an option is used without the required argument,
+# an exception will be raised.
+#   require 'optparse'
+#
+#   options = {}
+#   OptionParser.new do |parser|
+#     parser.on("-r", "--require LIBRARY",
+#               "Require the LIBRARY before executing your script") do |lib|
+#       puts "You required #{lib}!"
+#     end
+#   end.parse!
+#
+# Used:
+#
+#   bash-3.2$ ruby optparse-test.rb -r
+#   optparse-test.rb:9:in `<main>': missing argument: -r (OptionParser::MissingArgument)
+#   bash-3.2$ ruby optparse-test.rb -r my-library
+#   You required my-library!
+#
+# === Type Coercion
+#
+# OptionParser supports the ability to coerce command line arguments
+# into objects for us.
+#
+# OptionParser comes with a few ready-to-use kinds of  type
+# coercion. They are:
+#
+# - Date  -- Anything accepted by +Date.parse+
+# - DateTime -- Anything accepted by +DateTime.parse+
+# - Time -- Anyting accepted by +Time.httpdate+ or +Time.parse+
+# - URI  -- Anything accepted by +URI.parse+
+# - Shellwords -- Anything accepted by +Shellwords.shellwords+
+# - String -- Any non-empty string
+# - Integer -- Any integer. Will convert octal. (e.g. 124, -3, 040)
+# - Float -- Any float. (e.g. 10, 3.14, -100E+13)
+# - Numeric -- Any integer, float, or rational (1, 3.4, 1/3)
+# - DecimalInteger -- Like +Integer+, but no octal format.
+# - OctalInteger -- Like +Integer+, but no decimal format.
+# - DecimalNumeric -- Decimal integer or float.
+# - TrueClass --  Accepts '+, yes, true, -, no, false' and
+#   defaults as +true+
+# - FalseClass -- Same as +TrueClass+, but defaults to +false+
+# - Array -- Strings separated by ',' (e.g. 1,2,3)
+# - Regexp -- Regular expressions. Also includes options.
+#
+# We can also add our own coercions, which we will cover soon.
+#
+# ==== Using Built-in Conversions
+#
+# As an example, the built-in +Time+ conversion is used. The other built-in
+# conversions behave in in the same way.
+# OptionParser will attempt to parse the argument
+# as a +Time+. If it succeeeds, that time will be passed to the
+# handler block. Otherwise, an exception will be raised.
+#
+#   require 'optparse'
+#   require 'optparse/time'
+#   OptionParser.new do |parser|
+#     parser.on("-t", "--time [TIME]", Time, "Begin execution at given time") do |time|
+#       p time
+#     end
+#   end.parse!
+#
+# Used:
+#   bash-3.2$ ruby optparse-test.rb  -t nonsense
+#   ... invalid argument: -t nonsense (OptionParser::InvalidArgument)
+#   from ... time.rb:5:in `block in <top (required)>'
+#   from optparse-test.rb:31:in `<main>'
+#   bash-3.2$ ruby optparse-test.rb  -t 10-11-12
+#   2010-11-12 00:00:00 -0500
+#   bash-3.2$ ruby optparse-test.rb  -t 9:30
+#   2014-08-13 09:30:00 -0400
+#
+# ==== Creating Custom Conversions
+#
+# The +accept+ method on OptionParser may be used to create converters.
+# It specifies which conversion block to call whenever a class is specified.
+# The example below uses it to fetch a +User+ object before the +on+ handler receives it.
+#
+#   require 'optparse'
+#
+#   User = Struct.new(:id, :name)
+#
+#   def find_user id
+#     not_found = ->{ raise "No User Found for id #{id}" }
+#     [ User.new(1, "Sam"),
+#       User.new(2, "Gandalf") ].find(not_found) do |u|
+#       u.id == id
+#     end
+#   end
+#
+#   op = OptionParser.new
+#   op.accept(User) do |user_id|
+#     find_user user_id.to_i
+#   end
+#
+#   op.on("--user ID", User) do |user|
+#     puts user
+#   end
+#
+#   op.parse!
+#
+# output:
+#   bash-3.2$ ruby optparse-test.rb --user 1
+#   #<struct User id=1, name="Sam">
+#   bash-3.2$ ruby optparse-test.rb --user 2
+#   #<struct User id=2, name="Gandalf">
+#   bash-3.2$ ruby optparse-test.rb --user 3
+#   optparse-test.rb:15:in `block in find_user': No User Found for id 3 (RuntimeError)
 # === Complete example
 #
 # The following example is a complete Ruby program.  You can run it and see the
@@ -90,124 +243,155 @@
 #   require 'pp'
 #
 #   class OptparseExample
+#     Version = '1.0.0'
 #
 #     CODES = %w[iso-2022-jp shift_jis euc-jp utf8 binary]
 #     CODE_ALIASES = { "jis" => "iso-2022-jp", "sjis" => "shift_jis" }
+#
+#     class ScriptOptions
+#       attr_accessor :library, :inplace, :encoding, :transfer_type,
+#                     :verbose
+#       def initialize
+#         self.library = []
+#         self.inplace = false
+#         self.encoding = "utf8"
+#         self.transfer_type = :auto
+#         self.verbose = false
+#       end
+#     end
 #
 #     #
 #     # Return a structure describing the options.
 #     #
 #     def self.parse(args)
-#       # The options specified on the command line will be collected in *options*.
-#       # We set default values here.
-#       options = OpenStruct.new
-#       options.library = []
-#       options.inplace = false
-#       options.encoding = "utf8"
-#       options.transfer_type = :auto
-#       options.verbose = false
+#       # The options specified on the command line will be collected in
+#       # *options*.
 #
-#       opts = OptionParser.new do |opts|
-#         opts.banner = "Usage: example.rb [options]"
+#       @options = ScriptOptions.new
+#       option_parser.parse!(args)
+#       @options
+#     end
 #
-#         opts.separator ""
-#         opts.separator "Specific options:"
+#     attr_reader :parser, :options
 #
-#         # Mandatory argument.
-#         opts.on("-r", "--require LIBRARY",
-#                 "Require the LIBRARY before executing your script") do |lib|
-#           options.library << lib
-#         end
+#     def option_parser
+#       @parser ||= OptionParser.new do |parser|
+#         parser.banner = "Usage: example.rb [options]"
+#         parser.separator ""
+#         parser.separator "Specific options:"
 #
-#         # Optional argument; multi-line description.
-#         opts.on("-i", "--inplace [EXTENSION]",
-#                 "Edit ARGV files in place",
-#                 "  (make backup if EXTENSION supplied)") do |ext|
-#           options.inplace = true
-#           options.extension = ext || ''
-#           options.extension.sub!(/\A\.?(?=.)/, ".")  # Ensure extension begins with dot.
-#         end
+#         # add additional options
+#         perform_inplace_option
+#         delay_execution_option
+#         execute_at_time_option
+#         specify_record_separator_option
+#         list_example_option
+#         specify_encoding_option
+#         optional_option_argument_with_keyword_completion_option
+#         boolean_verbose_option
 #
-#         # Cast 'delay' argument to a Float.
-#         opts.on("--delay N", Float, "Delay N seconds before executing") do |n|
-#           options.delay = n
-#         end
-#
-#         # Cast 'time' argument to a Time object.
-#         opts.on("-t", "--time [TIME]", Time, "Begin execution at given time") do |time|
-#           options.time = time
-#         end
-#
-#         # Cast to octal integer.
-#         opts.on("-F", "--irs [OCTAL]", OptionParser::OctalInteger,
-#                 "Specify record separator (default \\0)") do |rs|
-#           options.record_separator = rs
-#         end
-#
-#         # List of arguments.
-#         opts.on("--list x,y,z", Array, "Example 'list' of arguments") do |list|
-#           options.list = list
-#         end
-#
-#         # Keyword completion.  We are specifying a specific set of arguments (CODES
-#         # and CODE_ALIASES - notice the latter is a Hash), and the user may provide
-#         # the shortest unambiguous text.
-#         code_list = (CODE_ALIASES.keys + CODES).join(',')
-#         opts.on("--code CODE", CODES, CODE_ALIASES, "Select encoding",
-#                 "  (#{code_list})") do |encoding|
-#           options.encoding = encoding
-#         end
-#
-#         # Optional argument with keyword completion.
-#         opts.on("--type [TYPE]", [:text, :binary, :auto],
-#                 "Select transfer type (text, binary, auto)") do |t|
-#           options.transfer_type = t
-#         end
-#
-#         # Boolean switch.
-#         opts.on("-v", "--[no-]verbose", "Run verbosely") do |v|
-#           options.verbose = v
-#         end
-#
-#         opts.separator ""
-#         opts.separator "Common options:"
-#
+#         parser.separator ""
+#         parser.separator "Common options:"
 #         # No argument, shows at tail.  This will print an options summary.
 #         # Try it and see!
-#         opts.on_tail("-h", "--help", "Show this message") do
-#           puts opts
+#         parser.on_tail("-h", "--help", "Show this message") do
+#           puts parser
 #           exit
 #         end
-#
 #         # Another typical switch to print the version.
-#         opts.on_tail("--version", "Show version") do
-#           puts OptionParser::Version.join('.')
+#         parser.on_tail("--version", "Show version") do
+#           puts Version
 #           exit
 #         end
 #       end
+#     end
 #
-#       opts.parse!(args)
-#       options
-#     end  # parse()
+#     def perform_inplace_option
+#       # Specifies an optional option argument
+#       parser.on("-i", "--inplace [EXTENSION]",
+#               "Edit ARGV files in place",
+#               "  (make backup if EXTENSION supplied)") do |ext|
+#         options.inplace = true
+#         options.extension = ext || ''
+#         options.extension.sub!(/\A\.?(?=.)/, ".")  # Ensure extension begins with dot.
+#       end
+#     end
+#
+#     def delay_execution_option
+#       # Cast 'delay' argument to a Float.
+#       parser.on("--delay N", Float, "Delay N seconds before executing") do |n|
+#         options.delay = n
+#       end
+#     end
+#
+#     def execute_at_time_option
+#       # Cast 'time' argument to a Time object.
+#       parser.on("-t", "--time [TIME]", Time, "Begin execution at given time") do |time|
+#         options.time = time
+#       end
+#     end
+#
+#
+#     def specify_record_separator_option
+#       # Cast to octal integer.
+#       parser.on("-F", "--irs [OCTAL]", OptionParser::OctalInteger,
+#               "Specify record separator (default \\0)") do |rs|
+#         options.record_separator = rs
+#       end
+#     end
+#
+#     def list_example_option
+#       # List of arguments.
+#       parser.on("--list x,y,z", Array, "Example 'list' of arguments") do |list|
+#         options.list = list
+#       end
+#     end
+#
+#     def specify_encoding_option
+#       # Keyword completion.  We are specifying a specific set of arguments (CODES
+#       # and CODE_ALIASES - notice the latter is a Hash), and the user may provide
+#       # the shortest unambiguous text.
+#       code_list = (CODE_ALIASES.keys + CODES).join(',')
+#       parser.on("--code CODE", CODES, CODE_ALIASES, "Select encoding",
+#               "  (#{code_list})") do |encoding|
+#         options.encoding = encoding
+#       end
+#     end
+#
+#
+#     def optional_option_argument_with_keyword_completion_option
+#       # Optional '--type' option argument with keyword completion.
+#       parser.on("--type [TYPE]", [:text, :binary, :auto],
+#                     "Select transfer type (text, binary, auto)") do |t|
+#         options.transfer_type = t
+#       end
+#     end
+#
+#
+#     def boolean_verbose_option
+#       # Boolean switch.
+#       parser.on("-v", "--[no-]verbose", "Run verbosely") do |v|
+#         options.verbose = v
+#       end
+#     end
 #
 #   end  # class OptparseExample
-#
 #   options = OptparseExample.parse(ARGV)
 #   pp options
+#   pp ARGV
+#
+# === Shell Completion
+#
+# For modern shells (e.g. bash, zsh, etc.), you can use shell
+# completion for command line options.
 #
 # === Further documentation
 #
 # The above examples should be enough to learn how to use this class.  If you
-# have any questions, email me (gsinclair@soyabean.com.au) and I will update
-# this document.
+# have any questions, file a ticket at http://bugs.ruby-lang.org.
 #
 class OptionParser
   # :stopdoc:
-  RCSID = %w$Id$[1..-1].each {|s| s.freeze}.freeze
-  Version = (RCSID[1].split('.').collect {|s| s.to_i}.extend(Comparable).freeze if RCSID[1])
-  LastModified = (Time.gm(*RCSID[2, 2].join('-').scan(/\d+/).collect {|s| s.to_i}) if RCSID[2])
-  Release = RCSID[2]
-
   NoArgument = [NO_ARGUMENT = :NONE, nil].freeze
   RequiredArgument = [REQUIRED_ARGUMENT = :REQUIRED, true].freeze
   OptionalArgument = [OPTIONAL_ARGUMENT = :OPTIONAL, false].freeze
@@ -218,12 +402,14 @@ class OptionParser
   # and resolved against a list of acceptable values.
   #
   module Completion
-    def complete(key, icase = false, pat = nil)
-      pat ||= Regexp.new('\A' + Regexp.quote(key).gsub(/\w+\b/, '\&\w*'),
-                         icase)
-      canon, sw, cn = nil
+    def self.regexp(key, icase)
+      Regexp.new('\A' + Regexp.quote(key).gsub(/\w+\b/, '\&\w*'), icase)
+    end
+
+    def self.candidate(key, icase = false, pat = nil, &block)
+      pat ||= Completion.regexp(key, icase)
       candidates = []
-      each do |k, *v|
+      block.call do |k, *v|
         (if Regexp === k
            kn = nil
            k === key
@@ -234,7 +420,16 @@ class OptionParser
         v << k if v.empty?
         candidates << [k, v, kn]
       end
-      candidates = candidates.sort_by {|k, v, kn| kn.size}
+      candidates
+    end
+
+    def candidate(key, icase = false, pat = nil)
+      Completion.candidate(key, icase, pat, &method(:each))
+    end
+
+    public
+    def complete(key, icase = false, pat = nil)
+      candidates = candidate(key, icase, pat, &method(:each)).sort_by {|k, v, kn| kn.size}
       if candidates.size == 1
         canon, sw, * = candidates[0]
       elsif candidates.size > 1
@@ -422,6 +617,24 @@ class OptionParser
     #
     def switch_name
       (long.first || short.first).sub(/\A-+(?:\[no-\])?/, '')
+    end
+
+    def compsys(sdone, ldone)   # :nodoc:
+      sopts, lopts = [], []
+      @short.each {|s| sdone.fetch(s) {sopts << s}; sdone[s] = true} if @short
+      @long.each {|s| ldone.fetch(s) {lopts << s}; ldone[s] = true} if @long
+      return if sopts.empty? and lopts.empty? # completely hidden
+
+      (sopts+lopts).each do |opt|
+        # "(-x -c -r)-l[left justify]" \
+        if /^--\[no-\](.+)$/ =~ opt
+          o = $1
+          yield("--#{o}", desc.join(""))
+          yield("--no-#{o}", desc.join(""))
+        else
+          yield("#{opt}", desc.join(""))
+        end
+      end
     end
 
     #
@@ -662,6 +875,14 @@ class OptionParser
       end
       to
     end
+
+    def compsys(*args, &block)  # :nodoc:
+      list.each do |opt|
+        if opt.respond_to?(:compsys)
+          opt.compsys(*args, &block)
+        end
+      end
+    end
   end
 
   #
@@ -691,7 +912,7 @@ class OptionParser
   # OPTIONAL_ARGUMENT:: The switch requires an optional argument. (:OPTIONAL)
   #
   # Use like --switch=argument (long style) or -Xargument (short style). For
-  # short style, only portion matched to argument pattern is dealed as
+  # short style, only portion matched to argument pattern is treated as
   # argument.
   #
   ArgumentStyle = {}
@@ -708,6 +929,24 @@ class OptionParser
   DefaultList.short['-'] = Switch::NoArgument.new {}
   DefaultList.long[''] = Switch::NoArgument.new {throw :terminate}
 
+
+  COMPSYS_HEADER = <<'XXX'      # :nodoc:
+
+typeset -A opt_args
+local context state line
+
+_arguments -s -S \
+XXX
+
+  def compsys(to, name = File.basename($0)) # :nodoc:
+    to << "#compdef #{name}\n"
+    to << COMPSYS_HEADER
+    visit(:compsys, {}, {}) {|o, d|
+      to << %Q[  "#{o}[#{d.gsub(/[\"\[\]]/, '\\\\\&')}]" \\\n]
+    }
+    to << "  '*:file:_files' && return 0\n"
+  end
+
   #
   # Default options for ARGV, which never appear in option summary.
   #
@@ -718,8 +957,30 @@ class OptionParser
   # Shows option summary.
   #
   Officious['help'] = proc do |parser|
-    Switch::NoArgument.new do
+    Switch::NoArgument.new do |arg|
       puts parser.help
+      exit
+    end
+  end
+
+  #
+  # --*-completion-bash=WORD
+  # Shows candidates for command line completion.
+  #
+  Officious['*-completion-bash'] = proc do |parser|
+    Switch::RequiredArgument.new do |arg|
+      puts parser.candidate(arg)
+      exit
+    end
+  end
+
+  #
+  # --*-completion-zsh[=NAME:FILE]
+  # Creates zsh completion file.
+  #
+  Officious['*-completion-zsh'] = proc do |parser|
+    Switch::OptionalArgument.new do |arg|
+      parser.compsys(STDOUT, arg)
       exit
     end
   end
@@ -982,13 +1243,13 @@ class OptionParser
   #
   # Returns option summary string.
   #
-  def help; summarize(banner.to_s.sub(/\n?\z/, "\n")) end
+  def help; summarize("#{banner}".sub(/\n?\z/, "\n")) end
   alias to_s help
 
   #
   # Returns option summary list.
   #
-  def to_a; summarize(banner.to_a.dup) end
+  def to_a; summarize("#{banner}".split(/^/)) end
 
   #
   # Checks if an argument is given twice, in which case an ArgumentError is
@@ -1007,7 +1268,7 @@ class OptionParser
   end
   private :notwice
 
-  SPLAT_PROC = proc {|*a| a.length <= 1 ? a.first : a}
+  SPLAT_PROC = proc {|*a| a.length <= 1 ? a.first : a} # :nodoc:
   #
   # Creates an OptionParser::Switch from the parameters. The parsed argument
   # value is passed to the given block, where it can be processed.
@@ -1253,6 +1514,7 @@ class OptionParser
 
   #
   # Same as #order, but removes switches destructively.
+  # Non-option arguments remain in +argv+.
   #
   def order!(argv = default_argv, &nonopt)
     parse_in_order(argv, &nonopt)
@@ -1343,6 +1605,7 @@ class OptionParser
 
   #
   # Same as #permute, but removes switches destructively.
+  # Non-option arguments remain in +argv+.
   #
   def permute!(argv = default_argv)
     nonopts = []
@@ -1362,6 +1625,7 @@ class OptionParser
 
   #
   # Same as #parse, but removes switches destructively.
+  # Non-option arguments remain in +argv+.
   #
   def parse!(argv = default_argv)
     if ENV.include?('POSIXLY_CORRECT')
@@ -1374,11 +1638,12 @@ class OptionParser
   #
   # Wrapper method for getopts.rb.
   #
-  #   params = ARGV.getopts("ab:", "foo", "bar:")
+  #   params = ARGV.getopts("ab:", "foo", "bar:", "zot:Z;zot option)
   #   # params[:a] = true   # -a
   #   # params[:b] = "1"    # -b1
   #   # params[:foo] = "1"  # --foo
   #   # params[:bar] = "x"  # --bar x
+  #   # params[:zot] = "z"  # --zot Z
   #
   def getopts(*args)
     argv = Array === args.first ? args.shift : default_argv
@@ -1397,13 +1662,14 @@ class OptionParser
     end if single_options
 
     long_options.each do |arg|
+      arg, desc = arg.split(';', 2)
       opt, val = arg.split(':', 2)
       if val
         result[opt] = val.empty? ? nil : val
-        define("--#{opt} VAL")
+        define("--#{opt}=#{result[opt] || "VAL"}", *[desc].compact)
       else
         result[opt] = false
-        define("--#{opt}")
+        define("--#{opt}", *[desc].compact)
       end
     end
 
@@ -1460,6 +1726,36 @@ class OptionParser
     }
   end
   private :complete
+
+  def candidate(word)
+    list = []
+    case word
+    when /\A--/
+      word, arg = word.split(/=/, 2)
+      argpat = Completion.regexp(arg, false) if arg and !arg.empty?
+      long = true
+    when /\A-(!-)/
+      short = true
+    when /\A-/
+      long = short = true
+    end
+    pat = Completion.regexp(word, true)
+    visit(:each_option) do |opt|
+      next unless Switch === opt
+      opts = (long ? opt.long : []) + (short ? opt.short : [])
+      opts = Completion.candidate(word, true, pat, &opts.method(:each)).map(&:first) if pat
+      if /\A=/ =~ opt.arg
+        opts.map! {|sw| sw + "="}
+        if arg and CompletingHash === opt.pattern
+          if opts = opt.pattern.candidate(arg, false, argpat)
+            opts.map!(&:last)
+          end
+        end
+      end
+      list.concat(opts)
+    end
+    list
+  end
 
   #
   # Loads options from file names as +filename+. Does nothing when the file
@@ -1518,15 +1814,22 @@ class OptionParser
   decimal = '\d+(?:_\d+)*'
   binary = 'b[01]+(?:_[01]+)*'
   hex = 'x[\da-f]+(?:_[\da-f]+)*'
-  octal = "0(?:[0-7]*(?:_[0-7]+)*|#{binary}|#{hex})"
+  octal = "0(?:[0-7]+(?:_[0-7]+)*|#{binary}|#{hex})?"
   integer = "#{octal}|#{decimal}"
-  accept(Integer, %r"\A[-+]?(?:#{integer})"io) {|s,| Integer(s) if s}
+
+  accept(Integer, %r"\A[-+]?(?:#{integer})\z"io) {|s,|
+    begin
+      Integer(s)
+    rescue ArgumentError
+      raise OptionParser::InvalidArgument, s
+    end if s
+  }
 
   #
   # Float number format, and converts to Float.
   #
   float = "(?:#{decimal}(?:\\.(?:#{decimal})?)?|\\.#{decimal})(?:E[-+]?#{decimal})?"
-  floatpat = %r"\A[-+]?#{float}"io
+  floatpat = %r"\A[-+]?#{float}\z"io
   accept(Float, floatpat) {|s,| s.to_f if s}
 
   #
@@ -1534,7 +1837,7 @@ class OptionParser
   # for float format, and Rational for rational format.
   #
   real = "[-+]?(?:#{octal}|#{float})"
-  accept(Numeric, /\A(#{real})(?:\/(#{real}))?/io) {|s, d, n|
+  accept(Numeric, /\A(#{real})(?:\/(#{real}))?\z/io) {|s, d, n|
     if n
       Rational(d, n)
     elsif s
@@ -1545,22 +1848,40 @@ class OptionParser
   #
   # Decimal integer format, to be converted to Integer.
   #
-  DecimalInteger = /\A[-+]?#{decimal}/io
-  accept(DecimalInteger) {|s,| s.to_i if s}
+  DecimalInteger = /\A[-+]?#{decimal}\z/io
+  accept(DecimalInteger, DecimalInteger) {|s,|
+    begin
+      Integer(s)
+    rescue ArgumentError
+      raise OptionParser::InvalidArgument, s
+    end if s
+  }
 
   #
   # Ruby/C like octal/hexadecimal/binary integer format, to be converted to
   # Integer.
   #
-  OctalInteger = /\A[-+]?(?:[0-7]+(?:_[0-7]+)*|0(?:#{binary}|#{hex}))/io
-  accept(OctalInteger) {|s,| s.oct if s}
+  OctalInteger = /\A[-+]?(?:[0-7]+(?:_[0-7]+)*|0(?:#{binary}|#{hex}))\z/io
+  accept(OctalInteger, OctalInteger) {|s,|
+    begin
+      Integer(s, 8)
+    rescue ArgumentError
+      raise OptionParser::InvalidArgument, s
+    end if s
+  }
 
   #
   # Decimal integer/float number format, to be converted to Integer for
   # integer format, Float for float format.
   #
   DecimalNumeric = floatpat     # decimal integer is allowed as float also.
-  accept(DecimalNumeric) {|s,| eval(s) if s}
+  accept(DecimalNumeric, floatpat) {|s,|
+    begin
+      eval(s)
+    rescue SyntaxError
+      raise OptionParser::InvalidArgument, s
+    end if s
+  }
 
   #
   # Boolean switch, which means whether it is present or not, whether it is
@@ -1596,7 +1917,8 @@ class OptionParser
       f |= Regexp::IGNORECASE if /i/ =~ o
       f |= Regexp::MULTILINE if /m/ =~ o
       f |= Regexp::EXTENDED if /x/ =~ o
-      k = o.delete("^imx")
+      k = o.delete("imx")
+      k = nil if k.empty?
     end
     Regexp.new(s || all, f, k)
   end
@@ -1656,7 +1978,7 @@ class OptionParser
     end
 
     def inspect
-      "#<#{self.class.to_s}: #{args.join(' ')}>"
+      "#<#{self.class}: #{args.join(' ')}>"
     end
 
     #
@@ -1815,9 +2137,4 @@ end
 # ARGV is arguable by OptionParser
 ARGV.extend(OptionParser::Arguable)
 
-if $0 == __FILE__
-  Version = OptionParser::Version
-  ARGV.options {|q|
-    q.parse!.empty? or puts "what's #{ARGV.join(' ')}?"
-  } or abort(ARGV.options.to_s)
-end
+OptParse = OptionParser

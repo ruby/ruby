@@ -1,15 +1,15 @@
-# -*- coding: euc-jp -*-
+# -*- coding: utf-8 -*-
 #
 # form widget demo (called by 'widget')
 #
 
-# toplevel widget ¤¬Â¸ºß¤¹¤ì¤Ðºï½ü¤¹¤ë
+# toplevel widget ãŒå­˜åœ¨ã™ã‚Œã°å‰Šé™¤ã™ã‚‹
 if defined?($form_demo) && $form_demo
   $form_demo.destroy
   $form_demo = nil
 end
 
-# demo ÍÑ¤Î toplevel widget ¤òÀ¸À®
+# demo ç”¨ã® toplevel widget ã‚’ç”Ÿæˆ
 $form_demo = TkToplevel.new {|w|
   title("Form Demonstration")
   iconname("form")
@@ -18,20 +18,20 @@ $form_demo = TkToplevel.new {|w|
 
 base_frame = TkFrame.new($form_demo).pack(:fill=>:both, :expand=>true)
 
-# label À¸À®
+# label ç”Ÿæˆ
 msg = TkLabel.new(base_frame) {
   font $font
   wraplength '4i'
   justify 'left'
-  text "¤³¤Î¥¦¥£¥ó¥É¥¦¤Ï´ÊÃ±¤Ê¥Õ¥©¡¼¥àÆþÎÏÍÑ¤Ë¤Ê¤Ã¤Æ¤¤¤Æ¡¢¤µ¤Þ¤¶¤Þ¤Ê¥¨¥ó¥È¥ê¤ËÆþÎÏ¤¬¤Ç¤­¤Þ¤¹¡£¥¿¥Ö¤Ç¥¨¥ó¥È¥ê¤ÎÀÚÂØ¤¨¤¬¤Ç¤­¤Þ¤¹¡£"
+  text "ã“ã®ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã¯ç°¡å˜ãªãƒ•ã‚©ãƒ¼ãƒ å…¥åŠ›ç”¨ã«ãªã£ã¦ã„ã¦ã€ã•ã¾ã–ã¾ãªã‚¨ãƒ³ãƒˆãƒªã«å…¥åŠ›ãŒã§ãã¾ã™ã€‚ã‚¿ãƒ–ã§ã‚¨ãƒ³ãƒˆãƒªã®åˆ‡æ›¿ãˆãŒã§ãã¾ã™ã€‚"
 }
 msg.pack('side'=>'top', 'fill'=>'x')
 
-# frame À¸À®
+# frame ç”Ÿæˆ
 TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
-    #text 'Î»²ò'
-    text 'ÊÄ¤¸¤ë'
+    #text 'äº†è§£'
+    text 'é–‰ã˜ã‚‹'
     command proc{
       tmppath = $form_demo
       $form_demo = nil
@@ -40,12 +40,12 @@ TkFrame.new(base_frame) {|frame|
   }.pack('side'=>'left', 'expand'=>'yes')
 
   TkButton.new(frame) {
-    text '¥³¡¼¥É»²¾È'
+    text 'ã‚³ãƒ¼ãƒ‰å‚ç…§'
     command proc{showCode 'form'}
   }.pack('side'=>'left', 'expand'=>'yes')
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
-# entry À¸À®
+# entry ç”Ÿæˆ
 form_data = []
 (1..5).each{|i|
   f = TkFrame.new(base_frame, 'bd'=>2)
@@ -56,10 +56,10 @@ form_data = []
   form_data[i] = {'frame'=>f, 'entry'=>e, 'label'=>l}
 }
 
-# Ê¸»úÎóÀßÄê
-form_data[1]['label'].text('Ì¾Á°:')
-form_data[2]['label'].text('½»½ê:')
-form_data[5]['label'].text('ÅÅÏÃ:')
+# æ–‡å­—åˆ—è¨­å®š
+form_data[1]['label'].text('åå‰:')
+form_data[2]['label'].text('ä½æ‰€:')
+form_data[5]['label'].text('é›»è©±:')
 
 # pack
 (1..5).each{|i| form_data[i]['frame'].pack('side'=>'top', 'fill'=>'x')}

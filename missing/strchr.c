@@ -2,6 +2,8 @@
 
 #include "ruby/missing.h"
 
+size_t strlen(const char*);
+
 char *
 strchr(const char *s, int c)
 {

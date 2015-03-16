@@ -1,6 +1,6 @@
 =begin
  distributed Ruby --- Log server
- 	Copyright (c) 1999-2000 Masatoshi SEKI 
+ 	Copyright (c) 1999-2000 Masatoshi SEKI
 =end
 
 require 'drb/drb'
@@ -21,8 +21,8 @@ class Logger
   def flush
     begin
       while(1)
-	@fp.puts(@queue.pop)
-	@fp.flush
+        @fp.puts(@queue.pop)
+        @fp.flush
       end
     ensure
       @fp.close

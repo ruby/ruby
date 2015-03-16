@@ -6,39 +6,39 @@
 static void
 warn_printf(const char *fmt, ...)
 {
-    char buf[BUFSIZ];
+    VALUE str;
     va_list args;
 
     va_init_list(args, fmt);
-    vsnprintf(buf, BUFSIZ, fmt, args);
+    str = rb_vsprintf(fmt, args);
     va_end(args);
-    rb_write_error(buf);
+    rb_write_error_str(str);
 }
 
 #define warn_print(x) rb_write_error(x)
-#define warn_print2(x,l) rb_write_error2(x,l)
+#define warn_print2(x,l) rb_write_error2((x),(l))
+#define warn_print_str(x) rb_write_error_str(x)
 
 static void
 error_pos(void)
 {
-    const char *sourcefile = rb_sourcefile();
+    VALUE sourcefile = rb_sourcefilename();
     int sourceline = rb_sourceline();
 
     if (sourcefile) {
+	ID caller_name;
 	if (sourceline == 0) {
-	    warn_printf("%s", sourcefile);
+	    warn_printf("%"PRIsVALUE, sourcefile);
 	}
-	else if (rb_frame_callee()) {
-	    warn_printf("%s:%d:in `%s'", sourcefile, sourceline,
-			rb_id2name(rb_frame_callee()));
+	else if ((caller_name = rb_frame_callee()) != 0) {
+	    warn_printf("%"PRIsVALUE":%d:in `%"PRIsVALUE"'", sourcefile, sourceline,
+			rb_id2str(caller_name));
 	}
 	else {
-	    warn_printf("%s:%d", sourcefile, sourceline);
+	    warn_printf("%"PRIsVALUE":%d", sourcefile, sourceline);
 	}
     }
 }
-
-VALUE rb_check_backtrace(VALUE);
 
 static VALUE
 get_backtrace(VALUE info)
@@ -57,20 +57,33 @@ rb_get_backtrace(VALUE info)
     return get_backtrace(info);
 }
 
+VALUE rb_exc_set_backtrace(VALUE exc, VALUE bt);
+
 static void
 set_backtrace(VALUE info, VALUE bt)
 {
+    ID set_backtrace = rb_intern("set_backtrace");
+
+    if (rb_backtrace_p(bt)) {
+	if (rb_method_basic_definition_p(CLASS_OF(info), set_backtrace)) {
+	    rb_exc_set_backtrace(info, bt);
+	    return;
+	}
+	else {
+	    bt = rb_backtrace_to_str_ary(bt);
+	}
+    }
     rb_funcall(info, rb_intern("set_backtrace"), 1, bt);
 }
 
 static void
 error_print(void)
 {
-    volatile VALUE errat = Qnil;		/* OK */
+    volatile VALUE errat = Qundef;
     rb_thread_t *th = GET_THREAD();
     VALUE errinfo = th->errinfo;
     int raised_flag = th->raised_flag;
-    volatile VALUE eclass, e;
+    volatile VALUE eclass = Qundef, e = Qundef;
     const char *volatile einfo;
     volatile long elen;
 
@@ -78,15 +91,19 @@ error_print(void)
 	return;
     rb_thread_raised_clear(th);
 
-    PUSH_TAG();
-    if (EXEC_TAG() == 0) {
+    TH_PUSH_TAG(th);
+    if (TH_EXEC_TAG() == 0) {
 	errat = get_backtrace(errinfo);
     }
-    else {
+    else if (errat == Qundef) {
 	errat = Qnil;
     }
-    if (EXEC_TAG())
+    else if (eclass == Qundef || e != Qundef) {
 	goto error;
+    }
+    else {
+	goto no_message;
+    }
     if (NIL_P(errat)) {
 	const char *file = rb_sourcefile();
 	int line = rb_sourceline();
@@ -101,28 +118,27 @@ error_print(void)
 	error_pos();
     }
     else {
-	VALUE mesg = RARRAY_PTR(errat)[0];
+	VALUE mesg = RARRAY_AREF(errat, 0);
 
 	if (NIL_P(mesg))
 	    error_pos();
 	else {
-	    warn_print2(RSTRING_PTR(mesg), RSTRING_LEN(mesg));
+	    warn_print_str(mesg);
 	}
     }
 
     eclass = CLASS_OF(errinfo);
-    if (EXEC_TAG() == 0) {
-	e = rb_funcall(errinfo, rb_intern("message"), 0, 0);
-	StringValue(e);
+    if (eclass != Qundef &&
+	(e = rb_check_funcall(errinfo, rb_intern("message"), 0, 0)) != Qundef &&
+	(RB_TYPE_P(e, T_STRING) || !NIL_P(e = rb_check_string_type(e)))) {
 	einfo = RSTRING_PTR(e);
 	elen = RSTRING_LEN(e);
     }
     else {
+      no_message:
 	einfo = "";
 	elen = 0;
     }
-    if (EXEC_TAG())
-	goto error;
     if (eclass == rb_eRuntimeError && elen == 0) {
 	warn_print(": unhandled exception\n");
     }
@@ -132,7 +148,7 @@ error_print(void)
 	epath = rb_class_name(eclass);
 	if (elen == 0) {
 	    warn_print(": ");
-	    warn_print2(RSTRING_PTR(epath), RSTRING_LEN(epath));
+	    warn_print_str(epath);
 	    warn_print("\n");
 	}
 	else {
@@ -146,23 +162,22 @@ error_print(void)
 		tail++;		/* skip newline */
 	    }
 	    warn_print(": ");
-	    warn_print2(einfo, len);
+	    warn_print_str(tail ? rb_str_subseq(e, 0, len) : e);
 	    if (epath) {
 		warn_print(" (");
-		warn_print2(RSTRING_PTR(epath), RSTRING_LEN(epath));
+		warn_print_str(epath);
 		warn_print(")\n");
 	    }
 	    if (tail) {
-		warn_print2(tail, elen - len - 1);
-		if (einfo[elen-1] != '\n') warn_print2("\n", 1);
+		warn_print_str(rb_str_subseq(e, tail - einfo, elen - len - 1));
 	    }
+	    if (tail ? einfo[elen-1] != '\n' : !epath) warn_print2("\n", 1);
 	}
     }
 
     if (!NIL_P(errat)) {
 	long i;
 	long len = RARRAY_LEN(errat);
-	VALUE *ptr = RARRAY_PTR(errat);
         int skip = eclass == rb_eSysStackError;
 
 #define TRACE_MAX (TRACE_HEAD+TRACE_TAIL+5)
@@ -170,8 +185,9 @@ error_print(void)
 #define TRACE_TAIL 5
 
 	for (i = 1; i < len; i++) {
-	    if (TYPE(ptr[i]) == T_STRING) {
-		warn_printf("\tfrom %s\n", RSTRING_PTR(ptr[i]));
+	    VALUE line = RARRAY_AREF(errat, i);
+	    if (RB_TYPE_P(line, T_STRING)) {
+		warn_printf("\tfrom %"PRIsVALUE"\n", line);
 	    }
 	    if (skip && i == TRACE_HEAD && len > TRACE_MAX) {
 		warn_printf("\t ... %ld levels...\n",
@@ -181,7 +197,8 @@ error_print(void)
 	}
     }
   error:
-    POP_TAG();
+    TH_POP_TAG();
+    th->errinfo = errinfo;
     rb_thread_raised_set(th, raised_flag);
 }
 
@@ -191,8 +208,8 @@ ruby_error_print(void)
     error_print();
 }
 
-void
-rb_print_undef(VALUE klass, ID id, int scope)
+static const char *
+method_scope_name(int scope)
 {
     const char *v;
 
@@ -202,16 +219,43 @@ rb_print_undef(VALUE klass, ID id, int scope)
       case NOEX_PRIVATE: v = " private"; break;
       case NOEX_PROTECTED: v = " protected"; break;
     }
-    rb_name_error(id, "undefined%s method `%s' for %s `%s'", v,
-		  rb_id2name(id),
-		  (TYPE(klass) == T_MODULE) ? "module" : "class",
-		  rb_class2name(klass));
+    return v;
+}
+
+void
+rb_print_undef(VALUE klass, ID id, int scope)
+{
+    const char *v = method_scope_name(scope);
+    rb_name_error(id, "undefined%s method `%"PRIsVALUE"' for %s `% "PRIsVALUE"'", v,
+		  QUOTE_ID(id),
+		  (RB_TYPE_P(klass, T_MODULE)) ? "module" : "class",
+		  rb_class_name(klass));
+}
+
+void
+rb_print_undef_str(VALUE klass, VALUE name)
+{
+    rb_name_error_str(name, "undefined method `%"PRIsVALUE"' for %s `% "PRIsVALUE"'",
+		      QUOTE(name),
+		      (RB_TYPE_P(klass, T_MODULE)) ? "module" : "class",
+		      rb_class_name(klass));
+}
+
+void
+rb_print_inaccessible(VALUE klass, ID id, int scope)
+{
+    const char *v = method_scope_name(scope);
+    rb_name_error(id, "method `%"PRIsVALUE"' for %s `% "PRIsVALUE"' is %s",
+		  QUOTE_ID(id),
+		  (RB_TYPE_P(klass, T_MODULE)) ? "module" : "class",
+		  rb_class_name(klass),
+		  v);
 }
 
 static int
 sysexit_status(VALUE err)
 {
-    VALUE st = rb_iv_get(err, "status");
+    VALUE st = rb_ivar_get(err, id_status);
     return NUM2INT(st);
 }
 
@@ -258,7 +302,8 @@ error_handle(int ex)
 	if (rb_obj_is_kind_of(errinfo, rb_eSystemExit)) {
 	    status = sysexit_status(errinfo);
 	}
-	else if (rb_obj_is_instance_of(errinfo, rb_eSignal)) {
+	else if (rb_obj_is_instance_of(errinfo, rb_eSignal) &&
+		 rb_ivar_get(errinfo, id_signo) != INT2FIX(SIGSEGV)) {
 	    /* no message when exiting by signal */
 	}
 	else {

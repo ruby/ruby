@@ -1,9 +1,9 @@
-require_relative 'gemutilities'
+require 'rubygems/test_case'
 require 'rubygems/package'
 require 'rubygems/security'
 require 'rubygems/commands/fetch_command'
 
-class TestGemCommandsFetchCommand < RubyGemTestCase
+class TestGemCommandsFetchCommand < Gem::TestCase
 
   def setup
     super
@@ -12,13 +12,13 @@ class TestGemCommandsFetchCommand < RubyGemTestCase
   end
 
   def test_execute
-    util_setup_fake_fetcher
-    util_setup_spec_fetcher @a2
+    specs = spec_fetcher do |fetcher|
+      fetcher.gem 'a', 2
+    end
 
-    @fetcher.data["#{@gem_repo}gems/#{@a2.file_name}"] =
-      File.read(File.join(@gemhome, 'cache', @a2.file_name))
+    refute_path_exists File.join(@tempdir, 'cache'), 'sanity check'
 
-    @cmd.options[:args] = [@a2.name]
+    @cmd.options[:args] = %w[a]
 
     use_ui @ui do
       Dir.chdir @tempdir do
@@ -26,20 +26,45 @@ class TestGemCommandsFetchCommand < RubyGemTestCase
       end
     end
 
-    assert File.exist?(File.join(@tempdir, @a2.file_name)),
-           "#{@a2.full_name} not fetched"
+    a2 = specs['a-2']
+
+    assert_path_exists(File.join(@tempdir, a2.file_name),
+                       "#{a2.full_name} not fetched")
+    refute_path_exists File.join(@tempdir, 'cache'),
+                       'gem repository directories must not be created'
+  end
+
+  def test_execute_latest
+    specs = spec_fetcher do |fetcher|
+      fetcher.gem 'a', 1
+      fetcher.gem 'a', 2
+    end
+
+    refute_path_exists File.join(@tempdir, 'cache'), 'sanity check'
+
+    @cmd.options[:args] = %w[a]
+    @cmd.options[:version] = req('>= 0.1')
+
+    use_ui @ui do
+      Dir.chdir @tempdir do
+        @cmd.execute
+      end
+    end
+
+    a2 = specs['a-2']
+    assert_path_exists(File.join(@tempdir, a2.file_name),
+                       "#{a2.full_name} not fetched")
+    refute_path_exists File.join(@tempdir, 'cache'),
+                       'gem repository directories must not be created'
   end
 
   def test_execute_prerelease
-    util_setup_fake_fetcher true
-    util_setup_spec_fetcher @a2, @a2_pre
+    specs = spec_fetcher do |fetcher|
+      fetcher.gem 'a', 2
+      fetcher.gem 'a', '2.a'
+    end
 
-    @fetcher.data["#{@gem_repo}gems/#{@a2.file_name}"] =
-      File.read(File.join(@gemhome, 'cache', @a2.file_name))
-    @fetcher.data["#{@gem_repo}gems/#{@a2_pre.file_name}"] =
-      File.read(File.join(@gemhome, 'cache', @a2_pre.file_name))
-
-    @cmd.options[:args] = [@a2.name]
+    @cmd.options[:args] = %w[a]
     @cmd.options[:prerelease] = true
 
     use_ui @ui do
@@ -48,18 +73,41 @@ class TestGemCommandsFetchCommand < RubyGemTestCase
       end
     end
 
-    assert File.exist?(File.join(@tempdir, @a2_pre.file_name)),
-           "#{@a2_pre.full_name} not fetched"
+    a2 = specs['a-2']
+
+    assert_path_exists(File.join(@tempdir, a2.file_name),
+                       "#{a2.full_name} not fetched")
+  end
+
+  def test_execute_specific_prerelease
+    specs = spec_fetcher do |fetcher|
+      fetcher.gem 'a', 2
+      fetcher.gem 'a', '2.a'
+    end
+
+    @cmd.options[:args] = %w[a]
+    @cmd.options[:prerelease] = true
+    @cmd.options[:version] = "2.a"
+
+    use_ui @ui do
+      Dir.chdir @tempdir do
+        @cmd.execute
+      end
+    end
+
+    a2_pre = specs['a-2.a']
+
+    assert_path_exists(File.join(@tempdir, a2_pre.file_name),
+                       "#{a2_pre.full_name} not fetched")
   end
 
   def test_execute_version
-    util_setup_fake_fetcher
-    util_setup_spec_fetcher @a1, @a2
+    specs = spec_fetcher do |fetcher|
+      fetcher.gem 'a', 1
+      fetcher.gem 'a', 2
+    end
 
-    @fetcher.data["#{@gem_repo}gems/#{@a1.file_name}"] =
-      File.read(File.join(@gemhome, 'cache', @a1.file_name))
-
-    @cmd.options[:args] = [@a2.name]
+    @cmd.options[:args] = %w[a]
     @cmd.options[:version] = Gem::Requirement.new '1'
 
     use_ui @ui do
@@ -68,8 +116,10 @@ class TestGemCommandsFetchCommand < RubyGemTestCase
       end
     end
 
-    assert File.exist?(File.join(@tempdir, @a1.file_name)),
-           "#{@a1.full_name} not fetched"
+    a1 = specs['a-1']
+
+    assert_path_exists(File.join(@tempdir, a1.file_name),
+                       "#{a1.full_name} not fetched")
   end
 
 end

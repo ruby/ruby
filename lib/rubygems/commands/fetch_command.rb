@@ -1,7 +1,6 @@
 require 'rubygems/command'
 require 'rubygems/local_remote_options'
 require 'rubygems/version_option'
-require 'rubygems/source_info_cache'
 
 class Gem::Commands::FetchCommand < Gem::Command
 
@@ -14,6 +13,7 @@ class Gem::Commands::FetchCommand < Gem::Command
     add_bulk_threshold_option
     add_proxy_option
     add_source_option
+    add_clear_sources_option
 
     add_version_option
     add_platform_option
@@ -28,36 +28,46 @@ class Gem::Commands::FetchCommand < Gem::Command
     "--version '#{Gem::Requirement.default}'"
   end
 
+  def description # :nodoc:
+    <<-EOF
+The fetch command fetches gem files that can be stored for later use or
+unpacked to examine their contents.
+
+See the build command help for an example of unpacking a gem, modifying it,
+then repackaging it.
+    EOF
+  end
+
   def usage # :nodoc:
     "#{program_name} GEMNAME [GEMNAME ...]"
   end
 
   def execute
     version = options[:version] || Gem::Requirement.default
-    all = Gem::Requirement.default != version
 
+    platform  = Gem.platforms.last
     gem_names = get_all_gem_names
 
     gem_names.each do |gem_name|
       dep = Gem::Dependency.new gem_name, version
       dep.prerelease = options[:prerelease]
 
-      specs_and_sources = Gem::SpecFetcher.fetcher.fetch(dep, all, true,
-                                                         dep.prerelease?)
-
       specs_and_sources, errors =
-        Gem::SpecFetcher.fetcher.fetch_with_errors(dep, all, true,
-                                                   dep.prerelease?)
+        Gem::SpecFetcher.fetcher.spec_for_dependency dep
 
-      spec, source_uri = specs_and_sources.sort_by { |s,| s.version }.last
+      if platform then
+        filtered = specs_and_sources.select { |s,| s.platform == platform }
+        specs_and_sources = filtered unless filtered.empty?
+      end
+
+      spec, source = specs_and_sources.max_by { |s,| s.version }
 
       if spec.nil? then
-        show_lookup_failure gem_name, version, errors
+        show_lookup_failure gem_name, version, errors, options[:domain]
         next
       end
 
-      path = Gem::RemoteFetcher.fetcher.download spec, source_uri
-      FileUtils.mv path, spec.file_name
+      source.download spec
 
       say "Downloaded #{spec.full_name}"
     end

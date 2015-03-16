@@ -9,8 +9,8 @@ tkextlib/       non-standard Tcl/Tk extension support libraries
 
 *********************************************************************
 ***  The followings exists for backward compatibility only.
-***  The only thing which they work is that requires current 
-***  library files ( tk/*.rb ). 
+***  The only thing which they work is that requires current
+***  library files ( tk/*.rb ).
 *********************************************************************
 tkafter.rb	handles Tcl after
 tkbgerror.rb	Tk error module

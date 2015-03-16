@@ -11,25 +11,25 @@ namespace eval tile {
 }
 
 namespace eval tile::kroc {
-    
+
     set imgdir [file join [file dirname [info script]] kroc]
     array set Images [tile::LoadImages $imgdir *.gif]
-    
+
     if {[package vsatisfies [package provide tile] 0.5]} {
         set TNoteBook_Tab TNotebook.Tab
     } else {
         set TNoteBook_Tab Tab.TNotebook
     }
-    
+
     style theme create kroc -parent alt -settings {
-        
+
         style default . -background #FCB64F -troughcolor #F8C278 -borderwidth 1
 	style default . -font TkDefaultFont -borderwidth 1
         style map . -background [list active #694418]
         style map . -foreground [list disabled #B2B2B2 active #FFE7CB]
-        
+
         style default TButton -padding "10 4"
-        
+
         style default $TNoteBook_Tab -padding {10 3} -font TkDefaultFont
         style map $TNoteBook_Tab \
                 -background [list selected #FCB64F {} #FFE6BA] \
@@ -41,7 +41,7 @@ namespace eval tile::kroc {
                 -arrowcolor	{ pressed #FFE7CB } \
                 -relief		{ pressed sunken } \
                 ;
-        
+
         style layout Vertical.TScrollbar {
             Scrollbar.trough -children {
                 Scrollbar.uparrow -side top
@@ -50,7 +50,7 @@ namespace eval tile::kroc {
                 Scrollbar.thumb -side top -expand true
             }
         }
-        
+
         style layout Horizontal.TScrollbar {
             Scrollbar.trough -children {
                 Scrollbar.leftarrow -side left
@@ -59,18 +59,18 @@ namespace eval tile::kroc {
                 Scrollbar.thumb -side left -expand true
             }
         }
-        
+
         #
         # Elements:
         #
         if {[package vsatisfies [package provide tile] 0.5]} {
-            
+
             style element create Button.button image $Images(button-n) \
                 -map [list  \
                     pressed		$Images(button-p) \
                     active		$Images(button-h) \
                     ] -border 3 -sticky ew
-            
+
             style element create Checkbutton.indicator image $Images(check-nu) \
                 -map [list \
                     {pressed selected}	$Images(check-nc) \
@@ -79,7 +79,7 @@ namespace eval tile::kroc {
                     active		$Images(check-hu) \
                     selected		$Images(check-nc) \
                     ] -sticky w
-            
+
             style element create Radiobutton.indicator image $Images(radio-nu) \
                 -map [list \
                     {pressed selected}	$Images(radio-nc) \
@@ -88,15 +88,15 @@ namespace eval tile::kroc {
                     active		$Images(radio-hu) \
                     selected		$Images(radio-nc) \
                     ] -sticky w
-            
+
         } else {
-            
+
             style element create Button.button pixmap -images [list  \
                     pressed		$Images(button-p) \
                     active		$Images(button-h) \
                     {}			$Images(button-n) \
                     ] -border 3 -tiling tile
-            
+
             style element create Checkbutton.indicator pixmap -images [list \
                     {pressed selected}	$Images(check-nc) \
                     pressed		$Images(check-nu) \
@@ -105,7 +105,7 @@ namespace eval tile::kroc {
                     selected		$Images(check-nc) \
                     {}			$Images(check-nu) \
                     ] -tiling fixed
-            
+
             style element create Radiobutton.indicator pixmap -images [list \
                     {pressed selected}	$Images(radio-nc) \
                     pressed		$Images(radio-nu) \
@@ -114,7 +114,7 @@ namespace eval tile::kroc {
                     selected		$Images(radio-nc) \
                     {}			$Images(radio-nu) \
                     ] -tiling fixed
-            
+
         }
 
         #
@@ -141,7 +141,7 @@ namespace eval tile::kroc {
 		}
             }
         }
-        
+
         style layout TRadiobutton {
             Radiobutton.border -children {
                 Radiobutton.background
@@ -153,7 +153,7 @@ namespace eval tile::kroc {
                 }
             }
         }
-        
+
     } }
 
 # -------------------------------------------------------------------------

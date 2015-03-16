@@ -1,70 +1,77 @@
+class CGI
   # Base module for HTML-generation mixins.
   #
   # Provides methods for code generation for tags following
   # the various DTD element types.
-class CGI
   module TagMaker # :nodoc:
 
     # Generate code for an element with required start and end tags.
     #
     #   - -
-    def nn_element_def(element)
-      nOE_element_def(element, <<-END)
-          if block_given?
-            yield.to_s
-          else
-            ""
-          end +
-          "</#{element.upcase}>"
-      END
+    def nn_element(element, attributes = {})
+      s = nOE_element(element, attributes)
+      if block_given?
+        s << yield.to_s
+      end
+      s << "</#{element.upcase}>"
+    end
+
+    def nn_element_def(attributes = {}, &block)
+      nn_element(__callee__, attributes, &block)
     end
 
     # Generate code for an empty element.
     #
     #   - O EMPTY
-    def nOE_element_def(element, append = nil)
-      s = <<-END
-          attributes={attributes=>nil} if attributes.kind_of?(String)
-          "<#{element.upcase}" + attributes.collect{|name, value|
-            next unless value
-            " " + CGI::escapeHTML(name.to_s) +
-            if true == value
-              ""
-            else
-              '="' + CGI::escapeHTML(value.to_s) + '"'
-            end
-          }.join + ">"
-      END
-      s.sub!(/\Z/, " +") << append if append
-      s
+    def nOE_element(element, attributes = {})
+      attributes={attributes=>nil} if attributes.kind_of?(String)
+      s = "<#{element.upcase}"
+      attributes.each do|name, value|
+        next unless value
+        s << " "
+        s << CGI::escapeHTML(name.to_s)
+        if value != true
+          s << '="'
+          s << CGI::escapeHTML(value.to_s)
+          s << '"'
+        end
+      end
+      s << ">"
     end
+
+    def nOE_element_def(attributes = {}, &block)
+      nOE_element(__callee__, attributes, &block)
+    end
+
 
     # Generate code for an element for which the end (and possibly the
     # start) tag is optional.
     #
     #   O O or - O
-    def nO_element_def(element)
-      nOE_element_def(element, <<-END)
-          if block_given?
-            yield.to_s + "</#{element.upcase}>"
-          else
-            ""
-          end
-      END
+    def nO_element(element, attributes = {})
+      s = nOE_element(element, attributes)
+      if block_given?
+        s << yield.to_s
+        s << "</#{element.upcase}>"
+      end
+      s
+    end
+
+    def nO_element_def(attributes = {}, &block)
+      nO_element(__callee__, attributes, &block)
     end
 
   end # TagMaker
 
 
-  #
   # Mixin module providing HTML generation methods.
   #
   # For example,
   #   cgi.a("http://www.example.com") { "Example" }
   #     # => "<A HREF=\"http://www.example.com\">Example</A>"
   #
-  # Modules Http3, Http4, etc., contain more basic HTML-generation methods
-  # (:title, :center, etc.).
+  # Modules Html3, Html4, etc., contain more basic HTML-generation methods
+  # (+#title+, +#h1+, etc.).
   #
   # See class CGI for a detailed example.
   #
@@ -92,11 +99,7 @@ class CGI
                    else
                      href
                    end
-      if block_given?
-        super(attributes){ yield }
-      else
-        super(attributes)
-      end
+      super(attributes)
     end
 
     # Generate a Document Base URI element as a String.
@@ -114,11 +117,7 @@ class CGI
                    else
                      href
                    end
-      if block_given?
-        super(attributes){ yield }
-      else
-        super(attributes)
-      end
+      super(attributes)
     end
 
     # Generate a BlockQuote element as a string.
@@ -137,11 +136,7 @@ class CGI
                    else
                      cite
                    end
-      if block_given?
-        super(attributes){ yield }
-      else
-        super(attributes)
-      end
+      super(attributes)
     end
 
 
@@ -161,11 +156,7 @@ class CGI
                    else
                      align
                    end
-      if block_given?
-        super(attributes){ yield }
-      else
-        super(attributes)
-      end
+      super(attributes)
     end
 
 
@@ -334,7 +325,7 @@ class CGI
         body = ""
       end
       if @output_hidden
-        body += @output_hidden.collect{|k,v|
+        body << @output_hidden.collect{|k,v|
           "<INPUT TYPE=\"HIDDEN\" NAME=\"#{k}\" VALUE=\"#{v}\">"
         }.join
       end
@@ -420,19 +411,15 @@ class CGI
 
       if attributes.has_key?("DOCTYPE")
         if attributes["DOCTYPE"]
-          buf += attributes.delete("DOCTYPE")
+          buf << attributes.delete("DOCTYPE")
         else
           attributes.delete("DOCTYPE")
         end
       else
-        buf += doctype
+        buf << doctype
       end
 
-      if block_given?
-        buf += super(attributes){ yield }
-      else
-        buf += super(attributes)
-      end
+      buf << super(attributes)
 
       if pretty
         CGI::pretty(buf, pretty)
@@ -824,11 +811,7 @@ class CGI
                    else
                      name
                    end
-      if block_given?
-        super(attributes){ yield }
-      else
-        super(attributes)
-      end
+      super(attributes)
     end
 
   end # HtmlExtension
@@ -836,49 +819,38 @@ class CGI
 
   # Mixin module for HTML version 3 generation methods.
   module Html3 # :nodoc:
+    include TagMaker
 
     # The DOCTYPE declaration for this version of HTML
     def doctype
       %|<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">|
     end
 
-    # Initialise the HTML generation methods for this version.
-    def element_init
-      extend TagMaker
-      methods = ""
+    instance_method(:nn_element_def).tap do |m|
       # - -
       for element in %w[ A TT I B U STRIKE BIG SMALL SUB SUP EM STRONG
-          DFN CODE SAMP KBD VAR CITE FONT ADDRESS DIV center MAP
-          APPLET PRE XMP LISTING DL OL UL DIR MENU SELECT table TITLE
+          DFN CODE SAMP KBD VAR CITE FONT ADDRESS DIV CENTER MAP
+          APPLET PRE XMP LISTING DL OL UL DIR MENU SELECT TABLE TITLE
           STYLE SCRIPT H1 H2 H3 H4 H5 H6 TEXTAREA FORM BLOCKQUOTE
           CAPTION ]
-        methods += <<-BEGIN + nn_element_def(element) + <<-END
-          def #{element.downcase}(attributes = {})
-        BEGIN
-          end
-        END
+        define_method(element.downcase, m)
       end
+    end
 
+    instance_method(:nOE_element_def).tap do |m|
       # - O EMPTY
       for element in %w[ IMG BASE BASEFONT BR AREA LINK PARAM HR INPUT
           ISINDEX META ]
-        methods += <<-BEGIN + nOE_element_def(element) + <<-END
-          def #{element.downcase}(attributes = {})
-        BEGIN
-          end
-        END
+        define_method(element.downcase, m)
       end
+    end
 
+    instance_method(:nO_element_def).tap do |m|
       # O O or - O
-      for element in %w[ HTML HEAD BODY P PLAINTEXT DT DD LI OPTION tr
-          th td ]
-        methods += <<-BEGIN + nO_element_def(element) + <<-END
-          def #{element.downcase}(attributes = {})
-        BEGIN
-          end
-        END
+      for element in %w[ HTML HEAD BODY P PLAINTEXT DT DD LI OPTION TR
+          TH TD ]
+        define_method(element.downcase, m)
       end
-      eval(methods)
     end
 
   end # Html3
@@ -886,48 +858,38 @@ class CGI
 
   # Mixin module for HTML version 4 generation methods.
   module Html4 # :nodoc:
+    include TagMaker
 
     # The DOCTYPE declaration for this version of HTML
     def doctype
       %|<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">|
     end
 
-    # Initialise the HTML generation methods for this version.
-    def element_init
-      extend TagMaker
-      methods = ""
-      # - -
+    # Initialize the HTML generation methods for this version.
+    # - -
+    instance_method(:nn_element_def).tap do |m|
       for element in %w[ TT I B BIG SMALL EM STRONG DFN CODE SAMP KBD
         VAR CITE ABBR ACRONYM SUB SUP SPAN BDO ADDRESS DIV MAP OBJECT
         H1 H2 H3 H4 H5 H6 PRE Q INS DEL DL OL UL LABEL SELECT OPTGROUP
         FIELDSET LEGEND BUTTON TABLE TITLE STYLE SCRIPT NOSCRIPT
         TEXTAREA FORM A BLOCKQUOTE CAPTION ]
-        methods += <<-BEGIN + nn_element_def(element) + <<-END
-          def #{element.downcase}(attributes = {})
-        BEGIN
-          end
-        END
+        define_method(element.downcase, m)
       end
+    end
 
-      # - O EMPTY
+    # - O EMPTY
+    instance_method(:nOE_element_def).tap do |m|
       for element in %w[ IMG BASE BR AREA LINK PARAM HR INPUT COL META ]
-        methods += <<-BEGIN + nOE_element_def(element) + <<-END
-          def #{element.downcase}(attributes = {})
-        BEGIN
-          end
-        END
+        define_method(element.downcase, m)
       end
+    end
 
-      # O O or - O
+    # O O or - O
+    instance_method(:nO_element_def).tap do |m|
       for element in %w[ HTML BODY P DT DD LI OPTION THEAD TFOOT TBODY
-          COLGROUP TR TH TD HEAD]
-        methods += <<-BEGIN + nO_element_def(element) + <<-END
-          def #{element.downcase}(attributes = {})
-        BEGIN
-          end
-        END
+          COLGROUP TR TH TD HEAD ]
+        define_method(element.downcase, m)
       end
-      eval(methods)
     end
 
   end # Html4
@@ -935,6 +897,7 @@ class CGI
 
   # Mixin module for HTML version 4 transitional generation methods.
   module Html4Tr # :nodoc:
+    include TagMaker
 
     # The DOCTYPE declaration for this version of HTML
     def doctype
@@ -942,43 +905,32 @@ class CGI
     end
 
     # Initialise the HTML generation methods for this version.
-    def element_init
-      extend TagMaker
-      methods = ""
-      # - -
+    # - -
+    instance_method(:nn_element_def).tap do |m|
       for element in %w[ TT I B U S STRIKE BIG SMALL EM STRONG DFN
           CODE SAMP KBD VAR CITE ABBR ACRONYM FONT SUB SUP SPAN BDO
           ADDRESS DIV CENTER MAP OBJECT APPLET H1 H2 H3 H4 H5 H6 PRE Q
           INS DEL DL OL UL DIR MENU LABEL SELECT OPTGROUP FIELDSET
           LEGEND BUTTON TABLE IFRAME NOFRAMES TITLE STYLE SCRIPT
           NOSCRIPT TEXTAREA FORM A BLOCKQUOTE CAPTION ]
-        methods += <<-BEGIN + nn_element_def(element) + <<-END
-          def #{element.downcase}(attributes = {})
-        BEGIN
-          end
-        END
+        define_method(element.downcase, m)
       end
+    end
 
-      # - O EMPTY
+    # - O EMPTY
+    instance_method(:nOE_element_def).tap do |m|
       for element in %w[ IMG BASE BASEFONT BR AREA LINK PARAM HR INPUT
           COL ISINDEX META ]
-        methods += <<-BEGIN + nOE_element_def(element) + <<-END
-          def #{element.downcase}(attributes = {})
-        BEGIN
-          end
-        END
+        define_method(element.downcase, m)
       end
+    end
 
-      # O O or - O
+    # O O or - O
+    instance_method(:nO_element_def).tap do |m|
       for element in %w[ HTML BODY P DT DD LI OPTION THEAD TFOOT TBODY
           COLGROUP TR TH TD HEAD ]
-        methods += <<-BEGIN + nO_element_def(element) + <<-END
-          def #{element.downcase}(attributes = {})
-        BEGIN
-          end
-        END
+        define_method(element.downcase, m)
       end
-      eval(methods)
     end
 
   end # Html4Tr
@@ -986,6 +938,7 @@ class CGI
 
   # Mixin module for generating HTML version 4 with framesets.
   module Html4Fr # :nodoc:
+    include TagMaker
 
     # The DOCTYPE declaration for this version of HTML
     def doctype
@@ -993,29 +946,89 @@ class CGI
     end
 
     # Initialise the HTML generation methods for this version.
-    def element_init
-      methods = ""
-      # - -
+    # - -
+    instance_method(:nn_element_def).tap do |m|
       for element in %w[ FRAMESET ]
-        methods += <<-BEGIN + nn_element_def(element) + <<-END
-          def #{element.downcase}(attributes = {})
-        BEGIN
-          end
-        END
+        define_method(element.downcase, m)
       end
+    end
 
-      # - O EMPTY
+    # - O EMPTY
+    instance_method(:nOE_element_def).tap do |m|
       for element in %w[ FRAME ]
-        methods += <<-BEGIN + nOE_element_def(element) + <<-END
-          def #{element.downcase}(attributes = {})
-        BEGIN
-          end
-        END
+        define_method(element.downcase, m)
       end
-      eval(methods)
     end
 
   end # Html4Fr
+
+
+  # Mixin module for HTML version 5 generation methods.
+  module Html5 # :nodoc:
+    include TagMaker
+
+    # The DOCTYPE declaration for this version of HTML
+    def doctype
+      %|<!DOCTYPE HTML>|
+    end
+
+    # Initialise the HTML generation methods for this version.
+    # - -
+    instance_method(:nn_element_def).tap do |m|
+      for element in %w[ SECTION NAV ARTICLE ASIDE HGROUP HEADER
+        FOOTER FIGURE FIGCAPTION S TIME U MARK RUBY BDI IFRAME
+        VIDEO AUDIO CANVAS DATALIST OUTPUT PROGRESS METER DETAILS
+        SUMMARY MENU DIALOG I B SMALL EM STRONG DFN CODE SAMP KBD
+        VAR CITE ABBR SUB SUP SPAN BDO ADDRESS DIV MAP OBJECT
+        H1 H2 H3 H4 H5 H6 PRE Q INS DEL DL OL UL LABEL SELECT
+        FIELDSET LEGEND BUTTON TABLE TITLE STYLE SCRIPT NOSCRIPT
+        TEXTAREA FORM A BLOCKQUOTE CAPTION ]
+        define_method(element.downcase, m)
+      end
+    end
+
+    # - O EMPTY
+    instance_method(:nOE_element_def).tap do |m|
+      for element in %w[ IMG BASE BR AREA LINK PARAM HR INPUT COL META
+        COMMAND EMBED KEYGEN SOURCE TRACK WBR ]
+        define_method(element.downcase, m)
+      end
+    end
+
+    # O O or - O
+    instance_method(:nO_element_def).tap do |m|
+      for element in %w[ HTML HEAD BODY P DT DD LI OPTION THEAD TFOOT TBODY
+          OPTGROUP COLGROUP RT RP TR TH TD ]
+        define_method(element.downcase, m)
+      end
+    end
+
+  end # Html5
+
+  class HTML3
+    include Html3
+    include HtmlExtension
+  end
+
+  class HTML4
+    include Html4
+    include HtmlExtension
+  end
+
+  class HTML4Tr
+    include Html4Tr
+    include HtmlExtension
+  end
+
+  class HTML4Fr
+    include Html4Tr
+    include Html4Fr
+    include HtmlExtension
+  end
+
+  class HTML5
+    include Html5
+    include HtmlExtension
+  end
+
 end
-
-

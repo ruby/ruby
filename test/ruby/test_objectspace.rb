@@ -1,5 +1,4 @@
 require 'test/unit'
-require_relative 'envutil'
 
 class TestObjectSpace < Test::Unit::TestCase
   def self.deftest_id2ref(obj)
@@ -39,13 +38,13 @@ End
     h = {}
     ObjectSpace.count_objects(h)
     assert_kind_of(Hash, h)
-    assert(h.keys.all? {|x| x.is_a?(Symbol) || x.is_a?(Integer) })
-    assert(h.values.all? {|x| x.is_a?(Integer) })
+    assert_empty(h.keys.delete_if {|x| x.is_a?(Symbol) || x.is_a?(Integer) })
+    assert_empty(h.values.delete_if {|x| x.is_a?(Integer) })
 
     h = ObjectSpace.count_objects
     assert_kind_of(Hash, h)
-    assert(h.keys.all? {|x| x.is_a?(Symbol) || x.is_a?(Integer) })
-    assert(h.values.all? {|x| x.is_a?(Integer) })
+    assert_empty(h.keys.delete_if {|x| x.is_a?(Symbol) || x.is_a?(Integer) })
+    assert_empty(h.values.delete_if {|x| x.is_a?(Integer) })
 
     assert_raise(TypeError) { ObjectSpace.count_objects(1) }
 
@@ -64,5 +63,50 @@ End
       !b
     END
     assert_raise(ArgumentError) { ObjectSpace.define_finalizer([], Object.new) }
+
+    code = proc do |priv|
+      <<-"CODE"
+      fin = Object.new
+      class << fin
+        #{priv}def call(id)
+          puts "finalized"
+        end
+      end
+      ObjectSpace.define_finalizer([], fin)
+      CODE
+    end
+    assert_in_out_err([], code[""], ["finalized"])
+    assert_in_out_err([], code["private "], ["finalized"])
+    c = EnvUtil.labeled_class("C\u{3042}").new
+    o = Object.new
+    assert_raise_with_message(ArgumentError, /C\u{3042}/) {
+      ObjectSpace.define_finalizer(o, c)
+    }
+  end
+
+  def test_each_object
+    assert_separately([], <<-End)
+    GC.disable
+    eval('begin; 1.times{}; rescue; ensure; end')
+    arys = []
+    ObjectSpace.each_object(Array){|ary|
+      arys << ary
+    }
+    GC.enable
+    arys.each{|ary|
+      begin
+        assert_equal(String, ary.inspect.class) # should not cause SEGV
+      rescue RuntimeError
+        # rescue "can't modify frozen File" error.
+      end
+    }
+    End
+  end
+
+  def test_each_object_recursive_key
+    assert_normal_exit(<<-'end;', '[ruby-core:66742] [Bug #10579]')
+      h = {["foo"]=>nil}
+      p Thread.current[:__recursive_key__]
+    end;
   end
 end

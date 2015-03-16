@@ -11,6 +11,34 @@ module Psych
   # See Psych::Parser for more details
   class Handler
     ###
+    # Configuration options for dumping YAML.
+    class DumperOptions
+      attr_accessor :line_width, :indentation, :canonical
+
+      def initialize
+        @line_width  = 0
+        @indentation = 2
+        @canonical   = false
+      end
+    end
+
+    # Default dumping options
+    OPTIONS = DumperOptions.new
+
+    # Events that a Handler should respond to.
+    EVENTS = [ :alias,
+               :empty,
+               :end_document,
+               :end_mapping,
+               :end_sequence,
+               :end_stream,
+               :scalar,
+               :start_document,
+               :start_mapping,
+               :start_sequence,
+               :start_stream ]
+
+    ###
     # Called with +encoding+ when the YAML stream starts.  This method is
     # called once per stream.  A stream may contain multiple documents.
     #

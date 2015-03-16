@@ -1,7 +1,9 @@
 require "rss/rss"
 
 module RSS
+  # The prefix for the Dublin Core XML namespace.
   DC_PREFIX = 'dc'
+  # The URI of the Dublin Core specification.
   DC_URI = "http://purl.org/dc/elements/1.1/"
 
   module BaseDublinCoreModel

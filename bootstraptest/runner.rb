@@ -1,4 +1,4 @@
-"exec" "${RUBY-ruby}" "-x" "$0" "$@"; true # -*- mode: ruby; coding: utf-8 -*-
+"exec" "${RUBY-ruby}" "-x" "$0" "$@" || true # -*- mode: ruby; coding: utf-8 -*-
 #!./ruby
 # $Id$
 
@@ -60,6 +60,10 @@ end
 def main
   @ruby = File.expand_path('miniruby')
   @verbose = false
+  $stress = false
+  @color = nil
+  @tty = nil
+  @quiet = false
   dir = nil
   quiet = false
   tests = nil
@@ -80,8 +84,17 @@ def main
       true
     when /\A(--stress|-s)/
       $stress = true
+    when /\A--color(?:=(?:always|(auto)|(never)|(.*)))?\z/
+      warn "unknown --color argument: #$3" if $3
+      @color = $1 ? nil : !$2
+      true
+    when /\A--tty(=(?:yes|(no)|(.*)))?\z/
+      warn "unknown --tty argument: #$3" if $3
+      @tty = !$1 || !$2
+      true
     when /\A(-q|--q(uiet))\z/
       quiet = true
+      @quiet = true
       true
     when /\A(-v|--v(erbose))\z/
       @verbose = true
@@ -91,12 +104,16 @@ Usage: #{File.basename($0, '.*')} --ruby=PATH [--sets=NAME,NAME,...]
         --sets=NAME,NAME,...        Name of test sets.
         --dir=DIRECTORY             Working directory.
                                     default: /tmp/bootstraptestXXXXX.tmpwd
+        --color[=WHEN]              Colorize the output.  WHEN defaults to 'always'
+                                    or can be 'never' or 'auto'.
     -s, --stress                    stress test.
     -v, --verbose                   Output test name before exec.
     -q, --quiet                     Don\'t print header message.
     -h, --help                      Print this message and quit.
 End
       exit true
+    when /\A-j/
+      true
     else
       false
     end
@@ -109,6 +126,23 @@ End
   tests = Dir.glob("#{File.dirname($0)}/test_*.rb").sort if tests.empty?
   pathes = tests.map {|path| File.expand_path(path) }
 
+  @progress = %w[- \\ | /]
+  @progress_bs = "\b" * @progress[0].size
+  @tty = $stderr.tty? if @tty.nil?
+  case @color
+  when nil
+    @color = @tty && /dumb/ !~ ENV["TERM"]
+  end
+  @tty &&= !@verbose
+  if @color
+    # dircolors-like style
+    colors = (colors = ENV['TEST_COLORS']) ? Hash[colors.scan(/(\w+)=([^:]*)/)] : {}
+    @passed = "\e[#{colors["pass"] || "32"}m"
+    @failed = "\e[#{colors["fail"] || "31"}m"
+    @reset = "\e[m"
+  else
+    @passed = @failed = @reset = ""
+  end
   unless quiet
     puts Time.now
     if defined?(RUBY_DESCRIPTION)
@@ -128,46 +162,110 @@ End
   }
 end
 
+def erase(e = true)
+  if e and @columns > 0 and !@verbose
+    "\r#{" "*@columns}\r"
+  else
+    ""
+  end
+end
+
 def exec_test(pathes)
   @count = 0
   @error = 0
   @errbuf = []
   @location = nil
+  @columns = 0
+  @width = pathes.map {|path| File.basename(path).size}.max + 2
   pathes.each do |path|
-    $stderr.print "\n#{File.basename(path)} "
+    @basename = File.basename(path)
+    $stderr.printf("%s%-*s ", erase(@quiet), @width, @basename)
+    $stderr.flush
+    @columns = @width + 1
+    $stderr.puts if @verbose
+    count = @count
+    error = @error
     load File.expand_path(path)
+    if @tty
+      if @error == error
+        msg = "PASS #{@count-count}"
+        @columns += msg.size - 1
+        $stderr.print "#{@progress_bs}#{@passed}#{msg}#{@reset}"
+      else
+        msg = "FAIL #{@error-error}/#{@count-count}"
+        $stderr.print "#{@progress_bs}#{@failed}#{msg}#{@reset}"
+        @columns = 0
+      end
+    end
+    $stderr.puts unless @quiet and @tty and @error == error
   end
-  $stderr.puts
+  $stderr.print(erase) if @quiet
   if @error == 0
     if @count == 0
       $stderr.puts "No tests, no problem"
     else
-      $stderr.puts "PASS all #{@count} tests"
+      $stderr.puts "#{@passed}PASS#{@reset} all #{@count} tests"
     end
     exit true
   else
     @errbuf.each do |msg|
       $stderr.puts msg
     end
-    $stderr.puts "FAIL #{@error}/#{@count} tests failed"
+    $stderr.puts "#{@failed}FAIL#{@reset} #{@error}/#{@count} tests failed"
     exit false
   end
 end
 
-def assert_check(testsrc, message = '', opt = '')
-  $stderr.puts "\##{@count} #{@location}" if @verbose
-  result = get_result_string(testsrc, opt)
-  check_coredump
-  faildesc = yield(result)
-  if !faildesc
-    $stderr.print '.'
-  else
-    $stderr.print 'F'
-    error faildesc, message
+def show_progress(message = '')
+  if @verbose
+    $stderr.print "\##{@count} #{@location} "
+  elsif @tty
+    $stderr.print "#{@progress_bs}#{@progress[@count % @progress.size]}"
   end
+  t = Time.now if @verbose
+  faildesc, errout = with_stderr {yield}
+  t = Time.now - t if @verbose
+  if !faildesc
+    if @tty
+      $stderr.print "#{@progress_bs}#{@progress[@count % @progress.size]}"
+    elsif @verbose
+      $stderr.printf(". %.3f\n", t)
+    else
+      $stderr.print '.'
+    end
+  else
+    $stderr.print "#{@failed}F"
+    $stderr.printf(" %.3f", t) if @verbose
+    $stderr.print "#{@reset}"
+    $stderr.puts if @verbose
+    error faildesc, message
+    unless errout.empty?
+      $stderr.print "#{@failed}stderr output is not empty#{@reset}\n", adjust_indent(errout)
+    end
+    if @tty and !@verbose
+      $stderr.printf("%-*s%s", @width, @basename, @progress[@count % @progress.size])
+    end
+  end
+rescue Interrupt
+  raise Interrupt
 rescue Exception => err
   $stderr.print 'E'
+  $stderr.puts if @verbose
   error err.message, message
+end
+
+# NativeClient is special.  The binary is cross-compiled.  But runs on the build environment.
+# So RUBY_PLATFORM in this process is not useful to detect it.
+def nacl?
+  @ruby and File.basename(@ruby.split(/\s/).first)['sel_ldr']
+end
+
+def assert_check(testsrc, message = '', opt = '')
+  show_progress(message) {
+    result = get_result_string(testsrc, opt)
+    check_coredump
+    yield(result)
+  }
 end
 
 def assert_equal(expected, testsrc, message = '')
@@ -214,107 +312,89 @@ def assert_valid_syntax(testsrc, message = '')
 end
 
 def assert_normal_exit(testsrc, *rest)
+  newtest
   opt = {}
   opt = rest.pop if Hash === rest.last
   message, ignore_signals = rest
   message ||= ''
   timeout = opt[:timeout]
-  newtest
-  $stderr.puts "\##{@count} #{@location}" if @verbose
-  faildesc = nil
-  filename = make_srcfile(testsrc)
-  old_stderr = $stderr.dup
-  timeout_signaled = false
-  begin
-    $stderr.reopen("assert_normal_exit.log", "w")
-    io = IO.popen("#{@ruby} -W0 #{filename}")
-    pid = io.pid
-    th = Thread.new {
-      io.read
-      io.close
-      $?
-    }
-    if !th.join(timeout)
-      Process.kill :KILL, pid
-      timeout_signaled = true
+  show_progress(message) {
+    faildesc = nil
+    filename = make_srcfile(testsrc)
+    old_stderr = $stderr.dup
+    timeout_signaled = false
+    begin
+      $stderr.reopen("assert_normal_exit.log", "w")
+      io = IO.popen("#{@ruby} -W0 #{filename}")
+      pid = io.pid
+      th = Thread.new {
+        io.read
+        io.close
+        $?
+      }
+      if !th.join(timeout)
+        Process.kill :KILL, pid
+        timeout_signaled = true
+      end
+      status = th.value
+    ensure
+      $stderr.reopen(old_stderr)
+      old_stderr.close
     end
-    status = th.value
-  ensure
-    $stderr.reopen(old_stderr)
-    old_stderr.close
-  end
-  if status.signaled?
-    signo = status.termsig
-    signame = Signal.list.invert[signo]
-    unless ignore_signals and ignore_signals.include?(signame)
-      sigdesc = "signal #{signo}"
-      if signame
-        sigdesc = "SIG#{signame} (#{sigdesc})"
-      end
-      if timeout_signaled
-        sigdesc << " (timeout)"
-      end
-      faildesc = pretty(testsrc, "killed by #{sigdesc}", nil)
-      stderr_log = File.read("assert_normal_exit.log")
-      if !stderr_log.empty?
-        faildesc << "\n" if /\n\z/ !~ faildesc
-        stderr_log << "\n" if /\n\z/ !~ stderr_log
-        stderr_log.gsub!(/^.*\n/) { '| ' + $& }
-        faildesc << stderr_log
+    if status && status.signaled?
+      signo = status.termsig
+      signame = Signal.list.invert[signo]
+      unless ignore_signals and ignore_signals.include?(signame)
+        sigdesc = "signal #{signo}"
+        if signame
+          sigdesc = "SIG#{signame} (#{sigdesc})"
+        end
+        if timeout_signaled
+          sigdesc << " (timeout)"
+        end
+        faildesc = pretty(testsrc, "killed by #{sigdesc}", nil)
+        stderr_log = File.read("assert_normal_exit.log")
+        if !stderr_log.empty?
+          faildesc << "\n" if /\n\z/ !~ faildesc
+          stderr_log << "\n" if /\n\z/ !~ stderr_log
+          stderr_log.gsub!(/^.*\n/) { '| ' + $& }
+          faildesc << stderr_log
+        end
       end
     end
-  end
-  if !faildesc
-    $stderr.print '.'
-    true
-  else
-    $stderr.print 'F'
-    error faildesc, message
-    false
-  end
-rescue Exception => err
-  $stderr.print 'E'
-  error err.message, message
-  false
+    faildesc
+  }
 end
 
 def assert_finish(timeout_seconds, testsrc, message = '')
   newtest
-  $stderr.puts "\##{@count} #{@location}" if @verbose
-  faildesc = nil
-  filename = make_srcfile(testsrc)
-  io = IO.popen("#{@ruby} -W0 #{filename}")
-  pid = io.pid
-  waited = false
-  tlimit = Time.now + timeout_seconds
-  while Time.now < tlimit
-    if Process.waitpid pid, Process::WNOHANG
-      waited = true
-      break
+  show_progress(message) {
+    faildesc = nil
+    filename = make_srcfile(testsrc)
+    io = IO.popen("#{@ruby} -W0 #{filename}")
+    pid = io.pid
+    waited = false
+    tlimit = Time.now + timeout_seconds
+    while Time.now < tlimit
+      if Process.waitpid pid, Process::WNOHANG
+        waited = true
+        break
+      end
+      sleep 0.1
     end
-    sleep 0.1
-  end
-  if !waited
-    Process.kill(:KILL, pid)
-    Process.waitpid pid
-    faildesc = pretty(testsrc, "not finished in #{timeout_seconds} seconds", nil)
-  end
-  io.close
-  if !faildesc
-    $stderr.print '.'
-  else
-    $stderr.print 'F'
-    error faildesc, message
-  end
-rescue Exception => err
-  $stderr.print 'E'
-  error err.message, message
+    if !waited
+      Process.kill(:KILL, pid)
+      Process.waitpid pid
+      faildesc = pretty(testsrc, "not finished in #{timeout_seconds} seconds", nil)
+    end
+    io.close
+    faildesc
+  }
 end
 
 def flunk(message = '')
   newtest
-  $stderr.print 'F'
-  error message, ''
+  show_progress('') { message }
 end
 
 def pretty(src, desc, result)
@@ -325,7 +405,7 @@ end
 INDENT = 27
 
 def adjust_indent(src)
-  untabify(src).gsub(/^ {#{INDENT}}/o, '').gsub(/^/, '   ')
+  untabify(src).gsub(/^ {#{INDENT}}/o, '').gsub(/^/, '   ').sub(/\s*\z/, "\n")
 end
 
 def untabify(str)
@@ -347,11 +427,33 @@ def get_result_string(src, opt = '')
     begin
       `#{@ruby} -W0 #{opt} #{filename}`
     ensure
+      raise Interrupt if $? and $?.signaled? && $?.termsig == Signal.list["INT"]
       raise CoreDumpError, "core dumped" if $? and $?.coredump?
     end
   else
     eval(src).to_s
   end
+end
+
+def with_stderr
+  out = err = nil
+  begin
+    r, w = IO.pipe
+    stderr = $stderr.dup
+    $stderr.reopen(w)
+    w.close
+    reader = Thread.start {r.read}
+    begin
+      out = yield
+    ensure
+      $stderr.reopen(stderr)
+      err = reader.value
+    end
+  ensure
+    w.close rescue nil
+    r.close rescue nil
+  end
+  return out, err
 end
 
 def newtest
@@ -361,7 +463,12 @@ def newtest
 end
 
 def error(msg, additional_message)
-  @errbuf.push "\##{@count} #{@location}: #{msg}  #{additional_message}"
+  msg = "#{@failed}\##{@count} #{@location}#{@reset}: #{msg}  #{additional_message}"
+  if @tty
+    $stderr.puts "#{erase}#{msg}"
+  else
+    @errbuf.push msg
+  end
   @error += 1
 end
 

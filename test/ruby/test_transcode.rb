@@ -1,7 +1,8 @@
-# -*- encoding: ASCII-8BIT -*-   # make sure this runs in binary mode
+# encoding: ASCII-8BIT   # make sure this runs in binary mode
 # some of the comments are in UTF-8
 
 require 'test/unit'
+
 class TestTranscode < Test::Unit::TestCase
   def test_errors
     assert_raise(Encoding::ConverterNotFoundError) { 'abc'.encode('foo', 'bar') }
@@ -29,16 +30,16 @@ class TestTranscode < Test::Unit::TestCase
   end
 
   def test_noargument
-    default_default_internal = Encoding.default_internal
-    Encoding.default_internal = nil
-    assert_equal("\u3042".encode, "\u3042")
-    assert_equal("\xE3\x81\x82\x81".force_encoding("utf-8").encode,
-                 "\xE3\x81\x82\x81".force_encoding("utf-8"))
-    Encoding.default_internal = 'EUC-JP'
-    assert_equal("\u3042".encode, "\xA4\xA2".force_encoding('EUC-JP'))
-    assert_equal("\xE3\x81\x82\x81".force_encoding("utf-8").encode,
-                 "\xA4\xA2?".force_encoding('EUC-JP'))
-    Encoding.default_internal = default_default_internal
+    EnvUtil.with_default_internal(nil) do
+      assert_equal("\u3042".encode, "\u3042")
+      assert_equal("\xE3\x81\x82\x81".force_encoding("utf-8").encode,
+                   "\xE3\x81\x82\x81".force_encoding("utf-8"))
+    end
+    EnvUtil.with_default_internal('EUC-JP') do
+      assert_equal("\u3042".encode, "\xA4\xA2".force_encoding('EUC-JP'))
+      assert_equal("\xE3\x81\x82\x81".force_encoding("utf-8").encode,
+                   "\xA4\xA2?".force_encoding('EUC-JP'))
+    end
   end
 
   def test_length
@@ -51,7 +52,7 @@ class TestTranscode < Test::Unit::TestCase
   end
 
   def check_both_ways(utf8, raw, encoding)
-    assert_equal(utf8.force_encoding('utf-8'), raw.encode('utf-8', encoding))
+    assert_equal(utf8.force_encoding('utf-8'), raw.encode('utf-8', encoding),utf8.dump+raw.dump)
     assert_equal(raw.force_encoding(encoding), utf8.encode(encoding, 'utf-8'))
   end
 
@@ -60,13 +61,42 @@ class TestTranscode < Test::Unit::TestCase
     assert_equal(str2.force_encoding(enc2), str1.encode(enc2, enc1))
   end
 
+  def test_encoding_of_ascii_originating_from_binary
+    binary_string = [0x82, 0x74, 0x68, 0x69, 0x73, 0x20, 0x69, 0x73, 0x20,
+                     0x61, 0x20, 0x76, 0x65, 0x72, 0x79, 0x20, 0x6c, 0x6f,
+                     0x6e, 0x67, 0x20, 0x73, 0x74, 0x72, 0x69, 0x6e, 0x67]
+    class << binary_string
+      # create a copy on write substring that contains
+      # just the ascii characters (i.e. this is...), in JRuby
+      # the underlying string have the same buffer backing
+      # it up, but the offset of the string will be 1 instead
+      # of 0.
+      def make_cow_substring
+        pack('C27').slice(1, 26)
+      end
+    end
+
+    ascii_string  = binary_string.make_cow_substring
+    assert_equal("this is a very long string", ascii_string)
+    assert_equal(Encoding::ASCII_8BIT, ascii_string.encoding)
+    utf8_string = nil
+    assert_nothing_raised("JRUBY-6764") do
+      utf8_string = ascii_string.encode(Encoding::UTF_8)
+    end
+    assert_equal("this is a very long string", utf8_string)
+    assert_equal(Encoding::UTF_8, utf8_string.encoding)
+  end
+
   def test_encodings
     check_both_ways("\u307E\u3064\u3082\u3068 \u3086\u304D\u3072\u308D",
         "\x82\xdc\x82\xc2\x82\xe0\x82\xc6 \x82\xe4\x82\xab\x82\xd0\x82\xeb", 'shift_jis') # まつもと ゆきひろ
     check_both_ways("\u307E\u3064\u3082\u3068 \u3086\u304D\u3072\u308D",
         "\xa4\xde\xa4\xc4\xa4\xe2\xa4\xc8 \xa4\xe6\xa4\xad\xa4\xd2\xa4\xed", 'euc-jp')
+    check_both_ways("\u307E\u3064\u3082\u3068 \u3086\u304D\u3072\u308D",
+        "\xa4\xde\xa4\xc4\xa4\xe2\xa4\xc8 \xa4\xe6\xa4\xad\xa4\xd2\xa4\xed", 'euc-jis-2004')
     check_both_ways("\u677E\u672C\u884C\u5F18", "\x8f\xbc\x96\x7b\x8d\x73\x8d\x4f", 'shift_jis') # 松本行弘
     check_both_ways("\u677E\u672C\u884C\u5F18", "\xbe\xbe\xcb\xdc\xb9\xd4\xb9\xb0", 'euc-jp')
+    check_both_ways("\u677E\u672C\u884C\u5F18", "\xbe\xbe\xcb\xdc\xb9\xd4\xb9\xb0", 'euc-jis-2004')
     check_both_ways("D\u00FCrst", "D\xFCrst", 'iso-8859-1') # Dürst
     check_both_ways("D\u00FCrst", "D\xFCrst", 'iso-8859-2')
     check_both_ways("D\u00FCrst", "D\xFCrst", 'iso-8859-3')
@@ -83,6 +113,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u0643\u062A\u0628", "\xE3\xCA\xC8", 'iso-8859-6') # كتب
     check_both_ways("\u65E5\u8A18", "\x93\xFA\x8BL", 'shift_jis') # 日記
     check_both_ways("\u65E5\u8A18", "\xC6\xFC\xB5\xAD", 'euc-jp')
+    check_both_ways("\u65E5\u8A18", "\xC6\xFC\xB5\xAD", 'euc-jis-2004')
     check_both_ways("\uC560\uC778\uAD6C\uD568\u0020\u6734\uC9C0\uC778",
          "\xBE\xD6\xC0\xCE\xB1\xB8\xC7\xD4\x20\xDA\xD3\xC1\xF6\xC0\xCE", 'euc-kr') # 애인구함 朴지인
     check_both_ways("\uC544\uD58F\uD58F\u0020\uB620\uBC29\uD6BD\uB2D8\u0020\uC0AC\uB791\uD716",
@@ -1019,6 +1050,21 @@ class TestTranscode < Test::Unit::TestCase
     check_utf_16_both_ways("\u{F00FF}", "\xDB\x80\xDC\xFF")
   end
 
+  def test_utf_16_bom
+    expected = "\u{3042}\u{3044}\u{20bb7}"
+    assert_equal(expected, %w/fffe4230443042d8b7df/.pack("H*").encode("UTF-8","UTF-16"))
+    check_both_ways(expected, %w/feff30423044d842dfb7/.pack("H*"), "UTF-16")
+    assert_raise(Encoding::InvalidByteSequenceError){%w/feffdfb7/.pack("H*").encode("UTF-8","UTF-16")}
+    assert_raise(Encoding::InvalidByteSequenceError){%w/fffeb7df/.pack("H*").encode("UTF-8","UTF-16")}
+  end
+
+  def test_utf_32_bom
+    expected = "\u{3042}\u{3044}\u{20bb7}"
+    assert_equal(expected, %w/fffe00004230000044300000b70b0200/.pack("H*").encode("UTF-8","UTF-32"))
+    check_both_ways(expected, %w/0000feff000030420000304400020bb7/.pack("H*"), "UTF-32")
+    assert_raise(Encoding::InvalidByteSequenceError){%w/0000feff00110000/.pack("H*").encode("UTF-8","UTF-32")}
+  end
+
   def check_utf_32_both_ways(utf8, raw)
     copy = raw.dup
     0.step(copy.length-1, 4) do |i|
@@ -1140,9 +1186,15 @@ class TestTranscode < Test::Unit::TestCase
     assert_equal("\uFFFD!",
       "\xff!".encode("utf-8", "euc-jp", :invalid=>:replace))
     assert_equal("\uFFFD!",
+      "\xff!".encode("utf-8", "euc-jis-2004", :invalid=>:replace))
+    assert_equal("\uFFFD!",
       "\xa1!".encode("utf-8", "euc-jp", :invalid=>:replace))
     assert_equal("\uFFFD!",
+      "\xa1!".encode("utf-8", "euc-jis-2004", :invalid=>:replace))
+    assert_equal("\uFFFD!",
       "\x8f\xa1!".encode("utf-8", "euc-jp", :invalid=>:replace))
+    assert_equal("\uFFFD!",
+      "\x8f\xa1!".encode("utf-8", "euc-jis-2004", :invalid=>:replace))
 
     assert_equal("?",
       "\xdc\x00".encode("EUC-JP", "UTF-16BE", :invalid=>:replace), "[ruby-dev:35776]")
@@ -1159,6 +1211,7 @@ class TestTranscode < Test::Unit::TestCase
 
   def test_invalid_replace_string
     assert_equal("a<x>A", "a\x80A".encode("us-ascii", "euc-jp", :invalid=>:replace, :replace=>"<x>"))
+    assert_equal("a<x>A", "a\x80A".encode("us-ascii", "euc-jis-2004", :invalid=>:replace, :replace=>"<x>"))
   end
 
   def test_undef_replace
@@ -1273,6 +1326,64 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u795E\u6797\u7FA9\u535A", "\xBF\xC0\xCE\xD3\xB5\xC1\xC7\xEE", 'euc-jp') # 神林義博
   end
 
+  def test_euc_jis_2004
+    check_both_ways("\u3000", "\xA1\xA1", 'euc-jis-2004') # full-width space
+    check_both_ways("\u00D7", "\xA1\xDF", 'euc-jis-2004') # ×
+    check_both_ways("\u00F7", "\xA1\xE0", 'euc-jis-2004') # ÷
+    check_both_ways("\u25C7", "\xA1\xFE", 'euc-jis-2004') # ◇
+    check_both_ways("\u25C6", "\xA2\xA1", 'euc-jis-2004') # ◆
+    check_both_ways("\uFF07", "\xA2\xAF", 'euc-jis-2004') # ＇
+    check_both_ways("\u309F", "\xA2\xB9", 'euc-jis-2004') # ゟ
+    check_both_ways("\u2284", "\xA2\xC2", 'euc-jis-2004') # ⊄
+    check_both_ways("\u2306", "\xA2\xC9", 'euc-jis-2004') # ⌆
+    check_both_ways("\u2295", "\xA2\xD1", 'euc-jis-2004') # ⊕
+    check_both_ways("\u3017", "\xA2\xDB", 'euc-jis-2004') # 〗
+    check_both_ways("\u2262", "\xA2\xEB", 'euc-jis-2004') # ≢
+    check_both_ways("\u2194", "\xA2\xF1", 'euc-jis-2004') # ↔
+    check_both_ways("\u266E", "\xA2\xFA", 'euc-jis-2004') # ♮
+    check_both_ways("\u2669", "\xA2\xFD", 'euc-jis-2004') # ♩
+    check_both_ways("\u25EF", "\xA2\xFE", 'euc-jis-2004') # ◯
+    check_both_ways("\u2935", "\xA3\xAF", 'euc-jis-2004') # ⤵
+    check_both_ways("\u29BF", "\xA3\xBA", 'euc-jis-2004') # ⦿
+    check_both_ways("\u2022", "\xA3\xC0", 'euc-jis-2004') # •
+    check_both_ways("\u2213", "\xA3\xDB", 'euc-jis-2004') # ∓
+    check_both_ways("\u2127", "\xA3\xE0", 'euc-jis-2004') # ℧
+    check_both_ways("\u30A0", "\xA3\xFB", 'euc-jis-2004') # ゠
+    check_both_ways("\uFF54", "\xA3\xF4", 'euc-jis-2004') # ｔ
+    assert_raise(Encoding::UndefinedConversionError) { "\xA5\xF7".encode("utf-8", 'euc-jis-2004') }
+    check_both_ways("\u2664", "\xA6\xB9", 'euc-jis-2004') # ♤
+    check_both_ways("\u2663", "\xA6\xC0", 'euc-jis-2004') # ♣
+    check_both_ways("\u03C2", "\xA6\xD9", 'euc-jis-2004') # ς
+    check_both_ways("\u23BE", "\xA7\xC2", 'euc-jis-2004') # ⎾
+    check_both_ways("\u23CC", "\xA7\xD0", 'euc-jis-2004') # ⏌
+    check_both_ways("\u30F7", "\xA7\xF2", 'euc-jis-2004') # ヷ
+    check_both_ways("\u3251", "\xA8\xC1", 'euc-jis-2004') # ㉑
+    check_both_ways("\u{20B9F}", "\xCF\xD4", 'euc-jis-2004') # 𠮑
+    check_both_ways("\u541E", "\xCF\xFE", 'euc-jis-2004') # 吞
+    check_both_ways("\u6A97", "\xDD\xA1", 'euc-jis-2004') # 檗
+    check_both_ways("\u6BEF", "\xDD\xDF", 'euc-jis-2004') # 毯
+    check_both_ways("\u9EBE", "\xDD\xE0", 'euc-jis-2004') # 麾
+    check_both_ways("\u6CBE", "\xDD\xFE", 'euc-jis-2004') # 沾
+    check_both_ways("\u6CBA", "\xDE\xA1", 'euc-jis-2004') # 沺
+    check_both_ways("\u6ECC", "\xDE\xFE", 'euc-jis-2004') # 滌
+    check_both_ways("\u6F3E", "\xDF\xA1", 'euc-jis-2004') # 漾
+    check_both_ways("\u70DD", "\xDF\xDF", 'euc-jis-2004') # 烝
+    check_both_ways("\u70D9", "\xDF\xE0", 'euc-jis-2004') # 烙
+    check_both_ways("\u71FC", "\xDF\xFE", 'euc-jis-2004') # 燼
+    check_both_ways("\u71F9", "\xE0\xA1", 'euc-jis-2004') # 燹
+    check_both_ways("\u73F1", "\xE0\xFE", 'euc-jis-2004') # 珱
+    check_both_ways("\u5653", "\xF4\xA7", 'euc-jis-2004') # 噓
+    #check_both_ways("\u9ADC", "\xFC\xE3", 'euc-jp') # 髜 (IBM extended)
+
+    check_both_ways("\u9DD7", "\xFE\xE5", 'euc-jis-2004') # 鷗
+    check_both_ways("\u{2000B}", "\xAE\xA2", 'euc-jis-2004') # 𠀋
+    check_both_ways("\u{2A6B2}", "\x8F\xFE\xF6", 'euc-jis-2004') # 𪚲
+
+    check_both_ways("\u677E\u672C\u884C\u5F18", "\xBE\xBE\xCB\xDC\xB9\xD4\xB9\xB0", 'euc-jis-2004') # 松本行弘
+    check_both_ways("\u9752\u5C71\u5B66\u9662\u5927\u5B66", "\xC0\xC4\xBB\xB3\xB3\xD8\xB1\xA1\xC2\xE7\xB3\xD8", 'euc-jis-2004') # 青山学院大学
+    check_both_ways("\u795E\u6797\u7FA9\u535A", "\xBF\xC0\xCE\xD3\xB5\xC1\xC7\xEE", 'euc-jis-2004') # 神林義博
+  end
+
   def test_eucjp_ms
     check_both_ways("\u2116", "\xAD\xE2", 'eucJP-ms') # NUMERO SIGN
     check_both_ways("\u221A", "\xA2\xE5", 'eucJP-ms') # SQUARE ROOT
@@ -1357,7 +1468,7 @@ class TestTranscode < Test::Unit::TestCase
                  "\xA1\xA1".encode("ISO-2022-JP", "EUC-JP"))
   end
 
-  def test_cp50221
+  def test_from_cp50221
     assert_equal("!", "\e(B\x21".encode("utf-8", "cp50221"))
     assert_equal("!", "\e(J\x21".encode("utf-8", "cp50221"))
     assert_equal("\uFF71",     "\xB1".encode("utf-8", "cp50221"))
@@ -1373,10 +1484,11 @@ class TestTranscode < Test::Unit::TestCase
     assert_equal("\u5fde", "\e$B\x7A\x21".encode("utf-8", "cp50221"))
     assert_equal("\u72be", "\e$B\x7B\x21".encode("utf-8", "cp50221"))
     assert_equal("\u91d7", "\e$B\x7C\x21".encode("utf-8", "cp50221"))
-    assert_equal("\e(I!_\e(B", "\xA1\xDF".encode("cp50220","sjis"))
+    assert_equal("\xA1\xDF".force_encoding("sjis"),
+                 "\e(I!_\e(B".encode("sjis","cp50220"))
   end
 
-  def test_cp50221
+  def test_to_cp50221
     assert_equal("\e$B!#!,\e(B".force_encoding("cp50220"),
                  "\xA1\xDF".encode("cp50220","sjis"))
     assert_equal("\e$B%*!+%,%I%J!+%N!+%P%\\%^!+%Q%]%\"\e(B".force_encoding("cp50220"),
@@ -1389,14 +1501,16 @@ class TestTranscode < Test::Unit::TestCase
   end
 
   def test_unicode_public_review_issue_121 # see http://www.unicode.org/review/pr-121.html
-    # assert_equal("\x00\x61\xFF\xFD\x00\x62".force_encoding('UTF-16BE'),
-    #   "\x61\xF1\x80\x80\xE1\x80\xC2\x62".encode('UTF-16BE', 'UTF-8', invalid: :replace)) # option 1
     assert_equal("\x00\x61\xFF\xFD\xFF\xFD\xFF\xFD\x00\x62".force_encoding('UTF-16BE'),
       "\x61\xF1\x80\x80\xE1\x80\xC2\x62".encode('UTF-16BE', 'UTF-8', invalid: :replace)) # option 2
     assert_equal("\x61\x00\xFD\xFF\xFD\xFF\xFD\xFF\x62\x00".force_encoding('UTF-16LE'),
       "\x61\xF1\x80\x80\xE1\x80\xC2\x62".encode('UTF-16LE', 'UTF-8', invalid: :replace)) # option 2
-    # assert_equal("\x00\x61\xFF\xFD\xFF\xFD\xFF\xFD\xFF\xFD\xFF\xFD\xFF\xFD\x00\x62".force_encoding('UTF-16BE'),
-    # "\x61\xF1\x80\x80\xE1\x80\xC2\x62".encode('UTF-16BE', 'UTF-8', invalid: :replace)) # option 3
+
+    # additional clarification
+    assert_equal("\xFF\xFD\xFF\xFD\xFF\xFD\xFF\xFD".force_encoding('UTF-16BE'),
+      "\xF0\x80\x80\x80".encode('UTF-16BE', 'UTF-8', invalid: :replace))
+    assert_equal("\xFD\xFF\xFD\xFF\xFD\xFF\xFD\xFF".force_encoding('UTF-16LE'),
+      "\xF0\x80\x80\x80".encode('UTF-16LE', 'UTF-8', invalid: :replace))
   end
 
   def test_yen_sign
@@ -1794,9 +1908,9 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u77AC", "\xC0\xFE", 'Big5') # 瞬
     check_both_ways("\u8B96", "\xC6\x40", 'Big5') # 讖
     check_both_ways("\u7C72", "\xC6\x7E", 'Big5') # 籲
-	#assert_raise(Encoding::UndefinedConversionError) { "\xC6\xA1".encode("utf-8", 'Big5') }
+    #assert_raise(Encoding::UndefinedConversionError) { "\xC6\xA1".encode("utf-8", 'Big5') }
     #assert_raise(Encoding::UndefinedConversionError) { "\xC7\x40".encode("utf-8", 'Big5') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xC8\x40".encode("utf-8", 'Big5') }
+    #assert_raise(Encoding::UndefinedConversionError) { "\xC8\x40".encode("utf-8", 'Big5') }
     check_both_ways("\u4E42", "\xC9\x40", 'Big5') # 乂
     check_both_ways("\u6C15", "\xC9\x7E", 'Big5') # 氕
     check_both_ways("\u6C36", "\xC9\xA1", 'Big5') # 氶
@@ -1829,7 +1943,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u9F0A", "\xF9\x7E", 'Big5') # 鼊
     check_both_ways("\u9FA4", "\xF9\xA1", 'Big5') # 龤
     check_both_ways("\u9F98", "\xF9\xD5", 'Big5') # 龘
-    assert_raise(Encoding::UndefinedConversionError) { "\xF9\xD6".encode("utf-8", 'Big5') }
+    #assert_raise(Encoding::UndefinedConversionError) { "\xF9\xD6".encode("utf-8", 'Big5') }
     check_both_ways("\u795E\u6797\u7FA9\u535A", "\xAF\xAB\xAA\x4C\xB8\x71\xB3\xD5", 'Big5') # 神林義博
   end
 
@@ -1861,7 +1975,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u77AC", "\xC0\xFE", 'Big5-HKSCS') # 瞬
     check_both_ways("\u8B96", "\xC6\x40", 'Big5-HKSCS') # 讖
     check_both_ways("\u7C72", "\xC6\x7E", 'Big5-HKSCS') # 籲
-	#assert_raise(Encoding::UndefinedConversionError) { "\xC6\xA1".encode("utf-8", 'Big5-HKSCS') }
+    #assert_raise(Encoding::UndefinedConversionError) { "\xC6\xA1".encode("utf-8", 'Big5-HKSCS') }
     #assert_raise(Encoding::UndefinedConversionError) { "\xC7\x40".encode("utf-8", 'Big5-HKSCS') }
     #assert_raise(Encoding::UndefinedConversionError) { "\xC8\x40".encode("utf-8", 'Big5-HKSCS') }
     check_both_ways("\u4E42", "\xC9\x40", 'Big5-HKSCS') # 乂
@@ -1896,15 +2010,15 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u9F0A", "\xF9\x7E", 'Big5-HKSCS') # 鼊
     check_both_ways("\u9FA4", "\xF9\xA1", 'Big5-HKSCS') # 龤
     check_both_ways("\u9F98", "\xF9\xD5", 'Big5-HKSCS') # 龘
-    check_both_ways("\u{23ED7}", "\x8E\x40", 'Big5-HKSCS') # 𣻗
+    #check_both_ways("\u{23ED7}", "\x8E\x40", 'Big5-HKSCS') # 𣻗
     #assert_raise(Encoding::UndefinedConversionError) { "\xF9\xD6".encode("utf-8", 'Big5-HKSCS') }
     check_both_ways("\u795E\u6797\u7FA9\u535A", "\xAF\xAB\xAA\x4C\xB8\x71\xB3\xD5", 'Big5-HKSCS') # 神林義博
   end
-  
+
   def test_Big5_UAO
     check_both_ways("\u4e17", "\x81\x40", 'Big5-UAO') # 丗
   end
-  
+
   def test_nothing_changed
     a = "James".force_encoding("US-ASCII")
     b = a.encode("Shift_JIS")
@@ -1913,11 +2027,13 @@ class TestTranscode < Test::Unit::TestCase
   end
 
   def test_utf8_mac
-    assert_equal("\u{fb4d}", "\u05DB\u05BF".encode("UTF-8", "UTF8-MAC"))
-    assert_equal("\u{1ff7}", "\u03C9\u0345\u0342".encode("UTF-8", "UTF8-MAC"))
+    # composition exclusion
+    assert_equal("\u05DB\u05BF", "\u05DB\u05BF".encode("UTF-8", "UTF8-MAC")) #"\u{fb4d}"
+
+    assert_equal("\u{1ff7}", "\u03C9\u0342\u0345".encode("UTF-8", "UTF8-MAC"))
 
     assert_equal("\u05DB\u05BF", "\u{fb4d}".encode("UTF8-MAC").force_encoding("UTF-8"))
-    assert_equal("\u03C9\u0345\u0342", "\u{1ff7}".encode("UTF8-MAC").force_encoding("UTF-8"))
+    assert_equal("\u03C9\u0342\u0345", "\u{1ff7}".encode("UTF8-MAC").force_encoding("UTF-8"))
 
     check_both_ways("\u{e9 74 e8}", "e\u0301te\u0300", 'UTF8-MAC')
   end
@@ -1929,5 +2045,50 @@ class TestTranscode < Test::Unit::TestCase
         fallback: {"\u{20000}" => "\u3042"}))
     assert_equal("[ISU]", "\u{1F4BA}".encode("SJIS-KDDI",
         fallback: {"\u{1F4BA}" => "[ISU]"}))
+  end
+
+  def test_fallback_hash_default
+    fallback = Hash.new {|h, x| "U+%.4X" % x.unpack("U")}
+    assert_equal("U+3042", "\u{3042}".encode("US-ASCII", fallback: fallback))
+  end
+
+  def test_fallback_proc
+    fallback = proc {|x| "U+%.4X" % x.unpack("U")}
+    assert_equal("U+3042", "\u{3042}".encode("US-ASCII", fallback: fallback))
+  end
+
+  def test_fallback_method
+    def (fallback = "U+%.4X").escape(x)
+      self % x.unpack("U")
+    end
+    assert_equal("U+3042", "\u{3042}".encode("US-ASCII", fallback: fallback.method(:escape)))
+  end
+
+  bug8940 = '[ruby-core:57318] [Bug #8940]'
+  %w[UTF-32 UTF-16].each do |enc|
+    define_method("test_pseudo_encoding_inspect(#{enc})") do
+      assert_normal_exit("'aaa'.encode('#{enc}').inspect", bug8940)
+      assert_equal(4, 'aaa'.encode(enc).length, "should count in #{enc} with BOM")
+    end
+  end
+
+  def test_encode_with_invalid_chars
+    bug8995 = '[ruby-dev:47747]'
+    EnvUtil.with_default_internal(Encoding::UTF_8) do
+      str = "\xff".force_encoding('utf-8')
+      assert_equal str, str.encode, bug8995
+      assert_equal "\ufffd", str.encode(invalid: :replace), bug8995
+    end
+  end
+
+  def test_valid_dummy_encoding
+    bug9314 = '[ruby-core:59354] [Bug #9314]'
+    assert_separately(%W[- -- #{bug9314}], <<-'end;')
+    bug = ARGV.shift
+    result = assert_nothing_raised(TypeError, bug) {break "test".encode(Encoding::UTF_16)}
+    assert_equal("\xFE\xFF\x00t\x00e\x00s\x00t", result.b, bug)
+    result = assert_nothing_raised(TypeError, bug) {break "test".encode(Encoding::UTF_32)}
+    assert_equal("\x00\x00\xFE\xFF\x00\x00\x00t\x00\x00\x00e\x00\x00\x00s\x00\x00\x00t", result.b, bug)
+    end;
   end
 end

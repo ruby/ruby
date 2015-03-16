@@ -5,7 +5,10 @@ end
 
 require "test/unit"
 require "tempfile"
+require "timeout"
 require "tmpdir"
+require "thread"
+require "io/nonblock"
 
 class TestSocket_UNIXSocket < Test::Unit::TestCase
   def test_fd_passing
@@ -20,6 +23,7 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
       r2 = s2.recv_io
       assert_equal(r1.stat.ino, r2.stat.ino)
       assert_not_equal(r1.fileno, r2.fileno)
+      assert(r2.close_on_exec?)
       w.syswrite "a"
       assert_equal("a", r2.sysread(10))
     ensure
@@ -49,17 +53,22 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
         end
         assert_equal(1, ret)
         ret = s2.recvmsg(:scm_rights=>true)
-        data, srcaddr, flags, *ctls = ret
+        _, _, _, *ctls = ret
         recv_io_ary = []
-        ctls.each {|ctl|
-          next if ctl.level != Socket::SOL_SOCKET || ctl.type != Socket::SCM_RIGHTS
-          recv_io_ary.concat ctl.unix_rights
-        }
-        assert_equal(send_io_ary.length, recv_io_ary.length)
-        send_io_ary.length.times {|i|
-          assert_not_equal(send_io_ary[i].fileno, recv_io_ary[i].fileno)
-          assert(File.identical?(send_io_ary[i], recv_io_ary[i]))
-        }
+        begin
+          ctls.each {|ctl|
+            next if ctl.level != Socket::SOL_SOCKET || ctl.type != Socket::SCM_RIGHTS
+            recv_io_ary.concat ctl.unix_rights
+          }
+          assert_equal(send_io_ary.length, recv_io_ary.length)
+          send_io_ary.length.times {|i|
+            assert_not_equal(send_io_ary[i].fileno, recv_io_ary[i].fileno)
+            assert(File.identical?(send_io_ary[i], recv_io_ary[i]))
+            assert(recv_io_ary[i].close_on_exec?)
+          }
+        ensure
+          recv_io_ary.each {|io2| io2.close if !io2.closed? }
+        end
       }
     }
   ensure
@@ -85,21 +94,59 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
         end
         assert_equal(1, ret)
         ret = s2.recvmsg(:scm_rights=>true)
-        data, srcaddr, flags, *ctls = ret
+        _, _, _, *ctls = ret
         recv_io_ary = []
-        ctls.each {|ctl|
-          next if ctl.level != Socket::SOL_SOCKET || ctl.type != Socket::SCM_RIGHTS
-          recv_io_ary.concat ctl.unix_rights
-        }
-        assert_equal(send_io_ary.length, recv_io_ary.length)
-        send_io_ary.length.times {|i|
-          assert_not_equal(send_io_ary[i].fileno, recv_io_ary[i].fileno)
-          assert(File.identical?(send_io_ary[i], recv_io_ary[i]))
-        }
+        begin
+          ctls.each {|ctl|
+            next if ctl.level != Socket::SOL_SOCKET || ctl.type != Socket::SCM_RIGHTS
+            recv_io_ary.concat ctl.unix_rights
+          }
+          assert_equal(send_io_ary.length, recv_io_ary.length)
+          send_io_ary.length.times {|i|
+            assert_not_equal(send_io_ary[i].fileno, recv_io_ary[i].fileno)
+            assert(File.identical?(send_io_ary[i], recv_io_ary[i]))
+            assert(recv_io_ary[i].close_on_exec?)
+          }
+        ensure
+          recv_io_ary.each {|io2| io2.close if !io2.closed? }
+        end
       }
     }
   ensure
     io_ary.each {|io| io.close if !io.closed? }
+  end
+
+  def test_fd_passing_race_condition
+    r1, w = IO.pipe
+    s1, s2 = UNIXSocket.pair
+    s1.nonblock = s2.nonblock = true
+    lock = Mutex.new
+    nr = 0
+    x = 2
+    y = 1000
+    begin
+      s1.send_io(nil)
+    rescue NotImplementedError
+      assert_raise(NotImplementedError) { s2.recv_io }
+    rescue TypeError
+      thrs = x.times.map do
+        Thread.new do
+          y.times do
+            s2.recv_io.close
+            lock.synchronize { nr += 1 }
+          end
+          true
+        end
+      end
+      (x * y).times { s1.send_io r1 }
+      assert_equal([true]*x, thrs.map { |t| t.value })
+      assert_equal x * y, nr
+    ensure
+      s1.close
+      s2.close
+      w.close
+      r1.close
+    end
   end
 
   def test_sendmsg
@@ -115,6 +162,7 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
         r2 = s2.recv_io
         begin
           assert(File.identical?(r1, r2))
+          assert(r2.close_on_exec?)
         ensure
           r2.close
         end
@@ -195,6 +243,7 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
 	  r2 = ios[0]
 	  begin
 	    assert(File.identical?(r1, r2))
+            assert(r2.close_on_exec?)
 	  ensure
 	    r2.close
 	  end
@@ -204,24 +253,46 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
   end
 
   def bound_unix_socket(klass)
-    tmpfile = Tempfile.new("testrubysock")
+    tmpfile = Tempfile.new("s")
     path = tmpfile.path
     tmpfile.close(true)
-    yield klass.new(path), path
+    io = klass.new(path)
+    yield io, path
   ensure
+    io.close
     File.unlink path if path && File.socket?(path)
   end
 
   def test_addr
     bound_unix_socket(UNIXServer) {|serv, path|
-      c = UNIXSocket.new(path)
-      s = serv.accept
-      assert_equal(["AF_UNIX", path], c.peeraddr)
-      assert_equal(["AF_UNIX", ""], c.addr)
-      assert_equal(["AF_UNIX", ""], s.peeraddr)
-      assert_equal(["AF_UNIX", path], s.addr)
-      assert_equal(path, s.path)
-      assert_equal("", c.path)
+      UNIXSocket.open(path) {|c|
+        s = serv.accept
+        begin
+          assert_equal(["AF_UNIX", path], c.peeraddr)
+          assert_equal(["AF_UNIX", ""], c.addr)
+          assert_equal(["AF_UNIX", ""], s.peeraddr)
+          assert_equal(["AF_UNIX", path], s.addr)
+          assert_equal(path, s.path)
+          assert_equal("", c.path)
+        ensure
+          s.close
+        end
+      }
+    }
+  end
+
+  def test_cloexec
+    bound_unix_socket(UNIXServer) {|serv, path|
+      UNIXSocket.open(path) {|c|
+        s = serv.accept
+        begin
+          assert(serv.close_on_exec?)
+          assert(c.close_on_exec?)
+          assert(s.close_on_exec?)
+        ensure
+          s.close
+        end
+      }
     }
   end
 
@@ -285,17 +356,26 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
   end
 
   def test_too_long_path
-    assert_raise(ArgumentError) { Socket.sockaddr_un("a" * 300) }
-    assert_raise(ArgumentError) { UNIXServer.new("a" * 300) }
+    assert_raise(ArgumentError) { Socket.sockaddr_un("a" * 3000) }
+    assert_raise(ArgumentError) { UNIXServer.new("a" * 3000) }
   end
 
-  def test_nul
-    assert_raise(ArgumentError) { Socket.sockaddr_un("a\0b") }
+  def test_abstract_namespace
+    return if /linux/ !~ RUBY_PLATFORM
+    addr = Socket.pack_sockaddr_un("\0foo")
+    assert_match(/\0foo\z/, addr)
+    assert_equal("\0foo", Socket.unpack_sockaddr_un(addr))
   end
 
   def test_dgram_pair
     s1, s2 = UNIXSocket.pair(Socket::SOCK_DGRAM)
-    assert_raise(Errno::EAGAIN) { s1.recv_nonblock(10) }
+    begin
+      s1.recv_nonblock(10)
+      fail
+    rescue => e
+      assert(IO::EAGAINWaitReadable === e)
+      assert(IO::WaitReadable === e)
+    end
     s2.send("", 0)
     s2.send("haha", 0)
     s2.send("", 0)
@@ -304,19 +384,42 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
     assert_equal("haha", s1.recv(10))
     assert_equal("", s1.recv(10))
     assert_equal("", s1.recv(10))
-    assert_raise(Errno::EAGAIN) { s1.recv_nonblock(10) }
+    assert_raise(IO::EAGAINWaitReadable) { s1.recv_nonblock(10) }
   ensure
     s1.close if s1
     s2.close if s2
   end
 
+  def test_dgram_pair_sendrecvmsg_errno_set
+    s1, s2 = to_close = UNIXSocket.pair(Socket::SOCK_DGRAM)
+    pipe = IO.pipe
+    to_close.concat(pipe)
+    set_errno = lambda do
+      begin
+        pipe[0].read_nonblock(1)
+        fail
+      rescue => e
+        assert(IO::EAGAINWaitReadable === e)
+      end
+    end
+    Timeout.timeout(10) do
+      set_errno.call
+      assert_equal(2, s1.sendmsg("HI"))
+      set_errno.call
+      assert_equal("HI", s2.recvmsg[0])
+    end
+  ensure
+    to_close.each(&:close) if to_close
+  end
+
   def test_epipe # [ruby-dev:34619]
-    s1, s2 = UNIXSocket.pair
-    s1.shutdown(Socket::SHUT_WR)
-    assert_raise(Errno::EPIPE) { s1.write "a" }
-    assert_equal(nil, s2.read(1))
-    s2.write "a"
-    assert_equal("a", s1.read(1))
+    UNIXSocket.pair {|s1, s2|
+      s1.shutdown(Socket::SHUT_WR)
+      assert_raise(Errno::EPIPE) { s1.write "a" }
+      assert_equal(nil, s2.read(1))
+      s2.write "a"
+      assert_equal("a", s1.read(1))
+    }
   end
 
   def test_socket_pair_with_block
@@ -337,6 +440,13 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
     }
     assert_kind_of(UNIXSocket, pair[0])
     assert_kind_of(UNIXSocket, pair[1])
+  end
+
+  def test_unix_socket_pair_close_on_exec
+    UNIXSocket.pair {|s1, s2|
+      assert(s1.close_on_exec?)
+      assert(s2.close_on_exec?)
+    }
   end
 
   def test_initialize
@@ -374,15 +484,21 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
     return if /linux/ !~ RUBY_PLATFORM
     Dir.mktmpdir {|d|
       sockpath = "#{d}/sock"
-      serv = Socket.unix_server_socket(sockpath)
-      c = Socket.unix(sockpath)
-      s, = serv.accept
-      cred = s.getsockopt(:SOCKET, :PEERCRED)
-      inspect = cred.inspect
-      assert_match(/ pid=#{$$} /, inspect)
-      assert_match(/ euid=#{Process.euid} /, inspect)
-      assert_match(/ egid=#{Process.egid} /, inspect)
-      assert_match(/ \(ucred\)/, inspect)
+      Socket.unix_server_socket(sockpath) {|serv|
+        Socket.unix(sockpath) {|c|
+          s, = serv.accept
+          begin
+            cred = s.getsockopt(:SOCKET, :PEERCRED)
+            inspect = cred.inspect
+            assert_match(/ pid=#{$$} /, inspect)
+            assert_match(/ euid=#{Process.euid} /, inspect)
+            assert_match(/ egid=#{Process.egid} /, inspect)
+            assert_match(/ \(ucred\)/, inspect)
+          ensure
+            s.close
+          end
+        }
+      }
     }
   end
 
@@ -391,7 +507,7 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
     Dir.mktmpdir {|d|
       sockpath = "#{d}/sock"
       serv = Socket.unix_server_socket(sockpath)
-      c = Socket.unix(sockpath)
+      Socket.unix(sockpath)
       s, = serv.accept
       cred = s.getsockopt(0, Socket::LOCAL_PEERCRED)
       inspect = cred.inspect
@@ -404,18 +520,24 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
     return if /linux/ !~ RUBY_PLATFORM
     Dir.mktmpdir {|d|
       sockpath = "#{d}/sock"
-      serv = Socket.unix_server_socket(sockpath)
-      c = Socket.unix(sockpath)
-      s, = serv.accept
-      s.setsockopt(:SOCKET, :PASSCRED, 1)
-      c.print "a"
-      msg, cliend_ai, rflags, cred = s.recvmsg
-      inspect = cred.inspect
-      assert_equal("a", msg)
-      assert_match(/ pid=#{$$} /, inspect)
-      assert_match(/ uid=#{Process.uid} /, inspect)
-      assert_match(/ gid=#{Process.gid} /, inspect)
-      assert_match(/ \(ucred\)/, inspect)
+      Socket.unix_server_socket(sockpath) {|serv|
+        Socket.unix(sockpath) {|c|
+          s, = serv.accept
+          begin
+            s.setsockopt(:SOCKET, :PASSCRED, 1)
+            c.print "a"
+            msg, _, _, cred = s.recvmsg
+            inspect = cred.inspect
+            assert_equal("a", msg)
+            assert_match(/ pid=#{$$} /, inspect)
+            assert_match(/ uid=#{Process.uid} /, inspect)
+            assert_match(/ gid=#{Process.gid} /, inspect)
+            assert_match(/ \(ucred\)/, inspect)
+          ensure
+            s.close
+          end
+        }
+      }
     }
   end
 
@@ -428,7 +550,7 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
       s, = serv.accept
       s.setsockopt(0, Socket::LOCAL_CREDS, 1)
       c.print "a"
-      msg, cliend_ai, rflags, cred = s.recvmsg
+      msg, _, _, cred = s.recvmsg
       assert_equal("a", msg)
       inspect = cred.inspect
       assert_match(/ uid=#{Process.uid} /, inspect)
@@ -447,7 +569,7 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
       c = Socket.unix(sockpath)
       s, = serv.accept
       c.sendmsg("a", 0, nil, [:SOCKET, Socket::SCM_CREDS, ""])
-      msg, cliend_ai, rflags, cred = s.recvmsg
+      msg, _, _, cred = s.recvmsg
       assert_equal("a", msg)
       inspect = cred.inspect
       assert_match(/ pid=#{$$} /, inspect)
@@ -461,15 +583,91 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
   def test_getpeereid
     Dir.mktmpdir {|d|
       path = "#{d}/sock"
-      serv = Socket.unix_server_socket(path)
-      c = Socket.unix(path)
-      s, = serv.accept
-      begin
-        assert_equal([Process.euid, Process.egid], c.getpeereid)
-        assert_equal([Process.euid, Process.egid], s.getpeereid)
-      rescue NotImplementedError
-      end
+      Socket.unix_server_socket(path) {|serv|
+        Socket.unix(path) {|c|
+          s, = serv.accept
+          begin
+            assert_equal([Process.euid, Process.egid], c.getpeereid)
+            assert_equal([Process.euid, Process.egid], s.getpeereid)
+          rescue NotImplementedError
+          ensure
+            s.close
+          end
+        }
+      }
     }
   end
 
+  def test_abstract_unix_server
+    return if /linux/ !~ RUBY_PLATFORM
+    name = "\0ruby-test_unix"
+    s0 = nil
+    UNIXServer.open(name) {|s|
+      assert_equal(name, s.local_address.unix_path)
+      s0 = s
+      UNIXSocket.open(name) {|c|
+        sock = s.accept
+        begin
+          assert_equal(name, c.remote_address.unix_path)
+        ensure
+          sock.close
+        end
+      }
+    }
+    assert(s0.closed?)
+  end
+
+  def test_abstract_unix_socket_econnrefused
+    return if /linux/ !~ RUBY_PLATFORM
+    name = "\0ruby-test_unix"
+    assert_raise(Errno::ECONNREFUSED) do
+      UNIXSocket.open(name) {}
+    end
+  end
+
+  def test_abstract_unix_server_socket
+    return if /linux/ !~ RUBY_PLATFORM
+    name = "\0ruby-test_unix"
+    s0 = nil
+    Socket.unix_server_socket(name) {|s|
+      assert_equal(name, s.local_address.unix_path)
+      s0 = s
+      Socket.unix(name) {|c|
+        sock, = s.accept
+        begin
+          assert_equal(name, c.remote_address.unix_path)
+        ensure
+          sock.close
+        end
+      }
+    }
+    assert(s0.closed?)
+  end
+
+  def test_autobind
+    return if /linux/ !~ RUBY_PLATFORM
+    s0 = nil
+    Socket.unix_server_socket("") {|s|
+      name = s.local_address.unix_path
+      assert_match(/\A\0[0-9a-f]{5}\z/, name)
+      s0 = s
+      Socket.unix(name) {|c|
+        sock, = s.accept
+        begin
+          assert_equal(name, c.remote_address.unix_path)
+        ensure
+          sock.close
+        end
+      }
+    }
+    assert(s0.closed?)
+  end
+
+  def test_accept_nonblock
+    bound_unix_socket(UNIXServer) {|serv, path|
+      assert_raises(IO::WaitReadable) { serv.accept_nonblock }
+      assert_raises(IO::WaitReadable) { serv.accept_nonblock(exception: true) }
+      assert_equal :wait_readable, serv.accept_nonblock(exception: false)
+    }
+  end
 end if defined?(UNIXSocket) && /cygwin/ !~ RUBY_PLATFORM

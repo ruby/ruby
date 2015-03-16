@@ -1,13 +1,11 @@
 #!/usr/bin/env ruby
-# -*- coding: utf-8 -*-
+# encoding: utf-8
 
 require 'test/unit'
-case ENV['JSON']
-when 'pure' then require 'json/pure'
-when 'ext'  then require 'json/ext'
-else             require 'json'
-end
+require File.join(File.dirname(__FILE__), 'setup_variant')
 require 'stringio'
+require 'tempfile'
+require 'ostruct'
 
 unless Array.method_defined?(:permutation)
   begin
@@ -23,7 +21,7 @@ unless Array.method_defined?(:permutation)
   end
 end
 
-class TC_JSON < Test::Unit::TestCase
+class TestJSON < Test::Unit::TestCase
   include JSON
 
   def setup
@@ -108,6 +106,46 @@ class TC_JSON < Test::Unit::TestCase
     assert_equal({ "a" => 0.23 }, parse('  {  "a"  :  0.23  }  '))
   end
 
+  def test_parse_json_primitive_values
+    assert_raise(JSON::ParserError) { JSON.parse('') }
+    assert_raise(JSON::ParserError) { JSON.parse('', :quirks_mode => true) }
+    assert_raise(TypeError) { JSON::Parser.new(nil).parse }
+    assert_raise(TypeError) { JSON::Parser.new(nil, :quirks_mode => true).parse }
+    assert_raise(TypeError) { JSON.parse(nil) }
+    assert_raise(TypeError) { JSON.parse(nil, :quirks_mode => true) }
+    assert_raise(JSON::ParserError) { JSON.parse('  /* foo */ ') }
+    assert_raise(JSON::ParserError) { JSON.parse('  /* foo */ ', :quirks_mode => true) }
+    parser = JSON::Parser.new('null')
+    assert_equal false, parser.quirks_mode?
+    assert_raise(JSON::ParserError) { parser.parse }
+    assert_raise(JSON::ParserError) { JSON.parse('null') }
+    assert_equal nil, JSON.parse('null', :quirks_mode => true)
+    parser = JSON::Parser.new('null', :quirks_mode => true)
+    assert_equal true, parser.quirks_mode?
+    assert_equal nil, parser.parse
+    assert_raise(JSON::ParserError) { JSON.parse('false') }
+    assert_equal false, JSON.parse('false', :quirks_mode => true)
+    assert_raise(JSON::ParserError) { JSON.parse('true') }
+    assert_equal true, JSON.parse('true', :quirks_mode => true)
+    assert_raise(JSON::ParserError) { JSON.parse('23') }
+    assert_equal 23, JSON.parse('23', :quirks_mode => true)
+    assert_raise(JSON::ParserError) { JSON.parse('1') }
+    assert_equal 1, JSON.parse('1', :quirks_mode => true)
+    assert_raise(JSON::ParserError) { JSON.parse('3.141') }
+    assert_in_delta 3.141, JSON.parse('3.141', :quirks_mode => true), 1E-3
+    assert_raise(JSON::ParserError) { JSON.parse('18446744073709551616') }
+    assert_equal 2 ** 64, JSON.parse('18446744073709551616', :quirks_mode => true)
+    assert_raise(JSON::ParserError) { JSON.parse('"foo"') }
+    assert_equal 'foo', JSON.parse('"foo"', :quirks_mode => true)
+    assert_raise(JSON::ParserError) { JSON.parse('NaN', :allow_nan => true) }
+    assert JSON.parse('NaN', :quirks_mode => true, :allow_nan => true).nan?
+    assert_raise(JSON::ParserError) { JSON.parse('Infinity', :allow_nan => true) }
+    assert JSON.parse('Infinity', :quirks_mode => true, :allow_nan => true).infinite?
+    assert_raise(JSON::ParserError) { JSON.parse('-Infinity', :allow_nan => true) }
+    assert JSON.parse('-Infinity', :quirks_mode => true, :allow_nan => true).infinite?
+    assert_raise(JSON::ParserError) { JSON.parse('[ 1, ]', :quirks_mode => true) }
+  end
+
   if Array.method_defined?(:permutation)
     def test_parse_more_complex_arrays
       a = [ nil, false, true, "foßbar", [ "n€st€d", true ], { "nested" => true, "n€ßt€ð2" => {} }]
@@ -154,16 +192,68 @@ class TC_JSON < Test::Unit::TestCase
     assert_equal(@ary,
       parse('[[1],["foo"],[3.14],[47.11e+2],[2718.0E-3],[null],[[1,-2,3]]'\
       ',[false],[true]]'))
-    assert_equal(@ary, parse(%Q{   [   [1] , ["foo"]  ,  [3.14] \t ,  [47.11e+2] 
+    assert_equal(@ary, parse(%Q{   [   [1] , ["foo"]  ,  [3.14] \t ,  [47.11e+2]\s
       , [2718.0E-3 ],\r[ null] , [[1, -2, 3 ]], [false ],[ true]\n ]  }))
   end
 
-  class SubArray < Array; end
+  class SubArray < Array
+    def <<(v)
+      @shifted = true
+      super
+    end
 
-  def test_parse_array_custom_class
-    res = parse('[]', :array_class => SubArray)
-    assert_equal([], res)
+    def shifted?
+      @shifted
+    end
+  end
+
+  class SubArray2 < Array
+    def to_json(*a)
+      {
+        JSON.create_id => self.class.name,
+        'ary'          => to_a,
+      }.to_json(*a)
+    end
+
+    def self.json_create(o)
+      o.delete JSON.create_id
+      o['ary']
+    end
+  end
+
+  class SubArrayWrapper
+    def initialize
+      @data = []
+    end
+
+    attr_reader :data
+
+    def [](index)
+      @data[index]
+    end
+
+    def <<(value)
+      @data << value
+      @shifted = true
+    end
+
+    def shifted?
+      @shifted
+    end
+  end
+
+  def test_parse_array_custom_array_derived_class
+    res = parse('[1,2]', :array_class => SubArray)
+    assert_equal([1,2], res)
     assert_equal(SubArray, res.class)
+    assert res.shifted?
+  end
+
+  def test_parse_array_custom_non_array_derived_class
+    res = parse('[1,2]', :array_class => SubArrayWrapper)
+    assert_equal([1,2], res.data)
+    assert_equal(SubArrayWrapper, res.class)
+    assert res.shifted?
   end
 
   def test_parse_object
@@ -173,12 +263,93 @@ class TC_JSON < Test::Unit::TestCase
     assert_equal({'foo'=>'bar'}, parse('    { "foo"  :   "bar"   }   '))
   end
 
-  class SubHash < Hash; end
+  class SubHash < Hash
+    def []=(k, v)
+      @item_set = true
+      super
+    end
 
-  def test_parse_object_custom_class
-    res = parse('{}', :object_class => SubHash)
-    assert_equal({}, res)
+    def item_set?
+      @item_set
+    end
+  end
+
+  class SubHash2 < Hash
+    def to_json(*a)
+      {
+        JSON.create_id => self.class.name,
+      }.merge(self).to_json(*a)
+    end
+
+    def self.json_create(o)
+      o.delete JSON.create_id
+      self[o]
+    end
+  end
+
+  class SubOpenStruct < OpenStruct
+    def [](k)
+      __send__(k)
+    end
+
+    def []=(k, v)
+      @item_set = true
+      __send__("#{k}=", v)
+    end
+
+    def item_set?
+      @item_set
+    end
+  end
+
+  def test_parse_object_custom_hash_derived_class
+    res = parse('{"foo":"bar"}', :object_class => SubHash)
+    assert_equal({"foo" => "bar"}, res)
     assert_equal(SubHash, res.class)
+    assert res.item_set?
+  end
+
+  def test_parse_object_custom_non_hash_derived_class
+    res = parse('{"foo":"bar"}', :object_class => SubOpenStruct)
+    assert_equal "bar", res.foo
+    assert_equal(SubOpenStruct, res.class)
+    assert res.item_set?
+  end
+
+  def test_parse_generic_object
+    res = parse('{"foo":"bar", "baz":{}}', :object_class => JSON::GenericObject)
+    assert_equal(JSON::GenericObject, res.class)
+    assert_equal "bar", res.foo
+    assert_equal "bar", res["foo"]
+    assert_equal "bar", res[:foo]
+    assert_equal "bar", res.to_hash[:foo]
+    assert_equal(JSON::GenericObject, res.baz.class)
+  end
+
+  def test_generate_core_subclasses_with_new_to_json
+    obj = SubHash2["foo" => SubHash2["bar" => true]]
+    obj_json = JSON(obj)
+    obj_again = JSON.parse(obj_json, :create_additions => true)
+    assert_kind_of SubHash2, obj_again
+    assert_kind_of SubHash2, obj_again['foo']
+    assert obj_again['foo']['bar']
+    assert_equal obj, obj_again
+    assert_equal ["foo"], JSON(JSON(SubArray2["foo"]), :create_additions => true)
+  end
+
+  def test_generate_core_subclasses_with_default_to_json
+    assert_equal '{"foo":"bar"}', JSON(SubHash["foo" => "bar"])
+    assert_equal '["foo"]', JSON(SubArray["foo"])
+  end
+
+  def test_generate_of_core_subclasses
+    obj = SubHash["foo" => SubHash["bar" => true]]
+    obj_json = JSON(obj)
+    obj_again = JSON(obj_json)
+    assert_kind_of Hash, obj_again
+    assert_kind_of Hash, obj_again['foo']
+    assert obj_again['foo']['bar']
+    assert_equal obj, obj_again
   end
 
   def test_parser_reset
@@ -275,12 +446,12 @@ EOT
     assert_raises(JSON::NestingError) { JSON.parse '[[]]', :max_nesting => 1 }
     assert_raises(JSON::NestingError) { JSON.parser.new('[[]]', :max_nesting => 1).parse }
     assert_equal [[]], JSON.parse('[[]]', :max_nesting => 2)
-    too_deep = '[[[[[[[[[[[[[[[[[[[["Too deep"]]]]]]]]]]]]]]]]]]]]'
+    too_deep = '[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[["Too deep"]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]'
     too_deep_ary = eval too_deep
     assert_raises(JSON::NestingError) { JSON.parse too_deep }
     assert_raises(JSON::NestingError) { JSON.parser.new(too_deep).parse }
-    assert_raises(JSON::NestingError) { JSON.parse too_deep, :max_nesting => 19 }
-    ok = JSON.parse too_deep, :max_nesting => 20
+    assert_raises(JSON::NestingError) { JSON.parse too_deep, :max_nesting => 100 }
+    ok = JSON.parse too_deep, :max_nesting => 101
     assert_equal too_deep_ary, ok
     ok = JSON.parse too_deep, :max_nesting => nil
     assert_equal too_deep_ary, ok
@@ -291,8 +462,8 @@ EOT
     assert_raises(JSON::NestingError) { JSON.generate [[]], :max_nesting => 1 }
     assert_equal '[[]]', JSON.generate([[]], :max_nesting => 2)
     assert_raises(JSON::NestingError) { JSON.generate too_deep_ary }
-    assert_raises(JSON::NestingError) { JSON.generate too_deep_ary, :max_nesting => 19 }
-    ok = JSON.generate too_deep_ary, :max_nesting => 20
+    assert_raises(JSON::NestingError) { JSON.generate too_deep_ary, :max_nesting => 100 }
+    ok = JSON.generate too_deep_ary, :max_nesting => 101
     assert_equal too_deep, ok
     ok = JSON.generate too_deep_ary, :max_nesting => nil
     assert_equal too_deep, ok
@@ -309,20 +480,47 @@ EOT
       JSON.parse('{"foo":"bar", "baz":"quux"}', :symbolize_names => true))
   end
 
-  def test_load_dump
-    too_deep = '[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]'
+  def test_load
+    assert_equal @hash, JSON.load(@json)
+    tempfile = Tempfile.open('json')
+    tempfile.write @json
+    tempfile.rewind
+    assert_equal @hash, JSON.load(tempfile)
+    stringio = StringIO.new(@json)
+    stringio.rewind
+    assert_equal @hash, JSON.load(stringio)
+    assert_equal nil, JSON.load(nil)
+    assert_equal nil, JSON.load('')
+  ensure
+    tempfile.close!
+  end
+
+  def test_load_with_options
+    small_hash  = JSON("foo" => 'bar')
+    symbol_hash = { :foo => 'bar' }
+    assert_equal symbol_hash, JSON.load(small_hash, nil, :symbolize_names => true)
+  end
+
+  def test_dump
+    too_deep = '[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]'
     assert_equal too_deep, JSON.dump(eval(too_deep))
     assert_kind_of String, Marshal.dump(eval(too_deep))
-    assert_raises(ArgumentError) { JSON.dump(eval(too_deep), 19) }
-    assert_raises(ArgumentError) { Marshal.dump(eval(too_deep), 19) }
-    assert_equal too_deep, JSON.dump(eval(too_deep), 20)
-    assert_kind_of String, Marshal.dump(eval(too_deep), 20)
+    assert_raises(ArgumentError) { JSON.dump(eval(too_deep), 100) }
+    assert_raises(ArgumentError) { Marshal.dump(eval(too_deep), 100) }
+    assert_equal too_deep, JSON.dump(eval(too_deep), 101)
+    assert_kind_of String, Marshal.dump(eval(too_deep), 101)
     output = StringIO.new
     JSON.dump(eval(too_deep), output)
     assert_equal too_deep, output.string
     output = StringIO.new
-    JSON.dump(eval(too_deep), output, 20)
+    JSON.dump(eval(too_deep), output, 101)
     assert_equal too_deep, output.string
+  end
+
+  def test_dump_should_modify_defaults
+    max_nesting = JSON.dump_default_options[:max_nesting]
+    JSON.dump([], StringIO.new, 10)
+    assert_equal max_nesting, JSON.dump_default_options[:max_nesting]
   end
 
   def test_big_integers
@@ -337,4 +535,19 @@ EOT
     json5 = JSON([orig = 1 << 64])
     assert_equal orig, JSON[json5][0]
   end
+
+  if defined?(JSON::Ext::Parser)
+    def test_allocate
+      parser = JSON::Ext::Parser.new("{}")
+      assert_raise(TypeError, '[ruby-core:35079]') {parser.__send__(:initialize, "{}")}
+      parser = JSON::Ext::Parser.allocate
+      assert_raise(TypeError, '[ruby-core:35079]') {parser.source}
+    end
+  end
+
+  def test_argument_encoding
+    source = "{}".force_encoding("ascii-8bit")
+    JSON::Parser.new(source)
+    assert_equal Encoding::ASCII_8BIT, source.encoding
+  end if defined?(Encoding::ASCII_8BIT)
 end

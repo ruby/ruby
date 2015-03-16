@@ -1,11 +1,6 @@
 require "rexml/document"
 require "rexml/streamlistener"
 
-/\A(\d+)\.(\d+)(?:\.\d+)+\z/ =~ REXML::Version
-if ([$1.to_i, $2.to_i] <=> [2, 5]) < 0
-  raise LoadError, "needs REXML 2.5 or later (#{REXML::Version})"
-end
-
 module RSS
 
   class REXMLParser < BaseParser

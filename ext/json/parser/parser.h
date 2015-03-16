@@ -3,24 +3,23 @@
 
 #include "ruby.h"
 
-#if HAVE_RE_H
+#ifndef HAVE_RUBY_RE_H
 #include "re.h"
 #endif
 
-#ifdef HAVE_RUBY_ENCODING_H
-#include "ruby/encoding.h"
-#define FORCE_UTF8(obj) rb_enc_associate((obj), rb_utf8_encoding())
+#ifdef HAVE_RUBY_ST_H
+#include "ruby/st.h"
 #else
-#define FORCE_UTF8(obj)
+#include "st.h"
 #endif
 
 #define option_given_p(opts, key) RTEST(rb_funcall(opts, i_key_p, 1, key))
 
 /* unicode */
 
-typedef unsigned long	UTF32;	/* at least 32 bits */
-typedef unsigned short UTF16;	/* at least 16 bits */
-typedef unsigned char	UTF8;	  /* typically 8 bits */
+typedef unsigned long UTF32;  /* at least 32 bits */
+typedef unsigned short UTF16; /* at least 16 bits */
+typedef unsigned char UTF8;   /* typically 8 bits */
 
 #define UNI_REPLACEMENT_CHAR (UTF32)0x0000FFFD
 #define UNI_SUR_HIGH_START  (UTF32)0xD800
@@ -39,13 +38,20 @@ typedef struct JSON_ParserStruct {
     int allow_nan;
     int parsing_name;
     int symbolize_names;
+    int quirks_mode;
     VALUE object_class;
     VALUE array_class;
+    int create_additions;
+    VALUE match_string;
+    FBuffer *fbuffer;
 } JSON_Parser;
 
 #define GET_PARSER                          \
+    GET_PARSER_INIT;                        \
+    if (!json->Vsource) rb_raise(rb_eTypeError, "uninitialized instance")
+#define GET_PARSER_INIT                     \
     JSON_Parser *json;                      \
-    Data_Get_Struct(self, JSON_Parser, json)
+    TypedData_Get_Struct(self, JSON_Parser, &JSON_Parser_type, json)
 
 #define MinusInfinity "-Infinity"
 #define EVIL 0x666
@@ -62,10 +68,26 @@ static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *resu
 static VALUE convert_encoding(VALUE source);
 static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self);
 static VALUE cParser_parse(VALUE self);
-static JSON_Parser *JSON_allocate();
-static void JSON_mark(JSON_Parser *json);
-static void JSON_free(JSON_Parser *json);
+static JSON_Parser *JSON_allocate(void);
+static void JSON_mark(void *json);
+static void JSON_free(void *json);
 static VALUE cJSON_parser_s_allocate(VALUE klass);
 static VALUE cParser_source(VALUE self);
+#ifndef ZALLOC
+#define ZALLOC(type) ((type *)ruby_zalloc(sizeof(type)))
+static inline void *ruby_zalloc(size_t n)
+{
+    void *p = ruby_xmalloc(n);
+    memset(p, 0, n);
+    return p;
+}
+#endif
+#ifdef TypedData_Wrap_Struct
+static const rb_data_type_t JSON_Parser_type;
+#define NEW_TYPEDDATA_WRAPPER 1
+#else
+#define TypedData_Wrap_Struct(klass, ignore, json) Data_Wrap_Struct(klass, JSON_mark, JSON_free, json)
+#define TypedData_Get_Struct(self, JSON_Parser, ignore, json) Data_Get_Struct(self, JSON_Parser, json)
+#endif
 
 #endif

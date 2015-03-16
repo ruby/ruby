@@ -42,7 +42,7 @@ module Emoji
     def test_encoding_name
       %w(UTF8-DoCoMo
          SJIS-DoCoMo).each do |n|
-        assert Encoding.name_list.include?(n), "encoding not found: #{n}"
+        assert_include Encoding.name_list, n, "encoding not found: #{n}"
       end
     end
 
@@ -126,7 +126,7 @@ module Emoji
          SJIS-KDDI
          ISO-2022-JP-KDDI
          stateless-ISO-2022-JP-KDDI).each do |n|
-        assert Encoding.name_list.include?(n), "encoding not found: #{n}"
+        assert_include Encoding.name_list, n, "encoding not found: #{n}"
       end
     end
 
@@ -250,7 +250,7 @@ module Emoji
     def test_encoding_name
       %w(UTF8-SoftBank
          SJIS-SoftBank).each do |n|
-        assert Encoding.name_list.include?(n), "encoding not found: #{n}"
+        assert_include Encoding.name_list, n, "encoding not found: #{n}"
       end
     end
 

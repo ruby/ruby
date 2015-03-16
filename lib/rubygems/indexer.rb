@@ -1,9 +1,6 @@
-require 'fileutils'
-require 'tmpdir'
-require 'zlib'
-
 require 'rubygems'
-require 'rubygems/format'
+require 'rubygems/package'
+require 'time'
 
 begin
   gem 'builder'
@@ -17,11 +14,6 @@ end
 class Gem::Indexer
 
   include Gem::UserInteraction
-
-  ##
-  # Build indexes for RubyGems older than 1.2.0 when true
-
-  attr_accessor :build_legacy
 
   ##
   # Build indexes for RubyGems 1.2.0 and newer when true
@@ -57,22 +49,21 @@ class Gem::Indexer
   # Create an indexer that will index the gems in +directory+.
 
   def initialize(directory, options = {})
-    unless ''.respond_to? :to_xs then
-      raise "Gem::Indexer requires that the XML Builder library be installed:" \
-           "\n\tgem install builder"
+    require 'fileutils'
+    require 'tmpdir'
+    require 'zlib'
+
+    unless defined?(Builder::XChar) then
+      raise "Gem::Indexer requires that the XML Builder library be installed:" +
+            "\n\tgem install builder"
     end
 
-    options = { :build_legacy => true, :build_modern => true }.merge options
+    options = { :build_modern => true }.merge options
 
-    @build_legacy = options[:build_legacy]
     @build_modern = options[:build_modern]
 
-    @rss_title = options[:rss_title]
-    @rss_host = options[:rss_host]
-    @rss_gems_host = options[:rss_gems_host]
-
     @dest_directory = directory
-    @directory = File.join Dir.tmpdir, "gem_generate_index_#{$$}"
+    @directory = File.join(Dir.tmpdir, "gem_generate_index_#{$$}")
 
     marshal_name = "Marshal.#{Gem.marshal_version}"
 
@@ -80,149 +71,55 @@ class Gem::Indexer
     @marshal_index = File.join @directory, marshal_name
 
     @quick_dir = File.join @directory, 'quick'
-
     @quick_marshal_dir = File.join @quick_dir, marshal_name
+    @quick_marshal_dir_base = File.join "quick", marshal_name # FIX: UGH
 
     @quick_index = File.join @quick_dir, 'index'
     @latest_index = File.join @quick_dir, 'latest_index'
 
     @specs_index = File.join @directory, "specs.#{Gem.marshal_version}"
-    @latest_specs_index = File.join @directory,
-                                    "latest_specs.#{Gem.marshal_version}"
-    @prerelease_specs_index = File.join(@directory,
-                                        "prerelease_specs.#{Gem.marshal_version}")
-
-    @dest_specs_index = File.join @dest_directory,
-                                  "specs.#{Gem.marshal_version}"
-    @dest_latest_specs_index = File.join @dest_directory,
-                                         "latest_specs.#{Gem.marshal_version}"
-    @dest_prerelease_specs_index = File.join @dest_directory,
-                                            "prerelease_specs.#{Gem.marshal_version}"
-
-    @rss_index = File.join @directory, 'index.rss'
+    @latest_specs_index =
+      File.join(@directory, "latest_specs.#{Gem.marshal_version}")
+    @prerelease_specs_index =
+      File.join(@directory, "prerelease_specs.#{Gem.marshal_version}")
+    @dest_specs_index =
+      File.join(@dest_directory, "specs.#{Gem.marshal_version}")
+    @dest_latest_specs_index =
+      File.join(@dest_directory, "latest_specs.#{Gem.marshal_version}")
+    @dest_prerelease_specs_index =
+      File.join(@dest_directory, "prerelease_specs.#{Gem.marshal_version}")
 
     @files = []
   end
 
   ##
-  # Abbreviate the spec for downloading.  Abbreviated specs are only used for
-  # searching, downloading and related activities and do not need deployment
-  # specific information (e.g. list of files).  So we abbreviate the spec,
-  # making it much smaller for quicker downloads.
-
-  def abbreviate(spec)
-    spec.files = []
-    spec.test_files = []
-    spec.rdoc_options = []
-    spec.extra_rdoc_files = []
-    spec.cert_chain = []
-    spec
-  end
-
-  ##
   # Build various indicies
 
-  def build_indicies(index)
-    # Marshal gemspecs are used by both modern and legacy RubyGems
-    build_marshal_gemspecs index
-    build_legacy_indicies index if @build_legacy
-    build_modern_indicies index if @build_modern
-    build_rss index
+  def build_indicies
+    Gem::Specification.dirs = []
+    Gem::Specification.add_specs(*map_gems_to_specs(gem_file_list))
+
+    build_marshal_gemspecs
+    build_modern_indicies if @build_modern
 
     compress_indicies
   end
 
   ##
-  # Builds indicies for RubyGems older than 1.2.x
-
-  def build_legacy_indicies(index)
-    progress = ui.progress_reporter index.size,
-                                    "Generating YAML quick index gemspecs for #{index.size} gems",
-                                    "Complete"
-
-    Gem.time 'Generated YAML quick index gemspecs' do
-      index.released_gems.each do |original_name, spec|
-        spec_file_name = "#{original_name}.gemspec.rz"
-        yaml_name = File.join @quick_dir, spec_file_name
-
-        yaml_zipped = Gem.deflate spec.to_yaml
-        open yaml_name, 'wb' do |io| io.write yaml_zipped end
-
-        progress.updated original_name
-      end
-
-      progress.done
-    end
-
-    say "Generating quick index"
-
-    Gem.time 'Generated quick index' do
-      open @quick_index, 'wb' do |io|
-        io.puts index.sort.map { |_, spec| spec.original_name }
-      end
-    end
-
-    say "Generating latest index"
-
-    Gem.time 'Generated latest index' do
-      open @latest_index, 'wb' do |io|
-        io.puts index.latest_specs.sort.map { |spec| spec.original_name }
-      end
-    end
-
-    # Don't need prerelease legacy index
-
-    say "Generating Marshal master index"
-
-    Gem.time 'Generated Marshal master index' do
-      open @marshal_index, 'wb' do |io|
-        io.write index.dump
-      end
-    end
-
-    progress = ui.progress_reporter index.size,
-                                    "Generating YAML master index for #{index.size} gems (this may take a while)",
-                                    "Complete"
-
-    Gem.time 'Generated YAML master index' do
-      open @master_index, 'wb' do |io|
-        io.puts "--- !ruby/object:#{index.class}"
-        io.puts "gems:"
-
-        gems = index.sort_by { |name, gemspec| gemspec.sort_obj }
-        gems.each do |original_name, gemspec|
-          yaml = gemspec.to_yaml.gsub(/^/, '    ')
-          yaml = yaml.sub(/\A    ---/, '') # there's a needed extra ' ' here
-          io.print "  #{original_name}:"
-          io.puts yaml
-
-          progress.updated original_name
-        end
-      end
-
-      progress.done
-    end
-
-    @files << @quick_dir
-    @files << @master_index
-    @files << "#{@master_index}.Z"
-    @files << @marshal_index
-    @files << "#{@marshal_index}.Z"
-  end
-
-  ##
   # Builds Marshal quick index gemspecs.
 
-  def build_marshal_gemspecs(index)
-    progress = ui.progress_reporter index.size,
-                                    "Generating Marshal quick index gemspecs for #{index.size} gems",
+  def build_marshal_gemspecs
+    count = Gem::Specification.count { |s| not s.default_gem? }
+    progress = ui.progress_reporter count,
+                                    "Generating Marshal quick index gemspecs for #{count} gems",
                                     "Complete"
 
     files = []
 
     Gem.time 'Generated Marshal quick index gemspecs' do
-      index.gems.each do |original_name, spec|
-        spec_file_name = "#{original_name}.gemspec.rz"
+      Gem::Specification.each do |spec|
+        next if spec.default_gem?
+        spec_file_name = "#{spec.original_name}.gemspec.rz"
         marshal_name = File.join @quick_marshal_dir, spec_file_name
 
         marshal_zipped = Gem.deflate Marshal.dump(spec)
@@ -230,7 +127,7 @@ class Gem::Indexer
 
         files << marshal_name
 
-        progress.updated original_name
+        progress.updated spec.original_name
       end
 
       progress.done
@@ -250,8 +147,8 @@ class Gem::Indexer
     Gem.time "Generated #{name} index" do
       open(file, 'wb') do |io|
         specs = index.map do |*spec|
-          # We have to splat here because latest_specs is an array,
-          # while the others are hashes. See the TODO in source_index.rb
+          # We have to splat here because latest_specs is an array, while the
+          # others are hashes.
           spec = spec.flatten.last
           platform = spec.original_platform
 
@@ -274,13 +171,18 @@ class Gem::Indexer
   ##
   # Builds indicies for RubyGems 1.2 and newer. Handles full, latest, prerelease
 
-  def build_modern_indicies(index)
-    build_modern_index(index.released_specs.sort, @specs_index, 'specs')
-    build_modern_index(index.latest_specs.sort,
-                       @latest_specs_index,
-                       'latest specs')
-    build_modern_index(index.prerelease_specs.sort,
-                       @prerelease_specs_index,
+  def build_modern_indicies
+    specs = Gem::Specification.reject { |s| s.default_gem? }
+
+    prerelease, released = specs.partition { |s|
+      s.version.prerelease?
+    }
+    latest_specs =
+      Gem::Specification.latest_specs.reject { |s| s.default_gem? }
+
+    build_modern_index(released.sort, @specs_index, 'specs')
+    build_modern_index(latest_specs.sort, @latest_specs_index, 'latest specs')
+    build_modern_index(prerelease.sort, @prerelease_specs_index,
                        'prerelease specs')
 
     @files += [@specs_index,
@@ -291,165 +193,31 @@ class Gem::Indexer
                "#{@prerelease_specs_index}.gz"]
   end
 
-  ##
-  # Builds an RSS feed for past two days gem releases according to the gem's
-  # date.
-
-  def build_rss(index)
-    if @rss_host.nil? or @rss_gems_host.nil? then
-      if Gem.configuration.really_verbose then
-        alert_warning "no --rss-host or --rss-gems-host, RSS generation disabled"
-      end
-      return
-    end
-
-    require 'cgi'
-    require 'rubygems/text'
-
-    extend Gem::Text
-
-    Gem.time 'Generated rss' do
-      open @rss_index, 'wb' do |io|
-        rss_host = CGI.escapeHTML @rss_host
-        rss_title = CGI.escapeHTML(@rss_title || 'gems')
-
-        io.puts <<-HEADER
-<?xml version="1.0"?>
-<rss version="2.0">
-  <channel>
-    <title>#{rss_title}</title>
-    <link>http://#{rss_host}</link>
-    <description>Recently released gems from http://#{rss_host}</description>
-    <generator>RubyGems v#{Gem::VERSION}</generator>
-    <docs>http://cyber.law.harvard.edu/rss/rss.html</docs>
-        HEADER
-
-        today = Gem::Specification::TODAY
-        yesterday = today - 86400
-
-        index = index.select do |_, spec|
-          spec_date = spec.date
-
-          case spec_date
-          when Date
-            Time.parse(spec_date.to_s) >= yesterday
-          when Time
-            spec_date >= yesterday
-          end
-        end
-
-        index = index.select do |_, spec|
-          spec_date = spec.date
-
-          case spec_date
-          when Date
-            Time.parse(spec_date.to_s) <= today
-          when Time
-            spec_date <= today
-          end
-        end
-
-        index.sort_by { |_, spec| [-spec.date.to_i, spec] }.each do |_, spec|
-          gem_path = CGI.escapeHTML "http://#{@rss_gems_host}/gems/#{spec.file_name}"
-          size = File.stat(spec.loaded_from).size rescue next
-
-          description = spec.description || spec.summary || ''
-          authors = Array spec.authors
-          emails = Array spec.email
-          authors = emails.zip(authors).map do |email, author|
-            email += " (#{author})" if author and not author.empty?
-          end.join ', '
-
-          description = description.split(/\n\n+/).map do |chunk|
-            format_text chunk, 78
-          end
-
-          description = description.join "\n\n"
-
-          item = ''
-
-          item << <<-ITEM
-    <item>
-      <title>#{CGI.escapeHTML spec.full_name}</title>
-      <description>
-&lt;pre&gt;#{CGI.escapeHTML description.chomp}&lt;/pre&gt;
-      </description>
-      <author>#{CGI.escapeHTML authors}</author>
-      <guid>#{CGI.escapeHTML spec.full_name}</guid>
-      <enclosure url=\"#{gem_path}\"
-                 length=\"#{size}\" type=\"application/octet-stream\" />
-      <pubDate>#{spec.date.rfc2822}</pubDate>
-          ITEM
-
-          item << <<-ITEM if spec.homepage
-      <link>#{CGI.escapeHTML spec.homepage}</link>
-          ITEM
-
-          item << <<-ITEM
-    </item>
-          ITEM
-
-          io.puts item
-        end
-
-        io.puts <<-FOOTER
-  </channel>
-</rss>
-        FOOTER
-      end
-    end
-
-    @files << @rss_index
-  end
-
-  ##
-  # Collect specifications from .gem files from the gem directory.
-
-  def collect_specs(gems = gem_file_list)
-    index = Gem::SourceIndex.new
-
-    progress = ui.progress_reporter gems.size,
-                                    "Loading #{gems.size} gems from #{@dest_directory}",
-                                    "Loaded all gems"
-
-    Gem.time 'loaded' do
-      gems.each do |gemfile|
-        if File.size(gemfile.to_s) == 0 then
-          alert_warning "Skipping zero-length gem: #{gemfile}"
-          next
-        end
-
-        begin
-          spec = Gem::Format.from_file_by_path(gemfile).spec
-          spec.loaded_from = gemfile
-
-          unless gemfile =~ /\/#{Regexp.escape spec.original_name}.*\.gem\z/i then
-            expected_name = spec.full_name
-            expected_name << " (#{spec.original_name})" if
-              spec.original_name != spec.full_name
-            alert_warning "Skipping misnamed gem: #{gemfile} should be named #{expected_name}"
-            next
-          end
-
-          abbreviate spec
-          sanitize spec
-
-          index.add_spec spec, spec.original_name
-
-          progress.updated spec.original_name
-
-        rescue SignalException => e
-          alert_error "Received signal, exiting"
-          raise
-        rescue Exception => e
-          alert_error "Unable to process #{gemfile}\n#{e.message} (#{e.class})\n\t#{e.backtrace.join "\n\t"}"
-        end
+  def map_gems_to_specs gems
+    gems.map { |gemfile|
+      if File.size(gemfile) == 0 then
+        alert_warning "Skipping zero-length gem: #{gemfile}"
+        next
       end
 
-      progress.done
-    end
+      begin
+        spec = Gem::Package.new(gemfile).spec
+        spec.loaded_from = gemfile
 
-    index
+        spec.abbreviate
+        spec.sanitize
+
+        spec
+      rescue SignalException
+        alert_error "Received signal, exiting"
+        raise
+      rescue Exception => e
+        msg = ["Unable to process #{gemfile}",
+               "#{e.message} (#{e.class})",
+               "\t#{e.backtrace.join "\n\t"}"].join("\n")
+        alert_error msg
+      end
+    }.compact
   end
 
   ##
@@ -461,20 +229,6 @@ class Gem::Indexer
     say "Compressing indicies"
 
     Gem.time 'Compressed indicies' do
-      if @build_legacy then
-        compress @quick_index, 'rz'
-        paranoid @quick_index, 'rz'
-
-        compress @latest_index, 'rz'
-        paranoid @latest_index, 'rz'
-
-        compress @marshal_index, 'Z'
-        paranoid @marshal_index, 'Z'
-
-        compress @master_index, 'Z'
-        paranoid @master_index, 'Z'
-      end
-
       if @build_modern then
         gzip @specs_index
         gzip @latest_specs_index
@@ -518,7 +272,7 @@ class Gem::Indexer
   # List of gem file names to index.
 
   def gem_file_list
-    Dir.glob(File.join(@dest_directory, "gems", "*.gem"))
+    Dir[File.join(@dest_directory, "gems", '*.gem')]
   end
 
   ##
@@ -526,8 +280,7 @@ class Gem::Indexer
 
   def generate_index
     make_temp_directories
-    index = collect_specs
-    build_indicies index
+    build_indicies
     install_indicies
   rescue SignalException
   ensure
@@ -551,24 +304,22 @@ class Gem::Indexer
 
     say "Moving index into production dir #{@dest_directory}" if verbose
 
-    files = @files.dup
+    files = @files
     files.delete @quick_marshal_dir if files.include? @quick_dir
 
-    if files.include? @quick_marshal_dir and
-       not files.include? @quick_dir then
+    if files.include? @quick_marshal_dir and not files.include? @quick_dir then
       files.delete @quick_marshal_dir
-      quick_marshal_dir = @quick_marshal_dir.sub @directory, ''
 
-      dst_name = File.join @dest_directory, quick_marshal_dir
+      dst_name = File.join(@dest_directory, @quick_marshal_dir_base)
 
       FileUtils.mkdir_p File.dirname(dst_name), :verbose => verbose
       FileUtils.rm_rf dst_name, :verbose => verbose
-      FileUtils.mv @quick_marshal_dir, dst_name, :verbose => verbose,
-                   :force => true
+      FileUtils.mv(@quick_marshal_dir, dst_name,
+                   :verbose => verbose, :force => true)
     end
 
     files = files.map do |path|
-      path.sub @directory, ''
+      path.sub(/^#{Regexp.escape @directory}\/?/, '') # HACK?
     end
 
     files.each do |file|
@@ -576,8 +327,8 @@ class Gem::Indexer
       dst_name = File.join @dest_directory, file
 
       FileUtils.rm_rf dst_name, :verbose => verbose
-      FileUtils.mv src_name, @dest_directory, :verbose => verbose,
-                   :force => true
+      FileUtils.mv(src_name, @dest_directory,
+                   :verbose => verbose, :force => true)
     end
   end
 
@@ -603,36 +354,9 @@ class Gem::Indexer
   end
 
   ##
-  # Sanitize the descriptive fields in the spec.  Sometimes non-ASCII
-  # characters will garble the site index.  Non-ASCII characters will
-  # be replaced by their XML entity equivalent.
-
-  def sanitize(spec)
-    spec.summary = sanitize_string(spec.summary)
-    spec.description = sanitize_string(spec.description)
-    spec.post_install_message = sanitize_string(spec.post_install_message)
-    spec.authors = spec.authors.collect { |a| sanitize_string(a) }
-
-    spec
-  end
-
-  ##
-  # Sanitize a single string.
-
-  def sanitize_string(string)
-    # HACK the #to_s is in here because RSpec has an Array of Arrays of
-    # Strings for authors.  Need a way to disallow bad values on gempsec
-    # generation.  (Probably won't happen.)
-    string ? string.to_s.to_xs : string
-  end
-
-  ##
-  # Perform an in-place update of the repository from newly added gems.  Only
-  # works for modern indicies, and sets #build_legacy to false when run.
+  # Perform an in-place update of the repository from newly added gems.
 
   def update_index
-    @build_legacy = false
-
     make_temp_directories
 
     specs_mtime = File.stat(@dest_specs_index).mtime
@@ -649,14 +373,19 @@ class Gem::Indexer
       terminate_interaction 0
     end
 
-    index = collect_specs updated_gems
+    specs = map_gems_to_specs updated_gems
+    prerelease, released = specs.partition { |s| s.version.prerelease? }
 
-    files = build_marshal_gemspecs index
+    Gem::Specification.dirs = []
+    Gem::Specification.add_specs(*specs)
+
+    files = build_marshal_gemspecs
 
     Gem.time 'Updated indexes' do
-      update_specs_index index.released_gems, @dest_specs_index, @specs_index
-      update_specs_index index.released_gems, @dest_latest_specs_index, @latest_specs_index
-      update_specs_index(index.prerelease_gems, @dest_prerelease_specs_index,
+      update_specs_index released, @dest_specs_index, @specs_index
+      update_specs_index released, @dest_latest_specs_index, @latest_specs_index
+      update_specs_index(prerelease,
+                         @dest_prerelease_specs_index,
                          @prerelease_specs_index)
     end
 
@@ -674,12 +403,12 @@ class Gem::Indexer
     files << "#{@prerelease_specs_index}.gz"
 
     files = files.map do |path|
-      path.sub @directory, ''
+      path.sub(/^#{Regexp.escape @directory}\/?/, '') # HACK?
     end
 
     files.each do |file|
       src_name = File.join @directory, file
-      dst_name = File.join @dest_directory, File.dirname(file)
+      dst_name = File.join @dest_directory, file # REFACTOR: duped above
 
       FileUtils.mv src_name, dst_name, :verbose => verbose,
                    :force => true
@@ -695,7 +424,7 @@ class Gem::Indexer
   def update_specs_index(index, source, dest)
     specs_index = Marshal.load Gem.read_binary(source)
 
-    index.each do |_, spec|
+    index.each do |spec|
       platform = spec.original_platform
       platform = Gem::Platform::RUBY if platform.nil? or platform.empty?
       specs_index << [spec.name, spec.version, platform]
@@ -707,6 +436,4 @@ class Gem::Indexer
       Marshal.dump specs_index, io
     end
   end
-
 end
-

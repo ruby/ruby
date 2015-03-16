@@ -43,9 +43,9 @@ class TestEncodingConverter < Test::Unit::TestCase
 
   def test_asciicompat_encoding_iso2022jp
     acenc = Encoding::Converter.asciicompat_encoding("ISO-2022-JP")
-    str = "\e$B~~\(B".force_encoding("iso-2022-jp")
+    str = "\e$B~~\e(B".force_encoding("iso-2022-jp")
     str2 = str.encode(acenc)
-    str3 = str.encode("ISO-2022-JP")
+    str3 = str2.encode("ISO-2022-JP")
     assert_equal(str, str3)
   end
 
@@ -85,8 +85,8 @@ class TestEncodingConverter < Test::Unit::TestCase
     }
 
     encoding_list = Encoding.list.map {|e| e.name }
-    assert(!encoding_list.include?(name1))
-    assert(!encoding_list.include?(name2))
+    assert_not_include(encoding_list, name1)
+    assert_not_include(encoding_list, name2)
   end
 
   def test_newline_converter_with_ascii_incompatible
@@ -146,7 +146,7 @@ class TestEncodingConverter < Test::Unit::TestCase
 
   def test_nil_source_buffer
     ec = Encoding::Converter.new("UTF-8", "EUC-JP")
-    ret = ec.primitive_convert(nil, dst="", nil, 10)
+    ret = ec.primitive_convert(nil, "", nil, 10)
     assert_equal(:finished, ret)
   end
 
@@ -449,6 +449,16 @@ class TestEncodingConverter < Test::Unit::TestCase
     assert_econv("abc\rdef", :finished, 50, ec, "abc\ndef", "")
   end
 
+  def test_no_universal_newline1
+    ec = Encoding::Converter.new("UTF-8", "EUC-JP", universal_newline: false)
+    assert_econv("abc\r\ndef", :finished, 50, ec, "abc\r\ndef", "")
+  end
+
+  def test_no_universal_newline2
+    ec = Encoding::Converter.new("", "", universal_newline: false)
+    assert_econv("abc\r\ndef", :finished, 50, ec, "abc\r\ndef", "")
+  end
+
   def test_after_output
     ec = Encoding::Converter.new("UTF-8", "EUC-JP")
     a =     ["",  "abc\u{3042}def", ec, nil, 100, :after_output=>true]
@@ -464,44 +474,44 @@ class TestEncodingConverter < Test::Unit::TestCase
 
   def test_errinfo_invalid_euc_jp
     ec = Encoding::Converter.new("EUC-JP", "Shift_JIS")
-    ec.primitive_convert(src="\xff", dst="", nil, 10)
+    ec.primitive_convert("\xff", "", nil, 10)
     assert_errinfo(:invalid_byte_sequence, "EUC-JP", "Shift_JIS", "\xFF", "", ec)
   end
 
   def test_errinfo_invalid_euc_jp2
     ec = Encoding::Converter.new("EUC-JP", "ISO-8859-1")
-    ec.primitive_convert(src="\xff", dst="", nil, 10)
+    ec.primitive_convert("\xff", "", nil, 10)
     assert_errinfo(:invalid_byte_sequence, "EUC-JP", "UTF-8", "\xFF", "", ec)
   end
 
   def test_errinfo_undefined_hiragana
     ec = Encoding::Converter.new("EUC-JP", "ISO-8859-1")
-    ec.primitive_convert(src="\xa4\xa2", dst="", nil, 10)
+    ec.primitive_convert("\xa4\xa2", "", nil, 10)
     assert_errinfo(:undefined_conversion, "UTF-8", "ISO-8859-1", "\xE3\x81\x82", "", ec)
   end
 
   def test_errinfo_invalid_partial_character
     ec = Encoding::Converter.new("EUC-JP", "ISO-8859-1")
-    ec.primitive_convert(src="\xa4", dst="", nil, 10)
+    ec.primitive_convert("\xa4", "", nil, 10)
     assert_errinfo(:incomplete_input, "EUC-JP", "UTF-8", "\xA4", "", ec)
   end
 
   def test_errinfo_valid_partial_character
     ec = Encoding::Converter.new("EUC-JP", "ISO-8859-1")
-    ec.primitive_convert(src="\xa4", dst="", nil, 10, :partial_input=>true)
+    ec.primitive_convert("\xa4", "", nil, 10, :partial_input=>true)
     assert_errinfo(:source_buffer_empty, nil, nil, nil, nil, ec)
   end
 
   def test_errinfo_invalid_utf16be
     ec = Encoding::Converter.new("UTF-16BE", "UTF-8")
-    ec.primitive_convert(src="\xd8\x00\x00@", dst="", nil, 10)
+    ec.primitive_convert(src="\xd8\x00\x00@", "", nil, 10)
     assert_errinfo(:invalid_byte_sequence, "UTF-16BE", "UTF-8", "\xD8\x00", "\x00", ec)
     assert_equal("@", src)
   end
 
   def test_errinfo_invalid_utf16le
     ec = Encoding::Converter.new("UTF-16LE", "UTF-8")
-    ec.primitive_convert(src="\x00\xd8@\x00", dst="", nil, 10)
+    ec.primitive_convert(src="\x00\xd8@\x00", "", nil, 10)
     assert_errinfo(:invalid_byte_sequence, "UTF-16LE", "UTF-8", "\x00\xD8", "@\x00", ec)
     assert_equal("", src)
   end
@@ -588,7 +598,7 @@ class TestEncodingConverter < Test::Unit::TestCase
 
   def test_putback2
     ec = Encoding::Converter.new("utf-16le", "euc-jp")
-    ret = ec.primitive_convert(src="\x00\xd8\x21\x00", dst="", nil, nil)
+    ret = ec.primitive_convert("\x00\xd8\x21\x00", "", nil, nil)
     assert_equal(:invalid_byte_sequence, ret)
     assert_equal("\x00".force_encoding("utf-16le"), ec.putback(1))
     assert_equal("\x21".force_encoding("utf-16le"), ec.putback(1))
@@ -694,20 +704,20 @@ class TestEncodingConverter < Test::Unit::TestCase
   def test_last_error1
     ec = Encoding::Converter.new("sjis", "euc-jp")
     assert_equal(nil, ec.last_error)
-    assert_equal(:incomplete_input, ec.primitive_convert(src="fo\x81", dst="", nil, nil))
+    assert_equal(:incomplete_input, ec.primitive_convert("fo\x81", "", nil, nil))
     assert_kind_of(Encoding::InvalidByteSequenceError, ec.last_error)
   end
 
   def test_last_error2
     ec = Encoding::Converter.new("sjis", "euc-jp")
-    assert_equal("fo", ec.convert(src="fo\x81"))
+    assert_equal("fo", ec.convert("fo\x81"))
     assert_raise(Encoding::InvalidByteSequenceError) { ec.finish }
     assert_kind_of(Encoding::InvalidByteSequenceError, ec.last_error)
   end
 
   def test_us_ascii
     ec = Encoding::Converter.new("UTF-8", "US-ASCII")
-    ec.primitive_convert(src="\u{3042}", dst="")
+    ec.primitive_convert("\u{3042}", "")
     err = ec.last_error
     assert_kind_of(Encoding::UndefinedConversionError, err)
     assert_equal("\u{3042}", err.error_char)
@@ -715,7 +725,7 @@ class TestEncodingConverter < Test::Unit::TestCase
 
   def test_88591
     ec = Encoding::Converter.new("UTF-8", "ISO-8859-1")
-    ec.primitive_convert(src="\u{3042}", dst="")
+    ec.primitive_convert("\u{3042}", "")
     err = ec.last_error
     assert_kind_of(Encoding::UndefinedConversionError, err)
     assert_equal("\u{3042}", err.error_char)
@@ -891,5 +901,26 @@ class TestEncodingConverter < Test::Unit::TestCase
       broken = "\x80".force_encoding("euc-jp")
       "".encode("euc-jp", :undef => :replace, :replace => broken)
     }
+  end
+
+  def test_newline_option
+    ec1 = Encoding::Converter.new("", "", universal_newline: true)
+    ec2 = Encoding::Converter.new("", "", newline: :universal)
+    assert_equal(ec1, ec2)
+    assert_raise_with_message(ArgumentError, /\u{3042}/) {
+      Encoding::Converter.new("", "", newline: "\u{3042}".to_sym)
+    }
+  end
+
+  def test_default_external
+    Encoding.list.grep(->(enc) {/\AISO-8859-\d+\z/i =~ enc.name}) do |enc|
+      assert_separately(%W[--disable=gems -d - #{enc.name}], <<-EOS, ignore_stderr: true)
+    Encoding.default_external = ext = ARGV[0]
+    Encoding.default_internal = int ='utf-8'
+    assert_nothing_raised do
+      Encoding::Converter.new(ext, int)
+    end
+    EOS
+    end
   end
 end

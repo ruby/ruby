@@ -36,7 +36,7 @@ class TestLDAP < Test::Unit::TestCase
     assert_equal(nil, u.extensions)
 
     # from RFC2255, section 6.
-    urls = {
+    {
       'ldap:///o=University%20of%20Michigan,c=US' =>
       ['ldap', nil, URI::LDAP::DEFAULT_PORT,
 	'o=University%20of%20Michigan,c=US',

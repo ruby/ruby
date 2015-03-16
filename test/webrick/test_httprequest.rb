@@ -3,6 +3,15 @@ require "stringio"
 require "test/unit"
 
 class TestWEBrickHTTPRequest < Test::Unit::TestCase
+  def test_simple_request
+    msg = <<-_end_of_message_
+GET /
+    _end_of_message_
+    req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
+    req.parse(StringIO.new(msg))
+    assert(req.meta_vars) # fails if @header was not initialized and iteration is attempted on the nil reference
+  end
+
   def test_parse_09
     msg = <<-_end_of_message_
       GET /
@@ -58,7 +67,7 @@ class TestWEBrickHTTPRequest < Test::Unit::TestCase
 
   def test_request_uri_too_large
     msg = <<-_end_of_message_
-      GET /#{"a"*1024} HTTP/1.1
+      GET /#{"a"*2084} HTTP/1.1
     _end_of_message_
     req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
     assert_raise(WEBrick::HTTPStatus::RequestURITooLarge){
@@ -303,6 +312,59 @@ class TestWEBrickHTTPRequest < Test::Unit::TestCase
     assert_equal(443, req.port)
     assert_equal("234.234.234.234", req.remote_ip)
     assert(req.ssl?)
+
+    msg = <<-_end_of_message_
+      GET /foo HTTP/1.1
+      Host: localhost:10080
+      Client-IP: 234.234.234.234
+      X-Forwarded-Proto: https
+      X-Forwarded-For: 192.168.1.10
+      X-Forwarded-Host: forward1.example.com:1234, forward2.example.com:5678
+      X-Forwarded-Server: server1.example.com, server2.example.com
+      X-Requested-With: XMLHttpRequest
+      Connection: Keep-Alive
+
+    _end_of_message_
+    msg.gsub!(/^ {6}/, "")
+    req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
+    req.parse(StringIO.new(msg))
+    assert_equal("server1.example.com", req.server_name)
+    assert_equal("https://forward1.example.com:1234/foo", req.request_uri.to_s)
+    assert_equal("forward1.example.com", req.host)
+    assert_equal(1234, req.port)
+    assert_equal("234.234.234.234", req.remote_ip)
+    assert(req.ssl?)
+  end
+
+  def test_continue_sent
+    msg = <<-_end_of_message_
+      POST /path HTTP/1.1
+      Expect: 100-continue
+
+    _end_of_message_
+    msg.gsub!(/^ {6}/, "")
+    req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
+    req.parse(StringIO.new(msg))
+    assert req['expect']
+    l = msg.size
+    req.continue
+    assert_not_equal l, msg.size
+    assert_match(/HTTP\/1.1 100 continue\r\n\r\n\z/, msg)
+    assert !req['expect']
+  end
+
+  def test_continue_not_sent
+    msg = <<-_end_of_message_
+      POST /path HTTP/1.1
+
+    _end_of_message_
+    msg.gsub!(/^ {6}/, "")
+    req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
+    req.parse(StringIO.new(msg))
+    assert !req['expect']
+    l = msg.size
+    req.continue
+    assert_equal l, msg.size
   end
 
   def test_bad_messages

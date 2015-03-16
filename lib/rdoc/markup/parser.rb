@@ -1,5 +1,4 @@
 require 'strscan'
-require 'rdoc/text'
 
 ##
 # A recursive-descent parser for RDoc markup.
@@ -52,13 +51,15 @@ class RDoc::Markup::Parser
   attr_reader :tokens
 
   ##
-  # Parsers +str+ into a Document
+  # Parses +str+ into a Document.
+  #
+  # Use RDoc::Markup#parse instead of this method.
 
   def self.parse str
     parser = new
-    #parser.debug = true
     parser.tokenize str
-    RDoc::Markup::Document.new(*parser.parse)
+    doc = RDoc::Markup::Document.new
+    parser.parse doc
   end
 
   ##
@@ -74,22 +75,35 @@ class RDoc::Markup::Parser
   # Creates a new Parser.  See also ::parse
 
   def initialize
-    @tokens = []
-    @current_token = nil
-    @debug = false
-
-    @line = 0
-    @line_pos = 0
+    @binary_input   = nil
+    @current_token  = nil
+    @debug          = false
+    @have_encoding  = Object.const_defined? :Encoding
+    @have_byteslice = ''.respond_to? :byteslice
+    @input          = nil
+    @input_encoding = nil
+    @line           = 0
+    @line_pos       = 0
+    @s              = nil
+    @tokens         = []
   end
 
   ##
   # Builds a Heading of +level+
 
   def build_heading level
-    heading = RDoc::Markup::Heading.new level, text
-    skip :NEWLINE
+    type, text, = get
 
-    heading
+    text = case type
+           when :TEXT then
+             skip :NEWLINE
+             text
+           else
+             unget
+             ''
+           end
+
+    RDoc::Markup::Heading.new level, text
   end
 
   ##
@@ -99,44 +113,80 @@ class RDoc::Markup::Parser
     p :list_start => margin if @debug
 
     list = RDoc::Markup::List.new
+    label = nil
 
     until @tokens.empty? do
       type, data, column, = get
 
       case type
-      when :BULLET, :LABEL, :LALPHA, :NOTE, :NUMBER, :UALPHA then
-        list_type = type
-
-        if column < margin then
+      when *LIST_TOKENS then
+        if column < margin || (list.type && list.type != type) then
           unget
           break
         end
 
-        if list.type and list.type != list_type then
-          unget
-          break
-        end
-
-        list.type = list_type
+        list.type = type
+        peek_type, _, column, = peek_token
 
         case type
         when :NOTE, :LABEL then
-          _, indent, = get # SPACE
-          if :NEWLINE == peek_token.first then
-            get
-            peek_type, new_indent, peek_column, = peek_token
-            indent = new_indent if
-              peek_type == :INDENT and peek_column >= column
-            unget
+          label = [] unless label
+
+          if peek_type == :NEWLINE then
+            # description not on the same line as LABEL/NOTE
+            # skip the trailing newline & any blank lines below
+            while peek_type == :NEWLINE
+              get
+              peek_type, _, column, = peek_token
+            end
+
+            # we may be:
+            #   - at end of stream
+            #   - at a column < margin:
+            #         [text]
+            #       blah blah blah
+            #   - at the same column, but with a different type of list item
+            #       [text]
+            #       * blah blah
+            #   - at the same column, with the same type of list item
+            #       [one]
+            #       [two]
+            # In all cases, we have an empty description.
+            # In the last case only, we continue.
+            if peek_type.nil? || column < margin then
+              empty = true
+            elsif column == margin then
+              case peek_type
+              when type
+                empty = :continue
+              when *LIST_TOKENS
+                empty = true
+              else
+                empty = false
+              end
+            else
+              empty = false
+            end
+
+            if empty then
+              label << data
+              next if empty == :continue
+              break
+            end
           end
         else
           data = nil
-          _, indent, = get
         end
 
-        list_item = build_list_item(margin + indent, data)
+        if label then
+          data = label << data
+          label = nil
+        end
 
-        list << list_item if list_item
+        list_item = RDoc::Markup::ListItem.new data
+        parse list_item, column
+        list << list_item
+
       else
         unget
         break
@@ -145,57 +195,15 @@ class RDoc::Markup::Parser
 
     p :list_end => margin if @debug
 
-    return nil if list.empty?
+    if list.empty? then
+      return nil unless label
+      return nil unless [:LABEL, :NOTE].include? list.type
 
-    list
-  end
-
-  ##
-  # Builds a ListItem that is flush to +indent+ with type +item_type+
-
-  def build_list_item indent, item_type = nil
-    p :list_item_start => [indent, item_type] if @debug
-
-    list_item = RDoc::Markup::ListItem.new item_type
-
-    until @tokens.empty? do
-      type, data, column = get
-
-      if column < indent and
-         not type == :NEWLINE and
-         (type != :INDENT or data < indent) then
-        unget
-        break
-      end
-
-      case type
-      when :INDENT then
-        unget
-        list_item.push(*parse(indent))
-      when :TEXT then
-        unget
-        list_item << build_paragraph(indent)
-      when :HEADER then
-        list_item << build_heading(data)
-      when :NEWLINE then
-        list_item << RDoc::Markup::BlankLine.new
-      when *LIST_TOKENS then
-        unget
-        list_item << build_list(column)
-      else
-        raise ParseError, "Unhandled token #{@current_token.inspect}"
-      end
+      list_item = RDoc::Markup::ListItem.new label, RDoc::Markup::BlankLine.new
+      list << list_item
     end
 
-    p :list_item_end => [indent, item_type] if @debug
-
-    return nil if list_item.empty?
-
-    list_item.parts.shift if
-      RDoc::Markup::BlankLine === list_item.parts.first and
-      list_item.length > 1
-
-    list_item
+    list
   end
 
   ##
@@ -209,25 +217,19 @@ class RDoc::Markup::Parser
     until @tokens.empty? do
       type, data, column, = get
 
-      case type
-      when :INDENT then
-        next if data == margin and peek_token[0] == :TEXT
-
-        unget
-        break
-      when :TEXT then
-        if column != margin then
-          unget
-          break
-        end
-
+      if type == :TEXT and column == margin then
         paragraph << data
-        skip :NEWLINE
+
+        break if peek_token.first == :BREAK
+
+        data << ' ' if skip :NEWLINE
       else
         unget
         break
       end
     end
+
+    paragraph.parts.last.sub!(/ \z/, '') # cleanup
 
     p :paragraph_end => margin if @debug
 
@@ -235,72 +237,101 @@ class RDoc::Markup::Parser
   end
 
   ##
-  # Builds a Verbatim that is flush to +margin+
+  # Builds a Verbatim that is indented from +margin+.
+  #
+  # The verbatim block is shifted left (the least indented lines start in
+  # column 0).  Each part of the verbatim is one line of text, always
+  # terminated by a newline.  Blank lines always consist of a single newline
+  # character, and there is never a single newline at the end of the verbatim.
 
   def build_verbatim margin
     p :verbatim_begin => margin if @debug
     verbatim = RDoc::Markup::Verbatim.new
 
+    min_indent = nil
+    generate_leading_spaces = true
+    line = ''
+
     until @tokens.empty? do
       type, data, column, = get
 
-      case type
-      when :INDENT then
-        if margin >= data then
-          unget
-          break
-        end
+      if type == :NEWLINE then
+        line << data
+        verbatim << line
+        line = ''
+        generate_leading_spaces = true
+        next
+      end
 
-        indent = data - margin
-
-        verbatim << ' ' * indent
-      when :HEADER then
-        verbatim << '=' * data
-
-        _, _, peek_column, = peek_token
-        peek_column ||= column + data
-        verbatim << ' ' * (peek_column - column - data)
-      when :RULE then
-        width = 2 + data
-        verbatim << '-' * width
-
-        _, _, peek_column, = peek_token
-        peek_column ||= column + data + 2
-        verbatim << ' ' * (peek_column - column - width)
-      when :TEXT then
-        verbatim << data
-      when *LIST_TOKENS then
-        if column <= margin then
-          unget
-          break
-        end
-
-        list_marker = case type
-                      when :BULLET                   then '*'
-                      when :LABEL                    then "[#{data}]"
-                      when :LALPHA, :NUMBER, :UALPHA then "#{data}."
-                      when :NOTE                     then "#{data}::"
-                      end
-
-        verbatim << list_marker
-
-        _, data, = get
-
-        verbatim << ' ' * (data - list_marker.length)
-      when :NEWLINE then
-        verbatim << data
-        break unless [:INDENT, :NEWLINE].include? peek_token[0]
-      else
+      if column <= margin
         unget
         break
       end
+
+      if generate_leading_spaces then
+        indent = column - margin
+        line << ' ' * indent
+        min_indent = indent if min_indent.nil? || indent < min_indent
+        generate_leading_spaces = false
+      end
+
+      case type
+      when :HEADER then
+        line << '=' * data
+        _, _, peek_column, = peek_token
+        peek_column ||= column + data
+        indent = peek_column - column - data
+        line << ' ' * indent
+      when :RULE then
+        width = 2 + data
+        line << '-' * width
+        _, _, peek_column, = peek_token
+        peek_column ||= column + width
+        indent = peek_column - column - width
+        line << ' ' * indent
+      when :BREAK, :TEXT then
+        line << data
+      else # *LIST_TOKENS
+        list_marker = case type
+                      when :BULLET then data
+                      when :LABEL  then "[#{data}]"
+                      when :NOTE   then "#{data}::"
+                      else # :LALPHA, :NUMBER, :UALPHA
+                        "#{data}."
+                      end
+        line << list_marker
+        peek_type, _, peek_column = peek_token
+        unless peek_type == :NEWLINE then
+          peek_column ||= column + list_marker.length
+          indent = peek_column - column - list_marker.length
+          line << ' ' * indent
+        end
+      end
+
     end
 
+    verbatim << line << "\n" unless line.empty?
+    verbatim.parts.each { |p| p.slice!(0, min_indent) unless p == "\n" } if min_indent > 0
     verbatim.normalize
 
     p :verbatim_end => margin if @debug
 
     verbatim
+  end
+
+  ##
+  # The character offset for the input string at the given +byte_offset+
+
+  def char_pos byte_offset
+    if @have_byteslice then
+      @input.byteslice(0, byte_offset).length
+    elsif @have_encoding then
+      matched = @binary_input[0, byte_offset]
+      matched.force_encoding @input_encoding
+      matched.length
+    else
+      byte_offset
+    end
   end
 
   ##
@@ -313,65 +344,72 @@ class RDoc::Markup::Parser
   end
 
   ##
-  # Parses the tokens into a Document
+  # Parses the tokens into an array of RDoc::Markup::XXX objects,
+  # and appends them to the passed +parent+ RDoc::Markup::YYY object.
+  #
+  # Exits at the end of the token stream, or when it encounters a token
+  # in a column less than +indent+ (unless it is a NEWLINE).
+  #
+  # Returns +parent+.
 
-  def parse indent = 0
+  def parse parent, indent = 0
     p :parse_start => indent if @debug
-
-    document = []
 
     until @tokens.empty? do
       type, data, column, = get
 
-      if type != :INDENT and column < indent then
-        unget
-        break
+      case type
+      when :BREAK then
+        parent << RDoc::Markup::BlankLine.new
+        skip :NEWLINE, false
+        next
+      when :NEWLINE then
+        # trailing newlines are skipped below, so this is a blank line
+        parent << RDoc::Markup::BlankLine.new
+        skip :NEWLINE, false
+        next
       end
 
+      # indentation change: break or verbatim
+      if column < indent then
+        unget
+        break
+      elsif column > indent then
+        unget
+        parent << build_verbatim(indent)
+        next
+      end
+
+      # indentation is the same
       case type
       when :HEADER then
-        document << build_heading(data)
-      when :INDENT then
-        if indent > data then
-          unget
-          break
-        elsif indent == data then
-          next
-        end
-
-        unget
-        document << build_verbatim(indent)
-      when :NEWLINE then
-        document << RDoc::Markup::BlankLine.new
-        skip :NEWLINE, false
+        parent << build_heading(data)
       when :RULE then
-        document << RDoc::Markup::Rule.new(data)
+        parent << RDoc::Markup::Rule.new(data)
         skip :NEWLINE
       when :TEXT then
         unget
-        document << build_paragraph(indent)
-
-        # we're done with this paragraph (indent mismatch)
-        break if peek_token[0] == :TEXT
+        parse_text parent, indent
       when *LIST_TOKENS then
         unget
-
-        list = build_list(indent)
-
-        document << list if list
-
-        # we're done with this list (indent mismatch)
-        break if LIST_TOKENS.include? peek_token.first and indent > 0
+        parent << build_list(indent)
       else
         type, data, column, line = @current_token
-        raise ParseError,
-              "Unhandled token #{type} (#{data.inspect}) at #{line}:#{column}"
+        raise ParseError, "Unhandled token #{type} (#{data.inspect}) at #{line}:#{column}"
       end
     end
 
     p :parse_end => indent if @debug
 
-    document
+    parent
+
+  end
+
+  ##
+  # Small hook that is overridden by RDoc::TomDoc
+
+  def parse_text parent, indent # :nodoc:
+    parent << build_paragraph(indent)
   end
 
   ##
@@ -384,122 +422,112 @@ class RDoc::Markup::Parser
   end
 
   ##
-  # Skips a token of +token_type+, optionally raising an error.
+  # Creates the StringScanner
 
-  def skip token_type, error = true
-    type, data, = get
+  def setup_scanner input
+    @line     = 0
+    @line_pos = 0
+    @input    = input.dup
 
-    return unless type # end of stream
-
-    return @current_token if token_type == type
-
-    unget
-
-    raise ParseError, "expected #{token_type} got #{@current_token.inspect}" if
-      error
-  end
-
-  ##
-  # Consumes tokens until NEWLINE and turns them back into text
-
-  def text
-    text = ''
-
-    loop do
-      type, data, = get
-
-      text << case type
-              when :BULLET then
-                _, space, = get # SPACE
-                "*#{' ' * (space - 1)}"
-              when :LABEL then
-                _, space, = get # SPACE
-                "[#{data}]#{' ' * (space - data.length - 2)}"
-              when :LALPHA, :NUMBER, :UALPHA then
-                _, space, = get # SPACE
-                "#{data}.#{' ' * (space - 2)}"
-              when :NOTE then
-                _, space = get # SPACE
-                "#{data}::#{' ' * (space - data.length - 2)}"
-              when :TEXT then
-                data
-              when :NEWLINE then
-                unget
-                break
-              when nil then
-                break
-              else
-                raise ParseError, "unhandled token #{@current_token.inspect}"
-              end
+    if @have_encoding and not @have_byteslice then
+      @input_encoding = @input.encoding
+      @binary_input   = @input.force_encoding Encoding::BINARY
     end
 
-    text
+    @s = StringScanner.new input
   end
 
   ##
-  # Calculates the column and line of the current token based on +offset+.
+  # Skips the next token if its type is +token_type+.
+  #
+  # Optionally raises an error if the next token is not of the expected type.
 
-  def token_pos offset
-    [offset - @line_pos, @line]
+  def skip token_type, error = true
+    type, = get
+    return unless type # end of stream
+    return @current_token if token_type == type
+    unget
+    raise ParseError, "expected #{token_type} got #{@current_token.inspect}" if error
   end
 
   ##
   # Turns text +input+ into a stream of tokens
 
   def tokenize input
-    s = StringScanner.new input
+    setup_scanner input
 
-    @line = 0
-    @line_pos = 0
+    until @s.eos? do
+      pos = @s.pos
 
-    until s.eos? do
-      pos = s.pos
+      # leading spaces will be reflected by the column of the next token
+      # the only thing we loose are trailing spaces at the end of the file
+      next if @s.scan(/ +/)
+
+      # note: after BULLET, LABEL, etc.,
+      # indent will be the column of the next non-newline token
 
       @tokens << case
-                 when s.scan(/\r?\n/) then
-                   token = [:NEWLINE, s.matched, *token_pos(pos)]
-                   @line_pos = s.pos
+                 # [CR]LF => :NEWLINE
+                 when @s.scan(/\r?\n/) then
+                   token = [:NEWLINE, @s.matched, *token_pos(pos)]
+                   @line_pos = char_pos @s.pos
                    @line += 1
                    token
-                 when s.scan(/ +/) then
-                   [:INDENT, s.matched_size, *token_pos(pos)]
-                 when s.scan(/(=+)\s*/) then
-                   level = s[1].length
-                   level = 6 if level > 6
-                   @tokens << [:HEADER, level, *token_pos(pos)]
+                 # === text => :HEADER then :TEXT
+                 when @s.scan(/(=+)(\s*)/) then
+                   level = @s[1].length
+                   header = [:HEADER, level, *token_pos(pos)]
 
-                   pos = s.pos
-                   s.scan(/.*/)
-                   [:TEXT, s.matched, *token_pos(pos)]
-                 when s.scan(/^(-{3,}) *$/) then
-                   [:RULE, s[1].length - 2, *token_pos(pos)]
-                 when s.scan(/([*-])\s+/) then
-                   @tokens << [:BULLET, :BULLET, *token_pos(pos)]
-                   [:SPACE, s.matched_size, *token_pos(pos)]
-                 when s.scan(/([a-z]|\d+)\.[ \t]+\S/i) then
-                   list_label = s[1]
-                   width      = s.matched_size - 1
+                   if @s[2] =~ /^\r?\n/ then
+                     @s.pos -= @s[2].length
+                     header
+                   else
+                     pos = @s.pos
+                     @s.scan(/.*/)
+                     @tokens << header
+                     [:TEXT, @s.matched.sub(/\r$/, ''), *token_pos(pos)]
+                   end
+                 # --- (at least 3) and nothing else on the line => :RULE
+                 when @s.scan(/(-{3,}) *\r?$/) then
+                   [:RULE, @s[1].length - 2, *token_pos(pos)]
+                 # * or - followed by white space and text => :BULLET
+                 when @s.scan(/([*-]) +(\S)/) then
+                   @s.pos -= @s[2].bytesize # unget \S
+                   [:BULLET, @s[1], *token_pos(pos)]
+                 # A. text, a. text, 12. text => :UALPHA, :LALPHA, :NUMBER
+                 when @s.scan(/([a-z]|\d+)\. +(\S)/i) then
+                   # FIXME if tab(s), the column will be wrong
+                   # either support tabs everywhere by first expanding them to
+                   # spaces, or assume that they will have been replaced
+                   # before (and provide a check for that at least in debug
+                   # mode)
+                   list_label = @s[1]
+                   @s.pos -= @s[2].bytesize # unget \S
+                   list_type =
+                     case list_label
+                     when /[a-z]/ then :LALPHA
+                     when /[A-Z]/ then :UALPHA
+                     when /\d/    then :NUMBER
+                     else
+                       raise ParseError, "BUG token #{list_label}"
+                     end
+                   [list_type, list_label, *token_pos(pos)]
+                 # [text] followed by spaces or end of line => :LABEL
+                 when @s.scan(/\[(.*?)\]( +|\r?$)/) then
+                   [:LABEL, @s[1], *token_pos(pos)]
+                 # text:: followed by spaces or end of line => :NOTE
+                 when @s.scan(/(.*?)::( +|\r?$)/) then
+                   [:NOTE, @s[1], *token_pos(pos)]
+                 # anything else: :TEXT
+                 else @s.scan(/(.*?)(  )?\r?$/)
+                   token = [:TEXT, @s[1], *token_pos(pos)]
 
-                   s.pos -= 1 # unget \S
-
-                   list_type = case list_label
-                               when /[a-z]/ then :LALPHA
-                               when /[A-Z]/ then :UALPHA
-                               when /\d/    then :NUMBER
-                               else
-                                 raise ParseError, "BUG token #{list_label}"
-                               end
-
-                   @tokens << [list_type, list_label, *token_pos(pos)]
-                   [:SPACE, width, *token_pos(pos)]
-                 when s.scan(/\[(.*?)\]( +|$)/) then
-                   @tokens << [:LABEL, s[1], *token_pos(pos)]
-                   [:SPACE, s.matched_size, *token_pos(pos)]
-                 when s.scan(/(.*?)::( +|$)/) then
-                   @tokens << [:NOTE, s[1], *token_pos(pos)]
-                   [:SPACE, s.matched_size, *token_pos(pos)]
-                 else s.scan(/.*/)
-                   [:TEXT, s.matched, *token_pos(pos)]
+                   if @s[2] then
+                     @tokens << token
+                     [:BREAK, @s[2], *token_pos(pos + @s[1].length)]
+                   else
+                     token
+                   end
                  end
     end
 
@@ -507,23 +535,24 @@ class RDoc::Markup::Parser
   end
 
   ##
-  # Returns the current token or +token+ to the token stream
+  # Calculates the column (by character) and line of the current token based
+  # on +byte_offset+.
 
-  def unget token = @current_token
+  def token_pos byte_offset
+    offset = char_pos byte_offset
+
+    [offset - @line_pos, @line]
+  end
+
+  ##
+  # Returns the current token to the token stream
+
+  def unget
+    token = @current_token
     p :unget => token if @debug
     raise Error, 'too many #ungets' if token == @tokens.first
     @tokens.unshift token if token
   end
 
 end
-
-require 'rdoc/markup/blank_line'
-require 'rdoc/markup/document'
-require 'rdoc/markup/heading'
-require 'rdoc/markup/list'
-require 'rdoc/markup/list_item'
-require 'rdoc/markup/raw'
-require 'rdoc/markup/paragraph'
-require 'rdoc/markup/rule'
-require 'rdoc/markup/verbatim'
 

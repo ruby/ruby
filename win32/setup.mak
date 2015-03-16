@@ -19,7 +19,6 @@ MAKE = $(MAKE) -f $(MAKEFILE)
 !else
 MAKEFILE = Makefile
 !endif
-ARCH = PROCESSOR_ARCHITECTURE
 CPU = PROCESSOR_LEVEL
 CC = cl -nologo
 CPP = $(CC) -EP
@@ -58,128 +57,91 @@ BASERUBY = $(BASERUBY:/=\)
 !if defined(NTVER)
 NTVER = $(NTVER)
 !endif
+!if defined(USE_RUBYGEMS)
+USE_RUBYGEMS = $(USE_RUBYGEMS)
+!endif
+
 <<
 !if !defined(BASERUBY)
-	@for %I in (ruby.exe) do @echo BASERUBY = %~s$$PATH:I >> $(MAKEFILE)
+	@for %I in (ruby.exe) do @echo BASERUBY = %~s$$PATH:I>> $(MAKEFILE)
+	@echo !if "$$(BASERUBY)" == "">> $(MAKEFILE)
+	@echo BASERUBY = echo executable host ruby is required.  use --with-baseruby option.^& exit 1 >> $(MAKEFILE)
+	@echo HAVE_BASERUBY = no>> $(MAKEFILE)
+	@echo !else>> $(MAKEFILE)
+	@echo HAVE_BASERUBY = yes>> $(MAKEFILE)
+	@echo !endif>> $(MAKEFILE)
+!elseif [$(BASERUBY) -eexit 2> nul] == 0
+	@echo HAVE_BASERUBY = yes>> $(MAKEFILE)
+!else
+	@echo HAVE_BASERUBY = no>> $(MAKEFILE)
 !endif
 
--system-vars-: -runtime- -unicows-
+-system-vars-: -osname- -runtime- -headers-
 
--system-vars32-: -osname32- -runtime- -unicows-
+-system-vars32-: -osname32- -runtime- -headers-
 
--system-vars64-: -osname64- -runtime-
+-system-vars64-: -osname64- -runtime- -headers-
 
 -osname32-: nul
-	@echo TARGET_OS = mswin32 >>$(MAKEFILE)
+	@echo TARGET_OS = mswin32>>$(MAKEFILE)
 
 -osname64-: nul
-	@echo TARGET_OS = mswin64 >>$(MAKEFILE)
+	@echo TARGET_OS = mswin64>>$(MAKEFILE)
+
+-osname-: nul
+	@echo !ifndef TARGET_OS>>$(MAKEFILE)
+	@($(CC) -c <<conftest.c > nul && (echo TARGET_OS = mswin32) || (echo TARGET_OS = mswin64)) >>$(MAKEFILE)
+#ifdef _WIN64
+#error
+#endif
+<<
+	@echo !endif>>$(MAKEFILE)
+	@$(WIN32DIR:/=\)\rm.bat conftest.*
 
 -runtime-: nul
-	$(CC) -MD <<rtname.c user32.lib -link > nul
-#include <windows.h>
-#include <memory.h>
-#include <string.h>
-#include <stddef.h>
+	@$(CC) -MD <<conftest.c user32.lib -link > nul
 #include <stdio.h>
-#include <stdlib.h>
-#ifndef MAXPATHLEN
-# define MAXPATHLEN 1024
-#endif
-
-int
-runtime_name()
-{
-    char libpath[MAXPATHLEN+1];
-    char *p, *base = NULL, *ver = NULL;
-    HMODULE msvcrt = NULL;
-    MEMORY_BASIC_INFORMATION m;
-
-    memset(&m, 0, sizeof(m));
-    if (VirtualQuery(stdin, &m, sizeof(m)) && m.State == MEM_COMMIT)
-	msvcrt = (HMODULE)m.AllocationBase;
-    GetModuleFileName(msvcrt, libpath, sizeof libpath);
-
-    libpath[sizeof(libpath) - 1] = '\0';
-    for (p = libpath; *p; p = CharNext(p)) {
-	if (*p == '\\') {
-	    base = ++p;
-	}
-    }
-    if (!base) return 0;
-    if (p = strchr(base, '.')) *p = '\0';
-    for (p = base; *p; p = CharNext(p)) {
-	if (!isascii(*p)) continue;
-	if (isupper(*p)) {
-	    *p = tolower(*p);
-	}
-	if (!isdigit(*p)) {
-	    ver = NULL;
-	} else if (!ver) {
-	    ver = p;
-	}
-    }
-    printf("!ifndef TARGET_OS\n");
-#ifdef _WIN64
-    printf("TARGET_OS = mswin64\n");
-#else
-    printf("TARGET_OS = mswin32\n");
-#endif
-    printf("!endif\n");
-    if (ver) {
-	printf("PLATFORM = $$(TARGET_OS)_%s\n", ver);
-    }
-    else {
-	printf("PLATFORM = $$(TARGET_OS)\n");
-	ver = "60";
-    }
-    printf("RT = %s\n", base);
-    printf("RT_VER = %s\n", ver);
-    return 1;
-}
-
-int main(int argc, char **argv)
-{
-    if (!runtime_name()) return EXIT_FAILURE;
-    return EXIT_SUCCESS;
-}
+int main(void) {FILE *volatile f = stdin; return 0;}
 <<
-	@.\rtname >>$(MAKEFILE)
-	@del rtname.*
+	@$(WIN32DIR:/=\)\rtname conftest.exe >>$(MAKEFILE)
+	@$(WIN32DIR:/=\)\rm.bat conftest.*
 
--unicows-: nul
-!if "$(ENABLE_WIN95)" == ""
-	@echo Checking unicows.lib
-	@$(CC) -MD <<conftest.c unicows.lib user32.lib > nul && echo>>$(MAKEFILE) ENABLE_WIN95 = yes || rem
+-headers-: nul
+
+check-psapi.h: nul
+	($(CC) -MD <<conftest.c psapi.lib -link && echo>>$(MAKEFILE) HAVE_PSAPI_H=1) & $(WIN32DIR:/=\)\rm.bat conftest.*
 #include <windows.h>
-int main()
-{
-    return GetEnvironmentVariableW(0, 0, 0) == 0;
-}
+#include <psapi.h>
+int main(void) {return (EnumProcesses(NULL,0,NULL) ? 0 : 1);}
 <<
-	@del conftest.*
-!else if "$(ENABLE_WIN95)" == "yes"
-	@echo>>$(MAKEFILE) ENABLE_WIN95 = yes
-!endif
 
--version-: nul
+-version-: nul verconf.mk
 	@$(APPEND)
-	@$(CPP) -I$(srcdir) -I$(srcdir)/include <<"Creating $(MAKEFILE)" | find "=" >>$(MAKEFILE)
+	@$(CPP) -I$(srcdir) -I$(srcdir)/include <<"Creating $(MAKEFILE)" | findstr "=" >>$(MAKEFILE)
 #define RUBY_REVISION 0
 #include "version.h"
-MAJOR = RUBY_VERSION_MAJOR
-MINOR = RUBY_VERSION_MINOR
-TEENY = RUBY_VERSION_TEENY
+MAJOR = RUBY_API_VERSION_MAJOR
+MINOR = RUBY_API_VERSION_MINOR
+TEENY = RUBY_API_VERSION_TEENY
+RUBY_PROGRAM_VERSION = RUBY_VERSION
 MSC_VER = _MSC_VER
+<<
+
+verconf.mk: nul
+	@echo RUBY_RELEASE_DATE \>$(@)
+	@$(CPP) -I$(srcdir) -I$(srcdir)/include <<"Creating $(@)" | findstr "=" >>$(@)
+#define RUBY_REVISION 0
+#include "version.h"
+ = RUBY_RELEASE_DATE
 <<
 
 -program-name-:
 	@type << >>$(MAKEFILE)
-!ifdef RUBY_PREFIX
-RUBY_PREFIX = $(RUBY_PREFIX)
+!ifdef PROGRAM_PREFIX
+PROGRAM_PREFIX = $(PROGRAM_PREFIX)
 !endif
-!ifdef RUBY_SUFFIX
-RUBY_SUFFIX = $(RUBY_SUFFIX)
+!ifdef PROGRAM_SUFFIX
+PROGRAM_SUFFIX = $(PROGRAM_SUFFIX)
 !endif
 !ifdef RUBY_INSTALL_NAME
 RUBY_INSTALL_NAME = $(RUBY_INSTALL_NAME)
@@ -190,32 +152,28 @@ RUBY_SO_NAME = $(RUBY_SO_NAME)
 <<
 
 -generic-: nul
-!if defined($(ARCH)) || defined($(CPU))
-	@type << >>$(MAKEFILE)
-!if defined($(ARCH))
-!if "$(PROCESSOR_ARCHITECTURE)" == "AMD64"
-$(ARCH) = x64
-!elseif "$(PROCESSOR_ARCHITECTURE)" == "IA64"
-$(ARCH) = ia64
-!else
-$(ARCH) = $(PROCESSOR_ARCHITECTURE)
-!endif
-!endif
-!if defined($(CPU))
-$(CPU) = $(PROCESSOR_LEVEL)
-!endif
-
+	@$(CPP) <<conftest.c 2>nul | findstr = >>$(MAKEFILE)
+#if defined _M_X64
+MACHINE = x64
+#elif defined _M_IA64
+MACHINE = ia64
+#else
+MACHINE = x86
+#endif
 <<
+!if defined($(CPU))
+	@echo>>$(MAKEFILE) $(CPU) = $(PROCESSOR_LEVEL)
 !endif
+	@$(APPEND)
 
 -alpha-: nul
-	@echo $(ARCH) = alpha>>$(MAKEFILE)
+	@echo MACHINE = alpha>>$(MAKEFILE)
 -x64-: nul
-	@echo $(ARCH) = x64>>$(MAKEFILE)
+	@echo MACHINE = x64>>$(MAKEFILE)
 -ia64-: nul
-	@echo $(ARCH) = ia64>>$(MAKEFILE)
+	@echo MACHINE = ia64>>$(MAKEFILE)
 -ix86-: nul
-	@echo $(ARCH) = x86>>$(MAKEFILE)
+	@echo MACHINE = x86>>$(MAKEFILE)
 
 -i386-: -ix86-
 	@echo $(CPU) = 3>>$(MAKEFILE)
@@ -245,7 +203,7 @@ $(CPU) = $(PROCESSOR_LEVEL)
 # CPPFLAGS = -I. -I$$(srcdir) -I$$(srcdir)/missing -DLIBRUBY_SO=\"$$(LIBRUBY_SO)\"
 # STACK = 0x2000000
 # LDFLAGS = $$(CFLAGS) -Fm
-# XLDFLAGS = 
+# XLDFLAGS =
 # RFLAGS = -r
 # EXTLIBS =
 

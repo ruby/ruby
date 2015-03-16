@@ -1,7 +1,10 @@
 require 'digest.so'
 
 module Digest
-  def self.const_missing(name)
+  # A mutex for Digest().
+  REQUIRE_MUTEX = Mutex.new
+
+  def self.const_missing(name) # :nodoc:
     case name
     when :SHA256, :SHA384, :SHA512
       lib = 'digest/sha2.so'
@@ -11,7 +14,7 @@ module Digest
 
     begin
       require lib
-    rescue LoadError => e
+    rescue LoadError
       raise LoadError, "library not found for class Digest::#{name} -- #{lib}", caller(1)
     end
     unless Digest.const_defined?(name)
@@ -21,12 +24,14 @@ module Digest
   end
 
   class ::Digest::Class
-    # creates a digest object and reads a given file, _name_.
+    # Creates a digest object and reads a given file, _name_.
+    # Optional arguments are passed to the constructor of the digest
+    # class.
     #
-    #  p Digest::SHA256.file("X11R6.8.2-src.tar.bz2").hexdigest
-    #  # => "f02e3c85572dc9ad7cb77c2a638e3be24cc1b5bea9fdbb0b0299c9668475c534"
-    def self.file(name)
-      new.file(name)
+    #   p Digest::SHA256.file("X11R6.8.2-src.tar.bz2").hexdigest
+    #   # => "f02e3c85572dc9ad7cb77c2a638e3be24cc1b5bea9fdbb0b0299c9668475c534"
+    def self.file(name, *args)
+      new(*args).file(name)
     end
 
     # Returns the base64 encoded hash value of a given _string_.  The
@@ -38,7 +43,7 @@ module Digest
   end
 
   module Instance
-    # updates the digest with the contents of a given file _name_ and
+    # Updates the digest with the contents of a given file _name_ and
     # returns self.
     def file(name)
       File.open(name, "rb") {|f|
@@ -53,8 +58,8 @@ module Digest
     # If none is given, returns the resulting hash value of the digest
     # in a base64 encoded form, keeping the digest's state.
     #
-    # If a _string_ is given, returns the hash value for the given
-    # _string_ in a base64 encoded form, resetting the digest to the
+    # If a +string+ is given, returns the hash value for the given
+    # +string+ in a base64 encoded form, resetting the digest to the
     # initial state before and after the process.
     #
     # In either case, the return value is properly padded with '=' and
@@ -71,6 +76,33 @@ module Digest
   end
 end
 
+# call-seq:
+#   Digest(name) -> digest_subclass
+#
+# Returns a Digest subclass by +name+ in a thread-safe manner even
+# when on-demand loading is involved.
+#
+#   require 'digest'
+#
+#   Digest("MD5")
+#   # => Digest::MD5
+#
+#   Digest(:SHA256)
+#   # => Digest::SHA256
+#
+#   Digest(:Foo)
+#   # => LoadError: library not found for class Digest::Foo -- digest/foo
 def Digest(name)
-  Digest.const_get(name)
+  const = name.to_sym
+  Digest::REQUIRE_MUTEX.synchronize {
+    # Ignore autoload's because it is void when we have #const_missing
+    Digest.const_missing(const)
+  }
+rescue LoadError
+  # Constants do not necessarily rely on digest/*.
+  if Digest.const_defined?(const)
+    Digest.const_get(const)
+  else
+    raise
+  end
 end

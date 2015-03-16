@@ -59,7 +59,7 @@ The original copyright notice follows.
    email: matumoto@math.keio.ac.jp
 */
 
-#include "ruby/ruby.h"
+#include "internal.h"
 
 #include <limits.h>
 #ifdef HAVE_UNISTD_H
@@ -73,6 +73,9 @@ The original copyright notice follows.
 #endif
 #include <math.h>
 #include <errno.h>
+#if defined(HAVE_SYS_TIME_H)
+#include <sys/time.h>
+#endif
 
 #ifdef _WIN32
 # if !defined(_WIN32_WINNT) || _WIN32_WINNT < 0x0400
@@ -81,6 +84,7 @@ The original copyright notice follows.
 #  undef __WINCRYPT_H__
 # endif
 #include <wincrypt.h>
+#include "ruby_atomic.h"
 #endif
 
 typedef int int_must_be_32bit_at_least[sizeof(int) * CHAR_BIT < 32 ? -1 : 1];
@@ -92,7 +96,7 @@ typedef int int_must_be_32bit_at_least[sizeof(int) * CHAR_BIT < 32 ? -1 : 1];
 #define UMASK 0x80000000U	/* most significant w-r bits */
 #define LMASK 0x7fffffffU	/* least significant r bits */
 #define MIXBITS(u,v) ( ((u) & UMASK) | ((v) & LMASK) )
-#define TWIST(u,v) ((MIXBITS(u,v) >> 1) ^ ((v)&1U ? MATRIX_A : 0U))
+#define TWIST(u,v) ((MIXBITS((u),(v)) >> 1) ^ ((v)&1U ? MATRIX_A : 0U))
 
 enum {MT_MAX_STATE = N};
 
@@ -192,30 +196,39 @@ genrand_int32(struct MT *mt)
 }
 
 /* generates a random number on [0,1) with 53-bit resolution*/
+static double int_pair_to_real_exclusive(uint32_t a, uint32_t b);
 static double
 genrand_real(struct MT *mt)
 {
     /* mt must be initialized */
-    unsigned int a = genrand_int32(mt)>>5, b = genrand_int32(mt)>>6;
+    unsigned int a = genrand_int32(mt), b = genrand_int32(mt);
+    return int_pair_to_real_exclusive(a, b);
+}
+
+static double
+int_pair_to_real_exclusive(uint32_t a, uint32_t b)
+{
+    a >>= 5;
+    b >>= 6;
     return(a*67108864.0+b)*(1.0/9007199254740992.0);
 }
 
 /* generates a random number on [0,1] with 53-bit resolution*/
-static double int_pair_to_real_inclusive(unsigned int a, unsigned int b);
+static double int_pair_to_real_inclusive(uint32_t a, uint32_t b);
+#if 0
 static double
 genrand_real2(struct MT *mt)
 {
     /* mt must be initialized */
-    unsigned int a = genrand_int32(mt), b = genrand_int32(mt);
+    uint32_t a = genrand_int32(mt), b = genrand_int32(mt);
     return int_pair_to_real_inclusive(a, b);
 }
+#endif
 
 /* These real versions are due to Isaku Wada, 2002/01/09 added */
 
 #undef N
 #undef M
-
-/* These real versions are due to Isaku Wada, 2002/01/09 added */
 
 typedef struct {
     VALUE seed;
@@ -229,15 +242,20 @@ static rb_random_t default_rand;
 static VALUE rand_init(struct MT *mt, VALUE vseed);
 static VALUE random_seed(void);
 
-static struct MT *
-default_mt(void)
+static rb_random_t *
+rand_start(rb_random_t *r)
 {
-    rb_random_t *r = &default_rand;
     struct MT *mt = &r->mt;
     if (!genrand_initialized(mt)) {
 	r->seed = rand_init(mt, random_seed());
     }
-    return mt;
+    return r;
+}
+
+static struct MT *
+default_mt(void)
+{
+    return &rand_start(&default_rand)->mt;
 }
 
 unsigned int
@@ -254,42 +272,30 @@ rb_genrand_real(void)
     return genrand_real(mt);
 }
 
-#define BDIGITS(x) (RBIGNUM_DIGITS(x))
-#define BITSPERDIG (SIZEOF_BDIGITS*CHAR_BIT)
-#define BIGRAD ((BDIGIT_DBL)1 << BITSPERDIG)
-#define DIGSPERINT (SIZEOF_INT/SIZEOF_BDIGITS)
-#define BIGUP(x) ((BDIGIT_DBL)(x) << BITSPERDIG)
-#define BIGDN(x) RSHIFT(x,BITSPERDIG)
-#define BIGLO(x) ((BDIGIT)((x) & (BIGRAD-1)))
-#define BDIGMAX ((BDIGIT)-1)
-
-#define roomof(n, m) (int)(((n)+(m)-1) / (m))
-#define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
 #define SIZEOF_INT32 (31/CHAR_BIT + 1)
 
 static double
-int_pair_to_real_inclusive(unsigned int a, unsigned int b)
+int_pair_to_real_inclusive(uint32_t a, uint32_t b)
 {
-    VALUE x = rb_big_new(roomof(64, BITSPERDIG), 1);
-    VALUE m = rb_big_new(roomof(53, BITSPERDIG), 1);
-    BDIGIT *xd = BDIGITS(x);
-    int i = 0;
+    VALUE x;
+    VALUE m;
+    uint32_t xary[2], mary[2];
     double r;
 
-    xd[i++] = (BDIGIT)b;
-#if BITSPERDIG < 32
-    xd[i++] = (BDIGIT)(b >> BITSPERDIG);
-#endif
-    xd[i++] = (BDIGIT)a;
-#if BITSPERDIG < 32
-    xd[i++] = (BDIGIT)(a >> BITSPERDIG);
-#endif
-    xd = BDIGITS(m);
-#if BITSPERDIG < 53
-    MEMZERO(xd, BDIGIT, roomof(53, BITSPERDIG) - 1);
-#endif
-    xd[53 / BITSPERDIG] = 1 << 53 % BITSPERDIG;
-    xd[0] |= 1;
+    /* (a << 32) | b */
+    xary[0] = a;
+    xary[1] = b;
+    x = rb_integer_unpack(xary, 2, sizeof(uint32_t), 0,
+        INTEGER_PACK_MSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER|
+        INTEGER_PACK_FORCE_BIGNUM);
+
+    /* (1 << 53) | 1 */
+    mary[0] = 0x00200000;
+    mary[1] = 0x00000001;
+    m = rb_integer_unpack(mary, 2, sizeof(uint32_t), 0,
+        INTEGER_PACK_MSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER|
+        INTEGER_PACK_FORCE_BIGNUM);
+
     x = rb_big_mul(x, m);
     if (FIXNUM_P(x)) {
 #if CHAR_BIT * SIZEOF_LONG > 64
@@ -299,21 +305,11 @@ int_pair_to_real_inclusive(unsigned int a, unsigned int b)
 #endif
     }
     else {
-#if 64 % BITSPERDIG == 0
-	long len = RBIGNUM_LEN(x);
-	xd = BDIGITS(x);
-	MEMMOVE(xd, xd + 64 / BITSPERDIG, BDIGIT, len - 64 / BITSPERDIG);
-	MEMZERO(xd + len - 64 / BITSPERDIG, BDIGIT, 64 / BITSPERDIG);
-	r = rb_big2dbl(x);
-#else
-	x = rb_big_rshift(x, INT2FIX(64));
-	if (FIXNUM_P(x)) {
-	    r = (double)FIX2ULONG(x);
-	}
-	else {
-	    r = rb_big2dbl(x);
-	}
-#endif
+        uint32_t uary[4];
+        rb_integer_pack(x, uary, numberof(uary), sizeof(uint32_t), 0,
+                INTEGER_PACK_MSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
+        /* r = x >> 64 */
+        r = (double)uary[0] * (0x10000 * (double)0x10000) + (double)uary[1];
     }
     return ldexp(r, -53);
 }
@@ -321,6 +317,7 @@ int_pair_to_real_inclusive(unsigned int a, unsigned int b)
 VALUE rb_cRandom;
 #define id_minus '-'
 #define id_plus  '+'
+static ID id_rand, id_bytes;
 
 /* :nodoc: */
 static void
@@ -349,6 +346,7 @@ static const rb_data_type_t random_data_type = {
 	random_free,
 	random_memsize,
     },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 static rb_random_t *
@@ -357,6 +355,16 @@ get_rnd(VALUE obj)
     rb_random_t *ptr;
     TypedData_Get_Struct(obj, rb_random_t, &random_data_type, ptr);
     return ptr;
+}
+
+static rb_random_t *
+try_get_rnd(VALUE obj)
+{
+    if (obj == rb_cRandom) {
+	return rand_start(&default_rand);
+    }
+    if (!rb_typeddata_is_kind_of(obj, &random_data_type)) return NULL;
+    return DATA_PTR(obj);
 }
 
 /* :nodoc: */
@@ -373,80 +381,43 @@ static VALUE
 rand_init(struct MT *mt, VALUE vseed)
 {
     volatile VALUE seed;
-    long blen = 0;
-    long fixnum_seed;
-    int i, j, len;
-    unsigned int buf0[SIZEOF_LONG / SIZEOF_INT32 * 4], *buf = buf0;
+    uint32_t buf0[SIZEOF_LONG / SIZEOF_INT32 * 4], *buf = buf0;
+    size_t len;
+    int sign;
 
     seed = rb_to_int(vseed);
-    switch (TYPE(seed)) {
-      case T_FIXNUM:
-	len = 1;
-	fixnum_seed = FIX2LONG(seed);
-        if (fixnum_seed < 0)
-            fixnum_seed = -fixnum_seed;
-	buf[0] = (unsigned int)(fixnum_seed & 0xffffffff);
-#if SIZEOF_LONG > SIZEOF_INT32
-	if ((long)(int)fixnum_seed != fixnum_seed) {
-	    if ((buf[1] = (unsigned int)(fixnum_seed >> 32)) != 0) ++len;
-	}
-#endif
-	break;
-      case T_BIGNUM:
-	blen = RBIGNUM_LEN(seed);
-	if (blen == 0) {
-	    len = 1;
-	}
-	else {
-	    if (blen > MT_MAX_STATE * SIZEOF_INT32 / SIZEOF_BDIGITS)
-		blen = (len = MT_MAX_STATE) * SIZEOF_INT32 / SIZEOF_BDIGITS;
-	    len = roomof((int)blen * SIZEOF_BDIGITS, SIZEOF_INT32);
-	}
-	/* allocate ints for init_by_array */
-	if (len > numberof(buf0)) buf = ALLOC_N(unsigned int, len);
-	memset(buf, 0, len * sizeof(*buf));
-	len = 0;
-	for (i = (int)(blen-1); 0 <= i; i--) {
-	    j = i * SIZEOF_BDIGITS / SIZEOF_INT32;
-#if SIZEOF_BDIGITS < SIZEOF_INT32
-	    buf[j] <<= BITSPERDIG;
-#endif
-	    buf[j] |= RBIGNUM_DIGITS(seed)[i];
-	    if (!len && buf[j]) len = j;
-	}
-	++len;
-	break;
-      default:
-	rb_raise(rb_eTypeError, "failed to convert %s into Integer",
-		 rb_obj_classname(vseed));
+
+    len = rb_absint_numwords(seed, 32, NULL);
+    if (len > numberof(buf0))
+        buf = ALLOC_N(unsigned int, len);
+    sign = rb_integer_pack(seed, buf, len, sizeof(uint32_t), 0,
+        INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
+    if (sign < 0)
+        sign = -sign;
+    if (len == 0) {
+        buf[0] = 0;
+        len = 1;
     }
     if (len <= 1) {
         init_genrand(mt, buf[0]);
     }
     else {
-        if (buf[len-1] == 1) /* remove leading-zero-guard */
+        if (sign != 2 && buf[len-1] == 1) /* remove leading-zero-guard */
             len--;
-        init_by_array(mt, buf, len);
+        init_by_array(mt, buf, (int)len);
     }
     if (buf != buf0) xfree(buf);
     return seed;
 }
 
 /*
- * call-seq: Random.new([seed]) -> prng
+ * call-seq:
+ *   Random.new(seed = Random.new_seed) -> prng
  *
- * Creates new Mersenne Twister based pseudorandom number generator with
- * seed.  When the argument seed is omitted, the generator is initialized
- * with Random.new_seed.
+ * Creates a new PRNG using +seed+ to set the initial state. If +seed+ is
+ * omitted, the generator is initialized with Random.new_seed.
  *
- * The argument seed is used to ensure repeatable sequences of random numbers
- * between different runs of the program.
- *
- *     prng = Random.new(1234)
- *     [ prng.rand, prng.rand ]   #=> [0.191519450378892, 0.622108771039832]
- *     [ prng.integer(10), prng.integer(1000) ]  #=> [4, 664]
- *     prng = Random.new(1234)
- *     [ prng.rand, prng.rand ]   #=> [0.191519450378892, 0.622108771039832]
+ * See Random.srand for more information on the use of seed values.
  */
 static VALUE
 random_init(int argc, VALUE *argv, VALUE obj)
@@ -455,16 +426,18 @@ random_init(int argc, VALUE *argv, VALUE obj)
     rb_random_t *rnd = get_rnd(obj);
 
     if (argc == 0) {
+	rb_check_frozen(obj);
 	vseed = random_seed();
     }
     else {
 	rb_scan_args(argc, argv, "01", &vseed);
+	rb_check_copyable(obj, vseed);
     }
     rnd->seed = rand_init(&rnd->mt, vseed);
     return obj;
 }
 
-#define DEFAULT_SEED_LEN (DEFAULT_SEED_CNT * (int)sizeof(int))
+#define DEFAULT_SEED_LEN (DEFAULT_SEED_CNT * (int)sizeof(int32_t))
 
 #if defined(S_ISCHR) && !defined(DOSISH)
 # define USE_DEV_URANDOM 1
@@ -472,99 +445,159 @@ random_init(int argc, VALUE *argv, VALUE obj)
 # define USE_DEV_URANDOM 0
 #endif
 
+#if defined(_WIN32)
 static void
-fill_random_seed(unsigned int seed[DEFAULT_SEED_CNT])
+release_crypt(void *p)
+{
+    HCRYPTPROV prov = (HCRYPTPROV)ATOMIC_PTR_EXCHANGE(*(HCRYPTPROV *)p, INVALID_HANDLE_VALUE);
+    if (prov && prov != (HCRYPTPROV)INVALID_HANDLE_VALUE) {
+	CryptReleaseContext(prov, 0);
+    }
+}
+#endif
+
+static int
+fill_random_bytes(void *seed, size_t size)
+{
+#if USE_DEV_URANDOM
+    int fd = rb_cloexec_open("/dev/urandom",
+# ifdef O_NONBLOCK
+			     O_NONBLOCK|
+# endif
+# ifdef O_NOCTTY
+			     O_NOCTTY|
+# endif
+			     O_RDONLY, 0);
+    struct stat statbuf;
+    ssize_t ret = 0;
+
+    if (fd < 0) return -1;
+    rb_update_max_fd(fd);
+    if (fstat(fd, &statbuf) == 0 && S_ISCHR(statbuf.st_mode)) {
+	ret = read(fd, seed, size);
+    }
+    close(fd);
+    if (ret < 0 || (size_t)ret < size) return -1;
+#elif defined(_WIN32)
+    static HCRYPTPROV perm_prov;
+    HCRYPTPROV prov = perm_prov, old_prov;
+    if (!prov) {
+	if (!CryptAcquireContext(&prov, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT)) {
+	    prov = (HCRYPTPROV)INVALID_HANDLE_VALUE;
+	}
+	old_prov = (HCRYPTPROV)ATOMIC_SIZE_CAS(perm_prov, 0, prov);
+	if (prov == (HCRYPTPROV)INVALID_HANDLE_VALUE) {
+	    if (old_prov) prov = old_prov;
+	}
+	else {
+	    if (!old_prov) {
+		rb_gc_register_mark_object(Data_Wrap_Struct(0, 0, release_crypt, &prov));
+	    }
+	    else {
+		CryptReleaseContext(prov, 0);
+		prov = old_prov;
+	    }
+	}
+    }
+    if (prov == (HCRYPTPROV)INVALID_HANDLE_VALUE) return -1;
+    CryptGenRandom(prov, size, seed);
+#endif
+    return 0;
+}
+
+static void
+fill_random_seed(uint32_t seed[DEFAULT_SEED_CNT])
 {
     static int n = 0;
     struct timeval tv;
-#if USE_DEV_URANDOM
-    int fd;
-    struct stat statbuf;
-#elif defined(_WIN32)
-    HCRYPTPROV prov;
-#endif
 
     memset(seed, 0, DEFAULT_SEED_LEN);
 
-#if USE_DEV_URANDOM
-    if ((fd = open("/dev/urandom", O_RDONLY
-#ifdef O_NONBLOCK
-            |O_NONBLOCK
-#endif
-#ifdef O_NOCTTY
-            |O_NOCTTY
-#endif
-            )) >= 0) {
-        if (fstat(fd, &statbuf) == 0 && S_ISCHR(statbuf.st_mode)) {
-	    if (read(fd, seed, DEFAULT_SEED_LEN) < DEFAULT_SEED_LEN) {
-		/* abandon */;
-	    }
-        }
-        close(fd);
-    }
-#elif defined(_WIN32)
-    if (CryptAcquireContext(&prov, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT)) {
-	CryptGenRandom(prov, DEFAULT_SEED_LEN, (void *)seed);
-	CryptReleaseContext(prov, 0);
-    }
-#endif
+    fill_random_bytes(seed, sizeof(*seed));
 
     gettimeofday(&tv, 0);
     seed[0] ^= tv.tv_usec;
-    seed[1] ^= (unsigned int)tv.tv_sec;
+    seed[1] ^= (uint32_t)tv.tv_sec;
 #if SIZEOF_TIME_T > SIZEOF_INT
-    seed[0] ^= (unsigned int)((time_t)tv.tv_sec >> SIZEOF_INT * CHAR_BIT);
+    seed[0] ^= (uint32_t)((time_t)tv.tv_sec >> SIZEOF_INT * CHAR_BIT);
 #endif
     seed[2] ^= getpid() ^ (n++ << 16);
-    seed[3] ^= (unsigned int)(VALUE)&seed;
+    seed[3] ^= (uint32_t)(VALUE)&seed;
 #if SIZEOF_VOIDP > SIZEOF_INT
-    seed[2] ^= (unsigned int)((VALUE)&seed >> SIZEOF_INT * CHAR_BIT);
+    seed[2] ^= (uint32_t)((VALUE)&seed >> SIZEOF_INT * CHAR_BIT);
 #endif
 }
 
 static VALUE
-make_seed_value(const void *ptr)
+make_seed_value(const uint32_t *ptr)
 {
-    const long len = DEFAULT_SEED_LEN/SIZEOF_BDIGITS;
-    BDIGIT *digits;
-    NEWOBJ(big, struct RBignum);
-    OBJSETUP(big, rb_cBignum, T_BIGNUM);
+    VALUE seed;
+    size_t len;
+    uint32_t buf[DEFAULT_SEED_CNT+1];
 
-    RBIGNUM_SET_SIGN(big, 1);
-    rb_big_resize((VALUE)big, len + 1);
-    digits = RBIGNUM_DIGITS(big);
+    if (ptr[DEFAULT_SEED_CNT-1] <= 1) {
+        /* set leading-zero-guard */
+        MEMCPY(buf, ptr, uint32_t, DEFAULT_SEED_CNT);
+        buf[DEFAULT_SEED_CNT] = 1;
+        ptr = buf;
+        len = DEFAULT_SEED_CNT+1;
+    }
+    else {
+        len = DEFAULT_SEED_CNT;
+    }
 
-    MEMCPY(digits, ptr, char, DEFAULT_SEED_LEN);
+    seed = rb_integer_unpack(ptr, len, sizeof(uint32_t), 0,
+        INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
 
-    /* set leading-zero-guard if need. */
-    digits[len] =
-#if SIZEOF_INT32 / SIZEOF_BDIGITS > 1
-	digits[len-2] <= 1 && digits[len-1] == 0
-#else
-	digits[len-1] <= 1
-#endif
-	? 1 : 0;
-
-    return rb_big_norm((VALUE)big);
+    return seed;
 }
 
 /*
  * call-seq: Random.new_seed -> integer
  *
- * Returns arbitrary value for seed.
+ * Returns an arbitrary seed value. This is used by Random.new
+ * when no seed value is specified as an argument.
+ *
+ *   Random.new_seed  #=> 115032730400174366788466674494640623225
  */
 static VALUE
 random_seed(void)
 {
-    unsigned int buf[DEFAULT_SEED_CNT];
+    uint32_t buf[DEFAULT_SEED_CNT];
     fill_random_seed(buf);
     return make_seed_value(buf);
 }
 
 /*
+ * call-seq: Random.raw_seed(size) -> string
+ *
+ * Returns a raw seed string, using platform providing features.
+ *
+ *   Random.raw_seed(8)  #=> "\x78\x41\xBA\xAF\x7D\xEA\xD8\xEA"
+ */
+static VALUE
+random_raw_seed(VALUE self, VALUE size)
+{
+    long n = NUM2ULONG(size);
+    VALUE buf = rb_str_new(0, n);
+    if (n == 0) return buf;
+    if (fill_random_bytes(RSTRING_PTR(buf), n)) return Qnil;
+    return buf;
+}
+
+/*
  * call-seq: prng.seed -> integer
  *
- * Returns the seed of the generator.
+ * Returns the seed value used to initialize the generator. This may be used to
+ * initialize another generator with the same state at a later time, causing it
+ * to produce the same sequence of numbers.
+ *
+ *   prng1 = Random.new(1234)
+ *   prng1.seed       #=> 1234
+ *   prng1.rand(100)  #=> 47
+ *
+ *   prng2 = Random.new(prng1.seed)
+ *   prng2.rand(100)  #=> 47
  */
 static VALUE
 random_get_seed(VALUE obj)
@@ -576,9 +609,14 @@ random_get_seed(VALUE obj)
 static VALUE
 random_copy(VALUE obj, VALUE orig)
 {
-    rb_random_t *rnd1 = get_rnd(obj);
-    rb_random_t *rnd2 = get_rnd(orig);
-    struct MT *mt = &rnd1->mt;
+    rb_random_t *rnd1, *rnd2;
+    struct MT *mt;
+
+    if (!OBJ_INIT_COPY(obj, orig)) return obj;
+
+    rnd1 = get_rnd(obj);
+    rnd2 = get_rnd(orig);
+    mt = &rnd1->mt;
 
     *rnd1 = *rnd2;
     mt->next = mt->state + numberof(mt->state) - mt->left + 1;
@@ -588,23 +626,9 @@ random_copy(VALUE obj, VALUE orig)
 static VALUE
 mt_state(const struct MT *mt)
 {
-    VALUE bigo = rb_big_new(sizeof(mt->state) / sizeof(BDIGIT), 1);
-    BDIGIT *d = RBIGNUM_DIGITS(bigo);
-    int i;
-
-    for (i = 0; i < numberof(mt->state); ++i) {
-	unsigned int x = mt->state[i];
-#if SIZEOF_BDIGITS < SIZEOF_INT32
-	int j;
-	for (j = 0; j < SIZEOF_INT32 / SIZEOF_BDIGITS; ++j) {
-	    *d++ = BIGLO(x);
-	    x = BIGDN(x);
-	}
-#else
-	*d++ = (BDIGIT)x;
-#endif
-    }
-    return rb_big_norm(bigo);
+    return rb_integer_unpack(mt->state, numberof(mt->state),
+        sizeof(*mt->state), 0,
+        INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
 }
 
 /* :nodoc: */
@@ -658,11 +682,12 @@ random_load(VALUE obj, VALUE dump)
     rb_random_t *rnd = get_rnd(obj);
     struct MT *mt = &rnd->mt;
     VALUE state, left = INT2FIX(1), seed = INT2FIX(0);
-    VALUE *ary;
+    const VALUE *ary;
     unsigned long x;
 
+    rb_check_copyable(obj, dump);
     Check_Type(dump, T_ARRAY);
-    ary = RARRAY_PTR(dump);
+    ary = RARRAY_CONST_PTR(dump);
     switch (RARRAY_LEN(dump)) {
       case 3:
 	seed = ary[2];
@@ -674,60 +699,9 @@ random_load(VALUE obj, VALUE dump)
       default:
 	rb_raise(rb_eArgError, "wrong dump data");
     }
-    memset(mt->state, 0, sizeof(mt->state));
-    if (FIXNUM_P(state)) {
-	x = FIX2ULONG(state);
-	mt->state[0] = (unsigned int)x;
-#if SIZEOF_LONG / SIZEOF_INT >= 2
-	mt->state[1] = (unsigned int)(x >> BITSPERDIG);
-#endif
-#if SIZEOF_LONG / SIZEOF_INT >= 3
-	mt->state[2] = (unsigned int)(x >> 2 * BITSPERDIG);
-#endif
-#if SIZEOF_LONG / SIZEOF_INT >= 4
-	mt->state[3] = (unsigned int)(x >> 3 * BITSPERDIG);
-#endif
-    }
-    else {
-	BDIGIT *d;
-	long len;
-	Check_Type(state, T_BIGNUM);
-	len = RBIGNUM_LEN(state);
-	if (len > roomof(sizeof(mt->state), SIZEOF_BDIGITS)) {
-	    len = roomof(sizeof(mt->state), SIZEOF_BDIGITS);
-	}
-#if SIZEOF_BDIGITS < SIZEOF_INT
-	else if (len % DIGSPERINT) {
-	    d = RBIGNUM_DIGITS(state) + len;
-# if DIGSPERINT == 2
-	    --len;
-	    x = *--d;
-# else
-	    x = 0;
-	    do {
-		x = (x << BITSPERDIG) | *--d;
-	    } while (--len % DIGSPERINT);
-# endif
-	    mt->state[len / DIGSPERINT] = (unsigned int)x;
-	}
-#endif
-	if (len > 0) {
-	    d = BDIGITS(state) + len;
-	    do {
-		--len;
-		x = *--d;
-# if DIGSPERINT == 2
-		--len;
-		x = (x << BITSPERDIG) | *--d;
-# elif SIZEOF_BDIGITS < SIZEOF_INT
-		do {
-		    x = (x << BITSPERDIG) | *--d;
-		} while (--len % DIGSPERINT);
-# endif
-		mt->state[len / DIGSPERINT] = (unsigned int)x;
-	    } while (len > 0);
-	}
-    }
+    rb_integer_pack(state, mt->state, numberof(mt->state),
+        sizeof(*mt->state), 0,
+        INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
     x = NUM2ULONG(left);
     if (x > numberof(mt->state)) {
 	rb_raise(rb_eArgError, "wrong value");
@@ -740,17 +714,26 @@ random_load(VALUE obj, VALUE dump)
 }
 
 /*
- *  call-seq:
- *     srand(number=0)    -> old_seed
+ * call-seq:
+ *   srand(number = Random.new_seed) -> old_seed
  *
- *  Seeds the pseudorandom number generator to the value of
- *  <i>number</i>. If <i>number</i> is omitted
- *  or zero, seeds the generator using a combination of the time, the
- *  process id, and a sequence number. (This is also the behavior if
- *  <code>Kernel::rand</code> is called without previously calling
- *  <code>srand</code>, but without the sequence.) By setting the seed
- *  to a known value, scripts can be made deterministic during testing.
- *  The previous seed value is returned. Also see <code>Kernel::rand</code>.
+ * Seeds the system pseudo-random number generator, Random::DEFAULT, with
+ * +number+.  The previous seed value is returned.
+ *
+ * If +number+ is omitted, seeds the generator using a source of entropy
+ * provided by the operating system, if available (/dev/urandom on Unix systems
+ * or the RSA cryptographic provider on Windows), which is then combined with
+ * the time, the process id, and a sequence number.
+ *
+ * srand may be used to ensure repeatable sequences of pseudo-random numbers
+ * between different runs of the program. By setting the seed to a known value,
+ * programs can be made deterministic during testing.
+ *
+ *   srand 1234               # => 268519324636777531569100071560086917274
+ *   [ rand, rand ]           # => [0.1915194503788923, 0.6221087710398319]
+ *   [ rand(10), rand(1000) ] # => [4, 664]
+ *   srand 1234               # => 1234
+ *   [ rand, rand ]           # => [0.1915194503788923, 0.6221087710398319]
  */
 
 static VALUE
@@ -759,7 +742,6 @@ rb_f_srand(int argc, VALUE *argv, VALUE obj)
     VALUE seed, old;
     rb_random_t *r = &default_rand;
 
-    rb_secure(4);
     if (argc == 0) {
 	seed = random_seed();
     }
@@ -809,39 +791,33 @@ limited_rand(struct MT *mt, unsigned long limit)
 }
 
 static VALUE
-limited_big_rand(struct MT *mt, struct RBignum *limit)
+limited_big_rand(struct MT *mt, VALUE limit)
 {
     /* mt must be initialized */
-    unsigned long mask, lim, rnd;
-    struct RBignum *val;
-    long i, len;
+
+    uint32_t mask;
+    long i;
     int boundary;
 
-    len = (RBIGNUM_LEN(limit) * SIZEOF_BDIGITS + 3) / 4;
-    val = (struct RBignum *)rb_big_clone((VALUE)limit);
-    RBIGNUM_SET_SIGN(val, 1);
-#if SIZEOF_BDIGITS == 2
-# define BIG_GET32(big,i) \
-    (RBIGNUM_DIGITS(big)[(i)*2] | \
-     ((i)*2+1 < RBIGNUM_LEN(big) ? \
-      (RBIGNUM_DIGITS(big)[(i)*2+1] << 16) : \
-      0))
-# define BIG_SET32(big,i,d) \
-    ((RBIGNUM_DIGITS(big)[(i)*2] = (d) & 0xffff), \
-     ((i)*2+1 < RBIGNUM_LEN(big) ? \
-      (RBIGNUM_DIGITS(big)[(i)*2+1] = (d) >> 16) : \
-      0))
-#else
-    /* SIZEOF_BDIGITS == 4 */
-# define BIG_GET32(big,i) (RBIGNUM_DIGITS(big)[i])
-# define BIG_SET32(big,i,d) (RBIGNUM_DIGITS(big)[i] = (d))
-#endif
+    size_t len;
+    uint32_t *tmp, *lim_array, *rnd_array;
+    VALUE vtmp;
+    VALUE val;
+
+    len = rb_absint_numwords(limit, 32, NULL);
+    tmp = ALLOCV_N(uint32_t, vtmp, len*2);
+    lim_array = tmp;
+    rnd_array = tmp + len;
+    rb_integer_pack(limit, lim_array, len, sizeof(uint32_t), 0,
+        INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
+
   retry:
     mask = 0;
     boundary = 1;
     for (i = len-1; 0 <= i; i--) {
-        lim = BIG_GET32(limit, i);
-        mask = mask ? 0xffffffff : make_mask(lim);
+	uint32_t rnd;
+        uint32_t lim = lim_array[i];
+        mask = mask ? 0xffffffff : (uint32_t)make_mask(lim);
         if (mask) {
             rnd = genrand_int32(mt) & mask;
             if (boundary) {
@@ -854,52 +830,161 @@ limited_big_rand(struct MT *mt, struct RBignum *limit)
         else {
             rnd = 0;
         }
-        BIG_SET32(val, i, (BDIGIT)rnd);
+        rnd_array[i] = rnd;
     }
-    return rb_big_norm((VALUE)val);
+    val = rb_integer_unpack(rnd_array, len, sizeof(uint32_t), 0,
+        INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
+    ALLOCV_END(vtmp);
+
+    return val;
 }
 
+/*
+ * Returns random unsigned long value in [0, +limit+].
+ *
+ * Note that +limit+ is included, and the range of the argument and the
+ * return value depends on environments.
+ */
 unsigned long
-rb_rand_internal(unsigned long i)
+rb_genrand_ulong_limited(unsigned long limit)
 {
-    struct MT *mt = default_mt();
-    return limited_rand(mt, i);
+    return limited_rand(default_mt(), limit);
+}
+
+static unsigned int
+random_int32(VALUE obj, rb_random_t *rnd)
+{
+    if (!rnd) {
+#if SIZEOF_LONG * CHAR_BIT > 32
+	VALUE lim = ULONG2NUM(0x100000000UL);
+#elif defined HAVE_LONG_LONG
+	VALUE lim = ULL2NUM((LONG_LONG)0xffffffff+1);
+#else
+	VALUE lim = rb_big_plus(ULONG2NUM(0xffffffff), INT2FIX(1));
+#endif
+	return (unsigned int)NUM2ULONG(rb_funcall2(obj, id_rand, 1, &lim));
+    }
+    return genrand_int32(&rnd->mt);
 }
 
 unsigned int
 rb_random_int32(VALUE obj)
 {
-    rb_random_t *rnd = get_rnd(obj);
-    return genrand_int32(&rnd->mt);
+    return random_int32(obj, try_get_rnd(obj));
+}
+
+static double
+random_real(VALUE obj, rb_random_t *rnd, int excl)
+{
+    uint32_t a = random_int32(obj, rnd);
+    uint32_t b = random_int32(obj, rnd);
+    if (excl) {
+	return int_pair_to_real_exclusive(a, b);
+    }
+    else {
+	return int_pair_to_real_inclusive(a, b);
+    }
 }
 
 double
 rb_random_real(VALUE obj)
 {
-    rb_random_t *rnd = get_rnd(obj);
+    rb_random_t *rnd = try_get_rnd(obj);
+    if (!rnd) {
+	VALUE v = rb_funcall2(obj, id_rand, 0, 0);
+	double d = NUM2DBL(v);
+	if (d < 0.0) {
+	    rb_raise(rb_eRangeError, "random number too small %g", d);
+	}
+	else if (d >= 1.0) {
+	    rb_raise(rb_eRangeError, "random number too big %g", d);
+	}
+	return d;
+    }
     return genrand_real(&rnd->mt);
 }
 
+static inline VALUE
+ulong_to_num_plus_1(unsigned long n)
+{
+#if HAVE_LONG_LONG
+    return ULL2NUM((LONG_LONG)n+1);
+#else
+    if (n >= ULONG_MAX) {
+	return rb_big_plus(ULONG2NUM(n), INT2FIX(1));
+    }
+    return ULONG2NUM(n+1);
+#endif
+}
+
+static unsigned long
+random_ulong_limited(VALUE obj, rb_random_t *rnd, unsigned long limit)
+{
+    if (!rnd) {
+	extern int rb_num_negative_p(VALUE);
+	VALUE lim = ulong_to_num_plus_1(limit);
+	VALUE v = rb_to_int(rb_funcall2(obj, id_rand, 1, &lim));
+	unsigned long r = NUM2ULONG(v);
+	if (rb_num_negative_p(v)) {
+	    rb_raise(rb_eRangeError, "random number too small %ld", r);
+	}
+	if (r > limit) {
+	    rb_raise(rb_eRangeError, "random number too big %ld", r);
+	}
+	return r;
+    }
+    return limited_rand(&rnd->mt, limit);
+}
+
+static VALUE
+random_ulong_limited_big(VALUE obj, rb_random_t *rnd, VALUE vmax)
+{
+    if (!rnd) {
+	extern int rb_num_negative_p(VALUE);
+	VALUE lim = rb_big_plus(vmax, INT2FIX(1));
+	VALUE v = rb_to_int(rb_funcall2(obj, id_rand, 1, &lim));
+	if (rb_num_negative_p(v)) {
+	    rb_raise(rb_eRangeError, "random number too small %"PRIsVALUE, v);
+	}
+	if (FIX2LONG(rb_big_cmp(vmax, v)) < 0) {
+	    rb_raise(rb_eRangeError, "random number too big %"PRIsVALUE, v);
+	}
+	return v;
+    }
+    return limited_big_rand(&rnd->mt, vmax);
+}
+
+unsigned long
+rb_random_ulong_limited(VALUE obj, unsigned long limit)
+{
+    return random_ulong_limited(obj, try_get_rnd(obj), limit);
+}
+
+static VALUE genrand_bytes(rb_random_t *rnd, long n);
+
 /*
- * call-seq: prng.bytes(size) -> prng
+ * call-seq: prng.bytes(size) -> a_string
  *
- * Returns a random binary string.  The argument size specified the length of
- * the result string.
+ * Returns a random binary string containing +size+ bytes.
+ *
+ *   random_string = Random.new.bytes(10) # => "\xD7:R\xAB?\x83\xCE\xFAkO"
+ *   random_string.size                   # => 10
  */
 static VALUE
 random_bytes(VALUE obj, VALUE len)
 {
-    return rb_random_bytes(obj, NUM2LONG(rb_to_int(len)));
+    return genrand_bytes(get_rnd(obj), NUM2LONG(rb_to_int(len)));
 }
 
-VALUE
-rb_random_bytes(VALUE obj, long n)
+static VALUE
+genrand_bytes(rb_random_t *rnd, long n)
 {
-    rb_random_t *rnd = get_rnd(obj);
-    VALUE bytes = rb_str_new(0, n);
-    char *ptr = RSTRING_PTR(bytes);
+    VALUE bytes;
+    char *ptr;
     unsigned int r, i;
 
+    bytes = rb_str_new(0, n);
+    ptr = RSTRING_PTR(bytes);
     for (; n >= SIZEOF_INT32; n -= SIZEOF_INT32) {
 	r = genrand_int32(&rnd->mt);
 	i = SIZEOF_INT32;
@@ -918,12 +1003,24 @@ rb_random_bytes(VALUE obj, long n)
     return bytes;
 }
 
+VALUE
+rb_random_bytes(VALUE obj, long n)
+{
+    rb_random_t *rnd = try_get_rnd(obj);
+    if (!rnd) {
+	VALUE len = LONG2NUM(n);
+	return rb_funcall2(obj, id_bytes, 1, &len);
+    }
+    return genrand_bytes(rnd, n);
+}
+
 static VALUE
-range_values(VALUE vmax, VALUE *begp, int *exclp)
+range_values(VALUE vmax, VALUE *begp, VALUE *endp, int *exclp)
 {
     VALUE end, r;
 
     if (!rb_range_values(vmax, begp, &end, exclp)) return Qfalse;
+    if (endp) *endp = end;
     if (!rb_respond_to(end, id_minus)) return Qfalse;
     r = rb_funcall2(end, id_minus, 1, begp);
     if (NIL_P(r)) return Qfalse;
@@ -931,41 +1028,67 @@ range_values(VALUE vmax, VALUE *begp, int *exclp)
 }
 
 static VALUE
-rand_int(struct MT *mt, VALUE vmax, int restrictive)
+rand_int(VALUE obj, rb_random_t *rnd, VALUE vmax, int restrictive)
 {
     /* mt must be initialized */
-    long max;
     unsigned long r;
 
     if (FIXNUM_P(vmax)) {
-	max = FIX2LONG(vmax);
+	long max = FIX2LONG(vmax);
 	if (!max) return Qnil;
 	if (max < 0) {
 	    if (restrictive) return Qnil;
 	    max = -max;
 	}
-	r = limited_rand(mt, (unsigned long)max - 1);
+	r = random_ulong_limited(obj, rnd, (unsigned long)max - 1);
 	return ULONG2NUM(r);
     }
     else {
 	VALUE ret;
 	if (rb_bigzero_p(vmax)) return Qnil;
-	if (!RBIGNUM_SIGN(vmax)) {
+	if (!BIGNUM_SIGN(vmax)) {
 	    if (restrictive) return Qnil;
-	    vmax = rb_big_clone(vmax);
-	    RBIGNUM_SET_SIGN(vmax, 1);
+            vmax = rb_big_uminus(vmax);
 	}
 	vmax = rb_big_minus(vmax, INT2FIX(1));
 	if (FIXNUM_P(vmax)) {
-	    max = FIX2LONG(vmax);
+	    long max = FIX2LONG(vmax);
 	    if (max == -1) return Qnil;
-	    r = limited_rand(mt, max);
+	    r = random_ulong_limited(obj, rnd, max);
 	    return LONG2NUM(r);
 	}
-	ret = limited_big_rand(mt, RBIGNUM(vmax));
+	ret = random_ulong_limited_big(obj, rnd, vmax);
 	RB_GC_GUARD(vmax);
 	return ret;
     }
+}
+
+NORETURN(static void domain_error(void));
+static void
+domain_error(void)
+{
+    VALUE error = INT2FIX(EDOM);
+    rb_exc_raise(rb_class_new_instance(1, &error, rb_eSystemCallError));
+}
+
+NORETURN(static void invalid_argument(VALUE));
+static void
+invalid_argument(VALUE arg0)
+{
+    rb_raise(rb_eArgError, "invalid argument - %"PRIsVALUE, arg0);
+}
+
+static VALUE
+check_random_number(VALUE v, const VALUE *argv)
+{
+    switch (v) {
+      case Qfalse:
+	(void)NUM2LONG(argv[0]);
+	break;
+      case Qnil:
+	invalid_argument(argv[0]);
+    }
+    return v;
 }
 
 static inline double
@@ -973,136 +1096,204 @@ float_value(VALUE v)
 {
     double x = RFLOAT_VALUE(v);
     if (isinf(x) || isnan(x)) {
-	VALUE error = INT2FIX(EDOM);
-	rb_exc_raise(rb_class_new_instance(1, &error, rb_eSystemCallError));
+	domain_error();
     }
     return x;
 }
 
-/*
- * call-seq:
- *     prng.rand -> float
- *     prng.rand(limit) -> number
- *
- * When the argument is an +Integer+ or a +Bignum+, it returns a
- * random integer greater than or equal to zero and less than the
- * argument.  Unlike Random.rand, when the argument is a negative
- * integer or zero, it raises an ArgumentError.
- *
- * When the argument is a +Float+, it returns a random floating point
- * number between 0.0 and _max_, including 0.0 and excluding _max_.
- *
- * When the argument _limit_ is a +Range+, it returns a random
- * number where range.member?(number) == true.
- *     prng.rand(5..9)  #=> one of [5, 6, 7, 8, 9]
- *     prng.rand(5...9) #=> one of [5, 6, 7, 8]
- *     prng.rand(5.0..9.0) #=> between 5.0 and 9.0, including 9.0
- *     prng.rand(5.0...9.0) #=> between 5.0 and 9.0, excluding 9.0
- *
- * +begin+/+end+ of the range have to have subtract and add methods.
- *
- * Otherwise, it raises an ArgumentError.
- */
-static VALUE
-random_rand(int argc, VALUE *argv, VALUE obj)
+static inline VALUE
+rand_range(VALUE obj, rb_random_t* rnd, VALUE range)
 {
-    rb_random_t *rnd = get_rnd(obj);
-    VALUE vmax, beg = Qundef, v;
+    VALUE beg = Qundef, end = Qundef, vmax, v;
     int excl = 0;
 
-    if (argc == 0) {
-	return rb_float_new(genrand_real(&rnd->mt));
-    }
-    else if (argc != 1) {
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for 0..1)", argc);
-    }
-    vmax = argv[0];
-    if (NIL_P(vmax)) {
+    if ((v = vmax = range_values(range, &beg, &end, &excl)) == Qfalse)
+	return Qfalse;
+    if (!RB_TYPE_P(vmax, T_FLOAT) && (v = rb_check_to_integer(vmax, "to_int"), !NIL_P(v))) {
+	long max;
+	vmax = v;
 	v = Qnil;
-    }
-    else if (TYPE(vmax) != T_FLOAT && (v = rb_check_to_integer(vmax, "to_int"), !NIL_P(v))) {
-	v = rand_int(&rnd->mt, vmax = v, 1);
+	if (FIXNUM_P(vmax)) {
+	  fixnum:
+	    if ((max = FIX2LONG(vmax) - excl) >= 0) {
+		unsigned long r = random_ulong_limited(obj, rnd, (unsigned long)max);
+		v = ULONG2NUM(r);
+	    }
+	}
+	else if (BUILTIN_TYPE(vmax) == T_BIGNUM && BIGNUM_SIGN(vmax) && !rb_bigzero_p(vmax)) {
+	    vmax = excl ? rb_big_minus(vmax, INT2FIX(1)) : rb_big_norm(vmax);
+	    if (FIXNUM_P(vmax)) {
+		excl = 0;
+		goto fixnum;
+	    }
+	    v = random_ulong_limited_big(obj, rnd, vmax);
+	}
     }
     else if (v = rb_check_to_float(vmax), !NIL_P(v)) {
-	double max = float_value(v);
-	if (max > 0.0)
-	    v = rb_float_new(max * genrand_real(&rnd->mt));
-	else
-	    v = Qnil;
-    }
-    else if ((v = range_values(vmax, &beg, &excl)) != Qfalse) {
-	vmax = v;
-	if (TYPE(vmax) != T_FLOAT && (v = rb_check_to_integer(vmax, "to_int"), !NIL_P(v))) {
-	    long max;
-	    vmax = v;
-	    v = Qnil;
-	    if (FIXNUM_P(vmax)) {
-	      fixnum:
-		if ((max = FIX2LONG(vmax) - excl) >= 0) {
-		    unsigned long r = limited_rand(&rnd->mt, (unsigned long)max);
-		    v = ULONG2NUM(r);
-		}
-	    }
-	    else if (BUILTIN_TYPE(vmax) == T_BIGNUM && RBIGNUM_SIGN(vmax) && !rb_bigzero_p(vmax)) {
-		vmax = excl ? rb_big_minus(vmax, INT2FIX(1)) : rb_big_norm(vmax);
-		if (FIXNUM_P(vmax)) {
-		    excl = 0;
-		    goto fixnum;
-		}
-		v = limited_big_rand(&rnd->mt, RBIGNUM(vmax));
-	    }
+	int scale = 1;
+	double max = RFLOAT_VALUE(v), mid = 0.5, r;
+	if (isinf(max)) {
+	    double min = float_value(rb_to_float(beg)) / 2.0;
+	    max = float_value(rb_to_float(end)) / 2.0;
+	    scale = 2;
+	    mid = max + min;
+	    max -= min;
 	}
-	else if (v = rb_check_to_float(vmax), !NIL_P(v)) {
-	    double max = float_value(v), r;
-	    v = Qnil;
-	    if (max > 0.0) {
-		if (excl) {
-		    r = genrand_real(&rnd->mt);
-		}
-		else {
-		    r = genrand_real2(&rnd->mt);
-		}
-		v = rb_float_new(r * max);
-	    }
-	    else if (max == 0.0 && !excl) {
-		v = rb_float_new(0.0);
-	    }
+	else if (isnan(max)) {
+	    domain_error();
 	}
-    }
-    else {
 	v = Qnil;
-	(void)NUM2LONG(vmax);
+	if (max > 0.0) {
+	    r = random_real(obj, rnd, excl);
+	    if (scale > 1) {
+		return rb_float_new(+(+(+(r - 0.5) * max) * scale) + mid);
+	    }
+	    v = rb_float_new(r * max);
+	}
+	else if (max == 0.0 && !excl) {
+	    v = rb_float_new(0.0);
+	}
     }
-    if (NIL_P(v)) {
-	VALUE mesg = rb_str_new_cstr("invalid argument - ");
-	rb_str_append(mesg, rb_obj_as_string(argv[0]));
-	rb_exc_raise(rb_exc_new3(rb_eArgError, mesg));
-    }
-    if (beg == Qundef) return v;
+
     if (FIXNUM_P(beg) && FIXNUM_P(v)) {
 	long x = FIX2LONG(beg) + FIX2LONG(v);
 	return LONG2NUM(x);
     }
     switch (TYPE(v)) {
+      case T_NIL:
+	break;
       case T_BIGNUM:
 	return rb_big_plus(v, beg);
       case T_FLOAT: {
 	VALUE f = rb_check_to_float(beg);
 	if (!NIL_P(f)) {
-	    RFLOAT_VALUE(v) += RFLOAT_VALUE(f);
-	    return v;
+	    return DBL2NUM(RFLOAT_VALUE(v) + RFLOAT_VALUE(f));
 	}
       }
       default:
 	return rb_funcall2(beg, id_plus, 1, &v);
     }
+
+    return v;
+}
+
+static VALUE rand_random(int argc, VALUE *argv, VALUE obj, rb_random_t *rnd);
+
+/*
+ * call-seq:
+ *   prng.rand -> float
+ *   prng.rand(max) -> number
+ *
+ * When +max+ is an Integer, +rand+ returns a random integer greater than
+ * or equal to zero and less than +max+. Unlike Kernel.rand, when +max+
+ * is a negative integer or zero, +rand+ raises an ArgumentError.
+ *
+ *   prng = Random.new
+ *   prng.rand(100)       # => 42
+ *
+ * When +max+ is a Float, +rand+ returns a random floating point number
+ * between 0.0 and +max+, including 0.0 and excluding +max+.
+ *
+ *   prng.rand(1.5)       # => 1.4600282860034115
+ *
+ * When +max+ is a Range, +rand+ returns a random number where
+ * range.member?(number) == true.
+ *
+ *   prng.rand(5..9)      # => one of [5, 6, 7, 8, 9]
+ *   prng.rand(5...9)     # => one of [5, 6, 7, 8]
+ *   prng.rand(5.0..9.0)  # => between 5.0 and 9.0, including 9.0
+ *   prng.rand(5.0...9.0) # => between 5.0 and 9.0, excluding 9.0
+ *
+ * Both the beginning and ending values of the range must respond to subtract
+ * (<tt>-</tt>) and add (<tt>+</tt>)methods, or rand will raise an
+ * ArgumentError.
+ */
+static VALUE
+random_rand(int argc, VALUE *argv, VALUE obj)
+{
+    VALUE v = rand_random(argc, argv, obj, get_rnd(obj));
+    check_random_number(v, argv);
+    return v;
+}
+
+static VALUE
+rand_random(int argc, VALUE *argv, VALUE obj, rb_random_t *rnd)
+{
+    VALUE vmax, v;
+    double max = 0.0;
+
+    if (argc == 0) {
+	goto float_rand;
+    }
+    else {
+	rb_check_arity(argc, 0, 1);
+    }
+    vmax = argv[0];
+    if (NIL_P(vmax)) {
+	v = Qnil;
+    }
+    else if (!RB_TYPE_P(vmax, T_FLOAT) && (v = rb_check_to_integer(vmax, "to_int"), !NIL_P(v))) {
+	v = rand_int(obj, rnd, v, 1);
+    }
+    else if (v = rb_check_to_float(vmax), !NIL_P(v)) {
+	max = float_value(v);
+	if (max < 0.0) {
+	    v = Qnil;
+	}
+	else {
+	    uint32_t a, b;
+	    double r;
+
+	  float_rand:
+	    a = random_int32(obj, rnd);
+	    b = random_int32(obj, rnd);
+	    r = int_pair_to_real_exclusive(a, b);
+	    if (max > 0.0) r *= max;;
+	    v = rb_float_new(r);
+	}
+    }
+    else if ((v = rand_range(obj, rnd, vmax)) != Qfalse) {
+	/* nothing to do */
+    }
+    else {
+	return Qfalse;
+    }
+    return v;
+}
+
+static VALUE
+rand_random_number(int argc, VALUE *argv, VALUE obj)
+{
+    rb_random_t *rnd = try_get_rnd(obj);
+    VALUE v = rand_random(argc, argv, obj, rnd);
+    if (NIL_P(v)) v = rand_random(0, 0, obj, rnd);
+    else if (!v) invalid_argument(argv[0]);
+    return v;
 }
 
 /*
  * call-seq:
- *     prng1 == prng2 -> true or false
+ *   prng1 == prng2 -> true or false
  *
- * Returns true if the generators' states equal.
+ * Returns true if the two generators have the same internal state, otherwise
+ * false.  Equivalent generators will return the same sequence of
+ * pseudo-random numbers.  Two generators will generally have the same state
+ * only if they were initialized with the same seed
+ *
+ *   Random.new == Random.new             # => false
+ *   Random.new(1234) == Random.new(1234) # => true
+ *
+ * and have the same invocation history.
+ *
+ *   prng1 = Random.new(1234)
+ *   prng2 = Random.new(1234)
+ *   prng1 == prng2 # => true
+ *
+ *   prng1.rand     # => 0.1915194503788923
+ *   prng1 == prng2 # => false
+ *
+ *   prng2.rand     # => 0.1915194503788923
+ *   prng1 == prng2 # => true
  */
 static VALUE
 random_equal(VALUE self, VALUE other)
@@ -1119,46 +1310,97 @@ random_equal(VALUE self, VALUE other)
 }
 
 /*
- *  call-seq:
- *     rand(max=0)    -> number
+ * call-seq:
+ *   rand(max=0)    -> number
  *
- *  Converts <i>max</i> to an integer using max1 =
- *  max<code>.to_i.abs</code>. If _max_ is +nil+ the result is zero, returns a
- *  pseudorandom floating point number greater than or equal to 0.0 and
- *  less than 1.0. Otherwise, returns a pseudorandom integer greater
- *  than or equal to zero and less than max1. <code>Kernel::srand</code>
- *  may be used to ensure repeatable sequences of random numbers between
- *  different runs of the program. Ruby currently uses a modified
- *  Mersenne Twister with a period of 2**19937-1.
+ * If called without an argument, or if <tt>max.to_i.abs == 0</tt>, rand
+ * returns a pseudo-random floating point number between 0.0 and 1.0,
+ * including 0.0 and excluding 1.0.
  *
- *     srand 1234                 #=> 0
- *     [ rand,  rand ]            #=> [0.191519450163469, 0.49766366626136]
- *     [ rand(10), rand(1000) ]   #=> [6, 817]
- *     srand 1234                 #=> 1234
- *     [ rand,  rand ]            #=> [0.191519450163469, 0.49766366626136]
+ *   rand        #=> 0.2725926052826416
+ *
+ * When +max.abs+ is greater than or equal to 1, +rand+ returns a pseudo-random
+ * integer greater than or equal to 0 and less than +max.to_i.abs+.
+ *
+ *   rand(100)   #=> 12
+ *
+ * When +max+ is a Range, +rand+ returns a random number where
+ * range.member?(number) == true.
+ *
+ * Negative or floating point values for +max+ are allowed, but may give
+ * surprising results.
+ *
+ *   rand(-100) # => 87
+ *   rand(-0.5) # => 0.8130921818028143
+ *   rand(1.9)  # equivalent to rand(1), which is always 0
+ *
+ * Kernel.srand may be used to ensure that sequences of random numbers are
+ * reproducible between different runs of a program.
+ *
+ * See also Random.rand.
  */
 
 static VALUE
 rb_f_rand(int argc, VALUE *argv, VALUE obj)
 {
-    VALUE vmax, r;
-    struct MT *mt = default_mt();
+    VALUE v, vmax, r;
+    rb_random_t *rnd = rand_start(&default_rand);
 
     if (argc == 0) goto zero_arg;
     rb_scan_args(argc, argv, "01", &vmax);
     if (NIL_P(vmax)) goto zero_arg;
+    if ((v = rand_range(Qnil, rnd, vmax)) != Qfalse) {
+	return v;
+    }
     vmax = rb_to_int(vmax);
-    if (vmax == INT2FIX(0) || NIL_P(r = rand_int(mt, vmax, 0))) {
+    if (vmax == INT2FIX(0) || NIL_P(r = rand_int(Qnil, rnd, vmax, 0))) {
       zero_arg:
-	return DBL2NUM(genrand_real(mt));
+	return DBL2NUM(genrand_real(&rnd->mt));
     }
     return r;
 }
 
-static st_index_t hashseed;
+/*
+ * call-seq:
+ *   Random.rand -> float
+ *   Random.rand(max) -> number
+ *
+ * Alias of Random::DEFAULT.rand.
+ */
 
 static VALUE
-init_randomseed(struct MT *mt, unsigned int initial[DEFAULT_SEED_CNT])
+random_s_rand(int argc, VALUE *argv, VALUE obj)
+{
+    VALUE v = rand_random(argc, argv, Qnil, rand_start(&default_rand));
+    check_random_number(v, argv);
+    return v;
+}
+
+#define SIP_HASH_STREAMING 0
+#define sip_hash24 ruby_sip_hash24
+#if !defined _WIN32 && !defined BYTE_ORDER
+# ifdef WORDS_BIGENDIAN
+#   define BYTE_ORDER BIG_ENDIAN
+# else
+#   define BYTE_ORDER LITTLE_ENDIAN
+# endif
+# ifndef LITTLE_ENDIAN
+#   define LITTLE_ENDIAN 1234
+# endif
+# ifndef BIG_ENDIAN
+#   define BIG_ENDIAN    4321
+# endif
+#endif
+#include "siphash.c"
+
+static st_index_t hashseed;
+static union {
+    uint8_t key[16];
+    uint32_t u32[(16 * sizeof(uint8_t) - 1) / sizeof(uint32_t)];
+} sipseed;
+
+static VALUE
+init_randomseed(struct MT *mt, uint32_t initial[DEFAULT_SEED_CNT])
 {
     VALUE seed;
     fill_random_seed(initial);
@@ -1172,9 +1414,10 @@ void
 Init_RandomSeed(void)
 {
     rb_random_t *r = &default_rand;
-    unsigned int initial[DEFAULT_SEED_CNT];
+    uint32_t initial[DEFAULT_SEED_CNT];
     struct MT *mt = &r->mt;
     VALUE seed = init_randomseed(mt, initial);
+    int i;
 
     hashseed = genrand_int32(mt);
 #if SIZEOF_ST_INDEX_T*CHAR_BIT > 4*8
@@ -1190,6 +1433,9 @@ Init_RandomSeed(void)
     hashseed |= genrand_int32(mt);
 #endif
 
+    for (i = 0; i < numberof(sipseed.u32); ++i)
+	sipseed.u32[i] = genrand_int32(mt);
+
     rb_global_variable(&r->seed);
     r->seed = seed;
 }
@@ -1200,13 +1446,24 @@ rb_hash_start(st_index_t h)
     return st_hash_start(hashseed + h);
 }
 
+st_index_t
+rb_memhash(const void *ptr, long len)
+{
+    sip_uint64_t h = sip_hash24(sipseed.key, ptr, len);
+#ifdef HAVE_UINT64_T
+    return (st_index_t)h;
+#else
+    return (st_index_t)(h.u32[0] ^ h.u32[1]);
+#endif
+}
+
 static void
 Init_RandomSeed2(void)
 {
     VALUE seed = default_rand.seed;
 
     if (RB_TYPE_P(seed, T_BIGNUM)) {
-	RBASIC(seed)->klass = rb_cBignum;
+	rb_obj_reveal(seed, rb_cBignum);
     }
 }
 
@@ -1218,8 +1475,32 @@ rb_reset_random_seed(void)
     r->seed = INT2FIX(0);
 }
 
+/*
+ * Document-class: Random
+ *
+ * Random provides an interface to Ruby's pseudo-random number generator, or
+ * PRNG.  The PRNG produces a deterministic sequence of bits which approximate
+ * true randomness. The sequence may be represented by integers, floats, or
+ * binary strings.
+ *
+ * The generator may be initialized with either a system-generated or
+ * user-supplied seed value by using Random.srand.
+ *
+ * The class method Random.rand provides the base functionality of Kernel.rand
+ * along with better handling of floating point values. These are both
+ * interfaces to Random::DEFAULT, the Ruby system PRNG.
+ *
+ * Random.new will create a new PRNG with a state independent of
+ * Random::DEFAULT, allowing multiple generators with different seed values or
+ * sequence positions to exist simultaneously. Random objects can be
+ * marshaled, allowing sequences to be saved and resumed.
+ *
+ * PRNGs are currently implemented as a modified Mersenne Twister with a period
+ * of 2**19937-1.
+ */
+
 void
-Init_Random(void)
+InitVM_Random(void)
 {
     Init_RandomSeed2();
     rb_define_global_function("srand", rb_f_srand, -1);
@@ -1232,17 +1513,39 @@ Init_Random(void)
     rb_define_method(rb_cRandom, "bytes", random_bytes, 1);
     rb_define_method(rb_cRandom, "seed", random_get_seed, 0);
     rb_define_method(rb_cRandom, "initialize_copy", random_copy, 1);
-    rb_define_method(rb_cRandom, "marshal_dump", random_dump, 0);
-    rb_define_method(rb_cRandom, "marshal_load", random_load, 1);
+    rb_define_private_method(rb_cRandom, "marshal_dump", random_dump, 0);
+    rb_define_private_method(rb_cRandom, "marshal_load", random_load, 1);
     rb_define_private_method(rb_cRandom, "state", random_state, 0);
     rb_define_private_method(rb_cRandom, "left", random_left, 0);
     rb_define_method(rb_cRandom, "==", random_equal, 1);
-    rb_define_const(rb_cRandom, "DEFAULT",
-		    TypedData_Wrap_Struct(rb_cRandom, &random_data_type, &default_rand));
+
+    {
+	VALUE rand_default = TypedData_Wrap_Struct(rb_cRandom, &random_data_type, &default_rand);
+	rb_gc_register_mark_object(rand_default);
+	/* Direct access to Ruby's Pseudorandom number generator (PRNG). */
+	rb_define_const(rb_cRandom, "DEFAULT", rand_default);
+    }
 
     rb_define_singleton_method(rb_cRandom, "srand", rb_f_srand, -1);
-    rb_define_singleton_method(rb_cRandom, "rand", rb_f_rand, -1);
+    rb_define_singleton_method(rb_cRandom, "rand", random_s_rand, -1);
     rb_define_singleton_method(rb_cRandom, "new_seed", random_seed, 0);
+    rb_define_singleton_method(rb_cRandom, "raw_seed", random_raw_seed, 1);
     rb_define_private_method(CLASS_OF(rb_cRandom), "state", random_s_state, 0);
     rb_define_private_method(CLASS_OF(rb_cRandom), "left", random_s_left, 0);
+
+    {
+	VALUE m = rb_define_module_under(rb_cRandom, "Formatter");
+	rb_include_module(rb_cRandom, m);
+	rb_define_method(m, "random_number", rand_random_number, -1);
+    }
+}
+
+#undef rb_intern
+void
+Init_Random(void)
+{
+    id_rand = rb_intern("rand");
+    id_bytes = rb_intern("bytes");
+
+    InitVM(Random);
 }

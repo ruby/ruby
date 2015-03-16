@@ -1,13 +1,13 @@
 =begin
  distributed Ruby --- dRuby Sample Server
- 	Copyright (c) 1999-2000,2002 Masatoshi SEKI 
+ 	Copyright (c) 1999-2000,2002 Masatoshi SEKI
 =end
 
 =begin
  How to play.
 
  Terminal 1
- | % ruby drbs.rb 
+ | % ruby drbs.rb
  | druby://yourhost:7640
 
  Terminal 2

@@ -1,8 +1,9 @@
 /**********************************************************************
-  regenc.c -  Oniguruma (regular expression library)
+  regenc.c -  Onigmo (Oniguruma-mod) (regular expression library)
 **********************************************************************/
 /*-
  * Copyright (c) 2002-2007  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
+ * Copyright (c) 2011       K.Takata  <kentkt AT csc DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -51,7 +52,7 @@ onigenc_set_default_encoding(OnigEncoding enc)
 }
 
 extern int
-onigenc_mbclen_approximate(const OnigUChar* p,const OnigUChar* e, struct OnigEncodingTypeST* enc)
+onigenc_mbclen_approximate(const OnigUChar* p,const OnigUChar* e, OnigEncoding enc)
 {
   int ret = ONIGENC_PRECISE_MBC_ENC_LEN(enc,p,e);
   if (ONIGENC_MBCLEN_CHARFOUND_P(ret))
@@ -66,7 +67,7 @@ onigenc_get_right_adjust_char_head(OnigEncoding enc, const UChar* start, const U
 {
   UChar* p = ONIGENC_LEFT_ADJUST_CHAR_HEAD(enc, start, s, end);
   if (p < s) {
-      p += enclen(enc, p, end);
+    p += enclen(enc, p, end);
   }
   return p;
 }
@@ -413,9 +414,7 @@ onigenc_ascii_apply_all_case_fold(OnigCaseFoldType flag ARG_UNUSED,
   OnigCodePoint code;
   int i, r;
 
-  for (i = 0;
-       i < (int )(sizeof(OnigAsciiLowerMap)/sizeof(OnigPairCaseFoldCodes));
-       i++) {
+  for (i = 0; i < numberof(OnigAsciiLowerMap); i++) {
     code = OnigAsciiLowerMap[i].to;
     r = (*f)(OnigAsciiLowerMap[i].from, &code, 1, arg);
     if (r != 0) return r;
@@ -430,8 +429,8 @@ onigenc_ascii_apply_all_case_fold(OnigCaseFoldType flag ARG_UNUSED,
 
 extern int
 onigenc_ascii_get_case_fold_codes_by_str(OnigCaseFoldType flag ARG_UNUSED,
-    const OnigUChar* p, const OnigUChar* end ARG_UNUSED, OnigCaseFoldCodeItem items[],
-     OnigEncoding enc ARG_UNUSED)
+	 const OnigUChar* p, const OnigUChar* end ARG_UNUSED,
+	 OnigCaseFoldCodeItem items[], OnigEncoding enc ARG_UNUSED)
 {
   if (0x41 <= *p && *p <= 0x5a) {
     items[0].byte_len = 1;
@@ -569,9 +568,10 @@ onigenc_get_case_fold_codes_by_str_with_map(int map_size,
 
 
 extern int
-onigenc_not_support_get_ctype_code_range(OnigCtype ctype,
-                       OnigCodePoint* sb_out, const OnigCodePoint* ranges[],
-		       OnigEncoding enc)
+onigenc_not_support_get_ctype_code_range(OnigCtype ctype ARG_UNUSED,
+	 OnigCodePoint* sb_out ARG_UNUSED,
+	 const OnigCodePoint* ranges[] ARG_UNUSED,
+	 OnigEncoding enc)
 {
   return ONIG_NO_SUPPORT_CONFIG;
 }
@@ -588,7 +588,7 @@ onigenc_is_mbc_newline_0x0a(const UChar* p, const UChar* end, OnigEncoding enc A
 /* for single byte encodings */
 extern int
 onigenc_ascii_mbc_case_fold(OnigCaseFoldType flag ARG_UNUSED, const UChar** p,
-			    const UChar*end, UChar* lower, OnigEncoding enc ARG_UNUSED)
+			    const UChar* end, UChar* lower, OnigEncoding enc ARG_UNUSED)
 {
   *lower = ONIGENC_ASCII_CODE_TO_LOWER_CASE(**p);
 
@@ -632,28 +632,31 @@ extern int
 onigenc_single_byte_code_to_mbc(OnigCodePoint code, UChar *buf, OnigEncoding enc ARG_UNUSED)
 {
   if (code > 0xff)
-      rb_raise(rb_eRangeError, "%u out of char range", code);
+    rb_raise(rb_eRangeError, "%u out of char range", code);
   *buf = (UChar )(code & 0xff);
   return 1;
 }
 
 extern UChar*
-onigenc_single_byte_left_adjust_char_head(const UChar* start ARG_UNUSED, const UChar* s,
-                                          const UChar* end,
+onigenc_single_byte_left_adjust_char_head(const UChar* start ARG_UNUSED,
+					  const UChar* s,
+					  const UChar* end ARG_UNUSED,
 					  OnigEncoding enc ARG_UNUSED)
 {
   return (UChar* )s;
 }
 
 extern int
-onigenc_always_true_is_allowed_reverse_match(const UChar* s ARG_UNUSED, const UChar* end ARG_UNUSED,
+onigenc_always_true_is_allowed_reverse_match(const UChar* s   ARG_UNUSED,
+					     const UChar* end ARG_UNUSED,
 					     OnigEncoding enc ARG_UNUSED)
 {
   return TRUE;
 }
 
 extern int
-onigenc_always_false_is_allowed_reverse_match(const UChar* s ARG_UNUSED, const UChar* end ARG_UNUSED,
+onigenc_always_false_is_allowed_reverse_match(const UChar* s   ARG_UNUSED,
+					      const UChar* end ARG_UNUSED,
 					      OnigEncoding enc ARG_UNUSED)
 {
   return FALSE;
@@ -715,7 +718,7 @@ onigenc_mbn_mbc_case_fold(OnigEncoding enc, OnigCaseFoldType flag ARG_UNUSED,
 #if 0
 extern int
 onigenc_mbn_is_mbc_ambiguous(OnigEncoding enc, OnigCaseFoldType flag,
-                             const UChar** pp ARG_UNUSED, const UChar* end ARG_UNUSED)
+                             const UChar** pp, const UChar* end ARG_UNUSED)
 {
   const UChar* p = *pp;
 
@@ -732,8 +735,9 @@ onigenc_mbn_is_mbc_ambiguous(OnigEncoding enc, OnigCaseFoldType flag,
 extern int
 onigenc_mb2_code_to_mbclen(OnigCodePoint code, OnigEncoding enc ARG_UNUSED)
 {
-  if ((code & 0xff00) != 0) return 2;
-  else return 1;
+  if (code <= 0xff) return 1;
+  if (code <= 0xffff) return 2;
+  return ONIGERR_TOO_BIG_WIDE_CHAR_VALUE;
 }
 
 extern int
@@ -759,7 +763,7 @@ onigenc_mb2_code_to_mbc(OnigEncoding enc, OnigCodePoint code, UChar *buf)
   if (enclen(enc, buf, p) != (p - buf))
     return ONIGERR_INVALID_CODE_POINT_VALUE;
 #endif
-  return (int)(p - buf);
+  return (int )(p - buf);
 }
 
 extern int
@@ -782,36 +786,36 @@ onigenc_mb4_code_to_mbc(OnigEncoding enc, OnigCodePoint code, UChar *buf)
   if (enclen(enc, buf, p) != (p - buf))
     return ONIGERR_INVALID_CODE_POINT_VALUE;
 #endif
-  return (int)(p - buf);
+  return (int )(p - buf);
 }
 
 extern int
 onigenc_minimum_property_name_to_ctype(OnigEncoding enc, UChar* p, UChar* end)
 {
   static const PosixBracketEntryType PBS[] = {
-    PosixBracketEntryInit("Alnum",  ONIGENC_CTYPE_ALNUM),
-    PosixBracketEntryInit("Alpha",  ONIGENC_CTYPE_ALPHA),
-    PosixBracketEntryInit("Blank",  ONIGENC_CTYPE_BLANK),
-    PosixBracketEntryInit("Cntrl",  ONIGENC_CTYPE_CNTRL),
-    PosixBracketEntryInit("Digit",  ONIGENC_CTYPE_DIGIT),
-    PosixBracketEntryInit("Graph",  ONIGENC_CTYPE_GRAPH),
-    PosixBracketEntryInit("Lower",  ONIGENC_CTYPE_LOWER),
-    PosixBracketEntryInit("Print",  ONIGENC_CTYPE_PRINT),
-    PosixBracketEntryInit("Punct",  ONIGENC_CTYPE_PUNCT),
-    PosixBracketEntryInit("Space",  ONIGENC_CTYPE_SPACE),
-    PosixBracketEntryInit("Upper",  ONIGENC_CTYPE_UPPER),
-    PosixBracketEntryInit("XDigit", ONIGENC_CTYPE_XDIGIT),
-    PosixBracketEntryInit("ASCII",  ONIGENC_CTYPE_ASCII),
-    PosixBracketEntryInit("Word",   ONIGENC_CTYPE_WORD),
+    POSIX_BRACKET_ENTRY_INIT("Alnum",  ONIGENC_CTYPE_ALNUM),
+    POSIX_BRACKET_ENTRY_INIT("Alpha",  ONIGENC_CTYPE_ALPHA),
+    POSIX_BRACKET_ENTRY_INIT("Blank",  ONIGENC_CTYPE_BLANK),
+    POSIX_BRACKET_ENTRY_INIT("Cntrl",  ONIGENC_CTYPE_CNTRL),
+    POSIX_BRACKET_ENTRY_INIT("Digit",  ONIGENC_CTYPE_DIGIT),
+    POSIX_BRACKET_ENTRY_INIT("Graph",  ONIGENC_CTYPE_GRAPH),
+    POSIX_BRACKET_ENTRY_INIT("Lower",  ONIGENC_CTYPE_LOWER),
+    POSIX_BRACKET_ENTRY_INIT("Print",  ONIGENC_CTYPE_PRINT),
+    POSIX_BRACKET_ENTRY_INIT("Punct",  ONIGENC_CTYPE_PUNCT),
+    POSIX_BRACKET_ENTRY_INIT("Space",  ONIGENC_CTYPE_SPACE),
+    POSIX_BRACKET_ENTRY_INIT("Upper",  ONIGENC_CTYPE_UPPER),
+    POSIX_BRACKET_ENTRY_INIT("XDigit", ONIGENC_CTYPE_XDIGIT),
+    POSIX_BRACKET_ENTRY_INIT("ASCII",  ONIGENC_CTYPE_ASCII),
+    POSIX_BRACKET_ENTRY_INIT("Word",   ONIGENC_CTYPE_WORD),
   };
 
-  const PosixBracketEntryType *pb, *pbe;
+  const PosixBracketEntryType *pb;
   int len;
 
   len = onigenc_strlen(enc, p, end);
-  for (pbe = (pb = PBS) + sizeof(PBS)/sizeof(PBS[0]); pb < pbe; ++pb) {
+  for (pb = PBS; pb < PBS + numberof(PBS); pb++) {
     if (len == pb->len &&
-        onigenc_with_ascii_strncmp(enc, p, end, pb->name, pb->len) == 0)
+        onigenc_with_ascii_strnicmp(enc, p, end, pb->name, pb->len) == 0)
       return pb->ctype;
   }
 
@@ -859,6 +863,27 @@ onigenc_with_ascii_strncmp(OnigEncoding enc, const UChar* p, const UChar* end,
 
     c = (int )ONIGENC_MBC_TO_CODE(enc, p, end);
     x = *sascii - c;
+    if (x) return x;
+
+    sascii++;
+    p += enclen(enc, p, end);
+  }
+  return 0;
+}
+
+extern int
+onigenc_with_ascii_strnicmp(OnigEncoding enc, const UChar* p, const UChar* end,
+                            const UChar* sascii /* ascii */, int n)
+{
+  int x, c;
+
+  while (n-- > 0) {
+    if (p >= end) return (int )(*sascii);
+
+    c = (int )ONIGENC_MBC_TO_CODE(enc, p, end);
+    if (ONIGENC_IS_ASCII_CODE(c))
+      c = ONIGENC_ASCII_CODE_TO_LOWER_CASE(c);
+    x = ONIGENC_ASCII_CODE_TO_LOWER_CASE(*sascii) - c;
     if (x) return x;
 
     sascii++;

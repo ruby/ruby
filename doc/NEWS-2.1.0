@@ -1,0 +1,376 @@
+# -*- rdoc -*-
+
+= NEWS for Ruby 2.1.0
+
+This document is a list of user visible feature changes made between
+releases except for bug fixes.
+
+Note that each entry is kept so brief that no reason behind or
+reference information is supplied with.  For a full list of changes
+with all sufficient information, see the ChangeLog file.
+
+== Changes since the 2.0.0 release
+
+=== Language changes
+
+* Now the default values of keyword arguments can be omitted.  Those
+  "required keyword arguments" need giving explicitly at the call time.
+
+* Added suffixes for integer and float literals: 'r', 'i', and 'ri'.
+  * "42r" and "3.14r" are evaluated as Rational(42, 1) and 3.14.rationalize,
+    respectively.  But exponential form with 'r' suffix like "6.022e+23r" is
+    not accepted because it is misleading.
+  * "42i" and "3.14i" are evaluated as Complex(0, 42) and Complex(0, 3.14),
+    respectively.
+  * "42ri" and "3.14ri" are evaluated as Complex(0, 42r) and Complex(0, 3.14r),
+    respectively.
+
+* def-expr now returns the symbol of its name instead of nil.
+
+=== Core classes updates (outstanding ones only)
+
+* Array
+  * New methods
+    * Array#to_h converts an array of key-value pairs into a Hash.
+
+* Binding
+  * New methods
+    * Binding#local_variable_get(symbol)
+    * Binding#local_variable_set(symbol, obj)
+    * Binding#local_variable_defined?(symbol)
+
+* Enumerable
+  * New methods
+    * Enumerable#to_h converts a list of key-value pairs into a Hash.
+
+* Exception
+  * New methods
+    * Exception#cause provides the previous exception which has been caught
+      at where raising the new exception.
+
+* GC
+  * improvements:
+    * introduced the generational GC a.k.a RGenGC.
+  * added environment variables:
+    * RUBY_GC_HEAP_INIT_SLOTS
+    * RUBY_GC_HEAP_FREE_SLOTS
+    * RUBY_GC_HEAP_GROWTH_FACTOR
+    * RUBY_GC_HEAP_GROWTH_MAX_SLOTS
+    * RUBY_GC_MALLOC_LIMIT_MAX
+    * RUBY_GC_MALLOC_LIMIT_GROWTH_FACTOR
+    * RUBY_GC_OLDMALLOC_LIMIT
+    * RUBY_GC_OLDMALLOC_LIMIT_MAX
+    * RUBY_GC_OLDMALLOC_LIMIT_GROWTH_FACTOR
+  * obsoleted environment variables:
+    * RUBY_FREE_MIN (Use RUBY_GC_HEAP_FREE_SLOTS instead)
+    * RUBY_HEAP_MIN_SLOTS (Use RUBY_GC_HEAP_INIT_SLOTS instead)
+
+* Integer
+  * New methods
+    * Fixnum#bit_length
+    * Bignum#bit_length
+  * Bignum performance improvement
+    * Use GMP if available.
+      GMP is used only for several operations:
+      multiplication, division, radix conversion, GCD
+
+* IO
+  * extended methods:
+    * IO#seek supports SEEK_DATA and SEEK_HOLE as whence.
+    * IO#seek accepts symbols (:CUR, :END, :SET, :DATA, :HOLE) for 2nd argument.
+    * IO#read_nonblock accepts optional `exception: false` to return symbols
+    * IO#write_nonblock accepts optional `exception: false` to return symbols
+
+* Kernel
+  * New methods:
+    * Kernel#singleton_method
+
+* Module
+  * New methods:
+    * Module#using, which activates refinements of the specified module only
+      in the current class or module definition.
+    * Module#singleton_class? returns true if the receiver is a singleton class
+      or false if it is an ordinary class or module.
+  * extended methods:
+    * Module#refine is no longer experimental.
+    * Module#include and Module#prepend are now public methods.
+
+* Mutex
+  * misc
+    * Mutex#owned? is no longer experimental.
+
+* Numeric
+  * extended methods:
+    * Numeric#step allows the limit argument to be omitted, in which
+      case an infinite sequence of numbers is generated.  Keyword
+      arguments `to` and `by` are introduced for ease of use.
+      `by` can be 0, in which case the same value will be generated
+      indefinitely.
+
+* Process
+  * New methods:
+    * alternative methods to $0/$0=:
+      * Process.argv0() returns the original value of $0.
+      * Process.setproctitle() sets the process title without affecting $0.
+    * Process.clock_gettime
+    * Process.clock_getres
+
+* String
+  * "literal".freeze is now optimized to return the same object
+  * New methods:
+    * String#scrub and String#scrub! verify and fix invalid byte sequence.
+      If you want to use this function with older Ruby,
+      consider to use string-scrub.gem.
+
+* Symbol
+  * All symbols are now frozen.
+
+* pack/unpack (Array/String)
+  * Q! and q! directives for long long type if platform has the type.
+
+* toplevel
+  * extended methods:
+    * main.using is no longer experimental. The method activates refinements
+      in the ancestors of the argument module to support refinement
+      inheritance by Module#include.
+
+=== Core classes compatibility issues (excluding feature bug fixes)
+
+* Hash
+  * incompatible changes:
+    * Hash#reject will return plain Hash object in the future versions, that
+      is the original object's subclass, instance variables, default value,
+      and taintedness will be no longer copied, so now warnings are emitted
+      when called with such Hash.
+
+* IO
+  * incompatible changes:
+    * open ignore internal encoding if external encoding is ASCII-8BIT.
+
+* Kernel#eval, Kernel#instance_eval, and Module#module_eval.
+  * Copies the scope information of the original environment, which means
+    that private, protected, public, and module_function without arguments
+    do not affect the environment outside the eval string.
+    For example, `class Foo; eval "private"; def foo; end; end' doesn't make
+    Foo#foo private.
+
+* Kernel#untrusted?, untrust, and trust
+  * These methods are deprecated and their behavior is same as tainted?,
+    taint, and untaint, respectively.  If $VERBOSE is true, they show warnings.
+
+* Module#ancestors
+  * The ancestors of a singleton class now include singleton classes,
+    in particular itself.
+
+* Module#define_method and Object#define_singleton_method
+  * Now they return the symbols of the defined methods, not the methods/procs
+    themselves.
+
+* Numeric#quo
+  * Raises TypeError instead of ArgumentError if the receiver doesn't have
+    to_r method.
+
+* Proc
+  * Returning from lambda proc now always exits from the Proc, not from the
+    method where the lambda is created.  Returning from non-lambda proc exits
+    from the method, same as the former behavior.
+
+String
+  * If invalid: :replace is specified for String#encode, replace
+    invalid byte sequence even if the destination encoding equals to
+    the source encoding.
+
+=== Stdlib updates (outstanding ones only)
+
+* CGI::Util
+  * All class methods modulized.
+
+* Digest
+  * extended methods:
+    * Digest::Class.file takes optional arguments for its constructor
+
+* Matrix
+  * Added Vector#cross_product.
+
+* Net::SMTP
+  * Added Net::SMTP#rset to implement the RSET command
+
+* objspace
+  * new method:
+    * ObjectSpace.trace_object_allocations
+    * ObjectSpace.trace_object_allocations_start
+    * ObjectSpace.trace_object_allocations_stop
+    * ObjectSpace.trace_object_allocations_clear
+    * ObjectSpace.allocation_sourcefile
+    * ObjectSpace.allocation_sourceline
+    * ObjectSpace.allocation_class_path
+    * ObjectSpace.allocation_method_id
+    * ObjectSpace.allocation_generation
+    * ObjectSpace.reachable_objects_from_root
+    * ObjectSpace.dump
+    * ObjectSpace.dump_all
+
+* OpenSSL::BN
+  * extended methods:
+    * OpenSSL::BN.new allows Fixnum/Bignum argument.
+
+* open-uri
+  * Support multiple fields with same field name (like Set-Cookie).
+
+* Pathname
+  * New methods:
+    * Pathname#write
+    * Pathname#binwrite
+
+* rake
+  * Updated to 10.1.0.  Major changes include removal of the class namespace,
+    Rake::DSL to hold the rake DSL methods and removal of support for legacy
+    rake features.
+
+    For a complete list of changes since rake 0.9.6 see:
+
+    http://rake.rubyforge.org/doc/release_notes/rake-10_1_0_rdoc.html
+
+    http://rake.rubyforge.org/doc/release_notes/rake-10_0_3_rdoc.html
+
+* RbConfig
+  * New constants:
+    * RbConfig::SIZEOF is added to provide the size of C types.
+
+* RDoc
+  * Updated to 4.1.0.  Major enhancements include a modified default template
+  * and accessibility enhancements.
+
+    For a list of minor enhancements and bug fixes see:
+    https://github.com/rdoc/rdoc/blob/v4.1.0.preview.1/History.rdoc
+
+* Resolv
+  * New methods:
+    * Resolv::DNS.fetch_resource
+  * One-shot multicast DNS support
+  * Support LOC resources
+
+* REXML::Parsers::SAX2Parser
+  * Fixes wrong number of arguments of entitydecl event. Document of the event
+    says "an array of the entity declaration" but implementation passes two
+    or more arguments. It is an implementation bug but it breaks backward
+    compatibility.
+
+* REXML::Parsers::StreamParser
+  * Supports "entity" event.
+
+* REXML::Text
+  * REXML::Text#<< supports method chain like 'text << "XXX" << "YYY"'.
+  * REXML::Text#<< supports not "raw" mode.
+
+* Rinda::RingServer, Rinda::RingFinger
+  * Rinda now supports multicast sockets.  See Rinda::RingServer and
+    Rinda::RingFinger for details.
+
+* RubyGems
+  * Updated to 2.2.0.  Notable new features include:
+
+    * Gemfile or gem.deps.rb support including Gem.file.lock (experimental)
+    * Improved, iterative resolver (compared to RubyGems 2.1 and earlier)
+    * Support for a sharing a GEM_HOME across ruby platforms and versions
+
+    For a complete list of enhancements and bug fixes see:
+    https://github.com/rubygems/rubygems/tree/master/History.txt
+
+* Set
+  * New methods:
+    * Set#intersect?
+    * Set#disjoint?
+
+* Socket
+  * New methods:
+    * Socket.getifaddrs
+
+* StringScanner
+  * extended methods:
+    * StringScanner#[] supports named captures.
+
+* Syslog::Logger
+  * Added facility.
+
+* Tempfile
+  * New methods:
+    * Tempfile.create
+
+* Timeout
+  * The exception to terminate the given block can no longer be rescued
+    inside the block, by default, unless the exception class is given
+    explicitly.
+
+* TSort
+  * New methods:
+    * TSort.tsort
+    * TSort.tsort_each
+    * TSort.strongly_connected_components
+    * TSort.each_strongly_connected_component
+    * TSort.each_strongly_connected_component_from
+
+* WEBrick
+  * The body of a response may now be a StringIO or other IO-like that responds
+    to #readpartial and #read.
+
+* XMLRPC::Client
+  * New methods:
+    * XMLRPC::Client#http. It returns Net::HTTP for the client. Normally,
+      it is not needed. It is useful when you want to change minor HTTP client
+      options. You can change major HTTP client options by XMLRPC::Client
+      methods. You should use XMLRPC::Client methods for changing major
+      HTTP client options instead of XMLRPC::Client#http.
+
+=== Stdlib compatibility issues (excluding feature bug fixes)
+
+* Set
+  * incompatible changes:
+    * Set#to_set now returns self instead of generating a copy.
+
+* URI
+  * incompatible changes:
+    * URI.decode_www_form follows current WHATWG URL Standard.
+      It gets encoding argument to specify the character encoding.
+      It now allows loose percent encoded strings, but denies ;-separator.
+    * URI.encode_www_form follows current WHATWG URL Standard.
+      It gets encoding argument to convert before percent encode.
+      UTF-16 strings aren't converted to UTF-8 before percent encode by default.
+
+* curses
+  * Removed.
+    curses is now available as a gem.
+    See https://rubygems.org/gems/curses for details.
+
+=== Built-in global variables compatibility issues
+
+* $SAFE
+  * $SAFE=4 is obsolete.  If $SAFE is set to 4 or larger, an ArgumentError
+    is raised.
+
+=== C API updates
+
+* rb_gc_set_params() is deprecated. This is only used in Ruby internal.
+
+* rb_gc_count() added. This returns the number of times GC occurred.
+
+* rb_gc_stat() added. This allows access to specific GC.stat() values from C
+  without any allocation overhead.
+
+* rb_gc_latest_gc_info() added. This allows access to GC.latest_gc_info().
+
+* rb_postponed_job_register() added. Takes a function callback which is invoked
+  when the VM is in a consistent state, i.e. to perform work from a C signal
+  handler.
+
+* rb_profile_frames() added. Provides low-cost access to the current ruby stack
+  for callstack profiling.
+
+* rb_tracepoint_new() supports new internal events accessible only from C:
+  * RUBY_INTERNAL_EVENT_NEWOBJ
+  * RUBY_INTERNAL_EVENT_FREEOBJ
+  * RUBY_INTERNAL_EVENT_GC_START
+  * RUBY_INTERNAL_EVENT_GC_END_MARK
+  * RUBY_INTERNAL_EVENT_GC_END_SWEEP
+  * Note that you *can not* specify "internal events" with normal events
+    (such as RUBY_EVENT_CALL, RUBY_EVENT_RETURN) simultaneously.

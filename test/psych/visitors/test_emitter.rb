@@ -1,4 +1,4 @@
-require_relative '../helper'
+require 'psych/helper'
 
 module Psych
   module Visitors
@@ -46,7 +46,7 @@ module Psych
         @visitor.accept s
 
         assert_match(/1.1/, @io.string)
-        assert_equal @io.string, s.to_yaml
+        assert_equal @io.string, s.yaml
       end
 
       def test_document_implicit_end
@@ -61,8 +61,8 @@ module Psych
         @visitor.accept s
 
         assert_match(/key: value/, @io.string)
-        assert_equal @io.string, s.to_yaml
-        assert(/\.\.\./ !~ s.to_yaml)
+        assert_equal @io.string, s.yaml
+        assert(/\.\.\./ !~ s.yaml)
       end
 
       def test_scalar
@@ -76,7 +76,7 @@ module Psych
         @visitor.accept s
 
         assert_match(/hello/, @io.string)
-        assert_equal @io.string, s.to_yaml
+        assert_equal @io.string, s.yaml
       end
 
       def test_scalar_with_tag
@@ -91,7 +91,7 @@ module Psych
 
         assert_match(/str/, @io.string)
         assert_match(/hello/, @io.string)
-        assert_equal @io.string, s.to_yaml
+        assert_equal @io.string, s.yaml
       end
 
       def test_sequence
@@ -107,7 +107,7 @@ module Psych
         @visitor.accept s
 
         assert_match(/- hello/, @io.string)
-        assert_equal @io.string, s.to_yaml
+        assert_equal @io.string, s.yaml
       end
 
       def test_mapping
@@ -122,7 +122,7 @@ module Psych
         @visitor.accept s
 
         assert_match(/key: value/, @io.string)
-        assert_equal @io.string, s.to_yaml
+        assert_equal @io.string, s.yaml
       end
 
       def test_alias
@@ -137,7 +137,7 @@ module Psych
         @visitor.accept s
 
         assert_match(/&A key: \*A/, @io.string)
-        assert_equal @io.string, s.to_yaml
+        assert_equal @io.string, s.yaml
       end
     end
   end

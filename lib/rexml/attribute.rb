@@ -80,8 +80,11 @@ module REXML
     # Returns the namespace URL, if defined, or nil otherwise
     #
     #  e = Element.new("el")
-    #  e.add_attributes({"xmlns:ns", "http://url"})
-    #  e.namespace( "ns" )              # -> "http://url"
+    #  e.add_namespace("ns", "http://url")
+    #  e.add_attribute("ns:a", "b")
+    #  e.add_attribute("nsx:a", "c")
+    #  e.attribute("ns:a").namespace # => "http://url"
+    #  e.attribute("nsx:a").namespace # => nil
     def namespace arg=nil
       arg = prefix if arg.nil?
       @element.namespace arg
@@ -115,7 +118,7 @@ module REXML
     def doctype
       if @element
         doc = @element.document
-        doctype = doc.doctype if doc
+        doc.doctype if doc
       end
     end
 
@@ -156,7 +159,7 @@ module REXML
       self
     end
 
-    # Removes this Attribute from the tree, and returns true if successfull
+    # Removes this Attribute from the tree, and returns true if successful
     #
     # This method is usually not called directly.
     def remove

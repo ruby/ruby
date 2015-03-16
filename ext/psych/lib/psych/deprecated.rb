@@ -21,6 +21,7 @@ module Psych
     target.psych_to_yaml unless opts[:nodump]
   end
 
+  # This method is deprecated, use Psych.load_stream instead.
   def self.load_documents yaml, &block
     if $VERBOSE
       warn "#{caller[0]}: load_documents is deprecated, use load_stream"
@@ -34,7 +35,8 @@ module Psych
     warn "#{caller[0]}: detect_implicit is deprecated" if $VERBOSE
     return '' unless String === thing
     return 'null' if '' == thing
-    ScalarScanner.new.tokenize(thing).class.name.downcase
+    ss = ScalarScanner.new(ClassLoader.new)
+    ss.tokenize(thing).class.name.downcase
   end
 
   def self.add_ruby_type type_tag, &block
@@ -76,6 +78,7 @@ module Psych
 end
 
 class Object
+  undef :to_yaml_properties rescue nil
   def to_yaml_properties # :nodoc:
     instance_variables
   end

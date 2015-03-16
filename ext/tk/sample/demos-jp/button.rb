@@ -1,36 +1,36 @@
-# -*- coding: euc-jp -*-
+# -*- coding: utf-8 -*-
 #
 # button widget demo (called by 'widget')
 #
 #
 
-# toplevel widget ¤¬Â¸ºß¤¹¤ì¤Ğºï½ü¤¹¤ë
+# toplevel widget ãŒå­˜åœ¨ã™ã‚Œã°å‰Šé™¤ã™ã‚‹
 if defined?($button_demo) && $button_demo
   $button_demo.destroy
   $button_demo = nil
 end
 
-# demo ÍÑ¤Î toplevel widget ¤òÀ¸À®
+# demo ç”¨ã® toplevel widget ã‚’ç”Ÿæˆ
 $button_demo = TkToplevel.new {|w|
   title("Button Demonstration")
   iconname("button")
   positionWindow(w)
 }
 
-# label À¸À®
+# label ç”Ÿæˆ
 msg = TkLabel.new($button_demo) {
   font $kanji_font
   wraplength '4i'
   justify 'left'
-  text "¥Ü¥¿¥ó¤ò¥¯¥ê¥Ã¥¯¤¹¤ë¤È¡¢¥Ü¥¿¥ó¤ÎÇØ·Ê¿§¤¬¤½¤Î¥Ü¥¿¥ó¤Ë½ñ¤«¤ì¤Æ¤¤¤ë¿§¤Ë¤Ê¤ê¤Ş¤¹¡£¥Ü¥¿¥ó¤«¤é¥Ü¥¿¥ó¤Ø¤Î°ÜÆ°¤Ï¥¿¥Ö¤ò²¡¤¹¤³¤È¤Ç¤â²ÄÇ½¤Ç¤¹¡£¤Ş¤¿¥¹¥Ú¡¼¥¹¤Ç¼Â¹Ô¤¹¤ë¤³¤È¤¬¤Ç¤­¤Ş¤¹¡£"
+  text "ãƒœã‚¿ãƒ³ã‚’ã‚¯ãƒªãƒƒã‚¯ã™ã‚‹ã¨ã€ãƒœã‚¿ãƒ³ã®èƒŒæ™¯è‰²ãŒãã®ãƒœã‚¿ãƒ³ã«æ›¸ã‹ã‚Œã¦ã„ã‚‹è‰²ã«ãªã‚Šã¾ã™ã€‚ãƒœã‚¿ãƒ³ã‹ã‚‰ãƒœã‚¿ãƒ³ã¸ã®ç§»å‹•ã¯ã‚¿ãƒ–ã‚’æŠ¼ã™ã“ã¨ã§ã‚‚å¯èƒ½ã§ã™ã€‚ã¾ãŸã‚¹ãƒšãƒ¼ã‚¹ã§å®Ÿè¡Œã™ã‚‹ã“ã¨ãŒã§ãã¾ã™ã€‚"
 }
 msg.pack('side'=>'top')
 
-# frame À¸À®
+# frame ç”Ÿæˆ
 $button_buttons = Tk::Frame.new($button_demo) {|frame|
   TkButton.new(frame) {
-    #text 'Î»²ò'
-    text 'ÊÄ¤¸¤ë'
+    #text 'äº†è§£'
+    text 'é–‰ã˜ã‚‹'
     command proc{
       tmppath = $button_demo
       $button_demo = nil
@@ -39,13 +39,13 @@ $button_buttons = Tk::Frame.new($button_demo) {|frame|
   }.pack('side'=>'left', 'expand'=>'yes')
 
   TkButton.new(frame) {
-    text '¥³¡¼¥É»²¾È'
+    text 'ã‚³ãƒ¼ãƒ‰å‚ç…§'
     command proc{showCode 'button'}
   }.pack('side'=>'left', 'expand'=>'yes')
 
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
-# button À¸À®
+# button ç”Ÿæˆ
 TkButton.new($button_demo){
   text "Peach Puff"
   width 10

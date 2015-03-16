@@ -33,7 +33,7 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
     config = {
       :ServerName => "localhost.localdomain",
       :ProxyContentHandler => Proc.new{|req, res| proxy_handler_called += 1 },
-      :RequestHandler => Proc.new{|req, res| request_handler_called += 1 }
+      :RequestCallback => Proc.new{|req, res| request_handler_called += 1 }
     }
     TestWEBrick.start_httpproxy(config){|server, addr, port, log|
       server.mount_proc("/"){|req, res|
@@ -78,7 +78,7 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
     config = {
       :ServerName => "localhost.localdomain",
       :ProxyContentHandler => Proc.new{|req, res| proxy_handler_called += 1 },
-      :RequestHandler => Proc.new{|req, res| request_handler_called += 1 }
+      :RequestCallback => Proc.new{|req, res| request_handler_called += 1 }
     }
     TestWEBrick.start_httpproxy(config){|server, addr, port, log|
       server.mount_proc("/"){|req, res|
@@ -123,7 +123,7 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
       nil, nil, OpenSSL::Digest::SHA1.new
     )
     return cert
-  end
+  end if defined?(OpenSSL::TestUtils)
 
   def test_connect
     # Testing CONNECT to proxy server
@@ -143,7 +143,7 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
     }
     config = {
       :ServerName => "localhost.localdomain",
-      :RequestHandler => Proc.new{|req, res|
+      :RequestCallback => Proc.new{|req, res|
         assert_equal("CONNECT", req.request_method)
       },
     }
@@ -159,18 +159,20 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
         end
 
         req = Net::HTTP::Get.new("/")
+        req["Content-Type"] = "application/x-www-form-urlencoded"
         http.request(req){|res|
           assert_equal("SSL GET / ", res.body, s_log.call + log.call)
         }
 
         req = Net::HTTP::Post.new("/")
+        req["Content-Type"] = "application/x-www-form-urlencoded"
         req.body = "post-data"
         http.request(req){|res|
           assert_equal("SSL POST / post-data", res.body, s_log.call + log.call)
         }
       }
     }
-  end if defined?(OpenSSL)
+  end if defined?(OpenSSL::TestUtils)
 
   def test_upstream_proxy
     # Testing GET or POST through the upstream proxy server
@@ -185,7 +187,7 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
     up_config = {
       :ServerName => "localhost.localdomain",
       :ProxyContentHandler => Proc.new{|req, res| up_proxy_handler_called += 1},
-      :RequestHandler => Proc.new{|req, res| up_request_handler_called += 1}
+      :RequestCallback => Proc.new{|req, res| up_request_handler_called += 1}
     }
     TestWEBrick.start_httpproxy(up_config){|up_server, up_addr, up_port, up_log|
       up_server.mount_proc("/"){|req, res|
@@ -195,13 +197,14 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
         :ServerName => "localhost.localdomain",
         :ProxyURI => URI.parse("http://localhost:#{up_port}"),
         :ProxyContentHandler => Proc.new{|req, res| proxy_handler_called += 1},
-        :RequestHandler => Proc.new{|req, res| request_handler_called += 1},
+        :RequestCallback => Proc.new{|req, res| request_handler_called += 1},
       }
       TestWEBrick.start_httpproxy(config){|server, addr, port, log|
         http = Net::HTTP.new(up_addr, up_port, addr, port)
 
         req = Net::HTTP::Get.new("/")
         http.request(req){|res|
+          skip res.message unless res.code == '200'
           via = res["via"].split(/,\s+/)
           assert(via.include?("1.1 localhost.localdomain:#{up_port}"), up_log.call + log.call)
           assert(via.include?("1.1 localhost.localdomain:#{port}"), up_log.call + log.call)
@@ -237,7 +240,7 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
         assert_equal(3, proxy_handler_called, up_log.call + log.call)
         assert_equal(3, request_handler_called, up_log.call + log.call)
 
-        if defined?(OpenSSL)
+        if defined?(OpenSSL::TestUtils)
           # Testing CONNECT to the upstream proxy server
           #
           #  client -------> proxy -------> proxy -------> https

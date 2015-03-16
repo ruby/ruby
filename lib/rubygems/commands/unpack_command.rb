@@ -1,13 +1,15 @@
-require 'fileutils'
 require 'rubygems/command'
 require 'rubygems/installer'
 require 'rubygems/version_option'
+require 'rubygems/remote_fetcher'
 
 class Gem::Commands::UnpackCommand < Gem::Command
 
   include Gem::VersionOption
 
   def initialize
+    require 'fileutils'
+
     super 'unpack', 'Unpack an installed gem to the current directory',
           :version => Gem::Requirement.default,
           :target  => Dir.pwd
@@ -15,6 +17,10 @@ class Gem::Commands::UnpackCommand < Gem::Command
     add_option('--target=DIR',
                'target directory for unpacking') do |value, options|
       options[:target] = value
+    end
+
+    add_option('--spec', 'unpack the gem specification') do |value, options|
+      options[:spec] = true
     end
 
     add_version_option
@@ -28,18 +34,26 @@ class Gem::Commands::UnpackCommand < Gem::Command
     "--version '#{Gem::Requirement.default}'"
   end
 
-  def usage # :nodoc:
-    "#{program_name} GEMNAME"
+  def description
+    <<-EOF
+The unpack command allows you to examine the contents of a gem or modify
+them to help diagnose a bug.
+
+You can add the contents of the unpacked gem to the load path using the
+RUBYLIB environment variable or -I:
+
+  $ gem unpack my_gem
+  Unpacked gem: '.../my_gem-1.0'
+  [edit my_gem-1.0/lib/my_gem.rb]
+  $ ruby -Imy_gem-1.0/lib -S other_program
+
+You can repackage an unpacked gem using the build command.  See the build
+command help for an example.
+    EOF
   end
 
-  def download dependency
-    found = Gem::SpecFetcher.fetcher.fetch dependency
-
-    return if found.empty?
-
-    spec, source_uri = found.first
-
-    Gem::RemoteFetcher.fetcher.download spec, source_uri
+  def usage # :nodoc:
+    "#{program_name} GEMNAME"
   end
 
   #--
@@ -52,16 +66,50 @@ class Gem::Commands::UnpackCommand < Gem::Command
       dependency = Gem::Dependency.new name, options[:version]
       path = get_path dependency
 
-      if path then
+      unless path then
+        alert_error "Gem '#{name}' not installed nor fetchable."
+        next
+      end
+
+      if @options[:spec] then
+        spec, metadata = get_metadata path
+
+        if metadata.nil? then
+          alert_error "--spec is unsupported on '#{name}' (old format gem)"
+          next
+        end
+
+        spec_file = File.basename spec.spec_file
+
+        open spec_file, 'w' do |io|
+          io.write metadata
+        end
+      else
         basename = File.basename path, '.gem'
         target_dir = File.expand_path basename, options[:target]
-        FileUtils.mkdir_p target_dir
-        Gem::Installer.new(path, :unpack => true).unpack target_dir
+
+        package = Gem::Package.new path
+        package.extract_files target_dir
+
         say "Unpacked gem: '#{target_dir}'"
-      else
-        alert_error "Gem '#{name}' not installed."
       end
     end
+  end
+
+  ##
+  #
+  # Find cached filename in Gem.path. Returns nil if the file cannot be found.
+  #
+  #--
+  # TODO: see comments in get_path() about general service.
+
+  def find_in_cache(filename)
+    Gem.path.each do |path|
+      this_path = File.join(path, "cache", filename)
+      return this_path if File.exist? this_path
+    end
+
+    return nil
   end
 
   ##
@@ -84,25 +132,50 @@ class Gem::Commands::UnpackCommand < Gem::Command
   def get_path dependency
     return dependency.name if dependency.name =~ /\.gem$/i
 
-    specs = Gem.source_index.search dependency
+    specs = dependency.matching_specs
 
-    selected = specs.sort_by { |s| s.version }.last
+    selected = specs.max_by { |s| s.version }
 
-    return download(dependency) if selected.nil?
+    return Gem::RemoteFetcher.fetcher.download_to_cache(dependency) unless
+      selected
 
     return unless dependency.name =~ /^#{selected.name}$/i
 
     # We expect to find (basename).gem in the 'cache' directory.  Furthermore,
     # the name match must be exact (ignoring case).
-    filename = selected.file_name
-    path = nil
 
-    Gem.path.find do |gem_dir|
-      path = File.join gem_dir, 'cache', filename
-      File.exist? path
-    end
+    path = find_in_cache File.basename selected.cache_file
+
+    return Gem::RemoteFetcher.fetcher.download_to_cache(dependency) unless path
 
     path
+  end
+
+  ##
+  # Extracts the Gem::Specification and raw metadata from the .gem file at
+  # +path+.
+  #--
+  # TODO move to Gem::Package as #raw_spec or something
+
+  def get_metadata path
+    format = Gem::Package.new path
+    spec = format.spec
+
+    metadata = nil
+
+    open path, Gem.binary_mode do |io|
+      tar = Gem::Package::TarReader.new io
+      tar.each_entry do |entry|
+        case entry.full_name
+        when 'metadata' then
+          metadata = entry.read
+        when 'metadata.gz' then
+          metadata = Gem.gunzip entry.read
+        end
+      end
+    end
+
+    return spec, metadata
   end
 
 end

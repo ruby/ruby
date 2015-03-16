@@ -1,8 +1,8 @@
-require_relative 'gemutilities'
+require 'rubygems/test_case'
 require 'rubygems/local_remote_options'
 require 'rubygems/command'
 
-class TestGemLocalRemoteOptions < RubyGemTestCase
+class TestGemLocalRemoteOptions < Gem::TestCase
 
   def setup
     super
@@ -28,6 +28,23 @@ class TestGemLocalRemoteOptions < RubyGemTestCase
     @cmd.options[:domain] = :both
 
     assert_equal true, @cmd.both?
+  end
+
+  def test_clear_sources_option
+    @cmd.add_local_remote_options
+
+    s = URI.parse "http://only-gems.example.com/"
+
+    @cmd.handle_options %W[--clear-sources --source #{s}]
+    assert_equal [s.to_s], Gem.sources
+  end
+
+  def test_clear_sources_option_idiot_proof
+    spec_fetcher
+
+    @cmd.add_local_remote_options
+    @cmd.handle_options %W[--clear-sources]
+    assert_equal Gem.default_sources, Gem.sources
   end
 
   def test_local_eh
@@ -62,9 +79,28 @@ class TestGemLocalRemoteOptions < RubyGemTestCase
     s3 = URI.parse 'http://other-gems.example.com/some_subdir'
     s4 = URI.parse 'http://more-gems.example.com/' # Intentional duplicate
 
+    original_sources = Gem.sources.dup
+
     @cmd.handle_options %W[--source #{s1} --source #{s2} --source #{s3} --source #{s4}]
 
-    assert_equal [s1.to_s, s2.to_s, "#{s3}/"], Gem.sources
+    original_sources << s1.to_s
+    original_sources << s2.to_s
+    original_sources << "#{s3}/"
+
+    assert_equal original_sources, Gem.sources
+  end
+
+  def test_short_source_option
+    @cmd.add_source_option
+
+    original_sources = Gem.sources.dup
+
+    source = URI.parse 'http://more-gems.example.com/'
+    @cmd.handle_options %W[-s #{source}]
+
+    original_sources << source
+
+    assert_equal original_sources, Gem.sources
   end
 
   def test_update_sources_option

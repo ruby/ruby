@@ -24,7 +24,7 @@
 static int call_macinit = 0;
 
 static void
-_macinit()
+_macinit(void)
 {
     if (!call_macinit) {
         tcl_macQdPtr = &qd; /* setup QuickDraw globals */
@@ -72,15 +72,19 @@ _nativethread_consistency_check(ip)
 #if defined USE_TCL_STUBS && defined USE_TK_STUBS
 
 #if defined _WIN32 || defined __CYGWIN__
-# include "util.h"
+#  ifdef HAVE_RUBY_RUBY_H
+#    include "ruby/util.h"
+#  else
+#    include "util.h"
+#  endif
 # include <windows.h>
   typedef HINSTANCE DL_HANDLE;
 # define DL_OPEN LoadLibrary
 # define DL_SYM GetProcAddress
 # define TCL_INDEX 4
 # define TK_INDEX 3
-# define TCL_NAME "tcl89%s"
-# define TK_NAME "tk89%s"
+# define TCL_NAME "tcl89"
+# define TK_NAME "tk89"
 # undef DLEXT
 # define DLEXT ".dll"
 #elif defined HAVE_DLOPEN
@@ -90,9 +94,9 @@ _nativethread_consistency_check(ip)
 # define DL_SYM dlsym
 # define TCL_INDEX 8
 # define TK_INDEX 7
-# define TCL_NAME "libtcl8.9%s"
-# define TK_NAME "libtk8.9%s"
-# if defined(__APPLE__) && defined(__MACH__)   /* Mac OS X */
+# define TCL_NAME "libtcl8.9"
+# define TK_NAME "libtk8.9"
+# ifdef __APPLE__
 #  undef DLEXT
 #  define DLEXT ".dylib"
 # endif
@@ -112,7 +116,6 @@ ruby_open_tcl_dll(appname)
     void (*p_Tcl_FindExecutable)(const char *);
     int n;
     char *ruby_tcl_dll = 0;
-    char tcl_name[20];
 
     if (tcl_dll) return TCLTK_STUBS_OK;
 
@@ -123,7 +126,7 @@ ruby_open_tcl_dll(appname)
     if (ruby_tcl_dll) {
         tcl_dll = (DL_HANDLE)DL_OPEN(ruby_tcl_dll);
     } else {
-        snprintf(tcl_name, sizeof tcl_name, TCL_NAME, DLEXT);
+	char tcl_name[] = TCL_NAME DLEXT;
         /* examine from 8.9 to 8.1 */
         for (n = '9'; n > '0'; n--) {
             tcl_name[TCL_INDEX] = n;
@@ -154,11 +157,10 @@ ruby_open_tcl_dll(appname)
 }
 
 int
-ruby_open_tk_dll()
+ruby_open_tk_dll(void)
 {
     int n;
     char *ruby_tk_dll = 0;
-    char tk_name[20];
 
     if (!tcl_dll) {
         /* int ret = ruby_open_tcl_dll(RSTRING_PTR(rb_argv0)); */
@@ -172,7 +174,7 @@ ruby_open_tk_dll()
     if (ruby_tk_dll) {
         tk_dll = (DL_HANDLE)DL_OPEN(ruby_tk_dll);
     } else {
-        snprintf(tk_name, sizeof tk_name, TK_NAME, DLEXT);
+	char tk_name[] = TK_NAME DLEXT;
         /* examine from 8.9 to 8.1 */
         for (n = '9'; n > '0'; n--) {
             tk_name[TK_INDEX] = n;
@@ -200,13 +202,13 @@ ruby_open_tcltk_dll(appname)
 }
 
 int
-tcl_stubs_init_p()
+tcl_stubs_init_p(void)
 {
     return(tclStubsPtr != (TclStubs*)NULL);
 }
 
 int
-tk_stubs_init_p()
+tk_stubs_init_p(void)
 {
     return(tkStubsPtr != (TkStubs*)NULL);
 }
@@ -283,7 +285,7 @@ ruby_tcl_create_ip_and_stubs_init(st)
 }
 
 int
-ruby_tcl_stubs_init()
+ruby_tcl_stubs_init(void)
 {
     int st;
     Tcl_Interp *tcl_ip;
@@ -325,12 +327,12 @@ ruby_tk_stubs_init(tcl_ip)
         if (!p_Tk_Init)
             return NO_Tk_Init;
 
-#if defined USE_TK_STUBS && defined TK_FRAMEWORK && defined(__APPLE__) && defined(__MACH__)
+#if defined USE_TK_STUBS && defined TK_FRAMEWORK && defined(__APPLE__)
 	/*
 	  FIX ME : dirty hack for Mac OS X frameworks.
 	  With stubs, fails to find Resource/Script directory of Tk.framework.
 	  So, teach it to a Tcl interpreter by an environment variable.
-	  e.g. when $tcl_library == 
+	  e.g. when $tcl_library ==
 	               /Library/Frameworks/Tcl.framwwork/8.5/Resources/Scripts
 		   ==> /Library/Frameworks/Tk.framwwork/8.5/Resources/Scripts
 	*/
@@ -395,7 +397,7 @@ ruby_tk_stubs_safeinit(tcl_ip)
 }
 
 int
-ruby_tcltk_stubs()
+ruby_tcltk_stubs(void)
 {
     int st;
     Tcl_Interp *tcl_ip;
@@ -465,7 +467,7 @@ ruby_open_tcl_dll(appname)
 }
 
 int
-ruby_open_tk_dll()
+ruby_open_tk_dll(void)
 {
     if (!open_tcl_dll) {
         /* ruby_open_tcl_dll(RSTRING_PTR(rb_argv0)); */
@@ -487,13 +489,13 @@ ruby_open_tcltk_dll(appname)
 }
 
 int
-tcl_stubs_init_p()
+tcl_stubs_init_p(void)
 {
     return 1;
 }
 
 int
-tk_stubs_init_p()
+tk_stubs_init_p(void)
 {
     return call_tk_stubs_init;
 }
@@ -526,7 +528,7 @@ ruby_tcl_create_ip_and_stubs_init(st)
 }
 
 int
-ruby_tcl_stubs_init()
+ruby_tcl_stubs_init(void)
 {
     return TCLTK_STUBS_OK;
 }
@@ -580,7 +582,7 @@ ruby_tk_stubs_safeinit(tcl_ip)
 }
 
 int
-ruby_tcltk_stubs()
+ruby_tcltk_stubs(void)
 {
     /* Tcl_FindExecutable(RSTRING_PTR(rb_argv0)); */
     Tcl_FindExecutable(rb_argv0 ? RSTRING_PTR(rb_argv0) : 0);

@@ -45,28 +45,29 @@ extern "C" {
 #endif
 #endif
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility push(default)
-#endif
+RUBY_SYMBOL_EXPORT_BEGIN
 
-#define scan_oct(s,l,e) (int)ruby_scan_oct(s,l,e)
+#define DECIMAL_SIZE_OF_BITS(n) (((n) * 3010 + 9998) / 9999)
+/* an approximation of ceil(n * log10(2)), upto 65536 at least */
+
+#define scan_oct(s,l,e) ((int)ruby_scan_oct((s),(l),(e)))
 unsigned long ruby_scan_oct(const char *, size_t, size_t *);
-#define scan_hex(s,l,e) (int)ruby_scan_hex(s,l,e)
+#define scan_hex(s,l,e) ((int)ruby_scan_hex((s),(l),(e)))
 unsigned long ruby_scan_hex(const char *, size_t, size_t *);
 
-#if defined(__CYGWIN32__) || defined(_WIN32)
-void ruby_add_suffix(VALUE str, const char *suffix);
-#endif
-
+#ifdef HAVE_GNU_QSORT_R
+# define ruby_qsort qsort_r
+#else
 void ruby_qsort(void *, const size_t, const size_t,
 		int (*)(const void *, const void *, void *), void *);
+#endif
 
 void ruby_setenv(const char *, const char *);
 void ruby_unsetenv(const char *);
 #undef setenv
 #undef unsetenv
-#define setenv(name,val) ruby_setenv(name,val)
-#define unsetenv(name,val) ruby_unsetenv(name);
+#define setenv(name,val) ruby_setenv((name),(val))
+#define unsetenv(name,val) ruby_unsetenv(name)
 
 char *ruby_strdup(const char *);
 #undef strdup
@@ -77,7 +78,7 @@ char *ruby_getcwd(void);
 
 double ruby_strtod(const char *, char **);
 #undef strtod
-#define strtod(s,e) ruby_strtod(s,e)
+#define strtod(s,e) ruby_strtod((s),(e))
 
 #if defined _MSC_VER && _MSC_VER >= 1300
 #pragma warning(push)
@@ -89,9 +90,7 @@ double ruby_strtod(const char *, char **);
 
 void ruby_each_words(const char *, void (*)(const char*, int, void*), void *);
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility pop
-#endif
+RUBY_SYMBOL_EXPORT_END
 
 #if defined(__cplusplus)
 #if 0

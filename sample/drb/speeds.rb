@@ -3,7 +3,7 @@ class Foo
   def initialize
     @i = 0
   end
-  
+
   def foo(i)
     @i = i
     i + i
@@ -24,7 +24,7 @@ when /^tcpromp:/, /^unixromp:/
 
 when /^druby:/
   require 'drb/drb'
-  
+
   DRb.start_service(uri, Foo.new)
 end
 

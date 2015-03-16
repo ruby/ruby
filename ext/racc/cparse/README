@@ -6,5 +6,6 @@ Racc parser generator.  If you want to generate
 your own parser, you must get Racc full package.
 Get it from:
 
-  http://raa.ruby-lang.org/list.rhtml?name=racc
+  - http://i.loveruby.net/en/projects/racc
+  - https://github.com/tenderlove/racc
 

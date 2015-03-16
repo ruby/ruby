@@ -1,6 +1,5 @@
 require 'test/unit'
 require 'tmpdir'
-require_relative 'envutil'
 
 class TestSystem < Test::Unit::TestCase
   def test_system
@@ -84,11 +83,80 @@ class TestSystem < Test::Unit::TestCase
           ENV["PATH"] = path
         end
         File.unlink tmpfilename
+
+        testname = '[ruby-core:44505]'
+        assert_match(/Windows/, `ver`, testname)
+        assert_equal 0, $?.to_i, testname
       end
     }
+  end
+
+  def test_system_at
+    if /mswin|mingw/ =~ RUBY_PLATFORM
+      bug4393 = '[ruby-core:35218]'
+
+      # @ + builtin command
+      assert_equal("foo\n", `@echo foo`, bug4393);
+      assert_equal("foo\n", `@@echo foo`, bug4393);
+      assert_equal("@@foo\n", `@@echo @@foo`, bug4393);
+
+      # @ + non builtin command
+      Dir.mktmpdir("ruby_script_tmp") {|tmpdir|
+        tmpfilename = "#{tmpdir}/ruby_script_tmp.#{$$}"
+
+        tmp = open(tmpfilename, "w")
+        tmp.print "foo\nbar\nbaz\n@foo";
+        tmp.close
+
+        assert_match(/\Abar\nbaz\n?\z/, `@@findstr "ba" #{tmpfilename.gsub("/", "\\")}`, bug4393);
+      }
+    end
+  end
+
+  def test_system_redirect_win
+    if /mswin|mingw/ !~ RUBY_PLATFORM
+      return
+    end
+
+    Dir.mktmpdir("ruby_script_tmp") do |tmpdir|
+      cmd = nil
+      message = proc do
+        [
+         '[ruby-talk:258939]',
+         "out.txt:",
+         *File.readlines("out.txt").map{|s|"  "+s.inspect},
+         "err.txt:",
+         *File.readlines("err.txt").map{|s|"  "+s.inspect},
+         "system(#{cmd.inspect})"
+        ].join("\n")
+      end
+      class << message
+        alias to_s call
+      end
+      Dir.chdir(tmpdir) do
+        open("input.txt", "w") {|f| f.puts "BFI3CHL671"}
+        cmd = "%WINDIR%/system32/find.exe \"BFI3CHL671\" input.txt > out.txt 2>err.txt"
+        assert_equal(true, system(cmd), message)
+        cmd = "\"%WINDIR%/system32/find.exe\" \"BFI3CHL671\" input.txt > out.txt 2>err.txt"
+        assert_equal(true, system(cmd), message)
+        cmd = "\"%WINDIR%/system32/find.exe BFI3CHL671\" input.txt > out.txt 2>err.txt"
+        assert_equal(false, system(cmd), message)
+      end
+    end
   end
 
   def test_empty_evstr
     assert_equal("", eval('"#{}"', nil, __FILE__, __LINE__), "[ruby-dev:25113]")
   end
+
+  def test_fallback_to_sh
+    Dir.mktmpdir("ruby_script_tmp") {|tmpdir|
+      tmpfilename = "#{tmpdir}/ruby_script_tmp.#{$$}"
+      open(tmpfilename, "w") {|f|
+        f.puts ": ;"
+        f.chmod(0755)
+      }
+      assert_equal(true, system(tmpfilename), '[ruby-core:32745]')
+    }
+  end if File.executable?("/bin/sh")
 end

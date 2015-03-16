@@ -1,24 +1,56 @@
 require_relative 'helper'
+require 'date'
 
 module Psych
   class TestScalarScanner < TestCase
-    def test_scan_time
-      [ '2001-12-15T02:59:43.1Z',
-        '2001-12-14t21:59:43.10-05:00',
-        '2001-12-14 21:59:43.10 -5',
-        '2010-01-06 00:00:00 -08:00',
-        '2001-12-15 2:59:43.10',
-      ].each do |time|
-        ss = Psych::ScalarScanner.new
-        assert_instance_of Time, ss.tokenize(time)
-      end
-    end
-
     attr_reader :ss
 
     def setup
       super
-      @ss = Psych::ScalarScanner.new
+      @ss = Psych::ScalarScanner.new ClassLoader.new
+    end
+
+    def test_scan_time
+      { '2001-12-15T02:59:43.1Z' => Time.utc(2001, 12, 15, 02, 59, 43, 100000),
+        '2001-12-14t21:59:43.10-05:00' => Time.utc(2001, 12, 15, 02, 59, 43, 100000),
+        '2001-12-14 21:59:43.10 -5' => Time.utc(2001, 12, 15, 02, 59, 43, 100000),
+        '2001-12-15 2:59:43.10' => Time.utc(2001, 12, 15, 02, 59, 43, 100000),
+        '2011-02-24 11:17:06 -0800' => Time.utc(2011, 02, 24, 19, 17, 06)
+      }.each do |time_str, time|
+        assert_equal time, @ss.tokenize(time_str)
+      end
+    end
+
+    def test_scan_bad_time
+      [ '2001-12-15T02:59:73.1Z',
+        '2001-12-14t90:59:43.10-05:00',
+        '2001-92-14 21:59:43.10 -5',
+        '2001-12-15 92:59:43.10',
+        '2011-02-24 81:17:06 -0800',
+      ].each do |time_str|
+        assert_equal time_str, @ss.tokenize(time_str)
+      end
+    end
+
+    def test_scan_bad_dates
+      x = '2000-15-01'
+      assert_equal x, @ss.tokenize(x)
+
+      x = '2000-10-51'
+      assert_equal x, @ss.tokenize(x)
+
+      x = '2000-10-32'
+      assert_equal x, @ss.tokenize(x)
+    end
+
+    def test_scan_good_edge_date
+      x = '2000-1-31'
+      assert_equal Date.strptime(x, '%Y-%m-%d'), @ss.tokenize(x)
+    end
+
+    def test_scan_bad_edge_date
+      x = '2000-11-31'
+      assert_equal x, @ss.tokenize(x)
     end
 
     def test_scan_date
@@ -65,6 +97,10 @@ module Psych
 
     def test_scan_true
       assert_equal true, ss.tokenize('true')
+    end
+
+    def test_scan_strings_starting_with_underscores
+      assert_equal "_100", ss.tokenize('_100')
     end
   end
 end

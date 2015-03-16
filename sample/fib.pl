@@ -1,10 +1,10 @@
 sub fib {
     my($n)=@_;
     if ($n<2) {
-	return $n;
+      return $n;
     }
     else {
-	return fib($n-2)+fib($n-1);
+      return fib($n-2)+fib($n-1);
     }
 }
 

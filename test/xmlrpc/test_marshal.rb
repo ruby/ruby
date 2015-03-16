@@ -1,6 +1,7 @@
 require 'test/unit'
 require "xmlrpc/marshal"
 
+module TestXMLRPC
 class Test_Marshal < Test::Unit::TestCase
   # for test_parser_values
   class Person
@@ -43,7 +44,7 @@ class Test_Marshal < Test::Unit::TestCase
 
   def test_parser_values
     v1 = [
-      1, -7778,                        # integers
+      1, -7778, -(2**31), 2**31-1,     # integers
       1.0, 0.0, -333.0, 2343434343.0,  # floats
       false, true, true, false,        # booleans
       "Hallo", "with < and >", ""      # strings
@@ -81,6 +82,21 @@ class Test_Marshal < Test::Unit::TestCase
     # Struct
   end
 
+  def test_parser_invalid_values
+    values = [
+      -1-(2**31), 2**31,
+      Float::INFINITY, -Float::INFINITY, Float::NAN
+    ]
+    XMLRPC::XMLParser.each_installed_parser do |parser|
+      m = XMLRPC::Marshal.new(parser)
+
+      values.each do |v|
+        assert_raise(RuntimeError, "#{v} shouldn't be dumped, but dumped") \
+          { m.dump_response(v) }
+      end
+    end
+  end
+
   def test_no_params_tag
     # bug found by Idan Sofer
 
@@ -90,4 +106,5 @@ class Test_Marshal < Test::Unit::TestCase
     assert_equal(expect, str)
   end
 
+end
 end

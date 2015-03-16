@@ -1,15 +1,11 @@
 # -*- mode: ruby; ruby-indent-level: 2; tab-width: 2 -*-
-# vim: noet ts=2 sts=8 sw=2
 
-require 'pathname'
-require 'fileutils'
 require 'erb'
-
+require 'fileutils'
+require 'pathname'
 require 'rdoc/generator/markup'
 
-$DARKFISH_DRYRUN = false # TODO make me non-global
-
-#
+##
 # Darkfish RDoc HTML Generator
 #
 # $Id: darkfish.rb 52 2009-01-07 02:08:11Z deveiant $
@@ -50,404 +46,715 @@ $DARKFISH_DRYRUN = false # TODO make me non-global
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
+# == Attributions
+#
+# Darkfish uses the {Silk Icons}[http://www.famfamfam.com/lab/icons/silk/] set
+# by Mark James.
+
 class RDoc::Generator::Darkfish
 
-	RDoc::RDoc.add_generator( self )
+  RDoc::RDoc.add_generator self
 
-	include ERB::Util
+  include ERB::Util
 
-	# Subversion rev
-	SVNRev = %$Rev: 52 $
+  ##
+  # Stylesheets, fonts, etc. that are included in RDoc.
 
-	# Subversion ID
-	SVNId = %$Id: darkfish.rb 52 2009-01-07 02:08:11Z deveiant $
+  BUILTIN_STYLE_ITEMS = # :nodoc:
+    %w[
+      css/fonts.css
+      fonts/Lato-Light.ttf
+      fonts/Lato-LightItalic.ttf
+      fonts/Lato-Regular.ttf
+      fonts/Lato-RegularItalic.ttf
+      fonts/SourceCodePro-Bold.ttf
+      fonts/SourceCodePro-Regular.ttf
+      css/rdoc.css
+  ]
 
-	# Path to this file's parent directory. Used to find templates and other
-	# resources.
-	GENERATOR_DIR = File.join 'rdoc', 'generator'
+  ##
+  # Path to this file's parent directory. Used to find templates and other
+  # resources.
 
-	# Release Version
-	VERSION = '1.1.6'
+  GENERATOR_DIR = File.join 'rdoc', 'generator'
 
-	# Directory where generated classes live relative to the root
-	CLASS_DIR = nil
+  ##
+  # Release Version
 
-	# Directory where generated files live relative to the root
-	FILE_DIR = nil
+  VERSION = '3'
 
+  ##
+  # Description of this generator
 
-	#################################################################
-	###	C L A S S   M E T H O D S
-	#################################################################
+  DESCRIPTION = 'HTML generator, written by Michael Granger'
 
-	### Standard generator factory method
-	def self::for( options )
-		new( options )
-	end
+  ##
+  # The relative path to style sheets and javascript.  By default this is set
+  # the same as the rel_prefix.
 
+  attr_accessor :asset_rel_path
 
-	#################################################################
-	###	I N S T A N C E   M E T H O D S
-	#################################################################
+  ##
+  # The path to generate files into, combined with <tt>--op</tt> from the
+  # options for a full path.
 
-	### Initialize a few instance variables before we start
-	def initialize( options )
-		@options = options
+  attr_reader :base_dir
 
-		template = @options.template || 'darkfish'
+  ##
+  # Classes and modules to be used by this generator, not necessarily
+  # displayed.  See also #modsort
 
-		template_dir = $LOAD_PATH.map do |path|
-			File.join File.expand_path(path), GENERATOR_DIR, 'template', template
-		end.find do |dir|
-			File.directory? dir
-		end
+  attr_reader :classes
 
-		raise RDoc::Error, "could not find template #{template.inspect}" unless
-			template_dir
+  ##
+  # No files will be written when dry_run is true.
 
-		@template_dir = Pathname.new File.expand_path(template_dir)
+  attr_accessor :dry_run
 
-		@files      = nil
-		@classes    = nil
+  ##
+  # When false the generate methods return a String instead of writing to a
+  # file.  The default is true.
 
-		@basedir = Pathname.pwd.expand_path
-	end
+  attr_accessor :file_output
 
-	######
-	public
-	######
+  ##
+  # Files to be displayed by this generator
 
-	# The output directory
-	attr_reader :outputdir
-
+  attr_reader :files
 
-	### Output progress information if debugging is enabled
-	def debug_msg( *msg )
-		return unless $DEBUG_RDOC
-		$stderr.puts( *msg )
-	end
-
-	def class_dir
-		CLASS_DIR
-	end
+  ##
+  # The JSON index generator for this Darkfish generator
 
-	def file_dir
-		FILE_DIR
-	end
-
-	### Create the directories the generated docs will live in if
-	### they don't already exist.
-	def gen_sub_directories
-		@outputdir.mkpath
-	end
-
-	### Copy over the stylesheet into the appropriate place in the output
-	### directory.
-	def write_style_sheet
-		debug_msg "Copying static files"
-		options = { :verbose => $DEBUG_RDOC, :noop => $DARKFISH_DRYRUN }
-
-		FileUtils.cp @template_dir + 'rdoc.css', '.', options
-
-		Dir[(@template_dir + "{js,images}/**/*").to_s].each do |path|
-			next if File.directory? path
-			next if path =~ /#{File::SEPARATOR}\./
-
-			dst = Pathname.new(path).relative_path_from @template_dir
-
-			# I suck at glob
-			dst_dir = dst.dirname
-			FileUtils.mkdir_p dst_dir, options unless File.exist? dst_dir
-
-			FileUtils.cp @template_dir + path, dst, options
-		end
-	end
-
-	### Build the initial indices and output objects
-	### based on an array of TopLevel objects containing
-	### the extracted information.
-	def generate( top_levels )
-		@outputdir = Pathname.new( @options.op_dir ).expand_path( @basedir )
-
-		@files = top_levels.sort
-		@classes = RDoc::TopLevel.all_classes_and_modules.sort
-		@methods = @classes.map { |m| m.method_list }.flatten.sort
-		@modsort = get_sorted_module_list( @classes )
-
-		# Now actually write the output
-		write_style_sheet
-		generate_index
-		generate_class_files
-		generate_file_files
-
-	rescue StandardError => err
-		debug_msg "%s: %s\n  %s" % [ err.class.name, err.message, err.backtrace.join("\n  ") ]
-		raise
-	end
-
-	#########
-	protected
-	#########
-
-	### Return a list of the documented modules sorted by salience first, then
-	### by name.
-	def get_sorted_module_list( classes )
-		nscounts = classes.inject({}) do |counthash, klass|
-			top_level = klass.full_name.gsub( /::.*/, '' )
-			counthash[top_level] ||= 0
-			counthash[top_level] += 1
-
-			counthash
-		end
-
-		# Sort based on how often the top level namespace occurs, and then on the
-		# name of the module -- this works for projects that put their stuff into
-		# a namespace, of course, but doesn't hurt if they don't.
-		classes.sort_by do |klass|
-			top_level = klass.full_name.gsub( /::.*/, '' )
-			[
-				nscounts[ top_level ] * -1,
-				klass.full_name
-			]
-		end.select do |klass|
-			klass.document_self
-		end
-	end
-
-	### Generate an index page which lists all the classes which
-	### are documented.
-	def generate_index
-		template_file = @template_dir + 'index.rhtml'
-		return unless template_file.exist?
-
-		debug_msg "Rendering the index page..."
-
-		template_src = template_file.read
-		template = ERB.new( template_src, nil, '<>' )
-		template.filename = template_file.to_s
-		context = binding()
-
-		output = nil
-
-		begin
-			output = template.result( context )
-		rescue NoMethodError => err
-			raise RDoc::Error, "Error while evaluating %s: %s (at %p)" % [
-				template_file,
-				err.message,
-				eval( "_erbout[-50,50]", context )
-			], err.backtrace
-		end
-
-		outfile = @basedir + @options.op_dir + 'index.html'
-		unless $DARKFISH_DRYRUN
-			debug_msg "Outputting to %s" % [outfile.expand_path]
-			outfile.open( 'w', 0644 ) do |fh|
-				fh.print( output )
-			end
-		else
-			debug_msg "Would have output to %s" % [outfile.expand_path]
-		end
-	end
-
-	### Generate a documentation file for each class
-	def generate_class_files
-		template_file = @template_dir + 'classpage.rhtml'
-		return unless template_file.exist?
-		debug_msg "Generating class documentation in #@outputdir"
-
-		@classes.each do |klass|
-			debug_msg "  working on %s (%s)" % [ klass.full_name, klass.path ]
-			outfile    = @outputdir + klass.path
-			rel_prefix = @outputdir.relative_path_from( outfile.dirname )
-			svninfo    = self.get_svninfo( klass )
-
-			debug_msg "  rendering #{outfile}"
-			self.render_template( template_file, binding(), outfile )
-		end
-	end
-
-	### Generate a documentation file for each file
-	def generate_file_files
-		template_file = @template_dir + 'filepage.rhtml'
-		return unless template_file.exist?
-		debug_msg "Generating file documentation in #@outputdir"
-
-		@files.each do |file|
-			outfile     = @outputdir + file.path
-			debug_msg "  working on %s (%s)" % [ file.full_name, outfile ]
-			rel_prefix  = @outputdir.relative_path_from( outfile.dirname )
-			context     = binding()
-
-			debug_msg "  rendering #{outfile}"
-			self.render_template( template_file, binding(), outfile )
-		end
-	end
-
-
-	### Return a string describing the amount of time in the given number of
-	### seconds in terms a human can understand easily.
-	def time_delta_string( seconds )
-		return 'less than a minute' if seconds < 1.minute
-		return (seconds / 1.minute).to_s + ' minute' + (seconds/60 == 1 ? '' : 's') if seconds < 50.minutes
-		return 'about one hour' if seconds < 90.minutes
-		return (seconds / 1.hour).to_s + ' hours' if seconds < 18.hours
-		return 'one day' if seconds < 1.day
-		return 'about one day' if seconds < 2.days
-		return (seconds / 1.day).to_s + ' days' if seconds < 1.week
-		return 'about one week' if seconds < 2.week
-		return (seconds / 1.week).to_s + ' weeks' if seconds < 3.months
-		return (seconds / 1.month).to_s + ' months' if seconds < 1.year
-		return (seconds / 1.year).to_s + ' years'
-	end
-
-
-	# %q$Id: darkfish.rb 52 2009-01-07 02:08:11Z deveiant $"
-	SVNID_PATTERN = /
-		\$Id:\s
-			(\S+)\s					# filename
-			(\d+)\s					# rev
-			(\d{4}-\d{2}-\d{2})\s	# Date (YYYY-MM-DD)
-			(\d{2}:\d{2}:\d{2}Z)\s	# Time (HH:MM:SSZ)
-			(\w+)\s				 	# committer
-		\$$
-	/x
-
-	### Try to extract Subversion information out of the first constant whose value looks like
-	### a subversion Id tag. If no matching constant is found, and empty hash is returned.
-	def get_svninfo( klass )
-		constants = klass.constants or return {}
-
-		constants.find {|c| c.value =~ SVNID_PATTERN } or return {}
-
-		filename, rev, date, time, committer = $~.captures
-		commitdate = Time.parse( date + ' ' + time )
-
-		return {
-			:filename    => filename,
-			:rev         => Integer( rev ),
-			:commitdate  => commitdate,
-			:commitdelta => time_delta_string( Time.now.to_i - commitdate.to_i ),
-			:committer   => committer,
-		}
-	end
-
-
-	### Load and render the erb template in the given +template_file+ within the
-	### specified +context+ (a Binding object) and write it out to +outfile+.
-	### Both +template_file+ and +outfile+ should be Pathname-like objects.
-
-	def render_template( template_file, context, outfile )
-		template_src = template_file.read
-		template = ERB.new( template_src, nil, '<>' )
-		template.filename = template_file.to_s
-
-		output = begin
-							 template.result( context )
-						 rescue NoMethodError => err
-							 raise RDoc::Error, "Error while evaluating %s: %s (at %p)" % [
-								 template_file.to_s,
-								 err.message,
-								 eval( "_erbout[-50,50]", context )
-							 ], err.backtrace
-						 end
-
-		unless $DARKFISH_DRYRUN
-			outfile.dirname.mkpath
-			outfile.open( 'w', 0644 ) do |ofh|
-				ofh.print( output )
-			end
-		else
-			debug_msg "  would have written %d bytes to %s" %
-			[ output.length, outfile ]
-		end
-	end
-
-end # Roc::Generator::Darkfish
-
-# :stopdoc:
-
-### Time constants
-module TimeConstantMethods # :nodoc:
-
-	### Number of seconds (returns receiver unmodified)
-	def seconds
-		return self
-	end
-	alias_method :second, :seconds
-
-	### Returns number of seconds in <receiver> minutes
-	def minutes
-		return self * 60
-	end
-	alias_method :minute, :minutes
-
-	### Returns the number of seconds in <receiver> hours
-	def hours
-		return self * 60.minutes
-	end
-	alias_method :hour, :hours
-
-	### Returns the number of seconds in <receiver> days
-	def days
-		return self * 24.hours
-	end
-	alias_method :day, :days
-
-	### Return the number of seconds in <receiver> weeks
-	def weeks
-		return self * 7.days
-	end
-	alias_method :week, :weeks
-
-	### Returns the number of seconds in <receiver> fortnights
-	def fortnights
-		return self * 2.weeks
-	end
-	alias_method :fortnight, :fortnights
-
-	### Returns the number of seconds in <receiver> months (approximate)
-	def months
-		return self * 30.days
-	end
-	alias_method :month, :months
-
-	### Returns the number of seconds in <receiver> years (approximate)
-	def years
-		return (self * 365.25.days).to_i
-	end
-	alias_method :year, :years
-
-
-	### Returns the Time <receiver> number of seconds before the
-	### specified +time+. E.g., 2.hours.before( header.expiration )
-	def before( time )
-		return time - self
-	end
-
-
-	### Returns the Time <receiver> number of seconds ago. (e.g.,
-	### expiration > 2.hours.ago )
-	def ago
-		return self.before( ::Time.now )
-	end
-
-
-	### Returns the Time <receiver> number of seconds after the given +time+.
-	### E.g., 10.minutes.after( header.expiration )
-	def after( time )
-		return time + self
-	end
-
-	# Reads best without arguments:  10.minutes.from_now
-	def from_now
-		return self.after( ::Time.now )
-	end
-end # module TimeConstantMethods
-
-
-# Extend Numeric with time constants
-class Numeric # :nodoc:
-	include TimeConstantMethods
+  attr_reader :json_index
+
+  ##
+  # Methods to be displayed by this generator
+
+  attr_reader :methods
+
+  ##
+  # Sorted list of classes and modules to be displayed by this generator
+
+  attr_reader :modsort
+
+  ##
+  # The RDoc::Store that is the source of the generated content
+
+  attr_reader :store
+
+  ##
+  # The directory where the template files live
+
+  attr_reader :template_dir # :nodoc:
+
+  ##
+  # The output directory
+
+  attr_reader :outputdir
+
+  ##
+  # Initialize a few instance variables before we start
+
+  def initialize store, options
+    @store   = store
+    @options = options
+
+    @asset_rel_path = ''
+    @base_dir       = Pathname.pwd.expand_path
+    @dry_run        = @options.dry_run
+    @file_output    = true
+    @template_dir   = Pathname.new options.template_dir
+    @template_cache = {}
+
+    @classes = nil
+    @context = nil
+    @files   = nil
+    @methods = nil
+    @modsort = nil
+
+    @json_index = RDoc::Generator::JsonIndex.new self, options
+  end
+
+  ##
+  # Output progress information if debugging is enabled
+
+  def debug_msg *msg
+    return unless $DEBUG_RDOC
+    $stderr.puts(*msg)
+  end
+
+  ##
+  # Directory where generated class HTML files live relative to the output
+  # dir.
+
+  def class_dir
+    nil
+  end
+
+  ##
+  # Directory where generated class HTML files live relative to the output
+  # dir.
+
+  def file_dir
+    nil
+  end
+
+  ##
+  # Create the directories the generated docs will live in if they don't
+  # already exist.
+
+  def gen_sub_directories
+    @outputdir.mkpath
+  end
+
+  ##
+  # Copy over the stylesheet into the appropriate place in the output
+  # directory.
+
+  def write_style_sheet
+    debug_msg "Copying static files"
+    options = { :verbose => $DEBUG_RDOC, :noop => @dry_run }
+
+    BUILTIN_STYLE_ITEMS.each do |item|
+      install_rdoc_static_file @template_dir + item, "./#{item}", options
+    end
+
+    @options.template_stylesheets.each do |stylesheet|
+      FileUtils.cp stylesheet, '.', options
+    end
+
+    Dir[(@template_dir + "{js,images}/**/*").to_s].each do |path|
+      next if File.directory? path
+      next if File.basename(path) =~ /^\./
+
+      dst = Pathname.new(path).relative_path_from @template_dir
+
+      install_rdoc_static_file @template_dir + path, dst, options
+    end
+  end
+
+  ##
+  # Build the initial indices and output objects based on an array of TopLevel
+  # objects containing the extracted information.
+
+  def generate
+    setup
+
+    write_style_sheet
+    generate_index
+    generate_class_files
+    generate_file_files
+    generate_table_of_contents
+    @json_index.generate
+    @json_index.generate_gzipped
+
+    copy_static
+
+  rescue => e
+    debug_msg "%s: %s\n  %s" % [
+      e.class.name, e.message, e.backtrace.join("\n  ")
+    ]
+
+    raise
+  end
+
+  ##
+  # Copies static files from the static_path into the output directory
+
+  def copy_static
+    return if @options.static_path.empty?
+
+    fu_options = { :verbose => $DEBUG_RDOC, :noop => @dry_run }
+
+    @options.static_path.each do |path|
+      unless File.directory? path then
+        FileUtils.install path, @outputdir, fu_options.merge(:mode => 0644)
+        next
+      end
+
+      Dir.chdir path do
+        Dir[File.join('**', '*')].each do |entry|
+          dest_file = @outputdir + entry
+
+          if File.directory? entry then
+            FileUtils.mkdir_p entry, fu_options
+          else
+            FileUtils.install entry, dest_file, fu_options.merge(:mode => 0644)
+          end
+        end
+      end
+    end
+  end
+
+  ##
+  # Return a list of the documented modules sorted by salience first, then
+  # by name.
+
+  def get_sorted_module_list classes
+    classes.select do |klass|
+      klass.display?
+    end.sort
+  end
+
+  ##
+  # Generate an index page which lists all the classes which are documented.
+
+  def generate_index
+    setup
+
+    template_file = @template_dir + 'index.rhtml'
+    return unless template_file.exist?
+
+    debug_msg "Rendering the index page..."
+
+    out_file = @base_dir + @options.op_dir + 'index.html'
+    rel_prefix = @outputdir.relative_path_from out_file.dirname
+    search_index_rel_prefix = rel_prefix
+    search_index_rel_prefix += @asset_rel_path if @file_output
+
+    # suppress 1.9.3 warning
+    asset_rel_prefix = asset_rel_prefix = rel_prefix + @asset_rel_path
+
+    @title = @options.title
+
+    render_template template_file, out_file do |io| binding end
+  rescue => e
+    error = RDoc::Error.new \
+      "error generating index.html: #{e.message} (#{e.class})"
+    error.set_backtrace e.backtrace
+
+    raise error
+  end
+
+  ##
+  # Generates a class file for +klass+
+
+  def generate_class klass, template_file = nil
+    setup
+
+    current = klass
+
+    template_file ||= @template_dir + 'class.rhtml'
+
+    debug_msg "  working on %s (%s)" % [klass.full_name, klass.path]
+    out_file   = @outputdir + klass.path
+    rel_prefix = @outputdir.relative_path_from out_file.dirname
+    search_index_rel_prefix = rel_prefix
+    search_index_rel_prefix += @asset_rel_path if @file_output
+
+    # suppress 1.9.3 warning
+    asset_rel_prefix = asset_rel_prefix = rel_prefix + @asset_rel_path
+    svninfo          = svninfo          = get_svninfo(current)
+
+    @title = "#{klass.type} #{klass.full_name} - #{@options.title}"
+
+    debug_msg "  rendering #{out_file}"
+    render_template template_file, out_file do |io| binding end
+  end
+
+  ##
+  # Generate a documentation file for each class and module
+
+  def generate_class_files
+    setup
+
+    template_file = @template_dir + 'class.rhtml'
+    template_file = @template_dir + 'classpage.rhtml' unless
+      template_file.exist?
+    return unless template_file.exist?
+    debug_msg "Generating class documentation in #{@outputdir}"
+
+    current = nil
+
+    @classes.each do |klass|
+      current = klass
+
+      generate_class klass, template_file
+    end
+  rescue => e
+    error = RDoc::Error.new \
+      "error generating #{current.path}: #{e.message} (#{e.class})"
+    error.set_backtrace e.backtrace
+
+    raise error
+  end
+
+  ##
+  # Generate a documentation file for each file
+
+  def generate_file_files
+    setup
+
+    page_file     = @template_dir + 'page.rhtml'
+    fileinfo_file = @template_dir + 'fileinfo.rhtml'
+
+    # for legacy templates
+    filepage_file = @template_dir + 'filepage.rhtml' unless
+      page_file.exist? or fileinfo_file.exist?
+
+    return unless
+      page_file.exist? or fileinfo_file.exist? or filepage_file.exist?
+
+    debug_msg "Generating file documentation in #{@outputdir}"
+
+    out_file = nil
+    current = nil
+
+    @files.each do |file|
+      current = file
+
+      if file.text? and page_file.exist? then
+        generate_page file
+        next
+      end
+
+      template_file = nil
+      out_file = @outputdir + file.path
+      debug_msg "  working on %s (%s)" % [file.full_name, out_file]
+      rel_prefix = @outputdir.relative_path_from out_file.dirname
+      search_index_rel_prefix = rel_prefix
+      search_index_rel_prefix += @asset_rel_path if @file_output
+
+      # suppress 1.9.3 warning
+      asset_rel_prefix = asset_rel_prefix = rel_prefix + @asset_rel_path
+
+      unless filepage_file then
+        if file.text? then
+          next unless page_file.exist?
+          template_file = page_file
+          @title = file.page_name
+        else
+          next unless fileinfo_file.exist?
+          template_file = fileinfo_file
+          @title = "File: #{file.base_name}"
+        end
+      end
+
+      @title += " - #{@options.title}"
+      template_file ||= filepage_file
+
+      render_template template_file, out_file do |io| binding end
+    end
+  rescue => e
+    error =
+      RDoc::Error.new "error generating #{out_file}: #{e.message} (#{e.class})"
+    error.set_backtrace e.backtrace
+
+    raise error
+  end
+
+  ##
+  # Generate a page file for +file+
+
+  def generate_page file
+    setup
+
+    template_file = @template_dir + 'page.rhtml'
+
+    out_file = @outputdir + file.path
+    debug_msg "  working on %s (%s)" % [file.full_name, out_file]
+    rel_prefix = @outputdir.relative_path_from out_file.dirname
+    search_index_rel_prefix = rel_prefix
+    search_index_rel_prefix += @asset_rel_path if @file_output
+
+    # suppress 1.9.3 warning
+    current          = current          = file
+    asset_rel_prefix = asset_rel_prefix = rel_prefix + @asset_rel_path
+
+    @title = "#{file.page_name} - #{@options.title}"
+
+    debug_msg "  rendering #{out_file}"
+    render_template template_file, out_file do |io| binding end
+  end
+
+  ##
+  # Generates the 404 page for the RDoc servlet
+
+  def generate_servlet_not_found message
+    setup
+
+    template_file = @template_dir + 'servlet_not_found.rhtml'
+    return unless template_file.exist?
+
+    debug_msg "Rendering the servlet 404 Not Found page..."
+
+    rel_prefix = rel_prefix = ''
+    search_index_rel_prefix = rel_prefix
+    search_index_rel_prefix += @asset_rel_path if @file_output
+
+    # suppress 1.9.3 warning
+    asset_rel_prefix = asset_rel_prefix = ''
+
+    @title = 'Not Found'
+
+    render_template template_file do |io| binding end
+  rescue => e
+    error = RDoc::Error.new \
+      "error generating servlet_not_found: #{e.message} (#{e.class})"
+    error.set_backtrace e.backtrace
+
+    raise error
+  end
+
+  ##
+  # Generates the servlet root page for the RDoc servlet
+
+  def generate_servlet_root installed
+    setup
+
+    template_file = @template_dir + 'servlet_root.rhtml'
+    return unless template_file.exist?
+
+    debug_msg 'Rendering the servlet root page...'
+
+    rel_prefix = '.'
+    asset_rel_prefix = rel_prefix
+    search_index_rel_prefix = asset_rel_prefix
+    search_index_rel_prefix += @asset_rel_path if @file_output
+
+    @title = 'Local RDoc Documentation'
+
+    render_template template_file do |io| binding end
+  rescue => e
+    error = RDoc::Error.new \
+      "error generating servlet_root: #{e.message} (#{e.class})"
+    error.set_backtrace e.backtrace
+
+    raise error
+  end
+
+  ##
+  # Generate an index page which lists all the classes which are documented.
+
+  def generate_table_of_contents
+    setup
+
+    template_file = @template_dir + 'table_of_contents.rhtml'
+    return unless template_file.exist?
+
+    debug_msg "Rendering the Table of Contents..."
+
+    out_file = @outputdir + 'table_of_contents.html'
+    rel_prefix = @outputdir.relative_path_from out_file.dirname
+    search_index_rel_prefix = rel_prefix
+    search_index_rel_prefix += @asset_rel_path if @file_output
+
+    # suppress 1.9.3 warning
+    asset_rel_prefix = asset_rel_prefix = rel_prefix + @asset_rel_path
+
+    @title = "Table of Contents - #{@options.title}"
+
+    render_template template_file, out_file do |io| binding end
+  rescue => e
+    error = RDoc::Error.new \
+      "error generating table_of_contents.html: #{e.message} (#{e.class})"
+    error.set_backtrace e.backtrace
+
+    raise error
+  end
+
+  def install_rdoc_static_file source, destination, options # :nodoc:
+    return unless source.exist?
+
+    begin
+      FileUtils.mkdir_p File.dirname(destination), options
+
+      begin
+        FileUtils.ln source, destination, options
+      rescue Errno::EEXIST
+        FileUtils.rm destination
+        retry
+      end
+    rescue
+      FileUtils.cp source, destination, options
+    end
+  end
+
+  ##
+  # Prepares for generation of output from the current directory
+
+  def setup
+    return if instance_variable_defined? :@outputdir
+
+    @outputdir = Pathname.new(@options.op_dir).expand_path @base_dir
+
+    return unless @store
+
+    @classes = @store.all_classes_and_modules.sort
+    @files   = @store.all_files.sort
+    @methods = @classes.map { |m| m.method_list }.flatten.sort
+    @modsort = get_sorted_module_list @classes
+  end
+
+  ##
+  # Return a string describing the amount of time in the given number of
+  # seconds in terms a human can understand easily.
+
+  def time_delta_string seconds
+    return 'less than a minute'          if seconds < 60
+    return "#{seconds / 60} minute#{seconds / 60 == 1 ? '' : 's'}" if
+                                            seconds < 3000     # 50 minutes
+    return 'about one hour'              if seconds < 5400     # 90 minutes
+    return "#{seconds / 3600} hours"     if seconds < 64800    # 18 hours
+    return 'one day'                     if seconds < 86400    #  1 day
+    return 'about one day'               if seconds < 172800   #  2 days
+    return "#{seconds / 86400} days"     if seconds < 604800   #  1 week
+    return 'about one week'              if seconds < 1209600  #  2 week
+    return "#{seconds / 604800} weeks"   if seconds < 7257600  #  3 months
+    return "#{seconds / 2419200} months" if seconds < 31536000 #  1 year
+    return "#{seconds / 31536000} years"
+  end
+
+  # %q$Id: darkfish.rb 52 2009-01-07 02:08:11Z deveiant $"
+  SVNID_PATTERN = /
+    \$Id:\s
+    (\S+)\s                # filename
+    (\d+)\s                # rev
+    (\d{4}-\d{2}-\d{2})\s  # Date (YYYY-MM-DD)
+    (\d{2}:\d{2}:\d{2}Z)\s # Time (HH:MM:SSZ)
+    (\w+)\s                # committer
+    \$$
+  /x
+
+  ##
+  # Try to extract Subversion information out of the first constant whose
+  # value looks like a subversion Id tag. If no matching constant is found,
+  # and empty hash is returned.
+
+  def get_svninfo klass
+    constants = klass.constants or return {}
+
+    constants.find { |c| c.value =~ SVNID_PATTERN } or return {}
+
+    filename, rev, date, time, committer = $~.captures
+    commitdate = Time.parse "#{date} #{time}"
+
+    return {
+      :filename    => filename,
+      :rev         => Integer(rev),
+      :commitdate  => commitdate,
+      :commitdelta => time_delta_string(Time.now - commitdate),
+      :committer   => committer,
+    }
+  end
+
+  ##
+  # Creates a template from its components and the +body_file+.
+  #
+  # For backwards compatibility, if +body_file+ contains "<html" the body is
+  # used directly.
+
+  def assemble_template body_file
+    body = body_file.read
+    return body if body =~ /<html/
+
+    head_file = @template_dir + '_head.rhtml'
+    footer_file = @template_dir + '_footer.rhtml'
+
+    <<-TEMPLATE
+<!DOCTYPE html>
+
+<html>
+<head>
+#{head_file.read}
+
+#{body}
+
+#{footer_file.read}
+    TEMPLATE
+  end
+
+  ##
+  # Renders the ERb contained in +file_name+ relative to the template
+  # directory and returns the result based on the current context.
+
+  def render file_name
+    template_file = @template_dir + file_name
+
+    template = template_for template_file, false, RDoc::ERBPartial
+
+    template.filename = template_file.to_s
+
+    template.result @context
+  end
+
+  ##
+  # Load and render the erb template in the given +template_file+ and write
+  # it out to +out_file+.
+  #
+  # Both +template_file+ and +out_file+ should be Pathname-like objects.
+  #
+  # An io will be yielded which must be captured by binding in the caller.
+
+  def render_template template_file, out_file = nil # :yield: io
+    io_output = out_file && !@dry_run && @file_output
+    erb_klass = io_output ? RDoc::ERBIO : ERB
+
+    template = template_for template_file, true, erb_klass
+
+    if io_output then
+      debug_msg "Outputting to %s" % [out_file.expand_path]
+
+      out_file.dirname.mkpath
+      out_file.open 'w', 0644 do |io|
+        io.set_encoding @options.encoding if Object.const_defined? :Encoding
+
+        @context = yield io
+
+        template_result template, @context, template_file
+      end
+    else
+      @context = yield nil
+
+      output = template_result template, @context, template_file
+
+      debug_msg "  would have written %d characters to %s" % [
+        output.length, out_file.expand_path
+      ] if @dry_run
+
+      output
+    end
+  end
+
+  ##
+  # Creates the result for +template+ with +context+.  If an error is raised a
+  # Pathname +template_file+ will indicate the file where the error occurred.
+
+  def template_result template, context, template_file
+    template.filename = template_file.to_s
+    template.result context
+  rescue NoMethodError => e
+    raise RDoc::Error, "Error while evaluating %s: %s" % [
+      template_file.expand_path,
+      e.message,
+    ], e.backtrace
+  end
+
+  ##
+  # Retrieves a cache template for +file+, if present, or fills the cache.
+
+  def template_for file, page = true, klass = ERB
+    template = @template_cache[file]
+
+    return template if template
+
+    if page then
+      template = assemble_template file
+      erbout = 'io'
+    else
+      template = file.read
+      template = template.encode @options.encoding if
+        Object.const_defined? :Encoding
+
+      file_var = File.basename(file).sub(/\..*/, '')
+
+      erbout = "_erbout_#{file_var}"
+    end
+
+    template = klass.new template, nil, '<>', erbout
+    @template_cache[file] = template
+    template
+  end
+
 end
 

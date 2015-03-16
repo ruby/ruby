@@ -107,7 +107,7 @@ static const signed char trans[][0x100] = {
     /* c */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
     /* d */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
     /* e */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    /* f */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, F 
+    /* f */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, F
   },
   { /* S1   0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f */
     /* 0 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
@@ -125,7 +125,7 @@ static const signed char trans[][0x100] = {
     /* c */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
     /* d */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
     /* e */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
-    /* f */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, F 
+    /* f */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, F
   },
   { /* S2   0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f */
     /* 0 */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
@@ -167,19 +167,19 @@ big5_mbc_enc_len0(const UChar* p, const UChar* e, int tridx, const int tbl[])
 static int
 big5_mbc_enc_len(const UChar* p, const UChar* e, OnigEncoding enc ARG_UNUSED)
 {
-    return big5_mbc_enc_len0(p, e, 0, EncLen_BIG5);
+  return big5_mbc_enc_len0(p, e, 0, EncLen_BIG5);
 }
 
 static int
 big5_hkscs_mbc_enc_len(const UChar* p, const UChar* e, OnigEncoding enc ARG_UNUSED)
 {
-    return big5_mbc_enc_len0(p, e, 2, EncLen_BIG5_HKSCS);
+  return big5_mbc_enc_len0(p, e, 2, EncLen_BIG5_HKSCS);
 }
 
 static int
 big5_uao_mbc_enc_len(const UChar* p, const UChar* e, OnigEncoding enc ARG_UNUSED)
 {
-    return big5_mbc_enc_len0(p, e, 2, EncLen_BIG5_UAO);
+  return big5_mbc_enc_len0(p, e, 2, EncLen_BIG5_UAO);
 }
 
 static OnigCodePoint
@@ -260,7 +260,7 @@ big5_left_adjust_char_head(const UChar* start, const UChar* s, const UChar* end,
 	p++;
 	break;
       }
-    } 
+    }
   }
   len = enclen(enc, p, end);
   if (p + len > s) return (UChar* )p;
@@ -299,14 +299,22 @@ OnigEncodingDefine(big5, BIG5) = {
   big5_is_code_ctype,
   onigenc_not_support_get_ctype_code_range,
   big5_left_adjust_char_head,
-  big5_is_allowed_reverse_match
+  big5_is_allowed_reverse_match,
+  0,
+  ONIGENC_FLAG_NONE,
 };
-ENC_ALIAS("CP950", "Big5")
+
+/*
+ * Name: CP950
+ * Source: http://msdn.microsoft.com/en-us/goglobal/cc305155.aspx
+ */
+ENC_REPLICATE("CP950", "Big5")
 
 /*
  * Name: Big5-HKSCS
  * MIBenum: 2101
- * Source:   See (http://www.iana.org/assignments/charset-reg/Big5-HKSCS)
+ * Source: http://www.iana.org/assignments/charset-reg/Big5-HKSCS
+ * Source: http://www.ogcio.gov.hk/ccli/eng/hkscs/mapping_table_2008.html
  * Alias: None
  */
 OnigEncodingDefine(big5_hkscs, BIG5_HKSCS) = {
@@ -325,9 +333,19 @@ OnigEncodingDefine(big5_hkscs, BIG5_HKSCS) = {
   big5_is_code_ctype,
   onigenc_not_support_get_ctype_code_range,
   big5_left_adjust_char_head,
-  big5_is_allowed_reverse_match
+  big5_is_allowed_reverse_match,
+  0,
+  ONIGENC_FLAG_NONE,
 };
-ENC_ALIAS("CP951", "Big5-HKSCS")
+ENC_ALIAS("Big5-HKSCS:2008", "Big5-HKSCS")
+
+/*
+ * Name: CP951
+ * Source: http://www.microsoft.com/hk/hkscs/default.aspx
+ * Source: http://www.microsoft.com/downloads/en/details.aspx?FamilyID=0e6f5ac8-7baa-4571-b8e8-78b3b776afd7&DisplayLang=en
+ * Source: http://blogs.msdn.com/b/shawnste/archive/2007/03/12/cp-951-hkscs.aspx
+ */
+ENC_REPLICATE("CP951", "Big5-HKSCS")
 
 /*
  * Name: Big5-UAO [NOT registered by IANA!]
@@ -349,5 +367,7 @@ OnigEncodingDefine(big5_uao, BIG5_UAO) = {
   big5_is_code_ctype,
   onigenc_not_support_get_ctype_code_range,
   big5_left_adjust_char_head,
-  big5_is_allowed_reverse_match
+  big5_is_allowed_reverse_match,
+  0,
+  ONIGENC_FLAG_NONE,
 };

@@ -2,10 +2,10 @@
 #ifndef RUBY_GC_H
 #define RUBY_GC_H 1
 
-#if defined(__x86_64__) && defined(__GNUC__)
-#define SET_MACHINE_STACK_END(p) __asm__("movq\t%%rsp, %0" : "=r" (*p))
-#elif defined(__i386) && defined(__GNUC__)
-#define SET_MACHINE_STACK_END(p) __asm__("movl\t%%esp, %0" : "=r" (*p))
+#if defined(__x86_64__) && !defined(_ILP32) && defined(__GNUC__) && !defined(__native_client__)
+#define SET_MACHINE_STACK_END(p) __asm__ __volatile__ ("movq\t%%rsp, %0" : "=r" (*(p)))
+#elif defined(__i386) && defined(__GNUC__) && !defined(__native_client__)
+#define SET_MACHINE_STACK_END(p) __asm__ __volatile__ ("movl\t%%esp, %0" : "=r" (*(p)))
 #else
 NOINLINE(void rb_gc_set_stack_end(VALUE **stack_end_p));
 #define SET_MACHINE_STACK_END(p) rb_gc_set_stack_end(p)
@@ -43,10 +43,10 @@ rb_gc_debug_body(const char *mode, const char *msg, int st, void *ptr)
     fflush(stdout);
 }
 
-#define RUBY_MARK_ENTER(msg) rb_gc_debug_body("mark", msg, 1, ptr)
-#define RUBY_MARK_LEAVE(msg) rb_gc_debug_body("mark", msg, 0, ptr)
-#define RUBY_FREE_ENTER(msg) rb_gc_debug_body("free", msg, 1, ptr)
-#define RUBY_FREE_LEAVE(msg) rb_gc_debug_body("free", msg, 0, ptr)
+#define RUBY_MARK_ENTER(msg) rb_gc_debug_body("mark", (msg), 1, ptr)
+#define RUBY_MARK_LEAVE(msg) rb_gc_debug_body("mark", (msg), 0, ptr)
+#define RUBY_FREE_ENTER(msg) rb_gc_debug_body("free", (msg), 1, ptr)
+#define RUBY_FREE_LEAVE(msg) rb_gc_debug_body("free", (msg), 0, ptr)
 #define RUBY_GC_INFO         rb_gc_debug_indent(); printf
 
 #else
@@ -58,12 +58,12 @@ rb_gc_debug_body(const char *mode, const char *msg, int st, void *ptr)
 #endif
 
 #define RUBY_MARK_UNLESS_NULL(ptr) if(RTEST(ptr)){rb_gc_mark(ptr);}
-#define RUBY_FREE_UNLESS_NULL(ptr) if(ptr){ruby_xfree(ptr);}
+#define RUBY_FREE_UNLESS_NULL(ptr) if(ptr){ruby_xfree(ptr);(ptr)=NULL;}
 
 #if STACK_GROW_DIRECTION > 0
-# define STACK_UPPER(x, a, b) a
+# define STACK_UPPER(x, a, b) (a)
 #elif STACK_GROW_DIRECTION < 0
-# define STACK_UPPER(x, a, b) b
+# define STACK_UPPER(x, a, b) (b)
 #else
 RUBY_EXTERN int ruby_stack_grow_direction;
 int ruby_get_stack_grow_direction(volatile VALUE *addr);
@@ -71,28 +71,37 @@ int ruby_get_stack_grow_direction(volatile VALUE *addr);
 	(ruby_stack_grow_direction ?		\
 	 ruby_stack_grow_direction :		\
 	 ruby_get_stack_grow_direction(x)) > 0)
-# define STACK_UPPER(x, a, b) (stack_growup_p(x) ? a : b)
+# define STACK_UPPER(x, a, b) (stack_growup_p(x) ? (a) : (b))
 #endif
 
 #if STACK_GROW_DIRECTION
 #define STACK_GROW_DIR_DETECTION
-#define STACK_DIR_UPPER(a,b) STACK_UPPER(0, a, b)
+#define STACK_DIR_UPPER(a,b) STACK_UPPER(0, (a), (b))
 #else
 #define STACK_GROW_DIR_DETECTION VALUE stack_grow_dir_detection
-#define STACK_DIR_UPPER(a,b) STACK_UPPER(&stack_grow_dir_detection, a, b)
+#define STACK_DIR_UPPER(a,b) STACK_UPPER(&stack_grow_dir_detection, (a), (b))
 #endif
+#define IS_STACK_DIR_UPPER() STACK_DIR_UPPER(1,0)
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility push(default)
-#endif
+RUBY_SYMBOL_EXPORT_BEGIN
 
+/* exports for objspace module */
 size_t rb_objspace_data_type_memsize(VALUE obj);
+void rb_objspace_reachable_objects_from(VALUE obj, void (func)(VALUE, void *), void *data);
+void rb_objspace_reachable_objects_from_root(void (func)(const char *category, VALUE, void *), void *data);
+int rb_objspace_markable_object_p(VALUE obj);
+int rb_objspace_internal_object_p(VALUE obj);
+int rb_objspace_marked_object_p(VALUE obj);
+int rb_objspace_garbage_object_p(VALUE obj);
+
 void rb_objspace_each_objects(
     int (*callback)(void *start, void *end, size_t stride, void *data),
     void *data);
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility pop
-#endif
+void rb_objspace_each_objects_without_setup(
+    int (*callback)(void *, void *, size_t, void *),
+    void *data);
+
+RUBY_SYMBOL_EXPORT_END
 
 #endif /* RUBY_GC_H */

@@ -1,7 +1,7 @@
+# coding: US-ASCII
 require 'test/unit'
 require 'tmpdir'
 require 'timeout'
-require_relative 'envutil'
 
 class TestIO_M17N < Test::Unit::TestCase
   ENCS = [
@@ -17,6 +17,35 @@ class TestIO_M17N < Test::Unit::TestCase
         yield dir
       }
     }
+  end
+
+  def pipe(*args, wp, rp)
+    re, we = nil, nil
+    r, w = IO.pipe(*args)
+    rt = Thread.new do
+      begin
+        rp.call(r)
+      rescue Exception
+        r.close
+        re = $!
+      end
+    end
+    wt = Thread.new do
+      begin
+        wp.call(w)
+      rescue Exception
+        w.close
+        we = $!
+      end
+    end
+    flunk("timeout") unless wt.join(10) && rt.join(10)
+  ensure
+    w.close unless !w || w.closed?
+    r.close unless !r || r.closed?
+    (wt.kill; wt.join) if wt
+    (rt.kill; rt.join) if rt
+    raise we if we
+    raise re if re
   end
 
   def with_pipe(*args)
@@ -42,7 +71,7 @@ class TestIO_M17N < Test::Unit::TestCase
 #{encdump expected} expected but not equal to
 #{encdump actual}.
 EOT
-    assert_block(full_message) { expected == actual }
+    assert_equal(expected, actual, full_message)
   end
 
   def test_open_r
@@ -75,6 +104,42 @@ EOT
     }
   end
 
+  def test_open_r_ascii8bit
+    with_tmpdir {
+      generate_file('tmp', "")
+      EnvUtil.with_default_external(Encoding::ASCII_8BIT) do
+        EnvUtil.with_default_internal(Encoding::UTF_8) do
+          open("tmp", "r") {|f|
+            assert_equal(Encoding::ASCII_8BIT, f.external_encoding)
+            assert_equal(nil, f.internal_encoding)
+          }
+          open("tmp", "r:ascii-8bit") {|f|
+            assert_equal(Encoding::ASCII_8BIT, f.external_encoding)
+            assert_equal(nil, f.internal_encoding)
+          }
+          open("tmp", "r:ascii-8bit:utf-16") {|f|
+            assert_equal(Encoding::ASCII_8BIT, f.external_encoding)
+            assert_equal(nil, f.internal_encoding)
+          }
+        end
+        EnvUtil.with_default_internal(nil) do
+          open("tmp", "r") {|f|
+            assert_equal(Encoding::ASCII_8BIT, f.external_encoding)
+            assert_equal(nil, f.internal_encoding)
+          }
+          open("tmp", "r:ascii-8bit") {|f|
+            assert_equal(Encoding::ASCII_8BIT, f.external_encoding)
+            assert_equal(nil, f.internal_encoding)
+          }
+          open("tmp", "r:ascii-8bit:utf-16") {|f|
+            assert_equal(Encoding::ASCII_8BIT, f.external_encoding)
+            assert_equal(nil, f.internal_encoding)
+          }
+        end
+      end
+    }
+  end
+
   def test_open_r_enc_in_opt
     with_tmpdir {
       generate_file('tmp', "")
@@ -85,7 +150,27 @@ EOT
     }
   end
 
-  def test_open_r_enc_in_opt2
+  def test_open_r_encname_in_opt
+    with_tmpdir {
+      generate_file('tmp', "")
+      open("tmp", "r", encoding: Encoding::EUC_JP) {|f|
+        assert_equal(Encoding::EUC_JP, f.external_encoding)
+        assert_equal(nil, f.internal_encoding)
+      }
+    }
+  end
+
+  def test_open_r_ext_enc_in_opt
+    with_tmpdir {
+      generate_file('tmp', "")
+      open("tmp", "r", external_encoding: Encoding::EUC_JP) {|f|
+        assert_equal(Encoding::EUC_JP, f.external_encoding)
+        assert_equal(nil, f.internal_encoding)
+      }
+    }
+  end
+
+  def test_open_r_ext_encname_in_opt
     with_tmpdir {
       generate_file('tmp', "")
       open("tmp", "r", external_encoding: "euc-jp") {|f|
@@ -98,6 +183,16 @@ EOT
   def test_open_r_enc_enc
     with_tmpdir {
       generate_file('tmp', "")
+      open("tmp", "r", external_encoding: Encoding::EUC_JP, internal_encoding: Encoding::UTF_8) {|f|
+        assert_equal(Encoding::EUC_JP, f.external_encoding)
+        assert_equal(Encoding::UTF_8, f.internal_encoding)
+      }
+    }
+  end
+
+  def test_open_r_encname_encname
+    with_tmpdir {
+      generate_file('tmp', "")
       open("tmp", "r:euc-jp:utf-8") {|f|
         assert_equal(Encoding::EUC_JP, f.external_encoding)
         assert_equal(Encoding::UTF_8, f.internal_encoding)
@@ -105,7 +200,7 @@ EOT
     }
   end
 
-  def test_open_r_enc_enc_in_opt
+  def test_open_r_encname_encname_in_opt
     with_tmpdir {
       generate_file('tmp', "")
       open("tmp", "r", encoding: "euc-jp:utf-8") {|f|
@@ -115,7 +210,17 @@ EOT
     }
   end
 
-  def test_open_r_enc_enc_in_opt2
+  def test_open_r_enc_enc_in_opt
+    with_tmpdir {
+      generate_file('tmp', "")
+      open("tmp", "r", external_encoding: Encoding::EUC_JP, internal_encoding: Encoding::UTF_8) {|f|
+        assert_equal(Encoding::EUC_JP, f.external_encoding)
+        assert_equal(Encoding::UTF_8, f.internal_encoding)
+      }
+    }
+  end
+
+  def test_open_r_externalencname_internalencname_in_opt
     with_tmpdir {
       generate_file('tmp', "")
       open("tmp", "r", external_encoding: "euc-jp", internal_encoding: "utf-8") {|f|
@@ -206,13 +311,24 @@ EOT
     }
   end
 
+  def test_ignored_encoding_option
+    enc = "\u{30a8 30f3 30b3 30fc 30c7 30a3 30f3 30b0}"
+    pattern = /#{enc}/
+    assert_warning(pattern) {
+      open(IO::NULL, external_encoding: "us-ascii", encoding: enc) {}
+    }
+    assert_warning(pattern) {
+      open(IO::NULL, internal_encoding: "us-ascii", encoding: enc) {}
+    }
+  end
+
   def test_io_new_enc
     with_tmpdir {
       generate_file("tmp", "\xa1")
       fd = IO.sysopen("tmp")
       f = IO.new(fd, "r:sjis")
       begin
-        assert_equal(Encoding::Shift_JIS, f.read.encoding)
+        assert_equal(Encoding::Windows_31J, f.read.encoding)
       ensure
         f.close
       end
@@ -220,54 +336,68 @@ EOT
   end
 
   def test_s_pipe_invalid
-    with_pipe("utf-8", "euc-jp", :invalid=>:replace) {|r, w|
-      w << "\x80"
-      w.close
-      assert_equal("?", r.read)
-    }
+    pipe("utf-8", "euc-jp", { :invalid=>:replace },
+        proc do |w|
+          w << "\x80"
+          w.close
+        end,
+        proc do |r|
+          assert_equal("?", r.read)
+        end)
   end
 
   def test_s_pipe_undef
-    with_pipe("utf-8:euc-jp", :undef=>:replace) {|r, w|
-      w << "\ufffd"
-      w.close
-      assert_equal("?", r.read)
-    }
+    pipe("utf-8:euc-jp", { :undef=>:replace },
+         proc do |w|
+           w << "\ufffd"
+           w.close
+         end,
+         proc do |r|
+           assert_equal("?", r.read)
+         end)
   end
 
   def test_s_pipe_undef_replace_string
-    with_pipe("utf-8:euc-jp", :undef=>:replace, :replace=>"X") {|r, w|
-      w << "\ufffd"
-      w.close
-      assert_equal("X", r.read)
-    }
+    pipe("utf-8:euc-jp", { :undef=>:replace, :replace=>"X" },
+         proc do |w|
+           w << "\ufffd"
+           w.close
+         end,
+         proc do |r|
+           assert_equal("X", r.read)
+         end)
   end
 
   def test_dup
-    with_pipe("utf-8:euc-jp") {|r, w|
-      w << "\u3042"
-      w.close
-      r2 = r.dup
-      begin
-        assert_equal("\xA4\xA2".force_encoding("euc-jp"), r2.read)
-      ensure
-        r2.close
-      end
-
-    }
+    pipe("utf-8:euc-jp",
+         proc do |w|
+           w << "\u3042"
+           w.close
+         end,
+         proc do |r|
+           r2 = r.dup
+           begin
+             assert_equal("\xA4\xA2".force_encoding("euc-jp"), r2.read)
+           ensure
+             r2.close
+           end
+         end)
   end
 
   def test_dup_undef
-    with_pipe("utf-8:euc-jp", :undef=>:replace) {|r, w|
-      w << "\uFFFD"
-      w.close
-      r2 = r.dup
-      begin
-        assert_equal("?", r2.read)
-      ensure
-        r2.close
-      end
-    }
+    pipe("utf-8:euc-jp", { :undef=>:replace },
+         proc do |w|
+           w << "\uFFFD"
+           w.close
+         end,
+         proc do |r|
+           r2 = r.dup
+           begin
+             assert_equal("?", r2.read)
+           ensure
+             r2.close
+           end
+         end)
   end
 
   def test_stdin
@@ -331,47 +461,53 @@ EOT
   end
 
   def test_pipe_terminator_conversion
-    with_pipe("euc-jp:utf-8") {|r, w|
-      w.write "before \xa2\xa2 after"
-      rs = "\xA2\xA2".encode("utf-8", "euc-jp")
-      w.close
-      timeout(1) {
-        assert_equal("before \xa2\xa2".encode("utf-8", "euc-jp"),
-                     r.gets(rs))
-      }
-    }
+    rs = "\xA2\xA2".encode("utf-8", "euc-jp")
+    pipe("euc-jp:utf-8",
+         proc do |w|
+           w.write "before \xa2\xa2 after"
+           w.close
+         end,
+         proc do |r|
+           timeout(1) {
+             assert_equal("before \xa2\xa2".encode("utf-8", "euc-jp"),
+                          r.gets(rs))
+           }
+         end)
   end
 
   def test_pipe_conversion
-    with_pipe("euc-jp:utf-8") {|r, w|
-      w.write "\xa1\xa1"
-      assert_equal("\xa1\xa1".encode("utf-8", "euc-jp"), r.getc)
-    }
+    pipe("euc-jp:utf-8",
+         proc do |w|
+           w.write "\xa1\xa1"
+         end,
+         proc do |r|
+           assert_equal("\xa1\xa1".encode("utf-8", "euc-jp"), r.getc)
+         end)
   end
 
   def test_pipe_convert_partial_read
-    with_pipe("euc-jp:utf-8") {|r, w|
-      begin
-        t = Thread.new {
-          w.write "\xa1"
-          sleep 0.1
-          w.write "\xa1"
-        }
-        assert_equal("\xa1\xa1".encode("utf-8", "euc-jp"), r.getc)
-      ensure
-        t.join if t
-      end
-    }
+    pipe("euc-jp:utf-8",
+         proc do |w|
+           w.write "\xa1"
+           sleep 0.1
+           w.write "\xa1"
+         end,
+         proc do |r|
+           assert_equal("\xa1\xa1".encode("utf-8", "euc-jp"), r.getc)
+         end)
   end
 
   def test_getc_invalid
-    with_pipe("euc-jp:utf-8") {|r, w|
-      w << "\xa1xyz"
-      w.close
-      err = assert_raise(Encoding::InvalidByteSequenceError) { r.getc }
-      assert_equal("\xA1".force_encoding("ascii-8bit"), err.error_bytes)
-      assert_equal("xyz", r.read(10))
-    }
+    pipe("euc-jp:utf-8",
+         proc do |w|
+           w << "\xa1xyz"
+           w.close
+         end,
+         proc do |r|
+           err = assert_raise(Encoding::InvalidByteSequenceError) { r.getc }
+           assert_equal("\xA1".force_encoding("ascii-8bit"), err.error_bytes)
+           assert_equal("xyz", r.read(10))
+         end)
   end
 
   def test_getc_stateful_conversion
@@ -389,14 +525,13 @@ EOT
     with_tmpdir {
       src = "\u3042"
       generate_file('tmp', src)
-      defext = Encoding.default_external
-      Encoding.default_external = Encoding::UTF_8
-      open("tmp", "rt") {|f|
-        s = f.getc
-        assert_equal(true, s.valid_encoding?)
-        assert_equal("\u3042", s)
-      }
-      Encoding.default_external = defext
+      EnvUtil.with_default_external(Encoding::UTF_8) do
+        open("tmp", "rt") {|f|
+          s = f.getc
+          assert_equal(true, s.valid_encoding?)
+          assert_equal("\u3042", s)
+        }
+      end
     }
   end
 
@@ -404,17 +539,40 @@ EOT
     with_tmpdir {
       src = "\xE3\x81"
       generate_file('tmp', src)
-      defext = Encoding.default_external
-      Encoding.default_external = Encoding::UTF_8
-      open("tmp", "rt") {|f|
-        s = f.getc
-        assert_equal(false, s.valid_encoding?)
-        assert_equal("\xE3".force_encoding("UTF-8"), s)
-        s = f.getc
-        assert_equal(false, s.valid_encoding?)
-        assert_equal("\x81".force_encoding("UTF-8"), s)
+      EnvUtil.with_default_external(Encoding::UTF_8) do
+        open("tmp", "rt") {|f|
+          s = f.getc
+          assert_equal(false, s.valid_encoding?)
+          assert_equal("\xE3".force_encoding("UTF-8"), s)
+          s = f.getc
+          assert_equal(false, s.valid_encoding?)
+          assert_equal("\x81".force_encoding("UTF-8"), s)
+        }
+      end
+    }
+  end
+
+  def test_ungetc_int
+    with_tmpdir {
+      generate_file('tmp', "A")
+      s = open("tmp", "r:GB18030") {|f|
+        f.ungetc(0x8431A439)
+        f.read
       }
-      Encoding.default_external = defext
+      assert_equal(Encoding::GB18030, s.encoding)
+      assert_str_equal(0x8431A439.chr("GB18030")+"A", s)
+    }
+  end
+
+  def test_ungetc_str
+    with_tmpdir {
+      generate_file('tmp', "A")
+      s = open("tmp", "r:GB18030") {|f|
+        f.ungetc(0x8431A439.chr("GB18030"))
+        f.read
+      }
+      assert_equal(Encoding::GB18030, s.encoding)
+      assert_str_equal(0x8431A439.chr("GB18030")+"A", s)
     }
   end
 
@@ -573,185 +731,224 @@ EOT
     utf8 = "\u6666"
     eucjp = "\xb3\xa2".force_encoding("EUC-JP")
 
-    with_pipe {|r,w|
-      assert_equal(Encoding.default_external, r.external_encoding)
-      assert_equal(nil, r.internal_encoding)
+    pipe(proc do |w|
       w << utf8
       w.close
+    end, proc do |r|
+      assert_equal(Encoding.default_external, r.external_encoding)
+      assert_equal(nil, r.internal_encoding)
       s = r.read
       assert_equal(Encoding.default_external, s.encoding)
       assert_str_equal(utf8.dup.force_encoding(Encoding.default_external), s)
-    }
+    end)
 
-    with_pipe("EUC-JP") {|r,w|
-      assert_equal(Encoding::EUC_JP, r.external_encoding)
-      assert_equal(nil, r.internal_encoding)
-      w << eucjp
-      w.close
-      assert_equal(eucjp, r.read)
-    }
+    pipe("EUC-JP",
+         proc do |w|
+           w << eucjp
+           w.close
+         end,
+         proc do |r|
+           assert_equal(Encoding::EUC_JP, r.external_encoding)
+           assert_equal(nil, r.internal_encoding)
+           assert_equal(eucjp, r.read)
+         end)
 
-    with_pipe("UTF-8") {|r,w|
-      w << "a" * 1023 + "\u3042" + "a" * 1022
-      w.close
-      assert_equal(true, r.read.valid_encoding?)
-    }
+    pipe("UTF-8",
+         proc do |w|
+           w << "a" * 1023 + "\u3042" + "a" * 1022
+           w.close
+         end,
+         proc do |r|
+           assert_equal(true, r.read.valid_encoding?)
+         end)
 
-    with_pipe("UTF-8:EUC-JP") {|r,w|
-      assert_equal(Encoding::UTF_8, r.external_encoding)
-      assert_equal(Encoding::EUC_JP, r.internal_encoding)
-      w << utf8
-      w.close
-      assert_equal(eucjp, r.read)
-    }
+    pipe("UTF-8:EUC-JP",
+         proc do |w|
+           w << utf8
+           w.close
+         end,
+         proc do |r|
+           assert_equal(Encoding::UTF_8, r.external_encoding)
+           assert_equal(Encoding::EUC_JP, r.internal_encoding)
+           assert_equal(eucjp, r.read)
+         end)
 
-    e = assert_raise(ArgumentError) {with_pipe("UTF-8", "UTF-8".encode("UTF-32BE")) {}}
-    assert_match(/invalid name encoding/, e.message)
-    e = assert_raise(ArgumentError) {with_pipe("UTF-8".encode("UTF-32BE")) {}}
-    assert_match(/invalid name encoding/, e.message)
+    assert_raise_with_message(ArgumentError, /invalid name encoding/) do
+      with_pipe("UTF-8", "UTF-8".encode("UTF-32BE")) {}
+    end
+    assert_raise_with_message(ArgumentError, /invalid name encoding/) do
+      with_pipe("UTF-8".encode("UTF-32BE")) {}
+    end
 
     ENCS.each {|enc|
-      with_pipe(enc) {|r, w|
-        w << "\xc2\xa1"
-        w.close
-        s = r.getc
-        assert_equal(enc, s.encoding)
-      }
+      pipe(enc,
+           proc do |w|
+             w << "\xc2\xa1"
+             w.close
+           end,
+           proc do |r|
+             s = r.getc
+             assert_equal(enc, s.encoding)
+           end)
     }
 
     ENCS.each {|enc|
       next if enc == Encoding::ASCII_8BIT
       next if enc == Encoding::UTF_8
-      with_pipe("#{enc}:UTF-8") {|r, w|
-        w << "\xc2\xa1"
-        w.close
-        s = r.read
-        assert_equal(Encoding::UTF_8, s.encoding)
-        assert_equal(s.encode("UTF-8"), s)
-      }
+      pipe("#{enc}:UTF-8",
+           proc do |w|
+             w << "\xc2\xa1"
+             w.close
+           end,
+           proc do |r|
+             s = r.read
+             assert_equal(Encoding::UTF_8, s.encoding)
+             assert_equal(s.encode("UTF-8"), s)
+           end)
     }
 
   end
 
   def test_marshal
-    with_pipe("EUC-JP") {|r, w|
-      data = 56225
-      Marshal.dump(data, w)
-      w.close
-      result = nil
-      assert_nothing_raised("[ruby-dev:33264]") { result = Marshal.load(r) }
-      assert_equal(data, result)
-    }
+    data = 56225
+    pipe("EUC-JP",
+         proc do |w|
+           Marshal.dump(data, w)
+           w.close
+         end,
+         proc do |r|
+           result = nil
+           assert_nothing_raised("[ruby-dev:33264]") { result = Marshal.load(r) }
+           assert_equal(data, result)
+         end)
   end
 
   def test_gets_nil
-    with_pipe("UTF-8:EUC-JP") {|r, w|
-      w << "\u{3042}"
-      w.close
-      result = r.gets(nil)
-      assert_equal("\u{3042}".encode("euc-jp"), result)
-    }
+    pipe("UTF-8:EUC-JP",
+         proc do |w|
+           w << "\u{3042}"
+           w.close
+         end,
+         proc do |r|
+           result = r.gets(nil)
+           assert_equal("\u{3042}".encode("euc-jp"), result)
+         end)
   end
 
   def test_gets_limit
-    with_pipe("euc-jp") {|r, w| w << "\xa4\xa2\xa4\xa4\xa4\xa6\n\xa4\xa8\xa4\xaa"; w.close
-      assert_equal("\xa4\xa2".force_encoding("euc-jp"), r.gets(1))
-    }
-    with_pipe("euc-jp") {|r, w| w << "\xa4\xa2\xa4\xa4\xa4\xa6\n\xa4\xa8\xa4\xaa"; w.close
-      assert_equal("\xa4\xa2".force_encoding("euc-jp"), r.gets(2))
-    }
-    with_pipe("euc-jp") {|r, w| w << "\xa4\xa2\xa4\xa4\xa4\xa6\n\xa4\xa8\xa4\xaa"; w.close
-      assert_equal("\xa4\xa2\xa4\xa4".force_encoding("euc-jp"), r.gets(3))
-    }
-    with_pipe("euc-jp") {|r, w| w << "\xa4\xa2\xa4\xa4\xa4\xa6\n\xa4\xa8\xa4\xaa"; w.close
-      assert_equal("\xa4\xa2\xa4\xa4".force_encoding("euc-jp"), r.gets(4))
-    }
-    with_pipe("euc-jp") {|r, w| w << "\xa4\xa2\xa4\xa4\xa4\xa6\n\xa4\xa8\xa4\xaa"; w.close
-      assert_equal("\xa4\xa2\xa4\xa4\xa4\xa6".force_encoding("euc-jp"), r.gets(5))
-    }
-    with_pipe("euc-jp") {|r, w| w << "\xa4\xa2\xa4\xa4\xa4\xa6\n\xa4\xa8\xa4\xaa"; w.close
-      assert_equal("\xa4\xa2\xa4\xa4\xa4\xa6".force_encoding("euc-jp"), r.gets(6))
-    }
-    with_pipe("euc-jp") {|r, w| w << "\xa4\xa2\xa4\xa4\xa4\xa6\n\xa4\xa8\xa4\xaa"; w.close
-      assert_equal("\xa4\xa2\xa4\xa4\xa4\xa6\n".force_encoding("euc-jp"), r.gets(7))
-    }
-    with_pipe("euc-jp") {|r, w| w << "\xa4\xa2\xa4\xa4\xa4\xa6\n\xa4\xa8\xa4\xaa"; w.close
-      assert_equal("\xa4\xa2\xa4\xa4\xa4\xa6\n".force_encoding("euc-jp"), r.gets(8))
-    }
-    with_pipe("euc-jp") {|r, w| w << "\xa4\xa2\xa4\xa4\xa4\xa6\n\xa4\xa8\xa4\xaa"; w.close
-      assert_equal("\xa4\xa2\xa4\xa4\xa4\xa6\n".force_encoding("euc-jp"), r.gets(9))
-    }
+    pipe("euc-jp",
+         proc {|w| w << "\xa4\xa2\xa4\xa4\xa4\xa6\n\xa4\xa8\xa4\xaa"; w.close },
+         proc {|r| assert_equal("\xa4\xa2".force_encoding("euc-jp"), r.gets(1)) })
+    pipe("euc-jp",
+         proc {|w| w << "\xa4\xa2\xa4\xa4\xa4\xa6\n\xa4\xa8\xa4\xaa"; w.close },
+         proc {|r| assert_equal("\xa4\xa2".force_encoding("euc-jp"), r.gets(2)) })
+    pipe("euc-jp",
+         proc {|w| w << "\xa4\xa2\xa4\xa4\xa4\xa6\n\xa4\xa8\xa4\xaa"; w.close },
+         proc {|r| assert_equal("\xa4\xa2\xa4\xa4".force_encoding("euc-jp"), r.gets(3)) })
+    pipe("euc-jp",
+         proc {|w| w << "\xa4\xa2\xa4\xa4\xa4\xa6\n\xa4\xa8\xa4\xaa"; w.close },
+         proc {|r| assert_equal("\xa4\xa2\xa4\xa4".force_encoding("euc-jp"), r.gets(4)) })
+    pipe("euc-jp",
+         proc {|w| w << "\xa4\xa2\xa4\xa4\xa4\xa6\n\xa4\xa8\xa4\xaa"; w.close },
+         proc {|r| assert_equal("\xa4\xa2\xa4\xa4\xa4\xa6".force_encoding("euc-jp"), r.gets(5)) })
+    pipe("euc-jp",
+         proc {|w| w << "\xa4\xa2\xa4\xa4\xa4\xa6\n\xa4\xa8\xa4\xaa"; w.close },
+         proc {|r| assert_equal("\xa4\xa2\xa4\xa4\xa4\xa6".force_encoding("euc-jp"), r.gets(6)) })
+    pipe("euc-jp",
+         proc {|w| w << "\xa4\xa2\xa4\xa4\xa4\xa6\n\xa4\xa8\xa4\xaa"; w.close },
+         proc {|r| assert_equal("\xa4\xa2\xa4\xa4\xa4\xa6\n".force_encoding("euc-jp"), r.gets(7)) })
+    pipe("euc-jp",
+         proc {|w| w << "\xa4\xa2\xa4\xa4\xa4\xa6\n\xa4\xa8\xa4\xaa"; w.close },
+         proc {|r| assert_equal("\xa4\xa2\xa4\xa4\xa4\xa6\n".force_encoding("euc-jp"), r.gets(8)) })
+    pipe("euc-jp",
+         proc {|w| w << "\xa4\xa2\xa4\xa4\xa4\xa6\n\xa4\xa8\xa4\xaa"; w.close },
+         proc {|r| assert_equal("\xa4\xa2\xa4\xa4\xa4\xa6\n".force_encoding("euc-jp"), r.gets(9)) })
   end
 
   def test_gets_invalid
-    with_pipe("utf-8:euc-jp") {|r, w|
-      before = "\u{3042}\u{3044}"
-      invalid = "\x80".force_encoding("utf-8")
-      after = "\u{3046}\u{3048}"
-      w << before + invalid + after
-      w.close
-      err = assert_raise(Encoding::InvalidByteSequenceError) { r.gets }
-      assert_equal(invalid.force_encoding("ascii-8bit"), err.error_bytes)
-      assert_equal(after.encode("euc-jp"), r.gets)
-    }
+    before = "\u{3042}\u{3044}"
+    invalid = "\x80".force_encoding("utf-8")
+    after = "\u{3046}\u{3048}"
+    pipe("utf-8:euc-jp",
+         proc do |w|
+           w << before + invalid + after
+           w.close
+         end,
+         proc do |r|
+           err = assert_raise(Encoding::InvalidByteSequenceError) { r.gets }
+           assert_equal(invalid.force_encoding("ascii-8bit"), err.error_bytes)
+           assert_equal(after.encode("euc-jp"), r.gets)
+         end)
   end
 
   def test_getc_invalid2
-    with_pipe("utf-8:euc-jp") {|r, w|
-      before1 = "\u{3042}"
-      before2 = "\u{3044}"
-      invalid = "\x80".force_encoding("utf-8")
-      after1 = "\u{3046}"
-      after2 = "\u{3048}"
-      w << before1 + before2 + invalid + after1 + after2
-      w.close
-      assert_equal(before1.encode("euc-jp"), r.getc)
-      assert_equal(before2.encode("euc-jp"), r.getc)
-      err = assert_raise(Encoding::InvalidByteSequenceError) { r.getc }
-      assert_equal(invalid.force_encoding("ascii-8bit"), err.error_bytes)
-      assert_equal(after1.encode("euc-jp"), r.getc)
-      assert_equal(after2.encode("euc-jp"), r.getc)
-    }
+    before1 = "\u{3042}"
+    before2 = "\u{3044}"
+    invalid = "\x80".force_encoding("utf-8")
+    after1 = "\u{3046}"
+    after2 = "\u{3048}"
+    pipe("utf-8:euc-jp",
+         proc do |w|
+           w << before1 + before2 + invalid + after1 + after2
+           w.close
+         end,
+         proc do |r|
+           assert_equal(before1.encode("euc-jp"), r.getc)
+           assert_equal(before2.encode("euc-jp"), r.getc)
+           err = assert_raise(Encoding::InvalidByteSequenceError) { r.getc }
+           assert_equal(invalid.force_encoding("ascii-8bit"), err.error_bytes)
+           assert_equal(after1.encode("euc-jp"), r.getc)
+           assert_equal(after2.encode("euc-jp"), r.getc)
+         end)
   end
 
   def test_getc_invalid3
-    with_pipe("utf-16le:euc-jp", binmode: true) {|r, w|
-      before1 = "\x42\x30".force_encoding("utf-16le")
-      before2 = "\x44\x30".force_encoding("utf-16le")
-      invalid = "\x00\xd8".force_encoding("utf-16le")
-      after1 = "\x46\x30".force_encoding("utf-16le")
-      after2 = "\x48\x30".force_encoding("utf-16le")
-      w << before1 + before2 + invalid + after1 + after2
-      w.close
-      assert_equal(before1.encode("euc-jp"), r.getc)
-      assert_equal(before2.encode("euc-jp"), r.getc)
-      err = assert_raise(Encoding::InvalidByteSequenceError) { r.getc }
-      assert_equal(invalid.force_encoding("ascii-8bit"), err.error_bytes)
-      assert_equal(after1.encode("euc-jp"), r.getc)
-      assert_equal(after2.encode("euc-jp"), r.getc)
-    }
+    before1 = "\x42\x30".force_encoding("utf-16le")
+    before2 = "\x44\x30".force_encoding("utf-16le")
+    invalid = "\x00\xd8".force_encoding("utf-16le")
+    after1 = "\x46\x30".force_encoding("utf-16le")
+    after2 = "\x48\x30".force_encoding("utf-16le")
+    pipe("utf-16le:euc-jp", { :binmode => true },
+         proc do |w|
+           w << before1 + before2 + invalid + after1 + after2
+           w.close
+         end,
+         proc do |r|
+           assert_equal(before1.encode("euc-jp"), r.getc)
+           assert_equal(before2.encode("euc-jp"), r.getc)
+           err = assert_raise(Encoding::InvalidByteSequenceError) { r.getc }
+           assert_equal(invalid.force_encoding("ascii-8bit"), err.error_bytes)
+           assert_equal(after1.encode("euc-jp"), r.getc)
+           assert_equal(after2.encode("euc-jp"), r.getc)
+         end)
   end
 
   def test_read_all
-    with_pipe("utf-8:euc-jp") {|r, w|
-      str = "\u3042\u3044"
-      w << str
-      w.close
-      assert_equal(str.encode("euc-jp"), r.read)
-    }
+    str = "\u3042\u3044"
+    pipe("utf-8:euc-jp",
+         proc do |w|
+           w << str
+           w.close
+         end,
+         proc do |r|
+           assert_equal(str.encode("euc-jp"), r.read)
+         end)
   end
 
   def test_read_all_invalid
-    with_pipe("utf-8:euc-jp") {|r, w|
-      before = "\u{3042}\u{3044}"
-      invalid = "\x80".force_encoding("utf-8")
-      after = "\u{3046}\u{3048}"
-      w << before + invalid + after
-      w.close
-      err = assert_raise(Encoding::InvalidByteSequenceError) { r.read }
-      assert_equal(invalid.force_encoding("ascii-8bit"), err.error_bytes)
-      assert_equal(after.encode("euc-jp"), r.read)
-    }
+    before = "\u{3042}\u{3044}"
+    invalid = "\x80".force_encoding("utf-8")
+    after = "\u{3046}\u{3048}"
+    pipe("utf-8:euc-jp",
+      proc do |w|
+        w << before + invalid + after
+        w.close
+      end,
+      proc do |r|
+        err = assert_raise(Encoding::InvalidByteSequenceError) { r.read }
+        assert_equal(invalid.force_encoding("ascii-8bit"), err.error_bytes)
+        assert_equal(after.encode("euc-jp"), r.read)
+      end)
   end
 
   def test_file_foreach
@@ -764,84 +961,131 @@ EOT
   end
 
   def test_set_encoding
-    with_pipe("utf-8:euc-jp") {|r, w|
-      s = "\u3042".force_encoding("ascii-8bit")
-      s << "\x82\xa0".force_encoding("ascii-8bit")
-      w << s
-      w.close
-      assert_equal("\xa4\xa2".force_encoding("euc-jp"), r.getc)
-      r.set_encoding("shift_jis:euc-jp")
-      assert_equal("\xa4\xa2".force_encoding("euc-jp"), r.getc)
-    }
+    pipe("utf-8:euc-jp",
+         proc do |w|
+           s = "\u3042".force_encoding("ascii-8bit")
+           s << "\x82\xa0".force_encoding("ascii-8bit")
+           w << s
+           w.close
+         end,
+         proc do |r|
+           assert_equal("\xa4\xa2".force_encoding("euc-jp"), r.getc)
+           r.set_encoding("shift_jis:euc-jp")
+           assert_equal("\xa4\xa2".force_encoding("euc-jp"), r.getc)
+         end)
   end
 
   def test_set_encoding2
-    with_pipe("utf-8:euc-jp") {|r, w|
-      s = "\u3042".force_encoding("ascii-8bit")
-      s << "\x82\xa0".force_encoding("ascii-8bit")
-      w << s
-      w.close
-      assert_equal("\xa4\xa2".force_encoding("euc-jp"), r.getc)
-      r.set_encoding("shift_jis", "euc-jp")
-      assert_equal("\xa4\xa2".force_encoding("euc-jp"), r.getc)
-    }
+    pipe("utf-8:euc-jp",
+         proc do |w|
+           s = "\u3042".force_encoding("ascii-8bit")
+           s << "\x82\xa0".force_encoding("ascii-8bit")
+           w << s
+           w.close
+         end,
+         proc do |r|
+           assert_equal("\xa4\xa2".force_encoding("euc-jp"), r.getc)
+           r.set_encoding("shift_jis", "euc-jp")
+           assert_equal("\xa4\xa2".force_encoding("euc-jp"), r.getc)
+         end)
   end
 
   def test_set_encoding_nil
-    with_pipe("utf-8:euc-jp") {|r, w|
-      s = "\u3042".force_encoding("ascii-8bit")
-      s << "\x82\xa0".force_encoding("ascii-8bit")
-      w << s
-      w.close
-      assert_equal("\xa4\xa2".force_encoding("euc-jp"), r.getc)
-      r.set_encoding(nil)
-      assert_equal("\x82\xa0".force_encoding(Encoding.default_external), r.read)
-    }
+    pipe("utf-8:euc-jp",
+         proc do |w|
+           s = "\u3042".force_encoding("ascii-8bit")
+           s << "\x82\xa0".force_encoding("ascii-8bit")
+           w << s
+           w.close
+         end,
+         proc do |r|
+           assert_equal("\xa4\xa2".force_encoding("euc-jp"), r.getc)
+           r.set_encoding(nil)
+           assert_equal("\x82\xa0".force_encoding(Encoding.default_external), r.read)
+         end)
   end
 
   def test_set_encoding_enc
-    with_pipe("utf-8:euc-jp") {|r, w|
-      s = "\u3042".force_encoding("ascii-8bit")
-      s << "\x82\xa0".force_encoding("ascii-8bit")
-      w << s
-      w.close
-      assert_equal("\xa4\xa2".force_encoding("euc-jp"), r.getc)
-      r.set_encoding(Encoding::Shift_JIS)
-      assert_equal("\x82\xa0".force_encoding(Encoding::Shift_JIS), r.getc)
-    }
+    pipe("utf-8:euc-jp",
+         proc do |w|
+           s = "\u3042".force_encoding("ascii-8bit")
+           s << "\x82\xa0".force_encoding("ascii-8bit")
+           w << s
+           w.close
+         end,
+         proc do |r|
+           assert_equal("\xa4\xa2".force_encoding("euc-jp"), r.getc)
+           r.set_encoding(Encoding::Shift_JIS)
+           assert_equal("\x82\xa0".force_encoding(Encoding::Shift_JIS), r.getc)
+         end)
   end
 
   def test_set_encoding_invalid
-    with_pipe {|r, w|
-      w << "\x80"
-      w.close
-      r.set_encoding("utf-8:euc-jp", :invalid=>:replace)
-      assert_equal("?", r.read)
-    }
+    pipe(proc do |w|
+           w << "\x80"
+           w.close
+         end,
+         proc do |r|
+           r.set_encoding("utf-8:euc-jp", :invalid=>:replace)
+           assert_equal("?", r.read)
+         end)
+  end
+
+  def test_set_encoding_identical
+    #bug5568 = '[ruby-core:40727]'
+    bug6324 = '[ruby-core:44455]'
+    open(__FILE__, "r") do |f|
+      assert_warning('', bug6324) {
+        f.set_encoding("eucjp:euc-jp")
+      }
+      assert_warning('', bug6324) {
+        f.set_encoding("eucjp", "euc-jp")
+      }
+      assert_warning('', bug6324) {
+        f.set_encoding(Encoding::EUC_JP, "euc-jp")
+      }
+      assert_warning('', bug6324) {
+        f.set_encoding("eucjp", Encoding::EUC_JP)
+      }
+      assert_warning('', bug6324) {
+        f.set_encoding(Encoding::EUC_JP, Encoding::EUC_JP)
+      }
+      nonstr = Object.new
+      def nonstr.to_str; "eucjp"; end
+      assert_warning('', bug6324) {
+        f.set_encoding(nonstr, nonstr)
+      }
+    end
   end
 
   def test_set_encoding_undef
-    with_pipe {|r, w|
-      w << "\ufffd"
-      w.close
-      r.set_encoding("utf-8", "euc-jp", :undef=>:replace)
-      assert_equal("?", r.read)
-    }
+    pipe(proc do |w|
+           w << "\ufffd"
+           w.close
+         end,
+         proc do |r|
+           r.set_encoding("utf-8", "euc-jp", :undef=>:replace)
+           assert_equal("?", r.read)
+         end)
   end
 
   def test_set_encoding_undef_replace
-    with_pipe {|r, w|
-      w << "\ufffd"
-      w.close
-      r.set_encoding("utf-8", "euc-jp", :undef=>:replace, :replace=>"ZZZ")
-      assert_equal("ZZZ", r.read)
-    }
-    with_pipe {|r, w|
-      w << "\ufffd"
-      w.close
-      r.set_encoding("utf-8:euc-jp", :undef=>:replace, :replace=>"ZZZ")
-      assert_equal("ZZZ", r.read)
-    }
+    pipe(proc do |w|
+           w << "\ufffd"
+           w.close
+         end,
+         proc do |r|
+           r.set_encoding("utf-8", "euc-jp", :undef=>:replace, :replace=>"ZZZ")
+           assert_equal("ZZZ", r.read)
+         end)
+    pipe(proc do |w|
+           w << "\ufffd"
+           w.close
+         end,
+         proc do |r|
+           r.set_encoding("utf-8:euc-jp", :undef=>:replace, :replace=>"ZZZ")
+           assert_equal("ZZZ", r.read)
+         end)
   end
 
   def test_set_encoding_binmode
@@ -872,59 +1116,110 @@ EOT
         f.set_encoding("iso-2022-jp")
       }
     }
+    assert_nothing_raised {
+      open(__FILE__, "r", binmode: true) {|f|
+        assert_equal(Encoding::ASCII_8BIT, f.external_encoding)
+        f.set_encoding("iso-2022-jp")
+      }
+    }
+    assert_raise(ArgumentError) {
+      open(__FILE__, "rb", binmode: true) {|f|
+        f.set_encoding("iso-2022-jp")
+      }
+    }
+    assert_raise(ArgumentError) {
+      open(__FILE__, "rb", binmode: false) {|f|
+        f.set_encoding("iso-2022-jp")
+      }
+    }
+  end
+
+  def test_set_encoding_unsupported
+    bug5567 = '[ruby-core:40726]'
+    IO.pipe do |r, w|
+      assert_nothing_raised(bug5567) do
+        assert_warning(/Unsupported/, bug5567) {r.set_encoding("fffffffffffxx")}
+        assert_warning(/Unsupported/, bug5567) {r.set_encoding("fffffffffffxx", "us-ascii")}
+        assert_warning(/Unsupported/, bug5567) {r.set_encoding("us-ascii", "fffffffffffxx")}
+      end
+    end
+  end
+
+  def test_textmode_twice
+    assert_raise(ArgumentError) {
+      open(__FILE__, "rt", textmode: true) {|f|
+        f.set_encoding("iso-2022-jp")
+      }
+    }
+    assert_raise(ArgumentError) {
+      open(__FILE__, "rt", textmode: false) {|f|
+        f.set_encoding("iso-2022-jp")
+      }
+    }
   end
 
   def test_write_conversion_fixenc
-    with_pipe {|r, w|
-      w.set_encoding("iso-2022-jp:utf-8")
-      t = Thread.new { r.read.force_encoding("ascii-8bit") }
-      w << "\u3042"
-      w << "\u3044"
-      w.close
-      assert_equal("\e$B$\"$$\e(B".force_encoding("ascii-8bit"), t.value)
-    }
+    pipe(proc do |w|
+           w.set_encoding("iso-2022-jp:utf-8")
+             w << "\u3042"
+             w << "\u3044"
+             w.close
+         end,
+         proc do |r|
+           assert_equal("\e$B$\"$$\e(B".force_encoding("ascii-8bit"),
+                        r.read.force_encoding("ascii-8bit"))
+         end)
   end
 
   def test_write_conversion_anyenc_stateful
-    with_pipe {|r, w|
-      w.set_encoding("iso-2022-jp")
-      t = Thread.new { r.read.force_encoding("ascii-8bit") }
-      w << "\u3042"
-      w << "\x82\xa2".force_encoding("sjis")
-      w.close
-      assert_equal("\e$B$\"$$\e(B".force_encoding("ascii-8bit"), t.value)
-    }
+    pipe(proc do |w|
+           w.set_encoding("iso-2022-jp")
+           w << "\u3042"
+           w << "\x82\xa2".force_encoding("sjis")
+           w.close
+         end,
+         proc do |r|
+           assert_equal("\e$B$\"$$\e(B".force_encoding("ascii-8bit"),
+                        r.read.force_encoding("ascii-8bit"))
+         end)
   end
 
   def test_write_conversion_anyenc_stateless
-    with_pipe {|r, w|
-      w.set_encoding("euc-jp")
-      t = Thread.new { r.read.force_encoding("ascii-8bit") }
-      w << "\u3042"
-      w << "\x82\xa2".force_encoding("sjis")
-      w.close
-      assert_equal("\xa4\xa2\xa4\xa4".force_encoding("ascii-8bit"), t.value)
-    }
+    pipe(proc do |w|
+           w.set_encoding("euc-jp")
+           w << "\u3042"
+           w << "\x82\xa2".force_encoding("sjis")
+           w.close
+         end,
+         proc do |r|
+           assert_equal("\xa4\xa2\xa4\xa4".force_encoding("ascii-8bit"),
+                        r.read.force_encoding("ascii-8bit"))
+         end)
   end
 
   def test_write_conversion_anyenc_stateful_nosync
-    with_pipe {|r, w|
-      w.sync = false
-      w.set_encoding("iso-2022-jp")
-      t = Thread.new { r.read.force_encoding("ascii-8bit") }
-      w << "\u3042"
-      w << "\x82\xa2".force_encoding("sjis")
-      w.close
-      assert_equal("\e$B$\"$$\e(B".force_encoding("ascii-8bit"), t.value)
-    }
+    pipe(proc do |w|
+           w.sync = false
+           w.set_encoding("iso-2022-jp")
+           w << "\u3042"
+           w << "\x82\xa2".force_encoding("sjis")
+           w.close
+         end,
+         proc do |r|
+           assert_equal("\e$B$\"$$\e(B".force_encoding("ascii-8bit"),
+                        r.read.force_encoding("ascii-8bit"))
+         end)
   end
 
   def test_read_stateful
-    with_pipe("euc-jp:iso-2022-jp") {|r, w|
-      w << "\xA4\xA2"
-      w.close
-      assert_equal("\e$B$\"\e(B".force_encoding("iso-2022-jp"), r.read)
-    }
+    pipe("euc-jp:iso-2022-jp",
+         proc do |w|
+           w << "\xA4\xA2"
+           w.close
+         end,
+         proc do |r|
+           assert_equal("\e$B$\"\e(B".force_encoding("iso-2022-jp"), r.read)
+         end)
   end
 
   def test_stdin_external_encoding_with_reopen
@@ -1023,6 +1318,16 @@ EOT
       s = f.read
       assert_equal(Encoding::ASCII_8BIT, s.encoding)
       assert_equal("\xff".force_encoding("ascii-8bit"), s)
+    }
+  end
+
+  def test_open_pipe_r_enc2
+    open("|#{EnvUtil.rubybin} -e 'putc \"\\u3042\"'", "r:UTF-8") {|f|
+      assert_equal(Encoding::UTF_8, f.external_encoding)
+      assert_equal(nil, f.internal_encoding)
+      s = f.read
+      assert_equal(Encoding::UTF_8, s.encoding)
+      assert_equal("\u3042", s)
     }
   end
 
@@ -1147,7 +1452,12 @@ EOT
   end
 
   def test_both_textmode_binmode
-    assert_raise(ArgumentError) { open("not-exist", "r", :textmode=>true, :binmode=>true) }
+    bug5918 = '[ruby-core:42199]'
+    assert_raise(ArgumentError, bug5918) { open("not-exist", "r", :textmode=>true, :binmode=>true) }
+    assert_raise(ArgumentError, bug5918) { open("not-exist", "rt", :binmode=>true) }
+    assert_raise(ArgumentError, bug5918) { open("not-exist", "rt", :binmode=>false) }
+    assert_raise(ArgumentError, bug5918) { open("not-exist", "rb", :textmode=>true) }
+    assert_raise(ArgumentError, bug5918) { open("not-exist", "rb", :textmode=>false) }
   end
 
   def test_textmode_decode_universal_newline_read
@@ -1158,6 +1468,9 @@ EOT
       open("t.crlf", "rt:euc-jp:utf-8") {|f| assert_equal("a\nb\nc\n", f.read) }
       open("t.crlf", "rt") {|f| assert_equal("a\nb\nc\n", f.read) }
       open("t.crlf", "r", :textmode=>true) {|f| assert_equal("a\nb\nc\n", f.read) }
+      open("t.crlf", "r", textmode: true, universal_newline: false) {|f|
+        assert_equal("a\r\nb\r\nc\r\n", f.read)
+      }
 
       generate_file("t.cr", "a\rb\rc\r")
       assert_equal("a\nb\nc\n", File.read("t.cr", mode:"rt:euc-jp:utf-8"))
@@ -1414,7 +1727,7 @@ EOT
     u16 = "\x85\x35\0\r\x00\xa2\0\r\0\n\0\n".force_encoding("utf-16be")
     i = "\e$B\x42\x22\e(B\r\e$B\x21\x71\e(B\r\n\n".force_encoding("iso-2022-jp")
     n = system_newline
-    un = n.encode("utf-16be").force_encoding("ascii-8bit")
+    n.encode("utf-16be").force_encoding("ascii-8bit")
 
     assert_write("a\rb\r#{n}c#{n}", "wt", a)
     assert_write("\xc2\xa2", "wt", e)
@@ -1732,6 +2045,7 @@ EOT
   def test_strip_bom
     with_tmpdir {
       text = "\uFEFFa"
+      stripped = "a"
       %w/UTF-8 UTF-16BE UTF-16LE UTF-32BE UTF-32LE/.each do |name|
         path = '%s-bom.txt' % name
         content = text.encode(name)
@@ -1739,11 +2053,32 @@ EOT
         result = File.read(path, mode: 'rb:BOM|UTF-8')
         assert_equal(content[1].force_encoding("ascii-8bit"),
                      result.force_encoding("ascii-8bit"))
+        result = File.read(path, mode: 'rb:BOM|UTF-8:UTF-8')
+        assert_equal(Encoding::UTF_8, result.encoding)
+        assert_equal(stripped, result)
       end
 
       bug3407 = '[ruby-core:30641]'
-      result = File.read('UTF-8-bom.txt', encoding: 'BOM|UTF-8')
+      path = 'UTF-8-bom.txt'
+      result = File.read(path, encoding: 'BOM|UTF-8')
       assert_equal("a", result.force_encoding("ascii-8bit"), bug3407)
+
+      bug8323 = '[ruby-core:54563] [Bug #8323]'
+      expected = "a\xff".force_encoding("utf-8")
+      open(path, 'ab') {|f| f.write("\xff")}
+      result = File.read(path, encoding: 'BOM|UTF-8')
+      assert_not_predicate(result, :valid_encoding?, bug8323)
+      assert_equal(expected, result, bug8323)
+      result = File.read(path, encoding: 'BOM|UTF-8:UTF-8')
+      assert_not_predicate(result, :valid_encoding?, bug8323)
+      assert_equal(expected, result, bug8323)
+
+      path = 'ascii.txt'
+      generate_file(path, stripped)
+      result = File.read(path, encoding: 'BOM|UTF-8')
+      assert_equal(stripped, result, bug8323)
+      result = File.read(path, encoding: 'BOM|UTF-8:UTF-8')
+      assert_equal(stripped, result, bug8323)
     }
   end
 
@@ -1774,64 +2109,458 @@ EOT
       open("ff", "w") {|f| }
       open("ff", "rt") {|f|
         f.ungetc "a"
-        assert(!f.eof?, "[ruby-dev:40506] (3)")
+        assert_not_predicate(f, :eof?, "[ruby-dev:40506] (3)")
       }
     }
   end
 
   def test_cbuf_select
-    with_pipe("US-ASCII:UTF-8", :universal_newline => true) do |r, w|
-      w << "\r\n"
-      r.ungetc(r.getc)
-      assert_equal([[r],[],[]], IO.select([r], nil, nil, 1))
-    end
+    pipe("US-ASCII:UTF-8", { :universal_newline => true },
+         proc do |w|
+           w << "\r\n"
+         end,
+         proc do |r|
+           r.ungetc(r.getc)
+           assert_equal([[r],[],[]], IO.select([r], nil, nil, 1))
+         end)
   end
 
   def test_textmode_paragraphmode
-    with_pipe("US-ASCII:UTF-8", :universal_newline => true) do |r, w|
-      w << "a\n\n\nc".gsub(/\n/, "\r\n")
-      w.close
-      assert_equal("a\n\n", r.gets(""))
-      assert_equal("c", r.gets(""), "[ruby-core:23723] (18)")
-    end
+    pipe("US-ASCII:UTF-8", { :universal_newline => true },
+         proc do |w|
+           w << "a\n\n\nc".gsub(/\n/, "\r\n")
+           w.close
+         end,
+         proc do |r|
+           assert_equal("a\n\n", r.gets(""))
+           assert_equal("c", r.gets(""), "[ruby-core:23723] (18)")
+         end)
   end
 
   def test_textmode_paragraph_binaryread
-    with_pipe("US-ASCII:UTF-8", :universal_newline => true) do |r, w|
-      w << "a\n\n\ncdefgh".gsub(/\n/, "\r\n")
-      w.close
-      assert_equal("a\n\n", r.gets(""))
-      assert_equal("c", r.getc)
-      assert_equal("defgh", r.readpartial(10))
-    end
+    pipe("US-ASCII:UTF-8", { :universal_newline => true },
+         proc do |w|
+           w << "a\n\n\ncdefgh".gsub(/\n/, "\r\n")
+           w.close
+         end,
+         proc do |r|
+           assert_equal("a\n\n", r.gets(""))
+           assert_equal("c", r.getc)
+           assert_equal("defgh", r.readpartial(10))
+         end)
   end
 
   def test_textmode_paragraph_nonasciicompat
     bug3534 = ['[ruby-dev:41803]', '[Bug #3534]']
-    r, w = IO.pipe
-    [Encoding::UTF_32BE, Encoding::UTF_32LE,
-     Encoding::UTF_16BE, Encoding::UTF_16LE,
-     Encoding::UTF_8].each do |e|
-      r.set_encoding(Encoding::US_ASCII, e)
-      w.print(bug3534[0], "\n\n\n\n", bug3534[1], "\n")
-      assert_equal((bug3534[0]+"\n\n").encode(e), r.gets(""), bug3534[0])
-      assert_equal((bug3534[1]+"\n").encode(e), r.gets(), bug3534[1])
-    end
+    IO.pipe {|r, w|
+      [Encoding::UTF_32BE, Encoding::UTF_32LE,
+       Encoding::UTF_16BE, Encoding::UTF_16LE,
+       Encoding::UTF_8].each do |e|
+        r.set_encoding(Encoding::US_ASCII, e)
+        wthr = Thread.new{ w.print(bug3534[0], "\n\n\n\n", bug3534[1], "\n") }
+        assert_equal((bug3534[0]+"\n\n").encode(e), r.gets(""), bug3534[0])
+        assert_equal((bug3534[1]+"\n").encode(e), r.gets(), bug3534[1])
+        wthr.join
+      end
+    }
   end
 
   def test_binmode_paragraph_nonasciicompat
     bug3534 = ['[ruby-dev:41803]', '[Bug #3534]']
-    r, w = IO.pipe
-    r.binmode
-    w.binmode
-    [Encoding::UTF_32BE, Encoding::UTF_32LE,
-     Encoding::UTF_16BE, Encoding::UTF_16LE,
-     Encoding::UTF_8].each do |e|
-      r.set_encoding(Encoding::US_ASCII, e)
-      w.print(bug3534[0], "\n\n\n\n", bug3534[1], "\n")
-      assert_equal((bug3534[0]+"\n\n").encode(e), r.gets(""), bug3534[0])
-      assert_equal((bug3534[1]+"\n").encode(e), r.gets(), bug3534[1])
+    IO.pipe {|r, w|
+      r.binmode
+      w.binmode
+      [Encoding::UTF_32BE, Encoding::UTF_32LE,
+       Encoding::UTF_16BE, Encoding::UTF_16LE,
+       Encoding::UTF_8].each do |e|
+        r.set_encoding(Encoding::US_ASCII, e)
+        wthr = Thread.new{ w.print(bug3534[0], "\n\n\n\n", bug3534[1], "\n") }
+        assert_equal((bug3534[0]+"\n\n").encode(e), r.gets(""), bug3534[0])
+        assert_equal((bug3534[1]+"\n").encode(e), r.gets(), bug3534[1])
+        wthr.join
+      end
+    }
+  end
+
+  def test_puts_widechar
+    bug = '[ruby-dev:42212]'
+    pipe(Encoding::ASCII_8BIT,
+         proc do |w|
+           w.binmode
+           w.puts(0x010a.chr(Encoding::UTF_32BE))
+           w.puts(0x010a.chr(Encoding::UTF_16BE))
+           w.puts(0x0a010000.chr(Encoding::UTF_32LE))
+           w.puts(0x0a01.chr(Encoding::UTF_16LE))
+           w.close
+         end,
+         proc do |r|
+           r.binmode
+           assert_equal("\x00\x00\x01\x0a\n", r.read(5), bug)
+           assert_equal("\x01\x0a\n", r.read(3), bug)
+           assert_equal("\x00\x00\x01\x0a\n", r.read(5), bug)
+           assert_equal("\x01\x0a\n", r.read(3), bug)
+           assert_equal("", r.read, bug)
+           r.close
+         end)
+  end
+
+  def test_getc_ascii_only
+    bug4557 = '[ruby-core:35630]'
+    c = with_tmpdir {
+      open("a", "wb") {|f| f.puts "a"}
+      open("a", "rt") {|f| f.getc}
+    }
+    assert_predicate(c, :ascii_only?, bug4557)
+  end
+
+  def test_getc_conversion
+    bug8516 = '[ruby-core:55444] [Bug #8516]'
+    c = with_tmpdir {
+      open("a", "wb") {|f| f.putc "\xe1"}
+      open("a", "r:iso-8859-1:utf-8") {|f| f.getc}
+    }
+    assert_not_predicate(c, :ascii_only?, bug8516)
+    assert_equal(1, c.size, bug8516)
+  end
+
+  def test_default_mode_on_dosish
+    with_tmpdir {
+      open("a", "w") {|f| f.write "\n"}
+      assert_equal("\r\n", IO.binread("a"))
+    }
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
+
+  def test_default_mode_on_unix
+    with_tmpdir {
+      open("a", "w") {|f| f.write "\n"}
+      assert_equal("\n", IO.binread("a"))
+    }
+  end unless /mswin|mingw/ =~ RUBY_PLATFORM
+
+  def test_text_mode
+    with_tmpdir {
+      open("a", "wb") {|f| f.write "\r\n"}
+      assert_equal("\n", open("a", "rt"){|f| f.read})
+    }
+  end
+
+  def test_binary_mode
+    with_tmpdir {
+      open("a", "wb") {|f| f.write "\r\n"}
+      assert_equal("\r\n", open("a", "rb"){|f| f.read})
+    }
+  end
+
+  def test_default_stdout_stderr_mode
+    with_pipe do |in_r, in_w|
+      with_pipe do |out_r, out_w|
+        pid = Process.spawn({}, EnvUtil.rubybin, in: in_r, out: out_w, err: out_w)
+        in_r.close
+        out_w.close
+        in_w.write <<-EOS
+          STDOUT.puts "abc"
+          STDOUT.flush
+          STDERR.puts "def"
+          STDERR.flush
+        EOS
+        in_w.close
+        Process.wait pid
+        assert_equal "abc\r\ndef\r\n", out_r.binmode.read
+        out_r.close
+      end
+    end
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
+
+  def test_cr_decorator_on_stdout
+    with_pipe do |in_r, in_w|
+      with_pipe do |out_r, out_w|
+        pid = Process.spawn({}, EnvUtil.rubybin, in: in_r, out: out_w)
+        in_r.close
+        out_w.close
+        in_w.write <<-EOS
+          STDOUT.set_encoding('locale', nil, newline: :cr)
+          STDOUT.puts "abc"
+          STDOUT.flush
+        EOS
+        in_w.close
+        Process.wait pid
+        assert_equal "abc\r", out_r.binmode.read
+        out_r.close
+      end
     end
   end
-end
 
+  def test_lf_decorator_on_stdout
+    with_pipe do |in_r, in_w|
+      with_pipe do |out_r, out_w|
+        pid = Process.spawn({}, EnvUtil.rubybin, in: in_r, out: out_w)
+        in_r.close
+        out_w.close
+        in_w.write <<-EOS
+          STDOUT.set_encoding('locale', nil, newline: :lf)
+          STDOUT.puts "abc"
+          STDOUT.flush
+        EOS
+        in_w.close
+        Process.wait pid
+        assert_equal "abc\n", out_r.binmode.read
+        out_r.close
+      end
+    end
+  end
+
+  def test_crlf_decorator_on_stdout
+    with_pipe do |in_r, in_w|
+      with_pipe do |out_r, out_w|
+        pid = Process.spawn({}, EnvUtil.rubybin, in: in_r, out: out_w)
+        in_r.close
+        out_w.close
+        in_w.write <<-EOS
+          STDOUT.set_encoding('locale', nil, newline: :crlf)
+          STDOUT.puts "abc"
+          STDOUT.flush
+        EOS
+        in_w.close
+        Process.wait pid
+        assert_equal "abc\r\n", out_r.binmode.read
+        out_r.close
+      end
+    end
+  end
+
+  def test_binmode_with_pipe
+    with_pipe do |r, w|
+      src = "a\r\nb\r\nc\r\n"
+      w.binmode.write src
+      w.close
+
+      assert_equal("a", r.getc)
+      assert_equal("\n", r.getc)
+      r.binmode
+      assert_equal("b", r.getc)
+      assert_equal("\r", r.getc)
+      assert_equal("\n", r.getc)
+      assert_equal("c", r.getc)
+      assert_equal("\r", r.getc)
+      assert_equal("\n", r.getc)
+      assert_equal(nil, r.getc)
+      r.close
+    end
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
+
+  def test_stdin_binmode
+    with_pipe do |in_r, in_w|
+      with_pipe do |out_r, out_w|
+        pid = Process.spawn({}, EnvUtil.rubybin, '-e', <<-'End', in: in_r, out: out_w)
+          STDOUT.binmode
+          STDOUT.write STDIN.getc
+          STDOUT.write STDIN.getc
+          STDIN.binmode
+          STDOUT.write STDIN.getc
+          STDOUT.write STDIN.getc
+          STDOUT.write STDIN.getc
+          STDOUT.write STDIN.getc
+          STDOUT.write STDIN.getc
+          STDOUT.write STDIN.getc
+          STDOUT.write STDIN.getc
+        End
+        in_r.close
+        out_w.close
+        src = "a\r\nb\r\nc\r\n"
+        in_w.binmode.write src
+        in_w.close
+        Process.wait pid
+        assert_equal "a\nb\r\nc\r\n", out_r.binmode.read
+        out_r.close
+      end
+    end
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
+
+  def test_read_with_length
+    with_tmpdir {
+      str = "a\nb"
+      generate_file("tmp", str)
+      open("tmp", "r") do |f|
+        assert_equal(str, f.read(3))
+      end
+    }
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
+
+  def test_read_with_length_binmode
+    with_tmpdir {
+      str = "a\r\nb\r\nc\r\n\r\n"
+      generate_file("tmp", str)
+      open("tmp", "r") do |f|
+        # read with length should be binary mode
+        assert_equal("a\r\n", f.read(3)) # binary
+        assert_equal("b\nc\n\n", f.read) # text
+      end
+    }
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
+
+  def test_gets_and_read_with_binmode
+    with_tmpdir {
+      str = "a\r\nb\r\nc\r\n\n\r\n"
+      generate_file("tmp", str)
+      open("tmp", "r") do |f|
+        assert_equal("a\n", f.gets)      # text
+        assert_equal("b\r\n", f.read(3)) # binary
+        assert_equal("c\r\n", f.read(3)) # binary
+        assert_equal("\n\n", f.read)     # text
+      end
+    }
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
+
+  def test_getc_and_read_with_binmode
+    with_tmpdir {
+      str = "a\r\nb\r\nc\n\n\r\n\r\n"
+      generate_file("tmp", str)
+      open("tmp", "r") do |f|
+        assert_equal("a", f.getc)         # text
+        assert_equal("\n", f.getc)        # text
+        assert_equal("b\r\n", f.read(3))  # binary
+        assert_equal("c\n\n\n\n", f.read) # text
+      end
+    }
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
+
+  def test_read_with_binmode_and_gets
+    with_tmpdir {
+      str = "a\r\nb\r\nc\r\n\r\n"
+      open("tmp", "wb") { |f| f.write str }
+      open("tmp", "r") do |f|
+        assert_equal("a", f.getc)         # text
+        assert_equal("\n", f.getc)        # text
+        assert_equal("b\r\n", f.read(3))  # binary
+        assert_equal("c\n", f.gets)       # text
+        assert_equal("\n", f.gets)        # text
+      end
+    }
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
+
+  def test_read_with_binmode_and_getc
+    with_tmpdir {
+      str = "a\r\nb\r\nc\r\n\r\n"
+      open("tmp", "wb") { |f| f.write str }
+      open("tmp", "r") do |f|
+        assert_equal("a", f.getc)         # text
+        assert_equal("\n", f.getc)        # text
+        assert_equal("b\r\n", f.read(3))  # binary
+        assert_equal("c", f.getc)         # text
+        assert_equal("\n", f.getc)        # text
+        assert_equal("\n", f.getc)        # text
+      end
+    }
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
+
+  def test_read_write_with_binmode
+    with_tmpdir {
+      str = "a\r\n"
+      generate_file("tmp", str)
+      open("tmp", "r+") do |f|
+        assert_equal("a\r\n", f.read(3))  # binary
+        f.write("b\n\n");                 # text
+        f.rewind
+        assert_equal("a\nb\n\n", f.read)  # text
+        f.rewind
+        assert_equal("a\r\nb\r\n\r\n", f.binmode.read) # binary
+      end
+    }
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
+
+  def test_seek_with_setting_binmode
+    with_tmpdir {
+      str = "a\r\nb\r\nc\r\n\r\n\n\n\n\n\n\n\n"
+      generate_file("tmp", str)
+      open("tmp", "r") do |f|
+        assert_equal("a\n", f.gets)      # text
+        assert_equal("b\r\n", f.read(3)) # binary
+      end
+    }
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
+
+  def test_error_nonascii
+    bug6071 = '[ruby-dev:45279]'
+    paths = ["\u{3042}".encode("sjis"), "\u{ff}".encode("iso-8859-1")]
+    encs = with_tmpdir {
+      paths.map {|path|
+        open(path) rescue $!.message.encoding
+      }
+    }
+    assert_equal(paths.map(&:encoding), encs, bug6071)
+  end
+
+  def test_inspect_nonascii
+    bug6072 = '[ruby-dev:45280]'
+    paths = ["\u{3042}".encode("sjis"), "\u{ff}".encode("iso-8859-1")]
+    encs = with_tmpdir {
+      paths.map {|path|
+        open(path, "wb") {|f| f.inspect.encoding}
+      }
+    }
+    assert_equal(paths.map(&:encoding), encs, bug6072)
+  end
+
+  def test_pos_dont_move_cursor_position
+    bug6179 = '[ruby-core:43497]'
+    with_tmpdir {
+      str = "line one\r\nline two\r\nline three\r\n"
+      generate_file("tmp", str)
+      open("tmp", "r") do |f|
+        assert_equal("line one\n", f.readline)
+        assert_equal(10, f.pos, bug6179)
+        assert_equal("line two\n", f.readline, bug6179)
+        assert_equal(20, f.pos, bug6179)
+        assert_equal("line three\n", f.readline, bug6179)
+      end
+    }
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
+
+  def test_pos_with_buffer_end_cr
+    bug6401 = '[ruby-core:44874]'
+    with_tmpdir {
+      # Read buffer size is 8191. This generates '\r' at 8191.
+      lines = ["X" * 8187, "X"]
+      generate_file("tmp", lines.join("\r\n") + "\r\n")
+
+      open("tmp", "r") do |f|
+        lines.each do |line|
+          f.pos
+          assert_equal(line, f.readline.chomp, bug6401)
+        end
+      end
+    }
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
+
+  def test_read_crlf_and_eof
+    bug6271 = '[ruby-core:44189]'
+    with_tmpdir {
+      str = "a\r\nb\r\nc\r\n"
+      generate_file("tmp", str)
+      open("tmp", "r") do |f|
+        i = 0
+        until f.eof?
+          assert_equal(str[i], f.read(1), bug6271)
+          i += 1
+        end
+        assert_equal(str.size, i, bug6271)
+      end
+    }
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
+
+  def test_read_with_buf_broken_ascii_only
+    a, b = IO.pipe
+    a.binmode
+    b.binmode
+    b.write("\xE2\x9C\x93")
+    b.close
+
+    buf = "".force_encoding("binary")
+    assert buf.ascii_only?, "should have been ascii_only?"
+    a.read(1, buf)
+    assert !buf.ascii_only?, "should not have been ascii_only?"
+  ensure
+    a.close rescue nil
+    b.close rescue nil
+  end
+end

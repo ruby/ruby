@@ -1,5 +1,5 @@
+# coding: US-ASCII
 require 'test/unit'
-require_relative 'envutil'
 
 class TestRegexp < Test::Unit::TestCase
   def setup
@@ -9,6 +9,12 @@ class TestRegexp < Test::Unit::TestCase
 
   def teardown
     $VERBOSE = @verbose
+  end
+
+  def test_has_NOENCODING
+    assert Regexp::NOENCODING
+    re = //n
+    assert_equal Regexp::NOENCODING, re.options
   end
 
   def test_ruby_dev_999
@@ -57,6 +63,14 @@ class TestRegexp < Test::Unit::TestCase
 
   def test_to_s
     assert_equal '(?-mix:\x00)', Regexp.new("\0").to_s
+
+    str = "abcd\u3042"
+    [:UTF_16BE, :UTF_16LE, :UTF_32BE, :UTF_32LE].each do |es|
+      enc = Encoding.const_get(es)
+      rs = Regexp.new(str.encode(enc)).to_s
+      assert_equal("(?-mix:abcd\u3042)".encode(enc), rs)
+      assert_equal(enc, rs.encoding)
+    end
   end
 
   def test_union
@@ -69,6 +83,11 @@ class TestRegexp < Test::Unit::TestCase
     rescue ArgumentError
       :ok
     end
+  end
+
+  def test_word_boundary
+    assert_match(/\u3042\b /, "\u3042 ")
+    assert_not_match(/\u3042\ba/, "\u3042a")
   end
 
   def test_named_capture
@@ -122,6 +141,31 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal("fbazo", s)
   end
 
+  def test_named_capture_with_nul
+    bug9902 = '[ruby-dev:48275] [Bug #9902]'
+
+    m = /(?<a>.*)/.match("foo")
+    assert_raise(IndexError, bug9902) {m["a\0foo"]}
+    assert_raise(IndexError, bug9902) {m["a\0foo".to_sym]}
+
+    m = Regexp.new("(?<foo\0bar>.*)").match("xxx")
+    assert_raise(IndexError, bug9902) {m["foo"]}
+    assert_raise(IndexError, bug9902) {m["foo".to_sym]}
+    assert_nothing_raised(IndexError, bug9902) {
+      assert_equal("xxx", m["foo\0bar"], bug9902)
+      assert_equal("xxx", m["foo\0bar".to_sym], bug9902)
+    }
+  end
+
+  def test_named_capture_nonascii
+    bug9903 = '[ruby-dev:48278] [Bug #9903]'
+
+    key = "\xb1\xb2".force_encoding(Encoding::EUC_JP)
+    m = /(?<#{key}>.*)/.match("xxx")
+    assert_equal("xxx", m[key])
+    assert_raise(IndexError, bug9903) {m[key.dup.force_encoding(Encoding::Shift_JIS)]}
+  end
+
   def test_assign_named_capture
     assert_equal("a", eval('/(?<foo>.)/ =~ "a"; foo'))
     assert_equal("a", eval('foo = 1; /(?<foo>.)/ =~ "a"; foo'))
@@ -132,7 +176,7 @@ class TestRegexp < Test::Unit::TestCase
 
   def test_assign_named_capture_to_reserved_word
     /(?<nil>.)/ =~ "a"
-    assert(!local_variables.include?(:nil), "[ruby-dev:32675]")
+    assert_not_include(local_variables, :nil, "[ruby-dev:32675]")
   end
 
   def test_match_regexp
@@ -144,7 +188,56 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_source
+    bug5484 = '[ruby-core:40364]'
     assert_equal('', //.source)
+    assert_equal('\:', /\:/.source, bug5484)
+    assert_equal(':', %r:\::.source, bug5484)
+  end
+
+  def test_source_escaped
+    expected, result = "$*+.?^|".each_char.map {|c|
+      [
+        ["\\#{c}", "\\#{c}", 1],
+        begin
+          re = eval("%r#{c}\\#{c}#{c}", nil, __FILE__, __LINE__)
+          t = eval("/\\#{c}/", nil, __FILE__, __LINE__).source
+        rescue SyntaxError => e
+          [e, t, nil]
+        else
+          [re.source, t, re =~ "a#{c}a"]
+        end
+      ]
+    }.transpose
+    assert_equal(expected, result)
+  end
+
+  def test_source_escaped_paren
+    bug7610 = '[ruby-core:51088] [Bug #7610]'
+    bug8133 = '[ruby-core:53578] [Bug #8133]'
+    [
+     ["(", ")", bug7610], ["[", "]", bug8133],
+     ["{", "}", bug8133], ["<", ">", bug8133],
+    ].each do |lparen, rparen, bug|
+      s = "\\#{lparen}a\\#{rparen}"
+      assert_equal(/#{s}/, eval("%r#{lparen}#{s}#{rparen}"), bug)
+    end
+  end
+
+  def test_source_unescaped
+    expected, result = "!\"#%&',-/:;=@_`~".each_char.map {|c|
+      [
+        ["#{c}", "\\#{c}", 1],
+        begin
+          re = eval("%r#{c}\\#{c}#{c}", nil, __FILE__, __LINE__)
+          t = eval("%r{\\#{c}}", nil, __FILE__, __LINE__).source
+        rescue SyntaxError => e
+          [e, t, nil]
+        else
+          [re.source, t, re =~ "a#{c}a"]
+        end
+      ]
+    }.transpose
+    assert_equal(expected, result)
   end
 
   def test_inspect
@@ -279,14 +372,6 @@ class TestRegexp < Test::Unit::TestCase
   def test_initialize
     assert_raise(ArgumentError) { Regexp.new }
     assert_equal(/foo/, Regexp.new(/foo/, Regexp::IGNORECASE))
-    re = /foo/
-    assert_raise(SecurityError) do
-      Thread.new { $SAFE = 4; re.instance_eval { initialize(re) } }.join
-    end
-    re.taint
-    assert_raise(SecurityError) do
-      Thread.new { $SAFE = 4; re.instance_eval { initialize(re) } }.join
-    end
 
     assert_equal(Encoding.find("US-ASCII"), Regexp.new("b..", nil, "n").encoding)
     assert_equal("bar", "foobarbaz"[Regexp.new("b..", nil, "n")])
@@ -319,7 +404,7 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal(/a/, eval(%q(s="\u0061";/#{s}/n)))
     assert_raise(RegexpError) { s = "\u3042"; eval(%q(/#{s}/n)) }
     assert_raise(RegexpError) { s = "\u0061"; eval(%q(/\u3042#{s}/n)) }
-    assert_raise(RegexpError) { s1=[0xff].pack("C"); s2="\u3042"; eval(%q(/#{s1}#{s2}/)) }
+    assert_raise(RegexpError) { s1=[0xff].pack("C"); s2="\u3042"; eval(%q(/#{s1}#{s2}/)); [s1, s2] }
 
     assert_raise(ArgumentError) { s = '\x'; /#{ s }/ }
 
@@ -358,9 +443,11 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_equal
-    assert_equal(true, /abc/ == /abc/)
-    assert_equal(false, /abc/ == /abc/m)
-    assert_equal(false, /abc/ == /abd/)
+    bug5484 = '[ruby-core:40364]'
+    assert_equal(/abc/, /abc/)
+    assert_not_equal(/abc/, /abc/m)
+    assert_not_equal(/abc/, /abd/)
+    assert_equal(/\/foo/, Regexp.new('/foo'), bug5484)
   end
 
   def test_match
@@ -437,6 +524,12 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal('foo[\z]baz', "foobarbaz".sub!(/(b..)/, '[\z]'))
   end
 
+  def test_regsub_K
+    bug8856 = '[ruby-dev:47694] [Bug #8856]'
+    result = "foobarbazquux/foobarbazquux".gsub(/foo\Kbar/, "")
+    assert_equal('foobazquux/foobazquux', result, bug8856)
+  end
+
   def test_KCODE
     assert_nil($KCODE)
     assert_nothing_raised { $KCODE = nil }
@@ -450,6 +543,19 @@ class TestRegexp < Test::Unit::TestCase
     /bar/ =~ "bar"
     $~ = m
     assert_equal("foo", $&)
+  end
+
+  def test_match_without_regexp
+    bug10877 = '[ruby-core:68209] [Bug #10877]'
+    "abc".sub("a", "")
+    assert_raise_with_message(IndexError, /foo/, bug10877) {$~["foo"]}
+    key = "\u{3042}"
+    [Encoding::UTF_8, Encoding::Shift_JIS, Encoding::EUC_JP].each do |enc|
+      idx = key.encode(enc)
+      EnvUtil.with_default_external(enc) do
+        assert_raise_with_message(IndexError, /#{idx}/, bug10877) {$~[idx]}
+      end
+    end
   end
 
   def test_last_match
@@ -482,32 +588,34 @@ class TestRegexp < Test::Unit::TestCase
   def test_taint
     m = Thread.new do
       "foo"[/foo/]
-      $SAFE = 4
+      $SAFE = 3
       /foo/.match("foo")
     end.value
-    assert(m.tainted?)
+    assert_predicate(m, :tainted?)
     assert_nothing_raised('[ruby-core:26137]') {
-      m = proc {$SAFE = 4; %r"#{ }"o}.call
+      m = proc {$SAFE = 3; %r"#{ }"o}.call
     }
-    assert(m.tainted?)
+    assert_predicate(m, :tainted?)
   end
 
-  def check(re, ss, fs = [])
+  def assert_regexp(re, ss, fs = [], msg = nil)
     re = Regexp.new(re) unless re.is_a?(Regexp)
     ss = [ss] unless ss.is_a?(Array)
     ss.each do |e, s|
       s ||= e
-      assert_match(re, s)
+      assert_match(re, s, msg)
       m = re.match(s)
-      assert_equal(e, m[0])
+      assert_equal(e, m[0], msg)
     end
     fs = [fs] unless fs.is_a?(Array)
-    fs.each {|s| assert_no_match(re, s) }
+    fs.each {|s| assert_no_match(re, s, msg) }
   end
+  alias check assert_regexp
 
-  def failcheck(re)
+  def assert_fail(re)
     assert_raise(RegexpError) { %r"#{ re }" }
   end
+  alias failcheck assert_fail
 
   def test_parse
     check(/\*\+\?\{\}\|\(\)\<\>\`\'/, "*+?{}|()<>`'")
@@ -524,7 +632,7 @@ class TestRegexp < Test::Unit::TestCase
     check(/\A\80\z/, "80", ["\100", ""])
     check(/\A\77\z/, "?")
     check(/\A\78\z/, "\7" + '8', ["\100", ""])
-    check(/\A\Qfoo\E\z/, "QfooE")
+    check(eval('/\A\Qfoo\E\z/'), "QfooE")
     check(/\Aa++\z/, "aaa")
     check('\Ax]\z', "x]")
     check(/x#foo/x, "x", "#foo")
@@ -583,6 +691,9 @@ class TestRegexp < Test::Unit::TestCase
     failcheck('(?<!.*)')
     check(/(?<=A|B.)C/, [%w(C AC), %w(C BXC)], %w(C BC))
     check(/(?<!A|B.)C/, [%w(C C), %w(C BC)], %w(AC BXC))
+
+    assert_not_match(/(?<!aa|b)c/i, "Aac")
+    assert_not_match(/(?<!b|aa)c/i, "Aac")
   end
 
   def test_parse_kg
@@ -679,7 +790,7 @@ class TestRegexp < Test::Unit::TestCase
     check(/\A[a-b-]\z/, %w(a b -), ["", "c"])
     check('\A[a-b-&&\w]\z', %w(a b), ["", "-"])
     check('\A[a-b-&&\W]\z', "-", ["", "a", "b"])
-    check('\A[a-c-e]\z', %w(a b c e), %w(- d)) # is it OK?
+    check('\A[a-c-e]\z', %w(a b c e -), %w(d))
     check(/\A[a-f&&[^b-c]&&[^e]]\z/, %w(a d f), %w(b c e g 0))
     check(/\A[[^b-c]&&[^e]&&a-f]\z/, %w(a d f), %w(b c e g 0))
     check(/\A[\n\r\t]\z/, ["\n", "\r", "\t"])
@@ -695,9 +806,9 @@ class TestRegexp < Test::Unit::TestCase
 
   def test_posix_bracket
     check(/\A[[:alpha:]0]\z/, %w(0 a), %w(1 .))
-    check(/\A[[:^alpha:]0]\z/, %w(0 1 .), "a")
-    check(/\A[[:alpha\:]]\z/, %w(a l p h a :), %w(b 0 1 .))
-    check(/\A[[:alpha:foo]0]\z/, %w(0 a), %w(1 .))
+    check(eval('/\A[[:^alpha:]0]\z/'), %w(0 1 .), "a")
+    check(eval('/\A[[:alpha\:]]\z/'), %w(a l p h a :), %w(b 0 1 .))
+    check(eval('/\A[[:alpha:foo]0]\z/'), %w(0 a), %w(1 .))
     check(/\A[[:xdigit:]&&[:alpha:]]\z/, "a", %w(g 0))
     check('\A[[:abcdefghijklmnopqrstu:]]+\z', "[]")
     failcheck('[[:alpha')
@@ -794,9 +905,28 @@ class TestRegexp < Test::Unit::TestCase
     #assert_match(/^(\ufb05)\1\1$/i, "\ufb05\ufb06st") # this must be bug...
     assert_match(/^\ufb05{3}$/i, "\ufb05\ufb06st")
     assert_match(/^\u03b9\u0308\u0301$/i, "\u0390")
-    assert_nothing_raised { 0x03ffffff.chr("utf-8").size }
-    assert_nothing_raised { 0x7fffffff.chr("utf-8").size }
   end
+
+  def test_unicode_age
+    assert_match(/^\p{Age=6.0}$/u, "\u261c")
+    assert_match(/^\p{Age=1.1}$/u, "\u261c")
+    assert_no_match(/^\P{age=6.0}$/u, "\u261c")
+
+    assert_match(/^\p{age=6.0}$/u, "\u31f6")
+    assert_match(/^\p{age=3.2}$/u, "\u31f6")
+    assert_no_match(/^\p{age=3.1}$/u, "\u31f6")
+    assert_no_match(/^\p{age=3.0}$/u, "\u31f6")
+    assert_no_match(/^\p{age=1.1}$/u, "\u31f6")
+
+    assert_match(/^\p{age=6.0}$/u, "\u2754")
+    assert_no_match(/^\p{age=5.0}$/u, "\u2754")
+    assert_no_match(/^\p{age=4.0}$/u, "\u2754")
+    assert_no_match(/^\p{age=3.0}$/u, "\u2754")
+    assert_no_match(/^\p{age=2.0}$/u, "\u2754")
+    assert_no_match(/^\p{age=1.1}$/u, "\u2754")
+  end
+
+  MatchData_A = eval("class MatchData_\u{3042} < MatchData; self; end")
 
   def test_matchdata
     a = "haystack".match(/hay/)
@@ -804,19 +934,12 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal(a, b, '[ruby-core:24748]')
     h = {a => 42}
     assert_equal(42, h[b], '[ruby-core:24748]')
+    assert_match(/#<TestRegexp::MatchData_\u{3042}:/, MatchData_A.allocate.inspect)
   end
 
   def test_regexp_poped
     assert_nothing_raised { eval("a = 1; /\#{ a }/; a") }
     assert_nothing_raised { eval("a = 1; /\#{ a }/o; a") }
-  end
-
-  def test_optimize_last_anycharstar
-    s = "1" + " " * 5000000
-    assert_nothing_raised { s.match(/(\d) (.*)/) }
-    assert_equal("1", $1)
-    assert_equal(" " * 4999999, $2)
-    assert_match(/(?:A.+){2}/, 'AbAb')
   end
 
   def test_invalid_fragment
@@ -825,11 +948,24 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_dup_warn
-    assert_in_out_err(%w/-w -U/, "#coding:utf-8\nx=/[\u3042\u3041]/\n!x", [], [])
-    assert_in_out_err(%w/-w -U/, "#coding:utf-8\nx=/[\u3042\u3042]/\n!x", [], /duplicated/u, nil,
-                      encoding: Encoding::UTF_8)
-    assert_in_out_err(%w/-w -U/, "#coding:utf-8\nx=/[\u3042\u3041-\u3043]/\n!x", [], /duplicated/u, nil,
-                      encoding: Encoding::UTF_8)
+    assert_warning(/duplicated/) { Regexp.new('[\u3042\u3043\u3042]') }
+    assert_warning(/duplicated/) { Regexp.new('[\u3042\u3043\u3043]') }
+    assert_warning(/\A\z/) { Regexp.new('[\u3042\u3044\u3043]') }
+    assert_warning(/\A\z/) { Regexp.new('[\u3042\u3045\u3043]') }
+    assert_warning(/\A\z/) { Regexp.new('[\u3042\u3045\u3044]') }
+    assert_warning(/\A\z/) { Regexp.new('[\u3042\u3045\u3043-\u3044]') }
+    assert_warning(/duplicated/) { Regexp.new('[\u3042\u3045\u3042-\u3043]') }
+    assert_warning(/duplicated/) { Regexp.new('[\u3042\u3045\u3044-\u3045]') }
+    assert_warning(/\A\z/) { Regexp.new('[\u3042\u3046\u3044]') }
+    assert_warning(/duplicated/) { Regexp.new('[\u1000-\u2000\u3042-\u3046\u3044]') }
+    assert_warning(/duplicated/) { Regexp.new('[\u3044\u3041-\u3047]') }
+    assert_warning(/duplicated/) { Regexp.new('[\u3042\u3044\u3046\u3041-\u3047]') }
+
+    bug7471 = '[ruby-core:50344]'
+    assert_warning('', bug7471) { Regexp.new('[\D]') =~ "\u3042" }
+
+    bug8151 = '[ruby-core:53649]'
+    assert_warning(/\A\z/, bug8151) { Regexp.new('(?:[\u{33}])').to_s }
   end
 
   def test_property_warn
@@ -841,5 +977,126 @@ class TestRegexp < Test::Unit::TestCase
     error = assert_raise(SyntaxError) {eval('/\x/', nil, bug3539)}
     assert_match(/invalid hex escape/, error.message)
     assert_equal(1, error.message.scan(/.*invalid .*escape.*/i).size, bug3539)
+  end
+
+  def test_raw_hyphen_and_tk_char_type_after_range
+    bug6853 = '[ruby-core:47115]'
+    # use Regexp.new instead of literal to ignore a parser warning.
+    check(Regexp.new('[0-1-\\s]'), [' ', '-'], ['2', 'a'], bug6853)
+  end
+
+  def test_error_message_on_failed_conversion
+    bug7539 = '[ruby-core:50733]'
+    assert_equal false, /x/=== 42
+    assert_raise_with_message(TypeError, 'no implicit conversion of Fixnum into String', bug7539) {
+      Regexp.quote(42)
+    }
+  end
+
+  def test_conditional_expression
+    bug8583 = '[ruby-dev:47480] [Bug #8583]'
+
+    conds = {"xy"=>true, "yx"=>true, "xx"=>false, "yy"=>false}
+    assert_match_each(/\A((x)|(y))(?(2)y|x)\z/, conds, bug8583)
+    assert_match_each(/\A((?<x>x)|(?<y>y))(?(<x>)y|x)\z/, conds, bug8583)
+  end
+
+  def test_options_in_look_behind
+    assert_nothing_raised {
+      assert_match_at("(?<=(?i)ab)cd", "ABcd", [[2,4]])
+      assert_match_at("(?<=(?i:ab))cd", "ABcd", [[2,4]])
+      assert_match_at("(?<!(?i)ab)cd", "aacd", [[2,4]])
+      assert_match_at("(?<!(?i:ab))cd", "aacd", [[2,4]])
+
+      assert_not_match("(?<=(?i)ab)cd", "ABCD")
+      assert_not_match("(?<=(?i:ab))cd", "ABCD")
+      assert_not_match("(?<!(?i)ab)cd", "ABcd")
+      assert_not_match("(?<!(?i:ab))cd", "ABcd")
+    }
+  end
+
+  def test_once
+    pr1 = proc{|i| /#{i}/o}
+    assert_equal(/0/, pr1.call(0))
+    assert_equal(/0/, pr1.call(1))
+    assert_equal(/0/, pr1.call(2))
+  end
+
+  def test_once_recursive
+    pr2 = proc{|i|
+      if i > 0
+        /#{pr2.call(i-1).to_s}#{i}/
+      else
+        //
+      end
+    }
+    assert_equal(/(?-mix:(?-mix:(?-mix:)1)2)3/, pr2.call(3))
+  end
+
+  def test_once_multithread
+    m = Mutex.new
+    pr3 = proc{|i|
+      /#{m.unlock; sleep 0.5; i}/o
+    }
+    ary = []
+    n = 0
+    th1 = Thread.new{m.lock; ary << pr3.call(n+=1)}
+    th2 = Thread.new{m.lock; ary << pr3.call(n+=1)}
+    th1.join; th2.join
+    assert_equal([/1/, /1/], ary)
+  end
+
+  def test_once_escape
+    pr4 = proc{|i|
+      catch(:xyzzy){
+        /#{throw :xyzzy, i}/o =~ ""
+        :ng
+      }
+    }
+    assert_equal(0, pr4.call(0))
+    assert_equal(1, pr4.call(1))
+  end
+
+  def test_eq_tilde_can_be_overridden
+    assert_separately([], <<-RUBY)
+      class Regexp
+        undef =~
+        def =~(str)
+          "foo"
+        end
+      end
+
+      assert_equal("foo", // =~ "")
+    RUBY
+  end
+
+  # This assertion is for porting x2() tests in testpy.py of Onigmo.
+  def assert_match_at(re, str, positions, msg = nil)
+    re = Regexp.new(re) unless re.is_a?(Regexp)
+
+    match = re.match(str)
+
+    assert_not_nil match, message(msg) {
+      "Expected #{re.inspect} to match #{str.inspect}"
+    }
+
+    if match
+      actual_positions = (0...match.size).map { |i|
+        [match.begin(i), match.end(i)]
+      }
+
+      assert_equal positions, actual_positions, message(msg) {
+        "Expected #{re.inspect} to match #{str.inspect} at: #{positions.inspect}"
+      }
+    end
+  end
+
+  def assert_match_each(re, conds, msg = nil)
+    errs = conds.select {|str, match| match ^ (re =~ str)}
+    msg = message(msg) {
+      "Expected #{re.inspect} to\n" +
+      errs.map {|str, match| "\t#{'not ' unless match}match #{str.inspect}"}.join(",\n")
+    }
+    assert_empty(errs, msg)
   end
 end

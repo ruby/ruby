@@ -1,15 +1,15 @@
-# -*- coding: euc-jp -*-
+# -*- coding: utf-8 -*-
 #
 # Canvas Text widget demo (called by 'widget')
 #
 
-# toplevel widget ¤¬Â¸ºß¤¹¤ì¤Ðºï½ü¤¹¤ë
+# toplevel widget ãŒå­˜åœ¨ã™ã‚Œã°å‰Šé™¤ã™ã‚‹
 if defined?($ctext_demo) && $ctext_demo
   $ctext_demo.destroy
   $ctext_demo = nil
 end
 
-# demo ÍÑ¤Î toplevel widget ¤òÀ¸À®
+# demo ç”¨ã® toplevel widget ã‚’ç”Ÿæˆ
 $ctext_demo = TkToplevel.new {|w|
   title("Canvas Text Demonstration")
   iconname("Text")
@@ -18,23 +18,23 @@ $ctext_demo = TkToplevel.new {|w|
 
 base_frame = TkFrame.new($ctext_demo).pack(:fill=>:both, :expand=>true)
 
-# label À¸À®
+# label ç”Ÿæˆ
 TkLabel.new(base_frame, 'font'=>$font, 'wraplength'=>'5i', 'justify'=>'left',
-            'text'=>"¤³¤Î¥¦¥£¥ó¥É¥¦¤Ë¤Ï¥­¥ã¥ó¥Ð¥¹widget¤Î¥Æ¥­¥¹¥Èµ¡Ç½¤ò¥Ç¥â¤¹¤ë¤¿¤á¤Î¥Æ¥­¥¹¥ÈÊ¸»úÎó¤¬É½¼¨¤µ¤ì¤Æ¤¤¤Þ¤¹¡£¥Þ¥¦¥¹¤ò»Í³Ñ¤ÎÃæ¤Ë»ý¤Ã¤Æ¤¤¤­¡¢¥¯¥ê¥Ã¥¯¤¹¤ë¤È°ÌÃÖ¤®¤áÍÑ¤ÎÅÀ¤«¤é¤ÎÁêÂÐ°ÌÃÖ¤òÊÑ¤¨¤¿¤ê¡¢¹ÔÂ·¤¨¤òÊÑ¤¨¤¿¤ê¤¹¤ë¤³¤È¤¬¤Ç¤­¤Þ¤¹¡£¤Þ¤¿°Ê²¼¤Î¤è¤¦¤ÊÊÔ½¸¤Î¤¿¤á¤Î´ÊÃ±¤Ê¥Ð¥¤¥ó¥Ç¥£¥ó¥°¤ò¥µ¥Ý¡¼¥È¤·¤Æ¤¤¤Þ¤¹¡£
+            'text'=>"ã“ã®ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã«ã¯ã‚­ãƒ£ãƒ³ãƒã‚¹widgetã®ãƒ†ã‚­ã‚¹ãƒˆæ©Ÿèƒ½ã‚’ãƒ‡ãƒ¢ã™ã‚‹ãŸã‚ã®ãƒ†ã‚­ã‚¹ãƒˆæ–‡å­—åˆ—ãŒè¡¨ç¤ºã•ã‚Œã¦ã„ã¾ã™ã€‚ãƒžã‚¦ã‚¹ã‚’å››è§’ã®ä¸­ã«æŒã£ã¦ã„ãã€ã‚¯ãƒªãƒƒã‚¯ã™ã‚‹ã¨ä½ç½®ãŽã‚ç”¨ã®ç‚¹ã‹ã‚‰ã®ç›¸å¯¾ä½ç½®ã‚’å¤‰ãˆãŸã‚Šã€è¡Œæƒãˆã‚’å¤‰ãˆãŸã‚Šã™ã‚‹ã“ã¨ãŒã§ãã¾ã™ã€‚ã¾ãŸä»¥ä¸‹ã®ã‚ˆã†ãªç·¨é›†ã®ãŸã‚ã®ç°¡å˜ãªãƒã‚¤ãƒ³ãƒ‡ã‚£ãƒ³ã‚°ã‚’ã‚µãƒãƒ¼ãƒˆã—ã¦ã„ã¾ã™ã€‚
 
-  1. ¥Þ¥¦¥¹¤ò»ý¤Ã¤Æ¤¤¤­¡¢¥¯¥ê¥Ã¥¯¤·¡¢ÆþÎÏ¤Ç¤­¤Þ¤¹¡£
-  2. ¥Ü¥¿¥ó1¤ÇÁªÂò¤Ç¤­¤Þ¤¹¡£
-  3. ¥Þ¥¦¥¹¤Î°ÌÃÖ¤Ë¥Ü¥¿¥ó2¤ÇÁªÂò¤·¤¿¥Æ¥­¥¹¥È¤ò¥³¥Ô¡¼¤Ç¤­¤Þ¤¹¡£
-  4.¥Ð¥Ã¥¯¥¹¥Ú¡¼¥¹¤ò¥³¥ó¥È¥í¡¼¥ë-H¤ÇÁÞÆþ¥«¡¼¥½¥ë¤ÎÄ¾Á°¤ÎÊ¸»ú¤òºï½ü¤·¤Þ¤¹¡£
-  5. Delete¥­¡¼¤ÏÁÞÆþ¥«¡¼¥½¥ë¤ÎÄ¾¸å¤ÎÊ¸»ú¤òºï½ü¤·¤Þ¤¹¡£"){
+  1. ãƒžã‚¦ã‚¹ã‚’æŒã£ã¦ã„ãã€ã‚¯ãƒªãƒƒã‚¯ã—ã€å…¥åŠ›ã§ãã¾ã™ã€‚
+  2. ãƒœã‚¿ãƒ³1ã§é¸æŠžã§ãã¾ã™ã€‚
+  3. ãƒžã‚¦ã‚¹ã®ä½ç½®ã«ãƒœã‚¿ãƒ³2ã§é¸æŠžã—ãŸãƒ†ã‚­ã‚¹ãƒˆã‚’ã‚³ãƒ”ãƒ¼ã§ãã¾ã™ã€‚
+  4.ãƒãƒƒã‚¯ã‚¹ãƒšãƒ¼ã‚¹ã‚’ã‚³ãƒ³ãƒˆãƒ­ãƒ¼ãƒ«-Hã§æŒ¿å…¥ã‚«ãƒ¼ã‚½ãƒ«ã®ç›´å‰ã®æ–‡å­—ã‚’å‰Šé™¤ã—ã¾ã™ã€‚
+  5. Deleteã‚­ãƒ¼ã¯æŒ¿å…¥ã‚«ãƒ¼ã‚½ãƒ«ã®ç›´å¾Œã®æ–‡å­—ã‚’å‰Šé™¤ã—ã¾ã™ã€‚"){
   pack('side'=>'top')
 }
 
-# frame À¸À®
+# frame ç”Ÿæˆ
 $ctext_buttons = TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
-    #text 'Î»²ò'
-    text 'ÊÄ¤¸¤ë'
+    #text 'äº†è§£'
+    text 'é–‰ã˜ã‚‹'
     command proc{
       tmppath = $ctext_demo
       $ctext_demo = nil
@@ -43,30 +43,30 @@ $ctext_buttons = TkFrame.new(base_frame) {|frame|
   }.pack('side'=>'left', 'expand'=>'yes')
 
   TkButton.new(frame) {
-    text '¥³¡¼¥É»²¾È'
+    text 'ã‚³ãƒ¼ãƒ‰å‚ç…§'
     command proc{showCode 'ctext'}
   }.pack('side'=>'left', 'expand'=>'yes')
 }
 $ctext_buttons.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
-# canvas À¸À®
+# canvas ç”Ÿæˆ
 $ctext_canvas = TkCanvas.new(base_frame, 'relief'=>'flat',
                              'borderwidth'=>0, 'width'=>500, 'height'=>350)
 $ctext_canvas.pack('side'=>'top', 'expand'=>'yes', 'fill'=>'both')
 
-# font ÀßÄê
+# font è¨­å®š
 if $tk_version =~ /^4.*/
   textFont = '-*-Helvetica-Medium-R-Normal--*-240-*-*-*-*-*-*'
 else
   textFont = 'Helvetica 24'
 end
 
-# canvas ÀßÄê
+# canvas è¨­å®š
 TkcRectangle.new($ctext_canvas, 245, 195, 255, 205,
                  'outline'=>'black', 'fill'=>'red')
 
 ctag_text_param = {
-  'text'=>"¤³¤ì¤Ï¥­¥ã¥ó¥Ð¥¹widget¤Î¥Æ¥­¥¹¥Èµ¡Ç½¤ò¥Ç¥â¤¹¤ë¤¿¤á¤ÎÊ¸»úÎó¤Ç¤¹¡£\n¾å¤Ç½Ò¤Ù¤¿¤è¤¦¤ÊÊÔ½¸¤ò²ÄÇ½¤È¤¹¤ë¤¿¤á¤Î¥Ð¥¤¥ó¥Ç¥£¥ó¥°¤ò»Ü¤·¤Æ¤¤¤Þ¤¹¡£",
+  'text'=>"ã“ã‚Œã¯ã‚­ãƒ£ãƒ³ãƒã‚¹widgetã®ãƒ†ã‚­ã‚¹ãƒˆæ©Ÿèƒ½ã‚’ãƒ‡ãƒ¢ã™ã‚‹ãŸã‚ã®æ–‡å­—åˆ—ã§ã™ã€‚\nä¸Šã§è¿°ã¹ãŸã‚ˆã†ãªç·¨é›†ã‚’å¯èƒ½ã¨ã™ã‚‹ãŸã‚ã®ãƒã‚¤ãƒ³ãƒ‡ã‚£ãƒ³ã‚°ã‚’æ–½ã—ã¦ã„ã¾ã™ã€‚",
   'width'=>440, 'anchor'=>'n', 'justify'=>'left'
 }
 if $tk_version =~ /^4.*/

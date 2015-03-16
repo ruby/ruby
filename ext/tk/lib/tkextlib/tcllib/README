@@ -4,14 +4,14 @@
 Tcllib includes many utilities. But currently, supports TKLib part
 only (see the following 'tcllib contents').
 
-If you request to support others, please send your message to one of 
-ruby-talk/ruby-list/ruby-dev/ruby-ext mailing lists. 
+If you request to support others, please send your message to one of
+ruby-talk/ruby-list/ruby-dev/ruby-ext mailing lists.
 
 -----<from "What is tcllib?">----------------------------
-Tcllib is a collection of utility modules for Tcl. These modules provide 
-a wide variety of functionality, from implementations of standard data 
-structures to implementations of common networking protocols. The intent 
-is to collect commonly used function into a single library, which users 
+Tcllib is a collection of utility modules for Tcl. These modules provide
+a wide variety of functionality, from implementations of standard data
+structures to implementations of common networking protocols. The intent
+is to collect commonly used function into a single library, which users
 can rely on to be available and stable.
 ---------------------------------------------------------
 
@@ -124,7 +124,7 @@ Grammars and finite automata
 
 TKLib
     * Plotchart - Simple plotting and charting package
-    * autoscroll - Provides for a scrollbar to automatically mapped and 
+    * autoscroll - Provides for a scrollbar to automatically mapped and
                    unmapped as needed
     * ctext - An extended text widget with customizable Syntax highlighting
     * cursor - Procedures to handle CURSOR data

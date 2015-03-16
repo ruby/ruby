@@ -5,7 +5,7 @@ require "test/unit"
 class TestEUC_JP < Test::Unit::TestCase
   def test_mbc_case_fold
     assert_match(/(£á)(a)\1\2/i, "£áa£áA")
-    assert_no_match(/(£á)(a)\1\2/i, "£áa£ÁA")
+    assert_match(/(£á)(a)\1\2/i, "£áa£ÁA")
   end
 
   def test_property

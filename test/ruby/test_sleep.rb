@@ -1,12 +1,15 @@
 require 'test/unit'
+require 'etc'
 
 class TestSleep < Test::Unit::TestCase
   def test_sleep_5sec
     GC.disable
-    start = Time.now
+    start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
     sleep 5
-    slept = Time.now-start
-    assert_in_delta(5.0, slept, 0.1, "[ruby-core:18015]: longer than expected")
+    slept = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start
+    bottom = 5.0
+    assert_operator(slept, :>=, bottom)
+    assert_operator(slept, :<=, 6.0, "[ruby-core:18015]: longer than expected")
   ensure
     GC.enable
   end

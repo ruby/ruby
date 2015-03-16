@@ -11,27 +11,27 @@ module Rake
   #
   # The PackageTask will create the following targets:
   #
-  # [<b>:package</b>]
+  # +:package+ ::
   #   Create all the requested package files.
   #
-  # [<b>:clobber_package</b>]
+  # +:clobber_package+ ::
   #   Delete all the package files.  This target is automatically
   #   added to the main clobber target.
   #
-  # [<b>:repackage</b>]
+  # +:repackage+ ::
   #   Rebuild the package files from scratch, even if they are not out
   #   of date.
   #
-  # [<b>"<em>package_dir</em>/<em>name</em>-<em>version</em>.tgz"</b>]
+  # <tt>"<em>package_dir</em>/<em>name</em>-<em>version</em>.tgz"</tt> ::
   #   Create a gzipped tar package (if <em>need_tar</em> is true).
   #
-  # [<b>"<em>package_dir</em>/<em>name</em>-<em>version</em>.tar.gz"</b>]
+  # <tt>"<em>package_dir</em>/<em>name</em>-<em>version</em>.tar.gz"</tt> ::
   #   Create a gzipped tar package (if <em>need_tar_gz</em> is true).
   #
-  # [<b>"<em>package_dir</em>/<em>name</em>-<em>version</em>.tar.bz2"</b>]
+  # <tt>"<em>package_dir</em>/<em>name</em>-<em>version</em>.tar.bz2"</tt> ::
   #   Create a bzip2'd tar package (if <em>need_tar_bz2</em> is true).
   #
-  # [<b>"<em>package_dir</em>/<em>name</em>-<em>version</em>.zip"</b>]
+  # <tt>"<em>package_dir</em>/<em>name</em>-<em>version</em>.zip"</tt> ::
   #   Create a zip package archive (if <em>need_zip</em> is true).
   #
   # Example:
@@ -51,13 +51,16 @@ module Rake
     # Directory used to store the package files (default is 'pkg').
     attr_accessor :package_dir
 
-    # True if a gzipped tar file (tgz) should be produced (default is false).
+    # True if a gzipped tar file (tgz) should be produced (default is
+    # false).
     attr_accessor :need_tar
 
-    # True if a gzipped tar file (tar.gz) should be produced (default is false).
+    # True if a gzipped tar file (tar.gz) should be produced (default
+    # is false).
     attr_accessor :need_tar_gz
 
-    # True if a bzip2'd tar file (tar.bz2) should be produced (default is false).
+    # True if a bzip2'd tar file (tar.bz2) should be produced (default
+    # is false).
     attr_accessor :need_tar_bz2
 
     # True if a zip file should be produced (default is false)
@@ -72,7 +75,10 @@ module Rake
     # Zip command for zipped archives.  The default is 'zip'.
     attr_accessor :zip_command
 
-    # Create a Package Task with the given name and version.
+    # Create a Package Task with the given name and version.  Use +:noversion+
+    # as the version to build a package without a version or to provide a
+    # fully-versioned package name.
+
     def initialize(name=nil, version=nil)
       init(name, version)
       yield self if block_given?
@@ -118,9 +124,10 @@ module Rake
       ].each do |(need, file, flag)|
         if need
           task :package => ["#{package_dir}/#{file}"]
-          file "#{package_dir}/#{file}" => [package_dir_path] + package_files do
+          file "#{package_dir}/#{file}" =>
+            [package_dir_path] + package_files do
             chdir(package_dir) do
-              sh %{#{@tar_command} #{flag}cvf #{file} #{package_name}}
+              sh @tar_command, "#{flag}cvf", file, package_name
             end
           end
         end
@@ -128,21 +135,19 @@ module Rake
 
       if need_zip
         task :package => ["#{package_dir}/#{zip_file}"]
-        file "#{package_dir}/#{zip_file}" => [package_dir_path] + package_files do
+        file "#{package_dir}/#{zip_file}" =>
+          [package_dir_path] + package_files do
           chdir(package_dir) do
-            sh %{#{@zip_command} -r #{zip_file} #{package_name}}
+            sh @zip_command, "-r", zip_file, package_name
           end
         end
       end
 
-      directory package_dir
-
-      file package_dir_path => @package_files do
-        mkdir_p package_dir rescue nil
+      directory package_dir_path => @package_files do
         @package_files.each do |fn|
           f = File.join(package_dir_path, fn)
           fdir = File.dirname(f)
-          mkdir_p(fdir) if !File.exist?(fdir)
+          mkdir_p(fdir) unless File.exist?(fdir)
           if File.directory?(fn)
             mkdir_p(f)
           else
@@ -154,25 +159,37 @@ module Rake
       self
     end
 
+    # The name of this package
+
     def package_name
       @version ? "#{@name}-#{@version}" : @name
     end
+
+    # The directory this package will be built in
 
     def package_dir_path
       "#{package_dir}/#{package_name}"
     end
 
+    # The package name with .tgz added
+
     def tgz_file
       "#{package_name}.tgz"
     end
+
+    # The package name with .tar.gz added
 
     def tar_gz_file
       "#{package_name}.tar.gz"
     end
 
+    # The package name with .tar.bz2 added
+
     def tar_bz2_file
       "#{package_name}.tar.bz2"
     end
+
+    # The package name with .zip added
 
     def zip_file
       "#{package_name}.zip"

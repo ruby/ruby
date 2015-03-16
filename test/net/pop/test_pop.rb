@@ -57,7 +57,7 @@ class TestPOP < Test::Unit::TestCase
   def test_apop_invalid_at
     pop_test(@stamp_base.sub('@', '.')) do |pop|
       assert_instance_of Net::APOP, pop
-      e = assert_raise Net::POPAuthenticationError do
+      assert_raise Net::POPAuthenticationError do
         pop.start(@ok_user, @users[@ok_user])
       end
     end
@@ -67,7 +67,7 @@ class TestPOP < Test::Unit::TestCase
     host = 'localhost'
     server = TCPServer.new(host, 0)
     port = server.addr[1]
-    thread = Thread.start do
+    server_thread = Thread.start do
       sock = server.accept
       begin
         pop_server_loop(sock, apop)
@@ -75,20 +75,24 @@ class TestPOP < Test::Unit::TestCase
         sock.close
       end
     end
-    begin
-      pop = Net::POP3::APOP(apop).new(host, port)
-      #pop.set_debug_output $stderr
-      yield pop
-    ensure
+    client_thread = Thread.start do
       begin
-        pop.finish
-      rescue IOError
-        raise unless $!.message == "POP session not yet started"
+        begin
+          pop = Net::POP3::APOP(apop).new(host, port)
+          #pop.set_debug_output $stderr
+          yield pop
+        ensure
+          begin
+            pop.finish
+          rescue IOError
+            raise unless $!.message == "POP session not yet started"
+          end
+        end
+      ensure
+        server.close
       end
     end
-  ensure
-    server.close
-    thread.value
+    assert_join_threads([client_thread, server_thread])
   end
 
   def pop_server_loop(sock, apop)

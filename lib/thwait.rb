@@ -1,8 +1,8 @@
 #
 #   thwait.rb - thread synchronization class
-#   	$Release Version: 0.9 $
-#   	$Revision: 1.3 $
-#   	by Keiju ISHITSUKA(Nihon Rational Software Co.,Ltd.)
+#       $Release Version: 0.9 $
+#       $Revision: 1.3 $
+#       by Keiju ISHITSUKA(Nihon Rational Software Co.,Ltd.)
 
 require "thread.rb"
 require "e2mmap.rb"
@@ -15,18 +15,16 @@ require "e2mmap.rb"
 #
 # Example:
 #
-#   ThreadsWait.all_wait(thr1, thr2, ...) do |t|
+#   ThreadsWait.all_waits(thr1, thr2, ...) do |t|
 #     STDERR.puts "Thread #{t} has terminated."
 #   end
 #
-#   
+#
 #   th = ThreadsWait.new(thread1,...)
 #   th.next_wait # next one to be done
-#    
+#
 #
 class ThreadsWait
-  RCS_ID='-$Id: thwait.rb,v 1.3 1998/06/26 03:19:34 keiju Exp keiju $-'
-
   extend Exception2MessageMapper
   def_exception("ErrNoWaitingThread", "No threads for waiting.")
   def_exception("ErrNoFinishedThread", "No finished threads.")
@@ -39,7 +37,7 @@ class ThreadsWait
     tw = ThreadsWait.new(*threads)
     if block_given?
       tw.all_waits do |th|
-	yield th
+        yield th
       end
     else
       tw.all_waits
@@ -57,7 +55,7 @@ class ThreadsWait
   end
 
   # Returns the array of threads that have not terminated yet.
-  attr :threads
+  attr_reader :threads
 
   #
   # Returns +true+ if there are no threads in the pool still running.
@@ -91,11 +89,11 @@ class ThreadsWait
     @threads.concat threads
     for th in threads
       Thread.start(th) do |t|
-	begin
-	  t.join
-	ensure
-	  @wait_queue.push t
-	end
+        begin
+          t.join
+        ensure
+          @wait_queue.push t
+        end
       end
     end
   end
@@ -131,13 +129,12 @@ class ThreadsWait
   end
 end
 
-ThWait = ThreadsWait
+##
+# An alias for ThreadsWait from thwait.rb
 
+ThWait = ThreadsWait
 
 # Documentation comments:
 #  - Source of documentation is evenly split between Nutshell, existing
 #    comments, and my own rephrasing.
 #  - I'm not particularly confident that the comments are all exactly correct.
-#  - The history, etc., up the top appears in the RDoc output.  Perhaps it would
-#    be better to direct that not to appear, and put something else there
-#    instead.

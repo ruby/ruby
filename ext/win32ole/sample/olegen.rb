@@ -8,7 +8,7 @@ require 'win32ole'
 class WIN32COMGen
   def initialize(typelib)
     @typelib = typelib
-    @reciever = ""
+    @receiver = ""
   end
   attr_reader :typelib
 
@@ -87,7 +87,7 @@ class WIN32COMGen
   end
 
   def generate_method_body(method, disptype, types=nil)
-    "    ret = #{@reciever}#{disptype}(#{method.dispid}, [" +
+    "    ret = #{@receiver}#{disptype}(#{method.dispid}, [" +
     generate_args(method).gsub("=nil", "") +
     "], [" +
     generate_argtypes(method, types) +
@@ -303,10 +303,10 @@ STR
     if klass.ole_type == "Class" &&
        klass.guid &&
        klass.progid
-      @reciever = "@dispatch."
+      @receiver = "@dispatch."
       define_class(klass, io)
     else
-      @reciever = ""
+      @receiver = ""
       define_module(klass, io)
     end
     generate_constants(klass, io)

@@ -79,7 +79,7 @@ class TestDateStrftime < Test::Unit::TestCase
 	assert_equal(f2, d.strftime(f2), [f2, s].inspect)
       end
       case f[-1,1]
-      when 'd', 'e', 'H', 'I', 'm', 'M', 'S', 'u', 'U', 'V', 'w', 'W', 'y'
+      when 'd', 'e', 'H', 'k', 'I', 'l', 'm', 'M', 'S', 'u', 'U', 'V', 'w', 'W', 'y'
 	f2 = f.sub(/\A%/, '%O')
 	assert_equal(s[0], d.strftime(f2), [f2, s].inspect)
       else
@@ -124,9 +124,7 @@ class TestDateStrftime < Test::Unit::TestCase
 
   def test_strftime__3_2
     s = Time.now.strftime('%G')
-    if s.empty? || s == '%G'
-      return
-    end
+    skip if s.empty? || s == '%G'
     (Date.new(1970,1,1)..Date.new(2037,12,31)).each do |d|
       t = Time.utc(d.year,d.mon,d.mday)
       assert_equal(t.strftime('%G'), d.strftime('%G'))
@@ -186,10 +184,23 @@ class TestDateStrftime < Test::Unit::TestCase
     s = '2006-08-08T23:15:33'
     (-24..24).collect{|x| '%+.2d' % x}.each do |hh|
       %w(00 30).each do |mm|
+	r = hh + mm
+	if r[-4,4] == '2430'
+	  r = '+0000'
+	end
 	d = DateTime.parse(s + hh + mm)
-	assert_equal(hh + mm, d.strftime('%z'))
+	assert_equal(r, d.strftime('%z'))
       end
     end
+  end
+
+  def test_strftime_milli
+    s = '1970-01-01T00:00:00.123456789'
+    d = DateTime.parse(s)
+    assert_equal('123', d.strftime('%Q'))
+    s = '1970-01-02T02:03:04.123456789'
+    d = DateTime.parse(s)
+    assert_equal('93784123', d.strftime('%Q'))
   end
 
   def test_strftime__minus
@@ -325,6 +336,21 @@ class TestDateStrftime < Test::Unit::TestCase
     assert_equal('+09:08:07', d.strftime('%:::z'))
   end
 
+  def test_strftime__gnuext_complex
+    d = DateTime.parse('2001-02-03T04:05:06+09:00')
+    assert_equal('Sat Feb  3 04:05:06 2001', d.strftime('%-100c'))
+    assert_equal('Sat Feb  3 04:05:06 2001'.rjust(100), d.strftime('%100c'))
+    assert_equal('Sat Feb  3 04:05:06 2001'.rjust(100), d.strftime('%_100c'))
+    assert_equal('Sat Feb  3 04:05:06 2001'.rjust(100, '0'), d.strftime('%0100c'))
+    assert_equal('SAT FEB  3 04:05:06 2001', d.strftime('%^c'))
+
+    assert_equal('Sat Feb  3 04:05:06 +09:00 2001', d.strftime('%-100+'))
+    assert_equal('Sat Feb  3 04:05:06 +09:00 2001'.rjust(100), d.strftime('%100+'))
+    assert_equal('Sat Feb  3 04:05:06 +09:00 2001'.rjust(100), d.strftime('%_100+'))
+    assert_equal('Sat Feb  3 04:05:06 +09:00 2001'.rjust(100, '0'), d.strftime('%0100+'))
+    assert_equal('SAT FEB  3 04:05:06 +09:00 2001', d.strftime('%^+'))
+  end
+
   def test__different_format
     d = Date.new(2001,2,3)
 
@@ -332,8 +358,8 @@ class TestDateStrftime < Test::Unit::TestCase
     assert_equal(d.ctime, d.asctime)
 
     assert_equal('2001-02-03', d.iso8601)
-    assert_equal(d.rfc3339, d.iso8601)
     assert_equal(d.xmlschema, d.iso8601)
+    assert_equal('2001-02-03T00:00:00+00:00', d.rfc3339)
     assert_equal('Sat, 3 Feb 2001 00:00:00 +0000', d.rfc2822)
     assert_equal(d.rfc822, d.rfc2822)
     assert_equal('Sat, 03 Feb 2001 00:00:00 GMT', d.httpdate)
@@ -356,9 +382,17 @@ class TestDateStrftime < Test::Unit::TestCase
     assert_equal('2001-02-03T04:05:06.123+00:00', d2.iso8601(3))
     assert_equal('2001-02-03T04:05:06.123+00:00', d2.rfc3339(3))
     assert_equal('H13.02.03T04:05:06.123+00:00', d2.jisx0301(3))
+    assert_equal('2001-02-03T04:05:06.123+00:00', d2.iso8601(3.5))
+    assert_equal('2001-02-03T04:05:06.123+00:00', d2.rfc3339(3.5))
+    assert_equal('H13.02.03T04:05:06.123+00:00', d2.jisx0301(3.5))
     assert_equal('2001-02-03T04:05:06.123456000+00:00', d2.iso8601(9))
     assert_equal('2001-02-03T04:05:06.123456000+00:00', d2.rfc3339(9))
     assert_equal('H13.02.03T04:05:06.123456000+00:00', d2.jisx0301(9))
+    assert_equal('2001-02-03T04:05:06.123456000+00:00', d2.iso8601(9.9))
+    assert_equal('2001-02-03T04:05:06.123456000+00:00', d2.rfc3339(9.9))
+    assert_equal('H13.02.03T04:05:06.123456000+00:00', d2.jisx0301(9.9))
+
+    assert_equal('1800-01-01T00:00:00+00:00', DateTime.new(1800).jisx0301)
 
     assert_equal('1868-01-25', Date.parse('1868-01-25').jisx0301)
     assert_equal('1872-12-31', Date.parse('1872-12-31').jisx0301)

@@ -1,7 +1,9 @@
 require 'rss/2.0'
 
 module RSS
+  # The prefix for the iTunes XML namespace.
   ITUNES_PREFIX = 'itunes'
+  # The URI of the iTunes specification.
   ITUNES_URI = 'http://www.itunes.com/dtds/podcast-1.0.dtd'
 
   Rss.install_ns(ITUNES_PREFIX, ITUNES_URI)

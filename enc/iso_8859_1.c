@@ -107,7 +107,7 @@ apply_all_case_fold(OnigCaseFoldType flag,
 		    OnigEncoding enc ARG_UNUSED)
 {
   return onigenc_apply_all_case_fold_with_map(
-            sizeof(CaseFoldMap)/sizeof(OnigPairCaseFoldCodes), CaseFoldMap, 1,
+            numberof(CaseFoldMap), CaseFoldMap, 1,
             flag, f, arg);
 }
 
@@ -270,7 +270,9 @@ OnigEncodingDefine(iso_8859_1, ISO_8859_1) = {
   is_code_ctype,
   onigenc_not_support_get_ctype_code_range,
   onigenc_single_byte_left_adjust_char_head,
-  onigenc_always_true_is_allowed_reverse_match
+  onigenc_always_true_is_allowed_reverse_match,
+  0,
+  ONIGENC_FLAG_NONE,
 };
 ENC_ALIAS("ISO8859-1", "ISO-8859-1")
 

@@ -3,7 +3,7 @@
 #
 #  by A. Ito
 #
-#  This program reports the latest version of ruby interpreter
+#  This program reports the latest version of Ruby interpreter
 #  by connecting to ftp server at ruby-lang.org.
 #
 require 'pty'

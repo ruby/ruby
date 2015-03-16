@@ -1,14 +1,29 @@
+# coding: utf-8
+
 require 'test/unit'
 require 'webrick'
 require_relative 'webrick_testing'
 require "xmlrpc/server"
 require 'xmlrpc/client'
+require 'logger'
 
+module TestXMLRPC
 class Test_Webrick < Test::Unit::TestCase
   include WEBrick_Testing
 
-  def create_servlet
+  def create_servlet(server)
     s = XMLRPC::WEBrickServlet.new
+
+    basic_auth = WEBrick::HTTPAuth::BasicAuth.new(
+      :Realm => 'auth',
+      :UserDB => WEBrick::HTTPAuth::Htpasswd.new(File.expand_path('./htpasswd', File.dirname(__FILE__))),
+      :Logger => server.logger,
+    )
+
+    class << s; self end.send(:define_method, :service) {|req, res|
+      basic_auth.authenticate(req, res)
+      super(req, res)
+    }
 
     s.add_handler("test.add") do |a,b|
       a + b
@@ -32,9 +47,10 @@ class Test_Webrick < Test::Unit::TestCase
     return s
   end
 
-  def setup_http_server(port, use_ssl)
+  def setup_http_server_option(use_ssl)
     option = {
-      :Port => port,
+      :BindAddress => "localhost",
+      :Port => 0,
       :SSLEnable => use_ssl,
     }
     if use_ssl
@@ -45,21 +61,38 @@ class Test_Webrick < Test::Unit::TestCase
       )
     end
 
-    start_server(option) {|w| w.mount('/RPC2', create_servlet) }
-
-    @s = XMLRPC::Client.new3(:port => port, :use_ssl => use_ssl)
+    option
   end
 
-  PORT = 8070
   def test_client_server
     # NOTE: I don't enable SSL testing as this hangs
     [false].each do |use_ssl|
-      begin
-        setup_http_server(PORT, use_ssl)
-        do_test
-      ensure
-        stop_server
-      end
+      option = setup_http_server_option(use_ssl)
+      with_server(option, method(:create_servlet)) {|addr|
+        @s = XMLRPC::Client.new3(:host => addr.ip_address, :port => addr.ip_port, :use_ssl => use_ssl)
+        @s.user = 'admin'
+        @s.password = 'admin'
+        silent do
+          do_test
+        end
+        @s.http.finish
+        @s = XMLRPC::Client.new3(:host => addr.ip_address, :port => addr.ip_port, :use_ssl => use_ssl)
+        @s.user = '01234567890123456789012345678901234567890123456789012345678901234567890123456789'
+        @s.password = 'guest'
+        silent do
+          do_test
+        end
+        @s.http.finish
+      }
+    end
+  end
+
+  def silent
+    begin
+      back, $VERBOSE = $VERBOSE, nil
+      yield
+    ensure
+      $VERBOSE = back
     end
   end
 
@@ -94,5 +127,9 @@ class Test_Webrick < Test::Unit::TestCase
     ok, param = @s.call2('test.add', 1, 2, 3)
     assert_equal false, ok
     assert_equal(-99, param.faultCode)
+
+    # multibyte characters
+    assert_equal "あいうえおかきくけこ", @s.call('test.add', "あいうえお", "かきくけこ")
   end
+end
 end

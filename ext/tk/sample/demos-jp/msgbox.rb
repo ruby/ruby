@@ -1,15 +1,15 @@
-# -*- coding: euc-jp -*-
+# -*- coding: utf-8 -*-
 #
 # message boxes widget demo (called by 'widget')
 #
 
-# toplevel widget ¤¬Â¸ºß¤¹¤ì¤Ðºï½ü¤¹¤ë
+# toplevel widget ãŒå­˜åœ¨ã™ã‚Œã°å‰Šé™¤ã™ã‚‹
 if defined?($msgbox_demo) && $msgbox_demo
   $msgbox_demo.destroy
   $msgbox_demo = nil
 end
 
-# demo ÍÑ¤Î toplevel widget ¤òÀ¸À®
+# demo ç”¨ã® toplevel widget ã‚’ç”Ÿæˆ
 $msgbox_demo = TkToplevel.new {|w|
   title("Message Box Demonstration")
   iconname("messagebox")
@@ -18,15 +18,15 @@ $msgbox_demo = TkToplevel.new {|w|
 
 base_frame = TkFrame.new($msgbox_demo).pack(:fill=>:both, :expand=>true)
 
-# label À¸À®
+# label ç”Ÿæˆ
 TkLabel.new(base_frame, 'font'=>$font, 'wraplength'=>'4i', 'justify'=>'left',
-            'text'=>"¤Þ¤ºÉ½¼¨¤¹¤ë¥¢¥¤¥³¥ó¤È¥á¥Ã¥»¡¼¥¸¥Ü¥Ã¥¯¥¹¤Î¼ïÎà¤òÁª¤ó¤Ç²¼¤µ¤¤¡£¤½¤Î¸å¤Ë\"¥á¥Ã¥»¡¼¥¸¥Ü¥Ã¥¯¥¹\"¥Ü¥¿¥ó¤ò²¡¤¹¤È¡¢»ØÄê¤·¤¿¥á¥Ã¥»¡¼¥¸¥Ü¥Ã¥¯¥¹¤¬É½¼¨¤µ¤ì¤Þ¤¹¡£").pack('side'=>'top')
+            'text'=>"ã¾ãšè¡¨ç¤ºã™ã‚‹ã‚¢ã‚¤ã‚³ãƒ³ã¨ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ãƒœãƒƒã‚¯ã‚¹ã®ç¨®é¡žã‚’é¸ã‚“ã§ä¸‹ã•ã„ã€‚ãã®å¾Œã«\"ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ãƒœãƒƒã‚¯ã‚¹\"ãƒœã‚¿ãƒ³ã‚’æŠ¼ã™ã¨ã€æŒ‡å®šã—ãŸãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ãƒœãƒƒã‚¯ã‚¹ãŒè¡¨ç¤ºã•ã‚Œã¾ã™ã€‚").pack('side'=>'top')
 
-# frame À¸À®
+# frame ç”Ÿæˆ
 TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
-    #text 'Î»²ò'
-    text 'ÊÄ¤¸¤ë'
+    #text 'äº†è§£'
+    text 'é–‰ã˜ã‚‹'
     command proc{
       tmppath = $msgbox_demo
       $msgbox_demo = nil
@@ -35,17 +35,17 @@ TkFrame.new(base_frame) {|frame|
   }.pack('side'=>'left', 'expand'=>'yes')
 
   TkButton.new(frame) {
-    text '¥³¡¼¥É»²¾È'
+    text 'ã‚³ãƒ¼ãƒ‰å‚ç…§'
     command proc{showCode 'msgbox'}
   }.pack('side'=>'left', 'expand'=>'yes')
 
   TkButton.new(frame) {
-    text '¥á¥Ã¥»¡¼¥¸¥Ü¥Ã¥¯¥¹'
+    text 'ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ãƒœãƒƒã‚¯ã‚¹'
     command proc{showMessageBox $msgbox_demo}
   }.pack('side'=>'left', 'expand'=>'yes')
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
-# frame À¸À®
+# frame ç”Ÿæˆ
 $msgbox_leftframe  = TkFrame.new(base_frame)
 $msgbox_rightframe = TkFrame.new(base_frame)
 $msgbox_leftframe .pack('side'=>'left', 'expand'=>'yes', 'fill'=>'y',
@@ -53,7 +53,7 @@ $msgbox_leftframe .pack('side'=>'left', 'expand'=>'yes', 'fill'=>'y',
 $msgbox_rightframe.pack('side'=>'left', 'expand'=>'yes', 'fill'=>'y',
                         'pady'=>'.5c', 'padx'=>'.5c')
 
-TkLabel.new($msgbox_leftframe, 'text'=>'¥¢¥¤¥³¥ó').pack('side'=>'top')
+TkLabel.new($msgbox_leftframe, 'text'=>'ã‚¢ã‚¤ã‚³ãƒ³').pack('side'=>'top')
 TkFrame.new($msgbox_leftframe, 'relief'=>'ridge', 'bd'=>1, 'height'=>2)\
 .pack('side'=>'top', 'fill'=>'x', 'expand'=>'no')
 
@@ -65,7 +65,7 @@ $msgboxIcon = TkVariable.new('info')
                                         'anchor'=>'w', 'fill'=>'x')
 }
 
-TkLabel.new($msgbox_rightframe, 'text'=>'¼ïÎà').pack('side'=>'top')
+TkLabel.new($msgbox_rightframe, 'text'=>'ç¨®é¡ž').pack('side'=>'top')
 TkFrame.new($msgbox_rightframe, 'relief'=>'ridge', 'bd'=>1, 'height'=>2)\
 .pack('side'=>'top', 'fill'=>'x', 'expand'=>'no')
 
@@ -81,9 +81,9 @@ $msgboxType = TkVariable.new('ok')
 def showMessageBox(w)
   button = Tk.messageBox('icon'=>$msgboxIcon.value, 'type'=>$msgboxType.value,
                          'title'=>'Message', 'parent'=>w,
-                         'message'=>"¤³¤ì¤Ï\"#{$msgboxType.value}\"¤È¤¤¤¦¼ïÎà¤Î¥á¥Ã¥»¡¼¥¸¥Ü¥Ã¥¯¥¹¤Ç¡¢\"#{$msgboxIcon.value}\"¤Î¥¢¥¤¥³¥ó¤¬É½¼¨¤µ¤ì¤Æ¤¤¤Þ¤¹¡£")
+                         'message'=>"ã“ã‚Œã¯\"#{$msgboxType.value}\"ã¨ã„ã†ç¨®é¡žã®ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ãƒœãƒƒã‚¯ã‚¹ã§ã€\"#{$msgboxIcon.value}\"ã®ã‚¢ã‚¤ã‚³ãƒ³ãŒè¡¨ç¤ºã•ã‚Œã¦ã„ã¾ã™ã€‚")
 
   Tk.messageBox('icon'=>'info', 'type'=>'ok', 'parent'=>w,
-                'message'=>"¤¢¤Ê¤¿¤Ï \"#{button}\" ¤ò²¡¤·¤Þ¤·¤¿¤Í¡£")
+                'message'=>"ã‚ãªãŸã¯ \"#{button}\" ã‚’æŠ¼ã—ã¾ã—ãŸã­ã€‚")
 end
 

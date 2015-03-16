@@ -12,6 +12,7 @@ require 'rdoc/ri/driver'
 
 require "irb/cmd/nop.rb"
 
+# :stopdoc:
 module IRB
   module ExtendCommand
     class Help<Nop
@@ -26,7 +27,7 @@ module IRB
           end
           names.each do |name|
             begin
-              Ri.get_info_for(name.to_s)
+              Ri.display_name(name.to_s)
             rescue RDoc::RI::Error
               puts $!.message
             end
@@ -37,3 +38,4 @@ module IRB
     end
   end
 end
+# :startdoc:

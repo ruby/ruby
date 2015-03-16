@@ -3,13 +3,13 @@
 
 First of all, please read README.tcltklib to use Tcl/Tk Aqua Framework.
 
-With Tcl/Tk Aqua libraries, current tcltklib somtimes freezes when 
-using Aqua specific dialogs (e.g. Tk.messageBox). 
+With Tcl/Tk Aqua libraries, current tcltklib somtimes freezes when
+using Aqua specific dialogs (e.g. Tk.messageBox).
 This is a known bug of Ruby-1.8.4 release.
 
-When you meet the trouble on your GUI, you'll be able to avoid the trouble 
-by Tcl/Tk's traditional dialogs. 
-If you want to do that, please call some of the following bits of script 
+When you meet the trouble on your GUI, you'll be able to avoid the trouble
+by Tcl/Tk's traditional dialogs.
+If you want to do that, please call some of the following bits of script
 after "reqruie 'tk'".
 
 =================================================================
@@ -57,11 +57,11 @@ Tk.ip_eval(<<'EOS')
 EOS
 =================================================================
 
-Each of them replaces the platform specific dialog command to the 
-traditional one. 
+Each of them replaces the platform specific dialog command to the
+traditional one.
 
-If you use some MultiTkIp objects, probably, you'll have to call the 
-bits of script for each MultiTkIp object. 
+If you use some MultiTkIp objects, probably, you'll have to call the
+bits of script for each MultiTkIp object.
 
--- 
+--
 Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)

@@ -32,7 +32,9 @@ module FileUtils
   @fileutils_output = $stdout
 end
 
+# :nodoc:
 def setup(options = "", *long_options)
+  caller = caller_locations(1, 1)[0].label
   opt_hash = {}
   argv = []
   OptionParser.new do |o|
@@ -53,6 +55,10 @@ def setup(options = "", *long_options)
       end
     end
     o.on("-v") do opt_hash[:verbose] = true end
+    o.on("--help") do
+      UN.help([caller])
+      exit
+    end
     o.order!(ARGV) do |x|
       if /[*?\[{]/ =~ x
         argv.concat(Dir[x])
@@ -69,9 +75,9 @@ end
 #
 #   ruby -run -e cp -- [OPTION] SOURCE DEST
 #
-#   -p		preserve file attributes if possible
-#   -r		copy recursively
-#   -v		verbose
+#   -p          preserve file attributes if possible
+#   -r          copy recursively
+#   -v          verbose
 #
 
 def cp
@@ -90,9 +96,9 @@ end
 #
 #   ruby -run -e ln -- [OPTION] TARGET LINK_NAME
 #
-#   -s		make symbolic links instead of hard links
-#   -f		remove existing destination files
-#   -v		verbose
+#   -s          make symbolic links instead of hard links
+#   -f          remove existing destination files
+#   -v          verbose
 #
 
 def ln
@@ -111,7 +117,7 @@ end
 #
 #   ruby -run -e mv -- [OPTION] SOURCE DEST
 #
-#   -v		verbose
+#   -v          verbose
 #
 
 def mv
@@ -127,9 +133,9 @@ end
 #
 #   ruby -run -e rm -- [OPTION] FILE
 #
-#   -f		ignore nonexistent files
-#   -r		remove the contents of directories recursively
-#   -v		verbose
+#   -f          ignore nonexistent files
+#   -r          remove the contents of directories recursively
+#   -v          verbose
 #
 
 def rm
@@ -146,8 +152,8 @@ end
 #
 #   ruby -run -e mkdir -- [OPTION] DIR
 #
-#   -p		no error if existing, make parent directories as needed
-#   -v		verbose
+#   -p          no error if existing, make parent directories as needed
+#   -v          verbose
 #
 
 def mkdir
@@ -163,8 +169,8 @@ end
 #
 #   ruby -run -e rmdir -- [OPTION] DIR
 #
-#   -p		remove DIRECTORY and its ancestors.
-#   -v		verbose
+#   -p          remove DIRECTORY and its ancestors.
+#   -v          verbose
 #
 
 def rmdir
@@ -179,10 +185,10 @@ end
 #
 #   ruby -run -e install -- [OPTION] SOURCE DEST
 #
-#   -p		apply access/modification times of SOURCE files to
-#  		corresponding destination files
-#   -m		set permission mode (as in chmod), instead of 0755
-#   -v		verbose
+#   -p          apply access/modification times of SOURCE files to
+#               corresponding destination files
+#   -m          set permission mode (as in chmod), instead of 0755
+#   -v          verbose
 #
 
 def install
@@ -200,7 +206,7 @@ end
 #
 #   ruby -run -e chmod -- [OPTION] OCTAL-MODE FILE
 #
-#   -v		verbose
+#   -v          verbose
 #
 
 def chmod
@@ -215,7 +221,7 @@ end
 #
 #   ruby -run -e touch -- [OPTION] FILE
 #
-#   -v		verbose
+#   -v          verbose
 #
 
 def touch
@@ -229,9 +235,9 @@ end
 #
 #   ruby -run -e wait_writable -- [OPTION] FILE
 #
-#   -n RETRY	count to retry
-#   -w SEC	each wait time in seconds
-#   -v		verbose
+#   -n RETRY    count to retry
+#   -w SEC      each wait time in seconds
+#   -v          verbose
 #
 
 def wait_writable
@@ -246,8 +252,10 @@ def wait_writable
         break
       rescue Errno::EACCES => e
         raise if n and (n -= 1) <= 0
-        puts e
-        STDOUT.flush
+        if verbose
+          puts e
+          STDOUT.flush
+        end
         sleep wait
         retry
       end
@@ -260,15 +268,15 @@ end
 #
 #   ruby -run -e mkmf -- [OPTION] EXTNAME [OPTION]
 #
-#   -d ARGS	run dir_config
-#   -h ARGS	run have_header
-#   -l ARGS	run have_library
-#   -f ARGS	run have_func
-#   -v ARGS	run have_var
-#   -t ARGS	run have_type
-#   -m ARGS	run have_macro
-#   -c ARGS	run have_const
-#   --vendor	install to vendor_ruby
+#   -d ARGS     run dir_config
+#   -h ARGS     run have_header
+#   -l ARGS     run have_library
+#   -f ARGS     run have_func
+#   -v ARGS     run have_var
+#   -t ARGS     run have_type
+#   -m ARGS     run have_macro
+#   -c ARGS     run have_const
+#   --vendor    install to vendor_ruby
 #
 
 def mkmf
@@ -311,16 +319,17 @@ def httpd
     [:Port, :MaxClients].each do |name|
       opt = options[name] and (options[name] = Integer(opt)) rescue nil
     end
-    unless argv.empty?
-      options[:DocumentRoot] = argv.shift
+    unless argv.size == 1
+      raise ArgumentError, "DocumentRoot is mandatory"
     end
+    options[:DocumentRoot] = argv.shift
     s = WEBrick::HTTPServer.new(options)
     shut = proc {s.shutdown}
-    Signal.trap("TERM", shut)
-    Signal.trap("QUIT", shut) if Signal.list.has_key?("QUIT")
-    if STDIN.tty?
-      Signal.trap("HUP", shut) if Signal.list.has_key?("HUP")
-      Signal.trap("INT", shut)
+    siglist = %w"TERM QUIT"
+    siglist.concat(%w"HUP INT") if STDIN.tty?
+    siglist &= Signal.list.keys
+    siglist.each do |sig|
+      Signal.trap(sig, shut)
     end
     s.start
   end
@@ -334,15 +343,33 @@ end
 
 def help
   setup do |argv,|
+    UN.help(argv)
+  end
+end
+
+module UN # :nodoc:
+  module_function
+  def help(argv, output: $stdout)
     all = argv.empty?
+    cmd = nil
+    if all
+      store = proc {|msg| output << msg}
+    else
+      messages = {}
+      store = proc {|msg| messages[cmd] = msg}
+    end
     open(__FILE__) do |me|
       while me.gets("##\n")
-	if help = me.gets("\n\n")
-	  if all or argv.delete help[/-e \w+/].sub(/-e /, "")
-	    print help.gsub(/^# ?/, "")
-	  end
-	end
+        if help = me.gets("\n\n")
+          if all or argv.include?(cmd = help[/^#\s*ruby\s.*-e\s+(\w+)/, 1])
+            store[help.gsub(/^# ?/, "")]
+            break unless all or argv.size > messages.size
+          end
+        end
       end
+    end
+    if messages
+      argv.each {|cmd| output << messages[cmd]}
     end
   end
 end

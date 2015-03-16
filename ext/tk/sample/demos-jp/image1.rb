@@ -1,15 +1,15 @@
-# -*- coding: euc-jp -*-
+# -*- coding: utf-8 -*-
 #
 # two image widgets demo (called by 'widget')
 #
 
-# toplevel widget ¤¬Â¸ºß¤¹¤ì¤Ðºï½ü¤¹¤ë
+# toplevel widget ãŒå­˜åœ¨ã™ã‚Œã°å‰Šé™¤ã™ã‚‹
 if defined?($image1_demo) && $image1_demo
   $image1_demo.destroy
   $image1_demo = nil
 end
 
-# demo ÍÑ¤Î toplevel widget ¤òÀ¸À®
+# demo ç”¨ã® toplevel widget ã‚’ç”Ÿæˆ
 $image1_demo = TkToplevel.new {|w|
   title('Image Demonstration #1')
   iconname("Image1")
@@ -18,20 +18,20 @@ $image1_demo = TkToplevel.new {|w|
 
 base_frame = TkFrame.new($image1_demo).pack(:fill=>:both, :expand=>true)
 
-# label À¸À®
+# label ç”Ÿæˆ
 msg = TkLabel.new(base_frame) {
   font $font
   wraplength '4i'
   justify 'left'
-  text "¤³¤Î¥Ç¥â¤Ç¤Ï2¤Ä¤Î¥é¥Ù¥ë¾å¤Ë²èÁü¤ò¤½¤ì¤¾¤ìÉ½¼¨¤·¤Æ¤¤¤Þ¤¹¡£"
+  text "ã“ã®ãƒ‡ãƒ¢ã§ã¯2ã¤ã®ãƒ©ãƒ™ãƒ«ä¸Šã«ç”»åƒã‚’ãã‚Œãžã‚Œè¡¨ç¤ºã—ã¦ã„ã¾ã™ã€‚"
 }
 msg.pack('side'=>'top')
 
-# frame À¸À®
+# frame ç”Ÿæˆ
 TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
-    #text 'Î»²ò'
-    text 'ÊÄ¤¸¤ë'
+    #text 'äº†è§£'
+    text 'é–‰ã˜ã‚‹'
     command proc{
       tmppath = $image1_demo
       $image1_demo = nil
@@ -40,13 +40,13 @@ TkFrame.new(base_frame) {|frame|
   }.pack('side'=>'left', 'expand'=>'yes')
 
   TkButton.new(frame) {
-    text '¥³¡¼¥É»²¾È'
+    text 'ã‚³ãƒ¼ãƒ‰å‚ç…§'
     command proc{showCode 'image1'}
   }.pack('side'=>'left', 'expand'=>'yes')
 
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
-# image À¸À®
+# image ç”Ÿæˆ
 image1a = \
 TkPhotoImage.new('file'=>[$demo_dir,'..',
                           'images','earth.gif'].join(File::Separator))
@@ -54,7 +54,7 @@ image1b = \
 TkPhotoImage.new('file'=>[$demo_dir,'..',
                           'images','earthris.gif'].join(File::Separator))
 
-# label À¸À®
+# label ç”Ÿæˆ
 #[ TkLabel.new(base_frame, 'image'=>image1a, 'bd'=>1, 'relief'=>'sunken'),
 #  TkLabel.new(base_frame, 'image'=>image1b, 'bd'=>1, 'relief'=>'sunken')
 #].each{|w| w.pack('side'=>'top', 'padx'=>'.5m', 'pady'=>'.5m')}

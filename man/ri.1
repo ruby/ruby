@@ -1,5 +1,5 @@
 .\"Ruby is copyrighted by Yukihiro Matsumoto <matz@netlab.jp>.
-.Dd December 29, 2008
+.Dd November 7, 2012
 .Dt RI(1) "" "Ruby Programmers Reference Guide"
 .Os UNIX
 .Sh NAME
@@ -18,7 +18,7 @@
 .Op Ar target ...
 .Sh DESCRIPTION
 .Nm
-is a CUI front end for the Ruby API reference.
+is a CLI front end for the Ruby API reference.
 You can search and read API reference for classes and methods with
 .Nm .
 .Pp
@@ -77,7 +77,8 @@ directories.  May be repeated.
 .It Fl -fmt Ar FORMAT
 .It Fl -format Ns = Ns FORMAT
 Format to use when displaying output:
-.Dd ansi, bs, html, plain, simple
+.Pp
+ansi, bs, html, plain, simple
 .Pp
 Use 'bs' (backspace) with most pager programs. To use ANSI, either disable the
 pager or tell the pager to allow control characters.
@@ -168,12 +169,12 @@ Searches user-wide documents here.
 .Li Security vulnerabilities should be reported via an email to
 .Aq security@ruby-lang.org Ns
 .Li .
-Reported problems will be published after fixed.
+Reported problems will be published after being fixed.
 .Pp
 .Li And you can report other bugs and feature requests via the
-Ruby Issue Tracking System (http://redmine.ruby-lang.org).
+Ruby Issue Tracking System (http://bugs.ruby-lang.org).
 Do not report security vulnerabilities
-via the system because it publishes the vulnerabilities immedately.
+via the system because it publishes the vulnerabilities immediately.
 .El
 .Sh AUTHORS
 Written by Dave Thomas

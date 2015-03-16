@@ -85,7 +85,9 @@ class TestBasicInstructions < Test::Unit::TestCase
     s = "OK"
     prev = nil
     3.times do
-      assert_equal prev.object_id, (prev ||= /#{s}/o).object_id  if prev
+      re = /#{s}/o
+      assert_same prev, re if prev
+      prev = re
     end
   end
 
@@ -500,6 +502,7 @@ class TestBasicInstructions < Test::Unit::TestCase
 
   class OP
     attr_reader :x
+    attr_accessor :foo
     def x=(x)
       @x = x
       :Bug1996
@@ -600,6 +603,19 @@ class TestBasicInstructions < Test::Unit::TestCase
     assert_equal 4, x[0]
   end
 
+  def test_send_opassign
+    return if defined?(RUBY_ENGINE) and RUBY_ENGINE != "ruby"
+
+    bug7773 = '[ruby-core:51821]'
+    x = OP.new
+    assert_equal 42, x.foo = 42, bug7773
+    assert_equal 42, x.foo, bug7773
+    assert_equal -6, x.send(:foo=, -6), bug7773
+    assert_equal -6, x.foo, bug7773
+    assert_equal :Bug1996, x.send(:x=, :case_when_setter_returns_other_value), bug7773
+    assert_equal :case_when_setter_returns_other_value, x.x, bug7773
+  end
+
   def test_backref
     /re/ =~ 'not match'
     assert_nil $~
@@ -632,7 +648,7 @@ class TestBasicInstructions < Test::Unit::TestCase
     assert_equal 'i', $~[9]
     assert_equal 'x', $`
     assert_equal 'abcdefghi', $&
-    assert_equal 'y', $'
+    assert_equal "y", $'
     assert_equal 'i', $+
     assert_equal 'a', $1
     assert_equal 'b', $2
@@ -662,19 +678,23 @@ class TestBasicInstructions < Test::Unit::TestCase
   end
 
   def test_array_splat
+    feature1125 = '[ruby-core:21901]'
+
     a = []
     assert_equal [], [*a]
     assert_equal [1], [1, *a]
+    assert_not_same(a, [*a], feature1125)
     a = [2]
     assert_equal [2], [*a]
     assert_equal [1, 2], [1, *a]
+    assert_not_same(a, [*a], feature1125)
     a = [2, 3]
     assert_equal [2, 3], [*a]
     assert_equal [1, 2, 3], [1, *a]
+    assert_not_same(a, [*a], feature1125)
 
     a = nil
     assert_equal [], [*a]
     assert_equal [1], [1, *a]
   end
-
 end

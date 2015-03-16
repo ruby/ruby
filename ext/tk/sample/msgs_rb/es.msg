@@ -69,7 +69,7 @@ TkMsgCatalog.new('::tk') {
     es "Tcl Scripts", "Scripts Tcl"
     es "Tcl for Windows", "Tcl para Windows"
     es "Text Files", "Archivos de texto"
-    es "&Yes", "&S\\u00ed" 
+    es "&Yes", "&S\\u00ed"
     es "abort", "abortar"
     es "blue", "azul"
     es "cancel", "cancelar"

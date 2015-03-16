@@ -1,5 +1,6 @@
+# -*- coding: utf-8 -*-
 #++
-# Copyright (C) 2004 Mauricio Julio Fernández Pradier
+# Copyright (C) 2004 Mauricio Julio FernÃ¡ndez Pradier
 # See LICENSE.txt for additional licensing information.
 #--
 
@@ -67,6 +68,10 @@ class Gem::Package::TarReader::Entry
     else
       @header.name
     end
+  rescue ArgumentError => e
+    raise unless e.message == 'string contains null byte'
+    raise Gem::Package::TarInvalidError,
+          'tar is corrupt, name contains null byte'
   end
 
   ##
@@ -123,6 +128,8 @@ class Gem::Package::TarReader::Entry
 
     ret
   end
+
+  alias readpartial read # :nodoc:
 
   ##
   # Rewinds to the beginning of the tar file entry

@@ -402,6 +402,10 @@ m(1,2,*ary,&b)
 $result
 }
 
+# aset and splat
+assert_equal '4', %q{class Foo;def []=(a,b,c,d);end;end;Foo.new[1,*a=[2,3]]=4}
+assert_equal '4', %q{class Foo;def []=(a,b,c,d);end;end;def m(&blk)Foo.new[1,*a=[2,3],&blk]=4;end;m{}}
+
 # post test
 assert_equal %q{[1, 2, :o1, :o2, [], 3, 4, NilClass, nil, nil]}, %q{
 def m(m1, m2, o1=:o1, o2=:o2, *r, p1, p2, &b)
@@ -882,50 +886,6 @@ class C0; def m *args; [:C0_m, args]; end; end
 class C1 < C0; def m a, o=:o; super; end; end
 ; C1.new.m 1, 2}
 
-assert_equal %q{[:ok, :ok, :ok, :ok, :ok, :ok, :ng, :ng]}, %q{
-  $ans = []
-  class Foo
-    def m
-    end
-  end
-
-  c1 = c2 = nil
-
-  lambda{
-    $SAFE = 4
-    c1 = Class.new{
-      def m
-      end
-    }
-    c2 = Class.new(Foo){
-      alias mm m
-    }
-  }.call
-
-  def test
-    begin
-      yield
-    rescue SecurityError
-      $ans << :ok
-    else
-      $ans << :ng
-    end
-  end
-
-  o1 = c1.new
-  o2 = c2.new
-  
-  test{o1.m}
-  test{o2.mm}
-  test{o1.send :m}
-  test{o2.send :mm}
-  test{o1.public_send :m}
-  test{o2.public_send :mm}
-  test{o1.method(:m).call}
-  test{o2.method(:mm).call}
-  $ans
-}
-
 assert_equal 'ok', %q{
   class C
     def x=(n)
@@ -997,8 +957,8 @@ assert_equal 'ok', %q{
 
 assert_normal_exit %q{
   begin
-    Process.setrlimit(Process::RLIMIT_STACK, 4_202_496)
-    # FreeBSD fails this less than 4M + 8K bytes.
+    Process.setrlimit(Process::RLIMIT_STACK, 4_206_592)
+    # FreeBSD SEGVs this less than 4M + 12K bytes.
   rescue Exception
     exit
   end
@@ -1074,7 +1034,7 @@ assert_equal '[1, 2, [3, 4]]', %q{
   def regular(a, b, *c)
     [a, b, c]
   end
-  regular(*[], 1, *[], *[2, 3], *[], 4) 
+  regular(*[], 1, *[], *[2, 3], *[], 4)
 }, '[ruby-core:19413]'
 
 assert_equal '[1, [:foo, 3, 4, :foo]]', %q{
@@ -1093,7 +1053,7 @@ assert_equal '["B", "A"]', %q{
   end
 
   class B < A
-    define_method(:m) do    
+    define_method(:m) do
       ['B', super()]
     end
   end
@@ -1174,4 +1134,87 @@ assert_equal 'ok', %q{
   rescue NoMethodError
     'ok'
   end
+}
+assert_equal 'ok', %q{
+  [0][0, &proc{}] += 21
+  'ok'
+}, '[ruby-core:30534]'
+
+# should not cache when splat
+assert_equal 'ok', %q{
+  class C
+    attr_reader :a
+    def initialize
+      @a = 1
+    end
+  end
+
+  def m *args
+    C.new.a(*args)
+  end
+
+  m()
+  begin
+    m(1)
+  rescue ArgumentError
+    'ok'
+  end
+}
+
+assert_equal 'DC', %q{
+  $result = []
+
+  class C
+    def foo *args
+      $result << 'C'
+    end
+  end
+  class D
+    def foo *args
+      $result << 'D'
+    end
+  end
+
+  o1 = $o1 = C.new
+  o2 = $o2 = D.new
+
+  args = Object.new
+  def args.to_a
+    test1 $o2, nil
+    []
+  end
+  def test1 o, args
+    o.foo(*args)
+  end
+  test1 o1, args
+  $result.join
+}
+
+assert_equal 'DC', %q{
+  $result = []
+
+  class C
+    def foo *args
+      $result << 'C'
+    end
+  end
+  class D
+    def foo *args
+      $result << 'D'
+    end
+  end
+
+  o1 = $o1 = C.new
+  o2 = $o2 = D.new
+
+  block = Object.new
+  def block.to_proc
+    test2 $o2, %w(a, b, c), nil
+    Proc.new{}
+  end
+  def test2 o, args, block
+    o.foo(*args, &block)
+  end
+  test2 o1, [], block
+  $result.join
 }

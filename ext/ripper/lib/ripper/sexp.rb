@@ -14,12 +14,33 @@ class Ripper
 
   # [EXPERIMENTAL]
   # Parses +src+ and create S-exp tree.
-  # This method is for mainly developper use.
+  # Returns more readable tree rather than Ripper.sexp_raw.
+  # This method is mainly for developer use.
   #
   #   require 'ripper'
-  #   require 'pp
+  #   require 'pp'
   #
   #   pp Ripper.sexp("def m(a) nil end")
+  #     #=> [:program,
+  #          [[:def,
+  #           [:@ident, "m", [1, 4]],
+  #           [:paren, [:params, [[:@ident, "a", [1, 6]]], nil, nil, nil, nil]],
+  #           [:bodystmt, [[:var_ref, [:@kw, "nil", [1, 9]]]], nil, nil, nil]]]]
+  #
+  def Ripper.sexp(src, filename = '-', lineno = 1)
+    builder = SexpBuilderPP.new(src, filename, lineno)
+    sexp = builder.parse
+    sexp unless builder.error?
+  end
+
+  # [EXPERIMENTAL]
+  # Parses +src+ and create S-exp tree.
+  # This method is mainly for developer use.
+  #
+  #   require 'ripper'
+  #   require 'pp'
+  #
+  #   pp Ripper.sexp_raw("def m(a) nil end")
   #     #=> [:program,
   #          [:stmts_add,
   #           [:stmts_new],
@@ -32,12 +53,10 @@ class Ripper
   #             nil,
   #             nil]]]]
   #
-  def Ripper.sexp(src, filename = '-', lineno = 1)
-    SexpBuilderPP.new(src, filename, lineno).parse
-  end
-
   def Ripper.sexp_raw(src, filename = '-', lineno = 1)
-    SexpBuilder.new(src, filename, lineno).parse
+    builder = SexpBuilder.new(src, filename, lineno)
+    sexp = builder.parse
+    sexp unless builder.error?
   end
 
   class SexpBuilderPP < ::Ripper   #:nodoc:

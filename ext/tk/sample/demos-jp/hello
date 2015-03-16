@@ -1,10 +1,10 @@
 #!/usr/bin/env ruby
-# -*- coding: euc-jp -*-
+# -*- coding: utf-8 -*-
 require 'tk'
 
 TkButton.new(nil,
-	'text'=>"¤³¤ó¤Ë¤Á¤Ï¡¢À¤³¦",
-	'command'=>proc{print "¤³¤ó¤Ë¤Á¤Ï¡¢À¤³¦\n"; exit}
+	'text'=>"ã“ã‚“ã«ã¡ã¯ã€ä¸–ç•Œ",
+	'command'=>proc{print "ã“ã‚“ã«ã¡ã¯ã€ä¸–ç•Œ\n"; exit}
 ).pack
 
 Tk.mainloop

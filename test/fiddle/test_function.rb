@@ -1,7 +1,12 @@
-require_relative 'helper'
+begin
+  require_relative 'helper'
+rescue LoadError
+end
 
 module Fiddle
   class TestFunction < Fiddle::TestCase
+    include Test::Unit::Assertions
+
     def setup
       super
       Fiddle.last_error = nil
@@ -10,6 +15,11 @@ module Fiddle
     def test_default_abi
       func = Function.new(@libm['sin'], [TYPE_DOUBLE], TYPE_DOUBLE)
       assert_equal Function::DEFAULT, func.abi
+    end
+
+    def test_name
+      func = Function.new(@libm['sin'], [TYPE_DOUBLE], TYPE_DOUBLE, name: 'sin')
+      assert_equal 'sin', func.name
     end
 
     def test_argument_errors
@@ -51,7 +61,7 @@ module Fiddle
       func = Function.new(@libc['strcpy'], [TYPE_VOIDP, TYPE_VOIDP], TYPE_VOIDP)
 
       assert_nil Fiddle.last_error
-      str = func.call("000", "123")
+      func.call("000", "123")
       refute_nil Fiddle.last_error
     end
 
@@ -62,5 +72,11 @@ module Fiddle
       assert_equal("123", buff)
       assert_equal("123", str.to_s)
     end
+
+    def test_no_memory_leak
+      prep = 'r = Fiddle::Function.new(Fiddle.dlopen(nil)["rb_obj_tainted"], [Fiddle::TYPE_UINTPTR_T], Fiddle::TYPE_UINTPTR_T); a = "a"'
+      code = 'begin r.call(a); rescue TypeError; end'
+      assert_no_memory_leak(%w[-W0 -rfiddle], "#{prep}\n1000.times{#{code}}", "10_000.times {#{code}}", limit: 1.2)
+    end
   end
-end
+end if defined?(Fiddle)

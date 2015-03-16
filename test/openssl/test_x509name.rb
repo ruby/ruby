@@ -1,10 +1,7 @@
-begin
-  require "openssl"
-rescue LoadError
-end
-require "test/unit"
+# coding: US-ASCII
+require_relative 'utils'
 
-if defined?(OpenSSL)
+if defined?(OpenSSL::TestUtils)
 
 class OpenSSL::TestX509Name < Test::Unit::TestCase
   OpenSSL::ASN1::ObjectId.register(
@@ -104,6 +101,58 @@ class OpenSSL::TestX509Name < Test::Unit::TestCase
     assert_equal(name_from_der.to_der, name.to_der)
   end
 
+  def test_unrecognized_oid
+    dn = [ ["1.2.3.4.5.6.7.8.9.7.5.3.1", "Unknown OID 1"],
+           ["1.1.2.3.5.8.13.21.34", "Unknown OID 2"],
+           ["C", "US"],
+           ["postalCode", "60602"],
+           ["ST", "Illinois"],
+           ["L", "Chicago"],
+           #["street", "123 Fake St"],
+           ["O", "Some Company LLC"],
+           ["CN", "mydomain.com"] ]
+
+    name = OpenSSL::X509::Name.new(dn)
+    ary = name.to_a
+    #assert_equal("/1.2.3.4.5.6.7.8.9.7.5.3.1=Unknown OID 1/1.1.2.3.5.8.13.21.34=Unknown OID 2/C=US/postalCode=60602/ST=Illinois/L=Chicago/street=123 Fake St/O=Some Company LLC/CN=mydomain.com", name.to_s)
+    assert_equal("/1.2.3.4.5.6.7.8.9.7.5.3.1=Unknown OID 1/1.1.2.3.5.8.13.21.34=Unknown OID 2/C=US/postalCode=60602/ST=Illinois/L=Chicago/O=Some Company LLC/CN=mydomain.com", name.to_s)
+    assert_equal("1.2.3.4.5.6.7.8.9.7.5.3.1", ary[0][0])
+    assert_equal("1.1.2.3.5.8.13.21.34", ary[1][0])
+    assert_equal("C", ary[2][0])
+    assert_equal("postalCode", ary[3][0])
+    assert_equal("ST", ary[4][0])
+    assert_equal("L", ary[5][0])
+    #assert_equal("street", ary[6][0])
+    assert_equal("O", ary[6][0])
+    assert_equal("CN", ary[7][0])
+    assert_equal("Unknown OID 1", ary[0][1])
+    assert_equal("Unknown OID 2", ary[1][1])
+    assert_equal("US", ary[2][1])
+    assert_equal("60602", ary[3][1])
+    assert_equal("Illinois", ary[4][1])
+    assert_equal("Chicago", ary[5][1])
+    #assert_equal("123 Fake St", ary[6][1])
+    assert_equal("Some Company LLC", ary[6][1])
+    assert_equal("mydomain.com", ary[7][1])
+  end
+
+  def test_unrecognized_oid_parse_encode_equality
+    dn = [ ["1.2.3.4.5.6.7.8.9.7.5.3.2", "Unknown OID1"],
+           ["1.1.2.3.5.8.13.21.35", "Unknown OID2"],
+           ["C", "US"],
+           ["postalCode", "60602"],
+           ["ST", "Illinois"],
+           ["L", "Chicago"],
+           #["street", "123 Fake St"],
+           ["O", "Some Company LLC"],
+           ["CN", "mydomain.com"] ]
+
+    name1 = OpenSSL::X509::Name.new(dn)
+    name2 = OpenSSL::X509::Name.parse(name1.to_s)
+    assert_equal(name1.to_s, name2.to_s)
+    assert_equal(name1.to_a, name2.to_a)
+  end
+
   def test_s_parse
     dn = "/DC=org/DC=ruby-lang/CN=www.ruby-lang.org"
     name = OpenSSL::X509::Name.parse(dn)
@@ -120,14 +169,14 @@ class OpenSSL::TestX509Name < Test::Unit::TestCase
     assert_equal(OpenSSL::ASN1::UTF8STRING, ary[2][2])
 
     dn2 = "DC=org, DC=ruby-lang, CN=www.ruby-lang.org"
-    name = OpenSSL::X509::Name.parse(dn)
+    name = OpenSSL::X509::Name.parse(dn2)
     ary = name.to_a
     assert_equal(dn, name.to_s)
     assert_equal("org", ary[0][1])
     assert_equal("ruby-lang", ary[1][1])
     assert_equal("www.ruby-lang.org", ary[2][1])
 
-    name = OpenSSL::X509::Name.parse(dn, @obj_type_tmpl)
+    name = OpenSSL::X509::Name.parse(dn2, @obj_type_tmpl)
     ary = name.to_a
     assert_equal(OpenSSL::ASN1::IA5STRING, ary[0][2])
     assert_equal(OpenSSL::ASN1::IA5STRING, ary[1][2])
@@ -260,6 +309,58 @@ class OpenSSL::TestX509Name < Test::Unit::TestCase
     assert_equal(OpenSSL::ASN1::UTF8STRING, ary[2][2])
     assert_equal(OpenSSL::ASN1::IA5STRING, ary[3][2])
     assert_equal(OpenSSL::ASN1::PRINTABLESTRING, ary[4][2])
+  end
+
+  def test_add_entry_street
+    return if OpenSSL::OPENSSL_VERSION_NUMBER < 0x009080df # 0.9.8m
+    # openssl/crypto/objects/obj_mac.h 1.83
+    dn = [
+      ["DC", "org"],
+      ["DC", "ruby-lang"],
+      ["CN", "GOTOU Yuuzou"],
+      ["emailAddress", "gotoyuzo@ruby-lang.org"],
+      ["serialNumber", "123"],
+      ["street", "Namiki"],
+    ]
+    name = OpenSSL::X509::Name.new
+    dn.each{|attr| name.add_entry(*attr) }
+    ary = name.to_a
+    assert_equal("/DC=org/DC=ruby-lang/CN=GOTOU Yuuzou/emailAddress=gotoyuzo@ruby-lang.org/serialNumber=123/street=Namiki", name.to_s)
+    assert_equal("Namiki", ary[5][1])
+  end
+
+  def test_equals2
+    n1 = OpenSSL::X509::Name.parse 'CN=a'
+    n2 = OpenSSL::X509::Name.parse 'CN=a'
+
+    assert_equal n1, n2
+  end
+
+  def test_spaceship
+    n1 = OpenSSL::X509::Name.parse 'CN=a'
+    n2 = OpenSSL::X509::Name.parse 'CN=b'
+
+    assert_equal(-1, n1 <=> n2)
+  end
+
+  def name_hash(name)
+    # OpenSSL 1.0.0 uses SHA1 for canonical encoding (not just a der) of
+    # X509Name for X509_NAME_hash.
+    name.respond_to?(:hash_old) ? name.hash_old : name.hash
+  end
+
+  def test_hash
+    dn = "/DC=org/DC=ruby-lang/CN=www.ruby-lang.org"
+    name = OpenSSL::X509::Name.parse(dn)
+    d = Digest::MD5.digest(name.to_der)
+    expected = (d[0].ord & 0xff) | (d[1].ord & 0xff) << 8 | (d[2].ord & 0xff) << 16 | (d[3].ord & 0xff) << 24
+    assert_equal(expected, name_hash(name))
+    #
+    dn = "/DC=org/DC=ruby-lang/CN=baz.ruby-lang.org"
+    name = OpenSSL::X509::Name.parse(dn)
+    d = Digest::MD5.digest(name.to_der)
+    expected = (d[0].ord & 0xff) | (d[1].ord & 0xff) << 8 | (d[2].ord & 0xff) << 16 | (d[3].ord & 0xff) << 24
+    assert_equal(expected, name_hash(name))
   end
 end
 

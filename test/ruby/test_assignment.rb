@@ -17,7 +17,9 @@ class TestAssignment < Test::Unit::TestCase
     cc = 5
     cc &&=44
     assert_equal(44, cc)
+  end
 
+  def test_assign_simple
     a = nil; assert_nil(a)
     a = 1; assert_equal(1, a)
     a = []; assert_equal([], a)
@@ -28,7 +30,9 @@ class TestAssignment < Test::Unit::TestCase
     a = [*[]]; assert_equal([], a)
     a = [*[1]]; assert_equal([1], a)
     a = [*[1,2]]; assert_equal([1,2], a)
+  end
 
+  def test_assign_splat
     a = *[]; assert_equal([], a)
     a = *[1]; assert_equal([1], a)
     a = *[nil]; assert_equal([nil], a)
@@ -37,7 +41,9 @@ class TestAssignment < Test::Unit::TestCase
     a = *[*[]]; assert_equal([], a)
     a = *[*[1]]; assert_equal([1], a)
     a = *[*[1,2]]; assert_equal([1,2], a)
+  end
 
+  def test_assign_ary
     *a = nil; assert_equal([nil], a)
     *a = 1; assert_equal([1], a)
     *a = []; assert_equal([], a)
@@ -48,7 +54,9 @@ class TestAssignment < Test::Unit::TestCase
     *a = [*[]]; assert_equal([], a)
     *a = [*[1]]; assert_equal([1], a)
     *a = [*[1,2]]; assert_equal([1,2], a)
+  end
 
+  def test_assign_ary_splat
     *a = *[]; assert_equal([], a)
     *a = *[1]; assert_equal([1], a)
     *a = *[nil]; assert_equal([nil], a)
@@ -57,7 +65,9 @@ class TestAssignment < Test::Unit::TestCase
     *a = *[*[]]; assert_equal([], a)
     *a = *[*[1]]; assert_equal([1], a)
     *a = *[*[1,2]]; assert_equal([1,2], a)
+  end
 
+  def test_massign_simple
     a,b,*c = nil; assert_equal([nil,nil,[]], [a,b,c])
     a,b,*c = 1; assert_equal([1,nil,[]], [a,b,c])
     a,b,*c = []; assert_equal([nil,nil,[]], [a,b,c])
@@ -68,7 +78,9 @@ class TestAssignment < Test::Unit::TestCase
     a,b,*c = [*[]]; assert_equal([nil,nil,[]], [a,b,c])
     a,b,*c = [*[1]]; assert_equal([1,nil,[]], [a,b,c])
     a,b,*c = [*[1,2]]; assert_equal([1,2,[]], [a,b,c])
+  end
 
+  def test_massign_splat
     a,b,*c = *[]; assert_equal([nil,nil,[]], [a,b,c])
     a,b,*c = *[1]; assert_equal([1,nil,[]], [a,b,c])
     a,b,*c = *[nil]; assert_equal([nil,nil,[]], [a,b,c])
@@ -77,7 +89,9 @@ class TestAssignment < Test::Unit::TestCase
     a,b,*c = *[*[]]; assert_equal([nil,nil,[]], [a,b,c])
     a,b,*c = *[*[1]]; assert_equal([1,nil,[]], [a,b,c])
     a,b,*c = *[*[1,2]]; assert_equal([1,2,[]], [a,b,c])
+  end
 
+  def test_assign_abbreviated
     bug2050 = '[ruby-core:25629]'
     a = Hash.new {[]}
     b = [1, 2]
@@ -85,6 +99,47 @@ class TestAssignment < Test::Unit::TestCase
     assert_equal([1, 2, 3], a[:x], bug2050)
     assert_equal([1, 2, 3, [1, 2, 3]], a[:x] <<= [*b, 3], bug2050)
     assert_equal([1, 2, 3, [1, 2, 3]], a[:x], bug2050)
+  end
+
+  def test_assign_private_self
+    bug9907 = '[ruby-core:62949] [Bug #9907]'
+
+    o = Object.new
+    class << o
+      private
+      def foo; 42; end
+      def [](i); 42; end
+      def foo=(a); 42; end
+      def []=(i, a); 42; end
+    end
+
+    assert_raise(NoMethodError) {
+      o.instance_eval {o.foo = 1}
+    }
+    assert_nothing_raised(NoMethodError) {
+      assert_equal(1, o.instance_eval {self.foo = 1})
+    }
+
+    assert_raise(NoMethodError) {
+      o.instance_eval {o[0] = 1}
+    }
+    assert_nothing_raised(NoMethodError) {
+      assert_equal(1, o.instance_eval {self[0] = 1})
+    }
+
+    assert_nothing_raised(NoMethodError, bug9907) {
+      assert_equal(43, o.instance_eval {self.foo += 1})
+    }
+    assert_nothing_raised(NoMethodError, bug9907) {
+      assert_equal(1, o.instance_eval {self.foo &&= 1})
+    }
+
+    assert_nothing_raised(NoMethodError, bug9907) {
+      assert_equal(43, o.instance_eval {self[0] += 1})
+    }
+    assert_nothing_raised(NoMethodError, bug9907) {
+      assert_equal(1, o.instance_eval {self[0] &&= 1})
+    }
   end
 
   def test_yield
@@ -691,5 +746,15 @@ class TestAssignmentGen < Test::Unit::TestCase
     Sentence.each(syntax, :xassign, 4) {|assign|
       check(assign)
     }
+  end
+
+  def test_optimized_aset
+    bug9448 = Class.new do
+      def []=(key, new_value)
+        '[ruby-core:60071] [Bug #9448]'
+      end
+    end
+    o = bug9448.new
+    assert_equal("ok", o['current'] = "ok")
   end
 end

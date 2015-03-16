@@ -12,18 +12,22 @@ require 'ripper/core'
 
 class Ripper
 
-  # Tokenizes Ruby program and returns an Array of String.
+  # Tokenizes the Ruby program and returns an array of strings.
+  #
+  #   p Ripper.tokenize("def m(a) nil end")
+  #      # => ["def", " ", "m", "(", "a", ")", " ", "nil", " ", "end"]
+  #
   def Ripper.tokenize(src, filename = '-', lineno = 1)
     Lexer.new(src, filename, lineno).tokenize
   end
 
-  # Tokenizes Ruby program and returns an Array of Array,
-  # which is formatted like [[lineno, column], type, token].
+  # Tokenizes the Ruby program and returns an array of an array,
+  # which is formatted like <code>[[lineno, column], type, token]</code>.
   #
   #   require 'ripper'
   #   require 'pp'
   #
-  #   p Ripper.lex("def m(a) nil end")
+  #   pp Ripper.lex("def m(a) nil end")
   #     #=> [[[1,  0], :on_kw,     "def"],
   #          [[1,  3], :on_sp,     " "  ],
   #          [[1,  4], :on_ident,  "m"  ],
@@ -90,9 +94,12 @@ class Ripper
 
   class TokenPattern   #:nodoc:
 
-    class Error < ::StandardError; end
-    class CompileError < Error; end
-    class MatchError < Error; end
+    class Error < ::StandardError # :nodoc:
+    end
+    class CompileError < Error # :nodoc:
+    end
+    class MatchError < Error # :nodoc:
+    end
 
     class << self
       alias compile new
@@ -155,7 +162,7 @@ class Ripper
       MAP[tok]  or raise CompileError, "unknown token: #{tok}"
     end
 
-    class MatchData
+    class MatchData # :nodoc:
       def initialize(tokens, match)
         @tokens = tokens
         @match = match

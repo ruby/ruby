@@ -1,14 +1,13 @@
 require 'rexml/xmltokens'
-require 'rexml/light/node'
 
 # [ :element, parent, name, attributes, children* ]
   # a = Node.new
-  # a << "B"		# => <a>B</a>
-  # a.b			# => <a>B<b/></a>
-  # a.b[1]			# => <a>B<b/><b/><a>
-  # a.b[1]["x"] = "y"	# => <a>B<b/><b x="y"/></a>
-  # a.b[0].c		# => <a>B<b><c/></b><b x="y"/></a>
-  # a.b.c << "D"		# => <a>B<b><c>D</c></b><b x="y"/></a>
+  # a << "B"            # => <a>B</a>
+  # a.b                 # => <a>B<b/></a>
+  # a.b[1]                      # => <a>B<b/><b/><a>
+  # a.b[1]["x"] = "y"   # => <a>B<b/><b x="y"/></a>
+  # a.b[0].c            # => <a>B<b><c/></b><b x="y"/></a>
+  # a.b.c << "D"                # => <a>B<b><c>D</c></b><b x="y"/></a>
 module REXML
   module Light
     # Represents a tagged XML element.  Elements are characterized by
@@ -41,7 +40,7 @@ module REXML
         end
       end
 
-      def each( &block )
+      def each
         size.times { |x| yield( at(x+4) ) }
       end
 

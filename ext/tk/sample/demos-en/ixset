@@ -164,8 +164,8 @@ class Xsettings
     #
     bell = TkFrame.new(@root, 'relief'=>'raised', 'borderwidth'=>2)
     l = TkLabel.new(bell, 'text'=>'Bell Settings')
-    @w_bellvol = TkScale.new(bell, 'from'=>0, 'to'=>100, 'length'=>200, 
-			     'tickinterval'=>20, 'orient'=>'horizontal', 
+    @w_bellvol = TkScale.new(bell, 'from'=>0, 'to'=>100, 'length'=>200,
+			     'tickinterval'=>20, 'orient'=>'horizontal',
 			     'label'=>"Volume (%)")
 
     f = TkFrame.new(bell)
@@ -180,13 +180,13 @@ class Xsettings
 
     #
     # Keyboard settings
-    # 
+    #
     kbdonoff = nil
     kbdcli = nil
     kbd = TkFrame.new(@root, 'relief'=>'raised', 'borderwidth'=>2)
     l = TkLabel.new(kbd, 'text'=>'Keyboard Repeat Settings')
     f = TkFrame.new(kbd)
-    @w_kbdonoff = TkCheckButton.new(f, 'text'=>'On', 'relief'=>'flat', 
+    @w_kbdonoff = TkCheckButton.new(f, 'text'=>'On', 'relief'=>'flat',
 				    'onvalue'=>'on', 'offvalue'=>'off',
 				    'variable'=>@w_kbdrep ) {
       def self.set(value)
@@ -198,8 +198,8 @@ class Xsettings
       end
       pack('side'=>'left', 'expand'=>'yes', 'fill'=>'both')
     }
-    @w_kbdcli = TkScale.new(f, 'from'=>0, 'to'=>100, 'length'=>200, 
-			 'tickinterval'=>20, 'orient'=>'horizontal', 
+    @w_kbdcli = TkScale.new(f, 'from'=>0, 'to'=>100, 'length'=>200,
+			 'tickinterval'=>20, 'orient'=>'horizontal',
 			 'label'=>'Click Volume (%)')
     @w_kbdcli.pack('side'=>'left', 'expand'=>'yes')
     l.pack('side'=>'top', 'expand'=>'yes')
@@ -225,9 +225,9 @@ class Xsettings
     l = TkLabel.new(screen, 'text'=>'Screen-saver Settings')
     f = TkFrame.new(screen)
     ff1 = TkFrame.new(f)
-    [ @w_screenblank = TkRadioButton.new(ff1, 'text'=>'Blank', 
-					 'relief'=>'flat', 
-					 'variable'=>@w_screenbla, 
+    [ @w_screenblank = TkRadioButton.new(ff1, 'text'=>'Blank',
+					 'relief'=>'flat',
+					 'variable'=>@w_screenbla,
 					 'value'=>'blank') {
 	def self.set(value)
 	  if value == 'blank'
@@ -236,10 +236,10 @@ class Xsettings
 	    self.deselect
 	  end
 	end
-      }, 
-      @w_screenpat = TkRadioButton.new(ff1, 'text'=>'Pattern', 
-				       'relief'=>'flat', 
-				       'variable'=>@w_screenbla, 
+      },
+      @w_screenpat = TkRadioButton.new(ff1, 'text'=>'Pattern',
+				       'relief'=>'flat',
+				       'variable'=>@w_screenbla,
 				       'value'=>'noblank') {
 	def self.set(value)
 	  if value != 'blank'
@@ -252,7 +252,7 @@ class Xsettings
     ].each {|w| w.pack('side'=>'top', 'pady'=>2, 'anchor'=>'w') }
 
     ff2 = TkFrame.new(f)
-    [ @w_screentim = LabelEntry.new(ff2, 'Timeout (s)', 5), 
+    [ @w_screentim = LabelEntry.new(ff2, 'Timeout (s)', 5),
       @w_screencyc = LabelEntry.new(ff2, 'Cycle (s)', 5) ].each{|w|
       w.pack('side'=>'top', 'pady'=>2, 'anchor'=>'e')
     }

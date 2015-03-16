@@ -27,7 +27,7 @@ class Tk::RbWidget::Editable_Listbox < TkListbox
       if idx = @ebox.pos
         see(idx) if bbox(idx).empty?
         @ebox.focus(true)
-      end 
+      end
     }
   }
 

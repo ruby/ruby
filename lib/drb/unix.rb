@@ -6,33 +6,39 @@ raise(LoadError, "UNIXServer is required") unless defined?(UNIXServer)
 
 module DRb
 
+  # Implements DRb over a UNIX socket
+  #
+  # DRb UNIX socket URIs look like <code>drbunix:<path>?<option></code>.  The
+  # option is optional.
+
   class DRbUNIXSocket < DRbTCPSocket
+    # :stopdoc:
     def self.parse_uri(uri)
       if /^drbunix:(.*?)(\?(.*))?$/ =~ uri
-	filename = $1
-	option = $3
-	[filename, option]
+        filename = $1
+        option = $3
+        [filename, option]
       else
-	raise(DRbBadScheme, uri) unless uri =~ /^drbunix:/
-	raise(DRbBadURI, 'can\'t parse uri:' + uri)
+        raise(DRbBadScheme, uri) unless uri =~ /^drbunix:/
+        raise(DRbBadURI, 'can\'t parse uri:' + uri)
       end
     end
 
     def self.open(uri, config)
-      filename, option = parse_uri(uri)
+      filename, = parse_uri(uri)
       filename.untaint
       soc = UNIXSocket.open(filename)
       self.new(uri, soc, config)
     end
 
     def self.open_server(uri, config)
-      filename, option = parse_uri(uri)
+      filename, = parse_uri(uri)
       if filename.size == 0
-	soc = temp_server
+        soc = temp_server
         filename = soc.path
-	uri = 'drbunix:' + soc.path
+        uri = 'drbunix:' + soc.path
       else
-	soc = UNIXServer.open(filename)
+        soc = UNIXServer.open(filename)
       end
       owner = config[:UNIXFileOwner]
       group = config[:UNIXFileGroup]
@@ -67,18 +73,18 @@ module DRb
       tmpdir = Dir::tmpdir
       n = 0
       while true
-	begin
-	  tmpname = sprintf('%s/druby%d.%d', tmpdir, $$, n)
-	  lock = tmpname + '.lock'
-	  unless File.exist?(tmpname) or File.exist?(lock)
-	    Dir.mkdir(lock)
-	    break
-	  end
-	rescue
-	  raise "cannot generate tempfile `%s'" % tmpname if n >= Max_try
-	  #sleep(1)
-	end
-	n += 1
+        begin
+          tmpname = sprintf('%s/druby%d.%d', tmpdir, $$, n)
+          lock = tmpname + '.lock'
+          unless File.exist?(tmpname) or File.exist?(lock)
+            Dir.mkdir(lock)
+            break
+          end
+        rescue
+          raise "cannot generate tempfile `%s'" % tmpname if n >= Max_try
+          #sleep(1)
+        end
+        n += 1
       end
       soc = UNIXServer.new(tmpname)
       Dir.rmdir(lock)
@@ -92,17 +98,20 @@ module DRb
       @socket.close
       File.unlink(path) if @server_mode
       @socket = nil
+      close_shutdown_pipe
     end
 
     def accept
-      s = @socket.accept
+      s = accept_or_shutdown
+      return nil unless s
       self.class.new(nil, s, @config)
     end
 
     def set_sockopt(soc)
-      soc.fcntl(Fcntl::F_SETFL, Fcntl::FD_CLOEXEC) if defined? Fcntl::FD_CLOEXEC
+      soc.fcntl(Fcntl::F_SETFD, Fcntl::FD_CLOEXEC) if defined? Fcntl::FD_CLOEXEC
     end
   end
 
   DRbProtocol.add_protocol(DRbUNIXSocket)
+  # :startdoc:
 end

@@ -13,6 +13,6 @@ This library is based on MoonWolf version written in Ruby.  Thanks a lot.
 * not implemented: (({fcntl})), (({reopen})).
 * (({fileno})) returns nil.
 * (({pos=})) returns new position, not 0.
-* (({ungetc})) does nothing at start of the string. 
+* (({ungetc})) does nothing at start of the string.
 
 =end

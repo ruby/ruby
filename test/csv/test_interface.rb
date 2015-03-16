@@ -7,13 +7,17 @@
 #  Copyright 2005 James Edward Gray II. You can redistribute or modify this code
 #  under the terms of Ruby's license.
 
-require "test/unit"
+require_relative "base"
+require "tempfile"
 
-require "csv"
+class TestCSV::Interface < TestCSV
+  extend DifferentOFS
 
-class TestCSVInterface < Test::Unit::TestCase
   def setup
-    @path = File.join(File.dirname(__FILE__), "temp_test_data.csv")
+    super
+    @tempfile = Tempfile.new(%w"temp .csv")
+    @tempfile.close
+    @path = @tempfile.path
 
     File.open(@path, "wb") do |file|
       file << "1\t2\t3\r\n"
@@ -24,7 +28,8 @@ class TestCSVInterface < Test::Unit::TestCase
   end
 
   def teardown
-    File.unlink(@path)
+    @tempfile.close(true)
+    super
   end
 
   ### Test Read Interface ###
@@ -35,20 +40,26 @@ class TestCSVInterface < Test::Unit::TestCase
     end
   end
 
+  def test_foreach_enum
+    CSV.foreach(@path, col_sep: "\t", row_sep: "\r\n").zip(@expected) do |row, exp|
+      assert_equal(exp, row)
+    end
+  end
+
   def test_open_and_close
     csv = CSV.open(@path, "r+", col_sep: "\t", row_sep: "\r\n")
     assert_not_nil(csv)
     assert_instance_of(CSV, csv)
-    assert_equal(false, csv.closed?)
+    assert_not_predicate(csv, :closed?)
     csv.close
-    assert(csv.closed?)
+    assert_predicate(csv, :closed?)
 
     ret = CSV.open(@path) do |new_csv|
       csv = new_csv
       assert_instance_of(CSV, new_csv)
       "Return value."
     end
-    assert(csv.closed?)
+    assert_predicate(csv, :closed?)
     assert_equal("Return value.", ret)
   end
 
@@ -79,7 +90,7 @@ class TestCSVInterface < Test::Unit::TestCase
     assert_equal(nil,       CSV.parse_line(""))  # to signal eof
     assert_equal(Array.new, CSV.parse_line("\n1,2,3"))
   end
-  
+
   def test_read_and_readlines
     assert_equal( @expected,
                   CSV.read(@path, col_sep: "\t", row_sep: "\r\n") )
@@ -108,6 +119,20 @@ class TestCSVInterface < Test::Unit::TestCase
       assert_equal(@expected.shift, csv.shift)
       assert_equal(@expected.shift, csv.shift)
       assert_equal(nil, csv.shift)
+    end
+  end
+
+  def test_enumerators_are_supported
+    CSV.open(@path, col_sep: "\t", row_sep: "\r\n") do |csv|
+      enum = csv.each
+      assert_instance_of(Enumerator, enum)
+      assert_equal(@expected.shift, enum.next)
+    end
+  end
+
+  def test_nil_is_not_acceptable
+    assert_raise_with_message ArgumentError, "Cannot parse nil as CSV" do
+      CSV.new(nil)
     end
   end
 
@@ -176,6 +201,25 @@ class TestCSVInterface < Test::Unit::TestCase
                            converters:        :all,
                            header_converters: :symbol ) do |csv|
       csv.each { |line| assert_equal(lines.shift, line.to_hash) }
+    end
+  end
+
+  def test_write_hash_with_string_keys
+    File.unlink(@path)
+
+    lines = [{a: 1, b: 2, c: 3}, {a: 4, b: 5, c: 6}]
+    CSV.open( @path, "wb", headers: true ) do |csv|
+      csv << lines.first.keys
+      lines.each { |line| csv << line }
+    end
+    CSV.open( @path, "rb", headers: true ) do |csv|
+      csv.each do |line|
+        csv.headers.each_with_index do |header, h|
+          keys = line.to_hash.keys
+          assert_instance_of(String, keys[h])
+          assert_same(header, keys[h])
+        end
+      end
     end
   end
 
@@ -305,5 +349,20 @@ class TestCSVInterface < Test::Unit::TestCase
     # shortcuts
     assert_equal(STDOUT, CSV.instance.instance_eval { @io })
     assert_equal(STDOUT, CSV { |new_csv| new_csv.instance_eval { @io } })
+  end
+
+  def test_options_are_not_modified
+    opt = {}.freeze
+    assert_nothing_raised {  CSV.foreach(@path, opt)       }
+    assert_nothing_raised {  CSV.open(@path, opt){}        }
+    assert_nothing_raised {  CSV.parse("", opt)            }
+    assert_nothing_raised {  CSV.parse_line("", opt)       }
+    assert_nothing_raised {  CSV.read(@path, opt)          }
+    assert_nothing_raised {  CSV.readlines(@path, opt)     }
+    assert_nothing_raised {  CSV.table(@path, opt)         }
+    assert_nothing_raised {  CSV.generate(opt){}           }
+    assert_nothing_raised {  CSV.generate_line([], opt)    }
+    assert_nothing_raised {  CSV.filter("", "", opt){}     }
+    assert_nothing_raised {  CSV.instance("", opt)         }
   end
 end

@@ -1,4 +1,4 @@
-# -*- coding: euc-jp -*-
+# -*- coding: utf-8 -*-
 #
 # Ruby/Tk Goldverg demo (called by 'widget')
 #
@@ -63,7 +63,7 @@ msg = TkLabel.new($goldberg_demo) {
   font 'Arial 10'
   wraplength '4i'
   justify 'left'
-  text "¤³¤ì¤Ï¡¢¤¢¤Ê¤¿¤¬¼«Ê¬¤Î¥¢¥Ë¥á¡¼¥·¥ç¥ó¤ò¤¤¤«¤ËÆş¤êÁÈ¤ó¤À¤â¤Î¤Ë¤Ç¤­¤ë¤«¤ò¼¨¤¹¤È¤¤¤¦¤À¤±¤Î¤¿¤á¤Î¥Ç¥â¤Ç¤¹¡£¥Ü¡¼¥ë¤ò¥¯¥ê¥Ã¥¯¤¹¤ì¤ĞÊª¤¬Æ°¤­»Ï¤á¤Ş¤¹¡ª\n\n\"Man will always find a difficult means to perform a simple task\"\n - Rube Goldberg"
+  text "ã“ã‚Œã¯ã€ã‚ãªãŸãŒè‡ªåˆ†ã®ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ã‚’ã„ã‹ã«å…¥ã‚Šçµ„ã‚“ã ã‚‚ã®ã«ã§ãã‚‹ã‹ã‚’ç¤ºã™ã¨ã„ã†ã ã‘ã®ãŸã‚ã®ãƒ‡ãƒ¢ã§ã™ã€‚ãƒœãƒ¼ãƒ«ã‚’ã‚¯ãƒªãƒƒã‚¯ã™ã‚Œã°ç‰©ãŒå‹•ãå§‹ã‚ã¾ã™ï¼\n\n\"Man will always find a difficult means to perform a simple task\"\n - Rube Goldberg"
 }
 msg.pack('side'=>'top')
 =end
@@ -72,7 +72,7 @@ msg.pack('side'=>'top')
 # frame
 TkFrame.new($goldberg_demo) {|frame|
   TkButton.new(frame) {
-    text 'ÊÄ¤¸¤ë'
+    text 'é–‰ã˜ã‚‹'
     command proc{
       tmppath = $goldberg_demo
       $goldberg_demo = nil
@@ -81,7 +81,7 @@ TkFrame.new($goldberg_demo) {|frame|
   }.pack('side'=>'left', 'expand'=>'yes')
 
   TkButton.new(frame) {
-    text '¥³¡¼¥É»²¾È'
+    text 'ã‚³ãƒ¼ãƒ‰å‚ç…§'
     command proc{showCode 'goldberg'}
   }.pack('side'=>'left', 'expand'=>'yes')
 
@@ -99,7 +99,7 @@ class TkGoldberg_Demo
     @S['speed']   = TkVariable.new(5)
     @S['cnt']     = TkVariable.new(0)
     # @S['message'] = TkVariable.new("\\nWelcome\\nto\\nRuby/Tk")
-    @S['message'] = TkVariable.new("\\n ¤è¤¦¤³¤½¡ª\\nRuby/Tk\\n¤Î\\nÀ¤³¦¤Ø")
+    @S['message'] = TkVariable.new("\\n ã‚ˆã†ã“ãï¼\\nRuby/Tk\\nã®\\nä¸–ç•Œã¸")
     @S['pause']   = TkVariable.new
     @S['details'] = TkVariable.new(true)
 
@@ -184,7 +184,7 @@ class TkGoldberg_Demo
       font 'Arial 10'
       wraplength 600
       justify 'left'
-      text "¤³¤ì¤Ï¡¢¤¢¤Ê¤¿¤¬¼«Ê¬¤Î¥¢¥Ë¥á¡¼¥·¥ç¥ó¤ò¤¤¤«¤ËÆş¤êÁÈ¤ó¤À¤â¤Î¤Ë¤Ç¤­¤ë¤«¤ò¼¨¤¹¤È¤¤¤¦¤À¤±¤Î¤¿¤á¤Î¥Ç¥â¤Ç¤¹¡£¥Ü¡¼¥ë¤ò¥¯¥ê¥Ã¥¯¤¹¤ì¤ĞÊª¤¬Æ°¤­»Ï¤á¤Ş¤¹¡ª\n\"Man will always find a difficult means to perform a simple task\" - Rube Goldberg"
+      text "ã“ã‚Œã¯ã€ã‚ãªãŸãŒè‡ªåˆ†ã®ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ã‚’ã„ã‹ã«å…¥ã‚Šçµ„ã‚“ã ã‚‚ã®ã«ã§ãã‚‹ã‹ã‚’ç¤ºã™ã¨ã„ã†ã ã‘ã®ãŸã‚ã®ãƒ‡ãƒ¢ã§ã™ã€‚ãƒœãƒ¼ãƒ«ã‚’ã‚¯ãƒªãƒƒã‚¯ã™ã‚Œã°ç‰©ãŒå‹•ãå§‹ã‚ã¾ã™ï¼\n\"Man will always find a difficult means to perform a simple task\" - Rube Goldberg"
     }
     msg.place(:in=>@canvas, :relx=>0, :rely=>0, :anchor=>:nw)
 
@@ -192,7 +192,7 @@ class TkGoldberg_Demo
 
     # TkButton.new(frame, :bg=>@C['bg'], :activebackground=>@C['bg']) {
     Tk::Button.new(frame, :bg=>@C['bg'], :activebackground=>@C['bg']) {
-      text 'ÊÄ¤¸¤ë'
+      text 'é–‰ã˜ã‚‹'
       command proc{
         tmppath = $goldberg_demo
         $goldberg_demo = nil
@@ -202,7 +202,7 @@ class TkGoldberg_Demo
 
     # TkButton.new(frame, :bg=>@C['bg'], :activebackground=>@C['bg']) {
     Tk::Button.new(frame, :bg=>@C['bg'], :activebackground=>@C['bg']) {
-      text '¥³¡¼¥É»²¾È'
+      text 'ã‚³ãƒ¼ãƒ‰å‚ç…§'
       command proc{showCode 'goldberg'}
     }.pack('side'=>'left', 'padx'=>5)
 
@@ -420,7 +420,7 @@ class TkGoldberg_Demo
     color = @C['0']
     TkcText.new(@canvas,
                 # [579, 119], :text=>'START HERE!',
-                [558, 119], :text=>'¤³¤³¤«¤é¥¹¥¿¡¼¥È¡ª',
+                [558, 119], :text=>'ã“ã“ã‹ã‚‰ã‚¹ã‚¿ãƒ¼ãƒˆï¼',
                 :fill=>color, :anchor=>:w,
                 :tag=>'I0', :font=>['Times Roman', 12, :italic, :bold])
     TkcLine.new(@canvas, [719, 119, 763, 119], :tag=>'I0', :fill=>color,
@@ -1792,7 +1792,7 @@ class TkGoldberg_Demo
       @canvas.delete('I24', 'I26')
       TkcText.new(@canvas, 430, 735, :anchor=>:s, :tag=>'I26',
                   #:text=>'click to continue',
-                  :text=>'¥¯¥ê¥Ã¥¯¤Ç¥ê¥»¥Ã¥È¤·¤Ş¤¹',
+                  :text=>'ã‚¯ãƒªãƒƒã‚¯ã§ãƒªã‚»ãƒƒãƒˆã—ã¾ã™',
                   :font=>['Times Roman', 20, :bold])
       @canvas.bind('1', proc{reset})
       return 4

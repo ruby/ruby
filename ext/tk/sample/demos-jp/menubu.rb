@@ -1,4 +1,4 @@
-# -*- coding: euc-jp -*-
+# -*- coding: utf-8 -*-
 require "tkcanvas"
 
 def optionMenu(menubutton, varName, firstValue, *rest)
@@ -38,16 +38,16 @@ base_frame = TkFrame.new($menubu_demo).pack(:fill=>:both, :expand=>true)
 # version check
 if $tk_version.to_f < 8.0
 
-# label À¸À®
+# label ç”Ÿæˆ
 TkLabel.new(base_frame,'font'=>$font,'wraplength'=>'4i','justify'=>'left') {
-    text("¼Â¹Ô¤·¤è¤¦¤È¤·¤¿¥¹¥¯¥ê¥×¥È¤Ï Tk8.0 °Ê¾å¤ÇÍøÍÑ¤Ç¤­¤ëµ¡Ç½¤òÍøÍÑ¤·¤Æ¤¤¤ë¤¿¤á¡¢¤¢¤Ê¤¿¤Î Ruby#{VERSION}/Tk#{$tk_version}#{(Tk::JAPANIZED_TK)? 'jp': ''} ¤Ç¤ÏÀµ¾ï¤Ë¼Â¹Ô¤Ç¤­¤Þ¤»¤ó¡£¤è¤Ã¤Æ¥Ç¥â¤Î¼Â¹Ô¤òÃæ»ß¤·¤Þ¤·¤¿¡£¤¿¤À¤·¡¢²¼¤Î¥³¡¼¥É»²¾È¥Ü¥¿¥ó¤ò²¡¤¹¤³¤È¤Ç¡¢¼Â¹Ô¤¬Ãæ»ß¤µ¤ì¤¿¥¹¥¯¥ê¥×¥È¤Î¥½¡¼¥¹¤ò»²¾È¤¹¤ë¤³¤È¤Ï²ÄÇ½¤Ç¤¹¡£")
+    text("å®Ÿè¡Œã—ã‚ˆã†ã¨ã—ãŸã‚¹ã‚¯ãƒªãƒ—ãƒˆã¯ Tk8.0 ä»¥ä¸Šã§åˆ©ç”¨ã§ãã‚‹æ©Ÿèƒ½ã‚’åˆ©ç”¨ã—ã¦ã„ã‚‹ãŸã‚ã€ã‚ãªãŸã® Ruby#{VERSION}/Tk#{$tk_version}#{(Tk::JAPANIZED_TK)? 'jp': ''} ã§ã¯æ­£å¸¸ã«å®Ÿè¡Œã§ãã¾ã›ã‚“ã€‚ã‚ˆã£ã¦ãƒ‡ãƒ¢ã®å®Ÿè¡Œã‚’ä¸­æ­¢ã—ã¾ã—ãŸã€‚ãŸã ã—ã€ä¸‹ã®ã‚³ãƒ¼ãƒ‰å‚ç…§ãƒœã‚¿ãƒ³ã‚’æŠ¼ã™ã“ã¨ã§ã€å®Ÿè¡ŒãŒä¸­æ­¢ã•ã‚ŒãŸã‚¹ã‚¯ãƒªãƒ—ãƒˆã®ã‚½ãƒ¼ã‚¹ã‚’å‚ç…§ã™ã‚‹ã“ã¨ã¯å¯èƒ½ã§ã™ã€‚")
 }.pack('side'=>'top')
 
-# frame À¸À®
+# frame ç”Ÿæˆ
 TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
-    #text 'Î»²ò'
-    text 'ÊÄ¤¸¤ë'
+    #text 'äº†è§£'
+    text 'é–‰ã˜ã‚‹'
     command proc{
       tmppath = $menubu_demo
       $menubu_demo = nil
@@ -56,7 +56,7 @@ TkFrame.new(base_frame) {|frame|
   }.pack('side'=>'left', 'expand'=>'yes')
 
   TkButton.new(frame) {
-    text '¥³¡¼¥É»²¾È'
+    text 'ã‚³ãƒ¼ãƒ‰å‚ç…§'
     command proc{showCode 'menubu'}
   }.pack('side'=>'left', 'expand'=>'yes')
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
@@ -160,8 +160,8 @@ center = TkFrame.new(body) {
 
 TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
-    #text 'Î»²ò'
-    text 'ÊÄ¤¸¤ë'
+    #text 'äº†è§£'
+    text 'é–‰ã˜ã‚‹'
     command proc {
       tmppath = $menubu_demo
       $menubu_demo = nil
@@ -170,7 +170,7 @@ TkFrame.new(base_frame) {|frame|
   }.pack('side'=>'left', 'expand'=>'yes')
 
   TkButton.new(frame) {
-    text '¥³¡¼¥É»²¾È'
+    text 'ã‚³ãƒ¼ãƒ‰å‚ç…§'
     command proc { showCode 'menubu' }
   }.pack('side'=>'left', 'expand'=>'yes')
 }.pack('side'=>'bottom', 'expand'=>'yes', 'fill'=>'x', 'pady'=>'2m')
@@ -179,10 +179,10 @@ msg = TkLabel.new(center) {
 #  font $font
   wraplength '4i'
   justify 'left'
-  text "¤³¤ì¤Ï¥á¥Ë¥å¡¼¥Ü¥¿¥ó¤Î¥Ç¥â¤Ç¤¹¡£\"Below\"¤Î¥Ü¥¿¥ó¤Ï\
-²¼¤Ë¥á¥Ë¥å¡¼¤ò½Ð¤·¡¢\"Right\"¤Î¥Ü¥¿¥ó¤Ï±¦¤Ë¥á¥Ë¥å¡¼¤ò½Ð¤·¤Æ¡¢\
-¡Ä¡Ä¤È¤Ê¤ê¤Þ¤¹¡£¤³¤ÎÊ¸¾Ï¤Î²¼¤Ë¤Ï2¤Ä¤Î¥ª¥×¥·¥ç¥ó¥á¥Ë¥å¡¼¤¬¤¢¤ê¤Þ¤¹¡£\
-1¤Ä¤ÏÉáÄÌ¤Î¥á¥Ë¥å¡¼¤Ç¡¢¤â¤¦1¤Ä¤Ï16¿§¤Î¥Ñ¥ì¥Ã¥È¤Ç¤¹¡£"
+  text "ã“ã‚Œã¯ãƒ¡ãƒ‹ãƒ¥ãƒ¼ãƒœã‚¿ãƒ³ã®ãƒ‡ãƒ¢ã§ã™ã€‚\"Below\"ã®ãƒœã‚¿ãƒ³ã¯\
+ä¸‹ã«ãƒ¡ãƒ‹ãƒ¥ãƒ¼ã‚’å‡ºã—ã€\"Right\"ã®ãƒœã‚¿ãƒ³ã¯å³ã«ãƒ¡ãƒ‹ãƒ¥ãƒ¼ã‚’å‡ºã—ã¦ã€\
+â€¦â€¦ã¨ãªã‚Šã¾ã™ã€‚ã“ã®æ–‡ç« ã®ä¸‹ã«ã¯2ã¤ã®ã‚ªãƒ—ã‚·ãƒ§ãƒ³ãƒ¡ãƒ‹ãƒ¥ãƒ¼ãŒã‚ã‚Šã¾ã™ã€‚\
+1ã¤ã¯æ™®é€šã®ãƒ¡ãƒ‹ãƒ¥ãƒ¼ã§ã€ã‚‚ã†1ã¤ã¯16è‰²ã®ãƒ‘ãƒ¬ãƒƒãƒˆã§ã™ã€‚"
 }
 msg.pack('side'=>'top', 'padx'=>25, 'pady'=>25)
 

@@ -19,8 +19,64 @@
 #include "ruby/ruby.h"
 #include <float.h>
 
+#ifndef RB_UNUSED_VAR
+# ifdef __GNUC__
+#  define RB_UNUSED_VAR(x) x __attribute__ ((unused))
+# else
+#  define RB_UNUSED_VAR(x) x
+# endif
+#endif
+
+#ifndef UNREACHABLE
+# define UNREACHABLE		/* unreachable */
+#endif
+
+#undef BDIGIT
+#undef SIZEOF_BDIGITS
+#undef BDIGIT_DBL
+#undef BDIGIT_DBL_SIGNED
+#undef PRI_BDIGIT_PREFIX
+#undef PRI_BDIGIT_DBL_PREFIX
+
+#ifdef HAVE_INT64_T
+# define BDIGIT uint32_t
+# define BDIGIT_DBL uint64_t
+# define BDIGIT_DBL_SIGNED int64_t
+# define SIZEOF_BDIGITS 4
+# define PRI_BDIGIT_PREFIX ""
+# ifdef PRI_LL_PREFIX
+# define PRI_BDIGIT_DBL_PREFIX PRI_LL_PREFIX
+# else
+# define PRI_BDIGIT_DBL_PREFIX "l"
+# endif
+#else
+# define BDIGIT uint16_t
+# define BDIGIT_DBL uint32_t
+# define BDIGIT_DBL_SIGNED int32_t
+# define SIZEOF_BDIGITS 2
+# define PRI_BDIGIT_PREFIX "h"
+# define PRI_BDIGIT_DBL_PREFIX ""
+#endif
+
+#define PRIdBDIGIT PRI_BDIGIT_PREFIX"d"
+#define PRIiBDIGIT PRI_BDIGIT_PREFIX"i"
+#define PRIoBDIGIT PRI_BDIGIT_PREFIX"o"
+#define PRIuBDIGIT PRI_BDIGIT_PREFIX"u"
+#define PRIxBDIGIT PRI_BDIGIT_PREFIX"x"
+#define PRIXBDIGIT PRI_BDIGIT_PREFIX"X"
+
+#define PRIdBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"d"
+#define PRIiBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"i"
+#define PRIoBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"o"
+#define PRIuBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"u"
+#define PRIxBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"x"
+#define PRIXBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"X"
+
 #if defined(__cplusplus)
 extern "C" {
+#if 0
+} /* satisfy cc-mode */
+#endif
 #endif
 
 #ifndef HAVE_LABS
@@ -94,9 +150,11 @@ extern VALUE rb_cBigDecimal;
 #define VP_EXCEPTION_OVERFLOW   ((unsigned short)0x0001) /* 0x0008) */
 #define VP_EXCEPTION_ZERODIVIDE ((unsigned short)0x0010)
 
-/* Following 2 exceptions cann't controlled by user */
+/* Following 2 exceptions can't controlled by user */
 #define VP_EXCEPTION_OP         ((unsigned short)0x0020)
 #define VP_EXCEPTION_MEMORY     ((unsigned short)0x0040)
+
+#define RMPD_EXCEPTION_MODE_DEFAULT 0U
 
 /* Computation mode */
 #define VP_ROUND_MODE            ((unsigned short)0x0100)
@@ -108,6 +166,8 @@ extern VALUE rb_cBigDecimal;
 #define VP_ROUND_FLOOR      6
 #define VP_ROUND_HALF_EVEN  7
 
+#define RMPD_ROUNDING_MODE_DEFAULT  VP_ROUND_HALF_UP
+
 #define VP_SIGN_NaN                0 /* NaN                      */
 #define VP_SIGN_POSITIVE_ZERO      1 /* Positive zero            */
 #define VP_SIGN_NEGATIVE_ZERO     -1 /* Negative zero            */
@@ -115,6 +175,12 @@ extern VALUE rb_cBigDecimal;
 #define VP_SIGN_NEGATIVE_FINITE   -2 /* Negative finite number   */
 #define VP_SIGN_POSITIVE_INFINITE  3 /* Positive infinite number */
 #define VP_SIGN_NEGATIVE_INFINITE -3 /* Negative infinite number */
+
+#ifdef __GNUC__
+#define	FLEXIBLE_ARRAY_SIZE 0
+#else
+#define	FLEXIBLE_ARRAY_SIZE 1
+#endif
 
 /*
  * VP representation
@@ -140,7 +206,7 @@ typedef struct {
                      *         -3 : Negative infinite number
                      */
     short  flag;    /* Not used in vp_routines,space for user.  */
-    BDIGIT frac[1]; /* Pointer to array of fraction part.       */
+    BDIGIT frac[FLEXIBLE_ARRAY_SIZE]; /* Array of fraction part. */
 } Real;
 
 /*
@@ -150,7 +216,7 @@ typedef struct {
  */
 
 VP_EXPORT  Real *
-VpNewRbClass(size_t mx, char *str, VALUE klass);
+VpNewRbClass(size_t mx, char const *str, VALUE klass);
 
 VP_EXPORT  Real *VpCreateRbObject(size_t mx,const char *str);
 
@@ -176,9 +242,9 @@ VP_EXPORT size_t VpGetPrecLimit(void);
 VP_EXPORT size_t VpSetPrecLimit(size_t n);
 
 /* Round mode */
-VP_EXPORT int           VpIsRoundMode(unsigned long n);
-VP_EXPORT unsigned long VpGetRoundMode(void);
-VP_EXPORT unsigned long VpSetRoundMode(unsigned long n);
+VP_EXPORT int            VpIsRoundMode(unsigned short n);
+VP_EXPORT unsigned short VpGetRoundMode(void);
+VP_EXPORT unsigned short VpSetRoundMode(unsigned short n);
 
 VP_EXPORT int VpException(unsigned short f,const char *str,int always);
 #if 0  /* unused */
@@ -187,6 +253,7 @@ VP_EXPORT int VpIsNegDoubleZero(double v);
 VP_EXPORT size_t VpNumOfChars(Real *vp,const char *pszFmt);
 VP_EXPORT size_t VpInit(BDIGIT BaseVal);
 VP_EXPORT void *VpMemAlloc(size_t mb);
+VP_EXPORT void *VpMemRealloc(void *ptr, size_t mb);
 VP_EXPORT void VpFree(Real *pv);
 VP_EXPORT Real *VpAlloc(size_t mx, const char *szVal);
 VP_EXPORT size_t VpAsgn(Real *c, Real *a, int isw);
@@ -206,9 +273,9 @@ VP_EXPORT void VpDtoV(Real *m,double d);
 VP_EXPORT void VpItoV(Real *m,S_INT ival);
 #endif
 VP_EXPORT int VpSqrt(Real *y,Real *x);
-VP_EXPORT int VpActiveRound(Real *y, Real *x, int f, ssize_t il);
-VP_EXPORT int VpMidRound(Real *y, int f, ssize_t nf);
-VP_EXPORT int VpLeftRound(Real *y, int f, ssize_t nf);
+VP_EXPORT int VpActiveRound(Real *y, Real *x, unsigned short f, ssize_t il);
+VP_EXPORT int VpMidRound(Real *y, unsigned short f, ssize_t nf);
+VP_EXPORT int VpLeftRound(Real *y, unsigned short f, ssize_t nf);
 VP_EXPORT void VpFrac(Real *y, Real *x);
 VP_EXPORT int VpPower(Real *y, Real *x, SIGNED_VALUE n);
 
@@ -246,7 +313,7 @@ VP_EXPORT Real *VpOne(void);
 #define VpIsZero(a)     (VpIsPosZero(a) || VpIsNegZero(a))
 #define VpSetPosZero(a) ((a)->frac[0]=0,(a)->Prec=1,(a)->sign=VP_SIGN_POSITIVE_ZERO)
 #define VpSetNegZero(a) ((a)->frac[0]=0,(a)->Prec=1,(a)->sign=VP_SIGN_NEGATIVE_ZERO)
-#define VpSetZero(a,s)  ( ((s)>0)?VpSetPosZero(a):VpSetNegZero(a) )
+#define VpSetZero(a,s)  (void)(((s)>0)?VpSetPosZero(a):VpSetNegZero(a))
 
 /* NaN */
 #define VpIsNaN(a)      ((a)->sign==VP_SIGN_NaN)
@@ -259,16 +326,18 @@ VP_EXPORT Real *VpOne(void);
 #define VpIsDef(a)      ( !(VpIsNaN(a)||VpIsInf(a)) )
 #define VpSetPosInf(a)  ((a)->frac[0]=0,(a)->Prec=1,(a)->sign=VP_SIGN_POSITIVE_INFINITE)
 #define VpSetNegInf(a)  ((a)->frac[0]=0,(a)->Prec=1,(a)->sign=VP_SIGN_NEGATIVE_INFINITE)
-#define VpSetInf(a,s)   ( ((s)>0)?VpSetPosInf(a):VpSetNegInf(a) )
+#define VpSetInf(a,s)   (void)(((s)>0)?VpSetPosInf(a):VpSetNegInf(a))
 #define VpHasVal(a)     (a->frac[0])
 #define VpIsOne(a)      ((a->Prec==1)&&(a->frac[0]==1)&&(a->exponent==1))
 #define VpExponent(a)   (a->exponent)
 #ifdef BIGDECIMAL_DEBUG
 int VpVarCheck(Real * v);
 #endif /* BIGDECIMAL_DEBUG */
-VP_EXPORT int VPrint(FILE *fp,const char *cntl_chr,Real *a);
 
 #if defined(__cplusplus)
+#if 0
+{ /* satisfy cc-mode */
+#endif
 }  /* extern "C" { */
 #endif
 #endif /* RUBY_BIG_DECIMAL_H */

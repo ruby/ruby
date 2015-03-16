@@ -22,9 +22,53 @@ extern "C" {
 #include RUBY_EXTCONF_H
 #endif
 
+/* AC_INCLUDES_DEFAULT */
+#include <stdio.h>
+#ifdef HAVE_SYS_TYPES_H
+# include <sys/types.h>
+#endif
+#ifdef HAVE_SYS_STAT_H
+# include <sys/stat.h>
+#endif
+#ifdef STDC_HEADERS
+# include <stdlib.h>
+# include <stddef.h>
+#else
+# ifdef HAVE_STDLIB_H
+#  include <stdlib.h>
+# endif
+#endif
+#ifdef HAVE_STRING_H
+# if !defined STDC_HEADERS && defined HAVE_MEMORY_H
+#  include <memory.h>
+# endif
+# include <string.h>
+#endif
+#ifdef HAVE_STRINGS_H
+# include <strings.h>
+#endif
+#ifdef HAVE_INTTYPES_H
+# include <inttypes.h>
+#endif
+#ifdef HAVE_STDINT_H
+# include <stdint.h>
+#endif
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
+
+#ifdef HAVE_SYS_SELECT_H
+# include <sys/select.h>
+#endif
+
+#if defined HAVE_SETJMPEX_H && defined HAVE__SETJMPEX
+#include <setjmpex.h>
+#endif
+
+#include "ruby/missing.h"
+
 #define RUBY
 
-#include <stdlib.h>
 #ifdef __cplusplus
 # ifndef  HAVE_PROTOTYPES
 #  define HAVE_PROTOTYPES 1
@@ -54,9 +98,12 @@ extern "C" {
 #define ANYARGS
 #endif
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility push(default)
+#ifndef RUBY_SYMBOL_EXPORT_BEGIN
+# define RUBY_SYMBOL_EXPORT_BEGIN /* begin */
+# define RUBY_SYMBOL_EXPORT_END   /* end */
 #endif
+
+RUBY_SYMBOL_EXPORT_BEGIN
 
 #define xmalloc ruby_xmalloc
 #define xmalloc2 ruby_xmalloc2
@@ -65,16 +112,26 @@ extern "C" {
 #define xrealloc2 ruby_xrealloc2
 #define xfree ruby_xfree
 
-void *xmalloc(size_t);
-void *xmalloc2(size_t,size_t);
-void *xcalloc(size_t,size_t);
-void *xrealloc(void*,size_t);
-void *xrealloc2(void*,size_t,size_t);
+#if defined(__GNUC__) && __GNUC__ >= 4 && __GNUC_MINOR__ >= 3
+# define RUBY_ATTR_ALLOC_SIZE(params) __attribute__ ((__alloc_size__ params))
+#else
+# define RUBY_ATTR_ALLOC_SIZE(params)
+#endif
+
+void *xmalloc(size_t) RUBY_ATTR_ALLOC_SIZE((1));
+void *xmalloc2(size_t,size_t) RUBY_ATTR_ALLOC_SIZE((1,2));
+void *xcalloc(size_t,size_t) RUBY_ATTR_ALLOC_SIZE((1,2));
+void *xrealloc(void*,size_t) RUBY_ATTR_ALLOC_SIZE((2));
+void *xrealloc2(void*,size_t,size_t) RUBY_ATTR_ALLOC_SIZE((2,3));
 void xfree(void*);
 
 #define STRINGIZE(expr) STRINGIZE0(expr)
 #ifndef STRINGIZE0
 #define STRINGIZE0(expr) #expr
+#endif
+
+#ifdef HAVE_LONG_LONG
+# define HAVE_TRUE_LONG_LONG 1
 #endif
 
 #if SIZEOF_LONG_LONG > 0
@@ -84,44 +141,6 @@ void xfree(void*);
 # define LONG_LONG __int64
 # undef SIZEOF_LONG_LONG
 # define SIZEOF_LONG_LONG SIZEOF___INT64
-#endif
-
-#if SIZEOF_INT*2 <= SIZEOF_LONG_LONG
-# define BDIGIT unsigned int
-# define SIZEOF_BDIGITS SIZEOF_INT
-# define BDIGIT_DBL unsigned LONG_LONG
-# define BDIGIT_DBL_SIGNED LONG_LONG
-#elif SIZEOF_INT*2 <= SIZEOF_LONG
-# define BDIGIT unsigned int
-# define SIZEOF_BDIGITS SIZEOF_INT
-# define BDIGIT_DBL unsigned long
-# define BDIGIT_DBL_SIGNED long
-#elif SIZEOF_SHORT*2 <= SIZEOF_LONG
-# define BDIGIT unsigned short
-# define SIZEOF_BDIGITS SIZEOF_SHORT
-# define BDIGIT_DBL unsigned long
-# define BDIGIT_DBL_SIGNED long
-#else
-# define BDIGIT unsigned short
-# define SIZEOF_BDIGITS (SIZEOF_LONG/2)
-# define BDIGIT_DBL unsigned long
-# define BDIGIT_DBL_SIGNED long
-#endif
-
-#ifdef INFINITY
-# define HAVE_INFINITY
-#else
-/** @internal */
-extern const unsigned char rb_infinity[];
-# define INFINITY (*(float *)rb_infinity)
-#endif
-
-#ifdef NAN
-# define HAVE_NAN
-#else
-/** @internal */
-extern const unsigned char rb_nan[];
-# define NAN (*(float *)rb_nan)
 #endif
 
 #ifdef __CYGWIN__
@@ -140,89 +159,12 @@ extern const unsigned char rb_nan[];
 #endif
 #endif
 
-#ifdef __NeXT__
-/* NextStep, OpenStep, Rhapsody */
-#ifndef S_IRUSR
-#define S_IRUSR 0000400        /* read permission, owner */
-#endif
-#ifndef S_IRGRP
-#define S_IRGRP 0000040        /* read permission, group */
-#endif
-#ifndef S_IROTH
-#define S_IROTH 0000004        /* read permission, other */
-#endif
-#ifndef S_IWUSR
-#define S_IWUSR 0000200        /* write permission, owner */
-#endif
-#ifndef S_IWGRP
-#define S_IWGRP 0000020        /* write permission, group */
-#endif
-#ifndef S_IWOTH
-#define S_IWOTH 0000002        /* write permission, other */
-#endif
-#ifndef S_IXUSR
-#define S_IXUSR 0000100        /* execute/search permission, owner */
-#endif
-#ifndef S_IXGRP
-#define S_IXGRP 0000010        /* execute/search permission, group */
-#endif
-#ifndef S_IXOTH
-#define S_IXOTH 0000001        /* execute/search permission, other */
-#endif
-#ifndef S_IRWXU
-#define S_IRWXU 0000700        /* read, write, execute permissions, owner */
-#endif
-#ifndef S_IRWXG
-#define S_IRWXG 0000070        /* read, write, execute permissions, group */
-#endif
-#ifndef S_IRWXO
-#define S_IRWXO 0000007        /* read, write, execute permissions, other */
-#endif
-#ifndef S_ISBLK
-#define S_ISBLK(mode)  (((mode) & (0170000)) == (0060000))
-#endif
-#ifndef S_ISCHR
-#define S_ISCHR(mode)  (((mode) & (0170000)) == (0020000))
-#endif
-#ifndef S_ISDIR
-#define S_ISDIR(mode)  (((mode) & (0170000)) == (0040000))
-#endif
-#ifndef S_ISFIFO
-#define S_ISFIFO(mode) (((mode) & (0170000)) == (0010000))
-#endif
-#ifndef S_ISREG
-#define S_ISREG(mode)  (((mode) & (0170000)) == (0100000))
-#endif
-#ifndef __APPLE__
-/* NextStep, OpenStep (but not Rhapsody) */
-#ifndef GETPGRP_VOID
-#define GETPGRP_VOID 1
-#endif
-#ifndef WNOHANG
-#define WNOHANG 01
-#endif
-#ifndef WUNTRACED
-#define WUNTRACED 02
-#endif
-#ifndef X_OK
-#define X_OK 1
-#endif
-#endif /* __APPLE__ */
-#endif /* NeXT */
-
 #ifdef _WIN32
 #include "ruby/win32.h"
 #endif
 
 #if defined(__BEOS__) && !defined(__HAIKU__) && !defined(BONE)
 #include <net/socket.h> /* intern.h needs fd_set definition */
-#elif defined (__SYMBIAN32__) && defined (HAVE_SYS_SELECT_H)
-# include <sys/select.h>
-#endif
-
-#ifdef __SYMBIAN32__
-# define FALSE 0
-# define TRUE 1
 #endif
 
 #ifdef RUBY_EXPORT
@@ -258,22 +200,9 @@ extern const unsigned char rb_nan[];
         /* MB_CUR_MAX will not work well in C locale */
 #endif
 
-#if defined(sparc) || defined(__sparc__)
-static inline void
-flush_register_windows(void)
-{
-    asm
-#ifdef __GNUC__
-	volatile
-#endif
-# if defined(__sparc_v9__) || defined(__sparcv9) || defined(__arch64__)
-	("flushw")
-# else
-	("ta 0x03")
-# endif /* trap always to flush register windows if we are on a Sparc system */
-	;
-}
-#  define FLUSH_REGISTER_WINDOWS flush_register_windows()
+#if defined(__sparc)
+void rb_sparc_flush_register_windows(void);
+#  define FLUSH_REGISTER_WINDOWS rb_sparc_flush_register_windows()
 #elif defined(__ia64)
 void *rb_ia64_bsp(void);
 void rb_ia64_flushrs(void);
@@ -311,9 +240,12 @@ void rb_ia64_flushrs(void);
 #define RUBY_PLATFORM "unknown-unknown"
 #endif
 
+#ifndef FUNC_MINIMIZED
+#define FUNC_MINIMIZED(x) x
+#endif
 #ifndef RUBY_ALIAS_FUNCTION_TYPE
 #define RUBY_ALIAS_FUNCTION_TYPE(type, prot, name, args) \
-    type prot {return name args;}
+    FUNC_MINIMIZED(type prot) {return name args;}
 #endif
 #ifndef RUBY_ALIAS_FUNCTION_VOID
 #define RUBY_ALIAS_FUNCTION_VOID(prot, name, args) \
@@ -324,9 +256,28 @@ void rb_ia64_flushrs(void);
     RUBY_ALIAS_FUNCTION_TYPE(VALUE, prot, name, args)
 #endif
 
-#if defined __GNUC__ && __GNUC__ >= 4
-#pragma GCC visibility pop
+#ifndef UNALIGNED_WORD_ACCESS
+# if defined(__i386) || defined(__i386__) || defined(_M_IX86) || \
+     defined(__x86_64) || defined(__x86_64__) || defined(_M_AMD64) || \
+     defined(__powerpc64__) || \
+     defined(__mc68020__)
+#   define UNALIGNED_WORD_ACCESS 1
+# else
+#   define UNALIGNED_WORD_ACCESS 0
+# endif
 #endif
+#ifndef PACKED_STRUCT
+# define PACKED_STRUCT(x) x
+#endif
+#ifndef PACKED_STRUCT_UNALIGNED
+# if UNALIGNED_WORD_ACCESS
+#   define PACKED_STRUCT_UNALIGNED(x) PACKED_STRUCT(x)
+# else
+#   define PACKED_STRUCT_UNALIGNED(x) x
+# endif
+#endif
+
+RUBY_SYMBOL_EXPORT_END
 
 #if defined(__cplusplus)
 #if 0

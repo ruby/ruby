@@ -51,6 +51,8 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal("abc\n", StringIO.new("abc\n\ndef\n").gets)
     assert_equal("abc\n\ndef\n", StringIO.new("abc\n\ndef\n").gets(nil))
     assert_equal("abc\n\n", StringIO.new("abc\n\ndef\n").gets(""))
+    assert_raise(TypeError){StringIO.new("").gets(1, 1)}
+    assert_nothing_raised {StringIO.new("").gets(nil, nil)}
   end
 
   def test_readlines
@@ -87,6 +89,14 @@ class TestStringIO < Test::Unit::TestCase
     f.close unless f.closed?
   end
 
+  def test_write_nonblock_no_exceptions
+    s = ""
+    f = StringIO.new(s, "w")
+    f.write_nonblock("foo", exception: false)
+    f.close
+    assert_equal("foo", s)
+  end
+
   def test_write_nonblock
     s = ""
     f = StringIO.new(s, "w")
@@ -107,6 +117,36 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal("barbaz", s)
   ensure
     f.close unless f.closed?
+  end
+
+  def test_write_infection
+    bug9769 = '[ruby-dev:48118] [Bug #9769]'
+    s = "".untaint
+    f = StringIO.new(s, "w")
+    f.print("bar".taint)
+    f.close
+    assert_predicate(s, :tainted?, bug9769)
+  ensure
+    f.close unless f.closed?
+  end
+
+  def test_write_encoding
+    s = "".force_encoding(Encoding::UTF_8)
+    f = StringIO.new(s)
+    f.print("\u{3053 3093 306b 3061 306f ff01}".b)
+    assert_equal(Encoding::UTF_8, s.encoding, "honor the original encoding over ASCII-8BIT")
+  end
+
+  def test_set_encoding
+    bug10285 = '[ruby-core:65240] [Bug #10285]'
+    f = StringIO.new()
+    f.set_encoding(Encoding::ASCII_8BIT)
+    f.write("quz \x83 mat".b)
+    s = "foo \x97 bar".force_encoding(Encoding::WINDOWS_1252)
+    assert_nothing_raised(Encoding::CompatibilityError, bug10285) {
+      f.write(s)
+    }
+    assert_equal(Encoding::ASCII_8BIT, f.string.encoding, bug10285)
   end
 
   def test_mode_error
@@ -153,12 +193,12 @@ class TestStringIO < Test::Unit::TestCase
   def test_close
     f = StringIO.new("")
     f.close
-    assert_raise(IOError) { f.close }
+    assert_nil(f.close)
 
     f = StringIO.new("")
     f.close_read
     f.close_write
-    assert_raise(IOError) { f.close }
+    assert_nil(f.close)
   ensure
     f.close unless f.closed?
   end
@@ -167,7 +207,7 @@ class TestStringIO < Test::Unit::TestCase
     f = StringIO.new("")
     f.close_read
     assert_raise(IOError) { f.read }
-    assert_raise(IOError) { f.close_read }
+    assert_nothing_raised(IOError) {f.close_read}
     f.close
 
     f = StringIO.new("", "w")
@@ -181,7 +221,7 @@ class TestStringIO < Test::Unit::TestCase
     f = StringIO.new("")
     f.close_write
     assert_raise(IOError) { f.write("foo") }
-    assert_raise(IOError) { f.close_write }
+    assert_nothing_raised(IOError) {f.close_write}
     f.close
 
     f = StringIO.new("", "r")
@@ -232,7 +272,7 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal(nil, f1.getc)
     assert_equal(true, f2.eof?)
     f1.close
-    assert_equal(true, f2.closed?)
+    assert_equal(false, f2.closed?, '[ruby-core:48443]')
   ensure
     f1.close unless f1.closed?
     f2.close unless f2.closed?
@@ -378,6 +418,12 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal("a" * 10000 + "zz", f.gets("zz"))
     f = StringIO.new("a" * 10000 + "zz!")
     assert_equal("a" * 10000 + "zz!", f.gets("zzz"))
+
+    bug4112 = '[ruby-dev:42674]'
+    ["a".encode("utf-16be"), "\u3042"].each do |s|
+      assert_equal(s, StringIO.new(s).gets(1), bug4112)
+      assert_equal(s, StringIO.new(s).gets(nil, 1), bug4112)
+    end
   end
 
   def test_each
@@ -403,6 +449,22 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal("foo123", s)
   end
 
+  def test_putc_nonascii
+    s = ""
+    f = StringIO.new(s, "w")
+    f.putc("\u{3042}")
+    f.putc(0x3044)
+    f.close
+    assert_equal("\u{3042}D", s)
+
+    s = "foo"
+    f = StringIO.new(s, "a")
+    f.putc("\u{3042}")
+    f.putc(0x3044)
+    f.close
+    assert_equal("foo\u{3042}D", s)
+  end
+
   def test_read
     f = StringIO.new("\u3042\u3044")
     assert_raise(ArgumentError) { f.read(-1) }
@@ -410,24 +472,57 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal("\u3042\u3044", f.read)
     f.rewind
     assert_equal("\u3042\u3044".force_encoding(Encoding::ASCII_8BIT), f.read(f.size))
+
+    bug5207 = '[ruby-core:39026]'
+    f.rewind
+    assert_equal("\u3042\u3044", f.read(nil, nil), bug5207)
+    f.rewind
+    s = ""
+    f.read(nil, s)
+    assert_equal("\u3042\u3044", s, bug5207)
+    f.rewind
+    # not empty buffer
+    s = "0123456789"
+    f.read(nil, s)
+    assert_equal("\u3042\u3044", s)
   end
 
   def test_readpartial
     f = StringIO.new("\u3042\u3044")
     assert_raise(ArgumentError) { f.readpartial(-1) }
     assert_raise(ArgumentError) { f.readpartial(1, 2, 3) }
-    assert_equal("\u3042\u3044", f.readpartial)
+    assert_equal("\u3042\u3044".force_encoding(Encoding::ASCII_8BIT), f.readpartial(100))
     f.rewind
     assert_equal("\u3042\u3044".force_encoding(Encoding::ASCII_8BIT), f.readpartial(f.size))
+    f.rewind
+    # not empty buffer
+    s = '0123456789'
+    assert_equal("\u3042\u3044".force_encoding(Encoding::ASCII_8BIT), f.readpartial(f.size, s))
   end
 
   def test_read_nonblock
     f = StringIO.new("\u3042\u3044")
     assert_raise(ArgumentError) { f.read_nonblock(-1) }
     assert_raise(ArgumentError) { f.read_nonblock(1, 2, 3) }
-    assert_equal("\u3042\u3044", f.read_nonblock)
+    assert_equal("\u3042\u3044".force_encoding("BINARY"), f.read_nonblock(100))
+    assert_raise(EOFError) { f.read_nonblock(10) }
     f.rewind
     assert_equal("\u3042\u3044".force_encoding(Encoding::ASCII_8BIT), f.read_nonblock(f.size))
+  end
+
+  def test_read_nonblock_no_exceptions
+    f = StringIO.new("\u3042\u3044")
+    assert_raise(ArgumentError) { f.read_nonblock(-1, exception: false) }
+    assert_raise(ArgumentError) { f.read_nonblock(1, 2, 3, exception: false) }
+    assert_raise(ArgumentError) { f.read_nonblock }
+    assert_equal("\u3042\u3044".force_encoding(Encoding::ASCII_8BIT), f.read_nonblock(100, exception: false))
+    assert_equal(nil, f.read_nonblock(10, exception: false))
+    f.rewind
+    assert_equal("\u3042\u3044".force_encoding(Encoding::ASCII_8BIT), f.read_nonblock(f.size))
+    f.rewind
+    # not empty buffer
+    s = '0123456789'
+    assert_equal("\u3042\u3044".force_encoding(Encoding::ASCII_8BIT), f.read_nonblock(f.size, s))
   end
 
   def test_size
@@ -464,5 +559,31 @@ class TestStringIO < Test::Unit::TestCase
 
       expected_pos += 1
     end
+  end
+
+  def test_frozen
+    s = StringIO.new
+    s.freeze
+    bug = '[ruby-core:33648]'
+    assert_raise(RuntimeError, bug) {s.puts("foo")}
+    assert_raise(RuntimeError, bug) {s.string = "foo"}
+    assert_raise(RuntimeError, bug) {s.reopen("")}
+  end
+
+  def test_frozen_string
+    s = StringIO.new("".freeze)
+    bug = '[ruby-core:48530]'
+    assert_raise(IOError, bug) {s.write("foo")}
+    assert_raise(IOError, bug) {s.ungetc("a")}
+    assert_raise(IOError, bug) {s.ungetbyte("a")}
+  end
+
+  def test_readlines_limit_0
+    assert_raise(ArgumentError, "[ruby-dev:43392]") { StringIO.new.readlines(0) }
+  end
+
+  def test_each_line_limit_0
+    assert_raise(ArgumentError, "[ruby-dev:43392]") { StringIO.new.each_line(0){} }
+    assert_raise(ArgumentError, "[ruby-dev:43392]") { StringIO.new.each_line("a",0){} }
   end
 end

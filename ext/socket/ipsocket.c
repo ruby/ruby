@@ -15,7 +15,7 @@ struct inetsock_arg
     VALUE sock;
     struct {
 	VALUE host, serv;
-	struct addrinfo *res;
+	struct rb_addrinfo *res;
     } remote, local;
     int type;
     int fd;
@@ -25,11 +25,11 @@ static VALUE
 inetsock_cleanup(struct inetsock_arg *arg)
 {
     if (arg->remote.res) {
-	freeaddrinfo(arg->remote.res);
+	rb_freeaddrinfo(arg->remote.res);
 	arg->remote.res = 0;
     }
     if (arg->local.res) {
-	freeaddrinfo(arg->local.res);
+	rb_freeaddrinfo(arg->local.res);
 	arg->local.res = 0;
     }
     if (arg->fd >= 0) {
@@ -42,8 +42,8 @@ static VALUE
 init_inetsock_internal(struct inetsock_arg *arg)
 {
     int type = arg->type;
-    struct addrinfo *res;
-    int fd, status = 0;
+    struct addrinfo *res, *lres;
+    int fd, status = 0, local = 0;
     const char *syscall = 0;
 
     arg->remote.res = rsock_addrinfo(arg->remote.host, arg->remote.serv, SOCK_STREAM,
@@ -57,11 +57,25 @@ init_inetsock_internal(struct inetsock_arg *arg)
     }
 
     arg->fd = fd = -1;
-    for (res = arg->remote.res; res; res = res->ai_next) {
+    for (res = arg->remote.res->ai; res; res = res->ai_next) {
 #if !defined(INET6) && defined(AF_INET6)
 	if (res->ai_family == AF_INET6)
 	    continue;
 #endif
+        lres = NULL;
+        if (arg->local.res) {
+            for (lres = arg->local.res->ai; lres; lres = lres->ai_next) {
+                if (lres->ai_family == res->ai_family)
+                    break;
+            }
+            if (!lres) {
+                if (res->ai_next || status < 0)
+                    continue;
+                /* Use a different family local address if no choice, this
+                 * will cause EAFNOSUPPORT. */
+                lres = arg->local.res->ai;
+            }
+        }
 	status = rsock_socket(res->ai_family,res->ai_socktype,res->ai_protocol);
 	syscall = "socket(2)";
 	fd = status;
@@ -79,8 +93,9 @@ init_inetsock_internal(struct inetsock_arg *arg)
 	    syscall = "bind(2)";
 	}
 	else {
-	    if (arg->local.res) {
-		status = bind(fd, arg->local.res->ai_addr, arg->local.res->ai_addrlen);
+	    if (lres) {
+		status = bind(fd, lres->ai_addr, lres->ai_addrlen);
+		local = status;
 		syscall = "bind(2)";
 	    }
 
@@ -99,16 +114,26 @@ init_inetsock_internal(struct inetsock_arg *arg)
 	    break;
     }
     if (status < 0) {
-	rb_sys_fail(syscall);
+	VALUE host, port;
+
+	if (local < 0) {
+	    host = arg->local.host;
+	    port = arg->local.serv;
+	} else {
+	    host = arg->remote.host;
+	    port = arg->remote.serv;
+	}
+
+	rsock_sys_fail_host_port(syscall, host, port);
     }
 
     arg->fd = -1;
 
     if (type == INET_SERVER) {
-	status = listen(fd, 5);
+	status = listen(fd, SOMAXCONN);
 	if (status < 0) {
 	    close(fd);
-	    syscall = "listen(2)";
+            rb_sys_fail("listen(2)");
 	}
     }
 
@@ -139,7 +164,7 @@ static ID id_numeric, id_hostname;
 int
 rsock_revlookup_flag(VALUE revlookup, int *norevlookup)
 {
-#define return_norevlookup(x) {*norevlookup = x; return 1;}
+#define return_norevlookup(x) {*norevlookup = (x); return 1;}
     ID id;
 
     switch (revlookup) {
@@ -184,7 +209,7 @@ static VALUE
 ip_addr(int argc, VALUE *argv, VALUE sock)
 {
     rb_io_t *fptr;
-    struct sockaddr_storage addr;
+    union_sockaddr addr;
     socklen_t len = (socklen_t)sizeof addr;
     int norevlookup;
 
@@ -192,9 +217,9 @@ ip_addr(int argc, VALUE *argv, VALUE sock)
 
     if (argc < 1 || !rsock_revlookup_flag(argv[0], &norevlookup))
 	norevlookup = fptr->mode & FMODE_NOREVLOOKUP;
-    if (getsockname(fptr->fd, (struct sockaddr*)&addr, &len) < 0)
+    if (getsockname(fptr->fd, &addr.addr, &len) < 0)
 	rb_sys_fail("getsockname(2)");
-    return rsock_ipaddr((struct sockaddr*)&addr, norevlookup);
+    return rsock_ipaddr(&addr.addr, len, norevlookup);
 }
 
 /*
@@ -214,7 +239,7 @@ ip_addr(int argc, VALUE *argv, VALUE sock)
  *
  *   TCPSocket.open("www.ruby-lang.org", 80) {|sock|
  *     p sock.peeraddr #=> ["AF_INET", 80, "carbon.ruby-lang.org", "221.186.184.68"]
- *     p sock.peeraddr(true)  #=> ["AF_INET", 80, "221.186.184.68", "221.186.184.68"]
+ *     p sock.peeraddr(true)  #=> ["AF_INET", 80, "carbon.ruby-lang.org", "221.186.184.68"]
  *     p sock.peeraddr(false) #=> ["AF_INET", 80, "221.186.184.68", "221.186.184.68"]
  *     p sock.peeraddr(:hostname) #=> ["AF_INET", 80, "carbon.ruby-lang.org", "221.186.184.68"]
  *     p sock.peeraddr(:numeric)  #=> ["AF_INET", 80, "221.186.184.68", "221.186.184.68"]
@@ -225,7 +250,7 @@ static VALUE
 ip_peeraddr(int argc, VALUE *argv, VALUE sock)
 {
     rb_io_t *fptr;
-    struct sockaddr_storage addr;
+    union_sockaddr addr;
     socklen_t len = (socklen_t)sizeof addr;
     int norevlookup;
 
@@ -233,9 +258,9 @@ ip_peeraddr(int argc, VALUE *argv, VALUE sock)
 
     if (argc < 1 || !rsock_revlookup_flag(argv[0], &norevlookup))
 	norevlookup = fptr->mode & FMODE_NOREVLOOKUP;
-    if (getpeername(fptr->fd, (struct sockaddr*)&addr, &len) < 0)
+    if (getpeername(fptr->fd, &addr.addr, &len) < 0)
 	rb_sys_fail("getpeername(2)");
-    return rsock_ipaddr((struct sockaddr*)&addr, norevlookup);
+    return rsock_ipaddr(&addr.addr, len, norevlookup);
 }
 
 /*
@@ -278,24 +303,25 @@ ip_recvfrom(int argc, VALUE *argv, VALUE sock)
 static VALUE
 ip_s_getaddress(VALUE obj, VALUE host)
 {
-    struct sockaddr_storage addr;
-    struct addrinfo *res = rsock_addrinfo(host, Qnil, SOCK_STREAM, 0);
+    union_sockaddr addr;
+    struct rb_addrinfo *res = rsock_addrinfo(host, Qnil, SOCK_STREAM, 0);
+    socklen_t len = res->ai->ai_addrlen;
 
     /* just take the first one */
-    memcpy(&addr, res->ai_addr, res->ai_addrlen);
-    freeaddrinfo(res);
+    memcpy(&addr, res->ai->ai_addr, len);
+    rb_freeaddrinfo(res);
 
-    return rsock_make_ipaddr((struct sockaddr*)&addr);
+    return rsock_make_ipaddr(&addr.addr, len);
 }
 
-/*
- * Document-class: ::IPSocket < BasicSocket
- *
- * IPSocket is the super class of TCPSocket and UDPSocket.
- */
 void
 rsock_init_ipsocket(void)
 {
+    /*
+     * Document-class: IPSocket < BasicSocket
+     *
+     * IPSocket is the super class of TCPSocket and UDPSocket.
+     */
     rb_cIPSocket = rb_define_class("IPSocket", rb_cBasicSocket);
     rb_define_method(rb_cIPSocket, "addr", ip_addr, -1);
     rb_define_method(rb_cIPSocket, "peeraddr", ip_peeraddr, -1);

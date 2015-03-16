@@ -1,15 +1,15 @@
-# -*- coding: euc-jp -*-
+# -*- coding: utf-8 -*-
 #
 # menus widget demo (called by 'widget')
 #
 
-# toplevel widget ¤¬Â¸ºß¤¹¤ì¤Ðºï½ü¤¹¤ë
+# toplevel widget ãŒå­˜åœ¨ã™ã‚Œã°å‰Šé™¤ã™ã‚‹
 if defined?($menu8x_demo) && $menu8x_demo
   $menu8x_demo.destroy
   $menu8x_demo = nil
 end
 
-# demo ÍÑ¤Î toplevel widget ¤òÀ¸À®
+# demo ç”¨ã® toplevel widget ã‚’ç”Ÿæˆ
 $menu8x_demo = TkToplevel.new {|w|
   title("Menu Demonstration (Tk8.x)")
   iconname("menu")
@@ -21,16 +21,16 @@ base_frame = TkFrame.new($menu8x_demo).pack(:fill=>:both, :expand=>true)
 # version check
 if $tk_version.to_f < 8.0
 
-# label À¸À®
+# label ç”Ÿæˆ
 TkLabel.new(base_frame,'font'=>$font,'wraplength'=>'4i','justify'=>'left') {
-    text("¼Â¹Ô¤·¤è¤¦¤È¤·¤¿¥¹¥¯¥ê¥×¥È¤Ï Tk8.0 °Ê¾å¤ÇÍøÍÑ¤Ç¤­¤ëµ¡Ç½¤òÍøÍÑ¤·¤Æ¤¤¤ë¤¿¤á¡¢¤¢¤Ê¤¿¤Î Ruby#{VERSION}/Tk#{$tk_version}#{(Tk::JAPANIZED_TK)? 'jp': ''} ¤Ç¤ÏÀµ¾ï¤Ë¼Â¹Ô¤Ç¤­¤Þ¤»¤ó¡£¤è¤Ã¤Æ¥Ç¥â¤Î¼Â¹Ô¤òÃæ»ß¤·¤Þ¤·¤¿¡£¤¿¤À¤·¡¢²¼¤Î¥³¡¼¥É»²¾È¥Ü¥¿¥ó¤ò²¡¤¹¤³¤È¤Ç¡¢¼Â¹Ô¤¬Ãæ»ß¤µ¤ì¤¿¥¹¥¯¥ê¥×¥È¤Î¥½¡¼¥¹¤ò»²¾È¤¹¤ë¤³¤È¤Ï²ÄÇ½¤Ç¤¹¡£")
+    text("å®Ÿè¡Œã—ã‚ˆã†ã¨ã—ãŸã‚¹ã‚¯ãƒªãƒ—ãƒˆã¯ Tk8.0 ä»¥ä¸Šã§åˆ©ç”¨ã§ãã‚‹æ©Ÿèƒ½ã‚’åˆ©ç”¨ã—ã¦ã„ã‚‹ãŸã‚ã€ã‚ãªãŸã® Ruby#{VERSION}/Tk#{$tk_version}#{(Tk::JAPANIZED_TK)? 'jp': ''} ã§ã¯æ­£å¸¸ã«å®Ÿè¡Œã§ãã¾ã›ã‚“ã€‚ã‚ˆã£ã¦ãƒ‡ãƒ¢ã®å®Ÿè¡Œã‚’ä¸­æ­¢ã—ã¾ã—ãŸã€‚ãŸã ã—ã€ä¸‹ã®ã‚³ãƒ¼ãƒ‰å‚ç…§ãƒœã‚¿ãƒ³ã‚’æŠ¼ã™ã“ã¨ã§ã€å®Ÿè¡ŒãŒä¸­æ­¢ã•ã‚ŒãŸã‚¹ã‚¯ãƒªãƒ—ãƒˆã®ã‚½ãƒ¼ã‚¹ã‚’å‚ç…§ã™ã‚‹ã“ã¨ã¯å¯èƒ½ã§ã™ã€‚")
 }.pack('side'=>'top')
 
-# frame À¸À®
+# frame ç”Ÿæˆ
 TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
-    #text 'Î»²ò'
-    text 'ÊÄ¤¸¤ë'
+    #text 'äº†è§£'
+    text 'é–‰ã˜ã‚‹'
     command proc{
       tmppath = $menu8x_demo
       $menu8x_demo = nil
@@ -39,7 +39,7 @@ TkFrame.new(base_frame) {|frame|
   }.pack('side'=>'left', 'expand'=>'yes')
 
   TkButton.new(frame) {
-    text '¥³¡¼¥É»²¾È'
+    text 'ã‚³ãƒ¼ãƒ‰å‚ç…§'
     command proc{showCode 'menu8x'}
   }.pack('side'=>'left', 'expand'=>'yes')
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
@@ -52,17 +52,17 @@ rescue
   windowingsystem = ""
 end
 
-# label À¸À®
+# label ç”Ÿæˆ
 TkLabel.new(base_frame,'font'=>$font,'wraplength'=>'4i','justify'=>'left') {
   if $tk_platform['platform'] == 'macintosh' ||
       windowingsystem == "classic" || windowingsystem == "aqua"
-    text("¤³¤Î¥¦¥£¥ó¥É¥¦¤ÏÍÍ¡¹¤Ê¥á¥Ë¥å¡¼¤È¥«¥¹¥±¡¼¥É¥á¥Ë¥å¡¼¤«¤é¹½À®¤µ¤ì¤Æ¤¤¤Þ¤¹¡£Command-X ¤òÆþÎÏ¤¹¤ë¤È¡¢X¤¬¥³¥Þ¥ó¥É¥­¡¼µ­¹æ¤ËÂ³¤¤¤ÆÉ½¼¨¤µ¤ì¤Æ¤¤¤ëÊ¸»ú¤Ê¤é¤Ð¡¢¥¢¥¯¥»¥é¥ì¡¼¥¿¤ò»È¤Ã¤¿¹àÌÜµ¯Æ°¤ò¹Ô¤¦¤³¤È¤¬¤Ç¤­¤Þ¤¹¡£¥á¥Ë¥å¡¼Í×ÁÇÃæ¡¢ºÇ¸å¤Î¤â¤Î¤Ï¡¢¤½¤Î¥á¥Ë¥å¡¼¤ÎºÇ½é¤Î¹àÌÜ¤òÁªÂò¤¹¤ë¤³¤È¤ÇÆÈÎ©¤µ¤»¤ë¤³¤È¤¬¤Ç¤­¤Þ¤¹¡£")
+    text("ã“ã®ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã¯æ§˜ã€…ãªãƒ¡ãƒ‹ãƒ¥ãƒ¼ã¨ã‚«ã‚¹ã‚±ãƒ¼ãƒ‰ãƒ¡ãƒ‹ãƒ¥ãƒ¼ã‹ã‚‰æ§‹æˆã•ã‚Œã¦ã„ã¾ã™ã€‚Command-X ã‚’å…¥åŠ›ã™ã‚‹ã¨ã€XãŒã‚³ãƒžãƒ³ãƒ‰ã‚­ãƒ¼è¨˜å·ã«ç¶šã„ã¦è¡¨ç¤ºã•ã‚Œã¦ã„ã‚‹æ–‡å­—ãªã‚‰ã°ã€ã‚¢ã‚¯ã‚»ãƒ©ãƒ¬ãƒ¼ã‚¿ã‚’ä½¿ã£ãŸé …ç›®èµ·å‹•ã‚’è¡Œã†ã“ã¨ãŒã§ãã¾ã™ã€‚ãƒ¡ãƒ‹ãƒ¥ãƒ¼è¦ç´ ä¸­ã€æœ€å¾Œã®ã‚‚ã®ã¯ã€ãã®ãƒ¡ãƒ‹ãƒ¥ãƒ¼ã®æœ€åˆã®é …ç›®ã‚’é¸æŠžã™ã‚‹ã“ã¨ã§ç‹¬ç«‹ã•ã›ã‚‹ã“ã¨ãŒã§ãã¾ã™ã€‚")
   else
-    text("¤³¤Î¥¦¥£¥ó¥É¥¦¤ÏÍÍ¡¹¤Ê¥á¥Ë¥å¡¼¤È¥«¥¹¥±¡¼¥É¥á¥Ë¥å¡¼¤«¤é¹½À®¤µ¤ì¤Æ¤¤¤Þ¤¹¡£Alt-X ¤òÆþÎÏ¤¹¤ë¤È¡¢X¤¬¥á¥Ë¥å¡¼¤Ë¥¢¥ó¥À¡¼¥é¥¤¥óÉÕ¤­¤ÇÉ½¼¨¤µ¤ì¤Æ¤¤¤ëÊ¸»ú¤Ê¤é¤Ð¡¢¥­¡¼¥Ü¡¼¥É¤«¤é¤Î»ØÄê¤¬¤Ç¤­¤Þ¤¹¡£Ìð°õ¥­¡¼¤Ç¥á¥Ë¥å¡¼¤Î¥È¥é¥Ð¡¼¥¹¤â²ÄÇ½¤Ç¤¹¡£¥á¥Ë¥å¡¼¤¬»ØÄê¤µ¤ì¤¿ºÝ¤Ë¤Ï¡¢¥¹¥Ú¡¼¥¹¥­¡¼¤Ç¼Â¹Ô¤¹¤ë¤³¤È¤¬¤Ç¤­¤Þ¤¹¡£¤¢¤ë¤¤¤Ï¡¢¥¢¥ó¥À¡¼¥é¥¤¥óÉÕ¤­¤ÎÊ¸»ú¤òÆþÎÏ¤¹¤ë¤³¤È¤Ç¤â¼Â¹Ô¤Ç¤­¤Þ¤¹¡£¥á¥Ë¥å¡¼¤Î¥¨¥ó¥È¥ê¤¬¥¢¥¯¥»¥é¥ì¡¼¥¿¤ò»ý¤Ã¤Æ¤¤¤ë¾ì¹ç¤Ï¡¢¤½¤Î¥¢¥¯¥»¥é¥ì¡¼¥¿¤òÆþÎÏ¤¹¤ë¤³¤È¤Ç¥á¥Ë¥å¡¼¤ò»ØÄê¤¹¤ë¤³¤È¤Ê¤·¤Ë¼Â¹Ô¤¹¤ë¤³¤È¤¬¤Ç¤­¤Þ¤¹¡£¥á¥Ë¥å¡¼Í×ÁÇÃæ¡¢ºÇ¸å¤Î¤â¤Î¤Ï¡¢¤½¤Î¥á¥Ë¥å¡¼¤ÎºÇ½é¤Î¹àÌÜ¤òÁªÂò¤¹¤ë¤³¤È¤ÇÆÈÎ©¤µ¤»¤ë¤³¤È¤¬¤Ç¤­¤Þ¤¹¡£")
+    text("ã“ã®ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã¯æ§˜ã€…ãªãƒ¡ãƒ‹ãƒ¥ãƒ¼ã¨ã‚«ã‚¹ã‚±ãƒ¼ãƒ‰ãƒ¡ãƒ‹ãƒ¥ãƒ¼ã‹ã‚‰æ§‹æˆã•ã‚Œã¦ã„ã¾ã™ã€‚Alt-X ã‚’å…¥åŠ›ã™ã‚‹ã¨ã€XãŒãƒ¡ãƒ‹ãƒ¥ãƒ¼ã«ã‚¢ãƒ³ãƒ€ãƒ¼ãƒ©ã‚¤ãƒ³ä»˜ãã§è¡¨ç¤ºã•ã‚Œã¦ã„ã‚‹æ–‡å­—ãªã‚‰ã°ã€ã‚­ãƒ¼ãƒœãƒ¼ãƒ‰ã‹ã‚‰ã®æŒ‡å®šãŒã§ãã¾ã™ã€‚çŸ¢å°ã‚­ãƒ¼ã§ãƒ¡ãƒ‹ãƒ¥ãƒ¼ã®ãƒˆãƒ©ãƒãƒ¼ã‚¹ã‚‚å¯èƒ½ã§ã™ã€‚ãƒ¡ãƒ‹ãƒ¥ãƒ¼ãŒæŒ‡å®šã•ã‚ŒãŸéš›ã«ã¯ã€ã‚¹ãƒšãƒ¼ã‚¹ã‚­ãƒ¼ã§å®Ÿè¡Œã™ã‚‹ã“ã¨ãŒã§ãã¾ã™ã€‚ã‚ã‚‹ã„ã¯ã€ã‚¢ãƒ³ãƒ€ãƒ¼ãƒ©ã‚¤ãƒ³ä»˜ãã®æ–‡å­—ã‚’å…¥åŠ›ã™ã‚‹ã“ã¨ã§ã‚‚å®Ÿè¡Œã§ãã¾ã™ã€‚ãƒ¡ãƒ‹ãƒ¥ãƒ¼ã®ã‚¨ãƒ³ãƒˆãƒªãŒã‚¢ã‚¯ã‚»ãƒ©ãƒ¬ãƒ¼ã‚¿ã‚’æŒã£ã¦ã„ã‚‹å ´åˆã¯ã€ãã®ã‚¢ã‚¯ã‚»ãƒ©ãƒ¬ãƒ¼ã‚¿ã‚’å…¥åŠ›ã™ã‚‹ã“ã¨ã§ãƒ¡ãƒ‹ãƒ¥ãƒ¼ã‚’æŒ‡å®šã™ã‚‹ã“ã¨ãªã—ã«å®Ÿè¡Œã™ã‚‹ã“ã¨ãŒã§ãã¾ã™ã€‚ãƒ¡ãƒ‹ãƒ¥ãƒ¼è¦ç´ ä¸­ã€æœ€å¾Œã®ã‚‚ã®ã¯ã€ãã®ãƒ¡ãƒ‹ãƒ¥ãƒ¼ã®æœ€åˆã®é …ç›®ã‚’é¸æŠžã™ã‚‹ã“ã¨ã§ç‹¬ç«‹ã•ã›ã‚‹ã“ã¨ãŒã§ãã¾ã™ã€‚")
   end
 }.pack('side'=>'top')
 
-# ¾õÂÖÉ½¼¨¤ÎÀ¸À®
+# çŠ¶æ…‹è¡¨ç¤ºã®ç”Ÿæˆ
 $menu8xstatus = TkVariable.new("    ")
 TkFrame.new(base_frame) {|frame|
   TkLabel.new(frame, 'textvariable'=>$menu8xstatus, 'relief'=>'sunken',
@@ -70,11 +70,11 @@ TkFrame.new(base_frame) {|frame|
   .pack('side'=>'left', 'padx'=>2, 'expand'=>'yes', 'fill'=>'both')
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>2)
 
-# frame À¸À®
+# frame ç”Ÿæˆ
 TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
-    #text 'Î»²ò'
-    text 'ÊÄ¤¸¤ë'
+    #text 'äº†è§£'
+    text 'é–‰ã˜ã‚‹'
     command proc{
       tmppath = $menu8x_demo
       $menu8x_demo = nil
@@ -83,24 +83,24 @@ TkFrame.new(base_frame) {|frame|
   }.pack('side'=>'left', 'expand'=>'yes')
 
   TkButton.new(frame) {
-    text '¥³¡¼¥É»²¾È'
+    text 'ã‚³ãƒ¼ãƒ‰å‚ç…§'
     command proc{showCode 'menu8x'}
   }.pack('side'=>'left', 'expand'=>'yes')
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
-# menu À¸À®
+# menu ç”Ÿæˆ
 TkMenu.new($menu8x_demo, 'tearoff'=>false) {|m|
   TkMenu.new(m, 'tearoff'=>false) {|file_menu|
     m.add('cascade', 'label'=>'File', 'menu'=>file_menu, 'underline'=>0)
-    add('command', 'label'=>'³«¤¯ ...', 'command'=>proc{fail '¤³¤ì¤Ï¡¢¥Ç¥â¤Ç¤¹¤Î¤Ç"³«¤¯ ..."¤ËÂÐ¤¹¤ë¥¢¥¯¥·¥ç¥ó¤ÏÄêµÁ¤µ¤ì¤Æ¤¤¤Þ¤»¤ó¡£'})
-    add('command', 'label'=>'¿·µ¬', 'command'=>proc{fail '¤³¤ì¤Ï¡¢¥Ç¥â¤Ç¤¹¤Î¤Ç"¿·µ¬"¤ËÂÐ¤¹¤ë¥¢¥¯¥·¥ç¥ó¤ÏÄêµÁ¤µ¤ì¤Æ¤¤¤Þ¤»¤ó¡£'})
-    add('command', 'label'=>'ÊÝÂ¸', 'command'=>proc{fail '¤³¤ì¤Ï¡¢¥Ç¥â¤Ç¤¹¤Î¤Ç"ÊÝÂ¸"¤ËÂÐ¤¹¤ë¥¢¥¯¥·¥ç¥ó¤ÏÄêµÁ¤µ¤ì¤Æ¤¤¤Þ¤»¤ó¡£'})
-    add('command', 'label'=>'ÊÝÂ¸(»ØÄê) ...', 'command'=>proc{fail '¤³¤ì¤Ï¡¢¥Ç¥â¤Ç¤¹¤Î¤Ç"ÊÝÂ¸(»ØÄê) ..."¤ËÂÐ¤¹¤ë¥¢¥¯¥·¥ç¥ó¤ÏÄêµÁ¤µ¤ì¤Æ¤¤¤Þ¤»¤ó¡£'})
+    add('command', 'label'=>'é–‹ã ...', 'command'=>proc{fail 'ã“ã‚Œã¯ã€ãƒ‡ãƒ¢ã§ã™ã®ã§"é–‹ã ..."ã«å¯¾ã™ã‚‹ã‚¢ã‚¯ã‚·ãƒ§ãƒ³ã¯å®šç¾©ã•ã‚Œã¦ã„ã¾ã›ã‚“ã€‚'})
+    add('command', 'label'=>'æ–°è¦', 'command'=>proc{fail 'ã“ã‚Œã¯ã€ãƒ‡ãƒ¢ã§ã™ã®ã§"æ–°è¦"ã«å¯¾ã™ã‚‹ã‚¢ã‚¯ã‚·ãƒ§ãƒ³ã¯å®šç¾©ã•ã‚Œã¦ã„ã¾ã›ã‚“ã€‚'})
+    add('command', 'label'=>'ä¿å­˜', 'command'=>proc{fail 'ã“ã‚Œã¯ã€ãƒ‡ãƒ¢ã§ã™ã®ã§"ä¿å­˜"ã«å¯¾ã™ã‚‹ã‚¢ã‚¯ã‚·ãƒ§ãƒ³ã¯å®šç¾©ã•ã‚Œã¦ã„ã¾ã›ã‚“ã€‚'})
+    add('command', 'label'=>'ä¿å­˜(æŒ‡å®š) ...', 'command'=>proc{fail 'ã“ã‚Œã¯ã€ãƒ‡ãƒ¢ã§ã™ã®ã§"ä¿å­˜(æŒ‡å®š) ..."ã«å¯¾ã™ã‚‹ã‚¢ã‚¯ã‚·ãƒ§ãƒ³ã¯å®šç¾©ã•ã‚Œã¦ã„ã¾ã›ã‚“ã€‚'})
     add('separator')
-    add('command', 'label'=>'¥×¥ê¥ó¥ÈÀßÄê ...', 'command'=>proc{fail '¤³¤ì¤Ï¡¢¥Ç¥â¤Ç¤¹¤Î¤Ç"¥×¥ê¥ó¥ÈÀßÄê ..."¤ËÂÐ¤¹¤ë¥¢¥¯¥·¥ç¥ó¤ÏÄêµÁ¤µ¤ì¤Æ¤¤¤Þ¤»¤ó¡£'})
-    add('command', 'label'=>'¥×¥ê¥ó¥È ...', 'command'=>proc{fail '¤³¤ì¤Ï¡¢¥Ç¥â¤Ç¤¹¤Î¤Ç"¥×¥ê¥ó¥È ..."¤ËÂÐ¤¹¤ë¥¢¥¯¥·¥ç¥ó¤ÏÄêµÁ¤µ¤ì¤Æ¤¤¤Þ¤»¤ó¡£'})
+    add('command', 'label'=>'ãƒ—ãƒªãƒ³ãƒˆè¨­å®š ...', 'command'=>proc{fail 'ã“ã‚Œã¯ã€ãƒ‡ãƒ¢ã§ã™ã®ã§"ãƒ—ãƒªãƒ³ãƒˆè¨­å®š ..."ã«å¯¾ã™ã‚‹ã‚¢ã‚¯ã‚·ãƒ§ãƒ³ã¯å®šç¾©ã•ã‚Œã¦ã„ã¾ã›ã‚“ã€‚'})
+    add('command', 'label'=>'ãƒ—ãƒªãƒ³ãƒˆ ...', 'command'=>proc{fail 'ã“ã‚Œã¯ã€ãƒ‡ãƒ¢ã§ã™ã®ã§"ãƒ—ãƒªãƒ³ãƒˆ ..."ã«å¯¾ã™ã‚‹ã‚¢ã‚¯ã‚·ãƒ§ãƒ³ã¯å®šç¾©ã•ã‚Œã¦ã„ã¾ã›ã‚“ã€‚'})
     add('separator')
-    add('command', 'label'=>'½ªÎ»', 'command'=>proc{$menu8x_demo.destroy})
+    add('command', 'label'=>'çµ‚äº†', 'command'=>proc{$menu8x_demo.destroy})
   }
 
   if $tk_platform['platform'] == 'macintosh' ||
@@ -114,10 +114,10 @@ TkMenu.new($menu8x_demo, 'tearoff'=>false) {|m|
 
   TkMenu.new(m, 'tearoff'=>false) {|basic_menu|
     m.add('cascade', 'label'=>'Basic', 'menu'=>basic_menu, 'underline'=>0)
-    add('command', 'label'=>'²¿¤â¤·¤Ê¤¤Ä¹¤¤¥¨¥ó¥È¥ê')
+    add('command', 'label'=>'ä½•ã‚‚ã—ãªã„é•·ã„ã‚¨ãƒ³ãƒˆãƒª')
     ['A','B','C','D','E','F','G'].each{|c|
-      # add('command', 'label'=>"Ê¸»ú \"#{c}\" ¤ò°õ»ú", 'underline'=>4,
-      add('command', 'label'=>"Print letter \"#{c}\" (Ê¸»ú \"#{c}\" ¤ò°õ»ú)",
+      # add('command', 'label'=>"æ–‡å­— \"#{c}\" ã‚’å°å­—", 'underline'=>4,
+      add('command', 'label'=>"Print letter \"#{c}\" (æ–‡å­— \"#{c}\" ã‚’å°å­—)",
           'underline'=>14, 'accelerator'=>"Meta+#{c}",
           'command'=>proc{print c,"\n"}, 'accelerator'=>"#{modifier}+#{c}")
       $menu8x_demo.bind("#{modifier}-#{c.downcase}", proc{print c,"\n"})
@@ -126,56 +126,56 @@ TkMenu.new($menu8x_demo, 'tearoff'=>false) {|m|
 
   TkMenu.new(m, 'tearoff'=>false) {|cascade_menu|
     m.add('cascade', 'label'=>'Cascades', 'menu'=>cascade_menu, 'underline'=>0)
-    add('command', 'label'=>'Print hello(¤³¤ó¤Ë¤Á¤Ï)',
-        'command'=>proc{print "Hello(¤³¤ó¤Ë¤Á¤Ï)\n"},
+    add('command', 'label'=>'Print hello(ã“ã‚“ã«ã¡ã¯)',
+        'command'=>proc{print "Hello(ã“ã‚“ã«ã¡ã¯)\n"},
         'accelerator'=>"#{modifier}+H", 'underline'=>6)
-    $menu8x_demo.bind("#{modifier}-h", proc{print "Hello(¤³¤ó¤Ë¤Á¤Ï)\n"})
-    add('command', 'label'=>'Print goodbye(¤µ¤è¤¦¤Ê¤é)',
-        'command'=>proc{print "Goodbye(¤µ¤è¤¦¤Ê¤é)\n"},
+    $menu8x_demo.bind("#{modifier}-h", proc{print "Hello(ã“ã‚“ã«ã¡ã¯)\n"})
+    add('command', 'label'=>'Print goodbye(ã•ã‚ˆã†ãªã‚‰)',
+        'command'=>proc{print "Goodbye(ã•ã‚ˆã†ãªã‚‰)\n"},
         'accelerator'=>"#{modifier}+G", 'underline'=>6)
-    $menu8x_demo.bind("#{modifier}-g", proc{print "Goodbye(¤µ¤è¤¦¤Ê¤é)\n"})
+    $menu8x_demo.bind("#{modifier}-g", proc{print "Goodbye(ã•ã‚ˆã†ãªã‚‰)\n"})
 
     TkMenu.new(m, 'tearoff'=>false) {|cascade_check|
-      cascade_menu.add('cascade', 'label'=>'Check buttons(¥Á¥§¥Ã¥¯¥Ü¥¿¥ó)',
+      cascade_menu.add('cascade', 'label'=>'Check buttons(ãƒã‚§ãƒƒã‚¯ãƒœã‚¿ãƒ³)',
                        'menu'=>cascade_check, 'underline'=>0)
       oil = TkVariable.new(0)
-      add('check', 'label'=>'¥ª¥¤¥ëÅÀ¸¡', 'variable'=>oil)
+      add('check', 'label'=>'ã‚ªã‚¤ãƒ«ç‚¹æ¤œ', 'variable'=>oil)
       trans = TkVariable.new(0)
-      add('check', 'label'=>'¥È¥é¥ó¥¹¥ß¥Ã¥·¥ç¥óÅÀ¸¡', 'variable'=>trans)
+      add('check', 'label'=>'ãƒˆãƒ©ãƒ³ã‚¹ãƒŸãƒƒã‚·ãƒ§ãƒ³ç‚¹æ¤œ', 'variable'=>trans)
       brakes = TkVariable.new(0)
-      add('check', 'label'=>'¥Ö¥ì¡¼¥­ÅÀ¸¡', 'variable'=>brakes)
+      add('check', 'label'=>'ãƒ–ãƒ¬ãƒ¼ã‚­ç‚¹æ¤œ', 'variable'=>brakes)
       lights = TkVariable.new(0)
-      add('check', 'label'=>'¥é¥¤¥ÈÅÀ¸¡', 'variable'=>lights)
+      add('check', 'label'=>'ãƒ©ã‚¤ãƒˆç‚¹æ¤œ', 'variable'=>lights)
       add('separator')
-      add('command', 'label'=>'¸½ºß¤ÎÃÍ¤òÉ½¼¨',
+      add('command', 'label'=>'ç¾åœ¨ã®å€¤ã‚’è¡¨ç¤º',
           'command'=>proc{showVars($menu8x_demo,
-                                   ['¥ª¥¤¥ëÅÀ¸¡', oil],
-                                   ['¥È¥é¥ó¥¹¥ß¥Ã¥·¥ç¥óÅÀ¸¡', trans],
-                                   ['¥Ö¥ì¡¼¥­ÅÀ¸¡', brakes],
-                                   ['¥é¥¤¥ÈÅÀ¸¡', lights])} )
+                                   ['ã‚ªã‚¤ãƒ«ç‚¹æ¤œ', oil],
+                                   ['ãƒˆãƒ©ãƒ³ã‚¹ãƒŸãƒƒã‚·ãƒ§ãƒ³ç‚¹æ¤œ', trans],
+                                   ['ãƒ–ãƒ¬ãƒ¼ã‚­ç‚¹æ¤œ', brakes],
+                                   ['ãƒ©ã‚¤ãƒˆç‚¹æ¤œ', lights])} )
       invoke 1
       invoke 3
     }
 
     TkMenu.new(m, 'tearoff'=>false) {|cascade_radio|
-      cascade_menu.add('cascade', 'label'=>'Radio buttons(¥é¥¸¥ª¥Ü¥¿¥ó)',
+      cascade_menu.add('cascade', 'label'=>'Radio buttons(ãƒ©ã‚¸ã‚ªãƒœã‚¿ãƒ³)',
                        'menu'=>cascade_radio, 'underline'=>0)
       pointSize = TkVariable.new
-      add('radio', 'label'=>'10 ¥Ý¥¤¥ó¥È', 'variable'=>pointSize, 'value'=>10)
-      add('radio', 'label'=>'14 ¥Ý¥¤¥ó¥È', 'variable'=>pointSize, 'value'=>14)
-      add('radio', 'label'=>'18 ¥Ý¥¤¥ó¥È', 'variable'=>pointSize, 'value'=>18)
-      add('radio', 'label'=>'24 ¥Ý¥¤¥ó¥È', 'variable'=>pointSize, 'value'=>24)
-      add('radio', 'label'=>'32 ¥Ý¥¤¥ó¥È', 'variable'=>pointSize, 'value'=>32)
+      add('radio', 'label'=>'10 ãƒã‚¤ãƒ³ãƒˆ', 'variable'=>pointSize, 'value'=>10)
+      add('radio', 'label'=>'14 ãƒã‚¤ãƒ³ãƒˆ', 'variable'=>pointSize, 'value'=>14)
+      add('radio', 'label'=>'18 ãƒã‚¤ãƒ³ãƒˆ', 'variable'=>pointSize, 'value'=>18)
+      add('radio', 'label'=>'24 ãƒã‚¤ãƒ³ãƒˆ', 'variable'=>pointSize, 'value'=>24)
+      add('radio', 'label'=>'32 ãƒã‚¤ãƒ³ãƒˆ', 'variable'=>pointSize, 'value'=>32)
       add('separator')
       style = TkVariable.new
-      add('radio', 'label'=>'¥í¡¼¥Þ¥ó', 'variable'=>style, 'value'=>'roman')
-      add('radio', 'label'=>'¥Ü¡¼¥ë¥É', 'variable'=>style, 'value'=>'bold')
-      add('radio', 'label'=>'¥¤¥¿¥ê¥Ã¥¯', 'variable'=>style, 'value'=>'italic')
+      add('radio', 'label'=>'ãƒ­ãƒ¼ãƒžãƒ³', 'variable'=>style, 'value'=>'roman')
+      add('radio', 'label'=>'ãƒœãƒ¼ãƒ«ãƒ‰', 'variable'=>style, 'value'=>'bold')
+      add('radio', 'label'=>'ã‚¤ã‚¿ãƒªãƒƒã‚¯', 'variable'=>style, 'value'=>'italic')
       add('separator')
-      add('command', 'label'=>'¸½ºß¤ÎÃÍ¤òÉ½¼¨',
+      add('command', 'label'=>'ç¾åœ¨ã®å€¤ã‚’è¡¨ç¤º',
           'command'=>proc{showVars($menu8x_demo,
-                                   ['¥Ý¥¤¥ó¥È¥µ¥¤¥º', pointSize],
-                                   ['¥¹¥¿¥¤¥ë', style])} )
+                                   ['ãƒã‚¤ãƒ³ãƒˆã‚µã‚¤ã‚º', pointSize],
+                                   ['ã‚¹ã‚¿ã‚¤ãƒ«', style])} )
       invoke 1
       invoke 7
     }
@@ -188,9 +188,9 @@ TkMenu.new($menu8x_demo, 'tearoff'=>false) {|m|
                         'images','pattern.xbm'].join(File::Separator),
         'hidemargin'=>1,
         'command'=>proc{TkDialog.new('title'=>'Bitmap Menu Entry',
-                                     'text'=>'º£¤¢¤Ê¤¿¤¬ÁªÂò¤·¤¿¥á¥Ë¥å¡¼¤Î¹àÌÜ¤Ï¥Æ¥­¥¹¥È¤Ç¤Ï¤Ê¤¯¥Ó¥Ã¥È¥Þ¥Ã¥×¤òÉ½¼¨¤·¤Æ¤¤¤Þ¤·¤¿¡£¤½¤ì°Ê³°¤ÎÅÀ¤Ç¤ÏÂ¾¤Î¥á¥Ë¥å¡¼¹àÌÜ¤ÈÊÑ¤ï¤ê¤Þ¤»¤ó¡£',
+                                     'text'=>'ä»Šã‚ãªãŸãŒé¸æŠžã—ãŸãƒ¡ãƒ‹ãƒ¥ãƒ¼ã®é …ç›®ã¯ãƒ†ã‚­ã‚¹ãƒˆã§ã¯ãªããƒ“ãƒƒãƒˆãƒžãƒƒãƒ—ã‚’è¡¨ç¤ºã—ã¦ã„ã¾ã—ãŸã€‚ãã‚Œä»¥å¤–ã®ç‚¹ã§ã¯ä»–ã®ãƒ¡ãƒ‹ãƒ¥ãƒ¼é …ç›®ã¨å¤‰ã‚ã‚Šã¾ã›ã‚“ã€‚',
                                      'bitmap'=>'', 'default'=>0,
-                                     'buttons'=>'Î»²ò')} )
+                                     'buttons'=>'äº†è§£')} )
     ['info', 'questhead', 'error'].each{|icon|
       add('command', 'bitmap'=>icon, 'hidemargin'=>1,
           'command'=>proc{print "You invoked the #{icon} bitmap\n"})
@@ -201,8 +201,8 @@ TkMenu.new($menu8x_demo, 'tearoff'=>false) {|m|
 
   TkMenu.new(m, 'tearoff'=>false) {|more_menu|
     m.add('cascade', 'label'=>'More', 'menu'=>more_menu, 'underline'=>0)
-    [ '¥¨¥ó¥È¥ê','ÊÌ¤Î¥¨¥ó¥È¥ê','²¿¤â¤·¤Ê¤¤','¤Û¤È¤ó¤É²¿¤â¤·¤Ê¤¤',
-      '¿ÍÀ¸¤ò°ÕµÁ¤¢¤ë¤â¤Î¤Ë' ].each{|i|
+    [ 'ã‚¨ãƒ³ãƒˆãƒª','åˆ¥ã®ã‚¨ãƒ³ãƒˆãƒª','ä½•ã‚‚ã—ãªã„','ã»ã¨ã‚“ã©ä½•ã‚‚ã—ãªã„',
+      'äººç”Ÿã‚’æ„ç¾©ã‚ã‚‹ã‚‚ã®ã«' ].each{|i|
       add('command', 'label'=>i,
           'command'=>proc{print "You invoked \"#{i}\"\n"})
     }

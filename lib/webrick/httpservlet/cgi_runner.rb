@@ -20,7 +20,6 @@ end
 
 STDIN.binmode
 
-buf = ""
 len = sysread(STDIN, 8).to_i
 out = sysread(STDIN, len)
 STDOUT.reopen(open(out, "w"))
@@ -38,7 +37,7 @@ hash.each{|k, v| ENV[k] = v if v }
 dir = File::dirname(ENV["SCRIPT_FILENAME"])
 Dir::chdir dir
 
-if interpreter = ARGV[0]
+if ARGV[0]
   argv = ARGV.dup
   argv << ENV["SCRIPT_FILENAME"]
   exec(*argv)

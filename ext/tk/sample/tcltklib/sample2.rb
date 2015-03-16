@@ -7,12 +7,12 @@
 #---------------------------------------------------------------------------
 
 #       Sep. 17, 1997   modified by Y. Shigehiro for tcltk library
-#          maeda shugo (shugo@po.aianet.ne.jp) »á¤Ë¤è¤ë
-#          (ruby/tk ¤Ç½ñ¤«¤ì¤Æ¤¤¤¿) ruby ¤Î¥µ¥ó¥×¥ë¥×¥í¥°¥é¥à
+#          maeda shugo (shugo@po.aianet.ne.jp) æ°ã«ã‚ˆã‚‹
+#          (ruby/tk ã§æ›¸ã‹ã‚Œã¦ã„ãŸ) ruby ã®ã‚µãƒ³ãƒ—ãƒ«ãƒ—ãƒ­ã‚°ãƒ©ãƒ 
 #               http://www.aianet.or.jp/~shugo/ruby/othello.rb.gz
-#          ¤ò tcltk ¥é¥¤¥Ö¥é¥ê¤ò»È¤¦¤è¤¦¤Ë, µ¡³£Åª¤ËÊÑ¹¹¤·¤Æ¤ß¤Ş¤·¤¿.
+#          ã‚’ tcltk ãƒ©ã‚¤ãƒ–ãƒ©ãƒªã‚’ä½¿ã†ã‚ˆã†ã«, æ©Ÿæ¢°çš„ã«å¤‰æ›´ã—ã¦ã¿ã¾ã—ãŸ.
 #
-#          ¤Ê¤ë¤Ù¤¯¥ª¥ê¥¸¥Ê¥ë¤ÈÆ±¤¸¤Ë¤Ê¤ë¤è¤¦¤Ë¤·¤Æ¤¢¤ê¤Ş¤¹.
+#          ãªã‚‹ã¹ãã‚ªãƒªã‚¸ãƒŠãƒ«ã¨åŒã˜ã«ãªã‚‹ã‚ˆã†ã«ã—ã¦ã‚ã‚Šã¾ã™.
 
 require "observer"
 require "tcltk"
@@ -343,14 +343,14 @@ class Othello
       @board = Board.new(self)
       @board_view = BoardView.new(self, @board)
       #### added by Y. Shigehiro
-      ## board_view ¤ÎÂç¤­¤µ¤òÀßÄê¤¹¤ë.
+      ## board_view ã®å¤§ãã•ã‚’è¨­å®šã™ã‚‹.
       x1, y1, x2, y2 = @board_view.e("bbox all").split(/ /).collect{|i| i.to_f}
       @board_view.e("configure -width", x2 - x1)
       @board_view.e("configure -height", y2 - y1)
-      ## scrollregion ¤òÀßÄê¤¹¤ë.
+      ## scrollregion ã‚’è¨­å®šã™ã‚‹.
       @board_view.e("configure -scrollregion {", @board_view.e("bbox all"),
          "}")
-      #### ¤³¤³¤Ş¤Ç
+      #### ã“ã“ã¾ã§
       $pack.e(@board_view, "-fill both -expand true")
 
       panel = TclTkWidget.new($ip, $root, $frame)

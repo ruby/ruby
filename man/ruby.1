@@ -1,5 +1,5 @@
 .\"Ruby is copyrighted by Yukihiro Matsumoto <matz@netlab.jp>.
-.Dd October 25, 2008
+.Dd November 7, 2012
 .Dt RUBY(1) "" "Ruby Programmers Reference Guide"
 .\".Dt RUBY 1
 .Os UNIX
@@ -32,12 +32,12 @@
 .Sh DESCRIPTION
 Ruby is an interpreted scripting language for quick and easy
 object-oriented programming.  It has many features to process text
-files and to do system management tasks (as in Perl).  It is simple,
+files and to do system management tasks (like in Perl).  It is simple,
 straight-forward, and extensible.
 .Pp
 If you want a language for easy object-oriented programming, or you
 don't like the Perl ugliness, or you do like the concept of LISP, but
-don't like too much parentheses, Ruby may be the language of your
+don't like too many parentheses, Ruby might be your language of
 choice.
 .Sh FEATURES
 Ruby's features are as follows:
@@ -53,7 +53,7 @@ time check.
 .Pp
 .It Sy "No declaration needed"
 You can use variables in your Ruby programs without any declarations.
-Variable names denote their scope, local, global, instance, etc.
+Variable names denote their scope - global, class, instance, or local.
 .Pp
 .It Sy "Simple syntax"
 Ruby has a simple syntax influenced slightly from Eiffel.
@@ -64,11 +64,11 @@ from anywhere are automatically collected by the garbage collector
 built into the interpreter.
 .Pp
 .It Sy "Everything is an object"
-Ruby is the purely object-oriented language, and was so since its
+Ruby is a purely object-oriented language, and was so since its
 creation.  Even such basic data as integers are seen as objects.
 .Pp
 .It Sy "Class, inheritance, and methods"
-Of course, as an object-oriented language, Ruby has such basic
+Being an object-oriented language, Ruby naturally has basic
 features like classes, inheritance, and methods.
 .Pp
 .It Sy "Singleton methods"
@@ -81,7 +81,7 @@ to.
 .It Sy "Mix-in by modules"
 Ruby intentionally does not have the multiple inheritance as it is a
 source of confusion.  Instead, Ruby has the ability to share
-implementations across the inheritance tree.  This is often called
+implementations across the inheritance tree.  This is often called a
 .Sq Mix-in .
 .Pp
 .It Sy "Iterators"
@@ -90,7 +90,7 @@ Ruby has iterators for loop abstraction.
 .It Sy "Closures"
 In Ruby, you can objectify the procedure.
 .Pp
-.It Sy "Text processing and regular expression"
+.It Sy "Text processing and regular expressions"
 Ruby has a bunch of text processing features like in Perl.
 .Pp
 .It Sy "M17N, character set independent"
@@ -102,8 +102,8 @@ different character encodings, without dependence on Unicode.
 With built-in bignums, you can for example calculate factorial(400).
 .Pp
 .It Sy "Reflection and domain specific languages"
-Class is also an instance of Class class. Definition of classes and methods
-is just an expression as 1+1 is. So your programs can even write and modify programs.
+Class is also an instance of the Class class. Definition of classes and methods
+is an expression just as 1+1 is. So your programs can even write and modify programs.
 Thus you can write your application in your own programming language on top of Ruby.
 .Pp
 .It Sy "Exception handling"
@@ -123,9 +123,8 @@ on-the-fly.
 Libraries called "builtin libraries" and "standard libraries" are bundled with Ruby.
 And you can obtain more libraries via the package management system called `RubyGems'.
 .Pp
-Moreover there are thousands of Ruby projects in Rubyforge
-.Pf ( "http://www.rubyforge.org" ) and RAA
-.Pf ( "http://raa.ruby-lang.org" ) Ns .
+Moreover there are thousands of Ruby projects on GitHub
+.Aq Pa https://github.com/languages/Ruby .
 .El
 .Pp
 .Sh OPTIONS
@@ -161,8 +160,12 @@ Causes Ruby to switch to the directory.
 .It Fl -encoding Ar external Ns Op : Ns Ar internal
 Specifies the default value(s) for external encodings and internal encoding. Values should be separated with colon (:).
 .Pp
-You can ommit the one for internal encodings, then the value
+You can omit the one for internal encodings, then the value
 .Pf ( Li "Encoding.default_internal" ) will be nil.
+.Pp
+.It Fl -external-encoding Ns = Ns Ar encoding
+.It Fl -internal-encoding Ns = Ns Ar encoding
+Specify the default external or internal character encoding
 .Pp
 .It Fl F Ar pattern
 Specifies input field separator
@@ -195,7 +198,7 @@ ASCII-8BIT (BINARY)
 .It Fl S
 Makes Ruby use the
 .Ev PATH
-environment variable to search for script, unless if its name begins
+environment variable to search for script, unless its name begins
 with a slash.  This is used to emulate
 .Li #!
 on machines that don't support it, in the following manner:
@@ -209,11 +212,11 @@ on machines that don't support it, in the following manner:
 Turns on taint checks at the specified level (default 1).
 .Pp
 .It Fl U
-Sets the defalut value for internal encodings
+Sets the default value for internal encodings
 .Pf ( Li "Encoding.default_internal" ) to UTF-8.
 .Pp
 .It Fl W Ns Op Ar level=2
-Turns on verbose mode at the specified level, without printing version
+Turns on verbose mode at the specified level without printing the version
 message at the beginning. The level can be;
 .Bl -hang -offset indent
 .It Sy 0
@@ -259,7 +262,7 @@ will be set to true.
 .Pp
 .It Fl e Ar command
 Specifies script from command-line while telling Ruby not to search
-the rest of arguments for a script file name.
+the rest of the arguments for a script file name.
 .Pp
 .It Fl h
 .It Fl -help
@@ -334,8 +337,8 @@ On some systems
 .Li "$0"
 does not always contain the full pathname, so you need the
 .Fl S
-switch to tell Ruby to search for the script if necessary.  To handle
-embedded spaces or such.  A better construct than
+switch to tell Ruby to search for the script if necessary (to handle embedded
+spaces and such).  A better construct than
 .Li "$*"
 would be
 .Li ${1+"$@"} ,
@@ -343,7 +346,7 @@ but it does not work if the script is being interpreted by
 .Xr csh 1 .
 .Pp
 .It Fl v
-Enables verbose mode.  Ruby will print its version at the beginning,
+Enables verbose mode.  Ruby will print its version at the beginning
 and set the variable
 .Li "$VERBOSE"
 to true.  Some methods print extra messages if this variable is true.
@@ -358,16 +361,16 @@ variable to true.
 .Pp
 .It Fl x Ns Op Ar directory
 Tells Ruby that the script is embedded in a message.  Leading garbage
-will be discarded until the first that starts with
+will be discarded until the first line that starts with
 .Dq #!
 and contains the string,
 .Dq ruby .
-Any meaningful switches on that line will applied.  The end of script
+Any meaningful switches on that line will be applied.  The end of the script
 must be specified with either
 .Li EOF ,
 .Li "^D" ( Li "control-D" ) ,
 .Li "^Z" ( Li "control-Z" ) ,
-or reserved word
+or the reserved word
 .Li __END__ .
 If the directory name is specified, Ruby will switch to that directory
 before executing script.
@@ -377,8 +380,8 @@ before executing script.
 DO NOT USE.
 .Pp
 Turns on compiler debug mode.  Ruby will print a bunch of internal
-state messages during compiling scripts.  You don't have to specify
-this switch, unless you are going to debug the Ruby interpreter.
+state messages during compilation.  Only specify this switch you are going to
+debug the Ruby interpreter.
 .Pp
 .It Fl -disable- Ns Ar FEATURE
 .It Fl -enable- Ns Ar FEATURE
@@ -413,11 +416,11 @@ Prints the specified target.
 can be one of;
 .Bl -hang -offset indent
 .It Sy insns
-disassembed instructions
+disassembled instructions
 .Pp
 .El
 .Pp
-You don't have to specify this switch, unless you are going to debug the Ruby interpreter.
+Only specify this switch if you are going to debug the Ruby interpreter.
 .Pp
 .It Fl -verbose
 Enables verbose mode without printing version message at the
@@ -429,7 +432,7 @@ after printing its version.
 .El
 .Pp
 .Sh ENVIRONMENT
-.Bl -tag -width "RUBYLIB_PREFIX" -compact
+.Bl -tag -width "RUBYSHELL" -compact
 .It Ev RUBYLIB
 A colon-separated list of directories that are added to Ruby's
 library load path
@@ -469,27 +472,140 @@ variable is not defined, Ruby refers to
 Ruby refers to the
 .Ev PATH
 environment variable on calling Kernel#system.
-.Pp
-.It Ev RUBYLIB_PREFIX
-This variable is obsolete.
 .El
 .Pp
-And Ruby depends on some RubyGems related environment variables unless disabled RubyGems.
+And Ruby depends on some RubyGems related environment variables unless RubyGems is disabled.
 See the help of
 .Xr gem 1
-as bellow.
+as below.
 .Bd -literal -offset indent
 % gem help
 .Ed
 .Pp
+.Sh GC ENVIRONMENT
+The Ruby garbage collector (GC) tracks objects in fixed-sized slots,
+but each object may have auxillary memory allocations handled by the
+malloc family of C standard library calls (
+.Xr malloc 3 ,
+.Xr calloc 3 ,
+and
+.Xr realloc 3 ) .
+In this documentatation, the "heap" refers to the Ruby object heap
+of fixed-sized slots, while "malloc" refers to auxillary
+allocations commonly referred to as the "process heap".
+Thus there are at least two possible ways to trigger GC:
+.Bl -hang -offset indent
+.It Sy 1
+Reaching the object limit.
+.It Sy 2
+Reaching the malloc limit.
+.Pp
+.El
+In Ruby 2.1, the generational GC was introduced and the limits are divided
+into young and old generations, providing two additional ways to trigger
+a GC:
+.Bl -hang -offset indent
+.It Sy 3
+Reaching the old object limit.
+.It Sy 4
+Reaching the old malloc limit.
+.El
+.Pp
+There are currently 4 possible areas where the GC may be tuned by
+the the following 11 environment variables:
+.Bl -hang -compact -width "RUBY_GC_OLDMALLOC_LIMIT_GROWTH_FACTOR"
+.It Ev RUBY_GC_HEAP_INIT_SLOTS
+Initial allocation slots.  Introduced in Ruby 2.1, default: 10000.
+.Pp
+.It Ev RUBY_GC_HEAP_FREE_SLOTS
+Prepare at least this amount of slots after GC.
+Allocate this number slots if there are not enough slots.
+Introduced in Ruby 2.1, default: 4096
+.Pp
+.It Ev RUBY_GC_HEAP_GROWTH_FACTOR
+Increase allocation rate of heap slots by this factor.
+Introduced in Ruby 2.1, default: 1.8, minimum: 1.0 (no growth)
+.Pp
+.It Ev RUBY_GC_HEAP_GROWTH_MAX_SLOTS
+Allocation rate is limited to this number of slots,
+preventing excessive allocation due to RUBY_GC_HEAP_GROWTH_FACTOR.
+Introduced in Ruby 2.1, default: 0 (no limit)
+.Pp
+.It Ev RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR
+Perform a full GC when the number of old objects is more than R * N,
+where R is this factor and N is the number of old objects after the
+last full GC.
+Introduced in Ruby 2.1.1, default: 2.0
+.Pp
+.It Ev RUBY_GC_MALLOC_LIMIT
+The initial limit of young generation allocation from the malloc-family.
+GC will start when this limit is reached.
+Default: 16MB
+.Pp
+.It Ev RUBY_GC_MALLOC_LIMIT_MAX
+The maximum limit of young generation allocation from malloc before GC starts.
+Prevents excessive malloc growth due to RUBY_GC_MALLOC_LIMIT_GROWTH_FACTOR.
+Introduced in Ruby 2.1, default: 32MB.
+.Pp
+.It Ev RUBY_GC_MALLOC_LIMIT_GROWTH_FACTOR
+Increases the limit of young generation malloc calls, reducing
+GC frequency but increasing malloc growth until RUBY_GC_MALLOC_LIMIT_MAX
+is reached.
+Introduced in Ruby 2.1, default: 1.4, minimum: 1.0 (no growth)
+.Pp
+.It Ev RUBY_GC_OLDMALLOC_LIMIT
+The initial limit of old generation allocation from malloc,
+a full GC will start when this limit is reached.
+Introduced in Ruby 2.1, default: 16MB
+.Pp
+.It Ev RUBY_GC_OLDMALLOC_LIMIT_MAX
+The maximum limit of old generation allocation from malloc before a
+full GC starts.
+Prevents excessive malloc growth due to RUBY_GC_OLDMALLOC_LIMIT_GROWTH_FACTOR.
+Introduced in Ruby 2.1, default: 128MB
+.Pp
+.It Ev RUBY_GC_OLDMALLOC_LIMIT_GROWTH_FACTOR
+Increases the limit of old generation malloc allocation, reducing full
+GC frequency but increasing malloc growth until RUBY_GC_OLDMALLOC_LIMIT_MAX
+is reached.
+Introduced in Ruby 2.1, default: 1.2, minimum: 1.0 (no growth)
+.Pp
+.El
+.Sh STACK SIZE ENVIRONMENT
+Stack size environment variables are implementation-dependent and
+subject to change with different versions of Ruby.  The VM stack is used
+for pure-Ruby code and managed by the virtual machine.  Machine stack is
+used by the operating system and its usage is dependent on C extensions
+as well as C compiler options.  Using lower values for these may allow
+applications to keep more Fibers or Threads running; but increases the
+chance of SystemStackError exceptions and segmentation faults (SIGSEGV).
+These environment variables are available since Ruby 2.0.0.
+All values are specified in bytes.
+.Pp
+.Bl -hang -compact -width "RUBY_THREAD_MACHINE_STACK_SIZE"
+.It Ev RUBY_THREAD_VM_STACK_SIZE
+VM stack size used at thread creation.
+default: 131072 (32-bit CPU) or 262144 (64-bit)
+.Pp
+.It Ev RUBY_THREAD_MACHINE_STACK_SIZE
+Machine stack size used at thread creation.
+default: 524288 or 1048575
+.Pp
+.It Ev RUBY_FIBER_VM_STACK_SIZE
+VM stack size used at fiber creation.
+default: 65536 or 131072
+.Pp
+.It Ev RUBY_FIBER_MACHINE_STACK_SIZE
+Machine stack size used at fiber creation.
+default: 262144 or 524288
+.Pp
+.El
 .Sh SEE ALSO
 .Bl -hang -compact -width "http://www.ruby-lang.org/123"
-.It http://www.ruby-lang.org
+.It https://www.ruby-lang.org/
 The official web site.
-.It http://www.rubyforge.org
-hosting many open source ruby projects.
-.It http://raa.ruby-lang.org
-Ruby Application Archive.
+.It https://www.ruby-toolbox.com/
+Comprehensive catalog of Ruby libraries.
 .El
 .Pp
 .Sh REPORTING BUGS
@@ -497,15 +613,17 @@ Ruby Application Archive.
 .Li Security vulnerabilities should be reported via an email to
 .Aq security@ruby-lang.org Ns
 .Li .
-Reported problems will be published after fixed.
+Reported problems will be published after they've been fixed.
 .Pp
 .Li And you can report other bugs and feature requests via the
-Ruby Issue Tracking System (http://redmine.ruby-lang.org).
+Ruby Issue Tracking System (https://bugs.ruby-lang.org/).
 Do not report security vulnerabilities
-via the system because it publishes the vulnerabilities immedately.
+via the system because it publishes the vulnerabilities immediately.
 .El
 .Sh AUTHORS
 Ruby is designed and implemented by
 .An Yukihiro Matsumoto Aq matz@netlab.jp .
 .Pp
-See <\fBhttp://redmine.ruby-lang.org/wiki/ruby/Contributors\fR> for contributors to Ruby.
+See
+.Aq Pa https://bugs.ruby-lang.org/projects/ruby/wiki/Contributors
+for contributors to Ruby.

@@ -6,7 +6,7 @@
 #
 #      $\ = ' -- '
 #      "waterbuffalo" =~ /buff/
-#      print $", $', $$, "\n"
+#      print $', $$, "\n"
 #
 #  With English:
 #
@@ -14,8 +14,38 @@
 #
 #      $OUTPUT_FIELD_SEPARATOR = ' -- '
 #      "waterbuffalo" =~ /buff/
-#      print $LOADED_FEATURES, $POSTMATCH, $PID, "\n"
-
+#      print $POSTMATCH, $PID, "\n"
+#
+#  Below is a full list of descriptive aliases and their associated global
+#  variable:
+#
+#  $ERROR_INFO::              $!
+#  $ERROR_POSITION::          $@
+#  $FS::                      $;
+#  $FIELD_SEPARATOR::         $;
+#  $OFS::                     $,
+#  $OUTPUT_FIELD_SEPARATOR::  $,
+#  $RS::                      $/
+#  $INPUT_RECORD_SEPARATOR::  $/
+#  $ORS::                     $\
+#  $OUTPUT_RECORD_SEPARATOR:: $\
+#  $INPUT_LINE_NUMBER::       $.
+#  $NR::                      $.
+#  $LAST_READ_LINE::          $_
+#  $DEFAULT_OUTPUT::          $>
+#  $DEFAULT_INPUT::           $<
+#  $PID::                     $$
+#  $PROCESS_ID::              $$
+#  $CHILD_STATUS::            $?
+#  $LAST_MATCH_INFO::         $~
+#  $IGNORECASE::              $=
+#  $ARGV::                    $*
+#  $MATCH::                   $&
+#  $PREMATCH::                $`
+#  $POSTMATCH::               $'
+#  $LAST_PAREN_MATCH::        $+
+#
+module English end if false
 
 # The exception object passed to +raise+.
 alias $ERROR_INFO              $!
@@ -119,7 +149,7 @@ alias $CHILD_STATUS            $?
 # and <tt>$1</tt> to <tt>$9</tt> are all derived from
 # <tt>$~</tt>. Assigning to <tt>$~</tt> changes the values of these
 # derived variables.  This variable is local to the current
-# scope. Thread local.
+# scope.
 alias $LAST_MATCH_INFO         $~
 
 # If set to any value apart from +nil+ or +false+, all pattern matches
@@ -135,21 +165,21 @@ alias $ARGV                    $*
 
 # The string matched by the last successful pattern
 # match. This variable is local to the current
-# scope. Read only. Thread local.
+# scope. Read only.
 alias $MATCH                   $&
 
 # The string preceding the match in the last
 # successful pattern match. This variable is local to
-# the current scope. Read only. Thread local.
+# the current scope. Read only.
 alias $PREMATCH                $`
 
 # The string following the match in the last
 # successful pattern match. This variable is local to
-# the current scope. Read only. Thread local.
+# the current scope. Read only.
 alias $POSTMATCH               $'
 
 # The contents of the highest-numbered group matched in the last
 # successful pattern match. Thus, in <tt>"cat" =~ /(c|a)(t|z)/</tt>,
 # <tt>$+</tt> will be set to "t".  This variable is local to the
-# current scope. Read only. Thread local.
+# current scope. Read only.
 alias $LAST_PAREN_MATCH        $+

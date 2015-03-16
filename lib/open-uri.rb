@@ -9,21 +9,22 @@ module Kernel
     alias open_uri_original_open open # :nodoc:
   end
 
-  # makes possible to open various resources including URIs.
-  # If the first argument respond to `open' method,
-  # the method is called with the rest arguments.
+  # Allows the opening of various resources including URIs.
   #
-  # If the first argument is a string which begins with xxx://,
-  # it is parsed by URI.parse.  If the parsed object respond to `open' method,
-  # the method is called with the rest arguments.
+  # If the first argument responds to the 'open' method, 'open' is called on
+  # it with the rest of the arguments.
   #
-  # Otherwise original open is called.
+  # If the first argument is a string that begins with xxx://, it is parsed by
+  # URI.parse.  If the parsed object responds to the 'open' method,
+  # 'open' is called on it with the rest of the arguments.
   #
-  # Since open-uri.rb provides URI::HTTP#open, URI::HTTPS#open and
-  # URI::FTP#open,
-  # Kernel[#.]open can accepts such URIs and strings which begins with
-  # http://, https:// and ftp://.
-  # In these case, the opened file object is extended by OpenURI::Meta.
+  # Otherwise, the original Kernel#open is called.
+  #
+  # OpenURI::OpenRead#open provides URI::HTTP#open, URI::HTTPS#open and
+  # URI::FTP#open, Kernel#open.
+  #
+  # We can accept URIs and strings that begin with http://, https:// and
+  # ftp://. In these cases, the opened file object is extended by OpenURI::Meta.
   def open(name, *rest, &block) # :doc:
     if name.respond_to?(:open)
       name.open(*rest, &block)
@@ -38,18 +39,18 @@ module Kernel
   module_function :open
 end
 
-# OpenURI is an easy-to-use wrapper for net/http, net/https and net/ftp.
+# OpenURI is an easy-to-use wrapper for Net::HTTP, Net::HTTPS and Net::FTP.
 #
-#== Example
+# == Example
 #
-# It is possible to open http/https/ftp URL as usual like opening a file:
+# It is possible to open an http, https or ftp URL as though it were a file:
 #
 #   open("http://www.ruby-lang.org/") {|f|
 #     f.each_line {|line| p line}
 #   }
 #
-# The opened file has several methods for meta information as follows since
-# it is extended by OpenURI::Meta.
+# The opened file has several getter methods for its meta-information, as
+# follows, since it is extended by OpenURI::Meta.
 #
 #   open("http://www.ruby-lang.org/en") {|f|
 #     f.each_line {|line| p line}
@@ -70,11 +71,13 @@ end
 #   }
 #
 # The environment variables such as http_proxy, https_proxy and ftp_proxy
-# are in effect by default.  :proxy => nil disables proxy.
+# are in effect by default. Here we disable proxy:
 #
-#   open("http://www.ruby-lang.org/en/raa.html", :proxy => nil) {|f|
+#   open("http://www.ruby-lang.org/en/", :proxy => nil) {|f|
 #     # ...
 #   }
+#
+# See OpenURI::OpenRead.open and Kernel#open for more on available options.
 #
 # URI objects can be opened in a similar way.
 #
@@ -99,6 +102,7 @@ module OpenURI
     :content_length_proc => true,
     :http_basic_authentication => true,
     :read_timeout => true,
+    :open_timeout => true,
     :ssl_ca_cert => nil,
     :ssl_verify_mode => nil,
     :ftp_active_mode => false,
@@ -126,7 +130,7 @@ module OpenURI
 
   def OpenURI.open_uri(name, *rest) # :nodoc:
     uri = URI::Generic === name ? name : URI.parse(name)
-    mode, perm, rest = OpenURI.scan_open_optional_arguments(*rest)
+    mode, _, rest = OpenURI.scan_open_optional_arguments(*rest)
     options = rest.shift if !rest.empty? && Hash === rest.first
     raise ArgumentError.new("extra arguments") if !rest.empty?
     options ||= {}
@@ -149,7 +153,11 @@ module OpenURI
       begin
         yield io
       ensure
-        io.close
+        if io.respond_to? :close!
+          io.close! # Tempfile
+        else
+          io.close if !io.closed?
+        end
       end
     else
       io
@@ -234,7 +242,7 @@ module OpenURI
 
   def OpenURI.redirectable?(uri1, uri2) # :nodoc:
     # This test is intended to forbid a redirection from http://... to
-    # file:///etc/passwd.
+    # file:///etc/passwd, file:///dev/zero, etc.  CVE-2011-1521
     # https to http redirect is also forbidden intentionally.
     # It avoids sending secure cookie or referer by non-secure HTTP protocol.
     # (RFC 2109 4.3.1, RFC 2965 3.3, RFC 2616 15.1.3)
@@ -249,8 +257,7 @@ module OpenURI
       raise "Non-HTTP proxy URI: #{proxy_uri}" if proxy_uri.class != URI::HTTP
     end
 
-    if target.userinfo && "1.9.0" <= RUBY_VERSION
-      # don't raise for 1.8 because compatibility.
+    if target.userinfo
       raise ArgumentError, "userinfo not supported.  [RFC3986]"
     end
 
@@ -263,17 +270,17 @@ module OpenURI
       # HTTP or HTTPS
       if proxy
         if proxy_user && proxy_pass
-          klass = Net::HTTP::Proxy(proxy_uri.host, proxy_uri.port, proxy_user, proxy_pass)
+          klass = Net::HTTP::Proxy(proxy_uri.hostname, proxy_uri.port, proxy_user, proxy_pass)
         else
-          klass = Net::HTTP::Proxy(proxy_uri.host, proxy_uri.port)
+          klass = Net::HTTP::Proxy(proxy_uri.hostname, proxy_uri.port)
         end
       end
-      target_host = target.host
+      target_host = target.hostname
       target_port = target.port
       request_uri = target.request_uri
     else
       # FTP over HTTP proxy
-      target_host = proxy_uri.host
+      target_host = proxy_uri.hostname
       target_port = proxy_uri.port
       request_uri = target.to_s
       if proxy_user && proxy_pass
@@ -281,17 +288,19 @@ module OpenURI
       end
     end
 
-    http = klass.new(target_host, target_port)
+    http = proxy ? klass.new(target_host, target_port) : klass.new(target_host, target_port, nil)
     if target.class == URI::HTTPS
       require 'net/https'
       http.use_ssl = true
       http.verify_mode = options[:ssl_verify_mode] || OpenSSL::SSL::VERIFY_PEER
       store = OpenSSL::X509::Store.new
       if options[:ssl_ca_cert]
-        if File.directory? options[:ssl_ca_cert]
-          store.add_path options[:ssl_ca_cert]
-        else
-          store.add_file options[:ssl_ca_cert]
+        Array(options[:ssl_ca_cert]).each do |cert|
+          if File.directory? cert
+            store.add_path cert
+          else
+            store.add_file cert
+          end
         end
       else
         store.set_default_paths
@@ -300,6 +309,9 @@ module OpenURI
     end
     if options.include? :read_timeout
       http.read_timeout = options[:read_timeout]
+    end
+    if options.include? :open_timeout
+      http.open_timeout = options[:open_timeout]
     end
 
     resp = nil
@@ -329,7 +341,7 @@ module OpenURI
     io = buf.io
     io.rewind
     io.status = [resp.code, resp.message]
-    resp.each {|name,value| buf.io.meta_add_field name, value }
+    resp.each_name {|name| buf.io.meta_add_field2 name, resp.get_fields(name) }
     case resp
     when Net::HTTPSuccess
     when Net::HTTPMovedPermanently, # 301
@@ -355,6 +367,8 @@ module OpenURI
     attr_reader :io
   end
 
+  # Raised on redirection,
+  # only occurs when +redirect+ option for HTTP is +false+.
   class HTTPRedirect < HTTPError
     def initialize(message, io, uri)
       super(message, io)
@@ -363,7 +377,7 @@ module OpenURI
     attr_reader :uri
   end
 
-  class Buffer # :nodoc:
+  class Buffer # :nodoc: all
     def initialize
       @io = StringIO.new
       @size = 0
@@ -396,27 +410,36 @@ module OpenURI
       obj.extend Meta
       obj.instance_eval {
         @base_uri = nil
-        @meta = {}
+        @meta = {} # name to string.  legacy.
+        @metas = {} # name to array of strings.
       }
       if src
         obj.status = src.status
         obj.base_uri = src.base_uri
-        src.meta.each {|name, value|
-          obj.meta_add_field(name, value)
+        src.metas.each {|name, values|
+          obj.meta_add_field2(name, values)
         }
       end
     end
 
-    # returns an Array which consists status code and message.
+    # returns an Array that consists of status code and message.
     attr_accessor :status
 
-    # returns a URI which is base of relative URIs in the data.
-    # It may differ from the URI supplied by a user because redirection.
+    # returns a URI that is the base of relative URIs in the data.
+    # It may differ from the URI supplied by a user due to redirection.
     attr_accessor :base_uri
 
-    # returns a Hash which represents header fields.
+    # returns a Hash that represents header fields.
     # The Hash keys are downcased for canonicalization.
+    # The Hash values are a field body.
+    # If there are multiple field with same field name,
+    # the field values are concatenated with a comma.
     attr_reader :meta
+
+    # returns a Hash that represents header fields.
+    # The Hash keys are downcased for canonicalization.
+    # The Hash value are an array of field values.
+    attr_reader :metas
 
     def meta_setup_encoding # :nodoc:
       charset = self.charset
@@ -437,30 +460,38 @@ module OpenURI
       end
     end
 
-    def meta_add_field(name, value) # :nodoc:
+    def meta_add_field2(name, values) # :nodoc:
       name = name.downcase
-      @meta[name] = value
+      @metas[name] = values
+      @meta[name] = values.join(', ')
       meta_setup_encoding if name == 'content-type'
     end
 
-    # returns a Time which represents Last-Modified field.
+    def meta_add_field(name, value) # :nodoc:
+      meta_add_field2(name, [value])
+    end
+
+    # returns a Time that represents the Last-Modified field.
     def last_modified
-      if v = @meta['last-modified']
+      if vs = @metas['last-modified']
+        v = vs.join(', ')
         Time.httpdate(v)
       else
         nil
       end
     end
 
+    # :stopdoc:
     RE_LWS = /[\r\n\t ]+/n
     RE_TOKEN = %r{[^\x00- ()<>@,;:\\"/\[\]?={}\x7f]+}n
     RE_QUOTED_STRING = %r{"(?:[\r\n\t !#-\[\]-~\x80-\xff]|\\[\x00-\x7f])*"}n
     RE_PARAMETERS = %r{(?:;#{RE_LWS}?#{RE_TOKEN}#{RE_LWS}?=#{RE_LWS}?(?:#{RE_TOKEN}|#{RE_QUOTED_STRING})#{RE_LWS}?)*}n
+    # :startdoc:
 
     def content_type_parse # :nodoc:
-      v = @meta['content-type']
+      vs = @metas['content-type']
       # The last (?:;#{RE_LWS}?)? matches extra ";" which violates RFC2045.
-      if v && %r{\A#{RE_LWS}?(#{RE_TOKEN})#{RE_LWS}?/(#{RE_TOKEN})#{RE_LWS}?(#{RE_PARAMETERS})(?:;#{RE_LWS}?)?\z}no =~ v
+      if vs && %r{\A#{RE_LWS}?(#{RE_TOKEN})#{RE_LWS}?/(#{RE_TOKEN})#{RE_LWS}?(#{RE_PARAMETERS})(?:;#{RE_LWS}?)?\z}no =~ vs.join(', ')
         type = $1.downcase
         subtype = $2.downcase
         parameters = []
@@ -480,7 +511,7 @@ module OpenURI
     # It is downcased for canonicalization.
     # Content-Type parameters are stripped.
     def content_type
-      type, *parameters = content_type_parse
+      type, *_ = content_type_parse
       type || 'application/octet-stream'
     end
 
@@ -508,12 +539,13 @@ module OpenURI
       end
     end
 
-    # returns a list of encodings in Content-Encoding field
-    # as an Array of String.
+    # Returns a list of encodings in Content-Encoding field as an array of
+    # strings.
+    #
     # The encodings are downcased for canonicalization.
     def content_encoding
-      v = @meta['content-encoding']
-      if v && %r{\A#{RE_LWS}?#{RE_TOKEN}#{RE_LWS}?(?:,#{RE_LWS}?#{RE_TOKEN}#{RE_LWS}?)*}o =~ v
+      vs = @metas['content-encoding']
+      if vs && %r{\A#{RE_LWS}?#{RE_TOKEN}#{RE_LWS}?(?:,#{RE_LWS}?#{RE_TOKEN}#{RE_LWS}?)*}o =~ (v = vs.join(', '))
         v.scan(RE_TOKEN).map {|content_coding| content_coding.downcase}
       else
         []
@@ -526,22 +558,25 @@ module OpenURI
     # OpenURI::OpenRead#open provides `open' for URI::HTTP and URI::FTP.
     #
     # OpenURI::OpenRead#open takes optional 3 arguments as:
-    # OpenURI::OpenRead#open([mode [, perm]] [, options]) [{|io| ... }]
     #
-    # `mode', `perm' is same as Kernel#open.
+    #   OpenURI::OpenRead#open([mode [, perm]] [, options]) [{|io| ... }]
     #
-    # However, `mode' must be read mode because OpenURI::OpenRead#open doesn't
+    # OpenURI::OpenRead#open returns an IO-like object if block is not given.
+    # Otherwise it yields the IO object and return the value of the block.
+    # The IO object is extended with OpenURI::Meta.
+    #
+    # +mode+ and +perm+ are the same as Kernel#open.
+    #
+    # However, +mode+ must be read mode because OpenURI::OpenRead#open doesn't
     # support write mode (yet).
-    # Also `perm' is just ignored because it is meaningful only for file
-    # creation.
+    # Also +perm+ is ignored because it is meaningful only for file creation.
     #
-    # `options' must be a hash.
+    # +options+ must be a hash.
     #
-    # Each pairs which key is a string in the hash specify a extra header
-    # field for HTTP.
-    # I.e. it is ignored for FTP without HTTP proxy.
+    # Each option with a string key specifies an extra header field for HTTP.
+    # I.e., it is ignored for FTP without HTTP proxy.
     #
-    # The hash may include other options which key is a symbol:
+    # The hash may include other options, where keys are symbols:
     #
     # [:proxy]
     #  Synopsis:
@@ -553,22 +588,28 @@ module OpenURI
     #
     #  If :proxy option is specified, the value should be String, URI,
     #  boolean or nil.
+    #
     #  When String or URI is given, it is treated as proxy URI.
+    #
     #  When true is given or the option itself is not specified,
     #  environment variable `scheme_proxy' is examined.
     #  `scheme' is replaced by `http', `https' or `ftp'.
+    #
     #  When false or nil is given, the environment variables are ignored and
     #  connection will be made to a server directly.
     #
     # [:proxy_http_basic_authentication]
     #  Synopsis:
-    #    :proxy_http_basic_authentication => ["http://proxy.foo.com:8000/", "proxy-user", "proxy-password"]
-    #    :proxy_http_basic_authentication => [URI.parse("http://proxy.foo.com:8000/"), "proxy-user", "proxy-password"]
+    #    :proxy_http_basic_authentication =>
+    #      ["http://proxy.foo.com:8000/", "proxy-user", "proxy-password"]
+    #    :proxy_http_basic_authentication =>
+    #      [URI.parse("http://proxy.foo.com:8000/"),
+    #       "proxy-user", "proxy-password"]
     #
-    #  If :proxy option is specified, the value should be an Array with 3 elements.
-    #  It should contain a proxy URI, a proxy user name and a proxy password.
-    #  The proxy URI should be a String, an URI or nil.
-    #  The proxy user name and password should be a String.
+    #  If :proxy option is specified, the value should be an Array with 3
+    #  elements.  It should contain a proxy URI, a proxy user name and a proxy
+    #  password.  The proxy URI should be a String, an URI or nil.  The proxy
+    #  user name and password should be a String.
     #
     #  If nil is given for the proxy URI, this option is just ignored.
     #
@@ -590,14 +631,13 @@ module OpenURI
     #
     #  If :content_length_proc option is specified, the option value procedure
     #  is called before actual transfer is started.
-    #  It takes one argument which is expected content length in bytes.
+    #  It takes one argument, which is expected content length in bytes.
     #
     #  If two or more transfer is done by HTTP redirection, the procedure
     #  is called only one for a last transfer.
     #
     #  When expected content length is unknown, the procedure is called with
-    #  nil.
-    #  It is happen when HTTP response has no Content-Length header.
+    #  nil.  This happens when the HTTP response has no Content-Length header.
     #
     # [:progress_proc]
     #  Synopsis:
@@ -605,7 +645,7 @@ module OpenURI
     #
     #  If :progress_proc option is specified, the proc is called with one
     #  argument each time when `open' gets content fragment from network.
-    #  The argument `size' `size' is a accumulated transferred size in bytes.
+    #  The argument +size+ is the accumulated transferred size in bytes.
     #
     #  If two or more transfer is done by HTTP redirection, the procedure
     #  is called only one for a last transfer.
@@ -633,9 +673,16 @@ module OpenURI
     #
     #  :read_timeout option specifies a timeout of read for http connections.
     #
+    # [:open_timeout]
+    #  Synopsis:
+    #    :open_timeout=>nil     (no timeout)
+    #    :open_timeout=>10      (10 second)
+    #
+    #  :open_timeout option specifies a timeout of open for http connections.
+    #
     # [:ssl_ca_cert]
     #  Synopsis:
-    #    :ssl_ca_cert=>filename
+    #    :ssl_ca_cert=>filename or an Array of filenames
     #
     #  :ssl_ca_cert is used to specify CA certificate for SSL.
     #  If it is given, default certificates are not used.
@@ -646,26 +693,24 @@ module OpenURI
     #
     #  :ssl_verify_mode is used to specify openssl verify mode.
     #
-    # OpenURI::OpenRead#open returns an IO like object if block is not given.
-    # Otherwise it yields the IO object and return the value of the block.
-    # The IO object is extended with OpenURI::Meta.
-    #
     # [:ftp_active_mode]
     #  Synopsis:
     #    :ftp_active_mode=>bool
     #
-    # :ftp_active_mode=>true is used to make ftp active mode.
-    # Note that the active mode is default in Ruby 1.8 or prior.
-    # Ruby 1.9 uses passive mode by default.
+    #  <tt>:ftp_active_mode => true</tt> is used to make ftp active mode.
+    #  Ruby 1.9 uses passive mode by default.
+    #  Note that the active mode is default in Ruby 1.8 or prior.
     #
     # [:redirect]
     #  Synopsis:
     #    :redirect=>bool
     #
-    # :redirect=>false is used to disable HTTP redirects at all.
-    # OpenURI::HTTPRedirect exception raised on redirection.
-    # It is true by default.
-    # The true means redirections between http and ftp is permitted.
+    #  +:redirect+ is true by default.  <tt>:redirect => false</tt> is used to
+    #  disable all HTTP redirects.
+    #
+    #  OpenURI::HTTPRedirect exception raised on redirection.
+    #  Using +true+ also means that redirections between http and ftp are
+    #  permitted.
     #
     def open(*rest, &block)
       OpenURI.open_uri(self, *rest, &block)
@@ -674,7 +719,7 @@ module OpenURI
     # OpenURI::OpenRead#read([options]) reads a content referenced by self and
     # returns the content as string.
     # The string is extended with OpenURI::Meta.
-    # The argument `options' is same as OpenURI::OpenRead#open.
+    # The argument +options+ is same as OpenURI::OpenRead#open.
     def read(options={})
       self.open(options) {|f|
         str = f.read
@@ -686,84 +731,6 @@ module OpenURI
 end
 
 module URI
-  class Generic
-    # returns a proxy URI.
-    # The proxy URI is obtained from environment variables such as http_proxy,
-    # ftp_proxy, no_proxy, etc.
-    # If there is no proper proxy, nil is returned.
-    #
-    # Note that capitalized variables (HTTP_PROXY, FTP_PROXY, NO_PROXY, etc.)
-    # are examined too.
-    #
-    # But http_proxy and HTTP_PROXY is treated specially under CGI environment.
-    # It's because HTTP_PROXY may be set by Proxy: header.
-    # So HTTP_PROXY is not used.
-    # http_proxy is not used too if the variable is case insensitive.
-    # CGI_HTTP_PROXY can be used instead.
-    def find_proxy
-      name = self.scheme.downcase + '_proxy'
-      proxy_uri = nil
-      if name == 'http_proxy' && ENV.include?('REQUEST_METHOD') # CGI?
-        # HTTP_PROXY conflicts with *_proxy for proxy settings and
-        # HTTP_* for header information in CGI.
-        # So it should be careful to use it.
-        pairs = ENV.reject {|k, v| /\Ahttp_proxy\z/i !~ k }
-        case pairs.length
-        when 0 # no proxy setting anyway.
-          proxy_uri = nil
-        when 1
-          k, v = pairs.shift
-          if k == 'http_proxy' && ENV[k.upcase] == nil
-            # http_proxy is safe to use because ENV is case sensitive.
-            proxy_uri = ENV[name]
-          else
-            proxy_uri = nil
-          end
-        else # http_proxy is safe to use because ENV is case sensitive.
-          proxy_uri = ENV.to_hash[name]
-        end
-        if !proxy_uri
-          # Use CGI_HTTP_PROXY.  cf. libwww-perl.
-          proxy_uri = ENV["CGI_#{name.upcase}"]
-        end
-      elsif name == 'http_proxy'
-        unless proxy_uri = ENV[name]
-          if proxy_uri = ENV[name.upcase]
-            warn 'The environment variable HTTP_PROXY is discouraged.  Use http_proxy.'
-          end
-        end
-      else
-        proxy_uri = ENV[name] || ENV[name.upcase]
-      end
-
-      if proxy_uri && self.host
-        require 'socket'
-        begin
-          addr = IPSocket.getaddress(self.host)
-          proxy_uri = nil if /\A127\.|\A::1\z/ =~ addr
-        rescue SocketError
-        end
-      end
-
-      if proxy_uri
-        proxy_uri = URI.parse(proxy_uri)
-        name = 'no_proxy'
-        if no_proxy = ENV[name] || ENV[name.upcase]
-          no_proxy.scan(/([^:,]*)(?::(\d+))?/) {|host, port|
-            if /(\A|\.)#{Regexp.quote host}\z/i =~ self.host &&
-               (!port || self.port == port.to_i)
-              proxy_uri = nil
-              break
-            end
-          }
-        end
-        proxy_uri
-      else
-        nil
-      end
-    end
-  end
-
   class HTTP
     def buffer_open(buf, proxy, options) # :nodoc:
       OpenURI.open_http(buf, self, proxy, options)
@@ -804,7 +771,7 @@ module URI
 
       # The access sequence is defined by RFC 1738
       ftp = Net::FTP.new
-      ftp.connect(self.host, self.port)
+      ftp.connect(self.hostname, self.port)
       ftp.passive = true if !options[:ftp_active_mode]
       # todo: extract user/passwd from .netrc.
       user = 'anonymous'

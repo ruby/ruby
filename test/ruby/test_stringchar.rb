@@ -4,14 +4,14 @@ class TestStringchar < Test::Unit::TestCase
   def test_string
     assert_equal("abcd", "abcd")
     assert_match(/abcd/, "abcd")
-    assert("abcd" === "abcd")
+    assert_operator("abcd", :===, "abcd")
     # compile time string concatenation
     assert_equal("abcd", "ab" "cd")
     assert_equal("22aacd44", "#{22}aa" "cd#{44}")
     assert_equal("22aacd445566", "#{22}aa" "cd#{44}" "55" "#{66}")
-    assert("abc" !~ /^$/)
-    assert("abc\n" !~ /^$/)
-    assert("abc" !~ /^d*$/)
+    assert_operator("abc", :!~, /^$/)
+    assert_operator("abc\n", :!~, /^$/)
+    assert_operator("abc", :!~, /^d*$/)
     assert_equal(3, ("abc" =~ /d*$/))
     assert("" =~ /^$/)
     assert("\n" =~ /^$/)
@@ -30,12 +30,12 @@ class TestStringchar < Test::Unit::TestCase
     assert(/(\s+\d+){2}/ =~ " 1 2"); assert_equal(" 1 2", $&)
     assert(/(?:\s+\d+){2}/ =~ " 1 2"); assert_equal(" 1 2", $&)
 
-    $x = <<END;
+    x = <<END;
 ABCD
 ABCD
 END
-    $x.gsub!(/((.|\n)*?)B((.|\n)*?)D/m ,'\1\3')
-    assert_equal("AC\nAC\n", $x)
+    x.gsub!(/((.|\n)*?)B((.|\n)*?)D/m ,'\1\3')
+    assert_equal("AC\nAC\n", x)
 
     assert_match(/foo(?=(bar)|(baz))/, "foobar")
     assert_match(/foo(?=(bar)|(baz))/, "foobaz")
@@ -56,12 +56,12 @@ END
     assert_equal('-', foo * 1)
     assert_equal('', foo * 0)
 
-    $x = "a.gif"
-    assert_equal("gif", $x.sub(/.*\.([^\.]+)$/, '\1'))
-    assert_equal("b.gif", $x.sub(/.*\.([^\.]+)$/, 'b.\1'))
-    assert_equal("", $x.sub(/.*\.([^\.]+)$/, '\2'))
-    assert_equal("ab", $x.sub(/.*\.([^\.]+)$/, 'a\2b'))
-    assert_equal("<a.gif>", $x.sub(/.*\.([^\.]+)$/, '<\&>'))
+    x = "a.gif"
+    assert_equal("gif", x.sub(/.*\.([^\.]+)$/, '\1'))
+    assert_equal("b.gif", x.sub(/.*\.([^\.]+)$/, 'b.\1'))
+    assert_equal("", x.sub(/.*\.([^\.]+)$/, '\2'))
+    assert_equal("ab", x.sub(/.*\.([^\.]+)$/, 'a\2b'))
+    assert_equal("<a.gif>", x.sub(/.*\.([^\.]+)$/, '<\&>'))
   end
 
   def test_char
@@ -78,16 +78,16 @@ END
     assert_equal("abc", "abcc".squeeze!("a-z"))
     assert_equal("ad", "abcd".delete!("bc"))
 
-    $x = "abcdef"
-    $y = [ ?a, ?b, ?c, ?d, ?e, ?f ]
-    $bad = false
-    $x.each_byte {|i|
-      if i.chr != $y.shift
-        $bad = true
+    x = "abcdef"
+    y = [ ?a, ?b, ?c, ?d, ?e, ?f ]
+    bad = false
+    x.each_byte {|i|
+      if i.chr != y.shift
+        bad = true
         break
       end
     }
-    assert(!$bad)
+    assert(!bad)
 
     s = "a string"
     s[0..s.size]="another string"
@@ -162,5 +162,20 @@ EOS
     assert_equal("aaBBcc", s)
     s.delete!("a-z")
     assert_equal("BB", s)
+  end
+
+  def test_dump
+    bug3996 = '[ruby-core:32935]'
+    Encoding.list.find_all {|enc| enc.ascii_compatible?}.each do |enc|
+      (0..256).map do |c|
+        begin
+          s = c.chr(enc)
+        rescue RangeError, ArgumentError
+          break
+        else
+          assert_not_match(/\0/, s.dump, bug3996)
+        end
+      end
+    end
   end
 end

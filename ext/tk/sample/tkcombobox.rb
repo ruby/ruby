@@ -370,7 +370,7 @@ EOD
 
     startwait = keys.delete('startwait'){300}
     interval = keys.delete('interval'){150}
-    @lst = Tk::RbWidget::AutoScrollListbox.new(@top, :scrollbar=>true, 
+    @lst = Tk::RbWidget::AutoScrollListbox.new(@top, :scrollbar=>true,
                                                :startwait=>startwait,
                                                :interval=>interval)
     @lst.pack(:fill=>:both, :expand=>true)
@@ -464,7 +464,7 @@ if __FILE__ == $0
 # e0.values(%w(aa bb cc dd ee ff gg hh ii jj kk ll mm nn oo pp qq rr ss tt uu))
 
   v = TkVariable.new
-  e = Tk::RbWidget::Combobox.new(:height=>7, :scrollbar=>true, 
+  e = Tk::RbWidget::Combobox.new(:height=>7, :scrollbar=>true,
                                  :textvariable=>v,
                                  :arrowrelief=>:flat, :arrowborderwidth=>0,
                                  :startwait=>400, :interval=>200).pack
@@ -480,9 +480,9 @@ if __FILE__ == $0
   TkFrame.new(:relief=>:raised, :borderwidth=>2,
               :height=>3).pack(:fill=>:x, :expand=>true, :padx=>5, :pady=>3)
 
-  l = Tk::RbWidget::AutoScrollListbox.new(nil, :relief=>:groove, 
-                                          :borderwidth=>4,:height=>7, 
-                                          :width=>20).pack(:fill=>:both, 
+  l = Tk::RbWidget::AutoScrollListbox.new(nil, :relief=>:groove,
+                                          :borderwidth=>4,:height=>7,
+                                          :width=>20).pack(:fill=>:both,
                                                            :expand=>true)
   (0..20).each{|i| l.insert('end', "line #{i}")}
 

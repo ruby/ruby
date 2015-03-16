@@ -1,7 +1,9 @@
-require_relative 'gemutilities'
+# coding: UTF-8
+
+require 'rubygems/test_case'
 require 'rubygems/ext'
 
-class TestGemExtExtConfBuilder < RubyGemTestCase
+class TestGemExtExtConfBuilder < Gem::TestCase
 
   def setup
     super
@@ -25,22 +27,62 @@ class TestGemExtExtConfBuilder < RubyGemTestCase
     output = []
 
     Dir.chdir @ext do
-      Gem::Ext::ExtConfBuilder.build 'extconf.rb', nil, @dest_path, output
+      result =
+        Gem::Ext::ExtConfBuilder.build 'extconf.rb', nil, @dest_path, output
+
+      assert_same result, output
     end
 
-    expected = [
-      "ruby extconf.rb",
-      "creating Makefile\n",
-      "make",
-      "make: Nothing to be done for `all'.\n",
-      "make install",
-      "make: Nothing to be done for `install'.\n"
-    ]
-
-    assert_match(/^#{Gem.ruby} extconf.rb/, output[0])
+    assert_match(/^#{Gem.ruby}.* extconf.rb/, output[0])
     assert_equal "creating Makefile\n", output[1]
-    assert_equal make_command, output[2]
-    assert_equal make_command + " install", output[4]
+    assert_contains_make_command 'clean', output[2]
+    assert_contains_make_command '', output[4]
+    assert_contains_make_command 'install', output[6]
+    assert_empty Dir.glob(File.join(@ext, 'siteconf*.rb'))
+  end
+
+  def test_class_build_rbconfig_make_prog
+    configure_args do
+
+      File.open File.join(@ext, 'extconf.rb'), 'w' do |extconf|
+        extconf.puts "require 'mkmf'\ncreate_makefile 'foo'"
+      end
+
+      output = []
+
+      Dir.chdir @ext do
+        Gem::Ext::ExtConfBuilder.build 'extconf.rb', nil, @dest_path, output
+      end
+
+      assert_equal "creating Makefile\n", output[1]
+      assert_contains_make_command 'clean', output[2]
+      assert_contains_make_command '', output[4]
+      assert_contains_make_command 'install', output[6]
+    end
+  end
+
+  def test_class_build_env_make
+    env_make = ENV.delete 'make'
+    ENV['make'] = 'anothermake'
+
+    configure_args '' do
+      File.open File.join(@ext, 'extconf.rb'), 'w' do |extconf|
+        extconf.puts "require 'mkmf'\ncreate_makefile 'foo'"
+      end
+
+      output = []
+
+      assert_raises Gem::InstallError do
+        Dir.chdir @ext do
+          Gem::Ext::ExtConfBuilder.build 'extconf.rb', nil, @dest_path, output
+        end
+      end
+
+      assert_equal "creating Makefile\n",   output[1]
+      assert_contains_make_command 'clean', output[2]
+    end
+  ensure
+    ENV['make'] = env_make
   end
 
   def test_class_build_extconf_fail
@@ -62,12 +104,53 @@ class TestGemExtExtConfBuilder < RubyGemTestCase
       end
     end
 
-    assert_match(/\Aextconf failed:
+    assert_equal 'extconf failed, exit code 1', error.message
 
-#{Gem.ruby} extconf.rb.*
-checking for main\(\) in .*?nonexistent/m, error.message)
+    assert_match(/^#{Gem.ruby}.* extconf.rb/, output[0])
+    assert_path_exists File.join @dest_path, 'mkmf.log'
+  end
 
-    assert_match(/^#{Gem.ruby} extconf.rb/, output[0])
+  def test_class_build_unconventional
+    if vc_windows? && !nmake_found?
+      skip("test_class_build skipped - nmake not found")
+    end
+
+    File.open File.join(@ext, 'extconf.rb'), 'w' do |extconf|
+      extconf.puts <<-'EXTCONF'
+include RbConfig
+
+ruby =
+  if ENV['RUBY'] then
+    ENV['RUBY']
+  else
+    ruby_exe = "#{CONFIG['RUBY_INSTALL_NAME']}#{CONFIG['EXEEXT']}"
+    File.join CONFIG['bindir'], ruby_exe
+  end
+
+open 'Makefile', 'w' do |io|
+  io.write <<-Makefile
+clean: ruby
+all: ruby
+install: ruby
+
+ruby:
+\t#{ruby} -e0
+
+  Makefile
+end
+      EXTCONF
+    end
+
+    output = []
+
+    Dir.chdir @ext do
+      Gem::Ext::ExtConfBuilder.build 'extconf.rb', nil, @dest_path, output
+    end
+
+    assert_contains_make_command 'clean', output[2]
+    assert_contains_make_command '', output[4]
+    assert_contains_make_command 'install', output[6]
+    assert_empty Dir.glob(File.join(@ext, 'siteconf*.rb'))
   end
 
   def test_class_make
@@ -78,8 +161,10 @@ checking for main\(\) in .*?nonexistent/m, error.message)
     output = []
     makefile_path = File.join(@ext, 'Makefile')
     File.open makefile_path, 'w' do |makefile|
+      makefile.puts "# π"
       makefile.puts "RUBYARCHDIR = $(foo)$(target_prefix)"
       makefile.puts "RUBYLIBDIR = $(bar)$(target_prefix)"
+      makefile.puts "clean:"
       makefile.puts "all:"
       makefile.puts "install:"
     end
@@ -88,17 +173,9 @@ checking for main\(\) in .*?nonexistent/m, error.message)
       Gem::Ext::ExtConfBuilder.make @ext, output
     end
 
-    assert_equal make_command, output[0]
-    assert_equal "#{make_command} install", output[2]
-
-    edited_makefile = <<-EOF
-RUBYARCHDIR = #{@ext}$(target_prefix)
-RUBYLIBDIR = #{@ext}$(target_prefix)
-all:
-install:
-    EOF
-
-    assert_equal edited_makefile, File.read(makefile_path)
+    assert_contains_make_command 'clean', output[0]
+    assert_contains_make_command '', output[2]
+    assert_contains_make_command 'install', output[4]
   end
 
   def test_class_make_no_Makefile
@@ -108,13 +185,21 @@ install:
       end
     end
 
-    expected = <<-EOF.strip
-Makefile not found:
+    assert_equal 'Makefile not found', error.message
+  end
 
-output
-    EOF
+  def configure_args args = nil
+    configure_args = RbConfig::CONFIG['configure_args']
+    RbConfig::CONFIG['configure_args'] = args if args
 
-    assert_equal expected, error.message
+    yield
+
+  ensure
+    if configure_args then
+      RbConfig::CONFIG['configure_args'] = configure_args
+    else
+      RbConfig::CONFIG.delete 'configure_args'
+    end
   end
 
 end

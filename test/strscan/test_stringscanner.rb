@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #
 # test/strscan/test_stringscanner.rb
 #
@@ -199,6 +200,17 @@ class TestStringScanner < Test::Unit::TestCase
     assert_equal 11, s.pos
   end
 
+  def test_pos_unicode
+    s = StringScanner.new("abcädeföghi")
+    assert_equal 0, s.charpos
+    assert_equal "abcä", s.scan_until(/ä/)
+    assert_equal 4, s.charpos
+    assert_equal "defö", s.scan_until(/ö/)
+    assert_equal 8, s.charpos
+    s.terminate
+    assert_equal 11, s.charpos
+  end
+
   def test_concat
     s = StringScanner.new('a')
     s.scan(/a/)
@@ -390,6 +402,8 @@ class TestStringScanner < Test::Unit::TestCase
     assert_equal 'stra', s[-1]
     assert_equal 'stra', s[0]
     assert_nil           s[1]
+    assert_raise(IndexError) { s[:c] }
+    assert_raise(IndexError) { s['c'] }
 
     assert_equal false,  s[-1].tainted?
     assert_equal false,  s[0].tainted?
@@ -445,6 +459,19 @@ class TestStringScanner < Test::Unit::TestCase
     assert_equal true, s[2].tainted?
     assert_equal true, s[3].tainted?
     assert_equal true, s[4].tainted?
+
+    s = StringScanner.new("foo bar baz")
+    s.scan(/(?<a>\w+) (?<b>\w+) (\w+)/)
+    assert_equal 'foo', s[1]
+    assert_equal 'bar', s[2]
+    assert_nil s[3]
+    assert_equal 'foo', s[:a]
+    assert_equal 'bar', s[:b]
+    assert_raise(IndexError) { s[:c] }
+    assert_equal 'foo', s['a']
+    assert_equal 'bar', s['b']
+    assert_raise(IndexError) { s['c'] }
+    assert_raise_with_message(IndexError, /\u{30c6 30b9 30c8}/) { s["\u{30c6 30b9 30c8}"] }
   end
 
   def test_pre_match

@@ -1,4 +1,4 @@
-# -*- coding: euc-jp -*-
+# -*- coding: utf-8 -*-
 #
 # animated wave demo (called by 'widget')
 #
@@ -24,15 +24,15 @@ msg = TkLabel.new(base_frame) {
   font $font
   wraplength '4i'
   justify 'left'
-  text '¤³¤Î¥Ç¥â¤Ç¤Ï¡¢¥é¥¤¥ó¥¢¥¤¥Æ¥à¤¬°ì¤Ä¤À¤±ÉÁ¤«¤ì¤¿¥­¥ã¥ó¥Ğ¥¹¥¦¥£¥¸¥§¥Ã¥È¤¬É½¼¨¤µ¤ì¤Æ¤¤¤Ş¤¹¡£¥¢¥Ë¥á¡¼¥·¥ç¥ó½èÍı¤Ï¡¢¤½¤Î¥é¥¤¥ó¥¢¥¤¥Æ¥à¤ÎºÂÉ¸ÃÍ¤òÊÑ¹¹¤¹¤ë¤³¤È¤Ç¼Â¸½¤·¤Æ¤¤¤Ş¤¹¡£'
+  text 'ã“ã®ãƒ‡ãƒ¢ã§ã¯ã€ãƒ©ã‚¤ãƒ³ã‚¢ã‚¤ãƒ†ãƒ ãŒä¸€ã¤ã ã‘æã‹ã‚ŒãŸã‚­ãƒ£ãƒ³ãƒã‚¹ã‚¦ã‚£ã‚¸ã‚§ãƒƒãƒˆãŒè¡¨ç¤ºã•ã‚Œã¦ã„ã¾ã™ã€‚ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³å‡¦ç†ã¯ã€ãã®ãƒ©ã‚¤ãƒ³ã‚¢ã‚¤ãƒ†ãƒ ã®åº§æ¨™å€¤ã‚’å¤‰æ›´ã™ã‚‹ã“ã¨ã§å®Ÿç¾ã—ã¦ã„ã¾ã™ã€‚'
 }
 msg.pack('side'=>'top')
 
 # create frame
 TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
-    #text 'Î»²ò'
-    text 'ÊÄ¤¸¤ë'
+    #text 'äº†è§£'
+    text 'é–‰ã˜ã‚‹'
     command proc{
       tmppath = $aniwave_demo
       $aniwave_demo = nil
@@ -41,7 +41,7 @@ TkFrame.new(base_frame) {|frame|
   }.pack('side'=>'left', 'expand'=>'yes')
 
   TkButton.new(frame) {
-    text '¥³¡¼¥É»²¾È'
+    text 'ã‚³ãƒ¼ãƒ‰å‚ç…§'
     command proc{showCode 'aniwave'}
   }.pack('side'=>'left', 'expand'=>'yes')
 

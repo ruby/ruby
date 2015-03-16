@@ -86,7 +86,7 @@ def parse_result data
       else
         raise "not a data"
       end
-      
+
     end
     if /benchmark summary/ =~ line
       flag = true

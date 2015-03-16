@@ -29,10 +29,7 @@
 
 #include "regenc.h"
 
-#define UTF16_IS_SURROGATE_FIRST(c)    (((c) & 0xfc) == 0xd8)
-#define UTF16_IS_SURROGATE_SECOND(c)   (((c) & 0xfc) == 0xdc)
-#define UTF16_IS_SURROGATE(c)          (((c) & 0xf8) == 0xd8)
-
+#if 0
 static const int EncLen_UTF16[] = {
   2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
   2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
@@ -51,12 +48,14 @@ static const int EncLen_UTF16[] = {
   2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
   2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2
 };
+#endif
 
 static int
 utf16le_mbc_enc_len(const UChar* p, const OnigUChar* e,
 		    OnigEncoding enc ARG_UNUSED)
 {
-  int len = e-p, byte;
+  int len = (int)(e - p);
+  UChar byte;
   if (len < 2)
     return ONIGENC_CONSTRUCT_MBCLEN_NEEDMORE(1);
   byte = p[1];
@@ -80,11 +79,8 @@ utf16le_is_mbc_newline(const UChar* p, const UChar* end,
     if (*p == 0x0a && *(p+1) == 0x00)
       return 1;
 #ifdef USE_UNICODE_ALL_LINE_TERMINATORS
-    if ((
-#ifndef USE_CRNL_AS_LINE_TERMINATOR
-	 *p == 0x0d ||
-#endif
-	 *p == 0x85) && *(p+1) == 0x00)
+    if ((*p == 0x0b || *p == 0x0c || *p == 0x0d || *p == 0x85)
+	&& *(p+1) == 0x00)
       return 1;
     if (*(p+1) == 0x20 && (*p == 0x29 || *p == 0x28))
       return 1;
@@ -244,5 +240,7 @@ OnigEncodingDefine(utf_16le, UTF_16LE) = {
   onigenc_unicode_is_code_ctype,
   onigenc_utf16_32_get_ctype_code_range,
   utf16le_left_adjust_char_head,
-  onigenc_always_false_is_allowed_reverse_match
+  onigenc_always_false_is_allowed_reverse_match,
+  0,
+  ONIGENC_FLAG_UNICODE,
 };

@@ -1,0 +1,152 @@
+= Ruby Security
+
+The Ruby programming language is large and complex and there are many security
+pitfalls often encountered by newcomers and experienced Rubyists alike.
+
+This document aims to discuss many of these pitfalls and provide more secure
+alternatives where applicable.
+
+Please check the full list of publicly known CVEs and how to correctly report a
+security vulnerability, at: http://www.ruby-lang.org/en/security/
+Japanese version is here: http://www.ruby-lang.org/ja/security/
+
+Security vulnerabilities should be reported via an email to
+mailto:security@ruby-lang.org ({the PGP public
+key}[http://www.ruby-lang.org/security.asc]), which is a private mailing list.
+Reported problems will be published after fixes.
+
+== <code>$SAFE</code>
+
+Ruby provides a mechanism to restrict what operations can be performed by Ruby
+code in the form of the <code>$SAFE</code> variable.
+
+However, <code>$SAFE</code> does not provide a secure environment for executing
+untrusted code.
+
+If you need to execute untrusted code, you should use an operating system level
+sandboxing mechanism. On Linux, ptrace or LXC can be used to sandbox
+potentially malicious code. Other similar mechanisms exist on every major
+operating system.
+
+== +Marshal.load+
+
+Ruby's +Marshal+ module provides methods for serializing and deserializing Ruby
+object trees to and from a binary data format.
+
+Never use +Marshal.load+ to deserialize untrusted or user supplied data.
+Because +Marshal+ can deserialize to almost any Ruby object and has full
+control over instance variables, it is possible to craft a malicious payload
+that executes code shortly after deserialization.
+
+If you need to deserialize untrusted data, you should use JSON as it is only
+capable of returning 'primitive' types such as strings, arrays, hashes, numbers
+and nil. If you need to deserialize other classes, you should handle this
+manually. Never deserialize to a user specified class.
+
+== YAML
+
+YAML is a popular human readable data serialization format used by many Ruby
+programs for configuration and database persistence of Ruby object trees.
+
+Similar to +Marshal+, it is able to deserialize into arbitrary Ruby classes.
+For example, the following YAML data will create an +ERB+ object when
+deserialized:
+
+  !ruby/object:ERB
+  src: puts `uname`
+
+Because of this, many of the security considerations applying to Marshal are
+also applicable to YAML. Do not use YAML to deserialize untrusted data.
+
+== Symbols
+
+Symbols are often seen as syntax sugar for simple strings, but they play a much
+more crucial role. The MRI Ruby implementation uses Symbols internally for
+method, variable and constant names. The reason for this is that symbols are
+simply integers with names attached to them, so they are faster to look up in
+hashtables.
+
+Starting in version 2.2, most symbols can be garbage collected; these are
+called <i>mortal</i> symbols. Most symbols you create (e.g. by calling
++to_sym+) are mortal.
+
+<i>Immortal</i> symbols on the other hand will never be garbage collected.
+They are created when modifying code:
+* defining a method (e.g. with +define_method+),
+* setting an instance variable (e.g. with +instance_variable_set+),
+* creating a variable or constant (e.g. with +const_set+)
+C extensions that have not been updated and are still calling `SYM2ID`
+will create immortal symbols.
+Bugs in 2.2.0: +send+ and +__send__+ also created immortal symbols,
+and calling methods with keyword arguments could also create some.
+
+Don't create immortal symbols from user inputs. Otherwise, this would
+allow a user to mount a denial of service attack against your application by
+flooding it with unique strings, which will cause memory to grow indefinitely
+until the Ruby process is killed or causes the system to slow to a halt.
+
+While it might not be a good idea to call these with user inputs, methods that
+used to be vulnerable such as +to_sym+, +respond_to?+,
++method+, +instance_variable_get+, +const_get+, etc. are no longer a threat.
+
+== Regular expressions
+
+Ruby's regular expression syntax has some minor differences when compared to
+other languages. In Ruby, the <code>^</code> and <code>$</code> anchors do not
+refer to the beginning and end of the string, rather the beginning and end of a
+*line*.
+
+This means that if you're using a regular expression like
+<code>/^[a-z]+$/</code> to restrict a string to only letters, an attacker can
+bypass this check by passing a string containing a letter, then a newline, then
+any string of their choosing.
+
+If you want to match the beginning and end of the entire string in Ruby, use
+the anchors +\A+ and +\z+.
+
+== +eval+
+
+Never pass untrusted or user controlled input to +eval+.
+
+Unless you are implementing a REPL like +irb+ or +pry+, +eval+ is almost
+certainly not what you want. Do not attempt to filter user input before passing
+it to +eval+ - this approach is fraught with danger and will most likely open
+your application up to a serious remote code execution vulnerability.
+
+== +send+
+
+'Global functions' in Ruby (+puts+, +exit+, etc.) are actually private instance
+methods on +Object+. This means it is possible to invoke these methods with
++send+, even if the call to +send+ has an explicit receiver.
+
+For example, the following code snippet writes "Hello world" to the terminal:
+
+  1.send(:puts, "Hello world")
+
+You should never call +send+ with user supplied input as the first parameter.
+Doing so can introduce a denial of service vulnerability:
+
+  foo.send(params[:bar]) # params[:bar] is "exit!"
+
+If an attacker can control the first two arguments to +send+, remote code
+execution is possible:
+
+  # params is { :a => "eval", :b => "...ruby code to be executed..." }
+  foo.send(params[:a], params[:b])
+
+When dispatching a method call based on user input, carefully verify that the
+method name. If possible, check it against a whitelist of safe method names.
+
+Note that the use of +public_send+ is also dangerous, as +send+ itself is
+public:
+
+  1.public_send("send", "eval", "...ruby code to be executed...")
+
+== DRb
+
+As DRb allows remote clients to invoke arbitrary methods, it is not suitable to
+expose to untrusted clients.
+
+When using DRb, try to avoid exposing it over the network if possible. If this
+isn't possible and you need to expose DRb to the world, you *must* configure an
+appropriate security policy with <code>DRb::ACL</code>.

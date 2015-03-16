@@ -1,19 +1,19 @@
-If you want to use Ruby/Tk (tk.rb and so on), you must have tcltklib.so 
-which is working correctly. When you have some troubles on compiling, 
-please read README.tcltklib and README.ActiveTcl. 
-Even if there is a tcltklib.so on your Ruby library directry, it will not 
-work without Tcl/Tk libraries (e.g. libtcl8.4.so) on your environment. 
-You must also check that your Tcl/Tk is installed properly. 
+If you want to use Ruby/Tk (tk.rb and so on), you must have tcltklib.so
+which is working correctly. When you have some troubles on compiling,
+please read README.tcltklib and README.ActiveTcl.
+Even if there is a tcltklib.so on your Ruby library directory, it will not
+work without Tcl/Tk libraries (e.g. libtcl8.4.so) on your environment.
+You must also check that your Tcl/Tk is installed properly.
 
 --------------------------------------------
- ( the following is written in EUC-JP )
+ ( the following is written in UTF-8 )
 
-Ruby/Tk (tk.rb ¤Ê¤É) ¤ò»È¤¤¤¿¤¤¾ì¹ç¤Ë¤Ï¡¤tcltklib.so ¤¬Àµ¤·¤¯Æ°¤¤¤Æ¤¤¤Ê
-¤±¤ì¤Ğ¤Ê¤ê¤Ş¤»¤ó¡¥¥³¥ó¥Ñ¥¤¥ë»ş¤Ë²¿¤«ÌäÂê¤¬À¸¤¸¤¿¾ì¹ç¤Ï¡¤README.tcltklib 
-¤ä README.ActiveTcl ¤ò¸«¤Æ¤¯¤À¤µ¤¤¡¥
-¤¿¤È¤¨ Ruby ¤Î¥é¥¤¥Ö¥é¥ê¥Ç¥£¥ì¥¯¥È¥ê¤Ë tcltklib.so ¤¬Â¸ºß¤·¤Æ¤¤¤¿¤È¤·¤Æ
-¤â¡¤¼Â¹Ô´Ä¶­¤Ë Tcl/Tk ¥é¥¤¥Ö¥é¥ê (libtcl8.4.so ¤Ê¤É) ¤¬¤Ê¤±¤ì¤Ğµ¡Ç½¤·¤Ş
-¤»¤ó¡¥Tcl/Tk ¤¬Àµ¤·¤¯¥¤¥ó¥¹¥È¡¼¥ë¤µ¤ì¤Æ¤¤¤ë¤«¤â¥Á¥§¥Ã¥¯¤·¤Æ¤¯¤À¤µ¤¤¡¥
+Ruby/Tk (tk.rb ãªã©) ã‚’ä½¿ã„ãŸã„å ´åˆã«ã¯ï¼Œtcltklib.so ãŒæ­£ã—ãå‹•ã„ã¦ã„ãª
+ã‘ã‚Œã°ãªã‚Šã¾ã›ã‚“ï¼ã‚³ãƒ³ãƒ‘ã‚¤ãƒ«æ™‚ã«ä½•ã‹å•é¡ŒãŒç”Ÿã˜ãŸå ´åˆã¯ï¼ŒREADME.tcltklib
+ã‚„ README.ActiveTcl ã‚’è¦‹ã¦ãã ã•ã„ï¼
+ãŸã¨ãˆ Ruby ã®ãƒ©ã‚¤ãƒ–ãƒ©ãƒªãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªã« tcltklib.so ãŒå­˜åœ¨ã—ã¦ã„ãŸã¨ã—ã¦
+ã‚‚ï¼Œå®Ÿè¡Œç’°å¢ƒã« Tcl/Tk ãƒ©ã‚¤ãƒ–ãƒ©ãƒª (libtcl8.4.so ãªã©) ãŒãªã‘ã‚Œã°æ©Ÿèƒ½ã—ã¾
+ã›ã‚“ï¼Tcl/Tk ãŒæ­£ã—ãã‚¤ãƒ³ã‚¹ãƒˆãƒ¼ãƒ«ã•ã‚Œã¦ã„ã‚‹ã‹ã‚‚ãƒã‚§ãƒƒã‚¯ã—ã¦ãã ã•ã„ï¼
 
 ==========================================================
                 Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)

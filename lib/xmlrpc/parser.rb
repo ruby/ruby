@@ -1,6 +1,3 @@
-#
-# Parser for XML-RPC call and response
-#
 # Copyright (C) 2001, 2002, 2003 by Michael Neumann (mneumann@ntecs.de)
 #
 # $Id$
@@ -12,7 +9,6 @@ require "xmlrpc/base64"
 require "xmlrpc/datetime"
 
 
-# add some methods to NQXML::Node
 module NQXML
   class Node
 
@@ -49,29 +45,41 @@ module NQXML
   end # class Node
 end # module NQXML
 
-module XMLRPC
+module XMLRPC # :nodoc:
 
+  # Raised when the remote procedure returns a fault-structure, which has two
+  # accessor-methods +faultCode+ an Integer, and +faultString+ a String.
   class FaultException < StandardError
     attr_reader :faultCode, :faultString
 
-    alias message faultString
-
+    # Creates a new XMLRPC::FaultException instance.
+    #
+    # +faultString+ is passed to StandardError as the +msg+ of the Exception.
     def initialize(faultCode, faultString)
       @faultCode   = faultCode
       @faultString = faultString
+      super(@faultString)
     end
 
-    # returns a hash
+    # The +faultCode+ and +faultString+ of the exception in a Hash.
     def to_h
       {"faultCode" => @faultCode, "faultString" => @faultString}
     end
   end
 
+  # Helper class used to convert types.
   module Convert
+
+    # Converts a String to an Integer
+    #
+    # See also String.to_i
     def self.int(str)
       str.to_i
     end
 
+    # Converts a String to +true+ or +false+
+    #
+    # Raises an exception if +str+ is not +0+ or +1+
     def self.boolean(str)
       case str
       when "0" then false
@@ -81,10 +89,18 @@ module XMLRPC
       end
     end
 
+    # Converts a String to a Float
+    #
+    # See also String.to_f
     def self.double(str)
       str.to_f
     end
 
+    # Converts a the given +str+ to a +dateTime.iso8601+ formatted date.
+    #
+    # Raises an exception if the String isn't in +dateTime.iso8601+ format.
+    #
+    # See also, XMLRPC::DateTime
     def self.dateTime(str)
       case str
       when /^(-?\d\d\d\d)-?(\d\d)-?(\d\d)T(\d\d):(\d\d):(\d\d)(?:Z|([+-])(\d\d):?(\d\d))?$/
@@ -115,12 +131,16 @@ module XMLRPC
       end
     end
 
+    # Decodes the given +str+ using XMLRPC::Base64.decode
     def self.base64(str)
       XMLRPC::Base64.decode(str)
     end
 
+    # Converts the given +hash+ to a marshalled object.
+    #
+    # Returns the given +hash+ if an exception occurs.
     def self.struct(hash)
-      # convert to marhalled object
+      # convert to marshalled object
       klass = hash["___class___"]
       if klass.nil? or Config::ENABLE_MARSHALLING == false
         hash
@@ -142,6 +162,15 @@ module XMLRPC
       end
     end
 
+    # Converts the given +hash+ to an XMLRPC::FaultException object by passing
+    # the +faultCode+ and +faultString+ attributes of the Hash to
+    # XMLRPC::FaultException.new
+    #
+    # Raises an Exception if the given +hash+ doesn't meet the requirements.
+    # Those requirements being:
+    # * 2 keys
+    # * <code>'faultCode'</code> key is an Integer
+    # * <code>'faultString'</code> key is a String
     def self.fault(hash)
       if hash.kind_of? Hash and hash.size == 2 and
         hash.has_key? "faultCode" and hash.has_key? "faultString" and
@@ -155,6 +184,7 @@ module XMLRPC
 
   end # module Convert
 
+  # Parser for XML-RPC call and response
   module XMLParser
 
     class AbstractTreeParser
@@ -169,10 +199,8 @@ module XMLRPC
 
       private
 
-      #
-      # remove all whitespaces but in the tags i4, int, boolean....
+      # Removes all whitespaces but in the tags i4, i8, int, boolean....
       # and all comments
-      #
       def removeWhitespacesAndComments(node)
         remove = []
         childs = node.childNodes.to_a
@@ -180,7 +208,7 @@ module XMLRPC
           case _nodeType(nd)
           when :TEXT
             # TODO: add nil?
-            unless %w(i4 int boolean string double dateTime.iso8601 base64).include? node.nodeName
+            unless %w(i4 i8 int boolean string double dateTime.iso8601 base64).include? node.nodeName
 
                if node.nodeName == "value"
                  if not node.childNodes.to_a.detect {|n| _nodeType(n) == :ELEMENT}.nil?
@@ -218,9 +246,7 @@ module XMLRPC
         node
       end
 
-      #
-      # returns, when successfully the only child-node
-      #
+      # Returns, when successfully the only child-node
       def hasOnlyOneChild(node, name=nil)
         if node.childNodes.to_a.size != 1
           raise "wrong xml-rpc (size)"
@@ -237,7 +263,7 @@ module XMLRPC
         end
       end
 
-      # the node `node` has empty string or string
+      # The node `node` has empty string or string
       def text_zero_one(node)
         nodes = node.childNodes.to_a.size
 
@@ -254,7 +280,7 @@ module XMLRPC
       def integer(node)
         #TODO: check string for float because to_i returnsa
         #      0 when wrong string
-         nodeMustBe(node, %w(i4 int))
+         nodeMustBe(node, %w(i4 i8 int))
         hasOnlyOneChild(node)
 
         Convert.int(text(node.firstChild))
@@ -416,7 +442,7 @@ module XMLRPC
           text_zero_one(node)
         when :ELEMENT
           case child.nodeName
-          when "i4", "int"        then integer(child)
+          when "i4", "i8", "int"  then integer(child)
           when "boolean"          then boolean(child)
           when "string"           then string(child)
           when "double"           then double(child)
@@ -526,7 +552,7 @@ module XMLRPC
         case name
         when "string"
           @value = @data
-        when "i4", "int"
+        when "i4", "i8", "int"
           @value = Convert.int(@data)
         when "boolean"
           @value = Convert.boolean(@data)
@@ -576,7 +602,6 @@ module XMLRPC
 
     end # module StreamParserMixin
 
-    # ---------------------------------------------------------------------------
     class XMLStreamParser < AbstractStreamParser
       def initialize
         require "xmlparser"
@@ -585,7 +610,7 @@ module XMLRPC
         }
       end
     end # class XMLStreamParser
-    # ---------------------------------------------------------------------------
+
     class NQXMLStreamParser < AbstractStreamParser
       def initialize
         require "nqxml/streamingparser"
@@ -614,7 +639,7 @@ module XMLRPC
       end # class XMLRPCParser
 
     end # class NQXMLStreamParser
-    # ---------------------------------------------------------------------------
+
     class XMLTreeParser < AbstractTreeParser
 
       def initialize
@@ -625,10 +650,10 @@ module XMLRPC
         if defined? XML::DOM::Builder
           return if defined? XML::DOM::Node::DOCUMENT # code below has been already executed
           klass = XML::DOM::Node
-          klass.const_set("DOCUMENT", klass::DOCUMENT_NODE)
-          klass.const_set("TEXT", klass::TEXT_NODE)
-          klass.const_set("COMMENT", klass::COMMENT_NODE)
-          klass.const_set("ELEMENT", klass::ELEMENT_NODE)
+          klass.const_set(:DOCUMENT, klass::DOCUMENT_NODE)
+          klass.const_set(:TEXT, klass::TEXT_NODE)
+          klass.const_set(:COMMENT, klass::COMMENT_NODE)
+          klass.const_set(:ELEMENT, klass::ELEMENT_NODE)
         end
       end
 
@@ -666,7 +691,7 @@ module XMLRPC
       end
 
     end # class XMLParser
-    # ---------------------------------------------------------------------------
+
     class NQXMLTreeParser < AbstractTreeParser
 
       def initialize
@@ -694,7 +719,7 @@ module XMLRPC
       end
 
     end # class NQXMLTreeParser
-    # ---------------------------------------------------------------------------
+
     class REXMLStreamParser < AbstractStreamParser
       def initialize
         require "rexml/document"
@@ -714,12 +739,12 @@ module XMLRPC
         end
 
         def parse(str)
-          parser = REXML::Document.parse_stream(str, self)
+          REXML::Document.parse_stream(str, self)
         end
       end
 
     end
-    # ---------------------------------------------------------------------------
+
     class XMLScanStreamParser < AbstractStreamParser
       def initialize
         require "xmlscan/parser"
@@ -743,7 +768,7 @@ module XMLRPC
         end
 
         alias :on_stag :startElement
- 	alias :on_etag :endElement
+        alias :on_etag :endElement
 
         def on_stag_end(name); end
 
@@ -788,13 +813,45 @@ module XMLRPC
 
       end
     end
-    # ---------------------------------------------------------------------------
+
+    class LibXMLStreamParser < AbstractStreamParser
+      def initialize
+        require 'libxml'
+        @parser_class = LibXMLStreamListener
+      end
+
+      class LibXMLStreamListener
+        include StreamParserMixin
+
+        def on_start_element_ns(name, attributes, prefix, uri, namespaces)
+          startElement(name)
+        end
+
+        def on_end_element_ns(name, prefix, uri)
+          endElement(name)
+        end
+
+        alias :on_characters :character
+        alias :on_cdata_block :character
+
+        def method_missing(*a)
+        end
+
+        def parse(str)
+          parser = LibXML::XML::SaxParser.string(str)
+          parser.callbacks = self
+          parser.parse()
+        end
+      end
+    end
+
     XMLParser   = XMLTreeParser
     NQXMLParser = NQXMLTreeParser
 
     Classes = [XMLStreamParser, XMLTreeParser,
                NQXMLStreamParser, NQXMLTreeParser,
-               REXMLStreamParser, XMLScanStreamParser]
+               REXMLStreamParser, XMLScanStreamParser,
+               LibXMLStreamParser]
 
     # yields an instance of each installed parser
     def self.each_installed_parser

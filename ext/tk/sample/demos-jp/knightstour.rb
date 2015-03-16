@@ -1,4 +1,4 @@
-# -*- coding: euc-jp -*-
+# -*- coding: utf-8 -*-
 #
 # Based on the widget demo of Tcl/Tk8.5.2
 # The following is the original copyright text.
@@ -94,13 +94,13 @@ class Knights_Tour
       @start_btn.state :normal
       if @visited.length == 64
         if @initial == square
-          @log.insert :end, '¼þÍ·(closed tour)À®¸ù¡ª'
+          @log.insert :end, 'å‘¨éŠ(closed tour)æˆåŠŸï¼'
         else
-          @log.insert :end, "À®¸ù\n", {}
+          @log.insert :end, "æˆåŠŸ\n", {}
           Tk.after(@delay.numeric * 2){tour(rand(64))} if @continuous.bool
         end
       else
-        @log.insert :end, "¼ºÇÔ¡ª\n", {}
+        @log.insert :end, "å¤±æ•—ï¼\n", {}
       end
     end
   end
@@ -158,10 +158,10 @@ class Knights_Tour
     sep = Ttk::Separator.new(frame)
     Tk.grid(sep, :columnspan=>4, :row=>0, :sticky=>'ew', :pady=>2)
     TkGrid('x',
-           Ttk::Button.new(frame, :text=>'¥³¡¼¥É»²¾È',
+           Ttk::Button.new(frame, :text=>'ã‚³ãƒ¼ãƒ‰å‚ç…§',
                            :image=>$image['view'], :compound=>:left,
                            :command=>proc{showCode 'knightstour'}),
-           Ttk::Button.new(frame, :text=>'ÊÄ¤¸¤ë',
+           Ttk::Button.new(frame, :text=>'é–‰ã˜ã‚‹',
                            :image=>$image['delete'], :compound=>:left,
                            :command=>proc{
                              $knightstour.destroy
@@ -187,14 +187,14 @@ class Knights_Tour
     @continuous = TkVariable.new(false)
 
     tool_f = Ttk::Frame.new($knightstour)
-    label = Ttk::Label.new(tool_f, :text=>'¼Â¹ÔÂ®ÅÙ')
+    label = Ttk::Label.new(tool_f, :text=>'å®Ÿè¡Œé€Ÿåº¦')
     scale = Ttk::Scale.new(tool_f, :from=>8, :to=>2000, :variable=>@delay,
                            :command=>proc{|n| set_delay(n)})
-    check = Ttk::Checkbutton.new(tool_f, :text=>'È¿Éü',
+    check = Ttk::Checkbutton.new(tool_f, :text=>'åå¾©',
                                  :variable=>@continuous)
-    @start_btn = Ttk::Button.new(tool_f, :text=>'³«»Ï',
+    @start_btn = Ttk::Button.new(tool_f, :text=>'é–‹å§‹',
                                  :command=>proc{tour()})
-    @exit_btn = Ttk::Button.new(tool_f, :text=>'½ªÎ»',
+    @exit_btn = Ttk::Button.new(tool_f, :text=>'çµ‚äº†',
                                 :command=>proc{_exit()})
 
     7.downto(0){|row|

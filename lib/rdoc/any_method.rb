@@ -1,29 +1,19 @@
-require 'rdoc/code_object'
-require 'rdoc/tokenstream'
-
 ##
 # AnyMethod is the base class for objects representing methods
 
-class RDoc::AnyMethod < RDoc::CodeObject
-
-  MARSHAL_VERSION = 1 # :nodoc:
-
-  include Comparable
+class RDoc::AnyMethod < RDoc::MethodAttr
 
   ##
-  # Method name
+  # 2::
+  #   RDoc 4
+  #   Added calls_super
+  #   Added parent name and class
+  #   Added section title
+  # 3::
+  #   RDoc 4.1
+  #   Added is_alias_for
 
-  attr_writer :name
-
-  ##
-  # public, protected, private
-
-  attr_accessor :visibility
-
-  ##
-  # Parameters yielded by the called block
-
-  attr_accessor :block_params
+  MARSHAL_VERSION = 3 # :nodoc:
 
   ##
   # Don't rename \#initialize to \::new
@@ -31,24 +21,14 @@ class RDoc::AnyMethod < RDoc::CodeObject
   attr_accessor :dont_rename_initialize
 
   ##
-  # Is this a singleton method?
+  # The C function that implements this method (if it was defined in a C file)
 
-  attr_accessor :singleton
-
-  ##
-  # Source file token stream
-
-  attr_reader :text
+  attr_accessor :c_function
 
   ##
-  # Array of other names for this method
+  # Different ways to call this method
 
-  attr_reader :aliases
-
-  ##
-  # The method we're aliasing
-
-  attr_accessor :is_alias_for
+  attr_reader :call_seq
 
   ##
   # Parameters for this method
@@ -56,51 +36,47 @@ class RDoc::AnyMethod < RDoc::CodeObject
   attr_accessor :params
 
   ##
-  # Different ways to call this method
+  # If true this method uses +super+ to call a superclass version
 
-  attr_accessor :call_seq
+  attr_accessor :calls_super
 
   include RDoc::TokenStream
 
-  def initialize(text, name)
-    super()
+  ##
+  # Creates a new AnyMethod with a token stream +text+ and +name+
 
-    @text = text
-    @name = name
+  def initialize text, name
+    super
 
-    @aliases                = []
-    @block_params           = nil
-    @call_seq               = nil
+    @c_function = nil
     @dont_rename_initialize = false
-    @is_alias_for           = nil
-    @params                 = nil
-    @parent_name            = nil
-    @singleton              = nil
-    @token_stream           = nil
-    @visibility             = :public
+    @token_stream = nil
+    @calls_super = false
+    @superclass_method = nil
   end
 
   ##
-  # Order by #singleton then #name
+  # Adds +an_alias+ as an alias for this method in +context+.
 
-  def <=>(other)
-    [@singleton ? 0 : 1, @name] <=> [other.singleton ? 0 : 1, other.name]
-  end
+  def add_alias an_alias, context = nil
+    method = self.class.new an_alias.text, an_alias.new_name
 
-  ##
-  # Adds +method+ as an alias for this method
-
-  def add_alias(method)
+    method.record_location an_alias.file
+    method.singleton = self.singleton
+    method.params = self.params
+    method.visibility = self.visibility
+    method.comment = an_alias.comment
+    method.is_alias_for = self
     @aliases << method
+    context.add_method method if context
+    method
   end
 
   ##
-  # HTML fragment reference for this method
+  # Prefix for +aref+ is 'method'.
 
-  def aref
-    type = singleton ? 'c' : 'i'
-
-    "method-#{type}-#{CGI.escape name}"
+  def aref_prefix
+    'method'
   end
 
   ##
@@ -117,27 +93,34 @@ class RDoc::AnyMethod < RDoc::CodeObject
   end
 
   ##
-  # HTML id-friendly method name
+  # Sets the different ways you can call this method.  If an empty +call_seq+
+  # is given nil is assumed.
+  #
+  # See also #param_seq
 
-  def html_name
-    @name.gsub(/[^a-z]+/, '-')
-  end
+  def call_seq= call_seq
+    return if call_seq.empty?
 
-  def inspect # :nodoc:
-    alias_for = @is_alias_for ? " (alias for #{@is_alias_for.name})" : nil
-    "#<%s:0x%x %s (%s)%s>" % [
-      self.class, object_id,
-      full_name,
-      visibility,
-      alias_for,
-    ]
+    @call_seq = call_seq
   end
 
   ##
-  # Full method name including namespace
+  # Loads is_alias_for from the internal name.  Returns nil if the alias
+  # cannot be found.
 
-  def full_name
-    @full_name ||= "#{@parent ? @parent.full_name : '(unknown)'}#{pretty_name}"
+  def is_alias_for # :nodoc:
+    case @is_alias_for
+    when RDoc::MethodAttr then
+      @is_alias_for
+    when Array then
+      return nil unless @store
+
+      klass_name, singleton, method_name = @is_alias_for
+
+      return nil unless klass = @store.find_class_or_module(klass_name)
+
+      @is_alias_for = klass.find_method method_name, singleton
+    end
   end
 
   ##
@@ -145,8 +128,14 @@ class RDoc::AnyMethod < RDoc::CodeObject
 
   def marshal_dump
     aliases = @aliases.map do |a|
-      [a.full_name, parse(a.comment)]
+      [a.name, parse(a.comment)]
     end
+
+    is_alias_for = [
+      @is_alias_for.parent.full_name,
+      @is_alias_for.singleton,
+      @is_alias_for.name
+    ] if @is_alias_for
 
     [ MARSHAL_VERSION,
       @name,
@@ -158,6 +147,12 @@ class RDoc::AnyMethod < RDoc::CodeObject
       @block_params,
       aliases,
       @params,
+      @file.relative_name,
+      @calls_super,
+      @parent.name,
+      @parent.class,
+      @section.title,
+      is_alias_for,
     ]
   end
 
@@ -168,50 +163,112 @@ class RDoc::AnyMethod < RDoc::CodeObject
   # * #full_name
   # * #parent_name
 
-  def marshal_load(array)
+  def marshal_load array
+    initialize_visibility
+
     @dont_rename_initialize = nil
-    @is_alias_for           = nil
     @token_stream           = nil
     @aliases                = []
+    @parent                 = nil
+    @parent_name            = nil
+    @parent_class           = nil
+    @section                = nil
+    @file                   = nil
 
-    @name         = array[1]
-    @full_name    = array[2]
-    @singleton    = array[3]
-    @visibility   = array[4]
-    @comment      = array[5]
-    @call_seq     = array[6]
-    @block_params = array[7]
-    @params       = array[9]
-
-    @parent_name = if @full_name =~ /#/ then
-                     $`
-                   else
-                     name = @full_name.split('::')
-                     name.pop
-                     name.join '::'
-                   end
+    version        = array[0]
+    @name          = array[1]
+    @full_name     = array[2]
+    @singleton     = array[3]
+    @visibility    = array[4]
+    @comment       = array[5]
+    @call_seq      = array[6]
+    @block_params  = array[7]
+    #                      8 handled below
+    @params        = array[9]
+    #                      10 handled below
+    @calls_super   = array[11]
+    @parent_name   = array[12]
+    @parent_title  = array[13]
+    @section_title = array[14]
+    @is_alias_for  = array[15]
 
     array[8].each do |new_name, comment|
-      add_alias RDoc::Alias.new(nil, @name, new_name, comment)
+      add_alias RDoc::Alias.new(nil, @name, new_name, comment, @singleton)
     end
+
+    @parent_name ||= if @full_name =~ /#/ then
+                       $`
+                     else
+                       name = @full_name.split('::')
+                       name.pop
+                       name.join '::'
+                     end
+
+    @file = RDoc::TopLevel.new array[10] if version > 0
   end
 
   ##
   # Method name
+  #
+  # If the method has no assigned name, it extracts it from #call_seq.
 
   def name
     return @name if @name
 
-    @name = @call_seq[/^.*?\.(\w+)/, 1] || @call_seq if @call_seq
+    @name =
+      @call_seq[/^.*?\.(\w+)/, 1] ||
+      @call_seq[/^.*?(\w+)/, 1] ||
+      @call_seq if @call_seq
   end
 
   ##
-  # Pretty parameter list for this method
+  # A list of this method's method and yield parameters.  +call-seq+ params
+  # are preferred over parsed method and block params.
+
+  def param_list
+    if @call_seq then
+      params = @call_seq.split("\n").last
+      params = params.sub(/.*?\((.*)\)/, '\1')
+      params = params.sub(/(\{|do)\s*\|([^|]*)\|.*/, ',\2')
+    elsif @params then
+      params = @params.sub(/\((.*)\)/, '\1')
+
+      params << ",#{@block_params}" if @block_params
+    elsif @block_params then
+      params = @block_params
+    else
+      return []
+    end
+
+    if @block_params then
+      # If this method has explicit block parameters, remove any explicit
+      # &block
+      params.sub!(/,?\s*&\w+/, '')
+    else
+      params.sub!(/\&(\w+)/, '\1')
+    end
+
+    params = params.gsub(/\s+/, '').split(',').reject(&:empty?)
+
+    params.map { |param| param.sub(/=.*/, '') }
+  end
+
+  ##
+  # Pretty parameter list for this method.  If the method's parameters were
+  # given by +call-seq+ it is preferred over the parsed values.
 
   def param_seq
-    params = @params.gsub(/\s*\#.*/, '')
-    params = params.tr("\n", " ").squeeze(" ")
-    params = "(#{params})" unless params[0] == ?(
+    if @call_seq then
+      params = @call_seq.split("\n").last
+      params = params.sub(/[^( ]+/, '')
+      params = params.sub(/(\|[^|]+\|)\s*\.\.\.\s*(end|\})/, '\1 \2')
+    elsif @params then
+      params = @params.gsub(/\s*\#.*/, '')
+      params = params.tr("\n", " ").squeeze(" ")
+      params = "(#{params})" unless params[0] == ?(
+    else
+      params = ''
+    end
 
     if @block_params then
       # If this method has explicit block parameters, remove any explicit
@@ -230,60 +287,29 @@ class RDoc::AnyMethod < RDoc::CodeObject
   end
 
   ##
-  # Name of our parent with special handling for un-marshaled methods
+  # Sets the store for this method and its referenced code objects.
 
-  def parent_name
-    @parent_name || super
+  def store= store
+    super
+
+    @file = @store.add_file @file.full_name if @file
   end
 
   ##
-  # Path to this method
+  # For methods that +super+, find the superclass method that would be called.
 
-  def path
-    "#{@parent.path}##{aref}"
-  end
+  def superclass_method
+    return unless @calls_super
+    return @superclass_method if @superclass_method
 
-  ##
-  # Method name with class/instance indicator
-
-  def pretty_name
-    "#{singleton ? '::' : '#'}#{@name}"
-  end
-
-  def pretty_print q # :nodoc:
-    alias_for = @is_alias_for ? "alias for #{@is_alias_for.name}" : nil
-
-    q.group 2, "[#{self.class.name} #{full_name} #{visibility}", "]" do
-      if alias_for then
-        q.breakable
-        q.text alias_for
-      end
-
-      if text then
-        q.breakable
-        q.text "text:"
-        q.breakable
-        q.pp @text
-      end
-
-      unless comment.empty? then
-        q.breakable
-        q.text "comment:"
-        q.breakable
-        q.pp @comment
+    parent.each_ancestor do |ancestor|
+      if method = ancestor.method_list.find { |m| m.name == @name } then
+        @superclass_method = method
+        break
       end
     end
-  end
 
-  def to_s # :nodoc:
-    "#{self.class.name}: #{full_name} (#{@text})\n#{@comment}"
-  end
-
-  ##
-  # Type of method (class or instance)
-
-  def type
-    singleton ? 'class' : 'instance'
+    @superclass_method
   end
 
 end

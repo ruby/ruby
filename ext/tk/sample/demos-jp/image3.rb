@@ -1,4 +1,4 @@
-# -*- coding: euc-jp -*-
+# -*- coding: utf-8 -*-
 # image3.rb
 #
 # This demonstration script creates a simple collection of widgets
@@ -56,15 +56,15 @@ msg = TkLabel.new(base_frame) {
   font $font
   wraplength '4i'
   justify 'left'
-  text "¤³¤Î¥Ç¥â¤Ç¤ÏTk¤Î photo image ¤ò»ÈÍÑ¤·¤Æ²èÁü¤ò ¸«¤ë¤³¤È¤¬¤Ç¤­¤Þ¤¹¡£ºÇ½é¤Ë¥¨¥ó¥È¥êÆâ¤Ë¤Ë¥Ç¥£¥ì¥¯¥È¥êÌ¾¤òÆþ¤ì¤Æ²¼¤µ¤¤¡£¼¡¤Ë²¼¤Î¥ê¥¹¥È¥Ü¥Ã¥¯¥¹¤Ë¤³¤Î¥Ç¥£¥ì¥¯¥È¥ê¤ò¥í¡¼¥É¤¹¤ë¤¿¤á¡¢¥ê¥¿¡¼¥ó¤ò²¡¤·¤Æ¤¯¤À¤µ¤¤¡£¤½¤Î¸å¡¢²èÁü¤òÁªÂò¤¹¤ë¤¿¤á¤Ë¥ê¥¹¥È¥Ü¥Ã¥¯¥¹¤ÎÃæ¤Î¥Õ¥¡¥¤¥ëÌ¾¤ò¥À¥Ö¥ë¥¯¥ê¥Ã¥¯¤·¤Æ²¼¤µ¤¤¡£"
+  text "ã“ã®ãƒ‡ãƒ¢ã§ã¯Tkã® photo image ã‚’ä½¿ç”¨ã—ã¦ç”»åƒã‚’ è¦‹ã‚‹ã“ã¨ãŒã§ãã¾ã™ã€‚æœ€åˆã«ã‚¨ãƒ³ãƒˆãƒªå†…ã«ã«ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªåã‚’å…¥ã‚Œã¦ä¸‹ã•ã„ã€‚æ¬¡ã«ä¸‹ã®ãƒªã‚¹ãƒˆãƒœãƒƒã‚¯ã‚¹ã«ã“ã®ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªã‚’ãƒ­ãƒ¼ãƒ‰ã™ã‚‹ãŸã‚ã€ãƒªã‚¿ãƒ¼ãƒ³ã‚’æŠ¼ã—ã¦ãã ã•ã„ã€‚ãã®å¾Œã€ç”»åƒã‚’é¸æŠžã™ã‚‹ãŸã‚ã«ãƒªã‚¹ãƒˆãƒœãƒƒã‚¯ã‚¹ã®ä¸­ã®ãƒ•ã‚¡ã‚¤ãƒ«åã‚’ãƒ€ãƒ–ãƒ«ã‚¯ãƒªãƒƒã‚¯ã—ã¦ä¸‹ã•ã„ã€‚"
 }
 msg.pack('side'=>'top')
 
 # frame
 TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
-    #text 'Î»²ò'
-    text 'ÊÄ¤¸¤ë'
+    #text 'äº†è§£'
+    text 'é–‰ã˜ã‚‹'
     command proc{
       tmppath = $image3_demo
       $image3_demo = nil
@@ -73,7 +73,7 @@ TkFrame.new(base_frame) {|frame|
   }.pack('side'=>'left', 'expand'=>'yes')
 
   TkButton.new(frame) {
-    text '¥³¡¼¥É»²¾È'
+    text 'ã‚³ãƒ¼ãƒ‰å‚ç…§'
     command proc{showCode 'image3'}
   }.pack('side'=>'left', 'expand'=>'yes')
 
@@ -92,9 +92,9 @@ $image3a = TkPhotoImage.new
 #
 image3_f = TkFrame.new(base_frame).pack(:fill=>:both, :expand=>true)
 
-image3_df = TkLabelFrame.new(base_frame, :text=>'¥Ç¥£¥ì¥¯¥È¥ê:')
+image3_df = TkLabelFrame.new(base_frame, :text=>'ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒª:')
 
-image3_ff = TkLabelFrame.new(base_frame, :text=>'¥Õ¥¡¥¤¥ë:',
+image3_ff = TkLabelFrame.new(base_frame, :text=>'ãƒ•ã‚¡ã‚¤ãƒ«:',
                              :padx=>'2m', :pady=>'2m')
 image3_lbx = TkListbox.new(image3_ff, :width=>20, :height=>10) {
   pack(:side=>:left, :fill=>:y, :expand=>true)
@@ -109,12 +109,12 @@ image3_ent = TkEntry.new(image3_df, :width=>30, :textvariable=>$dirName){
   bind('Return', proc{loadDir3(image3_lbx)})
 }
 
-TkButton.new(image3_df, :pady=>0, :padx=>'2m', :text=>"¥Ç¥£¥ì¥¯¥È¥êÁªÂò",
+TkButton.new(image3_df, :pady=>0, :padx=>'2m', :text=>"ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªé¸æŠž",
              :command=>proc{selectAndLoadDir3(image3_ent, image3_lbx)}) {
   pack(:side=>:left, :fill=>:y, :padx=>[0, '2m'], :pady=>'2m')
 }
 
-image3_if = TkLabelFrame.new(base_frame, :text=>'¥¤¥á¡¼¥¸:') {|f|
+image3_if = TkLabelFrame.new(base_frame, :text=>'ã‚¤ãƒ¡ãƒ¼ã‚¸:') {|f|
   # TkLabel.new(f, :image=>$image3a).pack(:padx=>'2m', :pady=>'2m')
   Tk::Label.new(f, :image=>$image3a).pack(:padx=>'2m', :pady=>'2m')
 }

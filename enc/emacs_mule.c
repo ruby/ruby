@@ -30,7 +30,7 @@
 #include "regint.h"
 
 
-#define emacsmule_islead(c)    ((UChar )((c) - 0x81) > 0x9d - 0x81)
+#define emacsmule_islead(c)    ((UChar )(c) < 0x9e)
 
 /*
     CHARACTER := ASCII_CHAR | MULTIBYTE_CHAR
@@ -103,7 +103,7 @@ static const signed char trans[][0x100] = {
     /* c */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
     /* d */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
     /* e */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
-    /* f */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A 
+    /* f */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A
   },
   { /* S2   0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f */
     /* 0 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
@@ -121,7 +121,7 @@ static const signed char trans[][0x100] = {
     /* c */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
     /* d */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
     /* e */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    /* f */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 
+    /* f */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
   },
   { /* S3   0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f */
     /* 0 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
@@ -264,7 +264,7 @@ code_to_mbc(OnigCodePoint code, UChar *buf, OnigEncoding enc)
 
   if (enclen(enc, buf, p) != (p - buf))
     return ONIGERR_INVALID_CODE_POINT_VALUE;
-  return p - buf;
+  return (int)(p - buf);
 }
 
 static int
@@ -334,7 +334,8 @@ OnigEncodingDefine(emacs_mule, Emacs_Mule) = {
   onigenc_not_support_get_ctype_code_range,
   left_adjust_char_head,
   onigenc_always_true_is_allowed_reverse_match,
-  0
+  0,
+  ONIGENC_FLAG_NONE,
 };
 
 ENC_REPLICATE("stateless-ISO-2022-JP", "Emacs-Mule")

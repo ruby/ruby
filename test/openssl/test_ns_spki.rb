@@ -1,12 +1,6 @@
-begin
-  require "openssl"
-  require_relative 'utils'
-rescue LoadError
-end
-require "test/unit"
+require_relative 'utils'
 
-if defined?(OpenSSL)
-
+if defined?(OpenSSL::TestUtils)
 
 class OpenSSL::TestNSSPI < Test::Unit::TestCase
   def setup
@@ -18,9 +12,6 @@ class OpenSSL::TestNSSPI < Test::Unit::TestCase
     @b64 << "AQABFhFNb3ppbGxhSXNNeUZyaWVuZDANBgkqhkiG9w0BAQQFAANBAAKv2Eex2n/S"
     @b64 << "r/7iJNroWlSzSMtTiQTEB+ADWHGj9u1xrUrOilq/o2cuQxIfZcNZkYAkWP4DubqW"
     @b64 << "i0//rgBvmco="
-  end
-
-  def teardown
   end
 
   def test_build_data
@@ -39,6 +30,7 @@ class OpenSSL::TestNSSPI < Test::Unit::TestCase
     assert_equal("RandomString", spki.challenge)
     assert_equal(key1.public_key.to_der, spki.public_key.to_der)
     assert(spki.verify(spki.public_key))
+    assert_not_nil(spki.to_text)
   end
 
   def test_decode_data

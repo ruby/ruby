@@ -11,10 +11,7 @@ module RSS
           plural_name ||= "#{name}s"
           full_name = "#{RSS::DC_PREFIX}_#{name}"
           full_plural_name = "#{RSS::DC_PREFIX}_#{plural_name}"
-          klass_name = Utils.to_class_name(name)
           plural_klass_name = "DublinCore#{Utils.to_class_name(plural_name)}"
-          full_plural_klass_name = "self.class::#{plural_klass_name}"
-          full_klass_name = "#{full_plural_klass_name}::#{klass_name}"
           klass.def_classed_elements(full_name, "value", plural_klass_name,
                                      full_plural_name, name)
           klass.module_eval(<<-EOC, __FILE__, __LINE__ + 1)

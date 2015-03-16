@@ -1,13 +1,13 @@
 =begin
  multiple DRbServer
- 	Copyright (c) 1999-2002 Masatoshi SEKI 
+ 	Copyright (c) 1999-2002 Masatoshi SEKI
 =end
 
 =begin
  How to play.
 
  Terminal 1
- | % ruby drbm.rb 
+ | % ruby drbm.rb
  | druby://yourhost:7640 druby://yourhost:7641
 
  Terminal 2
@@ -24,7 +24,7 @@ class Hoge
   def initialize(s)
     @str = s
   end
-  
+
   def to_s
     @str
   end

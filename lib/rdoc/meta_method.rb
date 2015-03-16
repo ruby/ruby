@@ -1,5 +1,3 @@
-require 'rdoc/any_method'
-
 ##
 # MetaMethod represents a meta-programmed method
 

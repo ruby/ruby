@@ -1,36 +1,55 @@
 require 'test/unit'
 require 'open-uri'
-require 'openssl'
 require 'stringio'
 require 'webrick'
-require 'webrick/https'
+begin
+  require 'openssl'
+  require 'webrick/https'
+  require_relative '../openssl/utils'
+rescue LoadError
+end
 require 'webrick/httpproxy'
 
 class TestOpenURISSL < Test::Unit::TestCase
+end
 
+class TestOpenURISSL
   NullLog = Object.new
   def NullLog.<<(arg)
   end
 
-  def with_https
+  def with_https(log_tester=lambda {|log| assert_equal([], log) })
+    log = []
+    logger = WEBrick::Log.new(log, WEBrick::BasicLog::WARN)
     Dir.mktmpdir {|dr|
       srv = WEBrick::HTTPServer.new({
         :DocumentRoot => dr,
         :ServerType => Thread,
-        :Logger => WEBrick::Log.new(NullLog),
+        :Logger => logger,
         :AccessLog => [[NullLog, ""]],
         :SSLEnable => true,
         :SSLCertificate => OpenSSL::X509::Certificate.new(SERVER_CERT),
         :SSLPrivateKey => OpenSSL::PKey::RSA.new(SERVER_KEY),
+        :SSLTmpDhCallback => proc { OpenSSL::TestUtils::TEST_KEY_DH1024 },
         :BindAddress => '127.0.0.1',
         :Port => 0})
       _, port, _, host = srv.listeners[0].addr
-      begin
-        th = srv.start
-        yield srv, dr, "https://#{host}:#{port}"
-      ensure
-        srv.shutdown
-      end
+      threads = []
+      server_thread = srv.start
+      threads << Thread.new {
+        server_thread.join
+        if log_tester
+          log_tester.call(log)
+        end
+      }
+      threads << Thread.new {
+        begin
+          yield srv, dr, "https://#{host}:#{port}", server_thread, log, threads
+        ensure
+          srv.shutdown
+        end
+      }
+      assert_join_threads(threads)
     }
   end
 
@@ -44,61 +63,116 @@ class TestOpenURISSL < Test::Unit::TestCase
     @proxies.each_with_index {|k, i| ENV[k] = @old_proxies[i] }
   end
 
-  def test_validation
+  def setup_validation(srv, dr)
+    cacert_filename = "#{dr}/cacert.pem"
+    open(cacert_filename, "w") {|f| f << CA_CERT }
+    srv.mount_proc("/data", lambda { |req, res| res.body = "ddd" } )
+    cacert_filename
+  end
+
+  def test_validation_success
     with_https {|srv, dr, url|
-      cacert_filename = "#{dr}/cacert.pem"
-      open(cacert_filename, "w") {|f| f << CA_CERT }
-      open("#{dr}/data", "w") {|f| f << "ddd" }
+      cacert_filename = setup_validation(srv, dr)
       open("#{url}/data", :ssl_ca_cert => cacert_filename) {|f|
         assert_equal("200", f.status[0])
         assert_equal("ddd", f.read)
       }
+    }
+  end
+
+  def test_validation_noverify
+    with_https {|srv, dr, url|
+      setup_validation(srv, dr)
       open("#{url}/data", :ssl_verify_mode => OpenSSL::SSL::VERIFY_NONE) {|f|
         assert_equal("200", f.status[0])
         assert_equal("ddd", f.read)
       }
+    }
+  end
+
+  def test_validation_failure
+    unless /mswin|mingw/ =~ RUBY_PLATFORM
+      # on Windows, Errno::ECONNRESET will be raised, and it'll be eaten by
+      # WEBrick
+      log_tester = lambda {|server_log|
+        assert_equal(1, server_log.length)
+        assert_match(/ERROR OpenSSL::SSL::SSLError:/, server_log[0])
+      }
+    end
+    with_https(log_tester) {|srv, dr, url, server_thread, server_log|
+      setup_validation(srv, dr)
       assert_raise(OpenSSL::SSL::SSLError) { open("#{url}/data") {} }
     }
   end
 
-  def test_proxy
-    with_https {|srv, dr, url|
+  def with_https_proxy(proxy_log_tester=lambda {|proxy_log, proxy_access_log| assert_equal([], proxy_log) })
+    proxy_log = []
+    proxy_logger = WEBrick::Log.new(proxy_log, WEBrick::BasicLog::WARN)
+    with_https {|srv, dr, url, server_thread, server_log, threads|
+      srv.mount_proc("/proxy", lambda { |req, res| res.body = "proxy" } )
       cacert_filename = "#{dr}/cacert.pem"
       open(cacert_filename, "w") {|f| f << CA_CERT }
       cacert_directory = "#{dr}/certs"
       Dir.mkdir cacert_directory
       hashed_name = "%08x.0" % OpenSSL::X509::Certificate.new(CA_CERT).subject.hash
       open("#{cacert_directory}/#{hashed_name}", "w") {|f| f << CA_CERT }
-      prxy = WEBrick::HTTPProxyServer.new({
+      proxy = WEBrick::HTTPProxyServer.new({
         :ServerType => Thread,
-        :Logger => WEBrick::Log.new(NullLog),
-        :AccessLog => [[sio=StringIO.new, WEBrick::AccessLog::COMMON_LOG_FORMAT]],
+        :Logger => proxy_logger,
+        :AccessLog => [[proxy_access_log=[], WEBrick::AccessLog::COMMON_LOG_FORMAT]],
         :BindAddress => '127.0.0.1',
         :Port => 0})
-      _, p_port, _, p_host = prxy.listeners[0].addr
+      _, proxy_port, _, proxy_host = proxy.listeners[0].addr
+      proxy_thread = proxy.start
+      threads << Thread.new {
+        proxy_thread.join
+        if proxy_log_tester
+          proxy_log_tester.call(proxy_log, proxy_access_log)
+        end
+      }
       begin
-        th = prxy.start
-        open("#{dr}/proxy", "w") {|f| f << "proxy" }
-        open("#{url}/proxy", :proxy=>"http://#{p_host}:#{p_port}/", :ssl_ca_cert => cacert_filename) {|f|
-          assert_equal("200", f.status[0])
-          assert_equal("proxy", f.read)
-        }
-        assert_match(%r[CONNECT #{url.sub(%r{\Ahttps://}, '')} ], sio.string)
-        sio.truncate(0); sio.rewind
-        open("#{url}/proxy", :proxy=>"http://#{p_host}:#{p_port}/", :ssl_ca_cert => cacert_directory) {|f|
-          assert_equal("200", f.status[0])
-          assert_equal("proxy", f.read)
-        }
-        assert_match(%r[CONNECT #{url.sub(%r{\Ahttps://}, '')} ], sio.string)
-        sio.truncate(0); sio.rewind
+        yield srv, dr, url, cacert_filename, cacert_directory, proxy_host, proxy_port
       ensure
-        prxy.shutdown
+        proxy.shutdown
       end
     }
   end
 
-end
+  def test_proxy_cacert_file
+    url = nil
+    proxy_log_tester = lambda {|proxy_log, proxy_access_log|
+      assert_equal(1, proxy_access_log.length)
+      assert_match(%r[CONNECT #{url.sub(%r{\Ahttps://}, '')} ], proxy_access_log[0])
+      assert_equal([], proxy_log)
+    }
+    with_https_proxy(proxy_log_tester) {|srv, dr, url_, cacert_filename, cacert_directory, proxy_host, proxy_port|
+      url = url_
+      open("#{url}/proxy", :proxy=>"http://#{proxy_host}:#{proxy_port}/", :ssl_ca_cert => cacert_filename) {|f|
+        assert_equal("200", f.status[0])
+        assert_equal("proxy", f.read)
+      }
+    }
+  end
 
+  def test_proxy_cacert_dir
+    url = nil
+    proxy_log_tester = lambda {|proxy_log, proxy_access_log|
+      assert_equal(1, proxy_access_log.length)
+      assert_match(%r[CONNECT #{url.sub(%r{\Ahttps://}, '')} ], proxy_access_log[0])
+      assert_equal([], proxy_log)
+    }
+    with_https_proxy(proxy_log_tester) {|srv, dr, url_, cacert_filename, cacert_directory, proxy_host, proxy_port|
+      url = url_
+      open("#{url}/proxy", :proxy=>"http://#{proxy_host}:#{proxy_port}/", :ssl_ca_cert => cacert_directory) {|f|
+        assert_equal("200", f.status[0])
+        assert_equal("proxy", f.read)
+      }
+    }
+  end
+
+end if defined?(OpenSSL::TestUtils)
+
+if defined?(OpenSSL::TestUtils)
 # mkdir demoCA demoCA/private demoCA/newcerts
 # touch demoCA/index.txt
 # echo 00 > demoCA/serial
@@ -143,13 +217,13 @@ Certificate:
                     36:c1:44:4e:ab:9a:b2:73:6d
                 Exponent: 65537 (0x10001)
         X509v3 extensions:
-            X509v3 Basic Constraints: 
+            X509v3 Basic Constraints:
                 CA:FALSE
-            Netscape Comment: 
+            Netscape Comment:
                 OpenSSL Generated Certificate
-            X509v3 Subject Key Identifier: 
+            X509v3 Subject Key Identifier:
                 24:6F:03:A3:EE:06:51:75:B2:BA:FC:3A:38:59:BF:ED:87:CD:E8:7F
-            X509v3 Authority Key Identifier: 
+            X509v3 Authority Key Identifier:
                 keyid:24:6F:03:A3:EE:06:51:75:B2:BA:FC:3A:38:59:BF:ED:87:CD:E8:7F
 
     Signature Algorithm: sha1WithRSAEncryption
@@ -205,15 +279,15 @@ Certificate:
                     f0:86:61:ce:f1:ff:42:c7:23
                 Exponent: 65537 (0x10001)
         X509v3 extensions:
-            X509v3 Basic Constraints: 
+            X509v3 Basic Constraints:
                 CA:FALSE
-            Netscape Cert Type: 
+            Netscape Cert Type:
                 SSL Server
-            Netscape Comment: 
+            Netscape Comment:
                 OpenSSL Generated Certificate
-            X509v3 Subject Key Identifier: 
+            X509v3 Subject Key Identifier:
                 7F:17:5A:58:88:96:E1:1F:44:EA:FF:AD:C6:2E:90:E2:95:32:DD:F0
-            X509v3 Authority Key Identifier: 
+            X509v3 Authority Key Identifier:
                 keyid:24:6F:03:A3:EE:06:51:75:B2:BA:FC:3A:38:59:BF:ED:87:CD:E8:7F
 
     Signature Algorithm: sha1WithRSAEncryption
@@ -312,3 +386,5 @@ TIvZKDovHJ3UV163xaECQEVQR2ZW6SHZQA6vP/IFd6vnCECXiCpRs36GsLIDLm02
 P0ZCl31aopNsBcKLiy2v1X116XDwLSHjuc9NmsSX4nk=
 -----END RSA PRIVATE KEY-----
 End
+
+end

@@ -16,5 +16,4 @@
 #undef close
 #define close ruby_close
 #endif
-
 #endif

@@ -1,6 +1,6 @@
 require "rexml/document"
 
-require "rss-testcase"
+require_relative "rss-testcase"
 
 require "rss/maker"
 require "rss/1.0"

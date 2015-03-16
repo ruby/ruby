@@ -1,14 +1,24 @@
+require 'psych/json/ruby_events'
+
 module Psych
   module Visitors
     class JSONTree < YAMLTree
-      def initialize options = {}, emitter = Psych::JSON::TreeBuilder.new
-        super
+      include Psych::JSON::RubyEvents
+
+      def self.create options = {}
+        emitter = Psych::JSON::TreeBuilder.new
+        class_loader = ClassLoader.new
+        ss           = ScalarScanner.new class_loader
+        new(emitter, ss, options)
       end
 
-      def visit_String o
-        @emitter.scalar o.to_s, nil, nil, false, true, Nodes::Scalar::ANY
+      def accept target
+        if target.respond_to?(:encode_with)
+          dump_coder target
+        else
+          send(@dispatch_cache[target.class], target)
+        end
       end
-      alias :visit_Symbol :visit_String
     end
   end
 end

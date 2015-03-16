@@ -27,8 +27,7 @@
 
 <%= transcode_generated_code %>
 
-void
-Init_japanese_sjis(void)
+TRANS_INIT(japanese_sjis)
 {
 <%= transcode_register_code %>
 }

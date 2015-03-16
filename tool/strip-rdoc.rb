@@ -1,7 +1,8 @@
 #!ruby
 
+ARGF.binmode
 source = ARGF.read
-source = source.gsub(%r{/\*([!*])((?!\*/).+?)\*/}m) do |comment| 
+source = source.gsub(%r{/\*([!*])((?!\*/).+?)\*/}m) do |comment|
   marker, comment = $1, $2
   next "/**#{comment}*/" unless /^\s*\*\s?\-\-\s*$/ =~ comment
   doxybody = nil

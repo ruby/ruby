@@ -1,16 +1,17 @@
 require 'test/unit'
+require 'timeout'
 require 'tmpdir'
 
 class TestNotImplement < Test::Unit::TestCase
   def test_respond_to_fork
-    assert_includes(Process.methods, :fork)
+    assert_include(Process.methods, :fork)
     if /linux/ =~ RUBY_PLATFORM
       assert_equal(true, Process.respond_to?(:fork))
     end
   end
 
   def test_respond_to_lchmod
-    assert_includes(File.methods, :lchmod)
+    assert_include(File.methods, :lchmod)
     if /linux/ =~ RUBY_PLATFORM
       assert_equal(false, File.respond_to?(:lchmod))
     end
@@ -20,13 +21,32 @@ class TestNotImplement < Test::Unit::TestCase
   end
 
   def test_call_fork
-    if Process.respond_to?(:fork)
-      assert_nothing_raised {
+    GC.start
+    pid = nil
+    ps =
+      case RUBY_PLATFORM
+      when /linux/ # assume Linux Distribution uses procps
+        proc {`ps -eLf #{pid}`}
+      when /freebsd/
+        proc {`ps -lH #{pid}`}
+      when /darwin/
+        proc {`ps -lM #{pid}`}
+      else
+        proc {`ps -l #{pid}`}
+      end
+    assert_nothing_raised(Timeout::Error, ps) do
+      Timeout.timeout(5) {
         pid = fork {}
         Process.wait pid
+        pid = nil
       }
     end
-  end
+  ensure
+    if pid
+      Process.kill(:KILL, pid)
+      Process.wait pid
+    end
+  end if Process.respond_to?(:fork)
 
   def test_call_lchmod
     if File.respond_to?(:lchmod)

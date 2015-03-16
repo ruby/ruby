@@ -28,15 +28,15 @@ module REXML
       # Listen arguments:
       #
       # Symbol, Array, Block
-      # 	Listen to Symbol events on Array elements
+      #         Listen to Symbol events on Array elements
       # Symbol, Block
       #   Listen to Symbol events
       # Array, Listener
-      # 	Listen to all events on Array elements
+      #         Listen to all events on Array elements
       # Array, Block
-      # 	Listen to :start_element events on Array elements
+      #         Listen to :start_element events on Array elements
       # Listener
-      # 	Listen to All events
+      #         Listen to All events
       #
       # Symbol can be one of: :start_element, :end_element,
       # :start_prefix_mapping, :end_prefix_mapping, :characters,
@@ -87,7 +87,7 @@ module REXML
         @listeners.each { |sym,match,block|
           block.start_document if sym == :start_document or sym.nil?
         }
-        root = context = []
+        context = []
         while true
           event = @parser.pull
           case event[0]
@@ -176,8 +176,7 @@ module REXML
             }
             handle( :characters, copy )
           when :entitydecl
-            @entities[ event[1] ] = event[2] if event.size == 3
-            handle( *event )
+            handle_entitydecl( event )
           when :processing_instruction, :comment, :attlistdecl,
             :elementdecl, :cdata, :notationdecl, :xmldecl
             handle( *event )
@@ -198,12 +197,38 @@ module REXML
         } if listeners
       end
 
+      def handle_entitydecl( event )
+        @entities[ event[1] ] = event[2] if event.size == 3
+        parameter_reference_p = false
+        case event[2]
+        when "SYSTEM"
+          if event.size == 5
+            if event.last == "%"
+              parameter_reference_p = true
+            else
+              event[4, 0] = "NDATA"
+            end
+          end
+        when "PUBLIC"
+          if event.size == 6
+            if event.last == "%"
+              parameter_reference_p = true
+            else
+              event[5, 0] = "NDATA"
+            end
+          end
+        else
+          parameter_reference_p = (event.size == 4)
+        end
+        event[1, 0] = event.pop if parameter_reference_p
+        handle( event[0], event[1..-1] )
+      end
+
       # The following methods are duplicates, but it is faster than using
       # a helper
       def get_procs( symbol, name )
         return nil if @procs.size == 0
         @procs.find_all do |sym, match, block|
-          #puts sym.inspect+"=="+symbol.inspect+ "\t"+match.inspect+"=="+name.inspect+ "\t"+( (sym.nil? or symbol == sym) and ((name.nil? and match.nil?) or match.nil? or ( (name == match) or (match.kind_of? Regexp and name =~ match)))).to_s
           (
             (sym.nil? or symbol == sym) and
             ((name.nil? and match.nil?) or match.nil? or (

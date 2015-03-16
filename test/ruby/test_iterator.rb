@@ -25,14 +25,14 @@ class TestIterator < Test::Unit::TestCase
   end
 
   def test_array
-    $x = [1, 2, 3, 4]
-    $y = []
+    x = [1, 2, 3, 4]
+    y = []
 
     # iterator over array
-    for i in $x
-      $y.push i
+    for i in x
+      y.push i
     end
-    assert_equal($x, $y)
+    assert_equal(x, y)
   end
 
   def tt
@@ -79,36 +79,36 @@ class TestIterator < Test::Unit::TestCase
     assert(done)
 
     done = false
-    $bad = false
+    bad = false
     loop {
       break if done
       done = true
       next
-      $bad = true			# should not reach here
+      bad = true			# should not reach here
     }
-    assert(!$bad)
+    assert(!bad)
 
     done = false
-    $bad = false
+    bad = false
     loop {
       break if done
       done = true
       redo
-      $bad = true			# should not reach here
+      bad = true			# should not reach here
     }
-    assert(!$bad)
+    assert(!bad)
 
-    $x = []
+    x = []
     for i in 1 .. 7
-      $x.push i
+      x.push i
     end
-    assert_equal(7, $x.size)
-    assert_equal([1, 2, 3, 4, 5, 6, 7], $x)
+    assert_equal(7, x.size)
+    assert_equal([1, 2, 3, 4, 5, 6, 7], x)
   end
 
   def test_append_method_to_built_in_class
-    $x = [[1,2],[3,4],[5,6]]
-    assert_equal($x.iter_test1{|x|x}, $x.iter_test2{|x|x})
+    x = [[1,2],[3,4],[5,6]]
+    assert_equal(x.iter_test1{|x|x}, x.iter_test2{|x|x})
   end
 
   class IterTest

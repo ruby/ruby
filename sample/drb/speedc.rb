@@ -11,7 +11,7 @@ when /^tcpromp:/, /^unixromp:/
   foo = client.resolve("foo")
 when /^druby:/
   require 'drb/drb'
-  
+
   DRb.start_service
   foo = DRbObject.new(nil, uri)
 end

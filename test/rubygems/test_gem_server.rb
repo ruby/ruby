@@ -1,23 +1,63 @@
-require_relative 'gemutilities'
+require 'rubygems/test_case'
 require 'rubygems/server'
 require 'stringio'
 
 class Gem::Server
-  attr_accessor :source_index
   attr_reader :server
 end
 
-class TestGemServer < RubyGemTestCase
-
+class TestGemServer < Gem::TestCase
   def setup
     super
 
-    @a1 = quick_gem 'a', '1'
-    @a2 = quick_gem 'a', '2'
+    @a1   = quick_gem 'a', '1'
+    @a2   = quick_gem 'a', '2'
+    @a3_p = quick_gem 'a', '3.a'
 
     @server = Gem::Server.new Gem.dir, process_based_port, false
     @req = WEBrick::HTTPRequest.new :Logger => nil
     @res = WEBrick::HTTPResponse.new :HTTPVersion => '1.0'
+  end
+
+  def test_doc_root_3
+    orig_rdoc_version = Gem::RDoc.rdoc_version
+    Gem::RDoc.instance_variable_set :@rdoc_version, Gem::Version.new('3.12')
+
+    assert_equal '/doc_root/X-1/rdoc/index.html', @server.doc_root('X-1')
+
+  ensure
+    Gem::RDoc.instance_variable_set :@rdoc_version, orig_rdoc_version
+  end
+
+  def test_doc_root_4
+    orig_rdoc_version = Gem::RDoc.rdoc_version
+    Gem::RDoc.instance_variable_set :@rdoc_version, Gem::Version.new('4.0')
+
+    assert_equal '/doc_root/X-1/', @server.doc_root('X-1')
+
+  ensure
+    Gem::RDoc.instance_variable_set :@rdoc_version, orig_rdoc_version
+  end
+
+  def test_have_rdoc_4_plus_eh
+    orig_rdoc_version = Gem::RDoc.rdoc_version
+    Gem::RDoc.instance_variable_set(:@rdoc_version, Gem::Version.new('4.0'))
+
+    server = Gem::Server.new Gem.dir, 0, false
+    assert server.have_rdoc_4_plus?
+
+    Gem::RDoc.instance_variable_set :@rdoc_version, Gem::Version.new('3.12')
+
+    server = Gem::Server.new Gem.dir, 0, false
+    refute server.have_rdoc_4_plus?
+
+    Gem::RDoc.instance_variable_set(:@rdoc_version,
+                                    Gem::Version.new('4.0.0.preview2'))
+
+    server = Gem::Server.new Gem.dir, 0, false
+    assert server.have_rdoc_4_plus?
+  ensure
+    Gem::RDoc.instance_variable_set :@rdoc_version, orig_rdoc_version
   end
 
   def test_spec_dirs
@@ -31,56 +71,52 @@ class TestGemServer < RubyGemTestCase
                   File.join(Gem.dir, 'specifications')], s.spec_dirs
   end
 
-  def test_Marshal
-    data = StringIO.new "GET /Marshal.#{Gem.marshal_version} HTTP/1.0\r\n\r\n"
-    @req.parse data
-
-    @server.Marshal @req, @res
-
-    assert_equal 200, @res.status, @res.body
-    assert_match %r| \d\d:\d\d:\d\d |, @res['date']
-    assert_equal 'application/octet-stream', @res['content-type']
-
-    si = Gem::SourceIndex.new
-    si.add_specs @a1, @a2
-
-    assert_equal si, Marshal.load(@res.body)
-  end
-
-  def test_Marshal_Z
-    data = StringIO.new "GET /Marshal.#{Gem.marshal_version}.Z HTTP/1.0\r\n\r\n"
-    @req.parse data
-
-    @server.Marshal @req, @res
-
-    assert_equal 200, @res.status, @res.body
-    assert_match %r| \d\d:\d\d:\d\d |, @res['date']
-    assert_equal 'application/x-deflate', @res['content-type']
-
-    si = Gem::SourceIndex.new
-    si.add_specs @a1, @a2
-
-    assert_equal si, Marshal.load(Gem.inflate(@res.body))
-  end
-
   def test_latest_specs
     data = StringIO.new "GET /latest_specs.#{Gem.marshal_version} HTTP/1.0\r\n\r\n"
     @req.parse data
 
-    @server.latest_specs @req, @res
+    Gem::Deprecate.skip_during do
+      @server.latest_specs @req, @res
+    end
 
     assert_equal 200, @res.status, @res.body
     assert_match %r| \d\d:\d\d:\d\d |, @res['date']
     assert_equal 'application/octet-stream', @res['content-type']
     assert_equal [['a', Gem::Version.new(2), Gem::Platform::RUBY]],
-                 Marshal.load(@res.body)
+    Marshal.load(@res.body)
+  end
+
+  def test_latest_specs_gemdirs
+    data = StringIO.new "GET /latest_specs.#{Gem.marshal_version} HTTP/1.0\r\n\r\n"
+    dir = "#{@gemhome}2"
+
+    spec = util_spec 'z', 9
+
+    specs_dir = File.join dir, 'specifications'
+    FileUtils.mkdir_p specs_dir
+
+    open File.join(specs_dir, spec.spec_name), 'w' do |io|
+      io.write spec.to_ruby
+    end
+
+    server = Gem::Server.new dir, process_based_port, false
+
+    @req.parse data
+
+    server.latest_specs @req, @res
+
+    assert_equal 200, @res.status
+
+    assert_equal [['z', v(9), Gem::Platform::RUBY]], Marshal.load(@res.body)
   end
 
   def test_latest_specs_gz
     data = StringIO.new "GET /latest_specs.#{Gem.marshal_version}.gz HTTP/1.0\r\n\r\n"
     @req.parse data
 
-    @server.latest_specs @req, @res
+    Gem::Deprecate.skip_during do
+      @server.latest_specs @req, @res
+    end
 
     assert_equal 200, @res.status, @res.body
     assert_match %r| \d\d:\d\d:\d\d |, @res['date']
@@ -92,7 +128,7 @@ class TestGemServer < RubyGemTestCase
   def test_listen
     util_listen
 
-    out, err = capture_io do
+    capture_io do
       @server.listen
     end
 
@@ -102,113 +138,78 @@ class TestGemServer < RubyGemTestCase
   def test_listen_addresses
     util_listen
 
-    out, err = capture_io do
+    capture_io do
       @server.listen %w[a b]
     end
-    
+
     assert_equal 2, @server.server.listeners.length
   end
 
-  def test_quick_a_1_gemspec_rz
-    data = StringIO.new "GET /quick/a-1.gemspec.rz HTTP/1.0\r\n\r\n"
+  def test_prerelease_specs
+    data = StringIO.new "GET /prerelease_specs.#{Gem.marshal_version} HTTP/1.0\r\n\r\n"
     @req.parse data
 
-    @server.quick @req, @res
-
-    assert_equal 200, @res.status, @res.body
-    assert @res['date']
-    assert_equal 'application/x-deflate', @res['content-type']
-
-    spec = YAML.load Gem.inflate(@res.body)
-    assert_equal 'a', spec.name
-    assert_equal Gem::Version.new(1), spec.version
-  end
-
-  def test_quick_a_1_mswin32_gemspec_rz
-    a1_p = quick_gem 'a', '1' do |s| s.platform = Gem::Platform.local end
-
-    data = StringIO.new "GET /quick/a-1-#{Gem::Platform.local}.gemspec.rz HTTP/1.0\r\n\r\n"
-    @req.parse data
-
-    @server.quick @req, @res
-
-    assert_equal 200, @res.status, @res.body
-    assert @res['date']
-    assert_equal 'application/x-deflate', @res['content-type']
-
-    spec = YAML.load Gem.inflate(@res.body)
-    assert_equal 'a', spec.name
-    assert_equal Gem::Version.new(1), spec.version
-    assert_equal Gem::Platform.local, spec.platform
-  end
-
-  def test_quick_common_substrings
-    ab1 = quick_gem 'ab', '1'
-
-    data = StringIO.new "GET /quick/a-1.gemspec.rz HTTP/1.0\r\n\r\n"
-    @req.parse data
-
-    @server.quick @req, @res
-
-    assert_equal 200, @res.status, @res.body
-    assert @res['date']
-    assert_equal 'application/x-deflate', @res['content-type']
-
-    spec = YAML.load Gem.inflate(@res.body)
-    assert_equal 'a', spec.name
-    assert_equal Gem::Version.new(1), spec.version
-  end
-
-  def test_quick_index
-    data = StringIO.new "GET /quick/index HTTP/1.0\r\n\r\n"
-    @req.parse data
-
-    @server.quick @req, @res
+    Gem::Deprecate.skip_during do
+      @server.prerelease_specs @req, @res
+    end
 
     assert_equal 200, @res.status, @res.body
     assert_match %r| \d\d:\d\d:\d\d |, @res['date']
-    assert_equal 'text/plain', @res['content-type']
-    assert_equal "a-1\na-2", @res.body
+    assert_equal 'application/octet-stream', @res['content-type']
+    assert_equal [['a', v('3.a'), Gem::Platform::RUBY]],
+                 Marshal.load(@res.body)
   end
 
-  def test_quick_index_rz
-    data = StringIO.new "GET /quick/index.rz HTTP/1.0\r\n\r\n"
+  def test_prerelease_specs_gz
+    data = StringIO.new "GET /prerelease_specs.#{Gem.marshal_version}.gz HTTP/1.0\r\n\r\n"
     @req.parse data
 
-    @server.quick @req, @res
+    Gem::Deprecate.skip_during do
+      @server.prerelease_specs @req, @res
+    end
 
     assert_equal 200, @res.status, @res.body
     assert_match %r| \d\d:\d\d:\d\d |, @res['date']
-    assert_equal 'application/x-deflate', @res['content-type']
-    assert_equal "a-1\na-2", Gem.inflate(@res.body)
+    assert_equal 'application/x-gzip', @res['content-type']
+    assert_equal [['a', v('3.a'), Gem::Platform::RUBY]],
+                 Marshal.load(Gem.gunzip(@res.body))
   end
 
-  def test_quick_latest_index
-    data = StringIO.new "GET /quick/latest_index HTTP/1.0\r\n\r\n"
+  def test_quick_gemdirs
+    data = StringIO.new "GET /quick/Marshal.4.8/z-9.gemspec.rz HTTP/1.0\r\n\r\n"
+    dir = "#{@gemhome}2"
+
+    server = Gem::Server.new dir, process_based_port, false
+
     @req.parse data
 
-    @server.quick @req, @res
+    server.quick @req, @res
 
-    assert_equal 200, @res.status, @res.body
-    assert_match %r| \d\d:\d\d:\d\d |, @res['date']
-    assert_equal 'text/plain', @res['content-type']
-    assert_equal 'a-2', @res.body
-  end
+    assert_equal 404, @res.status
 
-  def test_quick_latest_index_rz
-    data = StringIO.new "GET /quick/latest_index.rz HTTP/1.0\r\n\r\n"
-    @req.parse data
+    spec = util_spec 'z', 9
 
-    @server.quick @req, @res
+    specs_dir = File.join dir, 'specifications'
 
-    assert_equal 200, @res.status, @res.body
-    assert_match %r| \d\d:\d\d:\d\d |, @res['date']
-    assert_equal 'application/x-deflate', @res['content-type']
-    assert_equal 'a-2', Gem.inflate(@res.body)
+    FileUtils.mkdir_p specs_dir
+
+    open File.join(specs_dir, spec.spec_name), 'w' do |io|
+      io.write spec.to_ruby
+    end
+
+    data.rewind
+
+    req = WEBrick::HTTPRequest.new :Logger => nil
+    res = WEBrick::HTTPResponse.new :HTTPVersion => '1.0'
+    req.parse data
+
+    server.quick req, res
+
+    assert_equal 200, res.status
   end
 
   def test_quick_missing
-    data = StringIO.new "GET /quick/z-9.gemspec.rz HTTP/1.0\r\n\r\n"
+    data = StringIO.new "GET /quick/Marshal.4.8/z-9.gemspec.rz HTTP/1.0\r\n\r\n"
     @req.parse data
 
     @server.quick @req, @res
@@ -236,7 +237,7 @@ class TestGemServer < RubyGemTestCase
   end
 
   def test_quick_marshal_a_1_mswin32_gemspec_rz
-    a1_p = quick_gem 'a', '1' do |s| s.platform = Gem::Platform.local end
+    quick_gem 'a', '1' do |s| s.platform = Gem::Platform.local end
 
     data = StringIO.new "GET /quick/Marshal.#{Gem.marshal_version}/a-1-#{Gem::Platform.local}.gemspec.rz HTTP/1.0\r\n\r\n"
     @req.parse data
@@ -251,6 +252,38 @@ class TestGemServer < RubyGemTestCase
     assert_equal 'a', spec.name
     assert_equal Gem::Version.new(1), spec.version
     assert_equal Gem::Platform.local, spec.platform
+  end
+
+  def test_quick_marshal_a_3_a_gemspec_rz
+    data = StringIO.new "GET /quick/Marshal.#{Gem.marshal_version}/a-3.a.gemspec.rz HTTP/1.0\r\n\r\n"
+    @req.parse data
+
+    @server.quick @req, @res
+
+    assert_equal 200, @res.status, @res.body
+    assert @res['date']
+    assert_equal 'application/x-deflate', @res['content-type']
+
+    spec = Marshal.load Gem.inflate(@res.body)
+    assert_equal 'a', spec.name
+    assert_equal v('3.a'), spec.version
+  end
+
+  def test_quick_marshal_a_b_3_a_gemspec_rz
+    quick_gem 'a-b', '3.a'
+
+    data = StringIO.new "GET /quick/Marshal.#{Gem.marshal_version}/a-b-3.a.gemspec.rz HTTP/1.0\r\n\r\n"
+    @req.parse data
+
+    @server.quick @req, @res
+
+    assert_equal 200, @res.status, @res.body
+    assert @res['date']
+    assert_equal 'application/x-deflate', @res['content-type']
+
+    spec = Marshal.load Gem.inflate(@res.body)
+    assert_equal 'a-b', spec.name
+    assert_equal v('3.a'), spec.version
   end
 
   def test_rdoc
@@ -275,6 +308,29 @@ class TestGemServer < RubyGemTestCase
     assert_equal 'text/html', @res['content-type']
   end
 
+  def test_root_gemdirs
+    data = StringIO.new "GET / HTTP/1.0\r\n\r\n"
+    dir = "#{@gemhome}2"
+
+    spec = util_spec 'z', 9
+
+    specs_dir = File.join dir, 'specifications'
+    FileUtils.mkdir_p specs_dir
+
+    open File.join(specs_dir, spec.spec_name), 'w' do |io|
+      io.write spec.to_ruby
+    end
+
+    server = Gem::Server.new dir, process_based_port, false
+
+    @req.parse data
+
+    server.root @req, @res
+
+    assert_equal 200, @res.status
+    assert_match 'z 9', @res.body
+  end
+
   def test_specs
     data = StringIO.new "GET /specs.#{Gem.marshal_version} HTTP/1.0\r\n\r\n"
     @req.parse data
@@ -286,8 +342,33 @@ class TestGemServer < RubyGemTestCase
     assert_equal 'application/octet-stream', @res['content-type']
 
     assert_equal [['a', Gem::Version.new(1), Gem::Platform::RUBY],
-                  ['a', Gem::Version.new(2), Gem::Platform::RUBY]],
+                  ['a', Gem::Version.new(2), Gem::Platform::RUBY],
+                  ['a', v('3.a'), Gem::Platform::RUBY]],
                  Marshal.load(@res.body)
+  end
+
+  def test_specs_gemdirs
+    data = StringIO.new "GET /specs.#{Gem.marshal_version} HTTP/1.0\r\n\r\n"
+    dir = "#{@gemhome}2"
+
+    spec = util_spec 'z', 9
+
+    specs_dir = File.join dir, 'specifications'
+    FileUtils.mkdir_p specs_dir
+
+    open File.join(specs_dir, spec.spec_name), 'w' do |io|
+      io.write spec.to_ruby
+    end
+
+    server = Gem::Server.new dir, process_based_port, false
+
+    @req.parse data
+
+    server.specs @req, @res
+
+    assert_equal 200, @res.status
+
+    assert_equal [['z', v(9), Gem::Platform::RUBY]], Marshal.load(@res.body)
   end
 
   def test_specs_gz
@@ -301,40 +382,9 @@ class TestGemServer < RubyGemTestCase
     assert_equal 'application/x-gzip', @res['content-type']
 
     assert_equal [['a', Gem::Version.new(1), Gem::Platform::RUBY],
-                  ['a', Gem::Version.new(2), Gem::Platform::RUBY]],
+                  ['a', Gem::Version.new(2), Gem::Platform::RUBY],
+                  ['a', v('3.a'), Gem::Platform::RUBY]],
                  Marshal.load(Gem.gunzip(@res.body))
-  end
-
-  def test_yaml
-    data = StringIO.new "GET /yaml.#{Gem.marshal_version} HTTP/1.0\r\n\r\n"
-    @req.parse data
-
-    @server.yaml @req, @res
-
-    assert_equal 200, @res.status, @res.body
-    assert_match %r| \d\d:\d\d:\d\d |, @res['date']
-    assert_equal 'text/plain', @res['content-type']
-
-    si = Gem::SourceIndex.new
-    si.add_specs @a1, @a2
-
-    assert_equal si, YAML.load(@res.body)
-  end
-
-  def test_yaml_Z
-    data = StringIO.new "GET /yaml.#{Gem.marshal_version}.Z HTTP/1.0\r\n\r\n"
-    @req.parse data
-
-    @server.yaml @req, @res
-
-    assert_equal 200, @res.status, @res.body
-    assert_match %r| \d\d:\d\d:\d\d |, @res['date']
-    assert_equal 'application/x-deflate', @res['content-type']
-
-    si = Gem::SourceIndex.new
-    si.add_specs @a1, @a2
-
-    assert_equal si, YAML.load(Gem.inflate(@res.body))
   end
 
   def util_listen
@@ -351,6 +401,4 @@ class TestGemServer < RubyGemTestCase
 
     @server.instance_variable_set :@server, webrick
   end
-
 end
-

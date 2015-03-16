@@ -68,7 +68,7 @@ static const signed char trans[][0x100] = {
     /* c */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
     /* d */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
     /* e */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    /* f */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, F 
+    /* f */ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, F
   },
   { /* S1   0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f */
     /* 0 */ F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
@@ -86,7 +86,7 @@ static const signed char trans[][0x100] = {
     /* c */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
     /* d */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
     /* e */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,
-    /* f */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, F 
+    /* f */ A, A, A, A, A, A, A, A, A, A, A, A, A, A, A, F
   }
 };
 #undef A
@@ -187,6 +187,8 @@ OnigEncodingDefine(euc_kr, EUC_KR) = {
   euckr_is_code_ctype,
   onigenc_not_support_get_ctype_code_range,
   euckr_left_adjust_char_head,
-  euckr_is_allowed_reverse_match
+  euckr_is_allowed_reverse_match,
+  0,
+  ONIGENC_FLAG_NONE,
 };
 ENC_ALIAS("eucKR", "EUC-KR")

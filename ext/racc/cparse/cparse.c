@@ -91,7 +91,7 @@ num_to_long(VALUE n)
 }
 
 #define AREF(s, idx) \
-    ((0 <= idx && idx < RARRAY_LEN(s)) ? RARRAY_PTR(s)[idx] : Qnil)
+    ((0 <= idx && idx < RARRAY_LEN(s)) ? rb_ary_entry(s, idx) : Qnil)
 
 /* -----------------------------------------------------------------------
                         Parser Stack Interfaces
@@ -105,7 +105,7 @@ get_stack_tail(VALUE stack, long len)
 {
     if (len < 0) return Qnil;  /* system error */
     if (len > RARRAY_LEN(stack)) len = RARRAY_LEN(stack);
-    return rb_ary_new4(len, RARRAY_PTR(stack) + RARRAY_LEN(stack) - len);
+    return rb_ary_subseq(stack, RARRAY_LEN(stack) - len, len);
 }
 
 static void
@@ -122,7 +122,7 @@ cut_stack_tail(VALUE stack, long len)
 #define PUSH(s, i) rb_ary_store(s, RARRAY_LEN(s), i)
 #define POP(s) rb_ary_pop(s)
 #define LAST_I(s) \
-    ((RARRAY_LEN(s) > 0) ? RARRAY_PTR(s)[RARRAY_LEN(s) - 1] : Qnil)
+    ((RARRAY_LEN(s) > 0) ? rb_ary_entry(s, RARRAY_LEN(s) - 1) : Qnil)
 #define GET_TAIL(s, len) get_stack_tail(s, len)
 #define CUT_TAIL(s, len) cut_stack_tail(s, len)
 
@@ -192,7 +192,7 @@ static VALUE racc_yyparse _((VALUE parser, VALUE lexer, VALUE lexmid,
                              VALUE arg, VALUE sysdebug));
 
 static void call_lexer _((struct cparse_params *v));
-static VALUE lexer_i _((VALUE block_args, VALUE data, VALUE self));
+static VALUE lexer_i _((RB_BLOCK_CALL_FUNC_ARGLIST(block_args, data)));
 
 static VALUE assert_array _((VALUE a));
 static long assert_integer _((VALUE n));
@@ -200,6 +200,7 @@ static VALUE assert_hash _((VALUE h));
 static VALUE initialize_params _((VALUE vparams, VALUE parser, VALUE arg,
                                  VALUE lexer, VALUE lexmid));
 static void cparse_params_mark _((void *ptr));
+static size_t cparse_params_memsize _((const void *ptr));
 
 static void parse_main _((struct cparse_params *v,
                          VALUE tok, VALUE val, int resume));
@@ -217,31 +218,48 @@ static VALUE reduce0 _((VALUE block_args, VALUE data, VALUE self));
 # define D_printf(fmt,arg)
 #endif
 
+#undef RUBY_UNTYPED_DATA_WARNING
+#define RUBY_UNTYPED_DATA_WARNING 1
+
+static const rb_data_type_t cparse_params_type = {
+    "racc/cparse",
+    {
+	cparse_params_mark,
+	RUBY_TYPED_DEFAULT_FREE,
+	cparse_params_memsize,
+    },
+#ifdef RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0,
+    RUBY_TYPED_FREE_IMMEDIATELY,
+#endif
+};
+
 static VALUE
 racc_cparse(VALUE parser, VALUE arg, VALUE sysdebug)
 {
-    volatile VALUE vparams;
+    VALUE vparams;
     struct cparse_params *v;
 
-    vparams = Data_Make_Struct(CparseParams, struct cparse_params,
-                               cparse_params_mark, -1, v);
+    vparams = TypedData_Make_Struct(CparseParams, struct cparse_params,
+				    &cparse_params_type, v);
     D_puts("starting cparse");
     v->sys_debug = RTEST(sysdebug);
     vparams = initialize_params(vparams, parser, arg, Qnil, Qnil);
     v->lex_is_iterator = FALSE;
     parse_main(v, Qnil, Qnil, 0);
 
+    RB_GC_GUARD(vparams);
     return v->retval;
 }
 
 static VALUE
 racc_yyparse(VALUE parser, VALUE lexer, VALUE lexmid, VALUE arg, VALUE sysdebug)
 {
-    volatile VALUE vparams;
+    VALUE vparams;
     struct cparse_params *v;
 
-    vparams = Data_Make_Struct(CparseParams, struct cparse_params,
-                               cparse_params_mark, -1, v);
+    vparams = TypedData_Make_Struct(CparseParams, struct cparse_params,
+				    &cparse_params_type, v);
     v->sys_debug = RTEST(sysdebug);
     D_puts("start C yyparse");
     vparams = initialize_params(vparams, parser, arg, lexer, lexmid);
@@ -254,6 +272,7 @@ racc_yyparse(VALUE parser, VALUE lexer, VALUE lexmid, VALUE arg, VALUE sysdebug)
                  rb_id2name(v->lexmid));
     }
 
+    RB_GC_GUARD(vparams);
     return v->retval;
 }
 
@@ -267,9 +286,8 @@ call_lexer(struct cparse_params *v)
 static VALUE
 lexer_iter(VALUE data)
 {
-    struct cparse_params *v;
+    struct cparse_params *v = rb_check_typeddata(data, &cparse_params_type);
 
-    Data_Get_Struct(data, struct cparse_params, v);
     rb_funcall(v->lexer, v->lexmid, 0);
     return Qnil;
 }
@@ -282,12 +300,11 @@ call_lexer(struct cparse_params *v)
 #endif
 
 static VALUE
-lexer_i(VALUE block_args, VALUE data, VALUE self)
+lexer_i(RB_BLOCK_CALL_FUNC_ARGLIST(block_args, data))
 {
-    struct cparse_params *v;
+    struct cparse_params *v = rb_check_typeddata(data, &cparse_params_type);
     VALUE tok, val;
 
-    Data_Get_Struct(data, struct cparse_params, v);
     if (v->fin)
         rb_raise(rb_eArgError, "extra token after EndOfToken");
     extract_user_token(v, block_args, &tok, &val);
@@ -320,9 +337,8 @@ assert_integer(VALUE n)
 static VALUE
 initialize_params(VALUE vparams, VALUE parser, VALUE arg, VALUE lexer, VALUE lexmid)
 {
-    struct cparse_params *v;
+    struct cparse_params *v = rb_check_typeddata(vparams, &cparse_params_type);
 
-    Data_Get_Struct(vparams, struct cparse_params, v);
     v->value_v = vparams;
     v->parser = parser;
     v->lexer = lexer;
@@ -334,21 +350,21 @@ initialize_params(VALUE vparams, VALUE parser, VALUE arg, VALUE lexer, VALUE lex
     Check_Type(arg, T_ARRAY);
     if (!(13 <= RARRAY_LEN(arg) && RARRAY_LEN(arg) <= 14))
         rb_raise(RaccBug, "[Racc Bug] wrong arg.size %ld", RARRAY_LEN(arg));
-    v->action_table   = assert_array  (RARRAY_PTR(arg)[ 0]);
-    v->action_check   = assert_array  (RARRAY_PTR(arg)[ 1]);
-    v->action_default = assert_array  (RARRAY_PTR(arg)[ 2]);
-    v->action_pointer = assert_array  (RARRAY_PTR(arg)[ 3]);
-    v->goto_table     = assert_array  (RARRAY_PTR(arg)[ 4]);
-    v->goto_check     = assert_array  (RARRAY_PTR(arg)[ 5]);
-    v->goto_default   = assert_array  (RARRAY_PTR(arg)[ 6]);
-    v->goto_pointer   = assert_array  (RARRAY_PTR(arg)[ 7]);
-    v->nt_base        = assert_integer(RARRAY_PTR(arg)[ 8]);
-    v->reduce_table   = assert_array  (RARRAY_PTR(arg)[ 9]);
-    v->token_table    = assert_hash   (RARRAY_PTR(arg)[10]);
-    v->shift_n        = assert_integer(RARRAY_PTR(arg)[11]);
-    v->reduce_n       = assert_integer(RARRAY_PTR(arg)[12]);
+    v->action_table   = assert_array  (rb_ary_entry(arg,  0));
+    v->action_check   = assert_array  (rb_ary_entry(arg,  1));
+    v->action_default = assert_array  (rb_ary_entry(arg,  2));
+    v->action_pointer = assert_array  (rb_ary_entry(arg,  3));
+    v->goto_table     = assert_array  (rb_ary_entry(arg,  4));
+    v->goto_check     = assert_array  (rb_ary_entry(arg,  5));
+    v->goto_default   = assert_array  (rb_ary_entry(arg,  6));
+    v->goto_pointer   = assert_array  (rb_ary_entry(arg,  7));
+    v->nt_base        = assert_integer(rb_ary_entry(arg,  8));
+    v->reduce_table   = assert_array  (rb_ary_entry(arg,  9));
+    v->token_table    = assert_hash   (rb_ary_entry(arg, 10));
+    v->shift_n        = assert_integer(rb_ary_entry(arg, 11));
+    v->reduce_n       = assert_integer(rb_ary_entry(arg, 12));
     if (RARRAY_LEN(arg) > 13) {
-        v->use_result_var = RTEST(RARRAY_PTR(arg)[13]);
+        v->use_result_var = RTEST(rb_ary_entry(arg, 13));
     }
     else {
         v->use_result_var = TRUE;
@@ -405,6 +421,12 @@ cparse_params_mark(void *ptr)
     rb_gc_mark(v->retval);
 }
 
+static size_t
+cparse_params_memsize(const void *ptr)
+{
+    return sizeof(struct cparse_params);
+}
+
 static void
 extract_user_token(struct cparse_params *v, VALUE block_args,
                    VALUE *tok, VALUE *val)
@@ -416,12 +438,12 @@ extract_user_token(struct cparse_params *v, VALUE block_args,
         return;
     }
 
-    if (TYPE(block_args) != T_ARRAY) {
+    if (!RB_TYPE_P(block_args, T_ARRAY)) {
         rb_raise(rb_eTypeError,
-                 "%s() %s %s (must be Array[2])",
+                 "%s() %s %"PRIsVALUE" (must be Array[2])",
                  v->lex_is_iterator ? rb_id2name(v->lexmid) : "next_token",
                  v->lex_is_iterator ? "yielded" : "returned",
-                 rb_class2name(CLASS_OF(block_args)));
+                 rb_obj_class(block_args));
     }
     if (RARRAY_LEN(block_args) != 2) {
         rb_raise(rb_eArgError,
@@ -564,7 +586,7 @@ parse_main(struct cparse_params *v, VALUE tok, VALUE val, int resume)
 
   accept:
     if (v->debug) rb_funcall(v->parser, id_d_accept, 0);
-    v->retval = RARRAY_PTR(v->vstack)[0];
+    v->retval = rb_ary_entry(v->vstack, 0);
     v->fin = CP_FIN_ACCEPT;
     return;
 
@@ -684,7 +706,7 @@ reduce(struct cparse_params *v, long act)
 static VALUE
 reduce0(VALUE val, VALUE data, VALUE self)
 {
-    struct cparse_params *v;
+    struct cparse_params *v = rb_check_typeddata(data, &cparse_params_type);
     VALUE reduce_to, reduce_len, method_id;
     long len;
     ID mid;
@@ -692,10 +714,9 @@ reduce0(VALUE val, VALUE data, VALUE self)
     long i, k1, k2;
     VALUE goto_state;
 
-    Data_Get_Struct(data, struct cparse_params, v);
-    reduce_len = RARRAY_PTR(v->reduce_table)[v->ruleno];
-    reduce_to  = RARRAY_PTR(v->reduce_table)[v->ruleno+1];
-    method_id  = RARRAY_PTR(v->reduce_table)[v->ruleno+2];
+    reduce_len = rb_ary_entry(v->reduce_table, v->ruleno);
+    reduce_to  = rb_ary_entry(v->reduce_table, v->ruleno+1);
+    method_id  = rb_ary_entry(v->reduce_table, v->ruleno+2);
     len = NUM2LONG(reduce_len);
     mid = value_to_id(method_id);
 
@@ -710,10 +731,10 @@ reduce0(VALUE val, VALUE data, VALUE self)
     else {
         if (mid != id_noreduce) {
             tmp_v = GET_TAIL(v->vstack, len);
-            tmp = RARRAY_PTR(tmp_v)[0];
+            tmp = rb_ary_entry(tmp_v, 0);
         }
         else {
-            tmp = RARRAY_PTR(v->vstack)[ RARRAY_LEN(v->vstack) - len ];
+            tmp = rb_ary_entry(v->vstack, RARRAY_LEN(v->vstack) - len);
         }
         CUT_TAIL(v->vstack, len);
         if (v->debug) {
@@ -794,6 +815,8 @@ reduce0(VALUE val, VALUE data, VALUE self)
 void
 Init_cparse(void)
 {
+#undef rb_intern
+#define rb_intern(str) rb_intern_const(str)
     VALUE Racc, Parser;
     ID id_racc = rb_intern("Racc");
 
@@ -813,6 +836,9 @@ Init_cparse(void)
         rb_str_new2("$originalId: cparse.c,v 1.8 2006/07/06 11:39:46 aamine Exp $"));
 
     CparseParams = rb_define_class_under(Racc, "CparseParams", rb_cObject);
+    rb_undef_alloc_func(CparseParams);
+    rb_undef_method(CparseParams, "initialize");
+    rb_undef_method(CparseParams, "initialize_copy");
 
     RaccBug = rb_eRuntimeError;
 

@@ -11,12 +11,13 @@
 
 #undef RUBY_EXPORT
 #include "ruby.h"
-#include "debug.h"
+#include "vm_debug.h"
 #ifdef HAVE_LOCALE_H
 #include <locale.h>
 #endif
-
-RUBY_GLOBAL_SETUP
+#ifdef RUBY_DEBUG_ENV
+#include <stdlib.h>
+#endif
 
 int
 main(int argc, char **argv)

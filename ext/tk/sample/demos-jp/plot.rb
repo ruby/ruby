@@ -1,15 +1,15 @@
-# -*- coding: euc-jp -*-
+# -*- coding: utf-8 -*-
 #
 # 2-D plot widget demo (called by 'widget')
 #
 
-# toplevel widget ¤¬Â¸ºß¤¹¤ì¤Ðºï½ü¤¹¤ë
+# toplevel widget ãŒå­˜åœ¨ã™ã‚Œã°å‰Šé™¤ã™ã‚‹
 if defined?($plot_demo) && $plot_demo
   $plot_demo.destroy
   $plot_demo = nil
 end
 
-# demo ÍÑ¤Î toplevel widget ¤òÀ¸À®
+# demo ç”¨ã® toplevel widget ã‚’ç”Ÿæˆ
 $plot_demo = TkToplevel.new {|w|
   title("Plot Demonstration")
   iconname("Plot")
@@ -18,17 +18,17 @@ $plot_demo = TkToplevel.new {|w|
 
 base_frame = TkFrame.new($plot_demo).pack(:fill=>:both, :expand=>true)
 
-# label À¸À®
+# label ç”Ÿæˆ
 TkLabel.new(base_frame, 'font'=>$font, 'wraplength'=>'4i', 'justify'=>'left',
-            'text'=>"¤³¤Î¥¦¥£¥ó¥É¥¦¤Ï´ÊÃ±¤Ê2¼¡¸µ¤Î¥×¥í¥Ã¥È¤ò´Þ¤ó¤À¥­¥ã¥ó¥Ð¥¹ widget¤Ç¤¹¡£É½¼¨¤µ¤ì¤¿ÅÀ¤ò¥Þ¥¦¥¹¥Ü¥¿¥ó1¤Ç¥É¥é¥Ã¥°¤·¤Æ¥Ç¡¼¥¿¤ò¤¤¤¸¤ë¤³¤È¤¬¤Ç¤­¤Þ¤¹¡£"){
+            'text'=>"ã“ã®ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã¯ç°¡å˜ãª2æ¬¡å…ƒã®ãƒ—ãƒ­ãƒƒãƒˆã‚’å«ã‚“ã ã‚­ãƒ£ãƒ³ãƒã‚¹ widgetã§ã™ã€‚è¡¨ç¤ºã•ã‚ŒãŸç‚¹ã‚’ãƒžã‚¦ã‚¹ãƒœã‚¿ãƒ³1ã§ãƒ‰ãƒ©ãƒƒã‚°ã—ã¦ãƒ‡ãƒ¼ã‚¿ã‚’ã„ã˜ã‚‹ã“ã¨ãŒã§ãã¾ã™ã€‚"){
   pack('side'=>'top')
 }
 
-# frame À¸À®
+# frame ç”Ÿæˆ
 $plot_buttons = TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
-    #text 'Î»²ò'
-    text 'ÊÄ¤¸¤ë'
+    #text 'äº†è§£'
+    text 'é–‰ã˜ã‚‹'
     command proc{
       tmppath = $plot_demo
       $plot_demo = nil
@@ -37,28 +37,28 @@ $plot_buttons = TkFrame.new(base_frame) {|frame|
   }.pack('side'=>'left', 'expand'=>'yes')
 
   TkButton.new(frame) {
-    text '¥³¡¼¥É»²¾È'
+    text 'ã‚³ãƒ¼ãƒ‰å‚ç…§'
     command proc{showCode 'plot'}
   }.pack('side'=>'left', 'expand'=>'yes')
 }
 $plot_buttons.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
-# font ÀßÄê
+# font è¨­å®š
   if $tk_version =~ /^4.*/
     plotFont = '-*-Helvetica-Medium-R-Normal--*-180-*-*-*-*-*-*'
   else
     font = 'Helvetica 18'
   end
 
-# canvas ÀßÄê
+# canvas è¨­å®š
 $plot_canvas = TkCanvas.new(base_frame,'relief'=>'raised','width'=>450,'height'=>300)
 $plot_canvas.pack('side'=>'top', 'fill'=>'x')
 
-# plot À¸À®
+# plot ç”Ÿæˆ
 TkcLine.new($plot_canvas, 100, 250, 400, 250, 'width'=>2)
 TkcLine.new($plot_canvas, 100, 250, 100,  50, 'width'=>2)
 TkcText.new($plot_canvas, 225, 20,
-            'text'=>"´ÊÃ±¤Ê¥×¥í¥Ã¥È", 'font'=>plotFont, 'fill'=>'brown')
+            'text'=>"ç°¡å˜ãªãƒ—ãƒ­ãƒƒãƒˆ", 'font'=>plotFont, 'fill'=>'brown')
 
 (0..10).each {|i|
   x = 100 + (i * 30)

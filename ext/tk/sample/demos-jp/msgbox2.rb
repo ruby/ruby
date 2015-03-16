@@ -1,15 +1,15 @@
-# -*- coding: euc-jp -*-
+# -*- coding: utf-8 -*-
 #
 # message boxes widget demo (called by 'widget')
 #
 
-# toplevel widget ��¸�ߤ���к������
+# toplevel widget が存在すれば削除する
 if defined?($msgbox2_demo) && $msgbox2_demo
   $msgbox2_demo.destroy
   $msgbox2_demo = nil
 end
 
-# demo �Ѥ� toplevel widget ������
+# demo 用の toplevel widget を生成
 $msgbox2_demo = TkToplevel.new {|w|
   title("Message Box Demonstration")
   iconname("messagebox")
@@ -18,15 +18,15 @@ $msgbox2_demo = TkToplevel.new {|w|
 
 base_frame = TkFrame.new($msgbox2_demo).pack(:fill=>:both, :expand=>true)
 
-# label ����
+# label 生成
 TkLabel.new(base_frame, 'font'=>$font, 'wraplength'=>'4i', 'justify'=>'left',
-            'text'=>"�ޤ�ɽ�����륢������ȥ�å������ܥå����μ��������ǲ����������θ��\"��å������ܥå���\"�ܥ���򲡤��ȡ����ꤵ�줿�����ǡ���å������Ⱦܺ٥ƥ����ȤȤ���ä���å������ܥå�����ɽ������ޤ���").pack('side'=>'top')
+            'text'=>"まず表示するアイコンとメッセージボックスの種類を選んで下さい。その後に\"メッセージボックス\"ボタンを押すと、指定された形式で、メッセージと詳細テキストとを持ったメッセージボックスが表示されます。").pack('side'=>'top')
 
-# frame ����
+# frame 生成
 TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
-    #text 'λ��'
-    text '�Ĥ���'
+    #text '了解'
+    text '閉じる'
     command proc{
       tmppath = $msgbox2_demo
       $msgbox2_demo = nil
@@ -35,17 +35,17 @@ TkFrame.new(base_frame) {|frame|
   }.pack('side'=>'left', 'expand'=>'yes')
 
   TkButton.new(frame) {
-    text '�����ɻ���'
+    text 'コード参照'
     command proc{showCode 'msgbox2'}
   }.pack('side'=>'left', 'expand'=>'yes')
 
   TkButton.new(frame) {
-    text '��å������ܥå���'
+    text 'メッセージボックス'
     command proc{showMessageBox2 $msgbox2_demo}
   }.pack('side'=>'left', 'expand'=>'yes')
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
-# frame ����
+# frame 生成
 $msgbox_leftframe  = TkFrame.new(base_frame)
 $msgbox_rightframe = TkFrame.new(base_frame)
 $msgbox_leftframe .pack('side'=>'left', 'expand'=>'yes', 'fill'=>'y',
@@ -53,7 +53,7 @@ $msgbox_leftframe .pack('side'=>'left', 'expand'=>'yes', 'fill'=>'y',
 $msgbox_rightframe.pack('side'=>'left', 'expand'=>'yes', 'fill'=>'y',
                         'pady'=>'.5c', 'padx'=>'.5c')
 
-TkLabel.new($msgbox_leftframe, 'text'=>'��������').pack('side'=>'top')
+TkLabel.new($msgbox_leftframe, 'text'=>'アイコン').pack('side'=>'top')
 TkFrame.new($msgbox_leftframe, 'relief'=>'ridge', 'bd'=>1, 'height'=>2)\
 .pack('side'=>'top', 'fill'=>'x', 'expand'=>'no')
 
@@ -65,7 +65,7 @@ $msgboxIcon = TkVariable.new('info')
                                         'anchor'=>'w', 'fill'=>'x')
 }
 
-TkLabel.new($msgbox_rightframe, 'text'=>'����').pack('side'=>'top')
+TkLabel.new($msgbox_rightframe, 'text'=>'種類').pack('side'=>'top')
 TkFrame.new($msgbox_rightframe, 'relief'=>'ridge', 'bd'=>1, 'height'=>2)\
 .pack('side'=>'top', 'fill'=>'x', 'expand'=>'no')
 
@@ -81,10 +81,10 @@ $msgboxType = TkVariable.new('ok')
 def showMessageBox2(w)
   button = Tk.messageBox('icon'=>$msgboxIcon.value, 'type'=>$msgboxType.value,
                          'title'=>'Message', 'parent'=>w,
-                         'message'=>"\"#{$msgboxType.value}\"�����פΥ�å������ܥå���",
-                         'detail'=>"�����\"#{$msgboxType.value}\"�Ȥ�������Υ�å������ܥå����ǡ�\"#{$msgboxIcon.value}\"�Υ�������ɽ������Ƥ��ޤ������Υܥ���Τ����줫�����򤷤ƥ���å����Ƥ���������")
+                         'message'=>"\"#{$msgboxType.value}\"タイプのメッセージボックス",
+                         'detail'=>"これは\"#{$msgboxType.value}\"という種類のメッセージボックスで、\"#{$msgboxIcon.value}\"のアイコンが表示されています。下のボタンのいずれかを選択してクリックしてください。")
 
   Tk.messageBox('icon'=>'info', 'type'=>'ok', 'parent'=>w,
-                'message'=>"���ʤ��� \"#{button}\" �򲡤��ޤ����͡�")
+                'message'=>"あなたは \"#{button}\" を押しましたね。")
 end
 

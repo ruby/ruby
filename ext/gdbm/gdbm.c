@@ -73,12 +73,18 @@
  */
 static VALUE rb_cGDBM, rb_eGDBMError, rb_eGDBMFatalError;
 
+#if SIZEOF_LONG > SIZEOF_INT
+#define TOO_LONG(n) ((long)(+(int)(n)) != (long)(n))
+#else
+#define TOO_LONG(n) 0
+#endif
+
 #define RUBY_GDBM_RW_BIT 0x20000000
 
 #define MY_BLOCK_SIZE (2048)
 #define MY_FATAL_FUNC rb_gdbm_fatal
 static void
-rb_gdbm_fatal(char *msg)
+rb_gdbm_fatal(const char *msg)
 {
     rb_raise(rb_eGDBMFatalError, "%s", msg);
 }
@@ -95,24 +101,44 @@ closed_dbm(void)
 }
 
 #define GetDBM(obj, dbmp) do {\
-    Data_Get_Struct(obj, struct dbmdata, dbmp);\
-    if (dbmp == 0) closed_dbm();\
-    if (dbmp->di_dbm == 0) closed_dbm();\
+    TypedData_Get_Struct((obj), struct dbmdata, &dbm_type, (dbmp));\
+    if ((dbmp) == 0) closed_dbm();\
+    if ((dbmp)->di_dbm == 0) closed_dbm();\
 } while (0)
 
-#define GetDBM2(obj, data, dbm) {\
-    GetDBM(obj, data);\
-    (dbm) = dbmp->di_dbm;\
-}
+#define GetDBM2(obj, dbmp, dbm) do {\
+    GetDBM((obj), (dbmp));\
+    (dbm) = (dbmp)->di_dbm;\
+} while (0)
 
 static void
-free_dbm(struct dbmdata *dbmp)
+free_dbm(void *ptr)
 {
+    struct dbmdata *dbmp = ptr;
     if (dbmp) {
         if (dbmp->di_dbm) gdbm_close(dbmp->di_dbm);
         xfree(dbmp);
     }
 }
+
+static size_t
+memsize_dbm(const void *ptr)
+{
+    size_t size = 0;
+    const struct dbmdata *dbmp = ptr;
+    if (dbmp) {
+	size += sizeof(*dbmp);
+	if (dbmp->di_dbm) size += DBM_SIZEOF_DBM;
+    }
+    return size;
+}
+
+static const rb_data_type_t dbm_type = {
+    "gdbm",
+    {0, free_dbm, memsize_dbm,},
+    0, 0,
+    RUBY_TYPED_FREE_IMMEDIATELY,
+};
 
 /*
  * call-seq:
@@ -143,7 +169,7 @@ fgdbm_closed(VALUE obj)
 {
     struct dbmdata *dbmp;
 
-    Data_Get_Struct(obj, struct dbmdata, dbmp);
+    TypedData_Get_Struct(obj, struct dbmdata, &dbm_type, dbmp);
     if (dbmp == 0)
         return Qtrue;
     if (dbmp->di_dbm == 0)
@@ -155,7 +181,7 @@ fgdbm_closed(VALUE obj)
 static VALUE
 fgdbm_s_alloc(VALUE klass)
 {
-    return Data_Wrap_Struct(klass, 0, free_dbm, 0);
+    return TypedData_Wrap_Struct(klass, &dbm_type, 0);
 }
 
 /*
@@ -204,6 +230,11 @@ fgdbm_initialize(int argc, VALUE *argv, VALUE obj)
 
     SafeStringValue(file);
 
+#ifdef GDBM_CLOEXEC
+    /* GDBM_CLOEXEC is available since gdbm 1.10. */
+    flags |= GDBM_CLOEXEC;
+#endif
+
     if (flags & RUBY_GDBM_RW_BIT) {
         flags &= ~RUBY_GDBM_RW_BIT;
         dbm = gdbm_open(RSTRING_PTR(file), MY_BLOCK_SIZE,
@@ -222,13 +253,17 @@ fgdbm_initialize(int argc, VALUE *argv, VALUE obj)
                             GDBM_READER|flags, 0, MY_FATAL_FUNC);
     }
 
+    if (dbm) {
+        rb_fd_fix_cloexec(gdbm_fdesc(dbm));
+    }
+
     if (!dbm) {
         if (mode == -1) return Qnil;
 
         if (gdbm_errno == GDBM_FILE_OPEN_ERROR ||
             gdbm_errno == GDBM_CANT_BE_READER ||
             gdbm_errno == GDBM_CANT_BE_WRITER)
-            rb_sys_fail(RSTRING_PTR(file));
+            rb_sys_fail_str(file);
         else
             rb_raise(rb_eGDBMError, "%s", gdbm_strerror(gdbm_errno));
     }
@@ -264,7 +299,7 @@ fgdbm_initialize(int argc, VALUE *argv, VALUE obj)
 static VALUE
 fgdbm_s_open(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE obj = Data_Wrap_Struct(klass, 0, free_dbm, 0);
+    VALUE obj = fgdbm_s_alloc(klass);
 
     if (NIL_P(fgdbm_initialize(argc, argv, obj))) {
         return Qnil;
@@ -297,10 +332,13 @@ static VALUE
 rb_gdbm_fetch2(GDBM_FILE dbm, VALUE keystr)
 {
     datum key;
+    long len;
 
     StringValue(keystr);
+    len = RSTRING_LEN(keystr);
+    if (TOO_LONG(len)) return Qnil;
     key.dptr = RSTRING_PTR(keystr);
-    key.dsize = RSTRING_LEN(keystr);
+    key.dsize = (int)len;
 
     return rb_gdbm_fetch(dbm, key);
 }
@@ -336,9 +374,12 @@ rb_gdbm_nextkey(GDBM_FILE dbm, VALUE keystr)
 {
     datum key, key2;
     VALUE str;
+    long len;
 
+    len = RSTRING_LEN(keystr);
+    if (TOO_LONG(len)) return Qnil;
     key.dptr = RSTRING_PTR(keystr);
-    key.dsize = RSTRING_LEN(keystr);
+    key.dsize = (int)len;
     key2 = gdbm_nextkey(dbm, key);
     if (key2.dptr == 0)
         return Qnil;
@@ -416,9 +457,9 @@ fgdbm_key(VALUE obj, VALUE valstr)
 
         valstr2 = rb_gdbm_fetch2(dbm, keystr);
         if (!NIL_P(valstr2) &&
-            RSTRING_LEN(valstr) == RSTRING_LEN(valstr2) &&
+            (int)RSTRING_LEN(valstr) == (int)RSTRING_LEN(valstr2) &&
             memcmp(RSTRING_PTR(valstr), RSTRING_PTR(valstr2),
-                   RSTRING_LEN(valstr)) == 0) {
+                   (int)RSTRING_LEN(valstr)) == 0) {
             return keystr;
         }
     }
@@ -485,7 +526,6 @@ fgdbm_values_at(int argc, VALUE *argv, VALUE obj)
 static void
 rb_gdbm_modify(VALUE obj)
 {
-    rb_secure(4);
     if (OBJ_FROZEN(obj)) rb_error_frozen("GDBM");
 }
 
@@ -495,11 +535,14 @@ rb_gdbm_delete(VALUE obj, VALUE keystr)
     datum key;
     struct dbmdata *dbmp;
     GDBM_FILE dbm;
+    long len;
 
     rb_gdbm_modify(obj);
     StringValue(keystr);
+    len = RSTRING_LEN(keystr);
+    if (TOO_LONG(len)) return Qnil;
     key.dptr = RSTRING_PTR(keystr);
-    key.dsize = RSTRING_LEN(keystr);
+    key.dsize = (int)len;
 
     GetDBM2(obj, dbmp, dbm);
     if (!gdbm_exists(dbm, key)) {
@@ -570,7 +613,7 @@ fgdbm_delete_if(VALUE obj)
     struct dbmdata *dbmp;
     GDBM_FILE dbm;
     VALUE keystr, valstr;
-    VALUE ret, ary = rb_ary_new();
+    VALUE ret, ary = rb_ary_tmp_new(0);
     int i, status = 0, n;
 
     rb_gdbm_modify(obj);
@@ -581,8 +624,9 @@ fgdbm_delete_if(VALUE obj)
     for (keystr = rb_gdbm_firstkey(dbm); RTEST(keystr);
          keystr = rb_gdbm_nextkey(dbm, keystr)) {
 
+	OBJ_FREEZE(keystr);
         valstr = rb_gdbm_fetch2(dbm, keystr);
-        ret = rb_protect(rb_yield, rb_assoc_new(keystr, valstr), &status);
+        ret = rb_protect(rb_yield, rb_assoc_new(rb_str_dup(keystr), valstr), &status);
         if (status != 0) break;
         if (RTEST(ret)) rb_ary_push(ary, keystr);
         GetDBM2(obj, dbmp, dbm);
@@ -591,7 +635,8 @@ fgdbm_delete_if(VALUE obj)
     for (i = 0; i < RARRAY_LEN(ary); i++)
         rb_gdbm_delete(obj, RARRAY_PTR(ary)[i]);
     if (status) rb_jump_tag(status);
-    if (n > 0) dbmp->di_size = n - RARRAY_LEN(ary);
+    if (n > 0) dbmp->di_size = n - (int)RARRAY_LEN(ary);
+    rb_ary_clear(ary);
 
     return obj;
 }
@@ -683,10 +728,10 @@ fgdbm_store(VALUE obj, VALUE keystr, VALUE valstr)
     StringValue(valstr);
 
     key.dptr = RSTRING_PTR(keystr);
-    key.dsize = RSTRING_LEN(keystr);
+    key.dsize = RSTRING_LENINT(keystr);
 
     val.dptr = RSTRING_PTR(valstr);
-    val.dsize = RSTRING_LEN(valstr);
+    val.dsize = RSTRING_LENINT(valstr);
 
     GetDBM2(obj, dbmp, dbm);
     dbmp->di_size = -1;
@@ -699,7 +744,7 @@ fgdbm_store(VALUE obj, VALUE keystr, VALUE valstr)
 }
 
 static VALUE
-update_i(VALUE pair, VALUE dbm)
+update_i(RB_BLOCK_CALL_FUNC_ARGLIST(pair, dbm))
 {
     Check_Type(pair, T_ARRAY);
     if (RARRAY_LEN(pair) < 2) {
@@ -853,7 +898,7 @@ fgdbm_each_key(VALUE obj)
  *      gdbm.each_pair { |key, value| block } -> gdbm
  *
  * Executes _block_ for each key in the database, passing the _key_ and the
- * correspoding _value_ as a parameter.
+ * corresponding _value_ as a parameter.
  */
 static VALUE
 fgdbm_each_pair(VALUE obj)
@@ -927,7 +972,9 @@ fgdbm_values(VALUE obj)
 
 /*
  * call-seq:
+ *      gdbm.include?(k) -> true or false
  *      gdbm.has_key?(k) -> true or false
+ *      gdbm.member?(k) -> true or false
  *      gdbm.key?(k) -> true or false
  *
  * Returns true if the given key _k_ exists within the database.
@@ -939,10 +986,13 @@ fgdbm_has_key(VALUE obj, VALUE keystr)
     datum key;
     struct dbmdata *dbmp;
     GDBM_FILE dbm;
+    long len;
 
     StringValue(keystr);
+    len = RSTRING_LENINT(keystr);
+    if (TOO_LONG(len)) return Qfalse;
     key.dptr = RSTRING_PTR(keystr);
-    key.dsize = RSTRING_LEN(keystr);
+    key.dsize = (int)len;
 
     GetDBM2(obj, dbmp, dbm);
     if (gdbm_exists(dbm, key))
@@ -973,9 +1023,9 @@ fgdbm_has_value(VALUE obj, VALUE valstr)
         valstr2 = rb_gdbm_fetch2(dbm, keystr);
 
         if (!NIL_P(valstr2) &&
-            RSTRING_LEN(valstr) == RSTRING_LEN(valstr2) &&
+            (int)RSTRING_LEN(valstr) == (int)RSTRING_LEN(valstr2) &&
             memcmp(RSTRING_PTR(valstr), RSTRING_PTR(valstr2),
-                   RSTRING_LEN(valstr)) == 0) {
+                   (int)RSTRING_LEN(valstr)) == 0) {
             return Qtrue;
         }
     }
@@ -1023,6 +1073,7 @@ fgdbm_reorganize(VALUE obj)
     rb_gdbm_modify(obj);
     GetDBM2(obj, dbmp, dbm);
     gdbm_reorganize(dbm);
+    rb_fd_fix_cloexec(gdbm_fdesc(dbm));
     return obj;
 }
 
@@ -1031,7 +1082,7 @@ fgdbm_reorganize(VALUE obj)
  *     gdbm.sync -> gdbm
  *
  * Unless the _gdbm_ object has been opened with the *SYNC* flag, it is not
- * guarenteed that database modification operations are immediately applied to
+ * guaranteed that database modification operations are immediately applied to
  * the database file. This method ensures that all recent modifications
  * to the database are written to the file. Blocks until all writing operations
  * to the disk have been finished.

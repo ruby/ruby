@@ -1,51 +1,98 @@
+require 'date'
 
+# = time.rb
 #
-# == Introduction
+# When 'time' is required, Time is extended with additional methods for parsing
+# and converting Times.
 #
-# This library extends the Time class:
-# * conversion between date string and time object.
-#   * date-time defined by RFC 2822
-#   * HTTP-date defined by RFC 2616
-#   * dateTime defined by XML Schema Part 2: Datatypes (ISO 8601)
-#   * various formats handled by Date._parse (string to time only)
+# == Features
 #
-# == Design Issues
+# This library extends the Time class with the following conversions between
+# date strings and Time objects:
 #
-# === Specialized interface
+# * date-time defined by {RFC 2822}[http://www.ietf.org/rfc/rfc2822.txt]
+# * HTTP-date defined by {RFC 2616}[http://www.ietf.org/rfc/rfc2616.txt]
+# * dateTime defined by XML Schema Part 2: Datatypes ({ISO
+#   8601}[http://www.iso.org/iso/date_and_time_format])
+# * various formats handled by Date._parse
+# * custom formats handled by Date._strptime
 #
-# This library provides methods dedicated to special purposes:
-# * RFC 2822, RFC 2616 and XML Schema.
-# * They makes usual life easier.
+# == Examples
 #
-# === Doesn't depend on strftime
+# All examples assume you have loaded Time with:
 #
-# This library doesn't use +strftime+.  Especially #rfc2822 doesn't depend
-# on +strftime+ because:
+#   require 'time'
 #
-# * %a and %b are locale sensitive
+# All of these examples were done using the EST timezone which is GMT-5.
 #
-#   Since they are locale sensitive, they may be replaced to
-#   invalid weekday/month name in some locales.
-#   Since ruby-1.6 doesn't invoke setlocale by default,
-#   the problem doesn't arise until some external library invokes setlocale.
-#   Ruby/GTK is the example of such library.
+# === Converting to a String
 #
-# * %z is not portable
+#   t = Time.now
+#   t.iso8601  # => "2011-10-05T22:26:12-04:00"
+#   t.rfc2822  # => "Wed, 05 Oct 2011 22:26:12 -0400"
+#   t.httpdate # => "Thu, 06 Oct 2011 02:26:12 GMT"
 #
-#   %z is required to generate zone in date-time of RFC 2822
-#   but it is not portable.
+# === Time.parse
 #
+# #parse takes a string representation of a Time and attempts to parse it
+# using a heuristic.
+#
+#   Time.parse("2010-10-31") #=> 2010-10-31 00:00:00 -0500
+#
+# Any missing pieces of the date are inferred based on the current date.
+#
+#   # assuming the current date is "2011-10-31"
+#   Time.parse("12:00") #=> 2011-10-31 12:00:00 -0500
+#
+# We can change the date used to infer our missing elements by passing a second
+# object that responds to #mon, #day and #year, such as Date, Time or DateTime.
+# We can also use our own object.
+#
+#   class MyDate
+#     attr_reader :mon, :day, :year
+#
+#     def initialize(mon, day, year)
+#       @mon, @day, @year = mon, day, year
+#     end
+#   end
+#
+#   d  = Date.parse("2010-10-28")
+#   t  = Time.parse("2010-10-29")
+#   dt = DateTime.parse("2010-10-30")
+#   md = MyDate.new(10,31,2010)
+#
+#   Time.parse("12:00", d)  #=> 2010-10-28 12:00:00 -0500
+#   Time.parse("12:00", t)  #=> 2010-10-29 12:00:00 -0500
+#   Time.parse("12:00", dt) #=> 2010-10-30 12:00:00 -0500
+#   Time.parse("12:00", md) #=> 2010-10-31 12:00:00 -0500
+#
+# #parse also accepts an optional block. You can use this block to specify how
+# to handle the year component of the date. This is specifically designed for
+# handling two digit years. For example, if you wanted to treat all two digit
+# years prior to 70 as the year 2000+ you could write this:
+#
+#   Time.parse("01-10-31") {|year| year + (year < 70 ? 2000 : 1900)}
+#   #=> 2001-10-31 00:00:00 -0500
+#   Time.parse("70-10-31") {|year| year + (year < 70 ? 2000 : 1900)}
+#   #=> 1970-10-31 00:00:00 -0500
+#
+# === Time.strptime
+#
+# #strptime works similar to +parse+ except that instead of using a heuristic
+# to detect the format of the input string, you provide a second argument that
+# describes the format of the string. For example:
+#
+#   Time.strptime("2000-10-31", "%Y-%m-%d") #=> 2000-10-31 00:00:00 -0500
 
-require 'date/format'
-
-#
-# Implements the extensions to the Time class that are described in the
-# documentation for the time.rb library.
-#
 class Time
   class << Time
 
-    ZoneOffset = {
+    #
+    # A hash of timezones mapped to hour differences from UTC. The
+    # set of time zones corresponds to the ones specified by RFC 2822
+    # and ISO 8601.
+    #
+    ZoneOffset = { # :nodoc:
       'UTC' => 0,
       # ISO 8601
       'Z' => 0,
@@ -62,6 +109,26 @@ class Time
       'N' => -1, 'O' => -2, 'P' => -3, 'Q' => -4,  'R' => -5,  'S' => -6,
       'T' => -7, 'U' => -8, 'V' => -9, 'W' => -10, 'X' => -11, 'Y' => -12,
     }
+
+    #
+    # Return the number of seconds the specified time zone differs
+    # from UTC.
+    #
+    # Numeric time zones that include minutes, such as
+    # <code>-10:00</code> or <code>+1330</code> will work, as will
+    # simpler hour-only time zones like <code>-10</code> or
+    # <code>+13</code>.
+    #
+    # Textual time zones listed in ZoneOffset are also supported.
+    #
+    # If the time zone does not match any of the above, +zone_offset+
+    # will check if the local time zone (both with and without
+    # potential Daylight Saving \Time changes being in effect) matches
+    # +zone+. Specifying a value for +year+ will change the year used
+    # to find the local time zone.
+    #
+    # If +zone_offset+ is unable to determine the offset, nil will be
+    # returned.
     def zone_offset(zone, year=self.now.year)
       off = nil
       zone = zone.upcase
@@ -82,7 +149,6 @@ class Time
     def zone_utc?(zone)
       # * +0000
       #   In RFC 2822, +0000 indicate a time zone at Universal Time.
-      #   Europe/London is "a time zone at Universal Time" in Winter.
       #   Europe/Lisbon is "a time zone at Universal Time" in Winter.
       #   Atlantic/Reykjavik is "a time zone at Universal Time".
       #   Africa/Dakar is "a time zone at Universal Time".
@@ -108,8 +174,26 @@ class Time
     end
     private :zone_utc?
 
-    LeapYearMonthDays = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
-    CommonYearMonthDays = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    def force_zone!(t, zone, offset=nil)
+      if zone_utc?(zone)
+        t.utc
+      elsif offset ||= zone_offset(zone)
+        # Prefer the local timezone over the fixed offset timezone because
+        # the former is a real timezone and latter is an artificial timezone.
+        t.localtime
+        if t.utc_offset != offset
+          # Use the fixed offset timezone only if the local timezone cannot
+          # represent the given offset.
+          t.localtime(offset)
+        end
+      else
+        t.localtime
+      end
+    end
+    private :force_zone!
+
+    LeapYearMonthDays = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31] # :nodoc:
+    CommonYearMonthDays = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31] # :nodoc:
     def month_days(y, m)
       if ((y % 4 == 0) && (y % 100 != 0)) || (y % 400 == 0)
         LeapYearMonthDays[m-1]
@@ -130,7 +214,8 @@ class Time
         if o != 0 then hour += o; o, hour = hour.divmod(24); off += o end
         if off != 0
           day += off
-          if month_days(year, mon) < day
+          days = month_days(year, mon)
+          if days and days < day
             mon += 1
             if 12 < mon
               mon = 1
@@ -162,9 +247,24 @@ class Time
     end
     private :apply_offset
 
-    def make_time(year, mon, day, hour, min, sec, sec_fraction, zone, now)
+    def make_time(date, year, mon, day, hour, min, sec, sec_fraction, zone, now)
+      if !year && !mon && !day && !hour && !min && !sec && !sec_fraction
+        raise ArgumentError, "no time information in #{date.inspect}"
+      end
+
+      off_year = year || now.year
+      off = nil
+      off = zone_offset(zone, off_year) if zone
+
+      if off
+        now = now.getlocal(off) if now.utc_offset != off
+      else
+        now = now.getlocal
+      end
+
       usec = nil
       usec = sec_fraction * 1000000 if sec_fraction
+
       if now
         begin
           break if year; year = now.year
@@ -185,14 +285,16 @@ class Time
       sec ||= 0
       usec ||= 0
 
-      off = nil
-      off = zone_offset(zone, year) if zone
+      if year != off_year
+        off = nil
+        off = zone_offset(zone, year) if zone
+      end
 
       if off
         year, mon, day, hour, min, sec =
           apply_offset(year, mon, day, hour, min, sec, off)
         t = self.utc(year, mon, day, hour, min, sec, usec)
-        t.localtime if !zone_utc?(zone)
+        force_zone!(t, zone, off)
         t
       else
         self.local(year, mon, day, hour, min, sec, usec)
@@ -212,16 +314,16 @@ class Time
     # supplied with those of +now+.  For the lower components, the minimum
     # values (1 or 0) are assumed if broken or missing.  For example:
     #
-    #     # Suppose it is "Thu Nov 29 14:33:20 GMT 2001" now and
-    #     # your timezone is GMT:
-    #     now = Time.parse("Thu Nov 29 14:33:20 GMT 2001")
-    #     Time.parse("16:30", now)     #=> 2001-11-29 16:30:00 +0900
-    #     Time.parse("7/23", now)      #=> 2001-07-23 00:00:00 +0900
-    #     Time.parse("Aug 31", now)    #=> 2001-08-31 00:00:00 +0900
-    #     Time.parse("Aug 2000", now)  #=> 2000-08-01 00:00:00 +0900
+    #     # Suppose it is "Thu Nov 29 14:33:20 2001" now and
+    #     # your time zone is EST which is GMT-5.
+    #     now = Time.parse("Thu Nov 29 14:33:20 2001")
+    #     Time.parse("16:30", now)     #=> 2001-11-29 16:30:00 -0500
+    #     Time.parse("7/23", now)      #=> 2001-07-23 00:00:00 -0500
+    #     Time.parse("Aug 31", now)    #=> 2001-08-31 00:00:00 -0500
+    #     Time.parse("Aug 2000", now)  #=> 2000-08-01 00:00:00 -0500
     #
-    # Since there are numerous conflicts among locally defined timezone
-    # abbreviations all over the world, this method is not made to
+    # Since there are numerous conflicts among locally defined time zone
+    # abbreviations all over the world, this method is not intended to
     # understand all of them.  For example, the abbreviation "CST" is
     # used variously as:
     #
@@ -232,39 +334,34 @@ class Time
     #     +10:30 in Australia/Adelaide,
     #     etc.
     #
-    # Based on the fact, this method only understands the timezone
-    # abbreviations described in RFC 822 and the system timezone, in the
+    # Based on this fact, this method only understands the time zone
+    # abbreviations described in RFC 822 and the system time zone, in the
     # order named. (i.e. a definition in RFC 822 overrides the system
-    # timezone definition.)  The system timezone is taken from
+    # time zone definition.)  The system time zone is taken from
     # <tt>Time.local(year, 1, 1).zone</tt> and
     # <tt>Time.local(year, 7, 1).zone</tt>.
-    # If the extracted timezone abbreviation does not match any of them,
+    # If the extracted time zone abbreviation does not match any of them,
     # it is ignored and the given time is regarded as a local time.
     #
     # ArgumentError is raised if Date._parse cannot extract information from
-    # +date+ or Time class cannot represent specified date.
+    # +date+ or if the Time class cannot represent specified date.
     #
-    # This method can be used as fail-safe for other parsing methods as:
+    # This method can be used as a fail-safe for other parsing methods as:
     #
     #   Time.rfc2822(date) rescue Time.parse(date)
     #   Time.httpdate(date) rescue Time.parse(date)
     #   Time.xmlschema(date) rescue Time.parse(date)
     #
-    # A failure for Time.parse should be checked, though.
+    # A failure of Time.parse should be checked, though.
     #
-    # time library should be required to use this method as follows.
-    #
-    #     require 'time'
+    # You must require 'time' to use this method.
     #
     def parse(date, now=self.now)
       comp = !block_given?
       d = Date._parse(date, comp)
-      if !d[:year] && !d[:mon] && !d[:mday] && !d[:hour] && !d[:min] && !d[:sec] && !d[:sec_fraction]
-        raise ArgumentError, "no time information in #{date.inspect}"
-      end
       year = d[:year]
       year = yield(year) if year && !comp
-      make_time(year, d[:mon], d[:mday], d[:hour], d[:min], d[:sec], d[:sec_fraction], d[:zone], now)
+      make_time(date, year, d[:mon], d[:mday], d[:hour], d[:min], d[:sec], d[:sec_fraction], d[:zone], now)
     end
 
     #
@@ -273,16 +370,81 @@ class Time
     # If a block is given, the year described in +date+ is converted by the
     # block.  For example:
     #
-    #     Time.strptime(...) {|y| y < 100 ? (y >= 69 ? y + 1900 : y + 2000) : y}
+    #   Time.strptime(...) {|y| y < 100 ? (y >= 69 ? y + 1900 : y + 2000) : y}
+    #
+    # Below is a list of the formatting options:
+    #
+    # %a :: The abbreviated weekday name ("Sun")
+    # %A :: The  full  weekday  name ("Sunday")
+    # %b :: The abbreviated month name ("Jan")
+    # %B :: The  full  month  name ("January")
+    # %c :: The preferred local date and time representation
+    # %C :: Century (20 in 2009)
+    # %d :: Day of the month (01..31)
+    # %D :: Date (%m/%d/%y)
+    # %e :: Day of the month, blank-padded ( 1..31)
+    # %F :: Equivalent to %Y-%m-%d (the ISO 8601 date format)
+    # %h :: Equivalent to %b
+    # %H :: Hour of the day, 24-hour clock (00..23)
+    # %I :: Hour of the day, 12-hour clock (01..12)
+    # %j :: Day of the year (001..366)
+    # %k :: hour, 24-hour clock, blank-padded ( 0..23)
+    # %l :: hour, 12-hour clock, blank-padded ( 0..12)
+    # %L :: Millisecond of the second (000..999)
+    # %m :: Month of the year (01..12)
+    # %M :: Minute of the hour (00..59)
+    # %n :: Newline (\n)
+    # %N :: Fractional seconds digits, default is 9 digits (nanosecond)
+    #       %3N :: millisecond (3 digits)
+    #       %6N :: microsecond (6 digits)
+    #       %9N :: nanosecond (9 digits)
+    # %p :: Meridian indicator ("AM" or "PM")
+    # %P :: Meridian indicator ("am" or "pm")
+    # %r :: time, 12-hour (same as %I:%M:%S %p)
+    # %R :: time, 24-hour (%H:%M)
+    # %s :: Number of seconds since 1970-01-01 00:00:00 UTC.
+    # %S :: Second of the minute (00..60)
+    # %t :: Tab character (\t)
+    # %T :: time, 24-hour (%H:%M:%S)
+    # %u :: Day of the week as a decimal, Monday being 1. (1..7)
+    # %U :: Week number of the current year, starting with the first Sunday as
+    #       the first day of the first week (00..53)
+    # %v :: VMS date (%e-%b-%Y)
+    # %V :: Week number of year according to ISO 8601 (01..53)
+    # %W :: Week  number  of the current year, starting with the first Monday
+    #       as the first day of the first week (00..53)
+    # %w :: Day of the week (Sunday is 0, 0..6)
+    # %x :: Preferred representation for the date alone, no time
+    # %X :: Preferred representation for the time alone, no date
+    # %y :: Year without a century (00..99)
+    # %Y :: Year which may include century, if provided
+    # %z :: Time zone as  hour offset from UTC (e.g. +0900)
+    # %Z :: Time zone name
+    # %% :: Literal "%" character
+
     def strptime(date, format, now=self.now)
       d = Date._strptime(date, format)
       raise ArgumentError, "invalid strptime format - `#{format}'" unless d
-      year = d[:year]
-      year = yield(year) if year && block_given?
-      make_time(year, d[:mon], d[:mday], d[:hour], d[:min], d[:sec], d[:sec_fraction], d[:zone], now)
+      if seconds = d[:seconds]
+        if sec_fraction = d[:sec_fraction]
+          usec = sec_fraction * 1000000
+          usec *= -1 if seconds < 0
+        else
+          usec = 0
+        end
+        t = Time.at(seconds, usec)
+        if zone = d[:zone]
+          force_zone!(t, zone)
+        end
+      else
+        year = d[:year]
+        year = yield(year) if year && block_given?
+        t = make_time(date, year, d[:mon], d[:mday], d[:hour], d[:min], d[:sec], d[:sec_fraction], d[:zone], now)
+      end
+      t
     end
 
-    MonthValue = {
+    MonthValue = { # :nodoc:
       'JAN' => 1, 'FEB' => 2, 'MAR' => 3, 'APR' => 4, 'MAY' => 5, 'JUN' => 6,
       'JUL' => 7, 'AUG' => 8, 'SEP' => 9, 'OCT' =>10, 'NOV' =>11, 'DEC' =>12
     }
@@ -293,13 +455,11 @@ class Time
     # updated by RFC 1123.
     #
     # ArgumentError is raised if +date+ is not compliant with RFC 2822
-    # or Time class cannot represent specified date.
+    # or if the Time class cannot represent specified date.
     #
     # See #rfc2822 for more information on this format.
     #
-    # time library should be required to use this method as follows.
-    #
-    #     require 'time'
+    # You must require 'time' to use this method.
     #
     def rfc2822(date)
       if /\A\s*
@@ -316,24 +476,26 @@ class Time
         day = $1.to_i
         mon = MonthValue[$2.upcase]
         year = $3.to_i
+        short_year_p = $3.length <= 3
         hour = $4.to_i
         min = $5.to_i
         sec = $6 ? $6.to_i : 0
         zone = $7
 
-        # following year completion is compliant with RFC 2822.
-        year = if year < 50
-                 2000 + year
-               elsif year < 1000
-                 1900 + year
-               else
-                 year
-               end
+        if short_year_p
+          # following year completion is compliant with RFC 2822.
+          year = if year < 50
+                   2000 + year
+                 else
+                   1900 + year
+                 end
+        end
 
+        off = zone_offset(zone)
         year, mon, day, hour, min, sec =
-          apply_offset(year, mon, day, hour, min, sec, zone_offset(zone))
+          apply_offset(year, mon, day, hour, min, sec, off)
         t = self.utc(year, mon, day, hour, min, sec)
-        t.localtime if !zone_utc?(zone)
+        force_zone!(t, zone, off)
         t
       else
         raise ArgumentError.new("not RFC 2822 compliant date: #{date.inspect}")
@@ -342,17 +504,15 @@ class Time
     alias rfc822 rfc2822
 
     #
-    # Parses +date+ as HTTP-date defined by RFC 2616 and converts it to a Time
-    # object.
+    # Parses +date+ as an HTTP-date defined by RFC 2616 and converts it to a
+    # Time object.
     #
-    # ArgumentError is raised if +date+ is not compliant with RFC 2616 or Time
-    # class cannot represent specified date.
+    # ArgumentError is raised if +date+ is not compliant with RFC 2616 or if
+    # the Time class cannot represent specified date.
     #
     # See #httpdate for more information on this format.
     #
-    # time library should be required to use this method as follows.
-    #
-    #     require 'time'
+    # You must require 'time' to use this method.
     #
     def httpdate(date)
       if /\A\s*
@@ -363,7 +523,7 @@ class Time
           (\d{2}):(\d{2}):(\d{2})\x20
           GMT
           \s*\z/ix =~ date
-        self.rfc2822(date)
+        self.rfc2822(date).utc
       elsif /\A\s*
              (?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),\x20
              (\d\d)-(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-(\d\d)\x20
@@ -392,18 +552,16 @@ class Time
     end
 
     #
-    # Parses +date+ as dateTime defined by XML Schema and converts it to a Time
-    # object.  The format is restricted version of the format defined by ISO
-    # 8601.
+    # Parses +date+ as a dateTime defined by the XML Schema and converts it to
+    # a Time object.  The format is a restricted version of the format defined
+    # by ISO 8601.
     #
-    # ArgumentError is raised if +date+ is not compliant with the format or Time
-    # class cannot represent specified date.
+    # ArgumentError is raised if +date+ is not compliant with the format or if
+    # the Time class cannot represent specified date.
     #
     # See #xmlschema for more information on this format.
     #
-    # time library should be required to use this method as follows.
-    #
-    #     require 'time'
+    # You must require 'time' to use this method.
     #
     def xmlschema(date)
       if /\A\s*
@@ -425,9 +583,12 @@ class Time
         end
         if $8
           zone = $8
+          off = zone_offset(zone)
           year, mon, day, hour, min, sec =
-            apply_offset(year, mon, day, hour, min, sec, zone_offset(zone))
-          self.utc(year, mon, day, hour, min, sec, usec)
+            apply_offset(year, mon, day, hour, min, sec, off)
+          t = self.utc(year, mon, day, hour, min, sec, usec)
+          force_zone!(t, zone, off)
+          t
         else
           self.local(year, mon, day, hour, min, sec, usec)
         end
@@ -447,9 +608,7 @@ class Time
   #
   # If +self+ is a UTC time, -0000 is used as zone.
   #
-  # time library should be required to use this method as follows.
-  #
-  #     require 'time'
+  # You must require 'time' to use this method.
   #
   def rfc2822
     sprintf('%s, %02d %s %0*d %02d:%02d:%02d ',
@@ -466,25 +625,25 @@ class Time
   end
   alias rfc822 rfc2822
 
-  RFC2822_DAY_NAME = [
+
+  RFC2822_DAY_NAME = [ # :nodoc:
     'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'
   ]
-  RFC2822_MONTH_NAME = [
+
+  RFC2822_MONTH_NAME = [ # :nodoc:
     'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
   ]
 
   #
-  # Returns a string which represents the time as rfc1123-date of HTTP-date
+  # Returns a string which represents the time as RFC 1123 date of HTTP-date
   # defined by RFC 2616:
   #
   #   day-of-week, DD month-name CCYY hh:mm:ss GMT
   #
   # Note that the result is always UTC (GMT).
   #
-  # time library should be required to use this method as follows.
-  #
-  #     require 'time'
+  # You must require 'time' to use this method.
   #
   def httpdate
     t = dup.utc
@@ -495,7 +654,7 @@ class Time
   end
 
   #
-  # Returns a string which represents the time as dateTime defined by XML
+  # Returns a string which represents the time as a dateTime defined by XML
   # Schema:
   #
   #   CCYY-MM-DDThh:mm:ssTZD
@@ -505,28 +664,18 @@ class Time
   #
   # If self is a UTC time, Z is used as TZD.  [+-]hh:mm is used otherwise.
   #
-  # +fractional_seconds+ specifies a number of digits of fractional seconds.
-  # Its default value is 0.
+  # +fractional_digits+ specifies a number of digits to use for fractional
+  # seconds.  Its default value is 0.
   #
-  # time library should be required to use this method as follows.
-  #
-  #     require 'time'
+  # You must require 'time' to use this method.
   #
   def xmlschema(fraction_digits=0)
-    sprintf('%0*d-%02d-%02dT%02d:%02d:%02d',
-      year < 0 ? 5 : 4, year, mon, day, hour, min, sec) +
-    if fraction_digits == 0
-      ''
-    else
-      '.' + sprintf('%0*d', fraction_digits, (subsec * 10**fraction_digits).floor)
-    end +
-    if utc?
-      'Z'
-    else
-      off = utc_offset
-      sign = off < 0 ? '-' : '+'
-      sprintf('%s%02d:%02d', sign, *(off.abs / 60).divmod(60))
+    fraction_digits = fraction_digits.to_i
+    s = strftime("%FT%T")
+    if fraction_digits > 0
+      s << strftime(".%#{fraction_digits}N")
     end
+    s << (utc? ? 'Z' : strftime("%:z"))
   end
   alias iso8601 xmlschema
 end

@@ -1,10 +1,8 @@
-require 'rdoc/text'
-require 'rdoc/code_objects'
-require 'rdoc/generator'
-require 'rdoc/markup/to_html_crossref'
-
 ##
 # Handle common RDoc::Markup tasks for various CodeObjects
+#
+# This module is loaded by generators.  It allows RDoc's CodeObject tree to
+# avoid loading generator code to improve startup time for +ri+.
 
 module RDoc::Generator::Markup
 
@@ -35,15 +33,18 @@ module RDoc::Generator::Markup
   def formatter
     return @formatter if defined? @formatter
 
-    show_hash = RDoc::RDoc.current.options.show_hash
+    options = @store.rdoc.options
     this = RDoc::Context === self ? self : @parent
-    @formatter = RDoc::Markup::ToHtmlCrossref.new this.path, this, show_hash
+
+    @formatter = RDoc::Markup::ToHtmlCrossref.new options, this.path, this
+    @formatter.code_object = self
+    @formatter
   end
 
   ##
   # Build a webcvs URL starting for the given +url+ with +full_path+ appended
   # as the destination path.  If +url+ contains '%s' +full_path+ will be
-  # sprintf'd into +url+ instead.
+  # will replace the %s using sprintf on the +url+.
 
   def cvs_url(url, full_path)
     if /%s/ =~ url then
@@ -55,93 +56,90 @@ module RDoc::Generator::Markup
 
 end
 
-class RDoc::AnyMethod
+class RDoc::CodeObject
 
   include RDoc::Generator::Markup
+
+end
+
+class RDoc::MethodAttr
+
+  @add_line_numbers = false
+
+  class << self
+    ##
+    # Allows controlling whether <tt>#markup_code</tt> adds line numbers to
+    # the source code.
+
+    attr_accessor :add_line_numbers
+  end
 
   ##
   # Prepend +src+ with line numbers.  Relies on the first line of a source
   # code listing having:
   #
-  #    # File xxxxx, line dddd
+  #   # File xxxxx, line dddd
+  #
+  # If it has this comment then line numbers are added to +src+ and the <tt>,
+  # line dddd</tt> portion of the comment is removed.
 
   def add_line_numbers(src)
-    if src =~ /\A.*, line (\d+)/ then
-      first = $1.to_i - 1
-      last  = first + src.count("\n")
-      size = last.to_s.length
+    return unless src.sub!(/\A(.*)(, line (\d+))/, '\1')
+    first = $3.to_i - 1
+    last  = first + src.count("\n")
+    size = last.to_s.length
 
-      line = first
-      src.gsub!(/^/) do
-        res = if line == first then
-                " " * (size + 2)
-              else
-                "%2$*1$d: " % [size, line]
-              end
+    line = first
+    src.gsub!(/^/) do
+      res = if line == first then
+              " " * (size + 1)
+            else
+              "<span class=\"line-num\">%2$*1$d</span> " % [size, line]
+            end
 
-        line += 1
-        res
-      end
+      line += 1
+      res
     end
   end
 
   ##
-  # Turns the method's token stream into HTML
+  # Turns the method's token stream into HTML.
+  #
+  # Prepends line numbers if +add_line_numbers+ is true.
 
   def markup_code
     return '' unless @token_stream
 
-    src = ""
+    src = RDoc::TokenStream.to_html @token_stream
 
-    @token_stream.each do |t|
-      next unless t
-      #        style = STYLE_MAP[t.class]
-      style = case t
-              when RDoc::RubyToken::TkCONSTANT then "ruby-constant"
-              when RDoc::RubyToken::TkKW       then "ruby-keyword kw"
-              when RDoc::RubyToken::TkIVAR     then "ruby-ivar"
-              when RDoc::RubyToken::TkOp       then "ruby-operator"
-              when RDoc::RubyToken::TkId       then "ruby-identifier"
-              when RDoc::RubyToken::TkNode     then "ruby-node"
-              when RDoc::RubyToken::TkCOMMENT  then "ruby-comment cmt"
-              when RDoc::RubyToken::TkREGEXP   then "ruby-regexp re"
-              when RDoc::RubyToken::TkSTRING   then "ruby-value str"
-              when RDoc::RubyToken::TkVal      then "ruby-value"
-              else
-                nil
-              end
-
-      text = CGI.escapeHTML t.text
-
-      if style
-        src << "<span class=\"#{style}\">#{text}</span>"
-      else
-        src << text
+    # dedent the source
+    indent = src.length
+    lines = src.lines.to_a
+    lines.shift if src =~ /\A.*#\ *File/i # remove '# File' comment
+    lines.each do |line|
+      if line =~ /^ *(?=\S)/
+        n = $&.length
+        indent = n if n < indent
+        break if n == 0
       end
     end
+    src.gsub!(/^#{' ' * indent}/, '') if indent > 0
 
-    add_line_numbers src
+    add_line_numbers(src) if RDoc::MethodAttr.add_line_numbers
 
     src
   end
 
 end
 
-class RDoc::Attr
+class RDoc::ClassModule
 
-  include RDoc::Generator::Markup
+  ##
+  # Handy wrapper for marking up this class or module's comment
 
-end
-
-class RDoc::Constant
-
-  include RDoc::Generator::Markup
-
-end
-
-class RDoc::Context
-
-  include RDoc::Generator::Markup
+  def description
+    markup @comment_location
+  end
 
 end
 
@@ -158,12 +156,12 @@ class RDoc::TopLevel
   # command line option to set.
 
   def cvs_url
-    url = RDoc::RDoc.current.options.webcvs
+    url = @store.rdoc.options.webcvs
 
     if /%s/ =~ url then
-      url % @absolute_name
+      url % @relative_name
     else
-      url + @absolute_name
+      url + @relative_name
     end
   end
 

@@ -1,3 +1,4 @@
+require 'rexml/security'
 require 'rexml/entity'
 require 'rexml/doctype'
 require 'rexml/child'
@@ -102,10 +103,10 @@ module REXML
 
       @raw = raw unless raw.nil?
       @entity_filter = entity_filter
-      @normalized = @unnormalized = nil
+      clear_cache
 
       if arg.kind_of? String
-        @string = arg.clone
+        @string = arg.dup
         @string.squeeze!(" \n\t") unless respect_whitespace
       elsif arg.kind_of? Text
         @string = arg.to_s
@@ -185,8 +186,13 @@ module REXML
 
     # Appends text to this text node.  The text is appended in the +raw+ mode
     # of this text node.
+    #
+    # +returns+ the text itself to enable method chain like
+    # 'text << "XXX" << "YYY"'.
     def <<( to_append )
       @string << to_append.gsub( /\r\n?/, "\n" )
+      clear_cache
+      self
     end
 
 
@@ -255,8 +261,7 @@ module REXML
     #   e[0].value = "<a>"    # <a>&lt;a&gt;</a>
     def value=( val )
       @string = val.gsub( /\r\n?/, "\n" )
-      @unnormalized = nil
-      @normalized = nil
+      clear_cache
       @raw = false
     end
 
@@ -330,6 +335,12 @@ module REXML
       out << copy
     end
 
+    private
+    def clear_cache
+      @normalized = nil
+      @unnormalized = nil
+    end
+
     # Reads text, substituting entities
     def Text::read_with_substitution( input, illegal=nil )
       copy = input.clone
@@ -367,7 +378,7 @@ module REXML
         doctype.entities.each_value do |entity|
           copy = copy.gsub( entity.value,
             "&#{entity.name};" ) if entity.value and
-              not( entity_filter and entity_filter.include?(entity) )
+              not( entity_filter and entity_filter.include?(entity.name) )
         end
       else
         # Replace all ampersands that aren't part of an entity
@@ -380,25 +391,35 @@ module REXML
 
     # Unescapes all possible entities
     def Text::unnormalize( string, doctype=nil, filter=nil, illegal=nil )
+      sum = 0
       string.gsub( /\r\n?/, "\n" ).gsub( REFERENCE ) {
-        ref = $&
-        if ref[1] == ?#
-          if ref[2] == ?x
-            [ref[3...-1].to_i(16)].pack('U*')
-          else
-            [ref[2...-1].to_i].pack('U*')
-          end
-        elsif ref == '&amp;'
-          '&'
-        elsif filter and filter.include?( ref[1...-1] )
-          ref
-        elsif doctype
-          doctype.entity( ref[1...-1] ) or ref
+        s = Text.expand($&, doctype, filter)
+        if sum + s.bytesize > Security.entity_expansion_text_limit
+          raise "entity expansion has grown too large"
         else
-          entity_value = DocType::DEFAULT_ENTITIES[ ref[1...-1] ]
-          entity_value ? entity_value.value : ref
+          sum += s.bytesize
         end
+        s
       }
+    end
+
+    def Text.expand(ref, doctype, filter)
+      if ref[1] == ?#
+        if ref[2] == ?x
+          [ref[3...-1].to_i(16)].pack('U*')
+        else
+          [ref[2...-1].to_i].pack('U*')
+        end
+      elsif ref == '&amp;'
+        '&'
+      elsif filter and filter.include?( ref[1...-1] )
+        ref
+      elsif doctype
+        doctype.entity( ref[1...-1] ) or ref
+      else
+        entity_value = DocType::DEFAULT_ENTITIES[ ref[1...-1] ]
+        entity_value ? entity_value.value : ref
+      end
     end
   end
 end

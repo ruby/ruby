@@ -51,6 +51,7 @@ module Gem::LocalRemoteOptions
     end
 
     add_bulk_threshold_option
+    add_clear_sources_option
     add_source_option
     add_proxy_option
     add_update_sources_option
@@ -65,6 +66,18 @@ module Gem::LocalRemoteOptions
                "synchronization (default #{Gem.configuration.bulk_threshold})") do
       |value, options|
       Gem.configuration.bulk_threshold = value.to_i
+    end
+  end
+
+  ##
+  # Add the --clear-sources option
+
+  def add_clear_sources_option
+    add_option(:"Local/Remote", '--clear-sources',
+               'Clear the gem sources') do |value, options|
+
+      Gem.sources = nil
+      options[:sources_cleared] = true
     end
   end
 
@@ -87,15 +100,15 @@ module Gem::LocalRemoteOptions
   def add_source_option
     accept_uri_http
 
-    add_option(:"Local/Remote", '--source URL', URI::HTTP,
-               'Use URL as the remote source for gems') do |source, options|
+    add_option(:"Local/Remote", '-s', '--source URL', URI::HTTP,
+               'Append URL to list of remote gem sources') do |source, options|
+
       source << '/' if source !~ /\/\z/
 
-      if options[:added_source] then
-        Gem.sources << source unless Gem.sources.include?(source)
+      if options.delete :sources_cleared then
+        Gem.sources = [source]
       else
-        options[:added_source] = true
-        Gem.sources.replace [source]
+        Gem.sources << source unless Gem.sources.include?(source)
       end
     end
   end
@@ -104,7 +117,7 @@ module Gem::LocalRemoteOptions
   # Add the --update-sources option
 
   def add_update_sources_option
-    add_option(:"Local/Remote", '-u', '--[no-]update-sources',
+    add_option(:Deprecated, '-u', '--[no-]update-sources',
                'Update local source cache') do |value, options|
       Gem.configuration.update_sources = value
     end

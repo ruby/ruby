@@ -1,7 +1,7 @@
-require_relative 'gem_package_tar_test_case'
+require 'rubygems/package/tar_test_case'
 require 'rubygems/package'
 
-class TestGemPackageTarReaderEntry < TarTestCase
+class TestGemPackageTarReaderEntry < Gem::Package::TarTestCase
 
   def setup
     super
@@ -9,11 +9,20 @@ class TestGemPackageTarReaderEntry < TarTestCase
     @contents = ('a'..'z').to_a.join * 100
 
     @tar = ''
-    @tar << tar_file_header("lib/foo", "", 0, @contents.size)
+    @tar << tar_file_header("lib/foo", "", 0, @contents.size, Time.now)
     @tar << @contents
     @tar << "\0" * (512 - (@tar.size % 512))
 
     @entry = util_entry @tar
+  end
+
+  def teardown
+    close_util_entry(@entry)
+    super
+  end
+
+  def close_util_entry(entry)
+    entry.instance_variable_get(:@io).close!
   end
 
   def test_bytes_read
@@ -61,18 +70,34 @@ class TestGemPackageTarReaderEntry < TarTestCase
     assert_equal 'lib/foo', @entry.full_name
   end
 
+  def test_full_name_null
+    @entry.header.prefix << "\000"
+
+    e = assert_raises Gem::Package::TarInvalidError do
+      @entry.full_name
+    end
+
+    assert_equal 'tar is corrupt, name contains null byte', e.message
+  end
+
   def test_getc
     assert_equal ?a, @entry.getc
   end
 
   def test_directory_eh
     assert_equal false, @entry.directory?
-    assert_equal true, util_dir_entry.directory?
+    dir_ent = util_dir_entry
+    assert_equal true, dir_ent.directory?
+  ensure
+    close_util_entry(dir_ent) if dir_ent
   end
 
   def test_file_eh
     assert_equal true, @entry.file?
-    assert_equal false, util_dir_entry.file?
+    dir_ent = util_dir_entry
+    assert_equal false, dir_ent.file?
+  ensure
+    close_util_entry(dir_ent) if dir_ent
   end
 
   def test_pos

@@ -3,7 +3,7 @@ require 'test/unit'
 class ComplexRational_Test < Test::Unit::TestCase
 
   def test_rat_srat
-    return unless defined?(Rational)
+    skip unless defined?(Rational)
 
     c = SimpleRat(1,3)
     cc = Rational(3,2)
@@ -74,8 +74,8 @@ class ComplexRational_Test < Test::Unit::TestCase
 
     assert_equal(0, Rational(2,3) <=> SimpleRat(2,3))
     assert_equal(0, SimpleRat(2,3) <=> Rational(2,3))
-    assert(Rational(2,3) == SimpleRat(2,3))
-    assert(SimpleRat(2,3) == Rational(2,3))
+    assert_equal(Rational(2,3), SimpleRat(2,3))
+    assert_equal(SimpleRat(2,3), Rational(2,3))
 
     assert_equal(SimpleRat, (c + 0).class)
     assert_equal(SimpleRat, (c - 0).class)
@@ -88,7 +88,7 @@ class ComplexRational_Test < Test::Unit::TestCase
   end
 
   def test_comp_srat
-    return unless defined?(Rational)
+    skip unless defined?(Rational)
 
     c = Complex(SimpleRat(2,3),SimpleRat(1,2))
     cc = Complex(Rational(3,2),Rational(2,1))
@@ -168,10 +168,10 @@ class ComplexRational_Test < Test::Unit::TestCase
     assert_equal([Float,Float],
 		 (cc ** c).instance_eval{[real.class, imag.class]})
 
-    assert(Complex(SimpleRat(2,3),SimpleRat(3,2)) ==
-	   Complex(Rational(2,3),Rational(3,2)))
-    assert(Complex(Rational(2,3),Rational(3,2)) ==
-	   Complex(SimpleRat(2,3),SimpleRat(3,2)))
+    assert_equal(Complex(SimpleRat(2,3),SimpleRat(3,2)),
+                 Complex(Rational(2,3),Rational(3,2)))
+    assert_equal(Complex(Rational(2,3),Rational(3,2)),
+                 Complex(SimpleRat(2,3),SimpleRat(3,2)))
 
     assert_equal([SimpleRat,SimpleRat],
 		 (c + 0).instance_eval{[real.class, imag.class]})

@@ -32,14 +32,22 @@ while arg = ARGV[0]
   ARGV.shift
 end
 
-srcdir ||= File.expand_path('..', File.dirname(__FILE__))
+unless defined?(File.realpath)
+  def File.realpath(*args)
+    Dir.chdir(expand_path(*args)) do
+      Dir.pwd
+    end
+  end
+end
+
+srcdir ||= File.realpath('..', File.dirname(__FILE__))
 archdir ||= '.'
 
 abs_archdir = File.expand_path(archdir)
 $:.unshift(abs_archdir)
 
 config = File.read(conffile = File.join(abs_archdir, 'rbconfig.rb'))
-config.sub!(/^(\s*)RUBY_VERSION\s*==.*(\sor\s*)$/, '\1true\2')
+config.sub!(/^(\s*)RUBY_VERSION\b.*(\sor\s*)$/, '\1true\2')
 config = Module.new {module_eval(config, conffile)}::RbConfig::CONFIG
 
 ruby = File.join(archdir, config["RUBY_INSTALL_NAME"]+config['EXEEXT'])
@@ -50,7 +58,7 @@ end
 libs = [abs_archdir]
 extout ||= config["EXTOUT"]
 if extout
-  abs_extout = File.expand_path(extout)
+  abs_extout = File.expand_path(extout, abs_archdir)
   libs << File.expand_path("common", abs_extout) << File.expand_path(config['arch'], abs_extout)
 end
 libs << File.expand_path("lib", srcdir)
@@ -71,8 +79,12 @@ if File.file?(libruby_so)
   if e = config['LIBPATHENV'] and !e.empty?
     env[e] = [abs_archdir, ENV[e]].compact.join(File::PATH_SEPARATOR)
   end
-  if /linux/ =~ RUBY_PLATFORM
-    env["LD_PRELOAD"] = [libruby_so, ENV["LD_PRELOAD"]].compact.join(' ')
+  if e = config['PRELOADENV']
+    e = nil if e.empty?
+    e ||= "LD_PRELOAD" if /linux/ =~ RUBY_PLATFORM
+  end
+  if e
+    env[e] = [libruby_so, ENV[e]].compact.join(File::PATH_SEPARATOR)
   end
 end
 

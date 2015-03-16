@@ -1,20 +1,18 @@
+#option platform cygwin|mingw|mswin
 #option nodynamic
 
 Win32API
 bigdecimal
-#curses
 #dbm
 digest
 digest/md5
 digest/rmd160
 digest/sha1
 digest/sha2
-dl
 enumerator
 etc
 fcntl
 #gdbm
-#iconv
 #io/wait
 nkf
 #openssl
@@ -26,7 +24,6 @@ sdbm
 socket
 stringio
 strscan
-syck
 #syslog
 #tk
 win32ole

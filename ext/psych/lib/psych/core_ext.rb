@@ -30,10 +30,6 @@ class Module
   alias :yaml_as :psych_yaml_as
 end
 
-module Kernel
-  def psych_y *objects
-    puts Psych.dump_stream(*objects)
-  end
-  remove_method :y rescue nil
-  alias y psych_y
+if defined?(::IRB)
+  require 'psych/y'
 end

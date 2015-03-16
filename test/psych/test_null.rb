@@ -10,7 +10,7 @@ module Psych
 ---
 - ~
 - null
-- 
+-
 - Null
 - NULL
       eoyml
