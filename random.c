@@ -491,6 +491,8 @@ fill_random_bytes(void *seed, size_t size)
 	}
 	else {
 	    if (!old_prov) {
+# undef RUBY_UNTYPED_DATA_WARNING
+# define RUBY_UNTYPED_DATA_WARNING 0
 		rb_gc_register_mark_object(Data_Wrap_Struct(0, 0, release_crypt, &prov));
 	    }
 	    else {
