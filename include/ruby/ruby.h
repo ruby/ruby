@@ -1169,7 +1169,9 @@ rb_obj_freeze_inline(VALUE x)
 # define RUBY_UNTYPED_DATA_FUNC(func) DEPRECATED(func)
 #endif
 
+#if defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P)
 RUBY_UNTYPED_DATA_FUNC(static inline VALUE rb_data_object_alloc_warning(VALUE,void*,RUBY_DATA_FUNC,RUBY_DATA_FUNC));
+#endif
 RUBY_UNTYPED_DATA_FUNC(static inline void *rb_data_object_get_warning(VALUE));
 
 static inline VALUE
