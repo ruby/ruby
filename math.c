@@ -495,7 +495,7 @@ math_log(int argc, const VALUE *argv, VALUE obj)
 static double
 math_log1(VALUE x)
 {
-    double d0, d;
+    double d;
     size_t numbits;
 
     if (RB_BIGNUM_TYPE_P(x) && BIGNUM_POSITIVE_P(x) &&
@@ -507,15 +507,13 @@ math_log1(VALUE x)
 	numbits = 0;
     }
 
-    d0 = Get_Double(x);
+    d = Get_Double(x);
     /* check for domain error */
-    if (d0 < 0.0) domain_error("log");
+    if (d < 0.0) domain_error("log");
     /* check for pole error */
-    if (d0 == 0.0) return -INFINITY;
-    d = log(d0);
-    if (numbits)
-        d += numbits * log(2); /* log(2**numbits) */
-    return d;
+    if (d == 0.0) return -INFINITY;
+
+    return log(d) + numbits * log(2); /* log(d * 2 ** numbits) */
 }
 
 #ifndef log2
@@ -550,7 +548,7 @@ extern double log2(double);
 static VALUE
 math_log2(VALUE obj, VALUE x)
 {
-    double d0, d;
+    double d;
     size_t numbits;
 
     if (RB_BIGNUM_TYPE_P(x) && BIGNUM_POSITIVE_P(x) &&
@@ -562,14 +560,13 @@ math_log2(VALUE obj, VALUE x)
 	numbits = 0;
     }
 
-    d0 = Get_Double(x);
+    d = Get_Double(x);
     /* check for domain error */
-    if (d0 < 0.0) domain_error("log2");
+    if (d < 0.0) domain_error("log2");
     /* check for pole error */
-    if (d0 == 0.0) return DBL2NUM(-INFINITY);
-    d = log2(d0);
-    d += numbits;
-    return DBL2NUM(d);
+    if (d == 0.0) return DBL2NUM(-INFINITY);
+
+    return DBL2NUM(log2(d) + numbits); /* log2(d * 2 ** numbits) */
 }
 
 /*
@@ -591,7 +588,7 @@ math_log2(VALUE obj, VALUE x)
 static VALUE
 math_log10(VALUE obj, VALUE x)
 {
-    double d0, d;
+    double d;
     size_t numbits;
 
     if (RB_BIGNUM_TYPE_P(x) && BIGNUM_POSITIVE_P(x) &&
@@ -603,15 +600,13 @@ math_log10(VALUE obj, VALUE x)
 	numbits = 0;
     }
 
-    d0 = Get_Double(x);
+    d = Get_Double(x);
     /* check for domain error */
-    if (d0 < 0.0) domain_error("log10");
+    if (d < 0.0) domain_error("log10");
     /* check for pole error */
-    if (d0 == 0.0) return DBL2NUM(-INFINITY);
-    d = log10(d0);
-    if (numbits)
-        d += numbits * log10(2); /* log10(2**numbits) */
-    return DBL2NUM(d);
+    if (d == 0.0) return DBL2NUM(-INFINITY);
+
+    return DBL2NUM(log10(d) + numbits * log10(2)); /* log10(d * 2 ** numbits) */
 }
 
 /*

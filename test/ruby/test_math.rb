@@ -150,6 +150,7 @@ class TestMath < Test::Unit::TestCase
     check(1, Math.log(10, 10))
     check(2, Math.log(100, 10))
     check(Math.log(2.0 ** 64), Math.log(1 << 64))
+    check(Math.log(2) * 1024.0, Math.log(2 ** 1024))
     assert_nothing_raised { assert_infinity(Math.log(1.0/0)) }
     assert_nothing_raised { assert_infinity(-Math.log(+0.0)) }
     assert_nothing_raised { assert_infinity(-Math.log(-0.0)) }
@@ -164,6 +165,7 @@ class TestMath < Test::Unit::TestCase
     check(1, Math.log2(2))
     check(2, Math.log2(4))
     check(Math.log2(2.0 ** 64), Math.log2(1 << 64))
+    check(1024.0, Math.log2(2 ** 1024))
     assert_nothing_raised { assert_infinity(Math.log2(1.0/0)) }
     assert_nothing_raised { assert_infinity(-Math.log2(+0.0)) }
     assert_nothing_raised { assert_infinity(-Math.log2(-0.0)) }
@@ -175,6 +177,7 @@ class TestMath < Test::Unit::TestCase
     check(1, Math.log10(10))
     check(2, Math.log10(100))
     check(Math.log10(2.0 ** 64), Math.log10(1 << 64))
+    check(Math.log10(2) * 1024, Math.log10(2 ** 1024))
     assert_nothing_raised { assert_infinity(Math.log10(1.0/0)) }
     assert_nothing_raised { assert_infinity(-Math.log10(+0.0)) }
     assert_nothing_raised { assert_infinity(-Math.log10(-0.0)) }
