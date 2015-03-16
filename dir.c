@@ -1737,7 +1737,9 @@ glob_helper(
 		else
 		    new_isdir = NO;
 #else
-		new_isdir = dp->d_type == DT_DIR ? YES : dp->d_type == DT_LNK ? UNKNOWN : NO;
+		new_isdir = dp->d_type == DT_DIR ? YES :
+		    (dp->d_type == DT_LNK || dp->d_type == DT_UNKNOWN) ? UNKNOWN :
+		    NO;
 #endif
 	    }
 
