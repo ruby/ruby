@@ -1,3 +1,10 @@
+Mon Mar 16 17:43:21 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/webrick/server.rb: Fix regression bug in WEBrick's
+	  :DoNotReverseLookup config option implementation.
+	  [fix GH-731] Patch by @vais
+	* test/webrick/test_do_not_reverse_lookup.rb: ditto.
+
 Sat Mar 14 20:05:23 2015  Kazuki Tanaka  <gogotanaka@ruby-lang.org>
 
 	* math.c (math_gamma): optimization for passed small integer.
