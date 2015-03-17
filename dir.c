@@ -1522,7 +1522,25 @@ replace_real_basename(char *path, long base, rb_encoding *enc, int norm_p)
 # error not implemented
 #endif
 
-enum answer {UNKNOWN = -1, NO, YES};
+#ifndef IFTODT
+# define IFTODT(m)	(((m) & S_IFMT) / ((~S_IFMT & S_IFMT-1) + 1))
+#endif
+
+typedef enum {
+#ifdef DT_UNKNOWN
+    path_exist     = DT_UNKNOWN,
+    path_directory = DT_DIR,
+    path_regular   = DT_REG,
+    path_symlink   = DT_LNK,
+#else
+    path_exist,
+    path_directory = IFTODT(S_IFDIR),
+    path_regular   = IFTODT(S_IFREG),
+    path_symlink   = IFTODT(S_IFLNK),
+#endif
+    path_noent = -1,
+    path_unknown = -2
+} rb_pathtype_t;
 
 #ifndef S_ISDIR
 #   define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
@@ -1570,8 +1588,7 @@ static int
 glob_helper(
     const char *path,
     int dirsep, /* '/' should be placed before appending child entry's name to 'path'. */
-    enum answer exist, /* Does 'path' indicate an existing entry? */
-    enum answer isdir, /* Does 'path' indicate a directory or a symlink to a directory? */
+    rb_pathtype_t pathtype, /* type of 'path' */
     struct glob_pattern **beg,
     struct glob_pattern **end,
     int flags,
@@ -1619,31 +1636,27 @@ glob_helper(
 
     pathlen = strlen(path);
     if (*path) {
-	if (match_all && exist == UNKNOWN) {
+	if (match_all && pathtype == path_unknown) {
 	    if (do_lstat(path, &st, flags, enc) == 0) {
-		exist = YES;
-		isdir = S_ISDIR(st.st_mode) ? YES : S_ISLNK(st.st_mode) ? UNKNOWN : NO;
+		pathtype = IFTODT(st.st_mode);
 	    }
 	    else {
-		exist = NO;
-		isdir = NO;
+		pathtype = path_noent;
 	    }
 	}
-	if (match_dir && isdir == UNKNOWN) {
+	if (match_dir && pathtype == path_unknown) {
 	    if (do_stat(path, &st, flags, enc) == 0) {
-		exist = YES;
-		isdir = S_ISDIR(st.st_mode) ? YES : NO;
+		pathtype = IFTODT(st.st_mode);
 	    }
 	    else {
-		exist = NO;
-		isdir = NO;
+		pathtype = path_noent;
 	    }
 	}
-	if (match_all && exist == YES) {
+	if (match_all && pathtype > path_noent) {
 	    status = glob_call_func(func, path, arg, enc);
 	    if (status) return status;
 	}
-	if (match_dir && isdir == YES) {
+	if (match_dir && pathtype == path_directory) {
 	    char *tmp = join_path(path, pathlen, dirsep, "", 0);
 	    if (!tmp) return -1;
 	    status = glob_call_func(func, tmp, arg, enc);
@@ -1652,7 +1665,7 @@ glob_helper(
 	}
     }
 
-    if (exist == NO || isdir == NO) return 0;
+    if (pathtype == path_noent) return 0;
 
     if (magical || recursive) {
 	struct dirent *dp;
@@ -1694,7 +1707,7 @@ glob_helper(
 # endif
 	while ((dp = READDIR(dirp, enc)) != NULL) {
 	    char *buf;
-	    enum answer new_isdir = UNKNOWN;
+	    rb_pathtype_t new_pathtype = path_unknown;
 	    const char *name;
 	    size_t namlen;
 	    int dotfile = 0;
@@ -1733,13 +1746,11 @@ glob_helper(
 		/* RECURSIVE never match dot files unless FNM_DOTMATCH is set */
 #ifndef DT_DIR
 		if (do_lstat(buf, &st, flags, enc) == 0)
-		    new_isdir = S_ISDIR(st.st_mode) ? YES : S_ISLNK(st.st_mode) ? UNKNOWN : NO;
+		    new_pathtype = IFTODT(st.st_mode);
 		else
-		    new_isdir = NO;
+		    new_pathtype = path_noent;
 #else
-		new_isdir = dp->d_type == DT_DIR ? YES :
-		    (dp->d_type == DT_LNK || dp->d_type == DT_UNKNOWN) ? UNKNOWN :
-		    NO;
+		new_pathtype = dp->d_type;
 #endif
 	    }
 
@@ -1753,7 +1764,8 @@ glob_helper(
 	    for (cur = beg; cur < end; ++cur) {
 		struct glob_pattern *p = *cur;
 		if (p->type == RECURSIVE) {
-		    if (new_isdir == YES) /* not symlink but real directory */
+		    if (new_pathtype == path_directory || /* not symlink but real directory */
+			new_pathtype == path_exist)
 			*new_end++ = p; /* append recursive pattern */
 		    p = p->next; /* 0 times recursion */
 		}
@@ -1774,7 +1786,7 @@ glob_helper(
 		}
 	    }
 
-	    status = glob_helper(buf, 1, YES, new_isdir, new_beg, new_end,
+	    status = glob_helper(buf, 1, new_pathtype, new_beg, new_end,
 				 flags, func, arg, enc);
 	    GLOB_FREE(buf);
 	    GLOB_FREE(new_beg);
@@ -1835,7 +1847,7 @@ glob_helper(
 		    buf = replace_real_basename(buf, base, enc, IF_NORMALIZE_UTF8PATH(1)+0);
 		}
 #endif
-		status = glob_helper(buf, 1, UNKNOWN, UNKNOWN, new_beg,
+		status = glob_helper(buf, 1, path_unknown, new_beg,
 				     new_end, flags, func, arg, enc);
 		GLOB_FREE(buf);
 		GLOB_FREE(new_beg);
@@ -1877,7 +1889,7 @@ ruby_glob0(const char *path, int flags, ruby_glob_func *func, VALUE arg, rb_enco
 	GLOB_FREE(buf);
 	return -1;
     }
-    status = glob_helper(buf, 0, UNKNOWN, UNKNOWN, &list, &list + 1, flags, func, arg, enc);
+    status = glob_helper(buf, 0, path_unknown, &list, &list + 1, flags, func, arg, enc);
     glob_free_pattern(list);
     GLOB_FREE(buf);
 

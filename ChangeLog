@@ -1,3 +1,10 @@
+Tue Mar 17 17:23:11 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (glob_helper): distinguish not-yet-stated and DT_UNKNOWN
+	  by readdir, and traverse recursively for the former.  Linux
+	  readdir returns DT_UNKNOWN on some filesystems, e.g., smbfs,
+	  iso9660.
+
 Mon Mar 16 17:43:21 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/webrick/server.rb: Fix regression bug in WEBrick's
