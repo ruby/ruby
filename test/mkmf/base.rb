@@ -3,6 +3,7 @@ $extmk = true
 require 'test/unit'
 require 'mkmf'
 require 'tmpdir'
+require_relative '../ruby/envutil'
 
 $extout = '$(topdir)/'+RbConfig::CONFIG["EXTOUT"]
 RbConfig::CONFIG['topdir'] = CONFIG['topdir'] = File.expand_path(CONFIG['topdir'])
@@ -49,7 +50,9 @@ class TestMkmf < Test::Unit::TestCase
       @buffer << s if @out
     end
   end
+end
 
+module TestMkmf::Base
   attr_reader :stdout
 
   def mkmflog(msg)
@@ -84,7 +87,7 @@ class TestMkmf < Test::Unit::TestCase
     @tmpdir = Dir.mktmpdir
     @curdir = Dir.pwd
     @mkmfobj = Object.new
-    @stdout = Capture.new
+    @stdout = TestMkmf::Capture.new
     Dir.chdir(@tmpdir)
     @quiet, Logging.quiet = Logging.quiet, true
     init_mkmf
@@ -125,5 +128,13 @@ class TestMkmf < Test::Unit::TestCase
       f.grep(/^---config-value=(.*)/) {return $1}
     end
     nil
+  end
+end
+
+class TestMkmf
+  include TestMkmf::Base
+
+  def assert_separately(args, src, *rest)
+    super(args + ["-r#{__FILE__}"], "extend TestMkmf::Base; setup\n#{src}", *rest)
   end
 end
