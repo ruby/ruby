@@ -1,3 +1,21 @@
+Tue Mar 17 18:51:43 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/bm_vm1_gc_wb_ary(_promoted).rb: separate fastpath and
+	  slowpath for WB.
+
+	  Before this change bm_vm1_gc_wb_ary.rb tried to check the performance
+	  for WB slowpath (making a reference from oldobj to newobj). However,
+	  from Ruby 2.2, 3 GCs are needed to promote new objects because
+	  only 3 age objects are promted objects.
+
+	  To compare fastpath and slowpath, introduce new "promoted" version
+	  benchmark.
+
+	  bm_vm1_gc_wb_ary.rb is for fastpath and
+	  bm_vm1_gc_wb_ary_promoted.rb is for slowpath.
+
+	* benchmark/bm_vm1_gc_wb_obj(_promtoed).rb: ditto.
+
 Tue Mar 17 17:23:11 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (glob_helper): distinguish not-yet-stated and DT_UNKNOWN
