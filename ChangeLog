@@ -1,3 +1,10 @@
+Wed Mar 18 05:34:32 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* string.c: introduce STR_FAKESTR to show string is FAKESTR or not.
+
+	* string.c (STR_SET_SHARED): ignore FAKESTR because only Ruby objects
+	  can use write barrier.
+
 Tue Mar 17 18:59:16 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/ruby.h: use rb_gc_writebrrier() simply.

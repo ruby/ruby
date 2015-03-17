@@ -52,9 +52,22 @@ static VALUE rb_str_clear(VALUE str);
 VALUE rb_cString;
 VALUE rb_cSymbol;
 
+/* FLAGS of RString
+ *
+ * 1:     RSTRING_NOEMBED
+ * 2:     STR_SHARED (== ELTS_SHARED)
+ * 2-6:   RSTRING_EMBED_LEN (5 bits == 32)
+ * 7:     STR_TMPLOCK
+ * 8-9:   ENC_CODERANGE (2 bits)
+ * 10-16: ENCODING (7 bits == 128)
+ * 18:    STR_NOFREE
+ * 19:    STR_FAKESTR
+ */
+
 #define RUBY_MAX_CHAR_LEN 16
 #define STR_TMPLOCK FL_USER7
 #define STR_NOFREE FL_USER18
+#define STR_FAKESTR FL_USER19
 
 #define STR_SET_NOEMBED(str) do {\
     FL_SET((str), STR_NOEMBED);\
@@ -120,8 +133,10 @@ VALUE rb_cSymbol;
 } while (0)
 
 #define STR_SET_SHARED(str, shared_str) do { \
-    RB_OBJ_WRITE((str), &RSTRING(str)->as.heap.aux.shared, (shared_str)); \
-    FL_SET((str), STR_SHARED); \
+    if (!FL_TEST(str, STR_FAKESTR)) { \
+	RB_OBJ_WRITE((str), &RSTRING(str)->as.heap.aux.shared, (shared_str)); \
+	FL_SET((str), STR_SHARED); \
+    } \
 } while (0)
 
 #define STR_HEAP_PTR(str)  (RSTRING(str)->as.heap.ptr)
@@ -262,7 +277,7 @@ rb_fstring(VALUE str)
 static VALUE
 setup_fake_str(struct RString *fake_str, const char *name, long len, int encidx)
 {
-    fake_str->basic.flags = T_STRING|RSTRING_NOEMBED|STR_NOFREE;
+    fake_str->basic.flags = T_STRING|RSTRING_NOEMBED|STR_NOFREE|STR_FAKESTR;
     /* SHARED to be allocated by the callback */
 
     ENCODING_SET_INLINED((VALUE)fake_str, encidx);
