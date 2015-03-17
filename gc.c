@@ -5458,11 +5458,11 @@ rgengc_mark_and_rememberset_clear(rb_objspace_t *objspace, rb_heap_t *heap)
 
 /* RGENGC: APIs */
 
-void
-rb_gc_writebarrier_generational(VALUE a, VALUE b)
-{
-    rb_objspace_t *objspace = &rb_objspace;
+NOINLINE(static void gc_writebarrier_generational(rb_objspace_t *objspace, VALUE a, VALUE b));
 
+static void
+gc_writebarrier_generational(rb_objspace_t *objspace, VALUE a, VALUE b)
+{
     if (RGENGC_CHECK_MODE) {
 	if (!RVALUE_OLD_P(a)) rb_bug("rb_gc_writebarrier_generational: %s is not an old object.", obj_info(a));
 	if ( RVALUE_OLD_P(b)) rb_bug("rb_gc_writebarrier_generational: %s is an old object.", obj_info(b));
@@ -5486,49 +5486,60 @@ gc_mark_from(rb_objspace_t *objspace, VALUE obj, VALUE parent)
     gc_grey(objspace, obj);
 }
 
-int
-rb_gc_writebarrier_incremental(VALUE a, VALUE b)
+NOINLINE(static void gc_writebarrier_incremental(rb_objspace_t *objspace, VALUE a, VALUE b));
+
+static void
+gc_writebarrier_incremental(rb_objspace_t *objspace, VALUE a, VALUE b)
+{
+    gc_report(2, objspace, "rb_gc_writebarrier_incremental: [LG] %s -> %s\n", obj_info(a), obj_info(b));
+
+    if (RVALUE_BLACK_P(a)) {
+	if (RVALUE_WHITE_P(b)) {
+	    if (!RVALUE_WB_UNPROTECTED(a)) {
+		gc_report(2, objspace, "rb_gc_writebarrier_incremental: [IN] %s -> %s\n", obj_info(a), obj_info(b));
+		gc_mark_from(objspace, b, a);
+	    }
+	}
+	else if (RVALUE_OLD_P(a) && !RVALUE_OLD_P(b)) {
+	    if (!RVALUE_WB_UNPROTECTED(b)) {
+		gc_report(1, objspace, "rb_gc_writebarrier_incremental: [GN] %s -> %s\n", obj_info(a), obj_info(b));
+		RVALUE_AGE_SET_OLD(objspace, b);
+
+		if (RVALUE_BLACK_P(b)) {
+		    gc_grey(objspace, b);
+		}
+	    }
+	    else {
+		gc_report(1, objspace, "rb_gc_writebarrier_incremental: [LL] %s -> %s\n", obj_info(a), obj_info(b));
+		gc_remember_unprotected(objspace, b);
+	    }
+	}
+    }
+}
+#else
+#define gc_writebarrier_incremental(objspace, a, b)
+#endif
+
+void
+rb_gc_writebarrier(VALUE a, VALUE b)
 {
     rb_objspace_t *objspace = &rb_objspace;
 
-    if (RGENGC_CHECK_MODE) {
-	if (SPECIAL_CONST_P(a)) rb_bug("rb_gc_writebarrier: a is special const");
-	if (SPECIAL_CONST_P(b)) rb_bug("rb_gc_writebarrier: a is special const");
-    }
+    if (RGENGC_CHECK_MODE && SPECIAL_CONST_P(a)) rb_bug("rb_gc_writebarrier: a is special const");
+    if (RGENGC_CHECK_MODE && SPECIAL_CONST_P(b)) rb_bug("rb_gc_writebarrier: b is special const");
 
     if (LIKELY(!is_incremental_marking(objspace))) {
-	return FALSE;
-    }
-    else {
-	gc_report(2, objspace, "rb_gc_writebarrier_incremental: [LG] %s -> %s\n", obj_info(a), obj_info(b));
-
-	if (RVALUE_BLACK_P(a)) {
-	    if (RVALUE_WHITE_P(b)) {
-		if (!RVALUE_WB_UNPROTECTED(a)) {
-		    gc_report(2, objspace, "rb_gc_writebarrier_incremental: [IN] %s -> %s\n", obj_info(a), obj_info(b));
-		    gc_mark_from(objspace, b, a);
-		}
-	    }
-	    else if (RVALUE_OLD_P(a) && !RVALUE_OLD_P(b)) {
-		if (!RVALUE_WB_UNPROTECTED(b)) {
-		    gc_report(1, objspace, "rb_gc_writebarrier_incremental: [GN] %s -> %s\n", obj_info(a), obj_info(b));
-		    RVALUE_AGE_SET_OLD(objspace, b);
-
-		    if (RVALUE_BLACK_P(b)) {
-			gc_grey(objspace, b);
-		    }
-		}
-		else {
-		    gc_report(1, objspace, "rb_gc_writebarrier_incremental: [LL] %s -> %s\n", obj_info(a), obj_info(b));
-		    gc_remember_unprotected(objspace, b);
-		}
-	    }
+	if (!RVALUE_OLD_P(a) || RVALUE_OLD_P(b)) {
+	    return;
 	}
-
-	return TRUE;
+	else {
+	    gc_writebarrier_generational(objspace, a, b);
+	}
+    }
+    else { /* slow path */
+	gc_writebarrier_incremental(objspace, a, b);
     }
 }
-#endif
 
 void
 rb_gc_writebarrier_unprotect(VALUE obj)

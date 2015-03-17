@@ -1,3 +1,26 @@
+Tue Mar 17 18:59:16 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/ruby.h: use rb_gc_writebrrier() simply.
+	  For incremental GC, we need to get a pointer to the objspace.
+	  We can share this pointer for the following WB process.
+	  And considering icache hit ratio, prcess in the GC.
+
+	* gc.c (rb_gc_writebarrier): added.
+
+	* gc.c (gc_writebarrier_generational, gc_writebarrier_incremental):
+	  make them NOINLINE because inlining them into rb_gc_writebarrier()
+	  makes a prologue code of rb_gc_writebarrier() longer (storing callee
+	  save registers).
+
+	  This patch improve the performance of WB on micro-benchmarks.
+
+	  name                   ruby 2.1   trunk   modified
+	  vm1_gc_wb_ary*            0.511   0.632      0.532
+	  vm1_gc_wb_ary_promoted*   0.578   0.701      0.674
+	  vm1_gc_wb_obj*            0.419   0.575      0.492
+	  vm1_gc_wb_obj_promoted*   0.537   0.664      0.618
+	                                                 (sec)
+
 Tue Mar 17 18:51:43 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/bm_vm1_gc_wb_ary(_promoted).rb: separate fastpath and
