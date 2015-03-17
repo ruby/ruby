@@ -79,7 +79,7 @@ Sat Mar 14 02:14:50 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Fri Mar 13 15:04:36 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* ext/stringio/stringio.c (strio_close): don't raise on dobule
+	* ext/stringio/stringio.c (strio_close): don't raise on double
 	  close for consistent to IO#close.
 
 Fri Mar 13 15:03:20 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
