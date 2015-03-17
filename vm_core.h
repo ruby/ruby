@@ -896,6 +896,8 @@ void rb_gc_mark_machine_stack(rb_thread_t *th);
 
 int rb_autoloading_value(VALUE mod, ID id, VALUE* value);
 
+void rb_vm_rewrite_cref_stack(NODE *node, VALUE old_klass, VALUE new_klass, NODE **new_cref_ptr);
+
 #define sysstack_error GET_VM()->special_exceptions[ruby_error_sysstack]
 
 #define RUBY_CONST_ASSERT(expr) (1/!!(expr)) /* expr must be a compile-time constant */
