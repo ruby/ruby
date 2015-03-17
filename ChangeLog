@@ -1,3 +1,8 @@
+Wed Mar 18 02:40:18 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (constat_reset): do nothing on non-standard
+	  console emulators.  [ruby-core:66471] [Bug #10546]
+
 Wed Mar 18 02:03:02 2015  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* vm_insnhelper.c (rb_vm_rewrite_cref_stack): copy nd_refinements
