@@ -1,3 +1,9 @@
+Wed Mar 18 02:42:37 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (w32_spawn): `v2` is used not only for `shell` but also
+	  `cmd`, so must not free before using `cmd`.
+	  [ruby-core:66648] [Bug #10563]
+
 Wed Mar 18 02:40:18 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (constat_reset): do nothing on non-standard
