@@ -1281,6 +1281,83 @@ class TestRefinement < Test::Unit::TestCase
     end;
   end
 
+  def test_remove_refined_method
+    assert_separately([], <<-"end;")
+    bug10765 = '[ruby-core:67722] [Bug #10765]'
+
+    class C
+      def foo
+        "C#foo"
+      end
+    end
+
+    module RefinementBug
+      refine C do
+        def foo
+          "RefinementBug#foo"
+        end
+      end
+    end
+
+    using RefinementBug
+
+    class C
+      remove_method :foo
+    end
+
+    assert_equal("RefinementBug#foo", C.new.foo, bug10765)
+    end;
+  end
+
+  def test_remove_undefined_refined_method
+    assert_separately([], <<-"end;")
+    bug10765 = '[ruby-core:67722] [Bug #10765]'
+
+    class C
+    end
+
+    module RefinementBug
+      refine C do
+        def foo
+        end
+      end
+    end
+
+    using RefinementBug
+
+    assert_raise(NameError, bug10765) {
+      class C
+        remove_method :foo
+      end
+    }
+    end;
+  end
+
+  module NotIncludeSuperclassMethod
+    class X
+      def foo
+      end
+    end
+
+    class Y < X
+    end
+
+    module Bar
+      refine Y do
+        def foo
+        end
+      end
+    end
+  end
+
+  def test_instance_methods_not_include_superclass_method
+    bug10826 = '[ruby-dev:48854] [Bug #10826]'
+    assert_not_include(NotIncludeSuperclassMethod::Y.instance_methods(false),
+                       :foo, bug10826)
+    assert_include(NotIncludeSuperclassMethod::Y.instance_methods(true),
+                   :foo, bug10826)
+  end
+
   private
 
   def eval_using(mod, s)
