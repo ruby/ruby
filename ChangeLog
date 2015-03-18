@@ -1,3 +1,7 @@
+Wed Mar 18 12:07:36 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* string.c: add a comment about RSTRING_FSTR.
+
 Wed Mar 18 12:01:53 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (rb_any_hash): use same hash values with Float#hash so

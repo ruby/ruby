@@ -60,6 +60,7 @@ VALUE rb_cSymbol;
  * 7:     STR_TMPLOCK
  * 8-9:   ENC_CODERANGE (2 bits)
  * 10-16: ENCODING (7 bits == 128)
+ * 17:    RSTRING_FSTR
  * 18:    STR_NOFREE
  * 19:    STR_FAKESTR
  */
