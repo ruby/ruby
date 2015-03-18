@@ -1,3 +1,10 @@
+Thu Mar 19 05:30:13 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.c (iseq_mark): skip some marking if iseq->orig is available.
+
+	* iseq.c (rb_iseq_clone): need WB for iseq1->klass = iseq0->klass
+	  (done in MEMCPY).
+
 Thu Mar 19 04:55:53 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* internal.h (IMEMO_DEBUG): added.

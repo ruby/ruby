@@ -114,16 +114,20 @@ iseq_mark(void *ptr)
 	rb_iseq_t *iseq = ptr;
 
 	RUBY_GC_INFO("%s @ %s\n", RSTRING_PTR(iseq->location.label), RSTRING_PTR(iseq->location.path));
-	RUBY_MARK_UNLESS_NULL(iseq->mark_ary);
 
-	RUBY_MARK_UNLESS_NULL(iseq->location.label);
-	RUBY_MARK_UNLESS_NULL(iseq->location.base_label);
-	RUBY_MARK_UNLESS_NULL(iseq->location.path);
-	RUBY_MARK_UNLESS_NULL(iseq->location.absolute_path);
+	if (!iseq->orig) {
+	    RUBY_MARK_UNLESS_NULL(iseq->mark_ary);
+	    RUBY_MARK_UNLESS_NULL(iseq->location.label);
+	    RUBY_MARK_UNLESS_NULL(iseq->location.base_label);
+	    RUBY_MARK_UNLESS_NULL(iseq->location.path);
+	    RUBY_MARK_UNLESS_NULL(iseq->location.absolute_path);
+	    RUBY_MARK_UNLESS_NULL(iseq->coverage);
+	}
+	else {
+	    RUBY_MARK_UNLESS_NULL(iseq->orig);
+	}
 
 	RUBY_MARK_UNLESS_NULL(iseq->klass);
-	RUBY_MARK_UNLESS_NULL(iseq->coverage);
-	RUBY_MARK_UNLESS_NULL(iseq->orig);
 
 	if (iseq->compile_data != 0) {
 	    struct iseq_compile_data *const compile_data = iseq->compile_data;
@@ -1946,7 +1950,7 @@ rb_iseq_clone(VALUE iseqval, VALUE newcbase)
     GetISeqPtr(iseqval, iseq0);
     GetISeqPtr(newiseq, iseq1);
 
-    MEMCPY(iseq1, iseq0, rb_iseq_t, 1); /* TODO: write barrier? */
+    MEMCPY(iseq1, iseq0, rb_iseq_t, 1);
 
     iseq1->self = newiseq;
     if (!iseq1->orig) {
@@ -1958,6 +1962,9 @@ rb_iseq_clone(VALUE iseqval, VALUE newcbase)
 
     if (newcbase) {
 	RB_OBJ_WRITE(iseq1->self, &iseq1->klass, newcbase);
+    }
+    else {
+	RB_OBJ_WRITTEN(iseq1->self, Qundef, iseq1->klass);
     }
 
     return newiseq;
