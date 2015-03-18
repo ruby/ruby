@@ -1,3 +1,8 @@
+Wed Mar 18 17:14:39 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (RVALUE_PROMOTE_RAW): rename to RVALUE_OLD_LONG_LIVED_SET()
+	  to make clear.
+
 Wed Mar 18 17:10:01 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (check_rvalue_consistency): do not need to check is_sweeping().

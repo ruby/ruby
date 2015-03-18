@@ -1071,7 +1071,7 @@ RVALUE_AGE(VALUE obj)
 #endif
 
 static inline void
-RVALUE_PROMOTE_RAW(rb_objspace_t *objspace, VALUE obj)
+RVALUE_OLD_LONG_LIVED_SET(rb_objspace_t *objspace, VALUE obj)
 {
     MARK_IN_BITMAP(GET_HEAP_LONG_LIVED_BITS(obj), obj);
     objspace->rgengc.old_objects++;
@@ -1105,7 +1105,7 @@ RVALUE_AGE_INC(rb_objspace_t *objspace, VALUE obj)
     RBASIC(obj)->flags = RVALUE_FLAGS_AGE_SET(flags, age);
 
     if (age == RVALUE_OLD_AGE) {
-	RVALUE_PROMOTE_RAW(objspace, obj);
+	RVALUE_OLD_LONG_LIVED_SET(objspace, obj);
     }
     check_rvalue_consistency(obj);
 }
@@ -1118,7 +1118,7 @@ RVALUE_AGE_SET_OLD(rb_objspace_t *objspace, VALUE obj)
     if (RGENGC_CHECK_MODE) assert(!RVALUE_OLD_P(obj));
 
     RBASIC(obj)->flags = RVALUE_FLAGS_AGE_SET(RBASIC(obj)->flags, RVALUE_OLD_AGE);
-    RVALUE_PROMOTE_RAW(objspace, obj);
+    RVALUE_OLD_LONG_LIVED_SET(objspace, obj);
 
     check_rvalue_consistency(obj);
 }
