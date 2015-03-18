@@ -515,11 +515,9 @@ RCLASS_SET_SUPER(VALUE klass, VALUE super)
 }
 /* IMEMO: Internal memo object */
 
-/* FL_USER0, FL_USER1, FL_USER2: type */
-#define FL_IMEMO_MARK_V0 FL_USER6
-#define FL_IMEMO_MARK_V1 FL_USER3
-#define FL_IMEMO_MARK_V2 FL_USER4
-#define FL_IMEMO_MARK_V3 FL_USER5
+#ifndef IMEMO_DEBUG
+#define IMEMO_DEBUG 0
+#endif
 
 struct RIMemo {
     VALUE flags;
@@ -587,7 +585,11 @@ struct vm_ifunc {
     ID id;
 };
 
+#if IMEMO_DEBUG
+#define IFUNC_NEW(a, b) ((struct vm_ifunc *)rb_imemo_new_debug(imemo_ifunc, (VALUE)(a), (VALUE)(b), 0, 0, __FILE__, __LINE__))
+#else
 #define IFUNC_NEW(a, b) ((struct vm_ifunc *)rb_imemo_new(imemo_ifunc, (VALUE)(a), (VALUE)(b), 0, 0))
+#endif
 
 /* MEMO */
 
@@ -608,7 +610,12 @@ struct MEMO {
 #define MEMO_V2_SET(m, v) RB_OBJ_WRITE((memo), &(memo)->v2, (v))
 
 #define MEMO_CAST(m) ((struct MEMO *)m)
+
+#if IMEMO_DEBUG
+#define MEMO_NEW(a, b, c) ((struct MEMO *)rb_imemo_new_debug(imemo_memo, (VALUE)(a), (VALUE)(b), (VALUE)(c), 0, __FILE__, __LINE__))
+#else
 #define MEMO_NEW(a, b, c) ((struct MEMO *)rb_imemo_new(imemo_memo, (VALUE)(a), (VALUE)(b), (VALUE)(c), 0))
+#endif
 
 #define type_roomof(x, y) ((sizeof(x) + sizeof(y) - 1) / sizeof(y))
 #define MEMO_FOR(type, value) ((type *)RARRAY_PTR(value))
@@ -1287,6 +1294,10 @@ size_t rb_obj_memsize_of(VALUE);
 #define RB_OBJ_GC_FLAGS_MAX 5
 size_t rb_obj_gc_flags(VALUE, ID[], size_t);
 void rb_gc_mark_values(long n, const VALUE *values);
+
+#if IMEMO_DEBUG
+VALUE rb_imemo_new_debug(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VALUE v0, const char *file, int line);
+#endif
 
 VALUE rb_imemo_new(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VALUE v0);
 

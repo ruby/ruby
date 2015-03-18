@@ -1796,6 +1796,17 @@ rb_imemo_new(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VALUE v0)
     return newobj_of(v0, flags, v1, v2, v3);
 }
 
+#if IMEMO_DEBUG
+VALUE
+rb_imemo_new_debug(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VALUE v0, const char *file, int line)
+{
+    VALUE flags = T_IMEMO | (type << FL_USHIFT) | FL_WB_PROTECTED;
+    VALUE memo = newobj_of(v0, flags, v1, v2, v3);
+    fprintf(stderr, "memo %p (type: %d) @ %s:%d\n", memo, imemo_type(memo), file, line);
+    return memo;
+}
+#endif
+
 VALUE
 rb_data_object_alloc(VALUE klass, void *datap, RUBY_DATA_FUNC dmark, RUBY_DATA_FUNC dfree)
 {
@@ -8830,6 +8841,21 @@ obj_info(VALUE obj)
 	      }
 	  }
 	  break;
+      }
+      case T_IMEMO: {
+	  const char *imemo_name;
+	  switch (imemo_type(obj)) {
+#define IMEMO_NAME(x) case imemo_##x: imemo_name = #x; break;
+	      IMEMO_NAME(none);
+	      IMEMO_NAME(cref);
+	      IMEMO_NAME(svar);
+	      IMEMO_NAME(throw_data);
+	      IMEMO_NAME(ifunc);
+	      IMEMO_NAME(memo);
+	    default: rb_bug("unknown IMEMO");
+#undef IMEMO_NAME
+	  }
+	  snprintf(buff, OBJ_INFO_BUFFERS_SIZE, "%s %s", buff, imemo_name);
       }
       default:
 	break;
