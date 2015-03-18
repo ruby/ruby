@@ -992,7 +992,7 @@ check_rvalue_consistency(const VALUE obj)
 	if (!is_full_marking(objspace) && long_lived_bit && age != RVALUE_OLD_AGE && !wb_unprotected_bit) {
 	    rb_bug("check_rvalue_consistency: %s is long lived, but not old (age: %d) and not WB unprotected.\n", obj_info(obj), age);
 	}
-	if (!is_marking(objspace) && !is_sweeping(objspace) && long_lived_bit && RVALUE_MARK_BITMAP(obj) == 0) {
+	if (!is_marking(objspace) && long_lived_bit && RVALUE_MARK_BITMAP(obj) == 0) {
 	    rb_bug("check_rvalue_consistency: %s is long lived, but is not marked while !gc.", obj_info(obj));
 	}
 
