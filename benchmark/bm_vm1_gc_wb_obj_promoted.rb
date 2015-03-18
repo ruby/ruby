@@ -3,8 +3,8 @@ class C
 end
 long_lived = C.new
 
-if RUBY_VERSION > "2.2.0"
-  3.times{ GC.start(immediate_mark: false, lazy_sweep: false) }
+if RUBY_VERSION >= "2.2.0"
+  3.times{ GC.start(full_mark: false, immediate_mark: true, lazy_sweep: false) }
 elsif
   GC.start
 end

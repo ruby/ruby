@@ -1,3 +1,14 @@
+Wed Mar 18 14:13:22 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/bm_vm1_gc_wb_ary.rb: run GC to finish "marking" phase.
+
+	* benchmark/bm_vm1_gc_wb_obj.rb: ditto.
+
+	* benchmark/bm_vm1_gc_wb_ary_promoted.rb: add parameter
+	  full_mark: false to invoke only minor GC.
+
+	* benchmark/bm_vm1_gc_wb_obj_promoted.rb: ditto.
+
 Wed Mar 18 12:07:36 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* string.c: add a comment about RSTRING_FSTR.
