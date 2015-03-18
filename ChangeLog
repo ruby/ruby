@@ -1,3 +1,18 @@
+Thu Mar 19 03:37:52 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (check_rvalue_consistency): refactoring.
+	  * not inline on RGENGC_CHECK_MODE > 0.
+	  * check SPECIAL_CONST_P(obj) first.
+	  * add a check that remembered_bit is only TRUE when old (age == 3).
+
+	* gc.c (RVALUE_DEMOTE): should clear RVALUE_REMEMBERED bit.
+
+	  remembered_bit should be TRUE only for old (age == 3) objects.
+
+	  Actually there are no effect because demoted objects will be
+	  uncollectible WB unprotected objects (marked at the begginig of
+	  every minor GC).
+
 Thu Mar 19 02:52:48 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: rename terminologies.
