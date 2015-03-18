@@ -846,8 +846,8 @@ enum_sort(VALUE obj)
 
 #define SORT_BY_BUFSIZE 16
 struct sort_by_data {
-    VALUE ary;
-    VALUE buf;
+    const VALUE ary;
+    const VALUE buf;
     long n;
 };
 
@@ -989,8 +989,8 @@ enum_sort_by(VALUE obj)
     memo = MEMO_NEW(0, 0, 0);
     OBJ_INFECT(memo, obj);
     data = (struct sort_by_data *)&memo->v1;
-    data->ary = ary;
-    data->buf = buf;
+    RB_OBJ_WRITE(memo, &data->ary, ary);
+    RB_OBJ_WRITE(memo, &data->buf, buf);
     data->n = 0;
     rb_block_call(obj, id_each, 0, 0, sort_by_i, (VALUE)memo);
     ary = data->ary;
