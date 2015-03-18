@@ -1,3 +1,23 @@
+Wed Mar 18 17:21:12 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_writebarrier_generational): add an alternative write
+	  barrier (WB) implementation.
+	  When finding reference from [Old obj] to [New obj] by WB, current
+	  implementation marks [Old obj] as remembered old objects and marks
+	  chilldren of [Old obj] at the beggining of marking.
+
+	  Added (but disabled) code changes current behaviour. This fix promote
+	  [New obj] to old and marks as a remembered old object. We can assume
+	  "new objects referred from old objects are maybe long-lived old
+	  objects".
+
+	  Disadvantage of added algorithm is we may promote unwilling 
+	  short-lived objects. For example, consider many new objects push and
+	  pop to an old stack object. All of new objects (short-lived objects)
+	  promote to old objects unexpectedly.
+
+	  To compare these behaviour, I add this new code (but disabled it).
+
 Wed Mar 18 17:14:39 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (RVALUE_PROMOTE_RAW): rename to RVALUE_OLD_LONG_LIVED_SET()
