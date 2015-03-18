@@ -4,7 +4,7 @@ Wed Mar 18 17:21:12 2015  Koichi Sasada  <ko1@atdot.net>
 	  barrier (WB) implementation.
 	  When finding reference from [Old obj] to [New obj] by WB, current
 	  implementation marks [Old obj] as remembered old objects and marks
-	  chilldren of [Old obj] at the beggining of marking.
+	  children of [Old obj] at the beginning of marking.
 
 	  Added (but disabled) code changes current behaviour. This fix promote
 	  [New obj] to old and marks as a remembered old object. We can assume
@@ -86,7 +86,7 @@ Tue Mar 17 18:51:43 2015  Koichi Sasada  <ko1@atdot.net>
 	  Before this change bm_vm1_gc_wb_ary.rb tried to check the performance
 	  for WB slowpath (making a reference from oldobj to newobj). However,
 	  from Ruby 2.2, 3 GCs are needed to promote new objects because
-	  only 3 age objects are promted objects.
+	  only 3 age objects are promoted objects.
 
 	  To compare fastpath and slowpath, introduce new "promoted" version
 	  benchmark.
@@ -94,7 +94,7 @@ Tue Mar 17 18:51:43 2015  Koichi Sasada  <ko1@atdot.net>
 	  bm_vm1_gc_wb_ary.rb is for fastpath and
 	  bm_vm1_gc_wb_ary_promoted.rb is for slowpath.
 
-	* benchmark/bm_vm1_gc_wb_obj(_promtoed).rb: ditto.
+	* benchmark/bm_vm1_gc_wb_obj(_promoted).rb: ditto.
 
 Tue Mar 17 17:23:11 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
