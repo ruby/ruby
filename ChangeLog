@@ -1,3 +1,19 @@
+Thu Mar 19 02:52:48 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: rename terminologies.
+	  * long_lived -> uncollectible:
+	    because this bitmap does not mean "long lived objects in past",
+	    but means "prohibit collection thse objects until next major GC".
+
+	    Uncollectible objects consist of two types objects, one is old
+	    objects (WB protected objects which age == 3) and another is
+	    uncollectible WB unprotected objects which are referred from old
+	    objects
+
+	  * remembered_wb_unprotected_objects ->
+	    uncollectible_wb_unprotected_objects:
+	    because uncollectible objects does not mean remembered objects.
+
 Wed Mar 18 17:21:12 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_writebarrier_generational): add an alternative write
