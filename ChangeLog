@@ -1,3 +1,8 @@
+Thu Mar 19 06:29:28 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* test/objspace/test_objspace.rb: flag name was changed
+	  (long_lived -> uncollectible).
+
 Thu Mar 19 05:30:13 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* iseq.c (iseq_mark): skip some marking if iseq->orig is available.
