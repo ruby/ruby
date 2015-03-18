@@ -13,7 +13,9 @@ override XCFLAGS := $(filter-out -D_FORTIFY_SOURCE=%,$(XCFLAGS))
 endif
 
 ifeq ($(if $(filter all main exts enc trans libencs libenc libtrans \
-		    program wprogram miniruby$(EXEEXT) mini,\
+		    prog program ruby ruby$(EXEEXT) \
+		    wprogram rubyw rubyw$(EXEEXT) \
+		    miniruby$(EXEEXT) mini,\
 	     $(MAKECMDGOALS)),,$(MAKECMDGOALS)),)
 -include showflags
 endif
