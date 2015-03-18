@@ -1,3 +1,13 @@
+Thu Mar 19 04:52:26 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (RGENGC_OLD_NEWOBJ_CHECK): add check mechanism.
+
+	  If RGENGC_OLD_NEWOBJ_CHECK > 0, then create old objects
+	  (not new objects) periodically.
+
+	  Create one old objects per RGENGC_OLD_NEWOBJ_CHECK objects are
+	  created.
+
 Thu Mar 19 04:46:36 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* enum.c (enum_sort_by): add WBs.

@@ -220,6 +220,16 @@ static ruby_gc_params_t gc_params = {
 #define RGENGC_CHECK_MODE  0
 #endif
 
+/* RGENGC_OLD_NEWOBJ_CHECK
+ * 0:  disable all assertions
+ * >0: make a OLD object when new object creation.
+ *
+ * Make one OLD object per RGENGC_OLD_NEWOBJ_CHECK WB protected objects creation.
+ */
+#ifndef RGENGC_OLD_NEWOBJ_CHECK
+#define RGENGC_OLD_NEWOBJ_CHECK 0
+#endif
+
 /* RGENGC_PROFILE
  * 0: disable RGenGC profiling
  * 1: enable profiling for basic information
@@ -798,6 +808,7 @@ static int gc_mark_stacked_objects_incremental(rb_objspace_t *, size_t count);
 static int gc_mark_stacked_objects_all(rb_objspace_t *);
 static void gc_grey(rb_objspace_t *objspace, VALUE ptr);
 
+static inline int gc_mark_set(rb_objspace_t *objspace, VALUE obj);
 static inline int is_pointer_to_heap(rb_objspace_t *objspace, void *ptr);
 
 static void   push_mark_stack(mark_stack_t *, VALUE);
@@ -1732,6 +1743,28 @@ newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3)
     objspace->total_allocated_objects++;
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_NEWOBJ, obj);
     gc_report(5, objspace, "newobj: %s\n", obj_info(obj));
+
+#if RGENGC_OLD_NEWOBJ_CHECK > 0
+    {
+	static int newobj_cnt = RGENGC_OLD_NEWOBJ_CHECK;
+
+	if (flags & FL_WB_PROTECTED &&   /* do not promote WB unprotected objects */
+	    ! RB_TYPE_P(obj, T_ARRAY)) { /* array.c assumes that allocated objects are new */
+	    if (--newobj_cnt == 0) {
+		newobj_cnt = RGENGC_OLD_NEWOBJ_CHECK;
+
+		gc_mark_set(objspace, obj);
+		RVALUE_AGE_SET_OLD(objspace, obj);
+
+		if (is_pointer_to_heap(objspace, (void *)klass)) RB_OBJ_WRITTEN(obj, Qundef, klass);
+		if (is_pointer_to_heap(objspace, (void *)v1))    RB_OBJ_WRITTEN(obj, Qundef, v1);
+		if (is_pointer_to_heap(objspace, (void *)v2))    RB_OBJ_WRITTEN(obj, Qundef, v2);
+		if (is_pointer_to_heap(objspace, (void *)v3))    RB_OBJ_WRITTEN(obj, Qundef, v3);
+	    }
+	}
+    }
+#endif
+    check_rvalue_consistency(obj);
     return obj;
 }
 
