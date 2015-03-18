@@ -1,3 +1,9 @@
+Wed Mar 18 12:01:53 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (rb_any_hash): use same hash values with Float#hash so
+	  that -0.0 and +0.0 will be identical.
+	  [ruby-core:68541] [Bug #10979]
+
 Wed Mar 18 05:34:32 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* string.c: introduce STR_FAKESTR to show string is FAKESTR or not.
