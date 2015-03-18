@@ -11,7 +11,7 @@ Wed Mar 18 17:21:12 2015  Koichi Sasada  <ko1@atdot.net>
 	  "new objects referred from old objects are maybe long-lived old
 	  objects".
 
-	  Disadvantage of added algorithm is we may promote unwilling 
+	  Disadvantage of added algorithm is we may promote unwilling
 	  short-lived objects. For example, consider many new objects push and
 	  pop to an old stack object. All of new objects (short-lived objects)
 	  promote to old objects unexpectedly.
