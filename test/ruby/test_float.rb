@@ -674,7 +674,7 @@ class TestFloat < Test::Unit::TestCase
   end
 
   def test_hash_0
-    bug10979 = '[ruby-core:68541] [Bug #10979]' 
+    bug10979 = '[ruby-core:68541] [Bug #10979]'
     assert_equal(+0.0.hash, -0.0.hash)
     assert_operator(+0.0, :eql?, -0.0)
     h = {0.0 => bug10979}
