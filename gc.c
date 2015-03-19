@@ -4413,9 +4413,7 @@ gc_mark_stacked_objects(rb_objspace_t *objspace, int incremental, size_t count)
 #endif
     }
 
-    if (RGENGC_CHECK_MODE >= 3) {
-	gc_verify_internal_consistency(Qnil);
-    }
+    if (RGENGC_CHECK_MODE >= 3) gc_verify_internal_consistency(Qnil);
 
     if (is_mark_stack_empty(mstack)) {
 	shrink_stack_chunk_cache(mstack);
@@ -4952,7 +4950,7 @@ gc_verify_heap_pages(rb_objspace_t *objspace)
  *  if RGenGC is supported.
  */
 static VALUE
-gc_verify_internal_consistency(VALUE self)
+gc_verify_internal_consistency(VALUE dummy)
 {
     rb_objspace_t *objspace = &rb_objspace;
     struct verify_internal_consistency_struct data = {0};
@@ -5027,6 +5025,12 @@ gc_verify_internal_consistency(VALUE self)
     gc_report(5, objspace, "gc_verify_internal_consistency: OK\n");
 
     return Qnil;
+}
+
+void
+rb_gc_verify_internal_consistency(void)
+{
+    gc_verify_internal_consistency(Qnil);
 }
 
 /* marks */
