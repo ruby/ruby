@@ -1,3 +1,7 @@
+Thu Mar 19 21:25:25 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (rb_copy_wb_protected_attribute): demote `dest' object.
+
 Thu Mar 19 16:18:00 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c, internal.h: export rb_gc_verify_internal_consistency().
