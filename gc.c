@@ -8812,6 +8812,10 @@ obj_info(VALUE obj)
 	     C(RVALUE_WB_UNPROTECTED_BITMAP(obj), "U"),
 	     obj_type_name(obj));
 
+#if GC_DEBUG
+    snprintf(buff, OBJ_INFO_BUFFERS_SIZE, "%s @%s:%d", buff, RANY(obj)->file, RANY(obj)->line);
+#endif
+
 #ifdef HAVE_VA_ARGS_MACRO
     switch (BUILTIN_TYPE(obj)) {
       case T_NODE:
