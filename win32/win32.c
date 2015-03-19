@@ -4976,8 +4976,8 @@ fileattr_to_unixmode(DWORD attr, const WCHAR *path)
 	}
     }
 
-    mode |= (mode & 0700) >> 3;
-    mode |= (mode & 0700) >> 6;
+    mode |= (mode & 0500) >> 3;
+    mode |= (mode & 0500) >> 6;
 
     return mode;
 }
@@ -5132,9 +5132,6 @@ wstati64(const WCHAR *path, struct stati64 *st)
 	lstrcatW(buf1, L".");
 
     ret = winnt_stat(buf1, st);
-    if (ret == 0) {
-	st->st_mode &= ~(S_IWGRP | S_IWOTH);
-    }
     if (v)
 	ALLOCV_END(v);
 
