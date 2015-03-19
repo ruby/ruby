@@ -1,3 +1,9 @@
+Thu Mar 19 16:12:01 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (newobj_of): fix RGENGC_OLD_NEWOBJ_CHECK logics.
+	  * skip on incremental marking because not sure what happen :p
+	  * rb_gc_writebarrier_remember() is enough to mark children.
+
 Thu Mar 19 16:08:42 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (rb_copy_wb_protected_attribute): need demote for old objects.
