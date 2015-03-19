@@ -4956,6 +4956,9 @@ fileattr_to_unixmode(DWORD attr, const WCHAR *path)
     if (attr & FILE_ATTRIBUTE_DIRECTORY) {
 	mode |= S_IFDIR | S_IEXEC;
     }
+    else if (attr & FILE_ATTRIBUTE_REPARSE_POINT) {
+	mode |= S_IFLNK;
+    }
     else {
 	mode |= S_IFREG;
     }

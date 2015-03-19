@@ -439,6 +439,8 @@ __declspec(dllimport) extern int finite(double);
 #define S_IXOTH 0001
 #endif
 
+#define S_IFLNK 0xa000
+
 /*
  * define this so we can do inplace editing
  */
