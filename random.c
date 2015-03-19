@@ -485,13 +485,13 @@ fill_random_bytes(void *seed, size_t size)
 	if (!CryptAcquireContext(&prov, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT)) {
 	    prov = (HCRYPTPROV)INVALID_HANDLE_VALUE;
 	}
-	old_prov = (HCRYPTPROV)ATOMIC_SIZE_CAS(perm_prov, 0, prov);
+	old_prov = (HCRYPTPROV)ATOMIC_PTR_CAS(perm_prov, 0, prov);
 	if (prov == (HCRYPTPROV)INVALID_HANDLE_VALUE) {
 	    if (old_prov) prov = old_prov;
 	}
 	else {
 	    if (!old_prov) {
-		rb_gc_register_mark_object(Data_Wrap_Struct(0, 0, release_crypt, &prov));
+		rb_gc_register_mark_object(Data_Wrap_Struct(0, 0, release_crypt, &perm_prov));
 	    }
 	    else {
 		CryptReleaseContext(prov, 0);

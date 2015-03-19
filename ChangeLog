@@ -1,3 +1,8 @@
+Thu Mar 19 10:31:00 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* random.c (fill_random_bytes): release the handle in the static
+	  variable, not a local variable.
+
 Thu Mar 19 06:30:35 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* object.c (rb_obj_clone): do not touch age (FL_PROMOTED[01]) because
