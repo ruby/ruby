@@ -4104,6 +4104,7 @@ AC_SUBST(vendordir)dnl
 AC_SUBST(vendorlibdir)dnl
 AC_SUBST(vendorarchdir)dnl
 
+AC_SUBST(CONFIGURE, "`echo $0 | sed 's|.*/||'`")dnl
 AC_SUBST(configure_args, "`echo "${ac_configure_args}" | sed 's/\\$/$$/g'`")dnl
 
 if test "${universal_binary-no}" = yes ; then

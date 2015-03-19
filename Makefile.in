@@ -22,6 +22,7 @@ LD = @LD@
 YACC = bison
 PURIFY =
 AUTOCONF = autoconf
+CONFIGURE = @CONFIGURE@
 @SET_MAKE@
 MKFILES = @MAKEFILES@
 BASERUBY = @BASERUBY@
@@ -298,8 +299,8 @@ reconfig config.status:	$(srcdir)/configure $(srcdir)/enc/Makefile.in \
 	@PWD= MINIRUBY="$(MINIRUBY)"; export MINIRUBY; \
 	set $(SHELL) $($@-args); $(reconfig-exec-$(V))
 
-$(srcdir)/configure: $(srcdir)/configure.in
-	$(CHDIR) $(srcdir) && exec $(AUTOCONF)
+$(srcdir)/$(CONFIGURE): $(srcdir)/configure.in
+	$(CHDIR) $(srcdir) && exec $(AUTOCONF) -o $(@F)
 
 incs: id.h
 all-incs: probes.h
