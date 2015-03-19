@@ -5734,12 +5734,7 @@ rb_copy_wb_protected_attribute(VALUE dest, VALUE obj)
 #if USE_RGENGC
     rb_objspace_t *objspace = &rb_objspace;
 
-    if (RGENGC_CHECK_MODE > 0 && RVALUE_WB_UNPROTECTED(dest)) {
-	rb_bug("rb_copy_wb_protected_attribute: dest should not be WB unprotected - %s",
-	       obj_info(dest));
-    }
-
-    if (RVALUE_WB_UNPROTECTED(obj)) {
+    if (RVALUE_WB_UNPROTECTED(obj) && !RVALUE_WB_UNPROTECTED(dest)) {
 	if (!RVALUE_OLD_P(dest)) {
 	    MARK_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(dest), dest);
 	    RVALUE_AGE_RESET_RAW(dest);
