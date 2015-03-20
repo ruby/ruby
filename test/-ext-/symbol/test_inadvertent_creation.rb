@@ -85,7 +85,7 @@ module Test_Symbol
     Feature5079 = '[ruby-core:38404]'
 
     def test_undefined_instance_variable
-      feature5079 = feature5079
+      feature5079 = Feature5079
       c = Class.new
       iv = noninterned_name("@")
 
@@ -94,7 +94,7 @@ module Test_Symbol
     end
 
     def test_undefined_class_variable
-      feature5079 = feature5079
+      feature5079 = Feature5079
       c = Class.new
       cv = noninterned_name("@@")
 
@@ -104,7 +104,7 @@ module Test_Symbol
 
 
     def test_undefined_const
-      feature5079 = feature5079
+      feature5079 = Feature5079
       c = Class.new
       s = noninterned_name("A")
 
@@ -112,7 +112,7 @@ module Test_Symbol
     end
 
     def test_undefined_method
-      feature5079 = feature5079
+      feature5079 = Feature5079
       c = Class.new
       s = noninterned_name
 
