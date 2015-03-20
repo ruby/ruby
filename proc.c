@@ -1134,29 +1134,68 @@ rb_obj_is_method(VALUE m)
     }
 }
 
+static int
+respond_to_missing_p(VALUE klass, VALUE obj, VALUE sym, int scope)
+{
+    /* TODO: merge with obj_respond_to() */
+    ID rmiss = idRespond_to_missing;
+
+    if (obj == Qundef) return 0;
+    if (rb_method_basic_definition_p(klass, rmiss)) return 0;
+    return RTEST(rb_funcall(obj, rmiss, 2, sym, scope ? Qfalse : Qtrue));
+}
+
+
+static VALUE
+mnew_missing(VALUE rclass, VALUE klass, VALUE obj, ID id, ID rid, VALUE mclass)
+{
+    struct METHOD *data;
+    VALUE method = TypedData_Make_Struct(mclass, struct METHOD, &method_data_type, data);
+    rb_method_entry_t *me;
+    rb_method_definition_t *def;
+
+    data->recv = obj;
+    data->rclass = rclass;
+    data->defined_class = klass;
+    data->id = rid;
+
+    me = ALLOC(rb_method_entry_t);
+    data->me = me;
+    me->flag = 0;
+    me->mark = 0;
+    me->called_id = id;
+    me->klass = klass;
+    me->def = 0;
+
+    def = ALLOC(rb_method_definition_t);
+    me->def = def;
+    def->type = VM_METHOD_TYPE_MISSING;
+    def->original_id = id;
+    def->alias_count = 0;
+
+    data->ume = ALLOC(struct unlinked_method_entry_list_entry);
+    data->me->def->alias_count++;
+
+    OBJ_INFECT(method, klass);
+
+    return method;
+}
+
 static VALUE
 mnew_internal(rb_method_entry_t *me, VALUE defined_class, VALUE klass,
 	      VALUE obj, ID id, VALUE mclass, int scope, int error)
 {
-    VALUE method;
-    VALUE rclass = klass;
-    ID rid = id;
     struct METHOD *data;
+    VALUE rclass = klass;
+    VALUE method;
+    ID rid = id;
     rb_method_definition_t *def = 0;
     rb_method_flag_t flag = NOEX_UNDEF;
 
   again:
     if (UNDEFINED_METHOD_ENTRY_P(me)) {
-	ID rmiss = idRespond_to_missing;
-	VALUE sym = ID2SYM(id);
-
-	if (obj != Qundef && !rb_method_basic_definition_p(klass, rmiss)) {
-	    if (RTEST(rb_funcall(obj, rmiss, 2, sym, scope ? Qfalse : Qtrue))) {
-		me = 0;
-		defined_class = klass;
-
-		goto gen_method;
-	    }
+	if (respond_to_missing_p(klass, obj, ID2SYM(id), scope)) {
+	    return mnew_missing(rclass, klass, obj, id, rid, mclass);
 	}
 	if (!error) return Qnil;
 	rb_print_undef(klass, id, 0);
@@ -1183,7 +1222,6 @@ mnew_internal(rb_method_entry_t *me, VALUE defined_class, VALUE klass,
 	rclass = RCLASS_SUPER(rclass);
     }
 
-  gen_method:
     method = TypedData_Make_Struct(mclass, struct METHOD, &method_data_type, data);
 
     data->recv = obj;
@@ -1191,24 +1229,7 @@ mnew_internal(rb_method_entry_t *me, VALUE defined_class, VALUE klass,
     data->defined_class = defined_class;
     data->id = rid;
     data->me = ALLOC(rb_method_entry_t);
-    if (me) {
-	*data->me = *me;
-    }
-    else {
-	me = data->me;
-	me->flag = 0;
-	me->mark = 0;
-	me->called_id = id;
-	me->klass = klass;
-	me->def = 0;
-
-	def = ALLOC(rb_method_definition_t);
-	me->def = def;
-
-	def->type = VM_METHOD_TYPE_MISSING;
-	def->original_id = id;
-	def->alias_count = 0;
-    }
+    *data->me = *me;
     data->ume = ALLOC(struct unlinked_method_entry_list_entry);
     data->me->def->alias_count++;
 
@@ -1440,6 +1461,23 @@ rb_method_name_error(VALUE klass, VALUE str)
 		      QUOTE(str), s0, rb_class_name(c));
 }
 
+static VALUE
+obj_method(VALUE obj, VALUE vid, int scope)
+{
+    ID id = rb_check_id(&vid);
+    const VALUE klass = CLASS_OF(obj);
+    const VALUE mclass = rb_cMethod;
+
+    if (!id) {
+	if (respond_to_missing_p(klass, obj, vid, scope)) {
+	    id = rb_intern_str(vid);
+	    return mnew_missing(klass, klass, obj, id, id, mclass);
+	}
+	rb_method_name_error(klass, vid);
+    }
+    return mnew(klass, obj, id, mclass, scope);
+}
+
 /*
  *  call-seq:
  *     obj.method(sym)    -> method
@@ -1471,11 +1509,7 @@ rb_method_name_error(VALUE klass, VALUE str)
 VALUE
 rb_obj_method(VALUE obj, VALUE vid)
 {
-    ID id = rb_check_id(&vid);
-    if (!id) {
-	rb_method_name_error(CLASS_OF(obj), vid);
-    }
-    return mnew(CLASS_OF(obj), obj, id, rb_cMethod, FALSE);
+    return obj_method(obj, vid, FALSE);
 }
 
 /*
@@ -1488,11 +1522,7 @@ rb_obj_method(VALUE obj, VALUE vid)
 VALUE
 rb_obj_public_method(VALUE obj, VALUE vid)
 {
-    ID id = rb_check_id(&vid);
-    if (!id) {
-	rb_method_name_error(CLASS_OF(obj), vid);
-    }
-    return mnew(CLASS_OF(obj), obj, id, rb_cMethod, TRUE);
+    return obj_method(obj, vid, TRUE);
 }
 
 /*
@@ -1526,6 +1556,11 @@ rb_obj_singleton_method(VALUE obj, VALUE vid)
     VALUE klass;
     ID id = rb_check_id(&vid);
     if (!id) {
+	if (!NIL_P(klass = rb_singleton_class_get(obj)) &&
+	    respond_to_missing_p(klass, obj, vid, FALSE)) {
+	    id = rb_intern_str(vid);
+	    return mnew_missing(klass, klass, obj, id, id, rb_cMethod);
+	}
 	rb_name_error_str(vid, "undefined singleton method `%"PRIsVALUE"' for `%"PRIsVALUE"'",
 			  QUOTE(vid), obj);
     }
