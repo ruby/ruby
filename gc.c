@@ -8798,9 +8798,10 @@ static char obj_info_buffers[OBJ_INFO_BUFFERS_NUM][OBJ_INFO_BUFFERS_SIZE];
 static const char *
 obj_info(VALUE obj)
 {
-    int index = obj_info_buffers_index++;
-    char *buff = &obj_info_buffers[index][0];
-    int age = RVALUE_FLAGS_AGE(RBASIC(obj)->flags);
+    const int index = obj_info_buffers_index++;
+    char *const buff = &obj_info_buffers[index][0];
+    const int age = RVALUE_FLAGS_AGE(RBASIC(obj)->flags);
+    const int type = BUILTIN_TYPE(obj);
 
     if (obj_info_buffers_index >= OBJ_INFO_BUFFERS_NUM) {
 	obj_info_buffers_index = 0;
@@ -8816,12 +8817,28 @@ obj_info(VALUE obj)
 	     C(RVALUE_WB_UNPROTECTED_BITMAP(obj), "U"),
 	     obj_type_name(obj));
 
+    switch (type) {
+      case T_NODE:
+      case T_IMEMO:
+	break;
+      default:
+	if (RBASIC(obj)->klass == 0) {
+	    snprintf(buff, OBJ_INFO_BUFFERS_SIZE, "%s (internal)", buff);
+	}
+	else {
+	    VALUE class_path = rb_class_path_cached(RBASIC(obj)->klass);
+	    if (!NIL_P(class_path)) {
+		snprintf(buff, OBJ_INFO_BUFFERS_SIZE, "%s (%s)", buff, RSTRING_PTR(class_path));
+	    }
+	}
+    }
+
 #if GC_DEBUG
     snprintf(buff, OBJ_INFO_BUFFERS_SIZE, "%s @%s:%d", buff, RANY(obj)->file, RANY(obj)->line);
 #endif
 
 #ifdef HAVE_VA_ARGS_MACRO
-    switch (BUILTIN_TYPE(obj)) {
+    switch (type) {
       case T_NODE:
 	snprintf(buff, OBJ_INFO_BUFFERS_SIZE, "%s (%s)", buff,
 		 ruby_node_name(nd_type(obj)));
@@ -8844,7 +8861,7 @@ obj_info(VALUE obj)
 	  break;
       }
       case T_DATA: {
-	  const char *type_name = rb_objspace_data_type_name(obj);
+	  const char * const type_name = rb_objspace_data_type_name(obj);
 	  if (type_name && strcmp(type_name, "iseq") == 0) {
 	      rb_iseq_t *iseq;
 	      GetISeqPtr(obj, iseq);
@@ -8852,6 +8869,9 @@ obj_info(VALUE obj)
 		  snprintf(buff, OBJ_INFO_BUFFERS_SIZE, "%s %s@%s:%d", buff,
 			   RSTRING_PTR(iseq->location.label), RSTRING_PTR(iseq->location.path), (int)iseq->location.first_lineno);
 	      }
+	  }
+	  else if (type_name) {
+		  snprintf(buff, OBJ_INFO_BUFFERS_SIZE, "%s %s", buff, type_name);
 	  }
 	  break;
       }
