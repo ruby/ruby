@@ -7694,9 +7694,7 @@ rb_str_crypt(VALUE str, VALUE salt)
 	rb_raise(rb_eArgError, "salt too short (need >=2 bytes)");
     }
 
-    s = RSTRING_PTR(str);
-    if (!s || memchr(s, '\0', RSTRING_LEN(str)))
-        rb_raise(rb_eArgError, "string contains null character");
+    s = StringValueCStr(str);
 
     if (!s) s = "";
     saltp = RSTRING_PTR(salt);
