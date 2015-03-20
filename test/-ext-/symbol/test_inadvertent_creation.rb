@@ -120,6 +120,7 @@ module Test_Symbol
       assert_not_interned_error(c, :public_method, s, feature5079)
       assert_not_interned_error(c, :instance_method, s, feature5079)
       assert_not_interned_error(c, :public_instance_method, s, feature5079)
+      assert_not_interned_error(c, :singleton_method, s, feature5079)
     end
 
     Feature5089 = '[ruby-core:38447]'
