@@ -1492,6 +1492,10 @@ vm_exec(rb_thread_t *th)
 			      case VM_FRAME_MAGIC_LAMBDA:
 				EXEC_EVENT_HOOK_AND_POP_FRAME(th, RUBY_EVENT_B_RETURN, th->cfp->self, 0, 0, Qnil);
 				break;
+			      case VM_FRAME_MAGIC_METHOD:
+				RUBY_DTRACE_METHOD_RETURN_HOOK(th, 0, 0);
+				EXEC_EVENT_HOOK_AND_POP_FRAME(th, RUBY_EVENT_RETURN, th->cfp->self, 0, 0, Qnil);
+				break;
 			    }
 
 			    vm_pop_frame(th);
