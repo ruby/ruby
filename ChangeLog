@@ -1,9 +1,3 @@
-Fri Mar 20 12:38:36 2015  Koichi Sasada  <ko1@atdot.net>
-
-	* gc.c (obj_info): obj_info() can receive internal objects.
-
-	* gc.c (check_rvalue_consistency): obj_info() returns const char *.
-
 Fri Mar 20 12:14:37 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (obj_info): show class name and T_DATA type_name.

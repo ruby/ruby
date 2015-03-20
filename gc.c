@@ -998,8 +998,8 @@ check_rvalue_consistency(const VALUE obj)
 	const int marking_bit = RVALUE_MARKING_BITMAP(obj) != 0, remembered_bit = marking_bit;
 	const int age = RVALUE_FLAGS_AGE(RBASIC(obj)->flags);
 
-	if (BUILTIN_TYPE(obj) == T_NONE)   rb_bug("check_rvalue_consistency: %s is T_NONE", obj_info(obj));
-	if (BUILTIN_TYPE(obj) == T_ZOMBIE) rb_bug("check_rvalue_consistency: %s is T_ZOMBIE", obj_info(obj));
+	if (BUILTIN_TYPE(obj) == T_NONE)   rb_bug("check_rvalue_consistency: %p is T_NONE", obj_info(obj));
+	if (BUILTIN_TYPE(obj) == T_ZOMBIE) rb_bug("check_rvalue_consistency: %p is T_ZOMBIE", obj_info(obj));
 	obj_memsize_of((VALUE)obj, FALSE);
 
 	/* check generation
@@ -8817,16 +8817,19 @@ obj_info(VALUE obj)
 	     C(RVALUE_WB_UNPROTECTED_BITMAP(obj), "U"),
 	     obj_type_name(obj));
 
-    if (internal_object_p(obj)) {
-	/* ignore */
-    }
-    else if (RBASIC(obj)->klass == 0) {
-	snprintf(buff, OBJ_INFO_BUFFERS_SIZE, "%s (temporary internal)", buff);
-    }
-    else {
-	VALUE class_path = rb_class_path_cached(RBASIC(obj)->klass);
-	if (!NIL_P(class_path)) {
-	    snprintf(buff, OBJ_INFO_BUFFERS_SIZE, "%s (%s)", buff, RSTRING_PTR(class_path));
+    switch (type) {
+      case T_NODE:
+      case T_IMEMO:
+	break;
+      default:
+	if (RBASIC(obj)->klass == 0) {
+	    snprintf(buff, OBJ_INFO_BUFFERS_SIZE, "%s (internal)", buff);
+	}
+	else {
+	    VALUE class_path = rb_class_path_cached(RBASIC(obj)->klass);
+	    if (!NIL_P(class_path)) {
+		snprintf(buff, OBJ_INFO_BUFFERS_SIZE, "%s (%s)", buff, RSTRING_PTR(class_path));
+	    }
 	}
     }
 
