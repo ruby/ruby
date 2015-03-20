@@ -97,6 +97,10 @@ notifications:
     on_success: always
     on_failure: never
 
+  email:
+    - ko1c-failure@atdot.net
+    - shibata.hiroshi@gmail.com
+
 # Local Variables:
 # mode: YAML
 # coding: utf-8-unix
