@@ -12078,7 +12078,7 @@ rb_readwrite_sys_fail(int writable, const char *mesg)
  *  Example:
  *
  *    require 'io/console'
- *    rows, columns = $stdin.winsize
+ *    rows, columns = $stdout.winsize
  *    puts "Your screen is #{columns} wide and #{rows} tall"
  */
 

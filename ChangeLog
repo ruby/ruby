@@ -1,3 +1,14 @@
+Sat Mar 21 15:01:26 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/io/console/console.c (console_set_winsize): use handle for
+	  writing.  GetConsoleScreenBufferInfo seems failing on a handle
+	  for reading.
+
+	* io.c: [DOC] update the example of IO#winsize to use $stdout
+	  instead of $stdin, which does not work on Windows.  a patch by
+	  Jan Lelis <mail AT janlelis.de> at [ruby-core:68574].
+	  [Bug #10986]
+
 Fri Mar 20 18:41:03 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (respond_to_missing_p): check if the receiver responds to

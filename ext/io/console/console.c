@@ -525,16 +525,14 @@ console_set_winsize(VALUE io, VALUE size)
     int newrow, newcol;
 #endif
     VALUE row, col, xpixel, ypixel;
-#if defined TIOCSWINSZ
     int fd;
-#endif
 
     GetOpenFile(io, fptr);
     size = rb_Array(size);
     rb_scan_args((int)RARRAY_LEN(size), RARRAY_PTR(size), "22",
                 &row, &col, &xpixel, &ypixel);
-#if defined TIOCSWINSZ
     fd = GetWriteFD(fptr);
+#if defined TIOCSWINSZ
     ws.ws_row = ws.ws_col = ws.ws_xpixel = ws.ws_ypixel = 0;
 #define SET(m) ws.ws_##m = NIL_P(m) ? 0 : (unsigned short)NUM2UINT(m)
     SET(row);
@@ -544,24 +542,24 @@ console_set_winsize(VALUE io, VALUE size)
 #undef SET
     if (!setwinsize(fd, &ws)) rb_sys_fail(0);
 #elif defined _WIN32
-    wh = (HANDLE)rb_w32_get_osfhandle(GetReadFD(fptr));
+    wh = (HANDLE)rb_w32_get_osfhandle(fd);
     newrow = (SHORT)NUM2UINT(row);
     newcol = (SHORT)NUM2UINT(col);
-    if (!getwinsize(GetReadFD(fptr), &ws)) {
-	rb_sys_fail("GetConsoleScreenBufferInfo");
+    if (!GetConsoleScreenBufferInfo(wh, &ws)) {
+	rb_syserr_fail(LAST_ERROR, "GetConsoleScreenBufferInfo");
     }
     if ((ws.dwSize.X < newcol && (ws.dwSize.X = newcol, 1)) ||
 	(ws.dwSize.Y < newrow && (ws.dwSize.Y = newrow, 1))) {
-	if (!(SetConsoleScreenBufferSize(wh, ws.dwSize) || SET_LAST_ERROR)) {
-	    rb_sys_fail("SetConsoleScreenBufferInfo");
+	if (!SetConsoleScreenBufferSize(wh, ws.dwSize)) {
+	    rb_syserr_fail(LAST_ERROR, "SetConsoleScreenBufferInfo");
 	}
     }
     ws.srWindow.Left = 0;
     ws.srWindow.Top = 0;
     ws.srWindow.Right = newcol;
     ws.srWindow.Bottom = newrow;
-    if (!(SetConsoleWindowInfo(wh, FALSE, &ws.srWindow) || SET_LAST_ERROR)) {
-	rb_sys_fail("SetConsoleWindowInfo");
+    if (!SetConsoleWindowInfo(wh, FALSE, &ws.srWindow)) {
+	rb_syserr_fail(LAST_ERROR, "SetConsoleWindowInfo");
     }
 #endif
     return io;
