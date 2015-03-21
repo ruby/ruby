@@ -2088,9 +2088,10 @@ float_arg(VALUE self)
  * and i is imaginary unit.  Real a equals complex a+0i
  * mathematically.
  *
- * In ruby, you can create complex object with Complex, Complex::rect,
- * Complex::polar or to_c method.
+ * Complex object can be created as literal, and also by using
+ * Kernel#Complex, Complex::rect, Complex::polar or to_c method.
  *
+ *    2+1i                 #=> (2+1i)
  *    Complex(1)           #=> (1+0i)
  *    Complex(2, 3)        #=> (2+3i)
  *    Complex.polar(2, 3)  #=> (-1.9799849932008908+0.2822400161197344i)
