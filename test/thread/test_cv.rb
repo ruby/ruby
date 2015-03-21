@@ -195,6 +195,14 @@ INPUT
     assert_nothing_raised(Exception) { mutex.synchronize {condvar.broadcast} }
   end
 
+  def test_dup
+    bug9440 = '[ruby-core:59961] [Bug #9440]'
+    condvar = ConditionVariable.new
+    assert_raise(NoMethodError, bug9440) do
+      condvar.dup
+    end
+  end
+
   (DumpableCV = ConditionVariable.dup).class_eval {remove_method :marshal_dump}
 
   def test_dump

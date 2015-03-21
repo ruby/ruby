@@ -220,6 +220,14 @@ class TestQueue < Test::Unit::TestCase
     end
   end
 
+  def test_dup
+    bug9440 = '[ruby-core:59961] [Bug #9440]'
+    q = Queue.new
+    assert_raise(NoMethodError, bug9440) do
+      q.dup
+    end
+  end
+
   (DumpableQueue = Queue.dup).class_eval {remove_method :marshal_dump}
 
   def test_dump

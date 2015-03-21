@@ -590,12 +590,14 @@ Init_thread(void)
 
     rb_define_method(rb_cConditionVariable, "initialize", rb_condvar_initialize, 0);
     rb_define_method(rb_cConditionVariable, "marshal_dump", undumpable, 0);
+    rb_undef_method(rb_cConditionVariable, "initialize_copy");
     rb_define_method(rb_cConditionVariable, "wait", rb_condvar_wait, -1);
     rb_define_method(rb_cConditionVariable, "signal", rb_condvar_signal, 0);
     rb_define_method(rb_cConditionVariable, "broadcast", rb_condvar_broadcast, 0);
 
     rb_define_method(rb_cQueue, "initialize", rb_queue_initialize, 0);
     rb_define_method(rb_cQueue, "marshal_dump", undumpable, 0);
+    rb_undef_method(rb_cQueue, "initialize_copy");
     rb_define_method(rb_cQueue, "push", rb_queue_push, 1);
     rb_define_method(rb_cQueue, "pop", rb_queue_pop, -1);
     rb_define_method(rb_cQueue, "empty?", rb_queue_empty_p, 0);
