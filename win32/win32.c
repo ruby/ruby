@@ -56,6 +56,10 @@
 # define CharNextExA(cp, p, flags) CharNextExA((WORD)(cp), (p), (flags))
 #endif
 
+#if _WIN32_WINNT < 0x0600
+DWORD WINAPI GetFinalPathNameByHandleW(HANDLE, LPWSTR, DWORD, DWORD);
+#endif
+
 static int w32_stati64(const char *path, struct stati64 *st, UINT cp);
 static char *w32_getenv(const char *name, UINT cp);
 
@@ -5038,10 +5042,39 @@ check_valid_dir(const WCHAR *path)
 
 /* License: Ruby's */
 static int
-winnt_stat(const WCHAR *path, struct stati64 *st)
+stat_by_find(const WCHAR *path, struct stati64 *st)
 {
     HANDLE h;
     WIN32_FIND_DATAW wfd;
+    /* GetFileAttributesEx failed; check why. */
+    int e = GetLastError();
+
+    if ((e == ERROR_FILE_NOT_FOUND) || (e == ERROR_INVALID_NAME)
+	|| (e == ERROR_PATH_NOT_FOUND || (e == ERROR_BAD_NETPATH))) {
+	errno = map_errno(e);
+	return -1;
+    }
+
+    /* Fall back to FindFirstFile for ERROR_SHARING_VIOLATION */
+    h = FindFirstFileW(path, &wfd);
+    if (h == INVALID_HANDLE_VALUE) {
+	errno = map_errno(GetLastError());
+	return -1;
+    }
+    FindClose(h);
+    st->st_mode  = fileattr_to_unixmode(wfd.dwFileAttributes, path);
+    st->st_atime = filetime_to_unixtime(&wfd.ftLastAccessTime);
+    st->st_mtime = filetime_to_unixtime(&wfd.ftLastWriteTime);
+    st->st_ctime = filetime_to_unixtime(&wfd.ftCreationTime);
+    st->st_size = ((__int64)wfd.nFileSizeHigh << 32) | wfd.nFileSizeLow;
+    st->st_nlink = 1;
+    return 0;
+}
+
+/* License: Ruby's */
+static int
+winnt_stat(const WCHAR *path, struct stati64 *st)
+{
     WIN32_FILE_ATTRIBUTE_DATA wfa;
     const WCHAR *p = path;
 
@@ -5067,29 +5100,7 @@ winnt_stat(const WCHAR *path, struct stati64 *st)
 	st->st_ctime = filetime_to_unixtime(&wfa.ftCreationTime);
     }
     else {
-	/* GetFileAttributesEx failed; check why. */
-	int e = GetLastError();
-
-	if ((e == ERROR_FILE_NOT_FOUND) || (e == ERROR_INVALID_NAME)
-	    || (e == ERROR_PATH_NOT_FOUND || (e == ERROR_BAD_NETPATH))) {
-	    errno = map_errno(e);
-	    return -1;
-	}
-
-	/* Fall back to FindFirstFile for ERROR_SHARING_VIOLATION */
-	h = FindFirstFileW(path, &wfd);
-	if (h != INVALID_HANDLE_VALUE) {
-	    FindClose(h);
-	    st->st_mode  = fileattr_to_unixmode(wfd.dwFileAttributes, path);
-	    st->st_atime = filetime_to_unixtime(&wfd.ftLastAccessTime);
-	    st->st_mtime = filetime_to_unixtime(&wfd.ftLastWriteTime);
-	    st->st_ctime = filetime_to_unixtime(&wfd.ftCreationTime);
-	    st->st_size = ((__int64)wfd.nFileSizeHigh << 32) | wfd.nFileSizeLow;
-	}
-	else {
-	    errno = map_errno(GetLastError());
-	    return -1;
-	}
+	if (stat_by_find(path, st)) return -1;
     }
 
     st->st_dev = st->st_rdev = (iswalpha(path[0]) && path[1] == L':') ?

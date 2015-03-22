@@ -122,6 +122,9 @@ PLATFORM = mswin32
 !if !defined(RT)
 !error RT not defined.  Retry from configure pass.
 !endif
+!ifndef NTVER
+NTVER = 0x0600
+!endif
 !ifdef NTVER
 ARCHDEFS = -D_WIN32_WINNT=$(NTVER) $(ARCHDEFS)
 !endif
