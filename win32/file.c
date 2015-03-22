@@ -350,7 +350,14 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 
     /* convert char * to wchar_t */
     if (!NIL_P(path)) {
-	wpath = mbstr_to_wstr(cp, RSTRING_PTR(path), (int)RSTRING_LEN(path), &wpath_len);
+	const long path_len = RSTRING_LEN(path);
+#if SIZEOF_INT < SIZEOF_LONG
+	if ((long)(int)path_len != path_len) {
+	    rb_raise(rb_eRangeError, "path (%ld bytes) is too long",
+		     path_len);
+	}
+#endif
+	wpath = mbstr_to_wstr(cp, RSTRING_PTR(path), path_len, &wpath_len);
 	wpath_pos = wpath;
     }
 
@@ -425,7 +432,15 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 
 	/* convert char * to wchar_t */
 	if (!NIL_P(dir)) {
-	    wdir = mbstr_to_wstr(cp, RSTRING_PTR(dir), (int)RSTRING_LEN(dir), &wdir_len);
+	    const long dir_len = RSTRING_LEN(dir);
+#if SIZEOF_INT < SIZEOF_LONG
+	    if ((long)(int)dir_len != dir_len) {
+		if (wpath) xfree(wpath);
+		rb_raise(rb_eRangeError, "base directory (%ld bytes) is too long",
+			 dir_len);
+	    }
+#endif
+	    wdir = mbstr_to_wstr(cp, RSTRING_PTR(dir), dir_len, &wdir_len);
 	    wdir_pos = wdir;
 	}
 
