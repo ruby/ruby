@@ -1,4 +1,7 @@
-Sun Mar 22 09:51:29 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Mar 22 09:53:15 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/make-snapshot (package): add default CONFIGURE name to
+	  follow r50039.
 
 	* tool/make-snapshot (package): substitute configuration variables
 	  in Makefile.in instead of passing by the command line, and make

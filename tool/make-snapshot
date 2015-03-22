@@ -304,6 +304,7 @@ def package(vcs, rev, destdir, tmp = nil)
         "BASERUBY"=>baseruby,
         "BOOTSTRAPRUBY"=>baseruby,
         "PWD"=>Dir.pwd,
+        "CONFIGURE"=>"configure",
       }
       mk.gsub!(/@([A-Za-z_]\w*)@/) {vars[$1] || ENV[$1]}
       mk << commonmk.gsub(/(?<!#)\{[^{}]*\}/, "")
