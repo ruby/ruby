@@ -387,8 +387,8 @@ rb_path_to_class(VALUE pathname)
 	}
 	if (!id || !rb_const_defined_at(c, id)) {
 	  undefined_class:
-	    rb_raise(rb_eArgError, "undefined class/module %.*"PRIsVALUE,
-		     (int)(p-path), pathname);
+	    rb_raise(rb_eArgError, "undefined class/module % "PRIsVALUE,
+		     rb_str_subseq(pathname, 0, p-path));
 	}
 	c = rb_const_get_at(c, id);
 	if (!RB_TYPE_P(c, T_MODULE) && !RB_TYPE_P(c, T_CLASS)) {
