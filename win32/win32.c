@@ -4868,6 +4868,7 @@ isUNCRoot(const WCHAR *path)
     } while (0)
 
 static time_t filetime_to_unixtime(const FILETIME *ft);
+static WCHAR *name_for_stat(WCHAR *buf, const WCHAR *path);
 
 #undef fstat
 /* License: Ruby's */
@@ -5099,10 +5100,8 @@ rb_w32_stat(const char *path, struct stat *st)
 static int
 wstati64(const WCHAR *path, struct stati64 *st)
 {
-    const WCHAR *p;
-    WCHAR *buf1, *s, *end;
-    int len, size;
-    int ret;
+    WCHAR *buf1;
+    int ret, size;
     VALUE v;
 
     if (!path || !st) {
@@ -5111,6 +5110,23 @@ wstati64(const WCHAR *path, struct stati64 *st)
     }
     size = lstrlenW(path) + 2;
     buf1 = ALLOCV_N(WCHAR, v, size);
+    if (!(path = name_for_stat(buf1, path)))
+	return -1;
+    ret = winnt_stat(path, st);
+    if (v)
+	ALLOCV_END(v);
+
+    return ret;
+}
+
+/* License: Ruby's */
+static WCHAR *
+name_for_stat(WCHAR *buf1, const WCHAR *path)
+{
+    const WCHAR *p;
+    WCHAR *s, *end;
+    int len;
+
     for (p = path, s = buf1; *p; p++, s++) {
 	if (*p == L'/')
 	    *s = L'\\';
@@ -5121,7 +5137,7 @@ wstati64(const WCHAR *path, struct stati64 *st)
     len = s - buf1;
     if (!len || L'\"' == *(--s)) {
 	errno = ENOENT;
-	return -1;
+	return NULL;
     }
     end = buf1 + len - 1;
 
@@ -5134,11 +5150,7 @@ wstati64(const WCHAR *path, struct stati64 *st)
     else if (*end == L'\\' || (buf1 + 1 == end && *end == L':'))
 	lstrcatW(buf1, L".");
 
-    ret = winnt_stat(buf1, st);
-    if (v)
-	ALLOCV_END(v);
-
-    return ret;
+    return buf1;
 }
 
 /* License: Ruby's */
