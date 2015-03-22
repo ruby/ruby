@@ -4869,6 +4869,7 @@ isUNCRoot(const WCHAR *path)
 
 static time_t filetime_to_unixtime(const FILETIME *ft);
 static WCHAR *name_for_stat(WCHAR *buf, const WCHAR *path);
+static DWORD stati64_handle(HANDLE h, struct stati64 *st);
 
 #undef fstat
 /* License: Ruby's */
@@ -4901,7 +4902,6 @@ rb_w32_fstat(int fd, struct stat *st)
 int
 rb_w32_fstati64(int fd, struct stati64 *st)
 {
-    BY_HANDLE_FILE_INFORMATION info;
     struct stat tmp;
     int ret;
 
@@ -4915,7 +4915,18 @@ rb_w32_fstati64(int fd, struct stati64 *st)
     tmp.st_mode &= ~(S_IWGRP | S_IWOTH);
 #endif
     COPY_STAT(tmp, *st, +);
-    if (GetFileInformationByHandle((HANDLE)_get_osfhandle(fd), &info)) {
+    stati64_handle((HANDLE)_get_osfhandle(fd), st);
+    return ret;
+}
+
+/* License: Ruby's */
+static DWORD
+stati64_handle(HANDLE h, struct stati64 *st)
+{
+    BY_HANDLE_FILE_INFORMATION info;
+    DWORD attr = (DWORD)-1;
+
+    if (GetFileInformationByHandle(h, &info)) {
 #ifdef __BORLANDC__
 	if (!(info.dwFileAttributes & FILE_ATTRIBUTE_READONLY)) {
 	    st->st_mode |= S_IWUSR;
@@ -4925,8 +4936,10 @@ rb_w32_fstati64(int fd, struct stati64 *st)
 	st->st_atime = filetime_to_unixtime(&info.ftLastAccessTime);
 	st->st_mtime = filetime_to_unixtime(&info.ftLastWriteTime);
 	st->st_ctime = filetime_to_unixtime(&info.ftCreationTime);
+	st->st_nlink = info.nNumberOfLinks;
+	attr = info.dwFileAttributes;
     }
-    return ret;
+    return attr;
 }
 
 /* License: Ruby's */
