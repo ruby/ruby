@@ -252,6 +252,17 @@ class TestMarshal < Test::Unit::TestCase
     assert_include(Marshal.dump([:a, :a]), ';')
   end
 
+  def test_symlink_in_ivar
+    bug10991 = '[ruby-core:68587] [Bug #10991]'
+    sym = Marshal.load("\x04\x08" +
+                       "I" ":\x0bKernel" +
+                       ("\x06" +
+                        ("I" ":\x07@a" +
+                         ("\x06" ":\x07@b" "e;\x0""o:\x0bObject""\x0")) +
+                        "0"))
+    assert_equal(:Kernel, sym, bug10991)
+  end
+
   ClassUTF8 = eval("class R\u{e9}sum\u{e9}; self; end")
 
   iso_8859_1 = Encoding::ISO_8859_1
