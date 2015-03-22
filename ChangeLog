@@ -1,3 +1,9 @@
+Sun Mar 22 09:51:29 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/make-snapshot (package): substitute configuration variables
+	  in Makefile.in instead of passing by the command line, and make
+	  temporary Makefile instead of a pipe.
+
 Sun Mar 22 08:09:47 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (ext/ripper/ripper.c, ext/rbconfig/sizeof/sizes.c):

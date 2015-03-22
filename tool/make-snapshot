@@ -288,26 +288,36 @@ def package(vcs, rev, destdir, tmp = nil)
       File.open("#{defaults}/ruby.rb", "w") {}
       miniruby = ENV['MINIRUBY'] + " -I. -I#{extout} -rcross"
       baseruby = ENV["BASERUBY"]
-      mk = IO.read("Makefile.in").gsub(/^@.*\n/, '').gsub(/@([A-Za-z_]\w*)@/) {ENV[$1]}
+      mk = IO.read("Makefile.in").gsub(/^@.*\n/, '')
+      vars = {
+        "srcdir"=>".",
+        "CHDIR"=>"cd",
+        "NULLCMD"=>":",
+        "PATH_SEPARATOR"=>File::PATH_SEPARATOR,
+        "IFCHANGE"=>"tool/ifchange",
+        "MKDIR_P"=>"mkdir -p",
+        "RMALL"=>"rm -fr",
+        "MINIRUBY"=>miniruby,
+        "RUNRUBY"=>miniruby,
+        "RUBY"=>ENV["RUBY"],
+        "HAVE_BASERUBY"=>"yes",
+        "BASERUBY"=>baseruby,
+        "BOOTSTRAPRUBY"=>baseruby,
+        "PWD"=>Dir.pwd,
+      }
+      mk.gsub!(/@([A-Za-z_]\w*)@/) {vars[$1] || ENV[$1]}
       mk << commonmk.gsub(/(?<!#)\{[^{}]*\}/, "")
-      cmd = %W[make -f -
-               srcdir=. CHDIR=cd NULLCMD=:
-               PATH_SEPARATOR=#{File::PATH_SEPARATOR}
-               IFCHANGE=tool/ifchange MAKEDIRS=mkdir\ -p
-               RMALL=rm\ -fr
-               MINIRUBY=#{miniruby}
-               RUNRUBY=#{miniruby}
-               RUBY=#{ENV["RUBY"]}
-               HAVE_BASERUBY=yes
-               BASERUBY=#{baseruby}
-               BOOTSTRAPRUBY=#{baseruby}
-               PWD=#{Dir.pwd}
-               prereq]
-      IO.popen(cmd, "w") do |f|
+      mk << <<-'APPEND'
+
+prereq: clean-cache $(CLEAN_CACHE)
+clean-cache $(CLEAN_CACHE): after-update
+after-update:: extract-gems
+extract-gems:
+      APPEND
+      open(clean.add("Makefile"), "w") do |f|
         f.puts mk
-        f.puts "after-update::", "clean-cache $(CLEAN_CACHE): after-update", "prereq: clean-cache $(CLEAN_CACHE)"
-        f.puts "extract-gems:", "after-update:: extract-gems"
       end
+      system("make", "prereq")
       clean.push("rbconfig.rb", ".rbconfig.time", "enc.mk")
       print "prerequisites"
     else
