@@ -5073,6 +5073,14 @@ stat_by_find(const WCHAR *path, struct stati64 *st)
 
 /* License: Ruby's */
 static int
+path_drive(const WCHAR *path)
+{
+    return (iswalpha(path[0]) && path[1] == L':') ?
+	towupper(path[0]) - L'A' : _getdrive() - 1;
+}
+
+/* License: Ruby's */
+static int
 winnt_stat(const WCHAR *path, struct stati64 *st)
 {
     WIN32_FILE_ATTRIBUTE_DATA wfa;
@@ -5103,8 +5111,7 @@ winnt_stat(const WCHAR *path, struct stati64 *st)
 	if (stat_by_find(path, st)) return -1;
     }
 
-    st->st_dev = st->st_rdev = (iswalpha(path[0]) && path[1] == L':') ?
-	towupper(path[0]) - L'A' : _getdrive() - 1;
+    st->st_dev = st->st_rdev = path_drive(path);
 
     return 0;
 }
