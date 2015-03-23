@@ -1,7 +1,7 @@
 Mon Mar 23 23:18:27 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (dir_close): don't raise on dobule close for consistent to
-	  IO#close.
+	  IO#close.  [Feature #10950]
 
 Mon Mar 23 21:22:07 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
