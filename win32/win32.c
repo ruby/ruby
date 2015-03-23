@@ -5094,7 +5094,7 @@ winnt_stat(const WCHAR *path, struct stati64 *st)
 
     if (get_final_path == (get_final_path_func)-1) {
 	get_final_path = (get_final_path_func)
-	    get_proc_address(NULL, "GetFinalPathNameByHandleW", NULL);
+	    get_proc_address("kernel32", "GetFinalPathNameByHandleW", NULL);
     }
 
     memset(st, 0, sizeof(*st));
