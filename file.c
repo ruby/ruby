@@ -2790,6 +2790,7 @@ rb_file_s_readlink(VALUE klass, VALUE path)
     return rb_readlink(path);
 }
 
+#ifndef _WIN32
 VALUE
 rb_readlink(VALUE path)
 {
@@ -2818,6 +2819,7 @@ rb_readlink(VALUE path)
 
     return v;
 }
+#endif
 #else
 #define rb_file_s_readlink rb_f_notimplement
 #endif

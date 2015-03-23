@@ -653,6 +653,35 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     return result;
 }
 
+ssize_t rb_w32_wreadlink(const WCHAR *path, WCHAR *buf, size_t bufsize);
+
+VALUE
+rb_readlink(VALUE path)
+{
+    ssize_t len;
+    WCHAR *wpath, wbuf[MAX_PATH];
+    rb_encoding *enc;
+    UINT cp, path_cp;
+
+    rb_secure(2);
+    FilePathValue(path);
+    enc = rb_enc_get(path);
+    cp = path_cp = code_page(enc);
+    if (cp == INVALID_CODE_PAGE) {
+	path = fix_string_encoding(path, enc);
+	cp = CP_UTF8;
+    }
+    wpath = mbstr_to_wstr(cp, RSTRING_PTR(path), RSTRING_LEN(path), NULL);
+    if (!wpath) rb_memerror();
+    len = rb_w32_wreadlink(wpath, wbuf, numberof(wbuf));
+    free(wpath);
+    if (len < 0) rb_sys_fail_path(path);
+    enc = rb_filesystem_encoding();
+    cp = path_cp = code_page(enc);
+    if (cp == INVALID_CODE_PAGE) cp = CP_UTF8;
+    return append_wstr(rb_enc_str_new(0, 0, enc), wbuf, len, cp, path_cp, enc);
+}
+
 int
 rb_file_load_ok(const char *path)
 {

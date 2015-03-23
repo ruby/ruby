@@ -1,4 +1,7 @@
-Mon Mar 23 17:36:00 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Mar 23 21:22:07 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/file.c (rb_readlink): move from file.c for better buffer
+	  allocation and the result encoding.
 
 	* win32/win32.c (wreadlink, rb_w32_ureadlink): implement readlink().
 
