@@ -126,6 +126,7 @@ class TestDir < Test::Unit::TestCase
   def test_close
     d = Dir.open(@root)
     d.close
+    assert_nothing_raised(IOError) { d.close }
     assert_raise(IOError) { d.read }
   end
 

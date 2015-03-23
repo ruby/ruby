@@ -543,11 +543,16 @@ dir_closed(void)
 }
 
 static struct dir_data *
+dir_get(VALUE dir)
+{
+    rb_check_frozen(dir);
+    return rb_check_typeddata(dir, &dir_data_type);
+}
+
+static struct dir_data *
 dir_check(VALUE dir)
 {
-    struct dir_data *dirp;
-    rb_check_frozen(dir);
-    dirp = rb_check_typeddata(dir, &dir_data_type);
+    struct dir_data *dirp = dir_get(dir);
     if (!dirp->dir) dir_closed();
     return dirp;
 }
@@ -831,7 +836,8 @@ dir_close(VALUE dir)
 {
     struct dir_data *dirp;
 
-    GetDIR(dir, dirp);
+    dirp = dir_get(dir);
+    if (!dirp->dir) return Qnil;
     closedir(dirp->dir);
     dirp->dir = NULL;
 
