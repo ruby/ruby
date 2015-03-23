@@ -17,16 +17,6 @@ Mon Mar 23 14:40:45 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* win32/win32.c (winnt_lstat): rename old winnt_stat, which does
 	  not follow symbolic links.
 
-Mon Mar 23 02:03:28 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* marshal.c (r_symreal): register symbol names as strings first so
-	  that r_symlink always returns valid names.
-	  [ruby-core:68587] [Bug #10991]
-
-	* marshal.c (r_ivar, r_object0): now need to intern symbol names.
-
-	* marshal.c (r_object0): compare with symbol names.
-
 Mon Mar 23 01:44:35 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (r_symreal): register symbol names as strings first so
