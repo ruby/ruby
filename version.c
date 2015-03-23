@@ -71,6 +71,10 @@ Init_version(void)
      * The engine or interpreter this ruby uses.
      */
     rb_define_global_const("RUBY_ENGINE", ruby_engine_name = MKSTR(engine));
+    /*
+     * The version of the engine or interpreter this ruby uses.
+     */
+    rb_define_global_const("RUBY_ENGINE_VERSION", MKSTR(version));
 }
 
 /*! Prints the version information of the CRuby interpreter to stdout. */
