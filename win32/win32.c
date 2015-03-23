@@ -4679,6 +4679,116 @@ link(const char *from, const char *to)
 }
 
 /* License: Ruby's */
+ssize_t
+rb_w32_wreadlink(const WCHAR *path, WCHAR *buf, size_t bufsize)
+{
+    struct {
+	ULONG  ReparseTag;
+	USHORT ReparseDataLength;
+	USHORT Reserved;
+	struct {
+	    USHORT SubstituteNameOffset;
+	    USHORT SubstituteNameLength;
+	    USHORT PrintNameOffset;
+	    USHORT PrintNameLength;
+	    ULONG  Flags;
+	    WCHAR  PathBuffer[MAXPATHLEN * 2];
+	} SymbolicLinkReparseBuffer;
+    } rp;
+    HANDLE f;
+    DWORD ret;
+    int e = 0;
+
+    typedef BOOL (WINAPI *device_io_control_func)(HANDLE, DWORD, LPVOID,
+						  DWORD, LPVOID, DWORD,
+						  LPDWORD, LPOVERLAPPED);
+    static device_io_control_func device_io_control = (device_io_control_func)-1;
+
+    if (device_io_control == (device_io_control_func)-1) {
+	device_io_control = (device_io_control_func)
+	    get_proc_address("kernel32", "DeviceIoControl", NULL);
+    }
+    if (!device_io_control) {
+	errno = ENOSYS;
+	return -1;
+    }
+
+    f = CreateFileW(path, 0, FILE_SHARE_READ|FILE_SHARE_WRITE,
+		    NULL, OPEN_EXISTING,
+		    FILE_FLAG_BACKUP_SEMANTICS|FILE_FLAG_OPEN_REPARSE_POINT,
+		    NULL);
+    if (f == INVALID_HANDLE_VALUE) {
+	errno = map_errno(GetLastError());
+	return -1;
+    }
+
+    if (!device_io_control(f, FSCTL_GET_REPARSE_POINT, NULL, 0,
+			 &rp, sizeof(rp), &ret, NULL)) {
+	e = map_errno(GetLastError());
+    }
+    else if (rp.ReparseTag != IO_REPARSE_TAG_SYMLINK){
+	e = EINVAL;
+    }
+    else {
+	void *name = ((char *)rp.SymbolicLinkReparseBuffer.PathBuffer +
+		      rp.SymbolicLinkReparseBuffer.PrintNameOffset);
+	ret = rp.SymbolicLinkReparseBuffer.PrintNameLength;
+	((WCHAR *)name)[ret/sizeof(WCHAR)] = L'\0';
+	translate_wchar(name, L'\\', L'/');
+	bufsize *= sizeof(WCHAR);
+	memcpy(buf, name, ret > bufsize ? bufsize : ret);
+    }
+
+    CloseHandle(f);
+    if (e) {
+	errno = e;
+	return -1;
+    }
+    return ret / sizeof(WCHAR);
+}
+
+/* License: Ruby's */
+static ssize_t
+w32_readlink(UINT cp, const char *path, char *buf, size_t bufsize)
+{
+    WCHAR *wpath;
+    WCHAR wbuf[MAXPATHLEN];
+    ssize_t ret;
+
+    wpath = mbstr_to_wstr(cp, path, -1, NULL);
+    if (!wpath) return -1;
+    ret = rb_w32_wreadlink(wpath, wbuf, MAXPATHLEN);
+    free(wpath);
+    if (ret < 0) return ret;
+    ret = WideCharToMultiByte(cp, 0, wbuf, ret, buf, bufsize, NULL, NULL);
+    if (!ret) {
+	int e = GetLastError();
+	if (e == ERROR_INSUFFICIENT_BUFFER) {
+	    ret = bufsize;
+	}
+	else {
+	    errno = map_errno(e);
+	    ret = -1;
+	}
+    }
+    return ret;
+}
+
+/* License: Ruby's */
+ssize_t
+rb_w32_ureadlink(const char *path, char *buf, size_t bufsize)
+{
+    return w32_readlink(CP_UTF8, path, buf, bufsize);
+}
+
+/* License: Ruby's */
+ssize_t
+readlink(const char *path, char *buf, size_t bufsize)
+{
+    return w32_readlink(filecp(), path, buf, bufsize);
+}
+
+/* License: Ruby's */
 int
 wait(int *status)
 {
