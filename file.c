@@ -95,7 +95,7 @@ int flock(int, int);
 #ifdef _WIN32
 #define STAT(p, s)	rb_w32_ustati64((p), (s))
 #undef lstat
-#define lstat(p, s)	rb_w32_ustati64((p), (s))
+#define lstat(p, s)	rb_w32_ulstati64((p), (s))
 #undef access
 #define access(p, m)	rb_w32_uaccess((p), (m))
 #undef chmod

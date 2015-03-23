@@ -215,6 +215,7 @@ typedef int clockid_t;
 extern int rb_w32_stat(const char *, struct stat *);
 extern int rb_w32_fstat(int, struct stat *);
 #endif
+#define lstat(path,st)		rb_w32_lstati64(path,st)
 #define access(path,mode)	rb_w32_access(path,mode)
 
 #define strcasecmp		_stricmp
@@ -343,6 +344,8 @@ extern int rb_w32_uunlink(const char *);
 extern int rb_w32_uchmod(const char *, int);
 extern int rb_w32_stati64(const char *, struct stati64 *);
 extern int rb_w32_ustati64(const char *, struct stati64 *);
+extern int rb_w32_lstati64(const char *, struct stati64 *);
+extern int rb_w32_ulstati64(const char *, struct stati64 *);
 extern int rb_w32_access(const char *, int);
 extern int rb_w32_uaccess(const char *, int);
 extern char rb_w32_fd_is_text(int);

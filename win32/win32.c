@@ -61,6 +61,7 @@ DWORD WINAPI GetFinalPathNameByHandleW(HANDLE, LPWSTR, DWORD, DWORD);
 #endif
 
 static int w32_stati64(const char *path, struct stati64 *st, UINT cp);
+static int w32_lstati64(const char *path, struct stati64 *st, UINT cp);
 static char *w32_getenv(const char *name, UINT cp);
 
 #undef getenv
@@ -111,6 +112,7 @@ static int has_redirection(const char *, UINT);
 int rb_w32_wait_events(HANDLE *events, int num, DWORD timeout);
 static int rb_w32_open_osfhandle(intptr_t osfhandle, int flags);
 static int wstati64(const WCHAR *path, struct stati64 *st);
+static int wlstati64(const WCHAR *path, struct stati64 *st);
 VALUE rb_w32_conv_from_wchar(const WCHAR *wstr, rb_encoding *enc);
 int ruby_brace_glob_with_enc(const char *str, int flags, ruby_glob_func *func, VALUE arg, rb_encoding *enc);
 
@@ -5079,9 +5081,54 @@ path_drive(const WCHAR *path)
 	towupper(path[0]) - L'A' : _getdrive() - 1;
 }
 
+static const WCHAR namespace_prefix[] = {L'\\', L'\\', L'?', L'\\'};
+
 /* License: Ruby's */
 static int
 winnt_stat(const WCHAR *path, struct stati64 *st)
+{
+    HANDLE f;
+
+    typedef DWORD (WINAPI *get_final_path_func)(HANDLE, WCHAR*, DWORD, DWORD);
+    static get_final_path_func get_final_path = (get_final_path_func)-1;
+
+    if (get_final_path == (get_final_path_func)-1) {
+	get_final_path = (get_final_path_func)
+	    get_proc_address(NULL, "GetFinalPathNameByHandleW", NULL);
+    }
+
+    memset(st, 0, sizeof(*st));
+    f = CreateFileW(path, 0, 0, NULL, OPEN_EXISTING,
+		    FILE_FLAG_BACKUP_SEMANTICS, NULL);
+    if (f != INVALID_HANDLE_VALUE) {
+	WCHAR finalname[MAX_PATH];
+	const DWORD attr = stati64_handle(f, st);
+	const DWORD len = get_final_path ?
+	    get_final_path(f, finalname, numberof(finalname), 0) : 0;
+	CloseHandle(f);
+	if (attr & FILE_ATTRIBUTE_DIRECTORY) {
+	    if (check_valid_dir(path)) return -1;
+	}
+	st->st_mode = fileattr_to_unixmode(attr, path);
+	if (len) {
+	    finalname[len] = L'\0';
+	    path = finalname;
+	    if (wcsncmp(path, namespace_prefix, numberof(namespace_prefix)) == 0)
+		path += numberof(namespace_prefix);
+	}
+    }
+    else {
+	if (stat_by_find(path, st)) return -1;
+    }
+
+    st->st_dev = st->st_rdev = path_drive(path);
+
+    return 0;
+}
+
+/* License: Ruby's */
+static int
+winnt_lstat(const WCHAR *path, struct stati64 *st)
 {
     WIN32_FILE_ATTRIBUTE_DATA wfa;
     const WCHAR *p = path;
@@ -5089,7 +5136,8 @@ winnt_stat(const WCHAR *path, struct stati64 *st)
     memset(st, 0, sizeof(*st));
     st->st_nlink = 1;
 
-    if (wcsncmp(p, L"\\\\?\\", 4) == 0) p += 4;
+    if (wcsncmp(p, namespace_prefix, numberof(namespace_prefix)) == 0)
+	p += numberof(namespace_prefix);
     if (wcspbrk(p, L"?*")) {
 	errno = ENOENT;
 	return -1;
@@ -5144,6 +5192,29 @@ wstati64(const WCHAR *path, struct stati64 *st)
     if (!(path = name_for_stat(buf1, path)))
 	return -1;
     ret = winnt_stat(path, st);
+    if (v)
+	ALLOCV_END(v);
+
+    return ret;
+}
+
+/* License: Ruby's */
+static int
+wlstati64(const WCHAR *path, struct stati64 *st)
+{
+    WCHAR *buf1;
+    int ret, size;
+    VALUE v;
+
+    if (!path || !st) {
+	errno = EFAULT;
+	return -1;
+    }
+    size = lstrlenW(path) + 2;
+    buf1 = ALLOCV_N(WCHAR, v, size);
+    if (!(path = name_for_stat(buf1, path)))
+	return -1;
+    ret = winnt_lstat(path, st);
     if (v)
 	ALLOCV_END(v);
 
@@ -5208,6 +5279,34 @@ w32_stati64(const char *path, struct stati64 *st, UINT cp)
     if (!(wpath = mbstr_to_wstr(cp, path, -1, NULL)))
 	return -1;
     ret = wstati64(wpath, st);
+    free(wpath);
+    return ret;
+}
+
+/* License: Ruby's */
+int
+rb_w32_ulstati64(const char *path, struct stati64 *st)
+{
+    return w32_lstati64(path, st, CP_UTF8);
+}
+
+/* License: Ruby's */
+int
+rb_w32_lstati64(const char *path, struct stati64 *st)
+{
+    return w32_lstati64(path, st, filecp());
+}
+
+/* License: Ruby's */
+static int
+w32_lstati64(const char *path, struct stati64 *st, UINT cp)
+{
+    WCHAR *wpath;
+    int ret;
+
+    if (!(wpath = mbstr_to_wstr(cp, path, -1, NULL)))
+	return -1;
+    ret = wlstati64(wpath, st);
     free(wpath);
     return ret;
 }

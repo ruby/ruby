@@ -1135,6 +1135,8 @@ sys_enc_warning_in(const char *func, const char *mesg, rb_encoding *enc)
 
 #ifdef _WIN32
 #define STAT(p, s)	rb_w32_ustati64((p), (s))
+#undef lstat
+#define lstat(p, s)	rb_w32_ulstati64((p), (s))
 #else
 #define STAT(p, s)	stat((p), (s))
 #endif
