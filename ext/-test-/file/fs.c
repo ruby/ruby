@@ -1,55 +1,64 @@
 #include "ruby/ruby.h"
 #include "ruby/io.h"
 
-#ifdef __linux__
-# define HAVE_GETMNTENT
+#ifdef HAVE_SYS_MOUNT_H
+#include <sys/mount.h>
+#endif
+#ifdef HAVE_SYS_VFS_H
+#include <sys/vfs.h>
 #endif
 
-#ifdef HAVE_GETMNTENT
-# include <stdio.h>
-# include <mntent.h>
+#if defined HAVE_STRUCT_STATFS_F_FSTYPENAME
+typedef struct statfs statfs_t;
+# define STATFS(f, s) statfs((f), (s))
+# define HAVE_STRUCT_STATFS_T_F_FSTYPENAME 1
+#elif defined(HAVE_STRUCT_STATVFS_F_FSTYPENAME) /* NetBSD */
+typedef struct statvfs statfs_t;
+# define STATFS(f, s) statvfs((f), (s))
+# define HAVE_STRUCT_STATFS_T_F_FSTYPENAME 1
+#elif defined(HAVE_STRUCT_STATVFS_F_BASETYPE) /* AIX, HP-UX, Solaris */
+typedef struct statvfs statfs_t;
+# define STATFS(f, s) statvfs((f), (s))
+# define HAVE_STRUCT_STATFS_T_F_FSTYPENAME 1
+# define f_fstypename f_basetype
+#elif defined HAVE_STRUCT_STATFS_F_TYPE
+typedef struct statfs statfs_t;
+# define STATFS(f, s) statfs((f), (s))
+#elif defined HAVE_STRUCT_STATVFS_F_TYPE
+typedef struct statvfs statfs_t;
+# define STATFS(f, s) statvfs((f), (s))
 #endif
 
 VALUE
 get_fsname(VALUE self, VALUE str)
 {
-#ifdef HAVE_GETMNTENT
-    const char *path;
-    struct mntent mntbuf;
-    static const int buflen = 4096;
-    char *buf = alloca(buflen);
-    int len = 0;
-    FILE *fp;
-#define FSNAME_LEN 100
-    char name[FSNAME_LEN] = "";
+#ifdef STATFS
+    statfs_t st;
+# define CSTR(s) rb_str_new_cstr(s)
 
     FilePathValue(str);
-    path = RSTRING_PTR(str);
-    fp = setmntent("/etc/mtab", "r");
-    if (!fp) rb_sys_fail("setmntent(/etb/mtab)");;
-
-    while (getmntent_r(fp, &mntbuf, buf, buflen)) {
-	int i;
-	char *mnt_dir = mntbuf.mnt_dir;
-	for (i=0; mnt_dir[i]; i++) {
-	    if (mnt_dir[i] != path[i]) {
-		goto next_entry;
-	    }
-	}
-	if (i >= len) {
-	    len = i;
-	    strlcpy(name, mntbuf.mnt_type, FSNAME_LEN);
-	}
-next_entry:
-	;
+    str = rb_str_encode_ospath(str);
+    if (STATFS(StringValueCStr(str), &st) == -1) {
+	rb_sys_fail_str(str);
     }
-    endmntent(fp);
-
-    if (!len) rb_sys_fail("no matching entry");;
-    return rb_str_new_cstr(name);
-#else
-    return Qnil;
+# ifdef HAVE_STRUCT_STATFS_T_F_FSTYPENAME
+    if (st.f_fstypename[0])
+	return CSTR(st.f_fstypename);
+# endif
+    switch (st.f_type) {
+      case 0x9123683E: /* BTRFS_SUPER_MAGIC */
+	return CSTR("btrfs");
+      case 0x7461636f: /* OCFS2_SUPER_MAGIC */
+	return CSTR("ocfs");
+      case 0xEF53: /* EXT2_SUPER_MAGIC EXT3_SUPER_MAGIC EXT4_SUPER_MAGIC */
+	return CSTR("ext4");
+      case 0x58465342: /* XFS_SUPER_MAGIC */
+	return CSTR("xfs");
+      case 0x01021994: /* TMPFS_MAGIC */
+	return CSTR("tmpfs");
+    }
 #endif
+    return Qnil;
 }
 
 void

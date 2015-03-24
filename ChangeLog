@@ -1,3 +1,8 @@
+Tue Mar 24 17:30:12 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/-test-/file/fs.c (get_fsname): return filesystem name by
+	  statfs/statvfs.  [ruby-core:68624] [Bug #10998]
+
 Tue Mar 24 16:46:02 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* tool/redmine-backporter.rb: now doesn't required spaces just after
