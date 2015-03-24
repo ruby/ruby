@@ -246,10 +246,12 @@ version 1.8.7. The current branch maintainers are as follows:
 
 [trunk]
   unnecessary
-[ruby_2_0_0]
+[ruby_2_1]
   Chikanaga Tomoyuki (nagachika)
-[ruby_1_9_3]
+[ruby_2_0_0]
   NAKAMURA Usaku (usa)
+[ruby_1_9_3]
+  _unmaintained_
 [ruby_1_9_2, ruby_1_9_1]
   _unmaintained_
 [ruby_1_8]

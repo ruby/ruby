@@ -1,3 +1,7 @@
+Tue Mar 24 21:59:10 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* doc/contributing.rdoc: update Maintainers list.
+
 Tue Mar 24 19:10:24 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_writebarrier_generational): fix messages for rb_bug().
