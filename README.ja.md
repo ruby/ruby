@@ -55,7 +55,7 @@ http://www.ruby-lang.org/
 
 ## メーリングリスト
 
-Rubyのメーリングリストがあります。参加希望の方は
+Rubyのメーリングリストがあります．参加希望の方は
 
 mailto:ruby-list-request@ruby-lang.org
 
@@ -63,22 +63,22 @@ mailto:ruby-list-request@ruby-lang.org
 
     subscribe
 
-と書いて送って下さい。
+と書いて送って下さい．
 
-Ruby開発者向けメーリングリストもあります。こちらではrubyのバグ、将来の仕様拡張など実装上の問題について議論されています。 参加希望の方は
+Ruby開発者向けメーリングリストもあります．こちらではrubyのバグ，将来の仕様拡張など実装上の問題について議論されています． 参加希望の方は
 
 mailto:ruby-dev-request@ruby-lang.org
 
-までruby-listと同様の方法でメールしてください。
+までruby-listと同様の方法でメールしてください．
 
 Ruby拡張モジュールについて話し合うruby-extメーリングリストと数学関係の話題について話し合うruby-mathメーリングリストと
-英語でrubyについて話し合うruby-talkメーリングリストもあります。参加方法はどれも同じです。
+英語でrubyについて話し合うruby-talkメーリングリストもあります．参加方法はどれも同じです．
 
 ## コンパイル・インストール
 
 以下の手順で行ってください．
 
-1.  もし `configure` ファイルが見つからない、もしくは `configure.in` より古いようなら、 `autoconf` を実行して
+1.  もし `configure` ファイルが見つからない，もしくは `configure.in` より古いようなら， `autoconf` を実行して
     新しく `configure` を生成する
 
 2.  `configure` を実行して `Makefile` などを生成する
@@ -154,11 +154,11 @@ UNIXであれば `configure` がほとんどの差異を吸収してくれるは
 
 ## 配布条件
 
-`COPYING.ja` ファイルを参照してください。
+`COPYING.ja` ファイルを参照してください．
 
 ## フィードバック
 
-Rubyに関する質問は Ruby-Talk（英語）や Ruby-List（日本語） (https://www.ruby-lang.org/ja/community/mailing-lists) や、
+Rubyに関する質問は Ruby-Talk（英語）や Ruby-List（日本語） (https://www.ruby-lang.org/ja/community/mailing-lists) や，
 stackoverflow (http://ja.stackoverflow.com/) などのWebサイトに投稿してください．
 
 バグ報告は http://bugs.ruby-lang.org で受け付けています．
@@ -166,7 +166,7 @@ stackoverflow (http://ja.stackoverflow.com/) などのWebサイトに投稿し�
 
 ## 著者
 
-Rubyのオリジナル版は、1995年にまつもとゆきひろ氏によって設計・開発されました．
+Rubyのオリジナル版は，1995年にまつもとゆきひろ氏によって設計・開発されました．
 
 <mailto:matz@ruby-lang.org>
 

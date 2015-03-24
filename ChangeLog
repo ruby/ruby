@@ -1,3 +1,7 @@
+Tue Mar 24 17:34:01 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* README.ja.md: should be chunibyo.
+
 Tue Mar 24 17:30:12 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/-test-/file/fs.c (get_fsname): return filesystem name by
