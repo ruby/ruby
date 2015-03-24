@@ -1,3 +1,8 @@
+Tue Mar 24 16:46:02 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* tool/redmine-backporter.rb: now doesn't required spaces just after
+	  `!`.
+
 Mon Mar 23 23:18:27 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (dir_close): don't raise on dobule close for consistent to

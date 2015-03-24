@@ -558,7 +558,7 @@ while true
     break
   end
   break unless l
-  cmd, args = l.strip.split(/\s+/, 2)
+  cmd, args = l.strip.split(/\s+|\b/, 2)
   next unless cmd
   if (!args || args.empty?) && /\A\d+\z/ =~ cmd
     args = cmd
@@ -570,7 +570,7 @@ while true
   cmd = list[cmd]
   begin
     if cmd
-      commands[cmd].call(args.to_s)
+      commands[cmd].call(args)
     else
       raise CommandSyntaxError
     end
