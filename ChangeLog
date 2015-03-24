@@ -3,6 +3,8 @@ Tue Mar 25 06:55:43 2015  Kazuki Tanaka  <gogotanaka@ruby-lang.org>
 	* complex.c (k_inexact_p, k_exact_zero_p): use k_exact_zero_p macro
 	  to remove k_inexact_p macro.
 
+	* complex.c (k_exact_one_p): remove unused macro k_exact_one_p.
+
 Tue Mar 24 22:23:33 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* doc/extention.rdoc: move from toplevel document and added extname.

@@ -267,7 +267,6 @@ k_complex_p(VALUE x)
 #define k_exact_p(x) (!k_float_p(x))
 
 #define k_exact_zero_p(x) (k_exact_p(x) && f_zero_p(x))
-#define k_exact_one_p(x) (k_exact_p(x) && f_one_p(x))
 
 #define get_dat1(x) \
     struct RComplex *dat;\
