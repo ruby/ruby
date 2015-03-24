@@ -1,3 +1,8 @@
+Wed Mar 25 08:07:28 2015  Eric Wong  <e@80x24.org>
+
+	* doc/extension.rdoc: fix spelling of filename
+	* doc/extension.ja.rdoc: ditto.
+
 Tue Mar 25 06:55:43 2015  Kazuki Tanaka  <gogotanaka@ruby-lang.org>
 
 	* complex.c (k_inexact_p, k_exact_zero_p): use k_exact_zero_p macro
