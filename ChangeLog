@@ -1,3 +1,10 @@
+Tue Mar 24 19:10:24 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_writebarrier_generational): fix messages for rb_bug().
+	  Remove `rb_' prefix.
+
+	* gc.c (gc_writebarrier_incremental): ditto.
+
 Tue Mar 24 17:34:01 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* README.ja.md: should be chunibyo.

@@ -5536,14 +5536,14 @@ gc_writebarrier_generational(rb_objspace_t *objspace, VALUE a, VALUE b)
     if (RGENGC_CHECK_MODE) {
 	if (!RVALUE_OLD_P(a)) rb_bug("gc_writebarrier_generational: %s is not an old object.", obj_info(a));
 	if ( RVALUE_OLD_P(b)) rb_bug("gc_writebarrier_generational: %s is an old object.", obj_info(b));
-	if (is_incremental_marking(objspace)) rb_bug("rb_gc_writebarrier_generational: called while incremental marking: %s -> %s", obj_info(a), obj_info(b));
+	if (is_incremental_marking(objspace)) rb_bug("gc_writebarrier_generational: called while incremental marking: %s -> %s", obj_info(a), obj_info(b));
     }
 
 #if 1
     /* mark `a' and remember (default behaviour) */
     if (!rgengc_remembered(objspace, a)) {
 	rgengc_remember(objspace, a);
-	gc_report(1, objspace, "rb_gc_writebarrier_generational: %s (remembered) -> %s\n", obj_info(a), obj_info(b));
+	gc_report(1, objspace, "gc_writebarrier_generational: %s (remembered) -> %s\n", obj_info(a), obj_info(b));
     }
 #else
     /* mark `b' and remember */
@@ -5579,18 +5579,18 @@ NOINLINE(static void gc_writebarrier_incremental(rb_objspace_t *objspace, VALUE 
 static void
 gc_writebarrier_incremental(rb_objspace_t *objspace, VALUE a, VALUE b)
 {
-    gc_report(2, objspace, "rb_gc_writebarrier_incremental: [LG] %s -> %s\n", obj_info(a), obj_info(b));
+    gc_report(2, objspace, "gc_writebarrier_incremental: [LG] %s -> %s\n", obj_info(a), obj_info(b));
 
     if (RVALUE_BLACK_P(a)) {
 	if (RVALUE_WHITE_P(b)) {
 	    if (!RVALUE_WB_UNPROTECTED(a)) {
-		gc_report(2, objspace, "rb_gc_writebarrier_incremental: [IN] %s -> %s\n", obj_info(a), obj_info(b));
+		gc_report(2, objspace, "gc_writebarrier_incremental: [IN] %s -> %s\n", obj_info(a), obj_info(b));
 		gc_mark_from(objspace, b, a);
 	    }
 	}
 	else if (RVALUE_OLD_P(a) && !RVALUE_OLD_P(b)) {
 	    if (!RVALUE_WB_UNPROTECTED(b)) {
-		gc_report(1, objspace, "rb_gc_writebarrier_incremental: [GN] %s -> %s\n", obj_info(a), obj_info(b));
+		gc_report(1, objspace, "gc_writebarrier_incremental: [GN] %s -> %s\n", obj_info(a), obj_info(b));
 		RVALUE_AGE_SET_OLD(objspace, b);
 
 		if (RVALUE_BLACK_P(b)) {
@@ -5598,7 +5598,7 @@ gc_writebarrier_incremental(rb_objspace_t *objspace, VALUE a, VALUE b)
 		}
 	    }
 	    else {
-		gc_report(1, objspace, "rb_gc_writebarrier_incremental: [LL] %s -> %s\n", obj_info(a), obj_info(b));
+		gc_report(1, objspace, "gc_writebarrier_incremental: [LL] %s -> %s\n", obj_info(a), obj_info(b));
 		gc_remember_unprotected(objspace, b);
 	    }
 	}
