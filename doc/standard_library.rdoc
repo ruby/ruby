@@ -69,7 +69,6 @@ Shellwords:: Manipulates strings with word parsing rules of UNIX Bourne shell
 Singleton:: Implementation of the Singleton pattern for Ruby
 Synchronizer:: A module that provides a two-phase lock with a counter
 Tempfile:: A utility class for managing temporary files
-Thread:: Provides support classes for threaded programs
 ThreadsWait:: Watches for termination of multiple threads
 Time:: Extends the Time class with methods for parsing and conversion
 Timeout:: Auto-terminate potentially long-running operations in Ruby
@@ -110,6 +109,7 @@ Socket:: Access underlying OS socket implementations
 StringIO:: Pseudo I/O on String objects
 StringScanner:: Provides lexical scanning operations on a String
 Syslog:: Ruby interface for the POSIX system logging facility
+Thread:: Provides support classes for threaded programs
 Tk:: Provides a framework for building a Graphical User Interface (GUI)
 WIN32OLE:: Provides an interface for OLE Automation in Ruby
 Zlib:: Ruby interface for the zlib compression/decompression library
