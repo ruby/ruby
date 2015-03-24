@@ -113,7 +113,3 @@ Thread:: Provides support classes for threaded programs
 Tk:: Provides a framework for building a Graphical User Interface (GUI)
 WIN32OLE:: Provides an interface for OLE Automation in Ruby
 Zlib:: Ruby interface for the zlib compression/decompression library
-
-
-
-

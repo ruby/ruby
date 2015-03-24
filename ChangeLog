@@ -1,3 +1,7 @@
+Tue Mar 24 22:06:58 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* doc/standard_library.rdoc: strip.
+
 Tue Mar 24 22:06:27 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* doc/standard_library.rdoc: move Thread to Extentions.
