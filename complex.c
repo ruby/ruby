@@ -265,7 +265,6 @@ k_complex_p(VALUE x)
 }
 
 #define k_exact_p(x) (!k_float_p(x))
-#define k_inexact_p(x) k_float_p(x)
 
 #define k_exact_zero_p(x) (k_exact_p(x) && f_zero_p(x))
 #define k_exact_one_p(x) (k_exact_p(x) && f_one_p(x))
@@ -1435,7 +1434,7 @@ nucomp_to_i(VALUE self)
 {
     get_dat1(self);
 
-    if (k_inexact_p(dat->imag) || f_nonzero_p(dat->imag)) {
+    if (!k_exact_zero_p(dat->imag)) {
 	rb_raise(rb_eRangeError, "can't convert %"PRIsVALUE" into Integer",
 		 self);
     }
@@ -1458,7 +1457,7 @@ nucomp_to_f(VALUE self)
 {
     get_dat1(self);
 
-    if (k_inexact_p(dat->imag) || f_nonzero_p(dat->imag)) {
+    if (!k_exact_zero_p(dat->imag)) {
 	rb_raise(rb_eRangeError, "can't convert %"PRIsVALUE" into Float",
 		 self);
     }
@@ -1483,7 +1482,7 @@ nucomp_to_r(VALUE self)
 {
     get_dat1(self);
 
-    if (k_inexact_p(dat->imag) || f_nonzero_p(dat->imag)) {
+    if (!k_exact_zero_p(dat->imag)) {
 	rb_raise(rb_eRangeError, "can't convert %"PRIsVALUE" into Rational",
 		 self);
     }
@@ -1510,7 +1509,7 @@ nucomp_rationalize(int argc, VALUE *argv, VALUE self)
 
     rb_scan_args(argc, argv, "01", NULL);
 
-    if (k_inexact_p(dat->imag) || f_nonzero_p(dat->imag)) {
+    if (!k_exact_zero_p(dat->imag)) {
        rb_raise(rb_eRangeError, "can't convert %"PRIsVALUE" into Rational",
                 self);
     }
