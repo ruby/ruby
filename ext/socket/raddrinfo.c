@@ -1210,7 +1210,7 @@ rsock_inspect_sockaddr(struct sockaddr *sockaddr_arg, socklen_t socklen, VALUE r
           }
 #endif
 
-#ifdef AF_PACKET
+#if defined(AF_PACKET) && defined(__linux__)
           /* GNU/Linux */
           case AF_PACKET:
           {

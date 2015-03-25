@@ -1,3 +1,15 @@
+Wed Mar 25 16:46:49 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/socket/extconf.rb: Solaris 11 has struct tcp_info.tcpi_ca_state,
+	  but it is a dummy.
+
+	* ext/socket/option.c: Solaris 11 doesn't have u_intN_t.
+
+	* ext/socket/option.c: Solaris 11 needs inspect_tcpi_msec.
+
+	* ext/socket/raddrinfo.c: Solaris 11 has AF_PACKET but doesn't have
+	  related macros.
+
 Wed Mar 25 17:03:08 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/-test-/file/fs.c (get_fsname): try magic number only if
