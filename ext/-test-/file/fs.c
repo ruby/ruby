@@ -12,21 +12,24 @@
 typedef struct statfs statfs_t;
 # define STATFS(f, s) statfs((f), (s))
 # define HAVE_STRUCT_STATFS_T_F_FSTYPENAME 1
+# if defined HAVE_STRUCT_STATFS_F_TYPE
+#   define HAVE_STRUCT_STATFS_T_F_TYPE 1
+# endif
 #elif defined(HAVE_STRUCT_STATVFS_F_FSTYPENAME) /* NetBSD */
 typedef struct statvfs statfs_t;
 # define STATFS(f, s) statvfs((f), (s))
 # define HAVE_STRUCT_STATFS_T_F_FSTYPENAME 1
+# if defined HAVE_STRUCT_STATVFS_F_TYPE
+#   define HAVE_STRUCT_STATFS_T_F_TYPE 1
+# endif
 #elif defined(HAVE_STRUCT_STATVFS_F_BASETYPE) /* AIX, HP-UX, Solaris */
 typedef struct statvfs statfs_t;
 # define STATFS(f, s) statvfs((f), (s))
 # define HAVE_STRUCT_STATFS_T_F_FSTYPENAME 1
 # define f_fstypename f_basetype
-#elif defined HAVE_STRUCT_STATFS_F_TYPE
-typedef struct statfs statfs_t;
-# define STATFS(f, s) statfs((f), (s))
-#elif defined HAVE_STRUCT_STATVFS_F_TYPE
-typedef struct statvfs statfs_t;
-# define STATFS(f, s) statvfs((f), (s))
+# if defined HAVE_STRUCT_STATVFS_F_TYPE
+#   define HAVE_STRUCT_STATFS_T_F_TYPE 1
+# endif
 #endif
 
 VALUE
@@ -45,6 +48,7 @@ get_fsname(VALUE self, VALUE str)
     if (st.f_fstypename[0])
 	return CSTR(st.f_fstypename);
 # endif
+# ifdef HAVE_STRUCT_STATFS_T_F_TYPE
     switch (st.f_type) {
       case 0x9123683E: /* BTRFS_SUPER_MAGIC */
 	return CSTR("btrfs");
@@ -57,6 +61,7 @@ get_fsname(VALUE self, VALUE str)
       case 0x01021994: /* TMPFS_MAGIC */
 	return CSTR("tmpfs");
     }
+# endif
 #endif
     return Qnil;
 }

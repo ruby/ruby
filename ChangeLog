@@ -1,3 +1,8 @@
+Wed Mar 25 17:03:08 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/-test-/file/fs.c (get_fsname): try magic number only if
+	  f_type is included.  [ruby-dev:48913] [Bug #11000]
+
 Wed Mar 25 11:20:40 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* benchmark/bm_hash_aref_flo.rb: make more realistic data.
