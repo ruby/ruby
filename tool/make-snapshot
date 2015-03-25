@@ -245,6 +245,8 @@ def package(vcs, rev, destdir, tmp = nil)
       f.puts "CROSS_COMPILING=true"
       f.puts "Object.__send__(:remove_const, :RUBY_PLATFORM)"
       f.puts "RUBY_PLATFORM='none'"
+      f.puts "Object.__send__(:remove_const, :RUBY_VERSION)"
+      f.puts "RUBY_VERSION='#{version}'"
     end
     unless File.exist?("configure")
       print "creating configure..."
