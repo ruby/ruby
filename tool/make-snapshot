@@ -308,7 +308,8 @@ def package(vcs, rev, destdir, tmp = nil)
         "PWD"=>Dir.pwd,
         "CONFIGURE"=>"configure",
       }
-      mk.gsub!(/@([A-Za-z_]\w*)@/) {vars[$1] || ENV[$1]}
+      args = vars.dup
+      mk.gsub!(/@([A-Za-z_]\w*)@/) {args.delete($1); vars[$1] || ENV[$1]}
       mk << commonmk.gsub(/(?<!#)\{[^{}]*\}/, "")
       mk << <<-'APPEND'
 
@@ -320,7 +321,7 @@ extract-gems:
       open(clean.add("Makefile"), "w") do |f|
         f.puts mk
       end
-      system("make", "prereq")
+      system("make", "prereq", *args.map {|arg| arg.join("=")})
       clean.push("rbconfig.rb", ".rbconfig.time", "enc.mk")
       print "prerequisites"
     else
