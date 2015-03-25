@@ -448,8 +448,8 @@ end
 
 define rp_class
   printf "(struct RClass *) %p", (void*)$arg0
-  if ((struct RClass *)($arg0))->ptr.origin != $arg0
-    printf " -> %p", ((struct RClass *)($arg0))->ptr.origin
+  if ((struct RClass *)($arg0))->ptr.origin_ != $arg0
+    printf " -> %p", ((struct RClass *)($arg0))->ptr.origin_
   end
   printf "\n"
   rb_classname $arg0
