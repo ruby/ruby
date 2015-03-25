@@ -1,3 +1,7 @@
+Thu Mar 26 06:35:10 2015  Eric Wong  <e@80x24.org>
+
+	* README.EXT: add redirect [ruby-core:68631]
+
 Wed Mar 25 16:46:49 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/socket/extconf.rb: Solaris 11 has struct tcp_info.tcpi_ca_state,
