@@ -1,3 +1,8 @@
+Thu Mar 26 10:05:13 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/test_observer.rb: add tests for Observable module.
+	  [fix GH-859] Patch by @brightbits
+
 Thu Mar 26 06:35:10 2015  Eric Wong  <e@80x24.org>
 
 	* README.EXT: add redirect [ruby-core:68631]
