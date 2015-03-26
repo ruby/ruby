@@ -249,7 +249,7 @@ define rp
     printf "%sT_IMEMO%s(", $color_type, $color_end
     output (enum imemo_type)(($flags>>RUBY_FL_USHIFT)&imemo_mask)
     printf "): "
-    print *((VALUE (*)[4])($arg0))
+    rp_imemo $arg0
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_NODE
     printf "%sT_NODE%s(", $color_type, $color_end
@@ -465,6 +465,40 @@ define rp_class
 end
 document rp_class
   Print the content of a Class/Module.
+end
+
+define rp_imemo
+  set $flags = (((struct RBasic *)($arg0))->flags >> RUBY_FL_USHIFT) & imemo_mask
+  if $flags == imemo_cref
+    printf "(rb_cref_t *) %p\n", (void*)$arg0
+    print *(rb_cref_t *)$arg0
+  else
+  if $flags == imemo_svar
+    printf "(struct vm_svar *) %p\n", (void*)$arg0
+    print *(struct vm_svar *)$arg0
+  else
+  if $flags == imemo_throw_data
+    printf "(struct vm_throw_data *) %p\n", (void*)$arg0
+    print *(struct vm_throw_data *)$arg0
+  else
+  if $flags == imemo_ifunc
+    printf "(struct vm_ifunc *) %p\n", (void*)$arg0
+    print *(struct vm_ifunc *)$arg0
+  else
+  if $flags == imemo_memo
+    printf "(struct MEMO *) %p\n", (void*)$arg0
+    print *(struct MEMO *)$arg0
+  else
+    printf "(struct RIMemo *) %p\n", (void*)$arg0
+    print *(struct RIMemo *)$arg0
+  end
+  end
+  end
+  end
+  end
+end
+document rp_imemo
+  Print the content of a memo
 end
 
 define nd_type
