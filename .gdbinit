@@ -245,6 +245,12 @@ define rp
     printf "%sT_UNDEF%s: ", $color_type, $color_end
     print (struct RBasic *)($arg0)
   else
+  if ($flags & RUBY_T_MASK) == RUBY_T_IMEMO
+    printf "%sT_IMEMO%s(", $color_type, $color_end
+    output (enum imemo_type)(($flags>>RUBY_FL_USHIFT)&imemo_mask)
+    printf "): "
+    print *((VALUE (*)[4])($arg0))
+  else
   if ($flags & RUBY_T_MASK) == RUBY_T_NODE
     printf "%sT_NODE%s(", $color_type, $color_end
     output (enum node_type)(($flags&RUBY_NODE_TYPEMASK)>>RUBY_NODE_TYPESHIFT)
@@ -257,6 +263,7 @@ define rp
   else
     printf "%sunknown%s: ", $color_type, $color_end
     print (struct RBasic *)($arg0)
+  end
   end
   end
   end
