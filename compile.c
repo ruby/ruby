@@ -5397,7 +5397,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	 */
 	int is_index = iseq->is_size++;
 	VALUE once_iseq = NEW_CHILD_ISEQVAL(
-	    (NODE *)IFUNC_NEW(build_postexe_iseq, node->nd_body),
+	    (NODE *)IFUNC_NEW(build_postexe_iseq, node->nd_body, 0),
 	    make_name_for_block(iseq), ISEQ_TYPE_BLOCK, line);
 
 	ADD_INSN2(ret, line, once, once_iseq, INT2FIX(is_index));
@@ -6315,7 +6315,7 @@ method_for_self(VALUE name, VALUE arg, rb_insn_func_t func,
     acc.arg = arg;
     acc.func = func;
     acc.line = caller_location(&path, &absolute_path);
-    return rb_iseq_new_with_opt((NODE *)IFUNC_NEW(build, (VALUE)&acc),
+    return rb_iseq_new_with_opt((NODE *)IFUNC_NEW(build, (VALUE)&acc, 0),
 				rb_sym2str(name), path, absolute_path,
 				INT2FIX(acc.line), 0, ISEQ_TYPE_METHOD, 0);
 }

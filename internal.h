@@ -585,7 +585,7 @@ struct vm_ifunc {
     ID id;
 };
 
-#define IFUNC_NEW(a, b) ((struct vm_ifunc *)rb_imemo_new(imemo_ifunc, (VALUE)(a), (VALUE)(b), 0, 0))
+#define IFUNC_NEW(a, b, c) ((struct vm_ifunc *)rb_imemo_new(imemo_ifunc, (VALUE)(a), (VALUE)(b), (VALUE)(c), 0))
 
 /* MEMO */
 

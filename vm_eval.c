@@ -1105,11 +1105,10 @@ rb_iterate(VALUE (* it_proc) (VALUE), VALUE data1,
 {
     int state;
     volatile VALUE retval = Qnil;
-    struct vm_ifunc *ifunc = IFUNC_NEW(bl_proc, data2);
+    struct vm_ifunc *ifunc = bl_proc ?
+	IFUNC_NEW(bl_proc, data2, rb_frame_this_func()) : 0;
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *volatile cfp = th->cfp;
-
-    ifunc->id = rb_frame_this_func();
 
     TH_PUSH_TAG(th);
     state = TH_EXEC_TAG();
@@ -1144,8 +1143,8 @@ rb_iterate(VALUE (* it_proc) (VALUE), VALUE data1,
 
 		rb_vm_rewind_cfp(th, cfp);
 	    }
-	    else{
-		/* SDR(); printf("%p, %p\n", cdfp, escape_dfp); */
+	    else if (0) {
+		SDR(); fprintf(stderr, "%p, %p\n", cfp, escape_cfp);
 	    }
 	}
 	else if (state == TAG_RETRY) {
@@ -1163,10 +1162,7 @@ rb_iterate(VALUE (* it_proc) (VALUE), VALUE data1,
     }
     TH_POP_TAG();
 
-    switch (state) {
-      case 0:
-	break;
-      default:
+    if (state) {
 	TH_JUMP_TAG(th, state);
     }
     return retval;
