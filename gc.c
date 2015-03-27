@@ -1787,6 +1787,8 @@ rb_node_newnode(enum node_type type, VALUE a0, VALUE a1, VALUE a2)
     return n;
 }
 
+#undef rb_imemo_new
+
 VALUE
 rb_imemo_new(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VALUE v0)
 {
@@ -1798,8 +1800,7 @@ rb_imemo_new(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VALUE v0)
 VALUE
 rb_imemo_new_debug(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VALUE v0, const char *file, int line)
 {
-    VALUE flags = T_IMEMO | (type << FL_USHIFT) | FL_WB_PROTECTED;
-    VALUE memo = newobj_of(v0, flags, v1, v2, v3);
+    VALUE memo = rb_imemo_new(type, v1, v2, v3, v0);
     fprintf(stderr, "memo %p (type: %d) @ %s:%d\n", memo, imemo_type(memo), file, line);
     return memo;
 }

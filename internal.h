@@ -585,11 +585,7 @@ struct vm_ifunc {
     ID id;
 };
 
-#if IMEMO_DEBUG
-#define IFUNC_NEW(a, b) ((struct vm_ifunc *)rb_imemo_new_debug(imemo_ifunc, (VALUE)(a), (VALUE)(b), 0, 0, __FILE__, __LINE__))
-#else
 #define IFUNC_NEW(a, b) ((struct vm_ifunc *)rb_imemo_new(imemo_ifunc, (VALUE)(a), (VALUE)(b), 0, 0))
-#endif
 
 /* MEMO */
 
@@ -611,11 +607,7 @@ struct MEMO {
 
 #define MEMO_CAST(m) ((struct MEMO *)m)
 
-#if IMEMO_DEBUG
-#define MEMO_NEW(a, b, c) ((struct MEMO *)rb_imemo_new_debug(imemo_memo, (VALUE)(a), (VALUE)(b), (VALUE)(c), 0, __FILE__, __LINE__))
-#else
 #define MEMO_NEW(a, b, c) ((struct MEMO *)rb_imemo_new(imemo_memo, (VALUE)(a), (VALUE)(b), (VALUE)(c), 0))
-#endif
 
 #define type_roomof(x, y) ((sizeof(x) + sizeof(y) - 1) / sizeof(y))
 #define MEMO_FOR(type, value) ((type *)RARRAY_PTR(value))
@@ -1299,9 +1291,10 @@ void rb_gc_mark_values(long n, const VALUE *values);
 
 #if IMEMO_DEBUG
 VALUE rb_imemo_new_debug(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VALUE v0, const char *file, int line);
-#endif
-
+#define rb_imemo_new(type, v1, v2, v3, v0) rb_imemo_new_debug(type, v1, v2, v3, v0, __FILE__, __LINE__)
+#else
 VALUE rb_imemo_new(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VALUE v0);
+#endif
 
 RUBY_SYMBOL_EXPORT_END
 
