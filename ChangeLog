@@ -1,3 +1,8 @@
+Fri Mar 27 16:34:16 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk: revert using BOOTSTRAPRUBY for enc.mk, as
+	  enc/depend uses CONFIG.  [ruby-core:68647] [Bug #11004]
+
 Thu Mar 26 10:05:13 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* test/test_observer.rb: add tests for Observable module.
