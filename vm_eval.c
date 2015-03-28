@@ -1130,34 +1130,22 @@ rb_iterate(VALUE (* it_proc) (VALUE), VALUE data1,
 	}
 	retval = (*it_proc) (data1);
     }
-    else {
-	const struct vm_throw_data *err = (struct vm_throw_data *)th->errinfo;
-	if (state == TAG_BREAK) {
-	    const rb_control_frame_t *escape_cfp = THROW_DATA_CATCH_FRAME(err);
+    else if (state == TAG_BREAK || state == TAG_RETRY) {
+	const struct vm_throw_data *const err = (struct vm_throw_data *)th->errinfo;
+	const rb_control_frame_t *const escape_cfp = THROW_DATA_CATCH_FRAME(err);
 
-	    if (cfp == escape_cfp) {
-		state = 0;
-		th->state = 0;
-		th->errinfo = Qnil;
-		retval = THROW_DATA_VAL(err);
+	if (cfp == escape_cfp) {
+	    rb_vm_rewind_cfp(th, cfp);
 
-		rb_vm_rewind_cfp(th, cfp);
-	    }
-	    else if (0) {
-		SDR(); fprintf(stderr, "%p, %p\n", cfp, escape_cfp);
-	    }
+	    state = 0;
+	    th->state = 0;
+	    th->errinfo = Qnil;
+
+	    if (state == TAG_RETRY) goto iter_retry;
+	    retval = THROW_DATA_VAL(err);
 	}
-	else if (state == TAG_RETRY) {
-	    const rb_control_frame_t *escape_cfp = THROW_DATA_CATCH_FRAME(err);
-
-	    if (cfp == escape_cfp) {
-		rb_vm_rewind_cfp(th, cfp);
-
-		state = 0;
-		th->state = 0;
-		th->errinfo = Qnil;
-		goto iter_retry;
-	    }
+	else if (0) {
+	    SDR(); fprintf(stderr, "%p, %p\n", cfp, escape_cfp);
 	}
     }
     TH_POP_TAG();
