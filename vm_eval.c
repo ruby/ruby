@@ -1099,32 +1099,28 @@ static const char *
 vm_frametype_name(const rb_control_frame_t *cfp);
 #endif
 
-VALUE
-rb_iterate(VALUE (* it_proc) (VALUE), VALUE data1,
-	   VALUE (* bl_proc) (ANYARGS), VALUE data2)
+static VALUE
+rb_iterate0(VALUE (* it_proc) (VALUE), VALUE data1,
+	    const struct vm_ifunc *const ifunc,
+	    rb_thread_t *const th)
 {
     int state;
     volatile VALUE retval = Qnil;
-    struct vm_ifunc *ifunc = bl_proc ?
-	IFUNC_NEW(bl_proc, data2, rb_frame_this_func()) : 0;
-    rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *volatile cfp = th->cfp;
+    rb_control_frame_t *const cfp = th->cfp;
 
     TH_PUSH_TAG(th);
     state = TH_EXEC_TAG();
     if (state == 0) {
-	VAR_INITIALIZED(th);
-	VAR_INITIALIZED(ifunc);
       iter_retry:
 	{
 	    rb_block_t *blockptr;
-	    if (bl_proc) {
-		blockptr = RUBY_VM_GET_BLOCK_PTR_IN_CFP(th->cfp);
+	    if (ifunc) {
+		blockptr = RUBY_VM_GET_BLOCK_PTR_IN_CFP(cfp);
 		blockptr->iseq = (void *)ifunc;
 		blockptr->proc = 0;
 	    }
 	    else {
-		blockptr = VM_CF_BLOCK_PTR(th->cfp);
+		blockptr = VM_CF_BLOCK_PTR(cfp);
 	    }
 	    th->passed_block = blockptr;
 	}
@@ -1154,6 +1150,15 @@ rb_iterate(VALUE (* it_proc) (VALUE), VALUE data1,
 	TH_JUMP_TAG(th, state);
     }
     return retval;
+}
+
+VALUE
+rb_iterate(VALUE (* it_proc)(VALUE), VALUE data1,
+	   VALUE (* bl_proc)(ANYARGS), VALUE data2)
+{
+    return rb_iterate0(it_proc, data1,
+		       bl_proc ? IFUNC_NEW(bl_proc, data2, rb_frame_this_func()) : 0,
+		       GET_THREAD());
 }
 
 struct iter_method_arg {
