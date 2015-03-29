@@ -432,7 +432,7 @@ class TestProc < Test::Unit::TestCase
     assert_equal(:noreason, exc.reason)
   end
 
-  def test_binding2
+  def test_curry_binding
     assert_raise(ArgumentError) { proc {}.curry.binding }
   end
 
