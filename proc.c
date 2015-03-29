@@ -2507,7 +2507,7 @@ proc_binding(VALUE self)
 	}
 	iseq = rb_method_get_iseq((VALUE)((struct vm_ifunc *)iseq)->data);
 	GetEnvPtr(envval, env);
-	if (env->local_size < iseq->local_size) {
+	if (iseq && env->local_size < iseq->local_size) {
 	    int prev_local_size = env->local_size;
 	    int local_size = iseq->local_size;
 	    VALUE newenvval = TypedData_Wrap_Struct(RBASIC_CLASS(envval), RTYPEDDATA_TYPE(envval), 0);
