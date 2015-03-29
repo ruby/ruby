@@ -1,3 +1,9 @@
+Sun Mar 29 11:51:32 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (proc_binding): replicate env from method object, and
+	  allocate the local variable area for the iseq local table.
+	  [ruby-core:68673] [Bug #11012]
+
 Sat Mar 28 09:19:41 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/date/extconf.rb: try_cflags("-std=iso9899:1999") [Bug #10906]

@@ -2493,22 +2493,40 @@ static VALUE
 proc_binding(VALUE self)
 {
     rb_proc_t *proc;
-    VALUE bindval;
+    VALUE bindval, envval;
     rb_binding_t *bind;
     rb_iseq_t *iseq;
 
     GetProcPtr(self, proc);
+    envval = proc->envval;
     iseq = proc->block.iseq;
     if (RUBY_VM_IFUNC_P(iseq)) {
+	rb_env_t *env;
 	if (!IS_METHOD_PROC_ISEQ(iseq)) {
 	    rb_raise(rb_eArgError, "Can't create Binding from C level Proc");
 	}
 	iseq = rb_method_get_iseq((VALUE)((struct vm_ifunc *)iseq)->data);
+	GetEnvPtr(envval, env);
+	if (env->local_size < iseq->local_size) {
+	    int prev_local_size = env->local_size;
+	    int local_size = iseq->local_size;
+	    VALUE newenvval = TypedData_Wrap_Struct(RBASIC_CLASS(envval), RTYPEDDATA_TYPE(envval), 0);
+	    rb_env_t *newenv = xmalloc(sizeof(rb_env_t) + ((local_size + 1) * sizeof(VALUE)));
+	    RTYPEDDATA_DATA(newenvval) = newenv;
+	    newenv->env_size = local_size + 2;
+	    newenv->local_size = local_size;
+	    newenv->prev_envval = env->prev_envval;
+	    newenv->block = env->block;
+	    MEMCPY(newenv->env, env->env, VALUE, prev_local_size + 1);
+	    rb_mem_clear(newenv->env + prev_local_size + 1, local_size - prev_local_size);
+	    newenv->env[local_size + 1] = newenvval;
+	    envval = newenvval;
+	}
     }
 
     bindval = rb_binding_alloc(rb_cBinding);
     GetBindingPtr(bindval, bind);
-    bind->env = proc->envval;
+    bind->env = envval;
     bind->blockprocval = proc->blockprocval;
     if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
 	bind->path = iseq->location.path;
