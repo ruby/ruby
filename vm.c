@@ -512,16 +512,17 @@ vm_make_env_each(const rb_thread_t *const th, rb_control_frame_t *const cfp,
     env->env_size = local_size + 1 + 1;
     env->local_size = local_size;
 
-    for (i = 0; i <= local_size; i++) {
-	env->env[i] = envptr[-local_size + i];
+    i = local_size + 1;
+    MEMCPY(env->env, envptr - local_size, VALUE, i);
 #if 0
+    for (i = 0; i <= local_size; i++) {
 	fprintf(stderr, "%2d ", &envptr[-local_size + i] - th->stack); dp(env->env[i]);
 	if (RUBY_VM_NORMAL_ISEQ_P(cfp->iseq)) {
 	    /* clear value stack for GC */
 	    envptr[-local_size + i] = 0;
 	}
-#endif
     }
+#endif
 
     /* be careful not to trigger GC after this */
     envval = TypedData_Wrap_Struct(rb_cEnv, &env_data_type, env);
