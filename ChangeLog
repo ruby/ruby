@@ -76,7 +76,7 @@ Tue Mar 24 22:06:58 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 Tue Mar 24 22:06:27 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
-	* doc/standard_library.rdoc: move Thread to Extentions.
+	* doc/standard_library.rdoc: move Thread to Extensions.
 
 Tue Mar 24 21:59:10 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
@@ -105,7 +105,7 @@ Tue Mar 24 16:46:02 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 Mon Mar 23 23:18:27 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* dir.c (dir_close): don't raise on dobule close for consistent to
+	* dir.c (dir_close): don't raise on double close for consistent to
 	  IO#close.  [Feature #10950]
 
 Mon Mar 23 21:22:07 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
