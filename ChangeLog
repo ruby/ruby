@@ -1,3 +1,8 @@
+Sun Mar 29 21:08:37 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* gc.c (objspace_allrefs_destruct_i): fix a typo.
+	  [Bug #11013]
+
 Sun Mar 29 11:51:32 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (proc_binding): replicate env from method object, and

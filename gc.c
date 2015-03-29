@@ -4692,7 +4692,7 @@ objspace_allrefs(rb_objspace_t *objspace)
 }
 
 static int
-objspaec_allrefs_destruct_i(st_data_t key, st_data_t value, void *ptr)
+objspace_allrefs_destruct_i(st_data_t key, st_data_t value, void *ptr)
 {
     struct reflist *refs = (struct reflist *)value;
     reflist_destruct(refs);
@@ -4702,7 +4702,7 @@ objspaec_allrefs_destruct_i(st_data_t key, st_data_t value, void *ptr)
 static void
 objspace_allrefs_destruct(struct st_table *refs)
 {
-    st_foreach(refs, objspaec_allrefs_destruct_i, 0);
+    st_foreach(refs, objspace_allrefs_destruct_i, 0);
     st_free_table(refs);
 }
 
