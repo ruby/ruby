@@ -671,7 +671,8 @@ rb_readlink(VALUE path)
 	path = fix_string_encoding(path, enc);
 	cp = CP_UTF8;
     }
-    wpath = mbstr_to_wstr(cp, RSTRING_PTR(path), RSTRING_LEN(path), NULL);
+    wpath = mbstr_to_wstr(cp, RSTRING_PTR(path),
+			  RSTRING_LEN(path)+rb_enc_mbminlen(enc), NULL);
     if (!wpath) rb_memerror();
     len = rb_w32_wreadlink(wpath, wbuf, numberof(wbuf));
     free(wpath);
