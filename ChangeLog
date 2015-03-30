@@ -1,3 +1,7 @@
+Mon Mar 30 22:02:55 2015  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* README.EXT.ja: add redirect [ruby-core:68631]
+
 Mon Mar 30 14:42:41 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (fileattr_to_unixmode, winnt_lstat): deal with
