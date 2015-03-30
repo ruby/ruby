@@ -504,12 +504,11 @@ static const char builtin_types[][10] = {
     "false",
     "Symbol",			/* :symbol */
     "Fixnum",
-    "",				/* 0x16 */
+    "undef",			/* internal use: #undef; should not happen */
     "",				/* 0x17 */
     "",				/* 0x18 */
     "",				/* 0x19 */
-    "",				/* 0x1a */
-    "undef",			/* internal use: #undef; should not happen */
+    "Memo",			/* internal use: general memo */
     "Node",			/* internal use: syntax tree node */
     "iClass",			/* internal use: mixed-in module holder */
 };
