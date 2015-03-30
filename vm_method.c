@@ -639,12 +639,17 @@ get_original_method_entry(VALUE refinements,
 			  const rb_method_entry_t *me,
 			  VALUE *defined_class_ptr)
 {
+    VALUE super;
+
     if (me->def->body.orig_me) {
 	return me->def->body.orig_me;
     }
+    else if (!(super = RCLASS_SUPER(me->klass))) {
+	return 0;
+    }
     else {
 	rb_method_entry_t *tmp_me;
-	tmp_me = rb_method_entry(RCLASS_SUPER(me->klass), me->called_id,
+	tmp_me = rb_method_entry(super, me->called_id,
 				 defined_class_ptr);
 	return rb_resolve_refined_method(refinements, tmp_me,
 					 defined_class_ptr);

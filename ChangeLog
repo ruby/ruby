@@ -1,3 +1,8 @@
+Tue Mar 31 00:38:14 2015  Seiei Higa  <hanachin@gmail.com>
+
+	* vm_method.c (rb_method_entry): if no super class, no original
+	  method entry.  [ruby-core:67389] [Bug #10707]
+
 Tue Mar 31 00:34:39 2015  Vit Ondruch  <vondruch@redhat.com>
 
 	* configure.in (RUBY_SETJMP_TYPE): Remove superfluous semicolon
