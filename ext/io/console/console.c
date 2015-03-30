@@ -689,7 +689,7 @@ console_dev(VALUE klass)
 	    if ((fptr = RFILE(con)->fptr) && GetReadFD(fptr) != -1)
 		return con;
 	}
-	rb_mod_remove_const(klass, ID2SYM(id_console));
+	rb_const_remove(klass, id_console);
     }
     {
 	VALUE args[2];

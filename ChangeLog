@@ -1,3 +1,8 @@
+Mon Mar 30 23:30:57 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/io/console/console.c (console_dev): id_console is not a
+	  constant name, use rb_const_remove() to get rid of NameError.
+
 Sun Mar 22 04:15:39 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/thread/thread.c (Init_thread): ConditionVariable and Queue
