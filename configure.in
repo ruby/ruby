@@ -1148,10 +1148,6 @@ main()
 		ac_cv_func_isinf=yes
 		ac_cv_func_isnan=yes
 		],
-[solaris*], [	LIBS="-lm $LIBS"
-	AS_CASE(["$target_cpu"],
-	 [sparc*], [ac_cv_func_vfork=no])
-		],
 [nacl], [
   LIBS="-lm $LIBS"
   if test "${nacl_cv_build_variant}" = "newlib"; then
