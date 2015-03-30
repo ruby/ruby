@@ -5083,11 +5083,11 @@ fileattr_to_unixmode(DWORD attr, const WCHAR *path)
 	mode |= S_IREAD | S_IWRITE | S_IWUSR;
     }
 
-    if (attr & FILE_ATTRIBUTE_DIRECTORY) {
-	mode |= S_IFDIR | S_IEXEC;
+    if (attr & FILE_ATTRIBUTE_REPARSE_POINT) {
+	mode |= S_IFLNK | S_IEXEC;
     }
-    else if (attr & FILE_ATTRIBUTE_REPARSE_POINT) {
-	mode |= S_IFLNK;
+    else if (attr & FILE_ATTRIBUTE_DIRECTORY) {
+	mode |= S_IFDIR | S_IEXEC;
     }
     else {
 	mode |= S_IFREG;
@@ -5253,7 +5253,11 @@ winnt_lstat(const WCHAR *path, struct stati64 *st)
 	return -1;
     }
     if (GetFileAttributesExW(path, GetFileExInfoStandard, (void*)&wfa)) {
-	if (wfa.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+	if (wfa.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) {
+	    /* TODO: size in which encoding? */
+	    st->st_size = 0;
+	}
+	else if (wfa.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
 	    if (check_valid_dir(path)) return -1;
 	    st->st_size = 0;
 	}
