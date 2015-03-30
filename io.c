@@ -10515,52 +10515,57 @@ copy_stream_body(VALUE arg)
 
     stp->total = 0;
 
-    if (src_io == argf ||
-        !(RB_TYPE_P(src_io, T_FILE) ||
-          RB_TYPE_P(src_io, T_STRING) ||
-          rb_respond_to(src_io, rb_intern("to_path")))) {
-        src_fd = -1;
+    if (src_io == argf) {
+	src_fd = -1;
+    }
+    else if (RB_TYPE_P(src_io, T_FILE)) {
+	goto io_src;
+    }
+    else if (!RB_TYPE_P(src_io, T_STRING) &&
+	     (rb_respond_to(src_io, id_read) ||
+	      rb_respond_to(src_io, id_readpartial))) {
+	src_fd = -1;
     }
     else {
-	if (!RB_TYPE_P(src_io, T_FILE)) {
-            VALUE args[2];
-	    FilePathValue(src_io);
-	    args[0] = src_io;
-	    args[1] = INT2NUM(O_RDONLY|common_oflags);
-            src_io = rb_class_new_instance(2, args, rb_cFile);
-            stp->src = src_io;
-            stp->close_src = 1;
-        }
-        GetOpenFile(src_io, src_fptr);
-        rb_io_check_byte_readable(src_fptr);
-        src_fd = src_fptr->fd;
+	VALUE args[2];
+	FilePathValue(src_io);
+	args[0] = src_io;
+	args[1] = INT2NUM(O_RDONLY|common_oflags);
+	src_io = rb_class_new_instance(2, args, rb_cFile);
+	stp->src = src_io;
+	stp->close_src = 1;
+      io_src:
+	GetOpenFile(src_io, src_fptr);
+	rb_io_check_byte_readable(src_fptr);
+	src_fd = src_fptr->fd;
     }
     stp->src_fd = src_fd;
 
-    if (dst_io == argf ||
-        !(RB_TYPE_P(dst_io, T_FILE) ||
-          RB_TYPE_P(dst_io, T_STRING) ||
-          rb_respond_to(dst_io, rb_intern("to_path")))) {
-        dst_fd = -1;
+    if (dst_io == argf) {
+	dst_fd = -1;
+    }
+    else if (RB_TYPE_P(dst_io, T_FILE)) {
+	dst_io = GetWriteIO(dst_io);
+	stp->dst = dst_io;
+	goto io_dst;
+    }
+    else if (!RB_TYPE_P(dst_io, T_STRING) &&
+	     rb_respond_to(dst_io, id_write)) {
+	dst_fd = -1;
     }
     else {
-	if (!RB_TYPE_P(dst_io, T_FILE)) {
-            VALUE args[3];
-	    FilePathValue(dst_io);
-	    args[0] = dst_io;
-	    args[1] = INT2NUM(O_WRONLY|O_CREAT|O_TRUNC|common_oflags);
-            args[2] = INT2FIX(0666);
-            dst_io = rb_class_new_instance(3, args, rb_cFile);
-            stp->dst = dst_io;
-            stp->close_dst = 1;
-        }
-        else {
-            dst_io = GetWriteIO(dst_io);
-            stp->dst = dst_io;
-        }
-        GetOpenFile(dst_io, dst_fptr);
-        rb_io_check_writable(dst_fptr);
-        dst_fd = dst_fptr->fd;
+	VALUE args[3];
+	FilePathValue(dst_io);
+	args[0] = dst_io;
+	args[1] = INT2NUM(O_WRONLY|O_CREAT|O_TRUNC|common_oflags);
+	args[2] = INT2FIX(0666);
+	dst_io = rb_class_new_instance(3, args, rb_cFile);
+	stp->dst = dst_io;
+	stp->close_dst = 1;
+      io_dst:
+	GetOpenFile(dst_io, dst_fptr);
+	rb_io_check_writable(dst_fptr);
+	dst_fd = dst_fptr->fd;
     }
     stp->dst_fd = dst_fd;
 

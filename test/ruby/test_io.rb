@@ -873,6 +873,21 @@ class TestIO < Test::Unit::TestCase
     }
   end
 
+  def test_copy_stream_strio_to_tempfile
+    bug11015 = '[ruby-core:68676] [Bug #11015]'
+    # StringIO to Tempfile
+    src = StringIO.new("abcd")
+    dst = Tempfile.new("baz")
+    ret = IO.copy_stream(src, dst)
+    assert_equal(4, ret)
+    pos = dst.pos
+    dst.rewind
+    assert_equal("abcd", dst.read)
+    assert_equal(4, pos, bug11015)
+  ensure
+    dst.close!
+  end
+
   def test_copy_stream_write_in_binmode
     bug8767 = '[ruby-core:56518] [Bug #8767]'
     mkcdtmpdir {
