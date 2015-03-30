@@ -1,3 +1,9 @@
+Tue Mar 31 00:34:39 2015  Vit Ondruch  <vondruch@redhat.com>
+
+	* configure.in (RUBY_SETJMP_TYPE): Remove superfluous semicolon
+	  which causes a syntax error with autoconf 2.63.
+	  [ruby-core:67429] [Bug #10716]
+
 Tue Mar 31 00:32:04 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/fiddle/test_handle.rb (test_NEXT): use -test-/dln/empty
