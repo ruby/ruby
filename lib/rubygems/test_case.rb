@@ -1108,7 +1108,7 @@ Also, a list:
   # other platforms, including Cygwin, it will return 'make'.
 
   def self.make_command
-    ENV["MAKE"] || (vc_windows? ? 'nmake' : 'make')
+    ENV["make"] || ENV["MAKE"] || (vc_windows? ? 'nmake' : 'make')
   end
 
   ##
@@ -1117,7 +1117,7 @@ Also, a list:
   # other platforms, including Cygwin, it will return 'make'.
 
   def make_command
-    ENV["MAKE"] || (vc_windows? ? 'nmake' : 'make')
+    ENV["make"] || ENV["MAKE"] || (vc_windows? ? 'nmake' : 'make')
   end
 
   ##
