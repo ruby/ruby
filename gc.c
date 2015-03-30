@@ -8489,6 +8489,8 @@ rb_gcdebug_sentinel(VALUE obj, const char *name)
  *  called when a specific object is about to be destroyed by garbage
  *  collection.
  *
+ *     require 'objspace'
+ *
  *     a = "A"
  *     b = "B"
  *
