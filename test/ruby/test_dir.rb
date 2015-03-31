@@ -178,6 +178,11 @@ class TestDir < Test::Unit::TestCase
     end
   end
 
+  def test_entries
+    entries = Dir.open(@root) {|dir| dir.entries}
+    assert_equal(%w(. ..) + (?a..?z).to_a, entries.sort)
+  end
+
   def test_foreach
     assert_equal(%w(. ..) + (?a..?z).to_a, Dir.foreach(@root).to_a.sort)
   end
