@@ -9,6 +9,7 @@ MAJOR=@MAJOR@
 MINOR=@MINOR@
 TEENY=@TEENY@
 ruby_version=@ruby_version@
+ruby_version_dir_name=@ruby_version_dir_name@
 RUBY_API_VERSION=@RUBY_API_VERSION@
 RUBY_PROGRAM_VERSION=@RUBY_PROGRAM_VERSION@
 RUBY_BASE_NAME=@RUBY_BASE_NAME@
