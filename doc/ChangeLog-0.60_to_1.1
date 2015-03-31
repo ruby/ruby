@@ -1,7 +1,7 @@
 Tue Aug 12 16:02:18 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* variable.c: option variables: $-0, $-p(readonly), $-v,
-	  $-I(load_path), $-a(readonly), $-K, $-d, $-F, $-i, $-l. 
+	  $-I(load_path), $-a(readonly), $-K, $-d, $-F, $-i, $-l.
 
 	* parse.y (yylex): ignore rd (ruby document) in the code.
 
@@ -75,7 +75,7 @@ Wed Jul 23 09:56:55 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
 	* object.c (obj_methods): returns list of method names of the
 	  specified object.
 
-	* class.c (mod_instance_methods): returns list of method names of 
+	* class.c (mod_instance_methods): returns list of method names of
 	  the class instnace.
 
 Fri Jul 11 22:38:55 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
@@ -298,7 +298,7 @@ Tue Apr 22 12:58:26 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
 Thu Apr 17 00:40:51 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
 
 	* configure.in (rb_cv_bsdpgrp): proper check for BSD
-	  setpgrp/setpgrp. 
+	  setpgrp/setpgrp.
 
 Wed Apr 16 16:14:02 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
 
@@ -405,7 +405,7 @@ Wed Apr  2 14:51:06 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
 	* eval.c (thread_create): halt on some deadlock conditions.
 
 	* regex.c (is_in_list): wrong result for non-mbc higher-byte
-	  characters. 
+	  characters.
 
 	* regex.c (re_match): wrong skip for multi-byte characters.
 
@@ -436,7 +436,7 @@ Fri Mar 28 11:24:51 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
 	* eval.c (obj_make_private): new method make_method_{public,private}
 	  to change visibility of singleton methods.
 
-	* regex.c (re_compile_pattern): enables numeric literal >= 0x80 in 
+	* regex.c (re_compile_pattern): enables numeric literal >= 0x80 in
 	  the character class.
 
 	* regex.c (re_compile_pattern): enabled numeric literal >= 0x80,
@@ -471,7 +471,7 @@ Tue Mar 25 14:08:43 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
 	* lib/English.rb: provides nicer English alias for the variables.
 
 	* parse.y (expr): alias $var1 $var2 makes alias of the global
-	  variable. 
+	  variable.
 
 Mon Mar 24 18:23:20 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
 
@@ -562,13 +562,13 @@ Tue Mar  4 12:28:32 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
 Mon Mar  3 22:44:55 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
 
 	* eval.c (thread_status): returns nil for exception terminated
-	  threads. 
+	  threads.
 
 	* eval.c (thread_value): re-raise exceptions.
 
 Sat Mar  1 00:59:47 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
 
-	* eval.c (rb_eval): restore $! value after rescue clause, to 
+	* eval.c (rb_eval): restore $! value after rescue clause, to
 	  re-raise exceptions correctly.
 
 Fri Feb 28 16:43:38 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
@@ -659,7 +659,7 @@ Thu Feb 13 16:21:24 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
 
 	* parse.y (expr): return/yield now accept normal argument format.
 
-	* parse.y (yylex): a star in `yield *x' must not be multiplication 
+	* parse.y (yylex): a star in `yield *x' must not be multiplication
 	  operator.
 
 Wed Feb 12 15:06:44 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
@@ -703,10 +703,10 @@ Tue Feb  4 00:37:29 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
 
 Mon Feb  3 10:13:06 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
 
-	* eval.c (obj_extend): move real inclusion to Module#extend_object 
+	* eval.c (obj_extend): move real inclusion to Module#extend_object
 	  to allow redfinition.
 
-	* object.c (Init_Object): Kernel class is now Module. Object class 
+	* object.c (Init_Object): Kernel class is now Module. Object class
 	  became the true root class.
 
 	* object.c (obj_inspect): remove useless buffer.
@@ -835,7 +835,7 @@ Fri Jan 17 12:31:37 1997  Yukihiro Matsumoto  <matz@caelum.co.jp>
 
 	* version 1.0-970117
 
-	* ruby.c (ruby_options): constant PLATFORM, which is in the {cpu}-{os} 
+	* ruby.c (ruby_options): constant PLATFORM, which is in the {cpu}-{os}
 	  form, defined.
 
 	* configure.in: platform infomation embedded in the interpreter.
@@ -1206,7 +1206,7 @@ Thu Nov 21 04:13:21 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
 	  ルを静的リンクするように
 
 	* pack.c (pack_unpack): 行末の改行がない時にもチェックサムをスキッ
-	  プするように 
+	  プするように
 
 Wed Nov 20 21:42:51 1996  Yasuo OHBA  <jammy@shljapan.co.jp>
 
@@ -1601,7 +1601,7 @@ Mon Sep 30 15:28:00 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
 	* eval.c (rb_eval): yieldで正しくないselfが設定されていた
 
 	* eval.c (ruby_run): toplevelの例外処理のバグ
-	
+
 Mon Sep 30 09:13:26 1996  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
 
 	* djgpp対応
@@ -1815,7 +1815,7 @@ Thu Sep  5 14:23:07 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
 
 Thu Sep  5 00:32:07 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
 
-	* eval.c (class_superclass) クラスのスーパークラスを返すメソッド． 
+	* eval.c (class_superclass) クラスのスーパークラスを返すメソッド．
 
 Wed Sep  4 16:54:56 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
 
@@ -1841,7 +1841,7 @@ Mon Sep  2 11:37:59 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
 
 	* parse.y (primary): `::'をprimaryに移動 Foo::Bar.Bazがエラーにな
 	  らないように．
-	
+
 	* parse.y (primary): オペレータ形式の特異メソッドが定義できない
 
 	* random.c (f_rand): maxが0の時に対応
@@ -1880,7 +1880,7 @@ Sat Aug 24 23:56:37 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
 
 Fri Aug 23 18:13:03 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
 
-	* regex.c (re_free_registers): allocateしていない時には当然 free 
+	* regex.c (re_free_registers): allocateしていない時には当然 free
 	  してはいけない．
 
 Thu Aug 22 01:20:35 1996  Yukihiro Matsumoto  <matz@caelum.co.jp>
@@ -3039,7 +3039,7 @@ Wed Sep 27 04:12:44 1995  Takahasi Mamoru  <taka@soum.co.jp>
 
 Tue Sep 26 19:12:42 1995  Yasuo OHBA  <jammy@csg.mes.co.jp>
 
-	* dln.c (dln_find_1): `.', `..'から始まるパスに対応した. 
+	* dln.c (dln_find_1): `.', `..'から始まるパスに対応した.
 
 Mon Sep 25 12:33:03 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
 
@@ -3255,7 +3255,7 @@ Mon Jul 17 14:53:51 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
 	* variable.c (rb_const_get): 未初期化のCONSTANTの値をnilにした．し
 	  かし，今後また例外に戻す可能性はある．要はoptionalなクラス/モジュー
 	  ルが存在するかチェックしたいだけなんだな．
-	  
+
 	* st.c (int): grow_factorを固定にした(大嶋さんのマシンに対応)．
 
 Fri Jul 14 00:48:40 1995  Yukihiro Matsumoto  <matz@caelum.co.jp>
@@ -3354,7 +3354,7 @@ Thu Jun  8 00:59:03 1995  Yukihiro Matsumoto  (matz@dyna)
 	* extmk.rb.in: 判定した値をファイルにキャッシュするようにした．
 
 	* assoc.c (to_a): to_aメソッドが再定義されていなかった．
-					 
+
 	* eval.c (rb_eval): 初期化されていないローカル変数へのアクセスを引
 	  数の無いメソッド呼び出しと解釈する．ただし，(現状では)メソッドが
 	  定義されていない場合，エラーにせず変数未初期化のwaringを出して

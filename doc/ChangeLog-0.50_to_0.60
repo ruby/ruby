@@ -78,7 +78,7 @@ Sun Nov 19 23:02:27 1994  Yukihiro Matsumoto  (matz@dyna)
 	  そのものを与えるように．
 
 	* file.c(chmod,chown,unlink,utime): `\'でワイルドカードをエスケー
-	  プできるように．  
+	  プできるように．
 
 Fri Nov 18 00:20:42 1994  Yukihiro Matsumoto  (matz@ix-02)
 
@@ -226,7 +226,7 @@ Wed Oct 12 10:09:07 1994  Yukihiro Matsumoto  (matz@ix-02)
 	* eval.c(rb_call): キャッシュの計算をinline化. キャッシュミスがあ
 	  れば関数呼び出しでメソッドを検索する. methods.cはなくなった.
 
-	* eval.c(rb_eval): ローカル変数用の領域をalloca()するように変更. 
+	* eval.c(rb_eval): ローカル変数用の領域をalloca()するように変更.
 	  サイズの変更が必要になれば改めてmalloc()するように.
 
 	* parse.y: error recoveryの際にlex_stateを更新しておくように.
@@ -241,7 +241,7 @@ Tue Oct 11 17:10:46 1994  Yukihiro Matsumoto  (matz@ix-02)
 	* io.c(to_i): IOクラスのインスタンスを整数に変換するとそのファイル
 	  記述子を返すように.
 
-	* numeric.c(num2int): to_iメソッドを使ってできる限り整数に変換する. 
+	* numeric.c(num2int): to_iメソッドを使ってできる限り整数に変換する.
 	  以前はnum2fixだけが全てのオブジェクトに対してto_iメソッドを適用
 	  していた.
 
@@ -263,7 +263,7 @@ Wed Oct  5 15:00:58 1994  Yukihiro Matsumoto  (matz@ix-02)
 
 	* ruby.h: TRUEでsyntax errorにならないよう#undefを追加.
 
-	* eval.c(rb_eval): thread化に挑戦したが, 失敗(速くならなかった). 
+	* eval.c(rb_eval): thread化に挑戦したが, 失敗(速くならなかった).
 	  が, Scopingなどの無駄なコードの削除とメソッド呼び出しの引数セッ
 	  トのinline化で若干の高速化を実現した. 副作用として, argc, argv形
 	  式の関数呼び出しの仕様が変化した(argvにselfを含まなくなった).
@@ -297,7 +297,7 @@ Fri Sep 30 11:36:07 1994  Yukihiro Matsumoto  (matz@ix-02)
 
 Wed Sep 28 23:30:28 1994  Yukihiro Matsumoto  (matz@dyna)
 
-	* eval.c(Ffail): 今までfailはカーネルクラスのメソッドであったが, 
+	* eval.c(Ffail): 今までfailはカーネルクラスのメソッドであったが,
 	  構文に組み込んだ. この変更によって, 1)`fail'は予約語となり, ロー
 	  カル変数に用いることができなくなった. 2)`fail'単体で例外を発生す
 	  るようになった. 3)failはメソッドではなくなったので再定義される可
@@ -425,7 +425,7 @@ Wed Aug 24 00:01:15 1994  Yukihiro Matsumoto  (matz@dyna)
 
 Tue Aug 23 18:08:33 1994  Yukihiro Matsumoto  (matz@ix-02)
 
-	* eval.c: スクリプト実行開始前に例外が発生した時にcore dumpした. 
+	* eval.c: スクリプト実行開始前に例外が発生した時にcore dumpした.
 	  組み込み用にコードを変更した時にenbugしてしまった.
 
 Tue Aug 23 00:07:17 1994  Yukihiro Matsumoto  (matz@dyna)
@@ -454,7 +454,7 @@ Fri Aug 19 11:44:13 1994  Yukihiro Matsumoto  (matz@ix-02)
 	* main.c: rubyをほかのプログラムに組み込めるようにmain()を分割した.
 	  それにともない, プログラムの呼び出し構造を修正した.
 
-	* parse.y: 条件式の定義を変更. ifなどの条件式の中でだけ`&&'や`||' 
+	* parse.y: 条件式の定義を変更. ifなどの条件式の中でだけ`&&'や`||'
 	  および`!'の引数が条件式になるように. この変更により条件式以外の
 	  場所での `&&', `||', `!'演算子の動作が直観に一致する.
 

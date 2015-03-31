@@ -25,7 +25,7 @@ Wed Oct 12 10:09:07 1994  Yukihiro Matsumoto  (matz@ix-02)
 	* eval.c(rb_call): キャッシュの計算をinline化. キャッシュミスがあ
 	  れば関数呼び出しでメソッドを検索する. methods.cはなくなった.
 
-	* eval.c(rb_eval): ローカル変数用の領域をalloca()するように変更. 
+	* eval.c(rb_eval): ローカル変数用の領域をalloca()するように変更.
 	  サイズの変更が必要になれば改めてmalloc()するように.
 
 	* parse.y: error recoveryの際にlex_stateを更新しておくように.
@@ -40,7 +40,7 @@ Tue Oct 11 17:10:46 1994  Yukihiro Matsumoto  (matz@ix-02)
 	* io.c(to_i): IOクラスのインスタンスを整数に変換するとそのファイル
 	  記述子を返すように.
 
-	* numeric.c(num2int): to_iメソッドを使ってできる限り整数に変換する. 
+	* numeric.c(num2int): to_iメソッドを使ってできる限り整数に変換する.
 	  以前はnum2fixだけが全てのオブジェクトに対してto_iメソッドを適用
 	  していた.
 
@@ -62,7 +62,7 @@ Wed Oct  5 15:00:58 1994  Yukihiro Matsumoto  (matz@ix-02)
 
 	* ruby.h: TRUEでsyntax errorにならないよう#undefを追加.
 
-	* eval.c(rb_eval): thread化に挑戦したが, 失敗(速くならなかった). 
+	* eval.c(rb_eval): thread化に挑戦したが, 失敗(速くならなかった).
 	  が, Scopingなどの無駄なコードの削除とメソッド呼び出しの引数セッ
 	  トのinline化で若干の高速化を実現した. 副作用として, argc, argv形
 	  式の関数呼び出しの仕様が変化した(argvにselfを含まなくなった).
@@ -96,7 +96,7 @@ Fri Sep 30 11:36:07 1994  Yukihiro Matsumoto  (matz@ix-02)
 
 Wed Sep 28 23:30:28 1994  Yukihiro Matsumoto  (matz@dyna)
 
-	* eval.c(Ffail): 今までfailはカーネルクラスのメソッドであったが, 
+	* eval.c(Ffail): 今までfailはカーネルクラスのメソッドであったが,
 	  構文に組み込んだ. この変更によって, 1)`fail'は予約語となり, ロー
 	  カル変数に用いることができなくなった. 2)`fail'単体で例外を発生す
 	  るようになった. 3)failはメソッドではなくなったので再定義される可
@@ -224,7 +224,7 @@ Wed Aug 24 00:01:15 1994  Yukihiro Matsumoto  (matz@dyna)
 
 Tue Aug 23 18:08:33 1994  Yukihiro Matsumoto  (matz@ix-02)
 
-	* eval.c: スクリプト実行開始前に例外が発生した時にcore dumpした. 
+	* eval.c: スクリプト実行開始前に例外が発生した時にcore dumpした.
 	  組み込み用にコードを変更した時にenbugしてしまった.
 
 Tue Aug 23 00:07:17 1994  Yukihiro Matsumoto  (matz@dyna)
@@ -253,7 +253,7 @@ Fri Aug 19 11:44:13 1994  Yukihiro Matsumoto  (matz@ix-02)
 	* main.c: rubyをほかのプログラムに組み込めるようにmain()を分割した.
 	  それにともない, プログラムの呼び出し構造を修正した.
 
-	* parse.y: 条件式の定義を変更. ifなどの条件式の中でだけ`&&'や`||' 
+	* parse.y: 条件式の定義を変更. ifなどの条件式の中でだけ`&&'や`||'
 	  および`!'の引数が条件式になるように. この変更により条件式以外の
 	  場所での `&&', `||', `!'演算子の動作が直観に一致する.
 
@@ -297,7 +297,7 @@ Thu Aug 11 11:43:15 1994  Yukihiro Matsumoto  (matz@ix-02)
 
 Wed Aug 10 15:54:46 1994  Yukihiro Matsumoto  (matz@ix-02)
 
-	* variable.c: -vオプションが指定されている時は初期化されていない, 
+	* variable.c: -vオプションが指定されている時は初期化されていない,
 	  大域変数, インスタンス変数, ローカル変数を参照した時点でwarning
 	  を出すようにした.
 
@@ -354,7 +354,7 @@ Mon Aug  1 13:41:11 1994  Yukihiro Matsumoto  (matz@ix-02)
 	* parse.y: `cmd`によってコマンドを文字列に展開することができるよう
 	  になった.
 
-	* parse.y: __FILE__, __LINE__を追加. それぞれファイル名(文字列), 
+	* parse.y: __FILE__, __LINE__を追加. それぞれファイル名(文字列),
 	  行番号(整数)を値とする疑似変数.
 
 Fri Jul 29 13:16:07 1994  Yukihiro Matsumoto  (matz@ix-02)
@@ -393,7 +393,7 @@ Mon Jul 18 10:19:15 1994  Yukihiro Matsumoto  (matz@ix-02)
 	* eval.c(rb_eval): 多重代入で, 右辺が配列でない時には`to_a'メソッ
 	  ドで配列に変換して代入するようにした. 今までの仕様だと右辺値が第
 	  1要素にそのまま代入されていたが, structなど配列に変換できるもの
-	  は変換した方が嬉しい気がする. 
+	  は変換した方が嬉しい気がする.
 
 	* dbm.c,dict.c(delete_if): メソッド追加.
 
@@ -431,7 +431,7 @@ Thu Jul 14 11:18:07 1994  Yukihiro Matsumoto  (matz@ix-02)
 
 	* parse.y: 配列を生成する構文を[..]に変更した. 過去のRubyスクリプ
 	  トとの互換性が保てないが, Dictを生成する構文を導入するに当たり,
-	  perl5に合わせて(意識して), 変更する時期は今しかないと考えた. 
+	  perl5に合わせて(意識して), 変更する時期は今しかないと考えた.
 	  *BACKWARD INCOMPATIBILITY*
 
 	* eval.c(Feval): eval()でメソッドを定義する時, 定義されるクラスを
@@ -463,7 +463,7 @@ Mon Jul 11 09:51:24 1994  Yukihiro Matsumoto  (matz@ix-02)
 
 	* variable.c(Fdefined): idも引数として受け付けるように.
 
-	* parse.y: if文/unless文にキーワードthenを追加. thenなしというのは, 
+	* parse.y: if文/unless文にキーワードthenを追加. thenなしというのは,
 	  意外と間違いが多いので. もちろん省略できる.
 
 Sat Jul  9 02:16:04 1994  Yukihiro Matsumoto  (matz@dyna)
@@ -509,7 +509,7 @@ Tue Jul  5 12:48:39 1994  Yukihiro Matsumoto  (matz@ix-02)
 	  EOFが検出できるように.
 
 	* ruby.c: -l/-r/-R/-Xオプションの追加.
-	
+
 	* ruby.c: -n/-pオプションのloopの付加などをメインルーチンに移動し
 	  た. これで, オプションの解析途中で(`-c'オプションのせいで)終了な
 	  どといったことはない.
@@ -569,7 +569,7 @@ Wed Jun 29 00:14:20 1994  Yukihiro Matsumoto  (matz@dyna)
 	* sprintf() - rubyにはunsignedは無いので, %uを取り除いた.
 
 	* sprintf() - %b, %x, %oでは2の補数表現, %B, %X, %Oでは符号付き表
-	  現で出力するように. ここ数日でsprintf()の仕様がゆらいでいたが, 
+	  現で出力するように. ここ数日でsprintf()の仕様がゆらいでいたが,
 	  これで落ち着きそうだ.
 
 Tue Jun 28 14:42:03 1994  Yukihiro Matsumoto  (matz@ix-02)
@@ -666,7 +666,7 @@ Thu Jun 16 10:32:23 1994  Yukihiro Matsumoto  (matz@ix-02)
 	* pack.c: エンディアンをautoconfで判定するようにしたので, v/Vが使
 	  えるようになった. またntoh?()/hton?()も自前で用意した.
 
-	* Stat: st_rdevをアクセスするメソッドを追加. さらにシステムがstat 
+	* Stat: st_rdevをアクセスするメソッドを追加. さらにシステムがstat
 	  構造体にst_blksize, st_blockを持っているかをautoconfでチェックす
 	  るようにした.
 
@@ -879,7 +879,7 @@ Fri May 27 11:42:00 1994  Yukihiro Matsumoto  (matz@ix-02)
 Thu May 26 10:32:55 1994  Yukihiro Matsumoto  (matz@ix-02)
 
 	* スクリプト読み込みルーチンを書き直して, 通常ファイル以外のファイ
-	  ル名や空文字列がスクリプトとして与えられた場合に対応した. また, 
+	  ル名や空文字列がスクリプトとして与えられた場合に対応した. また,
 	  標準入力からスクリプトを読み込む時に, 一時ファイルが/tmpに残らな
 	  いようにした.
 
@@ -924,7 +924,7 @@ Thu May 19 22:57:07 1994  Yukihiro Matsumoto  (matz@dyna)
 
 	* 複合文でもvoid valueのチェックを行うようにした.
 
-	* untilの動作の修正(do..until型だった). 
+	* untilの動作の修正(do..until型だった).
 
 Wed May 18 01:06:25 1994  Yukihiro Matsumoto  (matz@dyna)
 
