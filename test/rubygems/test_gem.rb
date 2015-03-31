@@ -1315,7 +1315,8 @@ class TestGem < Gem::TestCase
 
   def test_self_user_dir
     parts = [@userhome, '.gem', Gem.ruby_engine]
-    parts << RbConfig::CONFIG['ruby_version'] unless RbConfig::CONFIG['ruby_version'].empty?
+    ruby_version_dir_name = RbConfig::CONFIG['ruby_version_dir_name'] || RbConfig::CONFIG['ruby_version']
+    parts << ruby_version_dir_name unless ruby_version_dir_name.empty?
 
     assert_equal File.join(parts), Gem.user_dir
   end
@@ -1391,7 +1392,7 @@ class TestGem < Gem::TestCase
     vendordir(File.join(@tempdir, 'vendor')) do
       expected =
         File.join RbConfig::CONFIG['vendordir'], 'gems',
-                  RbConfig::CONFIG['ruby_version']
+                  RbConfig::CONFIG['ruby_version_dir_name'] || RbConfig::CONFIG['ruby_version']
 
       assert_equal expected, Gem.vendor_dir
     end

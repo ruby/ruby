@@ -32,20 +32,20 @@ module Gem
              [
                File.dirname(RbConfig::CONFIG['sitedir']),
                'Gems',
-               RbConfig::CONFIG['ruby_version']
+               RbConfig::CONFIG['ruby_version_dir_name'] || RbConfig::CONFIG['ruby_version']
              ]
            elsif RbConfig::CONFIG['rubylibprefix']
              [
                RbConfig::CONFIG['rubylibprefix'],
                'gems',
-               RbConfig::CONFIG['ruby_version']
+               RbConfig::CONFIG['ruby_version_dir_name'] || RbConfig::CONFIG['ruby_version']
              ]
            else
              [
                RbConfig::CONFIG['libdir'],
                ruby_engine,
                'gems',
-               RbConfig::CONFIG['ruby_version']
+               RbConfig::CONFIG['ruby_version_dir_name'] || RbConfig::CONFIG['ruby_version']
              ]
            end
 
@@ -82,7 +82,8 @@ module Gem
 
   def self.user_dir
     parts = [Gem.user_home, '.gem', ruby_engine]
-    parts << RbConfig::CONFIG['ruby_version'] unless RbConfig::CONFIG['ruby_version'].empty?
+    ruby_version_dir_name = RbConfig::CONFIG['ruby_version_dir_name'] || RbConfig::CONFIG['ruby_version']
+    parts << ruby_version_dir_name unless ruby_version_dir_name.empty?
     File.join parts
   end
 
@@ -165,7 +166,7 @@ module Gem
     return nil unless RbConfig::CONFIG.key? 'vendordir'
 
     File.join RbConfig::CONFIG['vendordir'], 'gems',
-              RbConfig::CONFIG['ruby_version']
+              RbConfig::CONFIG['ruby_version_dir_name'] || RbConfig::CONFIG['ruby_version']
   end
 
   ##
