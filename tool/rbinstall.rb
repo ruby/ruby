@@ -406,7 +406,7 @@ end
 
 install?(:doc, :rdoc) do
   if $rdocdir
-    ridatadir = File.join(CONFIG['ridir'], CONFIG['ruby_version'], "system")
+    ridatadir = File.join(CONFIG['ridir'], CONFIG['ruby_version_dir_name'] || CONFIG['ruby_version'], "system")
     prepare "rdoc", ridatadir
     install_recursive($rdocdir, ridatadir, :mode => $data_mode)
   end
