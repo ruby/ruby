@@ -179,7 +179,7 @@ class TestDir < Test::Unit::TestCase
   end
 
   def test_foreach
-    assert_equal(Dir.foreach(@root).to_a.sort, %w(. ..) + (?a..?z).to_a)
+    assert_equal(%w(. ..) + (?a..?z).to_a, Dir.foreach(@root).to_a.sort)
   end
 
   def test_dir_enc
