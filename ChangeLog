@@ -1,3 +1,10 @@
+Tue Mar 31 15:25:07 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* doc/ChangeLog-0.06_to_0.52: added archived Changelog.
+	  [ruby-list:50105]
+	* doc/ChangeLog-0.50_to_0.60: ditto.
+	* doc/ChangeLog-0.60_to_1.1: ditto.
+
 Mon Mar 30 22:02:55 2015  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* README.EXT.ja: add redirect [ruby-core:68631]
