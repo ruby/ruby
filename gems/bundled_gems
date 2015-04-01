@@ -1,3 +1,4 @@
 power_assert 0.2.2
 test-unit 3.0.9
 minitest 5.4.3
+rake 10.4.2
