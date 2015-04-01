@@ -416,7 +416,8 @@ class TestFileUtils < Test::Unit::TestCase
 
     mkdir 'tmp/tmpdir'
     mkdir_p 'tmp/dest2/tmpdir'
-    assert_raise(Errno::EEXIST) {
+    assert_raise_with_message(Errno::EEXIST, %r' - tmp/dest2/tmpdir\z',
+                              '[ruby-core:68706] [Bug #11021]') {
       mv 'tmp/tmpdir', 'tmp/dest2'
     }
     mkdir 'tmp/dest2/tmpdir/junk'

@@ -518,7 +518,7 @@ module FileUtils
       begin
         if destent.exist?
           if destent.directory?
-            raise Errno::EEXIST, dest
+            raise Errno::EEXIST, d
           else
             destent.remove_file if rename_cannot_overwrite_file?
           end

@@ -1,3 +1,10 @@
+Wed Apr  1 09:59:12 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/fileutils.rb (FileUtils#mv): show the exact target path in
+	  the error message instead of the destination parent directory
+	  name.  patched by Joao Britto <jabcalves AT gmail.com> at
+	  [ruby-core:68706].  [Bug #11021]
+
 Tue Mar 31 15:25:07 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* doc/ChangeLog-0.06_to_0.52: added archived Changelog.
