@@ -1,3 +1,8 @@
+Wed Apr  1 11:09:15 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (push_glob): remove indirect links of arguments for
+	  trampoline.
+
 Wed Apr  1 09:59:12 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/fileutils.rb (FileUtils#mv): show the exact target path in

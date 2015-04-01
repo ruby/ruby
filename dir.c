@@ -2060,10 +2060,23 @@ ruby_brace_glob_with_enc(const char *str, int flags, ruby_glob_func *func, VALUE
     return ruby_brace_glob0(str, flags & ~GLOB_VERBOSE, func, arg, enc);
 }
 
+struct push_glob_args {
+    struct glob_args glob;
+    int flags;
+};
+
+static int
+push_caller(const char *path, VALUE val, void *enc)
+{
+    struct push_glob_args *arg = (struct push_glob_args *)val;
+
+    return ruby_glob0(path, arg->flags, rb_glob_caller, (VALUE)&arg->glob, enc);
+}
+
 static int
 push_glob(VALUE ary, VALUE str, int flags)
 {
-    struct glob_args args;
+    struct push_glob_args args;
     rb_encoding *enc = rb_enc_get(str);
 
 #ifdef __APPLE__
@@ -2071,16 +2084,18 @@ push_glob(VALUE ary, VALUE str, int flags)
 #endif
     if (enc == rb_usascii_encoding()) enc = rb_filesystem_encoding();
     if (enc == rb_usascii_encoding()) enc = rb_ascii8bit_encoding();
-    args.func = push_pattern;
-    args.value = ary;
-    args.enc = enc;
+    flags |= GLOB_VERBOSE;
+    args.glob.func = push_pattern;
+    args.glob.value = ary;
+    args.glob.enc = enc;
+    args.flags = flags;
 #ifdef __APPLE__
     enc = rb_utf8_encoding();
 #endif
 
     RB_GC_GUARD(str);
-    return ruby_brace_glob0(RSTRING_PTR(str), flags | GLOB_VERBOSE,
-			    rb_glob_caller, (VALUE)&args, enc);
+    return ruby_brace_expand(RSTRING_PTR(str), flags,
+			     push_caller, (VALUE)&args, enc);
 }
 
 static VALUE
