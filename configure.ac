@@ -96,7 +96,7 @@ RUBY_BASE_NAME=`echo ruby | sed "$program_transform_name"`
 RUBYW_BASE_NAME=`echo rubyw | sed "$program_transform_name"`
 AC_SUBST(RUBY_BASE_NAME)
 AC_SUBST(RUBYW_BASE_NAME)
-AC_SUBST(RUBY_VERSION_NAME, '${RUBY_BASE_NAME}-${ruby_version}')
+AC_SUBST(RUBY_VERSION_NAME, '${RUBY_BASE_NAME}-${ruby_version_dir_name}')
 
 AC_CANONICAL_TARGET
 test x"$target_alias" = x &&
