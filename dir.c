@@ -2035,12 +2035,12 @@ glob_brace(const char *path, VALUE val, void *enc)
     return ruby_glob0(path, arg->flags, arg->func, arg->value, enc);
 }
 
-static int
-ruby_brace_glob0(const char *str, int flags, ruby_glob_func *func, VALUE arg,
-		 rb_encoding* enc)
+int
+ruby_brace_glob_with_enc(const char *str, int flags, ruby_glob_func *func, VALUE arg, rb_encoding *enc)
 {
     struct brace_args args;
 
+    flags &= ~GLOB_VERBOSE;
     args.func = func;
     args.value = arg;
     args.flags = flags;
@@ -2050,14 +2050,7 @@ ruby_brace_glob0(const char *str, int flags, ruby_glob_func *func, VALUE arg,
 int
 ruby_brace_glob(const char *str, int flags, ruby_glob_func *func, VALUE arg)
 {
-    return ruby_brace_glob0(str, flags & ~GLOB_VERBOSE, func, arg,
-			    rb_ascii8bit_encoding());
-}
-
-int
-ruby_brace_glob_with_enc(const char *str, int flags, ruby_glob_func *func, VALUE arg, rb_encoding *enc)
-{
-    return ruby_brace_glob0(str, flags & ~GLOB_VERBOSE, func, arg, enc);
+    return ruby_brace_glob_with_enc(str, flags, func, arg, rb_ascii8bit_encoding());
 }
 
 struct push_glob_args {
