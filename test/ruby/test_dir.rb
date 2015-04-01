@@ -231,7 +231,8 @@ class TestDir < Test::Unit::TestCase
     assert_equal([*?a..?z, *"symlink-a".."symlink-z"].each_slice(2).map {|f, _| File.join(@root, f + "/") }.sort,
 		 Dir.glob(File.join(@root, "*/")).sort)
 
-    Dir.glob(File.join(@root, "**/"))
+    assert_equal([@root + "/", *[*?a..?z].each_slice(2).map {|f, _| File.join(@root, f + "/") }.sort],
+                 Dir.glob(File.join(@root, "**/")).sort)
   end
 
   def test_glob_metachar
