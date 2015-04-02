@@ -739,6 +739,8 @@ install?(:ext, :comm, :gem) do
   Gem::Specification.each_spec([srcdir+'/gems/*']) do |spec|
     ins = RbInstall::UnpackedInstaller.new(spec,
                                            :install_dir => install_dir,
+                                           :bin_dir => with_destdir(bindir),
+                                           :wrappers => true,
                                            :ignore_dependencies => true)
     puts "#{" "*30}#{spec.name} #{spec.version}"
     ins.install
@@ -752,11 +754,13 @@ install?(:ext, :comm, :gem) do
   if defined?(Zlib)
     options = {
       :install_dir => install_dir,
+      :bin_dir => with_destdir(bindir),
       :domain => :local,
       :ignore_dependencies => true,
       :dir_mode => $dir_mode,
       :data_mode => $data_mode,
       :prog_mode => $prog_mode,
+      :wrappers => true,
     }
     gems.each do |gem|
       Gem.install(gem, Gem::Requirement.default, options)
