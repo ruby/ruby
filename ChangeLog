@@ -8,12 +8,6 @@ Thu Apr  2 16:26:59 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* configure.in (LIBRUBY_DLDFLAGS): compatibility_version must be
 	  valid version numbers, not an arbitrary string.
 
-Thu Apr  2 16:25:21 2015  svn  <svn@b2dd03c8-39d4-4d8f-98ff-823fe69b080e>
-
-	* 2015-04-02
-
-	git-svn-id: svn+ssh://ci.ruby-lang.org/ruby/trunk@50150 b2dd03c8-39d4-4d8f-98ff-823fe69b080e
-
 Wed Apr  1 11:09:15 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (push_glob): remove indirect links of arguments for
