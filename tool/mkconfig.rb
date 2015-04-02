@@ -136,7 +136,7 @@ File.foreach "config.status" do |line|
       v_others << v
     end
     case name
-    when "ruby_version"
+    when "RUBY_PROGRAM_VERSION"
       version = val[/\A"(.*)"\z/, 1]
     end
   end

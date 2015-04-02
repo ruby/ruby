@@ -1,3 +1,13 @@
+Thu Apr  2 16:26:59 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk, tool/mkconfig.rb: check the running ruby version in
+	  rbconfig.rb with the program version, as RUBY_VERSION has never
+	  been affected by --with-ruby-version option.
+	  [ruby-core:68639] [Bug #11002]
+
+	* configure.in (LIBRUBY_DLDFLAGS): compatibility_version must be
+	  valid version numbers, not an arbitrary string.
+
 Thu Apr  2 16:25:21 2015  svn  <svn@b2dd03c8-39d4-4d8f-98ff-823fe69b080e>
 
 	* 2015-04-02
