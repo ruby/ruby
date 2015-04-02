@@ -1013,7 +1013,7 @@ info-arch: PHONY
 change: PHONY
 	$(BASERUBY) -C "$(srcdir)" ./tool/change_maker.rb $(CHANGES) > change.log
 
-fool: check test-rubyspec
+exam: check test-rubyspec
 
 love: sudo-precheck up all test install test-all
 	@echo love is all you need

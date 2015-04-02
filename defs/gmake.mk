@@ -7,7 +7,7 @@ TEST_TARGETS := $(patsubst test-%,yes-test-%,$(patsubst btest-%,yes-btest-%,$(TE
 TEST_DEPENDS := $(if $(TEST_TARGETS),$(filter all main exts,$(MAKECMDGOALS)))
 TEST_DEPENDS += $(if $(filter check%,$(MAKECMDGOALS)),main)
 TEST_DEPENDS += $(if $(filter all,$(INSTALLDOC)),docs)
-CHECK_TARGETS := fool love check%
+CHECK_TARGETS := exam love check%
 
 ifneq ($(filter -O0 -Od,$(optflags)),)
 override XCFLAGS := $(filter-out -D_FORTIFY_SOURCE=%,$(XCFLAGS))
@@ -64,7 +64,7 @@ install-prereq: uninstall
 uninstall sudo-precheck: all $(if $(filter all,$(INSTALLDOC)),docs)
 endif
 
-ifneq ($(filter fool,$(MAKECMDGOALS)),)
+ifneq ($(filter exam,$(MAKECMDGOALS)),)
 test-rubyspec: check
 yes-test-all no-test-all: test
 endif
