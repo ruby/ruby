@@ -1083,8 +1083,12 @@ module Net   #:nodoc:
     end
 
     def edit_path(path)
-      if proxy? and not use_ssl? then
-        "http://#{addr_port}#{path}"
+      if proxy?
+        if path.start_with?("ftp://") || use_ssl?
+          path
+        else
+          "http://#{addr_port}#{path}"
+        end
       else
         path
       end
