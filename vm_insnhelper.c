@@ -1436,13 +1436,14 @@ vm_call_cfunc_latter(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_
     VALUE val;
     int argc = ci->argc;
     VALUE *argv = STACK_ADDR_FROM_TOP(argc);
+    VALUE recv = ci->recv;
     const rb_method_cfunc_t *cfunc = vm_method_cfunc_entry(ci->me);
 
     th->passed_ci = ci;
     reg_cfp->sp -= argc + 1;
     ci->aux.inc_sp = argc + 1;
     VM_PROFILE_UP(0);
-    val = (*cfunc->invoker)(cfunc->func, ci, argv);
+    val = (*cfunc->invoker)(cfunc->func, recv, argc, argv);
 
     /* check */
     if (reg_cfp == th->cfp) { /* no frame push */
@@ -1490,7 +1491,7 @@ vm_call_cfunc(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci)
 }
 
 void
-vm_call_cfunc_push_frame(rb_thread_t *th)
+rb_vm_call_cfunc_push_frame(rb_thread_t *th)
 {
     rb_call_info_t *ci = th->passed_ci;
     const rb_method_entry_t *me = ci->me;
@@ -1498,7 +1499,7 @@ vm_call_cfunc_push_frame(rb_thread_t *th)
 
     vm_push_frame(th, 0, VM_FRAME_MAGIC_CFUNC, ci->recv, ci->defined_class,
 		  VM_ENVVAL_BLOCK_PTR(ci->blockptr), NULL /* cref */,
-		  0, th->cfp->sp + ci->aux.inc_sp, 1, me);
+		  0, th->cfp->sp + ci->aux.inc_sp, 1, me, 0);
 
     if (ci->call != vm_call_general) {
 	ci->call = vm_call_cfunc_with_frame;

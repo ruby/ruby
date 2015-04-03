@@ -71,13 +71,15 @@ vm_call0_cfunc(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
 	const rb_method_entry_t *me = ci->me;
 	const rb_method_cfunc_t *cfunc = &me->def->body.cfunc;
 	int len = cfunc->argc;
+	VALUE recv = ci->recv;
+	int argc = ci->argc;
 
 	if (len >= 0) rb_check_arity(ci->argc, len, len);
 
 	th->passed_ci = ci;
 	ci->aux.inc_sp = 0;
 	VM_PROFILE_UP(2);
-	val = (*cfunc->invoker)(cfunc->func, ci, argv);
+	val = (*cfunc->invoker)(cfunc->func, recv, argc, argv);
 
 	if (reg_cfp == th->cfp) {
 	    if (UNLIKELY(th->passed_ci != ci)) {

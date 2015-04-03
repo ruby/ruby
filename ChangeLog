@@ -1,3 +1,12 @@
+Fri Apr  3 11:43:17 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (vm_call0_cfunc): update invoker arguments.
+
+	* vm_insnhelper.c (vm_call_cfunc_latter): ditto.
+
+	* vm_insnhelper.c (rb_vm_call_cfunc_push_frame): ditto, and prefix
+	  with rb_.
+
 Thu Apr  2 16:26:59 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk, tool/mkconfig.rb: check the running ruby version in

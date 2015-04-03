@@ -1035,8 +1035,8 @@ GET_THREAD(void)
     rb_thread_t *th = ruby_current_thread;
 #if OPT_CALL_CFUNC_WITHOUT_FRAME
     if (UNLIKELY(th->passed_ci != 0)) {
-	void vm_call_cfunc_push_frame(rb_thread_t *th);
-	vm_call_cfunc_push_frame(th);
+	void rb_vm_call_cfunc_push_frame(rb_thread_t *th);
+	rb_vm_call_cfunc_push_frame(th);
     }
 #endif
     return th;
