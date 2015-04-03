@@ -1,13 +1,13 @@
 # -*- makefile-gmake -*-
 gnumake = yes
 
+CHECK_TARGETS := exam love check%
 TEST_TARGETS := $(filter check test check% test% btest%,$(MAKECMDGOALS))
 TEST_TARGETS += $(subst check,test-all,$(patsubst check-%,test-%,$(TEST_TARGETS)))
 TEST_TARGETS := $(patsubst test-%,yes-test-%,$(patsubst btest-%,yes-btest-%,$(TEST_TARGETS)))
 TEST_DEPENDS := $(if $(TEST_TARGETS),$(filter all main exts,$(MAKECMDGOALS)))
-TEST_DEPENDS += $(if $(filter check%,$(MAKECMDGOALS)),main)
+TEST_DEPENDS += $(if $(filter $(CHECK_TARGETS),$(MAKECMDGOALS)),main)
 TEST_DEPENDS += $(if $(filter all,$(INSTALLDOC)),docs)
-CHECK_TARGETS := exam love check%
 
 ifneq ($(filter -O0 -Od,$(optflags)),)
 override XCFLAGS := $(filter-out -D_FORTIFY_SOURCE=%,$(XCFLAGS))
