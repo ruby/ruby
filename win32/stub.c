@@ -7,12 +7,14 @@ static void stub_sysinit(int *argc, char ***argv);
 void
 stub_sysinit(int *argc, char ***argv)
 {
-    char exename[4096];
-    size_t lenexe, len0, lenall;
+    WCHAR exename[4096];
+    size_t wlenexe, len0, lenall;
+    int lenexe;
     int i, ac;
     char **av, *p;
 
-    lenexe = (size_t)GetModuleFileName(NULL, exename, sizeof exename);
+    wlenexe = (size_t)GetModuleFileNameW(NULL, exename, sizeof(exename) / sizeof(*exename));
+    lenexe = WideCharToMultiByte(CP_UTF8, 0, exename, wlenexe, NULL, 0, NULL, NULL);
     ruby_sysinit(argc, argv);
     ac = *argc;
     av = *argv;
@@ -33,7 +35,7 @@ stub_sysinit(int *argc, char ***argv)
     memmove(p, (char *)(av + ac), len0);
     *av++ = p;
     p += len0;
-    memcpy(p, exename, lenexe);
+    WideCharToMultiByte(CP_UTF8, 0, exename, wlenexe, p, lenexe, NULL, NULL);
     p[lenexe] = '\0';
     *av++ = p;
     p += lenexe + 1;
