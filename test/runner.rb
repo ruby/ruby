@@ -4,6 +4,11 @@ src_testdir = File.dirname(File.realpath(__FILE__))
 $LOAD_PATH << src_testdir
 $LOAD_PATH.unshift "#{src_testdir}/lib"
 
+# Get bundled gems on load path
+Dir.glob("#{src_testdir}/../gems/*/*.gemspec")
+  .reject {|f| f =~ /minitest|test-unit|power_assert/ }
+  .map {|f| $LOAD_PATH.unshift File.join(File.dirname(f), "lib") }
+
 require 'test/unit'
 
 module Gem
