@@ -741,7 +741,8 @@ install?(:ext, :comm, :gem) do
                                            :install_dir => install_dir,
                                            :bin_dir => with_destdir(bindir),
                                            :wrappers => true,
-                                           :ignore_dependencies => true)
+                                           :ignore_dependencies => true,
+                                           :format_executable => true)
     puts "#{" "*30}#{spec.name} #{spec.version}"
     ins.install
     installed_gems[spec.full_name] = true
@@ -761,6 +762,7 @@ install?(:ext, :comm, :gem) do
       :data_mode => $data_mode,
       :prog_mode => $prog_mode,
       :wrappers => true,
+      :format_executable => true,
     }
     gems.each do |gem|
       Gem.install(gem, Gem::Requirement.default, options)
