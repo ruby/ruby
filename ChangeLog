@@ -1,3 +1,9 @@
+Sat Apr  4 11:30:24 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_setbyte): check the argument first not to
+	  discard shared string and code range unnecessarily until
+	  actually changing the contents.  pointed out by headius.
+
 Sat Apr  4 08:16:43 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/net/http.rb (edit_path): use path which is absolute ftp url
