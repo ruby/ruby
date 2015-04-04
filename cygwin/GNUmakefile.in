@@ -67,11 +67,11 @@ $(WPROGRAM): $(RUBYW_INSTALL_NAME).res.@OBJEXT@
 	$(ECHO) linking $@
 	$(Q) $(PURIFY) $(CC) -mwindows -e $(SYMBOL_PREFIX)mainCRTStartup $(LDFLAGS) $(XLDFLAGS) \
 	  $(MAINOBJ) $(EXTOBJS) $(LIBRUBYARG) $(LIBS) -o $@
-$(STUBPROGRAM): $(RUBY_INSTALL_NAME).res.@OBJEXT@ stub.@OBJEXT@
+$(STUBPROGRAM): $(RUBY_INSTALL_NAME).res.@OBJEXT@ win32/stub.@OBJEXT@
 	@rm -f $@
 	$(ECHO) linking $@
 	$(Q) $(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) \
-	  stub.@OBJEXT@ $(EXTOBJS) $(LIBRUBYARG) $(LIBS) -o $@
+	  win32/stub.@OBJEXT@ $(EXTOBJS) $(LIBRUBYARG) $(LIBS) -o $@
 
 $(RUBY_EXP): $(LIBRUBY_A)
 	$(ECHO) creating $@
