@@ -769,6 +769,8 @@ install?(:ext, :comm, :gem) do
       gemname = File.basename(gem)
       puts "#{" "*30}#{gemname}"
     end
+    # fix bindir permission
+    File.chmod($prog_mode, *Dir.glob(with_destdir(bindir)+"/*"))
     # fix directory permissions
     # TODO: Gem.install should accept :dir_mode option or something
     File.chmod($dir_mode, *Dir.glob(install_dir+"/**/"))
