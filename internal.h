@@ -844,7 +844,7 @@ VALUE rb_iseq_absolute_path(VALUE iseqval);
 VALUE rb_iseq_label(VALUE iseqval);
 VALUE rb_iseq_base_label(VALUE iseqval);
 VALUE rb_iseq_first_lineno(VALUE iseqval);
-VALUE rb_iseq_klass(VALUE iseqval); /* completely temporary fucntion */
+VALUE rb_iseq_klass(VALUE iseqval); /* completely temporary function */
 VALUE rb_iseq_method_name(VALUE self);
 
 /* load.c */
