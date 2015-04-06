@@ -513,7 +513,7 @@ setup_parameters_complex(rb_thread_t * const th, const rb_iseq_t * const iseq, r
 
     /*
      * Extend SP for GC.
-     * 
+     *
      * [pushed values] [uninitialized values]
      * <- ci->argc -->
      * <- iseq->param.size------------------>
