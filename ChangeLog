@@ -1,3 +1,18 @@
+Mon Apr  6 16:09:58 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_args.c: protect value stack from calling other methods
+	  during complex parameter setting process (splat, kw, and so on).
+	  [Bug #11027]
+
+	* vm_core.h: remove rb_thead_t::mark_stack_len.
+	  With this modification, we don't need to use th->mark_stack_len.
+
+	* test/ruby/test_keyword.rb: add a test.
+
+	* cont.c (cont_capture): catch up this fix.
+
+	* vm.c (rb_thread_mark): ditto.
+
 Mon Apr  6 11:26:42 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* tool/downloader.rb (http_options): prevent content auto decoding

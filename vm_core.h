@@ -631,7 +631,6 @@ typedef struct rb_thread_struct {
     enum rb_thread_status status;
     int to_kill;
     int priority;
-    int mark_stack_len;
 
     native_thread_data_t native_thread_data;
     void *blocking_region_buffer;

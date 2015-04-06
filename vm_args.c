@@ -83,19 +83,17 @@ args_reduce(struct args_info *args, int over_argc)
 }
 
 static inline int
-args_check_block_arg0(struct args_info *args, rb_thread_t *th, const int msl)
+args_check_block_arg0(struct args_info *args, rb_thread_t *th)
 {
     VALUE ary = Qnil;
 
     if (args->rest && RARRAY_LEN(args->rest) == 1) {
 	VALUE arg0 = RARRAY_AREF(args->rest, 0);
 	ary = rb_check_array_type(arg0);
-	th->mark_stack_len = msl;
     }
     else if (args->argc == 1) {
 	VALUE arg0 = args->argv[0];
 	ary = rb_check_array_type(arg0);
-	th->mark_stack_len = msl;
 	args->argv[0] = arg0; /* see: https://bugs.ruby-lang.org/issues/8484 */
     }
 
@@ -173,10 +171,9 @@ args_rest_array(struct args_info *args)
 }
 
 static int
-keyword_hash_p(VALUE *kw_hash_ptr, VALUE *rest_hash_ptr, rb_thread_t *th, const int msl)
+keyword_hash_p(VALUE *kw_hash_ptr, VALUE *rest_hash_ptr, rb_thread_t *th)
 {
     *rest_hash_ptr = rb_check_hash_type(*kw_hash_ptr);
-    th->mark_stack_len = msl;
 
     if (!NIL_P(*rest_hash_ptr)) {
 	VALUE hash = rb_extract_keywords(rest_hash_ptr);
@@ -191,7 +188,7 @@ keyword_hash_p(VALUE *kw_hash_ptr, VALUE *rest_hash_ptr, rb_thread_t *th, const 
 }
 
 static VALUE
-args_pop_keyword_hash(struct args_info *args, VALUE *kw_hash_ptr, rb_thread_t *th, const int msl)
+args_pop_keyword_hash(struct args_info *args, VALUE *kw_hash_ptr, rb_thread_t *th)
 {
     VALUE rest_hash;
 
@@ -200,7 +197,7 @@ args_pop_keyword_hash(struct args_info *args, VALUE *kw_hash_ptr, rb_thread_t *t
 	assert(args->argc > 0);
 	*kw_hash_ptr = args->argv[args->argc-1];
 
-	if (keyword_hash_p(kw_hash_ptr, &rest_hash, th, msl)) {
+	if (keyword_hash_p(kw_hash_ptr, &rest_hash, th)) {
 	    if (rest_hash) {
 		args->argv[args->argc-1] = rest_hash;
 	    }
@@ -216,7 +213,7 @@ args_pop_keyword_hash(struct args_info *args, VALUE *kw_hash_ptr, rb_thread_t *t
 	if (len > 0) {
 	    *kw_hash_ptr = RARRAY_AREF(args->rest, len - 1);
 
-	    if (keyword_hash_p(kw_hash_ptr, &rest_hash, th, msl)) {
+	    if (keyword_hash_p(kw_hash_ptr, &rest_hash, th)) {
 		if (rest_hash) {
 		    RARRAY_ASET(args->rest, len - 1, rest_hash);
 		}
@@ -511,9 +508,27 @@ setup_parameters_complex(rb_thread_t * const th, const rb_iseq_t * const iseq, r
     int given_argc;
     struct args_info args_body, *args;
     VALUE keyword_hash = Qnil;
-    const int msl = ci->argc + iseq->param.size;
+    VALUE * const orig_sp = th->cfp->sp;
+    int i;
 
-    th->mark_stack_len = msl;
+    /*
+     * Extend SP for GC.
+     * 
+     * [pushed values] [uninitialized values]
+     * <- ci->argc -->
+     * <- iseq->param.size------------------>
+     * ^ locals        ^ sp
+     *
+     * =>
+     * [pushed values] [initialized values  ]
+     * <- ci->argc -->
+     * <- iseq->param.size------------------>
+     * ^ locals                             ^ sp
+     */
+    for (i=ci->argc; i<iseq->param.size; i++) {
+	locals[i] = Qnil;
+    }
+    th->cfp->sp = &locals[i];
 
     /* setup args */
     args = &args_body;
@@ -556,7 +571,7 @@ setup_parameters_complex(rb_thread_t * const th, const rb_iseq_t * const iseq, r
 	    (min_argc > 0 || iseq->param.opt_num > 1 ||
 	     iseq->param.flags.has_kw || iseq->param.flags.has_kwrest) &&
 	    !iseq->param.flags.ambiguous_param0 &&
-	    args_check_block_arg0(args, th, msl)) {
+	    args_check_block_arg0(args, th)) {
 	    given_argc = RARRAY_LENINT(args->rest);
 	}
 	break;
@@ -564,7 +579,7 @@ setup_parameters_complex(rb_thread_t * const th, const rb_iseq_t * const iseq, r
 	if (given_argc == 1 &&
 	    given_argc != iseq->param.lead_num &&
 	    !iseq->param.flags.has_rest &&
-	    args_check_block_arg0(args, th, msl)) {
+	    args_check_block_arg0(args, th)) {
 	    given_argc = RARRAY_LENINT(args->rest);
 	}
     }
@@ -590,7 +605,7 @@ setup_parameters_complex(rb_thread_t * const th, const rb_iseq_t * const iseq, r
     if (given_argc > min_argc &&
 	(iseq->param.flags.has_kw || iseq->param.flags.has_kwrest) &&
 	args->kw_argv == NULL) {
-	if (args_pop_keyword_hash(args, &keyword_hash, th, msl)) {
+	if (args_pop_keyword_hash(args, &keyword_hash, th)) {
 	    given_argc--;
 	}
     }
@@ -662,8 +677,7 @@ setup_parameters_complex(rb_thread_t * const th, const rb_iseq_t * const iseq, r
     }
 #endif
 
-    th->mark_stack_len = 0;
-
+    th->cfp->sp = orig_sp;
     return opt_pc;
 }
 

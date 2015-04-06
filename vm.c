@@ -2048,7 +2048,6 @@ rb_thread_mark(void *ptr)
 	    rb_control_frame_t *limit_cfp = (void *)(th->stack + th->stack_size);
 
 	    rb_gc_mark_values((long)(sp - p), p);
-	    rb_gc_mark_locations(sp, sp + th->mark_stack_len);
 
 	    while (cfp != limit_cfp) {
 		rb_iseq_t *iseq = cfp->iseq;
