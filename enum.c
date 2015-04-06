@@ -2706,7 +2706,6 @@ enum_cycle(int argc, VALUE *argv, VALUE obj)
 
 struct chunk_arg {
     VALUE categorize;
-    VALUE state;
     VALUE prev_value;
     VALUE prev_elts;
     VALUE yielder;
@@ -2722,10 +2721,7 @@ chunk_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, _argp))
 
     ENUM_WANT_SVALUE();
 
-    if (NIL_P(argp->state))
-        v = rb_funcall(argp->categorize, id_call, 1, i);
-    else
-        v = rb_funcall(argp->categorize, id_call, 2, i, argp->state);
+    v = rb_funcall(argp->categorize, id_call, 1, i);
 
     if (v == alone) {
         if (!NIL_P(argp->prev_value)) {
@@ -2771,13 +2767,9 @@ chunk_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
 
     enumerable = rb_ivar_get(enumerator, rb_intern("chunk_enumerable"));
     memo->categorize = rb_ivar_get(enumerator, rb_intern("chunk_categorize"));
-    memo->state = rb_ivar_get(enumerator, rb_intern("chunk_initial_state"));
     memo->prev_value = Qnil;
     memo->prev_elts = Qnil;
     memo->yielder = yielder;
-
-    if (!NIL_P(memo->state))
-	memo->state = rb_obj_dup(memo->state);
 
     rb_block_call(enumerable, id_each, 0, 0, chunk_ii, arg);
     memo = MEMO_FOR(struct chunk_arg, arg);
@@ -2789,7 +2781,6 @@ chunk_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
 /*
  *  call-seq:
  *     enum.chunk { |elt| ... }                       -> an_enumerator
- *     enum.chunk(initial_state) { |elt, state| ... } -> an_enumerator (deprecated)
  *
  *  Enumerates over the items, chunking them together based on the return
  *  value of the block.
@@ -2875,22 +2866,16 @@ chunk_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
  *
  */
 static VALUE
-enum_chunk(int argc, VALUE *argv, VALUE enumerable)
+enum_chunk(VALUE enumerable)
 {
-    VALUE initial_state;
     VALUE enumerator;
-    int n;
 
     if (!rb_block_given_p())
 	rb_raise(rb_eArgError, "no block given");
-    n = rb_scan_args(argc, argv, "01", &initial_state);
-    if (n != 0)
-        rb_warn("initial_state given for chunk.  (Use local variables.)");
 
     enumerator = rb_obj_alloc(rb_cEnumerator);
     rb_ivar_set(enumerator, rb_intern("chunk_enumerable"), enumerable);
     rb_ivar_set(enumerator, rb_intern("chunk_categorize"), rb_block_proc());
-    rb_ivar_set(enumerator, rb_intern("chunk_initial_state"), initial_state);
     rb_block_call(enumerator, idInitialize, 0, 0, chunk_i, enumerator);
     return enumerator;
 }
@@ -2899,7 +2884,6 @@ enum_chunk(int argc, VALUE *argv, VALUE enumerable)
 struct slicebefore_arg {
     VALUE sep_pred;
     VALUE sep_pat;
-    VALUE state;
     VALUE prev_elts;
     VALUE yielder;
 };
@@ -2914,10 +2898,8 @@ slicebefore_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, _argp))
 
     if (!NIL_P(argp->sep_pat))
         header_p = rb_funcall(argp->sep_pat, id_eqq, 1, i);
-    else if (NIL_P(argp->state))
-        header_p = rb_funcall(argp->sep_pred, id_call, 1, i);
     else
-        header_p = rb_funcall(argp->sep_pred, id_call, 2, i, argp->state);
+        header_p = rb_funcall(argp->sep_pred, id_call, 1, i);
     if (RTEST(header_p)) {
         if (!NIL_P(argp->prev_elts))
             rb_funcall(argp->yielder, id_lshift, 1, argp->prev_elts);
@@ -2943,12 +2925,8 @@ slicebefore_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
     enumerable = rb_ivar_get(enumerator, rb_intern("slicebefore_enumerable"));
     memo->sep_pred = rb_attr_get(enumerator, rb_intern("slicebefore_sep_pred"));
     memo->sep_pat = NIL_P(memo->sep_pred) ? rb_ivar_get(enumerator, rb_intern("slicebefore_sep_pat")) : Qnil;
-    memo->state = rb_attr_get(enumerator, rb_intern("slicebefore_initial_state"));
     memo->prev_elts = Qnil;
     memo->yielder = yielder;
-
-    if (!NIL_P(memo->state))
-        memo->state = rb_obj_dup(memo->state);
 
     rb_block_call(enumerable, id_each, 0, 0, slicebefore_ii, arg);
     memo = MEMO_FOR(struct slicebefore_arg, arg);
@@ -2961,7 +2939,6 @@ slicebefore_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
  *  call-seq:
  *     enum.slice_before(pattern)                             -> an_enumerator
  *     enum.slice_before { |elt| bool }                       -> an_enumerator
- *     enum.slice_before(initial_state) { |elt, state| bool } -> an_enumerator (deprecated)
  *
  *  Creates an enumerator for each chunked elements.
  *  The beginnings of chunks are defined by _pattern_ and the block.
@@ -3107,14 +3084,10 @@ enum_slice_before(int argc, VALUE *argv, VALUE enumerable)
     VALUE enumerator;
 
     if (rb_block_given_p()) {
-        VALUE initial_state;
-        int n;
-        n = rb_scan_args(argc, argv, "01", &initial_state);
-        if (n != 0)
-	    rb_warn("initial_state given for slice_before.  (Use local variables.)");
+        if (argc != 0)
+            rb_error_arity(argc, 0, 0);
         enumerator = rb_obj_alloc(rb_cEnumerator);
         rb_ivar_set(enumerator, rb_intern("slicebefore_sep_pred"), rb_block_proc());
-        rb_ivar_set(enumerator, rb_intern("slicebefore_initial_state"), initial_state);
     }
     else {
         VALUE sep_pat;
@@ -3455,7 +3428,7 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable, "drop", enum_drop, 1);
     rb_define_method(rb_mEnumerable, "drop_while", enum_drop_while, 0);
     rb_define_method(rb_mEnumerable, "cycle", enum_cycle, -1);
-    rb_define_method(rb_mEnumerable, "chunk", enum_chunk, -1);
+    rb_define_method(rb_mEnumerable, "chunk", enum_chunk, 0);
     rb_define_method(rb_mEnumerable, "slice_before", enum_slice_before, -1);
     rb_define_method(rb_mEnumerable, "slice_after", enum_slice_after, -1);
     rb_define_method(rb_mEnumerable, "slice_when", enum_slice_when, 0);

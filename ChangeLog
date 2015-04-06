@@ -1,3 +1,8 @@
+Mon Apr  6 22:52:35 2015  Tanaka Akira  <akr@fsij.org>
+
+	* enum.c: Enumerable#chunk and Enumerable#slice_before no longer takes
+	  the initial_state argument.  [Feature #10958]
+
 Mon Apr  6 16:09:58 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_args.c: protect value stack from calling other methods

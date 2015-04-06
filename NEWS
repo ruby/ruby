@@ -25,6 +25,11 @@ with all sufficient information, see the ChangeLog file.
   * Array#flatten and Array#flatten! no longer try to call #to_ary
     method on elements beyond the given level.  [Bug #10748]
 
+* Enumerable
+  * Enumerable#chunk and Enumerable#slice_before no longer takes the
+    initial_state argument.  [Feature #10958]
+    Use a local variable instead to maintain a state.
+
 * IO
   * IO#close doesn't raise when the IO object is closed.  [Feature #10718]
 
