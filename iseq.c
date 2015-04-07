@@ -2142,13 +2142,9 @@ rb_iseq_build_for_ruby2cext(
     ALLOC_AND_COPY(iseq->line_info_table, line_info_table,
 		   struct iseq_line_info_entry, iseq->line_info_size);
 
-    /*
-     * FIXME: probably broken, but this function is probably unused
-     * and should be removed
-     */
-    if (iseq->catch_table) {
-	MEMCPY(&iseq->catch_table->entries, catch_table,
-	    struct iseq_catch_table_entry, iseq->catch_table->size);
+    if (catch_table) {
+        ALLOC_AND_COPY(&iseq->catch_table->entries, catch_table,
+	    struct iseq_catch_table_entry, catch_table->size);
     }
 
     ALLOC_AND_COPY(iseq->param.opt_table, arg_opt_table, VALUE, iseq->param.opt_num + 1);
