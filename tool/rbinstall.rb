@@ -659,10 +659,11 @@ end
         path = File.dirname(@gem.path)
         return if path == destination_dir
         File.chmod(0700, destination_dir)
+        mode = pattern == "bin/*" ? $script_mode : $data_mode
         install_recursive(path, without_destdir(destination_dir),
                           :glob => pattern,
                           :no_install => "*.gemspec",
-                          :mode => $data_mode)
+                          :mode => mode)
         File.chmod($dir_mode, destination_dir)
       end
     end
@@ -676,6 +677,15 @@ end
     end
   end
 end
+
+class Gem::Installer
+  generate_bin_script = instance_method(:generate_bin_script)
+  define_method(:generate_bin_script) do |filename, bindir|
+    generate_bin_script.bind(self).call(filename, bindir)
+    File.chmod($script_mode, File.join(bindir, formatted_program_filename(filename)))
+  end
+end
+
 # :startdoc:
 
 install?(:ext, :comm, :gem) do
@@ -725,7 +735,7 @@ install?(:ext, :comm, :gem) do
       makedirs(bin_dir)
 
       execs = gemspec.executables.map {|exec| File.join(srcdir, 'bin', exec)}
-      install(execs, bin_dir, :mode => $prog_mode)
+      install(execs, bin_dir, :mode => $script_mode)
     end
   end
 end
@@ -764,8 +774,6 @@ install?(:ext, :comm, :gem) do
       gemname = File.basename(gem)
       puts "#{" "*30}#{gemname}"
     end
-    # fix bindir permission
-    File.chmod($prog_mode, *Dir.glob(with_destdir(bindir)+"/*"))
     # fix directory permissions
     # TODO: Gem.install should accept :dir_mode option or something
     File.chmod($dir_mode, *Dir.glob(install_dir+"/**/"))
