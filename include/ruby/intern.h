@@ -618,8 +618,6 @@ VALUE rb_Hash(VALUE);
 double rb_cstr_to_dbl(const char*, int);
 double rb_str_to_dbl(VALUE, int);
 /* parse.y */
-RUBY_EXTERN int   ruby_sourceline;
-RUBY_EXTERN char *ruby_sourcefile;
 ID rb_id_attrset(ID);
 int rb_is_const_id(ID);
 int rb_is_global_id(ID);
