@@ -679,6 +679,12 @@ end
 end
 
 class Gem::Installer
+  install = instance_method(:install)
+  define_method(:install) do
+    spec.post_install_message = nil
+    install.bind(self).call
+  end
+
   generate_bin_script = instance_method(:generate_bin_script)
   define_method(:generate_bin_script) do |filename, bindir|
     generate_bin_script.bind(self).call(filename, bindir)
