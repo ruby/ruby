@@ -1,3 +1,8 @@
+Thu Apr  9 08:24:03 2015  Masahiro Tomita  <tommy@tmtm.org>
+
+	* ext/socket/raddrinfo.c (addrinfo_mload): fix memory leak of
+	  addrinfo.  [ruby-dev:48923] [Bug #11051]
+
 Wed Apr  8 17:45:02 2015  Shannon Skipper  <shannonskipper@gmail.com>
 
 	* version.c (Init_version): the version of the engine or
