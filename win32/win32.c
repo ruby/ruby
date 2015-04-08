@@ -4726,7 +4726,8 @@ rb_w32_wreadlink(const WCHAR *path, WCHAR *buf, size_t bufsize)
 			 &rp, sizeof(rp), &ret, NULL)) {
 	e = map_errno(GetLastError());
     }
-    else if (rp.ReparseTag != IO_REPARSE_TAG_SYMLINK){
+    else if (rp.ReparseTag != IO_REPARSE_TAG_SYMLINK &&
+	     rp.ReparseTag != IO_REPARSE_TAG_MOUNT_POINT){
 	e = EINVAL;
     }
     else {
