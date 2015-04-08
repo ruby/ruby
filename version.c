@@ -38,10 +38,11 @@ VALUE ruby_engine_name = Qnil;
 void
 Init_version(void)
 {
+    VALUE v = MKSTR(version);
     /*
      * The running version of ruby
      */
-    rb_define_global_const("RUBY_VERSION", MKSTR(version));
+    rb_define_global_const("RUBY_VERSION", v);
     /*
      * The date this ruby was released
      */
@@ -71,6 +72,10 @@ Init_version(void)
      * The engine or interpreter this ruby uses.
      */
     rb_define_global_const("RUBY_ENGINE", ruby_engine_name = MKSTR(engine));
+    /*
+     * The version of the engine or interpreter this ruby uses.
+     */
+    rb_define_global_const("RUBY_ENGINE_VERSION", v);
 }
 
 /*! Prints the version information of the CRuby interpreter to stdout. */

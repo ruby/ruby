@@ -1,3 +1,8 @@
+Wed Apr  8 17:45:02 2015  Shannon Skipper  <shannonskipper@gmail.com>
+
+	* version.c (Init_version): the version of the engine or
+	  interpreter.  [Fix GH-858]
+
 Wed Apr  8 16:15:30 2015  Kenta Murata  <mrkn@cookpad.com>
 
 	* bigdecimal: conform to ruby's license.  [ruby-core:68466] [Bug #10952]
