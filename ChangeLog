@@ -1,3 +1,7 @@
+Wed Apr  8 14:03:47 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/test_symbol.rb: fix syntax error.
+
 Wed Apr  8 13:01:06 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (rb_any_hash): Symbols are compared by the identities

@@ -255,6 +255,6 @@ class TestSymbol < Test::Unit::TestCase
       assert_nothing_raised(RuntimeError, bug11035) {
         h['bar'.to_sym] = 2
       }
-    end
-  end;
+    end;
+  end
 end
