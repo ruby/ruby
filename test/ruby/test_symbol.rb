@@ -238,4 +238,23 @@ class TestSymbol < Test::Unit::TestCase
       200_000.times { |i| i.to_s.to_sym }
     end;
   end
+
+  def test_hash_redefinition
+    assert_separately([], <<-'end;')
+      bug11035 = '[ruby-core:68767] [Bug #11035]'
+      class Symbol
+        def hash
+          raise
+        end
+      end
+
+      h = {}
+      assert_nothing_raised(RuntimeError, bug11035) {
+        h[:foo] = 1
+      }
+      assert_nothing_raised(RuntimeError, bug11035) {
+        h['bar'.to_sym] = 2
+      }
+    end
+  end;
 end
