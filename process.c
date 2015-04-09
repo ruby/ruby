@@ -282,6 +282,65 @@ static ID id_hertz;
 extern ID ruby_static_id_status;
 #define id_status ruby_static_id_status
 
+/*#define DEBUG_REDIRECT*/
+#if defined(DEBUG_REDIRECT)
+
+#include <stdarg.h>
+
+static void
+ttyprintf(const char *fmt, ...)
+{
+    va_list ap;
+    FILE *tty;
+    int save = errno;
+#ifdef _WIN32
+    tty = fopen("con", "w");
+#else
+    tty = fopen("/dev/tty", "w");
+#endif
+    if (!tty)
+        return;
+
+    va_start(ap, fmt);
+    vfprintf(tty, fmt, ap);
+    va_end(ap);
+    fclose(tty);
+    errno = save;
+}
+
+static int
+redirect_dup(int oldfd)
+{
+    int ret;
+    ret = dup(oldfd);
+    ttyprintf("dup(%d) => %d\n", oldfd, ret);
+    return ret;
+}
+
+static int
+redirect_dup2(int oldfd, int newfd)
+{
+    int ret;
+    ret = dup2(oldfd, newfd);
+    ttyprintf("dup2(%d, %d)\n", oldfd, newfd);
+    return ret;
+}
+
+static int
+redirect_close(int fd)
+{
+    int ret;
+    ret = close(fd);
+    ttyprintf("close(%d)\n", fd);
+    return ret;
+}
+
+#else
+#define redirect_dup(oldfd) dup(oldfd)
+#define redirect_dup2(oldfd, newfd) dup2((oldfd), (newfd))
+#define redirect_close(fd) close(fd)
+#endif
+
 /*
  *  call-seq:
  *     Process.pid   -> fixnum
@@ -2451,65 +2510,6 @@ rb_f_exec(int argc, const VALUE *argv)
 }
 
 #define ERRMSG(str) do { if (errmsg && 0 < errmsg_buflen) strlcpy(errmsg, (str), errmsg_buflen); } while (0)
-
-/*#define DEBUG_REDIRECT*/
-#if defined(DEBUG_REDIRECT)
-
-#include <stdarg.h>
-
-static void
-ttyprintf(const char *fmt, ...)
-{
-    va_list ap;
-    FILE *tty;
-    int save = errno;
-#ifdef _WIN32
-    tty = fopen("con", "w");
-#else
-    tty = fopen("/dev/tty", "w");
-#endif
-    if (!tty)
-        return;
-
-    va_start(ap, fmt);
-    vfprintf(tty, fmt, ap);
-    va_end(ap);
-    fclose(tty);
-    errno = save;
-}
-
-static int
-redirect_dup(int oldfd)
-{
-    int ret;
-    ret = dup(oldfd);
-    ttyprintf("dup(%d) => %d\n", oldfd, ret);
-    return ret;
-}
-
-static int
-redirect_dup2(int oldfd, int newfd)
-{
-    int ret;
-    ret = dup2(oldfd, newfd);
-    ttyprintf("dup2(%d, %d)\n", oldfd, newfd);
-    return ret;
-}
-
-static int
-redirect_close(int fd)
-{
-    int ret;
-    ret = close(fd);
-    ttyprintf("close(%d)\n", fd);
-    return ret;
-}
-
-#else
-#define redirect_dup(oldfd) dup(oldfd)
-#define redirect_dup2(oldfd, newfd) dup2((oldfd), (newfd))
-#define redirect_close(fd) close(fd)
-#endif
 
 static int
 save_redirect_fd(int fd, struct rb_execarg *sargp, char *errmsg, size_t errmsg_buflen)
