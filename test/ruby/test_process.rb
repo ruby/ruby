@@ -562,7 +562,7 @@ class TestProcess < Test::Unit::TestCase
     with_tmpchdir {|d|
       system("mkfifo fifo")
       return if !$?.success?
-      assert(FileTest.pipe?("fifo"))
+      assert(FileTest.pipe?("fifo"), "should be pipe")
       t1 = Thread.new {
         system(*ECHO["output to fifo"], :out=>"fifo")
       }
@@ -572,7 +572,7 @@ class TestProcess < Test::Unit::TestCase
       v1, v2 = assert_join_threads([t1, t2])
       assert_equal("output to fifo\n", v2)
     }
-  end
+  end unless windows? # does not support fifo
 
   def test_execopts_redirect_pipe
     with_pipe {|r1, w1|
