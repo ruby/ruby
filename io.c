@@ -5894,7 +5894,7 @@ popen_exec(void *pp, char *errmsg, size_t errmsg_len)
 static VALUE
 rb_execarg_fixup_v(VALUE execarg_obj)
 {
-    rb_execarg_fixup(execarg_obj);
+    rb_execarg_parent_start(execarg_obj);
     return Qnil;
 }
 
@@ -6079,7 +6079,7 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode, convconfig_t *convc
 	cmd = StringValueCStr(prog);
     }
     if (!NIL_P(execarg_obj)) {
-	rb_execarg_fixup(execarg_obj);
+	rb_execarg_parent_start(execarg_obj);
 	rb_execarg_run_options(eargp, sargp, NULL, 0);
     }
     fp = popen(cmd, modestr);

@@ -182,7 +182,7 @@ establishShell(int argc, VALUE *argv, struct pty_info *info,
 
     carg.execarg_obj = rb_execarg_new(argc, argv, 1);
     carg.eargp = rb_execarg_get(carg.execarg_obj);
-    rb_execarg_fixup(carg.execarg_obj);
+    rb_execarg_parent_start(carg.execarg_obj);
 
     getDevice(&master, &slave, SlaveName, 0);
 

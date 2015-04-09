@@ -1,3 +1,13 @@
+Thu Apr  9 20:52:31 2015  Tanaka Akira  <akr@fsij.org>
+
+	* internal.h (rb_execarg_parent_start): Renamed from rb_execarg_fixup.
+
+	* process.c: Follows the above change.
+
+	* io.c: Ditto.
+
+	* ext/pty/pty.c: Ditto.
+
 Thu Apr  9 20:35:12 2015  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (fd_clear_cloexec): Extracted from run_exec_dup2.
