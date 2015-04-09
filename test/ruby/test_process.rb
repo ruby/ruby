@@ -560,7 +560,7 @@ class TestProcess < Test::Unit::TestCase
 
   def test_execopts_redirect_open_fifo
     with_tmpchdir {|d|
-      system("mknod fifo p")
+      system("mkfifo fifo")
       return if !$?.success?
       assert(FileTest.pipe?("fifo"))
       t1 = Thread.new {

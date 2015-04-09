@@ -1,3 +1,8 @@
+Fri Apr 10 02:18:53 2015  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/test_process.rb: Use mkfifo command instead of mknod
+	  command to create a named file.  mkfifo commandis defined by POSIX.
+
 Fri Apr 10 01:29:05 2015  Tanaka Akira  <akr@fsij.org>
 
 	* process.c: Release GVL when opening a file in spawn() to avoid whole
