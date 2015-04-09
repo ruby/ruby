@@ -1,3 +1,13 @@
+Fri Apr 10 01:29:05 2015  Tanaka Akira  <akr@fsij.org>
+
+	* process.c: Release GVL when opening a file in spawn() to avoid whole
+	  process blocking when opening a named pipe.
+	  (open_func): New function.
+	  (rb_execarg_parent_start1): Extracted from rb_execarg_parent_start and
+	  use rb_thread_call_without_gvl2 to release GVL when opening a file.
+	  (rb_execarg_parent_start): Invoke rb_execarg_parent_start1 via
+	  rb_protect and invoke rb_execarg_parent_end when error.
+
 Thu Apr  9 22:19:19 2015  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (redirect_open): Removed.

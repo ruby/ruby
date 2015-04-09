@@ -558,6 +558,22 @@ class TestProcess < Test::Unit::TestCase
     }
   end unless windows? # passing non-stdio fds is not supported on Windows
 
+  def test_execopts_redirect_open_fifo
+    with_tmpchdir {|d|
+      system("mknod fifo p")
+      return if !$?.success?
+      assert(FileTest.pipe?("fifo"))
+      t1 = Thread.new {
+        system(*ECHO["output to fifo"], :out=>"fifo")
+      }
+      t2 = Thread.new {
+        IO.popen([*CAT, :in=>"fifo"]) {|f| f.read }
+      }
+      v1, v2 = assert_join_threads([t1, t2])
+      assert_equal("output to fifo\n", v2)
+    }
+  end
+
   def test_execopts_redirect_pipe
     with_pipe {|r1, w1|
       with_pipe {|r2, w2|

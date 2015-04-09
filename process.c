@@ -322,7 +322,7 @@ redirect_dup2(int oldfd, int newfd)
 {
     int ret;
     ret = dup2(oldfd, newfd);
-    ttyprintf("dup2(%d, %d)\n", oldfd, newfd);
+    ttyprintf("dup2(%d, %d) => %d\n", oldfd, newfd, ret);
     return ret;
 }
 
@@ -331,7 +331,25 @@ redirect_close(int fd)
 {
     int ret;
     ret = close(fd);
-    ttyprintf("close(%d)\n", fd);
+    ttyprintf("close(%d) => %d\n", fd, ret);
+    return ret;
+}
+
+static int
+parent_redirect_open(const char *pathname, int flags, mode_t perm)
+{
+    int ret;
+    ret = rb_cloexec_open(pathname, flags, perm);
+    ttyprintf("parent_open(\"%s\", 0x%x, 0%o) => %d\n", pathname, flags, perm, ret);
+    return ret;
+}
+
+static int
+parent_redirect_close(int fd)
+{
+    int ret;
+    ret = close(fd);
+    ttyprintf("parent_close(%d) => %d\n", fd, ret);
     return ret;
 }
 
@@ -339,6 +357,8 @@ redirect_close(int fd)
 #define redirect_dup(oldfd) dup(oldfd)
 #define redirect_dup2(oldfd, newfd) dup2((oldfd), (newfd))
 #define redirect_close(fd) close(fd)
+#define parent_redirect_open(pathname, flags, perm) rb_cloexec_open((pathname), (flags), (perm))
+#define parent_redirect_close(fd) close(fd)
 #endif
 
 /*
@@ -2265,8 +2285,27 @@ fill_envp_buf_i(st_data_t st_key, st_data_t st_val, st_data_t arg)
 
 static long run_exec_dup2_tmpbuf_size(long n);
 
-void
-rb_execarg_parent_start(VALUE execarg_obj)
+struct open_struct {
+    int entered;
+    VALUE fname;
+    int oflags;
+    mode_t perm;
+    int ret;
+    int err;
+};
+
+static void *
+open_func(void *ptr)
+{
+    struct open_struct *data = ptr;
+    const char *fname = RSTRING_PTR(data->fname);
+    data->entered = 1;
+    data->ret = parent_redirect_open(fname, data->oflags, data->perm);
+    return NULL;
+}
+
+static VALUE
+rb_execarg_parent_start1(VALUE execarg_obj)
 {
     struct rb_execarg *eargp = rb_execarg_get(execarg_obj);
     int unsetenv_others;
@@ -2286,15 +2325,23 @@ rb_execarg_parent_start(VALUE execarg_obj)
             VALUE fd2v = RARRAY_AREF(param, 3);
             int fd2;
             if (NIL_P(fd2v)) {
-                const char *path;
+                struct open_struct open_data;
                 FilePathValue(vpath);
-                path = StringValueCStr(vpath);
-                fd2 = rb_cloexec_open(path, flags, perm);
-                if (fd2 == -1) {
-                    goto error;
-                }
+                do {
+                    rb_thread_check_ints();
+                    open_data.entered = 0;
+                    open_data.fname = vpath;
+                    open_data.oflags = flags;
+                    open_data.perm = perm;
+                    open_data.ret = -1;
+                    rb_thread_call_without_gvl2(open_func, (void *)&open_data, RUBY_UBF_IO, 0);
+                } while (!open_data.entered);
+                fd2 = open_data.ret;
+                if (fd2 == -1)
+                    rb_sys_fail("open");
                 rb_update_max_fd(fd2);
                 RARRAY_ASET(param, 3, INT2FIX(fd2));
+                rb_thread_check_ints();
             }
             else {
                 fd2 = NUM2INT(fd2v);
@@ -2370,11 +2417,18 @@ rb_execarg_parent_start(VALUE execarg_obj)
     }
 
     RB_GC_GUARD(execarg_obj);
-    return;
+    return Qnil;
+}
 
-  error:
-    rb_execarg_parent_end(execarg_obj);
-    rb_sys_fail("open");
+void
+rb_execarg_parent_start(VALUE execarg_obj)
+{
+    int state;
+    rb_protect(rb_execarg_parent_start1, execarg_obj, &state);
+    if (state) {
+        rb_execarg_parent_end(execarg_obj);
+        rb_jump_tag(state);
+    }
 }
 
 void
@@ -2395,7 +2449,7 @@ rb_execarg_parent_end(VALUE execarg_obj)
             fd2v = RARRAY_AREF(param, 3);
             if (!NIL_P(fd2v)) {
                 fd2 = FIX2INT(fd2v);
-                close(fd2);
+                parent_redirect_close(fd2);
                 RARRAY_ASET(param, 3, Qnil);
             }
         }
