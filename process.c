@@ -2505,20 +2505,10 @@ redirect_close(int fd)
     return ret;
 }
 
-static int
-redirect_open(const char *pathname, int flags, mode_t perm)
-{
-    int ret;
-    ret = open(pathname, flags, perm);
-    ttyprintf("open(\"%s\", 0x%x, 0%o) => %d\n", pathname, flags, perm, ret);
-    return ret;
-}
-
 #else
 #define redirect_dup(oldfd) dup(oldfd)
 #define redirect_dup2(oldfd, newfd) dup2((oldfd), (newfd))
 #define redirect_close(fd) close(fd)
-#define redirect_open(pathname, flags, perm) open((pathname), (flags), (perm))
 #endif
 
 static int
