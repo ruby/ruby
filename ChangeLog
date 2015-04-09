@@ -1,3 +1,7 @@
+Thu Apr  9 20:35:12 2015  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (fd_clear_cloexec): Extracted from run_exec_dup2.
+
 Thu Apr  9 09:26:47 2015  Eric Wong  <e@80x24.org>
 
 	* ccan/list/list.h: sync with ccan upstream

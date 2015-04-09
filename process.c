@@ -2515,6 +2515,29 @@ run_exec_dup2_tmpbuf_size(long n)
     return sizeof(struct run_exec_dup2_fd_pair) * n;
 }
 
+/* This function should be async-signal-safe.  Actually it is. */
+static int
+fd_clear_cloexec(int fd, char *errmsg, size_t errmsg_buflen)
+{
+#ifdef F_GETFD
+    int ret;
+    ret = fcntl(fd, F_GETFD); /* async-signal-safe */
+    if (ret == -1) {
+        ERRMSG("fcntl(F_GETFD)");
+        return -1;
+    }
+    if (ret & FD_CLOEXEC) {
+        ret &= ~FD_CLOEXEC;
+        ret = fcntl(fd, F_SETFD, ret); /* async-signal-safe */
+        if (ret == -1) {
+            ERRMSG("fcntl(F_SETFD)");
+            return -1;
+        }
+    }
+#endif
+    return 0;
+}
+
 /* This function should be async-signal-safe when sargp is NULL.  Hopefully it is. */
 static int
 run_exec_dup2(VALUE ary, VALUE tmpbuf, struct rb_execarg *sargp, char *errmsg, size_t errmsg_buflen)
@@ -2584,22 +2607,8 @@ run_exec_dup2(VALUE ary, VALUE tmpbuf, struct rb_execarg *sargp, char *errmsg, s
         if (pairs[i].oldfd == -1)
             continue;
         if (pairs[i].oldfd == pairs[i].newfd) { /* self cycle */
-#ifdef F_GETFD
-            int fd = pairs[i].oldfd;
-            ret = fcntl(fd, F_GETFD); /* async-signal-safe */
-            if (ret == -1) {
-                ERRMSG("fcntl(F_GETFD)");
+            if (fd_clear_cloexec(pairs[i].oldfd, errmsg, errmsg_buflen) == -1) /* async-signal-safe */
                 goto fail;
-            }
-            if (ret & FD_CLOEXEC) {
-                ret &= ~FD_CLOEXEC;
-                ret = fcntl(fd, F_SETFD, ret); /* async-signal-safe */
-                if (ret == -1) {
-                    ERRMSG("fcntl(F_SETFD)");
-                    goto fail;
-                }
-            }
-#endif
             pairs[i].oldfd = -1;
             continue;
         }
