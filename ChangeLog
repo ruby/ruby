@@ -1,3 +1,8 @@
+Thu Apr  9 09:26:47 2015  Eric Wong  <e@80x24.org>
+
+	* ccan/list/list.h: sync with ccan upstream
+	  [ccan commit c2fbfe5282ba264f3485586e7efa8a5967f2d386]
+
 Thu Apr  9 08:24:03 2015  Masahiro Tomita  <tommy@tmtm.org>
 
 	* ext/socket/raddrinfo.c (addrinfo_mload): fix memory leak of
