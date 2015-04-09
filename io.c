@@ -6000,6 +6000,7 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode, convconfig_t *convc
             if (0 <= arg.write_pair[1]) close(arg.write_pair[1]);
             if (0 <= arg.pair[0]) close(arg.pair[0]);
             if (0 <= arg.pair[1]) close(arg.pair[1]);
+            rb_execarg_parent_end(execarg_obj);
             rb_jump_tag(state);
         }
 
@@ -6025,6 +6026,7 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode, convconfig_t *convc
 	if (eargp)
 	    rb_execarg_run_options(sargp, NULL, NULL, 0);
 # endif
+        rb_execarg_parent_end(execarg_obj);
     }
     else {
 # if defined(HAVE_WORKING_FORK)
@@ -6083,8 +6085,10 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode, convconfig_t *convc
 	rb_execarg_run_options(eargp, sargp, NULL, 0);
     }
     fp = popen(cmd, modestr);
-    if (eargp)
+    if (eargp) {
+        rb_execarg_parent_end(execarg_obj);
 	rb_execarg_run_options(sargp, NULL, NULL, 0);
+    }
     if (!fp) rb_sys_fail_path(prog);
     fd = fileno(fp);
 #endif

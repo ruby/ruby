@@ -1514,8 +1514,8 @@ check_exec_redirect(VALUE key, VALUE val, struct rb_execarg *eargp)
                 flags = rb_to_int(flags);
             perm = rb_ary_entry(val, 2);
             perm = NIL_P(perm) ? INT2FIX(0644) : rb_to_int(perm);
-            param = hide_obj(rb_ary_new3(3, hide_obj(EXPORT_DUP(path)),
-                                            flags, perm));
+            param = hide_obj(rb_ary_new3(4, hide_obj(EXPORT_DUP(path)),
+                                            flags, perm, Qnil));
             eargp->fd_open = check_exec_redirect1(eargp->fd_open, key, param);
         }
         break;
@@ -1542,8 +1542,8 @@ check_exec_redirect(VALUE key, VALUE val, struct rb_execarg *eargp)
 	else
             flags = INT2NUM(O_RDONLY);
         perm = INT2FIX(0644);
-        param = hide_obj(rb_ary_new3(3, hide_obj(EXPORT_DUP(path)),
-                                        flags, perm));
+        param = hide_obj(rb_ary_new3(4, hide_obj(EXPORT_DUP(path)),
+                                        flags, perm, Qnil));
         eargp->fd_open = check_exec_redirect1(eargp->fd_open, key, param);
         break;
 
@@ -1769,7 +1769,7 @@ check_exec_fds_1(struct rb_execarg *eargp, VALUE h, int maxhint, VALUE ary)
             if (RTEST(rb_hash_lookup(h, INT2FIX(fd)))) {
                 rb_raise(rb_eArgError, "fd %d specified twice", fd);
             }
-            if (ary == eargp->fd_open || ary == eargp->fd_dup2)
+            if (ary == eargp->fd_dup2)
                 rb_hash_aset(h, INT2FIX(fd), Qtrue);
             else if (ary == eargp->fd_dup2_child)
                 rb_hash_aset(h, INT2FIX(fd), RARRAY_AREF(elt, 1));
@@ -1797,7 +1797,6 @@ check_exec_fds(struct rb_execarg *eargp)
 
     maxhint = check_exec_fds_1(eargp, h, maxhint, eargp->fd_dup2);
     maxhint = check_exec_fds_1(eargp, h, maxhint, eargp->fd_close);
-    maxhint = check_exec_fds_1(eargp, h, maxhint, eargp->fd_open);
     maxhint = check_exec_fds_1(eargp, h, maxhint, eargp->fd_dup2_child);
 
     if (eargp->fd_dup2_child) {
@@ -2215,6 +2214,36 @@ rb_execarg_parent_start(VALUE execarg_obj)
     VALUE envopts;
     VALUE ary;
 
+    ary = eargp->fd_open;
+    if (ary != Qfalse) {
+        long i;
+        for (i = 0; i < RARRAY_LEN(ary); i++) {
+            VALUE elt = RARRAY_AREF(ary, i);
+            int fd = FIX2INT(RARRAY_AREF(elt, 0));
+            VALUE param = RARRAY_AREF(elt, 1);
+            VALUE vpath = RARRAY_AREF(param, 0);
+            int flags = NUM2INT(RARRAY_AREF(param, 1));
+            int perm = NUM2INT(RARRAY_AREF(param, 2));
+            VALUE fd2v = RARRAY_AREF(param, 3);
+            int fd2;
+            if (NIL_P(fd2v)) {
+                const char *path;
+                FilePathValue(vpath);
+                path = StringValueCStr(vpath);
+                fd2 = rb_cloexec_open(path, flags, perm);
+                if (fd2 == -1) {
+                    goto error;
+                }
+                rb_update_max_fd(fd2);
+                RARRAY_ASET(param, 3, INT2FIX(fd2));
+            }
+            else {
+                fd2 = NUM2INT(fd2v);
+            }
+            rb_execarg_addopt(execarg_obj, INT2FIX(fd), INT2FIX(fd2));
+        }
+    }
+
     eargp->redirect_fds = check_exec_fds(eargp);
 
     ary = eargp->fd_dup2;
@@ -2280,6 +2309,40 @@ rb_execarg_parent_start(VALUE execarg_obj)
         }
         */
     }
+
+    RB_GC_GUARD(execarg_obj);
+    return;
+
+  error:
+    rb_execarg_parent_end(execarg_obj);
+    rb_sys_fail("open");
+}
+
+void
+rb_execarg_parent_end(VALUE execarg_obj)
+{
+    struct rb_execarg *eargp = rb_execarg_get(execarg_obj);
+    int err = errno;
+    VALUE ary;
+
+    ary = eargp->fd_open;
+    if (ary != Qfalse) {
+        long i;
+        for (i = 0; i < RARRAY_LEN(ary); i++) {
+            VALUE elt = RARRAY_AREF(ary, i);
+            VALUE param = RARRAY_AREF(elt, 1);
+            VALUE fd2v;
+            int fd2;
+            fd2v = RARRAY_AREF(param, 3);
+            if (!NIL_P(fd2v)) {
+                fd2 = FIX2INT(fd2v);
+                close(fd2);
+                RARRAY_ASET(param, 3, Qnil);
+            }
+        }
+    }
+
+    errno = err;
     RB_GC_GUARD(execarg_obj);
 }
 
@@ -2677,57 +2740,6 @@ run_exec_close(VALUE ary, char *errmsg, size_t errmsg_buflen)
 
 /* This function should be async-signal-safe when sargp is NULL.  Actually it is. */
 static int
-run_exec_open(VALUE ary, struct rb_execarg *sargp, char *errmsg, size_t errmsg_buflen)
-{
-    long i;
-    int ret;
-
-    for (i = 0; i < RARRAY_LEN(ary);) {
-        VALUE elt = RARRAY_AREF(ary, i);
-        int fd = FIX2INT(RARRAY_AREF(elt, 0));
-        VALUE param = RARRAY_AREF(elt, 1);
-        const VALUE vpath = RARRAY_AREF(param, 0);
-        const char *path = RSTRING_PTR(vpath);
-        int flags = NUM2INT(RARRAY_AREF(param, 1));
-        int perm = NUM2INT(RARRAY_AREF(param, 2));
-        int need_close = 1;
-        int fd2 = redirect_open(path, flags, perm); /* async-signal-safe */
-        if (fd2 == -1) {
-            ERRMSG("open");
-            return -1;
-        }
-        rb_update_max_fd(fd2);
-        while (i < RARRAY_LEN(ary) &&
-               (elt = RARRAY_AREF(ary, i), RARRAY_AREF(elt, 1) == param)) {
-            fd = FIX2INT(RARRAY_AREF(elt, 0));
-            if (fd == fd2) {
-                need_close = 0;
-            }
-            else {
-                if (save_redirect_fd(fd, sargp, errmsg, errmsg_buflen) < 0) /* async-signal-safe */
-                    return -1;
-                ret = redirect_dup2(fd2, fd); /* async-signal-safe */
-                if (ret == -1) {
-                    ERRMSG("dup2");
-                    return -1;
-                }
-                rb_update_max_fd(fd);
-            }
-            i++;
-        }
-        if (need_close) {
-            ret = redirect_close(fd2); /* async-signal-safe */
-            if (ret == -1) {
-                ERRMSG("close");
-                return -1;
-            }
-        }
-    }
-    return 0;
-}
-
-/* This function should be async-signal-safe when sargp is NULL.  Actually it is. */
-static int
 run_exec_dup2_child(VALUE ary, struct rb_execarg *sargp, char *errmsg, size_t errmsg_buflen)
 {
     long i;
@@ -2926,12 +2938,6 @@ rb_execarg_run_options(const struct rb_execarg *eargp, struct rb_execarg *sargp,
         rb_close_before_exec(3, eargp->close_others_maxhint, eargp->redirect_fds); /* async-signal-safe */
     }
 #endif
-
-    obj = eargp->fd_open;
-    if (obj != Qfalse) {
-        if (run_exec_open(obj, sargp, errmsg, errmsg_buflen) == -1) /* async-signal-safe */
-            return -1;
-    }
 
     obj = eargp->fd_dup2_child;
     if (obj != Qfalse) {
@@ -3848,6 +3854,7 @@ rb_spawn_internal(int argc, const VALUE *argv, char *errmsg, size_t errmsg_bufle
     eargp = rb_execarg_get(execarg_obj);
     rb_execarg_parent_start(execarg_obj);
     ret = rb_spawn_process(eargp, errmsg, errmsg_buflen);
+    rb_execarg_parent_end(execarg_obj);
     RB_GC_GUARD(execarg_obj);
     return ret;
 }
@@ -4215,6 +4222,7 @@ rb_f_spawn(int argc, VALUE *argv)
     fail_str = eargp->use_shell ? eargp->invoke.sh.shell_script : eargp->invoke.cmd.command_name;
 
     pid = rb_spawn_process(eargp, errmsg, sizeof(errmsg));
+    rb_execarg_parent_end(execarg_obj);
     RB_GC_GUARD(execarg_obj);
 
     if (pid == -1) {

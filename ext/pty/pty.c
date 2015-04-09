@@ -196,12 +196,14 @@ establishShell(int argc, VALUE *argv, struct pty_info *info,
 	int e = errno;
 	close(master);
 	close(slave);
+        rb_execarg_parent_end(carg.execarg_obj);
 	errno = e;
 	if (status) rb_jump_tag(status);
 	rb_sys_fail(errbuf[0] ? errbuf : "fork failed");
     }
 
     close(slave);
+    rb_execarg_parent_end(carg.execarg_obj);
 
     info->child_pid = pid;
     info->fd = master;

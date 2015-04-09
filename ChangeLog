@@ -1,3 +1,23 @@
+Thu Apr  9 21:38:20 2015  Tanaka Akira  <akr@fsij.org>
+
+	* internal.h (rb_execarg_parent_end): Declared.
+
+	* process.c: "spawn" opens files in the parent process.
+	  (check_exec_redirect): Add an placeholder for fd in parameters
+	  for fd_open.
+	  (check_exec_fds_1): Delete fd_open condition.
+	  (check_exec_fds): Don't call check_exec_fds_1 with fd_open.
+	  (rb_execarg_parent_start): Open files specified as "spawn" options
+	  and add "dup2" options.
+	  (rb_execarg_parent_end): New function to close opened fds.
+	  (run_exec_open): Removed.
+	  (rb_execarg_run_options): Don't call run_exec_open.
+	  (rb_spawn_internal): Call rb_execarg_parent_end.
+
+	* io.c (pipe_open): Call rb_execarg_parent_end.
+
+	* ext/pty/pty.c (establishShell): Call rb_execarg_parent_end.
+
 Thu Apr  9 20:52:31 2015  Tanaka Akira  <akr@fsij.org>
 
 	* internal.h (rb_execarg_parent_start): Renamed from rb_execarg_fixup.
