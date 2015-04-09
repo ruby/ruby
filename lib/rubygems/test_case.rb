@@ -1439,7 +1439,10 @@ begin
 rescue Gem::LoadError
 end
 
-require 'rake/packagetask'
+begin
+  require 'rake/packagetask'
+rescue LoadError
+end
 
 begin
   gem 'rdoc'
