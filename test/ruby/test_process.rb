@@ -545,7 +545,7 @@ class TestProcess < Test::Unit::TestCase
       system RUBY, "-e", "#{minfd}.upto(#{maxfd}) {|fd| IO.new(fd).print fd.to_s }", opts
       minfd.upto(maxfd) {|fd| assert_equal(fd.to_s, File.read("out#{fd}")) }
     }
-  end
+  end unless windows? # passing non-stdio fds is not supported on Windows
 
   def test_execopts_redirect_open_order_reverse
     minfd = 3
@@ -556,7 +556,7 @@ class TestProcess < Test::Unit::TestCase
       system RUBY, "-e", "#{minfd}.upto(#{maxfd}) {|fd| IO.new(fd).print fd.to_s }", opts
       minfd.upto(maxfd) {|fd| assert_equal(fd.to_s, File.read("out#{fd}")) }
     }
-  end
+  end unless windows? # passing non-stdio fds is not supported on Windows
 
   def test_execopts_redirect_pipe
     with_pipe {|r1, w1|
