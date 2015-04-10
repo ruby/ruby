@@ -1,3 +1,7 @@
+Fri Apr 10 19:38:46 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* test/objspace/test_objspace.rb: remove debug prints.
+
 Fri Apr 10 19:35:51 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* ext/objspace/objspace.c: add ObjectSpace.count_imemo_objects method
