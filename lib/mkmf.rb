@@ -568,7 +568,7 @@ MSG
   # [+src+] a String which contains a C source
   # [+opt+] a String which contains compiler options
   def try_compile(src, opt="", *opts, &b)
-    with_werror(opt, *opts) {|_opt, *_opts| try_do(src, cc_command(_opt), *_opts, &b)} and
+    with_werror(opt, *opts) {|_opt, *| try_do(src, cc_command(_opt), *opts, &b)} and
       File.file?("#{CONFTEST}.#{$OBJEXT}")
   ensure
     MakeMakefile.rm_f "#{CONFTEST}*"
@@ -621,8 +621,8 @@ MSG
     $CFLAGS = cflags unless ret
   end
 
-  def try_cflags(flags, *opts)
-    try_compile(MAIN_DOES_NOTHING, flags, *opts)
+  def try_cflags(flags, opts = {})
+    try_compile(MAIN_DOES_NOTHING, flags, {:werror => true}.update(opts))
   end
 
   def with_ldflags(flags)
@@ -633,8 +633,8 @@ MSG
     $LDFLAGS = ldflags unless ret
   end
 
-  def try_ldflags(flags)
-    try_link(MAIN_DOES_NOTHING, flags)
+  def try_ldflags(flags, opts = {})
+    try_link(MAIN_DOES_NOTHING, flags, {:werror => true}.update(opts))
   end
 
   def try_static_assert(expr, headers = nil, opt = "", &b)

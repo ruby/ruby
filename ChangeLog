@@ -1,3 +1,13 @@
+Fri Apr 10 22:29:21 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (try_compile): pass the given werror flag to try_do
+	  to check if stderr is empty.
+
+	* lib/mkmf.rb (try_cflags, try_ldflags): default werror to true.
+
+	* win32/Makefile.sub (WERRORFLAG): remove useless option.  VC does
+	  not make warnings of unknown command option an error.
+
 Fri Apr 10 19:34:24 2015  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/test_file_exhaustive.rb: Test socket.
