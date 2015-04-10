@@ -125,6 +125,26 @@ set_zero_i(st_data_t key, st_data_t val, st_data_t arg)
     return ST_CONTINUE;
 }
 
+static VALUE
+setup_hash(int argc, VALUE *argv)
+{
+    VALUE hash;
+
+    if (rb_scan_args(argc, argv, "01", &hash) == 1) {
+        if (!RB_TYPE_P(hash, T_HASH))
+            rb_raise(rb_eTypeError, "non-hash given");
+    }
+
+    if (hash == Qnil) {
+        hash = rb_hash_new();
+    }
+    else if (!RHASH_EMPTY_P(hash)) {
+        st_foreach(RHASH_TBL(hash), set_zero_i, hash);
+    }
+
+    return hash;
+}
+
 static int
 cos_i(void *vstart, void *vend, size_t stride, void *data)
 {
@@ -206,12 +226,7 @@ count_objects_size(int argc, VALUE *argv, VALUE os)
     size_t counts[T_MASK+1];
     size_t total = 0;
     enum ruby_value_type i;
-    VALUE hash;
-
-    if (rb_scan_args(argc, argv, "01", &hash) == 1) {
-        if (!RB_TYPE_P(hash, T_HASH))
-            rb_raise(rb_eTypeError, "non-hash given");
-    }
+    VALUE hash = setup_hash(argc, argv);
 
     for (i = 0; i <= T_MASK; i++) {
 	counts[i] = 0;
@@ -281,12 +296,7 @@ count_nodes(int argc, VALUE *argv, VALUE os)
 {
     size_t nodes[NODE_LAST+1];
     size_t i;
-    VALUE hash;
-
-    if (rb_scan_args(argc, argv, "01", &hash) == 1) {
-        if (!RB_TYPE_P(hash, T_HASH))
-            rb_raise(rb_eTypeError, "non-hash given");
-    }
+    VALUE hash = setup_hash(argc, argv);
 
     for (i = 0; i <= NODE_LAST; i++) {
 	nodes[i] = 0;
@@ -485,22 +495,8 @@ cto_i(void *vstart, void *vend, size_t stride, void *data)
 static VALUE
 count_tdata_objects(int argc, VALUE *argv, VALUE self)
 {
-    VALUE hash;
-
-    if (rb_scan_args(argc, argv, "01", &hash) == 1) {
-        if (!RB_TYPE_P(hash, T_HASH))
-            rb_raise(rb_eTypeError, "non-hash given");
-    }
-
-    if (hash == Qnil) {
-        hash = rb_hash_new();
-    }
-    else if (!RHASH_EMPTY_P(hash)) {
-        st_foreach(RHASH_TBL(hash), set_zero_i, hash);
-    }
-
+    VALUE hash = setup_hash(argc, argv);
     rb_objspace_each_objects(cto_i, (void *)hash);
-
     return hash;
 }
 
