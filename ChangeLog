@@ -1,3 +1,8 @@
+Fri Apr 10 23:57:44 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (need_normalization): use getattrlist() if fgetattrlist()
+	  is unavailable, on OSX 10.5.  [ruby-core:68829] [Bug #11054]
+
 Fri Apr 10 22:29:21 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (try_compile): pass the given werror flag to try_do

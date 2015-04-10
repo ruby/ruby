@@ -103,13 +103,23 @@ char *strchr(char*,char);
 #include <sys/mount.h>
 #include <sys/vnode.h>
 
+# if defined HAVE_FGETATTRLIST || !defined HAVE_GETATTRLIST
+#   define need_normalization(dirp, path) need_normalization(dirp)
+# else
+#   define need_normalization(dirp, path) need_normalization(path)
+# endif
 static inline int
-need_normalization(DIR *dirp)
+need_normalization(DIR *dirp, const char *path)
 {
-# ifdef HAVE_GETATTRLIST
+# if defined HAVE_FGETATTRLIST || defined HAVE_GETATTRLIST
     u_int32_t attrbuf[SIZEUP32(fsobj_tag_t)];
     struct attrlist al = {ATTR_BIT_MAP_COUNT, 0, ATTR_CMN_OBJTAG,};
-    if (!fgetattrlist(dirfd(dirp), &al, attrbuf, sizeof(attrbuf), 0)) {
+#   if defined HAVE_FGETATTRLIST
+    int ret = fgetattrlist(dirfd(dirp), &al, attrbuf, sizeof(attrbuf), 0);
+#   else
+    int ret = getattrlist(path, &al, attrbuf, sizeof(attrbuf), 0);
+#   endif
+    if (!ret) {
 	const fsobj_tag_t *tag = (void *)(attrbuf+1);
 	switch (*tag) {
 	  case VT_HFS:
@@ -699,7 +709,7 @@ dir_each(VALUE dir)
     RETURN_ENUMERATOR(dir, 0, 0);
     GetDIR(dir, dirp);
     rewinddir(dirp->dir);
-    IF_NORMALIZE_UTF8PATH(norm_p = need_normalization(dirp->dir));
+    IF_NORMALIZE_UTF8PATH(norm_p = need_normalization(dirp->dir, RSTRING_PTR(dirp->path)));
     while ((dp = READDIR(dirp->dir, dirp->enc)) != NULL) {
 	const char *name = dp->d_name;
 	size_t namlen = NAMLEN(dp);
@@ -1701,7 +1711,7 @@ glob_helper(
 # endif
 	    return 0;
 	}
-	IF_NORMALIZE_UTF8PATH(norm_p = need_normalization(dirp));
+	IF_NORMALIZE_UTF8PATH(norm_p = need_normalization(dirp, *path ? path : "."));
 
 # if NORMALIZE_UTF8PATH
 	if (!(norm_p || magical || recursive)) {
