@@ -13,8 +13,6 @@ begin
 rescue Gem::LoadError
 end
 
-require 'json'
-
 ##
 # Methods for manipulating comment text
 
@@ -321,4 +319,3 @@ module RDoc::Text
   end
 
 end
-
