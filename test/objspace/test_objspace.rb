@@ -79,6 +79,17 @@ class TestObjSpace < Test::Unit::TestCase
     assert_not_empty(arg)
   end
 
+  def test_count_imemo_objects
+    res = ObjectSpace.count_imemo_objects
+    puts
+    pp res
+    assert_not_empty(res)
+    assert_not_nil(res[:imemo_cref])
+    arg = {}
+    res = ObjectSpace.count_imemo_objects(arg)
+    assert_not_empty(res)
+  end
+
   def test_reachable_objects_from
     assert_separately %w[--disable-gem -robjspace], __FILE__, __LINE__, <<-'eom'
     assert_equal(nil, ObjectSpace.reachable_objects_from(nil))

@@ -39,6 +39,9 @@ with all sufficient information, see the ChangeLog file.
   * Socket#accept_nonblock supports `exception :false` to return symbols
     Ditto for TCPServer#accept_nonblock, UNIXServer#accept_nonblock
 
+* ObjectSpace (objspace)
+  * ObjectSpace.count_imemo_objects is added.
+
 * OpenSSL
   * OpenSSL::SSL::SSLSocket#accept_nonblock supports `exception: false`
     to return symbols

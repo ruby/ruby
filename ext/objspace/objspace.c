@@ -500,6 +500,82 @@ count_tdata_objects(int argc, VALUE *argv, VALUE self)
     return hash;
 }
 
+static ID imemo_type_ids[imemo_mask];
+
+static int
+count_imemo_objects_i(void *vstart, void *vend, size_t stride, void *data)
+{
+    VALUE hash = (VALUE)data;
+    VALUE v = (VALUE)vstart;
+
+    for (; v != (VALUE)vend; v += stride) {
+	if (RBASIC(v)->flags && BUILTIN_TYPE(v) == T_IMEMO) {
+	    VALUE counter;
+	    VALUE key = ID2SYM(imemo_type_ids[imemo_type(v)]);
+
+	    counter = rb_hash_aref(hash, key);
+
+	    if (NIL_P(counter)) {
+		counter = INT2FIX(1);
+	    }
+	    else {
+		counter = INT2FIX(FIX2INT(counter) + 1);
+	    }
+
+	    rb_hash_aset(hash, key, counter);
+	}
+    }
+
+    return 0;
+}
+
+/*
+ *  call-seq:
+ *     ObjectSpace.count_imemo_objects([result_hash]) -> hash
+ *
+ *  Counts objects for each +T_IMEMO+ type.
+ *
+ *  This method is only for MRI developers interested in performance and memory
+ *  usage of Ruby programs.
+ *
+ *  It returns a hash as:
+ *
+ *       {:imemo_ifunc=>8,
+ *        :imemo_svar=>7,
+ *        :imemo_cref=>509,
+ *        :imemo_memo=>1,
+ *        :imemo_throw_data=>1}
+ *
+ *  If the optional argument, result_hash, is given, it is overwritten and
+ *  returned. This is intended to avoid probe effect.
+ *
+ *  The contents of the returned hash is implementation specific and may change
+ *  in the future.
+ *
+ *  In this version, keys are symbol objects.
+ *
+ *  This method is only expected to work with C Ruby.
+ */
+
+static VALUE
+count_imemo_objects(int argc, VALUE *argv, VALUE self)
+{
+    VALUE hash = setup_hash(argc, argv);
+
+    if (imemo_type_ids[0] == 0) {
+	imemo_type_ids[0] = rb_intern("imemo_none");
+	imemo_type_ids[1] = rb_intern("imemo_cref");
+	imemo_type_ids[2] = rb_intern("imemo_svar");
+	imemo_type_ids[3] = rb_intern("imemo_throw_data");
+	imemo_type_ids[4] = rb_intern("imemo_ifunc");
+	imemo_type_ids[5] = rb_intern("imemo_memo");
+    }
+
+    rb_objspace_each_objects(count_imemo_objects_i, (void *)hash);
+
+    return hash;
+}
+
 static void
 iow_mark(void *ptr)
 {
@@ -749,6 +825,7 @@ Init_objspace(void)
     rb_define_module_function(rb_mObjSpace, "count_objects_size", count_objects_size, -1);
     rb_define_module_function(rb_mObjSpace, "count_nodes", count_nodes, -1);
     rb_define_module_function(rb_mObjSpace, "count_tdata_objects", count_tdata_objects, -1);
+    rb_define_module_function(rb_mObjSpace, "count_imemo_objects", count_imemo_objects, -1);
 
     rb_define_module_function(rb_mObjSpace, "reachable_objects_from", reachable_objects_from, 1);
     rb_define_module_function(rb_mObjSpace, "reachable_objects_from_root", reachable_objects_from_root, 0);

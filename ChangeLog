@@ -1,3 +1,12 @@
+Fri Apr 10 19:35:51 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/objspace/objspace.c: add ObjectSpace.count_imemo_objects method
+	  to count imemo objects for each type.
+
+	* test/objspace/test_objspace.rb: add a test.
+
+	* NEWS: describe about this addition.
+
 Fri Apr 10 19:34:24 2015  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/test_file_exhaustive.rb: Test anonymous pipe.
