@@ -54,7 +54,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def make_tmp_filename(prefix)
-    "#{@dir}/#{prefix}.#{$$}.test"
+    "#{@dir}/#{prefix}.test"
   end
 
   def test_path
