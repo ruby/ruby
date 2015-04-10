@@ -54,7 +54,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def make_tmp_filename(prefix)
-    "#{@dir}/#{prefix}#{File.basename(__FILE__)}.#{$$}.test"
+    "#{@dir}/#{prefix}.#{$$}.test"
   end
 
   def test_path
@@ -173,7 +173,7 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_file.not_socket?(@file)
     assert_file.not_socket?(@nofile)
     if defined? UNIXServer
-      socket = make_tmp_filename("socket")
+      socket = make_tmp_filename("s")
       UNIXServer.open(socket) {|sock|
         assert_file.socket?(socket)
       }
@@ -1003,7 +1003,7 @@ class TestFileExhaustive < Test::Unit::TestCase
       make_fifo fifo
     end
     if defined? UNIXServer
-      socket = make_tmp_filename("socket")
+      socket = make_tmp_filename("s")
       UNIXServer.open(socket).close
     end
     [@dir, @file, @zerofile, @symlinkfile, @hardlinkfile, fifo, socket].compact.each do |f|
@@ -1129,7 +1129,7 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert(!(File::Stat.new(@dir).socket?))
     assert(!(File::Stat.new(@file).socket?))
     if defined? UNIXServer
-      socket = make_tmp_filename("socket")
+      socket = make_tmp_filename("s")
       UNIXServer.open(socket) {|sock|
         assert(File::Stat.new(socket).socket?)
       }
