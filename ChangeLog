@@ -1,3 +1,12 @@
+Fri Apr 10 11:44:09 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/date/extconf.rb: check warnings.
+
+	* lib/mkmf.rb (try_cflags): pass options to try_compile.
+
+	* win32/Makefile.sub (WERRORFLAG): make unknown command line
+	  options an error.
+
 Fri Apr 10 08:00:17 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_process.rb: unfortunately, windows is not POSIX...

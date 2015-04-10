@@ -621,8 +621,8 @@ MSG
     $CFLAGS = cflags unless ret
   end
 
-  def try_cflags(flags)
-    try_compile(MAIN_DOES_NOTHING, flags)
+  def try_cflags(flags, *opts)
+    try_compile(MAIN_DOES_NOTHING, flags, *opts)
   end
 
   def with_ldflags(flags)
