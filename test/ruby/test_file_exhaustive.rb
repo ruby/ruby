@@ -45,6 +45,13 @@ class TestFileExhaustive < Test::Unit::TestCase
     open(file, "w") {|fh| fh << content }
   end
 
+  if /mswin|mingw|bccwin/ !~ RUBY_PLATFORM
+    def make_fifo(file)
+      system("mkfifo", file)
+      assert $?.success?, "mkfifo fails"
+    end
+  end
+
   def make_tmp_filename(prefix)
     "#{@dir}/#{prefix}#{File.basename(__FILE__)}.#{$$}.test"
   end
@@ -141,10 +148,15 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_file.not_directory?(@nofile)
   end
 
-  def test_pipe_p ## xxx
+  def test_pipe_p
     assert_file.not_pipe?(@dir)
     assert_file.not_pipe?(@file)
     assert_file.not_pipe?(@nofile)
+    if self.respond_to? :make_fifo
+      fifo = make_tmp_filename("fifo")
+      make_fifo fifo
+      assert_file.pipe?(fifo)
+    end
   end
 
   def test_symlink_p
@@ -979,7 +991,11 @@ class TestFileExhaustive < Test::Unit::TestCase
   def test_test
     sleep(@time - Time.now + 1.1)
     make_file("foo", @file + "2")
-    [@dir, @file, @zerofile, @symlinkfile, @hardlinkfile].compact.each do |f|
+    if self.respond_to? :make_fifo
+      fifo = make_tmp_filename("fifo")
+      make_fifo fifo
+    end
+    [@dir, @file, @zerofile, @symlinkfile, @hardlinkfile, fifo].compact.each do |f|
       assert_equal(File.atime(f), test(?A, f))
       assert_equal(File.ctime(f), test(?C, f))
       assert_equal(File.mtime(f), test(?M, f))
@@ -1076,9 +1092,14 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert(!(File::Stat.new(@file).directory?))
   end
 
-  def test_stat_pipe_p ## xxx
+  def test_stat_pipe_p
     assert(!(File::Stat.new(@dir).pipe?))
     assert(!(File::Stat.new(@file).pipe?))
+    if self.respond_to? :make_fifo
+      fifo = make_tmp_filename("fifo")
+      make_fifo fifo
+      assert((File::Stat.new(fifo).pipe?))
+    end
   end
 
   def test_stat_symlink_p
