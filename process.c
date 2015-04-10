@@ -2286,7 +2286,6 @@ fill_envp_buf_i(st_data_t st_key, st_data_t st_val, st_data_t arg)
 static long run_exec_dup2_tmpbuf_size(long n);
 
 struct open_struct {
-    int entered;
     VALUE fname;
     int oflags;
     mode_t perm;
@@ -2299,8 +2298,8 @@ open_func(void *ptr)
 {
     struct open_struct *data = ptr;
     const char *fname = RSTRING_PTR(data->fname);
-    data->entered = 1;
     data->ret = parent_redirect_open(fname, data->oflags, data->perm);
+    data->err = errno;
     return NULL;
 }
 
@@ -2327,18 +2326,21 @@ rb_execarg_parent_start1(VALUE execarg_obj)
             if (NIL_P(fd2v)) {
                 struct open_struct open_data;
                 FilePathValue(vpath);
-                do {
-                    rb_thread_check_ints();
-                    open_data.entered = 0;
-                    open_data.fname = vpath;
-                    open_data.oflags = flags;
-                    open_data.perm = perm;
-                    open_data.ret = -1;
-                    rb_thread_call_without_gvl2(open_func, (void *)&open_data, RUBY_UBF_IO, 0);
-                } while (!open_data.entered);
-                fd2 = open_data.ret;
-                if (fd2 == -1)
+              again:
+                open_data.fname = vpath;
+                open_data.oflags = flags;
+                open_data.perm = perm;
+                open_data.ret = -1;
+                open_data.err = EINTR;
+                rb_thread_call_without_gvl2(open_func, (void *)&open_data, RUBY_UBF_IO, 0);
+                if (open_data.ret == -1) {
+                    if (open_data.err == EINTR) {
+                        rb_thread_check_ints();
+                        goto again;
+                    }
                     rb_sys_fail("open");
+                }
+                fd2 = open_data.ret;
                 rb_update_max_fd(fd2);
                 RARRAY_ASET(param, 3, INT2FIX(fd2));
                 rb_thread_check_ints();

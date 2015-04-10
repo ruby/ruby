@@ -1,3 +1,7 @@
+Fri Apr 10 18:29:49 2015  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rb_execarg_parent_start1): Handle EINTR.
+
 Fri Apr 10 17:27:58 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (vm_exec): check other events when RETURN is thrown.

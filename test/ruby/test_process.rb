@@ -574,6 +574,43 @@ class TestProcess < Test::Unit::TestCase
     }
   end unless windows? # does not support fifo
 
+  def test_execopts_redirect_open_fifo_interrupt_raise
+    with_tmpchdir {|d|
+      system("mkfifo fifo")
+      return if !$?.success?
+      IO.popen([RUBY, '-e', <<-'EOS']) {|io|
+        class E < StandardError; end
+        trap(:USR1) { raise E }
+        begin
+          system("cat", :in => "fifo")
+        rescue E
+          puts "ok"
+        end
+      EOS
+        sleep 0.1
+        Process.kill(:USR1, io.pid)
+        assert_equal("ok\n", io.read)
+      }
+    }
+  end unless windows? # does not support fifo
+
+  def test_execopts_redirect_open_fifo_interrupt_print
+    with_tmpchdir {|d|
+      system("mkfifo fifo")
+      return if !$?.success?
+      IO.popen([RUBY, '-e', <<-'EOS']) {|io|
+        trap(:USR1) { print "trap\n" }
+        system("cat", :in => "fifo")
+      EOS
+        sleep 0.1
+        Process.kill(:USR1, io.pid)
+        sleep 0.1
+        File.write("fifo", "ok\n")
+        assert_equal("trap\nok\n", io.read)
+      }
+    }
+  end unless windows? # does not support fifo
+
   def test_execopts_redirect_pipe
     with_pipe {|r1, w1|
       with_pipe {|r2, w2|
