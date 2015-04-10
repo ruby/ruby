@@ -1100,6 +1100,10 @@ class TestFileExhaustive < Test::Unit::TestCase
       make_fifo fifo
       assert((File::Stat.new(fifo).pipe?))
     end
+    IO.pipe {|r, w|
+      assert(r.stat.pipe?)
+      assert(w.stat.pipe?)
+    }
   end
 
   def test_stat_symlink_p

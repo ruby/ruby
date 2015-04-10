@@ -1,3 +1,7 @@
+Fri Apr 10 19:34:24 2015  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/test_file_exhaustive.rb: Test anonymous pipe.
+
 Fri Apr 10 19:31:56 2015  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/test_file_exhaustive.rb: Test named pipe.
