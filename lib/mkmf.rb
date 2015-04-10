@@ -609,8 +609,8 @@ MSG
     $CPPFLAGS = cppflags unless ret
   end
 
-  def try_cppflags(flags)
-    try_header(MAIN_DOES_NOTHING, flags)
+  def try_cppflags(flags, opts = {})
+    try_header(MAIN_DOES_NOTHING, flags, {:werror => true}.update(opts))
   end
 
   def with_cflags(flags)
