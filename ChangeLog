@@ -1,3 +1,10 @@
+Fri Apr 10 17:27:58 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (vm_exec): check other events when RETURN is thrown.
+	  [Bug #10724]
+
+	* test/ruby/test_settracefunc.rb: add a test.
+
 Fri Apr 10 11:44:09 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/date/extconf.rb: check warnings.
