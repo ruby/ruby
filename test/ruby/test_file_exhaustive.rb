@@ -1,6 +1,7 @@
 require "test/unit"
 require "fileutils"
 require "tmpdir"
+require "socket"
 
 class TestFileExhaustive < Test::Unit::TestCase
   DRIVE = Dir.pwd[%r'\A(?:[a-z]:|//[^/]+/[^/]+)'i]
@@ -167,10 +168,16 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_file.not_symlink?(@nofile)
   end
 
-  def test_socket_p ## xxx
+  def test_socket_p
     assert_file.not_socket?(@dir)
     assert_file.not_socket?(@file)
     assert_file.not_socket?(@nofile)
+    if defined? UNIXServer
+      socket = make_tmp_filename("socket")
+      UNIXServer.open(socket) {|sock|
+        assert_file.socket?(socket)
+      }
+    end
   end
 
   def test_blockdev_p ## xxx
@@ -995,7 +1002,11 @@ class TestFileExhaustive < Test::Unit::TestCase
       fifo = make_tmp_filename("fifo")
       make_fifo fifo
     end
-    [@dir, @file, @zerofile, @symlinkfile, @hardlinkfile, fifo].compact.each do |f|
+    if defined? UNIXServer
+      socket = make_tmp_filename("socket")
+      UNIXServer.open(socket).close
+    end
+    [@dir, @file, @zerofile, @symlinkfile, @hardlinkfile, fifo, socket].compact.each do |f|
       assert_equal(File.atime(f), test(?A, f))
       assert_equal(File.ctime(f), test(?C, f))
       assert_equal(File.mtime(f), test(?M, f))
@@ -1114,9 +1125,15 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert(!(File::Stat.new(@hardlinkfile).symlink?)) if @hardlinkfile
   end
 
-  def test_stat_socket_p ## xxx
+  def test_stat_socket_p
     assert(!(File::Stat.new(@dir).socket?))
     assert(!(File::Stat.new(@file).socket?))
+    if defined? UNIXServer
+      socket = make_tmp_filename("socket")
+      UNIXServer.open(socket) {|sock|
+        assert(File::Stat.new(socket).socket?)
+      }
+    end
   end
 
   def test_stat_blockdev_p ## xxx
