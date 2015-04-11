@@ -775,6 +775,7 @@ install?(:ext, :comm, :gem) do
   end
   next if gems.empty?
   if defined?(Zlib)
+    ENV['DESTDIR'] = $destdir if $destdir
     gems.each do |gem|
       Gem.install(gem, Gem::Requirement.default, options)
       gemname = File.basename(gem)
