@@ -1,3 +1,7 @@
+Sun Apr 12 08:52:01 2015  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/test_file_exhaustive.rb: Test suid, sgid and sticky file.
+
 Sat Apr 11 23:48:30 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* template/fake.rb.in: Don't assign baseruby, Because it's affect to

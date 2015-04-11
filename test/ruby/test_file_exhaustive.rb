@@ -57,6 +57,30 @@ class TestFileExhaustive < Test::Unit::TestCase
     @file
   end
 
+  def suidfile
+    return @suidfile if defined? @suidfile
+    @suidfile = make_tmp_filename("suidfile")
+    make_file("", @suidfile)
+    File.chmod 04500, @suidfile
+    @suidfile
+  end
+
+  def sgidfile
+    return @sgidfile if defined? @sgidfile
+    @sgidfile = make_tmp_filename("sgidfile")
+    make_file("", @sgidfile)
+    File.chmod 02500, @sgidfile
+    @sgidfile
+  end
+
+  def stickyfile
+    return @stickyfile if defined? @stickyfile
+    @stickyfile = make_tmp_filename("stickyfile")
+    Dir.mkdir(@stickyfile)
+    File.chmod 01500, @stickyfile
+    @stickyfile
+  end
+
   def symlinkfile
     return @symlinkfile if @symlinkfile
     @symlinkfile = make_tmp_filename("symlinkfile")
@@ -351,10 +375,19 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_file.grpowned?(regular_file)
   end
 
-  def test_suid_sgid_sticky ## xxx
+  def test_suid
     assert_file.not_setuid?(regular_file)
+    assert_file.setuid?(suidfile) if suidfile
+  end
+
+  def test_sgid
     assert_file.not_setgid?(regular_file)
+    assert_file.setgid?(sgidfile) if sgidfile
+  end
+
+  def test_sticky
     assert_file.not_sticky?(regular_file)
+    assert_file.sticky?(stickyfile) if stickyfile
   end
 
   def test_path_identical_p
@@ -1048,7 +1081,19 @@ class TestFileExhaustive < Test::Unit::TestCase
     sleep(1.1)
     fn2 = fn1 + "2"
     make_file("foo", fn2)
-    [@dir, fn1, zerofile, symlinkfile, hardlinkfile, chardev, fifo, socket].compact.each do |f|
+    [
+      @dir,
+      fn1,
+      zerofile,
+      suidfile,
+      sgidfile,
+      stickyfile,
+      symlinkfile,
+      hardlinkfile,
+      chardev,
+      fifo,
+      socket
+    ].compact.each do |f|
       assert_equal(File.atime(f), test(?A, f))
       assert_equal(File.ctime(f), test(?C, f))
       assert_equal(File.mtime(f), test(?M, f))
@@ -1177,7 +1222,7 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert(!(File::Stat.new(regular_file).blockdev?))
   end
 
-  def test_stat_chardev_p ## xxx
+  def test_stat_chardev_p
     assert(!(File::Stat.new(@dir).chardev?))
     assert(!(File::Stat.new(regular_file).chardev?))
     assert(File::Stat.new(chardev).chardev?) if chardev
@@ -1278,10 +1323,19 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert(File::Stat.new(regular_file).grpowned?)
   end
 
-  def test_stat_suid_sgid_sticky ## xxx
+  def test_stat_suid
     assert(!(File::Stat.new(regular_file).setuid?))
+    assert(File::Stat.new(suidfile).setuid?) if suidfile
+  end
+
+  def test_stat_sgid
     assert(!(File::Stat.new(regular_file).setgid?))
+    assert(File::Stat.new(sgidfile).setgid?) if sgidfile
+  end
+
+  def test_stat_sticky
     assert(!(File::Stat.new(regular_file).sticky?))
+    assert(File::Stat.new(stickyfile).sticky?) if stickyfile
   end
 
   def test_stat_size
