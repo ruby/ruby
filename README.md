@@ -105,20 +105,17 @@ This is what you need to do to compile and install Ruby:
 
     *   `${DESTDIR}${prefix}/bin`
     *   `${DESTDIR}${prefix}/include/ruby-${MAJOR}.${MINOR}.${TEENY}`
-    *   `${DESTDIR}${prefix}/include/ruby-${MAJOR}.${MINOR}.${TEENY}/${PLATFOR
-        M}`
+    *   `${DESTDIR}${prefix}/include/ruby-${MAJOR}.${MINOR}.${TEENY}/${PLATFORM}`
     *   `${DESTDIR}${prefix}/lib`
     *   `${DESTDIR}${prefix}/lib/ruby`
     *   `${DESTDIR}${prefix}/lib/ruby/${MAJOR}.${MINOR}.${TEENY}`
     *   `${DESTDIR}${prefix}/lib/ruby/${MAJOR}.${MINOR}.${TEENY}/${PLATFORM}`
     *   `${DESTDIR}${prefix}/lib/ruby/site_ruby`
     *   `${DESTDIR}${prefix}/lib/ruby/site_ruby/${MAJOR}.${MINOR}.${TEENY}`
-    *   `${DESTDIR}${prefix}/lib/ruby/site_ruby/${MAJOR}.${MINOR}.${TEENY}/${P
-        LATFORM}`
+    *   `${DESTDIR}${prefix}/lib/ruby/site_ruby/${MAJOR}.${MINOR}.${TEENY}/${PLATFORM}`
     *   `${DESTDIR}${prefix}/lib/ruby/vendor_ruby`
     *   `${DESTDIR}${prefix}/lib/ruby/vendor_ruby/${MAJOR}.${MINOR}.${TEENY}`
-    *   `${DESTDIR}${prefix}/lib/ruby/vendor_ruby/${MAJOR}.${MINOR}.${TEENY}/$
-        {PLATFORM}`
+    *   `${DESTDIR}${prefix}/lib/ruby/vendor_ruby/${MAJOR}.${MINOR}.${TEENY}/${PLATFORM}`
     *   `${DESTDIR}${prefix}/lib/ruby/gems/${MAJOR}.${MINOR}.${TEENY}`
     *   `${DESTDIR}${prefix}/share/man/man1`
     *   `${DESTDIR}${prefix}/share/ri/${MAJOR}.${MINOR}.${TEENY}/system`
@@ -137,9 +134,8 @@ If you fail to compile ruby, please send the detailed error report with the
 error log and machine/OS type, to help others.
 
 Some extension libraries may not get compiled because of lack of necessary
-external libraries and/or headers, then you will need to run '`make
-distclean-ext`' to remove old configuration after installing them in such
-case.
+external libraries and/or headers, then you will need to run '`make distclean-ext`'
+to remove old configuration after installing them in such case.
 
 ## Copying
 
