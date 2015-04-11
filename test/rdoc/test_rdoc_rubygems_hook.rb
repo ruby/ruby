@@ -66,7 +66,7 @@ class TestRDocRubygemsHook < Gem::TestCase
     @hook.document 'darkfish', options, @a.doc_dir('rdoc')
 
     assert @hook.rdoc_installed?
-  end
+  end if defined?(JSON)
 
   def test_generate
     FileUtils.mkdir_p @a.doc_dir
@@ -105,7 +105,7 @@ class TestRDocRubygemsHook < Gem::TestCase
     assert_equal %w[README lib], rdoc.options.files.sort
 
     assert_equal 'MyTitle', rdoc.store.main
-  end
+  end if defined?(JSON)
 
   def test_generate_configuration_rdoc_array
     Gem.configuration[:rdoc] = %w[-A]
@@ -248,4 +248,3 @@ class TestRDocRubygemsHook < Gem::TestCase
   end
 
 end
-

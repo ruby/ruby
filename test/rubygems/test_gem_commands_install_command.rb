@@ -379,7 +379,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
     wait_for_child_process_to_exit
 
     assert_path_exists File.join(a2.doc_dir, 'ri')
-    assert_path_exists File.join(a2.doc_dir, 'rdoc')
+    assert_path_exists File.join(a2.doc_dir, 'rdoc') if defined?(JSON)
   end
 
   def test_execute_saves_build_args
