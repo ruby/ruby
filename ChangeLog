@@ -1,3 +1,7 @@
+Sat Apr 11 15:56:58 2015  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/test_file_exhaustive.rb: Create sample files lazily.
+
 Sat Apr 11 14:03:47 2015  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/test_file_exhaustive.rb: Test character device using
