@@ -135,8 +135,8 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_stat
-    hardlinkfile
     fn1 = regular_file
+    hardlinkfile
     sleep(1.1)
     fn2 = fn1 + "2"
     make_file("foo", fn2)
@@ -1044,6 +1044,7 @@ class TestFileExhaustive < Test::Unit::TestCase
 
   def test_test
     fn1 = regular_file
+    hardlinkfile
     sleep(1.1)
     fn2 = fn1 + "2"
     make_file("foo", fn2)
@@ -1096,7 +1097,7 @@ class TestFileExhaustive < Test::Unit::TestCase
     fn1 = regular_file
     hardlinkfile
     sleep(1.1)
-    fn2 = regular_file + "2"
+    fn2 = fn1 + "2"
     make_file("foo", fn2)
     fs1, fs2 = File::Stat.new(fn1), File::Stat.new(fn2)
     assert_nothing_raised do
