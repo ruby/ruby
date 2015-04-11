@@ -615,7 +615,7 @@ MSG
 
   def append_cppflags(flags, *opts)
     Array(flags).each do |flag|
-      if checking_for "whether #{flag} is accepted as CPPFLAGS" {
+      if checking_for("whether #{flag} is accepted as CPPFLAGS") {
            try_cppflags(flag, *opts)
          }
         $CPPFLAGS << " " << flag
@@ -637,7 +637,7 @@ MSG
 
   def append_cflags(flags, *opts)
     Array(flags).each do |flag|
-      if checking_for "whether #{flag} is accepted as CFLAGS" {
+      if checking_for("whether #{flag} is accepted as CFLAGS") {
            try_cflags(flag, *opts)
          }
         $CFLAGS << " " << flag
@@ -659,7 +659,7 @@ MSG
 
   def append_ldflags(flags, *opts)
     Array(flags).each do |flag|
-      if checking_for "whether #{flag} is accepted as LDFLAGS" {
+      if checking_for("whether #{flag} is accepted as LDFLAGS") {
            try_ldflags(flag, *opts)
          }
         $LDFLAGS << " " << flag
