@@ -387,8 +387,9 @@ module MakeMakefile
       if opts and opts[:werror]
         result = nil
         Logging.postpone do |log|
-          result = (system(libpath_env, command) and File.zero?(log.path))
-          ""
+          output = IO.popen(libpath_env, command, &:read)
+          result = ($?.success? and File.zero?(log.path))
+          output
         end
         result
       else
