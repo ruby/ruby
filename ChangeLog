@@ -1,3 +1,8 @@
+Sat Apr 11 14:03:47 2015  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/test_file_exhaustive.rb: Test character device using
+	  /dev/null.
+
 Sat Apr 11 10:59:58 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (append_cppflags, append_cflags, append_ldflags):

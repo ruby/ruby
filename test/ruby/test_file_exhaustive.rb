@@ -24,6 +24,7 @@ class TestFileExhaustive < Test::Unit::TestCase
     @hardlinkfile = make_tmp_filename("hardlinkfile")
     make_file("foo", @file)
     make_file("", @zerofile)
+    @chardev = File::NULL == "/dev/null" ? "/dev/null" : nil
     @time = Time.now
     begin
       File.symlink(@file, @symlinkfile)
@@ -186,10 +187,11 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_file.not_blockdev?(@nofile)
   end
 
-  def test_chardev_p ## xxx
+  def test_chardev_p
     assert_file.not_chardev?(@dir)
     assert_file.not_chardev?(@file)
     assert_file.not_chardev?(@nofile)
+    assert_file.chardev?(@chardev) if @chardev
   end
 
   def test_exist_p
@@ -1006,7 +1008,7 @@ class TestFileExhaustive < Test::Unit::TestCase
       socket = make_tmp_filename("s")
       UNIXServer.open(socket).close
     end
-    [@dir, @file, @zerofile, @symlinkfile, @hardlinkfile, fifo, socket].compact.each do |f|
+    [@dir, @file, @zerofile, @symlinkfile, @hardlinkfile, @chardev, fifo, socket].compact.each do |f|
       assert_equal(File.atime(f), test(?A, f))
       assert_equal(File.ctime(f), test(?C, f))
       assert_equal(File.mtime(f), test(?M, f))
@@ -1144,6 +1146,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   def test_stat_chardev_p ## xxx
     assert(!(File::Stat.new(@dir).chardev?))
     assert(!(File::Stat.new(@file).chardev?))
+    assert(File::Stat.new(@chardev).chardev?) if @chardev
   end
 
   def test_stat_readable_p
