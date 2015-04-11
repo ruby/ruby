@@ -775,7 +775,7 @@ install?(:ext, :comm, :gem) do
   end
   next if gems.empty?
   if defined?(Zlib)
-    ENV['DESTDIR'] = $destdir if $destdir
+    Gem.instance_variable_set(:@ruby, with_destdir(File.join(bindir, ruby_install_name)))
     gems.each do |gem|
       Gem.install(gem, Gem::Requirement.default, options)
       gemname = File.basename(gem)
