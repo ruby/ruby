@@ -3,6 +3,11 @@ require 'rubygems/user_interaction'
 require 'fileutils'
 require 'rdoc'
 
+begin
+  require 'json'
+rescue LoadError
+end
+
 ##
 # Gem::RDoc provides methods to generate RDoc and ri data for installed gems
 # upon gem installation.
@@ -200,7 +205,7 @@ class RDoc::RubygemsHook
       @generate_ri   and (@force or not File.exist? @ri_dir)
 
     document 'darkfish', options, @rdoc_dir if
-      @generate_rdoc and (@force or not File.exist? @rdoc_dir)
+      defined?(JSON) and @generate_rdoc and (@force or not File.exist? @rdoc_dir)
   end
 
   ##
@@ -250,4 +255,3 @@ class RDoc::RubygemsHook
   end
 
 end
-

@@ -265,7 +265,7 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     a2 = @specs['a-2']
 
     assert_path_exists File.join(a2.doc_dir, 'rdoc')
-  end
+  end if defined?(JSON)
 
   def test_execute_named
     spec_fetcher do |fetcher|
@@ -540,4 +540,3 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
   end
 
 end
-

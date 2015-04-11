@@ -24,6 +24,11 @@ unless Gem::Dependency.new('rdoc', '>= 3.10').matching_specs.empty?
   gem 'json'
 end
 
+begin
+  require 'json'
+rescue LoadError
+end
+
 require 'minitest/autorun'
 
 require 'rubygems/deprecate'
