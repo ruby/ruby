@@ -1169,7 +1169,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   def test_stat_socket_p
     assert(!(File::Stat.new(@dir).socket?))
     assert(!(File::Stat.new(regular_file).socket?))
-    assert(File::Stat.new(socket).socket?)
+    assert(File::Stat.new(socket).socket?) if socket
   end
 
   def test_stat_blockdev_p ## xxx
