@@ -1151,7 +1151,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   def test_stat_pipe_p
     assert(!(File::Stat.new(@dir).pipe?))
     assert(!(File::Stat.new(regular_file).pipe?))
-    assert((File::Stat.new(fifo).pipe?)) if fifo
+    assert(File::Stat.new(fifo).pipe?) if fifo
     IO.pipe {|r, w|
       assert(r.stat.pipe?)
       assert(w.stat.pipe?)
