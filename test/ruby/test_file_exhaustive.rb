@@ -1093,9 +1093,9 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_stat_init
+    fn1 = regular_file
     hardlinkfile
     sleep(1.1)
-    fn1 = regular_file
     fn2 = regular_file + "2"
     make_file("foo", fn2)
     fs1, fs2 = File::Stat.new(fn1), File::Stat.new(fn2)
