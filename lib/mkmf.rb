@@ -613,6 +613,16 @@ MSG
     try_header(MAIN_DOES_NOTHING, flags, {:werror => true}.update(opts))
   end
 
+  def append_cppflags(flags, *opts)
+    Array(flags).each do |flag|
+      if checking_for "whether #{flag} is accepted as CPPFLAGS" {
+           try_cppflags(flag, *opts)
+         }
+        $CPPFLAGS << " " << flag
+      end
+    end
+  end
+
   def with_cflags(flags)
     cflags = $CFLAGS
     $CFLAGS = flags
@@ -625,6 +635,16 @@ MSG
     try_compile(MAIN_DOES_NOTHING, flags, {:werror => true}.update(opts))
   end
 
+  def append_cflags(flags, *opts)
+    Array(flags).each do |flag|
+      if checking_for "whether #{flag} is accepted as CFLAGS" {
+           try_cflags(flag, *opts)
+         }
+        $CFLAGS << " " << flag
+      end
+    end
+  end
+
   def with_ldflags(flags)
     ldflags = $LDFLAGS
     $LDFLAGS = flags
@@ -635,6 +655,16 @@ MSG
 
   def try_ldflags(flags, opts = {})
     try_link(MAIN_DOES_NOTHING, flags, {:werror => true}.update(opts))
+  end
+
+  def append_ldflags(flags, *opts)
+    Array(flags).each do |flag|
+      if checking_for "whether #{flag} is accepted as LDFLAGS" {
+           try_ldflags(flag, *opts)
+         }
+        $LDFLAGS << " " << flag
+      end
+    end
   end
 
   def try_static_assert(expr, headers = nil, opt = "", &b)
