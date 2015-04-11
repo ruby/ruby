@@ -1,3 +1,8 @@
+Sat Apr 11 23:33:22 2015  Tanaka Akira  <akr@fsij.org>
+
+	* file.c (rb_f_test): Consider nsec for "=", "<" and ">" for "test"
+	  method.
+
 Sat Apr 11 23:26:05 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* tool/rbinstall.rb: support destdir for native extention gem.

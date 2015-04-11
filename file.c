@@ -4829,22 +4829,28 @@ rb_f_test(int argc, VALUE *argv)
 
     if (strchr("=<>", cmd)) {
 	struct stat st1, st2;
+        struct timespec t1, t2;
 
 	CHECK(2);
 	if (rb_stat(argv[1], &st1) < 0) return Qfalse;
 	if (rb_stat(argv[2], &st2) < 0) return Qfalse;
 
+        t1 = stat_mtimespec(&st1);
+        t2 = stat_mtimespec(&st2);
+
 	switch (cmd) {
 	  case '=':
-	    if (st1.st_mtime == st2.st_mtime) return Qtrue;
+	    if (t1.tv_sec == t2.tv_sec && t1.tv_nsec == t2.tv_nsec) return Qtrue;
 	    return Qfalse;
 
 	  case '>':
-	    if (st1.st_mtime > st2.st_mtime) return Qtrue;
+	    if (t1.tv_sec > t2.tv_sec) return Qtrue;
+	    if (t1.tv_sec == t2.tv_sec && t1.tv_nsec > t2.tv_nsec) return Qtrue;
 	    return Qfalse;
 
 	  case '<':
-	    if (st1.st_mtime < st2.st_mtime) return Qtrue;
+	    if (t1.tv_sec < t2.tv_sec) return Qtrue;
+	    if (t1.tv_sec == t2.tv_sec && t1.tv_nsec < t2.tv_nsec) return Qtrue;
 	    return Qfalse;
 	}
     }
