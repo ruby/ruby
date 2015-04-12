@@ -2103,7 +2103,7 @@ arg		: lhs '=' arg
 			value_expr($3);
 			$$ = NEW_DOT2($1, $3);
 			if ($1 && nd_type($1) == NODE_LIT && FIXNUM_P($1->nd_lit) &&
-			    nd_type($3) == NODE_LIT && FIXNUM_P($3->nd_lit)) {
+			    $3 && nd_type($3) == NODE_LIT && FIXNUM_P($3->nd_lit)) {
 			    deferred_nodes = list_append(deferred_nodes, $$);
 			}
 		    /*%
@@ -2117,7 +2117,7 @@ arg		: lhs '=' arg
 			value_expr($3);
 			$$ = NEW_DOT3($1, $3);
 			if ($1 && nd_type($1) == NODE_LIT && FIXNUM_P($1->nd_lit) &&
-			    nd_type($3) == NODE_LIT && FIXNUM_P($3->nd_lit)) {
+			    $3 && nd_type($3) == NODE_LIT && FIXNUM_P($3->nd_lit)) {
 			    deferred_nodes = list_append(deferred_nodes, $$);
 			}
 		    /*%
