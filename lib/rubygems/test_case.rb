@@ -23,8 +23,14 @@ unless Gem::Dependency.new('rdoc', '>= 3.10').matching_specs.empty?
   gem 'rdoc'
   begin
     gem 'json'
-  rescue LoadError
+  rescue Gem::LoadError
+    # for Ruby 2.3.0
   end
+end
+
+begin
+  require 'json'
+rescue LoadError
 end
 
 require 'minitest/autorun'

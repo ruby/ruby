@@ -1,3 +1,8 @@
+Sun Apr 12 15:11:16 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* lib/rubygems/test_case.rb: use explicitly exception class and reverted
+	  to require JSON library for rubygems tests with Ruby 2.2.0 or earlier.
+
 Sun Apr 12 15:10:18 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/io/wait/wait.c (io_wait_readable): simply returns that IO is
