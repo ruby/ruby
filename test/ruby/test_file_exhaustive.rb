@@ -57,6 +57,16 @@ class TestFileExhaustive < Test::Unit::TestCase
     @file
   end
 
+  def notownedfile
+    return @notownedfile if defined? @notownedfile
+    if Process.euid != 0
+      @notownedfile = '/'
+    else
+      @notownedfile = nil
+    end
+    @notownedfile
+  end
+
   def suidfile
     return @suidfile if defined? @suidfile
     if /mswin|mingw|bccwin/ !~ RUBY_PLATFORM
@@ -381,9 +391,14 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_file.not_size?(nofile)
   end
 
-  def test_owned_p ## xxx
+  def test_owned_p
     return if /cygwin|mswin|bccwin|mingw|emx/ =~ RUBY_PLATFORM
     assert_file.owned?(regular_file)
+    assert_file.not_owned?(notownedfile)
+  end
+
+  def test_grpowned_p ## xxx
+    return if /cygwin|mswin|bccwin|mingw|emx/ =~ RUBY_PLATFORM
     assert_file.grpowned?(regular_file)
   end
 
@@ -1097,6 +1112,7 @@ class TestFileExhaustive < Test::Unit::TestCase
       @dir,
       fn1,
       zerofile,
+      notownedfile,
       suidfile,
       sgidfile,
       stickyfile,
@@ -1329,9 +1345,14 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert(!(File::Stat.new(zerofile).size?))
   end
 
-  def test_stat_owned_p ## xxx
+  def test_stat_owned_p
     return if /cygwin|mswin|bccwin|mingw|emx/ =~ RUBY_PLATFORM
     assert(File::Stat.new(regular_file).owned?)
+    assert(!File::Stat.new(notownedfile).owned?)
+  end
+
+  def test_stat_grpowned_p ## xxx
+    return if /cygwin|mswin|bccwin|mingw|emx/ =~ RUBY_PLATFORM
     assert(File::Stat.new(regular_file).grpowned?)
   end
 
