@@ -1,3 +1,7 @@
+Sun Apr 12 09:57:16 2015  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/test_file_exhaustive.rb: Test a block device on GNU/Linux.
+
 Sun Apr 12 09:24:03 2015  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/test_file_exhaustive.rb: Test a file not owned.

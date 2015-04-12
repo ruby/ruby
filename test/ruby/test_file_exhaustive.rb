@@ -155,6 +155,20 @@ class TestFileExhaustive < Test::Unit::TestCase
     @chardev
   end
 
+  def blockdev
+    return @blockdev if defined? @blockdev
+    if /linux/ =~ RUBY_PLATFORM
+      if File.exist? '/dev/loop0'
+        @blockdev = '/dev/loop0'
+      elsif File.exist? '/dev/sda'
+        @blockdev = '/dev/sda'
+      end
+    else
+      @blockdev = nil
+    end
+    @blockdev
+  end
+
   def test_path
     file = regular_file
 
@@ -272,10 +286,11 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_file.socket?(socket) if socket
   end
 
-  def test_blockdev_p ## xxx
+  def test_blockdev_p
     assert_file.not_blockdev?(@dir)
     assert_file.not_blockdev?(regular_file)
     assert_file.not_blockdev?(nofile)
+    assert_file.blockdev?(blockdev) if blockdev
   end
 
   def test_chardev_p
@@ -1119,6 +1134,7 @@ class TestFileExhaustive < Test::Unit::TestCase
       symlinkfile,
       hardlinkfile,
       chardev,
+      blockdev,
       fifo,
       socket
     ].compact.each do |f|
@@ -1245,9 +1261,10 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert(File::Stat.new(socket).socket?) if socket
   end
 
-  def test_stat_blockdev_p ## xxx
+  def test_stat_blockdev_p
     assert(!(File::Stat.new(@dir).blockdev?))
     assert(!(File::Stat.new(regular_file).blockdev?))
+    assert(File::Stat.new(blockdev).blockdev?) if blockdev
   end
 
   def test_stat_chardev_p
