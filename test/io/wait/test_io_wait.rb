@@ -70,7 +70,9 @@ class TestIOWait < Test::Unit::TestCase
 
   def test_wait_eof
     th = Thread.new { sleep 0.01; @w.close }
-    assert_nil @r.wait
+    assert_nothing_raised(Timeout::Error) do
+      Timeout.timeout(0.1) {@r.wait}
+    end
   ensure
     th.join
   end
