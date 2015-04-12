@@ -1,3 +1,8 @@
+Sun Apr 12 09:04:37 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_file_exhaustive.rb: Windows doesn't support Unix file
+	  modes.
+
 Sun Apr 12 08:56:44 2015  Tanaka Akira  <akr@fsij.org>
 
 	* ext/-test-/file/fs.c: OpenBSD needs sys/param.h before sys/mount.h.

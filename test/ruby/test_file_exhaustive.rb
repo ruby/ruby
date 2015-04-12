@@ -59,26 +59,38 @@ class TestFileExhaustive < Test::Unit::TestCase
 
   def suidfile
     return @suidfile if defined? @suidfile
-    @suidfile = make_tmp_filename("suidfile")
-    make_file("", @suidfile)
-    File.chmod 04500, @suidfile
-    @suidfile
+    if /mswin|mingw|bccwin/ !~ RUBY_PLATFORM
+      @suidfile = make_tmp_filename("suidfile")
+      make_file("", @suidfile)
+      File.chmod 04500, @suidfile
+      @suidfile
+    else
+      @suidfile = nil
+    end
   end
 
   def sgidfile
     return @sgidfile if defined? @sgidfile
-    @sgidfile = make_tmp_filename("sgidfile")
-    make_file("", @sgidfile)
-    File.chmod 02500, @sgidfile
-    @sgidfile
+    if /mswin|mingw|bccwin/ !~ RUBY_PLATFORM
+      @sgidfile = make_tmp_filename("sgidfile")
+      make_file("", @sgidfile)
+      File.chmod 02500, @sgidfile
+      @sgidfile
+    else
+      @sgidfile = nil
+    end
   end
 
   def stickyfile
     return @stickyfile if defined? @stickyfile
-    @stickyfile = make_tmp_filename("stickyfile")
-    Dir.mkdir(@stickyfile)
-    File.chmod 01500, @stickyfile
-    @stickyfile
+    if /mswin|mingw|bccwin/ !~ RUBY_PLATFORM
+      @stickyfile = make_tmp_filename("stickyfile")
+      Dir.mkdir(@stickyfile)
+      File.chmod 01500, @stickyfile
+      @stickyfile
+    else
+      @stickyfile = nil
+    end
   end
 
   def symlinkfile
