@@ -620,37 +620,6 @@ module RbInstall
         @gemspec.to_ruby
       end
     end
-
-    class Generator < Struct.new(:name, :base_dir, :src, :execs)
-      def gemspec
-        @gemspec ||= eval spec_source
-      end
-
-      def spec_source
-        <<-GEMSPEC
-Gem::Specification.new do |s|
-  s.name = #{name.dump}
-  s.version = #{version.dump}
-  s.summary = "This #{name} is bundled with Ruby"
-  s.executables = #{execs.inspect}
-  s.files = #{files.inspect}
-end
-        GEMSPEC
-      end
-
-      private
-      def version
-        version = open(src) { |f|
-          f.find { |s| /^\s*\w*VERSION\s*=(?!=)/ =~ s }
-        } or return
-        version.split(%r"=\s*", 2)[1].strip[/\A([\'\"])(.*?)\1/, 2]
-      end
-
-      def files
-        file_collector = FileCollector.new(base_dir)
-        file_collector.collect
-      end
-    end
   end
 
   class UnpackedInstaller < Gem::Installer
@@ -704,22 +673,6 @@ install?(:ext, :comm, :gem) do
   makedirs(default_spec_dir)
 
   gems = {}
-  File.foreach(File.join(srcdir, "defs/default_gems")) do |line|
-    line.chomp!
-    line.sub!(/\s*#.*/, '')
-    next if line.empty?
-    words = []
-    line.scan(/\G\s*([^\[\]\s]+|\[([^\[\]]*)\])/) do
-      words << ($2 ? $2.split : $1)
-    end
-    name, base_dir, src, execs = *words
-    next unless name and base_dir and src
-
-    src       = File.join(srcdir, src)
-    base_dir  = File.join(srcdir, base_dir)
-    specgen   = RbInstall::Specs::Generator.new(name, base_dir, src, execs || [])
-    gems[name] ||= specgen
-  end
 
   Dir.glob(srcdir+"/{lib,ext}/**/*.gemspec").each do |src|
     specgen   = RbInstall::Specs::Reader.new(src)
