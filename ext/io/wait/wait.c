@@ -151,8 +151,8 @@ io_wait_readable(int argc, VALUE *argv, VALUE io)
  *   io.wait_writable          -> IO
  *   io.wait_writable(timeout) -> IO or nil
  *
- * Waits until IO writable is available or times out and returns self or
- * nil when EOF is reached.
+ * Waits until IO is writable without blocking and returns +self+ or
+ * +nil+ when times out.
  */
 static VALUE
 io_wait_writable(int argc, VALUE *argv, VALUE io)
