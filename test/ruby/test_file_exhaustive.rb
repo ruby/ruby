@@ -131,8 +131,7 @@ class TestFileExhaustive < Test::Unit::TestCase
     return @fifo if defined? @fifo
     if POSIX
       fn = make_tmp_filename("fifo")
-      system("mkfifo", fn)
-      assert $?.success?, "mkfifo fails"
+      assert(system("mkfifo", fn), "mkfifo fails")
       @fifo = fn
     else
       @fifo = nil
@@ -949,9 +948,9 @@ class TestFileExhaustive < Test::Unit::TestCase
   def test_basename
     assert_equal(File.basename(regular_file).sub(/\.test$/, ""), File.basename(regular_file, ".test"))
     assert_equal("", s = File.basename(""))
-    assert(!s.frozen?, '[ruby-core:24199]')
+    assert_not_predicate(s, :frozen?, '[ruby-core:24199]')
     assert_equal("foo", s = File.basename("foo"))
-    assert(!s.frozen?, '[ruby-core:24199]')
+    assert_not_predicate(s, :frozen?, '[ruby-core:24199]')
     assert_equal("foo", File.basename("foo", ".ext"))
     assert_equal("foo", File.basename("foo.ext", ".ext"))
     assert_equal("foo", File.basename("foo.ext", ".*"))
@@ -1219,149 +1218,149 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_stat_directory_p
-    assert(File::Stat.new(@dir).directory?)
-    assert(!(File::Stat.new(regular_file).directory?))
+    assert_predicate(File::Stat.new(@dir), :directory?)
+    assert_not_predicate(File::Stat.new(regular_file), :directory?)
   end
 
   def test_stat_pipe_p
-    assert(!(File::Stat.new(@dir).pipe?))
-    assert(!(File::Stat.new(regular_file).pipe?))
-    assert(File::Stat.new(fifo).pipe?) if fifo
+    assert_not_predicate(File::Stat.new(@dir), :pipe?)
+    assert_not_predicate(File::Stat.new(regular_file), :pipe?)
+    assert_predicate(File::Stat.new(fifo), :pipe?) if fifo
     IO.pipe {|r, w|
-      assert(r.stat.pipe?)
-      assert(w.stat.pipe?)
+      assert_predicate(r.stat, :pipe?)
+      assert_predicate(w.stat, :pipe?)
     }
   end
 
   def test_stat_symlink_p
-    assert(!(File::Stat.new(@dir).symlink?))
-    assert(!(File::Stat.new(regular_file).symlink?))
+    assert_not_predicate(File::Stat.new(@dir), :symlink?)
+    assert_not_predicate(File::Stat.new(regular_file), :symlink?)
     # File::Stat uses stat
-    assert(!(File::Stat.new(symlinkfile).symlink?)) if symlinkfile
-    assert(!(File::Stat.new(hardlinkfile).symlink?)) if hardlinkfile
+    assert_not_predicate(File::Stat.new(symlinkfile), :symlink?) if symlinkfile
+    assert_not_predicate(File::Stat.new(hardlinkfile), :symlink?) if hardlinkfile
   end
 
   def test_stat_socket_p
-    assert(!(File::Stat.new(@dir).socket?))
-    assert(!(File::Stat.new(regular_file).socket?))
-    assert(File::Stat.new(socket).socket?) if socket
+    assert_not_predicate(File::Stat.new(@dir), :socket?)
+    assert_not_predicate(File::Stat.new(regular_file), :socket?)
+    assert_predicate(File::Stat.new(socket), :socket?) if socket
   end
 
   def test_stat_blockdev_p
-    assert(!(File::Stat.new(@dir).blockdev?))
-    assert(!(File::Stat.new(regular_file).blockdev?))
-    assert(File::Stat.new(blockdev).blockdev?) if blockdev
+    assert_not_predicate(File::Stat.new(@dir), :blockdev?)
+    assert_not_predicate(File::Stat.new(regular_file), :blockdev?)
+    assert_predicate(File::Stat.new(blockdev), :blockdev?) if blockdev
   end
 
   def test_stat_chardev_p
-    assert(!(File::Stat.new(@dir).chardev?))
-    assert(!(File::Stat.new(regular_file).chardev?))
-    assert(File::Stat.new(chardev).chardev?) if chardev
+    assert_not_predicate(File::Stat.new(@dir), :chardev?)
+    assert_not_predicate(File::Stat.new(regular_file), :chardev?)
+    assert_predicate(File::Stat.new(chardev), :chardev?) if chardev
   end
 
   def test_stat_readable_p
     return if Process.euid == 0
     File.chmod(0200, regular_file)
-    assert(!(File::Stat.new(regular_file).readable?))
+    assert_not_predicate(File::Stat.new(regular_file), :readable?)
     File.chmod(0600, regular_file)
-    assert(File::Stat.new(regular_file).readable?)
+    assert_predicate(File::Stat.new(regular_file), :readable?)
   end if POSIX
 
   def test_stat_readable_real_p
     return if Process.euid == 0
     File.chmod(0200, regular_file)
-    assert(!(File::Stat.new(regular_file).readable_real?))
+    assert_not_predicate(File::Stat.new(regular_file), :readable_real?)
     File.chmod(0600, regular_file)
-    assert(File::Stat.new(regular_file).readable_real?)
+    assert_predicate(File::Stat.new(regular_file), :readable_real?)
   end if POSIX
 
   def test_stat_world_readable_p
     File.chmod(0006, regular_file)
-    assert(File::Stat.new(regular_file).world_readable?)
+    assert_predicate(File::Stat.new(regular_file), :world_readable?)
     File.chmod(0060, regular_file)
-    assert(!(File::Stat.new(regular_file).world_readable?))
+    assert_not_predicate(File::Stat.new(regular_file), :world_readable?)
     File.chmod(0600, regular_file)
-    assert(!(File::Stat.new(regular_file).world_readable?))
+    assert_not_predicate(File::Stat.new(regular_file), :world_readable?)
   end if POSIX
 
   def test_stat_writable_p
     return if Process.euid == 0
     File.chmod(0400, regular_file)
-    assert(!(File::Stat.new(regular_file).writable?))
+    assert_not_predicate(File::Stat.new(regular_file), :writable?)
     File.chmod(0600, regular_file)
-    assert(File::Stat.new(regular_file).writable?)
+    assert_predicate(File::Stat.new(regular_file), :writable?)
   end if POSIX
 
   def test_stat_writable_real_p
     return if Process.euid == 0
     File.chmod(0400, regular_file)
-    assert(!(File::Stat.new(regular_file).writable_real?))
+    assert_not_predicate(File::Stat.new(regular_file), :writable_real?)
     File.chmod(0600, regular_file)
-    assert(File::Stat.new(regular_file).writable_real?)
+    assert_predicate(File::Stat.new(regular_file), :writable_real?)
   end if POSIX
 
   def test_stat_world_writable_p
     File.chmod(0006, regular_file)
-    assert(File::Stat.new(regular_file).world_writable?)
+    assert_predicate(File::Stat.new(regular_file), :world_writable?)
     File.chmod(0060, regular_file)
-    assert(!(File::Stat.new(regular_file).world_writable?))
+    assert_not_predicate(File::Stat.new(regular_file), :world_writable?)
     File.chmod(0600, regular_file)
-    assert(!(File::Stat.new(regular_file).world_writable?))
+    assert_not_predicate(File::Stat.new(regular_file), :world_writable?)
   end if POSIX
 
   def test_stat_executable_p
     File.chmod(0100, regular_file)
-    assert(File::Stat.new(regular_file).executable?)
+    assert_predicate(File::Stat.new(regular_file), :executable?)
     File.chmod(0600, regular_file)
-    assert(!(File::Stat.new(regular_file).executable?))
+    assert_not_predicate(File::Stat.new(regular_file), :executable?)
   end if POSIX
 
   def test_stat_executable_real_p
     File.chmod(0100, regular_file)
-    assert(File::Stat.new(regular_file).executable_real?)
+    assert_predicate(File::Stat.new(regular_file), :executable_real?)
     File.chmod(0600, regular_file)
-    assert(!(File::Stat.new(regular_file).executable_real?))
+    assert_not_predicate(File::Stat.new(regular_file), :executable_real?)
   end if POSIX
 
   def test_stat_file_p
-    assert(!(File::Stat.new(@dir).file?))
-    assert(File::Stat.new(regular_file).file?)
+    assert_not_predicate(File::Stat.new(@dir), :file?)
+    assert_predicate(File::Stat.new(regular_file), :file?)
   end
 
   def test_stat_zero_p
     assert_nothing_raised { File::Stat.new(@dir).zero? }
-    assert(!(File::Stat.new(regular_file).zero?))
-    assert(File::Stat.new(zerofile).zero?)
+    assert_not_predicate(File::Stat.new(regular_file), :zero?)
+    assert_predicate(File::Stat.new(zerofile), :zero?)
   end
 
   def test_stat_size_p
     assert_nothing_raised { File::Stat.new(@dir).size? }
     assert_equal(3, File::Stat.new(regular_file).size?)
-    assert(!(File::Stat.new(zerofile).size?))
+    assert_not_predicate(File::Stat.new(zerofile), :size?)
   end
 
   def test_stat_owned_p
-    assert(File::Stat.new(regular_file).owned?)
-    assert(!File::Stat.new(notownedfile).owned?) if notownedfile
+    assert_predicate(File::Stat.new(regular_file), :owned?)
+    assert_not_predicate(File::Stat.new(notownedfile), :owned?) if notownedfile
   end if POSIX
 
   def test_stat_grpowned_p ## xxx
-    assert(File::Stat.new(regular_file).grpowned?)
+    assert_predicate(File::Stat.new(regular_file), :grpowned?)
   end if POSIX
 
   def test_stat_suid
-    assert(!(File::Stat.new(regular_file).setuid?))
-    assert(File::Stat.new(suidfile).setuid?) if suidfile
+    assert_not_predicate(File::Stat.new(regular_file), :setuid?)
+    assert_predicate(File::Stat.new(suidfile), :setuid?) if suidfile
   end
 
   def test_stat_sgid
-    assert(!(File::Stat.new(regular_file).setgid?))
-    assert(File::Stat.new(sgidfile).setgid?) if sgidfile
+    assert_not_predicate(File::Stat.new(regular_file), :setgid?)
+    assert_predicate(File::Stat.new(sgidfile), :setgid?) if sgidfile
   end
 
   def test_stat_sticky
-    assert(!(File::Stat.new(regular_file).sticky?))
-    assert(File::Stat.new(stickyfile).sticky?) if stickyfile
+    assert_not_predicate(File::Stat.new(regular_file), :sticky?)
+    assert_predicate(File::Stat.new(stickyfile), :sticky?) if stickyfile
   end
 
   def test_stat_size
