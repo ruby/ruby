@@ -2,7 +2,7 @@ Sun Apr 12 09:05:44 2015  Tanaka Akira  <akr@fsij.org>
 
 	* ext/fiddle/depend: Fix "Wrong mix of special targets" error with
 	  OpenBSD make.
-	
+
 Sun Apr 12 09:04:37 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_file_exhaustive.rb: Windows doesn't support Unix file
