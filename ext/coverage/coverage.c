@@ -93,7 +93,7 @@ rb_coverage_result(VALUE klass)
  *
  * = Usage
  *
- * 1. require "coverage.so"
+ * 1. require "coverage"
  * 2. do Coverage.start
  * 3. require or load Ruby source file
  * 4. Coverage.result will return a hash that contains filename as key and
@@ -116,7 +116,7 @@ rb_coverage_result(VALUE klass)
  *   end
  *   [EOF]
  *
- *   require "coverage.so"
+ *   require "coverage"
  *   Coverage.start
  *   require "foo.rb"
  *   p Coverage.result  #=> {"foo.rb"=>[1, 1, 10, nil, nil, 1, 1, nil, 0, nil]}
