@@ -31,7 +31,7 @@ class TestIOWait < Test::Unit::TestCase
 
   def test_nread_buffered
     @w.syswrite ".\n!"
-    assert_equal ".\n", @r.read(2)
+    assert_equal ".\n", @r.gets
     assert_equal 1, @r.nread
   end
 
