@@ -45,11 +45,11 @@ distclean-libffi:
 realclean-libffi:
 	$(Q) $(RMALL) $(LIBFFI_DIR)
 
-.PHONY clean-libffi distclean-libffi realclean-libffi: .FORCE
-.PHONY clean-none distclean-none realclean-none: .FORCE
+.PHONY: clean-libffi distclean-libffi realclean-libffi
+.PHONY: clean-none distclean-none realclean-none
 
 clean: clean-$(LIBFFI_CLEAN)
 distclean: distclean-$(LIBFFI_CLEAN)
 realclean: realclean-$(LIBFFI_CLEAN)
 
-.PHONY configure: configure-libffi
+.PHONY: configure configure-libffi
