@@ -409,7 +409,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   def test_owned_p
     return if /cygwin|mswin|bccwin|mingw|emx/ =~ RUBY_PLATFORM
     assert_file.owned?(regular_file)
-    assert_file.not_owned?(notownedfile)
+    assert_file.not_owned?(notownedfile) if notownedfile
   end
 
   def test_grpowned_p ## xxx
@@ -1365,7 +1365,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   def test_stat_owned_p
     return if /cygwin|mswin|bccwin|mingw|emx/ =~ RUBY_PLATFORM
     assert(File::Stat.new(regular_file).owned?)
-    assert(!File::Stat.new(notownedfile).owned?)
+    assert(!File::Stat.new(notownedfile).owned?) if notownedfile
   end
 
   def test_stat_grpowned_p ## xxx
