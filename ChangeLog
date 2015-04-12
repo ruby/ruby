@@ -11,8 +11,8 @@ Sun Apr 12 18:12:07 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 Sun Apr 12 17:35:17 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
-	* ext/json/*, test/json/*: Reverted r50231. Because it's not works with
-	  cross-compile environment.
+	* ext/json/*, test/json/*: Reverted r50231.  Because it's not
+	  working with cross-compile environment.
 
 Sun Apr 12 15:34:59 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
