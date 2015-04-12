@@ -1,3 +1,13 @@
+Mon Apr 13 00:49:56 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (arg): fix segfault by null caused by syntax error.
+	  [ruby-core:68851] [Bug #10957]
+
+Mon Apr 13 00:49:56 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (primary): empty parentheses at cmdarg can be null.
+	  [ruby-core:68477] [Bug #10957]
+
 Mon Apr 13 00:44:12 2015  Eric Wong  <e@80x24.org>
 
 	* ext/io/wait/wait.c (io_nread): wrap return value with INT2FIX
