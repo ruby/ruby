@@ -44,6 +44,20 @@ static VALUE io_wait_readable _((int argc, VALUE *argv, VALUE io));
 static VALUE io_wait_writable _((int argc, VALUE *argv, VALUE io));
 void Init_wait _((void));
 
+static struct timeval *
+get_timeout(int argc, VALUE *argv, struct timeval *timerec)
+{
+    VALUE timeout = Qnil;
+    rb_check_arity(argc, 0, 1);
+    if (!argc || NIL_P(timeout = argv[0])) {
+	return NULL;
+    }
+    else {
+	*timerec = rb_time_interval(timeout);
+	return timerec;
+    }
+}
+
 /*
  * call-seq:
  *   io.nread -> int
@@ -109,21 +123,12 @@ io_wait_readable(int argc, VALUE *argv, VALUE io)
     rb_io_t *fptr;
     int i;
     ioctl_arg n;
-    VALUE timeout;
     struct timeval timerec;
     struct timeval *tv;
 
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
-    rb_scan_args(argc, argv, "01", &timeout);
-    if (NIL_P(timeout)) {
-	tv = NULL;
-    }
-    else {
-	timerec = rb_time_interval(timeout);
-	tv = &timerec;
-    }
-
+    tv = get_timeout(argc, argv, &timerec);
     if (rb_io_read_pending(fptr)) return Qtrue;
     if (!FIONREAD_POSSIBLE_P(fptr->fd)) return Qfalse;
     i = rb_wait_for_single_fd(fptr->fd, RB_WAITFD_IN, tv);
@@ -148,21 +153,12 @@ io_wait_writable(int argc, VALUE *argv, VALUE io)
 {
     rb_io_t *fptr;
     int i;
-    VALUE timeout;
     struct timeval timerec;
     struct timeval *tv;
 
     GetOpenFile(io, fptr);
     rb_io_check_writable(fptr);
-    rb_scan_args(argc, argv, "01", &timeout);
-    if (NIL_P(timeout)) {
-	tv = NULL;
-    }
-    else {
-	timerec = rb_time_interval(timeout);
-	tv = &timerec;
-    }
-
+    tv = get_timeout(argc, argv, &timerec);
     i = rb_wait_for_single_fd(fptr->fd, RB_WAITFD_OUT, tv);
     if (i < 0)
 	rb_sys_fail(0);
