@@ -3182,12 +3182,18 @@ End
     mkcdtmpdir {
       assert(system("mkfifo", "fifo"), "mkfifo fails")
       assert_separately([], <<-'EOS')
-        t = Thread.new {
-          open("fifo") {}
+        t1 = Thread.new {
+          open("fifo", "r") {|r|
+            r.read
+          }
         }
-        sleep 0.1 until t.status == "sleep"
-        sleep 0.1
-        assert(true)
+        t2 = Thread.new {
+          open("fifo", "w") {|w|
+            w.write "foo"
+          }
+        }
+        t1_value, _ = assert_join_threads([t1, t2])
+        assert_equal("foo", t1_value)
       EOS
     }
   end if /mswin|mingw|bccwin/ !~ RUBY_PLATFORM
