@@ -1,4 +1,7 @@
-Sun Apr 12 15:08:13 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Apr 12 15:10:18 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/io/wait/wait.c (io_wait_readable): simply returns that IO is
+	  readable without blocking, but no longer returns EOF.
 
 	* ext/io/wait/wait.c (io_ready_p, io_wait_readable): try polling
 	  first and check FIONREAD optionally to see if EOF.

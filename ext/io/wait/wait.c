@@ -117,13 +117,14 @@ io_ready_p(VALUE io)
 
 /*
  * call-seq:
- *   io.wait          -> IO, true, false or nil
- *   io.wait(timeout) -> IO, true, false or nil
- *   io.wait_readable          -> IO, true, false or nil
- *   io.wait_readable(timeout) -> IO, true, false or nil
+ *   io.wait          -> IO, true or nil
+ *   io.wait(timeout) -> IO, true or nil
+ *   io.wait_readable          -> IO, true or nil
+ *   io.wait_readable(timeout) -> IO, true or nil
  *
- * Waits until input is available or times out and returns self or nil when
- * EOF is reached.
+ * Waits until IO is readable without blocking and returns +self+, or
+ * +nil+ when times out.
+ * Returns +true+ immediately when buffered data is available.
  */
 
 static VALUE
@@ -138,10 +139,7 @@ io_wait_readable(int argc, VALUE *argv, VALUE io)
     tv = get_timeout(argc, argv, &timerec);
     if (rb_io_read_pending(fptr)) return Qtrue;
     if (wait_for_single_fd(fptr, RB_WAITFD_IN, tv)) {
-	ioctl_arg n;
-	if (!FIONREAD_POSSIBLE_P(fptr->fd)) return io;
-	if (ioctl(fptr->fd, FIONREAD, &n)) rb_sys_fail(0);
-	if (n > 0) return io;
+	return io;
     }
     return Qnil;
 }
