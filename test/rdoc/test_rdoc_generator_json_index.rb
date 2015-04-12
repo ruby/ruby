@@ -320,4 +320,5 @@ class TestRDocGeneratorJsonIndex < RDoc::TestCase
     assert_equal 'cd', @g.search_string('C d')
   end
 
-end if defined?(JSON)
+end
+

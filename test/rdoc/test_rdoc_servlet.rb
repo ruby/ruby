@@ -531,4 +531,5 @@ class TestRDocServlet < RDoc::TestCase
     store.save
   end
 
-end if defined?(JSON)
+end
+

@@ -6,11 +6,6 @@ rescue NoMethodError, Gem::LoadError
   # for ruby tests
 end
 
-begin
-  require 'json'
-rescue LoadError
-end
-
 require 'minitest/autorun'
 require 'minitest/benchmark' if ENV['BENCHMARK']
 
@@ -219,3 +214,4 @@ $LOAD_PATH.each do |load_path|
   break if load_path[0] == ?/
   load_path.replace File.expand_path load_path
 end if RUBY_VERSION < '1.9'
+

@@ -21,16 +21,7 @@ end
 # them while we're testing rubygems, and thus we can't actually load them.
 unless Gem::Dependency.new('rdoc', '>= 3.10').matching_specs.empty?
   gem 'rdoc'
-  begin
-    gem 'json'
-  rescue Gem::LoadError
-    # for Ruby 2.3.0
-  end
-end
-
-begin
-  require 'json'
-rescue LoadError
+  gem 'json'
 end
 
 require 'minitest/autorun'

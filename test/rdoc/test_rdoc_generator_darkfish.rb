@@ -225,4 +225,5 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
                     "#{filename} is not hard-linked"
   end
 
-end if defined?(JSON)
+end
+

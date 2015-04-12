@@ -59,6 +59,7 @@ class TestExtLibs < Test::Unit::TestCase
   check_existence "io/console"
   check_existence "io/nonblock"
   check_existence "io/wait"
+  check_existence "json"
   check_existence "mathn/complex"
   check_existence "mathn/rational"
   check_existence "nkf"
