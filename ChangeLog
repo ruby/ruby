@@ -1,3 +1,8 @@
+Sun Apr 12 14:13:28 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* gc.c: Document require name for ObjectSpace methods.
+	  [ci skip][fix GH-860] Patch by @schneems
+
 Sun Apr 12 13:54:05 2015  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/test_io.rb: New test that open(fifo) doesn't block other
