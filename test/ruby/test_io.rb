@@ -3178,4 +3178,18 @@ End
     assert_raise(IOError) { io.close }
   end
 
+  def test_open_fifo_does_not_block_other_threads
+    mkcdtmpdir {
+      assert(system("mkfifo", "fifo"), "mkfifo fails")
+      assert_separately([], <<-'EOS')
+        t = Thread.new {
+          open("fifo") {}
+        }
+        sleep 0.1 until t.status == "sleep"
+        sleep 0.1
+        assert(true)
+      EOS
+    }
+  end if /mswin|mingw|bccwin/ !~ RUBY_PLATFORM
+
 end
