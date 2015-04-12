@@ -5,6 +5,7 @@ require "socket"
 
 class TestFileExhaustive < Test::Unit::TestCase
   DRIVE = Dir.pwd[%r'\A(?:[a-z]:|//[^/]+/[^/]+)'i]
+  POSIX = /cygwin|mswin|bccwin|mingw|emx/ !~ RUBY_PLATFORM
 
   def assert_incompatible_encoding
     d = "\u{3042}\u{3044}".encode("utf-16le")
@@ -69,7 +70,7 @@ class TestFileExhaustive < Test::Unit::TestCase
 
   def suidfile
     return @suidfile if defined? @suidfile
-    if /mswin|mingw|bccwin/ !~ RUBY_PLATFORM
+    if POSIX
       @suidfile = make_tmp_filename("suidfile")
       make_file("", @suidfile)
       File.chmod 04500, @suidfile
@@ -81,7 +82,7 @@ class TestFileExhaustive < Test::Unit::TestCase
 
   def sgidfile
     return @sgidfile if defined? @sgidfile
-    if /mswin|mingw|bccwin/ !~ RUBY_PLATFORM
+    if POSIX
       @sgidfile = make_tmp_filename("sgidfile")
       make_file("", @sgidfile)
       File.chmod 02500, @sgidfile
@@ -93,7 +94,7 @@ class TestFileExhaustive < Test::Unit::TestCase
 
   def stickyfile
     return @stickyfile if defined? @stickyfile
-    if /mswin|mingw|bccwin/ !~ RUBY_PLATFORM
+    if POSIX
       @stickyfile = make_tmp_filename("stickyfile")
       Dir.mkdir(@stickyfile)
       File.chmod 01500, @stickyfile
@@ -127,7 +128,7 @@ class TestFileExhaustive < Test::Unit::TestCase
 
   def fifo
     return @fifo if defined? @fifo
-    if /mswin|mingw|bccwin/ !~ RUBY_PLATFORM
+    if POSIX
       fn = make_tmp_filename("fifo")
       system("mkfifo", fn)
       assert $?.success?, "mkfifo fails"
@@ -307,7 +308,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_readable_p
-    return if /cygwin|mswin|bccwin|mingw|emx/ =~ RUBY_PLATFORM
+    return if !POSIX
     return if Process.euid == 0
     File.chmod(0200, regular_file)
     assert_file.not_readable?(regular_file)
@@ -317,7 +318,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_readable_real_p
-    return if /cygwin|mswin|bccwin|mingw|emx/ =~ RUBY_PLATFORM
+    return if !POSIX
     return if Process.euid == 0
     File.chmod(0200, regular_file)
     assert_file.not_readable_real?(regular_file)
@@ -327,7 +328,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_world_readable_p
-    return if /cygwin|mswin|bccwin|mingw|emx/ =~ RUBY_PLATFORM
+    return if !POSIX
     File.chmod(0006, regular_file)
     assert_file.world_readable?(regular_file)
     File.chmod(0060, regular_file)
@@ -338,7 +339,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_writable_p
-    return if /cygwin|mswin|bccwin|mingw|emx/ =~ RUBY_PLATFORM
+    return if !POSIX
     return if Process.euid == 0
     File.chmod(0400, regular_file)
     assert_file.not_writable?(regular_file)
@@ -348,7 +349,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_writable_real_p
-    return if /cygwin|mswin|bccwin|mingw|emx/ =~ RUBY_PLATFORM
+    return if !POSIX
     return if Process.euid == 0
     File.chmod(0400, regular_file)
     assert_file.not_writable_real?(regular_file)
@@ -358,7 +359,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_world_writable_p
-    return if /cygwin|mswin|bccwin|mingw|emx/ =~ RUBY_PLATFORM
+    return if !POSIX
     File.chmod(0006, regular_file)
     assert_file.world_writable?(regular_file)
     File.chmod(0060, regular_file)
@@ -369,7 +370,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_executable_p
-    return if /cygwin|mswin|bccwin|mingw|emx/ =~ RUBY_PLATFORM
+    return if !POSIX
     File.chmod(0100, regular_file)
     assert_file.executable?(regular_file)
     File.chmod(0600, regular_file)
@@ -378,7 +379,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_executable_real_p
-    return if /cygwin|mswin|bccwin|mingw|emx/ =~ RUBY_PLATFORM
+    return if !POSIX
     File.chmod(0100, regular_file)
     assert_file.executable_real?(regular_file)
     File.chmod(0600, regular_file)
@@ -407,13 +408,13 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_owned_p
-    return if /cygwin|mswin|bccwin|mingw|emx/ =~ RUBY_PLATFORM
+    return if !POSIX
     assert_file.owned?(regular_file)
     assert_file.not_owned?(notownedfile) if notownedfile
   end
 
   def test_grpowned_p ## xxx
-    return if /cygwin|mswin|bccwin|mingw|emx/ =~ RUBY_PLATFORM
+    return if !POSIX
     assert_file.grpowned?(regular_file)
   end
 
@@ -499,7 +500,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_chmod
-    return if /cygwin|mswin|bccwin|mingw|emx/ =~ RUBY_PLATFORM
+    return if !POSIX
     assert_equal(1, File.chmod(0444, regular_file))
     assert_equal(0444, File.stat(regular_file).mode % 01000)
     assert_equal(0, File.open(regular_file) {|f| f.chmod(0222)})
@@ -509,7 +510,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_lchmod
-    return if /cygwin|mswin|bccwin|mingw|emx/ =~ RUBY_PLATFORM
+    return if !POSIX
     assert_equal(1, File.lchmod(0444, regular_file))
     assert_equal(0444, File.stat(regular_file).mode % 01000)
     File.lchmod(0600, regular_file)
@@ -586,7 +587,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_umask
-    return if /cygwin|mswin|bccwin|mingw|emx/ =~ RUBY_PLATFORM
+    return if !POSIX
     prev = File.umask(0777)
     assert_equal(0777, File.umask)
     open(nofile, "w") { }
@@ -1274,7 +1275,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_stat_readable_p
-    return if /cygwin|mswin|bccwin|mingw|emx/ =~ RUBY_PLATFORM
+    return if !POSIX
     return if Process.euid == 0
     File.chmod(0200, regular_file)
     assert(!(File::Stat.new(regular_file).readable?))
@@ -1283,7 +1284,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_stat_readable_real_p
-    return if /cygwin|mswin|bccwin|mingw|emx/ =~ RUBY_PLATFORM
+    return if !POSIX
     return if Process.euid == 0
     File.chmod(0200, regular_file)
     assert(!(File::Stat.new(regular_file).readable_real?))
@@ -1292,7 +1293,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_stat_world_readable_p
-    return if /cygwin|mswin|bccwin|mingw|emx/ =~ RUBY_PLATFORM
+    return if !POSIX
     File.chmod(0006, regular_file)
     assert(File::Stat.new(regular_file).world_readable?)
     File.chmod(0060, regular_file)
@@ -1302,7 +1303,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_stat_writable_p
-    return if /cygwin|mswin|bccwin|mingw|emx/ =~ RUBY_PLATFORM
+    return if !POSIX
     return if Process.euid == 0
     File.chmod(0400, regular_file)
     assert(!(File::Stat.new(regular_file).writable?))
@@ -1311,7 +1312,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_stat_writable_real_p
-    return if /cygwin|mswin|bccwin|mingw|emx/ =~ RUBY_PLATFORM
+    return if !POSIX
     return if Process.euid == 0
     File.chmod(0400, regular_file)
     assert(!(File::Stat.new(regular_file).writable_real?))
@@ -1320,7 +1321,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_stat_world_writable_p
-    return if /cygwin|mswin|bccwin|mingw|emx/ =~ RUBY_PLATFORM
+    return if !POSIX
     File.chmod(0006, regular_file)
     assert(File::Stat.new(regular_file).world_writable?)
     File.chmod(0060, regular_file)
@@ -1330,7 +1331,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_stat_executable_p
-    return if /cygwin|mswin|bccwin|mingw|emx/ =~ RUBY_PLATFORM
+    return if !POSIX
     File.chmod(0100, regular_file)
     assert(File::Stat.new(regular_file).executable?)
     File.chmod(0600, regular_file)
@@ -1338,7 +1339,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_stat_executable_real_p
-    return if /cygwin|mswin|bccwin|mingw|emx/ =~ RUBY_PLATFORM
+    return if !POSIX
     File.chmod(0100, regular_file)
     assert(File::Stat.new(regular_file).executable_real?)
     File.chmod(0600, regular_file)
@@ -1363,13 +1364,13 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_stat_owned_p
-    return if /cygwin|mswin|bccwin|mingw|emx/ =~ RUBY_PLATFORM
+    return if !POSIX
     assert(File::Stat.new(regular_file).owned?)
     assert(!File::Stat.new(notownedfile).owned?) if notownedfile
   end
 
   def test_stat_grpowned_p ## xxx
-    return if /cygwin|mswin|bccwin|mingw|emx/ =~ RUBY_PLATFORM
+    return if !POSIX
     assert(File::Stat.new(regular_file).grpowned?)
   end
 
