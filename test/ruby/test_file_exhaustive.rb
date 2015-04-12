@@ -308,27 +308,24 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_readable_p
-    return if !POSIX
     return if Process.euid == 0
     File.chmod(0200, regular_file)
     assert_file.not_readable?(regular_file)
     File.chmod(0600, regular_file)
     assert_file.readable?(regular_file)
     assert_file.not_readable?(nofile)
-  end
+  end if POSIX
 
   def test_readable_real_p
-    return if !POSIX
     return if Process.euid == 0
     File.chmod(0200, regular_file)
     assert_file.not_readable_real?(regular_file)
     File.chmod(0600, regular_file)
     assert_file.readable_real?(regular_file)
     assert_file.not_readable_real?(nofile)
-  end
+  end if POSIX
 
   def test_world_readable_p
-    return if !POSIX
     File.chmod(0006, regular_file)
     assert_file.world_readable?(regular_file)
     File.chmod(0060, regular_file)
@@ -336,30 +333,27 @@ class TestFileExhaustive < Test::Unit::TestCase
     File.chmod(0600, regular_file)
     assert_file.not_world_readable?(regular_file)
     assert_file.not_world_readable?(nofile)
-  end
+  end if POSIX
 
   def test_writable_p
-    return if !POSIX
     return if Process.euid == 0
     File.chmod(0400, regular_file)
     assert_file.not_writable?(regular_file)
     File.chmod(0600, regular_file)
     assert_file.writable?(regular_file)
     assert_file.not_writable?(nofile)
-  end
+  end if POSIX
 
   def test_writable_real_p
-    return if !POSIX
     return if Process.euid == 0
     File.chmod(0400, regular_file)
     assert_file.not_writable_real?(regular_file)
     File.chmod(0600, regular_file)
     assert_file.writable_real?(regular_file)
     assert_file.not_writable_real?(nofile)
-  end
+  end if POSIX
 
   def test_world_writable_p
-    return if !POSIX
     File.chmod(0006, regular_file)
     assert_file.world_writable?(regular_file)
     File.chmod(0060, regular_file)
@@ -367,25 +361,23 @@ class TestFileExhaustive < Test::Unit::TestCase
     File.chmod(0600, regular_file)
     assert_file.not_world_writable?(regular_file)
     assert_file.not_world_writable?(nofile)
-  end
+  end if POSIX
 
   def test_executable_p
-    return if !POSIX
     File.chmod(0100, regular_file)
     assert_file.executable?(regular_file)
     File.chmod(0600, regular_file)
     assert_file.not_executable?(regular_file)
     assert_file.not_executable?(nofile)
-  end
+  end if POSIX
 
   def test_executable_real_p
-    return if !POSIX
     File.chmod(0100, regular_file)
     assert_file.executable_real?(regular_file)
     File.chmod(0600, regular_file)
     assert_file.not_executable_real?(regular_file)
     assert_file.not_executable_real?(nofile)
-  end
+  end if POSIX
 
   def test_file_p
     assert_file.not_file?(@dir)
@@ -408,15 +400,13 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_owned_p
-    return if !POSIX
     assert_file.owned?(regular_file)
     assert_file.not_owned?(notownedfile) if notownedfile
-  end
+  end if POSIX
 
   def test_grpowned_p ## xxx
-    return if !POSIX
     assert_file.grpowned?(regular_file)
-  end
+  end if POSIX
 
   def test_suid
     assert_file.not_setuid?(regular_file)
@@ -500,23 +490,21 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_chmod
-    return if !POSIX
     assert_equal(1, File.chmod(0444, regular_file))
     assert_equal(0444, File.stat(regular_file).mode % 01000)
     assert_equal(0, File.open(regular_file) {|f| f.chmod(0222)})
     assert_equal(0222, File.stat(regular_file).mode % 01000)
     File.chmod(0600, regular_file)
     assert_raise(Errno::ENOENT) { File.chmod(0600, nofile) }
-  end
+  end if POSIX
 
   def test_lchmod
-    return if !POSIX
     assert_equal(1, File.lchmod(0444, regular_file))
     assert_equal(0444, File.stat(regular_file).mode % 01000)
     File.lchmod(0600, regular_file)
     assert_raise(Errno::ENOENT) { File.lchmod(0600, nofile) }
   rescue NotImplementedError
-  end
+  end if POSIX
 
   def test_chown ## xxx
   end
@@ -587,7 +575,6 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_umask
-    return if !POSIX
     prev = File.umask(0777)
     assert_equal(0777, File.umask)
     open(nofile, "w") { }
@@ -595,7 +582,7 @@ class TestFileExhaustive < Test::Unit::TestCase
     File.unlink(nofile)
     assert_equal(0777, File.umask(prev))
     assert_raise(ArgumentError) { File.umask(0, 1, 2) }
-  end
+  end if POSIX
 
   def test_expand_path
     assert_equal(regular_file, File.expand_path(File.basename(regular_file), File.dirname(regular_file)))
@@ -1275,76 +1262,68 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_stat_readable_p
-    return if !POSIX
     return if Process.euid == 0
     File.chmod(0200, regular_file)
     assert(!(File::Stat.new(regular_file).readable?))
     File.chmod(0600, regular_file)
     assert(File::Stat.new(regular_file).readable?)
-  end
+  end if POSIX
 
   def test_stat_readable_real_p
-    return if !POSIX
     return if Process.euid == 0
     File.chmod(0200, regular_file)
     assert(!(File::Stat.new(regular_file).readable_real?))
     File.chmod(0600, regular_file)
     assert(File::Stat.new(regular_file).readable_real?)
-  end
+  end if POSIX
 
   def test_stat_world_readable_p
-    return if !POSIX
     File.chmod(0006, regular_file)
     assert(File::Stat.new(regular_file).world_readable?)
     File.chmod(0060, regular_file)
     assert(!(File::Stat.new(regular_file).world_readable?))
     File.chmod(0600, regular_file)
     assert(!(File::Stat.new(regular_file).world_readable?))
-  end
+  end if POSIX
 
   def test_stat_writable_p
-    return if !POSIX
     return if Process.euid == 0
     File.chmod(0400, regular_file)
     assert(!(File::Stat.new(regular_file).writable?))
     File.chmod(0600, regular_file)
     assert(File::Stat.new(regular_file).writable?)
-  end
+  end if POSIX
 
   def test_stat_writable_real_p
-    return if !POSIX
     return if Process.euid == 0
     File.chmod(0400, regular_file)
     assert(!(File::Stat.new(regular_file).writable_real?))
     File.chmod(0600, regular_file)
     assert(File::Stat.new(regular_file).writable_real?)
-  end
+  end if POSIX
 
   def test_stat_world_writable_p
-    return if !POSIX
     File.chmod(0006, regular_file)
     assert(File::Stat.new(regular_file).world_writable?)
     File.chmod(0060, regular_file)
     assert(!(File::Stat.new(regular_file).world_writable?))
     File.chmod(0600, regular_file)
     assert(!(File::Stat.new(regular_file).world_writable?))
-  end
+  end if POSIX
 
   def test_stat_executable_p
-    return if !POSIX
     File.chmod(0100, regular_file)
     assert(File::Stat.new(regular_file).executable?)
     File.chmod(0600, regular_file)
     assert(!(File::Stat.new(regular_file).executable?))
-  end
+  end if POSIX
 
   def test_stat_executable_real_p
-    return if !POSIX
     File.chmod(0100, regular_file)
     assert(File::Stat.new(regular_file).executable_real?)
     File.chmod(0600, regular_file)
     assert(!(File::Stat.new(regular_file).executable_real?))
-  end
+  end if POSIX
 
   def test_stat_file_p
     assert(!(File::Stat.new(@dir).file?))
@@ -1364,15 +1343,13 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_stat_owned_p
-    return if !POSIX
     assert(File::Stat.new(regular_file).owned?)
     assert(!File::Stat.new(notownedfile).owned?) if notownedfile
-  end
+  end if POSIX
 
   def test_stat_grpowned_p ## xxx
-    return if !POSIX
     assert(File::Stat.new(regular_file).grpowned?)
-  end
+  end if POSIX
 
   def test_stat_suid
     assert(!(File::Stat.new(regular_file).setuid?))
