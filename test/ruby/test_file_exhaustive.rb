@@ -6,6 +6,7 @@ require "socket"
 class TestFileExhaustive < Test::Unit::TestCase
   DRIVE = Dir.pwd[%r'\A(?:[a-z]:|//[^/]+/[^/]+)'i]
   POSIX = /cygwin|mswin|bccwin|mingw|emx/ !~ RUBY_PLATFORM
+  NTFS = !(/cygwin|mingw|mswin|bccwin/ !~ RUBY_PLATFORM)
 
   def assert_incompatible_encoding
     d = "\u{3042}\u{3044}".encode("utf-16le")
@@ -256,7 +257,7 @@ class TestFileExhaustive < Test::Unit::TestCase
         assert_nothing_raised { File.stat(File.basename(prefix)) }
       end
     end
-  end if /mswin|mingw|cygwin/ =~ RUBY_PLATFORM
+  end if NTFS
 
   def test_directory_p
     assert_file.directory?(@dir)
@@ -586,8 +587,7 @@ class TestFileExhaustive < Test::Unit::TestCase
 
   def test_expand_path
     assert_equal(regular_file, File.expand_path(File.basename(regular_file), File.dirname(regular_file)))
-    case RUBY_PLATFORM
-    when /cygwin|mingw|mswin|bccwin/
+    if NTFS
       assert_equal(regular_file, File.expand_path(regular_file + " "))
       assert_equal(regular_file, File.expand_path(regular_file + "."))
       assert_equal(regular_file, File.expand_path(regular_file + "::$DATA"))
@@ -595,6 +595,8 @@ class TestFileExhaustive < Test::Unit::TestCase
       assert_match(/\Ac:\//i, File.expand_path('c:foo', 'd:/bar'))
       assert_match(/\Ae:\//i, File.expand_path('e:foo', 'd:/bar'))
       assert_match(%r'\Ac:/bar/foo\z'i, File.expand_path('c:foo', 'c:/bar'))
+    end
+    case RUBY_PLATFORM
     when /darwin/
       ["\u{feff}", *"\u{2000}"..."\u{2100}"].each do |c|
         file = regular_file + c
@@ -957,7 +959,7 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_equal("foo", File.basename("foo", ".ext"))
     assert_equal("foo", File.basename("foo.ext", ".ext"))
     assert_equal("foo", File.basename("foo.ext", ".*"))
-    if /cygwin|mingw|mswin|bccwin/ =~ RUBY_PLATFORM
+    if NTFS
       basename = File.basename(regular_file)
       assert_equal(basename, File.basename(regular_file + " "))
       assert_equal(basename, File.basename(regular_file + "."))
@@ -1006,7 +1008,7 @@ class TestFileExhaustive < Test::Unit::TestCase
     infixes = ["", " ", "."]
     infixes2 = infixes + [".ext "]
     appendixes = [""]
-    if /cygwin|mingw|mswin|bccwin/ =~ RUBY_PLATFORM
+    if NTFS
       appendixes << " " << "." << "::$DATA" << "::$DATA.bar"
     end
     prefixes.each do |prefix|
