@@ -160,11 +160,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   def blockdev
     return @blockdev if defined? @blockdev
     if /linux/ =~ RUBY_PLATFORM
-      if File.exist? '/dev/loop0'
-        @blockdev = '/dev/loop0'
-      elsif File.exist? '/dev/sda'
-        @blockdev = '/dev/sda'
-      end
+      @blockdev = %w[/dev/loop0 /dev/sda /dev/vda /dev/xvda1].find {|f| File.exist? f }
     else
       @blockdev = nil
     end
