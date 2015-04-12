@@ -36,15 +36,16 @@ with all sufficient information, see the ChangeLog file.
 === Stdlib updates (outstanding ones only)
 
 * Socket
-  * Socket#accept_nonblock supports `exception :false` to return symbols
-    Ditto for TCPServer#accept_nonblock, UNIXServer#accept_nonblock
+  * Socket#accept_nonblock and Socket#connect_nonblock supports
+    `exception :false` to return symbols.
+    Ditto for TCPServer#accept_nonblock, UNIXServer#accept_nonblock.
 
 * ObjectSpace (objspace)
   * ObjectSpace.count_imemo_objects is added.
 
 * OpenSSL
-  * OpenSSL::SSL::SSLSocket#accept_nonblock supports `exception: false`
-    to return symbols
+  * OpenSSL::SSL::SSLSocket#accept_nonblock and
+    OpenSSL::SSL::SSLSocket#connect_nonblock supports `exception: false`.
 
 === Stdlib compatibility issues (excluding feature bug fixes)
 

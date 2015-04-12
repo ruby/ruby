@@ -1,3 +1,16 @@
+Sun Apr 12 10:29:14 2015  Eric Wong  <e@80x24.org>
+
+	* ext/openssl/ossl_ssl.c (ossl_ssl_connect_nonblock):
+	  support `exception: false'
+	* (get_no_exception): move function location
+	* ext/socket/socket.c (sock_connect_nonblock):
+	  support `exception: false'
+	* test/openssl/test_pair.rb (test_connect_accept_nonblock_no_exception):
+	  test `exception: false' on connect,
+	  rename from `test_accept_nonblock_no_exception'
+	* test/socket/test_nonblock.rb (test_connect_nonblock_no_exception):
+	  new test
+
 Sun Apr 12 09:57:16 2015  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/test_file_exhaustive.rb: Test a block device on GNU/Linux.

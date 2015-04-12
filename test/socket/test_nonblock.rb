@@ -55,6 +55,29 @@ class TestSocketNonblock < Test::Unit::TestCase
     s.close if s
   end
 
+  def test_connect_nonblock_no_exception
+    serv = Socket.new(:INET, :STREAM)
+    serv.bind(Socket.sockaddr_in(0, "127.0.0.1"))
+    serv.listen(5)
+    c = Socket.new(:INET, :STREAM)
+    servaddr = serv.getsockname
+    rv = c.connect_nonblock(servaddr, exception: false)
+    case rv
+    when 0
+      # some OSes return immediately on non-blocking local connect()
+    else
+      assert_equal :wait_writable, rv
+    end
+    assert_equal([ [], [c], [] ], IO.select(nil, [c], nil, 60))
+    s, sockaddr = serv.accept
+    assert_equal(Socket.unpack_sockaddr_in(c.getsockname),
+                 Socket.unpack_sockaddr_in(sockaddr))
+  ensure
+    serv.close if serv
+    c.close if c
+    s.close if s
+  end
+
   def test_udp_recvfrom_nonblock
     u1 = UDPSocket.new
     u2 = UDPSocket.new

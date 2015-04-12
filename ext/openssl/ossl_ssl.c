@@ -1330,9 +1330,17 @@ ossl_ssl_connect(VALUE self)
     return ossl_start_ssl(self, SSL_connect, "SSL_connect", 0, 0);
 }
 
+static int
+get_no_exception(VALUE opts)
+{
+    if (!NIL_P(opts) && Qfalse == rb_hash_lookup2(opts, sym_exception, Qundef))
+	return 1;
+    return 0;
+}
+
 /*
  * call-seq:
- *    ssl.connect_nonblock => self
+ *    ssl.connect_nonblock([options]) => self
  *
  * Initiates the SSL/TLS handshake as a client in non-blocking manner.
  *
@@ -1347,12 +1355,22 @@ ossl_ssl_connect(VALUE self)
  *     retry
  *   end
  *
+ * By specifying `exception: false`, the options hash allows you to indicate
+ * that connect_nonblock should not raise an IO::WaitReadable or
+ * IO::WaitWritable exception, but return the symbol :wait_readable or
+ * :wait_writable instead.
  */
 static VALUE
-ossl_ssl_connect_nonblock(VALUE self)
+ossl_ssl_connect_nonblock(int argc, VALUE *argv, VALUE self)
 {
+    int no_exception;
+    VALUE opts = Qnil;
+
+    rb_scan_args(argc, argv, "0:", &opts);
+    no_exception = get_no_exception(opts);
+
     ossl_ssl_setup(self);
-    return ossl_start_ssl(self, SSL_connect, "SSL_connect", 1, 0);
+    return ossl_start_ssl(self, SSL_connect, "SSL_connect", 1, no_exception);
 }
 
 /*
@@ -1367,14 +1385,6 @@ ossl_ssl_accept(VALUE self)
 {
     ossl_ssl_setup(self);
     return ossl_start_ssl(self, SSL_accept, "SSL_accept", 0, 0);
-}
-
-static int
-get_no_exception(VALUE opts)
-{
-    if (!NIL_P(opts) && Qfalse == rb_hash_lookup2(opts, sym_exception, Qundef))
-	return 1;
-    return 0;
 }
 
 /*
@@ -2235,7 +2245,7 @@ Init_ossl_ssl(void)
     rb_define_alias(cSSLSocket, "to_io", "io");
     rb_define_method(cSSLSocket, "initialize", ossl_ssl_initialize, -1);
     rb_define_method(cSSLSocket, "connect",    ossl_ssl_connect, 0);
-    rb_define_method(cSSLSocket, "connect_nonblock",    ossl_ssl_connect_nonblock, 0);
+    rb_define_method(cSSLSocket, "connect_nonblock",    ossl_ssl_connect_nonblock, -1);
     rb_define_method(cSSLSocket, "accept",     ossl_ssl_accept, 0);
     rb_define_method(cSSLSocket, "accept_nonblock", ossl_ssl_accept_nonblock, -1);
     rb_define_method(cSSLSocket, "sysread",    ossl_ssl_read, -1);

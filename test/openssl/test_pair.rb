@@ -283,7 +283,7 @@ module OpenSSL::TestPairM
     serv.close if serv && !serv.closed?
   end
 
-  def test_accept_nonblock_no_exception
+  def test_connect_accept_nonblock_no_exception
     ctx2 = OpenSSL::SSL::SSLContext.new
     ctx2.ciphers = "ADH"
     ctx2.tmp_dh_callback = proc { OpenSSL::TestUtils::TEST_KEY_DH1024 }
@@ -297,10 +297,30 @@ module OpenSSL::TestPairM
     ctx1 = OpenSSL::SSL::SSLContext.new
     ctx1.ciphers = "ADH"
     s1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx1)
-    th = Thread.new { s1.connect }
+    th = Thread.new do
+      rets = []
+      begin
+        rv = s1.connect_nonblock(exception: false)
+        rets << rv
+        case rv
+        when :wait_writable
+          IO.select(nil, [s1], nil, 5)
+        when :wait_readable
+          IO.select([s1], nil, nil, 5)
+        end
+      end until rv == s1
+      rets
+    end
+
     until th.join(0.01)
       accepted = s2.accept_nonblock(exception: false)
       assert_includes([s2, :wait_readable, :wait_writable ], accepted)
+    end
+
+    rets = th.value
+    assert_instance_of Array, rets
+    rets.each do |rv|
+      assert_includes([s1, :wait_readable, :wait_writable ], rv)
     end
   ensure
     s1.close if s1

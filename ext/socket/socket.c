@@ -10,6 +10,8 @@
 
 #include "rubysocket.h"
 
+static VALUE sym_exception, sym_wait_writable;
+
 static VALUE sock_s_unpack_sockaddr_in(VALUE, VALUE);
 
 void
@@ -440,7 +442,7 @@ sock_connect(VALUE sock, VALUE addr)
 
 /*
  * call-seq:
- *   socket.connect_nonblock(remote_sockaddr) => 0
+ *   socket.connect_nonblock(remote_sockaddr, [options]) => 0
  *
  * Requests a connection to be made on the given +remote_sockaddr+ after
  * O_NONBLOCK is set for the underlying file descriptor.
@@ -477,24 +479,36 @@ sock_connect(VALUE sock, VALUE addr)
  * it is extended by IO::WaitWritable.
  * So IO::WaitWritable can be used to rescue the exceptions for retrying connect_nonblock.
  *
+ * By specifying `exception: false`, the options hash allows you to indicate
+ * that connect_nonblock should not raise an IO::WaitWritable exception, but
+ * return the symbol :wait_writable instead.
+ *
  * === See
  * * Socket#connect
  */
 static VALUE
-sock_connect_nonblock(VALUE sock, VALUE addr)
+sock_connect_nonblock(int argc, VALUE *argv, VALUE sock)
 {
+    VALUE addr;
+    VALUE opts = Qnil;
     VALUE rai;
     rb_io_t *fptr;
     int n;
 
+    rb_scan_args(argc, argv, "1:", &addr, &opts);
     SockAddrStringValueWithAddrinfo(addr, rai);
     addr = rb_str_new4(addr);
     GetOpenFile(sock, fptr);
     rb_io_set_nonblock(fptr);
     n = connect(fptr->fd, (struct sockaddr*)RSTRING_PTR(addr), RSTRING_SOCKLEN(addr));
     if (n < 0) {
-        if (errno == EINPROGRESS)
+        if (errno == EINPROGRESS) {
+            if (!NIL_P(opts) &&
+                    Qfalse == rb_hash_lookup2(opts, sym_exception, Qundef)) {
+                return sym_wait_writable;
+            }
             rb_readwrite_sys_fail(RB_IO_WAIT_WRITABLE, "connect(2) would block");
+	}
 	rsock_sys_fail_raddrinfo_or_sockaddr("connect(2)", addr, rai);
     }
 
@@ -2158,7 +2172,7 @@ Init_socket(void)
 
     rb_define_method(rb_cSocket, "initialize", sock_initialize, -1);
     rb_define_method(rb_cSocket, "connect", sock_connect, 1);
-    rb_define_method(rb_cSocket, "connect_nonblock", sock_connect_nonblock, 1);
+    rb_define_method(rb_cSocket, "connect_nonblock", sock_connect_nonblock, -1);
     rb_define_method(rb_cSocket, "bind", sock_bind, 1);
     rb_define_method(rb_cSocket, "listen", rsock_sock_listen, 1);
     rb_define_method(rb_cSocket, "accept", sock_accept, 0);
@@ -2187,4 +2201,8 @@ Init_socket(void)
 #endif
 
     rb_define_singleton_method(rb_cSocket, "ip_address_list", socket_s_ip_address_list, 0);
+
+#undef rb_intern
+    sym_exception = ID2SYM(rb_intern("exception"));
+    sym_wait_writable = ID2SYM(rb_intern("wait_writable"));
 }
