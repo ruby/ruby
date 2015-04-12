@@ -21,9 +21,9 @@ class Object
   patchlevel_str = RUBY_PATCHLEVEL == -1 ? "dev" : "p#{RUBY_PATCHLEVEL}"
   RUBY_DESCRIPTION = "ruby #{RUBY_VERSION}#{patchlevel_str} (#{RUBY_RELEASE_DATE}) [#{RUBY_PLATFORM}]"
 end
-builddir = File.dirname(__FILE__)
+builddir = File.dirname(File.expand_path(__FILE__))
 top_srcdir = File.expand_path("@srcdir@", builddir)
-$:.unshift(File.expand_path(builddir))
+$:.unshift(builddir)
 fake = File.join(top_srcdir, "tool/fake.rb")
 eval(File.read(fake), nil, fake)
 ENV["RUBYOPT"] = ["-r#{__FILE__}", ENV["RUBYOPT"]].compact.join(" ")
