@@ -273,7 +273,8 @@ vm_call_super(rb_thread_t *th, int argc, const VALUE *argv)
 	rb_bug("vm_call_super: should not be reached");
     }
 
-    klass = RCLASS_SUPER(cfp->klass);
+    klass = RCLASS_ORIGIN(cfp->klass);
+    klass = RCLASS_SUPER(klass);
     id = cfp->me->def->original_id;
     me = rb_method_entry(klass, id, &klass);
     if (!me) {
