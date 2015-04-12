@@ -58,6 +58,16 @@ get_timeout(int argc, VALUE *argv, struct timeval *timerec)
     }
 }
 
+static int
+wait_for_single_fd(rb_io_t *fptr, int events, struct timeval *tv)
+{
+    int i = rb_wait_for_single_fd(fptr->fd, events, tv);
+    if (i < 0)
+	rb_sys_fail(0);
+    rb_io_check_closed(fptr);
+    return (i & events);
+}
+
 /*
  * call-seq:
  *   io.nread -> int
@@ -121,7 +131,6 @@ static VALUE
 io_wait_readable(int argc, VALUE *argv, VALUE io)
 {
     rb_io_t *fptr;
-    int i;
     ioctl_arg n;
     struct timeval timerec;
     struct timeval *tv;
@@ -131,10 +140,7 @@ io_wait_readable(int argc, VALUE *argv, VALUE io)
     tv = get_timeout(argc, argv, &timerec);
     if (rb_io_read_pending(fptr)) return Qtrue;
     if (!FIONREAD_POSSIBLE_P(fptr->fd)) return Qfalse;
-    i = rb_wait_for_single_fd(fptr->fd, RB_WAITFD_IN, tv);
-    if (i < 0)
-	rb_sys_fail(0);
-    rb_io_check_closed(fptr);
+    wait_for_single_fd(fptr, RB_WAITFD_IN, tv);
     if (ioctl(fptr->fd, FIONREAD, &n)) rb_sys_fail(0);
     if (n > 0) return io;
     return Qnil;
@@ -152,19 +158,15 @@ static VALUE
 io_wait_writable(int argc, VALUE *argv, VALUE io)
 {
     rb_io_t *fptr;
-    int i;
     struct timeval timerec;
     struct timeval *tv;
 
     GetOpenFile(io, fptr);
     rb_io_check_writable(fptr);
     tv = get_timeout(argc, argv, &timerec);
-    i = rb_wait_for_single_fd(fptr->fd, RB_WAITFD_OUT, tv);
-    if (i < 0)
-	rb_sys_fail(0);
-    rb_io_check_closed(fptr);
-    if (i & RB_WAITFD_OUT)
+    if (wait_for_single_fd(fptr, RB_WAITFD_OUT, tv)) {
 	return io;
+    }
     return Qnil;
 }
 
