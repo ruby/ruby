@@ -105,14 +105,13 @@ static VALUE
 io_ready_p(VALUE io)
 {
     rb_io_t *fptr;
-    ioctl_arg n;
+    struct timeval tv = {0, 0};
 
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
     if (rb_io_read_pending(fptr)) return Qtrue;
-    if (!FIONREAD_POSSIBLE_P(fptr->fd)) return Qnil;
-    if (ioctl(fptr->fd, FIONREAD, &n)) return Qnil;
-    if (n > 0) return Qtrue;
+    if (wait_for_single_fd(fptr, RB_WAITFD_IN, &tv))
+	return Qtrue;
     return Qfalse;
 }
 
@@ -131,7 +130,6 @@ static VALUE
 io_wait_readable(int argc, VALUE *argv, VALUE io)
 {
     rb_io_t *fptr;
-    ioctl_arg n;
     struct timeval timerec;
     struct timeval *tv;
 
@@ -139,10 +137,12 @@ io_wait_readable(int argc, VALUE *argv, VALUE io)
     rb_io_check_readable(fptr);
     tv = get_timeout(argc, argv, &timerec);
     if (rb_io_read_pending(fptr)) return Qtrue;
-    if (!FIONREAD_POSSIBLE_P(fptr->fd)) return Qfalse;
-    wait_for_single_fd(fptr, RB_WAITFD_IN, tv);
-    if (ioctl(fptr->fd, FIONREAD, &n)) rb_sys_fail(0);
-    if (n > 0) return io;
+    if (wait_for_single_fd(fptr, RB_WAITFD_IN, tv)) {
+	ioctl_arg n;
+	if (!FIONREAD_POSSIBLE_P(fptr->fd)) return io;
+	if (ioctl(fptr->fd, FIONREAD, &n)) rb_sys_fail(0);
+	if (n > 0) return io;
+    }
     return Qnil;
 }
 

@@ -1,3 +1,9 @@
+Sun Apr 12 15:08:13 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/io/wait/wait.c (io_ready_p, io_wait_readable): try polling
+	  first and check FIONREAD optionally to see if EOF.
+	  [ruby-core:36805] [Feature #4849]
+
 Sun Apr 12 14:53:23 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* lib/rubygems/test_case.rb: fixed json load error for rubygems tests.
