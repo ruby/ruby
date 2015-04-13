@@ -1,3 +1,8 @@
+Mon Apr 13 16:39:57 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (arg): fix segfault by null caused by syntax error.
+	  [ruby-core:68851] [Bug #10957]
+
 Tue Mar 31 00:49:23 2015  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* gc.c (wmap_final_func): fix memory size shortage when realloc wmap.
