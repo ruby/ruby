@@ -5,6 +5,7 @@ _=
 "`expr \"$ruby\" : echo > /dev/null || echo exec`" \
 "$ruby" '-r"`expr \"$0\" : / > /dev/null || pwd`/${0#/}" "$@";' \
 "}" || "exit" "$?"
+_=baseruby
 ruby=ruby
 class Object
   remove_const :CROSS_COMPILING if defined?(CROSS_COMPILING)
