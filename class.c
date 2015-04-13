@@ -936,7 +936,7 @@ rb_prepend_module(VALUE klass, VALUE module)
 	OBJ_WB_UNPROTECT(origin); /* TODO: conservertive shading. Need more survery. */
 	RCLASS_SET_SUPER(origin, RCLASS_SUPER(klass));
 	RCLASS_SET_SUPER(klass, origin);
-	RCLASS_ORIGIN(klass) = origin;
+	RB_OBJ_WRITE(klass, &RCLASS_ORIGIN(klass), origin);
 	RCLASS_M_TBL_WRAPPER(origin) = RCLASS_M_TBL_WRAPPER(klass);
 	RCLASS_M_TBL_INIT(klass);
 	st_foreach(RCLASS_M_TBL(origin), move_refined_method,
