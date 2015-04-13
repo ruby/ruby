@@ -1804,13 +1804,22 @@ autoload_require(VALUE arg)
     return rb_require_safe(ele->feature, ele->safe_level);
 }
 
+static VALUE
+autoload_reset(VALUE arg)
+{
+    struct autoload_data_i *ele = (struct autoload_data_i *)arg;
+    if (ele->thread == rb_thread_current()) {
+	ele->thread = Qnil;
+    }
+    return 0;			/* ignored */
+}
+
 VALUE
 rb_autoload_load(VALUE mod, ID id)
 {
     VALUE load, result;
     const char *loading = 0, *src;
     struct autoload_data_i *ele;
-    int state = 0;
 
     if (!autoload_defined_p(mod, id)) return Qfalse;
     load = check_autoload_required(mod, id, &loading);
@@ -1826,11 +1835,7 @@ rb_autoload_load(VALUE mod, ID id)
 	ele->thread = rb_thread_current();
     }
     /* autoload_data_i can be deleted by another thread while require */
-    result = rb_protect(autoload_require, (VALUE)ele, &state);
-    if (ele->thread == rb_thread_current()) {
-	ele->thread = Qnil;
-    }
-    if (state) rb_jump_tag(state);
+    result = rb_ensure(autoload_require, (VALUE)ele, autoload_reset, (VALUE)ele);
 
     if (RTEST(result)) {
 	/* At the last, move a value defined in autoload to constant table */
