@@ -345,6 +345,156 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     end
   end
 
+  def test_verify_hostname
+    assert_equal(true,  OpenSSL::SSL.verify_hostname("www.example.com", "*.example.com"))
+    assert_equal(false, OpenSSL::SSL.verify_hostname("www.subdomain.example.com", "*.example.com"))
+  end
+
+  def test_verify_wildcard
+    assert_equal(false, OpenSSL::SSL.verify_wildcard("foo", "x*"))
+    assert_equal(true,  OpenSSL::SSL.verify_wildcard("foo", "foo"))
+    assert_equal(true,  OpenSSL::SSL.verify_wildcard("foo", "f*"))
+    assert_equal(true,  OpenSSL::SSL.verify_wildcard("foo", "*"))
+    assert_equal(false, OpenSSL::SSL.verify_wildcard("abc*bcd", "abcd"))
+    assert_equal(false, OpenSSL::SSL.verify_wildcard("xn--qdk4b9b", "x*"))
+    assert_equal(false, OpenSSL::SSL.verify_wildcard("xn--qdk4b9b", "*--qdk4b9b"))
+    assert_equal(true,  OpenSSL::SSL.verify_wildcard("xn--qdk4b9b", "xn--qdk4b9b"))
+  end
+
+  # Comments in this test is excerpted from http://tools.ietf.org/html/rfc6125#page-27
+  def test_post_connection_check_wildcard_san
+    # case-insensitive ASCII comparison
+    # RFC 6125, section 6.4.1
+    #
+    # "..matching of the reference identifier against the presented identifier
+    # is performed by comparing the set of domain name labels using a
+    # case-insensitive ASCII comparison, as clarified by [DNS-CASE] (e.g.,
+    # "WWW.Example.Com" would be lower-cased to "www.example.com" for
+    # comparison purposes)
+    assert_equal(true, OpenSSL::SSL.verify_certificate_identity(
+      create_cert_with_san('DNS:*.example.com'), 'www.example.com'))
+    assert_equal(true, OpenSSL::SSL.verify_certificate_identity(
+      create_cert_with_san('DNS:*.Example.COM'), 'www.example.com'))
+    assert_equal(true, OpenSSL::SSL.verify_certificate_identity(
+      create_cert_with_san('DNS:*.example.com'), 'WWW.Example.COM'))
+    # 1.  The client SHOULD NOT attempt to match a presented identifier in
+    #     which the wildcard character comprises a label other than the
+    #     left-most label (e.g., do not match bar.*.example.net).
+    assert_equal(false, OpenSSL::SSL.verify_certificate_identity(
+      create_cert_with_san('DNS:www.*.com'), 'www.example.com'))
+    # 2.  If the wildcard character is the only character of the left-most
+    #     label in the presented identifier, the client SHOULD NOT compare
+    #     against anything but the left-most label of the reference
+    #     identifier (e.g., *.example.com would match foo.example.com but
+    #     not bar.foo.example.com or example.com).
+    assert_equal(true, OpenSSL::SSL.verify_certificate_identity(
+      create_cert_with_san('DNS:*.example.com'), 'foo.example.com'))
+    assert_equal(false, OpenSSL::SSL.verify_certificate_identity(
+      create_cert_with_san('DNS:*.example.com'), 'bar.foo.example.com'))
+    # 3.  The client MAY match a presented identifier in which the wildcard
+    #     character is not the only character of the label (e.g.,
+    #     baz*.example.net and *baz.example.net and b*z.example.net would
+    #     be taken to match baz1.example.net and foobaz.example.net and
+    #     buzz.example.net, respectively).  ...
+    assert_equal(true, OpenSSL::SSL.verify_certificate_identity(
+      create_cert_with_san('DNS:baz*.example.com'), 'baz1.example.com'))
+    assert_equal(true, OpenSSL::SSL.verify_certificate_identity(
+      create_cert_with_san('DNS:*baz.example.com'), 'foobaz.example.com'))
+    assert_equal(true, OpenSSL::SSL.verify_certificate_identity(
+      create_cert_with_san('DNS:b*z.example.com'), 'buzz.example.com'))
+    # Section 6.4.3 of RFC6125 states that client should NOT match identifier
+    # where wildcard is other than left-most label.
+    #
+    # Also implicitly mentions the wildcard character only in singular form,
+    # and discourages matching against more than one wildcard.
+    #
+    # See RFC 6125, section 7.2, subitem 2.
+    assert_equal(false, OpenSSL::SSL.verify_certificate_identity(
+      create_cert_with_san('DNS:*b*.example.com'), 'abc.example.com'))
+    assert_equal(false, OpenSSL::SSL.verify_certificate_identity(
+      create_cert_with_san('DNS:*b*.example.com'), 'ab.example.com'))
+    assert_equal(false, OpenSSL::SSL.verify_certificate_identity(
+      create_cert_with_san('DNS:*b*.example.com'), 'bc.example.com'))
+    #                                ...  However, the client SHOULD NOT
+    #   attempt to match a presented identifier where the wildcard
+    #   character is embedded within an A-label or U-label [IDNA-DEFS] of
+    #   an internationalized domain name [IDNA-PROTO].
+    assert_equal(true, OpenSSL::SSL.verify_certificate_identity(
+      create_cert_with_san('DNS:xn*.example.com'), 'xn1ca.example.com'))
+    # part of A-label
+    assert_equal(false, OpenSSL::SSL.verify_certificate_identity(
+      create_cert_with_san('DNS:xn--*.example.com'), 'xn--1ca.example.com'))
+    # part of U-label
+    # dNSName in RFC5280 is an IA5String so U-label should NOT be allowed
+    # regardless of wildcard.
+    #
+    # See Section 7.2 of RFC 5280:
+    #   IA5String is limited to the set of ASCII characters.
+    assert_equal(false, OpenSSL::SSL.verify_certificate_identity(
+      create_cert_with_san('DNS:á*.example.com'), 'á1.example.com'))
+  end
+
+  def test_post_connection_check_wildcard_cn
+    assert_equal(true, OpenSSL::SSL.verify_certificate_identity(
+      create_cert_with_name('*.example.com'), 'www.example.com'))
+    assert_equal(true, OpenSSL::SSL.verify_certificate_identity(
+      create_cert_with_name('*.Example.COM'), 'www.example.com'))
+    assert_equal(true, OpenSSL::SSL.verify_certificate_identity(
+      create_cert_with_name('*.example.com'), 'WWW.Example.COM'))
+    assert_equal(false, OpenSSL::SSL.verify_certificate_identity(
+      create_cert_with_name('www.*.com'), 'www.example.com'))
+    assert_equal(true, OpenSSL::SSL.verify_certificate_identity(
+      create_cert_with_name('*.example.com'), 'foo.example.com'))
+    assert_equal(false, OpenSSL::SSL.verify_certificate_identity(
+      create_cert_with_name('*.example.com'), 'bar.foo.example.com'))
+    assert_equal(true, OpenSSL::SSL.verify_certificate_identity(
+      create_cert_with_name('baz*.example.com'), 'baz1.example.com'))
+    assert_equal(true, OpenSSL::SSL.verify_certificate_identity(
+      create_cert_with_name('*baz.example.com'), 'foobaz.example.com'))
+    assert_equal(true, OpenSSL::SSL.verify_certificate_identity(
+      create_cert_with_name('b*z.example.com'), 'buzz.example.com'))
+    # Section 6.4.3 of RFC6125 states that client should NOT match identifier
+    # where wildcard is other than left-most label.
+    #
+    # Also implicitly mentions the wildcard character only in singular form,
+    # and discourages matching against more than one wildcard.
+    #
+    # See RFC 6125, section 7.2, subitem 2.
+    assert_equal(false, OpenSSL::SSL.verify_certificate_identity(
+      create_cert_with_name('*b*.example.com'), 'abc.example.com'))
+    assert_equal(false, OpenSSL::SSL.verify_certificate_identity(
+      create_cert_with_name('*b*.example.com'), 'ab.example.com'))
+    assert_equal(false, OpenSSL::SSL.verify_certificate_identity(
+      create_cert_with_name('*b*.example.com'), 'bc.example.com'))
+    assert_equal(true, OpenSSL::SSL.verify_certificate_identity(
+      create_cert_with_name('xn*.example.com'), 'xn1ca.example.com'))
+    assert_equal(false, OpenSSL::SSL.verify_certificate_identity(
+      create_cert_with_name('xn--*.example.com'), 'xn--1ca.example.com'))
+    # part of U-label
+    # Subject in RFC5280 states case-insensitive ASCII comparison.
+    #
+    # See Section 7.2 of RFC 5280:
+    #   IA5String is limited to the set of ASCII characters.
+    assert_equal(false, OpenSSL::SSL.verify_certificate_identity(
+      create_cert_with_name('á*.example.com'), 'á1.example.com'))
+  end
+
+  def create_cert_with_san(san)
+    ef = OpenSSL::X509::ExtensionFactory.new
+    cert = OpenSSL::X509::Certificate.new
+    cert.subject = OpenSSL::X509::Name.parse("/DC=some/DC=site/CN=Some Site")
+    ext = ef.create_ext('subjectAltName', san)
+    cert.add_extension(ext)
+    cert
+  end
+
+  def create_cert_with_name(name)
+    cert = OpenSSL::X509::Certificate.new
+    cert.subject = OpenSSL::X509::Name.new([['DC', 'some'], ['DC', 'site'], ['CN', name]])
+    cert
+  end
+
+
   # Create NULL byte SAN certificate
   def create_null_byte_SAN_certificate(critical = false)
     ef = OpenSSL::X509::ExtensionFactory.new
