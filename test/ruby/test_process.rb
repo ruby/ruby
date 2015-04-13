@@ -560,8 +560,11 @@ class TestProcess < Test::Unit::TestCase
 
   def test_execopts_redirect_open_fifo
     with_tmpchdir {|d|
-      system("mkfifo fifo")
-      return if !$?.success?
+      begin
+        File.mkfifo("fifo")
+      rescue NotImplementedError
+        return
+      end
       assert(FileTest.pipe?("fifo"), "should be pipe")
       t1 = Thread.new {
         system(*ECHO["output to fifo"], :out=>"fifo")
@@ -576,8 +579,11 @@ class TestProcess < Test::Unit::TestCase
 
   def test_execopts_redirect_open_fifo_interrupt_raise
     with_tmpchdir {|d|
-      system("mkfifo fifo")
-      return if !$?.success?
+      begin
+        File.mkfifo("fifo")
+      rescue NotImplementedError
+        return
+      end
       IO.popen([RUBY, '-e', <<-'EOS']) {|io|
         class E < StandardError; end
         trap(:USR1) { raise E }
@@ -596,8 +602,11 @@ class TestProcess < Test::Unit::TestCase
 
   def test_execopts_redirect_open_fifo_interrupt_print
     with_tmpchdir {|d|
-      system("mkfifo fifo")
-      return if !$?.success?
+      begin
+        File.mkfifo("fifo")
+      rescue NotImplementedError
+        return
+      end
       IO.popen([RUBY, '-e', <<-'EOS']) {|io|
         trap(:USR1) { print "trap\n" }
         system("cat", :in => "fifo")

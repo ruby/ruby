@@ -131,7 +131,7 @@ class TestFileExhaustive < Test::Unit::TestCase
     return @fifo if defined? @fifo
     if POSIX
       fn = make_tmp_filename("fifo")
-      assert(system("mkfifo", fn), "mkfifo fails")
+      File.mkfifo(fn)
       @fifo = fn
     else
       @fifo = nil

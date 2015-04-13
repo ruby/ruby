@@ -3180,7 +3180,7 @@ End
 
   def test_open_fifo_does_not_block_other_threads
     mkcdtmpdir {
-      assert(system("mkfifo", "fifo"), "mkfifo fails")
+      File.mkfifo("fifo")
       assert_separately([], <<-'EOS')
         t1 = Thread.new {
           open("fifo", "r") {|r|

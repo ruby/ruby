@@ -3,6 +3,12 @@ require "open3"
 require "timeout"
 require_relative "find_executable"
 
+def File.mkfifo(fn)
+  raise NotImplementedError, "does not support fifo" if /mswin|mingw|bccwin/ =~ RUBY_PLATFORM
+  ret = system("mkfifo", fn)
+  raise NotImplementedError, "mkfifo fails" if !ret
+end
+
 module EnvUtil
   def rubybin
     if ruby = ENV["RUBY"]
