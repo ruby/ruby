@@ -20,7 +20,9 @@
 st_table *rb_global_tbl;
 static ID autoload, classpath, tmp_classpath, classid;
 
+static void check_before_mod_set(VALUE, ID, VALUE, const char *);
 static void setup_const_entry(rb_const_entry_t *, VALUE, VALUE, rb_const_flag_t);
+static int const_update(st_data_t *, st_data_t *, st_data_t, int);
 
 void
 Init_var_tables(void)
@@ -1693,11 +1695,7 @@ static void
 autoload_delete(VALUE mod, ID id)
 {
     st_data_t val, load = 0, n = id;
-    rb_const_entry_t *ce;
 
-    st_delete(RCLASS_CONST_TBL(mod), &n, &val);
-    ce = (rb_const_entry_t*)val;
-    if (ce) xfree(ce);
     if (st_lookup(RCLASS_IV_TBL(mod), (st_data_t)autoload, &val)) {
 	struct st_table *tbl = check_autoload_table((VALUE)val);
 
@@ -1794,8 +1792,10 @@ static VALUE
 autoload_const_set(VALUE arg)
 {
     struct autoload_const_set_args* args = (struct autoload_const_set_args *)arg;
-    autoload_delete(args->mod, args->id);
-    rb_const_set(args->mod, args->id, args->value);
+    VALUE klass = args->mod;
+    ID id = args->id;
+    check_before_mod_set(klass, id, args->value, "constant");
+    st_update(RCLASS_CONST_TBL(klass), (st_data_t)id, const_update, (st_data_t)args);
     return 0;			/* ignored */
 }
 
@@ -2209,7 +2209,6 @@ void
 rb_const_set(VALUE klass, ID id, VALUE val)
 {
     rb_const_entry_t *ce;
-    rb_const_flag_t visibility = CONST_PUBLIC;
     st_table *tbl = RCLASS_CONST_TBL(klass);
 
     if (NIL_P(klass)) {
@@ -2220,9 +2219,32 @@ rb_const_set(VALUE klass, ID id, VALUE val)
     check_before_mod_set(klass, id, val, "constant");
     if (!tbl) {
 	RCLASS_CONST_TBL(klass) = tbl = st_init_numtable();
+	rb_clear_constant_cache();
+	ce = ZALLOC(rb_const_entry_t);
+	st_insert(tbl, (st_data_t)id, (st_data_t)ce);
+	setup_const_entry(ce, klass, val, CONST_PUBLIC);
     }
     else {
-	ce = rb_const_lookup(klass, id);
+	struct autoload_const_set_args args;
+	args.mod = klass;
+	args.id = id;
+	args.value = val;
+	st_update(tbl, (st_data_t)id, const_update, (st_data_t)&args);
+    }
+}
+
+static int
+const_update(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
+{
+    struct autoload_const_set_args *args = (struct autoload_const_set_args *)arg;
+    VALUE klass = args->mod;
+    VALUE val = args->value;
+    ID id = args->id;
+    rb_const_flag_t visibility = CONST_PUBLIC;
+    rb_const_entry_t *ce;
+
+    if (existing) {
+	ce = (rb_const_entry_t *)*value;
 	if (ce) {
 	    if (ce->value == Qundef) {
 		VALUE load;
@@ -2234,7 +2256,7 @@ rb_const_set(VALUE klass, ID id, VALUE val)
 		    rb_clear_constant_cache();
 
 		    ele->value = val; /* autoload_i is non-WB-protected */
-		    return;
+		    return ST_STOP;
 		}
 		/* otherwise, allow to override */
 		autoload_delete(klass, id);
@@ -2251,17 +2273,19 @@ rb_const_set(VALUE klass, ID id, VALUE val)
 		    rb_compile_warn(RSTRING_PTR(ce->file), ce->line,
 				    "previous definition of %"PRIsVALUE" was here", name);
 		}
-		st_delete(RCLASS_CONST_TBL(klass), &id, 0);
-		xfree(ce);
 	    }
+	    rb_clear_constant_cache();
+	    setup_const_entry(ce, klass, val, visibility);
+	    return ST_STOP;
 	}
     }
 
     rb_clear_constant_cache();
 
     ce = ZALLOC(rb_const_entry_t);
+    *value = (st_data_t)ce;
     setup_const_entry(ce, klass, val, visibility);
-    st_insert(tbl, (st_data_t)id, (st_data_t)ce);
+    return ST_CONTINUE;
 }
 
 static void
