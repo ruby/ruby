@@ -1,3 +1,9 @@
+Mon Apr 13 13:03:33 2015  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* lib/securerandom.rb: skip Win32 libraries in SecureRandom if
+	  OpenSSL::Random is available.
+	  https://github.com/ruby/ruby/pull/848 [Bug #10948] [Bug #10995]
+
 Mon Apr 13 00:49:56 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (arg): fix segfault by null caused by syntax error.
