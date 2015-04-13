@@ -2,9 +2,9 @@ Mon Apr 13 22:44:07 2015  Tanaka Akira  <akr@fsij.org>
 
 	* test/lib/envutil.rb (File.mkfifo): Defined using mkfifo command.
 
-	* test/ruby/test_io.rb: Ditto.
+	* test/ruby/test_io.rb: Use File.mkfifo.
 
-	* test/ruby/test_file_exhaustive.rb: Use File.mkfifo.
+	* test/ruby/test_file_exhaustive.rb: Ditto.
 
 	* test/ruby/test_process.rb: Ditto.
 
