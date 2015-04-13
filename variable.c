@@ -20,6 +20,8 @@
 st_table *rb_global_tbl;
 static ID autoload, classpath, tmp_classpath, classid;
 
+static void setup_const_entry(rb_const_entry_t *, VALUE, VALUE, rb_const_flag_t);
+
 void
 Init_var_tables(void)
 {
@@ -2208,6 +2210,7 @@ rb_const_set(VALUE klass, ID id, VALUE val)
 {
     rb_const_entry_t *ce;
     rb_const_flag_t visibility = CONST_PUBLIC;
+    st_table *tbl = RCLASS_CONST_TBL(klass);
 
     if (NIL_P(klass)) {
 	rb_raise(rb_eTypeError, "no class/module to define constant %"PRIsVALUE"",
@@ -2215,8 +2218,8 @@ rb_const_set(VALUE klass, ID id, VALUE val)
     }
 
     check_before_mod_set(klass, id, val, "constant");
-    if (!RCLASS_CONST_TBL(klass)) {
-	RCLASS_CONST_TBL(klass) = st_init_numtable();
+    if (!tbl) {
+	RCLASS_CONST_TBL(klass) = tbl = st_init_numtable();
     }
     else {
 	ce = rb_const_lookup(klass, id);
@@ -2256,11 +2259,16 @@ rb_const_set(VALUE klass, ID id, VALUE val)
 
     rb_clear_constant_cache();
 
-
     ce = ZALLOC(rb_const_entry_t);
+    setup_const_entry(ce, klass, val, visibility);
+    st_insert(tbl, (st_data_t)id, (st_data_t)ce);
+}
+
+static void
+setup_const_entry(rb_const_entry_t *ce, VALUE klass, VALUE val, rb_const_flag_t visibility)
+{
     ce->flag = visibility;
     ce->line = rb_sourceline();
-    st_insert(RCLASS_CONST_TBL(klass), (st_data_t)id, (st_data_t)ce);
     RB_OBJ_WRITE(klass, &ce->value, val);
     RB_OBJ_WRITE(klass, &ce->file, rb_sourcefilename());
 }
