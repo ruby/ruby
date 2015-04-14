@@ -208,7 +208,7 @@ location_base_label(rb_backtrace_location_t *loc)
       case LOCATION_TYPE_ISEQ_CALCED:
 	return loc->body.iseq.iseq->location.base_label;
       case LOCATION_TYPE_CFUNC:
-	return rb_sym_to_s(ID2SYM(loc->body.cfunc.mid));
+	return rb_id2str(loc->body.cfunc.mid);
       case LOCATION_TYPE_IFUNC:
       default:
 	rb_bug("location_base_label: unreachable");
