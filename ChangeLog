@@ -1,3 +1,8 @@
+Wed Apr 15 07:34:49 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread_pthread.c (reserve_stack): keep sp safe zone to get rid
+	  of crash by -fstack-check.  [ruby-core:68740] [Bug #11030]
+
 Tue Apr 14 16:03:49 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* tool/merger.rb (versionup): should also increment revision when
