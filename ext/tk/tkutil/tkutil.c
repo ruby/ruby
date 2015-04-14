@@ -46,6 +46,10 @@ extern char *strndup(const char* _ptr, size_t _len);
 # define rb_sym2str(obj) rb_id2str(SYM2ID(obj))
 #endif
 
+#ifndef HAVE_RB_ID2STR
+# define rb_id2str(id) rb_str_new2(rb_id2name(id))
+#endif
+
 static VALUE cMethod;
 
 static VALUE cTclTkLib;
