@@ -3056,7 +3056,7 @@ set_zero(st_data_t key, st_data_t val, st_data_t arg)
  *  call-seq:
  *     ObjectSpace.count_objects([result_hash]) -> hash
  *
- *  Counts objects for each type.
+ *  Counts all objects grouped by type.
  *
  *  It returns a hash, such as:
  *	{
@@ -3068,10 +3068,16 @@ set_zero(st_data_t key, st_data_t val, st_data_t arg)
  *	}
  *
  *  The contents of the returned hash are implementation specific.
- *  It may be changed in future.
+ *  It may be changed in future. The +:TOTAL+ key contains the count
+ *  of all currently allocated and previously freed objects.
  *
  *  If the optional argument +result_hash+ is given,
  *  it is overwritten and returned. This is intended to avoid probe effect.
+ *
+ *    h = {}
+ *    ObjectSpace.count_objects(h)
+ *    puts h
+ *    # => { :TOTAL=>10000, :T_CLASS=>158280, :T_MODULE=>20672, :T_STRING=>527249 }
  *
  *  This method is only expected to work on C Ruby.
  *

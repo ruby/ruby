@@ -1,3 +1,9 @@
+Tue Apr 14 08:59:04 2015  Zachary Scott  <e@zzak.io>
+
+        * gc.c: [DOC] Improve documentation for ObjectSpace.count_objects
+          with regards to `:TOTAL` key, with patch by @schneems [Fixes GH-871]
+          https://github.com/ruby/ruby/pull/871 [Bug #11067]
+
 Mon Apr 13 22:44:07 2015  Tanaka Akira  <akr@fsij.org>
 
 	* test/lib/envutil.rb (File.mkfifo): Defined using mkfifo command.
