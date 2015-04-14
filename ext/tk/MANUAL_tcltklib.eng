@@ -1,7 +1,7 @@
 (tof)
                                     2005/07/05  Hidetoshi NAGAI
 
-This document discribes about the 'tcltklib' library. Although there
+This document describes about the 'tcltklib' library. Although there
 is the 'tcltk' library (tcltk.rb) under this directory, no description
 in this document (because it is not maintained recently).
 
@@ -215,7 +215,7 @@ module TclTklib
     mainloop_abort_on_exception=(bool)
        : Define whether the eventloop stops on exception or not.
        : If true (default value), stops on exception.
-       : If false, show a waring message but ignore the exception.
+       : If false, show a warning message but ignore the exception.
        : If nil, no warning message and ignore the exception.
        : This parameter is sometimes useful when multiple Tk
        : interpreters are working. Because the only one eventloop

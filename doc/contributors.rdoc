@@ -1,6 +1,6 @@
 = Contributors to Ruby
 
-The following list might be imcomplete. Feel free to add your name if your
+The following list might be incomplete. Feel free to add your name if your
 patch was accepted into Ruby.
 
 == A

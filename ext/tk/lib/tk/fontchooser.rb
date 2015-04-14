@@ -51,7 +51,7 @@ class << TkFont::Chooser
       tk_tcl2ruby(val)
     when 'visible'
       bool(val)
-    else # unkown
+    else # unknown
       val
     end
   end

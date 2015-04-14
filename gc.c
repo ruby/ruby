@@ -649,7 +649,7 @@ struct heap_page {
 #if USE_RGENGC
     bits_t wb_unprotected_bits[HEAP_BITMAP_LIMIT];
 #endif
-    /* the following three bitmaps are cleared at the beggining of full GC */
+    /* the following three bitmaps are cleared at the beginning of full GC */
     bits_t mark_bits[HEAP_BITMAP_LIMIT];
 #if USE_RGENGC
     bits_t uncollectible_bits[HEAP_BITMAP_LIMIT];

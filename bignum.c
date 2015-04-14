@@ -173,7 +173,7 @@ static int nlz(BDIGIT x) { return nlz_int128((uint128_t)x) - (SIZEOF_INT128_T-SI
 #define U128(a,b,c,d) (((uint128_t)U64(a,b) << 64) | U64(c,d))
 #endif
 
-/* The following scirpt, maxpow.rb, generates the tables follows.
+/* The following script, maxpow.rb, generates the tables follows.
 
 def big(n, bits)
   ns = []

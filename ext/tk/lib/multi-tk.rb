@@ -2475,7 +2475,7 @@ end
 
 
 # event loop
-# all master/slave IPs are controled by only one event-loop
+# all master/slave IPs are controlled by only one event-loop
 class MultiTkIp
   def self.default_master?
     __getip == @@DEFAULT_MASTER
