@@ -1041,7 +1041,7 @@ ev_on_event(int argc, VALUE *argv, VALUE self, VALUE is_ary_arg)
             rb_raise(rb_eTypeError, "wrong argument type (expected String or Symbol)");
         }
         if (RB_TYPE_P(event, T_SYMBOL)) {
-            event = rb_sym_to_s(event);
+            event = rb_sym2str(event);
         }
     }
     data = rb_ary_new3(4, rb_block_proc(), event, args, is_ary_arg);
@@ -1131,7 +1131,7 @@ fev_off_event(int argc, VALUE *argv, VALUE self)
             rb_raise(rb_eTypeError, "wrong argument type (expected String or Symbol)");
         }
         if (RB_TYPE_P(event, T_SYMBOL)) {
-            event = rb_sym_to_s(event);
+            event = rb_sym2str(event);
         }
     }
     events = rb_ivar_get(self, id_events);

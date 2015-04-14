@@ -2513,7 +2513,7 @@ hash2named_arg(VALUE key, VALUE val, VALUE pop)
         rb_raise(rb_eTypeError, "wrong argument type (expected String or Symbol)");
     }
     if (RB_TYPE_P(key, T_SYMBOL)) {
-	key = rb_sym_to_s(key);
+	key = rb_sym2str(key);
     }
 
     /* pNamedArgs[0] is <method name>, so "index + 1" */
@@ -2580,7 +2580,7 @@ ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket)
 	rb_raise(rb_eTypeError, "method is wrong type (expected String or Symbol)");
     }
     if (RB_TYPE_P(cmd, T_SYMBOL)) {
-	cmd = rb_sym_to_s(cmd);
+	cmd = rb_sym2str(cmd);
     }
     pole = oledata_get_struct(self);
     if(!pole->pDispatch) {
@@ -3577,7 +3577,7 @@ fole_respond_to(VALUE self, VALUE method)
         rb_raise(rb_eTypeError, "wrong argument type (expected String or Symbol)");
     }
     if (RB_TYPE_P(method, T_SYMBOL)) {
-        method = rb_sym_to_s(method);
+        method = rb_sym2str(method);
     }
     pole = oledata_get_struct(self);
     wcmdname = ole_vstr2wc(method);
