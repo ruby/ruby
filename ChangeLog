@@ -1,3 +1,12 @@
+Wed Apr 15 07:51:23 2015  Yuki Yugui Sonoda  <yugui@yugui.jp>
+
+	* doc/extension.ja.rdoc: Added description of TypedData_XXX.
+	  Deprecated the old DATA_XXX.
+	  Reviewed by ko1 and nobu.
+	  Fixes [ruby-dev:40881] #3064
+
+	* doc/extension.rdoc: ditto.
+
 Wed Apr 15 07:34:49 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread_pthread.c (reserve_stack): keep sp safe zone to get rid

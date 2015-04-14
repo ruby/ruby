@@ -620,39 +620,124 @@ The prototypes of the getter and setter functions are as follows:
 
 == Encapsulate C Data into a Ruby Object
 
-To wrap and objectify a C pointer as a Ruby object (so called
-DATA), use Data_Wrap_Struct().
+Sometimes you need to expose your struct in the C world as a Ruby
+object.
+In a situation like this, making use of the TypedData_XXX macro
+family, the pointer to the struct and the Ruby object can be mutually
+converted.
 
-  Data_Wrap_Struct(klass, mark, free, sval)
+# The old (non-Typed) Data_XXX macro family has been deprecated.
+# In the future version of Ruby, it is possible old macros will not
+# work.
 
-Data_Wrap_Struct() returns a created DATA object.  The klass argument
-is the class for the DATA object.  The mark argument is the function
-to mark Ruby objects pointed by this data.  The free argument is the
-function to free the pointer allocation.  If this is -1, the pointer
-will be just freed.  The functions mark and free will be called from
-garbage collector.
+=== C struct to Ruby object
+You can convert sval, a pointer to your struct, into a Ruby object
+with the next macro.
 
-These mark / free functions are invoked during GC execution.  No
+  TypedData_Wrap_Struct(klass, data_type, sval)
+
+TypedData_Wrap_Struct() returns a created Ruby object as a VALUE.
+
+The klass argument is the class for the object.
+data_type is a pointer to a const ruby_data_type_t which describes
+how Ruby should manage the struct.
+
+It is recommended that klass derives from a special class called
+Data (rb_cData) but not from Object or other ordinal classes.
+If it doesn't, you have to call rb_undef_alloc_func(klass).
+
+ruby_data_type_t is defined like this.  Let's take a look at each
+member of the struct.
+
+  struct rb_data_type_struct {
+          const char *wrap_struct_name;
+          struct {
+                  void (*dmark)(void*);
+                  void (*dfree)(void*);
+                  size_t (*dsize)(const void *);
+                  void *reserved[2];
+          } function;
+          const rb_data_type_t *parent;
+          void *data;
+          VALUE flags;
+  };
+
+wrap_struct_name is an identifier of this instance of the struct.
+It is basically used for collecting and emitting statistics.
+So the identifier must be unique in the process, but doesn't need
+to be valid as a C or Ruby identifier.
+
+These dmark / dfree functions are invoked during GC execution.  No
 object allocations are allowed during it, so do not allocate ruby
 objects inside them.
+  
+dmark is a function to mark Ruby objects referred from your struct.
+It must mark all references from your struct with rb_gc_mark or
+its family if your struct keeps such references.
+
+# Note that it is recommended to avoid such a reference.
+
+dfree is a function to free the pointer allocation.
+If this is -1, the pointer will be just freed.
+
+dsize calculates memory consumption in bytes by the struct.
+Its parameter is a pointer to your struct.
+You can pass 0 as dsize if it is hard to implement such a function.
+But it is still recommended to avoid 0.
+
+You have to fill reserved and parent with 0.
+
+You can fill "data" with an arbitrary value for your use.
+Ruby does nothing with the member. 
+
+flags is a bitwise-OR of the following flag values.
+Since they require deep understanding of garbage collector in Ruby,
+you can just set 0 to flags if you are not sure.
+
+RUBY_TYPED_FREE_IMMEDIATELY ::
+
+  This flag makes the garbage collector immediately invoke dfree() 
+  during GC when it need to free your struct.
+  You can specify this flag if the dfree never unlocks Ruby's
+  internal lock (GVL).
+
+  If this flag is not set, Ruby defers invokation of dfree()
+  and invokes dfree() at the same time as finalizers.
+
+RUBY_TYPED_WB_PROTECTED ::
+
+  It shows that implementation of the object supports write barriers.
+  If this flag is set, Ruby is better able to do garbage collection
+  of the object.
+  
+  When it is set, however, you are responsible for putting write
+  barriers in all implementations of methods of that object as
+  appropriate. Otherwise Ruby might crash while running.
+
+  More about write barriers can be found in "Generational GC" in
+  Appendix D.
+
 
 You can allocate and wrap the structure in one step.
 
-  Data_Make_Struct(klass, type, mark, free, sval)
+  TypedData_Make_Struct(klass, type, data_type, sval)
 
 This macro returns an allocated Data object, wrapping the pointer to
 the structure, which is also allocated.  This macro works like:
 
-  (sval = ALLOC(type), Data_Wrap_Struct(klass, mark, free, sval))
+  (sval = ZALLOC(type), TypedData_Wrap_Struct(klass, data_type, sval))
 
-Arguments klass, mark, and free work like their counterparts in
-Data_Wrap_Struct().  A pointer to the allocated structure will be
-assigned to sval, which should be a pointer of the type specified.
+Arguments klass and data_type work like their counterparts in
+TypedData_Wrap_Struct().  A pointer to the allocated structure will
+be assigned to sval, which should be a pointer of the type specified.
+
+
+=== Ruby object to C struct
 
 To retrieve the C pointer from the Data object, use the macro
 Data_Get_Struct().
 
-  Data_Get_Struct(obj, type, sval)
+  TypedData_Get_Struct(obj, type, &data_type, sval)
 
 A pointer to the structure will be assigned to the variable sval.
 
@@ -721,7 +806,14 @@ Data_Make_Struct.
       DBM *di_dbm;
   };
 
-  obj = Data_Make_Struct(klass, struct dbmdata, 0, free_dbm, dbmp);
+  static const rb_data_type_t dbm_type = {
+      "dbm",
+      {0, free_dbm, memsize_dbm,},
+      0, 0,
+      RUBY_TYPED_FREE_IMMEDIATELY,
+  };
+
+  obj = TypedData_Make_Struct(klass, struct dbmdata, &dbm_type, dbmp);
 
 This code wraps the dbmdata structure into a Ruby object.  We avoid
 wrapping DBM* directly, because we want to cache size information.
@@ -730,12 +822,13 @@ To retrieve the dbmdata structure from a Ruby object, we define the
 following macro:
 
   #define GetDBM(obj, dbmp) do {\
-      Data_Get_Struct(obj, struct dbmdata, dbmp);\
+      TypedData_Get_Struct(obj, struct dbmdata, &dbm_type, dbmp);\
+      if ((dbmp) == 0) closed_dbm();\
       if (dbmp->di_dbm == 0) closed_dbm();\
   } while (0)
 
-This sort of complicated macro does the retrieving and close checking for
-the DBM.
+This sort of complicated macro does the retrieving and close checking
+for the DBM.
 
 There are three kinds of way to receive method arguments.  First,
 methods with a fixed number of arguments receive arguments like this:

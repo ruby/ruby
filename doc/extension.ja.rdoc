@@ -675,61 +675,131 @@ getterとsetterの仕様は以下の通りです．
 == CのデータをRubyオブジェクトにする
 
 Cの世界で定義されたデータ(構造体)をRubyのオブジェクトとして
-取り扱いたい場合がありえます．このような場合には，Dataという
-RubyオブジェクトにCの構造体(へのポインタ)をくるむことでRuby
-オブジェクトとして取り扱えるようになります．
+取り扱いたい場合がありえます．このような場合はTypedData_XXX
+マクロ群を用いて構造体へのポインタとRubyのオブジェクトとを互
+いに変換できます．
 
-Dataオブジェクトを生成して構造体をRubyオブジェクトにカプセル
-化するためには，以下のマクロを使います．
+# 古い(非Typedな)Data_XXXマクロ群は非推奨になりました．
+# 将来のバージョンのRubyでは古いマクロは動作しなくなる可能性
+# があります．
 
-  Data_Wrap_Struct(klass, mark, free, sval)
+=== 構造体からオブジェクトへ
+構造体へのポインタsvalをRubyオブジェクトに変換するには次のマ
+クロを使います。
 
-このマクロの戻り値は生成されたDataオブジェクトです．
+  TypedData_Wrap_Struct(klass, data_type, sval)
 
-klassはこのDataオブジェクトのクラスです．markはこの構造体が
-Rubyのオブジェクトへの参照がある時に使う関数です．そのような
-参照を含まない時には0を指定します．
+このマクロの戻り値は生成されたオブジェクトを表すVALUE値です．
+
+klassはこのオブジェクトのクラスです．data_typeはこの構造体を
+Rubyが管理するための情報を記述したconst rb_data_type_t型への
+ポインタです．
+
+なお, klassは, Objectや他のクラスではなくData (rb_cData)とい
+う特別なクラスから派生することが推奨されます．
+Dataから派生しない場合には, 必ずrb_undef_alloc_func(klass)
+を呼び出してください．
+
+rb_data_type_tは次のように定義されています．
+
+  struct rb_data_type_struct {
+          const char *wrap_struct_name;
+          struct {
+                  void (*dmark)(void*);
+                  void (*dfree)(void*);
+                  size_t (*dsize)(const void *);
+                  void *reserved[2];
+          } function;
+          const rb_data_type_t *parent;
+          void *data;
+          VALUE flags;
+  };
+
+wrap_struct_nameはこの構造体を識別する名前です．主に統計情報
+の収集と出力に用いられます．プロセス内で一意であれば特にCや
+Rubyの識別子として有効である必要はありません．
+
+dmarkおよびdfree関数はGC実行中に呼び出されます.
+なお, GC実行中はRubyオブジェクトのアロケーションは禁止されま
+す. よって, dmarkおよびdfree関数でRubyオブジェクトのアロケー
+ションは行わないでください.
+
+dmarkはガーベージコレクタがオブジェクトへの参照をマークする
+ときに用いる関数です．この構造体がRubyのオブジェクトへの参照
+を保持するときには, dmarkではrb_gc_markなどを用いて構造体内
+のすべての参照をマークしなければなりません．
+そのような参照を含まない時には0を指定します．
 
 # そのような参照は勧められません．
 
-freeはこの構造体がもう不要になった時に呼ばれる関数です．この
-関数がガーベージコレクタから呼ばれます．これが-1の場合は，単
-純に開放されます．
+dfreeはこの構造体がもう不要になった時に呼ばれる関数です．こ
+の関数がガーベージコレクタから呼ばれます．これが-1の場合は，
+単純に構造体が解放されます．
 
-markおよびfree関数はGC実行中に呼び出されます.
-なお, GC実行中はRubyオブジェクトのアロケーションは禁止されま
-す. よって, markおよびfree関数でRubyオブジェクトのアロケーシ
-ョンは行わないでください.
+dsizeは構造体が消費しているメモリのバイト数を返す関数です．
+引数として構造体へのポインタが渡されます．実装困難であれば0
+を渡しても差し支えありませんが, できるだけ指定するようにして
+ください．
 
-Cの構造体の割当とDataオブジェクトの生成を同時に行うマクロと
-して以下のものが提供されています．
+reservedとparentは0で埋めなければなりません．
 
-  Data_Make_Struct(klass, type, mark, free, sval)
+dataにはユーザー定義の任意の値を指定できます．Rubyはこの値に
+は関知しないので，好きに使ってください．
 
-このマクロの戻り値は生成されたDataオブジェクトです．このマク
-ロは以下の式のように働きます:
+flagsには次のフラグのうち当てはまるもののビット和を指定しま
+す．いずれもRubyのガーベージコレクタについての深い理解を必要
+としますので，良くわからない場合には0を指定すると良いでしょ
+う．
 
-  (sval = ALLOC(type), Data_Wrap_Struct(klass, mark, free, sval))
+RUBY_TYPED_FREE_IMMEDIATELY ::
 
-klass, mark, freeはData_Wrap_Structと同じ働きをします．type
+  このフラグを指定すると，ガーベージコレクタはこの構造体が不
+  要になった場合にはGC中に直ちにdfreeを呼び出します．
+  dfreeがRuby内部のロック(GVL)を解放する可能性がない場合はこ
+  のフラグを指定できます．
+
+  指定しない場合はdfree呼び出しは遅延され, ファイナライザと
+  同じタイミングで実行されます．
+
+RUBY_TYPED_WB_PROTECTED :: 
+
+  オブジェクトの実装がライトバリアをサポートしていることを示
+  します．このフラグを指定するとRubyはそのオブジェクトに対し
+  てGCをより効率的に実行できます．
+  ただし，指定する場合はユーザーはそのオブジェクトのすべての
+  メソッドの実装に適切にライトバリアを挿入する責任があります．
+  さもなくばRubyは実行時にクラッシュする可能性があります．
+  
+  ライトバリアについてはdoc/extension.rdocのAppendix D
+  "Generational GC"も参照してください．
+
+
+Cの構造体の割当と対応するオブジェクトの生成を同時に行うマク
+ロとして以下のものが提供されています．
+
+  TypedData_Make_Struct(klass, type, data_type, sval)
+
+このマクロの戻り値は生成されたオブジェクトのVALUE値
+です．このマクロは以下の式のように働きます:
+
+  (sval = ZALLOC(type), TypedData_Wrap_Struct(klass, data_type, sval))
+
+klass, data_typeはData_Wrap_Structと同じ働きをします．type
 は割り当てるC構造体の型です．割り当てられた構造体は変数sval
 に代入されます．この変数の型は (type*) である必要があります．
 
-Dataオブジェクトからポインタを取り出すのは以下のマクロを用い
-ます．
+=== オブジェクトから構造体へ
 
-  Data_Get_Struct(obj, type, sval)
+TypedData_Wrap_StructやTypedData_Make_Structで生成したオブジェ
+クトから構造体へのポインタを復元するには以下のマクロを用いま
+す．
+
+  TypedData_Get_Struct(obj, type, &data_type, sval)
 
 Cの構造体へのポインタは変数svalに代入されます．
 
-これらのDataの使い方はちょっと分かりにくいので，後で説明する
-例題を参照してください．
-
-= 例題 - dbmパッケージを作る
-
-ここまでの説明でとりあえず拡張ライブラリは作れるはずです．
-Rubyのextディレクトリにすでに含まれているdbmライブラリを例に
-して段階的に説明します．
+これらのマクロの使い方はちょっと分かりにくいので，後で説明す
+る例題を参照してください．
 
 == ディレクトリを作る
 
@@ -797,10 +867,16 @@ dbm.cではData_Make_Structを以下のように使っています．
       DBM *di_dbm;
   };
 
+  static const rb_data_type_t dbm_type = {
+      "dbm",
+      {0, free_dbm, memsize_dbm,},
+      0, 0,
+      RUBY_TYPED_FREE_IMMEDIATELY,
+  };
 
-  obj = Data_Make_Struct(klass, struct dbmdata, 0, free_dbm, dbmp);
+  obj = TypedData_Make_Struct(klass, struct dbmdata, &dbm_type, dbmp);
 
-ここではdbmstruct構造体へのポインタをDataにカプセル化してい
+ここではdbmdata構造体へのポインタをDataにカプセル化してい
 ます．DBM*を直接カプセル化しないのはclose()した時の処理を考
 えてのことです．
 
@@ -808,8 +884,9 @@ Dataオブジェクトからdbmstruct構造体のポインタを取り出すた�
 に以下のマクロを使っています．
 
   #define GetDBM(obj, dbmp) do {\
-      Data_Get_Struct(obj, struct dbmdata, dbmp);\
-      if (dbmp->di_dbm == 0) closed_dbm();\
+      TypedData_Get_Struct(obj, struct dbmdata, &dbm_type, dbmp);\
+      if ((dbmp) == 0) closed_dbm();\
+      if ((dbmp)->di_dbm == 0) closed_dbm();\
   } while (0)
 
 ちょっと複雑なマクロですが，要するにdbmdata構造体のポインタ
