@@ -85,6 +85,9 @@
 #endif
 #ifdef HAVE_GRP_H
 #include <grp.h>
+# ifdef __CYGWIN__
+int initgroups(const char *, rb_gid_t);
+# endif
 #endif
 #ifdef HAVE_SYS_ID_H
 #include <sys/id.h>
