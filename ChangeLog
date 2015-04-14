@@ -1,3 +1,7 @@
+Tue Apr 14 16:02:07 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* version.h (RUBY_VERSION): bump RUBY_VERSION to 2.1.7.
+
 Mon Apr 13 22:17:59 2015  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* ext/openssl/lib/openssl/ssl.rb: stricter hostname verification
