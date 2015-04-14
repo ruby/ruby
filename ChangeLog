@@ -1,3 +1,8 @@
+Tue Apr 14 11:24:56 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/-test-/printf/printf.c (uint_to_str): renamed to get rid of
+	  conflict on cygwin.  [ruby-core:68877] [Bug #11065]
+
 Tue Apr 14 08:59:04 2015  Zachary Scott  <e@zzak.io>
 
         * gc.c: [DOC] Improve documentation for ObjectSpace.count_objects
