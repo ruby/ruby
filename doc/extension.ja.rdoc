@@ -761,7 +761,7 @@ RUBY_TYPED_FREE_IMMEDIATELY ::
   指定しない場合はdfree呼び出しは遅延され, ファイナライザと
   同じタイミングで実行されます．
 
-RUBY_TYPED_WB_PROTECTED :: 
+RUBY_TYPED_WB_PROTECTED ::
 
   オブジェクトの実装がライトバリアをサポートしていることを示
   します．このフラグを指定するとRubyはそのオブジェクトに対し
@@ -769,7 +769,7 @@ RUBY_TYPED_WB_PROTECTED ::
   ただし，指定する場合はユーザーはそのオブジェクトのすべての
   メソッドの実装に適切にライトバリアを挿入する責任があります．
   さもなくばRubyは実行時にクラッシュする可能性があります．
-  
+
   ライトバリアについてはdoc/extension.rdocのAppendix D
   "Generational GC"も参照してください．
 

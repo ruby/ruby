@@ -670,7 +670,7 @@ to be valid as a C or Ruby identifier.
 These dmark / dfree functions are invoked during GC execution.  No
 object allocations are allowed during it, so do not allocate ruby
 objects inside them.
-  
+
 dmark is a function to mark Ruby objects referred from your struct.
 It must mark all references from your struct with rb_gc_mark or
 its family if your struct keeps such references.
@@ -688,7 +688,7 @@ But it is still recommended to avoid 0.
 You have to fill reserved and parent with 0.
 
 You can fill "data" with an arbitrary value for your use.
-Ruby does nothing with the member. 
+Ruby does nothing with the member.
 
 flags is a bitwise-OR of the following flag values.
 Since they require deep understanding of garbage collector in Ruby,
@@ -696,7 +696,7 @@ you can just set 0 to flags if you are not sure.
 
 RUBY_TYPED_FREE_IMMEDIATELY ::
 
-  This flag makes the garbage collector immediately invoke dfree() 
+  This flag makes the garbage collector immediately invoke dfree()
   during GC when it need to free your struct.
   You can specify this flag if the dfree never unlocks Ruby's
   internal lock (GVL).
@@ -709,7 +709,7 @@ RUBY_TYPED_WB_PROTECTED ::
   It shows that implementation of the object supports write barriers.
   If this flag is set, Ruby is better able to do garbage collection
   of the object.
-  
+
   When it is set, however, you are responsible for putting write
   barriers in all implementations of methods of that object as
   appropriate. Otherwise Ruby might crash while running.
