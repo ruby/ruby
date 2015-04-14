@@ -1,3 +1,8 @@
+Tue Apr 14 16:03:49 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* tool/merger.rb (versionup): should also increment revision when
+	  changing teeny.
+
 Tue Apr 14 11:24:56 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/-test-/printf/printf.c (uint_to_str): renamed to get rid of

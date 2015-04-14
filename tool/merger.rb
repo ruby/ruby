@@ -79,10 +79,10 @@ def version_up(inc=nil)
 
   if inc == :teeny
     v[2].succ!
-  else # patchlevel
-    if pl != "-1"
-      pl.succ!
-    end
+  end
+  # patchlevel
+  if pl != "-1"
+    pl.succ!
   end
 
   str = open 'version.h', 'rb' do |f| f.read end
