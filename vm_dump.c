@@ -735,7 +735,11 @@ procstat_vm(struct procstat *procstat, struct kinfo_proc *kipp)
 		ptrwidth, "START", ptrwidth, "END", "PRT", "RES",
 		"PRES", "REF", "SHD", "FL", "TP", "PATH");
 
+#ifdef HAVE_PROCSTAT_GETVMMAP
 	freep = procstat_getvmmap(procstat, kipp, &cnt);
+#else
+	freep = kinfo_getvmmap(kipp->ki_pid, &cnt);
+#endif
 	if (freep == NULL)
 		return;
 	for (i = 0; i < cnt; i++) {
