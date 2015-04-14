@@ -42,6 +42,10 @@ static int rb_thread_critical; /* dummy */
 extern char *strndup(const char* _ptr, size_t _len);
 #endif
 
+#ifndef HAVE_RB_SYM2STR
+# define rb_sym2str(obj) rb_id2str(SYM2ID(obj))
+#endif
+
 static VALUE cMethod;
 
 static VALUE cTclTkLib;
@@ -839,11 +843,7 @@ get_eval_string_core(obj, enc_flag, self)
                 return fromDefaultEnc_toUTF8(rb_sym2str(obj), self);
             }
         } else {
-#ifdef HAVE_RB_SYM_TO_S
-            return rb_sym_to_s(obj);
-#else
             return rb_sym2str(obj);
-#endif
         }
 
     case T_HASH:
