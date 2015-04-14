@@ -429,11 +429,11 @@ range_step(int argc, VALUE *argv, VALUE range)
     else if (SYMBOL_P(b) && SYMBOL_P(e)) { /* symbols are special */
 	VALUE args[2], iter[2];
 
-	args[0] = rb_sym_to_s(e);
+	args[0] = rb_sym2str(e);
 	args[1] = EXCL(range) ? Qtrue : Qfalse;
 	iter[0] = INT2FIX(1);
 	iter[1] = step;
-	rb_block_call(rb_sym_to_s(b), rb_intern("upto"), 2, args, sym_step_i, (VALUE)iter);
+	rb_block_call(rb_sym2str(b), rb_intern("upto"), 2, args, sym_step_i, (VALUE)iter);
     }
     else if (ruby_float_step(b, e, step, EXCL(range))) {
 	/* done */
@@ -771,9 +771,9 @@ range_each(VALUE range)
     else if (SYMBOL_P(beg) && SYMBOL_P(end)) { /* symbols are special */
 	VALUE args[2];
 
-	args[0] = rb_sym_to_s(end);
+	args[0] = rb_sym2str(end);
 	args[1] = EXCL(range) ? Qtrue : Qfalse;
-	rb_block_call(rb_sym_to_s(beg), rb_intern("upto"), 2, args, sym_each_i, 0);
+	rb_block_call(rb_sym2str(beg), rb_intern("upto"), 2, args, sym_each_i, 0);
     }
     else {
 	VALUE tmp = rb_check_string_type(beg);
