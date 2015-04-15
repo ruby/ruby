@@ -47,6 +47,10 @@ with all sufficient information, see the ChangeLog file.
   * OpenSSL::SSL::SSLSocket#accept_nonblock and
     OpenSSL::SSL::SSLSocket#connect_nonblock supports `exception: false`.
 
+* io/wait
+  * IO#wait_readable no longer checks FIONREAD, it may be used for
+    non-bytestream IO such as listen sockets.
+
 === Stdlib compatibility issues (excluding feature bug fixes)
 
 * lib/webrick/utils.rb

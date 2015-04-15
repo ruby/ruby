@@ -1,3 +1,7 @@
+Thu Apr 16 05:15:50 2015  Eric Wong  <e@80x24.org>
+
+	* NEWS: note IO#wait_readable change in r50263
+
 Thu Apr 16 05:09:36 2015  Eric Wong  <e@80x24.org>
 
 	* lib/net/protocol.rb (rbuf_fill): use IO#wait_*able
