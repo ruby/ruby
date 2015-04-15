@@ -20,6 +20,7 @@
 
 require 'socket'
 require 'timeout'
+require 'io/wait'
 
 module Net # :nodoc:
 
@@ -153,12 +154,12 @@ module Net # :nodoc:
       when String
         return @rbuf << rv
       when :wait_readable
-        IO.select([@io], nil, nil, @read_timeout) or raise Net::ReadTimeout
+        @io.to_io.wait_readable(@read_timeout) or raise Net::ReadTimeout
         # continue looping
       when :wait_writable
         # OpenSSL::Buffering#read_nonblock may fail with IO::WaitWritable.
         # http://www.openssl.org/support/faq.html#PROG10
-        IO.select(nil, [@io], nil, @read_timeout) or raise Net::ReadTimeout
+        @io.to_io.wait_writable(@read_timeout) or raise Net::ReadTimeout
         # continue looping
       when nil
         # callers do not care about backtrace, so avoid allocating for it

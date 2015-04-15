@@ -1,3 +1,9 @@
+Thu Apr 16 05:09:36 2015  Eric Wong  <e@80x24.org>
+
+	* lib/net/protocol.rb (rbuf_fill): use IO#wait_*able
+	* lib/net/http/generic_request.rb (wait_for_continue): ditto
+	  [ruby-core:68891] [Feature #11056]
+
 Wed Apr 15 18:43:43 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_trace.c (rb_tracepoint_new): fix documentation.
