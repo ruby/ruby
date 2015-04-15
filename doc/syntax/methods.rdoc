@@ -55,7 +55,7 @@ it indicates that unlike its non-bang equivalent, permanently modifies its
 receiver. Almost always, Ruby core library will have a non-bang
 counterpart (method name which does NOT end with <code>!</code>) of every bang
 method (method name which does end with <code>!</code>) that does not modify
-the receiver. This convention is typically true for ruby core libary but
+the receiver. This convention is typically true for ruby core library but
 may or may not hold true for other ruby libraries.
 
 Methods that end with a question mark by convention return boolean. But they

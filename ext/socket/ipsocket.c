@@ -193,7 +193,7 @@ rsock_revlookup_flag(VALUE revlookup, int *norevlookup)
  * hostname is obtained from numeric_address using reverse lookup.
  * Or if it is +false+, or +:numeric+,
  * hostname is same as numeric_address.
- * Or if it is +nil+ or ommitted, obeys to +ipsocket.do_not_reverse_lookup+.
+ * Or if it is +nil+ or omitted, obeys to +ipsocket.do_not_reverse_lookup+.
  * See +Socket.getaddrinfo+ also.
  *
  *   TCPSocket.open("www.ruby-lang.org", 80) {|sock|
@@ -234,7 +234,7 @@ ip_addr(int argc, VALUE *argv, VALUE sock)
  * hostname is obtained from numeric_address using reverse lookup.
  * Or if it is +false+, or +:numeric+,
  * hostname is same as numeric_address.
- * Or if it is +nil+ or ommitted, obeys to +ipsocket.do_not_reverse_lookup+.
+ * Or if it is +nil+ or omitted, obeys to +ipsocket.do_not_reverse_lookup+.
  * See +Socket.getaddrinfo+ also.
  *
  *   TCPSocket.open("www.ruby-lang.org", 80) {|sock|

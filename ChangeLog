@@ -1,3 +1,12 @@
+Wed Apr 15 10:37:40 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* doc/contributors.rdoc: fix a typo. Patch by @davydovanton
+	  [fix GH-872][ci skip]
+	* doc/syntax/methods.rdoc: ditto.
+	* ext/digest/sha2/sha2.c: ditto.
+	* ext/socket/ipsocket.c: ditto.
+	* ext/tk/*: ditto.
+
 Wed Apr 15 07:51:23 2015  Yuki Yugui Sonoda  <yugui@yugui.jp>
 
 	* doc/extension.ja.rdoc: Added description of TypedData_XXX.

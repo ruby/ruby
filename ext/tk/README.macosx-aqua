@@ -3,7 +3,7 @@
 
 First of all, please read README.tcltklib to use Tcl/Tk Aqua Framework.
 
-With Tcl/Tk Aqua libraries, current tcltklib somtimes freezes when
+With Tcl/Tk Aqua libraries, current tcltklib sometimes freezes when
 using Aqua specific dialogs (e.g. Tk.messageBox).
 This is a known bug of Ruby-1.8.4 release.
 
