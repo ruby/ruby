@@ -1191,7 +1191,7 @@ tracepoint_new(VALUE klass, rb_thread_t *target_th, rb_event_flag_t events, void
  * It is important to note that you cannot register callbacks for normal events and internal events
  * simultaneously because they are different purpose.
  * You can use any Ruby APIs (calling methods and so on) on normal event hooks.
- * However, you can not use any Ruby APIs (even object creations).
+ * However, in internal events, you can not use any Ruby APIs (even object creations).
  * This is why we can't specify internal events by TracePoint directly.
  * Limitations are MRI version specific.
  *

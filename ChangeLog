@@ -1,3 +1,8 @@
+Wed Apr 15 18:43:43 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_trace.c (rb_tracepoint_new): fix documentation.
+	  Commented by @emilsoman.
+
 Wed Apr 15 17:36:51 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_trace.c (rb_tracepoint_new): Add documentation for
