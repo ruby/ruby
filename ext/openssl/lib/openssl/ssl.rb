@@ -21,7 +21,7 @@ module OpenSSL
   module SSL
     class SSLContext
       DEFAULT_PARAMS = {
-        :ssl_version => "SSLv23",
+        :ssl_version => "TLSv1_2",
         :verify_mode => OpenSSL::SSL::VERIFY_PEER,
         :ciphers => %w{
           ECDHE-ECDSA-AES128-GCM-SHA256
@@ -64,6 +64,7 @@ module OpenSSL
           opts |= OpenSSL::SSL::OP_NO_COMPRESSION if defined?(OpenSSL::SSL::OP_NO_COMPRESSION)
           opts |= OpenSSL::SSL::OP_NO_SSLv2 if defined?(OpenSSL::SSL::OP_NO_SSLv2)
           opts |= OpenSSL::SSL::OP_NO_SSLv3 if defined?(OpenSSL::SSL::OP_NO_SSLv3)
+          opts |= OpenSSL::SSL::OP_NO_TLSv1 if defined?(OpenSSL::SSL::OP_NO_TLSv1)
           opts
         }.call
       }
