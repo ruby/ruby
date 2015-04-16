@@ -1837,7 +1837,8 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 
       case TYPE_USRMARSHAL:
         {
-	    VALUE klass = path2class(r_unique(arg));
+	    VALUE name = r_unique(arg);
+	    VALUE klass = path2class(name);
 	    VALUE oldclass = 0;
 	    VALUE data;
 
@@ -1847,8 +1848,8 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 		append_extmod(v, extmod);
             }
 	    if (!rb_obj_respond_to(v, s_mload, TRUE)) {
-		rb_raise(rb_eTypeError, "instance of %s needs to have method `marshal_load'",
-			 rb_class2name(klass));
+		rb_raise(rb_eTypeError, "instance of %"PRIsVALUE" needs to have method `marshal_load'",
+			 name);
 	    }
 	    v = r_entry(v, arg);
 	    data = r_object(arg);
