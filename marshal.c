@@ -1878,7 +1878,8 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 
       case TYPE_DATA:
 	{
-	    VALUE klass = path2class(r_unique(arg));
+	    VALUE name = r_unique(arg);
+	    VALUE klass = path2class(name);
 	    VALUE oldclass = 0;
 	    VALUE r;
 
@@ -1889,8 +1890,8 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    v = r_entry(v, arg);
 	    if (!rb_obj_respond_to(v, s_load_data, TRUE)) {
 		rb_raise(rb_eTypeError,
-			 "class %s needs to have instance method `_load_data'",
-			 rb_class2name(klass));
+			 "class %"PRIsVALUE" needs to have instance method `_load_data'",
+			 name);
 	    }
 	    r = r_object0(arg, 0, extmod);
 	    rb_funcall2(v, s_load_data, 1, &r);
