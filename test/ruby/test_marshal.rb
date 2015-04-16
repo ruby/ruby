@@ -647,4 +647,11 @@ class TestMarshal < Test::Unit::TestCase
       c.cc.call
     end
   end
+
+  def test_undumpable_message
+    c = Module.new {break module_eval("class IO\u{26a1} < IO;self;end")}
+    assert_raise_with_message(TypeError, /IO\u{26a1}/) {
+      Marshal.dump(c.new(0, autoclose: false))
+    }
+  end
 end
