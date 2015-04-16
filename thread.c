@@ -736,8 +736,8 @@ thread_s_new(int argc, VALUE *argv, VALUE klass)
     rb_obj_call_init(thread, argc, argv);
     GetThreadPtr(thread, th);
     if (!th->first_args) {
-	rb_raise(rb_eThreadError, "uninitialized thread - check `%s#initialize'",
-		 rb_class2name(klass));
+	rb_raise(rb_eThreadError, "uninitialized thread - check `%"PRIsVALUE"#initialize'",
+		 klass);
     }
     return thread;
 }

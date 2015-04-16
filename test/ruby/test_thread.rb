@@ -1033,4 +1033,17 @@ q.pop
     assert_not_predicate(status, :signaled?, FailDesc[status, bug9751, output])
     assert_predicate(status, :success?, bug9751)
   end if Process.respond_to?(:fork)
+
+  def test_subclass_no_initialize
+    t = Module.new do
+      break eval("class C\u{30b9 30ec 30c3 30c9} < Thread; self; end")
+    end
+    t.class_eval do
+      def initialize
+      end
+    end
+    assert_raise_with_message(ThreadError, /C\u{30b9 30ec 30c3 30c9}/) do
+      t.new {}
+    end
+  end
 end
