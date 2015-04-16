@@ -673,4 +673,15 @@ class TestMarshal < Test::Unit::TestCase
       Marshal.load(d)
     }
   end
+
+  def test_unloadable_userdef
+    c = eval("class Userdef\u{23F0 23F3}<Time;self;end")
+    class << c
+      undef _load
+    end
+    d = Marshal.dump(c.new)
+    assert_raise_with_message(TypeError, /Userdef\u{23F0 23F3}/) {
+      Marshal.load(d)
+    }
+  end
 end

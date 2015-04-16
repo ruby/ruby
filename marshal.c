@@ -1815,12 +1815,13 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 
       case TYPE_USERDEF:
         {
-	    VALUE klass = path2class(r_unique(arg));
+	    VALUE name = r_unique(arg);
+	    VALUE klass = path2class(name);
 	    VALUE data;
 
 	    if (!rb_obj_respond_to(klass, s_load, TRUE)) {
-		rb_raise(rb_eTypeError, "class %s needs to have method `_load'",
-			 rb_class2name(klass));
+		rb_raise(rb_eTypeError, "class %"PRIsVALUE" needs to have method `_load'",
+			 name);
 	    }
 	    data = r_string(arg);
 	    if (ivp) {
