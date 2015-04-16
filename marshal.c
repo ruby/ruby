@@ -893,8 +893,8 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 
 		if (!rb_obj_respond_to(obj, s_dump_data, TRUE)) {
 		    rb_raise(rb_eTypeError,
-			     "no _dump_data is defined for class %s",
-			     rb_obj_classname(obj));
+			     "no _dump_data is defined for class %"PRIsVALUE,
+			     rb_obj_class(obj));
 		}
 		v = rb_funcall2(obj, s_dump_data, 0, 0);
 		check_dump_arg(arg, s_dump_data);

@@ -654,4 +654,11 @@ class TestMarshal < Test::Unit::TestCase
       Marshal.dump(c.new(0, autoclose: false))
     }
   end
+
+  def test_undumpable_data
+    c = Module.new {break module_eval("class T\u{23F0 23F3}<Time;undef _dump;self;end")}
+    assert_raise_with_message(TypeError, /T\u{23F0 23F3}/) {
+      Marshal.dump(c.new)
+    }
+  end
 end
