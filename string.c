@@ -2194,7 +2194,7 @@ str_buf_cat(VALUE str, const char *ptr, long len)
     if (ptr >= sptr && ptr <= sptr + olen) {
         off = ptr - sptr;
     }
-    rb_str_modify(str);
+    rb_str_modify_expand(str, len);
     if (len == 0) return 0;
     if (STR_EMBED_P(str)) {
 	capa = RSTRING_EMBED_LEN_MAX;
