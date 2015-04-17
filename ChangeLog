@@ -1,3 +1,9 @@
+Fri Apr 17 11:58:34 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (STR_SET_EMBED): clear NOFREE flag at embedding as
+	  embedded strings no longer refer static strings.
+	  [ruby-core:68436] [Bug #10942]
+
 Thu Apr 16 05:15:50 2015  Eric Wong  <e@80x24.org>
 
 	* NEWS: note IO#wait_readable change in r50263

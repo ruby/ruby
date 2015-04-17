@@ -74,7 +74,7 @@ VALUE rb_cSymbol;
     FL_SET((str), STR_NOEMBED);\
     STR_SET_EMBED_LEN((str), 0);\
 } while (0)
-#define STR_SET_EMBED(str) FL_UNSET((str), STR_NOEMBED)
+#define STR_SET_EMBED(str) FL_UNSET((str), (STR_NOEMBED|STR_NOFREE))
 #define STR_SET_EMBED_LEN(str, n) do { \
     long tmp_n = (n);\
     RBASIC(str)->flags &= ~RSTRING_EMBED_LEN_MASK;\
