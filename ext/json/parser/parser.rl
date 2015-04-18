@@ -700,12 +700,11 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
         json->object_class = Qnil;
         json->array_class = Qnil;
     }
-    source = rb_convert_type(source, T_STRING, "String", "to_str");
+    StringValue(source);
     if (!json->quirks_mode) {
-      source = convert_encoding(StringValue(source));
+	source = convert_encoding(source);
     }
     json->current_nesting = 0;
-    StringValue(source);
     json->len = RSTRING_LEN(source);
     json->source = RSTRING_PTR(source);;
     json->Vsource = source;

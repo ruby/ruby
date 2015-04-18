@@ -1716,12 +1716,11 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
         json->object_class = Qnil;
         json->array_class = Qnil;
     }
-    source = rb_convert_type(source, T_STRING, "String", "to_str");
+    StringValue(source);
     if (!json->quirks_mode) {
-      source = convert_encoding(StringValue(source));
+	source = convert_encoding(source);
     }
     json->current_nesting = 0;
-    StringValue(source);
     json->len = RSTRING_LEN(source);
     json->source = RSTRING_PTR(source);;
     json->Vsource = source;
@@ -1729,7 +1728,7 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
 }
 
 
-#line 1733 "parser.c"
+#line 1732 "parser.c"
 enum {JSON_start = 1};
 enum {JSON_first_final = 10};
 enum {JSON_error = 0};
@@ -1737,7 +1736,7 @@ enum {JSON_error = 0};
 enum {JSON_en_main = 1};
 
 
-#line 740 "parser.rl"
+#line 739 "parser.rl"
 
 
 static VALUE cParser_parse_strict(VALUE self)
@@ -1748,16 +1747,16 @@ static VALUE cParser_parse_strict(VALUE self)
     GET_PARSER;
 
 
-#line 1752 "parser.c"
+#line 1751 "parser.c"
 	{
 	cs = JSON_start;
 	}
 
-#line 750 "parser.rl"
+#line 749 "parser.rl"
     p = json->source;
     pe = p + json->len;
 
-#line 1761 "parser.c"
+#line 1760 "parser.c"
 	{
 	if ( p == pe )
 		goto _test_eof;
@@ -1813,7 +1812,7 @@ case 5:
 		goto st1;
 	goto st5;
 tr3:
-#line 729 "parser.rl"
+#line 728 "parser.rl"
 	{
         char *np;
         json->current_nesting = 1;
@@ -1822,7 +1821,7 @@ tr3:
     }
 	goto st10;
 tr4:
-#line 722 "parser.rl"
+#line 721 "parser.rl"
 	{
         char *np;
         json->current_nesting = 1;
@@ -1834,7 +1833,7 @@ st10:
 	if ( ++p == pe )
 		goto _test_eof10;
 case 10:
-#line 1838 "parser.c"
+#line 1837 "parser.c"
 	switch( (*p) ) {
 		case 13: goto st10;
 		case 32: goto st10;
@@ -1891,7 +1890,7 @@ case 9:
 	_out: {}
 	}
 
-#line 753 "parser.rl"
+#line 752 "parser.rl"
 
     if (cs >= JSON_first_final && p == pe) {
         return result;
@@ -1903,7 +1902,7 @@ case 9:
 
 
 
-#line 1907 "parser.c"
+#line 1906 "parser.c"
 enum {JSON_quirks_mode_start = 1};
 enum {JSON_quirks_mode_first_final = 10};
 enum {JSON_quirks_mode_error = 0};
@@ -1911,7 +1910,7 @@ enum {JSON_quirks_mode_error = 0};
 enum {JSON_quirks_mode_en_main = 1};
 
 
-#line 778 "parser.rl"
+#line 777 "parser.rl"
 
 
 static VALUE cParser_parse_quirks_mode(VALUE self)
@@ -1922,16 +1921,16 @@ static VALUE cParser_parse_quirks_mode(VALUE self)
     GET_PARSER;
 
 
-#line 1926 "parser.c"
+#line 1925 "parser.c"
 	{
 	cs = JSON_quirks_mode_start;
 	}
 
-#line 788 "parser.rl"
+#line 787 "parser.rl"
     p = json->source;
     pe = p + json->len;
 
-#line 1935 "parser.c"
+#line 1934 "parser.c"
 	{
 	if ( p == pe )
 		goto _test_eof;
@@ -1965,7 +1964,7 @@ st0:
 cs = 0;
 	goto _out;
 tr2:
-#line 770 "parser.rl"
+#line 769 "parser.rl"
 	{
         char *np = JSON_parse_value(json, p, pe, &result);
         if (np == NULL) { p--; {p++; cs = 10; goto _out;} } else {p = (( np))-1;}
@@ -1975,7 +1974,7 @@ st10:
 	if ( ++p == pe )
 		goto _test_eof10;
 case 10:
-#line 1979 "parser.c"
+#line 1978 "parser.c"
 	switch( (*p) ) {
 		case 13: goto st10;
 		case 32: goto st10;
@@ -2064,7 +2063,7 @@ case 9:
 	_out: {}
 	}
 
-#line 791 "parser.rl"
+#line 790 "parser.rl"
 
     if (cs >= JSON_quirks_mode_first_final && p == pe) {
         return result;
