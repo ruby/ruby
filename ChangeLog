@@ -1,3 +1,8 @@
+Sat Apr 18 15:18:56 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/json/parser/parser.rl: raise with messages in UTF-8
+	  encoding.  [ruby-core:67386] [Bug #10705]
+
 Fri Apr 17 11:58:34 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (STR_SET_EMBED): clear NOFREE flag at embedding as
