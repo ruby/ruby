@@ -2,7 +2,7 @@
 #include "parser.h"
 
 #if defined HAVE_RUBY_ENCODING_H
-# define EXC_ENCODING UTF8,
+# define EXC_ENCODING UTF_8,
 # ifndef HAVE_RB_ENC_RAISE
 static void
 enc_raise(rb_encoding *enc, VALUE exc, const char *fmt, ...)
@@ -16,8 +16,8 @@ enc_raise(rb_encoding *enc, VALUE exc, const char *fmt, ...)
 
     rb_exc_raise(rb_exc_new3(exc, mesg));
 }
+#   define rb_enc_raise enc_raise
 # endif
-# define rb_enc_raise enc_raise
 #else
 # define EXC_ENCODING /* nothing */
 # define rb_enc_raise rb_raise
