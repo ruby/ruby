@@ -66,9 +66,7 @@ static int convert_UTF32_to_UTF8(char *buf, UTF32 ch)
 }
 
 #ifdef HAVE_RUBY_ENCODING_H
-static VALUE CEncoding_ASCII_8BIT, CEncoding_UTF_8, CEncoding_UTF_16BE,
-    CEncoding_UTF_16LE, CEncoding_UTF_32BE, CEncoding_UTF_32LE;
-static ID i_encoding, i_encode;
+static rb_encoding *UTF_16BE, *UTF_16LE, *UTF_32BE, *UTF_32LE;
 #else
 static ID i_iconv;
 #endif
@@ -557,22 +555,22 @@ static VALUE convert_encoding(VALUE source)
     }
 #ifdef HAVE_RUBY_ENCODING_H
     {
-        VALUE encoding = rb_funcall(source, i_encoding, 0);
-        if (encoding == CEncoding_ASCII_8BIT) {
+        rb_encoding *enc = rb_enc_get(source);
+        if (enc == rb_ascii8bit_encoding()) {
             if (len >= 4 &&  ptr[0] == 0 && ptr[1] == 0 && ptr[2] == 0) {
-                source = rb_funcall(source, i_encode, 2, CEncoding_UTF_8, CEncoding_UTF_32BE);
+                source = rb_str_conv_enc(source, UTF_32BE, rb_utf8_encoding());
             } else if (len >= 4 && ptr[0] == 0 && ptr[2] == 0) {
-                source = rb_funcall(source, i_encode, 2, CEncoding_UTF_8, CEncoding_UTF_16BE);
+                source = rb_str_conv_enc(source, UTF_16BE, rb_utf8_encoding());
             } else if (len >= 4 && ptr[1] == 0 && ptr[2] == 0 && ptr[3] == 0) {
-                source = rb_funcall(source, i_encode, 2, CEncoding_UTF_8, CEncoding_UTF_32LE);
+                source = rb_str_conv_enc(source, UTF_32LE, rb_utf8_encoding());
             } else if (len >= 4 && ptr[1] == 0 && ptr[3] == 0) {
-                source = rb_funcall(source, i_encode, 2, CEncoding_UTF_8, CEncoding_UTF_16LE);
+                source = rb_str_conv_enc(source, UTF_16LE, rb_utf8_encoding());
             } else {
                 source = rb_str_dup(source);
                 FORCE_UTF8(source);
             }
         } else {
-            source = rb_funcall(source, i_encode, 1, CEncoding_UTF_8);
+            source = rb_str_conv_enc(source, NULL, rb_utf8_encoding());
         }
     }
 #else
@@ -922,14 +920,10 @@ void Init_parser(void)
     i_aref = rb_intern("[]");
     i_leftshift = rb_intern("<<");
 #ifdef HAVE_RUBY_ENCODING_H
-    CEncoding_UTF_8 = rb_funcall(rb_path2class("Encoding"), rb_intern("find"), 1, rb_str_new2("utf-8"));
-    CEncoding_UTF_16BE = rb_funcall(rb_path2class("Encoding"), rb_intern("find"), 1, rb_str_new2("utf-16be"));
-    CEncoding_UTF_16LE = rb_funcall(rb_path2class("Encoding"), rb_intern("find"), 1, rb_str_new2("utf-16le"));
-    CEncoding_UTF_32BE = rb_funcall(rb_path2class("Encoding"), rb_intern("find"), 1, rb_str_new2("utf-32be"));
-    CEncoding_UTF_32LE = rb_funcall(rb_path2class("Encoding"), rb_intern("find"), 1, rb_str_new2("utf-32le"));
-    CEncoding_ASCII_8BIT = rb_funcall(rb_path2class("Encoding"), rb_intern("find"), 1, rb_str_new2("ascii-8bit"));
-    i_encoding = rb_intern("encoding");
-    i_encode = rb_intern("encode");
+    UTF_16BE = rb_enc_find("utf-16be");
+    UTF_16LE = rb_enc_find("utf-16le");
+    UTF_32BE = rb_enc_find("utf-32be");
+    UTF_32LE = rb_enc_find("utf-32le");
 #else
     i_iconv = rb_intern("iconv");
 #endif
