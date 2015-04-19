@@ -1356,7 +1356,7 @@ cbsubst_sym_to_subst(self, sym)
 
     *(ptr++) = '%';
 
-    if (len = inf->keylen[idx]) {
+    if ((len = inf->keylen[idx]) != 0) {
       /* longname */
       strncpy(ptr, inf->key[idx], len);
       ptr += len;
@@ -1426,7 +1426,7 @@ cbsubst_get_subst_arg(argc, argv, self)
 
 	*(ptr++) = '%';
 
-	if (len = inf->keylen[idx]) {
+	if ((len = inf->keylen[idx]) != 0) {
 	  /* longname */
 	  strncpy(ptr, inf->key[idx], len);
 	  ptr += len;
@@ -1523,7 +1523,7 @@ cbsubst_get_all_subst_keys(self)
 
       *(ptr++) = '%';
 
-      if (len = inf->keylen[idx]) {
+      if ((len = inf->keylen[idx]) != 0) {
 	/* longname */
 	strncpy(ptr, inf->key[idx], len);
 	ptr += len;
@@ -1691,7 +1691,7 @@ cbsubst_scan_args(self, arg_key, val_ary)
       } else if (*(keyptr + idx) == ' ') {
 	proc = Qnil;
       } else {
-	if (type_chr = inf->type[*(keyptr + idx)]) {
+	if ((type_chr = inf->type[*(keyptr + idx)]) != 0) {
 	  proc = rb_hash_aref(inf->proc, INT2FIX((int)type_chr));
 	} else {
 	  proc = Qnil;

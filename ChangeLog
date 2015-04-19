@@ -1,3 +1,8 @@
+Sun Apr 19 12:19:17 2015  Chad Brewbaker  <crb002@gmail.com>
+
+	* ext/{etc,openssl,tk}: Adding parens and comparisons around
+	  assignments to get rid of Wparentheses warnings.  [Fix GH-875]
+
 Sun Apr 19 10:42:54 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (get_env_cstr): environment variables must be ASCII

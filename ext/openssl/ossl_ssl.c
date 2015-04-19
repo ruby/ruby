@@ -1124,7 +1124,7 @@ ossl_ssl_shutdown(SSL *ssl)
 	     * Ignore the case SSL_shutdown returns -1. Empty handshake_func
 	     * must not happen.
 	     */
-	    if (rc = SSL_shutdown(ssl))
+	    if ((rc = SSL_shutdown(ssl)) != 0)
 		break;
 	}
 	SSL_clear(ssl);
