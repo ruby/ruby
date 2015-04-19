@@ -571,7 +571,7 @@ def main_actual_fix(problems)
       end
     else
       if pre_dep_post
-        puts "no addtional lines: #{makefile}"
+        puts "no additional lines: #{makefile}"
       elsif content
         puts "no dependencies section: #{makefile}"
       else

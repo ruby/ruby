@@ -467,7 +467,7 @@ def find_top( rotation_skip)
 end
 
 # the normail find routine, iterates through the available pieces, checks all rotations at the current location
-# and adds any boards found.  depth is acheived via recursion.  the overall approach is described
+# and adds any boards found.  depth is achieved via recursion.  the overall approach is described
 # here: http://www-128.ibm.com/developerworks/java/library/j-javaopt/
 # parameters:
 #  start_location -- where to start looking for place for the next piece at
