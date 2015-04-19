@@ -3,6 +3,23 @@ require 'test/unit'
 class TestEnv < Test::Unit::TestCase
   IGNORE_CASE = /bccwin|mswin|mingw/ =~ RUBY_PLATFORM
   PATH_ENV = "PATH"
+  INVALID_ENVVARS = [
+    "foo\0bar",
+    "\xa1\xa1".force_encoding(Encoding::UTF_16LE),
+    "foo".force_encoding(Encoding::ISO_2022_JP),
+  ]
+
+  def assert_invalid_env(msg = nil)
+    failed = {}
+    INVALID_ENVVARS.select do |v|
+      begin
+        assert_raise(ArgumentError) {yield v}
+      rescue MiniTest::Assertion => e
+        failed[v] = e
+      end
+    end
+    assert(failed.empty?, message(msg) {mu_pp(failed)})
+  end
 
   def setup
     @verbose = $VERBOSE
@@ -87,13 +104,13 @@ class TestEnv < Test::Unit::TestCase
   end
 
   def test_delete
-    assert_raise(ArgumentError) { ENV.delete("foo\0bar") }
+    assert_invalid_env {|v| ENV.delete(v)}
     assert_nil(ENV.delete("TEST"))
     assert_nothing_raised { ENV.delete(PATH_ENV) }
   end
 
   def test_getenv
-    assert_raise(ArgumentError) { ENV["foo\0bar"] }
+    assert_invalid_env {|v| ENV[v]}
     ENV[PATH_ENV] = ""
     assert_equal("", ENV[PATH_ENV])
     assert_nil(ENV[""])
@@ -110,7 +127,7 @@ class TestEnv < Test::Unit::TestCase
     assert_equal("foo", ENV.fetch("test", "foo"))
     assert_equal("bar", ENV.fetch("test") { "bar" })
     assert_equal("bar", ENV.fetch("test", "foo") { "bar" })
-    assert_raise(ArgumentError) { ENV.fetch("foo\0bar") }
+    assert_invalid_env {|v| ENV.fetch(v)}
     assert_nothing_raised { ENV.fetch(PATH_ENV, "foo") }
     ENV[PATH_ENV] = ""
     assert_equal("", ENV.fetch(PATH_ENV))
@@ -119,8 +136,8 @@ class TestEnv < Test::Unit::TestCase
   def test_aset
     assert_nothing_raised { ENV["test"] = nil }
     assert_equal(nil, ENV["test"])
-    assert_raise(ArgumentError) { ENV["foo\0bar"] = "test" }
-    assert_raise(ArgumentError) { ENV["test"] = "foo\0bar" }
+    assert_invalid_env {|v| ENV[v] = "test"}
+    assert_invalid_env {|v| ENV["test"] = v}
 
     begin
       # setenv(3) allowed the name includes '=',
@@ -276,7 +293,7 @@ class TestEnv < Test::Unit::TestCase
     assert_not_send([ENV, :has_key?, "test"])
     ENV["test"] = "foo"
     assert_send([ENV, :has_key?, "test"])
-    assert_raise(ArgumentError) { ENV.has_key?("foo\0bar") }
+    assert_invalid_env {|v| ENV.has_key?(v)}
   end
 
   def test_assoc
@@ -290,7 +307,7 @@ class TestEnv < Test::Unit::TestCase
       assert_equal("test", k)
       assert_equal("foo", v)
     end
-    assert_raise(ArgumentError) { ENV.assoc("foo\0bar") }
+    assert_invalid_env {|v| ENV.assoc(v)}
   end
 
   def test_has_value2

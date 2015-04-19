@@ -2699,9 +2699,24 @@ env_str_new2(const char *ptr)
     return env_str_new(ptr, strlen(ptr));
 }
 
+static void *
+get_env_cstr(VALUE str, const char *name)
+{
+    char *var;
+    rb_encoding *enc = rb_enc_get(str);
+    if (!rb_enc_asciicompat(enc)) {
+	rb_raise(rb_eArgError, "bad environment variable %s: ASCII incompatible encoding: %s",
+		 name, rb_enc_name(enc));
+    }
+    var = RSTRING_PTR(str);
+    if (memchr(var, '\0', RSTRING_LEN(str))) {
+	rb_raise(rb_eArgError, "bad environment variable %s: contains null byte", name);
+    }
+    return var;
+}
+
 #define get_env_ptr(var, val) \
-    (memchr((var = RSTRING_PTR(val)), '\0', RSTRING_LEN(val)) ? \
-     rb_raise(rb_eArgError, "bad environment variable " #var) : (void)0)
+    (var = get_env_cstr(val, #var))
 
 static inline const char *
 env_name(volatile VALUE *s)
