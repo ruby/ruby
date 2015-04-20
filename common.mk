@@ -552,7 +552,7 @@ no-fake: PHONY
 $(arch)-fake.rb: $(RBCONFIG) $(srcdir)/template/fake.rb.in $(srcdir)/tool/expand-config.rb rbconfig.rb
 	@$(BOOTSTRAPRUBY) $(srcdir)/tool/expand-config.rb \
 		-output=$@ -mode=$(INSTALL_PROG_MODE) -expand -config=rbconfig.rb \
-		srcdir="$(srcdir)" BASERUBY="$(BASERUBY:\=/)" $(srcdir)/template/fake.rb.in
+		srcdir="$(srcdir)" BASERUBY="$(BASERUBY)" $(srcdir)/template/fake.rb.in
 
 btest: $(TEST_RUNNABLE)-btest
 no-btest: PHONY
