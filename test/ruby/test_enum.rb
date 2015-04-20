@@ -33,20 +33,6 @@ class TestEnumerable < Test::Unit::TestCase
     $VERBOSE = @verbose
   end
 
-  def assert_not_warn
-    begin
-      org_stderr = $stderr
-      v = $VERBOSE
-      $stderr = StringIO.new(warn = '')
-      $VERBOSE = true
-      yield
-    ensure
-      $stderr = org_stderr
-      $VERBOSE = v
-    end
-    assert_equal("", warn)
-  end
-
   def test_grep
     assert_equal([1, 2, 1, 2], @obj.grep(1..2))
     a = []
@@ -513,7 +499,7 @@ class TestEnumerable < Test::Unit::TestCase
     ss = %w[abc defg h ijk l mno pqr st u vw xy z]
     assert_equal([%w[abc defg h], %w[ijk l], %w[mno], %w[pqr st u vw xy z]],
                  ss.slice_before(/\A...\z/).to_a)
-    assert_not_warn{ss.slice_before(/\A...\z/).to_a}
+    assert_warning("") {ss.slice_before(/\A...\z/).to_a}
   end
 
   def test_slice_after0
