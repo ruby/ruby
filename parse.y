@@ -5175,6 +5175,7 @@ static int parser_tokadd_string(struct parser_params*,int,int,int,long*,rb_encod
 static void parser_tokaddmbc(struct parser_params *parser, int c, rb_encoding *enc);
 static int parser_parse_string(struct parser_params*,NODE*);
 static int parser_here_document(struct parser_params*,NODE*);
+static VALUE parser_heredoc_dedent(VALUE);
 
 
 # define nextc()                      parser_nextc(parser)
@@ -5693,6 +5694,7 @@ rb_parser_compile_file_path(VALUE vparser, VALUE fname, VALUE file, int start)
 #define STR_FUNC_SYMBOL 0x10
 #define STR_FUNC_INDENT 0x20
 #define STR_FUNC_LABEL  0x40
+#define STR_FUNC_DEDENT 0x80
 
 enum string_type {
     str_label  = STR_FUNC_LABEL,
@@ -5718,6 +5720,10 @@ parser_str_new(const char *p, long n, rb_encoding *enc, int func, rb_encoding *e
 	else if (enc0 == rb_usascii_encoding() && enc != rb_utf8_encoding()) {
 	    rb_enc_associate(str, rb_ascii8bit_encoding());
 	}
+    }
+
+    if (func & STR_FUNC_DEDENT) {
+        return parser_heredoc_dedent(str);
     }
 
     return str;
@@ -6471,7 +6477,11 @@ parser_heredoc_identifier(struct parser_params *parser)
     if (c == '-') {
 	c = nextc();
 	func = STR_FUNC_INDENT;
+    } else if (c == '~') {
+        c = nextc();
+        func = STR_FUNC_INDENT | STR_FUNC_DEDENT;
     }
+    
     switch (c) {
       case '\'':
 	func |= str_squote; goto quoted;
@@ -6495,7 +6505,9 @@ parser_heredoc_identifier(struct parser_params *parser)
       default:
 	if (!parser_is_identchar()) {
 	    pushback(c);
-	    if (func & STR_FUNC_INDENT) {
+	    if (func & STR_FUNC_DEDENT) {
+		pushback('~');
+	    } else if (func & STR_FUNC_INDENT) {
 		pushback('-');
 	    }
 	    return 0;
@@ -6539,6 +6551,44 @@ parser_heredoc_restore(struct parser_params *parser, NODE *here)
     dispose_string(here->nd_lit);
     rb_gc_force_recycle((VALUE)here);
     ripper_flush(parser);
+}
+
+static VALUE
+parser_heredoc_dedent(VALUE input)
+{
+    char *str = RSTRING_PTR(input), *p, *out_p;
+    long len = RSTRING_LEN(input), indent = len, line_indent = 0, lines = 0;
+    char *end = &str[len];
+    VALUE output;
+
+    p = str;
+    while (p < end) {
+        lines++;
+        line_indent = 0;
+        while (p < end && (*p == ' ' || *p == '\t')) {
+            line_indent++;
+            p++;
+        }
+        if (p < end && line_indent < indent) indent = line_indent;
+        if (indent == 0) break;
+
+        while (p < end && *p != '\r' && *p != '\n') p++;
+        if (p < end && *p == '\r') p++;
+        if (p < end && *p == '\n') p++;
+    }
+
+    output = rb_str_new(0, len - (lines * indent));
+    out_p = RSTRING_PTR(output);
+
+    p = str;
+    while (p < end) {
+        p = p + indent;
+        while (p < end && *p != '\r' && *p != '\n') *out_p++ = *p++;
+        if (p < end && *p == '\r') *out_p++ = *p++;
+        if (p < end && *p == '\n') *out_p++ = *p++;
+    }
+
+    return output;
 }
 
 static int
