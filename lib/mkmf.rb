@@ -1915,7 +1915,7 @@ VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}
       next if /^abs_/ =~ key
       next if /^(?:src|top|hdr)dir$/ =~ key
       next unless /dir$/ =~ key
-      mk << "#{key} = #{with_destdir(var)}\n"
+      mk << "#{key} = #{/^(?:top_src|build)dir$/ =~ key ? var : with_destdir(var)}\n"
     end
     if !$extmk and !$configure_args.has_key?('--ruby') and
         sep = config_string('BUILD_FILE_SEPARATOR')
