@@ -4686,14 +4686,23 @@ rb_w32_wreadlink(const WCHAR *path, WCHAR *buf, size_t bufsize)
 	ULONG  ReparseTag;
 	USHORT ReparseDataLength;
 	USHORT Reserved;
-	struct {
-	    USHORT SubstituteNameOffset;
-	    USHORT SubstituteNameLength;
-	    USHORT PrintNameOffset;
-	    USHORT PrintNameLength;
-	    ULONG  Flags;
-	    WCHAR  PathBuffer[MAXPATHLEN * 2];
-	} SymbolicLinkReparseBuffer;
+	union {
+	    struct {
+		USHORT SubstituteNameOffset;
+		USHORT SubstituteNameLength;
+		USHORT PrintNameOffset;
+		USHORT PrintNameLength;
+		ULONG  Flags;
+		WCHAR  PathBuffer[MAXPATHLEN * 2];
+	    } SymbolicLinkReparseBuffer;
+	    struct {
+		USHORT SubstituteNameOffset;
+		USHORT SubstituteNameLength;
+		USHORT PrintNameOffset;
+		USHORT PrintNameLength;
+		WCHAR  PathBuffer[MAXPATHLEN * 2];
+	    } MountPointReparseBuffer;
+	};
     } rp;
     HANDLE f;
     DWORD ret;
@@ -4738,10 +4747,12 @@ rb_w32_wreadlink(const WCHAR *path, WCHAR *buf, size_t bufsize)
 	    ret = rp.SymbolicLinkReparseBuffer.PrintNameLength;
 	}
 	else { /* IO_REPARSE_TAG_MOUNT_POINT */
-	    /* +4/-4 mean to drop "?\" */
-	    name = ((char *)rp.SymbolicLinkReparseBuffer.PathBuffer +
-		    rp.SymbolicLinkReparseBuffer.SubstituteNameOffset + 4);
-	    ret = rp.SymbolicLinkReparseBuffer.SubstituteNameLength - 4;
+	    /* +4/-4 means to drop "\??\" */
+	    name = ((char *)rp.MountPointReparseBuffer.PathBuffer +
+		    rp.MountPointReparseBuffer.SubstituteNameOffset +
+		    4 * sizeof(WCHAR));
+	    ret = rp.MountPointReparseBuffer.SubstituteNameLength -
+		  4 * sizeof(WCHAR);
 	}
 	((WCHAR *)name)[ret/sizeof(WCHAR)] = L'\0';
 	translate_wchar(name, L'\\', L'/');
