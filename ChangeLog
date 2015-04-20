@@ -1,3 +1,8 @@
+Mon Apr 20 15:02:47 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_wreadlink): fixed a bug that a junktion misses
+	  its drive letter.
+
 Mon Apr 20 12:54:56 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* ext/openssl/*: use license instead of licence.

@@ -4731,9 +4731,18 @@ rb_w32_wreadlink(const WCHAR *path, WCHAR *buf, size_t bufsize)
 	e = EINVAL;
     }
     else {
-	void *name = ((char *)rp.SymbolicLinkReparseBuffer.PathBuffer +
-		      rp.SymbolicLinkReparseBuffer.PrintNameOffset);
-	ret = rp.SymbolicLinkReparseBuffer.PrintNameLength;
+	void *name;
+	if (rp.ReparseTag == IO_REPARSE_TAG_SYMLINK) {
+	    name = ((char *)rp.SymbolicLinkReparseBuffer.PathBuffer +
+		    rp.SymbolicLinkReparseBuffer.PrintNameOffset);
+	    ret = rp.SymbolicLinkReparseBuffer.PrintNameLength;
+	}
+	else { /* IO_REPARSE_TAG_MOUNT_POINT */
+	    /* +4/-4 mean to drop "?\" */
+	    name = ((char *)rp.SymbolicLinkReparseBuffer.PathBuffer +
+		    rp.SymbolicLinkReparseBuffer.SubstituteNameOffset + 4);
+	    ret = rp.SymbolicLinkReparseBuffer.SubstituteNameLength - 4;
+	}
 	((WCHAR *)name)[ret/sizeof(WCHAR)] = L'\0';
 	translate_wchar(name, L'\\', L'/');
 	bufsize *= sizeof(WCHAR);
