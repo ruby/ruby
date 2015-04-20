@@ -248,7 +248,7 @@ class TestObject < Test::Unit::TestCase
     assert_raise(TypeError) { String(o) }
   end
 
-  def test_check_convert_type
+  def test_convert_array
     o = Object.new
     def o.to_a; 1; end
     assert_raise(TypeError) { Array(o) }
