@@ -9,6 +9,7 @@ config["RUBY_RELEASE_DATE"] ||=
 
 while /\A(\w+)=(.*)/ =~ ARGV[0]
   config[$1] = $2
+  config[$1].tr(File::ALT_SEPARATOR, File::SEPARATOR) if File::ALT_SEPARATOR
   ARGV.shift
 end
 
