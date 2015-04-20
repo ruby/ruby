@@ -1,3 +1,9 @@
+Mon Apr 20 12:54:56 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ext/openssl/*: use license instead of licence.
+	  [fix GH-876][ci skip] Patch by @davydovanton
+	* lib/net/https.rb: ditto.
+
 Mon Apr 20 12:42:40 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* benchmark/bm_so_meteor_contest.rb: fix a typo.
