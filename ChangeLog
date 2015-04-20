@@ -1,3 +1,9 @@
+Mon Apr 20 11:10:46 2015  Eric Wong  <e@80x24.org>
+
+	* ext/socket/socket.c (sock_connect_nonblock): do not raise EISCONN
+	  [ruby-core:68926] [Feature #11072]
+	* test/socket/test_nonblock.rb: check non-EISCONN on 2nd connect
+
 Sun Apr 19 12:19:17 2015  Chad Brewbaker  <crb002@gmail.com>
 
 	* ext/{etc,openssl,tk}: Adding parens and comparisons around

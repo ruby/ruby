@@ -69,6 +69,8 @@ class TestSocketNonblock < Test::Unit::TestCase
       assert_equal :wait_writable, rv
     end
     assert_equal([ [], [c], [] ], IO.select(nil, [c], nil, 60))
+    assert_equal(0, c.connect_nonblock(servaddr, exception: false),
+                 'there should be no EISCONN error')
     s, sockaddr = serv.accept
     assert_equal(Socket.unpack_sockaddr_in(c.getsockname),
                  Socket.unpack_sockaddr_in(sockaddr))

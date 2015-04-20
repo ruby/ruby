@@ -509,6 +509,12 @@ sock_connect_nonblock(int argc, VALUE *argv, VALUE sock)
             }
             rb_readwrite_sys_fail(RB_IO_WAIT_WRITABLE, "connect(2) would block");
 	}
+	if (errno == EISCONN) {
+            if (!NIL_P(opts) &&
+                    Qfalse == rb_hash_lookup2(opts, sym_exception, Qundef)) {
+                return INT2FIX(0);
+            }
+	}
 	rsock_sys_fail_raddrinfo_or_sockaddr("connect(2)", addr, rai);
     }
 
