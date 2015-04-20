@@ -51,7 +51,7 @@ Sun Apr 19 10:42:54 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (get_env_cstr): environment variables must be ASCII
 	  compatible, as dummy encodings and wide char encodings are
-	  unsupproted now.
+	  unsupported now.
 
 Sat Apr 18 15:18:56 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
