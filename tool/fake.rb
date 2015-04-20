@@ -24,7 +24,7 @@ prehook = proc do |extmk|
     mkconfig["builddir"] = config["builddir"] = builddir
     config["rubyhdrdir"] = File.join(mkconfig["top_srcdir"], "include")
     config["rubyarchhdrdir"] = File.join(builddir, config["EXTOUT"], "include", config["arch"])
-    mkconfig["libdir"] = config["libdir"] = mkconfig["topdir"]
+    mkconfig["libdirname"] = "builddir"
     trace_var(:$ruby, posthook)
   end
   untrace_var(:$extmk, prehook)
