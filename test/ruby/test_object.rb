@@ -254,6 +254,8 @@ class TestObject < Test::Unit::TestCase
     assert_raise(TypeError) { Array(o) }
     def o.to_a; [1]; end
     assert_equal([1], Array(o))
+    def o.to_ary; [2]; end
+    assert_equal([2], Array(o))
     def o.respond_to?(*) false; end
     assert_equal([o], Array(o))
   end
