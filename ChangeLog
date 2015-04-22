@@ -1,3 +1,8 @@
+Tue Apr 22 12:42:12 2015  Kazuki Tanaka  <gogotanaka@ruby-lang.org>
+
+	* test/ruby/test_object.rb: add tests for Kernel#String and Kernel#Array.
+	  [fix GH-879][fix GH-880] Patch by @yui-knk
+
 Tue Apr 21 20:46:02 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* test/ruby/test_object.rb: renamed tests to explicitly class name.
