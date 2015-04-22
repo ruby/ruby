@@ -244,6 +244,8 @@ class TestObject < Test::Unit::TestCase
     assert_raise(TypeError) { String(o) }
     def o.to_s; "o"; end
     assert_equal("o", String(o))
+    def o.to_str; "O"; end
+    assert_equal("O", String(o))
     def o.respond_to?(*) false; end
     assert_raise(TypeError) { String(o) }
   end
