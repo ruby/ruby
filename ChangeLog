@@ -1,3 +1,9 @@
+Wed Apr 22 18:36:50 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb (move, uid_move): support the MOVE command defined
+	  in RFC6851.  Patch by ojab ojab.
+	  [ruby-core:68960] [Feature #11077]
+
 Tue Apr 22 12:42:12 2015  Kazuki Tanaka  <gogotanaka@ruby-lang.org>
 
 	* test/ruby/test_object.rb: add tests for Kernel#String and Kernel#Array.
