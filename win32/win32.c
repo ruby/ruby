@@ -2314,6 +2314,8 @@ static inline ioinfo* _pioinfo(int);
 #define _osfhnd(i)  (_pioinfo(i)->osfhnd)
 #define _osfile(i)  (_pioinfo(i)->osfile)
 #define _pipech(i)  (_pioinfo(i)->pipech)
+#define rb_acrt_lowio_lock_fh(i)   MTHREAD_ONLY(EnterCriticalSection(&_pioinfo(i)->lock))
+#define rb_acrt_lowio_unlock_fh(i) MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(i)->lock))
 
 #if RUBY_MSVCRT_VERSION >= 80
 static size_t pioinfo_extra = 0;	/* workaround for VC++8 SP1 */
@@ -2400,14 +2402,14 @@ rb_w32_open_osfhandle(intptr_t osfhandle, int flags)
     }
     else {
 
-	MTHREAD_ONLY(EnterCriticalSection(&(_pioinfo(fh)->lock)));
+	rb_acrt_lowio_lock_fh(fh);
 	/* the file is open. now, set the info in _osfhnd array */
 	_set_osfhnd(fh, osfhandle);
 
 	fileflags |= FOPEN;		/* mark as open */
 
 	_set_osflags(fh, fileflags); /* set osfile entry */
-	MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fh)->lock));
+	rb_acrt_lowio_unlock_fh(fh);
     }
     return fh;			/* return handle */
 }
@@ -3089,9 +3091,9 @@ rb_w32_accept(int s, struct sockaddr *addr, int *addrlen)
 	    r = accept(TO_SOCKET(s), addr, addrlen);
 	    if (r != INVALID_SOCKET) {
 		SetHandleInformation((HANDLE)r, HANDLE_FLAG_INHERIT, 0);
-		MTHREAD_ONLY(EnterCriticalSection(&(_pioinfo(fd)->lock)));
+		rb_acrt_lowio_lock_fh(fd);
 		_set_osfhnd(fd, r);
-		MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
+		rb_acrt_lowio_unlock_fh(fd);
 		CloseHandle(h);
 		socklist_insert(r, 0);
 	    }
@@ -6093,7 +6095,7 @@ rb_w32_wopen(const WCHAR *file, int oflag, ...)
 	return -1;
     }
     RUBY_CRITICAL({
-	MTHREAD_ONLY(EnterCriticalSection(&(_pioinfo(fd)->lock)));
+	rb_acrt_lowio_lock_fh(fd);
 	_set_osfhnd(fd, (intptr_t)INVALID_HANDLE_VALUE);
 	_set_osflags(fd, 0);
 
@@ -6103,7 +6105,7 @@ rb_w32_wopen(const WCHAR *file, int oflag, ...)
 	    DWORD e = GetLastError();
 	    if (e != ERROR_ACCESS_DENIED || !check_if_wdir(file))
 		errno = map_errno(e);
-	    MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
+	    rb_acrt_lowio_unlock_fh(fd);
 	    fd = -1;
 	    goto quit;
 	}
@@ -6118,7 +6120,7 @@ rb_w32_wopen(const WCHAR *file, int oflag, ...)
 	  case FILE_TYPE_UNKNOWN:
 	    errno = map_errno(GetLastError());
 	    CloseHandle(h);
-	    MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
+	    rb_acrt_lowio_unlock_fh(fd);
 	    fd = -1;
 	    goto quit;
 	}
@@ -6128,7 +6130,7 @@ rb_w32_wopen(const WCHAR *file, int oflag, ...)
 	_set_osfhnd(fd, (intptr_t)h);
 	_set_osflags(fd, flags | FOPEN);
 
-	MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
+	rb_acrt_lowio_unlock_fh(fd);
       quit:
 	;
     });
@@ -6225,10 +6227,10 @@ rb_w32_pipe(int fds[2])
 	    break;
 	}
 
-	MTHREAD_ONLY(EnterCriticalSection(&(_pioinfo(fdRead)->lock)));
+	rb_acrt_lowio_lock_fh(fdRead);
 	_set_osfhnd(fdRead, (intptr_t)hRead);
 	_set_osflags(fdRead, FOPEN | FPIPE | FNOINHERIT);
-	MTHREAD_ONLY(LeaveCriticalSection(&(_pioinfo(fdRead)->lock)));
+	rb_acrt_lowio_unlock_fh(fdRead);
     } while (0));
     if (ret)
 	return ret;
@@ -6243,10 +6245,10 @@ rb_w32_pipe(int fds[2])
 	    ret = -1;
 	    break;
 	}
-	MTHREAD_ONLY(EnterCriticalSection(&(_pioinfo(fdWrite)->lock)));
+	rb_acrt_lowio_lock_fh(fdWrite);
 	_set_osfhnd(fdWrite, (intptr_t)hWrite);
 	_set_osflags(fdWrite, FOPEN | FPIPE | FNOINHERIT);
-	MTHREAD_ONLY(LeaveCriticalSection(&(_pioinfo(fdWrite)->lock)));
+	rb_acrt_lowio_unlock_fh(fdWrite);
     } while (0));
     if (ret) {
 	rb_w32_close(fdRead);
@@ -6717,11 +6719,11 @@ rb_w32_read(int fd, void *buf, size_t size)
 	return _read(fd, buf, size);
     }
 
-    MTHREAD_ONLY(EnterCriticalSection(&(_pioinfo(fd)->lock)));
+    rb_acrt_lowio_lock_fh(fd);
 
     if (!size || _osfile(fd) & FEOFLAG) {
 	_set_osflags(fd, _osfile(fd) & ~FEOFLAG);
-	MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
+	rb_acrt_lowio_unlock_fh(fd);
 	return 0;
     }
 
@@ -6750,7 +6752,7 @@ rb_w32_read(int fd, void *buf, size_t size)
     /* if have cancel_io, use Overlapped I/O */
     if (cancel_io) {
 	if (setup_overlapped(&ol, fd)) {
-	    MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
+	    rb_acrt_lowio_unlock_fh(fd);
 	    return -1;
 	}
 
@@ -6767,7 +6769,7 @@ rb_w32_read(int fd, void *buf, size_t size)
 	    else {
 		errno = map_errno(err);
 	    }
-	    MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
+	    rb_acrt_lowio_unlock_fh(fd);
 	    return -1;
 	}
 	else if (err != ERROR_IO_PENDING) {
@@ -6775,13 +6777,13 @@ rb_w32_read(int fd, void *buf, size_t size)
 	    if (err == ERROR_ACCESS_DENIED)
 		errno = EBADF;
 	    else if (err == ERROR_BROKEN_PIPE || err == ERROR_HANDLE_EOF) {
-		MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
+		rb_acrt_lowio_unlock_fh(fd);
 		return 0;
 	    }
 	    else
 		errno = map_errno(err);
 
-	    MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
+	    rb_acrt_lowio_unlock_fh(fd);
 	    return -1;
 	}
 
@@ -6794,7 +6796,7 @@ rb_w32_read(int fd, void *buf, size_t size)
 		    errno = map_errno(GetLastError());
 		CloseHandle(ol.hEvent);
 		cancel_io((HANDLE)_osfhnd(fd));
-		MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
+		rb_acrt_lowio_unlock_fh(fd);
 		return -1;
 	    }
 
@@ -6807,7 +6809,7 @@ rb_w32_read(int fd, void *buf, size_t size)
 		}
 		CloseHandle(ol.hEvent);
 		cancel_io((HANDLE)_osfhnd(fd));
-		MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
+		rb_acrt_lowio_unlock_fh(fd);
 		return ret;
 	    }
 	}
@@ -6832,7 +6834,7 @@ rb_w32_read(int fd, void *buf, size_t size)
 	_set_osflags(fd, _osfile(fd) | FEOFLAG);
 
 
-    MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
+    rb_acrt_lowio_unlock_fh(fd);
 
     return ret;
 }
@@ -6863,10 +6865,10 @@ rb_w32_write(int fd, const void *buf, size_t size)
 	return _write(fd, buf, size);
     }
 
-    MTHREAD_ONLY(EnterCriticalSection(&(_pioinfo(fd)->lock)));
+    rb_acrt_lowio_lock_fh(fd);
 
     if (!size || _osfile(fd) & FEOFLAG) {
-	MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
+	rb_acrt_lowio_unlock_fh(fd);
 	return 0;
     }
 
@@ -6880,7 +6882,7 @@ rb_w32_write(int fd, const void *buf, size_t size)
     /* if have cancel_io, use Overlapped I/O */
     if (cancel_io) {
 	if (setup_overlapped(&ol, fd)) {
-	    MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
+	    rb_acrt_lowio_unlock_fh(fd);
 	    return -1;
 	}
 
@@ -6896,7 +6898,7 @@ rb_w32_write(int fd, const void *buf, size_t size)
 	    else
 		errno = map_errno(err);
 
-	    MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
+	    rb_acrt_lowio_unlock_fh(fd);
 	    return -1;
 	}
 
@@ -6909,7 +6911,7 @@ rb_w32_write(int fd, const void *buf, size_t size)
 		    errno = map_errno(GetLastError());
 		CloseHandle(ol.hEvent);
 		cancel_io((HANDLE)_osfhnd(fd));
-		MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
+		rb_acrt_lowio_unlock_fh(fd);
 		return -1;
 	    }
 
@@ -6918,7 +6920,7 @@ rb_w32_write(int fd, const void *buf, size_t size)
 		errno = map_errno(GetLastError());
 		CloseHandle(ol.hEvent);
 		cancel_io((HANDLE)_osfhnd(fd));
-		MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
+		rb_acrt_lowio_unlock_fh(fd);
 		return -1;
 	    }
 	}
@@ -6945,7 +6947,7 @@ rb_w32_write(int fd, const void *buf, size_t size)
 	errno = EWOULDBLOCK;
     }
 
-    MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
+    rb_acrt_lowio_unlock_fh(fd);
 
     return ret;
 }
