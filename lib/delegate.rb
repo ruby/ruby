@@ -17,7 +17,7 @@
 # yourself needing this control, have a look at Forwardable which is also in
 # the standard library.  It may suit your needs better.)
 #
-# SimpleDelegator's implementation serves as a nice example if the use of
+# SimpleDelegator's implementation serves as a nice example of the use of
 # Delegator:
 #
 #   class SimpleDelegator < Delegator
