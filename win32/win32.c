@@ -89,19 +89,12 @@ static char *w32_getenv(const char *name, UINT cp);
 #undef setsockopt
 #undef dup2
 
-#if defined __BORLANDC__
-#  define _filbuf _fgetc
-#  define _flsbuf _fputc
-#  define enough_to_get(n) (--(n) >= 0)
-#  define enough_to_put(n) (++(n) < 0)
-#else
-# if RUBY_MSVCRT_VERSION >= 140
-#  define _filbuf _fgetc_nolock
-#  define _flsbuf _fputc_nolock
-# endif
-#  define enough_to_get(n) (--(n) >= 0)
-#  define enough_to_put(n) (--(n) >= 0)
+#if RUBY_MSVCRT_VERSION >= 140
+# define _filbuf _fgetc_nolock
+# define _flsbuf _fputc_nolock
 #endif
+#define enough_to_get(n) (--(n) >= 0)
+#define enough_to_put(n) (--(n) >= 0)
 
 #ifdef WIN32_DEBUG
 #define Debug(something) something
@@ -2245,20 +2238,6 @@ rb_w32_closedir(DIR *dirp)
     }
 }
 
-#if (defined _MT || defined __MSVCRT__) && !defined __BORLANDC__
-#define MSVCRT_THREADS
-#endif
-#ifdef MSVCRT_THREADS
-# define MTHREAD_ONLY(x) x
-# define STHREAD_ONLY(x)
-#elif defined(__BORLANDC__)
-# define MTHREAD_ONLY(x)
-# define STHREAD_ONLY(x)
-#else
-# define MTHREAD_ONLY(x)
-# define STHREAD_ONLY(x) x
-#endif
-
 #if RUBY_MSVCRT_VERSION >= 140
 typedef struct {
     union
@@ -2290,10 +2269,8 @@ typedef struct	{
     intptr_t osfhnd;	/* underlying OS file HANDLE */
     char osfile;	/* attributes of file (e.g., open in text mode?) */
     char pipech;	/* one char buffer for handles opened on pipes */
-#ifdef MSVCRT_THREADS
     int lockinitflag;
     CRITICAL_SECTION lock;
-#endif
 #if RUBY_MSVCRT_VERSION >= 80
     char textmode;
     char pipech2[2];
@@ -2305,7 +2282,6 @@ typedef struct	{
 #define _CRTIMP __declspec(dllimport)
 #endif
 
-#if !defined(__BORLANDC__)
 EXTERN_C _CRTIMP ioinfo * __pioinfo[];
 static inline ioinfo* _pioinfo(int);
 
@@ -2314,8 +2290,8 @@ static inline ioinfo* _pioinfo(int);
 #define _osfhnd(i)  (_pioinfo(i)->osfhnd)
 #define _osfile(i)  (_pioinfo(i)->osfile)
 #define _pipech(i)  (_pioinfo(i)->pipech)
-#define rb_acrt_lowio_lock_fh(i)   MTHREAD_ONLY(EnterCriticalSection(&_pioinfo(i)->lock))
-#define rb_acrt_lowio_unlock_fh(i) MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(i)->lock))
+#define rb_acrt_lowio_lock_fh(i)   EnterCriticalSection(&_pioinfo(i)->lock)
+#define rb_acrt_lowio_unlock_fh(i) LeaveCriticalSection(&_pioinfo(i)->lock)
 
 #if RUBY_MSVCRT_VERSION >= 80
 static size_t pioinfo_extra = 0;	/* workaround for VC++8 SP1 */
@@ -2339,9 +2315,6 @@ set_pioinfo_extra(void)
 	pioinfo_extra = 0;
     }
 }
-#else
-#define pioinfo_extra 0
-#endif
 
 static inline ioinfo*
 _pioinfo(int fd)
@@ -2453,20 +2426,6 @@ init_stdhandle(void)
 }
 #endif
 
-/* License: Ruby's */
-#ifdef __BORLANDC__
-static int
-rb_w32_open_osfhandle(intptr_t osfhandle, int flags)
-{
-    int fd = _open_osfhandle(osfhandle, flags);
-    if (fd == -1) {
-	errno = EMFILE;		/* too many open files */
-	_doserrno = 0L;		/* not an OS error */
-    }
-    return fd;
-}
-#endif
-
 #undef getsockopt
 
 /* License: Ruby's */
@@ -2501,15 +2460,6 @@ rb_w32_strerror(int e)
     static char buffer[512];
     DWORD source = 0;
     char *p;
-
-#if defined __BORLANDC__ && defined ENOTEMPTY // _sys_errlist is broken
-    switch (e) {
-      case ENAMETOOLONG:
-	return "Filename too long";
-      case ENOTEMPTY:
-	return "Directory not empty";
-    }
-#endif
 
     if (e < 0 || e > sys_nerr) {
 	if (e < 0)
@@ -5049,17 +4999,8 @@ rb_w32_fstat(int fd, struct stat *st)
     int ret = fstat(fd, st);
 
     if (ret) return ret;
-#ifdef __BORLANDC__
-    st->st_mode &= ~(S_IWGRP | S_IWOTH);
-#else
     if (GetEnvironmentVariableW(L"TZ", NULL, 0) == 0 && GetLastError() == ERROR_ENVVAR_NOT_FOUND) return ret;
-#endif
     if (GetFileInformationByHandle((HANDLE)_get_osfhandle(fd), &info)) {
-#ifdef __BORLANDC__
-	if (!(info.dwFileAttributes & FILE_ATTRIBUTE_READONLY)) {
-	    st->st_mode |= S_IWUSR;
-	}
-#endif
 	st->st_atime = filetime_to_unixtime(&info.ftLastAccessTime);
 	st->st_mtime = filetime_to_unixtime(&info.ftLastWriteTime);
 	st->st_ctime = filetime_to_unixtime(&info.ftCreationTime);
@@ -5074,15 +5015,10 @@ rb_w32_fstati64(int fd, struct stati64 *st)
     struct stat tmp;
     int ret;
 
-#ifndef __BORLANDC__
     if (GetEnvironmentVariableW(L"TZ", NULL, 0) == 0 && GetLastError() == ERROR_ENVVAR_NOT_FOUND) return _fstati64(fd, st);
-#endif
     ret = fstat(fd, &tmp);
 
     if (ret) return ret;
-#ifdef __BORLANDC__
-    tmp.st_mode &= ~(S_IWGRP | S_IWOTH);
-#endif
     COPY_STAT(tmp, *st, +);
     stati64_handle((HANDLE)_get_osfhandle(fd), st);
     return ret;
@@ -5096,11 +5032,6 @@ stati64_handle(HANDLE h, struct stati64 *st)
     DWORD attr = (DWORD)-1;
 
     if (GetFileInformationByHandle(h, &info)) {
-#ifdef __BORLANDC__
-	if (!(info.dwFileAttributes & FILE_ATTRIBUTE_READONLY)) {
-	    st->st_mode |= S_IWUSR;
-	}
-#endif
 	st->st_size = ((__int64)info.nFileSizeHigh << 32) | info.nFileSizeLow;
 	st->st_atime = filetime_to_unixtime(&info.ftLastAccessTime);
 	st->st_mtime = filetime_to_unixtime(&info.ftLastWriteTime);
@@ -5564,44 +5495,6 @@ rb_w32_ftruncate(int fd, off_t length)
     return rb_chsize(h, length);
 }
 
-#ifdef __BORLANDC__
-/* License: Ruby's */
-off_t
-_filelengthi64(int fd)
-{
-    DWORD u, l;
-    int e;
-
-    l = GetFileSize((HANDLE)_get_osfhandle(fd), &u);
-    if (l == (DWORD)-1L && (e = GetLastError())) {
-	errno = map_errno(e);
-	return (off_t)-1;
-    }
-    return ((off_t)u << 32) | l;
-}
-
-/* License: Ruby's */
-off_t
-_lseeki64(int fd, off_t offset, int whence)
-{
-    long u, l;
-    int e;
-    HANDLE h = (HANDLE)_get_osfhandle(fd);
-
-    if (!h) {
-	errno = EBADF;
-	return -1;
-    }
-    u = (long)(offset >> 32);
-    if ((l = SetFilePointer(h, (long)offset, &u, whence)) == -1L &&
-	(e = GetLastError())) {
-	errno = map_errno(e);
-	return -1;
-    }
-    return ((off_t)u << 32) | l;
-}
-#endif
-
 /* License: Ruby's */
 static long
 filetime_to_clock(FILETIME *ft)
@@ -5645,22 +5538,6 @@ catch_interrupt(void)
     RUBY_CRITICAL(rb_w32_wait_events(NULL, 0, 0));
 }
 
-#if defined __BORLANDC__
-#undef read
-/* License: Ruby's */
-int
-read(int fd, void *buf, size_t size)
-{
-    int ret = _read(fd, buf, size);
-    if ((ret < 0) && (errno == EPIPE)) {
-	errno = 0;
-	ret = 0;
-    }
-    catch_interrupt();
-    return ret;
-}
-#endif
-
 #undef fgetc
 /* License: Ruby's */
 int
@@ -5672,11 +5549,6 @@ rb_w32_getc(FILE* stream)
     }
     else {
 	c = _filbuf(stream);
-#if defined __BORLANDC__
-        if ((c == EOF) && (errno == EPIPE)) {
-	    clearerr(stream);
-        }
-#endif
 	catch_interrupt();
     }
     return c;
@@ -7274,7 +7146,6 @@ rb_w32_uchmod(const char *path, int mode)
     return ret;
 }
 
-#if !defined(__BORLANDC__)
 /* License: Ruby's */
 int
 rb_w32_isatty(int fd)
@@ -7291,63 +7162,6 @@ rb_w32_isatty(int fd)
     }
     return 1;
 }
-#endif
-
-//
-// Fix bcc32's stdio bug
-//
-
-#ifdef __BORLANDC__
-/* License: Ruby's */
-static int
-too_many_files(void)
-{
-    FILE *f;
-    for (f = _streams; f < _streams + _nfile; f++) {
-	if (f->fd < 0) return 0;
-    }
-    return 1;
-}
-
-#undef fopen
-/* License: Ruby's */
-FILE *
-rb_w32_fopen(const char *path, const char *mode)
-{
-    FILE *f = (errno = 0, fopen(path, mode));
-    if (f == NULL && errno == 0) {
-	if (too_many_files())
-	    errno = EMFILE;
-    }
-    return f;
-}
-
-/* License: Ruby's */
-FILE *
-rb_w32_fdopen(int handle, const char *type)
-{
-    FILE *f = (errno = 0, _fdopen(handle, (char *)type));
-    if (f == NULL && errno == 0) {
-	if (handle < 0)
-	    errno = EBADF;
-	else if (too_many_files())
-	    errno = EMFILE;
-    }
-    return f;
-}
-
-/* License: Ruby's */
-FILE *
-rb_w32_fsopen(const char *path, const char *mode, int shflags)
-{
-    FILE *f = (errno = 0, _fsopen(path, mode, shflags));
-    if (f == NULL && errno == 0) {
-	if (too_many_files())
-	    errno = EMFILE;
-    }
-    return f;
-}
-#endif
 
 #if defined(_MSC_VER) && RUBY_MSVCRT_VERSION <= 60
 extern long _ftol(double);

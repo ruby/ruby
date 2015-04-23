@@ -1,3 +1,9 @@
+Fri Apr 24 08:40:13 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* win32/win32.c: remove bcc related code.
+
+	* include/ruby/win32.h: ditto.
+
 Fri Apr 24 08:21:07 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* win32/win32.c (rb_acrt_lowio_lock_fh): wrap _pioinfo(i)->lock.

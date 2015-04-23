@@ -77,7 +77,7 @@ extern "C++" {			/* template without extern "C++" */
 #endif
 #include <io.h>
 #include <malloc.h>
-#if defined __MINGW32__ || __BORLANDC__ >= 0x0580
+#if defined __MINGW32__
 # include <stdint.h>
 #else
 # if !defined(_INTPTR_T_DEFINED)
@@ -163,28 +163,11 @@ typedef int clockid_t;
 #define sleep(x)		rb_w32_Sleep((x)*1000)
 #define Sleep(msec)		(void)rb_w32_Sleep(msec)
 #define fstati64(fd,st) 	rb_w32_fstati64(fd,st)
-#ifdef __BORLANDC__
-#define creat(p, m)		_creat(p, m)
-#define eof()			_eof()
-#define filelength(h)		_filelength(h)
-#define mktemp(t)		_mktemp(t)
-#define tell(h)			_tell(h)
-#define _open			_sopen
-#define sopen			_sopen
-#undef fopen
-#define fopen(p, m)		rb_w32_fopen(p, m)
-#undef fdopen
-#define fdopen(h, m)		rb_w32_fdopen(h, m)
-#undef fsopen
-#define fsopen(p, m, sh)	rb_w32_fsopen(p, m, sh)
-#endif /* __BORLANDC__ */
 
 #undef execv
 #define execv(path,argv)	rb_w32_aspawn(P_OVERLAY,path,argv)
-#if !defined(__BORLANDC__)
 #undef isatty
 #define isatty(h)		rb_w32_isatty(h)
-#endif /* __BORLANDC__ */
 
 #undef mkdir
 #define mkdir(p, m)		rb_w32_mkdir(p, m)
@@ -198,9 +181,7 @@ typedef int clockid_t;
 #define off_t __int64
 #define stat stati64
 #define fstat(fd,st)		fstati64(fd,st)
-#if defined(__BORLANDC__)
-#define stati64(path, st) rb_w32_stati64(path, st)
-#elif !defined(_MSC_VER) || RT_VER < 80
+#if !defined(_MSC_VER) || RT_VER < 80
 #define stati64 _stati64
 #ifndef _stati64
 #define _stati64(path, st) rb_w32_stati64(path, st)
@@ -334,9 +315,7 @@ extern int fcntl(int, int, ...);
 extern int rb_w32_set_nonblock(int);
 extern rb_pid_t rb_w32_getpid(void);
 extern rb_pid_t rb_w32_getppid(void);
-#if !defined(__BORLANDC__)
 extern int rb_w32_isatty(int);
-#endif
 extern int rb_w32_uchdir(const char *);
 extern int rb_w32_mkdir(const char *, int);
 extern int rb_w32_umkdir(const char *, int);
@@ -354,13 +333,6 @@ extern int rb_w32_uaccess(const char *, int);
 extern char rb_w32_fd_is_text(int);
 extern int rb_w32_fstati64(int, struct stati64 *);
 extern int rb_w32_dup2(int, int);
-
-#ifdef __BORLANDC__
-extern off_t _lseeki64(int, off_t, int);
-extern FILE *rb_w32_fopen(const char *, const char *);
-extern FILE *rb_w32_fdopen(int, const char *);
-extern FILE *rb_w32_fsopen(const char *, const char *, int);
-#endif
 
 #include <float.h>
 
@@ -400,19 +372,6 @@ __declspec(dllimport) extern int finite(double);
 
 #if !defined S_IFIFO && defined _S_IFIFO
 #define S_IFIFO _S_IFIFO
-#endif
-
-#if 0 && defined __BORLANDC__
-#undef S_ISDIR
-#undef S_ISFIFO
-#undef S_ISBLK
-#undef S_ISCHR
-#undef S_ISREG
-#define S_ISDIR(m)  (((unsigned short)(m) & S_IFMT) == S_IFDIR)
-#define S_ISFIFO(m) (((unsigned short)(m) & S_IFMT) == S_IFIFO)
-#define S_ISBLK(m)  (((unsigned short)(m) & S_IFMT) == S_IFBLK)
-#define S_ISCHR(m)  (((unsigned short)(m) & S_IFMT) == S_IFCHR)
-#define S_ISREG(m)  (((unsigned short)(m) & S_IFMT) == S_IFREG)
 #endif
 
 #if !defined S_IRUSR && !defined __MINGW32__
