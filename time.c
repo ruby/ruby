@@ -1639,6 +1639,10 @@ localtime_with_gmtoff_zone(const time_t *t, struct tm *result, long *gmtoff, con
             else
                 *zone = zone_str("(NO-TIMEZONE-ABBREVIATION)");
 #elif defined(HAVE_TZNAME) && defined(HAVE_DAYLIGHT)
+# if RUBY_MSVCRT_VERSION >= 140
+#  define tzname _tzname
+#  define daylight _daylight
+# endif
             /* this needs tzset or localtime, instead of localtime_r */
             *zone = zone_str(tzname[daylight && tm.tm_isdst]);
 #else

@@ -1,3 +1,12 @@
+Fri Apr 24 04:49:05 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* win32/Makefile.sub: MSVC14 have struct timespec.
+
+	* win32/rtname.cmd: support vcruntime140.dll.
+
+	* time.c (localtime_with_gmtoff_zone): MSVC14 doesn't have tzname and
+	  daylight but have _tzname and _daylight.
+
 Thu Apr 23 11:35:55 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_eval.c (rb_obj_instance_eval, rb_obj_instance_exec): allow
