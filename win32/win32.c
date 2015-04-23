@@ -4113,7 +4113,7 @@ dupfd(HANDLE hDup, char flags, int minfd)
     save_errno = errno;
     while (filled > 0) {
 	int fd = fds[--filled];
-	_osfhnd(fd) = (intptr_t)INVALID_HANDLE_VALUE;
+	_set_osfhnd(fd, (intptr_t)INVALID_HANDLE_VALUE);
 	close(fd);
     }
     errno = save_errno;
@@ -6100,7 +6100,7 @@ rb_w32_wopen(const WCHAR *file, int oflag, ...)
 	    flags |= FAPPEND;
 
 	_set_osfhnd(fd, (intptr_t)h);
-	_osfile(fd) = flags | FOPEN;
+	_set_osflags(fd, flags | FOPEN);
 
 	MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
       quit:
