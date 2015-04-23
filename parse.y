@@ -6557,32 +6557,55 @@ static VALUE
 parser_heredoc_dedent(VALUE input)
 {
     char *str = RSTRING_PTR(input), *p, *out_p;
-    long len = RSTRING_LEN(input), indent = len, line_indent = 0, lines = 0;
+    long len = RSTRING_LEN(input), indent = len, line_indent = 0;
+    long out_len = 0, i;
     char *end = &str[len];
     VALUE output;
 
     p = str;
     while (p < end) {
-        lines++;
         line_indent = 0;
         while (p < end && (*p == ' ' || *p == '\t')) {
             line_indent++;
             p++;
         }
-        if (p < end && line_indent < indent) indent = line_indent;
-        if (indent == 0) break;
+        
+        if (p < end && *p != '\r' && *p != '\n' && line_indent < indent) {
+            indent = line_indent;
+            if (indent == 0) break;
+        }
 
         while (p < end && *p != '\r' && *p != '\n') p++;
         if (p < end && *p == '\r') p++;
         if (p < end && *p == '\n') p++;
     }
 
-    output = rb_str_new(0, len - (lines * indent));
+    p = str;
+    while (p < end) {
+        for (i = 0; p < end && i < indent; i++) {
+            if (*p != ' ' && *p != '\t') break;
+            p++;
+        }
+        for (; p < end && *p != '\r' && *p != '\n'; p++) out_len++;
+        if (p < end && *p == '\r') {
+            out_len++;
+            p++;
+        }
+        if (p < end && *p == '\n') {
+            out_len++;
+            p++;
+        }
+    }
+
+    output = rb_str_new(0, out_len);
     out_p = RSTRING_PTR(output);
 
     p = str;
     while (p < end) {
-        p = p + indent;
+        for (i = 0; p < end && i < indent; i++) {
+            if (*p != ' ' && *p != '\t') break;
+            p++;
+        }
         while (p < end && *p != '\r' && *p != '\n') *out_p++ = *p++;
         if (p < end && *p == '\r') *out_p++ = *p++;
         if (p < end && *p == '\n') *out_p++ = *p++;

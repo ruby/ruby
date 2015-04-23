@@ -206,7 +206,8 @@ a "squiggly" heredoc, which uses a "~" instead of a "-" after <tt><<</tt>:
     SQUIGGLY_HEREDOC
 
 The indentation of the least-indented line will be removed from each line of
-the content.
+the content.  Note that empty lines and lines consisting solely of tabs and
+spaces will be ignored for the purposes of determining indentation.
 
 A heredoc allows interpolation and escaped characters.  You may disable
 interpolation and escaping by surrounding the opening identifier with single
