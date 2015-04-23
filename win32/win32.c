@@ -95,6 +95,10 @@ static char *w32_getenv(const char *name, UINT cp);
 #  define enough_to_get(n) (--(n) >= 0)
 #  define enough_to_put(n) (++(n) < 0)
 #else
+# if RUBY_MSVCRT_VERSION >= 140
+#  define _filbuf _fgetc_nolock
+#  define _flsbuf _fputc_nolock
+# endif
 #  define enough_to_get(n) (--(n) >= 0)
 #  define enough_to_put(n) (--(n) >= 0)
 #endif
@@ -2255,6 +2259,32 @@ rb_w32_closedir(DIR *dirp)
 # define STHREAD_ONLY(x) x
 #endif
 
+#if RUBY_MSVCRT_VERSION >= 140
+typedef struct {
+    union
+    {
+        FILE  _public_file;
+        char* _ptr;
+    };
+
+    char*            _base;
+    int              _cnt;
+    long             _flags;
+    long             _file;
+    int              _charbuf;
+    int              _bufsiz;
+    char*            _tmpfname;
+    CRITICAL_SECTION _lock;
+} vcruntime_file;
+#define FILE_COUNT(stream) ((vcruntime_file*)stream)->_cnt
+#define FILE_READPTR(stream) ((vcruntime_file*)stream)->_ptr
+#define FILE_FILENO(stream) ((vcruntime_file*)stream)->_file
+#else
+#define FILE_COUNT(stream) stream->_cnt
+#define FILE_READPTR(stream) stream->_ptr
+#define FILE_FILENO(stream) stream->_file
+#endif
+
 /* License: Ruby's */
 typedef struct	{
     intptr_t osfhnd;	/* underlying OS file HANDLE */
@@ -2395,16 +2425,16 @@ init_stdhandle(void)
      (fd))
 
     if (fileno(stdin) < 0) {
-	stdin->_file = open_null(0);
+	FILE_FILENO(stdin) = open_null(0);
     }
     else {
 	setmode(fileno(stdin), O_BINARY);
     }
     if (fileno(stdout) < 0) {
-	stdout->_file = open_null(1);
+	FILE_FILENO(stdout) = open_null(1);
     }
     if (fileno(stderr) < 0) {
-	stderr->_file = open_null(2);
+	FILE_FILENO(stderr) = open_null(2);
     }
     if (nullfd >= 0 && !keep) close(nullfd);
     setvbuf(stderr, NULL, _IONBF, 0);
@@ -5629,18 +5659,14 @@ read(int fd, void *buf, size_t size)
 }
 #endif
 
-
-#define FILE_COUNT _cnt
-#define FILE_READPTR _ptr
-
 #undef fgetc
 /* License: Ruby's */
 int
 rb_w32_getc(FILE* stream)
 {
     int c;
-    if (enough_to_get(stream->FILE_COUNT)) {
-	c = (unsigned char)*stream->FILE_READPTR++;
+    if (enough_to_get(FILE_COUNT(stream))) {
+	c = (unsigned char)*FILE_READPTR(stream)++;
     }
     else {
 	c = _filbuf(stream);
@@ -5659,8 +5685,8 @@ rb_w32_getc(FILE* stream)
 int
 rb_w32_putc(int c, FILE* stream)
 {
-    if (enough_to_put(stream->FILE_COUNT)) {
-	c = (unsigned char)(*stream->FILE_READPTR++ = (char)c);
+    if (enough_to_put(FILE_COUNT(stream))) {
+	c = (unsigned char)(*FILE_READPTR(stream)++ = (char)c);
     }
     else {
 	c = _flsbuf(c, stream);

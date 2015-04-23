@@ -1,3 +1,24 @@
+Fri Apr 24 06:47:19 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* win32/win32.c (_filbuf): msvc14 doesn't have it, use _fgetc_nolock.
+
+	* win32/win32.c (_flsbuf): msvc14 doesn't have it, use _fputc_nolock.
+
+	* win32/win32.c (vcruntime_file): define vcruntime_file on msvc14
+	  because it doesn't export FILE's internal structure.
+
+	* win32/win32.c (FILE_COUNT): added to abstract FILE->_cnt.
+
+	* win32/win32.c (FILE_READPTR): added to abstract FILE->_ptr.
+
+	* win32/win32.c (FILE_FILENO): added to abstract FILE->_file.
+
+	* win32/win32.c (init_stdhandle): use FILE_FILENO.
+
+	* win32/win32.c (rb_w32_getc): use FILE_COUNT and FILE_READPTR.
+
+	* win32/win32.c (rb_w32_putc): ditto.
+
 Fri Apr 24 06:37:07 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* win32/win32.c (dupfd): use _set_osfhnd.
