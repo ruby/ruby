@@ -1,3 +1,7 @@
+Thu Apr 24 05:38:01 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_mark_roots): fox to work PRINT_ROOT_TICKS.
+
 Fri Apr 24 04:49:05 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* win32/Makefile.sub: MSVC14 have struct timespec.

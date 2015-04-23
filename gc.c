@@ -154,7 +154,7 @@ rb_gc_guarded_ptr_val(volatile VALUE *ptr, VALUE val)
 #define PRINT_ROOT_TICKS 0
 #endif
 
-#define USE_TICK_T                 (PRINT_ENTER_EXIT_TICK || PRINT_MEASURE_LINE)
+#define USE_TICK_T                 (PRINT_ENTER_EXIT_TICK || PRINT_MEASURE_LINE || PRINT_ROOT_TICKS)
 #define TICK_TYPE 1
 
 typedef struct {
@@ -4471,11 +4471,6 @@ gc_mark_roots(rb_objspace_t *objspace, const char **categoryp)
 {
     struct gc_list *list;
     rb_thread_t *th = GET_THREAD();
-    if (categoryp) *categoryp = "xxx";
-
-#if USE_RGENGC
-    objspace->rgengc.parent_object = Qfalse;
-#endif
 
 #if PRINT_ROOT_TICKS
     tick_t start_tick = tick();
@@ -4485,6 +4480,12 @@ gc_mark_roots(rb_objspace_t *objspace, const char **categoryp)
     if (mark_ticks_categories[0] == 0) {
 	atexit(show_mark_ticks);
     }
+#endif
+
+    if (categoryp) *categoryp = "xxx";
+
+#if USE_RGENGC
+    objspace->rgengc.parent_object = Qfalse;
 #endif
 
 #if PRINT_ROOT_TICKS
