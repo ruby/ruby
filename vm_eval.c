@@ -1627,6 +1627,20 @@ specific_eval(int argc, const VALUE *argv, VALUE klass, VALUE self)
     }
 }
 
+static VALUE
+singleton_class_for_eval(VALUE self)
+{
+    if (SPECIAL_CONST_P(self)) {
+	return rb_special_singleton_class(self);
+    }
+    switch (BUILTIN_TYPE(self)) {
+      case T_FLOAT: case T_BIGNUM: case T_SYMBOL:
+	return Qnil;
+      default:
+	return rb_singleton_class(self);
+    }
+}
+
 /*
  *  call-seq:
  *     obj.instance_eval(string [, filename [, lineno]] )   -> obj
@@ -1663,14 +1677,7 @@ specific_eval(int argc, const VALUE *argv, VALUE klass, VALUE self)
 VALUE
 rb_obj_instance_eval(int argc, const VALUE *argv, VALUE self)
 {
-    VALUE klass;
-
-    if (SPECIAL_CONST_P(self)) {
-	klass = rb_special_singleton_class(self);
-    }
-    else {
-	klass = rb_singleton_class(self);
-    }
+    VALUE klass = singleton_class_for_eval(self);
     return specific_eval(argc, argv, klass, self);
 }
 
@@ -1695,14 +1702,7 @@ rb_obj_instance_eval(int argc, const VALUE *argv, VALUE self)
 VALUE
 rb_obj_instance_exec(int argc, const VALUE *argv, VALUE self)
 {
-    VALUE klass;
-
-    if (SPECIAL_CONST_P(self)) {
-	klass = rb_special_singleton_class(self);
-    }
-    else {
-	klass = rb_singleton_class(self);
-    }
+    VALUE klass = singleton_class_for_eval(self);
     return yield_under(klass, self, rb_ary_new4(argc, argv));
 }
 

@@ -199,6 +199,35 @@ class TestSymbol < Test::Unit::TestCase
     assert_raise(TypeError) { a = :foo; def a.foo; end }
   end
 
+  SymbolsForEval = [
+    :foo,
+    "dynsym_#{Random.rand(10000)}_#{Time.now}".to_sym
+  ]
+
+  def test_instance_eval
+    bug11086 = '[ruby-core:68961] [Bug #11086]'
+    SymbolsForEval.each do |sym|
+      assert_nothing_raised(TypeError, sym, bug11086) {
+        sym.instance_eval {}
+      }
+      assert_raise(TypeError, sym, bug11086) {
+        sym.instance_eval {def foo; end}
+      }
+    end
+  end
+
+  def test_instance_exec
+    bug11086 = '[ruby-core:68961] [Bug #11086]'
+    SymbolsForEval.each do |sym|
+      assert_nothing_raised(TypeError, sym, bug11086) {
+        sym.instance_exec {}
+      }
+      assert_raise(TypeError, sym, bug11086) {
+        sym.instance_exec {def foo; end}
+      }
+    end
+  end
+
   def test_frozen_symbol
     assert_equal(true, :foo.frozen?)
     assert_equal(true, :each.frozen?)

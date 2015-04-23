@@ -1539,7 +1539,8 @@ singleton_class_of(VALUE obj)
 {
     VALUE klass;
 
-    if (FIXNUM_P(obj) || FLONUM_P(obj) || SYMBOL_P(obj)) {
+    if (FIXNUM_P(obj) || FLONUM_P(obj) || STATIC_SYM_P(obj)) {
+      no_singleton:
 	rb_raise(rb_eTypeError, "can't define singleton");
     }
     if (SPECIAL_CONST_P(obj)) {
@@ -1549,9 +1550,9 @@ singleton_class_of(VALUE obj)
 	return klass;
     }
     else {
-	enum ruby_value_type type = BUILTIN_TYPE(obj);
-	if (type == T_FLOAT || type == T_BIGNUM) {
-	    rb_raise(rb_eTypeError, "can't define singleton");
+	switch (BUILTIN_TYPE(obj)) {
+	  case T_FLOAT: case T_BIGNUM: case T_SYMBOL:
+	    goto no_singleton;
 	}
     }
 
