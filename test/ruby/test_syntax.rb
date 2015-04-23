@@ -490,7 +490,16 @@ z
   end
 
   def test_dedented_heredoc_with_blank_less_indented_line
+    # the blank line has two leading spaces
     assert_equal("a\n\nb\n", <<~eos)
+    a
+  
+    b
+    eos
+  end
+
+  def test_dedented_heredoc_with_blank_less_indented_line_escaped
+    assert_equal("    a\n  \n    b\n", <<~eos)
     a
 \ \ 
     b
@@ -498,7 +507,16 @@ z
   end
 
   def test_dedented_heredoc_with_blank_more_indented_line
+    # the blank line has six leading spaces
     assert_equal("a\n  \nb\n", <<~eos)
+    a
+      
+    b
+    eos
+  end
+
+  def test_dedented_heredoc_with_blank_more_indented_line_escaped
+    assert_equal("    a\n      \n    b\n", <<~eos)
     a
 \ \ \ \ \ \ 
     b
