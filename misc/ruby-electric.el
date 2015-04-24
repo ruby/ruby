@@ -10,7 +10,7 @@
 ;; URL: https://github.com/knu/ruby-electric.el
 ;; Keywords: languages ruby
 ;; License: The same license terms as Ruby
-;; Version: 2.2.2
+;; Version: 2.2.3
 
 ;;; Commentary:
 ;;
@@ -32,6 +32,9 @@
 ;;; Code:
 
 (require 'ruby-mode)
+
+(eval-when-compile
+  (require 'cl))
 
 (defgroup ruby-electric nil
   "Minor mode providing electric editing commands for ruby files"
@@ -279,19 +282,31 @@ enabled."
         (t
          (ruby-electric-space/return-fallback))))
 
-(defun ruby-electric-code-at-point-p()
+(defun ruby-electric--get-faces-at-point ()
+  (let* ((point (point))
+         (value (or
+                 (get-text-property point 'read-face-name)
+                 (get-text-property point 'face))))
+    (if (listp value) value (list value))))
+
+(defun ruby-electric--faces-at-point-include-p (&rest faces)
   (and ruby-electric-mode
-       (let* ((properties (text-properties-at (point))))
-         (and (null (memq 'font-lock-string-face properties))
-              (null (memq 'font-lock-comment-face properties))))))
+       (loop for face in faces
+             with pfaces = (ruby-electric--get-faces-at-point)
+             thereis (memq face pfaces))))
+
+(defun ruby-electric-code-at-point-p()
+  (not (ruby-electric--faces-at-point-include-p
+        'font-lock-string-face
+        'font-lock-comment-face)))
 
 (defun ruby-electric-string-at-point-p()
-  (and ruby-electric-mode
-       (consp (memq 'font-lock-string-face (text-properties-at (point))))))
+  (ruby-electric--faces-at-point-include-p
+   'font-lock-string-face))
 
 (defun ruby-electric-comment-at-point-p()
-  (and ruby-electric-mode
-       (consp (memq 'font-lock-comment-face (text-properties-at (point))))))
+  (ruby-electric--faces-at-point-include-p
+   'font-lock-comment-face))
 
 (defun ruby-electric-escaped-p()
   (let ((f nil))
