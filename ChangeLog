@@ -1,3 +1,8 @@
+Fri Apr 24 10:40:02 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_{getc,putc}): removed.  they are needed for old
+	  ruby (before 1.8), but not now.
+
 Fri Apr 24 08:40:13 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* win32/win32.c: remove bcc related code.

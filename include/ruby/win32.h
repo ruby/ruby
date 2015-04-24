@@ -128,27 +128,11 @@ typedef int clockid_t;
 #define CLOCK_REALTIME  0
 #define CLOCK_MONOTONIC 1
 
-#undef getc
-#undef putc
-#undef fgetc
-#undef fputc
-#undef getchar
-#undef putchar
-#undef fgetchar
-#undef fputchar
 #undef utime
 #undef lseek
 #undef stat
 #undef fstat
-#define getc(_stream)		rb_w32_getc(_stream)
-#define getchar()		rb_w32_getc(stdin)
-#define putc(_c, _stream)	rb_w32_putc(_c, _stream)
-#define putchar(_c)		rb_w32_putc(_c, stdout)
 #ifdef RUBY_EXPORT
-#define fgetc(_stream)		getc(_stream)
-#define fputc(_c, _stream)	putc(_c, _stream)
-#define fgetchar()		getchar()
-#define fputchar(_c)		putchar(_c)
 #define utime(_p, _t)		rb_w32_utime(_p, _t)
 #define lseek(_f, _o, _w)	_lseeki64(_f, _o, _w)
 
@@ -730,8 +714,6 @@ struct tm *localtime_r(const time_t *, struct tm *);
 
 /* thread stuff */
 int  rb_w32_sleep(unsigned long msec);
-int  rb_w32_putc(int, FILE*);
-int  rb_w32_getc(FILE*);
 int  rb_w32_open(const char *, int, ...);
 int  rb_w32_uopen(const char *, int, ...);
 int  rb_w32_wopen(const WCHAR *, int, ...);

@@ -5530,46 +5530,7 @@ rb_w32_times(struct tms *tmbuf)
 #define yield_once() Sleep(0)
 #define yield_until(condition) do yield_once(); while (!(condition))
 
-/* License: Ruby's */
-static void
-catch_interrupt(void)
-{
-    yield_once();
-    RUBY_CRITICAL(rb_w32_wait_events(NULL, 0, 0));
-}
 
-#undef fgetc
-/* License: Ruby's */
-int
-rb_w32_getc(FILE* stream)
-{
-    int c;
-    if (enough_to_get(FILE_COUNT(stream))) {
-	c = (unsigned char)*FILE_READPTR(stream)++;
-    }
-    else {
-	c = _filbuf(stream);
-	catch_interrupt();
-    }
-    return c;
-}
-
-#undef fputc
-/* License: Ruby's */
-int
-rb_w32_putc(int c, FILE* stream)
-{
-    if (enough_to_put(FILE_COUNT(stream))) {
-	c = (unsigned char)(*FILE_READPTR(stream)++ = (char)c);
-    }
-    else {
-	c = _flsbuf(c, stream);
-	catch_interrupt();
-    }
-    return c;
-}
-
-/* License: Ruby's */
 struct asynchronous_arg_t {
     /* output field */
     void* stackaddr;
