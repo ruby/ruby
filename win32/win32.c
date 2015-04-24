@@ -5519,10 +5519,12 @@ rb_w32_times(struct tms *tmbuf)
     return 0;
 }
 
+
+/* License: Ruby's */
 #define yield_once() Sleep(0)
 #define yield_until(condition) do yield_once(); while (!(condition))
 
-
+/* License: Ruby's */
 struct asynchronous_arg_t {
     /* output field */
     void* stackaddr;
