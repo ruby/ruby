@@ -2315,6 +2315,9 @@ set_pioinfo_extra(void)
 	pioinfo_extra = 0;
     }
 }
+#else
+#define pioinfo_extra 0
+#endif
 
 static inline ioinfo*
 _pioinfo(int fd)
@@ -2414,17 +2417,6 @@ init_stdhandle(void)
     if (nullfd >= 0 && !keep) close(nullfd);
     setvbuf(stderr, NULL, _IONBF, 0);
 }
-#else
-
-#define _set_osfhnd(fh, osfh) (void)((fh), (osfh))
-#define _set_osflags(fh, flags) (void)((fh), (flags))
-
-/* License: Ruby's */
-static void
-init_stdhandle(void)
-{
-}
-#endif
 
 #undef getsockopt
 
