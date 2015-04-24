@@ -1,3 +1,7 @@
+Fri Apr 24 17:27:31 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* test/fiddle/test_handle.rb: fix syntax.
+
 Tue Apr 14 16:02:07 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* version.h (RUBY_VERSION): bump RUBY_VERSION to 2.1.7.
