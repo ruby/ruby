@@ -114,6 +114,7 @@ class Exports::Mswin < Exports
         when /OBJECT/, /LIBRARY/
           next if /^[[:xdigit:]]+ 0+ UNDEF / =~ l
           next unless /External/ =~ l
+          next if /(?:_local_stdio_printf_options|v(f|sn?)printf_l)\Z/ =~ l
           next unless l.sub!(/.*?\s(\(\)\s+)?External\s+\|\s+/, '')
           is_data = !$1
           if noprefix or /^[@_]/ =~ l
