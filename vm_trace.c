@@ -684,6 +684,10 @@ symbol2event_flag(VALUE v)
 {
     ID id;
     VALUE sym = rb_convert_type(v, T_SYMBOL, "Symbol", "to_sym");
+    const rb_event_flag_t RUBY_EVENT_A_CALL =
+	RUBY_EVENT_CALL | RUBY_EVENT_B_CALL | RUBY_EVENT_C_CALL;
+    const rb_event_flag_t RUBY_EVENT_A_RETURN =
+	RUBY_EVENT_RETURN | RUBY_EVENT_B_RETURN | RUBY_EVENT_C_RETURN;
 
 #define C(name, NAME) CONST_ID(id, #name); if (sym == ID2SYM(id)) return RUBY_EVENT_##NAME
     C(line, LINE);
@@ -699,9 +703,9 @@ symbol2event_flag(VALUE v)
     C(thread_begin, THREAD_BEGIN);
     C(thread_end, THREAD_END);
     C(specified_line, SPECIFIED_LINE);
+    C(a_call, A_CALL);
+    C(a_return, A_RETURN);
 #undef C
-    CONST_ID(id, "a_call"); if (sym == ID2SYM(id)) return RUBY_EVENT_CALL | RUBY_EVENT_B_CALL | RUBY_EVENT_C_CALL;
-    CONST_ID(id, "a_return"); if (sym == ID2SYM(id)) return RUBY_EVENT_RETURN | RUBY_EVENT_B_RETURN | RUBY_EVENT_C_RETURN;
     rb_raise(rb_eArgError, "unknown event: %"PRIsVALUE, rb_sym2str(sym));
 }
 
