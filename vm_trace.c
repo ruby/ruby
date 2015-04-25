@@ -1447,7 +1447,6 @@ Init_vm_trace(void)
      */
     rb_cTracePoint = rb_define_class("TracePoint", rb_cObject);
     rb_undef_alloc_func(rb_cTracePoint);
-    rb_undef_method(CLASS_OF(rb_cTracePoint), "new");
     rb_define_singleton_method(rb_cTracePoint, "new", tracepoint_new_s, -1);
     /*
      * Document-method: trace
