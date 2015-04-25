@@ -1,7 +1,7 @@
 Sat Apr 25 14:26:19 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (str_buf_cat): expand later so that the buffer can be
-	  larger for further use.  [Bug #11080] [Bug #11080]
+	  larger for further use.  [Bug #11080] [Bug #11095]
 
 Fri Apr 24 23:48:45 2015  Akinori MUSHA  <knu@iDaemons.org>
 
