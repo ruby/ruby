@@ -682,7 +682,7 @@ tp_alloc(VALUE klass)
 static rb_event_flag_t
 symbol2event_flag(VALUE v)
 {
-    static ID id;
+    ID id;
     VALUE sym = rb_convert_type(v, T_SYMBOL, "Symbol", "to_sym");
 
 #define C(name, NAME) CONST_ID(id, #name); if (sym == ID2SYM(id)) return RUBY_EVENT_##NAME
