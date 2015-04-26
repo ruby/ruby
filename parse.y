@@ -6216,16 +6216,16 @@ parser_tokadd_string(struct parser_params *parser,
     } while (0)
 
     while ((c = nextc()) != -1) {
-        if (reading_indentation) {
-            if (c == ' ' || c == '\t') {
-                line_indent++;
-            } else {
-                if (heredoc_indent > line_indent && c != '\r' && c != '\n') {
-                    heredoc_indent = line_indent;
-                }
-                reading_indentation = 0;
-            }
-        }
+	if (reading_indentation) {
+	    if (c == ' ' || c == '\t') {
+		line_indent++;
+	    } else {
+		if (heredoc_indent > line_indent && c != '\r' && c != '\n') {
+		    heredoc_indent = line_indent;
+		}
+		reading_indentation = 0;
+	    }
+	}
 
 	if (paren && c == paren) {
 	    ++*nest;
@@ -6491,7 +6491,6 @@ parser_heredoc_identifier(struct parser_params *parser)
         c = nextc();
         func = STR_FUNC_INDENT | STR_FUNC_DEDENT;
     }
-    
     switch (c) {
       case '\'':
 	func |= str_squote; goto quoted;
@@ -6574,19 +6573,19 @@ parser_heredoc_dedent(struct parser_params *parser, VALUE input)
     
     p = str;
     while (p < end) {
-        for (i = 0; p < end && i < heredoc_indent; i++) {
-            if (*p != ' ' && *p != '\t') break;
-            p++;
-        }
-        for (; p < end && *p != '\r' && *p != '\n'; p++) out_len++;
-        if (p < end && *p == '\r') {
-            out_len++;
-            p++;
-        }
-        if (p < end && *p == '\n') {
-            out_len++;
-            p++;
-        }
+	for (i = 0; p < end && i < heredoc_indent; i++) {
+	    if (*p != ' ' && *p != '\t') break;
+	    p++;
+	}
+	for (; p < end && *p != '\r' && *p != '\n'; p++) out_len++;
+	if (p < end && *p == '\r') {
+	    out_len++;
+	    p++;
+	}
+	if (p < end && *p == '\n') {
+	    out_len++;
+	    p++;
+	}
     }
 
     output = rb_str_new(0, out_len);
@@ -6594,13 +6593,13 @@ parser_heredoc_dedent(struct parser_params *parser, VALUE input)
 
     p = str;
     while (p < end) {
-        for (i = 0; p < end && i < heredoc_indent; i++) {
-            if (*p != ' ' && *p != '\t') break;
-            p++;
-        }
-        while (p < end && *p != '\r' && *p != '\n') *out_p++ = *p++;
-        if (p < end && *p == '\r') *out_p++ = *p++;
-        if (p < end && *p == '\n') *out_p++ = *p++;
+	for (i = 0; p < end && i < heredoc_indent; i++) {
+	    if (*p != ' ' && *p != '\t') break;
+	    p++;
+	}
+	while (p < end && *p != '\r' && *p != '\n') *out_p++ = *p++;
+	if (p < end && *p == '\r') *out_p++ = *p++;
+	if (p < end && *p == '\n') *out_p++ = *p++;
     }
 
     dispose_string(input);
