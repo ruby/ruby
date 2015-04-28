@@ -1,3 +1,8 @@
+Tue Apr 28 14:14:16 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread_pthread.c (reserve_stack): keep sp safe zone to get rid
+	  of crash by -fstack-check.  [ruby-core:68740] [Bug #11030]
+
 Fri Apr 24 17:27:31 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* test/fiddle/test_handle.rb: fix syntax.
