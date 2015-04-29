@@ -44,7 +44,7 @@ class CGICookieTest < Test::Unit::TestCase
                              'path'=>'/cgi-bin/myapp/',
                              'domain'=>'www.example.com',
                              'expires'=>t,
-                             'secure'=>true
+                             'secure'=>true,
                              )
     assert_equal('name1', cookie.name)
     assert_equal(value, cookie.value)

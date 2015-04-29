@@ -11,11 +11,11 @@ class CGI
   #   cookie1 = CGI::Cookie.new("name", "value1", "value2", ...)
   #   cookie1 = CGI::Cookie.new("name" => "name", "value" => "value")
   #   cookie1 = CGI::Cookie.new('name'    => 'name',
-  #                              'value'   => ['value1', 'value2', ...],
-  #                              'path'    => 'path',   # optional
-  #                              'domain'  => 'domain', # optional
-  #                              'expires' => Time.now, # optional
-  #                              'secure'  => true      # optional
+  #                             'value'   => ['value1', 'value2', ...],
+  #                             'path'    => 'path',   # optional
+  #                             'domain'  => 'domain', # optional
+  #                             'expires' => Time.now, # optional
+  #                             'secure'  => true,     # optional
   #                             )
   #
   #   cgi.out("cookie" => [cookie1, cookie2]) { "string" }
