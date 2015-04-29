@@ -3624,8 +3624,34 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	iseq->compile_data->ensure_node_stack = iseq->compile_data->ensure_node_stack->prev;
 	break;
       }
-      case NODE_ITER:
-      case NODE_FOR:{
+      case NODE_FOR:
+	if (node->nd_var) {
+	    /* massign to var in "for"
+	     * args.length == 1 && Array === (tmp = args[0]) ? tmp : args
+	     */
+	    NODE *var = node->nd_var;
+	    LABEL *not_single = NEW_LABEL(nd_line(var));
+	    LABEL *not_ary = NEW_LABEL(nd_line(var));
+	    COMPILE(ret, "for var", var);
+	    ADD_INSN(ret, line, dup);
+	    ADD_CALL(ret, line, idLength, INT2FIX(0));
+	    ADD_INSN1(ret, line, putobject, INT2FIX(1));
+	    ADD_CALL(ret, line, idEq, INT2FIX(1));
+	    ADD_INSNL(ret, line, branchunless, not_single);
+	    ADD_INSN(ret, line, dup);
+	    ADD_INSN1(ret, line, putobject, INT2FIX(0));
+	    ADD_CALL(ret, line, idAREF, INT2FIX(1));
+	    ADD_INSN1(ret, line, putobject, rb_cArray);
+	    ADD_INSN1(ret, line, topn, INT2FIX(1));
+	    ADD_CALL(ret, line, idEqq, INT2FIX(1));
+	    ADD_INSNL(ret, line, branchunless, not_ary);
+	    ADD_INSN(ret, line, swap);
+	    ADD_LABEL(ret, not_ary);
+	    ADD_INSN(ret, line, pop);
+	    ADD_LABEL(ret, not_single);
+	    break;
+	}
+      case NODE_ITER:{
 	VALUE prevblock = iseq->compile_data->current_block;
 	LABEL *retry_label = NEW_LABEL(line);
 	LABEL *retry_end_l = NEW_LABEL(line);
