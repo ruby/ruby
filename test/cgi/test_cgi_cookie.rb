@@ -31,6 +31,7 @@ class CGICookieTest < Test::Unit::TestCase
     assert_nil(cookie.expires)
     assert_equal('', cookie.path)
     assert_equal(false, cookie.secure)
+    assert_equal(false, cookie.httponly)
     assert_equal("name1=val1&%26%3C%3E%22&%E3%82%86%E3%82%93%E3%82%86%E3%82%93; path=", cookie.to_s)
   end
 
@@ -45,6 +46,7 @@ class CGICookieTest < Test::Unit::TestCase
                              'domain'=>'www.example.com',
                              'expires'=>t,
                              'secure'=>true,
+                             'httponly'=>true
                              )
     assert_equal('name1', cookie.name)
     assert_equal(value, cookie.value)
@@ -52,7 +54,8 @@ class CGICookieTest < Test::Unit::TestCase
     assert_equal(t, cookie.expires)
     assert_equal('/cgi-bin/myapp/', cookie.path)
     assert_equal(true, cookie.secure)
-    assert_equal('name1=val1&%26%3C%3E%22&%A5%E0%A5%B9%A5%AB; domain=www.example.com; path=/cgi-bin/myapp/; expires=Tue, 31 Dec 2030 23:59:59 GMT; secure', cookie.to_s)
+    assert_equal(true, cookie.httponly)
+    assert_equal('name1=val1&%26%3C%3E%22&%A5%E0%A5%B9%A5%AB; domain=www.example.com; path=/cgi-bin/myapp/; expires=Tue, 31 Dec 2030 23:59:59 GMT; secure; HttpOnly', cookie.to_s)
   end
 
 
