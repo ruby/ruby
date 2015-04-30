@@ -2465,7 +2465,7 @@ nurat_s_convert(int argc, VALUE *argv, VALUE klass)
  * a/b (b>0).  Where a is numerator and b is denominator.  Integer a
  * equals rational a/1 mathematically.
  *
- * In ruby, you can create rational object with Rational, to_r, 
+ * In ruby, you can create rational object with Rational, to_r,
  * rationalize method or suffixing r to a literal.  The return values will be irreducible.
  *
  *    Rational(1)      #=> (1/1)
