@@ -102,7 +102,7 @@ class TestAssignment < Test::Unit::TestCase
   end
 
   def test_assign_private_self
-    bug9907 = '[ruby-core:62949] [Bug #9907]'
+    bug11096 = '[ruby-core:68984] [Bug #11096]'
 
     o = Object.new
     class << o
@@ -127,17 +127,17 @@ class TestAssignment < Test::Unit::TestCase
       assert_equal(1, o.instance_eval {self[0] = 1})
     }
 
-    assert_nothing_raised(NoMethodError, bug9907) {
+    assert_raise(NoMethodError, bug11096) {
       assert_equal(43, o.instance_eval {self.foo += 1})
     }
-    assert_nothing_raised(NoMethodError, bug9907) {
+    assert_raise(NoMethodError, bug11096) {
       assert_equal(1, o.instance_eval {self.foo &&= 1})
     }
 
-    assert_nothing_raised(NoMethodError, bug9907) {
+    assert_raise(NoMethodError, bug11096) {
       assert_equal(43, o.instance_eval {self[0] += 1})
     }
-    assert_nothing_raised(NoMethodError, bug9907) {
+    assert_raise(NoMethodError, bug11096) {
       assert_equal(1, o.instance_eval {self[0] &&= 1})
     }
   end
