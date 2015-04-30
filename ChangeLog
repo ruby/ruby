@@ -1,3 +1,8 @@
+Thu Apr 30 16:22:16 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (lambda): push and reset cmdarg_stack in lambda body.
+	  [ruby-core:69017] [Bug #11107]
+
 Sun Apr 26 07:36:48 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enc/utf_8.c (code_to_mbclen, code_to_mbc): reject values larger
