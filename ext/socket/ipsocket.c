@@ -127,7 +127,7 @@ init_inetsock_internal(struct inetsock_arg *arg)
 	    port = arg->remote.serv;
 	}
 
-	rsock_syserr_fail_host_port(error, mesg, host, port);
+	rsock_syserr_fail_host_port(error, syscall, host, port);
     }
 
     arg->fd = -1;
