@@ -1,3 +1,9 @@
+Thu Apr 30 16:39:44 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/socket/ipsocket.c (init_inetsock_internal): preserve errno
+	  before other library calls and use rb_syserr_fail.
+	  [ruby-core:68531] [Bug #10975]
+
 Thu Apr 30 16:22:16 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (lambda): push and reset cmdarg_stack in lambda body.
