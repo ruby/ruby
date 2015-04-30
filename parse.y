@@ -5686,6 +5686,7 @@ rb_parser_compile_file_path(volatile VALUE vparser, VALUE fname, VALUE file, int
 #define STR_FUNC_QWORDS 0x08
 #define STR_FUNC_SYMBOL 0x10
 #define STR_FUNC_INDENT 0x20
+#define STR_FUNC_LABEL  0x40
 
 enum string_type {
     str_squote = (0),
@@ -7858,7 +7859,7 @@ parser_yylex(struct parser_params *parser)
 	}
 	else {
 	    token = parse_string(lex_strterm);
-	    if (token == tSTRING_END && (peek_n('\'', -1) || peek_n('"', -1))) {
+	    if ((token == tSTRING_END) && (lex_strterm->nd_func & STR_FUNC_LABEL)) {
 		if (((IS_lex_state(EXPR_BEG | EXPR_ENDFN) && !COND_P()) || IS_ARG()) &&
 		    IS_LABEL_SUFFIX(0)) {
 		    nextc();
@@ -8139,7 +8140,7 @@ parser_yylex(struct parser_params *parser)
 	return '>';
 
       case '"':
-	lex_strterm = NEW_STRTERM(str_dquote, '"', 0);
+	lex_strterm = NEW_STRTERM(str_dquote|STR_FUNC_LABEL, '"', 0);
 	return tSTRING_BEG;
 
       case '`':
@@ -8158,7 +8159,7 @@ parser_yylex(struct parser_params *parser)
 	return tXSTRING_BEG;
 
       case '\'':
-	lex_strterm = NEW_STRTERM(str_squote, '\'', 0);
+	lex_strterm = NEW_STRTERM(str_squote|STR_FUNC_LABEL, '\'', 0);
 	return tSTRING_BEG;
 
       case '?':
