@@ -1324,6 +1324,21 @@ dln_load(const char *file)
 	    error = dln_strerror();
 	    goto failed;
 	}
+# if defined RUBY_EXPORT
+	{
+	    static const char incompatible[] = "incompatible library version";
+	    void *ex = dlsym(handle, EXPORT_PREFIX"ruby_xmalloc");
+	    if (ex && ex != ruby_xmalloc) {
+
+#   if !defined __APPLE__
+		/* dlclose() segfaults */
+		dlclose(handle);
+#   endif
+		error = incompatible;
+		goto failed;
+	    }
+	}
+# endif
 
 	init_fct = (void(*)())(VALUE)dlsym(handle, buf);
 	if (init_fct == NULL) {

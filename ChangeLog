@@ -1,3 +1,9 @@
+Fri May  1 13:30:24 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dln.c (dln_load): check if a different libruby is loaded by the
+	  extension library, and then bail out to get rid of very frequent
+	  reported stale bug reports.
+
 Thu Apr 30 19:51:11 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (iseq_compile_each): revert r46873 and r46875, not to
