@@ -2377,10 +2377,32 @@ static void
 set_pioinfo_extra(void)
 {
 #if RUBY_MSVCRT_VERSION >= 140
+    // get __pioinfo addr with _isatty
     HMODULE mod = GetModuleHandle("ucrtbase.dll");
-    FARPROC addr = GetProcAddress(mod, "_isatty");
-    intptr_t delta = 0xc07b0; /* __pioinfo - _isatty() */
-    __pioinfo = (ioinfo**)((intptr_t)addr + delta);
+    char *addr = (char*)GetProcAddress(mod, "_isatty");
+    // _osfile(fh) & FDEV /*0x40*/
+#if _WIN64
+    // lea rdx,[__pioinfo's addr in RIP-relative 32bit addr]
+    addr += 0x25;
+# define OPSIZE 3
+    if (memcmp(addr, "\x48\x8d\x15", OPSIZE)) {
+	fprintf(stderr, "unexpected ucrtbase.dll\n");
+	abort();
+    }
+    addr += OPSIZE;
+    int32_t rel = *(int32_t*)(addr);
+    char *rip = addr + 4;
+    __pioinfo = (ioinfo**)(rip + rel);
+#else
+    // mov eax,dword ptr [eax*4+100EB430h]
+    addr += 0x32;
+# define OPSIZE 3
+    if (memcmp(addr, "\x8B\x04\x85", OPSIZE)) {
+	fprintf(stderr, "unexpected ucrtbase.dll\n");
+	abort();
+    }
+    __pioinfo = (ioinfo**)*(intptr_t*)(addr + OPSIZE);
+#endif
 #else
     int fd;
 
