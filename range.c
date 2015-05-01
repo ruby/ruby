@@ -18,7 +18,9 @@
 #include <math.h>
 
 VALUE rb_cRange;
-static ID id_cmp, id_succ, id_beg, id_end, id_excl, id_integer_p, id_div;
+static ID id_beg, id_end, id_excl, id_integer_p, id_div;
+#define id_cmp idCmp
+#define id_succ idSucc
 
 #define RANGE_BEG(r) (RSTRUCT(r)->as.ary[0])
 #define RANGE_END(r) (RSTRUCT(r)->as.ary[1])
@@ -1330,8 +1332,6 @@ Init_Range(void)
 #undef rb_intern
 #define rb_intern(str) rb_intern_const(str)
 
-    id_cmp = rb_intern("<=>");
-    id_succ = rb_intern("succ");
     id_beg = rb_intern("begin");
     id_end = rb_intern("end");
     id_excl = rb_intern("excl");
