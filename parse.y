@@ -487,6 +487,10 @@ static int reg_fragment_check_gen(struct parser_params*, VALUE, int);
 static NODE *reg_named_capture_assign_gen(struct parser_params* parser, VALUE regexp, NODE *match);
 #define reg_named_capture_assign(regexp,match) reg_named_capture_assign_gen(parser,(regexp),(match))
 
+static NODE *parser_heredoc_dedent(struct parser_params*,NODE*);
+# define heredoc_dedent(str) parser_heredoc_dedent(parser, (str))
+
+
 #define get_id(id) (id)
 #define get_value(val) (val)
 #else
@@ -3887,6 +3891,7 @@ strings		: string
 			else {
 			    node = evstr2dstr(node);
 			}
+			heredoc_indent = 0;
 			$$ = node;
 		    /*%
 			$$ = $1;
@@ -3909,7 +3914,7 @@ string		: tCHAR
 string1		: tSTRING_BEG string_contents tSTRING_END
 		    {
 		    /*%%%*/
-			$$ = $2;
+			$$ = heredoc_dedent($2);
 		    /*%
 			$$ = dispatch1(string_literal, $2);
 		    %*/
@@ -4319,6 +4324,10 @@ string_content	: tSTRING_CONTENT
 			$<num>$ = brace_nest;
 			brace_nest = 0;
 		    }
+		    {
+			$<num>$ = heredoc_indent;
+			heredoc_indent = 0;
+		    }
 		  compstmt tSTRING_DEND
 		    {
 			cond_stack = $<val>1;
@@ -4326,11 +4335,12 @@ string_content	: tSTRING_CONTENT
 			lex_strterm = $<node>3;
 			lex_state = $<num>4;
 			brace_nest = $<num>5;
+			heredoc_indent = $<num>6;
 		    /*%%%*/
-			if ($6) $6->flags &= ~NODE_FL_NEWLINE;
-			$$ = new_evstr($6);
+			if ($7) $7->flags &= ~NODE_FL_NEWLINE;
+			$$ = new_evstr($7);
 		    /*%
-			$$ = dispatch1(string_embexpr, $6);
+			$$ = dispatch1(string_embexpr, $7);
 		    %*/
 		    }
 		;
@@ -6195,8 +6205,8 @@ parser_tokadd_string(struct parser_params *parser,
     rb_encoding *enc = *encp;
     char *errbuf = 0;
     static const char mixed_msg[] = "%s mixed within %s source";
-    int reading_indentation = ((func & STR_FUNC_DEDENT) && heredoc_indent > 0);
     int line_indent = 0;
+    int reading_indentation = heredoc_indent > 0;
 
 #define mixed_error(enc1, enc2) if (!errbuf) {	\
 	size_t len = sizeof(mixed_msg) - 4;	\
@@ -6488,8 +6498,9 @@ parser_heredoc_identifier(struct parser_params *parser)
 	c = nextc();
 	func = STR_FUNC_INDENT;
     } else if (c == '~') {
-        c = nextc();
-        func = STR_FUNC_INDENT | STR_FUNC_DEDENT;
+	c = nextc();
+	func = STR_FUNC_INDENT;
+	heredoc_indent = INT_MAX;
     }
     switch (c) {
       case '\'':
@@ -6514,7 +6525,7 @@ parser_heredoc_identifier(struct parser_params *parser)
       default:
 	if (!parser_is_identchar()) {
 	    pushback(c);
-	    if (func & STR_FUNC_DEDENT) {
+	    if (heredoc_indent > 0) {
 		pushback('~');
 	    } else if (func & STR_FUNC_INDENT) {
 		pushback('-');
@@ -6562,15 +6573,20 @@ parser_heredoc_restore(struct parser_params *parser, NODE *here)
     ripper_flush(parser);
 }
 
-static VALUE
-parser_heredoc_dedent(struct parser_params *parser, VALUE input)
+static NODE *
+parser_heredoc_dedent(struct parser_params *parser, NODE *node)
 {
-    long len = RSTRING_LEN(input), out_len = 0, i;
-    char *str = RSTRING_PTR(input), *p, *out_p, *end = &str[len];
+    long len, out_len, i;
+    char *str, *p, *out_p, *end;
     VALUE output;
 
-    if (heredoc_indent == 0) return input;
-    
+    if (heredoc_indent <= 0) return node;
+
+    len = RSTRING_LEN(node->nd_lit);
+    out_len = 0;
+    str = RSTRING_PTR(node->nd_lit);
+    end = &str[len];
+
     p = str;
     while (p < end) {
 	for (i = 0; p < end && i < heredoc_indent; i++) {
@@ -6602,8 +6618,9 @@ parser_heredoc_dedent(struct parser_params *parser, VALUE input)
 	if (p < end && *p == '\n') *out_p++ = *p++;
     }
 
-    dispose_string(input);
-    return output;
+    dispose_string(node->nd_lit);
+    node->nd_lit = output;
+    return node;
 }
 
 static int
@@ -6792,7 +6809,6 @@ parser_here_document(struct parser_params *parser, NODE *here)
 	    tokadd('#');
 	    c = nextc();
 	}
-	if (func & STR_FUNC_DEDENT) heredoc_indent = INT_MAX;
 	do {
 	    pushback(c);
 	    if ((c = tokadd_string(func, '\n', 0, NULL, &enc)) == -1) {
@@ -6813,7 +6829,6 @@ parser_here_document(struct parser_params *parser, NODE *here)
     dispatch_heredoc_end();
     heredoc_restore(lex_strterm);
     lex_strterm = NEW_STRTERM(-1, 0, 0);
-    if (func & STR_FUNC_DEDENT) str = parser_heredoc_dedent(parser, str);
     set_yylval_str(str);
     return tSTRING_CONTENT;
 }

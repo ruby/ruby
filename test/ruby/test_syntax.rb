@@ -535,6 +535,16 @@ That might span many lines
     eos
   end
 
+  def test_dedented_heredoc_with_interpolation
+      assert_equal(<<-eos, <<~eos)
+ #{1}a
+zy
+      eos
+  #{1}a
+ zy
+      eos
+  end
+
   def test_lineno_after_heredoc
     bug7559 = '[ruby-dev:46737]'
     expected, _, actual = __LINE__, <<eom, __LINE__
