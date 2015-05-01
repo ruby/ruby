@@ -106,13 +106,7 @@ dln_loaderror(const char *format, ...)
 # define USE_DLN_DLOPEN
 #endif
 
-#ifndef FUNCNAME_PATTERN
-# if defined(__hp9000s300) || ((defined(__NetBSD__) || defined(__FreeBSD__) || defined(__OpenBSD__)) && !defined(__ELF__)) || defined(__BORLANDC__) || defined(NeXT) || defined(__WATCOMC__) || defined(MACOSX_DYLD)
-#  define FUNCNAME_PREFIX "_Init_"
-# else
-#  define FUNCNAME_PREFIX "Init_"
-# endif
-#endif
+#define FUNCNAME_PREFIX EXPORT_PREFIX"Init_"
 
 #if defined __CYGWIN__ || defined DOSISH
 #define isdirsep(x) ((x) == '/' || (x) == '\\')
