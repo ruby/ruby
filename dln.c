@@ -1330,12 +1330,14 @@ dln_load(const char *file)
 	    void *ex = dlsym(handle, EXPORT_PREFIX"ruby_xmalloc");
 	    if (ex && ex != ruby_xmalloc) {
 
-#   if !defined __APPLE__
+#   if defined __APPLE__
 		/* dlclose() segfaults */
+		rb_fatal("%s - %s", incompatible, file);
+#   else
 		dlclose(handle);
-#   endif
 		error = incompatible;
 		goto failed;
+#   endif
 	    }
 	}
 # endif
