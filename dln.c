@@ -106,7 +106,12 @@ dln_loaderror(const char *format, ...)
 # define USE_DLN_DLOPEN
 #endif
 
-#define FUNCNAME_PREFIX EXPORT_PREFIX"Init_"
+#if defined(__hp9000s300) || ((defined(__NetBSD__) || defined(__FreeBSD__) || defined(__OpenBSD__)) && !defined(__ELF__)) || defined(__BORLANDC__) || defined(NeXT) || defined(__WATCOMC__) || defined(MACOSX_DYLD)
+# define EXTERNAL_PREFIX "_"
+#else
+# define EXTERNAL_PREFIX ""
+#endif
+#define FUNCNAME_PREFIX EXTERNAL_PREFIX"Init_"
 
 #if defined __CYGWIN__ || defined DOSISH
 #define isdirsep(x) ((x) == '/' || (x) == '\\')
@@ -1327,7 +1332,7 @@ dln_load(const char *file)
 # if defined RUBY_EXPORT
 	{
 	    static const char incompatible[] = "incompatible library version";
-	    void *ex = dlsym(handle, EXPORT_PREFIX"ruby_xmalloc");
+	    void *ex = dlsym(handle, EXTERNAL_PREFIX"ruby_xmalloc");
 	    if (ex && ex != ruby_xmalloc) {
 
 #   if defined __APPLE__

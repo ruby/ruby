@@ -749,7 +749,6 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 !if "$(EXTSTATIC)" == "static"
 #define EXTSTATIC 1
 !endif
-#define EXPORT_PREFIX "_"
 #define EXECUTABLE_EXTS $(EXECUTABLE_EXTS)
 #define RUBY_COREDLL "$(RT)"
 #define LIBRUBY_SO "$(LIBRUBY_SO)"
