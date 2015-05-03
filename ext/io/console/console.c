@@ -639,6 +639,24 @@ console_ioflush(VALUE io)
     return io;
 }
 
+static VALUE
+console_beep(VALUE io)
+{
+    rb_io_t *fptr;
+    int fd;
+
+    GetOpenFile(io, fptr);
+    fd = GetWriteFD(fptr);
+#ifdef _WIN32
+    (void)fd;
+    MessageBeep(0);
+#else
+    if (write(fd, "\a", 1) < 0)
+	rb_sys_fail(0);
+#endif
+    return io;
+}
+
 /*
  * call-seq:
  *   IO.console      -> #<File:/dev/tty>
@@ -782,6 +800,7 @@ InitVM_console(void)
     rb_define_method(rb_cIO, "iflush", console_iflush, 0);
     rb_define_method(rb_cIO, "oflush", console_oflush, 0);
     rb_define_method(rb_cIO, "ioflush", console_ioflush, 0);
+    rb_define_method(rb_cIO, "beep", console_beep, 0);
     rb_define_singleton_method(rb_cIO, "console", console_dev, -1);
     {
 	VALUE mReadable = rb_define_module_under(rb_cIO, "generic_readable");
