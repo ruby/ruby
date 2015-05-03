@@ -1,3 +1,8 @@
+Sun May  3 21:59:48 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/yaml.rb: fix typo. [ci skip][fix GH-890]
+	  Patch by @miketheman
+
 Sun May  3 10:02:12 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* range.c (linear_object_p, range_include): test if covered for
