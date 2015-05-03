@@ -50,11 +50,7 @@ typedef struct sgttyb conmode;
 #include <winioctl.h>
 typedef DWORD conmode;
 
-#ifdef HAVE_RB_W32_MAP_ERRNO
 #define LAST_ERROR rb_w32_map_errno(GetLastError())
-#else
-#define LAST_ERROR EBADF
-#endif
 #define SET_LAST_ERROR (errno = LAST_ERROR, 0)
 
 static int
