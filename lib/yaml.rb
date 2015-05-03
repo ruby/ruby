@@ -52,7 +52,7 @@ YAML = Psych # :nodoc:
 # For more advanced details on the implementation see Psych, and also check out
 # http://yaml.org for spec details and other helpful information.
 #
-# Pysch is maintained by Aaron Patterson on github: https://github.com/tenderlove/psych
+# Psych is maintained by Aaron Patterson on github: https://github.com/tenderlove/psych
 #
 # Syck can also be found on github: https://github.com/tenderlove/syck
 module YAML
