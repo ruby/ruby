@@ -657,6 +657,52 @@ console_beep(VALUE io)
     return io;
 }
 
+#if defined _WIN32
+static VALUE
+console_goto(VALUE io, VALUE x, VALUE y)
+{
+    rb_io_t *fptr;
+    int fd;
+    COORD pos;
+
+    GetOpenFile(io, fptr);
+    fd = GetWriteFD(fptr);
+    pos.X = NUM2UINT(x);
+    pos.Y = NUM2UINT(y);
+    if (!SetConsoleCursorPosition((HANDLE)rb_w32_get_osfhandle(fd), pos)) {
+	rb_syserr_fail(LAST_ERROR, 0);
+    }
+    return io;
+}
+
+static VALUE
+console_cursor_pos(VALUE io)
+{
+    rb_io_t *fptr;
+    int fd;
+    rb_console_size_t ws;
+
+    GetOpenFile(io, fptr);
+    fd = GetWriteFD(fptr);
+    if (!GetConsoleScreenBufferInfo((HANDLE)rb_w32_get_osfhandle(fd), &ws)) {
+	rb_syserr_fail(LAST_ERROR, 0);
+    }
+    return rb_assoc_new(UINT2NUM(ws.dwCursorPosition.X), UINT2NUM(ws.dwCursorPosition.Y));
+}
+
+static VALUE
+console_cursor_set(VALUE io, VALUE cpos)
+{
+    cpos = rb_convert_type(cpos, T_ARRAY, "Array", "to_ary");
+    if (RARRAY_LEN(cpos) != 2) rb_raise(rb_eArgError, "expected 2D coordinate");
+    return console_goto(io, RARRAY_AREF(cpos, 0), RARRAY_AREF(cpos, 1));
+}
+#else
+# define console_goto rb_f_notimplement
+# define console_cursor_pos rb_f_notimplement
+# define console_cursor_set rb_f_notimplement
+#endif
+
 /*
  * call-seq:
  *   IO.console      -> #<File:/dev/tty>
@@ -801,6 +847,9 @@ InitVM_console(void)
     rb_define_method(rb_cIO, "oflush", console_oflush, 0);
     rb_define_method(rb_cIO, "ioflush", console_ioflush, 0);
     rb_define_method(rb_cIO, "beep", console_beep, 0);
+    rb_define_method(rb_cIO, "goto", console_goto, 2);
+    rb_define_method(rb_cIO, "cursor", console_cursor_pos, 0);
+    rb_define_method(rb_cIO, "cursor=", console_cursor_set, 1);
     rb_define_singleton_method(rb_cIO, "console", console_dev, -1);
     {
 	VALUE mReadable = rb_define_module_under(rb_cIO, "generic_readable");
