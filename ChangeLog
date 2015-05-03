@@ -1,3 +1,8 @@
+Sun May  3 10:02:12 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* range.c (linear_object_p, range_include): test if covered for
+	  linear objects.  [ruby-core:69052] [Bug #11113]
+
 Fri May  1 13:30:24 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dln.c (dln_load): check if a different libruby is loaded by the
