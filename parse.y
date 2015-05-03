@@ -676,6 +676,9 @@ new_args_tail_gen(struct parser_params *parser, VALUE k, VALUE kr, VALUE b)
 
 #define new_defined(expr) dispatch1(defined, (expr))
 
+static VALUE parser_heredoc_dedent_ripper(struct parser_params*,VALUE);
+# define heredoc_dedent_ripper(str) parser_heredoc_dedent_ripper(parser, (str))
+
 #define FIXME 0
 
 #endif /* RIPPER */
@@ -3918,7 +3921,8 @@ string1		: tSTRING_BEG string_contents tSTRING_END
 		    /*%%%*/
 			$$ = heredoc_dedent($2);
 		    /*%
-			$$ = dispatch1(string_literal, $2);
+			$$ = dispatch1(string_literal, 
+                                       heredoc_dedent_ripper($2));
 		    %*/
 		    }
 		;
@@ -6578,11 +6582,57 @@ parser_heredoc_restore(struct parser_params *parser, NODE *here)
     ripper_flush(parser);
 }
 
+static VALUE
+parser_heredoc_dedent_string(struct parser_params *parser, VALUE input,
+			     long *count_indent, long *copy_indent)
+{
+    long len, out_len;
+    char *str, *p, *out_p, *end;
+    VALUE output;
+    
+    len = RSTRING_LEN(input);
+    out_len = 0;
+    str = RSTRING_PTR(input);
+    end = &str[len];
+
+    p = str;
+    while (p < end) {
+	for (; p < end && *count_indent > 0; (*count_indent)--) {
+	    if (*p != ' ' && *p != '\t') break;
+	    p++;
+	}
+	for (; p < end && *p != '\n'; p++) out_len++;
+	if (p < end && *p == '\n') {
+	    *count_indent = heredoc_indent;
+	    out_len++;
+	    p++;
+	}
+    }
+
+    output = rb_str_new(0, out_len);
+    out_p = RSTRING_PTR(output);
+
+    p = str;
+    while (p < end) {
+	for (; p < end && *copy_indent > 0; (*copy_indent)--) {
+	    if (*p != ' ' && *p != '\t') break;
+	    p++;
+	}
+	while (p < end && *p != '\n') *out_p++ = *p++;
+	if (p < end && *p == '\n') {
+	    *copy_indent = heredoc_indent;
+	    *out_p++ = *p++;
+	}
+    }
+
+    return output;
+}
+
+#ifndef RIPPER
 static NODE *
 parser_heredoc_dedent(struct parser_params *parser, NODE *root)
 {
-    long len, out_len, count_indent, copy_indent;
-    char *str, *p, *out_p, *end;
+    long count_indent, copy_indent;
     VALUE output;
     NODE *node, *str_node;
 
@@ -6592,40 +6642,8 @@ parser_heredoc_dedent(struct parser_params *parser, NODE *root)
     count_indent = copy_indent = heredoc_indent;
 
     while (str_node) {
-	len = RSTRING_LEN(str_node->nd_lit);
-	out_len = 0;
-	str = RSTRING_PTR(str_node->nd_lit);
-	end = &str[len];
-
-	p = str;
-	while (p < end) {
-	    for (; p < end && count_indent > 0; count_indent--) {
-		if (*p != ' ' && *p != '\t') break;
-		p++;
-	    }
-	    for (; p < end && *p != '\n'; p++) out_len++;
-	    if (p < end && *p == '\n') {
-		count_indent = heredoc_indent;
-		out_len++;
-		p++;
-	    }
-	}
-
-	output = rb_str_new(0, out_len);
-	out_p = RSTRING_PTR(output);
-
-	p = str;
-	while (p < end) {
-	    for (; p < end && copy_indent > 0; copy_indent--) {
-		if (*p != ' ' && *p != '\t') break;
-		p++;
-	    }
-	    while (p < end && *p != '\n') *out_p++ = *p++;
-	    if (p < end && *p == '\n') {
-		copy_indent = heredoc_indent;
-		*out_p++ = *p++;
-	    }
-	}
+	output = parser_heredoc_dedent_string(parser, str_node->nd_lit,
+	    &count_indent, &copy_indent);
 
 	dispose_string(str_node->nd_lit);
 	str_node->nd_lit = output;
@@ -6643,6 +6661,36 @@ parser_heredoc_dedent(struct parser_params *parser, NODE *root)
 
     return root;
 }
+#else /* RIPPER */
+static VALUE
+parser_heredoc_dedent_ripper(struct parser_params *parser, VALUE array)
+{
+    long count_indent, copy_indent, array_len, i;
+    VALUE e, sym, ret;
+
+    if (heredoc_indent <= 0) return array;
+
+    count_indent = copy_indent = heredoc_indent;
+
+    array_len = RARRAY_LEN(array);
+    for (i = 0; i < array_len; i++) {
+	e = rb_ary_entry(array, i);
+	if (TYPE(e) == T_ARRAY && TYPE(sym = rb_ary_entry(e, 0)) == T_SYMBOL) {
+	    if (rb_to_id(sym) != rb_intern("string_content") &&
+	    	rb_to_id(sym) != rb_intern("@tstring_content")) continue;
+	    ret = parser_heredoc_dedent_string(parser, rb_ary_entry(e, 1),
+					       &count_indent, &copy_indent);
+	    rb_ary_store(e, 1, ret);
+	} else if (TYPE(e) == T_STRING) {
+	    ret = parser_heredoc_dedent_string(parser, e,
+					       &count_indent, &copy_indent);
+	    rb_ary_store(array, i, ret);
+	}
+    }
+
+    return array;
+}
+#endif
 
 static int
 parser_whole_match_p(struct parser_params *parser,
