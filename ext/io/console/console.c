@@ -697,10 +697,36 @@ console_cursor_set(VALUE io, VALUE cpos)
     if (RARRAY_LEN(cpos) != 2) rb_raise(rb_eArgError, "expected 2D coordinate");
     return console_goto(io, RARRAY_AREF(cpos, 0), RARRAY_AREF(cpos, 1));
 }
+
+#include "win32_vk.h"
+
+static VALUE
+console_key_pressed_p(VALUE io, VALUE k)
+{
+    int vk = -1;
+
+    if (FIXNUM_P(k)) {
+	vk = NUM2UINT(k);
+    }
+    else {
+	const struct vktable *t;
+	if (SYMBOL_P(k)) {
+	    k = rb_sym2str(k);
+	}
+	else {
+	    StringValueCStr(k);
+	}
+	t = console_win32_vk(RSTRING_PTR(k), RSTRING_LEN(k));
+	if (!t) rb_raise(rb_eArgError, "unknown virtual key code: %"PRIsVALUE, k);
+	vk = t->vk;
+    }
+    return GetKeyState(vk) & 0x80 ? Qtrue : Qfalse;
+}
 #else
 # define console_goto rb_f_notimplement
 # define console_cursor_pos rb_f_notimplement
 # define console_cursor_set rb_f_notimplement
+# define console_key_pressed_p rb_f_notimplement
 #endif
 
 /*
@@ -850,6 +876,7 @@ InitVM_console(void)
     rb_define_method(rb_cIO, "goto", console_goto, 2);
     rb_define_method(rb_cIO, "cursor", console_cursor_pos, 0);
     rb_define_method(rb_cIO, "cursor=", console_cursor_set, 1);
+    rb_define_method(rb_cIO, "pressed?", console_key_pressed_p, 1);
     rb_define_singleton_method(rb_cIO, "console", console_dev, -1);
     {
 	VALUE mReadable = rb_define_module_under(rb_cIO, "generic_readable");
