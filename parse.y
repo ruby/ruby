@@ -256,6 +256,7 @@ struct parser_params {
     int tokline;
     int heredoc_end;
     int heredoc_indent;
+    int heredoc_line_indent;
     char *tokenbuf;
     NODE *deferred_nodes;
     struct local_vars *lvtbl;
@@ -347,6 +348,7 @@ static int parser_yyerror(struct parser_params*, const char*);
 #define lex_pend		(parser->lex.pend)
 #define heredoc_end		(parser->heredoc_end)
 #define heredoc_indent		(parser->heredoc_indent)
+#define heredoc_line_indent	(parser->heredoc_line_indent)
 #define command_start		(parser->command_start)
 #define deferred_nodes		(parser->deferred_nodes)
 #define lex_gets_ptr		(parser->lex.gets_ptr)
@@ -6205,8 +6207,6 @@ parser_tokadd_string(struct parser_params *parser,
     rb_encoding *enc = *encp;
     char *errbuf = 0;
     static const char mixed_msg[] = "%s mixed within %s source";
-    int line_indent = 0;
-    int reading_indentation = heredoc_indent > 0;
 
 #define mixed_error(enc1, enc2) if (!errbuf) {	\
 	size_t len = sizeof(mixed_msg) - 4;	\
@@ -6226,14 +6226,18 @@ parser_tokadd_string(struct parser_params *parser,
     } while (0)
 
     while ((c = nextc()) != -1) {
-	if (reading_indentation) {
-	    if (c == ' ' || c == '\t') {
-		line_indent++;
+	if (heredoc_indent > 0) {
+	    if (heredoc_line_indent == -1) {
+		if (c == '\n') heredoc_line_indent = 0;
 	    } else {
-		if (heredoc_indent > line_indent && c != '\r' && c != '\n') {
-		    heredoc_indent = line_indent;
+		if (c == ' ' || c == '\t') {
+		    heredoc_line_indent++;
+		} else if (c != '\n') {
+		    if (heredoc_indent > heredoc_line_indent) {
+			heredoc_indent = heredoc_line_indent;
+		    }
+		    heredoc_line_indent = -1;
 		}
-		reading_indentation = 0;
 	    }
 	}
 
@@ -6501,6 +6505,7 @@ parser_heredoc_identifier(struct parser_params *parser)
 	c = nextc();
 	func = STR_FUNC_INDENT;
 	heredoc_indent = INT_MAX;
+	heredoc_line_indent = 0;
     }
     switch (c) {
       case '\'':
@@ -6574,53 +6579,69 @@ parser_heredoc_restore(struct parser_params *parser, NODE *here)
 }
 
 static NODE *
-parser_heredoc_dedent(struct parser_params *parser, NODE *node)
+parser_heredoc_dedent(struct parser_params *parser, NODE *root)
 {
-    long len, out_len, i;
+    long len, out_len, count_indent, copy_indent;
     char *str, *p, *out_p, *end;
     VALUE output;
+    NODE *node, *str_node;
 
-    if (heredoc_indent <= 0) return node;
+    if (heredoc_indent <= 0) return root;
 
-    len = RSTRING_LEN(node->nd_lit);
-    out_len = 0;
-    str = RSTRING_PTR(node->nd_lit);
-    end = &str[len];
+    node = str_node = root;
+    count_indent = copy_indent = heredoc_indent;
 
-    p = str;
-    while (p < end) {
-	for (i = 0; p < end && i < heredoc_indent; i++) {
-	    if (*p != ' ' && *p != '\t') break;
-	    p++;
+    while (str_node) {
+	len = RSTRING_LEN(str_node->nd_lit);
+	out_len = 0;
+	str = RSTRING_PTR(str_node->nd_lit);
+	end = &str[len];
+
+	p = str;
+	while (p < end) {
+	    for (; p < end && count_indent > 0; count_indent--) {
+		if (*p != ' ' && *p != '\t') break;
+		p++;
+	    }
+	    for (; p < end && *p != '\n'; p++) out_len++;
+	    if (p < end && *p == '\n') {
+		count_indent = heredoc_indent;
+		out_len++;
+		p++;
+	    }
 	}
-	for (; p < end && *p != '\r' && *p != '\n'; p++) out_len++;
-	if (p < end && *p == '\r') {
-	    out_len++;
-	    p++;
+
+	output = rb_str_new(0, out_len);
+	out_p = RSTRING_PTR(output);
+
+	p = str;
+	while (p < end) {
+	    for (; p < end && copy_indent > 0; copy_indent--) {
+		if (*p != ' ' && *p != '\t') break;
+		p++;
+	    }
+	    while (p < end && *p != '\n') *out_p++ = *p++;
+	    if (p < end && *p == '\n') {
+		copy_indent = heredoc_indent;
+		*out_p++ = *p++;
+	    }
 	}
-	if (p < end && *p == '\n') {
-	    out_len++;
-	    p++;
+
+	dispose_string(str_node->nd_lit);
+	str_node->nd_lit = output;
+
+	str_node = 0;
+	while (node = node->nd_next) {
+	    if (nd_type(node) != NODE_ARRAY) break;
+	    if (nd_type(node->nd_head) == NODE_STR ||
+		nd_type(node->nd_head) == NODE_DSTR) {
+		str_node = node->nd_head;
+		break;
+	    }
 	}
     }
 
-    output = rb_str_new(0, out_len);
-    out_p = RSTRING_PTR(output);
-
-    p = str;
-    while (p < end) {
-	for (i = 0; p < end && i < heredoc_indent; i++) {
-	    if (*p != ' ' && *p != '\t') break;
-	    p++;
-	}
-	while (p < end && *p != '\r' && *p != '\n') *out_p++ = *p++;
-	if (p < end && *p == '\r') *out_p++ = *p++;
-	if (p < end && *p == '\n') *out_p++ = *p++;
-    }
-
-    dispose_string(node->nd_lit);
-    node->nd_lit = output;
-    return node;
+    return root;
 }
 
 static int

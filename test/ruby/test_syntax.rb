@@ -535,7 +535,7 @@ That might span many lines
     eos
   end
 
-  def test_dedented_heredoc_with_interpolation
+  def test_dedented_heredoc_with_interpolated_expression
       assert_equal(<<-eos, <<~eos)
  #{1}a
 zy
@@ -543,6 +543,17 @@ zy
   #{1}a
  zy
       eos
+  end
+
+  def test_dedented_heredoc_with_interpolated_string
+    w = ""
+    assert_equal(<<-eos, <<~eos)
+#{w} a
+ zy
+    eos
+ #{w} a
+  zy
+    eos
   end
 
   def test_lineno_after_heredoc
