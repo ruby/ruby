@@ -10,6 +10,9 @@
 #ifdef HAVE_SYS_VFS_H
 #include <sys/vfs.h>
 #endif
+#ifdef HAVE_SYS_STATVFS_H
+#include <sys/statvfs.h>
+#endif
 
 #if defined HAVE_STRUCT_STATFS_F_FSTYPENAME
 typedef struct statfs statfs_t;
