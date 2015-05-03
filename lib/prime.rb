@@ -57,9 +57,6 @@ end
 #
 # == Retrieving the instance
 #
-# +Prime+.new is obsolete. Now +Prime+ has the default instance and you can
-# access it as +Prime+.instance.
-#
 # For convenience, each instance method of +Prime+.instance can be accessed
 # as a class method of +Prime+.
 #
@@ -90,20 +87,11 @@ end
 
 class Prime
   include Enumerable
-  @the_instance = Prime.new
-
-  # obsolete. Use +Prime+::+instance+ or class methods of +Prime+.
-  def initialize
-    @generator = EratosthenesGenerator.new
-    extend OldCompatibility
-    warn "Prime::new is obsolete. use Prime::instance or class methods of Prime."
-  end
+  include Singleton
 
   class << self
     extend Forwardable
     include Enumerable
-    # Returns the default instance of Prime.
-    def instance; @the_instance end
 
     def method_added(method) # :nodoc:
       (class<< self;self;end).def_delegator :instance, method
@@ -136,14 +124,6 @@ class Prime
   #   Upper bound of prime numbers. The iterator stops after it
   #   yields all prime numbers p <= +ubound+.
   #
-  # == Note
-  #
-  # +Prime+.+new+ returns an object extended by +Prime+::+OldCompatibility+
-  # in order to be compatible with Ruby 1.8, and +Prime+#each is overwritten
-  # by +Prime+::+OldCompatibility+#+each+.
-  #
-  # +Prime+.+new+ is now obsolete. Use +Prime+.+instance+.+each+ or simply
-  # +Prime+.+each+.
   def each(ubound = nil, generator = EratosthenesGenerator.new, &block)
     generator.upper_bound = ubound
     generator.each(&block)
@@ -462,26 +442,6 @@ class Prime
         @primes.push prime unless prime.nil?
       end
       @max_checked = segment_max
-    end
-  end
-
-  # Provides a +Prime+ object with compatibility to Ruby 1.8 when instantiated via +Prime+.+new+.
-  module OldCompatibility
-    # Returns the next prime number and forwards internal pointer.
-    def succ
-      @generator.succ
-    end
-    alias next succ
-
-    # Overwrites Prime#each.
-    #
-    # Iterates the given block over all prime numbers. Note that enumeration
-    # starts from the current position of internal pointer, not rewound.
-    def each
-      return @generator.dup unless block_given?
-      loop do
-        yield succ
-      end
     end
   end
 end
