@@ -3947,9 +3947,10 @@ xstring		: tXSTRING_BEG xstring_contents tSTRING_END
 				break;
 			    }
 			}
-			$$ = node;
+			$$ = heredoc_dedent(node);
 		    /*%
-			$$ = dispatch1(xstring_literal, $2);
+			$$ = dispatch1(xstring_literal, 
+				       heredoc_dedent_ripper($2));
 		    %*/
 		    }
 		;
