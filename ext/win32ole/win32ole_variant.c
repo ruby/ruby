@@ -491,9 +491,9 @@ unlock_safe_array(SAFEARRAY *psa)
  *  WIN32OLE_VARIANT object is VT_ARRAY.
  *
  *  REMARK:
- *     The all indicies should be 0 or natural number and
- *     lower than or equal to max indicies.
- *     (This point is different with Ruby Array indicies.)
+ *     The all indices should be 0 or natural number and
+ *     lower than or equal to max indices.
+ *     (This point is different with Ruby Array indices.)
  *
  *     obj = WIN32OLE_VARIANT.new([[1,2,3],[4,5,6]])
  *     p obj[0,0] # => 1
@@ -546,9 +546,9 @@ folevariant_ary_aref(int argc, VALUE *argv, VALUE self)
  *  WIN32OLE_VARIANT object is VT_ARRAY.
  *
  *  REMARK:
- *     The all indicies should be 0 or natural number and
- *     lower than or equal to max indicies.
- *     (This point is different with Ruby Array indicies.)
+ *     The all indices should be 0 or natural number and
+ *     lower than or equal to max indices.
+ *     (This point is different with Ruby Array indices.)
  *
  *     obj = WIN32OLE_VARIANT.new([[1,2,3],[4,5,6]])
  *     obj[0,0] = 7
