@@ -5,7 +5,7 @@ hdr = nil
 case
 when macro_defined?("_WIN32", "")
   # rb_w32_map_errno: 1.8.7
-  win32 = true
+  vk_header = "win32_vk.h"
 when hdr = %w"termios.h termio.h".find {|h| have_header(h)}
   have_func("cfmakeraw", hdr)
 when have_header(hdr = "sgtty.h")
@@ -19,6 +19,6 @@ if ok
   # rb_io_get_write_io: 1.9.1
   # rb_cloexec_open: 2.0.0
   create_makefile("io/console") {|conf|
-    conf << "\n""VK_HEADER = win32_vk.h\n"
+    conf << "\n""VK_HEADER = #{vk_header}\n"
   }
 end
