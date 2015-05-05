@@ -74,6 +74,10 @@ module OpenSSL
         DEFAULT_CERT_STORE.flags = OpenSSL::X509::V_FLAG_CRL_CHECK_ALL
       end
 
+      def initialize
+        set_params
+      end
+
       ##
       # Sets the parameters for this SSL context to the values in +params+.
       # The keys in +params+ must be assignment methods on SSLContext.

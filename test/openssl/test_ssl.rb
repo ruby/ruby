@@ -332,6 +332,8 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     start_server(OpenSSL::SSL::VERIFY_NONE, true, :ignore_listener_error => true){|server, port|
       sock = TCPSocket.new("127.0.0.1", port)
       ctx = OpenSSL::SSL::SSLContext.new
+      assert_equal(OpenSSL::SSL::VERIFY_PEER, ctx.verify_mode)
+      assert_equal(OpenSSL::SSL::SSLContext::DEFAULT_PARAMS[:options], ctx.options)
       ctx.set_params
       assert_equal(OpenSSL::SSL::VERIFY_PEER, ctx.verify_mode)
       assert_equal(OpenSSL::SSL::SSLContext::DEFAULT_PARAMS[:options], ctx.options)
