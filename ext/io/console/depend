@@ -1,3 +1,5 @@
+WIN32_VK_HEADER = {$(srcdir)}win32_vk.chksum
+
 $(OBJS): $(HDRS) $(ruby_headers) \
   $(VK_HEADER) \
   $(hdrdir)/ruby/io.h \
@@ -6,5 +8,12 @@ $(OBJS): $(HDRS) $(ruby_headers) \
 
 win32_vk.h: win32_vk.list
 
-.list.h:
-	gperf --ignore-case -E -C -P -p -j1 -i 1 -g -o -t -K ofs -N console_win32_vk -k* --output-file=$@ $<
+{$(srcdir)}.list.h:
+	gperf --ignore-case -E -C -P -p -j1 -i 1 -g -o -t -K ofs -N console_win32_vk -k* --output-file=$(@F) $<
+
+.SUFFIXES: .chksum .list
+
+{$(srcdir)}.list.chksum:
+	@$(RUBY) -I$(top_srcdir)/tool -rchecksum \
+	    -e "Checksum.update(ARGV) {|k,f|k.copy(f) rescue k.make(f)}" \
+	    -- --make=$(MAKE) -I$(srcdir) $(<F) $(@F:.chksum=.h)
