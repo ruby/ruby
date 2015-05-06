@@ -1,6 +1,7 @@
 require 'socket'
 require 'timeout'
 require 'thread'
+require 'io/wait'
 
 begin
   require 'securerandom'
@@ -680,7 +681,11 @@ class Resolv
           if timeout <= 0
             raise ResolvTimeout
           end
-          select_result = IO.select(@socks, nil, nil, timeout)
+          if @socks.size == 1
+            select_result = @socks[0].wait_readable(timeout) ? [ @socks ] : nil
+          else
+            select_result = IO.select(@socks, nil, nil, timeout)
+          end
           if !select_result
             after_select = Time.now
             next if after_select < timelimit

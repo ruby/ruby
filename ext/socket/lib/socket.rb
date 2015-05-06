@@ -1,4 +1,5 @@
 require 'socket.so'
+require 'io/wait'
 
 class Addrinfo
   # creates an Addrinfo object from the arguments.
@@ -54,9 +55,8 @@ class Addrinfo
         when 0 # success or EISCONN, other errors raise
           break
         when :wait_writable
-          if !IO.select(nil, [sock], nil, timeout)
+          sock.wait_writable(timeout) or
             raise Errno::ETIMEDOUT, 'user specified timeout'
-          end
         end while true
       else
         sock.connect(self)
