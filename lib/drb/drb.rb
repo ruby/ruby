@@ -48,6 +48,7 @@
 require 'socket'
 require 'thread'
 require 'fcntl'
+require 'io/wait'
 require 'drb/eq'
 
 #
@@ -1003,7 +1004,7 @@ module DRb
     # Check to see if this connection is alive.
     def alive?
       return false unless @socket
-      if IO.select([@socket], nil, nil, 0)
+      if @socket.to_io.wait_readable(0)
         close
         return false
       end

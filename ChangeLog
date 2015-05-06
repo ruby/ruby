@@ -1,3 +1,11 @@
+Thu May  7 05:14:39 2015  Eric Wong  <e@80x24.org>
+
+	* ext/socket/lib/socket.rb (connect_nonblock): use IO#wait_writable
+	* lib/drb/drb.rb (DRB::DRbTCPSocket#alive?): use IO#wait_readable
+	* lib/webrick/httpserver.rb (run): ditto
+	* lib/resolv.rb (request): ditto for single socket case
+	  [ruby-core:68943] [Feature #11081]
+
 Wed May  6 22:49:54 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_eval.c (rb_method_call_status): undefined refined method is
