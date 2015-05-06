@@ -559,7 +559,8 @@ rb_method_call_status(rb_thread_t *th, const rb_method_entry_t *me, call_type sc
     ID oid;
     int noex;
 
-    if (UNDEFINED_METHOD_ENTRY_P(me)) {
+    if (UNDEFINED_METHOD_ENTRY_P(me) ||
+	UNDEFINED_REFINED_METHOD_P(me->def)) {
 	return scope == CALL_VCALL ? NOEX_VCALL : 0;
     }
     klass = me->klass;
