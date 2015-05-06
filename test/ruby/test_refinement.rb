@@ -1428,6 +1428,23 @@ class TestRefinement < Test::Unit::TestCase
     INPUT
   end
 
+  def test_check_funcall_undefined
+    bug11117 = '[ruby-core:69064] [Bug #11117]'
+
+    x = Class.new
+    Module.new do
+      refine x do
+        def to_regexp
+          //
+        end
+      end
+    end
+
+    assert_nothing_raised(NoMethodError, bug11117) {
+      assert_nil(Regexp.try_convert(x.new))
+    }
+  end
+
   private
 
   def eval_using(mod, s)
