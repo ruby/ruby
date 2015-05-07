@@ -1,5 +1,5 @@
 /* C code produced by gperf version 3.0.4 */
-/* Command-line: gperf --ignore-case -E -C -P -p -j1 -i 1 -g -o -t -K ofs -N console_win32_vk -k'*' --output-file=win32_vk.h win32_vk.list  */
+/* Command-line: gperf --ignore-case -E -C -P -p -j1 -i 1 -g -o -t -K ofs -N console_win32_vk -k'*' --output-file=win32_vk.inc win32_vk.list  */
 
 #if !((' ' == 32) && ('!' == 33) && ('"' == 34) && ('#' == 35) \
       && ('%' == 37) && ('&' == 38) && ('\'' == 39) && ('(' == 40) \
