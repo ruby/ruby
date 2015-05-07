@@ -7,15 +7,22 @@ class Checksum
     @vpath = vpath
   end
 
+  attr_reader :source, :target
+
   def source=(source)
     @source = source
     @checksum = File.basename(source, ".*") + ".chksum"
+  end
+
+  def target=(target)
+    @target = target
   end
 
   def update?
     src = @vpath.read(@source)
     @len = src.length
     @sum = src.sum
+    return false unless @vpath.search(File.method(:exist?), @target)
     begin
       data = @vpath.read(@checksum)
     rescue
@@ -47,8 +54,8 @@ class Checksum
     true
   end
 
-  def make(arg)
-    system([@make, arg].compact.join(' '))
+  def make(*args)
+    system(@make, *args)
   end
 
   def def_options(opt = (require 'optparse'; OptionParser.new))
@@ -59,7 +66,7 @@ class Checksum
 
   def self.update(argv)
     k = new(VPath.new)
-    k.source, *argv = k.def_options.parse(*argv)
+    k.source, k.target, *argv = k.def_options.parse(*argv)
     k.update {|k| yield(k, *argv)}
   end
 end
