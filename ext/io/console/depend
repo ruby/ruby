@@ -15,5 +15,5 @@ win32_vk.inc: win32_vk.list
 
 {$(srcdir)}.list.chksum:
 	@$(RUBY) -I$(top_srcdir)/tool -rchecksum \
-	    -e "Checksum.update(ARGV) {|k,f|k.copy(f) rescue k.make(f)}" \
+	    -e "Checksum.update(ARGV) {|k|k.copy(k.target) rescue k.make(k.target)}" \
 	    -- --make=$(MAKE) -I$(srcdir) $(<F) $(@F:.chksum=.inc)
