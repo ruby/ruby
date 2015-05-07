@@ -1,3 +1,7 @@
+Thu May  7 22:22:59 2015  Sho Hashimoto  <sho-h@ruby-lang.org>
+
+	* proc.c: [DOC] fix Binding#local_variable_set example. [ci skip]
+
 Thu May  7 11:32:57 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* Makefile.in (rbconfig.rb): add rule to make.
