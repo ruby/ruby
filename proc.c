@@ -476,12 +476,12 @@ bind_local_variable_get(VALUE bindval, VALUE sym)
  *
  *	def foo
  *  	  a = 1
- *  	  b = binding
- *  	  b.local_variable_set(:a, 2) # set existing local variable `a'
- *  	  b.local_variable_set(:b, 3) # create new local variable `b'
- *  	                              # `b' exists only in binding.
- *  	  b.local_variable_get(:a) #=> 2
- *  	  b.local_variable_get(:b) #=> 3
+ *  	  bind = binding
+ *  	  bind.local_variable_set(:a, 2) # set existing local variable `a'
+ *  	  bind.local_variable_set(:b, 3) # create new local variable `b'
+ *  	                                 # `b' exists only in binding.
+ *  	  p bind.local_variable_get(:a) #=> 2
+ *  	  p bind.local_variable_get(:b) #=> 3
  *  	  p a #=> 2
  *  	  p b #=> NameError
  *  	end
