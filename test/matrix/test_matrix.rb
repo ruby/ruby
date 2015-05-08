@@ -179,8 +179,11 @@ class TestMatrix < Test::Unit::TestCase
   end
 
   def test_determinant
+    assert_equal(0, Matrix[[0,0],[0,0]].determinant)
     assert_equal(45, Matrix[[7,6], [3,9]].determinant)
     assert_equal(-18, Matrix[[2,0,1],[0,-2,2],[1,2,3]].determinant)
+    assert_equal(-7, Matrix[[0,0,1],[0,7,6],[1,3,9]].determinant)
+    assert_equal(42, Matrix[[7,0,1,0,12],[8,1,1,9,1],[4,0,0,-7,17],[-1,0,0,-4,8],[10,1,1,8,6]].determinant)
   end
 
   def test_new_matrix
@@ -414,13 +417,6 @@ class TestMatrix < Test::Unit::TestCase
     assert_equal(Matrix[[67,96],[48,99]], Matrix[[7,6],[3,9]] ** 2)
     assert_equal(Matrix.I(5), Matrix.I(5) ** -1)
     assert_raise(Matrix::ErrOperationNotDefined) { Matrix.I(5) ** Object.new }
-  end
-
-  def test_det
-    assert_equal(45, Matrix[[7,6],[3,9]].det)
-    assert_equal(0, Matrix[[0,0],[0,0]].det)
-    assert_equal(-7, Matrix[[0,0,1],[0,7,6],[1,3,9]].det)
-    assert_equal(42, Matrix[[7,0,1,0,12],[8,1,1,9,1],[4,0,0,-7,17],[-1,0,0,-4,8],[10,1,1,8,6]].det)
   end
 
   def test_rank2
