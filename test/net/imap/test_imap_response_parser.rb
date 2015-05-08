@@ -149,6 +149,15 @@ EOF
       response.data.attr["BODYSTRUCTURE"].parts[1].body.param["FILENAME"])
   end
 
+  def test_body_type_disposition_without_language
+    parser = Net::IMAP::ResponseParser.new
+    response = parser.parse(<<EOF.gsub(/\n/, "\r\n").taint)
+* 4 FETCH (BODY (((\"text\" \"plain\" (\"charset\" \"utf-8\") NIL NIL \"7bit\" 257 9 NIL NIL NIL NIL)(\"text\" \"html\" (\"charset\" \"utf-8\") NIL NIL \"quoted-printable\" 655 9 NIL NIL NIL NIL) \"alternative\" (\"boundary\" \"001a1137a5047848dd05157ddaa1\") NIL)(\"application\" \"pdf\" (\"name\" \"test.xml\" \"x-apple-part-url\" \"9D00D9A2-98AB-4EFB-85BA-FB255F8BF3D7\") NIL NIL \"base64\" 4383638 NIL (\"attachment\" (\"filename\" \"test.xml\")) NIL NIL) \"mixed\" (\"boundary\" \"001a1137a5047848e405157ddaa3\") NIL))
+EOF
+	assert_equal("test.xml",
+                 response.data.attr["BODY"].parts[1].param["NAME"])
+  end
+
   def assert_parseable(s)
     parser = Net::IMAP::ResponseParser.new
     parser.parse(s.gsub(/\n/, "\r\n").taint)
