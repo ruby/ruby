@@ -1,5 +1,3 @@
-WIN32_VK_HEADER = {$(srcdir)}win32_vk.chksum
-
 $(OBJS): $(HDRS) $(ruby_headers) \
   $(VK_HEADER) \
   $(hdrdir)/ruby/io.h \
