@@ -449,6 +449,8 @@ rb_f_sprintf(int argc, const VALUE *argv)
     return rb_str_format(argc - 1, argv + 1, GETNTHARG(0));
 }
 
+VALUE rb_time_strftime(VALUE time, VALUE format);
+
 VALUE
 rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 {
@@ -522,6 +524,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	nextvalue = Qundef;
       retry:
 	switch (*p) {
+	  malformed:
 	  default:
 	    if (rb_enc_isprint(*p, enc))
 		rb_raise(rb_eArgError, "malformed format string - %%%c", *p);
@@ -653,6 +656,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	    p--;
 	  case '%':
 	    if (flags != FNONE) {
+	      invalid:
 		rb_raise(rb_eArgError, "invalid format character - %%");
 	    }
 	    PUSH("%", 1);
@@ -1184,6 +1188,29 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		CHECK(need);
 		snprintf(&buf[blen], need, fbuf, fval);
 		blen += strlen(&buf[blen]);
+	    }
+	    break;
+	  case '(':
+	    {
+		VALUE arg = GETARG();
+		const char *beg = ++p;
+		long len;
+		while (p < end && *p != ')') {
+		    if (*p == '%') {
+			if (++p >= end) goto invalid;
+		    }
+		    p += rb_enc_mbclen(p, end, enc);
+		}
+		if (p >= end) {
+		    rb_raise(rb_eArgError, "malformed format - unmatched parenthesis");
+		}
+		len = p++ - beg;
+		switch (*p) {
+		  case 'T': break;
+		  default: goto malformed;
+		}
+		nextvalue = rb_time_strftime(arg, rb_str_subseq(fmt, beg - RSTRING_PTR(fmt), len));
+		goto format_s;
 	    }
 	    break;
 	}
