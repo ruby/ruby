@@ -1,3 +1,9 @@
+Fri May  8 22:57:24 2015  takiy33  <takiy33@gmail.com>
+
+	* test/matrix/test_matrix.rb (test_determinant): refactor test on
+	  Matrix#determinant, by merging with test_det for an alias method
+	  det.  [Fix GH-897]
+
 Fri May  8 15:43:11 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (body_ext_mpart): should work even if body-fld-dsp
