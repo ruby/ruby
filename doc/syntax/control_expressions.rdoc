@@ -441,7 +441,7 @@ for proper usage of +retry+.
 
 == Flip-Flop
 
-The flip-flop is rarely seen conditional expression.  It's primary use is
+The flip-flop is a rarely seen conditional expression.  It's primary use is
 for processing text from ruby one-line programs used with <code>ruby -n</code>
 or <code>ruby -p</code>.
 

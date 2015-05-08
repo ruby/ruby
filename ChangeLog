@@ -1,3 +1,8 @@
+Fri May  8 15:05:57 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* doc/syntax/control_expressions.rdoc: fix a missing "a"
+	  [fix GH-888][ci skip] Patch by @riffraff
+
 Fri May  8 12:11:33 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_eval.c (rb_method_call_status): resolve refined method entry
