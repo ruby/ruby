@@ -2639,7 +2639,13 @@ module Net
           return param
         end
         disposition = body_fld_dsp
-        match(T_SPACE)
+
+        token = lookahead
+        if token.symbol == T_SPACE
+          shift_token
+        else
+          return param, disposition
+        end
         language = body_fld_lang
 
         token = lookahead
