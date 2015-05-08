@@ -1,3 +1,8 @@
+Sat May  9 06:48:36 2015  Eric Wong  <e@80x24.org>
+
+	* ext/socket/ancdata.c (bsock_recvmsg_internal): GC guard
+	  [Bug #11123]
+
 Fri May  8 22:57:24 2015  takiy33  <takiy33@gmail.com>
 
 	* test/matrix/test_matrix.rb (test_determinant): refactor test on

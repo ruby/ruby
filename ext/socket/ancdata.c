@@ -1711,6 +1711,7 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
                 discard_cmsg(cmh, msg_end, (flags & MSG_PEEK) != 0);
             rb_ary_push(ret, ctl);
         }
+        RB_GC_GUARD(ctl_str);
     }
 #endif
 
