@@ -477,10 +477,6 @@ static int reg_fragment_check_gen(struct parser_params*, VALUE, int);
 static NODE *reg_named_capture_assign_gen(struct parser_params* parser, VALUE regexp, NODE *match);
 #define reg_named_capture_assign(regexp,match) reg_named_capture_assign_gen(parser,(regexp),(match))
 
-static NODE *assoc_concat_gen(struct parser_params*,NODE*,NODE*);
-#define assoc_concat(assocs,tail) assoc_concat_gen(parser,(assocs),(tail))
-static ID var_to_assoc_key(ID);
-
 #define get_id(id) (id)
 #define get_value(val) (val)
 #else
@@ -824,7 +820,7 @@ static void token_info_pop(struct parser_params*, const char *token);
 %type <node> command_asgn mrhs mrhs_arg superclass block_call block_command
 %type <node> f_block_optarg f_block_opt
 %type <node> f_arglist f_args f_arg f_arg_item f_optarg f_marg f_marg_list f_margs
-%type <node> assoc_list assoc_items assoc_item assocs assoc undef_list backref string_dvar for_var
+%type <node> assoc_list assocs assoc undef_list backref string_dvar for_var
 %type <node> block_param opt_block_param block_param_def f_opt
 %type <node> f_kwarg f_kw f_block_kwarg f_block_kw
 %type <node> bv_decls opt_bv_decl bvar
@@ -5010,44 +5006,12 @@ singleton	: var_ref
 		;
 
 assoc_list	: none
-		| assoc_items trailer
+		| assocs trailer
 		    {
 		    /*%%%*/
 			$$ = $1;
 		    /*%
 			$$ = dispatch1(assoclist_from_args, $1);
-		    %*/
-		    }
-		;
-
-assoc_items	: assoc_item
-		    /*%c%*/
-		    /*%c
-		    {
-			$$ = rb_ary_new3(1, $1);
-		    }
-		    %*/
-		| assoc_items ',' assoc_item
-		    {
-		    /*%%%*/
-			$$ = assoc_concat($1, $3);
-		    /*%
-			$$ = rb_ary_push($1, $3);
-		    %*/
-		    }
-		;
-
-assoc_item	: assoc
-		| user_variable
-		    {
-		    /*%%%*/
-			ID k = var_to_assoc_key($1);
-			NODE *key, *val;
-			key = NEW_LIT(ID2SYM(k));
-			if (!(val = gettable($1))) val = NEW_BEGIN(0);
-			$$ = list_append(NEW_LIST(key), val);
-		    /*%
-			$$ = dispatch2(assoc_new, $1, id_is_var(get_id($1)) ? dispatch1(var_ref, $1) : dispatch1(vcall, $1));
 		    %*/
 		    }
 		;
@@ -5062,7 +5026,21 @@ assocs		: assoc
 		| assocs ',' assoc
 		    {
 		    /*%%%*/
-			$$ = assoc_concat($1, $3);
+			NODE *assocs = $1;
+			NODE *tail = $3;
+			if (!assocs) {
+			    assocs = tail;
+			}
+			else if (tail) {
+			    if (assocs->nd_head &&
+				!tail->nd_head && nd_type(tail->nd_next) == NODE_ARRAY &&
+				nd_type(tail->nd_next->nd_head) == NODE_HASH) {
+				/* DSTAR */
+				tail = tail->nd_next->nd_head->nd_head;
+			    }
+			    assocs = list_concat(assocs, tail);
+			}
+			$$ = assocs;
 		    /*%
 			$$ = rb_ary_push($1, $3);
 		    %*/
@@ -10447,39 +10425,6 @@ rb_parser_reg_compile(struct parser_params* parser, VALUE str, int options, VALU
 	rb_set_errinfo(err);
     }
     return re;
-}
-
-static NODE *
-assoc_concat_gen(struct parser_params *parser, NODE *assocs, NODE *tail)
-{
-    if (!assocs) {
-	assocs = tail;
-    }
-    else if (tail) {
-	if (assocs->nd_head &&
-	    !tail->nd_head && nd_type(tail->nd_next) == NODE_ARRAY &&
-	    nd_type(tail->nd_next->nd_head) == NODE_HASH) {
-	    /* DSTAR */
-	    tail = tail->nd_next->nd_head->nd_head;
-	}
-	assocs = list_concat(assocs, tail);
-    }
-    return assocs;
-}
-
-static ID var_to_assoc_key(ID var)
-{
-    switch (id_type(var)) {
-      case ID_LOCAL:
-      case ID_CONST:
-	return var;
-      default: {
-	const char *name = rb_id2name(var);
-	while (*name == '$' || *name == '@')
-	    name++;
-	return rb_intern(name);
-      }
-    }
 }
 
 NODE*
