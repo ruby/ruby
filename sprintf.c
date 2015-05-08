@@ -449,8 +449,6 @@ rb_f_sprintf(int argc, const VALUE *argv)
     return rb_str_format(argc - 1, argv + 1, GETNTHARG(0));
 }
 
-VALUE rb_time_strftime(VALUE time, VALUE format);
-
 VALUE
 rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 {
