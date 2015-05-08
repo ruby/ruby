@@ -1,3 +1,8 @@
+Fri May  8 12:11:33 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (rb_method_call_status): resolve refined method entry
+	  to check if undefined.  [ruby-core:69064] [Bug #11117]
+
 Thu May  7 22:22:59 2015  Sho Hashimoto  <sho-h@ruby-lang.org>
 
 	* proc.c: [DOC] fix Binding#local_variable_set example. [ci skip]

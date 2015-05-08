@@ -1445,6 +1445,16 @@ class TestRefinement < Test::Unit::TestCase
     }
   end
 
+  def test_funcall_inherited
+    bug11117 = '[ruby-core:69064] [Bug #11117]'
+
+    Module.new {refine(Dir) {def to_s; end}}
+    x = Class.new(Dir).allocate
+    assert_nothing_raised(NoMethodError, bug11117) {
+      x.inspect
+    }
+  end
+
   private
 
   def eval_using(mod, s)
