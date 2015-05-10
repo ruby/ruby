@@ -1,3 +1,11 @@
+Sun May 10 12:41:18 2015  Masaki Matsushita <glass.saga@gmail.com>
+
+	* ext/zlib/zlib.c (rb_gzreader_external_encoding):
+	  define GzipReader#external_encoding.
+	  [Bug #10900]
+
+	* test/zlib/test_zlib.rb: test for above.
+
 Sun May 10 11:57:48 2015  Masaki Matsushita <glass.saga@gmail.com>
 
 	* ext/win32ole/win32ole_variant.c: fix typo "indicies".

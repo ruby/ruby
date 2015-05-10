@@ -4237,6 +4237,17 @@ rb_gzreader_readlines(int argc, VALUE *argv, VALUE obj)
     return dst;
 }
 
+/*
+ * Document-method: Zlib::GzipReader#external_encoding
+ *
+ * See Zlib::GzipReader documentation for a description.
+ */
+static VALUE
+rb_gzreader_external_encoding(VALUE self)
+{
+    return rb_enc_from_encoding(get_gzfile(self)->enc);
+}
+
 #endif /* GZIP_SUPPORT */
 
 void
@@ -4505,6 +4516,7 @@ Init_zlib(void)
     rb_define_method(cGzipReader, "each_line", rb_gzreader_each, -1);
     rb_define_method(cGzipReader, "lines", rb_gzreader_lines, -1);
     rb_define_method(cGzipReader, "readlines", rb_gzreader_readlines, -1);
+    rb_define_method(cGzipReader, "external_encoding", rb_gzreader_external_encoding, 0);
 
     /* The OS code of current host */
     rb_define_const(mZlib, "OS_CODE", INT2FIX(OS_CODE));
