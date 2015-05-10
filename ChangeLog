@@ -1,3 +1,8 @@
+Sun May 10 21:32:45 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (gc_mark_children): call dmark function for non-NULL
+	  pointers only, so that DATA_PTR can be NULL safely now.
+
 Sun May 10 16:23:58 2015  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* proc.c (proc_binding): fix segmentation fault on marking phase.
