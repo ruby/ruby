@@ -521,7 +521,7 @@ enum_to_a(int argc, VALUE *argv, VALUE obj)
 	ary = rb_ary_new();
     }
     else {
-	ary = rb_ary_new2(NUM2LONG(size));
+	ary = rb_ary_new_capa(NUM2LONG(size));
     }
 
     rb_block_call(obj, id_each, argc, argv, collect_all, ary);
