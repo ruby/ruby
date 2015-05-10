@@ -515,18 +515,7 @@ enum_flat_map(VALUE obj)
 static VALUE
 enum_to_a(int argc, VALUE *argv, VALUE obj)
 {
-<<<<<<< HEAD
-    VALUE ary, size = rb_check_funcall(obj, id_size, 0, 0);
-
-    if (size == Qundef) {
-	ary = rb_ary_new();
-    }
-    else {
-	ary = rb_ary_new2(NUM2LONG(size));
-    }
-=======
     VALUE ary = rb_ary_new();
->>>>>>> parent of 3482910... temp
 
     rb_block_call(obj, id_each, argc, argv, collect_all, ary);
     OBJ_INFECT(ary, obj);
