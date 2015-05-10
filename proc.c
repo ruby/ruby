@@ -2510,15 +2510,16 @@ proc_binding(VALUE self)
 	if (iseq && env->local_size < iseq->local_size) {
 	    int prev_local_size = env->local_size;
 	    int local_size = iseq->local_size;
-	    VALUE newenvval = TypedData_Wrap_Struct(RBASIC_CLASS(envval), RTYPEDDATA_TYPE(envval), 0);
-	    rb_env_t *newenv = xmalloc(sizeof(rb_env_t) + ((local_size + 1) * sizeof(VALUE)));
-	    RTYPEDDATA_DATA(newenvval) = newenv;
+	    rb_env_t *newenv;
+	    VALUE newenvval;
+	    newenv = xmalloc(sizeof(rb_env_t) + ((local_size + 1) * sizeof(VALUE)));
 	    newenv->env_size = local_size + 2;
 	    newenv->local_size = local_size;
 	    newenv->prev_envval = env->prev_envval;
 	    newenv->block = env->block;
 	    MEMCPY(newenv->env, env->env, VALUE, prev_local_size + 1);
 	    rb_mem_clear(newenv->env + prev_local_size + 1, local_size - prev_local_size);
+	    newenvval = TypedData_Wrap_Struct(RBASIC_CLASS(envval), RTYPEDDATA_TYPE(envval), newenv);
 	    newenv->env[local_size + 1] = newenvval;
 	    envval = newenvval;
 	}
