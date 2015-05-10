@@ -507,6 +507,7 @@ vm_make_env_each(const rb_thread_t *const th, rb_control_frame_t *const cfp,
 	local_size = cfp->iseq->local_size;
     }
 
+    envval = TypedData_Wrap_Struct(rb_cEnv, &env_data_type, 0);
     /* allocate env */
     env = xmalloc(sizeof(rb_env_t) + ((local_size + 1) * sizeof(VALUE)));
     env->env_size = local_size + 1 + 1;
@@ -525,7 +526,7 @@ vm_make_env_each(const rb_thread_t *const th, rb_control_frame_t *const cfp,
 #endif
 
     /* be careful not to trigger GC after this */
-    envval = TypedData_Wrap_Struct(rb_cEnv, &env_data_type, env);
+    RTYPEDDATA_DATA(envval) = env;
 
    /*
     * must happen after TypedData_Wrap_Struct to ensure penvval is markable
