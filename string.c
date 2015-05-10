@@ -7711,7 +7711,8 @@ rb_str_crypt(VALUE str, VALUE salt)
 	rb_raise(rb_eArgError, "salt too short (need >=2 bytes)");
     }
 
-    s = RSTRING_PTR(str);
+    s = StringValueCStr(str);
+
     if (!s) s = "";
     saltp = RSTRING_PTR(salt);
     if (!saltp[0] || !saltp[1]) goto short_salt;
