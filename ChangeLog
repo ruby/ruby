@@ -1,3 +1,9 @@
+Mon May 11 00:20:31 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (Data_Make_Struct, TypedData_Make_Struct):
+	  allocate wrapper data object before allocating DATA_PTR to get
+	  rid of possible memory leak when the former failed.
+
 Sun May 10 21:32:45 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (gc_mark_children): call dmark function for non-NULL
