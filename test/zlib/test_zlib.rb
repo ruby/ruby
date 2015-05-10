@@ -953,7 +953,10 @@ if defined? Zlib
         content = (0..255).to_a.pack('c*')
         Zlib::GzipWriter.wrap(t) {|gz| gz.print(content) }
 
-        read_all = Zlib::GzipReader.open(t.path) {|gz| gz.read }
+        read_all = Zlib::GzipReader.open(t.path) do |gz|
+          assert_equal(Encoding.default_external, gz.external_encoding)
+          gz.read
+        end
         assert_equal(Encoding.default_external, read_all.encoding)
 
         # chunks are in BINARY regardless of encoding settings
