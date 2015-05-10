@@ -1,3 +1,9 @@
+Sun May 10 11:23:03 2015  Masaki Matsushita <glass.saga@gmail.com>
+
+	* enum.c (enum_to_a): Use size to set array capa when possible.
+	  the patch is from HonoreDB <aweiner at mdsol.com>.
+	  [fix GH-444]
+
 Sat May  9 06:48:36 2015  Eric Wong  <e@80x24.org>
 
 	* ext/socket/ancdata.c (bsock_recvmsg_internal): GC guard
