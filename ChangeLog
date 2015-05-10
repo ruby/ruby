@@ -1,3 +1,13 @@
+Sun May 10 11:57:48 2015  Masaki Matsushita <glass.saga@gmail.com>
+
+	* ext/win32ole/win32ole_variant.c: fix typo "indicies".
+	  the patch is from davydovanton <antondavydov.o at gmail.com>.
+	  [fix GH-892]
+
+	* lib/rubygems/indexer.rb: ditto.
+
+	* test/rubygems/test_gem_indexer.rb: ditto.
+
 Sun May 10 11:44:37 2015  Masaki Matsushita <glass.saga@gmail.com>
 
 	* string.c (rb_str_crypt): Raise ArgumentError when
