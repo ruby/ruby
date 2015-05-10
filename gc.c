@@ -1813,10 +1813,26 @@ rb_data_object_alloc(VALUE klass, void *datap, RUBY_DATA_FUNC dmark, RUBY_DATA_F
 }
 
 VALUE
+rb_data_object_zalloc(VALUE klass, size_t size, RUBY_DATA_FUNC dmark, RUBY_DATA_FUNC dfree)
+{
+    VALUE obj = rb_data_object_alloc(klass, 0, dmark, dfree);
+    DATA_PTR(obj) = xcalloc(1, size);
+    return obj;
+}
+
+VALUE
 rb_data_typed_object_alloc(VALUE klass, void *datap, const rb_data_type_t *type)
 {
     if (klass) Check_Type(klass, T_CLASS);
     return newobj_of(klass, T_DATA | (type->flags & ~T_MASK), (VALUE)type, (VALUE)1, (VALUE)datap);
+}
+
+VALUE
+rb_data_typed_object_zalloc(VALUE klass, size_t size, const rb_data_type_t *type)
+{
+    VALUE obj = rb_data_typed_object_alloc(klass, 0, type);
+    DATA_PTR(obj) = xcalloc(1, size);
+    return obj;
 }
 
 size_t
