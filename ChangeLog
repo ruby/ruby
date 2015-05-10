@@ -1,3 +1,12 @@
+Sun May 10 11:44:37 2015  Masaki Matsushita <glass.saga@gmail.com>
+
+	* string.c (rb_str_crypt): Raise ArgumentError when
+	  string passed to String#crypt contains null.
+	  the patch is from jrusnack <jrusnack at redhat.com>.
+	  [Bug #10988] [fix GH-853]
+
+	* test/ruby/test_string.rb: test for above.
+
 Sun May 10 11:23:03 2015  Masaki Matsushita <glass.saga@gmail.com>
 
 	* enum.c (enum_to_a): Use size to set array capa when possible.

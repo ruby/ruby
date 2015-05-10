@@ -507,6 +507,7 @@ class TestString < Test::Unit::TestCase
     assert_raise(ArgumentError) {S("mypassword").crypt(S(""))}
     assert_raise(ArgumentError) {S("mypassword").crypt(S("\0a"))}
     assert_raise(ArgumentError) {S("mypassword").crypt(S("a\0"))}
+    assert_raise(ArgumentError) {S("poison\u0000null").crypt(S("aa"))}
     [Encoding::UTF_16BE, Encoding::UTF_16LE,
      Encoding::UTF_32BE, Encoding::UTF_32LE].each do |enc|
       assert_raise(ArgumentError) {S("mypassword").crypt(S("aa".encode(enc)))}
