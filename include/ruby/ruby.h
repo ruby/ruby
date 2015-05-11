@@ -1031,16 +1031,38 @@ void *rb_check_typeddata(VALUE, const rb_data_type_t *);
 #define Data_Wrap_Struct(klass,mark,free,sval)\
     rb_data_object_alloc((klass),(sval),(RUBY_DATA_FUNC)(mark),(RUBY_DATA_FUNC)(free))
 
+#define Data_Make_Struct0(result, klass, size, mark, free, sval) \
+    VALUE result = rb_data_object_zalloc(klass, size, mark, free); \
+    (void)((sval) = DATA_PTR(result));
+
+#ifdef __GNUC__
+#define Data_Make_Struct(klass,type,mark,free,sval) ({\
+    Data_Make_Struct0(data_struct_obj, klass, sizeof(type), mark, free, sval); \
+    data_struct_obj; \
+})
+#else
 #define Data_Make_Struct(klass,type,mark,free,sval) (\
     rb_data_struct_make((klass),(RUBY_DATA_FUNC)(mark),(RUBY_DATA_FUNC)(free),(void **)&(sval),sizeof(type)) \
 )
+#endif
 
 #define TypedData_Wrap_Struct(klass,data_type,sval)\
   rb_data_typed_object_alloc((klass),(sval),(data_type))
 
+#define TypedData_Make_Struct0(result, klass, size, data_type, sval) \
+    VALUE result = rb_data_typed_object_zalloc(klass, size, data_type); \
+    (void)((sval) = DATA_PTR(result));
+
+#ifdef __GNUC__
+#define TypedData_Make_Struct(klass, type, data_type, sval) ({\
+    TypedData_Make_Struct0(data_struct_obj, klass, sizeof(type), data_type, sval); \
+    data_struct_obj; \
+})
+#else
 #define TypedData_Make_Struct(klass, type, data_type, sval) (\
     rb_data_typed_struct_make((klass),(data_type),(void **)&(sval),sizeof(type)) \
 )
+#endif
 
 #define Data_Get_Struct(obj,type,sval) \
     ((sval) = (type*)rb_data_object_get(obj))
@@ -1205,17 +1227,15 @@ rb_data_object_get_warning(VALUE obj)
 static inline VALUE
 rb_data_struct_make(VALUE klass, RUBY_DATA_FUNC mark_func, RUBY_DATA_FUNC free_func, void **datap, size_t size)
 {
-    VALUE obj = rb_data_object_zalloc(klass, size, mark_func, free_func);
-    *datap = DATA_PTR(obj);
-    return obj;
+    Data_Make_Struct0(result, klass, size, mark_func, free_func, *datap);
+    return result;
 }
 
 static inline VALUE
 rb_data_typed_struct_make(VALUE klass, const rb_data_type_t *type, void **datap, size_t size)
 {
-    VALUE obj = rb_data_typed_object_zalloc(klass, size, type);
-    *datap = DATA_PTR(obj);
-    return obj;
+    TypedData_Make_Struct0(result, klass, size, type, *datap);
+    return result;
 }
 
 #define rb_data_object_alloc_0 rb_data_object_alloc
