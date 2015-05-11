@@ -1,4 +1,4 @@
-power_assert 0.2.2
+power_assert 0.2.3
 test-unit 3.0.9
-minitest 5.4.3
+minitest 5.6.1
 rake 10.4.2
