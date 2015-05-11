@@ -1,6 +1,6 @@
 Mon May 11 10:58:45 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
-	* gems/bundled_gems: Update minite-5.6.1 and power_assert-0.2.3.
+	* gems/bundled_gems: Update minitest-5.6.1 and power_assert-0.2.3.
 
 Mon May 11 00:20:31 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
