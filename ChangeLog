@@ -1,3 +1,12 @@
+Mon May 11 11:09:08 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dln.c (dln_load): check if a different libruby is loaded by the
+	  extension library, and then bail out to get rid of very frequent
+	  reported stale bug reports.
+
+	* dln.c (dln_load): raise fatal error on OSX not other extension
+	  libraries to refer different libruby.
+
 Mon May 11 10:59:53 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (lambda): push and reset cmdarg_stack in lambda body.
