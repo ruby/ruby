@@ -950,8 +950,29 @@ preface_dump(void)
 	"     * /Library/Logs/DiagnosticReports\n"
 	"   for more details.\n"
 	"\n";
+    const char *const endmsg = msg + sizeof(msg) - 1;
+    const char *p = msg;
+#define RED "\033[;31;1;7m"
+#define GREEN "\033[;32;7m"
+#define RESET "\033[m"
 
-    fputs(msg, stderr);
+    if (isatty(fileno(stderr))) {
+	const char *e = strchr(p, '\n');
+	const int w = (int)(e - p);
+	fputs(RED, stderr);
+	fwrite(p, 1, w, stderr);
+	fputs(RESET, stderr);
+	fputc('\n', stderr);
+	while ((p = e + 1) < endmsg && (e = strchr(p, '\n')) != 0 && e > p + 1) {
+	    int i = (int)(e - p);
+	    fputs(GREEN, stderr);
+	    fwrite(p, 1, e - p, stderr);
+	    for (; i < w; ++i) fputc(' ', stderr);
+	    fputs(RESET, stderr);
+	    fputc('\n', stderr);
+	}
+    }
+    fwrite(p, 1, endmsg - p, stderr);
 #endif
 }
 
