@@ -949,6 +949,7 @@ preface_dump(void)
 	"     * ~/Library/Logs/DiagnosticReports\n"
 	"     * /Library/Logs/DiagnosticReports\n"
 	"   for more details.\n"
+	"Don't forget to include the above Crash Report log file in bug reports.\n"
 	"\n";
     const char *const endmsg = msg + sizeof(msg) - 1;
     const char *p = msg;
@@ -959,18 +960,14 @@ preface_dump(void)
     if (isatty(fileno(stderr))) {
 	const char *e = strchr(p, '\n');
 	const int w = (int)(e - p);
-	fputs(RED, stderr);
-	fwrite(p, 1, w, stderr);
-	fputs(RESET, stderr);
-	fputc('\n', stderr);
-	while ((p = e + 1) < endmsg && (e = strchr(p, '\n')) != 0 && e > p + 1) {
+	do {
 	    int i = (int)(e - p);
-	    fputs(GREEN, stderr);
+	    fputs(*p == ' ' ? GREEN : RED, stderr);
 	    fwrite(p, 1, e - p, stderr);
 	    for (; i < w; ++i) fputc(' ', stderr);
 	    fputs(RESET, stderr);
 	    fputc('\n', stderr);
-	}
+	} while ((p = e + 1) < endmsg && (e = strchr(p, '\n')) != 0 && e > p + 1);
     }
     fwrite(p, 1, endmsg - p, stderr);
 #endif

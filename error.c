@@ -47,9 +47,6 @@ static const char REPORTBUG_MSG[] =
 	" or extension libraries.\n" \
 	"Bug reports are welcome.\n" \
 	""
-#if defined __APPLE__
-	"Don't forget to include the above Crash Report log file.\n"
-#endif
 	"For details: http://www.ruby-lang.org/bugreport.html\n\n" \
     ;
 
