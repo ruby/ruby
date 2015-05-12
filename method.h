@@ -60,8 +60,6 @@ typedef enum {
     END_OF_ENUMERATION(VM_METHOD_TYPE)
 } rb_method_type_t;
 
-struct rb_call_info_struct;
-
 typedef struct rb_method_cfunc_struct {
     VALUE (*func)(ANYARGS);
     VALUE (*invoker)(VALUE (*func)(ANYARGS), VALUE recv, int argc, const VALUE *argv);
