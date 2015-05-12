@@ -936,6 +936,25 @@ rb_dump_machine_register(const ucontext_t *ctx)
 # define rb_dump_machine_register(ctx) ((void)0)
 #endif /* HAVE_PRINT_MACHINE_REGISTERS */
 
+static void
+preface_dump(void)
+{
+#if defined __APPLE__
+    static const char msg[] = ""
+	"-- Crash Report log information "
+	"--------------------------------------------\n"
+	"   See Crash Report log file under the one of following:\n"
+	"     * ~/Library/Logs/CrashReporter\n"
+	"     * /Library/Logs/CrashReporter\n"
+	"     * ~/Library/Logs/DiagnosticReports\n"
+	"     * /Library/Logs/DiagnosticReports\n"
+	"   for more details.\n"
+	"\n";
+
+    fputs(msg, stderr);
+#endif
+}
+
 void
 rb_vm_bugreport(const void *ctx)
 {
@@ -949,18 +968,8 @@ rb_vm_bugreport(const void *ctx)
 #endif
     const rb_vm_t *const vm = GET_VM();
 
-#if defined __APPLE__
-    fputs("-- Crash Report log information "
-	  "--------------------------------------------\n"
-	  "   See Crash Report log file under the one of following:\n"
-	  "     * ~/Library/Logs/CrashReporter\n"
-	  "     * /Library/Logs/CrashReporter\n"
-	  "     * ~/Library/Logs/DiagnosticReports\n"
-	  "     * /Library/Logs/DiagnosticReports\n"
-	  "   for more details.\n"
-	  "\n",
-	  stderr);
-#endif
+    preface_dump();
+
     if (vm) {
 	SDR();
 	rb_backtrace_print_as_bugreport();
