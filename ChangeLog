@@ -1,3 +1,10 @@
+Tue May 12 16:11:55 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/tk/extconf.rb: support Tcl/Tk8.6.
+
+	* ext/tk/tcltklib.c, ext/tk/lib/tk.rb: get rid of SEGV with Tcl/Tk8.6.
+	  [Backport #10401]
+
 Mon May 11 11:09:08 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dln.c (dln_load): check if a different libruby is loaded by the
