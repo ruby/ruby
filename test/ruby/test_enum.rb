@@ -100,6 +100,36 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal([1, 2, 3, 1, 2], @obj.to_a)
   end
 
+  def test_to_a_size_symbol
+    sym = Object.new
+    class << sym
+      include Enumerable
+      def each
+        self
+      end
+
+      def size
+        :size
+      end
+    end
+    assert_equal([], sym.to_a)
+  end
+
+  def test_to_a_size_infinity
+    inf = Object.new
+    class << inf
+      include Enumerable
+      def each
+        self
+      end
+
+      def size
+        Float::INFINITY
+      end
+    end
+    assert_equal([], inf.to_a)
+  end
+
   def test_to_h
     obj = Object.new
     def obj.each(*args)
