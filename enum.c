@@ -517,11 +517,11 @@ enum_to_a(int argc, VALUE *argv, VALUE obj)
 {
     VALUE ary, size = rb_check_funcall(obj, id_size, 0, 0);
 
-    if (NIL_P(size) || size == Qundef) {
-	ary = rb_ary_new();
+    if (FIXNUM_P(size)) {
+	ary = rb_ary_new_capa(NUM2LONG(size));
     }
     else {
-	ary = rb_ary_new_capa(NUM2LONG(size));
+	ary = rb_ary_new();
     }
 
     rb_block_call(obj, id_each, argc, argv, collect_all, ary);

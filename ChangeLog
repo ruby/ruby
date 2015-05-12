@@ -1,3 +1,10 @@
+Tue May 12 22:18:27 2015  Masaki Matsushita <glass.saga@gmail.com>
+
+	* enum.c (enum_to_a): fix incompatibility introduced in r50457.
+	  [Bug #11130]
+
+	* test/ruby/test_enum.rb: test for above.
+
 Tue May 12 17:08:03 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* method.h: remove unused declaration.
