@@ -1,3 +1,8 @@
+Wed May 13 11:13:40 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parse_gvar): separate message for gvar without
+	  non-space characters from message for invalid identitirs.
+
 Tue May 12 22:18:27 2015  Masaki Matsushita <glass.saga@gmail.com>
 
 	* enum.c (enum_to_a): fix incompatibility introduced in r50457.

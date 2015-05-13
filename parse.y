@@ -7675,8 +7675,13 @@ parse_gvar(struct parser_params *parser, const enum lex_state_e last_state)
 
       default:
 	if (!parser_is_identchar()) {
-	    pushback(c);
-	    compile_error(PARSER_ARG "`$%c' is not allowed as a global variable name", c);
+	    if (c == -1 || ISSPACE(c)) {
+		compile_error(PARSER_ARG "`$' without identifiers is not allowed as a global variable name");
+	    }
+	    else {
+		pushback(c);
+		compile_error(PARSER_ARG "`$%c' is not allowed as a global variable name", c);
+	    }
 	    return 0;
 	}
       case '0':
