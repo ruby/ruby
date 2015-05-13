@@ -1,3 +1,8 @@
+Thu May 14 00:50:40 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (lambda): push and reset cmdarg_stack in lambda body.
+	  [ruby-core:69017] [Bug #11107]
+
 Thu May 14 00:39:29 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dln.c (dln_load): check if a different libruby is loaded by the
