@@ -375,6 +375,25 @@ class TestParse < Test::Unit::TestCase
     assert_nothing_raised { eval(':""') }
   end
 
+  def assert_disallowed_variable(type, noname, *invalid)
+    assert_syntax_error(noname, "`#{noname}' without identifiers is not allowed as #{type} variable name")
+    invalid.each do |name|
+      assert_syntax_error(name, "`#{name}' is not allowed as #{type} variable name")
+    end
+  end
+
+  def test_disallowed_instance_variable
+    assert_disallowed_variable("an instance", *%w[@ @1 @.])
+  end
+
+  def test_disallowed_class_variable
+    assert_disallowed_variable("a class", *%w[@@ @@1 @@.])
+  end
+
+  def test_disallowed_gloal_variable
+    assert_disallowed_variable("a global", *%w[$ $%])
+  end
+
   def test_arg2
     o = Object.new
 
