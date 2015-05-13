@@ -336,7 +336,7 @@ rb_set_class_path_string(VALUE klass, VALUE under, VALUE name)
 	OBJ_FREEZE(str);
 	if (!permanent) {
 	    pathid = tmp_classpath;
-	    rb_ivar_set(klass, classid, ID2SYM(rb_intern_str(name)));
+	    rb_ivar_set(klass, classid, rb_str_intern(name));
 	}
     }
     rb_ivar_set(klass, pathid, str);
@@ -358,7 +358,7 @@ rb_set_class_path(VALUE klass, VALUE under, const char *name)
 	rb_str_cat2(str, name);
 	if (!permanent) {
 	    pathid = tmp_classpath;
-	    rb_ivar_set(klass, classid, ID2SYM(rb_intern(name)));
+	    rb_ivar_set(klass, classid, rb_str_intern(rb_str_new_cstr(name)));
 	}
     }
     OBJ_FREEZE(str);
