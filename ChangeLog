@@ -1,3 +1,9 @@
+Wed May 13 14:32:13 2015  Tanaka Akira  <akr@fsij.org>
+
+	* lib/resolv.rb (Resolv::DNS::Label::Str#==): Check class equality.
+	  (Resolv::DNS::Name#initialize): Normalize labels as
+	  Resolv::DNS::Label::Str objects.
+
 Tue May 12 16:11:55 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/tk/extconf.rb: support Tcl/Tk8.6.
