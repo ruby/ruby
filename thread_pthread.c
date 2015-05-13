@@ -662,10 +662,15 @@ reserve_stack(volatile char *limit, size_t size)
 # endif
     struct rlimit rl;
     volatile char buf[0x100];
+    enum {stack_check_margin = 0x1000}; /* for -fstack-check */
+
     STACK_GROW_DIR_DETECTION;
 
     if (!getrlimit(RLIMIT_STACK, &rl) && rl.rlim_cur == RLIM_INFINITY)
 	return;
+
+    if (size < stack_check_margin) return;
+    size -= stack_check_margin;
 
     size -= sizeof(buf); /* margin */
     if (IS_STACK_DIR_UPPER()) {
@@ -674,13 +679,14 @@ reserve_stack(volatile char *limit, size_t size)
 	if (limit > end) {
 	    size = limit - end;
 	    limit = alloca(size);
-	    limit[size-1] = 0;
+	    limit[stack_check_margin+size-1] = 0;
 	}
     }
     else {
 	limit -= size;
 	if (buf > limit) {
 	    limit = alloca(buf - limit);
+	    limit -= stack_check_margin;
 	    limit[0] = 0;
 	}
     }

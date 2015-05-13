@@ -1,3 +1,8 @@
+Thu May 14 00:19:04 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread_pthread.c (reserve_stack): keep sp safe zone to get rid
+	  of crash by -fstack-check.  [ruby-core:68740] [Bug #11030]
+
 Tue Apr 14 23:33:39 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: check also procstat_getvmmap, which is not
