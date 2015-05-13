@@ -362,7 +362,7 @@ class TestParse < Test::Unit::TestCase
 
   def test_dstr_disallowed_variable
     bug8375 = '[ruby-core:54885] [Bug #8375]'
-    %w[@ @1 @@. @@ @@1 @@. $ $%].each do |src|
+    %w[@ @1 @. @@ @@1 @@. $ $%].each do |src|
       src = '#'+src+' '
       str = assert_nothing_raised(SyntaxError, "#{bug8375} #{src.dump}") do
         break eval('"'+src+'"')
