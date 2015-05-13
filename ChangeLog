@@ -1,3 +1,10 @@
+Thu May 14 00:29:44 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/fileutils.rb (FileUtils#mv): show the exact target path in
+	  the error message instead of the destination parent directory
+	  name.  patched by Joao Britto <jabcalves AT gmail.com> at
+	  [ruby-core:68706].  [Bug #11021]
+
 Thu May 14 00:19:04 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread_pthread.c (reserve_stack): keep sp safe zone to get rid
