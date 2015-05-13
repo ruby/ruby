@@ -1,3 +1,10 @@
+Wed May 13 17:10:37 2015  Masaki Matsushita <glass.saga@gmail.com>
+
+	* enum.c (enum_to_a): revert r50457.
+	  it requires recursion check.
+	  then, it doesn't make performance improvement.
+	  [Bug #11130] [Feature #9118]
+
 Wed May 13 11:13:40 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parse_gvar): separate message for gvar without
