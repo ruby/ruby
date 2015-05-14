@@ -1803,7 +1803,7 @@ static VALUE
 autoload_require(VALUE arg)
 {
     struct autoload_data_i *ele = (struct autoload_data_i *)arg;
-    return rb_require_safe(ele->feature, ele->safe_level);
+    return rb_funcall(rb_vm_top_self(), rb_intern("require"), 1, ele->feature);
 }
 
 static VALUE
