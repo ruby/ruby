@@ -33,6 +33,18 @@ class TestEnumerable < Test::Unit::TestCase
     $VERBOSE = @verbose
   end
 
+  def test_grep_v
+    assert_equal([3], @obj.grep_v(1..2))
+    a = []
+    @obj.grep_v(2) {|x| a << x }
+    assert_equal([1, 3, 1], a)
+
+    a = []
+    lambda = ->(x, i) {a << [x, i]}
+    @obj.each_with_index.grep_v(proc{|x,i|x!=2}, &lambda)
+    assert_equal([[2, 1], [2, 4]], a)
+  end
+
   def test_grep
     assert_equal([1, 2, 1, 2], @obj.grep(1..2))
     a = []

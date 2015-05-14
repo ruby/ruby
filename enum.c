@@ -45,7 +45,7 @@ grep_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
     struct MEMO *memo = MEMO_CAST(args);
     ENUM_WANT_SVALUE();
 
-    if (RTEST(rb_funcall(memo->v1, id_eqq, 1, i))) {
+    if (RTEST(rb_funcall(memo->v1, id_eqq, 1, i)) == RTEST(memo->u3.value)) {
 	rb_ary_push(memo->v2, i);
     }
     return Qnil;
@@ -57,7 +57,7 @@ grep_iter_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
     struct MEMO *memo = MEMO_CAST(args);
     ENUM_WANT_SVALUE();
 
-    if (RTEST(rb_funcall(memo->v1, id_eqq, 1, i))) {
+    if (RTEST(rb_funcall(memo->v1, id_eqq, 1, i)) == RTEST(memo->u3.value)) {
 	rb_ary_push(memo->v2, rb_yield(i));
     }
     return Qnil;
@@ -85,7 +85,33 @@ static VALUE
 enum_grep(VALUE obj, VALUE pat)
 {
     VALUE ary = rb_ary_new();
-    struct MEMO *memo = MEMO_NEW(pat, ary, 0);
+    struct MEMO *memo = MEMO_NEW(pat, ary, Qtrue);
+
+    rb_block_call(obj, id_each, 0, 0, rb_block_given_p() ? grep_iter_i : grep_i, (VALUE)memo);
+
+    return ary;
+}
+
+/*
+ *  call-seq:
+ *     enum.grep_v(pattern)                  -> array
+ *     enum.grep_v(pattern) { |obj| block }  -> array
+ *
+ *  Inversed version of Enumerable#grep.
+ *  Returns an array of every element in <i>enum</i> for which
+ *  not <code>Pattern === element</code>.
+ *
+ *     (1..10).grep_v 2..5   #=> [1, 6, 7, 8, 9, 10]
+ *     res =(1..10).grep_v(2..5) { |v| v * 2 }
+ *     res                    #=> [1, 12, 14, 16, 18, 20]
+ *
+ */
+
+static VALUE
+enum_grep_v(VALUE obj, VALUE pat)
+{
+    VALUE ary = rb_ary_new();
+    struct MEMO *memo = MEMO_NEW(pat, ary, Qfalse);
 
     rb_block_call(obj, id_each, 0, 0, rb_block_given_p() ? grep_iter_i : grep_i, (VALUE)memo);
 
@@ -3388,6 +3414,7 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable, "sort", enum_sort, 0);
     rb_define_method(rb_mEnumerable, "sort_by", enum_sort_by, 0);
     rb_define_method(rb_mEnumerable, "grep", enum_grep, 1);
+    rb_define_method(rb_mEnumerable, "grep_v", enum_grep_v, 1);
     rb_define_method(rb_mEnumerable, "count", enum_count, -1);
     rb_define_method(rb_mEnumerable, "find", enum_find, -1);
     rb_define_method(rb_mEnumerable, "detect", enum_find, -1);

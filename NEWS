@@ -15,6 +15,10 @@ with all sufficient information, see the ChangeLog file.
 
 === Core classes updates (outstanding ones only)
 
+* Enumerable
+
+  * Enumerable#grep_v is added as inversed version of Enumerable#grep.
+
 === Core classes compatibility issues (excluding feature bug fixes)
 
 * Array
