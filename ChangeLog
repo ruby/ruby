@@ -1,3 +1,10 @@
+Fri May 15 05:01:25 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* symbol.c (Init_sym): make dsym_fstrs a hash compared by identity
+	  as the keys are unique fstrings, to get rid of running hash and
+	  compare methods and causing new object allocation during garbage
+	  collection phase.  [ruby-dev:48891] [Bug #10933]
+
 Thu May 14 00:50:40 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (lambda): push and reset cmdarg_stack in lambda body.
