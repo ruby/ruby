@@ -1,3 +1,12 @@
+Fri May 15 06:54:19 2015  Aaron Patterson <tenderlove@ruby-lang.org>
+
+	* variable.c: Change autoload to call `require` through Ruby rather
+	  than directly calling `rb_require_safe`.  This allows things like
+	  RubyGems to intercept file loading done though `autoload`.
+	  [Feature #11140]
+
+	* test/ruby/test_autoload.rb: Test for change.
+
 Wed Apr  8 19:18:02 2015  Shota Fukumori (sora_h)  <her@sorah.jp>
 
 	* enum.c (enum_grep_v, grep_i, grep_iter_i, Init_enum):
