@@ -13,13 +13,8 @@ require 'pathname.so'
 
 class Pathname
 
-  # :stopdoc:
-  if RUBY_VERSION < "1.9"
-    TO_PATH = :to_str
-  else
-    # to_path is implemented so Pathname objects are usable with File.open, etc.
-    TO_PATH = :to_path
-  end
+  # to_path is implemented so Pathname objects are usable with File.open, etc.
+  TO_PATH = :to_path
 
   SAME_PATHS = if File::FNM_SYSCASE.nonzero?
     # Avoid #zero? here because #casecmp can return nil.
