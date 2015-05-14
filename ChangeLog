@@ -1,3 +1,8 @@
+Wed Apr  8 19:18:02 2015  Shota Fukumori (sora_h)  <her@sorah.jp>
+
+	* enum.c (enum_grep_v, grep_i, grep_iter_i, Init_enum):
+	  Implement Enumerable#grep_v.
+
 Thu May 14 15:54:13 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* ext/pathname/lib/pathname.rb: Remove condition of RUBY_VERSION <= 1.9.
