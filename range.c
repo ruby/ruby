@@ -171,34 +171,20 @@ range_eq(VALUE range, VALUE obj)
     return rb_exec_recursive_paired(recursive_equal, range, obj, obj);
 }
 
+/* compares _a_ and _b_ and returns:
+ * < 0: a < b
+ * = 0: a = b
+ * > 0: a > b or not-comparable
+ */
 static int
-r_lt(VALUE a, VALUE b)
+r_less(VALUE a, VALUE b)
 {
     VALUE r = rb_funcall(a, id_cmp, 1, b);
 
     if (NIL_P(r))
-	return (int)Qfalse;
-    if (rb_cmpint(r, a, b) < 0)
-	return (int)Qtrue;
-    return (int)Qfalse;
+	return INT_MAX;
+    return rb_cmpint(r, a, b);
 }
-
-static int
-r_le(VALUE a, VALUE b)
-{
-    int c;
-    VALUE r = rb_funcall(a, id_cmp, 1, b);
-
-    if (NIL_P(r))
-	return (int)Qfalse;
-    c = rb_cmpint(r, a, b);
-    if (c == 0)
-	return (int)INT2FIX(0);
-    if (c < 0)
-	return (int)Qtrue;
-    return (int)Qfalse;
-}
-
 
 static VALUE
 recursive_eql(VALUE range, VALUE obj, int recur)
@@ -275,16 +261,15 @@ range_each_func(VALUE range, rb_block_call_func *func, VALUE arg)
     VALUE v = b;
 
     if (EXCL(range)) {
-	while (r_lt(v, e)) {
+	while (r_less(v, e) < 0) {
 	    (*func) (v, arg, 0, 0, 0);
 	    v = rb_funcallv(v, id_succ, 0, 0);
 	}
     }
     else {
-	while ((c = r_le(v, e)) != Qfalse) {
+	while ((c = r_less(v, e)) <= 0) {
 	    (*func) (v, arg, 0, 0, 0);
-	    if (c == (int)INT2FIX(0))
-		break;
+	    if (!c) break;
 	    v = rb_funcallv(v, id_succ, 0, 0);
 	}
     }
@@ -1232,15 +1217,10 @@ range_cover(VALUE range, VALUE val)
 static VALUE
 r_cover_p(VALUE range, VALUE beg, VALUE end, VALUE val)
 {
-    if (r_le(beg, val)) {
-	if (EXCL(range)) {
-	    if (r_lt(val, end))
-		return Qtrue;
-	}
-	else {
-	    if (r_le(val, end))
-		return Qtrue;
-	}
+    if (r_less(beg, val) <= 0) {
+	int excl = EXCL(range);
+	if (r_less(val, end) <= -excl)
+	    return Qtrue;
     }
     return Qfalse;
 }
