@@ -174,7 +174,7 @@ range_eq(VALUE range, VALUE obj)
 /* compares _a_ and _b_ and returns:
  * < 0: a < b
  * = 0: a = b
- * > 0: a > b or not-comparable
+ * > 0: a > b or non-comparable
  */
 static int
 r_less(VALUE a, VALUE b)
@@ -1165,24 +1165,9 @@ range_include(VALUE range, VALUE val)
 	!NIL_P(rb_check_to_integer(end, "to_int"))) {
 	return r_cover_p(range, beg, end, val);
     }
-    else if (RB_TYPE_P(beg, T_STRING) && RB_TYPE_P(end, T_STRING) &&
-	     RSTRING_LEN(beg) == 1 && RSTRING_LEN(end) == 1) {
-	if (NIL_P(val)) return Qfalse;
-	if (RB_TYPE_P(val, T_STRING)) {
-	    if (RSTRING_LEN(val) == 0 || RSTRING_LEN(val) > 1)
-		return Qfalse;
-	    else {
-		char b = RSTRING_PTR(beg)[0];
-		char e = RSTRING_PTR(end)[0];
-		char v = RSTRING_PTR(val)[0];
-
-		if (ISASCII(b) && ISASCII(e) && ISASCII(v)) {
-		    if (b <= v && v < e) return Qtrue;
-		    if (!EXCL(range) && v == e) return Qtrue;
-		    return Qfalse;
-		}
-	    }
-	}
+    else if (RB_TYPE_P(beg, T_STRING) && RB_TYPE_P(end, T_STRING)) {
+	VALUE rb_str_include_range_p(VALUE beg, VALUE end, VALUE val, VALUE exclusive);
+	return rb_str_include_range_p(beg, end, val, RANGE_EXCL(range));
     }
     /* TODO: ruby_frame->this_func = rb_intern("include?"); */
     return rb_call_super(1, &val);
