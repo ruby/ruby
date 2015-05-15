@@ -22,6 +22,8 @@ static ID id_beg, id_end, id_excl, id_integer_p, id_div;
 #define id_cmp idCmp
 #define id_succ idSucc
 
+static VALUE r_cover_p(VALUE, VALUE, VALUE, VALUE);
+
 #define RANGE_BEG(r) (RSTRUCT(r)->as.ary[0])
 #define RANGE_END(r) (RSTRUCT(r)->as.ary[1])
 #define RANGE_EXCL(r) (RSTRUCT(r)->as.ary[2])
@@ -1176,17 +1178,7 @@ range_include(VALUE range, VALUE val)
     if (nv ||
 	!NIL_P(rb_check_to_integer(beg, "to_int")) ||
 	!NIL_P(rb_check_to_integer(end, "to_int"))) {
-	if (r_le(beg, val)) {
-	    if (EXCL(range)) {
-		if (r_lt(val, end))
-		    return Qtrue;
-	    }
-	    else {
-		if (r_le(val, end))
-		    return Qtrue;
-	    }
-	}
-	return Qfalse;
+	return r_cover_p(range, beg, end, val);
     }
     else if (RB_TYPE_P(beg, T_STRING) && RB_TYPE_P(end, T_STRING) &&
 	     RSTRING_LEN(beg) == 1 && RSTRING_LEN(end) == 1) {
@@ -1234,6 +1226,12 @@ range_cover(VALUE range, VALUE val)
 
     beg = RANGE_BEG(range);
     end = RANGE_END(range);
+    return r_cover_p(range, beg, end, val);
+}
+
+static VALUE
+r_cover_p(VALUE range, VALUE beg, VALUE end, VALUE val)
+{
     if (r_le(beg, val)) {
 	if (EXCL(range)) {
 	    if (r_lt(val, end))
