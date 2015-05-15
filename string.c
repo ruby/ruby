@@ -3449,6 +3449,15 @@ rb_str_succ_bang(VALUE str)
     return str;
 }
 
+static int
+all_digits_p(const char *s, long len)
+{
+    while (len-- > 0) {
+	if (!ISDIGIT(*s)) return 0;
+	s++;
+    }
+    return 1;
+}
 
 /*
  *  call-seq:
@@ -3513,22 +3522,13 @@ rb_str_upto(int argc, VALUE *argv, VALUE beg)
 	return beg;
     }
     /* both edges are all digits */
-    if (ascii && ISDIGIT(RSTRING_PTR(beg)[0]) && ISDIGIT(RSTRING_PTR(end)[0])) {
-	char *s, *send;
+    if (ascii && ISDIGIT(RSTRING_PTR(beg)[0]) && ISDIGIT(RSTRING_PTR(end)[0]) &&
+	all_digits_p(RSTRING_PTR(beg), RSTRING_LEN(beg)) &&
+	all_digits_p(RSTRING_PTR(end), RSTRING_LEN(end))) {
 	VALUE b, e;
 	int width;
 
-	s = RSTRING_PTR(beg); send = RSTRING_END(beg);
-	width = rb_long2int(send - s);
-	while (s < send) {
-	    if (!ISDIGIT(*s)) goto no_digits;
-	    s++;
-	}
-	s = RSTRING_PTR(end); send = RSTRING_END(end);
-	while (s < send) {
-	    if (!ISDIGIT(*s)) goto no_digits;
-	    s++;
-	}
+	width = RSTRING_LENINT(beg);
 	b = rb_str_to_inum(beg, 10, FALSE);
 	e = rb_str_to_inum(end, 10, FALSE);
 	if (FIXNUM_P(b) && FIXNUM_P(e)) {
@@ -3556,7 +3556,6 @@ rb_str_upto(int argc, VALUE *argv, VALUE beg)
 	return beg;
     }
     /* normal case */
-  no_digits:
     n = rb_str_cmp(beg, end);
     if (n > 0 || (excl && n == 0)) return beg;
 
