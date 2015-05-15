@@ -3459,6 +3459,15 @@ all_digits_p(const char *s, long len)
     return 1;
 }
 
+static VALUE str_upto_each(VALUE beg, VALUE end, int excl, int (*each)(VALUE, VALUE), VALUE);
+
+static int
+str_upto_i(VALUE str, VALUE arg)
+{
+    rb_yield(str);
+    return 0;
+}
+
 /*
  *  call-seq:
  *     str.upto(other_str, exclusive=false) {|s| block }   -> str
@@ -3495,14 +3504,20 @@ static VALUE
 rb_str_upto(int argc, VALUE *argv, VALUE beg)
 {
     VALUE end, exclusive;
-    VALUE current, after_end;
-    ID succ;
-    int n, excl, ascii;
-    rb_encoding *enc;
 
     rb_scan_args(argc, argv, "11", &end, &exclusive);
     RETURN_ENUMERATOR(beg, argc, argv);
-    excl = RTEST(exclusive);
+    return str_upto_each(beg, end, RTEST(exclusive), str_upto_i, Qnil);
+}
+
+static VALUE
+str_upto_each(VALUE beg, VALUE end, int excl, int (*each)(VALUE, VALUE), VALUE arg)
+{
+    VALUE current, after_end;
+    ID succ;
+    int n, ascii;
+    rb_encoding *enc;
+
     CONST_ID(succ, "succ");
     StringValue(end);
     enc = rb_enc_check(beg, end);
@@ -3514,7 +3529,7 @@ rb_str_upto(int argc, VALUE *argv, VALUE beg)
 
 	if (c > e || (excl && c == e)) return beg;
 	for (;;) {
-	    rb_yield(rb_enc_str_new(&c, 1, enc));
+	    if ((*each)(rb_enc_str_new(&c, 1, enc), arg)) break;
 	    if (!excl && c == e) break;
 	    c++;
 	    if (excl && c == e) break;
@@ -3538,7 +3553,7 @@ rb_str_upto(int argc, VALUE *argv, VALUE beg)
 
 	    while (bi <= ei) {
 		if (excl && bi == ei) break;
-		rb_yield(rb_enc_sprintf(usascii, "%.*ld", width, bi));
+		if ((*each)(rb_enc_sprintf(usascii, "%.*ld", width, bi), arg)) break;
 		bi++;
 	    }
 	}
@@ -3549,7 +3564,7 @@ rb_str_upto(int argc, VALUE *argv, VALUE beg)
 	    args[0] = INT2FIX(width);
 	    while (rb_funcall(b, op, 1, e)) {
 		args[1] = b;
-		rb_yield(rb_str_format(numberof(args), args, fmt));
+		if ((*each)(rb_str_format(numberof(args), args, fmt), arg)) break;
 		b = rb_funcallv(b, succ, 0, 0);
 	    }
 	}
@@ -3565,7 +3580,7 @@ rb_str_upto(int argc, VALUE *argv, VALUE beg)
 	VALUE next = Qnil;
 	if (excl || !rb_str_equal(current, end))
 	    next = rb_funcallv(current, succ, 0, 0);
-	rb_yield(current);
+	if ((*each)(current, arg)) break;
 	if (NIL_P(next)) break;
 	current = next;
 	StringValue(current);
@@ -3575,6 +3590,59 @@ rb_str_upto(int argc, VALUE *argv, VALUE beg)
     }
 
     return beg;
+}
+
+static int
+include_range_i(VALUE str, VALUE arg)
+{
+    VALUE *argp = (VALUE *)arg;
+    if (!rb_equal(str, *argp)) return 0;
+    *argp = Qnil;
+    return 1;
+}
+
+VALUE
+rb_str_include_range_p(VALUE beg, VALUE end, VALUE val, VALUE exclusive)
+{
+    beg = rb_str_new_frozen(beg);
+    StringValue(end);
+    end = rb_str_new_frozen(end);
+    if (NIL_P(val)) return Qfalse;
+    val = rb_check_string_type(val);
+    if (NIL_P(val)) return Qfalse;
+    if (rb_enc_asciicompat(STR_ENC_GET(beg)) &&
+	rb_enc_asciicompat(STR_ENC_GET(end)) &&
+	rb_enc_asciicompat(STR_ENC_GET(val))) {
+	const char *bp = RSTRING_PTR(beg);
+	const char *ep = RSTRING_PTR(end);
+	const char *vp = RSTRING_PTR(val);
+	if (RSTRING_LEN(beg) == 1 && RSTRING_LEN(end) == 1) {
+	    if (RSTRING_LEN(val) == 0 || RSTRING_LEN(val) > 1)
+		return Qfalse;
+	    else {
+		char b = *bp;
+		char e = *ep;
+		char v = *vp;
+
+		if (ISASCII(b) && ISASCII(e) && ISASCII(v)) {
+		    if (b <= v && v < e) return Qtrue;
+		    if (!RTEST(exclusive) && v == e) return Qtrue;
+		    return Qfalse;
+		}
+	    }
+	}
+#if 0
+	/* both edges are all digits */
+	if (ISDIGIT(*bp) && ISDIGIT(*ep) &&
+	    all_digits_p(bp, RSTRING_LEN(beg)) &&
+	    all_digits_p(ep, RSTRING_LEN(end))) {
+	    /* TODO */
+	}
+#endif
+    }
+    str_upto_each(beg, end, RTEST(exclusive), include_range_i, (VALUE)&val);
+
+    return NIL_P(val) ? Qtrue : Qfalse;
 }
 
 static VALUE
