@@ -3692,7 +3692,7 @@ rb_ary_times(VALUE ary, VALUE times)
 
 /*
  *  call-seq:
- *     ary.assoc(obj)   -> new_ary  or  nil
+ *     ary.assoc(obj)   -> element_ary  or  nil
  *
  *  Searches through an array whose elements are also arrays comparing +obj+
  *  with the first element of each contained array using <code>obj.==</code>.
@@ -3727,7 +3727,7 @@ rb_ary_assoc(VALUE ary, VALUE key)
 
 /*
  *  call-seq:
- *     ary.rassoc(obj) -> new_ary or nil
+ *     ary.rassoc(obj) -> element_ary or nil
  *
  *  Searches through the array whose elements are also arrays.
  *
