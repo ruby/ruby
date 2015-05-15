@@ -128,7 +128,8 @@ class CGI
     #
     # +val+ must be a boolean.
     def secure=(val)
-      @secure = !!val
+      @secure = val if val == true or val == false
+      @secure
     end
 
     # Set whether the Cookie is a httponly cookie or not.
