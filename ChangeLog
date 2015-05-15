@@ -1,3 +1,9 @@
+Fri May 15 18:28:20 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_assoc, rb_ary_rassoc): [DOC] the result when key
+	  was found is the existing element, not a new array.  reported by
+	  Giau Nguyen <giaunv AT nustechnology.com>.
+
 Fri May 15 08:24:28 2015  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
 
 	* lib/cgi/cookie.rb: Implement HttpOnly flag for cookies.
