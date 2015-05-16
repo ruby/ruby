@@ -17,7 +17,7 @@ with all sufficient information, see the ChangeLog file.
 
 * Enumerable
 
-  * Enumerable#grep_v is added as inversed version of Enumerable#grep.
+  * Enumerable#grep_v is added as inverse version of Enumerable#grep.
 
 === Core classes compatibility issues (excluding feature bug fixes)
 
