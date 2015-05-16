@@ -1,3 +1,12 @@
+Sun May 17 03:58:59 2015  Aaron Patterson <tenderlove@ruby-lang.org>
+
+	* load.c (loaded_feature_path): stop returning false negatives for
+	  filenames which are trailing substrings of file extensions.  For
+	  example, 'b', which a trailing substring of ".rb" should not return
+	  false. [Bug #11155][ruby-core:69206]
+
+	* test/ruby/test_autoload.rb: test for fix
+
 Sat May 16 21:41:24 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* string.c: added documentation for character sequence \' with String#sub
