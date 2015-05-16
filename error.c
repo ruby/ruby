@@ -1155,16 +1155,13 @@ static const rb_data_type_t name_err_mesg_data_type = {
 VALUE
 rb_name_err_mesg_new(VALUE obj, VALUE mesg, VALUE recv, VALUE method)
 {
+    VALUE result = TypedData_Wrap_Struct(rb_cNameErrorMesg, &name_err_mesg_data_type, 0);
     VALUE *ptr = ALLOC_N(VALUE, NAME_ERR_MESG_COUNT);
-    VALUE result;
 
     ptr[0] = mesg;
     ptr[1] = recv;
     ptr[2] = method;
-    result = TypedData_Wrap_Struct(rb_cNameErrorMesg, &name_err_mesg_data_type, ptr);
-    RB_GC_GUARD(mesg);
-    RB_GC_GUARD(recv);
-    RB_GC_GUARD(method);
+    RTYPEDDATA_DATA(result) = ptr;
     return result;
 }
 

@@ -406,12 +406,14 @@ static VALUE
 stat_new_0(VALUE klass, const struct stat *st)
 {
     struct stat *nst = 0;
+    VALUE obj = TypedData_Wrap_Struct(klass, &stat_data_type, 0);
 
     if (st) {
 	nst = ALLOC(struct stat);
 	*nst = *st;
+	RTYPEDDATA_DATA(obj) = nst;
     }
-    return TypedData_Wrap_Struct(klass, &stat_data_type, nst);
+    return obj;
 }
 
 VALUE
