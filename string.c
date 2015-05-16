@@ -4310,6 +4310,9 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
  *  double-quoted string, both back-references must be preceded by an
  *  additional backslash. However, within +replacement+ the special match
  *  variables, such as <code>&$</code>, will not refer to the current match.
+ *  If +replacement+ is a String that looks like a pattern's capture group but
+ *  is actaully not a pattern capture group e.g. <code>"\\'"</code>, then it
+ *  will have to be preceded by two backslashes like so <code>"\\\\'"</code>.
  *
  *  If the second argument is a Hash, and the matched text is one of its keys,
  *  the corresponding value is the replacement string.
