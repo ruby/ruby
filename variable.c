@@ -1682,12 +1682,11 @@ rb_autoload(VALUE mod, ID id, const char *file)
     FL_UNSET(fn, FL_TAINT);
     OBJ_FREEZE(fn);
 
-    ele = ALLOC(struct autoload_data_i);
+    ad = TypedData_Make_Struct(0, struct autoload_data_i, &autoload_data_i_type, ele);
     ele->feature = fn;
     ele->safe_level = rb_safe_level();
     ele->thread = Qnil;
     ele->value = Qundef;
-    ad = TypedData_Wrap_Struct(0, &autoload_data_i_type, ele);
     st_insert(tbl, (st_data_t)id, (st_data_t)ad);
 }
 

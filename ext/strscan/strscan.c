@@ -198,12 +198,12 @@ static VALUE
 strscan_s_allocate(VALUE klass)
 {
     struct strscanner *p;
+    VALUE obj = TypedData_Make_Struct(klass, struct strscanner, &strscanner_type, p);
 
-    p = ZALLOC(struct strscanner);
     CLEAR_MATCH_STATUS(p);
     onig_region_init(&(p->regs));
     p->str = Qnil;
-    return TypedData_Wrap_Struct(klass, &strscanner_type, p);
+    return obj;
 }
 
 /*
