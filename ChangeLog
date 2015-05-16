@@ -1,3 +1,8 @@
+Sat May 16 21:38:05 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* enum.c: fix a sample code. Patch by @eagletmt
+	  [fix GH-901][ci skip]
+
 Sat May 16 21:17:11 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (rb_data_object_wrap, rb_data_typed_object_wrap): rename
