@@ -71,11 +71,10 @@ static const rb_data_type_t proc_data_type = {
 };
 
 VALUE
-rb_proc_wrap(VALUE klass, rb_proc_t *proc)
+rb_proc_alloc(VALUE klass)
 {
-    proc->block.proc = TypedData_Wrap_Struct(klass, &proc_data_type, proc);
-
-    return proc->block.proc;
+    rb_proc_t *proc;
+    return TypedData_Make_Struct(klass, rb_proc_t, &proc_data_type, proc);
 }
 
 VALUE
@@ -95,11 +94,13 @@ proc_dup(VALUE self)
 {
     VALUE procval;
     rb_proc_t *src;
-    rb_proc_t *dst = ALLOC(rb_proc_t);
+    rb_proc_t *dst;
 
     GetProcPtr(self, src);
+    procval = rb_proc_alloc(rb_cProc);
+    GetProcPtr(procval, dst);
     *dst = *src;
-    procval = rb_proc_wrap(rb_cProc, dst);
+    dst->block.proc = procval;
     RB_GC_GUARD(self); /* for: body = proc_dup(body) */
 
     return procval;
