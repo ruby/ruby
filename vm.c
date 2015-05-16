@@ -658,24 +658,18 @@ vm_make_proc_from_block(rb_thread_t *th, rb_block_t *block)
 }
 
 static inline VALUE
-rb_proc_alloc(VALUE klass, const rb_block_t *block,
-		VALUE envval, VALUE blockprocval,
-		int8_t safe_level, int8_t is_from_method, int8_t is_lambda)
+rb_proc_create(VALUE klass, const rb_block_t *block,
+	       VALUE envval, VALUE blockprocval,
+	       int8_t safe_level, int8_t is_from_method, int8_t is_lambda)
 {
-    VALUE procval;
-    rb_proc_t *proc = ALLOC(rb_proc_t);
+    VALUE procval = rb_proc_alloc(klass);
+    rb_proc_t *proc = RTYPEDDATA_DATA(procval);
 
     proc->block = *block;
+    proc->block.proc = procval;
     proc->safe_level = safe_level;
     proc->is_from_method = is_from_method;
     proc->is_lambda = is_lambda;
-
-    procval = rb_proc_wrap(klass, proc);
-
-    /*
-     * ensure VALUEs are markable here as rb_proc_wrap may trigger allocation
-     * and clobber envval + blockprocval
-     */
     proc->envval = envval;
     proc->blockprocval = blockprocval;
 
@@ -704,8 +698,8 @@ rb_vm_make_proc_lambda(rb_thread_t *th, const rb_block_t *block, VALUE klass, in
 	check_env_value(envval);
     }
 
-    procval = rb_proc_alloc(klass, block, envval, blockprocval,
-			    (int8_t)th->safe_level, 0, is_lambda);
+    procval = rb_proc_create(klass, block, envval, blockprocval,
+			     (int8_t)th->safe_level, 0, is_lambda);
 
     if (VMDEBUG) {
 	if (th->stack < block->ep && block->ep < th->stack + th->stack_size) {
