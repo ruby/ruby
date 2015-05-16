@@ -574,7 +574,7 @@ class TestRequire < Test::Unit::TestCase
     Dir.mktmpdir {|tmp|
       Dir.chdir(tmp) {
         open("foo.rb", "w") {}
-        assert_in_out_err(["RUBYOPT"=>nil], <<-INPUT, %w(:ok), [], bug7158)
+        assert_in_out_err([{"RUBYOPT"=>nil}, '--disable-gems'], <<-INPUT, %w(:ok), [], bug7158)
           $:.replace([IO::NULL])
           a = Object.new
           def a.to_path
@@ -584,7 +584,8 @@ class TestRequire < Test::Unit::TestCase
           begin
             require "foo"
             p [:ng, $LOAD_PATH, ENV['RUBYLIB']]
-          rescue LoadError
+          rescue LoadError => e
+            raise unless e.path == "foo"
           end
           def a.to_path
             "#{tmp}"
@@ -600,7 +601,7 @@ class TestRequire < Test::Unit::TestCase
     Dir.mktmpdir {|tmp|
       Dir.chdir(tmp) {
         open("foo.rb", "w") {}
-        assert_in_out_err(["RUBYOPT"=>nil], <<-INPUT, %w(:ok), [], bug7158)
+        assert_in_out_err([{"RUBYOPT"=>nil}, '--disable-gems'], <<-INPUT, %w(:ok), [], bug7158)
           $:.replace([IO::NULL])
           a = Object.new
           def a.to_str
@@ -610,7 +611,8 @@ class TestRequire < Test::Unit::TestCase
           begin
             require "foo"
             p [:ng, $LOAD_PATH, ENV['RUBYLIB']]
-          rescue LoadError
+          rescue LoadError => e
+            raise unless e.path == "foo"
           end
           def a.to_str
             "#{tmp}"
@@ -628,7 +630,7 @@ class TestRequire < Test::Unit::TestCase
         open("foo.rb", "w") {}
         Dir.mkdir("a")
         open(File.join("a", "bar.rb"), "w") {}
-        assert_in_out_err([], <<-INPUT, %w(:ok), [], bug7383)
+        assert_in_out_err(['--disable-gems'], <<-INPUT, %w(:ok), [], bug7383)
           $:.replace([IO::NULL])
           $:.#{add} "#{tmp}"
           $:.#{add} "#{tmp}/a"
@@ -637,8 +639,12 @@ class TestRequire < Test::Unit::TestCase
           # Expanded load path cache should be rebuilt.
           begin
             require "bar"
-          rescue LoadError
-            p :ok
+          rescue LoadError => e
+            if e.path == "bar"
+              p :ok
+            else
+              raise
+            end
           end
         INPUT
       }
