@@ -3027,26 +3027,19 @@ rb_w32_accept(int s, struct sockaddr *addr, int *addrlen)
 	StartSockets();
     }
     RUBY_CRITICAL({
-	HANDLE h = CreateFile("NUL", 0, 0, NULL, OPEN_ALWAYS, 0, NULL);
-	fd = rb_w32_open_osfhandle((intptr_t)h, O_RDWR|O_BINARY|O_NOINHERIT);
-	if (fd != -1) {
-	    r = accept(TO_SOCKET(s), addr, addrlen);
-	    if (r != INVALID_SOCKET) {
-		SetHandleInformation((HANDLE)r, HANDLE_FLAG_INHERIT, 0);
-		rb_acrt_lowio_lock_fh(fd);
-		_set_osfhnd(fd, r);
-		rb_acrt_lowio_unlock_fh(fd);
-		CloseHandle(h);
+	r = accept(TO_SOCKET(s), addr, addrlen);
+	if (r != INVALID_SOCKET) {
+	    SetHandleInformation((HANDLE)r, HANDLE_FLAG_INHERIT, 0);
+	    fd = rb_w32_open_osfhandle((intptr_t)r, O_RDWR|O_BINARY|O_NOINHERIT);
+	    if (fd != -1)
 		socklist_insert(r, 0);
-	    }
-	    else {
-		errno = map_errno(WSAGetLastError());
-		close(fd);
-		fd = -1;
-	    }
+	    else
+		closesocket(r);
 	}
-	else
-	    CloseHandle(h);
+	else {
+	    errno = map_errno(WSAGetLastError());
+	    fd = -1;
+	}
     });
     return fd;
 }
