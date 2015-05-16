@@ -1010,9 +1010,9 @@ typedef void (*RUBY_DATA_FUNC)(void*);
 #   define RUBY_UNTYPED_DATA_WARNING 0
 # endif
 #endif
-VALUE rb_data_object_alloc(VALUE,void*,RUBY_DATA_FUNC,RUBY_DATA_FUNC);
+VALUE rb_data_object_wrap(VALUE,void*,RUBY_DATA_FUNC,RUBY_DATA_FUNC);
 VALUE rb_data_object_zalloc(VALUE,size_t,RUBY_DATA_FUNC,RUBY_DATA_FUNC);
-VALUE rb_data_typed_object_alloc(VALUE klass, void *datap, const rb_data_type_t *);
+VALUE rb_data_typed_object_wrap(VALUE klass, void *datap, const rb_data_type_t *);
 VALUE rb_data_typed_object_zalloc(VALUE klass, size_t size, const rb_data_type_t *type);
 int rb_typeddata_inherited_p(const rb_data_type_t *child, const rb_data_type_t *parent);
 int rb_typeddata_is_kind_of(VALUE, const rb_data_type_t *);
@@ -1029,7 +1029,7 @@ void *rb_check_typeddata(VALUE, const rb_data_type_t *);
 #define RUBY_TYPED_PROMOTED1         FL_PROMOTED1    /* THIS FLAG DEPENDS ON Ruby version */
 
 #define Data_Wrap_Struct(klass,mark,free,sval)\
-    rb_data_object_alloc((klass),(sval),(RUBY_DATA_FUNC)(mark),(RUBY_DATA_FUNC)(free))
+    rb_data_object_wrap((klass),(sval),(RUBY_DATA_FUNC)(mark),(RUBY_DATA_FUNC)(free))
 
 #define Data_Make_Struct0(result, klass, size, mark, free, sval) \
     VALUE result = rb_data_object_zalloc(klass, size, mark, free); \
@@ -1042,12 +1042,12 @@ void *rb_check_typeddata(VALUE, const rb_data_type_t *);
 })
 #else
 #define Data_Make_Struct(klass,type,mark,free,sval) (\
-    rb_data_struct_make((klass),(RUBY_DATA_FUNC)(mark),(RUBY_DATA_FUNC)(free),(void **)&(sval),sizeof(type)) \
+    rb_data_object_make((klass),(RUBY_DATA_FUNC)(mark),(RUBY_DATA_FUNC)(free),(void **)&(sval),sizeof(type)) \
 )
 #endif
 
 #define TypedData_Wrap_Struct(klass,data_type,sval)\
-  rb_data_typed_object_alloc((klass),(sval),(data_type))
+  rb_data_typed_object_wrap((klass),(sval),(data_type))
 
 #define TypedData_Make_Struct0(result, klass, size, data_type, sval) \
     VALUE result = rb_data_typed_object_zalloc(klass, size, data_type); \
@@ -1060,7 +1060,7 @@ void *rb_check_typeddata(VALUE, const rb_data_type_t *);
 })
 #else
 #define TypedData_Make_Struct(klass, type, data_type, sval) (\
-    rb_data_typed_struct_make((klass),(data_type),(void **)&(sval),sizeof(type)) \
+    rb_data_typed_object_make((klass),(data_type),(void **)&(sval),sizeof(type)) \
 )
 #endif
 
@@ -1192,23 +1192,23 @@ rb_obj_freeze_inline(VALUE x)
 #endif
 
 #if defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P)
-RUBY_UNTYPED_DATA_FUNC(static inline VALUE rb_data_object_alloc_warning(VALUE,void*,RUBY_DATA_FUNC,RUBY_DATA_FUNC));
+RUBY_UNTYPED_DATA_FUNC(static inline VALUE rb_data_object_wrap_warning(VALUE,void*,RUBY_DATA_FUNC,RUBY_DATA_FUNC));
 #endif
 RUBY_UNTYPED_DATA_FUNC(static inline void *rb_data_object_get_warning(VALUE));
 
 static inline VALUE
-rb_data_object_alloc_warning(VALUE klass, void *ptr, RUBY_DATA_FUNC mark, RUBY_DATA_FUNC free)
+rb_data_object_wrap_warning(VALUE klass, void *ptr, RUBY_DATA_FUNC mark, RUBY_DATA_FUNC free)
 {
-    return rb_data_object_alloc(klass, ptr, mark, free);
+    return rb_data_object_wrap(klass, ptr, mark, free);
 }
 
 #if defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P)
-#define rb_data_object_alloc_warning(klass, ptr, mark, free) \
+#define rb_data_object_wrap_warning(klass, ptr, mark, free) \
     __extension__( \
 	__builtin_choose_expr( \
 	    __builtin_constant_p(klass) && !(klass), \
-	    rb_data_object_alloc(klass, ptr, mark, free), \
-	    rb_data_object_alloc_warning(klass, ptr, mark, free)))
+	    rb_data_object_wrap(klass, ptr, mark, free), \
+	    rb_data_object_wrap_warning(klass, ptr, mark, free)))
 #endif
 
 static inline void *
@@ -1225,28 +1225,28 @@ rb_data_object_get_warning(VALUE obj)
 }
 
 static inline VALUE
-rb_data_struct_make(VALUE klass, RUBY_DATA_FUNC mark_func, RUBY_DATA_FUNC free_func, void **datap, size_t size)
+rb_data_object_make(VALUE klass, RUBY_DATA_FUNC mark_func, RUBY_DATA_FUNC free_func, void **datap, size_t size)
 {
     Data_Make_Struct0(result, klass, size, mark_func, free_func, *datap);
     return result;
 }
 
 static inline VALUE
-rb_data_typed_struct_make(VALUE klass, const rb_data_type_t *type, void **datap, size_t size)
+rb_data_typed_object_make(VALUE klass, const rb_data_type_t *type, void **datap, size_t size)
 {
     TypedData_Make_Struct0(result, klass, size, type, *datap);
     return result;
 }
 
-#define rb_data_object_alloc_0 rb_data_object_alloc
-#define rb_data_object_alloc_1 rb_data_object_alloc_warning
-#define rb_data_object_alloc  RUBY_MACRO_SELECT(rb_data_object_alloc_, RUBY_UNTYPED_DATA_WARNING)
+#define rb_data_object_wrap_0 rb_data_object_wrap
+#define rb_data_object_wrap_1 rb_data_object_wrap_warning
+#define rb_data_object_wrap  RUBY_MACRO_SELECT(rb_data_object_wrap_, RUBY_UNTYPED_DATA_WARNING)
 #define rb_data_object_get_0 rb_data_object_get
 #define rb_data_object_get_1 rb_data_object_get_warning
 #define rb_data_object_get  RUBY_MACRO_SELECT(rb_data_object_get_, RUBY_UNTYPED_DATA_WARNING)
-#define rb_data_struct_make_0 rb_data_struct_make
-#define rb_data_struct_make_1 rb_data_struct_make_warning
-#define rb_data_struct_make   RUBY_MACRO_SELECT(rb_data_struct_make_, RUBY_UNTYPED_DATA_WARNING)
+#define rb_data_object_make_0 rb_data_object_make
+#define rb_data_object_make_1 rb_data_object_make_warning
+#define rb_data_object_make   RUBY_MACRO_SELECT(rb_data_object_make_, RUBY_UNTYPED_DATA_WARNING)
 
 #if USE_RGENGC
 #define OBJ_PROMOTED_RAW(x)         ((RBASIC(x)->flags & (FL_PROMOTED0|FL_PROMOTED1)) == (FL_PROMOTED0|FL_PROMOTED1))

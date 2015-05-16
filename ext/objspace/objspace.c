@@ -600,7 +600,7 @@ static VALUE rb_mInternalObjectWrapper;
 static VALUE
 iow_newobj(VALUE obj)
 {
-    return rb_data_typed_object_alloc(rb_mInternalObjectWrapper, (void *)obj, &iow_data_type);
+    return TypedData_Wrap_Struct(rb_mInternalObjectWrapper, &iow_data_type, (void *)obj);
 }
 
 /* Returns the type of the internal object. */
