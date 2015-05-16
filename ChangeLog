@@ -1,3 +1,9 @@
+Sat May 16 21:17:11 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (rb_data_object_wrap, rb_data_typed_object_wrap): rename
+	  alloc as wrap.  these functions do not allocate data pointers
+	  but just wrap the given pointers.
+
 Sat May 16 19:59:24 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_accept): simplified.
