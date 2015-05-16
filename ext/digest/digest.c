@@ -565,10 +565,9 @@ rb_digest_base_alloc(VALUE klass)
 
     algo = get_digest_base_metadata(klass);
 
-    pctx = xmalloc(algo->ctx_size);
+    obj = rb_data_typed_object_zalloc(klass, algo->ctx_size, &digest_type);
+    pctx = RTYPEDDATA_DATA(obj);
     algo_init(algo, pctx);
-
-    obj = TypedData_Wrap_Struct(klass, &digest_type, pctx);
 
     return obj;
 }
