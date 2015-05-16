@@ -1,3 +1,7 @@
+Sat May 16 19:59:24 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_accept): simplified.
+
 Fri May 15 18:28:20 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_assoc, rb_ary_rassoc): [DOC] the result when key
