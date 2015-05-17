@@ -1,3 +1,9 @@
+Sun May 17 17:21:29 2015  Eric Wong  <e@80x24.org>
+
+	* lib/webrick/utils.rb (set_non_blocking): use IO#nonblock=
+	* (set_close_on_exec): use IO#close_on_exec=
+	  [Feature #11136]
+
 Sun May 17 15:01:26 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (num_positive_p, num_negative_p): add methods
