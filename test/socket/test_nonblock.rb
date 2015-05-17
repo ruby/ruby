@@ -1,5 +1,6 @@
 begin
   require "socket"
+  require "io/nonblock"
 rescue LoadError
 end
 
@@ -24,6 +25,9 @@ class TestSocketNonblock < Test::Unit::TestCase
       s, sockaddr = serv.accept_nonblock
     end
     assert_equal(Socket.unpack_sockaddr_in(c.getsockname), Socket.unpack_sockaddr_in(sockaddr))
+    if s.respond_to?(:nonblock?)
+      assert s.nonblock?, 'accepted socket is non-blocking'
+    end
   ensure
     serv.close if serv
     c.close if c
