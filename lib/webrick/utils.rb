@@ -9,7 +9,7 @@
 # $IPR: utils.rb,v 1.10 2003/02/16 22:22:54 gotoyuzo Exp $
 
 require 'socket'
-require 'fcntl'
+require 'io/nonblock'
 require 'etc'
 
 module WEBrick
@@ -17,20 +17,14 @@ module WEBrick
     ##
     # Sets IO operations on +io+ to be non-blocking
     def set_non_blocking(io)
-      flag = File::NONBLOCK
-      if defined?(Fcntl::F_GETFL)
-        flag |= io.fcntl(Fcntl::F_GETFL)
-      end
-      io.fcntl(Fcntl::F_SETFL, flag)
+      io.nonblock = true if io.respond_to?(:nonblock=)
     end
     module_function :set_non_blocking
 
     ##
     # Sets the close on exec flag for +io+
     def set_close_on_exec(io)
-      if defined?(Fcntl::FD_CLOEXEC)
-        io.fcntl(Fcntl::F_SETFD, Fcntl::FD_CLOEXEC)
-      end
+      io.close_on_exec = true if io.respond_to?(:close_on_exec=)
     end
     module_function :set_close_on_exec
 
