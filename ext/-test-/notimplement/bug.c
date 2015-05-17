@@ -8,7 +8,7 @@ bug_funcall(int argc, VALUE *argv, VALUE self)
 }
 
 void
-Init_bug(void)
+Init_notimplement(void)
 {
     VALUE mBug = rb_define_module("Bug");
     rb_define_module_function(mBug, "funcall", bug_funcall, -1);
