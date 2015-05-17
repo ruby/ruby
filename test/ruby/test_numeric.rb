@@ -146,6 +146,30 @@ class TestNumeric < Test::Unit::TestCase
     assert_predicate(a, :zero?)
   end
 
+  def test_positive_p
+    a = Class.new(Numeric) do
+      def >(x); true; end
+    end.new
+    assert_predicate(a, :positive?)
+
+    a = Class.new(Numeric) do
+      def >(x); false; end
+    end.new
+    assert_not_predicate(a, :positive?)
+  end
+
+  def test_negative_p
+    a = Class.new(Numeric) do
+      def <(x); true; end
+    end.new
+    assert_predicate(a, :negative?)
+
+    a = Class.new(Numeric) do
+      def <(x); false; end
+    end.new
+    assert_not_predicate(a, :negative?)
+  end
+
   def test_to_int
     a = Class.new(Numeric) do
       def to_i; :ok; end

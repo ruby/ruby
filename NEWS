@@ -19,6 +19,11 @@ with all sufficient information, see the ChangeLog file.
 
   * Enumerable#grep_v is added as inverse version of Enumerable#grep.
 
+* Numeric
+
+  * Numeric#positive? and Numeric#negative? are added, which return
+    true when the receiver is positive and negative respectively.
+
 === Core classes compatibility issues (excluding feature bug fixes)
 
 * Array
