@@ -1,3 +1,15 @@
+Sun May 17 15:01:26 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (num_positive_p, num_negative_p): add methods
+	  Numeric#positive? and Numeric#negative?.
+	  [ruby-core:69173] [Feature #11151]
+
+	* numeric.c (flo_positive_p, flo_negative_p): specialiazed
+	  functions for Float.
+
+	* complex.c (Init_Complex): Complex do not have positive? and
+	  negative? methods
+
 Sun May 17 14:57:42 2015  Eric Wong  <e@80x24.org>
 
 	* lib/webrick/server.rb (accept_client): avoid redundant fcntl call

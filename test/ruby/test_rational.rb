@@ -921,6 +921,16 @@ class Rational_Test < Test::Unit::TestCase
     assert_raise(ZeroDivisionError, bug5713) { Rational(0, 1) ** Rational(-2,3) }
   end
 
+  def test_positive_p
+    assert_predicate(1/2r, :positive?)
+    assert_not_predicate(-1/2r, :positive?)
+  end
+
+  def test_negative_p
+    assert_predicate(-1/2r, :negative?)
+    assert_not_predicate(1/2r, :negative?)
+  end
+
   def test_known_bug
   end
 
