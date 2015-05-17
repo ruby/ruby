@@ -1,3 +1,13 @@
+Sun May 17 12:13:33 2015  Eric Wong  <e@80x24.org>
+
+	* ext/socket/init.c (cloexec_accept): support nonblock flag and
+	  use SOCK_NONBLOCK if possible
+	* ext/socket/init.c (rsock_s_accept_nonblock):
+	  update cloexec_accept call
+	* ext/socket/init.c (accept_blocking): ditto for blocking
+	* test/socket/test_nonblock.rb: check nonblock? on accepted socket
+	  [Feature #11138]
+
 Sun May 17 03:58:59 2015  Aaron Patterson <tenderlove@ruby-lang.org>
 
 	* load.c (loaded_feature_path): stop returning false negatives for

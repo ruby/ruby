@@ -471,7 +471,8 @@ make_fd_nonblock(int fd)
 }
 
 static int
-cloexec_accept(int socket, struct sockaddr *address, socklen_t *address_len)
+cloexec_accept(int socket, struct sockaddr *address, socklen_t *address_len,
+	       int nonblock)
 {
     int ret;
     socklen_t len0 = 0;
@@ -485,11 +486,21 @@ cloexec_accept(int socket, struct sockaddr *address, socklen_t *address_len)
 #ifdef SOCK_CLOEXEC
         flags |= SOCK_CLOEXEC;
 #endif
+#ifdef SOCK_NONBLOCK
+        if (nonblock) {
+            flags |= SOCK_NONBLOCK;
+        }
+#endif
         ret = accept4(socket, address, address_len, flags);
         /* accept4 is available since Linux 2.6.28, glibc 2.10. */
         if (ret != -1) {
             if (ret <= 2)
                 rb_maygvl_fd_fix_cloexec(ret);
+#ifndef SOCK_NONBLOCK
+            if (nonblock) {
+                make_fd_nonblock(ret);
+            }
+#endif
             if (address_len && len0 < *address_len) *address_len = len0;
             return ret;
         }
@@ -503,6 +514,9 @@ cloexec_accept(int socket, struct sockaddr *address, socklen_t *address_len)
     if (ret == -1) return -1;
     if (address_len && len0 < *address_len) *address_len = len0;
     rb_maygvl_fd_fix_cloexec(ret);
+    if (nonblock) {
+        make_fd_nonblock(ret);
+    }
     return ret;
 }
 
@@ -521,7 +535,7 @@ rsock_s_accept_nonblock(int argc, VALUE *argv, VALUE klass, rb_io_t *fptr,
 
     rb_secure(3);
     rb_io_set_nonblock(fptr);
-    fd2 = cloexec_accept(fptr->fd, (struct sockaddr*)sockaddr, len);
+    fd2 = cloexec_accept(fptr->fd, (struct sockaddr*)sockaddr, len, 1);
     if (fd2 < 0) {
 	switch (errno) {
 	  case EAGAIN:
@@ -539,7 +553,6 @@ rsock_s_accept_nonblock(int argc, VALUE *argv, VALUE klass, rb_io_t *fptr,
         rb_sys_fail("accept(2)");
     }
     rb_update_max_fd(fd2);
-    make_fd_nonblock(fd2);
     return rsock_init_sock(rb_obj_alloc(klass), fd2);
 }
 
@@ -553,7 +566,7 @@ static VALUE
 accept_blocking(void *data)
 {
     struct accept_arg *arg = data;
-    return (VALUE)cloexec_accept(arg->fd, arg->sockaddr, arg->len);
+    return (VALUE)cloexec_accept(arg->fd, arg->sockaddr, arg->len, 0);
 }
 
 VALUE
