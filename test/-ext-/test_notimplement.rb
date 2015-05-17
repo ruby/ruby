@@ -1,6 +1,6 @@
-require '-test-/bug-3662/bug'
+require '-test-/notimplement'
 
-class Test_BUG_3662 < Test::Unit::TestCase
+class TestNotImplement < Test::Unit::TestCase
   def test_funcall_notimplement
     bug3662 = '[ruby-dev:41953]'
     assert_raise(NotImplementedError, bug3662) {
