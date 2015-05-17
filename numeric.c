@@ -162,6 +162,17 @@ rb_num_to_uint(VALUE val, unsigned int *ret)
 
 #define method_basic_p(klass) rb_method_basic_definition_p(klass, mid)
 
+static VALUE
+compare_with_zero(VALUE num, ID mid)
+{
+    VALUE zero = INT2FIX(0);
+    VALUE r = rb_check_funcall(num, mid, 1, &zero);
+    if (r == Qundef) {
+	rb_cmperr(mid, zero);
+    }
+    return r;
+}
+
 static inline int
 positive_int_p(VALUE num)
 {
@@ -175,7 +186,7 @@ positive_int_p(VALUE num)
 	if (method_basic_p(rb_cBignum))
 	    return BIGNUM_POSITIVE_P(num);
     }
-    return RTEST(rb_funcall(num, mid, 1, INT2FIX(0)));
+    return RTEST(compare_with_zero(num, mid));
 }
 
 static inline int
@@ -191,7 +202,7 @@ negative_int_p(VALUE num)
 	if (method_basic_p(rb_cBignum))
 	    return BIGNUM_NEGATIVE_P(num);
     }
-    return RTEST(rb_funcall(num, mid, 1, INT2FIX(0)));
+    return RTEST(compare_with_zero(num, mid));
 }
 
 int
