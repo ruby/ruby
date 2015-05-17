@@ -1,3 +1,8 @@
+Sun May 17 14:57:42 2015  Eric Wong  <e@80x24.org>
+
+	* lib/webrick/server.rb (accept_client): avoid redundant fcntl call
+	  [Feature #11137]
+
 Sun May 17 12:13:33 2015  Eric Wong  <e@80x24.org>
 
 	* ext/socket/init.c (cloexec_accept): support nonblock flag and
