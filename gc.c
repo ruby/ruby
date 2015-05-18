@@ -8859,7 +8859,6 @@ obj_info(VALUE obj)
     snprintf(buff, OBJ_INFO_BUFFERS_SIZE, "%s @%s:%d", buff, RANY(obj)->file, RANY(obj)->line);
 #endif
 
-#ifdef HAVE_VA_ARGS_MACRO
     switch (type) {
       case T_NODE:
 	snprintf(buff, OBJ_INFO_BUFFERS_SIZE, "%s (%s)", buff,
@@ -8872,50 +8871,49 @@ obj_info(VALUE obj)
 		 (int)RARRAY_LEN(obj));
 	break;
       case T_STRING: {
-	  snprintf(buff, OBJ_INFO_BUFFERS_SIZE, "%s %s", buff, RSTRING_PTR(obj));
-	  break;
+	snprintf(buff, OBJ_INFO_BUFFERS_SIZE, "%s %s", buff, RSTRING_PTR(obj));
+	break;
       }
       case T_CLASS: {
-	  VALUE class_path = rb_class_path_cached(obj);
-	  if (!NIL_P(class_path)) {
-	      snprintf(buff, OBJ_INFO_BUFFERS_SIZE, "%s %s", buff, RSTRING_PTR(class_path));
-	  }
-	  break;
+	VALUE class_path = rb_class_path_cached(obj);
+	if (!NIL_P(class_path)) {
+	    snprintf(buff, OBJ_INFO_BUFFERS_SIZE, "%s %s", buff, RSTRING_PTR(class_path));
+	}
+	break;
       }
       case T_DATA: {
-	  const char * const type_name = rb_objspace_data_type_name(obj);
-	  if (type_name && strcmp(type_name, "iseq") == 0) {
-	      rb_iseq_t *iseq;
-	      GetISeqPtr(obj, iseq);
-	      if (iseq->location.label) {
-		  snprintf(buff, OBJ_INFO_BUFFERS_SIZE, "%s %s@%s:%d", buff,
-			   RSTRING_PTR(iseq->location.label), RSTRING_PTR(iseq->location.path), (int)iseq->location.first_lineno);
-	      }
-	  }
-	  else if (type_name) {
-		  snprintf(buff, OBJ_INFO_BUFFERS_SIZE, "%s %s", buff, type_name);
-	  }
-	  break;
+	const char * const type_name = rb_objspace_data_type_name(obj);
+	if (type_name && strcmp(type_name, "iseq") == 0) {
+	    rb_iseq_t *iseq;
+	    GetISeqPtr(obj, iseq);
+	    if (iseq->location.label) {
+		snprintf(buff, OBJ_INFO_BUFFERS_SIZE, "%s %s@%s:%d", buff,
+			 RSTRING_PTR(iseq->location.label), RSTRING_PTR(iseq->location.path), (int)iseq->location.first_lineno);
+	    }
+	}
+	else if (type_name) {
+	    snprintf(buff, OBJ_INFO_BUFFERS_SIZE, "%s %s", buff, type_name);
+	}
+	break;
       }
       case T_IMEMO: {
-	  const char *imemo_name;
-	  switch (imemo_type(obj)) {
+	const char *imemo_name;
+	switch (imemo_type(obj)) {
 #define IMEMO_NAME(x) case imemo_##x: imemo_name = #x; break;
-	      IMEMO_NAME(none);
-	      IMEMO_NAME(cref);
-	      IMEMO_NAME(svar);
-	      IMEMO_NAME(throw_data);
-	      IMEMO_NAME(ifunc);
-	      IMEMO_NAME(memo);
-	    default: rb_bug("unknown IMEMO");
+	    IMEMO_NAME(none);
+	    IMEMO_NAME(cref);
+	    IMEMO_NAME(svar);
+	    IMEMO_NAME(throw_data);
+	    IMEMO_NAME(ifunc);
+	    IMEMO_NAME(memo);
+	  default: rb_bug("unknown IMEMO");
 #undef IMEMO_NAME
-	  }
-	  snprintf(buff, OBJ_INFO_BUFFERS_SIZE, "%s %s", buff, imemo_name);
+	}
+	snprintf(buff, OBJ_INFO_BUFFERS_SIZE, "%s %s", buff, imemo_name);
       }
       default:
 	break;
     }
-#endif
 #undef TF
 #undef C
 
