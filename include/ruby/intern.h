@@ -401,6 +401,10 @@ VALUE rb_eval_cmd(VALUE, VALUE, int);
 int rb_obj_respond_to(VALUE, ID, int);
 int rb_respond_to(VALUE, ID);
 VALUE rb_f_notimplement(int argc, const VALUE *argv, VALUE obj);
+#if !defined(RUBY_EXPORT) && defined(_WIN32)
+RUBY_EXTERN VALUE (*const rb_f_notimplement_)(int, const VALUE *, VALUE);
+#define rb_f_notimplement (*rb_f_notimplement_)
+#endif
 void rb_interrupt(void);
 VALUE rb_apply(VALUE, ID, VALUE);
 void rb_backtrace(void);

@@ -7,4 +7,8 @@ class TestNotImplement < Test::Unit::TestCase
       Bug.funcall(:notimplement)
     }
   end
+
+  def test_respond_to
+    assert_not_respond_to(Bug, :notimplement)
+  end
 end

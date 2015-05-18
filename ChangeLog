@@ -1,3 +1,10 @@
+Mon May 18 15:31:31 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/intern.h (rb_f_notimplement): should not respond to
+	  not-implemented methods.  as the address inside a DLL and the
+	  imported address are different on Windows, use an exported
+	  variable to share the same address.
+
 Mon May 18 13:55:01 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/monitor.rb (mon_try_enter, mon_enter): should reset @mon_count
