@@ -1,3 +1,9 @@
+Mon May 18 13:55:01 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/monitor.rb (mon_try_enter, mon_enter): should reset @mon_count
+	  just in case the previous owner thread dies without mon_exit.
+	  [fix GH-874] Patch by @chrisberkhout
+
 Sun May 17 17:21:29 2015  Eric Wong  <e@80x24.org>
 
 	* lib/webrick/utils.rb (set_non_blocking): use IO#nonblock=
