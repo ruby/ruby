@@ -23,7 +23,7 @@ Sun May 17 15:01:26 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  Numeric#positive? and Numeric#negative?.
 	  [ruby-core:69173] [Feature #11151]
 
-	* numeric.c (flo_positive_p, flo_negative_p): specialiazed
+	* numeric.c (flo_positive_p, flo_negative_p): specialized
 	  functions for Float.
 
 	* complex.c (Init_Complex): Complex do not have positive? and
