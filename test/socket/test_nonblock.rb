@@ -26,7 +26,7 @@ class TestSocketNonblock < Test::Unit::TestCase
     end
     assert_equal(Socket.unpack_sockaddr_in(c.getsockname), Socket.unpack_sockaddr_in(sockaddr))
     if s.respond_to?(:nonblock?)
-      assert s.nonblock?, 'accepted socket is non-blocking'
+      assert_predicate(s, :nonblock?, 'accepted socket is non-blocking')
     end
   ensure
     serv.close if serv
