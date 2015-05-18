@@ -170,6 +170,7 @@ module MonitorMixin
         return false
       end
       @mon_owner = Thread.current
+      @mon_count = 0
     end
     @mon_count += 1
     return true
@@ -184,6 +185,7 @@ module MonitorMixin
     if @mon_owner != Thread.current
       @mon_mutex.lock
       @mon_owner = Thread.current
+      @mon_count = 0
     end
     @mon_count += 1
   end

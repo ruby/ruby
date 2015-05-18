@@ -33,6 +33,22 @@ class TestMonitor < Test::Unit::TestCase
     assert_equal((1..10).to_a, ary)
   end
 
+  def test_enter_second_after_killed_thread
+    th = Thread.start {
+      @monitor.enter
+      Thread.current.kill
+      @monitor.exit
+    }
+    th.join
+    @monitor.enter
+    @monitor.exit
+    th2 = Thread.start {
+      @monitor.enter
+      @monitor.exit
+    }
+    assert_join_threads([th, th2])
+  end
+
   def test_synchronize
     ary = []
     queue = Queue.new
@@ -107,6 +123,22 @@ class TestMonitor < Test::Unit::TestCase
       queue1.enq(nil)
       queue2.deq
       assert_equal(true, @monitor.try_enter)
+    }
+    assert_join_threads([th, th2])
+  end
+
+  def test_try_enter_second_after_killed_thread
+    th = Thread.start {
+      assert_equal(true, @monitor.try_enter)
+      Thread.current.kill
+      @monitor.exit
+    }
+    th.join
+    assert_equal(true, @monitor.try_enter)
+    @monitor.exit
+    th2 = Thread.start {
+      assert_equal(true, @monitor.try_enter)
+      @monitor.exit
     }
     assert_join_threads([th, th2])
   end
