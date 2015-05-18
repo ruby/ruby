@@ -214,19 +214,11 @@ p Foo::Bar
 
   def add_autoload(path)
     (@autoload_paths ||= []) << path
-    eval <<-END
-      class ::Object
-        autoload :AutoloadTest, #{path.dump}
-      end
-    END
+    ::Object.class_eval {autoload(:AutoloadTest, path)}
   end
 
   def remove_autoload_constant
     $".replace($" - @autoload_paths)
-    eval <<-END
-      class ::Object
-        remove_const(:AutoloadTest)
-      end
-    END
+    ::Object.class_eval {remove_const(:AutoloadTest)}
   end
 end
