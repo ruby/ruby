@@ -1032,7 +1032,9 @@ void *rb_check_typeddata(VALUE, const rb_data_type_t *);
     rb_data_object_wrap((klass),(sval),(RUBY_DATA_FUNC)(mark),(RUBY_DATA_FUNC)(free))
 
 #define Data_Make_Struct0(result, klass, type, size, mark, free, sval) \
-    VALUE result = rb_data_object_zalloc(klass, size, mark, free); \
+    VALUE result = rb_data_object_zalloc((klass), (size), \
+					 (RUBY_DATA_FUNC)(mark), \
+					 (RUBY_DATA_FUNC)(free)); \
     (void)((sval) = (type *)DATA_PTR(result));
 
 #ifdef __GNUC__

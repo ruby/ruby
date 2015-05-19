@@ -1,3 +1,8 @@
+Tue May 19 09:54:44 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (Data_Make_Struct0): needs function pointer
+	  casts to fix function overloading in C++.
+
 Tue May 19 09:43:56 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (Data_Make_Struct0, TypedData_Make_Struct0):
