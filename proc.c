@@ -719,7 +719,7 @@ proc_call(int argc, VALUE *argv, VALUE procval)
     GetProcPtr(procval, proc);
 
     iseq = proc->block.iseq;
-    if (BUILTIN_TYPE(iseq) == T_NODE || iseq->param.flags.has_block) {
+    if (RUBY_VM_IFUNC_P(iseq) || iseq->param.flags.has_block) {
 	if (rb_block_given_p()) {
 	    rb_proc_t *passed_proc;
 	    RB_GC_GUARD(passed_procval) = rb_block_proc();
@@ -843,7 +843,7 @@ rb_block_min_max_arity(rb_block_t *block, int *max)
 {
     rb_iseq_t *iseq = block->iseq;
     if (iseq) {
-	if (BUILTIN_TYPE(iseq) != T_NODE) {
+	if (!RUBY_VM_IFUNC_P(iseq)) {
 	    return rb_iseq_min_max_arity(iseq, max);
 	}
 	else {
@@ -1717,7 +1717,7 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
 	rb_proc_t *proc;
 	body = proc_dup(body);
 	GetProcPtr(body, proc);
-	if (BUILTIN_TYPE(proc->block.iseq) != T_NODE) {
+	if (!RUBY_VM_IFUNC_P(proc->block.iseq)) {
 	    proc->block.iseq->defined_method_id = id;
 	    RB_OBJ_WRITE(proc->block.iseq->self, &proc->block.iseq->klass, mod);
 	    proc->is_lambda = TRUE;
@@ -2477,22 +2477,40 @@ static VALUE
 proc_binding(VALUE self)
 {
     rb_proc_t *proc;
-    VALUE bindval;
+    VALUE bindval, envval;
     rb_binding_t *bind;
     rb_iseq_t *iseq;
 
     GetProcPtr(self, proc);
+    envval = proc->envval;
     iseq = proc->block.iseq;
-    if (RB_TYPE_P((VALUE)iseq, T_NODE)) {
+    if (RUBY_VM_IFUNC_P(iseq)) {
+	rb_env_t *env;
 	if (!IS_METHOD_PROC_NODE((NODE *)iseq)) {
 	    rb_raise(rb_eArgError, "Can't create Binding from C level Proc");
 	}
 	iseq = rb_method_get_iseq(RNODE(iseq)->u2.value);
+	GetEnvPtr(envval, env);
+	if (iseq && env->local_size < iseq->local_size) {
+	    int prev_local_size = env->local_size;
+	    int local_size = iseq->local_size;
+	    VALUE newenvval = TypedData_Wrap_Struct(RBASIC_CLASS(envval), RTYPEDDATA_TYPE(envval), 0);
+	    rb_env_t *newenv = xmalloc(sizeof(rb_env_t) + ((local_size + 1) * sizeof(VALUE)));
+	    RTYPEDDATA_DATA(newenvval) = newenv;
+	    newenv->env_size = local_size + 2;
+	    newenv->local_size = local_size;
+	    newenv->prev_envval = env->prev_envval;
+	    newenv->block = env->block;
+	    MEMCPY(newenv->env, env->env, VALUE, prev_local_size + 1);
+	    rb_mem_clear(newenv->env + prev_local_size + 1, local_size - prev_local_size);
+	    newenv->env[local_size + 1] = newenvval;
+	    envval = newenvval;
+	}
     }
 
     bindval = rb_binding_alloc(rb_cBinding);
     GetBindingPtr(bindval, bind);
-    bind->env = proc->envval;
+    bind->env = envval;
     bind->blockprocval = proc->blockprocval;
     if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
 	bind->path = iseq->location.path;
