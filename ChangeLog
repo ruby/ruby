@@ -1,3 +1,8 @@
+Wed May 20 03:10:49 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* benchmark/bm_hash_aref_flo.rb: make more realistic data.
+	  [ruby-core:68632] [[Bug #10999]
+
 Wed May 20 02:49:49 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (respond_to_missing_p): check if the receiver responds to
