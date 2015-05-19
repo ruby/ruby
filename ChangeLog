@@ -1,3 +1,9 @@
+Tue May 19 09:43:56 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (Data_Make_Struct0, TypedData_Make_Struct0):
+	  explicit cast from void* is necessary as implicit cast is
+	  disallowed in C++.
+
 Mon May 18 15:31:31 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/intern.h (rb_f_notimplement): should not respond to

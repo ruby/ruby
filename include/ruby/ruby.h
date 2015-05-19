@@ -1031,13 +1031,13 @@ void *rb_check_typeddata(VALUE, const rb_data_type_t *);
 #define Data_Wrap_Struct(klass,mark,free,sval)\
     rb_data_object_wrap((klass),(sval),(RUBY_DATA_FUNC)(mark),(RUBY_DATA_FUNC)(free))
 
-#define Data_Make_Struct0(result, klass, size, mark, free, sval) \
+#define Data_Make_Struct0(result, klass, type, size, mark, free, sval) \
     VALUE result = rb_data_object_zalloc(klass, size, mark, free); \
-    (void)((sval) = DATA_PTR(result));
+    (void)((sval) = (type *)DATA_PTR(result));
 
 #ifdef __GNUC__
 #define Data_Make_Struct(klass,type,mark,free,sval) ({\
-    Data_Make_Struct0(data_struct_obj, klass, sizeof(type), mark, free, sval); \
+    Data_Make_Struct0(data_struct_obj, klass, type, sizeof(type), mark, free, sval); \
     data_struct_obj; \
 })
 #else
@@ -1049,13 +1049,13 @@ void *rb_check_typeddata(VALUE, const rb_data_type_t *);
 #define TypedData_Wrap_Struct(klass,data_type,sval)\
   rb_data_typed_object_wrap((klass),(sval),(data_type))
 
-#define TypedData_Make_Struct0(result, klass, size, data_type, sval) \
+#define TypedData_Make_Struct0(result, klass, type, size, data_type, sval) \
     VALUE result = rb_data_typed_object_zalloc(klass, size, data_type); \
-    (void)((sval) = DATA_PTR(result));
+    (void)((sval) = (type *)DATA_PTR(result));
 
 #ifdef __GNUC__
 #define TypedData_Make_Struct(klass, type, data_type, sval) ({\
-    TypedData_Make_Struct0(data_struct_obj, klass, sizeof(type), data_type, sval); \
+    TypedData_Make_Struct0(data_struct_obj, klass, type, sizeof(type), data_type, sval); \
     data_struct_obj; \
 })
 #else
@@ -1227,14 +1227,14 @@ rb_data_object_get_warning(VALUE obj)
 static inline VALUE
 rb_data_object_make(VALUE klass, RUBY_DATA_FUNC mark_func, RUBY_DATA_FUNC free_func, void **datap, size_t size)
 {
-    Data_Make_Struct0(result, klass, size, mark_func, free_func, *datap);
+    Data_Make_Struct0(result, klass, void, size, mark_func, free_func, *datap);
     return result;
 }
 
 static inline VALUE
 rb_data_typed_object_make(VALUE klass, const rb_data_type_t *type, void **datap, size_t size)
 {
-    TypedData_Make_Struct0(result, klass, size, type, *datap);
+    TypedData_Make_Struct0(result, klass, void, size, type, *datap);
     return result;
 }
 
