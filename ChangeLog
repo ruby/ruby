@@ -1,3 +1,9 @@
+Wed May 20 04:33:50 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (STR_SET_EMBED): clear NOFREE flag at embedding as
+	  embedded strings no longer refer static strings.
+	  [ruby-core:68436] [Bug #10942]
+
 Wed May 20 03:46:11 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (need_normalization): use getattrlist() if fgetattrlist()
