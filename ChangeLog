@@ -1,3 +1,8 @@
+Tue May 19 18:54:41 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* iseq.c (rb_iseq_compile_with_option): check srouce type, must be
+	  an IO or a String.  [ruby-core:69219] [Bug #11159]
+
 Tue May 19 17:15:03 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/benchmark.rb: Update Benchmark documentation and formatting.
