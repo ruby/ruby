@@ -1,3 +1,8 @@
+Wed May 20 03:46:11 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (need_normalization): use getattrlist() if fgetattrlist()
+	  is unavailable, on OSX 10.5.  [ruby-core:68829] [Bug #11054]
+
 Wed May 20 03:25:34 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (proc_binding): replicate env from method object, and
