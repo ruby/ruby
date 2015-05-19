@@ -666,7 +666,7 @@ num_positive_p(VALUE num)
     }
     else if (RB_TYPE_P(num, T_BIGNUM)) {
 	if (method_basic_p(rb_cBignum))
-	    return BIGNUM_POSITIVE_P(num);
+	    return BIGNUM_POSITIVE_P(num) && !rb_bigzero_p(num);
     }
     return RTEST(compare_with_zero(num, mid));
 }
