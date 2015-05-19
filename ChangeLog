@@ -1,3 +1,12 @@
+Tue May 19 11:18:46 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (rb_data_typed_object_alloc),
+	  (rb_data_object_alloc): add old names for source level backward
+	  compatibilities.
+
+	* gc.c (rb_data_object_alloc, rb_data_typed_object_alloc): add
+	  aliases for binary level backward compatibilities.
+
 Tue May 19 09:54:44 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (Data_Make_Struct0): needs function pointer
