@@ -1481,12 +1481,34 @@ replace_real_basename(char *path, long base, rb_encoding *enc, int norm_p)
     free(wplain);
     if (h == INVALID_HANDLE_VALUE) return path;
     FindClose(h);
-    tmp = rb_w32_conv_from_wchar(fd.cFileName, enc);
-    wlen = RSTRING_LEN(tmp);
-    path = GLOB_REALLOC(path, base + wlen + 1);
-    memcpy(path + base, RSTRING_PTR(tmp), wlen);
-    path[base + wlen] = 0;
-    rb_str_resize(tmp, 0);
+    if (tmp) {
+	char *buf;
+	tmp = rb_w32_conv_from_wchar(fd.cFileName, enc);
+	wlen = RSTRING_LEN(tmp);
+	buf = GLOB_REALLOC(path, base + wlen + 1);
+	if (buf) {
+	    path = buf;
+	    memcpy(path + base, RSTRING_PTR(tmp), wlen);
+	    path[base + wlen] = 0;
+	}
+	rb_str_resize(tmp, 0);
+    }
+    else {
+	char *utf8filename;
+	wlen = WideCharToMultiByte(CP_UTF8, 0, fd.cFileName, -1, NULL, 0, NULL, NULL);
+	utf8filename = GLOB_REALLOC(0, wlen);
+	if (utf8filename) {
+	    char *buf;
+	    WideCharToMultiByte(CP_UTF8, 0, fd.cFileName, -1, utf8filename, wlen, NULL, NULL);
+	    buf = GLOB_REALLOC(path, base + wlen + 1);
+	    if (buf) {
+		path = buf;
+		memcpy(path + base, utf8filename, wlen);
+		path[base + wlen] = 0;
+	    }
+	    GLOB_FREE(utf8filename);
+	}
+    }
     return path;
 }
 #elif USE_NAME_ON_FS == 1
