@@ -1,3 +1,11 @@
+Tue May 19 11:22:28 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/uri/rfc2396_parser.rb (initialize_pattern):
+	  URI::Generic.build should accept port as a string.
+	  pattern[:PORT] is not defined for long.
+	  by Dave Slutzkin <daveslutzkin@fastmail.fm>
+	  https://github.com/ruby/ruby/pull/804 fix GH-804
+
 Tue May 19 11:18:46 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (rb_data_typed_object_alloc),

@@ -761,6 +761,10 @@ class URI::TestGeneric < Test::Unit::TestCase
     u = URI::Generic.build(['http', nil, 'example.com', 80, nil, '/foo', nil, nil, nil])
     assert_equal('http://example.com:80/foo', u.to_s)
 
+    u = URI::Generic.build(:port => "5432")
+    assert_equal(":5432", u.to_s)
+    assert_equal(5432, u.port)
+
     u = URI::Generic.build(:scheme => "http", :host => "::1", :path => "/bar/baz")
     assert_equal("http://[::1]/bar/baz", u.to_s)
     assert_equal("[::1]", u.host)
