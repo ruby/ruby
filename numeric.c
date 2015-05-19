@@ -662,13 +662,13 @@ num_positive_p(VALUE num)
 
     if (FIXNUM_P(num)) {
 	if (method_basic_p(rb_cFixnum))
-	    return (SIGNED_VALUE)num > (SIGNED_VALUE)INT2FIX(0);
+	    return (SIGNED_VALUE)num > (SIGNED_VALUE)INT2FIX(0) ? Qtrue : Qfalse;
     }
     else if (RB_TYPE_P(num, T_BIGNUM)) {
 	if (method_basic_p(rb_cBignum))
-	    return BIGNUM_POSITIVE_P(num) && !rb_bigzero_p(num);
+	    return BIGNUM_POSITIVE_P(num) && !rb_bigzero_p(num) ? Qtrue : Qfalse;
     }
-    return RTEST(compare_with_zero(num, mid));
+    return compare_with_zero(num, mid);
 }
 
 /*
