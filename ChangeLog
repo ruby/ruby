@@ -1,3 +1,9 @@
+Tue May 19 13:10:08 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (num_positive_p): should false on Bignum 0.
+	  http://twitter.com/rafaelfranca/status/600509783427391488
+	  [ruby-core:69173] [Feature #11151]
+
 Tue May 19 11:22:28 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/uri/rfc2396_parser.rb (initialize_pattern):
