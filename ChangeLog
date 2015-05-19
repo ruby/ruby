@@ -1,3 +1,8 @@
+Tue May 19 17:15:03 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/benchmark.rb: Update Benchmark documentation and formatting.
+	  [fix GH-903][ci skip]
+
 Tue May 19 13:10:08 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (num_positive_p): should false on Bignum 0.

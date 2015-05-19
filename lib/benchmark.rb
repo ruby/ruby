@@ -131,7 +131,7 @@ module Benchmark
   #
   # If the block returns an array of
   # Benchmark::Tms objects, these will be used to format
-  # additional lines of output. If +label+ parameters are
+  # additional lines of output. If +labels+ parameter are
   # given, these are used to label these extra lines.
   #
   # _Note_: Other methods provide a simpler interface to this one, and are
@@ -180,8 +180,8 @@ module Benchmark
 
 
   # A simple interface to the #benchmark method, #bm generates sequential
-  # reports with labels.  The parameters have the same meaning as for
-  # #benchmark.
+  # reports with labels. +label_width+ and +labels+ parameters have the same
+  # meaning as for #benchmark.
   #
   #     require 'benchmark'
   #
@@ -281,7 +281,20 @@ module Benchmark
 
   #
   # Returns the time used to execute the given block as a
-  # Benchmark::Tms object.
+  # Benchmark::Tms object. Takes +label+ option.
+  #
+  #       require 'benchmark'
+  #
+  #       n = 1000000
+  #
+  #       time = Benchmark.measure do
+  #         n.times { a = "1" }
+  #       end
+  #       puts time
+  #
+  # Generates:
+  #
+  #        0.220000   0.000000   0.220000 (  0.227313)
   #
   def measure(label = "") # :yield:
     t0, r0 = Process.times, Process.clock_gettime(BENCHMARK_CLOCK)
@@ -475,7 +488,7 @@ module Benchmark
 
     #
     # Returns the contents of this Tms object as
-    # a formatted string, according to a format string
+    # a formatted string, according to a +format+ string
     # like that passed to Kernel.format. In addition, #format
     # accepts the following extensions:
     #
@@ -487,7 +500,7 @@ module Benchmark
     # <tt>%r</tt>::     Replaced by the elapsed real time, as reported by Tms#real
     # <tt>%n</tt>::     Replaced by the label string, as reported by Tms#label (Mnemonic: n of "*n*ame")
     #
-    # If _format_ is not given, FORMAT is used as default value, detailing the
+    # If +format+ is not given, FORMAT is used as default value, detailing the
     # user, system and real elapsed time.
     #
     def format(format = nil, *args)
