@@ -1010,6 +1010,8 @@ typedef void (*RUBY_DATA_FUNC)(void*);
 #   define RUBY_UNTYPED_DATA_WARNING 0
 # endif
 #endif
+#define rb_data_object_alloc rb_data_object_wrap
+#define rb_data_typed_object_alloc rb_data_typed_object_wrap
 VALUE rb_data_object_wrap(VALUE,void*,RUBY_DATA_FUNC,RUBY_DATA_FUNC);
 VALUE rb_data_object_zalloc(VALUE,size_t,RUBY_DATA_FUNC,RUBY_DATA_FUNC);
 VALUE rb_data_typed_object_wrap(VALUE klass, void *datap, const rb_data_type_t *);
