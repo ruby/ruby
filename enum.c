@@ -1700,7 +1700,7 @@ minmax_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, _memo))
  *     enum.minmax                  -> [min, max]
  *     enum.minmax { |a, b| block } -> [min, max]
  *
- *  Returns two elements array which contains the minimum and the
+ *  Returns a two element array which contains the minimum and the
  *  maximum value in the enumerable.  The first form assumes all
  *  objects implement <code>Comparable</code>; the second uses the
  *  block to return <em>a <=> b</em>.
