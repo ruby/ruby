@@ -82,6 +82,28 @@ module Test_Symbol
       assert_not_interned_false(c, :class_variable_defined?, noninterned_name("@@"), feature5072)
     end
 
+    def test_missing_method
+      bug10985 = '[ruby-core:68564] [Bug #10985]'
+      m = nil
+      c = Class.new do
+        def self.respond_to_missing?(*)
+          true
+        end
+      end
+
+      s = noninterned_name
+      assert_nothing_raised(NameError, bug10985) {m = c.method(s)}
+      assert_raise_with_message(NoMethodError, /#{s}/) {m.call}
+
+      s = noninterned_name
+      assert_nothing_raised(NameError, bug10985) {m = c.public_method(s.to_sym)}
+      assert_raise_with_message(NoMethodError, /#{s}/) {m.call}
+
+      s = noninterned_name
+      assert_nothing_raised(NameError, bug10985) {m = c.singleton_method(s.to_sym)}
+      assert_raise_with_message(NoMethodError, /#{s}/) {m.call}
+    end
+
     Feature5079 = '[ruby-core:38404]'
 
     def test_undefined_instance_variable

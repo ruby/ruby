@@ -1,3 +1,11 @@
+Wed May 20 02:49:49 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (respond_to_missing_p): check if the receiver responds to
+	  the given method by respond_to_missing?.
+
+	* proc.c (mnew_missing): create Method object for method_missing.
+	  [ruby-core:68564] [Bug #10985]
+
 Wed May 20 02:16:05 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* dir.c (replace_real_basename): need to check the return value of
