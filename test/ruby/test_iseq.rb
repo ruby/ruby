@@ -134,4 +134,11 @@ class TestISeq < Test::Unit::TestCase
       assert(!op.to_s.match(/^opt_/), "#{op}")
     }
   end
+
+  def test_invalid_source
+    bug11159 = '[ruby-core:69219] [Bug #11159]'
+    assert_raise(TypeError, bug11159) {ISeq.compile(nil)}
+    assert_raise(TypeError, bug11159) {ISeq.compile(:foo)}
+    assert_raise(TypeError, bug11159) {ISeq.compile(1)}
+  end
 end
