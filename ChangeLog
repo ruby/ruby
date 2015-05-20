@@ -1,3 +1,9 @@
+Thu May 21 00:07:54 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (rb_obj_instance_eval, rb_obj_instance_exec): allow
+	  symbols to just instance_eval/exec, except for definition of
+	  singletons.  [ruby-core:68961] [Bug #11086]
+
 Wed May 20 04:33:50 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (STR_SET_EMBED): clear NOFREE flag at embedding as
