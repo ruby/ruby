@@ -1,3 +1,8 @@
+Wed May 20 17:34:43 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* iseq.c (rb_iseq_compile_with_option): check source type, must be
+	  an IO or a String.  [ruby-core:69219] [Bug #11159]
+
 Wed May 13 14:32:13 2015  Tanaka Akira  <akr@fsij.org>
 
 	* lib/resolv.rb (Resolv::DNS::Label::Str#==): Check class equality.
