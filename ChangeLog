@@ -1,3 +1,8 @@
+Wed May 20 23:19:05 2015  Yusuke Endoh  <mame@ruby-lang.org>
+
+	* lib/base64.rb: Fix rdoc-formatting for padding argument.
+	  [fix GH-905][ci skip] Patch by @davydovanton
+
 Wed May 20 13:16:23 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (DEPRECATED_BY): deprecate warning with preferable
