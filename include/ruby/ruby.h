@@ -35,6 +35,9 @@ extern "C" {
 #ifndef DEPRECATED
 # define DEPRECATED(x) x
 #endif
+#ifndef DEPRECATED_BY
+# define DEPRECATED_BY(n,x) DEPRECATED(x)
+#endif
 #ifndef NOINLINE
 # define NOINLINE(x) x
 #endif
