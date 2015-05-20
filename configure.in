@@ -1653,6 +1653,7 @@ AS_VAR_POPDEF([rbcv])dnl
 
 RUBY_FUNC_ATTRIBUTE(noreturn, NORETURN)
 RUBY_FUNC_ATTRIBUTE(deprecated, DEPRECATED)
+RUBY_FUNC_ATTRIBUTE(deprecated("by "@%:@n), DEPRECATED_BY(n,x), rb_cv_func_deprecated_by)
 RUBY_FUNC_ATTRIBUTE(noinline, NOINLINE)
 
 if_i386=${universal_binary+[defined __i386__]}
