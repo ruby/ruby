@@ -1623,7 +1623,7 @@ exception_type2symbol(VALUE type)
       case CATCH_TYPE_REDO:   CONST_ID(id, "redo");   break;
       case CATCH_TYPE_NEXT:   CONST_ID(id, "next");   break;
       default:
-	rb_bug("...");
+	rb_bug("exception_type2symbol: unknown type %d", (int)type);
     }
     return ID2SYM(id);
 }
