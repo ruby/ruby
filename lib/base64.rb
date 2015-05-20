@@ -78,7 +78,7 @@ module Base64
   # Alphabet'' in RFC 4648.
   # The alphabet uses '-' instead of '+' and '_' instead of '/'.
   # Note that the result can still contain '='.
-  # You can remove the padding by setting "padding" as false.
+  # You can remove the padding by setting +padding+ as false.
   def urlsafe_encode64(bin, padding: true)
     str = strict_encode64(bin).tr("+/", "-_")
     str = str.delete("=") unless padding
