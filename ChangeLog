@@ -1,3 +1,18 @@
+Thu May 21 00:55:45 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_args.c: protect value stack from calling other methods
+	  during complex parameter setting process (splat, kw, and so on).
+	  [Bug #11027]
+
+	* vm_core.h: remove rb_thead_t::mark_stack_len.
+	  With this modification, we don't need to use th->mark_stack_len.
+
+	* test/ruby/test_keyword.rb: add a test.
+
+	* cont.c (cont_capture): catch up this fix.
+
+	* vm.c (rb_thread_mark): ditto.
+
 Thu May 21 00:07:54 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_eval.c (rb_obj_instance_eval, rb_obj_instance_exec): allow

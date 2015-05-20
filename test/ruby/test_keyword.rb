@@ -566,4 +566,14 @@ class TestKeywordArguments < Test::Unit::TestCase
     result = m(["a" => 10]) { |a = nil, **b| [a, b] }
     assert_equal([{"a" => 10}, {}], result)
   end
+
+  def method_for_test_to_hash_call_during_setup_complex_parameters k1:, k2:, **rest_kw
+    [k1, k2, rest_kw]
+  end
+
+  def test_to_hash_call_during_setup_complex_parameters
+    sym = "sym_#{Time.now}".to_sym
+    h = method_for_test_to_hash_call_during_setup_complex_parameters k1: "foo", k2: "bar", sym => "baz"
+    assert_equal ["foo", "bar", {sym => "baz"}], h, '[Bug #11027]'
+  end
 end
