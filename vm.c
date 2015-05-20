@@ -116,6 +116,9 @@ static void vm_collect_usage_register(int reg, int isset);
 #endif
 
 static VALUE
+vm_invoke_bmethod(rb_thread_t *th, rb_proc_t *proc, VALUE self, VALUE defined_class,
+		  int argc, const VALUE *argv, const rb_block_t *blockptr);
+static VALUE
 vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc, VALUE self, VALUE defined_class,
 	       int argc, const VALUE *argv, const rb_block_t *blockptr);
 
@@ -896,17 +899,13 @@ vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc, VALUE self, VALUE defined_class
 
     TH_PUSH_TAG(th);
     if ((state = EXEC_TAG()) == 0) {
-	if (!proc->is_from_method) {
-	    th->safe_level = proc->safe_level;
-	}
+	th->safe_level = proc->safe_level;
 	val = invoke_block_from_c(th, &proc->block, self, argc, argv, blockptr, 0,
 				  defined_class, 0);
     }
     TH_POP_TAG();
 
-    if (!proc->is_from_method) {
-	th->safe_level = stored_safe;
-    }
+    th->safe_level = stored_safe;
 
     if (state) {
 	JUMP_TAG(state);
@@ -914,12 +913,26 @@ vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc, VALUE self, VALUE defined_class
     return val;
 }
 
+static VALUE
+vm_invoke_bmethod(rb_thread_t *th, rb_proc_t *proc, VALUE self, VALUE defined_class,
+		  int argc, const VALUE *argv, const rb_block_t *blockptr)
+{
+    return invoke_block_from_c(th, &proc->block, self, argc, argv, blockptr, 0,
+			       defined_class, 0);
+}
+
 VALUE
 rb_vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc,
 		  int argc, const VALUE *argv, const rb_block_t *blockptr)
 {
-    return vm_invoke_proc(th, proc, proc->block.self, proc->block.klass,
-			  argc, argv, blockptr);
+    VALUE self = proc->block.self;
+    VALUE defined_class = proc->block.klass;
+    if (proc->is_from_method) {
+	return vm_invoke_bmethod(th, proc, self, defined_class, argc, argv, blockptr);
+    }
+    else {
+	return vm_invoke_proc(th, proc, self, defined_class, argc, argv, blockptr);
+    }
 }
 
 /* special variable */
