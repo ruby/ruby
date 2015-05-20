@@ -1013,8 +1013,6 @@ typedef void (*RUBY_DATA_FUNC)(void*);
 #   define RUBY_UNTYPED_DATA_WARNING 0
 # endif
 #endif
-#define rb_data_object_alloc rb_data_object_wrap
-#define rb_data_typed_object_alloc rb_data_typed_object_wrap
 VALUE rb_data_object_wrap(VALUE,void*,RUBY_DATA_FUNC,RUBY_DATA_FUNC);
 VALUE rb_data_object_zalloc(VALUE,size_t,RUBY_DATA_FUNC,RUBY_DATA_FUNC);
 VALUE rb_data_typed_object_wrap(VALUE klass, void *datap, const rb_data_type_t *);
@@ -1244,6 +1242,24 @@ rb_data_typed_object_make(VALUE klass, const rb_data_type_t *type, void **datap,
     TypedData_Make_Struct0(result, klass, void, size, type, *datap);
     return result;
 }
+
+#ifndef rb_data_object_alloc
+DEPRECATED_BY(rb_data_object_wrap, static inline VALUE rb_data_object_alloc(VALUE,void*,RUBY_DATA_FUNC,RUBY_DATA_FUNC));
+static inline VALUE
+rb_data_object_alloc(VALUE klass, void *data, RUBY_DATA_FUNC dmark, RUBY_DATA_FUNC dfree)
+{
+    return rb_data_object_wrap(klass, data, dmark, dfree);
+}
+#endif
+
+#ifndef rb_data_typed_object_alloc
+DEPRECATED_BY(rb_data_typed_object_wrap, static inline VALUE rb_data_typed_object_alloc(VALUE,void*,const rb_data_type_t*));
+static inline VALUE
+rb_data_typed_object_alloc(VALUE klass, void *datap, const rb_data_type_t *type)
+{
+    return rb_data_typed_object_wrap(klass, datap, type);
+}
+#endif
 
 #define rb_data_object_wrap_0 rb_data_object_wrap
 #define rb_data_object_wrap_1 rb_data_object_wrap_warning

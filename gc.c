@@ -11,6 +11,9 @@
 
 **********************************************************************/
 
+#define rb_data_object_alloc rb_data_object_alloc
+#define rb_data_typed_object_alloc rb_data_typed_object_alloc
+
 #include "internal.h"
 #include "ruby/st.h"
 #include "ruby/re.h"
