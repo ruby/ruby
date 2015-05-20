@@ -1,4 +1,7 @@
-Wed May 20 13:14:30 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed May 20 13:16:23 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (DEPRECATED_BY): deprecate warning with preferable
+	  alternative.
 
 	* configure.in (RUBY_FUNC_ATTRIBUTE): allow attribute arguments in
 	  the macro.
