@@ -1,3 +1,8 @@
+Thu May 21 01:34:48 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (id2ref): prohibit from accessing internal objects.
+	  [ruby-core:68348] [Bug #10918]
+
 Thu May 21 01:32:02 2015  Rei Odaira  <Rei.Odaira@gmail.com>
 
 	* ext/pty/pty.c: AIX supports autopush.
