@@ -2,3 +2,4 @@ power_assert 0.2.3
 test-unit 3.0.9
 minitest 5.6.1
 rake 10.4.2
+net-telnet 0.1.1
