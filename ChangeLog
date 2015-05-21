@@ -1,3 +1,8 @@
+Thu May 21 09:46:58 2015  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* ext/pty/pty.c: AIX supports autopush.
+	  Patch by Perry Smith [ruby-core:58539] [Bug #9144]
+
 Wed May 20 17:34:43 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* iseq.c (rb_iseq_compile_with_option): check source type, must be

@@ -262,7 +262,7 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     if ((slavefd = rb_cloexec_open(slavedevice, O_RDWR|O_NOCTTY, 0)) == -1) goto error;
     rb_update_max_fd(slavefd);
 
-#if defined(I_PUSH) && !defined(__linux__)
+#if defined(I_PUSH) && !defined(__linux__) && !defined(_AIX)
     if (ioctl(slavefd, I_PUSH, "ptem") == -1) goto error;
     if (ioctl(slavefd, I_PUSH, "ldterm") == -1) goto error;
     if (ioctl(slavefd, I_PUSH, "ttcompat") == -1) goto error;
@@ -346,7 +346,7 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     if (no_mesg(slavedevice, nomesg) == -1) goto error;
     if((slavefd = rb_cloexec_open(slavedevice, O_RDWR, 0)) == -1) goto error;
     rb_update_max_fd(slavefd);
-#if defined(I_PUSH) && !defined(__linux__)
+#if defined(I_PUSH) && !defined(__linux__) && !defined(_AIX)
     if(ioctl(slavefd, I_PUSH, "ptem") == -1) goto error;
     if(ioctl(slavefd, I_PUSH, "ldterm") == -1) goto error;
     ioctl(slavefd, I_PUSH, "ttcompat");
