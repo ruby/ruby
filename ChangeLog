@@ -1,3 +1,8 @@
+Thu May 21 14:15:10 2015  Eric Wong  <e@80x24.org>
+
+	* ext/socket/ancdata.c (bsock_recvmsg_internal): GC guard
+	  [Bug #11123]
+
 Thu May 21 14:11:50 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (body_ext_mpart): should work even if body-fld-dsp
