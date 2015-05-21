@@ -45,6 +45,7 @@ end
 # * Matrix.zero(n)
 # * Matrix.row_vector(row)
 # * Matrix.column_vector(column)
+# * Matrix.empty(row_count, column_count)
 # * Matrix.hstack(*matrices)
 # * Matrix.vstack(*matrices)
 #
@@ -1700,6 +1701,7 @@ end
 # * #*(x) "is matrix or number"
 # * #+(v)
 # * #-(v)
+# * #/(v)
 # * #+@
 # * #-@
 #
