@@ -124,6 +124,8 @@ hexencode_str_new(VALUE str_digest)
         p[i + i + 1] = hex[byte & 0x0f];
     }
 
+    RB_GC_GUARD(str_digest);
+
     return str;
 }
 
@@ -623,6 +625,7 @@ rb_digest_base_update(VALUE self, VALUE str)
 
     StringValue(str);
     algo->update_func(pctx, (unsigned char *)RSTRING_PTR(str), RSTRING_LEN(str));
+    RB_GC_GUARD(str);
 
     return self;
 }
