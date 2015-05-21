@@ -1508,7 +1508,7 @@ static VALUE
 iseq_s_of(VALUE klass, VALUE body)
 {
     VALUE ret = Qnil;
-    rb_iseq_t *iseq;
+    const rb_iseq_t *iseq;
 
     rb_secure(1);
 

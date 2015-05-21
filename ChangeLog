@@ -1,3 +1,15 @@
+Thu May 21 18:00:19 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.c: constify.
+
+	* iseq.h: ditto.
+
+	* method.h: ditto.
+
+	* proc.c: ditto.
+
+	* vm_method.c: ditto.
+
 Thu May 21 17:44:53 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* proc.c: fix issues caused by binding created from Method#to_proc.
