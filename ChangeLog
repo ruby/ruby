@@ -1,3 +1,8 @@
+Thu May 21 14:04:06 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* range.c (linear_object_p, range_include): test if covered for
+	  linear objects.  [ruby-core:69052] [Bug #11113]
+
 Thu May 21 14:01:40 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* rational.c: Added documentation for rational literal.
