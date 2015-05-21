@@ -371,11 +371,11 @@ get_local_variable_ptr(VALUE envval, ID lid)
 	iseq = env->block.iseq;
 
 	if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
-	for (i=0; i<iseq->local_table_size; i++) {
-	    if (iseq->local_table[i] == lid) {
-		return &env->env[i];
+	    for (i=0; i<iseq->local_table_size; i++) {
+		if (iseq->local_table[i] == lid) {
+		    return &env->env[i];
+		}
 	    }
-	}
 	}
 	else {
 	    return NULL;
@@ -2531,7 +2531,7 @@ proc_binding(VALUE self)
 	}
 	else {
 	    rb_raise(rb_eArgError, "Can't create Binding from C level Proc");
- 	}
+	}
     }
 
     bindval = rb_binding_alloc(rb_cBinding);

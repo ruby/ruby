@@ -779,8 +779,8 @@ rb_binding_add_dynavars(rb_binding_t *bind, int dyncount, const ID *dynvars)
     node = NEW_NODE(NODE_SCOPE, dyns, 0, 0);
 
     if (base_iseq) {
-    iseqval = rb_iseq_new(node, base_iseq->location.label, path, path,
-			  base_iseq->self, ISEQ_TYPE_EVAL);
+	iseqval = rb_iseq_new(node, base_iseq->location.label, path, path,
+			      base_iseq->self, ISEQ_TYPE_EVAL);
     }
     else {
 	VALUE tempstr = rb_str_new2("<temp>");
