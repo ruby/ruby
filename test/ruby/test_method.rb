@@ -887,17 +887,25 @@ class TestMethod < Test::Unit::TestCase
     end
   end
 
+  class C
+    D = "Const_D"
+    def foo
+      a = b = c = 12345
+    end
+  end
+
   def test_to_proc_binding
     bug11012 = '[ruby-core:68673] [Bug #11012]'
-    class << (obj = Object.new)
-      src = 1000.times.map {|i|"v#{i} = nil"}.join("\n")
-      eval("def foo()\n""#{src}\n""end")
-    end
 
-    b = obj.method(:foo).to_proc.binding
-    b.local_variables.each_with_index {|n, i|
-      b.local_variable_set(n, i)
-    }
-    assert_equal([998, 999], %w[v998 v999].map {|n| b.local_variable_get(n)}, bug11012)
+    b = C.new.method(:foo).to_proc.binding
+    assert_equal([], b.local_variables)
+    assert_equal("Const_D", b.eval("D")) # Check CREF
+
+    assert_raise(NameError){ b.local_variable_get(:foo) }
+    assert_equal(123, b.local_variable_set(:foo, 123))
+    assert_equal(123, b.local_variable_get(:foo))
+    assert_equal(456, b.local_variable_set(:bar, 456))
+    assert_equal(123, b.local_variable_get(:foo))
+    assert_equal(456, b.local_variable_get(:bar))
   end
 end
