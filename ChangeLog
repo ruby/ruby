@@ -1,3 +1,8 @@
+Thu May 21 17:29:26 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/matrix.rb: added documentation for Matrix#empty and Matrix#/
+	  [Feature #10070][ruby-dev:48433] Patch by @gogotanaka
+
 Thu May 21 17:02:43 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* proc.c: rename functions.
