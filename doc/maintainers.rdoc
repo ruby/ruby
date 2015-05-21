@@ -116,8 +116,6 @@ Zachary Scott (zzak)
   Shugo Maeda (shugo)
 [lib/net/imap.rb]
   Shugo Maeda (shugo)
-[lib/net/telnet.rb]
-  _unmaintained_
 [lib/net/http.rb, lib/net/https]
   NARUSE, Yui (naruse)
 [lib/net/pop.rb]
