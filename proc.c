@@ -2182,7 +2182,7 @@ rb_obj_method_arity(VALUE obj, ID id)
 }
 
 static inline rb_method_definition_t *
-method_get_def(VALUE method)
+method_def(VALUE method)
 {
     struct METHOD *data;
 
@@ -2191,7 +2191,7 @@ method_get_def(VALUE method)
 }
 
 static rb_iseq_t *
-method_get_iseq(rb_method_definition_t *def)
+method_def_iseq(rb_method_definition_t *def)
 {
     switch (def->type) {
       case VM_METHOD_TYPE_BMETHOD:
@@ -2203,22 +2203,23 @@ method_get_iseq(rb_method_definition_t *def)
     }
 }
 
-static const rb_cref_t *
-method_get_cref(rb_method_definition_t *def)
+rb_iseq_t *
+rb_method_iseq(VALUE method)
 {
+    return method_def_iseq(method_def(method));
+}
+
+static const rb_cref_t *
+method_cref(VALUE method)
+{
+    rb_method_definition_t *def = method_def(method);
+
     switch (def->type) {
       case VM_METHOD_TYPE_ISEQ:
 	return def->body.iseq_body.cref;
       default:
 	return NULL;
     }
-}
-
-
-rb_iseq_t *
-rb_method_iseq(VALUE method)
-{
-    return method_get_iseq(method_get_def(method));
 }
 
 static VALUE
@@ -2229,7 +2230,7 @@ method_def_location(rb_method_definition_t *def)
 	    return Qnil;
 	return rb_ary_dup(def->body.attr.location);
     }
-    return iseq_location(method_get_iseq(def));
+    return iseq_location(method_def_iseq(def));
 }
 
 VALUE
@@ -2263,7 +2264,7 @@ rb_obj_method_location(VALUE obj, ID id)
 VALUE
 rb_method_location(VALUE method)
 {
-    rb_method_definition_t *def = method_get_def(method);
+    rb_method_definition_t *def = method_def(method);
     return method_def_location(def);
 }
 
@@ -2422,8 +2423,8 @@ method_to_proc(VALUE method)
     GetEnvPtr(proc->envval, env);
     env->block.self = meth->recv;
     env->block.klass = meth->defined_class;
-    env->block.iseq = method_get_iseq(meth->me->def);
-    env->block.ep[-1] = (VALUE)method_get_cref(meth->me->def);
+    env->block.iseq = method_def_iseq(meth->me->def);
+    env->block.ep[-1] = (VALUE)method_cref(method);
     return procval;
 }
 
