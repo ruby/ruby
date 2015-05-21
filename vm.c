@@ -98,6 +98,12 @@ vm_cref_new_toplevel(rb_thread_t *th)
     return cref;
 }
 
+rb_cref_t *
+rb_vm_cref_new_toplevel(void)
+{
+    return vm_cref_new_toplevel(GET_THREAD());
+}
+
 static void
 vm_cref_dump(const char *mesg, const rb_cref_t *cref)
 {
@@ -772,8 +778,14 @@ rb_binding_add_dynavars(rb_binding_t *bind, int dyncount, const ID *dynvars)
     MEMCPY(dyns + 1, dynvars, ID, dyncount);
     node = NEW_NODE(NODE_SCOPE, dyns, 0, 0);
 
+    if (base_iseq) {
     iseqval = rb_iseq_new(node, base_iseq->location.label, path, path,
 			  base_iseq->self, ISEQ_TYPE_EVAL);
+    }
+    else {
+	VALUE tempstr = rb_str_new2("<temp>");
+	iseqval = rb_iseq_new_top(node, tempstr, tempstr, tempstr, Qfalse);
+    }
     node->u1.tbl = 0; /* reset table */
     ALLOCV_END(idtmp);
 

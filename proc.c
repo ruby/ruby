@@ -33,6 +33,7 @@ VALUE rb_cProc;
 static VALUE bmcall(VALUE, VALUE, int, VALUE *, VALUE);
 static int method_arity(VALUE);
 static int method_min_max_arity(VALUE, int *max);
+
 #define attached id__attached__
 
 /* Proc */
@@ -369,14 +370,19 @@ get_local_variable_ptr(VALUE envval, ID lid)
 	GetEnvPtr(envval, env);
 	iseq = env->block.iseq;
 
+	if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
 	for (i=0; i<iseq->local_table_size; i++) {
 	    if (iseq->local_table[i] == lid) {
 		return &env->env[i];
 	    }
 	}
+	}
+	else {
+	    return NULL;
+	}
     } while ((envval = env->prev_envval) != 0);
 
-    return 0;
+    return NULL;
 }
 
 /*
@@ -2401,30 +2407,20 @@ static VALUE
 method_to_proc(VALUE method)
 {
     VALUE procval;
-    struct METHOD *meth;
     rb_proc_t *proc;
-    rb_env_t *env;
 
     /*
      * class Method
      *   def to_proc
-     *     proc{|*args|
+     *     lambda{|*args|
      *       self.call(*args)
      *     }
      *   end
      * end
      */
-    TypedData_Get_Struct(method, struct METHOD, &method_data_type, meth);
     procval = rb_iterate(mlambda, 0, bmcall, method);
     GetProcPtr(procval, proc);
     proc->is_from_method = 1;
-    proc->block.self = meth->recv;
-    proc->block.klass = meth->defined_class;
-    GetEnvPtr(proc->envval, env);
-    env->block.self = meth->recv;
-    env->block.klass = meth->defined_class;
-    env->block.iseq = method_def_iseq(meth->me->def);
-    env->block.ep[-1] = (VALUE)method_cref(method);
     return procval;
 }
 
@@ -2476,6 +2472,29 @@ localjump_reason(VALUE exc)
     return rb_iv_get(exc, "@reason");
 }
 
+rb_cref_t *rb_vm_cref_new_toplevel(void); /* vm.c */
+
+static VALUE
+env_clone(VALUE envval, VALUE receiver, const rb_cref_t *cref)
+{
+    VALUE newenvval = TypedData_Wrap_Struct(RBASIC_CLASS(envval), RTYPEDDATA_TYPE(envval), 0);
+    rb_env_t *env, *newenv;
+    int envsize;
+
+    if (cref == NULL) {
+	cref = rb_vm_cref_new_toplevel();
+    }
+
+    GetEnvPtr(envval, env);
+    envsize = sizeof(rb_env_t) + (env->local_size + 1) * sizeof(VALUE);
+    newenv = xmalloc(envsize);
+    memcpy(newenv, env, envsize);
+    RTYPEDDATA_DATA(newenvval) = newenv;
+    newenv->block.self = receiver;
+    newenv->block.ep[-1] = (VALUE)cref;
+    return newenvval;
+}
+
 /*
  *  call-seq:
  *     prc.binding    -> binding
@@ -2503,34 +2522,31 @@ proc_binding(VALUE self)
     envval = proc->envval;
     iseq = proc->block.iseq;
     if (RUBY_VM_IFUNC_P(iseq)) {
-	rb_env_t *env;
-	if (!IS_METHOD_PROC_ISEQ(iseq)) {
+	if (IS_METHOD_PROC_ISEQ(iseq)) {
+	    VALUE method = (VALUE)((struct vm_ifunc *)iseq)->data;
+	    envval = env_clone(envval, method_receiver(method), method_cref(method));
+	}
+	else {
 	    rb_raise(rb_eArgError, "Can't create Binding from C level Proc");
-	}
-	iseq = rb_method_iseq((VALUE)((struct vm_ifunc *)iseq)->data);
-	GetEnvPtr(envval, env);
-	if (iseq && env->local_size < iseq->local_size) {
-	    int prev_local_size = env->local_size;
-	    int local_size = iseq->local_size;
-	    VALUE newenvval = TypedData_Wrap_Struct(RBASIC_CLASS(envval), RTYPEDDATA_TYPE(envval), 0);
-	    rb_env_t *newenv = xmalloc(sizeof(rb_env_t) + ((local_size + 1) * sizeof(VALUE)));
-	    RTYPEDDATA_DATA(newenvval) = newenv;
-	    newenv->env_size = local_size + 2;
-	    newenv->local_size = local_size;
-	    newenv->prev_envval = env->prev_envval;
-	    newenv->block = env->block;
-	    MEMCPY(newenv->env, env->env, VALUE, prev_local_size + 1);
-	    rb_mem_clear(newenv->env + prev_local_size + 1, local_size - prev_local_size);
-	    newenv->env[local_size + 1] = newenvval;
-	    envval = newenvval;
-	}
+ 	}
     }
 
     bindval = rb_binding_alloc(rb_cBinding);
     GetBindingPtr(bindval, bind);
     bind->env = envval;
     bind->blockprocval = proc->blockprocval;
-    if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
+
+    if (!RUBY_VM_NORMAL_ISEQ_P(iseq)) {
+	if (RUBY_VM_IFUNC_P(iseq) && IS_METHOD_PROC_ISEQ(iseq)) {
+	    VALUE method = (VALUE)((struct vm_ifunc *)iseq)->data;
+	    iseq = rb_method_iseq(method);
+	}
+	else {
+	    iseq = NULL;
+	}
+    }
+
+    if (iseq) {
 	bind->path = iseq->location.path;
 	bind->first_lineno = FIX2INT(rb_iseq_first_lineno(iseq->self));
     }
@@ -2538,6 +2554,7 @@ proc_binding(VALUE self)
 	bind->path = Qnil;
 	bind->first_lineno = 0;
     }
+
     return bindval;
 }
 
