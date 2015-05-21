@@ -258,4 +258,17 @@ EOF
     assert_equal(empty_part.body.subtype, 'MIXED')
     assert_equal(empty_part.body.param['BOUNDARY'], '000e0cd29212e3e06a0486590ae2')
   end
+
+  # [Bug #11128]
+  def test_body_ext_mpart_without_lang
+    parser = Net::IMAP::ResponseParser.new
+    response = parser.parse("* 4 FETCH (BODY (((\"text\" \"plain\" (\"charset\" \"utf-8\") NIL NIL \"7bit\" 257 9 NIL NIL NIL NIL)(\"text\" \"html\" (\"charset\" \"utf-8\") NIL NIL \"quoted-printable\" 655 9 NIL NIL NIL NIL) \"alternative\" (\"boundary\" \"001a1137a5047848dd05157ddaa1\") NIL)(\"application\" \"pdf\" (\"name\" \"test.xml\" \"x-apple-part-url\" \"9D00D9A2-98AB-4EFB-85BA-FB255F8BF3D7\") NIL NIL \"base64\" 4383638 NIL (\"attachment\" (\"filename\" \"test.xml\")) NIL NIL) \"mixed\" (\"boundary\" \"001a1137a5047848e405157ddaa3\") NIL))\r\n")
+    assert_equal("FETCH", response.name)
+    body = response.data.attr["BODY"]
+    assert_equal(nil, body.parts[0].disposition)
+    assert_equal(nil, body.parts[0].language)
+    assert_equal("ATTACHMENT", body.parts[1].disposition.dsp_type)
+    assert_equal("test.xml", body.parts[1].disposition.param["FILENAME"])
+    assert_equal(nil, body.parts[1].language)
+  end
 end
