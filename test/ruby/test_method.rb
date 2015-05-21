@@ -907,5 +907,6 @@ class TestMethod < Test::Unit::TestCase
     assert_equal(456, b.local_variable_set(:bar, 456))
     assert_equal(123, b.local_variable_get(:foo))
     assert_equal(456, b.local_variable_get(:bar))
+    assert_equal([:bar, :foo], b.local_variables.sort)
   end
 end
