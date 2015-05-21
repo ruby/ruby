@@ -1,3 +1,13 @@
+Thu May 21 08:25:19 2015  Eric Wong  <e@80x24.org>
+
+	* variable.c (Init_var_tables): init generic_iv_tbl
+	  (rb_generic_ivar_table, generic_ivar_get, generic_ivar_set,
+	   generic_ivar_defined, generic_ivar_remove,
+	   rb_mark_generic_ivar, givar_i, rb_mark_generic_ivar_tbl,
+	   rb_free_generic_ivar, rb_copy_generic_ivar, rb_ivar_foreach,
+	   rb_ivar_count): remove checks for uninitialize generic_iv_tbl
+	[ruby-core:69155] [Feature #11146]
+
 Thu May 21 04:11:03 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* iseq.c (exception_type2symbol): show correct bug message.
