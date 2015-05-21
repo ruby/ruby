@@ -4,6 +4,7 @@ rescue LoadError
 end
 
 require "test/unit"
+require_relative "../ruby/envutil"
 
 class TestSocketAddrinfo < Test::Unit::TestCase
   HAS_UNIXSOCKET = defined?(UNIXSocket) && /cygwin/ !~ RUBY_PLATFORM
@@ -466,6 +467,17 @@ class TestSocketAddrinfo < Test::Unit::TestCase
     assert_equal(ai1.socktype, ai2.socktype)
     assert_equal(ai1.protocol, ai2.protocol)
     assert_equal(ai1.canonname, ai2.canonname)
+  end
+
+  def test_marshal_memory_leak
+    bug11051 = '[ruby-dev:48923] [Bug #11051]'
+    assert_no_memory_leak(%w[-rsocket], <<-PREP, <<-CODE, bug11051, rss: true)
+    d = Marshal.dump(Addrinfo.tcp("127.0.0.1", 80))
+    1000.times {Marshal.load(d)}
+    PREP
+    GC.start
+    20_000.times {Marshal.load(d)}
+    CODE
   end
 
   if Socket.const_defined?("AF_INET6") && Socket::AF_INET6.is_a?(Integer)
