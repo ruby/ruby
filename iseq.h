@@ -34,7 +34,7 @@ VALUE rb_iseq_line_trace_all(VALUE iseqval);
 VALUE rb_iseq_line_trace_specify(VALUE iseqval, VALUE pos, VALUE set);
 
 /* proc.c */
-rb_iseq_t *rb_method_get_iseq(VALUE body);
+rb_iseq_t *rb_method_iseq(VALUE body);
 rb_iseq_t *rb_proc_get_iseq(VALUE proc, int *is_proc);
 
 struct rb_compile_option_struct {
