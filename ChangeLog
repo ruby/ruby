@@ -1,3 +1,11 @@
+Thu May 21 15:37:32 2015  Zachary Scott  <e@zzak.io>
+
+        * vm_method.c: Remove private attribute warning [Bug #10967]
+          Patch by @spastorino [Fixes GH-849]
+          https://github.com/ruby/ruby/pull/849
+
+        * test/ruby/test_module.rb: Update test for changes
+
 Thu May 21 10:59:43 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* proc.c (method_proc): rename to method_to_proc.
