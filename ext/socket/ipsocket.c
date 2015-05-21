@@ -41,6 +41,7 @@ inetsock_cleanup(struct inetsock_arg *arg)
 static VALUE
 init_inetsock_internal(struct inetsock_arg *arg)
 {
+    int error = 0;
     int type = arg->type;
     struct addrinfo *res, *lres;
     int fd, status = 0, local = 0;
@@ -80,6 +81,7 @@ init_inetsock_internal(struct inetsock_arg *arg)
 	syscall = "socket(2)";
 	fd = status;
 	if (fd < 0) {
+	    error = errno;
 	    continue;
 	}
 	arg->fd = fd;
@@ -107,6 +109,7 @@ init_inetsock_internal(struct inetsock_arg *arg)
 	}
 
 	if (status < 0) {
+	    error = errno;
 	    close(fd);
 	    arg->fd = fd = -1;
 	    continue;
@@ -124,7 +127,7 @@ init_inetsock_internal(struct inetsock_arg *arg)
 	    port = arg->remote.serv;
 	}
 
-	rsock_sys_fail_host_port(syscall, host, port);
+	rsock_syserr_fail_host_port(error, syscall, host, port);
     }
 
     arg->fd = -1;
@@ -132,8 +135,9 @@ init_inetsock_internal(struct inetsock_arg *arg)
     if (type == INET_SERVER) {
 	status = listen(fd, SOMAXCONN);
 	if (status < 0) {
+	    error = errno;
 	    close(fd);
-            rb_sys_fail("listen(2)");
+	    rb_syserr_fail(error, "listen(2)");
 	}
     }
 

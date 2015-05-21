@@ -1,3 +1,9 @@
+Thu May 21 13:57:47 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/socket/ipsocket.c (init_inetsock_internal): preserve errno
+	  before other library calls and use rb_syserr_fail.
+	  [ruby-core:68531] [Bug #10975]
+
 Thu May 21 13:32:52 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/-test-/printf/printf.c (uint_to_str): renamed to get rid of
