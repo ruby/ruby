@@ -1,3 +1,10 @@
+Thu May 21 17:02:43 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* proc.c: rename functions.
+	  * method_get_def() -> method_def()
+	  * method_get_iseq() -> method_def_iseq()
+	  * method_get_cref() -> method_cref()
+
 Thu May 21 16:52:44 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* proc.c (rb_method_get_iseq): rename to rb_method_iseq.
