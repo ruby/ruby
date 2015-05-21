@@ -2397,7 +2397,7 @@ rb_proc_new(
  */
 
 static VALUE
-method_proc(VALUE method)
+method_to_proc(VALUE method)
 {
     VALUE procval;
     struct METHOD *meth;
@@ -2679,7 +2679,7 @@ proc_curry(int argc, const VALUE *argv, VALUE self)
 static VALUE
 rb_method_curry(int argc, const VALUE *argv, VALUE self)
 {
-    VALUE proc = method_proc(self);
+    VALUE proc = method_to_proc(self);
     return proc_curry(argc, argv, proc);
 }
 
@@ -2806,7 +2806,7 @@ Init_Proc(void)
     rb_define_method(rb_cMethod, "arity", method_arity_m, 0);
     rb_define_method(rb_cMethod, "inspect", method_inspect, 0);
     rb_define_method(rb_cMethod, "to_s", method_inspect, 0);
-    rb_define_method(rb_cMethod, "to_proc", method_proc, 0);
+    rb_define_method(rb_cMethod, "to_proc", method_to_proc, 0);
     rb_define_method(rb_cMethod, "receiver", method_receiver, 0);
     rb_define_method(rb_cMethod, "name", method_name, 0);
     rb_define_method(rb_cMethod, "original_name", method_original_name, 0);
