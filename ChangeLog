@@ -1,3 +1,9 @@
+Thu May 21 20:27:07 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in (RUBY_DTRACE_POSTPROCESS): cmp -b is GNU extension.
+	  darwin uses GNU cmp, and FreeBSD and Solaris are not.
+	  Note that accidentally equals to expected result.
+
 Thu May 21 18:00:19 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* iseq.c: constify.

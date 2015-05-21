@@ -649,7 +649,7 @@ _PROBES
 	    $DTRACE -G -s conftest_provider.d conftest.${ac_objext} 2>/dev/null &&
 	    :
 	}; then
-	    if cmp -b conftest.o conftest.${ac_objext}.save; then
+	    if cmp -s conftest.o conftest.${ac_objext}.save; then
 		rb_cv_prog_dtrace_g=yes
 	    else
 		rb_cv_prog_dtrace_g=rebuild
