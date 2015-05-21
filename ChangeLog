@@ -1,3 +1,8 @@
+Thu May 21 13:32:52 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/-test-/printf/printf.c (uint_to_str): renamed to get rid of
+	  conflict on cygwin.  [ruby-core:68877] [Bug #11065]
+
 Thu May 21 13:28:03 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (vm_exec): check other events when RETURN is thrown.
