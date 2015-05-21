@@ -4,13 +4,6 @@
  *
  * Copyright(C) 2002 by Shigeo Kobayashi(shigeo@tinyforest.gr.jp)
  *
- * You may distribute under the terms of either the GNU General Public
- * License or the Artistic License, as specified in the README file
- * of this BigDecimal distribution.
- *
- *  NOTE: Change log in this source removed to reduce source code size.
- *        See rev. 1.25 if needed.
- *
  */
 
 /* #define BIGDECIMAL_DEBUG 1 */

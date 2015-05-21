@@ -1,3 +1,7 @@
+Thu May 21 13:19:52 2015  Kenta Murata  <mrkn@cookpad.com>
+
+	* bigdecimal: conform to ruby's license.  [ruby-core:68466] [Bug #10952]
+
 Thu May 21 09:49:01 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (id2ref): prohibit from accessing internal objects.
