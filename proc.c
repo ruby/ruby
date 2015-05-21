@@ -722,9 +722,9 @@ static VALUE
 proc_call(int argc, VALUE *argv, VALUE procval)
 {
     VALUE vret;
+    const rb_block_t *blockptr = 0;
+    const rb_iseq_t *iseq;
     rb_proc_t *proc;
-    rb_block_t *blockptr = 0;
-    rb_iseq_t *iseq;
     VALUE passed_procval;
     GetProcPtr(procval, proc);
 
@@ -851,7 +851,8 @@ rb_iseq_min_max_arity(const rb_iseq_t *iseq, int *max)
 static int
 rb_block_min_max_arity(rb_block_t *block, int *max)
 {
-    rb_iseq_t *iseq = block->iseq;
+    const rb_iseq_t *iseq = block->iseq;
+
     if (iseq) {
 	if (!RUBY_VM_IFUNC_P(iseq)) {
 	    return rb_iseq_min_max_arity(iseq, max);
@@ -916,11 +917,11 @@ rb_block_arity(void)
 
 #define get_proc_iseq rb_proc_get_iseq
 
-rb_iseq_t *
+const rb_iseq_t *
 rb_proc_get_iseq(VALUE self, int *is_proc)
 {
-    rb_proc_t *proc;
-    rb_iseq_t *iseq;
+    const rb_proc_t *proc;
+    const rb_iseq_t *iseq;
 
     GetProcPtr(self, proc);
     iseq = proc->block.iseq;
@@ -938,7 +939,7 @@ rb_proc_get_iseq(VALUE self, int *is_proc)
 }
 
 static VALUE
-iseq_location(rb_iseq_t *iseq)
+iseq_location(const rb_iseq_t *iseq)
 {
     VALUE loc[2];
 
@@ -1000,7 +1001,7 @@ static VALUE
 rb_proc_parameters(VALUE self)
 {
     int is_proc;
-    rb_iseq_t *iseq = get_proc_iseq(self, &is_proc);
+    const rb_iseq_t *iseq = get_proc_iseq(self, &is_proc);
     if (!iseq) {
 	return unnamed_parameters(rb_proc_arity(self));
     }
@@ -1050,7 +1051,7 @@ proc_to_s(VALUE self)
     VALUE str = 0;
     rb_proc_t *proc;
     const char *cname = rb_obj_classname(self);
-    rb_iseq_t *iseq;
+    const rb_iseq_t *iseq;
     const char *is_lambda;
 
     GetProcPtr(self, proc);
@@ -1189,7 +1190,7 @@ mnew_missing(VALUE rclass, VALUE klass, VALUE obj, ID id, ID rid, VALUE mclass)
 }
 
 static VALUE
-mnew_internal(rb_method_entry_t *me, VALUE defined_class, VALUE klass,
+mnew_internal(const rb_method_entry_t *me, VALUE defined_class, VALUE klass,
 	      VALUE obj, ID id, VALUE mclass, int scope, int error)
 {
     struct METHOD *data;
@@ -1246,7 +1247,7 @@ mnew_internal(rb_method_entry_t *me, VALUE defined_class, VALUE klass,
 }
 
 static VALUE
-mnew_from_me(rb_method_entry_t *me, VALUE defined_class, VALUE klass,
+mnew_from_me(const rb_method_entry_t *me, VALUE defined_class, VALUE klass,
 	     VALUE obj, ID id, VALUE mclass, int scope)
 {
     return mnew_internal(me, defined_class, klass, obj, id, mclass, scope, TRUE);
@@ -1256,7 +1257,7 @@ static VALUE
 mnew(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
 {
     VALUE defined_class;
-    rb_method_entry_t *me =
+    const rb_method_entry_t *me =
 	rb_method_entry_without_refinements(klass, id, &defined_class);
     return mnew_from_me(me, defined_class, klass, obj, id, mclass, scope);
 }
@@ -1559,9 +1560,10 @@ rb_obj_public_method(VALUE obj, VALUE vid)
 VALUE
 rb_obj_singleton_method(VALUE obj, VALUE vid)
 {
-    rb_method_entry_t *me;
+    const rb_method_entry_t *me;
     VALUE klass;
     ID id = rb_check_id(&vid);
+
     if (!id) {
 	if (!NIL_P(klass = rb_singleton_class_get(obj)) &&
 	    respond_to_missing_p(klass, obj, vid, FALSE)) {
@@ -2048,6 +2050,7 @@ static int
 rb_method_entry_min_max_arity(const rb_method_entry_t *me, int *max)
 {
     const rb_method_definition_t *def = me->def;
+
     if (!def) return *max = 0;
     switch (def->type) {
       case VM_METHOD_TYPE_CFUNC:
@@ -2149,13 +2152,14 @@ method_arity(VALUE method)
     return rb_method_entry_arity(data->me);
 }
 
-static rb_method_entry_t *
+static const rb_method_entry_t *
 original_method_entry(VALUE mod, ID id)
 {
     VALUE rclass;
-    rb_method_entry_t *me;
+    const rb_method_entry_t *me;
+
     while ((me = rb_method_entry(mod, id, &rclass)) != 0) {
-	rb_method_definition_t *def = me->def;
+	const rb_method_definition_t *def = me->def;
 	if (!def) break;
 	if (def->type != VM_METHOD_TYPE_ZSUPER) break;
 	mod = RCLASS_SUPER(rclass);
@@ -2167,7 +2171,7 @@ original_method_entry(VALUE mod, ID id)
 static int
 method_min_max_arity(VALUE method, int *max)
 {
-    struct METHOD *data;
+    const struct METHOD *data;
 
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
     return rb_method_entry_min_max_arity(data->me, max);
@@ -2176,7 +2180,7 @@ method_min_max_arity(VALUE method, int *max)
 int
 rb_mod_method_arity(VALUE mod, ID id)
 {
-    rb_method_entry_t *me = original_method_entry(mod, id);
+    const rb_method_entry_t *me = original_method_entry(mod, id);
     if (!me) return 0;		/* should raise? */
     return rb_method_entry_arity(me);
 }
@@ -2187,17 +2191,17 @@ rb_obj_method_arity(VALUE obj, ID id)
     return rb_mod_method_arity(CLASS_OF(obj), id);
 }
 
-static inline rb_method_definition_t *
+static inline const rb_method_definition_t *
 method_def(VALUE method)
 {
-    struct METHOD *data;
+    const struct METHOD *data;
 
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
     return data->me->def;
 }
 
-static rb_iseq_t *
-method_def_iseq(rb_method_definition_t *def)
+static const rb_iseq_t *
+method_def_iseq(const rb_method_definition_t *def)
 {
     switch (def->type) {
       case VM_METHOD_TYPE_BMETHOD:
@@ -2209,7 +2213,7 @@ method_def_iseq(rb_method_definition_t *def)
     }
 }
 
-rb_iseq_t *
+const rb_iseq_t *
 rb_method_iseq(VALUE method)
 {
     return method_def_iseq(method_def(method));
@@ -2218,7 +2222,7 @@ rb_method_iseq(VALUE method)
 static const rb_cref_t *
 method_cref(VALUE method)
 {
-    rb_method_definition_t *def = method_def(method);
+    const rb_method_definition_t *def = method_def(method);
 
     switch (def->type) {
       case VM_METHOD_TYPE_ISEQ:
@@ -2229,7 +2233,7 @@ method_cref(VALUE method)
 }
 
 static VALUE
-method_def_location(rb_method_definition_t *def)
+method_def_location(const rb_method_definition_t *def)
 {
     if (def->type == VM_METHOD_TYPE_ATTRSET || def->type == VM_METHOD_TYPE_IVAR) {
 	if (!def->body.attr.location)
@@ -2240,7 +2244,7 @@ method_def_location(rb_method_definition_t *def)
 }
 
 VALUE
-rb_method_entry_location(rb_method_entry_t *me)
+rb_method_entry_location(const rb_method_entry_t *me)
 {
     if (!me || !me->def) return Qnil;
     return method_def_location(me->def);
@@ -2249,7 +2253,7 @@ rb_method_entry_location(rb_method_entry_t *me)
 VALUE
 rb_mod_method_location(VALUE mod, ID id)
 {
-    rb_method_entry_t *me = original_method_entry(mod, id);
+    const rb_method_entry_t *me = original_method_entry(mod, id);
     return rb_method_entry_location(me);
 }
 
@@ -2270,8 +2274,7 @@ rb_obj_method_location(VALUE obj, ID id)
 VALUE
 rb_method_location(VALUE method)
 {
-    rb_method_definition_t *def = method_def(method);
-    return method_def_location(def);
+    return method_def_location(method_def(method));
 }
 
 /*
@@ -2284,7 +2287,7 @@ rb_method_location(VALUE method)
 static VALUE
 rb_method_parameters(VALUE method)
 {
-    rb_iseq_t *iseq = rb_method_iseq(method);
+    const rb_iseq_t *iseq = rb_method_iseq(method);
     if (!iseq) {
 	return unnamed_parameters(method_arity(method));
     }
@@ -2430,9 +2433,9 @@ method_to_proc(VALUE method)
 static VALUE
 method_super_method(VALUE method)
 {
-    struct METHOD *data;
+    const struct METHOD *data;
     VALUE defined_class, super_class;
-    rb_method_entry_t *me;
+    const rb_method_entry_t *me;
 
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
     defined_class = data->defined_class;
@@ -2513,10 +2516,10 @@ env_clone(VALUE envval, VALUE receiver, const rb_cref_t *cref)
 static VALUE
 proc_binding(VALUE self)
 {
-    rb_proc_t *proc;
     VALUE bindval, envval;
+    const rb_proc_t *proc;
+    const rb_iseq_t *iseq;
     rb_binding_t *bind;
-    rb_iseq_t *iseq;
 
     GetProcPtr(self, proc);
     envval = proc->envval;
