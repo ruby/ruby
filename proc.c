@@ -924,7 +924,7 @@ rb_proc_get_iseq(VALUE self, int *is_proc)
 	iseq = 0;
 	if (IS_METHOD_PROC_ISEQ(ifunc)) {
 	    /* method(:foo).to_proc */
-	    iseq = rb_method_get_iseq((VALUE)ifunc->data);
+	    iseq = rb_method_iseq((VALUE)ifunc->data);
 	    if (is_proc) *is_proc = 0;
 	}
     }
@@ -2216,7 +2216,7 @@ method_get_cref(rb_method_definition_t *def)
 
 
 rb_iseq_t *
-rb_method_get_iseq(VALUE method)
+rb_method_iseq(VALUE method)
 {
     return method_get_iseq(method_get_def(method));
 }
@@ -2277,7 +2277,7 @@ rb_method_location(VALUE method)
 static VALUE
 rb_method_parameters(VALUE method)
 {
-    rb_iseq_t *iseq = rb_method_get_iseq(method);
+    rb_iseq_t *iseq = rb_method_iseq(method);
     if (!iseq) {
 	return unnamed_parameters(method_arity(method));
     }
@@ -2506,7 +2506,7 @@ proc_binding(VALUE self)
 	if (!IS_METHOD_PROC_ISEQ(iseq)) {
 	    rb_raise(rb_eArgError, "Can't create Binding from C level Proc");
 	}
-	iseq = rb_method_get_iseq((VALUE)((struct vm_ifunc *)iseq)->data);
+	iseq = rb_method_iseq((VALUE)((struct vm_ifunc *)iseq)->data);
 	GetEnvPtr(envval, env);
 	if (iseq && env->local_size < iseq->local_size) {
 	    int prev_local_size = env->local_size;

@@ -1,3 +1,9 @@
+Thu May 21 16:52:44 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* proc.c (rb_method_get_iseq): rename to rb_method_iseq.
+
+	* iseq.c: catch up this fix.
+
 Thu May 21 15:41:45 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/net/telnet.rb: gemify net-telnet.

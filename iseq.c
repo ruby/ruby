@@ -1520,7 +1520,7 @@ iseq_s_of(VALUE klass, VALUE body)
 	    ret = iseq->self;
 	}
     }
-    else if ((iseq = rb_method_get_iseq(body)) != 0) {
+    else if ((iseq = rb_method_iseq(body)) != 0) {
 	ret = iseq->self;
     }
     return ret;
