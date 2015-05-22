@@ -6813,10 +6813,13 @@ rb_w32_write_console(uintptr_t strarg, int fd)
 	len = RSTRING_LEN(str) / sizeof(WCHAR);
 	break;
     }
+    reslen = 0;
     while (len > 0) {
 	long curlen = constat_parse(handle, s, (next = ptr, &next), &len);
+	reslen += next - ptr;
 	if (curlen > 0) {
-	    if (!WriteConsoleW(handle, ptr, curlen, &reslen, NULL)) {
+	    long written;
+	    if (!WriteConsoleW(handle, ptr, curlen, &written, NULL)) {
 		if (GetLastError() == ERROR_CALL_NOT_IMPLEMENTED)
 		    disable = TRUE;
 		reslen = (DWORD)-1L;
