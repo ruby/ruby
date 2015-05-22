@@ -1,3 +1,7 @@
+Fri May 22 16:48:32 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* NEWS: added news for net-telnet and rake
+
 Thu May 21 20:27:07 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in (RUBY_DTRACE_POSTPROCESS): cmp -b is GNU extension.
