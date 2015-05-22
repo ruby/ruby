@@ -6328,7 +6328,7 @@ constat_apply(HANDLE handle, struct constat *s, WCHAR w)
 					csbi.dwSize.X * csbi.dwCursorPosition.Y + csbi.dwCursorPosition.X,
 					pos, &written);
 	    break;
-	  case 2:	/* erase entire line */
+	  case 2:	/* erase entire screen */
 	    pos.X = 0;
 	    pos.Y = 0;
 	    FillConsoleOutputCharacterW(handle, L' ', csbi.dwSize.X * csbi.dwSize.Y, pos, &written);
