@@ -51,7 +51,7 @@ Thu May 21 17:44:53 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (vm_cref_new_toplevel): export as rb_vm_cref_new_toplevel().
 
-	* test/ruby/test_method.rb: add some assersions.
+	* test/ruby/test_method.rb: add some assertions.
 
 Thu May 21 17:29:26 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
