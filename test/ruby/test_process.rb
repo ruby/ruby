@@ -2017,4 +2017,16 @@ EOS
     status = th.value
     assert status.success?, status.inspect
   end if defined?(fork)
+
+  def test_kill_at_spawn_failure
+    bug11166 = '[ruby-core:69304] [Bug #11166]'
+    th = nil
+    x = with_tmpchdir {|d|
+      prog = "#{d}/notexist"
+      th = Thread.start {system(prog);sleep}
+      th.kill
+      th.join(0.1)
+    }
+    assert_equal(th, x)
+  end if defined?(fork)
 end
