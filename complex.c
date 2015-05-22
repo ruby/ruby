@@ -592,8 +592,8 @@ f_complex_polar(VALUE klass, VALUE x, VALUE y)
 	    y = DBL2NUM(imag);
 	}
 	else {
+	    y = f_mul(x, DBL2NUM(sin(arg)));
 	    x = f_mul(x, DBL2NUM(cos(arg)));
-	    y = f_mul(y, DBL2NUM(sin(arg)));
 	    if (canonicalization && f_zero_p(y)) return x;
 	}
 	return nucomp_s_new_internal(klass, x, y);

@@ -1,3 +1,8 @@
+Fri May 22 20:56:33 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* complex.c (f_complex_polar): simple bug reproduced only when y is
+	  a float but x is not a float.
+
 Fri May 22 19:42:06 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (rb_spawn_process): do not discard global escape

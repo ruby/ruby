@@ -212,6 +212,7 @@ class Complex_Test < Test::Unit::TestCase
 
   def test_polar
     assert_equal([1,2], Complex.polar(1,2).polar)
+    assert_equal(Complex.polar(1.0, Math::PI * 2 / 3), Complex.polar(1, Math::PI * 2 / 3))
   end
 
   def test_uplus
