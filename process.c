@@ -2436,8 +2436,8 @@ rb_execarg_parent_start(VALUE execarg_obj)
     }
 }
 
-void
-rb_execarg_parent_end(VALUE execarg_obj)
+static VALUE
+execarg_parent_end(VALUE execarg_obj)
 {
     struct rb_execarg *eargp = rb_execarg_get(execarg_obj);
     int err = errno;
@@ -2461,6 +2461,13 @@ rb_execarg_parent_end(VALUE execarg_obj)
     }
 
     errno = err;
+    return execarg_obj;
+}
+
+void
+rb_execarg_parent_end(VALUE execarg_obj)
+{
+    execarg_parent_end(execarg_obj);
     RB_GC_GUARD(execarg_obj);
 }
 
@@ -3845,16 +3852,13 @@ static rb_pid_t
 rb_spawn_process(struct rb_execarg *eargp, char *errmsg, size_t errmsg_buflen)
 {
     rb_pid_t pid;
-#if !USE_SPAWNV
-    int status;
-#endif
 #if !defined HAVE_WORKING_FORK || USE_SPAWNV
     VALUE prog;
     struct rb_execarg sarg;
 #endif
 
 #if defined HAVE_WORKING_FORK && !USE_SPAWNV
-    pid = rb_fork_async_signal_safe(&status, rb_exec_atfork, eargp, eargp->redirect_fds, errmsg, errmsg_buflen);
+    pid = rb_fork_async_signal_safe(NULL, rb_exec_atfork, eargp, eargp->redirect_fds, errmsg, errmsg_buflen);
 #else
     prog = eargp->use_shell ? eargp->invoke.sh.shell_script : eargp->invoke.cmd.command_name;
 
@@ -3892,20 +3896,42 @@ rb_spawn_process(struct rb_execarg *eargp, char *errmsg, size_t errmsg_buflen)
     return pid;
 }
 
+struct spawn_args {
+    VALUE execarg;
+    struct {
+	char *ptr;
+	size_t buflen;
+    } errmsg;
+};
+
+static VALUE
+do_spawn_process(VALUE arg)
+{
+    struct spawn_args *argp = (struct spawn_args *)arg;
+    rb_execarg_parent_start1(argp->execarg);
+    return (VALUE)rb_spawn_process(DATA_PTR(argp->execarg),
+				   argp->errmsg.ptr, argp->errmsg.buflen);
+}
+
+static rb_pid_t
+rb_execarg_spawn(VALUE execarg_obj, char *errmsg, size_t errmsg_buflen)
+{
+    struct spawn_args args;
+
+    args.execarg = execarg_obj;
+    args.errmsg.ptr = errmsg;
+    args.errmsg.buflen = errmsg_buflen;
+    return (rb_pid_t)rb_ensure(do_spawn_process, (VALUE)&args,
+			       execarg_parent_end, execarg_obj);
+}
+
 static rb_pid_t
 rb_spawn_internal(int argc, const VALUE *argv, char *errmsg, size_t errmsg_buflen)
 {
     VALUE execarg_obj;
-    struct rb_execarg *eargp;
-    rb_pid_t ret;
 
     execarg_obj = rb_execarg_new(argc, argv, TRUE);
-    eargp = rb_execarg_get(execarg_obj);
-    rb_execarg_parent_start(execarg_obj);
-    ret = rb_spawn_process(eargp, errmsg, errmsg_buflen);
-    rb_execarg_parent_end(execarg_obj);
-    RB_GC_GUARD(execarg_obj);
-    return ret;
+    return rb_execarg_spawn(execarg_obj, errmsg, errmsg_buflen);
 }
 
 rb_pid_t
@@ -4267,12 +4293,9 @@ rb_f_spawn(int argc, VALUE *argv)
 
     execarg_obj = rb_execarg_new(argc, argv, TRUE);
     eargp = rb_execarg_get(execarg_obj);
-    rb_execarg_parent_start(execarg_obj);
     fail_str = eargp->use_shell ? eargp->invoke.sh.shell_script : eargp->invoke.cmd.command_name;
 
-    pid = rb_spawn_process(eargp, errmsg, sizeof(errmsg));
-    rb_execarg_parent_end(execarg_obj);
-    RB_GC_GUARD(execarg_obj);
+    pid = rb_execarg_spawn(execarg_obj, errmsg, sizeof(errmsg));
 
     if (pid == -1) {
 	const char *prog = errmsg;
