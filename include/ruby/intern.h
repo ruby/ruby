@@ -636,7 +636,6 @@ VALUE rb_backref_get(void);
 void rb_backref_set(VALUE);
 VALUE rb_lastline_get(void);
 void rb_lastline_set(VALUE);
-VALUE rb_sym_all_symbols(void);
 /* process.c */
 void rb_last_status_set(int status, rb_pid_t pid);
 VALUE rb_last_status_get(void);
@@ -790,6 +789,8 @@ long rb_str_offset(VALUE, long);
 size_t rb_str_capacity(VALUE);
 VALUE rb_str_ellipsize(VALUE, long);
 VALUE rb_str_scrub(VALUE, VALUE);
+/* symbol.c */
+VALUE rb_sym_all_symbols(void);
 
 #if defined(__GNUC__) && !defined(__PCC__)
 #define rb_str_new(str, len) __extension__ (	\
