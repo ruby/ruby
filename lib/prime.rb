@@ -138,7 +138,7 @@ class Prime
   # +generator+:: optional. A pseudo-prime generator.
   def prime?(value, generator = Prime::Generator23.new)
     return false if value < 2
-    for num in generator
+    generator.each do |num|
       q,r = value.divmod num
       return true if q < num
       return false if r == 0
@@ -196,7 +196,7 @@ class Prime
     else
       pv = []
     end
-    for prime in generator
+    generator.each do |prime|
       count = 0
       while (value1, mod = value.divmod(prime)
              mod) == 0
@@ -211,7 +211,7 @@ class Prime
     if value > 1
       pv.push [value, 1]
     end
-    return pv
+    pv
   end
 
   # An abstract class for enumerating pseudo-prime numbers.
@@ -340,7 +340,7 @@ class Prime
         when 3; @prime = 5; @step = 2
         end
       end
-      return @prime
+      @prime
     end
     alias next succ
     def rewind
@@ -367,7 +367,7 @@ class Prime
 
     # Returns the cached prime numbers.
     def cache
-      return @primes
+      @primes
     end
     alias primes cache
     alias primes_so_far cache
@@ -392,7 +392,7 @@ class Prime
         @primes.push @next_to_check if @primes[2..@ulticheck_index].find {|prime| @next_to_check % prime == 0 }.nil?
         @next_to_check += 2
       end
-      return @primes[index]
+      @primes[index]
     end
   end
 
