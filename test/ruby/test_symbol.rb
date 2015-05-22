@@ -12,6 +12,19 @@ class TestSymbol < Test::Unit::TestCase
     assert_nothing_raised(SyntaxError) {assert_equal(sym, eval(n))}
   end
 
+  def test_intern
+    assert_equal(':""', ''.intern.inspect)
+    assert_equal(':$foo', '$foo'.intern.inspect)
+    assert_equal(':"!foo"', '!foo'.intern.inspect)
+    assert_equal(':"foo=="', "foo==".intern.inspect)
+  end
+
+  def test_all_symbols
+    x = Symbol.all_symbols
+    assert_kind_of(Array, x)
+    assert_empty(x.reject {|s| s.is_a?(Symbol) })
+  end
+
   def test_inspect_invalid
     # 2) Symbol#inspect sometimes returns invalid symbol representations:
     assert_eval_inspected(:"!")

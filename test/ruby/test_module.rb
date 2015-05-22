@@ -826,6 +826,9 @@ class TestModule < Test::Unit::TestCase
     c.class_eval('@@foo = :foo')
     c.class_eval { remove_class_variable(:@@foo) }
     assert_equal(false, c.class_variable_defined?(:@@foo))
+    assert_raise(NameError) do
+      c.class_eval { remove_class_variable(:@var) }
+    end
   end
 
   def test_export_method

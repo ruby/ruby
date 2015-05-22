@@ -839,26 +839,6 @@ x = __ENCODING__
     end
   end
 
-  def test_intern
-    assert_equal(':""', ''.intern.inspect)
-    assert_equal(':$foo', '$foo'.intern.inspect)
-    assert_equal(':"!foo"', '!foo'.intern.inspect)
-    assert_equal(':"foo=="', "foo==".intern.inspect)
-  end
-
-  def test_all_symbols
-    x = Symbol.all_symbols
-    assert_kind_of(Array, x)
-    assert_empty(x.reject {|s| s.is_a?(Symbol) })
-  end
-
-  def test_is_class_id
-    c = Class.new
-    assert_raise(NameError) do
-      c.instance_eval { remove_class_variable(:@var) }
-    end
-  end
-
   def test_method_block_location
     bug5614 = '[ruby-core:40936]'
     expected = nil
