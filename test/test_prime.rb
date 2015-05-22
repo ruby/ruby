@@ -1,6 +1,5 @@
 require 'test/unit'
 require 'prime'
-require 'stringio'
 require 'timeout'
 
 class TestPrime < Test::Unit::TestCase
@@ -54,23 +53,18 @@ class TestPrime < Test::Unit::TestCase
     assert enum.respond_to?(:rewind)
   end
 
-  def test_new
-    orig_stderr, orig_verbose = $stderr, $VERBOSE
-
-    $stderr = buf = StringIO.new('', 'w')
-    $VERBOSE = false
-
-    enum = Prime.new
-    assert_match("obsolete", buf.string)
-
+  def test_instance_without_block
+    enum = Prime.instance.each
     assert enum.respond_to?(:each)
     assert enum.kind_of?(Enumerable)
+    assert enum.respond_to?(:with_index)
+    assert enum.respond_to?(:next)
     assert enum.respond_to?(:succ)
+    assert enum.respond_to?(:rewind)
+  end
 
-    assert Prime === enum
-  ensure
-    $stderr = orig_stderr
-    $VERBOSE = orig_verbose
+  def test_new
+    exception = assert_raises(NoMethodError) { Prime.new }
   end
 
   def test_enumerator_succ
