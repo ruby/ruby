@@ -1643,6 +1643,7 @@ addrinfo_mload(VALUE self, VALUE ary)
 
         len = res->ai->ai_addrlen;
         memcpy(&ss, res->ai->ai_addr, res->ai->ai_addrlen);
+        rb_freeaddrinfo(res);
         break;
       }
     }

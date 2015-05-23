@@ -1,3 +1,8 @@
+Sun May 24 02:21:47 2015  Masahiro Tomita  <tommy@tmtm.org>
+
+	* ext/socket/raddrinfo.c (addrinfo_mload): fix memory leak of
+	  addrinfo.  [ruby-dev:48923] [Bug #11051]
+
 Sun May 24 02:17:05 2015  Kenta Murata  <mrkn@cookpad.com>
 
 	* bigdecimal: conform to ruby's license.  [ruby-core:68466] [Bug #10952]
