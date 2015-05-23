@@ -1137,10 +1137,14 @@ flo_eq(VALUE x, VALUE y)
 static VALUE
 flo_hash(VALUE num)
 {
-    double d;
+    return rb_dbl_hash(RFLOAT_VALUE(num));
+}
+
+VALUE
+rb_dbl_hash(double d)
+{
     st_index_t hash;
 
-    d = RFLOAT_VALUE(num);
     /* normalize -0.0 to 0.0 */
     if (d == 0.0) d = 0.0;
     hash = rb_memhash(&d, sizeof(d));
