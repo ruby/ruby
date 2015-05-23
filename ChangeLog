@@ -1,3 +1,8 @@
+Sun May 24 03:53:07 2015  Eric Wong  <e@80x24.org>
+
+	* ext/socket/ancdata.c (bsock_recvmsg_internal): GC guard
+	  [Bug #11123]
+
 Sun May 24 03:44:42 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* range.c (linear_object_p, range_include): test if covered for
