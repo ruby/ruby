@@ -1,3 +1,8 @@
+Sun May 24 03:44:42 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* range.c (linear_object_p, range_include): test if covered for
+	  linear objects.  [ruby-core:69052] [Bug #11113]
+
 Sun May 24 03:41:45 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (body_ext_mpart): should work even if body-fld-dsp
