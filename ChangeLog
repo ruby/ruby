@@ -1,3 +1,12 @@
+Sun May 24 02:02:00 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/test_symbol.rb: fix syntax error.
+
+Sun May 24 02:02:00 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (rb_any_hash): Symbols are compared by the identities
+	  always.  [ruby-core:68767] [Bug #11035]
+
 Sun May 24 02:01:07 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (rb_any_hash): use same hash values with Float#hash so

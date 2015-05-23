@@ -149,6 +149,9 @@ rb_any_hash(VALUE a)
     else if (BUILTIN_TYPE(a) == T_STRING) {
 	hnum = rb_str_hash(a);
     }
+    else if (BUILTIN_TYPE(a) == T_SYMBOL) {
+	hnum = rb_objid_hash((st_index_t)a);
+    }
     else if (BUILTIN_TYPE(a) == T_FLOAT) {
 	return rb_dbl_hash(rb_float_value(a));
     }
