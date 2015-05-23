@@ -1,3 +1,13 @@
+Sun May 24 03:56:27 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (r_symreal): register symbol names as strings first so
+	  that r_symlink always returns valid names.
+	  [ruby-core:68587] [Bug #10991]
+
+	* marshal.c (r_ivar, r_object0): now need to intern symbol names.
+
+	* marshal.c (r_object0): compare with symbol names.
+
 Sun May 24 03:53:07 2015  Eric Wong  <e@80x24.org>
 
 	* ext/socket/ancdata.c (bsock_recvmsg_internal): GC guard
