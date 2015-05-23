@@ -130,6 +130,11 @@ class VCS
     return last, changed, modified, *rest
   end
 
+  def modified(path)
+    last, changed, modified, *rest = get_revisions(path)
+    modified
+  end
+
   def relative_to(path)
     if path
       srcdir = File.realpath(@srcdir)
