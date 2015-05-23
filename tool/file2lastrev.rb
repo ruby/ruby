@@ -17,6 +17,7 @@ def self.output=(output)
 end
 @suppress_not_found = false
 
+format = '%Y-%m-%dT%H:%M:%S%z'
 srcdir = nil
 parser = OptionParser.new {|opts|
   opts.on("--srcdir=PATH", "use PATH as source directory") do |path|
@@ -31,8 +32,9 @@ parser = OptionParser.new {|opts|
   opts.on("--doxygen", "Doxygen format") do
     self.output = :doxygen
   end
-  opts.on("--modified", "modified time") do
+  opts.on("--modified[=FORMAT]", "modified time") do |fmt|
     self.output = :modified
+    format = fmt if fmt
   end
   opts.on("-q", "--suppress_not_found") do
     @suppress_not_found = true
@@ -67,7 +69,7 @@ parser.parse! rescue abort "#{File.basename(Program)}: #{$!}\n#{parser}"
     }
   when :modified
     proc {|last, changed, modified|
-      modified.strftime('%Y-%m-%dT%H:%M:%S%z')
+      modified.strftime(format)
     }
   else
     raise "unknown output format `#{@output}'"
