@@ -1,3 +1,13 @@
+Sun May 24 02:06:34 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/-test-/file/fs.c (get_fsname): try magic number only if
+	  f_type is included.  [ruby-dev:48913] [Bug #11000]
+
+Sun May 24 02:06:34 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/-test-/file/fs.c (get_fsname): return filesystem name by
+	  statfs/statvfs.  [ruby-core:68624] [Bug #10998]
+
 Sun May 24 02:02:00 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_symbol.rb: fix syntax error.
