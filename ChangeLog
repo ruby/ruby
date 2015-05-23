@@ -1,3 +1,7 @@
+Sun May 24 02:17:05 2015  Kenta Murata  <mrkn@cookpad.com>
+
+	* bigdecimal: conform to ruby's license.  [ruby-core:68466] [Bug #10952]
+
 Sun May 24 02:06:34 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/-test-/file/fs.c (get_fsname): try magic number only if

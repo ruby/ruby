@@ -4,13 +4,6 @@
  *
  * Copyright(C) 2002 by Shigeo Kobayashi(shigeo@tinyforest.gr.jp)
  *
- * You may distribute under the terms of either the GNU General Public
- * License or the Artistic License, as specified in the README file
- * of this BigDecimal distribution.
- *
- * NOTES:
- *   2003-03-28 V1.0 checked in.
- *
  */
 
 #ifndef  RUBY_BIG_DECIMAL_H
