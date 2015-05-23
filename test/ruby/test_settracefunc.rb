@@ -1332,4 +1332,24 @@ class TestSetTraceFunc < Test::Unit::TestCase
     }
     assert_equal [__LINE__ - 3, __LINE__ - 2], lines, 'Bug #10449'
   end
+
+  class Bug10724
+    def initialize
+      loop{return}
+    end
+  end
+
+  def test_throwing_return_with_finish_frame
+    target_th = Thread.current
+    evs = []
+
+    TracePoint.new(:call, :return){|tp|
+      return if Thread.current != target_th
+      evs << tp.event
+    }.enable{
+      a = Bug10724.new
+    }
+
+    assert_equal([:call, :return], evs)
+  end
 end

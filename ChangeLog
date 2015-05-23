@@ -1,3 +1,10 @@
+Sun May 24 02:44:53 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (vm_exec): check other events when RETURN is thrown.
+	  [Bug #10724]
+
+	* test/ruby/test_settracefunc.rb: add a test.
+
 Sun May 24 02:21:47 2015  Masahiro Tomita  <tommy@tmtm.org>
 
 	* ext/socket/raddrinfo.c (addrinfo_mload): fix memory leak of
