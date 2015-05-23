@@ -673,7 +673,7 @@ num_positive_p(VALUE num)
 
 /*
  *  call-seq:
- *     num.positive? ->  true or false
+ *     num.negative? ->  true or false
  *
  *  Returns +true+ if +num+ is less than 0.
  */
