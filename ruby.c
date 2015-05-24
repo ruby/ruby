@@ -131,6 +131,18 @@ static struct {
 } origarg;
 
 static void
+show_usage_line(const char *str, unsigned int namelen, unsigned int secondlen, int help)
+{
+    const unsigned int w = 16;
+    const int wrap = help && namelen + secondlen - 2 > w;
+    printf("  %.*s%-*.*s%-*s%s\n", namelen-1, str,
+	   (wrap ? 0 : w - namelen + 1),
+	   (help ? secondlen-1 : 0), str + namelen,
+	   (wrap ? w + 3 : 0), (wrap ? "\n" : ""),
+	   str + namelen + secondlen);
+}
+
+static void
 usage(const char *name, int help)
 {
     /* This message really ought to be max 23 lines.
@@ -182,15 +194,9 @@ usage(const char *name, int help)
 	M("gems",    "",        "rubygems (default: "DEFAULT_RUBYGEMS_ENABLED")"),
 	M("rubyopt", "",        "RUBYOPT environment variable (default: enabled)"),
     };
-    int i, w = 16, num = numberof(usage_msg) - (help ? 1 : 0);
-#define SHOW(m) do { \
-	int wrap = help && (m).namelen + (m).secondlen - 2 > w; \
-	printf("  %.*s%-*.*s%-*s%s\n", (m).namelen-1, (m).str, \
-	       (wrap ? 0 : w - (m).namelen + 1), \
-	       (help ? (m).secondlen-1 : 0), (m).str + (m).namelen, \
-	       (wrap ? w + 3 : 0), (wrap ? "\n" : ""), \
-	       (m).str + (m).namelen + (m).secondlen); \
-    } while (0)
+    int i;
+    const int num = numberof(usage_msg) - (help ? 1 : 0);
+#define SHOW(m) show_usage_line((m).str, (m).namelen, (m).secondlen, help)
 
     printf("Usage: %s [switches] [--] [programfile] [arguments]\n", name);
     for (i = 0; i < num; ++i)
