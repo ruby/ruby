@@ -408,6 +408,9 @@ eom
       res = http.post(uri.path, "issue_id=#@issue",
                      'X-Redmine-API-Key' => REDMINE_API_KEY)
       puts res.body
+      class << @changesets
+        remove_method(:validated) rescue nil
+      end
     end
   },
 
