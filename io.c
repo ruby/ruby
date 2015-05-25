@@ -3112,6 +3112,7 @@ prepare_getline_args(int argc, VALUE *argv, VALUE *rsp, long *limit, VALUE io)
     VALUE rs = rb_rs, lim = Qnil;
     rb_io_t *fptr;
 
+    rb_check_arity(argc, 0, 2);
     if (argc == 1) {
         VALUE tmp = Qnil;
 
@@ -3123,7 +3124,7 @@ prepare_getline_args(int argc, VALUE *argv, VALUE *rsp, long *limit, VALUE io)
         }
     }
     else if (2 <= argc) {
-        rb_scan_args(argc, argv, "2", &rs, &lim);
+	rs = argv[0], lim = argv[1];
         if (!NIL_P(rs))
             StringValue(rs);
     }
