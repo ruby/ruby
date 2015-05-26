@@ -112,7 +112,7 @@ RUBY_SYMBOL_EXPORT_BEGIN
 #define xrealloc2 ruby_xrealloc2
 #define xfree ruby_xfree
 
-#if defined(__GNUC__) && __GNUC__ >= 4 && __GNUC_MINOR__ >= 3
+#if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3))
 # define RUBY_ATTR_ALLOC_SIZE(params) __attribute__ ((__alloc_size__ params))
 #else
 # define RUBY_ATTR_ALLOC_SIZE(params)
