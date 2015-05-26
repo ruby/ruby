@@ -103,10 +103,12 @@ class TestGemCommandsPristineCommand < Gem::TestCase
 
     assert_path_exists gem_exec
 
+    ruby_exec = sprintf Gem.default_exec_format, 'ruby'
+
     if win_platform?
-      assert_match %r%\A#!\s*ruby%, File.read(gem_exec)
+      assert_match %r%\A#!\s*#{ruby_exec}%, File.read(gem_exec)
     else
-      assert_match %r%\A#!\s*/usr/bin/env ruby%, File.read(gem_exec)
+      assert_match %r%\A#!\s*/usr/bin/env #{ruby_exec}%, File.read(gem_exec)
     end
   end
 
