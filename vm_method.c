@@ -1303,6 +1303,9 @@ rb_alias(VALUE klass, ID name, ID def)
 
   again:
     orig_me = search_method(klass, def, &defined_class);
+    if (orig_me && orig_me->def->type == VM_METHOD_TYPE_REFINED) {
+	orig_me = rb_resolve_refined_method(Qnil, orig_me, &defined_class);
+    }
 
     if (UNDEFINED_METHOD_ENTRY_P(orig_me) ||
 	UNDEFINED_REFINED_METHOD_P(orig_me->def)) {

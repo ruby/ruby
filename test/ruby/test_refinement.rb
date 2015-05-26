@@ -1455,6 +1455,32 @@ class TestRefinement < Test::Unit::TestCase
     }
   end
 
+  def test_alias_refined_method2
+    bug11182 = '[ruby-core:69360]'
+    assert_in_out_err([], <<-INPUT, ["C"], [], bug11182)
+      class C
+        def foo
+          puts "C"
+        end
+      end
+
+      module M
+        refine C do
+          def foo
+            puts "Refiend C"
+          end
+        end
+      end
+
+      class D < C
+        alias bar foo
+      end
+
+      using M
+      D.new.bar
+    INPUT
+  end
+
   private
 
   def eval_using(mod, s)

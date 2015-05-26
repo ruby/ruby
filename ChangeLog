@@ -1,3 +1,8 @@
+Tue May 26 22:10:43 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* vm_method.c (rb_alias): should resolve refined methods.
+	  [ruby-core:69360] [Bug #11182]
+
 Tue May 26 21:35:13 2015  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* include/ruby/defines.h (RUBY_ATTR_ALLOC_SIZE): fix condition.
