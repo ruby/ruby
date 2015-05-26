@@ -34,6 +34,9 @@ calc_lineno(const rb_iseq_t *iseq, const VALUE *pc)
     return rb_iseq_line_no(iseq, pc - iseq->iseq_encoded);
 }
 
+#define FILE_LINE_MASK ((UINT_MAX >> FILE_CNT_BITS))
+#define FILE_LINE_BITS ((sizeof(unsigned int) * 8) - FILE_CNT_BITS)
+
 int
 rb_vm_get_sourceline(const rb_control_frame_t *cfp)
 {
@@ -43,6 +46,9 @@ rb_vm_get_sourceline(const rb_control_frame_t *cfp)
     if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
 	lineno = calc_lineno(cfp->iseq, cfp->pc);
     }
+
+    lineno &= FILE_LINE_MASK;
+
     return lineno;
 }
 
@@ -319,11 +325,20 @@ location_to_str(rb_backtrace_location_t *loc)
 	name = loc->body.iseq.iseq->location.label;
 
 	lineno = loc->body.iseq.lineno.lineno = calc_lineno(loc->body.iseq.iseq, loc->body.iseq.lineno.pc);
+
+	if (TYPE(loc->body.iseq.iseq->location.path_array) == T_ARRAY) {
+	    int idx = lineno >> FILE_LINE_BITS;
+	    file = rb_ary_entry(loc->body.iseq.iseq->location.path_array, idx);
+	}
+
 	loc->type = LOCATION_TYPE_ISEQ_CALCED;
 	break;
       case LOCATION_TYPE_ISEQ_CALCED:
 	file = loc->body.iseq.iseq->location.path;
 	lineno = loc->body.iseq.lineno.lineno;
+	if (loc->body.iseq.iseq->location.path_array != Qnil) {
+	    int idx = lineno >> FILE_LINE_BITS;
+	}
 	name = loc->body.iseq.iseq->location.label;
 	break;
       case LOCATION_TYPE_CFUNC:
@@ -342,6 +357,8 @@ location_to_str(rb_backtrace_location_t *loc)
       default:
 	rb_bug("location_to_str: unreachable");
     }
+
+    lineno &= FILE_LINE_MASK;		/* FIXME */
 
     return location_format(file, lineno, name);
 }

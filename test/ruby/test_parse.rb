@@ -874,6 +874,24 @@ x = __ENCODING__
     assert_warning(/#{a}/) {eval("#{a} = 1; /(?<#{a}>)/ =~ ''")}
   end
 
+  def test_unused_variable_with_line
+    o = Object.new
+    assert_warning(/assigned but unused variable/) {o.instance_eval("def foo; a=1; nil; end")}
+    a = "\u{3042}"
+    assert_warning(/:100:/) {
+      o.instance_eval("#pline 100\ndef foo; #{a}=1; nil; end")
+    }
+  end
+
+  def test_unused_variable_with_line_file
+    o = Object.new
+    assert_warning(/assigned but unused variable/) {o.instance_eval("def foo; a=1; nil; end")}
+    a = "\u{3042}"
+    assert_warning(/bob:100:/) {
+      o.instance_eval("#pline 100 \"bob\"\ndef foo; #{a}=1; nil; end")
+    }
+  end
+
 =begin
   def test_past_scope_variable
     assert_warning(/past scope/) {catch {|tag| eval("BEGIN{throw tag}; tap {a = 1}; a")}}

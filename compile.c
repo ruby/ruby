@@ -990,10 +990,12 @@ new_child_iseq(rb_iseq_t *iseq, NODE *node,
 	       VALUE name, VALUE parent, enum iseq_type type, int line_no)
 {
     VALUE ret;
+    VALUE path = iseq_path(iseq->self);
+    VALUE path_array = iseq->location.path_array;
 
     debugs("[new_child_iseq]> ---------------------------------------\n");
     ret = rb_iseq_new_with_opt(node, name,
-			       iseq_path(iseq->self), iseq_absolute_path(iseq->self),
+			       path_array == Qnil ? path : path_array, iseq_absolute_path(iseq->self),
 			       INT2FIX(line_no), parent, type, iseq->compile_data->option);
     debugs("[new_child_iseq]< ---------------------------------------\n");
     iseq_add_mark_object(iseq, ret);
@@ -3303,6 +3305,17 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
     type = nd_type(node);
 
     switch (type) {
+      case NODE_FILES:{
+        VALUE path_array = iseq->location.path_array;
+	rb_iseq_location_t *loc = &iseq->location;
+	if (TYPE( path_array ) != T_NIL)
+	  rb_bug("NODE_FILE: path array must be nil");
+	path_array = node->u1.value;
+	if (TYPE( path_array ) != T_ARRAY)
+	  rb_bug("NODE_FILE: must be array");
+	RB_OBJ_WRITE(iseq->self, &loc->path_array, path_array);
+	break;
+      }
       case NODE_BLOCK:{
 	while (node && nd_type(node) == NODE_BLOCK) {
 	    COMPILE_(ret, "BLOCK body", node->nd_head,

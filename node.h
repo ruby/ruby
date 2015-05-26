@@ -232,6 +232,8 @@ enum node_type {
 #define NODE_PRELUDE     NODE_PRELUDE
     NODE_LAMBDA,
 #define NODE_LAMBDA      NODE_LAMBDA
+    NODE_FILES,
+#define NODE_FILES       NODE_FILES
     NODE_LAST
 #define NODE_LAST        NODE_LAST
 };
@@ -464,6 +466,7 @@ typedef struct RNode {
 #define NEW_ATTRASGN(r,m,a) NEW_NODE(NODE_ATTRASGN,r,m,a)
 #define NEW_PRELUDE(p,b) NEW_NODE(NODE_PRELUDE,p,b,0)
 #define NEW_MEMO(a,b,c) NEW_NODE(NODE_MEMO,a,b,c)
+#define NEW_FILES(a) NEW_NODE(NODE_FILES,a,0,0)
 
 #define roomof(x, y) ((sizeof(x) + sizeof(y) - 1) / sizeof(y))
 #define MEMO_FOR(type, value) ((type *)RARRAY_PTR(value))
@@ -540,5 +543,7 @@ RUBY_SYMBOL_EXPORT_END
 #endif
 }  /* extern "C" { */
 #endif
+
+#define FILE_CNT_MAX 10
 
 #endif /* RUBY_NODE_H */
