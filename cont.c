@@ -237,7 +237,7 @@ cont_free(void *ptr)
 	    /* fiber */
 	    rb_fiber_t *fib = (rb_fiber_t*)cont;
 #ifdef _WIN32
-	    if (GET_THREAD()->fiber != fib && cont->type != ROOT_FIBER_CONTEXT) {
+	    if (GET_THREAD() && GET_THREAD()->fiber != fib && cont->type != ROOT_FIBER_CONTEXT) {
 		/* don't delete root fiber handle */
 		rb_fiber_t *fib = (rb_fiber_t*)cont;
 		if (fib->fib_handle) {
@@ -245,7 +245,7 @@ cont_free(void *ptr)
 		}
 	    }
 #else /* not WIN32 */
-	    if (GET_THREAD()->fiber != fib) {
+	    if (GET_THREAD() && GET_THREAD()->fiber != fib) {
                 rb_fiber_t *fib = (rb_fiber_t*)cont;
                 if (fib->ss_sp) {
                     if (cont->type == ROOT_FIBER_CONTEXT) {
