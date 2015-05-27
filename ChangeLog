@@ -1,3 +1,9 @@
+Thu May 28 06:55:53 2015  Anton Davydov  <antondavydov.o@gmail.com>
+
+	* ext/tk/sample/figmemo_sample.rb (open_file),
+	  ext/tk/sample/tktextio.rb (TkTextIO): fix typo in messages.
+	  [Fix GH-916]
+
 Wed May 27 09:50:51 2015  Eric Wong  <e@80x24.org>
 
 	* ext/openssl/ossl_asn1.c (ossl_asn1_traverse, ossl_asn1_decode,
