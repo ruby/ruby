@@ -301,6 +301,10 @@ static ruby_gc_params_t gc_params = {
 #define MALLOC_ALLOCATED_SIZE_CHECK 0
 #endif
 
+#ifndef GC_DEBUG_STRESS_TO_CLASS
+#define GC_DEBUG_STRESS_TO_CLASS 0
+#endif
+
 typedef enum {
     GPR_FLAG_NONE               = 0x000,
     /* major reason */
@@ -612,6 +616,10 @@ typedef struct rb_objspace {
     } rincgc;
 #endif
 #endif /* USE_RGENGC */
+
+#if GC_DEBUG_STRESS_TO_CLASS
+    VALUE stress_to_class;
+#endif
 } rb_objspace_t;
 
 
@@ -715,6 +723,11 @@ VALUE *ruby_initial_gc_stress_ptr = &ruby_initial_gc_stress;
 #define global_list		objspace->global_list
 #define ruby_gc_stressful	objspace->flags.gc_stressful
 #define ruby_gc_stress_mode     objspace->gc_stress_mode
+#if GC_DEBUG_STRESS_TO_CLASS
+#define stress_to_class         objspace->stress_to_class
+#else
+#define stress_to_class         0
+#endif
 
 #define is_marking(objspace)             ((objspace)->flags.stat == gc_stat_marking)
 #define is_sweeping(objspace)            ((objspace)->flags.stat == gc_stat_sweeping)
@@ -1673,6 +1686,16 @@ newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3)
 {
     rb_objspace_t *objspace = &rb_objspace;
     VALUE obj;
+
+#if GC_DEBUG_STRESS_TO_CLASS
+    if (UNLIKELY(stress_to_class)) {
+	long i, cnt = RARRAY_LEN(stress_to_class);
+	const VALUE *ptr = RARRAY_CONST_PTR(stress_to_class);
+	for (i = 0; i < cnt; ++i) {
+	    if (klass == ptr[i]) rb_memerror();
+	}
+    }
+#endif
 
     if (UNLIKELY(during_gc || ruby_gc_stressful)) {
 	if (during_gc) {
@@ -8991,6 +9014,37 @@ rb_gcdebug_sentinel(VALUE obj, const char *name)
 
 #endif /* GC_DEBUG */
 
+#if GC_DEBUG_STRESS_TO_CLASS
+static VALUE
+rb_gcdebug_add_stress_to_class(int argc, VALUE *argv, VALUE self)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+
+    if (!stress_to_class) {
+	stress_to_class = rb_ary_tmp_new(argc);
+    }
+    rb_ary_cat(stress_to_class, argv, argc);
+    return self;
+}
+
+static VALUE
+rb_gcdebug_remove_stress_to_class(int argc, VALUE *argv, VALUE self)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    int i;
+
+    if (stress_to_class) {
+	for (i = 0; i < argc; ++i) {
+	    rb_ary_delete_same(stress_to_class, argv[i]);
+	}
+	if (RARRAY_LEN(stress_to_class) == 0) {
+	    stress_to_class = 0;
+	}
+    }
+    return Qnil;
+}
+#endif
+
 /*
  * Document-module: ObjectSpace
  *
@@ -9134,6 +9188,11 @@ Init_GC(void)
 #if MALLOC_ALLOCATED_SIZE
     rb_define_singleton_method(rb_mGC, "malloc_allocated_size", gc_malloc_allocated_size, 0);
     rb_define_singleton_method(rb_mGC, "malloc_allocations", gc_malloc_allocations, 0);
+#endif
+
+#if GC_DEBUG_STRESS_TO_CLASS
+    rb_define_singleton_method(rb_mGC, "add_stress_to_class", rb_gcdebug_add_stress_to_class, -1);
+    rb_define_singleton_method(rb_mGC, "remove_stress_to_class", rb_gcdebug_remove_stress_to_class, -1);
 #endif
 
     /* ::GC::OPTS, which shows GC build options */
