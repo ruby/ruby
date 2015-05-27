@@ -4595,6 +4595,8 @@ gc_mark_roots(rb_objspace_t *objspace, const char **categoryp)
     MARK_CHECKPOINT("live_method_entries");
     rb_gc_mark_unlinked_live_method_entries(th->vm);
 
+    if (stress_to_class) rb_gc_mark(stress_to_class);
+
     MARK_CHECKPOINT("finish");
 #undef MARK_CHECKPOINT
 }
