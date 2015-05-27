@@ -6134,6 +6134,9 @@ ip_init(argc, argv, self)
 
     /* create object */
     TypedData_Get_Struct(self, struct tcltkip, &tcltkip_type, ptr);
+    if (DATA_PTR(self)) {
+	rb_raise(rb_eArgError, "already initialized interpreter");
+    }
     ptr = ALLOC(struct tcltkip);
     /* ptr = RbTk_ALLOC_N(struct tcltkip, 1); */
     DATA_PTR(self) = ptr;
