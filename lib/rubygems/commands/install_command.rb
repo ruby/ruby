@@ -275,7 +275,7 @@ to write the specification by hand.  For example:
       gem = fetcher.download_to_cache dependency
     end
 
-    inst = Gem::Installer.new gem, options
+    inst = Gem::Installer.at gem, options
     inst.install
 
     require 'rubygems/dependency_installer'

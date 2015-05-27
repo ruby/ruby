@@ -159,7 +159,7 @@ class Gem::RequestSet
 
       path = req.download cache_dir
 
-      inst = Gem::Installer.new path, options
+      inst = Gem::Installer.at path, options
 
       yield req, inst if block_given?
 

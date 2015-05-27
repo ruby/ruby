@@ -24,7 +24,7 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
 
     gemhome2 = "#{@gemhome}2"
 
-    a_4 = util_spec 'a', 4
+    a_4, = util_gem 'a', 4
     install_gem a_4, :install_dir => gemhome2
 
     Gem::Specification.dirs = [@gemhome, gemhome2]
@@ -41,7 +41,7 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
       @cmd.execute
     end
 
-    assert_equal %w[a-4 a_evil-9 b-2 c-1.2 default-1 dep_x-1 pl-1-x86-linux x-1],
+    assert_equal %w[a_evil-9 b-2 c-1.2 default-1 dep_x-1 pl-1-x86-linux x-1],
                  Gem::Specification.all_names.sort
   end
 
@@ -213,7 +213,7 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
 
     gemhome2 = "#{@gemhome}2"
 
-    a_4 = util_spec 'a', 4
+    a_4, = util_gem 'a', 4
     install_gem a_4, :install_dir => gemhome2
 
     Gem::Specification.dirs = [@gemhome, gemhome2]
@@ -229,7 +229,7 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
       @cmd.execute
     end
 
-    assert_equal %w[a-4 default-1], Gem::Specification.all_names.sort
+    assert_equal %w[default-1], Gem::Specification.all_names.sort
   end
 
   def test_handle_options

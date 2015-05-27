@@ -61,11 +61,6 @@ class Gem::Installer
 
   attr_reader :options
 
-  ##
-  # Sets the specification for .gem-less installs.
-
-  attr_writer :spec
-
   @path_warning = false
 
   @install_lock = Mutex.new
@@ -100,6 +95,40 @@ class Gem::Installer
   end
 
   ##
+  # Construct an installer object for the gem file located at +path+
+
+  def self.at path, options = {}
+    security_policy = options[:security_policy]
+    package = Gem::Package.new path, security_policy
+    new package, options
+  end
+
+  class FakePackage < Struct.new :spec
+    def extract_files destination_dir, pattern = '*'
+      FileUtils.mkdir_p destination_dir
+
+      spec.files.each do |file|
+        file = File.join destination_dir, file
+        next if File.exist? file
+        FileUtils.mkdir_p File.dirname(file)
+        File.open file, 'w' do |fp| fp.puts "# #{file}" end
+      end
+    end
+
+    def copy_to path
+    end
+  end
+
+  ##
+  # Construct an installer object for an ephemeral gem (one where we don't
+  # actually have a .gem file, just a spec)
+
+  def self.for_spec spec, options = {}
+    # FIXME: we should have a real Package class for this
+    new FakePackage.new(spec), options
+  end
+
+  ##
   # Constructs an Installer instance that will install the gem located at
   # +gem+.  +options+ is a Hash with the following keys:
   #
@@ -122,16 +151,21 @@ class Gem::Installer
   # :build_args:: An Array of arguments to pass to the extension builder
   #               process. If not set, then Gem::Command.build_args is used
 
-  def initialize(gem, options={})
+  def initialize(package, options={})
     require 'fileutils'
 
-    @gem = gem
     @options = options
-    @package = Gem::Package.new @gem
+    if package.is_a? String
+      security_policy = options[:security_policy]
+      @package = Gem::Package.new package, security_policy
+      if $VERBOSE
+        warn "constructing an Installer object with a string is deprecated. Please use Gem::Installer.at (called from: #{caller.first})"
+      end
+    else
+      @package = package
+    end
 
     process_options
-
-    @package.security_policy = @security_policy
 
     if options[:user_install] and not options[:unpack] then
       @gem_home = Gem.user_dir
@@ -211,7 +245,7 @@ class Gem::Installer
   # Lazy accessor for the installer's spec.
 
   def spec
-    @spec ||= @package.spec
+    @package.spec
   rescue Gem::Package::Error => e
     raise Gem::InstallError, "invalid gem: #{e.message}"
   end
@@ -230,7 +264,7 @@ class Gem::Installer
   def install
     pre_install_checks
 
-    FileUtils.rm_f File.join gem_home, 'specifications', @spec.spec_name
+    FileUtils.rm_f File.join gem_home, 'specifications', spec.spec_name
 
     run_pre_install_hooks
 
@@ -239,12 +273,12 @@ class Gem::Installer
 
     FileUtils.mkdir_p gem_dir
 
-    spec.loaded_from = spec_file
-
     if @options[:install_as_default]
+      spec.loaded_from = default_spec_file
       extract_bin
       write_default_spec
     else
+      spec.loaded_from = spec_file
       extract_files
 
       build_extensions
@@ -258,7 +292,7 @@ class Gem::Installer
 
     say spec.post_install_message unless spec.post_install_message.nil?
 
-    Gem::Installer.install_lock.synchronize { Gem::Specification.add_spec spec }
+    Gem::Installer.install_lock.synchronize { Gem::Specification.reset }
 
     run_post_install_hooks
 
@@ -363,7 +397,7 @@ class Gem::Installer
   #
 
   def default_spec_file
-    File.join gem_home, "specifications/default", "#{spec.full_name}.gemspec"
+    File.join Gem::Specification.default_specifications_dir, "#{spec.full_name}.gemspec"
   end
 
   ##
@@ -595,7 +629,6 @@ class Gem::Installer
     @gem_home            = options[:install_dir] || Gem.dir
     @ignore_dependencies = options[:ignore_dependencies]
     @format_executable   = options[:format_executable]
-    @security_policy     = options[:security_policy]
     @wrappers            = options[:wrappers]
     @only_install_dir    = options[:only_install_dir]
 
@@ -661,7 +694,7 @@ class Gem::Installer
 
 require 'rubygems'
 
-version = "#{Gem::Requirement.default}"
+version = "#{Gem::Requirement.default}.a"
 
 if ARGV.first
   str = ARGV.first
@@ -764,11 +797,6 @@ TEXT
   def pre_install_checks
     verify_gem_home options[:unpack]
 
-    # If we're forcing the install then disable security unless the security
-    # policy says that we only install signed gems.
-    @security_policy = nil if
-      @force and @security_policy and not @security_policy.only_signed
-
     ensure_loadable_spec
 
     if options[:install_as_default]
@@ -811,8 +839,7 @@ TEXT
 
   def write_cache_file
     cache_file = File.join gem_home, 'cache', spec.file_name
-
-    FileUtils.cp @gem, cache_file unless File.exist? cache_file
+    @package.copy_to cache_file
   end
 
 end

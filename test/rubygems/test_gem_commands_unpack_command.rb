@@ -101,10 +101,8 @@ class TestGemCommandsUnpackCommand < Gem::TestCase
 
   def test_execute_remote
     spec_fetcher do |fetcher|
-      fetcher.spec 'a', 1
-      fetcher.gem  'a', 2
-
-      fetcher.clear
+      fetcher.download 'a', 1
+      fetcher.download 'a', 2
     end
 
     Gem.configuration.verbose = :really
@@ -184,8 +182,8 @@ class TestGemCommandsUnpackCommand < Gem::TestCase
 
     foo_path = File.join(@tempdir, "#{foo_spec.full_name}.gem")
     foo_bar_path = File.join(@tempdir, "#{foo_bar_spec.full_name}.gem")
-    Gem::Installer.new(foo_path).install
-    Gem::Installer.new(foo_bar_path).install
+    Gem::Installer.at(foo_path).install
+    Gem::Installer.at(foo_bar_path).install
 
     @cmd.options[:args] = %w[foo]
 

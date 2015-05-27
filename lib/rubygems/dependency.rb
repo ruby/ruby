@@ -164,6 +164,10 @@ class Gem::Dependency
     @type ||= :runtime
   end
 
+  def runtime?
+    @type == :runtime || !@type
+  end
+
   def == other # :nodoc:
     Gem::Dependency === other &&
       self.name        == other.name &&
@@ -270,9 +274,8 @@ class Gem::Dependency
   end
 
   def matching_specs platform_only = false
-    matches = Gem::Specification.stubs.find_all { |spec|
-      self.name === spec.name and # TODO: == instead of ===
-        requirement.satisfied_by? spec.version
+    matches = Gem::Specification.stubs_for(name).find_all { |spec|
+      requirement.satisfied_by? spec.version
     }.map(&:to_spec)
 
     if platform_only

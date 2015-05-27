@@ -294,7 +294,7 @@ class TestGemIndexer < Gem::TestCase
 
     sys_gem = util_spec 'systemgem', '1.0'
     util_build_gem sys_gem
-    Gem::Specification.add_spec sys_gem
+    install_default_gems sys_gem
     yield
     util_remove_gem sys_gem
   end

@@ -1,4 +1,5 @@
 require 'rubygems/test_case'
+require 'rubygems/installer'
 require 'rubygems/resolver'
 
 class TestGemResolverLockSpecification < Gem::TestCase
@@ -34,8 +35,7 @@ class TestGemResolverLockSpecification < Gem::TestCase
 
   def test_install
     spec_fetcher do |fetcher|
-      fetcher.gem 'a', 2
-      fetcher.clear
+      fetcher.download 'a', 2
     end
 
     spec = @LS.new @set, 'a', v(2), @source, Gem::Platform::RUBY
@@ -85,6 +85,7 @@ class TestGemResolverLockSpecification < Gem::TestCase
 
   def test_spec_loaded
     real_spec = util_spec 'a', 2
+    install_specs real_spec
     real_spec.activate
 
     version = v(2)

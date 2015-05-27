@@ -107,6 +107,8 @@ class TestGemExtExtConfBuilder < Gem::TestCase
     assert_equal 'extconf failed, exit code 1', error.message
 
     assert_match(/^#{Gem.ruby}.* extconf.rb/, output[0])
+    assert_match(File.join(@dest_path, 'mkmf.log'), output[3])
+
     assert_path_exists File.join @dest_path, 'mkmf.log'
   end
 
