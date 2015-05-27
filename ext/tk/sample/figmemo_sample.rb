@@ -300,7 +300,7 @@ end
 def open_file(canvas, fname)
   if canvas.modified?
     ret = Tk.messageBox(:icon=>'warning',:type=>'okcancel',:default=>'cancel',
-                        :message=>'Canvas may be modified. Realy erase? ')
+                        :message=>'Canvas may be modified. Really erase? ')
     return if ret == 'cancel'
   end
 
