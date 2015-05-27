@@ -598,17 +598,17 @@ GetPositiveInt(VALUE v)
 VP_EXPORT Real *
 VpNewRbClass(size_t mx, const char *str, VALUE klass)
 {
+    VALUE obj = TypedData_Wrap_Struct(klass, &BigDecimal_data_type, 0);
     Real *pv = VpAlloc(mx,str);
-    pv->obj = TypedData_Wrap_Struct(klass, &BigDecimal_data_type, pv);
+    RTYPEDDATA_DATA(obj) = pv;
+    pv->obj = obj;
     return pv;
 }
 
 VP_EXPORT Real *
 VpCreateRbObject(size_t mx, const char *str)
 {
-    Real *pv = VpAlloc(mx,str);
-    pv->obj = TypedData_Wrap_Struct(rb_cBigDecimal, &BigDecimal_data_type, pv);
-    return pv;
+    return VpNewRbClass(mx, str, rb_cBigDecimal);
 }
 
 #define VpAllocReal(prec) (Real *)VpMemAlloc(offsetof(Real, frac) + (prec) * sizeof(BDIGIT))
@@ -2595,11 +2595,13 @@ BigDecimal_global_new(int argc, VALUE *argv, VALUE self)
 {
     ENTER(1);
     Real *pv;
+    VALUE obj;
 
+    obj = TypedData_Wrap_Struct(rb_cBigDecimal, &BigDecimal_data_type, 0);
     GUARD_OBJ(pv, BigDecimal_new(argc, argv));
     if (ToValue(pv)) pv = VpCopy(NULL, pv);
-    pv->obj = TypedData_Wrap_Struct(rb_cBigDecimal, &BigDecimal_data_type, pv);
-    return pv->obj;
+    RTYPEDDATA_DATA(obj) = pv;
+    return pv->obj = obj;
 }
 
  /* call-seq:
