@@ -238,6 +238,14 @@ module EnvUtil
     def self.diagnostic_reports(signame, cmd, pid, now)
     end
   end
+
+  def self.gc_stress_to_class?
+    unless defined?(@gc_stress_to_class)
+      _, _, status = invoke_ruby(["-e""exit GC.respond_to?(:add_stress_to_class)"])
+      @gc_stress_to_class = status.success?
+    end
+    @gc_stress_to_class
+  end
 end
 
 module Test
