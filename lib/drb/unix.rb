@@ -108,7 +108,7 @@ module DRb
     end
 
     def set_sockopt(soc)
-      soc.fcntl(Fcntl::F_SETFD, Fcntl::FD_CLOEXEC) if defined? Fcntl::FD_CLOEXEC
+      # no-op for now
     end
   end
 

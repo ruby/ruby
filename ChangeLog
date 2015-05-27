@@ -1,3 +1,9 @@
+Wed May 27 09:27:30 2015  Eric Wong  <e@80x24.org>
+
+	* lib/drb/drb.rb (set_sockopt): remove redundant fcntl call
+	* lib/drb/unix.rb (set_sockopt): ditto
+	  [ruby-core:69128] [Feature #11137]
+
 Tue May 26 22:10:43 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* vm_method.c (rb_alias): should resolve refined methods.
