@@ -103,7 +103,13 @@ class Gem::Installer
     new package, options
   end
 
-  class FakePackage < Struct.new :spec
+  class FakePackage
+    attr_accessor :spec
+
+    def initialize(spec)
+      @spec = spec
+    end
+
     def extract_files destination_dir, pattern = '*'
       FileUtils.mkdir_p destination_dir
 
@@ -843,4 +849,3 @@ TEXT
   end
 
 end
-
