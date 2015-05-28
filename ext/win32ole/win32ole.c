@@ -3909,10 +3909,12 @@ Init_win32ole(void)
     message_filter.RetryRejectedCall = mf_RetryRejectedCall;
     message_filter.MessagePending = mf_MessagePending;
 
-    enc2cp_hash = TypedData_Wrap_Struct(rb_cData, &win32ole_hash_datatype, st_init_numtable());
+    enc2cp_hash = TypedData_Wrap_Struct(rb_cData, &win32ole_hash_datatype, 0);
+    RTYPEDDATA_DATA(enc2cp_hash) = st_init_numtable();
     rb_gc_register_mark_object(enc2cp_hash);
 
-    com_hash = TypedData_Wrap_Struct(rb_cData, &win32ole_hash_datatype, st_init_numtable());
+    com_hash = TypedData_Wrap_Struct(rb_cData, &win32ole_hash_datatype, 0);
+    RTYPEDDATA_DATA(com_hash) = st_init_numtable();
     rb_gc_register_mark_object(com_hash);
 
     cWIN32OLE = rb_define_class("WIN32OLE", rb_cObject);
