@@ -1455,7 +1455,6 @@ cbsubst_get_subst_key(self, str)
     struct cbsubst_info *inf;
     volatile VALUE list;
     volatile VALUE ret;
-    VALUE keyval;
     long i, len, keylen;
     int idx;
     char *buf, *ptr, *key;
@@ -1469,8 +1468,8 @@ cbsubst_get_subst_key(self, str)
     ptr = buf = ALLOC_N(char, inf->full_subst_length + len + 1);
 
     for(i = 0; i < len; i++) {
-      keyval = RARRAY_PTR(list)[i];
-      key = RSTRING_PTR(keyval);
+      VALUE keyval = RARRAY_CONST_PTR(list)[i];
+      const char *key = (Check_Type(keyval, T_STRING), StringValueCStr(keyval));
       if (*key == '%') {
 	if (*(key + 2) == '\0') {
 	  /* single char */
@@ -1568,6 +1567,9 @@ cbsubst_table_setup(argc, argv, self)
     proc_inf = longkey_inf;
     longkey_inf = rb_ary_new();
   }
+  Check_Type(key_inf, T_ARRAY);
+  Check_Type(longkey_inf, T_ARRAY);
+  Check_Type(proc_inf, T_ARRAY);
 
   /* check the number of longkeys */
   if (RARRAY_LEN(longkey_inf) > 125 /* from 0x80 to 0xFD */) {
@@ -1670,9 +1672,9 @@ cbsubst_scan_args(self, arg_key, val_ary)
 {
     struct cbsubst_info *inf;
     long idx;
-    unsigned char *keyptr = (unsigned char*)RSTRING_PTR(arg_key);
+    unsigned char *keyptr = (unsigned char*)StringValueCStr(arg_key);
     long keylen = RSTRING_LEN(arg_key);
-    long vallen = RARRAY_LEN(val_ary);
+    long vallen = (Check_Type(val_ary, T_ARRAY), RARRAY_LEN(val_ary));
     unsigned char type_chr;
     volatile VALUE dst = rb_ary_new2(vallen);
     volatile VALUE proc;
