@@ -833,14 +833,6 @@ static VALUE cParser_parse(VALUE self)
   }
 }
 
-
-static JSON_Parser *JSON_allocate(void)
-{
-    JSON_Parser *json = ZALLOC(JSON_Parser);
-    json->fbuffer = fbuffer_alloc(0);
-    return json;
-}
-
 static void JSON_mark(void *ptr)
 {
     JSON_Parser *json = ptr;
@@ -877,8 +869,10 @@ static const rb_data_type_t JSON_Parser_type = {
 
 static VALUE cJSON_parser_s_allocate(VALUE klass)
 {
-    JSON_Parser *json = JSON_allocate();
-    return TypedData_Wrap_Struct(klass, &JSON_Parser_type, json);
+    JSON_Parser *json;
+    VALUE obj = TypedData_Make_Struct(klass, JSON_Parser, &JSON_Parser_type, json);
+    json->fbuffer = fbuffer_alloc(0);
+    return obj;
 }
 
 /*

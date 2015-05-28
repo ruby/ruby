@@ -68,7 +68,6 @@ static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *resu
 static VALUE convert_encoding(VALUE source);
 static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self);
 static VALUE cParser_parse(VALUE self);
-static JSON_Parser *JSON_allocate(void);
 static void JSON_mark(void *json);
 static void JSON_free(void *json);
 static VALUE cJSON_parser_s_allocate(VALUE klass);
@@ -82,11 +81,11 @@ static inline void *ruby_zalloc(size_t n)
     return p;
 }
 #endif
-#ifdef TypedData_Wrap_Struct
+#ifdef TypedData_Make_Struct
 static const rb_data_type_t JSON_Parser_type;
 #define NEW_TYPEDDATA_WRAPPER 1
 #else
-#define TypedData_Wrap_Struct(klass, ignore, json) Data_Wrap_Struct(klass, JSON_mark, JSON_free, json)
+#define TypedData_Make_Struct(klass, type, ignore, json) Data_Make_Struct(klass, type, NULL, JSON_free, json)
 #define TypedData_Get_Struct(self, JSON_Parser, ignore, json) Data_Get_Struct(self, JSON_Parser, json)
 #endif
 
