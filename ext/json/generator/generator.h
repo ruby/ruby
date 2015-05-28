@@ -112,7 +112,6 @@ static VALUE mFalseClass_to_json(int argc, VALUE *argv, VALUE self);
 static VALUE mNilClass_to_json(int argc, VALUE *argv, VALUE self);
 static VALUE mObject_to_json(int argc, VALUE *argv, VALUE self);
 static void State_free(void *state);
-static JSON_Generator_State *State_allocate(void);
 static VALUE cState_s_allocate(VALUE klass);
 static VALUE cState_configure(VALUE self, VALUE opts);
 static VALUE cState_to_h(VALUE self);
@@ -156,11 +155,11 @@ static inline void *ruby_zalloc(size_t n)
     return p;
 }
 #endif
-#ifdef TypedData_Wrap_Struct
+#ifdef TypedData_Make_Struct
 static const rb_data_type_t JSON_Generator_State_type;
 #define NEW_TYPEDDATA_WRAPPER 1
 #else
-#define TypedData_Wrap_Struct(klass, ignore, json) Data_Wrap_Struct(klass, NULL, State_free, json)
+#define TypedData_Make_Struct(klass, type, ignore, json) Data_Make_Struct(klass, type, NULL, State_free, json)
 #define TypedData_Get_Struct(self, JSON_Generator_State, ignore, json) Data_Get_Struct(self, JSON_Generator_State, json)
 #endif
 

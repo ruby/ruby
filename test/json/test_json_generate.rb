@@ -344,4 +344,17 @@ EOT
       assert_equal '[""]', JSON.generate([s.new])
     end
   end
+
+  if EnvUtil.gc_stress_to_class?
+    def assert_no_memory_leak(code, *rest, **opt)
+      code = "8.times {20_000.times {begin #{code}; rescue NoMemoryError; end}; GC.start}"
+      super(["-rjson/ext/generator"],
+            "GC.add_stress_to_class(JSON::Ext::Generator::State); "\
+            "#{code}", code, *rest, rss: true, limit: 1.1, **opt)
+    end
+
+    def test_no_memory_leak_allocate
+      assert_no_memory_leak("JSON::Ext::Generator::State.allocate")
+    end
+  end
 end
