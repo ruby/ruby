@@ -285,4 +285,55 @@ class TestObjSpace < Test::Unit::TestCase
       assert_not_match /"fd":/, output
     end
   end
+
+  def traverse_classes klass
+    h = {}
+    while klass && !h.has_key?(klass)
+      h[klass] = true
+      klass = ObjectSpace.internal_class_of(klass)
+    end
+  end
+
+  def test_internal_class_of
+    i = 0
+    ObjectSpace.each_object{|o|
+      traverse_classes ObjectSpace.internal_class_of(o)
+      i += 1
+    }
+    assert_operator i, :>, 0
+  end
+
+  def traverse_super_classes klass
+    while klass
+      klass = ObjectSpace.internal_super_of(klass)
+    end
+  end
+
+  def all_super_classes klass
+    klasses = []
+    while klass
+      klasses << klass
+      klass = ObjectSpace.internal_super_of(klass)
+    end
+    klasses
+  end
+
+  def test_internal_super_of
+    klasses = all_super_classes(String)
+    String.ancestors.each{|k|
+      case k
+      when Class
+        assert_equal(true, klasses.include?(k), k.inspect)
+      when Module
+        assert_equal(false, klasses.include?(k), k.inspect) # Internal object (T_ICLASS)
+      end
+    }
+
+    i = 0
+    ObjectSpace.each_object(Module){|o|
+      traverse_super_classes ObjectSpace.internal_super_of(o)
+      i += 1
+    }
+    assert_operator i, :>, 0
+  end
 end

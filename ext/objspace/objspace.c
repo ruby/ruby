@@ -792,6 +792,73 @@ reachable_objects_from_root(VALUE self)
     return hash;
 }
 
+static VALUE
+wrap_klass_iow(VALUE klass)
+{
+    if (!RTEST(klass)) {
+	return Qnil;
+    }
+    else if (RB_TYPE_P(klass, T_ICLASS)) {
+	return iow_newobj(klass);
+    }
+    else {
+	return klass;
+    }
+}
+
+/*
+ *  call-seq:
+ *     ObjectSpace.internal_class_of(obj) -> Class or Module
+ *
+ *  [MRI specific feature] Return internal class of obj.
+ *  obj can be an instance of InternalObjectWrapper.
+ *
+ *  Note that you should not use this method in your application.
+ */
+static VALUE
+objspace_internal_class_of(VALUE self, VALUE obj)
+{
+    VALUE klass;
+
+    if (rb_typeddata_is_kind_of(obj, &iow_data_type)) {
+	obj = (VALUE)DATA_PTR(obj);
+    }
+
+    klass = CLASS_OF(obj);
+    return wrap_klass_iow(klass);
+}
+
+/*
+ *  call-seq:
+ *     ObjectSpace.internal_super_of(cls) -> Class or Module
+ *
+ *  [MRI specific feature] Return internal super class of cls (Class or Module).
+ *  obj can be an instance of InternalObjectWrapper.
+ *
+ *  Note that you should not use this method in your application.
+ */
+static VALUE
+objspace_internal_super_of(VALUE self, VALUE obj)
+{
+    VALUE super;
+
+    if (rb_typeddata_is_kind_of(obj, &iow_data_type)) {
+	obj = (VALUE)DATA_PTR(obj);
+    }
+
+    switch (TYPE(obj)) {
+      case T_MODULE:
+      case T_CLASS:
+      case T_ICLASS:
+	super = RCLASS_SUPER(obj);
+	break;
+      default:
+	rb_raise(rb_eArgError, "class or module is expected");
+    }
+
+    return wrap_klass_iow(super);
+}
+
 void Init_object_tracing(VALUE rb_mObjSpace);
 void Init_objspace_dump(VALUE rb_mObjSpace);
 
@@ -829,6 +896,9 @@ Init_objspace(void)
 
     rb_define_module_function(rb_mObjSpace, "reachable_objects_from", reachable_objects_from, 1);
     rb_define_module_function(rb_mObjSpace, "reachable_objects_from_root", reachable_objects_from_root, 0);
+
+    rb_define_module_function(rb_mObjSpace, "internal_class_of", objspace_internal_class_of, 1);
+    rb_define_module_function(rb_mObjSpace, "internal_super_of", objspace_internal_super_of, 1);
 
     /*
      * This class is used as a return value from
