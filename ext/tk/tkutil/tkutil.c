@@ -1199,7 +1199,8 @@ allocate_cbsubst_info(struct cbsubst_info **inf_ptr)
   volatile VALUE proc, aliases;
   int idx;
 
-  inf = ALLOC(struct cbsubst_info);
+  VALUE info = TypedData_Make_Struct(cSUBST_INFO, struct cbsubst_info,
+				     &cbsubst_info_type, inf);
 
   inf->full_subst_length = 0;
 
@@ -1218,7 +1219,7 @@ allocate_cbsubst_info(struct cbsubst_info **inf_ptr)
 
   if (inf_ptr != (struct cbsubst_info **)NULL) *inf_ptr = inf;
 
-  return TypedData_Wrap_Struct(cSUBST_INFO, &cbsubst_info_type, inf);
+  return info;
 }
 
 static void
@@ -1246,7 +1247,7 @@ cbsubst_initialize(argc, argv, self)
 
     inf = cbsubst_get_ptr(rb_obj_class(self));
 
-   idx = 0;
+    idx = 0;
     for(iv_idx = 0; iv_idx < CBSUBST_TBL_MAX; iv_idx++) {
       if ( inf->ivar[iv_idx] == (ID) 0 ) continue;
       rb_ivar_set(self, inf->ivar[iv_idx], argv[idx++]);
