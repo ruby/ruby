@@ -1461,6 +1461,7 @@ cbsubst_get_subst_key(self, str)
     char *buf, *ptr, *key;
 
     list = rb_funcall(cTclTkLib, ID_split_tklist, 1, str);
+    Check_Type(list, T_ARRAY);
     len = RARRAY_LEN(list);
 
     inf = cbsubst_get_ptr(self);
