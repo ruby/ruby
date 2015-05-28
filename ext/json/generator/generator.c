@@ -526,16 +526,11 @@ static const rb_data_type_t JSON_Generator_State_type = {
 };
 #endif
 
-static JSON_Generator_State *State_allocate(void)
-{
-    JSON_Generator_State *state = ZALLOC(JSON_Generator_State);
-    return state;
-}
-
 static VALUE cState_s_allocate(VALUE klass)
 {
-    JSON_Generator_State *state = State_allocate();
-    return TypedData_Wrap_Struct(klass, &JSON_Generator_State_type, state);
+    JSON_Generator_State *state;
+    return TypedData_Make_Struct(klass, JSON_Generator_State,
+				 &JSON_Generator_State_type, state);
 }
 
 /*
