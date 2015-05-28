@@ -1,3 +1,14 @@
+Fri May 29 04:37:38 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/objspace/objspace.c: add two methods to debug internals.
+
+	  * ObjectSpace.internal_class_of: return RBASIC_CLASS(obj).
+	  * ObjectSpace.internal_super_of: return RCLASS_SUPER(cls).
+
+	* NEWS: add information about both methods.
+
+	* test/objspace/test_objspace.rb: add tests for both methods.
+
 Thu May 28 06:55:53 2015  Anton Davydov  <antondavydov.o@gmail.com>
 
 	* ext/tk/sample/figmemo_sample.rb (open_file),
