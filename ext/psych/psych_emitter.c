@@ -50,14 +50,13 @@ static const rb_data_type_t psych_emitter_type = {
 static VALUE allocate(VALUE klass)
 {
     yaml_emitter_t * emitter;
-
-    emitter = xmalloc(sizeof(yaml_emitter_t));
+    VALUE obj = TypedData_Make_Struct(klass, yaml_emitter_t, &psych_emitter_type, emitter);
 
     yaml_emitter_initialize(emitter);
     yaml_emitter_set_unicode(emitter, 1);
     yaml_emitter_set_indent(emitter, 2);
 
-    return TypedData_Wrap_Struct(klass, &psych_emitter_type, emitter);
+    return obj;
 }
 
 /* call-seq: Psych::Emitter.new(io, options = Psych::Emitter::OPTIONS)

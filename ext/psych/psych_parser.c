@@ -70,11 +70,11 @@ static const rb_data_type_t psych_parser_type = {
 static VALUE allocate(VALUE klass)
 {
     yaml_parser_t * parser;
+    VALUE obj = TypedData_Make_Struct(klass, yaml_parser_t, &psych_parser_type, parser);
 
-    parser = xmalloc(sizeof(yaml_parser_t));
     yaml_parser_initialize(parser);
 
-    return TypedData_Wrap_Struct(klass, &psych_parser_type, parser);
+    return obj;
 }
 
 static VALUE make_exception(yaml_parser_t * parser, VALUE path)
