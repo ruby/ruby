@@ -1,3 +1,8 @@
+Fri May 29 14:03:33 2015  Matt Hoyle  <matt@deployable.co>
+
+	* ext/bigdecimal/bigdecimal.c (VpSetPTR): fix a typo, 'expoennt'
+	  to 'exponent'.  [ruby-core:67980] [Bug #10823] [Fix GH-825]
+
 Fri May 29 14:00:16 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/file.c (rb_file_expand_path_internal): neither the drive
