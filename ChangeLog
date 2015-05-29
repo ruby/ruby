@@ -1,3 +1,16 @@
+Fri May 29 14:00:16 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/file.c (rb_file_expand_path_internal): neither the drive
+	  of base directory nor the current drive are involved in the
+	  result if different than the drive of path.
+	  [ruby-core:68130] [Bug #10858]
+
+Fri May 29 14:00:16 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/file.c (rb_file_expand_path_internal): do not make invalid
+	  (or ADS) path if the path has a drive letter, the result also
+	  should have be under it.  [ruby-core:68130] [Bug #10858]
+
 Fri May 29 13:41:44 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* marshal.c (r_symreal): register the symbol name first so that
