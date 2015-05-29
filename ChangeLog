@@ -1,3 +1,29 @@
+Sat May 30 08:36:04 2015  Eric Wong  <e@80x24.org>
+
+	* variable.c (static int special_generic_ivar): move
+	  (rb_generic_ivar_table): rewrite for compatibility
+	  (gen_ivtbl_bytes): new function
+	  (generic_ivar_get): update to use ivar index
+	  (generic_ivar_update): ditto
+	  (generic_ivar_set): ditto
+	  (generic_ivar_defined): ditto
+	  (generic_ivar_remove): ditto
+	  (rb_mark_generic_ivar): ditto
+	  (givar_i): ditto
+	  (rb_free_generic_ivar): ditto
+	  (rb_mark_generic_ivar_tbl): ditto
+	  (rb_generic_ivar_memsize): ditto
+	  (rb_copy_generic_ivar): ditto
+	  (rb_ivar_set): ditto
+	  (rb_ivar_foreach): ditto
+	  (rb_ivar_count): ditto
+	  (givar_mark_i): remove
+	  (gen_ivtbl_mark): new function
+	  (gen_ivar_each): ditto
+	  (iv_index_tbl_extend): update for struct ivar_update
+	  (iv_index_tbl_newsize): ditto
+	  [ruby-core:69323] [Feature #11170]
+
 Sat May 30 08:10:46 2015  Eric Wong  <e@80x24.org>
 
 	* variable.c (iv_index_tbl_make): extract from rb_ivar_set
