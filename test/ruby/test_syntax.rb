@@ -579,6 +579,13 @@ eom
     assert_syntax_error('0...%w.', /unterminated string/, bug10957)
   end
 
+  def test_too_big_nth_ref
+    bug11192 = '[ruby-core:69393] [Bug #11192]'
+    assert_warn(/too big/, bug11192) do
+      eval('$99999999999999999')
+    end
+  end
+
   private
 
   def not_label(x) @result = x; @not_label ||= nil end
