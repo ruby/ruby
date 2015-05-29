@@ -1272,7 +1272,9 @@ r_symreal(struct load_arg *arg, int ivar)
     int idx = -1;
     st_index_t n = arg->symbols->num_entries;
 
-    st_insert(arg->symbols, (st_data_t)n, (st_data_t)0);
+    if (rb_enc_str_asciionly_p(s)) rb_enc_associate_index(s, ENCINDEX_US_ASCII);
+    id = rb_intern_str(s);
+    st_insert(arg->symbols, (st_data_t)n, (st_data_t)id);
     if (ivar) {
 	long num = r_long(arg);
 	while (num-- > 0) {
@@ -1282,7 +1284,6 @@ r_symreal(struct load_arg *arg, int ivar)
     }
     if (idx > 0) rb_enc_associate_index(s, idx);
     id = rb_intern_str(s);
-    st_insert(arg->symbols, (st_data_t)n, (st_data_t)id);
 
     return id;
 }

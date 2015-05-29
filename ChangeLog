@@ -1,3 +1,8 @@
+Fri May 29 13:41:44 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* marshal.c (r_symreal): register the symbol name first so that
+	  r_symlink always returns valid names. [Bug #10991]
+
 Thu May 28 09:51:28 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (rb_any_hash): use same hash values with Float#hash so
