@@ -1163,6 +1163,45 @@ rb_attr_get(VALUE obj, ID id)
     return rb_ivar_lookup(obj, id, Qnil);
 }
 
+static st_table *
+iv_index_tbl_make(VALUE obj)
+{
+    VALUE klass = rb_obj_class(obj);
+    st_table *iv_index_tbl = RCLASS_IV_INDEX_TBL(klass);
+
+    if (!iv_index_tbl) {
+	iv_index_tbl = RCLASS_IV_INDEX_TBL(klass) = st_init_numtable();
+    }
+
+    return iv_index_tbl;
+}
+
+static int
+iv_index_tbl_extend(st_table *iv_index_tbl, ID id, st_data_t *index)
+{
+    if (st_lookup(iv_index_tbl, (st_data_t)id, index)) {
+	return 0;
+    }
+    *index = iv_index_tbl->num_entries;
+    if (*index >= INT_MAX) {
+	rb_raise(rb_eArgError, "too many instance variables");
+    }
+    st_add_direct(iv_index_tbl, (st_data_t)id, *index);
+    return 1;
+}
+
+static long
+iv_index_tbl_newsize(st_table *iv_index_tbl, st_data_t index, int ivar_extended)
+{
+    long newsize = (index+1) + (index+1)/4; /* (index+1)*1.25 */
+
+    if (!ivar_extended &&
+        iv_index_tbl->num_entries < (st_index_t)newsize) {
+        newsize = iv_index_tbl->num_entries;
+    }
+    return newsize;
+}
+
 VALUE
 rb_ivar_set(VALUE obj, ID id, VALUE val)
 {
@@ -1175,21 +1214,8 @@ rb_ivar_set(VALUE obj, ID id, VALUE val)
     if (SPECIAL_CONST_P(obj)) goto generic;
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
-        iv_index_tbl = ROBJECT_IV_INDEX_TBL(obj);
-        if (!iv_index_tbl) {
-            VALUE klass = rb_obj_class(obj);
-            iv_index_tbl = RCLASS_IV_INDEX_TBL(klass);
-            if (!iv_index_tbl) {
-                iv_index_tbl = RCLASS_IV_INDEX_TBL(klass) = st_init_numtable();
-            }
-        }
-        ivar_extended = 0;
-        if (!st_lookup(iv_index_tbl, (st_data_t)id, &index)) {
-            index = iv_index_tbl->num_entries;
-	    if (index >= INT_MAX) rb_raise(rb_eArgError, "too many instance variables");
-            st_add_direct(iv_index_tbl, (st_data_t)id, index);
-            ivar_extended = 1;
-        }
+        iv_index_tbl = iv_index_tbl_make(obj);
+        ivar_extended = iv_index_tbl_extend(iv_index_tbl, id, &index);
         len = ROBJECT_NUMIV(obj);
         if (len <= (long)index) {
             VALUE *ptr = ROBJECT_IVPTR(obj);
@@ -1202,11 +1228,8 @@ rb_ivar_set(VALUE obj, ID id, VALUE val)
             }
             else {
                 VALUE *newptr;
-                long newsize = (index+1) + (index+1)/4; /* (index+1)*1.25 */
-                if (!ivar_extended &&
-                    iv_index_tbl->num_entries < (st_index_t)newsize) {
-                    newsize = iv_index_tbl->num_entries;
-                }
+                long newsize = iv_index_tbl_newsize(iv_index_tbl, index,
+                                                      ivar_extended);
 
                 if (RBASIC(obj)->flags & ROBJECT_EMBED) {
                     newptr = ALLOC_N(VALUE, newsize);

@@ -1,3 +1,11 @@
+Sat May 30 08:10:46 2015  Eric Wong  <e@80x24.org>
+
+	* variable.c (iv_index_tbl_make): extract from rb_ivar_set
+	  (iv_index_tbl_extend): ditto
+	  (iv_index_tbl_newsize): ditto
+	  (rb_ivar_set): use extracted functions
+	  [ruby-core:69323] (Part 1)
+
 Fri May 29 17:39:14 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* tool/make_hgraph.rb: added.
