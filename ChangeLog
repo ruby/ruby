@@ -1,3 +1,12 @@
+Fri May 29 11:18:58 2015  Eric Wong  <e@80x24.org>
+
+	* ext/socket/ancdata.c (bsock_sendmsg_internal,
+	  bsock_recvmsg_internal):
+	  avoid redundant fcntl on Linux
+	  [ruby-core:69154] [Feature #11145]
+	* ext/socket/init.c (rsock_s_recvfrom_nonblock): ditto
+	* ext/socket/rubysocket.h (MSG_DONTWAIT_RELIABLE): new macro
+
 Fri May 29 10:30:34 2015  Eric Wong  <e@80x24.org>
 
 	* lib/net/resolv.rb (request): use monotonic clock
