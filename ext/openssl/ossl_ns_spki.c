@@ -10,11 +10,13 @@
  */
 #include "ossl.h"
 
-#define WrapSPKI(klass, obj, spki) do { \
+#define NewSPKI(klass) \
+    TypedData_Wrap_Struct((klass), &ossl_netscape_spki_type, 0)
+#define SetSPKI(obj, spki) do { \
     if (!(spki)) { \
 	ossl_raise(rb_eRuntimeError, "SPKI wasn't initialized!"); \
     } \
-    (obj) = TypedData_Wrap_Struct((klass), &ossl_netscape_spki_type, (spki)); \
+    RTYPEDDATA_DATA(obj) = (spki); \
 } while (0)
 #define GetSPKI(obj, spki) do { \
     TypedData_Get_Struct((obj), NETSCAPE_SPKI, &ossl_netscape_spki_type, (spki)); \
@@ -58,10 +60,11 @@ ossl_spki_alloc(VALUE klass)
     NETSCAPE_SPKI *spki;
     VALUE obj;
 
+    obj = NewSPKI(klass);
     if (!(spki = NETSCAPE_SPKI_new())) {
 	ossl_raise(eSPKIError, NULL);
     }
-    WrapSPKI(klass, obj, spki);
+    SetSPKI(obj, spki);
 
     return obj;
 }

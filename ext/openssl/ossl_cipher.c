@@ -10,8 +10,8 @@
  */
 #include "ossl.h"
 
-#define WrapCipher(obj, klass, ctx) \
-    (obj) = TypedData_Wrap_Struct((klass), &ossl_cipher_type, (ctx))
+#define NewCipher(klass) \
+    TypedData_Wrap_Struct((klass), &ossl_cipher_type, 0)
 #define MakeCipher(obj, klass, ctx) \
     (obj) = TypedData_Make_Struct((klass), EVP_CIPHER_CTX, &ossl_cipher_type, (ctx))
 #define AllocCipher(obj, ctx) \
@@ -98,11 +98,7 @@ ossl_cipher_memsize(const void *ptr)
 static VALUE
 ossl_cipher_alloc(VALUE klass)
 {
-    VALUE obj;
-
-    WrapCipher(obj, klass, 0);
-
-    return obj;
+    return NewCipher(klass);
 }
 
 /*

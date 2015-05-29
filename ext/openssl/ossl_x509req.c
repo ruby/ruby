@@ -10,11 +10,13 @@
  */
 #include "ossl.h"
 
-#define WrapX509Req(klass, obj, req) do { \
+#define NewX509Req(klass) \
+    TypedData_Wrap_Struct((klass), &ossl_x509req_type, 0)
+#define SetX509Req(obj, req) do { \
     if (!(req)) { \
 	ossl_raise(rb_eRuntimeError, "Req wasn't initialized!"); \
     } \
-    (obj) = TypedData_Wrap_Struct((klass), &ossl_x509req_type, (req)); \
+    RTYPEDDATA_DATA(obj) = (req); \
 } while (0)
 #define GetX509Req(obj, req) do { \
     TypedData_Get_Struct((obj), X509_REQ, &ossl_x509req_type, (req)); \
@@ -56,6 +58,7 @@ ossl_x509req_new(X509_REQ *req)
     X509_REQ *new;
     VALUE obj;
 
+    obj = NewX509Req(cX509Req);
     if (!req) {
 	new = X509_REQ_new();
     } else {
@@ -64,7 +67,7 @@ ossl_x509req_new(X509_REQ *req)
     if (!new) {
 	ossl_raise(eX509ReqError, NULL);
     }
-    WrapX509Req(cX509Req, obj, new);
+    SetX509Req(obj, new);
 
     return obj;
 }
@@ -101,10 +104,11 @@ ossl_x509req_alloc(VALUE klass)
     X509_REQ *req;
     VALUE obj;
 
+    obj = NewX509Req(klass);
     if (!(req = X509_REQ_new())) {
 	ossl_raise(eX509ReqError, NULL);
     }
-    WrapX509Req(klass, obj, req);
+    SetX509Req(obj, req);
 
     return obj;
 }

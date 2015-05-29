@@ -13,9 +13,11 @@
 
 #if defined(OSSL_OCSP_ENABLED)
 
-#define WrapOCSPReq(klass, obj, req) do { \
+#define NewOCSPReq(klass) \
+    TypedData_Wrap_Struct((klass), &ossl_ocsp_request_type, 0)
+#define SetOCSPReq(obj, req) do { \
     if(!(req)) ossl_raise(rb_eRuntimeError, "Request wasn't initialized!"); \
-    (obj) = TypedData_Wrap_Struct((klass), &ossl_ocsp_request_type, (req)); \
+    RTYPEDDATA_DATA(obj) = (req); \
 } while (0)
 #define GetOCSPReq(obj, req) do { \
     TypedData_Get_Struct((obj), OCSP_REQUEST, &ossl_ocsp_request_type, (req)); \
@@ -26,9 +28,11 @@
     GetOCSPReq((obj), (req)); \
 } while (0)
 
-#define WrapOCSPRes(klass, obj, res) do { \
+#define NewOCSPRes(klass) \
+    TypedData_Wrap_Struct((klass), &ossl_ocsp_response_type, 0)
+#define SetOCSPRes(obj, res) do { \
     if(!(res)) ossl_raise(rb_eRuntimeError, "Response wasn't initialized!"); \
-    (obj) = TypedData_Wrap_Struct((klass), &ossl_ocsp_response_type, (res)); \
+    RTYPEDDATA_DATA(obj) = (res); \
 } while (0)
 #define GetOCSPRes(obj, res) do { \
     TypedData_Get_Struct((obj), OCSP_RESPONSE, &ossl_ocsp_response_type, (res)); \
@@ -39,9 +43,11 @@
     GetOCSPRes((obj), (res)); \
 } while (0)
 
-#define WrapOCSPBasicRes(klass, obj, res) do { \
+#define NewOCSPBasicRes(klass) \
+    TypedData_Wrap_Struct((klass), &ossl_ocsp_basicresp_type, 0)
+#define SetOCSPBasicRes(obj, res) do { \
     if(!(res)) ossl_raise(rb_eRuntimeError, "Response wasn't initialized!"); \
-    (obj) = TypedData_Wrap_Struct((klass), &ossl_ocsp_basicresp_type, (res)); \
+    RTYPEDDATA_DATA(obj) = (res); \
 } while (0)
 #define GetOCSPBasicRes(obj, res) do { \
     TypedData_Get_Struct((obj), OCSP_BASICRESP, &ossl_ocsp_basicresp_type, (res)); \
@@ -52,9 +58,11 @@
     GetOCSPBasicRes((obj), (res)); \
 } while (0)
 
-#define WrapOCSPCertId(klass, obj, cid) do { \
+#define NewOCSPCertId(klass) \
+    TypedData_Wrap_Struct((klass), &ossl_ocsp_certid_type, 0)
+#define SetOCSPCertId(obj, cid) do { \
     if(!(cid)) ossl_raise(rb_eRuntimeError, "Cert ID wasn't initialized!"); \
-    (obj) = TypedData_Wrap_Struct((klass), &ossl_ocsp_certid_type, (cid)); \
+    RTYPEDDATA_DATA(obj) = (cid); \
 } while (0)
 #define GetOCSPCertId(obj, cid) do { \
     TypedData_Get_Struct((obj), OCSP_CERTID, &ossl_ocsp_certid_type, (cid)); \
@@ -134,8 +142,8 @@ static const rb_data_type_t ossl_ocsp_certid_type = {
 static VALUE
 ossl_ocspcertid_new(OCSP_CERTID *cid)
 {
-    VALUE obj;
-    WrapOCSPCertId(cOCSPCertId, obj, cid);
+    VALUE obj = NewOCSPCertId(cOCSPCertId);
+    SetOCSPCertId(obj, cid);
     return obj;
 }
 
@@ -148,9 +156,10 @@ ossl_ocspreq_alloc(VALUE klass)
     OCSP_REQUEST *req;
     VALUE obj;
 
+    obj = NewOCSPReq(klass);
     if (!(req = OCSP_REQUEST_new()))
 	ossl_raise(eOCSPError, NULL);
-    WrapOCSPReq(klass, obj, req);
+    SetOCSPReq(obj, req);
 
     return obj;
 }
@@ -294,9 +303,10 @@ ossl_ocspreq_get_certid(VALUE self)
     ary = (count > 0) ? rb_ary_new() : Qnil;
     for(i = 0; i < count; i++){
 	one = OCSP_request_onereq_get0(req, i);
+	tmp = NewOCSPCertId(cOCSPCertId);
 	if(!(id = OCSP_CERTID_dup(OCSP_onereq_get0_id(one))))
 	    ossl_raise(eOCSPError, NULL);
-	WrapOCSPCertId(cOCSPCertId, tmp, id);
+	SetOCSPCertId(tmp, id);
 	rb_ary_push(ary, tmp);
     }
 
@@ -415,9 +425,10 @@ ossl_ocspres_s_create(VALUE klass, VALUE status, VALUE basic_resp)
 
     if(NIL_P(basic_resp)) bs = NULL;
     else GetOCSPBasicRes(basic_resp, bs); /* NO NEED TO DUP */
+    obj = NewOCSPRes(klass);
     if(!(res = OCSP_response_create(st, bs)))
 	ossl_raise(eOCSPError, NULL);
-    WrapOCSPRes(klass, obj, res);
+    SetOCSPRes(obj, res);
 
     return obj;
 }
@@ -428,9 +439,10 @@ ossl_ocspres_alloc(VALUE klass)
     OCSP_RESPONSE *res;
     VALUE obj;
 
+    obj = NewOCSPRes(klass);
     if(!(res = OCSP_RESPONSE_new()))
 	ossl_raise(eOCSPError, NULL);
-    WrapOCSPRes(klass, obj, res);
+    SetOCSPRes(obj, res);
 
     return obj;
 }
@@ -519,9 +531,10 @@ ossl_ocspres_get_basic(VALUE self)
     VALUE ret;
 
     GetOCSPRes(self, res);
+    ret = NewOCSPBasicRes(cOCSPBasicRes);
     if(!(bs = OCSP_response_get1_basic(res)))
 	return Qnil;
-    WrapOCSPBasicRes(cOCSPBasicRes, ret, bs);
+    SetOCSPBasicRes(ret, bs);
 
     return ret;
 }
@@ -562,9 +575,10 @@ ossl_ocspbres_alloc(VALUE klass)
     OCSP_BASICRESP *bs;
     VALUE obj;
 
+    obj = NewOCSPBasicRes(klass);
     if(!(bs = OCSP_BASICRESP_new()))
 	ossl_raise(eOCSPError, NULL);
-    WrapOCSPBasicRes(klass, obj, bs);
+    SetOCSPBasicRes(obj, bs);
 
     return obj;
 }
@@ -851,9 +865,10 @@ ossl_ocspcid_alloc(VALUE klass)
     OCSP_CERTID *id;
     VALUE obj;
 
+    obj = NewOCSPCertId(klass);
     if(!(id = OCSP_CERTID_new()))
 	ossl_raise(eOCSPError, NULL);
-    WrapOCSPCertId(klass, obj, id);
+    SetOCSPCertId(obj, id);
 
     return obj;
 }

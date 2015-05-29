@@ -10,11 +10,13 @@
  */
 #include "ossl.h"
 
-#define WrapX509Store(klass, obj, st) do { \
+#define NewX509Store(klass) \
+    TypedData_Wrap_Struct((klass), &ossl_x509store_type, 0)
+#define SetX509Store(obj, st) do { \
     if (!(st)) { \
 	ossl_raise(rb_eRuntimeError, "STORE wasn't initialized!"); \
     } \
-    (obj) = TypedData_Wrap_Struct((klass), &ossl_x509store_type, (st)); \
+    RTYPEDDATA_DATA(obj) = (st); \
 } while (0)
 #define GetX509Store(obj, st) do { \
     TypedData_Get_Struct((obj), X509_STORE, &ossl_x509store_type, (st)); \
@@ -27,11 +29,13 @@
     GetX509Store((obj), (st)); \
 } while (0)
 
-#define WrapX509StCtx(klass, obj, ctx) do { \
+#define NewX509StCtx(klass) \
+    TypedData_Wrap_Struct((klass), &ossl_x509stctx_type, 0)
+#define SetX509StCtx(obj, ctx) do { \
     if (!(ctx)) { \
 	ossl_raise(rb_eRuntimeError, "STORE_CTX wasn't initialized!"); \
     } \
-    (obj) = TypedData_Wrap_Struct((klass), &ossl_x509stctx_type, (ctx)); \
+    RTYPEDDATA_DATA(obj) = (ctx); \
 } while (0)
 #define GetX509StCtx(obj, ctx) do { \
     TypedData_Get_Struct((obj), X509_STORE_CTX, &ossl_x509stctx_type, (ctx)); \
@@ -73,7 +77,8 @@ ossl_x509store_new(X509_STORE *store)
 {
     VALUE obj;
 
-    WrapX509Store(cX509Store, obj, store);
+    obj = NewX509Store(cX509Store);
+    SetX509Store(obj, store);
 
     return obj;
 }
@@ -108,10 +113,11 @@ ossl_x509store_alloc(VALUE klass)
     X509_STORE *store;
     VALUE obj;
 
+    obj = NewX509Store(klass);
     if((store = X509_STORE_new()) == NULL){
         ossl_raise(eX509StoreError, NULL);
     }
-    WrapX509Store(klass, obj, store);
+    SetX509Store(obj, store);
 
     return obj;
 }
@@ -373,7 +379,8 @@ ossl_x509stctx_new(X509_STORE_CTX *ctx)
 {
     VALUE obj;
 
-    WrapX509StCtx(cX509StoreContext, obj, ctx);
+    obj = NewX509StCtx(cX509StoreContext);
+    SetX509StCtx(obj, ctx);
 
     return obj;
 }
@@ -407,10 +414,11 @@ ossl_x509stctx_alloc(VALUE klass)
     X509_STORE_CTX *ctx;
     VALUE obj;
 
+    obj = NewX509StCtx(klass);
     if((ctx = X509_STORE_CTX_new()) == NULL){
         ossl_raise(eX509StoreError, NULL);
     }
-    WrapX509StCtx(klass, obj, ctx);
+    SetX509StCtx(obj, ctx);
 
     return obj;
 }

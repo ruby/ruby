@@ -10,11 +10,13 @@
  */
 #include "ossl.h"
 
-#define WrapX509(klass, obj, x509) do { \
+#define NewX509(klass) \
+    TypedData_Wrap_Struct((klass), &ossl_x509_type, 0)
+#define SetX509(obj, x509) do { \
     if (!(x509)) { \
 	ossl_raise(rb_eRuntimeError, "CERT wasn't initialized!"); \
     } \
-    (obj) = TypedData_Wrap_Struct((klass), &ossl_x509_type, (x509)); \
+    RTYPEDDATA_DATA(obj) = (x509); \
 } while (0)
 #define GetX509(obj, x509) do { \
     TypedData_Get_Struct((obj), X509, &ossl_x509_type, (x509)); \
@@ -56,6 +58,7 @@ ossl_x509_new(X509 *x509)
     X509 *new;
     VALUE obj;
 
+    obj = NewX509(cX509Cert);
     if (!x509) {
 	new = X509_new();
     } else {
@@ -64,7 +67,7 @@ ossl_x509_new(X509 *x509)
     if (!new) {
 	ossl_raise(eX509CertError, NULL);
     }
-    WrapX509(cX509Cert, obj, new);
+    SetX509(obj, new);
 
     return obj;
 }
@@ -77,6 +80,7 @@ ossl_x509_new_from_file(VALUE filename)
     VALUE obj;
 
     SafeStringValue(filename);
+    obj = NewX509(cX509Cert);
     if (!(fp = fopen(RSTRING_PTR(filename), "r"))) {
 	ossl_raise(eX509CertError, "%s", strerror(errno));
     }
@@ -97,7 +101,7 @@ ossl_x509_new_from_file(VALUE filename)
     if (!x509) {
 	ossl_raise(eX509CertError, NULL);
     }
-    WrapX509(cX509Cert, obj, x509);
+    SetX509(obj, x509);
 
     return obj;
 }
@@ -133,10 +137,10 @@ ossl_x509_alloc(VALUE klass)
     X509 *x509;
     VALUE obj;
 
+    obj = NewX509(klass);
     x509 = X509_new();
     if (!x509) ossl_raise(eX509CertError, NULL);
-
-    WrapX509(klass, obj, x509);
+    SetX509(obj, x509);
 
     return obj;
 }

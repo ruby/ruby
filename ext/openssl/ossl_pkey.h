@@ -21,11 +21,13 @@ extern const rb_data_type_t ossl_evp_pkey_type;
 #define OSSL_PKEY_SET_PUBLIC(obj)  rb_iv_set((obj), "private", Qfalse)
 #define OSSL_PKEY_IS_PRIVATE(obj)  (rb_iv_get((obj), "private") == Qtrue)
 
-#define WrapPKey(klass, obj, pkey) do { \
+#define NewPKey(klass) \
+    TypedData_Wrap_Struct((klass), &ossl_evp_pkey_type, 0)
+#define SetPKey(obj, pkey) do { \
     if (!(pkey)) { \
 	rb_raise(rb_eRuntimeError, "PKEY wasn't initialized!"); \
     } \
-    (obj) = TypedData_Wrap_Struct((klass), &ossl_evp_pkey_type, (pkey)); \
+    RTYPEDDATA_DATA(obj) = (pkey); \
     OSSL_PKEY_SET_PUBLIC(obj); \
 } while (0)
 #define GetPKey(obj, pkey) do {\
