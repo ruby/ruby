@@ -10,11 +10,13 @@
  */
 #include "ossl.h"
 
-#define WrapX509CRL(klass, obj, crl) do { \
+#define NewX509CRL(klass) \
+    TypedData_Wrap_Struct((klass), &ossl_x509crl_type, 0)
+#define SetX509CRL(obj, crl) do { \
     if (!(crl)) { \
 	ossl_raise(rb_eRuntimeError, "CRL wasn't initialized!"); \
     } \
-    (obj) = TypedData_Wrap_Struct((klass), &ossl_x509crl_type, (crl)); \
+    RTYPEDDATA_DATA(obj) = (crl); \
 } while (0)
 #define GetX509CRL(obj, crl) do { \
     TypedData_Get_Struct((obj), X509_CRL, &ossl_x509crl_type, (crl)); \
@@ -77,9 +79,10 @@ ossl_x509crl_new(X509_CRL *crl)
     X509_CRL *tmp;
     VALUE obj;
 
+    obj = NewX509CRL(cX509CRL);
     tmp = crl ? X509_CRL_dup(crl) : X509_CRL_new();
     if(!tmp) ossl_raise(eX509CRLError, NULL);
-    WrapX509CRL(cX509CRL, obj, tmp);
+    SetX509CRL(obj, tmp);
 
     return obj;
 }
@@ -93,10 +96,11 @@ ossl_x509crl_alloc(VALUE klass)
     X509_CRL *crl;
     VALUE obj;
 
+    obj = NewX509CRL(klass);
     if (!(crl = X509_CRL_new())) {
 	ossl_raise(eX509CRLError, NULL);
     }
-    WrapX509CRL(klass, obj, crl);
+    SetX509CRL(obj, crl);
 
     return obj;
 }

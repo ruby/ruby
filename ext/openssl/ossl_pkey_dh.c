@@ -46,6 +46,7 @@ dh_instance(VALUE klass, DH *dh)
     if (!dh) {
 	return Qfalse;
     }
+    obj = NewPKey(klass);
     if (!(pkey = EVP_PKEY_new())) {
 	return Qfalse;
     }
@@ -53,7 +54,7 @@ dh_instance(VALUE klass, DH *dh)
 	EVP_PKEY_free(pkey);
 	return Qfalse;
     }
-    WrapPKey(klass, obj, pkey);
+    SetPKey(obj, pkey);
 
     return obj;
 }
@@ -66,10 +67,11 @@ ossl_dh_new(EVP_PKEY *pkey)
     if (!pkey) {
 	obj = dh_instance(cDH, DH_new());
     } else {
+	obj = NewPKey(cDH);
 	if (EVP_PKEY_type(pkey->type) != EVP_PKEY_DH) {
 	    ossl_raise(rb_eTypeError, "Not a DH key!");
 	}
-	WrapPKey(cDH, obj, pkey);
+	SetPKey(obj, pkey);
     }
     if (obj == Qfalse) {
 	ossl_raise(eDHError, NULL);

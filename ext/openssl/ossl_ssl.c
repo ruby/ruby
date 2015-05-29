@@ -175,17 +175,20 @@ ossl_sslctx_s_alloc(VALUE klass)
 {
     SSL_CTX *ctx;
     long mode = SSL_MODE_ENABLE_PARTIAL_WRITE;
+    VALUE obj;
 
 #ifdef SSL_MODE_RELEASE_BUFFERS
     mode |= SSL_MODE_RELEASE_BUFFERS;
 #endif
 
+    obj = TypedData_Wrap_Struct(klass, &ossl_sslctx_type, 0);
     ctx = SSL_CTX_new(SSLv23_method());
     if (!ctx) {
         ossl_raise(eSSLError, "SSL_CTX_new");
     }
     SSL_CTX_set_mode(ctx, mode);
-    return TypedData_Wrap_Struct(klass, &ossl_sslctx_type, ctx);
+    RTYPEDDATA_DATA(obj) = ctx;
+    return obj;
 }
 
 /*

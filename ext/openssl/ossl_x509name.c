@@ -10,11 +10,13 @@
  */
 #include "ossl.h"
 
-#define WrapX509Name(klass, obj, name) do { \
+#define NewX509Name(klass) \
+    TypedData_Wrap_Struct((klass), &ossl_x509name_type, 0)
+#define SetX509Name(obj, name) do { \
     if (!(name)) { \
 	ossl_raise(rb_eRuntimeError, "Name wasn't initialized."); \
     } \
-    (obj) = TypedData_Wrap_Struct((klass), &ossl_x509name_type, (name)); \
+    RTYPEDDATA_DATA(obj) = (name); \
 } while (0)
 #define GetX509Name(obj, name) do { \
     TypedData_Get_Struct((obj), X509_NAME, &ossl_x509name_type, (name)); \
@@ -61,6 +63,7 @@ ossl_x509name_new(X509_NAME *name)
     X509_NAME *new;
     VALUE obj;
 
+    obj = NewX509Name(cX509Name);
     if (!name) {
 	new = X509_NAME_new();
     } else {
@@ -69,7 +72,7 @@ ossl_x509name_new(X509_NAME *name)
     if (!new) {
 	ossl_raise(eX509NameError, NULL);
     }
-    WrapX509Name(cX509Name, obj, new);
+    SetX509Name(obj, new);
 
     return obj;
 }
@@ -93,10 +96,11 @@ ossl_x509name_alloc(VALUE klass)
     X509_NAME *name;
     VALUE obj;
 
+    obj = NewX509Name(klass);
     if (!(name = X509_NAME_new())) {
 	ossl_raise(eX509NameError, NULL);
     }
-    WrapX509Name(klass, obj, name);
+    SetX509Name(obj, name);
 
     return obj;
 }

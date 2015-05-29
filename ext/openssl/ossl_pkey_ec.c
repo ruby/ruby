@@ -116,6 +116,7 @@ static VALUE ec_instance(VALUE klass, EC_KEY *ec)
     if (!ec) {
 	return Qfalse;
     }
+    obj = NewPKey(klass);
     if (!(pkey = EVP_PKEY_new())) {
 	return Qfalse;
     }
@@ -123,7 +124,7 @@ static VALUE ec_instance(VALUE klass, EC_KEY *ec)
 	EVP_PKEY_free(pkey);
 	return Qfalse;
     }
-    WrapPKey(klass, obj, pkey);
+    SetPKey(obj, pkey);
 
     return obj;
 }
@@ -135,10 +136,11 @@ VALUE ossl_ec_new(EVP_PKEY *pkey)
     if (!pkey) {
 	obj = ec_instance(cEC, EC_KEY_new());
     } else {
+	obj = NewPKey(cEC);
 	if (EVP_PKEY_type(pkey->type) != EVP_PKEY_EC) {
 	    ossl_raise(rb_eTypeError, "Not a EC key!");
 	}
-	WrapPKey(cEC, obj, pkey);
+	SetPKey(obj, pkey);
     }
     if (obj == Qfalse) {
 	ossl_raise(eECError, NULL);

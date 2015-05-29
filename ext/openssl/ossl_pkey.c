@@ -241,10 +241,11 @@ ossl_pkey_alloc(VALUE klass)
     EVP_PKEY *pkey;
     VALUE obj;
 
+    obj = NewPKey(klass);
     if (!(pkey = EVP_PKEY_new())) {
 	ossl_raise(ePKeyError, NULL);
     }
-    WrapPKey(klass, obj, pkey);
+    SetPKey(obj, pkey);
 
     return obj;
 }

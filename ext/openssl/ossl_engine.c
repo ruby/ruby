@@ -12,11 +12,13 @@
 
 #if defined(OSSL_ENGINE_ENABLED)
 
-#define WrapEngine(klass, obj, engine) do { \
+#define NewEngine(klass) \
+    TypedData_Wrap_Struct((klass), &ossl_engine_type, 0)
+#define SetEngine(obj, engine) do { \
     if (!(engine)) { \
 	ossl_raise(rb_eRuntimeError, "ENGINE wasn't initialized."); \
     } \
-    (obj) = TypedData_Wrap_Struct((klass), &ossl_engine_type, (engine)); \
+    RTYPEDDATA_DATA(obj) = (engine); \
 } while(0)
 #define GetEngine(obj, engine) do { \
     TypedData_Get_Struct((obj), ENGINE, &ossl_engine_type, (engine)); \
@@ -182,11 +184,12 @@ ossl_engine_s_engines(VALUE klass)
 
     ary = rb_ary_new();
     for(e = ENGINE_get_first(); e; e = ENGINE_get_next(e)){
+	obj = NewEngine(klass);
 	/* Need a ref count of two here because of ENGINE_free being
 	 * called internally by OpenSSL when moving to the next ENGINE
 	 * and by us when releasing the ENGINE reference */
 	ENGINE_up_ref(e);
-	WrapEngine(klass, obj, e);
+	SetEngine(obj, e);
         rb_ary_push(ary, obj);
     }
 
@@ -213,9 +216,10 @@ ossl_engine_s_by_id(VALUE klass, VALUE id)
 
     StringValue(id);
     ossl_engine_s_load(1, &id, klass);
+    obj = NewEngine(klass);
     if(!(e = ENGINE_by_id(RSTRING_PTR(id))))
 	ossl_raise(eEngineError, NULL);
-    WrapEngine(klass, obj, e);
+    SetEngine(obj, e);
     if(rb_block_given_p()) rb_yield(obj);
     if(!ENGINE_init(e))
 	ossl_raise(eEngineError, NULL);
@@ -232,10 +236,11 @@ ossl_engine_s_alloc(VALUE klass)
     ENGINE *e;
     VALUE obj;
 
+    obj = NewEngine(klass);
     if (!(e = ENGINE_new())) {
        ossl_raise(eEngineError, NULL);
     }
-    WrapEngine(klass, obj, e);
+    SetEngine(obj, e);
 
     return obj;
 }

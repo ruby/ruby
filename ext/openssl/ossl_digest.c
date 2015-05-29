@@ -95,13 +95,11 @@ ossl_digest_new(const EVP_MD *md)
 static VALUE
 ossl_digest_alloc(VALUE klass)
 {
-    EVP_MD_CTX *ctx;
-    VALUE obj;
-
-    ctx = EVP_MD_CTX_create();
+    VALUE obj = TypedData_Wrap_Struct(klass, &ossl_digest_type, 0);
+    EVP_MD_CTX *ctx = EVP_MD_CTX_create();
     if (ctx == NULL)
 	ossl_raise(rb_eRuntimeError, "EVP_MD_CTX_create() failed");
-    obj = TypedData_Wrap_Struct(klass, &ossl_digest_type, ctx);
+    RTYPEDDATA_DATA(obj) = ctx;
 
     return obj;
 }

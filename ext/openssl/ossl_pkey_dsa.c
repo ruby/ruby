@@ -40,6 +40,7 @@ dsa_instance(VALUE klass, DSA *dsa)
     if (!dsa) {
 	return Qfalse;
     }
+    obj = NewPKey(klass);
     if (!(pkey = EVP_PKEY_new())) {
 	return Qfalse;
     }
@@ -47,7 +48,7 @@ dsa_instance(VALUE klass, DSA *dsa)
 	EVP_PKEY_free(pkey);
 	return Qfalse;
     }
-    WrapPKey(klass, obj, pkey);
+    SetPKey(obj, pkey);
 
     return obj;
 }
@@ -60,10 +61,11 @@ ossl_dsa_new(EVP_PKEY *pkey)
     if (!pkey) {
 	obj = dsa_instance(cDSA, DSA_new());
     } else {
+	obj = NewPKey(cDSA);
 	if (EVP_PKEY_type(pkey->type) != EVP_PKEY_DSA) {
 	    ossl_raise(rb_eTypeError, "Not a DSA key!");
 	}
-	WrapPKey(cDSA, obj, pkey);
+	SetPKey(obj, pkey);
     }
     if (obj == Qfalse) {
 	ossl_raise(eDSAError, NULL);

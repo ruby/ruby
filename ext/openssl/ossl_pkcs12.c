@@ -5,9 +5,12 @@
  */
 #include "ossl.h"
 
-#define WrapPKCS12(klass, obj, p12) do { \
+#define NewPKCS12(klass) \
+    TypedData_Wrap_Struct((klass), &ossl_pkcs12_type, 0)
+
+#define SetPKCS12(obj, p12) do { \
     if(!(p12)) ossl_raise(rb_eRuntimeError, "PKCS12 wasn't initialized."); \
-    (obj) = TypedData_Wrap_Struct((klass), &ossl_pkcs12_type, (p12)); \
+    RTYPEDDATA_DATA(obj) = (p12); \
 } while (0)
 
 #define GetPKCS12(obj, p12) do { \
@@ -56,8 +59,9 @@ ossl_pkcs12_s_allocate(VALUE klass)
     PKCS12 *p12;
     VALUE obj;
 
+    obj = NewPKCS12(klass);
     if(!(p12 = PKCS12_new())) ossl_raise(ePKCS12Error, NULL);
-    WrapPKCS12(klass, obj, p12);
+    SetPKCS12(obj, p12);
 
     return obj;
 }
@@ -118,11 +122,12 @@ ossl_pkcs12_s_create(int argc, VALUE *argv, VALUE self)
     if (!NIL_P(keytype))
         ktype = NUM2INT(keytype);
 
+    obj = NewPKCS12(cPKCS12);
     p12 = PKCS12_create(passphrase, friendlyname, key, x509, x509s,
                         nkey, ncert, kiter, miter, ktype);
     sk_X509_pop_free(x509s, X509_free);
     if(!p12) ossl_raise(ePKCS12Error, NULL);
-    WrapPKCS12(cPKCS12, obj, p12);
+    SetPKCS12(obj, p12);
 
     ossl_pkcs12_set_key(obj, pkey);
     ossl_pkcs12_set_cert(obj, cert);
