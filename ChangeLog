@@ -1,3 +1,13 @@
+Fri May 29 14:39:00 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_compile_each): out of range NTH_REF is always
+	  nil.
+
+	* parse.y (parse_numvar): check overflow of NTH_REF and range.
+	  [ruby-core:69393] [Bug #11192]
+
+	* util.c (ruby_scan_digits): make public and add length parameter.
+
 Fri May 29 11:18:58 2015  Eric Wong  <e@80x24.org>
 
 	* ext/socket/ancdata.c (bsock_sendmsg_internal,
