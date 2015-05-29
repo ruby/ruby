@@ -211,7 +211,10 @@ rsock_s_recvfrom_nonblock(VALUE sock, int argc, VALUE *argv, enum sock_recv_type
     str = rb_tainted_str_new(0, buflen);
 
     rb_io_check_closed(fptr);
-    rb_io_set_nonblock(fptr);
+
+    if (!MSG_DONTWAIT_RELIABLE)
+	rb_io_set_nonblock(fptr);
+
     len0 = alen;
     slen = recvfrom(fd, RSTRING_PTR(str), buflen, flags, &buf.addr, &alen);
     if (slen != -1 && len0 < alen)

@@ -407,9 +407,20 @@ NORETURN(void rsock_sys_fail_raddrinfo_or_sockaddr(const char *, VALUE addr, VAL
 #if defined(__linux__)
 static inline int rsock_maybe_fd_writable(int fd) { return 1; }
 static inline void rsock_maybe_wait_fd(int fd) { }
+#  ifdef MSG_DONTWAIT
+#    define MSG_DONTWAIT_RELIABLE 1
+#  endif
 #else /* some systems (mswin/mingw) need these.  ref: r36946 */
 #  define rsock_maybe_fd_writable(fd) rb_thread_fd_writable((fd))
 #  define rsock_maybe_wait_fd(fd) rb_thread_wait_fd((fd))
+#endif
+
+/*
+ * some OSes may support MSG_DONTWAIT inconsistently depending on socket
+ * type, we only expect Linux to support it consistently for all socket types.
+ */
+#ifndef MSG_DONTWAIT_RELIABLE
+#  define MSG_DONTWAIT_RELIABLE 0
 #endif
 
 #endif

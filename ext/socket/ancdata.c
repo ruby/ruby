@@ -1277,7 +1277,7 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
 #endif
 
     rb_io_check_closed(fptr);
-    if (nonblock)
+    if (nonblock && !MSG_DONTWAIT_RELIABLE)
         rb_io_set_nonblock(fptr);
 
     ss = rb_sendmsg(fptr->fd, &mh, flags);
@@ -1595,7 +1595,7 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
         flags |= MSG_PEEK;
 
     rb_io_check_closed(fptr);
-    if (nonblock)
+    if (nonblock && !MSG_DONTWAIT_RELIABLE)
         rb_io_set_nonblock(fptr);
 
     ss = rb_recvmsg(fptr->fd, &mh, flags);
