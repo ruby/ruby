@@ -1,3 +1,8 @@
+Fri May 29 10:30:34 2015  Eric Wong  <e@80x24.org>
+
+	* lib/net/resolv.rb (request): use monotonic clock
+	* lib/net/http.rb (begin_transport, end_transport): ditto
+
 Fri May 29 04:37:38 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* ext/objspace/objspace.c: add two methods to debug internals.

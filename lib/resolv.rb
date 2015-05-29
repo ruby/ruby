@@ -667,7 +667,7 @@ class Resolv
       end
 
       def request(sender, tout)
-        start = Time.now
+        start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
         timelimit = start + tout
         begin
           sender.send
@@ -676,7 +676,7 @@ class Resolv
           raise ResolvTimeout
         end
         while true
-          before_select = Time.now
+          before_select = Process.clock_gettime(Process::CLOCK_MONOTONIC)
           timeout = timelimit - before_select
           if timeout <= 0
             raise ResolvTimeout
@@ -687,7 +687,7 @@ class Resolv
             select_result = IO.select(@socks, nil, nil, timeout)
           end
           if !select_result
-            after_select = Time.now
+            after_select = Process.clock_gettime(Process::CLOCK_MONOTONIC)
             next if after_select < timelimit
             raise ResolvTimeout
           end

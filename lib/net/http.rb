@@ -1460,7 +1460,7 @@ module Net   #:nodoc:
     def begin_transport(req)
       if @socket.closed?
         connect
-      elsif @last_communicated && @last_communicated + @keep_alive_timeout < Time.now
+      elsif @last_communicated && @last_communicated + @keep_alive_timeout < Process.clock_gettime(Process::CLOCK_MONOTONIC)
         D 'Conn close because of keep_alive_timeout'
         @socket.close
         connect
@@ -1484,7 +1484,7 @@ module Net   #:nodoc:
         @socket.close
       elsif keep_alive?(req, res)
         D 'Conn keep-alive'
-        @last_communicated = Time.now
+        @last_communicated = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       else
         D 'Conn close'
         @socket.close
