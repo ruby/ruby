@@ -1013,6 +1013,27 @@ rb_generic_ivar_table(VALUE obj)
 }
 
 static VALUE
+generic_ivar_delete(VALUE obj, ID id, VALUE undef)
+{
+    struct gen_ivtbl *ivtbl;
+
+    if (gen_ivtbl_get(obj, &ivtbl)) {
+	st_table *iv_index_tbl = RCLASS_IV_INDEX_TBL(rb_obj_class(obj));
+	st_data_t index;
+
+	if (st_lookup(iv_index_tbl, (st_data_t)id, &index)) {
+	    if ((long)index < ivtbl->numiv) {
+		VALUE ret = ivtbl->ivptr[index];
+
+		ivtbl->ivptr[index] = Qundef;
+		return ret == Qundef ? undef : ret;
+	    }
+	}
+    }
+    return undef;
+}
+
+static VALUE
 generic_ivar_get(VALUE obj, ID id, VALUE undef)
 {
     struct gen_ivtbl *ivtbl;
@@ -1272,6 +1293,48 @@ VALUE
 rb_attr_get(VALUE obj, ID id)
 {
     return rb_ivar_lookup(obj, id, Qnil);
+}
+
+static VALUE
+rb_ivar_delete(VALUE obj, ID id, VALUE undef)
+{
+    VALUE val, *ptr;
+    struct st_table *iv_index_tbl;
+    long len;
+    st_data_t index;
+
+    if (SPECIAL_CONST_P(obj)) goto generic;
+    switch (BUILTIN_TYPE(obj)) {
+      case T_OBJECT:
+        len = ROBJECT_NUMIV(obj);
+        ptr = ROBJECT_IVPTR(obj);
+        iv_index_tbl = ROBJECT_IV_INDEX_TBL(obj);
+        if (!iv_index_tbl) break;
+        if (!st_lookup(iv_index_tbl, (st_data_t)id, &index)) break;
+        if (len <= (long)index) break;
+        val = ptr[index];
+        ptr[index] = Qundef;
+        if (val != Qundef)
+            return val;
+	break;
+      case T_CLASS:
+      case T_MODULE:
+	if (RCLASS_IV_TBL(obj) && st_delete(RCLASS_IV_TBL(obj), (st_data_t *)&id, &index))
+	    return (VALUE)index;
+	break;
+      default:
+      generic:
+	if (FL_TEST(obj, FL_EXIVAR) || rb_special_const_p(obj))
+	    return generic_ivar_delete(obj, id, undef);
+	break;
+    }
+    return undef;
+}
+
+VALUE
+rb_attr_delete(VALUE obj, ID id)
+{
+    return rb_ivar_delete(obj, id, Qnil);
 }
 
 static st_table *

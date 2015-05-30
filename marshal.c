@@ -594,24 +594,33 @@ w_encoding(VALUE encname, struct dump_call_arg *arg)
 }
 
 static st_index_t
-has_ivars(VALUE obj, VALUE encname, st_table **ivtbl)
+has_ivars(VALUE obj, VALUE encname, VALUE *ivobj)
 {
-    st_index_t num = !NIL_P(encname);
+    st_index_t enc = !NIL_P(encname);
+    st_index_t num = 0;
 
-    *ivtbl = rb_generic_ivar_table(obj);
-    if (*ivtbl) {
-	st_foreach_safe(*ivtbl, obj_count_ivars, (st_data_t)&num);
+    if (SPECIAL_CONST_P(obj)) goto generic;
+    switch (BUILTIN_TYPE(obj)) {
+      case T_OBJECT:
+      case T_CLASS:
+      case T_MODULE:
+	break; /* counted elsewhere */
+      default:
+      generic:
+	rb_ivar_foreach(obj, obj_count_ivars, (st_data_t)&num);
+	if (num) *ivobj = obj;
     }
-    return num;
+
+    return num + enc;
 }
 
 static void
-w_ivar(st_index_t num, st_table *tbl, VALUE encname, struct dump_call_arg *arg)
+w_ivar(st_index_t num, VALUE ivobj, VALUE encname, struct dump_call_arg *arg)
 {
     w_long(num, arg->arg);
     w_encoding(encname, arg);
-    if (tbl) {
-	st_foreach_safe(tbl, w_obj_each, (st_data_t)arg);
+    if (ivobj != Qundef) {
+	rb_ivar_foreach(ivobj, w_obj_each, (st_data_t)arg);
     }
 }
 
@@ -638,7 +647,7 @@ static void
 w_object(VALUE obj, struct dump_arg *arg, int limit)
 {
     struct dump_call_arg c_arg;
-    st_table *ivtbl = 0;
+    VALUE ivobj = Qundef;
     st_data_t num;
     st_index_t hasiv = 0;
     VALUE encname = Qnil;
@@ -708,7 +717,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	    return;
 	}
 	if (rb_obj_respond_to(obj, s_dump, TRUE)) {
-            st_table *ivtbl2 = 0;
+	    VALUE ivobj2 = Qundef;
 	    st_index_t hasiv2;
 	    VALUE encname2;
 
@@ -718,18 +727,18 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	    if (!RB_TYPE_P(v, T_STRING)) {
 		rb_raise(rb_eTypeError, "_dump() must return string");
 	    }
-	    hasiv = has_ivars(obj, (encname = encoding_name(obj, arg)), &ivtbl);
-	    hasiv2 = has_ivars(v, (encname2 = encoding_name(v, arg)), &ivtbl2);
+	    hasiv = has_ivars(obj, (encname = encoding_name(obj, arg)), &ivobj);
+	    hasiv2 = has_ivars(v, (encname2 = encoding_name(v, arg)), &ivobj2);
 	    if (hasiv2) {
 		hasiv = hasiv2;
-		ivtbl = ivtbl2;
+		ivobj = ivobj2;
 		encname = encname2;
 	    }
 	    if (hasiv) w_byte(TYPE_IVAR, arg);
 	    w_class(TYPE_USERDEF, obj, arg, FALSE);
 	    w_bytes(RSTRING_PTR(v), RSTRING_LEN(v), arg);
 	    if (hasiv) {
-		w_ivar(hasiv, ivtbl, encname, &c_arg);
+		w_ivar(hasiv, ivobj, encname, &c_arg);
 	    }
             st_add_direct(arg->data, obj, arg->data->num_entries);
 	    return;
@@ -737,7 +746,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 
         st_add_direct(arg->data, obj, arg->data->num_entries);
 
-	hasiv = has_ivars(obj, (encname = encoding_name(obj, arg)), &ivtbl);
+	hasiv = has_ivars(obj, (encname = encoding_name(obj, arg)), &ivobj);
         {
             st_data_t compat_data;
             rb_alloc_func_t allocator = rb_get_alloc_func(RBASIC(obj)->klass);
@@ -751,7 +760,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
                     arg->compat_tbl = rb_init_identtable();
                 }
                 st_insert(arg->compat_tbl, (st_data_t)obj, (st_data_t)real_obj);
-		if (obj != real_obj && !ivtbl) hasiv = 0;
+		if (obj != real_obj && ivobj == Qundef) hasiv = 0;
             }
         }
 	if (hasiv) w_byte(TYPE_IVAR, arg);
@@ -911,7 +920,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	RB_GC_GUARD(obj);
     }
     if (hasiv) {
-	w_ivar(hasiv, ivtbl, encname, &c_arg);
+	w_ivar(hasiv, ivobj, encname, &c_arg);
     }
 }
 
