@@ -193,10 +193,10 @@ release_method_definition(rb_method_definition_t *def)
 }
 
 void
-rb_free_method_entry(rb_method_entry_t *me)
+rb_free_method_entry(const rb_method_entry_t *me)
 {
     release_method_definition(me->def);
-    xfree(me);
+    xfree((void *)me);
 }
 
 static inline rb_method_entry_t *search_method(VALUE klass, ID id, VALUE *defined_class_ptr);
