@@ -123,41 +123,29 @@ class Tempfile < DelegateClass(File)
   # If Tempfile.new cannot find a unique filename within a limited
   # number of tries, then it will raise an exception.
   def initialize(basename="", tmpdir=nil, mode: 0, **options)
-    if block_given?
-      warn "Tempfile.new doesn't call the given block."
-    end
-    @data = []
-    @clean_proc = Remover.new(@data)
-    ObjectSpace.define_finalizer(self, @clean_proc)
+    warn "Tempfile.new doesn't call the given block." if block_given?
 
+    @mode = mode|File::RDWR|File::CREAT|File::EXCL
     ::Dir::Tmpname.create(basename, tmpdir, options) do |tmpname, n, opts|
-      mode |= File::RDWR|File::CREAT|File::EXCL
       opts[:perm] = 0600
-      @data[1] = @tmpfile = File.open(tmpname, mode, opts)
-      @data[0] = @tmpname = tmpname
-      @mode = mode & ~(File::CREAT|File::EXCL)
-      opts.freeze
-      @opts = opts
+      @tmpfile = File.open(tmpname, @mode, opts)
+      @opts = opts.freeze
     end
+    ObjectSpace.define_finalizer(self, Remover.new(@tmpfile))
 
     super(@tmpfile)
   end
 
   # Opens or reopens the file with mode "r+".
   def open
-    @tmpfile.close if @tmpfile
-    @tmpfile = File.open(@tmpname, @mode, @opts)
-    @data[1] = @tmpfile
+    _close
+    mode = @mode & ~(File::CREAT|File::EXCL)
+    @tmpfile = File.open(@tmpfile.path, mode, @opts)
     __setobj__(@tmpfile)
   end
 
   def _close    # :nodoc:
-    begin
-      @tmpfile.close if @tmpfile
-    ensure
-      @tmpfile = nil
-      @data[1] = nil if @data
-    end
+    @tmpfile.close unless @tmpfile.closed?
   end
   protected :_close
 
@@ -168,18 +156,14 @@ class Tempfile < DelegateClass(File)
   # If you don't explicitly unlink the temporary file, the removal
   # will be delayed until the object is finalized.
   def close(unlink_now=false)
-    if unlink_now
-      close!
-    else
-      _close
-    end
+    _close
+    unlink if unlink_now
   end
 
   # Closes and unlinks (deletes) the file. Has the same effect as called
   # <tt>close(true)</tt>.
   def close!
-    _close
-    unlink
+    close(true)
   end
 
   # Unlinks (deletes) the file from the filesystem. One should always unlink
@@ -216,37 +200,32 @@ class Tempfile < DelegateClass(File)
   #                    # to do so again.
   #   end
   def unlink
-    return unless @tmpname
+    return if @unlinked
     begin
-      File.unlink(@tmpname)
+      File.unlink(@tmpfile.path)
     rescue Errno::ENOENT
     rescue Errno::EACCES
       # may not be able to unlink on Windows; just ignore
       return
     end
-    # remove tmpname from remover
-    @data[0] = @data[1] = nil
-    @tmpname = nil
     ObjectSpace.undefine_finalizer(self)
+    @unlinked = true
   end
   alias delete unlink
 
   # Returns the full path name of the temporary file.
   # This will be nil if #unlink has been called.
   def path
-    @tmpname
+    @unlinked ? nil : @tmpfile.path
   end
 
   # Returns the size of the temporary file.  As a side effect, the IO
   # buffer is flushed before determining the size.
   def size
-    if @tmpfile
-      @tmpfile.flush
-      @tmpfile.stat.size
-    elsif @tmpname
-      File.size(@tmpname)
+    if !@tmpfile.closed?
+      @tmpfile.size # File#size calls rb_io_flush_raw()
     else
-      0
+      File.size?(@tmpfile.path)
     end
   end
   alias length size
@@ -261,28 +240,23 @@ class Tempfile < DelegateClass(File)
   end
 
   class Remover
-    def initialize(data)
-      @pid = $$
-      @data = data
+    def initialize(tmpfile)
+      @pid = Process.pid
+      @tmpfile = tmpfile
     end
 
     def call(*args)
-      return if @pid != $$
+      return if @pid != Process.pid
 
-      path, tmpfile = @data
+      warn "removing #{@tmpfile.path}..." if $DEBUG
 
-      STDERR.print "removing ", path, "..." if $DEBUG
-
-      tmpfile.close if tmpfile
-
-      if path
-        begin
-          File.unlink(path)
-        rescue Errno::ENOENT
-        end
+      @tmpfile.close if @tmpfile.closed?
+      begin
+        File.unlink(@tmpfile.path)
+      rescue Errno::ENOENT
       end
 
-      STDERR.print "done\n" if $DEBUG
+      warn "done" if $DEBUG
     end
   end
 
