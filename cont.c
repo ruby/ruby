@@ -236,17 +236,16 @@ cont_free(void *ptr)
 	else {
 	    /* fiber */
 	    rb_fiber_t *fib = (rb_fiber_t*)cont;
+	    const rb_thread_t *const th = GET_THREAD();
 #ifdef _WIN32
-	    if (GET_THREAD()->fiber != fib && cont->type != ROOT_FIBER_CONTEXT) {
+	    if (th && th->fiber != fib && cont->type != ROOT_FIBER_CONTEXT) {
 		/* don't delete root fiber handle */
-		rb_fiber_t *fib = (rb_fiber_t*)cont;
 		if (fib->fib_handle) {
 		    DeleteFiber(fib->fib_handle);
 		}
 	    }
 #else /* not WIN32 */
-	    if (GET_THREAD()->fiber != fib) {
-                rb_fiber_t *fib = (rb_fiber_t*)cont;
+	    if (th && th->fiber != fib) {
                 if (fib->ss_sp) {
                     if (cont->type == ROOT_FIBER_CONTEXT) {
 			rb_bug("Illegal root fiber parameter");

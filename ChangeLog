@@ -1,3 +1,8 @@
+Sat May 30 09:14:28 2015  Scott Francis  <scott.francis@shopify.com>
+
+	* cont.c (cont_free): check if ruby_current_thread is still valid.
+	  [Fix GH-914]
+
 Sat May 30 08:36:04 2015  Eric Wong  <e@80x24.org>
 
 	* variable.c (static int special_generic_ivar): move
