@@ -129,7 +129,7 @@ rb_add_method_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, rb_me
     }
 }
 
-void
+static void
 rb_unlink_method_entry(rb_method_entry_t *me)
 {
     struct unlinked_method_entry_list_entry *ume = ALLOC(struct unlinked_method_entry_list_entry);
