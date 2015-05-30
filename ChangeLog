@@ -1,3 +1,7 @@
+Sun May 31 03:34:25 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_method.c (rb_unlink_method_entry): make it static.
+
 Sun May 31 03:26:58 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* method.h, vm_method.c (rb_free_method_entry): constify a parameter.
