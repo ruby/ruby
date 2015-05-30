@@ -140,7 +140,7 @@ VALUE rb_mod_method_location(VALUE mod, ID id);
 VALUE rb_obj_method_location(VALUE obj, ID id);
 
 void rb_mark_method_entry(const rb_method_entry_t *me);
-void rb_free_method_entry(rb_method_entry_t *me);
+void rb_free_method_entry(const rb_method_entry_t *me);
 void rb_sweep_method_entry(void *vm);
 
 #endif /* METHOD_H */
