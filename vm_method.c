@@ -1351,12 +1351,12 @@ rb_alias(VALUE klass, ID name, ID def)
 	rb_method_entry_t *new_orig_me;
 	rb_method_definition_t *def;
 
-    if (RB_TYPE_P(defined_class, T_ICLASS)) {
+	if (RB_TYPE_P(defined_class, T_ICLASS)) {
 	    defined_class = real_owner = RBASIC_CLASS(defined_class);
 	}
 	else {
 	    real_owner = defined_class;
-    }
+	}
 
 	/* make ne me */
 	new_orig_me = ALLOC(rb_method_entry_t);
