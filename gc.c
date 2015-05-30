@@ -3946,21 +3946,29 @@ mark_method_entry(rb_objspace_t *objspace, const rb_method_entry_t *me)
 	gc_mark(objspace, def->body.iseq_body.iseq->self);
 	gc_mark(objspace, (VALUE)def->body.iseq_body.cref);
 	break;
-      case VM_METHOD_TYPE_BMETHOD:
-	gc_mark(objspace, def->body.proc);
-	break;
       case VM_METHOD_TYPE_ATTRSET:
       case VM_METHOD_TYPE_IVAR:
 	gc_mark(objspace, def->body.attr.location);
 	break;
+      case VM_METHOD_TYPE_BMETHOD:
+	gc_mark(objspace, def->body.proc);
+	break;
+      case VM_METHOD_TYPE_ALIAS:
+	mark_method_entry(objspace, def->body.alias.original_me);
+	return;
       case VM_METHOD_TYPE_REFINED:
 	if (def->body.orig_me) {
 	    def = def->body.orig_me->def;
 	    goto again;
 	}
 	break;
-      default:
-	break; /* ignore */
+      case VM_METHOD_TYPE_CFUNC:
+      case VM_METHOD_TYPE_ZSUPER:
+      case VM_METHOD_TYPE_MISSING:
+      case VM_METHOD_TYPE_OPTIMIZED:
+      case VM_METHOD_TYPE_UNDEF:
+      case VM_METHOD_TYPE_NOTIMPLEMENTED:
+	break;
     }
 }
 

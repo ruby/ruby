@@ -2066,6 +2066,8 @@ rb_method_entry_min_max_arity(const rb_method_entry_t *me, int *max)
 	return *max = 1;
       case VM_METHOD_TYPE_IVAR:
 	return *max = 0;
+      case VM_METHOD_TYPE_ALIAS:
+	return rb_method_entry_min_max_arity(def->body.alias.original_me, max);
       case VM_METHOD_TYPE_BMETHOD:
 	return rb_proc_min_max_arity(def->body.proc, max);
       case VM_METHOD_TYPE_ISEQ: {
@@ -2204,13 +2206,24 @@ static const rb_iseq_t *
 method_def_iseq(const rb_method_definition_t *def)
 {
     switch (def->type) {
-      case VM_METHOD_TYPE_BMETHOD:
-	return get_proc_iseq(def->body.proc, 0);
       case VM_METHOD_TYPE_ISEQ:
 	return def->body.iseq_body.iseq;
-      default:
-	return NULL;
+      case VM_METHOD_TYPE_BMETHOD:
+	return get_proc_iseq(def->body.proc, 0);
+      case VM_METHOD_TYPE_ALIAS:
+	return method_def_iseq(def->body.alias.original_me->def);
+      case VM_METHOD_TYPE_CFUNC:
+      case VM_METHOD_TYPE_ATTRSET:
+      case VM_METHOD_TYPE_IVAR:
+      case VM_METHOD_TYPE_ZSUPER:
+      case VM_METHOD_TYPE_UNDEF:
+      case VM_METHOD_TYPE_NOTIMPLEMENTED:
+      case VM_METHOD_TYPE_OPTIMIZED:
+      case VM_METHOD_TYPE_MISSING:
+      case VM_METHOD_TYPE_REFINED:
+	break;
     }
+    return NULL;
 }
 
 const rb_iseq_t *
@@ -2224,9 +2237,13 @@ method_cref(VALUE method)
 {
     const rb_method_definition_t *def = method_def(method);
 
+  again:
     switch (def->type) {
       case VM_METHOD_TYPE_ISEQ:
 	return def->body.iseq_body.cref;
+      case VM_METHOD_TYPE_ALIAS:
+	def = def->body.alias.original_me->def;
+	goto again;
       default:
 	return NULL;
     }

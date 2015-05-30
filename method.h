@@ -51,6 +51,7 @@ typedef enum {
     VM_METHOD_TYPE_IVAR,
     VM_METHOD_TYPE_BMETHOD,
     VM_METHOD_TYPE_ZSUPER,
+    VM_METHOD_TYPE_ALIAS,
     VM_METHOD_TYPE_UNDEF,
     VM_METHOD_TYPE_NOTIMPLEMENTED,
     VM_METHOD_TYPE_OPTIMIZED, /* Kernel#send, Proc#call, etc */
@@ -71,6 +72,10 @@ typedef struct rb_method_attr_struct {
     const VALUE location;
 } rb_method_attr_t;
 
+typedef struct rb_method_alias_struct {
+    const struct rb_method_entry_struct *original_me; /* original_me->klass is original owner */
+} rb_method_alias_t;
+
 typedef struct rb_iseq_struct rb_iseq_t;
 
 typedef struct rb_method_definition_struct {
@@ -85,6 +90,7 @@ typedef struct rb_method_definition_struct {
 	} iseq_body;
 	rb_method_cfunc_t cfunc;
 	rb_method_attr_t attr;
+	rb_method_alias_t alias;
 	const VALUE proc;                 /* should be mark */
 	enum method_optimized_type {
 	    OPTIMIZED_METHOD_TYPE_SEND,

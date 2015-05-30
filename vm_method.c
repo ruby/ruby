@@ -178,13 +178,20 @@ rb_sweep_method_entry(void *pvm)
 static void
 release_method_definition(rb_method_definition_t *def)
 {
-    if (def == 0)
-	return;
+    if (def == 0) return;
+
     if (def->alias_count == 0) {
-	if (def->type == VM_METHOD_TYPE_REFINED &&
-	    def->body.orig_me) {
-	    rb_free_method_entry(def->body.orig_me);
+	switch (def->type) {
+	  case VM_METHOD_TYPE_REFINED:
+	    if (def->body.orig_me) rb_free_method_entry(def->body.orig_me);
+	    break;
+	  case VM_METHOD_TYPE_ALIAS:
+	    if (!def->body.alias.original_me) rb_free_method_entry(def->body.alias.original_me);
+	    break;
+	  default:
+	    break;
 	}
+
 	xfree(def);
     }
     else if (def->alias_count > 0) {
@@ -537,13 +544,20 @@ rb_add_method_iseq(VALUE klass, ID mid, rb_iseq_t *iseq, rb_cref_t *cref, rb_met
 }
 
 static rb_method_entry_t *
+method_entry_set0(VALUE klass, ID mid, rb_method_type_t type,
+		  rb_method_definition_t *def, rb_method_flag_t noex, VALUE defined_class)
+{
+    rb_method_entry_t *newme = rb_method_entry_make(klass, mid, type, def, noex, defined_class);
+    method_added(klass, mid);
+    return newme;
+}
+
+static rb_method_entry_t *
 method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *me,
 		 rb_method_flag_t noex, VALUE defined_class)
 {
     rb_method_type_t type = me->def ? me->def->type : VM_METHOD_TYPE_UNDEF;
-    rb_method_entry_t *newme = rb_method_entry_make(klass, mid, type, me->def, noex, defined_class);
-    method_added(klass, mid);
-    return newme;
+    return method_entry_set0(klass, mid, type, me->def, noex, defined_class);
 }
 
 rb_method_entry_t *
@@ -612,16 +626,6 @@ rb_method_entry_get_without_cache(VALUE klass, ID id,
 {
     VALUE defined_class;
     rb_method_entry_t *me = search_method(klass, id, &defined_class);
-
-    if (me && me->klass) {
-	switch (BUILTIN_TYPE(me->klass)) {
-	  case T_CLASS:
-	    if (RBASIC(klass)->flags & FL_SINGLETON) break;
-	    /* fall through */
-	  case T_ICLASS:
-	    defined_class = me->klass;
-	}
-    }
 
     if (ruby_running) {
 	if (OPT_GLOBAL_METHOD_CACHE) {
@@ -1205,18 +1209,38 @@ rb_method_entry_eq(const rb_method_entry_t *m1, const rb_method_entry_t *m2)
     return rb_method_definition_eq(m1->def, m2->def);
 }
 
+static const rb_method_definition_t *
+original_method_definition(const rb_method_definition_t *def)
+{
+  again:
+    if (def) {
+	switch (def->type) {
+	  case VM_METHOD_TYPE_REFINED:
+	    if (def->body.orig_me) {
+		def = def->body.orig_me->def;
+		goto again;
+	    }
+	    break;
+	  case VM_METHOD_TYPE_ALIAS:
+	    def = def->body.alias.original_me->def;
+	    goto again;
+	  default:
+	    break;
+	}
+    }
+    return def;
+}
+
 static int
 rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_definition_t *d2)
 {
-    if (d1 && d1->type == VM_METHOD_TYPE_REFINED && d1->body.orig_me)
-	d1 = d1->body.orig_me->def;
-    if (d2 && d2->type == VM_METHOD_TYPE_REFINED && d2->body.orig_me)
-	d2 = d2->body.orig_me->def;
+    d1 = original_method_definition(d1);
+    d2 = original_method_definition(d2);
+
     if (d1 == d2) return 1;
     if (!d1 || !d2) return 0;
-    if (d1->type != d2->type) {
-	return 0;
-    }
+    if (d1->type != d2->type) return 0;
+
     switch (d1->type) {
       case VM_METHOD_TYPE_ISEQ:
 	return d1->body.iseq_body.iseq == d2->body.iseq_body.iseq;
@@ -1237,17 +1261,21 @@ rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_defini
 	return 1;
       case VM_METHOD_TYPE_OPTIMIZED:
 	return d1->body.optimize_type == d2->body.optimize_type;
-      default:
-	rb_bug("rb_method_entry_eq: unsupported method type (%d)\n", d1->type);
-	return 0;
+      case VM_METHOD_TYPE_REFINED:
+      case VM_METHOD_TYPE_ALIAS:
+	break;
     }
+    rb_bug("rb_method_definition_eq: unsupported type: %d\n", d1->type);
 }
 
 static st_index_t
 rb_hash_method_definition(st_index_t hash, const rb_method_definition_t *def)
 {
-  again:
     hash = rb_hash_uint(hash, def->type);
+    def = original_method_definition(def);
+
+    if (!def) return hash;
+
     switch (def->type) {
       case VM_METHOD_TYPE_ISEQ:
 	return rb_hash_uint(hash, (st_index_t)def->body.iseq_body.iseq);
@@ -1268,18 +1296,11 @@ rb_hash_method_definition(st_index_t hash, const rb_method_definition_t *def)
       case VM_METHOD_TYPE_OPTIMIZED:
 	return rb_hash_uint(hash, def->body.optimize_type);
       case VM_METHOD_TYPE_REFINED:
-	if (def->body.orig_me) {
-	    def = def->body.orig_me->def;
-	    goto again;
+      case VM_METHOD_TYPE_ALIAS:
+	break; /* unreachable */
 	}
-	else {
-	    return hash;
-	}
-      default:
 	rb_bug("rb_hash_method_definition: unsupported method type (%d)\n", def->type);
     }
-    return hash;
-}
 
 st_index_t
 rb_hash_method_entry(st_index_t hash, const rb_method_entry_t *me)
@@ -1310,25 +1331,52 @@ rb_alias(VALUE klass, ID name, ID def)
     if (UNDEFINED_METHOD_ENTRY_P(orig_me) ||
 	UNDEFINED_REFINED_METHOD_P(orig_me->def)) {
 	if ((!RB_TYPE_P(klass, T_MODULE)) ||
-	    (orig_me = search_method(rb_cObject, def, 0),
+	    (orig_me = search_method(rb_cObject, def, &defined_class),
 	     UNDEFINED_METHOD_ENTRY_P(orig_me))) {
 	    rb_print_undef(klass, def, 0);
 	}
     }
+
     if (orig_me->def->type == VM_METHOD_TYPE_ZSUPER) {
 	klass = RCLASS_SUPER(klass);
 	def = orig_me->def->original_id;
 	flag = orig_me->flag;
 	goto again;
     }
-    if (RB_TYPE_P(defined_class, T_ICLASS)) {
-	VALUE real_class = RBASIC_CLASS(defined_class);
-	if (real_class && RCLASS_ORIGIN(real_class) == defined_class)
-	    defined_class = real_class;
-    }
 
     if (flag == NOEX_UNDEF) flag = orig_me->flag;
+
+    if (defined_class != target_klass) { /* inter class/module alias */
+	VALUE real_owner;
+	rb_method_entry_t *new_orig_me;
+	rb_method_definition_t *def;
+
+    if (RB_TYPE_P(defined_class, T_ICLASS)) {
+	    defined_class = real_owner = RBASIC_CLASS(defined_class);
+	}
+	else {
+	    real_owner = defined_class;
+    }
+
+	/* make ne me */
+	new_orig_me = ALLOC(rb_method_entry_t);
+	*new_orig_me = *orig_me;
+	new_orig_me->called_id = name;
+
+	/* make alias def */
+	def = ALLOC(rb_method_definition_t);
+	def->type = VM_METHOD_TYPE_ALIAS;
+	def->original_id = orig_me->called_id;
+	def->alias_count = -1; /* will be increment at method_entry_set0() */
+	def->body.alias.original_me = new_orig_me;
+	if (new_orig_me->def) new_orig_me->def->alias_count++;
+
+	/* make copy */
+	method_entry_set0(target_klass, name, VM_METHOD_TYPE_ALIAS, def, flag, defined_class);
+    }
+    else {
     method_entry_set(target_klass, name, orig_me, flag, defined_class);
+}
 }
 
 /*
