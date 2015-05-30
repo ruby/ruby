@@ -1,3 +1,8 @@
+Sat May 30 18:05:02 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/tempfile.rb (Remover#call): fixed wrong condition.  introduced at
+	  r50682.
+
 Sat May 30 16:12:35 2015  Eric Wong  <e@80x24.org>
 
 	* ext/socket/ancdata.c: use RB_GC_GUARD instead of volatile

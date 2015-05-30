@@ -251,7 +251,7 @@ class Tempfile < DelegateClass(File)
 
       warn "removing #{@tmpfile.path}..." if $DEBUG
 
-      @tmpfile.close if @tmpfile.closed?
+      @tmpfile.close unless @tmpfile.closed?
       begin
         File.unlink(@tmpfile.path)
       rescue Errno::ENOENT
