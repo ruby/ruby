@@ -17,7 +17,7 @@ provider ruby {
      ruby:::method-return(classname, methodname, filename, lineno);
 
      This probe is fired just after a method has returned. The arguments are
-     the same as "ruby:::function-entry".
+     the same as "ruby:::method-entry".
   */
   probe method__return(const char *classname, const char *methodname, const char *filename, int lineno);
 
@@ -25,14 +25,14 @@ provider ruby {
      ruby:::cmethod-entry(classname, methodname, filename, lineno);
 
      This probe is fired just before a C method is entered. The arguments are
-     the same as "ruby:::function-entry".
+     the same as "ruby:::method-entry".
   */
   probe cmethod__entry(const char *classname, const char *methodname, const char *filename, int lineno);
   /*
      ruby:::cmethod-return(classname, methodname, filename, lineno);
 
      This probe is fired just before a C method returns. The arguments are
-     the same as "ruby:::function-entry".
+     the same as "ruby:::method-entry".
   */
   probe cmethod__return(const char *classname, const char *methodname, const char *filename, int lineno);
 
