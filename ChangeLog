@@ -1,3 +1,12 @@
+Sat May 30 10:26:09 2015  Masaki Matsushita <glass.saga@gmail.com>
+
+	* lib/tempfile.rb: refactoring.
+	  * use warn instead of STDERR.print
+	  * remove @tmpname and use @tmpfile.path
+	  * introduce @unlinked flag
+	  * Remover takes only @tmpfile
+	  * mode will be modified just before file reopen
+
 Sat May 30 09:02:51 2015  Eric Wong  <e@80x24.org>
 
 	* include/ruby/intern.h (rb_generic_ivar_table): deprecate
