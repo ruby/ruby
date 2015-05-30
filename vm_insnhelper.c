@@ -1382,6 +1382,7 @@ vm_method_cfunc_entry(const rb_method_entry_t *me)
 	METHOD_BUG(OPTIMIZED);
 	METHOD_BUG(MISSING);
 	METHOD_BUG(REFINED);
+	METHOD_BUG(ALIAS);
 # undef METHOD_BUG
       default:
 	rb_bug("wrong method type: %d", me->def->type);
@@ -1700,6 +1701,25 @@ current_method_entry(rb_thread_t *th, rb_control_frame_t *cfp)
     return cfp;
 }
 
+static VALUE
+find_defiend_class_by_owner(VALUE current_class, VALUE target_owner)
+{
+    VALUE klass = current_class;
+
+    /* for prepended Module, then start from cover class */
+    if (RB_TYPE_P(klass, T_ICLASS) && FL_TEST(klass, RICLASS_IS_ORIGIN)) klass = RBASIC_CLASS(klass);
+
+    while (RTEST(klass)) {
+	VALUE owner = RB_TYPE_P(klass, T_ICLASS) ? RBASIC_CLASS(klass) : klass;
+	if (owner == target_owner) {
+	    return klass;
+	}
+	klass = RCLASS_SUPER(klass);
+    }
+
+    return current_class; /* maybe module function */
+}
+
 static
 #ifdef _MSC_VER
 __forceinline
@@ -1770,6 +1790,11 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 		else {
 		    goto start_method_dispatch;
 		}
+	      }
+	      case VM_METHOD_TYPE_ALIAS: {
+		ci->me = ci->me->def->body.alias.original_me;
+		ci->defined_class = find_defiend_class_by_owner(ci->defined_class, ci->me->klass /* owner */);
+		goto normal_method_dispatch;
 	      }
 	      case VM_METHOD_TYPE_OPTIMIZED:{
 		switch (ci->me->def->body.optimize_type) {

@@ -1,3 +1,49 @@
+Sun May 31 03:36:42 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* method.h: add VM_METHOD_TYPE_ALIAS rb_method_definition_t::type
+	  to fix [Bug #11173].
+
+	  Now, inter class/method alias creates new method entry
+	  VM_METHOD_TYPE_ALIAS, which has an original method entry.
+
+	* vm_insnhelper.c (find_defiend_class_by_owner): added.
+	  Search corresponding defined_class from owner class/module.
+
+	* vm_method.c (rb_method_entry_get_without_cache): return me->klass
+	  directly for defined_class.
+
+	  Now, no need to check me->klass any more.
+
+	* vm_method.c (method_entry_set0): separated from method_entry_set().
+
+	* vm_method.c (rb_alias): make method entry has VM_METHOD_TYPE_ALIAS.
+
+	* vm_method.c (release_method_definition): support VM_METHOD_TYPE_ALIAS.
+
+	* vm_method.c (rb_hash_method_definition): ditto.
+
+	* vm_method.c (rb_method_definition_eq): ditto.
+
+	* vm_method.c (release_method_definition): ditto.
+
+	* vm_insnhelper.c (vm_call_method): ditto.
+
+	* vm_insnhelper.c (vm_method_cfunc_entry): ditto.
+
+	* vm_eval.c (vm_call0_body): ditto.
+
+	* gc.c (mark_method_entry): ditto.
+
+	* proc.c (method_def_iseq): ditto.
+
+	* proc.c (method_cref): ditto.
+
+	* proc.c (rb_method_entry_min_max_arity): ditto.
+
+	* test/ruby/test_alias.rb: add tests.
+
+	* test/ruby/test_module.rb: fix a test to catch up current behavior.
+
 Sun May 31 03:34:25 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_method.c (rb_unlink_method_entry): make it static.

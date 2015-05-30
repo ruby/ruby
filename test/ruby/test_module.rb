@@ -2042,7 +2042,7 @@ class TestModule < Test::Unit::TestCase
 
       A.prepend InspectIsShallow
 
-      expect = "#<Method: A(Object)#inspect(shallow_inspect)>"
+      expect = "#<Method: A(ShallowInspect)#inspect(shallow_inspect)>"
       assert_equal expect, A.new.method(:inspect).inspect, "#{bug_10282}"
     RUBY
   end

@@ -193,4 +193,13 @@ class TestAlias < Test::Unit::TestCase
       assert_equal(o.to_s, o.orig_to_s, bug)
     end;
   end
+
+  class C0; def foo; end; end
+  class C1 < C0; alias bar foo; end
+
+  def test_alias_method_equation
+    obj = C1.new
+    assert_equal(obj.method(:bar), obj.method(:foo))
+    assert_equal(obj.method(:foo), obj.method(:bar))
+  end
 end

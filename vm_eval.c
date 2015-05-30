@@ -217,6 +217,12 @@ vm_call0_body(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
 	    if (!ci->me->def) return Qnil;
 	    goto again;
 	}
+      case VM_METHOD_TYPE_ALIAS:
+	{
+	    ci->me = ci->me->def->body.alias.original_me;
+	    ci->defined_class = find_defiend_class_by_owner(ci->defined_class, ci->me->klass);
+	    goto again;
+	}
       case VM_METHOD_TYPE_MISSING:
 	{
 	    VALUE new_args = rb_ary_new4(ci->argc, argv);
