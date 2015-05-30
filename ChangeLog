@@ -2,8 +2,6 @@ Sun May 31 03:26:58 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* method.h, vm_method.c (rb_free_method_entry): constify a parameter.
 
-	* vm_method.c (rb_unlink_method_entry): constify a parameter.
-
 	* vm_core.h: remove useless declaration about rb_unlink_method_entry().
 
 Sat May 30 18:05:02 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
