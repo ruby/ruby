@@ -1,3 +1,8 @@
+Sat May 30 16:12:35 2015  Eric Wong  <e@80x24.org>
+
+	* ext/socket/ancdata.c: use RB_GC_GUARD instead of volatile
+	  [ruby-core:69419] [Feature #11198]
+
 Sat May 30 15:59:10 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/tempfile.rb (Tempfile#initialize): initialize @unlinked to fix
