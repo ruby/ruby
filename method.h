@@ -85,13 +85,13 @@ typedef struct rb_method_definition_struct {
 
     union {
 	struct {
-	    rb_iseq_t *const iseq;            /* should be mark */
+	    rb_iseq_t *const iseq;            /* should be marked */
 	    rb_cref_t *cref;
 	} iseq_body;
 	rb_method_cfunc_t cfunc;
 	rb_method_attr_t attr;
 	rb_method_alias_t alias;
-	const VALUE proc;                 /* should be mark */
+	const VALUE proc;                 /* should be marked */
 	enum method_optimized_type {
 	    OPTIMIZED_METHOD_TYPE_SEND,
 	    OPTIMIZED_METHOD_TYPE_CALL,
@@ -107,7 +107,7 @@ typedef struct rb_method_entry_struct {
     char mark;
     rb_method_definition_t *def;
     ID called_id;
-    VALUE klass;                    /* should be mark */
+    VALUE klass;                    /* should be marked */
 } rb_method_entry_t;
 
 struct unlinked_method_entry_list_entry {
