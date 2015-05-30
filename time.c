@@ -4735,16 +4735,13 @@ time_mload(VALUE time, VALUE str)
     long nsec;
     VALUE submicro, nano_num, nano_den, offset, zone;
     wideval_t timew;
-    st_data_t data;
 
     time_modify(time);
 
 #define get_attr(attr, iffound) \
-    attr = rb_attr_get(str, id_##attr); \
+    attr = rb_attr_delete(str, id_##attr); \
     if (!NIL_P(attr)) { \
-	data = id_##attr; \
 	iffound; \
-        st_delete(rb_generic_ivar_table(str), &data, 0); \
     }
 
     get_attr(nano_num, {});

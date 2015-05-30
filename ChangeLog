@@ -1,3 +1,16 @@
+Sat May 30 09:02:51 2015  Eric Wong  <e@80x24.org>
+
+	* include/ruby/intern.h (rb_generic_ivar_table): deprecate
+	* internal.h (rb_attr_delete): declare
+	* marshal.c (has_ivars): use rb_ivar_foreach
+	  (w_ivar): ditto
+	  (w_object): update for new interface
+	* time.c (time_mload): use rb_attr_delete
+	* variable.c (generic_ivar_delete): implement
+	  (rb_ivar_delete): ditto
+	  (rb_attr_delete): ditto
+	  [ruby-core:69323] [Feature #11170]
+
 Sat May 30 09:14:28 2015  Scott Francis  <scott.francis@shopify.com>
 
 	* cont.c (cont_free): check if ruby_current_thread is still valid.

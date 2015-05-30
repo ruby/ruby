@@ -936,7 +936,7 @@ VALUE rb_f_trace_var(int, const VALUE*);
 VALUE rb_f_untrace_var(int, const VALUE*);
 VALUE rb_f_global_variables(void);
 void rb_alias_variable(ID, ID);
-struct st_table* rb_generic_ivar_table(VALUE);
+DEPRECATED(struct st_table* rb_generic_ivar_table(VALUE));
 void rb_copy_generic_ivar(VALUE,VALUE);
 void rb_free_generic_ivar(VALUE);
 VALUE rb_ivar_get(VALUE, ID);
