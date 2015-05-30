@@ -2856,6 +2856,7 @@ Init_vm_objects(void)
 
     /* initialize mark object array, hash */
     vm->mark_object_ary = rb_ary_tmp_new(128);
+    vm->loading_table = st_init_strtable();
 }
 
 /* top self */
