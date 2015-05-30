@@ -207,7 +207,7 @@ File.open(path, "w").close
     assert_in_out_err('-rtempfile', <<-'EOS') do |(filename), (error)|
 puts Tempfile.new('foo').path
     EOS
-      assert !File.exist?(filename)
+      assert !File.exist?(filename), "tempfile must not be exist after GC."
       assert_nil(error)
     end
   end
