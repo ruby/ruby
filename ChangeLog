@@ -1,3 +1,8 @@
+Sat May 30 11:02:55 2015  Martin Englund <martin@englund.nu>
+
+	* doc/dtrace_probes.rdoc: change lingering dtrace probe documentation
+	  from function- to method-
+
 Sat May 30 10:26:09 2015  Masaki Matsushita <glass.saga@gmail.com>
 
 	* lib/tempfile.rb: refactoring.
