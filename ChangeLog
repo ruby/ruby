@@ -1,3 +1,9 @@
+Sat May 30 15:59:10 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/tempfile.rb (Tempfile#initialize): initialize @unlinked to fix
+	  test failures introduced at r50682.  I hope that check the results of
+	  tests before committing, at least the tests about the changed feature.
+
 Sat May 30 11:02:55 2015  Martin Englund <martin@englund.nu>
 
 	* doc/dtrace_probes.rdoc: change lingering dtrace probe documentation

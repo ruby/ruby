@@ -125,6 +125,7 @@ class Tempfile < DelegateClass(File)
   def initialize(basename="", tmpdir=nil, mode: 0, **options)
     warn "Tempfile.new doesn't call the given block." if block_given?
 
+    @unlinked = false
     @mode = mode|File::RDWR|File::CREAT|File::EXCL
     ::Dir::Tmpname.create(basename, tmpdir, options) do |tmpname, n, opts|
       opts[:perm] = 0600
