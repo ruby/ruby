@@ -37,8 +37,7 @@ has_extra_methods(VALUE klass)
     const VALUE base = rb_cHash;
     VALUE c = klass;
     while (c != base) {
-	st_table *mtbl = RCLASS_M_TBL(c);
-	if (mtbl && mtbl->num_entries) return klass;
+	if (rb_class_has_methods(c)) return klass;
 	c = RCLASS_SUPER(c);
     }
     return 0;

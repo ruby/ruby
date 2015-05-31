@@ -1985,6 +1985,13 @@ rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optional, V
 #undef extract_kwarg
 }
 
+int
+rb_class_has_methods(VALUE c)
+{
+    st_table *mtbl = RCLASS_M_TBL(c);
+    return mtbl && mtbl->num_entries ? TRUE : FALSE;
+}
+
 /*!
  * \}
  */

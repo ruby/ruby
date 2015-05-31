@@ -667,6 +667,8 @@ VALUE rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach);
 VALUE rb_singleton_class_get(VALUE obj);
 void Init_class_hierarchy(void);
 
+int rb_class_has_methods(VALUE c);
+
 /* compar.c */
 VALUE rb_invcmp(VALUE, VALUE);
 
