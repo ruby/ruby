@@ -1,3 +1,12 @@
+Mon Jun  1 04:15:42 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* class.c (rb_class_has_methods): added to reduce depenedency
+	  to internal class data structure.
+
+	* internal.h: ditto.
+
+	* hash.c (has_extra_methods): use added function.
+
 Mon Jun  1 04:11:48 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c , gc.h (rb_obj_info): export obj_info(VALUE) for debugging.
