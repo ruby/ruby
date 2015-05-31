@@ -1458,7 +1458,7 @@ cbsubst_get_subst_key(self, str)
     volatile VALUE ret;
     long i, len, keylen;
     int idx;
-    char *buf, *ptr, *key;
+    char *buf, *ptr;
 
     list = rb_funcall(cTclTkLib, ID_split_tklist, 1, str);
     Check_Type(list, T_ARRAY);
@@ -1466,7 +1466,7 @@ cbsubst_get_subst_key(self, str)
 
     inf = cbsubst_get_ptr(self);
 
-    ptr = buf = ALLOC_N(char, inf->full_subst_length + len + 1);
+    ptr = buf = ALLOC_N(char, len + 1);
 
     for(i = 0; i < len; i++) {
       VALUE keyval = RARRAY_CONST_PTR(list)[i];
