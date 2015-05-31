@@ -917,7 +917,7 @@ rb_frame_visibility_test(rb_method_flag_t flag)
 static int
 rb_frame_visibility_check(rb_method_flag_t flag)
 {
-    return CREF_VISI(rb_vm_cref()) == flag;
+    return CREF_VISI(rb_vm_cref()) == (long)flag;
 }
 
 void
