@@ -83,6 +83,8 @@ int ruby_get_stack_grow_direction(volatile VALUE *addr);
 #endif
 #define IS_STACK_DIR_UPPER() STACK_DIR_UPPER(1,0)
 
+const char *rb_obj_info(VALUE obj);
+
 RUBY_SYMBOL_EXPORT_BEGIN
 
 /* exports for objspace module */

@@ -8975,6 +8975,17 @@ obj_info(VALUE obj)
 }
 #endif
 
+const char *
+rb_obj_info(VALUE obj)
+{
+    if (!rb_special_const_p(obj)) {
+	return obj_info(obj);
+    }
+    else {
+	return obj_type_name(obj);
+    }
+}
+
 #if GC_DEBUG
 
 void
