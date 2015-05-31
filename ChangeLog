@@ -1,3 +1,8 @@
+Mon Jun  1 03:52:55 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/test_gc.rb: increase timeout seconds for GC stressful
+	  debugging.
+
 Sun May 31 04:18:06 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* method.h: fix typo of comments.
