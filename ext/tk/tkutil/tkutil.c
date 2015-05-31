@@ -1324,15 +1324,46 @@ cbsubst_def_attr_aliases(self, tbl)
 }
 
 static VALUE
+cbsubst_append_inf_key(str, inf, idx)
+    VALUE str;
+    const struct cbsubst_info *inf;
+    int idx;
+{
+    const long len = inf->keylen[idx];
+    const long olen = RSTRING_LEN(str);
+    char *buf, *ptr;
+
+    rb_str_modify_expand(str, (len ? len : 1) + 2);
+    buf = RSTRING_PTR(str);
+    ptr = buf + olen;
+
+    *(ptr++) = '%';
+
+    if (len != 0) {
+	/* longname */
+	strncpy(ptr, inf->key[idx], len);
+	ptr += len;
+    }
+    else {
+	/* single char */
+	*(ptr++) = (unsigned char)idx;
+    }
+
+    *(ptr++) = ' ';
+
+    rb_str_set_len(str, ptr - buf);
+
+    return str;
+}
+
+static VALUE
 cbsubst_sym_to_subst(self, sym)
     VALUE self;
     VALUE sym;
 {
     struct cbsubst_info *inf;
     VALUE str;
-    char *buf, *ptr;
     int idx;
-    long len;
     ID id;
     volatile VALUE ret;
 
@@ -1353,27 +1384,7 @@ cbsubst_sym_to_subst(self, sym)
     }
     if (idx >= CBSUBST_TBL_MAX)  return sym;
 
-    ptr = buf = ALLOC_N(char, inf->full_subst_length + 1);
-
-    *(ptr++) = '%';
-
-    if ((len = inf->keylen[idx]) != 0) {
-      /* longname */
-      strncpy(ptr, inf->key[idx], len);
-      ptr += len;
-    } else {
-      /* single char */
-      *(ptr++) = (unsigned char)idx;
-    }
-
-    *(ptr++) = ' ';
-    *(ptr++) = '\0';
-
-    ret = rb_str_new2(buf);
-
-    xfree(buf);
-
-    return ret;
+    return cbsubst_append_inf_key(rb_str_new(0, 0), inf, idx);
 }
 
 static VALUE
@@ -1384,16 +1395,13 @@ cbsubst_get_subst_arg(argc, argv, self)
 {
     struct cbsubst_info *inf;
     VALUE str;
-    char *buf, *ptr;
     int i, idx;
-    long len;
     ID id;
-    volatile VALUE arg_sym, ret;
+    VALUE arg_sym, ret, result;
 
     inf = cbsubst_get_ptr(self);
 
-    ptr = buf = ALLOC_N(char, inf->full_subst_length + 1);
-
+    result = rb_str_new(0, 0);
     for(i = 0; i < argc; i++) {
         switch(TYPE(argv[i])) {
         case T_STRING:
@@ -1425,27 +1433,10 @@ cbsubst_get_subst_arg(argc, argv, self)
             rb_raise(rb_eArgError, "cannot find attribute :%"PRIsVALUE, str);
         }
 
-	*(ptr++) = '%';
-
-	if ((len = inf->keylen[idx]) != 0) {
-	  /* longname */
-	  strncpy(ptr, inf->key[idx], len);
-	  ptr += len;
-	} else {
-	  /* single char */
-	  *(ptr++) = (unsigned char)idx;
-	}
-
-	*(ptr++) = ' ';
+	result = cbsubst_append_inf_key(result, inf, idx);
     }
 
-    *ptr = '\0';
-
-    ret = rb_str_new2(buf);
-
-    xfree(buf);
-
-    return ret;
+    return result;
 }
 
 static VALUE
@@ -1454,8 +1445,8 @@ cbsubst_get_subst_key(self, str)
     VALUE str;
 {
     struct cbsubst_info *inf;
-    volatile VALUE list;
-    volatile VALUE ret;
+    VALUE list;
+    VALUE ret;
     long i, len, keylen;
     int idx;
     char *buf, *ptr;
@@ -1466,7 +1457,8 @@ cbsubst_get_subst_key(self, str)
 
     inf = cbsubst_get_ptr(self);
 
-    ptr = buf = ALLOC_N(char, len + 1);
+    ret = rb_str_new(0, len);
+    ptr = buf = RSTRING_PTR(ret);
 
     for(i = 0; i < len; i++) {
       VALUE keyval = RARRAY_CONST_PTR(list)[i];
@@ -1494,10 +1486,8 @@ cbsubst_get_subst_key(self, str)
 	*(ptr++) = ' ';
       }
     }
-    *ptr = '\0';
 
-    ret = rb_str_new2(buf);
-    xfree(buf);
+    rb_str_set_len(ret, ptr - buf);
     return ret;
 }
 
@@ -1506,45 +1496,26 @@ cbsubst_get_all_subst_keys(self)
     VALUE self;
 {
     struct cbsubst_info *inf;
-    char *buf, *ptr;
     char *keys_buf, *keys_ptr;
     int idx;
-    long len;
-    volatile VALUE ret;
+    VALUE str, keys_str;
 
     inf = cbsubst_get_ptr(self);
 
-    ptr = buf = ALLOC_N(char, inf->full_subst_length + 1);
-    keys_ptr = keys_buf = ALLOC_N(char, CBSUBST_TBL_MAX + 1);
+    str = rb_str_new(0, 0);
+    keys_str = rb_str_new(0, CBSUBST_TBL_MAX);
+    keys_ptr = keys_buf = RSTRING_PTR(keys_str);
 
     for(idx = 0; idx < CBSUBST_TBL_MAX; idx++) {
       if (inf->ivar[idx] == (ID) 0) continue;
 
       *(keys_ptr++) = (unsigned char)idx;
 
-      *(ptr++) = '%';
-
-      if ((len = inf->keylen[idx]) != 0) {
-	/* longname */
-	strncpy(ptr, inf->key[idx], len);
-	ptr += len;
-      } else {
-	/* single char */
-	*(ptr++) = (unsigned char)idx;
-      }
-
-      *(ptr++) = ' ';
+      str = cbsubst_append_inf_key(str, inf, idx);
     }
+    rb_str_set_len(keys_str, keys_ptr - keys_buf);
 
-    *ptr = '\0';
-    *keys_ptr = '\0';
-
-    ret = rb_ary_new3(2, rb_str_new2(keys_buf), rb_str_new2(buf));
-
-    xfree(buf);
-    xfree(keys_buf);
-
-    return ret;
+    return rb_ary_new3(2, keys_str, str);
 }
 
 static VALUE
