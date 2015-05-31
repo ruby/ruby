@@ -908,6 +908,24 @@ rb_method_boundp(VALUE klass, ID id, int ex)
 
 extern ID rb_check_attr_id(ID id);
 
+static int
+rb_frame_visibility_test(rb_method_flag_t flag)
+{
+    return CREF_VISI(rb_vm_cref()) & flag;
+}
+
+static int
+rb_frame_visibility_check(rb_method_flag_t flag)
+{
+    return CREF_VISI(rb_vm_cref()) == flag;
+}
+
+void
+rb_frame_visibility_set(rb_method_flag_t flag)
+{
+    CREF_VISI_SET(rb_vm_cref(), flag);
+}
+
 void
 rb_attr(VALUE klass, ID id, int read, int write, int ex)
 {
@@ -919,13 +937,13 @@ rb_attr(VALUE klass, ID id, int read, int write, int ex)
 	noex = NOEX_PUBLIC;
     }
     else {
-	if (SCOPE_TEST(NOEX_PRIVATE)) {
+	if (rb_frame_visibility_test(NOEX_PRIVATE)) {
 	    noex = NOEX_PRIVATE;
-	    if (SCOPE_CHECK(NOEX_MODFUNC)) {
+	    if (rb_frame_visibility_check(NOEX_MODFUNC)) {
 		rb_warning("attribute accessor as module_function");
 	    }
 	}
-	else if (SCOPE_TEST(NOEX_PROTECTED)) {
+	else if (rb_frame_visibility_test(NOEX_PROTECTED)) {
 	    noex = NOEX_PROTECTED;
 	}
 	else {
@@ -1437,7 +1455,7 @@ static VALUE
 set_visibility(int argc, const VALUE *argv, VALUE module, rb_method_flag_t ex)
 {
     if (argc == 0) {
-	SCOPE_SET(ex);
+	rb_frame_visibility_set(ex);
     }
     else {
 	set_method_visibility(module, argc, argv, ex);
@@ -1638,7 +1656,7 @@ rb_mod_modfunc(int argc, VALUE *argv, VALUE module)
     }
 
     if (argc == 0) {
-	SCOPE_SET(NOEX_MODFUNC);
+	rb_frame_visibility_set(NOEX_MODFUNC);
 	return module;
     }
 

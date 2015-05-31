@@ -1,3 +1,12 @@
+Mon Jun  1 05:42:00 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* eval_intern.h, vm_method.c: move macros to functions.
+	  * SCOPE_TEST(f)  -> rb_frame_visibility_test(flag).
+	  * SCOPE_CHECK(f) -> rb_frame_visibility_check(flag).
+	  * SCOPE_SET(f)   -> rb_frame_visibility_set(flag).
+
+	* load.c (load_ext): use it.
+
 Mon Jun  1 04:47:37 2015  Zachary Scott  <e@zzak.io>
 
         * ext/date/date_core.c: [DOC] Add comparison of Time and DateTime

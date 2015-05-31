@@ -199,10 +199,6 @@ enum ruby_tag_type {
 #define TAG_FATAL	RUBY_TAG_FATAL
 #define TAG_MASK	RUBY_TAG_MASK
 
-#define SCOPE_TEST(f)  (CREF_VISI(rb_vm_cref()) & (f))
-#define SCOPE_CHECK(f) (CREF_VISI(rb_vm_cref()) == (f))
-#define SCOPE_SET(f)   (CREF_VISI_SET(rb_vm_cref(), (f)))
-
 /* CREF operators */
 
 #define NODE_FL_CREF_PUSHED_BY_EVAL_ (((VALUE)1)<<15)
@@ -285,6 +281,8 @@ CREF_OMOD_SHARED_UNSET(rb_cref_t *cref)
 {
     cref->flags &= ~NODE_FL_CREF_OMOD_SHARED_;
 }
+
+void rb_frame_visibility_set(rb_method_flag_t);
 
 void rb_thread_cleanup(void);
 void rb_thread_wait_other_threads(void);
