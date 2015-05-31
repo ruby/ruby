@@ -76,7 +76,7 @@ class TestTempfile < Test::Unit::TestCase
     assert_file.exist?(path)
 
     t.unlink
-    assert !File.exist?(path)
+    assert_file.not_exist?(path)
 
     assert_nil t.path
   end
@@ -99,7 +99,7 @@ class TestTempfile < Test::Unit::TestCase
     begin
       path = tempfile.path
       tempfile.unlink
-      assert !File.exist?(path)
+      assert_file.not_exist?(path)
       tempfile.write("hello ")
       tempfile.write("world\n")
       tempfile.rewind
@@ -123,7 +123,7 @@ class TestTempfile < Test::Unit::TestCase
     t.close(true)
     assert t.closed?
     assert_nil t.path
-    assert !File.exist?(path)
+    assert_file.not_exist?(path)
   end
 
   def test_close_with_unlink_now_true_does_not_unlink_if_already_unlinked
@@ -145,7 +145,7 @@ class TestTempfile < Test::Unit::TestCase
     t.close!
     assert t.closed?
     assert_nil t.path
-    assert !File.exist?(path)
+    assert_file.not_exist?(path)
   end
 
   def test_close_bang_does_not_unlink_if_already_unlinked
@@ -207,7 +207,7 @@ File.open(path, "w").close
     assert_in_out_err('-rtempfile', <<-'EOS') do |(filename), (error)|
 puts Tempfile.new('foo').path
     EOS
-      assert !File.exist?(filename), "tempfile must not be exist after GC."
+      assert_file.for("tempfile must not be exist after GC.").not_exist?(filename)
       assert_nil(error)
     end
   end
