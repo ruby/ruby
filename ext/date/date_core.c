@@ -9475,7 +9475,7 @@ Init_date_core(void)
     /*
 	:markup: Markdown
 
-	# When should you use DateTime and when should you use Time?
+	### When should you use DateTime and when should you use Time?
 
 	It's a common misconception that [William Shakespeare][1] and [Miguel de Cervantes][2] died on the same day in history - so much so that UNESCO named April 23 as [World Book Day because of this fact][3]. However because England hadn't yet adopted [Gregorian Calendar Reform][4] (and wouldn't until [1752][5]) their deaths are actually 10 days apart. Since Ruby's `Time` class implements a [proleptic Gregorian calendar][6] and has no concept of calendar reform then there's no way to express this. This is where `DateTime` steps in:
 
