@@ -9477,7 +9477,16 @@ Init_date_core(void)
 
 	### When should you use DateTime and when should you use Time?
 
-	It's a common misconception that [William Shakespeare][1] and [Miguel de Cervantes][2] died on the same day in history - so much so that UNESCO named April 23 as [World Book Day because of this fact][3]. However because England hadn't yet adopted [Gregorian Calendar Reform][4] (and wouldn't until [1752][5]) their deaths are actually 10 days apart. Since Ruby's `Time` class implements a [proleptic Gregorian calendar][6] and has no concept of calendar reform then there's no way to express this. This is where `DateTime` steps in:
+	It's a common misconception that [William Shakespeare][1] and
+	[Miguel de Cervantes][2] died on the same day in history -
+	so much so that UNESCO named April 23 as [World Book Day
+	because of this fact][3].
+	However because England hadn't yet adopted [Gregorian Calendar
+	Reform][4] (and wouldn't until [1752][5]) their deaths are
+	actually 10 days apart. Since Ruby's `Time` class implements a
+	[proleptic Gregorian calendar][6] and has no concept of
+	calendar reform then there's no way to express this. This is
+	where `DateTime` steps in:
 
 	``` irb
 	>> shakespeare = DateTime.iso8601('1616-04-23', Date::ENGLAND)
@@ -9486,7 +9495,8 @@ Init_date_core(void)
 	=> Sat, 23 Apr 1616 00:00:00 +0000
 	```
 
-	Already you can see something's weird - the days of the week are different, taking this further:
+	Already you can see something's weird - the days of the week
+	are different, taking this further:
 
 	``` irb
 	>> cervantes == shakespeare
@@ -9495,14 +9505,21 @@ Init_date_core(void)
 	=> 10
 	```
 
-	This shows that in fact they died 10 days apart (in reality 11 days since Cervantes died a day earlier but was buried on the 23rd). We can see the actual date of Shakespeare's death by using the `gregorian` method to convert it:
+	This shows that in fact they died 10 days apart (in reality 11
+	days since Cervantes died a day earlier but was buried on the
+	23rd). We can see the actual date of Shakespeare's death by
+	using the `gregorian` method to convert it:
 
 	``` irb
 	>> shakespeare.gregorian
 	=> Tue, 03 May 1616 00:00:00 +0000
 	```
 
-	So there's an argument that all the celebrations that take place on the 23rd April in Stratford-upon-Avon are actually the wrong date since England is now using the Gregorian calendar. You can see why when we transition across the reform date boundary:
+	So there's an argument that all the celebrations that take
+	place on the 23rd April in Stratford-upon-Avon are actually
+	the wrong date since England is now using the Gregorian
+	calendar. You can see why when we transition across the reform
+	date boundary:
 
 	``` irb
 	# start off with the anniversary of Shakespeare's birth in 1751
@@ -9518,9 +9535,21 @@ Init_date_core(void)
 	=> Fri, 04 May 1753 00:00:00 +0000
 	```
 
-	As you can see, if we're accurately tracking the number of [solar years][9] since Shakespeare's birthday then the correct anniversary date would be the 4th May and not the 23rd April.
+	As you can see, if we're accurately tracking the number of
+	[solar years][9] since Shakespeare's birthday then the correct
+	anniversary date would be the 4th May and not the 23rd April.
 
-	So when should use you use `DateTime` in Ruby and when should you use `Time`? Almost certainly you'll want to use `Time` since your app is probably dealing with current dates and times. However, if you need to deal with dates and times in a historical context you'll want to use `DateTime` to avoid making the same mistakes as UNESCO. If you also have to deal with timezones then best of luck - just bear in mind that you'll probably be dealing with [local solar times][7], since it wasn't until the 19th century that the introduction of the railways necessitated the need for [Standard Time][8] and eventually timezones.
+	So when should use you use `DateTime` in Ruby and when should
+	you use `Time`? Almost certainly you'll want to use `Time`
+	since your app is probably dealing with current dates and
+	times. However, if you need to deal with dates and times in a
+	historical context you'll want to use `DateTime` to avoid
+	making the same mistakes as UNESCO. If you also have to deal
+	with timezones then best of luck - just bear in mind that
+	you'll probably be dealing with [local solar times][7], since
+	it wasn't until the 19th century that the introduction of the
+	railways necessitated the need for [Standard Time][8] and
+	eventually timezones.
 
 	[1]: http://en.wikipedia.org/wiki/William_Shakespeare
 	[2]: http://en.wikipedia.org/wiki/Miguel_de_Cervantes
