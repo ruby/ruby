@@ -1,3 +1,8 @@
+Mon Jun  1 04:47:37 2015  Zachary Scott  <e@zzak.io>
+
+        * ext/date/date_core.c: [DOC] Add comparison of Time and DateTime
+          Patch provided by @pixeltrix
+
 Mon Jun  1 04:22:09 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h (VM_FRAME_MAGIC_DUMMY): introduce new frame type to
