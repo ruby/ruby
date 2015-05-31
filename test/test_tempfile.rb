@@ -112,16 +112,16 @@ class TestTempfile < Test::Unit::TestCase
 
   def test_close_and_close_p
     t = tempfile("foo")
-    assert !t.closed?
+    assert_not_predicate(t, :closed?)
     t.close
-    assert t.closed?
+    assert_predicate(t, :closed?)
   end
 
   def test_close_with_unlink_now_true_works
     t = tempfile("foo")
     path = t.path
     t.close(true)
-    assert t.closed?
+    assert_predicate(t, :closed?)
     assert_nil t.path
     assert_file.not_exist?(path)
   end
@@ -143,7 +143,7 @@ class TestTempfile < Test::Unit::TestCase
     t = tempfile("foo")
     path = t.path
     t.close!
-    assert t.closed?
+    assert_predicate(t, :closed?)
     assert_nil t.path
     assert_file.not_exist?(path)
   end
