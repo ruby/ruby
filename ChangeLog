@@ -1,3 +1,9 @@
+Tue Jun  2 00:10:14 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/resolv.rb (Requester#request): typo, regression introduced at
+	  r49422 (patchlevel 618).  reported and patched by Stefan Kolb
+	  [ruby-core:69429] [Backport #11204]
+
 Mon Apr 13 22:11:42 2015  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* ext/openssl/lib/openssl/ssl.rb: stricter hostname verification
