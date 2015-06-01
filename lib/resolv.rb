@@ -665,7 +665,7 @@ class Resolv
         begin
           sender.send
         rescue Errno::EHOSTUNREACH, # multi-homed IPv6 may generate this
-               Erron::ENETUNREACH
+               Errno::ENETUNREACH
           raise ResolvTimeout
         end
         while true
