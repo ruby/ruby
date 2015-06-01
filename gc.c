@@ -4315,7 +4315,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 	    rb_bug("T_IMEMO: unreachable");
 	}
     }
-a
+
     gc_mark(objspace, any->as.basic.klass);
 
     switch (BUILTIN_TYPE(obj)) {
