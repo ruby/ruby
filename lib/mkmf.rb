@@ -1791,7 +1791,8 @@ SRC
       # default to pkg-config command
       pkgconfig = $PKGCONFIG
       get = proc {|opt|
-        opt = IO.popen("#{$PKGCONFIG} --#{opt} #{pkg}", err:[:child, :out], &:read)
+        opt = xpopen("#{$PKGCONFIG} --#{opt} #{pkg}", err:[:child, :out], &:read)
+        Logging.open {puts opt.each_line.map{|s|"=> #{s.inspect}"}}
         opt.strip if $?.success?
       }
     elsif find_executable0(pkgconfig = "#{pkg}-config")
@@ -1801,7 +1802,8 @@ SRC
     end
     if pkgconfig
       get ||= proc {|opt|
-        opt = IO.popen("#{pkgconfig} --#{opt}", err:[:child, :out], &:read)
+        opt = xpopen("#{pkgconfig} --#{opt}", err:[:child, :out], &:read)
+        Logging.open {puts opt.each_line.map{|s|"=> #{s.inspect}"}}
         opt.strip if $?.success?
       }
     end
