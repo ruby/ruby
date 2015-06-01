@@ -517,7 +517,7 @@ class CSV
     end
 
     #
-    # Collapses the row into a simple Hash.  Be warning that this discards field
+    # Collapses the row into a simple Hash.  Be warned that this discards field
     # order and clobbers duplicate fields.
     #
     def to_hash
