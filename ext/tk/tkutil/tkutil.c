@@ -1617,6 +1617,7 @@ cbsubst_table_setup(argc, argv, self)
   for(idx = 0; idx < len; idx++) {
     inf = RARRAY_PTR(proc_inf)[idx];
     if (!RB_TYPE_P(inf, T_ARRAY)) continue;
+    if (RARRAY_LEN(inf) < 2) continue;
     rb_hash_aset(subst_inf->proc,
 		 (RB_TYPE_P(RARRAY_PTR(inf)[0], T_STRING)?
 		  INT2FIX(*(RSTRING_PTR(RARRAY_PTR(inf)[0]))) :
