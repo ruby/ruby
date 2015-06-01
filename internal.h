@@ -275,47 +275,6 @@ nlz_int128(uint128_t x)
      SIZEOF_LONG * CHAR_BIT - nlz_long((unsigned long)(x)))
 #endif
 
-struct rb_deprecated_classext_struct {
-    char conflict[sizeof(VALUE) * 3];
-};
-
-struct rb_subclass_entry;
-typedef struct rb_subclass_entry rb_subclass_entry_t;
-
-struct rb_subclass_entry {
-    VALUE klass;
-    rb_subclass_entry_t *next;
-};
-
-#if defined(HAVE_LONG_LONG)
-typedef unsigned LONG_LONG rb_serial_t;
-#define SERIALT2NUM ULL2NUM
-#elif defined(HAVE_UINT64_T)
-typedef uint64_t rb_serial_t;
-#define SERIALT2NUM SIZET2NUM
-#else
-typedef unsigned long rb_serial_t;
-#define SERIALT2NUM ULONG2NUM
-#endif
-
-struct rb_classext_struct {
-    struct st_table *iv_index_tbl;
-    struct st_table *iv_tbl;
-    struct st_table *const_tbl;
-    rb_subclass_entry_t *subclasses;
-    rb_subclass_entry_t **parent_subclasses;
-    /**
-     * In the case that this is an `ICLASS`, `module_subclasses` points to the link
-     * in the module's `subclasses` list that indicates that the klass has been
-     * included. Hopefully that makes sense.
-     */
-    rb_subclass_entry_t **module_subclasses;
-    rb_serial_t class_serial;
-    const VALUE origin_;
-    VALUE refined_class;
-    rb_alloc_func_t allocator;
-};
-
 #ifndef BDIGIT
 # if SIZEOF_INT*2 <= SIZEOF_LONG_LONG
 #  define BDIGIT unsigned int
@@ -469,6 +428,48 @@ extern void ruby_init_setproctitle(int argc, char *argv[]);
 #endif
 
 /* class.c */
+
+struct rb_deprecated_classext_struct {
+    char conflict[sizeof(VALUE) * 3];
+};
+
+struct rb_subclass_entry;
+typedef struct rb_subclass_entry rb_subclass_entry_t;
+
+struct rb_subclass_entry {
+    VALUE klass;
+    rb_subclass_entry_t *next;
+};
+
+#if defined(HAVE_LONG_LONG)
+typedef unsigned LONG_LONG rb_serial_t;
+#define SERIALT2NUM ULL2NUM
+#elif defined(HAVE_UINT64_T)
+typedef uint64_t rb_serial_t;
+#define SERIALT2NUM SIZET2NUM
+#else
+typedef unsigned long rb_serial_t;
+#define SERIALT2NUM ULONG2NUM
+#endif
+
+struct rb_classext_struct {
+    struct st_table *iv_index_tbl;
+    struct st_table *iv_tbl;
+    struct st_table *const_tbl;
+    rb_subclass_entry_t *subclasses;
+    rb_subclass_entry_t **parent_subclasses;
+    /**
+     * In the case that this is an `ICLASS`, `module_subclasses` points to the link
+     * in the module's `subclasses` list that indicates that the klass has been
+     * included. Hopefully that makes sense.
+     */
+    rb_subclass_entry_t **module_subclasses;
+    rb_serial_t class_serial;
+    const VALUE origin_;
+    VALUE refined_class;
+    rb_alloc_func_t allocator;
+};
+
 void rb_class_subclass_add(VALUE super, VALUE klass);
 void rb_class_remove_from_super_subclasses(VALUE);
 
