@@ -324,7 +324,8 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type,
 	    type != VM_METHOD_TYPE_UNDEF &&
 	    old_def->alias_count == 0 &&
 	    old_def->type != VM_METHOD_TYPE_UNDEF &&
-	    old_def->type != VM_METHOD_TYPE_ZSUPER) {
+	    old_def->type != VM_METHOD_TYPE_ZSUPER &&
+	    old_def->type != VM_METHOD_TYPE_ALIAS) {
 	    const rb_iseq_t *iseq = 0;
 
 	    rb_warning("method redefined; discarding old %"PRIsVALUE, rb_id2str(mid));
