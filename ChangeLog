@@ -1,3 +1,9 @@
+Mon Jun  1 22:01:27 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (pkg_config): split --libs if --libs-only-l option
+	  is not available.  patch in [ruby-core:69428] by Hans Mackowiak.
+	  [ruby-core:69421] [Bug #11201]
+
 Mon Jun  1 21:18:24 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_mark_children): remove a garbage character
