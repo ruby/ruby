@@ -20,7 +20,6 @@
 #else
 #define GLOBAL_METHOD_CACHE(c,m) (rb_bug("global method cache disabled improperly"), NULL)
 #endif
-#include "method.h"
 
 #define NOEX_NOREDEF 0
 #ifndef NOEX_NOREDEF

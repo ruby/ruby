@@ -11,7 +11,6 @@
 
 #include "internal.h"
 #include "vm_core.h"
-#include "method.h"
 
 VALUE rb_method_for_self_aref(VALUE name, VALUE arg, rb_insn_func_t func);
 VALUE rb_method_for_self_aset(VALUE name, VALUE arg, rb_insn_func_t func);
