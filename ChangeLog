@@ -20,7 +20,7 @@ Mon Jun  1 15:47:16 2015  Koichi Sasada  <ko1@atdot.net>
 
 Mon Jun  1 15:43:03 2015  Koichi Sasada  <ko1@atdot.net>
 
-	* class.c: remove needless include pragmra for method.h.
+	* class.c: remove needless include pragma for method.h.
 
 	* struct.c: ditto.
 
