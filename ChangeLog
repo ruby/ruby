@@ -51,7 +51,7 @@ Mon Jun  1 04:22:09 2015  Koichi Sasada  <ko1@atdot.net>
 
 Mon Jun  1 04:15:42 2015  Koichi Sasada  <ko1@atdot.net>
 
-	* class.c (rb_class_has_methods): added to reduce depenedency
+	* class.c (rb_class_has_methods): added to reduce dependency
 	  to internal class data structure.
 
 	* internal.h: ditto.
