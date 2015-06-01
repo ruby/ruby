@@ -1702,7 +1702,7 @@ current_method_entry(rb_thread_t *th, rb_control_frame_t *cfp)
 }
 
 static VALUE
-find_defiend_class_by_owner(VALUE current_class, VALUE target_owner)
+find_defined_class_by_owner(VALUE current_class, VALUE target_owner)
 {
     VALUE klass = current_class;
 
@@ -1793,7 +1793,7 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 	      }
 	      case VM_METHOD_TYPE_ALIAS: {
 		ci->me = ci->me->def->body.alias.original_me;
-		ci->defined_class = find_defiend_class_by_owner(ci->defined_class, ci->me->klass /* owner */);
+		ci->defined_class = find_defined_class_by_owner(ci->defined_class, ci->me->klass /* owner */);
 		goto normal_method_dispatch;
 	      }
 	      case VM_METHOD_TYPE_OPTIMIZED:{

@@ -79,7 +79,7 @@ Sun May 31 03:36:42 2015  Koichi Sasada  <ko1@atdot.net>
 	  Now, inter class/method alias creates new method entry
 	  VM_METHOD_TYPE_ALIAS, which has an original method entry.
 
-	* vm_insnhelper.c (find_defiend_class_by_owner): added.
+	* vm_insnhelper.c (find_defined_class_by_owner): added.
 	  Search corresponding defined_class from owner class/module.
 
 	* vm_method.c (rb_method_entry_get_without_cache): return me->klass
