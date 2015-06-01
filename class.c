@@ -25,7 +25,6 @@
 
 #include "internal.h"
 #include "ruby/st.h"
-#include "method.h"
 #include "constant.h"
 #include "vm_core.h"
 #include <ctype.h>
