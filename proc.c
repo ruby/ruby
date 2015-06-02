@@ -2655,7 +2655,6 @@ proc_curry(int argc, const VALUE *argv, VALUE self)
     else {
 	sarity = FIX2INT(arity);
 	if (rb_proc_lambda_p(self)) {
-	    bp();
 	    rb_check_arity(sarity, min_arity, max_arity);
 	}
     }

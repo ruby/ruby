@@ -1,3 +1,7 @@
+Tue Jun  2 21:29:28 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* proc.c (proc_curry): remove a debug line.
+
 Tue Jun  2 12:43:46 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* method.h: make rb_method_entry_t a VALUE.
