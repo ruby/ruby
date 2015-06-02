@@ -1,3 +1,8 @@
+Tue Jun  2 09:04:14 2015  Eric Wong  <e@80x24.org>
+
+	* lib/benchmark.rb: just use Process::CLOCK_MONOTONIC
+	  [ruby-core:69390]
+
 Mon Jun  1 22:01:27 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (pkg_config): split --libs if --libs-only-l option
