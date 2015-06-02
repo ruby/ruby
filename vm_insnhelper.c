@@ -2409,6 +2409,22 @@ FUNC_FASTCALL(rb_vm_opt_struct_aset)(rb_thread_t *th, rb_control_frame_t *reg_cf
 
 /* defined insn */
 
+static enum defined_type
+check_resopnd_to_missing(VALUE obj, VALUE v)
+{
+    VALUE args[2];
+    VALUE r;
+
+    args[0] = obj; args[1] = Qfalse;
+    r = rb_check_funcall(v, idRespond_to_missing, 2, args);
+    if (r != Qundef && RTEST(r)) {
+	return DEFINED_METHOD;
+    }
+    else {
+	return 0;
+    }
+}
+
 static VALUE
 vm_defined(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_num_t op_type, VALUE obj, VALUE needstr, VALUE v)
 {
@@ -2449,6 +2465,9 @@ vm_defined(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_num_t op_type, VALUE
 	if (rb_method_boundp(klass, SYM2ID(obj), 0)) {
 	    expr_type = DEFINED_METHOD;
 	}
+	else {
+	    expr_type = check_resopnd_to_missing(obj, v);
+	}
 	break;
       case DEFINED_METHOD:{
 	VALUE klass = CLASS_OF(v);
@@ -2462,13 +2481,7 @@ vm_defined(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_num_t op_type, VALUE
 	    }
 	}
 	else {
-	    VALUE args[2];
-	    VALUE r;
-
-	    args[0] = obj; args[1] = Qfalse;
-	    r = rb_check_funcall(v, idRespond_to_missing, 2, args);
-	    if (r != Qundef && RTEST(r))
-		expr_type = DEFINED_METHOD;
+	    expr_type = check_resopnd_to_missing(obj, v);
 	}
 	break;
       }

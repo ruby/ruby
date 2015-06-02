@@ -223,6 +223,14 @@ class TestDefined < Test::Unit::TestCase
 
     def existing_method
     end
+
+    def func_defined_existing_func
+      defined?(existing_method())
+    end
+
+    def func_defined_non_existing_func
+      defined?(non_existing_method())
+    end
   end
 
   def test_method_by_respond_to_missing
@@ -232,5 +240,12 @@ class TestDefined < Test::Unit::TestCase
     assert_equal(false, obj.called, bug_11211)
     assert_equal(nil, defined?(obj.non_existing_method), bug_11211)
     assert_equal(true, obj.called, bug_11211)
+
+    bug_11212 = '[Bug #11212]'
+    obj = ExampleRespondToMissing.new
+    assert_equal("method", obj.func_defined_existing_func, bug_11212)
+    assert_equal(false, obj.called, bug_11212)
+    assert_equal(nil, obj.func_defined_non_existing_func, bug_11212)
+    assert_equal(true, obj.called, bug_11212)
   end
 end
