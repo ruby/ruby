@@ -1,3 +1,7 @@
+Tue Jun  2 10:46:36 2015  Eric Wong  <e@80x24.org>
+
+	* test/socket/test_nonblock.rb: new test for sendmsg_nonblock
+
 Tue Jun  2 09:04:14 2015  Eric Wong  <e@80x24.org>
 
 	* lib/benchmark.rb: just use Process::CLOCK_MONOTONIC
