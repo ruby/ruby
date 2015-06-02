@@ -21,8 +21,7 @@ struct METHOD {
     VALUE rclass;
     VALUE defined_class;
     ID id;
-    rb_method_entry_t *me;
-    struct unlinked_method_entry_list_entry *ume;
+    rb_method_entry_t * const me;
 };
 
 VALUE rb_cUnboundMethod;
@@ -1100,18 +1099,12 @@ bm_mark(void *ptr)
     rb_gc_mark(data->defined_class);
     rb_gc_mark(data->rclass);
     rb_gc_mark(data->recv);
-    if (data->me) rb_mark_method_entry(data->me);
+    rb_gc_mark((VALUE)data->me);
 }
 
 static void
 bm_free(void *ptr)
 {
-    struct METHOD *data = ptr;
-    struct unlinked_method_entry_list_entry *ume = data->ume;
-    data->me->mark = 0;
-    ume->me = data->me;
-    ume->next = GET_VM()->unlinked_method_entry_list;
-    GET_VM()->unlinked_method_entry_list = ume;
     xfree(ptr);
 }
 
@@ -1167,22 +1160,13 @@ mnew_missing(VALUE rclass, VALUE klass, VALUE obj, ID id, ID rid, VALUE mclass)
     data->defined_class = klass;
     data->id = rid;
 
-    me = ALLOC(rb_method_entry_t);
-    data->me = me;
-    me->flag = 0;
-    me->mark = 0;
-    me->called_id = id;
-    me->klass = klass;
-    me->def = 0;
-
-    def = ALLOC(rb_method_definition_t);
-    me->def = def;
+    def = ZALLOC(rb_method_definition_t);
+    def->flag = 0;
     def->type = VM_METHOD_TYPE_MISSING;
     def->original_id = id;
-    def->alias_count = 0;
 
-    data->ume = ALLOC(struct unlinked_method_entry_list_entry);
-    data->me->def->alias_count++;
+    me = rb_method_entry_create(id, klass, def);
+    RB_OBJ_WRITE(method, &data->me, me);
 
     OBJ_INFECT(method, klass);
 
@@ -1210,13 +1194,13 @@ mnew_internal(const rb_method_entry_t *me, VALUE defined_class, VALUE klass,
     }
     def = me->def;
     if (flag == NOEX_UNDEF) {
-	flag = me->flag;
+	flag = def->flag;
 	if (scope && (flag & NOEX_MASK) != NOEX_PUBLIC) {
 	    if (!error) return Qnil;
 	    rb_print_inaccessible(klass, id, flag & NOEX_MASK);
 	}
     }
-    if (def && def->type == VM_METHOD_TYPE_ZSUPER) {
+    if (def->type == VM_METHOD_TYPE_ZSUPER) {
 	klass = RCLASS_SUPER(defined_class);
 	id = def->original_id;
 	me = rb_method_entry_without_refinements(klass, id, &defined_class);
@@ -1236,13 +1220,8 @@ mnew_internal(const rb_method_entry_t *me, VALUE defined_class, VALUE klass,
     data->rclass = rclass;
     data->defined_class = defined_class;
     data->id = rid;
-    data->me = ALLOC(rb_method_entry_t);
-    *data->me = *me;
-    data->ume = ALLOC(struct unlinked_method_entry_list_entry);
-    data->me->def->alias_count++;
-
+    RB_OBJ_WRITE(method, &data->me, rb_method_entry_clone(me));
     OBJ_INFECT(method, klass);
-
     return method;
 }
 
@@ -1364,12 +1343,9 @@ method_unbind(VALUE obj)
 				   &method_data_type, data);
     data->recv = Qundef;
     data->id = orig->id;
-    data->me = ALLOC(rb_method_entry_t);
-    *data->me = *orig->me;
-    if (orig->me->def) orig->me->def->alias_count++;
+    RB_OBJ_WRITE(method, &data->me, rb_method_entry_clone(orig->me));
     data->rclass = orig->rclass;
     data->defined_class = orig->defined_class;
-    data->ume = ALLOC(struct unlinked_method_entry_list_entry);
     OBJ_INFECT(method, obj);
 
     return method;
@@ -1832,12 +1808,11 @@ method_clone(VALUE self)
     TypedData_Get_Struct(self, struct METHOD, &method_data_type, orig);
     clone = TypedData_Make_Struct(CLASS_OF(self), struct METHOD, &method_data_type, data);
     CLONESETUP(clone, self);
-    *data = *orig;
-    data->me = ALLOC(rb_method_entry_t);
-    *data->me = *orig->me;
-    if (data->me->def) data->me->def->alias_count++;
-    data->ume = ALLOC(struct unlinked_method_entry_list_entry);
-
+    data->recv = orig->recv;
+    data->rclass = orig->rclass;
+    data->defined_class = orig->defined_class;
+    data->id = orig->id;
+    RB_OBJ_WRITE(clone, &data->me, rb_method_entry_clone(orig->me));
     return clone;
 }
 
@@ -2020,10 +1995,11 @@ umethod_bind(VALUE method, VALUE recv)
     }
 
     method = TypedData_Make_Struct(rb_cMethod, struct METHOD, &method_data_type, bound);
-    *bound = *data;
-    bound->me = ALLOC(rb_method_entry_t);
-    *bound->me = *data->me;
-    if (bound->me->def) bound->me->def->alias_count++;
+    bound->recv = data->recv;
+    bound->rclass = data->rclass;
+    bound->defined_class = data->defined_class;
+    bound->id = data->id;
+    RB_OBJ_WRITE(method, &bound->me, rb_method_entry_clone(data->me));
     rclass = CLASS_OF(recv);
     if (BUILTIN_TYPE(bound->defined_class) == T_MODULE) {
 	VALUE ic = rb_class_search_ancestor(rclass, bound->defined_class);
@@ -2036,7 +2012,6 @@ umethod_bind(VALUE method, VALUE recv)
     }
     bound->recv = recv;
     bound->rclass = rclass;
-    data->ume = ALLOC(struct unlinked_method_entry_list_entry);
 
     return method;
 }
@@ -2071,7 +2046,8 @@ rb_method_entry_min_max_arity(const rb_method_entry_t *me, int *max)
       case VM_METHOD_TYPE_BMETHOD:
 	return rb_proc_min_max_arity(def->body.proc, max);
       case VM_METHOD_TYPE_ISEQ: {
-	rb_iseq_t *iseq = def->body.iseq_body.iseq;
+	rb_iseq_t *iseq;
+	GetISeqPtr(def->body.iseq.iseqval, iseq);
 	return rb_iseq_min_max_arity(iseq, max);
       }
       case VM_METHOD_TYPE_UNDEF:
@@ -2207,7 +2183,11 @@ method_def_iseq(const rb_method_definition_t *def)
 {
     switch (def->type) {
       case VM_METHOD_TYPE_ISEQ:
-	return def->body.iseq_body.iseq;
+	{
+	    rb_iseq_t *iseq;
+	    GetISeqPtr(def->body.iseq.iseqval, iseq);
+	    return iseq;
+	}
       case VM_METHOD_TYPE_BMETHOD:
 	return get_proc_iseq(def->body.proc, 0);
       case VM_METHOD_TYPE_ALIAS:
@@ -2240,7 +2220,7 @@ method_cref(VALUE method)
   again:
     switch (def->type) {
       case VM_METHOD_TYPE_ISEQ:
-	return def->body.iseq_body.cref;
+	return def->body.iseq.cref;
       case VM_METHOD_TYPE_ALIAS:
 	def = def->body.alias.original_me->def;
 	goto again;
@@ -2675,6 +2655,7 @@ proc_curry(int argc, const VALUE *argv, VALUE self)
     else {
 	sarity = FIX2INT(arity);
 	if (rb_proc_lambda_p(self)) {
+	    bp();
 	    rb_check_arity(sarity, min_arity, max_arity);
 	}
     }

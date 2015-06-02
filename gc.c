@@ -403,6 +403,7 @@ typedef struct RVALUE {
 	    struct vm_throw_data throw_data;
 	    struct vm_ifunc ifunc;
 	    struct MEMO memo;
+	    struct rb_method_entry_struct ment;
 	} imemo;
 	struct {
 	    struct RBasic basic;
@@ -1923,21 +1924,10 @@ is_pointer_to_heap(rb_objspace_t *objspace, void *ptr)
     return FALSE;
 }
 
-static int
-free_method_entry_i(st_data_t key, st_data_t value, st_data_t data)
-{
-    rb_method_entry_t *me = (rb_method_entry_t *)value;
-    if (!me->mark) {
-	rb_free_method_entry(me);
-    }
-    return ST_CONTINUE;
-}
-
 static void
 rb_free_m_tbl(st_table *tbl)
 {
     if (tbl) {
-	st_foreach(tbl, free_method_entry_i, 0);
 	st_free_table(tbl);
     }
 }
@@ -2106,7 +2096,6 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	break;
       case T_RATIONAL:
       case T_COMPLEX:
-      case T_IMEMO:
 	break;
       case T_ICLASS:
 	/* Basically , T_ICLASS shares table with the module */
@@ -2146,6 +2135,14 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
       case T_SYMBOL:
 	{
             rb_gc_free_dsymbol(obj);
+	}
+	break;
+
+      case T_IMEMO:
+	{
+	    if (imemo_type(obj) == imemo_ment) {
+		rb_free_method_entry(&RANY(obj)->as.imemo.ment);
+	    }
 	}
 	break;
 
@@ -3406,11 +3403,6 @@ gc_sweep_start(rb_objspace_t *objspace)
 
     gc_stat_transition(objspace, gc_stat_sweeping);
 
-    /* sweep unlinked method entries */
-    if (GET_VM()->unlinked_method_entry_list) {
-	rb_sweep_method_entry(GET_VM());
-    }
-
     /* sometimes heap_allocatable_pages is not 0 */
     heap_pages_swept_slots = heap_allocatable_pages * HEAP_OBJ_LIMIT;
     total_limit_slot = objspace_available_slots(objspace);
@@ -3938,13 +3930,10 @@ mark_method_entry(rb_objspace_t *objspace, const rb_method_entry_t *me)
 
     gc_mark(objspace, me->klass);
 
-  again:
-    if (!def) return;
-
     switch (def->type) {
       case VM_METHOD_TYPE_ISEQ:
-	gc_mark(objspace, def->body.iseq_body.iseq->self);
-	gc_mark(objspace, (VALUE)def->body.iseq_body.cref);
+	gc_mark(objspace, def->body.iseq.iseqval);
+	gc_mark(objspace, (VALUE)def->body.iseq.cref);
 	break;
       case VM_METHOD_TYPE_ATTRSET:
       case VM_METHOD_TYPE_IVAR:
@@ -3954,13 +3943,10 @@ mark_method_entry(rb_objspace_t *objspace, const rb_method_entry_t *me)
 	gc_mark(objspace, def->body.proc);
 	break;
       case VM_METHOD_TYPE_ALIAS:
-	mark_method_entry(objspace, def->body.alias.original_me);
+	gc_mark(objspace, (VALUE)def->body.alias.original_me);
 	return;
       case VM_METHOD_TYPE_REFINED:
-	if (def->body.orig_me) {
-	    def = def->body.orig_me->def;
-	    goto again;
-	}
+	gc_mark(objspace, (VALUE)def->body.orig_me);
 	break;
       case VM_METHOD_TYPE_CFUNC:
       case VM_METHOD_TYPE_ZSUPER:
@@ -3972,18 +3958,12 @@ mark_method_entry(rb_objspace_t *objspace, const rb_method_entry_t *me)
     }
 }
 
-void
-rb_mark_method_entry(const rb_method_entry_t *me)
-{
-    mark_method_entry(&rb_objspace, me);
-}
-
 static int
 mark_method_entry_i(st_data_t key, st_data_t value, st_data_t data)
 {
-    const rb_method_entry_t *me = (const rb_method_entry_t *)value;
+    VALUE me = (VALUE)value;
     struct mark_tbl_arg *arg = (void*)data;
-    mark_method_entry(arg->objspace, me);
+    gc_mark(arg->objspace, me);
     return ST_CONTINUE;
 }
 
@@ -4295,7 +4275,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 	    gc_mark(objspace, RANY(obj)->as.imemo.cref.refinements);
 	    return;
 	  case imemo_svar:
-	    gc_mark(objspace, (VALUE)RANY(obj)->as.imemo.svar.cref);
+	    gc_mark(objspace, RANY(obj)->as.imemo.svar.cref_or_me);
 	    gc_mark(objspace, RANY(obj)->as.imemo.svar.lastline);
 	    gc_mark(objspace, RANY(obj)->as.imemo.svar.backref);
 	    gc_mark(objspace, RANY(obj)->as.imemo.svar.others);
@@ -4310,6 +4290,9 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 	    gc_mark(objspace, RANY(obj)->as.imemo.memo.v1);
 	    gc_mark(objspace, RANY(obj)->as.imemo.memo.v2);
 	    gc_mark_maybe(objspace, RANY(obj)->as.imemo.memo.u3.value);
+	    return;
+	  case imemo_ment:
+	    mark_method_entry(objspace, &RANY(obj)->as.imemo.ment);
 	    return;
 	  default:
 	    rb_bug("T_IMEMO: unreachable");
@@ -4599,9 +4582,6 @@ gc_mark_roots(rb_objspace_t *objspace, const char **categoryp)
     /* mark generic instance variables for special constants */
     MARK_CHECKPOINT("generic_ivars");
     rb_mark_generic_ivar_tbl();
-
-    MARK_CHECKPOINT("live_method_entries");
-    rb_gc_mark_unlinked_live_method_entries(th->vm);
 
     if (stress_to_class) rb_gc_mark(stress_to_class);
 
@@ -8953,10 +8933,14 @@ obj_info(VALUE obj)
 	    IMEMO_NAME(throw_data);
 	    IMEMO_NAME(ifunc);
 	    IMEMO_NAME(memo);
+	    IMEMO_NAME(ment);
 	  default: rb_bug("unknown IMEMO");
 #undef IMEMO_NAME
 	}
 	snprintf(buff, OBJ_INFO_BUFFERS_SIZE, "%s %s", buff, imemo_name);
+	if (imemo_type(obj) == imemo_ment) {
+	    snprintf(buff, OBJ_INFO_BUFFERS_SIZE, "%s (type: %d)", buff, RANY(obj)->as.imemo.ment.def->type);
+	}
       }
       default:
 	break;

@@ -124,6 +124,11 @@ class TestMethod < Test::Unit::TestCase
     assert_nil(eval("class TestCallee; __callee__; end"))
   end
 
+  def test_orphan_callee
+    c = Class.new{def foo; proc{__callee__}; end; alias alias_foo foo}
+    assert_equal(:alias_foo, c.new.alias_foo.call, '[Bug #11046]')
+  end
+
   def test_method_in_define_method_block
     bug4606 = '[ruby-core:35386]'
     c = Class.new do

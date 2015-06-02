@@ -535,6 +535,7 @@ enum imemo_type {
     imemo_throw_data = 3,
     imemo_ifunc = 4,
     imemo_memo = 5,
+    imemo_ment = 6,
     imemo_mask = 0x07
 };
 
@@ -558,7 +559,7 @@ typedef struct rb_cref_struct {
 
 struct vm_svar {
     VALUE flags;
-    const rb_cref_t * const cref;
+    const VALUE cref_or_me;
     const VALUE lastline;
     const VALUE backref;
     const VALUE others;
@@ -614,6 +615,8 @@ struct MEMO {
 #define MEMO_FOR(type, value) ((type *)RARRAY_PTR(value))
 #define NEW_MEMO_FOR(type, value) \
   ((value) = rb_ary_tmp_new_fill(type_roomof(type, VALUE)), MEMO_FOR(type, value))
+
+/* ment is in method.h */
 
 /* global variable */
 

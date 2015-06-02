@@ -44,6 +44,14 @@ typedef enum {
 
 /* method data type */
 
+typedef struct rb_method_entry_struct {
+    VALUE flags;
+    VALUE reserved;
+    struct rb_method_definition_struct * const def;
+    ID called_id;
+    const VALUE klass;    /* should be marked */
+} rb_method_entry_t;
+
 typedef enum {
     VM_METHOD_TYPE_ISEQ,
     VM_METHOD_TYPE_CFUNC,
@@ -61,6 +69,14 @@ typedef enum {
     END_OF_ENUMERATION(VM_METHOD_TYPE)
 } rb_method_type_t;
 
+typedef struct rb_iseq_struct rb_iseq_t;
+
+typedef struct rb_method_iseq_struct {
+    rb_iseq_t * const iseqptr;                    /* should be separated from iseqval */
+    rb_cref_t * const cref;                       /* shoudl be marked */
+    const VALUE iseqval;                          /* should be marked */
+} rb_method_iseq_t;
+
 typedef struct rb_method_cfunc_struct {
     VALUE (*func)(ANYARGS);
     VALUE (*invoker)(VALUE (*func)(ANYARGS), VALUE recv, int argc, const VALUE *argv);
@@ -69,25 +85,21 @@ typedef struct rb_method_cfunc_struct {
 
 typedef struct rb_method_attr_struct {
     ID id;
-    const VALUE location;
+    const VALUE location; /* sould be marked */
 } rb_method_attr_t;
 
 typedef struct rb_method_alias_struct {
     const struct rb_method_entry_struct *original_me; /* original_me->klass is original owner */
 } rb_method_alias_t;
 
-typedef struct rb_iseq_struct rb_iseq_t;
-
 typedef struct rb_method_definition_struct {
+    rb_method_flag_t flag;
     rb_method_type_t type; /* method type */
-    int alias_count;
+    int *alias_count_ptr;
     ID original_id;
 
     union {
-	struct {
-	    rb_iseq_t *const iseq;            /* should be marked */
-	    rb_cref_t *cref;
-	} iseq_body;
+	rb_method_iseq_t iseq;
 	rb_method_cfunc_t cfunc;
 	rb_method_attr_t attr;
 	rb_method_alias_t alias;
@@ -102,26 +114,13 @@ typedef struct rb_method_definition_struct {
     } body;
 } rb_method_definition_t;
 
-typedef struct rb_method_entry_struct {
-    rb_method_flag_t flag;
-    char mark;
-    rb_method_definition_t *def;
-    ID called_id;
-    VALUE klass;                    /* should be marked */
-} rb_method_entry_t;
-
-struct unlinked_method_entry_list_entry {
-    struct unlinked_method_entry_list_entry *next;
-    rb_method_entry_t *me;
-};
-
 #define UNDEFINED_METHOD_ENTRY_P(me) (!(me) || !(me)->def || (me)->def->type == VM_METHOD_TYPE_UNDEF)
 #define UNDEFINED_REFINED_METHOD_P(def) \
     ((def)->type == VM_METHOD_TYPE_REFINED && \
      UNDEFINED_METHOD_ENTRY_P((def)->body.orig_me))
 
 void rb_add_method_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, rb_method_flag_t noex);
-void rb_add_method_iseq(VALUE klass, ID mid, rb_iseq_t *iseq, rb_cref_t *cref, rb_method_flag_t noex);
+void rb_add_method_iseq(VALUE klass, ID mid, VALUE iseq, rb_cref_t *cref, rb_method_flag_t noex);
 rb_method_entry_t *rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *option, rb_method_flag_t noex);
 rb_method_entry_t *rb_method_entry(VALUE klass, ID id, VALUE *define_class_ptr);
 rb_method_entry_t *rb_method_entry_at(VALUE obj, ID id);
@@ -145,8 +144,11 @@ VALUE rb_method_entry_location(const rb_method_entry_t *me);
 VALUE rb_mod_method_location(VALUE mod, ID id);
 VALUE rb_obj_method_location(VALUE obj, ID id);
 
-void rb_mark_method_entry(const rb_method_entry_t *me);
 void rb_free_method_entry(const rb_method_entry_t *me);
 void rb_sweep_method_entry(void *vm);
+
+rb_method_entry_t *rb_method_entry_create(ID called_id, VALUE klass, rb_method_definition_t *def);
+rb_method_entry_t *rb_method_entry_clone(const rb_method_entry_t *me);
+void rb_method_entry_copy(rb_method_entry_t *dst, rb_method_entry_t *src);
 
 #endif /* METHOD_H */

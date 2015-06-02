@@ -243,18 +243,21 @@ rb_class_new(VALUE super)
 static void
 clone_method(VALUE klass, ID mid, const rb_method_entry_t *me)
 {
-    VALUE newiseqval;
-    if (me->def && me->def->type == VM_METHOD_TYPE_ISEQ) {
-	rb_iseq_t *iseq;
-	rb_cref_t *new_cref;
-	newiseqval = rb_iseq_clone(me->def->body.iseq_body.iseq->self, klass);
-	GetISeqPtr(newiseqval, iseq);
-	rb_vm_rewrite_cref_stack(me->def->body.iseq_body.cref, me->klass, klass, &new_cref);
-	rb_add_method_iseq(klass, mid, iseq, new_cref, me->flag);
-	RB_GC_GUARD(newiseqval);
+    if (me->def) {
+	if (me->def->type == VM_METHOD_TYPE_ISEQ) {
+	    VALUE newiseqval;
+	    rb_cref_t *new_cref;
+	    newiseqval = rb_iseq_clone(me->def->body.iseq.iseqval, klass);
+	    rb_vm_rewrite_cref_stack(me->def->body.iseq.cref, me->klass, klass, &new_cref);
+	    rb_add_method_iseq(klass, mid, newiseqval, new_cref, me->def->flag);
+	    RB_GC_GUARD(newiseqval);
+	}
+	else {
+	    rb_method_entry_set(klass, mid, me, me->def->flag);
+	}
     }
     else {
-	rb_method_entry_set(klass, mid, me, me->flag);
+	rb_bug("clone_method: unsupported");
     }
 }
 
@@ -904,11 +907,9 @@ move_refined_method(st_data_t key, st_data_t value, st_data_t data)
 	if (me->def->body.orig_me) {
 	    rb_method_entry_t *orig_me = me->def->body.orig_me, *new_me;
 	    me->def->body.orig_me = NULL;
-	    new_me = ALLOC(rb_method_entry_t);
-	    *new_me = *me;
+	    new_me = rb_method_entry_clone(me);
 	    st_add_direct(tbl, key, (st_data_t) new_me);
-	    *me = *orig_me;
-	    xfree(orig_me);
+	    rb_method_entry_copy(me, orig_me);
 	    return ST_CONTINUE;
 	}
 	else {
@@ -1125,7 +1126,7 @@ method_entry_i(st_data_t key, st_data_t value, st_data_t data)
 	    type = -1; /* none */
 	}
 	else {
-	    type = VISI(me->flag);
+	    type = VISI(me->def->flag);
 	}
 	st_add_direct(arg->list, key, type);
     }
