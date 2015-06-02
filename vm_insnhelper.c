@@ -2456,15 +2456,12 @@ vm_defined(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_num_t op_type, VALUE
 
 	if (me) {
 	    const rb_method_definition_t *def = me->def;
-	    if (!(def->flag & NOEX_PRIVATE)) {
-		if (!((def->flag & NOEX_PROTECTED) &&
-		      !rb_obj_is_kind_of(GET_SELF(),
-					 rb_class_real(klass)))) {
-		    expr_type = DEFINED_METHOD;
-		}
+	    if (!(def->flag & NOEX_PRIVATE) &&
+		!((def->flag & NOEX_PROTECTED) && !rb_obj_is_kind_of(GET_SELF(), rb_class_real(klass)))) {
+		expr_type = DEFINED_METHOD;
 	    }
 	}
-	{
+	else {
 	    VALUE args[2];
 	    VALUE r;
 
