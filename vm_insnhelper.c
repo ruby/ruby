@@ -2406,3 +2406,111 @@ FUNC_FASTCALL(rb_vm_opt_struct_aset)(rb_thread_t *th, rb_control_frame_t *reg_cf
     rb_struct_aset(GET_SELF(), TOPN(0), TOPN(1));
     return reg_cfp;
 }
+
+/* defined insn */
+
+static VALUE
+vm_defined(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_num_t op_type, VALUE obj, VALUE needstr, VALUE v)
+{
+    VALUE klass;
+    enum defined_type expr_type = 0;
+    enum defined_type type = (enum defined_type)op_type;
+
+    switch (type) {
+      case DEFINED_IVAR:
+	if (rb_ivar_defined(GET_SELF(), SYM2ID(obj))) {
+	    expr_type = DEFINED_IVAR;
+	}
+	break;
+      case DEFINED_IVAR2:
+	klass = vm_get_cbase(GET_EP());
+	break;
+      case DEFINED_GVAR:
+	if (rb_gvar_defined(rb_global_entry(SYM2ID(obj)))) {
+	    expr_type = DEFINED_GVAR;
+	}
+	break;
+      case DEFINED_CVAR: {
+	const rb_cref_t *cref = rb_vm_get_cref(GET_EP());
+	klass = vm_get_cvar_base(cref, GET_CFP());
+	if (rb_cvar_defined(klass, SYM2ID(obj))) {
+	    expr_type = DEFINED_CVAR;
+	}
+	break;
+      }
+      case DEFINED_CONST:
+	klass = v;
+	if (vm_get_ev_const(th, klass, SYM2ID(obj), 1)) {
+	    expr_type = DEFINED_CONST;
+	}
+	break;
+      case DEFINED_FUNC:
+	klass = CLASS_OF(v);
+	if (rb_method_boundp(klass, SYM2ID(obj), 0)) {
+	    expr_type = DEFINED_METHOD;
+	}
+	break;
+      case DEFINED_METHOD:{
+	VALUE klass = CLASS_OF(v);
+	const rb_method_entry_t *me = rb_method_entry(klass, SYM2ID(obj), 0);
+
+	if (me) {
+	    const rb_method_definition_t *def = me->def;
+	    if (!(def->flag & NOEX_PRIVATE)) {
+		if (!((def->flag & NOEX_PROTECTED) &&
+		      !rb_obj_is_kind_of(GET_SELF(),
+					 rb_class_real(klass)))) {
+		    expr_type = DEFINED_METHOD;
+		}
+	    }
+	}
+	{
+	    VALUE args[2];
+	    VALUE r;
+
+	    args[0] = obj; args[1] = Qfalse;
+	    r = rb_check_funcall(v, idRespond_to_missing, 2, args);
+	    if (r != Qundef && RTEST(r))
+		expr_type = DEFINED_METHOD;
+	}
+	break;
+      }
+      case DEFINED_YIELD:
+	if (GET_BLOCK_PTR()) {
+	    expr_type = DEFINED_YIELD;
+	}
+	break;
+      case DEFINED_ZSUPER:{
+	rb_call_info_t cit;
+	if (vm_search_superclass(GET_CFP(), GET_ISEQ(), Qnil, &cit) == 0) {
+	    VALUE klass = cit.klass;
+	    ID id = cit.mid;
+	    if (rb_method_boundp(klass, id, 0)) {
+		expr_type = DEFINED_ZSUPER;
+	    }
+	}
+	break;
+      }
+      case DEFINED_REF:{
+	if (vm_getspecial(th, GET_LEP(), Qfalse, FIX2INT(obj)) != Qnil) {
+	    expr_type = DEFINED_GVAR;
+	}
+	break;
+      }
+      default:
+	rb_bug("unimplemented defined? type (VM)");
+	break;
+    }
+
+    if (expr_type != 0) {
+	if (needstr != Qfalse) {
+	    return rb_iseq_defined_string(expr_type);
+	}
+	else {
+	    return Qtrue;
+	}
+    }
+    else {
+	return Qnil;
+    }
+}
