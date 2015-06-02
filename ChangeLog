@@ -1,3 +1,11 @@
+Wed Jun  3 04:34:39 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c (vm_defined): skip respond_to_missing? when
+	  a method is available.
+	  [Bug #11211]
+
+	* test/ruby/test_defined.rb: add a test for this fix.
+
 Wed Jun  3 04:14:13 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def (defined), vm_insnhelper.c (vm_defined):
