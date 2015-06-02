@@ -2,6 +2,7 @@ Wed Jun  3 04:48:05 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c (vm_defined): check respond_to_missing?
 	  at defined?(func()).
+	  [Bug #11212]
 
 	* test/ruby/test_defined.rb: add a test for this fix.
 
