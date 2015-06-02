@@ -26,7 +26,7 @@ Wed Jun  3 04:14:13 2015  Koichi Sasada  <ko1@atdot.net>
 Wed Jun  3 02:29:25 2015  Benoit Daloze  <eregontp@gmail.com>
 
 	* test/ruby/test_module.rb: Do not assume class variable order.
-	  Path by @enebo.
+	  Patch by @enebo.
 
 Wed Jun  3 01:10:38 2015  Yusuke Endoh  <mame@tsg.ne.jp>
 
