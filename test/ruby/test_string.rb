@@ -1946,6 +1946,13 @@ class TestString < Test::Unit::TestCase
     assert_equal((15..54).to_a.to_a.join, s3)
   end
 
+  def test_str_plus_subclassed
+    foo = S2.new("foo")
+    bar = S2.new("bar")
+    baz = foo + bar
+    assert_equal(TestString::S2, baz.class)
+  end
+
   def test_rb_str_new4
     s = "a" * 100
     s2 = s[10,90]

@@ -1486,7 +1486,7 @@ rb_str_plus(VALUE str1, VALUE str2)
     enc = rb_enc_check(str1, str2);
     RSTRING_GETMEM(str1, ptr1, len1);
     RSTRING_GETMEM(str2, ptr2, len2);
-    str3 = rb_str_new(0, len1+len2);
+    str3 = rb_str_new_with_class(str1, 0, len1+len2);
     ptr3 = RSTRING_PTR(str3);
     memcpy(ptr3, ptr1, len1);
     memcpy(ptr3+len1, ptr2, len2);
