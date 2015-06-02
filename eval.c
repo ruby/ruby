@@ -747,10 +747,11 @@ void
 rb_raise_jump(VALUE mesg, VALUE cause)
 {
     rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = th->cfp;
-    VALUE klass = cfp->me->klass;
+    const rb_control_frame_t *cfp = th->cfp;
+    const rb_method_entry_t *me = rb_vm_frame_method_entry(cfp);
+    VALUE klass = me->klass;
     VALUE self = cfp->self;
-    ID mid = cfp->me->called_id;
+    ID mid = me->called_id;
 
     th->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp);
     EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, self, mid, klass, Qnil);
@@ -922,15 +923,14 @@ rb_ensure(VALUE (*b_proc)(ANYARGS), VALUE data1, VALUE (*e_proc)(ANYARGS), VALUE
 }
 
 static const rb_method_entry_t *
-method_entry_of_iseq(rb_control_frame_t *cfp, rb_iseq_t *iseq)
+method_entry_of_iseq(const rb_control_frame_t *cfp, const rb_iseq_t *iseq)
 {
     rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp_limit;
+    const rb_control_frame_t *cfp_limit;
 
     cfp_limit = (rb_control_frame_t *)(th->stack + th->stack_size);
     while (cfp_limit > cfp) {
-	if (cfp->iseq == iseq)
-	    return cfp->me;
+	if (cfp->iseq == iseq) return rb_vm_frame_method_entry(cfp); /* TODO: fix me */
 	cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
     }
     return 0;
@@ -940,9 +940,11 @@ static ID
 frame_func_id(rb_control_frame_t *cfp)
 {
     const rb_method_entry_t *me_local;
-    rb_iseq_t *iseq = cfp->iseq;
-    if (cfp->me) {
-	return cfp->me->def->original_id;
+    const rb_iseq_t *iseq = cfp->iseq;
+    const rb_method_entry_t *me = rb_vm_frame_method_entry(cfp);
+
+    if (me) {
+	return me->def->original_id;
     }
     while (iseq) {
 	if (RUBY_VM_IFUNC_P(iseq)) {
@@ -952,7 +954,6 @@ frame_func_id(rb_control_frame_t *cfp)
 	}
 	me_local = method_entry_of_iseq(cfp, iseq);
 	if (me_local) {
-	    cfp->me = me_local;
 	    return me_local->def->original_id;
 	}
 	if (iseq->defined_method_id) {
@@ -970,9 +971,11 @@ static ID
 frame_called_id(rb_control_frame_t *cfp)
 {
     const rb_method_entry_t *me_local;
-    rb_iseq_t *iseq = cfp->iseq;
-    if (cfp->me) {
-	return cfp->me->called_id;
+    const rb_iseq_t *iseq = cfp->iseq;
+    const rb_method_entry_t *me = rb_vm_frame_method_entry(cfp);
+
+    if (me) {
+	return me->called_id;
     }
     while (iseq) {
 	if (RUBY_VM_IFUNC_P(iseq)) {
@@ -982,7 +985,6 @@ frame_called_id(rb_control_frame_t *cfp)
 	}
 	me_local = method_entry_of_iseq(cfp, iseq);
 	if (me_local) {
-	    cfp->me = me_local;
 	    return me_local->called_id;
 	}
 	if (iseq->defined_method_id) {
@@ -1488,9 +1490,8 @@ top_using(VALUE self, VALUE module)
     const rb_cref_t *cref = rb_vm_cref();
     rb_control_frame_t *prev_cfp = previous_frame(GET_THREAD());
 
-    if (CREF_NEXT(cref) || (prev_cfp && prev_cfp->me)) {
-	rb_raise(rb_eRuntimeError,
-		 "main.using is permitted only at toplevel");
+    if (CREF_NEXT(cref) || (prev_cfp && rb_vm_frame_method_entry(prev_cfp))) {
+	rb_raise(rb_eRuntimeError, "main.using is permitted only at toplevel");
     }
     rb_using_module(cref, module);
     return self;

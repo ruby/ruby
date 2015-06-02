@@ -440,8 +440,6 @@ typedef struct rb_vm_struct {
     VALUE verbose, debug, orig_progname, progname;
     VALUE coverages;
 
-    struct unlinked_method_entry_list_entry *unlinked_method_entry_list;
-
     VALUE defined_module_hash;
 
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
@@ -513,10 +511,9 @@ typedef struct rb_control_frame_struct {
     VALUE *ep;			/* cfp[6] / block[2] */
     rb_iseq_t *block_iseq;	/* cfp[7] / block[3] */
     VALUE proc;			/* cfp[8] / block[4] */
-    const rb_method_entry_t *me;/* cfp[9] */
 
 #if VM_DEBUG_BP_CHECK
-    VALUE *bp_check;		/* cfp[10] */
+    VALUE *bp_check;		/* cfp[9] */
 #endif
 } rb_control_frame_t;
 
@@ -954,7 +951,6 @@ void rb_vm_gvl_destroy(rb_vm_t *vm);
 VALUE rb_vm_call(rb_thread_t *th, VALUE recv, VALUE id, int argc,
 		 const VALUE *argv, const rb_method_entry_t *me,
 		 VALUE defined_class);
-void rb_gc_mark_unlinked_live_method_entries(void *pvm);
 
 void rb_thread_start_timer_thread(void);
 void rb_thread_stop_timer_thread(int);
@@ -1000,6 +996,8 @@ void rb_gc_mark_machine_stack(rb_thread_t *th);
 int rb_autoloading_value(VALUE mod, ID id, VALUE* value);
 
 void rb_vm_rewrite_cref_stack(rb_cref_t *node, VALUE old_klass, VALUE new_klass, rb_cref_t **new_cref_ptr);
+
+const rb_method_entry_t *rb_vm_frame_method_entry(const rb_control_frame_t *cfp);
 
 #define sysstack_error GET_VM()->special_exceptions[ruby_error_sysstack]
 

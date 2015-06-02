@@ -1208,7 +1208,6 @@ fiber_init(VALUE fibval, VALUE proc)
     th->cfp->iseq = 0;
     th->cfp->proc = 0;
     th->cfp->block_iseq = 0;
-    th->cfp->me = 0;
     th->tag = 0;
     th->local_storage = st_init_numtable();
     th->local_storage_recursive_hash = Qnil;
@@ -1256,7 +1255,7 @@ rb_fiber_start(void)
 	cont->value = Qnil;
 	th->errinfo = Qnil;
 	th->root_lep = rb_vm_ep_local_ep(proc->block.ep);
-	th->root_svar = Qnil;
+	th->root_svar = Qfalse;
 
 	fib->status = RUNNING;
 	cont->value = rb_vm_invoke_proc(th, proc, argc, argv, 0);

@@ -1,3 +1,36 @@
+Tue Jun  2 12:43:46 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* method.h: make rb_method_entry_t a VALUE.
+	  Motivation and new data structure are described in [Bug #11203].
+
+	  This patch also solve the following issues.
+
+	  * [Bug #11200] Memory leak of method entries
+	  * [Bug #11046] __callee__ returns incorrect method name in orphan
+	                 proc
+
+	* test/ruby/test_method.rb: add a test for [Bug #11046].
+
+	* vm_core.h: remvoe rb_control_frame_t::me. me is located at value
+	  stack.
+
+	* vm_core.h, gc.c, vm_method.c: remove unlinked_method... codes
+	  because method entries are simple VALUEs.
+
+	* method.h:  Now, all method entries has own independent method
+	  definititons. Strictly speaking, this change is not essential,
+	  but for future changes.
+
+	  * rb_method_entry_t::flag is move to rb_method_definition_t::flag.
+	  * rb_method_definition_t::alias_count is now
+	    rb_method_definition_t::alias_count_ptr, a pointer to the counter.
+
+	* vm_core.h, vm_insnhelper.c (rb_vm_frame_method_entry) added to
+	  search the current method entry from value stack.
+
+	* vm_insnhelper.c (VM_CHECK_MODE): introduced to enable/disable
+	  assertions.
+
 Tue Jun  2 10:46:36 2015  Eric Wong  <e@80x24.org>
 
 	* test/socket/test_nonblock.rb: new test for sendmsg_nonblock
