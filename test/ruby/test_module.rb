@@ -1768,8 +1768,8 @@ class TestModule < Test::Unit::TestCase
     m2.send(:include, m)
     m2.class_variable_set(:@@bar, 2)
     assert_equal([:@@foo], m.class_variables)
-    assert_equal([:@@bar, :@@foo], m2.class_variables)
-    assert_equal([:@@bar, :@@foo], m2.class_variables(true))
+    assert_equal([:@@bar, :@@foo], m2.class_variables.sort)
+    assert_equal([:@@bar, :@@foo], m2.class_variables(true).sort)
     assert_equal([:@@bar], m2.class_variables(false))
   end
 

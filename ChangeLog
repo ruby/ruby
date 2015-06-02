@@ -1,3 +1,8 @@
+Wed Jun  3 02:29:25 2015  Benoit Daloze  <eregontp@gmail.com>
+
+	* test/ruby/test_module.rb: Do not assume class variable order.
+	  Path by @enebo.
+
 Wed Jun  3 01:10:38 2015  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* vm_method.c (rb_method_definition_set): remove a double assignment.
