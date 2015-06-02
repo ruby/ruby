@@ -2046,8 +2046,7 @@ rb_method_entry_min_max_arity(const rb_method_entry_t *me, int *max)
       case VM_METHOD_TYPE_BMETHOD:
 	return rb_proc_min_max_arity(def->body.proc, max);
       case VM_METHOD_TYPE_ISEQ: {
-	rb_iseq_t *iseq;
-	GetISeqPtr(def->body.iseq.iseqval, iseq);
+	rb_iseq_t *iseq = def->body.iseq.iseqptr;
 	return rb_iseq_min_max_arity(iseq, max);
       }
       case VM_METHOD_TYPE_UNDEF:
@@ -2183,11 +2182,7 @@ method_def_iseq(const rb_method_definition_t *def)
 {
     switch (def->type) {
       case VM_METHOD_TYPE_ISEQ:
-	{
-	    rb_iseq_t *iseq;
-	    GetISeqPtr(def->body.iseq.iseqval, iseq);
-	    return iseq;
-	}
+	return def->body.iseq.iseqptr;
       case VM_METHOD_TYPE_BMETHOD:
 	return get_proc_iseq(def->body.proc, 0);
       case VM_METHOD_TYPE_ALIAS:

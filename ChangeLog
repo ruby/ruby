@@ -1,3 +1,17 @@
+Tue Jun  2 23:27:18 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* method.h: remove rb_method_iseq_t::iseqval.
+	  While making a r50728, iseqval is needed (to mark correctly),
+	  but now just iseqptr is enough.
+
+	* class.c: catch up this fix.
+
+	* gc.c: ditto.
+
+	* proc.c: ditto.
+
+	* vm_method.c: ditto.
+
 Tue Jun  2 21:29:28 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* proc.c (proc_curry): remove a debug line.
