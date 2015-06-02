@@ -1348,9 +1348,9 @@ rb_hash_method_entry(st_index_t hash, const rb_method_entry_t *me)
 }
 
 void
-rb_alias(VALUE klass, ID name, ID def)
+rb_alias(VALUE klass, ID alias_name, ID original_name)
 {
-    VALUE target_klass = klass;
+    const VALUE target_klass = klass;
     VALUE defined_class;
     rb_method_entry_t *orig_me;
     rb_method_flag_t flag = NOEX_UNDEF;
@@ -1362,7 +1362,7 @@ rb_alias(VALUE klass, ID name, ID def)
     rb_frozen_class_p(klass);
 
   again:
-    orig_me = search_method(klass, def, &defined_class);
+    orig_me = search_method(klass, original_name, &defined_class);
     if (orig_me && orig_me->def->type == VM_METHOD_TYPE_REFINED) {
 	orig_me = rb_resolve_refined_method(Qnil, orig_me, &defined_class);
     }
@@ -1370,15 +1370,15 @@ rb_alias(VALUE klass, ID name, ID def)
     if (UNDEFINED_METHOD_ENTRY_P(orig_me) ||
 	UNDEFINED_REFINED_METHOD_P(orig_me->def)) {
 	if ((!RB_TYPE_P(klass, T_MODULE)) ||
-	    (orig_me = search_method(rb_cObject, def, &defined_class),
+	    (orig_me = search_method(rb_cObject, original_name, &defined_class),
 	     UNDEFINED_METHOD_ENTRY_P(orig_me))) {
-	    rb_print_undef(klass, def, 0);
+	    rb_print_undef(klass, original_name, 0);
 	}
     }
 
     if (orig_me->def->type == VM_METHOD_TYPE_ZSUPER) {
 	klass = RCLASS_SUPER(klass);
-	def = orig_me->def->original_id;
+	original_name = orig_me->def->original_id;
 	flag = orig_me->def->flag;
 	goto again;
     }
@@ -1397,13 +1397,13 @@ rb_alias(VALUE klass, ID name, ID def)
 	}
 
 	/* make mthod entry */
-	alias_me = rb_add_method(target_klass, name, VM_METHOD_TYPE_ALIAS, rb_method_entry_clone(orig_me), flag);
+	alias_me = rb_add_method(target_klass, alias_name, VM_METHOD_TYPE_ALIAS, rb_method_entry_clone(orig_me), flag);
 	RB_OBJ_WRITE(alias_me, &alias_me->klass, defined_class);
 	alias_me->def->original_id = orig_me->called_id;
-	*(ID *)&alias_me->def->body.alias.original_me->called_id = name;
+	*(ID *)&alias_me->def->body.alias.original_me->called_id = alias_name;
     }
     else {
-	method_entry_set(target_klass, name, orig_me, flag, defined_class);
+	method_entry_set(target_klass, alias_name, orig_me, flag, defined_class);
     }
 }
 
