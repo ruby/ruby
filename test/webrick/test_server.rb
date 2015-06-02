@@ -29,7 +29,7 @@ class TestWEBrickServer < Test::Unit::TestCase
     log = []
     logger = WEBrick::Log.new(log, WEBrick::BasicLog::WARN)
 
-    assert_raises(SignalException) do
+    assert_raise(SignalException) do
       listener = Object.new
       def listener.to_io # IO.select invokes #to_io.
         raise SignalException, 'SIGTERM' # simulate signal in main thread

@@ -78,7 +78,7 @@ class TestSocket < Test::Unit::TestCase
       port, = Socket.unpack_sockaddr_in(addr)
 
       Socket.open(Socket::AF_INET, Socket::SOCK_STREAM, 0) {|s|
-        e = assert_raises(Errno::EADDRINUSE) do
+        e = assert_raise(Errno::EADDRINUSE) do
           s.bind(Socket.sockaddr_in(port, "127.0.0.1"))
         end
 
@@ -556,7 +556,7 @@ class TestSocket < Test::Unit::TestCase
     # some platforms may not timeout when the listener queue overflows,
     # but we know Linux does with the default listen backlog of SOMAXCONN for
     # TCPServer.
-    assert_raises(Errno::ETIMEDOUT) do
+    assert_raise(Errno::ETIMEDOUT) do
       (Socket::SOMAXCONN*2).times do |i|
         sock = Socket.tcp(host, port, :connect_timeout => 0)
         assert_equal sock, IO.select(nil, [ sock ])[1][0],

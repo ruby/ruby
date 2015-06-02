@@ -64,7 +64,7 @@ class TestPrime < Test::Unit::TestCase
   end
 
   def test_new
-    exception = assert_raises(NoMethodError) { Prime.new }
+    exception = assert_raise(NoMethodError) { Prime.new }
   end
 
   def test_enumerator_succ

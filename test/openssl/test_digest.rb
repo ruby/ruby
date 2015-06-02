@@ -106,7 +106,7 @@ class OpenSSL::TestDigest < Test::Unit::TestCase
   def test_openssl_digest
     assert_equal OpenSSL::Digest::MD5, OpenSSL::Digest("MD5")
 
-    assert_raises NameError do
+    assert_raise NameError do
       OpenSSL::Digest("no such digest")
     end
   end

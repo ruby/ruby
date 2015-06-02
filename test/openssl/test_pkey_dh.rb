@@ -13,7 +13,7 @@ class OpenSSL::TestPKeyDH < Test::Unit::TestCase
 
   def test_new_break
     assert_nil(OpenSSL::PKey::DH.new(NEW_KEYLEN) { break })
-    assert_raises(RuntimeError) do
+    assert_raise(RuntimeError) do
       OpenSSL::PKey::DH.new(NEW_KEYLEN) { raise }
     end
   end

@@ -118,7 +118,7 @@ module REXMLTests
       # above 10k explodes
       entities = '&a;' * 3 # 5k entity * 2 = 15k
       xmldoc = REXML::Document.new(template.sub(/\$/, entities))
-      assert_raises(RuntimeError) do
+      assert_raise(RuntimeError) do
         xmldoc.root.text
       end
     end
@@ -134,7 +134,7 @@ module REXMLTests
 
       # above 10k explodes
       entities = '%a;' * 3 # 5k entity * 2 = 15k
-      assert_raises(REXML::ParseException) do
+      assert_raise(REXML::ParseException) do
         REXML::Document.new(template.sub(/\$/, entities))
       end
     end

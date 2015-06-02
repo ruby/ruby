@@ -48,7 +48,7 @@ class TestSocket_UDPSocket < Test::Unit::TestCase
 
     s = UDPSocket.new
 
-    e = assert_raises(Errno::EADDRINUSE) do
+    e = assert_raise(Errno::EADDRINUSE) do
       s.bind(host, port)
     end
 
@@ -61,7 +61,7 @@ class TestSocket_UDPSocket < Test::Unit::TestCase
   def test_send_too_long
     u = UDPSocket.new
 
-    e = assert_raises Errno::EMSGSIZE do
+    e = assert_raise(Errno::EMSGSIZE) do
       u.send "\0" * 100_000, 0, "127.0.0.1", 7 # echo
     end
 

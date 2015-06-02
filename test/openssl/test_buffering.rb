@@ -61,7 +61,7 @@ class OpenSSL::TestBuffering < Test::Unit::TestCase
       raise SystemCallError, 'fail'
     end
 
-    assert_raises SystemCallError do
+    assert_raise SystemCallError do
       @io.flush
     end
 

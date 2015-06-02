@@ -899,7 +899,7 @@ class TestNetHTTPKeepAlive < Test::Unit::TestCase
     end
 
     start {|http|
-      assert_raises(EOFError, Errno::ECONNRESET, IOError) {
+      assert_raise(EOFError, Errno::ECONNRESET, IOError) {
         http.get('/')
       }
     }

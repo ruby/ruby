@@ -137,7 +137,7 @@ class TestOpenURI < Test::Unit::TestCase
   end
 
   def test_open_timeout
-    assert_raises(Net::OpenTimeout) do
+    assert_raise(Net::OpenTimeout) do
       URI("http://example.com/").read(open_timeout: 0.000001)
     end if false # avoid external resources in tests
 
