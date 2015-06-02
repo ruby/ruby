@@ -151,7 +151,7 @@ class TestDigestExtend < Test::Unit::TestCase
   end
 
   def test_block_length
-    assert_raises(RuntimeError) do
+    assert_raise(RuntimeError) do
       @MyDigest.new.block_length
     end
   end

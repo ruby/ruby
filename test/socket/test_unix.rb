@@ -665,8 +665,8 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
 
   def test_accept_nonblock
     bound_unix_socket(UNIXServer) {|serv, path|
-      assert_raises(IO::WaitReadable) { serv.accept_nonblock }
-      assert_raises(IO::WaitReadable) { serv.accept_nonblock(exception: true) }
+      assert_raise(IO::WaitReadable) { serv.accept_nonblock }
+      assert_raise(IO::WaitReadable) { serv.accept_nonblock(exception: true) }
       assert_equal :wait_readable, serv.accept_nonblock(exception: false)
     }
   end

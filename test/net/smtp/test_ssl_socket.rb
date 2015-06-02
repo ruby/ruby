@@ -1,8 +1,8 @@
 require 'net/smtp'
-require 'minitest/autorun'
+require 'test/unit'
 
 module Net
-  class TestSSLSocket < MiniTest::Unit::TestCase
+  class TestSSLSocket < Test::Unit::TestCase
     class MySMTP < SMTP
       attr_accessor :fake_tcp, :fake_ssl
 
@@ -52,7 +52,7 @@ module Net
       connection.fake_tcp = tcp_socket
       connection.fake_ssl = ssl_socket
 
-      assert_raises(OpenSSL::SSL::SSLError) do
+      assert_raise(OpenSSL::SSL::SSLError) do
         connection.start
       end
       assert_equal true, ssl_socket.closed

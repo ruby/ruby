@@ -233,7 +233,7 @@ if defined? Zlib
 
   class TestZlibInflate < Test::Unit::TestCase
     def test_class_inflate_dictionary
-      assert_raises(Zlib::NeedDict) do
+      assert_raise(Zlib::NeedDict) do
         Zlib::Inflate.inflate([0x08,0x3C,0x0,0x0,0x0,0x0].pack("c*"))
       end
     end

@@ -552,7 +552,7 @@ rEzBQ0F9dUyqQ9gyRg8KHhDfv9HzT1d/rnUZMkoombwYBRIUChGCYV0GnJcan2Zm
   end
 
   def test_primitive_inf_length
-    assert_raises(OpenSSL::ASN1::ASN1Error) do
+    assert_raise(OpenSSL::ASN1::ASN1Error) do
       spec = %w{ 02 80 02 01 01 00 00 }
       raw = [spec.join('')].pack('H*')
       OpenSSL::ASN1.decode(raw)

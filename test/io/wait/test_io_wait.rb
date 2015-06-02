@@ -97,7 +97,7 @@ class TestIOWait < Test::Unit::TestCase
 
   def test_wait_writable_closed
     @w.close
-    assert_raises(IOError) { @w.wait_writable }
+    assert_raise(IOError) { @w.wait_writable }
   end
 
 private

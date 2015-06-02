@@ -79,9 +79,9 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
 
   def test_accept_nonblock
     TCPServer.open("localhost", 0) {|svr|
-      assert_raises(IO::WaitReadable) { svr.accept_nonblock }
+      assert_raise(IO::WaitReadable) { svr.accept_nonblock }
       assert_equal :wait_readable, svr.accept_nonblock(exception: false)
-      assert_raises(IO::WaitReadable) { svr.accept_nonblock(exception: true) }
+      assert_raise(IO::WaitReadable) { svr.accept_nonblock(exception: true) }
     }
   end
 end if defined?(TCPSocket)

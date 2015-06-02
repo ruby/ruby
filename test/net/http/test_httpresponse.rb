@@ -253,7 +253,7 @@ Connection: close
 hello
 EOS
 
-    assert_raises Net::HTTPBadResponse do
+    assert_raise Net::HTTPBadResponse do
       Net::HTTPResponse.read_new(io)
     end
   end

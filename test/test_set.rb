@@ -26,13 +26,13 @@ class TC_Set < Test::Unit::TestCase
       Set.new([1,2])
       Set.new('a'..'c')
     }
-    assert_raises(ArgumentError) {
+    assert_raise(ArgumentError) {
       Set.new(false)
     }
-    assert_raises(ArgumentError) {
+    assert_raise(ArgumentError) {
       Set.new(1)
     }
-    assert_raises(ArgumentError) {
+    assert_raise(ArgumentError) {
       Set.new(1,2)
     }
 
@@ -157,7 +157,7 @@ class TC_Set < Test::Unit::TestCase
     set1 = Set[1, set2]
     set2.add(set1)
 
-    assert_raises(ArgumentError) {
+    assert_raise(ArgumentError) {
       set1.flatten!
     }
 
@@ -199,15 +199,15 @@ class TC_Set < Test::Unit::TestCase
   def test_superset?
     set = Set[1,2,3]
 
-    assert_raises(ArgumentError) {
+    assert_raise(ArgumentError) {
       set.superset?()
     }
 
-    assert_raises(ArgumentError) {
+    assert_raise(ArgumentError) {
       set.superset?(2)
     }
 
-    assert_raises(ArgumentError) {
+    assert_raise(ArgumentError) {
       set.superset?([2])
     }
 
@@ -226,15 +226,15 @@ class TC_Set < Test::Unit::TestCase
   def test_proper_superset?
     set = Set[1,2,3]
 
-    assert_raises(ArgumentError) {
+    assert_raise(ArgumentError) {
       set.proper_superset?()
     }
 
-    assert_raises(ArgumentError) {
+    assert_raise(ArgumentError) {
       set.proper_superset?(2)
     }
 
-    assert_raises(ArgumentError) {
+    assert_raise(ArgumentError) {
       set.proper_superset?([2])
     }
 
@@ -253,15 +253,15 @@ class TC_Set < Test::Unit::TestCase
   def test_subset?
     set = Set[1,2,3]
 
-    assert_raises(ArgumentError) {
+    assert_raise(ArgumentError) {
       set.subset?()
     }
 
-    assert_raises(ArgumentError) {
+    assert_raise(ArgumentError) {
       set.subset?(2)
     }
 
-    assert_raises(ArgumentError) {
+    assert_raise(ArgumentError) {
       set.subset?([2])
     }
 
@@ -280,15 +280,15 @@ class TC_Set < Test::Unit::TestCase
   def test_proper_subset?
     set = Set[1,2,3]
 
-    assert_raises(ArgumentError) {
+    assert_raise(ArgumentError) {
       set.proper_subset?()
     }
 
-    assert_raises(ArgumentError) {
+    assert_raise(ArgumentError) {
       set.proper_subset?(2)
     }
 
-    assert_raises(ArgumentError) {
+    assert_raise(ArgumentError) {
       set.proper_subset?([2])
     }
 
@@ -316,10 +316,10 @@ class TC_Set < Test::Unit::TestCase
       assert_send([set, :disjoint?, other])
       assert_send([other, :disjoint?, set])
     when Class
-      assert_raises(expected) {
+      assert_raise(expected) {
         set.intersect?(other)
       }
-      assert_raises(expected) {
+      assert_raise(expected) {
         set.disjoint?(other)
       }
     else
@@ -585,7 +585,7 @@ class TC_Set < Test::Unit::TestCase
     set << 4
     assert_same orig, set.freeze
     assert_equal true, set.frozen?
-    assert_raises(RuntimeError) {
+    assert_raise(RuntimeError) {
       set << 5
     }
     assert_equal 4, set.size
