@@ -1,3 +1,7 @@
+Wed Jun  3 08:06:30 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* gem/bundled_gems: updated to test-unit 3.1.1 and minitest 5.7.0.
+
 Wed Jun  3 04:48:05 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c (vm_defined): check respond_to_missing?
