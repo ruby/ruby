@@ -270,15 +270,6 @@ module Benchmark
     STDOUT.sync = sync unless sync.nil?
   end
 
-  # :stopdoc:
-  case
-  when defined?(Process::CLOCK_MONOTONIC)
-    BENCHMARK_CLOCK = Process::CLOCK_MONOTONIC
-  else
-    BENCHMARK_CLOCK = Process::CLOCK_REALTIME
-  end
-  # :startdoc:
-
   #
   # Returns the time used to execute the given block as a
   # Benchmark::Tms object. Takes +label+ option.
@@ -297,9 +288,9 @@ module Benchmark
   #        0.220000   0.000000   0.220000 (  0.227313)
   #
   def measure(label = "") # :yield:
-    t0, r0 = Process.times, Process.clock_gettime(BENCHMARK_CLOCK)
+    t0, r0 = Process.times, Process.clock_gettime(Process::CLOCK_MONOTONIC)
     yield
-    t1, r1 = Process.times, Process.clock_gettime(BENCHMARK_CLOCK)
+    t1, r1 = Process.times, Process.clock_gettime(Process::CLOCK_MONOTONIC)
     Benchmark::Tms.new(t1.utime  - t0.utime,
                        t1.stime  - t0.stime,
                        t1.cutime - t0.cutime,
@@ -312,9 +303,9 @@ module Benchmark
   # Returns the elapsed real time used to execute the given block.
   #
   def realtime # :yield:
-    r0 = Process.clock_gettime(BENCHMARK_CLOCK)
+    r0 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
     yield
-    Process.clock_gettime(BENCHMARK_CLOCK) - r0
+    Process.clock_gettime(Process::CLOCK_MONOTONIC) - r0
   end
 
   module_function :benchmark, :measure, :realtime, :bm, :bmbm
