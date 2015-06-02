@@ -275,6 +275,19 @@ class TestSocketNonblock < Test::Unit::TestCase
     }
   end
 
+  def test_sendmsg_nonblock_seqpacket
+    if defined?(UNIXSocket) && defined?(Socket::SOCK_SEQPACKET)
+      buf = '*' * 10000
+      UNIXSocket.pair(:SEQPACKET) do |s1, s2|
+        assert_raises(IO::WaitWritable) do
+          loop { s1.sendmsg_nonblock(buf) }
+        end
+      end
+    else
+      skip "UNIXSocket.pair(:SEQPACKET) not implemented on this platform"
+    end
+  end
+
   def test_recvmsg_nonblock_error
     udp_pair {|s1, s2|
       begin
