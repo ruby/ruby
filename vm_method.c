@@ -226,12 +226,9 @@ rb_method_definition_set(rb_method_definition_t *def, void *opts)
 	{
 	    rb_method_iseq_t *iseq_body = (rb_method_iseq_t *)opts;
 	    rb_cref_t *method_cref, *cref = iseq_body->cref;
-	    rb_iseq_t *iseq;
-	    GetISeqPtr(iseq_body->iseqval, iseq);
 
 	    /* setup iseq first (before invoking GC) */
-	    DEF_OBJ_WRITE(&def->body.iseq.iseqval, iseq_body->iseqval);
-	    DEF_OBJ_WRITE(&def->body.iseq.iseqptr, iseq);
+	    DEF_OBJ_WRITE(&def->body.iseq.iseqptr, iseq_body->iseqptr);
 
 	    if (0) vm_cref_dump("rb_method_definition_create", cref);
 
@@ -312,7 +309,7 @@ rb_method_definition_reset(rb_method_entry_t *me, rb_method_definition_t *def)
 {
     switch(def->type) {
       case VM_METHOD_TYPE_ISEQ:
-	RB_OBJ_WRITTEN(me, Qundef, def->body.iseq.iseqval);
+	RB_OBJ_WRITTEN(me, Qundef, def->body.iseq.iseqptr->self);
 	RB_OBJ_WRITTEN(me, Qundef, def->body.iseq.cref);
 	break;
       case VM_METHOD_TYPE_IVAR:
@@ -558,8 +555,12 @@ rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_
 void
 rb_add_method_iseq(VALUE klass, ID mid, VALUE iseqval, rb_cref_t *cref, rb_method_flag_t noex)
 {
-    rb_method_iseq_t iseq_body = {NULL, cref, iseqval};
-    rb_add_method(klass, mid, VM_METHOD_TYPE_ISEQ, &iseq_body, noex);
+    rb_iseq_t *iseq;
+    GetISeqPtr(iseqval, iseq);
+    {
+	rb_method_iseq_t iseq_body = {iseq, cref};
+	rb_add_method(klass, mid, VM_METHOD_TYPE_ISEQ, &iseq_body, noex);
+    }
 }
 
 static rb_method_entry_t *
@@ -1281,7 +1282,7 @@ rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_defini
 
     switch (d1->type) {
       case VM_METHOD_TYPE_ISEQ:
-	return d1->body.iseq.iseqval == d2->body.iseq.iseqval;
+	return d1->body.iseq.iseqptr == d2->body.iseq.iseqptr;
       case VM_METHOD_TYPE_CFUNC:
 	return
 	  d1->body.cfunc.func == d2->body.cfunc.func &&
@@ -1316,7 +1317,7 @@ rb_hash_method_definition(st_index_t hash, const rb_method_definition_t *def)
 
     switch (def->type) {
       case VM_METHOD_TYPE_ISEQ:
-	return rb_hash_uint(hash, (st_index_t)def->body.iseq.iseqval);
+	return rb_hash_uint(hash, (st_index_t)def->body.iseq.iseqptr);
       case VM_METHOD_TYPE_CFUNC:
 	hash = rb_hash_uint(hash, (st_index_t)def->body.cfunc.func);
 	return rb_hash_uint(hash, def->body.cfunc.argc);
