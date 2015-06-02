@@ -1,3 +1,10 @@
+Wed Jun  3 04:48:05 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c (vm_defined): check respond_to_missing?
+	  at defined?(func()).
+
+	* test/ruby/test_defined.rb: add a test for this fix.
+
 Wed Jun  3 04:34:39 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c (vm_defined): skip respond_to_missing? when
