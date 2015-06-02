@@ -2410,7 +2410,7 @@ FUNC_FASTCALL(rb_vm_opt_struct_aset)(rb_thread_t *th, rb_control_frame_t *reg_cf
 /* defined insn */
 
 static enum defined_type
-check_resopnd_to_missing(VALUE obj, VALUE v)
+check_respond_to_missing(VALUE obj, VALUE v)
 {
     VALUE args[2];
     VALUE r;
@@ -2466,7 +2466,7 @@ vm_defined(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_num_t op_type, VALUE
 	    expr_type = DEFINED_METHOD;
 	}
 	else {
-	    expr_type = check_resopnd_to_missing(obj, v);
+	    expr_type = check_respond_to_missing(obj, v);
 	}
 	break;
       case DEFINED_METHOD:{
@@ -2481,7 +2481,7 @@ vm_defined(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_num_t op_type, VALUE
 	    }
 	}
 	else {
-	    expr_type = check_resopnd_to_missing(obj, v);
+	    expr_type = check_respond_to_missing(obj, v);
 	}
 	break;
       }
