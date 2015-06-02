@@ -1,3 +1,8 @@
+Wed Jun  3 01:10:38 2015  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* vm_method.c (rb_method_definition_set): remove a double assignment.
+	  Coverity Scan found this bug.
+
 Wed Jun  3 00:04:51 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_method.c (rb_alias): rename parameter names.
