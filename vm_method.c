@@ -251,7 +251,7 @@ rb_method_definition_set(rb_method_definition_t *def, void *opts)
       case VM_METHOD_TYPE_ATTRSET:
       case VM_METHOD_TYPE_IVAR:
 	{
-	    rb_thread_t *th = th = GET_THREAD();
+	    rb_thread_t *th = GET_THREAD();
 	    rb_control_frame_t *cfp;
 	    int line;
 
