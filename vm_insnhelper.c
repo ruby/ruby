@@ -1911,7 +1911,7 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 
   start_method_dispatch:
     if (ci->me != 0) {
-	if (ci->me->def->flags.visi == METHOD_VISI_PUBLIC && ci->me->def->flags.safe == 0) {
+	if (LIKELY(ci->me->def->flags.visi == METHOD_VISI_PUBLIC && ci->me->def->flags.safe == 0)) {
 	    VALUE klass;
 
 	  normal_method_dispatch:
