@@ -80,8 +80,8 @@ typedef struct rb_method_alias_struct {
 typedef struct rb_method_definition_struct {
     struct {
 	rb_method_visibility_t visi: 3;
-	unsigned int basic: 1;
 	unsigned int safe: 3;
+	unsigned int basic: 1;
     } flags;
     rb_method_type_t type; /* method type */
 
