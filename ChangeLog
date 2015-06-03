@@ -10,7 +10,7 @@ Wed Jun 03 10:35:45 2015  Koichi Sasada  <ko1@atdot.net>
 	    * NOEX_PUBLIC    -> METHOD_VISI_PUBLIC    = 1
 	    * NOEX_PRIVATE   -> METHOD_VISI_PRIVATE   = 2
 	    * NOEX_PROTECTED -> METHOD_VISI_PROTECTED = 3
-	  * NOEX_SAFE(flag)) -> safe (flags::safe, 2 bits)
+	  * NOEX_SAFE(flag)) -> safe (flags::safe, 3 bits)
 	  * NOEX_BASIC       -> basic (flags::basic, 1 bit)
 	  * NOEX_MODFUNC     -> rb_scope_visibility_t in CREF
 	  * NOEX_SUPER       -> MISSING_SUPER (enum missing_reason)
