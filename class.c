@@ -241,25 +241,31 @@ rb_class_new(VALUE super)
 }
 
 static void
-clone_method(VALUE klass, ID mid, const rb_method_entry_t *me)
+clone_method(VALUE old_klass, VALUE new_klass, ID mid, const rb_method_entry_t *me)
 {
     if (me->def->type == VM_METHOD_TYPE_ISEQ) {
 	VALUE newiseqval;
 	rb_cref_t *new_cref;
-	newiseqval = rb_iseq_clone(me->def->body.iseq.iseqptr->self, klass);
-	rb_vm_rewrite_cref(me->def->body.iseq.cref, me->klass, klass, &new_cref);
-	rb_add_method_iseq(klass, mid, newiseqval, new_cref, me->def->flags.visi);
+	newiseqval = rb_iseq_clone(me->def->body.iseq.iseqptr->self, new_klass);
+	rb_vm_rewrite_cref(me->def->body.iseq.cref, old_klass, new_klass, &new_cref);
+	rb_add_method_iseq(new_klass, mid, newiseqval, new_cref, me->def->flags.visi);
 	RB_GC_GUARD(newiseqval);
     }
     else {
-	rb_method_entry_set(klass, mid, me, me->def->flags.visi);
+	rb_method_entry_set(new_klass, mid, me, me->def->flags.visi);
     }
 }
+
+struct clone_method_arg {
+    VALUE new_klass;
+    VALUE old_klass;
+};
 
 static int
 clone_method_i(st_data_t key, st_data_t value, st_data_t data)
 {
-    clone_method((VALUE)data, (ID)key, (const rb_method_entry_t *)value);
+    const struct clone_method_arg *arg = (struct clone_method_arg *)data;
+    clone_method(arg->old_klass, arg->new_klass, (ID)key, (const rb_method_entry_t *)value);
     return ST_CONTINUE;
 }
 
@@ -343,8 +349,11 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
 	st_foreach(RCLASS_CONST_TBL(orig), clone_const_i, (st_data_t)&arg);
     }
     if (RCLASS_M_TBL(orig)) {
+	struct clone_method_arg arg;
+	arg.old_klass = orig;
+	arg.new_klass = clone;
 	RCLASS_M_TBL_INIT(clone);
-	st_foreach(RCLASS_M_TBL(orig), clone_method_i, (st_data_t)clone);
+	st_foreach(RCLASS_M_TBL(orig), clone_method_i, (st_data_t)&arg);
     }
 
     return clone;
@@ -359,7 +368,7 @@ rb_singleton_class_clone(VALUE obj)
 VALUE
 rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach)
 {
-    VALUE klass = RBASIC(obj)->klass;
+    const VALUE klass = RBASIC(obj)->klass;
 
     if (!FL_TEST(klass, FL_SINGLETON))
 	return klass;
@@ -390,7 +399,12 @@ rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach)
 	    rb_singleton_class_attached(clone, attach);
 	}
 	RCLASS_M_TBL_INIT(clone);
-	st_foreach(RCLASS_M_TBL(klass), clone_method_i, (st_data_t)clone);
+	{
+	    struct clone_method_arg arg;
+	    arg.old_klass = klass;
+	    arg.new_klass = clone;
+	    st_foreach(RCLASS_M_TBL(klass), clone_method_i, (st_data_t)&arg);
+	}
 	rb_singleton_class_attached(RBASIC(clone)->klass, clone);
 	FL_SET(clone, FL_SINGLETON);
 

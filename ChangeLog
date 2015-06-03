@@ -1,3 +1,8 @@
+Thu Jun  4 04:28:45 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* class.c (clone_method): do not use me->klass, but use explicitly
+	  passed argument.
+
 Thu Jun  4 04:10:43 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h (rb_vm_rewrite_cref_stack): rename to rb_vm_rewrite_cref().
