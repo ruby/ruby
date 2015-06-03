@@ -463,56 +463,54 @@ rb_feature_p(const char *feature, const char *ext, int rb, int expanded, const c
     }
 
     loading_tbl = get_loading_table();
-    if (loading_tbl) {
-	f = 0;
-	if (!expanded) {
-	    struct loaded_feature_searching fs;
-	    fs.name = feature;
-	    fs.len = len;
-	    fs.type = type;
-	    fs.load_path = load_path ? load_path : rb_get_expanded_load_path();
-	    fs.result = 0;
-	    st_foreach(loading_tbl, loaded_feature_path_i, (st_data_t)&fs);
-	    if ((f = fs.result) != 0) {
-		if (fn) *fn = f;
-		goto loading;
-	    }
+    f = 0;
+    if (!expanded) {
+	struct loaded_feature_searching fs;
+	fs.name = feature;
+	fs.len = len;
+	fs.type = type;
+	fs.load_path = load_path ? load_path : rb_get_expanded_load_path();
+	fs.result = 0;
+	st_foreach(loading_tbl, loaded_feature_path_i, (st_data_t)&fs);
+	if ((f = fs.result) != 0) {
+	    if (fn) *fn = f;
+	    goto loading;
 	}
-	if (st_get_key(loading_tbl, (st_data_t)feature, &data)) {
-	    if (fn) *fn = (const char*)data;
-	  loading:
-	    if (!ext) return 'u';
-	    return !IS_RBEXT(ext) ? 's' : 'r';
-	}
-	else {
-	    VALUE bufstr;
-	    char *buf;
-	    static const char so_ext[][4] = {
-		".so", ".o",
-	    };
+    }
+    if (st_get_key(loading_tbl, (st_data_t)feature, &data)) {
+	if (fn) *fn = (const char*)data;
+      loading:
+	if (!ext) return 'u';
+	return !IS_RBEXT(ext) ? 's' : 'r';
+    }
+    else {
+	VALUE bufstr;
+	char *buf;
+	static const char so_ext[][4] = {
+	    ".so", ".o",
+	};
 
-	    if (ext && *ext) return 0;
-	    bufstr = rb_str_tmp_new(len + DLEXT_MAXLEN);
-	    buf = RSTRING_PTR(bufstr);
-	    MEMCPY(buf, feature, char, len);
-	    for (i = 0; (e = loadable_ext[i]) != 0; i++) {
-		strlcpy(buf + len, e, DLEXT_MAXLEN + 1);
-		if (st_get_key(loading_tbl, (st_data_t)buf, &data)) {
-		    rb_str_resize(bufstr, 0);
-		    if (fn) *fn = (const char*)data;
-		    return i ? 's' : 'r';
-		}
+	if (ext && *ext) return 0;
+	bufstr = rb_str_tmp_new(len + DLEXT_MAXLEN);
+	buf = RSTRING_PTR(bufstr);
+	MEMCPY(buf, feature, char, len);
+	for (i = 0; (e = loadable_ext[i]) != 0; i++) {
+	    strlcpy(buf + len, e, DLEXT_MAXLEN + 1);
+	    if (st_get_key(loading_tbl, (st_data_t)buf, &data)) {
+		rb_str_resize(bufstr, 0);
+		if (fn) *fn = (const char*)data;
+		return i ? 's' : 'r';
 	    }
-	    for (i = 0; i < numberof(so_ext); i++) {
-		strlcpy(buf + len, so_ext[i], DLEXT_MAXLEN + 1);
-		if (st_get_key(loading_tbl, (st_data_t)buf, &data)) {
-		    rb_str_resize(bufstr, 0);
-		    if (fn) *fn = (const char*)data;
-		    return 's';
-		}
-	    }
-	    rb_str_resize(bufstr, 0);
 	}
+	for (i = 0; i < numberof(so_ext); i++) {
+	    strlcpy(buf + len, so_ext[i], DLEXT_MAXLEN + 1);
+	    if (st_get_key(loading_tbl, (st_data_t)buf, &data)) {
+		rb_str_resize(bufstr, 0);
+		if (fn) *fn = (const char*)data;
+		return 's';
+	    }
+	}
+	rb_str_resize(bufstr, 0);
     }
     return 0;
 }
@@ -716,11 +714,7 @@ load_lock(const char *ftptr)
     st_data_t data;
     st_table *loading_tbl = get_loading_table();
 
-    if (!loading_tbl || !st_lookup(loading_tbl, (st_data_t)ftptr, &data)) {
-	/* loading ruby library should be serialized. */
-	if (!loading_tbl) {
-	    GET_VM()->loading_table = loading_tbl = st_init_strtable();
-	}
+    if (!st_lookup(loading_tbl, (st_data_t)ftptr, &data)) {
 	/* partial state */
 	ftptr = ruby_strdup(ftptr);
 	data = (st_data_t)rb_thread_shield_new();
@@ -1090,9 +1084,6 @@ ruby_init_ext(const char *name, void (*init)(void))
 
     if (rb_provided(name))
 	return;
-    if (!loading_tbl) {
-	GET_VM()->loading_table = loading_tbl = st_init_strtable();
-    }
     st_update(loading_tbl, (st_data_t)name, register_init_ext, (st_data_t)init);
 }
 
