@@ -1740,10 +1740,10 @@ vm_call_bmethod(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
     return vm_call_bmethod_body(th, ci, argv);
 }
 
-static enum missing_reason
+static enum method_missing_reason
 ci_missing_reason(const rb_call_info_t *ci)
 {
-    enum missing_reason stat = MISSING_NOENTRY;
+    enum method_missing_reason stat = MISSING_NOENTRY;
     if (ci->flag & VM_CALL_VCALL) stat |= MISSING_VCALL;
     if (ci->flag & VM_CALL_SUPER) stat |= MISSING_SUPER;
     return stat;
@@ -1785,7 +1785,7 @@ vm_call_opt_send(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *c
 	}
 	TOPN(i) = rb_str_intern(sym);
 	ci->mid = idMethodMissing;
-	th->method_missing_reason = ci->aux.missing_reason = ci_missing_reason(ci);
+	th->method_missing_reason = ci->aux.method_missing_reason = ci_missing_reason(ci);
     }
     else {
 	/* shift arguments */
@@ -1844,7 +1844,7 @@ vm_call_method_missing(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_inf
     argv[0] = ID2SYM(ci->mid);
     INC_SP(1);
 
-    th->method_missing_reason = ci->aux.missing_reason;
+    th->method_missing_reason = ci->aux.method_missing_reason;
     return vm_call_method(th, reg_cfp, &ci_entry);
 }
 
@@ -1939,7 +1939,7 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 		return vm_call_ivar(th, cfp, ci);
 	      }
 	      case VM_METHOD_TYPE_MISSING:{
-		ci->aux.missing_reason = 0;
+		ci->aux.method_missing_reason = 0;
 		CI_SET_FASTPATH(ci, vm_call_method_missing, enable_fastpath);
 		return vm_call_method_missing(th, cfp, ci);
 	      }
@@ -2040,18 +2040,18 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 	else {
 	    int safe;
 	    if (!(ci->flag & VM_CALL_FCALL) && (ci->me->def->flags.visi == METHOD_VISI_PRIVATE)) {
-		enum missing_reason stat = MISSING_PRIVATE;
+		enum method_missing_reason stat = MISSING_PRIVATE;
 		bp();
 		if (ci->flag & VM_CALL_VCALL) stat |= MISSING_VCALL;
 
-		ci->aux.missing_reason = stat;
+		ci->aux.method_missing_reason = stat;
 		CI_SET_FASTPATH(ci, vm_call_method_missing, 1);
 		return vm_call_method_missing(th, cfp, ci);
 	    }
 	    else if (!(ci->flag & VM_CALL_OPT_SEND) && (ci->me->def->flags.visi == METHOD_VISI_PROTECTED)) {
 		enable_fastpath = 0;
 		if (!rb_obj_is_kind_of(cfp->self, ci->defined_class)) {
-		    ci->aux.missing_reason = MISSING_PROTECTED;
+		    ci->aux.method_missing_reason = MISSING_PROTECTED;
 		    return vm_call_method_missing(th, cfp, ci);
 		}
 		else {
@@ -2075,7 +2075,7 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 	    rb_raise_method_missing(th, ci->argc, argv, ci->recv, stat);
 	}
 	else {
-	    ci->aux.missing_reason = stat;
+	    ci->aux.method_missing_reason = stat;
 	    CI_SET_FASTPATH(ci, vm_call_method_missing, 1);
 	    return vm_call_method_missing(th, cfp, ci);
 	}
@@ -2211,7 +2211,7 @@ vm_search_super_method(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_inf
     }
     if (!ci->klass) {
 	/* bound instance method of module */
-	ci->aux.missing_reason = MISSING_SUPER;
+	ci->aux.method_missing_reason = MISSING_SUPER;
 	CI_SET_FASTPATH(ci, vm_call_method_missing, 1);
 	return;
     }
