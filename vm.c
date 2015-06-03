@@ -1237,7 +1237,7 @@ static void
 rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VALUE klass)
 {
     st_data_t bop;
-    if (!me->def || me->def->type == VM_METHOD_TYPE_CFUNC) {
+    if (me->def->type == VM_METHOD_TYPE_CFUNC) {
 	if (st_lookup(vm_opt_method_table, (st_data_t)me, &bop)) {
 	    int flag = vm_redefinition_check_flag(klass);
 
@@ -1272,8 +1272,7 @@ add_opt_method(VALUE klass, ID mid, VALUE bop)
 {
     rb_method_entry_t *me = rb_method_entry_at(klass, mid);
 
-    if (me && me->def &&
-	me->def->type == VM_METHOD_TYPE_CFUNC) {
+    if (me && me->def->type == VM_METHOD_TYPE_CFUNC) {
 	st_insert(vm_opt_method_table, (st_data_t)me, (st_data_t)bop);
     }
     else {
