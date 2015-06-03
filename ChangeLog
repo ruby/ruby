@@ -1,3 +1,11 @@
+Wed Jun  3 16:17:21 2015  Aaron Patterson <tenderlove@ruby-lang.org>
+
+	* vm.c: eagerly allocate `loading_table`.  This eliminates the need to
+	  do NULL checks when looking up the `loading_table` hash.
+	  https://github.com/ruby/ruby/pull/918
+
+	* load.c: remove various NULL checks
+
 Wed Jun  3 11:47:15 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* method.h: change fileds order to gather frequent acces fields.
