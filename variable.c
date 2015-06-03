@@ -25,7 +25,6 @@ static void setup_const_entry(rb_const_entry_t *, VALUE, VALUE, rb_const_flag_t)
 static int const_update(st_data_t *, st_data_t *, st_data_t, int);
 static st_table *generic_iv_tbl;
 static st_table *generic_iv_tbl_compat;
-static int special_generic_ivar;
 
 /* per-object */
 struct gen_ivtbl {
@@ -1182,23 +1181,6 @@ rb_mark_generic_ivar(VALUE obj)
     }
 }
 
-static int
-givar_i(st_data_t k, st_data_t v, st_data_t a)
-{
-    VALUE obj = (VALUE)k;
-    if (rb_special_const_p(obj)) {
-	gen_ivtbl_mark((const struct gen_ivtbl *)v);
-    }
-    return ST_CONTINUE;
-}
-
-void
-rb_mark_generic_ivar_tbl(void)
-{
-    if (special_generic_ivar == 0) return;
-    st_foreach_safe(generic_iv_tbl, givar_i, 0);
-}
-
 void
 rb_free_generic_ivar(VALUE obj)
 {
@@ -1249,7 +1231,7 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
     long len;
     st_data_t index;
 
-    if (SPECIAL_CONST_P(obj)) goto generic;
+    if (SPECIAL_CONST_P(obj)) return undef;
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
         len = ROBJECT_NUMIV(obj);
@@ -1268,8 +1250,7 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
 	    return (VALUE)index;
 	break;
       default:
-      generic:
-	if (FL_TEST(obj, FL_EXIVAR) || rb_special_const_p(obj))
+	if (FL_TEST(obj, FL_EXIVAR))
 	    return generic_ivar_get(obj, id, undef);
 	break;
     }
@@ -1303,7 +1284,7 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
     long len;
     st_data_t index;
 
-    if (SPECIAL_CONST_P(obj)) goto generic;
+    rb_check_frozen(obj);
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
         len = ROBJECT_NUMIV(obj);
@@ -1323,8 +1304,7 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
 	    return (VALUE)index;
 	break;
       default:
-      generic:
-	if (FL_TEST(obj, FL_EXIVAR) || rb_special_const_p(obj))
+	if (FL_TEST(obj, FL_EXIVAR))
 	    return generic_ivar_delete(obj, id, undef);
 	break;
     }
@@ -1369,11 +1349,6 @@ generic_ivar_set(VALUE obj, ID id, VALUE val)
 {
     struct ivar_update ivup;
 
-    if (rb_special_const_p(obj)) {
-	if (rb_obj_frozen_p(obj)) rb_error_frozen("object");
-	special_generic_ivar = 1;
-    }
-
     ivup.extended = 0;
     ivup.u.iv_index_tbl = iv_index_tbl_make(obj);
     iv_index_tbl_extend(&ivup, id);
@@ -1392,7 +1367,7 @@ rb_ivar_set(VALUE obj, ID id, VALUE val)
     long i, len;
 
     rb_check_frozen(obj);
-    if (SPECIAL_CONST_P(obj)) goto generic;
+
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
         ivup.extended = 0;
@@ -1436,7 +1411,6 @@ rb_ivar_set(VALUE obj, ID id, VALUE val)
 	rb_st_insert_id_and_value(obj, RCLASS_IV_TBL(obj), (st_data_t)id, val);
         break;
       default:
-      generic:
 	generic_ivar_set(obj, id, val);
 	break;
     }
@@ -1449,7 +1423,8 @@ rb_ivar_defined(VALUE obj, ID id)
     VALUE val;
     struct st_table *iv_index_tbl;
     st_data_t index;
-    if (SPECIAL_CONST_P(obj)) goto generic;
+
+    if (SPECIAL_CONST_P(obj)) return Qfalse;
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
         iv_index_tbl = ROBJECT_IV_INDEX_TBL(obj);
@@ -1466,8 +1441,7 @@ rb_ivar_defined(VALUE obj, ID id)
 	    return Qtrue;
 	break;
       default:
-      generic:
-	if (FL_TEST(obj, FL_EXIVAR) || rb_special_const_p(obj))
+	if (FL_TEST(obj, FL_EXIVAR))
 	    return generic_ivar_defined(obj, id);
 	break;
     }
@@ -1577,10 +1551,7 @@ rb_copy_generic_ivar(VALUE clone, VALUE obj)
 {
     struct gen_ivtbl *ivtbl;
 
-    if (rb_special_const_p(clone)) {
-	if (rb_obj_frozen_p(clone)) rb_error_frozen("object");
-	special_generic_ivar = 1;
-    }
+    rb_check_frozen(clone);
 
     if (!FL_TEST(obj, FL_EXIVAR)) {
       clear:
@@ -1620,7 +1591,7 @@ rb_copy_generic_ivar(VALUE clone, VALUE obj)
 void
 rb_ivar_foreach(VALUE obj, int (*func)(ANYARGS), st_data_t arg)
 {
-    if (SPECIAL_CONST_P(obj)) goto generic;
+    if (SPECIAL_CONST_P(obj)) return;
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
         obj_ivar_each(obj, func, arg);
@@ -1632,8 +1603,7 @@ rb_ivar_foreach(VALUE obj, int (*func)(ANYARGS), st_data_t arg)
 	}
 	break;
       default:
-      generic:
-	if (FL_TEST(obj, FL_EXIVAR) || rb_special_const_p(obj)) {
+	if (FL_TEST(obj, FL_EXIVAR)) {
 	    gen_ivar_each(obj, func, arg);
 	}
 	break;
@@ -1644,7 +1614,9 @@ st_index_t
 rb_ivar_count(VALUE obj)
 {
     st_table *tbl;
-    if (SPECIAL_CONST_P(obj)) goto generic;
+
+    if (SPECIAL_CONST_P(obj)) return 0;
+
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
 	if ((tbl = ROBJECT_IV_INDEX_TBL(obj)) != 0) {
@@ -1665,8 +1637,7 @@ rb_ivar_count(VALUE obj)
 	}
 	break;
       default:
-      generic:
-	if (FL_TEST(obj, FL_EXIVAR) || rb_special_const_p(obj)) {
+	if (FL_TEST(obj, FL_EXIVAR)) {
 	    struct gen_ivtbl *ivtbl;
 
 	    if (gen_ivtbl_get(obj, &ivtbl)) {
@@ -1764,7 +1735,6 @@ rb_obj_remove_instance_variable(VALUE obj, VALUE name)
 		      QUOTE_ID(id));
     }
 
-    if (SPECIAL_CONST_P(obj)) goto generic;
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
         iv_index_tbl = ROBJECT_IV_INDEX_TBL(obj);
@@ -1785,8 +1755,7 @@ rb_obj_remove_instance_variable(VALUE obj, VALUE name)
 	}
 	break;
       default:
-      generic:
-	if (FL_TEST(obj, FL_EXIVAR) || rb_special_const_p(obj)) {
+	if (FL_TEST(obj, FL_EXIVAR)) {
 	    v = val;
 	    if (generic_ivar_remove(obj, (st_data_t)id, &v)) {
 		return (VALUE)v;
