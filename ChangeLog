@@ -1,3 +1,14 @@
+Wed Jun  3 19:24:12 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h: rename enum missing_reason to enum method_missing_reason.
+
+	* vm_core.h: use enum method_missing_reason for
+	  rb_thread_t::method_missing_reason.
+
+	* vm_eval.c: catch up this fix.
+
+	* vm_insnhelper.c: ditto.
+
 Wed Jun  3 16:17:21 2015  Aaron Patterson <tenderlove@ruby-lang.org>
 
 	* vm.c: eagerly allocate `loading_table`.  This eliminates the need to

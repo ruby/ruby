@@ -15,7 +15,7 @@ struct local_var_list {
     VALUE tbl;
 };
 
-static inline VALUE method_missing(VALUE obj, ID id, int argc, const VALUE *argv, enum missing_reason call_status);
+static inline VALUE method_missing(VALUE obj, ID id, int argc, const VALUE *argv, enum method_missing_reason call_status);
 static inline VALUE vm_yield_with_cref(rb_thread_t *th, int argc, const VALUE *argv, const rb_cref_t *cref);
 static inline VALUE vm_yield(rb_thread_t *th, int argc, const VALUE *argv);
 static inline VALUE vm_yield_with_block(rb_thread_t *th, int argc, const VALUE *argv, const rb_block_t *blockargptr);
@@ -208,7 +208,7 @@ vm_call0_body(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
 	    ci->defined_class = RCLASS_SUPER(ci->defined_class);
 
 	    if (!ci->defined_class || !(ci->me = rb_method_entry(ci->defined_class, ci->mid, &ci->defined_class))) {
-		enum missing_reason ex = (type == VM_METHOD_TYPE_ZSUPER) ? MISSING_SUPER : 0;
+		enum method_missing_reason ex = (type == VM_METHOD_TYPE_ZSUPER) ? MISSING_SUPER : 0;
 		ret = method_missing(ci->recv, ci->mid, ci->argc, argv, ex);
 		goto success;
 	    }
@@ -321,7 +321,7 @@ stack_check(void)
 
 static inline rb_method_entry_t *
     rb_search_method_entry(VALUE recv, ID mid, VALUE *defined_class_ptr);
-static inline enum missing_reason rb_method_call_status(rb_thread_t *th, const rb_method_entry_t *me, call_type scope, VALUE self);
+static inline enum method_missing_reason rb_method_call_status(rb_thread_t *th, const rb_method_entry_t *me, call_type scope, VALUE self);
 
 /*!
  * \internal
@@ -346,7 +346,7 @@ rb_call0(VALUE recv, ID mid, int argc, const VALUE *argv,
     rb_method_entry_t *me =
 	rb_search_method_entry(recv, mid, &defined_class);
     rb_thread_t *th = GET_THREAD();
-    enum missing_reason call_status = rb_method_call_status(th, me, scope, self);
+    enum method_missing_reason call_status = rb_method_call_status(th, me, scope, self);
 
     if (call_status != MISSING_NONE) {
 	return method_missing(recv, mid, argc, argv, call_status);
@@ -426,7 +426,7 @@ check_funcall_missing(rb_thread_t *th, VALUE klass, VALUE recv, ID mid, int argc
     else {
 	struct rescue_funcall_args args;
 
-	th->method_missing_reason = 0;
+	th->method_missing_reason = MISSING_NOENTRY;
 	args.recv = recv;
 	args.mid = mid;
 	args.argc = argc;
@@ -556,7 +556,7 @@ rb_search_method_entry(VALUE recv, ID mid, VALUE *defined_class_ptr)
     return rb_method_entry(klass, mid, defined_class_ptr);
 }
 
-static inline enum missing_reason
+static inline enum method_missing_reason
 rb_method_call_status(rb_thread_t *th, const rb_method_entry_t *me, call_type scope, VALUE self)
 {
     VALUE klass;
@@ -624,7 +624,7 @@ rb_call(VALUE recv, ID mid, int argc, const VALUE *argv, call_type scope)
 }
 
 NORETURN(static void raise_method_missing(rb_thread_t *th, int argc, const VALUE *argv,
-					  VALUE obj, enum missing_reason call_status));
+					  VALUE obj, enum method_missing_reason call_status));
 
 /*
  *  call-seq:
@@ -693,7 +693,7 @@ make_no_method_exception(VALUE exc, const char *format, VALUE obj, int argc, con
 
 static void
 raise_method_missing(rb_thread_t *th, int argc, const VALUE *argv, VALUE obj,
-		     enum missing_reason last_call_status)
+		     enum method_missing_reason last_call_status)
 {
     VALUE exc = rb_eNoMethodError;
     const char *format = 0;
@@ -728,7 +728,7 @@ raise_method_missing(rb_thread_t *th, int argc, const VALUE *argv, VALUE obj,
 }
 
 static inline VALUE
-method_missing(VALUE obj, ID id, int argc, const VALUE *argv, enum missing_reason call_status)
+method_missing(VALUE obj, ID id, int argc, const VALUE *argv, enum method_missing_reason call_status)
 {
     VALUE *nargv, result, work;
     rb_thread_t *th = GET_THREAD();

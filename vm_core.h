@@ -141,6 +141,16 @@ typedef struct rb_call_info_kw_arg_struct {
     VALUE keywords[1];
 } rb_call_info_kw_arg_t;
 
+enum method_missing_reason {
+    MISSING_NOENTRY   = 0x00,
+    MISSING_PRIVATE   = 0x01,
+    MISSING_PROTECTED = 0x02,
+    MISSING_VCALL     = 0x04,
+    MISSING_SUPER     = 0x08,
+    MISSING_MISSING   = 0x10,
+    MISSING_NONE      = 0x20
+};
+
 /* rb_call_info_t contains calling information including inline cache */
 typedef struct rb_call_info_struct {
     /* fixed at compile time */
@@ -167,15 +177,7 @@ typedef struct rb_call_info_struct {
     union {
 	int opt_pc; /* used by iseq */
 	int index; /* used by ivar */
-	enum missing_reason {
-	    MISSING_NOENTRY   = 0x00,
-	    MISSING_PRIVATE   = 0x01,
-	    MISSING_PROTECTED = 0x02,
-	    MISSING_VCALL     = 0x04,
-	    MISSING_SUPER     = 0x08,
-	    MISSING_MISSING   = 0x10,
-	    MISSING_NONE      = 0x20
-	} missing_reason; /* used by method_missing */
+	enum method_missing_reason method_missing_reason; /* used by method_missing */
 	int inc_sp; /* used by cfunc */
     } aux;
 
@@ -721,7 +723,7 @@ typedef struct rb_thread_struct {
     rb_ensure_list_t *ensure_list;
 
     /* misc */
-    int method_missing_reason;
+    enum method_missing_reason method_missing_reason;
     int abort_on_exception;
 #ifdef USE_SIGALTSTACK
     void *altstack;
