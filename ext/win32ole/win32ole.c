@@ -3994,7 +3994,7 @@ Init_win32ole(void)
      *   p WIN32OLE::ARGV # => [10, 20, 30]
      *
      * You can use WIN32OLE_VARIANT object to retrieve the value of reference
-     * arguments instead of refering WIN32OLE::ARGV.
+     * arguments instead of referring WIN32OLE::ARGV.
      *
      */
     rb_define_const(cWIN32OLE, "ARGV", rb_ary_new());
