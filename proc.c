@@ -2239,7 +2239,7 @@ method_def_location(const rb_method_definition_t *def)
 VALUE
 rb_method_entry_location(const rb_method_entry_t *me)
 {
-    if (!me || !me->def) return Qnil;
+    if (!me) return Qnil;
     return method_def_location(me->def);
 }
 

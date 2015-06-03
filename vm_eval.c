@@ -153,8 +153,6 @@ vm_call0_body(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
 {
     VALUE ret;
 
-    if (!ci->me->def) return Qnil;
-
     if (th->passed_block) {
 	ci->blockptr = (rb_block_t *)th->passed_block;
 	th->passed_block = 0;
@@ -213,7 +211,6 @@ vm_call0_body(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
 		goto success;
 	    }
 	    RUBY_VM_CHECK_INTS(th);
-	    if (!ci->me->def) return Qnil;
 	    goto again;
 	}
       case VM_METHOD_TYPE_ALIAS:
