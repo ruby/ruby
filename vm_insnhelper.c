@@ -465,23 +465,23 @@ rb_vm_get_cref(const VALUE *ep)
 }
 
 void
-rb_vm_rewrite_cref_stack(rb_cref_t *node, VALUE old_klass, VALUE new_klass, rb_cref_t **new_cref_ptr)
+rb_vm_rewrite_cref(rb_cref_t *cref, VALUE old_klass, VALUE new_klass, rb_cref_t **new_cref_ptr)
 {
-    rb_cref_t *new_node;
+    rb_cref_t *new_cref;
 
-    while (node) {
-	if (CREF_CLASS(node) == old_klass) {
-	    new_node = vm_cref_new(new_klass, 0, NULL);
-	    COPY_CREF_OMOD(new_node, node);
-	    CREF_NEXT_SET(new_node, CREF_NEXT(node));
-	    *new_cref_ptr = new_node;
+    while (cref) {
+	if (CREF_CLASS(cref) == old_klass) {
+	    new_cref = vm_cref_new(new_klass, 0, NULL);
+	    COPY_CREF_OMOD(new_cref, cref);
+	    CREF_NEXT_SET(new_cref, CREF_NEXT(cref));
+	    *new_cref_ptr = new_cref;
 	    return;
 	}
-	new_node = vm_cref_new(CREF_CLASS(node), 0, NULL);
-	COPY_CREF_OMOD(new_node, node);
-	node = CREF_NEXT(node);
-	*new_cref_ptr = new_node;
-	new_cref_ptr = (rb_cref_t **)&new_node->next;
+	new_cref = vm_cref_new(CREF_CLASS(cref), 0, NULL);
+	COPY_CREF_OMOD(new_cref, cref);
+	cref = CREF_NEXT(cref);
+	*new_cref_ptr = new_cref;
+	new_cref_ptr = (rb_cref_t **)&new_cref->next;
     }
     *new_cref_ptr = NULL;
 }
