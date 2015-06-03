@@ -141,4 +141,6 @@ rb_method_entry_t *rb_method_entry_create(ID called_id, VALUE klass, rb_method_d
 rb_method_entry_t *rb_method_entry_clone(const rb_method_entry_t *me);
 void rb_method_entry_copy(rb_method_entry_t *dst, rb_method_entry_t *src);
 
+void rb_scope_visibility_set(rb_method_visibility_t);
+
 #endif /* METHOD_H */
