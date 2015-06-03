@@ -1,3 +1,16 @@
+Thu Jun  4 05:44:01 2015  Eric Wong  <e@80x24.org>
+
+	* variable.c (special_generic_ivar): remove flag
+	  (givar_i, rb_mark_generic_ivar_tbl): remove functions
+	  (rb_free_generic_ivar, rb_ivar_lookup, rb_ivar_delete,
+	   generic_ivar_set, rb_ivar_set, rb_ivar_defined,
+	   rb_copy_generic_ivar, rb_ivar_foreach, rb_ivar_count,
+	   rb_obj_remove_instance_variable):
+	   adjust for lack of ivar support in special constants
+	* test/ruby/test_variable.rb: test ivars for special consts
+	* internal.h: remove rb_mark_generic_ivar_tbl decl
+	* gc.c (gc_mark_roots): remove rb_mark_generic_ivar_tbl call
+
 Thu Jun  4 05:13:34 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c (def_iseq_ptr): `iseqval' is not available any more.

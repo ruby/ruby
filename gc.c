@@ -4579,10 +4579,6 @@ gc_mark_roots(rb_objspace_t *objspace, const char **categoryp)
     MARK_CHECKPOINT("global_tbl");
     rb_gc_mark_global_tbl();
 
-    /* mark generic instance variables for special constants */
-    MARK_CHECKPOINT("generic_ivars");
-    rb_mark_generic_ivar_tbl();
-
     if (stress_to_class) rb_gc_mark(stress_to_class);
 
     MARK_CHECKPOINT("finish");

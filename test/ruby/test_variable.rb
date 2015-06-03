@@ -118,4 +118,22 @@ class TestVariable < Test::Unit::TestCase
       }
     }
   end
+
+  def test_special_constant_ivars
+    [ true, false, :symbol, "dsym#{rand(9999)}".to_sym, 1, 1.0 ].each do |v|
+      assert_empty v.instance_variables
+      msg = "can't modify frozen #{v.class}"
+
+      assert_raise_with_message(RuntimeError, msg) do
+        v.instance_variable_set(:@foo, :bar)
+      end
+
+      assert_nil v.instance_variable_get(:@foo)
+      refute v.instance_variable_defined?(:@foo)
+
+      assert_raise_with_message(RuntimeError, msg) do
+        v.remove_instance_variable(:@foo)
+      end
+    end
+  end
 end
