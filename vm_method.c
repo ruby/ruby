@@ -278,7 +278,7 @@ rb_method_definition_set(rb_method_definition_t *def, void *opts)
 	def->body.optimize_type = (enum method_optimized_type)opts;
 	return;
       case VM_METHOD_TYPE_REFINED:
-	DEF_OBJ_WRITE(&def->body.orig_me, (rb_method_entry_t *)opts);
+	DEF_OBJ_WRITE(&def->body.refined.orig_me, (rb_method_entry_t *)opts);
 	return;
       case VM_METHOD_TYPE_ALIAS:
 	DEF_OBJ_WRITE(&def->body.alias.original_me, (rb_method_entry_t *)opts);
@@ -321,7 +321,7 @@ rb_method_definition_reset(rb_method_entry_t *me, rb_method_definition_t *def)
 	RB_OBJ_WRITTEN(me, Qundef, def->body.proc);
 	break;
       case VM_METHOD_TYPE_REFINED:
-	RB_OBJ_WRITTEN(me, Qundef, def->body.orig_me);
+	RB_OBJ_WRITTEN(me, Qundef, def->body.refined.orig_me);
 	break;
       case VM_METHOD_TYPE_ALIAS:
 	RB_OBJ_WRITTEN(me, Qundef, def->body.alias.original_me);
@@ -548,8 +548,8 @@ rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_
     rb_method_definition_t *def = rb_method_definition_create(visi, type, mid, opts);
     rb_method_entry_t *me = rb_method_entry_make(klass, mid, type, def, visi, klass);
 
-    if (me->def->type == VM_METHOD_TYPE_REFINED && me->def->body.orig_me) { /* TODO: really needed? */
-	rb_method_definition_reset(me->def->body.orig_me, def);
+    if (me->def->type == VM_METHOD_TYPE_REFINED && me->def->body.refined.orig_me) { /* TODO: really needed? */
+	rb_method_definition_reset(me->def->body.refined.orig_me, def);
     }
 
     if (type != VM_METHOD_TYPE_UNDEF && type != VM_METHOD_TYPE_REFINED) {
@@ -716,8 +716,8 @@ get_original_method_entry(VALUE refinements,
 {
     VALUE super;
 
-    if (me->def->body.orig_me) {
-	return me->def->body.orig_me;
+    if (me->def->body.refined.orig_me) {
+	return me->def->body.refined.orig_me;
     }
     else if (!(super = RCLASS_SUPER(me->klass))) {
 	return 0;
@@ -893,8 +893,8 @@ rb_export_method(VALUE klass, ID name, rb_method_visibility_t visi)
 	if (klass == defined_class || RCLASS_ORIGIN(klass) == defined_class) {
 	    me->def->flags.visi = visi;
 
-	    if (me->def->type == VM_METHOD_TYPE_REFINED && me->def->body.orig_me) {
-		me->def->body.orig_me->def->flags.visi = visi;
+	    if (me->def->type == VM_METHOD_TYPE_REFINED && me->def->body.refined.orig_me) {
+		me->def->body.refined.orig_me->def->flags.visi = visi;
 	    }
 	    rb_clear_method_cache_by_class(klass);
 	}
@@ -1274,8 +1274,8 @@ original_method_definition(const rb_method_definition_t *def)
     if (def) {
 	switch (def->type) {
 	  case VM_METHOD_TYPE_REFINED:
-	    if (def->body.orig_me) {
-		def = def->body.orig_me->def;
+	    if (def->body.refined.orig_me) {
+		def = def->body.refined.orig_me->def;
 		goto again;
 	    }
 	    break;

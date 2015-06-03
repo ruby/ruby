@@ -3946,7 +3946,7 @@ mark_method_entry(rb_objspace_t *objspace, const rb_method_entry_t *me)
 	gc_mark(objspace, (VALUE)def->body.alias.original_me);
 	return;
       case VM_METHOD_TYPE_REFINED:
-	gc_mark(objspace, (VALUE)def->body.orig_me);
+	gc_mark(objspace, (VALUE)def->body.refined.orig_me);
 	break;
       case VM_METHOD_TYPE_CFUNC:
       case VM_METHOD_TYPE_ZSUPER:
