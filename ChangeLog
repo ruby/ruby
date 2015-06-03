@@ -1,3 +1,12 @@
+Thu Jun  4 04:10:43 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h (rb_vm_rewrite_cref_stack): rename to rb_vm_rewrite_cref().
+
+	* class.c (clone_method): use renamed name.
+
+	* vm_insnhelper.c (rb_vm_rewrite_cref): do not use `node' in variable
+	  names.
+
 Wed Jun  3 23:03:50 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_method.c: rename `rb_frame_...' to `rb_scope_...'.
