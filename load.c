@@ -463,7 +463,6 @@ rb_feature_p(const char *feature, const char *ext, int rb, int expanded, const c
     }
 
     loading_tbl = get_loading_table();
-    if (loading_tbl) {
 	f = 0;
 	if (!expanded) {
 	    struct loaded_feature_searching fs;
@@ -513,7 +512,6 @@ rb_feature_p(const char *feature, const char *ext, int rb, int expanded, const c
 	    }
 	    rb_str_resize(bufstr, 0);
 	}
-    }
     return 0;
 }
 
@@ -716,11 +714,7 @@ load_lock(const char *ftptr)
     st_data_t data;
     st_table *loading_tbl = get_loading_table();
 
-    if (!loading_tbl || !st_lookup(loading_tbl, (st_data_t)ftptr, &data)) {
-	/* loading ruby library should be serialized. */
-	if (!loading_tbl) {
-	    GET_VM()->loading_table = loading_tbl = st_init_strtable();
-	}
+    if (!st_lookup(loading_tbl, (st_data_t)ftptr, &data)) {
 	/* partial state */
 	ftptr = ruby_strdup(ftptr);
 	data = (st_data_t)rb_thread_shield_new();
@@ -1090,9 +1084,6 @@ ruby_init_ext(const char *name, void (*init)(void))
 
     if (rb_provided(name))
 	return;
-    if (!loading_tbl) {
-	GET_VM()->loading_table = loading_tbl = st_init_strtable();
-    }
     st_update(loading_tbl, (st_data_t)name, register_init_ext, (st_data_t)init);
 }
 
