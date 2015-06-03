@@ -1123,7 +1123,7 @@ method_entry_i(st_data_t key, st_data_t value, st_data_t data)
     struct method_entry_arg *arg = (struct method_entry_arg *)data;
     rb_method_visibility_t type;
 
-    if (me && me->def->type == VM_METHOD_TYPE_REFINED) {
+    if (me->def->type == VM_METHOD_TYPE_REFINED) {
 	VALUE klass = me->klass;
 	me = rb_resolve_refined_method(Qnil, me, NULL);
 	if (!me) return ST_CONTINUE;

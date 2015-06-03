@@ -1,3 +1,7 @@
+Thu Jun  4 04:50:12 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* class.c (method_entry_i): mtbl should not have `me' as NULL.
+
 Thu Jun  4 04:28:45 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* class.c (clone_method): do not use me->klass, but use explicitly
