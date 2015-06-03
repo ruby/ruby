@@ -6,7 +6,8 @@ class String
     strip.upcase.tr_s("^A-Z0-9_*", "_").tr_s("*", "P")
   end
 end
-types = ARGF.grep(/^\s*RUBY_CHECK_SIZEOF\((\w[^\[\],#]*)[^#]*\)/) {$1}
+types = ARGF.grep(/^\s*RUBY_CHECK_SIZEOF\((\w[^\[\],#]*)[^#]*\)|
+                   ^\s*check_sizeof\('(\w+)'/x) {$+}
 conditions = {
   "long long" => 'defined(HAVE_TRUE_LONG_LONG)',
 }
