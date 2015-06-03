@@ -10,6 +10,7 @@ Thu Jun  4 05:44:01 2015  Eric Wong  <e@80x24.org>
 	* test/ruby/test_variable.rb: test ivars for special consts
 	* internal.h: remove rb_mark_generic_ivar_tbl decl
 	* gc.c (gc_mark_roots): remove rb_mark_generic_ivar_tbl call
+	  [ruby-core:69441] [Feature #11208]
 
 Thu Jun  4 05:13:34 2015  Koichi Sasada  <ko1@atdot.net>
 
