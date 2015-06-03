@@ -551,7 +551,7 @@ typedef struct rb_cref_struct {
     VALUE flags;
     const VALUE refinements;
     const VALUE klass;
-    VALUE visi;
+    VALUE scope_visi;
     struct rb_cref_struct * const next;
 } rb_cref_t;
 

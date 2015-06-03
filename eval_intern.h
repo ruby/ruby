@@ -228,16 +228,25 @@ CREF_NEXT_SET(rb_cref_t *cref, const rb_cref_t *next_cref)
     RB_OBJ_WRITE(cref, &cref->next, next_cref);
 }
 
-static inline long
-CREF_VISI(const rb_cref_t *cref)
+typedef struct rb_scope_visi_struct {
+    rb_method_visibility_t method_visi : 3;
+    unsigned int module_func : 1;
+} rb_scope_visibility_t;
+
+static inline const rb_scope_visibility_t *
+CREF_SCOPE_VISI(const rb_cref_t *cref)
 {
-    return (long)cref->visi;
+    return (const rb_scope_visibility_t *)&cref->scope_visi;
 }
 
 static inline void
-CREF_VISI_SET(rb_cref_t *cref, long v)
+CREF_SCOPE_VISI_COPY(const rb_cref_t *dst_cref, rb_cref_t *src_cref)
 {
-    cref->visi = v;
+    rb_scope_visibility_t *src = (rb_scope_visibility_t *)&src_cref->scope_visi;
+    rb_scope_visibility_t *dst = (rb_scope_visibility_t *)&dst_cref->scope_visi;
+
+    dst->method_visi = src->method_visi;
+    dst->module_func = src->module_func;
 }
 
 static inline VALUE
@@ -282,7 +291,7 @@ CREF_OMOD_SHARED_UNSET(rb_cref_t *cref)
     cref->flags &= ~NODE_FL_CREF_OMOD_SHARED_;
 }
 
-void rb_frame_visibility_set(rb_method_flag_t);
+void rb_frame_visibility_set(rb_method_visibility_t);
 
 void rb_thread_cleanup(void);
 void rb_thread_wait_other_threads(void);
@@ -308,7 +317,7 @@ NORETURN(void rb_fiber_start(void));
 
 NORETURN(void rb_print_undef(VALUE, ID, int));
 NORETURN(void rb_print_undef_str(VALUE, VALUE));
-NORETURN(void rb_print_inaccessible(VALUE, ID, int));
+NORETURN(void rb_print_inaccessible(VALUE, ID, rb_method_visibility_t));
 NORETURN(void rb_vm_localjump_error(const char *,VALUE, int));
 NORETURN(void rb_vm_jump_tag_but_local_jump(int));
 NORETURN(void rb_raise_method_missing(rb_thread_t *th, int argc, const VALUE *argv,

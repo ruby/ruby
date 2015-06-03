@@ -21,27 +21,6 @@
 # endif
 #endif
 
-typedef enum {
-    NOEX_PUBLIC    = 0x00,
-    NOEX_NOSUPER   = 0x01,
-    NOEX_PRIVATE   = 0x02,
-    NOEX_PROTECTED = 0x04,
-    NOEX_MASK      = 0x06,
-    NOEX_BASIC     = 0x08,
-    NOEX_UNDEF     = NOEX_NOSUPER,
-    NOEX_MODFUNC   = 0x12,
-    NOEX_SUPER     = 0x20,
-    NOEX_VCALL     = 0x40,
-    NOEX_RESPONDS  = 0x80,
-
-    NOEX_BIT_WIDTH = 8,
-    NOEX_SAFE_SHIFT_OFFSET = ((NOEX_BIT_WIDTH+3)/4)*4 /* round up to nibble */
-} rb_method_flag_t;
-
-#define NOEX_SAFE(n) ((int)((n) >> NOEX_SAFE_SHIFT_OFFSET) & 0x0F)
-#define NOEX_WITH(n, s) (((s) << NOEX_SAFE_SHIFT_OFFSET) | (n) | (ruby_running ? 0 : NOEX_BASIC))
-#define NOEX_WITH_SAFE(n) NOEX_WITH((n), rb_safe_level())
-
 /* method data type */
 
 typedef struct rb_method_entry_struct {
@@ -51,6 +30,13 @@ typedef struct rb_method_entry_struct {
     ID called_id;
     const VALUE klass;    /* should be marked */
 } rb_method_entry_t;
+
+typedef enum {
+    METHOD_VISI_UNDEF     = 0x00,
+    METHOD_VISI_PUBLIC    = 0x01,
+    METHOD_VISI_PRIVATE   = 0x02,
+    METHOD_VISI_PROTECTED = 0x03
+} rb_method_visibility_t;
 
 typedef enum {
     VM_METHOD_TYPE_ISEQ,
@@ -92,10 +78,12 @@ typedef struct rb_method_alias_struct {
 } rb_method_alias_t;
 
 typedef struct rb_method_definition_struct {
-    rb_method_flag_t flag;
+    struct {
+	rb_method_visibility_t visi: 3;
+	unsigned int basic: 1;
+	unsigned int safe: 3;
+    } flags;
     rb_method_type_t type; /* method type */
-    int *alias_count_ptr;
-    ID original_id;
 
     union {
 	rb_method_iseq_t iseq;
@@ -111,6 +99,9 @@ typedef struct rb_method_definition_struct {
 	} optimize_type;
 	struct rb_method_entry_struct *orig_me;
     } body;
+
+    int *alias_count_ptr;
+    ID original_id;
 } rb_method_definition_t;
 
 #define UNDEFINED_METHOD_ENTRY_P(me) (!(me) || !(me)->def || (me)->def->type == VM_METHOD_TYPE_UNDEF)
@@ -118,9 +109,9 @@ typedef struct rb_method_definition_struct {
     ((def)->type == VM_METHOD_TYPE_REFINED && \
      UNDEFINED_METHOD_ENTRY_P((def)->body.orig_me))
 
-void rb_add_method_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, rb_method_flag_t noex);
-void rb_add_method_iseq(VALUE klass, ID mid, VALUE iseqval, rb_cref_t *cref, rb_method_flag_t noex);
-rb_method_entry_t *rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *option, rb_method_flag_t noex);
+void rb_add_method_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, rb_method_visibility_t visi);
+void rb_add_method_iseq(VALUE klass, ID mid, VALUE iseqval, rb_cref_t *cref, rb_method_visibility_t visi);
+rb_method_entry_t *rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *option, rb_method_visibility_t visi);
 rb_method_entry_t *rb_method_entry(VALUE klass, ID id, VALUE *define_class_ptr);
 rb_method_entry_t *rb_method_entry_at(VALUE obj, ID id);
 void rb_add_refined_method_entry(VALUE refined_class, ID mid);
@@ -133,7 +124,7 @@ rb_method_entry_t *rb_method_entry_without_refinements(VALUE klass, ID id,
 						       VALUE *defined_class_ptr);
 
 rb_method_entry_t *rb_method_entry_get_without_cache(VALUE klass, ID id, VALUE *define_class_ptr);
-rb_method_entry_t *rb_method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *, rb_method_flag_t noex);
+rb_method_entry_t *rb_method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *, rb_method_visibility_t noex);
 
 int rb_method_entry_arity(const rb_method_entry_t *me);
 int rb_method_entry_eq(const rb_method_entry_t *m1, const rb_method_entry_t *m2);

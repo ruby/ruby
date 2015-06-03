@@ -935,7 +935,7 @@ load_failed(VALUE fname)
 static VALUE
 load_ext(VALUE path)
 {
-    rb_frame_visibility_set(NOEX_PUBLIC);
+    rb_frame_visibility_set(METHOD_VISI_PUBLIC);
     return (VALUE)dln_load(RSTRING_PTR(path));
 }
 

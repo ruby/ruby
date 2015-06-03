@@ -1,3 +1,39 @@
+Wed Jun 03 10:35:45 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* method.h: split rb_method_definition_t::flag to several flags.
+
+	  `flag' contains several categories of attributes and it makes us
+	  confusion (at least, I had confused).
+
+	  * rb_method_visibility_t (flags::visi)
+	    * NOEX_UNDEF     -> METHOD_VISI_UNDEF     = 0
+	    * NOEX_PUBLIC    -> METHOD_VISI_PUBLIC    = 1
+	    * NOEX_PRIVATE   -> METHOD_VISI_PRIVATE   = 2
+	    * NOEX_PROTECTED -> METHOD_VISI_PROTECTED = 3
+	  * NOEX_SAFE(flag)) -> safe (flags::safe, 2 bits)
+	  * NOEX_BASIC       -> basic (flags::basic, 1 bit)
+	  * NOEX_MODFUNC     -> rb_scope_visibility_t in CREF
+	  * NOEX_SUPER       -> MISSING_SUPER (enum missing_reason)
+	  * NOEX_VCALL       -> MISSING_VCALL (enum missing_reason)
+	  * NOEX_RESPONDS    -> BOUND_RESPONDS (macro)
+
+	  Now, NOEX_NOREDEF is not supported (I'm not sure it is needed).
+
+	  Background:
+	    I did not know what "NOEX" stands for.
+	    I asked Matz (who made this name) and his answer was "Nothing".
+	    "At first, it meant NO EXport (private), but the original
+	    meaning was gone."
+	    This is why I remove the mysterious word "NOEX" from MRI.
+
+	* vm_core.h: introduce `enum missing_reason' to represent
+	  method_missing (NoMethodError) reason.
+
+	* eval_intern.h: introduce rb_scope_visibility_t to represent
+	  scope visibility.
+	  It has 3 method visibilities (public/private/protected)
+	  and `module_function`.
+
 Wed Jun  3 08:06:30 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* gem/bundled_gems: updated to test-unit 3.1.1 and minitest 5.7.0.

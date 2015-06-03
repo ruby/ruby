@@ -209,23 +209,22 @@ ruby_error_print(void)
 }
 
 static const char *
-method_scope_name(int scope)
+method_visibility_name(rb_method_visibility_t visi)
 {
-    const char *v;
-
-    switch (scope) {
-      default:
-      case NOEX_PUBLIC: v = ""; break;
-      case NOEX_PRIVATE: v = " private"; break;
-      case NOEX_PROTECTED: v = " protected"; break;
+    switch (visi) {
+      case METHOD_VISI_UNDEF:
+      case METHOD_VISI_PUBLIC:    return "";
+      case METHOD_VISI_PRIVATE:   return " private";
+      case METHOD_VISI_PROTECTED: return " protected";
     }
-    return v;
+    rb_bug("method_visibility_name: unreachable (%d)", (int)visi);
 }
 
 void
-rb_print_undef(VALUE klass, ID id, int scope)
+rb_print_undef(VALUE klass, ID id, int visi)
 {
-    const char *v = method_scope_name(scope);
+    const char *v = method_visibility_name(visi);
+
     rb_name_error(id, "undefined%s method `%"PRIsVALUE"' for %s `% "PRIsVALUE"'", v,
 		  QUOTE_ID(id),
 		  (RB_TYPE_P(klass, T_MODULE)) ? "module" : "class",
@@ -242,9 +241,9 @@ rb_print_undef_str(VALUE klass, VALUE name)
 }
 
 void
-rb_print_inaccessible(VALUE klass, ID id, int scope)
+rb_print_inaccessible(VALUE klass, ID id, rb_method_visibility_t visi)
 {
-    const char *v = method_scope_name(scope);
+    const char *v = method_visibility_name(visi);
     rb_name_error(id, "method `%"PRIsVALUE"' for %s `% "PRIsVALUE"' is %s",
 		  QUOTE_ID(id),
 		  (RB_TYPE_P(klass, T_MODULE)) ? "module" : "class",

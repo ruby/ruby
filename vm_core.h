@@ -167,7 +167,15 @@ typedef struct rb_call_info_struct {
     union {
 	int opt_pc; /* used by iseq */
 	int index; /* used by ivar */
-	int missing_reason; /* used by method_missing */
+	enum missing_reason {
+	    MISSING_NOENTRY   = 0x00,
+	    MISSING_PRIVATE   = 0x01,
+	    MISSING_PROTECTED = 0x02,
+	    MISSING_VCALL     = 0x04,
+	    MISSING_SUPER     = 0x08,
+	    MISSING_MISSING   = 0x10,
+	    MISSING_NONE      = 0x20
+	} missing_reason; /* used by method_missing */
 	int inc_sp; /* used by cfunc */
     } aux;
 

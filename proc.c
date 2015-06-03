@@ -1161,7 +1161,7 @@ mnew_missing(VALUE rclass, VALUE klass, VALUE obj, ID id, ID rid, VALUE mclass)
     data->id = rid;
 
     def = ZALLOC(rb_method_definition_t);
-    def->flag = 0;
+    def->flags.visi = METHOD_VISI_UNDEF;
     def->type = VM_METHOD_TYPE_MISSING;
     def->original_id = id;
 
@@ -1182,7 +1182,7 @@ mnew_internal(const rb_method_entry_t *me, VALUE defined_class, VALUE klass,
     VALUE method;
     ID rid = id;
     rb_method_definition_t *def = 0;
-    rb_method_flag_t flag = NOEX_UNDEF;
+    rb_method_visibility_t visi = METHOD_VISI_UNDEF;
 
   again:
     if (UNDEFINED_METHOD_ENTRY_P(me)) {
@@ -1193,11 +1193,11 @@ mnew_internal(const rb_method_entry_t *me, VALUE defined_class, VALUE klass,
 	rb_print_undef(klass, id, 0);
     }
     def = me->def;
-    if (flag == NOEX_UNDEF) {
-	flag = def->flag;
-	if (scope && (flag & NOEX_MASK) != NOEX_PUBLIC) {
+    if (visi == METHOD_VISI_UNDEF) {
+	visi = def->flags.visi;
+	if (scope && (visi != METHOD_VISI_PUBLIC)) {
 	    if (!error) return Qnil;
-	    rb_print_inaccessible(klass, id, flag & NOEX_MASK);
+	    rb_print_inaccessible(klass, id, visi);
 	}
     }
     if (def->type == VM_METHOD_TYPE_ZSUPER) {
@@ -1658,11 +1658,12 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
 {
     ID id;
     VALUE body;
-    rb_method_flag_t noex = NOEX_PUBLIC;
     const rb_cref_t *cref = rb_vm_cref_in_context(mod, mod);
+    const rb_scope_visibility_t default_scope_visi = {METHOD_VISI_PUBLIC, FALSE};
+    const rb_scope_visibility_t *scope_visi = &default_scope_visi;
 
     if (cref) {
-	noex = (rb_method_flag_t)CREF_VISI(cref);
+	scope_visi = CREF_SCOPE_VISI(cref);
     }
 
     if (argc == 1) {
@@ -1695,9 +1696,9 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
 			 rb_class_name(rclass));
 	    }
 	}
-	rb_method_entry_set(mod, id, method->me, noex);
-	if (noex == NOEX_MODFUNC) {
-	    rb_method_entry_set(rb_singleton_class(mod), id, method->me, NOEX_PUBLIC);
+	rb_method_entry_set(mod, id, method->me, scope_visi->method_visi);
+	if (scope_visi->module_func) {
+	    rb_method_entry_set(rb_singleton_class(mod), id, method->me, METHOD_VISI_PUBLIC);
 	}
 	RB_GC_GUARD(body);
     }
@@ -1712,9 +1713,9 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
 	    proc->is_from_method = TRUE;
 	    proc->block.klass = mod;
 	}
-	rb_add_method(mod, id, VM_METHOD_TYPE_BMETHOD, (void *)body, noex);
-	if (noex == NOEX_MODFUNC) {
-	    rb_add_method(rb_singleton_class(mod), id, VM_METHOD_TYPE_BMETHOD, (void *)body, NOEX_PUBLIC);
+	rb_add_method(mod, id, VM_METHOD_TYPE_BMETHOD, (void *)body, scope_visi->method_visi);
+	if (scope_visi->module_func) {
+	    rb_add_method(rb_singleton_class(mod), id, VM_METHOD_TYPE_BMETHOD, (void *)body, METHOD_VISI_PUBLIC);
 	}
     }
     else {

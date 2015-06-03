@@ -110,23 +110,23 @@ rb_f_notimplement(int argc, const VALUE *argv, VALUE obj)
 }
 
 static void
-rb_define_notimplement_method_id(VALUE mod, ID id, rb_method_flag_t noex)
+rb_define_notimplement_method_id(VALUE mod, ID id, rb_method_visibility_t visi)
 {
-    rb_add_method(mod, id, VM_METHOD_TYPE_NOTIMPLEMENTED, (void *)1, noex);
+    rb_add_method(mod, id, VM_METHOD_TYPE_NOTIMPLEMENTED, (void *)1, visi);
 }
 
 void
-rb_add_method_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, rb_method_flag_t noex)
+rb_add_method_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, rb_method_visibility_t visi)
 {
     if (argc < -2 || 15 < argc) rb_raise(rb_eArgError, "arity out of range: %d for -2..15", argc);
     if (func != rb_f_notimplement) {
 	rb_method_cfunc_t opt;
 	opt.func = func;
 	opt.argc = argc;
-	rb_add_method(klass, mid, VM_METHOD_TYPE_CFUNC, &opt, noex);
+	rb_add_method(klass, mid, VM_METHOD_TYPE_CFUNC, &opt, visi);
     }
     else {
-	rb_define_notimplement_method_id(klass, mid, noex);
+	rb_define_notimplement_method_id(klass, mid, visi);
     }
 }
 
@@ -293,11 +293,13 @@ rb_method_definition_set(rb_method_definition_t *def, void *opts)
 }
 
 static rb_method_definition_t *
-rb_method_definition_create(rb_method_flag_t flag, rb_method_type_t type, ID mid, void *opts)
+rb_method_definition_create(rb_method_visibility_t visi, rb_method_type_t type, ID mid, void *opts)
 {
     rb_method_definition_t *def = ZALLOC(rb_method_definition_t);
     /* def->alias_count_ptr = NULL; already cleared */
-    def->flag = flag;
+    def->flags.visi = visi;
+    def->flags.basic = ruby_running ? FALSE : TRUE;
+    def->flags.safe = rb_safe_level();
     def->type = type;
     def->original_id = mid;
     if (opts != NULL) rb_method_definition_set(def, opts);
@@ -335,7 +337,10 @@ static rb_method_definition_t *
 rb_method_definition_clone(rb_method_definition_t *src_def)
 {
     int *iptr = src_def->alias_count_ptr;
-    rb_method_definition_t *def = rb_method_definition_create(src_def->flag, src_def->type, src_def->original_id, NULL);
+    rb_method_definition_t *def = rb_method_definition_create(src_def->flags.visi, src_def->type, src_def->original_id, NULL);
+
+    def->flags.basic = src_def->flags.basic;
+    def->flags.safe = src_def->flags.safe;
     memcpy(&def->body, &src_def->body, sizeof(def->body));
     def->alias_count_ptr = src_def->alias_count_ptr;
 
@@ -383,7 +388,7 @@ make_method_entry_refined(rb_method_entry_t *me)
 
     rb_vm_check_redefinition_opt_method(me, me->klass);
 
-    new_def = rb_method_definition_create(NOEX_WITH_SAFE(NOEX_PUBLIC), VM_METHOD_TYPE_REFINED, me->called_id, rb_method_entry_clone(me));
+    new_def = rb_method_definition_create(METHOD_VISI_PUBLIC, VM_METHOD_TYPE_REFINED, me->called_id, rb_method_entry_clone(me));
     rb_method_definition_reset(me, new_def);
 }
 
@@ -397,12 +402,12 @@ rb_add_refined_method_entry(VALUE refined_class, ID mid)
 	rb_clear_method_cache_by_class(refined_class);
     }
     else {
-	rb_add_method(refined_class, mid, VM_METHOD_TYPE_REFINED, 0, NOEX_PUBLIC);
+	rb_add_method(refined_class, mid, VM_METHOD_TYPE_REFINED, 0, METHOD_VISI_PUBLIC);
     }
 }
 
 static rb_method_entry_t *
-rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type, rb_method_definition_t *def, rb_method_flag_t noex, VALUE defined_class)
+rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type, rb_method_definition_t *def, rb_method_visibility_t visi, VALUE defined_class)
 {
     rb_method_entry_t *me;
 #if NOEX_NOREDEF
@@ -424,7 +429,7 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type, rb_method_defin
 	  case idInitialize_clone:
 	  case idInitialize_dup:
 	  case idRespond_to_missing:
-	    noex |= NOEX_PRIVATE;
+	    visi = METHOD_VISI_PRIVATE;
 	}
     }
 
@@ -492,7 +497,8 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type, rb_method_defin
     }
 
     me = rb_method_entry_create(mid, defined_class, def);
-    def->flag = NOEX_WITH_SAFE(noex);;
+    def->flags.visi = visi;
+    def->flags.safe = rb_safe_level(); /* TODO: maybe we need to remove it. */
 
     rb_clear_method_cache_by_class(klass);
 
@@ -537,10 +543,10 @@ method_added(VALUE klass, ID mid)
 }
 
 rb_method_entry_t *
-rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_flag_t noex)
+rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_visibility_t visi)
 {
-    rb_method_definition_t *def = rb_method_definition_create(noex, type, mid, opts);
-    rb_method_entry_t *me = rb_method_entry_make(klass, mid, type, def, noex, klass);
+    rb_method_definition_t *def = rb_method_definition_create(visi, type, mid, opts);
+    rb_method_entry_t *me = rb_method_entry_make(klass, mid, type, def, visi, klass);
 
     if (me->def->type == VM_METHOD_TYPE_REFINED && me->def->body.orig_me) { /* TODO: really needed? */
 	rb_method_definition_reset(me->def->body.orig_me, def);
@@ -553,29 +559,31 @@ rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_
 }
 
 void
-rb_add_method_iseq(VALUE klass, ID mid, VALUE iseqval, rb_cref_t *cref, rb_method_flag_t noex)
+rb_add_method_iseq(VALUE klass, ID mid, VALUE iseqval, rb_cref_t *cref, rb_method_visibility_t visi)
 {
     rb_iseq_t *iseq;
     GetISeqPtr(iseqval, iseq);
     {
 	rb_method_iseq_t iseq_body = {iseq, cref};
-	rb_add_method(klass, mid, VM_METHOD_TYPE_ISEQ, &iseq_body, noex);
+	rb_add_method(klass, mid, VM_METHOD_TYPE_ISEQ, &iseq_body, visi);
     }
 }
 
 static rb_method_entry_t *
 method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *me,
-		 rb_method_flag_t noex, VALUE defined_class)
+		 rb_method_visibility_t visi, VALUE defined_class)
 {
-    rb_method_entry_t *newme = rb_method_entry_make(klass, mid, me->def->type, rb_method_definition_clone(me->def), noex, defined_class);
+    rb_method_definition_t *def = rb_method_definition_clone(me->def);
+    rb_method_entry_t *newme = rb_method_entry_make(klass, mid, me->def->type, def, visi, defined_class);
+    def->flags.safe = me->def->flags.safe;
     method_added(klass, mid);
     return newme;
 }
 
 rb_method_entry_t *
-rb_method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *me, rb_method_flag_t noex)
+rb_method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *me, rb_method_visibility_t visi)
 {
-    return method_entry_set(klass, mid, me, noex, klass);
+    return method_entry_set(klass, mid, me, visi, klass);
 }
 
 #define UNDEF_ALLOC_FUNC ((rb_alloc_func_t)-1)
@@ -864,7 +872,7 @@ rb_mod_remove_method(int argc, VALUE *argv, VALUE mod)
 }
 
 static void
-rb_export_method(VALUE klass, ID name, rb_method_flag_t noex)
+rb_export_method(VALUE klass, ID name, rb_method_visibility_t visi)
 {
     rb_method_entry_t *me;
     VALUE defined_class;
@@ -879,22 +887,25 @@ rb_export_method(VALUE klass, ID name, rb_method_flag_t noex)
 	rb_print_undef(klass, name, 0);
     }
 
-    if (me->def->flag != noex) {
+    if (me->def->flags.visi != visi) {
 	rb_vm_check_redefinition_opt_method(me, klass);
 
 	if (klass == defined_class || RCLASS_ORIGIN(klass) == defined_class) {
-	    me->def->flag = noex;
+	    me->def->flags.visi = visi;
 
 	    if (me->def->type == VM_METHOD_TYPE_REFINED && me->def->body.orig_me) {
-		me->def->body.orig_me->def->flag = noex;
+		me->def->body.orig_me->def->flags.visi = visi;
 	    }
 	    rb_clear_method_cache_by_class(klass);
 	}
 	else {
-	    rb_add_method(klass, name, VM_METHOD_TYPE_ZSUPER, 0, noex);
+	    rb_add_method(klass, name, VM_METHOD_TYPE_ZSUPER, 0, visi);
 	}
     }
 }
+
+#define BOUND_PRIVATE  0x01
+#define BOUND_RESPONDS 0x02
 
 int
 rb_method_boundp(VALUE klass, ID id, int ex)
@@ -905,14 +916,14 @@ rb_method_boundp(VALUE klass, ID id, int ex)
     if (me != 0) {
 	rb_method_definition_t *def = me->def;
 
-	if ((ex & ~NOEX_RESPONDS) &&
-	    ((def->flag & NOEX_PRIVATE) ||
-	     ((ex & NOEX_RESPONDS) && (def->flag & NOEX_PROTECTED)))) {
+	if ((ex & ~BOUND_RESPONDS) &&
+	    ((def->flags.visi == METHOD_VISI_PRIVATE) ||
+	     ((ex & BOUND_RESPONDS) && (def->flags.visi == METHOD_VISI_PROTECTED)))) {
 	    return 0;
 	}
 
 	if (def->type == VM_METHOD_TYPE_NOTIMPLEMENTED) {
-	    if (ex & NOEX_RESPONDS) return 2;
+	    if (ex & BOUND_RESPONDS) return 2;
 	    return 0;
 	}
 	return 1;
@@ -923,29 +934,39 @@ rb_method_boundp(VALUE klass, ID id, int ex)
 extern ID rb_check_attr_id(ID id);
 
 static int
-rb_frame_visibility_test(rb_method_flag_t flag)
+rb_frame_visibility_test(rb_method_visibility_t visi)
 {
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
 
     if (!vm_env_cref_by_cref(cfp->ep)) {
-	return NOEX_PUBLIC & flag;
+	return METHOD_VISI_PUBLIC == visi;
     }
     else {
-	return CREF_VISI(rb_vm_cref()) & flag;
+	return CREF_SCOPE_VISI(rb_vm_cref())->method_visi == visi;
     }
 }
 
 static int
-rb_frame_visibility_check(rb_method_flag_t flag)
+rb_frame_module_func_check(void)
 {
-    return CREF_VISI(rb_vm_cref()) == (long)flag;
+    return CREF_SCOPE_VISI(rb_vm_cref())->module_func;
 }
 
 void
-rb_frame_visibility_set(rb_method_flag_t flag)
+rb_frame_visibility_set(rb_method_visibility_t visi)
 {
-    CREF_VISI_SET(rb_vm_cref(), flag);
+    rb_scope_visibility_t *scope_visi = (rb_scope_visibility_t *)&rb_vm_cref()->scope_visi;
+    scope_visi->method_visi = visi;
+    scope_visi->module_func = FALSE;
+}
+
+void
+rb_frame_module_func_set(void)
+{
+    rb_scope_visibility_t *scope_visi = (rb_scope_visibility_t *)&rb_vm_cref()->scope_visi;
+    scope_visi->method_visi = METHOD_VISI_PRIVATE;
+    scope_visi->module_func = TRUE;
 }
 
 void
@@ -953,23 +974,23 @@ rb_attr(VALUE klass, ID id, int read, int write, int ex)
 {
     VALUE attriv;
     VALUE aname;
-    rb_method_flag_t noex;
+    rb_method_visibility_t visi;
 
     if (!ex) {
-	noex = NOEX_PUBLIC;
+	visi = METHOD_VISI_PUBLIC;
     }
     else {
-	if (rb_frame_visibility_test(NOEX_PRIVATE)) {
-	    noex = NOEX_PRIVATE;
-	    if (rb_frame_visibility_check(NOEX_MODFUNC)) {
+	if (rb_frame_visibility_test(METHOD_VISI_PRIVATE)) {
+	    visi = METHOD_VISI_PRIVATE;
+	    if (rb_frame_module_func_check()) {
 		rb_warning("attribute accessor as module_function");
 	    }
 	}
-	else if (rb_frame_visibility_test(NOEX_PROTECTED)) {
-	    noex = NOEX_PROTECTED;
+	else if (rb_frame_visibility_test(METHOD_VISI_PROTECTED)) {
+	    visi = METHOD_VISI_PROTECTED;
 	}
 	else {
-	    noex = NOEX_PUBLIC;
+	    visi = METHOD_VISI_PUBLIC;
 	}
     }
 
@@ -979,10 +1000,10 @@ rb_attr(VALUE klass, ID id, int read, int write, int ex)
     }
     attriv = (VALUE)rb_intern_str(rb_sprintf("@%"PRIsVALUE, aname));
     if (read) {
-	rb_add_method(klass, id, VM_METHOD_TYPE_IVAR, (void *)attriv, noex);
+	rb_add_method(klass, id, VM_METHOD_TYPE_IVAR, (void *)attriv, visi);
     }
     if (write) {
-	rb_add_method(klass, rb_id_attrset(id), VM_METHOD_TYPE_ATTRSET, (void *)attriv, noex);
+	rb_add_method(klass, rb_id_attrset(id), VM_METHOD_TYPE_ATTRSET, (void *)attriv, visi);
     }
 }
 
@@ -1021,7 +1042,7 @@ rb_undef(VALUE klass, ID id)
 		      QUOTE_ID(id), s0, rb_class_name(c));
     }
 
-    rb_add_method(klass, id, VM_METHOD_TYPE_UNDEF, 0, NOEX_PUBLIC);
+    rb_add_method(klass, id, VM_METHOD_TYPE_UNDEF, 0, METHOD_VISI_PUBLIC);
 
     CALL_METHOD_HOOK(klass, undefined, id);
 }
@@ -1125,17 +1146,15 @@ rb_mod_method_defined(VALUE mod, VALUE mid)
 
 }
 
-#define VISI_CHECK(x,f) (((x)&NOEX_MASK) == (f))
-
 static VALUE
-check_definition(VALUE mod, VALUE mid, rb_method_flag_t noex)
+check_definition(VALUE mod, VALUE mid, rb_method_visibility_t visi)
 {
     const rb_method_entry_t *me;
     ID id = rb_check_id(&mid);
     if (!id) return Qfalse;
     me = rb_method_entry_without_refinements(mod, id, 0);
     if (me) {
-	if (VISI_CHECK(me->def->flag, noex)) return Qtrue;
+	if (me->def->flags.visi == visi) return Qtrue;
     }
     return Qfalse;
 }
@@ -1171,7 +1190,7 @@ check_definition(VALUE mod, VALUE mid, rb_method_flag_t noex)
 static VALUE
 rb_mod_public_method_defined(VALUE mod, VALUE mid)
 {
-    return check_definition(mod, mid, NOEX_PUBLIC);
+    return check_definition(mod, mid, METHOD_VISI_PUBLIC);
 }
 
 /*
@@ -1205,7 +1224,7 @@ rb_mod_public_method_defined(VALUE mod, VALUE mid)
 static VALUE
 rb_mod_private_method_defined(VALUE mod, VALUE mid)
 {
-    return check_definition(mod, mid, NOEX_PRIVATE);
+    return check_definition(mod, mid, METHOD_VISI_PRIVATE);
 }
 
 /*
@@ -1239,7 +1258,7 @@ rb_mod_private_method_defined(VALUE mod, VALUE mid)
 static VALUE
 rb_mod_protected_method_defined(VALUE mod, VALUE mid)
 {
-    return check_definition(mod, mid, NOEX_PROTECTED);
+    return check_definition(mod, mid, METHOD_VISI_PROTECTED);
 }
 
 int
@@ -1353,7 +1372,7 @@ rb_alias(VALUE klass, ID alias_name, ID original_name)
     const VALUE target_klass = klass;
     VALUE defined_class;
     rb_method_entry_t *orig_me;
-    rb_method_flag_t flag = NOEX_UNDEF;
+    rb_method_visibility_t visi = METHOD_VISI_UNDEF;
 
     if (NIL_P(klass)) {
 	rb_raise(rb_eTypeError, "no class to make alias");
@@ -1379,11 +1398,11 @@ rb_alias(VALUE klass, ID alias_name, ID original_name)
     if (orig_me->def->type == VM_METHOD_TYPE_ZSUPER) {
 	klass = RCLASS_SUPER(klass);
 	original_name = orig_me->def->original_id;
-	flag = orig_me->def->flag;
+	visi = orig_me->def->flags.visi;
 	goto again;
     }
 
-    if (flag == NOEX_UNDEF) flag = orig_me->def->flag;
+    if (visi == METHOD_VISI_UNDEF) visi = orig_me->def->flags.visi;
 
     if (defined_class != target_klass) { /* inter class/module alias */
 	VALUE real_owner;
@@ -1397,13 +1416,14 @@ rb_alias(VALUE klass, ID alias_name, ID original_name)
 	}
 
 	/* make mthod entry */
-	alias_me = rb_add_method(target_klass, alias_name, VM_METHOD_TYPE_ALIAS, rb_method_entry_clone(orig_me), flag);
+	alias_me = rb_add_method(target_klass, alias_name, VM_METHOD_TYPE_ALIAS, rb_method_entry_clone(orig_me), visi);
 	RB_OBJ_WRITE(alias_me, &alias_me->klass, defined_class);
 	alias_me->def->original_id = orig_me->called_id;
 	*(ID *)&alias_me->def->body.alias.original_me->called_id = alias_name;
+	alias_me->def->flags.safe = orig_me->def->flags.safe;
     }
     else {
-	method_entry_set(target_klass, alias_name, orig_me, flag, defined_class);
+	method_entry_set(target_klass, alias_name, orig_me, visi, defined_class);
     }
 }
 
@@ -1441,7 +1461,7 @@ rb_mod_alias_method(VALUE mod, VALUE newname, VALUE oldname)
 }
 
 static void
-set_method_visibility(VALUE self, int argc, const VALUE *argv, rb_method_flag_t ex)
+set_method_visibility(VALUE self, int argc, const VALUE *argv, rb_method_visibility_t visi)
 {
     int i;
 
@@ -1457,18 +1477,18 @@ set_method_visibility(VALUE self, int argc, const VALUE *argv, rb_method_flag_t 
 	if (!id) {
 	    rb_print_undef_str(self, v);
 	}
-	rb_export_method(self, id, ex);
+	rb_export_method(self, id, visi);
     }
 }
 
 static VALUE
-set_visibility(int argc, const VALUE *argv, VALUE module, rb_method_flag_t ex)
+set_visibility(int argc, const VALUE *argv, VALUE module, rb_method_visibility_t visi)
 {
     if (argc == 0) {
-	rb_frame_visibility_set(ex);
+	rb_frame_visibility_set(visi);
     }
     else {
-	set_method_visibility(module, argc, argv, ex);
+	set_method_visibility(module, argc, argv, visi);
     }
     return module;
 }
@@ -1488,7 +1508,7 @@ set_visibility(int argc, const VALUE *argv, VALUE module, rb_method_flag_t ex)
 static VALUE
 rb_mod_public(int argc, VALUE *argv, VALUE module)
 {
-    return set_visibility(argc, argv, module, NOEX_PUBLIC);
+    return set_visibility(argc, argv, module, METHOD_VISI_PUBLIC);
 }
 
 /*
@@ -1506,7 +1526,7 @@ rb_mod_public(int argc, VALUE *argv, VALUE module)
 static VALUE
 rb_mod_protected(int argc, VALUE *argv, VALUE module)
 {
-    return set_visibility(argc, argv, module, NOEX_PROTECTED);
+    return set_visibility(argc, argv, module, METHOD_VISI_PROTECTED);
 }
 
 /*
@@ -1533,7 +1553,7 @@ rb_mod_protected(int argc, VALUE *argv, VALUE module)
 static VALUE
 rb_mod_private(int argc, VALUE *argv, VALUE module)
 {
-    return set_visibility(argc, argv, module, NOEX_PRIVATE);
+    return set_visibility(argc, argv, module, METHOD_VISI_PRIVATE);
 }
 
 /*
@@ -1549,7 +1569,7 @@ rb_mod_private(int argc, VALUE *argv, VALUE module)
 static VALUE
 rb_mod_public_method(int argc, VALUE *argv, VALUE obj)
 {
-    set_method_visibility(rb_singleton_class(obj), argc, argv, NOEX_PUBLIC);
+    set_method_visibility(rb_singleton_class(obj), argc, argv, METHOD_VISI_PUBLIC);
     return obj;
 }
 
@@ -1575,7 +1595,7 @@ rb_mod_public_method(int argc, VALUE *argv, VALUE obj)
 static VALUE
 rb_mod_private_method(int argc, VALUE *argv, VALUE obj)
 {
-    set_method_visibility(rb_singleton_class(obj), argc, argv, NOEX_PRIVATE);
+    set_method_visibility(rb_singleton_class(obj), argc, argv, METHOD_VISI_PRIVATE);
     return obj;
 }
 
@@ -1666,11 +1686,11 @@ rb_mod_modfunc(int argc, VALUE *argv, VALUE module)
     }
 
     if (argc == 0) {
-	rb_frame_visibility_set(NOEX_MODFUNC);
+	rb_frame_module_func_set();
 	return module;
     }
 
-    set_method_visibility(module, argc, argv, NOEX_PRIVATE);
+    set_method_visibility(module, argc, argv, METHOD_VISI_PRIVATE);
 
     for (i = 0; i < argc; i++) {
 	VALUE m = module;
@@ -1691,7 +1711,7 @@ rb_mod_modfunc(int argc, VALUE *argv, VALUE module)
 	    if (!m)
 		break;
 	}
-	rb_method_entry_set(rb_singleton_class(module), id, me, NOEX_PUBLIC);
+	rb_method_entry_set(rb_singleton_class(module), id, me, METHOD_VISI_PUBLIC);
     }
     return module;
 }
@@ -1700,8 +1720,7 @@ int
 rb_method_basic_definition_p(VALUE klass, ID id)
 {
     const rb_method_entry_t *me = rb_method_entry(klass, id, 0);
-    if (me && (me->def->flag & NOEX_BASIC)) return 1;
-    return 0;
+    return (me && me->def->flags.basic) ? TRUE : FALSE;
 }
 
 static inline int
@@ -1710,7 +1729,7 @@ basic_obj_respond_to(VALUE obj, ID id, int pub)
     VALUE klass = CLASS_OF(obj);
     VALUE args[2];
 
-    switch (rb_method_boundp(klass, id, pub|NOEX_RESPONDS)) {
+    switch (rb_method_boundp(klass, id, pub|BOUND_RESPONDS)) {
       case 2:
 	return FALSE;
       case 0:
@@ -1885,12 +1904,11 @@ Init_eval_method(void)
 			     "private", top_private, -1);
 
     {
-#define REPLICATE_METHOD(klass, id, noex) \
-	rb_method_entry_set((klass), (id), \
-			    rb_method_entry((klass), (id), 0), \
-			    (rb_method_flag_t)(noex | NOEX_BASIC | NOEX_NOREDEF))
-	REPLICATE_METHOD(rb_eException, idMethodMissing, NOEX_PRIVATE);
-	REPLICATE_METHOD(rb_eException, idRespond_to, NOEX_PUBLIC);
-	REPLICATE_METHOD(rb_eException, idRespond_to_missing, NOEX_PUBLIC);
+#define REPLICATE_METHOD(klass, id, visi) \
+  rb_method_entry_set((klass), (id), rb_method_entry((klass), (id), 0), (visi));
+
+	REPLICATE_METHOD(rb_eException, idMethodMissing, METHOD_VISI_PRIVATE);
+	REPLICATE_METHOD(rb_eException, idRespond_to, METHOD_VISI_PUBLIC);
+	REPLICATE_METHOD(rb_eException, idRespond_to_missing, METHOD_VISI_PUBLIC);
     }
 }
