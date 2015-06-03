@@ -262,6 +262,7 @@ class TestDir < Test::Unit::TestCase
   if /mswin|mingw/ =~ RUBY_PLATFORM
     def test_glob_legacy_short_name
       bug10819 = '[ruby-core:67954] [Bug #10819]'
+      bug11206 = '[ruby-core:69435] [Bug #11206]'
       skip unless /\A\w:/ =~ ENV["ProgramFiles"]
       short = "#$&/PROGRA~1"
       skip unless File.directory?(short)
@@ -270,8 +271,9 @@ class TestDir < Test::Unit::TestCase
       long = File.expand_path(short)
       assert_equal(Dir.glob("#{long}/Common*"), entries, bug10819)
       wild = short.sub(/1\z/, '*')
-      assert_include(Dir.glob(wild), long, bug10819)
-      assert_empty(entries - Dir.glob("#{wild}/Common*"), bug10819)
+      assert_not_include(Dir.glob(wild), long, bug11206)
+      assert_include(Dir.glob(wild, File::FNM_SHORTNAME), long, bug10819)
+      assert_empty(entries - Dir.glob("#{wild}/Common*", File::FNM_SHORTNAME), bug10819)
     end
   end
 

@@ -157,6 +157,11 @@ has_nonascii(const char *ptr, size_t len)
 #else
 #define FNM_SYSCASE	0
 #endif
+#if _WIN32
+#define FNM_SHORTNAME	0x20
+#else
+#define FNM_SHORTNAME	0
+#endif
 
 #define FNM_NOMATCH	1
 #define FNM_ERROR	2
@@ -1595,7 +1600,7 @@ dirent_match(const char *pat, rb_encoding *enc, const char *name, const struct d
 {
     if (fnmatch(pat, enc, name, flags) == 0) return 1;
 #ifdef _WIN32
-    if (dp->d_altname) {
+    if (dp->d_altname && (flags & FNM_SHORTNAME)) {
 	if (fnmatch(pat, enc, dp->d_altname, flags) == 0) return 1;
     }
 #endif
@@ -2636,4 +2641,11 @@ Init_Dir(void)
      *  0.
      */
     rb_file_const("FNM_SYSCASE", INT2FIX(FNM_SYSCASE));
+
+    /*  Document-const: File::Constants::FNM_SHORTNAME
+     *
+     *  Makes patterns to match short names if existing.  Valid only
+     *  on Microsoft Windows.
+     */
+    rb_file_const("FNM_SHORTNAME", INT2FIX(FNM_SHORTNAME));
 }
