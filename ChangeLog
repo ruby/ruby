@@ -1,3 +1,17 @@
+Thu Jun  4 07:22:45 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* method.h: introduce rb_method_refined_t for refined method entry.
+
+	* class.c (move_refined_method): catch up this fix.
+
+	* gc.c (mark_method_entry): ditto.
+
+	* vm_eval.c (vm_call0_body): ditto.
+
+	* vm_insnhelper.c (vm_call_method): ditto.
+
+	* vm_method.c: ditto.
+
 Thu Jun  4 07:12:20 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (dirent_match): match short names only when FNM_SHORTNAME

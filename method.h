@@ -77,6 +77,10 @@ typedef struct rb_method_alias_struct {
     const struct rb_method_entry_struct *original_me; /* original_me->klass is original owner */
 } rb_method_alias_t;
 
+typedef struct rb_method_refined_struct {
+    struct rb_method_entry_struct *orig_me;
+} rb_method_refined_t;
+
 typedef struct rb_method_definition_struct {
     struct {
 	rb_method_visibility_t visi: 3;
@@ -90,6 +94,8 @@ typedef struct rb_method_definition_struct {
 	rb_method_cfunc_t cfunc;
 	rb_method_attr_t attr;
 	rb_method_alias_t alias;
+	rb_method_refined_t refined;
+
 	const VALUE proc;                 /* should be marked */
 	enum method_optimized_type {
 	    OPTIMIZED_METHOD_TYPE_SEND,
@@ -97,7 +103,6 @@ typedef struct rb_method_definition_struct {
 
 	    OPTIMIZED_METHOD_TYPE__MAX
 	} optimize_type;
-	struct rb_method_entry_struct *orig_me;
     } body;
 
     int *alias_count_ptr;
@@ -107,7 +112,7 @@ typedef struct rb_method_definition_struct {
 #define UNDEFINED_METHOD_ENTRY_P(me) (!(me) || !(me)->def || (me)->def->type == VM_METHOD_TYPE_UNDEF)
 #define UNDEFINED_REFINED_METHOD_P(def) \
     ((def)->type == VM_METHOD_TYPE_REFINED && \
-     UNDEFINED_METHOD_ENTRY_P((def)->body.orig_me))
+     UNDEFINED_METHOD_ENTRY_P((def)->body.refined.orig_me))
 
 void rb_add_method_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, rb_method_visibility_t visi);
 void rb_add_method_iseq(VALUE klass, ID mid, VALUE iseqval, rb_cref_t *cref, rb_method_visibility_t visi);

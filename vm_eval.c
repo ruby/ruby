@@ -198,8 +198,8 @@ vm_call0_body(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
       case VM_METHOD_TYPE_REFINED:
 	{
 	    const rb_method_type_t type = ci->me->def->type;
-	    if (type == VM_METHOD_TYPE_REFINED && ci->me->def->body.orig_me) {
-		ci->me = ci->me->def->body.orig_me;
+	    if (type == VM_METHOD_TYPE_REFINED && ci->me->def->body.refined.orig_me) {
+		ci->me = ci->me->def->body.refined.orig_me;
 		goto again;
 	    }
 

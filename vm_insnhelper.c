@@ -2019,8 +2019,8 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 		}
 
 	      no_refinement_dispatch:
-		if (ci->me->def->body.orig_me) {
-		    ci->me = ci->me->def->body.orig_me;
+		if (ci->me->def->body.refined.orig_me) {
+		    ci->me = ci->me->def->body.refined.orig_me;
 		    if (UNDEFINED_METHOD_ENTRY_P(ci->me)) {
 			ci->me = 0;
 		    }
