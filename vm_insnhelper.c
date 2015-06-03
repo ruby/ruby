@@ -487,7 +487,7 @@ rb_vm_rewrite_cref_stack(rb_cref_t *node, VALUE old_klass, VALUE new_klass, rb_c
 }
 
 static rb_cref_t *
-vm_cref_push(rb_thread_t *th, VALUE klass, int noex, rb_block_t *blockptr)
+vm_cref_push(rb_thread_t *th, VALUE klass, rb_block_t *blockptr)
 {
     const rb_cref_t *prev_cref = NULL;
     rb_cref_t *cref = NULL;
@@ -502,7 +502,7 @@ vm_cref_push(rb_thread_t *th, VALUE klass, int noex, rb_block_t *blockptr)
 	    prev_cref = vm_env_cref(cfp->ep);
 	}
     }
-    cref = vm_cref_new(klass, noex, prev_cref);
+    cref = vm_cref_new(klass, METHOD_VISI_PUBLIC, prev_cref);
 
     /* TODO: why CREF_NEXT(cref) is 1? */
     if (CREF_NEXT(cref) && CREF_NEXT(cref) != (void *) 1 &&
@@ -1315,7 +1315,7 @@ vm_callee_setup_arg(rb_thread_t *th, rb_call_info_t *ci, const rb_iseq_t *iseq, 
 
 	CI_SET_FASTPATH(ci,
 			(UNLIKELY(ci->flag & VM_CALL_TAILCALL) ? vm_call_iseq_setup_tailcall : vm_call_iseq_setup_normal),
-			(!IS_ARGS_SPLAT(ci) && !IS_ARGS_KEYWORD(ci) && !(ci->me->def->flag & NOEX_PROTECTED)));
+			(!IS_ARGS_SPLAT(ci) && !IS_ARGS_KEYWORD(ci) && !(ci->me->def->flags.visi == METHOD_VISI_PROTECTED)));
     }
     else {
 	ci->aux.opt_pc = setup_parameters_complex(th, iseq, ci, argv, arg_setup_method);
@@ -1659,7 +1659,7 @@ vm_call_cfunc(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci)
     RUBY_DTRACE_CMETHOD_ENTRY_HOOK(th, me->klass, me->called_id);
     EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, recv, me->called_id, me->klass, Qnil);
 
-    if (!(ci->me->def->flag & NOEX_PROTECTED) &&
+    if (!(ci->me->def->flag & METHOD_VISI_PROTECTED) &&
 	!(ci->flag & VM_CALL_ARGS_SPLAT) &&
 	!(ci->kw_arg != NULL)) {
 	CI_SET_FASTPATH(ci, vm_call_cfunc_latter, 1);
@@ -1740,16 +1740,12 @@ vm_call_bmethod(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
     return vm_call_bmethod_body(th, ci, argv);
 }
 
-static int
+static enum missing_reason
 ci_missing_reason(const rb_call_info_t *ci)
 {
-    int stat = 0;
-    if (ci->flag & VM_CALL_VCALL) {
-	stat |= NOEX_VCALL;
-    }
-    if (ci->flag & VM_CALL_SUPER) {
-	stat |= NOEX_SUPER;
-    }
+    enum missing_reason stat = MISSING_NOENTRY;
+    if (ci->flag & VM_CALL_VCALL) stat |= MISSING_VCALL;
+    if (ci->flag & VM_CALL_SUPER) stat |= MISSING_SUPER;
     return stat;
 }
 
@@ -1915,7 +1911,7 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 
   start_method_dispatch:
     if (ci->me != 0) {
-	if ((ci->me->def->flag == 0)) {
+	if (ci->me->def->flags.visi == METHOD_VISI_PUBLIC && ci->me->def->flags.safe == 0) {
 	    VALUE klass;
 
 	  normal_method_dispatch:
@@ -2042,28 +2038,27 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 	    rb_bug("vm_call_method: unsupported method type (%d)", ci->me->def->type);
 	}
 	else {
-	    int noex_safe;
-	    if (!(ci->flag & VM_CALL_FCALL) && (ci->me->def->flag & NOEX_MASK) & NOEX_PRIVATE) {
-		int stat = NOEX_PRIVATE;
+	    int safe;
+	    if (!(ci->flag & VM_CALL_FCALL) && (ci->me->def->flags.visi == METHOD_VISI_PRIVATE)) {
+		enum missing_reason stat = MISSING_PRIVATE;
+		bp();
+		if (ci->flag & VM_CALL_VCALL) stat |= MISSING_VCALL;
 
-		if (ci->flag & VM_CALL_VCALL) {
-		    stat |= NOEX_VCALL;
-		}
 		ci->aux.missing_reason = stat;
 		CI_SET_FASTPATH(ci, vm_call_method_missing, 1);
 		return vm_call_method_missing(th, cfp, ci);
 	    }
-	    else if (!(ci->flag & VM_CALL_OPT_SEND) && (ci->me->def->flag & NOEX_MASK) & NOEX_PROTECTED) {
+	    else if (!(ci->flag & VM_CALL_OPT_SEND) && (ci->me->def->flags.visi == METHOD_VISI_PROTECTED)) {
 		enable_fastpath = 0;
 		if (!rb_obj_is_kind_of(cfp->self, ci->defined_class)) {
-		    ci->aux.missing_reason = NOEX_PROTECTED;
+		    ci->aux.missing_reason = MISSING_PROTECTED;
 		    return vm_call_method_missing(th, cfp, ci);
 		}
 		else {
 		    goto normal_method_dispatch;
 		}
 	    }
-	    else if ((noex_safe = NOEX_SAFE(ci->me->def->flag)) > th->safe_level && (noex_safe > 2)) {
+	    else if ((safe = ci->me->def->flags.safe) > th->safe_level && safe > 2) {
 		rb_raise(rb_eSecurityError, "calling insecure method: %"PRIsVALUE, rb_id2str(ci->mid));
 	    }
 	    else {
@@ -2216,7 +2211,7 @@ vm_search_super_method(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_inf
     }
     if (!ci->klass) {
 	/* bound instance method of module */
-	ci->aux.missing_reason = NOEX_SUPER;
+	ci->aux.missing_reason = MISSING_SUPER;
 	CI_SET_FASTPATH(ci, vm_call_method_missing, 1);
 	return;
     }
@@ -2475,9 +2470,19 @@ vm_defined(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_num_t op_type, VALUE
 
 	if (me) {
 	    const rb_method_definition_t *def = me->def;
-	    if (!(def->flag & NOEX_PRIVATE) &&
-		!((def->flag & NOEX_PROTECTED) && !rb_obj_is_kind_of(GET_SELF(), rb_class_real(klass)))) {
+
+	    switch ((unsigned int)def->flags.visi) {
+	      case METHOD_VISI_PRIVATE:
+		break;
+	      case METHOD_VISI_PROTECTED:
+		if (!rb_obj_is_kind_of(GET_SELF(), rb_class_real(klass))) {
+		    break;
+		}
+	      case METHOD_VISI_PUBLIC:
 		expr_type = DEFINED_METHOD;
+		break;
+	      default:
+		rb_bug("unreachable");
 	    }
 	}
 	else {

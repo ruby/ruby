@@ -249,11 +249,11 @@ clone_method(VALUE klass, ID mid, const rb_method_entry_t *me)
 	    rb_cref_t *new_cref;
 	    newiseqval = rb_iseq_clone(me->def->body.iseq.iseqptr->self, klass);
 	    rb_vm_rewrite_cref_stack(me->def->body.iseq.cref, me->klass, klass, &new_cref);
-	    rb_add_method_iseq(klass, mid, newiseqval, new_cref, me->def->flag);
+	    rb_add_method_iseq(klass, mid, newiseqval, new_cref, me->def->flags.visi);
 	    RB_GC_GUARD(newiseqval);
 	}
 	else {
-	    rb_method_entry_set(klass, mid, me, me->def->flag);
+	    rb_method_entry_set(klass, mid, me, me->def->flags.visi);
 	}
     }
     else {
@@ -1055,22 +1055,21 @@ rb_mod_ancestors(VALUE mod)
     return ary;
 }
 
-#define VISI(x) ((x)&NOEX_MASK)
-#define VISI_CHECK(x,f) (VISI(x) == (f))
-
 static int
 ins_methods_push(ID name, long type, VALUE ary, long visi)
 {
-    if (type == -1) return ST_CONTINUE;
+    if (type == METHOD_VISI_UNDEF) return ST_CONTINUE;
 
-    switch (visi) {
-      case NOEX_PRIVATE:
-      case NOEX_PROTECTED:
-      case NOEX_PUBLIC:
+    switch ((rb_method_visibility_t)visi) {
+      case METHOD_VISI_UNDEF:
+	return ST_CONTINUE;
+      case METHOD_VISI_PRIVATE:
+      case METHOD_VISI_PROTECTED:
+      case METHOD_VISI_PUBLIC:
 	visi = (type == visi);
 	break;
       default:
-	visi = (type != NOEX_PRIVATE);
+	visi = (type != METHOD_VISI_PRIVATE);
 	break;
     }
     if (visi) {
@@ -1088,19 +1087,19 @@ ins_methods_i(st_data_t name, st_data_t type, st_data_t ary)
 static int
 ins_methods_prot_i(st_data_t name, st_data_t type, st_data_t ary)
 {
-    return ins_methods_push((ID)name, (long)type, (VALUE)ary, NOEX_PROTECTED);
+    return ins_methods_push((ID)name, (long)type, (VALUE)ary, METHOD_VISI_PROTECTED);
 }
 
 static int
 ins_methods_priv_i(st_data_t name, st_data_t type, st_data_t ary)
 {
-    return ins_methods_push((ID)name, (long)type, (VALUE)ary, NOEX_PRIVATE);
+    return ins_methods_push((ID)name, (long)type, (VALUE)ary, METHOD_VISI_PRIVATE);
 }
 
 static int
 ins_methods_pub_i(st_data_t name, st_data_t type, st_data_t ary)
 {
-    return ins_methods_push((ID)name, (long)type, (VALUE)ary, NOEX_PUBLIC);
+    return ins_methods_push((ID)name, (long)type, (VALUE)ary, METHOD_VISI_PUBLIC);
 }
 
 struct method_entry_arg {
@@ -1113,7 +1112,7 @@ method_entry_i(st_data_t key, st_data_t value, st_data_t data)
 {
     const rb_method_entry_t *me = (const rb_method_entry_t *)value;
     struct method_entry_arg *arg = (struct method_entry_arg *)data;
-    long type;
+    rb_method_visibility_t type;
 
     if (me && me->def->type == VM_METHOD_TYPE_REFINED) {
 	VALUE klass = me->klass;
@@ -1123,12 +1122,12 @@ method_entry_i(st_data_t key, st_data_t value, st_data_t data)
     }
     if (!st_lookup(arg->list, key, 0)) {
 	if (UNDEFINED_METHOD_ENTRY_P(me)) {
-	    type = -1; /* none */
+	    type = METHOD_VISI_UNDEF; /* none */
 	}
 	else {
-	    type = VISI(me->def->flag);
+	    type = me->def->flags.visi;
 	}
-	st_add_direct(arg->list, key, type);
+	st_add_direct(arg->list, key, (long)type);
     }
     return ST_CONTINUE;
 }
@@ -1469,31 +1468,31 @@ rb_obj_singleton_methods(int argc, const VALUE *argv, VALUE obj)
 void
 rb_define_method_id(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc)
 {
-    rb_add_method_cfunc(klass, mid, func, argc, NOEX_PUBLIC);
+    rb_add_method_cfunc(klass, mid, func, argc, METHOD_VISI_PUBLIC);
 }
 
 void
 rb_define_method(VALUE klass, const char *name, VALUE (*func)(ANYARGS), int argc)
 {
-    rb_add_method_cfunc(klass, rb_intern(name), func, argc, NOEX_PUBLIC);
+    rb_add_method_cfunc(klass, rb_intern(name), func, argc, METHOD_VISI_PUBLIC);
 }
 
 void
 rb_define_protected_method(VALUE klass, const char *name, VALUE (*func)(ANYARGS), int argc)
 {
-    rb_add_method_cfunc(klass, rb_intern(name), func, argc, NOEX_PROTECTED);
+    rb_add_method_cfunc(klass, rb_intern(name), func, argc, METHOD_VISI_PROTECTED);
 }
 
 void
 rb_define_private_method(VALUE klass, const char *name, VALUE (*func)(ANYARGS), int argc)
 {
-    rb_add_method_cfunc(klass, rb_intern(name), func, argc, NOEX_PRIVATE);
+    rb_add_method_cfunc(klass, rb_intern(name), func, argc, METHOD_VISI_PRIVATE);
 }
 
 void
 rb_undef_method(VALUE klass, const char *name)
 {
-    rb_add_method(klass, rb_intern(name), VM_METHOD_TYPE_UNDEF, 0, NOEX_UNDEF);
+    rb_add_method(klass, rb_intern(name), VM_METHOD_TYPE_UNDEF, 0, METHOD_VISI_UNDEF);
 }
 
 /*!

@@ -3012,7 +3012,7 @@ primary		: literal
 		    /*%%%*/
 			NODE *body = remove_begin($5);
 			reduce_nodes(&body);
-			$$ = NEW_DEFN($2, $4, body, NOEX_PRIVATE);
+			$$ = NEW_DEFN($2, $4, body, METHOD_VISI_PRIVATE);
 			nd_set_line($$, $<num>1);
 		    /*%
 			$$ = dispatch3(def, $2, $4, $5);

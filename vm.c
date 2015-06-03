@@ -89,10 +89,10 @@ vm_cref_new(VALUE klass, long visi, const rb_cref_t *prev_cref)
 static rb_cref_t *
 vm_cref_new_toplevel(rb_thread_t *th)
 {
-    rb_cref_t *cref = vm_cref_new(rb_cObject, NOEX_PRIVATE /* toplevel visibility is private */, NULL);
+    rb_cref_t *cref = vm_cref_new(rb_cObject, METHOD_VISI_PRIVATE /* toplevel visibility is private */, NULL);
 
     if (th->top_wrapper) {
-	cref = vm_cref_new(th->top_wrapper, NOEX_PRIVATE, cref);
+	cref = vm_cref_new(th->top_wrapper, METHOD_VISI_PRIVATE, cref);
     }
 
     return cref;
@@ -2285,7 +2285,8 @@ vm_define_method(rb_thread_t *th, VALUE obj, ID id, VALUE iseqval,
 		 rb_num_t is_singleton, rb_cref_t *cref)
 {
     VALUE klass = CREF_CLASS(cref);
-    rb_method_flag_t noex = (rb_method_flag_t)CREF_VISI(cref);
+    const rb_scope_visibility_t *scope_visi = CREF_SCOPE_VISI(cref);
+    rb_method_visibility_t visi = scope_visi->method_visi;
     rb_iseq_t *miseq;
     GetISeqPtr(iseqval, miseq);
 
@@ -2300,17 +2301,17 @@ vm_define_method(rb_thread_t *th, VALUE obj, ID id, VALUE iseqval,
 
     if (is_singleton) {
 	klass = rb_singleton_class(obj); /* class and frozen checked in this API */
-	noex = NOEX_PUBLIC;
+	visi = METHOD_VISI_PUBLIC;
     }
 
     /* dup */
     RB_OBJ_WRITE(miseq->self, &miseq->klass, klass);
     miseq->defined_method_id = id;
-    rb_add_method_iseq(klass, id, iseqval, cref, noex);
+    rb_add_method_iseq(klass, id, iseqval, cref, visi);
 
-    if (!is_singleton && noex == NOEX_MODFUNC) {
+    if (!is_singleton && scope_visi->module_func) {
 	klass = rb_singleton_class(klass);
-	rb_add_method_iseq(klass, id, iseqval, cref, NOEX_PUBLIC);
+	rb_add_method_iseq(klass, id, iseqval, cref, METHOD_VISI_PUBLIC);
     }
 }
 
@@ -2797,7 +2798,7 @@ Init_VM(void)
 	th->cfp->self = th->top_self;
 	th->cfp->klass = Qnil;
 
-	th->cfp->ep[-1] = (VALUE)vm_cref_new(rb_cObject, NOEX_PRIVATE, NULL);
+	th->cfp->ep[-1] = (VALUE)vm_cref_new(rb_cObject, METHOD_VISI_PRIVATE, NULL);
 
 	/*
 	 * The Binding of the top level scope
