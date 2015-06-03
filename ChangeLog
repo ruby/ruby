@@ -1,3 +1,9 @@
+Thu Jun  4 07:12:20 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (dirent_match): match short names only when FNM_SHORTNAME
+	  flag is given, for the backward compatibility, and the new
+	  behavior is often dangerous.  [ruby-core:69435] [Bug #11206]
+
 Thu Jun  4 05:44:01 2015  Eric Wong  <e@80x24.org>
 
 	* variable.c (special_generic_ivar): remove flag
