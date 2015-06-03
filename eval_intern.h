@@ -291,8 +291,6 @@ CREF_OMOD_SHARED_UNSET(rb_cref_t *cref)
     cref->flags &= ~NODE_FL_CREF_OMOD_SHARED_;
 }
 
-void rb_frame_visibility_set(rb_method_visibility_t);
-
 void rb_thread_cleanup(void);
 void rb_thread_wait_other_threads(void);
 

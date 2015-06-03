@@ -934,7 +934,7 @@ rb_method_boundp(VALUE klass, ID id, int ex)
 extern ID rb_check_attr_id(ID id);
 
 static int
-rb_frame_visibility_test(rb_method_visibility_t visi)
+rb_scope_visibility_test(rb_method_visibility_t visi)
 {
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
@@ -948,21 +948,21 @@ rb_frame_visibility_test(rb_method_visibility_t visi)
 }
 
 static int
-rb_frame_module_func_check(void)
+rb_scope_module_func_check(void)
 {
     return CREF_SCOPE_VISI(rb_vm_cref())->module_func;
 }
 
 void
-rb_frame_visibility_set(rb_method_visibility_t visi)
+rb_scope_visibility_set(rb_method_visibility_t visi)
 {
     rb_scope_visibility_t *scope_visi = (rb_scope_visibility_t *)&rb_vm_cref()->scope_visi;
     scope_visi->method_visi = visi;
     scope_visi->module_func = FALSE;
 }
 
-void
-rb_frame_module_func_set(void)
+static void
+rb_scope_module_func_set(void)
 {
     rb_scope_visibility_t *scope_visi = (rb_scope_visibility_t *)&rb_vm_cref()->scope_visi;
     scope_visi->method_visi = METHOD_VISI_PRIVATE;
@@ -980,13 +980,13 @@ rb_attr(VALUE klass, ID id, int read, int write, int ex)
 	visi = METHOD_VISI_PUBLIC;
     }
     else {
-	if (rb_frame_visibility_test(METHOD_VISI_PRIVATE)) {
+	if (rb_scope_visibility_test(METHOD_VISI_PRIVATE)) {
 	    visi = METHOD_VISI_PRIVATE;
-	    if (rb_frame_module_func_check()) {
+	    if (rb_scope_module_func_check()) {
 		rb_warning("attribute accessor as module_function");
 	    }
 	}
-	else if (rb_frame_visibility_test(METHOD_VISI_PROTECTED)) {
+	else if (rb_scope_visibility_test(METHOD_VISI_PROTECTED)) {
 	    visi = METHOD_VISI_PROTECTED;
 	}
 	else {
@@ -1485,7 +1485,7 @@ static VALUE
 set_visibility(int argc, const VALUE *argv, VALUE module, rb_method_visibility_t visi)
 {
     if (argc == 0) {
-	rb_frame_visibility_set(visi);
+	rb_scope_visibility_set(visi);
     }
     else {
 	set_method_visibility(module, argc, argv, visi);
@@ -1686,7 +1686,7 @@ rb_mod_modfunc(int argc, VALUE *argv, VALUE module)
     }
 
     if (argc == 0) {
-	rb_frame_module_func_set();
+	rb_scope_module_func_set();
 	return module;
     }
 
