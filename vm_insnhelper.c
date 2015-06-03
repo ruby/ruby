@@ -1326,9 +1326,7 @@ static rb_iseq_t *
 def_iseq_ptr(rb_method_definition_t *def)
 {
 #if VM_CHECK_MODE > 0
-    rb_iseq_t *iseq;
     if (def->type != VM_METHOD_TYPE_ISEQ) rb_bug("def_iseq_ptr: not iseq (%d)", def->type);
-    GetISeqPtr(def->body.iseq.iseqval, iseq);
     if (def->body.iseq.iseqptr != iseq) rb_bug("def_iseq_ptr: ???.");
 #endif
     return def->body.iseq.iseqptr;
