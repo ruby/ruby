@@ -1,3 +1,7 @@
+Fri Jun  5 01:17:21 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c (vm_defined): no need to use cast.
+
 Fri Jun  5 01:14:02 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c (vm_defined): show additional messages on rb_bug().
