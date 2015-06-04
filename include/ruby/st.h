@@ -78,7 +78,7 @@ struct st_table {
      *   implementation-defined type. It is implementation-defined whether
      *   atomic types are permitted.
      * In short, long and long long bit-field are implementation-defined
-     * feature. Therefore we want to supress a warning explicitly.
+     * feature. Therefore we want to suppress a warning explicitly.
      */
     __extension__
 #endif
