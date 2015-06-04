@@ -2382,7 +2382,7 @@ static VALUE
 sort_reentered(VALUE ary)
 {
     if (RBASIC(ary)->klass) {
-	rb_raise(rb_eRuntimeError, "sort re-entered");
+	rb_raise(rb_eRuntimeError, "sort reentered");
     }
     return Qnil;
 }
