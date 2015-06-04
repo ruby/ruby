@@ -1131,12 +1131,11 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
 {
     rb_io_t *fptr;
     VALUE data, vflags, dest_sockaddr;
-    int controls_num;
     struct msghdr mh;
     struct iovec iov;
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
+    VALUE controls = Qnil;
     VALUE controls_str = 0;
-    VALUE *controls_ptr = NULL;
     int family;
 #endif
     int flags;
@@ -1151,20 +1150,20 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
 
     if (argc == 0)
         rb_raise(rb_eArgError, "mesg argument required");
-    data = argv[0];
-    if (1 < argc) vflags = argv[1];
-    if (2 < argc) dest_sockaddr = argv[2];
-    controls_num = 3 < argc ? argc - 3 : 0;
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
-    if (3 < argc) { controls_ptr = &argv[3]; }
+    rb_scan_args(argc, argv, "12*", &data, &vflags, &dest_sockaddr, &controls);
+#else
+    rb_scan_args(argc, argv, "12", &data, &vflags, &dest_sockaddr);
 #endif
 
     StringValue(data);
 
-    if (controls_num) {
+    if (!NIL_P(controls)) {
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
 	int i;
+	int controls_num = RARRAY_LENINT(controls);
 	size_t last_pad = 0;
+	const VALUE *controls_ptr = RARRAY_CONST_PTR(controls);
 #if defined(__NetBSD__)
         int last_level = 0;
         int last_type = 0;
@@ -1239,6 +1238,7 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
                 rb_str_set_len(controls_str, RSTRING_LEN(controls_str)-last_pad);
 #endif
 	}
+	RB_GC_GUARD(controls);
 #else
 	rb_raise(rb_eNotImpError, "control message for sendmsg is unimplemented");
 #endif
