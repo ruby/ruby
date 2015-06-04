@@ -1,3 +1,8 @@
+Thu Jun  4 09:52:02 2015  Eric Wong  <e@80x24.org>
+
+	* ext/openssl/lib/openssl/ssl.rb: use io/nonblock instead of fcntl
+	  [ruby-core:69382] [Feature #11190]
+
 Thu Jun  4 07:22:45 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* method.h: introduce rb_method_refined_t for refined method entry.
