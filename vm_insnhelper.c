@@ -2479,7 +2479,7 @@ vm_defined(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_num_t op_type, VALUE
 		expr_type = DEFINED_METHOD;
 		break;
 	      default:
-		rb_bug("unreachable");
+		rb_bug("vm_defined: unreachable: %u", (unsigned int)def->flags.visi);
 	    }
 	}
 	else {
