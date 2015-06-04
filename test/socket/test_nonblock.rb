@@ -279,7 +279,7 @@ class TestSocketNonblock < Test::Unit::TestCase
     def test_sendmsg_nonblock_seqpacket
       buf = '*' * 10000
       UNIXSocket.pair(:SEQPACKET) do |s1, s2|
-        assert_raise(IO::WaitWritable) do
+        assert_raise(IO::WaitWritable,Errno::EMSGSIZE) do
           loop { s1.sendmsg_nonblock(buf) }
         end
       end
