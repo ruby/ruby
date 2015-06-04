@@ -1401,7 +1401,8 @@ rb_scan_args(int argc, VALUE *argv, const char *fmt, ...) ::
 int rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optional, VALUE *values)
 
   Retrieves argument VALUEs bound to keywords, which directed by +table+
-  into +values+.  First +required+ number of IDs referred by +table+ are
+  into +values+, deleting retrieved entries from +keyword_hash+ along
+  the way.  First +required+ number of IDs referred by +table+ are
   mandatory, and succeeding +optional+ (- +optional+ - 1 if
   +optional+ is negative) number of IDs are optional.  If a
   mandatory key is not contained in +keyword_hash+, raises "missing
