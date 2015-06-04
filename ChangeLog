@@ -1,3 +1,8 @@
+Fri Jun  5 06:43:00 2015  Eric Wong  <e@80x24.org>
+
+	* doc/extension.rdoc: note rb_get_kwargs changes keywords_hash
+	  [ruby-core:68507]
+
 Fri Jun  5 05:50:29 2015  Eric Wong  <e@80x24.org>
 
 	* ext/socket/ancdata.c (bsock_sendmsg_internal): use rb_scan_args
