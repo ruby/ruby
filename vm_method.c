@@ -562,11 +562,15 @@ void
 rb_add_method_iseq(VALUE klass, ID mid, VALUE iseqval, rb_cref_t *cref, rb_method_visibility_t visi)
 {
     rb_iseq_t *iseq;
+    struct { /* should be same fields with rb_method_iseq_struct */
+	rb_iseq_t *iseqptr;
+	rb_cref_t *cref;
+    } iseq_body;
+
     GetISeqPtr(iseqval, iseq);
-    {
-	rb_method_iseq_t iseq_body = {iseq, cref};
-	rb_add_method(klass, mid, VM_METHOD_TYPE_ISEQ, &iseq_body, visi);
-    }
+    iseq_body.iseqptr = iseq;
+    iseq_body.cref = cref;
+    rb_add_method(klass, mid, VM_METHOD_TYPE_ISEQ, &iseq_body, visi);
 }
 
 static rb_method_entry_t *
