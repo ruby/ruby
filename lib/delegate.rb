@@ -388,9 +388,11 @@ end
 #
 def DelegateClass(superclass)
   klass = Class.new(Delegator)
-  methods = superclass.instance_methods
-  methods -= ::Delegator.public_api
-  methods -= [:to_s,:inspect,:=~,:!~,:===]
+  ignores = [*::Delegator.public_api, :to_s, :inspect, :=~, :!~, :===]
+  protected_instance_methods = superclass.protected_instance_methods
+  protected_instance_methods -= ignores
+  public_instance_methods = superclass.public_instance_methods
+  public_instance_methods -= ignores
   klass.module_eval do
     def __getobj__  # :nodoc:
       unless defined?(@delegate_dc_obj)
@@ -403,12 +405,16 @@ def DelegateClass(superclass)
       __raise__ ::ArgumentError, "cannot delegate to self" if self.equal?(obj)
       @delegate_dc_obj = obj
     end
-    methods.each do |method|
+    protected_instance_methods.each do |method|
+      define_method(method, Delegator.delegating_block(method))
+      protected method
+    end
+    public_instance_methods.each do |method|
       define_method(method, Delegator.delegating_block(method))
     end
   end
   klass.define_singleton_method :public_instance_methods do |all=true|
-    super(all) - superclass.protected_instance_methods
+    super(all) | superclass.public_instance_methods
   end
   klass.define_singleton_method :protected_instance_methods do |all=true|
     super(all) | superclass.protected_instance_methods
