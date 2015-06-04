@@ -2468,7 +2468,7 @@ vm_defined(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_num_t op_type, VALUE
 	if (me) {
 	    const rb_method_definition_t *def = me->def;
 
-	    switch ((unsigned int)def->flags.visi) {
+	    switch (def->flags.visi) {
 	      case METHOD_VISI_PRIVATE:
 		break;
 	      case METHOD_VISI_PROTECTED:
