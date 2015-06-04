@@ -132,7 +132,7 @@ Wed Jun  3 16:17:21 2015  Aaron Patterson <tenderlove@ruby-lang.org>
 
 Wed Jun  3 11:47:15 2015  Koichi Sasada  <ko1@atdot.net>
 
-	* method.h: change fileds order to gather frequent acces fields.
+	* method.h: change fields order to gather frequent access fields.
 
 	* vm_insnhelper.c (vm_call_method): add LIKELY().
 
