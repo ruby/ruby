@@ -1,3 +1,10 @@
+Fri Jun  5 07:05:58 2015  Eric Wong  <e@80x24.org>
+
+	* io.c (sym_wait_readable, sym_wait_writable): declare
+	  (io_getpartial): use sym_wait_readable
+	  (io_write_nonblock): use sym_wait_writable
+	  (Init_IO): initialize sym_wait_*able
+
 Fri Jun  5 06:43:00 2015  Eric Wong  <e@80x24.org>
 
 	* doc/extension.rdoc: note rb_get_kwargs changes keywords_hash

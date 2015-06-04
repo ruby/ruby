@@ -176,6 +176,7 @@ static ID id_write, id_read, id_getc, id_flush, id_readpartial, id_set_encoding;
 static VALUE sym_mode, sym_perm, sym_extenc, sym_intenc, sym_encoding, sym_open_args;
 static VALUE sym_textmode, sym_binmode, sym_autoclose;
 static VALUE sym_SET, sym_CUR, sym_END;
+static VALUE sym_wait_readable, sym_wait_writable;
 #ifdef SEEK_DATA
 static VALUE sym_DATA;
 #endif
@@ -2523,7 +2524,7 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int nonblock, int no_exception)
                 goto again;
             if (nonblock && (errno == EWOULDBLOCK || errno == EAGAIN)) {
                 if (no_exception)
-                    return ID2SYM(rb_intern("wait_readable"));
+                    return sym_wait_readable;
                 else
 		    rb_readwrite_sys_fail(RB_IO_WAIT_READABLE, "read would block");
             }
@@ -2717,7 +2718,7 @@ io_write_nonblock(VALUE io, VALUE str, int no_exception)
     if (n == -1) {
         if (errno == EWOULDBLOCK || errno == EAGAIN) {
 	    if (no_exception) {
-		return ID2SYM(rb_intern("wait_writable"));
+		return sym_wait_writable;
 	    }
 	    else {
 		rb_readwrite_sys_fail(RB_IO_WAIT_WRITABLE, "write would block");
@@ -12445,4 +12446,6 @@ Init_IO(void)
 #ifdef SEEK_HOLE
     sym_HOLE = ID2SYM(rb_intern("HOLE"));
 #endif
+    sym_wait_readable = ID2SYM(rb_intern("wait_readable"));
+    sym_wait_writable = ID2SYM(rb_intern("wait_writable"));
 }
