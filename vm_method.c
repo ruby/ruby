@@ -307,7 +307,7 @@ rb_method_definition_create(rb_method_visibility_t visi, rb_method_type_t type, 
 }
 
 static void
-rb_method_definition_reset(rb_method_entry_t *me, rb_method_definition_t *def)
+rb_method_definition_reset(const rb_method_entry_t *me, rb_method_definition_t *def)
 {
     switch(def->type) {
       case VM_METHOD_TYPE_ISEQ:
@@ -372,7 +372,7 @@ rb_method_entry_clone(const rb_method_entry_t *src_me)
 }
 
 void
-rb_method_entry_copy(rb_method_entry_t *dst, rb_method_entry_t *src)
+rb_method_entry_copy(rb_method_entry_t *dst, const rb_method_entry_t *src)
 {
     rb_method_definition_reset(dst, rb_method_definition_clone(src->def));
     dst->called_id = src->called_id;
@@ -709,7 +709,7 @@ rb_method_entry(VALUE klass, ID id, VALUE *defined_class_ptr)
     return rb_method_entry_get_without_cache(klass, id, defined_class_ptr);
 }
 
-static rb_method_entry_t *
+static const rb_method_entry_t *
 get_original_method_entry(VALUE refinements,
 			  const rb_method_entry_t *me,
 			  VALUE *defined_class_ptr)
@@ -731,7 +731,7 @@ get_original_method_entry(VALUE refinements,
     }
 }
 
-rb_method_entry_t *
+const rb_method_entry_t *
 rb_resolve_refined_method(VALUE refinements, const rb_method_entry_t *me,
 			  VALUE *defined_class_ptr)
 {
@@ -759,12 +759,12 @@ rb_resolve_refined_method(VALUE refinements, const rb_method_entry_t *me,
     }
 }
 
-rb_method_entry_t *
+const rb_method_entry_t *
 rb_method_entry_with_refinements(VALUE klass, ID id,
 				 VALUE *defined_class_ptr)
 {
     VALUE defined_class;
-    rb_method_entry_t *me = rb_method_entry(klass, id, &defined_class);
+    const rb_method_entry_t *me = rb_method_entry(klass, id, &defined_class);
 
     if (me && me->def->type == VM_METHOD_TYPE_REFINED) {
 	const rb_cref_t *cref = rb_vm_cref();
@@ -778,12 +778,12 @@ rb_method_entry_with_refinements(VALUE klass, ID id,
     return me;
 }
 
-rb_method_entry_t *
+const rb_method_entry_t *
 rb_method_entry_without_refinements(VALUE klass, ID id,
 				    VALUE *defined_class_ptr)
 {
     VALUE defined_class;
-    rb_method_entry_t *me = rb_method_entry(klass, id, &defined_class);
+    const rb_method_entry_t *me = rb_method_entry(klass, id, &defined_class);
 
     if (me && me->def->type == VM_METHOD_TYPE_REFINED) {
 	me = rb_resolve_refined_method(Qnil, me, &defined_class);
@@ -910,8 +910,7 @@ rb_export_method(VALUE klass, ID name, rb_method_visibility_t visi)
 int
 rb_method_boundp(VALUE klass, ID id, int ex)
 {
-    rb_method_entry_t *me =
-	rb_method_entry_without_refinements(klass, id, 0);
+    const rb_method_entry_t *me = rb_method_entry_without_refinements(klass, id, 0);
 
     if (me != 0) {
 	rb_method_definition_t *def = me->def;
@@ -1371,7 +1370,7 @@ rb_alias(VALUE klass, ID alias_name, ID original_name)
 {
     const VALUE target_klass = klass;
     VALUE defined_class;
-    rb_method_entry_t *orig_me;
+    const rb_method_entry_t *orig_me;
     rb_method_visibility_t visi = METHOD_VISI_UNDEF;
 
     if (NIL_P(klass)) {
