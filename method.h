@@ -78,7 +78,7 @@ typedef struct rb_method_alias_struct {
 } rb_method_alias_t;
 
 typedef struct rb_method_refined_struct {
-    struct rb_method_entry_struct *orig_me;
+    const struct rb_method_entry_struct *orig_me;
 } rb_method_refined_t;
 
 typedef struct rb_method_definition_struct {
@@ -120,13 +120,13 @@ rb_method_entry_t *rb_add_method(VALUE klass, ID mid, rb_method_type_t type, voi
 rb_method_entry_t *rb_method_entry(VALUE klass, ID id, VALUE *define_class_ptr);
 rb_method_entry_t *rb_method_entry_at(VALUE obj, ID id);
 void rb_add_refined_method_entry(VALUE refined_class, ID mid);
-rb_method_entry_t *rb_resolve_refined_method(VALUE refinements,
-					     const rb_method_entry_t *me,
-					     VALUE *defined_class_ptr);
-rb_method_entry_t *rb_method_entry_with_refinements(VALUE klass, ID id,
-						    VALUE *defined_class_ptr);
-rb_method_entry_t *rb_method_entry_without_refinements(VALUE klass, ID id,
-						       VALUE *defined_class_ptr);
+const rb_method_entry_t *rb_resolve_refined_method(VALUE refinements,
+						   const rb_method_entry_t *me,
+						   VALUE *defined_class_ptr);
+const rb_method_entry_t *rb_method_entry_with_refinements(VALUE klass, ID id,
+							  VALUE *defined_class_ptr);
+const rb_method_entry_t *rb_method_entry_without_refinements(VALUE klass, ID id,
+							     VALUE *defined_class_ptr);
 
 rb_method_entry_t *rb_method_entry_get_without_cache(VALUE klass, ID id, VALUE *define_class_ptr);
 rb_method_entry_t *rb_method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *, rb_method_visibility_t noex);
@@ -144,7 +144,7 @@ void rb_sweep_method_entry(void *vm);
 
 rb_method_entry_t *rb_method_entry_create(ID called_id, VALUE klass, rb_method_definition_t *def);
 rb_method_entry_t *rb_method_entry_clone(const rb_method_entry_t *me);
-void rb_method_entry_copy(rb_method_entry_t *dst, rb_method_entry_t *src);
+void rb_method_entry_copy(rb_method_entry_t *dst, const rb_method_entry_t *src);
 
 void rb_scope_visibility_set(rb_method_visibility_t);
 

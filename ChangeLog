@@ -1,3 +1,20 @@
+Fri Jun  5 00:55:21 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* method.h: constify rb_method_refined_t::orig_me.
+
+	  Also constify the following functions.
+
+	  * rb_resolve_refined_method()
+	  * rb_method_entry_with_refinements()
+	  * rb_method_entry_without_refinements()
+	  * rb_method_entry_copy()'s parameter.
+
+	* class.c: catch up this fix.
+
+	* vm_insnhelper.c: ditto.
+
+	* vm_method.c: ditto.
+
 Thu Jun  4 12:47:54 SGT 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* array.c: Revert r50763. because "reentered" is not typo.
