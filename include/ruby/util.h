@@ -48,7 +48,7 @@ extern "C" {
 RUBY_SYMBOL_EXPORT_BEGIN
 
 #define DECIMAL_SIZE_OF_BITS(n) (((n) * 3010 + 9998) / 9999)
-/* an approximation of ceil(n * log10(2)), upto 65536 at least */
+/* an approximation of ceil(n * log10(2)), up to 65536 at least */
 
 #define scan_oct(s,l,e) ((int)ruby_scan_oct((s),(l),(e)))
 unsigned long ruby_scan_oct(const char *, size_t, size_t *);
