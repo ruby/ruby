@@ -1,3 +1,11 @@
+Sat Jun  6 01:00:06 2015  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* ext/socket/ancdata.c (bsock_sendmsg_internal): all arguments are
+	  parsed even on systems without HAVE_STRUCT_MSGHDR_MSG_CONTROL
+	  to prevent SEGV caused by passing Qnil to RARRAY_LENINT and
+	  to preserve behavior before r50776.
+	  [Bug #11224] [ruby-core:69468] [Bug #11225] [ruby-core:69469]
+
 Fri Jun  5 22:37:42 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* class.c (ins_methods_push): change 3rd parameter's type

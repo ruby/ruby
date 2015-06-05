@@ -1151,11 +1151,8 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
 
     if (argc == 0)
         rb_raise(rb_eArgError, "mesg argument required");
-#if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
+
     rb_scan_args(argc, argv, "12*", &data, &vflags, &dest_sockaddr, &controls);
-#else
-    rb_scan_args(argc, argv, "12", &data, &vflags, &dest_sockaddr);
-#endif
 
     StringValue(data);
     controls_num = RARRAY_LENINT(controls);
