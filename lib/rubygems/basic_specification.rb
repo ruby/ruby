@@ -145,7 +145,7 @@ class Gem::BasicSpecification
     @full_require_paths ||=
     begin
       full_paths = raw_require_paths.map do |path|
-        File.join full_gem_path, path
+        File.join full_gem_path, path.untaint
       end
 
       full_paths << extension_dir unless @extensions.nil? || @extensions.empty?

@@ -2875,6 +2875,20 @@ http://opensource.org/licenses/alphabetical
     end
   end
 
+  def test_validate_permissions_of_missing_file_non_packaging
+    skip 'chmod not supported' if Gem.win_platform?
+
+    util_setup_validate
+
+    Dir.chdir @tempdir do
+      File.delete File.join('lib', 'code.rb')
+
+      use_ui @ui do
+        assert @a1.validate(false)
+      end
+    end
+  end
+
   def test_validate_platform_legacy
     util_setup_validate
 
