@@ -1,3 +1,7 @@
+Sat Jun  6 07:08:45 2015  Eric Wong  <e@80x24.org>
+
+	* ext/socket/ancdata.c (bsock_sendmsg_internal): drop redundant assignment
+
 Sat Jun  6 01:00:06 2015  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* ext/socket/ancdata.c (bsock_sendmsg_internal): all arguments are
