@@ -228,22 +228,17 @@ CREF_NEXT_SET(rb_cref_t *cref, const rb_cref_t *next_cref)
     RB_OBJ_WRITE(cref, &cref->next, next_cref);
 }
 
-typedef struct rb_scope_visi_struct {
-    rb_method_visibility_t method_visi : 3;
-    unsigned int module_func : 1;
-} rb_scope_visibility_t;
-
 static inline const rb_scope_visibility_t *
 CREF_SCOPE_VISI(const rb_cref_t *cref)
 {
-    return (const rb_scope_visibility_t *)&cref->scope_visi;
+    return &cref->scope_visi;
 }
 
 static inline void
-CREF_SCOPE_VISI_COPY(const rb_cref_t *dst_cref, rb_cref_t *src_cref)
+CREF_SCOPE_VISI_COPY(rb_cref_t *dst_cref, const rb_cref_t *src_cref)
 {
-    rb_scope_visibility_t *src = (rb_scope_visibility_t *)&src_cref->scope_visi;
-    rb_scope_visibility_t *dst = (rb_scope_visibility_t *)&dst_cref->scope_visi;
+    const rb_scope_visibility_t *src = &src_cref->scope_visi;
+    rb_scope_visibility_t *dst = &dst_cref->scope_visi;
 
     dst->method_visi = src->method_visi;
     dst->module_func = src->module_func;

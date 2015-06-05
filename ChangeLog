@@ -1,3 +1,23 @@
+Fri Jun  5 20:37:10 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* internal.h: move definition of rb_cref_t to method.h.
+
+	* eval_intern.h: move definition of rb_scope_visibility_t
+	  to method.h.
+
+	* method.h: change rb_cref_t::scope_visi from VALUE to
+	  rb_scope_visibility_t.
+	  [Bug #11219]
+
+	* vm.c (vm_cref_new): accept rb_method_visibility_t directly.
+
+	* vm_insnhelper.c (rb_vm_rewrite_cref): don't use 0,
+	  but METHOD_VISI_UNDEF.
+
+	* vm_method.c (rb_scope_visibility_set): don't need to use cast.
+
+	* vm_method.c (rb_scope_module_func_set): ditto.
+
 Fri Jun  5 17:27:30 2015  Eric Wong  <e@80x24.org>
 
 	* ext/socket/ancdata.c (bsock_sendmsg_internal): avoid msg_control

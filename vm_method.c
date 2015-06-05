@@ -959,7 +959,7 @@ rb_scope_module_func_check(void)
 void
 rb_scope_visibility_set(rb_method_visibility_t visi)
 {
-    rb_scope_visibility_t *scope_visi = (rb_scope_visibility_t *)&rb_vm_cref()->scope_visi;
+    rb_scope_visibility_t *scope_visi = &rb_vm_cref()->scope_visi;
     scope_visi->method_visi = visi;
     scope_visi->module_func = FALSE;
 }
@@ -967,7 +967,7 @@ rb_scope_visibility_set(rb_method_visibility_t visi)
 static void
 rb_scope_module_func_set(void)
 {
-    rb_scope_visibility_t *scope_visi = (rb_scope_visibility_t *)&rb_vm_cref()->scope_visi;
+    rb_scope_visibility_t *scope_visi = &rb_vm_cref()->scope_visi;
     scope_visi->method_visi = METHOD_VISI_PRIVATE;
     scope_visi->module_func = TRUE;
 }

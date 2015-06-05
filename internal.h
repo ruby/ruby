@@ -545,15 +545,7 @@ imemo_type(VALUE imemo)
     return (RBASIC(imemo)->flags >> FL_USHIFT) & imemo_mask;
 }
 
-/* CREF */
-
-typedef struct rb_cref_struct {
-    VALUE flags;
-    const VALUE refinements;
-    const VALUE klass;
-    VALUE scope_visi;
-    struct rb_cref_struct * const next;
-} rb_cref_t;
+/* CREF in method.h */
 
 /* SVAR */
 
