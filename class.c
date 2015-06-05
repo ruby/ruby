@@ -1065,11 +1065,11 @@ rb_mod_ancestors(VALUE mod)
 }
 
 static int
-ins_methods_push(ID name, long type, VALUE ary, long visi)
+ins_methods_push(ID name, long type, VALUE ary, rb_method_visibility_t visi)
 {
     if (type == METHOD_VISI_UNDEF) return ST_CONTINUE;
 
-    switch ((rb_method_visibility_t)visi) {
+    switch (visi) {
       case METHOD_VISI_UNDEF:
 	return ST_CONTINUE;
       case METHOD_VISI_PRIVATE:
@@ -1090,7 +1090,7 @@ ins_methods_push(ID name, long type, VALUE ary, long visi)
 static int
 ins_methods_i(st_data_t name, st_data_t type, st_data_t ary)
 {
-    return ins_methods_push((ID)name, (long)type, (VALUE)ary, -1); /* everything but private */
+    return ins_methods_push((ID)name, (rb_method_visibility_t)type, (VALUE)ary, -1); /* everything but private */
 }
 
 static int
@@ -1136,7 +1136,7 @@ method_entry_i(st_data_t key, st_data_t value, st_data_t data)
 	else {
 	    type = me->def->flags.visi;
 	}
-	st_add_direct(arg->list, key, (long)type);
+	st_add_direct(arg->list, key, (st_data_t)type);
     }
     return ST_CONTINUE;
 }

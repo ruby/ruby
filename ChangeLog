@@ -1,3 +1,12 @@
+Fri Jun  5 22:37:42 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* class.c (ins_methods_push): change 3rd parameter's type
+	  from long to rb_method_visibility_t.
+
+	* class.c (ins_methods_i): catch up this fix.
+
+	* class.c (method_entry_i): cast to st_data_t instead of `long'.
+
 Fri Jun  5 20:37:10 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* internal.h: move definition of rb_cref_t to method.h.
