@@ -1134,6 +1134,7 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
     struct msghdr mh;
     struct iovec iov;
     VALUE controls = Qnil;
+    int controls_num;
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
     VALUE controls_str = 0;
     int family;
@@ -1157,11 +1158,11 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
 #endif
 
     StringValue(data);
+    controls_num = RARRAY_LENINT(controls);
 
-    if (!NIL_P(controls)) {
+    if (controls_num) {
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
 	int i;
-	int controls_num = RARRAY_LENINT(controls);
 	size_t last_pad = 0;
 	const VALUE *controls_ptr = RARRAY_CONST_PTR(controls);
 #if defined(__NetBSD__)

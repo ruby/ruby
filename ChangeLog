@@ -1,3 +1,8 @@
+Fri Jun  5 17:27:30 2015  Eric Wong  <e@80x24.org>
+
+	* ext/socket/ancdata.c (bsock_sendmsg_internal): avoid msg_control
+	  ptr if msg_controllen is zero to fix portability problems.
+
 Fri Jun  5 09:17:45 2015  Eric Wong  <e@80x24.org>
 
 	* ext/socket/ancdata.c (bsock_sendmsg_internal): fix build error
