@@ -1268,10 +1268,6 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
         mh.msg_control = RSTRING_PTR(controls_str);
         mh.msg_controllen = RSTRING_SOCKLEN(controls_str);
     }
-    else {
-        mh.msg_control = NULL;
-        mh.msg_controllen = 0;
-    }
 #endif
 
     rb_io_check_closed(fptr);
