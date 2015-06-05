@@ -1,3 +1,8 @@
+Sat Jun  6 08:52:13 2015  Eric Wong  <e@80x24.org>
+
+	* test/socket/test_nonblock.rb: try to avoid EMSGSIZE
+	  [ruby-core:69466]
+
 Sat Jun  6 07:58:30 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: remove struct mark_tbl_arg and pass objspace directly
