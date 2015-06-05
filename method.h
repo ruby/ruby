@@ -21,6 +21,28 @@
 # endif
 #endif
 
+/* cref */
+
+typedef enum {
+    METHOD_VISI_UNDEF     = 0x00,
+    METHOD_VISI_PUBLIC    = 0x01,
+    METHOD_VISI_PRIVATE   = 0x02,
+    METHOD_VISI_PROTECTED = 0x03
+} rb_method_visibility_t;
+
+typedef struct rb_scope_visi_struct {
+    rb_method_visibility_t method_visi : 3;
+    unsigned int module_func : 1;
+} rb_scope_visibility_t;
+
+typedef struct rb_cref_struct {
+    VALUE flags;
+    const VALUE refinements;
+    const VALUE klass;
+    struct rb_cref_struct * const next;
+    rb_scope_visibility_t scope_visi;
+} rb_cref_t;
+
 /* method data type */
 
 typedef struct rb_method_entry_struct {
@@ -30,13 +52,6 @@ typedef struct rb_method_entry_struct {
     ID called_id;
     const VALUE klass;    /* should be marked */
 } rb_method_entry_t;
-
-typedef enum {
-    METHOD_VISI_UNDEF     = 0x00,
-    METHOD_VISI_PUBLIC    = 0x01,
-    METHOD_VISI_PRIVATE   = 0x02,
-    METHOD_VISI_PROTECTED = 0x03
-} rb_method_visibility_t;
 
 typedef enum {
     VM_METHOD_TYPE_ISEQ,

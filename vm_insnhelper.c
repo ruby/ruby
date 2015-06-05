@@ -471,13 +471,13 @@ rb_vm_rewrite_cref(rb_cref_t *cref, VALUE old_klass, VALUE new_klass, rb_cref_t 
 
     while (cref) {
 	if (CREF_CLASS(cref) == old_klass) {
-	    new_cref = vm_cref_new(new_klass, 0, NULL);
+	    new_cref = vm_cref_new(new_klass, METHOD_VISI_UNDEF, NULL);
 	    COPY_CREF_OMOD(new_cref, cref);
 	    CREF_NEXT_SET(new_cref, CREF_NEXT(cref));
 	    *new_cref_ptr = new_cref;
 	    return;
 	}
-	new_cref = vm_cref_new(CREF_CLASS(cref), 0, NULL);
+	new_cref = vm_cref_new(CREF_CLASS(cref), METHOD_VISI_UNDEF, NULL);
 	COPY_CREF_OMOD(new_cref, cref);
 	cref = CREF_NEXT(cref);
 	*new_cref_ptr = new_cref;
