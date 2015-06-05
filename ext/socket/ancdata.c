@@ -1133,8 +1133,8 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
     VALUE data, vflags, dest_sockaddr;
     struct msghdr mh;
     struct iovec iov;
-#if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
     VALUE controls = Qnil;
+#if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
     VALUE controls_str = 0;
     int family;
 #endif
