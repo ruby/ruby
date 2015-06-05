@@ -3855,42 +3855,34 @@ rb_gc_mark_values(long n, const VALUE *values)
 
 #define rb_gc_mark_locations(start, end) gc_mark_locations(objspace, (start), (end))
 
-struct mark_tbl_arg {
-    rb_objspace_t *objspace;
-};
-
 static int
 mark_entry(st_data_t key, st_data_t value, st_data_t data)
 {
-    struct mark_tbl_arg *arg = (void*)data;
-    gc_mark(arg->objspace, (VALUE)value);
+    rb_objspace_t *objspace = (rb_objspace_t *)data;
+    gc_mark(objspace, (VALUE)value);
     return ST_CONTINUE;
 }
 
 static void
 mark_tbl(rb_objspace_t *objspace, st_table *tbl)
 {
-    struct mark_tbl_arg arg;
     if (!tbl || tbl->num_entries == 0) return;
-    arg.objspace = objspace;
-    st_foreach(tbl, mark_entry, (st_data_t)&arg);
+    st_foreach(tbl, mark_entry, (st_data_t)objspace);
 }
 
 static int
 mark_key(st_data_t key, st_data_t value, st_data_t data)
 {
-    struct mark_tbl_arg *arg = (void*)data;
-    gc_mark(arg->objspace, (VALUE)key);
+    rb_objspace_t *objspace = (rb_objspace_t *)data;
+    gc_mark(objspace, (VALUE)key);
     return ST_CONTINUE;
 }
 
 static void
 mark_set(rb_objspace_t *objspace, st_table *tbl)
 {
-    struct mark_tbl_arg arg;
     if (!tbl) return;
-    arg.objspace = objspace;
-    st_foreach(tbl, mark_key, (st_data_t)&arg);
+    st_foreach(tbl, mark_key, (st_data_t)objspace);
 }
 
 void
@@ -3902,19 +3894,18 @@ rb_mark_set(st_table *tbl)
 static int
 mark_keyvalue(st_data_t key, st_data_t value, st_data_t data)
 {
-    struct mark_tbl_arg *arg = (void*)data;
-    gc_mark(arg->objspace, (VALUE)key);
-    gc_mark(arg->objspace, (VALUE)value);
+    rb_objspace_t *objspace = (rb_objspace_t *)data;
+
+    gc_mark(objspace, (VALUE)key);
+    gc_mark(objspace, (VALUE)value);
     return ST_CONTINUE;
 }
 
 static void
 mark_hash(rb_objspace_t *objspace, st_table *tbl)
 {
-    struct mark_tbl_arg arg;
     if (!tbl) return;
-    arg.objspace = objspace;
-    st_foreach(tbl, mark_keyvalue, (st_data_t)&arg);
+    st_foreach(tbl, mark_keyvalue, (st_data_t)objspace);
 }
 
 void
@@ -3962,8 +3953,9 @@ static int
 mark_method_entry_i(st_data_t key, st_data_t value, st_data_t data)
 {
     VALUE me = (VALUE)value;
-    struct mark_tbl_arg *arg = (void*)data;
-    gc_mark(arg->objspace, me);
+    rb_objspace_t *objspace = (rb_objspace_t *)data;
+
+    gc_mark(objspace, me);
     return ST_CONTINUE;
 }
 
@@ -3971,9 +3963,7 @@ static void
 mark_m_tbl(rb_objspace_t *objspace, struct st_table *tbl)
 {
     if (tbl) {
-	struct mark_tbl_arg arg;
-	arg.objspace = objspace;
-	st_foreach(tbl, mark_method_entry_i, (st_data_t)&arg);
+	st_foreach(tbl, mark_method_entry_i, (st_data_t)objspace);
     }
 }
 
@@ -3981,19 +3971,18 @@ static int
 mark_const_entry_i(st_data_t key, st_data_t value, st_data_t data)
 {
     const rb_const_entry_t *ce = (const rb_const_entry_t *)value;
-    struct mark_tbl_arg *arg = (void*)data;
-    gc_mark(arg->objspace, ce->value);
-    gc_mark(arg->objspace, ce->file);
+    rb_objspace_t *objspace = (rb_objspace_t *)data;
+
+    gc_mark(objspace, ce->value);
+    gc_mark(objspace, ce->file);
     return ST_CONTINUE;
 }
 
 static void
 mark_const_tbl(rb_objspace_t *objspace, st_table *tbl)
 {
-    struct mark_tbl_arg arg;
     if (!tbl) return;
-    arg.objspace = objspace;
-    st_foreach(tbl, mark_const_entry_i, (st_data_t)&arg);
+    st_foreach(tbl, mark_const_entry_i, (st_data_t)objspace);
 }
 
 #if STACK_GROW_DIRECTION < 0
