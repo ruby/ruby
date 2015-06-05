@@ -1,3 +1,8 @@
+Fri Jun  5 09:17:45 2015  Eric Wong  <e@80x24.org>
+
+	* ext/socket/ancdata.c (bsock_sendmsg_internal): fix build error
+	  from r50776
+
 Fri Jun  5 07:05:58 2015  Eric Wong  <e@80x24.org>
 
 	* io.c (sym_wait_readable, sym_wait_writable): declare
