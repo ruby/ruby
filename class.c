@@ -1091,19 +1091,19 @@ ins_methods_i(st_data_t name, st_data_t type, st_data_t ary)
 static int
 ins_methods_prot_i(st_data_t name, st_data_t type, st_data_t ary)
 {
-    return ins_methods_push((ID)name, (long)type, (VALUE)ary, METHOD_VISI_PROTECTED);
+    return ins_methods_push((ID)name, (rb_method_visibility_t)type, (VALUE)ary, METHOD_VISI_PROTECTED);
 }
 
 static int
 ins_methods_priv_i(st_data_t name, st_data_t type, st_data_t ary)
 {
-    return ins_methods_push((ID)name, (long)type, (VALUE)ary, METHOD_VISI_PRIVATE);
+    return ins_methods_push((ID)name, (rb_method_visibility_t)type, (VALUE)ary, METHOD_VISI_PRIVATE);
 }
 
 static int
 ins_methods_pub_i(st_data_t name, st_data_t type, st_data_t ary)
 {
-    return ins_methods_push((ID)name, (long)type, (VALUE)ary, METHOD_VISI_PUBLIC);
+    return ins_methods_push((ID)name, (rb_method_visibility_t)type, (VALUE)ary, METHOD_VISI_PUBLIC);
 }
 
 struct method_entry_arg {

@@ -1,3 +1,8 @@
+Sat Jun  6 15:59:38 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* class.c: ins_methods_push() needs rb_method_visibility_t type on
+	  2nd arg.
+
 Sat Jun  6 15:05:47 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* class.c (ins_methods_push): Change type and name of parameters
