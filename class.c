@@ -248,11 +248,11 @@ clone_method(VALUE old_klass, VALUE new_klass, ID mid, const rb_method_entry_t *
 	rb_cref_t *new_cref;
 	newiseqval = rb_iseq_clone(me->def->body.iseq.iseqptr->self, new_klass);
 	rb_vm_rewrite_cref(me->def->body.iseq.cref, old_klass, new_klass, &new_cref);
-	rb_add_method_iseq(new_klass, mid, newiseqval, new_cref, me->def->flags.visi);
+	rb_add_method_iseq(new_klass, mid, newiseqval, new_cref, METHOD_ENTRY_VISI(me));
 	RB_GC_GUARD(newiseqval);
     }
     else {
-	rb_method_entry_set(new_klass, mid, me, me->def->flags.visi);
+	rb_method_entry_set(new_klass, mid, me, METHOD_ENTRY_VISI(me));
     }
 }
 
@@ -1129,7 +1129,7 @@ method_entry_i(st_data_t key, st_data_t value, st_data_t data)
 	    type = METHOD_VISI_UNDEF; /* none */
 	}
 	else {
-	    type = me->def->flags.visi;
+	    type = METHOD_ENTRY_VISI(me);
 	}
 	st_add_direct(arg->list, key, (st_data_t)type);
     }

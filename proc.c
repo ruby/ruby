@@ -1161,11 +1161,11 @@ mnew_missing(VALUE rclass, VALUE klass, VALUE obj, ID id, ID rid, VALUE mclass)
     data->id = rid;
 
     def = ZALLOC(rb_method_definition_t);
-    def->flags.visi = METHOD_VISI_UNDEF;
     def->type = VM_METHOD_TYPE_MISSING;
     def->original_id = id;
 
-    me = rb_method_entry_create(id, klass, def);
+    me = rb_method_entry_create(id, klass, METHOD_VISI_UNDEF, def);
+
     RB_OBJ_WRITE(method, &data->me, me);
 
     OBJ_INFECT(method, klass);
@@ -1181,7 +1181,6 @@ mnew_internal(const rb_method_entry_t *me, VALUE defined_class, VALUE klass,
     VALUE rclass = klass;
     VALUE method;
     ID rid = id;
-    rb_method_definition_t *def = 0;
     rb_method_visibility_t visi = METHOD_VISI_UNDEF;
 
   again:
@@ -1192,17 +1191,16 @@ mnew_internal(const rb_method_entry_t *me, VALUE defined_class, VALUE klass,
 	if (!error) return Qnil;
 	rb_print_undef(klass, id, 0);
     }
-    def = me->def;
     if (visi == METHOD_VISI_UNDEF) {
-	visi = def->flags.visi;
+	visi = METHOD_ENTRY_VISI(me);
 	if (scope && (visi != METHOD_VISI_PUBLIC)) {
 	    if (!error) return Qnil;
 	    rb_print_inaccessible(klass, id, visi);
 	}
     }
-    if (def->type == VM_METHOD_TYPE_ZSUPER) {
+    if (me->def->type == VM_METHOD_TYPE_ZSUPER) {
 	klass = RCLASS_SUPER(defined_class);
-	id = def->original_id;
+	id = me->def->original_id;
 	me = rb_method_entry_without_refinements(klass, id, &defined_class);
 	goto again;
     }

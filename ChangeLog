@@ -1,3 +1,43 @@
+Sat Jun  6 18:23:41 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* method.h: back to share rb_method_definition_t by
+	  rb_method_entry_t.
+
+	  r50728 changed sharing `def's to isolating `def's
+	  on alias and so on. However, this change conflicts
+	  future improvement plan. So I change back to sharing approach.
+
+	* method.h: move rb_method_definition_t::flags to
+	  rb_method_entry_t::attr::flags.
+
+	  rb_method_entry_t::attr is union with VALUE because this field
+	  should have same size of VALUE. rb_method_entry_t is T_IMEMO).
+
+	  And also add the following access macros to it's fileds.
+
+	  * METHOD_ENTRY_VISI(me)
+	  * METHOD_ENTRY_BASIC(me)
+	  * METHOD_ENTRY_SAFE(me)
+
+	* vm_method.c (rb_method_definition_addref): added instead of
+	  rb_method_definition_clone().
+
+	  Do not create new definition, but increment alias_count.
+
+	* class.c (clone_method): catch up this fix.
+
+	* class.c (method_entry_i): ditto.
+
+	* proc.c (mnew_internal): ditto.
+
+	* proc.c (mnew_missing): ditto.
+
+	* vm_eval.c: ditto.
+
+	* vm_insnhelper.c: ditto.
+
+	* vm_method.c: ditto.
+
 Sat Jun  6 15:59:38 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* class.c: ins_methods_push() needs rb_method_visibility_t type on

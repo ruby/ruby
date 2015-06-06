@@ -387,7 +387,7 @@ check_funcall_respond_to(rb_thread_t *th, VALUE klass, VALUE recv, ID mid)
     VALUE defined_class;
     const rb_method_entry_t *me = rb_method_entry(klass, idRespond_to, &defined_class);
 
-    if (me && !me->def->flags.basic) {
+    if (me && !METHOD_ENTRY_BASIC(me)) {
 	const rb_block_t *passed_block = th->passed_block;
 	VALUE args[2], result;
 	int arity = rb_method_entry_arity(me);
@@ -570,7 +570,7 @@ rb_method_call_status(rb_thread_t *th, const rb_method_entry_t *me, call_type sc
     }
     klass = me->klass;
     oid = me->def->original_id;
-    visi = me->def->flags.visi;
+    visi = METHOD_ENTRY_VISI(me);
 
     if (oid != idMethodMissing) {
 	/* receiver specified form for private method */
@@ -592,7 +592,7 @@ rb_method_call_status(rb_thread_t *th, const rb_method_entry_t *me, call_type sc
 		}
 	    }
 
-	    if (me->def->flags.safe > th->safe_level) {
+	    if (METHOD_ENTRY_SAFE(me) > th->safe_level) {
 		rb_raise(rb_eSecurityError, "calling insecure method: %"PRIsVALUE, rb_id2str(me->called_id));
 	    }
 	}

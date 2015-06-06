@@ -47,11 +47,24 @@ typedef struct rb_cref_struct {
 
 typedef struct rb_method_entry_struct {
     VALUE flags;
-    VALUE reserved;
+
+    union {
+	struct {
+	    rb_method_visibility_t visi: 3;
+	    unsigned int safe: 3;
+	    unsigned int basic: 1;
+	} flags;
+	VALUE v; /* it should be VALUE size */
+    } attr;
+
     struct rb_method_definition_struct * const def;
     ID called_id;
     const VALUE klass;    /* should be marked */
 } rb_method_entry_t;
+
+#define METHOD_ENTRY_VISI(me)  (me)->attr.flags.visi
+#define METHOD_ENTRY_BASIC(me) (me)->attr.flags.basic
+#define METHOD_ENTRY_SAFE(me)  (me)->attr.flags.safe
 
 typedef enum {
     VM_METHOD_TYPE_ISEQ,
@@ -97,12 +110,8 @@ typedef struct rb_method_refined_struct {
 } rb_method_refined_t;
 
 typedef struct rb_method_definition_struct {
-    struct {
-	rb_method_visibility_t visi: 3;
-	unsigned int safe: 3;
-	unsigned int basic: 1;
-    } flags;
     rb_method_type_t type; /* method type */
+    int alias_count;
 
     union {
 	rb_method_iseq_t iseq;
@@ -120,7 +129,6 @@ typedef struct rb_method_definition_struct {
 	} optimize_type;
     } body;
 
-    int *alias_count_ptr;
     ID original_id;
 } rb_method_definition_t;
 
@@ -157,7 +165,7 @@ VALUE rb_obj_method_location(VALUE obj, ID id);
 void rb_free_method_entry(const rb_method_entry_t *me);
 void rb_sweep_method_entry(void *vm);
 
-rb_method_entry_t *rb_method_entry_create(ID called_id, VALUE klass, rb_method_definition_t *def);
+rb_method_entry_t *rb_method_entry_create(ID called_id, VALUE klass, rb_method_visibility_t visi, rb_method_definition_t *def);
 rb_method_entry_t *rb_method_entry_clone(const rb_method_entry_t *me);
 void rb_method_entry_copy(rb_method_entry_t *dst, const rb_method_entry_t *src);
 

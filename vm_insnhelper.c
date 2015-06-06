@@ -1315,7 +1315,7 @@ vm_callee_setup_arg(rb_thread_t *th, rb_call_info_t *ci, const rb_iseq_t *iseq, 
 
 	CI_SET_FASTPATH(ci,
 			(UNLIKELY(ci->flag & VM_CALL_TAILCALL) ? vm_call_iseq_setup_tailcall : vm_call_iseq_setup_normal),
-			(!IS_ARGS_SPLAT(ci) && !IS_ARGS_KEYWORD(ci) && !(ci->me->def->flags.visi == METHOD_VISI_PROTECTED)));
+			(!IS_ARGS_SPLAT(ci) && !IS_ARGS_KEYWORD(ci) && !(METHOD_ENTRY_VISI(ci->me) == METHOD_VISI_PROTECTED)));
     }
     else {
 	ci->aux.opt_pc = setup_parameters_complex(th, iseq, ci, argv, arg_setup_method);
@@ -1908,7 +1908,7 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 
   start_method_dispatch:
     if (ci->me != 0) {
-	if (LIKELY(ci->me->def->flags.visi == METHOD_VISI_PUBLIC && ci->me->def->flags.safe == 0)) {
+	if (LIKELY(METHOD_ENTRY_VISI(ci->me) == METHOD_VISI_PUBLIC && METHOD_ENTRY_SAFE(ci->me) == 0)) {
 	    VALUE klass;
 
 	  normal_method_dispatch:
@@ -2036,7 +2036,7 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 	}
 	else {
 	    int safe;
-	    if (!(ci->flag & VM_CALL_FCALL) && (ci->me->def->flags.visi == METHOD_VISI_PRIVATE)) {
+	    if (!(ci->flag & VM_CALL_FCALL) && (METHOD_ENTRY_VISI(ci->me) == METHOD_VISI_PRIVATE)) {
 		enum method_missing_reason stat = MISSING_PRIVATE;
 		bp();
 		if (ci->flag & VM_CALL_VCALL) stat |= MISSING_VCALL;
@@ -2045,7 +2045,7 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 		CI_SET_FASTPATH(ci, vm_call_method_missing, 1);
 		return vm_call_method_missing(th, cfp, ci);
 	    }
-	    else if (!(ci->flag & VM_CALL_OPT_SEND) && (ci->me->def->flags.visi == METHOD_VISI_PROTECTED)) {
+	    else if (!(ci->flag & VM_CALL_OPT_SEND) && (METHOD_ENTRY_VISI(ci->me) == METHOD_VISI_PROTECTED)) {
 		enable_fastpath = 0;
 		if (!rb_obj_is_kind_of(cfp->self, ci->defined_class)) {
 		    ci->aux.method_missing_reason = MISSING_PROTECTED;
@@ -2055,7 +2055,7 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 		    goto normal_method_dispatch;
 		}
 	    }
-	    else if ((safe = ci->me->def->flags.safe) > th->safe_level && safe > 2) {
+	    else if ((safe = METHOD_ENTRY_SAFE(ci->me)) > th->safe_level && safe > 2) {
 		rb_raise(rb_eSecurityError, "calling insecure method: %"PRIsVALUE, rb_id2str(ci->mid));
 	    }
 	    else {
@@ -2466,9 +2466,7 @@ vm_defined(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_num_t op_type, VALUE
 	const rb_method_entry_t *me = rb_method_entry(klass, SYM2ID(obj), 0);
 
 	if (me) {
-	    const rb_method_definition_t *def = me->def;
-
-	    switch (def->flags.visi) {
+	    switch (METHOD_ENTRY_VISI(me)) {
 	      case METHOD_VISI_PRIVATE:
 		break;
 	      case METHOD_VISI_PROTECTED:
@@ -2479,7 +2477,7 @@ vm_defined(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_num_t op_type, VALUE
 		expr_type = DEFINED_METHOD;
 		break;
 	      default:
-		rb_bug("vm_defined: unreachable: %u", (unsigned int)def->flags.visi);
+		rb_bug("vm_defined: unreachable: %u", (unsigned int)METHOD_ENTRY_VISI(me));
 	    }
 	}
 	else {
