@@ -1,5 +1,4 @@
 require 'test/unit'
-require 'cmath'
 
 class ComplexSub < Complex; end
 
@@ -901,109 +900,6 @@ class Complex_Test < Test::Unit::TestCase
     assert_equal(0.5, 1.0.fdiv(2))
     assert_equal(0.25, Rational(1,2).fdiv(2))
     assert_equal(Complex(0.5,1.0), Complex(1,2).quo(2))
-
-    unless $".grep(/(?:\A|(?<!add)\/)complex/).empty?
-      assert_equal(Complex(0,2), CMath.sqrt(-4.0))
-      assert_equal(Complex(0,2), CMath.sqrt(-4))
-      assert_equal(Complex(0,2), CMath.sqrt(Rational(-4)))
-
-      assert_equal(Complex(0,3), CMath.sqrt(-9.0))
-      assert_equal(Complex(0,3), CMath.sqrt(-9))
-      assert_equal(Complex(0,3), CMath.sqrt(Rational(-9)))
-
-      c = CMath.sqrt(Complex(1, 2))
-      assert_in_delta(1.272, c.real, 0.001)
-      assert_in_delta(0.786, c.imag, 0.001)
-
-      c = CMath.sqrt(-9)
-      assert_in_delta(0.0, c.real, 0.001)
-      assert_in_delta(3.0, c.imag, 0.001)
-
-      c = CMath.exp(Complex(1, 2))
-      assert_in_delta(-1.131, c.real, 0.001)
-      assert_in_delta(2.471, c.imag, 0.001)
-
-      c = CMath.sin(Complex(1, 2))
-      assert_in_delta(3.165, c.real, 0.001)
-      assert_in_delta(1.959, c.imag, 0.001)
-
-      c = CMath.cos(Complex(1, 2))
-      assert_in_delta(2.032, c.real, 0.001)
-      assert_in_delta(-3.051, c.imag, 0.001)
-
-      c = CMath.tan(Complex(1, 2))
-      assert_in_delta(0.033, c.real, 0.001)
-      assert_in_delta(1.014, c.imag, 0.001)
-
-      c = CMath.sinh(Complex(1, 2))
-      assert_in_delta(-0.489, c.real, 0.001)
-      assert_in_delta(1.403, c.imag, 0.001)
-
-      c = CMath.cosh(Complex(1, 2))
-      assert_in_delta(-0.642, c.real, 0.001)
-      assert_in_delta(1.068, c.imag, 0.001)
-
-      c = CMath.tanh(Complex(1, 2))
-      assert_in_delta(1.166, c.real, 0.001)
-      assert_in_delta(-0.243, c.imag, 0.001)
-
-      c = CMath.log(Complex(1, 2))
-      assert_in_delta(0.804, c.real, 0.001)
-      assert_in_delta(1.107, c.imag, 0.001)
-
-      c = CMath.log(Complex(1, 2), Math::E**2)
-      assert_in_delta(0.402, c.real, 0.001)
-      assert_in_delta(0.5535, c.imag, 0.001)
-
-      c = CMath.log(-1)
-      assert_in_delta(0.0, c.real, 0.001)
-      assert_in_delta(Math::PI, c.imag, 0.001)
-
-      c = CMath.log(8, 2)
-      assert_in_delta(3.0, c.real, 0.001)
-      assert_in_delta(0.0, c.imag, 0.001)
-
-      c = CMath.log(-8, -2)
-      assert_in_delta(1.092, c.real, 0.001)
-      assert_in_delta(-0.420, c.imag, 0.001)
-
-      c = CMath.log2(Complex(1, 2))
-      assert_in_delta(1.161, c.real, 0.001)
-      assert_in_delta(1.597, c.imag, 0.001)
-
-      c = CMath.log10(Complex(1, 2))
-      assert_in_delta(0.349, c.real, 0.001)
-      assert_in_delta(0.480, c.imag, 0.001)
-
-      c = CMath.asin(Complex(1, 2))
-      assert_in_delta(0.427, c.real, 0.001)
-      assert_in_delta(1.528, c.imag, 0.001)
-
-      c = CMath.acos(Complex(1, 2))
-      assert_in_delta(1.143, c.real, 0.001)
-      assert_in_delta(-1.528, c.imag, 0.001)
-
-      c = CMath.atan(Complex(1, 2))
-      assert_in_delta(1.338, c.real, 0.001)
-      assert_in_delta(0.402, c.imag, 0.001)
-
-      c = CMath.atan2(Complex(1, 2), 1)
-      assert_in_delta(1.338, c.real, 0.001)
-      assert_in_delta(0.402, c.imag, 0.001)
-
-      c = CMath.asinh(Complex(1, 2))
-      assert_in_delta(1.469, c.real, 0.001)
-      assert_in_delta(1.063, c.imag, 0.001)
-
-      c = CMath.acosh(Complex(1, 2))
-      assert_in_delta(1.528, c.real, 0.001)
-      assert_in_delta(1.143, c.imag, 0.001)
-
-      c = CMath.atanh(Complex(1, 2))
-      assert_in_delta(0.173, c.real, 0.001)
-      assert_in_delta(1.178, c.imag, 0.001)
-    end
-
   end
 
   def test_ruby19
