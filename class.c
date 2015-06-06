@@ -1075,7 +1075,7 @@ ins_methods_push(ID name, long type, VALUE ary, rb_method_visibility_t visi)
       case METHOD_VISI_PRIVATE:
       case METHOD_VISI_PROTECTED:
       case METHOD_VISI_PUBLIC:
-	visi = (type == visi);
+	visi = (type == (long)visi);
 	break;
       default:
 	visi = (type != METHOD_VISI_PRIVATE);
