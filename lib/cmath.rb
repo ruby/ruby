@@ -11,20 +11,13 @@
 # even know what they are. They would rather have Math.sqrt(-1) raise
 # an exception than return a complex number.
 #
+# For more information you can see Complex class.
+#
 # == Usage
 #
 # To start using this library, simply require cmath library:
 #
 #   require "cmath"
-#
-# And after call any CMath function. For example:
-#
-#   CMath.sqrt(-9)          #=> 0+3.0i
-#   CMath.exp(0 + 0i)       #=> 1.0+0.0i
-#   CMath.log10(-5.to_c)    #=> (0.6989700043360187+1.3643763538418412i)
-#
-#
-# For more information you can see Complec class.
 
 module CMath
 
@@ -57,7 +50,7 @@ module CMath
   ##
   # Math::E raised to the +z+ power
   #
-  #   CMath.exp(2i) #=> (-0.4161468365471424+0.9092974268256817i)
+  #   CMath.exp(1.i * Math::PI) #=> (-1.0+1.2246467991473532e-16i)
   def exp(z)
     begin
       if z.real?
@@ -91,7 +84,7 @@ module CMath
   end
 
   ##
-  # returns the base 2 logarithm of +z+
+  # Returns the base 2 logarithm of +z+
   #
   #   CMath.log2(-1) => (0.0+4.532360141827194i)
   def log2(z)
@@ -107,7 +100,7 @@ module CMath
   end
 
   ##
-  # returns the base 10 logarithm of +z+
+  # Returns the base 10 logarithm of +z+
   #
   #   CMath.log10(-1) #=> (0.0+1.3643763538418412i)
   def log10(z)
@@ -150,7 +143,7 @@ module CMath
   end
 
   ##
-  # returns the principal value of the cube root of +z+
+  # Returns the principal value of the cube root of +z+
   #
   #   CMath.cbrt(1 + 4i) #=> (1.449461632813119+0.6858152562177092i)
   def cbrt(z)
@@ -158,7 +151,7 @@ module CMath
   end
 
   ##
-  # returns the sine of +z+, where +z+ is given in radians
+  # Returns the sine of +z+, where +z+ is given in radians
   #
   #   CMath.sin(1 + 1i) #=> (1.2984575814159773+0.6349639147847361i)
   def sin(z)
@@ -175,7 +168,7 @@ module CMath
   end
 
   ##
-  # returns the cosine of +z+, where +z+ is given in radians
+  # Returns the cosine of +z+, where +z+ is given in radians
   #
   #   CMath.cos(1 + 1i) #=> (0.8337300251311491-0.9888977057628651i)
   def cos(z)
@@ -192,7 +185,7 @@ module CMath
   end
 
   ##
-  # returns the tangent of +z+, where +z+ is given in radians
+  # Returns the tangent of +z+, where +z+ is given in radians
   #
   #   CMath.tan(1 + 1i) #=> (0.27175258531951174+1.0839233273386943i)
   def tan(z)
@@ -208,7 +201,7 @@ module CMath
   end
 
   ##
-  # returns the hyperbolic sine of +z+, where +z+ is given in radians
+  # Returns the hyperbolic sine of +z+, where +z+ is given in radians
   #
   #   CMath.sinh(1 + 1i) #=> (0.6349639147847361+1.2984575814159773i)
   def sinh(z)
@@ -225,7 +218,7 @@ module CMath
   end
 
   ##
-  # returns the hyperbolic cosine of +z+, where +z+ is given in radians
+  # Returns the hyperbolic cosine of +z+, where +z+ is given in radians
   #
   #   CMath.cosh(1 + 1i) #=> (0.8337300251311491+0.9888977057628651i)
   def cosh(z)
@@ -242,7 +235,7 @@ module CMath
   end
 
   ##
-  # returns the hyperbolic tangent of +z+, where +z+ is given in radians
+  # Returns the hyperbolic tangent of +z+, where +z+ is given in radians
   #
   #   CMath.tanh(1 + 1i) #=> (1.0839233273386943+0.27175258531951174i)
   def tanh(z)
@@ -258,7 +251,7 @@ module CMath
   end
 
   ##
-  # returns the arc sine of +z+
+  # Returns the arc sine of +z+
   #
   #   CMath.asin(1 + 1i) #=> (0.6662394324925153+1.0612750619050355i)
   def asin(z)
@@ -274,7 +267,7 @@ module CMath
   end
 
   ##
-  # returns the arc cosine of +z+
+  # Returns the arc cosine of +z+
   #
   #   CMath.acos(1 + 1i) #=> (0.9045568943023813-1.0612750619050357i)
   def acos(z)
@@ -290,7 +283,7 @@ module CMath
   end
 
   ##
-  # returns the arc tangent of +z+
+  # Returns the arc tangent of +z+
   #
   #   CMath.atan(1 + 1i) #=> (1.0172219678978514+0.4023594781085251i)
   def atan(z)
