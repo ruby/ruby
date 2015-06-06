@@ -134,23 +134,17 @@ static void
 rb_method_definition_release(rb_method_definition_t *def)
 {
     if (def != NULL) {
-	if (def->alias_count_ptr == NULL) {
-	    if (METHOD_DEBUG) fprintf(stderr, " %p-%s:NULL\n", def, rb_id2name(def->original_id));
+	const int count = def->alias_count;
+	if (METHOD_DEBUG) assert(count >= 0);
+
+	if (count == 0) {
+	    if (METHOD_DEBUG) fprintf(stderr, "-%p-%s:%d\n", def, rb_id2name(def->original_id), count);
+	    xfree(def);
 	}
 	else {
-	    int *iptr = def->alias_count_ptr;
-
-	    if (*iptr == 0) {
-		if (METHOD_DEBUG) fprintf(stderr, "-%p-%s:%d\n", def, rb_id2name(def->original_id), *iptr);
-		xfree(iptr);
-	    }
-	    else {
-		if (METHOD_DEBUG) fprintf(stderr, "-%p-%s:%d->%d\n", def, rb_id2name(def->original_id), *iptr, *iptr-1);
-		*iptr -= 1;
-	    }
+	    if (METHOD_DEBUG) fprintf(stderr, "-%p-%s:%d->%d\n", def, rb_id2name(def->original_id), count, count-1);
+	    def->alias_count--;
 	}
-
-	xfree(def);
     }
 }
 
@@ -293,13 +287,9 @@ rb_method_definition_set(rb_method_definition_t *def, void *opts)
 }
 
 static rb_method_definition_t *
-rb_method_definition_create(rb_method_visibility_t visi, rb_method_type_t type, ID mid, void *opts)
+rb_method_definition_create(rb_method_type_t type, ID mid, void *opts)
 {
     rb_method_definition_t *def = ZALLOC(rb_method_definition_t);
-    /* def->alias_count_ptr = NULL; already cleared */
-    def->flags.visi = visi;
-    def->flags.basic = ruby_running ? FALSE : TRUE;
-    def->flags.safe = rb_safe_level();
     def->type = type;
     def->original_id = mid;
     if (opts != NULL) rb_method_definition_set(def, opts);
@@ -334,47 +324,40 @@ rb_method_definition_reset(const rb_method_entry_t *me, rb_method_definition_t *
 }
 
 static rb_method_definition_t *
-rb_method_definition_clone(rb_method_definition_t *src_def)
+rb_method_definition_addref(rb_method_definition_t *def)
 {
-    int *iptr = src_def->alias_count_ptr;
-    rb_method_definition_t *def = rb_method_definition_create(src_def->flags.visi, src_def->type, src_def->original_id, NULL);
-
-    def->flags.basic = src_def->flags.basic;
-    def->flags.safe = src_def->flags.safe;
-    memcpy(&def->body, &src_def->body, sizeof(def->body));
-    def->alias_count_ptr = src_def->alias_count_ptr;
-
-    if (!src_def->alias_count_ptr) {
-	iptr = def->alias_count_ptr = src_def->alias_count_ptr = ALLOC(int);
-	*iptr = 0;
-    }
-    *iptr += 1;
-
-    if (METHOD_DEBUG) fprintf(stderr, "+%p-%s:%d\n", src_def, rb_id2name(src_def->original_id), *iptr);
-
+    def->alias_count++;
+    if (METHOD_DEBUG) fprintf(stderr, "+%p-%s:%d\n", def, rb_id2name(def->original_id), def->alias_count);
     return def;
 }
 
 rb_method_entry_t *
-rb_method_entry_create(ID called_id, VALUE klass, rb_method_definition_t *def)
+rb_method_entry_create(ID called_id, VALUE klass, rb_method_visibility_t visi, rb_method_definition_t *def)
 {
     rb_method_entry_t *me = (rb_method_entry_t *)rb_imemo_new(imemo_ment, (VALUE)NULL, (VALUE)called_id, (VALUE)klass, 0);
+    METHOD_ENTRY_VISI(me) = visi;
+    METHOD_ENTRY_BASIC(me) = ruby_running ? FALSE : TRUE;
+    METHOD_ENTRY_SAFE(me) = rb_safe_level();
     rb_method_definition_reset(me, def);
+
     assert(def != NULL);
+
     return me;
 }
 
 rb_method_entry_t *
 rb_method_entry_clone(const rb_method_entry_t *src_me)
 {
-    rb_method_entry_t *me = rb_method_entry_create(src_me->called_id, src_me->klass, rb_method_definition_clone(src_me->def));
+    rb_method_entry_t *me = rb_method_entry_create(src_me->called_id, src_me->klass,
+						   METHOD_ENTRY_VISI(src_me),
+						   rb_method_definition_addref(src_me->def));
     return me;
 }
 
 void
 rb_method_entry_copy(rb_method_entry_t *dst, const rb_method_entry_t *src)
 {
-    rb_method_definition_reset(dst, rb_method_definition_clone(src->def));
+    rb_method_definition_reset(dst, rb_method_definition_addref(src->def));
     dst->called_id = src->called_id;
     RB_OBJ_WRITE((VALUE)dst, &dst->klass, src->klass);
 }
@@ -388,8 +371,9 @@ make_method_entry_refined(rb_method_entry_t *me)
 
     rb_vm_check_redefinition_opt_method(me, me->klass);
 
-    new_def = rb_method_definition_create(METHOD_VISI_PUBLIC, VM_METHOD_TYPE_REFINED, me->called_id, rb_method_entry_clone(me));
+    new_def = rb_method_definition_create(VM_METHOD_TYPE_REFINED, me->called_id, rb_method_entry_clone(me));
     rb_method_definition_reset(me, new_def);
+    METHOD_ENTRY_VISI(me) = METHOD_VISI_PUBLIC;
 }
 
 void
@@ -470,7 +454,7 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type, rb_method_defin
 
 	if (RTEST(ruby_verbose) &&
 	    type != VM_METHOD_TYPE_UNDEF &&
-	    (old_def->alias_count_ptr == NULL || *old_def->alias_count_ptr == 0) &&
+	    (old_def->alias_count == 0) &&
 	    old_def->type != VM_METHOD_TYPE_UNDEF &&
 	    old_def->type != VM_METHOD_TYPE_ZSUPER &&
 	    old_def->type != VM_METHOD_TYPE_ALIAS) {
@@ -496,9 +480,7 @@ rb_method_entry_make(VALUE klass, ID mid, rb_method_type_t type, rb_method_defin
 	}
     }
 
-    me = rb_method_entry_create(mid, defined_class, def);
-    def->flags.visi = visi;
-    def->flags.safe = rb_safe_level(); /* TODO: maybe we need to remove it. */
+    me = rb_method_entry_create(mid, defined_class, visi, def);
 
     rb_clear_method_cache_by_class(klass);
 
@@ -545,7 +527,7 @@ method_added(VALUE klass, ID mid)
 rb_method_entry_t *
 rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_visibility_t visi)
 {
-    rb_method_definition_t *def = rb_method_definition_create(visi, type, mid, opts);
+    rb_method_definition_t *def = rb_method_definition_create(type, mid, opts);
     rb_method_entry_t *me = rb_method_entry_make(klass, mid, type, def, visi, klass);
 
     if (me->def->type == VM_METHOD_TYPE_REFINED && me->def->body.refined.orig_me) { /* TODO: really needed? */
@@ -577,9 +559,9 @@ static rb_method_entry_t *
 method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *me,
 		 rb_method_visibility_t visi, VALUE defined_class)
 {
-    rb_method_definition_t *def = rb_method_definition_clone(me->def);
+    rb_method_definition_t *def = rb_method_definition_addref(me->def);
     rb_method_entry_t *newme = rb_method_entry_make(klass, mid, me->def->type, def, visi, defined_class);
-    def->flags.safe = me->def->flags.safe;
+    METHOD_ENTRY_SAFE(newme) = METHOD_ENTRY_SAFE(me);
     method_added(klass, mid);
     return newme;
 }
@@ -891,14 +873,14 @@ rb_export_method(VALUE klass, ID name, rb_method_visibility_t visi)
 	rb_print_undef(klass, name, 0);
     }
 
-    if (me->def->flags.visi != visi) {
+    if (METHOD_ENTRY_VISI(me) != visi) {
 	rb_vm_check_redefinition_opt_method(me, klass);
 
 	if (klass == defined_class || RCLASS_ORIGIN(klass) == defined_class) {
-	    me->def->flags.visi = visi;
+	    METHOD_ENTRY_VISI(me) = visi;
 
 	    if (me->def->type == VM_METHOD_TYPE_REFINED && me->def->body.refined.orig_me) {
-		me->def->body.refined.orig_me->def->flags.visi = visi;
+		METHOD_ENTRY_VISI((rb_method_entry_t *)me->def->body.refined.orig_me) = visi;
 	    }
 	    rb_clear_method_cache_by_class(klass);
 	}
@@ -917,15 +899,13 @@ rb_method_boundp(VALUE klass, ID id, int ex)
     const rb_method_entry_t *me = rb_method_entry_without_refinements(klass, id, 0);
 
     if (me != 0) {
-	rb_method_definition_t *def = me->def;
-
 	if ((ex & ~BOUND_RESPONDS) &&
-	    ((def->flags.visi == METHOD_VISI_PRIVATE) ||
-	     ((ex & BOUND_RESPONDS) && (def->flags.visi == METHOD_VISI_PROTECTED)))) {
+	    ((METHOD_ENTRY_VISI(me) == METHOD_VISI_PRIVATE) ||
+	     ((ex & BOUND_RESPONDS) && (METHOD_ENTRY_VISI(me) == METHOD_VISI_PROTECTED)))) {
 	    return 0;
 	}
 
-	if (def->type == VM_METHOD_TYPE_NOTIMPLEMENTED) {
+	if (me->def->type == VM_METHOD_TYPE_NOTIMPLEMENTED) {
 	    if (ex & BOUND_RESPONDS) return 2;
 	    return 0;
 	}
@@ -1157,7 +1137,7 @@ check_definition(VALUE mod, VALUE mid, rb_method_visibility_t visi)
     if (!id) return Qfalse;
     me = rb_method_entry_without_refinements(mod, id, 0);
     if (me) {
-	if (me->def->flags.visi == visi) return Qtrue;
+	if (METHOD_ENTRY_VISI(me) == visi) return Qtrue;
     }
     return Qfalse;
 }
@@ -1401,11 +1381,11 @@ rb_alias(VALUE klass, ID alias_name, ID original_name)
     if (orig_me->def->type == VM_METHOD_TYPE_ZSUPER) {
 	klass = RCLASS_SUPER(klass);
 	original_name = orig_me->def->original_id;
-	visi = orig_me->def->flags.visi;
+	visi = METHOD_ENTRY_VISI(orig_me);
 	goto again;
     }
 
-    if (visi == METHOD_VISI_UNDEF) visi = orig_me->def->flags.visi;
+    if (visi == METHOD_VISI_UNDEF) visi = METHOD_ENTRY_VISI(orig_me);
 
     if (defined_class != target_klass) { /* inter class/module alias */
 	VALUE real_owner;
@@ -1423,7 +1403,7 @@ rb_alias(VALUE klass, ID alias_name, ID original_name)
 	RB_OBJ_WRITE(alias_me, &alias_me->klass, defined_class);
 	alias_me->def->original_id = orig_me->called_id;
 	*(ID *)&alias_me->def->body.alias.original_me->called_id = alias_name;
-	alias_me->def->flags.safe = orig_me->def->flags.safe;
+	METHOD_ENTRY_SAFE(alias_me) = METHOD_ENTRY_SAFE(orig_me);
     }
     else {
 	method_entry_set(target_klass, alias_name, orig_me, visi, defined_class);
@@ -1723,7 +1703,7 @@ int
 rb_method_basic_definition_p(VALUE klass, ID id)
 {
     const rb_method_entry_t *me = rb_method_entry(klass, id, 0);
-    return (me && me->def->flags.basic) ? TRUE : FALSE;
+    return (me && METHOD_ENTRY_BASIC(me)) ? TRUE : FALSE;
 }
 
 static inline int
