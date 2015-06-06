@@ -1,3 +1,8 @@
+Sat Jun  6 15:05:47 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* class.c (ins_methods_push): Change type and name of parameters
+	  to make more clear.
+
 Sat Jun  6 08:52:13 2015  Eric Wong  <e@80x24.org>
 
 	* test/socket/test_nonblock.rb: try to avoid EMSGSIZE

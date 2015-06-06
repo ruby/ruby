@@ -1065,24 +1065,19 @@ rb_mod_ancestors(VALUE mod)
 }
 
 static int
-ins_methods_push(ID name, long type, VALUE ary, rb_method_visibility_t visi)
+ins_methods_push(ID name, rb_method_visibility_t visi, VALUE ary, rb_method_visibility_t expected_visi)
 {
-    if (type == METHOD_VISI_UNDEF) return ST_CONTINUE;
+    if (visi == METHOD_VISI_UNDEF) return ST_CONTINUE;
 
-    switch (visi) {
+    switch (expected_visi) {
       case METHOD_VISI_UNDEF:
-	return ST_CONTINUE;
+	if (visi != METHOD_VISI_PRIVATE) rb_ary_push(ary, ID2SYM(name));
+	break;
       case METHOD_VISI_PRIVATE:
       case METHOD_VISI_PROTECTED:
       case METHOD_VISI_PUBLIC:
-	visi = (type == (long)visi);
+	if (visi == expected_visi) rb_ary_push(ary, ID2SYM(name));
 	break;
-      default:
-	visi = (type != METHOD_VISI_PRIVATE);
-	break;
-    }
-    if (visi) {
-	rb_ary_push(ary, ID2SYM(name));
     }
     return ST_CONTINUE;
 }
@@ -1090,7 +1085,7 @@ ins_methods_push(ID name, long type, VALUE ary, rb_method_visibility_t visi)
 static int
 ins_methods_i(st_data_t name, st_data_t type, st_data_t ary)
 {
-    return ins_methods_push((ID)name, (rb_method_visibility_t)type, (VALUE)ary, -1); /* everything but private */
+    return ins_methods_push((ID)name, (rb_method_visibility_t)type, (VALUE)ary, METHOD_VISI_UNDEF); /* everything but private */
 }
 
 static int
