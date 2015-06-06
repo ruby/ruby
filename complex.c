@@ -2112,6 +2112,29 @@ float_arg(VALUE self)
  *
  *    Complex(1, 1) / 2    #=> ((1/2)+(1/2)*i)
  *    Complex(1, 1) / 2.0  #=> (0.5+0.5i)
+ *
+ * == Brief overview of complex numbers
+ *
+ * A complex number is a number that can be expressed in the form
+ * a + bi, where a and b are real numbers and i is the imaginary unit,
+ * that satisfies the equation x**2 = −1, that is, i**2 = −1. In this
+ * expression, a is the real part and b is the imaginary part of the
+ * complex number.
+ *
+ * In ruby, you can create complex object with Complex, ::rect, ::polar
+ * or #to_c method.
+ *
+ *   Complex(1)             #=> (1+0i)
+ *   1 + 1i                 #=> (1+1i)
+ *   Complex.polar(2, 3)    #=> (-1.9799849932008908+0.2822400161197344i)
+ *   3.to_c                 #=> (3+0i)
+ *
+ * == References
+ *
+ * Kahan, W: Branch cuts for complex elementary functions
+ * Solomentsev, E.D. (2001), "Complex number", in Hazewinkel, Michiel,
+ * <em>Encyclopedia of Mathematics, Springer, ISBN 978-1-55608-010-4
+ *
  */
 void
 Init_Complex(void)
