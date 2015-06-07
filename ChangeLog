@@ -17,7 +17,7 @@ Sat Jun  6 18:23:41 2015  Koichi Sasada  <ko1@atdot.net>
 	  rb_method_entry_t::attr is union with VALUE because this field
 	  should have same size of VALUE. rb_method_entry_t is T_IMEMO).
 
-	  And also add the following access macros to it's fileds.
+	  And also add the following access macros to it's fields.
 
 	  * METHOD_ENTRY_VISI(me)
 	  * METHOD_ENTRY_BASIC(me)
