@@ -1,3 +1,7 @@
+Mon Jun  8 05:09:58 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (obj_info): print method id for T_IMEMO/ment.
+
 Sun Jun  7 07:05:43 2015  Kazuki Tanaka  <gogotanaka@ruby-lang.org>
 
 	* Move test cases from test/ruby/test_complex.rb to test/test_cmath.rb
