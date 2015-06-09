@@ -436,9 +436,8 @@ class Prime
         end
       end
 
-      segment.each do |prime|
-        @primes.push prime unless prime.nil?
-      end
+      @primes.concat(segment.compact!)
+
       @max_checked = segment_max
     end
   end
