@@ -1,3 +1,8 @@
+Tue Jun  9 11:45:00 2015  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/matrix.rb: Simplify and optimize EratosthenesSieve
+	  based on patch by Ajay Kumar. [Fixes GH-921]
+
 Mon Jun  8 05:09:58 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (obj_info): print method id for T_IMEMO/ment.
