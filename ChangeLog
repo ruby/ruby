@@ -1,3 +1,9 @@
+Tue Jun  9 16:26:48 2015  Eric Wong  <e@80x24.org>
+
+	* ext/openssl/ossl_asn1.c (ossl_asn1_traverse, ossl_asn1_decode,
+	  ossl_asn1_decode_all): use RB_GC_GUARD instead of volatile
+	  [ruby-core:69371] [Bug #11185]
+
 Tue Jun  9 16:24:25 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* win32/win32.c (setup_overlapped): seek to the file end only when
