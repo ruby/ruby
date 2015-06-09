@@ -425,13 +425,10 @@ class Prime
       root = Integer(Math.sqrt(segment_max).floor)
 
       sieving_primes = @primes[1 .. -1].take_while { |prime| prime <= root }
-      offsets = Array.new(sieving_primes.size) do |i|
-        (-(segment_min + 1 + sieving_primes[i]) / 2) % sieving_primes[i]
-      end
 
       segment = ((segment_min + 1) .. segment_max).step(2).to_a
-      sieving_primes.each_with_index do |prime, index|
-        composite_index = offsets[index]
+      sieving_primes.each do |prime|
+        composite_index = (-(segment_min + 1 + prime) / 2) % prime
         while composite_index < segment.size do
           segment[composite_index] = nil
           composite_index += prime
