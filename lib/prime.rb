@@ -424,10 +424,11 @@ class Prime
       segment_max = [segment_min + max_segment_size, max_cached_prime * 2].min
       root = Integer(Math.sqrt(segment_max).floor)
 
-      sieving_primes = @primes[1 .. -1].take_while { |prime| prime <= root }
-
       segment = ((segment_min + 1) .. segment_max).step(2).to_a
-      sieving_primes.each do |prime|
+
+      (1..Float::INFINITY).each do |sieving|
+        prime = @primes[sieving]
+        break if prime > root
         composite_index = (-(segment_min + 1 + prime) / 2) % prime
         while composite_index < segment.size do
           segment[composite_index] = nil
