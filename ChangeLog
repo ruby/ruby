@@ -1,3 +1,12 @@
+Tue Jun  9 16:15:31 2015  Aaron Patterson <tenderlove@ruby-lang.org>
+
+	* load.c (loaded_feature_path): stop returning false negatives for
+	  filenames which are trailing substrings of file extensions.  For
+	  example, 'b', which a trailing substring of ".rb" should not return
+	  false. [Bug #11155][ruby-core:69206]
+
+	* test/ruby/test_autoload.rb: test for fix
+
 Fri May 29 14:03:33 2015  Matt Hoyle  <matt@deployable.co>
 
 	* ext/bigdecimal/bigdecimal.c (VpSetPTR): fix a typo, 'expoennt'
