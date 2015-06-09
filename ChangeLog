@@ -1,3 +1,8 @@
+Tue Jun  9 16:24:25 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* win32/win32.c (setup_overlapped): seek to the file end only when
+	  writing (mode:a), not reading (mode:a+, read).
+
 Tue Jun  9 16:15:31 2015  Aaron Patterson <tenderlove@ruby-lang.org>
 
 	* load.c (loaded_feature_path): stop returning false negatives for
