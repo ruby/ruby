@@ -1,3 +1,8 @@
+Tue Jun  9 16:29:49 2015  Eric Wong  <e@80x24.org>
+
+	* ext/socket/ancdata.c: use RB_GC_GUARD instead of volatile
+	  [ruby-core:69419] [Feature #11198]
+
 Tue Jun  9 16:26:48 2015  Eric Wong  <e@80x24.org>
 
 	* ext/openssl/ossl_asn1.c (ossl_asn1_traverse, ossl_asn1_decode,

@@ -1133,7 +1133,7 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
     struct msghdr mh;
     struct iovec iov;
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
-    volatile VALUE controls_str = 0;
+    VALUE controls_str = 0;
     VALUE *controls_ptr = NULL;
     int family;
 #endif
@@ -1289,6 +1289,9 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
             rb_readwrite_sys_fail(RB_IO_WAIT_WRITABLE, "sendmsg(2) would block");
 	rb_sys_fail("sendmsg(2)");
     }
+#if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
+    RB_GC_GUARD(controls_str);
+#endif
 
     return SSIZET2NUM(ss);
 }
