@@ -98,22 +98,16 @@ module MakeMakefile
       arg, val = arg.split('=', 2)
       next unless arg
       arg.tr!('_', '-')
-      if arg.sub!(/^(?!--)/, '--')
-        val or next
-        arg.downcase!
-      end
-      next if /^--(?:top|topsrc|src|cur)dir$/ =~ arg
+      next if /\A(--)?(?:top|topsrc|src|cur)dir\z/i =~ arg
       $configure_args[arg] = val || true
+      $configure_args["--#{arg.downcase}"] = val if val and /\A--/ !~ arg
     end
     for arg in ARGV
       arg, val = arg.split('=', 2)
       next unless arg
       arg.tr!('_', '-')
-      if arg.sub!(/^(?!--)/, '--')
-        val or next
-        arg.downcase!
-      end
       $configure_args[arg] = val || true
+      $configure_args["--#{arg.downcase}"] = val if val and /\A--/ !~ arg
     end
   end
 
