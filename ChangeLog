@@ -1,3 +1,15 @@
+Thu Jun 11 08:52:01 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* method.h: embed rb_method_entry_t::attr::flags (5 bits) into 
+	  rb_method_entry_t::flags to make one word spare space.
+
+	  Add some macros to access these flags.
+
+	* vm_method.c: use these macros.
+
+	* internal.h: define IMEMO_FL_USHIFT and IMEMO_FL_USER[0-4]
+	  for T_IMEMO local flags.
+
 Thu Jun 11 08:27:06 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c: use VM_ASSERT instead of assert().
