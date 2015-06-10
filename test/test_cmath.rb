@@ -41,6 +41,14 @@ class TestCMath < Test::Unit::TestCase
     assert_in_delta 0.17328679513998635+1.1780972450961724i , CMath.atanh(1+2i)
   end
 
+  def test_error_handling
+    assert_raise_with_message(TypeError, "Numeric Number required") { CMath.acos("2") }
+    assert_raise_with_message(TypeError, "Numeric Number required") { CMath.log("2") }
+    assert_raise(ArgumentError) { CMath.log(2, "2") }
+    assert_raise(NoMethodError) { CMath.log(2, 2i) }
+    assert_raise(RangeError) { CMath.hypot(2i, 2i) }
+  end
+
   def test_cbrt_returns_principal_value_of_cube_root
     assert_equal (-8)**(1.0/3), CMath.cbrt(-8), '#3676'
   end
