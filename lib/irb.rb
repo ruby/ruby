@@ -158,7 +158,7 @@ STDOUT.sync = true
 #     %M    # inspect of main object (self)
 #     %l    # type of string(", ', /, ]), `]' is inner %w[...]
 #     %NNi  # indent level. NN is digits and means as same as printf("%NNd").
-#           # It can be ommited
+#           # It can be omitted
 #     %NNn  # line number.
 #     %%    # %
 #
