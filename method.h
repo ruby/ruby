@@ -47,24 +47,44 @@ typedef struct rb_cref_struct {
 
 typedef struct rb_method_entry_struct {
     VALUE flags;
-
-    union {
-	struct {
-	    rb_method_visibility_t visi: 3;
-	    unsigned int safe: 3;
-	    unsigned int basic: 1;
-	} flags;
-	VALUE v; /* it should be VALUE size */
-    } attr;
-
+    VALUE dummy;
     struct rb_method_definition_struct * const def;
     ID called_id;
     const VALUE klass;    /* should be marked */
 } rb_method_entry_t;
 
-#define METHOD_ENTRY_VISI(me)  (me)->attr.flags.visi
-#define METHOD_ENTRY_BASIC(me) (me)->attr.flags.basic
-#define METHOD_ENTRY_SAFE(me)  (me)->attr.flags.safe
+#define METHOD_ENTRY_VISI(me)  (rb_method_visibility_t)(((me)->flags & (IMEMO_FL_USER0 | IMEMO_FL_USER1)) >> (IMEMO_FL_USHIFT+0))
+#define METHOD_ENTRY_BASIC(me) (int)                   (((me)->flags & (IMEMO_FL_USER2                 )) >> (IMEMO_FL_USHIFT+2))
+#define METHOD_ENTRY_SAFE(me)  (int)                   (((me)->flags & (IMEMO_FL_USER3 | IMEMO_FL_USER4)) >> (IMEMO_FL_USHIFT+3))
+
+static inline void
+METHOD_ENTRY_VISI_SET(rb_method_entry_t *me, rb_method_visibility_t visi)
+{
+    VM_ASSERT(visi <= 3);
+    me->flags = (me->flags & ~(IMEMO_FL_USER0 | IMEMO_FL_USER1)) | (visi << IMEMO_FL_USHIFT+0);
+}
+static inline void
+METHOD_ENTRY_BASIC_SET(rb_method_entry_t *me, int basic)
+{
+    VM_ASSERT(basic <= 1);
+    me->flags = me->flags | (basic << (IMEMO_FL_USHIFT+2));
+}
+static inline void
+METHOD_ENTRY_SAFE_SET(rb_method_entry_t *me, int safe)
+{
+    VM_ASSERT(safe <= 3);
+    me->flags = (me->flags & ~(IMEMO_FL_USER3 | IMEMO_FL_USER4)) | (safe << IMEMO_FL_USHIFT+3);
+}
+static inline void
+METHOD_ENTRY_FLAGS_SET(rb_method_entry_t *me, rb_method_visibility_t visi, int basic, int safe)
+{
+    VM_ASSERT(visi <= 3);
+    VM_ASSERT(basic <= 1);
+    VM_ASSERT(safe <= 3);
+    me->flags =
+      (me->flags & ~(IMEMO_FL_USER0|IMEMO_FL_USER1|IMEMO_FL_USER2|IMEMO_FL_USER3|IMEMO_FL_USER4)) |
+	((visi << IMEMO_FL_USHIFT+0) | (basic << (IMEMO_FL_USHIFT+2)) | (safe << IMEMO_FL_USHIFT+3));
+}
 
 typedef enum {
     VM_METHOD_TYPE_ISEQ,

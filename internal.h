@@ -545,6 +545,14 @@ imemo_type(VALUE imemo)
     return (RBASIC(imemo)->flags >> FL_USHIFT) & imemo_mask;
 }
 
+/* FL_USER0 to FL_USER2 is for type */
+#define IMEMO_FL_USHIFT (FL_USHIFT + 3)
+#define IMEMO_FL_USER0 FL_USER3
+#define IMEMO_FL_USER1 FL_USER4
+#define IMEMO_FL_USER2 FL_USER5
+#define IMEMO_FL_USER3 FL_USER6
+#define IMEMO_FL_USER4 FL_USER7
+
 /* CREF in method.h */
 
 /* SVAR */
