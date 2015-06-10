@@ -16,14 +16,6 @@
 #include "probes.h"
 #include "probes_helper.h"
 
-/*
- * Enable check mode.
- *   1: enable local assertions.
- */
-#ifndef VM_CHECK_MODE
-#define VM_CHECK_MODE 0
-#endif
-
 /* control stack frame */
 
 #ifndef INLINE
