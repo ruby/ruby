@@ -1,3 +1,9 @@
+Wed Jun 10 22:27:32 2015  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* lib/mkmf.rb: revert r50804 because of build failure when specifying
+	  LDFLAGS during configure, observed on Solaris with GCC 4.6.
+	  [Bug #11245]
+
 Wed Jun 10 21:59:51 2015  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* README.ja.md: fix markup miss.
