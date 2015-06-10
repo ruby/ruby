@@ -1,3 +1,7 @@
+Wed Jun 10 21:59:51 2015  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* README.ja.md: fix markup miss.
+
 Wed Jun 10 11:06:25 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* template/fake.rb.in: turn into erb template from autoconf
