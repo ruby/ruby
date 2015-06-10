@@ -2094,7 +2094,7 @@ class CSV
   # are set.  When +field_name+ is <tt>:header_converters</tt> header converters
   # are added instead.
   #
-  # The <tt>:unconverted_fields</tt> option is also actived for
+  # The <tt>:unconverted_fields</tt> option is also activated for
   # <tt>:converters</tt> calls, if requested.
   #
   def init_converters(options, field_name = :converters)
