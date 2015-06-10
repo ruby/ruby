@@ -146,8 +146,6 @@ static rb_serial_t ruby_vm_class_serial = 1;
 #include "vm_method.c"
 #include "vm_eval.c"
 
-#include <assert.h>
-
 #define PROCDEBUG 0
 
 rb_serial_t
