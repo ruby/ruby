@@ -1,3 +1,13 @@
+Wed Jun 10 11:06:25 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* template/fake.rb.in: turn into erb template from autoconf
+	  template to fake more accurately.
+
+	* common.mk (fake.rb): needs preprocessed file now.
+
+	* version.c (Init_version): add dummy expression to
+	  RUBY_ENGINE_VERSION.
+
 Tue Jun  9 12:31:25 2015  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/prime.rb: Simplify and optimize EratosthenesSieve
