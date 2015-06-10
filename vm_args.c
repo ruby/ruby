@@ -49,7 +49,7 @@ args_extend(struct args_info *args, const int min_argc)
 
     if (args->rest) {
 	args->rest = rb_ary_dup(args->rest);
-	assert(args->rest_index == 0);
+	VM_ASSERT(args->rest_index == 0);
 	for (i=args->argc + RARRAY_LENINT(args->rest); i<min_argc; i++) {
 	    rb_ary_push(args->rest, Qnil);
 	}
@@ -78,7 +78,7 @@ args_reduce(struct args_info *args, int over_argc)
 	}
     }
 
-    assert(args->argc >= over_argc);
+    VM_ASSERT(args->argc >= over_argc);
     args->argc -= over_argc;
 }
 
@@ -194,7 +194,7 @@ args_pop_keyword_hash(struct args_info *args, VALUE *kw_hash_ptr, rb_thread_t *t
 
     if (args->rest == Qfalse) {
       from_argv:
-	assert(args->argc > 0);
+	VM_ASSERT(args->argc > 0);
 	*kw_hash_ptr = args->argv[args->argc-1];
 
 	if (keyword_hash_p(kw_hash_ptr, &rest_hash, th)) {
@@ -652,11 +652,11 @@ setup_parameters_complex(rb_thread_t * const th, const rb_iseq_t * const iseq, r
 	    arg.vals = arg.keys + kw_len;
 	    arg.argc = 0;
 	    rb_hash_foreach(keyword_hash, fill_keys_values, (VALUE)&arg);
-	    assert(arg.argc == kw_len);
+	    VM_ASSERT(arg.argc == kw_len);
 	    args_setup_kw_parameters(arg.vals, kw_len, arg.keys, iseq, klocals);
 	}
 	else {
-	    assert(args_argc(args) == 0);
+	    VM_ASSERT(args_argc(args) == 0);
 	    args_setup_kw_parameters(NULL, 0, NULL, iseq, klocals);
 	}
     }

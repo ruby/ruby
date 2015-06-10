@@ -1,3 +1,13 @@
+Thu Jun 11 08:27:06 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c: use VM_ASSERT instead of assert().
+
+	* vm_args.c: ditto.
+
+	* vm_insnhelper.c: ditto.
+
+	* vm_method.c: ditto.
+
 Thu Jun 11 08:16:48 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h: define VM_ASSERT() for assertion

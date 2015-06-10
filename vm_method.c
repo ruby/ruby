@@ -135,7 +135,7 @@ rb_method_definition_release(rb_method_definition_t *def)
 {
     if (def != NULL) {
 	const int count = def->alias_count;
-	if (METHOD_DEBUG) assert(count >= 0);
+	VM_ASSERT(count >= 0);
 
 	if (count == 0) {
 	    if (METHOD_DEBUG) fprintf(stderr, "-%p-%s:%d\n", def, rb_id2name(def->original_id), count);
@@ -258,7 +258,7 @@ rb_method_definition_set(rb_method_definition_t *def, void *opts)
 		DEF_OBJ_WRITE(&def->body.attr.location, rb_ary_freeze(location));
 	    }
 	    else {
-		assert(def->body.attr.location == 0);
+		VM_ASSERT(def->body.attr.location == 0);
 	    }
 	    return;
 	}
@@ -340,7 +340,7 @@ rb_method_entry_create(ID called_id, VALUE klass, rb_method_visibility_t visi, r
     METHOD_ENTRY_SAFE(me) = rb_safe_level();
     rb_method_definition_reset(me, def);
 
-    assert(def != NULL);
+    VM_ASSERT(def != NULL);
 
     return me;
 }
