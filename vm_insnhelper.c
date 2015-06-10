@@ -51,6 +51,12 @@ vm_stackoverflow(void)
 static void
 check_frame(int magic, int req_block, int req_me, int req_cref, VALUE specval, VALUE cref_or_me)
 {
+    enum imemo_type cref_or_me_type = imemo_none;
+
+    if (RB_TYPE_P(cref_or_me, T_IMEMO)) {
+	cref_or_me_type = imemo_type(cref_or_me);
+    }
+
     if (req_block && !VM_ENVVAL_BLOCK_PTR_P(specval)) {
 	rb_bug("vm_push_frame: specval (%p) should be a block_ptr on %x frame", (void *)specval, magic);
     }
@@ -59,17 +65,17 @@ check_frame(int magic, int req_block, int req_me, int req_cref, VALUE specval, V
     }
 
     if (req_me) {
-	if (!RB_TYPE_P(cref_or_me, T_IMEMO) || imemo_type(cref_or_me) != imemo_ment) {
+	if (cref_or_me_type != imemo_ment) {
 	    rb_bug("vm_push_frame: (%s) should be method entry on %x frame", rb_obj_info(cref_or_me), magic);
 	}
     }
     else {
-	if (req_cref && (!RB_TYPE_P(cref_or_me, T_IMEMO) || imemo_type(cref_or_me) != imemo_cref)) {
+	if (req_cref && cref_or_me_type != imemo_cref) {
 	    rb_bug("vm_push_frame: (%s) should be CREF on %x frame", rb_obj_info(cref_or_me), magic);
 	}
 	else { /* cref or Qfalse */
-	    if (cref_or_me != Qfalse && (!RB_TYPE_P(cref_or_me, T_IMEMO) || imemo_type(cref_or_me) != imemo_cref)) {
-		if ((magic == VM_FRAME_MAGIC_LAMBDA || magic == VM_FRAME_MAGIC_IFUNC) && (RB_TYPE_P(cref_or_me, T_IMEMO) && imemo_type(cref_or_me) == imemo_ment)) {
+	    if (cref_or_me != Qfalse && cref_or_me_type != imemo_cref) {
+		if ((magic == VM_FRAME_MAGIC_LAMBDA || magic == VM_FRAME_MAGIC_IFUNC) && (cref_or_me_type == imemo_ment)) {
 		    /* ignore */
 		}
 		else {
