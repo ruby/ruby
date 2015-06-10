@@ -1,6 +1,6 @@
 Thu Jun 11 04:34:39 2015  Kazuki Tanaka  <gogotanaka@ruby-lang.org>
 
-	* test/test_cmath.rb: Add assertions for error handling.
+	* test/test_cmath.rb: Add some assertions.
 
 Thu Jun 11 00:34:39 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
