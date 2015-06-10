@@ -8,8 +8,8 @@ end
 if arg['i']
   src = File.read(arg['i'])
   arg['versions'] = version = {}
-  src.scan(/rb_define_global_const\("(RUBY_\w+)",\s*(?:.*rb_\w*str_new\w*\((\w+)|\(*\(VALUE\)\((.+)\)\)\s*<<\s?)/) do |n, s, i|
-    version[n] = i ? i.to_i : src[/\b#{s}\[\]\s*=\s*((?:"(?:\\.|[^\"\\])*"\s*)*);/m, 1].gsub(/\A"|"\z|" *"/, '').gsub(/\\(.)/, '\1')
+  src.scan(/rb_define_global_const\("(RUBY_\w+)",\s*(?:.*rb_\w*str_new\w*\s*\(\s*(\w+)|[\(\s]*\(\s*VALUE\s*\)\s*\((.+)\)\s*\)\s*<<\s?)/) do |n, s, i|
+    version[n] = i ? i.gsub(/\s+/, '').to_i : src[/\b#{s}\[\]\s*=\s*((?:"(?:\\.|[^\"\\])*"\s*)*);/m, 1].gsub(/\A"|"\s*\z|" *"/, '').gsub(/\\(.)/, '\1')
   end
 end
 %>baseruby="<%=arg['BASERUBY']%>"
