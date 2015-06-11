@@ -67,7 +67,7 @@ static inline void
 METHOD_ENTRY_BASIC_SET(rb_method_entry_t *me, int basic)
 {
     VM_ASSERT(basic <= 1);
-    me->flags = me->flags | (basic << (IMEMO_FL_USHIFT+2));
+    me->flags = (me->flags & ~(IMEMO_FL_USER2                  ) | (basic << (IMEMO_FL_USHIFT+2));
 }
 static inline void
 METHOD_ENTRY_SAFE_SET(rb_method_entry_t *me, int safe)
