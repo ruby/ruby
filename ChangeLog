@@ -1,3 +1,10 @@
+Thu Jun 11 14:34:45 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/rubygems.rb: bump version to 2.4.7 and 2.4.8. these versions fixed
+	  CVE-2015-3900.
+	* lib/rubygems/remote_fetcher.rb: ditto.
+	* test/rubygems/test_gem_remote_fetcher.rb: added testcase for CVE-2015-3900
+
 Thu Jun 11 14:18:51 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/rubygems.rb: bump version to 2.4.6. It's missing change at r49774.
