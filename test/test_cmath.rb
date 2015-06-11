@@ -23,13 +23,13 @@ class TestCMath < Test::Unit::TestCase
   end
 
   def test_trigonometric_functions
-    assert_equal CMath.sinh(2).i, CMath.sin(2i)
-    assert_equal CMath.cosh(2),   CMath.cos(2i)
-    assert_equal CMath.tanh(2).i, CMath.tan(2i)
+    assert_in_delta CMath.sinh(2).i, CMath.sin(2i)
+    assert_in_delta CMath.cosh(2),   CMath.cos(2i)
+    assert_in_delta CMath.tanh(2).i, CMath.tan(2i)
 
-    assert_equal CMath.sin(2).i, CMath.sinh(2i)
-    assert_equal CMath.cos(2),   CMath.cosh(2i)
-    assert_equal CMath.tan(2).i, CMath.tanh(2i)
+    assert_in_delta CMath.sin(2).i, CMath.sinh(2i)
+    assert_in_delta CMath.cos(2),   CMath.cosh(2i)
+    assert_in_delta CMath.tan(2).i, CMath.tanh(2i)
 
     assert_in_delta 1+1i, CMath.sin(CMath.asin(1+1i))
     assert_in_delta 1+1i, CMath.cos(CMath.acos(1+1i))
