@@ -1,3 +1,7 @@
+Thu Jun 11 15:53:31 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* method.h (METHOD_ENTRY_BASIC_SET): should clear last bit.
+
 Thu Jun 11 14:34:45 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/rubygems.rb: bump version to 2.4.7 and 2.4.8. these versions fixed
