@@ -19,6 +19,7 @@
 
 #define PRINT(type) puts(ruby_##type)
 #define MKSTR(type) rb_obj_freeze(rb_usascii_str_new_static(ruby_##type, sizeof(ruby_##type)-1))
+#define MKINT(name) INT2FIX(ruby_##name)
 
 const int ruby_api_version[] = {
     RUBY_API_VERSION_MAJOR,
@@ -38,6 +39,8 @@ VALUE ruby_engine_name = Qnil;
 void
 Init_version(void)
 {
+    enum {ruby_patchlevel = RUBY_PATCHLEVEL};
+    enum {ruby_revision = RUBY_REVISION};
     VALUE version;
     /*
      * The running version of ruby
@@ -55,11 +58,11 @@ Init_version(void)
      * The patchlevel for this ruby.  If this is a development build of ruby
      * the patchlevel will be -1
      */
-    rb_define_global_const("RUBY_PATCHLEVEL", INT2FIX(RUBY_PATCHLEVEL));
+    rb_define_global_const("RUBY_PATCHLEVEL", MKINT(patchlevel));
     /*
      * The SVN revision for this ruby.
      */
-    rb_define_global_const("RUBY_REVISION", INT2FIX(RUBY_REVISION));
+    rb_define_global_const("RUBY_REVISION", MKINT(revision));
     /*
      * The full ruby version string, like <tt>ruby -v</tt> prints'
      */
