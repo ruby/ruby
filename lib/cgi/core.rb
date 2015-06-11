@@ -646,6 +646,9 @@ class CGI
         boundary = $1.dup
         @multipart = true
         @params = read_multipart(boundary, Integer(env_table['CONTENT_LENGTH']))
+      elsif ("PUT" == env_table['REQUEST_METHOD'])
+	stdinput.binmode if defined? stdinput.binmode
+	@params = {'PUTDATA' => stdinput.read(Integer(env_table['CONTENT_LENGTH'])) || ''}
       else
         @multipart = false
         @params = CGI::parse(
