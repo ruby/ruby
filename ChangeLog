@@ -1,3 +1,14 @@
+Thu Jun 11 15:14:16 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in: define SET_THREAD_NAME if it has pthread_set_name_np
+	  for FreeBSD, and don't define it if both pthread_setname_np
+	  and pthread_set_name_np don't exist.
+
+	* thread_pthread.c (SET_THREAD_NAME): don't define if they don't exist.
+
+	* thread_pthread.c (native_set_thread_name): run if SET_THREAD_NAME
+	  is defined.
+
 Thu Jun 11 15:53:31 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* method.h (METHOD_ENTRY_BASIC_SET): should clear last bit.
