@@ -270,7 +270,7 @@ class Prime
 
     # see +Enumerator+#with_index.
     def with_index(offset = 0)
-      return enum_for(:with_index, offset) unless block_given?
+      return enum_for(:with_index, offset) { Float::INFINITY } unless block_given?
       return each_with_index(&proc) if offset == 0
 
       each do |prime|
@@ -281,10 +281,14 @@ class Prime
 
     # see +Enumerator+#with_object.
     def with_object(obj)
-      return enum_for(:with_object, obj) unless block_given?
+      return enum_for(:with_object, obj) { Float::INFINITY } unless block_given?
       each do |prime|
         yield prime, obj
       end
+    end
+
+    def size
+      Float::INFINITY
     end
   end
 
