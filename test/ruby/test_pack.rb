@@ -78,6 +78,14 @@ class TestPack < Test::Unit::TestCase
     assert_equal("\x01\x02\x03\x04", [0x01020304].pack("L"+mod))
     assert_equal("\x01\x02\x03\x04\x05\x06\x07\x08", [0x0102030405060708].pack("q"+mod))
     assert_equal("\x01\x02\x03\x04\x05\x06\x07\x08", [0x0102030405060708].pack("Q"+mod))
+    psize = [nil].pack('p').bytesize
+    if psize == 4
+      assert_equal("\x01\x02\x03\x04", [0x01020304].pack("j"+mod))
+      assert_equal("\x01\x02\x03\x04", [0x01020304].pack("J"+mod))
+    elsif psize == 8
+      assert_equal("\x01\x02\x03\x04\x05\x06\x07\x08", [0x0102030405060708].pack("j"+mod))
+      assert_equal("\x01\x02\x03\x04\x05\x06\x07\x08", [0x0102030405060708].pack("J"+mod))
+    end
     assert_match(/\A\x00*\x01\x02\z/, [0x0102].pack("s!"+mod))
     assert_match(/\A\x00*\x01\x02\z/, [0x0102].pack("S!"+mod))
     assert_match(/\A\x00*\x01\x02\x03\x04\z/, [0x01020304].pack("i"+mod))
@@ -86,7 +94,14 @@ class TestPack < Test::Unit::TestCase
     assert_match(/\A\x00*\x01\x02\x03\x04\z/, [0x01020304].pack("I!"+mod))
     assert_match(/\A\x00*\x01\x02\x03\x04\z/, [0x01020304].pack("l!"+mod))
     assert_match(/\A\x00*\x01\x02\x03\x04\z/, [0x01020304].pack("L!"+mod))
-    %w[s S l L q Q s! S! i I i! I! l! L!].each {|fmt|
+    if psize == 4
+      assert_match(/\A\x00*\x01\x02\x03\x04\z/, [0x01020304].pack("j!"+mod))
+      assert_match(/\A\x00*\x01\x02\x03\x04\z/, [0x01020304].pack("J!"+mod))
+    elsif psize == 8
+      assert_match(/\A\x00*\x01\x02\x03\x04\x05\x06\x07\x08\z/, [0x0102030405060708].pack("j!"+mod))
+      assert_match(/\A\x00*\x01\x02\x03\x04\x05\x06\x07\x08\z/, [0x0102030405060708].pack("J!"+mod))
+    end
+    %w[s S l L q Q j J s! S! i I i! I! l! L! j! J!].each {|fmt|
       fmt += mod
       nuls = [0].pack(fmt)
       v = 0
@@ -111,6 +126,14 @@ class TestPack < Test::Unit::TestCase
     assert_equal("\x04\x03\x02\x01", [0x01020304].pack("L"+mod))
     assert_equal("\x08\x07\x06\x05\x04\x03\x02\x01", [0x0102030405060708].pack("q"+mod))
     assert_equal("\x08\x07\x06\x05\x04\x03\x02\x01", [0x0102030405060708].pack("Q"+mod))
+    psize = [nil].pack('p').bytesize
+    if psize == 4
+      assert_equal("\x04\x03\x02\x01", [0x01020304].pack("j"+mod))
+      assert_equal("\x04\x03\x02\x01", [0x01020304].pack("J"+mod))
+    elsif psize == 8
+      assert_equal("\x08\x07\x06\x05\x04\x03\x02\x01", [0x0102030405060708].pack("j"+mod))
+      assert_equal("\x08\x07\x06\x05\x04\x03\x02\x01", [0x0102030405060708].pack("J"+mod))
+    end
     assert_match(/\A\x02\x01\x00*\z/, [0x0102].pack("s!"+mod))
     assert_match(/\A\x02\x01\x00*\z/, [0x0102].pack("S!"+mod))
     assert_match(/\A\x04\x03\x02\x01\x00*\z/, [0x01020304].pack("i"+mod))
@@ -119,7 +142,14 @@ class TestPack < Test::Unit::TestCase
     assert_match(/\A\x04\x03\x02\x01\x00*\z/, [0x01020304].pack("I!"+mod))
     assert_match(/\A\x04\x03\x02\x01\x00*\z/, [0x01020304].pack("l!"+mod))
     assert_match(/\A\x04\x03\x02\x01\x00*\z/, [0x01020304].pack("L!"+mod))
-    %w[s S l L q Q s! S! i I i! I! l! L!].each {|fmt|
+    if psize == 4
+      assert_match(/\A\x04\x03\x02\x01\x00*\z/, [0x01020304].pack("j!"+mod))
+      assert_match(/\A\x04\x03\x02\x01\x00*\z/, [0x01020304].pack("J!"+mod))
+    elsif psize == 8
+      assert_match(/\A\x08\x07\x06\x05\x04\x03\x02\x01\x00*\z/, [0x0102030405060708].pack("j!"+mod))
+      assert_match(/\A\x08\x07\x06\x05\x04\x03\x02\x01\x00*\z/, [0x0102030405060708].pack("J!"+mod))
+    end
+    %w[s S l L q Q j J s! S! i I i! I! l! L! j! J!].each {|fmt|
       fmt += mod
       nuls = [0].pack(fmt)
       v = 0
@@ -415,6 +445,43 @@ class TestPack < Test::Unit::TestCase
     assert_equal(8, [1].pack("Q").bytesize)
     assert_operator(8, :<=, [1].pack("q!").bytesize)
     assert_operator(8, :<=, [1].pack("Q!").bytesize)
+  end
+
+  def test_pack_unpack_jJ
+    # Note: we assume that the size of intptr_t and uintptr_t equals to the size
+    # of real pointer.
+    psize = [nil].pack("p").bytesize
+    if psize == 4
+      s1 = [67305985, -50462977].pack("j*")
+      s2 = [67305985, 4244504319].pack("J*")
+      assert_equal(s1, s2)
+      assert_equal([67305985, -50462977], s2.unpack("j*"))
+      assert_equal([67305985, 4244504319], s1.unpack("J*"))
+
+      s1 = [67305985, -50462977].pack("j!*")
+      s2 = [67305985, 4244504319].pack("J!*")
+      assert_equal([67305985, -50462977], s1.unpack("j!*"))
+      assert_equal([67305985, 4244504319], s2.unpack("J!*"))
+
+      assert_equal(4, [1].pack("j").bytesize)
+      assert_equal(4, [1].pack("J").bytesize)
+    elsif psize == 8
+      s1 = [578437695752307201, -506097522914230529].pack("j*")
+      s2 = [578437695752307201, 17940646550795321087].pack("J*")
+      assert_equal(s1, s2)
+      assert_equal([578437695752307201, -506097522914230529], s2.unpack("j*"))
+      assert_equal([578437695752307201, 17940646550795321087], s1.unpack("J*"))
+
+      s1 = [578437695752307201, -506097522914230529].pack("j!*")
+      s2 = [578437695752307201, 17940646550795321087].pack("J!*")
+      assert_equal([578437695752307201, -506097522914230529], s2.unpack("j!*"))
+      assert_equal([578437695752307201, 17940646550795321087], s1.unpack("J!*"))
+
+      assert_equal(8, [1].pack("j").bytesize)
+      assert_equal(8, [1].pack("J").bytesize)
+    else
+      assert false, "we don't know such platform now."
+    end
   end
 
   def test_pack_unpack_nN
