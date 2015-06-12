@@ -663,7 +663,7 @@ class SortedSet < Set
           end
 
           def each(&block)
-            block or return enum_for(__method__)
+            block or return enum_for(__method__) { size }
             to_a.each(&block)
             self
           end
