@@ -2629,7 +2629,7 @@ rb_ary_bsearch_index(VALUE ary)
 {
     long index_result = ary_bsearch_index(ary);
 
-    returns INT2FIX(index_result);
+    return INT2FIX(index_result);
 }
 
 static long
