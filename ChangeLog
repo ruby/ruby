@@ -1,3 +1,8 @@
+Fri Jun 12 22:21:12 2015  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/ruby/test_extlibs.rb (TestExtLibs::check_existence): fix
+	  error. [Bug #11255] [ruby-dev:49079]
+
 Fri Jun 12 21:17:46 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* pack.c (pack_{un,}pack): new template character `j` and `J`, pointer
