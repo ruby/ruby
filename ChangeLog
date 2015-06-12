@@ -1,3 +1,9 @@
+Fri Jun 12 16:28:17 2015  Radan Skoric  <radan.skoric@gmail.com>
+
+	* array.c (rb_ary_bsearch_index): Implement Array#bsearch_index
+	  method, which is similar to bsearch and returns the index or
+	  nil.  [Feature #10730]
+
 Thu Jun 11 19:11:22 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* ext/zlib/zlib.c: Fix indentation for rdoc.
