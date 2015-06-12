@@ -97,6 +97,15 @@ class TestPrime < Test::Unit::TestCase
     end
   end
 
+  def test_enumerator_with_object
+    object = Object.new
+    enum = Prime.each
+    enum.with_object(object).each do |p, o|
+      assert_equal object, o
+      break
+    end
+  end
+
   def test_default_instance_does_not_have_compatibility_methods
     assert !Prime.instance.respond_to?(:succ)
     assert !Prime.instance.respond_to?(:next)

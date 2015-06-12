@@ -1,3 +1,7 @@
+Sat Jun 13 00:45:06 2015  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/prime.rb: Fix with_object with no block given
+
 Sat Jun 13 00:44:59 2015  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/prime.rb: Have with_index accept an offset parameter.
