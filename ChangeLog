@@ -1,6 +1,10 @@
+Fri Jun 12 18:21:45 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ChangeLog: added missing commit message.
+
 Fri Jun 12 18:20:37 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
-	* sample/exyacc.rb: Fix some typos.
+	* sample/exyacc.rb: Fix some typos. [fix GH-927] Patch by @davydovanton
 	* sample/list.rb: ditto.
 	* sample/trick2013/kinaba/remarks.markdown: ditto.
 
