@@ -2547,6 +2547,8 @@ rb_ary_sort(VALUE ary)
     return ary;
 }
 
+static long ary_bsearch_index(VALUE ary);
+
 /*
  *  call-seq:
  *     ary.bsearch {|x| block }  -> elem
@@ -2603,9 +2605,39 @@ rb_ary_sort(VALUE ary)
 static VALUE
 rb_ary_bsearch(VALUE ary)
 {
+    long index_result = ary_bsearch_index(ary);
+
+    if (index_result < 0) return rb_ary_entry(ary, index_result);
+    return INT2FIX(index_result);
+}
+
+/*
+ *  call-seq:
+ *     ary.bsearch_index {|x| block }  -> int or nil
+ *
+ *  By using binary search, finds an index of a value from this array which
+ *  meets the given condition in O(log n) where n is the size of the array.
+ *
+ *  It supports two modes, depending on the nature of the block and they are
+ *  exactly the same as in the case of #bsearch method with the only difference
+ *  being that this method returns the index of the element instead of the
+ *  element itself. For more details consult the documentation for #bsearch.
+ */
+
+static VALUE
+rb_ary_bsearch_index(VALUE ary)
+{
+    long index_result = ary_bsearch_index(ary);
+
+    returns INT2FIX(index_result);
+}
+
+static long
+ary_bsearch_index(VALUE ary)
+{
     long low = 0, high = RARRAY_LEN(ary), mid;
-    int smaller = 0;
-    VALUE v, val, satisfied = Qnil;
+    int smaller = 0, satisfied = 0;
+    VALUE v, val;
 
     RETURN_ENUMERATOR(ary, 0, 0);
     while (low < high) {
@@ -2613,11 +2645,11 @@ rb_ary_bsearch(VALUE ary)
 	val = rb_ary_entry(ary, mid);
 	v = rb_yield(val);
 	if (FIXNUM_P(v)) {
-	    if (v == INT2FIX(0)) return val;
+	    if (v == INT2FIX(0)) return mid;
 	    smaller = (SIGNED_VALUE)v < 0; /* Fixnum preserves its sign-bit */
 	}
 	else if (v == Qtrue) {
-	    satisfied = val;
+	    satisfied = 1;
 	    smaller = 1;
 	}
 	else if (v == Qfalse || v == Qnil) {
@@ -2626,7 +2658,7 @@ rb_ary_bsearch(VALUE ary)
 	else if (rb_obj_is_kind_of(v, rb_cNumeric)) {
 	    const VALUE zero = INT2FIX(0);
 	    switch (rb_cmpint(rb_funcallv(v, id_cmp, 1, &zero), v, zero)) {
-	      case 0: return val;
+	      case 0: return mid;
 	      case 1: smaller = 1; break;
 	      case -1: smaller = 0;
 	    }
@@ -2643,7 +2675,8 @@ rb_ary_bsearch(VALUE ary)
 	    low = mid + 1;
 	}
     }
-    return satisfied;
+    if (!satisfied) return -1;
+    return low;
 }
 
 
@@ -5858,6 +5891,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "drop", rb_ary_drop, 1);
     rb_define_method(rb_cArray, "drop_while", rb_ary_drop_while, 0);
     rb_define_method(rb_cArray, "bsearch", rb_ary_bsearch, 0);
+    rb_define_method(rb_cArray, "bsearch_index", rb_ary_bsearch_index, 0);
     rb_define_method(rb_cArray, "any?", rb_ary_any_p, 0);
 
     id_cmp = rb_intern("<=>");
