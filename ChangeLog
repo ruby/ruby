@@ -1,3 +1,8 @@
+Sat Jun 13 00:45:08 2015  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/prime.rb: Return sized enumerators.
+	  Patch by Kenichi Kamiya [GH-931]
+
 Sat Jun 13 00:45:06 2015  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/prime.rb: Fix with_object with no block given

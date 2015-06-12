@@ -106,6 +106,13 @@ class TestPrime < Test::Unit::TestCase
     end
   end
 
+  def test_enumerator_size
+    enum = Prime.each
+    assert_equal Float::INFINITY, enum.size
+    assert_equal Float::INFINITY, enum.with_object(nil).size
+    assert_equal Float::INFINITY, enum.with_index(42).size
+  end
+
   def test_default_instance_does_not_have_compatibility_methods
     assert !Prime.instance.respond_to?(:succ)
     assert !Prime.instance.respond_to?(:next)
