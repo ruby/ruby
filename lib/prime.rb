@@ -269,7 +269,15 @@ class Prime
     end
 
     # see +Enumerator+#with_index.
-    alias with_index each_with_index
+    def with_index(offset = 0)
+      return enum_for(:with_index, offset) unless block_given?
+      return each_with_index(&proc) if offset == 0
+
+      each do |prime|
+        yield prime, offset
+        offset += 1
+      end
+    end
 
     # see +Enumerator+#with_object.
     def with_object(obj)

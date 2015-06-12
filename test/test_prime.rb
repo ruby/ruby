@@ -86,6 +86,17 @@ class TestPrime < Test::Unit::TestCase
     end
   end
 
+  def test_enumerator_with_index_with_offset
+    enum = Prime.each
+    last = 5-1
+    enum.with_index(5).each do |p,i|
+      break if i >= 100+5
+      assert_equal last+1, i
+      assert_equal PRIMES[i-5], p
+      last = i
+    end
+  end
+
   def test_default_instance_does_not_have_compatibility_methods
     assert !Prime.instance.respond_to?(:succ)
     assert !Prime.instance.respond_to?(:next)
