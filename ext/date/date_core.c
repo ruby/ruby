@@ -9539,7 +9539,7 @@ Init_date_core(void)
 	[solar years][9] since Shakespeare's birthday then the correct
 	anniversary date would be the 4th May and not the 23rd April.
 
-	So when should use you use `DateTime` in Ruby and when should
+	So when should you use `DateTime` in Ruby and when should
 	you use `Time`? Almost certainly you'll want to use `Time`
 	since your app is probably dealing with current dates and
 	times. However, if you need to deal with dates and times in a
