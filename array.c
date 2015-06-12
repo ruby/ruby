@@ -2547,7 +2547,7 @@ rb_ary_sort(VALUE ary)
     return ary;
 }
 
-static long ary_bsearch_index(VALUE ary);
+static VALUE rb_ary_bsearch_index(VALUE ary);
 
 /*
  *  call-seq:
@@ -2605,10 +2605,12 @@ static long ary_bsearch_index(VALUE ary);
 static VALUE
 rb_ary_bsearch(VALUE ary)
 {
-    long index_result = ary_bsearch_index(ary);
+    VALUE index_result = rb_ary_bsearch_index(ary);
 
-    if (index_result < 0) return rb_ary_entry(ary, index_result);
-    return INT2FIX(index_result);
+    if (FIXNUM_P(index_result)) {
+	return rb_ary_entry(ary, FIX2LONG(index_result));
+    }
+    return index_result;
 }
 
 /*
@@ -2627,14 +2629,6 @@ rb_ary_bsearch(VALUE ary)
 static VALUE
 rb_ary_bsearch_index(VALUE ary)
 {
-    long index_result = ary_bsearch_index(ary);
-
-    return INT2FIX(index_result);
-}
-
-static long
-ary_bsearch_index(VALUE ary)
-{
     long low = 0, high = RARRAY_LEN(ary), mid;
     int smaller = 0, satisfied = 0;
     VALUE v, val;
@@ -2645,7 +2639,7 @@ ary_bsearch_index(VALUE ary)
 	val = rb_ary_entry(ary, mid);
 	v = rb_yield(val);
 	if (FIXNUM_P(v)) {
-	    if (v == INT2FIX(0)) return mid;
+	    if (v == INT2FIX(0)) return INT2FIX(mid);
 	    smaller = (SIGNED_VALUE)v < 0; /* Fixnum preserves its sign-bit */
 	}
 	else if (v == Qtrue) {
@@ -2658,7 +2652,7 @@ ary_bsearch_index(VALUE ary)
 	else if (rb_obj_is_kind_of(v, rb_cNumeric)) {
 	    const VALUE zero = INT2FIX(0);
 	    switch (rb_cmpint(rb_funcallv(v, id_cmp, 1, &zero), v, zero)) {
-	      case 0: return mid;
+	      case 0: return INT2FIX(mid);
 	      case 1: smaller = 1; break;
 	      case -1: smaller = 0;
 	    }
@@ -2675,8 +2669,8 @@ ary_bsearch_index(VALUE ary)
 	    low = mid + 1;
 	}
     }
-    if (!satisfied) return -1;
-    return low;
+    if (!satisfied) return Qnil;
+    return INT2FIX(low);
 }
 
 
