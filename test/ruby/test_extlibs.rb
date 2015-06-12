@@ -13,7 +13,7 @@ class TestExtLibs < Test::Unit::TestCase
         log = #{log.dump}
         msg = proc {
           "extension library `#{ext}' is not found#{add_msg}\n" <<
-            (File.exist?(log) ? File.read(log) : "\#{log} not found")
+            (File.exist?(log) ? File.binread(log) : "\#{log} not found")
         }
         assert_nothing_raised(msg) do
           require "#{ext}"
