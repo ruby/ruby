@@ -364,6 +364,10 @@ class TC_Set < Test::Unit::TestCase
 
       ary.empty? or raise "forgotten elements: #{ary.join(', ')}"
     }
+    
+    assert_equal(6, e.size)
+    set << 42
+    assert_equal(7, e.size)
   end
 
   def test_add
