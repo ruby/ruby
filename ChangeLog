@@ -1,3 +1,15 @@
+Fri Jun 12 21:01:44 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* file.c (File::SHARE_DELETE): new flag to be able to delete opened file
+	  on Windows.
+
+	* include/win32/win32.c (O_SHARE_DELETE): new pseudo file mode flag.
+
+	* win32/win32.c (rb_w32_{w,}open): support above flag.  [EXPERIMENTAL]
+
+	* NEWS: mention about this feature.
+	  [Feature #11218] [ruby-dev:49022]
+
 Fri Jun 12 18:21:45 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* ChangeLog: added missing commit message.

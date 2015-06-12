@@ -5775,6 +5775,7 @@ rb_w32_open(const char *file, int oflag, ...)
     va_end(arg);
 
     if ((oflag & O_TEXT) || !(oflag & O_BINARY)) {
+	oflag &= ~O_SHARE_DELETE;
 	ret = _open(file, oflag, pmode);
 	if (ret == -1 && errno == EACCES) check_if_dir(file);
 	return ret;
@@ -5797,7 +5798,10 @@ rb_w32_wopen(const WCHAR *file, int oflag, ...)
     DWORD attr = FILE_ATTRIBUTE_NORMAL;
     SECURITY_ATTRIBUTES sec;
     HANDLE h;
+    int share_delete;
 
+    share_delete = oflag & O_SHARE_DELETE ? FILE_SHARE_DELETE : 0;
+    oflag &= ~O_SHARE_DELETE;
     if ((oflag & O_TEXT) || !(oflag & O_BINARY)) {
 	va_list arg;
 	int pmode;
@@ -5919,8 +5923,7 @@ rb_w32_wopen(const WCHAR *file, int oflag, ...)
 	_set_osfhnd(fd, (intptr_t)INVALID_HANDLE_VALUE);
 	_set_osflags(fd, 0);
 
-	h = CreateFileW(file, access, FILE_SHARE_READ | FILE_SHARE_WRITE, &sec,
-			create, attr, NULL);
+	h = CreateFileW(file, access, FILE_SHARE_READ | FILE_SHARE_WRITE | share_delete, &sec, create, attr, NULL);
 	if (h == INVALID_HANDLE_VALUE) {
 	    DWORD e = GetLastError();
 	    if (e != ERROR_ACCESS_DENIED || !check_if_wdir(file))

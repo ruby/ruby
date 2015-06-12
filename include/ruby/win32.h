@@ -124,6 +124,8 @@ typedef unsigned int uintptr_t;
 
 #define WNOHANG -1
 
+#define O_SHARE_DELETE 0x80000000 /* for rb_w32_open(), rb_w32_wopen() */
+
 typedef int clockid_t;
 #define CLOCK_REALTIME  0
 #define CLOCK_MONOTONIC 1

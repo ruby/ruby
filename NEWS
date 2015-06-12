@@ -24,6 +24,12 @@ with all sufficient information, see the ChangeLog file.
   * Numeric#positive? and Numeric#negative? are added, which return
     true when the receiver is positive and negative respectively.
 
+* IO
+
+  * new mode flag File::SHARE_DELETE is available.
+    this flag means to permit deleting opened file on Windows, but currently
+    this affect only files opened as binary.  [Feature #11218]
+
 === Core classes compatibility issues (excluding feature bug fixes)
 
 * Array

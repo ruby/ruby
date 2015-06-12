@@ -375,6 +375,19 @@ class TestFile < Test::Unit::TestCase
     }
   end
 
+  def test_file_share_delete
+    Dir.mktmpdir(__method__.to_s) do |tmpdir|
+      tmp = File.join(tmpdir, 'x')
+      File.open(tmp, mode: IO::WRONLY | IO::CREAT | IO::BINARY | IO::SHARE_DELETE) do |f|
+        assert_file.exist?(tmp)
+        assert_nothing_raised do
+          File.unlink(tmp)
+        end
+      end
+      assert_file.not_exist?(tmp)
+    end
+  end
+
   def test_conflicting_encodings
     Dir.mktmpdir(__method__.to_s) do |tmpdir|
       tmp = File.join(tmpdir, 'x')
