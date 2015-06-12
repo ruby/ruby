@@ -281,7 +281,7 @@ class Prime
 
     # see +Enumerator+#with_object.
     def with_object(obj)
-      return enum_for(:with_object) unless block_given?
+      return enum_for(:with_object, obj) unless block_given?
       each do |prime|
         yield prime, obj
       end
