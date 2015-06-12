@@ -1275,6 +1275,34 @@ rb_hash_values_at(int argc, VALUE *argv, VALUE hash)
     return result;
 }
 
+/*
+ * call-seq:
+ *   hsh.fetch_values(key, ...)                 -> array
+ *   hsh.fetch_values(key, ...) { |key| block } -> array
+ *
+ * Returns an array containing the values associated with the given keys
+ * but also raises <code>KeyError</code> when one of keys can't be found.
+ * Also see <code>Hash#values_at</code> and <code>Hash#fetch</code>.
+ *
+ *   h = { "cat" => "feline", "dog" => "canine", "cow" => "bovine" }
+ *
+ *   h.fetch_values("cow", "cat")                   #=> ["bovine", "feline"]
+ *   h.fetch_values("cow", "bird")                  # raises KeyError
+ *   h.fetch_values("cow", "bird") { |k| k.upcase } #=> ["bovine", "BIRD"]
+ */
+
+VALUE
+rb_hash_fetch_values(int argc, VALUE *argv, VALUE hash)
+{
+    VALUE result = rb_ary_new2(argc);
+    long i;
+
+    for (i=0; i<argc; i++) {
+	rb_ary_push(result, rb_hash_fetch(hash, argv[i]));
+    }
+    return result;
+}
+
 static int
 select_i(VALUE key, VALUE value, VALUE result)
 {
@@ -4001,6 +4029,7 @@ Init_Hash(void)
     rb_define_method(rb_cHash,"keys", rb_hash_keys, 0);
     rb_define_method(rb_cHash,"values", rb_hash_values, 0);
     rb_define_method(rb_cHash,"values_at", rb_hash_values_at, -1);
+    rb_define_method(rb_cHash,"fetch_values", rb_hash_fetch_values, -1);
 
     rb_define_method(rb_cHash,"shift", rb_hash_shift, 0);
     rb_define_method(rb_cHash,"delete", rb_hash_delete_m, 1);
