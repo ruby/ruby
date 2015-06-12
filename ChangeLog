@@ -1,3 +1,8 @@
+Sat Jun 13 00:44:59 2015  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/prime.rb: Have with_index accept an offset parameter.
+	  Based on patch by T Yamada. [#11007]
+
 Fri Jun 12 22:21:12 2015  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/ruby/test_extlibs.rb (TestExtLibs::check_existence): fix
