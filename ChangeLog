@@ -1,3 +1,9 @@
+Fri Jun 12 18:20:37 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* sample/exyacc.rb: Fix some typos.
+	* sample/list.rb: ditto.
+	* sample/trick2013/kinaba/remarks.markdown: ditto.
+
 Fri Jun 12 17:34:14 2015  Wojciech Mach  <wojtek@wojtekmach.pl>
 
 	* hash.c (rb_hash_fetch_values): add `Hash#fetch_values`.
