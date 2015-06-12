@@ -48,6 +48,10 @@ with all sufficient information, see the ChangeLog file.
 * IO
   * IO#close doesn't raise when the IO object is closed.  [Feature #10718]
 
+* pack/unpack (Array/String)
+  * j and J directives for pointer width integer type.  [Feature #11215]
+
+
 === Stdlib updates (outstanding ones only)
 
 * Socket
