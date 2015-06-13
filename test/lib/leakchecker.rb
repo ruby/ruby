@@ -7,11 +7,13 @@ class LeakChecker
   end
 
   def check(test_name)
-    leaked1 = check_fd_leak(test_name)
-    leaked2 = check_thread_leak(test_name)
-    leaked3 = check_tempfile_leak(test_name)
-    leaked4 = check_env(test_name)
-    GC.start if leaked1 || leaked2 || leaked3 || leaked4
+    leaks = [
+      check_fd_leak(test_name),
+      check_thread_leak(test_name),
+      check_tempfile_leak(test_name),
+      check_env(test_name)
+    ]
+    GC.start if leaks.any?
   end
 
   def find_fds

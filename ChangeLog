@@ -1,3 +1,7 @@
+Sun Jun 14 04:40:32 2015  Benoit Daloze  <eregontp@gmail.com>
+
+	* test/lib/leakchecker.rb (check): refactor.
+
 Sun Jun 14 04:34:14 2015  Benoit Daloze  <eregontp@gmail.com>
 
 	* test/lib/leakchecker.rb: Return false for no leaks.
