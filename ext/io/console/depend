@@ -7,11 +7,13 @@ $(OBJS): $(HDRS) $(ruby_headers) \
 win32_vk.inc: win32_vk.list
 
 .list.inc:
-	gperf --ignore-case -E -C -P -p -j1 -i 1 -g -o -t -K ofs -N console_win32_vk -k* --output-file=$(@F) $<
+	gperf --ignore-case -E -C -P -p -j1 -i 1 -g -o -t -K ofs -N console_win32_vk -k* $< \
+	| sed 's/(int)(long)&((\(struct stringpool_t\) *\*)0)->\(stringpool_[a-z0-9]*\)/offsetof(\1, \2)/g' \
+	> $(@F)
 
-.SUFFIXES: .chksum .list
+.SUFFIXES: .chksum .list .inc
 
 .list.chksum:
 	@$(RUBY) -I$(top_srcdir)/tool -rchecksum \
 	    -e "Checksum.update(ARGV) {|k|k.copy(k.target) rescue k.make(k.target)}" \
-	    -- --make=$(MAKE) -I$(srcdir) $(<F) $(@F:.chksum=.inc)
+	    -- --make="$(MAKE)" -I$(srcdir) $(<F) $(@F:.chksum=.inc)
