@@ -548,7 +548,18 @@ rb_stat_dev_minor(VALUE self)
 static VALUE
 rb_stat_ino(VALUE self)
 {
-#if SIZEOF_STRUCT_STAT_ST_INO > SIZEOF_LONG
+#ifdef _WIN32
+    struct stat *st = get_stat(self);
+    unsigned short *p2 = (unsigned short *)st;
+    unsigned int *p4 = (unsigned int *)st;
+    uint64_t r;
+    r = p2[2];
+    r <<= 16;
+    r |= p2[7];
+    r <<= 32;
+    r |= p4[5];
+    return ULL2NUM(r);
+#elif SIZEOF_STRUCT_STAT_ST_INO > SIZEOF_LONG
     return ULL2NUM(get_stat(self)->st_ino);
 #else
     return ULONG2NUM(get_stat(self)->st_ino);

@@ -1,3 +1,16 @@
+Sat Jun 13 20:28:14 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* file.c (rb_stat_ino): get inode from the interval of struct st.
+
+	* win32/win32.c (stati64_set_inode): get nFilIndexHigh/Low, and set it
+	  to the interval of struct st as inode.
+
+	* win32/win32.c (stati64_set_inode_handle): call stati64_set_inode.
+
+	* win32/win32.c (rb_w32_fstati64): call stati64_set_inode_handle.
+
+	* win32/win32.c (stati64_handle): call stati64_set_inode.
+
 Sat Jun 13 19:44:53 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/io/console/depend (.list.chksum): revert a part of r50859, because
