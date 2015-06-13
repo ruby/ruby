@@ -1,3 +1,8 @@
+Sun Jun 14 06:24:57 2015  Benoit Daloze  <eregontp@gmail.com>
+
+	* test/ruby/test_io.rb: add test for IO.binread fd leak.
+	  See r50881.
+
 Sun Jun 14 05:23:51 2015  Benoit Daloze  <eregontp@gmail.com>
 
 	* io.c (rb_io_s_binread): close fd if seek offset is invalid.
