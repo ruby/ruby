@@ -12,7 +12,7 @@ Gem::Specification.new do |s|
   s.email = "mrkn@mrkn.jp"
   s.description = "This library provides arbitrary-precision decimal floating-point number class."
   s.authors = ["Kenta Murata", "Zachary Scott", "Shigeo Kobayashi"]
-  s.require_path = %[.]
+  s.require_path = %[lib]
   s.files = %w[
     bigdecimal.gemspec
     bigdecimal.c

@@ -1,3 +1,9 @@
+Sat Jun 13 11:35:19 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.gemspec: Fix require paths for released gem.
+	  [fix GH-929] Patch by @voxik
+	* ext/io/console/io-console.gemspec: ditto.
+
 Sat Jun 13 00:45:08 2015  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/prime.rb: Return sized enumerators.
