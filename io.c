@@ -9901,7 +9901,16 @@ rb_io_s_binread(int argc, VALUE *argv, VALUE io)
     arg.argv = argv+1;
     arg.argc = (argc > 1) ? 1 : 0;
     if (!NIL_P(offset)) {
-	rb_io_seek(arg.io, offset, SEEK_SET);
+	struct seek_arg sarg;
+	int state = 0;
+	sarg.io = arg.io;
+	sarg.offset = offset;
+	sarg.mode = SEEK_SET;
+	rb_protect(seek_before_access, (VALUE)&sarg, &state);
+	if (state) {
+	    rb_io_close(arg.io);
+	    rb_jump_tag(state);
+	}
     }
     return rb_ensure(io_s_read, (VALUE)&arg, rb_io_close, arg.io);
 }
