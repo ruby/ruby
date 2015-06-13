@@ -342,6 +342,10 @@ class TestFile < Test::Unit::TestCase
   rescue NotImplementedError
   end
 
+  def test_stat_inode
+    assert_not_equal 0, File.stat(__FILE__).ino
+  end
+
   def test_chmod_m17n
     bug5671 = '[ruby-dev:44898]'
     Dir.mktmpdir('test-file-chmod-m17n-') do |tmpdir|
