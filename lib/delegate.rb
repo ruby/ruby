@@ -21,11 +21,6 @@
 # Delegator:
 #
 #   class SimpleDelegator < Delegator
-#     def initialize(obj)
-#       super                  # pass obj to Delegator constructor, required
-#       @delegate_sd_obj = obj # store obj for future use
-#     end
-#
 #     def __getobj__
 #       @delegate_sd_obj # return object we are delegating to, required
 #     end
