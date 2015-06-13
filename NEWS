@@ -49,7 +49,7 @@ with all sufficient information, see the ChangeLog file.
     Use a local variable instead to maintain a state.
 
 * File::Stat
-  * On Windows, File::Stat.ino now returns
+  * On Windows File::Stat#ino always returned 0, but now returns
     BY_HANDLE_FILE_INFORMATION.nFileIndexHigh/Low.
 
 * IO
