@@ -5982,6 +5982,11 @@ Init_File(void)
 #endif
     /* disable line code conversion */
     rb_define_const(rb_mFConst, "BINARY", INT2FIX(O_BINARY));
+#ifndef O_SHARE_DELETE
+# define O_SHARE_DELETE 0
+#endif
+    /* can delete opened file */
+    rb_define_const(rb_mFConst, "SHARE_DELETE", INT2FIX(O_SHARE_DELETE));
 #ifdef O_SYNC
     /* any write operation perform synchronously */
     rb_define_const(rb_mFConst, "SYNC", INT2FIX(O_SYNC));

@@ -8924,7 +8924,8 @@ obj_info(VALUE obj)
 	}
 	snprintf(buff, OBJ_INFO_BUFFERS_SIZE, "%s %s", buff, imemo_name);
 	if (imemo_type(obj) == imemo_ment) {
-	    snprintf(buff, OBJ_INFO_BUFFERS_SIZE, "%s (type: %d)", buff, RANY(obj)->as.imemo.ment.def->type);
+	    const rb_method_entry_t *me = &RANY(obj)->as.imemo.ment;
+	    snprintf(buff, OBJ_INFO_BUFFERS_SIZE, "%s (called_id: %s, type: %d)", buff, rb_id2name(me->called_id), me->def->type);
 	}
       }
       default:

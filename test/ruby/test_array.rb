@@ -2529,6 +2529,41 @@ class TestArray < Test::Unit::TestCase
     assert_include([4, 7], a.bsearch {|x| (2**100).coerce((1 - x / 4) * (2**100)).first })
   end
 
+  def test_bsearch_index_typechecks_return_values
+    assert_raise(TypeError) do
+      [1, 2, 42, 100, 666].bsearch_index {"not ok"}
+    end
+    assert_equal [1, 2, 42, 100, 666].bsearch_index {}, [1, 2, 42, 100, 666].bsearch_index {false}
+  end
+
+  def test_bsearch_index_with_no_block
+    enum = [1, 2, 42, 100, 666].bsearch_index
+    assert_nil enum.size
+    assert_equal 2, enum.each{|x| x >= 33 }
+  end
+
+  def test_bsearch_index_in_find_minimum_mode
+    a = [0, 4, 7, 10, 12]
+    assert_equal(1, a.bsearch_index {|x| x >=   4 })
+    assert_equal(2, a.bsearch_index {|x| x >=   6 })
+    assert_equal(0, a.bsearch_index {|x| x >=  -1 })
+    assert_equal(nil, a.bsearch_index {|x| x >= 100 })
+  end
+
+  def test_bsearch_index_in_find_any_mode
+    a = [0, 4, 7, 10, 12]
+    assert_include([1, 2], a.bsearch_index {|x| 1 - x / 4 })
+    assert_equal(nil, a.bsearch_index {|x| 4 - x / 2 })
+    assert_equal(nil, a.bsearch_index {|x| 1 })
+    assert_equal(nil, a.bsearch_index {|x| -1 })
+
+    assert_include([1, 2], a.bsearch_index {|x| (1 - x / 4) * (2**100) })
+    assert_equal(nil, a.bsearch_index {|x|   1  * (2**100) })
+    assert_equal(nil, a.bsearch_index {|x| (-1) * (2**100) })
+
+    assert_include([1, 2], a.bsearch_index {|x| (2**100).coerce((1 - x / 4) * (2**100)).first })
+  end
+
   def test_shared_marking
     reduce = proc do |s|
       s.gsub(/(verify_internal_consistency_reachable_i:\sWB\smiss\s\S+\s\(T_ARRAY\)\s->\s)\S+\s\((proc|T_NONE)\)\n
@@ -2550,6 +2585,34 @@ class TestArray < Test::Unit::TestCase
     EOS
     rescue Timeout::Error => e
       skip e.message
+    end
+  end
+
+  sizeof_long = [0].pack("l!").size
+  sizeof_voidp = [""].pack("p").size
+  if sizeof_long < sizeof_voidp
+    ARY_MAX = (1<<(8*sizeof_long-1)) / sizeof_voidp - 1
+    Bug11235 = '[ruby-dev:49043] [Bug #11235]'
+
+    def test_push_over_ary_max
+      assert_separately(['-', ARY_MAX.to_s, Bug11235], <<-"end;")
+        a = Array.new(ARGV[0].to_i)
+        assert_raise(IndexError, ARGV[1]) {0x1000.times {a.push(1)}}
+      end;
+    end
+
+    def test_unshift_over_ary_max
+      assert_separately(['-', ARY_MAX.to_s, Bug11235], <<-"end;")
+        a = Array.new(ARGV[0].to_i)
+        assert_raise(IndexError, ARGV[1]) {0x1000.times {a.unshift(1)}}
+      end;
+    end
+
+    def test_splice_over_ary_max
+      assert_separately(['-', ARY_MAX.to_s, Bug11235], <<-"end;")
+        a = Array.new(ARGV[0].to_i)
+        assert_raise(IndexError, ARGV[1]) {a[0, 0] = Array.new(0x1000)}
+      end;
     end
   end
 

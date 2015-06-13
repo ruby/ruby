@@ -12,6 +12,22 @@
 #ifndef RUBY_VM_CORE_H
 #define RUBY_VM_CORE_H
 
+/*
+ * Enable check mode.
+ *   1: enable local assertions.
+ */
+#ifndef VM_CHECK_MODE
+#define VM_CHECK_MODE 0
+#endif
+
+#if VM_CHECK_MODE > 0
+#define VM_ASSERT(expr) ( \
+	LIKELY(expr) ? (void)0 : \
+	rb_bug("%s:%d assertion violation - %s", __FILE__, __LINE__, #expr))
+#else
+#define VM_ASSERT(expr) ((void)0)
+#endif
+
 #define RUBY_VM_THREAD_MODEL 2
 
 #include "ruby/ruby.h"

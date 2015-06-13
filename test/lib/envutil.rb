@@ -493,7 +493,7 @@ eom
         _, err, status = EnvUtil.invoke_ruby(args, cmd, true, true, **opt)
         before = err.sub!(/^#{token_re}START=(\{.*\})\n/, '') && Memory::Status.parse($1)
         after = err.sub!(/^#{token_re}FINAL=(\{.*\})\n/, '') && Memory::Status.parse($1)
-        assert_equal([true, ""], [status.success?, err], message)
+        assert(status.success?, FailDesc[status, message, err])
         ([:size, (rss && :rss)] & after.members).each do |n|
           b = before[n]
           a = after[n]

@@ -1486,14 +1486,12 @@ timer_thread_sleep(rb_global_vm_lock_t* unused)
 #if defined(__linux__) && defined(PR_SET_NAME)
 # undef SET_THREAD_NAME
 # define SET_THREAD_NAME(name) prctl(PR_SET_NAME, name)
-#elif !defined(SET_THREAD_NAME)
-# define SET_THREAD_NAME(name) (void)0
 #endif
 
 static void
 native_set_thread_name(rb_thread_t *th)
 {
-#if defined(__linux__) && defined(PR_SET_NAME)
+#ifdef SET_THREAD_NAME
     if (!th->first_func && th->first_proc) {
 	VALUE loc = rb_proc_location(th->first_proc);
 	if (!NIL_P(loc)) {
@@ -1529,7 +1527,9 @@ thread_timer(void *p)
 
     if (TT_DEBUG) WRITE_CONST(2, "start timer thread\n");
 
+#ifdef SET_THREAD_NAME
     SET_THREAD_NAME("ruby-timer-thr");
+#endif
 
 #if !USE_SLEEPY_TIMER_THREAD
     native_mutex_initialize(&timer_thread_lock);

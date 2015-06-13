@@ -498,6 +498,21 @@ class TestHash < Test::Unit::TestCase
     assert_equal ['three', nil, 'one', 'nil'], res
   end
 
+  def test_fetch_values
+    res = @h.fetch_values
+    assert_equal(0, res.length)
+
+    res = @h.fetch_values(3, 2, 1, nil)
+    assert_equal(4, res.length)
+    assert_equal %w( three two one nil ), res
+
+    assert_raises KeyError do
+      @h.fetch_values(3, 'invalid')
+    end
+
+    res = @h.fetch_values(3, 'invalid') { |k| k.upcase }
+    assert_equal %w( three INVALID ), res
+  end
 
   def test_invert
     h = @h.invert

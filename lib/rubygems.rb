@@ -9,7 +9,7 @@ require 'rbconfig'
 require 'thread'
 
 module Gem
-  VERSION = '2.4.6'
+  VERSION = '2.4.8'
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -26,12 +26,12 @@ require 'rubygems/errors'
 # For user documentation, see:
 #
 # * <tt>gem help</tt> and <tt>gem help [command]</tt>
-# * {RubyGems User Guide}[http://guides.rubygems.org/]
-# * {Frequently Asked Questions}[http://guides.rubygems.org/faqs]
+# * {RubyGems User Guide}[http://docs.rubygems.org/read/book/1]
+# * {Frequently Asked Questions}[http://docs.rubygems.org/read/book/3]
 #
 # For gem developer documentation see:
 #
-# * {Creating Gems}[http://guides.rubygems.org/make-your-own-gem]
+# * {Creating Gems}[http://docs.rubygems.org/read/chapter/5]
 # * Gem::Specification
 # * Gem::Version for version dependency notes
 #
@@ -156,7 +156,6 @@ module Gem
   @@win_platform = nil
 
   @configuration = nil
-  @gemdeps = nil
   @loaded_specs = {}
   LOADED_SPECS_MUTEX = Mutex.new
   @path_to_default_spec_map = {}
@@ -185,9 +184,13 @@ module Gem
     # or if it was ambiguous (and thus unresolved) the code in our custom
     # require will try to activate the more specific version.
 
-    spec = Gem::Specification.find_by_path path
-    return false unless spec
-    return true if spec.activated?
+    spec = Gem::Specification.find_inactive_by_path path
+
+    unless spec
+      spec = Gem::Specification.find_by_path path
+      return true if spec && spec.activated?
+      return false
+    end
 
     begin
       spec.activate
@@ -430,7 +433,7 @@ module Gem
 
     files = find_files_from_load_path glob if check_load_path
 
-    files.concat Gem::Specification.stubs.map { |spec|
+    files.concat Gem::Specification.map { |spec|
       spec.matches_for_glob("#{glob}#{Gem.suffix_pattern}")
     }.flatten
 
@@ -595,7 +598,7 @@ module Gem
 
     unless test_syck
       begin
-        gem 'psych', '>= 1.2.1'
+        gem 'psych', '~> 1.2', '>= 1.2.1'
       rescue Gem::LoadError
         # It's OK if the user does not have the psych gem installed.  We will
         # attempt to require the stdlib version
@@ -1049,7 +1052,7 @@ module Gem
     end
 
     rs = Gem::RequestSet.new
-    @gemdeps = rs.load_gemdeps path
+    rs.load_gemdeps path
 
     rs.resolve_current.map do |s|
       sp = s.full_spec
@@ -1078,12 +1081,6 @@ module Gem
     # Hash of loaded Gem::Specification keyed by name
 
     attr_reader :loaded_specs
-
-    ##
-    # GemDependencyAPI object, which is set when .use_gemdeps is called.
-    # This contains all the information from the Gemfile.
-
-    attr_reader :gemdeps
 
     ##
     # Register a Gem::Specification for default gem.
@@ -1245,4 +1242,3 @@ require 'rubygems/core_ext/kernel_gem'
 require 'rubygems/core_ext/kernel_require'
 
 Gem.use_gemdeps
-

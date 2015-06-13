@@ -302,8 +302,8 @@ class Tempfile < DelegateClass(File)
   end
 end
 
-# Creates a temporally file as usual File object (not Tempfile).
-# It don't use finalizer and delegation.
+# Creates a temporary file as usual File object (not Tempfile).
+# It doesn't use finalizer and delegation.
 #
 # If no block is given, this is similar to Tempfile.new except
 # creating File instead of Tempfile.
@@ -313,7 +313,7 @@ end
 # If a block is given, then a File object will be constructed,
 # and the block is invoked with the object as the argument.
 # The File object will be automatically closed and
-# the temporally file is removed after the block terminates.
+# the temporary file is removed after the block terminates.
 # The call returns the value of the block.
 #
 # In any case, all arguments (+*args+) will be treated as Tempfile.new.

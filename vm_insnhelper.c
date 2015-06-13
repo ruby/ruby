@@ -16,14 +16,6 @@
 #include "probes.h"
 #include "probes_helper.h"
 
-/*
- * Enable check mode.
- *   1: enable local assertions.
- */
-#ifndef VM_CHECK_MODE
-#define VM_CHECK_MODE 0
-#endif
-
 /* control stack frame */
 
 #ifndef INLINE
@@ -51,6 +43,12 @@ vm_stackoverflow(void)
 static void
 check_frame(int magic, int req_block, int req_me, int req_cref, VALUE specval, VALUE cref_or_me)
 {
+    enum imemo_type cref_or_me_type = imemo_none;
+
+    if (RB_TYPE_P(cref_or_me, T_IMEMO)) {
+	cref_or_me_type = imemo_type(cref_or_me);
+    }
+
     if (req_block && !VM_ENVVAL_BLOCK_PTR_P(specval)) {
 	rb_bug("vm_push_frame: specval (%p) should be a block_ptr on %x frame", (void *)specval, magic);
     }
@@ -59,17 +57,17 @@ check_frame(int magic, int req_block, int req_me, int req_cref, VALUE specval, V
     }
 
     if (req_me) {
-	if (!RB_TYPE_P(cref_or_me, T_IMEMO) || imemo_type(cref_or_me) != imemo_ment) {
+	if (cref_or_me_type != imemo_ment) {
 	    rb_bug("vm_push_frame: (%s) should be method entry on %x frame", rb_obj_info(cref_or_me), magic);
 	}
     }
     else {
-	if (req_cref && (!RB_TYPE_P(cref_or_me, T_IMEMO) || imemo_type(cref_or_me) != imemo_cref)) {
+	if (req_cref && cref_or_me_type != imemo_cref) {
 	    rb_bug("vm_push_frame: (%s) should be CREF on %x frame", rb_obj_info(cref_or_me), magic);
 	}
 	else { /* cref or Qfalse */
-	    if (cref_or_me != Qfalse && (!RB_TYPE_P(cref_or_me, T_IMEMO) || imemo_type(cref_or_me) != imemo_cref)) {
-		if ((magic == VM_FRAME_MAGIC_LAMBDA || magic == VM_FRAME_MAGIC_IFUNC) && (RB_TYPE_P(cref_or_me, T_IMEMO) && imemo_type(cref_or_me) == imemo_ment)) {
+	    if (cref_or_me != Qfalse && cref_or_me_type != imemo_cref) {
+		if ((magic == VM_FRAME_MAGIC_LAMBDA || magic == VM_FRAME_MAGIC_IFUNC) && (cref_or_me_type == imemo_ment)) {
 		    /* ignore */
 		}
 		else {
@@ -843,7 +841,7 @@ vm_throw_start(rb_thread_t * const th, rb_control_frame_t * const reg_cfp, int s
 		ep = VM_EP_PREV_EP(ep);
 		base_iseq = base_iseq->parent_iseq;
 		escape_cfp = rb_vm_search_cf_from_ep(th, escape_cfp, ep);
-		assert(escape_cfp->iseq == base_iseq);
+		VM_ASSERT(escape_cfp->iseq == base_iseq);
 	    }
 	}
 

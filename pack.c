@@ -23,11 +23,11 @@
  * This behavior is consistent with the document of pack/unpack.
  */
 #ifdef HAVE_TRUE_LONG_LONG
-static const char natstr[] = "sSiIlLqQ";
+static const char natstr[] = "sSiIlLqQjJ";
 #else
-static const char natstr[] = "sSiIlL";
+static const char natstr[] = "sSiIlLjJ";
 #endif
-static const char endstr[] = "sSiIlLqQ";
+static const char endstr[] = "sSiIlLqQjJ";
 
 #ifdef HAVE_TRUE_LONG_LONG
 /* It is intentional to use long long instead of LONG_LONG. */
@@ -264,11 +264,15 @@ rb_str_associated(VALUE str)
  *      S         | Integer | 16-bit unsigned, native endian (uint16_t)
  *      L         | Integer | 32-bit unsigned, native endian (uint32_t)
  *      Q         | Integer | 64-bit unsigned, native endian (uint64_t)
+ *      J         | Integer | pointer width unsigned, native endian (uintptr_t)
+ *                |         | (J is available since Ruby 2.3.)
  *                |         |
  *      c         | Integer | 8-bit signed (signed char)
  *      s         | Integer | 16-bit signed, native endian (int16_t)
  *      l         | Integer | 32-bit signed, native endian (int32_t)
  *      q         | Integer | 64-bit signed, native endian (int64_t)
+ *      j         | Integer | pointer width signed, native endian (intptr_t)
+ *                |         | (j is available since Ruby 2.3.)
  *                |         |
  *      S_, S!    | Integer | unsigned short, native endian
  *      I, I_, I! | Integer | unsigned int, native endian
@@ -276,6 +280,8 @@ rb_str_associated(VALUE str)
  *      Q_, Q!    | Integer | unsigned long long, native endian (ArgumentError
  *                |         | if the platform has no long long type.)
  *                |         | (Q_ and Q! is available since Ruby 2.1.)
+ *      J!        | Integer | uintptr_t, native endian (same with J)
+ *                |         | (J! is available since Ruby 2.3.)
  *                |         |
  *      s_, s!    | Integer | signed short, native endian
  *      i, i_, i! | Integer | signed int, native endian
@@ -283,20 +289,26 @@ rb_str_associated(VALUE str)
  *      q_, q!    | Integer | signed long long, native endian (ArgumentError
  *                |         | if the platform has no long long type.)
  *                |         | (q_ and q! is available since Ruby 2.1.)
+ *      j!        | Integer | intptr_t, native endian (same with j)
+ *                |         | (j! is available since Ruby 2.3.)
  *                |         |
  *      S> L> Q>  | Integer | same as the directives without ">" except
- *      s> l> q>  |         | big endian
- *      S!> I!>   |         | (available since Ruby 1.9.3)
- *      L!> Q!>   |         | "S>" is same as "n"
- *      s!> i!>   |         | "L>" is same as "N"
- *      l!> q!>   |         |
+ *      J> s> l>  |         | big endian
+ *      q> j>     |         | (available since Ruby 1.9.3)
+ *      S!> I!>   |         | "S>" is same as "n"
+ *      L!> Q!>   |         | "L>" is same as "N"
+ *      J!> s!>   |         |
+ *      i!> l!>   |         |
+ *      q!> j!>   |         |
  *                |         |
  *      S< L< Q<  | Integer | same as the directives without "<" except
- *      s< l< q<  |         | little endian
- *      S!< I!<   |         | (available since Ruby 1.9.3)
- *      L!< Q!<   |         | "S<" is same as "v"
- *      s!< i!<   |         | "L<" is same as "V"
- *      l!< q!<   |         |
+ *      J< s< l<  |         | little endian
+ *      q< j<     |         | (available since Ruby 1.9.3)
+ *      S!< I!<   |         | "S<" is same as "v"
+ *      L!< Q!<   |         | "L<" is same as "V"
+ *      J!< s!<   |         |
+ *      i!< l!<   |         |
+ *      q!< j!<   |         |
  *                |         |
  *      n         | Integer | 16-bit unsigned, network (big-endian) byte order
  *      N         | Integer | 32-bit unsigned, network (big-endian) byte order
@@ -657,6 +669,16 @@ pack_pack(VALUE ary, VALUE fmt)
 	    integer_size = NATINT_LEN_Q;
             bigendian_p = BIGENDIAN_P();
             goto pack_integer;
+
+	  case 'j':		/* j for intptr_t */
+	    integer_size = sizeof(intptr_t);
+	    bigendian_p = BIGENDIAN_P();
+	    goto pack_integer;
+
+	  case 'J':		/* J for uintptr_t */
+	    integer_size = sizeof(uintptr_t);
+	    bigendian_p = BIGENDIAN_P();
+	    goto pack_integer;
 
 	  case 'n':		/* 16 bit (2 bytes) integer (network byte-order)  */
             integer_size = 2;
@@ -1477,6 +1499,18 @@ pack_unpack(VALUE str, VALUE fmt)
 	  case 'Q':
 	    signed_p = 0;
 	    integer_size = NATINT_LEN_Q;
+	    bigendian_p = BIGENDIAN_P();
+	    goto unpack_integer;
+
+	  case 'j':
+	    signed_p = 1;
+	    integer_size = sizeof(intptr_t);
+	    bigendian_p = BIGENDIAN_P();
+	    goto unpack_integer;
+
+	  case 'J':
+	    signed_p = 0;
+	    integer_size = sizeof(uintptr_t);
 	    bigendian_p = BIGENDIAN_P();
 	    goto unpack_integer;
 

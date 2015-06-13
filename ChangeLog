@@ -1,3 +1,204 @@
+Sat Jun 13 11:44:15 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/tempfile.rb: Fix typo. [fix GH-933] Patch by @Zorbash
+
+Sat Jun 13 11:38:00 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ext/openssl/ossl_ocsp.c: fix documentation on ocsp response cert status.
+	  [fix GH-932] Patch by @chrisholmes
+
+Sat Jun 13 11:35:19 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.gemspec: Fix require paths for released gem.
+	  [fix GH-929] Patch by @voxik
+	* ext/io/console/io-console.gemspec: ditto.
+
+Sat Jun 13 00:45:08 2015  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/prime.rb: Return sized enumerators.
+	  Patch by Kenichi Kamiya [GH-931]
+
+Sat Jun 13 00:45:06 2015  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/prime.rb: Fix with_object with no block given
+
+Sat Jun 13 00:44:59 2015  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/prime.rb: Have with_index accept an offset parameter.
+	  Based on patch by T Yamada. [#11007]
+
+Fri Jun 12 22:21:12 2015  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/ruby/test_extlibs.rb (TestExtLibs::check_existence): fix
+	  error. [Bug #11255] [ruby-dev:49079]
+
+Fri Jun 12 21:17:46 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* pack.c (pack_{un,}pack): new template character `j` and `J`, pointer
+	  with signed and unsigned integers.
+
+	* NEWS: mention about this feature.
+	  [Feature #11215] [ruby-dev:49015]
+
+Fri Jun 12 21:01:44 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* file.c (File::SHARE_DELETE): new flag to be able to delete opened file
+	  on Windows.
+
+	* include/win32/win32.c (O_SHARE_DELETE): new pseudo file mode flag.
+
+	* win32/win32.c (rb_w32_{w,}open): support above flag.  [EXPERIMENTAL]
+
+	* NEWS: mention about this feature.
+	  [Feature #11218] [ruby-dev:49022]
+
+Fri Jun 12 18:21:45 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ChangeLog: added missing commit message.
+
+Fri Jun 12 18:20:37 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* sample/exyacc.rb: Fix some typos. [fix GH-927] Patch by @davydovanton
+	* sample/list.rb: ditto.
+	* sample/trick2013/kinaba/remarks.markdown: ditto.
+
+Fri Jun 12 17:34:14 2015  Wojciech Mach  <wojtek@wojtekmach.pl>
+
+	* hash.c (rb_hash_fetch_values): add `Hash#fetch_values`.
+	  [Feature #10017] [Fix GH-776]
+
+Fri Jun 12 16:28:17 2015  Radan Skoric  <radan.skoric@gmail.com>
+
+	* array.c (rb_ary_bsearch_index): Implement Array#bsearch_index
+	  method, which is similar to bsearch and returns the index or
+	  nil.  [Feature #10730]
+
+Thu Jun 11 19:11:22 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ext/zlib/zlib.c: Fix indentation for rdoc.
+	  [Bug #11221][ruby-core:69465]
+
+Thu Jun 11 16:23:37 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* method.h (METHOD_ENTRY_BASIC_SET): fix last commit (unbalanced parens).
+
+Thu Jun 11 15:14:16 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in: define SET_THREAD_NAME if it has pthread_set_name_np
+	  for FreeBSD, and don't define it if both pthread_setname_np
+	  and pthread_set_name_np don't exist.
+
+	* thread_pthread.c (SET_THREAD_NAME): don't define if they don't exist.
+
+	* thread_pthread.c (native_set_thread_name): run if SET_THREAD_NAME
+	  is defined.
+
+Thu Jun 11 15:53:31 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* method.h (METHOD_ENTRY_BASIC_SET): should clear last bit.
+
+Thu Jun 11 14:34:45 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/rubygems.rb: bump version to 2.4.7 and 2.4.8. these versions fixed
+	  CVE-2015-3900.
+	* lib/rubygems/remote_fetcher.rb: ditto.
+	* test/rubygems/test_gem_remote_fetcher.rb: added testcase for CVE-2015-3900
+
+Thu Jun 11 14:18:51 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/rubygems.rb: bump version to 2.4.6. It's missing change at r49774.
+
+Thu Jun 11 13:50:19 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (ary_ensure_room_for_push): check if array size will
+	  exceed maxmum size to get rid of buffer overflow.
+	  [ruby-dev:49043] [Bug #11235]
+
+	* array.c (ary_ensure_room_for_unshift, rb_ary_splice): ditto.
+
+Thu Jun 11 13:17:34 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/test_cmath.rb (TestCMath#test_trigonometric_functions): should
+	  not compare float values (in complex values) by `==`.
+
+Thu Jun 11 08:52:01 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* method.h: embed rb_method_entry_t::attr::flags (5 bits) into
+	  rb_method_entry_t::flags to make one word spare space.
+
+	  Add some macros to access these flags.
+
+	* vm_method.c: use these macros.
+
+	* internal.h: define IMEMO_FL_USHIFT and IMEMO_FL_USER[0-4]
+	  for T_IMEMO local flags.
+
+Thu Jun 11 08:27:06 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c: use VM_ASSERT instead of assert().
+
+	* vm_args.c: ditto.
+
+	* vm_insnhelper.c: ditto.
+
+	* vm_method.c: ditto.
+
+Thu Jun 11 08:16:48 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h: define VM_ASSERT() for assertion
+	  enabled only when (VM_CHECK_MODE > 0).
+
+	* vm_insnhelper.c: move definition VM_CHECK_MODE
+	  from vm_insnhelper.c to vm_core.h.
+
+	* vm.c: remove <assert.h>
+
+Thu Jun 11 06:46:07 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c (check_frame): check type of cref_or_me first.
+
+Thu Jun 11 04:34:39 2015  Kazuki Tanaka  <gogotanaka@ruby-lang.org>
+
+	* test/test_cmath.rb: Add some assertions.
+
+Thu Jun 11 00:34:39 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* template/fake.rb.in: expanded macro result may have spaces
+	  between tokens.  [ruby-dev:49047] [Bug #11243]
+
+Wed Jun 10 22:27:32 2015  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* lib/mkmf.rb: revert r50804 because of build failure when specifying
+	  LDFLAGS during configure, observed on Solaris with GCC 4.6.
+	  [Bug #11245]
+
+Wed Jun 10 21:59:51 2015  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* README.ja.md: fix markup miss.
+
+Wed Jun 10 11:06:25 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* template/fake.rb.in: turn into erb template from autoconf
+	  template to fake more accurately.
+
+	* common.mk (fake.rb): needs preprocessed file now.
+
+	* version.c (Init_version): add dummy expression to
+	  RUBY_ENGINE_VERSION.
+
+Tue Jun  9 12:31:25 2015  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/prime.rb: Simplify and optimize EratosthenesSieve
+
+Tue Jun  9 11:45:00 2015  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/prime.rb: Simplify and optimize EratosthenesSieve
+	  based on patch by Ajay Kumar. [Fixes GH-921]
+
+Mon Jun  8 05:09:58 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (obj_info): print method id for T_IMEMO/ment.
+
 Sun Jun  7 07:05:43 2015  Kazuki Tanaka  <gogotanaka@ruby-lang.org>
 
 	* Move test cases from test/ruby/test_complex.rb to test/test_cmath.rb
@@ -17,7 +218,7 @@ Sat Jun  6 18:23:41 2015  Koichi Sasada  <ko1@atdot.net>
 	  rb_method_entry_t::attr is union with VALUE because this field
 	  should have same size of VALUE. rb_method_entry_t is T_IMEMO).
 
-	  And also add the following access macros to it's fileds.
+	  And also add the following access macros to it's fields.
 
 	  * METHOD_ENTRY_VISI(me)
 	  * METHOD_ENTRY_BASIC(me)

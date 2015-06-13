@@ -135,7 +135,7 @@ rb_method_definition_release(rb_method_definition_t *def)
 {
     if (def != NULL) {
 	const int count = def->alias_count;
-	if (METHOD_DEBUG) assert(count >= 0);
+	VM_ASSERT(count >= 0);
 
 	if (count == 0) {
 	    if (METHOD_DEBUG) fprintf(stderr, "-%p-%s:%d\n", def, rb_id2name(def->original_id), count);
@@ -258,7 +258,7 @@ rb_method_definition_set(rb_method_definition_t *def, void *opts)
 		DEF_OBJ_WRITE(&def->body.attr.location, rb_ary_freeze(location));
 	    }
 	    else {
-		assert(def->body.attr.location == 0);
+		VM_ASSERT(def->body.attr.location == 0);
 	    }
 	    return;
 	}
@@ -335,12 +335,10 @@ rb_method_entry_t *
 rb_method_entry_create(ID called_id, VALUE klass, rb_method_visibility_t visi, rb_method_definition_t *def)
 {
     rb_method_entry_t *me = (rb_method_entry_t *)rb_imemo_new(imemo_ment, (VALUE)NULL, (VALUE)called_id, (VALUE)klass, 0);
-    METHOD_ENTRY_VISI(me) = visi;
-    METHOD_ENTRY_BASIC(me) = ruby_running ? FALSE : TRUE;
-    METHOD_ENTRY_SAFE(me) = rb_safe_level();
+    METHOD_ENTRY_FLAGS_SET(me, visi, ruby_running ? FALSE : TRUE, rb_safe_level());
     rb_method_definition_reset(me, def);
 
-    assert(def != NULL);
+    VM_ASSERT(def != NULL);
 
     return me;
 }
@@ -373,7 +371,7 @@ make_method_entry_refined(rb_method_entry_t *me)
 
     new_def = rb_method_definition_create(VM_METHOD_TYPE_REFINED, me->called_id, rb_method_entry_clone(me));
     rb_method_definition_reset(me, new_def);
-    METHOD_ENTRY_VISI(me) = METHOD_VISI_PUBLIC;
+    METHOD_ENTRY_VISI_SET(me, METHOD_VISI_PUBLIC);
 }
 
 void
@@ -561,7 +559,7 @@ method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *me,
 {
     rb_method_definition_t *def = rb_method_definition_addref(me->def);
     rb_method_entry_t *newme = rb_method_entry_make(klass, mid, me->def->type, def, visi, defined_class);
-    METHOD_ENTRY_SAFE(newme) = METHOD_ENTRY_SAFE(me);
+    METHOD_ENTRY_SAFE_SET(newme, METHOD_ENTRY_SAFE(me));
     method_added(klass, mid);
     return newme;
 }
@@ -877,10 +875,10 @@ rb_export_method(VALUE klass, ID name, rb_method_visibility_t visi)
 	rb_vm_check_redefinition_opt_method(me, klass);
 
 	if (klass == defined_class || RCLASS_ORIGIN(klass) == defined_class) {
-	    METHOD_ENTRY_VISI(me) = visi;
+	    METHOD_ENTRY_VISI_SET(me, visi);
 
 	    if (me->def->type == VM_METHOD_TYPE_REFINED && me->def->body.refined.orig_me) {
-		METHOD_ENTRY_VISI((rb_method_entry_t *)me->def->body.refined.orig_me) = visi;
+		METHOD_ENTRY_VISI_SET((rb_method_entry_t *)me->def->body.refined.orig_me, visi);
 	    }
 	    rb_clear_method_cache_by_class(klass);
 	}
@@ -1403,7 +1401,7 @@ rb_alias(VALUE klass, ID alias_name, ID original_name)
 	RB_OBJ_WRITE(alias_me, &alias_me->klass, defined_class);
 	alias_me->def->original_id = orig_me->called_id;
 	*(ID *)&alias_me->def->body.alias.original_me->called_id = alias_name;
-	METHOD_ENTRY_SAFE(alias_me) = METHOD_ENTRY_SAFE(orig_me);
+	METHOD_ENTRY_SAFE_SET(alias_me, METHOD_ENTRY_SAFE(orig_me));
     }
     else {
 	method_entry_set(target_klass, alias_name, orig_me, visi, defined_class);

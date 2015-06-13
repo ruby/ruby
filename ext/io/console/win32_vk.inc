@@ -1,5 +1,5 @@
 /* C code produced by gperf version 3.0.4 */
-/* Command-line: gperf --ignore-case -E -C -P -p -j1 -i 1 -g -o -t -K ofs -N console_win32_vk -k'*' --output-file=win32_vk.inc win32_vk.list  */
+/* Command-line: gperf --ignore-case -E -C -P -p -j1 -i 1 -g -o -t -K ofs -N console_win32_vk -k'*' win32_vk.list  */
 
 #if !((' ' == 32) && ('!' == 33) && ('"' == 34) && ('#' == 35) \
       && ('%' == 37) && ('&' == 38) && ('\'' == 39) && ('(' == 40) \
@@ -535,368 +535,368 @@ console_win32_vk (str, len)
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1},
 #line 40 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str12, VK_UP},
+      {offsetof(struct stringpool_t, stringpool_str12), VK_UP},
 #line 52 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str13, VK_APPS},
+      {offsetof(struct stringpool_t, stringpool_str13), VK_APPS},
 #line 159 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str14, VK_CRSEL},
+      {offsetof(struct stringpool_t, stringpool_str14), VK_CRSEL},
 #line 34 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str15, VK_SPACE},
+      {offsetof(struct stringpool_t, stringpool_str15), VK_SPACE},
 #line 95 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str16, VK_SCROLL},
+      {offsetof(struct stringpool_t, stringpool_str16), VK_SCROLL},
 #line 29 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str17, VK_ESCAPE},
+      {offsetof(struct stringpool_t, stringpool_str17), VK_ESCAPE},
 #line 9 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str18, VK_CANCEL},
+      {offsetof(struct stringpool_t, stringpool_str18), VK_CANCEL},
 #line 32 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str19, VK_ACCEPT},
+      {offsetof(struct stringpool_t, stringpool_str19), VK_ACCEPT},
 #line 66 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str20, VK_SEPARATOR},
+      {offsetof(struct stringpool_t, stringpool_str20), VK_SEPARATOR},
 #line 43 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str21, VK_SELECT},
+      {offsetof(struct stringpool_t, stringpool_str21), VK_SELECT},
 #line 18 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str22, VK_CONTROL},
+      {offsetof(struct stringpool_t, stringpool_str22), VK_CONTROL},
 #line 166 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str23, VK_OEM_CLEAR},
+      {offsetof(struct stringpool_t, stringpool_str23), VK_OEM_CLEAR},
 #line 145 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str24, VK_OEM_RESET},
+      {offsetof(struct stringpool_t, stringpool_str24), VK_OEM_RESET},
 #line 155 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str25, VK_OEM_AUTO},
+      {offsetof(struct stringpool_t, stringpool_str25), VK_OEM_AUTO},
 #line 151 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str26, VK_OEM_CUSEL},
+      {offsetof(struct stringpool_t, stringpool_str26), VK_OEM_CUSEL},
       {-1},
 #line 22 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str28, VK_KANA},
+      {offsetof(struct stringpool_t, stringpool_str28), VK_KANA},
 #line 127 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str29, VK_OEM_PLUS},
+      {offsetof(struct stringpool_t, stringpool_str29), VK_OEM_PLUS},
 #line 35 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str30, VK_PRIOR},
+      {offsetof(struct stringpool_t, stringpool_str30), VK_PRIOR},
 #line 152 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str31, VK_OEM_ATTN},
+      {offsetof(struct stringpool_t, stringpool_str31), VK_OEM_ATTN},
 #line 20 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str32, VK_PAUSE},
+      {offsetof(struct stringpool_t, stringpool_str32), VK_PAUSE},
 #line 13 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str33, VK_BACK},
+      {offsetof(struct stringpool_t, stringpool_str33), VK_BACK},
 #line 144 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str34, VK_PACKET},
+      {offsetof(struct stringpool_t, stringpool_str34), VK_PACKET},
 #line 105 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str35, VK_RCONTROL},
+      {offsetof(struct stringpool_t, stringpool_str35), VK_RCONTROL},
 #line 104 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str36, VK_LCONTROL},
+      {offsetof(struct stringpool_t, stringpool_str36), VK_LCONTROL},
 #line 37 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str37, VK_END},
+      {offsetof(struct stringpool_t, stringpool_str37), VK_END},
 #line 38 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str38, VK_HOME},
+      {offsetof(struct stringpool_t, stringpool_str38), VK_HOME},
 #line 44 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str39, VK_PRINT},
+      {offsetof(struct stringpool_t, stringpool_str39), VK_PRINT},
 #line 94 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str40, VK_NUMLOCK},
+      {offsetof(struct stringpool_t, stringpool_str40), VK_NUMLOCK},
 #line 39 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str41, VK_LEFT},
+      {offsetof(struct stringpool_t, stringpool_str41), VK_LEFT},
 #line 25 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str42, VK_JUNJA},
+      {offsetof(struct stringpool_t, stringpool_str42), VK_JUNJA},
 #line 19 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str43, VK_MENU},
+      {offsetof(struct stringpool_t, stringpool_str43), VK_MENU},
 #line 150 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str44, VK_OEM_WSCTRL},
+      {offsetof(struct stringpool_t, stringpool_str44), VK_OEM_WSCTRL},
 #line 156 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str45, VK_OEM_ENLW},
+      {offsetof(struct stringpool_t, stringpool_str45), VK_OEM_ENLW},
 #line 36 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str46, VK_NEXT},
+      {offsetof(struct stringpool_t, stringpool_str46), VK_NEXT},
 #line 51 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str47, VK_RWIN},
+      {offsetof(struct stringpool_t, stringpool_str47), VK_RWIN},
 #line 50 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str48, VK_LWIN},
+      {offsetof(struct stringpool_t, stringpool_str48), VK_LWIN},
 #line 21 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str49, VK_CAPITAL},
+      {offsetof(struct stringpool_t, stringpool_str49), VK_CAPITAL},
 #line 49 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str50, VK_HELP},
+      {offsetof(struct stringpool_t, stringpool_str50), VK_HELP},
 #line 164 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str51, VK_NONAME},
+      {offsetof(struct stringpool_t, stringpool_str51), VK_NONAME},
 #line 8 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str52, VK_RBUTTON},
+      {offsetof(struct stringpool_t, stringpool_str52), VK_RBUTTON},
 #line 7 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str53, VK_LBUTTON},
+      {offsetof(struct stringpool_t, stringpool_str53), VK_LBUTTON},
 #line 96 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str54, VK_OEM_NEC_EQUAL},
+      {offsetof(struct stringpool_t, stringpool_str54), VK_OEM_NEC_EQUAL},
       {-1},
 #line 47 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str56, VK_INSERT},
+      {offsetof(struct stringpool_t, stringpool_str56), VK_INSERT},
 #line 27 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str57, VK_HANJA},
+      {offsetof(struct stringpool_t, stringpool_str57), VK_HANJA},
       {-1}, {-1},
 #line 46 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str60, VK_SNAPSHOT},
+      {offsetof(struct stringpool_t, stringpool_str60), VK_SNAPSHOT},
 #line 158 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str61, VK_ATTN},
+      {offsetof(struct stringpool_t, stringpool_str61), VK_ATTN},
 #line 14 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str62, VK_TAB},
+      {offsetof(struct stringpool_t, stringpool_str62), VK_TAB},
 #line 157 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str63, VK_OEM_BACKTAB},
+      {offsetof(struct stringpool_t, stringpool_str63), VK_OEM_BACKTAB},
 #line 143 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str64, VK_ICO_CLEAR},
+      {offsetof(struct stringpool_t, stringpool_str64), VK_ICO_CLEAR},
 #line 30 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str65, VK_CONVERT},
+      {offsetof(struct stringpool_t, stringpool_str65), VK_CONVERT},
 #line 16 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str66, VK_RETURN},
+      {offsetof(struct stringpool_t, stringpool_str66), VK_RETURN},
 #line 146 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str67, VK_OEM_JUMP},
+      {offsetof(struct stringpool_t, stringpool_str67), VK_OEM_JUMP},
       {-1}, {-1}, {-1},
 #line 111 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str71, VK_BROWSER_STOP},
+      {offsetof(struct stringpool_t, stringpool_str71), VK_BROWSER_STOP},
 #line 26 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str72, VK_FINAL},
+      {offsetof(struct stringpool_t, stringpool_str72), VK_FINAL},
 #line 163 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str73, VK_ZOOM},
+      {offsetof(struct stringpool_t, stringpool_str73), VK_ZOOM},
 #line 28 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str74, VK_KANJI},
+      {offsetof(struct stringpool_t, stringpool_str74), VK_KANJI},
 #line 48 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str75, VK_DELETE},
+      {offsetof(struct stringpool_t, stringpool_str75), VK_DELETE},
 #line 128 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str76, VK_OEM_COMMA},
+      {offsetof(struct stringpool_t, stringpool_str76), VK_OEM_COMMA},
 #line 67 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str77, VK_SUBTRACT},
+      {offsetof(struct stringpool_t, stringpool_str77), VK_SUBTRACT},
       {-1},
 #line 10 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str79, VK_MBUTTON},
+      {offsetof(struct stringpool_t, stringpool_str79), VK_MBUTTON},
 #line 78 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str80, VK_F9},
+      {offsetof(struct stringpool_t, stringpool_str80), VK_F9},
 #line 17 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str81, VK_SHIFT},
+      {offsetof(struct stringpool_t, stringpool_str81), VK_SHIFT},
 #line 103 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str82, VK_RSHIFT},
+      {offsetof(struct stringpool_t, stringpool_str82), VK_RSHIFT},
 #line 102 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str83, VK_LSHIFT},
+      {offsetof(struct stringpool_t, stringpool_str83), VK_LSHIFT},
 #line 65 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str84, VK_ADD},
+      {offsetof(struct stringpool_t, stringpool_str84), VK_ADD},
 #line 31 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str85, VK_NONCONVERT},
+      {offsetof(struct stringpool_t, stringpool_str85), VK_NONCONVERT},
 #line 160 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str86, VK_EXSEL},
+      {offsetof(struct stringpool_t, stringpool_str86), VK_EXSEL},
 #line 126 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str87, VK_OEM_1},
+      {offsetof(struct stringpool_t, stringpool_str87), VK_OEM_1},
 #line 138 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str88, VK_OEM_AX},
+      {offsetof(struct stringpool_t, stringpool_str88), VK_OEM_AX},
 #line 108 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str89, VK_BROWSER_BACK},
+      {offsetof(struct stringpool_t, stringpool_str89), VK_BROWSER_BACK},
 #line 137 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str90, VK_OEM_8},
+      {offsetof(struct stringpool_t, stringpool_str90), VK_OEM_8},
 #line 129 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str91, VK_OEM_MINUS},
+      {offsetof(struct stringpool_t, stringpool_str91), VK_OEM_MINUS},
 #line 162 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str92, VK_PLAY},
+      {offsetof(struct stringpool_t, stringpool_str92), VK_PLAY},
 #line 131 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str93, VK_OEM_2},
+      {offsetof(struct stringpool_t, stringpool_str93), VK_OEM_2},
 #line 15 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str94, VK_CLEAR},
+      {offsetof(struct stringpool_t, stringpool_str94), VK_CLEAR},
 #line 99 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str95, VK_OEM_FJ_TOUROKU},
+      {offsetof(struct stringpool_t, stringpool_str95), VK_OEM_FJ_TOUROKU},
 #line 147 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str96, VK_OEM_PA1},
+      {offsetof(struct stringpool_t, stringpool_str96), VK_OEM_PA1},
 #line 140 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str97, VK_ICO_HELP},
+      {offsetof(struct stringpool_t, stringpool_str97), VK_ICO_HELP},
 #line 112 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str98, VK_BROWSER_SEARCH},
+      {offsetof(struct stringpool_t, stringpool_str98), VK_BROWSER_SEARCH},
 #line 53 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str99, VK_SLEEP},
+      {offsetof(struct stringpool_t, stringpool_str99), VK_SLEEP},
       {-1},
 #line 70 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str101, VK_F1},
+      {offsetof(struct stringpool_t, stringpool_str101), VK_F1},
 #line 148 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str102, VK_OEM_PA2},
+      {offsetof(struct stringpool_t, stringpool_str102), VK_OEM_PA2},
 #line 154 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str103, VK_OEM_COPY},
+      {offsetof(struct stringpool_t, stringpool_str103), VK_OEM_COPY},
 #line 77 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str104, VK_F8},
+      {offsetof(struct stringpool_t, stringpool_str104), VK_F8},
 #line 88 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str105, VK_F19},
+      {offsetof(struct stringpool_t, stringpool_str105), VK_F19},
 #line 41 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str106, VK_RIGHT},
+      {offsetof(struct stringpool_t, stringpool_str106), VK_RIGHT},
 #line 71 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str107, VK_F2},
+      {offsetof(struct stringpool_t, stringpool_str107), VK_F2},
 #line 135 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str108, VK_OEM_6},
+      {offsetof(struct stringpool_t, stringpool_str108), VK_OEM_6},
 #line 87 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str109, VK_F18},
+      {offsetof(struct stringpool_t, stringpool_str109), VK_F18},
       {-1},
 #line 117 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str111, VK_VOLUME_UP},
+      {offsetof(struct stringpool_t, stringpool_str111), VK_VOLUME_UP},
       {-1}, {-1},
 #line 120 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str114, VK_MEDIA_STOP},
+      {offsetof(struct stringpool_t, stringpool_str114), VK_MEDIA_STOP},
 #line 130 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str115, VK_OEM_PERIOD},
+      {offsetof(struct stringpool_t, stringpool_str115), VK_OEM_PERIOD},
       {-1},
 #line 161 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str117, VK_EREOF},
+      {offsetof(struct stringpool_t, stringpool_str117), VK_EREOF},
       {-1}, {-1}, {-1},
 #line 114 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str121, VK_BROWSER_HOME},
+      {offsetof(struct stringpool_t, stringpool_str121), VK_BROWSER_HOME},
 #line 75 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str122, VK_F6},
+      {offsetof(struct stringpool_t, stringpool_str122), VK_F6},
       {-1},
 #line 110 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str124, VK_BROWSER_REFRESH},
+      {offsetof(struct stringpool_t, stringpool_str124), VK_BROWSER_REFRESH},
       {-1},
 #line 165 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str126, VK_PA1},
+      {offsetof(struct stringpool_t, stringpool_str126), VK_PA1},
 #line 142 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str127, VK_PROCESSKEY},
+      {offsetof(struct stringpool_t, stringpool_str127), VK_PROCESSKEY},
 #line 68 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str128, VK_DECIMAL},
+      {offsetof(struct stringpool_t, stringpool_str128), VK_DECIMAL},
 #line 132 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str129, VK_OEM_3},
+      {offsetof(struct stringpool_t, stringpool_str129), VK_OEM_3},
 #line 107 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str130, VK_RMENU},
+      {offsetof(struct stringpool_t, stringpool_str130), VK_RMENU},
 #line 106 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str131, VK_LMENU},
+      {offsetof(struct stringpool_t, stringpool_str131), VK_LMENU},
 #line 98 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str132, VK_OEM_FJ_MASSHOU},
+      {offsetof(struct stringpool_t, stringpool_str132), VK_OEM_FJ_MASSHOU},
 #line 54 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str133, VK_NUMPAD0},
+      {offsetof(struct stringpool_t, stringpool_str133), VK_NUMPAD0},
 #line 24 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str134, VK_HANGUL},
+      {offsetof(struct stringpool_t, stringpool_str134), VK_HANGUL},
 #line 63 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str135, VK_NUMPAD9},
+      {offsetof(struct stringpool_t, stringpool_str135), VK_NUMPAD9},
 #line 23 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str136, VK_HANGEUL},
+      {offsetof(struct stringpool_t, stringpool_str136), VK_HANGEUL},
 #line 134 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str137, VK_OEM_5},
+      {offsetof(struct stringpool_t, stringpool_str137), VK_OEM_5},
 #line 149 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str138, VK_OEM_PA3},
+      {offsetof(struct stringpool_t, stringpool_str138), VK_OEM_PA3},
 #line 115 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str139, VK_VOLUME_MUTE},
+      {offsetof(struct stringpool_t, stringpool_str139), VK_VOLUME_MUTE},
 #line 133 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str140, VK_OEM_4},
+      {offsetof(struct stringpool_t, stringpool_str140), VK_OEM_4},
 #line 122 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str141, VK_LAUNCH_MAIL},
+      {offsetof(struct stringpool_t, stringpool_str141), VK_LAUNCH_MAIL},
 #line 97 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str142, VK_OEM_FJ_JISHO},
+      {offsetof(struct stringpool_t, stringpool_str142), VK_OEM_FJ_JISHO},
 #line 72 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str143, VK_F3},
+      {offsetof(struct stringpool_t, stringpool_str143), VK_F3},
 #line 101 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str144, VK_OEM_FJ_ROYA},
+      {offsetof(struct stringpool_t, stringpool_str144), VK_OEM_FJ_ROYA},
 #line 100 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str145, VK_OEM_FJ_LOYA},
+      {offsetof(struct stringpool_t, stringpool_str145), VK_OEM_FJ_LOYA},
       {-1},
 #line 42 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str147, VK_DOWN},
+      {offsetof(struct stringpool_t, stringpool_str147), VK_DOWN},
       {-1},
 #line 153 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str149, VK_OEM_FINISH},
+      {offsetof(struct stringpool_t, stringpool_str149), VK_OEM_FINISH},
       {-1},
 #line 74 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str151, VK_F5},
+      {offsetof(struct stringpool_t, stringpool_str151), VK_F5},
       {-1},
 #line 136 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str153, VK_OEM_7},
+      {offsetof(struct stringpool_t, stringpool_str153), VK_OEM_7},
 #line 73 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str154, VK_F4},
+      {offsetof(struct stringpool_t, stringpool_str154), VK_F4},
 #line 86 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str155, VK_F17},
+      {offsetof(struct stringpool_t, stringpool_str155), VK_F17},
 #line 55 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str156, VK_NUMPAD1},
+      {offsetof(struct stringpool_t, stringpool_str156), VK_NUMPAD1},
 #line 141 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str157, VK_ICO_00},
+      {offsetof(struct stringpool_t, stringpool_str157), VK_ICO_00},
       {-1},
 #line 62 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str159, VK_NUMPAD8},
+      {offsetof(struct stringpool_t, stringpool_str159), VK_NUMPAD8},
       {-1}, {-1},
 #line 56 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str162, VK_NUMPAD2},
+      {offsetof(struct stringpool_t, stringpool_str162), VK_NUMPAD2},
       {-1},
 #line 124 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str164, VK_LAUNCH_APP1},
+      {offsetof(struct stringpool_t, stringpool_str164), VK_LAUNCH_APP1},
 #line 109 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str165, VK_BROWSER_FORWARD},
+      {offsetof(struct stringpool_t, stringpool_str165), VK_BROWSER_FORWARD},
       {-1},
 #line 76 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str167, VK_F7},
+      {offsetof(struct stringpool_t, stringpool_str167), VK_F7},
       {-1}, {-1},
 #line 125 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str170, VK_LAUNCH_APP2},
+      {offsetof(struct stringpool_t, stringpool_str170), VK_LAUNCH_APP2},
 #line 64 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str171, VK_MULTIPLY},
+      {offsetof(struct stringpool_t, stringpool_str171), VK_MULTIPLY},
       {-1}, {-1},
 #line 45 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str174, VK_EXECUTE},
+      {offsetof(struct stringpool_t, stringpool_str174), VK_EXECUTE},
       {-1},
 #line 113 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str176, VK_BROWSER_FAVORITES},
+      {offsetof(struct stringpool_t, stringpool_str176), VK_BROWSER_FAVORITES},
 #line 60 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str177, VK_NUMPAD6},
+      {offsetof(struct stringpool_t, stringpool_str177), VK_NUMPAD6},
       {-1},
 #line 85 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str179, VK_F16},
+      {offsetof(struct stringpool_t, stringpool_str179), VK_F16},
       {-1}, {-1},
 #line 79 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str182, VK_F10},
+      {offsetof(struct stringpool_t, stringpool_str182), VK_F10},
       {-1}, {-1},
 #line 116 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str185, VK_VOLUME_DOWN},
+      {offsetof(struct stringpool_t, stringpool_str185), VK_VOLUME_DOWN},
       {-1}, {-1},
 #line 89 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str188, VK_F20},
+      {offsetof(struct stringpool_t, stringpool_str188), VK_F20},
 #line 119 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str189, VK_MEDIA_PREV_TRACK},
+      {offsetof(struct stringpool_t, stringpool_str189), VK_MEDIA_PREV_TRACK},
       {-1},
 #line 33 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str191, VK_MODECHANGE},
+      {offsetof(struct stringpool_t, stringpool_str191), VK_MODECHANGE},
       {-1}, {-1}, {-1}, {-1}, {-1},
 #line 83 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str197, VK_F14},
+      {offsetof(struct stringpool_t, stringpool_str197), VK_F14},
 #line 57 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str198, VK_NUMPAD3},
+      {offsetof(struct stringpool_t, stringpool_str198), VK_NUMPAD3},
 #line 11 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str199, VK_XBUTTON1},
+      {offsetof(struct stringpool_t, stringpool_str199), VK_XBUTTON1},
       {-1}, {-1}, {-1},
 #line 93 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str203, VK_F24},
+      {offsetof(struct stringpool_t, stringpool_str203), VK_F24},
       {-1},
 #line 12 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str205, VK_XBUTTON2},
+      {offsetof(struct stringpool_t, stringpool_str205), VK_XBUTTON2},
 #line 59 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str206, VK_NUMPAD5},
+      {offsetof(struct stringpool_t, stringpool_str206), VK_NUMPAD5},
       {-1}, {-1},
 #line 58 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str209, VK_NUMPAD4},
+      {offsetof(struct stringpool_t, stringpool_str209), VK_NUMPAD4},
       {-1}, {-1}, {-1}, {-1}, {-1},
 #line 121 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str215, VK_MEDIA_PLAY_PAUSE},
+      {offsetof(struct stringpool_t, stringpool_str215), VK_MEDIA_PLAY_PAUSE},
       {-1},
 #line 123 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str217, VK_LAUNCH_MEDIA_SELECT},
+      {offsetof(struct stringpool_t, stringpool_str217), VK_LAUNCH_MEDIA_SELECT},
 #line 80 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str218, VK_F11},
+      {offsetof(struct stringpool_t, stringpool_str218), VK_F11},
       {-1},
 #line 139 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str220, VK_OEM_102},
+      {offsetof(struct stringpool_t, stringpool_str220), VK_OEM_102},
 #line 118 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str221, VK_MEDIA_NEXT_TRACK},
+      {offsetof(struct stringpool_t, stringpool_str221), VK_MEDIA_NEXT_TRACK},
 #line 61 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str222, VK_NUMPAD7},
+      {offsetof(struct stringpool_t, stringpool_str222), VK_NUMPAD7},
       {-1},
 #line 90 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str224, VK_F21},
+      {offsetof(struct stringpool_t, stringpool_str224), VK_F21},
       {-1},
 #line 82 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str226, VK_F13},
+      {offsetof(struct stringpool_t, stringpool_str226), VK_F13},
       {-1}, {-1},
 #line 81 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str229, VK_F12},
+      {offsetof(struct stringpool_t, stringpool_str229), VK_F12},
       {-1}, {-1},
 #line 92 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str232, VK_F23},
+      {offsetof(struct stringpool_t, stringpool_str232), VK_F23},
       {-1}, {-1},
 #line 91 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str235, VK_F22},
+      {offsetof(struct stringpool_t, stringpool_str235), VK_F22},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
 #line 84 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str242, VK_F15},
+      {offsetof(struct stringpool_t, stringpool_str242), VK_F15},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1},
 #line 69 "win32_vk.list"
-      {(int)(long)&((struct stringpool_t *)0)->stringpool_str256, VK_DIVIDE}
+      {offsetof(struct stringpool_t, stringpool_str256), VK_DIVIDE}
     };
 
   if (len <= MAX_WORD_LENGTH && len >= MIN_WORD_LENGTH)

@@ -269,14 +269,26 @@ class Prime
     end
 
     # see +Enumerator+#with_index.
-    alias with_index each_with_index
+    def with_index(offset = 0)
+      return enum_for(:with_index, offset) { Float::INFINITY } unless block_given?
+      return each_with_index(&proc) if offset == 0
+
+      each do |prime|
+        yield prime, offset
+        offset += 1
+      end
+    end
 
     # see +Enumerator+#with_object.
     def with_object(obj)
-      return enum_for(:with_object) unless block_given?
+      return enum_for(:with_object, obj) { Float::INFINITY } unless block_given?
       each do |prime|
         yield prime, obj
       end
+    end
+
+    def size
+      Float::INFINITY
     end
   end
 
@@ -424,23 +436,20 @@ class Prime
       segment_max = [segment_min + max_segment_size, max_cached_prime * 2].min
       root = Integer(Math.sqrt(segment_max).floor)
 
-      sieving_primes = @primes[1 .. -1].take_while { |prime| prime <= root }
-      offsets = Array.new(sieving_primes.size) do |i|
-        (-(segment_min + 1 + sieving_primes[i]) / 2) % sieving_primes[i]
-      end
-
       segment = ((segment_min + 1) .. segment_max).step(2).to_a
-      sieving_primes.each_with_index do |prime, index|
-        composite_index = offsets[index]
+
+      (1..Float::INFINITY).each do |sieving|
+        prime = @primes[sieving]
+        break if prime > root
+        composite_index = (-(segment_min + 1 + prime) / 2) % prime
         while composite_index < segment.size do
           segment[composite_index] = nil
           composite_index += prime
         end
       end
 
-      segment.each do |prime|
-        @primes.push prime unless prime.nil?
-      end
+      @primes.concat(segment.compact!)
+
       @max_checked = segment_max
     end
   end

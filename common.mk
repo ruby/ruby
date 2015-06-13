@@ -549,10 +549,14 @@ fake: $(CROSS_COMPILING)-fake
 yes-fake: $(arch)-fake.rb $(RBCONFIG) PHONY
 no-fake: PHONY
 
-$(arch)-fake.rb: $(RBCONFIG) $(srcdir)/template/fake.rb.in $(srcdir)/tool/expand-config.rb rbconfig.rb
-	@$(BOOTSTRAPRUBY) $(srcdir)/tool/expand-config.rb \
-		-output=$@ -mode=$(INSTALL_PROG_MODE) -expand -config=rbconfig.rb \
-		srcdir="$(srcdir)" BASERUBY="$(BASERUBY)" $(srcdir)/template/fake.rb.in
+$(arch)-fake.rb: $(srcdir)/template/fake.rb.in $(srcdir)/tool/generic_erb.rb version.i
+	$(ECHO) generating $@
+	@$(BOOTSTRAPRUBY) $(srcdir)/tool/generic_erb.rb -c -o $@ $(srcdir)/template/fake.rb.in \
+		i=version.i srcdir="$(srcdir)" BASERUBY="$(BASERUBY)"
+
+# .i really doesn't depend on .o, just ensure newer than headers which
+# version.o depends on.
+version.i: version.$(OBJEXT)
 
 btest: $(TEST_RUNNABLE)-btest
 no-btest: PHONY

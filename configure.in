@@ -2739,7 +2739,7 @@ if test x"$enable_pthread" = xyes; then
 	pthread_get_stackaddr_np pthread_get_stacksize_np \
 	thr_stksegment pthread_stackseg_np pthread_getthrds_np \
 	pthread_cond_init pthread_condattr_setclock pthread_condattr_init \
-	pthread_sigmask pthread_setname_np)
+	pthread_sigmask pthread_setname_np pthread_set_name_np)
     if test "${host_os}" = "nacl"; then
       ac_cv_func_pthread_attr_init=no
     else
@@ -2771,9 +2771,9 @@ if test x"$enable_pthread" = xyes; then
 	)
 	if test -n "${rb_cv_func_pthread_setname_np_arguments}"; then
 	    AC_DEFINE_UNQUOTED(SET_THREAD_NAME(name), pthread_setname_np${rb_cv_func_pthread_setname_np_arguments})
-	else
-	    AC_DEFINE_UNQUOTED(SET_THREAD_NAME(name), (void)0)
 	fi
+    elif test "$ac_cv_func_pthread_set_name_np" = yes; then
+	    AC_DEFINE_UNQUOTED(SET_THREAD_NAME(name), pthread_set_name_np(pthread_self(), name))
     fi
 fi
 if test x"$ac_cv_header_ucontext_h" = xyes; then
