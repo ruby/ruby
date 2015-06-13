@@ -1,3 +1,7 @@
+Sun Jun 14 05:23:51 2015  Benoit Daloze  <eregontp@gmail.com>
+
+	* io.c (rb_io_s_binread): close fd if seek offset is invalid.
+
 Sun Jun 14 04:40:32 2015  Benoit Daloze  <eregontp@gmail.com>
 
 	* test/lib/leakchecker.rb (check): refactor.
