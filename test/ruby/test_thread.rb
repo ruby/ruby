@@ -1048,9 +1048,11 @@ q.pop
   end
 
   def test_thread_name
-    t = Thread.start { }
+    t = Thread.start { sleep }
     t.name = 'foo'
     assert_equal 'foo', t.name
+  ensure
+    t.kill
     t.join
   end
 end
