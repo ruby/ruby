@@ -117,7 +117,7 @@ class LeakChecker
   end
 
   def check_tempfile_leak(test_name)
-    return false, @tempfile_info unless defined? Tempfile
+    return false unless defined? Tempfile
     count1, initial_tempfiles = @tempfile_info
     count2, current_tempfiles = find_tempfiles(count1)
     leaked = false

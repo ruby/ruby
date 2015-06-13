@@ -1,3 +1,8 @@
+Sun Jun 14 04:34:14 2015  Benoit Daloze  <eregontp@gmail.com>
+
+	* test/lib/leakchecker.rb: Return false for no leaks.
+	  Otherwise the GC could run for nothing.
+
 Sun Jun 14 04:15:40 2015  Benoit Daloze  <eregontp@gmail.com>
 
 	* lib/delegate.rb: [DOC] Update SimpleDelegator example. [ci skip]
