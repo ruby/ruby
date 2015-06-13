@@ -652,7 +652,7 @@ ossl_ocspbres_add_nonce(int argc, VALUE *argv, VALUE self)
  * call-seq:
  *   basic_response.add_status(certificate_id, status, reason, revocation_time, this_update, next_update, extensions) -> basic_response
  *
- * Adds a validation +status+ (0 for revoked, 1 for success) to this
+ * Adds a validation +status+ (0 for good, 1 for revoked, 2 for unknown) to this
  * response for +certificate_id+.  +reason+ describes the reason for the
  * revocation, if any.
  *
@@ -737,7 +737,7 @@ ossl_ocspbres_add_status(VALUE self, VALUE cid, VALUE status,
  *   basic_response.status -> statuses
  *
  * Returns an Array of statuses for this response.  Each status contains a
- * CertificateId, the status (0 for success, 1 for revoked), the reason for
+ * CertificateId, the status (0 for good, 1 for revoked, 2 for unknown), the reason for
  * the status, the revocation time, the time of this update, the time for the
  * next update and a list of OpenSSL::X509::Extensions.
  */

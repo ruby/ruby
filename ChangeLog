@@ -1,3 +1,8 @@
+Sat Jun 13 11:38:00 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ext/openssl/ossl_ocsp.c: fix documentation on ocsp response cert status.
+	  [fix GH-932] Patch by @chrisholmes
+
 Sat Jun 13 11:35:19 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.gemspec: Fix require paths for released gem.
