@@ -2717,6 +2717,58 @@ rb_thread_safe_level(VALUE thread)
 
 /*
  * call-seq:
+ *   thr.name   -> string
+ *
+ * Dump the name, id, and status of _thr_ to a string.
+ */
+
+static VALUE
+rb_thread_getname(VALUE thread)
+{
+    rb_thread_t *th;
+    GetThreadPtr(thread, th);
+    return th->name;
+}
+
+/*
+ * call-seq:
+ *   thr.name=(name)   -> string
+ *
+ * Dump the name, id, and status of _thr_ to a string.
+ */
+
+static VALUE
+rb_thread_setname(VALUE thread, VALUE name)
+{
+    rb_thread_t *th;
+    GetThreadPtr(thread, th);
+    th->name = rb_str_new_frozen(name);
+#if defined(HAVE_PTHREAD_SETNAME_NP)
+# if defined(__linux__)
+    pthread_setname_np(th->thread_id, RSTRING_PTR(name));
+# elif defined(__NetBSD__)
+    pthread_setname_np(th->thread_id, RSTRING_PTR(name), "%s");
+#elif defined(__APPLE__)
+    {
+	int mib[2] = {CTL_KERN, KERN_THREADNAME};
+	int r;
+# ifndef MAXTHREADNAMESIZE
+#  define MAXTHREADNAMESIZE 64
+# endif
+	int size_t len = RSTRING_LEN(name);
+	if (len > MAXTHREADNAMESIZE-1) len = MAXTHREADNAMESIZE-1;
+	r = sysctl(mib, 2, NULL, 0, RSTRING_PTR(name), len);
+	if (!r) rb_sys_fail("sysctl([CTL_KERN, KERN_THREADNAME],..)");
+    }
+# endif
+#elif defined(HAVE_PTHREAD_SET_NAME_NP) /* FreeBSD */
+    pthread_set_name_np(th->thread_id, RSTRING_PTR(name));
+#endif
+    return name;
+}
+
+/*
+ * call-seq:
  *   thr.inspect   -> string
  *
  * Dump the name, id, and status of _thr_ to a string.
@@ -2733,6 +2785,9 @@ rb_thread_inspect(VALUE thread)
     GetThreadPtr(thread, th);
     status = thread_status_name(th);
     str = rb_sprintf("#<%"PRIsVALUE":%p", cname, (void *)thread);
+    if (!NIL_P(th->name)) {
+	    rb_str_catf(str, "@%"PRIsVALUE, th->name);
+    }
     if (!th->first_func && th->first_proc) {
 	VALUE loc = rb_proc_location(th->first_proc);
 	if (!NIL_P(loc)) {
@@ -5039,6 +5094,8 @@ Init_Thread(void)
     rb_define_method(rb_cThread, "backtrace", rb_thread_backtrace_m, -1);
     rb_define_method(rb_cThread, "backtrace_locations", rb_thread_backtrace_locations_m, -1);
 
+    rb_define_method(rb_cThread, "name", rb_thread_getname, 0);
+    rb_define_method(rb_cThread, "name=", rb_thread_setname, 1);
     rb_define_method(rb_cThread, "inspect", rb_thread_inspect, 0);
 
     rb_vm_register_special_exception(ruby_error_closed_stream, rb_eIOError, "stream closed");

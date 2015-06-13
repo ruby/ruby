@@ -1,3 +1,17 @@
+Sat Jun 13 17:35:11 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* vm_core.h (rb_thread_t): add th->name.
+
+	* vm.c (th_init): initialize th->name.
+
+	* thread.c (Init_Thread): add Thread.name and Thread.name=.
+
+	* thread.c (rb_thread_inspect): show thread's name if set.
+
+	* thread.c (rb_thread_getname): defined.
+
+	* thread.c (rb_thread_setname): ditto.
+
 Sat Jun 13 11:39:43 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/tempfile.rb: Fix typo. [fix GH-933] Patch by @Zorbash
