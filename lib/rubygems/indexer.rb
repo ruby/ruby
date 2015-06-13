@@ -96,11 +96,10 @@ class Gem::Indexer
   # Build various indices
 
   def build_indices
-    Gem::Specification.dirs = []
-    Gem::Specification.add_specs(*map_gems_to_specs(gem_file_list))
-
-    build_marshal_gemspecs
-    build_modern_indices if @build_modern
+    specs = map_gems_to_specs gem_file_list
+    Gem::Specification._resort! specs
+    build_marshal_gemspecs specs
+    build_modern_indices specs if @build_modern
 
     compress_indices
   end
@@ -108,8 +107,8 @@ class Gem::Indexer
   ##
   # Builds Marshal quick index gemspecs.
 
-  def build_marshal_gemspecs
-    count = Gem::Specification.count { |s| not s.default_gem? }
+  def build_marshal_gemspecs specs
+    count = specs.count
     progress = ui.progress_reporter count,
                                     "Generating Marshal quick index gemspecs for #{count} gems",
                                     "Complete"
@@ -117,7 +116,7 @@ class Gem::Indexer
     files = []
 
     Gem.time 'Generated Marshal quick index gemspecs' do
-      Gem::Specification.each do |spec|
+      specs.each do |spec|
         next if spec.default_gem?
         spec_file_name = "#{spec.original_name}.gemspec.rz"
         marshal_name = File.join @quick_marshal_dir, spec_file_name
@@ -171,14 +170,12 @@ class Gem::Indexer
   ##
   # Builds indices for RubyGems 1.2 and newer. Handles full, latest, prerelease
 
-  def build_modern_indices
-    specs = Gem::Specification.reject { |s| s.default_gem? }
-
+  def build_modern_indices specs
     prerelease, released = specs.partition { |s|
       s.version.prerelease?
     }
     latest_specs =
-      Gem::Specification.latest_specs.reject { |s| s.default_gem? }
+      Gem::Specification._latest_specs specs
 
     build_modern_index(released.sort, @specs_index, 'specs')
     build_modern_index(latest_specs.sort, @latest_specs_index, 'latest specs')
@@ -376,10 +373,7 @@ class Gem::Indexer
     specs = map_gems_to_specs updated_gems
     prerelease, released = specs.partition { |s| s.version.prerelease? }
 
-    Gem::Specification.dirs = []
-    Gem::Specification.add_specs(*specs)
-
-    files = build_marshal_gemspecs
+    files = build_marshal_gemspecs specs
 
     Gem.time 'Updated indexes' do
       update_specs_index released, @dest_specs_index, @specs_index

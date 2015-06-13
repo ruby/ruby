@@ -18,11 +18,9 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     @cmd.options[:document] = []
 
     @specs = spec_fetcher do |fetcher|
-      fetcher.gem 'a', 1
-      fetcher.gem 'a', 2
-      fetcher.gem 'a', '3.a'
-
-      fetcher.clear
+      fetcher.download 'a', 1
+      fetcher.download 'a', 2
+      fetcher.download 'a', '3.a'
     end
 
     @a1_path  = @specs['a-1'].cache_file
@@ -32,10 +30,7 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
   def test_execute
     spec_fetcher do |fetcher|
-      fetcher.gem 'a', 2
-
-      fetcher.clear
-
+      fetcher.download 'a', 2
       fetcher.spec 'a', 1
     end
 
@@ -54,10 +49,8 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
   def test_execute_multiple
     spec_fetcher do |fetcher|
-      fetcher.gem 'a',  2
-      fetcher.gem 'ab', 2
-
-      fetcher.clear
+      fetcher.download 'a',  2
+      fetcher.download 'ab', 2
 
       fetcher.spec 'a',  1
       fetcher.spec 'ab', 1
@@ -78,9 +71,7 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
   def test_execute_system
     spec_fetcher do |fetcher|
-      fetcher.gem 'rubygems-update', 9 do |s| s.files = %w[setup.rb] end
-
-      fetcher.clear
+      fetcher.download 'rubygems-update', 9 do |s| s.files = %w[setup.rb] end
     end
 
     @cmd.options[:args]          = []
@@ -100,11 +91,9 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
   def test_execute_system_at_latest
     spec_fetcher do |fetcher|
-      fetcher.gem 'rubygems-update', Gem::VERSION do |s|
+      fetcher.download 'rubygems-update', Gem::VERSION do |s|
         s.files = %w[setup.rb]
       end
-
-      fetcher.clear
     end
 
     @cmd.options[:args]          = []
@@ -123,10 +112,8 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
   def test_execute_system_multiple
     spec_fetcher do |fetcher|
-      fetcher.gem 'rubygems-update', 8 do |s| s.files = %w[setup.rb] end
-      fetcher.gem 'rubygems-update', 9 do |s| s.files = %w[setup.rb] end
-
-      fetcher.clear
+      fetcher.download 'rubygems-update', 8 do |s| s.files = %w[setup.rb] end
+      fetcher.download 'rubygems-update', 9 do |s| s.files = %w[setup.rb] end
     end
 
     @cmd.options[:args]          = []
@@ -146,10 +133,8 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
   def test_execute_system_specific
     spec_fetcher do |fetcher|
-      fetcher.gem 'rubygems-update', 8 do |s| s.files = %w[setup.rb] end
-      fetcher.gem 'rubygems-update', 9 do |s| s.files = %w[setup.rb] end
-
-      fetcher.clear
+      fetcher.download 'rubygems-update', 8 do |s| s.files = %w[setup.rb] end
+      fetcher.download 'rubygems-update', 9 do |s| s.files = %w[setup.rb] end
     end
 
     @cmd.options[:args]          = []
@@ -169,10 +154,8 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
   def test_execute_system_specifically_to_latest_version
     spec_fetcher do |fetcher|
-      fetcher.gem 'rubygems-update', 8 do |s| s.files = %w[setup.rb] end
-      fetcher.gem 'rubygems-update', 9 do |s| s.files = %w[setup.rb] end
-
-      fetcher.clear
+      fetcher.download 'rubygems-update', 8 do |s| s.files = %w[setup.rb] end
+      fetcher.download 'rubygems-update', 9 do |s| s.files = %w[setup.rb] end
     end
 
     @cmd.options[:args]          = []
@@ -213,11 +196,9 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
   def test_execute_dependencies
     spec_fetcher do |fetcher|
-      fetcher.gem 'a', 2, 'b' => 2, 'c' => 2
-      fetcher.gem 'b', 2
-      fetcher.gem 'c', 2
-
-      fetcher.clear
+      fetcher.download 'a', 2, 'b' => 2, 'c' => 2
+      fetcher.download 'b', 2
+      fetcher.download 'c', 2
 
       fetcher.spec 'a', 1, 'c' => '1.2'
       fetcher.spec 'c', '1.2'
@@ -243,10 +224,7 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
   def test_execute_rdoc
     skip if RUBY_VERSION <= "1.8.7"
     spec_fetcher do |fetcher|
-      fetcher.gem 'a', 2
-
-      fetcher.clear
-
+      fetcher.download 'a', 2
       fetcher.spec 'a', 1
     end
 
@@ -269,9 +247,7 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
   def test_execute_named
     spec_fetcher do |fetcher|
-      fetcher.gem 'a', 2
-
-      fetcher.clear
+      fetcher.download 'a', 2
 
       fetcher.spec 'a', 1
     end
@@ -292,8 +268,7 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
   def test_execute_named_some_up_to_date
     spec_fetcher do |fetcher|
-      fetcher.gem 'a', 2
-      fetcher.clear
+      fetcher.download 'a', 2
       fetcher.spec 'a', 1
 
       fetcher.spec 'b', 2
@@ -334,9 +309,7 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
   def test_execute_named_up_to_date_prerelease
     spec_fetcher do |fetcher|
-      fetcher.gem 'a', '3.a'
-
-      fetcher.clear
+      fetcher.download 'a', '3.a'
 
       fetcher.gem 'a', 2
     end
@@ -376,10 +349,7 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
   def test_execute_user_install
     spec_fetcher do |fetcher|
-      fetcher.gem 'a', 2
-
-      fetcher.clear
-
+      fetcher.download 'a', 2
       fetcher.spec 'a', 1
     end
 

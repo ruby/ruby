@@ -129,7 +129,7 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
 
     assert @cmd.options[:user_install]
 
-    @installer = Gem::Installer.new @gem, @cmd.options
+    @installer = Gem::Installer.at @gem, @cmd.options
     @installer.install
     assert_path_exists File.join(Gem.user_dir, 'gems')
     assert_path_exists File.join(Gem.user_dir, 'gems', @spec.full_name)
@@ -149,7 +149,7 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
       Gem.use_paths @gemhome, @userhome
 
       assert_raises(Gem::FilePermissionError) do
-        Gem::Installer.new(@gem, @cmd.options).install
+        Gem::Installer.at(@gem, @cmd.options).install
       end
     end
   ensure

@@ -12,7 +12,8 @@ require 'rubygems/platform'
 require 'rubygems/deprecate'
 require 'rubygems/basic_specification'
 require 'rubygems/stub_specification'
-require 'rubygems/util/stringio'
+require 'rubygems/util/list'
+require 'stringio'
 
 ##
 # The Specification class contains the information for a Gem.  Typically
@@ -171,6 +172,8 @@ class Gem::Specification < Gem::BasicSpecification
   @@nil_attributes, @@non_nil_attributes = @@default_value.keys.partition { |k|
     @@default_value[k].nil?
   }
+
+  @@stubs_by_name = {}
 
   ######################################################################
   # :section: Required gemspec attributes
@@ -345,7 +348,7 @@ class Gem::Specification < Gem::BasicSpecification
               add_bindir(@executables),
               @extra_rdoc_files,
               @extensions,
-             ].flatten.uniq.compact.sort
+             ].flatten.compact.uniq.sort
   end
 
   ######################################################################
@@ -729,12 +732,57 @@ class Gem::Specification < Gem::BasicSpecification
     end
   end
 
-  def self.each_stub(dirs) # :nodoc:
-    each_gemspec(dirs) do |path|
-      stub = Gem::StubSpecification.new(path)
-      yield stub if stub.valid?
+  def self.gemspec_stubs_in dir, pattern
+    Dir[File.join(dir, pattern)].map { |path|
+      if dir == default_specifications_dir
+        Gem::StubSpecification.default_gemspec_stub(path)
+      else
+        Gem::StubSpecification.gemspec_stub(path)
+      end
+    }.select(&:valid?)
+  end
+  private_class_method :gemspec_stubs_in
+
+  if [].respond_to? :flat_map
+    def self.map_stubs(dirs, pattern) # :nodoc:
+      dirs.flat_map { |dir| gemspec_stubs_in(dir, pattern) }
+    end
+  else # FIXME: remove when 1.8 is dropped
+    def self.map_stubs(dirs, pattern) # :nodoc:
+      dirs.map { |dir| gemspec_stubs_in(dir, pattern) }.flatten 1
     end
   end
+  private_class_method :map_stubs
+
+  uniq_takes_a_block = false
+  [1,2].uniq { uniq_takes_a_block = true }
+
+  if uniq_takes_a_block
+    def self.uniq_by(list, &block) # :nodoc:
+      list.uniq(&block)
+    end
+  else # FIXME: remove when 1.8 is dropped
+    def self.uniq_by(list) # :nodoc:
+      values = {}
+      list.each { |item|
+        value = yield item
+        values[value] ||= item
+      }
+      values.values
+    end
+  end
+  private_class_method :uniq_by
+
+  if [].respond_to? :sort_by!
+    def self.sort_by! list, &block
+      list.sort_by!(&block)
+    end
+  else # FIXME: remove when 1.8 is dropped
+    def self.sort_by! list, &block
+      list.replace list.sort_by(&block)
+    end
+  end
+  private_class_method :sort_by!
 
   def self.each_spec(dirs) # :nodoc:
     each_gemspec(dirs) do |path|
@@ -748,14 +796,30 @@ class Gem::Specification < Gem::BasicSpecification
 
   def self.stubs
     @@stubs ||= begin
-      stubs = {}
-      each_stub([default_specifications_dir] + dirs) do |stub|
-        stubs[stub.full_name] ||= stub
-      end
+      stubs = map_stubs([default_specifications_dir] + dirs, "*.gemspec")
+      stubs = uniq_by(stubs) { |stub| stub.full_name }
 
-      stubs = stubs.values
       _resort!(stubs)
+      @@stubs_by_name = stubs.group_by(&:name)
       stubs
+    end
+  end
+
+  EMPTY = [].freeze # :nodoc:
+
+  ##
+  # Returns a Gem::StubSpecification for installed gem named +name+
+
+  def self.stubs_for name
+    if @@stubs || @@stubs_by_name[name]
+      @@stubs_by_name[name] || []
+    else
+      stubs = map_stubs([default_specifications_dir] + dirs, "#{name}-*.gemspec")
+      stubs = uniq_by(stubs) { |stub| stub.full_name }.group_by(&:name)
+      stubs.each_value { |v| sort_by!(v) { |i| i.version } }
+
+      @@stubs_by_name.merge! stubs
+      @@stubs_by_name[name] ||= EMPTY
     end
   end
 
@@ -783,6 +847,7 @@ class Gem::Specification < Gem::BasicSpecification
   # properly sorted.
 
   def self.add_spec spec
+    warn "Gem::Specification.add_spec is deprecated and will be removed in Rubygems 3.0" unless Gem::Deprecate.skip
     # TODO: find all extraneous adds
     # puts
     # p :add_spec => [spec.full_name, caller.reject { |s| s =~ /minitest/ }]
@@ -797,6 +862,8 @@ class Gem::Specification < Gem::BasicSpecification
 
     _all << spec
     stubs << spec
+    (@@stubs_by_name[spec.name] ||= []) << spec
+    sort_by!(@@stubs_by_name[spec.name]) { |s| s.version }
     _resort!(_all)
     _resort!(stubs)
   end
@@ -805,14 +872,18 @@ class Gem::Specification < Gem::BasicSpecification
   # Adds multiple specs to the known specifications.
 
   def self.add_specs *specs
+    warn "Gem::Specification.add_specs is deprecated and will be removed in Rubygems 3.0" unless Gem::Deprecate.skip
+
     raise "nil spec!" if specs.any?(&:nil?) # TODO: remove once we're happy
 
     # TODO: this is much more efficient, but we need the extra checks for now
     # _all.concat specs
     # _resort!
 
-    specs.each do |spec| # TODO: slow
-      add_spec spec
+    Gem::Deprecate.skip_during do
+      specs.each do |spec| # TODO: slow
+        add_spec spec
+      end
     end
   end
 
@@ -839,6 +910,7 @@ class Gem::Specification < Gem::BasicSpecification
   # -- wilsonb
 
   def self.all= specs
+    @@stubs_by_name = specs.group_by(&:name)
     @@all = @@stubs = specs
   end
 
@@ -927,9 +999,10 @@ class Gem::Specification < Gem::BasicSpecification
   # Return the best specification that contains the file matching +path+.
 
   def self.find_by_path path
-    self.find { |spec|
+    stub = stubs.find { |spec|
       spec.contains_requirable_file? path
     }
+    stub && stub.to_spec
   end
 
   ##
@@ -961,15 +1034,13 @@ class Gem::Specification < Gem::BasicSpecification
     specs = unresolved_deps.values.map { |dep| dep.to_specs }.flatten
 
     specs.reverse_each do |spec|
-      trails = []
       spec.traverse do |from_spec, dep, to_spec, trail|
-        next unless to_spec.conflicts.empty?
-        trails << trail if to_spec.contains_requirable_file? path
+        if to_spec.has_conflicts? || to_spec.conficts_when_loaded_with?(trail)
+          :next
+        else
+          return trail.reverse if to_spec.contains_requirable_file? path
+        end
       end
-
-      next if trails.empty?
-
-      return trails.map(&:reverse).sort.first.reverse
     end
 
     []
@@ -1008,10 +1079,14 @@ class Gem::Specification < Gem::BasicSpecification
   # +prerelease+ is true.
 
   def self.latest_specs prerelease = false
+    _latest_specs Gem::Specification._all, prerelease
+  end
+
+  def self._latest_specs specs, prerelease = false # :nodoc:
     result = Hash.new { |h,k| h[k] = {} }
     native = {}
 
-    Gem::Specification.reverse_each do |spec|
+    specs.reverse_each do |spec|
       next if spec.version.prerelease? unless prerelease
 
       native[spec.name] = spec.version if spec.platform == Gem::Platform::RUBY
@@ -1126,8 +1201,11 @@ class Gem::Specification < Gem::BasicSpecification
   # Removes +spec+ from the known specs.
 
   def self.remove_spec spec
+    warn "Gem::Specification.remove_spec is deprecated and will be removed in Rubygems 3.0" unless Gem::Deprecate.skip
     _all.delete spec
     stubs.delete_if { |s| s.full_name == spec.full_name }
+    (@@stubs_by_name[spec.name] || []).delete_if { |s| s.full_name == spec.full_name }
+    reset
   end
 
   ##
@@ -1153,6 +1231,7 @@ class Gem::Specification < Gem::BasicSpecification
     Gem.pre_reset_hooks.each { |hook| hook.call }
     @@all = nil
     @@stubs = nil
+    @@stubs_by_name = {}
     _clear_load_cache
     unresolved = unresolved_deps
     unless unresolved.empty? then
@@ -1564,6 +1643,30 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
+  # return true if there will be conflict when spec if loaded together with the list of specs.
+
+  def conficts_when_loaded_with?(list_of_specs) # :nodoc:
+    result = list_of_specs.any? { |spec|
+      spec.dependencies.any? { |dep| dep.runtime? && (dep.name == name) && !satisfies_requirement?(dep) }
+    }
+    result
+  end
+
+  ##
+  # Return true if there are possible conflicts against the currently loaded specs.
+
+  def has_conflicts?
+    self.dependencies.any? { |dep|
+      if dep.runtime? then
+        spec = Gem.loaded_specs[dep.name]
+        spec and not spec.satisfies_requirement? dep
+      else
+        false
+      end
+    }
+  end
+
+  ##
   # The date this gem was created.  Lazily defaults to the current UTC date.
   #
   # There is no need to set this in your gem specification.
@@ -1883,9 +1986,10 @@ class Gem::Specification < Gem::BasicSpecification
   # +version+.
 
   def initialize name = nil, version = nil
+    super()
     @loaded = false
     @activated = false
-    self.loaded_from = nil
+    @loaded_from = nil
     @original_platform = nil
     @installed_by_version = nil
 
@@ -1952,20 +2056,6 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
-  # Returns a string usable in Dir.glob to match all requirable paths
-  # for this spec.
-
-  def lib_dirs_glob
-    dirs = if self.require_paths.size > 1 then
-             "{#{self.require_paths.join(',')}}"
-           else
-             self.require_paths.first
-           end
-
-    "#{self.full_gem_path}/#{dirs}"
-  end
-
-  ##
   # Files in the Gem under one of the require_paths
 
   def lib_files
@@ -1992,9 +2082,8 @@ class Gem::Specification < Gem::BasicSpecification
     @licenses ||= []
   end
 
-  def loaded_from= path # :nodoc:
+  def internal_init # :nodoc:
     super
-
     @bin_dir       = nil
     @cache_dir     = nil
     @cache_file    = nil
@@ -2009,16 +2098,6 @@ class Gem::Specification < Gem::BasicSpecification
 
   def mark_version
     @rubygems_version = Gem::VERSION
-  end
-
-  ##
-  # Return all files in this gem that match for +glob+.
-
-  def matches_for_glob glob # TODO: rename?
-    # TODO: do we need these?? Kill it
-    glob = File.join(self.lib_dirs_glob, glob)
-
-    Dir[glob].map { |f| f.untaint } # FIX our tests are broken, run w/ SAFE=1
   end
 
   ##
@@ -2154,10 +2233,8 @@ class Gem::Specification < Gem::BasicSpecification
   # Check the spec for possible conflicts and freak out if there are any.
 
   def raise_if_conflicts # :nodoc:
-    conf = self.conflicts
-
-    unless conf.empty? then
-      raise Gem::ConflictError.new self, conf
+    if has_conflicts? then
+      raise Gem::ConflictError.new self, conflicts
     end
   end
 
@@ -2234,7 +2311,7 @@ class Gem::Specification < Gem::BasicSpecification
   # List of dependencies that will automatically be activated at runtime.
 
   def runtime_dependencies
-    dependencies.select { |d| d.type == :runtime }
+    dependencies.select(&:runtime?)
   end
 
   ##
@@ -2461,7 +2538,7 @@ class Gem::Specification < Gem::BasicSpecification
       builder << self
       ast = builder.tree
 
-      io = Gem::StringSink.new
+      io = StringIO.new
       io.set_encoding Encoding::UTF_8 if Object.const_defined? :Encoding
 
       Psych::Visitors::Emitter.new(io).accept(ast)
@@ -2480,14 +2557,28 @@ class Gem::Specification < Gem::BasicSpecification
   # Recursively walk dependencies of this spec, executing the +block+ for each
   # hop.
 
-  def traverse trail = [], &block
-    trail = trail + [self]
-    runtime_dependencies.each do |dep|
-      dep.to_specs.each do |dep_spec|
-        block[self, dep, dep_spec, trail + [dep_spec]]
-        dep_spec.traverse(trail, &block) unless
-          trail.map(&:name).include? dep_spec.name
+  def traverse trail = [], visited = {}, &block
+    trail.push(self)
+    begin
+      dependencies.each do |dep|
+        dep.to_specs.reverse_each do |dep_spec|
+          next if visited.has_key?(dep_spec)
+          visited[dep_spec] = true
+          trail.push(dep_spec)
+          begin
+            result = block[self, dep, dep_spec, trail]
+          ensure
+            trail.pop
+          end
+          unless result == :next
+            spec_name = dep_spec.name
+            dep_spec.traverse(trail, visited, &block) unless
+              trail.any? { |s| s.name == spec_name }
+          end
+        end
       end
+    ensure
+      trail.pop
     end
   end
 
@@ -2535,13 +2626,13 @@ class Gem::Specification < Gem::BasicSpecification
             'specification must have at least one require_path'
     end
 
-    @files.delete_if            { |x| File.directory?(x) }
-    @test_files.delete_if       { |x| File.directory?(x) }
+    @files.delete_if            { |x| File.directory?(x) && !File.symlink?(x) }
+    @test_files.delete_if       { |x| File.directory?(x) && !File.symlink?(x) }
     @executables.delete_if      { |x| File.directory?(File.join(@bindir, x)) }
-    @extra_rdoc_files.delete_if { |x| File.directory?(x) }
-    @extensions.delete_if       { |x| File.directory?(x) }
+    @extra_rdoc_files.delete_if { |x| File.directory?(x) && !File.symlink?(x) }
+    @extensions.delete_if       { |x| File.directory?(x) && !File.symlink?(x) }
 
-    non_files = files.reject { |x| File.file?(x) }
+    non_files = files.reject { |x| File.file?(x) || File.symlink?(x) }
 
     unless not packaging or non_files.empty? then
       raise Gem::InvalidSpecificationException,
@@ -2676,6 +2767,11 @@ http://opensource.org/licenses/alphabetical
       warning "#{executable_path} is missing #! line" unless shebang
     end
 
+    files.each do |file|
+      next unless File.symlink?(file)
+      warning "#{file} is a symlink, which is not supported on all platforms"
+    end
+
     validate_dependencies
 
     true
@@ -2761,12 +2857,14 @@ open-ended dependency on #{dep} is not recommended
     return if Gem.win_platform?
 
     files.each do |file|
+      next unless File.file?(file)
       next if File.stat(file).mode & 0444 == 0444
       warning "#{file} is not world-readable"
     end
 
     executables.each do |name|
       exec = File.join @bindir, name
+      next unless File.file?(exec)
       next if File.stat(exec).executable?
       warning "#{exec} is not executable"
     end

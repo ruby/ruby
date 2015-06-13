@@ -10,8 +10,8 @@ module Gem::Util
 
   def self.gunzip(data)
     require 'zlib'
-    require 'rubygems/util/stringio'
-    data = Gem::StringSource.new data
+    require 'stringio'
+    data = StringIO.new(data, 'r')
 
     unzipped = Zlib::GzipReader.new(data).read
     unzipped.force_encoding Encoding::BINARY if Object.const_defined? :Encoding
@@ -23,8 +23,8 @@ module Gem::Util
 
   def self.gzip(data)
     require 'zlib'
-    require 'rubygems/util/stringio'
-    zipped = Gem::StringSink.new
+    require 'stringio'
+    zipped = StringIO.new('','w')
     zipped.set_encoding Encoding::BINARY if Object.const_defined? :Encoding
 
     Zlib::GzipWriter.wrap zipped do |io| io.write data end

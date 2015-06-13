@@ -22,12 +22,16 @@ class Gem::BasicSpecification
   ##
   # The path this gemspec was loaded from.  This attribute is not persisted.
 
-  attr_reader :loaded_from
+  attr_accessor :loaded_from
 
   ##
   # Allows correct activation of git: and path: gems.
 
   attr_writer :full_gem_path # :nodoc:
+
+  def initialize
+    internal_init
+  end
 
   def self.default_specifications_dir
     File.join(Gem.default_dir, "specifications", "default")
@@ -141,7 +145,7 @@ class Gem::BasicSpecification
     @full_require_paths ||=
     begin
       full_paths = raw_require_paths.map do |path|
-        File.join full_gem_path, path
+        File.join full_gem_path, path.untaint
       end
 
       full_paths << extension_dir unless @extensions.nil? || @extensions.empty?
@@ -189,13 +193,7 @@ class Gem::BasicSpecification
     @gems_dir ||= File.join(loaded_from && base_dir || Gem.dir, "gems")
   end
 
-  ##
-  # Set the path the Specification was loaded from. +path+ is converted to a
-  # String.
-
-  def loaded_from= path
-    @loaded_from   = path && path.to_s
-
+  def internal_init # :nodoc:
     @extension_dir = nil
     @extensions_dir = nil
     @full_gem_path         = nil
@@ -261,6 +259,30 @@ class Gem::BasicSpecification
     end
 
     paths.uniq
+  end
+
+  ##
+  # Return all files in this gem that match for +glob+.
+
+  def matches_for_glob glob # TODO: rename?
+    # TODO: do we need these?? Kill it
+    glob = File.join(self.lib_dirs_glob, glob)
+
+    Dir[glob].map { |f| f.untaint } # FIX our tests are broken, run w/ SAFE=1
+  end
+
+  ##
+  # Returns a string usable in Dir.glob to match all requirable paths
+  # for this spec.
+
+  def lib_dirs_glob
+    dirs = if self.require_paths.size > 1 then
+             "{#{self.require_paths.join(',')}}"
+           else
+             self.require_paths.first
+           end
+
+    "#{self.full_gem_path}/#{dirs}"
   end
 
   ##

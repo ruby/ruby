@@ -103,10 +103,12 @@ class TestGemCommandsPristineCommand < Gem::TestCase
 
     assert_path_exists gem_exec
 
+    ruby_exec = sprintf Gem.default_exec_format, 'ruby'
+
     if win_platform?
-      assert_match %r%\A#!\s*ruby%, File.read(gem_exec)
+      assert_match %r%\A#!\s*#{ruby_exec}%, File.read(gem_exec)
     else
-      assert_match %r%\A#!\s*/usr/bin/env ruby%, File.read(gem_exec)
+      assert_match %r%\A#!\s*/usr/bin/env #{ruby_exec}%, File.read(gem_exec)
     end
   end
 
@@ -151,10 +153,11 @@ class TestGemCommandsPristineCommand < Gem::TestCase
 
     ext_path = File.join @tempdir, 'ext', 'a', 'extconf.rb'
     write_file ext_path do |io|
-      io.write '# extconf.rb'
+      io.write "# extconf.rb\nrequire 'mkmf'; create_makefile 'a'"
     end
 
     util_build_gem a
+    install_gem a
 
     @cmd.options[:args] = %w[a]
     @cmd.options[:extensions] = false
@@ -403,7 +406,7 @@ class TestGemCommandsPristineCommand < Gem::TestCase
   end
 
   def test_execute_unknown_gem_at_remote_source
-    util_spec 'a'
+    install_specs util_spec 'a'
 
     @cmd.options[:args] = %w[a]
 
@@ -442,9 +445,10 @@ class TestGemCommandsPristineCommand < Gem::TestCase
   def test_execute_bundled_gem_on_old_rubies
     util_set_RUBY_VERSION '1.9.3', 551
 
-    util_spec 'bigdecimal', '1.1.0' do |s|
+    spec = util_spec 'bigdecimal', '1.1.0' do |s|
       s.summary = "This bigdecimal is bundled with Ruby"
     end
+    install_specs spec
 
     @cmd.options[:args] = %w[bigdecimal]
 

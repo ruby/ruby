@@ -9,7 +9,7 @@ class TestStubSpecification < Gem::TestCase
   def setup
     super
 
-    @foo = Gem::StubSpecification.new FOO
+    @foo = Gem::StubSpecification.gemspec_stub FOO
   end
 
   def test_initialize
@@ -31,7 +31,7 @@ class TestStubSpecification < Gem::TestCase
   end
 
   def test_initialize_missing_stubline
-    stub = Gem::StubSpecification.new(BAR)
+    stub = Gem::StubSpecification.gemspec_stub(BAR)
     assert_equal "bar", stub.name
     assert_equal Gem::Version.new("0.0.2"), stub.version
     assert_equal Gem::Platform.new("ruby"), stub.platform
@@ -72,6 +72,21 @@ class TestStubSpecification < Gem::TestCase
     assert_equal expected, stub.full_require_paths
   end
 
+  def test_lib_dirs_glob
+    stub = stub_without_extension
+
+    assert_equal File.join(stub.full_gem_path, 'lib'), stub.lib_dirs_glob
+  end
+
+  def test_matches_for_glob
+    stub = stub_without_extension
+    code_rb = File.join stub.gem_dir, 'lib', 'code.rb'
+    FileUtils.mkdir_p File.dirname code_rb
+    FileUtils.touch code_rb
+
+    assert_equal code_rb, stub.matches_for_glob('code*').first
+  end
+
   def test_missing_extensions_eh
     stub = stub_with_extension do |s|
       extconf_rb = File.join s.gem_dir, s.extensions.first
@@ -103,7 +118,7 @@ class TestStubSpecification < Gem::TestCase
       io.write spec.to_ruby_for_cache
     end
 
-    default_spec = Gem::StubSpecification.new spec.loaded_from
+    default_spec = Gem::StubSpecification.gemspec_stub spec.loaded_from
 
     refute default_spec.missing_extensions?
   end
@@ -125,7 +140,7 @@ class TestStubSpecification < Gem::TestCase
   def test_to_spec_with_other_specs_loaded_does_not_warn
     real_foo = util_spec @foo.name, @foo.version
     real_foo.activate
-    bar = Gem::StubSpecification.new BAR
+    bar = Gem::StubSpecification.gemspec_stub BAR
     refute_predicate Gem.loaded_specs, :empty?
     assert bar.to_spec
   end
@@ -164,7 +179,7 @@ end
 
       io.flush
 
-      stub = Gem::StubSpecification.new io.path
+      stub = Gem::StubSpecification.gemspec_stub io.path
 
       yield stub if block_given?
 
@@ -187,7 +202,7 @@ end
 
       io.flush
 
-      stub = Gem::StubSpecification.new io.path
+      stub = Gem::StubSpecification.gemspec_stub io.path
 
       yield stub if block_given?
 

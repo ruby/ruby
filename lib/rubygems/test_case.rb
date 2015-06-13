@@ -36,6 +36,7 @@ require 'shellwords'
 require 'tmpdir'
 require 'uri'
 require 'zlib'
+require 'benchmark' # stdlib
 
 Gem.load_yaml
 
@@ -275,6 +276,7 @@ class Gem::TestCase < MiniTest::Unit::TestCase
     @orig_ENV_HOME = ENV['HOME']
     ENV['HOME'] = @userhome
     Gem.instance_variable_set :@user_home, nil
+    Gem.instance_variable_set :@gemdeps, nil
     Gem.send :remove_instance_variable, :@ruby_version if
       Gem.instance_variables.include? :@ruby_version
 
@@ -329,6 +331,7 @@ class Gem::TestCase < MiniTest::Unit::TestCase
     end
 
     @marshal_version = "#{Marshal::MAJOR_VERSION}.#{Marshal::MINOR_VERSION}"
+    @orig_LOADED_FEATURES = $LOADED_FEATURES.dup
   end
 
   ##
@@ -337,6 +340,7 @@ class Gem::TestCase < MiniTest::Unit::TestCase
 
   def teardown
     $LOAD_PATH.replace @orig_LOAD_PATH if @orig_LOAD_PATH
+    $LOADED_FEATURES.replace @orig_LOADED_FEATURES if @orig_LOADED_FEATURES
 
     if @orig_BASERUBY
       RbConfig::CONFIG['BASERUBY'] = @orig_BASERUBY
@@ -373,6 +377,7 @@ class Gem::TestCase < MiniTest::Unit::TestCase
     ENV['GEM_PRIVATE_KEY_PASSPHRASE'] = @orig_gem_private_key_passphrase
 
     Gem::Specification._clear_load_cache
+    Gem::Specification.unresolved_deps.clear
   end
 
   def common_installer_setup
@@ -488,7 +493,7 @@ class Gem::TestCase < MiniTest::Unit::TestCase
       gem = File.join(@tempdir, File.basename(spec.cache_file)).untaint
     end
 
-    Gem::Installer.new(gem, options.merge({:wrappers => true})).install
+    Gem::Installer.at(gem, options.merge({:wrappers => true})).install
   end
 
   ##
@@ -503,8 +508,11 @@ class Gem::TestCase < MiniTest::Unit::TestCase
   def uninstall_gem spec
     require 'rubygems/uninstaller'
 
-    Gem::Uninstaller.new(spec.name,
-                         :executables => true, :user_install => true).uninstall
+    Class.new(Gem::Uninstaller) {
+      def ask_if_ok spec
+        true
+      end
+    }.new(spec.name, :executables => true, :user_install => true).uninstall
   end
 
   ##
@@ -598,7 +606,7 @@ class Gem::TestCase < MiniTest::Unit::TestCase
 
     spec.loaded_from = spec.loaded_from = written_path
 
-    Gem::Specification.add_spec spec.for_cache
+    Gem::Specification.reset
 
     return spec
   end
@@ -654,7 +662,10 @@ class Gem::TestCase < MiniTest::Unit::TestCase
   # Install the provided specs
 
   def install_specs(*specs)
-    Gem::Specification.add_specs(*specs)
+    specs.each do |spec|
+      Gem::Installer.for_spec(spec).install
+    end
+
     Gem.searcher = nil
   end
 
@@ -675,8 +686,9 @@ class Gem::TestCase < MiniTest::Unit::TestCase
   # Install the provided default specs
 
   def install_default_specs(*specs)
-    install_specs(*specs)
     specs.each do |spec|
+      installer = Gem::Installer.for_spec(spec, :install_as_default => true)
+      installer.install
       Gem.register_default_spec(spec)
     end
   end
@@ -788,9 +800,7 @@ class Gem::TestCase < MiniTest::Unit::TestCase
       end
     end
 
-    spec.loaded_from = spec.spec_file
-
-    Gem::Specification.add_spec spec
+    Gem::Specification.reset
 
     return spec
   end
@@ -977,14 +987,13 @@ Also, a list:
   # Best used with +@all_gems+ from #util_setup_fake_fetcher.
 
   def util_setup_spec_fetcher(*specs)
-    specs -= Gem::Specification._all
-    Gem::Specification.add_specs(*specs)
+    all_specs = Gem::Specification.to_a + specs
+    Gem::Specification._resort! all_specs
 
     spec_fetcher = Gem::SpecFetcher.fetcher
 
-    prerelease, all = Gem::Specification.partition { |spec|
-      spec.version.prerelease?
-    }
+    prerelease, all = all_specs.partition { |spec| spec.version.prerelease?  }
+    latest = Gem::Specification._latest_specs all_specs
 
     spec_fetcher.specs[@uri] = []
     all.each do |spec|
@@ -992,7 +1001,7 @@ Also, a list:
     end
 
     spec_fetcher.latest_specs[@uri] = []
-    Gem::Specification.latest_specs.each do |spec|
+    latest.each do |spec|
       spec_fetcher.latest_specs[@uri] << spec.name_tuple
     end
 
@@ -1008,7 +1017,7 @@ Also, a list:
       specs = all.map { |spec| spec.name_tuple }
       s_zip = util_gzip Marshal.dump Gem::NameTuple.to_basic specs
 
-      latest_specs = Gem::Specification.latest_specs.map do |spec|
+      latest_specs = latest.map do |spec|
         spec.name_tuple
       end
 
@@ -1023,7 +1032,7 @@ Also, a list:
 
       v = Gem.marshal_version
 
-      Gem::Specification.each do |spec|
+      all_specs.each do |spec|
         path = "#{@gem_repo}quick/Marshal.#{v}/#{spec.original_name}.gemspec.rz"
         data = Marshal.dump spec
         data_deflate = Zlib::Deflate.deflate data
@@ -1447,6 +1456,12 @@ end
 begin
   gem 'rdoc'
   require 'rdoc'
+rescue LoadError, Gem::LoadError
+end
+
+begin
+  gem 'builder'
+  require 'builder/xchar'
 rescue LoadError, Gem::LoadError
 end
 
