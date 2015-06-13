@@ -2775,7 +2775,7 @@ rb_thread_inspect(VALUE thread)
     status = thread_status_name(th);
     str = rb_sprintf("#<%"PRIsVALUE":%p", cname, (void *)thread);
     if (!NIL_P(th->name)) {
-	    rb_str_catf(str, "@%"PRIsVALUE, th->name);
+	rb_str_catf(str, "@%"PRIsVALUE, th->name);
     }
     if (!th->first_func && th->first_proc) {
 	VALUE loc = rb_proc_location(th->first_proc);
