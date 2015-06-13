@@ -2748,18 +2748,6 @@ rb_thread_setname(VALUE thread, VALUE name)
     pthread_setname_np(th->thread_id, RSTRING_PTR(name));
 # elif defined(__NetBSD__)
     pthread_setname_np(th->thread_id, RSTRING_PTR(name), "%s");
-#elif defined(__APPLE__)
-    {
-	int mib[2] = {CTL_KERN, KERN_THREADNAME};
-	int r;
-# ifndef MAXTHREADNAMESIZE
-#  define MAXTHREADNAMESIZE 64
-# endif
-	int size_t len = RSTRING_LEN(name);
-	if (len > MAXTHREADNAMESIZE-1) len = MAXTHREADNAMESIZE-1;
-	r = sysctl(mib, 2, NULL, 0, RSTRING_PTR(name), len);
-	if (!r) rb_sys_fail("sysctl([CTL_KERN, KERN_THREADNAME],..)");
-    }
 # endif
 #elif defined(HAVE_PTHREAD_SET_NAME_NP) /* FreeBSD */
     pthread_set_name_np(th->thread_id, RSTRING_PTR(name));
