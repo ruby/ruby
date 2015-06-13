@@ -10,7 +10,7 @@ Sat Jun 13 17:35:11 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* vm.c (th_init): initialize th->name.
 
-	* thread.c (Init_Thread): add Thread.name and Thread.name=.
+	* thread.c (Init_Thread): add Thread.name and name=. [Feature #11251]
 
 	* thread.c (rb_thread_inspect): show thread's name if set.
 

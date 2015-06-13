@@ -51,6 +51,9 @@ with all sufficient information, see the ChangeLog file.
 * pack/unpack (Array/String)
   * j and J directives for pointer width integer type.  [Feature #11215]
 
+* Thread
+  * Thread#name, Thread#name are added to handle thread names [Feature #11251]
+
 
 === Stdlib updates (outstanding ones only)
 
