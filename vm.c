@@ -2126,6 +2126,8 @@ rb_thread_mark(void *ptr)
 				 sizeof(th->machine.regs) / sizeof(VALUE));
 	}
 
+	RUBY_MARK_UNLESS_NULL(th->name);
+
 	rb_vm_trace_mark_event_hooks(&th->event_hooks);
     }
 
