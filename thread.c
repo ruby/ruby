@@ -2719,7 +2719,7 @@ rb_thread_safe_level(VALUE thread)
  * call-seq:
  *   thr.name   -> string
  *
- * Dump the name, id, and status of _thr_ to a string.
+ * show the name of the thread.
  */
 
 static VALUE
@@ -2734,7 +2734,8 @@ rb_thread_getname(VALUE thread)
  * call-seq:
  *   thr.name=(name)   -> string
  *
- * Dump the name, id, and status of _thr_ to a string.
+ * set given name to the ruby thread.
+ * On some platform, it may set the name to pthread and/or kernel.
  */
 
 static VALUE
