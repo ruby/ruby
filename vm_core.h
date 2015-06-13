@@ -745,6 +745,7 @@ typedef struct rb_thread_struct {
     void *altstack;
 #endif
     unsigned long running_time_us;
+    VALUE name;
 } rb_thread_t;
 
 typedef enum {

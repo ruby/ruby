@@ -1046,4 +1046,11 @@ q.pop
       t.new {}
     end
   end
+
+  def test_thread_name
+    t = Thread.start { }
+    t.name = 'foo'
+    assert_equal 'foo', t.name
+    t.join
+  end
 end
