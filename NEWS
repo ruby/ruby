@@ -45,6 +45,10 @@ with all sufficient information, see the ChangeLog file.
     initial_state argument.  [Feature #10958]
     Use a local variable instead to maintain a state.
 
+* File::Stat
+  * On Windows, File::Stat.ino now returns
+    BY_HANDLE_FILE_INFORMATION.nFileIndexHigh/Low.
+
 * IO
   * IO#close doesn't raise when the IO object is closed.  [Feature #10718]
 
