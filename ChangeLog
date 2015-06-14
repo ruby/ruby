@@ -1,3 +1,9 @@
+Sun Jun 14 20:09:25 2015  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (time_getlocaltime): [DOC] Add examples of valid utc_offset
+	  formats.
+	  [ruby-core:68306] [Misc #10905] Patch by Charles Korn.
+
 Sun Jun 14 18:49:56 2015  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/raddrinfo.c (parse_numeric_port): Detect
