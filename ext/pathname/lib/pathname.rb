@@ -278,9 +278,17 @@ class Pathname
   #     #<Pathname:path/to/some>
   #     #<Pathname:path/to/some/file.rb>
   #
+  # Returns an Enumerator if no block was given.
+  #
+  #   enum = Pathname.new("/usr/bin/ruby").descend
+  #     # ... do stuff ...
+  #   enum.each { |e| ... }
+  #     # yields Pathnames /, /usr, /usr/bin, and /usr/bin/ruby.
+  #
   # It doesn't access the filesystem.
   #
   def descend
+    return to_enum(__method__) unless block_given?
     vs = []
     ascend {|v| vs << v }
     vs.reverse_each {|v| yield v }
@@ -303,9 +311,17 @@ class Pathname
   #     #<Pathname:path/to>
   #     #<Pathname:path>
   #
+  # Returns an Enumerator if no block was given.
+  #
+  #   enum = Pathname.new("/usr/bin/ruby").ascend
+  #     # ... do stuff ...
+  #   enum.each { |e| ... }
+  #     # yields Pathnames /usr/bin/ruby, /usr/bin, /usr, and /.
+  #
   # It doesn't access the filesystem.
   #
   def ascend
+    return to_enum(__method__) unless block_given?
     path = @path
     yield self
     while r = chop_basename(path)

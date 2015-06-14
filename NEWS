@@ -78,6 +78,10 @@ with all sufficient information, see the ChangeLog file.
   * OpenSSL::SSL::SSLSocket#accept_nonblock and
     OpenSSL::SSL::SSLSocket#connect_nonblock supports `exception: false`.
 
+* Pathname
+  * Pathname#descend and Pathname#ascend supported blockless form.
+    [Feature #11052]
+
 * io/wait
   * IO#wait_readable no longer checks FIONREAD, it may be used for
     non-bytestream IO such as listen sockets.
