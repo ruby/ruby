@@ -693,4 +693,17 @@ class TestRequire < Test::Unit::TestCase
       INPUT
     }
   end
+
+  def test_loading_fifo_threading
+    Tempfile.create(%w'fifo .rb') {|f|
+      f.close
+      File.unlink(f.path)
+      File.mkfifo(f.path)
+      assert_separately(["-", f.path], <<-END, timeout: 3)
+      th = Thread.current
+      Thread.start {0.1; th.raise(IOError)}
+      assert_raise(IOError) {load(ARGV[0])}
+      END
+    }
+  end
 end
