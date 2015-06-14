@@ -1,3 +1,16 @@
+Sat Jun 13 07:21:18 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread.c (thread_start_func_2): don't interrupt when last thread
+	  exit unless main thread is already exited. Otherwise main thread
+	  could be wrongly interrupted when it uses rb_thread_call_without_gvl().
+	  Patch by Takehiro Kubo. [Bug #11237][ruby-dev:49044][GH-898]
+
+	* test/-ext-/gvl/test_last_thread.rb: new test for the above fix.
+
+	* ext/-test-/gvl/call_without_gvl/call_without_gvl.c: new ext for
+	  the above test.
+	* ext/-test-/gvl/call_without_gvl/extconf.rb: ditto.
+
 Mon Jun 15 00:14:33 2015  Tanaka Akira  <akr@fsij.org>
 
 	* ext/pathname/lib/pathname.rb (descend): Blockless form supported.
