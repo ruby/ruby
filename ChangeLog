@@ -1,3 +1,13 @@
+Sun Jun 14 18:49:56 2015  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/raddrinfo.c (parse_numeric_port): Detect
+	  port overflow.
+	  (numeric_getaddrinfo): Use parse_numeric_port.
+	  numeric_getaddrinfo fails if port is too big now.
+	  This makes rb_getaddrinfo invokes the real getaddrinfo()
+	  on such condition.
+	  This change is related to [ruby-core:69355] [Bug #11179].
+
 Sun Jun 14 17:26:03 2015  Tanaka Akira  <akr@fsij.org>
 
 	* enum.c (enum_chunk_while): New method Enumerable#chunk_while.
