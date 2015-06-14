@@ -1,3 +1,8 @@
+Sun Jun 14 17:20:40 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_file_load_ok): try opening file without gvl not to
+	  lock entire process.  [Bug #11060]
+
 Sun Jun 14 10:43:50 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* tool/runruby.rb: just remove the lines of RUBY_VERSION check and raise
