@@ -154,6 +154,7 @@ struct getaddrinfo_arg
     struct addrinfo **res;
 };
 
+#ifdef HAVE_INET_PTON
 static int
 parse_numeric_port(const char *service, int *portp)
 {
@@ -179,6 +180,7 @@ parse_numeric_port(const char *service, int *portp)
 
     return 1;
 }
+#endif
 
 static void *
 nogvl_getaddrinfo(void *arg)
