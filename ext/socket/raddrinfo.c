@@ -154,6 +154,32 @@ struct getaddrinfo_arg
     struct addrinfo **res;
 };
 
+static int
+parse_numeric_port(const char *service, int *portp)
+{
+    unsigned long u;
+
+    if (!service) {
+        *portp = 0;
+        return 1;
+    }
+
+    if (strspn(service, "0123456789") != strlen(service))
+        return 0;
+
+    errno = 0;
+    u = STRTOUL(service, NULL, 10);
+    if (errno)
+        return 0;
+
+    if (0x10000 <= u)
+        return 0;
+
+    *portp = u;
+
+    return 1;
+}
+
 static void *
 nogvl_getaddrinfo(void *arg)
 {
@@ -181,7 +207,9 @@ numeric_getaddrinfo(const char *node, const char *service,
 #   define inet_pton(f,s,d)        rb_w32_inet_pton(f,s,d)
 # endif
 
-    if (node && (!service || strspn(service, "0123456789") == strlen(service))) {
+    int port;
+
+    if (node && parse_numeric_port(service, &port)) {
 	static const struct {
 	    int socktype;
 	    int protocol;
@@ -191,7 +219,6 @@ numeric_getaddrinfo(const char *node, const char *service,
 	    { SOCK_RAW, 0 }
 	};
 	struct addrinfo *ai = NULL;
-        int port = service ? (unsigned short)atoi(service): 0;
         int hint_family = hints ? hints->ai_family : PF_UNSPEC;
         int hint_socktype = hints ? hints->ai_socktype : 0;
         int hint_protocol = hints ? hints->ai_protocol : 0;
