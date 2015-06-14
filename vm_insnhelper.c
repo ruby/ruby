@@ -186,16 +186,16 @@ lep_svar_set(rb_thread_t *th, VALUE *lep, rb_num_t key, VALUE val)
 
     switch (key) {
       case 0:
-	svar->u1.value = val;
+	RB_OBJ_WRITE(svar, &svar->u1.value, val);
 	return;
       case 1:
-	svar->u2.value = val;
+	RB_OBJ_WRITE(svar, &svar->u2.value, val);
 	return;
       default: {
 	VALUE ary = svar->u3.value;
 
 	if (NIL_P(ary)) {
-	    svar->u3.value = ary = rb_ary_new();
+	    RB_OBJ_WRITE(svar, &svar->u3.value, ary = rb_ary_new());
 	}
 	rb_ary_store(ary, key - DEFAULT_SPECIAL_VAR_COUNT, val);
       }
