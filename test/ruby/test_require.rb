@@ -701,7 +701,7 @@ class TestRequire < Test::Unit::TestCase
       File.mkfifo(f.path)
       assert_separately(["-", f.path], <<-END, timeout: 3)
       th = Thread.current
-      Thread.start {0.1; th.raise(IOError)}
+      Thread.start {begin sleep(0.001) end until th.stop?; th.raise(IOError)}
       assert_raise(IOError) {load(ARGV[0])}
       END
     }
