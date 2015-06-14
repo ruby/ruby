@@ -175,7 +175,7 @@ parse_numeric_port(const char *service, int *portp)
     if (0x10000 <= u)
         return 0;
 
-    *portp = u;
+    *portp = (int)u;
 
     return 1;
 }
