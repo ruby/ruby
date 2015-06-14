@@ -1,3 +1,9 @@
+Sun Jun 14 10:13:55 2015  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/source.rb (REXML::IOSource#scan): Fix a typo in
+	  document. [fix GH-934]
+	  Patch by Anton Davydov. Thanks!!!
+
 Sun Jun 14 10:09:48 2015  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/attlistdecl.rb (REXML::AttlistDecl): Fix a typo in
