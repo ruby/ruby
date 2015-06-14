@@ -705,5 +705,5 @@ class TestRequire < Test::Unit::TestCase
       assert_raise(IOError) {load(ARGV[0])}
       END
     }
-  end
+  end unless /mswin|mingw/ =~ RUBY_PLATFORM
 end
