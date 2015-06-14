@@ -1,6 +1,5 @@
 #include "ruby/ruby.h"
 #include "ruby/thread.h"
-#include <sys/select.h>
 
 static void*
 native_sleep_callback(void *data)
