@@ -36,31 +36,31 @@ class TestPrime < Test::Unit::TestCase
       end
 
       # Prime number theorem
-      assert primes.length >= max/Math.log(max)
+      assert_operator primes.length, :>=, max/Math.log(max)
       delta = 0.05
       li = (2..max).step(delta).inject(0){|sum,x| sum + delta/Math.log(x)}
-      assert primes.length <= li
+      assert_operator primes.length, :<=, li
     end
   end
 
   def test_each_without_block
     enum = Prime.each
-    assert enum.respond_to?(:each)
-    assert enum.kind_of?(Enumerable)
-    assert enum.respond_to?(:with_index)
-    assert enum.respond_to?(:next)
-    assert enum.respond_to?(:succ)
-    assert enum.respond_to?(:rewind)
+    assert_respond_to(enum, :each)
+    assert_kind_of(Enumerable, enum)
+    assert_respond_to(enum, :with_index)
+    assert_respond_to(enum, :next)
+    assert_respond_to(enum, :succ)
+    assert_respond_to(enum, :rewind)
   end
 
   def test_instance_without_block
     enum = Prime.instance.each
-    assert enum.respond_to?(:each)
-    assert enum.kind_of?(Enumerable)
-    assert enum.respond_to?(:with_index)
-    assert enum.respond_to?(:next)
-    assert enum.respond_to?(:succ)
-    assert enum.respond_to?(:rewind)
+    assert_respond_to(enum, :each)
+    assert_kind_of(Enumerable, enum)
+    assert_respond_to(enum, :with_index)
+    assert_respond_to(enum, :next)
+    assert_respond_to(enum, :succ)
+    assert_respond_to(enum, :rewind)
   end
 
   def test_new
@@ -114,8 +114,8 @@ class TestPrime < Test::Unit::TestCase
   end
 
   def test_default_instance_does_not_have_compatibility_methods
-    assert !Prime.instance.respond_to?(:succ)
-    assert !Prime.instance.respond_to?(:next)
+    assert_not_respond_to(Prime.instance, :succ)
+    assert_not_respond_to(Prime.instance, :next)
   end
 
   class TestInteger < Test::Unit::TestCase
@@ -135,36 +135,36 @@ class TestPrime < Test::Unit::TestCase
 
     def test_prime?
       # zero and unit
-      assert !0.prime?
-      assert !1.prime?
+      assert_not_predicate(0, :prime?)
+      assert_not_predicate(1, :prime?)
 
       # small primes
-      assert 2.prime?
-      assert 3.prime?
+      assert_predicate(2, :prime?)
+      assert_predicate(3, :prime?)
 
       # squared prime
-      assert !4.prime?
-      assert !9.prime?
+      assert_not_predicate(4, :prime?)
+      assert_not_predicate(9, :prime?)
 
       # mersenne numbers
-      assert((2**31-1).prime?)
-      assert !(2**32-1).prime?
+      assert_predicate((2**31-1), :prime?)
+      assert_not_predicate((2**32-1), :prime?)
 
       # fermat numbers
-      assert((2**(2**4)+1).prime?)
-      assert !(2**(2**5)+1).prime? # Euler!
+      assert_predicate((2**(2**4)+1), :prime?)
+      assert_not_predicate((2**(2**5)+1), :prime?) # Euler!
 
       # large composite
-      assert !((2**13-1) * (2**17-1)).prime?
+      assert_not_predicate(((2**13-1) * (2**17-1)), :prime?)
 
       # factorial
-      assert !(2...100).inject(&:*).prime?
+      assert_not_predicate((2...100).inject(&:*), :prime?)
 
       # negative
-      assert !-1.prime?
-      assert !-2.prime?
-      assert !-3.prime?
-      assert !-4.prime?
+      assert_not_predicate(-1, :prime?)
+      assert_not_predicate(-2, :prime?)
+      assert_not_predicate(-3, :prime?)
+      assert_not_predicate(-4, :prime?)
     end
   end
 
