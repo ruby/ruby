@@ -3255,6 +3255,7 @@ struct slicewhen_arg {
     VALUE prev_elt;
     VALUE prev_elts;
     VALUE yielder;
+    int inverted; /* 0 for slice_when and 1 for chunk_while. */
 };
 
 static VALUE
@@ -3275,6 +3276,9 @@ slicewhen_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, _memo))
     else {
         split_p = RTEST(rb_funcall(memo->pred, id_call, 2, memo->prev_elt, i));
         UPDATE_MEMO;
+
+        if (memo->inverted)
+            split_p = !split_p;
 
         if (split_p) {
             rb_funcall(memo->yielder, id_lshift, 1, memo->prev_elts);
@@ -3304,6 +3308,7 @@ slicewhen_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
     memo->prev_elt = Qundef;
     memo->prev_elts = Qnil;
     memo->yielder = yielder;
+    memo->inverted = RTEST(rb_attr_get(enumerator, rb_intern("slicewhen_inverted")));
 
     rb_block_call(enumerable, id_each, 0, 0, slicewhen_ii, arg);
     memo = MEMO_FOR(struct slicewhen_arg, arg);
@@ -3383,6 +3388,71 @@ enum_slice_when(VALUE enumerable)
     enumerator = rb_obj_alloc(rb_cEnumerator);
     rb_ivar_set(enumerator, rb_intern("slicewhen_enum"), enumerable);
     rb_ivar_set(enumerator, rb_intern("slicewhen_pred"), pred);
+    rb_ivar_set(enumerator, rb_intern("slicewhen_inverted"), Qfalse);
+
+    rb_block_call(enumerator, idInitialize, 0, 0, slicewhen_i, enumerator);
+    return enumerator;
+}
+
+/*
+ *  call-seq:
+ *     enum.chunk_while {|elt_before, elt_after| bool } -> an_enumerator
+ *
+ *  Creates an enumerator for each chunked elements.
+ *  The beginnings of chunks are defined by the block.
+ *
+ *  This method split each chunk using adjacent elements,
+ *  _elt_before_ and _elt_after_,
+ *  in the receiver enumerator.
+ *  This method split chunks between _elt_before_ and _elt_after_ where
+ *  the block returns false.
+ *
+ *  The block is called the length of the receiver enumerator minus one.
+ *
+ *  The result enumerator yields the chunked elements as an array.
+ *  So +each+ method can be called as follows:
+ *
+ *    enum.chunk_while { |elt_before, elt_after| bool }.each { |ary| ... }
+ *
+ *  Other methods of the Enumerator class and Enumerable module,
+ *  such as +to_a+, +map+, etc., are also usable.
+ *
+ *  For example, one-by-one increasing subsequence can be chunked as follows:
+ *
+ *    a = [1,2,4,9,10,11,12,15,16,19,20,21]
+ *    b = a.chunk_while {|i, j| i+1 == j }
+ *    p b.to_a #=> [[1, 2], [4], [9, 10, 11, 12], [15, 16], [19, 20, 21]]
+ *    c = b.map {|a| a.length < 3 ? a : "#{a.first}-#{a.last}" }
+ *    p c #=> [[1, 2], [4], "9-12", [15, 16], "19-21"]
+ *    d = c.join(",")
+ *    p d #=> "1,2,4,9-12,15,16,19-21"
+ *
+ *  Increasing (non-decreasing) subsequence can be chunked as follows:
+ *
+ *    a = [0, 9, 2, 2, 3, 2, 7, 5, 9, 5]
+ *    p a.chunk_while {|i, j| i <= j }.to_a
+ *    #=> [[0, 9], [2, 2, 3], [2, 7], [5, 9], [5]]
+ *
+ *  Adjacent evens and odds can be chunked as follows:
+ *  (Enumerable#chunk is another way to do it.)
+ *
+ *    a = [7, 5, 9, 2, 0, 7, 9, 4, 2, 0]
+ *    p a.chunk_while {|i, j| i.even? == j.even? }.to_a
+ *    #=> [[7, 5, 9], [2, 0], [7, 9], [4, 2, 0]]
+ *
+ */
+static VALUE
+enum_chunk_while(VALUE enumerable)
+{
+    VALUE enumerator;
+    VALUE pred;
+
+    pred = rb_block_proc();
+
+    enumerator = rb_obj_alloc(rb_cEnumerator);
+    rb_ivar_set(enumerator, rb_intern("slicewhen_enum"), enumerable);
+    rb_ivar_set(enumerator, rb_intern("slicewhen_pred"), pred);
+    rb_ivar_set(enumerator, rb_intern("slicewhen_inverted"), Qtrue);
 
     rb_block_call(enumerator, idInitialize, 0, 0, slicewhen_i, enumerator);
     return enumerator;
@@ -3459,6 +3529,7 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable, "slice_before", enum_slice_before, -1);
     rb_define_method(rb_mEnumerable, "slice_after", enum_slice_after, -1);
     rb_define_method(rb_mEnumerable, "slice_when", enum_slice_when, 0);
+    rb_define_method(rb_mEnumerable, "chunk_while", enum_chunk_while, 0);
 
     id_next = rb_intern("next");
     id_call = rb_intern("call");

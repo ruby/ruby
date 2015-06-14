@@ -1,3 +1,8 @@
+Sun Jun 14 17:26:03 2015  Tanaka Akira  <akr@fsij.org>
+
+	* enum.c (enum_chunk_while): New method Enumerable#chunk_while.
+	  [ruby-core:67738] [Feature #10769] proposed by Tsuyoshi Sawada.
+
 Sun Jun 14 17:20:40 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_load_ok): try opening file without gvl not to
