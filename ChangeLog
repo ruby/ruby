@@ -1,3 +1,9 @@
+Sun Jun 14 10:43:50 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* tool/runruby.rb: just remove the lines of RUBY_VERSION check and raise
+	  instead of replacing the check to `true`, for getting rid of a
+	  warning `possibly useless use of true in void context`.
+
 Sun Jun 14 10:13:55 2015  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/source.rb (REXML::IOSource#scan): Fix a typo in
