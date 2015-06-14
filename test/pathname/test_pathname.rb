@@ -430,7 +430,7 @@ class TestPathname < Test::Unit::TestCase
   end
 
   def descend(path)
-    Pathname.new(path).enum_for(:descend).map {|v| v.to_s }
+    Pathname.new(path).descend.map(&:to_s)
   end
 
   defassert(:descend, %w[/ /a /a/b /a/b/c], "/a/b/c")
@@ -439,13 +439,21 @@ class TestPathname < Test::Unit::TestCase
   defassert(:descend, %w[a/], "a/")
 
   def ascend(path)
-    Pathname.new(path).enum_for(:ascend).map {|v| v.to_s }
+    Pathname.new(path).ascend.map(&:to_s)
   end
 
   defassert(:ascend, %w[/a/b/c /a/b /a /], "/a/b/c")
   defassert(:ascend, %w[a/b/c a/b a], "a/b/c")
   defassert(:ascend, %w[./a/b/c ./a/b ./a .], "./a/b/c")
   defassert(:ascend, %w[a/], "a/")
+
+  def test_blockless_ascend_is_enumerator
+    assert_kind_of(Enumerator, Pathname.new('a').ascend)
+  end
+
+  def test_blockless_descend_is_enumerator
+    assert_kind_of(Enumerator, Pathname.new('a').descend)
+  end
 
   def test_initialize
     p1 = Pathname.new('a')
