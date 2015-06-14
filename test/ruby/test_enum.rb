@@ -659,6 +659,11 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal([[1], [4], [9,10,11,12], [15,16], [19,20,21]], e.to_a)
   end
 
+  def test_chunk_while_contiguously_increasing_integers
+    e = [1,4,9,10,11,12,15,16,19,20,21].chunk_while {|i, j| i+1 == j }
+    assert_equal([[1], [4], [9,10,11,12], [15,16], [19,20,21]], e.to_a)
+  end
+
   def test_detect
     @obj = ('a'..'z')
     assert_equal('c', @obj.detect {|x| x == 'c' })
