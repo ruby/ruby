@@ -337,7 +337,7 @@ def read_single_cc_deps(path_i, cwd)
     files.delete compiler_wd
     compiler_wd = Pathname(compiler_wd.sub(%r{//\z}, ''))
   else
-    raise "compiler working directory not found"
+    raise "compiler working directory not found: #{path_i}"
   end
   deps = []
   files.each_key {|dep|
