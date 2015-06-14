@@ -3581,6 +3581,8 @@ time_fixoff(VALUE time)
  *  local time (using the local time zone in effect for this process).
  *
  *  If +utc_offset+ is given, it is used instead of the local time.
+ *  +utc_offset+ can be given as a human-readable string (eg. <code>"+09:00"</code>)
+ *  or as a number of seconds (eg. <code>32400</code>).
  *
  *     t = Time.utc(2000,1,1,20,15,1)  #=> 2000-01-01 20:15:01 UTC
  *     t.utc?                          #=> true
@@ -3592,6 +3594,10 @@ time_fixoff(VALUE time)
  *     j = t.getlocal("+09:00")        #=> 2000-01-02 05:15:01 +0900
  *     j.utc?                          #=> false
  *     t == j                          #=> true
+ *
+ *     k = t.getlocal(9*60*60)         #=> 2000-01-02 05:15:01 +0900
+ *     k.utc?                          #=> false
+ *     t == k                          #=> true
  */
 
 static VALUE
