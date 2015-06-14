@@ -17,9 +17,9 @@ class TestUnicodeNormalize < Test::Unit::TestCase
     .collect.with_index { |linedata, linenumber| [linedata, linenumber]}
     .reject { |line| line[0] =~ /^[\#@]/ }
     .collect do |line|
-      NormTest.new *(line[0].split(';').take(5).collect do |code_string|
+      NormTest.new(*(line[0].split(';').take(5).collect do |code_string|
         code_string.split(/\s/).collect { |cp| cp.to_i(16) }.pack('U*')
-      end + [line[1]+1])
+      end + [line[1]+1]))
     end
   end
 
