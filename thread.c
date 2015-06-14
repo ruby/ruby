@@ -629,7 +629,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 
 	/* delete self other than main thread from living_threads */
 	rb_vm_living_threads_remove(th->vm, th);
-	if (rb_thread_alone()) {
+	if (main_th->status == THREAD_KILLED && rb_thread_alone()) {
 	    /* I'm last thread. wake up main thread from rb_thread_terminate_all */
 	    rb_threadptr_interrupt(main_th);
 	}
