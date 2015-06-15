@@ -364,6 +364,10 @@ class TC_Set < Test::Unit::TestCase
 
       ary.empty? or raise "forgotten elements: #{ary.join(', ')}"
     }
+
+    assert_equal(6, e.size)
+    set << 42
+    assert_equal(7, e.size)
   end
 
   def test_add
@@ -668,6 +672,29 @@ class TC_SortedSet < Test::Unit::TestCase
     assert_same(nil, ret)
     assert_equal(['four', 'one', 'three', 'two'], s.to_a)
     assert_equal(['four', 'one', 'three', 'two'], a)
+  end
+
+  def test_each
+    ary = [1,3,5,7,10,20]
+    set = SortedSet.new(ary)
+
+    ret = set.each { |o| }
+    assert_same(set, ret)
+
+    e = set.each
+    assert_instance_of(Enumerator, e)
+
+    assert_nothing_raised {
+      set.each { |o|
+        ary.delete(o) or raise "unexpected element: #{o}"
+      }
+
+      ary.empty? or raise "forgotten elements: #{ary.join(', ')}"
+    }
+
+    assert_equal(6, e.size)
+    set << 42
+    assert_equal(7, e.size)
   end
 end
 
