@@ -1,3 +1,8 @@
+Mon Jun 15 02:26:34 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/net/http.rb (Net::HTTP#connect): use connect_nonblock and
+	  io/wait to eliminate timeout use. fix GH-899
+
 Sat Jun 13 07:21:18 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread.c (thread_start_func_2): don't interrupt when last thread
