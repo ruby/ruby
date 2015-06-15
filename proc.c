@@ -37,7 +37,7 @@ static int method_min_max_arity(VALUE, int *max);
 
 /* Proc */
 
-#define IS_METHOD_PROC_ISEQ(iseq) (RB_TYPE_P((VALUE)(iseq), T_IMEMO) && ((struct vm_ifunc *)(iseq))->func == bmcall)
+#define IS_METHOD_PROC_ISEQ(iseq) (RUBY_VM_IFUNC_P(iseq) && ((struct vm_ifunc *)(iseq))->func == bmcall)
 
 static void
 proc_mark(void *ptr)
@@ -1659,6 +1659,7 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
     const rb_cref_t *cref = rb_vm_cref_in_context(mod, mod);
     const rb_scope_visibility_t default_scope_visi = {METHOD_VISI_PUBLIC, FALSE};
     const rb_scope_visibility_t *scope_visi = &default_scope_visi;
+    int is_method = FALSE;
 
     if (cref) {
 	scope_visi = CREF_SCOPE_VISI(cref);
@@ -1672,14 +1673,15 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
 	rb_check_arity(argc, 1, 2);
 	id = rb_to_id(argv[0]);
 	body = argv[1];
-	if (!rb_obj_is_method(body) && !rb_obj_is_proc(body)) {
+	is_method = rb_obj_is_method(body) != Qfalse;
+	if (!is_method && !rb_obj_is_proc(body)) {
 	    rb_raise(rb_eTypeError,
 		     "wrong argument type %s (expected Proc/Method)",
 		     rb_obj_classname(body));
 	}
     }
 
-    if (rb_obj_is_method(body)) {
+    if (is_method) {
 	struct METHOD *method = (struct METHOD *)DATA_PTR(body);
 	VALUE rclass = method->rclass;
 	if (rclass != mod && !RB_TYPE_P(rclass, T_MODULE) &&
@@ -1700,7 +1702,7 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
 	}
 	RB_GC_GUARD(body);
     }
-    else if (rb_obj_is_proc(body)) {
+    else {
 	rb_proc_t *proc;
 	body = proc_dup(body);
 	GetProcPtr(body, proc);
@@ -1715,10 +1717,6 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
 	if (scope_visi->module_func) {
 	    rb_add_method(rb_singleton_class(mod), id, VM_METHOD_TYPE_BMETHOD, (void *)body, METHOD_VISI_PUBLIC);
 	}
-    }
-    else {
-	/* type error */
-	rb_raise(rb_eTypeError, "wrong argument type (expected Proc/Method)");
     }
 
     return ID2SYM(id);
