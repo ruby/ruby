@@ -426,9 +426,9 @@ eom
         # really is it succeed?
         unless ignore_stderr
           # the body of assert_separately must not output anything to detect error
-          assert_equal("", stderr, "assert_separately failed with error message")
+          assert(stderr.empty?, FailDesc[status, "assert_separately failed with error message", stderr])
         end
-        assert_equal(0, status, "assert_separately failed: '#{stderr}'")
+        assert(status.success?, FailDesc[status, "assert_separately failed", stderr])
         raise marshal_error if marshal_error
       end
 
