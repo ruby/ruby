@@ -131,13 +131,16 @@ unix_path(VALUE sock)
 
 /*
  * call-seq:
- *   unixsocket.recvfrom(maxlen [, flags]) => [mesg, unixaddress]
+ *   unixsocket.recvfrom(maxlen [, flags[, outbuf]) => [mesg, unixaddress]
  *
  * Receives a message via _unixsocket_.
  *
  * _maxlen_ is the maximum number of bytes to receive.
  *
  * _flags_ should be a bitwise OR of Socket::MSG_* constants.
+ *
+ * _outbuf_ will contain only the received data after the method call
+ * even if it is not empty at the beginning.
  *
  *   s1 = Socket.new(:UNIX, :DGRAM, 0)
  *   s1_ai = Addrinfo.unix("/tmp/sock1")

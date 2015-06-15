@@ -615,14 +615,16 @@ bsock_do_not_reverse_lookup_set(VALUE sock, VALUE state)
 
 /*
  * call-seq:
- *   basicsocket.recv(maxlen) => mesg
- *   basicsocket.recv(maxlen, flags) => mesg
+ *   basicsocket.recv(maxlen[, flags[, outbuf]]) => mesg
  *
  * Receives a message.
  *
  * _maxlen_ is the maximum number of bytes to receive.
  *
  * _flags_ should be a bitwise OR of Socket::MSG_* constants.
+ *
+ * _outbuf_ will contain only the received data after the method call
+ * even if it is not empty at the beginning.
  *
  *   UNIXSocket.pair {|s1, s2|
  *     s1.puts "Hello World"

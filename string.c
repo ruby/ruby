@@ -2107,7 +2107,7 @@ rb_str_unlocktmp(VALUE str)
     return str;
 }
 
-VALUE
+RUBY_FUNC_EXPORTED VALUE
 rb_str_locktmp_ensure(VALUE str, VALUE (*func)(VALUE), VALUE arg)
 {
     rb_str_locktmp(str);

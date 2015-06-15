@@ -108,21 +108,48 @@ recvfrom_blocking(void *data)
     return (VALUE)ret;
 }
 
+static VALUE
+rsock_strbuf(VALUE str, long buflen)
+{
+    long len;
+
+    if (NIL_P(str)) return rb_tainted_str_new(0, buflen);
+
+    StringValue(str);
+    len = RSTRING_LEN(str);
+    if (len >= buflen) {
+	rb_str_modify(str);
+    } else {
+	rb_str_modify_expand(str, buflen - len);
+    }
+    rb_str_set_len(str, buflen);
+    return str;
+}
+
+static VALUE
+recvfrom_locktmp(VALUE v)
+{
+    struct recvfrom_arg *arg = (struct recvfrom_arg *)v;
+
+    return rb_thread_io_blocking_region(recvfrom_blocking, arg, arg->fd);
+}
+
 VALUE
 rsock_s_recvfrom(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from)
 {
     rb_io_t *fptr;
-    VALUE str, klass;
+    VALUE str;
     struct recvfrom_arg arg;
     VALUE len, flg;
     long buflen;
     long slen;
 
-    rb_scan_args(argc, argv, "11", &len, &flg);
+    rb_scan_args(argc, argv, "12", &len, &flg, &str);
 
     if (flg == Qnil) arg.flags = 0;
     else             arg.flags = NUM2INT(flg);
     buflen = NUM2INT(len);
+    str = rsock_strbuf(str, buflen);
 
     GetOpenFile(sock, fptr);
     if (rb_io_read_pending(fptr)) {
@@ -130,24 +157,18 @@ rsock_s_recvfrom(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from)
     }
     arg.fd = fptr->fd;
     arg.alen = (socklen_t)sizeof(arg.buf);
-
-    arg.str = str = rb_tainted_str_new(0, buflen);
-    klass = RBASIC(str)->klass;
-    rb_obj_hide(str);
+    arg.str = str;
 
     while (rb_io_check_closed(fptr),
 	   rsock_maybe_wait_fd(arg.fd),
-	   (slen = BLOCKING_REGION_FD(recvfrom_blocking, &arg)) < 0) {
+	   (slen = (long)rb_str_locktmp_ensure(str, recvfrom_locktmp,
+	                                       (VALUE)&arg)) < 0) {
         if (!rb_io_wait_readable(fptr->fd)) {
             rb_sys_fail("recvfrom(2)");
         }
-	if (RBASIC(str)->klass || RSTRING_LEN(str) != buflen) {
-	    rb_raise(rb_eRuntimeError, "buffer string modified");
-	}
     }
 
-    rb_obj_reveal(str, klass);
-    if (slen < RSTRING_LEN(str)) {
+    if (slen != RSTRING_LEN(str)) {
 	rb_str_set_len(str, slen);
     }
     rb_obj_taint(str);
@@ -191,11 +212,12 @@ rsock_s_recvfrom_nonblock(VALUE sock, int argc, VALUE *argv, enum sock_recv_type
     VALUE opts = Qnil;
     socklen_t len0;
 
-    rb_scan_args(argc, argv, "11:", &len, &flg, &opts);
+    rb_scan_args(argc, argv, "12:", &len, &flg, &str, &opts);
 
     if (flg == Qnil) flags = 0;
     else             flags = NUM2INT(flg);
     buflen = NUM2INT(len);
+    str = rsock_strbuf(str, buflen);
 
 #ifdef MSG_DONTWAIT
     /* MSG_DONTWAIT avoids the race condition between fcntl and recvfrom.
@@ -208,8 +230,6 @@ rsock_s_recvfrom_nonblock(VALUE sock, int argc, VALUE *argv, enum sock_recv_type
 	rb_raise(rb_eIOError, "recvfrom for buffered IO");
     }
     fd = fptr->fd;
-
-    str = rb_tainted_str_new(0, buflen);
 
     rb_io_check_closed(fptr);
 
@@ -233,7 +253,7 @@ rsock_s_recvfrom_nonblock(VALUE sock, int argc, VALUE *argv, enum sock_recv_type
 	}
 	rb_sys_fail("recvfrom(2)");
     }
-    if (slen < RSTRING_LEN(str)) {
+    if (slen != RSTRING_LEN(str)) {
 	rb_str_set_len(str, slen);
     }
     rb_obj_taint(str);
