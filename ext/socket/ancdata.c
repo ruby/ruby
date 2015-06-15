@@ -3,6 +3,7 @@
 #include <time.h>
 
 int rsock_cmsg_cloexec_state = -1; /* <0: unknown, 0: ignored, >0: working */
+static VALUE sym_exception, sym_wait_readable, sym_wait_writable;
 
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
 static VALUE rb_cAncillaryData;
@@ -1133,6 +1134,7 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
     VALUE data, vflags, dest_sockaddr;
     struct msghdr mh;
     struct iovec iov;
+    VALUE opts = Qnil;
     VALUE controls = Qnil;
     int controls_num;
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
@@ -1152,7 +1154,8 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
     if (argc == 0)
         rb_raise(rb_eArgError, "mesg argument required");
 
-    rb_scan_args(argc, argv, "12*", &data, &vflags, &dest_sockaddr, &controls);
+    rb_scan_args(argc, argv, "12*:", &data, &vflags, &dest_sockaddr, &controls,
+                 &opts);
 
     StringValue(data);
     controls_num = RARRAY_LENINT(controls);
@@ -1281,8 +1284,13 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
             rb_io_check_closed(fptr);
             goto retry;
         }
-        if (nonblock && (errno == EWOULDBLOCK || errno == EAGAIN))
-            rb_readwrite_sys_fail(RB_IO_WAIT_WRITABLE, "sendmsg(2) would block");
+        if (nonblock && (errno == EWOULDBLOCK || errno == EAGAIN)) {
+	    if (rsock_opt_false_p(opts, sym_exception)) {
+		return sym_wait_writable;
+	    }
+	    rb_readwrite_sys_fail(RB_IO_WAIT_WRITABLE,
+				  "sendmsg(2) would block");
+	}
 	rb_sys_fail("sendmsg(2)");
     }
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
@@ -1336,7 +1344,7 @@ rsock_bsock_sendmsg(int argc, VALUE *argv, VALUE sock)
 #if defined(HAVE_SENDMSG)
 /*
  * call-seq:
- *    basicsocket.sendmsg_nonblock(mesg, flags=0, dest_sockaddr=nil, *controls) => numbytes_sent
+ *    basicsocket.sendmsg_nonblock(mesg, flags=0, dest_sockaddr=nil, *controls, opts={}) => numbytes_sent
  *
  * sendmsg_nonblock sends a message using sendmsg(2) system call in non-blocking manner.
  *
@@ -1344,6 +1352,9 @@ rsock_bsock_sendmsg(int argc, VALUE *argv, VALUE sock)
  * but the non-blocking flag is set before the system call
  * and it doesn't retry the system call.
  *
+ * By specifying `exception: false`, the _opts_ hash allows you to indicate
+ * that sendmsg_nonblock should not raise an IO::WaitWritable exception, but
+ * return the symbol :wait_writable instead.
  */
 VALUE
 rsock_bsock_sendmsg_nonblock(int argc, VALUE *argv, VALUE sock)
@@ -1602,8 +1613,12 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
             rb_io_check_closed(fptr);
             goto retry;
         }
-        if (nonblock && (errno == EWOULDBLOCK || errno == EAGAIN))
+        if (nonblock && (errno == EWOULDBLOCK || errno == EAGAIN)) {
+            if (rsock_opt_false_p(vopts, sym_exception)) {
+                return sym_wait_readable;
+            }
             rb_readwrite_sys_fail(RB_IO_WAIT_READABLE, "recvmsg(2) would block");
+        }
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
         if (!gc_done && (errno == EMFILE || errno == EMSGSIZE)) {
           /*
@@ -1788,6 +1803,9 @@ rsock_bsock_recvmsg(int argc, VALUE *argv, VALUE sock)
  * but non-blocking flag is set before the system call
  * and it doesn't retry the system call.
  *
+ * By specifying `exception: false`, the _opts_ hash allows you to indicate
+ * that recvmsg_nonblock should not raise an IO::WaitWritable exception, but
+ * return the symbol :wait_writable instead.
  */
 VALUE
 rsock_bsock_recvmsg_nonblock(int argc, VALUE *argv, VALUE sock)
@@ -1833,4 +1851,8 @@ rsock_init_ancdata(void)
     rb_define_method(rb_cAncillaryData, "ipv6_pktinfo_addr", ancillary_ipv6_pktinfo_addr, 0);
     rb_define_method(rb_cAncillaryData, "ipv6_pktinfo_ifindex", ancillary_ipv6_pktinfo_ifindex, 0);
 #endif
+#undef rb_intern
+    sym_exception = ID2SYM(rb_intern("exception"));
+    sym_wait_readable = ID2SYM(rb_intern("wait_readable"));
+    sym_wait_writable = ID2SYM(rb_intern("wait_writable"));
 }

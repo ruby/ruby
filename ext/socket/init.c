@@ -188,9 +188,10 @@ rsock_s_recvfrom_nonblock(VALUE sock, int argc, VALUE *argv, enum sock_recv_type
     long slen;
     int fd, flags;
     VALUE addr = Qnil;
+    VALUE opts = Qnil;
     socklen_t len0;
 
-    rb_scan_args(argc, argv, "11", &len, &flg);
+    rb_scan_args(argc, argv, "11:", &len, &flg, &opts);
 
     if (flg == Qnil) flags = 0;
     else             flags = NUM2INT(flg);
@@ -226,6 +227,8 @@ rsock_s_recvfrom_nonblock(VALUE sock, int argc, VALUE *argv, enum sock_recv_type
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
 	  case EWOULDBLOCK:
 #endif
+            if (rsock_opt_false_p(opts, sym_exception))
+		return sym_wait_readable;
             rb_readwrite_sys_fail(RB_IO_WAIT_READABLE, "recvfrom(2) would block");
 	}
 	rb_sys_fail("recvfrom(2)");
@@ -528,13 +531,9 @@ rsock_s_accept_nonblock(int argc, VALUE *argv, VALUE klass, rb_io_t *fptr,
 			struct sockaddr *sockaddr, socklen_t *len)
 {
     int fd2;
-    int ex = 1;
     VALUE opts = Qnil;
 
     rb_scan_args(argc, argv, "0:", &opts);
-
-    if (!NIL_P(opts) && Qfalse == rb_hash_lookup2(opts, sym_exception, Qundef))
-	ex = 0;
 
     rb_secure(3);
     rb_io_set_nonblock(fptr);
@@ -549,7 +548,7 @@ rsock_s_accept_nonblock(int argc, VALUE *argv, VALUE klass, rb_io_t *fptr,
 #if defined EPROTO
 	  case EPROTO:
 #endif
-            if (!ex)
+            if (rsock_opt_false_p(opts, sym_exception))
 		return sym_wait_readable;
             rb_readwrite_sys_fail(RB_IO_WAIT_READABLE, "accept(2) would block");
 	}

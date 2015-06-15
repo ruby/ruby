@@ -1,3 +1,18 @@
+Tue Jun 16 04:38:02 2015  Eric Wong  <e@80x24.org>
+
+	* ext/socket/ancdata.c (bsock_sendmsg_internal,
+	  bsock_recvmsg_internal):
+	  support "exception: false" kwarg
+	* ext/socket/init.c (rsock_s_recvfrom_nonblock):
+	  ditto
+	* ext/socket/init.c (rsock_s_recvfrom_nonblock): use rsock_opt_false_p
+	* ext/socket/socket.c (sock_connect_nonblock): ditto
+	* ext/socket/rubysocket.h (rsock_opt_false_p): new function
+	* ext/socket/basicsocket.c (bsock_recv_nonblock): update rdoc
+	* ext/socket/udpsocket.c (udp_recvfrom_nonblock): ditto
+	* test/socket/test_nonblock.rb: new tests
+	  [ruby-core:69542] [Feature #11229]
+
 Mon Jun 15 14:33:02 2015  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/set.rb: Make Set#each and SortedSet#each generate a sized

@@ -1,6 +1,7 @@
 begin
   require "socket"
   require "io/nonblock"
+  require "io/wait"
 rescue LoadError
 end
 
@@ -275,12 +276,44 @@ class TestSocketNonblock < Test::Unit::TestCase
     }
   end
 
+  def test_recvfrom_nonblock_no_exception
+    udp_pair do |s1, s2|
+      assert_equal :wait_readable, s1.recvfrom_nonblock(100, exception: false)
+      s2.send("aaa", 0, s1.getsockname)
+      assert s1.wait_readable
+      mesg, inet_addr = s1.recvfrom_nonblock(100, exception: false)
+      assert_equal(4, inet_addr.length)
+      assert_equal("aaa", mesg)
+    end
+  end
+
   if defined?(UNIXSocket) && defined?(Socket::SOCK_SEQPACKET)
     def test_sendmsg_nonblock_seqpacket
       buf = '*' * 8192
       UNIXSocket.pair(:SEQPACKET) do |s1, s2|
         assert_raise(IO::WaitWritable) do
           loop { s1.sendmsg_nonblock(buf) }
+        end
+      end
+    rescue NotImplementedError, Errno::ENOSYS, Errno::EPROTONOSUPPORT
+      skip "UNIXSocket.pair(:SEQPACKET) not implemented on this platform: #{$!}"
+    end
+
+    def test_sendmsg_nonblock_no_exception
+      buf = '*' * 128
+      UNIXSocket.pair(:SEQPACKET) do |s1, s2|
+        n = 0
+        Timeout.timeout(60) do
+          case rv = s1.sendmsg_nonblock(buf, exception: false)
+          when Integer
+            n += rv
+          when :wait_writable
+            break
+          else
+            flunk "unexpected return value: #{rv.inspect}"
+          end while true
+          assert_equal :wait_writable, rv
+          assert_operator n, :>, 0
         end
       end
     rescue NotImplementedError, Errno::ENOSYS, Errno::EPROTONOSUPPORT
@@ -297,6 +330,7 @@ class TestSocketNonblock < Test::Unit::TestCase
       rescue Errno::EWOULDBLOCK
         assert_kind_of(IO::WaitReadable, $!)
       end
+      assert_equal :wait_readable, s1.recvmsg_nonblock(11, exception: false)
     }
   end
 
@@ -307,6 +341,16 @@ class TestSocketNonblock < Test::Unit::TestCase
       rescue Errno::EWOULDBLOCK
         assert_kind_of(IO::WaitReadable, $!)
       end
+    }
+  end
+
+  def test_recv_nonblock_no_exception
+    tcp_pair {|c, s|
+      assert_equal :wait_readable, c.recv_nonblock(11, exception: false)
+      s.write('HI')
+      assert c.wait_readable
+      assert_equal 'HI', c.recv_nonblock(11, exception: false)
+      assert_equal :wait_readable, c.recv_nonblock(11, exception: false)
     }
   end
 

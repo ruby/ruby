@@ -640,8 +640,7 @@ bsock_recv(int argc, VALUE *argv, VALUE sock)
 
 /*
  * call-seq:
- * 	basicsocket.recv_nonblock(maxlen) => mesg
- * 	basicsocket.recv_nonblock(maxlen, flags) => mesg
+ * 	basicsocket.recv_nonblock(maxlen [, flags [, options ]) => mesg
  *
  * Receives up to _maxlen_ bytes from +socket+ using recvfrom(2) after
  * O_NONBLOCK is set for the underlying file descriptor.
@@ -655,6 +654,7 @@ bsock_recv(int argc, VALUE *argv, VALUE sock)
  * === Parameters
  * * +maxlen+ - the number of bytes to receive from the socket
  * * +flags+ - zero or more of the +MSG_+ options
+ * * +options+ - keyword hash, supporting `exception: false`
  *
  * === Example
  * 	serv = TCPServer.new("127.0.0.1", 0)
@@ -678,6 +678,10 @@ bsock_recv(int argc, VALUE *argv, VALUE sock)
  * If the exception is Errno::EWOULDBLOCK or Errno::AGAIN,
  * it is extended by IO::WaitReadable.
  * So IO::WaitReadable can be used to rescue the exceptions for retrying recv_nonblock.
+ *
+ * By specifying `exception: false`, the options hash allows you to indicate
+ * that recv_nonblock should not raise an IO::WaitWritable exception, but
+ * return the symbol :wait_writable instead.
  *
  * === See
  * * Socket#recvfrom
