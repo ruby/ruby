@@ -65,9 +65,15 @@ with all sufficient information, see the ChangeLog file.
 === Stdlib updates (outstanding ones only)
 
 * Socket
-  * Socket#accept_nonblock and Socket#connect_nonblock supports
-    `exception :false` to return symbols.
-    Ditto for TCPServer#accept_nonblock, UNIXServer#accept_nonblock.
+  * Socket#connect_nonblock, Socket#accept_nonblock,
+    TCPServer#accept_nonblock, UNIXServer#accept_nonblock,
+    BasicSocket#recv_nonblock, BasicSocket#recvmsg_nonblock,
+    BasicSocket#sendmsg_nonblock all support `exception :false` to return
+    :wait_readable or :wait_writable symbols instead of raising
+    IO::WaitReadable or IO::WaitWritable exceptions
+  * BasicSocket#recv and BasicSocket#recv_nonblock allow an output
+    String buffer argument like IO#read and IO#read_nonblock to reduce
+    GC overhead
 
 * ObjectSpace (objspace)
   * ObjectSpace.count_imemo_objects is added.
