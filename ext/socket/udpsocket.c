@@ -194,8 +194,7 @@ udp_send(int argc, VALUE *argv, VALUE sock)
 
 /*
  * call-seq:
- *   udpsocket.recvfrom_nonblock(maxlen) => [mesg, sender_inet_addr]
- *   udpsocket.recvfrom_nonblock(maxlen, flags) => [mesg, sender_inet_addr]
+ *   udpsocket.recvfrom_nonblock(maxlen [, flags [, options]) => [mesg, sender_inet_addr]
  *
  * Receives up to _maxlen_ bytes from +udpsocket+ using recvfrom(2) after
  * O_NONBLOCK is set for the underlying file descriptor.
@@ -211,6 +210,7 @@ udp_send(int argc, VALUE *argv, VALUE sock)
  * === Parameters
  * * +maxlen+ - the number of bytes to receive from the socket
  * * +flags+ - zero or more of the +MSG_+ options
+ * * +options+ - keyword hash, supporting `exception: false`
  *
  * === Example
  * 	require 'socket'
@@ -237,6 +237,10 @@ udp_send(int argc, VALUE *argv, VALUE sock)
  * If the exception is Errno::EWOULDBLOCK or Errno::AGAIN,
  * it is extended by IO::WaitReadable.
  * So IO::WaitReadable can be used to rescue the exceptions for retrying recvfrom_nonblock.
+ *
+ * By specifying `exception: false`, the options hash allows you to indicate
+ * that recvmsg_nonblock should not raise an IO::WaitWritable exception, but
+ * return the symbol :wait_writable instead.
  *
  * === See
  * * Socket#recvfrom

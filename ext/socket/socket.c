@@ -503,15 +503,13 @@ sock_connect_nonblock(int argc, VALUE *argv, VALUE sock)
     n = connect(fptr->fd, (struct sockaddr*)RSTRING_PTR(addr), RSTRING_SOCKLEN(addr));
     if (n < 0) {
         if (errno == EINPROGRESS) {
-            if (!NIL_P(opts) &&
-                    Qfalse == rb_hash_lookup2(opts, sym_exception, Qundef)) {
+           if (rsock_opt_false_p(opts, sym_exception)) {
                 return sym_wait_writable;
             }
             rb_readwrite_sys_fail(RB_IO_WAIT_WRITABLE, "connect(2) would block");
 	}
 	if (errno == EISCONN) {
-            if (!NIL_P(opts) &&
-                    Qfalse == rb_hash_lookup2(opts, sym_exception, Qundef)) {
+           if (rsock_opt_false_p(opts, sym_exception)) {
                 return INT2FIX(0);
             }
 	}

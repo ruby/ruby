@@ -423,4 +423,12 @@ static inline void rsock_maybe_wait_fd(int fd) { }
 #  define MSG_DONTWAIT_RELIABLE 0
 #endif
 
+static inline int
+rsock_opt_false_p(VALUE opt, VALUE sym)
+{
+    if (!NIL_P(opt) && Qfalse == rb_hash_lookup2(opt, sym, Qundef))
+	return 1;
+    return 0;
+}
+
 #endif
