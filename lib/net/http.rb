@@ -925,7 +925,24 @@ module Net   #:nodoc:
           end
           # Server Name Indication (SNI) RFC 3546
           s.hostname = @address if s.respond_to? :hostname=
-          Timeout.timeout(@open_timeout, Net::OpenTimeout) { s.connect }
+          timeout = @open_timeout
+
+          loop do
+            raise Net::OpenTimeout if timeout && timeout <= 0
+
+            start = Process.clock_gettime Process::CLOCK_MONOTONIC
+            case s.connect_nonblock(exception: false)
+            when :wait_readable then IO.select([s], nil, nil, timeout)
+            when :wait_writable then IO.select(nil, [s], nil, timeout)
+            else
+              break
+            end
+
+            if timeout
+              timeout -= Process.clock_gettime(Process::CLOCK_MONOTONIC) - start
+            end
+          end
+
           if @ssl_context.verify_mode != OpenSSL::SSL::VERIFY_NONE
             s.post_connection_check(@address)
           end
