@@ -1,3 +1,15 @@
+Tue Jun 16 04:50:44 2015  Eric Wong  <e@80x24.org>
+
+	* ext/socket/basicsocket.c (bsock_recv): document outbuf
+	* ext/socket/unixsocket.c (unix_recvfrom): ditto
+	* ext/socket/init.c (rsock_strbuf, recvfrom_locktmp): new functions
+	  (rsock_s_recvfrom): support destination buffer as 3rd arg
+	  (rsock_s_recvfrom_nonblock): ditto
+	* string.c (rb_str_locktmp_ensure): export for internal ext
+	* test/socket/test_nonblock.rb: test recv_nonblock
+	* test/socket/test_unix.rb: test recv
+	  [ruby-core:69543] [Feature #11242]
+
 Tue Jun 16 04:38:02 2015  Eric Wong  <e@80x24.org>
 
 	* ext/socket/ancdata.c (bsock_sendmsg_internal,

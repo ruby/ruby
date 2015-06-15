@@ -128,6 +128,16 @@ class TestSocketNonblock < Test::Unit::TestCase
     }
     mesg = u1.recv_nonblock(100)
     assert_equal("", mesg)
+
+    buf = "short"
+    out = "hello world" * 4
+    out.freeze
+    u2.send(out, 0, u1.getsockname)
+    IO.select [u1]
+    rv = u1.recv_nonblock(100, 0, buf)
+    assert_equal rv.object_id, buf.object_id
+    assert_equal out, rv
+    assert_equal out, buf
   ensure
     u1.close if u1
     u2.close if u2

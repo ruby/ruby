@@ -385,6 +385,13 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
     assert_equal("", s1.recv(10))
     assert_equal("", s1.recv(10))
     assert_raise(IO::EAGAINWaitReadable) { s1.recv_nonblock(10) }
+
+    buf = ""
+    s2.send("BBBBBB", 0)
+    sleep 0.1
+    rv = s1.recv(100, 0, buf)
+    assert_equal buf.object_id, rv.object_id
+    assert_equal "BBBBBB", rv
   ensure
     s1.close if s1
     s2.close if s2
