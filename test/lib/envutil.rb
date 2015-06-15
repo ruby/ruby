@@ -329,7 +329,8 @@ module Test
           if message and !message.empty?
             full_message << message << "\n"
           end
-          full_message << "pid #{pid} killed by #{sigdesc}"
+          full_message << "pid #{pid}"
+          full_message << " killed by #{sigdesc}" if sigdesc
           if out and !out.empty?
             full_message << "\n#{out.gsub(/^/, '| ')}"
             full_message << "\n" if /\n\z/ !~ full_message
