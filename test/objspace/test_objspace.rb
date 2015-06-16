@@ -178,7 +178,6 @@ class TestObjSpace < Test::Unit::TestCase
         obj2 = Object.new
       end
     ensure
-      GC.start
       ObjectSpace.trace_object_allocations_stop
       obj3 = Object.new
     end
