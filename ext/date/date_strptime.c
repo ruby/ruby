@@ -103,10 +103,12 @@ read_digits(const char *s, VALUE *n, size_t width)
 	return l;
     }
     else {
-	char *s2 = ALLOCA_N(char, l + 1);
+	VALUE vbuf = 0;
+	char *s2 = ALLOCV_N(char, vbuf, l + 1);
 	memcpy(s2, s, l);
 	s2[l] = '\0';
 	*n = rb_cstr_to_inum(s2, 10, 0);
+	ALLOCV_END(vbuf);
 	return l;
     }
 }
