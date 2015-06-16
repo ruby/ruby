@@ -131,7 +131,7 @@ unix_path(VALUE sock)
 
 /*
  * call-seq:
- *   unixsocket.recvfrom(maxlen [, flags[, outbuf]) => [mesg, unixaddress]
+ *   unixsocket.recvfrom(maxlen [, flags[, outbuf]]) => [mesg, unixaddress]
  *
  * Receives a message via _unixsocket_.
  *
