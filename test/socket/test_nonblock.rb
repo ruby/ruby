@@ -290,7 +290,7 @@ class TestSocketNonblock < Test::Unit::TestCase
     udp_pair do |s1, s2|
       assert_equal :wait_readable, s1.recvfrom_nonblock(100, exception: false)
       s2.send("aaa", 0)
-      assert s1.wait_readable
+      assert_predicate s1, :wait_readable
       mesg, inet_addr = s1.recvfrom_nonblock(100, exception: false)
       assert_equal(4, inet_addr.length)
       assert_equal("aaa", mesg)
@@ -358,7 +358,7 @@ class TestSocketNonblock < Test::Unit::TestCase
     tcp_pair {|c, s|
       assert_equal :wait_readable, c.recv_nonblock(11, exception: false)
       s.write('HI')
-      assert c.wait_readable
+      assert_predicate c, :wait_readable
       assert_equal 'HI', c.recv_nonblock(11, exception: false)
       assert_equal :wait_readable, c.recv_nonblock(11, exception: false)
     }
