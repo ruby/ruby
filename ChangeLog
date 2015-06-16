@@ -1,3 +1,9 @@
+Wed Jun 17 02:53:59 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* test/objspace/test_objspace.rb (test_dump_flags): relax pattern
+	  because long_lived flag and marked flag can be false at major GC.
+	  [Bug #10852]
+
 Mon Jun 15 03:24:23 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c (lep_svar_set): add WBs.
