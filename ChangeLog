@@ -282,7 +282,7 @@ Thu Jun 11 14:18:51 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 Thu Jun 11 13:50:19 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (ary_ensure_room_for_push): check if array size will
-	  exceed maxmum size to get rid of buffer overflow.
+	  exceed maximum size to get rid of buffer overflow.
 	  [ruby-dev:49043] [Bug #11235]
 
 	* array.c (ary_ensure_room_for_unshift, rb_ary_splice): ditto.
