@@ -7,7 +7,7 @@ class String
   end
 end
 types = ARGF.grep(/^\s*RUBY_CHECK_SIZEOF\((\w[^\[\],#]*)[^#]*\)|
-                   ^\s*check_sizeof\('(\w+)'/x) {$+}
+                   ^\s*check_sizeof\('(.+?)'/x) {$+}
 conditions = {
   "long long" => 'defined(HAVE_TRUE_LONG_LONG)',
 }
