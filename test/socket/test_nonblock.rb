@@ -289,7 +289,7 @@ class TestSocketNonblock < Test::Unit::TestCase
   def test_recvfrom_nonblock_no_exception
     udp_pair do |s1, s2|
       assert_equal :wait_readable, s1.recvfrom_nonblock(100, exception: false)
-      s2.send("aaa", 0, s1.getsockname)
+      s2.send("aaa", 0)
       assert s1.wait_readable
       mesg, inet_addr = s1.recvfrom_nonblock(100, exception: false)
       assert_equal(4, inet_addr.length)
