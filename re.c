@@ -1691,10 +1691,6 @@ match_array(VALUE match, int start)
 }
 
 
-/* [MG]:FIXME: I put parens around the /.../.match() in the first line of the
-   second example to prevent the '*' followed by a '/' from ending the
-   comment. */
-
 /*
  *  call-seq:
  *     mtch.to_a   -> anArray
@@ -1710,7 +1706,7 @@ match_array(VALUE match, int start)
  *  accessing the fields directly (as an intermediate array is
  *  generated).
  *
- *     all,f1,f2,f3 = *(/(.)(.)(\d+)(\d)/.match("THX1138."))
+ *     all,f1,f2,f3 = * /(.)(.)(\d+)(\d)/.match("THX1138.")
  *     all   #=> "HX1138"
  *     f1    #=> "H"
  *     f2    #=> "X"
@@ -2927,12 +2923,16 @@ rb_reg_match2(VALUE re)
  *  If a block is given, invoke the block with MatchData if match succeed, so
  *  that you can write
  *
- *     pat.match(str) {|m| ...}
+ *     /M(.*)/.match("Matz") do |m|
+ *       puts m[0]
+ *       puts m[1]
+ *     end
  *
  *  instead of
  *
- *     if m = pat.match(str)
- *       ...
+ *     if m = /M(.*)/.match("Matz")
+ *       puts m[0]
+ *       puts m[1]
  *     end
  *
  *  The return value is a value from block execution in this case.
@@ -2967,15 +2967,14 @@ rb_reg_match_m(int argc, VALUE *argv, VALUE re)
 /*
  * Document-method: compile
  *
- * Synonym for <code>Regexp.new</code>
+ * Alias for <code>Regexp.new</code>
  */
-
 
 /*
  *  call-seq:
- *     Regexp.new(string, [options [, kcode]])        -> regexp
+ *     Regexp.new(string, [options [, kcode]])       -> regexp
  *     Regexp.new(regexp)                            -> regexp
- *     Regexp.compile(string, [options [, kcode]])    -> regexp
+ *     Regexp.compile(string, [options [, kcode]])   -> regexp
  *     Regexp.compile(regexp)                        -> regexp
  *
  *  Constructs a new regular expression from +pattern+, which can be either a
