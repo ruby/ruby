@@ -194,7 +194,7 @@ udp_send(int argc, VALUE *argv, VALUE sock)
 
 /*
  * call-seq:
- *   udpsocket.recvfrom_nonblock(maxlen [, flags [, options]) => [mesg, sender_inet_addr]
+ *   udpsocket.recvfrom_nonblock(maxlen [, flags [, options]]) => [mesg, sender_inet_addr]
  *
  * Receives up to _maxlen_ bytes from +udpsocket+ using recvfrom(2) after
  * O_NONBLOCK is set for the underlying file descriptor.
