@@ -2,6 +2,7 @@ Tue Jun 16 17:37:01 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* test/objspace/test_objspace.rb: relax pattern because uncollectible
 	  flag and marked flag can be false at major GC.
+	  [Bug #10852]
 
 Tue Jun 16 04:50:44 2015  Eric Wong  <e@80x24.org>
 
