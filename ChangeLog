@@ -1,3 +1,10 @@
+Tue Jun 16 19:19:53 2015  Tanaka Akira  <akr@fsij.org>
+
+	* ext/rbconfig/sizeof/extconf.rb: Check several types defined in C99
+	  and x86_64 ABI.
+
+	* template/sizes.c.tmpl: Relax a pattern for types.
+
 Tue Jun 16 17:37:01 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* test/objspace/test_objspace.rb: relax pattern because uncollectible
