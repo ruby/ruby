@@ -879,19 +879,6 @@ class TestMethod < Test::Unit::TestCase
     assert_equal n  , rest_parameter(*(1..n)).size, '[Feature #10440]'
   end
 
-  def test_insecure_method
-    m = "\u{5371 967a}"
-    c = Class.new do
-      proc {$SAFE=3;def foo;end}.call
-      alias_method m, "foo"
-      eval "def bar; #{m}; end"
-    end
-    obj = c.new
-    assert_raise_with_message(SecurityError, /#{m}/) do
-      obj.bar
-    end
-  end
-
   class C
     D = "Const_D"
     def foo

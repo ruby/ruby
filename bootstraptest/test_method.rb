@@ -922,22 +922,6 @@ assert_equal 'ok', %q{
 }, '[ruby-core:11998]'
 
 assert_equal 'ok', %q{
-  proc{
-    $SAFE = 3
-    class C
-      def m
-        :ng
-      end
-    end
-  }.call
-  begin
-    C.new.m
-  rescue SecurityError
-    :ok
-  end
-}, '[ruby-core:11998]'
-
-assert_equal 'ok', %q{
   class B
     def m() :fail end
   end

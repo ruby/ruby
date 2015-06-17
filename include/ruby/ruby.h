@@ -572,15 +572,15 @@ VALUE rb_get_path(VALUE);
 VALUE rb_get_path_no_checksafe(VALUE);
 #define FilePathStringValue(v) ((v) = rb_get_path_no_checksafe(v))
 
-#define RUBY_SAFE_LEVEL_MAX 3
+#define RUBY_SAFE_LEVEL_MAX 2
 void rb_secure(int);
 int rb_safe_level(void);
 void rb_set_safe_level(int);
 #if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 4))
-int ruby_safe_level_4_error(void) __attribute__((error("$SAFE=4 is obsolete")));
-int ruby_safe_level_4_warning(void) __attribute__((warning("$SAFE=4 is obsolete")));
+int ruby_safe_level_3_error(void) __attribute__((error("$SAFE=3 and 4 is obsolete")));
+int ruby_safe_level_3_warning(void) __attribute__((warning("$SAFE=3 and 4 is obsolete")));
 # ifdef RUBY_EXPORT
-#   define ruby_safe_level_4_warning() ruby_safe_level_4_error()
+#   define ruby_safe_level_3_warning() ruby_safe_level_3_error()
 # endif
 #if defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P)
 # define RUBY_SAFE_LEVEL_INVALID_P(level) \
@@ -589,7 +589,7 @@ int ruby_safe_level_4_warning(void) __attribute__((warning("$SAFE=4 is obsolete"
 	    __builtin_constant_p(level), \
 	    ((level) < 0 || RUBY_SAFE_LEVEL_MAX < (level)), 0))
 # define RUBY_SAFE_LEVEL_CHECK(level, type) \
-    __extension__(__builtin_choose_expr(RUBY_SAFE_LEVEL_INVALID_P(level), ruby_safe_level_4_##type(), (level)))
+    __extension__(__builtin_choose_expr(RUBY_SAFE_LEVEL_INVALID_P(level), ruby_safe_level_3_##type(), (level)))
 #else
 /* in gcc 4.8 or earlier, __builtin_choose_expr() does not consider
  * __builtin_constant_p(variable) a constant expression.
@@ -598,7 +598,7 @@ int ruby_safe_level_4_warning(void) __attribute__((warning("$SAFE=4 is obsolete"
     __extension__(__builtin_constant_p(level) && \
 		  ((level) < 0 || RUBY_SAFE_LEVEL_MAX < (level)))
 # define RUBY_SAFE_LEVEL_CHECK(level, type) \
-    (RUBY_SAFE_LEVEL_INVALID_P(level) ? ruby_safe_level_4_##type() : (level))
+    (RUBY_SAFE_LEVEL_INVALID_P(level) ? ruby_safe_level_3_##type() : (level))
 #endif
 #define rb_secure(level) rb_secure(RUBY_SAFE_LEVEL_CHECK(level, warning))
 #define rb_set_safe_level(level) rb_set_safe_level(RUBY_SAFE_LEVEL_CHECK(level, error))

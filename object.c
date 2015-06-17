@@ -70,7 +70,6 @@ rb_obj_setup(VALUE obj, VALUE klass, VALUE type)
 {
     RBASIC(obj)->flags = type;
     RBASIC_SET_CLASS(obj, klass);
-    if (rb_safe_level() >= 3) FL_SET((obj), FL_TAINT);
     return obj;
 }
 
@@ -982,7 +981,6 @@ rb_obj_taint(VALUE obj)
 VALUE
 rb_obj_untaint(VALUE obj)
 {
-    rb_secure(3);
     if (OBJ_TAINTED(obj)) {
 	rb_check_frozen(obj);
 	FL_UNSET(obj, FL_TAINT);

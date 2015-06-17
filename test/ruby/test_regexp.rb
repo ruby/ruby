@@ -585,19 +585,6 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal(3, "foobarbaz\u3042".rindex(/b../n, 5))
   end
 
-  def test_taint
-    m = Thread.new do
-      "foo"[/foo/]
-      $SAFE = 3
-      /foo/.match("foo")
-    end.value
-    assert_predicate(m, :tainted?)
-    assert_nothing_raised('[ruby-core:26137]') {
-      m = proc {$SAFE = 3; %r"#{ }"o}.call
-    }
-    assert_predicate(m, :tainted?)
-  end
-
   def assert_regexp(re, ss, fs = [], msg = nil)
     re = Regexp.new(re) unless re.is_a?(Regexp)
     ss = [ss] unless ss.is_a?(Array)

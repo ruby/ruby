@@ -389,14 +389,14 @@ class TestThread < Test::Unit::TestCase
     ok = false
     t = Thread.new do
       EnvUtil.suppress_warning do
-        $SAFE = 3
+        $SAFE = 1
       end
       ok = true
       sleep
     end
     Thread.pass until ok
     assert_equal(0, Thread.current.safe_level)
-    assert_equal(3, t.safe_level)
+    assert_equal(1, t.safe_level)
 
   ensure
     t.kill if t

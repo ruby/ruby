@@ -1489,9 +1489,6 @@ rb_reg_search0(VALUE re, VALUE str, long pos, int reverse, int set_backref_str)
 	if (err) rb_memerror();
     }
     else {
-	if (rb_safe_level() >= 3)
-	    OBJ_TAINT(match);
-	else
 	    FL_UNSET(match, FL_TAINT);
     }
 

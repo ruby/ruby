@@ -30,7 +30,6 @@ udp_init(int argc, VALUE *argv, VALUE sock)
     int family = AF_INET;
     int fd;
 
-    rb_secure(3);
     if (rb_scan_args(argc, argv, "01", &arg) == 1) {
 	family = rsock_family_arg(arg);
     }
@@ -85,7 +84,6 @@ udp_connect(VALUE sock, VALUE host, VALUE port)
     struct udp_arg arg;
     VALUE ret;
 
-    rb_secure(3);
     arg.res = rsock_addrinfo(host, port, SOCK_DGRAM, 0);
     GetOpenFile(sock, fptr);
     arg.fd = fptr->fd;
@@ -114,7 +112,6 @@ udp_bind(VALUE sock, VALUE host, VALUE port)
     struct rb_addrinfo *res0;
     struct addrinfo *res;
 
-    rb_secure(3);
     res0 = rsock_addrinfo(host, port, SOCK_DGRAM, 0);
     GetOpenFile(sock, fptr);
     for (res = res0->ai; res; res = res->ai_next) {
@@ -267,4 +264,3 @@ rsock_init_udpsocket(void)
     rb_define_method(rb_cUDPSocket, "send", udp_send, -1);
     rb_define_method(rb_cUDPSocket, "recvfrom_nonblock", udp_recvfrom_nonblock, -1);
 }
-
