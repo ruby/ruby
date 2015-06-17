@@ -1,3 +1,9 @@
+Wed Jun 17 09:50:12 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rdoc/servlet.rb (documentation_search, root_search):
+	  requires json for JSON.dump and fix sporadic failures due to
+	  the loading order.
+
 Tue Jun 16 19:19:53 2015  Tanaka Akira  <akr@fsij.org>
 
 	* ext/rbconfig/sizeof/extconf.rb: Check several types defined in C99

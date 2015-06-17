@@ -185,7 +185,7 @@ class TestRDocServlet < RDoc::TestCase
 
     @s.do_GET @req, @res
 
-    assert_equal 'application/javascript', @res.content_type
+    assert_equal 'application/javascript', @res.content_type, @res.body
   end
 
   def test_documentation_page_class
