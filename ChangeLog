@@ -1,6 +1,11 @@
+Wed Jun 17 12:13:33 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ChangeLog: added contibutor name.
+
 Wed Jun 17 10:57:28 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/csv.rb: accept to use Range object for row selection.
+	  contributed by Mitsutaka Mimura.
 	  [Feature #11267][ruby-dev:49091]
 
 Wed Jun 17 09:50:12 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
