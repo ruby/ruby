@@ -1,3 +1,7 @@
+Wed Jun 17 11:39:15 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c (lep_svar_set): add WBs.
+
 Tue Jun  9 16:29:49 2015  Eric Wong  <e@80x24.org>
 
 	* ext/socket/ancdata.c: use RB_GC_GUARD instead of volatile
