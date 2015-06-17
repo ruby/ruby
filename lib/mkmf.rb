@@ -768,7 +768,7 @@ int main() {printf("%"PRI_CONFTEST_PREFIX"#{neg ? 'd' : 'u'}\\n", conftest_const
 /*top*/
 extern int t(void);
 #{MAIN_DOES_NOTHING 't'}
-int t(void) { #{decltype["volatile p"]}; p = (#{decltype[]})#{func}; return 0; }
+int t(void) { #{decltype["volatile p"]}; p = (#{decltype[]})#{func}; return !p; }
 SRC
     call && try_link(<<"SRC", opt, &b)
 #{headers}
@@ -787,7 +787,7 @@ SRC
 /*top*/
 extern int t(void);
 #{MAIN_DOES_NOTHING 't'}
-int t(void) { const volatile void *volatile p; p = &(&#{var})[0]; return 0; }
+int t(void) { const volatile void *volatile p; p = &(&#{var})[0]; return !p; }
 SRC
   end
 
