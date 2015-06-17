@@ -75,9 +75,6 @@ safe_setter(VALUE val)
 		 "tried to downgrade safe level from %d to %d",
 		 th->safe_level, level);
     }
-    if (level == 3) {
-	rb_warning("$SAFE=3 does no sandboxing");
-    }
     if (level > SAFE_LEVEL_MAX) {
 	rb_raise(rb_eArgError, "$SAFE=3 and 4 is obsolete");
     }
