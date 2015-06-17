@@ -1,3 +1,8 @@
+Thu Jun 18 06:02:42 2015  Eric Wong  <e@80x24.org>
+
+	* compile.c (get_exception_sym2type, iseq_build_from_ary_body):
+	  rely on %+PRIsVALUE instead of calling rb_inspect directly
+
 Wed Jun 17 20:59:25 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (ENC_MK): needs fake.rb if cross compilation.
