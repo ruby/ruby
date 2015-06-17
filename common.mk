@@ -547,7 +547,7 @@ check-ruby: test test-ruby
 
 fake: $(CROSS_COMPILING)-fake
 yes-fake: $(arch)-fake.rb $(RBCONFIG) PHONY
-no-fake: PHONY
+no-fake -fake: PHONY
 
 $(arch)-fake.rb: $(srcdir)/template/fake.rb.in $(srcdir)/tool/generic_erb.rb version.i
 	$(ECHO) generating $@
