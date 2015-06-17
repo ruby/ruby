@@ -1,3 +1,8 @@
+Wed Jun 17 15:15:53 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* safe.rb (safe_setter): of course, don't have to warn the limitation of
+	  $SAFE=3 after it's removed.
+
 Wed Jun 17 14:29:43 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* include/ruby/ruby.h: $SAFE=3 is now obsolete.
