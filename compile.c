@@ -5792,7 +5792,6 @@ get_exception_sym2type(VALUE sym)
 {
 #undef rb_intern
 #define rb_intern(str) rb_intern_const(str)
-    VALUE sym_inspect;
     static VALUE symRescue, symEnsure, symRetry;
     static VALUE symBreak, symRedo, symNext;
 
@@ -5811,9 +5810,7 @@ get_exception_sym2type(VALUE sym)
     if (sym == symBreak)  return CATCH_TYPE_BREAK;
     if (sym == symRedo)   return CATCH_TYPE_REDO;
     if (sym == symNext)   return CATCH_TYPE_NEXT;
-    sym_inspect = rb_inspect(sym);
-    rb_raise(rb_eSyntaxError, "invalid exception symbol: %s",
-	     StringValuePtr(sym_inspect));
+    rb_raise(rb_eSyntaxError, "invalid exception symbol: %+"PRIsVALUE, sym);
     return 0;
 }
 
@@ -5965,8 +5962,7 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 	    if (st_lookup(insn_table, (st_data_t)insn, &insn_id) == 0) {
 		/* TODO: exception */
 		rb_compile_error(RSTRING_PTR(iseq->location.path), line_no,
-				 "unknown instruction: %"PRIsVALUE,
-				 rb_inspect(insn));
+				 "unknown instruction: %+"PRIsVALUE, insn);
 	    }
 
 	    if (argc != insn_len((VALUE)insn_id)-1) {
