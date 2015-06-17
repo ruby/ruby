@@ -64,6 +64,9 @@ class TestCSV::Row < TestCSV
     # by index
     assert_equal(3, @row.field(2))
 
+    # by range
+    assert_equal([2,3], @row.field(1..2))
+
     # missing
     assert_nil(@row.field("Missing"))
     assert_nil(@row.field(10))
