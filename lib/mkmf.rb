@@ -775,6 +775,7 @@ SRC
 /*top*/
 extern int t(void);
 #{MAIN_DOES_NOTHING 't'}
+#{"extern void #{call};" if decltype}
 int t(void) { #{call}; return 0; }
 SRC
   end
