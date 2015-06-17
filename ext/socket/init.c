@@ -555,7 +555,6 @@ rsock_s_accept_nonblock(int argc, VALUE *argv, VALUE klass, rb_io_t *fptr,
 
     rb_scan_args(argc, argv, "0:", &opts);
 
-    rb_secure(3);
     rb_io_set_nonblock(fptr);
     fd2 = cloexec_accept(fptr->fd, (struct sockaddr*)sockaddr, len, 1);
     if (fd2 < 0) {
@@ -598,7 +597,6 @@ rsock_s_accept(VALUE klass, int fd, struct sockaddr *sockaddr, socklen_t *len)
     int retry = 0;
     struct accept_arg arg;
 
-    rb_secure(3);
     arg.fd = fd;
     arg.sockaddr = sockaddr;
     arg.len = len;

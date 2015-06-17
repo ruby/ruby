@@ -140,7 +140,6 @@ sock_initialize(int argc, VALUE *argv, VALUE sock)
     if (NIL_P(protocol))
         protocol = INT2FIX(0);
 
-    rb_secure(3);
     setup_domain_and_type(domain, &d, type, &t);
     fd = rsock_socket(d, t, NUM2INT(protocol));
     if (fd < 0) rb_sys_fail("socket(2)");
@@ -1059,7 +1058,6 @@ sock_gethostname(VALUE obj)
 
     char buf[RUBY_MAX_HOST_NAME_LEN+1];
 
-    rb_secure(3);
     if (gethostname(buf, (int)sizeof buf - 1) < 0)
 	rb_sys_fail("gethostname(3)");
 
@@ -1076,7 +1074,6 @@ sock_gethostname(VALUE obj)
 {
     struct utsname un;
 
-    rb_secure(3);
     uname(&un);
     return rb_str_new2(un.nodename);
 }
@@ -1143,7 +1140,6 @@ sock_sockaddr(struct sockaddr *addr, socklen_t len)
 static VALUE
 sock_s_gethostbyname(VALUE obj, VALUE host)
 {
-    rb_secure(3);
     return rsock_make_hostent(host, rsock_addrinfo(host, Qnil, SOCK_STREAM, AI_CANONNAME), sock_sockaddr);
 }
 

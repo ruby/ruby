@@ -1,3 +1,15 @@
+Wed Jun 17 14:29:43 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* include/ruby/ruby.h: $SAFE=3 is now obsolete.
+
+	* ext/socket/init.c, ext/socket/socket.c, ext/socket/tcpsocket.c
+	  ext/socket/udpsocket.c, gc.c, object.c, re.c, safe.c: removed code
+	  for $SAFE=3
+
+	* bootstraptest/test_method.rb, test/erb/test_erb.rb, test/ruby/test_dir.rb
+	  test/ruby/test_file.rb, test/ruby/test_method.rb, test/ruby/test_regexp.rb
+	  test/ruby/test_thread.rb: remove tests for $SAFE=3
+
 Wed Jun 17 12:13:33 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* ChangeLog: added contibutor name.
