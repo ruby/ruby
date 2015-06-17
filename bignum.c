@@ -3940,6 +3940,22 @@ str2big_gmp(
 }
 #endif
 
+/*
+ * Parse +str+ as Ruby Integer, i.e., underscores, 0d and 0b prefixes.
+ *
+ * str:      pointer to the string to be parsed.
+ *	     should be NUL-terminated.
+ * base:     base of conversion, must be 2..36, or -36..0.
+ *           if +base+ > 0, the conversion is done according to the +base+
+ *           and unmatched prefix is parsed as a part of the result if
+ *           present.
+ *           if +base+ <= 0, the conversion is done according to the
+ *           prefix if present, in base <code>-base</code> if +base+ < -1,
+ *           or in base 10.
+ * badcheck: if non-zero, +ArgumentError+ is raised when +str+ is not
+ *           valid as an Integer.  if zero, Fixnum 0 is returned in
+ *           that case.
+ */
 VALUE
 rb_cstr_to_inum(const char *str, int base, int badcheck)
 {
