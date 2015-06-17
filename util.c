@@ -94,6 +94,7 @@ ruby_scan_digits(const char *str, ssize_t len, int base, size_t *retlen, int *ov
     do {
 	int d = ruby_digit36_to_number_table[(unsigned char)*str++];
         if (d == -1 || base <= d) {
+	    --str;
 	    break;
         }
         if (mul_overflow < ret)
@@ -104,7 +105,7 @@ ruby_scan_digits(const char *str, ssize_t len, int base, size_t *retlen, int *ov
         if (ret < x)
             *overflow = 1;
     } while (len < 0 || --len);
-    *retlen = (str-1) - start;
+    *retlen = str - start;
     return ret;
 }
 
