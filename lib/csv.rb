@@ -284,11 +284,15 @@ class CSV
     #
     def field(header_or_index, minimum_index = 0)
       # locate the pair
-      finder = header_or_index.is_a?(Integer) ? :[] : :assoc
+      finder = (header_or_index.is_a?(Integer) || header_or_index.is_a?(Range)) ? :[] : :assoc
       pair   = @row[minimum_index..-1].send(finder, header_or_index)
 
       # return the field if we have a pair
-      pair.nil? ? nil : pair.last
+      if pair.nil?
+        nil
+      else
+        header_or_index.is_a?(Range) ? pair.map(&:last) : pair.last
+      end
     end
     alias_method :[], :field
 
@@ -690,7 +694,7 @@ class CSV
     #
     def [](index_or_header)
       if @mode == :row or  # by index
-         (@mode == :col_or_row and index_or_header.is_a? Integer)
+         (@mode == :col_or_row and (index_or_header.is_a?(Integer) or index_or_header.is_a?(Range)))
         @table[index_or_header]
       else                 # by header
         @table.map { |row| row[index_or_header] }

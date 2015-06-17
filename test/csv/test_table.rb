@@ -67,6 +67,9 @@ class TestCSV::Table < TestCSV
     @rows.each_index { |i| assert_equal(@rows[i], @table[i]) }
     assert_equal(nil, @table[100])  # empty row
 
+    # by row with Range
+    assert_equal([@table[1], @table[2]], @table[1..2])
+
     # by col
     @rows.first.headers.each do |header|
       assert_equal(@rows.map { |row| row[header] }, @table[header])
