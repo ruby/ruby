@@ -35,5 +35,6 @@ check_sizeof('_Decimal64') # x86_64 ABI
 check_sizeof('_Decimal128') # x86_64 ABI
 check_sizeof('__m64') # x86_64 ABI (optional)
 check_sizeof('__m128') # x86_64 ABI (optional)
+check_sizeof('__float80') # gcc x86
 
 create_makefile('rbconfig/sizeof')

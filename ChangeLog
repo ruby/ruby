@@ -1,3 +1,7 @@
+Wed Jun 17 20:23:29 2015  Tanaka Akira  <akr@fsij.org>
+
+	* ext/rbconfig/sizeof/extconf.rb: Check __float80.
+
 Wed Jun 17 15:15:53 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* safe.c (safe_setter): of course, don't have to warn the limitation of
