@@ -418,7 +418,6 @@ rb_f_kill(int argc, const VALUE *argv)
     VALUE str;
     const char *s;
 
-    rb_secure(2);
     rb_check_arity(argc, 2, UNLIMITED_ARGUMENTS);
 
     switch (TYPE(argv[0])) {
@@ -1280,7 +1279,6 @@ sig_trap(int argc, VALUE *argv)
     sighandler_t func;
     VALUE cmd;
 
-    rb_secure(2);
     rb_check_arity(argc, 1, 2);
 
     sig = trap_signm(argv[0]);

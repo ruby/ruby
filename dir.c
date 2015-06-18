@@ -941,7 +941,6 @@ dir_s_chdir(int argc, VALUE *argv, VALUE obj)
 {
     VALUE path = Qnil;
 
-    rb_secure(2);
     if (rb_scan_args(argc, argv, "01", &path) == 1) {
 	FilePathValue(path);
 	path = rb_str_encode_ospath(path);
@@ -1013,7 +1012,6 @@ check_dirname(volatile VALUE *dir)
     long len;
     rb_encoding *enc;
 
-    rb_secure(2);
     FilePathValue(d);
     enc = rb_enc_get(d);
     RSTRING_GETMEM(d, path, len);

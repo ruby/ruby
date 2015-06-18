@@ -664,7 +664,6 @@ rb_readlink(VALUE path)
     rb_encoding *enc;
     UINT cp, path_cp;
 
-    rb_secure(2);
     FilePathValue(path);
     enc = rb_enc_get(path);
     cp = path_cp = code_page(enc);

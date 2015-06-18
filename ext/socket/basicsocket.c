@@ -213,7 +213,6 @@ bsock_setsockopt(int argc, VALUE *argv, VALUE sock)
         rb_scan_args(argc, argv, "30", &lev, &optname, &val);
     }
 
-    rb_secure(2);
     GetOpenFile(sock, fptr);
     family = rsock_getfamily(fptr->fd);
     level = rsock_level_arg(family, lev);

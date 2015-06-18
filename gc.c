@@ -7012,7 +7012,6 @@ static VALUE
 gc_stress_set_m(VALUE self, VALUE flag)
 {
     rb_objspace_t *objspace = &rb_objspace;
-    rb_secure(2);
     gc_stress_set(objspace, flag);
     return flag;
 }
