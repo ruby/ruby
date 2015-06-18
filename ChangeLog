@@ -1,3 +1,7 @@
+Thu Jun 18 22:50:07 2015  Yusuke Endoh  <mame@ruby-lang.org>
+
+	* enc/make_encmake.rb: added --transes and --no-transes options.
+
 Thu Jun 18 18:24:12 2015  Eric Wong  <e@80x24.org>
 
 	* test/socket/test_unix.rb: replace sleep with select

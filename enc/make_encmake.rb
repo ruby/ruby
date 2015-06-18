@@ -15,6 +15,8 @@ BUILTIN_ENCS = []
 BUILTIN_TRANSES = []
 ENC_PATTERNS = []
 NOENC_PATTERNS = []
+TRANS_PATTERNS = []
+NOTRANS_PATTERNS = []
 module_type = :dynamic
 
 until ARGV.empty?
@@ -30,6 +32,12 @@ until ARGV.empty?
     ARGV.shift
   when /\A--no-encs=/
     NOENC_PATTERNS.concat $'.split
+    ARGV.shift
+  when /\A--transes=/
+    TRANS_PATTERNS.concat $'.split
+    ARGV.shift
+  when /\A--no-transes=/
+    NOTRANS_PATTERNS.concat $'.split
     ARGV.shift
   when /\A--module$/
     ARGV.shift
@@ -91,6 +99,10 @@ def target_transcoders
   trans -= BUILTIN_TRANSES
   atrans -= BUILTIN_TRANSES
   trans.uniq!
+  atrans.reject! {|e| !TRANS_PATTERNS.any? {|p| File.fnmatch?(p, e)}} if !TRANS_PATTERNS.empty?
+  atrans.reject! {|e| NOTRANS_PATTERNS.any? {|p| File.fnmatch?(p, e)}}
+  trans.reject! {|e| !TRANS_PATTERNS.any? {|p| File.fnmatch?(p, e)}} if !TRANS_PATTERNS.empty?
+  trans.reject! {|e| NOTRANS_PATTERNS.any? {|p| File.fnmatch?(p, e)}}
   atrans = atrans.sort_by(&ALPHANUMERIC_ORDER)
   trans = trans.sort_by(&ALPHANUMERIC_ORDER)
   trans.delete(db = "transdb")
