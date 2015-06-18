@@ -1,3 +1,7 @@
+Thu Jun 18 23:51:51 2015  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* bin/erb: $SAFE=3 is obsolete.
+
 Thu Jun 18 23:45:11 2015  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* safe.c: removed needless doc related $SAFE=2
