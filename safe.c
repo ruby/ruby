@@ -12,7 +12,6 @@
 /* safe-level:
    0 - strings from streams/environment/ARGV are tainted (default)
    1 - no dangerous operation by tainted value
-   2 - process/file operations prohibited
 */
 
 #define SAFE_LEVEL_MAX RUBY_SAFE_LEVEL_MAX
