@@ -569,6 +569,7 @@ count_imemo_objects(int argc, VALUE *argv, VALUE self)
 	imemo_type_ids[3] = rb_intern("imemo_throw_data");
 	imemo_type_ids[4] = rb_intern("imemo_ifunc");
 	imemo_type_ids[5] = rb_intern("imemo_memo");
+	imemo_type_ids[6] = rb_intern("imemo_ment");
     }
 
     rb_objspace_each_objects(count_imemo_objects_i, (void *)hash);
