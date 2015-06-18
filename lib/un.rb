@@ -319,6 +319,7 @@ def httpd
     [:Port, :MaxClients].each do |name|
       opt = options[name] and (options[name] = Integer(opt)) rescue nil
     end
+    options[:Port] ||= 8080     # HTTP Alternate
     unless argv.size == 1
       raise ArgumentError, "DocumentRoot is mandatory"
     end
