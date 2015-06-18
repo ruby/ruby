@@ -28,9 +28,9 @@
 #undef ruby_safe_level_3_warning
 
 int
-ruby_safe_level_4_warning(void)
+ruby_safe_level_3_warning(void)
 {
-    return 4;
+    return 3;
 }
 
 int
