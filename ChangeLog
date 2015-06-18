@@ -3,7 +3,7 @@ Thu Jun 18 16:58:35 2015  Koichi Sasada  <ko1@atdot.net>
 	* method.h: constify rb_method_alias_struct::original_me and
 	  rb_method_refined_struct::orig_me.
 
-	* class.c (move_refined_method): use RB_OBJ_WRITE() for 
+	* class.c (move_refined_method): use RB_OBJ_WRITE() for
 	  me->def->body.refined.orig_me.
 
 Thu Jun 18 14:35:28 2015  Koichi Sasada  <ko1@atdot.net>
