@@ -1,3 +1,7 @@
+Thu Jun 18 18:24:12 2015  Eric Wong  <e@80x24.org>
+
+	* test/socket/test_unix.rb: replace sleep with select
+
 Thu Jun 18 17:59:06 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (rb_vm_control_frame_id_and_class): remove usless codes.
