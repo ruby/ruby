@@ -320,10 +320,7 @@ def httpd
       opt = options[name] and (options[name] = Integer(opt)) rescue nil
     end
     options[:Port] ||= 8080     # HTTP Alternate
-    unless argv.size == 1
-      raise ArgumentError, "DocumentRoot is mandatory"
-    end
-    options[:DocumentRoot] = argv.shift
+    options[:DocumentRoot] = argv.shift || '.'
     s = WEBrick::HTTPServer.new(options)
     shut = proc {s.shutdown}
     siglist = %w"TERM QUIT"
