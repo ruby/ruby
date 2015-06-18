@@ -2701,9 +2701,9 @@ rb_thread_stop_p(VALUE thread)
  *  Returns the safe level in effect for <i>thr</i>. Setting thread-local safe
  *  levels can help when implementing sandboxes which run insecure code.
  *
- *     thr = Thread.new { $SAFE = 3; sleep }
+ *     thr = Thread.new { $SAFE = 1; sleep }
  *     Thread.current.safe_level   #=> 0
- *     thr.safe_level              #=> 3
+ *     thr.safe_level              #=> 1
  */
 
 static VALUE
