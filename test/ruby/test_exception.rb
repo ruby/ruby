@@ -659,6 +659,10 @@ end.join
 
   def test_name_error_info
     obj = BasicObject.new
+    class << obj
+      alias object_id __id__
+      def pretty_inspect; "`obj'"; end
+    end
     e = assert_raise(NameError) {
       obj.instance_eval("Object")
     }
@@ -667,11 +671,13 @@ end.join
       obj.instance_eval {foo}
     }
     assert_equal(:foo, e.name)
+    assert_same(obj, e.receiver)
     e = assert_raise(NoMethodError) {
       obj.foo(1, 2)
     }
     assert_equal(:foo, e.name)
     assert_equal([1, 2], e.args)
+    assert_same(obj, e.receiver)
   end
 
   def test_output_string_encoding
