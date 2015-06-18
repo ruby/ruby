@@ -1,3 +1,9 @@
+Thu Jun 18 23:25:51 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb: configure intersection of with-ext and not
+	  without-ext, as withouts is no longer true by default if
+	  with-ext option is given.  [ruby-dev:49108] [Bug #11280]
+
 Thu Jun 18 23:20:46 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* include/ruby/ruby.h: $SAFE=2 is now obsolete.
