@@ -1,3 +1,8 @@
+Thu Jun 18 13:32:46 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (name_err_receiver): add NameError#receiver method.
+	  [Feature #10881]
+
 Thu Jun 18 10:00:06 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* safe.c: removed needless doc related $SAFE=3

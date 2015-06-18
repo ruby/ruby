@@ -1249,6 +1249,22 @@ name_err_mesg_load(VALUE klass, VALUE str)
 
 /*
  * call-seq:
+ *   name_error.receiver  -> object
+ *
+ * Return the receiver associated with this NameError exception.
+ */
+
+static VALUE
+name_err_receiver(VALUE self)
+{
+    VALUE *ptr, mesg = rb_attr_get(self, id_mesg);
+
+    TypedData_Get_Struct(mesg, VALUE, &name_err_mesg_data_type, ptr);
+    return ptr[1];
+}
+
+/*
+ * call-seq:
  *   no_method_error.args  -> obj
  *
  * Return the arguments passed in as the third parameter to
@@ -1878,6 +1894,7 @@ Init_Exception(void)
     rb_eNameError     = rb_define_class("NameError", rb_eStandardError);
     rb_define_method(rb_eNameError, "initialize", name_err_initialize, -1);
     rb_define_method(rb_eNameError, "name", name_err_name, 0);
+    rb_define_method(rb_eNameError, "receiver", name_err_receiver, 0);
     rb_cNameErrorMesg = rb_define_class_under(rb_eNameError, "message", rb_cData);
     rb_define_singleton_method(rb_cNameErrorMesg, "!", rb_name_err_mesg_new, NAME_ERR_MESG_COUNT);
     rb_define_method(rb_cNameErrorMesg, "==", name_err_mesg_equal, 1);
