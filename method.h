@@ -122,11 +122,11 @@ typedef struct rb_method_attr_struct {
 } rb_method_attr_t;
 
 typedef struct rb_method_alias_struct {
-    const struct rb_method_entry_struct *original_me; /* original_me->klass is original owner */
+    const struct rb_method_entry_struct * const original_me; /* original_me->klass is original owner */
 } rb_method_alias_t;
 
 typedef struct rb_method_refined_struct {
-    const struct rb_method_entry_struct *orig_me;
+    const struct rb_method_entry_struct * const orig_me;
 } rb_method_refined_t;
 
 typedef struct rb_method_definition_struct {
