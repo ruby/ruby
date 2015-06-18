@@ -1,3 +1,7 @@
+Thu Jun 18 10:00:06 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* safe.c: removed needless doc related $SAFE=3
+
 Thu Jun 18 09:59:23 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* safe.c: rename old method name for $SAFE=3
