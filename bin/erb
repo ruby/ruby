@@ -76,7 +76,7 @@ class ERB
             require ARGV.req_arg
           when '-S'                        # security level
             arg = ARGV.req_arg
-            raise "invalid safe_level #{arg.dump}" unless arg =~ /\A[0-3]\z/
+            raise "invalid safe_level #{arg.dump}" unless arg =~ /\A[0-1]\z/
             safe_level = arg.to_i
           when '-T'                        # trim mode
             arg = ARGV.req_arg
@@ -112,7 +112,7 @@ class ERB
   -v               enable verbose mode
   -d               set $DEBUG to true
   -r library       load a library
-  -S safe_level    set $SAFE (0..3)
+  -S safe_level    set $SAFE (0..1)
   -E ex[:in]       set default external/internal encodings
   -U               set default encoding to UTF-8.
   -T trim_mode     specify trim_mode (0..2, -)
