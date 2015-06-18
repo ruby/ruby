@@ -1738,31 +1738,16 @@ rb_iseq_eval_main(VALUE iseqval)
 int
 rb_vm_control_frame_id_and_class(const rb_control_frame_t *cfp, ID *idp, VALUE *klassp)
 {
-    rb_iseq_t *iseq = cfp->iseq;
     const rb_method_entry_t *me = rb_vm_frame_method_entry(cfp);
 
-    if (!iseq && me) { /* TODO: me should know all */
+    if (me) {
 	if (idp) *idp = me->def->original_id;
 	if (klassp) *klassp = me->klass;
-	return 1;
+	return TRUE;
     }
-    while (iseq) {
-	if (RUBY_VM_IFUNC_P(iseq)) {
-	    if (idp) *idp = idIFUNC;
-	    if (klassp) *klassp = 0;
-	    return 1;
-	}
-	if (iseq->defined_method_id) {
-	    if (idp) *idp = iseq->defined_method_id;
-	    if (klassp) *klassp = iseq->klass;
-	    return 1;
-	}
-	if (iseq->local_iseq == iseq) {
-	    break;
-	}
-	iseq = iseq->parent_iseq;
+    else {
+	return FALSE;
     }
-    return 0;
 }
 
 int

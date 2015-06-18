@@ -1,3 +1,8 @@
+Thu Jun 18 17:59:06 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (rb_vm_control_frame_id_and_class): remove usless codes.
+	  `me' knows ID and owner class.
+
 Thu Jun 18 16:58:35 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* method.h: constify rb_method_alias_struct::original_me and
