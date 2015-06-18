@@ -514,7 +514,7 @@ withes, withouts = [["--with", nil], ["--without", default_exclude_exts]].collec
 }
 cond = proc {|ext, *|
   cond1 = proc {|n| File.fnmatch(n, ext)}
-  withes.call(cond1) or !withouts.call(cond1)
+  withes.call(cond1) and !withouts.call(cond1)
 }
 ($extension || %w[*]).each do |e|
   e = e.sub(/\A(?:\.\/)+/, '')
