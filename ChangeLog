@@ -1,3 +1,7 @@
+Thu Jun 18 14:35:28 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/objspace/objspace.c (count_imemo_objects): support imemo_ment.
+
 Thu Jun 18 13:32:46 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (name_err_receiver): add NameError#receiver method.
