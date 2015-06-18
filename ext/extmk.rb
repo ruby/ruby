@@ -503,7 +503,7 @@ default_exclude_exts =
   end
 withes, withouts = [["--with", nil], ["--without", default_exclude_exts]].collect {|w, d|
   if !(w = %w[-extensions -ext].collect {|o|arg_config(w+o)}).any?
-    d ? proc {|c1| d.any?(&c1)} : proc {false}
+    d ? proc {|c1| d.any?(&c1)} : proc {true}
   elsif (w = w.grep(String)).empty?
     proc {true}
   else
