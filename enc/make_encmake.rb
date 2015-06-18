@@ -51,7 +51,7 @@ def target_encodings
   deps = Hash.new {[]}
   inc_srcs = Hash.new {[]}
   default_deps = %w[regenc.h oniguruma.h config.h defines.h]
-  db = encs.delete("encdb")
+  encs.delete(db = "encdb")
   encs.each do |e|
     File.foreach("#$srcdir/#{e}.c") do |l|
       if /^\s*#\s*include\s+(?:"([^\"]+)"|<(ruby\/\sw+.h)>)/ =~ l
@@ -93,7 +93,8 @@ def target_transcoders
   trans.uniq!
   atrans = atrans.sort_by(&ALPHANUMERIC_ORDER)
   trans = trans.sort_by(&ALPHANUMERIC_ORDER)
-  trans.unshift(trans.delete("transdb"))
+  trans.delete(db = "transdb")
+  trans.unshift(db)
   trans.compact!
   trans |= atrans
   trans.map! {|e| "trans/#{e}"}
