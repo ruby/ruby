@@ -154,8 +154,6 @@ rb_fiddle_handle_initialize(int argc, VALUE argv[], VALUE self)
 	rb_bug("rb_fiddle_handle_new");
     }
 
-    rb_secure(2);
-
 #if defined(_WIN32)
     if( !clib ){
 	HANDLE rb_libruby_handle(void);
@@ -320,7 +318,6 @@ fiddle_handle_sym(void *handle, const char *name)
 #endif
     void (*func)();
 
-    rb_secure(2);
 #ifdef HAVE_DLERROR
     dlerror();
 #endif

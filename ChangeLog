@@ -1,3 +1,14 @@
+Thu Jun 18 23:20:46 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* include/ruby/ruby.h: $SAFE=2 is now obsolete.
+
+	* dir.c, ext/fiddle/handle.c, ext/socket/basicsocket.c, file.c
+	  gc.c, io.c, process.c, safe.c, signal.c, win32/file.c:
+	  removed code for $SAFE=2
+
+	* test/erb/test_erb.rb, test/fiddle/test_handle.rb
+	  test/ruby/test_env.rb: removed tests for $SAFE=2.
+
 Thu Jun 18 22:50:07 2015  Yusuke Endoh  <mame@ruby-lang.org>
 
 	* enc/make_encmake.rb: added --transes and --no-transes options.

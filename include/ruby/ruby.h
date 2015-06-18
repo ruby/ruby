@@ -572,15 +572,15 @@ VALUE rb_get_path(VALUE);
 VALUE rb_get_path_no_checksafe(VALUE);
 #define FilePathStringValue(v) ((v) = rb_get_path_no_checksafe(v))
 
-#define RUBY_SAFE_LEVEL_MAX 2
+#define RUBY_SAFE_LEVEL_MAX 1
 void rb_secure(int);
 int rb_safe_level(void);
 void rb_set_safe_level(int);
 #if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 4))
-int ruby_safe_level_3_error(void) __attribute__((error("$SAFE=3 and 4 is obsolete")));
-int ruby_safe_level_3_warning(void) __attribute__((warning("$SAFE=3 and 4 is obsolete")));
+int ruby_safe_level_2_error(void) __attribute__((error("$SAFE=2 to 4 are obsolete")));
+int ruby_safe_level_2_warning(void) __attribute__((warning("$SAFE=2 to 4 are obsolete")));
 # ifdef RUBY_EXPORT
-#   define ruby_safe_level_3_warning() ruby_safe_level_3_error()
+#   define ruby_safe_level_2_warning() ruby_safe_level_2_error()
 # endif
 #if defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P)
 # define RUBY_SAFE_LEVEL_INVALID_P(level) \

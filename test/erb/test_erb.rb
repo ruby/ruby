@@ -89,7 +89,6 @@ class TestERBCore < Test::Unit::TestCase
     _test_core(nil)
     _test_core(0)
     _test_core(1)
-    _test_core(2)
   end
 
   def _test_core(safe)

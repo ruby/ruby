@@ -9130,8 +9130,6 @@ rb_ioctl(VALUE io, VALUE req, VALUE arg)
     long narg;
     int retval;
 
-    rb_secure(2);
-
     narg = setup_narg(cmd, &arg, 1);
     GetOpenFile(io, fptr);
     retval = do_ioctl(fptr->fd, cmd, narg);
@@ -9218,8 +9216,6 @@ rb_fcntl(VALUE io, VALUE req, VALUE arg)
     rb_io_t *fptr;
     long narg;
     int retval;
-
-    rb_secure(2);
 
     narg = setup_narg(cmd, &arg, 0);
     GetOpenFile(io, fptr);
@@ -9339,7 +9335,6 @@ rb_f_syscall(int argc, VALUE *argv)
 	rb_warning("We plan to remove a syscall function at future release. DL(Fiddle) provides safer alternative.");
     }
 
-    rb_secure(2);
     if (argc == 0)
 	rb_raise(rb_eArgError, "too few arguments for syscall");
     if (argc > numberof(arg))

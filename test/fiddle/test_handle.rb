@@ -14,15 +14,6 @@ module Fiddle
       assert_kind_of Integer, handle.to_i
     end
 
-    def test_static_sym_secure
-      assert_raises(SecurityError) do
-        Thread.new do
-          $SAFE = 2
-          Fiddle::Handle.sym('calloc')
-        end.join
-      end
-    end
-
     def test_static_sym_unknown
       assert_raises(DLError) { Fiddle::Handle.sym('fooo') }
       assert_raises(DLError) { Fiddle::Handle['fooo'] }
@@ -66,16 +57,6 @@ module Fiddle
       assert_raises(TypeError) { handle[nil] }
     end
 
-    def test_sym_secure
-      assert_raises(SecurityError) do
-        Thread.new do
-          $SAFE = 2
-          handle = Handle.new(LIBC_SO)
-          handle.sym('calloc')
-        end.join
-      end
-    end
-
     def test_sym
       handle = Handle.new(LIBC_SO)
       refute_nil handle.sym('calloc')
@@ -97,24 +78,6 @@ module Fiddle
 
     def test_dlopen_returns_handle
       assert_instance_of Handle, dlopen(LIBC_SO)
-    end
-
-    def test_dlopen_safe
-      assert_raises(SecurityError) do
-        Thread.new do
-          $SAFE = 2
-          dlopen(LIBC_SO)
-        end.join
-      end
-    end
-
-    def test_initialize_safe
-      assert_raises(SecurityError) do
-        Thread.new do
-          $SAFE = 2
-          Handle.new(LIBC_SO)
-        end.join
-      end
     end
 
     def test_initialize_noargs

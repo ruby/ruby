@@ -377,7 +377,6 @@ parent_redirect_close(int fd)
 static VALUE
 get_pid(void)
 {
-    rb_secure(2);
     return PIDT2NUM(getpid());
 }
 
@@ -401,7 +400,6 @@ get_pid(void)
 static VALUE
 get_ppid(void)
 {
-    rb_secure(2);
     return PIDT2NUM(getppid());
 }
 
@@ -936,7 +934,6 @@ proc_wait(int argc, VALUE *argv)
     rb_pid_t pid;
     int flags, status;
 
-    rb_secure(2);
     flags = 0;
     if (argc == 0) {
 	pid = -1;
@@ -1010,7 +1007,6 @@ proc_waitall(void)
     rb_pid_t pid;
     int status;
 
-    rb_secure(2);
     result = rb_ary_new();
     rb_last_status_clear();
 
@@ -1106,7 +1102,6 @@ rb_detach_process(rb_pid_t pid)
 static VALUE
 proc_detach(VALUE obj, VALUE pid)
 {
-    rb_secure(2);
     return rb_detach_process(NUM2PIDT(pid));
 }
 
@@ -1651,8 +1646,6 @@ rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val)
 #if defined(HAVE_SETRLIMIT) && defined(NUM2RLIM)
     int rtype;
 #endif
-
-    rb_secure(2);
 
     switch (TYPE(key)) {
       case T_SYMBOL:
@@ -3657,8 +3650,6 @@ rb_f_fork(VALUE obj)
 {
     rb_pid_t pid;
 
-    rb_secure(2);
-
     switch (pid = rb_fork_ruby(NULL)) {
       case 0:
 	rb_thread_atfork();
@@ -4365,7 +4356,6 @@ proc_getpgrp(void)
 {
     rb_pid_t pgrp;
 
-    rb_secure(2);
 #if defined(HAVE_GETPGRP) && defined(GETPGRP_VOID)
     pgrp = getpgrp();
     if (pgrp < 0) rb_sys_fail(0);
@@ -4393,7 +4383,6 @@ proc_getpgrp(void)
 static VALUE
 proc_setpgrp(void)
 {
-    rb_secure(2);
   /* check for posix setpgid() first; this matches the posix */
   /* getpgrp() above.  It appears that configure will set SETPGRP_VOID */
   /* even though setpgrp(0,0) would be preferred. The posix call avoids */
@@ -4426,7 +4415,6 @@ proc_getpgid(VALUE obj, VALUE pid)
 {
     rb_pid_t i;
 
-    rb_secure(2);
     i = getpgid(NUM2PIDT(pid));
     if (i < 0) rb_sys_fail(0);
     return PIDT2NUM(i);
@@ -4450,7 +4438,6 @@ proc_setpgid(VALUE obj, VALUE pid, VALUE pgrp)
 {
     rb_pid_t ipid, ipgrp;
 
-    rb_secure(2);
     ipid = NUM2PIDT(pid);
     ipgrp = NUM2PIDT(pgrp);
 
@@ -4481,7 +4468,6 @@ proc_getsid(int argc, VALUE *argv)
     rb_pid_t sid;
     VALUE pid;
 
-    rb_secure(2);
     rb_scan_args(argc, argv, "01", &pid);
 
     if (NIL_P(pid))
@@ -4517,7 +4503,6 @@ proc_setsid(void)
 {
     rb_pid_t pid;
 
-    rb_secure(2);
     pid = setsid();
     if (pid < 0) rb_sys_fail(0);
     return PIDT2NUM(pid);
@@ -4578,7 +4563,6 @@ proc_getpriority(VALUE obj, VALUE which, VALUE who)
 {
     int prio, iwhich, iwho;
 
-    rb_secure(2);
     iwhich = NUM2INT(which);
     iwho   = NUM2INT(who);
 
@@ -4610,7 +4594,6 @@ proc_setpriority(VALUE obj, VALUE which, VALUE who, VALUE prio)
 {
     int iwhich, iwho, iprio;
 
-    rb_secure(2);
     iwhich = NUM2INT(which);
     iwho   = NUM2INT(who);
     iprio  = NUM2INT(prio);
@@ -4850,8 +4833,6 @@ proc_getrlimit(VALUE obj, VALUE resource)
 {
     struct rlimit rlim;
 
-    rb_secure(2);
-
     if (getrlimit(rlimit_resource_type(resource), &rlim) < 0) {
 	rb_sys_fail("getrlimit");
     }
@@ -4919,8 +4900,6 @@ proc_setrlimit(int argc, VALUE *argv, VALUE obj)
     VALUE resource, rlim_cur, rlim_max;
     struct rlimit rlim;
 
-    rb_secure(2);
-
     rb_scan_args(argc, argv, "21", &resource, &rlim_cur, &rlim_max);
     if (rlim_max == Qnil)
         rlim_max = rlim_cur;
@@ -4941,7 +4920,6 @@ static int under_uid_switch = 0;
 static void
 check_uid_switch(void)
 {
-    rb_secure(2);
     if (under_uid_switch) {
 	rb_raise(rb_eRuntimeError, "can't handle UID while evaluating block given to Process::UID.switch method");
     }
@@ -4951,7 +4929,6 @@ static int under_gid_switch = 0;
 static void
 check_gid_switch(void)
 {
-    rb_secure(2);
     if (under_gid_switch) {
 	rb_raise(rb_eRuntimeError, "can't handle GID while evaluating block given to Process::UID.switch method");
     }
@@ -5650,7 +5627,6 @@ p_sys_setresgid(VALUE obj, VALUE rid, VALUE eid, VALUE sid)
 static VALUE
 p_sys_issetugid(VALUE obj)
 {
-    rb_secure(2);
     if (issetugid()) {
 	return Qtrue;
     }
@@ -5965,7 +5941,6 @@ proc_daemon(int argc, VALUE *argv)
     VALUE nochdir, noclose;
     int n;
 
-    rb_secure(2);
     rb_scan_args(argc, argv, "02", &nochdir, &noclose);
 
     prefork();
