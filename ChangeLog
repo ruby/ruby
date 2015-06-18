@@ -1,3 +1,7 @@
+Thu Jun 18 23:45:11 2015  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* safe.c: removed needless doc related $SAFE=2
+
 Thu Jun 18 23:38:07 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* thread.c (rb_thread_safe_level): fix document.  $SAFE=3 is obsolete.
