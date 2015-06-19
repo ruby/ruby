@@ -1,6 +1,6 @@
 Fri Jun 19 07:58:11 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* ext/extmk.rb: if no with-ext option is given, dafault to
+	* ext/extmk.rb: if no with-ext option is given, default to
 	  enable everything.  [ruby-dev:49108] [Bug #11280]
 
 Fri Jun 19 06:30:07 2015  Koichi Sasada  <ko1@atdot.net>
