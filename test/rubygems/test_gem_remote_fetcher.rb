@@ -898,7 +898,7 @@ gems:
       server.mount_proc("/insecure_redirect") { |req, res|
         res.set_redirect(WEBrick::HTTPStatus::MovedPermanently, req.query['to'])
       }
-      server.ssl_context.tmp_dh_callback = proc { OpenSSL::PKey::DH.new 128 }
+      server.ssl_context.tmp_dh_callback = proc {|_, _, k| OpenSSL::PKey::DH.new(k) }
       t = Thread.new do
         begin
           server.start
