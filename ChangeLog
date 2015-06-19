@@ -1,3 +1,9 @@
+Sat Jun 20 03:56:58 2015  Yusuke Endoh  <mame@ruby-lang.org>
+
+	* enc/make_encmake.rb: the list of encoding extension libraries must
+	  not include encinit.c itself.  It caused "undefined reference to
+	  Init_encinit".
+
 Sat Jun 20 02:03:53 2015  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* process.c (rb_execarg_parent_start1): new macro ALWAYS_NEED_ENVP
