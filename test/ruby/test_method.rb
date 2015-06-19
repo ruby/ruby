@@ -297,6 +297,7 @@ class TestMethod < Test::Unit::TestCase
   end
 
   def test_define_singleton_method_no_proc
+    o = Object.new
     assert_raise(ArgumentError) {
       o.instance_eval { define_singleton_method(:bar) }
     }
