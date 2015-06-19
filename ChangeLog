@@ -1,3 +1,24 @@
+Sat Jun 20 02:03:53 2015  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* process.c (rb_execarg_parent_start1): new macro ALWAYS_NEED_ENVP
+	  to generate envp_str anytime on Solaris 10 (or earlier version
+	  of Solaris) to avoid calling execv() which is async-signal unsafe
+	  on Solaris 10. [Bug #11265] [ruby-dev:49089]
+
+	* process.c (exec_with_sh, proc_exec_cmd): On Solaris 10,
+	  because ALWAYS_NEED_ENVP is 1 and envp_str is always generated,
+	  execv() in exec_with_sh() and proc_exec_cmd() are never called.
+	  To guarantee this, execv() is replaced by a macro to print
+	  out error message on Solaris 10.
+
+	* process.c (proc_exec_sh): Because proc_exec_sh() may be called
+	  by rb_proc_exec() with envp_str = Qfalse, execl() is replaced
+	  by a macro that calls execle() with "extern char **environ"
+	  traditional global variable on Solaris 10.
+	  TODO: This may be unsafe and sholud be changed in the future.
+	  Although rb_proc_exec() is not used from inside current version
+	  of ruby, it may be called by third-party extensions.
+
 Sat Jun 20 01:10:13 2015  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* NEWS: mention about $SAFE.

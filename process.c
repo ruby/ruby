@@ -285,6 +285,15 @@ static ID id_hertz;
 extern ID ruby_static_id_status;
 #define id_status ruby_static_id_status
 
+/* execv and execl are async-signal-safe since SUSv4 (POSIX.1-2008, XPG7) */
+#if defined(__sun) && !defined(_XPG7) /* Solaris 10, 9, ... */
+#define execv(path, argv) (rb_async_bug_errno("unreachable: async-signal-unsafe execv() is called", 0))
+#define execl(path, arg0, arg1, arg2, term) do { extern char **environ; execle((path), (arg0), (arg1), (arg2), (term), (environ)); } while (0)
+#define ALWAYS_NEED_ENVP 1
+#else
+#define ALWAYS_NEED_ENVP 0
+#endif
+
 /*#define DEBUG_REDIRECT*/
 #if defined(DEBUG_REDIRECT)
 
@@ -1201,7 +1210,7 @@ exec_with_sh(const char *prog, char **argv, char **envp)
     if (envp)
         execve("/bin/sh", argv, envp); /* async-signal-safe */
     else
-        execv("/bin/sh", argv); /* async-signal-safe */
+        execv("/bin/sh", argv); /* async-signal-safe (since SUSv4) */
 }
 
 #else
@@ -1261,7 +1270,7 @@ proc_exec_cmd(const char *prog, VALUE argv_str, VALUE envp_str)
     if (envp_str)
         execve(prog, argv, envp); /* async-signal-safe */
     else
-        execv(prog, argv); /* async-signal-safe */
+        execv(prog, argv); /* async-signal-safe (since SUSv4) */
     preserving_errno(try_with_sh(prog, argv, envp)); /* try_with_sh() is async-signal-safe. */
 # if defined(__EMX__) || defined(OS2)
     if (new_argv) {
@@ -1312,7 +1321,7 @@ proc_exec_sh(const char *str, VALUE envp_str)
     if (envp_str)
         execle("/bin/sh", "sh", "-c", str, (char *)NULL, (char **)RSTRING_PTR(envp_str)); /* async-signal-safe */
     else
-        execl("/bin/sh", "sh", "-c", str, (char *)NULL); /* async-signal-safe */
+        execl("/bin/sh", "sh", "-c", str, (char *)NULL); /* async-signal-safe (since SUSv4) */
 #endif
     return -1;
 #endif	/* _WIN32 */
@@ -2360,7 +2369,7 @@ rb_execarg_parent_start1(VALUE execarg_obj)
 
     unsetenv_others = eargp->unsetenv_others_given && eargp->unsetenv_others_do;
     envopts = eargp->env_modification;
-    if (unsetenv_others || envopts != Qfalse) {
+    if (ALWAYS_NEED_ENVP || unsetenv_others || envopts != Qfalse) {
         VALUE envtbl, envp_str, envp_buf;
         char *p, *ep;
         if (unsetenv_others) {
