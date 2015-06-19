@@ -129,6 +129,10 @@ with all sufficient information, see the ChangeLog file.
 
 === Built-in global variables compatibility issues
 
+* $SAFE
+  * $SAFE=2 and $SAFE=3 are obsolete.  If $SAFE is set to 2 or larger,
+    an ArgumentError is raised.
+
 === C API updates
 
 === Build system updates
