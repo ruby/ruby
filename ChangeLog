@@ -1,3 +1,8 @@
+Fri Jun 19 14:53:35 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (rb_mod_define_method): now requires a block direct to
+	  this method call.  [ruby-core:69655] [Bug #11283]
+
 Fri Jun 19 13:54:43 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (rb_mod_define_method): get rid of inadvertent ID

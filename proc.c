@@ -14,6 +14,10 @@
 #include "gc.h"
 #include "iseq.h"
 
+/* Proc.new with no block will raise an exception in the future
+ * versions */
+#define PROC_NEW_REQUIRES_BLOCK 0
+
 const rb_cref_t *rb_vm_cref_in_context(VALUE self, VALUE cbase);
 
 struct METHOD {
@@ -575,6 +579,7 @@ proc_new(VALUE klass, int8_t is_lambda)
     rb_block_t *block;
 
     if (!(block = rb_vm_control_frame_block_ptr(cfp))) {
+#if !PROC_NEW_REQUIRES_BLOCK
 	cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
 
 	if ((block = rb_vm_control_frame_block_ptr(cfp)) != 0) {
@@ -582,6 +587,9 @@ proc_new(VALUE klass, int8_t is_lambda)
 		rb_warn(proc_without_block);
 	    }
 	}
+#else
+	if (0)
+#endif
 	else {
 	    rb_raise(rb_eArgError, proc_without_block);
 	}
@@ -1671,7 +1679,17 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
     name = argv[0];
     id = rb_check_id(&name);
     if (argc == 1) {
+#if PROC_NEW_REQUIRES_BLOCK
 	body = rb_block_lambda();
+#else
+	rb_thread_t *th = GET_THREAD();
+	rb_block_t *block = rb_vm_control_frame_block_ptr(th->cfp);
+	if (!block) rb_raise(rb_eArgError, proc_without_block);
+	body = block->proc;
+	if (!body) {
+	    body = rb_vm_make_proc_lambda(th, block, rb_cProc, TRUE);
+	}
+#endif
     }
     else {
 	body = argv[1];

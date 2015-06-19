@@ -61,6 +61,11 @@ with all sufficient information, see the ChangeLog file.
 * IO
   * IO#close doesn't raise when the IO object is closed.  [Feature #10718]
 
+* Module
+  * Module#define_method and Object.define_singleton_method now
+    require method body, Proc, Method, or a block, and raise
+    ArgumentError if no block is given directly.  [Bug #11283]
+
 * pack/unpack (Array/String)
   * j and J directives for pointer width integer type.  [Feature #11215]
 

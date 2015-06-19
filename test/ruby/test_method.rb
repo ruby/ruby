@@ -285,14 +285,27 @@ class TestMethod < Test::Unit::TestCase
     end
     c = Class.new
     assert_raise(ArgumentError) {o.foo(c)}
-    o.foo(c) { :foo }
-    assert_equal(:foo, c.new.foo)
+
+    bug11283 = '[ruby-core:69655] [Bug #11283]'
+    assert_raise(ArgumentError, bug11283) {o.foo(c) {:foo}}
   end
 
   def test_define_singleton_method
     o = Object.new
     o.instance_eval { define_singleton_method(:foo) { :foo } }
     assert_equal(:foo, o.foo)
+  end
+
+  def test_define_singleton_method_no_proc
+    assert_raise(ArgumentError) {
+      o.instance_eval { define_singleton_method(:bar) }
+    }
+
+    bug11283 = '[ruby-core:69655] [Bug #11283]'
+    def o.define(n)
+      define_singleton_method(n)
+    end
+    assert_raise(ArgumentError) {o.define(:bar) {:bar}}
   end
 
   def test_define_method_invalid_arg
