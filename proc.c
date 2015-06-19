@@ -1657,6 +1657,7 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
 {
     ID id;
     VALUE body;
+    VALUE name;
     const rb_cref_t *cref = rb_vm_cref_in_context(mod, mod);
     const rb_scope_visibility_t default_scope_visi = {METHOD_VISI_PUBLIC, FALSE};
     const rb_scope_visibility_t *scope_visi = &default_scope_visi;
@@ -1666,13 +1667,13 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
 	scope_visi = CREF_SCOPE_VISI(cref);
     }
 
+    rb_check_arity(argc, 1, 2);
+    name = argv[0];
+    id = rb_check_id(&name);
     if (argc == 1) {
-	id = rb_to_id(argv[0]);
 	body = rb_block_lambda();
     }
     else {
-	rb_check_arity(argc, 1, 2);
-	id = rb_to_id(argv[0]);
 	body = argv[1];
 	is_method = rb_obj_is_method(body) != Qfalse;
 	if (!is_method && !rb_obj_is_proc(body)) {
@@ -1681,6 +1682,7 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
 		     rb_obj_classname(body));
 	}
     }
+    if (!id) id = rb_to_id(name);
 
     if (is_method) {
 	struct METHOD *method = (struct METHOD *)DATA_PTR(body);

@@ -1,3 +1,8 @@
+Fri Jun 19 13:54:43 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (rb_mod_define_method): get rid of inadvertent ID
+	  creations at error.
+
 Fri Jun 19 07:58:11 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb: if no with-ext option is given, default to
