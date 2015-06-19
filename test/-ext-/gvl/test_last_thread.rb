@@ -15,7 +15,7 @@ class TestLastThread < Test::Unit::TestCase
       t1 = Time.now
       t = t1 - t0
 
-      assert_operator(t, :>=, 1)
+      assert_in_delta(1.0, t, 0.16)
     end;
   end
 end
