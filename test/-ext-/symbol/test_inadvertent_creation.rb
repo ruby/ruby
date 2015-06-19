@@ -63,6 +63,28 @@ module Test_Symbol
       assert_not_interned_error(cl, :const_defined?, name.to_sym)
     end
 
+    def test_module_define_method_type_error
+      cl = Class.new
+      name = noninterned_name
+
+      assert_raise(TypeError) {cl.class_eval {define_method(name, "")}}
+      assert_not_interned(name)
+
+      assert_raise(TypeError) {cl.class_eval {define_method(name.to_sym, "")}}
+      assert_not_pinneddown(name)
+    end
+
+    def test_module_define_method_argument_error
+      cl = Class.new
+      name = noninterned_name
+
+      assert_raise(ArgumentError) {cl.class_eval {define_method(name)}}
+      assert_not_interned(name)
+
+      assert_raise(ArgumentError) {cl.class_eval {define_method(name.to_sym)}}
+      assert_not_pinneddown(name)
+    end
+
     def test_respond_to_missing
       feature5072 = Feature5072
       c = Class.new do
