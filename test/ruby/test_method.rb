@@ -278,19 +278,24 @@ class TestMethod < Test::Unit::TestCase
     end
   end
 
-  def test_define_singleton_method
+  def test_define_method_no_proc
     o = Object.new
     def o.foo(c)
       c.class_eval { define_method(:foo) }
     end
     c = Class.new
+    assert_raise(ArgumentError) {o.foo(c)}
     o.foo(c) { :foo }
     assert_equal(:foo, c.new.foo)
+  end
 
+  def test_define_singleton_method
     o = Object.new
     o.instance_eval { define_singleton_method(:foo) { :foo } }
     assert_equal(:foo, o.foo)
+  end
 
+  def test_define_method_invalid_arg
     assert_raise(TypeError) do
       Class.new.class_eval { define_method(:foo, Object.new) }
     end
