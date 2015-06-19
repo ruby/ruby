@@ -564,6 +564,8 @@ bind_receiver(VALUE bindval)
     return env->block.self;
 }
 
+static const char proc_without_block[] = "tried to create Proc object without a block";
+
 static VALUE
 proc_new(VALUE klass, int8_t is_lambda)
 {
@@ -577,12 +579,11 @@ proc_new(VALUE klass, int8_t is_lambda)
 
 	if ((block = rb_vm_control_frame_block_ptr(cfp)) != 0) {
 	    if (is_lambda) {
-		rb_warn("tried to create Proc object without a block");
+		rb_warn(proc_without_block);
 	    }
 	}
 	else {
-	    rb_raise(rb_eArgError,
-		     "tried to create Proc object without a block");
+	    rb_raise(rb_eArgError, proc_without_block);
 	}
     }
 
