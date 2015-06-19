@@ -1,3 +1,7 @@
+Sat Jun 20 01:10:13 2015  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* NEWS: mention about $SAFE.
+
 Fri Jun 19 14:53:35 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (rb_mod_define_method): now requires a block direct to
