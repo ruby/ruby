@@ -1,3 +1,12 @@
+Sun Jun 21 05:31:41 2015  Shota Fukumori  <her@sorah.jp>
+
+	* ext/objspace/objspace_dump.c(dump_object): Return empty JSON object when
+	  passed object is a special const, instead of SEGV.
+	  Based patch by Kohei Suzuki (eagletmt). [ruby-core:69692] [Bug #11291]
+
+	* test/objspace/test_objspace.rb(test_dump_special_consts): Test for above fix.
+
+
 Sat Jun 20 03:56:58 2015  Yusuke Endoh  <mame@ruby-lang.org>
 
 	* enc/make_encmake.rb: the list of encoding extension libraries must
