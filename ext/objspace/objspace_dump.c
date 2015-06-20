@@ -149,6 +149,10 @@ dump_object(VALUE obj, struct dump_config *dc)
     ID flags[RB_OBJ_GC_FLAGS_MAX];
     size_t n, i;
 
+    if (SPECIAL_CONST_P(obj)) {
+      return;
+    }
+
     dc->cur_obj = obj;
     dc->cur_obj_references = 0;
     dc->cur_obj_klass = BUILTIN_TYPE(obj) == T_NODE ? 0 : RBASIC_CLASS(obj);
