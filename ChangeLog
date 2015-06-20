@@ -21,7 +21,7 @@ Sat Jun 20 02:03:53 2015  Naohisa Goto  <ngotogenome@gmail.com>
 	  by rb_proc_exec() with envp_str = Qfalse, execl() is replaced
 	  by a macro that calls execle() with "extern char **environ"
 	  traditional global variable on Solaris 10.
-	  TODO: This may be unsafe and sholud be changed in the future.
+	  TODO: This may be unsafe and should be changed in the future.
 	  Although rb_proc_exec() is not used from inside current version
 	  of ruby, it may be called by third-party extensions.
 
