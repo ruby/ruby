@@ -410,7 +410,7 @@ class IPAddr
   # Set current netmask to given mask.
   def mask!(mask)
     if mask.kind_of?(String)
-      if mask =~ /^\d+$/
+      if mask =~ /\A\d+\z/
         prefixlen = mask.to_i
       else
         m = IPAddr.new(mask)
@@ -478,7 +478,7 @@ class IPAddr
       end
     end
     prefix, prefixlen = addr.split('/')
-    if prefix =~ /^\[(.*)\]$/i
+    if prefix =~ /\A\[(.*)\]\z/i
       prefix = $1
       family = Socket::AF_INET6
     end
