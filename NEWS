@@ -131,7 +131,7 @@ with all sufficient information, see the ChangeLog file.
 
 * $SAFE
   * $SAFE=2 and $SAFE=3 are obsolete.  If $SAFE is set to 2 or larger,
-    an ArgumentError is raised.
+    an ArgumentError is raised.  [Feature #5455]
 
 === C API updates
 
