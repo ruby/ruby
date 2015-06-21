@@ -98,7 +98,6 @@ STATIC_ASSERT(sizeof_long_and_sizeof_bdigit, SIZEOF_BDIGIT % SIZEOF_LONG == 0);
     rb_absint_size(x, NULL))
 
 #define BIGDIVREM_EXTRA_WORDS 1
-#define roomof(n, m) ((long)(((n)+(m)-1) / (m)))
 #define bdigit_roomof(n) roomof(n, SIZEOF_BDIGIT)
 #define BARY_ARGS(ary) ary, numberof(ary)
 

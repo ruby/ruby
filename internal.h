@@ -611,7 +611,8 @@ struct MEMO {
 
 #define MEMO_NEW(a, b, c) ((struct MEMO *)rb_imemo_new(imemo_memo, (VALUE)(a), (VALUE)(b), (VALUE)(c), 0))
 
-#define type_roomof(x, y) ((sizeof(x) + sizeof(y) - 1) / sizeof(y))
+#define roomof(x, y) (((x) + (y) - 1) / (y))
+#define type_roomof(x, y) roomof(sizeof(x), sizeof(y))
 #define MEMO_FOR(type, value) ((type *)RARRAY_PTR(value))
 #define NEW_MEMO_FOR(type, value) \
   ((value) = rb_ary_tmp_new_fill(type_roomof(type, VALUE)), MEMO_FOR(type, value))
