@@ -150,8 +150,8 @@ dump_object(VALUE obj, struct dump_config *dc)
     size_t n, i;
 
     if (SPECIAL_CONST_P(obj)) {
-      dump_append(dc, "{}");
-      return;
+	dump_append(dc, "{}");
+	return;
     }
 
     dc->cur_obj = obj;
