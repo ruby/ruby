@@ -1,3 +1,8 @@
+Sun Jun 21 20:28:09 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* internal.h (roomof): extract from type_roomof, and move from
+	  bignum.c.
+
 Sun Jun 21 18:32:37 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby_atomic.h (ATOMIC_PTR_CAS): define by generic CAS macro, not
