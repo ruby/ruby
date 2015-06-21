@@ -1,3 +1,8 @@
+Sun Jun 21 18:32:37 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby_atomic.h (ATOMIC_PTR_CAS): define by generic CAS macro, not
+	  via size_t, to suppress a warning by mingw gcc.
+
 Sun Jun 21 05:31:41 2015  Shota Fukumori  <her@sorah.jp>
 
 	* ext/objspace/objspace_dump.c(dump_object): Return empty JSON object when
