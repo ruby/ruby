@@ -4984,7 +4984,7 @@ rb_ary_permutation(int argc, VALUE *argv, VALUE ary)
     }
     else {             /* this is the general case */
 	volatile VALUE t0;
-	long *p = (long*)ALLOCV(t0, r*sizeof(long)+n*sizeof(char));
+	long *p = ALLOCV_N(long, t0, r+roomof(n, sizeof(long)));
 	char *used = (char*)(p + r);
 	VALUE ary0 = ary_make_shared_copy(ary); /* private defensive copy of ary */
 	RBASIC_CLEAR_CLASS(ary0);
