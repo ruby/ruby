@@ -1,3 +1,7 @@
+Sun Jun 21 23:52:46 2015  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* NEWS: mention Array#bsearch_index and Hash#fetch_values.
+
 Sun Jun 21 23:46:27 2015  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* NEWS: add a reference to a ticket.

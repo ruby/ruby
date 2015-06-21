@@ -15,11 +15,19 @@ with all sufficient information, see the ChangeLog file.
 
 === Core classes updates (outstanding ones only)
 
+* Array
+
+  * Array#bsearch_index [Feature #10730]
+
 * Enumerable
 
   * Enumerable#grep_v is added as inverse version of Enumerable#grep.
     [Feature #11049]
   * Enumerable#chunk_while [Feature #10769]
+
+* Hash
+
+  * Hash#fetch_values [Feature #10017]
 
 * Numeric
 
