@@ -37,7 +37,7 @@ with all sufficient information, see the ChangeLog file.
   * Thread#name, Thread#name are added to handle thread names [Feature #11251]
 
 * NameError
-  * NameError#receiver is added to take the reciever object. [Feature #10881]
+  * NameError#receiver is added to take the receiver object. [Feature #10881]
 
 === Core classes compatibility issues (excluding feature bug fixes)
 
