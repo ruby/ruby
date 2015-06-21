@@ -18,6 +18,7 @@ typedef unsigned int rb_atomic_t;
 # define ATOMIC_SIZE_SUB(var, val) __atomic_fetch_sub(&(var), (val), __ATOMIC_SEQ_CST)
 
 # define ATOMIC_PTR_EXCHANGE(var, val) __atomic_exchange_n(&(var), (val), __ATOMIC_SEQ_CST)
+# define ATOMIC_PTR_CAS(var, oldval, newval) ATOMIC_CAS(var, oldval, newval)
 
 #elif defined HAVE_GCC_SYNC_BUILTINS
 /* @shyouhei hack to support atomic operations in case of gcc. Gcc
@@ -36,6 +37,7 @@ typedef unsigned int rb_atomic_t; /* Anything OK */
 # define ATOMIC_SIZE_SUB(var, val) __sync_fetch_and_sub(&(var), (val))
 
 # define ATOMIC_PTR_EXCHANGE(var, val) __sync_lock_test_and_set(&(var), (val))
+# define ATOMIC_PTR_CAS(var, oldval, newval) ATOMIC_CAS(var, oldval, newval)
 
 #elif defined _WIN32
 #if defined _MSC_VER && _MSC_VER > 1200
