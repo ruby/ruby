@@ -1845,7 +1845,7 @@ open_dir_handle(const WCHAR *filename, WIN32_FIND_DATAW *fd)
     // Create the search pattern
     //
     len = lstrlenW(filename);
-    scanname = ALLOCV_N(WCHAR, v, len + sizeof(wildcard) / sizeof(WCHAR));
+    scanname = ALLOCV_N(WCHAR, v, len + numberof(wildcard));
     lstrcpyW(scanname, filename);
     p = CharPrevW(scanname, scanname + len);
     if (*p == L'/' || *p == L'\\' || *p == L':')
