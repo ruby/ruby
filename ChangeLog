@@ -1,3 +1,9 @@
+Tue Jun 23 06:37:10 2015  Eric Wong  <e@80x24.org>
+
+	* struct.c (struct_ivar_get): cache member definition in a subclass
+	  Thanks to Sokolov Yura aka funny_falcon <funny.falcon@gmail.com>
+	  in https://bugs.ruby-lang.org/issues/10585
+
 Tue Jun 23 04:58:06 2015  Eric Wong  <e@80x24.org>
 
 	* benchmark/bm_vm2_struct_big_href_hi.rb: new benchmark
