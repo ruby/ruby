@@ -314,22 +314,6 @@ module Test
         end
       end
 
-      def start_watchdog
-        Thread.new do
-          while stat = Process.wait2
-            break if @interrupt # Break when interrupt
-            pid, stat = stat
-            w = (@workers + @dead_workers).find{|x| pid == x.pid }
-            next unless w
-            w = w.dup
-            if w.status != :quit && !w.quit_called?
-              # Worker down
-              w.died(nil, !stat.signaled? && stat.exitstatus)
-            end
-          end
-        end
-      end
-
       def deal(io, type, result, rep, shutting_down = false)
         worker = @workers_hash[io]
         cmd = worker.read
@@ -404,9 +388,6 @@ module Test
         @workers_hash = {} # out-IO => worker
         @ios          = [] # Array of worker IOs
         begin
-          # Thread: watchdog
-          watchdog = start_watchdog
-
           @options[:parallel].times {launch_worker}
 
           while _io = IO.select(@ios)[0]
@@ -420,7 +401,6 @@ module Test
           @interrupt = ex
           return result
         ensure
-          watchdog.kill if watchdog
           if @interrupt
             @ios.select!{|x| @workers_hash[x].status == :running }
             while !@ios.empty? && (__io = IO.select(@ios,[],[],10))
