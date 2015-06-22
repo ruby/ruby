@@ -23,12 +23,20 @@ static VALUE struct_alloc(VALUE);
 static inline VALUE
 struct_ivar_get(VALUE c, ID id)
 {
+    VALUE orig = c;
+    VALUE ivar = rb_attr_get(c, id);
+
+    if (!NIL_P(ivar))
+	return ivar;
+
     for (;;) {
-	if (rb_ivar_defined(c, id))
-	    return rb_ivar_get(c, id);
 	c = RCLASS_SUPER(c);
 	if (c == 0 || c == rb_cStruct)
 	    return Qnil;
+	ivar = rb_attr_get(c, id);
+	if (!NIL_P(ivar)) {
+	    return rb_ivar_set(orig, id, ivar);
+	}
     }
 }
 
