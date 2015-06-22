@@ -1,7 +1,7 @@
 Mon Jun 22 18:08:48 2015  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* test/lib/test/unit.rb (Test::Unit::Parallel#start_watchdog): removed
-	  because it has been meaningless since r36385. [Bug:11288]
+	  because it has been meaningless since r36385. [Bug #11288]
 
 	* test/lib/test/unit.rb (Test::Unit::Parallel#_run_parallel): delete
 	  lines related to the removed start_watchdog method
