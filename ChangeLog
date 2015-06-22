@@ -1,3 +1,13 @@
+Tue Jun 23 04:58:06 2015  Eric Wong  <e@80x24.org>
+
+	* benchmark/bm_vm2_struct_big_href_hi.rb: new benchmark
+	* benchmark/bm_vm2_struct_big_href_lo.rb: ditto
+	* benchmark/bm_vm2_struct_big_hset.rb: ditto
+	* benchmark/bm_vm2_struct_small_href.rb: ditto
+	* benchmark/bm_vm2_struct_small_hset.rb: ditto
+	  Thanks to Sokolov Yura aka funny_falcon <funny.falcon@gmail.com>
+	  in https://bugs.ruby-lang.org/issues/10585
+
 Mon Jun 22 18:08:48 2015  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* test/lib/test/unit.rb (Test::Unit::Parallel#start_watchdog): removed
