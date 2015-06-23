@@ -1124,7 +1124,12 @@ nometh_err_initialize(int argc, VALUE *argv, VALUE self)
 }
 
 /* :nodoc: */
-#define NAME_ERR_MESG_COUNT 3
+enum {
+    NAME_ERR_MESG__MESG,
+    NAME_ERR_MESG__RECV,
+    NAME_ERR_MESG__NAME,
+    NAME_ERR_MESG_COUNT
+};
 
 static void
 name_err_mesg_mark(void *p)
@@ -1158,9 +1163,9 @@ rb_name_err_mesg_new(VALUE obj, VALUE mesg, VALUE recv, VALUE method)
     VALUE result = TypedData_Wrap_Struct(rb_cNameErrorMesg, &name_err_mesg_data_type, 0);
     VALUE *ptr = ALLOC_N(VALUE, NAME_ERR_MESG_COUNT);
 
-    ptr[0] = mesg;
-    ptr[1] = recv;
-    ptr[2] = method;
+    ptr[NAME_ERR_MESG__MESG] = mesg;
+    ptr[NAME_ERR_MESG__RECV] = recv;
+    ptr[NAME_ERR_MESG__NAME] = method;
     RTYPEDDATA_DATA(result) = ptr;
     return result;
 }
@@ -1192,14 +1197,14 @@ name_err_mesg_to_str(VALUE obj)
     VALUE *ptr, mesg;
     TypedData_Get_Struct(obj, VALUE, &name_err_mesg_data_type, ptr);
 
-    mesg = ptr[0];
+    mesg = ptr[NAME_ERR_MESG__MESG];
     if (NIL_P(mesg)) return Qnil;
     else {
 	const char *desc = 0;
 	VALUE d = 0, args[NAME_ERR_MESG_COUNT];
 	int state = 0;
 
-	obj = ptr[1];
+	obj = ptr[NAME_ERR_MESG__RECV];
 	switch (obj) {
 	  case Qnil:
 	    desc = "nil";
@@ -1226,7 +1231,7 @@ name_err_mesg_to_str(VALUE obj)
 	    rb_str_append(d, rb_class_name(CLASS_OF(obj)));
 	}
 	args[0] = mesg;
-	args[1] = ptr[2];
+	args[1] = ptr[NAME_ERR_MESG__NAME];
 	args[2] = d;
 	mesg = rb_f_sprintf(NAME_ERR_MESG_COUNT, args);
     }
@@ -1260,7 +1265,7 @@ name_err_receiver(VALUE self)
     VALUE *ptr, mesg = rb_attr_get(self, id_mesg);
 
     TypedData_Get_Struct(mesg, VALUE, &name_err_mesg_data_type, ptr);
-    return ptr[1];
+    return ptr[NAME_ERR_MESG__RECV];
 }
 
 /*
