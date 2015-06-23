@@ -1004,10 +1004,10 @@ dir_s_getwd(VALUE dir)
     return rb_dir_getwd();
 }
 
-static void
-check_dirname(volatile VALUE *dir)
+static VALUE
+check_dirname(VALUE dir)
 {
-    VALUE d = *dir;
+    VALUE d = dir;
     char *path, *pend;
     long len;
     rb_encoding *enc;
@@ -1020,7 +1020,7 @@ check_dirname(volatile VALUE *dir)
     if (pend - path < len) {
 	d = rb_str_subseq(d, 0, pend - path);
     }
-    *dir = rb_str_encode_ospath(d);
+    return rb_str_encode_ospath(d);
 }
 
 #if defined(HAVE_CHROOT)
@@ -1036,7 +1036,7 @@ check_dirname(volatile VALUE *dir)
 static VALUE
 dir_s_chroot(VALUE dir, VALUE path)
 {
-    check_dirname(&path);
+    path = check_dirname(path);
     if (chroot(RSTRING_PTR(path)) == -1)
 	rb_sys_fail_path(path);
 
@@ -1074,7 +1074,7 @@ dir_s_mkdir(int argc, VALUE *argv, VALUE obj)
 	mode = 0777;
     }
 
-    check_dirname(&path);
+    path = check_dirname(path);
     if (mkdir(RSTRING_PTR(path), mode) == -1)
 	rb_sys_fail_path(path);
 
@@ -1093,7 +1093,7 @@ dir_s_mkdir(int argc, VALUE *argv, VALUE obj)
 static VALUE
 dir_s_rmdir(VALUE obj, VALUE dir)
 {
-    check_dirname(&dir);
+    dir = check_dirname(dir);
     if (rmdir(RSTRING_PTR(dir)) < 0)
 	rb_sys_fail_path(dir);
 
