@@ -1,3 +1,8 @@
+Tue Jun 23 09:48:34 2015  Eric Wong  <e@80x24.org>
+
+	* dir.c (check_dirname): avoid volatile, use return value
+	  (dir_s_chroot, dir_s_mkdir, dir_s_rmdir): adjust callers
+
 Tue Jun 23 06:37:10 2015  Eric Wong  <e@80x24.org>
 
 	* struct.c (struct_ivar_get): cache member definition in a subclass
