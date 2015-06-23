@@ -1264,7 +1264,10 @@ name_err_receiver(VALUE self)
 {
     VALUE *ptr, mesg = rb_attr_get(self, id_mesg);
 
-    TypedData_Get_Struct(mesg, VALUE, &name_err_mesg_data_type, ptr);
+    if (!rb_typeddata_is_kind_of(mesg, &name_err_mesg_data_type)) {
+	rb_raise(rb_eArgError, "no receiver is available");
+    }
+    ptr = DATA_PTR(mesg);
     return ptr[NAME_ERR_MESG__RECV];
 }
 

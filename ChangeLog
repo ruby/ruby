@@ -1,3 +1,8 @@
+Tue Jun 23 14:32:42 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (name_err_receiver): raise ArgumentError if no receiver
+	  is available on this exception object.  [Feature #10881]
+
 Tue Jun 23 09:48:34 2015  Eric Wong  <e@80x24.org>
 
 	* dir.c (check_dirname): avoid volatile, use return value
