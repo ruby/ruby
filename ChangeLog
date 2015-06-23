@@ -1,3 +1,8 @@
+Wed Jun 24 08:28:15 2015  Eric Wong  <e@80x24.org>
+
+	* ext/socket/ancdata.c (bsock_recvmsg_internal): reduce stack use
+	  [ruby-core:69595] [Feature #11263]
+
 Tue Jun 23 14:32:42 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (name_err_receiver): raise ArgumentError if no receiver

@@ -1498,7 +1498,7 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
     struct msghdr mh;
     struct iovec iov;
     union_sockaddr namebuf;
-    char datbuf0[4096], *datbuf;
+    char *datbuf;
     VALUE dat_str = Qnil;
     VALUE ret;
     ssize_t ss;
@@ -1506,10 +1506,6 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
     struct cmsghdr *cmh;
     size_t maxctllen;
-    union {
-        char bytes[4096];
-        struct cmsghdr align;
-    } ctlbuf0;
     char *ctlbuf;
     VALUE ctl_str = Qnil;
     int family;
@@ -1519,9 +1515,9 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
 
     rb_scan_args(argc, argv, "03:", &vmaxdatlen, &vflags, &vmaxctllen, &vopts);
 
-    maxdatlen = NIL_P(vmaxdatlen) ? sizeof(datbuf0) : NUM2SIZET(vmaxdatlen);
+    maxdatlen = NIL_P(vmaxdatlen) ? 4096 : NUM2SIZET(vmaxdatlen);
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
-    maxctllen = NIL_P(vmaxctllen) ? sizeof(ctlbuf0) : NUM2SIZET(vmaxctllen);
+    maxctllen = NIL_P(vmaxctllen) ? 4096 : NUM2SIZET(vmaxctllen);
 #else
     if (!NIL_P(vmaxctllen))
         rb_raise(rb_eArgError, "control message not supported");
@@ -1561,26 +1557,18 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
 #endif
 
   retry:
-    if (maxdatlen <= sizeof(datbuf0))
-        datbuf = datbuf0;
-    else {
-        if (NIL_P(dat_str))
-            dat_str = rb_str_tmp_new(maxdatlen);
-        else
-            rb_str_resize(dat_str, maxdatlen);
-        datbuf = RSTRING_PTR(dat_str);
-    }
+    if (NIL_P(dat_str))
+	dat_str = rb_str_tmp_new(maxdatlen);
+    else
+	rb_str_resize(dat_str, maxdatlen);
+    datbuf = RSTRING_PTR(dat_str);
 
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
-    if (maxctllen <= sizeof(ctlbuf0))
-        ctlbuf = ctlbuf0.bytes;
-    else {
-        if (NIL_P(ctl_str))
-            ctl_str = rb_str_tmp_new(maxctllen);
-        else
-            rb_str_resize(ctl_str, maxctllen);
-        ctlbuf = RSTRING_PTR(ctl_str);
-    }
+    if (NIL_P(ctl_str))
+	ctl_str = rb_str_tmp_new(maxctllen);
+    else
+	rb_str_resize(ctl_str, maxctllen);
+    ctlbuf = RSTRING_PTR(ctl_str);
 #endif
 
     memset(&mh, 0, sizeof(mh));
