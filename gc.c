@@ -305,6 +305,12 @@ static ruby_gc_params_t gc_params = {
 #define GC_DEBUG_STRESS_TO_CLASS 0
 #endif
 
+#define RGENGC_OBJ_INFO 1
+
+#ifndef RGENGC_OBJ_INFO
+#define RGENGC_OBJ_INFO (RGENGC_DEBUG | RGENGC_CHECK_MODE)
+#endif
+
 typedef enum {
     GPR_FLAG_NONE               = 0x000,
     /* major reason */
@@ -4192,11 +4198,18 @@ static void
 gc_mark_ptr(rb_objspace_t *objspace, VALUE obj)
 {
     if (LIKELY(objspace->mark_func_data == NULL)) {
-	rgengc_check_relation(objspace, obj);
-
 	/* check code for Bug #11244 */
-	if (BUILTIN_TYPE(obj) == T_NONE) rb_bug("gc_mark_ptr: obj is T_NONE");
+	if (BUILTIN_TYPE(obj) == T_NONE) {
+	    if (objspace->rgengc.parent_object) {
+		rb_bug("gc_mark_ptr: obj is %s (parent: %s)", obj_info(obj),
+		       obj_info(objspace->rgengc.parent_object));
+	    }
+	    else {
+		rb_bug("gc_mark_ptr: obj is %s (parent is not old)", obj_info(obj));
+	    }
+	}
 
+	rgengc_check_relation(objspace, obj);
 	if (!gc_mark_set(objspace, obj)) return; /* already marked */
 	gc_aging(objspace, obj);
 	gc_grey(objspace, obj);
@@ -4304,10 +4317,6 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 	if (!RCLASS_EXT(obj)) break;
 	mark_tbl(objspace, RCLASS_IV_TBL(obj));
 	mark_const_tbl(objspace, RCLASS_CONST_TBL(obj));
-
-	/* TODO: remove it. check code for Bug #11244 */
-	if (RB_TYPE_P(RCLASS_SUPER(obj), T_NONE)) rb_bug("gc_mark_children: super is T_NONE (%s)", obj_info(obj));
-
 	gc_mark(objspace, RCLASS_SUPER((VALUE)obj));
 	break;
 
@@ -8828,7 +8837,7 @@ obj_type_name(VALUE obj)
     return type_name(TYPE(obj), obj);
 }
 
-#if RGENGC_DEBUG || RGENGC_CHECK_MODE
+#if RGENGC_OBJ_INFO
 #define OBJ_INFO_BUFFERS_NUM  10
 #define OBJ_INFO_BUFFERS_SIZE 0x100
 static int obj_info_buffers_index = 0;
