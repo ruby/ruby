@@ -4304,6 +4304,10 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 	if (!RCLASS_EXT(obj)) break;
 	mark_tbl(objspace, RCLASS_IV_TBL(obj));
 	mark_const_tbl(objspace, RCLASS_CONST_TBL(obj));
+
+	/* TODO: remove it. check code for Bug #11244 */
+	if (RB_TYPE_P(RCLASS_SUPER(obj), T_NONE)) rb_bug("gc_mark_children: super is T_NONE (%s)", obj_info(obj));
+
 	gc_mark(objspace, RCLASS_SUPER((VALUE)obj));
 	break;
 
