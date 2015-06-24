@@ -1,3 +1,9 @@
+Thu Jun 25 02:40:33 2015  Eric Wong  <e@80x24.org>
+
+	* ext/openssl/ossl_ssl.c (ossl_ssl_read_internal):
+	  do not process kwargs in blocking mode
+	* test/openssl/test_ssl.rb: test sysread
+
 Wed Jun 24 16:54:11 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_mark_children): add additional debug code for #11244.
