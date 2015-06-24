@@ -912,17 +912,17 @@ rb_method_boundp(VALUE klass, ID id, int ex)
     return 0;
 }
 
-static int
-rb_scope_visibility_test(rb_method_visibility_t visi)
+static rb_method_visibility_t
+rb_scope_visibility_get(void)
 {
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
 
     if (!vm_env_cref_by_cref(cfp->ep)) {
-	return METHOD_VISI_PUBLIC == visi;
+	return METHOD_VISI_PUBLIC;
     }
     else {
-	return CREF_SCOPE_VISI(rb_vm_cref())->method_visi == visi;
+	return CREF_SCOPE_VISI(rb_vm_cref())->method_visi;
     }
 }
 
@@ -958,17 +958,19 @@ rb_attr(VALUE klass, ID id, int read, int write, int ex)
 	visi = METHOD_VISI_PUBLIC;
     }
     else {
-	if (rb_scope_visibility_test(METHOD_VISI_PRIVATE)) {
-	    visi = METHOD_VISI_PRIVATE;
+	switch (rb_scope_visibility_get()) {
+	  case METHOD_VISI_PRIVATE:
 	    if (rb_scope_module_func_check()) {
 		rb_warning("attribute accessor as module_function");
 	    }
-	}
-	else if (rb_scope_visibility_test(METHOD_VISI_PROTECTED)) {
+	    visi = METHOD_VISI_PRIVATE;
+	    break;
+	  case METHOD_VISI_PROTECTED:
 	    visi = METHOD_VISI_PROTECTED;
-	}
-	else {
+	    break;
+	  default:
 	    visi = METHOD_VISI_PUBLIC;
+	    break;
 	}
     }
 
