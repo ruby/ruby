@@ -1,3 +1,17 @@
+Thu Jun 25 03:33:21 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (RGENGC_OBJ_INFO, obj_info): add a macro to enable/disable
+	  rich obj_info() output.
+
+	  At the default, the value of RGENGC_OBJ_INFO is
+	  (RGENGC_DEBUG | RGENGC_CHECK_MODE).
+
+	* gc.c (RGENGC_OBJ_INFO): force enable it to debug #11244.
+
+	* gc.c (gc_mark_ptr): print more details with obj_info().
+
+	* gc.c (gc_mark_children): remove useless debug prints.
+
 Thu Jun 25 02:40:33 2015  Eric Wong  <e@80x24.org>
 
 	* ext/openssl/ossl_ssl.c (ossl_ssl_read_internal):
