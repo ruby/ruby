@@ -180,8 +180,8 @@ class TestPrime < Test::Unit::TestCase
       end
 
       begin
-	Timeout.timeout(0.5) { Prime.each(7*37){} }
-	flunk("timeout expected")
+        Timeout.timeout(0.5) { Prime.each(7*37){} }
+        flunk("timeout expected")
       rescue Timeout::Error
       end
     ensure
