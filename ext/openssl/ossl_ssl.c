@@ -1430,13 +1430,17 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
 {
     SSL *ssl;
     int ilen, nread = 0;
-    int no_exception;
+    int no_exception = 0;
     VALUE len, str;
     rb_io_t *fptr;
     VALUE opts = Qnil;
 
-    rb_scan_args(argc, argv, "11:", &len, &str, &opts);
-    no_exception = get_no_exception(opts);
+    if (nonblock) {
+	rb_scan_args(argc, argv, "11:", &len, &str, &opts);
+	no_exception = get_no_exception(opts);
+    } else {
+	rb_scan_args(argc, argv, "11", &len, &str);
+    }
 
     ilen = NUM2INT(len);
     if(NIL_P(str)) str = rb_str_new(0, ilen);
