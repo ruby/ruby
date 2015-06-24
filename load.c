@@ -525,7 +525,7 @@ int
 rb_feature_provided(const char *feature, const char **loading)
 {
     const char *ext = strrchr(feature, '.');
-    volatile VALUE fullpath = 0;
+    VALUE fullpath = 0;
 
     if (*feature == '.' &&
 	(feature[1] == '/' || strncmp(feature+1, "./", 2) == 0)) {
@@ -544,6 +544,7 @@ rb_feature_provided(const char *feature, const char **loading)
     }
     if (rb_feature_p(feature, 0, TRUE, FALSE, loading))
 	return TRUE;
+    RB_GC_GUARD(fullpath);
     return FALSE;
 }
 
