@@ -1,4 +1,7 @@
-Wed Jun 24 12:47:14 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Jun 24 12:49:11 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_fstring_cstr): new function to make a fstring from
+	  a string literal.
 
 	* internal.h (rb_fstring_lit): new macro to make a fstring from a
 	  string literal.
