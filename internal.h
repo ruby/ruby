@@ -1091,6 +1091,15 @@ VALUE rb_fstring(VALUE);
 VALUE rb_fstring_new(const char *ptr, long len);
 #define rb_fstring_lit(str) rb_fstring_new((str), rb_strlen_lit(str))
 #define rb_fstring_literal(str) rb_fstring_lit(str)
+VALUE rb_fstring_cstr(const char *str);
+#if defined(__GNUC__) && !defined(__PCC__)
+#define rb_fstring_cstr(str) __extension__ (	\
+{						\
+    (__builtin_constant_p(str)) ?		\
+	rb_fstring_new((str), (long)strlen(str)) : \
+	rb_fstring_cstr(str); \
+})
+#endif
 int rb_str_buf_cat_escaped_char(VALUE result, unsigned int c, int unicode_p);
 int rb_str_symname_p(VALUE);
 VALUE rb_str_quote_unprintable(VALUE);
