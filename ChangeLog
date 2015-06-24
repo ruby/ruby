@@ -1,4 +1,7 @@
-Wed Jun 24 12:47:05 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Jun 24 12:47:14 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* internal.h (rb_fstring_lit): new macro to make a fstring from a
+	  string literal.
 
 	* include/ruby/intern.h (rb_strlen_lit): new macro to get the
 	  length of a string literal, borrowed from mruby/mruby@e4afd53.

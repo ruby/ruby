@@ -1089,6 +1089,8 @@ size_t rb_strftime(char *s, size_t maxsize, const char *format, rb_encoding *enc
 void Init_frozen_strings(void);
 VALUE rb_fstring(VALUE);
 VALUE rb_fstring_new(const char *ptr, long len);
+#define rb_fstring_lit(str) rb_fstring_new((str), rb_strlen_lit(str))
+#define rb_fstring_literal(str) rb_fstring_lit(str)
 int rb_str_buf_cat_escaped_char(VALUE result, unsigned int c, int unicode_p);
 int rb_str_symname_p(VALUE);
 VALUE rb_str_quote_unprintable(VALUE);
