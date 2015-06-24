@@ -8838,6 +8838,28 @@ obj_type_name(VALUE obj)
 }
 
 #if RGENGC_OBJ_INFO
+
+static const char *
+method_type_name(rb_method_type_t type)
+{
+    switch (type) {
+      case VM_METHOD_TYPE_ISEQ:           return "iseq";
+      case VM_METHOD_TYPE_ATTRSET:        return "attrest";
+      case VM_METHOD_TYPE_IVAR:           return "ivar";
+      case VM_METHOD_TYPE_BMETHOD:        return "bmethod";
+      case VM_METHOD_TYPE_ALIAS:          return "alias";
+      case VM_METHOD_TYPE_REFINED:        return "refined";
+      case VM_METHOD_TYPE_CFUNC:          return "cfunc";
+      case VM_METHOD_TYPE_ZSUPER:         return "zsuper";
+      case VM_METHOD_TYPE_MISSING:        return "missing";
+      case VM_METHOD_TYPE_OPTIMIZED:      return "optimized";
+      case VM_METHOD_TYPE_UNDEF:          return "undef";
+      case VM_METHOD_TYPE_NOTIMPLEMENTED: return "notimplemented";
+    }
+    rb_bug("method_type_name: unreachable (type: %d)", type);
+}
+
+
 #define OBJ_INFO_BUFFERS_NUM  10
 #define OBJ_INFO_BUFFERS_SIZE 0x100
 static int obj_info_buffers_index = 0;
@@ -8944,8 +8966,8 @@ obj_info(VALUE obj)
 	snprintf(buff, OBJ_INFO_BUFFERS_SIZE, "%s %s", buff, imemo_name);
 	if (imemo_type(obj) == imemo_ment) {
 	    const rb_method_entry_t *me = &RANY(obj)->as.imemo.ment;
-	    snprintf(buff, OBJ_INFO_BUFFERS_SIZE, "%s (called_id: %s, type: %d, alias: %d, class: %s)", buff,
-		     rb_id2name(me->called_id), me->def->type, me->def->alias_count, obj_info(me->klass));
+	    snprintf(buff, OBJ_INFO_BUFFERS_SIZE, "%s (called_id: %s, type: %s, alias: %d, class: %s)", buff,
+		     rb_id2name(me->called_id), method_type_name(me->def->type), me->def->alias_count, obj_info(me->klass));
 	}
       }
       default:
