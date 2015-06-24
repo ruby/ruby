@@ -7908,7 +7908,7 @@ rb_str_justify(int argc, VALUE *argv, VALUE str, char jflag)
     char *p;
     const char *f = " ";
     long n, size, llen, rlen, llen2 = 0, rlen2 = 0;
-    volatile VALUE pad;
+    VALUE pad;
     int singlebyte = 1, cr;
 
     rb_scan_args(argc, argv, "11", &w, &pad);
@@ -7985,6 +7985,8 @@ rb_str_justify(int argc, VALUE *argv, VALUE str, char jflag)
 	cr = ENC_CODERANGE_AND(cr, ENC_CODERANGE(pad));
     if (cr != ENC_CODERANGE_BROKEN)
 	ENC_CODERANGE_SET(res, cr);
+
+    RB_GC_GUARD(pad);
     return res;
 }
 
