@@ -1,3 +1,8 @@
+Thu Jun 25 06:40:46 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_method.c (rb_method_definition_reset): need a WB for
+	  VM_METHOD_TYPE_ATTRSET.
+
 Thu Jun 25 03:33:21 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (RGENGC_OBJ_INFO, obj_info): add a macro to enable/disable

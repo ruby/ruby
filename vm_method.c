@@ -304,6 +304,7 @@ rb_method_definition_reset(const rb_method_entry_t *me, rb_method_definition_t *
 	RB_OBJ_WRITTEN(me, Qundef, def->body.iseq.iseqptr->self);
 	RB_OBJ_WRITTEN(me, Qundef, def->body.iseq.cref);
 	break;
+      case VM_METHOD_TYPE_ATTRSET:
       case VM_METHOD_TYPE_IVAR:
 	RB_OBJ_WRITTEN(me, Qundef, def->body.attr.location);
 	break;
@@ -316,8 +317,13 @@ rb_method_definition_reset(const rb_method_entry_t *me, rb_method_definition_t *
       case VM_METHOD_TYPE_ALIAS:
 	RB_OBJ_WRITTEN(me, Qundef, def->body.alias.original_me);
 	break;
-      default:;
-	/* ignore */
+      case VM_METHOD_TYPE_CFUNC:
+      case VM_METHOD_TYPE_ZSUPER:
+      case VM_METHOD_TYPE_MISSING:
+      case VM_METHOD_TYPE_OPTIMIZED:
+      case VM_METHOD_TYPE_UNDEF:
+      case VM_METHOD_TYPE_NOTIMPLEMENTED:
+	break;
     }
 
     *(rb_method_definition_t **)&me->def = def;
