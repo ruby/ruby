@@ -1,3 +1,8 @@
+Wed Jun 24 12:21:16 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* re.c: Update documentation for Regexp class.
+	  [fix GH-937][ci skip] Patch by @davydovanton
+
 Wed Jun 24 09:23:03 2015  Eric Wong  <e@80x24.org>
 
 	* variable.c (generic_ivar_set): remove FL_ABLE check
