@@ -1924,12 +1924,6 @@ check_setter_id(VALUE name, int (*valid_sym_p)(VALUE), int (*valid_name_p)(VALUE
 }
 
 static int
-rb_is_attr_id(ID id)
-{
-    return rb_is_local_id(id) || rb_is_const_id(id);
-}
-
-static int
 rb_is_attr_name(VALUE name)
 {
     return rb_is_local_name(name) || rb_is_const_name(name);
@@ -1947,15 +1941,6 @@ static ID
 id_for_attr(VALUE name)
 {
     return id_for_setter(name, attr, invalid_attribute_name);
-}
-
-ID
-rb_check_attr_id(ID id)
-{
-    if (!rb_is_attr_id(id)) {
-	rb_name_error_str(id, invalid_attribute_name, QUOTE_ID(id));
-    }
-    return id;
 }
 
 /*
