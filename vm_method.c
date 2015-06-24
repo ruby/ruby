@@ -912,8 +912,6 @@ rb_method_boundp(VALUE klass, ID id, int ex)
     return 0;
 }
 
-extern ID rb_check_attr_id(ID id);
-
 static int
 rb_scope_visibility_test(rb_method_visibility_t visi)
 {
@@ -953,8 +951,7 @@ rb_scope_module_func_set(void)
 void
 rb_attr(VALUE klass, ID id, int read, int write, int ex)
 {
-    VALUE attriv;
-    VALUE aname;
+    ID attriv;
     rb_method_visibility_t visi;
 
     if (!ex) {
@@ -975,11 +972,7 @@ rb_attr(VALUE klass, ID id, int read, int write, int ex)
 	}
     }
 
-    aname = rb_id2str(rb_check_attr_id(id));
-    if (NIL_P(aname)) {
-	rb_raise(rb_eArgError, "argument needs to be symbol or string");
-    }
-    attriv = (VALUE)rb_intern_str(rb_sprintf("@%"PRIsVALUE, aname));
+    attriv = rb_intern_str(rb_sprintf("@%"PRIsVALUE, rb_id2str(id)));
     if (read) {
 	rb_add_method(klass, id, VM_METHOD_TYPE_IVAR, (void *)attriv, visi);
     }
