@@ -4193,6 +4193,10 @@ gc_mark_ptr(rb_objspace_t *objspace, VALUE obj)
 {
     if (LIKELY(objspace->mark_func_data == NULL)) {
 	rgengc_check_relation(objspace, obj);
+
+	/* check code for Bug #11244 */
+	if (BUILTIN_TYPE(obj) == T_NONE) rb_bug("gc_mark_ptr: obj is T_NONE");
+
 	if (!gc_mark_set(objspace, obj)) return; /* already marked */
 	gc_aging(objspace, obj);
 	gc_grey(objspace, obj);

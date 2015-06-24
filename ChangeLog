@@ -1,3 +1,10 @@
+Wed Jun 24 14:25:17 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_mark_ptr): add a check code for #11244.
+
+	  It should be removed later. But we can remain this check
+	  because it is only a branch.
+
 Wed Jun 24 12:49:11 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_fstring_cstr): new function to make a fstring from
