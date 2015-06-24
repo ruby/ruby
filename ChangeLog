@@ -1,3 +1,7 @@
+Thu Jun 25 06:49:25 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (obj_info): show more details for T_IMEMO/imemo_ment.
+
 Thu Jun 25 06:40:46 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_method.c (rb_method_definition_reset): need a WB for
