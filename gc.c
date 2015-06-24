@@ -9192,7 +9192,7 @@ Init_GC(void)
     {
 	VALUE opts;
 	rb_define_const(rb_mGC, "OPTS", opts = rb_ary_new());
-#define OPT(o) if (o) rb_ary_push(opts, rb_fstring_new(#o, strlen(#o)))
+#define OPT(o) if (o) rb_ary_push(opts, rb_fstring_lit(#o))
 	OPT(GC_DEBUG);
 	OPT(USE_RGENGC);
 	OPT(RGENGC_DEBUG);
