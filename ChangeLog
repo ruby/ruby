@@ -1,3 +1,9 @@
+Wed Jun 24 09:23:03 2015  Eric Wong  <e@80x24.org>
+
+	* variable.c (generic_ivar_set): remove FL_ABLE check
+	  (gen_ivar_copy): ditto
+	  [ruby-core:69715]
+
 Wed Jun 24 08:28:15 2015  Eric Wong  <e@80x24.org>
 
 	* ext/socket/ancdata.c (bsock_recvmsg_internal): reduce stack use

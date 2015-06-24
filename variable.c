@@ -1357,7 +1357,7 @@ generic_ivar_set(VALUE obj, ID id, VALUE val)
 
     ivup.u.ivtbl->ivptr[ivup.index] = val;
 
-    if (FL_ABLE(obj)) RB_OBJ_WRITTEN(obj, Qundef, val);
+    RB_OBJ_WRITTEN(obj, Qundef, val);
 }
 
 VALUE
@@ -1541,7 +1541,7 @@ gen_ivar_copy(ID id, VALUE val, st_data_t arg)
     }
     c->ivtbl->ivptr[ivup.index] = val;
 
-    if (FL_ABLE(c->obj)) RB_OBJ_WRITTEN(c->obj, Qundef, val);
+    RB_OBJ_WRITTEN(c->obj, Qundef, val);
 
     return ST_CONTINUE;
 }
