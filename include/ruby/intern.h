@@ -877,10 +877,15 @@ VALUE rb_sym_all_symbols(void);
 #define rb_str_buf_cat rb_str_cat
 #define rb_str_buf_cat2 rb_str_cat_cstr
 #define rb_str_cat2 rb_str_cat_cstr
-#define rb_str_new_literal(str) rb_str_new_static((str), sizeof(str)-1)
-#define rb_usascii_str_new_literal(str) rb_usascii_str_new_static((str), sizeof(str)-1)
-#define rb_utf8_str_new_literal(str) rb_utf8_str_new_static((str), sizeof(str)-1)
-#define rb_enc_str_new_literal(str, enc) rb_enc_str_new_static((str), sizeof(str)-1, (enc))
+#define rb_strlen_lit(str) (sizeof(str "") - 1)
+#define rb_str_new_lit(str) rb_str_new_static((str), rb_strlen_lit(str))
+#define rb_usascii_str_new_lit(str) rb_usascii_str_new_static((str), rb_strlen_lit(str))
+#define rb_utf8_str_new_lit(str) rb_utf8_str_new_static((str), rb_strlen_lit(str))
+#define rb_enc_str_new_lit(str, enc) rb_enc_str_new_static((str), rb_strlen_lit(str), (enc))
+#define rb_str_new_literal(str) rb_str_new_lit(str)
+#define rb_usascii_str_new_literal(str) rb_usascii_str_new_lit(str)
+#define rb_utf8_str_new_literal(str) rb_utf8_str_new_lit(str)
+#define rb_enc_str_new_literal(str, enc) rb_enc_str_new_lit(str, enc)
 
 /* struct.c */
 VALUE rb_struct_new(VALUE, ...);
