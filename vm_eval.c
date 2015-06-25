@@ -668,19 +668,12 @@ static VALUE
 make_no_method_exception(VALUE exc, const char *format, VALUE obj, int argc, const VALUE *argv)
 {
     int n = 0;
-    VALUE mesg;
     VALUE args[3];
 
     if (!format) {
 	format = "undefined method `%s' for %s";
     }
-    mesg = rb_const_get(exc, rb_intern("message"));
-    if (rb_method_basic_definition_p(CLASS_OF(mesg), '!')) {
-	args[n++] = rb_name_err_mesg_new(mesg, rb_str_new2(format), obj, argv[0]);
-    }
-    else {
-	args[n++] = rb_funcall(mesg, '!', 3, rb_str_new2(format), obj, argv[0]);
-    }
+    args[n++] = rb_name_err_mesg_new(rb_str_new_cstr(format), obj, argv[0]);
     args[n++] = argv[0];
     if (exc == rb_eNoMethodError) {
 	args[n++] = rb_ary_new4(argc - 1, argv + 1);
