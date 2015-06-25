@@ -33,7 +33,7 @@ Thu Jun 25 17:32:33 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_method.c (method_definition_reset): remove duplicated insertion.
 
-	* vm_method.c (rb_method_entry_clone): assgine dst->def here,
+	* vm_method.c (rb_method_entry_clone): assign dst->def here,
 	  not in method_definition_reset().
 
 Thu Jun 25 16:44:54 2015  Koichi Sasada  <ko1@atdot.net>
