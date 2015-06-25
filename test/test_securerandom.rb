@@ -104,10 +104,13 @@ end
   end
 
   def test_s_hex
-    assert_equal(16 * 2, @it.hex.size)
+    s = @it.hex
+    assert_equal(16 * 2, s.size)
+    assert_match(/\A\h+\z/, s)
     33.times do |idx|
-      assert_equal(idx * 2, @it.hex(idx).size)
-      assert_equal(idx, @it.hex(idx).gsub(/(..)/) { [$1].pack('H*') }.size)
+      s = @it.hex(idx)
+      assert_equal(idx * 2, s.size)
+      assert_match(/\A\h*\z/, s)
     end
   end
 
@@ -128,23 +131,20 @@ end
       assert_not_match(safe, @it.urlsafe_base64(idx))
     end
     # base64 can include unsafe byte
-    10001.times do |idx|
-      return if safe =~ @it.base64(idx)
-    end
-    flunk
+    assert((0..10000).any? {|idx| safe =~ @it.base64(idx)}, "None of base64(0..10000) is url-safe")
   end
 
   def test_s_random_number_float
     101.times do
       v = @it.random_number
-      assert(0.0 <= v && v < 1.0)
+      assert_in_range(0.0...1.0, v)
     end
   end
 
   def test_s_random_number_float_by_zero
     101.times do
       v = @it.random_number(0)
-      assert(0.0 <= v && v < 1.0)
+      assert_in_range(0.0...1.0, v)
     end
   end
 
@@ -152,16 +152,14 @@ end
     101.times do |idx|
       next if idx.zero?
       v = @it.random_number(idx)
-      assert(0 <= v && v < idx)
+      assert_in_range(0...idx, v)
     end
   end
 
   def test_uuid
     uuid = @it.uuid
     assert_equal(36, uuid.size)
-    uuid.unpack('a8xa4xa4xa4xa12').each do |e|
-      assert_match(/^[0-9a-f]+$/, e)
-    end
+    assert_match(/\A\h{8}-\h{4}-\h{4}-\h{4}-\h{12}\z/, uuid)
   end
 
   def protect
@@ -182,4 +180,7 @@ end
     }
   end
 
+  def assert_in_range(range, result, mesg = nil)
+    assert(range.cover?(result), message(mesg) {"Expected #{result} to be in #{range}"})
+  end
 end
