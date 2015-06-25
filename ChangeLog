@@ -1,3 +1,22 @@
+Thu Jun 25 16:44:54 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_method.c: make a rb_method_definition_t data (def) *after* making
+	  a rb_method_entry_t data (me).
+
+	  Normally, `me' points `def'. Some Ruby objects pointed from `def'
+	  and objects are marked by `me' (mark_method_entry() in gc.c).
+	  However, `def' is built before making a `me', then nobody can mark
+	  objects pointed from `def' before making (and pointing from) `me'.
+
+	  I hope this patch solve #11244.
+
+	* vm_method.c: remove `rb_' prefix from some static functions.
+
+	* method.h (rb_method_entry_create): constify
+
+	* gc.c (mark_method_entry): add checking `def' and
+	  `def->body.iseq.iseqptr' availability because they can be NULL.
+
 Thu Jun 25 14:14:16 2015  takiy33  <takiy33@gmail.com>
 
 	* test/test_prime.rb (test_eratosthenes_works_fine_after_timeout):
