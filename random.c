@@ -486,17 +486,16 @@ fill_random_bytes(void *seed, size_t size)
 	    prov = (HCRYPTPROV)INVALID_HANDLE_VALUE;
 	}
 	old_prov = (HCRYPTPROV)ATOMIC_PTR_CAS(perm_prov, 0, prov);
-	if (prov == (HCRYPTPROV)INVALID_HANDLE_VALUE) {
-	    if (old_prov) prov = old_prov;
-	}
-	else {
-	    if (!old_prov) {
+	if (LIKELY(!old_prov)) { /* no other threads acquried */
+	    if (prov != (HCRYPTPROV)INVALID_HANDLE_VALUE) {
 		rb_gc_register_mark_object(Data_Wrap_Struct(0, 0, release_crypt, &perm_prov));
 	    }
-	    else {
+	}
+	else {			/* another thread acquried */
+	    if (prov != (HCRYPTPROV)INVALID_HANDLE_VALUE) {
 		CryptReleaseContext(prov, 0);
-		prov = old_prov;
 	    }
+	    prov = old_prov;
 	}
     }
     if (prov == (HCRYPTPROV)INVALID_HANDLE_VALUE) return -1;
