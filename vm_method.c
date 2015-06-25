@@ -283,9 +283,9 @@ method_definition_set(rb_method_entry_t *me, rb_method_definition_t *def, void *
 }
 
 static void
-method_definition_reset(const rb_method_entry_t *me, rb_method_definition_t *def)
+method_definition_reset(const rb_method_entry_t *me)
 {
-    *(rb_method_definition_t **)&me->def = def;
+    rb_method_definition_t *def = me->def;
 
     switch(def->type) {
       case VM_METHOD_TYPE_ISEQ:
@@ -338,6 +338,7 @@ rb_method_entry_create(ID called_id, VALUE klass, rb_method_visibility_t visi, c
 {
     rb_method_entry_t *me = (rb_method_entry_t *)rb_imemo_new(imemo_ment, (VALUE)def, (VALUE)called_id, (VALUE)klass, 0);
     METHOD_ENTRY_FLAGS_SET(me, visi, ruby_running ? FALSE : TRUE, rb_safe_level());
+    if (def != NULL) method_definition_reset(me);
     return me;
 }
 
@@ -353,7 +354,8 @@ rb_method_entry_clone(const rb_method_entry_t *src_me)
 void
 rb_method_entry_copy(rb_method_entry_t *dst, const rb_method_entry_t *src)
 {
-    method_definition_reset(dst, method_definition_addref(src->def));
+    *(rb_method_definition_t **)&dst->def = method_definition_addref(src->def);
+    method_definition_reset(dst);
     dst->called_id = src->called_id;
     RB_OBJ_WRITE((VALUE)dst, &dst->klass, src->klass);
 }
