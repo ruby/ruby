@@ -1,3 +1,8 @@
+Thu Jun 25 14:14:16 2015  takiy33  <takiy33@gmail.com>
+
+	* test/test_prime.rb (test_eratosthenes_works_fine_after_timeout):
+	  use spaces instead of TABs in ruby codes.  [Fix GH-944]
+
 Thu Jun 25 07:08:35 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (obj_info, method_type_name): show method type name in a string
