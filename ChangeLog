@@ -1,3 +1,14 @@
+Thu Jun 25 21:24:28 2015  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* test/-ext-/popen_deadlock/test_popen_deadlock.rb: test [Bug #11265]
+
+	* ext/-test-/popen_deadlock/infinite_loop_dlsym.c: new ext to call
+	  dlsym(3) infinitely without GVL, used in the above test.
+
+	* ext/-test-/popen_deadlock/extconf.rb: extconf.rb for the above
+	  ext. Currently, only enabled on Solaris (main target) and Linux
+	  (as a reference platform and for debugging the ext).
+
 Thu Jun 25 19:24:25 2015  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* configure.in: not to use vfork on Solaris to avoid deadlock
