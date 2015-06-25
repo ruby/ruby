@@ -185,7 +185,7 @@ VALUE rb_obj_method_location(VALUE obj, ID id);
 void rb_free_method_entry(const rb_method_entry_t *me);
 void rb_sweep_method_entry(void *vm);
 
-rb_method_entry_t *rb_method_entry_create(ID called_id, VALUE klass, rb_method_visibility_t visi, rb_method_definition_t *def);
+rb_method_entry_t *rb_method_entry_create(ID called_id, VALUE klass, rb_method_visibility_t visi, const rb_method_definition_t *def);
 rb_method_entry_t *rb_method_entry_clone(const rb_method_entry_t *me);
 void rb_method_entry_copy(rb_method_entry_t *dst, const rb_method_entry_t *src);
 
