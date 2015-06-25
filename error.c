@@ -1158,7 +1158,7 @@ static const rb_data_type_t name_err_mesg_data_type = {
 
 /* :nodoc: */
 VALUE
-rb_name_err_mesg_new(VALUE obj, VALUE mesg, VALUE recv, VALUE method)
+rb_name_err_mesg_new(VALUE mesg, VALUE recv, VALUE method)
 {
     VALUE result = TypedData_Wrap_Struct(rb_cNameErrorMesg, &name_err_mesg_data_type, 0);
     VALUE *ptr = ALLOC_N(VALUE, NAME_ERR_MESG_COUNT);
@@ -1904,7 +1904,6 @@ Init_Exception(void)
     rb_define_method(rb_eNameError, "name", name_err_name, 0);
     rb_define_method(rb_eNameError, "receiver", name_err_receiver, 0);
     rb_cNameErrorMesg = rb_define_class_under(rb_eNameError, "message", rb_cData);
-    rb_define_singleton_method(rb_cNameErrorMesg, "!", rb_name_err_mesg_new, NAME_ERR_MESG_COUNT);
     rb_define_method(rb_cNameErrorMesg, "==", name_err_mesg_equal, 1);
     rb_define_method(rb_cNameErrorMesg, "to_str", name_err_mesg_to_str, 0);
     rb_define_method(rb_cNameErrorMesg, "_dump", name_err_mesg_dump, 1);
