@@ -1,3 +1,11 @@
+Thu Jun 25 18:25:41 2015  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* test/lib/envutil.rb (Test::Unit::Assertions#assert_no_memory_leak):
+	  NO_MEMORY_LEAK_ENVS is moved to Memory::NO_MEMORY_LEAK_ENVS
+	  to reduce child executions during test-all on Solaris.
+
+	* test/lib/memory_status.rb (Memory::NO_MEMORY_LEAK_ENVS): ditto.
+
 Thu Jun 25 17:32:33 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_method.c (rb_method_entry_create): need to call

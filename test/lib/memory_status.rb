@@ -108,4 +108,32 @@ module Memory
       status
     end
   end
+
+  # On some platforms (e.g. Solaris), libc malloc does not return
+  # freed memory to OS because of efficiency, and linking with extra
+  # malloc library is needed to detect memory leaks.
+  #
+  case RUBY_PLATFORM
+  when /solaris2\.(?:9|[1-9][0-9])/i # Solaris 9, 10, 11,...
+    bits = [nil].pack('p').size == 8 ? 64 : 32
+    if ENV['LD_PRELOAD'].to_s.empty? &&
+        ENV["LD_PRELOAD_#{bits}"].to_s.empty? &&
+        (ENV['UMEM_OPTIONS'].to_s.empty? ||
+         ENV['UMEM_OPTIONS'] == 'backend=mmap') then
+      envs = {
+        'LD_PRELOAD' => 'libumem.so',
+        'UMEM_OPTIONS' => 'backend=mmap'
+      }
+      args = [
+              envs,
+              "--disable=gems",
+              "-v", "-",
+             ]
+      _, err, status = EnvUtil.invoke_ruby(args, "exit(0)", true, true)
+      if status.exitstatus == 0 && err.to_s.empty? then
+        NO_MEMORY_LEAK_ENVS = envs
+      end
+    end
+  end #case RUBY_PLATFORM
+
 end
