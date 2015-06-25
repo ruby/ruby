@@ -1070,6 +1070,9 @@ main()
 		],
 [hpux*], [	LIBS="-lm $LIBS"
 		ac_cv_c_inline=no],
+[solaris*], [	LIBS="-lm $LIBS"
+		ac_cv_func_vfork=no
+		],
 [beos*|haiku*], [
 		ac_cv_func_link=no
 		ac_cv_func_sched_yield=no

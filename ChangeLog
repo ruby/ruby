@@ -1,3 +1,9 @@
+Thu Jun 25 19:24:25 2015  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* configure.in: not to use vfork on Solaris to avoid deadlock
+	  occurred in vfork(2) with multi-threading and dynamic linker
+	  on Solaris. [Bug #11265] [ruby-dev:49089]
+
 Thu Jun 25 18:25:41 2015  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* test/lib/envutil.rb (Test::Unit::Assertions#assert_no_memory_leak):
