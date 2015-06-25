@@ -821,7 +821,7 @@ rb_hash_fetch_m(int argc, VALUE *argv, VALUE hash)
     if (!RHASH(hash)->ntbl || !st_lookup(RHASH(hash)->ntbl, key, &val)) {
 	if (block_given) return rb_yield(key);
 	if (argc == 1) {
-	    volatile VALUE desc = rb_protect(rb_inspect, key, 0);
+	    VALUE desc = rb_protect(rb_inspect, key, 0);
 	    if (NIL_P(desc)) {
 		desc = rb_any_to_s(key);
 	    }
@@ -3284,7 +3284,7 @@ env_each_pair(VALUE ehash)
 static VALUE
 env_reject_bang(VALUE ehash)
 {
-    volatile VALUE keys;
+    VALUE keys;
     long i;
     int del = 0;
 
@@ -3301,6 +3301,7 @@ env_reject_bang(VALUE ehash)
 	    }
 	}
     }
+    RB_GC_GUARD(keys);
     if (del == 0) return Qnil;
     return envtbl;
 }
@@ -3370,6 +3371,7 @@ env_select(VALUE ehash)
 	    }
 	}
     }
+    RB_GC_GUARD(keys);
 
     return result;
 }
@@ -3384,7 +3386,7 @@ env_select(VALUE ehash)
 static VALUE
 env_select_bang(VALUE ehash)
 {
-    volatile VALUE keys;
+    VALUE keys;
     long i;
     int del = 0;
 
@@ -3401,6 +3403,7 @@ env_select_bang(VALUE ehash)
 	    }
 	}
     }
+    RB_GC_GUARD(keys);
     if (del == 0) return Qnil;
     return envtbl;
 }
@@ -3431,7 +3434,7 @@ env_keep_if(VALUE ehash)
 VALUE
 rb_env_clear(void)
 {
-    volatile VALUE keys;
+    VALUE keys;
     long i;
 
     keys = env_keys();
@@ -3441,6 +3444,7 @@ rb_env_clear(void)
 	    env_delete(Qnil, RARRAY_AREF(keys, i));
 	}
     }
+    RB_GC_GUARD(keys);
     return envtbl;
 }
 
@@ -3820,7 +3824,7 @@ env_replace_i(VALUE key, VALUE val, VALUE keys)
 static VALUE
 env_replace(VALUE env, VALUE hash)
 {
-    volatile VALUE keys;
+    VALUE keys;
     long i;
 
     keys = env_keys();
@@ -3831,6 +3835,7 @@ env_replace(VALUE env, VALUE hash)
     for (i=0; i<RARRAY_LEN(keys); i++) {
 	env_delete(env, RARRAY_AREF(keys, i));
     }
+    RB_GC_GUARD(keys);
     return env;
 }
 

@@ -1715,7 +1715,6 @@ enum_minmax(VALUE obj)
 {
     struct MEMO *memo = MEMO_NEW(Qundef, Qundef, Qundef);
     struct minmax_t *m = (struct minmax_t *)&memo->v1;
-    VALUE ary = rb_ary_new3(2, Qnil, Qnil);
 
     m->min = Qundef;
     m->last = Qundef;
@@ -1730,10 +1729,9 @@ enum_minmax(VALUE obj)
 	    minmax_i_update(m->last, m->last, m);
     }
     if (m->min != Qundef) {
-	rb_ary_store(ary, 0, m->min);
-	rb_ary_store(ary, 1, m->max);
+	return rb_assoc_new(m->min, m->max);
     }
-    return ary;
+    return rb_assoc_new(Qnil, Qnil);
 }
 
 static VALUE
