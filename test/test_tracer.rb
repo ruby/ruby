@@ -18,12 +18,7 @@ class TestTracer < Test::Unit::TestCase
 
   def test_tracer_with_option_r_without_gems
     assert_in_out_err(%w[--disable-gems -rtracer -e 1]) do |(*lines),|
-      case lines.size
-      when 1
-        # do nothing
-      else
-        flunk "unexpected output from `ruby --disable-gems -rtracer -e 1`"
-      end
+      assert_equal 1, lines.size, "unexpected output from `ruby --disable-gems -rtracer -e 1`"
       assert_equal "#0:-e:1::-: 1", lines.last
     end
   end

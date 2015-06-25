@@ -179,10 +179,8 @@ class TestPrime < Test::Unit::TestCase
         return n
       end
 
-      begin
+      assert_raise(Timeout::Error) do
         Timeout.timeout(0.5) { Prime.each(7*37){} }
-        flunk("timeout expected")
-      rescue Timeout::Error
       end
     ensure
       class << sieve
