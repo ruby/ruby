@@ -304,6 +304,7 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal([1, 3], [2,3,1].minmax)
     assert_equal([3, 1], [2,3,1].minmax {|a,b| b <=> a })
     assert_equal([1, 3], [2,2,3,3,1,1].minmax)
+    assert_equal([nil, nil], [].minmax)
   end
 
   def test_min_by

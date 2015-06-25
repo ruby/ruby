@@ -1,3 +1,8 @@
+Fri Jun 26 07:53:56 2015  Eric Wong  <e@80x24.org>
+
+	* enum.c (enum_minmax): simplify return value creation
+	* test/ruby/test_enum.rb: test behavior on empty
+
 Thu Jun 25 21:24:28 2015  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* test/-ext-/popen_deadlock/test_popen_deadlock.rb: test [Bug #11265]
