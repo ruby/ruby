@@ -2557,10 +2557,10 @@ rb_mod_singleton_p(VALUE klass)
 }
 
 static const struct conv_method_tbl {
-    const char method[8];
-    ID id;
+    const char method[6];
+    unsigned short id;
 } conv_method_names[] = {
-#define M(n) {"to_"#n, idTo_##n}
+#define M(n) {#n, (unsigned short)idTo_##n}
     M(int),
     M(ary),
     M(str),
@@ -2581,12 +2581,16 @@ convert_type(VALUE val, const char *tname, const char *method, int raise)
     ID m = 0;
     int i;
     VALUE r;
+    static const char prefix[] = "to_";
 
-    for (i=0; i < numberof(conv_method_names); i++) {
-	if (conv_method_names[i].method[0] == method[0] &&
-	    strcmp(conv_method_names[i].method, method) == 0) {
-	    m = conv_method_names[i].id;
-	    break;
+    if (strncmp(prefix, method, sizeof(prefix)-1) == 0) {
+	const char *const meth = &method[sizeof(prefix)-1];
+	for (i=0; i < numberof(conv_method_names); i++) {
+	    if (conv_method_names[i].method[0] == meth[0] &&
+		strcmp(conv_method_names[i].method, meth) == 0) {
+		m = conv_method_names[i].id;
+		break;
+	    }
 	}
     }
     if (!m) m = rb_intern(method);
