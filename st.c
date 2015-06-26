@@ -14,6 +14,7 @@
 #include <stdlib.h>
 #endif
 #include <string.h>
+#include "ccan/list/list.h"
 
 typedef struct st_table_entry st_table_entry;
 
