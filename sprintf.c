@@ -707,8 +707,12 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		VALUE arg = GETARG();
 		long len, slen;
 
-		if (*p == 'p') arg = rb_inspect(arg);
-		str = rb_obj_as_string(arg);
+		if (*p == 'p') {
+		    str = rb_inspect(arg);
+		}
+		else {
+		    str = rb_obj_as_string(arg);
+		}
 		if (OBJ_TAINTED(str)) tainted = 1;
 		len = RSTRING_LEN(str);
 		rb_str_set_len(result, blen);
