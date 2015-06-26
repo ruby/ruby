@@ -868,7 +868,7 @@ class CSV
         if row.header_row?
           array
         else
-          array + [row.fields]
+          array.concat [row.fields]
         end
       end
     end
