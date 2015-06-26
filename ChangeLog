@@ -1,3 +1,8 @@
+Fri Jun 26 12:48:37 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* transcode.c (load_transcoder_entry): fix transcoder loading race
+	  condition, by waiting in require.  [ruby-dev:49106] [Bug #11277]
+
 Fri Jun 26 07:53:56 2015  Eric Wong  <e@80x24.org>
 
 	* enum.c (enum_minmax): simplify return value creation
