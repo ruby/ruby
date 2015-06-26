@@ -2119,6 +2119,10 @@ sprintf.$(OBJEXT): {$(VPATH)}sprintf.c
 sprintf.$(OBJEXT): {$(VPATH)}st.h
 sprintf.$(OBJEXT): {$(VPATH)}subst.h
 sprintf.$(OBJEXT): {$(VPATH)}vsnprintf.c
+st.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
+st.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
+st.$(OBJEXT): $(CCAN_DIR)/list/list.h
+st.$(OBJEXT): $(CCAN_DIR)/str/str.h
 st.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 st.$(OBJEXT): $(top_srcdir)/include/ruby.h
 st.$(OBJEXT): {$(VPATH)}config.h
