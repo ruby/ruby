@@ -7,6 +7,12 @@ Fri Jun 26 07:53:56 2015  Eric Wong  <e@80x24.org>
 
 	* enum.c (enum_minmax): simplify return value creation
 	* test/ruby/test_enum.rb: test behavior on empty
+	* hash.c (rb_hash_fetch_m): remove unnecessary volatile since r41597
+	  (env_reject_bang): trade volatile for GC guard
+	  (env_select): ditto
+	  (env_select_bang): ditto
+	  (env_keep_if): ditto
+	  (rb_env_clear): ditto
 
 Thu Jun 25 21:24:28 2015  Naohisa Goto  <ngotogenome@gmail.com>
 
