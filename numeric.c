@@ -1933,13 +1933,15 @@ num_clamp(VALUE num, VALUE obj)
         return Qnil;
     }
 
+    double num_dbl, beg_dbl, end_dbl;
+
     VALUE begp, endp;
     int exclp;
     rb_range_values(obj, &begp, &endp, &exclp);
 
-    double num_dbl = NUM2DBL(num);
-    double beg_dbl = NUM2DBL(begp);
-    double end_dbl = NUM2DBL(endp);
+    num_dbl = NUM2DBL(num);
+    beg_dbl = NUM2DBL(begp);
+    end_dbl = NUM2DBL(endp);
 
     if (num_dbl < beg_dbl) {
         return begp;
