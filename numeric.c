@@ -1928,15 +1928,16 @@ num_floor(VALUE num)
 static VALUE
 num_clamp(VALUE num, VALUE obj)
 {
+    double num_dbl, beg_dbl, end_dbl;
+
+    VALUE begp, endp;
+    int exclp;
+
     if (!rb_obj_is_kind_of(obj, rb_cRange)) {
         rb_raise(rb_eArgError, "argument must be a Range");
         return Qnil;
     }
 
-    double num_dbl, beg_dbl, end_dbl;
-
-    VALUE begp, endp;
-    int exclp;
     rb_range_values(obj, &begp, &endp, &exclp);
 
     num_dbl = NUM2DBL(num);
