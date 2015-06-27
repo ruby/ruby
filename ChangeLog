@@ -1,3 +1,10 @@
+Sun Jun 14 19:02:03 2015  Benoit Daloze  <eregontp@gmail.com>
+
+	* lib/net/ftp.rb (makeport): close the TCPServer
+	  when sending the port fails.
+
+	* test/net/ftp/test_ftp.rb: test for above.
+
 Fri Jun 26 12:48:37 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* transcode.c (load_transcoder_entry): fix transcoder loading race
