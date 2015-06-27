@@ -1,6 +1,16 @@
 require 'test/unit'
 
 class TestNumeric < Test::Unit::TestCase
+  def test_clamp
+    assert_raise_with_message(ArgumentError, /argument must be a Range/) { 2.clamp(nil) }
+    assert_raise_with_message(ArgumentError, /argument must be a Range/) { 2.clamp('a') }
+
+    assert_equal(12, 12.clamp(0..100))
+
+    assert_equal(100, 523.clamp(0..100))
+    assert_equal(0, -3.123.clamp(0..100))
+  end
+
   def test_coerce
     a, b = 1.coerce(2)
     assert_equal(Fixnum, a.class)

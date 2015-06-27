@@ -1914,6 +1914,44 @@ num_floor(VALUE num)
 
 /*
  *  call-seq:
+ *     num.clamp(range) ->  integer or float
+ *
+ *  If num is smaller than the first item of the range, clamp returns that first item.
+ *  Similarly, if num is bigger than the last item of the range, clamp returns the last
+ *  range item. Otherwise, if the range contains +num+, it returns +num+.
+ *
+ *     12.clamp(0..100) #=> 12
+ *     523.clamp(0..100) #=> 100
+ *     -3.123.clamp(0..100) #=> 0
+ */
+
+static VALUE
+num_clamp(VALUE num, VALUE obj)
+{
+    if (!rb_obj_is_kind_of(obj, rb_cRange)) {
+        rb_raise(rb_eArgError, "argument must be a Range");
+        return Qnil;
+    }
+
+    VALUE begp, endp;
+    int exclp;
+    rb_range_values(obj, &begp, &endp, &exclp);
+
+    double num_dbl = NUM2DBL(num);
+    double beg_dbl = NUM2DBL(begp);
+    double end_dbl = NUM2DBL(endp);
+
+    if (num_dbl < beg_dbl) {
+        return begp;
+    } else if (num_dbl > end_dbl) {
+        return endp;
+    }
+
+    return num;
+}
+
+/*
+ *  call-seq:
  *     num.ceil  ->  integer
  *
  *  Returns the smallest possible Integer that is greater than or equal to
@@ -4128,6 +4166,7 @@ Init_Numeric(void)
     rb_define_method(rb_cNumeric, "step", num_step, -1);
     rb_define_method(rb_cNumeric, "positive?", num_positive_p, 0);
     rb_define_method(rb_cNumeric, "negative?", num_negative_p, 0);
+    rb_define_method(rb_cNumeric, "clamp", num_clamp, 1);
 
     rb_cInteger = rb_define_class("Integer", rb_cNumeric);
     rb_undef_alloc_func(rb_cInteger);
