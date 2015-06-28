@@ -1,3 +1,9 @@
+Mon Jun 29 07:23:55 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* template/sizes.c.tmpl: extract RUBY_DEFINT to define sizes of
+	  types checked by configure.in, and fix size of intptr_t in
+	  universal binary.
+
 Mon Jun 29 02:10:10 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* insns.def (defineclass): preserve encoding of name in error
