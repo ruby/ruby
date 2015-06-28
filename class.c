@@ -214,8 +214,8 @@ void
 rb_check_inheritable(VALUE super)
 {
     if (!RB_TYPE_P(super, T_CLASS)) {
-	rb_raise(rb_eTypeError, "superclass must be a Class (%s given)",
-		 rb_obj_classname(super));
+	rb_raise(rb_eTypeError, "superclass must be a Class (%"PRIsVALUE" given)",
+		 rb_obj_class(super));
     }
     if (RBASIC(super)->flags & FL_SINGLETON) {
 	rb_raise(rb_eTypeError, "can't make subclass of singleton class");
