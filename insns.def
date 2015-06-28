@@ -869,8 +869,8 @@ defineclass
 		tmp = rb_class_real(RCLASS_SUPER(klass));
 
 		if (tmp != super) {
-		    rb_raise(rb_eTypeError, "superclass mismatch for class %s",
-			     rb_id2name(id));
+		    rb_raise(rb_eTypeError, "superclass mismatch for class % "PRIsVALUE"",
+			     rb_id2str(id));
 		}
 	    }
 	}
