@@ -2066,6 +2066,14 @@ class TestModule < Test::Unit::TestCase
     end
   end
 
+  def test_redefinition_mismatch
+    m = Module.new
+    m.module_eval "A = 1"
+    assert_raise_with_message(TypeError, /is not a module/) {
+      m.module_eval "module A; end"
+    }
+  end
+
   private
 
   def assert_top_method_is_private(method)
