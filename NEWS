@@ -143,6 +143,10 @@ with all sufficient information, see the ChangeLog file.
 
 === C API updates
 
+* rb_define_class_id_under() now raises a TypeError exception when the
+  class is already defined but its superclass does not match the given
+  superclass, as well as definitions in ruby level.
+
 === Build system updates
 
 === Implementation changes

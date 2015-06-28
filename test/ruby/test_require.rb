@@ -228,7 +228,7 @@ class TestRequire < Test::Unit::TestCase
     assert_separately([], <<-INPUT)
       module Zlib; end
       class Zlib::Error; end
-      assert_raise(NameError) do
+      assert_raise(TypeError) do
         require 'zlib'
       end
     INPUT
