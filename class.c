@@ -703,7 +703,8 @@ rb_define_class_id_under(VALUE outer, ID id, VALUE super)
 	    rb_raise(rb_eTypeError, "%"PRIsVALUE" is not a class", rb_id2str(id));
 	}
 	if (rb_class_real(RCLASS_SUPER(klass)) != super) {
-	    rb_name_error(id, "%"PRIsVALUE" is already defined", rb_id2str(id));
+	    rb_raise(rb_eTypeError, "superclass mismatch for class %"PRIsVALUE"",
+		     rb_id2str(id));
 	}
 	return klass;
     }
