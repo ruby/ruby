@@ -861,7 +861,7 @@ defineclass
 	    klass = VM_DEFINECLASS_SCOPED_P(flags) ?
 		rb_public_const_get_at(klass, id) : rb_const_get_at(klass, id);
 	    if (!RB_TYPE_P(klass, T_CLASS)) {
-		rb_raise(rb_eTypeError, "%s is not a class", rb_id2name(id));
+		rb_raise(rb_eTypeError, "% "PRIsVALUE" is not a class", rb_id2str(id));
 	    }
 
 	    if (super != rb_cObject) {
@@ -899,7 +899,7 @@ defineclass
 		rb_public_const_get_at(klass, id) : rb_const_get_at(klass, id);
 	    /* already exist */
 	    if (!RB_TYPE_P(klass, T_MODULE)) {
-		rb_raise(rb_eTypeError, "%s is not a module", rb_id2name(id));
+		rb_raise(rb_eTypeError, "% "PRIsVALUE" is not a module", rb_id2str(id));
 	    }
 	}
 	else {

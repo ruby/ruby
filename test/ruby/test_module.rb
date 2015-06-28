@@ -2072,6 +2072,11 @@ class TestModule < Test::Unit::TestCase
     assert_raise_with_message(TypeError, /is not a module/) {
       m.module_eval "module A; end"
     }
+    n = "M\u{1f5ff}"
+    m.module_eval "#{n} = 42"
+    assert_raise_with_message(TypeError, "#{n} is not a module") {
+      m.module_eval "module #{n}; end"
+    }
   end
 
   private

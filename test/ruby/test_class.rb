@@ -529,5 +529,10 @@ class TestClass < Test::Unit::TestCase
     assert_raise_with_message(TypeError, /is not a class/) {
       m.module_eval "class A; end"
     }
+    n = "M\u{1f5ff}"
+    m.module_eval "#{n} = 42"
+    assert_raise_with_message(TypeError, "#{n} is not a class") {
+      m.module_eval "class #{n}; end"
+    }
   end
 end
