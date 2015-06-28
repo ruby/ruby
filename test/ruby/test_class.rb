@@ -369,6 +369,9 @@ class TestClass < Test::Unit::TestCase
         end
       end;
     }
+    assert_raise_with_message(TypeError, /#{n}/) {
+      m.module_eval "class #{n} < Class.new; end"
+    }
   end
 
   def test_cloned_singleton_method_added
