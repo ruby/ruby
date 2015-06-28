@@ -1,4 +1,7 @@
-Mon Jun 29 02:06:51 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Jun 29 02:08:01 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* insns.def (defineclass): preserve encoding of name in error
+	  messages for non-class super.
 
 	* insns.def (defineclass): preserve encoding of name in error
 	  messages when already defined but type mismatch.
