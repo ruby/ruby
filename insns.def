@@ -844,8 +844,8 @@ defineclass
 
 	if (VM_DEFINECLASS_HAS_SUPERCLASS_P(flags) &&
 	    !RB_TYPE_P(super, T_CLASS)) {
-	    rb_raise(rb_eTypeError, "superclass must be a Class (%s given)",
-		     rb_obj_classname(super));
+	    rb_raise(rb_eTypeError, "superclass must be a Class (% "PRIsVALUE" given)",
+		     rb_obj_class(super));
 	}
 
 	if (super == Qnil) {
