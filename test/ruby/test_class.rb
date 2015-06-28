@@ -193,6 +193,9 @@ class TestClass < Test::Unit::TestCase
     assert_raise(TypeError) { Class.new(c) }
     assert_raise(TypeError) { Class.new(Class) }
     assert_raise(TypeError) { eval("class Foo < Class; end") }
+    m = "M\u{1f5ff}"
+    o = Class.new {break eval("class #{m}; self; end.new")}
+    assert_raise_with_message(TypeError, /#{m}/) {Class.new(o)}
   end
 
   def test_initialize_copy
