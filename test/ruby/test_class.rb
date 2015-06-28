@@ -522,4 +522,12 @@ class TestClass < Test::Unit::TestCase
       assert_equal(m, m.xyzzy, "Bug #10871")
     }
   end
+
+  def test_redefinition_mismatch
+    m = Module.new
+    m.module_eval "A = 1"
+    assert_raise_with_message(TypeError, /is not a class/) {
+      m.module_eval "class A; end"
+    }
+  end
 end
