@@ -1,3 +1,26 @@
+Tue Jun 30 02:47:02 2015  Eric Wong  <e@80x24.org>
+
+	* include/ruby/st.h (struct st_table): hide struct list_head
+	* st.c (struct st_table_entry): adjust struct
+	  (head, tail): remove shortcut macros
+	  (st_head): new wrapper function
+	  (st_init_table_with_size): adjust to new struct and API
+	  (st_clear): ditto
+	  (add_direct): ditto
+	  (unpack_entries): ditto
+	  (rehash): ditto
+	  (st_copy): ditto
+	  (remove_entry): ditto
+	  (st_shift): ditto
+	  (st_foreach_check): ditto
+	  (st_foreach): ditto
+	  (get_keys): ditto
+	  (get_values): ditto
+	  (st_values_check): ditto
+	  (st_reverse_foreach_check): ditto (unused)
+	  (st_reverse_foreach): ditto (unused)
+	  [ruby-core:69726] [Misc #10278]
+
 Mon Jun 29 17:38:01 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* insns.def (defineclass): do not quote unprintable characters at

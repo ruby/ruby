@@ -86,7 +86,7 @@ struct st_table {
     union {
 	struct {
 	    struct st_table_entry **bins;
-	    struct st_table_entry *head, *tail;
+	    void *private_list_head[2];
 	} big;
 	struct {
 	    struct st_packed_entry *entries;
