@@ -838,6 +838,22 @@ class TestNetHTTPContinue < Test::Unit::TestCase
     assert_not_match(/HTTP\/1.1 100 continue/, @debug.string)
   end
 
+  def test_expect_continue_error_before_body
+    @log_tester = nil
+    mount_proc {|req, res|
+      raise WEBrick::HTTPStatus::Forbidden
+    }
+    start {|http|
+      uheader = {'content-length' => '5', 'expect' => '100-continue'}
+      http.continue_timeout = 1 # allow the server to respond before sending
+      http.request_post('/continue', 'data', uheader) {|res|
+        assert_equal(res.code, '403')
+      }
+    }
+    assert_match(/Expect: 100-continue/, @debug.string)
+    assert_not_match(/HTTP\/1.1 100 continue/, @debug.string)
+  end
+
   def test_expect_continue_error_while_waiting
     mount_proc {|req, res|
       res.status = 501
