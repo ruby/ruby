@@ -1,3 +1,8 @@
+Mon Jun 29 16:01:24 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/net/http/response.rb (inflater): CONTENT_ENCODING can be upper
+	  case. [ruby-core:69670] [Bug #11285] patched by Andy Chu
+
 Mon Jun 29 14:50:08 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* eval.c (add_activated_refinement): should not include the original

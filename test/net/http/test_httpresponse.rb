@@ -103,6 +103,34 @@ EOS
     end
   end
 
+  def test_read_body_content_encoding_deflate_uppercase
+    io = dummy_io(<<EOS)
+HTTP/1.1 200 OK
+Connection: close
+Content-Encoding: DEFLATE
+Content-Length: 13
+
+x\x9C\xCBH\xCD\xC9\xC9\a\x00\x06,\x02\x15
+EOS
+
+    res = Net::HTTPResponse.read_new(io)
+    res.decode_content = true
+
+    body = nil
+
+    res.reading_body io, true do
+      body = res.read_body
+    end
+
+    if Net::HTTP::HAVE_ZLIB
+      assert_equal nil, res['content-encoding']
+      assert_equal 'hello', body
+    else
+      assert_equal 'deflate', res['content-encoding']
+      assert_equal "x\x9C\xCBH\xCD\xC9\xC9\a\x00\x06,\x02\x15", body
+    end
+  end
+
   def test_read_body_content_encoding_deflate_chunked
     io = dummy_io(<<EOS)
 HTTP/1.1 200 OK
