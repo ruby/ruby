@@ -250,7 +250,8 @@ class Net::HTTPResponse
     return yield @socket unless @decode_content
     return yield @socket if self['content-range']
 
-    case self['content-encoding'].downcase
+    v = self['content-encoding']
+    case v && v.downcase
     when 'deflate', 'gzip', 'x-gzip' then
       self.delete 'content-encoding'
 
