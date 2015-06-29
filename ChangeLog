@@ -1,3 +1,8 @@
+Mon Jun 29 17:38:01 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* insns.def (defineclass): do not quote unprintable characters at
+	  raising an exception.
+
 Mon Jun 29 16:01:24 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/net/http/response.rb (inflater): CONTENT_ENCODING can be upper
