@@ -1326,7 +1326,7 @@ SRC
   #
   def check_sizeof(type, headers = nil, opts = "", &b)
     typedef, member, prelude = typedef_expr(type, headers)
-    prelude << "static #{typedef} *rbcv_ptr_;\n"
+    prelude << "#{typedef} *rbcv_ptr_;\n"
     prelude = [prelude]
     expr = "sizeof((*rbcv_ptr_)#{"." << member if member})"
     fmt = STRING_OR_FAILED_FORMAT
@@ -1479,7 +1479,7 @@ SRC
     prelude = [cpp_include(headers).split(/^/)]
     prelude << ["typedef #{type} rbcv_typedef_;\n",
                 "extern rbcv_typedef_ *#{func};\n",
-                "static rbcv_typedef_ #{var};\n",
+                "rbcv_typedef_ #{var};\n",
                ]
     type = "rbcv_typedef_"
     fmt = member && !(typeof = have_typeof?) ? "seems %s" : "%s"
@@ -1490,7 +1490,7 @@ SRC
       type = "rbcv_mem_typedef_"
       prelude[-1] << "typedef #{typeof}(#{val}) #{type};\n"
       prelude[-1] << "extern #{type} *#{func};\n"
-      prelude[-1] << "static #{type} #{var};\n"
+      prelude[-1] << "#{type} #{var};\n"
       val = var
     end
     def fmt.%(x)
@@ -1513,7 +1513,7 @@ SRC
       type = UNIVERSAL_INTS.find do |t|
         pre = prelude
         unless member
-          pre += [["static #{unsigned} #{t} #{ptr}#{var};\n",
+          pre += [["#{unsigned} #{t} #{ptr}#{var};\n",
                    "extern #{unsigned} #{t} #{ptr}*#{func};\n"]]
         end
         try_static_assert("sizeof(#{ptr}#{val}) == sizeof(#{unsigned} #{t})", pre)
