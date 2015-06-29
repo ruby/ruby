@@ -234,6 +234,15 @@ class TestObjSpace < Test::Unit::TestCase
     assert_match /"method":"#{loc.base_label}"/, info
   end
 
+  def test_dump_special_consts
+    # [ruby-core:69692] [Bug #11291]
+    assert_equal('{}', ObjectSpace.dump(nil))
+    assert_equal('{}', ObjectSpace.dump(true))
+    assert_equal('{}', ObjectSpace.dump(false))
+    assert_equal('{}', ObjectSpace.dump(0))
+    assert_equal('{}', ObjectSpace.dump(:foo))
+  end
+
   def test_dump_all
     entry = /"bytesize":11, "value":"TEST STRING", "encoding":"UTF-8", "file":"-", "line":4, "method":"dump_my_heap_please", "generation":/
 
