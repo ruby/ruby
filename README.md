@@ -8,26 +8,26 @@ extensible.
 ## Features of Ruby
 
 *   Simple Syntax
-*   **Normal** Object-Oriented features(ex. class, method calls)
-*   **Advanced** Object-Oriented features(ex. Mix-in, Singleton-method)
+*   **Normal** Object-oriented Features (e.g. class, method calls)
+*   **Advanced** Object-oriented Features (e.g. Mix-in, Singleton-method)
 *   Operator Overloading
 *   Exception Handling
 *   Iterators and Closures
 *   Garbage Collection
-*   Dynamic Loading of Object files(on some architecture)
+*   Dynamic Loading of Object Files (on some architectures)
 *   Highly Portable (works on many Unix-like/POSIX compatible platforms as
-    well as Windows, Mac OS X, BeOS etc.) cf.
+    well as Windows, Mac OS X, BeOS, etc.) cf.
     http://bugs.ruby-lang.org/projects/ruby-trunk/wiki/SupportedPlatforms
 
 
 ## How to get Ruby
 
-For a complete list of ways to install Ruby, including using third party tools
+For a complete list of ways to install Ruby, including using third-party tools
 like rvm, see:
 
 http://www.ruby-lang.org/en/downloads/
 
-The Ruby distribution files can be found in the following FTP site:
+The Ruby distribution files can be found on the following FTP site:
 
 ftp://ftp.ruby-lang.org/pub/ruby/
 
@@ -41,7 +41,7 @@ Or if you are using git then use the following command:
     $ git clone git://github.com/ruby/ruby.git
 
 There are some other branches under development.  Try the following command
-and see the list of branches:
+to see the list of branches:
 
     $ svn ls http://svn.ruby-lang.org/repos/ruby/branches/
 
@@ -49,16 +49,16 @@ Or if you are using git then use the following command:
 
     $ git ls-remote git://github.com/ruby/ruby.git
 
-## Ruby home-page
+## Ruby home page
 
-The URL of the Ruby home-page is:
+The URL of the Ruby home page is:
 
 http://www.ruby-lang.org/
 
 ## Mailing list
 
 There is a mailing list to talk about Ruby. To subscribe this list, please
-send the following phrase
+send the following phrase:
 
     subscribe
 
