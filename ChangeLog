@@ -1,3 +1,7 @@
+Mon Jun 29 12:09:10 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* README.md: tweak styles. [fix GH-945][ci skip] Patch by @bryndyment
+
 Mon Jun 29 07:23:55 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* template/sizes.c.tmpl: extract RUBY_DEFINT to define sizes of
