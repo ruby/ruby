@@ -1,3 +1,8 @@
+Mon Jun 29 14:50:08 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* eval.c (add_activated_refinement): should not include the original
+	  class.
+
 Mon Jun 29 12:09:10 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* README.md: tweak styles. [fix GH-945][ci skip] Patch by @bryndyment
