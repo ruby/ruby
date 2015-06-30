@@ -9,6 +9,7 @@ class Net::HTTPGenericRequest
 
   def initialize(m, reqbody, resbody, uri_or_path, initheader = nil)
     @method = m
+    @retry_networking_errors = Net::HTTP::IDEMPOTENT_METHODS_.include?(m)
     @request_has_body = reqbody
     @response_has_body = resbody
 
@@ -58,6 +59,11 @@ class Net::HTTPGenericRequest
   # themselves.
   attr_reader :decode_content
 
+  # When true, this request may be retried if a networking error is
+  # encountered. Set to false to disable retries. Defaults to
+  # true for idempotent HTTP methods.
+  attr_accessor :retry_networking_errors
+
   def inspect
     "\#<#{self.class} #{@method}>"
   end
@@ -97,6 +103,7 @@ class Net::HTTPGenericRequest
   attr_reader :body_stream
 
   def body_stream=(input)
+    @retry_networking_errors = input.respond_to?(:rewind)
     @body = nil
     @body_stream = input
     @body_data = nil

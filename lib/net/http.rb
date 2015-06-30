@@ -1389,6 +1389,7 @@ module Net   #:nodoc:
       if proxy_user()
         req.proxy_basic_auth proxy_user(), proxy_pass() unless use_ssl?
       end
+      req.retry_networking_errors = false if block_given?
       req.set_body_internal body
       res = transport_request(req, &block)
       if sspi_auth?(res)
@@ -1438,8 +1439,9 @@ module Net   #:nodoc:
              # avoid a dependency on OpenSSL
              defined?(OpenSSL::SSL) ? OpenSSL::SSL::SSLError : IOError,
              Timeout::Error => exception
-        if count == 0 && IDEMPOTENT_METHODS_.include?(req.method)
+        if count == 0 && req.retry_networking_errors
           count += 1
+          req.body_stream.rewind if req.body_stream
           @socket.close if @socket and not @socket.closed?
           D "Conn close because of error #{exception}, and retry"
           retry
