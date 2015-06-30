@@ -1,3 +1,11 @@
+Tue Jun 30 17:28:25 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_reopen): freopen(3) with OS encoding path.
+	  [ruby-core:69780] [Bug #11320]
+
+	* win32/file.c (rb_freopen): wrapper of wchar version freopen(3).
+	  use _wfreopen_s() if available.
+
 Tue Jun 30 08:24:08 2015  Eric Wong  <e@80x24.org>
 
 	* io.c (rb_io_oflags_modestr): handle O_TRUNC correctly

@@ -6706,6 +6706,20 @@ io_reopen(VALUE io, VALUE nfile)
     return io;
 }
 
+#ifdef _WIN32
+int rb_freopen(VALUE fname, const char *mode, FILE *fp);
+#else
+static int
+rb_freopen(VALUE fname, const char *mode, FILE *fp)
+{
+    if (!freopen(RSTRING_PTR(fname), mode, fp)) {
+	RB_GC_GUARD(fname);
+	return errno;
+    }
+    return 0;
+}
+#endif
+
 /*
  *  call-seq:
  *     ios.reopen(other_IO)         -> ios
@@ -6777,9 +6791,10 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
     fptr->rbuf.off = fptr->rbuf.len = 0;
 
     if (fptr->stdio_file) {
-        if (freopen(RSTRING_PTR(fptr->pathv), rb_io_oflags_modestr(oflags), fptr->stdio_file) == 0) {
-            rb_sys_fail_path(fptr->pathv);
-        }
+	int e = rb_freopen(rb_str_encode_ospath(fptr->pathv),
+			   rb_io_oflags_modestr(oflags),
+			   fptr->stdio_file);
+	if (e) rb_syserr_fail_path(e, fptr->pathv);
         fptr->fd = fileno(fptr->stdio_file);
         rb_fd_fix_cloexec(fptr->fd);
 #ifdef USE_SETVBUF
