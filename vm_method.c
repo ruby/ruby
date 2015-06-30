@@ -562,6 +562,7 @@ rb_add_method_iseq(VALUE klass, ID mid, VALUE iseqval, rb_cref_t *cref, rb_metho
     iseq_body.iseqptr = iseq;
     iseq_body.cref = cref;
     rb_add_method(klass, mid, VM_METHOD_TYPE_ISEQ, &iseq_body, visi);
+    RB_GC_GUARD(iseqval);
 }
 
 static rb_method_entry_t *

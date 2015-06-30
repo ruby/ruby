@@ -1968,6 +1968,8 @@ rb_iseq_clone(VALUE iseqval, VALUE newcbase)
 	RB_OBJ_WRITTEN(iseq1->self, Qundef, iseq1->klass);
     }
 
+    RB_GC_GUARD(iseqval); /* seems necessary iff RGenGC is disabled */
+
     return newiseq;
 }
 

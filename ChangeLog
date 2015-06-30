@@ -1,3 +1,12 @@
+Wed Jul  1 05:57:03 2015  Eric Wong  <e@80x24.org>
+
+	* vm_method.c (rb_add_method_iseq): add RB_GC_GUARD
+	* class.c (clone_method): remove RB_GC_GUARD
+	* struct.c (define_aref_method): ditto
+	  (define_aset_method): ditto
+	* vm.c (vm_define_method):
+	* iseq.c (rb_iseq_clone): add RB_GC_GUARD
+
 Wed Jul  1 05:43:58 2015  Eric Wong  <e@80x24.org>
 
 	* struct.c (AREF_HASH_THRESHOLD): new macro
