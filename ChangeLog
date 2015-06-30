@@ -1,3 +1,7 @@
+Tue Jun 30 18:38:16 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/file.c (rb_freopen): need to terminate by NUL.
+
 Tue Jun 30 17:28:25 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_reopen): freopen(3) with OS encoding path.
