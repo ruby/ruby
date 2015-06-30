@@ -1,3 +1,8 @@
+Tue Jun 30 23:12:08 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_reopen): FilePathValue() ensures the path
+	  NUL-terminated and frozen, so it is unnecessary to make it shared.
+
 Tue Jun 30 23:11:53 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (check_dirname): ensure path name NUL-terminated for

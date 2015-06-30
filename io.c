@@ -6778,7 +6778,7 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
 	oflags = rb_io_fmode_oflags(fptr->mode);
     }
 
-    fptr->pathv = rb_str_new_frozen(fname);
+    fptr->pathv = fname;
     if (fptr->fd < 0) {
         fptr->fd = rb_sysopen(fptr->pathv, oflags, 0666);
 	fptr->stdio_file = 0;
