@@ -131,7 +131,7 @@ struct_member_pos(VALUE s, VALUE name)
 {
     VALUE back = struct_ivar_get(rb_obj_class(s), id_back_members);
     VALUE const * p;
-    long j, mask;
+    int j, mask;
 
     if (UNLIKELY(NIL_P(back))) {
 	rb_raise(rb_eTypeError, "uninitialized struct");
@@ -141,12 +141,12 @@ struct_member_pos(VALUE s, VALUE name)
     }
 
     p = RARRAY_CONST_PTR(back);
-    mask = RARRAY_LEN(back);
+    mask = RARRAY_LENINT(back);
 
     if (mask <= AREF_HASH_THRESHOLD) {
 	if (UNLIKELY(RSTRUCT_LEN(s) != RARRAY_LEN(back))) {
 	    rb_raise(rb_eTypeError,
-		     "struct size differs (%ld required %ld given)",
+		     "struct size differs (%d required %ld given)",
 		     mask, RSTRUCT_LEN(s));
 	}
 	for (j = 0; j < mask; j++) {
