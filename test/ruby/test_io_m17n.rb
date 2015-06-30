@@ -1223,7 +1223,6 @@ EOT
   end
 
   def test_stdin_external_encoding_with_reopen
-    skip "passing non-stdio fds is not supported" if /mswin|mingw/ =~ RUBY_PLATFORM
     with_tmpdir {
       open("tst", "w+") {|f|
         pid = spawn(EnvUtil.rubybin, '-e', <<-'End', 10=>f)
@@ -1239,7 +1238,7 @@ EOT
         assert_equal("\u3042".force_encoding("ascii-8bit"), result)
       }
     }
-  end
+  end unless /mswin|mingw/ =~ RUBY_PLATFORM # passing non-stdio fds is not supported
 
   def test_popen_r_enc
     IO.popen("#{EnvUtil.rubybin} -e 'putc 255'", "r:ascii-8bit") {|f|
