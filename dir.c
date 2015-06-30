@@ -1019,6 +1019,7 @@ check_dirname(VALUE dir)
     pend = rb_enc_path_end(rb_enc_path_skip_prefix(path, pend, enc), pend, enc);
     if (pend - path < len) {
 	d = rb_str_subseq(d, 0, pend - path);
+	StringValueCStr(d);
     }
     return rb_str_encode_ospath(d);
 }

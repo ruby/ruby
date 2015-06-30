@@ -1,3 +1,10 @@
+Tue Jun 30 23:11:53 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (check_dirname): ensure path name NUL-terminated for
+	  SHARABLE_MIDDLE_SUBSTRING.
+
+	* io.c (rb_sysopen): ditto.
+
 Tue Jun 30 18:38:16 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/file.c (rb_freopen): need to terminate by NUL.

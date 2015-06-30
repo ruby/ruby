@@ -5444,6 +5444,7 @@ rb_sysopen(VALUE fname, int oflags, mode_t perm)
     struct sysopen_struct data;
 
     data.fname = rb_str_encode_ospath(fname);
+    StringValueCStr(data.fname);
     data.oflags = oflags;
     data.perm = perm;
 
