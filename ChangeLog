@@ -1,3 +1,19 @@
+Wed Jul  1 05:43:58 2015  Eric Wong  <e@80x24.org>
+
+	* struct.c (AREF_HASH_THRESHOLD): new macro
+	  (id_back_members): new ID
+	  (struct_member_pos_ideal): new function
+	  (struct_member_pos_probe): ditto
+	  (struct_set_members): ditto
+	  (struct_member_pos): ditto
+	  (rb_struct_getmember): use struct_member_pos for O(1) access
+	  (rb_struct_aref_sym): ditto
+	  (rb_struct_aset_sym): ditto
+	  (setup_struct): call struct_set_members
+	  (struct_define_without_accessor): ditto
+	  (Init_Struct): initialize __members_back__
+	  [ruby-core:66851] [ruby-core:69705] [ruby-core:69821]
+
 Tue Jun 30 23:12:08 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_reopen): FilePathValue() ensures the path
