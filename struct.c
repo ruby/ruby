@@ -288,7 +288,6 @@ define_aref_method(VALUE nstr, VALUE name, VALUE off)
     VALUE iseqval = rb_method_for_self_aref(name, off, rb_vm_opt_struct_aref);
 
     rb_add_method_iseq(nstr, SYM2ID(name), iseqval, NULL, METHOD_VISI_PUBLIC);
-    RB_GC_GUARD(iseqval);
 }
 
 static void
@@ -298,7 +297,6 @@ define_aset_method(VALUE nstr, VALUE name, VALUE off)
     VALUE iseqval = rb_method_for_self_aset(name, off, rb_vm_opt_struct_aset);
 
     rb_add_method_iseq(nstr, SYM2ID(name), iseqval, NULL, METHOD_VISI_PUBLIC);
-    RB_GC_GUARD(iseqval);
 }
 
 static VALUE
