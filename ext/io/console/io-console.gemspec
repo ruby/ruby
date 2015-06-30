@@ -12,7 +12,7 @@ Gem::Specification.new do |s|
   s.required_ruby_version = ">= 2.0.0"
   s.homepage = "http://www.ruby-lang.org"
   s.authors = ["Nobu Nakada"]
-  s.require_path = %[.]
+  s.require_path = %[lib]
   s.files = %w[console.c extconf.rb lib/console/size.rb]
   s.extensions = %w[extconf.rb]
   s.licenses = "ruby"

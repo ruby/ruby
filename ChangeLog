@@ -1,3 +1,9 @@
+Wed Jul  1 04:16:56 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.gemspec: Fix require paths for released gem.
+	  [fix GH-929] Patch by @voxik
+	* ext/io/console/io-console.gemspec: ditto.
+
 Wed Jul  1 04:15:38 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* ext/zlib/zlib.c: Fix indentation for rdoc.
