@@ -1653,7 +1653,6 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_close_on_exec
-    skip "IO\#close_on_exec is not implemented." unless have_close_on_exec?
     ruby do |f|
       assert_equal(true, f.close_on_exec?)
       f.close_on_exec = false
@@ -1681,7 +1680,7 @@ class TestIO < Test::Unit::TestCase
       w.close_on_exec = false
       assert_equal(false, w.close_on_exec?)
     end
-  end
+  end if have_close_on_exec?
 
   def test_pos
     make_tempfile {|t|
