@@ -741,7 +741,7 @@ rb_freopen(VALUE fname, const char *mode, FILE *file)
 	e = _wfreopen_s(&newfp, wname, wmode, file);
     }
 #endif
-    xfree(wname);
+    free(wname);
     return e;
 }
 
