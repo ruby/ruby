@@ -28,6 +28,10 @@ class TestNumeric < Test::Unit::TestCase
       assert_raise_with_message(TypeError, /:"\\u3042"/) {1|:"\u{3042}"}
       assert_raise_with_message(TypeError, /:"\\u3042"/) {1^:"\u{3042}"}
     end
+
+    bug10711 = '[ruby-core:67405] [Bug #10711]'
+    exp = "1.2 can't be coerced into Fixnum"
+    assert_raise_with_message(TypeError, exp, bug10711) { 1 & 1.2 }
   end
 
   def test_dummynumeric

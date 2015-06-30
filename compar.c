@@ -20,7 +20,7 @@ rb_cmperr(VALUE x, VALUE y)
 {
     const char *classname;
 
-    if (SPECIAL_CONST_P(y)) {
+    if (SPECIAL_CONST_P(y) || BUILTIN_TYPE(y) == T_FLOAT) {
 	y = rb_inspect(y);
 	classname = StringValuePtr(y);
     }
