@@ -1,3 +1,8 @@
+Wed Jul  1 08:47:24 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* struct.c (struct_member_pos): avoid implicit conversion loses
+	  integer precision: 'long' to 'int'.
+
 Wed Jul  1 05:57:03 2015  Eric Wong  <e@80x24.org>
 
 	* vm_method.c (rb_add_method_iseq): add RB_GC_GUARD
