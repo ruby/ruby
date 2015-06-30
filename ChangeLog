@@ -1,3 +1,8 @@
+Wed Jul  1 04:15:38 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ext/zlib/zlib.c: Fix indentation for rdoc.
+	  [Bug #11221][ruby-core:69465]
+
 Sat Jun 27 22:51:59 2015  Shota Fukumori  <her@sorah.jp>
 
 	* ext/objspace/objspace_dump.c(dump_object): Return empty JSON object when
