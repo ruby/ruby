@@ -1130,6 +1130,7 @@ main()
 		    AC_DEFINE(HAVE_TYPE_NET_LUID, 1)
 		fi
 		AC_CHECK_FUNCS(_gmtime64_s)
+		AC_CHECK_FUNCS(_wfreopen_s)
 		AC_LIBOBJ([langinfo])
 		],
 [os2-emx*], [	LIBS="-lm $LIBS"
