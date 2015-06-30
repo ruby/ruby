@@ -739,7 +739,6 @@ rb_freopen(VALUE fname, const char *mode, FILE *file)
     {
 	FILE *newfp = 0;
 	e = _wfreopen_s(&newfp, wname, wmode, file);
-	if (e != 0) cprintf("DEBUG: %d [%ls] [%ls]\n", e, wname, wmode);
     }
 #endif
     xfree(wname);
