@@ -174,7 +174,7 @@ class Gem::RequestSet::GemDependencyAPI
   ##
   # A Hash containing gem names and files to require from those gems.
 
-  attr_reader :requires # :nodoc:
+  attr_reader :requires
 
   ##
   # A set of gems that are loaded via the +:path+ option to #gem

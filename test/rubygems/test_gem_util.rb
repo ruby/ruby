@@ -27,5 +27,13 @@ class TestGemUtil < Gem::TestCase
     assert_equal File.join(@tempdir, 'a'),     enum.next
   end
 
+  def test_linked_list_find
+    list = [1,2,3,4,5].inject(Gem::List.new(0)) { |m,o|
+      Gem::List.new o, m
+    }
+    assert_equal 5, list.find { |x| x == 5 }
+    assert_equal 4, list.find { |x| x == 4 }
+  end
+
 end
 

@@ -73,6 +73,7 @@ class TestGemCommandsWhichCommand < Gem::TestCase
     @foo_bar = util_spec 'foo_bar' do |gem|
       gem.files = files
     end
+    install_specs @foo_bar
 
     files.each do |file|
       filename = File.join(@foo_bar.full_gem_path, file)

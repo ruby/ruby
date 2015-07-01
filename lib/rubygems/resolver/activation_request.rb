@@ -67,6 +67,8 @@ class Gem::Resolver::ActivationRequest
     @spec.full_name
   end
 
+  alias_method :to_s, :full_name
+
   ##
   # The Gem::Specification for this activation request.
 
@@ -169,4 +171,3 @@ class Gem::Resolver::ActivationRequest
   end
 
 end
-
