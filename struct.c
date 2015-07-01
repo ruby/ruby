@@ -85,26 +85,25 @@ struct_member_pos_probe(long prev, long mask)
 }
 
 static VALUE
-struct_set_members(VALUE klass, VALUE members)
+struct_set_members(VALUE klass, VALUE /* frozen hidden array */ members)
 {
     VALUE back;
+    const long members_length = RARRAY_LEN(members);
 
-    members = rb_ary_dup(members);
-    rb_obj_freeze(members);
-
-    if (RARRAY_LEN(members) <= AREF_HASH_THRESHOLD) {
+    if (members_length <= AREF_HASH_THRESHOLD) {
 	back = members;
-    } else {
+    }
+    else {
 	long i, j, mask = 64;
 	VALUE name;
 
-	while (mask < RARRAY_LEN(members) * 5) mask *= 2;
+	while (mask < members_length * 5) mask *= 2;
 
-	back = rb_ary_new2(mask + 1);
-	rb_ary_store(back, mask, INT2FIX(RARRAY_LEN(members)));
+	back = rb_ary_tmp_new(mask + 1);
+	rb_ary_store(back, mask, INT2FIX(members_length));
 	mask -= 2;			  /* mask = (2**k-1)*2 */
 
-	for (i=0; i<RARRAY_LEN(members); i++) {
+	for (i=0; i < members_length; i++) {
 	    name = RARRAY_AREF(members, i);
 
 	    j = struct_member_pos_ideal(name, mask);
@@ -118,8 +117,8 @@ struct_set_members(VALUE klass, VALUE members)
 		j = struct_member_pos_probe(j, mask);
 	    }
 	}
+	OBJ_FREEZE_RAW(back);
     }
-    rb_obj_freeze(back);
     rb_ivar_set(klass, id_members, members);
     rb_ivar_set(klass, id_back_members, back);
 
@@ -144,7 +143,7 @@ struct_member_pos(VALUE s, VALUE name)
     mask = RARRAY_LEN(back);
 
     if (mask <= AREF_HASH_THRESHOLD) {
-	if (UNLIKELY(RSTRUCT_LEN(s) != RARRAY_LEN(back))) {
+	if (UNLIKELY(RSTRUCT_LEN(s) != mask)) {
 	    rb_raise(rb_eTypeError,
 		     "struct size differs (%ld required %ld given)",
 		     mask, RSTRUCT_LEN(s));
@@ -377,7 +376,7 @@ rb_struct_define_without_accessor_under(VALUE outer, const char *class_name, VAL
         rb_ary_push(members, ID2SYM(rb_intern(name)));
     }
     va_end(ar);
-    OBJ_FREEZE(members);
+    OBJ_FREEZE_RAW(members);
 
     return struct_define_without_accessor(outer, class_name, super, alloc, members);
 }
@@ -395,7 +394,7 @@ rb_struct_define_without_accessor(const char *class_name, VALUE super, rb_alloc_
         rb_ary_push(members, ID2SYM(rb_intern(name)));
     }
     va_end(ar);
-    OBJ_FREEZE(members);
+    OBJ_FREEZE_RAW(members);
 
     return struct_define_without_accessor(0, class_name, super, alloc, members);
 }
@@ -415,6 +414,7 @@ rb_struct_define(const char *name, ...)
 	rb_ary_push(ary, ID2SYM(slot));
     }
     va_end(ar);
+    OBJ_FREEZE_RAW(ary);
 
     if (!name) st = anonymous_struct(rb_cStruct);
     else st = new_struct(rb_str_new2(name), rb_cStruct);
@@ -436,6 +436,7 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
 	rb_ary_push(ary, ID2SYM(slot));
     }
     va_end(ar);
+    OBJ_FREEZE_RAW(ary);
 
     return setup_struct(rb_define_class_under(outer, name, rb_cStruct), ary);
 }
@@ -512,6 +513,7 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
 	RARRAY_ASET(rest, i, ID2SYM(id));
 	rb_ary_set_len(rest, i+1);
     }
+    OBJ_FREEZE_RAW(rest);
     if (NIL_P(name)) {
 	st = anonymous_struct(klass);
     }
