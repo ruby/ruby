@@ -14,7 +14,9 @@
 #include "id.h"
 
 /* only for struct[:field] access */
-#define AREF_HASH_THRESHOLD (10)
+enum {
+    AREF_HASH_THRESHOLD = 10
+};
 
 VALUE rb_method_for_self_aref(VALUE name, VALUE arg, rb_insn_func_t func);
 VALUE rb_method_for_self_aset(VALUE name, VALUE arg, rb_insn_func_t func);
