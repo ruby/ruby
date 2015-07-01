@@ -1,3 +1,9 @@
+Wed Jul  1 09:28:47 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* struct.c (struct_member_pos): revert r51080 to fix other
+	  implicit conversions but cast the return value to fix the
+	  previous implicit conversion.
+
 Wed Jul  1 08:47:24 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* struct.c (struct_member_pos): avoid implicit conversion loses
