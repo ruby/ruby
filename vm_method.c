@@ -1892,11 +1892,13 @@ Init_eval_method(void)
 			     "private", top_private, -1);
 
     {
-#define REPLICATE_METHOD(klass, id, visi) \
-  rb_method_entry_set((klass), (id), rb_method_entry((klass), (id), 0), (visi));
+#define REPLICATE_METHOD(klass, id) do { \
+	    const rb_method_entry_t *me = rb_method_entry((klass), (id), 0); \
+	    rb_method_entry_set((klass), (id), me, METHOD_ENTRY_VISI(me)); \
+	} while (0)
 
-	REPLICATE_METHOD(rb_eException, idMethodMissing, METHOD_VISI_PRIVATE);
-	REPLICATE_METHOD(rb_eException, idRespond_to, METHOD_VISI_PUBLIC);
-	REPLICATE_METHOD(rb_eException, idRespond_to_missing, METHOD_VISI_PUBLIC);
+	REPLICATE_METHOD(rb_eException, idMethodMissing);
+	REPLICATE_METHOD(rb_eException, idRespond_to);
+	REPLICATE_METHOD(rb_eException, idRespond_to_missing);
     }
 }
