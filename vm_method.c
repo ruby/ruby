@@ -23,11 +23,6 @@
 #define GLOBAL_METHOD_CACHE(c,m) (rb_bug("global method cache disabled improperly"), NULL)
 #endif
 
-#define NOEX_NOREDEF 0
-#ifndef NOEX_NOREDEF
-#define NOEX_NOREDEF NOEX_RESPONDS
-#endif
-
 static void rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VALUE klass);
 
 #define object_id           idObject_id
@@ -403,7 +398,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
 {
     rb_method_entry_t *me;
 
-#if NOEX_NOREDEF
+#ifdef METHOD_ENTRY_NOREDEF
     VALUE rklass;
 #endif
     st_table *mtbl;
@@ -427,7 +422,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
     }
 
     rb_frozen_class_p(klass);
-#if NOEX_NOREDEF
+#ifdef METHOD_ENTRY_NOREDEF
     rklass = klass;
 #endif
 
@@ -450,8 +445,8 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
 	rb_method_definition_t *old_def = old_me->def;
 
 	if (rb_method_definition_eq(old_def, def)) return old_me;
-#if NOEX_NOREDEF
-	if (old_me->flag & NOEX_NOREDEF) {
+#ifdef METHOD_ENTRY_NOREDEF
+	if (METHOD_ENTRY_NOREDEF(old_me)) {
 	    rb_raise(rb_eTypeError, "cannot redefine %"PRIsVALUE"#%"PRIsVALUE,
 		     rb_class_name(rklass), rb_id2str(mid));
 	}
