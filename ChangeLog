@@ -1,3 +1,9 @@
+Wed Jul  1 09:30:36 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* struct.c (struct_set_members): hide internal back_members
+	  object, and members object does not need to be duped as it
+	  should be frozen and hidden.
+
 Wed Jul  1 09:28:47 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* struct.c (struct_member_pos): revert r51080 to fix other
