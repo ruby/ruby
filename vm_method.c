@@ -398,9 +398,6 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
 {
     rb_method_entry_t *me;
 
-#ifdef METHOD_ENTRY_NOREDEF
-    VALUE rklass;
-#endif
     st_table *mtbl;
     st_data_t data;
     int make_refined = 0;
@@ -422,9 +419,6 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
     }
 
     rb_frozen_class_p(klass);
-#ifdef METHOD_ENTRY_NOREDEF
-    rklass = klass;
-#endif
 
     if (FL_TEST(klass, RMODULE_IS_REFINEMENT)) {
 	VALUE refined_class = rb_refinement_module_get_refined_class(klass);
@@ -445,12 +439,6 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
 	rb_method_definition_t *old_def = old_me->def;
 
 	if (rb_method_definition_eq(old_def, def)) return old_me;
-#ifdef METHOD_ENTRY_NOREDEF
-	if (METHOD_ENTRY_NOREDEF(old_me)) {
-	    rb_raise(rb_eTypeError, "cannot redefine %"PRIsVALUE"#%"PRIsVALUE,
-		     rb_class_name(rklass), rb_id2str(mid));
-	}
-#endif
 	rb_vm_check_redefinition_opt_method(old_me, klass);
 
 	if (old_def->type == VM_METHOD_TYPE_REFINED) make_refined = 1;
