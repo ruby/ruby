@@ -1401,6 +1401,7 @@ DEFINE_ENUMFUNCS(none)
  *     [].none?                                           #=> true
  *     [nil].none?                                        #=> true
  *     [nil, false].none?                                 #=> true
+ *     [nil, false, true].none?                           #=> false
  */
 static VALUE
 enum_none(VALUE obj)
