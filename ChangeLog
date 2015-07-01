@@ -1,3 +1,9 @@
+Wed Jul  1 23:50:34 2015  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/net/http/test_httpresponse.rb
+	(HTTPResponseTest#test_read_body_content_encoding_deflate_uppercase):
+	fix a failure without zlib.
+
 Wed Jul  1 10:54:56 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* Add test for Enumerable#none? [fix GH-950] Patch by @yui-knk
