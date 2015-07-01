@@ -15,6 +15,7 @@
 
 /* only for struct[:field] access */
 enum {
+    AREF_HASH_UNIT = 5,
     AREF_HASH_THRESHOLD = 10
 };
 
@@ -82,8 +83,8 @@ struct_member_pos_ideal(VALUE name, long mask)
 static long
 struct_member_pos_probe(long prev, long mask)
 {
-    /* (((prev/2) * 5 + 1) & (mask/2)) * 2 */
-    return (prev * 5 + 2) & mask;
+    /* (((prev/2) * AREF_HASH_UNIT + 1) & (mask/2)) * 2 */
+    return (prev * AREF_HASH_UNIT + 2) & mask;
 }
 
 static VALUE
@@ -99,7 +100,7 @@ struct_set_members(VALUE klass, VALUE /* frozen hidden array */ members)
 	long i, j, mask = 64;
 	VALUE name;
 
-	while (mask < members_length * 5) mask *= 2;
+	while (mask < members_length * AREF_HASH_UNIT) mask *= 2;
 
 	back = rb_ary_tmp_new(mask + 1);
 	rb_ary_store(back, mask, INT2FIX(members_length));
