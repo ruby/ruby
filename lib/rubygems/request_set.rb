@@ -159,16 +159,13 @@ class Gem::RequestSet
 
       path = req.download cache_dir
 
-      inst = Gem::Installer.new path, options
+      inst = Gem::Installer.at path, options
 
       yield req, inst if block_given?
 
       requests << inst.install
     end
 
-    requests
-  ensure
-    raise if $!
     return requests if options[:gemdeps]
 
     specs = requests.map do |request|
@@ -187,6 +184,8 @@ class Gem::RequestSet
     Gem.done_installing_hooks.each do |hook|
       hook.call inst, specs
     end unless Gem.done_installing_hooks.empty?
+
+    requests
   end
 
   ##

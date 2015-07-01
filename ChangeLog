@@ -1,3 +1,9 @@
+Thu Jul  2 06:49:44 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/rubygems: Update to RubyGems HEAD(c202db2).
+	  this version contains many enhancements see http://git.io/vtNwF
+	* test/rubygems: ditto.
+
 Wed Jul  1 23:50:34 2015  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/net/http/test_httpresponse.rb

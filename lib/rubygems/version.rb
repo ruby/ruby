@@ -232,11 +232,11 @@ class Gem::Version
   # same precision. Version "1.0" is not the same as version "1".
 
   def eql? other
-    self.class === other and @version == other.version
+    self.class === other and @version == other._version
   end
 
   def hash # :nodoc:
-    @hash ||= segments.hash
+    @version.hash
   end
 
   def init_with coder # :nodoc:
@@ -333,7 +333,7 @@ class Gem::Version
 
   def <=> other
     return unless Gem::Version === other
-    return 0 if @version == other.version
+    return 0 if @version == other._version
 
     lhsegments = segments
     rhsegments = other.segments
@@ -356,5 +356,11 @@ class Gem::Version
     end
 
     return 0
+  end
+
+  protected
+
+  def _version
+    @version
   end
 end

@@ -26,8 +26,8 @@ class TestGemCommandsSpecificationCommand < Gem::TestCase
   end
 
   def test_execute_all
-    util_spec 'foo', '0.0.1'
-    util_spec 'foo', '0.0.2'
+    install_specs util_spec 'foo', '0.0.1'
+    install_specs util_spec 'foo', '0.0.2'
 
     @cmd.options[:args] = %w[foo]
     @cmd.options[:all] = true
@@ -89,8 +89,8 @@ class TestGemCommandsSpecificationCommand < Gem::TestCase
   end
 
   def test_execute_exact_match
-    util_spec 'foo'
-    util_spec 'foo_bar'
+    install_specs util_spec 'foo'
+    install_specs util_spec 'foo_bar'
 
     @cmd.options[:args] = %w[foo]
 

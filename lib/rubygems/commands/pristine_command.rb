@@ -156,7 +156,7 @@ extensions will be restored.
           install_defaults.to_s['--env-shebang']
         end
 
-      installer = Gem::Installer.new(gem,
+      installer = Gem::Installer.at(gem,
                                      :wrappers => true,
                                      :force => true,
                                      :install_dir => spec.base_dir,

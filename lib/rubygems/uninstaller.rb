@@ -271,7 +271,7 @@ class Gem::Uninstaller
 
     say "Successfully uninstalled #{spec.full_name}"
 
-    Gem::Specification.remove_spec spec
+    Gem::Specification.reset
   end
 
   ##

@@ -406,7 +406,7 @@ class TestGemDependencyInstaller < Gem::TestCase
   def test_install_dependency_existing
     util_setup_gems
 
-    Gem::Installer.new(@a1_gem).install
+    Gem::Installer.at(@a1_gem).install
     FileUtils.mv @a1_gem, @tempdir
     FileUtils.mv @b1_gem, @tempdir
     inst = nil
@@ -437,7 +437,7 @@ class TestGemDependencyInstaller < Gem::TestCase
 
     _, f1_gem = util_gem 'f', '1', 'e' => nil
 
-    Gem::Installer.new(e1_gem).install
+    Gem::Installer.at(e1_gem).install
     FileUtils.rm_r e1.extension_dir
 
     FileUtils.mv e1_gem, @tempdir
@@ -525,7 +525,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     inst = nil
 
     Dir.chdir @tempdir do
-      Gem::Installer.new('a-1.gem').install
+      Gem::Installer.at('a-1.gem').install
 
       inst = Gem::DependencyInstaller.new :domain => :local
       inst.install 'b-1.gem'
@@ -669,7 +669,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     FileUtils.mv @a1_gem, @tempdir
     FileUtils.mv @b1_gem, @tempdir
 
-    inst = Gem::Installer.new @a1.file_name
+    inst = Gem::Installer.at @a1.file_name
     inst.install
 
     gemhome2 = File.join @tempdir, 'gemhome2'
@@ -799,7 +799,7 @@ class TestGemDependencyInstaller < Gem::TestCase
   def test_install_reinstall
     util_setup_gems
 
-    Gem::Installer.new(@a1_gem).install
+    Gem::Installer.at(@a1_gem).install
     FileUtils.mv @a1_gem, @tempdir
     inst = nil
 

@@ -141,10 +141,9 @@ Gems to install:
 
   def test_install_from_gemdeps_lockfile
     spec_fetcher do |fetcher|
-      fetcher.gem 'a', 1
-      fetcher.gem 'a', 2
-      fetcher.gem 'b', 1, 'a' => '>= 0'
-      fetcher.clear
+      fetcher.download 'a', 1
+      fetcher.download 'a', 2
+      fetcher.download 'b', 1, 'a' => '>= 0'
     end
 
     rs = Gem::RequestSet.new
@@ -445,10 +444,8 @@ ruby "0"
     end
 
     spec_fetcher do |fetcher|
-      fetcher.gem "a", "1", "b" => "= 1"
-      fetcher.gem "b", "1"
-
-      fetcher.clear
+      fetcher.download "a", "1", "b" => "= 1"
+      fetcher.download "b", "1"
     end
 
     rs = Gem::RequestSet.new
