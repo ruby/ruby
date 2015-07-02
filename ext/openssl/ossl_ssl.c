@@ -1273,14 +1273,23 @@ read_would_block(int nonblock)
     }
 }
 
+static int
+no_exception_p(VALUE opts)
+{
+    if (RB_TYPE_P(opts, T_HASH) &&
+          rb_hash_lookup2(opts, sym_exception, Qundef) == Qfalse)
+	return 1;
+    return 0;
+}
+
 static VALUE
-ossl_start_ssl(VALUE self, int (*func)(), const char *funcname,
-		int nonblock, int no_exception)
+ossl_start_ssl(VALUE self, int (*func)(), const char *funcname, VALUE opts)
 {
     SSL *ssl;
     rb_io_t *fptr;
     int ret, ret2;
     VALUE cb_state;
+    int nonblock = opts != Qfalse;
 
     rb_ivar_set(self, ID_callback_state, Qnil);
 
@@ -1299,12 +1308,12 @@ ossl_start_ssl(VALUE self, int (*func)(), const char *funcname,
 
 	switch((ret2 = ssl_get_error(ssl, ret))){
 	case SSL_ERROR_WANT_WRITE:
-            if (no_exception) { return sym_wait_writable; }
+            if (no_exception_p(opts)) { return sym_wait_writable; }
             write_would_block(nonblock);
             rb_io_wait_writable(FPTR_TO_FD(fptr));
             continue;
 	case SSL_ERROR_WANT_READ:
-            if (no_exception) { return sym_wait_readable; }
+            if (no_exception_p(opts)) { return sym_wait_readable; }
             read_would_block(nonblock);
             rb_io_wait_readable(FPTR_TO_FD(fptr));
             continue;
@@ -1330,15 +1339,8 @@ static VALUE
 ossl_ssl_connect(VALUE self)
 {
     ossl_ssl_setup(self);
-    return ossl_start_ssl(self, SSL_connect, "SSL_connect", 0, 0);
-}
 
-static int
-get_no_exception(VALUE opts)
-{
-    if (!NIL_P(opts) && Qfalse == rb_hash_lookup2(opts, sym_exception, Qundef))
-	return 1;
-    return 0;
+    return ossl_start_ssl(self, SSL_connect, "SSL_connect", Qfalse);
 }
 
 /*
@@ -1366,14 +1368,12 @@ get_no_exception(VALUE opts)
 static VALUE
 ossl_ssl_connect_nonblock(int argc, VALUE *argv, VALUE self)
 {
-    int no_exception;
-    VALUE opts = Qnil;
-
+    VALUE opts;
     rb_scan_args(argc, argv, "0:", &opts);
-    no_exception = get_no_exception(opts);
 
     ossl_ssl_setup(self);
-    return ossl_start_ssl(self, SSL_connect, "SSL_connect", 1, no_exception);
+
+    return ossl_start_ssl(self, SSL_connect, "SSL_connect", opts);
 }
 
 /*
@@ -1387,7 +1387,8 @@ static VALUE
 ossl_ssl_accept(VALUE self)
 {
     ossl_ssl_setup(self);
-    return ossl_start_ssl(self, SSL_accept, "SSL_accept", 0, 0);
+
+    return ossl_start_ssl(self, SSL_accept, "SSL_accept", Qfalse);
 }
 
 /*
@@ -1415,14 +1416,12 @@ ossl_ssl_accept(VALUE self)
 static VALUE
 ossl_ssl_accept_nonblock(int argc, VALUE *argv, VALUE self)
 {
-    int no_exception;
-    VALUE opts = Qnil;
+    VALUE opts;
 
     rb_scan_args(argc, argv, "0:", &opts);
-    no_exception = get_no_exception(opts);
-
     ossl_ssl_setup(self);
-    return ossl_start_ssl(self, SSL_accept, "SSL_accept", 1, no_exception);
+
+    return ossl_start_ssl(self, SSL_accept, "SSL_accept", opts);
 }
 
 static VALUE
@@ -1430,14 +1429,12 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
 {
     SSL *ssl;
     int ilen, nread = 0;
-    int no_exception = 0;
     VALUE len, str;
     rb_io_t *fptr;
     VALUE opts = Qnil;
 
     if (nonblock) {
 	rb_scan_args(argc, argv, "11:", &len, &str, &opts);
-	no_exception = get_no_exception(opts);
     } else {
 	rb_scan_args(argc, argv, "11", &len, &str);
     }
@@ -1462,21 +1459,21 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
 	    case SSL_ERROR_NONE:
 		goto end;
 	    case SSL_ERROR_ZERO_RETURN:
-		if (no_exception) { return Qnil; }
+		if (no_exception_p(opts)) { return Qnil; }
 		rb_eof_error();
 	    case SSL_ERROR_WANT_WRITE:
-		if (no_exception) { return sym_wait_writable; }
+		if (no_exception_p(opts)) { return sym_wait_writable; }
                 write_would_block(nonblock);
                 rb_io_wait_writable(FPTR_TO_FD(fptr));
                 continue;
 	    case SSL_ERROR_WANT_READ:
-		if (no_exception) { return sym_wait_readable; }
+		if (no_exception_p(opts)) { return sym_wait_readable; }
                 read_would_block(nonblock);
                 rb_io_wait_readable(FPTR_TO_FD(fptr));
 		continue;
 	    case SSL_ERROR_SYSCALL:
 		if(ERR_peek_error() == 0 && nread == 0) {
-		    if (no_exception) { return Qnil; }
+		    if (no_exception_p(opts)) { return Qnil; }
 		    rb_eof_error();
 		}
 		rb_sys_fail(0);
@@ -1536,11 +1533,12 @@ ossl_ssl_read_nonblock(int argc, VALUE *argv, VALUE self)
 }
 
 static VALUE
-ossl_ssl_write_internal(VALUE self, VALUE str, int nonblock, int no_exception)
+ossl_ssl_write_internal(VALUE self, VALUE str, VALUE opts)
 {
     SSL *ssl;
     int nwrite = 0;
     rb_io_t *fptr;
+    int nonblock = opts != Qfalse;
 
     StringValue(str);
     GetSSL(self, ssl);
@@ -1553,12 +1551,12 @@ ossl_ssl_write_internal(VALUE self, VALUE str, int nonblock, int no_exception)
 	    case SSL_ERROR_NONE:
 		goto end;
 	    case SSL_ERROR_WANT_WRITE:
-		if (no_exception) { return sym_wait_writable; }
+		if (no_exception_p(opts)) { return sym_wait_writable; }
                 write_would_block(nonblock);
                 rb_io_wait_writable(FPTR_TO_FD(fptr));
                 continue;
 	    case SSL_ERROR_WANT_READ:
-		if (no_exception) { return sym_wait_readable; }
+		if (no_exception_p(opts)) { return sym_wait_readable; }
                 read_would_block(nonblock);
                 rb_io_wait_readable(FPTR_TO_FD(fptr));
                 continue;
@@ -1588,7 +1586,7 @@ ossl_ssl_write_internal(VALUE self, VALUE str, int nonblock, int no_exception)
 static VALUE
 ossl_ssl_write(VALUE self, VALUE str)
 {
-    return ossl_ssl_write_internal(self, str, 0, 0);
+    return ossl_ssl_write_internal(self, str, Qfalse);
 }
 
 /*
@@ -1601,14 +1599,11 @@ ossl_ssl_write(VALUE self, VALUE str)
 static VALUE
 ossl_ssl_write_nonblock(int argc, VALUE *argv, VALUE self)
 {
-    VALUE str;
-    VALUE opts = Qnil;
-    int no_exception;
+    VALUE str, opts;
 
     rb_scan_args(argc, argv, "1:", &str, &opts);
-    no_exception = get_no_exception(opts);
 
-    return ossl_ssl_write_internal(self, str, 1, no_exception);
+    return ossl_ssl_write_internal(self, str, opts);
 }
 
 /*
