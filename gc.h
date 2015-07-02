@@ -84,6 +84,7 @@ int ruby_get_stack_grow_direction(volatile VALUE *addr);
 #define IS_STACK_DIR_UPPER() STACK_DIR_UPPER(1,0)
 
 const char *rb_obj_info(VALUE obj);
+const char *rb_raw_obj_info(char *buff, const int buff_size, VALUE obj);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 
