@@ -1,3 +1,8 @@
+Thu Jul  2 18:39:20 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: remove `#define RGENGC_OBJ_INFO 1' line introduced to
+	  debug Bug #11244.
+
 Thu Jul  2 18:34:26 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (rb_raw_obj_info): separated from rb_obj_info().

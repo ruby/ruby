@@ -305,8 +305,6 @@ static ruby_gc_params_t gc_params = {
 #define GC_DEBUG_STRESS_TO_CLASS 0
 #endif
 
-#define RGENGC_OBJ_INFO 1
-
 #ifndef RGENGC_OBJ_INFO
 #define RGENGC_OBJ_INFO (RGENGC_DEBUG | RGENGC_CHECK_MODE)
 #endif
