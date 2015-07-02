@@ -185,7 +185,7 @@ class Gem::RequestSet::Lockfile
 
     platforms = platforms.sort_by { |platform| platform.to_s }
 
-    platforms.sort.each do |platform|
+    platforms.each do |platform|
       out << "  #{platform}"
     end
 

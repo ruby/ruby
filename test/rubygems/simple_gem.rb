@@ -16,7 +16,7 @@ SIMPLE_GEM = <<-GEMDATA
           @directory = options[:directory] || Gem.dir
           @force = options[:force]
 
-          gem = Gem::Installer.new(__FILE__).install(@force, @directory)
+          gem = Gem::Installer.at(__FILE__).install(@force, @directory)
           if options[:gen_rdoc]
             Gem::DocManager.new(gem).generate_rdoc
           end

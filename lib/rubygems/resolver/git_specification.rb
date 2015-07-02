@@ -23,8 +23,7 @@ class Gem::Resolver::GitSpecification < Gem::Resolver::SpecSpecification
   def install options = {}
     require 'rubygems/installer'
 
-    installer = Gem::Installer.new '', options
-    installer.spec = spec
+    installer = Gem::Installer.for_spec spec, options
 
     yield installer if block_given?
 

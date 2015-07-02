@@ -33,7 +33,7 @@ To search for remote gems use the search command.
   end
 
   def usage # :nodoc:
-    "#{program_name} [STRING ...]"
+    "#{program_name} [REGEXP ...]"
   end
 
 end

@@ -157,4 +157,3 @@ end
 # TODO: Remove in RubyGems 3
 
 Gem::Resolver::DependencyConflict = Gem::Resolver::Conflict # :nodoc:
-

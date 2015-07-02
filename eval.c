@@ -1274,7 +1274,7 @@ add_activated_refinement(VALUE activated_refinements,
     c = iclass = rb_include_class_new(refinement, superclass);
     RCLASS_REFINED_CLASS(c) = klass;
     refinement = RCLASS_SUPER(refinement);
-    while (refinement) {
+    while (refinement && refinement != klass) {
 	FL_SET(refinement, RMODULE_IS_OVERLAID);
 	c = RCLASS_SET_SUPER(c, rb_include_class_new(refinement, RCLASS_SUPER(c)));
 	RCLASS_REFINED_CLASS(c) = klass;

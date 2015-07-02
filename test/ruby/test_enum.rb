@@ -265,6 +265,7 @@ class TestEnumerable < Test::Unit::TestCase
     assert([].none?)
     assert([nil].none?)
     assert([nil,false].none?)
+    assert(![nil,false,true].none?)
   end
 
   def test_min

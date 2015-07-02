@@ -1653,7 +1653,6 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_close_on_exec
-    skip "IO\#close_on_exec is not implemented." unless have_close_on_exec?
     ruby do |f|
       assert_equal(true, f.close_on_exec?)
       f.close_on_exec = false
@@ -1681,7 +1680,7 @@ class TestIO < Test::Unit::TestCase
       w.close_on_exec = false
       assert_equal(false, w.close_on_exec?)
     end
-  end
+  end if have_close_on_exec?
 
   def test_pos
     make_tempfile {|t|
@@ -2069,6 +2068,15 @@ End
     }
   end
 
+  def test_reopen_stdio
+    mkcdtmpdir {
+      fname = 'bug11319'
+      File.write(fname, 'hello')
+      system(EnvUtil.rubybin, '-e', "STDOUT.reopen('#{fname}', 'w+')")
+      assert_equal('', File.read(fname))
+    }
+  end
+
   def test_reopen_mode
     feature7067 = '[ruby-core:47694]'
     make_tempfile {|t|
@@ -2154,6 +2162,26 @@ End
         assert_equal("\xB9\xC8\xB6\xCCbar\n".force_encoding(Encoding::EUC_JP), s)
       }
     }
+  end
+
+  bug11320 = '[ruby-core:69780] [Bug #11320]'
+  ["UTF-8", "EUC-JP", "Shift_JIS"].each do |enc|
+    define_method("test_reopen_nonascii(#{enc})") do
+      mkcdtmpdir do
+        fname = "\u{30eb 30d3 30fc}".encode(enc)
+        File.write(fname, '')
+        assert_file.exist?(fname)
+        stdin = $stdin.dup
+        begin
+          assert_nothing_raised(Errno::ENOENT, enc) {
+            $stdin.reopen(fname, 'r')
+          }
+        ensure
+          $stdin.reopen(stdin)
+          stdin.close
+        end
+      end
+    end
   end
 
   def test_foreach

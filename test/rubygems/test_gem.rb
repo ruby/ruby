@@ -37,7 +37,7 @@ class TestGem < Gem::TestCase
       c1 = new_spec "c", "1"
       c2 = new_spec "c", "2"
 
-      install_specs a1, b1, b2, c1, c2
+      install_specs c1, c2, b1, b2, a1
 
       a1.activate
 
@@ -61,7 +61,7 @@ class TestGem < Gem::TestCase
       d1 = new_spec "d", "1", { "c" => "< 2" },  "lib/d.rb"
       d2 = new_spec "d", "2", { "c" => "< 2" },  "lib/d.rb" # this
 
-      install_specs a1, b1, b2, c1, c2, d1, d2
+      install_specs c1, c2, b1, b2, d1, d2, a1
 
       a1.activate
 
@@ -88,6 +88,23 @@ class TestGem < Gem::TestCase
     assert_equal %w[a-1], installed.map { |spec| spec.full_name }
 
     assert_path_exists File.join(gemhome2, 'gems', 'a-1')
+  end
+
+  def test_self_install_in_rescue
+    spec_fetcher do |f|
+      f.gem  'a', 1
+      f.spec 'a', 2
+    end
+
+    gemhome2 = "#{@gemhome}2"
+
+    installed =
+      begin
+        raise 'Error'
+      rescue StandardError
+        Gem.install 'a', '= 1', :install_dir => gemhome2
+      end
+    assert_equal %w[a-1], installed.map { |spec| spec.full_name }
   end
 
   def test_require_missing
@@ -135,12 +152,12 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_bin_path_bin_name
-    util_exec_gem
+    install_specs util_exec_gem
     assert_equal @abin_path, Gem.bin_path('a', 'abin')
   end
 
   def test_self_bin_path_bin_name_version
-    util_exec_gem
+    install_specs util_exec_gem
     assert_equal @abin_path, Gem.bin_path('a', 'abin', '4')
   end
 
@@ -167,10 +184,11 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_bin_path_bin_file_gone_in_latest
-    util_exec_gem
-    util_spec 'a', '10' do |s|
+    install_specs util_exec_gem
+    spec = util_spec 'a', '10' do |s|
       s.executables = []
     end
+    install_specs spec
     # Should not find a-10's non-abin (bug)
     assert_equal @abin_path, Gem.bin_path('a', 'abin')
   end
@@ -881,8 +899,22 @@ class TestGem < Gem::TestCase
     assert_equal %w[http://gems.example.com/], Gem.sources
   end
 
+  def test_try_activate_returns_true_for_activated_specs
+    b = util_spec 'b', '1.0' do |spec|
+      spec.files << 'lib/b.rb'
+    end
+    install_specs b
+
+    assert Gem.try_activate('b'), 'try_activate should return true'
+    assert Gem.try_activate('b'), 'try_activate should still return true'
+  end
+
   def test_self_try_activate_missing_dep
+    b = util_spec 'b', '1.0'
     a = util_spec 'a', '1.0', 'b' => '>= 1.0'
+
+    install_specs b, a
+    uninstall_gem b
 
     a_file = File.join a.gem_dir, 'lib', 'a_file.rb'
 
@@ -898,10 +930,15 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_try_activate_missing_extensions
-    util_spec 'ext', '1' do |s|
+    spec = util_spec 'ext', '1' do |s|
       s.extensions = %w[ext/extconf.rb]
       s.mark_version
       s.installed_by_version = v('2.2')
+    end
+
+    # write the spec without install to simulate a failed install
+    write_file spec.spec_file do |io|
+      io.write spec.to_ruby_for_cache
     end
 
     _, err = capture_io do
@@ -944,7 +981,7 @@ class TestGem < Gem::TestCase
     b = util_spec "b", "1", "c" => nil
     c = util_spec "c", "2"
 
-    install_specs a, b, c
+    install_specs a, c, b
 
     Gem.needs do |r|
       r.gem "a"
@@ -966,7 +1003,7 @@ class TestGem < Gem::TestCase
       d =  new_spec "d", "1", {'e' => '= 1'}, "lib/d.rb"
       e = util_spec "e", "1"
 
-      install_specs a, b, c, d, e
+      install_specs a, c, b, e, d
 
       Gem.needs do |r|
         r.gem "a"
@@ -1372,16 +1409,21 @@ class TestGem < Gem::TestCase
   def test_use_gemdeps
     gem_deps_file = 'gem.deps.rb'.untaint
     spec = util_spec 'a', 1
+    install_specs spec
 
+    spec = Gem::Specification.find { |s| s == spec }
     refute spec.activated?
 
     open gem_deps_file, 'w' do |io|
       io.write 'gem "a"'
     end
 
+    assert_nil Gem.gemdeps
+
     Gem.use_gemdeps gem_deps_file
 
     assert spec.activated?
+    refute_nil Gem.gemdeps
   end
 
   def test_use_gemdeps_ENV
@@ -1430,6 +1472,8 @@ class TestGem < Gem::TestCase
     rubygems_gemdeps, ENV['RUBYGEMS_GEMDEPS'] = ENV['RUBYGEMS_GEMDEPS'], '-'
 
     spec = util_spec 'a', 1
+    install_specs spec
+    spec = Gem::Specification.find { |s| s == spec }
 
     refute spec.activated?
 
@@ -1499,7 +1543,9 @@ You may need to `gem install -g` to install missing gems
     rubygems_gemdeps, ENV['RUBYGEMS_GEMDEPS'] = ENV['RUBYGEMS_GEMDEPS'], 'x'
 
     spec = util_spec 'a', 1
+    install_specs spec
 
+    spec = Gem::Specification.find { |s| s == spec }
     refute spec.activated?
 
     open 'x', 'w' do |io|
@@ -1560,6 +1606,7 @@ You may need to `gem install -g` to install missing gems
 
     @exec_path = File.join spec.full_gem_path, spec.bindir, 'exec'
     @abin_path = File.join spec.full_gem_path, spec.bindir, 'abin'
+    spec
   end
 
   def util_remove_interrupt_command

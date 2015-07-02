@@ -1,23 +1,22 @@
 require 'rubygems/test_case'
 require 'rubygems/commands/query_command'
 
-class TestGemCommandsQueryCommand < Gem::TestCase
-
+module TestGemCommandsQueryCommandSetup
   def setup
     super
 
     @cmd = Gem::Commands::QueryCommand.new
 
-    @specs = spec_fetcher do |fetcher|
-      fetcher.spec 'a', 1
-      fetcher.spec 'a', 2
-      fetcher.spec 'a', '3.a'
-    end
+    @specs = add_gems_to_fetcher
 
     @fetcher.data["#{@gem_repo}Marshal.#{Gem.marshal_version}"] = proc do
       raise Gem::RemoteFetcher::FetchError
     end
   end
+end
+
+class TestGemCommandsQueryCommandWithInstalledGems < Gem::TestCase
+  include TestGemCommandsQueryCommandSetup
 
   def test_execute
     spec_fetcher do |fetcher|
@@ -36,37 +35,6 @@ class TestGemCommandsQueryCommand < Gem::TestCase
 
 a (2)
 pl (1 i386-linux)
-    EOF
-
-    assert_equal expected, @ui.output
-    assert_equal '', @ui.error
-  end
-
-  def test_execute_platform
-    spec_fetcher do |fetcher|
-      fetcher.clear
-
-      fetcher.spec 'a', 1
-      fetcher.spec 'a', 1 do |s|
-        s.platform = 'x86-linux'
-      end
-
-      fetcher.spec 'a', 2 do |s|
-        s.platform = 'universal-darwin'
-      end
-    end
-
-    @cmd.handle_options %w[-r -a]
-
-    use_ui @ui do
-      @cmd.execute
-    end
-
-    expected = <<-EOF
-
-*** REMOTE GEMS ***
-
-a (2 universal-darwin, 1 ruby x86-linux)
     EOF
 
     assert_equal expected, @ui.output
@@ -141,56 +109,6 @@ pl (1 i386-linux)
 *** REMOTE GEMS ***
 
 a (2)
-    Authors: Abraham Lincoln, Hirohito
-    Homepage: http://a.example.com/
-
-    This is a lot of text. This is a lot of text. This is a lot of text.
-    This is a lot of text.
-
-pl (1)
-    Platform: i386-linux
-    Author: A User
-    Homepage: http://example.com
-
-    this is a summary
-    EOF
-
-    assert_equal expected, @ui.output
-    assert_equal '', @ui.error
-  end
-
-  def test_execute_details_platform
-    spec_fetcher do |fetcher|
-      fetcher.clear
-
-      fetcher.spec 'a', 1 do |s|
-        s.platform = 'x86-linux'
-      end
-
-      fetcher.spec 'a', 2 do |s|
-        s.summary = 'This is a lot of text. ' * 4
-        s.authors = ['Abraham Lincoln', 'Hirohito']
-        s.homepage = 'http://a.example.com/'
-        s.platform = 'universal-darwin'
-      end
-
-      fetcher.legacy_platform
-    end
-
-    @cmd.handle_options %w[-r -d]
-
-    use_ui @ui do
-      @cmd.execute
-    end
-
-    expected = <<-EOF
-
-*** REMOTE GEMS ***
-
-a (2, 1)
-    Platforms:
-        1: x86-linux
-        2: universal-darwin
     Authors: Abraham Lincoln, Hirohito
     Homepage: http://a.example.com/
 
@@ -526,10 +444,130 @@ pl (1 i386-linux)
     assert_equal '', @ui.error
   end
 
+  def test_make_entry
+    a_2_name = @specs['a-2'].original_name
+
+    @fetcher.data.delete \
+      "#{@gem_repo}quick/Marshal.#{Gem.marshal_version}/#{a_2_name}.gemspec.rz"
+
+    a2 = @specs['a-2']
+    entry_tuples = [
+      [Gem::NameTuple.new(a2.name, a2.version, a2.platform),
+       Gem.sources.first],
+    ]
+
+    platforms = { a2.version => [a2.platform] }
+
+    entry = @cmd.send :make_entry, entry_tuples, platforms
+
+    assert_equal 'a (2)', entry
+  end
+
+  # Test for multiple args handling!
+  def test_execute_multiple_args
+    spec_fetcher do |fetcher|
+      fetcher.legacy_platform
+    end
+
+    @cmd.handle_options %w[a pl]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    assert_match %r%^a %, @ui.output
+    assert_match %r%^pl %, @ui.output
+    assert_equal '', @ui.error
+  end
+
+  def test_show_gems
+    @cmd.options[:name] = //
+    @cmd.options[:domain] = :remote
+
+    use_ui @ui do
+      @cmd.send :show_gems, /a/i, false
+    end
+
+    assert_match %r%^a %,  @ui.output
+    refute_match %r%^pl %, @ui.output
+    assert_empty @ui.error
+  end
+
+  private
+
+  def add_gems_to_fetcher
+    spec_fetcher do |fetcher|
+      fetcher.spec 'a', 1
+      fetcher.spec 'a', 2
+      fetcher.spec 'a', '3.a'
+    end
+  end
+end
+
+class TestGemCommandsQueryCommandWithoutInstalledGems < Gem::TestCase
+  include TestGemCommandsQueryCommandSetup
+
+  def test_execute_platform
+    spec_fetcher do |fetcher|
+      fetcher.spec 'a', 1
+      fetcher.spec 'a', 1 do |s|
+        s.platform = 'x86-linux'
+      end
+
+      fetcher.spec 'a', 2 do |s|
+        s.platform = 'universal-darwin'
+      end
+    end
+
+    @cmd.handle_options %w[-r -a]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    expected = <<-EOF
+
+*** REMOTE GEMS ***
+
+a (2 universal-darwin, 1 ruby x86-linux)
+    EOF
+
+    assert_equal expected, @ui.output
+    assert_equal '', @ui.error
+  end
+
+  def test_execute_default_details
+    spec_fetcher do |fetcher|
+      fetcher.spec 'a', 2
+    end
+
+    a1 = new_default_spec 'a', 1
+    install_default_specs a1
+
+    @cmd.handle_options %w[-l -d]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    expected = <<-EOF
+
+*** LOCAL GEMS ***
+
+a (2, 1)
+    Author: A User
+    Homepage: http://example.com
+    Installed at (2): #{@gemhome}
+                 (1, default): #{a1.base_dir}
+
+    this is a summary
+    EOF
+
+    assert_equal expected, @ui.output
+  end
+
   def test_execute_local_details
     spec_fetcher do |fetcher|
-      fetcher.clear
-
       fetcher.spec 'a', 1 do |s|
         s.platform = 'x86-linux'
       end
@@ -583,86 +621,13 @@ pl (1)
     assert_equal expected, @ui.output
   end
 
-  def test_execute_default_details
+  private
+
+  def add_gems_to_fetcher
     spec_fetcher do |fetcher|
-      fetcher.clear
-
-      fetcher.spec 'a', 2
+      fetcher.download 'a', 1
+      fetcher.download 'a', 2
+      fetcher.download 'a', '3.a'
     end
-
-    a1 = new_default_spec 'a', 1
-    install_default_specs a1
-
-    @cmd.handle_options %w[-l -d]
-
-    use_ui @ui do
-      @cmd.execute
-    end
-
-    expected = <<-EOF
-
-*** LOCAL GEMS ***
-
-a (2, 1)
-    Author: A User
-    Homepage: http://example.com
-    Installed at (2): #{@gemhome}
-                 (1, default): #{a1.base_dir}
-
-    this is a summary
-    EOF
-
-    assert_equal expected, @ui.output
   end
-
-  def test_make_entry
-    a_2_name = @specs['a-2'].original_name
-
-    @fetcher.data.delete \
-      "#{@gem_repo}quick/Marshal.#{Gem.marshal_version}/#{a_2_name}.gemspec.rz"
-
-    a2 = @specs['a-2']
-    entry_tuples = [
-      [Gem::NameTuple.new(a2.name, a2.version, a2.platform),
-       Gem.sources.first],
-    ]
-
-    platforms = { a2.version => [a2.platform] }
-
-    entry = @cmd.send :make_entry, entry_tuples, platforms
-
-    assert_equal 'a (2)', entry
-  end
-
-  # Test for multiple args handling!
-  def test_execute_multiple_args
-    spec_fetcher do |fetcher|
-      fetcher.legacy_platform
-    end
-
-    @cmd.handle_options %w[a pl]
-
-    use_ui @ui do
-      @cmd.execute
-    end
-
-    assert_match %r%^a %, @ui.output
-    assert_match %r%^pl %, @ui.output
-    assert_equal '', @ui.error
-  end
-
-  def test_show_gems
-    @cmd.options[:name] = //
-    @cmd.options[:domain] = :remote
-
-    use_ui @ui do
-      @cmd.send :show_gems, /a/i, false
-    end
-
-    assert_match %r%^a %,  @ui.output
-    refute_match %r%^pl %, @ui.output
-    assert_empty @ui.error
-  end
-
 end
-

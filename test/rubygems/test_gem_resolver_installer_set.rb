@@ -4,9 +4,8 @@ class TestGemResolverInstallerSet < Gem::TestCase
 
   def test_add_always_install
     spec_fetcher do |fetcher|
-      fetcher.spec 'a', 1
-      fetcher.spec 'a', 2
-      fetcher.clear
+      fetcher.download 'a', 1
+      fetcher.download 'a', 2
     end
 
     util_gem 'a', 1
@@ -39,11 +38,10 @@ class TestGemResolverInstallerSet < Gem::TestCase
 
   def test_add_always_install_platform
     spec_fetcher do |fetcher|
-      fetcher.spec 'a', 1
-      fetcher.spec 'a', 2 do |s|
+      fetcher.download 'a', 1
+      fetcher.download 'a', 2 do |s|
         s.platform = Gem::Platform.new 'x86-freebsd-9'
       end
-      fetcher.clear
     end
 
     set = Gem::Resolver::InstallerSet.new :both
@@ -139,8 +137,7 @@ class TestGemResolverInstallerSet < Gem::TestCase
 
   def test_find_all_always_install
     spec_fetcher do |fetcher|
-      fetcher.spec 'a', 2
-      fetcher.clear
+      fetcher.download 'a', 2
     end
 
     util_gem 'a', 1
@@ -156,9 +153,8 @@ class TestGemResolverInstallerSet < Gem::TestCase
 
   def test_find_all_prerelease
     spec_fetcher do |fetcher|
-      fetcher.spec 'a', '1'
-      fetcher.spec 'a', '1.a'
-      fetcher.clear
+      fetcher.download 'a', '1'
+      fetcher.download 'a', '1.a'
     end
 
     set = Gem::Resolver::InstallerSet.new :both

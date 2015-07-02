@@ -624,14 +624,33 @@ rsock_s_accept(VALUE klass, int fd, struct sockaddr *sockaddr, socklen_t *len)
 }
 
 int
-rsock_getfamily(int sockfd)
+rsock_getfamily(rb_io_t *fptr)
 {
     union_sockaddr ss;
     socklen_t sslen = (socklen_t)sizeof(ss);
+    int cached = fptr->mode & FMODE_SOCK;
+
+    if (cached) {
+        switch (cached) {
+#ifdef AF_UNIX
+	    case FMODE_UNIX: return AF_UNIX;
+#endif
+	    case FMODE_INET: return AF_INET;
+	    case FMODE_INET6: return AF_INET6;
+	}
+    }
 
     ss.addr.sa_family = AF_UNSPEC;
-    if (getsockname(sockfd, &ss.addr, &sslen) < 0)
+    if (getsockname(fptr->fd, &ss.addr, &sslen) < 0)
         return AF_UNSPEC;
+
+    switch (ss.addr.sa_family) {
+#ifdef AF_UNIX
+      case AF_UNIX: fptr->mode |= FMODE_UNIX; break;
+#endif
+      case AF_INET: fptr->mode |= FMODE_INET; break;
+      case AF_INET6: fptr->mode |= FMODE_INET6; break;
+    }
 
     return ss.addr.sa_family;
 }

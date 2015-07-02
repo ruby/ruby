@@ -338,13 +338,11 @@ DEPENDENCIES
 
   def test_to_s_gem_source
     spec_fetcher do |fetcher|
-      fetcher.spec 'a', 2
-      fetcher.clear
+      fetcher.download 'a', 2
     end
 
     spec_fetcher 'http://other.example/' do |fetcher|
-      fetcher.spec 'b', 2
-      fetcher.clear
+      fetcher.download 'b', 2
     end
 
     Gem.sources << 'http://other.example/'

@@ -30,6 +30,16 @@ class TestGemPackageTarWriter < Gem::Package::TarTestCase
     assert_equal 1024, @io.pos
   end
 
+  def test_add_symlink
+    Time.stub :now, Time.at(1458518157) do
+      @tar_writer.add_symlink 'x', 'y', 0644
+
+      assert_headers_equal(tar_symlink_header('x', '', 0644, Time.now, 'y'),
+                         @io.string[0, 512])
+    end
+    assert_equal 512, @io.pos
+  end
+
   def test_add_file_digest
     digest_algorithms = Digest::SHA1, Digest::SHA512
 
@@ -251,4 +261,3 @@ class TestGemPackageTarWriter < Gem::Package::TarTestCase
   end
 
 end
-

@@ -89,7 +89,7 @@ class Gem::Resolver::Specification
 
     gem = source.download spec, destination
 
-    installer = Gem::Installer.new gem, options
+    installer = Gem::Installer.at gem, options
 
     yield installer if block_given?
 

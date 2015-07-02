@@ -1,10 +1,6 @@
 $srcs = %w[sizes.c]
 $distcleanfiles.concat($srcs)
 
-check_sizeof('int8_t')
-check_sizeof('int16_t')
-check_sizeof('int32_t')
-check_sizeof('int64_t')
 check_sizeof('int_least8_t')
 check_sizeof('int_least16_t')
 check_sizeof('int_least32_t')
@@ -13,7 +9,6 @@ check_sizeof('int_fast8_t')
 check_sizeof('int_fast16_t')
 check_sizeof('int_fast32_t')
 check_sizeof('int_fast64_t')
-check_sizeof('intptr_t')
 check_sizeof('intmax_t')
 check_sizeof('sig_atomic_t', %w[signal.h])
 check_sizeof('wchar_t')

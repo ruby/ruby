@@ -15,9 +15,8 @@ class TestGemCommandsOutdatedCommand < Gem::TestCase
 
   def test_execute
     spec_fetcher do |fetcher|
-      fetcher.spec 'foo', '1.0'
-      fetcher.spec 'foo', '2.0'
-      fetcher.clear
+      fetcher.download 'foo', '1.0'
+      fetcher.download 'foo', '2.0'
       fetcher.gem 'foo', '0.1'
       fetcher.gem 'foo', '0.2'
     end

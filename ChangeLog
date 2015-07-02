@@ -1,3 +1,207 @@
+Thu Jul  2 14:45:53 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* st.c: get rid of VC++'s warnings of C4700 (uninitialized local
+	  variable used).  I think that these are wrong, but should shut them
+	  up.
+
+Thu Jul  2 14:15:50 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rubygems.rb (Gem.load_path_insert_index): search
+	  @gem_prelude_index first.
+
+	* lib/rubygems/test_case.rb (Gem::TestCase#setup): keep already
+	  expanded paths to prserve instance variables.
+
+Thu Jul  2 14:12:01 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (process_options): also copy initial load path marks at
+	  setting load paths encoding.
+
+Thu Jul  2 12:26:11 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/rubygems/test_gem_server.rb (process_based_port): use
+	  dynamically chosen port numberss to get rid of conflicts.
+
+Thu Jul  2 11:58:59 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/rubygems/test_gem_specification.rb: skip tests which the
+	  platform does not permit the filename of its test file.
+
+Thu Jul  2 11:36:20 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/rubygems/test_gem_resolver_git_specification.rb: require
+	  rubygems/installer.rb before Gem::TestCase#setup runs, otherwise
+	  as Gem::TestCase#teardown restores $LOADED_FEATURES to the state
+	  at that time, the requiring the file in GitSpecification#install
+	  method causes a lot of constant redefinitions.
+
+Thu Jul  2 10:43:36 2015  Eric Wong  <e@80x24.org>
+
+	* ext/socket/rubysocket.h: flags for common socket families
+	  (rsock_getfamily): update signature
+	* include/ruby/io.h: comment socket FMODE flags
+	* ext/socket/init.c (rsock_getfamily): memoize family
+	* ext/socket/basicsocket.c: adjust rsock_getfamily calls
+	* ext/socket/ancdata.c: ditto
+	  [ruby-core:69713] [Feature #11298]
+
+Thu Jul  2 10:30:01 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/rubygems/resolver.rb: fixed NameError of Gem::Util::NULL_DEVICE.
+
+Thu Jul  2 09:51:44 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/rubygems/resolver.rb: fix error of null device reference with DOSISH
+	  platform.
+
+Thu Jul  2 06:49:44 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/rubygems: Update to RubyGems HEAD(c202db2).
+	  this version contains many enhancements see http://git.io/vtNwF
+	* test/rubygems: ditto.
+
+Wed Jul  1 23:50:34 2015  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/net/http/test_httpresponse.rb
+	(HTTPResponseTest#test_read_body_content_encoding_deflate_uppercase):
+	fix a failure without zlib.
+
+Wed Jul  1 10:54:56 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* Add test for Enumerable#none? [fix GH-950] Patch by @yui-knk
+
+Wed Jul  1 09:30:36 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* struct.c (struct_set_members): hide internal back_members
+	  object, and members object does not need to be duped as it
+	  should be frozen and hidden.
+
+Wed Jul  1 09:28:47 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* struct.c (struct_member_pos): revert r51080 to fix other
+	  implicit conversions but cast the return value to fix the
+	  previous implicit conversion.
+
+Wed Jul  1 08:47:24 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* struct.c (struct_member_pos): avoid implicit conversion loses
+	  integer precision: 'long' to 'int'.
+
+Wed Jul  1 05:57:03 2015  Eric Wong  <e@80x24.org>
+
+	* vm_method.c (rb_add_method_iseq): add RB_GC_GUARD
+	* class.c (clone_method): remove RB_GC_GUARD
+	* struct.c (define_aref_method): ditto
+	  (define_aset_method): ditto
+	* vm.c (vm_define_method):
+	* iseq.c (rb_iseq_clone): add RB_GC_GUARD
+
+Wed Jul  1 05:43:58 2015  Eric Wong  <e@80x24.org>
+
+	* struct.c (AREF_HASH_THRESHOLD): new macro
+	  (id_back_members): new ID
+	  (struct_member_pos_ideal): new function
+	  (struct_member_pos_probe): ditto
+	  (struct_set_members): ditto
+	  (struct_member_pos): ditto
+	  (rb_struct_getmember): use struct_member_pos for O(1) access
+	  (rb_struct_aref_sym): ditto
+	  (rb_struct_aset_sym): ditto
+	  (setup_struct): call struct_set_members
+	  (struct_define_without_accessor): ditto
+	  (Init_Struct): initialize __members_back__
+	  [ruby-core:66851] [ruby-core:69705] [ruby-core:69821]
+
+Tue Jun 30 23:12:08 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_reopen): FilePathValue() ensures the path
+	  NUL-terminated and frozen, so it is unnecessary to make it shared.
+
+Tue Jun 30 23:11:53 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (check_dirname): ensure path name NUL-terminated for
+	  SHARABLE_MIDDLE_SUBSTRING.
+
+	* io.c (rb_sysopen): ditto.
+
+Tue Jun 30 18:38:16 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/file.c (rb_freopen): need to terminate by NUL.
+
+Tue Jun 30 17:28:25 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_reopen): freopen(3) with OS encoding path.
+	  [ruby-core:69780] [Bug #11320]
+
+	* win32/file.c (rb_freopen): wrapper of wchar version freopen(3).
+	  use _wfreopen_s() if available.
+
+Tue Jun 30 08:24:08 2015  Eric Wong  <e@80x24.org>
+
+	* io.c (rb_io_oflags_modestr): handle O_TRUNC correctly
+	* test/ruby/test_io.rb (test_reopen_stdio): new test
+	  Patch-by: cremno phobia <cremno@mail.ru>
+	  [ruby-core:69779] [Bug #11319]
+
+Tue Jun 30 02:47:02 2015  Eric Wong  <e@80x24.org>
+
+	* include/ruby/st.h (struct st_table): hide struct list_head
+	* st.c (struct st_table_entry): adjust struct
+	  (head, tail): remove shortcut macros
+	  (st_head): new wrapper function
+	  (st_init_table_with_size): adjust to new struct and API
+	  (st_clear): ditto
+	  (add_direct): ditto
+	  (unpack_entries): ditto
+	  (rehash): ditto
+	  (st_copy): ditto
+	  (remove_entry): ditto
+	  (st_shift): ditto
+	  (st_foreach_check): ditto
+	  (st_foreach): ditto
+	  (get_keys): ditto
+	  (get_values): ditto
+	  (st_values_check): ditto
+	  (st_reverse_foreach_check): ditto (unused)
+	  (st_reverse_foreach): ditto (unused)
+	  [ruby-core:69726] [Misc #10278]
+
+Mon Jun 29 17:38:01 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* insns.def (defineclass): do not quote unprintable characters at
+	  raising an exception.
+
+Mon Jun 29 16:01:24 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/net/http/response.rb (inflater): CONTENT_ENCODING can be upper
+	  case. [ruby-core:69670] [Bug #11285] patched by Andy Chu
+
+Mon Jun 29 14:50:08 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* eval.c (add_activated_refinement): should not include the original
+	  class.
+
+Mon Jun 29 12:09:10 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* README.md: tweak styles. [fix GH-945][ci skip] Patch by @bryndyment
+
+Mon Jun 29 07:23:55 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* template/sizes.c.tmpl: extract RUBY_DEFINT to define sizes of
+	  types checked by configure.in, and fix size of intptr_t in
+	  universal binary.
+
+Mon Jun 29 02:10:10 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* insns.def (defineclass): preserve encoding of name in error
+	  messages for super class mismatch.
+
+	* insns.def (defineclass): preserve encoding of name in error
+	  messages for non-class super.
+
+	* insns.def (defineclass): preserve encoding of name in error
+	  messages when already defined but type mismatch.
+
 Sun Jun 28 12:07:35 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* class.c (rb_define_class_id_under): raise TypeError exception

@@ -1,4 +1,5 @@
 require 'rubygems/test_case'
+require 'rubygems/installer'
 
 class TestGemResolverGitSpecification < Gem::TestCase
 

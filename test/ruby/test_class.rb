@@ -359,6 +359,19 @@ class TestClass < Test::Unit::TestCase
         end
       end;
     end
+
+    m = Module.new
+    n = "M\u{1f5ff}"
+    c = m.module_eval "class #{n}; new; end"
+    assert_raise_with_message(TypeError, /#{n}/) {
+      eval <<-"end;"
+        class C < c
+        end
+      end;
+    }
+    assert_raise_with_message(TypeError, /#{n}/) {
+      m.module_eval "class #{n} < Class.new; end"
+    }
   end
 
   def test_cloned_singleton_method_added
@@ -520,6 +533,19 @@ class TestClass < Test::Unit::TestCase
     ps.each{|p| p.call} # define xyzzy methods for each singleton classes
     ms.each{|m|
       assert_equal(m, m.xyzzy, "Bug #10871")
+    }
+  end
+
+  def test_redefinition_mismatch
+    m = Module.new
+    m.module_eval "A = 1"
+    assert_raise_with_message(TypeError, /is not a class/) {
+      m.module_eval "class A; end"
+    }
+    n = "M\u{1f5ff}"
+    m.module_eval "#{n} = 42"
+    assert_raise_with_message(TypeError, "#{n} is not a class") {
+      m.module_eval "class #{n}; end"
     }
   end
 end

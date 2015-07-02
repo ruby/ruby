@@ -23,11 +23,6 @@
 #define GLOBAL_METHOD_CACHE(c,m) (rb_bug("global method cache disabled improperly"), NULL)
 #endif
 
-#define NOEX_NOREDEF 0
-#ifndef NOEX_NOREDEF
-#define NOEX_NOREDEF NOEX_RESPONDS
-#endif
-
 static void rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VALUE klass);
 
 #define object_id           idObject_id
@@ -403,9 +398,6 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
 {
     rb_method_entry_t *me;
 
-#if NOEX_NOREDEF
-    VALUE rklass;
-#endif
     st_table *mtbl;
     st_data_t data;
     int make_refined = 0;
@@ -427,9 +419,6 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
     }
 
     rb_frozen_class_p(klass);
-#if NOEX_NOREDEF
-    rklass = klass;
-#endif
 
     if (FL_TEST(klass, RMODULE_IS_REFINEMENT)) {
 	VALUE refined_class = rb_refinement_module_get_refined_class(klass);
@@ -450,12 +439,6 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
 	rb_method_definition_t *old_def = old_me->def;
 
 	if (rb_method_definition_eq(old_def, def)) return old_me;
-#if NOEX_NOREDEF
-	if (old_me->flag & NOEX_NOREDEF) {
-	    rb_raise(rb_eTypeError, "cannot redefine %"PRIsVALUE"#%"PRIsVALUE,
-		     rb_class_name(rklass), rb_id2str(mid));
-	}
-#endif
 	rb_vm_check_redefinition_opt_method(old_me, klass);
 
 	if (old_def->type == VM_METHOD_TYPE_REFINED) make_refined = 1;
@@ -562,6 +545,7 @@ rb_add_method_iseq(VALUE klass, ID mid, VALUE iseqval, rb_cref_t *cref, rb_metho
     iseq_body.iseqptr = iseq;
     iseq_body.cref = cref;
     rb_add_method(klass, mid, VM_METHOD_TYPE_ISEQ, &iseq_body, visi);
+    RB_GC_GUARD(iseqval);
 }
 
 static rb_method_entry_t *
@@ -1891,11 +1875,13 @@ Init_eval_method(void)
 			     "private", top_private, -1);
 
     {
-#define REPLICATE_METHOD(klass, id, visi) \
-  rb_method_entry_set((klass), (id), rb_method_entry((klass), (id), 0), (visi));
+#define REPLICATE_METHOD(klass, id) do { \
+	    const rb_method_entry_t *me = rb_method_entry((klass), (id), 0); \
+	    rb_method_entry_set((klass), (id), me, METHOD_ENTRY_VISI(me)); \
+	} while (0)
 
-	REPLICATE_METHOD(rb_eException, idMethodMissing, METHOD_VISI_PRIVATE);
-	REPLICATE_METHOD(rb_eException, idRespond_to, METHOD_VISI_PUBLIC);
-	REPLICATE_METHOD(rb_eException, idRespond_to_missing, METHOD_VISI_PUBLIC);
+	REPLICATE_METHOD(rb_eException, idMethodMissing);
+	REPLICATE_METHOD(rb_eException, idRespond_to);
+	REPLICATE_METHOD(rb_eException, idRespond_to_missing);
     }
 }
