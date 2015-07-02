@@ -396,6 +396,8 @@ dladdr_path(const void* addr)
 }
 #endif
 
+#define INITIAL_LOAD_PATH_MARK rb_intern_const("@gem_prelude_index")
+
 void
 ruby_init_loadpath_safe(int safe_level)
 {
@@ -513,7 +515,7 @@ ruby_init_loadpath_safe(int safe_level)
 	ruby_push_include(getenv("RUBYLIB"), identical_path);
     }
 
-    id_initial_load_path_mark = rb_intern_const("@gem_prelude_index");
+    id_initial_load_path_mark = INITIAL_LOAD_PATH_MARK;
     while (*paths) {
 	size_t len = strlen(paths);
 	VALUE path = RUBY_RELATIVE(paths, len);
@@ -1421,9 +1423,12 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
     {
 	long i;
 	VALUE load_path = GET_VM()->load_path;
+	const ID id_initial_load_path_mark = INITIAL_LOAD_PATH_MARK;
 	for (i = 0; i < RARRAY_LEN(load_path); ++i) {
 	    VALUE path = RARRAY_AREF(load_path, i);
+	    int mark = rb_attr_get(path, id_initial_load_path_mark) == path;
 	    path = rb_enc_associate(rb_str_dup(path), lenc);
+	    if (mark) rb_ivar_set(path, id_initial_load_path_mark, path);
 	    RARRAY_ASET(load_path, i, path);
 	}
     }

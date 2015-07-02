@@ -1,3 +1,8 @@
+Thu Jul  2 14:12:01 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (process_options): also copy initial load path marks at
+	  setting load paths encoding.
+
 Thu Jul  2 12:26:11 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/rubygems/test_gem_server.rb (process_based_port): use
