@@ -942,8 +942,12 @@ dependencies: []
     @a2.name = 'a};raise "improper escaping";%q{'
 
     full_path = @a2.spec_file
-    write_file full_path do |io|
-      io.write @a2.to_ruby_for_cache
+    begin
+      write_file full_path do |io|
+        io.write @a2.to_ruby_for_cache
+      end
+    rescue Errno::EINVAL
+      skip "cannot create '#{full_path}' on this platform"
     end
 
     spec = Gem::Specification.load full_path
@@ -957,8 +961,12 @@ dependencies: []
     @a2.name = 'a#{raise %<improper escaping>}'
 
     full_path = @a2.spec_file
-    write_file full_path do |io|
-      io.write @a2.to_ruby_for_cache
+    begin
+      write_file full_path do |io|
+        io.write @a2.to_ruby_for_cache
+      end
+    rescue Errno::EINVAL
+      skip "cannot create '#{full_path}' on this platform"
     end
 
     spec = Gem::Specification.load full_path
@@ -972,8 +980,12 @@ dependencies: []
     @a2.name = 'a";raise "improper escaping";"'
 
     full_path = @a2.spec_file
-    write_file full_path do |io|
-      io.write @a2.to_ruby_for_cache
+    begin
+      write_file full_path do |io|
+        io.write @a2.to_ruby_for_cache
+      end
+    rescue Errno::EINVAL
+      skip "cannot create '#{full_path}' on this platform"
     end
 
     spec = Gem::Specification.load full_path

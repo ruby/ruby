@@ -1,3 +1,8 @@
+Thu Jul  2 11:58:59 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/rubygems/test_gem_specification.rb: skip tests which the
+	  platform does not permit the filename of its test file.
+
 Thu Jul  2 11:36:20 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/rubygems/test_gem_resolver_git_specification.rb: require
