@@ -232,6 +232,12 @@ extern int rsock_do_not_reverse_lookup;
 extern int rsock_cmsg_cloexec_state;
 #define FMODE_NOREVLOOKUP 0x100
 
+/* common socket families only */
+#define FMODE_UNIX        0x00200000
+#define FMODE_INET        0x00400000
+#define FMODE_INET6       0x00800000
+#define FMODE_SOCK        (FMODE_UNIX|FMODE_INET|FMODE_INET6)
+
 extern VALUE rb_cBasicSocket;
 extern VALUE rb_cIPSocket;
 extern VALUE rb_cTCPSocket;
@@ -279,7 +285,7 @@ int rsock_optname_arg(int family, int level, VALUE optname);
 int rsock_cmsg_type_arg(int family, int level, VALUE type);
 int rsock_shutdown_how_arg(VALUE how);
 
-int rsock_getfamily(int sockfd);
+int rsock_getfamily(rb_io_t *fptr);
 
 struct rb_addrinfo {
   struct addrinfo *ai;

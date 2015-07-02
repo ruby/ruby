@@ -1146,7 +1146,7 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
 
     GetOpenFile(sock, fptr);
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
-    family = rsock_getfamily(fptr->fd);
+    family = rsock_getfamily(fptr);
 #endif
 
     data = vflags = dest_sockaddr = Qnil;
@@ -1692,7 +1692,7 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
 			 );
 
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
-    family = rsock_getfamily(fptr->fd);
+    family = rsock_getfamily(fptr);
     if (mh.msg_controllen) {
 	char *msg_end = (char *)mh.msg_control + mh.msg_controllen;
         for (cmh = CMSG_FIRSTHDR(&mh); cmh != NULL; cmh = CMSG_NXTHDR(&mh, cmh)) {
