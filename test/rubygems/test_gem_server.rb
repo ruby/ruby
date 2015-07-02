@@ -7,6 +7,10 @@ class Gem::Server
 end
 
 class TestGemServer < Gem::TestCase
+  def process_based_port
+    0
+  end
+
   def setup
     super
 
