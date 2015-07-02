@@ -1,3 +1,8 @@
+Fri Jul  3 07:13:11 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (replace_real_basename): Win32 API does not set errno, get
+	  the last error by GetLastError() and map to errno.  [Bug #10015]
+
 Thu Jul  2 21:32:06 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (replace_real_basename): show warnings at errors.
