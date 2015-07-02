@@ -1359,20 +1359,17 @@ static VALUE
 strio_read_nonblock(int argc, VALUE *argv, VALUE self)
 {
     VALUE opts = Qnil, val;
-    int no_exception = 0;
 
     rb_scan_args(argc, argv, "11:", NULL, NULL, &opts);
 
     if (!NIL_P(opts)) {
 	argc--;
-
-	if (Qfalse == rb_hash_aref(opts, sym_exception))
-	    no_exception = 1;
     }
 
     val = strio_read(argc, argv, self);
     if (NIL_P(val)) {
-	if (no_exception)
+	if (!NIL_P(opts) &&
+	      rb_hash_lookup2(opts, sym_exception, Qundef) == Qfalse)
 	    return Qnil;
 	else
 	    rb_eof_error();

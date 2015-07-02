@@ -1,3 +1,29 @@
+Fri Jul  3 07:21:06 2015  Eric Wong  <e@80x24.org>
+
+	* benchmark/bm_io_nonblock_noex.rb: new benchmark
+	* ext/openssl/ossl_ssl.c (no_exception_p): new function
+	  (ossl_start_ssl): adjust for no_exception_p
+	  (ossl_ssl_connect): adjust ossl_start_ssl call
+	  (ossl_ssl_connect_nonblock): ditto
+	  (ossl_ssl_accept): ditto
+	  (ossl_ssl_accept_nonblock): ditto
+	  (ossl_ssl_read_internal): adjust for no_exception_p
+	  (ossl_ssl_write_internal): ditto
+	  (ossl_ssl_write): adjust ossl_write_internal call
+	  (ossl_ssl_write_nonblock): ditto
+	* ext/stringio/stringio.c (strio_read_nonblock):
+	  delay exception check
+	* io.c (no_exception_p): new function
+	  (io_getpartial): call no_exception_p
+	  (io_readpartial): adjust for io_getpartial
+	  (get_kwargs_exception): remove
+	  (io_read_nonblock): adjust for io_getpartial,
+	  check no_exception_p on EOF
+	  (io_write_nonblock): call no_exception_p
+	  (rb_io_write_nonblock): do not check `exception: false'
+	  (argf_getpartial): adjust for io_getpartial
+	  [ruby-core:69778] [Feature #11318]
+
 Fri Jul  3 07:13:11 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (replace_real_basename): Win32 API does not set errno, get

@@ -2482,8 +2482,18 @@ read_internal_call(VALUE arg)
     return Qundef;
 }
 
+static int
+no_exception_p(VALUE opts)
+{
+    VALUE except;
+    ID id = id_exception;
+
+    rb_get_kwargs(opts, &id, 0, 1, &except);
+    return except == Qfalse;
+}
+
 static VALUE
-io_getpartial(int argc, VALUE *argv, VALUE io, int nonblock, int no_exception)
+io_getpartial(int argc, VALUE *argv, VALUE io, VALUE opts, int nonblock)
 {
     rb_io_t *fptr;
     VALUE length, str;
@@ -2523,7 +2533,7 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int nonblock, int no_exception)
             if (!nonblock && rb_io_wait_readable(fptr->fd))
                 goto again;
             if (nonblock && (errno == EWOULDBLOCK || errno == EAGAIN)) {
-                if (no_exception)
+                if (no_exception_p(opts))
                     return sym_wait_readable;
                 else
 		    rb_readwrite_sys_fail(RB_IO_WAIT_READABLE, "read would block");
@@ -2603,23 +2613,10 @@ io_readpartial(int argc, VALUE *argv, VALUE io)
 {
     VALUE ret;
 
-    ret = io_getpartial(argc, argv, io, 0, 0);
+    ret = io_getpartial(argc, argv, io, Qnil, 0);
     if (NIL_P(ret))
         rb_eof_error();
     return ret;
-}
-
-static VALUE
-get_kwargs_exception(VALUE opts)
-{
-    static ID ids[1];
-    VALUE except;
-
-    if (!ids[0])
-	ids[0] = id_exception;
-
-    rb_get_kwargs(opts, ids, 0, 1, &except);
-    return except;
 }
 
 /*
@@ -2676,19 +2673,14 @@ get_kwargs_exception(VALUE opts)
 static VALUE
 io_read_nonblock(int argc, VALUE *argv, VALUE io)
 {
-    VALUE ret;
-    VALUE opts = Qnil;
-    int no_exception = 0;
+    VALUE ret, opts;
 
     rb_scan_args(argc, argv, "11:", NULL, NULL, &opts);
 
-    if (!NIL_P(opts) && Qfalse == get_kwargs_exception(opts))
-	no_exception = 1;
-
-    ret = io_getpartial(argc, argv, io, 1, no_exception);
+    ret = io_getpartial(argc, argv, io, opts, 1);
 
     if (NIL_P(ret)) {
-	if (no_exception)
+	if (no_exception_p(opts))
 	    return Qnil;
 	else
 	    rb_eof_error();
@@ -2697,7 +2689,7 @@ io_read_nonblock(int argc, VALUE *argv, VALUE io)
 }
 
 static VALUE
-io_write_nonblock(VALUE io, VALUE str, int no_exception)
+io_write_nonblock(VALUE io, VALUE str, VALUE opts)
 {
     rb_io_t *fptr;
     long n;
@@ -2717,7 +2709,7 @@ io_write_nonblock(VALUE io, VALUE str, int no_exception)
 
     if (n == -1) {
         if (errno == EWOULDBLOCK || errno == EAGAIN) {
-	    if (no_exception) {
+	    if (no_exception_p(opts)) {
 		return sym_wait_writable;
 	    }
 	    else {
@@ -2791,16 +2783,11 @@ io_write_nonblock(VALUE io, VALUE str, int no_exception)
 static VALUE
 rb_io_write_nonblock(int argc, VALUE *argv, VALUE io)
 {
-    VALUE str;
-    VALUE opts = Qnil;
-    int no_exceptions = 0;
+    VALUE str, opts;
 
     rb_scan_args(argc, argv, "10:", &str, &opts);
 
-    if (!NIL_P(opts) && Qfalse == get_kwargs_exception(opts))
-	no_exceptions = 1;
-
-    return io_write_nonblock(io, str, no_exceptions);
+    return io_write_nonblock(io, str, opts);
 }
 
 /*
@@ -11218,7 +11205,7 @@ argf_getpartial(int argc, VALUE *argv, VALUE argf, int nonblock)
 			 RUBY_METHOD_FUNC(0), Qnil, rb_eEOFError, (VALUE)0);
     }
     else {
-        tmp = io_getpartial(argc, argv, ARGF.current_file, nonblock, 0);
+        tmp = io_getpartial(argc, argv, ARGF.current_file, Qnil, nonblock);
     }
     if (NIL_P(tmp)) {
         if (ARGF.next_p == -1) {
