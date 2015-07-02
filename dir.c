@@ -1525,6 +1525,7 @@ replace_real_basename(char *path, long base, rb_encoding *enc, int norm_p, int f
     WCHAR *wplain;
     HANDLE h = INVALID_HANDLE_VALUE;
     long wlen;
+    int e = 0;
     if (enc &&
 	enc != rb_usascii_encoding() &&
 	enc != rb_ascii8bit_encoding() &&
@@ -1536,13 +1537,17 @@ replace_real_basename(char *path, long base, rb_encoding *enc, int norm_p, int f
     wplain = rb_w32_mbstr_to_wstr(CP_UTF8, plainname, -1, &wlen);
     if (tmp) rb_str_resize(tmp, 0);
     if (!wplain) return path;
-    if (GetFileAttributesExW(wplain, GetFileExInfoStandard, &fa))
+    if (GetFileAttributesExW(wplain, GetFileExInfoStandard, &fa)) {
 	h = FindFirstFileW(wplain, &fd);
+	e = rb_w32_map_errno(GetLastError());
+    }
     free(wplain);
     if (h == INVALID_HANDLE_VALUE) {
 	*type = path_noent;
-	if (!to_be_ignored(errno))
+	if (e && !to_be_ignored(e)) {
+	    errno = e;
 	    sys_warning(path, enc);
+	}
 	return path;
     }
     FindClose(h);
