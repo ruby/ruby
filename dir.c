@@ -147,6 +147,26 @@ has_nonascii(const char *ptr, size_t len)
 # define IF_NORMALIZE_UTF8PATH(something) /* nothing */
 #endif
 
+#ifndef IFTODT
+# define IFTODT(m)	(((m) & S_IFMT) / ((~S_IFMT & S_IFMT-1) + 1))
+#endif
+
+typedef enum {
+#ifdef DT_UNKNOWN
+    path_exist     = DT_UNKNOWN,
+    path_directory = DT_DIR,
+    path_regular   = DT_REG,
+    path_symlink   = DT_LNK,
+#else
+    path_exist,
+    path_directory = IFTODT(S_IFDIR),
+    path_regular   = IFTODT(S_IFREG),
+    path_symlink   = IFTODT(S_IFLNK),
+#endif
+    path_noent = -1,
+    path_unknown = -2
+} rb_pathtype_t;
+
 #define FNM_NOESCAPE	0x01
 #define FNM_PATHNAME	0x02
 #define FNM_DOTMATCH	0x04
@@ -1442,23 +1462,31 @@ is_case_sensitive(DIR *dirp)
 }
 
 static char *
-replace_real_basename(char *path, long base, rb_encoding *enc, int norm_p)
+replace_real_basename(char *path, long base, rb_encoding *enc, int norm_p, rb_pathtype_t *type)
 {
     struct {
 	u_int32_t length;
 	attrreference_t ref[1];
+	fsobj_type_t objtype;
 	char path[MAXPATHLEN * 3];
     } __attribute__((aligned(4), packed)) attrbuf[1];
-    struct attrlist al = {ATTR_BIT_MAP_COUNT, 0, ATTR_CMN_NAME};
+    struct attrlist al = {ATTR_BIT_MAP_COUNT, 0, ATTR_CMN_NAME|ATTR_CMN_OBJTYPE};
     const attrreference_t *const ar = attrbuf[0].ref;
     const char *name;
     long len;
     char *tmp;
     IF_NORMALIZE_UTF8PATH(VALUE utf8str = Qnil);
 
+    *type = path_noent;
     if (getattrlist(path, &al, attrbuf, sizeof(attrbuf), FSOPT_NOFOLLOW))
 	return path;
 
+    switch (attrbuf[0].objtype) {
+      case VREG: *type = path_regular; break;
+      case VDIR: *type = path_directory; break;
+      case VLNK: *type = path_symlink; break;
+      default: *type = path_exist; break;
+    }
     name = (char *)ar + ar->attr_dataoffset;
     len = (long)ar->attr_length - 1;
     if (name + len > (char *)attrbuf + sizeof(attrbuf))
@@ -1485,7 +1513,7 @@ replace_real_basename(char *path, long base, rb_encoding *enc, int norm_p)
 VALUE rb_w32_conv_from_wchar(const WCHAR *wstr, rb_encoding *enc);
 
 static char *
-replace_real_basename(char *path, long base, rb_encoding *enc, int norm_p)
+replace_real_basename(char *path, long base, rb_encoding *enc, int norm_p, rb_pathtype_t *type)
 {
     char *plainname = path;
     volatile VALUE tmp = 0;
@@ -1508,8 +1536,15 @@ replace_real_basename(char *path, long base, rb_encoding *enc, int norm_p)
     if (GetFileAttributesExW(wplain, GetFileExInfoStandard, &fa))
 	h = FindFirstFileW(wplain, &fd);
     free(wplain);
-    if (h == INVALID_HANDLE_VALUE) return path;
+    if (h == INVALID_HANDLE_VALUE) {
+	*type = path_noent;
+	return path;
+    }
     FindClose(h);
+    *type =
+	(fa.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) ? path_symlink :
+	(fa.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) ? path_directory :
+	path_regular;
     if (tmp) {
 	char *buf;
 	tmp = rb_w32_conv_from_wchar(fd.cFileName, enc);
@@ -1543,26 +1578,6 @@ replace_real_basename(char *path, long base, rb_encoding *enc, int norm_p)
 #elif USE_NAME_ON_FS == 1
 # error not implemented
 #endif
-
-#ifndef IFTODT
-# define IFTODT(m)	(((m) & S_IFMT) / ((~S_IFMT & S_IFMT-1) + 1))
-#endif
-
-typedef enum {
-#ifdef DT_UNKNOWN
-    path_exist     = DT_UNKNOWN,
-    path_directory = DT_DIR,
-    path_regular   = DT_REG,
-    path_symlink   = DT_LNK,
-#else
-    path_exist,
-    path_directory = IFTODT(S_IFDIR),
-    path_regular   = IFTODT(S_IFREG),
-    path_symlink   = IFTODT(S_IFLNK),
-#endif
-    path_noent = -1,
-    path_unknown = -2
-} rb_pathtype_t;
 
 #ifndef S_ISDIR
 #   define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
@@ -1830,6 +1845,7 @@ glob_helper(
 
 	for (cur = copy_beg; cur < copy_end; ++cur) {
 	    if (*cur) {
+		rb_pathtype_t new_pathtype = path_unknown;
 		char *buf;
 		char *name;
 		size_t len = strlen((*cur)->str) + 1;
@@ -1866,10 +1882,11 @@ glob_helper(
 #if USE_NAME_ON_FS == 1
 		if ((*cur)->type == ALPHA) {
 		    long base = pathlen + (dirsep != 0);
-		    buf = replace_real_basename(buf, base, enc, IF_NORMALIZE_UTF8PATH(1)+0);
+		    buf = replace_real_basename(buf, base, enc, IF_NORMALIZE_UTF8PATH(1)+0,
+						&new_pathtype);
 		}
 #endif
-		status = glob_helper(buf, 1, path_unknown, new_beg,
+		status = glob_helper(buf, 1, new_pathtype, new_beg,
 				     new_end, flags, func, arg, enc);
 		GLOB_FREE(buf);
 		GLOB_FREE(new_beg);
