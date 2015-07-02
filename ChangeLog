@@ -1,3 +1,13 @@
+Thu Jul  2 10:43:36 2015  Eric Wong  <e@80x24.org>
+
+	* ext/socket/rubysocket.h: flags for common socket families
+	  (rsock_getfamily): update signature
+	* include/ruby/io.h: comment socket FMODE flags
+	* ext/socket/init.c (rsock_getfamily): memoize family
+	* ext/socket/basicsocket.c: adjust rsock_getfamily calls
+	* ext/socket/ancdata.c: ditto
+	  [ruby-core:69713] [Feature #11298]
+
 Thu Jul  2 10:30:01 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/rubygems/resolver.rb: fixed NameError of Gem::Util::NULL_DEVICE.

@@ -214,7 +214,7 @@ bsock_setsockopt(int argc, VALUE *argv, VALUE sock)
     }
 
     GetOpenFile(sock, fptr);
-    family = rsock_getfamily(fptr->fd);
+    family = rsock_getfamily(fptr);
     level = rsock_level_arg(family, lev);
     option = rsock_optname_arg(family, level, optname);
 
@@ -311,7 +311,7 @@ bsock_getsockopt(VALUE sock, VALUE lev, VALUE optname)
     int family;
 
     GetOpenFile(sock, fptr);
-    family = rsock_getfamily(fptr->fd);
+    family = rsock_getfamily(fptr);
     level = rsock_level_arg(family, lev);
     option = rsock_optname_arg(family, level, optname);
     len = 256;
