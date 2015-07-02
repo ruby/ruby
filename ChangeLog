@@ -1,3 +1,8 @@
+Thu Jul  2 09:51:44 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/rubygems/resolver.rb: fix error of null device reference with DOSISH
+	  platform.
+
 Thu Jul  2 06:49:44 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/rubygems: Update to RubyGems HEAD(c202db2).
