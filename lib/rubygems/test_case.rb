@@ -269,7 +269,9 @@ class Gem::TestCase < MiniTest::Unit::TestCase
     Gem.ensure_gem_subdirectories @gemhome
 
     @orig_LOAD_PATH = $LOAD_PATH.dup
-    $LOAD_PATH.map! { |s| File.expand_path(s).untaint }
+    $LOAD_PATH.map! { |s|
+      (expand_path = File.expand_path(s)) == s ? s : expand_path.untaint
+    }
 
     Dir.chdir @tempdir
 

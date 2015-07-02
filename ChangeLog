@@ -1,3 +1,11 @@
+Thu Jul  2 14:15:50 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rubygems.rb (Gem.load_path_insert_index): search
+	  @gem_prelude_index first.
+
+	* lib/rubygems/test_case.rb (Gem::TestCase#setup): keep already
+	  expanded paths to prserve instance variables.
+
 Thu Jul  2 14:12:01 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (process_options): also copy initial load path marks at

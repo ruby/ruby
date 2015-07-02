@@ -577,6 +577,10 @@ module Gem
   # gem's paths are inserted before site lib directory by default.
 
   def self.load_path_insert_index
+    $LOAD_PATH.each_with_index do |path, i|
+      return i if path.instance_variable_defined?(:@gem_prelude_index)
+    end
+
     index = $LOAD_PATH.index RbConfig::CONFIG['sitelibdir']
 
     index
