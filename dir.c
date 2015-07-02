@@ -1462,7 +1462,7 @@ is_case_sensitive(DIR *dirp)
 }
 
 static char *
-replace_real_basename(char *path, long base, rb_encoding *enc, int norm_p, rb_pathtype_t *type)
+replace_real_basename(char *path, long base, rb_encoding *enc, int norm_p, int flags, rb_pathtype_t *type)
 {
     struct {
 	u_int32_t length;
@@ -1478,8 +1478,11 @@ replace_real_basename(char *path, long base, rb_encoding *enc, int norm_p, rb_pa
     IF_NORMALIZE_UTF8PATH(VALUE utf8str = Qnil);
 
     *type = path_noent;
-    if (getattrlist(path, &al, attrbuf, sizeof(attrbuf), FSOPT_NOFOLLOW))
+    if (getattrlist(path, &al, attrbuf, sizeof(attrbuf), FSOPT_NOFOLLOW)) {
+	if (!to_be_ignored(errno))
+	    sys_warning(path, enc);
 	return path;
+    }
 
     switch (attrbuf[0].objtype) {
       case VREG: *type = path_regular; break;
@@ -1513,7 +1516,7 @@ replace_real_basename(char *path, long base, rb_encoding *enc, int norm_p, rb_pa
 VALUE rb_w32_conv_from_wchar(const WCHAR *wstr, rb_encoding *enc);
 
 static char *
-replace_real_basename(char *path, long base, rb_encoding *enc, int norm_p, rb_pathtype_t *type)
+replace_real_basename(char *path, long base, rb_encoding *enc, int norm_p, int flags, rb_pathtype_t *type)
 {
     char *plainname = path;
     volatile VALUE tmp = 0;
@@ -1538,6 +1541,8 @@ replace_real_basename(char *path, long base, rb_encoding *enc, int norm_p, rb_pa
     free(wplain);
     if (h == INVALID_HANDLE_VALUE) {
 	*type = path_noent;
+	if (!to_be_ignored(errno))
+	    sys_warning(path, enc);
 	return path;
     }
     FindClose(h);
@@ -1883,7 +1888,7 @@ glob_helper(
 		if ((*cur)->type == ALPHA) {
 		    long base = pathlen + (dirsep != 0);
 		    buf = replace_real_basename(buf, base, enc, IF_NORMALIZE_UTF8PATH(1)+0,
-						&new_pathtype);
+						flags, &new_pathtype);
 		}
 #endif
 		status = glob_helper(buf, 1, new_pathtype, new_beg,
