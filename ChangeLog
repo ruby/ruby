@@ -32,7 +32,7 @@ Thu Jul  2 14:15:50 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  @gem_prelude_index first.
 
 	* lib/rubygems/test_case.rb (Gem::TestCase#setup): keep already
-	  expanded paths to prserve instance variables.
+	  expanded paths to preserve instance variables.
 
 Thu Jul  2 14:12:01 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -42,7 +42,7 @@ Thu Jul  2 14:12:01 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Thu Jul  2 12:26:11 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/rubygems/test_gem_server.rb (process_based_port): use
-	  dynamically chosen port numberss to get rid of conflicts.
+	  dynamically chosen port numbers to get rid of conflicts.
 
 Thu Jul  2 11:58:59 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
