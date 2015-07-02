@@ -282,7 +282,7 @@ st_init_strcasetable_with_size(st_index_t size)
 void
 st_clear(st_table *table)
 {
-    register st_table_entry *ptr, *next;
+    register st_table_entry *ptr = 0, *next;
 
     if (table->entries_packed) {
         table->num_entries = 0;
@@ -604,7 +604,7 @@ st_add_direct(st_table *table, st_data_t key, st_data_t value)
 static void
 rehash(register st_table *table)
 {
-    register st_table_entry *ptr, **new_bins;
+    register st_table_entry *ptr = 0, **new_bins;
     st_index_t new_num_bins, hash_val;
 
     new_num_bins = new_size(table->num_bins+1);
@@ -623,7 +623,7 @@ st_table*
 st_copy(st_table *old_table)
 {
     st_table *new_table;
-    st_table_entry *ptr, *entry;
+    st_table_entry *ptr = 0, *entry;
     st_index_t num_bins = old_table->num_bins;
 
     new_table = st_alloc_table();
@@ -887,7 +887,7 @@ st_update(st_table *table, st_data_t key, st_update_callback_func *func, st_data
 int
 st_foreach_check(st_table *table, int (*func)(ANYARGS), st_data_t arg, st_data_t never)
 {
-    st_table_entry *ptr, **last, *tmp, *next;
+    st_table_entry *ptr = 0, **last, *tmp, *next;
     struct list_head *head;
     enum st_retval retval;
     st_index_t i;
@@ -975,7 +975,7 @@ st_foreach_check(st_table *table, int (*func)(ANYARGS), st_data_t arg, st_data_t
 int
 st_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
 {
-    st_table_entry *ptr, **last, *tmp, *next;
+    st_table_entry *ptr = 0, **last, *tmp, *next;
     enum st_retval retval;
     struct list_head *head;
     st_index_t i;
@@ -1054,7 +1054,7 @@ get_keys(st_table *table, st_data_t *keys, st_index_t size, int check, st_data_t
 	}
     }
     else {
-	st_table_entry *ptr;
+	st_table_entry *ptr = 0;
 	st_data_t *keys_end = keys + size;
 
 	list_for_each(st_head(table), ptr, olist) {
@@ -1097,7 +1097,7 @@ get_values(st_table *table, st_data_t *values, st_index_t size, int check, st_da
 	}
     }
     else {
-	st_table_entry *ptr;
+	st_table_entry *ptr = 0;
 	st_data_t *values_end = values + size;
 
 	list_for_each(st_head(table), ptr, olist) {

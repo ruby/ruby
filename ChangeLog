@@ -1,3 +1,9 @@
+Thu Jul  2 14:45:53 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* st.c: get rid of VC++'s warnings of C4700 (uninitialized local
+	  variable used).  I think that these are wrong, but should shut them
+	  up.
+
 Thu Jul  2 14:15:50 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rubygems.rb (Gem.load_path_insert_index): search
