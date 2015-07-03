@@ -1,3 +1,8 @@
+Fri Jul  3 17:44:27 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_file_load_ok): try opening file without gvl not to
+	  lock entire process.  [Bug #11060]
+
 Tue Jun 30 11:56:24 2015  Eric Wong  <e@80x24.org>
 
 	* numeric.c (bit_coerce): use original value for error message

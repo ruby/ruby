@@ -678,7 +678,7 @@ load.$(OBJEXT): {$(VPATH)}load.c {$(VPATH)}eval_intern.h \
   {$(VPATH)}dln.h {$(VPATH)}internal.h $(PROBES_H_INCLUDES) {$(VPATH)}vm_opts.h
 file.$(OBJEXT): {$(VPATH)}file.c $(RUBY_H_INCLUDES) {$(VPATH)}io.h \
   $(ENCODING_H_INCLUDES) {$(VPATH)}util.h {$(VPATH)}dln.h \
-  {$(VPATH)}internal.h
+  {$(VPATH)}internal.h {$(VPATH)}thread.h
 gc.$(OBJEXT): {$(VPATH)}gc.c $(RUBY_H_INCLUDES) {$(VPATH)}re.h \
   {$(VPATH)}regex.h $(ENCODING_H_INCLUDES) $(VM_CORE_H_INCLUDES) \
   {$(VPATH)}gc.h {$(VPATH)}io.h {$(VPATH)}eval_intern.h {$(VPATH)}util.h \
@@ -835,7 +835,8 @@ utf_8.$(OBJEXT): {$(VPATH)}utf_8.c {$(VPATH)}regenc.h {$(VPATH)}config.h \
 
 win32/win32.$(OBJEXT): {$(VPATH)}win32/win32.c {$(VPATH)}dln.h {$(VPATH)}dln_find.c \
   {$(VPATH)}internal.h $(RUBY_H_INCLUDES) $(PLATFORM_D)
-win32/file.$(OBJEXT): {$(VPATH)}win32/file.c $(RUBY_H_INCLUDES) $(PLATFORM_D)
+win32/file.$(OBJEXT): {$(VPATH)}win32/file.c {$(VPATH)}thread.h \
+  $(RUBY_H_INCLUDES) $(PLATFORM_D)
 
 $(NEWLINE_C): $(srcdir)/enc/trans/newline.trans $(srcdir)/tool/transcode-tblgen.rb
 	$(Q) $(BASERUBY) "$(srcdir)/tool/transcode-tblgen.rb" -vo $@ $(srcdir)/enc/trans/newline.trans
