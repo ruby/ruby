@@ -1,3 +1,8 @@
+Fri Jul  3 12:25:19 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* transcode.c (rb_econv_set_replacement): target encoding name can
+	  be empty now.  [ruby-core:69841] [Bug #11324]
+
 Fri Jul  3 07:21:06 2015  Eric Wong  <e@80x24.org>
 
 	* benchmark/bm_io_nonblock_noex.rb: new benchmark
