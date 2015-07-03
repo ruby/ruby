@@ -867,6 +867,7 @@ VALUE rb_gcd_gmp(VALUE x, VALUE y);
 
 /* util.c */
 extern const signed char ruby_digit36_to_number_table[];
+extern unsigned long ruby_scan_digits(const char *str, ssize_t len, int base, size_t *retlen, int *overflow);
 
 /* variable.c */
 void rb_gc_mark_global_tbl(void);

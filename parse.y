@@ -6958,6 +6958,27 @@ parser_prepare(struct parser_params *parser)
      (ambiguous_operator(op, syn), 0)))
 
 static int
+parse_numvar(struct parser_params *parser)
+{
+    size_t len;
+    int overflow;
+    unsigned long n = ruby_scan_digits(tok()+1, toklen()-1, 10, &len, &overflow);
+    const unsigned long nth_ref_max =
+	(FIXNUM_MAX / 2 < INT_MAX) ? FIXNUM_MAX / 2 : INT_MAX;
+    /* NTH_REF is left-shifted to be ORed with back-ref flag and
+     * turned into a Fixnum, in compile.c */
+
+    if (overflow || n > nth_ref_max) {
+	/* compile_error()? */
+	rb_warnS("`%s' is too big for a number variable, always nil", tok());
+	return 0;		/* $0 is $PROGRAM_NAME, not NTH_REF */
+    }
+    else {
+	return (int)n;
+    }
+}
+
+static int
 parser_yylex(struct parser_params *parser)
 {
     register int c;
@@ -8053,7 +8074,7 @@ parser_yylex(struct parser_params *parser)
 	    pushback(c);
 	    if (IS_lex_state_for(last_state, EXPR_FNAME)) goto gvar;
 	    tokfix();
-	    set_yylval_node(NEW_NTH_REF(atoi(tok()+1)));
+	    set_yylval_node(NEW_NTH_REF(parse_numvar(parser)));
 	    return tNTH_REF;
 
 	  default:

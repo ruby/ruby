@@ -75,21 +75,25 @@ const signed char ruby_digit36_to_number_table[] = {
     /*f*/ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
 };
 
-static unsigned long
-scan_digits(const char *str, int base, size_t *retlen, int *overflow)
+unsigned long
+ruby_scan_digits(const char *str, ssize_t len, int base, size_t *retlen, int *overflow)
 {
 
     const char *start = str;
     unsigned long ret = 0, x;
     unsigned long mul_overflow = (~(unsigned long)0) / base;
-    int c;
+
     *overflow = 0;
 
-    while ((c = (unsigned char)*str++) != '\0') {
-        int d = ruby_digit36_to_number_table[c];
+    if (!len) {
+	*retlen = 0;
+	return 0;
+    }
+
+    do {
+	int d = ruby_digit36_to_number_table[(unsigned char)*str++];
         if (d == -1 || base <= d) {
-            *retlen = (str-1) - start;
-            return ret;
+	    break;
         }
         if (mul_overflow < ret)
             *overflow = 1;
@@ -98,7 +102,7 @@ scan_digits(const char *str, int base, size_t *retlen, int *overflow)
         ret += d;
         if (ret < x)
             *overflow = 1;
-    }
+    } while (len < 0 || --len);
     *retlen = (str-1) - start;
     return ret;
 }
@@ -150,7 +154,7 @@ ruby_strtoul(const char *str, char **endptr, int base)
         b = base == 0 ? 10 : base;
     }
 
-    ret = scan_digits(str, b, &len, &overflow);
+    ret = ruby_scan_digits(str, -1, b, &len, &overflow);
 
     if (0 < len)
         subject_found = str+len;
