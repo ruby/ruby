@@ -7,7 +7,7 @@
 #
 # Note that the selection of functions is similar, but not identical,
 # to that in module math. The reason for having two modules is that
-# some users aren’t interested in complex numbers, and perhaps don’t
+# some users aren't interested in complex numbers, and perhaps don't
 # even know what they are. They would rather have Math.sqrt(-1) raise
 # an exception than return a complex number.
 #
