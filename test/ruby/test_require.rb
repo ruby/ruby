@@ -691,7 +691,7 @@ class TestRequire < Test::Unit::TestCase
   def test_loading_fifo_threading
     Tempfile.create(%w'fifo .rb') {|f|
       f.close
-      File.unlink(f.path)
+      File.unlink(f.path) rescue nil
       File.mkfifo(f.path)
       assert_separately(["-", f.path], <<-END, timeout: 3)
       th = Thread.current

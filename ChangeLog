@@ -1,3 +1,8 @@
+Fri Jul  3 19:28:51 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_require.rb (TestRequire#test_loading_fifo_threading):
+	  ignore Errno::ENOENT on unlinking.  [Bug #11060]
+
 Fri Jul  3 18:40:48 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (pkg_config): split --libs if --libs-only-l option
