@@ -116,7 +116,7 @@ vm_call0_cfunc_with_frame(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv
     {
 	rb_control_frame_t *reg_cfp = th->cfp;
 
-	vm_push_frame(th, 0, VM_FRAME_MAGIC_CFUNC, recv, 
+	vm_push_frame(th, 0, VM_FRAME_MAGIC_CFUNC, recv,
 		      VM_ENVVAL_BLOCK_PTR(blockptr), (VALUE)me,
 		      0, reg_cfp->sp, 1, 0);
 

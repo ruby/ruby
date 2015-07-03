@@ -832,7 +832,7 @@ invoke_block_from_c(rb_thread_t *th, const rb_block_t *block,
 
 	if (me != 0) {
 	    /* bmethod */
-	    vm_push_frame(th, iseq, type | VM_FRAME_FLAG_FINISH | VM_FRAME_FLAG_BMETHOD, self, 
+	    vm_push_frame(th, iseq, type | VM_FRAME_FLAG_FINISH | VM_FRAME_FLAG_BMETHOD, self,
 			  VM_ENVVAL_PREV_EP_PTR(block->ep),
 			  (VALUE)me, /* cref or method (TODO: can we ignore cref?) */
 			  iseq->iseq_encoded + opt_pc,
