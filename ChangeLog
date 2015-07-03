@@ -1,3 +1,9 @@
+Fri Jul  3 18:40:48 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (pkg_config): split --libs if --libs-only-l option
+	  is not available.  patch in [ruby-core:69428] by Hans Mackowiak.
+	  [ruby-core:69421] [Bug #11201]
+
 Fri Jul  3 18:32:37 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (iseq_compile_each): out of range NTH_REF is always

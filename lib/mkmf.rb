@@ -1756,11 +1756,18 @@ SRC
     elsif get and try_ldflags(ldflags = get['libs'])
       cflags = get['cflags']
       libs = get['libs-only-l']
-      ldflags = (Shellwords.shellwords(ldflags) - Shellwords.shellwords(libs)).quote.join(" ")
-      $CFLAGS += " " << cflags
-      $CXXFLAGS += " " << cflags
-      $LDFLAGS = [orig_ldflags, ldflags].join(' ')
+      if cflags
+        $CFLAGS += " " << cflags
+        $CXXFLAGS += " " << cflags
+      end
+      if libs
+        ldflags = (Shellwords.shellwords(ldflags) - Shellwords.shellwords(libs)).quote.join(" ")
+      else
+        libs, ldflags = Shellwords.shellwords(ldflags).partition {|s| s =~ /-l([^ ]+)/ }.map {|l|l.quote.join(" ")}
+      end
       $libs += " " << libs
+
+      $LDFLAGS = [orig_ldflags, ldflags].join(' ')
       Logging::message "package configuration for %s\n", pkg
       Logging::message "cflags: %s\nldflags: %s\nlibs: %s\n\n",
                        cflags, ldflags, libs
