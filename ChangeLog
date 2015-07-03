@@ -1,3 +1,13 @@
+Fri Jul  3 17:53:43 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (rb_method_call_status): resolve refined method entry
+	  to check if undefined.  [ruby-core:69064] [Bug #11117]
+
+Fri Jul  3 17:53:43 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (rb_method_call_status): undefined refined method is
+	  not callable unless using.  [ruby-core:69064] [Bug #11117]
+
 Fri Jul  3 17:44:27 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_load_ok): try opening file without gvl not to
