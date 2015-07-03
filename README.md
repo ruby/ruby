@@ -147,7 +147,14 @@ Questions about the Ruby language can be asked on the Ruby-Talk mailing list
 (http://www.ruby-lang.org/en/community/mailing-lists) or on websites like
 (http://stackoverflow.com).
 
-Bug reports should be filed at http://bugs.ruby-lang.org
+Bug reports should be filed at http://bugs.ruby-lang.org. Read [HowToReport] for more informations.
+
+[HowToReport]: https://bugs.ruby-lang.org/projects/ruby/wiki/HowToReport
+
+##Contributing
+
+See the file `CONTRIBUTING.md`
+
 
 ## The Author
 
