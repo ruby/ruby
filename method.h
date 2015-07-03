@@ -47,11 +47,19 @@ typedef struct rb_cref_struct {
 
 typedef struct rb_method_entry_struct {
     VALUE flags;
-    VALUE dummy;
+    const VALUE defined_class;
     struct rb_method_definition_struct * const def;
     ID called_id;
-    const VALUE klass;    /* should be marked */
+    const VALUE owner;
 } rb_method_entry_t;
+
+typedef struct rb_callable_method_entry_struct { /* same fields with rb_method_entry_t */
+    VALUE flags;
+    const VALUE defined_class;
+    struct rb_method_definition_struct * const def;
+    ID called_id;
+    const VALUE owner;
+} rb_callable_method_entry_t;
 
 #define METHOD_ENTRY_VISI(me)  (rb_method_visibility_t)(((me)->flags & (IMEMO_FL_USER0 | IMEMO_FL_USER1)) >> (IMEMO_FL_USHIFT+0))
 #define METHOD_ENTRY_BASIC(me) (int)                   (((me)->flags & (IMEMO_FL_USER2                 )) >> (IMEMO_FL_USHIFT+2))
@@ -84,6 +92,13 @@ METHOD_ENTRY_FLAGS_SET(rb_method_entry_t *me, rb_method_visibility_t visi, unsig
     me->flags =
       (me->flags & ~(IMEMO_FL_USER0|IMEMO_FL_USER1|IMEMO_FL_USER2|IMEMO_FL_USER3|IMEMO_FL_USER4)) |
 	((visi << IMEMO_FL_USHIFT+0) | (basic << (IMEMO_FL_USHIFT+2)) | (safe << IMEMO_FL_USHIFT+3));
+}
+static inline void
+METHOD_ENTRY_FLAGS_COPY(rb_method_entry_t *dst, const rb_method_entry_t *src)
+{
+    dst->flags =
+      (dst->flags & ~(IMEMO_FL_USER0|IMEMO_FL_USER1|IMEMO_FL_USER2|IMEMO_FL_USER3|IMEMO_FL_USER4)) |
+	(src->flags & (IMEMO_FL_USER0|IMEMO_FL_USER1|IMEMO_FL_USER2|IMEMO_FL_USER3|IMEMO_FL_USER4));
 }
 
 typedef enum {
@@ -127,6 +142,7 @@ typedef struct rb_method_alias_struct {
 
 typedef struct rb_method_refined_struct {
     const struct rb_method_entry_struct * const orig_me;
+    const VALUE owner;
 } rb_method_refined_t;
 
 typedef struct rb_method_definition_struct {
@@ -159,20 +175,23 @@ typedef struct rb_method_definition_struct {
 
 void rb_add_method_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, rb_method_visibility_t visi);
 void rb_add_method_iseq(VALUE klass, ID mid, VALUE iseqval, rb_cref_t *cref, rb_method_visibility_t visi);
-rb_method_entry_t *rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *option, rb_method_visibility_t visi);
-rb_method_entry_t *rb_method_entry(VALUE klass, ID id, VALUE *define_class_ptr);
-rb_method_entry_t *rb_method_entry_at(VALUE obj, ID id);
 void rb_add_refined_method_entry(VALUE refined_class, ID mid);
-const rb_method_entry_t *rb_resolve_refined_method(VALUE refinements,
-						   const rb_method_entry_t *me,
-						   VALUE *defined_class_ptr);
-const rb_method_entry_t *rb_method_entry_with_refinements(VALUE klass, ID id,
-							  VALUE *defined_class_ptr);
-const rb_method_entry_t *rb_method_entry_without_refinements(VALUE klass, ID id,
-							     VALUE *defined_class_ptr);
 
-rb_method_entry_t *rb_method_entry_get_without_cache(VALUE klass, ID id, VALUE *define_class_ptr);
+rb_method_entry_t *rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *option, rb_method_visibility_t visi);
 rb_method_entry_t *rb_method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *, rb_method_visibility_t noex);
+rb_method_entry_t *rb_method_entry_create(ID called_id, VALUE klass, rb_method_visibility_t visi, const rb_method_definition_t *def);
+
+const rb_method_entry_t *rb_method_entry_at(VALUE obj, ID id);
+
+const rb_method_entry_t *rb_method_entry(VALUE klass, ID id);
+const rb_method_entry_t *rb_method_entry_with_refinements(VALUE klass, ID id);
+const rb_method_entry_t *rb_method_entry_without_refinements(VALUE klass, ID id);
+const rb_method_entry_t *rb_resolve_refined_method(VALUE refinements, const rb_method_entry_t *me);
+
+const rb_callable_method_entry_t *rb_callable_method_entry(VALUE klass, ID id);
+const rb_callable_method_entry_t *rb_callable_method_entry_with_refinements(VALUE klass, ID id);
+const rb_callable_method_entry_t *rb_callable_method_entry_without_refinements(VALUE klass, ID id);
+const rb_callable_method_entry_t *rb_resolve_refined_method_callable(VALUE refinements, const rb_callable_method_entry_t *me);
 
 int rb_method_entry_arity(const rb_method_entry_t *me);
 int rb_method_entry_eq(const rb_method_entry_t *m1, const rb_method_entry_t *m2);
@@ -185,8 +204,8 @@ VALUE rb_obj_method_location(VALUE obj, ID id);
 void rb_free_method_entry(const rb_method_entry_t *me);
 void rb_sweep_method_entry(void *vm);
 
-rb_method_entry_t *rb_method_entry_create(ID called_id, VALUE klass, rb_method_visibility_t visi, const rb_method_definition_t *def);
-rb_method_entry_t *rb_method_entry_clone(const rb_method_entry_t *me);
+const rb_method_entry_t *rb_method_entry_clone(const rb_method_entry_t *me);
+const rb_callable_method_entry_t *rb_method_entry_complement_defined_class(const rb_method_entry_t *src_me, VALUE defined_class);
 void rb_method_entry_copy(rb_method_entry_t *dst, const rb_method_entry_t *src);
 
 void rb_scope_visibility_set(rb_method_visibility_t);

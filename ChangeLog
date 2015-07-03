@@ -1,3 +1,118 @@
+Fri Jul 03 20:05:10 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* method.h: introduce rb_callable_method_entry_t to remove
+	  rb_control_frame_t::klass.
+	  [Bug #11278], [Bug #11279]
+
+	  rb_method_entry_t data belong to modules/classes.
+	  rb_method_entry_t::owner points defined module or class.
+
+	    module M
+	      def foo; end
+	    end
+
+	  In this case, owner is M.
+
+	  rb_callable_method_entry_t data belong to only classes.
+	  For modules, MRI creates corresponding T_ICLASS internally.
+	  rb_callable_method_entry_t can also belong to T_ICLASS.
+
+	  rb_callable_method_entry_t::defined_class points T_CLASS or
+	  T_ICLASS.
+	  rb_method_entry_t data for classes (not for modules) are also
+	  rb_callable_method_entry_t data because it is completely same data.
+	  In this case, rb_method_entry_t::owner == rb_method_entry_t::defined_class.
+
+	  For example, there are classes C and D, and incldues M,
+
+	    class C; include M; end
+	    class D; include M; end
+
+	  then, two T_ICLASS objects for C's super class and D's super class
+	  will be created.
+
+	  When C.new.foo is called, then M#foo is searcheed and
+	  rb_callable_method_t data is used by VM to invoke M#foo.
+
+	  rb_method_entry_t data is only one for M#foo.
+	  However, rb_callable_method_entry_t data are two (and can be more).
+	  It is proportional to the number of including (and prepending)
+	  classes (the number of T_ICLASS which point to the module).
+
+	  Now, created rb_callable_method_entry_t are collected when
+	  the original module M was modified. We can think it is a cache.
+
+	  We need to select what kind of method entry data is needed.
+	  To operate definition, then you need to use rb_method_entry_t.
+
+	  You can access them by the following functions.
+
+	  * rb_method_entry(VALUE klass, ID id);
+	  * rb_method_entry_with_refinements(VALUE klass, ID id);
+	  * rb_method_entry_without_refinements(VALUE klass, ID id);
+	  * rb_resolve_refined_method(VALUE refinements, const rb_method_entry_t *me);
+
+	  To invoke methods, then you need to use rb_callable_method_entry_t
+	  which you can get by the following APIs corresponding to the
+	  above listed functions.
+
+	  * rb_callable_method_entry(VALUE klass, ID id);
+	  * rb_callable_method_entry_with_refinements(VALUE klass, ID id);
+	  * rb_callable_method_entry_without_refinements(VALUE klass, ID id);
+	  * rb_resolve_refined_method_callable(VALUE refinements, const rb_callable_method_entry_t *me);
+
+	  VM pushes rb_callable_method_entry_t, so that rb_vm_frame_method_entry()
+	  returns rb_callable_method_entry_t.
+	  You can check a super class of current method by
+	  rb_callable_method_entry_t::defined_class.
+
+	* method.h: renamed from rb_method_entry_t::klass to
+	  rb_method_entry_t::owner.
+
+	* internal.h: add rb_classext_struct::callable_m_tbl to cache
+	  rb_callable_method_entry_t data.
+
+	  We need to consider abotu this field again because it is only
+	  active for T_ICLASS.
+
+	* class.c (method_entry_i): ditto.
+
+	* class.c (rb_define_attr): rb_method_entry() does not takes
+	  defiend_class_ptr.
+
+	* gc.c (mark_method_entry): mark RCLASS_CALLABLE_M_TBL() for T_ICLASS.
+
+	* cont.c (fiber_init): rb_control_frame_t::klass is removed.
+
+	* proc.c: fix `struct METHOD' data structure because
+	  rb_callable_method_t has all information.
+
+	* vm_core.h: remove several fields.
+	  * rb_control_frame_t::klass.
+	  * rb_block_t::klass.
+
+	  And catch up changes.
+
+	* eval.c: catch up changes.
+
+	* gc.c: ditto.
+
+	* insns.def: ditto.
+
+	* vm.c: ditto.
+
+	* vm_args.c: ditto.
+
+	* vm_backtrace.c: ditto.
+
+	* vm_dump.c: ditto.
+
+	* vm_eval.c: ditto.
+
+	* vm_insnhelper.c: ditto.
+
+	* vm_method.c: ditto.
+
 Fri Jul  3 14:30:18 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/file.c: some mingw compilers need a tweek for the

@@ -22,8 +22,7 @@
 #define INLINE inline
 #endif
 
-static rb_control_frame_t *
-vm_get_ruby_level_caller_cfp(const rb_thread_t *th, const rb_control_frame_t *cfp);
+static rb_control_frame_t *vm_get_ruby_level_caller_cfp(const rb_thread_t *th, const rb_control_frame_t *cfp);
 
 VALUE
 ruby_vm_sysstack_error_copy(void)
@@ -40,6 +39,34 @@ vm_stackoverflow(void)
 }
 
 #if VM_CHECK_MODE > 0
+
+static int
+callable_class_p(VALUE klass)
+{
+#if VM_CHECK_MODE >= 2
+    while (klass) {
+	if (klass == rb_cBasicObject) {
+	    return TRUE;
+	}
+	klass = RCLASS_SUPER(klass);
+    }
+    return FALSE;
+#else
+    return klass != 0;
+#endif
+}
+
+static int
+callable_method_entry_p(const rb_callable_method_entry_t *me)
+{
+    if (me == NULL || callable_class_p(me->defined_class)) {
+	return TRUE;
+    }
+    else {
+	return FALSE;
+    }
+}
+
 static void
 check_frame(int magic, int req_block, int req_me, int req_cref, VALUE specval, VALUE cref_or_me)
 {
@@ -76,6 +103,14 @@ check_frame(int magic, int req_block, int req_me, int req_cref, VALUE specval, V
 	    }
 	}
     }
+
+    if (cref_or_me_type == imemo_ment) {
+	const rb_callable_method_entry_t *me = (const rb_callable_method_entry_t *)cref_or_me;
+
+	if (!callable_method_entry_p(me)) {
+	    rb_bug("vm_push_frame: ment (%s) should be callable on %x frame.", rb_obj_info(cref_or_me), magic);
+	}
+    }
 }
 #endif
 
@@ -84,7 +119,6 @@ vm_push_frame(rb_thread_t *th,
 	      const rb_iseq_t *iseq,
 	      VALUE type,
 	      VALUE self,
-	      VALUE klass,
 	      VALUE specval,
 	      VALUE cref_or_me,
 	      const VALUE *pc,
@@ -146,19 +180,6 @@ vm_push_frame(rb_thread_t *th,
     cfp->self = self;
     cfp->block_iseq = 0;
     cfp->proc = 0;
-
-    if (klass) {
-	cfp->klass = klass;
-    }
-    else {
-	rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
-	if (RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th, prev_cfp)) {
-	    cfp->klass = Qnil;
-	}
-	else {
-	    cfp->klass = prev_cfp->klass;
-	}
-    }
 
     if (VMDEBUG == 2) {
 	SDR();
@@ -334,7 +355,7 @@ vm_getspecial(rb_thread_t *th, VALUE *lep, rb_num_t key, rb_num_t type)
     return val;
 }
 
-static rb_method_entry_t *
+static rb_callable_method_entry_t *
 check_method_entry(VALUE obj, int can_be_svar)
 {
     if (obj == Qfalse) return NULL;
@@ -345,7 +366,7 @@ check_method_entry(VALUE obj, int can_be_svar)
 
     switch (imemo_type(obj)) {
       case imemo_ment:
-	return (rb_method_entry_t *)obj;
+	return (rb_callable_method_entry_t *)obj;
       case imemo_cref:
 	return NULL;
       case imemo_svar:
@@ -360,11 +381,11 @@ check_method_entry(VALUE obj, int can_be_svar)
     }
 }
 
-const rb_method_entry_t *
+const rb_callable_method_entry_t *
 rb_vm_frame_method_entry(const rb_control_frame_t *cfp)
 {
     VALUE *ep = cfp->ep;
-    rb_method_entry_t *me;
+    rb_callable_method_entry_t *me;
 
     while (!VM_EP_LEP_P(ep)) {
 	if ((me = check_method_entry(ep[-1], FALSE)) != NULL) return me;
@@ -375,7 +396,7 @@ rb_vm_frame_method_entry(const rb_control_frame_t *cfp)
 }
 
 static rb_cref_t *
-method_entry_cref(rb_method_entry_t *me)
+method_entry_cref(rb_callable_method_entry_t *me)
 {
     switch (me->def->type) {
       case VM_METHOD_TYPE_ISEQ:
@@ -396,7 +417,7 @@ check_cref(VALUE obj, int can_be_svar)
 
     switch (imemo_type(obj)) {
       case imemo_ment:
-	return method_entry_cref((rb_method_entry_t *)obj);
+	return method_entry_cref((rb_callable_method_entry_t *)obj);
       case imemo_cref:
 	return (rb_cref_t *)obj;
       case imemo_svar:
@@ -558,15 +579,7 @@ vm_check_if_namespace(VALUE klass)
 static inline VALUE
 vm_get_iclass(rb_control_frame_t *cfp, VALUE klass)
 {
-    if (RB_TYPE_P(klass, T_MODULE) &&
-	FL_TEST(klass, RMODULE_IS_OVERLAID) &&
-	RB_TYPE_P(cfp->klass, T_ICLASS) &&
-	RBASIC(cfp->klass)->klass == klass) {
-	return cfp->klass;
-    }
-    else {
-	return klass;
-    }
+    return klass;
 }
 
 static inline VALUE
@@ -1040,7 +1053,8 @@ vm_search_method(rb_call_info_t *ci, VALUE recv)
     }
 #endif
 
-    ci->me = rb_method_entry(klass, ci->mid, &ci->defined_class);
+    ci->me = rb_callable_method_entry(klass, ci->mid);
+    VM_ASSERT(callable_method_entry_p(ci->me));
     ci->klass = klass;
     ci->call = vm_call_general;
 #if OPT_INLINE_METHOD_CACHE
@@ -1050,7 +1064,7 @@ vm_search_method(rb_call_info_t *ci, VALUE recv)
 }
 
 static inline int
-check_cfunc(const rb_method_entry_t *me, VALUE (*func)())
+check_cfunc(const rb_callable_method_entry_t *me, VALUE (*func)())
 {
     if (me && me->def->type == VM_METHOD_TYPE_CFUNC &&
 	me->def->body.cfunc.func == func) {
@@ -1114,12 +1128,11 @@ rb_equal_opt(VALUE obj1, VALUE obj2)
     ci.klass = 0;
     ci.method_state = 0;
     ci.me = NULL;
-    ci.defined_class = 0;
+    ci.class_serial = 0;
     return opt_eq_func(obj1, obj2, &ci);
 }
 
-static VALUE
-vm_call0(rb_thread_t*, VALUE, ID, int, const VALUE*, const rb_method_entry_t*, VALUE);
+static VALUE vm_call0(rb_thread_t*, VALUE, ID, int, const VALUE*, const rb_callable_method_entry_t *);
 
 static VALUE
 check_match(VALUE pattern, VALUE target, enum vm_check_match_type type)
@@ -1133,10 +1146,9 @@ check_match(VALUE pattern, VALUE target, enum vm_check_match_type type)
 	}
 	/* fall through */
       case VM_CHECKMATCH_TYPE_CASE: {
-	VALUE defined_class;
-	const rb_method_entry_t *me = rb_method_entry_with_refinements(CLASS_OF(pattern), idEqq, &defined_class);
+	const rb_callable_method_entry_t *me = rb_callable_method_entry_with_refinements(CLASS_OF(pattern), idEqq);
 	if (me) {
-	    return vm_call0(GET_THREAD(), pattern, idEqq, 1, &target, me, defined_class);
+	    return vm_call0(GET_THREAD(), pattern, idEqq, 1, &target, me);
 	}
 	else {
 	    /* fallback to funcall (e.g. method_missing) */
@@ -1352,7 +1364,7 @@ vm_call_iseq_setup_normal(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info
 {
     int i, local_size;
     VALUE *argv = cfp->sp - ci->argc;
-    const rb_method_entry_t *me = ci->me;
+    const rb_callable_method_entry_t *me = ci->me;
     rb_iseq_t *iseq = def_iseq_ptr(me->def);
     VALUE *sp = argv + iseq->param.size;
 
@@ -1361,7 +1373,7 @@ vm_call_iseq_setup_normal(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info
 	*sp++ = Qnil;
     }
 
-    vm_push_frame(th, iseq, VM_FRAME_MAGIC_METHOD, ci->recv, ci->defined_class,
+    vm_push_frame(th, iseq, VM_FRAME_MAGIC_METHOD, ci->recv,
 		  VM_ENVVAL_BLOCK_PTR(ci->blockptr), (VALUE)me,
 		  iseq->iseq_encoded + ci->aux.opt_pc, sp, 0, iseq->stack_max);
 
@@ -1374,7 +1386,7 @@ vm_call_iseq_setup_tailcall(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_in
 {
     int i;
     VALUE *argv = cfp->sp - ci->argc;
-    const rb_method_entry_t *me = ci->me;
+    const rb_callable_method_entry_t *me = ci->me;
     rb_iseq_t *iseq = def_iseq_ptr(me->def);
     VALUE *src_argv = argv;
     VALUE *sp_orig, *sp;
@@ -1401,8 +1413,7 @@ vm_call_iseq_setup_tailcall(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_in
     }
 
     vm_push_frame(th, iseq, VM_FRAME_MAGIC_METHOD | finish_flag,
-		  ci->recv, ci->defined_class,
-		  VM_ENVVAL_BLOCK_PTR(ci->blockptr), (VALUE)me,
+		  ci->recv, VM_ENVVAL_BLOCK_PTR(ci->blockptr), (VALUE)me,
 		  iseq->iseq_encoded + ci->aux.opt_pc, sp, 0, iseq->stack_max);
 
     cfp->sp = sp_orig;
@@ -1541,7 +1552,7 @@ vm_profile_show_result(void)
 
 static inline
 const rb_method_cfunc_t *
-vm_method_cfunc_entry(const rb_method_entry_t *me)
+vm_method_cfunc_entry(const rb_callable_method_entry_t *me)
 {
 #if VM_DEBUG_VERIFY_METHOD_CACHE
     switch (me->def->type) {
@@ -1571,20 +1582,19 @@ static VALUE
 vm_call_cfunc_with_frame(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci)
 {
     VALUE val;
-    const rb_method_entry_t *me = ci->me;
+    const rb_callable_method_entry_t *me = ci->me;
     const rb_method_cfunc_t *cfunc = vm_method_cfunc_entry(me);
     int len = cfunc->argc;
 
     /* don't use `ci' after EXEC_EVENT_HOOK because ci can be override */
     VALUE recv = ci->recv;
-    VALUE defined_class = ci->defined_class;
     rb_block_t *blockptr = ci->blockptr;
     int argc = ci->argc;
 
-    RUBY_DTRACE_CMETHOD_ENTRY_HOOK(th, me->klass, me->called_id);
-    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, recv, me->called_id, me->klass, Qundef);
+    RUBY_DTRACE_CMETHOD_ENTRY_HOOK(th, me->owner, me->called_id);
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, recv, me->called_id, me->owner, Qundef);
 
-    vm_push_frame(th, NULL, VM_FRAME_MAGIC_CFUNC, recv, defined_class,
+    vm_push_frame(th, NULL, VM_FRAME_MAGIC_CFUNC, recv,
 		  VM_ENVVAL_BLOCK_PTR(blockptr), (VALUE)me,
 		  0, th->cfp->sp, 1, 0);
 
@@ -1600,8 +1610,8 @@ vm_call_cfunc_with_frame(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_i
 
     vm_pop_frame(th);
 
-    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, recv, me->called_id, me->klass, val);
-    RUBY_DTRACE_CMETHOD_RETURN_HOOK(th, me->klass, me->called_id);
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, recv, me->called_id, me->owner, val);
+    RUBY_DTRACE_CMETHOD_RETURN_HOOK(th, me->owner, me->called_id);
 
     return val;
 }
@@ -1644,15 +1654,15 @@ static VALUE
 vm_call_cfunc(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci)
 {
     VALUE val;
-    const rb_method_entry_t *me = ci->me;
+    const rb_callable_method_entry_t *me = ci->me;
     int len = vm_method_cfunc_entry(me)->argc;
     VALUE recv = ci->recv;
 
     CALLER_SETUP_ARG(reg_cfp, ci);
     if (len >= 0) rb_check_arity(ci->argc, len, len);
 
-    RUBY_DTRACE_CMETHOD_ENTRY_HOOK(th, me->klass, me->called_id);
-    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, recv, me->called_id, me->klass, Qnil);
+    RUBY_DTRACE_CMETHOD_ENTRY_HOOK(th, me->owner, me->called_id);
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, recv, me->called_id, me->owner, Qnil);
 
     if (!(ci->me->def->flag & METHOD_VISI_PROTECTED) &&
 	!(ci->flag & VM_CALL_ARGS_SPLAT) &&
@@ -1661,8 +1671,8 @@ vm_call_cfunc(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci)
     }
     val = vm_call_cfunc_latter(th, reg_cfp, ci);
 
-    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, recv, me->called_id, me->klass, val);
-    RUBY_DTRACE_CMETHOD_RETURN_HOOK(th, me->klass, me->called_id);
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, recv, me->called_id, me->owner, val);
+    RUBY_DTRACE_CMETHOD_RETURN_HOOK(th, me->owner, me->called_id);
 
     return val;
 }
@@ -1671,11 +1681,11 @@ void
 rb_vm_call_cfunc_push_frame(rb_thread_t *th)
 {
     rb_call_info_t *ci = th->passed_ci;
-    const rb_method_entry_t *me = ci->me;
+    const rb_callable_method_entry_t *me = ci->me;
     th->passed_ci = 0;
 
-    vm_push_frame(th, 0, VM_FRAME_MAGIC_CFUNC, ci->recv, ci->defined_class,
-		  VM_ENVVAL_BLOCK_PTR(ci->blockptr), (VALUE)me /* cref */,
+    vm_push_frame(th, 0, VM_FRAME_MAGIC_CFUNC,
+		  ci->recv, VM_ENVVAL_BLOCK_PTR(ci->blockptr), (VALUE)me /* cref */,
 		  0, th->cfp->sp + ci->aux.inc_sp, 1, 0);
 
     if (ci->call != vm_call_general) {
@@ -1716,7 +1726,7 @@ vm_call_bmethod_body(rb_thread_t *th, rb_call_info_t *ci, const VALUE *argv)
     /* control block frame */
     th->passed_bmethod_me = ci->me;
     GetProcPtr(ci->me->def->body.proc, proc);
-    val = vm_invoke_bmethod(th, proc, ci->recv, ci->defined_class, ci->argc, argv, ci->blockptr);
+    val = vm_invoke_bmethod(th, proc, ci->recv, ci->argc, argv, ci->blockptr);
 
     return val;
 }
@@ -1790,7 +1800,7 @@ vm_call_opt_send(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *c
 	ci->argc -= 1;
 	DEC_SP(1);
     }
-    ci->me = rb_method_entry_without_refinements(CLASS_OF(ci->recv), ci->mid, &ci->defined_class);
+    ci->me = rb_callable_method_entry_without_refinements(CLASS_OF(ci->recv), ci->mid);
 
     ci->flag = VM_CALL_FCALL | VM_CALL_OPT_SEND;
 
@@ -1828,7 +1838,7 @@ vm_call_method_missing(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_inf
     ci_entry.mid = idMethodMissing;
     ci_entry.blockptr = ci->blockptr;
     ci_entry.recv = ci->recv;
-    ci_entry.me = rb_method_entry(CLASS_OF(ci_entry.recv), idMethodMissing, &ci_entry.defined_class);
+    ci_entry.me = rb_callable_method_entry(CLASS_OF(ci_entry.recv), idMethodMissing);
     ci_entry.kw_arg = NULL;
 
     /* shift arguments: m(a, b, c) #=> method_missing(:m, a, b, c) */
@@ -1892,6 +1902,55 @@ find_defined_class_by_owner(VALUE current_class, VALUE target_owner)
     return current_class; /* maybe module function */
 }
 
+static rb_method_definition_t *method_definition_create(rb_method_type_t type, ID mid);
+static void method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *def, void *opts);
+
+static const rb_callable_method_entry_t *
+aliased_callable_method_entry(const rb_callable_method_entry_t *me)
+{
+    const rb_method_entry_t *orig_me = me->def->body.alias.original_me;
+    const rb_callable_method_entry_t *cme;
+
+    if (orig_me->defined_class == 0) {
+	VALUE defined_class = find_defined_class_by_owner(me->defined_class, orig_me->owner);
+	VM_ASSERT(RB_TYPE_P(orig_me->owner, T_MODULE));
+	cme = rb_method_entry_complement_defined_class(orig_me, defined_class);
+
+	if (me->def->alias_count == 0) {
+	    RB_OBJ_WRITE(me, &me->def->body.alias.original_me, cme);
+	}
+	else {
+	    method_definition_set((rb_method_entry_t *)me,
+				  method_definition_create(VM_METHOD_TYPE_ALIAS, me->def->original_id),
+				  (void *)cme);
+	}
+    }
+    else {
+	cme = (const rb_callable_method_entry_t *)orig_me;
+    }
+
+    VM_ASSERT(callable_method_entry_p(cme));
+    return cme;
+}
+
+static const rb_callable_method_entry_t *
+refined_method_callable_without_refinement(const rb_callable_method_entry_t *me)
+{
+    const rb_method_entry_t *orig_me = me->def->body.refined.orig_me;
+    const rb_callable_method_entry_t *cme;
+
+    if (orig_me->defined_class == 0) {
+	cme = NULL;
+	rb_notimplement();
+    }
+    else {
+	cme = (const rb_callable_method_entry_t *)orig_me;
+    }
+
+    VM_ASSERT(callable_method_entry_p(cme));
+    return cme;
+}
+
 static
 #ifdef _MSC_VER
 __forceinline
@@ -1904,12 +1963,16 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
     int enable_fastpath = 1;
     rb_call_info_t ci_temp;
 
+    VM_ASSERT(callable_method_entry_p(ci->me));
+
   start_method_dispatch:
+    VM_ASSERT(callable_method_entry_p(ci->me));
     if (ci->me != 0) {
 	if (LIKELY(METHOD_ENTRY_VISI(ci->me) == METHOD_VISI_PUBLIC && METHOD_ENTRY_SAFE(ci->me) == 0)) {
 	    VALUE klass;
 
 	  normal_method_dispatch:
+	    VM_ASSERT(callable_method_entry_p(ci->me));
 	    switch (ci->me->def->type) {
 	      case VM_METHOD_TYPE_ISEQ:{
 		CI_SET_FASTPATH(ci, vm_call_iseq_setup, enable_fastpath);
@@ -1943,7 +2006,7 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 		return vm_call_bmethod(th, cfp, ci);
 	      }
 	      case VM_METHOD_TYPE_ZSUPER:{
-		klass = ci->me->klass;
+		klass = ci->me->owner;
 		klass = RCLASS_ORIGIN(klass);
 	      zsuper_method_dispatch:
 		klass = RCLASS_SUPER(klass);
@@ -1954,7 +2017,7 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 		ci_temp = *ci;
 		ci = &ci_temp;
 
-		ci->me = rb_method_entry(klass, ci->mid, &ci->defined_class);
+		ci->me = rb_callable_method_entry(klass, ci->mid);
 
 		if (ci->me != 0) {
 		    goto normal_method_dispatch;
@@ -1963,11 +2026,9 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 		    goto start_method_dispatch;
 		}
 	      }
-	      case VM_METHOD_TYPE_ALIAS: {
-		ci->me = ci->me->def->body.alias.original_me;
-		ci->defined_class = find_defined_class_by_owner(ci->defined_class, ci->me->klass /* owner */);
+	      case VM_METHOD_TYPE_ALIAS:
+		ci->me = aliased_callable_method_entry(ci->me);
 		goto normal_method_dispatch;
-	      }
 	      case VM_METHOD_TYPE_OPTIMIZED:{
 		switch (ci->me->def->body.optimize_type) {
 		  case OPTIMIZED_METHOD_TYPE_SEND:
@@ -1987,26 +2048,24 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 	      case VM_METHOD_TYPE_REFINED:{
 		const rb_cref_t *cref = rb_vm_get_cref(cfp->ep);
 		VALUE refinements = cref ? CREF_REFINEMENTS(cref) : Qnil;
-		VALUE refinement, defined_class;
-		rb_method_entry_t *me;
+		VALUE refinement;
+		const rb_callable_method_entry_t *me;
 
-		refinement = find_refinement(refinements,
-					     ci->defined_class);
+		refinement = find_refinement(refinements, ci->me->owner);
 		if (NIL_P(refinement)) {
 		    goto no_refinement_dispatch;
 		}
-		me = rb_method_entry(refinement, ci->mid, &defined_class);
+		me = rb_callable_method_entry(refinement, ci->mid);
 		if (me) {
 		    if (ci->call == vm_call_super_method) {
 			const rb_control_frame_t *top_cfp = current_method_entry(th, cfp);
-			const rb_method_entry_t *top_me = rb_vm_frame_method_entry(top_cfp);
+			const rb_callable_method_entry_t *top_me = rb_vm_frame_method_entry(top_cfp);
 
 			if (top_me && rb_method_definition_eq(me->def, top_me->def)) {
 			    goto no_refinement_dispatch;
 			}
 		    }
 		    ci->me = me;
-		    ci->defined_class = defined_class;
 		    if (me->def->type != VM_METHOD_TYPE_REFINED) {
 			goto start_method_dispatch;
 		    }
@@ -2018,14 +2077,15 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 
 	      no_refinement_dispatch:
 		if (ci->me->def->body.refined.orig_me) {
-		    ci->me = ci->me->def->body.refined.orig_me;
+		    ci->me = refined_method_callable_without_refinement(ci->me);
+
 		    if (UNDEFINED_METHOD_ENTRY_P(ci->me)) {
 			ci->me = 0;
 		    }
 		    goto start_method_dispatch;
 		}
 		else {
-		    klass = ci->me->klass;
+		    klass = ci->me->owner;
 		    goto zsuper_method_dispatch;
 		}
 	      }
@@ -2045,7 +2105,7 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 	    }
 	    else if (!(ci->flag & VM_CALL_OPT_SEND) && (METHOD_ENTRY_VISI(ci->me) == METHOD_VISI_PROTECTED)) {
 		enable_fastpath = 0;
-		if (!rb_obj_is_kind_of(cfp->self, ci->defined_class)) {
+		if (!rb_obj_is_kind_of(cfp->self, ci->me->defined_class)) {
 		    ci->aux.method_missing_reason = MISSING_PROTECTED;
 		    return vm_call_method_missing(th, cfp, ci);
 		}
@@ -2113,7 +2173,7 @@ vm_super_outside(void)
 static int
 vm_search_superclass(rb_control_frame_t *reg_cfp, rb_iseq_t *iseq, VALUE sigval, rb_call_info_t *ci)
 {
-    const rb_method_entry_t *me;
+    const rb_callable_method_entry_t *me;
 
     while (iseq && !iseq->klass) {
 	iseq = iseq->parent_iseq;
@@ -2157,10 +2217,11 @@ vm_search_superclass(rb_control_frame_t *reg_cfp, rb_iseq_t *iseq, VALUE sigval,
 	}
 
 	ci->mid = me->def->original_id;
-	ci->klass = vm_search_normal_superclass(lcfp->klass);
+	ci->klass = vm_search_normal_superclass(me->defined_class);
     }
     else {
-	ci->klass = vm_search_normal_superclass(reg_cfp->klass);
+	me = rb_vm_frame_method_entry(reg_cfp);
+	ci->klass = vm_search_normal_superclass(me->defined_class);
     }
 
     return 0;
@@ -2172,11 +2233,13 @@ vm_search_super_method(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_inf
     VALUE current_defined_class;
     rb_iseq_t *iseq = GET_ISEQ();
     VALUE sigval = TOPN(ci->argc);
+    const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(reg_cfp);
 
-    current_defined_class = GET_CFP()->klass;
-    if (NIL_P(current_defined_class)) {
+    if (!me) {
 	vm_super_outside();
     }
+
+    current_defined_class = me->defined_class;
 
     if (!NIL_P(RCLASS_REFINED_CLASS(current_defined_class))) {
 	current_defined_class = RCLASS_REFINED_CLASS(current_defined_class);
@@ -2212,7 +2275,7 @@ vm_search_super_method(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_inf
     }
 
     /* TODO: use inline cache */
-    ci->me = rb_method_entry(ci->klass, ci->mid, &ci->defined_class);
+    ci->me = rb_callable_method_entry(ci->klass, ci->mid);
     ci->call = vm_call_super_method;
 
     while (iseq && !iseq->klass) {
@@ -2220,8 +2283,8 @@ vm_search_super_method(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_inf
     }
 
     if (ci->me && ci->me->def->type == VM_METHOD_TYPE_ISEQ && def_iseq_ptr(ci->me->def) == iseq) {
-	ci->klass = RCLASS_SUPER(ci->defined_class);
-	ci->me = rb_method_entry(ci->klass, ci->mid, &ci->defined_class);
+	ci->klass = RCLASS_SUPER(ci->me->defined_class);
+	ci->me = rb_callable_method_entry(ci->klass, ci->mid);
     }
 }
 
@@ -2242,15 +2305,14 @@ block_proc_is_lambda(const VALUE procval)
 }
 
 static inline VALUE
-vm_yield_with_cfunc(rb_thread_t *th, const rb_block_t *block,
-		    VALUE self, VALUE defined_class,
+vm_yield_with_cfunc(rb_thread_t *th, const rb_block_t *block, VALUE self,
 		    int argc, const VALUE *argv,
 		    const rb_block_t *blockargptr)
 {
     const struct vm_ifunc *ifunc = (struct vm_ifunc *)block->iseq;
     VALUE val, arg, blockarg;
     int lambda = block_proc_is_lambda(block->proc);
-    const rb_method_entry_t *me = th->passed_bmethod_me;
+    const rb_callable_method_entry_t *me = th->passed_bmethod_me;
     th->passed_bmethod_me = NULL;
 
     if (lambda) {
@@ -2276,8 +2338,7 @@ vm_yield_with_cfunc(rb_thread_t *th, const rb_block_t *block,
     }
 
     vm_push_frame(th, (rb_iseq_t *)ifunc, VM_FRAME_MAGIC_IFUNC,
-		  self, defined_class,
-		  VM_ENVVAL_PREV_EP_PTR(block->ep), (VALUE)me,
+		  self, VM_ENVVAL_PREV_EP_PTR(block->ep), (VALUE)me,
 		  0, th->cfp->sp, 1, 0);
 
     val = (*ifunc->func) (arg, ifunc->data, argc, argv, blockarg);
@@ -2332,7 +2393,6 @@ vm_invoke_block(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci
 	vm_push_frame(th, iseq,
 		      is_lambda ? VM_FRAME_MAGIC_LAMBDA : VM_FRAME_MAGIC_BLOCK,
 		      block->self,
-		      block->klass,
 		      VM_ENVVAL_PREV_EP_PTR(block->ep), 0,
 		      iseq->iseq_encoded + opt_pc,
 		      rsp + arg_size,
@@ -2343,7 +2403,7 @@ vm_invoke_block(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci
     else {
 	VALUE val;
 	CALLER_SETUP_ARG(th->cfp, ci);
-	val = vm_yield_with_cfunc(th, block, block->self, block->klass,
+	val = vm_yield_with_cfunc(th, block, block->self,
 				  ci->argc, STACK_ADDR_FROM_TOP(ci->argc), 0);
 	POPN(ci->argc); /* TODO: should put before C/yield? */
 	return val;
@@ -2461,7 +2521,7 @@ vm_defined(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_num_t op_type, VALUE
 	break;
       case DEFINED_METHOD:{
 	VALUE klass = CLASS_OF(v);
-	const rb_method_entry_t *me = rb_method_entry(klass, SYM2ID(obj), 0);
+	const rb_method_entry_t *me = rb_method_entry(klass, SYM2ID(obj));
 
 	if (me) {
 	    switch (METHOD_ENTRY_VISI(me)) {

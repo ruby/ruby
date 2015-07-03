@@ -914,8 +914,7 @@ defineclass
     }
 
     /* enter scope */
-    vm_push_frame(th, class_iseq, VM_FRAME_MAGIC_CLASS,
-		  klass, 0,
+    vm_push_frame(th, class_iseq, VM_FRAME_MAGIC_CLASS, klass,
 		  VM_ENVVAL_BLOCK_PTR(GET_BLOCK_PTR()),
 		  (VALUE)vm_cref_push(th, klass, NULL),
 		  class_iseq->iseq_encoded, GET_SP(),
