@@ -55,7 +55,8 @@ class TestEnumerable < Test::Unit::TestCase
 
     bug5801 = '[ruby-dev:45041]'
     @empty.grep(//)
-    assert_nothing_raised(bug5801) {100.times {@empty.block.call}}
+    block = @empty.block
+    assert_nothing_raised(bug5801) {100.times {block.call}}
 
     a = []
     lambda = ->(x, i) {a << [x, i]}
@@ -173,6 +174,21 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal(1, @obj.first)
     assert_equal([1, 2, 3], @obj.first(3))
     assert_nil(@empty.first)
+
+    bug5801 = '[ruby-dev:45041]'
+    assert_in_out_err([], <<-'end;', [], /unexpected break/)
+      empty = Object.new
+      class << empty
+        attr_reader :block
+        include Enumerable
+        def each(&block)
+          @block = block
+          self
+        end
+      end
+      empty.first
+      empty.block.call
+    end;
   end
 
   def test_sort
@@ -396,7 +412,8 @@ class TestEnumerable < Test::Unit::TestCase
 
     bug5801 = '[ruby-dev:45040]'
     @empty.take_while {true}
-    assert_nothing_raised(bug5801) {100.times {@empty.block.call}}
+    block = @empty.block
+    assert_nothing_raised(bug5801) {100.times {block.call}}
   end
 
   def test_drop
