@@ -42,15 +42,13 @@ static VALUE send_internal(int argc, const VALUE *argv, VALUE recv, call_type sc
 static VALUE vm_call0_body(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv);
 
 static VALUE
-vm_call0(rb_thread_t* th, VALUE recv, ID id, int argc, const VALUE *argv,
-	 const rb_method_entry_t *me, VALUE defined_class)
+vm_call0(rb_thread_t* th, VALUE recv, ID id, int argc, const VALUE *argv, const rb_callable_method_entry_t *me)
 {
     rb_call_info_t ci_entry, *ci = &ci_entry;
 
     ci->flag = 0;
     ci->mid = id;
     ci->recv = recv;
-    ci->defined_class = defined_class;
     ci->argc = argc;
     ci->me = me;
     ci->kw_arg = NULL;
@@ -64,11 +62,11 @@ vm_call0_cfunc(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
 {
     VALUE val;
 
-    RUBY_DTRACE_CMETHOD_ENTRY_HOOK(th, ci->defined_class, ci->mid);
-    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, ci->recv, ci->mid, ci->defined_class, Qnil);
+    RUBY_DTRACE_CMETHOD_ENTRY_HOOK(th, ci->me->owner, ci->mid);
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, ci->recv, ci->mid, ci->me->owner, Qnil);
     {
 	rb_control_frame_t *reg_cfp = th->cfp;
-	const rb_method_entry_t *me = ci->me;
+	const rb_callable_method_entry_t *me = ci->me;
 	const rb_method_cfunc_t *cfunc = &me->def->body.cfunc;
 	int len = cfunc->argc;
 	VALUE recv = ci->recv;
@@ -95,8 +93,8 @@ vm_call0_cfunc(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
 	    vm_pop_frame(th);
 	}
     }
-    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, ci->recv, ci->mid, ci->defined_class, val);
-    RUBY_DTRACE_CMETHOD_RETURN_HOOK(th, ci->defined_class, ci->mid);
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, ci->recv, ci->mid, ci->me->owner, val);
+    RUBY_DTRACE_CMETHOD_RETURN_HOOK(th, ci->me->owner, ci->mid);
 
     return val;
 }
@@ -105,21 +103,20 @@ static VALUE
 vm_call0_cfunc_with_frame(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
 {
     VALUE val;
-    const rb_method_entry_t *me = ci->me;
+    const rb_callable_method_entry_t *me = ci->me;
     const rb_method_cfunc_t *cfunc = &me->def->body.cfunc;
     int len = cfunc->argc;
     VALUE recv = ci->recv;
-    VALUE defined_class = ci->defined_class;
     int argc = ci->argc;
     ID mid = ci->mid;
     rb_block_t *blockptr = ci->blockptr;
 
-    RUBY_DTRACE_CMETHOD_ENTRY_HOOK(th, defined_class, mid);
-    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, recv, mid, defined_class, Qnil);
+    RUBY_DTRACE_CMETHOD_ENTRY_HOOK(th, me->owner, mid);
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, recv, mid, me->owner, Qnil);
     {
 	rb_control_frame_t *reg_cfp = th->cfp;
 
-	vm_push_frame(th, 0, VM_FRAME_MAGIC_CFUNC, recv, defined_class,
+	vm_push_frame(th, 0, VM_FRAME_MAGIC_CFUNC, recv, 
 		      VM_ENVVAL_BLOCK_PTR(blockptr), (VALUE)me,
 		      0, reg_cfp->sp, 1, 0);
 
@@ -134,8 +131,8 @@ vm_call0_cfunc_with_frame(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv
 	VM_PROFILE_UP(3);
 	vm_pop_frame(th);
     }
-    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, recv, mid, defined_class, val);
-    RUBY_DTRACE_CMETHOD_RETURN_HOOK(th, defined_class, mid);
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, recv, mid, me->owner, val);
+    RUBY_DTRACE_CMETHOD_RETURN_HOOK(th, me->owner, mid);
 
     return val;
 }
@@ -198,14 +195,16 @@ vm_call0_body(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
       case VM_METHOD_TYPE_REFINED:
 	{
 	    const rb_method_type_t type = ci->me->def->type;
+	    VALUE super_class;
+
 	    if (type == VM_METHOD_TYPE_REFINED && ci->me->def->body.refined.orig_me) {
-		ci->me = ci->me->def->body.refined.orig_me;
+		ci->me = refined_method_callable_without_refinement(ci->me);
 		goto again;
 	    }
 
-	    ci->defined_class = RCLASS_SUPER(ci->defined_class);
+	    super_class = RCLASS_SUPER(ci->me->defined_class);
 
-	    if (!ci->defined_class || !(ci->me = rb_method_entry(ci->defined_class, ci->mid, &ci->defined_class))) {
+	    if (!super_class || !(ci->me = rb_callable_method_entry(super_class, ci->mid))) {
 		enum method_missing_reason ex = (type == VM_METHOD_TYPE_ZSUPER) ? MISSING_SUPER : 0;
 		ret = method_missing(ci->recv, ci->mid, ci->argc, argv, ex);
 		goto success;
@@ -214,11 +213,8 @@ vm_call0_body(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
 	    goto again;
 	}
       case VM_METHOD_TYPE_ALIAS:
-	{
-	    ci->me = ci->me->def->body.alias.original_me;
-	    ci->defined_class = find_defined_class_by_owner(ci->defined_class, ci->me->klass);
-	    goto again;
-	}
+	ci->me = aliased_callable_method_entry(ci->me);
+	goto again;
       case VM_METHOD_TYPE_MISSING:
 	{
 	    VALUE new_args = rb_ary_new4(ci->argc, argv);
@@ -258,10 +254,9 @@ vm_call0_body(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
 }
 
 VALUE
-rb_vm_call(rb_thread_t *th, VALUE recv, VALUE id, int argc, const VALUE *argv,
-	   const rb_method_entry_t *me, VALUE defined_class)
+rb_vm_call(rb_thread_t *th, VALUE recv, VALUE id, int argc, const VALUE *argv, const rb_callable_method_entry_t *me)
 {
-    return vm_call0(th, recv, id, argc, argv, me, defined_class);
+    return vm_call0(th, recv, id, argc, argv, me);
 }
 
 static inline VALUE
@@ -270,22 +265,24 @@ vm_call_super(rb_thread_t *th, int argc, const VALUE *argv)
     VALUE recv = th->cfp->self;
     VALUE klass;
     ID id;
-    rb_method_entry_t *me;
     rb_control_frame_t *cfp = th->cfp;
+    const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(cfp);
 
-    if (RUBY_VM_NORMAL_ISEQ_P(cfp->iseq) || NIL_P(cfp->klass)) {
+    if (RUBY_VM_NORMAL_ISEQ_P(cfp->iseq)) {
 	rb_bug("vm_call_super: should not be reached");
     }
 
-    klass = RCLASS_ORIGIN(cfp->klass);
+    klass = RCLASS_ORIGIN(me->defined_class);
     klass = RCLASS_SUPER(klass);
-    id = rb_vm_frame_method_entry(cfp)->def->original_id;
-    me = rb_method_entry(klass, id, &klass);
+    id = me->def->original_id;
+    me = rb_callable_method_entry(klass, id);
+
     if (!me) {
 	return method_missing(recv, id, argc, argv, MISSING_SUPER);
     }
-
-    return vm_call0(th, recv, id, argc, argv, me, klass);
+    else {
+	return vm_call0(th, recv, id, argc, argv, me);
+    }
 }
 
 VALUE
@@ -316,9 +313,8 @@ stack_check(void)
     }
 }
 
-static inline rb_method_entry_t *
-    rb_search_method_entry(VALUE recv, ID mid, VALUE *defined_class_ptr);
-static inline enum method_missing_reason rb_method_call_status(rb_thread_t *th, const rb_method_entry_t *me, call_type scope, VALUE self);
+static inline const rb_callable_method_entry_t *rb_search_method_entry(VALUE recv, ID mid);
+static inline enum method_missing_reason rb_method_call_status(rb_thread_t *th, const rb_callable_method_entry_t *me, call_type scope, VALUE self);
 
 /*!
  * \internal
@@ -339,9 +335,7 @@ static inline VALUE
 rb_call0(VALUE recv, ID mid, int argc, const VALUE *argv,
 	 call_type scope, VALUE self)
 {
-    VALUE defined_class;
-    rb_method_entry_t *me =
-	rb_search_method_entry(recv, mid, &defined_class);
+    const rb_callable_method_entry_t *me = rb_search_method_entry(recv, mid);
     rb_thread_t *th = GET_THREAD();
     enum method_missing_reason call_status = rb_method_call_status(th, me, scope, self);
 
@@ -349,7 +343,7 @@ rb_call0(VALUE recv, ID mid, int argc, const VALUE *argv,
 	return method_missing(recv, mid, argc, argv, call_status);
     }
     stack_check();
-    return vm_call0(th, recv, mid, argc, argv, me, defined_class);
+    return vm_call0(th, recv, mid, argc, argv, me);
 }
 
 struct rescue_funcall_args {
@@ -384,13 +378,12 @@ check_funcall_failed(struct rescue_funcall_args *args, VALUE e)
 static int
 check_funcall_respond_to(rb_thread_t *th, VALUE klass, VALUE recv, ID mid)
 {
-    VALUE defined_class;
-    const rb_method_entry_t *me = rb_method_entry(klass, idRespond_to, &defined_class);
+    const rb_callable_method_entry_t *me = rb_callable_method_entry(klass, idRespond_to);
 
     if (me && !METHOD_ENTRY_BASIC(me)) {
 	const rb_block_t *passed_block = th->passed_block;
 	VALUE args[2], result;
-	int arity = rb_method_entry_arity(me);
+	int arity = rb_method_entry_arity((const rb_method_entry_t *)me);
 
 	if (arity > 2)
 	    rb_raise(rb_eArgError, "respond_to? must accept 1 or 2 arguments (requires %d)", arity);
@@ -399,7 +392,7 @@ check_funcall_respond_to(rb_thread_t *th, VALUE klass, VALUE recv, ID mid)
 
 	args[0] = ID2SYM(mid);
 	args[1] = Qtrue;
-	result = vm_call0(th, recv, idRespond_to, arity, args, me, defined_class);
+	result = vm_call0(th, recv, idRespond_to, arity, args, me);
 	th->passed_block = passed_block;
 	if (!RTEST(result)) {
 	    return FALSE;
@@ -409,7 +402,7 @@ check_funcall_respond_to(rb_thread_t *th, VALUE klass, VALUE recv, ID mid)
 }
 
 static int
-check_funcall_callable(rb_thread_t *th, const rb_method_entry_t *me)
+check_funcall_callable(rb_thread_t *th, const rb_callable_method_entry_t *me)
 {
     return rb_method_call_status(th, me, CALL_FCALL, th->cfp->self) == MISSING_NONE;
 }
@@ -438,19 +431,18 @@ VALUE
 rb_check_funcall(VALUE recv, ID mid, int argc, const VALUE *argv)
 {
     VALUE klass = CLASS_OF(recv);
-    const rb_method_entry_t *me;
+    const rb_callable_method_entry_t *me;
     rb_thread_t *th = GET_THREAD();
-    VALUE defined_class;
 
     if (!check_funcall_respond_to(th, klass, recv, mid))
 	return Qundef;
 
-    me = rb_search_method_entry(recv, mid, &defined_class);
+    me = rb_search_method_entry(recv, mid);
     if (!check_funcall_callable(th, me)) {
 	return check_funcall_missing(th, klass, recv, mid, argc, argv);
     }
     stack_check();
-    return vm_call0(th, recv, mid, argc, argv, me, defined_class);
+    return vm_call0(th, recv, mid, argc, argv, me);
 }
 
 VALUE
@@ -458,21 +450,20 @@ rb_check_funcall_with_hook(VALUE recv, ID mid, int argc, const VALUE *argv,
 			   rb_check_funcall_hook *hook, VALUE arg)
 {
     VALUE klass = CLASS_OF(recv);
-    const rb_method_entry_t *me;
+    const rb_callable_method_entry_t *me;
     rb_thread_t *th = GET_THREAD();
-    VALUE defined_class;
 
     if (!check_funcall_respond_to(th, klass, recv, mid))
 	return Qundef;
 
-    me = rb_search_method_entry(recv, mid, &defined_class);
+    me = rb_search_method_entry(recv, mid);
     if (!check_funcall_callable(th, me)) {
 	(*hook)(FALSE, recv, mid, argc, argv, arg);
 	return check_funcall_missing(th, klass, recv, mid, argc, argv);
     }
     stack_check();
     (*hook)(TRUE, recv, mid, argc, argv, arg);
-    return vm_call0(th, recv, mid, argc, argv, me, defined_class);
+    return vm_call0(th, recv, mid, argc, argv, me);
 }
 
 static const char *
@@ -511,8 +502,8 @@ rb_type_str(enum ruby_value_type type)
 #undef type_case
 }
 
-static inline rb_method_entry_t *
-rb_search_method_entry(VALUE recv, ID mid, VALUE *defined_class_ptr)
+static inline const rb_callable_method_entry_t *
+rb_search_method_entry(VALUE recv, ID mid)
 {
     VALUE klass = CLASS_OF(recv);
 
@@ -550,11 +541,11 @@ rb_search_method_entry(VALUE recv, ID mid, VALUE *defined_class_ptr)
                          rb_id2str(mid), type, (void *)recv, flags);
         }
     }
-    return rb_method_entry(klass, mid, defined_class_ptr);
+    return rb_callable_method_entry(klass, mid);
 }
 
 static inline enum method_missing_reason
-rb_method_call_status(rb_thread_t *th, const rb_method_entry_t *me, call_type scope, VALUE self)
+rb_method_call_status(rb_thread_t *th, const rb_callable_method_entry_t *me, call_type scope, VALUE self)
 {
     VALUE klass;
     ID oid;
@@ -565,10 +556,11 @@ rb_method_call_status(rb_thread_t *th, const rb_method_entry_t *me, call_type sc
 	return scope == CALL_VCALL ? MISSING_VCALL : MISSING_NOENTRY;
     }
     if (me->def->type == VM_METHOD_TYPE_REFINED) {
-	me = rb_resolve_refined_method(Qnil, me, NULL);
+	me = rb_resolve_refined_method_callable(Qnil, me);
 	if (UNDEFINED_METHOD_ENTRY_P(me)) goto undefined;
     }
-    klass = me->klass;
+
+    klass = me->owner;
     oid = me->def->original_id;
     visi = METHOD_ENTRY_VISI(me);
 
@@ -1306,7 +1298,6 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_
 	    }
 	}
 	vm_set_eval_stack(th, iseqval, cref, base_block);
-	th->cfp->klass = CLASS_OF(base_block->self);
 	RB_GC_GUARD(crefval);
 
 	if (0) {		/* for debug */

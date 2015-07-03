@@ -1119,10 +1119,10 @@ method_entry_i(st_data_t key, st_data_t value, st_data_t data)
     rb_method_visibility_t type;
 
     if (me->def->type == VM_METHOD_TYPE_REFINED) {
-	VALUE klass = me->klass;
-	me = rb_resolve_refined_method(Qnil, me, NULL);
+	VALUE owner = me->owner;
+	me = rb_resolve_refined_method(Qnil, me);
 	if (!me) return ST_CONTINUE;
-	if (!arg->recur && me->klass != klass) return ST_CONTINUE;
+	if (!arg->recur && me->owner != owner) return ST_CONTINUE;
     }
     if (!st_lookup(arg->list, key, 0)) {
 	if (UNDEFINED_METHOD_ENTRY_P(me)) {
@@ -1718,7 +1718,7 @@ rb_define_attr(VALUE klass, const char *name, int read, int write)
 int
 rb_obj_basic_to_s_p(VALUE obj)
 {
-    const rb_method_entry_t *me = rb_method_entry(CLASS_OF(obj), rb_intern("to_s"), 0);
+    const rb_method_entry_t *me = rb_method_entry(CLASS_OF(obj), rb_intern("to_s"));
     if (me && me->def && me->def->type == VM_METHOD_TYPE_CFUNC &&
 	me->def->body.cfunc.func == rb_any_to_s)
 	return 1;

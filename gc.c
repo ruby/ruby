@@ -2105,6 +2105,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	if (FL_TEST(obj, RICLASS_IS_ORIGIN)) {
 	    rb_free_m_tbl(RCLASS_M_TBL(obj));
 	}
+	rb_free_m_tbl(RCLASS_CALLABLE_M_TBL(obj));
 	if (RCLASS_EXT(obj)->subclasses) {
 	    rb_class_detach_subclasses(obj);
 	    RCLASS_EXT(obj)->subclasses = NULL;
@@ -3926,7 +3927,8 @@ mark_method_entry(rb_objspace_t *objspace, const rb_method_entry_t *me)
 {
     const rb_method_definition_t *def = me->def;
 
-    gc_mark(objspace, me->klass);
+    gc_mark(objspace, me->owner);
+    gc_mark(objspace, me->defined_class);
 
     if (def) {
 	switch (def->type) {
@@ -3946,6 +3948,7 @@ mark_method_entry(rb_objspace_t *objspace, const rb_method_entry_t *me)
 	    return;
 	  case VM_METHOD_TYPE_REFINED:
 	    gc_mark(objspace, (VALUE)def->body.refined.orig_me);
+	    gc_mark(objspace, (VALUE)def->body.refined.owner);
 	    break;
 	  case VM_METHOD_TYPE_CFUNC:
 	  case VM_METHOD_TYPE_ZSUPER:
@@ -4324,6 +4327,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 	if (FL_TEST(obj, RICLASS_IS_ORIGIN)) {
 	    mark_m_tbl(objspace, RCLASS_M_TBL(obj));
 	}
+	mark_m_tbl(objspace, RCLASS_CALLABLE_M_TBL(obj));
 	if (!RCLASS_EXT(obj)) break;
 	gc_mark(objspace, RCLASS_SUPER((VALUE)obj));
 	break;
@@ -8953,7 +8957,7 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 	  if (imemo_type(obj) == imemo_ment) {
 	      const rb_method_entry_t *me = &RANY(obj)->as.imemo.ment;
 	      snprintf(buff, buff_size, "%s (called_id: %s, type: %s, alias: %d, class: %s)", buff,
-		       rb_id2name(me->called_id), method_type_name(me->def->type), me->def->alias_count, obj_info(me->klass));
+		       rb_id2name(me->called_id), method_type_name(me->def->type), me->def->alias_count, obj_info(me->defined_class));
 	  }
       }
       default:

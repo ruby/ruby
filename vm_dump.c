@@ -36,7 +36,7 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
     const char *magic, *iseq_name = "-", *selfstr = "-", *biseq_name = "-";
     VALUE tmp;
 
-    const rb_method_entry_t *me;
+    const rb_callable_method_entry_t *me;
 
     if (cfp->block_iseq != 0 && !RUBY_VM_IFUNC_P(cfp->block_iseq)) {
 	biseq_name = "";	/* RSTRING(cfp->block_iseq->location.label)->ptr; */

@@ -456,6 +456,7 @@ struct rb_classext_struct {
     struct st_table *iv_index_tbl;
     struct st_table *iv_tbl;
     struct st_table *const_tbl;
+    struct st_table *callable_m_tbl;
     rb_subclass_entry_t *subclasses;
     rb_subclass_entry_t **parent_subclasses;
     /**
@@ -477,6 +478,7 @@ void rb_class_remove_from_super_subclasses(VALUE);
 #define RCLASS_IV_TBL(c) (RCLASS_EXT(c)->iv_tbl)
 #define RCLASS_CONST_TBL(c) (RCLASS_EXT(c)->const_tbl)
 #define RCLASS_M_TBL(c) (RCLASS(c)->m_tbl)
+#define RCLASS_CALLABLE_M_TBL(c) (RCLASS_EXT(c)->callable_m_tbl)
 #define RCLASS_IV_INDEX_TBL(c) (RCLASS_EXT(c)->iv_index_tbl)
 #define RCLASS_ORIGIN(c) (RCLASS_EXT(c)->origin_)
 #define RCLASS_REFINED_CLASS(c) (RCLASS_EXT(c)->refined_class)

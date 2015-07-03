@@ -748,8 +748,8 @@ rb_raise_jump(VALUE mesg, VALUE cause)
 {
     rb_thread_t *th = GET_THREAD();
     const rb_control_frame_t *cfp = th->cfp;
-    const rb_method_entry_t *me = rb_vm_frame_method_entry(cfp);
-    VALUE klass = me->klass;
+    const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(cfp);
+    VALUE klass = me->owner;
     VALUE self = cfp->self;
     ID mid = me->called_id;
 
@@ -922,7 +922,7 @@ rb_ensure(VALUE (*b_proc)(ANYARGS), VALUE data1, VALUE (*e_proc)(ANYARGS), VALUE
     return result;
 }
 
-static const rb_method_entry_t *
+static const rb_callable_method_entry_t *
 method_entry_of_iseq(const rb_control_frame_t *cfp, const rb_iseq_t *iseq)
 {
     rb_thread_t *th = GET_THREAD();
@@ -939,9 +939,9 @@ method_entry_of_iseq(const rb_control_frame_t *cfp, const rb_iseq_t *iseq)
 static ID
 frame_func_id(rb_control_frame_t *cfp)
 {
-    const rb_method_entry_t *me_local;
     const rb_iseq_t *iseq = cfp->iseq;
-    const rb_method_entry_t *me = rb_vm_frame_method_entry(cfp);
+    const rb_callable_method_entry_t *me_local;
+    const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(cfp);
 
     if (me) {
 	return me->def->original_id;
@@ -970,9 +970,9 @@ frame_func_id(rb_control_frame_t *cfp)
 static ID
 frame_called_id(rb_control_frame_t *cfp)
 {
-    const rb_method_entry_t *me_local;
     const rb_iseq_t *iseq = cfp->iseq;
-    const rb_method_entry_t *me = rb_vm_frame_method_entry(cfp);
+    const rb_callable_method_entry_t *me_local;
+    const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(cfp);
 
     if (me) {
 	return me->called_id;
