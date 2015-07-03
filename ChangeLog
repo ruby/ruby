@@ -1,3 +1,13 @@
+Sat Jul  4 04:35:51 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (rb_method_call_status): resolve refined method entry
+	  to check if undefined.  [ruby-core:69064] [Bug #11117]
+
+Sat Jul  4 04:35:51 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (rb_method_call_status): undefined refined method is
+	  not callable unless using.  [ruby-core:69064] [Bug #11117]
+
 Wed Jul  1 04:16:56 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.gemspec: Fix require paths for released gem.
