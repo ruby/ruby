@@ -828,6 +828,7 @@ static VALUE enum_take(VALUE obj, VALUE n);
  *    %w[foo bar baz].first(2)  #=> ["foo", "bar"]
  *    %w[foo bar baz].first(10) #=> ["foo", "bar", "baz"]
  *    [].first                  #=> nil
+ *    [].first(10)              #=> []
  *
  */
 
