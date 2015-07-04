@@ -50,7 +50,7 @@ Fri Jul 03 20:05:10 2015  Koichi Sasada  <ko1@atdot.net>
 	  rb_callable_method_entry_t data because it is completely same data.
 	  In this case, rb_method_entry_t::owner == rb_method_entry_t::defined_class.
 
-	  For example, there are classes C and D, and incldues M,
+	  For example, there are classes C and D, and includes M,
 
 	    class C; include M; end
 	    class D; include M; end
@@ -58,7 +58,7 @@ Fri Jul 03 20:05:10 2015  Koichi Sasada  <ko1@atdot.net>
 	  then, two T_ICLASS objects for C's super class and D's super class
 	  will be created.
 
-	  When C.new.foo is called, then M#foo is searcheed and
+	  When C.new.foo is called, then M#foo is searched and
 	  rb_callable_method_t data is used by VM to invoke M#foo.
 
 	  rb_method_entry_t data is only one for M#foo.
@@ -99,13 +99,13 @@ Fri Jul 03 20:05:10 2015  Koichi Sasada  <ko1@atdot.net>
 	* internal.h: add rb_classext_struct::callable_m_tbl to cache
 	  rb_callable_method_entry_t data.
 
-	  We need to consider abotu this field again because it is only
+	  We need to consider about this field again because it is only
 	  active for T_ICLASS.
 
 	* class.c (method_entry_i): ditto.
 
 	* class.c (rb_define_attr): rb_method_entry() does not takes
-	  defiend_class_ptr.
+	  defined_class_ptr.
 
 	* gc.c (mark_method_entry): mark RCLASS_CALLABLE_M_TBL() for T_ICLASS.
 
