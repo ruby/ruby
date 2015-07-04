@@ -26,6 +26,7 @@
 #include "internal.h"
 #include "ruby/io.h"
 #include "ruby/util.h"
+#include "ruby/thread.h"
 #include "dln.h"
 
 #ifdef HAVE_UNISTD_H
@@ -5599,11 +5600,19 @@ rb_path_check(const char *path)
 }
 
 #ifndef _WIN32
+static void *
+loadopen_func(void *arg)
+{
+    return (void *)(VALUE)rb_cloexec_open((const char *)arg, O_RDONLY, 0);
+}
+
 int
 rb_file_load_ok(const char *path)
 {
     int ret = 1;
-    int fd = rb_cloexec_open(path, O_RDONLY, 0);
+    int fd;
+
+    fd = (int)(VALUE)rb_thread_call_without_gvl(loadopen_func, (void *)path, RUBY_UBF_IO, 0);
     if (fd == -1) return 0;
     rb_update_max_fd(fd);
 #if !defined DOSISH

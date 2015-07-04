@@ -1,3 +1,8 @@
+Sat Jul  4 23:08:32 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_file_load_ok): try opening file without gvl not to
+	  lock entire process.  [Bug #11060]
+
 Sat Jul  4 05:00:48 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (pkg_config): split --libs if --libs-only-l option
