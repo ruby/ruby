@@ -1,3 +1,10 @@
+Sat Jul  4 10:42:57 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rubygems/test_case.rb (teardown): do not delete features
+	  loaded from the original load paths, the same libraries should
+	  be loaded again when the same features are required.
+	  [ruby-dev:49031] [Bug #11222]
+
 Sat Jul  4 09:38:52 2015  Eric Wong  <e@80x24.org>
 
 	* vm.c (rb_vm_mark): reduce branches for always-set VM fields
