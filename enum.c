@@ -2350,10 +2350,10 @@ static VALUE
 zip_ary(RB_BLOCK_CALL_FUNC_ARGLIST(val, memoval))
 {
     struct MEMO *memo = (struct MEMO *)memoval;
-    volatile VALUE result = memo->v1;
-    volatile VALUE args = memo->v2;
+    VALUE result = memo->v1;
+    VALUE args = memo->v2;
     long n = memo->u3.cnt++;
-    volatile VALUE tmp;
+    VALUE tmp;
     int i;
 
     tmp = rb_ary_new2(RARRAY_LEN(args) + 1);
@@ -2374,6 +2374,9 @@ zip_ary(RB_BLOCK_CALL_FUNC_ARGLIST(val, memoval))
     else {
 	rb_ary_push(result, tmp);
     }
+
+    RB_GC_GUARD(args);
+
     return Qnil;
 }
 
@@ -2393,9 +2396,9 @@ static VALUE
 zip_i(RB_BLOCK_CALL_FUNC_ARGLIST(val, memoval))
 {
     struct MEMO *memo = (struct MEMO *)memoval;
-    volatile VALUE result = memo->v1;
-    volatile VALUE args = memo->v2;
-    volatile VALUE tmp;
+    VALUE result = memo->v1;
+    VALUE args = memo->v2;
+    VALUE tmp;
     int i;
 
     tmp = rb_ary_new2(RARRAY_LEN(args) + 1);
@@ -2422,6 +2425,9 @@ zip_i(RB_BLOCK_CALL_FUNC_ARGLIST(val, memoval))
     else {
 	rb_ary_push(result, tmp);
     }
+
+    RB_GC_GUARD(args);
+
     return Qnil;
 }
 
