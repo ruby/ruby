@@ -1816,17 +1816,17 @@ rb_vm_mark(void *ptr)
 	list_for_each(&vm->living_threads, th, vmlt_node) {
 	    rb_gc_mark(th->self);
 	}
-	RUBY_MARK_UNLESS_NULL(vm->thgroup_default);
-	RUBY_MARK_UNLESS_NULL(vm->mark_object_ary);
-	RUBY_MARK_UNLESS_NULL(vm->load_path);
-	RUBY_MARK_UNLESS_NULL(vm->load_path_snapshot);
+	rb_gc_mark(vm->thgroup_default);
+	rb_gc_mark(vm->mark_object_ary);
+	rb_gc_mark(vm->load_path);
+	rb_gc_mark(vm->load_path_snapshot);
 	RUBY_MARK_UNLESS_NULL(vm->load_path_check_cache);
-	RUBY_MARK_UNLESS_NULL(vm->expanded_load_path);
-	RUBY_MARK_UNLESS_NULL(vm->loaded_features);
-	RUBY_MARK_UNLESS_NULL(vm->loaded_features_snapshot);
-	RUBY_MARK_UNLESS_NULL(vm->top_self);
+	rb_gc_mark(vm->expanded_load_path);
+	rb_gc_mark(vm->loaded_features);
+	rb_gc_mark(vm->loaded_features_snapshot);
+	rb_gc_mark(vm->top_self);
 	RUBY_MARK_UNLESS_NULL(vm->coverages);
-	RUBY_MARK_UNLESS_NULL(vm->defined_module_hash);
+	rb_gc_mark(vm->defined_module_hash);
 
 	if (vm->loading_table) {
 	    rb_mark_tbl(vm->loading_table);
@@ -1858,9 +1858,9 @@ int
 rb_vm_add_root_module(ID id, VALUE module)
 {
     rb_vm_t *vm = GET_VM();
-    if (vm->defined_module_hash) {
-	rb_hash_aset(vm->defined_module_hash, ID2SYM(id), module);
-    }
+
+    rb_hash_aset(vm->defined_module_hash, ID2SYM(id), module);
+
     return TRUE;
 }
 
