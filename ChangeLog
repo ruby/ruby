@@ -1,3 +1,8 @@
+Sat Jul  4 09:38:52 2015  Eric Wong  <e@80x24.org>
+
+	* vm.c (rb_vm_mark): reduce branches for always-set VM fields
+	  (rb_vm_add_root_module): ditto
+
 Fri Jul 03 20:05:10 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* method.h: introduce rb_callable_method_entry_t to remove
