@@ -221,6 +221,7 @@ class TestEnumerable < Test::Unit::TestCase
 
   def test_sort
     assert_equal([1, 1, 2, 2, 3], @obj.sort)
+    assert_equal([3, 2, 2, 1, 1], @obj.sort {|x, y| y <=> x })
   end
 
   def test_sort_by
