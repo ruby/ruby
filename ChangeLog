@@ -1,3 +1,8 @@
+Sat Jul  4 14:38:43 2015  Eric Wong  <e@80x24.org>
+
+	* enum.c (zip_ary): remove volatile, use RB_GC_GUARD
+	  (zip_i): ditto
+
 Sat Jul  4 10:42:57 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rubygems/test_case.rb (teardown): do not delete features
