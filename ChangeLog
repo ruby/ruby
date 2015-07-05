@@ -1,3 +1,8 @@
+Mon Jul  6 01:18:11 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/lib/test/unit/parallel.rb: make @@project_dir one level
+	  upper as this file had moved one level deeper.
+
 Sun Jul  5 23:54:10 2015  mizokami  <suzunatsu@yahoo.com>
 
 	* lib/optparse.rb: [DOC] Fix typo.
