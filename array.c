@@ -2479,8 +2479,8 @@ rb_ary_sort_bang(VALUE ary)
         if (ARY_EMBED_P(tmp)) {
             if (ARY_SHARED_P(ary)) { /* ary might be destructively operated in the given block */
                 rb_ary_unshare(ary);
+		FL_SET_EMBED(ary);
             }
-            FL_SET_EMBED(ary);
 	    ary_memcpy(ary, 0, ARY_EMBED_LEN(tmp), ARY_EMBED_PTR(tmp));
             ARY_SET_LEN(ary, ARY_EMBED_LEN(tmp));
         }
