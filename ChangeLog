@@ -1,3 +1,10 @@
+Sun Jul  5 10:51:48 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_sort_bang): the original array may not be
+	  embedded even if a substitution array is embedded, as it is
+	  embedded when the original array is short enough but not
+	  embedded.  [ruby-dev:49166] [Bug #11332]
+
 Sun Jul  5 09:31:40 2015  Eric Wong  <e@80x24.org>
 
 	* test/ruby/test_process.rb: test for fd=3 usability in child
