@@ -2048,6 +2048,7 @@ EOS
         a[1].write('.')
         assert_equal ".", b[0].read(1)
       ensure
+        Process.wait(pid) if pid
         a.each(&:close) if a
         b.each(&:close) if b
       end
