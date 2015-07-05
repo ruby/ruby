@@ -1,3 +1,8 @@
+Sun Jul  5 14:49:01 2015  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* README.md: fix a typo pointed out by raoulvdberge.
+	  https://github.com/ruby/ruby/pull/953#commitcomment-11998186
+
 Sun Jul  5 12:56:20 2015  Irvi Firqotul Aini  <viarc7@gmail.com>
 
 	* README.md: Added link HowToReport bugs.
