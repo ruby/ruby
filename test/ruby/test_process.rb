@@ -2029,4 +2029,28 @@ EOS
     }
     assert_equal(th, x)
   end if defined?(fork)
+
+  def test_exec_fd_3_redirect
+    # ensure we can redirect anything to fd=3 in a child process.
+    # fd=3 is a commonly reserved FD for the timer thread pipe in the
+    # parent, but fd=3 is the first FD used by the sd_listen_fds function
+    # for systemd
+    assert_separately(['-', RUBY], <<-INPUT, timeout: 60)
+      ruby = ARGV.shift
+      begin
+        a = IO.pipe
+        b = IO.pipe
+        pid = fork do
+          exec ruby, '-e', 'print IO.for_fd(3).read(1)', 3 => a[0], 1 => b[1]
+        end
+        b[1].close
+        a[0].close
+        a[1].write('.')
+        assert_equal ".", b[0].read(1)
+      ensure
+        a.each(&:close) if a
+        b.each(&:close) if b
+      end
+    INPUT
+  end if defined?(fork)
 end

@@ -1,3 +1,7 @@
+Sun Jul  5 09:31:40 2015  Eric Wong  <e@80x24.org>
+
+	* test/ruby/test_process.rb: test for fd=3 usability in child
+
 Sat Jul  4 19:43:31 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* Add test case for empty array and first method with args.
