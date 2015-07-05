@@ -1,3 +1,228 @@
+Sun Jul  5 14:49:01 2015  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* README.md: fix a typo pointed out by raoulvdberge.
+	  https://github.com/ruby/ruby/pull/953#commitcomment-11998186
+
+Sun Jul  5 12:56:20 2015  Irvi Firqotul Aini  <viarc7@gmail.com>
+
+	* README.md: Added link HowToReport bugs.
+
+Sun Jul  5 10:51:48 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_sort_bang): the original array may not be
+	  embedded even if a substitution array is embedded, as it is
+	  embedded when the original array is short enough but not
+	  embedded.  [ruby-dev:49166] [Bug #11332]
+
+Sun Jul  5 09:31:40 2015  Eric Wong  <e@80x24.org>
+
+	* test/ruby/test_process.rb: test for fd=3 usability in child
+
+Sat Jul  4 19:43:31 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* Add test case for empty array and first method with args.
+	  Patch by @yui-knk [fix GH-955]
+
+Sat Jul  4 19:39:08 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* Add test for `Enumerable#sort` with block. Patch by @yui-knk
+	  [fix GH-954]
+
+Sat Jul  4 14:38:43 2015  Eric Wong  <e@80x24.org>
+
+	* enum.c (zip_ary): remove volatile, use RB_GC_GUARD
+	  (zip_i): ditto
+
+Sat Jul  4 10:42:57 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rubygems/test_case.rb (teardown): do not delete features
+	  loaded from the original load paths, the same libraries should
+	  be loaded again when the same features are required.
+	  [ruby-dev:49031] [Bug #11222]
+
+Sat Jul  4 09:38:52 2015  Eric Wong  <e@80x24.org>
+
+	* vm.c (rb_vm_mark): reduce branches for always-set VM fields
+	  (rb_vm_add_root_module): ditto
+
+Fri Jul 03 20:05:10 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* method.h: introduce rb_callable_method_entry_t to remove
+	  rb_control_frame_t::klass.
+	  [Bug #11278], [Bug #11279]
+
+	  rb_method_entry_t data belong to modules/classes.
+	  rb_method_entry_t::owner points defined module or class.
+
+	    module M
+	      def foo; end
+	    end
+
+	  In this case, owner is M.
+
+	  rb_callable_method_entry_t data belong to only classes.
+	  For modules, MRI creates corresponding T_ICLASS internally.
+	  rb_callable_method_entry_t can also belong to T_ICLASS.
+
+	  rb_callable_method_entry_t::defined_class points T_CLASS or
+	  T_ICLASS.
+	  rb_method_entry_t data for classes (not for modules) are also
+	  rb_callable_method_entry_t data because it is completely same data.
+	  In this case, rb_method_entry_t::owner == rb_method_entry_t::defined_class.
+
+	  For example, there are classes C and D, and includes M,
+
+	    class C; include M; end
+	    class D; include M; end
+
+	  then, two T_ICLASS objects for C's super class and D's super class
+	  will be created.
+
+	  When C.new.foo is called, then M#foo is searched and
+	  rb_callable_method_t data is used by VM to invoke M#foo.
+
+	  rb_method_entry_t data is only one for M#foo.
+	  However, rb_callable_method_entry_t data are two (and can be more).
+	  It is proportional to the number of including (and prepending)
+	  classes (the number of T_ICLASS which point to the module).
+
+	  Now, created rb_callable_method_entry_t are collected when
+	  the original module M was modified. We can think it is a cache.
+
+	  We need to select what kind of method entry data is needed.
+	  To operate definition, then you need to use rb_method_entry_t.
+
+	  You can access them by the following functions.
+
+	  * rb_method_entry(VALUE klass, ID id);
+	  * rb_method_entry_with_refinements(VALUE klass, ID id);
+	  * rb_method_entry_without_refinements(VALUE klass, ID id);
+	  * rb_resolve_refined_method(VALUE refinements, const rb_method_entry_t *me);
+
+	  To invoke methods, then you need to use rb_callable_method_entry_t
+	  which you can get by the following APIs corresponding to the
+	  above listed functions.
+
+	  * rb_callable_method_entry(VALUE klass, ID id);
+	  * rb_callable_method_entry_with_refinements(VALUE klass, ID id);
+	  * rb_callable_method_entry_without_refinements(VALUE klass, ID id);
+	  * rb_resolve_refined_method_callable(VALUE refinements, const rb_callable_method_entry_t *me);
+
+	  VM pushes rb_callable_method_entry_t, so that rb_vm_frame_method_entry()
+	  returns rb_callable_method_entry_t.
+	  You can check a super class of current method by
+	  rb_callable_method_entry_t::defined_class.
+
+	* method.h: renamed from rb_method_entry_t::klass to
+	  rb_method_entry_t::owner.
+
+	* internal.h: add rb_classext_struct::callable_m_tbl to cache
+	  rb_callable_method_entry_t data.
+
+	  We need to consider about this field again because it is only
+	  active for T_ICLASS.
+
+	* class.c (method_entry_i): ditto.
+
+	* class.c (rb_define_attr): rb_method_entry() does not takes
+	  defined_class_ptr.
+
+	* gc.c (mark_method_entry): mark RCLASS_CALLABLE_M_TBL() for T_ICLASS.
+
+	* cont.c (fiber_init): rb_control_frame_t::klass is removed.
+
+	* proc.c: fix `struct METHOD' data structure because
+	  rb_callable_method_t has all information.
+
+	* vm_core.h: remove several fields.
+	  * rb_control_frame_t::klass.
+	  * rb_block_t::klass.
+
+	  And catch up changes.
+
+	* eval.c: catch up changes.
+
+	* gc.c: ditto.
+
+	* insns.def: ditto.
+
+	* vm.c: ditto.
+
+	* vm_args.c: ditto.
+
+	* vm_backtrace.c: ditto.
+
+	* vm_dump.c: ditto.
+
+	* vm_eval.c: ditto.
+
+	* vm_insnhelper.c: ditto.
+
+	* vm_method.c: ditto.
+
+Fri Jul  3 14:30:18 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/file.c: some mingw compilers need a tweek for the
+	  declarations of _wfreopen_s.  [Bug #11320]
+
+Fri Jul  3 12:25:19 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* transcode.c (rb_econv_set_replacement): target encoding name can
+	  be empty now.  [ruby-core:69841] [Bug #11324]
+
+Fri Jul  3 07:21:06 2015  Eric Wong  <e@80x24.org>
+
+	* benchmark/bm_io_nonblock_noex.rb: new benchmark
+	* ext/openssl/ossl_ssl.c (no_exception_p): new function
+	  (ossl_start_ssl): adjust for no_exception_p
+	  (ossl_ssl_connect): adjust ossl_start_ssl call
+	  (ossl_ssl_connect_nonblock): ditto
+	  (ossl_ssl_accept): ditto
+	  (ossl_ssl_accept_nonblock): ditto
+	  (ossl_ssl_read_internal): adjust for no_exception_p
+	  (ossl_ssl_write_internal): ditto
+	  (ossl_ssl_write): adjust ossl_write_internal call
+	  (ossl_ssl_write_nonblock): ditto
+	* ext/stringio/stringio.c (strio_read_nonblock):
+	  delay exception check
+	* io.c (no_exception_p): new function
+	  (io_getpartial): call no_exception_p
+	  (io_readpartial): adjust for io_getpartial
+	  (get_kwargs_exception): remove
+	  (io_read_nonblock): adjust for io_getpartial,
+	  check no_exception_p on EOF
+	  (io_write_nonblock): call no_exception_p
+	  (rb_io_write_nonblock): do not check `exception: false'
+	  (argf_getpartial): adjust for io_getpartial
+	  [ruby-core:69778] [Feature #11318]
+
+Fri Jul  3 07:13:11 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (replace_real_basename): Win32 API does not set errno, get
+	  the last error by GetLastError() and map to errno.  [Bug #10015]
+
+Thu Jul  2 21:32:06 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (replace_real_basename): show warnings at errors.
+	  [Bug #10015]
+
+Thu Jul  2 18:39:20 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: remove `#define RGENGC_OBJ_INFO 1' line introduced to
+	  debug Bug #11244.
+
+Thu Jul  2 18:34:26 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (rb_raw_obj_info): separated from rb_obj_info().
+	  Fill internal object information into passed buffer.
+
+	* gc.h: declare rb_raw_obj_info().
+
+Thu Jul  2 16:15:04 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (replace_real_basename): update path type by the target
+	  attributes if possible, to improve the performance.  [Bug #10015]
+
 Thu Jul  2 14:45:53 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* st.c: get rid of VC++'s warnings of C4700 (uninitialized local
@@ -10,7 +235,7 @@ Thu Jul  2 14:15:50 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  @gem_prelude_index first.
 
 	* lib/rubygems/test_case.rb (Gem::TestCase#setup): keep already
-	  expanded paths to prserve instance variables.
+	  expanded paths to preserve instance variables.
 
 Thu Jul  2 14:12:01 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -20,7 +245,7 @@ Thu Jul  2 14:12:01 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Thu Jul  2 12:26:11 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/rubygems/test_gem_server.rb (process_based_port): use
-	  dynamically chosen port numberss to get rid of conflicts.
+	  dynamically chosen port numbers to get rid of conflicts.
 
 Thu Jul  2 11:58:59 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 

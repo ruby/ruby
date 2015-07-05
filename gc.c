@@ -305,8 +305,6 @@ static ruby_gc_params_t gc_params = {
 #define GC_DEBUG_STRESS_TO_CLASS 0
 #endif
 
-#define RGENGC_OBJ_INFO 1
-
 #ifndef RGENGC_OBJ_INFO
 #define RGENGC_OBJ_INFO (RGENGC_DEBUG | RGENGC_CHECK_MODE)
 #endif
@@ -2107,6 +2105,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	if (FL_TEST(obj, RICLASS_IS_ORIGIN)) {
 	    rb_free_m_tbl(RCLASS_M_TBL(obj));
 	}
+	rb_free_m_tbl(RCLASS_CALLABLE_M_TBL(obj));
 	if (RCLASS_EXT(obj)->subclasses) {
 	    rb_class_detach_subclasses(obj);
 	    RCLASS_EXT(obj)->subclasses = NULL;
@@ -3928,7 +3927,8 @@ mark_method_entry(rb_objspace_t *objspace, const rb_method_entry_t *me)
 {
     const rb_method_definition_t *def = me->def;
 
-    gc_mark(objspace, me->klass);
+    gc_mark(objspace, me->owner);
+    gc_mark(objspace, me->defined_class);
 
     if (def) {
 	switch (def->type) {
@@ -3948,6 +3948,7 @@ mark_method_entry(rb_objspace_t *objspace, const rb_method_entry_t *me)
 	    return;
 	  case VM_METHOD_TYPE_REFINED:
 	    gc_mark(objspace, (VALUE)def->body.refined.orig_me);
+	    gc_mark(objspace, (VALUE)def->body.refined.owner);
 	    break;
 	  case VM_METHOD_TYPE_CFUNC:
 	  case VM_METHOD_TYPE_ZSUPER:
@@ -4326,6 +4327,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 	if (FL_TEST(obj, RICLASS_IS_ORIGIN)) {
 	    mark_m_tbl(objspace, RCLASS_M_TBL(obj));
 	}
+	mark_m_tbl(objspace, RCLASS_CALLABLE_M_TBL(obj));
 	if (!RCLASS_EXT(obj)) break;
 	gc_mark(objspace, RCLASS_SUPER((VALUE)obj));
 	break;
@@ -8839,8 +8841,6 @@ obj_type_name(VALUE obj)
     return type_name(TYPE(obj), obj);
 }
 
-#if RGENGC_OBJ_INFO
-
 static const char *
 method_type_name(rb_method_type_t type)
 {
@@ -8861,12 +8861,6 @@ method_type_name(rb_method_type_t type)
     rb_bug("method_type_name: unreachable (type: %d)", type);
 }
 
-
-#define OBJ_INFO_BUFFERS_NUM  10
-#define OBJ_INFO_BUFFERS_SIZE 0x100
-static int obj_info_buffers_index = 0;
-static char obj_info_buffers[OBJ_INFO_BUFFERS_NUM][OBJ_INFO_BUFFERS_SIZE];
-
 /* from array.c */
 # define ARY_SHARED_P(ary) \
     (assert(!FL_TEST((ary), ELTS_SHARED) || !FL_TEST((ary), RARRAY_EMBED_FLAG)), \
@@ -8875,21 +8869,15 @@ static char obj_info_buffers[OBJ_INFO_BUFFERS_NUM][OBJ_INFO_BUFFERS_SIZE];
     (assert(!FL_TEST((ary), ELTS_SHARED) || !FL_TEST((ary), RARRAY_EMBED_FLAG)), \
      FL_TEST((ary), RARRAY_EMBED_FLAG)!=0)
 
-static const char *
-obj_info(VALUE obj)
+const char *
+rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 {
-    const int index = obj_info_buffers_index++;
-    char *const buff = &obj_info_buffers[index][0];
     const int age = RVALUE_FLAGS_AGE(RBASIC(obj)->flags);
     const int type = BUILTIN_TYPE(obj);
 
-    if (obj_info_buffers_index >= OBJ_INFO_BUFFERS_NUM) {
-	obj_info_buffers_index = 0;
-    }
-
 #define TF(c) ((c) != 0 ? "true" : "false")
 #define C(c, s) ((c) != 0 ? (s) : " ")
-    snprintf(buff, OBJ_INFO_BUFFERS_SIZE, "%p [%d%s%s%s%s] %s",
+    snprintf(buff, buff_size, "%p [%d%s%s%s%s] %s",
 	     (void *)obj, age,
 	     C(RVALUE_UNCOLLECTIBLE_BITMAP(obj),  "L"),
 	     C(RVALUE_MARK_BITMAP(obj),           "M"),
@@ -8901,76 +8889,76 @@ obj_info(VALUE obj)
 	/* ignore */
     }
     else if (RBASIC(obj)->klass == 0) {
-	snprintf(buff, OBJ_INFO_BUFFERS_SIZE, "%s (temporary internal)", buff);
+	snprintf(buff, buff_size, "%s (temporary internal)", buff);
     }
     else {
 	VALUE class_path = rb_class_path_cached(RBASIC(obj)->klass);
 	if (!NIL_P(class_path)) {
-	    snprintf(buff, OBJ_INFO_BUFFERS_SIZE, "%s (%s)", buff, RSTRING_PTR(class_path));
+	    snprintf(buff, buff_size, "%s (%s)", buff, RSTRING_PTR(class_path));
 	}
     }
 
 #if GC_DEBUG
-    snprintf(buff, OBJ_INFO_BUFFERS_SIZE, "%s @%s:%d", buff, RANY(obj)->file, RANY(obj)->line);
+    snprintf(buff, buff_size, "%s @%s:%d", buff, RANY(obj)->file, RANY(obj)->line);
 #endif
 
     switch (type) {
       case T_NODE:
-	snprintf(buff, OBJ_INFO_BUFFERS_SIZE, "%s (%s)", buff,
+	snprintf(buff, buff_size, "%s (%s)", buff,
 		 ruby_node_name(nd_type(obj)));
 	break;
       case T_ARRAY:
-	snprintf(buff, OBJ_INFO_BUFFERS_SIZE, "%s [%s%s] len: %d", buff,
+	snprintf(buff, buff_size, "%s [%s%s] len: %d", buff,
 		 C(ARY_EMBED_P(obj),  "E"),
 		 C(ARY_SHARED_P(obj), "S"),
 		 (int)RARRAY_LEN(obj));
 	break;
       case T_STRING: {
-	snprintf(buff, OBJ_INFO_BUFFERS_SIZE, "%s %s", buff, RSTRING_PTR(obj));
-	break;
+	  snprintf(buff, buff_size, "%s %s", buff, RSTRING_PTR(obj));
+	  break;
       }
       case T_CLASS: {
-	VALUE class_path = rb_class_path_cached(obj);
-	if (!NIL_P(class_path)) {
-	    snprintf(buff, OBJ_INFO_BUFFERS_SIZE, "%s %s", buff, RSTRING_PTR(class_path));
-	}
-	break;
+	  VALUE class_path = rb_class_path_cached(obj);
+	  if (!NIL_P(class_path)) {
+	      snprintf(buff, buff_size, "%s %s", buff, RSTRING_PTR(class_path));
+	  }
+	  break;
       }
       case T_DATA: {
-	const char * const type_name = rb_objspace_data_type_name(obj);
-	if (type_name && strcmp(type_name, "iseq") == 0) {
-	    rb_iseq_t *iseq;
-	    GetISeqPtr(obj, iseq);
-	    if (iseq->location.label) {
-		snprintf(buff, OBJ_INFO_BUFFERS_SIZE, "%s %s@%s:%d", buff,
-			 RSTRING_PTR(iseq->location.label), RSTRING_PTR(iseq->location.path), (int)iseq->location.first_lineno);
-	    }
-	}
-	else if (type_name) {
-	    snprintf(buff, OBJ_INFO_BUFFERS_SIZE, "%s %s", buff, type_name);
-	}
-	break;
+	  const char * const type_name = rb_objspace_data_type_name(obj);
+	  if (type_name && strcmp(type_name, "iseq") == 0) {
+	      rb_iseq_t *iseq;
+	      GetISeqPtr(obj, iseq);
+	      if (iseq->location.label) {
+		  snprintf(buff, buff_size, "%s %s@%s:%d", buff,
+			   RSTRING_PTR(iseq->location.label), RSTRING_PTR(iseq->location.path), (int)iseq->location.first_lineno);
+	      }
+	  }
+	  else if (type_name) {
+	      snprintf(buff, buff_size, "%s %s", buff, type_name);
+	  }
+	  break;
       }
       case T_IMEMO: {
-	const char *imemo_name;
-	switch (imemo_type(obj)) {
+	  const char *imemo_name;
+	  switch (imemo_type(obj)) {
 #define IMEMO_NAME(x) case imemo_##x: imemo_name = #x; break;
-	    IMEMO_NAME(none);
-	    IMEMO_NAME(cref);
-	    IMEMO_NAME(svar);
-	    IMEMO_NAME(throw_data);
-	    IMEMO_NAME(ifunc);
-	    IMEMO_NAME(memo);
-	    IMEMO_NAME(ment);
-	  default: rb_bug("unknown IMEMO");
+	      IMEMO_NAME(none);
+	      IMEMO_NAME(cref);
+	      IMEMO_NAME(svar);
+	      IMEMO_NAME(throw_data);
+	      IMEMO_NAME(ifunc);
+	      IMEMO_NAME(memo);
+	      IMEMO_NAME(ment);
+	    default: rb_bug("unknown IMEMO");
 #undef IMEMO_NAME
-	}
-	snprintf(buff, OBJ_INFO_BUFFERS_SIZE, "%s %s", buff, imemo_name);
-	if (imemo_type(obj) == imemo_ment) {
-	    const rb_method_entry_t *me = &RANY(obj)->as.imemo.ment;
-	    snprintf(buff, OBJ_INFO_BUFFERS_SIZE, "%s (called_id: %s, type: %s, alias: %d, class: %s)", buff,
-		     rb_id2name(me->called_id), method_type_name(me->def->type), me->def->alias_count, obj_info(me->klass));
-	}
+	  }
+	  snprintf(buff, buff_size, "%s %s", buff, imemo_name);
+	  if (imemo_type(obj) == imemo_ment) {
+	      const rb_method_entry_t *me = &RANY(obj)->as.imemo.ment;
+	      snprintf(buff, buff_size, "%s (called_id: %s, type: %s, alias: %d, class: %s)", buff,
+		       rb_id2name(me->called_id), method_type_name(me->def->type), me->def->alias_count, obj_info(me->defined_class));
+	  }
       }
       default:
 	break;
@@ -8981,6 +8969,24 @@ obj_info(VALUE obj)
     return buff;
 }
 
+#if RGENGC_OBJ_INFO
+#define OBJ_INFO_BUFFERS_NUM  10
+#define OBJ_INFO_BUFFERS_SIZE 0x100
+static int obj_info_buffers_index = 0;
+static char obj_info_buffers[OBJ_INFO_BUFFERS_NUM][OBJ_INFO_BUFFERS_SIZE];
+
+static const char *
+obj_info(VALUE obj)
+{
+    const int index = obj_info_buffers_index++;
+    char *const buff = &obj_info_buffers[index][0];
+
+    if (obj_info_buffers_index >= OBJ_INFO_BUFFERS_NUM) {
+	obj_info_buffers_index = 0;
+    }
+
+    return rb_raw_obj_info(buff, OBJ_INFO_BUFFERS_SIZE, obj);
+}
 #else
 static const char *
 obj_info(VALUE obj)

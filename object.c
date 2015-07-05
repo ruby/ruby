@@ -2579,7 +2579,7 @@ static VALUE
 convert_type(VALUE val, const char *tname, const char *method, int raise)
 {
     ID m = 0;
-    int i;
+    int i = numberof(conv_method_names);
     VALUE r;
     static const char prefix[] = "to_";
 

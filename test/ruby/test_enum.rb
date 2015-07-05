@@ -202,6 +202,7 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal(1, @obj.first)
     assert_equal([1, 2, 3], @obj.first(3))
     assert_nil(@empty.first)
+    assert_equal([], @empty.first(10))
 
     bug5801 = '[ruby-dev:45041]'
     assert_in_out_err([], <<-'end;', [], /unexpected break/)
@@ -221,6 +222,7 @@ class TestEnumerable < Test::Unit::TestCase
 
   def test_sort
     assert_equal([1, 1, 2, 2, 3], @obj.sort)
+    assert_equal([3, 2, 2, 1, 1], @obj.sort {|x, y| y <=> x })
   end
 
   def test_sort_by
@@ -236,6 +238,8 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal(false, @obj.all? {|x| x < 3 })
     assert_equal(true, @obj.all?)
     assert_equal(false, [true, true, false].all?)
+    assert_equal(true, [].all?)
+    assert_equal(true, @empty.all?)
   end
 
   def test_any
@@ -243,6 +247,8 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal(false, @obj.any? {|x| x > 3 })
     assert_equal(true, @obj.any?)
     assert_equal(false, [false, false, false].any?)
+    assert_equal(false, [].any?)
+    assert_equal(false, @empty.any?)
   end
 
   def test_one
@@ -254,6 +260,8 @@ class TestEnumerable < Test::Unit::TestCase
     assert(!(%w{ant bear cat}.one? {|word| word.length < 4}))
     assert(!([ nil, true, 99 ].one?))
     assert([ nil, true, false ].one?)
+    assert(![].one?)
+    assert(!@empty.one?)
   end
 
   def test_none
@@ -266,6 +274,7 @@ class TestEnumerable < Test::Unit::TestCase
     assert([nil].none?)
     assert([nil,false].none?)
     assert(![nil,false,true].none?)
+    assert(@empty.none?)
   end
 
   def test_min

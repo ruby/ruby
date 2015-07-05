@@ -465,7 +465,7 @@ backtrace_each(rb_thread_t *th,
 	    }
 	}
 	else if (RUBYVM_CFUNC_FRAME_P(cfp)) {
-	    const rb_method_entry_t *me = rb_vm_frame_method_entry(cfp);
+	    const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(cfp);
 	    ID mid = me->def->original_id;
 
 	    iter_cfunc(arg, cfp, mid);

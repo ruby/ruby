@@ -1,3 +1,7 @@
+#if defined(__MINGW32__)
+/* before stdio.h in ruby/define.h */
+# define MINGW_HAS_SECURE_API 1
+#endif
 #include "ruby/ruby.h"
 #include "ruby/encoding.h"
 #include "ruby/thread.h"

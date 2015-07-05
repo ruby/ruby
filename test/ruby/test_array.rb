@@ -1445,6 +1445,16 @@ class TestArray < Test::Unit::TestCase
     assert_equal(orig, ary, "must not be modified once frozen")
   end
 
+  def test_short_heap_array_sort_bang_memory_leak
+    bug11332 = '[ruby-dev:49166] [Bug #11332]'
+    assert_no_memory_leak([], <<-PREP, <<-TEST, bug11332, limit: 1.20)
+      def t; ary = [*1..5]; ary.pop(2); ary.sort!; end
+      1.times {t}
+    PREP
+      500000.times {t}
+    TEST
+  end
+
   def test_to_a
     a = @cls[ 1, 2, 3 ]
     a_id = a.__id__
