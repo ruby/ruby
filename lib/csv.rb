@@ -176,7 +176,7 @@ require "stringio"
 # support.  For example, <tt>:col_sep</tt>, <tt>:row_sep</tt>, and
 # <tt>:quote_char</tt> must be transcoded to match your data.  Hopefully this
 # makes the entire process feel transparent, since CSV's defaults should just
-# magically work for you data.  However, you can set these values manually in
+# magically work for your data.  However, you can set these values manually in
 # the target Encoding to avoid the translation.
 #
 # It's also important to note that while all of CSV's core parser is now
