@@ -1,3 +1,19 @@
+Tue Jul  7 03:57:28 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h: remove rb_iseq_t::defined_method_id because it is not
+	  needed.
+
+	* eval.c (frame_func_id): simplify. rb_callable_method_entry_t
+	  has enough information.
+
+	* eval.c (frame_called_id): ditto.
+
+	* iseq.c (prepare_iseq_build): catch up this fix.
+
+	* proc.c (rb_mod_define_method): ditto.
+
+	* vm.c (vm_define_method): ditto.
+
 Tue Jul  7 03:47:26 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h: remove a useless declaration.

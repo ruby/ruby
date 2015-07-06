@@ -268,7 +268,6 @@ prepare_iseq_build(rb_iseq_t *iseq,
     if (iseq != iseq->local_iseq) {
 	RB_OBJ_WRITE(iseq->self, &iseq->location.base_label, iseq->local_iseq->location.label);
     }
-    iseq->defined_method_id = 0;
     RB_OBJ_WRITE(iseq->self, &iseq->mark_ary, 0);
 
     iseq->compile_data = ZALLOC(struct iseq_compile_data);
