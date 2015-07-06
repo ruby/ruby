@@ -228,11 +228,8 @@ class TestSuper < Test::Unit::TestCase
     A.send(:include, Override)
   end
 
-  # [Bug #3351]
   def test_double_include
-    assert_equal([:Base, :Override], DoubleInclude::B.new.foo)
-    # should be changed as follows?
-    # assert_equal([:Base, :Override, :Override], DoubleInclude::B.new.foo)
+    assert_equal([:Base, :Override, :Override], DoubleInclude::B.new.foo, "[Bug #3351]")
   end
 
   module DoubleInclude2
