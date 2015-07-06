@@ -1447,7 +1447,7 @@ class TestArray < Test::Unit::TestCase
 
   def test_short_heap_array_sort_bang_memory_leak
     bug11332 = '[ruby-dev:49166] [Bug #11332]'
-    assert_no_memory_leak([], <<-PREP, <<-TEST, bug11332, limit: 1.20, timeout: 60)
+    assert_no_memory_leak([], <<-PREP, <<-TEST, bug11332, limit: 1.25, timeout: 60)
       def t; ary = [*1..5]; ary.pop(2); ary.sort!; end
       1.times {t}
     PREP
