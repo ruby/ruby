@@ -75,6 +75,20 @@ class TestComparable < Test::Unit::TestCase
     assert_equal(true, @o.between?(0, 0))
   end
 
+  def test_clamp
+    cmp->(x) do 0 <=> x end
+    assert_equal(1, @o.clamp(1, 2))
+    assert_equal(-1, @o.clamp(-2, -1))
+    assert_equal(0, @o.clamp(-1, 3))
+
+    # what about stuff like @o.clamp(2, 1) ?
+    cmp->(x) do 1 <=> x end
+    assert_equal(2, @o.clamp(2, 1))
+
+    cmp->(x) do 2 <=> x end
+    assert_equal(1, @o.clamp(2, 1))
+   end
+
   def test_err
     assert_raise(ArgumentError) { 1.0 < nil }
     assert_raise(ArgumentError) { 1.0 < Object.new }
