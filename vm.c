@@ -2287,8 +2287,6 @@ vm_define_method(rb_thread_t *th, VALUE obj, ID id, VALUE iseqval,
 	visi = METHOD_VISI_PUBLIC;
     }
 
-    /* dup */
-    miseq->defined_method_id = id;
     rb_add_method_iseq(klass, id, iseqval, cref, visi);
 
     if (!is_singleton && scope_visi->module_func) {

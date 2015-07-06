@@ -348,7 +348,6 @@ struct rb_iseq_struct {
     const VALUE orig;			/* non-NULL if its data have origin */
 
     /* misc */
-    ID defined_method_id;	/* for define_method */
     rb_num_t flip_cnt;
 
     /* used at compile time */

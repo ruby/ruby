@@ -1724,7 +1724,6 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
 	body = proc_dup(body);
 	GetProcPtr(body, proc);
 	if (!RUBY_VM_IFUNC_P(proc->block.iseq)) {
-	    proc->block.iseq->defined_method_id = id;
 	    proc->is_lambda = TRUE;
 	    proc->is_from_method = TRUE;
 	}

@@ -922,80 +922,30 @@ rb_ensure(VALUE (*b_proc)(ANYARGS), VALUE data1, VALUE (*e_proc)(ANYARGS), VALUE
     return result;
 }
 
-static const rb_callable_method_entry_t *
-method_entry_of_iseq(const rb_control_frame_t *cfp, const rb_iseq_t *iseq)
-{
-    rb_thread_t *th = GET_THREAD();
-    const rb_control_frame_t *cfp_limit;
-
-    cfp_limit = (rb_control_frame_t *)(th->stack + th->stack_size);
-    while (cfp_limit > cfp) {
-	if (cfp->iseq == iseq) return rb_vm_frame_method_entry(cfp); /* TODO: fix me */
-	cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
-    }
-    return 0;
-}
-
 static ID
 frame_func_id(rb_control_frame_t *cfp)
 {
-    const rb_iseq_t *iseq = cfp->iseq;
-    const rb_callable_method_entry_t *me_local;
     const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(cfp);
 
     if (me) {
 	return me->def->original_id;
     }
-    while (iseq) {
-	if (RUBY_VM_IFUNC_P(iseq)) {
-	    const struct vm_ifunc *ifunc = (struct vm_ifunc *)iseq;
-	    if (ifunc->id) return ifunc->id;
-	    return idIFUNC;
-	}
-	me_local = method_entry_of_iseq(cfp, iseq);
-	if (me_local) {
-	    return me_local->def->original_id;
-	}
-	if (iseq->defined_method_id) {
-	    return iseq->defined_method_id;
-	}
-	if (iseq->local_iseq == iseq) {
-	    break;
-	}
-	iseq = iseq->parent_iseq;
+    else {
+	return 0;
     }
-    return 0;
 }
 
 static ID
 frame_called_id(rb_control_frame_t *cfp)
 {
-    const rb_iseq_t *iseq = cfp->iseq;
-    const rb_callable_method_entry_t *me_local;
     const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(cfp);
 
     if (me) {
 	return me->called_id;
     }
-    while (iseq) {
-	if (RUBY_VM_IFUNC_P(iseq)) {
-	    const struct vm_ifunc *ifunc = (struct vm_ifunc *)iseq;
-	    if (ifunc->id) return ifunc->id;
-	    return idIFUNC;
-	}
-	me_local = method_entry_of_iseq(cfp, iseq);
-	if (me_local) {
-	    return me_local->called_id;
-	}
-	if (iseq->defined_method_id) {
-	    return iseq->defined_method_id;
-	}
-	if (iseq->local_iseq == iseq) {
-	    break;
-	}
-	iseq = iseq->parent_iseq;
+    else {
+	return 0;
     }
-    return 0;
 }
 
 ID
