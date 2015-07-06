@@ -218,8 +218,6 @@ typedef struct rb_iseq_location_struct {
     VALUE first_lineno; /* TODO: may be unsigned short */
 } rb_iseq_location_t;
 
-struct rb_iseq_struct;
-
 struct rb_iseq_struct {
     /***************/
     /* static data */
