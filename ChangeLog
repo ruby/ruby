@@ -1,3 +1,9 @@
+Tue Jul  7 01:52:14 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* cont.c (fiber_init): initialize control frame correctly.
+	  This fix does not affect any ordinal execution, but
+	  affects debug prints.
+
 Mon Jul  6 17:59:05 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c (vm_search_super_method): do not skip calling
