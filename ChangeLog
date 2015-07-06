@@ -1,3 +1,9 @@
+Tue Jul  7 04:42:25 2015  Eric Wong  <e@80x24.org>
+
+	* string.c (Init_String): use rb_str_freeze for String#freeze
+	  to resize internal buffer
+	  [ruby-core:69870] [Feature #11330]
+
 Tue Jul  7 04:12:32 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (vm_define_method): remove an unused local variable.
