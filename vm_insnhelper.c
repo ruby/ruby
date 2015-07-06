@@ -2277,15 +2277,6 @@ vm_search_super_method(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_inf
     /* TODO: use inline cache */
     ci->me = rb_callable_method_entry(ci->klass, ci->mid);
     ci->call = vm_call_super_method;
-
-    while (iseq && !iseq->klass) {
-	iseq = iseq->parent_iseq;
-    }
-
-    if (ci->me && ci->me->def->type == VM_METHOD_TYPE_ISEQ && def_iseq_ptr(ci->me->def) == iseq) {
-	ci->klass = RCLASS_SUPER(ci->me->defined_class);
-	ci->me = rb_callable_method_entry(ci->klass, ci->mid);
-    }
 }
 
 /* yield */
