@@ -1,3 +1,7 @@
+Mon Jul  6 17:59:11 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ext/tk/tcltklib.c: removed deprecated safe level.
+
 Mon Jul  6 17:16:37 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* method.h, proc.c (rb_method_entry_location): make it static
