@@ -2247,8 +2247,8 @@ method_def_location(const rb_method_definition_t *def)
     return iseq_location(method_def_iseq(def));
 }
 
-VALUE
-rb_method_entry_location(const rb_method_entry_t *me)
+static VALUE
+method_entry_location(const rb_method_entry_t *me)
 {
     if (!me) return Qnil;
     return method_def_location(me->def);
@@ -2258,7 +2258,7 @@ VALUE
 rb_mod_method_location(VALUE mod, ID id)
 {
     const rb_method_entry_t *me = original_method_entry(mod, id);
-    return rb_method_entry_location(me);
+    return method_entry_location(me);
 }
 
 VALUE
