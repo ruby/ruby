@@ -1,4 +1,5 @@
 require 'test/unit'
+require 'objspace'
 
 class TestRubyOptimization < Test::Unit::TestCase
 
@@ -120,6 +121,24 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_equal "foo", "foo".freeze
     assert_equal "foo".freeze.object_id, "foo".freeze.object_id
     assert_redefine_method('String', 'freeze', 'assert_nil "foo".freeze')
+  end
+
+  def test_string_freeze_saves_memory
+    n = 16384
+    data = '.'.freeze
+    r, w = IO.pipe
+    w.write data
+
+    s = r.readpartial(n, '')
+    assert_operator ObjectSpace.memsize_of(s), :>=, n,
+      'IO buffer NOT resized prematurely because will likely be reused'
+
+    s.freeze
+    assert_equal ObjectSpace.memsize_of(data), ObjectSpace.memsize_of(s),
+      'buffer resized on freeze since it cannot be written to again'
+  ensure
+    r.close if r
+    w.close if w
   end
 
   def test_string_eq_neq
