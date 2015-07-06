@@ -348,7 +348,6 @@ struct rb_iseq_struct {
 
     VALUE self;
     const VALUE orig;			/* non-NULL if its data have origin */
-    const VALUE klass;
 
     /* misc */
     ID defined_method_id;	/* for define_method */

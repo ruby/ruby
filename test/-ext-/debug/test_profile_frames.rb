@@ -25,12 +25,12 @@ class TestProfileFrames < Test::Unit::TestCase
     }.resume
 
     labels = [
-      "block (2 levels) in test_profile_frames",
+      "test_profile_frames",
       "zab",
       "baz",
       "bar",
       "foo",
-      "block in test_profile_frames",
+      "test_profile_frames",
     ]
     base_labels = [
       "test_profile_frames",
@@ -41,12 +41,12 @@ class TestProfileFrames < Test::Unit::TestCase
       "test_profile_frames",
     ]
     full_labels = [
-      "block (2 levels) in TestProfileFrames#test_profile_frames",
+      "TestProfileFrames#test_profile_frames",
       "#{obj.inspect}.zab",
       "SampleClassForTestProfileFrames::Sample2#baz",
       "SampleClassForTestProfileFrames.bar",
       "SampleClassForTestProfileFrames#foo",
-      "block in TestProfileFrames#test_profile_frames",
+      "TestProfileFrames#test_profile_frames",
     ]
     classes = [
       TestProfileFrames,
