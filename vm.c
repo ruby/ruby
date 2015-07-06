@@ -2275,8 +2275,6 @@ vm_define_method(rb_thread_t *th, VALUE obj, ID id, VALUE iseqval,
     VALUE klass = CREF_CLASS(cref);
     const rb_scope_visibility_t *scope_visi = CREF_SCOPE_VISI(cref);
     rb_method_visibility_t visi = scope_visi->method_visi;
-    rb_iseq_t *miseq;
-    GetISeqPtr(iseqval, miseq);
 
     if (NIL_P(klass)) {
 	rb_raise(rb_eTypeError, "no class/module to add method");
