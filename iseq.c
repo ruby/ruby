@@ -127,8 +127,6 @@ iseq_mark(void *ptr)
 	    RUBY_MARK_UNLESS_NULL(iseq->orig);
 	}
 
-	RUBY_MARK_UNLESS_NULL(iseq->klass);
-
 	if (iseq->compile_data != 0) {
 	    struct iseq_compile_data *const compile_data = iseq->compile_data;
 	    RUBY_MARK_UNLESS_NULL(compile_data->mark_ary);
@@ -261,7 +259,6 @@ prepare_iseq_build(rb_iseq_t *iseq,
 		   const rb_compile_option_t *option)
 {
     iseq->type = type;
-    RB_OBJ_WRITE(iseq->self, &iseq->klass, 0);
     set_relation(iseq, parent);
 
     name = rb_fstring(name);
@@ -936,14 +933,6 @@ rb_iseq_first_lineno(VALUE self)
     rb_iseq_t *iseq;
     GetISeqPtr(self, iseq);
     return iseq->location.first_lineno;
-}
-
-VALUE
-rb_iseq_klass(VALUE self)
-{
-    rb_iseq_t *iseq;
-    GetISeqPtr(self, iseq);
-    return iseq->local_iseq->klass;
 }
 
 VALUE
@@ -1959,13 +1948,6 @@ rb_iseq_clone(VALUE iseqval, VALUE newcbase)
     }
     if (iseq0->local_iseq == iseq0) {
 	iseq1->local_iseq = iseq1;
-    }
-
-    if (newcbase) {
-	RB_OBJ_WRITE(iseq1->self, &iseq1->klass, newcbase);
-    }
-    else {
-	RB_OBJ_WRITTEN(iseq1->self, Qundef, iseq1->klass);
     }
 
     RB_GC_GUARD(iseqval); /* seems necessary iff RGenGC is disabled */

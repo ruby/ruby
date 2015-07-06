@@ -405,11 +405,7 @@ class TestMethod < Test::Unit::TestCase
       end
     }
     c2 = Class.new(c1) { define_method(:m) { Proc.new { super() } } }
-    # c2.new.m.call should return :m1, but currently it raise NoMethodError.
-    # see [Bug #4881] and [Bug #3136]
-    assert_raise(NoMethodError) {
-      c2.new.m.call
-    }
+    assert_equal(:m1, c2.new.m.call, 'see [Bug #4881] and [Bug #3136]')
   end
 
   def test_clone

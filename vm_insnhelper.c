@@ -2173,58 +2173,19 @@ vm_super_outside(void)
 static int
 vm_search_superclass(rb_control_frame_t *reg_cfp, rb_iseq_t *iseq, VALUE sigval, rb_call_info_t *ci)
 {
-    const rb_callable_method_entry_t *me;
+    const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(reg_cfp);
 
-    while (iseq && !iseq->klass) {
-	iseq = iseq->parent_iseq;
-    }
-
-    if (iseq == 0) {
+    if (me == NULL) {
 	return -1;
     }
-
-    ci->mid = iseq->defined_method_id;
-
-    if (iseq != iseq->local_iseq) {
-	/* defined by Module#define_method() */
-	rb_control_frame_t *lcfp = GET_CFP();
-
-	if (!sigval) {
-	    /* zsuper */
-	    return -2;
-	}
-
-	while (lcfp->iseq != iseq) {
-	    rb_thread_t *th = GET_THREAD();
-	    VALUE *tep = VM_EP_PREV_EP(lcfp->ep);
-	    while (1) {
-		lcfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(lcfp);
-		if (RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th, lcfp)) {
-		    return -1;
-		}
-		if (lcfp->ep == tep) {
-		    break;
-		}
-	    }
-	}
-
-	me = rb_vm_frame_method_entry(lcfp);
-
-	/* temporary measure for [Bug #2420] [Bug #3136] */
-	if (!me) {
-	    fprintf(stderr, "kore?\n");
-	    return -1;
-	}
-
-	ci->mid = me->def->original_id;
-	ci->klass = vm_search_normal_superclass(me->defined_class);
+    else if (me->def->type == VM_METHOD_TYPE_BMETHOD && !sigval) {
+	return -2;
     }
     else {
-	me = rb_vm_frame_method_entry(reg_cfp);
+	ci->mid = me->def->original_id;
 	ci->klass = vm_search_normal_superclass(me->defined_class);
+	return 0;
     }
-
-    return 0;
 }
 
 static void

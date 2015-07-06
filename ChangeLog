@@ -1,3 +1,30 @@
+Tue Jul  7 03:33:20 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h: remove rb_iseq_t::klass to reduce dynamic data.
+
+	* internal.h, iseq.c (rb_iseq_klass): remove it because
+	  rb_iseq_t::klass is removed.
+
+	* vm_insnhelper.c (vm_super_outside): do not see cfp->iseq, but
+	  check callable method entry on a frame.
+	  This fix simplify the logic to search super class.
+
+	* test/ruby/test_method.rb: support super() from Proc.
+	  Now, [Bug #4881] and [Bug #3136] was solved.
+
+	* proc.c (rb_mod_define_method): catch up this change.
+
+	* vm.c (vm_define_method): ditto.
+
+	* vm_backtrace.c (rb_profile_frames): now, each `frame' objects
+	  are rb_callable_method_entry_t data or iseq VALUEs.
+
+	  This fix introduce minor compatibility issue that
+	  rb_profile_frame_label() always returns
+	  rb_profile_frame_base_label().
+
+	* test/-ext-/debug/test_profile_frames.rb: catch up this change.
+
 Tue Jul  7 01:52:14 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* cont.c (fiber_init): initialize control frame correctly.

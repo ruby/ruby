@@ -9,6 +9,8 @@
 
 **********************************************************************/
 
+#define VM_CHECK_MODE 2
+
 #include "internal.h"
 #include "ruby/debug.h"
 
@@ -1248,15 +1250,24 @@ rb_profile_frames(int start, int limit, VALUE *buff, int *lines)
     rb_control_frame_t *cfp = th->cfp, *end_cfp = RUBY_VM_END_CONTROL_FRAME(th);
 
     for (i=0; i<limit && cfp != end_cfp;) {
-	if (cfp->iseq && cfp->pc) { /* should be NORMAL_ISEQ */
+	const rb_callable_method_entry_t *cme = rb_vm_frame_method_entry(cfp);
+
+	if ((cme && cme->def->type == VM_METHOD_TYPE_ISEQ) || (cfp->iseq && cfp->pc)) {
 	    if (start > 0) {
 		start--;
 		continue;
 	    }
 
 	    /* record frame info */
-	    buff[i] = cfp->iseq->self;
-	    if (lines) lines[i] = calc_lineno(cfp->iseq, cfp->pc);
+	    if (cme) {
+		buff[i] = (VALUE)cme;
+	    }
+	    else {
+		buff[i] = cfp->iseq->self;
+	    }
+
+	    if (cfp->iseq && lines) lines[i] = calc_lineno(cfp->iseq, cfp->pc);
+
 	    i++;
 	}
 	cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
@@ -1265,42 +1276,83 @@ rb_profile_frames(int start, int limit, VALUE *buff, int *lines)
     return i;
 }
 
-#define frame2iseq(frame) frame
+static VALUE
+frame2iseq(VALUE frame)
+{
+    if (frame == Qnil) return Qnil;
+
+    if (RB_TYPE_P(frame, T_DATA)) {
+	VM_ASSERT(strcmp(rb_objspace_data_type_name(frame), "iseq") == 0);
+	return frame;
+    }
+
+    if (RB_TYPE_P(frame, T_IMEMO)) {
+	const rb_callable_method_entry_t *cme = (rb_callable_method_entry_t *)frame;
+	VM_ASSERT(imemo_type(frame) == imemo_ment);
+	switch (cme->def->type) {
+	  case VM_METHOD_TYPE_ISEQ:
+	    return cme->def->body.iseq.iseqptr->self;
+	  default:
+	    return Qnil;
+	}
+    }
+    rb_bug("frame2iseq: unreachable");
+}
 
 VALUE
 rb_profile_frame_path(VALUE frame)
 {
-    return rb_iseq_path(frame2iseq(frame));
+    VALUE iseqv = frame2iseq(frame);
+    return NIL_P(iseqv) ? Qnil : rb_iseq_path(iseqv);
 }
 
 VALUE
 rb_profile_frame_absolute_path(VALUE frame)
 {
-    return rb_iseq_absolute_path(frame2iseq(frame));
+    VALUE iseqv = frame2iseq(frame);
+    return NIL_P(iseqv) ? Qnil : rb_iseq_absolute_path(iseqv);
 }
 
 VALUE
 rb_profile_frame_label(VALUE frame)
 {
-    return rb_iseq_label(frame2iseq(frame));
+    VALUE iseqv = frame2iseq(frame);
+    return NIL_P(iseqv) ? Qnil : rb_iseq_label(iseqv);
 }
 
 VALUE
 rb_profile_frame_base_label(VALUE frame)
 {
-    return rb_iseq_base_label(frame2iseq(frame));
+    VALUE iseqv = frame2iseq(frame);
+    return NIL_P(iseqv) ? Qnil : rb_iseq_base_label(iseqv);
 }
 
 VALUE
 rb_profile_frame_first_lineno(VALUE frame)
 {
-    return rb_iseq_first_lineno(frame2iseq(frame));
+    VALUE iseqv = frame2iseq(frame);
+    return NIL_P(iseqv) ? Qnil : rb_iseq_first_lineno(iseqv);
+}
+
+static VALUE
+frame2klass(VALUE frame)
+{
+    if (frame == Qnil) return Qnil;
+
+    if (RB_TYPE_P(frame, T_IMEMO)) {
+	const rb_callable_method_entry_t *cme = (rb_callable_method_entry_t *)frame;
+	VM_ASSERT(imemo_type(frame) == imemo_ment);
+	return cme->defined_class;
+    }
+    else {
+	return Qnil;
+    }
 }
 
 VALUE
 rb_profile_frame_classpath(VALUE frame)
 {
-    VALUE klass = rb_iseq_klass(frame2iseq(frame));
+    VALUE klass = frame2klass(frame);
 
     if (klass && !NIL_P(klass)) {
 	if (RB_TYPE_P(klass, T_ICLASS)) {
@@ -1321,7 +1373,8 @@ rb_profile_frame_classpath(VALUE frame)
 VALUE
 rb_profile_frame_singleton_method_p(VALUE frame)
 {
-    VALUE klass = rb_iseq_klass(frame2iseq(frame));
+    VALUE klass = frame2klass(frame);
+
     if (klass && !NIL_P(klass) && FL_TEST(klass, FL_SINGLETON)) {
 	return Qtrue;
     }
@@ -1333,13 +1386,15 @@ rb_profile_frame_singleton_method_p(VALUE frame)
 VALUE
 rb_profile_frame_method_name(VALUE frame)
 {
-    return rb_iseq_method_name(frame2iseq(frame));
+    VALUE iseqv = frame2iseq(frame);
+    return NIL_P(iseqv) ? Qnil : rb_iseq_method_name(iseqv);
 }
 
 VALUE
 rb_profile_frame_qualified_method_name(VALUE frame)
 {
-    VALUE method_name = rb_iseq_method_name(frame2iseq(frame));
+    VALUE method_name = rb_profile_frame_method_name(frame);
+
     if (method_name != Qnil) {
 	VALUE classpath = rb_profile_frame_classpath(frame);
 	VALUE singleton_p = rb_profile_frame_singleton_method_p(frame);

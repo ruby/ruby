@@ -1725,7 +1725,6 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
 	GetProcPtr(body, proc);
 	if (!RUBY_VM_IFUNC_P(proc->block.iseq)) {
 	    proc->block.iseq->defined_method_id = id;
-	    RB_OBJ_WRITE(proc->block.iseq->self, &proc->block.iseq->klass, mod);
 	    proc->is_lambda = TRUE;
 	    proc->is_from_method = TRUE;
 	}
