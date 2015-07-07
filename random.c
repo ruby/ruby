@@ -529,7 +529,7 @@ fill_random_bytes_syscall(void *seed, size_t size)
 	    }
 	if ((size_t)ret == size) return 0;
     }
-    return 0;
+    return -1;
 }
 #else
 # define fill_random_bytes_syscall(seed, size) -1
@@ -539,7 +539,7 @@ static int
 fill_random_bytes(void *seed, size_t size)
 {
     int ret = fill_random_bytes_syscall(seed, size);
-    if (ret) return ret;
+    if (ret == 0) return ret;
     return fill_random_bytes_urandom(seed, size);
 }
 

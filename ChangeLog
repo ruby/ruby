@@ -1,3 +1,8 @@
+Tue Jul  7 16:39:04 2015  Eric Wong  <e@80x24.org>
+
+	* random.c (fill_random_bytes_syscall): return -1 for error
+	* random.c (fill_random_bytes): try urandom on syscall failure
+
 Tue Jul  7 15:02:18 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_str_normalize_ospath): skip invalid byte sequence not
