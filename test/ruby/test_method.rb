@@ -251,10 +251,12 @@ class TestMethod < Test::Unit::TestCase
     m = o.method(:bar).unbind
     assert_raise(TypeError) { m.bind(Object.new) }
 
-    cx = EnvUtil.labeled_class("X\u{1f431}")
-    assert_raise_with_message(TypeError, /X\u{1f431}/) {
-      o.method(cx)
-    }
+    EnvUtil.with_default_external(Encoding::UTF_8) do
+      cx = EnvUtil.labeled_class("X\u{1f431}")
+      assert_raise_with_message(TypeError, /X\u{1f431}/) {
+        o.method(cx)
+      }
+    end
   end
 
   def test_bind_module_instance_method
@@ -283,10 +285,12 @@ class TestMethod < Test::Unit::TestCase
     assert_raise(TypeError) do
       Class.new.class_eval { define_method(:bar, o.method(:bar)) }
     end
-    cx = EnvUtil.labeled_class("X\u{1f431}")
-    assert_raise_with_message(TypeError, /X\u{1F431}/) {
-      Class.new {define_method(cx) {}}
-    }
+    EnvUtil.with_default_external(Encoding::UTF_8) do
+      cx = EnvUtil.labeled_class("X\u{1f431}")
+      assert_raise_with_message(TypeError, /X\u{1F431}/) {
+        Class.new {define_method(cx) {}}
+      }
+    end
   end
 
   def test_define_method_no_proc
