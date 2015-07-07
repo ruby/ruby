@@ -1,3 +1,9 @@
+Tue Jul  7 15:02:18 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_str_normalize_ospath): skip invalid byte sequence not
+	  to loop infinitely.  this case usually does not happen as the
+	  input name should come from real file systems.
+
 Tue Jul  7 14:40:08 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_backtrace.c: remove debug flag introduced accidentaly.
