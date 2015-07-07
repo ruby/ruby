@@ -1,3 +1,7 @@
+Tue Jul  7 18:18:41 2015  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* random.c (fill_random_bytes_syscall): fix compile error.
+
 Tue Jul  7 16:47:30 2015  Eric Wong  <e@80x24.org>
 
 	* compile.c (COMPILE_ERROR): reduce GET_THREAD() calls
