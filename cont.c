@@ -226,7 +226,7 @@ cont_free(void *ptr)
     RUBY_FREE_ENTER("cont");
     if (ptr) {
 	rb_context_t *cont = ptr;
-	RUBY_FREE_UNLESS_NULL(cont->saved_thread.stack); fflush(stdout);
+	RUBY_FREE_UNLESS_NULL(cont->saved_thread.stack);
 #if FIBER_USE_NATIVE
 	if (cont->type == CONTINUATION_CONTEXT) {
 	    /* cont */

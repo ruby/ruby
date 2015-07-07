@@ -1,3 +1,8 @@
+Tue Jul  7 12:05:37 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* cont.c (cont_free): remove mysterious fflush()
+	  introduced at r19890, maybe accidentaly.
+
 Tue Jul  7 11:45:14 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* proc.c (rb_method_call): because data->me should be non-NULL,
