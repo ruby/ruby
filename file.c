@@ -294,6 +294,8 @@ rb_str_normalize_ospath(const char *ptr, long len)
 	    rb_str_append(str, rb_str_normalize_ospath0(p1, p-p1));
 	    rb_str_cat2(str, "\xEF\xBF\xBD");
 	    p += 1;
+	    p1 = p;
+	    continue;
 	}
 	l = MBCLEN_CHARFOUND_LEN(r);
 	c = rb_enc_mbc_to_codepoint(p, e, enc);
