@@ -9,8 +9,6 @@
 
 **********************************************************************/
 
-#define VM_CHECK_MODE 2
-
 #include "internal.h"
 #include "ruby/debug.h"
 
