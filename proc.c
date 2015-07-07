@@ -1848,7 +1848,7 @@ rb_method_call(int argc, const VALUE *argv, VALUE method)
 static const rb_callable_method_entry_t *
 method_callable_method_entry(struct METHOD *data)
 {
-    if (data->me && data->me->defined_class == 0) rb_bug("method_callable_method_entry: not callable.");
+    if (data->me->defined_class == 0) rb_bug("method_callable_method_entry: not callable.");
     return (const rb_callable_method_entry_t *)data->me;
 }
 
@@ -2324,7 +2324,7 @@ method_inspect(VALUE method)
 
     mklass = data->klass;
 
-    if (data->me && data->me->def->type == VM_METHOD_TYPE_ALIAS) {
+    if (data->me->def->type == VM_METHOD_TYPE_ALIAS) {
 	defined_class = data->me->def->body.alias.original_me->owner;
     }
     else {
