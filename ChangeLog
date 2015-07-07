@@ -15,12 +15,12 @@ Tue Jul  7 15:02:18 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Tue Jul  7 14:40:08 2015  Koichi Sasada  <ko1@atdot.net>
 
-	* vm_backtrace.c: remove debug flag introduced accidentaly.
+	* vm_backtrace.c: remove debug flag introduced accidentally.
 
 Tue Jul  7 12:05:37 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* cont.c (cont_free): remove mysterious fflush()
-	  introduced at r19890, maybe accidentaly.
+	  introduced at r19890, maybe accidentally.
 
 Tue Jul  7 11:45:14 2015  Koichi Sasada  <ko1@atdot.net>
 
