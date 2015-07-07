@@ -1,3 +1,7 @@
+Tue Jul  7 16:47:30 2015  Eric Wong  <e@80x24.org>
+
+	* compile.c (COMPILE_ERROR): reduce GET_THREAD() calls
+
 Tue Jul  7 16:39:04 2015  Eric Wong  <e@80x24.org>
 
 	* random.c (fill_random_bytes_syscall): return -1 for error
