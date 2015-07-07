@@ -1931,30 +1931,6 @@ iseq_data_to_ary(rb_iseq_t *iseq)
 }
 
 VALUE
-rb_iseq_clone(VALUE iseqval, VALUE newcbase)
-{
-    VALUE newiseq = iseq_alloc(rb_cISeq);
-    rb_iseq_t *iseq0, *iseq1;
-
-    GetISeqPtr(iseqval, iseq0);
-    GetISeqPtr(newiseq, iseq1);
-
-    MEMCPY(iseq1, iseq0, rb_iseq_t, 1);
-
-    iseq1->self = newiseq;
-    if (!iseq1->orig) {
-	RB_OBJ_WRITE(iseq1->self, &iseq1->orig, iseqval);
-    }
-    if (iseq0->local_iseq == iseq0) {
-	iseq1->local_iseq = iseq1;
-    }
-
-    RB_GC_GUARD(iseqval); /* seems necessary iff RGenGC is disabled */
-
-    return newiseq;
-}
-
-VALUE
 rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc)
 {
     int i, r;

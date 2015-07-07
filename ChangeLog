@@ -1,3 +1,11 @@
+Tue Jul 07 11:25:57 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.c, internal.h (rb_iseq_clone): removed because we don't need to
+	  clone iseq any more.
+
+	* class.c (clone_method): share iseq between cloned methods. All of
+	  method dependent information are able to refer from method entry.
+
 Tue Jul  7 04:42:25 2015  Eric Wong  <e@80x24.org>
 
 	* string.c (Init_String): use rb_str_freeze for String#freeze
