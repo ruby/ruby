@@ -445,21 +445,10 @@ random_init(int argc, VALUE *argv, VALUE obj)
 # define USE_DEV_URANDOM 0
 #endif
 
-#if defined(_WIN32)
-static void
-release_crypt(void *p)
-{
-    HCRYPTPROV prov = (HCRYPTPROV)ATOMIC_PTR_EXCHANGE(*(HCRYPTPROV *)p, INVALID_HANDLE_VALUE);
-    if (prov && prov != (HCRYPTPROV)INVALID_HANDLE_VALUE) {
-	CryptReleaseContext(prov, 0);
-    }
-}
-#endif
-
-static int
-fill_random_bytes(void *seed, size_t size)
-{
 #if USE_DEV_URANDOM
+static int
+fill_random_bytes_urandom(void *seed, size_t size)
+{
     int fd = rb_cloexec_open("/dev/urandom",
 # ifdef O_NONBLOCK
 			     O_NONBLOCK|
@@ -478,7 +467,25 @@ fill_random_bytes(void *seed, size_t size)
     }
     close(fd);
     if (ret < 0 || (size_t)ret < size) return -1;
-#elif defined(_WIN32)
+    return 0;
+}
+#else
+# define fill_random_bytes_urandom(seed, size) -1
+#endif
+
+#if defined(_WIN32)
+static void
+release_crypt(void *p)
+{
+    HCRYPTPROV prov = (HCRYPTPROV)ATOMIC_PTR_EXCHANGE(*(HCRYPTPROV *)p, INVALID_HANDLE_VALUE);
+    if (prov && prov != (HCRYPTPROV)INVALID_HANDLE_VALUE) {
+	CryptReleaseContext(prov, 0);
+    }
+}
+
+static int
+fill_random_bytes_syscall(void *seed, size_t size)
+{
     static HCRYPTPROV perm_prov;
     HCRYPTPROV prov = perm_prov, old_prov;
     if (!prov) {
@@ -500,8 +507,18 @@ fill_random_bytes(void *seed, size_t size)
     }
     if (prov == (HCRYPTPROV)INVALID_HANDLE_VALUE) return -1;
     CryptGenRandom(prov, size, seed);
-#endif
     return 0;
+}
+#else
+# define fill_random_bytes_syscall(seed, size) -1
+#endif
+
+static int
+fill_random_bytes(void *seed, size_t size)
+{
+    int ret = fill_random_bytes_syscall(seed, size);
+    if (ret) return ret;
+    return fill_random_bytes_urandom(seed, size);
 }
 
 static void
