@@ -1,3 +1,7 @@
+Wed Jul  8 07:43:01 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/csv.rb: typo fix [ci skip][fix GH-958] Patch by @henrik
+
 Wed Jul  8 04:42:27 2015  Eric Wong  <e@80x24.org>
 
 	* iseq.c (iseq_data_to_ary): dump kw_arg as symbol
