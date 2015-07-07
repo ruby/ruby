@@ -66,40 +66,34 @@ compile_data_free(struct iseq_compile_data *compile_data)
 static void
 iseq_free(void *ptr)
 {
-    rb_iseq_t *iseq;
     RUBY_FREE_ENTER("iseq");
 
     if (ptr) {
 	int i;
-	iseq = ptr;
-	if (!iseq->orig) {
-	    /* It's possible that strings are freed */
-	    if (0) {
-		RUBY_GC_INFO("%s @ %s\n", RSTRING_PTR(iseq->location.label),
-					  RSTRING_PTR(iseq->location.path));
-	    }
+	rb_iseq_t *iseq = ptr;
 
-	    RUBY_FREE_UNLESS_NULL(iseq->iseq_encoded);
-	    RUBY_FREE_UNLESS_NULL(iseq->line_info_table);
-	    RUBY_FREE_UNLESS_NULL(iseq->local_table);
-	    RUBY_FREE_UNLESS_NULL(iseq->is_entries);
-	    if (iseq->callinfo_entries) {
-		for (i=0; i<iseq->callinfo_size; i++) {
-		    /* TODO: revisit callinfo data structure */
-		    rb_call_info_kw_arg_t *kw_arg = iseq->callinfo_entries[i].kw_arg;
-		    RUBY_FREE_UNLESS_NULL(kw_arg);
-		}
-		RUBY_FREE_UNLESS_NULL(iseq->callinfo_entries);
+	ruby_xfree(iseq->iseq_encoded);
+	ruby_xfree(iseq->line_info_table);
+	ruby_xfree(iseq->local_table);
+	ruby_xfree(iseq->is_entries);
+
+	if (iseq->callinfo_entries) {
+	    for (i=0; i<iseq->callinfo_size; i++) {
+		/* TODO: revisit callinfo data structure */
+		rb_call_info_kw_arg_t *kw_arg = iseq->callinfo_entries[i].kw_arg;
+		ruby_xfree(kw_arg);
 	    }
-	    RUBY_FREE_UNLESS_NULL(iseq->catch_table);
-	    RUBY_FREE_UNLESS_NULL(iseq->param.opt_table);
-	    if (iseq->param.keyword != NULL) {
-		RUBY_FREE_UNLESS_NULL(iseq->param.keyword->default_values);
-		RUBY_FREE_UNLESS_NULL(iseq->param.keyword);
-	    }
-	    compile_data_free(iseq->compile_data);
-	    RUBY_FREE_UNLESS_NULL(iseq->iseq);
+	    ruby_xfree(iseq->callinfo_entries);
 	}
+	ruby_xfree(iseq->catch_table);
+	ruby_xfree(iseq->param.opt_table);
+	if (iseq->param.keyword != NULL) {
+	    ruby_xfree(iseq->param.keyword->default_values);
+	    ruby_xfree(iseq->param.keyword);
+	}
+	compile_data_free(iseq->compile_data);
+	ruby_xfree(iseq->iseq);
+
 	ruby_xfree(ptr);
     }
     RUBY_FREE_LEAVE("iseq");
@@ -115,17 +109,12 @@ iseq_mark(void *ptr)
 
 	RUBY_GC_INFO("%s @ %s\n", RSTRING_PTR(iseq->location.label), RSTRING_PTR(iseq->location.path));
 
-	if (!iseq->orig) {
-	    RUBY_MARK_UNLESS_NULL(iseq->mark_ary);
-	    RUBY_MARK_UNLESS_NULL(iseq->location.label);
-	    RUBY_MARK_UNLESS_NULL(iseq->location.base_label);
-	    RUBY_MARK_UNLESS_NULL(iseq->location.path);
-	    RUBY_MARK_UNLESS_NULL(iseq->location.absolute_path);
-	    RUBY_MARK_UNLESS_NULL(iseq->coverage);
-	}
-	else {
-	    RUBY_MARK_UNLESS_NULL(iseq->orig);
-	}
+	RUBY_MARK_UNLESS_NULL(iseq->mark_ary);
+	RUBY_MARK_UNLESS_NULL(iseq->location.label);
+	RUBY_MARK_UNLESS_NULL(iseq->location.base_label);
+	RUBY_MARK_UNLESS_NULL(iseq->location.path);
+	RUBY_MARK_UNLESS_NULL(iseq->location.absolute_path);
+	RUBY_MARK_UNLESS_NULL(iseq->coverage);
 
 	if (iseq->compile_data != 0) {
 	    struct iseq_compile_data *const compile_data = iseq->compile_data;
@@ -141,38 +130,36 @@ static size_t
 iseq_memsize(const void *ptr)
 {
     size_t size = sizeof(rb_iseq_t);
-    const rb_iseq_t *iseq;
 
     if (ptr) {
-	iseq = ptr;
-	if (!iseq->orig) {
+	const rb_iseq_t *iseq = ptr;
+
+	size += iseq->iseq_size * sizeof(VALUE);
+	size += iseq->line_info_size * sizeof(struct iseq_line_info_entry);
+	size += iseq->local_table_size * sizeof(ID);
+	if (iseq->catch_table) {
+	    size += iseq_catch_table_bytes(iseq->catch_table->size);
+	}
+	size += (iseq->param.opt_num + 1) * sizeof(VALUE);
+	if (iseq->param.keyword != NULL) {
+	    size += sizeof(struct rb_iseq_param_keyword);
+	    size += sizeof(VALUE) * (iseq->param.keyword->num - iseq->param.keyword->required_num);
+	}
+	size += iseq->is_size * sizeof(union iseq_inline_storage_entry);
+	size += iseq->callinfo_size * sizeof(rb_call_info_t);
+
+	if (iseq->compile_data) {
+	    struct iseq_compile_data_storage *cur;
+
+	    cur = iseq->compile_data->storage_head;
+	    while (cur) {
+		size += cur->size + SIZEOF_ISEQ_COMPILE_DATA_STORAGE;
+		cur = cur->next;
+	    }
+	    size += sizeof(struct iseq_compile_data);
+	}
+	if (iseq->iseq) {
 	    size += iseq->iseq_size * sizeof(VALUE);
-	    size += iseq->line_info_size * sizeof(struct iseq_line_info_entry);
-	    size += iseq->local_table_size * sizeof(ID);
-	    if (iseq->catch_table) {
-		size += iseq_catch_table_bytes(iseq->catch_table->size);
-	    }
-	    size += (iseq->param.opt_num + 1) * sizeof(VALUE);
-	    if (iseq->param.keyword != NULL) {
-		size += sizeof(struct rb_iseq_param_keyword);
-		size += sizeof(VALUE) * (iseq->param.keyword->num - iseq->param.keyword->required_num);
-	    }
-	    size += iseq->is_size * sizeof(union iseq_inline_storage_entry);
-	    size += iseq->callinfo_size * sizeof(rb_call_info_t);
-
-	    if (iseq->compile_data) {
-		struct iseq_compile_data_storage *cur;
-
-		cur = iseq->compile_data->storage_head;
-		while (cur) {
-		    size += cur->size + SIZEOF_ISEQ_COMPILE_DATA_STORAGE;
-		    cur = cur->next;
-		}
-		size += sizeof(struct iseq_compile_data);
-	    }
-	    if (iseq->iseq) {
-		size += iseq->iseq_size * sizeof(VALUE);
-	    }
 	}
     }
 

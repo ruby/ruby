@@ -345,7 +345,6 @@ struct rb_iseq_struct {
     /****************/
 
     VALUE self;
-    const VALUE orig;			/* non-NULL if its data have origin */
 
     /* misc */
     rb_num_t flip_cnt;
