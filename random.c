@@ -77,6 +77,12 @@ The original copyright notice follows.
 #include <sys/time.h>
 #endif
 
+#ifdef HAVE_SYSCALL_H
+#include <syscall.h>
+#elif defined HAVE_SYS_SYSCALL_H
+#include <sys/syscall.h>
+#endif
+
 #ifdef _WIN32
 # if !defined(_WIN32_WINNT) || _WIN32_WINNT < 0x0400
 #  undef _WIN32_WINNT
@@ -84,8 +90,8 @@ The original copyright notice follows.
 #  undef __WINCRYPT_H__
 # endif
 #include <wincrypt.h>
-#include "ruby_atomic.h"
 #endif
+#include "ruby_atomic.h"
 
 typedef int int_must_be_32bit_at_least[sizeof(int) * CHAR_BIT < 32 ? -1 : 1];
 
@@ -507,6 +513,22 @@ fill_random_bytes_syscall(void *seed, size_t size)
     }
     if (prov == (HCRYPTPROV)INVALID_HANDLE_VALUE) return -1;
     CryptGenRandom(prov, size, seed);
+    return 0;
+}
+#elif defined __linux__ && defined SYS_getrandom
+static int
+fill_random_bytes_syscall(void *seed, size_t size)
+{
+    static rb_atomic_t try_syscall = 1;
+    if (try_syscall) {
+	errno = 0;
+	ret = syscall(SYS_getrandom, seed, size, 0)
+	    if (errno == ENOSYS) {
+		try_syscall = 0;
+		return -1;
+	    }
+	if ((size_t)ret == size) return 0;
+    }
     return 0;
 }
 #else
