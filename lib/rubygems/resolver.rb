@@ -191,6 +191,8 @@ class Gem::Resolver
   rescue Molinillo::VersionConflict => e
     conflict = e.conflicts.values.first
     raise Gem::DependencyResolutionError, Conflict.new(conflict.requirement_trees.first.first, conflict.existing, conflict.requirement)
+  ensure
+    @output.close if @output and !debug?
   end
 
   ##
