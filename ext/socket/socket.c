@@ -1850,7 +1850,7 @@ socket_s_ip_address_list(VALUE self)
     errno = save_errno;
 
     if (reason)
-	rb_sys_fail(reason);
+	rb_syserr_fail(save_errno, reason);
     return list;
 
 #elif defined(SIOCGIFCONF)
@@ -1935,7 +1935,7 @@ socket_s_ip_address_list(VALUE self)
     errno = save_errno;
 
     if (reason)
-	rb_sys_fail(reason);
+	rb_syserr_fail(save_errno, reason);
     return list;
 
 #undef EXTRA_SPACE
