@@ -229,8 +229,7 @@ readline_getc(FILE *input)
                 goto again;
             rb_sys_fail("rb_wait_for_single_fd");
         }
-        errno = data.err;
-        rb_sys_fail("read");
+        rb_syserr_fail(data.err, "read");
     }
     return data.ret;
 }
@@ -557,8 +556,7 @@ readline_s_set_input(VALUE self, VALUE input)
         if (f == NULL) {
             int save_errno = errno;
             close(fd);
-            errno = save_errno;
-            rb_sys_fail("fdopen");
+            rb_syserr_fail(save_errno, "fdopen");
         }
         rl_instream = readline_rl_instream = f;
         readline_instream = input;
@@ -594,8 +592,7 @@ readline_s_set_output(VALUE self, VALUE output)
         if (f == NULL) {
             int save_errno = errno;
             close(fd);
-            errno = save_errno;
-            rb_sys_fail("fdopen");
+            rb_syserr_fail(save_errno, "fdopen");
         }
         rl_outstream = readline_rl_outstream = f;
         readline_outstream = output;
