@@ -569,11 +569,13 @@ rsock_bsock_send(int argc, VALUE *argv, VALUE sock)
  *
  * Gets the do_not_reverse_lookup flag of _basicsocket_.
  *
+ *   BasicSocket.do_not_reverse_lookup = false
  *   TCPSocket.open("www.ruby-lang.org", 80) {|sock|
  *     p sock.do_not_reverse_lookup      #=> false
- *     p sock.peeraddr                   #=> ["AF_INET", 80, "carbon.ruby-lang.org", "221.186.184.68"]
- *     sock.do_not_reverse_lookup = true
- *     p sock.peeraddr                   #=> ["AF_INET", 80, "221.186.184.68", "221.186.184.68"]
+ *   }
+ *   BasicSocket.do_not_reverse_lookup = true
+ *   TCPSocket.open("www.ruby-lang.org", 80) {|sock|
+ *     p sock.do_not_reverse_lookup      #=> true
  *   }
  */
 static VALUE
@@ -591,10 +593,12 @@ bsock_do_not_reverse_lookup(VALUE sock)
  *
  * Sets the do_not_reverse_lookup flag of _basicsocket_.
  *
- *   BasicSocket.do_not_reverse_lookup = false
- *   p TCPSocket.new("127.0.0.1", 80).do_not_reverse_lookup #=> false
- *   BasicSocket.do_not_reverse_lookup = true
- *   p TCPSocket.new("127.0.0.1", 80).do_not_reverse_lookup #=> true
+ *   TCPSocket.open("www.ruby-lang.org", 80) {|sock|
+ *     p sock.do_not_reverse_lookup       #=> true
+ *     p sock.peeraddr                    #=> ["AF_INET", 80, "221.186.184.68", "221.186.184.68"]
+ *     sock.do_not_reverse_lookup = false
+ *     p sock.peeraddr                    #=> ["AF_INET", 80, "carbon.ruby-lang.org", "54.163.249.195"]
+ *   }
  *
  */
 static VALUE
