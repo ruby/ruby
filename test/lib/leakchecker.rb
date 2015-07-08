@@ -17,6 +17,9 @@ class LeakChecker
   end
 
   def find_fds
+    if IO.respond_to?(:console) and (m = IO.method(:console)).arity.nonzero?
+      m[:close]
+    end
     fd_dir = "/proc/self/fd"
     if File.directory?(fd_dir)
       fds = Dir.open(fd_dir) {|d|
@@ -35,9 +38,6 @@ class LeakChecker
   def check_fd_leak(test_name)
     leaked = false
     live1 = @fd_info
-    if IO.respond_to?(:console) and (m = IO.method(:console)).arity.nonzero?
-      m[:close]
-    end
     live2 = find_fds
     fd_closed = live1 - live2
     if !fd_closed.empty?
