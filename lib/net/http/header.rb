@@ -14,7 +14,11 @@ module Net::HTTPHeader
     return unless initheader
     initheader.each do |key, value|
       warn "net/http: warning: duplicated HTTP header: #{key}" if key?(key) and $VERBOSE
-      @header[key.downcase] = [value.strip]
+      if value.nil? and $VERBOSE
+        warn "net/http: warning: duplicated HTTP header: #{key}" if key?(key) and $VERBOSE
+      else
+        @header[key.downcase] = [value.strip]
+      end
     end
   end
 
@@ -449,4 +453,3 @@ module Net::HTTPHeader
   private :tokens
 
 end
-
