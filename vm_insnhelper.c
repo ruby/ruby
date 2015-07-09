@@ -1055,7 +1055,6 @@ vm_search_method(rb_call_info_t *ci, VALUE recv)
 
     ci->me = rb_callable_method_entry(klass, ci->mid);
     VM_ASSERT(callable_method_entry_p(ci->me));
-    ci->klass = klass;
     ci->call = vm_call_general;
 #if OPT_INLINE_METHOD_CACHE
     ci->method_state = GET_GLOBAL_METHOD_STATE();
@@ -1125,7 +1124,6 @@ rb_equal_opt(VALUE obj1, VALUE obj2)
 {
     rb_call_info_t ci;
     ci.mid = idEq;
-    ci.klass = 0;
     ci.method_state = 0;
     ci.me = NULL;
     ci.class_serial = 0;
@@ -2170,29 +2168,10 @@ vm_super_outside(void)
     rb_raise(rb_eNoMethodError, "super called outside of method");
 }
 
-static int
-vm_search_superclass(rb_control_frame_t *reg_cfp, rb_iseq_t *iseq, VALUE sigval, rb_call_info_t *ci)
-{
-    const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(reg_cfp);
-
-    if (me == NULL) {
-	return -1;
-    }
-    else if (me->def->type == VM_METHOD_TYPE_BMETHOD && !sigval) {
-	return -2;
-    }
-    else {
-	ci->mid = me->def->original_id;
-	ci->klass = vm_search_normal_superclass(me->defined_class);
-	return 0;
-    }
-}
-
 static void
 vm_search_super_method(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci)
 {
-    VALUE current_defined_class;
-    rb_iseq_t *iseq = GET_ISEQ();
+    VALUE current_defined_class, klass;
     VALUE sigval = TOPN(ci->argc);
     const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(reg_cfp);
 
@@ -2219,25 +2198,26 @@ vm_search_super_method(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_inf
 		 rb_obj_class(ci->recv), m);
     }
 
-    switch (vm_search_superclass(GET_CFP(), iseq, sigval, ci)) {
-      case -1:
-	vm_super_outside();
-      case -2:
+    if (me->def->type == VM_METHOD_TYPE_BMETHOD && !sigval) {
 	rb_raise(rb_eRuntimeError,
 		 "implicit argument passing of super from method defined"
 		 " by define_method() is not supported."
 		 " Specify all arguments explicitly.");
     }
-    if (!ci->klass) {
+
+    ci->mid = me->def->original_id;
+    klass = vm_search_normal_superclass(me->defined_class);
+
+    if (!klass) {
 	/* bound instance method of module */
 	ci->aux.method_missing_reason = MISSING_SUPER;
 	CI_SET_FASTPATH(ci, vm_call_method_missing, 1);
-	return;
     }
-
-    /* TODO: use inline cache */
-    ci->me = rb_callable_method_entry(ci->klass, ci->mid);
-    ci->call = vm_call_super_method;
+    else {
+	/* TODO: use inline cache */
+	ci->me = rb_callable_method_entry(klass, ci->mid);
+	ci->call = vm_call_super_method;
+    }
 }
 
 /* yield */
@@ -2500,17 +2480,20 @@ vm_defined(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_num_t op_type, VALUE
 	    expr_type = DEFINED_YIELD;
 	}
 	break;
-      case DEFINED_ZSUPER:{
-	rb_call_info_t cit;
-	if (vm_search_superclass(GET_CFP(), GET_ISEQ(), Qnil, &cit) == 0) {
-	    VALUE klass = cit.klass;
-	    ID id = cit.mid;
-	    if (rb_method_boundp(klass, id, 0)) {
-		expr_type = DEFINED_ZSUPER;
+      case DEFINED_ZSUPER:
+	{
+	    const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(GET_CFP());
+
+	    if (me) {
+		VALUE klass = vm_search_normal_superclass(me->defined_class);
+		ID id = me->def->original_id;
+
+		if (rb_method_boundp(klass, id, 0)) {
+		    expr_type = DEFINED_ZSUPER;
+		}
 	    }
 	}
 	break;
-      }
       case DEFINED_REF:{
 	if (vm_getspecial(th, GET_LEP(), Qfalse, FIX2INT(obj)) != Qnil) {
 	    expr_type = DEFINED_GVAR;

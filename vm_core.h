@@ -180,7 +180,6 @@ typedef struct rb_call_info_struct {
     /* inline cache: keys */
     rb_serial_t method_state;
     rb_serial_t class_serial;
-    VALUE klass;
 
     /* inline cache: values */
     const rb_callable_method_entry_t *me;

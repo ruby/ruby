@@ -1,3 +1,21 @@
+Thu Jul  9 11:07:06 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h: remove rb_call_info_t::klass because
+	  rb_callable_method_entry_t has information about defined class.
+
+	* vm_insnhelper.c (vm_search_method): don't set ci->klass because
+	  it is removed.
+
+	* vm_insnhelper.c (rb_equal_opt): ditto.
+
+	* vm_insnhelper.c (vm_search_superclass): removed because it is too
+	  simple to write code directly.
+
+	* vm_insnhelper.c (vm_defined): don't use vm_search_superclass().
+	  This fix avoid searching current callable `me' twice.
+
+	* vm_insnhelper.c (vm_search_super_method): ditto.
+
 Thu Jul  9 10:03:10 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/net/http/responses.rb: Added 308 status to CODE_TO_OBJ list.
