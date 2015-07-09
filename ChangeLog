@@ -1,3 +1,8 @@
+Thu Jul  9 10:03:10 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/net/http/responses.rb: Added 308 status to CODE_TO_OBJ list.
+	  [fix GH-961] Patch by @billinghamj
+
 Thu Jul  9 09:34:14 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h (rb_control_frame_t): fix comments (layout index).
