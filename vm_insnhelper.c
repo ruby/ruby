@@ -2216,7 +2216,7 @@ vm_search_super_method(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_inf
     else {
 	/* TODO: use inline cache */
 	ci->me = rb_callable_method_entry(klass, ci->mid);
-	ci->call = vm_call_super_method;
+	CI_SET_FASTPATH(ci, vm_call_super_method, 1);
     }
 }
 
