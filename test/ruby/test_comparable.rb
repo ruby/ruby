@@ -81,12 +81,9 @@ class TestComparable < Test::Unit::TestCase
     assert_equal(-1, @o.clamp(-2, -1))
     assert_equal(0, @o.clamp(-1, 3))
 
-    # what about stuff like @o.clamp(2, 1) ?
-    cmp->(x) do 1 <=> x end
-    assert_equal(2, @o.clamp(2, 1))
-
-    cmp->(x) do 2 <=> x end
-    assert_equal(1, @o.clamp(2, 1))
+    assert_raise_with_message(ArgumentError, 'min argument must be smaller than max argument') {
+      @o.clamp(2, 1)
+    }
    end
 
   def test_err
