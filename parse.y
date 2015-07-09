@@ -9934,8 +9934,8 @@ remove_duplicate_keys(struct parser_params *parser, NODE *hash)
 	if (nd_type(head) == NODE_LIT &&
 	    st_lookup(literal_keys, (key = head->nd_lit), &data)) {
 	    rb_compile_warn(ruby_sourcefile, nd_line((NODE *)data),
-			    "duplicated key at line %d ignored: %+"PRIsVALUE,
-			    nd_line(head), head->nd_lit);
+			    "key %+"PRIsVALUE" is duplicated and overwritten on line %d",
+			    head->nd_lit, nd_line(head));
 	    head = ((NODE *)data)->nd_next;
 	    head->nd_head = block_append(head->nd_head, value->nd_head);
 	}

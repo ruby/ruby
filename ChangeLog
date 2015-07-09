@@ -1,3 +1,8 @@
+Thu Jul  9 09:25:50 2015  Zachary Scott  <e@zzak.io>
+
+        * parse.y: Improve duplicate key warning with patch by @andremedeiros
+          [Fix GH-938] https://github.com/ruby/ruby/pull/938 [Bug #11327]
+
 Wed Jul  8 07:43:01 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/csv.rb: typo fix [ci skip][fix GH-958] Patch by @henrik
