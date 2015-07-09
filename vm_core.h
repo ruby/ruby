@@ -527,12 +527,12 @@ typedef struct rb_control_frame_struct {
     rb_iseq_t *iseq;		/* cfp[2] */
     VALUE flag;			/* cfp[3] */
     VALUE self;			/* cfp[4] / block[0] */
-    VALUE *ep;			/* cfp[6] / block[1] */
-    rb_iseq_t *block_iseq;	/* cfp[7] / block[2] */
-    VALUE proc;			/* cfp[8] / block[3] */
+    VALUE *ep;			/* cfp[5] / block[1] */
+    rb_iseq_t *block_iseq;	/* cfp[6] / block[2] */
+    VALUE proc;			/* cfp[7] / block[3] */
 
 #if VM_DEBUG_BP_CHECK
-    VALUE *bp_check;		/* cfp[9] */
+    VALUE *bp_check;		/* cfp[8] */
 #endif
 } rb_control_frame_t;
 
