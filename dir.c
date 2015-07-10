@@ -1451,10 +1451,8 @@ is_case_sensitive(DIR *dirp)
     const vol_capabilities_attr_t *const cap = attrbuf[0].cap;
     const int idx = VOL_CAPABILITIES_FORMAT;
     const uint32_t mask = VOL_CAP_FMT_CASE_SENSITIVE;
-    struct statfs sf;
 
-    if (fstatfs(dirfd(dirp), &sf)) return -1;
-    if (getattrlist(sf.f_mntonname, &al, attrbuf, sizeof(attrbuf), FSOPT_NOFOLLOW))
+    if (fgetattrlist(dirfd(dirp), &al, attrbuf, sizeof(attrbuf), FSOPT_NOFOLLOW))
 	return -1;
     if (!(cap->valid[idx] & mask))
 	return -1;

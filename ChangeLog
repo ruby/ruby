@@ -1,3 +1,8 @@
+Fri Jul 10 17:41:54 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (is_case_sensitive): get attributes by the file descriptor
+	  of open directory, instead of using mount point name.
+
 Fri Jul 10 10:46:02 2015  ksss  <co000ri@gmail.com>
 
 	* ext/stringio/stringio.c (writable): remove unnecessary check for
