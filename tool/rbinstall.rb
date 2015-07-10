@@ -545,7 +545,22 @@ install?(:local, :comm, :man) do
         alias print push
       end
       open(mdoc) {|r| Mdoc2Man.mdoc2man(r, w)}
-      open_for_install(destfile, $data_mode) {w.join("")}
+      w = w.join("")
+      case $mantype
+      when /\.(?:(gz)|bz2)\z/
+        suffix = $&
+        compress = $1 ? "gzip" : "bzip2"
+        require 'tmpdir'
+        Dir.mktmpdir("man") {|d|
+          dest = File.join(d, File.basename(destfile))
+          File.open(dest, "wb") {|f| f.write w}
+          if system(compress, dest)
+            w = File.open(dest+suffix, "rb") {|f| f.read}
+            destfile << suffix
+          end
+        }
+      end
+      open_for_install(destfile, $data_mode) {w}
     end
   end
 end
