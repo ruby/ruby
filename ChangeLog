@@ -1,3 +1,8 @@
+Fri Jul 10 10:46:02 2015  ksss  <co000ri@gmail.com>
+
+	* ext/stringio/stringio.c (writable): remove unnecessary check for
+	  deprecated safe level 4.  [Fix GH-963]
+
 Thu Jul  9 15:07:12 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (waitpid): return immediately if interrupted.

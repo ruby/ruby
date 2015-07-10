@@ -139,8 +139,6 @@ writable(VALUE strio)
     if (!WRITABLE(strio)) {
 	rb_raise(rb_eIOError, "not opened for writing");
     }
-    if (!OBJ_TAINTED(ptr->string)) {
-    }
     return ptr;
 }
 
