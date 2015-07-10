@@ -1,3 +1,9 @@
+Fri Jul 10 22:05:50 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/timeout.rb (ExitException): removed internal exception class
+	  and use Timeout::Error instead, as using throw/catch to isolate
+	  each timeouts now.  [ruby-dev:49179] [Bug #11344]
+
 Fri Jul 10 20:13:05 2015  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* process.c (rb_f_exec): rb_exec_without_timer_thread should be

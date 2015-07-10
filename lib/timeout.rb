@@ -24,8 +24,6 @@
 module Timeout
   # Raised by Timeout#timeout when the block times out.
   class Error < RuntimeError
-  end
-  class ExitException < ::Exception # :nodoc:
     attr_reader :thread
 
     def self.catch(*args)
@@ -101,7 +99,7 @@ module Timeout
         bt = e.backtrace
       end
     else
-      bt = ExitException.catch(message, &bl)
+      bt = Error.catch(message, &bl)
     end
     rej = /\A#{Regexp.quote(__FILE__)}:#{__LINE__-4}\z/o
     bt.reject! {|m| rej =~ m}
