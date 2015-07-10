@@ -193,7 +193,7 @@ cmp_between(VALUE x, VALUE min, VALUE max)
 static VALUE
 cmp_clamp(VALUE x, VALUE min, VALUE max)
 {
-    if (RTEST(cmp_lt(max, min))) {
+    if (RTEST(cmp_gt(min, max))) {
         rb_raise(rb_eArgError, "min argument must be smaller than max argument");
     }
 
