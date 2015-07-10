@@ -2473,9 +2473,7 @@ rb_execarg_parent_end(VALUE execarg_obj)
     RB_GC_GUARD(execarg_obj);
 }
 
-#if defined(__APPLE__) || defined(__HAIKU__)
 static int rb_exec_without_timer_thread(const struct rb_execarg *eargp, char *errmsg, size_t errmsg_buflen);
-#endif
 
 /*
  *  call-seq:
@@ -2563,13 +2561,7 @@ rb_f_exec(int argc, const VALUE *argv)
     rb_execarg_parent_start(execarg_obj);
     fail_str = eargp->use_shell ? eargp->invoke.sh.shell_script : eargp->invoke.cmd.command_name;
 
-#if defined(__APPLE__) || defined(__HAIKU__)
     rb_exec_without_timer_thread(eargp, errmsg, sizeof(errmsg));
-#else
-    before_exec_async_signal_safe(); /* async-signal-safe */
-    rb_exec_async_signal_safe(eargp, errmsg, sizeof(errmsg));
-    preserving_errno(after_exec_async_signal_safe()); /* async-signal-safe */
-#endif
     RB_GC_GUARD(execarg_obj);
     if (errmsg[0])
         rb_sys_fail(errmsg);
@@ -3077,7 +3069,6 @@ failure:
     return -1;
 }
 
-#if defined(__APPLE__) || defined(__HAIKU__)
 static int
 rb_exec_without_timer_thread(const struct rb_execarg *eargp, char *errmsg, size_t errmsg_buflen)
 {
@@ -3087,7 +3078,6 @@ rb_exec_without_timer_thread(const struct rb_execarg *eargp, char *errmsg, size_
     preserving_errno(after_exec()); /* not async-signal-safe because it calls rb_thread_start_timer_thread.  */
     return ret;
 }
-#endif
 
 #ifdef HAVE_WORKING_FORK
 /* This function should be async-signal-safe.  Hopefully it is. */
