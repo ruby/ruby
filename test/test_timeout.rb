@@ -60,6 +60,11 @@ class TestTimeout < Test::Unit::TestCase
     assert_nothing_raised(ArgumentError, bug9354) do
       assert_equal(:ok, timeout(100, err) {:ok})
     end
+    assert_raise_with_message(err, /execution expired/) do
+      timeout 0.01, err do
+        sleep 3
+      end
+    end
   end
 
   def test_exit_exception
