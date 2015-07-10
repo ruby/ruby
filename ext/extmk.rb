@@ -257,6 +257,8 @@ def extmake(target)
 	f.print(*dummy_makefile(CONFIG["srcdir"]))
       end
 
+      return true if !error and target.start_with?("-")
+
       mess = "Failed to configure #{target}. It will not be installed.\n"
       if error
         mess = "#{error}\n#{mess}"
