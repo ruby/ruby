@@ -4194,7 +4194,7 @@ AC_ARG_WITH(mantype,
 	AS_HELP_STRING([--with-mantype=TYPE], [specify man page type; TYPE is one of man and doc]),
 		[
 			AS_CASE(["$withval"],
-			[man|doc], [MANTYPE=$withval],
+			[man|man.gz|man.bz2|doc|doc.gz|doc.bz2], [MANTYPE=$withval],
 			[AC_MSG_ERROR(invalid man type: $withval)])
 		])
 if test -z "$MANTYPE"; then
