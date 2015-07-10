@@ -387,10 +387,7 @@ checksum_long(uLong (*func)(uLong, const Bytef*, uInt), uLong sum, const Bytef *
 #endif
 
 static VALUE
-do_checksum(argc, argv, func)
-    int argc;
-    VALUE *argv;
-    uLong (*func)(uLong, const Bytef*, uInt);
+do_checksum(int argc, VALUE *argv, uLong (*func)(uLong, const Bytef*, uInt))
 {
     VALUE str, vsum;
     unsigned long sum;
@@ -1001,7 +998,8 @@ zstream_run_func(void *ptr)
 	if (args->stream_output) {
 	    state = (int)(VALUE)rb_thread_call_with_gvl(zstream_expand_buffer_protect,
 							(void *)z);
-	} else {
+	}
+	else {
 	    state = zstream_expand_buffer_without_gvl(z);
 	}
 
@@ -1983,7 +1981,8 @@ do_inflate(struct zstream *z, VALUE src)
  * stream's required dictionary.
  */
 static VALUE
-rb_inflate_add_dictionary(VALUE obj, VALUE dictionary) {
+rb_inflate_add_dictionary(VALUE obj, VALUE dictionary)
+{
     VALUE dictionaries = rb_ivar_get(obj, id_dictionaries);
     VALUE checksum = do_checksum(1, &dictionary, adler32);
 
@@ -4099,7 +4098,8 @@ gzreader_gets(int argc, VALUE *argv, VALUE obj)
 	rsptr = "\n\n";
 	rslen = 2;
 	rspara = 1;
-    } else {
+    }
+    else {
 	rsptr = RSTRING_PTR(rs);
 	rslen = RSTRING_LEN(rs);
 	rspara = 0;
@@ -4136,7 +4136,8 @@ gzreader_gets(int argc, VALUE *argv, VALUE obj)
 	    n = filled;
 	    if (limit > 0 && filled >= limit) break;
 	    n++;
-	} else {
+	}
+	else {
 	    n += (long)(res - p);
 	    p = res;
 	    if (rslen == 1 || memcmp(p, rsptr, rslen) == 0) break;
