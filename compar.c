@@ -173,6 +173,35 @@ cmp_between(VALUE x, VALUE min, VALUE max)
     return Qtrue;
 }
 
+
+/*
+ *  call-seq:
+ *     obj.clamp(min, max) ->  obj
+ *
+ * Returns <i>min</i> if <i>obj</i> <code><=></code> <i>min</i> is less
+ * than zero, <i>max</i> if <i>obj</i> <code><=></code> <i>min</i> is
+ * greater than zero and <i>obj</i> otherwise.
+ *
+ *     12.clamp(0, 100)         #=> 12
+ *     523.clamp(0, 100)        #=> 100
+ *     -3.123.clamp(0, 100)     #=> 0
+ *
+ *     'd'.clamp('a', 'f')      #=> 'd'
+ *     'z'.clamp('a', 'f')      #=> 'f'
+ */
+
+static VALUE
+cmp_clamp(VALUE x, VALUE min, VALUE max)
+{
+    if (RTEST(cmp_lt(max, min))) {
+        rb_raise(rb_eArgError, "min argument must be smaller than max argument");
+    }
+
+    if (RTEST(cmp_lt(x, min))) return min;
+    if (RTEST(cmp_gt(x, max))) return max;
+    return x;
+}
+
 /*
  *  The <code>Comparable</code> mixin is used by classes whose objects
  *  may be ordered. The class must define the <code><=></code> operator,
@@ -225,6 +254,7 @@ Init_Comparable(void)
     rb_define_method(rb_mComparable, "<", cmp_lt, 1);
     rb_define_method(rb_mComparable, "<=", cmp_le, 1);
     rb_define_method(rb_mComparable, "between?", cmp_between, 2);
+    rb_define_method(rb_mComparable, "clamp", cmp_clamp, 2);
 
     cmp = rb_intern("<=>");
 }

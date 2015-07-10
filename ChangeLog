@@ -1,3 +1,7 @@
+Thu Jul  9 18:31:49 2015  Ferdinand Niedermann  <nerdinand@nerdinand.com>
+
+  * compar.c (cmp_clamp): Introduce Comparable#clamp [Bug #10594]
+
 Thu Jul  9 15:07:12 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (waitpid): return immediately if interrupted.
