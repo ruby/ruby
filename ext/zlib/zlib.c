@@ -1029,7 +1029,7 @@ zstream_run(struct zstream *z, Bytef *src, long len, int flush)
 {
     struct zstream_run_args args;
     int err;
-    volatile VALUE guard = Qnil;
+    VALUE guard = Qnil;
 
     args.z = z;
     args.flush = flush;
@@ -1086,7 +1086,7 @@ loop:
 
     if (z->stream.avail_in > 0) {
 	zstream_append_input(z, z->stream.next_in, z->stream.avail_in);
-        RB_GC_GUARD(guard) = Qnil; /* prevent tail call to make guard effective */
+	RB_GC_GUARD(guard); /* prevent tail call to make guard effective */
     }
 
     if (args.jump_state)
@@ -2672,7 +2672,7 @@ gzfile_write(struct gzfile *gz, Bytef *str, long len)
 static long
 gzfile_read_more(struct gzfile *gz)
 {
-    volatile VALUE str;
+    VALUE str;
 
     while (!ZSTREAM_IS_FINISHED(&gz->z)) {
 	str = gzfile_read_raw(gz);
@@ -2685,6 +2685,7 @@ gzfile_read_more(struct gzfile *gz)
 	if (RSTRING_LEN(str) > 0) { /* prevent Z_BUF_ERROR */
 	    zstream_run(&gz->z, (Bytef*)RSTRING_PTR(str), RSTRING_LEN(str),
 			Z_SYNC_FLUSH);
+	    RB_GC_GUARD(str);
 	}
 	if (gz->z.buf_filled > 0) break;
     }
@@ -2791,6 +2792,7 @@ gzfile_readpartial(struct gzfile *gz, long len, VALUE outbuf)
     if (!NIL_P(outbuf)) {
         rb_str_resize(outbuf, RSTRING_LEN(dst));
         memcpy(RSTRING_PTR(outbuf), RSTRING_PTR(dst), RSTRING_LEN(dst));
+	RB_GC_GUARD(dst);
 	dst = outbuf;
     }
     OBJ_TAINT(dst);  /* for safe */
@@ -3583,6 +3585,7 @@ rb_gzwriter_write(VALUE obj, VALUE str)
 	str = rb_str_conv_enc(str, rb_enc_get(str), gz->enc2);
     }
     gzfile_write(gz, (Bytef*)RSTRING_PTR(str), RSTRING_LEN(str));
+    RB_GC_GUARD(str);
     return INT2FIX(RSTRING_LEN(str));
 }
 
@@ -3956,6 +3959,7 @@ rb_gzreader_ungetc(VALUE obj, VALUE s)
 	s = rb_str_conv_enc(s, rb_enc_get(s), gz->enc2);
     }
     gzfile_ungets(gz, (const Bytef*)RSTRING_PTR(s), RSTRING_LEN(s));
+    RB_GC_GUARD(s);
     return Qnil;
 }
 
@@ -4035,7 +4039,7 @@ static VALUE
 gzreader_gets(int argc, VALUE *argv, VALUE obj)
 {
     struct gzfile *gz = get_gzfile(obj);
-    volatile VALUE rs;
+    VALUE rs;
     VALUE dst;
     const char *rsptr;
     char *p, *res;
@@ -4154,6 +4158,7 @@ gzreader_gets(int argc, VALUE *argv, VALUE obj)
     if (rspara) {
 	gzreader_skip_linebreaks(gz);
     }
+    RB_GC_GUARD(rs);
 
     return gzfile_newstr(gz, dst);
 }
