@@ -1,7 +1,7 @@
 Sat Jul 11 12:45:51 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/timeout.rb (Timeout#timeout): remove regexp with wrong line
-	  nuber and fix caller depth.
+	  number and fix caller depth.
 
 Fri Jul 10 22:05:50 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
