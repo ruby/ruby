@@ -1501,7 +1501,7 @@ strio_set_encoding(int argc, VALUE *argv, VALUE self)
  *
  *   io = StringIO.new
  *   io.puts "Hello World"
- *   io.string #=> "Hello World"
+ *   io.string #=> "Hello World\n"
  */
 void
 Init_stringio(void)
