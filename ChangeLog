@@ -1,3 +1,8 @@
+Sun Jul 12 06:42:23 2015  ksss  <co000ri@gmail.com>
+
+	* test/stringio/test_stringio.rb (test_sysread): add a test for
+	  StringIO#sysread.  [Fix GH-966]
+
 Sat Jul 11 21:16:34 2015  ksss  <co000ri@gmail.com>
 
 	* ext/stringio/stringio.c (Init_stringio): [DOC] Fix an example,

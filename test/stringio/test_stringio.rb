@@ -470,6 +470,7 @@ class TestStringIO < Test::Unit::TestCase
     assert_raise(ArgumentError) { f.read(-1) }
     assert_raise(ArgumentError) { f.read(1, 2, 3) }
     assert_equal("\u3042\u3044", f.read)
+    assert_nil(f.read(1))
     f.rewind
     assert_equal("\u3042\u3044".force_encoding(Encoding::ASCII_8BIT), f.read(f.size))
 
@@ -523,6 +524,15 @@ class TestStringIO < Test::Unit::TestCase
     # not empty buffer
     s = '0123456789'
     assert_equal("\u3042\u3044".force_encoding(Encoding::ASCII_8BIT), f.read_nonblock(f.size, s))
+  end
+
+  def test_sysread
+    f = StringIO.new("sysread \u{30c6 30b9 30c8}")
+    assert_equal "sysread \u{30c6 30b9 30c8}", f.sysread
+    assert_equal "", f.sysread
+    assert_raise(EOFError) { f.sysread(1) }
+    f.rewind
+    assert_equal Encoding::ASCII_8BIT, f.sysread(3).encoding
   end
 
   def test_size
