@@ -101,9 +101,7 @@ module Timeout
     else
       bt = Error.catch(message, &bl)
     end
-    rej = /\A#{Regexp.quote(__FILE__)}:#{__LINE__-4}\z/o
-    bt.reject! {|m| rej =~ m}
-    level = -caller(CALLER_OFFSET).size
+    level = -caller(CALLER_OFFSET).size-2
     while THIS_FILE =~ bt[level]
       bt.delete_at(level)
     end
