@@ -1,3 +1,8 @@
+Sat Jul 11 21:16:34 2015  ksss  <co000ri@gmail.com>
+
+	* ext/stringio/stringio.c (Init_stringio): [DOC] Fix an example,
+	  StringIO#puts should be set "\n" at last.  [Fix GH-965]
+
 Sat Jul 11 12:45:51 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/timeout.rb (Timeout#timeout): remove regexp with wrong line
