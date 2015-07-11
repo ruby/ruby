@@ -525,6 +525,13 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal("\u3042\u3044".force_encoding(Encoding::ASCII_8BIT), f.read_nonblock(f.size, s))
   end
 
+  def test_sysread
+    f = StringIO.new("sysread testing")
+    assert_equal "sysread testing", f.sysread
+    assert_equal "", f.sysread
+    assert_raise(EOFError) { f.sysread(1) }
+  end
+
   def test_size
     f = StringIO.new("1234")
     assert_equal(4, f.size)
