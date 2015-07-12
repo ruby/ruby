@@ -680,7 +680,7 @@ bsock_recv(int argc, VALUE *argv, VALUE sock)
  * BasicSocket#recv_nonblock may raise any error corresponding to recvfrom(2) failure,
  * including Errno::EWOULDBLOCK.
  *
- * If the exception is Errno::EWOULDBLOCK or Errno::AGAIN,
+ * If the exception is Errno::EWOULDBLOCK or Errno::EAGAIN,
  * it is extended by IO::WaitReadable.
  * So IO::WaitReadable can be used to rescue the exceptions for retrying recv_nonblock.
  *

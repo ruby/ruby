@@ -1,3 +1,17 @@
+Sun Jul 12 09:20:02 2015  Shota Fukumori  <her@sorah.jp>
+
+	* ext/socket/basicsocket.c: [DOC] typo (Errno::AGAIN -> Errno::EAGAIN)
+
+	* ext/socket/socket.c: ditto
+
+	* ext/socket/tcpserver.c: ditto
+
+	* ext/socket/udpsocket.c: ditto
+
+	* ext/socket/unixserver.c: ditto
+
+	* io.c: ditto
+
 Sun Jul 12 06:42:23 2015  ksss  <co000ri@gmail.com>
 
 	* test/stringio/test_stringio.rb (test_sysread): add a test for
