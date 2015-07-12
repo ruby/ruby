@@ -1,3 +1,8 @@
+Mon Jul 13 01:37:27 2015  Zachary Scott  <zzak@ruby-lang.org>
+
+        * ext/openssl/ossl.c: [DOC] Backport ruby/openssl@dbb3fdb [Bug #11345]
+          Thanks to Tomoya Chiba for the report and help with patch.
+
 Sun Jul 12 09:20:02 2015  Shota Fukumori  <her@sorah.jp>
 
 	* ext/socket/basicsocket.c: [DOC] typo (Errno::AGAIN -> Errno::EAGAIN)
