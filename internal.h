@@ -847,13 +847,11 @@ VALUE rb_io_flush_raw(VALUE, int);
 size_t rb_io_memsize(const rb_io_t *);
 
 /* iseq.c */
-VALUE rb_iseq_clone(VALUE iseqval, VALUE newcbase);
 VALUE rb_iseq_path(VALUE iseqval);
 VALUE rb_iseq_absolute_path(VALUE iseqval);
 VALUE rb_iseq_label(VALUE iseqval);
 VALUE rb_iseq_base_label(VALUE iseqval);
 VALUE rb_iseq_first_lineno(VALUE iseqval);
-VALUE rb_iseq_klass(VALUE iseqval); /* completely temporary function */
 VALUE rb_iseq_method_name(VALUE self);
 
 /* load.c */

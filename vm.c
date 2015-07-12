@@ -2275,13 +2275,6 @@ vm_define_method(rb_thread_t *th, VALUE obj, ID id, VALUE iseqval,
     VALUE klass = CREF_CLASS(cref);
     const rb_scope_visibility_t *scope_visi = CREF_SCOPE_VISI(cref);
     rb_method_visibility_t visi = scope_visi->method_visi;
-    rb_iseq_t *miseq;
-    GetISeqPtr(iseqval, miseq);
-
-    if (miseq->klass) {
-	iseqval = rb_iseq_clone(iseqval, 0);
-	GetISeqPtr(iseqval, miseq);
-    }
 
     if (NIL_P(klass)) {
 	rb_raise(rb_eTypeError, "no class/module to add method");
@@ -2292,9 +2285,6 @@ vm_define_method(rb_thread_t *th, VALUE obj, ID id, VALUE iseqval,
 	visi = METHOD_VISI_PUBLIC;
     }
 
-    /* dup */
-    RB_OBJ_WRITE(miseq->self, &miseq->klass, klass);
-    miseq->defined_method_id = id;
     rb_add_method_iseq(klass, id, iseqval, cref, visi);
 
     if (!is_singleton && scope_visi->module_func) {

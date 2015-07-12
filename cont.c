@@ -226,7 +226,7 @@ cont_free(void *ptr)
     RUBY_FREE_ENTER("cont");
     if (ptr) {
 	rb_context_t *cont = ptr;
-	RUBY_FREE_UNLESS_NULL(cont->saved_thread.stack); fflush(stdout);
+	RUBY_FREE_UNLESS_NULL(cont->saved_thread.stack);
 #if FIBER_USE_NATIVE
 	if (cont->type == CONTINUATION_CONTEXT) {
 	    /* cont */
@@ -1196,14 +1196,15 @@ fiber_init(VALUE fibval, VALUE proc)
     th->cfp = (void *)(th->stack + th->stack_size);
     th->cfp--;
     th->cfp->pc = 0;
-    th->cfp->sp = th->stack + 1;
+    th->cfp->sp = th->stack + 2;
 #if VM_DEBUG_BP_CHECK
     th->cfp->bp_check = 0;
 #endif
-    th->cfp->ep = th->stack;
-    *th->cfp->ep = VM_ENVVAL_BLOCK_PTR(0);
+    th->cfp->ep = th->stack + 1;
+    th->cfp->ep[ 0] = VM_ENVVAL_BLOCK_PTR(0);
+    th->cfp->ep[-1] = 0;
     th->cfp->self = Qnil;
-    th->cfp->flag = 0;
+    th->cfp->flag = VM_FRAME_MAGIC_DUMMY | VM_FRAME_FLAG_FINISH;
     th->cfp->iseq = 0;
     th->cfp->proc = 0;
     th->cfp->block_iseq = 0;

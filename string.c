@@ -212,6 +212,7 @@ static int fstring_cmp(VALUE a, VALUE b);
 
 /* in case we restart MVM development, this needs to be per-VM */
 static st_table* frozen_strings;
+static VALUE register_fstring(VALUE str);
 
 static inline st_table*
 rb_vm_fstring_table(void)
@@ -260,12 +261,18 @@ fstr_update_callback(st_data_t *key, st_data_t *value, st_data_t arg, int existi
 VALUE
 rb_fstring(VALUE str)
 {
-    VALUE ret;
-
     Check_Type(str, T_STRING);
 
     if (FL_TEST(str, RSTRING_FSTR))
 	return str;
+
+    return register_fstring(str);
+}
+
+static VALUE
+register_fstring(VALUE str)
+{
+    VALUE ret;
 
     do {
 	ret = str;
@@ -301,7 +308,7 @@ VALUE
 rb_fstring_new(const char *ptr, long len)
 {
     struct RString fake_str;
-    return rb_fstring(setup_fake_str(&fake_str, ptr, len, ENCINDEX_US_ASCII));
+    return register_fstring(setup_fake_str(&fake_str, ptr, len, ENCINDEX_US_ASCII));
 }
 
 VALUE
@@ -9143,7 +9150,7 @@ Init_String(void)
     rb_define_method(rb_cString, "byteslice", rb_str_byteslice, -1);
     rb_define_method(rb_cString, "scrub", str_scrub, -1);
     rb_define_method(rb_cString, "scrub!", str_scrub_bang, -1);
-    rb_define_method(rb_cString, "freeze", rb_obj_freeze, 0);
+    rb_define_method(rb_cString, "freeze", rb_str_freeze, 0);
 
     rb_define_method(rb_cString, "to_i", rb_str_to_i, -1);
     rb_define_method(rb_cString, "to_f", rb_str_to_f, 0);

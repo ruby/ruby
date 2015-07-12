@@ -82,7 +82,7 @@ unix_accept(VALUE sock)
  * UNIXServer#accept_nonblock may raise any error corresponding to accept(2) failure,
  * including Errno::EWOULDBLOCK.
  *
- * If the exception is Errno::EWOULDBLOCK, Errno::AGAIN, Errno::ECONNABORTED or Errno::EPROTO,
+ * If the exception is Errno::EWOULDBLOCK, Errno::EAGAIN, Errno::ECONNABORTED or Errno::EPROTO,
  * it is extended by IO::WaitReadable.
  * So IO::WaitReadable can be used to rescue the exceptions for retrying accept_nonblock.
  *

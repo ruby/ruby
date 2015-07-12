@@ -963,9 +963,8 @@ rb_check_id(volatile VALUE *namep)
     else if (!RB_TYPE_P(name, T_STRING)) {
 	tmp = rb_check_string_type(name);
 	if (NIL_P(tmp)) {
-	    tmp = rb_inspect(name);
-	    rb_raise(rb_eTypeError, "%s is not a symbol nor a string",
-		     RSTRING_PTR(tmp));
+	    rb_raise(rb_eTypeError, "%+"PRIsVALUE" is not a symbol nor a string",
+		     name);
 	}
 	name = tmp;
 	*namep = name;
@@ -996,9 +995,8 @@ rb_check_symbol(volatile VALUE *namep)
     else if (!RB_TYPE_P(name, T_STRING)) {
 	tmp = rb_check_string_type(name);
 	if (NIL_P(tmp)) {
-	    tmp = rb_inspect(name);
-	    rb_raise(rb_eTypeError, "%s is not a symbol nor a string",
-		     RSTRING_PTR(tmp));
+	    rb_raise(rb_eTypeError, "%+"PRIsVALUE" is not a symbol nor a string",
+		     name);
 	}
 	name = tmp;
 	*namep = name;

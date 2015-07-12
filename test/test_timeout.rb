@@ -60,12 +60,17 @@ class TestTimeout < Test::Unit::TestCase
     assert_nothing_raised(ArgumentError, bug9354) do
       assert_equal(:ok, timeout(100, err) {:ok})
     end
+    assert_raise_with_message(err, /execution expired/) do
+      timeout 0.01, err do
+        sleep 3
+      end
+    end
   end
 
   def test_exit_exception
-    assert_raise_with_message(Timeout::ExitException, "boon") do
-      Timeout.timeout(10, Timeout::ExitException) do
-        raise Timeout::ExitException, "boon"
+    assert_raise_with_message(Timeout::Error, "boon") do
+      Timeout.timeout(10, Timeout::Error) do
+        raise Timeout::Error, "boon"
       end
     end
   end
@@ -79,5 +84,22 @@ class TestTimeout < Test::Unit::TestCase
     assert_raise_with_message(Timeout::Error, 'execution expired', bug9380) do
       Timeout.timeout(0.01) {e.next}
     end
+  end
+
+  def test_handle_interrupt
+    bug11344 = '[ruby-dev:49179] [Bug #11344]'
+    ok = false
+    assert_raise(Timeout::Error) {
+      Thread.handle_interrupt(Timeout::Error => :never) {
+        Timeout.timeout(0.01) {
+          sleep 0.2
+          ok = true
+          Thread.handle_interrupt(Timeout::Error => :on_blocking) {
+            sleep 0.2
+          }
+        }
+      }
+    }
+    assert(ok, bug11344)
   end
 end

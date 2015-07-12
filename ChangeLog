@@ -1,3 +1,254 @@
+Sun Jul 12 09:20:02 2015  Shota Fukumori  <her@sorah.jp>
+
+	* ext/socket/basicsocket.c: [DOC] typo (Errno::AGAIN -> Errno::EAGAIN)
+
+	* ext/socket/socket.c: ditto
+
+	* ext/socket/tcpserver.c: ditto
+
+	* ext/socket/udpsocket.c: ditto
+
+	* ext/socket/unixserver.c: ditto
+
+	* io.c: ditto
+
+Sun Jul 12 06:42:23 2015  ksss  <co000ri@gmail.com>
+
+	* test/stringio/test_stringio.rb (test_sysread): add a test for
+	  StringIO#sysread.  [Fix GH-966]
+
+Sat Jul 11 21:16:34 2015  ksss  <co000ri@gmail.com>
+
+	* ext/stringio/stringio.c (Init_stringio): [DOC] Fix an example,
+	  StringIO#puts should be set "\n" at last.  [Fix GH-965]
+
+Sat Jul 11 12:45:51 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/timeout.rb (Timeout#timeout): remove regexp with wrong line
+	  number and fix caller depth.
+
+Fri Jul 10 22:05:50 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/timeout.rb (ExitException): removed internal exception class
+	  and use Timeout::Error instead, as using throw/catch to isolate
+	  each timeouts now.  [ruby-dev:49179] [Bug #11344]
+
+Fri Jul 10 20:13:05 2015  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* process.c (rb_f_exec): rb_exec_without_timer_thread should be
+	  used on every OS, not only on Mac OS X or Haiku, to prevent
+	  timer thread communications using file descriptor 3 after
+	  setting redirection of the fd 3 before calling exec.
+	  [Bug #11336] [ruby-core:69886]
+
+Fri Jul 10 17:41:54 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (is_case_sensitive): get attributes by the file descriptor
+	  of open directory, instead of using mount point name.
+
+Fri Jul 10 10:46:02 2015  ksss  <co000ri@gmail.com>
+
+	* ext/stringio/stringio.c (writable): remove unnecessary check for
+	  deprecated safe level 4.  [Fix GH-963]
+
+Thu Jul  9 15:07:12 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (waitpid): return immediately if interrupted.
+	  reported by <takkanm AT gmail.com> [ruby-dev:49176] [Bug #11340]
+
+Thu Jul  9 13:03:46 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c (vm_search_super_method): use CI_SET_FASTPATH().
+
+Thu Jul  9 11:07:06 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h: remove rb_call_info_t::klass because
+	  rb_callable_method_entry_t has information about defined class.
+
+	* vm_insnhelper.c (vm_search_method): don't set ci->klass because
+	  it is removed.
+
+	* vm_insnhelper.c (rb_equal_opt): ditto.
+
+	* vm_insnhelper.c (vm_search_superclass): removed because it is too
+	  simple to write code directly.
+
+	* vm_insnhelper.c (vm_defined): don't use vm_search_superclass().
+	  This fix avoid searching current callable `me' twice.
+
+	* vm_insnhelper.c (vm_search_super_method): ditto.
+
+Thu Jul  9 10:03:10 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/net/http/responses.rb: Added 308 status to CODE_TO_OBJ list.
+	  [fix GH-961] Patch by @billinghamj
+
+Thu Jul  9 09:34:14 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h (rb_control_frame_t): fix comments (layout index).
+
+Thu Jul  9 09:25:50 2015  Zachary Scott  <e@zzak.io>
+
+        * parse.y: Improve duplicate key warning with patch by @andremedeiros
+          [Fix GH-938] https://github.com/ruby/ruby/pull/938 [Bug #11327]
+
+Wed Jul  8 07:43:01 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/csv.rb: typo fix [ci skip][fix GH-958] Patch by @henrik
+
+Wed Jul  8 04:42:27 2015  Eric Wong  <e@80x24.org>
+
+	* iseq.c (iseq_data_to_ary): dump kw_arg as symbol
+	* test/-ext-/iseq_load/test_iseq_load.rb: test kw_arg roundtrip
+	  [ruby-core:69891] [Bug #11338]
+
+Tue Jul  7 18:18:41 2015  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* random.c (fill_random_bytes_syscall): fix compile error.
+
+Tue Jul  7 16:47:30 2015  Eric Wong  <e@80x24.org>
+
+	* compile.c (COMPILE_ERROR): reduce GET_THREAD() calls
+
+Tue Jul  7 16:39:04 2015  Eric Wong  <e@80x24.org>
+
+	* random.c (fill_random_bytes_syscall): return -1 for error
+	* random.c (fill_random_bytes): try urandom on syscall failure
+
+Tue Jul  7 15:02:18 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_str_normalize_ospath): skip invalid byte sequence not
+	  to loop infinitely.  this case usually does not happen as the
+	  input name should come from real file systems.
+
+Tue Jul  7 14:40:08 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_backtrace.c: remove debug flag introduced accidentally.
+
+Tue Jul  7 12:05:37 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* cont.c (cont_free): remove mysterious fflush()
+	  introduced at r19890, maybe accidentally.
+
+Tue Jul  7 11:45:14 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* proc.c (rb_method_call): because data->me should be non-NULL,
+	  do not check data->me
+
+	* proc.c (method_inspect): ditto.
+
+Tue Jul  7 11:37:25 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h: remove rb_iseq_t::orig because rb_iseq_clone()
+	  no longer exists.
+
+	* iseq.c: don't use rb_iseq_t::orig.
+
+Tue Jul 07 11:25:57 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.c, internal.h (rb_iseq_clone): removed because we don't need to
+	  clone iseq any more.
+
+	* class.c (clone_method): share iseq between cloned methods. All of
+	  method dependent information are able to refer from method entry.
+
+Tue Jul  7 04:42:25 2015  Eric Wong  <e@80x24.org>
+
+	* string.c (Init_String): use rb_str_freeze for String#freeze
+	  to resize internal buffer
+	  [ruby-core:69870] [Feature #11330]
+
+Tue Jul  7 04:12:32 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (vm_define_method): remove an unused local variable.
+
+Tue Jul  7 03:57:28 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h: remove rb_iseq_t::defined_method_id because it is not
+	  needed.
+
+	* eval.c (frame_func_id): simplify. rb_callable_method_entry_t
+	  has enough information.
+
+	* eval.c (frame_called_id): ditto.
+
+	* iseq.c (prepare_iseq_build): catch up this fix.
+
+	* proc.c (rb_mod_define_method): ditto.
+
+	* vm.c (vm_define_method): ditto.
+
+Tue Jul  7 03:47:26 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h: remove a useless declaration.
+
+Tue Jul  7 03:33:20 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h: remove rb_iseq_t::klass to reduce dynamic data.
+
+	* internal.h, iseq.c (rb_iseq_klass): remove it because
+	  rb_iseq_t::klass is removed.
+
+	* vm_insnhelper.c (vm_super_outside): do not see cfp->iseq, but
+	  check callable method entry on a frame.
+	  This fix simplify the logic to search super class.
+
+	* test/ruby/test_method.rb: support super() from Proc.
+	  Now, [Bug #4881] and [Bug #3136] was solved.
+
+	* proc.c (rb_mod_define_method): catch up this change.
+
+	* vm.c (vm_define_method): ditto.
+
+	* vm_backtrace.c (rb_profile_frames): now, each `frame' objects
+	  are rb_callable_method_entry_t data or iseq VALUEs.
+
+	  This fix introduce minor compatibility issue that
+	  rb_profile_frame_label() always returns
+	  rb_profile_frame_base_label().
+
+	* test/-ext-/debug/test_profile_frames.rb: catch up this change.
+
+Tue Jul  7 01:52:14 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* cont.c (fiber_init): initialize control frame correctly.
+	  This fix does not affect any ordinal execution, but
+	  affects debug prints.
+
+Mon Jul  6 17:59:05 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c (vm_search_super_method): do not skip calling
+	  same methods in super.
+	  [Bug #3351]
+
+	* test/ruby/test_super.rb: fix a test.
+
+Mon Jul  6 17:59:11 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ext/tk/tcltklib.c: removed deprecated safe level.
+
+Mon Jul  6 17:16:37 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* method.h, proc.c (rb_method_entry_location): make it static
+	  and remove prefix `rb_' because it is used only in proc.c.
+
+Mon Jul  6 16:42:10 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* test/lib/memory_status.rb: removed redundant path.
+
+Mon Jul  6 01:18:11 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/lib/test/unit/parallel.rb: make @@project_dir one level
+	  upper as this file had moved one level deeper.
+
+Sun Jul  5 23:54:10 2015  mizokami  <suzunatsu@yahoo.com>
+
+	* lib/optparse.rb: [DOC] Fix typo.
+
+Sun Jul  5 18:25:37 2015  Eric Wong  <e@80x24.org>
+
+	* gc.c (gc_profile_record_get): fix spelling error in keys
+
 Sun Jul  5 14:49:01 2015  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* README.md: fix a typo pointed out by raoulvdberge.

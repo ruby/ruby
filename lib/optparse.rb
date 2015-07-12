@@ -151,7 +151,7 @@
 #
 # - Date  -- Anything accepted by +Date.parse+
 # - DateTime -- Anything accepted by +DateTime.parse+
-# - Time -- Anyting accepted by +Time.httpdate+ or +Time.parse+
+# - Time -- Anything accepted by +Time.httpdate+ or +Time.parse+
 # - URI  -- Anything accepted by +URI.parse+
 # - Shellwords -- Anything accepted by +Shellwords.shellwords+
 # - String -- Any non-empty string

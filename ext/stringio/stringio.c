@@ -139,8 +139,6 @@ writable(VALUE strio)
     if (!WRITABLE(strio)) {
 	rb_raise(rb_eIOError, "not opened for writing");
     }
-    if (!OBJ_TAINTED(ptr->string)) {
-    }
     return ptr;
 }
 
@@ -1503,7 +1501,7 @@ strio_set_encoding(int argc, VALUE *argv, VALUE self)
  *
  *   io = StringIO.new
  *   io.puts "Hello World"
- *   io.string #=> "Hello World"
+ *   io.string #=> "Hello World\n"
  */
 void
 Init_stringio(void)

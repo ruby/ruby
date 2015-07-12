@@ -868,7 +868,7 @@ sock_recvfrom(int argc, VALUE *argv, VALUE sock)
  * Socket#recvfrom_nonblock may raise any error corresponding to recvfrom(2) failure,
  * including Errno::EWOULDBLOCK.
  *
- * If the exception is Errno::EWOULDBLOCK or Errno::AGAIN,
+ * If the exception is Errno::EWOULDBLOCK or Errno::EAGAIN,
  * it is extended by IO::WaitReadable.
  * So IO::WaitReadable can be used to rescue the exceptions for retrying recvfrom_nonblock.
  *
@@ -953,7 +953,7 @@ sock_accept(VALUE sock)
  * Socket#accept_nonblock may raise any error corresponding to accept(2) failure,
  * including Errno::EWOULDBLOCK.
  *
- * If the exception is Errno::EWOULDBLOCK, Errno::AGAIN, Errno::ECONNABORTED or Errno::EPROTO,
+ * If the exception is Errno::EWOULDBLOCK, Errno::EAGAIN, Errno::ECONNABORTED or Errno::EPROTO,
  * it is extended by IO::WaitReadable.
  * So IO::WaitReadable can be used to rescue the exceptions for retrying accept_nonblock.
  *
@@ -1850,7 +1850,7 @@ socket_s_ip_address_list(VALUE self)
     errno = save_errno;
 
     if (reason)
-	rb_sys_fail(reason);
+	rb_syserr_fail(save_errno, reason);
     return list;
 
 #elif defined(SIOCGIFCONF)
@@ -1935,7 +1935,7 @@ socket_s_ip_address_list(VALUE self)
     errno = save_errno;
 
     if (reason)
-	rb_sys_fail(reason);
+	rb_syserr_fail(save_errno, reason);
     return list;
 
 #undef EXTRA_SPACE

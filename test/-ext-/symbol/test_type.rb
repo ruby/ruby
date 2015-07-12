@@ -120,5 +120,23 @@ module Test_Symbol
       assert_symtype(Bug::Symbol.attrset("foo!="), :attrset?)
       assert_equal(:"foo!=", Bug::Symbol.attrset(:foo!))
     end
+
+    def test_check_id_invalid_type
+      EnvUtil.with_default_external(Encoding::UTF_8) do
+        cx = EnvUtil.labeled_class("X\u{1f431}")
+        assert_raise_with_message(TypeError, /X\u{1F431}/) {
+          Bug::Symbol.pinneddown?(cx)
+        }
+      end
+    end
+
+    def test_check_symbol_invalid_type
+      EnvUtil.with_default_external(Encoding::UTF_8) do
+        cx = EnvUtil.labeled_class("X\u{1f431}")
+        assert_raise_with_message(TypeError, /X\u{1F431}/) {
+          Bug::Symbol.find(cx)
+        }
+      end
+    end
   end
 end

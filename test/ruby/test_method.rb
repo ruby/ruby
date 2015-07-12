@@ -251,6 +251,15 @@ class TestMethod < Test::Unit::TestCase
     m = o.method(:bar).unbind
     assert_raise(TypeError) { m.bind(Object.new) }
 
+    EnvUtil.with_default_external(Encoding::UTF_8) do
+      cx = EnvUtil.labeled_class("X\u{1f431}")
+      assert_raise_with_message(TypeError, /X\u{1f431}/) {
+        o.method(cx)
+      }
+    end
+  end
+
+  def test_bind_module_instance_method
     feature4254 = '[ruby-core:34267]'
     m = M.instance_method(:meth)
     assert_equal(:meth, m.bind(Object.new).call, feature4254)
@@ -275,6 +284,12 @@ class TestMethod < Test::Unit::TestCase
     end
     assert_raise(TypeError) do
       Class.new.class_eval { define_method(:bar, o.method(:bar)) }
+    end
+    EnvUtil.with_default_external(Encoding::UTF_8) do
+      cx = EnvUtil.labeled_class("X\u{1f431}")
+      assert_raise_with_message(TypeError, /X\u{1F431}/) {
+        Class.new {define_method(cx) {}}
+      }
     end
   end
 
@@ -405,11 +420,7 @@ class TestMethod < Test::Unit::TestCase
       end
     }
     c2 = Class.new(c1) { define_method(:m) { Proc.new { super() } } }
-    # c2.new.m.call should return :m1, but currently it raise NoMethodError.
-    # see [Bug #4881] and [Bug #3136]
-    assert_raise(NoMethodError) {
-      c2.new.m.call
-    }
+    assert_equal(:m1, c2.new.m.call, 'see [Bug #4881] and [Bug #3136]')
   end
 
   def test_clone

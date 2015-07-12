@@ -180,7 +180,6 @@ typedef struct rb_call_info_struct {
     /* inline cache: keys */
     rb_serial_t method_state;
     rb_serial_t class_serial;
-    VALUE klass;
 
     /* inline cache: values */
     const rb_callable_method_entry_t *me;
@@ -217,8 +216,6 @@ typedef struct rb_iseq_location_struct {
     const VALUE label;
     VALUE first_lineno; /* TODO: may be unsigned short */
 } rb_iseq_location_t;
-
-struct rb_iseq_struct;
 
 struct rb_iseq_struct {
     /***************/
@@ -347,11 +344,8 @@ struct rb_iseq_struct {
     /****************/
 
     VALUE self;
-    const VALUE orig;			/* non-NULL if its data have origin */
-    const VALUE klass;
 
     /* misc */
-    ID defined_method_id;	/* for define_method */
     rb_num_t flip_cnt;
 
     /* used at compile time */
@@ -532,12 +526,12 @@ typedef struct rb_control_frame_struct {
     rb_iseq_t *iseq;		/* cfp[2] */
     VALUE flag;			/* cfp[3] */
     VALUE self;			/* cfp[4] / block[0] */
-    VALUE *ep;			/* cfp[6] / block[1] */
-    rb_iseq_t *block_iseq;	/* cfp[7] / block[2] */
-    VALUE proc;			/* cfp[8] / block[3] */
+    VALUE *ep;			/* cfp[5] / block[1] */
+    rb_iseq_t *block_iseq;	/* cfp[6] / block[2] */
+    VALUE proc;			/* cfp[7] / block[3] */
 
 #if VM_DEBUG_BP_CHECK
-    VALUE *bp_check;		/* cfp[9] */
+    VALUE *bp_check;		/* cfp[8] */
 #endif
 } rb_control_frame_t;
 

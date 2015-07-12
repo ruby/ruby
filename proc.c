@@ -1724,8 +1724,6 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
 	body = proc_dup(body);
 	GetProcPtr(body, proc);
 	if (!RUBY_VM_IFUNC_P(proc->block.iseq)) {
-	    proc->block.iseq->defined_method_id = id;
-	    RB_OBJ_WRITE(proc->block.iseq->self, &proc->block.iseq->klass, mod);
 	    proc->is_lambda = TRUE;
 	    proc->is_from_method = TRUE;
 	}
@@ -1850,7 +1848,7 @@ rb_method_call(int argc, const VALUE *argv, VALUE method)
 static const rb_callable_method_entry_t *
 method_callable_method_entry(struct METHOD *data)
 {
-    if (data->me && data->me->defined_class == 0) rb_bug("method_callable_method_entry: not callable.");
+    if (data->me->defined_class == 0) rb_bug("method_callable_method_entry: not callable.");
     return (const rb_callable_method_entry_t *)data->me;
 }
 
@@ -2247,8 +2245,8 @@ method_def_location(const rb_method_definition_t *def)
     return iseq_location(method_def_iseq(def));
 }
 
-VALUE
-rb_method_entry_location(const rb_method_entry_t *me)
+static VALUE
+method_entry_location(const rb_method_entry_t *me)
 {
     if (!me) return Qnil;
     return method_def_location(me->def);
@@ -2258,7 +2256,7 @@ VALUE
 rb_mod_method_location(VALUE mod, ID id)
 {
     const rb_method_entry_t *me = original_method_entry(mod, id);
-    return rb_method_entry_location(me);
+    return method_entry_location(me);
 }
 
 VALUE
@@ -2326,7 +2324,7 @@ method_inspect(VALUE method)
 
     mklass = data->klass;
 
-    if (data->me && data->me->def->type == VM_METHOD_TYPE_ALIAS) {
+    if (data->me->def->type == VM_METHOD_TYPE_ALIAS) {
 	defined_class = data->me->def->body.alias.original_me->owner;
     }
     else {

@@ -287,12 +287,13 @@ r_value(VALUE value)
 /* error */
 #define COMPILE_ERROR(strs)                        \
 {                                                  \
-  VALUE tmp = GET_THREAD()->errinfo;               \
+  rb_thread_t *th = GET_THREAD();                  \
+  VALUE tmp = th->errinfo;                         \
   if (compile_debug) rb_compile_bug strs;          \
-  GET_THREAD()->errinfo = iseq->compile_data->err_info;  \
+  th->errinfo = iseq->compile_data->err_info;      \
   rb_compile_error strs;                           \
-  RB_OBJ_WRITE(iseq->self, &iseq->compile_data->err_info, GET_THREAD()->errinfo); \
-  GET_THREAD()->errinfo = tmp;                     \
+  RB_OBJ_WRITE(iseq->self, &iseq->compile_data->err_info, th->errinfo); \
+  th->errinfo = tmp;                               \
   ret = 0;                                         \
   break;                                           \
 }

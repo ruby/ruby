@@ -2637,7 +2637,7 @@ io_readpartial(int argc, VALUE *argv, VALUE io)
  *  It causes all errors the read(2) system call causes: Errno::EWOULDBLOCK, Errno::EINTR, etc.
  *  The caller should care such errors.
  *
- *  If the exception is Errno::EWOULDBLOCK or Errno::AGAIN,
+ *  If the exception is Errno::EWOULDBLOCK or Errno::EAGAIN,
  *  it is extended by IO::WaitReadable.
  *  So IO::WaitReadable can be used to rescue the exceptions for retrying read_nonblock.
  *
@@ -2738,7 +2738,7 @@ io_write_nonblock(VALUE io, VALUE str, VALUE opts)
  *  The result may also be smaller than string.length (partial write).
  *  The caller should care such errors and partial write.
  *
- *  If the exception is Errno::EWOULDBLOCK or Errno::AGAIN,
+ *  If the exception is Errno::EWOULDBLOCK or Errno::EAGAIN,
  *  it is extended by IO::WaitWritable.
  *  So IO::WaitWritable can be used to rescue the exceptions for retrying write_nonblock.
  *

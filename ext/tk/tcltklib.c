@@ -3039,7 +3039,7 @@ lib_do_one_event_core(argc, argv, self, is_ip)
         flags = FIX2INT(vflags);
     }
 
-    if (rb_safe_level() >= 4 || (rb_safe_level() >=1 && OBJ_TAINTED(vflags))) {
+    if (rb_safe_level() >=1 && OBJ_TAINTED(vflags)) {
       flags |= TCL_DONT_WAIT;
     }
 
@@ -3750,7 +3750,7 @@ ip_RubyExitCommand(clientData, interp, argc, argv)
 
     Tcl_ResetResult(interp);
 
-    if (rb_safe_level() >= 4 || Tcl_IsSafe(interp)) {
+    if (Tcl_IsSafe(interp)) {
 	if (!Tcl_InterpDeleted(interp)) {
 	  ip_finalize(interp);
 
@@ -6124,13 +6124,6 @@ ip_init(argc, argv, self)
     int st;
     int with_tk = 1;
     Tk_Window mainWin = (Tk_Window)NULL;
-
-    /* security check */
-    if (rb_safe_level() >= 4) {
-        rb_raise(rb_eSecurityError,
-                 "Cannot create a TclTkIp object at level %d",
-                 rb_safe_level());
-    }
 
     /* create object */
     TypedData_Get_Struct(self, struct tcltkip, &tcltkip_type, ptr);

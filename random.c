@@ -77,6 +77,12 @@ The original copyright notice follows.
 #include <sys/time.h>
 #endif
 
+#ifdef HAVE_SYSCALL_H
+#include <syscall.h>
+#elif defined HAVE_SYS_SYSCALL_H
+#include <sys/syscall.h>
+#endif
+
 #ifdef _WIN32
 # if !defined(_WIN32_WINNT) || _WIN32_WINNT < 0x0400
 #  undef _WIN32_WINNT
@@ -84,8 +90,8 @@ The original copyright notice follows.
 #  undef __WINCRYPT_H__
 # endif
 #include <wincrypt.h>
-#include "ruby_atomic.h"
 #endif
+#include "ruby_atomic.h"
 
 typedef int int_must_be_32bit_at_least[sizeof(int) * CHAR_BIT < 32 ? -1 : 1];
 
@@ -445,21 +451,10 @@ random_init(int argc, VALUE *argv, VALUE obj)
 # define USE_DEV_URANDOM 0
 #endif
 
-#if defined(_WIN32)
-static void
-release_crypt(void *p)
-{
-    HCRYPTPROV prov = (HCRYPTPROV)ATOMIC_PTR_EXCHANGE(*(HCRYPTPROV *)p, INVALID_HANDLE_VALUE);
-    if (prov && prov != (HCRYPTPROV)INVALID_HANDLE_VALUE) {
-	CryptReleaseContext(prov, 0);
-    }
-}
-#endif
-
-static int
-fill_random_bytes(void *seed, size_t size)
-{
 #if USE_DEV_URANDOM
+static int
+fill_random_bytes_urandom(void *seed, size_t size)
+{
     int fd = rb_cloexec_open("/dev/urandom",
 # ifdef O_NONBLOCK
 			     O_NONBLOCK|
@@ -478,7 +473,25 @@ fill_random_bytes(void *seed, size_t size)
     }
     close(fd);
     if (ret < 0 || (size_t)ret < size) return -1;
-#elif defined(_WIN32)
+    return 0;
+}
+#else
+# define fill_random_bytes_urandom(seed, size) -1
+#endif
+
+#if defined(_WIN32)
+static void
+release_crypt(void *p)
+{
+    HCRYPTPROV prov = (HCRYPTPROV)ATOMIC_PTR_EXCHANGE(*(HCRYPTPROV *)p, INVALID_HANDLE_VALUE);
+    if (prov && prov != (HCRYPTPROV)INVALID_HANDLE_VALUE) {
+	CryptReleaseContext(prov, 0);
+    }
+}
+
+static int
+fill_random_bytes_syscall(void *seed, size_t size)
+{
     static HCRYPTPROV perm_prov;
     HCRYPTPROV prov = perm_prov, old_prov;
     if (!prov) {
@@ -500,8 +513,35 @@ fill_random_bytes(void *seed, size_t size)
     }
     if (prov == (HCRYPTPROV)INVALID_HANDLE_VALUE) return -1;
     CryptGenRandom(prov, size, seed);
-#endif
     return 0;
+}
+#elif defined __linux__ && defined SYS_getrandom
+static int
+fill_random_bytes_syscall(void *seed, size_t size)
+{
+    static rb_atomic_t try_syscall = 1;
+    if (try_syscall) {
+	int ret;
+	errno = 0;
+	ret = syscall(SYS_getrandom, seed, size, 0);
+	if (errno == ENOSYS) {
+	    try_syscall = 0;
+	    return -1;
+	}
+	if ((size_t)ret == size) return 0;
+    }
+    return -1;
+}
+#else
+# define fill_random_bytes_syscall(seed, size) -1
+#endif
+
+static int
+fill_random_bytes(void *seed, size_t size)
+{
+    int ret = fill_random_bytes_syscall(seed, size);
+    if (ret == 0) return ret;
+    return fill_random_bytes_urandom(seed, size);
 }
 
 static void

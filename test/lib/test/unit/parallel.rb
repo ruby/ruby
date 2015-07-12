@@ -183,7 +183,7 @@ if $0 == __FILE__
   module Gem # :nodoc:
   end
   class Gem::TestCase < MiniTest::Unit::TestCase # :nodoc:
-    @@project_dir = File.expand_path('../../../..', __FILE__)
+    @@project_dir = File.expand_path('../../../../..', __FILE__)
   end
 
   Test::Unit::Worker.new.run(ARGV)
