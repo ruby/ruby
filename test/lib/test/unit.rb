@@ -292,7 +292,7 @@ module Test
         return if @workers.empty?
         @workers.reject! do |worker|
           begin
-            timeout(1) do
+            Timeout.timeout(1) do
               worker.quit
             end
           rescue Errno::EPIPE
@@ -303,7 +303,7 @@ module Test
 
         return if @workers.empty?
         begin
-          timeout(0.2 * @workers.size) do
+          Timeout.timeout(0.2 * @workers.size) do
             Process.waitall
           end
         rescue Timeout::Error

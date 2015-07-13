@@ -1591,7 +1591,7 @@ class TestProcess < Test::Unit::TestCase
 
     with_tmpchdir do
       assert_nothing_raised('[ruby-dev:12261]') do
-        timeout(3) do
+        Timeout.timeout(3) do
           pid = spawn('yes | ls')
           Process.waitpid pid
         end
