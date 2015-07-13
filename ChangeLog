@@ -1,3 +1,8 @@
+Mon Jul 13 23:58:08 2015  Stefano Tortarolo  <stefano.tortarolo@gmail.com>
+
+	* lib/webrick/httpproxy.rb (WEBrick::HTTPProxyServer#do_CONNECT):
+	  fix typos in debugger statements.  [Fix GH-967]
+
 Mon Jul 13 19:11:35 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/timeout.rb (timeout): warn as deprecated for a long time.
