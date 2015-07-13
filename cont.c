@@ -519,7 +519,7 @@ cont_capture(volatile int *stat)
     }
 
     if (ruby_setjmp(cont->jmpbuf)) {
-	volatile VALUE value;
+	VALUE value;
 
 	VAR_INITIALIZED(cont);
 	value = cont->value;

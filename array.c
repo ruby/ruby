@@ -1811,10 +1811,9 @@ ary_enum_length(VALUE ary, VALUE args, VALUE eobj)
  */
 
 VALUE
-rb_ary_each(VALUE array)
+rb_ary_each(VALUE ary)
 {
     long i;
-    volatile VALUE ary = array;
 
     RETURN_SIZED_ENUMERATOR(ary, 0, 0, ary_enum_length);
     for (i=0; i<RARRAY_LEN(ary); i++) {
