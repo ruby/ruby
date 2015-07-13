@@ -112,14 +112,9 @@ module Timeout
   module_function :timeout
 end
 
-# Identical to:
-#
-#   Timeout::timeout(n, e, &block).
-#
-# This method is deprecated and provided only for backwards compatibility.
-# You should use Timeout#timeout instead.
-def timeout(n, e = nil, &block)
-  Timeout::timeout(n, e, &block)
+def timeout(*args, &block)
+  warn "#{caller_locations(1, 1)[0]}: Object##{__method__} is deprecated, use Timeout.timeout instead."
+  Timeout.timeout(*args, &block)
 end
 
 # Another name for Timeout::Error, defined for backwards compatibility with
