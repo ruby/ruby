@@ -53,7 +53,7 @@ class TestResolvDNS < Test::Unit::TestCase
           }
         }
         server_thread = Thread.new {
-          msg, (_, client_port, _, client_address) = timeout(5) {u.recvfrom(4096)}
+          msg, (_, client_port, _, client_address) = Timeout.timeout(5) {u.recvfrom(4096)}
           id, word2, qdcount, ancount, nscount, arcount = msg.unpack("nnnnnn")
           qr =     (word2 & 0x8000) >> 15
           opcode = (word2 & 0x7800) >> 11
@@ -160,7 +160,7 @@ class TestResolvDNS < Test::Unit::TestCase
     # A rase condition here.
     # Another program may use the port.
     # But no way to prevent it.
-    timeout(5) do
+    Timeout.timeout(5) do
       Resolv::DNS.open(:nameserver_port => [[host, port]]) {|dns|
         assert_equal([], dns.getresources("test-no-server.example.org", Resolv::DNS::Resource::IN::A))
       }

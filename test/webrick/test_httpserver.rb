@@ -355,7 +355,7 @@ class TestWEBrickHTTPServer < Test::Unit::TestCase
       req = Net::HTTP::Get.new("/")
       req['Connection'] = 'Keep-Alive'
       begin
-        timeout(2) do
+        Timeout.timeout(2) do
           http.request(req){|res| assert_equal("foo", res.body) }
         end
       rescue Timeout::Error

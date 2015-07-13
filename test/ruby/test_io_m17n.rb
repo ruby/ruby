@@ -468,7 +468,7 @@ EOT
            w.close
          end,
          proc do |r|
-           timeout(1) {
+           Timeout.timeout(1) {
              assert_equal("before \xa2\xa2".encode("utf-8", "euc-jp"),
                           r.gets(rs))
            }

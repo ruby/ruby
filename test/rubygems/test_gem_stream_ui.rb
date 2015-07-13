@@ -38,7 +38,7 @@ class TestGemStreamUI < Gem::TestCase
     skip 'TTY detection broken on windows' if
       Gem.win_platform? unless RUBY_VERSION > '1.9.2'
 
-    timeout(1) do
+    Timeout.timeout(1) do
       expected_answer = "Arthur, King of the Britons"
       @in.string = "#{expected_answer}\n"
       actual_answer = @sui.ask("What is your name?")
@@ -52,7 +52,7 @@ class TestGemStreamUI < Gem::TestCase
 
     @in.tty = false
 
-    timeout(0.1) do
+    Timeout.timeout(0.1) do
       answer = @sui.ask("what is your favorite color?")
       assert_equal nil, answer
     end
@@ -62,7 +62,7 @@ class TestGemStreamUI < Gem::TestCase
     skip 'Always uses $stdin on windows' if
       Gem.win_platform? unless RUBY_VERSION > '1.9.2'
 
-    timeout(1) do
+    Timeout.timeout(1) do
       expected_answer = "Arthur, King of the Britons"
       @in.string = "#{expected_answer}\n"
       actual_answer = @sui.ask_for_password("What is your name?")
@@ -76,7 +76,7 @@ class TestGemStreamUI < Gem::TestCase
 
     @in.tty = false
 
-    timeout(0.1) do
+    Timeout.timeout(0.1) do
       answer = @sui.ask_for_password("what is the airspeed velocity of an unladen swallow?")
       assert_equal nil, answer
     end
@@ -88,7 +88,7 @@ class TestGemStreamUI < Gem::TestCase
 
     @in.tty = false
 
-    timeout(0.1) do
+    Timeout.timeout(0.1) do
       answer = @sui.ask_yes_no("do coconuts migrate?", false)
       assert_equal false, answer
 
@@ -103,7 +103,7 @@ class TestGemStreamUI < Gem::TestCase
 
     @in.tty = false
 
-    timeout(0.1) do
+    Timeout.timeout(0.1) do
       assert_raises(Gem::OperationNotSupportedError) do
         @sui.ask_yes_no("do coconuts migrate?")
       end

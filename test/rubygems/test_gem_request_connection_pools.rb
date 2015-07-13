@@ -118,7 +118,7 @@ class TestGemRequestConnectionPool < Gem::TestCase
     pool.checkout
 
     t1 = Thread.new {
-      timeout(1) do
+      Timeout.timeout(1) do
         pool.checkout
       end
     }

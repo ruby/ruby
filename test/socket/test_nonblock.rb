@@ -102,7 +102,7 @@ class TestSocketNonblock < Test::Unit::TestCase
     assert_raise(IO::WaitReadable) { u1.recvfrom_nonblock(100) }
     u2.send("", 0, u1.getsockname)
     assert_nothing_raised("cygwin 1.5.19 has a problem to send an empty UDP packet. [ruby-dev:28915]") {
-      timeout(1) { IO.select [u1] }
+      Timeout.timeout(1) { IO.select [u1] }
     }
     mesg, inet_addr = u1.recvfrom_nonblock(100)
     assert_equal("", mesg)
@@ -124,7 +124,7 @@ class TestSocketNonblock < Test::Unit::TestCase
     assert_raise(IO::WaitReadable) { u1.recv_nonblock(100) }
     u2.send("", 0, u1.getsockname)
     assert_nothing_raised("cygwin 1.5.19 has a problem to send an empty UDP packet. [ruby-dev:28915]") {
-      timeout(1) { IO.select [u1] }
+      Timeout.timeout(1) { IO.select [u1] }
     }
     mesg = u1.recv_nonblock(100)
     assert_equal("", mesg)

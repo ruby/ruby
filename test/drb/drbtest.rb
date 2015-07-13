@@ -27,7 +27,7 @@ class DRbService
     @server || @@server
   end
   def self.ext_service(name)
-    timeout(100, RuntimeError) do
+    Timeout.timeout(100, RuntimeError) do
       manager.service(name)
     end
   end
