@@ -1,3 +1,24 @@
+Wed Jul 15 01:09:09 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c: refactoring Proc/Env related code.
+
+	* vm_core.h: remove blockprocval field from rb_proc_t and rb_binding_t.
+	  Instead of this field, mark given block in Proc at rb_env_t::env.
+
+	* vm.c (vm_make_env_each): make an Env object with this layout.
+	  And also simplify parameters.
+
+	* proc.c: catch up this fix.
+
+	* vm_core.h: remove rb_env_t::local_size because it is not used.
+
+	* vm_dump.c (rb_vmdebug_env_dump_raw): catch up this fix.
+
+	* vm_core.h (rb_vm_make_env_object): remove rb_vm_make_env_object()
+	  because it is only refered from vm.c.
+
+	* vm_eval.c (eval_string_with_cref): catch up this fix.
+
 Wed Jul 15 00:03:36 2015  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* gc.c (__has_feature): move into internal.h.

@@ -786,7 +786,6 @@ typedef struct {
     rb_block_t block;
 
     VALUE envval;		/* for GC mark */
-    VALUE blockprocval;
     int8_t safe_level;		/* 0..1 */
     int8_t is_from_method;	/* bool */
     int8_t is_lambda;		/* bool */
@@ -797,7 +796,6 @@ typedef struct {
 
 typedef struct {
     int env_size;
-    int local_size;
     VALUE prev_envval;		/* for GC mark */
     rb_block_t block;
     VALUE env[1];               /* flexible array */
@@ -811,7 +809,6 @@ extern const rb_data_type_t ruby_binding_data_type;
 typedef struct {
     VALUE env;
     VALUE path;
-    VALUE blockprocval;	/* for GC mark */
     unsigned short first_lineno;
 } rb_binding_t;
 
@@ -961,7 +958,6 @@ VALUE rb_vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc,
 VALUE rb_vm_make_proc_lambda(rb_thread_t *th, const rb_block_t *block, VALUE klass, int8_t is_lambda);
 VALUE rb_vm_make_proc(rb_thread_t *th, const rb_block_t *block, VALUE klass);
 VALUE rb_vm_make_binding(rb_thread_t *th, const rb_control_frame_t *src_cfp);
-VALUE rb_vm_make_env_object(rb_thread_t *th, rb_control_frame_t *cfp);
 VALUE rb_vm_env_local_variables(VALUE envval);
 VALUE *rb_binding_add_dynavars(rb_binding_t *bind, int dyncount, const ID *dynvars);
 void rb_vm_inc_const_missing_count(void);

@@ -1308,7 +1308,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_
 	/* save new env */
 	GetISeqPtr(iseqval, iseq);
 	if (bind && iseq->local_table_size > 0) {
-	    bind->env = rb_vm_make_env_object(th, th->cfp);
+	    bind->env = vm_make_env_object(th, th->cfp);
 	}
 
 	/* kick */

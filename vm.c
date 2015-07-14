@@ -129,6 +129,8 @@ static void vm_collect_usage_insn(int insn);
 static void vm_collect_usage_register(int reg, int isset);
 #endif
 
+static VALUE vm_make_env_object(rb_thread_t *th, rb_control_frame_t *cfp);
+
 static VALUE
 vm_invoke_bmethod(rb_thread_t *th, rb_proc_t *proc, VALUE self,
 		  int argc, const VALUE *argv, const rb_block_t *blockptr);
@@ -289,7 +291,7 @@ vm_set_main_stack(rb_thread_t *th, VALUE iseqval)
     /* save binding */
     GetISeqPtr(iseqval, iseq);
     if (bind && iseq->local_size > 0) {
-	bind->env = rb_vm_make_env_object(th, th->cfp);
+	bind->env = vm_make_env_object(th, th->cfp);
     }
 }
 
@@ -481,60 +483,83 @@ check_env_value(VALUE envval)
     return Qnil;		/* unreachable */
 }
 
+/* return Qfalse if proc was already created */
 static VALUE
-vm_make_env_each(const rb_thread_t *const th, rb_control_frame_t *const cfp,
-		 VALUE *envptr, const VALUE *const endptr)
+vm_make_proc_from_block(rb_thread_t *th, rb_block_t *block)
 {
-    VALUE envval, penvval = 0;
-    rb_env_t *env;
-    VALUE *nenvptr;
-    int i, local_size;
+    if (!block->proc) {
+	block->proc = rb_vm_make_proc(th, block, rb_cProc);
+	return block->proc;
+    }
+    else {
+	return Qfalse;
+    }
+}
 
-    if (ENV_IN_HEAP_P(th, envptr)) {
-	return ENV_VAL(envptr);
+static VALUE
+vm_make_env_each(rb_thread_t *const th, rb_control_frame_t *const cfp)
+{
+    VALUE envval, penvval = 0, blockprocval = 0;
+    VALUE * const ep = cfp->ep;
+    rb_env_t *env;
+    VALUE *new_ep;
+    int i, local_size, env_size;
+
+    if (ENV_IN_HEAP_P(th, ep)) {
+	return ENV_VAL(ep);
     }
 
-    if (envptr != endptr) {
-	VALUE *penvptr = GC_GUARDED_PTR_REF(*envptr);
-	rb_control_frame_t *pcfp = cfp;
+    if (!VM_EP_LEP_P(ep)) {
+	VALUE *prev_ep = VM_EP_PREV_EP(ep);
 
-	if (ENV_IN_HEAP_P(th, penvptr)) {
-	    penvval = ENV_VAL(penvptr);
+	if (ENV_IN_HEAP_P(th, prev_ep)) {
+	    penvval = ENV_VAL(prev_ep);
 	}
 	else {
-	    while (pcfp->ep != penvptr) {
-		pcfp++;
-		if (pcfp->ep == 0) {
-		    SDR();
-		    rb_bug("invalid ep");
-		}
+	    rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+
+	    while (prev_cfp->ep != prev_ep) {
+		prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(prev_cfp);
+		if (VM_CHECK_MODE > 0 && prev_cfp->ep == 0) rb_bug("invalid ep");
 	    }
-	    penvval = vm_make_env_each(th, pcfp, penvptr, endptr);
-	    *envptr = VM_ENVVAL_PREV_EP_PTR(pcfp->ep);
+
+	    penvval = vm_make_env_each(th, prev_cfp);
+	    *ep = VM_ENVVAL_PREV_EP_PTR(prev_cfp->ep);
+	}
+    }
+    else {
+	rb_block_t *block = VM_EP_BLOCK_PTR(ep);
+
+	if (block && (blockprocval = vm_make_proc_from_block(th, block)) != Qfalse) {
+	    rb_proc_t *p;
+	    GetProcPtr(blockprocval, p);
+	    *ep = VM_ENVVAL_BLOCK_PTR(&p->block);
 	}
     }
 
     if (!RUBY_VM_NORMAL_ISEQ_P(cfp->iseq)) {
-	local_size = 2; /* specva + cref/me */
+	local_size = 1; /* cref/me */
     }
     else {
 	local_size = cfp->iseq->local_size;
     }
 
-    envval = TypedData_Wrap_Struct(rb_cEnv, &env_data_type, 0);
-    /* allocate env */
-    env = xmalloc(sizeof(rb_env_t) + ((local_size + 1) * sizeof(VALUE)));
-    env->env_size = local_size + 1 + 1;
-    env->local_size = local_size;
+    env_size = local_size +
+               1 /* specval */ +
+	       1 /* envval */ +
+	       (blockprocval ? 1 : 0) /* blockprocval */;
 
-    i = local_size + 1;
-    MEMCPY(env->env, envptr - local_size, VALUE, i);
+    envval = TypedData_Wrap_Struct(rb_cEnv, &env_data_type, 0);
+    env = xmalloc(sizeof(rb_env_t) + (env_size - 1 /* rb_env_t::env[1] */) * sizeof(VALUE));
+    env->env_size = env_size;
+
+    i = local_size + 1 /* specval */;
+    MEMCPY(env->env, ep - local_size, VALUE, i);
 #if 0
     for (i = 0; i <= local_size; i++) {
-	fprintf(stderr, "%2d ", &envptr[-local_size + i] - th->stack); dp(env->env[i]);
 	if (RUBY_VM_NORMAL_ISEQ_P(cfp->iseq)) {
 	    /* clear value stack for GC */
-	    envptr[-local_size + i] = 0;
+	    ep[-local_size + i] = 0;
 	}
     }
 #endif
@@ -548,16 +573,14 @@ vm_make_env_each(const rb_thread_t *const th, rb_control_frame_t *const cfp,
     */
     env->prev_envval = penvval;
 
-    *envptr = envval;		/* GC mark */
-    nenvptr = &env->env[i - 1];
-    nenvptr[1] = envval;	/* frame self */
-
-    /* reset ep in cfp */
-    cfp->ep = nenvptr;
-
+    *ep = envval;		/* GC mark */
+    new_ep = &env->env[i - 1];
+    new_ep[1] = envval;
+    if (blockprocval) new_ep[2] = blockprocval;
+    
     /* as Binding */
     env->block.self = cfp->self;
-    env->block.ep = cfp->ep;
+    env->block.ep = cfp->ep = new_ep;
     env->block.iseq = cfp->iseq;
     env->block.proc = 0;
 
@@ -565,7 +588,30 @@ vm_make_env_each(const rb_thread_t *const th, rb_control_frame_t *const cfp,
 	/* TODO */
 	env->block.iseq = 0;
     }
+
     return envval;
+}
+
+static VALUE
+vm_make_env_object(rb_thread_t *th, rb_control_frame_t *cfp)
+{
+    VALUE envval = vm_make_env_each(th, cfp);
+
+    if (PROCDEBUG) {
+	check_env_value(envval);
+    }
+
+    return envval;
+}
+
+void
+rb_vm_stack_to_heap(rb_thread_t *th)
+{
+    rb_control_frame_t *cfp = th->cfp;
+    while ((cfp = rb_vm_get_binding_creatable_next_cfp(th, cfp)) != 0) {
+	vm_make_env_object(th, cfp);
+	cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+    }
 }
 
 static int
@@ -615,65 +661,11 @@ rb_vm_env_local_variables(VALUE envval)
     return local_var_list_finish(&vars);
 }
 
-static VALUE vm_make_proc_from_block(rb_thread_t *th, rb_block_t *block);
-static VALUE vm_make_env_object(rb_thread_t * th, rb_control_frame_t *cfp, VALUE *blockprocptr);
-
-VALUE
-rb_vm_make_env_object(rb_thread_t * th, rb_control_frame_t *cfp)
-{
-    VALUE blockprocval;
-    return vm_make_env_object(th, cfp, &blockprocval);
-}
-
-static VALUE
-vm_make_env_object(rb_thread_t *th, rb_control_frame_t *cfp, VALUE *blockprocptr)
-{
-    VALUE envval;
-    VALUE *lep = VM_CF_LEP(cfp);
-    rb_block_t *blockptr = VM_EP_BLOCK_PTR(lep);
-
-    if (blockptr) {
-	VALUE blockprocval = vm_make_proc_from_block(th, blockptr);
-	rb_proc_t *p;
-	GetProcPtr(blockprocval, p);
-	lep[0] = VM_ENVVAL_BLOCK_PTR(&p->block);
-	*blockprocptr = blockprocval;
-    }
-
-    envval = vm_make_env_each(th, cfp, cfp->ep, lep);
-
-    if (PROCDEBUG) {
-	check_env_value(envval);
-    }
-
-    return envval;
-}
-
-void
-rb_vm_stack_to_heap(rb_thread_t *th)
-{
-    rb_control_frame_t *cfp = th->cfp;
-    while ((cfp = rb_vm_get_binding_creatable_next_cfp(th, cfp)) != 0) {
-	rb_vm_make_env_object(th, cfp);
-	cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
-    }
-}
-
 /* Proc */
-
-static VALUE
-vm_make_proc_from_block(rb_thread_t *th, rb_block_t *block)
-{
-    if (!block->proc) {
-	block->proc = rb_vm_make_proc(th, block, rb_cProc);
-    }
-    return block->proc;
-}
 
 static inline VALUE
 rb_proc_create(VALUE klass, const rb_block_t *block,
-	       VALUE envval, VALUE blockprocval,
-	       int8_t safe_level, int8_t is_from_method, int8_t is_lambda)
+	       VALUE envval, int8_t safe_level, int8_t is_from_method, int8_t is_lambda)
 {
     VALUE procval = rb_proc_alloc(klass);
     rb_proc_t *proc = RTYPEDDATA_DATA(procval);
@@ -684,7 +676,6 @@ rb_proc_create(VALUE klass, const rb_block_t *block,
     proc->is_from_method = is_from_method;
     proc->is_lambda = is_lambda;
     proc->envval = envval;
-    proc->blockprocval = blockprocval;
 
     return procval;
 }
@@ -698,21 +689,15 @@ rb_vm_make_proc(rb_thread_t *th, const rb_block_t *block, VALUE klass)
 VALUE
 rb_vm_make_proc_lambda(rb_thread_t *th, const rb_block_t *block, VALUE klass, int8_t is_lambda)
 {
-    VALUE procval, envval, blockprocval = 0;
+    VALUE procval, envval;
     rb_control_frame_t *cfp = RUBY_VM_GET_CFP_FROM_BLOCK_PTR(block);
 
     if (block->proc) {
 	rb_bug("rb_vm_make_proc: Proc value is already created.");
     }
 
-    envval = vm_make_env_object(th, cfp, &blockprocval);
-
-    if (PROCDEBUG) {
-	check_env_value(envval);
-    }
-
-    procval = rb_proc_create(klass, block, envval, blockprocval,
-			     (int8_t)th->safe_level, 0, is_lambda);
+    envval = vm_make_env_object(th, cfp);
+    procval = rb_proc_create(klass, block, envval, (int8_t)th->safe_level, 0, is_lambda);
 
     if (VMDEBUG) {
 	if (th->stack < block->ep && block->ep < th->stack + th->stack_size) {
@@ -732,14 +717,13 @@ rb_vm_make_binding(rb_thread_t *th, const rb_control_frame_t *src_cfp)
     rb_control_frame_t *ruby_level_cfp = rb_vm_get_ruby_level_next_cfp(th, src_cfp);
     VALUE bindval, envval;
     rb_binding_t *bind;
-    VALUE blockprocval = 0;
 
     if (cfp == 0 || ruby_level_cfp == 0) {
 	rb_raise(rb_eRuntimeError, "Can't create Binding Object on top of Fiber.");
     }
 
     while (1) {
-	envval = vm_make_env_object(th, cfp, &blockprocval);
+	envval = vm_make_env_object(th, cfp);
 	if (cfp == ruby_level_cfp) {
 	    break;
 	}
@@ -750,7 +734,6 @@ rb_vm_make_binding(rb_thread_t *th, const rb_control_frame_t *src_cfp)
     GetBindingPtr(bindval, bind);
     bind->env = envval;
     bind->path = ruby_level_cfp->iseq->location.path;
-    bind->blockprocval = blockprocval;
     bind->first_lineno = rb_vm_get_sourceline(ruby_level_cfp);
 
     return bindval;
@@ -767,7 +750,6 @@ rb_binding_add_dynavars(rb_binding_t *bind, int dyncount, const ID *dynvars)
     NODE *node = 0;
     ID minibuf[4], *dyns = minibuf;
     VALUE idtmp = 0;
-    VALUE blockprocval = 0;
 
     if (dyncount < 0) return 0;
 
@@ -794,8 +776,7 @@ rb_binding_add_dynavars(rb_binding_t *bind, int dyncount, const ID *dynvars)
     ALLOCV_END(idtmp);
 
     vm_set_eval_stack(th, iseqval, 0, base_block);
-    bind->env = vm_make_env_object(th, th->cfp, &blockprocval);
-    bind->blockprocval = blockprocval;
+    bind->env = vm_make_env_object(th, th->cfp);
     vm_pop_frame(th);
     GetEnvPtr(bind->env, env);
 

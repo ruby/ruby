@@ -187,10 +187,8 @@ rb_vmdebug_env_dump_raw(rb_env_t *env, VALUE *ep)
     while (env) {
 	fprintf(stderr, "--\n");
 	for (i = 0; i < env->env_size; i++) {
-	    fprintf(stderr, "%04d: %08"PRIxVALUE" (%p)", -env->local_size + i, env->env[i],
-		   (void *)&env->env[i]);
-	    if (&env->env[i] == ep)
-		fprintf(stderr, " <- ep");
+	    fprintf(stderr, "%04d: %08"PRIxVALUE" (%p)", i, env->env[i], (void *)&env->env[i]);
+	    if (&env->env[i] == ep) fprintf(stderr, " <- ep");
 	    fprintf(stderr, "\n");
 	}
 
