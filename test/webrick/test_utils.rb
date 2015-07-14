@@ -9,12 +9,16 @@ class TestWEBrickUtils < Test::Unit::TestCase
     end
   end
 
-  def do_test_timeout(m)
-    ex = Class.new(StandardError)
+  EX = Class.new(StandardError)
 
+  def test_no_timeout
+    m = WEBrick::Utils
     assert_equal(:foo, m.timeout(10){ :foo })
     assert_expired(true, m)
+  end
 
+  def test_nested_timeout_outer
+    m = WEBrick::Utils
     i = 0
     assert_raise(Timeout::Error){
       m.timeout(2){
@@ -26,13 +30,24 @@ class TestWEBrickUtils < Test::Unit::TestCase
     }
     assert_equal(2, i)
     assert_expired(true, m)
+  end
 
+  def test_timeout_default_execption
+    m = WEBrick::Utils
     assert_raise(Timeout::Error){ m.timeout(0.1){ sleep } }
     assert_expired(true, m)
+  end
 
+  def test_timeout_custom_exception
+    m = WEBrick::Utils
+    ex = EX
     assert_raise(ex){ m.timeout(0.1, ex){ sleep } }
     assert_expired(true, m)
+  end
 
+  def test_nested_timeout_inner_custom_exception
+    m = WEBrick::Utils
+    ex = EX
     i = 0
     assert_raise(ex){
       m.timeout(10){
@@ -42,7 +57,11 @@ class TestWEBrickUtils < Test::Unit::TestCase
     }
     assert_equal(1, i)
     assert_expired(true, m)
+  end
 
+  def test_nested_timeout_outer_custom_exception
+    m = WEBrick::Utils
+    ex = EX
     i = 0
     assert_raise(Timeout::Error){
       m.timeout(1){
@@ -52,10 +71,6 @@ class TestWEBrickUtils < Test::Unit::TestCase
     }
     assert_equal(1, i)
     assert_expired(true, m)
-  end
-
-  def test_webrick_timeout
-    do_test_timeout(WEBrick::Utils)
   end
 
   def test_create_listeners
