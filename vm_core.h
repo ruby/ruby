@@ -784,8 +784,6 @@ RUBY_SYMBOL_EXPORT_END
 
 typedef struct {
     rb_block_t block;
-
-    VALUE envval;		/* for GC mark */
     int8_t safe_level;		/* 0..1 */
     int8_t is_from_method;	/* bool */
     int8_t is_lambda;		/* bool */
@@ -959,6 +957,7 @@ VALUE rb_vm_make_proc(rb_thread_t *th, const rb_block_t *block, VALUE klass);
 VALUE rb_vm_make_binding(rb_thread_t *th, const rb_control_frame_t *src_cfp);
 VALUE rb_vm_env_local_variables(const rb_env_t *env);
 VALUE rb_vm_env_prev_envval(const rb_env_t *env);
+VALUE rb_vm_proc_envval(const rb_proc_t *proc);
 VALUE *rb_binding_add_dynavars(rb_binding_t *bind, int dyncount, const ID *dynvars);
 void rb_vm_inc_const_missing_count(void);
 void rb_vm_gvl_destroy(rb_vm_t *vm);

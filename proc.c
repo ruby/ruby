@@ -46,10 +46,9 @@ static void
 proc_mark(void *ptr)
 {
     rb_proc_t *proc = ptr;
-    RUBY_MARK_ENTER("proc");
-    RUBY_MARK_UNLESS_NULL(proc->envval);
     RUBY_MARK_UNLESS_NULL(proc->block.proc);
     RUBY_MARK_UNLESS_NULL(proc->block.self);
+    RUBY_MARK_UNLESS_NULL(rb_vm_proc_envval(proc));
     if (proc->block.iseq && RUBY_VM_IFUNC_P(proc->block.iseq)) {
 	RUBY_MARK_UNLESS_NULL((VALUE)(proc->block.iseq));
     }
@@ -670,7 +669,7 @@ rb_block_clear_env_self(VALUE proc)
     rb_proc_t *po;
     rb_env_t *env;
     GetProcPtr(proc, po);
-    GetEnvPtr(po->envval, env);
+    GetEnvPtr(rb_vm_proc_envval(po), env);
     env->env[0] = Qnil;
     return proc;
 }
@@ -1021,7 +1020,6 @@ rb_hash_proc(st_index_t hash, VALUE prc)
     rb_proc_t *proc;
     GetProcPtr(prc, proc);
     hash = rb_hash_uint(hash, (st_index_t)proc->block.iseq);
-    hash = rb_hash_uint(hash, (st_index_t)proc->envval);
     return rb_hash_uint(hash, (st_index_t)proc->block.ep >> 16);
 }
 
@@ -2533,7 +2531,7 @@ proc_binding(VALUE self)
     rb_binding_t *bind;
 
     GetProcPtr(self, proc);
-    envval = proc->envval;
+    envval = rb_vm_proc_envval(proc);
     iseq = proc->block.iseq;
     if (RUBY_VM_IFUNC_P(iseq)) {
 	if (IS_METHOD_PROC_ISEQ(iseq)) {

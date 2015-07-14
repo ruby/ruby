@@ -1,3 +1,15 @@
+Wed Jul 15 02:53:11 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h, vm.c: remove rb_proc_t::envval because we can know it via
+	  rb_proc_t::block::ep.
+
+	  rb_vm_proc_envval(const rb_proc_t *proc) returns an Env object which
+	  the Proc object use.
+
+	* proc.c: catch up this fix.
+
+	* vm_dump.c (rb_vmdebug_proc_dump_raw): ditto.
+
 Wed Jul 15 02:27:22 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h, vm.c: remvoe rb_env_t::prev_envval because we can know it
