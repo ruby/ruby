@@ -1,4 +1,7 @@
-Tue Jul 14 11:20:13 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Jul 14 11:21:31 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/webrick/utils.rb (WEBrick::Utils::TimeoutHandler#initialize):
+	  make sleep intervals adaptive than fixed period intervals.
 
 	* lib/webrick/server.rb (WEBrick::GenericServer#start): flush
 	  shutdown pipe.
