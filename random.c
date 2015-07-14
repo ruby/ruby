@@ -521,7 +521,7 @@ fill_random_bytes_syscall(void *seed, size_t size)
 {
     static rb_atomic_t try_syscall = 1;
     if (try_syscall) {
-	int ret;
+	long ret;
 	errno = 0;
 	ret = syscall(SYS_getrandom, seed, size, 0);
 	if (errno == ENOSYS) {
