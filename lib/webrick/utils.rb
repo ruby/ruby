@@ -153,7 +153,7 @@ module WEBrick
       # instead of creating the timeout handler directly.
       def initialize
         @timeout_info = Hash.new
-        Thread.start{
+        @watcher = Thread.start{
           while true
             now = Time.now
             wakeup = nil
@@ -194,8 +194,12 @@ module WEBrick
       # +exception+:: Exception to raise when timeout elapsed
       def register(thread, time, exception)
         @timeout_info[thread] ||= Array.new
-        @timeout_info[thread] << [time, exception]
-        return @timeout_info[thread].last.object_id
+        @timeout_info[thread] << (info = [time, exception])
+        begin
+          @watcher.wakeup
+        rescue ThreadError
+        end
+        return info.object_id
       end
 
       ##

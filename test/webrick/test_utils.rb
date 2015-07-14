@@ -5,7 +5,7 @@ class TestWEBrickUtils < Test::Unit::TestCase
   def assert_expired(flag, m)
     if m == WEBrick::Utils
       handler = WEBrick::Utils::TimeoutHandler.instance
-      assert_equal(flag, handler.instance_eval{ @timeout_info.empty? })
+      assert_equal(flag, handler.instance_variable_get(:@timeout_info).empty?)
     end
   end
 
@@ -21,8 +21,8 @@ class TestWEBrickUtils < Test::Unit::TestCase
     m = WEBrick::Utils
     i = 0
     assert_raise(Timeout::Error){
-      m.timeout(2){
-        assert_raise(Timeout::Error){ m.timeout(1){ i += 1; sleep } }
+      m.timeout(0.02){
+        assert_raise(Timeout::Error){ m.timeout(0.01){ i += 1; sleep } }
         assert_expired(false, m)
         i += 1
         sleep
@@ -34,14 +34,14 @@ class TestWEBrickUtils < Test::Unit::TestCase
 
   def test_timeout_default_execption
     m = WEBrick::Utils
-    assert_raise(Timeout::Error){ m.timeout(0.1){ sleep } }
+    assert_raise(Timeout::Error){ m.timeout(0.01){ sleep } }
     assert_expired(true, m)
   end
 
   def test_timeout_custom_exception
     m = WEBrick::Utils
     ex = EX
-    assert_raise(ex){ m.timeout(0.1, ex){ sleep } }
+    assert_raise(ex){ m.timeout(0.01, ex){ sleep } }
     assert_expired(true, m)
   end
 
@@ -51,7 +51,7 @@ class TestWEBrickUtils < Test::Unit::TestCase
     i = 0
     assert_raise(ex){
       m.timeout(10){
-        m.timeout(1, ex){ i += 1; sleep }
+        m.timeout(0.01, ex){ i += 1; sleep }
       }
       sleep
     }
@@ -64,8 +64,8 @@ class TestWEBrickUtils < Test::Unit::TestCase
     ex = EX
     i = 0
     assert_raise(Timeout::Error){
-      m.timeout(1){
-        m.timeout(10, ex){ i += 1; sleep }
+      m.timeout(0.01){
+        m.timeout(1.0, ex){ i += 1; sleep }
       }
       sleep
     }
