@@ -48,7 +48,6 @@ proc_mark(void *ptr)
     rb_proc_t *proc = ptr;
     RUBY_MARK_ENTER("proc");
     RUBY_MARK_UNLESS_NULL(proc->envval);
-    RUBY_MARK_UNLESS_NULL(proc->blockprocval);
     RUBY_MARK_UNLESS_NULL(proc->block.proc);
     RUBY_MARK_UNLESS_NULL(proc->block.self);
     if (proc->block.iseq && RUBY_VM_IFUNC_P(proc->block.iseq)) {
@@ -251,7 +250,6 @@ binding_mark(void *ptr)
 	bind = ptr;
 	RUBY_MARK_UNLESS_NULL(bind->env);
 	RUBY_MARK_UNLESS_NULL(bind->path);
-	RUBY_MARK_UNLESS_NULL(bind->blockprocval);
     }
     RUBY_MARK_LEAVE("binding");
 }
@@ -291,7 +289,6 @@ binding_dup(VALUE self)
     GetBindingPtr(bindval, dst);
     dst->env = src->env;
     dst->path = src->path;
-    dst->blockprocval = src->blockprocval;
     dst->first_lineno = src->first_lineno;
     return bindval;
 }
@@ -2500,7 +2497,7 @@ env_clone(VALUE envval, VALUE receiver, const rb_cref_t *cref)
     }
 
     GetEnvPtr(envval, env);
-    envsize = sizeof(rb_env_t) + (env->local_size + 1) * sizeof(VALUE);
+    envsize = sizeof(rb_env_t) + (env->env_size - 1) * sizeof(VALUE);
     newenv = xmalloc(envsize);
     memcpy(newenv, env, envsize);
     RTYPEDDATA_DATA(newenvval) = newenv;
@@ -2548,7 +2545,6 @@ proc_binding(VALUE self)
     bindval = rb_binding_alloc(rb_cBinding);
     GetBindingPtr(bindval, bind);
     bind->env = envval;
-    bind->blockprocval = proc->blockprocval;
 
     if (!RUBY_VM_NORMAL_ISEQ_P(iseq)) {
 	if (RUBY_VM_IFUNC_P(iseq) && IS_METHOD_PROC_ISEQ(iseq)) {
