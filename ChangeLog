@@ -1,3 +1,11 @@
+Tue Jul 14 11:20:13 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/webrick/server.rb (WEBrick::GenericServer#start): flush
+	  shutdown pipe.
+
+	* lib/webrick/server.rb (WEBrick::GenericServer#stop): request the
+	  server to stop immediately by sending data via shutdown pipe.
+
 Mon Jul 13 23:58:08 2015  Stefano Tortarolo  <stefano.tortarolo@gmail.com>
 
 	* lib/webrick/httpproxy.rb (WEBrick::HTTPProxyServer#do_CONNECT):

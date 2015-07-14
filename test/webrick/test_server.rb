@@ -137,8 +137,12 @@ class TestWEBrickServer < Test::Unit::TestCase
         flunk "unexpected log: #{msg.inspect}"
       end
     end
+    client_thread = nil
+    wakeup = -> {client_thread.wakeup}
     warn_flunk = WEBrick::Log.new(log, WEBrick::BasicLog::WARN)
     server = WEBrick::HTTPServer.new(
+      :StartCallback => wakeup,
+      :StopCallback => wakeup,
       :BindAddress => '0.0.0.0',
       :Port => 0,
       :Logger => warn_flunk)
