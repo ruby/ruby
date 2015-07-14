@@ -2,10 +2,15 @@ require "test/unit"
 require "webrick/utils"
 
 class TestWEBrickUtils < Test::Unit::TestCase
-  def assert_expired(flag, m)
-    if m == WEBrick::Utils
-      handler = WEBrick::Utils::TimeoutHandler.instance
-      assert_equal(flag, handler.instance_variable_get(:@timeout_info).empty?)
+  def assert_expired(m)
+    Thread.handle_interrupt(Timeout::Error => :never, EX => :never) do
+      assert_empty(m::TimeoutHandler.instance.instance_variable_get(:@timeout_info))
+    end
+  end
+
+  def assert_not_expired(m)
+    Thread.handle_interrupt(Timeout::Error => :never, EX => :never) do
+      assert_not_empty(m::TimeoutHandler.instance.instance_variable_get(:@timeout_info))
     end
   end
 
@@ -14,7 +19,7 @@ class TestWEBrickUtils < Test::Unit::TestCase
   def test_no_timeout
     m = WEBrick::Utils
     assert_equal(:foo, m.timeout(10){ :foo })
-    assert_expired(true, m)
+    assert_expired(m)
   end
 
   def test_nested_timeout_outer
@@ -23,26 +28,26 @@ class TestWEBrickUtils < Test::Unit::TestCase
     assert_raise(Timeout::Error){
       m.timeout(0.02){
         assert_raise(Timeout::Error){ m.timeout(0.01){ i += 1; sleep } }
-        assert_expired(false, m)
+        assert_not_expired(m)
         i += 1
         sleep
       }
     }
     assert_equal(2, i)
-    assert_expired(true, m)
+    assert_expired(m)
   end
 
   def test_timeout_default_execption
     m = WEBrick::Utils
     assert_raise(Timeout::Error){ m.timeout(0.01){ sleep } }
-    assert_expired(true, m)
+    assert_expired(m)
   end
 
   def test_timeout_custom_exception
     m = WEBrick::Utils
     ex = EX
     assert_raise(ex){ m.timeout(0.01, ex){ sleep } }
-    assert_expired(true, m)
+    assert_expired(m)
   end
 
   def test_nested_timeout_inner_custom_exception
@@ -56,7 +61,7 @@ class TestWEBrickUtils < Test::Unit::TestCase
       sleep
     }
     assert_equal(1, i)
-    assert_expired(true, m)
+    assert_expired(m)
   end
 
   def test_nested_timeout_outer_custom_exception
@@ -70,7 +75,7 @@ class TestWEBrickUtils < Test::Unit::TestCase
       sleep
     }
     assert_equal(1, i)
-    assert_expired(true, m)
+    assert_expired(m)
   end
 
   def test_create_listeners
