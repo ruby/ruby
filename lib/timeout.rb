@@ -48,7 +48,7 @@ module Timeout
   # :stopdoc:
   THIS_FILE = /\A#{Regexp.quote(__FILE__)}:/o
   CALLER_OFFSET = ((c = caller[0]) && THIS_FILE =~ c) ? 1 : 0
-  private_constant *%I[THIS_FILE CALLER_OFFSET]
+  private_constant :THIS_FILE, :CALLER_OFFSET
   # :startdoc:
 
   # Perform an operation in a block, raising an error if it takes longer than
