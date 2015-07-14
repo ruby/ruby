@@ -1,3 +1,14 @@
+Wed Jul 15 00:03:36 2015  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* gc.c (__has_feature): move into internal.h.
+
+	* internal.h (__has_feature): ditto.
+
+	* internal.h (__has_extension): new macro.
+
+	* internal.h (STATIC_ASSERT): use _Static_assert with
+	  clang. [ruby-core:69931] [Bug #11343]
+
 Wed Jul 15 00:00:00 2015  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* random.c (fill_random_bytes_syscall): fix compile error with
