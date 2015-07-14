@@ -379,7 +379,7 @@ get_local_variable_ptr(VALUE envval, ID lid)
 	else {
 	    return NULL;
 	}
-    } while ((envval = env->prev_envval) != 0);
+    } while ((envval = rb_vm_env_prev_envval(env)) != Qfalse);
 
     return NULL;
 }
@@ -432,9 +432,12 @@ static VALUE
 bind_local_variables(VALUE bindval)
 {
     const rb_binding_t *bind;
+    const rb_env_t *env;
 
     GetBindingPtr(bindval, bind);
-    return rb_vm_env_local_variables(bind->env);
+    GetEnvPtr(bind->env, env);
+
+    return rb_vm_env_local_variables(env);
 }
 
 /*

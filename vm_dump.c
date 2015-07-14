@@ -185,6 +185,8 @@ rb_vmdebug_env_dump_raw(rb_env_t *env, VALUE *ep)
     fprintf(stderr, "-- env --------------------\n");
 
     while (env) {
+	VALUE prev_envval;
+
 	fprintf(stderr, "--\n");
 	for (i = 0; i < env->env_size; i++) {
 	    fprintf(stderr, "%04d: %08"PRIxVALUE" (%p)", i, env->env[i], (void *)&env->env[i]);
@@ -192,11 +194,11 @@ rb_vmdebug_env_dump_raw(rb_env_t *env, VALUE *ep)
 	    fprintf(stderr, "\n");
 	}
 
-	if (env->prev_envval != 0) {
-	    GetEnvPtr(env->prev_envval, env);
+	if ((prev_envval = rb_vm_env_prev_envval(env)) != Qfalse) {
+	    GetEnvPtr(prev_envval, env);
 	}
 	else {
-	    env = 0;
+	    env = NULL;
 	}
     }
     fprintf(stderr, "---------------------------\n");

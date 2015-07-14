@@ -407,10 +407,6 @@ ruby_vm_run_at_exit_hooks(rb_vm_t *vm)
   };
  */
 
-#define ENV_IN_HEAP_P(th, env)  \
-  (!((th)->stack <= (env) && (env) < ((th)->stack + (th)->stack_size)))
-#define ENV_VAL(env)        ((env)[1])
-
 static void
 env_mark(void * const ptr)
 {
@@ -420,8 +416,7 @@ env_mark(void * const ptr)
     RUBY_GC_INFO("env->env\n");
     rb_gc_mark_values((long)env->env_size, env->env);
 
-    RUBY_GC_INFO("env->prev_envval\n");
-    RUBY_MARK_UNLESS_NULL(env->prev_envval);
+    RUBY_MARK_UNLESS_NULL(rb_vm_env_prev_envval(env));
     RUBY_MARK_UNLESS_NULL(env->block.self);
     RUBY_MARK_UNLESS_NULL(env->block.proc);
 
@@ -452,6 +447,9 @@ static const rb_data_type_t env_data_type = {
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
+#define VM_EP_IN_HEAP_P(th, ep)   (!((th)->stack <= (ep) && (ep) < ((th)->stack + (th)->stack_size)))
+#define VM_ENV_EP_ENVVAL(ep)      ((ep)[1])
+
 static VALUE check_env_value(VALUE envval);
 
 static int
@@ -462,9 +460,9 @@ check_env(rb_env_t * const env)
     fprintf(stderr, "envval: %10p ", (void *)env->block.ep[1]);
     dp(env->block.ep[1]);
     fprintf(stderr, "ep:    %10p\n", (void *)env->block.ep);
-    if (env->prev_envval) {
+    if (rb_vm_env_prev_envval(env)) {
 	fprintf(stderr, ">>\n");
-	check_env_value(env->prev_envval);
+	check_env_value(rb_vm_env_prev_envval(env));
 	fprintf(stderr, "<<\n");
     }
     return 1;
@@ -499,23 +497,20 @@ vm_make_proc_from_block(rb_thread_t *th, rb_block_t *block)
 static VALUE
 vm_make_env_each(rb_thread_t *const th, rb_control_frame_t *const cfp)
 {
-    VALUE envval, penvval = 0, blockprocval = 0;
+    VALUE envval, blockprocval = 0;
     VALUE * const ep = cfp->ep;
     rb_env_t *env;
     VALUE *new_ep;
     int i, local_size, env_size;
 
-    if (ENV_IN_HEAP_P(th, ep)) {
-	return ENV_VAL(ep);
+    if (VM_EP_IN_HEAP_P(th, ep)) {
+	return VM_ENV_EP_ENVVAL(ep);
     }
 
     if (!VM_EP_LEP_P(ep)) {
 	VALUE *prev_ep = VM_EP_PREV_EP(ep);
 
-	if (ENV_IN_HEAP_P(th, prev_ep)) {
-	    penvval = ENV_VAL(prev_ep);
-	}
-	else {
+	if (!VM_EP_IN_HEAP_P(th, prev_ep)) {
 	    rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
 
 	    while (prev_cfp->ep != prev_ep) {
@@ -523,7 +518,7 @@ vm_make_env_each(rb_thread_t *const th, rb_control_frame_t *const cfp)
 		if (VM_CHECK_MODE > 0 && prev_cfp->ep == 0) rb_bug("invalid ep");
 	    }
 
-	    penvval = vm_make_env_each(th, prev_cfp);
+	    vm_make_env_each(th, prev_cfp);
 	    *ep = VM_ENVVAL_PREV_EP_PTR(prev_cfp->ep);
 	}
     }
@@ -571,9 +566,8 @@ vm_make_env_each(rb_thread_t *const th, rb_control_frame_t *const cfp)
     * must happen after TypedData_Wrap_Struct to ensure penvval is markable
     * in case object allocation triggers GC and clobbers penvval.
     */
-    env->prev_envval = penvval;
-
     *ep = envval;		/* GC mark */
+
     new_ep = &env->env[i - 1];
     new_ep[1] = envval;
     if (blockprocval) new_ep[2] = blockprocval;
@@ -614,6 +608,19 @@ rb_vm_stack_to_heap(rb_thread_t *th)
     }
 }
 
+VALUE
+rb_vm_env_prev_envval(const rb_env_t *env)
+{
+    const VALUE *ep = env->block.ep;
+
+    if (VM_EP_LEP_P(ep)) {
+	return Qfalse;
+    }
+    else {
+	return VM_ENV_EP_ENVVAL(VM_EP_PREV_EP(ep));
+    }
+}
+
 static int
 collect_local_variables_in_iseq(const rb_iseq_t *iseq, const struct local_var_list *vars)
 {
@@ -628,19 +635,19 @@ collect_local_variables_in_iseq(const rb_iseq_t *iseq, const struct local_var_li
 static void
 collect_local_variables_in_env(const rb_env_t *env, const struct local_var_list *vars)
 {
+    VALUE prev_envval;
 
-    while (collect_local_variables_in_iseq(env->block.iseq, vars),
-	   env->prev_envval) {
-	GetEnvPtr(env->prev_envval, env);
+    while (collect_local_variables_in_iseq(env->block.iseq, vars), (prev_envval = rb_vm_env_prev_envval(env)) != Qfalse) {
+	GetEnvPtr(prev_envval, env);
     }
 }
 
 static int
 vm_collect_local_variables_in_heap(rb_thread_t *th, const VALUE *ep, const struct local_var_list *vars)
 {
-    if (ENV_IN_HEAP_P(th, ep)) {
+    if (VM_EP_IN_HEAP_P(th, ep)) {
 	rb_env_t *env;
-	GetEnvPtr(ENV_VAL(ep), env);
+	GetEnvPtr(VM_ENV_EP_ENVVAL(ep), env);
 	collect_local_variables_in_env(env, vars);
 	return 1;
     }
@@ -650,12 +657,9 @@ vm_collect_local_variables_in_heap(rb_thread_t *th, const VALUE *ep, const struc
 }
 
 VALUE
-rb_vm_env_local_variables(VALUE envval)
+rb_vm_env_local_variables(const rb_env_t *env)
 {
     struct local_var_list vars;
-    const rb_env_t *env;
-
-    GetEnvPtr(envval, env);
     local_var_list_init(&vars);
     collect_local_variables_in_env(env, &vars);
     return local_var_list_finish(&vars);
