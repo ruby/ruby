@@ -239,9 +239,12 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
     TestWEBrick.start_httpserver(config, log_tester) do |server, addr, port, log|
       http = Net::HTTP.new(addr, port)
       if windows?
-        fname = nil
-        Dir.chdir(config[:DocumentRoot]) do
-          fname = `dir /x webrick_long_filename.cgi`.match(/\s(w.+?cgi)\s/i)[1].downcase
+        root = config[:DocumentRoot].tr("/", "\\")
+        fname = IO.popen(%W[dir /x #{root}\\webrick_long_filename.cgi], &:read)
+        fname.sub!(/\A.*$^$.*$^$/m, '')
+        if fname
+          fname = fname[/\s(w.+?cgi)\s/i, 1]
+          fname.downcase!
         end
       else
         fname = "webric~1.cgi"
