@@ -1,3 +1,8 @@
+Wed Jul 15 08:59:19 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.h (RUBY_MARK_UNLESS_NULL): evaluate the argument only once
+	  to get rid of inadvertent side effects.
+
 Wed Jul 15 02:53:11 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h, vm.c: remove rb_proc_t::envval because we can know it via

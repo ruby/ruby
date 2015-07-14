@@ -57,7 +57,10 @@ rb_gc_debug_body(const char *mode, const char *msg, int st, void *ptr)
 #define RUBY_GC_INFO if(0)printf
 #endif
 
-#define RUBY_MARK_UNLESS_NULL(ptr) if(RTEST(ptr)){rb_gc_mark(ptr);}
+#define RUBY_MARK_UNLESS_NULL(ptr) do { \
+    VALUE markobj = (ptr); \
+    if (RTEST(markobj)) {rb_gc_mark(markobj);} \
+} while (0)
 #define RUBY_FREE_UNLESS_NULL(ptr) if(ptr){ruby_xfree(ptr);(ptr)=NULL;}
 
 #if STACK_GROW_DIRECTION > 0
