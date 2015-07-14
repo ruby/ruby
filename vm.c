@@ -577,7 +577,7 @@ vm_make_env_each(rb_thread_t *const th, rb_control_frame_t *const cfp)
     new_ep = &env->env[i - 1];
     new_ep[1] = envval;
     if (blockprocval) new_ep[2] = blockprocval;
-    
+
     /* as Binding */
     env->block.self = cfp->self;
     env->block.ep = cfp->ep = new_ep;
