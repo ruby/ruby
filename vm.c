@@ -679,7 +679,6 @@ rb_proc_create(VALUE klass, const rb_block_t *block,
     proc->safe_level = safe_level;
     proc->is_from_method = is_from_method;
     proc->is_lambda = is_lambda;
-    proc->envval = envval;
 
     return procval;
 }
@@ -711,6 +710,14 @@ rb_vm_make_proc_lambda(rb_thread_t *th, const rb_block_t *block, VALUE klass, in
 
     return procval;
 }
+
+VALUE
+rb_vm_proc_envval(const rb_proc_t *proc)
+{
+    VALUE envval = VM_ENV_EP_ENVVAL(proc->block.ep);
+    return envval;
+}
+
 
 /* Binding */
 
