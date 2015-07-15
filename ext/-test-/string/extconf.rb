@@ -4,4 +4,4 @@ inits = $srcs.map {|s| File.basename(s, ".*")}
 inits.delete("init")
 inits.map! {|s|"X(#{s})"}
 $defs << "-DTEST_INIT_FUNCS(X)=\"#{inits.join(' ')}\""
-create_makefile("-test-/string/string")
+create_makefile("-test-/string")

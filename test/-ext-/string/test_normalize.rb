@@ -1,5 +1,5 @@
 require 'test/unit'
-require "-test-/string/string"
+require "-test-/string"
 require "tempfile"
 
 class Test_StringNormalize < Test::Unit::TestCase
@@ -102,7 +102,7 @@ class Test_StringNormalize < Test::Unit::TestCase
   end
 
   def test_invalid_sequence
-    assert_separately(%w[-r-test-/string/string], <<-'end;')
+    assert_separately(%w[-r-test-/string], <<-'end;')
       assert_equal("\u{fffd}", Bug::String.new("\xff").normalize_ospath)
     end;
   end

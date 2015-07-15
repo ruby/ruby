@@ -1,5 +1,5 @@
 require 'test/unit'
-require "-test-/string/string"
+require "-test-/string"
 
 class Test_StrSetLen < Test::Unit::TestCase
   def setup

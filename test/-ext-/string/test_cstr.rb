@@ -1,5 +1,5 @@
 require 'test/unit'
-require "-test-/string/string"
+require "-test-/string"
 
 class Test_StringCStr < Test::Unit::TestCase
   Bug4319 = '[ruby-dev:43094]'

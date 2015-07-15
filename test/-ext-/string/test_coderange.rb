@@ -1,6 +1,6 @@
 # coding: ascii-8bit
 require 'test/unit'
-require "-test-/string/string"
+require "-test-/string"
 require "rbconfig/sizeof"
 
 class Test_StringCoderange < Test::Unit::TestCase
