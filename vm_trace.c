@@ -653,11 +653,9 @@ typedef struct rb_tp_struct {
 static void
 tp_mark(void *ptr)
 {
-    if (ptr) {
-	rb_tp_t *tp = (rb_tp_t *)ptr;
-	rb_gc_mark(tp->proc);
-	if (tp->target_th) rb_gc_mark(tp->target_th->self);
-    }
+    rb_tp_t *tp = ptr;
+    rb_gc_mark(tp->proc);
+    if (tp->target_th) rb_gc_mark(tp->target_th->self);
 }
 
 static size_t
