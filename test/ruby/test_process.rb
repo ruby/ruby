@@ -2017,7 +2017,7 @@ EOS
   end
 
   def test_deadlock_by_signal_at_forking
-    assert_separately(["-", EnvUtil.rubybin], <<-INPUT, timeout: 60)
+    assert_separately(["-", RUBY], <<-INPUT, timeout: 60)
       ruby = ARGV.shift
       GC.start # reduce garbage
       GC.disable # avoid triggering CoW after forks
