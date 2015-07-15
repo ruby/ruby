@@ -1,5 +1,5 @@
 require 'test/unit'
-require "-test-/string/string"
+require "-test-/string"
 
 class Test_StringQSort < Test::Unit::TestCase
   def test_qsort
