@@ -1,3 +1,10 @@
+Wed Jul 15 14:39:29 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (vm_make_env_each): add comments about env layout.
+	  Do not use `i' to specify `new_ep'.
+
+	* vm.c (rb_proc_create, rb_vm_make_proc_lambda): envval is not used.
+
 Wed Jul 15 08:59:19 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.h (RUBY_MARK_UNLESS_NULL): evaluate the argument only once

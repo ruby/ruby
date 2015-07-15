@@ -501,7 +501,7 @@ vm_make_env_each(rb_thread_t *const th, rb_control_frame_t *const cfp)
     VALUE * const ep = cfp->ep;
     rb_env_t *env;
     VALUE *new_ep;
-    int i, local_size, env_size;
+    int local_size, env_size;
 
     if (VM_EP_IN_HEAP_P(th, ep)) {
 	return VM_ENV_EP_ENVVAL(ep);
@@ -533,11 +533,23 @@ vm_make_env_each(rb_thread_t *const th, rb_control_frame_t *const cfp)
     }
 
     if (!RUBY_VM_NORMAL_ISEQ_P(cfp->iseq)) {
-	local_size = 1; /* cref/me */
+	local_size = 1 /* cref/me */;
     }
     else {
 	local_size = cfp->iseq->local_size;
     }
+
+    /*
+     * # local variables on a stack frame (N == local_size)
+     * [lvar1, lvar2, ..., lvarN, SPECVAL]
+     *                            ^
+     *                            ep[0]
+     *
+     * # moved local variables
+     * [lvar1, lvar2, ..., lvarN, SPECVAL, Envval, BlockProcval (if needed)]
+     *  ^                         ^
+     *  env->env[0]               ep[0]
+     */
 
     env_size = local_size +
                1 /* specval */ +
@@ -548,10 +560,10 @@ vm_make_env_each(rb_thread_t *const th, rb_control_frame_t *const cfp)
     env = xmalloc(sizeof(rb_env_t) + (env_size - 1 /* rb_env_t::env[1] */) * sizeof(VALUE));
     env->env_size = env_size;
 
-    i = local_size + 1 /* specval */;
-    MEMCPY(env->env, ep - local_size, VALUE, i);
+    MEMCPY(env->env, ep - local_size, VALUE, local_size + 1 /* specval */);
+
 #if 0
-    for (i = 0; i <= local_size; i++) {
+    for (i = 0; i < local_size; i++) {
 	if (RUBY_VM_NORMAL_ISEQ_P(cfp->iseq)) {
 	    /* clear value stack for GC */
 	    ep[-local_size + i] = 0;
@@ -568,7 +580,7 @@ vm_make_env_each(rb_thread_t *const th, rb_control_frame_t *const cfp)
     */
     *ep = envval;		/* GC mark */
 
-    new_ep = &env->env[i - 1];
+    new_ep = &env->env[local_size];
     new_ep[1] = envval;
     if (blockprocval) new_ep[2] = blockprocval;
 
@@ -669,7 +681,7 @@ rb_vm_env_local_variables(const rb_env_t *env)
 
 static inline VALUE
 rb_proc_create(VALUE klass, const rb_block_t *block,
-	       VALUE envval, int8_t safe_level, int8_t is_from_method, int8_t is_lambda)
+	       int8_t safe_level, int8_t is_from_method, int8_t is_lambda)
 {
     VALUE procval = rb_proc_alloc(klass);
     rb_proc_t *proc = RTYPEDDATA_DATA(procval);
@@ -692,15 +704,15 @@ rb_vm_make_proc(rb_thread_t *th, const rb_block_t *block, VALUE klass)
 VALUE
 rb_vm_make_proc_lambda(rb_thread_t *th, const rb_block_t *block, VALUE klass, int8_t is_lambda)
 {
-    VALUE procval, envval;
+    VALUE procval;
     rb_control_frame_t *cfp = RUBY_VM_GET_CFP_FROM_BLOCK_PTR(block);
 
     if (block->proc) {
 	rb_bug("rb_vm_make_proc: Proc value is already created.");
     }
 
-    envval = vm_make_env_object(th, cfp);
-    procval = rb_proc_create(klass, block, envval, (int8_t)th->safe_level, 0, is_lambda);
+    vm_make_env_object(th, cfp);
+    procval = rb_proc_create(klass, block, (int8_t)th->safe_level, 0, is_lambda);
 
     if (VMDEBUG) {
 	if (th->stack < block->ep && block->ep < th->stack + th->stack_size) {
