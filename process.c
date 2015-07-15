@@ -294,6 +294,16 @@ extern ID ruby_static_id_status;
 #define ALWAYS_NEED_ENVP 0
 #endif
 
+static inline int close_unless_reserved(fd)
+{
+    /* Do nothing to the reserved fd because it should be closed in exec(2)
+       due to the O_CLOEXEC or FD_CLOEXEC flag. */
+    if (rb_reserved_fd_p(fd)) { /* async-signal-safe */
+        return 0;
+    }
+    return close(fd); /* async-signal-safe */
+}
+
 /*#define DEBUG_REDIRECT*/
 #if defined(DEBUG_REDIRECT)
 
@@ -342,7 +352,7 @@ static int
 redirect_close(int fd)
 {
     int ret;
-    ret = close(fd);
+    ret = close_unless_reserved(fd);
     ttyprintf("close(%d) => %d\n", fd, ret);
     return ret;
 }
@@ -360,7 +370,7 @@ static int
 parent_redirect_close(int fd)
 {
     int ret;
-    ret = close(fd);
+    ret = close_unless_reserved(fd);
     ttyprintf("parent_close(%d) => %d\n", fd, ret);
     return ret;
 }
@@ -368,9 +378,9 @@ parent_redirect_close(int fd)
 #else
 #define redirect_dup(oldfd) dup(oldfd)
 #define redirect_dup2(oldfd, newfd) dup2((oldfd), (newfd))
-#define redirect_close(fd) close(fd)
+#define redirect_close(fd) close_unless_reserved(fd)
 #define parent_redirect_open(pathname, flags, perm) rb_cloexec_open((pathname), (flags), (perm))
-#define parent_redirect_close(fd) close(fd)
+#define parent_redirect_close(fd) close_unless_reserved(fd)
 #endif
 
 /*

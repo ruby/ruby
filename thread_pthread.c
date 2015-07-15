@@ -1692,10 +1692,11 @@ int
 rb_reserved_fd_p(int fd)
 {
 #if USE_SLEEPY_TIMER_THREAD
-    if (fd == timer_thread_pipe.normal[0] ||
-	fd == timer_thread_pipe.normal[1] ||
-	fd == timer_thread_pipe.low[0] ||
-	fd == timer_thread_pipe.low[1]) {
+    if ((fd == timer_thread_pipe.normal[0] ||
+	 fd == timer_thread_pipe.normal[1] ||
+	 fd == timer_thread_pipe.low[0] ||
+	 fd == timer_thread_pipe.low[1]) &&
+	timer_thread_pipe.owner_process == getpid()) { /* async-signal-safe */
 	return 1;
     }
     else {
