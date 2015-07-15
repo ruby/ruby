@@ -50,7 +50,7 @@ proc_mark(void *ptr)
     RUBY_MARK_UNLESS_NULL(proc->block.self);
     RUBY_MARK_UNLESS_NULL(rb_vm_proc_envval(proc));
     if (proc->block.iseq && RUBY_VM_IFUNC_P(proc->block.iseq)) {
-	RUBY_MARK_UNLESS_NULL((VALUE)(proc->block.iseq));
+	rb_gc_mark((VALUE)(proc->block.iseq));
     }
     RUBY_MARK_LEAVE("proc");
 }

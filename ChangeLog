@@ -1,3 +1,8 @@
+Wed Jul 15 18:31:18 2015  Eric Wong  <e@80x24.org>
+
+	* proc.c (proc_mark): remove redundant check
+	* vm.c (env_mark): ditto
+
 Wed Jul 15 17:27:40 2015  Eric Wong  <e@80x24.org>
 
 	* iseq.c (iseq_mark): remove check for data pointer
