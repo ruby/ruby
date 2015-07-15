@@ -1,3 +1,8 @@
+Wed Jul 15 23:40:32 2015  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* test/ruby/test_process.rb (test_deadlock_by_signal_at_forking):
+	  use RUBY (= EnvUtil.rubybin)
+
 Wed Jul 15 23:01:22 2015  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* process.c (redirect_close, parent_redirect_close): should not close
