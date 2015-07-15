@@ -677,6 +677,7 @@ enc_autoload(rb_encoding *enc)
 	i = enc->ruby_encoding_index;
 	enc_register_at(i & ENC_INDEX_MASK, rb_enc_name(enc), base);
 	((rb_raw_encoding *)enc)->ruby_encoding_index = i;
+	i &= ENC_INDEX_MASK;
     }
     else {
 	i = load_encoding(rb_enc_name(enc));

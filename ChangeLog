@@ -1,3 +1,9 @@
+Wed Jul 15 16:55:04 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (enc_autoload): drop dummy encoding flag from
+	  the loaded encoding index.  this flag is used only in this
+	  source.
+
 Wed Jul 15 14:39:29 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (vm_make_env_each): add comments about env layout.
