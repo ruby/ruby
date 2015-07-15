@@ -1,3 +1,7 @@
+Thu Jul 16 00:35:42 2015  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* .gitignore: ignore version.i.
+
 Wed Jul 15 23:40:32 2015  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* test/ruby/test_process.rb (test_deadlock_by_signal_at_forking):

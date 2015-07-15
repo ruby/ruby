@@ -106,6 +106,7 @@ y.tab.c
 /uncommon.mk
 /verconf.h
 /verconf.mk
+/version.i
 /web
 /yasmdata.rb
 
