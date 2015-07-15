@@ -2077,4 +2077,19 @@ EOS
       end
     INPUT
   end if defined?(fork)
+
+  def test_exec_close_reserved_fd
+    cmd = ".#{File::ALT_SEPARATOR || File::SEPARATOR}bug11353"
+    with_tmpchdir {
+      (3..6).each do |i|
+        ret = run_in_child(<<-INPUT)
+          begin
+            Process.exec('#{cmd}', 'dummy', #{i} => :close)
+          rescue SystemCallError
+          end
+        INPUT
+        assert_equal(0, ret)
+      end
+    }
+  end
 end

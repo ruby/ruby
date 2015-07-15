@@ -1,3 +1,8 @@
+Thu Jul 16 01:00:46 2015  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* test/ruby/test_process.rb (test_exec_close_reserved_fd): test for
+	  [Bug #11353]
+
 Thu Jul 16 00:35:42 2015  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* .gitignore: ignore version.i.
