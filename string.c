@@ -6878,7 +6878,7 @@ rb_str_enumerate_bytes(VALUE str, int wantarray)
 	if (wantarray)
 	    ary = rb_ary_new2(RSTRING_LEN(str));
 	else
-	    RETURN_SIZED_ENUMERATOR(str, 0, 0, rb_str_each_byte_size);
+	    return SIZED_ENUMERATOR(str, 0, 0, rb_str_each_byte_size);
     }
 
     for (i=0; i<RSTRING_LEN(str); i++) {
@@ -7071,7 +7071,7 @@ rb_str_enumerate_codepoints(VALUE str, int wantarray)
 	if (wantarray)
 	    ary = rb_ary_new_capa(str_strlen(str, enc)); /* str's enc*/
 	else
-	    RETURN_SIZED_ENUMERATOR(str, 0, 0, rb_str_each_char_size);
+	    return SIZED_ENUMERATOR(str, 0, 0, rb_str_each_char_size);
     }
 
     while (ptr < end) {
