@@ -1,3 +1,10 @@
+Wed Jul 15 17:27:40 2015  Eric Wong  <e@80x24.org>
+
+	* iseq.c (iseq_mark): remove check for data pointer
+	* proc.c (binding_mark): ditto
+	* vm.c (rb_thread_mark): ditto
+	* vm_trace.c (tp_mark): ditto
+
 Wed Jul 15 16:55:04 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (enc_autoload): drop dummy encoding flag from

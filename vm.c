@@ -2053,63 +2053,61 @@ void rb_fiber_mark_self(rb_fiber_t *fib);
 void
 rb_thread_mark(void *ptr)
 {
-    rb_thread_t *th = NULL;
+    rb_thread_t *th = ptr;
     RUBY_MARK_ENTER("thread");
-    if (ptr) {
-	th = ptr;
-	if (th->stack) {
-	    VALUE *p = th->stack;
-	    VALUE *sp = th->cfp->sp;
-	    rb_control_frame_t *cfp = th->cfp;
-	    rb_control_frame_t *limit_cfp = (void *)(th->stack + th->stack_size);
 
-	    rb_gc_mark_values((long)(sp - p), p);
+    if (th->stack) {
+	VALUE *p = th->stack;
+	VALUE *sp = th->cfp->sp;
+	rb_control_frame_t *cfp = th->cfp;
+	rb_control_frame_t *limit_cfp = (void *)(th->stack + th->stack_size);
 
-	    while (cfp != limit_cfp) {
-		rb_iseq_t *iseq = cfp->iseq;
-		rb_gc_mark(cfp->proc);
-		rb_gc_mark(cfp->self);
-		if (iseq) {
-		    rb_gc_mark(RUBY_VM_NORMAL_ISEQ_P(iseq) ? iseq->self : (VALUE)iseq);
-		}
-		cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+	rb_gc_mark_values((long)(sp - p), p);
+
+	while (cfp != limit_cfp) {
+	    rb_iseq_t *iseq = cfp->iseq;
+	    rb_gc_mark(cfp->proc);
+	    rb_gc_mark(cfp->self);
+	    if (iseq) {
+		rb_gc_mark(RUBY_VM_NORMAL_ISEQ_P(iseq) ? iseq->self : (VALUE)iseq);
 	    }
+	    cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
 	}
-
-	/* mark ruby objects */
-	RUBY_MARK_UNLESS_NULL(th->first_proc);
-	if (th->first_proc) RUBY_MARK_UNLESS_NULL(th->first_args);
-
-	RUBY_MARK_UNLESS_NULL(th->thgroup);
-	RUBY_MARK_UNLESS_NULL(th->value);
-	RUBY_MARK_UNLESS_NULL(th->errinfo);
-	RUBY_MARK_UNLESS_NULL(th->pending_interrupt_queue);
-	RUBY_MARK_UNLESS_NULL(th->pending_interrupt_mask_stack);
-	RUBY_MARK_UNLESS_NULL(th->root_svar);
-	RUBY_MARK_UNLESS_NULL(th->top_self);
-	RUBY_MARK_UNLESS_NULL(th->top_wrapper);
-	rb_fiber_mark_self(th->fiber);
-	rb_fiber_mark_self(th->root_fiber);
-	RUBY_MARK_UNLESS_NULL(th->stat_insn_usage);
-	RUBY_MARK_UNLESS_NULL(th->last_status);
-
-	RUBY_MARK_UNLESS_NULL(th->locking_mutex);
-
-	rb_mark_tbl(th->local_storage);
-	RUBY_MARK_UNLESS_NULL(th->local_storage_recursive_hash);
-	RUBY_MARK_UNLESS_NULL(th->local_storage_recursive_hash_for_trace);
-
-	if (GET_THREAD() != th && th->machine.stack_start && th->machine.stack_end) {
-	    rb_gc_mark_machine_stack(th);
-	    rb_gc_mark_locations((VALUE *)&th->machine.regs,
-				 (VALUE *)(&th->machine.regs) +
-				 sizeof(th->machine.regs) / sizeof(VALUE));
-	}
-
-	RUBY_MARK_UNLESS_NULL(th->name);
-
-	rb_vm_trace_mark_event_hooks(&th->event_hooks);
     }
+
+    /* mark ruby objects */
+    RUBY_MARK_UNLESS_NULL(th->first_proc);
+    if (th->first_proc) RUBY_MARK_UNLESS_NULL(th->first_args);
+
+    RUBY_MARK_UNLESS_NULL(th->thgroup);
+    RUBY_MARK_UNLESS_NULL(th->value);
+    RUBY_MARK_UNLESS_NULL(th->errinfo);
+    RUBY_MARK_UNLESS_NULL(th->pending_interrupt_queue);
+    RUBY_MARK_UNLESS_NULL(th->pending_interrupt_mask_stack);
+    RUBY_MARK_UNLESS_NULL(th->root_svar);
+    RUBY_MARK_UNLESS_NULL(th->top_self);
+    RUBY_MARK_UNLESS_NULL(th->top_wrapper);
+    rb_fiber_mark_self(th->fiber);
+    rb_fiber_mark_self(th->root_fiber);
+    RUBY_MARK_UNLESS_NULL(th->stat_insn_usage);
+    RUBY_MARK_UNLESS_NULL(th->last_status);
+
+    RUBY_MARK_UNLESS_NULL(th->locking_mutex);
+
+    rb_mark_tbl(th->local_storage);
+    RUBY_MARK_UNLESS_NULL(th->local_storage_recursive_hash);
+    RUBY_MARK_UNLESS_NULL(th->local_storage_recursive_hash_for_trace);
+
+    if (GET_THREAD() != th && th->machine.stack_start && th->machine.stack_end) {
+	rb_gc_mark_machine_stack(th);
+	rb_gc_mark_locations((VALUE *)&th->machine.regs,
+			     (VALUE *)(&th->machine.regs) +
+			     sizeof(th->machine.regs) / sizeof(VALUE));
+    }
+
+    RUBY_MARK_UNLESS_NULL(th->name);
+
+    rb_vm_trace_mark_event_hooks(&th->event_hooks);
 
     RUBY_MARK_LEAVE("thread");
 }

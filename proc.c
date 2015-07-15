@@ -243,13 +243,13 @@ binding_free(void *ptr)
 static void
 binding_mark(void *ptr)
 {
-    rb_binding_t *bind;
+    rb_binding_t *bind = ptr;
+
     RUBY_MARK_ENTER("binding");
-    if (ptr) {
-	bind = ptr;
-	RUBY_MARK_UNLESS_NULL(bind->env);
-	RUBY_MARK_UNLESS_NULL(bind->path);
-    }
+
+    RUBY_MARK_UNLESS_NULL(bind->env);
+    RUBY_MARK_UNLESS_NULL(bind->path);
+
     RUBY_MARK_LEAVE("binding");
 }
 

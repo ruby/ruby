@@ -102,27 +102,26 @@ iseq_free(void *ptr)
 static void
 iseq_mark(void *ptr)
 {
+    rb_iseq_t *iseq = ptr;
+
     RUBY_MARK_ENTER("iseq");
 
-    if (ptr) {
-	rb_iseq_t *iseq = ptr;
+    RUBY_GC_INFO("%s @ %s\n", RSTRING_PTR(iseq->location.label), RSTRING_PTR(iseq->location.path));
 
-	RUBY_GC_INFO("%s @ %s\n", RSTRING_PTR(iseq->location.label), RSTRING_PTR(iseq->location.path));
+    RUBY_MARK_UNLESS_NULL(iseq->mark_ary);
+    RUBY_MARK_UNLESS_NULL(iseq->location.label);
+    RUBY_MARK_UNLESS_NULL(iseq->location.base_label);
+    RUBY_MARK_UNLESS_NULL(iseq->location.path);
+    RUBY_MARK_UNLESS_NULL(iseq->location.absolute_path);
+    RUBY_MARK_UNLESS_NULL(iseq->coverage);
 
-	RUBY_MARK_UNLESS_NULL(iseq->mark_ary);
-	RUBY_MARK_UNLESS_NULL(iseq->location.label);
-	RUBY_MARK_UNLESS_NULL(iseq->location.base_label);
-	RUBY_MARK_UNLESS_NULL(iseq->location.path);
-	RUBY_MARK_UNLESS_NULL(iseq->location.absolute_path);
-	RUBY_MARK_UNLESS_NULL(iseq->coverage);
-
-	if (iseq->compile_data != 0) {
-	    struct iseq_compile_data *const compile_data = iseq->compile_data;
-	    RUBY_MARK_UNLESS_NULL(compile_data->mark_ary);
-	    RUBY_MARK_UNLESS_NULL(compile_data->err_info);
-	    RUBY_MARK_UNLESS_NULL(compile_data->catch_table_ary);
-	}
+    if (iseq->compile_data != 0) {
+	struct iseq_compile_data *const compile_data = iseq->compile_data;
+	RUBY_MARK_UNLESS_NULL(compile_data->mark_ary);
+	RUBY_MARK_UNLESS_NULL(compile_data->err_info);
+	RUBY_MARK_UNLESS_NULL(compile_data->catch_table_ary);
     }
+
     RUBY_MARK_LEAVE("iseq");
 }
 
