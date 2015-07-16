@@ -1,3 +1,10 @@
+Thu Jul 16 21:47:46 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.c (rb_iseq_disasm): rename rb_iseq_t *iseqdat to iseq
+	  and VALUE *iseq to code.
+
+	* iseq.c (rb_iseq_disasm_insn): ditto.
+
 Thu Jul 16 14:34:24 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm.c (REWIND_CFP): keep the arguments region inside the valid
