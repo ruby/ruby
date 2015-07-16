@@ -4189,7 +4189,7 @@ rb_obj_is_mutex(VALUE obj)
 static VALUE
 mutex_alloc(VALUE klass)
 {
-    VALUE volatile obj;
+    VALUE obj;
     rb_mutex_t *mutex;
 
     obj = TypedData_Make_Struct(klass, rb_mutex_t, &mutex_data_type, mutex);
