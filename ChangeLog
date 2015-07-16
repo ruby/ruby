@@ -1,3 +1,7 @@
+Thu Jul 16 19:12:30 2015  Eric Wong  <e@80x24.org>
+
+	* thread.c (mutex_alloc): remove needless volatile
+
 Thu Jul 16 22:05:29 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h: constify rb_iseq_t::parent_iseq.
