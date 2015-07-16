@@ -887,7 +887,8 @@ rb_waitpid(rb_pid_t pid, int *st, int flags)
 							 RUBY_UBF_PROCESS, 0);
     if (result < 0) {
 	if (errno == EINTR) {
-            RUBY_VM_CHECK_INTS(GET_THREAD());
+            rb_thread_t *th = GET_THREAD();
+            RUBY_VM_CHECK_INTS(th);
             goto retry;
         }
 	return (rb_pid_t)-1;

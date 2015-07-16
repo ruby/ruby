@@ -670,7 +670,7 @@ thread_create_core(VALUE thval, VALUE args, VALUE (*fn)(ANYARGS))
     rb_thread_t *th, *current_th = GET_THREAD();
     int err;
 
-    if (OBJ_FROZEN(GET_THREAD()->thgroup)) {
+    if (OBJ_FROZEN(current_th->thgroup)) {
 	rb_raise(rb_eThreadError,
 		 "can't start a new thread (frozen ThreadGroup)");
     }
@@ -1173,7 +1173,8 @@ rb_thread_wait_for(struct timeval time)
 void
 rb_thread_check_ints(void)
 {
-    RUBY_VM_CHECK_INTS_BLOCKING(GET_THREAD());
+    rb_thread_t *th = GET_THREAD();
+    RUBY_VM_CHECK_INTS_BLOCKING(th);
 }
 
 /*
@@ -4258,10 +4259,11 @@ rb_mutex_trylock(VALUE self)
 
     native_mutex_lock(&mutex->lock);
     if (mutex->th == 0) {
-	mutex->th = GET_THREAD();
+	rb_thread_t *th = GET_THREAD();
+	mutex->th = th;
 	locked = Qtrue;
 
-	mutex_locked(GET_THREAD(), self);
+	mutex_locked(th, self);
     }
     native_mutex_unlock(&mutex->lock);
 
@@ -4345,7 +4347,7 @@ rb_mutex_lock(VALUE self)
     }
 
     if (rb_mutex_trylock(self) == Qfalse) {
-	if (mutex->th == GET_THREAD()) {
+	if (mutex->th == th) {
 	    rb_raise(rb_eThreadError, "deadlock; recursive locking");
 	}
 
