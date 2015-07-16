@@ -1150,6 +1150,7 @@ void ruby_kill(rb_pid_t pid, int sig);
 
 /* thread_pthread.c, thread_win32.c */
 void Init_native_thread(void);
+int rb_divert_reserved_fd(int fd);
 
 /* transcode.c */
 extern VALUE rb_cEncodingConverter;

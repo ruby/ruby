@@ -788,6 +788,12 @@ rb_reserved_fd_p(int fd)
     return 0;
 }
 
+int
+rb_divert_reserved_fd(int fd)
+{
+    return 0;
+}
+
 rb_nativethread_id_t
 rb_nativethread_self(void)
 {

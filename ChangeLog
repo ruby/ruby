@@ -1,3 +1,23 @@
+Thu Jul 16 21:47:47 2015  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* process.c (redirect_dup2): when the new FD of dup2() coflicts
+	  with one of the timer thread FDs, the internal FD is diverted.
+	  [Bug #11336] [ruby-core:69886] [Bug #11350] [ruby-core:69961]
+
+	* process.c (dup2_with_divert): new function for the above purpose.
+
+	* thread_pthread.c (rb_divert_reserved_fd): new function for
+	  diverting reserved FD. If the given FD is the same as one of the
+	  reserved FDs, the reserved FD number is internally changed.
+	  It returns -1 when error. Otherwise, returns 0. It also returns
+	  0 if there is no need to change reserved FD number.
+
+	* thread_win32.c (rb_divert_reserved_fd): always returns 0 because
+	  of no reserved FDs.
+
+	* internal.h (rb_divert_reserved_fd): prototype declaration.
+	  It is Ruby internal use only.
+
 Thu Jul 16 21:47:46 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* iseq.c (rb_iseq_disasm): rename rb_iseq_t *iseqdat to iseq
