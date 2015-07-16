@@ -294,7 +294,8 @@ extern ID ruby_static_id_status;
 #define ALWAYS_NEED_ENVP 0
 #endif
 
-static inline int close_unless_reserved(fd)
+static inline int
+close_unless_reserved(int fd)
 {
     /* Do nothing to the reserved fd because it should be closed in exec(2)
        due to the O_CLOEXEC or FD_CLOEXEC flag. */
