@@ -1,3 +1,7 @@
+Thu Jul 16 11:38:21 2015  Eric Wong  <e@80x24.org>
+
+	* process.c (close_unless_reserved): declare type of `fd' arg
+
 Thu Jul 16 08:47:29 2015  Eric Wong  <e@80x24.org>
 
 	* load.c (rb_construct_expanded_load_path): fstring expanded path
