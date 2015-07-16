@@ -2297,7 +2297,11 @@ vm_define_method(rb_thread_t *th, VALUE obj, ID id, VALUE iseqval,
 
 #define REWIND_CFP(expr) do { \
     rb_thread_t *th__ = GET_THREAD(); \
-    th__->cfp++; expr; th__->cfp--; \
+    VALUE *const curr_sp = (th__->cfp++)->sp; \
+    VALUE *const saved_sp = th__->cfp->sp; \
+    th__->cfp->sp = curr_sp; \
+    expr; \
+    (th__->cfp--)->sp = saved_sp; \
 } while (0)
 
 static VALUE
@@ -2400,7 +2404,6 @@ static VALUE
 core_hash_merge_ary(VALUE hash, VALUE ary)
 {
     core_hash_merge(hash, RARRAY_LEN(ary), RARRAY_CONST_PTR(ary));
-    RB_GC_GUARD(ary);
     return hash;
 }
 
@@ -2408,14 +2411,8 @@ static VALUE
 m_core_hash_merge_ptr(int argc, VALUE *argv, VALUE recv)
 {
     VALUE hash = argv[0];
-    VALUE *args;
 
-    --argc; ++argv;
-    VM_ASSERT(argc <= 256);
-    args = ALLOCA_N(VALUE, argc);
-    MEMCPY(args, argv, VALUE, argc);
-    argv = args;
-    REWIND_CFP(core_hash_merge(hash, argc, argv));
+    REWIND_CFP(core_hash_merge(hash, argc-1, argv+1));
 
     return hash;
 }
