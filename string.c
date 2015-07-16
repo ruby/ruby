@@ -6709,7 +6709,7 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, int wantarray)
 	if (wantarray)
 	    ary = rb_ary_new();
 	else
-	    RETURN_ENUMERATOR(str, argc, argv);
+	    return SIZED_ENUMERATOR(str, argc, argv, 0);
     }
 
     if (NIL_P(rs)) {
