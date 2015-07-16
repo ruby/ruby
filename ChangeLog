@@ -1,3 +1,11 @@
+Thu Jul 16 14:18:37 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm.c (m_core_hash_merge_ptr): copy the arguments to the machine
+	  stack before rewinding the control frame pointer and leaving the
+	  arguments outside valid region of the value stack.
+	  [ruby-core:69969] [Bug #11352]
+
+
 Thu Jul 16 11:38:21 2015  Eric Wong  <e@80x24.org>
 
 	* process.c (close_unless_reserved): declare type of `fd' arg

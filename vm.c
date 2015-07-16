@@ -2400,6 +2400,7 @@ static VALUE
 core_hash_merge_ary(VALUE hash, VALUE ary)
 {
     core_hash_merge(hash, RARRAY_LEN(ary), RARRAY_CONST_PTR(ary));
+    RB_GC_GUARD(ary);
     return hash;
 }
 
@@ -2407,8 +2408,14 @@ static VALUE
 m_core_hash_merge_ptr(int argc, VALUE *argv, VALUE recv)
 {
     VALUE hash = argv[0];
+    VALUE *args;
 
-    REWIND_CFP(core_hash_merge(hash, argc-1, argv+1));
+    --argc; ++argv;
+    VM_ASSERT(argc <= 256);
+    args = ALLOCA_N(VALUE, argc);
+    MEMCPY(args, argv, VALUE, argc);
+    argv = args;
+    REWIND_CFP(core_hash_merge(hash, argc, argv));
 
     return hash;
 }
