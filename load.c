@@ -87,7 +87,7 @@ rb_construct_expanded_load_path(int type, int *has_relative, int *has_non_cache)
 	as_str = rb_get_path_check_convert(path, as_str, level);
 	expanded_path = rb_file_expand_path_fast(as_str, Qnil);
 	rb_str_freeze(expanded_path);
-	rb_ary_push(ary, expanded_path);
+	rb_ary_push(ary, rb_fstring(expanded_path));
     }
     rb_obj_freeze(ary);
     vm->expanded_load_path = ary;
@@ -287,9 +287,9 @@ get_loaded_features_index(void)
 	    VALUE entry, as_str;
 	    as_str = entry = rb_ary_entry(features, i);
 	    StringValue(as_str);
+	    as_str = rb_fstring(rb_str_freeze(as_str));
 	    if (as_str != entry)
 		rb_ary_store(features, i, as_str);
-	    rb_str_freeze(as_str);
 	    features_index_add(as_str, INT2FIX(i));
 	}
 	reset_loaded_features_snapshot();
@@ -560,7 +560,7 @@ rb_provide_feature(VALUE feature)
     }
     rb_str_freeze(feature);
 
-    rb_ary_push(features, feature);
+    rb_ary_push(features, rb_fstring(feature));
     features_index_add(feature, INT2FIX(RARRAY_LEN(features)-1));
     reset_loaded_features_snapshot();
 }
