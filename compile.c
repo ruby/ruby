@@ -1068,7 +1068,7 @@ iseq_set_exception_local_table(rb_iseq_t *iseq)
 }
 
 static int
-get_lvar_level(rb_iseq_t *iseq)
+get_lvar_level(const rb_iseq_t *iseq)
 {
     int lev = 0;
     while (iseq != iseq->local_iseq) {
@@ -1079,7 +1079,7 @@ get_lvar_level(rb_iseq_t *iseq)
 }
 
 static int
-get_dyna_var_idx_at_raw(rb_iseq_t *iseq, ID id)
+get_dyna_var_idx_at_raw(const rb_iseq_t *iseq, ID id)
 {
     int i;
 
@@ -1092,7 +1092,7 @@ get_dyna_var_idx_at_raw(rb_iseq_t *iseq, ID id)
 }
 
 static int
-get_local_var_idx(rb_iseq_t *iseq, ID id)
+get_local_var_idx(const rb_iseq_t *iseq, ID id)
 {
     int idx = get_dyna_var_idx_at_raw(iseq->local_iseq, id);
 
@@ -1104,7 +1104,7 @@ get_local_var_idx(rb_iseq_t *iseq, ID id)
 }
 
 static int
-get_dyna_var_idx(rb_iseq_t *iseq, ID id, int *level, int *ls)
+get_dyna_var_idx(const rb_iseq_t *iseq, ID id, int *level, int *ls)
 {
     int lv = 0, idx = -1;
 
@@ -3124,10 +3124,10 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *ret,
 }
 
 static VALUE
-make_name_for_block(rb_iseq_t *iseq)
+make_name_for_block(const rb_iseq_t *iseq)
 {
     int level = 1;
-    rb_iseq_t *ip = iseq;
+    const rb_iseq_t *ip = iseq;
 
     if (iseq->parent_iseq != 0) {
 	while (ip->local_iseq != ip) {
@@ -3716,7 +3716,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    COMPILE_ERROR((ERROR_ARGS "Can't escape from eval with break"));
 	}
 	else {
-	    rb_iseq_t *ip = iseq->parent_iseq;
+	    const rb_iseq_t *ip = iseq->parent_iseq;
 	    while (ip) {
 		if (!ip->compile_data) {
 		    ip = 0;
@@ -3781,8 +3781,8 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    COMPILE_ERROR((ERROR_ARGS "Can't escape from eval with next"));
 	}
 	else {
-	    rb_iseq_t *ip;
-	    ip = iseq;
+	    const rb_iseq_t *ip = iseq;
+
 	    while (ip) {
 		if (!ip->compile_data) {
 		    ip = 0;
@@ -3849,10 +3849,10 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    }
 	}
 	else {
-	    rb_iseq_t *ip;
+	    const rb_iseq_t *ip = iseq;
 	    unsigned long level;
 	    level = 0x8000 | 0x4000;
-	    ip = iseq;
+
 	    while (ip) {
 		if (!ip->compile_data) {
 		    ip = 0;
@@ -4639,7 +4639,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	else {
 	    /* NODE_ZSUPER */
 	    int i;
-	    rb_iseq_t *liseq = iseq->local_iseq;
+	    const rb_iseq_t *liseq = iseq->local_iseq;
 	    int lvar_level = get_lvar_level(iseq);
 
 	    argc = liseq->param.lead_num;
@@ -5382,7 +5382,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		ADD_INSN2(ret, line, getlocal, INT2FIX(2), INT2FIX(0));
 	    }
 	    else {
-		rb_iseq_t *ip = iseq;
+		const rb_iseq_t *ip = iseq;
 		int level = 0;
 		while (ip) {
 		    if (ip->type == ISEQ_TYPE_RESCUE) {
@@ -6253,7 +6253,8 @@ int
 rb_dvar_defined(ID id)
 {
     rb_thread_t *th = GET_THREAD();
-    rb_iseq_t *iseq;
+    const rb_iseq_t *iseq;
+
     if (th->base_block && (iseq = th->base_block->iseq)) {
 	while (iseq->type == ISEQ_TYPE_BLOCK ||
 	       iseq->type == ISEQ_TYPE_RESCUE ||
@@ -6278,7 +6279,7 @@ int
 rb_local_defined(ID id)
 {
     rb_thread_t *th = GET_THREAD();
-    rb_iseq_t *iseq;
+    const rb_iseq_t *iseq;
 
     if (th->base_block && th->base_block->iseq) {
 	int i;
