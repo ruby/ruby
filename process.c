@@ -305,6 +305,16 @@ close_unless_reserved(int fd)
     return close(fd); /* async-signal-safe */
 }
 
+static inline int
+dup2_with_divert(int oldfd, int newfd)
+{
+    if (rb_divert_reserved_fd(newfd) == -1) { /* async-signal-safe if no error occurred */
+        return -1;
+    } else {
+        return dup2(oldfd, newfd); /* async-signal-safe */
+    }
+}
+
 /*#define DEBUG_REDIRECT*/
 #if defined(DEBUG_REDIRECT)
 
@@ -344,7 +354,7 @@ static int
 redirect_dup2(int oldfd, int newfd)
 {
     int ret;
-    ret = dup2(oldfd, newfd);
+    ret = dup2_with_divert(oldfd, newfd);
     ttyprintf("dup2(%d, %d) => %d\n", oldfd, newfd, ret);
     return ret;
 }
@@ -378,7 +388,7 @@ parent_redirect_close(int fd)
 
 #else
 #define redirect_dup(oldfd) dup(oldfd)
-#define redirect_dup2(oldfd, newfd) dup2((oldfd), (newfd))
+#define redirect_dup2(oldfd, newfd) dup2_with_divert((oldfd), (newfd))
 #define redirect_close(fd) close_unless_reserved(fd)
 #define parent_redirect_open(pathname, flags, perm) rb_cloexec_open((pathname), (flags), (perm))
 #define parent_redirect_close(fd) close_unless_reserved(fd)

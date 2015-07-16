@@ -1707,6 +1707,29 @@ rb_reserved_fd_p(int fd)
 #endif
 }
 
+int
+rb_divert_reserved_fd(int fd)
+{
+#if USE_SLEEPY_TIMER_THREAD
+    int *ptr;
+    int newfd;
+
+    if ((fd == *(ptr = &(timer_thread_pipe.normal[0])) ||
+         fd == *(ptr = &(timer_thread_pipe.normal[1])) ||
+         fd == *(ptr = &(timer_thread_pipe.low[0])) ||
+         fd == *(ptr = &(timer_thread_pipe.low[1]))) &&
+        timer_thread_pipe.owner_process == getpid()) { /* async-signal-safe */
+        newfd = rb_cloexec_dup(fd); /* async-signal-safe if no error */
+        if (newfd == -1) return -1;
+        rb_update_max_fd(newfd); /* async-signal-safe if no error */
+        /* set_nonblock(newfd); */ /* async-signal-safe if no error */
+        *ptr = newfd;
+        rb_thread_wakeup_timer_thread_low(); /* async-signal-safe? */
+    }
+#endif
+    return 0;
+}
+
 rb_nativethread_id_t
 rb_nativethread_self(void)
 {
