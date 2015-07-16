@@ -1,3 +1,10 @@
+Thu Jul 16 08:47:29 2015  Eric Wong  <e@80x24.org>
+
+	* load.c (rb_construct_expanded_load_path): fstring expanded path
+	  (get_loaded_features_index): fstring feature path
+	  (rb_provide_feature): ditto
+	  [ruby-core:69871] [Feature #11331]
+
 Thu Jul 16 02:56:14 2015  Eric Wong  <e@80x24.org>
 
 	* thread.c (thread_initialize): avoid RSTRING_PTR and NUMT2INT
