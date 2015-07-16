@@ -841,7 +841,7 @@ vm_throw_start(rb_thread_t * const th, rb_control_frame_t * const reg_cfp, int s
     else if (state == TAG_BREAK) {
 	int is_orphan = 1;
 	VALUE *ep = GET_EP();
-	rb_iseq_t *base_iseq = GET_ISEQ();
+	const rb_iseq_t *base_iseq = GET_ISEQ();
 	escape_cfp = reg_cfp;
 
 	while (base_iseq->type != ISEQ_TYPE_BLOCK) {
@@ -1869,7 +1869,7 @@ current_method_entry(rb_thread_t *th, rb_control_frame_t *cfp)
     rb_control_frame_t *top_cfp = cfp;
 
     if (cfp->iseq && cfp->iseq->type == ISEQ_TYPE_BLOCK) {
-	rb_iseq_t *local_iseq = cfp->iseq->local_iseq;
+	const rb_iseq_t *local_iseq = cfp->iseq->local_iseq;
 	do {
 	    cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
 	    if (RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th, cfp)) {

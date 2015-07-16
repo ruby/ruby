@@ -1,3 +1,16 @@
+Thu Jul 16 22:05:29 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h: constify rb_iseq_t::parent_iseq.
+
+	  rb_iseq_t::local_iseq is not constant data because
+	  local_iseq::flip_cnt can be modified (commentted).
+
+	* compile.c: catch up this fix.
+
+	* iseq.c: ditto.
+
+	* vm_insnhelper.c: ditto.
+
 Thu Jul 16 21:47:47 2015  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* process.c (redirect_dup2): when the new FD of dup2() coflicts

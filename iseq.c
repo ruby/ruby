@@ -102,7 +102,7 @@ iseq_free(void *ptr)
 static void
 iseq_mark(void *ptr)
 {
-    rb_iseq_t *iseq = ptr;
+    const rb_iseq_t *iseq = ptr;
 
     RUBY_MARK_ENTER("iseq");
 
@@ -915,7 +915,7 @@ rb_iseq_base_label(VALUE self)
 VALUE
 rb_iseq_first_lineno(VALUE self)
 {
-    rb_iseq_t *iseq;
+    const rb_iseq_t *iseq;
     GetISeqPtr(self, iseq);
     return iseq->location.first_lineno;
 }
@@ -923,7 +923,7 @@ rb_iseq_first_lineno(VALUE self)
 VALUE
 rb_iseq_method_name(VALUE self)
 {
-    rb_iseq_t *iseq, *local_iseq;
+    const rb_iseq_t *iseq, *local_iseq;
     GetISeqPtr(self, iseq);
     local_iseq = iseq->local_iseq;
     if (local_iseq->type == ISEQ_TYPE_METHOD) {

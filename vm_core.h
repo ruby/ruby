@@ -336,8 +336,8 @@ struct rb_iseq_struct {
     struct iseq_catch_table *catch_table;
 
     /* for child iseq */
-    struct rb_iseq_struct *parent_iseq;
-    struct rb_iseq_struct *local_iseq;
+    const struct rb_iseq_struct *parent_iseq;
+    struct rb_iseq_struct *local_iseq; /* local_iseq->flip_cnt can be modified */
 
     /****************/
     /* dynamic data */
