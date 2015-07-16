@@ -1,3 +1,13 @@
+Fri Jul 17 05:33:58 2015  Eric Wong  <e@80x24.org>
+
+	* iseq.c (rb_iseq_compile_with_option): reuse result of previous
+	  GET_THREAD() call
+	* thread.c (thread_create_core): ditto
+	  (rb_mutex_trylock): ditto
+	  (rb_mutex_lock): ditto
+	* process.c (rb_waitpid): avoid multiple eval from RUBY_VM_CHECK_INTS
+	* thread.c (rb_thread_check_ints): ditto
+
 Thu Jul 16 19:12:30 2015  Eric Wong  <e@80x24.org>
 
 	* thread.c (mutex_alloc): remove needless volatile

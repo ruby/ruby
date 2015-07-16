@@ -568,7 +568,7 @@ rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE absolute_path, VALUE li
 	    node = rb_parser_compile_string_path(parser, file, src, ln);
 
 	    if (!node) {
-		rb_exc_raise(GET_THREAD()->errinfo);	/* TODO: check err */
+		rb_exc_raise(th->errinfo);	/* TODO: check err */
 	    }
 	}
 
