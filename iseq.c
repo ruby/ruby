@@ -1241,10 +1241,10 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
  * Iseq -> Iseq inspect object
  */
 int
-rb_iseq_disasm_insn(VALUE ret, const VALUE *iseq, size_t pos,
-		    const rb_iseq_t *iseqdat, VALUE child)
+rb_iseq_disasm_insn(VALUE ret, const VALUE *code, size_t pos,
+		    const rb_iseq_t *iseq, VALUE child)
 {
-    VALUE insn = iseq[pos];
+    VALUE insn = code[pos];
     int len = insn_len(insn);
     int j;
     const char *types = insn_op_types(insn);
@@ -1262,8 +1262,8 @@ rb_iseq_disasm_insn(VALUE ret, const VALUE *iseq, size_t pos,
 
     for (j = 0; types[j]; j++) {
 	const char *types = insn_op_types(insn);
-	VALUE opstr = rb_insn_operand_intern(iseqdat, insn, j, iseq[pos + j + 1],
-					     len, pos, &iseq[pos + j + 2],
+	VALUE opstr = rb_insn_operand_intern(iseq, insn, j, code[pos + j + 1],
+					     len, pos, &code[pos + j + 2],
 					     child);
 	rb_str_concat(str, opstr);
 
@@ -1273,8 +1273,8 @@ rb_iseq_disasm_insn(VALUE ret, const VALUE *iseq, size_t pos,
     }
 
     {
-	unsigned int line_no = find_line_no(iseqdat, pos);
-	unsigned int prev = pos == 0 ? 0 : find_line_no(iseqdat, pos - 1);
+	unsigned int line_no = find_line_no(iseq, pos);
+	unsigned int prev = pos == 0 ? 0 : find_line_no(iseq, pos - 1);
 	if (line_no && line_no != prev) {
 	    long slen = RSTRING_LEN(str);
 	    slen = (slen > 70) ? 0 : (70 - slen);
@@ -1335,8 +1335,8 @@ catch_type(int type)
 VALUE
 rb_iseq_disasm(VALUE self)
 {
-    rb_iseq_t *iseqdat = iseq_check(self); /* TODO: rename to iseq */
-    VALUE *iseq;
+    rb_iseq_t *iseq = iseq_check(self); /* TODO: rename to iseq */
+    VALUE *code;
     VALUE str = rb_str_new(0, 0);
     VALUE child = rb_ary_new();
     unsigned int size;
@@ -1348,11 +1348,11 @@ rb_iseq_disasm(VALUE self)
 
     rb_secure(1);
 
-    size = iseqdat->iseq_size;
+    size = iseq->iseq_size;
 
     rb_str_cat2(str, "== disasm: ");
 
-    rb_str_concat(str, iseq_inspect(iseqdat->self));
+    rb_str_concat(str, iseq_inspect(iseq->self));
     if ((l = RSTRING_LEN(str)) < header_minlen) {
 	rb_str_resize(str, header_minlen);
 	memset(RSTRING_PTR(str) + l, '=', header_minlen - l);
@@ -1360,11 +1360,11 @@ rb_iseq_disasm(VALUE self)
     rb_str_cat2(str, "\n");
 
     /* show catch table information */
-    if (iseqdat->catch_table) {
+    if (iseq->catch_table) {
 	rb_str_cat2(str, "== catch table\n");
     }
-    if (iseqdat->catch_table) for (i = 0; i < iseqdat->catch_table->size; i++) {
-	struct iseq_catch_table_entry *entry = &iseqdat->catch_table->entries[i];
+    if (iseq->catch_table) for (i = 0; i < iseq->catch_table->size; i++) {
+	struct iseq_catch_table_entry *entry = &iseq->catch_table->entries[i];
 	rb_str_catf(str,
 		    "| catch type: %-6s st: %04d ed: %04d sp: %04d cont: %04d\n",
 		    catch_type((int)entry->type), (int)entry->start,
@@ -1373,51 +1373,51 @@ rb_iseq_disasm(VALUE self)
 	    rb_str_concat(str, rb_iseq_disasm(entry->iseq));
 	}
     }
-    if (iseqdat->catch_table) {
+    if (iseq->catch_table) {
 	rb_str_cat2(str, "|-------------------------------------"
 		    "-----------------------------------\n");
     }
 
     /* show local table information */
-    tbl = iseqdat->local_table;
+    tbl = iseq->local_table;
 
     if (tbl) {
 	rb_str_catf(str,
 		    "local table (size: %d, argc: %d "
 		    "[opts: %d, rest: %d, post: %d, block: %d, kw: %d@%d, kwrest: %d])\n",
-		    iseqdat->local_size,
-		    iseqdat->param.lead_num,
-		    iseqdat->param.opt_num,
-		    iseqdat->param.flags.has_rest ? iseqdat->param.rest_start : -1,
-		    iseqdat->param.post_num,
-		    iseqdat->param.flags.has_block ? iseqdat->param.block_start : -1,
-		    iseqdat->param.flags.has_kw ? iseqdat->param.keyword->num : -1,
-		    iseqdat->param.flags.has_kw ? iseqdat->param.keyword->required_num : -1,
-		    iseqdat->param.flags.has_kwrest ? iseqdat->param.keyword->rest_start : -1);
+		    iseq->local_size,
+		    iseq->param.lead_num,
+		    iseq->param.opt_num,
+		    iseq->param.flags.has_rest ? iseq->param.rest_start : -1,
+		    iseq->param.post_num,
+		    iseq->param.flags.has_block ? iseq->param.block_start : -1,
+		    iseq->param.flags.has_kw ? iseq->param.keyword->num : -1,
+		    iseq->param.flags.has_kw ? iseq->param.keyword->required_num : -1,
+		    iseq->param.flags.has_kwrest ? iseq->param.keyword->rest_start : -1);
 
-	for (i = 0; i < iseqdat->local_table_size; i++) {
+	for (i = 0; i < iseq->local_table_size; i++) {
 	    long width;
 	    VALUE name = id_to_name(tbl[i], 0);
 	    char argi[0x100] = "";
 	    char opti[0x100] = "";
 
-	    if (iseqdat->param.flags.has_opt) {
-		int argc = iseqdat->param.lead_num;
-		int opts = iseqdat->param.opt_num;
+	    if (iseq->param.flags.has_opt) {
+		int argc = iseq->param.lead_num;
+		int opts = iseq->param.opt_num;
 		if (i >= argc && i < argc + opts) {
 		    snprintf(opti, sizeof(opti), "Opt=%"PRIdVALUE,
-			     iseqdat->param.opt_table[i - argc]);
+			     iseq->param.opt_table[i - argc]);
 		}
 	    }
 
 	    snprintf(argi, sizeof(argi), "%s%s%s%s%s",	/* arg, opts, rest, post  block */
-		     iseqdat->param.lead_num > i ? "Arg" : "",
+		     iseq->param.lead_num > i ? "Arg" : "",
 		     opti,
-		     (iseqdat->param.flags.has_rest && iseqdat->param.rest_start == i) ? "Rest" : "",
-		     (iseqdat->param.flags.has_post && iseqdat->param.post_start <= i && i < iseqdat->param.post_start + iseqdat->param.post_num) ? "Post" : "",
-		     (iseqdat->param.flags.has_block && iseqdat->param.block_start == i) ? "Block" : "");
+		     (iseq->param.flags.has_rest && iseq->param.rest_start == i) ? "Rest" : "",
+		     (iseq->param.flags.has_post && iseq->param.post_start <= i && i < iseq->param.post_start + iseq->param.post_num) ? "Post" : "",
+		     (iseq->param.flags.has_block && iseq->param.block_start == i) ? "Block" : "");
 
-	    rb_str_catf(str, "[%2d] ", iseqdat->local_size - i);
+	    rb_str_catf(str, "[%2d] ", iseq->local_size - i);
 	    width = RSTRING_LEN(str) + 11;
 	    if (name)
 		rb_str_append(str, name);
@@ -1430,9 +1430,9 @@ rb_iseq_disasm(VALUE self)
     }
 
     /* show each line */
-    iseq = rb_iseq_original_iseq(iseqdat);
+    code = rb_iseq_original_iseq(iseq);
     for (n = 0; n < size;) {
-	n += rb_iseq_disasm_insn(str, iseq, n, iseqdat, child);
+	n += rb_iseq_disasm_insn(str, code, n, iseq, child);
     }
 
     for (i = 0; i < RARRAY_LEN(child); i++) {
