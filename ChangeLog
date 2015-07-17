@@ -1,3 +1,7 @@
+Fri Jul 17 09:59:14 2015  Eric Wong  <e@80x24.org>
+
+	* thread.c (rb_thread_alone): simplify
+
 Fri Jul 17 09:58:32 2015  Eric Wong  <e@80x24.org>
 
 	* lib/rinda/tuplespace.rb: remove enumerator require
