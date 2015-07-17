@@ -1,3 +1,8 @@
+Fri Jul 17 15:36:40 2015  yui-knk  <spiketeika@gmail.com>
+
+	* test/ruby/test_range.rb (test_first_last): Add assertions to
+	  test of `Range#last` with exclude_end true case.  [Fix GH-970]
+
 Fri Jul 17 09:59:14 2015  Eric Wong  <e@80x24.org>
 
 	* thread.c (rb_thread_alone): simplify
