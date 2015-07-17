@@ -1,3 +1,10 @@
+Fri Jul 17 22:18:09 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_compile_each): use enum ruby_tag_type names.
+
+	* vm_core.h (ruby_tag_type): move from eval_intern.h for compiling
+	  break/next/redo/return.
+
 Fri Jul 17 15:39:19 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/encoding.h (ENC_CODERANGE_CLEAN_P): predicate that

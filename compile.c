@@ -3706,7 +3706,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	  break_by_insn:
 	    /* escape from block */
 	    COMPILE(ret, "break val (block)", node->nd_stts);
-	    ADD_INSN1(ret, line, throw, INT2FIX(level | 0x02) /* TAG_BREAK */ );
+	    ADD_INSN1(ret, line, throw, INT2FIX(level | TAG_BREAK));
 	    if (poped) {
 		ADD_INSN(ret, line, pop);
 	    }
@@ -3801,7 +3801,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    }
 	    if (ip != 0) {
 		COMPILE(ret, "next val", node->nd_stts);
-		ADD_INSN1(ret, line, throw, INT2FIX(level | 0x03) /* TAG_NEXT */ );
+		ADD_INSN1(ret, line, throw, INT2FIX(level | TAG_NEXT));
 
 		if (poped) {
 		    ADD_INSN(ret, line, pop);
@@ -3868,7 +3868,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    }
 	    if (ip != 0) {
 		ADD_INSN(ret, line, putnil);
-		ADD_INSN1(ret, line, throw, INT2FIX(level | 0x05) /* TAG_REDO */ );
+		ADD_INSN1(ret, line, throw, INT2FIX(level | TAG_REDO));
 
 		if (poped) {
 		    ADD_INSN(ret, line, pop);
@@ -3883,7 +3883,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       case NODE_RETRY:{
 	if (iseq->type == ISEQ_TYPE_RESCUE) {
 	    ADD_INSN(ret, line, putnil);
-	    ADD_INSN1(ret, line, throw, INT2FIX(0x04) /* TAG_RETRY */ );
+	    ADD_INSN1(ret, line, throw, INT2FIX(TAG_RETRY));
 
 	    if (poped) {
 		ADD_INSN(ret, line, pop);
@@ -4812,7 +4812,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		    }
 		}
 		else {
-		    ADD_INSN1(ret, line, throw, INT2FIX(0x01) /* TAG_RETURN */ );
+		    ADD_INSN1(ret, line, throw, INT2FIX(TAG_RETURN));
 		    if (poped) {
 			ADD_INSN(ret, line, pop);
 		    }
