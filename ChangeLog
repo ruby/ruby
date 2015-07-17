@@ -1,3 +1,13 @@
+Sat Jul 18 02:53:06 2015  Eric Wong  <e@80x24.org>
+
+	* io.c (argf_read_nonblock): support `exception: false'
+	  (io_nonblock_eof): new function
+	  (io_read_nonblock): use io_nonblock_eof
+	  (argf_getpartial): accept kwargs hash for `exception: false'
+	* test/ruby/test_argf.rb (test_read_nonblock): new test
+	* NEWS: add item for ARGF.read_nonblock
+	  [ruby-core:70000] [Feature #11358]
+
 Fri Jul 17 23:51:31 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_eval.c (rb_eval_cmd): $SAFE=4 has been deprecated.

@@ -2619,6 +2619,15 @@ io_readpartial(int argc, VALUE *argv, VALUE io)
     return ret;
 }
 
+static VALUE
+io_nonblock_eof(VALUE opts)
+{
+    if (!no_exception_p(opts)) {
+        rb_eof_error();
+    }
+    return Qnil;
+}
+
 /*
  *  call-seq:
  *     ios.read_nonblock(maxlen)              -> string
@@ -2680,10 +2689,7 @@ io_read_nonblock(int argc, VALUE *argv, VALUE io)
     ret = io_getpartial(argc, argv, io, opts, 1);
 
     if (NIL_P(ret)) {
-	if (no_exception_p(opts))
-	    return Qnil;
-	else
-	    rb_eof_error();
+	return io_nonblock_eof(opts);
     }
     return ret;
 }
@@ -11139,7 +11145,8 @@ argf_forward_call(VALUE arg)
     return Qnil;
 }
 
-static VALUE argf_getpartial(int argc, VALUE *argv, VALUE argf, int nonblock);
+static VALUE argf_getpartial(int argc, VALUE *argv, VALUE argf, VALUE opts,
+                             int nonblock);
 
 /*
  *  call-seq:
@@ -11164,7 +11171,7 @@ static VALUE argf_getpartial(int argc, VALUE *argv, VALUE argf, int nonblock);
 static VALUE
 argf_readpartial(int argc, VALUE *argv, VALUE argf)
 {
-    return argf_getpartial(argc, argv, argf, 0);
+    return argf_getpartial(argc, argv, argf, Qnil, 0);
 }
 
 /*
@@ -11178,11 +11185,18 @@ argf_readpartial(int argc, VALUE *argv, VALUE argf)
 static VALUE
 argf_read_nonblock(int argc, VALUE *argv, VALUE argf)
 {
-    return argf_getpartial(argc, argv, argf, 1);
+    VALUE opts;
+
+    rb_scan_args(argc, argv, "11:", NULL, NULL, &opts);
+
+    if (!NIL_P(opts))
+        argc--;
+
+    return argf_getpartial(argc, argv, argf, opts, 1);
 }
 
 static VALUE
-argf_getpartial(int argc, VALUE *argv, VALUE argf, int nonblock)
+argf_getpartial(int argc, VALUE *argv, VALUE argf, VALUE opts, int nonblock)
 {
     VALUE tmp, str, length;
 
@@ -11205,16 +11219,17 @@ argf_getpartial(int argc, VALUE *argv, VALUE argf, int nonblock)
 			 RUBY_METHOD_FUNC(0), Qnil, rb_eEOFError, (VALUE)0);
     }
     else {
-        tmp = io_getpartial(argc, argv, ARGF.current_file, Qnil, nonblock);
+        tmp = io_getpartial(argc, argv, ARGF.current_file, opts, nonblock);
     }
     if (NIL_P(tmp)) {
         if (ARGF.next_p == -1) {
-            rb_eof_error();
+	    return io_nonblock_eof(opts);
         }
         argf_close(argf);
         ARGF.next_p = 1;
-        if (RARRAY_LEN(ARGF.argv) == 0)
-            rb_eof_error();
+        if (RARRAY_LEN(ARGF.argv) == 0) {
+	    return io_nonblock_eof(opts);
+	}
         if (NIL_P(str))
             str = rb_str_new(NULL, 0);
         return str;

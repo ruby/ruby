@@ -856,4 +856,47 @@ class TestArgf < Test::Unit::TestCase
       assert_equal([49, 10, 50, 10, 51, 10, 52, 10, 53, 10, 54, 10], Marshal.load(f.read))
     end
   end
+
+  def test_read_nonblock
+    ruby('-e', <<-SRC) do |f|
+      $stdout.sync = true
+      :wait_readable == ARGF.read_nonblock(1, "", exception: false) or
+        abort "did not return :wait_readable"
+
+      begin
+        ARGF.read_nonblock(1)
+        abort 'fail to raise IO::WaitReadable'
+      rescue IO::WaitReadable
+      end
+      puts 'starting select'
+
+      IO.select([ARGF]) == [[ARGF], [], []] or
+        abort 'did not awaken for readability (before byte)'
+
+      buf = ''
+      buf.object_id == ARGF.read_nonblock(1, buf).object_id or
+        abort "read destination buffer failed"
+      print buf
+
+      IO.select([ARGF]) == [[ARGF], [], []] or
+        abort 'did not awaken for readability (before EOF)'
+
+      ARGF.read_nonblock(1, buf, exception: false) == nil or
+        abort "EOF should return nil if exception: false"
+
+      begin
+        ARGF.read_nonblock(1, buf)
+        abort 'fail to raise IO::WaitReadable'
+      rescue EOFError
+        puts 'done with eof'
+      end
+    SRC
+      f.sync = true
+      assert_equal "starting select\n", f.gets
+      f.write('.') # wake up from IO.select
+      assert_equal '.', f.read(1)
+      f.close_write
+      assert_equal "done with eof\n", f.gets
+    end
+  end
 end
