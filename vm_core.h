@@ -1128,23 +1128,32 @@ void rb_threadptr_exec_event_hooks(struct rb_trace_arg_struct *trace_arg);
 void rb_threadptr_exec_event_hooks_and_pop_frame(struct rb_trace_arg_struct *trace_arg);
 
 #define EXEC_EVENT_HOOK_ORIG(th_, flag_, self_, id_, klass_, data_, pop_p_) do { \
-    if (UNLIKELY(ruby_vm_event_flags & (flag_))) { \
-	if (((th)->event_hooks.events | (th)->vm->event_hooks.events) & (flag_)) { \
-	    struct rb_trace_arg_struct trace_arg; \
-	    trace_arg.event = (flag_); \
-	    trace_arg.th = (th_); \
-	    trace_arg.cfp = (trace_arg.th)->cfp; \
-	    trace_arg.self = (self_); \
-	    trace_arg.id = (id_); \
-	    trace_arg.klass = (klass_); \
-	    trace_arg.data = (data_); \
-	    trace_arg.path = Qundef; \
-	    trace_arg.klass_solved = 0; \
-	    if (pop_p_) rb_threadptr_exec_event_hooks_and_pop_frame(&trace_arg); \
-	    else rb_threadptr_exec_event_hooks(&trace_arg); \
-	} \
+    const rb_event_flag_t flag_arg_ = (flag_); \
+    if (UNLIKELY(ruby_vm_event_flags & (flag_arg_))) { \
+	/* defer evaluating the other arguments */ \
+	ruby_exec_event_hook_orig(th_, flag_arg_, self_, id_, klass_, data_, pop_p_); \
     } \
 } while (0)
+
+static inline void
+ruby_exec_event_hook_orig(rb_thread_t *const th, const rb_event_flag_t flag,
+			  VALUE self, ID id, VALUE klass, VALUE data, int pop_p)
+{
+    if ((th->event_hooks.events | th->vm->event_hooks.events) & flag) {
+	struct rb_trace_arg_struct trace_arg;
+	trace_arg.event = flag;
+	trace_arg.th = th;
+	trace_arg.cfp = th->cfp;
+	trace_arg.self = self;
+	trace_arg.id = id;
+	trace_arg.klass = klass;
+	trace_arg.data = data;
+	trace_arg.path = Qundef;
+	trace_arg.klass_solved = 0;
+	if (pop_p) rb_threadptr_exec_event_hooks_and_pop_frame(&trace_arg);
+	else rb_threadptr_exec_event_hooks(&trace_arg);
+    }
+}
 
 #define EXEC_EVENT_HOOK(th_, flag_, self_, id_, klass_, data_) \
   EXEC_EVENT_HOOK_ORIG(th_, flag_, self_, id_, klass_, data_, 0)
