@@ -1300,7 +1300,7 @@ enc_strlen(const char *p, const char *e, rb_encoding *enc, int cr)
 #endif
     else if (rb_enc_asciicompat(enc)) {
         c = 0;
-	if (cr == ENC_CODERANGE_7BIT || cr == ENC_CODERANGE_VALID) {
+	if (ENC_CODERANGE_CLEAN_P(cr)) {
 	    while (p < e) {
 		if (ISASCII(*p)) {
 		    q = search_nonascii(p, e);
@@ -2335,7 +2335,7 @@ rb_enc_cr_str_buf_cat(VALUE str, const char *ptr, long len,
     }
     else if (str_cr == ENC_CODERANGE_VALID) {
         res_encindex = str_encindex;
-	if (ptr_cr == ENC_CODERANGE_7BIT || ptr_cr == ENC_CODERANGE_VALID)
+	if (ENC_CODERANGE_CLEAN_P(ptr_cr))
 	    res_cr = str_cr;
 	else
 	    res_cr = ptr_cr;
@@ -6970,9 +6970,7 @@ rb_str_enumerate_chars(VALUE str, int wantarray)
 	    return SIZED_ENUMERATOR(str, 0, 0, rb_str_each_char_size);
     }
 
-    switch (ENC_CODERANGE(str)) {
-      case ENC_CODERANGE_VALID:
-      case ENC_CODERANGE_7BIT:
+    if (ENC_CODERANGE_CLEAN_P(ENC_CODERANGE(str))) {
 	for (i = 0; i < len; i += n) {
 	    n = rb_enc_fast_mbclen(ptr + i, ptr + len, enc);
 	    substr = rb_str_subseq(str, i, n);
@@ -6981,8 +6979,8 @@ rb_str_enumerate_chars(VALUE str, int wantarray)
 	    else
 		rb_yield(substr);
 	}
-	break;
-      default:
+    }
+    else {
 	for (i = 0; i < len; i += n) {
 	    n = rb_enc_mbclen(ptr + i, ptr + len, enc);
 	    substr = rb_str_subseq(str, i, n);
@@ -8377,7 +8375,7 @@ rb_str_scrub(VALUE str, VALUE repl)
     rb_encoding *enc;
     int encidx;
 
-    if (cr == ENC_CODERANGE_7BIT || cr == ENC_CODERANGE_VALID)
+    if (ENC_CODERANGE_CLEAN_P(cr))
 	return Qnil;
 
     enc = STR_ENC_GET(str);

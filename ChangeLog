@@ -1,3 +1,17 @@
+Fri Jul 17 15:39:19 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/encoding.h (ENC_CODERANGE_CLEAN_P): predicate that
+	  tells if the coderange is clean, that is 7bit or valid, and no
+	  needs to scrub.
+
+	* re.c (rb_reg_expr_str): use ENC_CODERANGE_CLEAN_P.
+
+	* string.c (enc_strlen, rb_enc_cr_str_buf_cat, rb_str_scrub):
+	  ditto.
+
+	* string.c (rb_str_enumerate_chars): ditto, and suppress a warning
+	  by gcc6.
+
 Fri Jul 17 15:36:52 2015  yui-knk  <spiketeika@gmail.com>
 
 	* test/ruby/test_range.rb (test_first_last): Add test for
