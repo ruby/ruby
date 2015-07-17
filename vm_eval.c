@@ -1502,7 +1502,7 @@ rb_eval_cmd(VALUE cmd, VALUE arg, int level)
     volatile int safe = rb_safe_level();
 
     if (OBJ_TAINTED(cmd)) {
-	level = 4;
+	level = RUBY_SAFE_LEVEL_MAX;
     }
 
     if (!RB_TYPE_P(cmd, T_STRING)) {
