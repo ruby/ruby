@@ -3,7 +3,6 @@ require 'pathname'
 
 require 'fileutils'
 require 'tmpdir'
-require 'enumerator'
 
 
 class TestPathname < Test::Unit::TestCase
