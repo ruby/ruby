@@ -3726,10 +3726,6 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		level++;
 		if (ip->compile_data->redo_label != 0) {
 		    level = 0x8000;
-		    if (ip->compile_data->loopval_popped == 0) {
-			/* need value */
-			level |= 0x4000;
-		    }
 		    goto break_by_insn;
 		}
 		else if (ip->type == ISEQ_TYPE_BLOCK) {
@@ -3789,7 +3785,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		    break;
 		}
 
-		level = 0x8000 | 0x4000;
+		level = 0x8000;
 		if (ip->compile_data->redo_label != 0) {
 		    /* while loop */
 		    break;
@@ -3850,8 +3846,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	}
 	else {
 	    const rb_iseq_t *ip = iseq;
-	    unsigned long level;
-	    level = 0x8000 | 0x4000;
+	    unsigned long level = 0x8000;
 
 	    while (ip) {
 		if (!ip->compile_data) {
