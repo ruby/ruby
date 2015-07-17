@@ -265,7 +265,10 @@ class TestRange < Test::Unit::TestCase
     assert_equal([0, 1, 2], (0...10).first(3))
     assert_equal([7, 8, 9], (0...10).last(3))
     assert_equal(0, (0...10).first)
+    assert_equal(10, (0...10).last)
     assert_equal("a", ("a"..."c").first)
+    assert_equal("c", ("a"..."c").last)
+    assert_equal(0, (2...0).last)
   end
 
   def test_to_s
