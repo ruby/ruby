@@ -4,6 +4,12 @@ require 'timeout'
 require 'bigdecimal'
 
 class TestRange < Test::Unit::TestCase
+  def test_new
+    assert_equal((0..2), Range.new(0, 2))
+    assert_equal((0..2), Range.new(0, 2, false))
+    assert_equal((0...2), Range.new(0, 2, true))
+  end
+
   def test_range_string
     # XXX: Is this really the test of Range?
     assert_equal([], ("a" ... "a").to_a)

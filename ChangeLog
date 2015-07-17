@@ -1,3 +1,8 @@
+Fri Jul 17 15:36:52 2015  yui-knk  <spiketeika@gmail.com>
+
+	* test/ruby/test_range.rb (test_first_last): Add test for
+	  `Range.new`.  [Fix GH-971]
+
 Fri Jul 17 15:36:40 2015  yui-knk  <spiketeika@gmail.com>
 
 	* test/ruby/test_range.rb (test_first_last): Add assertions to
