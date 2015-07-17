@@ -35,6 +35,11 @@ with all sufficient information, see the ChangeLog file.
     true when the receiver is positive and negative respectively.
     [Feature #11151]
 
+* ARGF
+
+  * ARGF.read_nonblock supports `exception: false' like IO#read_nonblock.
+    [Feature #11358]
+
 * IO
 
   * new mode flag File::SHARE_DELETE is available.
