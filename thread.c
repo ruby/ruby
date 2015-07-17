@@ -164,6 +164,21 @@ static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_regio
     }; \
 } while(0)
 
+#define RUBY_VM_CHECK_INTS_BLOCKING(th) vm_check_ints_blocking(th)
+static inline void
+vm_check_ints_blocking(rb_thread_t *th)
+{
+    if (UNLIKELY(!rb_threadptr_pending_interrupt_empty_p(th))) {
+	th->pending_interrupt_queue_checked = 0;
+
+	RUBY_VM_SET_INTERRUPT(th);
+	rb_threadptr_execute_interrupts(th, 1);
+    }
+    else if (UNLIKELY(RUBY_VM_INTERRUPTED_ANY(th))) {
+	rb_threadptr_execute_interrupts(th, 1);
+    }
+}
+
 #if THREAD_DEBUG
 #ifdef HAVE_VA_ARGS_MACRO
 void rb_thread_debug(const char *file, int line, const char *fmt, ...);
