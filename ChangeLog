@@ -1,3 +1,8 @@
+Sat Jul 18 07:20:18 2015  Jeremy Evans  <code@jeremyevans.net>
+
+	* test/socket/test_nonblock: use smaller buffer for sendmsg
+	  [ruby-core:70016] [Bug #11364]
+
 Sat Jul 18 07:04:24 2015  Eric Wong  <e@80x24.org>
 
 	* signal.c (trap_handler): cleanup to use RSTRING_GETMEM + memcmp
