@@ -1090,17 +1090,6 @@ void rb_threadptr_pending_interrupt_clear(rb_thread_t *th);
 void rb_threadptr_pending_interrupt_enque(rb_thread_t *th, VALUE v);
 int rb_threadptr_pending_interrupt_active_p(rb_thread_t *th);
 
-#define RUBY_VM_CHECK_INTS_BLOCKING(th) do {				\
-	if (UNLIKELY(!rb_threadptr_pending_interrupt_empty_p(th))) {	\
-	    th->pending_interrupt_queue_checked = 0;			\
-	    RUBY_VM_SET_INTERRUPT(th);					\
-	    rb_threadptr_execute_interrupts(th, 1);			\
-	}								\
-	else if (UNLIKELY(RUBY_VM_INTERRUPTED_ANY(th))) {		\
-	    rb_threadptr_execute_interrupts(th, 1);			\
-	}								\
-    } while (0)
-
 #define RUBY_VM_CHECK_INTS(th) do { \
     if (UNLIKELY(RUBY_VM_INTERRUPTED_ANY(th))) {	\
 	rb_threadptr_execute_interrupts(th, 0); \
