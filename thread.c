@@ -3048,12 +3048,7 @@ vm_living_thread_num(rb_vm_t *vm)
 int
 rb_thread_alone(void)
 {
-    int num = 1;
-    if (!list_empty(&GET_THREAD()->vm->living_threads)) {
-	num = vm_living_thread_num(GET_THREAD()->vm);
-	thread_debug("rb_thread_alone: %d\n", num);
-    }
-    return num == 1;
+    return vm_living_thread_num(GET_VM()) == 1;
 }
 
 /*
