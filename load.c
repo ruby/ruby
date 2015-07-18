@@ -573,7 +573,7 @@ rb_provide(const char *feature)
 
 NORETURN(static void load_failed(VALUE));
 
-static inline void
+static int
 rb_load_internal0(rb_thread_t *th, VALUE fname, int wrap)
 {
     int state;
@@ -623,42 +623,59 @@ rb_load_internal0(rb_thread_t *th, VALUE fname, int wrap)
 
     if (!loaded && !FIXNUM_P(th->errinfo)) {
 	/* an error on loading don't include INT2FIX(TAG_FATAL) see r35625 */
-	rb_exc_raise(th->errinfo);
+	return TAG_RAISE;
     }
     if (state) {
-	rb_vm_jump_tag_but_local_jump(state);
+	VALUE exc = rb_vm_make_jump_tag_but_local_jump(state, Qundef);
+	if (NIL_P(exc)) return state;
+	th->errinfo = exc;
+	return TAG_RAISE;
     }
 
     if (!NIL_P(th->errinfo)) {
 	/* exception during load */
-	rb_exc_raise(th->errinfo);
+	return TAG_RAISE;
     }
+    return state;
 }
 
 static void
 rb_load_internal(VALUE fname, int wrap)
 {
-    rb_load_internal0(GET_THREAD(), fname, wrap);
+    rb_thread_t *curr_th = GET_THREAD();
+    int state = rb_load_internal0(curr_th, fname, wrap);
+    if (state) {
+	if (state == TAG_RAISE) rb_exc_raise(curr_th->errinfo);
+	JUMP_TAG(state);
+    }
+}
+
+static VALUE
+file_to_load(VALUE fname)
+{
+    VALUE tmp = rb_find_file(FilePathValue(fname));
+    if (!tmp) load_failed(fname);
+    return tmp;
 }
 
 void
 rb_load(VALUE fname, int wrap)
 {
-    VALUE tmp = rb_find_file(FilePathValue(fname));
-    if (!tmp) load_failed(fname);
-    rb_load_internal(tmp, wrap);
+    rb_load_internal(file_to_load(fname), wrap);
 }
 
 void
 rb_load_protect(VALUE fname, int wrap, int *state)
 {
     int status;
+    volatile VALUE path = 0;
 
     PUSH_TAG();
     if ((status = EXEC_TAG()) == 0) {
-	rb_load(fname, wrap);
+	path = file_to_load(fname);
     }
     POP_TAG();
+    if (!status) status = rb_load_internal0(GET_THREAD(), path, wrap);
     if (state)
 	*state = status;
 }
