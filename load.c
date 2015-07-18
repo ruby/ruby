@@ -1007,7 +1007,7 @@ rb_require_internal(VALUE fname, int safe)
 	    }
 	    else if (!*ftptr) {
 		rb_provide_feature(path);
-		result = 1;
+		result = TAG_RETURN;
 	    }
 	    else {
 		switch (found) {
@@ -1022,7 +1022,7 @@ rb_require_internal(VALUE fname, int safe)
 		    break;
 		}
 		rb_provide_feature(path);
-		result = 1;
+		result = TAG_RETURN;
 	    }
 	}
     }
@@ -1052,9 +1052,8 @@ ruby_require_internal(const char *fname, unsigned int len)
     struct RString fake;
     VALUE str = rb_setup_fake_str(&fake, fname, len, 0);
     int result = rb_require_internal(str, 0);
-    if (result > 1) result = -1;
     rb_set_errinfo(Qnil);
-    return result;
+    return result == TAG_RETURN ? 1 : result ? -1 : 0;
 }
 
 VALUE
@@ -1062,7 +1061,7 @@ rb_require_safe(VALUE fname, int safe)
 {
     int result = rb_require_internal(fname, safe);
 
-    if (result > 1) {
+    if (result > TAG_RETURN) {
 	JUMP_TAG(result);
     }
     if (result < 0) {
