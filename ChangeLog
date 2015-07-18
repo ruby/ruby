@@ -1,3 +1,7 @@
+Sat Jul 18 10:29:03 2015  Eric Wong  <e@80x24.org>
+
+	* test/ruby/test_process.rb: test thread+sigs work after failed exec
+
 Sat Jul 18 07:20:18 2015  Jeremy Evans  <code@jeremyevans.net>
 
 	* test/socket/test_nonblock: use smaller buffer for sendmsg
