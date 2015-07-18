@@ -164,6 +164,7 @@ ruby_cleanup(volatile int ex)
     volatile VALUE errs[2];
     rb_thread_t *th = GET_THREAD();
     int nerr;
+    volatile int sysex = EXIT_SUCCESS;
 
     rb_threadptr_interrupt(th);
     rb_threadptr_check_signal(th);
@@ -195,22 +196,11 @@ ruby_cleanup(volatile int ex)
 	ex = state;
     }
     th->errinfo = errs[1];
-    ex = error_handle(ex);
-
-#if EXIT_SUCCESS != 0 || EXIT_FAILURE != 1
-    switch (ex) {
-#if EXIT_SUCCESS != 0
-      case 0: ex = EXIT_SUCCESS; break;
-#endif
-#if EXIT_FAILURE != 1
-      case 1: ex = EXIT_FAILURE; break;
-#endif
-    }
-#endif
+    sysex = error_handle(ex);
 
     state = 0;
     for (nerr = 0; nerr < numberof(errs); ++nerr) {
-	VALUE err = errs[nerr];
+	VALUE err = ATOMIC_SIZE_EXCHANGE(errs[nerr], Qnil);
 
 	if (!RTEST(err)) continue;
 
@@ -218,7 +208,7 @@ ruby_cleanup(volatile int ex)
 	if (THROW_DATA_P(err)) continue;
 
 	if (rb_obj_is_kind_of(err, rb_eSystemExit)) {
-	    ex = sysexit_status(err);
+	    sysex = sysexit_status(err);
 	    break;
 	}
 	else if (rb_obj_is_kind_of(err, rb_eSignal)) {
@@ -226,8 +216,8 @@ ruby_cleanup(volatile int ex)
 	    state = NUM2INT(sig);
 	    break;
 	}
-	else if (ex == EXIT_SUCCESS) {
-	    ex = EXIT_FAILURE;
+	else if (sysex == EXIT_SUCCESS) {
+	    sysex = EXIT_FAILURE;
 	}
     }
 
@@ -240,7 +230,7 @@ ruby_cleanup(volatile int ex)
     ruby_vm_destruct(GET_VM());
     if (state) ruby_default_signal(state);
 
-    return ex;
+    return sysex;
 }
 
 static int
