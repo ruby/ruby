@@ -2551,34 +2551,32 @@ static VALUE
 run_single_final(VALUE arg)
 {
     VALUE *args = (VALUE *)arg;
-    rb_eval_cmd(args[0], args[1], (int)args[2]);
-    return Qnil;
+
+    return rb_check_funcall(args[0], idCall, 1, args+1);
 }
 
 static void
 run_finalizer(rb_objspace_t *objspace, VALUE obj, VALUE table)
 {
     long i;
-    int status;
-    VALUE args[3];
-    VALUE objid = nonspecial_obj_id(obj);
+    VALUE args[2];
+    const int safe = rb_safe_level();
+    const VALUE errinfo = rb_errinfo();
 
-    if (RARRAY_LEN(table) > 0) {
-	args[1] = rb_obj_freeze(rb_ary_new3(1, objid));
-    }
-    else {
-	args[1] = 0;
-    }
+    args[1] = nonspecial_obj_id(obj);
 
-    args[2] = (VALUE)rb_safe_level();
     for (i=0; i<RARRAY_LEN(table); i++) {
-	VALUE final = RARRAY_AREF(table, i);
-	args[0] = RARRAY_AREF(final, 1);
-	args[2] = FIX2INT(RARRAY_AREF(final, 0));
-	status = 0;
+	const VALUE final = RARRAY_AREF(table, i);
+	const VALUE cmd = RARRAY_AREF(final, 1);
+	const int level = OBJ_TAINTED(cmd) ?
+	    RUBY_SAFE_LEVEL_MAX : FIX2INT(RARRAY_AREF(final, 0));
+	int status = 0;
+
+	args[0] = cmd;
+	rb_set_safe_level_force(level);
 	rb_protect(run_single_final, (VALUE)args, &status);
-	if (status)
-	    rb_set_errinfo(Qnil);
+	rb_set_safe_level_force(safe);
+	rb_set_errinfo(errinfo);
     }
 }
 
