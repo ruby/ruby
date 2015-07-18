@@ -168,15 +168,15 @@ static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_regio
 static inline void
 vm_check_ints_blocking(rb_thread_t *th)
 {
-    if (UNLIKELY(!rb_threadptr_pending_interrupt_empty_p(th))) {
+    if (LIKELY(rb_threadptr_pending_interrupt_empty_p(th))) {
+	if (LIKELY(!RUBY_VM_INTERRUPTED_ANY(th))) return;
+    }
+    else {
 	th->pending_interrupt_queue_checked = 0;
 
 	RUBY_VM_SET_INTERRUPT(th);
-	rb_threadptr_execute_interrupts(th, 1);
     }
-    else if (UNLIKELY(RUBY_VM_INTERRUPTED_ANY(th))) {
-	rb_threadptr_execute_interrupts(th, 1);
-    }
+    rb_threadptr_execute_interrupts(th, 1);
 }
 
 #if THREAD_DEBUG

@@ -1,3 +1,8 @@
+Sat Jul 18 21:29:19 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (vm_check_ints_blocking): gather common statements at
+	  the end, and prefer LIKELY for Visual C optimization.
+
 Sat Jul 18 20:44:56 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* load.c (rb_load_internal0): do not raise any exceptions but
