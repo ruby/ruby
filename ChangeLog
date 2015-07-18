@@ -1,3 +1,10 @@
+Sat Jul 18 20:44:56 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* load.c (rb_load_internal0): do not raise any exceptions but
+	  return the result tag state.
+
+	* load.c (rb_load_protect): reduce nested EXEC_TAGs.
+
 Sat Jul 18 19:52:17 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (run_finalizer): set and restore safe level here to reduce
