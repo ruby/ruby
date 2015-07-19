@@ -733,7 +733,7 @@ static VALUE cPTY;
  *   # The result of read operation when pty slave is closed is platform
  *   # dependent.
  *   ret = begin
- *           m.gets          # FreeBSD returns nil.
+ *           master.gets     # FreeBSD returns nil.
  *         rescue Errno::EIO # GNU/Linux raises EIO.
  *           nil
  *         end

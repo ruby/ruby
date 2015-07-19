@@ -1,3 +1,8 @@
+Sun Jul 19 14:29:18 2015  windwiny  <windwiny.ubt@gmail.com>
+
+	* ext/pty/pty.c: [DOC] fix example typo, an old name at move from
+	  PTY.open.  [Fix GH-972]
+
 Sat Jul 18 21:29:19 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (vm_check_ints_blocking): gather common statements at
