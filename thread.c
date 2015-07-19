@@ -3622,15 +3622,15 @@ ppoll(struct pollfd *fds, nfds_t nfds,
     if (ts) {
 	int tmp, tmp2;
 
-	if (ts->tv_sec > TIMET_MAX/1000)
+	if (ts->tv_sec > INT_MAX/1000)
 	    timeout_ms = -1;
 	else {
-	    tmp = ts->tv_sec * 1000;
-	    tmp2 = ts->tv_nsec / (1000 * 1000);
-	    if (TIMET_MAX - tmp < tmp2)
+	    tmp = (int)(ts->tv_sec * 1000);
+	    tmp2 = (int)(ts->tv_nsec / (1000 * 1000));
+	    if (INT_MAX - tmp < tmp2)
 		timeout_ms = -1;
 	    else
-		timeout_ms = tmp + tmp2;
+		timeout_ms = (int)(tmp + tmp2);
 	}
     }
     else
