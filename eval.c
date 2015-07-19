@@ -755,6 +755,9 @@ rb_raise_jump(VALUE mesg, VALUE cause)
 void
 rb_jump_tag(int tag)
 {
+    if (UNLIKELY(tag < TAG_RETURN || tag > TAG_FATAL)) {
+	unknown_longjmp_status(tag);
+    }
     JUMP_TAG(tag);
 }
 
