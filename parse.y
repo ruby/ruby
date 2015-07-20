@@ -229,7 +229,6 @@ struct parser_params {
     NODE *heap;
 
     YYSTYPE *parser_yylval;
-    VALUE eofp;
 
     NODE *parser_lex_strterm;
     stack_type parser_cond_stack;
@@ -237,15 +236,13 @@ struct parser_params {
     enum lex_state_e parser_lex_state;
     int parser_paren_nest;
     int parser_lpar_beg;
-    int parser_in_single;
-    int parser_in_def;
+    int parser_in_single; /* counter */
+    int parser_in_def; /* counter */
     int parser_brace_nest;
-    int parser_compile_for_eval;
-    int parser_in_kwarg;
-    int parser_in_defined;
     int parser_tokidx;
     int parser_toksiz;
     int parser_tokline;
+    int parser_heredoc_end;
     char *parser_tokenbuf;
     VALUE parser_lex_input;
     VALUE parser_lex_lastline;
@@ -253,8 +250,6 @@ struct parser_params {
     const char *parser_lex_pbeg;
     const char *parser_lex_p;
     const char *parser_lex_pend;
-    int parser_heredoc_end;
-    int parser_command_start;
     NODE *parser_deferred_nodes;
     long parser_lex_gets_ptr;
     VALUE (*parser_lex_gets)(struct parser_params*,VALUE);
@@ -269,9 +264,14 @@ struct parser_params {
 
     int last_cr_line;
 
+    unsigned int parser_command_start:1;
+    unsigned int eofp: 1;
     unsigned int parser_ruby__end__seen: 1;
     unsigned int parser_yydebug: 1;
     unsigned int has_shebang: 1;
+    unsigned int parser_in_defined: 1;
+    unsigned int parser_compile_for_eval: 1;
+    unsigned int parser_in_kwarg: 1;
 
 #ifndef RIPPER
     /* Ruby core only */
@@ -279,7 +279,7 @@ struct parser_params {
 # if WARN_PAST_SCOPE
     unsigned int parser_past_scope_enabled: 1;
 # endif
-    int nerr;
+    unsigned int has_err: 1;
 
     NODE *parser_eval_tree_begin;
     NODE *parser_eval_tree;
@@ -708,7 +708,7 @@ static void ripper_compile_error(struct parser_params*, const char *fmt, ...);
 # define PARSER_ARG parser,
 #else
 # define rb_compile_error rb_compile_error_with_enc
-# define compile_error parser->nerr++,rb_compile_error_with_enc
+# define compile_error (parser->has_err = 1),rb_compile_error_with_enc
 # define PARSER_ARG ruby_sourcefile, ruby_sourceline, (void *)current_enc,
 #endif
 
@@ -4507,7 +4507,7 @@ f_arglist	: '(' f_args rparen
 		    }
 		    f_args term
 		    {
-			parser->parser_in_kwarg = $<num>1;
+			parser->parser_in_kwarg = !!$<num>1;
 			$$ = $2;
 			lex_state = EXPR_BEG;
 			command_start = TRUE;
@@ -5512,7 +5512,7 @@ yycompile0(VALUE arg)
     lex_strterm = 0;
     lex_p = lex_pbeg = lex_pend = 0;
     lex_lastline = lex_nextline = 0;
-    if (parser->nerr) {
+    if (parser->has_err) {
 	return 0;
     }
     tree = ruby_eval_tree;
@@ -5597,7 +5597,7 @@ parser_compile_string(volatile VALUE vparser, VALUE fname, VALUE s, int line)
     lex_gets_ptr = 0;
     lex_input = rb_str_new_frozen(s);
     lex_pbeg = lex_p = lex_pend = 0;
-    compile_for_eval = rb_parse_in_eval();
+    compile_for_eval = !!rb_parse_in_eval();
 
     node = yycompile(parser, fname, line);
     RB_GC_GUARD(vparser); /* prohibit tail call optimization */
@@ -5669,7 +5669,7 @@ rb_parser_compile_file_path(volatile VALUE vparser, VALUE fname, VALUE file, int
     lex_gets = lex_io_gets;
     lex_input = file;
     lex_pbeg = lex_p = lex_pend = 0;
-    compile_for_eval = rb_parse_in_eval();
+    compile_for_eval = !!rb_parse_in_eval();
 
     node = yycompile(parser, fname, start);
     RB_GC_GUARD(vparser); /* prohibit tail call optimization */
@@ -5734,7 +5734,7 @@ parser_nextc(struct parser_params *parser)
 		return -1;
 
 	    if (!lex_input || NIL_P(v = lex_getline(parser))) {
-		parser->eofp = Qtrue;
+		parser->eofp = 1;
 		lex_goto_eol(parser);
 		return -1;
 	    }
@@ -8500,7 +8500,7 @@ parser_yylex(struct parser_params *parser)
       case '_':
 	if (was_bol() && whole_match_p("__END__", 7, 0)) {
 	    ruby__end__seen = 1;
-	    parser->eofp = Qtrue;
+	    parser->eofp = 1;
 #ifndef RIPPER
 	    return -1;
 #else
@@ -10547,7 +10547,7 @@ internal_id_gen(struct parser_params *parser)
 static void
 parser_initialize(struct parser_params *parser)
 {
-    parser->eofp = Qfalse;
+    parser->eofp = 0;
 
     parser->parser_lex_strterm = 0;
     parser->parser_cond_stack = 0;
