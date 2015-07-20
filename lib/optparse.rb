@@ -1711,7 +1711,7 @@ XXX
   # Completes shortened long style option switch and returns pair of
   # canonical switch and switch descriptor OptionParser::Switch.
   #
-  # +id+::    Searching table.
+  # +typ+::   Searching table.
   # +opt+::   Searching key.
   # +icase+:: Search case insensitive if true.
   # +pat+::   Optional pattern for completion.
