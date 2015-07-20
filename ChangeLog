@@ -1,3 +1,10 @@
+Tue Jul 21 05:20:21 2015  Eric Wong  <e@80x24.org>
+
+	* io.c (nogvl_wait_for_single_fd): new function for Linux
+	  (maygvl_copy_stream_wait_read): Linux-specific version
+	  (nogvl_copy_stream_wait_write): use nogvl_wait_for_single_fd
+	  [ruby-core:70051] [Feature #11377]
+
 Mon Jul 20 15:04:30 2015  Eric Wong  <e@80x24.org>
 
 	* parse.y (parser_initialize): avoid redundant zero-ing
