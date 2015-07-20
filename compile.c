@@ -3725,11 +3725,11 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 
 		level++;
 		if (ip->compile_data->redo_label != 0) {
-		    level = 0x8000;
+		    level = VM_THROW_NO_ESCAPE_FLAG;
 		    goto break_by_insn;
 		}
 		else if (ip->type == ISEQ_TYPE_BLOCK) {
-		    level <<= 16;
+		    level <<= VM_THROW_LEVEL_SHIFT;
 		    goto break_by_insn;
 		}
 		else if (ip->type == ISEQ_TYPE_EVAL) {
@@ -3785,7 +3785,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		    break;
 		}
 
-		level = 0x8000;
+		level = VM_THROW_NO_ESCAPE_FLAG;
 		if (ip->compile_data->redo_label != 0) {
 		    /* while loop */
 		    break;
@@ -3846,7 +3846,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	}
 	else {
 	    const rb_iseq_t *ip = iseq;
-	    unsigned long level = 0x8000;
+	    const unsigned long level = VM_THROW_NO_ESCAPE_FLAG;
 
 	    while (ip) {
 		if (!ip->compile_data) {

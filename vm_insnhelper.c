@@ -830,7 +830,8 @@ vm_throw_continue(rb_thread_t *th, VALUE err)
 }
 
 static VALUE
-vm_throw_start(rb_thread_t * const th, rb_control_frame_t * const reg_cfp, int state, const int flag, const rb_num_t level, const VALUE throwobj)
+vm_throw_start(rb_thread_t *const th, rb_control_frame_t *const reg_cfp, enum ruby_tag_type state,
+	       const int flag, const rb_num_t level, const VALUE throwobj)
 {
     rb_control_frame_t *escape_cfp = NULL;
     const rb_control_frame_t * const eocfp = RUBY_VM_END_CONTROL_FRAME(th); /* end of control frame pointer */
@@ -966,9 +967,9 @@ static VALUE
 vm_throw(rb_thread_t *th, rb_control_frame_t *reg_cfp,
 	 rb_num_t throw_state, VALUE throwobj)
 {
-    const int state = (int)(throw_state & 0xff);
-    const int flag = (int)(throw_state & 0x8000);
-    const rb_num_t level = throw_state >> 16;
+    const int state = (int)(throw_state & VM_THROW_STATE_MASK);
+    const int flag = (int)(throw_state & VM_THROW_NO_ESCAPE_FLAG);
+    const rb_num_t level = throw_state >> VM_THROW_LEVEL_SHIFT;
 
     if (state != 0) {
 	return vm_throw_start(th, reg_cfp, state, flag, level, throwobj);
