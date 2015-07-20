@@ -11167,7 +11167,7 @@ ripper_initialize(int argc, VALUE *argv, VALUE self)
         parser->parser_lex_gets = lex_get_str;
     }
     parser->parser_lex_input = src;
-    parser->eofp = Qfalse;
+    parser->eofp = 0;
     if (NIL_P(fname)) {
         fname = STR_NEW2("(ripper)");
 	OBJ_FREEZE(fname);
