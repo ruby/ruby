@@ -179,6 +179,12 @@ vm_check_ints_blocking(rb_thread_t *th)
     rb_threadptr_execute_interrupts(th, 1);
 }
 
+static int
+vm_living_thread_num(rb_vm_t *vm)
+{
+    return (int)vm->living_thread_num;
+}
+
 #if THREAD_DEBUG
 #ifdef HAVE_VA_ARGS_MACRO
 void rb_thread_debug(const char *file, int line, const char *fmt, ...);
@@ -479,6 +485,7 @@ rb_thread_terminate_all(void)
 {
     rb_thread_t *th = GET_THREAD(); /* main thread */
     rb_vm_t *vm = th->vm;
+    volatile int sleeping = 0;
 
     if (vm->main_thread != th) {
 	rb_bug("rb_thread_terminate_all: called by child thread (%p, %p)",
@@ -488,33 +495,35 @@ rb_thread_terminate_all(void)
     /* unlock all locking mutexes */
     rb_threadptr_unlock_all_locking_mutexes(th);
 
-  retry:
-    thread_debug("rb_thread_terminate_all (main thread: %p)\n", (void *)th);
-    terminate_all(vm, th);
+    TH_PUSH_TAG(th);
+    if (TH_EXEC_TAG() == 0) {
+      retry:
+	thread_debug("rb_thread_terminate_all (main thread: %p)\n", (void *)th);
+	terminate_all(vm, th);
 
-    while (!rb_thread_alone()) {
-	int state;
-
-	TH_PUSH_TAG(th);
-	if ((state = TH_EXEC_TAG()) == 0) {
+	while (vm_living_thread_num(vm) > 1) {
 	    /*
 	     * Thread exiting routine in thread_start_func_2 notify
 	     * me when the last sub-thread exit.
 	     */
+	    sleeping = 1;
 	    native_sleep(th, 0);
 	    RUBY_VM_CHECK_INTS_BLOCKING(th);
+	    sleeping = 0;
 	}
-	TH_POP_TAG();
-
+    }
+    else {
 	/*
 	 * When caught an exception (e.g. Ctrl+C), let's broadcast
 	 * kill request again to ensure killing all threads even
 	 * if they are blocked on sleep, mutex, etc.
 	 */
-	if (state) {
+	if (sleeping) {
+	    sleeping = 0;
 	    goto retry;
 	}
     }
+    TH_POP_TAG();
 }
 
 static void
@@ -3052,12 +3061,6 @@ thread_keys_i(ID key, VALUE value, VALUE ary)
 {
     rb_ary_push(ary, ID2SYM(key));
     return ST_CONTINUE;
-}
-
-static int
-vm_living_thread_num(rb_vm_t *vm)
-{
-    return (int)vm->living_thread_num;
 }
 
 int
