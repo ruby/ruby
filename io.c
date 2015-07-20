@@ -10087,6 +10087,49 @@ maygvl_copy_stream_continue_p(int has_gvl, struct copy_stream_struct *stp)
     return FALSE;
 }
 
+/* non-Linux poll may not work on all FDs */
+#if defined(HAVE_POLL) && defined(__linux__)
+#  define USE_POLL 1
+#  define IOWAIT_SYSCALL "poll"
+#else
+#  define IOWAIT_SYSCALL "select"
+#  define USE_POLL 0
+#endif
+
+#if USE_POLL
+static int
+nogvl_wait_for_single_fd(int fd, short events)
+{
+    struct pollfd fds;
+
+    fds.fd = fd;
+    fds.events = events;
+
+    return poll(&fds, 1, 0);
+}
+
+static int
+maygvl_copy_stream_wait_read(int has_gvl, struct copy_stream_struct *stp)
+{
+    int ret;
+
+    do {
+	if (has_gvl) {
+	    ret = rb_wait_for_single_fd(stp->src_fd, RB_WAITFD_IN, NULL);
+	}
+	else {
+	    ret = nogvl_wait_for_single_fd(stp->src_fd, POLLIN);
+	}
+    } while (ret == -1 && maygvl_copy_stream_continue_p(has_gvl, stp));
+
+    if (ret == -1) {
+        stp->syserr = "poll";
+        stp->error_no = errno;
+        return -1;
+    }
+    return 0;
+}
+#else /* !USE_POLL */
 static int
 maygvl_select(int has_gvl, int n, rb_fdset_t *rfds, rb_fdset_t *wfds, rb_fdset_t *efds, struct timeval *timeout)
 {
@@ -10114,6 +10157,7 @@ maygvl_copy_stream_wait_read(int has_gvl, struct copy_stream_struct *stp)
     }
     return 0;
 }
+#endif /* !USE_POLL */
 
 static int
 nogvl_copy_stream_wait_write(struct copy_stream_struct *stp)
@@ -10121,13 +10165,17 @@ nogvl_copy_stream_wait_write(struct copy_stream_struct *stp)
     int ret;
 
     do {
+#if USE_POLL
+	ret = nogvl_wait_for_single_fd(stp->dst_fd, POLLOUT);
+#else
 	rb_fd_zero(&stp->fds);
 	rb_fd_set(stp->dst_fd, &stp->fds);
         ret = rb_fd_select(rb_fd_max(&stp->fds), NULL, &stp->fds, NULL, NULL);
+#endif
     } while (ret == -1 && maygvl_copy_stream_continue_p(0, stp));
 
     if (ret == -1) {
-        stp->syserr = "select";
+        stp->syserr = IOWAIT_SYSCALL;
         stp->error_no = errno;
         return -1;
     }
