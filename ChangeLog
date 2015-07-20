@@ -1,3 +1,7 @@
+Mon Jul 20 15:04:30 2015  Eric Wong  <e@80x24.org>
+
+	* parse.y (parser_initialize): avoid redundant zero-ing
+
 Mon Jul 20 12:12:05 2015  Eric Wong  <e@80x24.org>
 
 	* parse.y (struct parser_params): pack: 88 => 256 bytes on 64-bit
