@@ -1,3 +1,8 @@
+Mon Jul 20 12:12:05 2015  Eric Wong  <e@80x24.org>
+
+	* parse.y (struct parser_params): pack: 88 => 256 bytes on 64-bit
+	  [ruby-core:70034] [Feature #11371]
+
 Sun Jul 19 14:29:18 2015  windwiny  <windwiny.ubt@gmail.com>
 
 	* ext/pty/pty.c: [DOC] fix example typo, an old name at move from
