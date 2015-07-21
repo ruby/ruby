@@ -2305,7 +2305,7 @@ static VALUE
 vm_invoke_block(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci)
 {
     const rb_block_t *block = VM_CF_BLOCK_PTR(reg_cfp);
-    rb_iseq_t *iseq;
+    const rb_iseq_t *iseq;
     VALUE type = GET_ISEQ()->local_iseq->type;
 
     if ((type != ISEQ_TYPE_METHOD && type != ISEQ_TYPE_CLASS) || block == 0) {
@@ -2344,7 +2344,7 @@ vm_invoke_block(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci
 }
 
 static VALUE
-vm_make_proc_with_iseq(rb_iseq_t *blockiseq)
+vm_make_proc_with_iseq(const rb_iseq_t *blockiseq)
 {
     rb_block_t *blockptr;
     rb_thread_t *th = GET_THREAD();
