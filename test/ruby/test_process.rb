@@ -768,6 +768,11 @@ class TestProcess < Test::Unit::TestCase
       IO.popen("#{RUBY} -e 'puts :foo'") {|io| assert_equal("foo\n", io.read) }
       assert_raise(Errno::ENOENT) { IO.popen(["echo bar"]) {} } # assuming "echo bar" command not exist.
       IO.popen(ECHO["baz"]) {|io| assert_equal("baz\n", io.read) }
+    }
+  end
+
+  def test_execopts_popen_stdio
+    with_tmpchdir {|d|
       assert_raise(ArgumentError) {
         IO.popen([*ECHO["qux"], STDOUT=>STDOUT]) {|io| }
       }
@@ -777,7 +782,12 @@ class TestProcess < Test::Unit::TestCase
       assert_raise(ArgumentError) {
         IO.popen([*ECHO["fuga"], STDOUT=>"out"]) {|io| }
       }
-      skip "inheritance of fd other than stdin,stdout and stderr is not supported" if windows?
+    }
+  end
+
+  def test_execopts_popen_extra_fd
+    skip "inheritance of fd other than stdin,stdout and stderr is not supported" if windows?
+    with_tmpchdir {|d|
       with_pipe {|r, w|
         IO.popen([RUBY, '-e', 'IO.new(3, "w").puts("a"); puts "b"', 3=>w]) {|io|
           assert_equal("b\n", io.read)
