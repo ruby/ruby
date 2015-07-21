@@ -572,7 +572,7 @@ class TestProcess < Test::Unit::TestCase
       t2 = Thread.new {
         IO.popen([*CAT, :in=>"fifo"]) {|f| f.read }
       }
-      v1, v2 = assert_join_threads([t1, t2])
+      _, v2 = assert_join_threads([t1, t2])
       assert_equal("output to fifo\n", v2)
     }
   end unless windows? # does not support fifo
@@ -2060,7 +2060,7 @@ EOS
       th.kill
       th.join(0.1)
     }
-    assert_equal(th, x)
+    assert_equal(th, x, bug11166)
   end if defined?(fork)
 
   def test_exec_fd_3_redirect
