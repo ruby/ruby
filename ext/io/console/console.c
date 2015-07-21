@@ -698,6 +698,7 @@ console_cursor_set(VALUE io, VALUE cpos)
     return console_goto(io, RARRAY_AREF(cpos, 0), RARRAY_AREF(cpos, 1));
 }
 
+#include "win32_vk.h"
 #include "win32_vk.inc"
 
 static VALUE
@@ -717,8 +718,9 @@ console_key_pressed_p(VALUE io, VALUE k)
 	    StringValueCStr(k);
 	}
 	t = console_win32_vk(RSTRING_PTR(k), RSTRING_LEN(k));
-	if (!t) rb_raise(rb_eArgError, "unknown virtual key code: %"PRIsVALUE, k);
-	vk = t->vk;
+	if (!t || (vk = (short)t->vk) == -1) {
+	    rb_raise(rb_eArgError, "unknown virtual key code: %"PRIsVALUE, k);
+	}
     }
     return GetKeyState(vk) & 0x80 ? Qtrue : Qfalse;
 }
