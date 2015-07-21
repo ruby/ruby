@@ -920,12 +920,12 @@ define rb_ps_vm
       set $ps_threads_i = $ps_threads_i + 1
     end
   else
-    set $ps_threads_ptr = (st_table_entry*)$ps_threads->head
+    set $ps_threads_ptr = (st_table_entry*)$ps_threads->as.big.private_list_head[0]
     while $ps_threads_ptr
       set $ps_threads_key = (st_data_t)$ps_threads_ptr->key
       set $ps_threads_val = (st_data_t)$ps_threads_ptr->record
       rb_ps_thread $ps_threads_key $ps_threads_val
-      set $ps_threads_ptr = (st_table_entry*)$ps_threads_ptr->fore
+      set $ps_threads_ptr = (st_table_entry*)$ps_threads_ptr->olist.next
     end
   end
 end
