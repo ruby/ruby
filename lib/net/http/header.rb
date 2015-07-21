@@ -15,7 +15,7 @@ module Net::HTTPHeader
     initheader.each do |key, value|
       warn "net/http: warning: duplicated HTTP header: #{key}" if key?(key) and $VERBOSE
       if value.nil? and $VERBOSE
-        warn "net/http: warning: nil HTTP header: #{key}" if key?(key) and $VERBOSE
+        warn "net/http: warning: nil HTTP header: #{key}" if $VERBOSE
       else
         @header[key.downcase] = [value.strip]
       end
