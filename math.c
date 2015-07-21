@@ -106,9 +106,6 @@ num2dbl_with_to_f(VALUE num)
 static VALUE
 math_atan2(VALUE obj, VALUE y, VALUE x)
 {
-#ifndef M_PI
-# define M_PI 3.14159265358979323846
-#endif
     double dx, dy;
     dx = Get_Double(x);
     dy = Get_Double(y);

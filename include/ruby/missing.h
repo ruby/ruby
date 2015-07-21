@@ -37,6 +37,13 @@ extern "C" {
 #endif
 #endif
 
+#ifndef M_PI
+# define M_PI 3.14159265358979323846
+#endif
+#ifndef M_PI_2
+# define M_PI_2 (M_PI/2)
+#endif
+
 #ifndef RUBY_SYMBOL_EXPORT_BEGIN
 # define RUBY_SYMBOL_EXPORT_BEGIN /* begin */
 # define RUBY_SYMBOL_EXPORT_END   /* end */
