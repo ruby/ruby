@@ -1,3 +1,11 @@
+Wed Jul 22 06:17:35 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* method.h: constify rb_method_iseq_t::iseqptr.
+
+	* proc.c (rb_method_entry_min_max_arity): catch up this fix.
+
+	* vm_insnhelper.c (def_iseq_ptr): constify.
+
 Wed Jul 22 03:37:39 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (internal_object_p): Now a singleton classes appear by
