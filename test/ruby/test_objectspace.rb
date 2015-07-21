@@ -109,4 +109,20 @@ End
       p Thread.current[:__recursive_key__]
     end;
   end
+
+  def test_each_object_singleton_class
+    assert_separately([], <<-End)
+      class C
+        class << self
+          $c = self
+        end
+      end
+
+      exist = false
+      ObjectSpace.each_object(Class){|o|
+        exist = true if $c == o
+      }
+      assert(exist, 'Bug #11360')
+    End
+  end
 end
