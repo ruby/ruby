@@ -4647,6 +4647,17 @@ link(const char *from, const char *to)
     return ret;
 }
 
+/* License: Public Domain, copied from mingw headers */
+#ifndef FILE_DEVICE_FILE_SYSTEM
+# define FILE_DEVICE_FILE_SYSTEM 0x00000009
+#endif
+#ifndef FSCTL_GET_REPARSE_POINT
+# define FSCTL_GET_REPARSE_POINT ((0x9<<16)|(42<<2))
+#endif
+#ifndef IO_REPARSE_TAG_SYMLINK
+# define IO_REPARSE_TAG_SYMLINK 0xA000000CL
+#endif
+
 /* License: Ruby's */
 ssize_t
 rb_w32_wreadlink(const WCHAR *path, WCHAR *buf, size_t bufsize)
