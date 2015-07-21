@@ -229,7 +229,7 @@ set_relation(rb_iseq_t *iseq, const VALUE parent)
 }
 
 void
-rb_iseq_add_mark_object(rb_iseq_t *iseq, VALUE obj)
+rb_iseq_add_mark_object(const rb_iseq_t *iseq, VALUE obj)
 {
     if (!RTEST(iseq->mark_ary)) {
 	RB_OBJ_WRITE(iseq->self, &iseq->mark_ary, rb_ary_tmp_new(3));

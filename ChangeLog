@@ -1,3 +1,11 @@
+Tue Jul 21 19:43:20 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c: constify the first parameter (iseq).
+	  * iseq_add_mark_object()
+	  * iseq_add_mark_object_compile_time()
+
+	* iseq.c, iseq.h (rb_iseq_add_mark_object): ditto.
+
 Tue Jul 21 16:18:48 2015  Eric Wong  <e@80x24.org>
 
 	* test/socket/test_nonblock.rb: increase buffer sizes
