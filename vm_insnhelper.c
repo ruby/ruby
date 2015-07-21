@@ -1331,7 +1331,7 @@ vm_callee_setup_arg(rb_thread_t *th, rb_call_info_t *ci, const rb_iseq_t *iseq, 
     }
 }
 
-static rb_iseq_t *
+static const rb_iseq_t *
 def_iseq_ptr(rb_method_definition_t *def)
 {
 #if VM_CHECK_MODE > 0
@@ -1364,7 +1364,7 @@ vm_call_iseq_setup_normal(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info
     int i, local_size;
     VALUE *argv = cfp->sp - ci->argc;
     const rb_callable_method_entry_t *me = ci->me;
-    rb_iseq_t *iseq = def_iseq_ptr(me->def);
+    const rb_iseq_t *iseq = def_iseq_ptr(me->def);
     VALUE *sp = argv + iseq->param.size;
 
     /* clear local variables (arg_size...local_size) */
@@ -1386,7 +1386,7 @@ vm_call_iseq_setup_tailcall(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_in
     int i;
     VALUE *argv = cfp->sp - ci->argc;
     const rb_callable_method_entry_t *me = ci->me;
-    rb_iseq_t *iseq = def_iseq_ptr(me->def);
+    const rb_iseq_t *iseq = def_iseq_ptr(me->def);
     VALUE *src_argv = argv;
     VALUE *sp_orig, *sp;
     VALUE finish_flag = VM_FRAME_TYPE_FINISH_P(cfp) ? VM_FRAME_FLAG_FINISH : 0;
