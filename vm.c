@@ -769,7 +769,7 @@ rb_binding_add_dynavars(rb_binding_t *bind, int dyncount, const ID *dynvars)
     rb_env_t *env;
     rb_block_t *base_block;
     rb_thread_t *th = GET_THREAD();
-    rb_iseq_t *base_iseq;
+    const rb_iseq_t *base_iseq;
     NODE *node = 0;
     ID minibuf[4], *dyns = minibuf;
     VALUE idtmp = 0;

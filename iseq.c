@@ -934,8 +934,7 @@ rb_iseq_method_name(VALUE self)
     }
 }
 
-static
-VALUE iseq_data_to_ary(rb_iseq_t *iseq);
+static VALUE iseq_data_to_ary(const rb_iseq_t *iseq);
 
 /*
  *  call-seq:
@@ -1611,7 +1610,7 @@ cdhash_each(VALUE key, VALUE value, VALUE ary)
 }
 
 static VALUE
-iseq_data_to_ary(rb_iseq_t *iseq)
+iseq_data_to_ary(const rb_iseq_t *iseq)
 {
     long i;
     size_t ti;
@@ -1731,7 +1730,7 @@ iseq_data_to_ary(rb_iseq_t *iseq)
     }
 
     /* body */
-    iseq_original = rb_iseq_original_iseq(iseq);
+    iseq_original = rb_iseq_original_iseq((rb_iseq_t *)iseq);
 
     for (seq = iseq_original; seq < iseq_original + iseq->iseq_size; ) {
 	VALUE insn = *seq++;
@@ -1756,7 +1755,7 @@ iseq_data_to_ary(rb_iseq_t *iseq)
 		break;
 	      case TS_ISEQ:
 		{
-		    rb_iseq_t *iseq = (rb_iseq_t *)*seq;
+		    const rb_iseq_t *iseq = (rb_iseq_t *)*seq;
 		    if (iseq) {
 			VALUE val = iseq_data_to_ary(iseq);
 			rb_ary_push(ary, val);

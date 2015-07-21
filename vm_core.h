@@ -201,7 +201,7 @@ typedef struct rb_call_info_struct {
 
     unsigned int flag;
     int orig_argc;
-    rb_iseq_t *blockiseq;
+    const rb_iseq_t *blockiseq;
     rb_call_info_kw_arg_t *kw_arg;
 
     /* inline cache: keys */
@@ -565,7 +565,7 @@ typedef struct rb_control_frame_struct {
 typedef struct rb_block_struct {
     VALUE self;			/* share with method frame if it's only block */
     VALUE *ep;			/* share with method frame if it's only block */
-    rb_iseq_t *iseq;
+    const rb_iseq_t *iseq;
     VALUE proc;
 } rb_block_t;
 
