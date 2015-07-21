@@ -422,7 +422,7 @@ APPEND_ELEM(ISEQ_ARG_DECLARE LINK_ANCHOR *anchor, LINK_ELEMENT *before, LINK_ELE
 #endif
 
 static int
-iseq_add_mark_object(rb_iseq_t *iseq, VALUE v)
+iseq_add_mark_object(const rb_iseq_t *iseq, VALUE v)
 {
     if (!SPECIAL_CONST_P(v)) {
 	rb_iseq_add_mark_object(iseq, v);
@@ -433,7 +433,7 @@ iseq_add_mark_object(rb_iseq_t *iseq, VALUE v)
 #define ruby_sourcefile		RSTRING_PTR(iseq->location.path)
 
 static int
-iseq_add_mark_object_compile_time(rb_iseq_t *iseq, VALUE v)
+iseq_add_mark_object_compile_time(const rb_iseq_t *iseq, VALUE v)
 {
     if (!SPECIAL_CONST_P(v)) {
 	rb_ary_push(iseq->compile_data->mark_ary, v);
