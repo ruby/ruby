@@ -1,3 +1,9 @@
+Tue Jul 21 16:18:48 2015  Eric Wong  <e@80x24.org>
+
+	* test/socket/test_nonblock.rb: increase buffer sizes
+	  to OpenBSD limits. Thanks to Jeremy Evans <code@jeremyevans.net>
+	  [ruby-core:70058]
+
 Tue Jul 21 16:08:53 2015  Eric Wong  <e@80x24.org>
 
 	* load.c (ruby_dln_librefs): make static
