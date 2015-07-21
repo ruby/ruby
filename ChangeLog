@@ -1,3 +1,10 @@
+Wed Jul 22 03:37:39 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (internal_object_p): Now a singleton classes appear by
+	  ObjectSpace.each_object. [Bug #11360]
+
+	* test/ruby/test_objectspace.rb: add a test about it.
+
 Tue Jul 21 21:21:33 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (do_select): replace switch and goto with a loop to

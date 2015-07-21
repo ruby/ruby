@@ -2319,9 +2319,6 @@ internal_object_p(VALUE obj)
 	  case T_NODE:
 	  case T_ZOMBIE:
 	    break;
-	  case T_CLASS:
-	    if (FL_TEST(p, FL_SINGLETON))
-	      break;
 	  default:
 	    if (!p->as.basic.klass) break;
 	    return 0;
