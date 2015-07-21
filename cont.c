@@ -659,6 +659,10 @@ fiber_initialize_machine_stack_context(rb_fiber_t *fib, size_t size)
     rb_thread_t *sth = &fib->cont.saved_thread;
 
 #ifdef _WIN32
+# if defined(_MSC_VER) && _MSC_VER <= 0x1200
+#   define CreateFiberEx(cs, stacksize, flags, entry, param) \
+    CreateFiber((stacksize), (entry), (param))
+# endif
     fib->fib_handle = CreateFiberEx(size - 1, size, 0, fiber_entry, NULL);
     if (!fib->fib_handle) {
 	/* try to release unnecessary fibers & retry to create */
