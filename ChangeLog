@@ -1,6 +1,6 @@
 Wed Jul 22 06:25:45 2015  Koichi Sasada  <ko1@atdot.net>
 
-	* vm_core.h: constify rb_call_info_t::blockiseq and rb_iseq_t::iseq.
+	* vm_core.h: constify rb_call_info_t::blockiseq and rb_block_::iseq.
 
 	* vm.c, vm_insnhelper.c: catch up this fix.
 
