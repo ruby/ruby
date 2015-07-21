@@ -1,3 +1,7 @@
+Tue Jul 21 16:08:53 2015  Eric Wong  <e@80x24.org>
+
+	* load.c (ruby_dln_librefs): make static
+
 Tue Jul 21 13:36:54 2015  yuuji.yaginuma  <yuuji.yaginuma@gmail.com>
 
 	* lib/optparse.rb (complete): [DOC] fix typo.  [Fix GH-973]
