@@ -8,7 +8,7 @@
 #include "eval_intern.h"
 #include "probes.h"
 
-VALUE ruby_dln_librefs;
+static VALUE ruby_dln_librefs;
 
 #define IS_RBEXT(e) (strcmp((e), ".rb") == 0)
 #define IS_SOEXT(e) (strcmp((e), ".so") == 0 || strcmp((e), ".o") == 0)
