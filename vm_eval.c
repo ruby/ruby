@@ -20,7 +20,7 @@ static inline VALUE vm_yield_with_cref(rb_thread_t *th, int argc, const VALUE *a
 static inline VALUE vm_yield(rb_thread_t *th, int argc, const VALUE *argv);
 static inline VALUE vm_yield_with_block(rb_thread_t *th, int argc, const VALUE *argv, const rb_block_t *blockargptr);
 static VALUE vm_exec(rb_thread_t *th);
-static void vm_set_eval_stack(rb_thread_t * th, VALUE iseqval, const rb_cref_t *cref, rb_block_t *base_block);
+static void vm_set_eval_stack(rb_thread_t * th, const rb_iseq_t *iseq, const rb_cref_t *cref, rb_block_t *base_block);
 static int vm_collect_local_variables_in_heap(rb_thread_t *th, const VALUE *dfp, const struct local_var_list *vars);
 
 static VALUE rb_eUncaughtThrow;
@@ -1234,8 +1234,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_
     if ((state = TH_EXEC_TAG()) == 0) {
 	rb_cref_t *cref = cref_arg;
 	rb_binding_t *bind = 0;
-	rb_iseq_t *iseq;
-	volatile VALUE iseqval;
+	const rb_iseq_t *iseq;
 	VALUE absolute_path = Qnil;
 	VALUE fname;
 
@@ -1282,7 +1281,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_
 	/* make eval iseq */
 	th->parse_in_eval++;
 	th->mild_compile_error++;
-	iseqval = rb_iseq_compile_with_option(src, fname, absolute_path, INT2FIX(line), base_block, Qnil);
+	iseq = rb_iseq_compile_with_option(src, fname, absolute_path, INT2FIX(line), base_block, Qnil);
 	th->mild_compile_error--;
 	th->parse_in_eval--;
 
@@ -1297,17 +1296,16 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_
 		cref = rb_vm_get_cref(base_block->ep);
 	    }
 	}
-	vm_set_eval_stack(th, iseqval, cref, base_block);
+	vm_set_eval_stack(th, iseq, cref, base_block);
 	RB_GC_GUARD(crefval);
 
 	if (0) {		/* for debug */
-	    VALUE disasm = rb_iseq_disasm(iseqval);
+	    VALUE disasm = rb_iseq_disasm(iseq);
 	    printf("%s\n", StringValuePtr(disasm));
 	}
 
 	/* save new env */
-	GetISeqPtr(iseqval, iseq);
-	if (bind && iseq->local_table_size > 0) {
+	if (bind && iseq->body->local_table_size > 0) {
 	    bind->env = vm_make_env_object(th, th->cfp);
 	}
 
@@ -2050,8 +2048,8 @@ rb_f_local_variables(void)
     local_var_list_init(&vars);
     while (cfp) {
 	if (cfp->iseq) {
-	    for (i = 0; i < cfp->iseq->local_table_size; i++) {
-		local_var_list_add(&vars, cfp->iseq->local_table[i]);
+	    for (i = 0; i < cfp->iseq->body->local_table_size; i++) {
+		local_var_list_add(&vars, cfp->iseq->body->local_table[i]);
 	    }
 	}
 	if (!VM_EP_LEP_P(cfp->ep)) {
@@ -2117,7 +2115,7 @@ rb_current_realfilepath(void)
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp = th->cfp;
     cfp = vm_get_ruby_level_caller_cfp(th, RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp));
-    if (cfp != 0) return cfp->iseq->location.absolute_path;
+    if (cfp != 0) return cfp->iseq->body->location.absolute_path;
     return Qnil;
 }
 

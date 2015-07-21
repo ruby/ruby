@@ -602,12 +602,12 @@ rb_load_internal0(rb_thread_t *th, VALUE fname, int wrap)
     state = EXEC_TAG();
     if (state == 0) {
 	NODE *node;
-	VALUE iseq;
+	rb_iseq_t *iseq;
 
 	th->mild_compile_error++;
 	node = (NODE *)rb_load_file_str(fname);
 	loaded = TRUE;
-	iseq = rb_iseq_new_top(node, rb_str_new2("<top (required)>"), fname, rb_realpath_internal(Qnil, fname, 1), Qfalse);
+	iseq = rb_iseq_new_top(node, rb_str_new2("<top (required)>"), fname, rb_realpath_internal(Qnil, fname, 1), NULL);
 	th->mild_compile_error--;
 	rb_iseq_eval(iseq);
     }

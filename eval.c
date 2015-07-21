@@ -237,7 +237,7 @@ static int
 ruby_exec_internal(void *n)
 {
     volatile int state;
-    VALUE iseq = (VALUE)n;
+    rb_iseq_t *iseq = (rb_iseq_t *)n;
     rb_thread_t *th = GET_THREAD();
 
     if (!n) return 0;
@@ -1448,10 +1448,10 @@ errinfo_place(rb_thread_t *th)
 
     while (RUBY_VM_VALID_CONTROL_FRAME_P(cfp, end_cfp)) {
 	if (RUBY_VM_NORMAL_ISEQ_P(cfp->iseq)) {
-	    if (cfp->iseq->type == ISEQ_TYPE_RESCUE) {
+	    if (cfp->iseq->body->type == ISEQ_TYPE_RESCUE) {
 		return &cfp->ep[-2];
 	    }
-	    else if (cfp->iseq->type == ISEQ_TYPE_ENSURE &&
+	    else if (cfp->iseq->body->type == ISEQ_TYPE_ENSURE &&
 		     !THROW_DATA_P(cfp->ep[-2]) &&
 		     !FIXNUM_P(cfp->ep[-2])) {
 		return &cfp->ep[-2];

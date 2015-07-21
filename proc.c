@@ -369,8 +369,8 @@ get_local_variable_ptr(VALUE envval, ID lid)
 	iseq = env->block.iseq;
 
 	if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
-	    for (i=0; i<iseq->local_table_size; i++) {
-		if (iseq->local_table[i] == lid) {
+	    for (i=0; i<iseq->body->local_table_size; i++) {
+		if (iseq->body->local_table[i] == lid) {
 		    return &env->env[i];
 		}
 	    }
@@ -735,7 +735,7 @@ proc_call(int argc, VALUE *argv, VALUE procval)
     GetProcPtr(procval, proc);
 
     iseq = proc->block.iseq;
-    if (RUBY_VM_IFUNC_P(iseq) || iseq->param.flags.has_block) {
+    if (RUBY_VM_IFUNC_P(iseq) || iseq->body->param.flags.has_block) {
 	if (rb_block_given_p()) {
 	    rb_proc_t *passed_proc;
 	    RB_GC_GUARD(passed_procval) = rb_block_proc();
@@ -847,11 +847,11 @@ proc_arity(VALUE self)
 static inline int
 rb_iseq_min_max_arity(const rb_iseq_t *iseq, int *max)
 {
-    *max = iseq->param.flags.has_rest == FALSE ?
-      iseq->param.lead_num + iseq->param.opt_num + iseq->param.post_num +
-      (iseq->param.flags.has_kw == TRUE || iseq->param.flags.has_kwrest == TRUE)
+    *max = iseq->body->param.flags.has_rest == FALSE ?
+      iseq->body->param.lead_num + iseq->body->param.opt_num + iseq->body->param.post_num +
+      (iseq->body->param.flags.has_kw == TRUE || iseq->body->param.flags.has_kwrest == TRUE)
       : UNLIMITED_ARGUMENTS;
-    return iseq->param.lead_num + iseq->param.post_num + (iseq->param.flags.has_kw && iseq->param.keyword->required_num > 0);
+    return iseq->body->param.lead_num + iseq->body->param.post_num + (iseq->body->param.flags.has_kw && iseq->body->param.keyword->required_num > 0);
 }
 
 static int
@@ -950,9 +950,9 @@ iseq_location(const rb_iseq_t *iseq)
     VALUE loc[2];
 
     if (!iseq) return Qnil;
-    loc[0] = iseq->location.path;
-    if (iseq->line_info_table) {
-	loc[1] = rb_iseq_first_lineno(iseq->self);
+    loc[0] = iseq->body->location.path;
+    if (iseq->body->line_info_table) {
+	loc[1] = rb_iseq_first_lineno(iseq);
     }
     else {
 	loc[1] = Qnil;
@@ -1066,11 +1066,11 @@ proc_to_s(VALUE self)
     if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
 	int first_lineno = 0;
 
-	if (iseq->line_info_table) {
-	    first_lineno = FIX2INT(rb_iseq_first_lineno(iseq->self));
+	if (iseq->body->line_info_table) {
+	    first_lineno = FIX2INT(rb_iseq_first_lineno(iseq));
 	}
 	str = rb_sprintf("#<%s:%p@%"PRIsVALUE":%d%s>", cname, (void *)self,
-			 iseq->location.path, first_lineno, is_lambda);
+			 iseq->body->location.path, first_lineno, is_lambda);
     }
     else {
 	str = rb_sprintf("#<%s:%p%s>", cname, (void *)proc->block.iseq,
@@ -2558,8 +2558,8 @@ proc_binding(VALUE self)
     }
 
     if (iseq) {
-	bind->path = iseq->location.path;
-	bind->first_lineno = FIX2INT(rb_iseq_first_lineno(iseq->self));
+	bind->path = iseq->body->location.path;
+	bind->first_lineno = FIX2INT(rb_iseq_first_lineno(iseq));
     }
     else {
 	bind->path = Qnil;

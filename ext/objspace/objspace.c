@@ -497,7 +497,7 @@ count_tdata_objects(int argc, VALUE *argv, VALUE self)
     return hash;
 }
 
-static ID imemo_type_ids[imemo_mask];
+static ID imemo_type_ids[imemo_mask+1];
 
 static int
 count_imemo_objects_i(void *vstart, void *vend, size_t stride, void *data)
@@ -567,6 +567,7 @@ count_imemo_objects(int argc, VALUE *argv, VALUE self)
 	imemo_type_ids[4] = rb_intern("imemo_ifunc");
 	imemo_type_ids[5] = rb_intern("imemo_memo");
 	imemo_type_ids[6] = rb_intern("imemo_ment");
+	imemo_type_ids[7] = rb_intern("imemo_iseq");
     }
 
     rb_objspace_each_objects(count_imemo_objects_i, (void *)hash);

@@ -39,7 +39,7 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
     const rb_callable_method_entry_t *me;
 
     if (cfp->block_iseq != 0 && !RUBY_VM_IFUNC_P(cfp->block_iseq)) {
-	biseq_name = "";	/* RSTRING(cfp->block_iseq->location.label)->ptr; */
+	biseq_name = "";	/* RSTRING(cfp->block_iseq->body->location.label)->ptr; */
     }
 
     if (ep < 0 || (size_t)ep > th->stack_size) {
@@ -99,11 +99,11 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
 	    iseq_name = "<ifunc>";
 	}
 	else {
-	    pc = cfp->pc - cfp->iseq->iseq_encoded;
-	    iseq_name = RSTRING_PTR(cfp->iseq->location.label);
+	    pc = cfp->pc - cfp->iseq->body->iseq_encoded;
+	    iseq_name = RSTRING_PTR(cfp->iseq->body->location.label);
 	    line = rb_vm_get_sourceline(cfp);
 	    if (line) {
-		snprintf(posbuf, MAX_POSBUF, "%s:%d", RSTRING_PTR(cfp->iseq->location.path), line);
+		snprintf(posbuf, MAX_POSBUF, "%s:%d", RSTRING_PTR(cfp->iseq->body->location.path), line);
 	    }
 	}
     }
@@ -233,9 +233,9 @@ static VALUE *
 vm_base_ptr(rb_control_frame_t *cfp)
 {
     rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
-    VALUE *bp = prev_cfp->sp + cfp->iseq->local_size + 1;
+    VALUE *bp = prev_cfp->sp + cfp->iseq->body->local_size + 1;
 
-    if (cfp->iseq->type == ISEQ_TYPE_METHOD) {
+    if (cfp->iseq->body->type == ISEQ_TYPE_METHOD) {
 	bp += 1;
     }
     return bp;
@@ -266,9 +266,9 @@ vm_stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 	name = "<ifunc>";
     }
     else {
-	argc = iseq->param.lead_num;
-	local_size = iseq->local_size;
-	name = RSTRING_PTR(iseq->location.label);
+	argc = iseq->body->param.lead_num;
+	local_size = iseq->body->local_size;
+	name = RSTRING_PTR(iseq->body->location.label);
     }
 
     /* stack trace header */
@@ -335,7 +335,7 @@ rb_vmdebug_debug_print_register(rb_thread_t *th)
     ptrdiff_t cfpi;
 
     if (RUBY_VM_NORMAL_ISEQ_P(cfp->iseq)) {
-	pc = cfp->pc - cfp->iseq->iseq_encoded;
+	pc = cfp->pc - cfp->iseq->body->iseq_encoded;
     }
 
     if (ep < 0 || (size_t)ep > th->stack_size) {
@@ -361,7 +361,7 @@ rb_vmdebug_debug_print_pre(rb_thread_t *th, rb_control_frame_t *cfp,VALUE *_pc)
     const rb_iseq_t *iseq = cfp->iseq;
 
     if (iseq != 0) {
-	ptrdiff_t pc = _pc - iseq->iseq_encoded;
+	ptrdiff_t pc = _pc - iseq->body->iseq_encoded;
 	int i;
 
 	for (i=0; i<(int)VM_CFP_CNT(th, cfp); i++) {

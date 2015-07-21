@@ -31,7 +31,7 @@ id2str(ID id)
 inline static int
 calc_lineno(const rb_iseq_t *iseq, const VALUE *pc)
 {
-    return rb_iseq_line_no(iseq, pc - iseq->iseq_encoded);
+    return rb_iseq_line_no(iseq, pc - iseq->body->iseq_encoded);
 }
 
 int
@@ -87,7 +87,7 @@ location_mark_entry(rb_backtrace_location_t *fi)
     switch (fi->type) {
       case LOCATION_TYPE_ISEQ:
       case LOCATION_TYPE_ISEQ_CALCED:
-	rb_gc_mark(fi->body.iseq.iseq->self);
+	rb_gc_mark((VALUE)fi->body.iseq.iseq);
 	break;
       case LOCATION_TYPE_CFUNC:
       case LOCATION_TYPE_IFUNC:
@@ -157,7 +157,7 @@ location_label(rb_backtrace_location_t *loc)
     switch (loc->type) {
       case LOCATION_TYPE_ISEQ:
       case LOCATION_TYPE_ISEQ_CALCED:
-	return loc->body.iseq.iseq->location.label;
+	return loc->body.iseq.iseq->body->location.label;
       case LOCATION_TYPE_CFUNC:
 	return rb_id2str(loc->body.cfunc.mid);
       case LOCATION_TYPE_IFUNC:
@@ -206,7 +206,7 @@ location_base_label(rb_backtrace_location_t *loc)
     switch (loc->type) {
       case LOCATION_TYPE_ISEQ:
       case LOCATION_TYPE_ISEQ_CALCED:
-	return loc->body.iseq.iseq->location.base_label;
+	return loc->body.iseq.iseq->body->location.base_label;
       case LOCATION_TYPE_CFUNC:
 	return rb_id2str(loc->body.cfunc.mid);
       case LOCATION_TYPE_IFUNC:
@@ -233,7 +233,7 @@ location_path(rb_backtrace_location_t *loc)
     switch (loc->type) {
       case LOCATION_TYPE_ISEQ:
       case LOCATION_TYPE_ISEQ_CALCED:
-	return loc->body.iseq.iseq->location.path;
+	return loc->body.iseq.iseq->body->location.path;
       case LOCATION_TYPE_CFUNC:
 	if (loc->body.cfunc.prev_loc) {
 	    return location_path(loc->body.cfunc.prev_loc);
@@ -266,7 +266,7 @@ location_absolute_path(rb_backtrace_location_t *loc)
     switch (loc->type) {
       case LOCATION_TYPE_ISEQ:
       case LOCATION_TYPE_ISEQ_CALCED:
-	return loc->body.iseq.iseq->location.absolute_path;
+	return loc->body.iseq.iseq->body->location.absolute_path;
       case LOCATION_TYPE_CFUNC:
 	if (loc->body.cfunc.prev_loc) {
 	    return location_absolute_path(loc->body.cfunc.prev_loc);
@@ -315,20 +315,20 @@ location_to_str(rb_backtrace_location_t *loc)
 
     switch (loc->type) {
       case LOCATION_TYPE_ISEQ:
-	file = loc->body.iseq.iseq->location.path;
-	name = loc->body.iseq.iseq->location.label;
+	file = loc->body.iseq.iseq->body->location.path;
+	name = loc->body.iseq.iseq->body->location.label;
 
 	lineno = loc->body.iseq.lineno.lineno = calc_lineno(loc->body.iseq.iseq, loc->body.iseq.lineno.pc);
 	loc->type = LOCATION_TYPE_ISEQ_CALCED;
 	break;
       case LOCATION_TYPE_ISEQ_CALCED:
-	file = loc->body.iseq.iseq->location.path;
+	file = loc->body.iseq.iseq->body->location.path;
 	lineno = loc->body.iseq.lineno.lineno;
-	name = loc->body.iseq.iseq->location.label;
+	name = loc->body.iseq.iseq->body->location.label;
 	break;
       case LOCATION_TYPE_CFUNC:
 	if (loc->body.cfunc.prev_loc) {
-	    file = loc->body.cfunc.prev_loc->body.iseq.iseq->location.path;
+	    file = loc->body.cfunc.prev_loc->body.iseq.iseq->body->location.path;
 	    lineno = location_lineno(loc->body.cfunc.prev_loc);
 	}
 	else {
@@ -693,8 +693,8 @@ oldbt_iter_iseq(void *ptr, const rb_control_frame_t *cfp)
     const rb_iseq_t *iseq = cfp->iseq;
     const VALUE *pc = cfp->pc;
     struct oldbt_arg *arg = (struct oldbt_arg *)ptr;
-    VALUE file = arg->filename = iseq->location.path;
-    VALUE name = iseq->location.label;
+    VALUE file = arg->filename = iseq->body->location.path;
+    VALUE name = iseq->body->location.label;
     int lineno = arg->lineno = calc_lineno(iseq, pc);
 
     (arg->func)(arg->data, file, lineno, name);
@@ -1111,7 +1111,7 @@ collect_caller_bindings_iseq(void *arg, const rb_control_frame_t *cfp)
     rb_ary_store(frame, CALLER_BINDING_SELF, cfp->self);
     rb_ary_store(frame, CALLER_BINDING_CLASS, get_klass(cfp));
     rb_ary_store(frame, CALLER_BINDING_BINDING, GC_GUARDED_PTR(cfp)); /* create later */
-    rb_ary_store(frame, CALLER_BINDING_ISEQ, cfp->iseq ? cfp->iseq->self : Qnil);
+    rb_ary_store(frame, CALLER_BINDING_ISEQ, cfp->iseq ? (VALUE)cfp->iseq : Qnil);
     rb_ary_store(frame, CALLER_BINDING_CFP, GC_GUARDED_PTR(cfp));
 
     rb_ary_push(data->ary, frame);
@@ -1231,7 +1231,9 @@ VALUE
 rb_debug_inspector_frame_iseq_get(const rb_debug_inspector_t *dc, long index)
 {
     VALUE frame = frame_get(dc, index);
-    return rb_ary_entry(frame, CALLER_BINDING_ISEQ);
+    VALUE iseq = rb_ary_entry(frame, CALLER_BINDING_ISEQ);
+
+    return RTEST(iseq) ? rb_iseqw_new((rb_iseq_t *)iseq) : Qnil;
 }
 
 VALUE
@@ -1261,7 +1263,7 @@ rb_profile_frames(int start, int limit, VALUE *buff, int *lines)
 		buff[i] = (VALUE)cme;
 	    }
 	    else {
-		buff[i] = cfp->iseq->self;
+		buff[i] = (VALUE)cfp->iseq;
 	    }
 
 	    if (cfp->iseq && lines) lines[i] = calc_lineno(cfp->iseq, cfp->pc);
@@ -1274,24 +1276,27 @@ rb_profile_frames(int start, int limit, VALUE *buff, int *lines)
     return i;
 }
 
-static VALUE
+static const rb_iseq_t *
 frame2iseq(VALUE frame)
 {
-    if (frame == Qnil) return Qnil;
-
-    if (RB_TYPE_P(frame, T_DATA)) {
-	VM_ASSERT(strcmp(rb_objspace_data_type_name(frame), "iseq") == 0);
-	return frame;
-    }
+    if (frame == Qnil) return NULL;
 
     if (RB_TYPE_P(frame, T_IMEMO)) {
-	const rb_callable_method_entry_t *cme = (rb_callable_method_entry_t *)frame;
-	VM_ASSERT(imemo_type(frame) == imemo_ment);
-	switch (cme->def->type) {
-	  case VM_METHOD_TYPE_ISEQ:
-	    return cme->def->body.iseq.iseqptr->self;
+	switch (imemo_type(frame)) {
+	  case imemo_iseq:
+	    return (const rb_iseq_t *)frame;
+	  case imemo_ment:
+	    {
+		const rb_callable_method_entry_t *cme = (rb_callable_method_entry_t *)frame;
+		switch (cme->def->type) {
+		  case VM_METHOD_TYPE_ISEQ:
+		    return cme->def->body.iseq.iseqptr;
+		  default:
+		    return NULL;
+		}
+	    }
 	  default:
-	    return Qnil;
+	    break;
 	}
     }
     rb_bug("frame2iseq: unreachable");
@@ -1300,36 +1305,36 @@ frame2iseq(VALUE frame)
 VALUE
 rb_profile_frame_path(VALUE frame)
 {
-    VALUE iseqv = frame2iseq(frame);
-    return NIL_P(iseqv) ? Qnil : rb_iseq_path(iseqv);
+    const rb_iseq_t *iseq = frame2iseq(frame);
+    return iseq ? rb_iseq_path(iseq) : Qnil;
 }
 
 VALUE
 rb_profile_frame_absolute_path(VALUE frame)
 {
-    VALUE iseqv = frame2iseq(frame);
-    return NIL_P(iseqv) ? Qnil : rb_iseq_absolute_path(iseqv);
+    const rb_iseq_t *iseq = frame2iseq(frame);
+    return iseq ? rb_iseq_absolute_path(iseq) : Qnil;
 }
 
 VALUE
 rb_profile_frame_label(VALUE frame)
 {
-    VALUE iseqv = frame2iseq(frame);
-    return NIL_P(iseqv) ? Qnil : rb_iseq_label(iseqv);
+    const rb_iseq_t *iseq = frame2iseq(frame);
+    return iseq ? rb_iseq_label(iseq) : Qnil;
 }
 
 VALUE
 rb_profile_frame_base_label(VALUE frame)
 {
-    VALUE iseqv = frame2iseq(frame);
-    return NIL_P(iseqv) ? Qnil : rb_iseq_base_label(iseqv);
+    const rb_iseq_t *iseq = frame2iseq(frame);
+    return iseq ? rb_iseq_base_label(iseq) : Qnil;
 }
 
 VALUE
 rb_profile_frame_first_lineno(VALUE frame)
 {
-    VALUE iseqv = frame2iseq(frame);
-    return NIL_P(iseqv) ? Qnil : rb_iseq_first_lineno(iseqv);
+    const rb_iseq_t *iseq = frame2iseq(frame);
+    return iseq ? rb_iseq_first_lineno(iseq) : Qnil;
 }
 
 static VALUE
@@ -1384,8 +1389,8 @@ rb_profile_frame_singleton_method_p(VALUE frame)
 VALUE
 rb_profile_frame_method_name(VALUE frame)
 {
-    VALUE iseqv = frame2iseq(frame);
-    return NIL_P(iseqv) ? Qnil : rb_iseq_method_name(iseqv);
+    const rb_iseq_t *iseq = frame2iseq(frame);
+    return iseq ? rb_iseq_method_name(iseq) : Qnil;
 }
 
 VALUE

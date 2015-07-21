@@ -404,6 +404,7 @@ typedef struct RVALUE {
 	    struct vm_ifunc ifunc;
 	    struct MEMO memo;
 	    struct rb_method_entry_struct ment;
+	    const rb_iseq_t iseq;
 	} imemo;
 	struct {
 	    struct RBasic basic;
@@ -699,6 +700,7 @@ static rb_objspace_t rb_objspace = {{GC_MALLOC_LIMIT_MIN}};
 #endif
 
 #define ruby_initial_gc_stress	gc_params.gc_stress
+
 VALUE *ruby_initial_gc_stress_ptr = &ruby_initial_gc_stress;
 
 #define malloc_limit		objspace->malloc_params.limit
@@ -777,6 +779,9 @@ struct RZombie {
 int ruby_gc_debug_indent = 0;
 VALUE rb_mGC;
 int ruby_disable_gc = 0;
+
+void rb_iseq_mark(const rb_iseq_t *iseq);
+void rb_iseq_free(const rb_iseq_t *iseq);
 
 void rb_gcdebug_print_obj_condition(VALUE obj);
 
@@ -2140,11 +2145,18 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 
       case T_IMEMO:
 	{
-	    if (imemo_type(obj) == imemo_ment) {
+	    switch (imemo_type(obj)) {
+	      case imemo_ment:
 		rb_free_method_entry(&RANY(obj)->as.imemo.ment);
+		break;
+	      case imemo_iseq:
+		rb_iseq_free(&RANY(obj)->as.imemo.iseq);
+		break;
+	      default:
+		break;
 	    }
 	}
-	break;
+	return 0;
 
       default:
 	rb_bug("gc_sweep(): unknown data type 0x%x(%p) 0x%"PRIxVALUE,
@@ -3924,7 +3936,7 @@ mark_method_entry(rb_objspace_t *objspace, const rb_method_entry_t *me)
     if (def) {
 	switch (def->type) {
 	  case VM_METHOD_TYPE_ISEQ:
-	    if (def->body.iseq.iseqptr) gc_mark(objspace, def->body.iseq.iseqptr->self);
+	    if (def->body.iseq.iseqptr) gc_mark(objspace, (VALUE)def->body.iseq.iseqptr);
 	    gc_mark(objspace, (VALUE)def->body.iseq.cref);
 	    break;
 	  case VM_METHOD_TYPE_ATTRSET:
@@ -4272,6 +4284,9 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 
       case T_IMEMO:
 	switch (imemo_type(obj)) {
+	  case imemo_none:
+	    rb_bug("unreachable");
+	    return;
 	  case imemo_cref:
 	    gc_mark(objspace, RANY(obj)->as.imemo.cref.klass);
 	    gc_mark(objspace, (VALUE)RANY(obj)->as.imemo.cref.next);
@@ -4297,9 +4312,11 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 	  case imemo_ment:
 	    mark_method_entry(objspace, &RANY(obj)->as.imemo.ment);
 	    return;
-	  default:
-	    rb_bug("T_IMEMO: unreachable");
+	  case imemo_iseq:
+	    rb_iseq_mark((rb_iseq_t *)obj);
+	    return;
 	}
+	rb_bug("T_IMEMO: unreachable");
     }
 
     gc_mark(objspace, any->as.basic.klass);
@@ -8917,15 +8934,7 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
       }
       case T_DATA: {
 	  const char * const type_name = rb_objspace_data_type_name(obj);
-	  if (type_name && strcmp(type_name, "iseq") == 0) {
-	      rb_iseq_t *iseq;
-	      GetISeqPtr(obj, iseq);
-	      if (iseq->location.label) {
-		  snprintf(buff, buff_size, "%s %s@%s:%d", buff,
-			   RSTRING_PTR(iseq->location.label), RSTRING_PTR(iseq->location.path), (int)iseq->location.first_lineno);
-	      }
-	  }
-	  else if (type_name) {
+	  if (type_name) {
 	      snprintf(buff, buff_size, "%s %s", buff, type_name);
 	  }
 	  break;
@@ -8945,10 +8954,25 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 #undef IMEMO_NAME
 	  }
 	  snprintf(buff, buff_size, "%s %s", buff, imemo_name);
-	  if (imemo_type(obj) == imemo_ment) {
-	      const rb_method_entry_t *me = &RANY(obj)->as.imemo.ment;
-	      snprintf(buff, buff_size, "%s (called_id: %s, type: %s, alias: %d, class: %s)", buff,
-		       rb_id2name(me->called_id), method_type_name(me->def->type), me->def->alias_count, obj_info(me->defined_class));
+
+	  switch (imemo_type(obj)) {
+	    case imemo_ment: {
+		const rb_method_entry_t *me = &RANY(obj)->as.imemo.ment;
+		snprintf(buff, buff_size, "%s (called_id: %s, type: %s, alias: %d, class: %s)", buff,
+			 rb_id2name(me->called_id), method_type_name(me->def->type), me->def->alias_count, obj_info(me->defined_class));
+		break;
+	    }
+	    case imemo_iseq: {
+		const rb_iseq_t *iseq = (const rb_iseq_t *)obj;
+
+		if (iseq->body->location.label) {
+		    snprintf(buff, buff_size, "%s %s@%s:%d", buff,
+			     RSTRING_PTR(iseq->body->location.label), RSTRING_PTR(iseq->body->location.path), (int)iseq->body->location.first_lineno);
+		}
+		break;
+	    }
+	    default:
+	      break;
 	  }
       }
       default:

@@ -254,7 +254,7 @@ method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *def, 
 		cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
 
 		if (cfp && (line = rb_vm_get_sourceline(cfp))) {
-		    VALUE location = rb_ary_new3(2, cfp->iseq->location.path, INT2FIX(line));
+		    VALUE location = rb_ary_new3(2, cfp->iseq->body->location.path, INT2FIX(line));
 		    RB_OBJ_WRITE(me, &def->body.attr.location, rb_ary_freeze(location));
 		}
 		else {
@@ -296,7 +296,7 @@ method_definition_reset(const rb_method_entry_t *me)
 
     switch(def->type) {
       case VM_METHOD_TYPE_ISEQ:
-	RB_OBJ_WRITTEN(me, Qundef, def->body.iseq.iseqptr->self);
+	RB_OBJ_WRITTEN(me, Qundef, def->body.iseq.iseqptr);
 	RB_OBJ_WRITTEN(me, Qundef, def->body.iseq.cref);
 	break;
       case VM_METHOD_TYPE_ATTRSET:
@@ -512,9 +512,9 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
 	      default:
 		break;
 	    }
-	    if (iseq && !NIL_P(iseq->location.path)) {
-		int line = iseq->line_info_table ? FIX2INT(rb_iseq_first_lineno(iseq->self)) : 0;
-		rb_compile_warning(RSTRING_PTR(iseq->location.path), line,
+	    if (iseq && !NIL_P(iseq->body->location.path)) {
+		int line = iseq->body->line_info_table ? FIX2INT(rb_iseq_first_lineno(iseq)) : 0;
+		rb_compile_warning(RSTRING_PTR(iseq->body->location.path), line,
 				   "previous definition of %"PRIsVALUE" was here",
 				   rb_id2str(old_def->original_id));
 	    }
@@ -583,19 +583,16 @@ rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_
 }
 
 void
-rb_add_method_iseq(VALUE klass, ID mid, VALUE iseqval, rb_cref_t *cref, rb_method_visibility_t visi)
+rb_add_method_iseq(VALUE klass, ID mid, const rb_iseq_t *iseq, rb_cref_t *cref, rb_method_visibility_t visi)
 {
-    rb_iseq_t *iseq;
     struct { /* should be same fields with rb_method_iseq_struct */
-	rb_iseq_t *iseqptr;
+	const rb_iseq_t *iseqptr;
 	rb_cref_t *cref;
     } iseq_body;
 
-    GetISeqPtr(iseqval, iseq);
     iseq_body.iseqptr = iseq;
     iseq_body.cref = cref;
     rb_add_method(klass, mid, VM_METHOD_TYPE_ISEQ, &iseq_body, visi);
-    RB_GC_GUARD(iseqval);
 }
 
 static rb_method_entry_t *
