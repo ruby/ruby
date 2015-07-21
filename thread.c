@@ -368,26 +368,23 @@ static int
 set_unblock_function(rb_thread_t *th, rb_unblock_function_t *func, void *arg,
 		     struct rb_unblock_callback *old, int fail_if_interrupted)
 {
-  check_ints:
-    if (fail_if_interrupted) {
-	if (RUBY_VM_INTERRUPTED_ANY(th)) {
-	    return FALSE;
+    do {
+	if (fail_if_interrupted) {
+	    if (RUBY_VM_INTERRUPTED_ANY(th)) {
+		return FALSE;
+	    }
 	}
-    }
-    else {
-	RUBY_VM_CHECK_INTS(th);
-    }
+	else {
+	    RUBY_VM_CHECK_INTS(th);
+	}
 
-    native_mutex_lock(&th->interrupt_lock);
-    if (RUBY_VM_INTERRUPTED_ANY(th)) {
-	native_mutex_unlock(&th->interrupt_lock);
-	goto check_ints;
-    }
-    else {
-	if (old) *old = th->unblock;
-	th->unblock.func = func;
-	th->unblock.arg = arg;
-    }
+	native_mutex_lock(&th->interrupt_lock);
+    } while (RUBY_VM_INTERRUPTED_ANY(th) &&
+	     (native_mutex_unlock(&th->interrupt_lock), TRUE));
+
+    if (old) *old = th->unblock;
+    th->unblock.func = func;
+    th->unblock.arg = arg;
     native_mutex_unlock(&th->interrupt_lock);
 
     return TRUE;
@@ -3462,6 +3459,32 @@ rb_fd_set(int fd, rb_fdset_t *set)
 
 #endif
 
+static inline int
+retryable(int e)
+{
+    if (e == EINTR) return TRUE;
+#ifdef ERESTART
+    if (e == ERESTART) return TRUE;
+#endif
+    return FALSE;
+}
+
+#define restore_fdset(fds1, fds2) \
+    ((fds1) ? rb_fd_dup(fds1, fds2) : (void)0)
+
+static inline void
+update_timeval(struct timeval *timeout, double limit)
+{
+    if (timeout) {
+	double d = limit - timeofday();
+
+	timeout->tv_sec = (time_t)d;
+	timeout->tv_usec = (int)((d-(double)timeout->tv_sec)*1e6);
+	if (timeout->tv_sec < 0)  timeout->tv_sec = 0;
+	if (timeout->tv_usec < 0) timeout->tv_usec = 0;
+    }
+}
+
 static int
 do_select(int n, rb_fdset_t *readfds, rb_fdset_t *writefds,
 	  rb_fdset_t *exceptfds, struct timeval *timeout)
@@ -3474,6 +3497,13 @@ do_select(int n, rb_fdset_t *readfds, rb_fdset_t *writefds,
     double limit = 0;
     struct timeval wait_rest;
     rb_thread_t *th = GET_THREAD();
+
+#define do_select_update() \
+    (restore_fdset(readfds, &orig_read), \
+     restore_fdset(writefds, &orig_write), \
+     restore_fdset(exceptfds, &orig_except), \
+     update_timeval(timeout, limit), \
+     TRUE)
 
     if (timeout) {
 	limit = timeofday();
@@ -3489,46 +3519,17 @@ do_select(int n, rb_fdset_t *readfds, rb_fdset_t *writefds,
     if (exceptfds)
 	rb_fd_init_copy(&orig_except, exceptfds);
 
-  retry:
-    lerrno = 0;
+    do {
+	lerrno = 0;
 
-    BLOCKING_REGION({
+	BLOCKING_REGION({
 	    result = native_fd_select(n, readfds, writefds, exceptfds,
 				      timeout, th);
 	    if (result < 0) lerrno = errno;
 	}, ubf_select, th, FALSE);
 
-    RUBY_VM_CHECK_INTS_BLOCKING(th);
-
-    errno = lerrno;
-
-    if (result < 0) {
-	switch (errno) {
-	  case EINTR:
-#ifdef ERESTART
-	  case ERESTART:
-#endif
-	    if (readfds)
-		rb_fd_dup(readfds, &orig_read);
-	    if (writefds)
-		rb_fd_dup(writefds, &orig_write);
-	    if (exceptfds)
-		rb_fd_dup(exceptfds, &orig_except);
-
-	    if (timeout) {
-		double d = limit - timeofday();
-
-		wait_rest.tv_sec = (time_t)d;
-		wait_rest.tv_usec = (int)((d-(double)wait_rest.tv_sec)*1e6);
-		if (wait_rest.tv_sec < 0)  wait_rest.tv_sec = 0;
-		if (wait_rest.tv_usec < 0) wait_rest.tv_usec = 0;
-	    }
-
-	    goto retry;
-	  default:
-	    break;
-	}
-    }
+	RUBY_VM_CHECK_INTS_BLOCKING(th);
+    } while (result < 0 && retryable(errno = lerrno) && do_select_update());
 
     if (readfds)
 	rb_fd_term(&orig_read);
@@ -3643,6 +3644,19 @@ ppoll(struct pollfd *fds, nfds_t nfds,
 }
 #endif
 
+static inline void
+update_timespec(struct timespec *timeout, double limit)
+{
+    if (timeout) {
+	double d = limit - timeofday();
+
+	timeout->tv_sec = (long)d;
+	timeout->tv_nsec = (long)((d-(double)timeout->tv_sec)*1e9);
+	if (timeout->tv_sec < 0)  timeout->tv_sec = 0;
+	if (timeout->tv_nsec < 0) timeout->tv_nsec = 0;
+    }
+}
+
 /*
  * returns a mask of events
  */
@@ -3656,6 +3670,10 @@ rb_wait_for_single_fd(int fd, int events, struct timeval *tv)
     struct timespec *timeout = NULL;
     rb_thread_t *th = GET_THREAD();
 
+#define poll_update() \
+    (update_timespec(timeout, limit), \
+     TRUE)
+
     if (tv) {
 	ts.tv_sec = tv->tv_sec;
 	ts.tv_nsec = tv->tv_usec * 1000;
@@ -3667,36 +3685,15 @@ rb_wait_for_single_fd(int fd, int events, struct timeval *tv)
     fds.fd = fd;
     fds.events = (short)events;
 
-retry:
-    lerrno = 0;
-    BLOCKING_REGION({
-	result = ppoll(&fds, 1, timeout, NULL);
-	if (result < 0) lerrno = errno;
-    }, ubf_select, th, FALSE);
+    do {
+	lerrno = 0;
+	BLOCKING_REGION({
+	    result = ppoll(&fds, 1, timeout, NULL);
+	    if (result < 0) lerrno = errno;
+	}, ubf_select, th, FALSE);
 
-    RUBY_VM_CHECK_INTS_BLOCKING(th);
-
-    if (result < 0) {
-	errno = lerrno;
-	switch (errno) {
-	  case EINTR:
-#ifdef ERESTART
-	  case ERESTART:
-#endif
-	    if (timeout) {
-		double d = limit - timeofday();
-
-		ts.tv_sec = (long)d;
-		ts.tv_nsec = (long)((d - (double)ts.tv_sec) * 1e9);
-		if (ts.tv_sec < 0)
-		    ts.tv_sec = 0;
-		if (ts.tv_nsec < 0)
-		    ts.tv_nsec = 0;
-	    }
-	    goto retry;
-	}
-	return -1;
-    }
+	RUBY_VM_CHECK_INTS_BLOCKING(th);
+    } while (result < 0 && retryable(errno = lerrno) && poll_update());
 
     if (fds.revents & POLLNVAL) {
 	errno = EBADF;
