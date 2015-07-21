@@ -1,3 +1,7 @@
+Wed Jul 22 07:15:33 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/objspace/objspace.c (total_i): no need to skip singleton classes.
+
 Wed Jul 22 06:37:54 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h: constify rb_call_info_t::kw_arg,
