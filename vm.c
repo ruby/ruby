@@ -1767,7 +1767,7 @@ rb_thread_current_status(const rb_thread_t *th)
 
     if (cfp->iseq != 0) {
 	if (cfp->pc != 0) {
-	    rb_iseq_t *iseq = cfp->iseq;
+	    const rb_iseq_t *iseq = cfp->iseq;
 	    int line_no = rb_vm_get_sourceline(cfp);
 	    str = rb_sprintf("%"PRIsVALUE":%d:in `%"PRIsVALUE"'",
 			     iseq->location.path, line_no, iseq->location.label);
@@ -2065,7 +2065,7 @@ rb_thread_mark(void *ptr)
 	rb_gc_mark_values((long)(sp - p), p);
 
 	while (cfp != limit_cfp) {
-	    rb_iseq_t *iseq = cfp->iseq;
+	    const rb_iseq_t *iseq = cfp->iseq;
 	    rb_gc_mark(cfp->proc);
 	    rb_gc_mark(cfp->self);
 	    if (iseq) {

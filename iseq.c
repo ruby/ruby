@@ -80,8 +80,8 @@ iseq_free(void *ptr)
 	if (iseq->callinfo_entries) {
 	    for (i=0; i<iseq->callinfo_size; i++) {
 		/* TODO: revisit callinfo data structure */
-		rb_call_info_kw_arg_t *kw_arg = iseq->callinfo_entries[i].kw_arg;
-		ruby_xfree(kw_arg);
+		const rb_call_info_kw_arg_t *kw_arg = iseq->callinfo_entries[i].kw_arg;
+		ruby_xfree((void *)kw_arg);
 	    }
 	    ruby_xfree(iseq->callinfo_entries);
 	}
