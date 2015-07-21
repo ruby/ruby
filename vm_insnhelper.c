@@ -845,15 +845,15 @@ vm_throw_start(rb_thread_t *const th, rb_control_frame_t *const reg_cfp, enum ru
 	const rb_iseq_t *base_iseq = GET_ISEQ();
 	escape_cfp = reg_cfp;
 
-	while (base_iseq->type != ISEQ_TYPE_BLOCK) {
-	    if (escape_cfp->iseq->type == ISEQ_TYPE_CLASS) {
+	while (base_iseq->body->type != ISEQ_TYPE_BLOCK) {
+	    if (escape_cfp->iseq->body->type == ISEQ_TYPE_CLASS) {
 		escape_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(escape_cfp);
 		ep = escape_cfp->ep;
 		base_iseq = escape_cfp->iseq;
 	    }
 	    else {
 		ep = VM_EP_PREV_EP(ep);
-		base_iseq = base_iseq->parent_iseq;
+		base_iseq = base_iseq->body->parent_iseq;
 		escape_cfp = rb_vm_search_cf_from_ep(th, escape_cfp, ep);
 		VM_ASSERT(escape_cfp->iseq == base_iseq);
 	    }
@@ -869,9 +869,9 @@ vm_throw_start(rb_thread_t *const th, rb_control_frame_t *const reg_cfp, enum ru
 
 	    while (escape_cfp < eocfp) {
 		if (escape_cfp->ep == ep) {
-		    const VALUE epc = escape_cfp->pc - escape_cfp->iseq->iseq_encoded;
+		    const VALUE epc = escape_cfp->pc - escape_cfp->iseq->body->iseq_encoded;
 		    const rb_iseq_t * const iseq = escape_cfp->iseq;
-		    const struct iseq_catch_table * const ct = iseq->catch_table;
+		    const struct iseq_catch_table * const ct = iseq->body->catch_table;
 		    const int ct_size = ct->size;
 		    int i;
 
@@ -919,7 +919,7 @@ vm_throw_start(rb_thread_t *const th, rb_control_frame_t *const reg_cfp, enum ru
 		target_lep = lep;
 	    }
 
-	    if (lep == target_lep && escape_cfp->iseq->type == ISEQ_TYPE_CLASS) {
+	    if (lep == target_lep && escape_cfp->iseq->body->type == ISEQ_TYPE_CLASS) {
 		in_class_frame = 1;
 		target_lep = 0;
 	    }
@@ -944,7 +944,7 @@ vm_throw_start(rb_thread_t *const th, rb_control_frame_t *const reg_cfp, enum ru
 		}
 	    }
 
-	    if (escape_cfp->ep == target_lep && escape_cfp->iseq->type == ISEQ_TYPE_METHOD) {
+	    if (escape_cfp->ep == target_lep && escape_cfp->iseq->body->type == ISEQ_TYPE_METHOD) {
 		goto valid_return;
 	    }
 
@@ -1198,9 +1198,9 @@ static VALUE *
 vm_base_ptr(rb_control_frame_t *cfp)
 {
     rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
-    VALUE *bp = prev_cfp->sp + cfp->iseq->local_size + 1;
+    VALUE *bp = prev_cfp->sp + cfp->iseq->body->local_size + 1;
 
-    if (cfp->iseq->type == ISEQ_TYPE_METHOD) {
+    if (cfp->iseq->body->type == ISEQ_TYPE_METHOD) {
 	/* adjust `self' */
 	bp += 1;
     }
@@ -1241,9 +1241,9 @@ vm_callee_setup_block_arg_arg0_splat(rb_control_frame_t *cfp, const rb_iseq_t *i
     int i;
     long len = RARRAY_LEN(ary);
 
-    CHECK_VM_STACK_OVERFLOW(cfp, iseq->param.lead_num);
+    CHECK_VM_STACK_OVERFLOW(cfp, iseq->body->param.lead_num);
 
-    for (i=0; i<len && i<iseq->param.lead_num; i++) {
+    for (i=0; i<len && i<iseq->body->param.lead_num; i++) {
 	argv[i] = RARRAY_AREF(ary, i);
     }
 
@@ -1253,12 +1253,12 @@ vm_callee_setup_block_arg_arg0_splat(rb_control_frame_t *cfp, const rb_iseq_t *i
 static inline int
 simple_iseq_p(const rb_iseq_t *iseq)
 {
-    return iseq->param.flags.has_opt == FALSE &&
-           iseq->param.flags.has_rest == FALSE &&
-	   iseq->param.flags.has_post == FALSE &&
-	   iseq->param.flags.has_kw == FALSE &&
-	   iseq->param.flags.has_kwrest == FALSE &&
-	   iseq->param.flags.has_block == FALSE;
+    return iseq->body->param.flags.has_opt == FALSE &&
+           iseq->body->param.flags.has_rest == FALSE &&
+	   iseq->body->param.flags.has_post == FALSE &&
+	   iseq->body->param.flags.has_kw == FALSE &&
+	   iseq->body->param.flags.has_kwrest == FALSE &&
+	   iseq->body->param.flags.has_block == FALSE;
 }
 
 static inline void
@@ -1272,32 +1272,32 @@ vm_callee_setup_block_arg(rb_thread_t *th, rb_call_info_t *ci, const rb_iseq_t *
 
 	if (arg_setup_type == arg_setup_block &&
 	    ci->argc == 1 &&
-	    iseq->param.flags.has_lead &&
-	    !iseq->param.flags.ambiguous_param0 &&
+	    iseq->body->param.flags.has_lead &&
+	    !iseq->body->param.flags.ambiguous_param0 &&
 	    !NIL_P(arg0 = vm_callee_setup_block_arg_arg0_check(argv))) {
 	    ci->argc = vm_callee_setup_block_arg_arg0_splat(cfp, iseq, argv, arg0);
 	}
 
-	if (ci->argc != iseq->param.lead_num) {
+	if (ci->argc != iseq->body->param.lead_num) {
 	    if (arg_setup_type == arg_setup_block) {
-		if (ci->argc < iseq->param.lead_num) {
+		if (ci->argc < iseq->body->param.lead_num) {
 		    int i;
-		    CHECK_VM_STACK_OVERFLOW(cfp, iseq->param.lead_num);
-		    for (i=ci->argc; i<iseq->param.lead_num; i++) argv[i] = Qnil;
-		    ci->argc = iseq->param.lead_num; /* fill rest parameters */
+		    CHECK_VM_STACK_OVERFLOW(cfp, iseq->body->param.lead_num);
+		    for (i=ci->argc; i<iseq->body->param.lead_num; i++) argv[i] = Qnil;
+		    ci->argc = iseq->body->param.lead_num; /* fill rest parameters */
 		}
-		else if (ci->argc > iseq->param.lead_num) {
-		    ci->argc = iseq->param.lead_num; /* simply truncate arguments */
+		else if (ci->argc > iseq->body->param.lead_num) {
+		    ci->argc = iseq->body->param.lead_num; /* simply truncate arguments */
 		}
 	    }
 	    else if (arg_setup_type == arg_setup_lambda &&
 		     ci->argc == 1 &&
 		     !NIL_P(arg0 = vm_callee_setup_block_arg_arg0_check(argv)) &&
-		     RARRAY_LEN(arg0) == iseq->param.lead_num) {
+		     RARRAY_LEN(arg0) == iseq->body->param.lead_num) {
 		ci->argc = vm_callee_setup_block_arg_arg0_splat(cfp, iseq, argv, arg0);
 	    }
 	    else {
-		argument_arity_error(th, iseq, ci->argc, iseq->param.lead_num, iseq->param.lead_num);
+		argument_arity_error(th, iseq, ci->argc, iseq->body->param.lead_num, iseq->body->param.lead_num);
 	    }
 	}
 
@@ -1316,8 +1316,8 @@ vm_callee_setup_arg(rb_thread_t *th, rb_call_info_t *ci, const rb_iseq_t *iseq, 
 
 	CALLER_SETUP_ARG(cfp, ci); /* splat arg */
 
-	if (ci->argc != iseq->param.lead_num) {
-	    argument_arity_error(th, iseq, ci->argc, iseq->param.lead_num, iseq->param.lead_num);
+	if (ci->argc != iseq->body->param.lead_num) {
+	    argument_arity_error(th, iseq, ci->argc, iseq->body->param.lead_num, iseq->body->param.lead_num);
 	}
 
 	ci->aux.opt_pc = 0;
@@ -1365,16 +1365,16 @@ vm_call_iseq_setup_normal(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info
     VALUE *argv = cfp->sp - ci->argc;
     const rb_callable_method_entry_t *me = ci->me;
     const rb_iseq_t *iseq = def_iseq_ptr(me->def);
-    VALUE *sp = argv + iseq->param.size;
+    VALUE *sp = argv + iseq->body->param.size;
 
     /* clear local variables (arg_size...local_size) */
-    for (i = iseq->param.size, local_size = iseq->local_size; i < local_size; i++) {
+    for (i = iseq->body->param.size, local_size = iseq->body->local_size; i < local_size; i++) {
 	*sp++ = Qnil;
     }
 
     vm_push_frame(th, iseq, VM_FRAME_MAGIC_METHOD, ci->recv,
 		  VM_ENVVAL_BLOCK_PTR(ci->blockptr), (VALUE)me,
-		  iseq->iseq_encoded + ci->aux.opt_pc, sp, 0, iseq->stack_max);
+		  iseq->body->iseq_encoded + ci->aux.opt_pc, sp, 0, iseq->body->stack_max);
 
     cfp->sp = argv - 1 /* recv */;
     return Qundef;
@@ -1402,18 +1402,18 @@ vm_call_iseq_setup_tailcall(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_in
     sp++;
 
     /* copy arguments */
-    for (i=0; i < iseq->param.size; i++) {
+    for (i=0; i < iseq->body->param.size; i++) {
 	*sp++ = src_argv[i];
     }
 
     /* clear local variables */
-    for (i = 0; i < iseq->local_size - iseq->param.size; i++) {
+    for (i = 0; i < iseq->body->local_size - iseq->body->param.size; i++) {
 	*sp++ = Qnil;
     }
 
     vm_push_frame(th, iseq, VM_FRAME_MAGIC_METHOD | finish_flag,
 		  ci->recv, VM_ENVVAL_BLOCK_PTR(ci->blockptr), (VALUE)me,
-		  iseq->iseq_encoded + ci->aux.opt_pc, sp, 0, iseq->stack_max);
+		  iseq->body->iseq_encoded + ci->aux.opt_pc, sp, 0, iseq->body->stack_max);
 
     cfp->sp = sp_orig;
     return Qundef;
@@ -1869,8 +1869,9 @@ current_method_entry(rb_thread_t *th, rb_control_frame_t *cfp)
 {
     rb_control_frame_t *top_cfp = cfp;
 
-    if (cfp->iseq && cfp->iseq->type == ISEQ_TYPE_BLOCK) {
-	const rb_iseq_t *local_iseq = cfp->iseq->local_iseq;
+    if (cfp->iseq && cfp->iseq->body->type == ISEQ_TYPE_BLOCK) {
+	const rb_iseq_t *local_iseq = cfp->iseq->body->local_iseq;
+
 	do {
 	    cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
 	    if (RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th, cfp)) {
@@ -2306,7 +2307,7 @@ vm_invoke_block(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci
 {
     const rb_block_t *block = VM_CF_BLOCK_PTR(reg_cfp);
     const rb_iseq_t *iseq;
-    VALUE type = GET_ISEQ()->local_iseq->type;
+    VALUE type = GET_ISEQ()->body->local_iseq->body->type;
 
     if ((type != ISEQ_TYPE_METHOD && type != ISEQ_TYPE_CLASS) || block == 0) {
 	rb_vm_localjump_error("no block given (yield)", Qnil, 0);
@@ -2315,7 +2316,7 @@ vm_invoke_block(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci
 
     if (!RUBY_VM_IFUNC_P(iseq)) {
 	int opt_pc;
-	const int arg_size = iseq->param.size;
+	const int arg_size = iseq->body->param.size;
 	int is_lambda = block_proc_is_lambda(block->proc);
 	VALUE * const rsp = GET_SP() - ci->argc;
 
@@ -2327,9 +2328,9 @@ vm_invoke_block(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci
 		      is_lambda ? VM_FRAME_MAGIC_LAMBDA : VM_FRAME_MAGIC_BLOCK,
 		      block->self,
 		      VM_ENVVAL_PREV_EP_PTR(block->ep), 0,
-		      iseq->iseq_encoded + opt_pc,
+		      iseq->body->iseq_encoded + opt_pc,
 		      rsp + arg_size,
-		      iseq->local_size - arg_size, iseq->stack_max);
+		      iseq->body->local_size - arg_size, iseq->body->stack_max);
 
 	return Qundef;
     }

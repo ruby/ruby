@@ -15,12 +15,12 @@
 RUBY_SYMBOL_EXPORT_BEGIN
 
 /* compile.c */
-VALUE rb_iseq_compile_node(VALUE self, NODE *node);
+VALUE rb_iseq_compile_node(rb_iseq_t *iseq, NODE *node);
 int rb_iseq_translate_threaded_code(rb_iseq_t *iseq);
-VALUE *rb_iseq_original_iseq(rb_iseq_t *iseq);
-VALUE rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc,
-			     VALUE locals, VALUE args,
-			     VALUE exception, VALUE body);
+VALUE *rb_iseq_original_iseq(const rb_iseq_t *iseq);
+void rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc,
+			    VALUE locals, VALUE args,
+			    VALUE exception, VALUE body);
 
 /* iseq.c */
 void rb_iseq_add_mark_object(const rb_iseq_t *iseq, VALUE obj);
@@ -29,9 +29,18 @@ VALUE rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc);
 struct st_table *ruby_insn_make_insn_table(void);
 unsigned int rb_iseq_line_no(const rb_iseq_t *iseq, size_t pos);
 
-int rb_iseq_line_trace_each(VALUE iseqval, int (*func)(int line, rb_event_flag_t *events_ptr, void *d), void *data);
-VALUE rb_iseq_line_trace_all(VALUE iseqval);
-VALUE rb_iseq_line_trace_specify(VALUE iseqval, VALUE pos, VALUE set);
+int rb_iseqw_line_trace_each(VALUE iseqval, int (*func)(int line, rb_event_flag_t *events_ptr, void *d), void *data);
+VALUE rb_iseqw_line_trace_all(VALUE iseqval);
+VALUE rb_iseqw_line_trace_specify(VALUE iseqval, VALUE pos, VALUE set);
+VALUE rb_iseqw_new(const rb_iseq_t *iseq);
+const rb_iseq_t *rb_iseqw_to_iseq(VALUE iseqw);
+
+VALUE rb_iseq_path(const rb_iseq_t *iseq);
+VALUE rb_iseq_absolute_path(const rb_iseq_t *iseq);
+VALUE rb_iseq_label(const rb_iseq_t *iseq);
+VALUE rb_iseq_base_label(const rb_iseq_t *iseq);
+VALUE rb_iseq_first_lineno(const rb_iseq_t *iseq);
+VALUE rb_iseq_method_name(const rb_iseq_t *iseq);
 
 /* proc.c */
 const rb_iseq_t *rb_method_iseq(VALUE body);
@@ -63,7 +72,7 @@ struct iseq_catch_table_entry {
 	CATCH_TYPE_REDO   = INT2FIX(5),
 	CATCH_TYPE_NEXT   = INT2FIX(6)
     } type;
-    VALUE iseq;
+    const rb_iseq_t *iseq;
     unsigned int start;
     unsigned int end;
     unsigned int cont;
@@ -109,7 +118,7 @@ struct iseq_compile_data {
     struct iseq_label_data *start_label;
     struct iseq_label_data *end_label;
     struct iseq_label_data *redo_label;
-    VALUE current_block;
+    const rb_iseq_t *current_block;
     VALUE ensure_node;
     VALUE for_iseq;
     struct iseq_compile_data_ensure_node_stack *ensure_node_stack;

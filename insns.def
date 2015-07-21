@@ -337,7 +337,7 @@ putiseq
 ()
 (VALUE ret)
 {
-    ret = iseq->self;
+    ret = (VALUE)iseq;
 }
 
 /**
@@ -917,8 +917,8 @@ defineclass
     vm_push_frame(th, class_iseq, VM_FRAME_MAGIC_CLASS, klass,
 		  VM_ENVVAL_BLOCK_PTR(GET_BLOCK_PTR()),
 		  (VALUE)vm_cref_push(th, klass, NULL),
-		  class_iseq->iseq_encoded, GET_SP(),
-		  class_iseq->local_size, class_iseq->stack_max);
+		  class_iseq->body->iseq_encoded, GET_SP(),
+		  class_iseq->body->local_size, class_iseq->body->stack_max);
 
     RESTORE_REGS();
     NEXT_INSN();

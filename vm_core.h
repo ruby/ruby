@@ -233,9 +233,6 @@ typedef struct rb_call_info_struct {
 #define GetCoreDataFromValue(obj, type, ptr) Data_Get_Struct((obj), type, (ptr))
 #endif
 
-#define GetISeqPtr(obj, ptr) \
-  GetCoreDataFromValue((obj), rb_iseq_t, (ptr))
-
 typedef struct rb_iseq_location_struct {
     const VALUE path;
     const VALUE absolute_path;
@@ -244,7 +241,7 @@ typedef struct rb_iseq_location_struct {
     VALUE first_lineno; /* TODO: may be unsigned short */
 } rb_iseq_location_t;
 
-struct rb_iseq_struct {
+struct rb_iseq_body {
     /***************/
     /* static data */
     /***************/
@@ -260,9 +257,7 @@ struct rb_iseq_struct {
 	ISEQ_TYPE_MAIN,
 	ISEQ_TYPE_DEFINED_GUARD
     } type;              /* instruction sequence type */
-#if defined(WORDS_BIGENDIAN) && (SIZEOF_VALUE > SIZEOF_INT)
-    char dummy[SIZEOF_VALUE - SIZEOF_INT]; /* [Bug #10037][ruby-core:63721] */
-#endif
+
     int stack_max; /* for stack overflow check */
 
     rb_iseq_location_t location;
@@ -370,17 +365,22 @@ struct rb_iseq_struct {
     /* dynamic data */
     /****************/
 
-    VALUE self;
-
     /* misc */
     rb_num_t flip_cnt;
-
-    /* used at compile time */
-    struct iseq_compile_data *compile_data;
 
     /* original iseq, before encoding
      * used for debug/dump (TODO: union with compile_data) */
     VALUE *iseq;
+};
+
+/* T_IMEMO/iseq */
+/* typedef rb_iseq_t is in method.h */
+struct rb_iseq_struct {
+    VALUE flags;
+    struct iseq_compile_data *compile_data; /* used at compile time */
+    struct rb_iseq_body *body;
+    VALUE dummy1;
+    VALUE dummy2;
 };
 
 enum ruby_special_exceptions {
@@ -785,18 +785,18 @@ typedef enum {
 RUBY_SYMBOL_EXPORT_BEGIN
 
 /* node -> iseq */
-VALUE rb_iseq_new(NODE*, VALUE, VALUE, VALUE, VALUE, enum iseq_type);
-VALUE rb_iseq_new_top(NODE *node, VALUE name, VALUE path, VALUE absolute_path, VALUE parent);
-VALUE rb_iseq_new_main(NODE *node, VALUE path, VALUE absolute_path);
-VALUE rb_iseq_new_with_bopt(NODE*, VALUE, VALUE, VALUE, VALUE, VALUE, enum iseq_type, VALUE);
-VALUE rb_iseq_new_with_opt(NODE*, VALUE, VALUE, VALUE, VALUE, VALUE, enum iseq_type, const rb_compile_option_t*);
+rb_iseq_t *rb_iseq_new(NODE*, VALUE, VALUE, VALUE, const rb_iseq_t *parent, enum iseq_type);
+rb_iseq_t *rb_iseq_new_top(NODE *node, VALUE name, VALUE path, VALUE absolute_path, const rb_iseq_t *parent);
+rb_iseq_t *rb_iseq_new_main(NODE *node, VALUE path, VALUE absolute_path);
+rb_iseq_t *rb_iseq_new_with_bopt(NODE*, VALUE, VALUE, VALUE, VALUE, VALUE, enum iseq_type, VALUE);
+rb_iseq_t *rb_iseq_new_with_opt(NODE*, VALUE, VALUE, VALUE, VALUE, const rb_iseq_t *parent, enum iseq_type, const rb_compile_option_t*);
 
 /* src -> iseq */
-VALUE rb_iseq_compile(VALUE src, VALUE file, VALUE line);
-VALUE rb_iseq_compile_on_base(VALUE src, VALUE file, VALUE line, rb_block_t *base_block);
-VALUE rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE absolute_path, VALUE line, rb_block_t *base_block, VALUE opt);
+rb_iseq_t *rb_iseq_compile(VALUE src, VALUE file, VALUE line);
+rb_iseq_t *rb_iseq_compile_on_base(VALUE src, VALUE file, VALUE line, rb_block_t *base_block);
+rb_iseq_t *rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE absolute_path, VALUE line, rb_block_t *base_block, VALUE opt);
 
-VALUE rb_iseq_disasm(VALUE self);
+VALUE rb_iseq_disasm(const rb_iseq_t *iseq);
 int rb_iseq_disasm_insn(VALUE str, const VALUE *iseqval, size_t pos, const rb_iseq_t *iseq, VALUE child);
 const char *ruby_node_name(int node);
 
@@ -946,9 +946,8 @@ rb_block_t *rb_vm_control_frame_block_ptr(const rb_control_frame_t *cfp);
 #define RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th, cfp) \
   (!RUBY_VM_VALID_CONTROL_FRAME_P((cfp), RUBY_VM_END_CONTROL_FRAME(th)))
 
-#define RUBY_VM_IFUNC_P(ptr)        RB_TYPE_P((VALUE)(ptr), T_IMEMO)
-#define RUBY_VM_NORMAL_ISEQ_P(ptr) \
-  ((ptr) && !RUBY_VM_IFUNC_P(ptr))
+#define RUBY_VM_IFUNC_P(ptr)        (RB_TYPE_P((VALUE)(ptr), T_IMEMO) && imemo_type((VALUE)ptr) == imemo_ifunc)
+#define RUBY_VM_NORMAL_ISEQ_P(ptr)  (RB_TYPE_P((VALUE)(ptr), T_IMEMO) && imemo_type((VALUE)ptr) == imemo_iseq)
 
 #define RUBY_VM_GET_BLOCK_PTR_IN_CFP(cfp) ((rb_block_t *)(&(cfp)->self))
 #define RUBY_VM_GET_CFP_FROM_BLOCK_PTR(b) \
@@ -972,8 +971,8 @@ NORETURN(void rb_bug_context(const void *, const char *fmt, ...));
 
 /* functions about thread/vm execution */
 RUBY_SYMBOL_EXPORT_BEGIN
-VALUE rb_iseq_eval(VALUE iseqval);
-VALUE rb_iseq_eval_main(VALUE iseqval);
+VALUE rb_iseq_eval(const rb_iseq_t *iseq);
+VALUE rb_iseq_eval_main(const rb_iseq_t *iseq);
 RUBY_SYMBOL_EXPORT_END
 int rb_thread_method_id_and_class(rb_thread_t *th, ID *idp, VALUE *klassp);
 

@@ -1,3 +1,48 @@
+Wed Jul 22 07:24:18 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* make rb_iseq_t T_IMEMO object (type is imemo_iseq).
+
+	  All contents of previous rb_iseq_t is in rb_iseq_t::body.
+	  Remove rb_iseq_t::self because rb_iseq_t is an object.
+
+	  RubyVM::InstructionSequence is wrapper object points T_IMEMO/iseq.
+	  So RubyVM::ISeq.of(something) method returns different wrapper
+	  objects but they point the same T_IMEMO/iseq object.
+
+	  This patch is big, but most of difference is replacement of
+	  iseq->xxx to iseq->body->xxx.
+
+	  (previous) rb_iseq_t::compile_data is also located to
+	  rb_iseq_t::compile_data.
+	  It was moved from rb_iseq_body::compile_data.
+
+	  Now rb_iseq_t has empty two pointers.
+	  I will split rb_iseq_body data into static data and dynamic data.
+
+	* compile.c: rename some functions/macros.
+	  Now, we don't need to separate iseq and iseqval (only VALUE).
+
+	* eval.c (ruby_exec_internal): `n' is rb_iseq_t (T_IMEMO/iseq).
+
+	* ext/objspace/objspace.c (count_imemo_objects): count T_IMEMO/iseq.
+
+	* gc.c: check T_IMEMO/iseq.
+
+	* internal.h: add imemo_type::imemo_iseq.
+
+	* iseq.c: define RubyVM::InstructionSequnce as T_OBJECT.
+	  Methods are implemented by functions named iseqw_....
+
+	* load.c (rb_load_internal0): rb_iseq_new_top() returns
+	  rb_iseq_t (T_IMEMO/iesq).
+
+	* method.h (rb_add_method_iseq): accept rb_iseq_t (T_IMEMO/iseq).
+
+	* vm_core.h (GetISeqPtr): removed because it is not T_DATA now.
+
+	* vm_core.h (struct rb_iseq_body): remove padding for
+	  [Bug #10037][ruby-core:63721].
+
 Wed Jul 22 07:15:33 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* ext/objspace/objspace.c (total_i): no need to skip singleton classes.

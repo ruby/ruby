@@ -546,6 +546,7 @@ enum imemo_type {
     imemo_ifunc = 4,
     imemo_memo = 5,
     imemo_ment = 6,
+    imemo_iseq = 7,
     imemo_mask = 0x07
 };
 
@@ -853,14 +854,6 @@ void rb_stdio_set_default_encoding(void);
 void rb_write_error_str(VALUE mesg);
 VALUE rb_io_flush_raw(VALUE, int);
 size_t rb_io_memsize(const rb_io_t *);
-
-/* iseq.c */
-VALUE rb_iseq_path(VALUE iseqval);
-VALUE rb_iseq_absolute_path(VALUE iseqval);
-VALUE rb_iseq_label(VALUE iseqval);
-VALUE rb_iseq_base_label(VALUE iseqval);
-VALUE rb_iseq_first_lineno(VALUE iseqval);
-VALUE rb_iseq_method_name(VALUE self);
 
 /* load.c */
 VALUE rb_get_load_path(void);
