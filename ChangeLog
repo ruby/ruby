@@ -1,3 +1,7 @@
+Tue Jul 21 13:36:54 2015  yuuji.yaginuma  <yuuji.yaginuma@gmail.com>
+
+	* lib/optparse.rb (complete): [DOC] fix typo.  [Fix GH-973]
+
 Tue Jul 21 05:20:21 2015  Eric Wong  <e@80x24.org>
 
 	* io.c (nogvl_wait_for_single_fd): new function for Linux
