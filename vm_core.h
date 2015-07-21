@@ -202,7 +202,7 @@ typedef struct rb_call_info_struct {
     unsigned int flag;
     int orig_argc;
     const rb_iseq_t *blockiseq;
-    rb_call_info_kw_arg_t *kw_arg;
+    const rb_call_info_kw_arg_t *kw_arg;
 
     /* inline cache: keys */
     rb_serial_t method_state;
@@ -550,11 +550,11 @@ typedef struct rb_vm_struct {
 typedef struct rb_control_frame_struct {
     VALUE *pc;			/* cfp[0] */
     VALUE *sp;			/* cfp[1] */
-    rb_iseq_t *iseq;		/* cfp[2] */
+    const rb_iseq_t *iseq;	/* cfp[2] */
     VALUE flag;			/* cfp[3] */
     VALUE self;			/* cfp[4] / block[0] */
     VALUE *ep;			/* cfp[5] / block[1] */
-    rb_iseq_t *block_iseq;	/* cfp[6] / block[2] */
+    const rb_iseq_t *block_iseq;/* cfp[6] / block[2] */
     VALUE proc;			/* cfp[7] / block[3] */
 
 #if VM_DEBUG_BP_CHECK

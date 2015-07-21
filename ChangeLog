@@ -1,3 +1,14 @@
+Wed Jul 22 06:37:54 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h: constify rb_call_info_t::kw_arg,
+	  rb_control_frame_t::iseq and rb_control_frame_t::block_iseq.
+
+	* iseq.c (iseq_free): catch up this fix.
+
+	* vm.c: ditto.
+
+	* vm_dump.c: ditto.
+
 Wed Jul 22 06:25:45 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h: constify rb_call_info_t::blockiseq and rb_block_::iseq.
