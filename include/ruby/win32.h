@@ -35,6 +35,9 @@ extern "C++" {			/* template without extern "C++" */
 #if !defined(_WIN64) && !defined(WIN32)
 #define WIN32
 #endif
+#if defined(_MSC_VER) && _MSC_VER <= 1200
+#include <windows.h>
+#endif
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #if !defined(_MSC_VER) || _MSC_VER >= 1400

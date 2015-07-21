@@ -66,6 +66,9 @@
 #endif
 #include <unistd.h>
 #else
+#if defined(_MSC_VER) && _MSC_VER <= 1200
+#include <windows.h>
+#endif
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <io.h>
