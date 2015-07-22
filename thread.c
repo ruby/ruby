@@ -3694,6 +3694,7 @@ rb_wait_for_single_fd(int fd, int events, struct timeval *tv)
 
 	RUBY_VM_CHECK_INTS_BLOCKING(th);
     } while (result < 0 && retryable(errno = lerrno) && poll_update());
+    if (result < 0) return -1;
 
     if (fds.revents & POLLNVAL) {
 	errno = EBADF;
