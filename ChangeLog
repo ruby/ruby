@@ -1,3 +1,8 @@
+Thu Jul 23 04:03:03 2015  Aaron Patterson <tenderlove@ruby-lang.org>
+
+	* ext/openssl/ossl_ssl.c: fix tests by not setting the instance
+	  variable on the frozen ssl instance.
+
 Thu Jul 23 03:32:26 2015  Aaron Patterson <tenderlove@ruby-lang.org>
 
 	* ext/openssl/ossl_ssl.c: add ECDH callback support. [Feature #11356]
