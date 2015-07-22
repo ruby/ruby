@@ -251,29 +251,11 @@ struct rb_iseq_constant_body {
     } type;              /* instruction sequence type */
 
     int stack_max; /* for stack overflow check */
-
-    rb_iseq_location_t location;
-
-    VALUE *iseq_encoded; /* encoded iseq (insn addr and operands) */
-    unsigned int iseq_size;
-    unsigned int line_info_size;
-
-    const VALUE mark_ary;     /* Array: includes operands which should be GC marked */
-
-    /* insn info, must be freed */
-    struct iseq_line_info_entry *line_info_table;
-
-    ID *local_table;		/* must free */
-    int local_table_size;
-
     /* sizeof(vars) + 1 */
     int local_size;
 
-    union iseq_inline_storage_entry *is_entries;
-    int is_size;
-
-    int callinfo_size;
-    rb_call_info_t *callinfo_entries;
+    unsigned int iseq_size;
+    VALUE *iseq_encoded; /* encoded iseq (insn addr and operands) */
 
     /**
      * parameter information
@@ -345,12 +327,28 @@ struct rb_iseq_constant_body {
 	} *keyword;
     } param;
 
+    rb_iseq_location_t location;
+
+    /* insn info, must be freed */
+    struct iseq_line_info_entry *line_info_table;
+
+    ID *local_table;		/* must free */
+
     /* catch table */
     struct iseq_catch_table *catch_table;
 
     /* for child iseq */
     const struct rb_iseq_struct *parent_iseq;
     struct rb_iseq_struct *local_iseq; /* local_iseq->flip_cnt can be modified */
+
+    union iseq_inline_storage_entry *is_entries;
+    rb_call_info_t *callinfo_entries;
+    const VALUE mark_ary;     /* Array: includes operands which should be GC marked */
+
+    int local_table_size;
+    int is_size;
+    int callinfo_size;
+    unsigned int line_info_size;
 };
 
 struct rb_iseq_variable_body {
