@@ -152,11 +152,7 @@ enum ruby_vm_throw_flags {
 };
 
 /* iseq data type */
-
-struct iseq_compile_data_ensure_node_stack;
-
 typedef struct rb_compile_option_struct rb_compile_option_t;
-
 
 struct iseq_inline_cache_entry {
     rb_serial_t ic_serial;
