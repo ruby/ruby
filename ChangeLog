@@ -1,3 +1,8 @@
+Wed Jul 22 09:45:31 2015  Maksim Sitnikov  <sitnikovme@undev.ru>
+
+	* numeric.c (num_coerce): [DOC] fix doc for Numeric#coerce,
+	  missing '+'.  [Fix GH-974]
+
 Wed Jul 22 07:24:18 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* make rb_iseq_t T_IMEMO object (type is imemo_iseq).

@@ -215,7 +215,7 @@ rb_num_negative_p(VALUE num)
  *  call-seq:
  *     num.coerce(numeric)  ->  array
  *
- *  If a +numeric is the same type as +num+, returns an array containing
+ *  If a +numeric+ is the same type as +num+, returns an array containing
  *  +numeric+ and +num+. Otherwise, returns an array with both a +numeric+ and
  *  +num+ represented as Float objects.
  *
