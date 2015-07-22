@@ -92,7 +92,7 @@ rb_iseq_free(const rb_iseq_t *iseq)
 	    ruby_xfree(iseq->body->param.keyword);
 	}
 	compile_data_free(iseq->compile_data);
-	ruby_xfree(iseq->body->iseq);
+	ruby_xfree(iseq->variable_body->iseq);
 	ruby_xfree(iseq->body);
     }
     RUBY_FREE_LEAVE("iseq");
@@ -106,14 +106,17 @@ rb_iseq_mark(const rb_iseq_t *iseq)
     RUBY_GC_INFO("%s @ %s\n", RSTRING_PTR(iseq->body->location.label), RSTRING_PTR(iseq->body->location.path));
 
     if (iseq->body) {
-	const struct rb_iseq_body *body = iseq->body;
+	const struct rb_iseq_constant_body *body = iseq->body;
 
 	RUBY_MARK_UNLESS_NULL(body->mark_ary);
 	RUBY_MARK_UNLESS_NULL(body->location.label);
 	RUBY_MARK_UNLESS_NULL(body->location.base_label);
 	RUBY_MARK_UNLESS_NULL(body->location.path);
 	RUBY_MARK_UNLESS_NULL(body->location.absolute_path);
-	RUBY_MARK_UNLESS_NULL(body->coverage);
+    }
+
+    if (iseq->variable_body) {
+	RUBY_MARK_UNLESS_NULL(iseq->variable_body->coverage);
     }
 
     if (iseq->compile_data != 0) {
@@ -173,7 +176,8 @@ static rb_iseq_t *
 iseq_alloc(void)
 {
     rb_iseq_t *iseq = (rb_iseq_t *)rb_imemo_new(imemo_iseq, 0, 0, 0, 0);
-    iseq->body = ZALLOC(struct rb_iseq_body);
+    iseq->body = ZALLOC(struct rb_iseq_constant_body);
+    iseq->variable_body = ZALLOC(struct rb_iseq_variable_body);
     return iseq;
 }
 
@@ -264,13 +268,13 @@ prepare_iseq_build(rb_iseq_t *iseq,
     iseq->compile_data->option = option;
     iseq->compile_data->last_coverable_line = -1;
 
-    RB_OBJ_WRITE(iseq, &iseq->body->coverage, Qfalse);
+    RB_OBJ_WRITE(iseq, &iseq->variable_body->coverage, Qfalse);
 
     if (!GET_THREAD()->parse_in_eval) {
 	VALUE coverages = rb_get_coverages();
 	if (RTEST(coverages)) {
-	    RB_OBJ_WRITE(iseq, &iseq->body->coverage, rb_hash_lookup(coverages, path));
-	    if (NIL_P(iseq->body->coverage)) RB_OBJ_WRITE(iseq, &iseq->body->coverage, Qfalse);
+	    RB_OBJ_WRITE(iseq, &iseq->variable_body->coverage, rb_hash_lookup(coverages, path));
+	    if (NIL_P(iseq->variable_body->coverage)) RB_OBJ_WRITE(iseq, &iseq->variable_body->coverage, Qfalse);
 	}
     }
 

@@ -1,3 +1,16 @@
+Wed Jul 22 19:52:45 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h: separate rb_iseq_body into rb_iseq_constant_body and
+	  rb_iseq_variable_body (rb_iseq_t::variable_body).
+
+	  rb_iseq_variable_body can be modified after compilation.
+
+	* compile.c: use rb_iseq_t::variable_body.
+
+	* iseq.c: ditto.
+
+	* thread.c: ditto.
+
 Wed Jul 22 17:50:35 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/matrix/eigenvalue_decomposition.rb: refine code style.
