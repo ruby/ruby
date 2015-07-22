@@ -7813,7 +7813,7 @@ parse_ident(struct parser_params *parser, int c, int cmd_state)
 	    enum lex_state_e state = lex_state;
 	    lex_state = kw->state;
 	    if (IS_lex_state_for(state, EXPR_FNAME)) {
-		set_yylval_name(rb_intern(kw->name));
+		set_yylval_name(rb_intern2(tok(), toklen()));
 		return kw->id[0];
 	    }
 	    if (IS_lex_state(EXPR_BEG)) {
