@@ -551,7 +551,7 @@ no-fake -fake: PHONY
 
 $(arch)-fake.rb: $(srcdir)/template/fake.rb.in $(srcdir)/tool/generic_erb.rb version.i
 	$(ECHO) generating $@
-	$(Q)$(EXEC) $(BOOTSTRAPRUBY) "$(srcdir)/tool/generic_erb.rb" -c -o $@ "$(srcdir)/template/fake.rb.in" \
+	$(Q)$(exec) $(BOOTSTRAPRUBY) "$(srcdir)/tool/generic_erb.rb" -c -o $@ "$(srcdir)/template/fake.rb.in" \
 		i=version.i srcdir="$(srcdir)" BASERUBY="$(BASERUBY)"
 
 # .i really doesn't depend on .o, just ensure newer than headers which
@@ -561,29 +561,29 @@ version.i: version.$(OBJEXT)
 btest: $(TEST_RUNNABLE)-btest
 no-btest: PHONY
 yes-btest: fake miniruby$(EXEEXT) PHONY
-	$(Q)$(EXEC) $(BOOTSTRAPRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(BTESTRUBY) $(RUN_OPTS)" $(OPTS) $(TESTOPTS)
+	$(Q)$(exec) $(BOOTSTRAPRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(BTESTRUBY) $(RUN_OPTS)" $(OPTS) $(TESTOPTS)
 
 btest-ruby: $(TEST_RUNNABLE)-btest-ruby
 no-btest-ruby: PHONY
 yes-btest-ruby: prog PHONY
-	$(Q)$(EXEC) $(RUNRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(PROGRAM) -I$(srcdir)/lib $(RUN_OPTS)" -q $(OPTS) $(TESTOPTS)
+	$(Q)$(exec) $(RUNRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(PROGRAM) -I$(srcdir)/lib $(RUN_OPTS)" -q $(OPTS) $(TESTOPTS)
 
 test-sample: $(TEST_RUNNABLE)-test-sample
 no-test-sample: PHONY
 yes-test-sample: prog PHONY
-	$(Q)$(EXEC) $(RUNRUBY) "$(srcdir)/tool/rubytest.rb" --run-opt=$(RUN_OPTS) $(OPTS) $(TESTOPTS)
+	$(Q)$(exec) $(RUNRUBY) "$(srcdir)/tool/rubytest.rb" --run-opt=$(RUN_OPTS) $(OPTS) $(TESTOPTS)
 
 test-knownbugs: test-knownbug
 test-knownbug: $(TEST_RUNNABLE)-test-knownbug
 no-test-knownbug: PHONY
 yes-test-knownbug: prog PHONY
-	-$(EXEC) $(RUNRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(PROGRAM) $(RUN_OPTS)" $(OPTS) $(TESTOPTS) $(srcdir)/KNOWNBUGS.rb
+	-$(exec) $(RUNRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(PROGRAM) $(RUN_OPTS)" $(OPTS) $(TESTOPTS) $(srcdir)/KNOWNBUGS.rb
 
 test: test-sample btest-ruby test-knownbug
 
 test-all: $(TEST_RUNNABLE)-test-all
 yes-test-all: prog PHONY
-	$(Q)$(EXEC) $(RUNRUBY) "$(srcdir)/test/runner.rb" --ruby="$(RUNRUBY)" $(TEST_EXCLUDES) $(TESTOPTS) $(TESTS)
+	$(Q)$(exec) $(RUNRUBY) "$(srcdir)/test/runner.rb" --ruby="$(RUNRUBY)" $(TEST_EXCLUDES) $(TESTOPTS) $(TESTS)
 TESTS_BUILD = mkmf
 no-test-all: PHONY
 	$(MINIRUBY) -I"$(srcdir)/lib" "$(srcdir)/test/runner.rb" $(TESTOPTS) $(TESTS_BUILD)
