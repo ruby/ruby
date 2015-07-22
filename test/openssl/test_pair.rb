@@ -283,6 +283,45 @@ module OpenSSL::TestPairM
     serv.close if serv && !serv.closed?
   end
 
+  def test_ecdh_callback
+    called = false
+    ctx2 = OpenSSL::SSL::SSLContext.new
+    ctx2.ciphers = "ECDH"
+    ctx2.tmp_ecdh_callback = ->(*args) {
+      called = true
+      OpenSSL::PKey::EC.new "prime256v1"
+    }
+
+    sock1, sock2 = tcp_pair
+
+    s2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx2)
+    ctx1 = OpenSSL::SSL::SSLContext.new
+    ctx1.ciphers = "ECDH"
+
+    s1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx1)
+    th = Thread.new do
+      begin
+        rv = s1.connect_nonblock(exception: false)
+        case rv
+        when :wait_writable
+          IO.select(nil, [s1], nil, 5)
+        when :wait_readable
+          IO.select([s1], nil, nil, 5)
+        end
+      end until rv == s1
+    end
+
+    accepted = s2.accept
+
+    assert called, 'ecdh callback should be called'
+  ensure
+    s1.close if s1
+    s2.close if s2
+    sock1.close if sock1
+    sock2.close if sock2
+    accepted.close if accepted.respond_to?(:close)
+  end
+
   def test_connect_accept_nonblock_no_exception
     ctx2 = OpenSSL::SSL::SSLContext.new
     ctx2.ciphers = "ADH"

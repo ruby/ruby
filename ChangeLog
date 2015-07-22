@@ -1,3 +1,9 @@
+Thu Jul 23 03:32:26 2015  Aaron Patterson <tenderlove@ruby-lang.org>
+
+	* ext/openssl/ossl_ssl.c: add ECDH callback support. [Feature #11356]
+
+	* test/openssl/test_pair.rb: test for ECDH callback support
+
 Thu Jul 23 03:29:49 2015  Aaron Patterson <tenderlove@ruby-lang.org>
 
 	* ext/openssl/ossl_ssl.c: add ALPN support. [Feature #9390]
