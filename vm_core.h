@@ -241,11 +241,7 @@ typedef struct rb_iseq_location_struct {
     VALUE first_lineno; /* TODO: may be unsigned short */
 } rb_iseq_location_t;
 
-struct rb_iseq_body {
-    /***************/
-    /* static data */
-    /***************/
-
+struct rb_iseq_constant_body {
     enum iseq_type {
 	ISEQ_TYPE_TOP,
 	ISEQ_TYPE_METHOD,
@@ -267,7 +263,6 @@ struct rb_iseq_body {
     unsigned int line_info_size;
 
     const VALUE mark_ary;     /* Array: includes operands which should be GC marked */
-    const VALUE coverage;     /* coverage array */
 
     /* insn info, must be freed */
     struct iseq_line_info_entry *line_info_table;
@@ -360,12 +355,11 @@ struct rb_iseq_body {
     /* for child iseq */
     const struct rb_iseq_struct *parent_iseq;
     struct rb_iseq_struct *local_iseq; /* local_iseq->flip_cnt can be modified */
+};
 
-    /****************/
-    /* dynamic data */
-    /****************/
+struct rb_iseq_variable_body {
+    const VALUE coverage;     /* coverage array */
 
-    /* misc */
     rb_num_t flip_cnt;
 
     /* original iseq, before encoding
@@ -378,8 +372,8 @@ struct rb_iseq_body {
 struct rb_iseq_struct {
     VALUE flags;
     struct iseq_compile_data *compile_data; /* used at compile time */
-    struct rb_iseq_body *body;
-    VALUE dummy1;
+    struct rb_iseq_constant_body *body;
+    struct rb_iseq_variable_body *variable_body;
     VALUE dummy2;
 };
 

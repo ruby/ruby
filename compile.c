@@ -225,9 +225,9 @@ r_value(VALUE value)
 
 #define ADD_TRACE(seq, line, event) \
   do { \
-      if ((event) == RUBY_EVENT_LINE && iseq->body->coverage && \
+      if ((event) == RUBY_EVENT_LINE && iseq->variable_body->coverage && \
 	  (line) != iseq->compile_data->last_coverable_line) { \
-	  RARRAY_ASET(iseq->body->coverage, (line) - 1, INT2FIX(0)); \
+	  RARRAY_ASET(iseq->variable_body->coverage, (line) - 1, INT2FIX(0)); \
 	  iseq->compile_data->last_coverable_line = (line); \
 	  ADD_INSN1((seq), (line), trace, INT2FIX(RUBY_EVENT_COVERAGE)); \
       } \
@@ -608,26 +608,26 @@ rb_vm_insn_addr2insn(const void *addr) /* cold path */
 VALUE *
 rb_iseq_original_iseq(const rb_iseq_t *iseq) /* cold path */
 {
-    if (iseq->body->iseq) return iseq->body->iseq;
+    if (iseq->variable_body->iseq) return iseq->variable_body->iseq;
 
-    iseq->body->iseq = ALLOC_N(VALUE, iseq->body->iseq_size);
+    iseq->variable_body->iseq = ALLOC_N(VALUE, iseq->body->iseq_size);
 
-    MEMCPY(iseq->body->iseq, iseq->body->iseq_encoded, VALUE, iseq->body->iseq_size);
+    MEMCPY(iseq->variable_body->iseq, iseq->body->iseq_encoded, VALUE, iseq->body->iseq_size);
 
 #if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
     {
 	unsigned int i;
 
 	for (i = 0; i < iseq->body->iseq_size; /* */ ) {
-	    const void *addr = (const void *)iseq->body->iseq[i];
+	    const void *addr = (const void *)iseq->variable_body->iseq[i];
 	    const int insn = rb_vm_insn_addr2insn(addr);
 
-	    iseq->body->iseq[i] = insn;
+	    iseq->variable_body->iseq[i] = insn;
 	    i += insn_len(insn);
 	}
     }
 #endif
-    return iseq->body->iseq;
+    return iseq->variable_body->iseq;
 }
 
 /*********************************************/
@@ -5299,7 +5299,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	rb_num_t cnt;
 	VALUE key;
 
-	cnt = local_iseq->body->flip_cnt++ + VM_SVAR_FLIPFLOP_START;
+	cnt = local_iseq->variable_body->flip_cnt++ + VM_SVAR_FLIPFLOP_START;
 	key = INT2FIX(cnt);
 
 	ADD_INSN2(ret, line, getspecial, key, INT2FIX(0));
