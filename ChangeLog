@@ -1,3 +1,8 @@
+Wed Jul 22 19:57:47 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h: remove unused declaration of
+	  iseq_compile_data_ensure_node_stack.
+
 Wed Jul 22 19:52:45 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h: separate rb_iseq_body into rb_iseq_constant_body and
