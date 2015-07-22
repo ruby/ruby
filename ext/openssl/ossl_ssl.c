@@ -707,7 +707,6 @@ ssl_alpn_select_cb(SSL *ssl, const unsigned char **out, unsigned char *outlen, c
     selected = rb_funcall(cb, rb_intern("call"), 1, protocols);
     *out = (unsigned char *) StringValuePtr(selected);
     *outlen = RSTRING_LENINT(selected);
-    rb_iv_set(sslctx_obj, "@_alpn_selected", selected);
 
     return SSL_TLSEXT_ERR_OK;
 }
