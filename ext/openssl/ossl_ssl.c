@@ -65,6 +65,7 @@ static VALUE eSSLErrorWaitWritable;
 #define ossl_sslctx_get_cert_store(o)    	rb_iv_get((o),"@cert_store")
 #define ossl_sslctx_get_extra_cert(o)    	rb_iv_get((o),"@extra_chain_cert")
 #define ossl_sslctx_get_client_cert_cb(o) 	rb_iv_get((o),"@client_cert_cb")
+#define ossl_sslctx_get_tmp_ecdh_cb(o)          rb_iv_get((o),"@tmp_ecdh_callback")
 #define ossl_sslctx_get_tmp_dh_cb(o)     	rb_iv_get((o),"@tmp_dh_callback")
 #define ossl_sslctx_get_sess_id_ctx(o)   	rb_iv_get((o),"@session_id_context")
 
@@ -74,6 +75,7 @@ static const char *ossl_sslctx_attrs[] = {
     "verify_callback", "options", "cert_store", "extra_chain_cert",
     "client_cert_cb", "tmp_dh_callback", "session_id_context",
     "session_get_cb", "session_new_cb", "session_remove_cb",
+    "tmp_ecdh_callback",
 #ifdef HAVE_SSL_SET_TLSEXT_HOST_NAME
     "servername_cb",
 #endif
@@ -89,6 +91,7 @@ static const char *ossl_sslctx_attrs[] = {
 #define ossl_ssl_get_x509(o)         rb_iv_get((o),"@x509")
 #define ossl_ssl_get_key(o)          rb_iv_get((o),"@key")
 #define ossl_ssl_get_tmp_dh(o)       rb_iv_get((o),"@tmp_dh")
+#define ossl_ssl_get_tmp_ecdh(o)     rb_iv_get((o),"@tmp_ecdh")
 
 #define ossl_ssl_set_io(o,v)         rb_iv_set((o),"@io",(v))
 #define ossl_ssl_set_ctx(o,v)        rb_iv_set((o),"@context",(v))
@@ -96,6 +99,7 @@ static const char *ossl_sslctx_attrs[] = {
 #define ossl_ssl_set_x509(o,v)       rb_iv_set((o),"@x509",(v))
 #define ossl_ssl_set_key(o,v)        rb_iv_set((o),"@key",(v))
 #define ossl_ssl_set_tmp_dh(o,v)     rb_iv_set((o),"@tmp_dh",(v))
+#define ossl_ssl_set_tmp_ecdh(o,v)   rb_iv_set((o),"@tmp_ecdh",(v))
 
 static const char *ossl_ssl_attr_readers[] = { "io", "context", };
 static const char *ossl_ssl_attrs[] = {
@@ -152,6 +156,7 @@ int ossl_ssl_ex_store_p;
 int ossl_ssl_ex_ptr_idx;
 int ossl_ssl_ex_client_cert_cb_idx;
 int ossl_ssl_ex_tmp_dh_callback_idx;
+int ossl_ssl_ex_tmp_ecdh_callback_idx;
 
 static void
 ossl_sslctx_free(void *ptr)
@@ -336,6 +341,41 @@ ossl_default_tmp_dh_callback(SSL *ssl, int is_export, int keylength)
     return NULL;
 }
 #endif /* OPENSSL_NO_DH */
+
+#if !defined(OPENSSL_NO_EC)
+static VALUE
+ossl_call_tmp_ecdh_callback(VALUE args)
+{
+    SSL *ssl;
+    VALUE cb, ecdh;
+    EVP_PKEY *pkey;
+
+    GetSSL(rb_ary_entry(args, 0), ssl);
+    cb = (VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_tmp_ecdh_callback_idx);
+    if (NIL_P(cb)) return Qfalse;
+    ecdh = rb_apply(cb, rb_intern("call"), args);
+    pkey = GetPKeyPtr(ecdh);
+    if (EVP_PKEY_type(pkey->type) != EVP_PKEY_EC) return Qfalse;
+    ossl_ssl_set_tmp_ecdh(rb_ary_entry(args, 0), ecdh);
+
+    return Qtrue;
+}
+
+static EC_KEY*
+ossl_tmp_ecdh_callback(SSL *ssl, int is_export, int keylength)
+{
+    VALUE args, success, rb_ssl;
+
+    rb_ssl = (VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx);
+
+    args = rb_ary_new_from_args(3, rb_ssl, INT2FIX(is_export), INT2FIX(keylength));
+
+    success = rb_protect(ossl_call_tmp_ecdh_callback, args, NULL);
+    if (!RTEST(success)) return NULL;
+
+    return GetPKeyPtr(ossl_ssl_get_tmp_ecdh(rb_ssl))->pkey.ec;
+}
+#endif
 
 static int
 ossl_ssl_verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
@@ -719,6 +759,13 @@ ossl_sslctx_setup(VALUE self)
 	SSL_CTX_set_tmp_dh_callback(ctx, ossl_default_tmp_dh_callback);
     }
 #endif
+
+#if !defined(OPENSSL_NO_EC)
+    if (RTEST(ossl_sslctx_get_tmp_ecdh_cb(self))){
+	SSL_CTX_set_tmp_ecdh_callback(ctx, ossl_tmp_ecdh_callback);
+    }
+#endif
+
     SSL_CTX_set_ex_data(ctx, ossl_ssl_ex_ptr_idx, (void*)self);
 
     val = ossl_sslctx_get_cert_store(self);
@@ -1275,6 +1322,8 @@ ossl_ssl_setup(VALUE self)
 	SSL_set_ex_data(ssl, ossl_ssl_ex_client_cert_cb_idx, (void*)cb);
 	cb = ossl_sslctx_get_tmp_dh_cb(v_ctx);
 	SSL_set_ex_data(ssl, ossl_ssl_ex_tmp_dh_callback_idx, (void*)cb);
+	cb = ossl_sslctx_get_tmp_ecdh_cb(v_ctx);
+	SSL_set_ex_data(ssl, ossl_ssl_ex_tmp_ecdh_callback_idx, (void*)cb);
 	SSL_set_info_callback(ssl, ssl_info_cb);
     }
 
@@ -1990,6 +2039,8 @@ Init_ossl_ssl(void)
 	SSL_get_ex_new_index(0,(void *)"ossl_ssl_ex_client_cert_cb_idx",0,0,0);
     ossl_ssl_ex_tmp_dh_callback_idx =
 	SSL_get_ex_new_index(0,(void *)"ossl_ssl_ex_tmp_dh_callback_idx",0,0,0);
+    ossl_ssl_ex_tmp_ecdh_callback_idx =
+	SSL_get_ex_new_index(0,(void *)"ossl_ssl_ex_tmp_ecdh_callback_idx",0,0,0);
 
     /* Document-module: OpenSSL::SSL
      *
@@ -2113,6 +2164,18 @@ Init_ossl_ssl(void)
     rb_attr(cSSLContext, rb_intern("client_cert_cb"), 1, 1, Qfalse);
 
     /*
+     * A callback invoked when ECDH parameters are required.
+     *
+     * The callback is invoked with the Session for the key exchange, an
+     * flag indicating the use of an export cipher and the keylength
+     * required.
+     *
+     * The callback must return an OpenSSL::PKey::EC instance of the correct
+     * key length.
+     */
+    rb_attr(cSSLContext, rb_intern("tmp_ecdh_callback"), 1, 1, Qfalse);
+
+     /*
      * A callback invoked when DH parameters are required.
      *
      * The callback is invoked with the Session for the key exchange, an
