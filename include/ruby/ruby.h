@@ -41,8 +41,15 @@ extern "C" {
 #ifndef NOINLINE
 # define NOINLINE(x) x
 #endif
+#ifndef ASSUME
+# ifdef UNREACHABLE
+#   define ASSUME(x) (LIKELY(!!(x)) ? (void)0 : UNREACHABLE)
+# else
+#   define ASSUME(x) ((void)0)
+# endif
+#endif
 #ifndef UNREACHABLE
-# define UNREACHABLE		/* unreachable */
+# define UNREACHABLE ((void)0)	/* unreachable */
 #endif
 
 #ifdef __GNUC__
