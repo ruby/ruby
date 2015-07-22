@@ -1,3 +1,9 @@
+Wed Jul 22 23:44:17 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_reverse): reversed string is not a substring,
+	  and should not set coderange of the original string.
+	  [ruby-dev:49189] [Bug #11387]
+
 Wed Jul 22 20:17:51 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h: modify layout of rb_iseq_constant_body.

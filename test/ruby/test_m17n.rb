@@ -1142,7 +1142,12 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_reverse
-    assert_equal(u("\xf0jihgfedcba"), u("abcdefghij\xf0").reverse)
+    bug11387 = '[ruby-dev:49189] [Bug #11387]'
+    s1 = u("abcdefghij\xf0")
+    s2 = s1.reverse
+    assert_not_predicate(s1, :valid_encoding?, bug11387)
+    assert_equal(u("\xf0jihgfedcba"), s2)
+    assert_not_predicate(s2, :valid_encoding?, bug11387)
   end
 
   def test_reverse_bang
