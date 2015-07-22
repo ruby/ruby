@@ -8,7 +8,7 @@ Wed Jul 22 20:17:51 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h: modify layout of rb_iseq_constant_body.
 
-	  Move frequent accesssing fields to upper part.
+	  Move frequent accessing fields to upper part.
 
 Wed Jul 22 19:57:47 2015  Koichi Sasada  <ko1@atdot.net>
 
@@ -36,7 +36,7 @@ Wed Jul 22 17:50:35 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 Wed Jul 22 15:48:47 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* test/ruby/test_range.rb: Add test case for Range#end with
-	  exclude_end true case. [fix GH-968] Pach by @yui-knk
+	  exclude_end true case. [fix GH-968] Patch by @yui-knk
 
 Wed Jul 22 09:45:31 2015  Maksim Sitnikov  <sitnikovme@undev.ru>
 
@@ -75,7 +75,7 @@ Wed Jul 22 07:24:18 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* internal.h: add imemo_type::imemo_iseq.
 
-	* iseq.c: define RubyVM::InstructionSequnce as T_OBJECT.
+	* iseq.c: define RubyVM::InstructionSequence as T_OBJECT.
 	  Methods are implemented by functions named iseqw_....
 
 	* load.c (rb_load_internal0): rb_iseq_new_top() returns
