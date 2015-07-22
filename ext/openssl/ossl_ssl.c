@@ -600,13 +600,13 @@ ssl_npn_encode_protocol_i(VALUE cur, VALUE encoded)
     return Qnil;
 }
 
-static void
-ssl_npn_encode_protocols(VALUE sslctx, VALUE protocols)
+static VALUE
+ssl_encode_npn_protocols(VALUE protocols)
 {
     VALUE encoded = rb_str_new2("");
     rb_iterate(rb_each, protocols, ssl_npn_encode_protocol_i, encoded);
     StringValueCStr(encoded);
-    rb_iv_set(sslctx, "@_protocols", encoded);
+    return encoded;
 }
 
 static int
@@ -645,6 +645,34 @@ ssl_npn_select_cb(SSL *s, unsigned char **out, unsigned char *outlen, const unsi
 
     return SSL_TLSEXT_ERR_OK;
 }
+
+#ifdef HAVE_SSL_CTX_SET_ALPN_SELECT_CB
+static int
+ssl_alpn_select_cb(SSL *ssl, const unsigned char **out, unsigned char *outlen, const unsigned char *in, unsigned int inlen, void *arg)
+{
+    int i = 0;
+    VALUE sslctx_obj, cb, protocols, selected;
+
+    sslctx_obj = (VALUE) arg;
+    cb = rb_iv_get(sslctx_obj, "@alpn_select_cb");
+    protocols = rb_ary_new();
+
+    /* The format is len_1|proto_1|...|len_n|proto_n\0 */
+    while (in[i]) {
+	VALUE protocol = rb_str_new((const char *) &in[i + 1], in[i]);
+	rb_ary_push(protocols, protocol);
+	i += in[i] + 1;
+    }
+
+    selected = rb_funcall(cb, rb_intern("call"), 1, protocols);
+    *out = (unsigned char *) StringValuePtr(selected);
+    *outlen = RSTRING_LENINT(selected);
+    rb_iv_set(sslctx_obj, "@_alpn_selected", selected);
+
+    return SSL_TLSEXT_ERR_OK;
+}
+#endif
+
 #endif
 
 /* This function may serve as the entry point to support further
@@ -781,13 +809,26 @@ ossl_sslctx_setup(VALUE self)
 #ifdef HAVE_OPENSSL_NPN_NEGOTIATED
     val = rb_iv_get(self, "@npn_protocols");
     if (!NIL_P(val)) {
-	ssl_npn_encode_protocols(self, val);
+	rb_iv_set(self, "@_protocols", ssl_encode_npn_protocols(val));
 	SSL_CTX_set_next_protos_advertised_cb(ctx, ssl_npn_advertise_cb, (void *) self);
 	OSSL_Debug("SSL NPN advertise callback added");
     }
     if (RTEST(rb_iv_get(self, "@npn_select_cb"))) {
 	SSL_CTX_set_next_proto_select_cb(ctx, ssl_npn_select_cb, (void *) self);
 	OSSL_Debug("SSL NPN select callback added");
+    }
+#endif
+
+#ifdef HAVE_SSL_CTX_SET_ALPN_SELECT_CB
+    val = rb_iv_get(self, "@alpn_protocols");
+    if (!NIL_P(val)) {
+	VALUE rprotos = ssl_encode_npn_protocols(val);
+	SSL_CTX_set_alpn_protos(ctx, StringValueCStr(rprotos), RSTRING_LEN(rprotos));
+	OSSL_Debug("SSL ALPN values added");
+    }
+    if (RTEST(rb_iv_get(self, "@alpn_select_cb"))) {
+	SSL_CTX_set_alpn_select_cb(ctx, ssl_alpn_select_cb, (void *) self);
+	OSSL_Debug("SSL ALPN select callback added");
     }
 #endif
 
@@ -1904,6 +1945,29 @@ ossl_ssl_npn_protocol(VALUE self)
     else
 	return rb_str_new((const char *) out, outlen);
 }
+
+/*
+ * call-seq:
+ *    ssl.alpn_protocol => String
+ *
+ * Returns the ALPN protocol string that was finally selected by the client
+ * during the handshake.
+ */
+static VALUE
+ossl_ssl_alpn_protocol(VALUE self)
+{
+    SSL *ssl;
+    const unsigned char *out;
+    unsigned int outlen;
+
+    ossl_ssl_data_get_struct(self, ssl);
+
+    SSL_get0_alpn_selected(ssl, &out, &outlen);
+    if (!outlen)
+	return Qnil;
+    else
+	return rb_str_new((const char *) out, outlen);
+}
 # endif
 #endif /* !defined(OPENSSL_NO_SOCK) */
 
@@ -2155,6 +2219,38 @@ Init_ossl_ssl(void)
     rb_attr(cSSLContext, rb_intern("npn_select_cb"), 1, 1, Qfalse);
 #endif
 
+#ifdef HAVE_SSL_CTX_SET_ALPN_SELECT_CB
+    /*
+     * An Enumerable of Strings. Each String represents a protocol to be
+     * advertised as the list of supported protocols for Application-Layer Protocol
+     * Negotiation. Supported in OpenSSL 1.0.1 and higher. Has no effect
+     * on the client side. If not set explicitly, the NPN extension will
+     * not be sent by the server in the handshake.
+     *
+     * === Example
+     *
+     *   ctx.alpn_protocols = ["http/1.1", "spdy/2", "h2"]
+     */
+    rb_attr(cSSLContext, rb_intern("alpn_protocols"), 1, 1, Qfalse);
+    /*
+     * A callback invoked on the server side when the server needs to select
+     * a protocol from the list sent by the client. Supported in OpenSSL 1.0.2
+     * and higher. The server MUST select a protocol of those advertised by
+     * the client. If none is acceptable, raising an error in the callback
+     * will cause the handshake to fail. Not setting this callback explicitly
+     * means not supporting the ALPN extension on the client - any protocols
+     * advertised by the server will be ignored.
+     *
+     * === Example
+     *
+     *   ctx.alpn_select_cb = lambda do |protocols|
+     *     #inspect the protocols and select one
+     *     protocols.first
+     *   end
+     */
+    rb_attr(cSSLContext, rb_intern("alpn_select_cb"), 1, 1, Qfalse);
+#endif
+
     rb_define_alias(cSSLContext, "ssl_timeout", "timeout");
     rb_define_alias(cSSLContext, "ssl_timeout=", "timeout=");
     rb_define_method(cSSLContext, "initialize",  ossl_sslctx_initialize, -1);
@@ -2267,6 +2363,9 @@ Init_ossl_ssl(void)
     rb_define_method(cSSLSocket, "session=",    ossl_ssl_set_session, 1);
     rb_define_method(cSSLSocket, "verify_result", ossl_ssl_get_verify_result, 0);
     rb_define_method(cSSLSocket, "client_ca", ossl_ssl_get_client_ca_list, 0);
+# ifdef HAVE_SSL_CTX_SET_ALPN_SELECT_CB
+    rb_define_method(cSSLSocket, "alpn_protocol", ossl_ssl_alpn_protocol, 0);
+# endif
 # ifdef HAVE_OPENSSL_NPN_NEGOTIATED
     rb_define_method(cSSLSocket, "npn_protocol", ossl_ssl_npn_protocol, 0);
 # endif

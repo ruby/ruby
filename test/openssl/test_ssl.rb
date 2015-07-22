@@ -795,6 +795,38 @@ end
     }
   end
 
+if OpenSSL::OPENSSL_VERSION_NUMBER >= 0x10002000
+  def test_alpn_protocol_selection_ary
+    advertised = ["http/1.1", "spdy/2"]
+    ctx_proc = Proc.new { |ctx|
+      ctx.alpn_select_cb = -> (protocols) {
+        protocols.first
+      }
+      ctx.alpn_protocols = advertised
+    }
+    start_server_version(:SSLv23, ctx_proc) { |server, port|
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.alpn_protocols = advertised
+      server_connect(port, ctx) { |ssl|
+        assert_equal(advertised.first, ssl.alpn_protocol)
+      }
+    }
+  end
+
+  def test_alpn_protocol_selection_cancel
+    ctx_proc = Proc.new { |ctx|
+      ctx.alpn_select_cb = -> (protocols) { nil }
+    }
+    assert_raises(MiniTest::Assertion) do # minitest/assertion comes from `assert_join_threads`
+      start_server_version(:SSLv23, ctx_proc) { |server, port|
+        ctx = OpenSSL::SSL::SSLContext.new
+        ctx.alpn_protocols = ["http/1.1"]
+        assert_raise(OpenSSL::SSL::SSLError) { server_connect(port, ctx) }
+      }
+    end
+  end
+end
+
 if OpenSSL::OPENSSL_VERSION_NUMBER > 0x10001000
 
   def test_npn_protocol_selection_ary
