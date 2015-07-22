@@ -458,7 +458,7 @@ class Matrix
       high = nn-1
       eps = Float::EPSILON
       exshift = 0.0
-      p=q=r=s=z=0
+      p = q = r = s = z = 0
 
       # Store roots isolated by balanc and compute matrix norm
 
