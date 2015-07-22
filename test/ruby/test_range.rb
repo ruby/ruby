@@ -259,6 +259,7 @@ class TestRange < Test::Unit::TestCase
   def test_begin_end
     assert_equal(0, (0..1).begin)
     assert_equal(1, (0..1).end)
+    assert_equal(1, (0...1).end)
   end
 
   def test_first_last
