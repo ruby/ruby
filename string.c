@@ -1168,7 +1168,7 @@ rb_obj_as_string(VALUE obj)
     str = rb_funcall(obj, id_to_s, 0);
     if (!RB_TYPE_P(str, T_STRING))
 	return rb_any_to_s(obj);
-    if (OBJ_TAINTED(obj)) OBJ_TAINT(str);
+    OBJ_INFECT(str, obj);
     return str;
 }
 
@@ -1514,8 +1514,7 @@ rb_str_plus(VALUE str1, VALUE str2)
     memcpy(ptr3+len1, ptr2, len2);
     TERM_FILL(&ptr3[len1+len2], rb_enc_mbminlen(enc));
 
-    if (OBJ_TAINTED(str1) || OBJ_TAINTED(str2))
-	OBJ_TAINT(str3);
+    FL_SET_RAW(str3, OBJ_TAINTED_RAW(str1) | OBJ_TAINTED_RAW(str2));
     ENCODING_CODERANGE_SET(str3, rb_enc_to_index(enc),
 			   ENC_CODERANGE_AND(ENC_CODERANGE(str1), ENC_CODERANGE(str2)));
     RB_GC_GUARD(str1);
@@ -4221,7 +4220,7 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
 	if (NIL_P(hash)) {
 	    StringValue(repl);
 	}
-	if (OBJ_TAINTED(repl)) tainted = 1;
+	tainted = OBJ_TAINTED_RAW(repl);
     }
 
     pat = get_pat_quoted(argv[0], 1);
@@ -4281,7 +4280,7 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
         }
 	rb_str_modify(str);
 	rb_enc_associate(str, enc);
-	if (OBJ_TAINTED(repl)) tainted = 1;
+	tainted |= OBJ_TAINTED_RAW(repl);
 	if (ENC_CODERANGE_UNKNOWN < cr && cr < ENC_CODERANGE_BROKEN) {
 	    int cr2 = ENC_CODERANGE(repl);
             if (cr2 == ENC_CODERANGE_BROKEN ||
@@ -4305,7 +4304,7 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
 	STR_SET_LEN(str, len);
 	TERM_FILL(&RSTRING_PTR(str)[len], TERM_LEN(str));
 	ENC_CODERANGE_SET(str, cr);
-	if (tainted) OBJ_TAINT(str);
+	FL_SET_RAW(str, tainted);
 
 	return str;
     }
@@ -4391,7 +4390,7 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 	else {
 	    mode = MAP;
 	}
-	if (OBJ_TAINTED(repl)) tainted = 1;
+	tainted = OBJ_TAINTED_RAW(repl);
 	break;
       default:
 	rb_check_arity(argc, 1, 2);
@@ -4454,8 +4453,7 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 	    val = repl;
 	}
 
-
-	if (OBJ_TAINTED(val)) tainted = 1;
+	tainted |= OBJ_TAINTED_RAW(val);
 
 	len = beg0 - offset;	/* copy pre-match substr */
         if (len) {
@@ -4489,11 +4487,11 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
     }
     else {
 	RBASIC_SET_CLASS(dest, rb_obj_class(str));
-	OBJ_INFECT(dest, str);
+	tainted |= OBJ_TAINTED_RAW(str);
 	str = dest;
     }
 
-    if (tainted) OBJ_TAINT(str);
+    FL_SET_RAW(str, tainted);
     return str;
 }
 
@@ -4723,7 +4721,7 @@ str_byte_substr(VALUE str, long beg, long len)
 	}
     }
 
-    OBJ_INFECT(str2, str);
+    OBJ_INFECT_RAW(str2, str);
 
     return str2;
 }
@@ -4848,7 +4846,7 @@ rb_str_reverse(VALUE str)
 	}
     }
     STR_SET_LEN(rev, RSTRING_LEN(str));
-    OBJ_INFECT(rev, str);
+    OBJ_INFECT_RAW(rev, str);
     str_enc_copy(rev, str);
     ENC_CODERANGE_SET(rev, cr);
 
@@ -5145,7 +5143,7 @@ rb_str_inspect(VALUE str)
     if (p > prev) str_buf_cat(result, prev, p - prev);
     str_buf_cat2(result, "\"");
 
-    OBJ_INFECT(result, str);
+    OBJ_INFECT_RAW(result, str);
     return result;
 }
 
@@ -5285,7 +5283,7 @@ rb_str_dump(VALUE str)
 	snprintf(q, qend-q, ".force_encoding(\"%s\")", enc->name);
 	enc = rb_ascii8bit_encoding();
     }
-    OBJ_INFECT(result, str);
+    OBJ_INFECT_RAW(result, str);
     /* result from dump is ASCII */
     rb_enc_associate(result, enc);
     ENC_CODERANGE_SET(result, ENC_CODERANGE_7BIT);
@@ -7812,8 +7810,7 @@ rb_str_crypt(VALUE str, VALUE salt)
 	rb_sys_fail("crypt");
     }
     result = rb_str_new_cstr(res);
-    OBJ_INFECT(result, str);
-    OBJ_INFECT(result, salt);
+    FL_SET_RAW(result, OBJ_TAINTED_RAW(str) | OBJ_TAINTED_RAW(salt));
     return result;
 }
 
@@ -7986,8 +7983,8 @@ rb_str_justify(int argc, VALUE *argv, VALUE str, char jflag)
     }
     TERM_FILL(p, rb_enc_mbminlen(enc));
     STR_SET_LEN(res, p-RSTRING_PTR(res));
-    OBJ_INFECT(res, str);
-    if (!NIL_P(pad)) OBJ_INFECT(res, pad);
+    OBJ_INFECT_RAW(res, str);
+    if (!NIL_P(pad)) OBJ_INFECT_RAW(res, pad);
     rb_enc_associate(res, enc);
     if (argc == 2)
 	cr = ENC_CODERANGE_AND(cr, ENC_CODERANGE(pad));
@@ -8247,7 +8244,7 @@ rb_str_b(VALUE str)
 {
     VALUE str2 = str_alloc(rb_cString);
     str_replace_shared_without_enc(str2, str);
-    OBJ_INFECT(str2, str);
+    OBJ_INFECT_RAW(str2, str);
     ENC_CODERANGE_CLEAR(str2);
     return str2;
 }
