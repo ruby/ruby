@@ -1,3 +1,8 @@
+Thu Jul 23 09:05:28 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (lambda_body): pop cmdarg stack for lookahead
+	  token.  [ruby-core:70067] [Bug #11380]
+
 Thu Jul 23 04:03:03 2015  Aaron Patterson <tenderlove@ruby-lang.org>
 
 	* ext/openssl/ossl_ssl.c: fix tests by not setting the instance
