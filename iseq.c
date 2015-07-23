@@ -1365,7 +1365,7 @@ rb_iseq_disasm(const rb_iseq_t *iseq)
     unsigned int size;
     int i;
     long l;
-    ID *tbl;
+    const ID *tbl;
     size_t n;
     enum {header_minlen = 72};
 
