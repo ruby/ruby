@@ -1105,13 +1105,21 @@ rb_str_to_str(VALUE str)
 }
 
 static inline void str_discard(VALUE str);
+static void str_shared_replace(VALUE str, VALUE str2);
 
 void
 rb_str_shared_replace(VALUE str, VALUE str2)
 {
+    if (str != str2) str_shared_replace(str, str2);
+}
+
+static void
+str_shared_replace(VALUE str, VALUE str2)
+{
     rb_encoding *enc;
     int cr;
-    if (str == str2) return;
+
+    ASSUME(str2 != str);
     enc = STR_ENC_GET(str2);
     cr = ENC_CODERANGE(str2);
     str_discard(str);
@@ -4477,7 +4485,7 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
     }
     rb_pat_search(pat, str, last, 1);
     if (bang) {
-        rb_str_shared_replace(str, dest);
+        str_shared_replace(str, dest);
     }
     else {
 	RBASIC_SET_CLASS(dest, rb_obj_class(str));
@@ -4872,7 +4880,7 @@ rb_str_reverse_bang(VALUE str)
 	    }
 	}
 	else {
-	    rb_str_shared_replace(str, rb_str_reverse(str));
+	    str_shared_replace(str, rb_str_reverse(str));
 	}
     }
     else {
