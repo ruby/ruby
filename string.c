@@ -973,8 +973,9 @@ rb_str_new_frozen(VALUE orig)
     else {
 	if (FL_TEST(orig, STR_SHARED)) {
 	    VALUE shared = RSTRING(orig)->as.heap.aux.shared;
-	    long ofs = RSTRING_PTR(orig) - RSTRING_PTR(shared);
-	    long rest = RSTRING_LEN(shared) - ofs - RSTRING_LEN(orig);
+	    long ofs = RSTRING(orig)->as.heap.ptr - RSTRING(shared)->as.heap.ptr;
+	    long rest = RSTRING(shared)->as.heap.len - ofs - RSTRING(orig)->as.heap.len;
+	    assert(!STR_EMBED_P(shared));
 	    assert(OBJ_FROZEN(shared));
 
 	    if ((ofs > 0) || (rest > 0) ||
@@ -1623,6 +1624,7 @@ static void
 str_make_independent_expand(VALUE str, long expand)
 {
     char *ptr;
+    const char *oldptr;
     long len = RSTRING_LEN(str);
     const int termlen = TERM_LEN(str);
     long capa = len + expand;
@@ -1639,8 +1641,9 @@ str_make_independent_expand(VALUE str, long expand)
     }
 
     ptr = ALLOC_N(char, capa + termlen);
-    if (RSTRING_PTR(str)) {
-	memcpy(ptr, RSTRING_PTR(str), len);
+    oldptr = RSTRING_PTR(str);
+    if (oldptr) {
+	memcpy(ptr, oldptr, len);
     }
     STR_SET_NOEMBED(str);
     FL_UNSET(str, STR_SHARED|STR_NOFREE);
