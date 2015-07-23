@@ -578,11 +578,12 @@ rb_iseq_translate_threaded_code(rb_iseq_t *iseq)
 #if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
     const void * const *table = rb_vm_get_insns_address_table();
     unsigned int i;
+    VALUE *encoded = (VALUE *)iseq->body->iseq_encoded;
 
     for (i = 0; i < iseq->body->iseq_size; /* */ ) {
 	int insn = (int)iseq->body->iseq_encoded[i];
 	int len = insn_len(insn);
-	iseq->body->iseq_encoded[i] = (VALUE)table[insn];
+	encoded[i] = (VALUE)table[insn];
 	i += len;
     }
 #endif
