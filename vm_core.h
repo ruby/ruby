@@ -255,7 +255,7 @@ struct rb_iseq_constant_body {
     int local_size;
 
     unsigned int iseq_size;
-    VALUE *iseq_encoded; /* encoded iseq (insn addr and operands) */
+    const VALUE *iseq_encoded; /* encoded iseq (insn addr and operands) */
 
     /**
      * parameter information
@@ -536,7 +536,7 @@ typedef struct rb_vm_struct {
 #endif
 
 typedef struct rb_control_frame_struct {
-    VALUE *pc;			/* cfp[0] */
+    const VALUE *pc;		/* cfp[0] */
     VALUE *sp;			/* cfp[1] */
     const rb_iseq_t *iseq;	/* cfp[2] */
     VALUE flag;			/* cfp[3] */

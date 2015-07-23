@@ -72,10 +72,10 @@ rb_iseq_free(const rb_iseq_t *iseq)
     if (iseq) {
 	int i;
 
-	ruby_xfree(iseq->body->iseq_encoded);
-	ruby_xfree(iseq->body->line_info_table);
-	ruby_xfree(iseq->body->local_table);
-	ruby_xfree(iseq->body->is_entries);
+	ruby_xfree((void *)iseq->body->iseq_encoded);
+	ruby_xfree((void *)iseq->body->line_info_table);
+	ruby_xfree((void *)iseq->body->local_table);
+	ruby_xfree((void *)iseq->body->is_entries);
 
 	if (iseq->body->callinfo_entries) {
 	    for (i=0; i<iseq->body->callinfo_size; i++) {
@@ -85,11 +85,12 @@ rb_iseq_free(const rb_iseq_t *iseq)
 	    }
 	    ruby_xfree(iseq->body->callinfo_entries);
 	}
-	ruby_xfree(iseq->body->catch_table);
-	ruby_xfree(iseq->body->param.opt_table);
+	ruby_xfree((void *)iseq->body->catch_table);
+	ruby_xfree((void *)iseq->body->param.opt_table);
+
 	if (iseq->body->param.keyword != NULL) {
-	    ruby_xfree(iseq->body->param.keyword->default_values);
-	    ruby_xfree(iseq->body->param.keyword);
+	    ruby_xfree((void *)iseq->body->param.keyword->default_values);
+	    ruby_xfree((void *)iseq->body->param.keyword);
 	}
 	compile_data_free(iseq->compile_data);
 	ruby_xfree(iseq->variable_body->iseq);
@@ -2118,7 +2119,8 @@ rb_iseqw_line_trace_each(VALUE iseqw, int (*func)(int line, rb_event_flag_t *eve
 		    /* printf("line: %d\n", line); */
 		    cont = (*func)(line, &events, data);
 		    if (current_events != events) {
-			iseq_original[pos+1] = iseq->body->iseq_encoded[pos+1] =
+			VALUE *encoded = (VALUE *)iseq->body->iseq_encoded;
+			iseq_original[pos+1] = encoded[pos+1] =
 			  (VALUE)(current_events | (events & RUBY_EVENT_SPECIFIED_LINE));
 		    }
 		}

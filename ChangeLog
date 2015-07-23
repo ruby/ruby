@@ -1,3 +1,14 @@
+Thu Jul 23 17:30:43 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h: constify rb_iseq_constant_body::iseq_encoded and
+	  rb_control_frame_t::pc.
+
+	* compile.c (rb_iseq_translate_threaded_code): catch up this fix.
+
+	* iseq.c: ditto.
+
+	* vm_exec.c (vm_exec_core): ditto.
+
 Thu Jul 23 10:25:46 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h: add raw FL macros, which assume always the
