@@ -155,6 +155,9 @@ VALUE rb_cSymbol;
 #define SHARABLE_SUBSTRING_P(beg, len, end) 1
 #endif
 
+static VALUE str_new_static(VALUE klass, const char *ptr, long len, int encindex);
+static void str_make_independent_expand(VALUE str, long expand);
+
 static rb_encoding *
 get_actual_encoding(const int encidx, VALUE str)
 {
@@ -244,12 +247,18 @@ fstr_update_callback(st_data_t *key, st_data_t *value, st_data_t arg, int existi
 	return ST_STOP;
     }
     else {
-	if (STR_SHARED_P(str)) { /* str should not be shared */
-	    str = rb_enc_str_new(RSTRING_PTR(str), RSTRING_LEN(str), STR_ENC_GET(str));
-	    OBJ_FREEZE(str);
+	if (FL_TEST_RAW(str, STR_FAKESTR)) {
+	    str = str_new_static(rb_cString, RSTRING(str)->as.heap.ptr,
+				 RSTRING(str)->as.heap.len,
+				 ENCODING_GET(str));
+	    OBJ_FREEZE_RAW(str);
 	}
 	else {
 	    str = rb_str_new_frozen(str);
+	    if (STR_SHARED_P(str)) { /* str should not be shared */
+		/* shared substring  */
+		str_make_independent_expand(str, 0L);
+	    }
 	}
 	RBASIC(str)->flags |= RSTRING_FSTR;
 
@@ -280,6 +289,8 @@ register_fstring(VALUE str)
 		    fstr_update_callback, (st_data_t)&ret);
     } while (ret == Qundef);
 
+    assert(OBJ_FROZEN(ret));
+    assert(!FL_TEST_RAW(ret, STR_FAKESTR));
     return ret;
 }
 
