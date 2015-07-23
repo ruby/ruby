@@ -281,10 +281,10 @@ class TestString < Test::Unit::TestCase
   def casetest(a, b, rev=false)
     msg = proc {"#{a} should#{' not' if rev} match #{b}"}
     case a
-      when b
-        assert(!rev, msg)
-      else
-        assert(rev, msg)
+    when b
+      assert(!rev, msg)
+    else
+      assert(rev, msg)
     end
   end
 
