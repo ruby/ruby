@@ -2474,7 +2474,9 @@ should_be_finalizable(VALUE obj)
  *     ObjectSpace.define_finalizer(obj, aProc=proc())
  *
  *  Adds <i>aProc</i> as a finalizer, to be called after <i>obj</i>
- *  was destroyed.
+ *  was destroyed. The object ID of the <i>obj</i> will be passed
+ *  as an argument to <i>aProc</i>. If <i>aProc</i> is a lambda or
+ *  method, make sure it can be called with a single argument.
  *
  */
 
