@@ -414,6 +414,11 @@ WARN
     assert_valid_syntax('p ->() do a() do end end', bug11107)
   end
 
+  def test_do_block_after_lambda
+    bug11380 = '[ruby-core:70067] [Bug #11380]'
+    assert_valid_syntax('p -> { :hello }, a: 1 do end', bug11380)
+  end
+
   def test_reserved_method_no_args
     bug6403 = '[ruby-dev:45626]'
     assert_valid_syntax("def self; :foo; end", __FILE__, bug6403)
