@@ -1056,12 +1056,13 @@ static int
 iseq_set_exception_local_table(rb_iseq_t *iseq)
 {
     ID id_dollar_bang;
+    ID *ids = (ID *)ALLOC_N(ID, 1);
 
     CONST_ID(id_dollar_bang, "#$!");
-    iseq->body->local_table = (ID *)ALLOC_N(ID, 1);
     iseq->body->local_table_size = 1;
     iseq->body->local_size = iseq->body->local_table_size + 1;
-    iseq->body->local_table[0] = id_dollar_bang;
+    ids[0] = id_dollar_bang;
+    iseq->body->local_table = ids;
     return COMPILE_OK;
 }
 
@@ -1279,12 +1280,17 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 	    }
 	    iseq->body->param.keyword->required_num = rkw;
 	    iseq->body->param.keyword->table = &iseq->body->local_table[iseq->body->param.keyword->bits_start - iseq->body->param.keyword->num];
-	    iseq->body->param.keyword->default_values = ALLOC_N(VALUE, RARRAY_LEN(default_values));
 
-	    for (i = 0; i < RARRAY_LEN(default_values); i++) {
-		VALUE dv = RARRAY_AREF(default_values, i);
-		if (dv == complex_mark) dv = Qundef;
-		iseq->body->param.keyword->default_values[i] = dv;
+	    {
+		VALUE *dvs = ALLOC_N(VALUE, RARRAY_LEN(default_values));
+
+		for (i = 0; i < RARRAY_LEN(default_values); i++) {
+		    VALUE dv = RARRAY_AREF(default_values, i);
+		    if (dv == complex_mark) dv = Qundef;
+		    dvs[i] = dv;
+		}
+
+		iseq->body->param.keyword->default_values = dvs;
 	    }
 	}
 	else if (args->kw_rest_arg) {
@@ -1349,8 +1355,9 @@ iseq_set_local_table(rb_iseq_t *iseq, const ID *tbl)
     }
 
     if (size > 0) {
-	iseq->body->local_table = (ID *)ALLOC_N(ID, size);
-	MEMCPY(iseq->body->local_table, tbl, ID, size);
+	ID *ids = (ID *)ALLOC_N(ID, size);
+	MEMCPY(ids, tbl, ID, size);
+	iseq->body->local_table = ids;
     }
 
     iseq->body->local_size = iseq->body->local_table_size = size;
@@ -6078,6 +6085,8 @@ iseq_build_kw(rb_iseq_t *iseq, VALUE params, VALUE keywords)
     int len = RARRAY_LENINT(keywords);
     int default_len;
     VALUE key, sym, default_val;
+    VALUE *dvs;
+    ID *ids;
 
     iseq->body->param.flags.has_kw = TRUE;
 
@@ -6086,7 +6095,7 @@ iseq_build_kw(rb_iseq_t *iseq, VALUE params, VALUE keywords)
 #define SYM(s) ID2SYM(rb_intern(#s))
     (void)int_param(&iseq->body->param.keyword->bits_start, params, SYM(kwbits));
     i = iseq->body->param.keyword->bits_start - iseq->body->param.keyword->num;
-    iseq->body->param.keyword->table = &iseq->body->local_table[i];
+    ids = (VALUE *)&iseq->body->local_table[i];
 #undef SYM
 
     /* required args */
@@ -6096,17 +6105,17 @@ iseq_build_kw(rb_iseq_t *iseq, VALUE params, VALUE keywords)
 	if (!SYMBOL_P(val)) {
 	    goto default_values;
 	}
-	iseq->body->param.keyword->table[i] = SYM2ID(val);
+	ids[i] = SYM2ID(val);
 	iseq->body->param.keyword->required_num++;
     }
 
-default_values: /* note: we intentionally preserve `i' from previous loop */
+  default_values: /* note: we intentionally preserve `i' from previous loop */
     default_len = len - i;
     if (default_len == 0) {
 	return;
     }
 
-    iseq->body->param.keyword->default_values = ALLOC_N(VALUE, default_len);
+    dvs = ALLOC_N(VALUE, default_len);
 
     for (j = 0; i < len; i++, j++) {
 	key = RARRAY_AREF(keywords, i);
@@ -6126,9 +6135,12 @@ default_values: /* note: we intentionally preserve `i' from previous loop */
 		     "keyword default has unsupported len %+"PRIsVALUE,
 		     key);
 	}
-	iseq->body->param.keyword->table[i] = SYM2ID(sym);
-	iseq->body->param.keyword->default_values[j] = default_val;
+	ids[i] = SYM2ID(sym);
+	dvs[j] = default_val;
     }
+
+    iseq->body->param.keyword->table = ids;
+    iseq->body->param.keyword->default_values = dvs;
 }
 
 void

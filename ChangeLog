@@ -1,3 +1,13 @@
+Thu Jul 23 18:50:43 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h: constify rb_iseq_constant_body::local_table and 
+	  rb_iseq_param_keyword::table and
+	  rb_iseq_param_keyword::default_values.
+
+	* compile.c: catch up this fix.
+
+	* iseq.c: ditto.
+
 Thu Jul 23 17:30:43 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h: constify rb_iseq_constant_body::iseq_encoded and

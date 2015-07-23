@@ -322,8 +322,8 @@ struct rb_iseq_constant_body {
 	    int required_num;
 	    int bits_start;
 	    int rest_start;
-	    ID *table;
-	    VALUE *default_values;
+	    const ID *table;
+	    const VALUE *default_values;
 	} *keyword;
     } param;
 
@@ -332,7 +332,7 @@ struct rb_iseq_constant_body {
     /* insn info, must be freed */
     struct iseq_line_info_entry *line_info_table;
 
-    ID *local_table;		/* must free */
+    const ID *local_table;		/* must free */
 
     /* catch table */
     struct iseq_catch_table *catch_table;
