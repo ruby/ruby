@@ -363,7 +363,7 @@ get_local_variable_ptr(VALUE envval, ID lid)
 
     do {
 	const rb_iseq_t *iseq;
-	int i;
+	unsigned int i;
 
 	GetEnvPtr(envval, env);
 	iseq = env->block.iseq;

@@ -629,7 +629,7 @@ rb_vm_env_prev_envval(const rb_env_t *env)
 static int
 collect_local_variables_in_iseq(const rb_iseq_t *iseq, const struct local_var_list *vars)
 {
-    int i;
+    unsigned int i;
     if (!iseq) return 0;
     for (i = 0; i < iseq->body->local_table_size; i++) {
 	local_var_list_add(vars, iseq->body->local_table[i]);
@@ -1477,7 +1477,7 @@ vm_exec(rb_thread_t *th)
 	}
     }
     else {
-	int i;
+	unsigned int i;
 	const struct iseq_catch_table_entry *entry;
 	const struct iseq_catch_table *ct;
 	unsigned long epc, cont_pc, cont_sp;

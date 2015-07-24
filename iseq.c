@@ -70,14 +70,13 @@ rb_iseq_free(const rb_iseq_t *iseq)
     RUBY_FREE_ENTER("iseq");
 
     if (iseq) {
-	int i;
-
 	ruby_xfree((void *)iseq->body->iseq_encoded);
 	ruby_xfree((void *)iseq->body->line_info_table);
 	ruby_xfree((void *)iseq->body->local_table);
 	ruby_xfree((void *)iseq->body->is_entries);
 
 	if (iseq->body->callinfo_entries) {
+	    unsigned int i;
 	    for (i=0; i<iseq->body->callinfo_size; i++) {
 		/* TODO: revisit callinfo data structure */
 		const rb_call_info_kw_arg_t *kw_arg = iseq->body->callinfo_entries[i].kw_arg;
@@ -1364,7 +1363,7 @@ rb_iseq_disasm(const rb_iseq_t *iseq)
     VALUE str = rb_str_new(0, 0);
     VALUE child = rb_ary_tmp_new(3);
     unsigned int size;
-    int i;
+    unsigned int i;
     long l;
     const ID *tbl;
     size_t n;
@@ -1387,14 +1386,16 @@ rb_iseq_disasm(const rb_iseq_t *iseq)
     if (iseq->body->catch_table) {
 	rb_str_cat2(str, "== catch table\n");
     }
-    if (iseq->body->catch_table) for (i = 0; i < iseq->body->catch_table->size; i++) {
-	const struct iseq_catch_table_entry *entry = &iseq->body->catch_table->entries[i];
-	rb_str_catf(str,
-		    "| catch type: %-6s st: %04d ed: %04d sp: %04d cont: %04d\n",
-		    catch_type((int)entry->type), (int)entry->start,
-		    (int)entry->end, (int)entry->sp, (int)entry->cont);
-	if (entry->iseq) {
-	    rb_str_concat(str, rb_iseq_disasm(entry->iseq));
+    if (iseq->body->catch_table) {
+	for (i = 0; i < iseq->body->catch_table->size; i++) {
+	    const struct iseq_catch_table_entry *entry = &iseq->body->catch_table->entries[i];
+	    rb_str_catf(str,
+			"| catch type: %-6s st: %04d ed: %04d sp: %04d cont: %04d\n",
+			catch_type((int)entry->type), (int)entry->start,
+			(int)entry->end, (int)entry->sp, (int)entry->cont);
+	    if (entry->iseq) {
+		rb_str_concat(str, rb_iseq_disasm(entry->iseq));
+	    }
 	}
     }
     if (iseq->body->catch_table) {
@@ -1420,6 +1421,7 @@ rb_iseq_disasm(const rb_iseq_t *iseq)
 		    iseq->body->param.flags.has_kwrest ? iseq->body->param.keyword->rest_start : -1);
 
 	for (i = 0; i < iseq->body->local_table_size; i++) {
+	    int li = (int)i;
 	    long width;
 	    VALUE name = id_to_name(tbl[i], 0);
 	    char argi[0x100] = "";
@@ -1428,18 +1430,18 @@ rb_iseq_disasm(const rb_iseq_t *iseq)
 	    if (iseq->body->param.flags.has_opt) {
 		int argc = iseq->body->param.lead_num;
 		int opts = iseq->body->param.opt_num;
-		if (i >= argc && i < argc + opts) {
+		if (li >= argc && li < argc + opts) {
 		    snprintf(opti, sizeof(opti), "Opt=%"PRIdVALUE,
-			     iseq->body->param.opt_table[i - argc]);
+			     iseq->body->param.opt_table[li - argc]);
 		}
 	    }
 
 	    snprintf(argi, sizeof(argi), "%s%s%s%s%s",	/* arg, opts, rest, post  block */
-		     iseq->body->param.lead_num > i ? "Arg" : "",
+		     iseq->body->param.lead_num > li ? "Arg" : "",
 		     opti,
-		     (iseq->body->param.flags.has_rest && iseq->body->param.rest_start == i) ? "Rest" : "",
-		     (iseq->body->param.flags.has_post && iseq->body->param.post_start <= i && i < iseq->body->param.post_start + iseq->body->param.post_num) ? "Post" : "",
-		     (iseq->body->param.flags.has_block && iseq->body->param.block_start == i) ? "Block" : "");
+		     (iseq->body->param.flags.has_rest && iseq->body->param.rest_start == li) ? "Rest" : "",
+		     (iseq->body->param.flags.has_post && iseq->body->param.post_start <= li && li < iseq->body->param.post_start + iseq->body->param.post_num) ? "Post" : "",
+		     (iseq->body->param.flags.has_block && iseq->body->param.block_start == li) ? "Block" : "");
 
 	    rb_str_catf(str, "[%2d] ", iseq->body->local_size - i);
 	    width = RSTRING_LEN(str) + 11;

@@ -80,7 +80,7 @@ struct iseq_catch_table_entry {
 };
 
 PACKED_STRUCT_UNALIGNED(struct iseq_catch_table {
-    int size;
+    unsigned int size;
     struct iseq_catch_table_entry entries[1]; /* flexible array */
 });
 

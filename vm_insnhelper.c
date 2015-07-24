@@ -713,7 +713,7 @@ vm_getivar(VALUE obj, ID id, IC ic, rb_call_info_t *ci, int is_attr)
 	const VALUE *const ptr = ROBJECT_IVPTR(obj);
 
 	if (LIKELY(is_attr ? ci->aux.index > 0 : ic->ic_serial == RCLASS_SERIAL(klass))) {
-	    int index = !is_attr ? (int)ic->ic_value.index : ci->aux.index - 1;
+	    long index = !is_attr ? (long)ic->ic_value.index : (long)(ci->aux.index - 1);
 
 	    if (index < len) {
 		val = ptr[index];
@@ -1383,7 +1383,7 @@ vm_call_iseq_setup_normal(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info
 static inline VALUE
 vm_call_iseq_setup_tailcall(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 {
-    int i;
+    unsigned int i;
     VALUE *argv = cfp->sp - ci->argc;
     const rb_callable_method_entry_t *me = ci->me;
     const rb_iseq_t *iseq = def_iseq_ptr(me->def);
