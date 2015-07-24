@@ -1,3 +1,18 @@
+Fri Jul 24 20:09:43 2015  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* test/rinda/test_rinda.rb (RingIPv6#prepare_ipv6): prevent to use
+	  IPv6 loopback interface for
+	  Rinda::TestRingFinger#test_make_socket_ipv6_multicast and
+	  Rinda::TestRingFinger#test_make_socket_ipv6_multicast_hops.
+	  The tests are skipped if there are no IPv6 devices other than the
+	  loopback device. [Bug #11394] [ruby-dev:49199]
+
+	* test/rinda/test_rinda.rb (test_make_socket_ipv6_multicast): ditto
+	  for Rinda::TestRingServer#test_make_socket_ipv6_multicast.
+
+	* test/rinda/test_rinda.rb (test_ring_server_ipv6_multicast): ditto
+	  for Rinda::TestRingServer#test_ring_server_ipv6_multicast.
+
 Fri Jul 24 16:35:55 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (fstr_update_callback): pool bare strings only.
