@@ -266,8 +266,7 @@ fstr_update_callback(st_data_t *key, st_data_t *value, st_data_t arg, int existi
 		assert(OBJ_FROZEN(str));
 	    }
 	    if (!BARE_STRING_P(str)) {
-		str = str_new_shared(rb_cString, str);
-		OBJ_FREEZE_RAW(str);
+		str = str_new_frozen(rb_cString, str);
 	    }
 	}
 	RBASIC(str)->flags |= RSTRING_FSTR;
@@ -1002,9 +1001,13 @@ rb_str_new_shared(VALUE str)
 VALUE
 rb_str_new_frozen(VALUE orig)
 {
+    VALUE str;
+
     if (OBJ_FROZEN(orig)) return orig;
 
-    return str_new_frozen(rb_obj_class(orig), orig);
+    str = str_new_frozen(rb_obj_class(orig), orig);
+    OBJ_INFECT(str, orig);
+    return str;
 }
 
 static VALUE
@@ -1048,7 +1051,6 @@ str_new_frozen(VALUE klass, VALUE orig)
     }
 
     rb_enc_cr_str_exact_copy(str, orig);
-    OBJ_INFECT(str, orig);
     OBJ_FREEZE(str);
     return str;
 }

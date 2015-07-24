@@ -1,3 +1,9 @@
+Fri Jul 24 21:27:29 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (fstr_update_callback): fstring must not be a shared
+	  string, or the content without RSTRING_FSTR may be freed.
+	  [ruby-dev:49188] [Bug #11386]
+
 Fri Jul 24 20:09:43 2015  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* test/rinda/test_rinda.rb (RingIPv6#prepare_ipv6): prevent to use
