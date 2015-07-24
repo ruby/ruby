@@ -1162,6 +1162,76 @@ iseq_calc_param_size(rb_iseq_t *iseq)
     }
 }
 
+static void
+iseq_set_arguments_keywords(rb_iseq_t *iseq, LINK_ANCHOR *optargs, const struct rb_args_info *args)
+{
+    NODE *node = args->kw_args;
+    struct rb_iseq_param_keyword *keyword;
+    const VALUE default_values = rb_ary_tmp_new(1);
+    const VALUE complex_mark = rb_str_tmp_new(0);
+    int kw = 0, rkw = 0, di = 0, i;
+
+    iseq->body->param.flags.has_kw = TRUE;
+    iseq->body->param.keyword = keyword = ZALLOC_N(struct rb_iseq_param_keyword, 1);
+    keyword->bits_start = get_dyna_var_idx_at_raw(iseq, args->kw_rest_arg->nd_vid);
+
+    while (node) {
+	NODE *val_node = node->nd_body->nd_value;
+	VALUE dv;
+
+	if (val_node == (NODE *)-1) {
+	    ++rkw;
+	}
+	else {
+	    switch (nd_type(val_node)) {
+	      case NODE_LIT:
+		dv = val_node->nd_lit;
+		iseq_add_mark_object(iseq, dv);
+		break;
+	      case NODE_NIL:
+		dv = Qnil;
+		break;
+	      case NODE_TRUE:
+		dv = Qtrue;
+		break;
+	      case NODE_FALSE:
+		dv = Qfalse;
+		break;
+	      default:
+		COMPILE_POPED(optargs, "kwarg", node); /* nd_type(node) == NODE_KW_ARG */
+		dv = complex_mark;
+	    }
+
+	    keyword->num = ++di;
+	    rb_ary_push(default_values, dv);
+	}
+
+	kw++;
+	node = node->nd_next;
+    }
+
+    keyword->num = kw;
+
+    if (args->kw_rest_arg->nd_cflag != 0) {
+	keyword->rest_start =  get_dyna_var_idx_at_raw(iseq, args->kw_rest_arg->nd_cflag);
+	iseq->body->param.flags.has_kwrest = TRUE;
+    }
+    keyword->required_num = rkw;
+    keyword->table = &iseq->body->local_table[keyword->bits_start - keyword->num];
+
+    {
+	VALUE *dvs = ALLOC_N(VALUE, RARRAY_LEN(default_values));
+
+	for (i = 0; i < RARRAY_LEN(default_values); i++) {
+	    VALUE dv = RARRAY_AREF(default_values, i);
+	    if (dv == complex_mark) dv = Qundef;
+	    dvs[i] = dv;
+	}
+
+	keyword->default_values = dvs;
+    }
+}
+
 static int
 iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 {
@@ -1200,6 +1270,7 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 	    NODE *node = args->opt_args;
 	    LABEL *label;
 	    VALUE labels = rb_ary_tmp_new(1);
+	    VALUE *opt_table;
 	    int i = 0, j;
 
 	    while (node) {
@@ -1216,87 +1287,27 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 	    rb_ary_push(labels, (VALUE)label | 1);
 	    ADD_LABEL(optargs, label);
 
-	    iseq->body->param.opt_num = i;
-	    iseq->body->param.opt_table = ALLOC_N(VALUE, i+1);
-	    MEMCPY(iseq->body->param.opt_table, RARRAY_CONST_PTR(labels), VALUE, i+1);
+	    opt_table = ALLOC_N(VALUE, i+1);
+
+	    MEMCPY(opt_table, RARRAY_CONST_PTR(labels), VALUE, i+1);
 	    for (j = 0; j < i+1; j++) {
-		iseq->body->param.opt_table[j] &= ~1;
+		opt_table[j] &= ~1;
 	    }
 	    rb_ary_clear(labels);
 
 	    iseq->body->param.flags.has_opt = TRUE;
+	    iseq->body->param.opt_num = i;
+	    iseq->body->param.opt_table = opt_table;
 	}
 
 	if (args->kw_args) {
-	    NODE *node = args->kw_args;
-	    const VALUE default_values = rb_ary_tmp_new(1);
-	    const VALUE complex_mark = rb_str_tmp_new(0);
-	    int kw = 0, rkw = 0, di = 0, i;
-
-	    iseq->body->param.flags.has_kw = TRUE;
-	    iseq->body->param.keyword = ZALLOC_N(struct rb_iseq_param_keyword, 1);
-	    iseq->body->param.keyword->bits_start = get_dyna_var_idx_at_raw(iseq, args->kw_rest_arg->nd_vid);
-
-	    while (node) {
-		NODE *val_node = node->nd_body->nd_value;
-		VALUE dv;
-
-		if (val_node == (NODE *)-1) {
-		    ++rkw;
-		}
-		else {
-		    switch (nd_type(val_node)) {
-		      case NODE_LIT:
-			dv = val_node->nd_lit;
-			iseq_add_mark_object(iseq, dv);
-			break;
-		      case NODE_NIL:
-			dv = Qnil;
-			break;
-		      case NODE_TRUE:
-			dv = Qtrue;
-			break;
-		      case NODE_FALSE:
-			dv = Qfalse;
-			break;
-		      default:
-			COMPILE_POPED(optargs, "kwarg", node); /* nd_type(node) == NODE_KW_ARG */
-			dv = complex_mark;
-		    }
-
-		    iseq->body->param.keyword->num = ++di;
-		    rb_ary_push(default_values, dv);
-		}
-
-		kw++;
-		node = node->nd_next;
-	    }
-
-	    iseq->body->param.keyword->num = kw;
-
-	    if (args->kw_rest_arg->nd_cflag != 0) {
-		iseq->body->param.keyword->rest_start =  get_dyna_var_idx_at_raw(iseq, args->kw_rest_arg->nd_cflag);
-		iseq->body->param.flags.has_kwrest = TRUE;
-	    }
-	    iseq->body->param.keyword->required_num = rkw;
-	    iseq->body->param.keyword->table = &iseq->body->local_table[iseq->body->param.keyword->bits_start - iseq->body->param.keyword->num];
-
-	    {
-		VALUE *dvs = ALLOC_N(VALUE, RARRAY_LEN(default_values));
-
-		for (i = 0; i < RARRAY_LEN(default_values); i++) {
-		    VALUE dv = RARRAY_AREF(default_values, i);
-		    if (dv == complex_mark) dv = Qundef;
-		    dvs[i] = dv;
-		}
-
-		iseq->body->param.keyword->default_values = dvs;
-	    }
+	    iseq_set_arguments_keywords(iseq, optargs, args);
 	}
 	else if (args->kw_rest_arg) {
+	    struct rb_iseq_param_keyword *keyword = ZALLOC_N(struct rb_iseq_param_keyword, 1);
+	    keyword->rest_start = get_dyna_var_idx_at_raw(iseq, args->kw_rest_arg->nd_vid);
+	    iseq->body->param.keyword = keyword;
 	    iseq->body->param.flags.has_kwrest = TRUE;
-	    iseq->body->param.keyword = ZALLOC_N(struct rb_iseq_param_keyword, 1);
-	    iseq->body->param.keyword->rest_start = get_dyna_var_idx_at_raw(iseq, args->kw_rest_arg->nd_vid);
 	}
 
 	if (args->pre_init) { /* m_init */
@@ -1771,10 +1782,11 @@ static int
 iseq_set_optargs_table(rb_iseq_t *iseq)
 {
     int i;
+    VALUE *opt_table = (VALUE *)iseq->body->param.opt_table;
 
     if (iseq->body->param.flags.has_opt) {
 	for (i = 0; i < iseq->body->param.opt_num + 1; i++) {
-	    iseq->body->param.opt_table[i] = label_get_position((LABEL *)iseq->body->param.opt_table[i]);
+	    opt_table[i] = label_get_position((LABEL *)opt_table[i]);
 	}
     }
     return COMPILE_OK;
@@ -6081,7 +6093,7 @@ int_param(int *dst, VALUE param, VALUE sym)
     return FALSE;
 }
 
-static void
+static const struct rb_iseq_param_keyword *
 iseq_build_kw(rb_iseq_t *iseq, VALUE params, VALUE keywords)
 {
     int i, j;
@@ -6090,14 +6102,14 @@ iseq_build_kw(rb_iseq_t *iseq, VALUE params, VALUE keywords)
     VALUE key, sym, default_val;
     VALUE *dvs;
     ID *ids;
+    struct rb_iseq_param_keyword *keyword = ZALLOC(struct rb_iseq_param_keyword);
 
     iseq->body->param.flags.has_kw = TRUE;
 
-    iseq->body->param.keyword = ZALLOC(struct rb_iseq_param_keyword);
-    iseq->body->param.keyword->num = len;
+    keyword->num = len;
 #define SYM(s) ID2SYM(rb_intern(#s))
-    (void)int_param(&iseq->body->param.keyword->bits_start, params, SYM(kwbits));
-    i = iseq->body->param.keyword->bits_start - iseq->body->param.keyword->num;
+    (void)int_param(&keyword->bits_start, params, SYM(kwbits));
+    i = keyword->bits_start - keyword->num;
     ids = (VALUE *)&iseq->body->local_table[i];
 #undef SYM
 
@@ -6109,13 +6121,13 @@ iseq_build_kw(rb_iseq_t *iseq, VALUE params, VALUE keywords)
 	    goto default_values;
 	}
 	ids[i] = SYM2ID(val);
-	iseq->body->param.keyword->required_num++;
+	keyword->required_num++;
     }
 
   default_values: /* note: we intentionally preserve `i' from previous loop */
     default_len = len - i;
     if (default_len == 0) {
-	return;
+	return keyword;
     }
 
     dvs = ALLOC_N(VALUE, default_len);
@@ -6134,16 +6146,16 @@ iseq_build_kw(rb_iseq_t *iseq, VALUE params, VALUE keywords)
 	    default_val = RARRAY_AREF(key, 1);
 	    break;
 	  default:
-	    rb_raise(rb_eTypeError,
-		     "keyword default has unsupported len %+"PRIsVALUE,
-		     key);
+	    rb_raise(rb_eTypeError, "keyword default has unsupported len %+"PRIsVALUE, key);
 	}
 	ids[i] = SYM2ID(sym);
 	dvs[j] = default_val;
     }
 
-    iseq->body->param.keyword->table = ids;
-    iseq->body->param.keyword->default_values = dvs;
+    keyword->table = ids;
+    keyword->default_values = dvs;
+
+    return keyword;
 }
 
 void
@@ -6197,15 +6209,16 @@ rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc, VALUE locals, VALUE params,
 	iseq->body->param.flags.has_opt = !!(len - 1 >= 0);
 
 	if (iseq->body->param.flags.has_opt) {
-	    iseq->body->param.opt_num = len - 1;
-	    iseq->body->param.opt_table = (VALUE *)ALLOC_N(VALUE, len);
+	    VALUE *opt_table = ALLOC_N(VALUE, len);
 
 	    for (i = 0; i < len; i++) {
 		VALUE ent = RARRAY_AREF(arg_opt_labels, i);
 		LABEL *label = register_label(iseq, labels_table, ent);
-
-		iseq->body->param.opt_table[i] = (VALUE)label;
+		opt_table[i] = (VALUE)label;
 	    }
+
+	    iseq->body->param.opt_num = len - 1;
+	    iseq->body->param.opt_table = opt_table;
 	}
       case T_NIL:
 	break;
@@ -6216,7 +6229,7 @@ rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc, VALUE locals, VALUE params,
 
     switch (TYPE(keywords)) {
       case T_ARRAY:
-	iseq_build_kw(iseq, params, keywords);
+	iseq->body->param.keyword = iseq_build_kw(iseq, params, keywords);
       case T_NIL:
 	break;
       default:
@@ -6229,12 +6242,12 @@ rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc, VALUE locals, VALUE params,
     }
 
     if (int_param(&i, params, SYM(kwrest))) {
-        if (!iseq->body->param.keyword) {
-          iseq->body->param.keyword = ZALLOC(struct rb_iseq_param_keyword);
-        }
-        iseq->body->param.keyword->rest_start = i;
-        iseq->body->param.flags.has_kwrest = TRUE;
-
+	struct rb_iseq_param_keyword *keyword = (struct rb_iseq_param_keyword *)iseq->body->param.keyword;
+	if (keyword == NULL) {
+	    iseq->body->param.keyword = keyword = ZALLOC(struct rb_iseq_param_keyword);
+	}
+	keyword->rest_start = i;
+	iseq->body->param.flags.has_kwrest = TRUE;
     }
 #undef SYM
     iseq_calc_param_size(iseq);
