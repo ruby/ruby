@@ -1080,11 +1080,11 @@ get_lvar_level(const rb_iseq_t *iseq)
 static int
 get_dyna_var_idx_at_raw(const rb_iseq_t *iseq, ID id)
 {
-    int i;
+    unsigned int i;
 
     for (i = 0; i < iseq->body->local_table_size; i++) {
 	if (iseq->body->local_table[i] == id) {
-	    return i;
+	    return (int)i;
 	}
     }
     return -1;
@@ -1587,7 +1587,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 			}
 		      case TS_IC: /* inline cache */
 			{
-			    int ic_index = FIX2INT(operands[j]);
+			    unsigned int ic_index = FIX2UINT(operands[j]);
 			    IC ic = (IC)&iseq->body->is_entries[ic_index];
 			    if (UNLIKELY(ic_index >= iseq->body->is_size)) {
 				rb_bug("iseq_set_sequence: ic_index overflow: index: %d, size: %d", ic_index, iseq->body->is_size);
@@ -1719,7 +1719,7 @@ static int
 iseq_set_exception_table(rb_iseq_t *iseq)
 {
     const VALUE *tptr, *ptr;
-    int tlen, i;
+    unsigned int tlen, i;
     struct iseq_catch_table_entry *entry;
 
     tlen = (int)RARRAY_LEN(iseq->compile_data->catch_table_ary);
@@ -6013,7 +6013,7 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 			break;
 		      case TS_IC:
 			argv[j] = op;
-			if (NUM2INT(op) >= iseq->body->is_size) {
+			if (NUM2UINT(op) >= iseq->body->is_size) {
 			    iseq->body->is_size = NUM2INT(op) + 1;
 			}
 			break;
@@ -6274,7 +6274,7 @@ rb_dvar_defined(ID id)
 	       iseq->body->type == ISEQ_TYPE_EVAL ||
 	       iseq->body->type == ISEQ_TYPE_MAIN
 	       ) {
-	    int i;
+	    unsigned int i;
 
 	    for (i = 0; i < iseq->body->local_table_size; i++) {
 		if (iseq->body->local_table[i] == id) {
@@ -6294,7 +6294,7 @@ rb_local_defined(ID id)
     const rb_iseq_t *iseq;
 
     if (th->base_block && th->base_block->iseq) {
-	int i;
+	unsigned int i;
 	iseq = th->base_block->iseq->body->local_iseq;
 
 	for (i=0; i<iseq->body->local_table_size; i++) {

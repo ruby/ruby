@@ -213,7 +213,7 @@ typedef struct rb_call_info_struct {
     int argc;
     union {
 	int opt_pc; /* used by iseq */
-	int index; /* used by ivar */
+	unsigned int index; /* used by ivar */
 	enum method_missing_reason method_missing_reason; /* used by method_missing */
 	int inc_sp; /* used by cfunc */
     } aux;
@@ -250,9 +250,9 @@ struct rb_iseq_constant_body {
 	ISEQ_TYPE_DEFINED_GUARD
     } type;              /* instruction sequence type */
 
-    int stack_max; /* for stack overflow check */
+    unsigned int stack_max; /* for stack overflow check */
     /* sizeof(vars) + 1 */
-    int local_size;
+    unsigned int local_size;
 
     unsigned int iseq_size;
     const VALUE *iseq_encoded; /* encoded iseq (insn addr and operands) */
@@ -293,7 +293,7 @@ struct rb_iseq_constant_body {
 	    unsigned int ambiguous_param0 : 1; /* {|a|} */
 	} flags;
 
-	int size;
+	unsigned int size;
 
 	int lead_num;
 	int opt_num;
@@ -345,9 +345,9 @@ struct rb_iseq_constant_body {
     rb_call_info_t *callinfo_entries;
     const VALUE mark_ary;     /* Array: includes operands which should be GC marked */
 
-    int local_table_size;
-    int is_size;
-    int callinfo_size;
+    unsigned int local_table_size;
+    unsigned int is_size;
+    unsigned int callinfo_size;
     unsigned int line_info_size;
 };
 

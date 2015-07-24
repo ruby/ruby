@@ -509,7 +509,7 @@ setup_parameters_complex(rb_thread_t * const th, const rb_iseq_t * const iseq, r
     struct args_info args_body, *args;
     VALUE keyword_hash = Qnil;
     VALUE * const orig_sp = th->cfp->sp;
-    int i;
+    unsigned int i;
 
     /*
      * Extend SP for GC.

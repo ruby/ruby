@@ -1,3 +1,30 @@
+Sat Jul 25 06:38:36 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h: size should be unsigned.
+	  * rb_call_info_t::index
+	  * rb_iseq_constant_body::stack_max
+	  * rb_iseq_constant_body::local_size
+	  * rb_iseq_constant_body::param::size
+	  * rb_iseq_constant_body::local_table_size
+	  * rb_iseq_constant_body::is_size
+	  * rb_iseq_constant_body::callinfo_size
+
+	* iseq.h: same for iseq_catch_table::size.
+
+	* compile.c: catch up these fix.
+
+	* iseq.c: ditto.
+
+	* proc.c: ditto.
+
+	* vm.c: ditto.
+
+	* vm_args.c: ditto.
+
+	* vm_eval.c: ditto.
+
+	* vm_insnhelper.c: ditto.
+
 Sat Jul 25 06:00:09 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h: constify rb_iseq_constant_body::line_info_table.

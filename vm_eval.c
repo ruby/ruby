@@ -2043,7 +2043,7 @@ rb_f_local_variables(void)
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp =
 	vm_get_ruby_level_caller_cfp(th, RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp));
-    int i;
+    unsigned int i;
 
     local_var_list_init(&vars);
     while (cfp) {
