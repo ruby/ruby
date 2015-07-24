@@ -1387,7 +1387,7 @@ rb_iseq_disasm(const rb_iseq_t *iseq)
 	rb_str_cat2(str, "== catch table\n");
     }
     if (iseq->body->catch_table) for (i = 0; i < iseq->body->catch_table->size; i++) {
-	struct iseq_catch_table_entry *entry = &iseq->body->catch_table->entries[i];
+	const struct iseq_catch_table_entry *entry = &iseq->body->catch_table->entries[i];
 	rb_str_catf(str,
 		    "| catch type: %-6s st: %04d ed: %04d sp: %04d cont: %04d\n",
 		    catch_type((int)entry->type), (int)entry->start,
@@ -1894,7 +1894,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
     /* exception */
     if (iseq->body->catch_table) for (i=0; i<iseq->body->catch_table->size; i++) {
 	VALUE ary = rb_ary_new();
-	struct iseq_catch_table_entry *entry = &iseq->body->catch_table->entries[i];
+	const struct iseq_catch_table_entry *entry = &iseq->body->catch_table->entries[i];
 	rb_ary_push(ary, exception_type2symbol(entry->type));
 	if (entry->iseq) {
 	    rb_ary_push(ary, iseq_data_to_ary(entry->iseq));

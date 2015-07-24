@@ -1714,44 +1714,47 @@ iseq_set_exception_table(rb_iseq_t *iseq)
     tlen = (int)RARRAY_LEN(iseq->compile_data->catch_table_ary);
     tptr = RARRAY_CONST_PTR(iseq->compile_data->catch_table_ary);
 
-    iseq->body->catch_table = 0;
     if (tlen > 0) {
-	iseq->body->catch_table = xmalloc(iseq_catch_table_bytes(tlen));
-	iseq->body->catch_table->size = tlen;
-    }
+	struct iseq_catch_table *table = xmalloc(iseq_catch_table_bytes(tlen));
+	table->size = tlen;
 
-    if (iseq->body->catch_table) for (i = 0; i < iseq->body->catch_table->size; i++) {
-	ptr = RARRAY_CONST_PTR(tptr[i]);
-	entry = &iseq->body->catch_table->entries[i];
-	entry->type = (enum catch_type)(ptr[0] & 0xffff);
-	entry->start = label_get_position((LABEL *)(ptr[1] & ~1));
-	entry->end = label_get_position((LABEL *)(ptr[2] & ~1));
-	entry->iseq = (rb_iseq_t *)ptr[3];
+	for (i = 0; i < table->size; i++) {
+	    ptr = RARRAY_CONST_PTR(tptr[i]);
+	    entry = &table->entries[i];
+	    entry->type = (enum catch_type)(ptr[0] & 0xffff);
+	    entry->start = label_get_position((LABEL *)(ptr[1] & ~1));
+	    entry->end = label_get_position((LABEL *)(ptr[2] & ~1));
+	    entry->iseq = (rb_iseq_t *)ptr[3];
 
-	/* register iseq as mark object */
-	if (entry->iseq != 0) {
-	    iseq_add_mark_object(iseq, (VALUE)entry->iseq);
-	}
+	    /* register iseq as mark object */
+	    if (entry->iseq != 0) {
+		iseq_add_mark_object(iseq, (VALUE)entry->iseq);
+	    }
 
-	/* stack depth */
-	if (ptr[4]) {
-	    LABEL *lobj = (LABEL *)(ptr[4] & ~1);
-	    entry->cont = label_get_position(lobj);
-	    entry->sp = label_get_sp(lobj);
+	    /* stack depth */
+	    if (ptr[4]) {
+		LABEL *lobj = (LABEL *)(ptr[4] & ~1);
+		entry->cont = label_get_position(lobj);
+		entry->sp = label_get_sp(lobj);
 
-	    /* TODO: Dirty Hack!  Fix me */
-	    if (entry->type == CATCH_TYPE_RESCUE ||
-		entry->type == CATCH_TYPE_BREAK ||
-		entry->type == CATCH_TYPE_NEXT) {
-		entry->sp--;
+		/* TODO: Dirty Hack!  Fix me */
+		if (entry->type == CATCH_TYPE_RESCUE ||
+		    entry->type == CATCH_TYPE_BREAK ||
+		    entry->type == CATCH_TYPE_NEXT) {
+		    entry->sp--;
+		}
+	    }
+	    else {
+		entry->cont = 0;
 	    }
 	}
-	else {
-	    entry->cont = 0;
-	}
+	iseq->body->catch_table = table;
+	RB_OBJ_WRITE(iseq, &iseq->compile_data->catch_table_ary, 0); /* free */
+    }
+    else {
+	iseq->body->catch_table = NULL;
     }
 
-    RB_OBJ_WRITE(iseq, &iseq->compile_data->catch_table_ary, 0); /* free */
     return COMPILE_OK;
 }
 

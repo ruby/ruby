@@ -1478,8 +1478,8 @@ vm_exec(rb_thread_t *th)
     }
     else {
 	int i;
-	struct iseq_catch_table_entry *entry;
-	struct iseq_catch_table *ct;
+	const struct iseq_catch_table_entry *entry;
+	const struct iseq_catch_table *ct;
 	unsigned long epc, cont_pc, cont_sp;
 	const rb_iseq_t *catch_iseq;
 	rb_control_frame_t *cfp;

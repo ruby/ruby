@@ -1,3 +1,13 @@
+Sat Jul 25 04:47:01 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h: constify rb_iseq_constant_body::catch_table.
+
+	* compile.c (iseq_set_exception_table): catch up this fix.
+
+	* iseq.c: ditto.
+
+	* vm.c (vm_exec): ditto.
+
 Fri Jul 24 21:29:54 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* st.c (EQUAL, st_delete_safe): fix arguments order to compare
