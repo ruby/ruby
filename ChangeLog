@@ -1,3 +1,13 @@
+Fri Jul 24 16:35:34 2015  yui-knk  <spiketeika@gmail.com>
+
+	* file.c (rb_file_s_extname): [DOC] add an example.
+
+	* test/ruby/test_path.rb (test_extname): add tests.  [Fix GH-978]
+	  * path starts with dot ('.a.rb')
+	  * path includes dir name ('a/b/d/test.rb')
+	  * path includes dir name and dir name starts with dot
+	    ('.a/b/d/test.rb')
+
 Thu Jul 23 18:50:43 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h: constify rb_iseq_constant_body::local_table and
