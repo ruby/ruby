@@ -1060,11 +1060,11 @@ iseqw_to_a(VALUE self)
 /* TODO: search algorithm is brute force.
          this should be binary search or so. */
 
-static struct iseq_line_info_entry *
+static const struct iseq_line_info_entry *
 get_line_info(const rb_iseq_t *iseq, size_t pos)
 {
     size_t i = 0, size = iseq->body->line_info_size;
-    struct iseq_line_info_entry *table = iseq->body->line_info_table;
+    const struct iseq_line_info_entry *table = iseq->body->line_info_table;
     const int debug = 0;
 
     if (debug) {
@@ -1098,7 +1098,8 @@ get_line_info(const rb_iseq_t *iseq, size_t pos)
 static unsigned int
 find_line_no(const rb_iseq_t *iseq, size_t pos)
 {
-    struct iseq_line_info_entry *entry = get_line_info(iseq, pos);
+    const struct iseq_line_info_entry *entry = get_line_info(iseq, pos);
+
     if (entry) {
 	return entry->line_no;
     }

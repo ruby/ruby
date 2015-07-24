@@ -330,7 +330,7 @@ struct rb_iseq_constant_body {
     rb_iseq_location_t location;
 
     /* insn info, must be freed */
-    struct iseq_line_info_entry *line_info_table;
+    const struct iseq_line_info_entry *line_info_table;
 
     const ID *local_table;		/* must free */
 
