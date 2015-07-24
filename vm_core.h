@@ -302,7 +302,7 @@ struct rb_iseq_constant_body {
 	int post_num;
 	int block_start;
 
-	VALUE *opt_table; /* (opt_num + 1) entries. */
+	const VALUE *opt_table; /* (opt_num + 1) entries. */
 	/* opt_num and opt_table:
 	 *
 	 * def foo o1=e1, o2=e2, ..., oN=eN
@@ -317,7 +317,7 @@ struct rb_iseq_constant_body {
 	 * opt_table = [A1, A2, ..., AN, AL]
 	 */
 
-	struct rb_iseq_param_keyword {
+	const struct rb_iseq_param_keyword {
 	    int num;
 	    int required_num;
 	    int bits_start;
