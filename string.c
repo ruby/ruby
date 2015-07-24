@@ -155,6 +155,9 @@ VALUE rb_cSymbol;
 #define SHARABLE_SUBSTRING_P(beg, len, end) 1
 #endif
 
+static VALUE str_replace_shared_without_enc(VALUE str2, VALUE str);
+static VALUE str_new_shared(VALUE klass, VALUE str);
+static VALUE str_new_frozen(VALUE klass, VALUE orig);
 static VALUE str_new_static(VALUE klass, const char *ptr, long len, int encindex);
 static void str_make_independent_expand(VALUE str, long expand);
 
@@ -228,6 +231,8 @@ static const struct st_hash_type fstring_hash_type = {
     rb_str_hash,
 };
 
+#define BARE_STRING_P(str) (!FL_ANY_RAW(str, FL_TAINT|FL_EXIVAR) && RBASIC_CLASS(str) == rb_cString)
+
 static int
 fstr_update_callback(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
 {
@@ -254,10 +259,15 @@ fstr_update_callback(st_data_t *key, st_data_t *value, st_data_t arg, int existi
 	    OBJ_FREEZE_RAW(str);
 	}
 	else {
-	    str = rb_str_new_frozen(str);
+	    str = str_new_frozen(rb_cString, str);
 	    if (STR_SHARED_P(str)) { /* str should not be shared */
 		/* shared substring  */
 		str_make_independent_expand(str, 0L);
+		assert(OBJ_FROZEN(str));
+	    }
+	    if (!BARE_STRING_P(str)) {
+		str = str_new_shared(rb_cString, str);
+		OBJ_FREEZE_RAW(str);
 	    }
 	}
 	RBASIC(str)->flags |= RSTRING_FSTR;
@@ -267,15 +277,32 @@ fstr_update_callback(st_data_t *key, st_data_t *value, st_data_t arg, int existi
     }
 }
 
+RUBY_FUNC_EXPORTED
 VALUE
 rb_fstring(VALUE str)
 {
+    VALUE fstr;
+    int bare;
+
     Check_Type(str, T_STRING);
 
     if (FL_TEST(str, RSTRING_FSTR))
 	return str;
 
-    return register_fstring(str);
+    bare = BARE_STRING_P(str);
+    if (STR_EMBED_P(str) && !bare) {
+	OBJ_FREEZE_RAW(str);
+	return str;
+    }
+
+    fstr = register_fstring(str);
+
+    if (!bare) {
+	str_replace_shared_without_enc(str, fstr);
+	OBJ_FREEZE_RAW(str);
+	return str;
+    }
+    return fstr;
 }
 
 static VALUE
@@ -286,11 +313,14 @@ register_fstring(VALUE str)
     do {
 	ret = str;
 	st_update(rb_vm_fstring_table(), (st_data_t)str,
-		    fstr_update_callback, (st_data_t)&ret);
+		  fstr_update_callback, (st_data_t)&ret);
     } while (ret == Qundef);
 
     assert(OBJ_FROZEN(ret));
     assert(!FL_TEST_RAW(ret, STR_FAKESTR));
+    assert(!FL_TEST_RAW(ret, FL_EXIVAR));
+    assert(!FL_TEST_RAW(ret, FL_TAINT));
+    assert(RBASIC_CLASS(ret) == rb_cString);
     return ret;
 }
 
@@ -972,11 +1002,15 @@ rb_str_new_shared(VALUE str)
 VALUE
 rb_str_new_frozen(VALUE orig)
 {
-    VALUE klass, str;
-
     if (OBJ_FROZEN(orig)) return orig;
 
-    klass = rb_obj_class(orig);
+    return str_new_frozen(rb_obj_class(orig), orig);
+}
+
+static VALUE
+str_new_frozen(VALUE klass, VALUE orig)
+{
+    VALUE str;
 
     if (STR_EMBED_P(orig)) {
 	str = str_new(klass, RSTRING_PTR(orig), RSTRING_LEN(orig));
