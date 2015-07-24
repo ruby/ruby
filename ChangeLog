@@ -1,3 +1,9 @@
+Sat Jul 25 06:00:09 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h: constify rb_iseq_constant_body::line_info_table.
+
+	* iseq.c: catch up this fix.
+
 Sat Jul 25 05:56:43 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h: constify rb_iseq_constant_body::param::opt_table and
