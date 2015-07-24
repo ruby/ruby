@@ -1,3 +1,9 @@
+Fri Jul 24 21:29:54 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* st.c (EQUAL, st_delete_safe): fix arguments order to compare
+	  function, searching key is the first and stored key is the
+	  second always.
+
 Fri Jul 24 21:27:29 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (fstr_update_callback): fstring must not be a shared
