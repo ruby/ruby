@@ -1,3 +1,11 @@
+Fri Jul 24 16:35:55 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (fstr_update_callback): pool bare strings only.
+
+	* string.c (rb_fstring): return the original string with sharing a
+	  fstring if it has extra attributes, not the fstring itself.
+	  [ruby-dev:49188] [Bug #11386]
+
 Fri Jul 24 16:35:34 2015  yui-knk  <spiketeika@gmail.com>
 
 	* file.c (rb_file_s_extname): [DOC] add an example.
