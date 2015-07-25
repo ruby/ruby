@@ -86,6 +86,14 @@ class Test_StringCStr < Test::Unit::TestCase
     }
   end
 
+  def test_wchar_replace
+    assert_wchars_term_char("abc") {|s|
+      w = s.dup
+      s.replace("abcdefghijklmnop")
+      s.replace(w)
+    }
+  end
+
   def test_embedded_from_heap
     gh821 = "[GH-821]"
     embedded_string = "abcdefghi"
