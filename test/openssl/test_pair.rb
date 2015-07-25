@@ -283,6 +283,29 @@ module OpenSSL::TestPairM
     serv.close if serv && !serv.closed?
   end
 
+  def test_connect_without_setting_dh_callback
+    ctx2 = OpenSSL::SSL::SSLContext.new
+    ctx2.ciphers = "DH"
+    sock1, sock2 = tcp_pair
+    s2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx2)
+    accepted = s2.accept_nonblock(exception: false)
+
+    ctx1 = OpenSSL::SSL::SSLContext.new
+    ctx1.ciphers = "DH"
+    s1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx1)
+    t = Thread.new { s1.connect }
+
+    accept = s2.accept
+    assert_equal s1, t.value
+    assert accept
+  ensure
+    s1.close if s1
+    s2.close if s2
+    sock1.close if sock1
+    sock2.close if sock2
+    accepted.close if accepted.respond_to?(:close)
+  end
+
   def test_ecdh_callback
     called = false
     ctx2 = OpenSSL::SSL::SSLContext.new
