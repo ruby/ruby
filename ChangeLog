@@ -1,3 +1,21 @@
+Sun Jul 26 07:47:14 2015  Aaron Patterson <tenderlove@ruby-lang.org>
+
+	* ext/openssl/lib/openssl/ssl.rb (module OpenSSL): move the default
+	  tmp_dh_callback Ruby code and set it as a default in `initialize`.
+
+	* ext/openssl/ossl_pkey_dh.c (static unsigned char DEFAULT_DH_512_GEN):
+	  move this constant to Ruby.
+
+	* ext/openssl/ossl_pkey_dh.c (static unsigned char DEFAULT_DH_1024_GEN):
+	  ditto
+
+	* ext/openssl/ossl_pkey_dh.c (Init_ossl_dh): ditto
+
+	* ext/openssl/ossl_ssl.c (ossl_tmp_dh_callback): ditto
+
+	* ext/openssl/ossl_ssl.c (ossl_sslctx_setup): tmp_dh_callback should
+	  always be set, so we can remove this conditional
+
 Sun Jul 26 06:22:24 2015  Aaron Patterson <tenderlove@ruby-lang.org>
 
 	* test/openssl/test_pair.rb: add a test ensuring that the default DH
