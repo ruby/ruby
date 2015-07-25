@@ -1,6 +1,6 @@
 Sun Jul 26 03:42:19 2015  Aaron Patterson <tenderlove@ruby-lang.org>
 
-	* ext/openssl/lib/openssl/ssl.rb (module OpenSSL): move 
+	* ext/openssl/lib/openssl/ssl.rb (module OpenSSL): move
 	  OpenSSL::SSL::SSLContext#initialize implementation to pure Ruby.
 
 	* ext/openssl/ossl_ssl.c (ossl_sslctx_initialize): ditto
