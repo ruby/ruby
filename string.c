@@ -367,11 +367,13 @@ fstring_set_class_i(st_data_t key, st_data_t val, st_data_t arg)
 static int
 fstring_cmp(VALUE a, VALUE b)
 {
-    int cmp = rb_str_hash_cmp(a, b);
-    if (cmp != 0) {
-	return cmp;
-    }
-    return ENCODING_GET(b) - ENCODING_GET(a);
+    long alen, blen;
+    const char *aptr, *bptr;
+    RSTRING_GETMEM(a, aptr, alen);
+    RSTRING_GETMEM(b, bptr, blen);
+    return (alen != blen ||
+	    ENCODING_GET(a) != ENCODING_GET(b) ||
+	    memcmp(aptr, bptr, alen) != 0);
 }
 
 static inline int
@@ -2576,14 +2578,13 @@ rb_str_hash(VALUE str)
 int
 rb_str_hash_cmp(VALUE str1, VALUE str2)
 {
-    long len;
-
-    if (!rb_str_comparable(str1, str2)) return 1;
-    if (RSTRING_LEN(str1) == (len = RSTRING_LEN(str2)) &&
-	memcmp(RSTRING_PTR(str1), RSTRING_PTR(str2), len) == 0) {
-	return 0;
-    }
-    return 1;
+    long len1, len2;
+    const char *ptr1, *ptr2;
+    RSTRING_GETMEM(str1, ptr1, len1);
+    RSTRING_GETMEM(str2, ptr2, len2);
+    return (len1 != len2 ||
+	    !rb_str_comparable(str1, str2) ||
+	    memcmp(ptr1, ptr2, len1) != 0);
 }
 
 /*
