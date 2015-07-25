@@ -1461,8 +1461,8 @@ rb_iseq_disasm(const rb_iseq_t *iseq)
 	n += rb_iseq_disasm_insn(str, code, n, iseq, child);
     }
 
-    for (i = 0; i < RARRAY_LEN(child); i++) {
-	VALUE isv = rb_ary_entry(child, i);
+    for (l = 0; l < RARRAY_LEN(child); l++) {
+	VALUE isv = rb_ary_entry(child, l);
 	rb_str_concat(str, rb_iseq_disasm((rb_iseq_t *)isv));
     }
 
@@ -1663,7 +1663,8 @@ cdhash_each(VALUE key, VALUE value, VALUE ary)
 static VALUE
 iseq_data_to_ary(const rb_iseq_t *iseq)
 {
-    long i;
+    unsigned int i;
+    long l;
     size_t ti;
     unsigned int pos;
     unsigned int line = 0;
@@ -1916,8 +1917,8 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
     body = rb_ary_new();
     ti = 0;
 
-    for (i=0, pos=0; i<RARRAY_LEN(nbody); i++) {
-	VALUE ary = RARRAY_AREF(nbody, i);
+    for (l=0, pos=0; l<RARRAY_LEN(nbody); l++) {
+	VALUE ary = RARRAY_AREF(nbody, l);
 	st_data_t label;
 
 	if (st_lookup(labels_table, pos, &label)) {
