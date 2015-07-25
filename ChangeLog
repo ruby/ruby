@@ -1,3 +1,9 @@
+Sun Jul 26 08:49:28 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* test/rubygems/test_gem_remote_fetcher.rb: backport rubygems upstream
+	  change for OpenSSL key length. see detail to
+	  https://github.com/rubygems/rubygems/pull/1290
+
 Sun Jul 26 08:33:03 2015  Aaron Patterson <tenderlove@ruby-lang.org>
 
 	* ext/openssl/lib/openssl/pkey.rb: implement DEFAULT_512 and
