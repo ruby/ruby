@@ -1,3 +1,8 @@
+Sun Jul 26 06:22:24 2015  Aaron Patterson <tenderlove@ruby-lang.org>
+
+	* test/openssl/test_pair.rb: add a test ensuring that the default DH
+	  callback is used when no DH callback is specified.
+
 Sun Jul 26 04:08:27 2015  Aaron Patterson <tenderlove@ruby-lang.org>
 
 	* ext/openssl/lib/openssl/ssl.rb (module OpenSSL): add missing
