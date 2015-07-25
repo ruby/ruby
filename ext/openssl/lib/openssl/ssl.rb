@@ -128,6 +128,10 @@ module OpenSSL
         end
         return params
       end
+
+      def tmp_dh_callback=(value)
+        @tmp_dh_callback = value || DEFAULT_TMP_DH_CALLBACK
+      end
     end
 
     module SocketForwarder
