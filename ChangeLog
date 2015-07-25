@@ -1,3 +1,20 @@
+Sun Jul 26 08:33:03 2015  Aaron Patterson <tenderlove@ruby-lang.org>
+
+	* ext/openssl/lib/openssl/pkey.rb: implement DEFAULT_512 and
+	  DEFAULT_1024 constants in Ruby.
+
+	* ext/openssl/lib/openssl/ssl.rb (module OpenSSL): Ask PKey for the
+	  default DH callback since it aleady must check whether openssl has
+	  been compiled with DH support.
+
+	* ext/openssl/ossl_pkey_dh.c (OSSL_PKEY_BN): Remove C definitions of
+	  DEFAULT_512 and DEFAULT_1024
+
+	* ext/openssl/ossl_pkey_dh.c (Init_ossl_dh): ditto
+
+	* test/openssl/test_pkey_dh.rb (class OpenSSL): add test to ensure the
+	  Ruby definitions are the same as the C definitions were.
+
 Sun Jul 26 08:14:59 2015  Aaron Patterson <tenderlove@ruby-lang.org>
 
 	* ext/openssl/lib/openssl/ssl.rb (module OpenSSL): support

@@ -74,20 +74,6 @@ module OpenSSL
         DEFAULT_CERT_STORE.flags = OpenSSL::X509::V_FLAG_CRL_CHECK_ALL
       end
 
-      if defined?(OpenSSL::PKey::DH)
-        DEFAULT_TMP_DH_CALLBACK = lambda { |ctx, is_export, keylen|
-          warn "using default DH parameters." if $VERBOSE
-          case keylen
-          when 512  then OpenSSL::PKey::DH::DEFAULT_512
-          when 1024 then OpenSSL::PKey::DH::DEFAULT_1024
-          else
-            nil
-          end
-        }
-      else
-        DEFAULT_TMP_DH_CALLBACK = nil
-      end
-
       INIT_VARS = ["cert", "key", "client_ca", "ca_file", "ca_path",
         "timeout", "verify_mode", "verify_depth", "renegotiation_cb",
         "verify_callback", "options", "cert_store", "extra_chain_cert",
@@ -105,7 +91,7 @@ module OpenSSL
       # You can get a list of valid methods with OpenSSL::SSL::SSLContext::METHODS
       def initialize(version = nil)
         INIT_VARS.each { |v| instance_variable_set v, nil }
-        @tmp_dh_callback = DEFAULT_TMP_DH_CALLBACK
+        @tmp_dh_callback = OpenSSL::PKey::DEFAULT_TMP_DH_CALLBACK
         return unless version
         self.ssl_version = version
       end
@@ -130,7 +116,7 @@ module OpenSSL
       end
 
       def tmp_dh_callback=(value)
-        @tmp_dh_callback = value || DEFAULT_TMP_DH_CALLBACK
+        @tmp_dh_callback = value || OpenSSL::PKey::DEFAULT_TMP_DH_CALLBACK
       end
     end
 
