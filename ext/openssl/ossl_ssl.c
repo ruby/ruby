@@ -69,22 +69,6 @@ static VALUE eSSLErrorWaitWritable;
 #define ossl_sslctx_get_tmp_dh_cb(o)     	rb_iv_get((o),"@tmp_dh_callback")
 #define ossl_sslctx_get_sess_id_ctx(o)   	rb_iv_get((o),"@session_id_context")
 
-static const char *ossl_sslctx_attrs[] = {
-    "cert", "key", "client_ca", "ca_file", "ca_path",
-    "timeout", "verify_mode", "verify_depth", "renegotiation_cb",
-    "verify_callback", "options", "cert_store", "extra_chain_cert",
-    "client_cert_cb", "tmp_dh_callback", "session_id_context",
-    "session_get_cb", "session_new_cb", "session_remove_cb",
-    "tmp_ecdh_callback",
-#ifdef HAVE_SSL_SET_TLSEXT_HOST_NAME
-    "servername_cb",
-#endif
-#ifdef HAVE_OPENSSL_NPN_NEGOTIATED
-    "npn_protocols",
-    "npn_select_cb",
-#endif
-};
-
 #define ossl_ssl_get_io(o)           rb_iv_get((o),"@io")
 #define ossl_ssl_get_ctx(o)          rb_iv_get((o),"@context")
 #define ossl_ssl_get_sync_close(o)   rb_iv_get((o),"@sync_close")
@@ -230,33 +214,6 @@ ossl_sslctx_set_ssl_version(VALUE self, VALUE ssl_method)
     }
 
     return ssl_method;
-}
-
-/*
- * call-seq:
- *    SSLContext.new => ctx
- *    SSLContext.new(:TLSv1) => ctx
- *    SSLContext.new("SSLv23_client") => ctx
- *
- * You can get a list of valid methods with OpenSSL::SSL::SSLContext::METHODS
- */
-static VALUE
-ossl_sslctx_initialize(int argc, VALUE *argv, VALUE self)
-{
-    VALUE ssl_method;
-    int i;
-
-    for(i = 0; i < numberof(ossl_sslctx_attrs); i++){
-	char buf[32];
-	snprintf(buf, sizeof(buf), "@%s", ossl_sslctx_attrs[i]);
-	rb_iv_set(self, buf, Qnil);
-    }
-    if (rb_scan_args(argc, argv, "01", &ssl_method) == 0){
-        return self;
-    }
-    ossl_sslctx_set_ssl_version(self, ssl_method);
-
-    return self;
 }
 
 static VALUE
@@ -2315,7 +2272,6 @@ Init_ossl_ssl(void)
 
     rb_define_alias(cSSLContext, "ssl_timeout", "timeout");
     rb_define_alias(cSSLContext, "ssl_timeout=", "timeout=");
-    rb_define_method(cSSLContext, "initialize",  ossl_sslctx_initialize, -1);
     rb_define_method(cSSLContext, "ssl_version=", ossl_sslctx_set_ssl_version, 1);
     rb_define_method(cSSLContext, "ciphers",     ossl_sslctx_get_ciphers, 0);
     rb_define_method(cSSLContext, "ciphers=",    ossl_sslctx_set_ciphers, 1);

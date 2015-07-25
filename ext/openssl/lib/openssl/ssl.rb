@@ -74,6 +74,26 @@ module OpenSSL
         DEFAULT_CERT_STORE.flags = OpenSSL::X509::V_FLAG_CRL_CHECK_ALL
       end
 
+      INIT_VARS = ["cert", "key", "client_ca", "ca_file", "ca_path",
+        "timeout", "verify_mode", "verify_depth", "renegotiation_cb",
+        "verify_callback", "options", "cert_store", "extra_chain_cert",
+        "client_cert_cb", "tmp_dh_callback", "session_id_context",
+        "session_get_cb", "session_new_cb", "session_remove_cb",
+        "tmp_ecdh_callback", "servername_cb", "npn_protocols",
+        "npn_select_cb"].map { |x| "@#{x}" }
+
+      # call-seq:
+      #    SSLContext.new => ctx
+      #    SSLContext.new(:TLSv1) => ctx
+      #    SSLContext.new("SSLv23_client") => ctx
+      #
+      # You can get a list of valid methods with OpenSSL::SSL::SSLContext::METHODS
+      def initialize(version = nil)
+        INIT_VARS.each { |v| instance_variable_set v, nil }
+        return unless version
+        self.ssl_version = version
+      end
+
       ##
       # Sets the parameters for this SSL context to the values in +params+.
       # The keys in +params+ must be assignment methods on SSLContext.
