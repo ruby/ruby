@@ -516,6 +516,12 @@ fill_random_bytes_syscall(void *seed, size_t size)
     return 0;
 }
 #elif defined __linux__ && defined SYS_getrandom
+#include <linux/random.h>
+
+# ifndef GRND_NONBLOCK
+#   define GRND_NONBLOCK 0x0001	/* not defined in musl libc */
+# endif
+
 static int
 fill_random_bytes_syscall(void *seed, size_t size)
 {
@@ -523,7 +529,7 @@ fill_random_bytes_syscall(void *seed, size_t size)
     if (try_syscall) {
 	long ret;
 	errno = 0;
-	ret = syscall(SYS_getrandom, seed, size, 0);
+	ret = syscall(SYS_getrandom, seed, size, GRND_NONBLOCK);
 	if (errno == ENOSYS) {
 	    try_syscall = 0;
 	    return -1;
