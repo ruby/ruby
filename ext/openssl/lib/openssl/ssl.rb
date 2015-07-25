@@ -80,6 +80,7 @@ module OpenSSL
         "client_cert_cb", "tmp_dh_callback", "session_id_context",
         "session_get_cb", "session_new_cb", "session_remove_cb",
         "tmp_ecdh_callback", "servername_cb", "npn_protocols",
+        "alpn_protocols", "alpn_select_cb",
         "npn_select_cb"].map { |x| "@#{x}" }
 
       # call-seq:
