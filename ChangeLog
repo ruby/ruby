@@ -1,3 +1,8 @@
+Sat Jul 25 11:05:31 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (str_replace_shared_without_enc): fill the terminator
+	  of embedded strings in wide char encodings.
+
 Sat Jul 25 06:38:36 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h: size should be unsigned.

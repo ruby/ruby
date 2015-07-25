@@ -962,16 +962,24 @@ rb_str_export_to_enc(VALUE str, rb_encoding *enc)
 static VALUE
 str_replace_shared_without_enc(VALUE str2, VALUE str)
 {
-    if (RSTRING_LEN(str) <= RSTRING_EMBED_LEN_MAX) {
+    const int termlen = TERM_LEN(str);
+    char *ptr;
+    long len;
+
+    RSTRING_GETMEM(str, ptr, len);
+    if (len+termlen <= RSTRING_EMBED_LEN_MAX+1) {
+	char *ptr2 = RSTRING(str2)->as.ary;
 	STR_SET_EMBED(str2);
-	memcpy(RSTRING_PTR(str2), RSTRING_PTR(str), RSTRING_LEN(str)+1);
-	STR_SET_EMBED_LEN(str2, RSTRING_LEN(str));
+	memcpy(ptr2, RSTRING_PTR(str), len);
+	STR_SET_EMBED_LEN(str2, len);
+	TERM_FILL(ptr2+len, termlen);
     }
     else {
 	str = rb_str_new_frozen(str);
 	FL_SET(str2, STR_NOEMBED);
-	RSTRING(str2)->as.heap.len = RSTRING_LEN(str);
-	RSTRING(str2)->as.heap.ptr = RSTRING_PTR(str);
+	RSTRING_GETMEM(str, ptr, len);
+	RSTRING(str2)->as.heap.len = len;
+	RSTRING(str2)->as.heap.ptr = ptr;
 	STR_SET_SHARED(str2, str);
     }
     return str2;
