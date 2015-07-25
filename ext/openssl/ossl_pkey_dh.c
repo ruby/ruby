@@ -540,7 +540,6 @@ static unsigned char DEFAULT_DH_512_PRIM[] = {
     0x44, 0x47, 0x19, 0xa1, 0x4a, 0xc8, 0x8b, 0xcb,
 };
 static unsigned char DEFAULT_DH_512_GEN[] = { 0x02 };
-DH *OSSL_DEFAULT_DH_512 = NULL;
 
 /*
  * -----BEGIN DH PARAMETERS-----
@@ -568,7 +567,6 @@ static unsigned char DEFAULT_DH_1024_PRIM[] = {
     0xff, 0x57, 0xe7, 0x19, 0x8d, 0x51, 0x77, 0x83
 };
 static unsigned char DEFAULT_DH_1024_GEN[] = { 0x02 };
-DH *OSSL_DEFAULT_DH_1024 = NULL;
 
 static DH*
 ossl_create_dh(unsigned char *p, size_t plen, unsigned char *g, size_t glen)
@@ -596,6 +594,8 @@ Init_ossl_dh(void)
     mOSSL = rb_define_module("OpenSSL"); /* let rdoc know about mOSSL and mPKey */
     mPKey = rb_define_module_under(mOSSL, "PKey");
 #endif
+    DH *OSSL_DEFAULT_DH_512;
+    DH *OSSL_DEFAULT_DH_1024;
 
     /* Document-class: OpenSSL::PKey::DHError
      *
@@ -658,6 +658,9 @@ Init_ossl_dh(void)
     OSSL_DEFAULT_DH_1024 = ossl_create_dh(
 	DEFAULT_DH_1024_PRIM, sizeof(DEFAULT_DH_1024_PRIM),
 	DEFAULT_DH_1024_GEN, sizeof(DEFAULT_DH_1024_GEN));
+
+    rb_define_const(cDH, "DEFAULT_512", dh_instance(cDH, OSSL_DEFAULT_DH_512));
+    rb_define_const(cDH, "DEFAULT_1024", dh_instance(cDH, OSSL_DEFAULT_DH_1024));
 }
 
 #else /* defined NO_DH */

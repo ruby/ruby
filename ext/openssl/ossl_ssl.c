@@ -283,20 +283,6 @@ ossl_tmp_dh_callback(SSL *ssl, int is_export, int keylength)
 
     return GetPKeyPtr(ossl_ssl_get_tmp_dh(args[0]))->pkey.dh;
 }
-
-static DH*
-ossl_default_tmp_dh_callback(SSL *ssl, int is_export, int keylength)
-{
-    rb_warning("using default DH parameters.");
-
-    switch(keylength){
-    case 512:
-	return OSSL_DEFAULT_DH_512;
-    case 1024:
-	return OSSL_DEFAULT_DH_1024;
-    }
-    return NULL;
-}
 #endif /* OPENSSL_NO_DH */
 
 #if !defined(OPENSSL_NO_EC)
@@ -708,12 +694,7 @@ ossl_sslctx_setup(VALUE self)
     GetSSLCTX(self, ctx);
 
 #if !defined(OPENSSL_NO_DH)
-    if (RTEST(ossl_sslctx_get_tmp_dh_cb(self))){
-	SSL_CTX_set_tmp_dh_callback(ctx, ossl_tmp_dh_callback);
-    }
-    else{
-	SSL_CTX_set_tmp_dh_callback(ctx, ossl_default_tmp_dh_callback);
-    }
+    SSL_CTX_set_tmp_dh_callback(ctx, ossl_tmp_dh_callback);
 #endif
 
 #if !defined(OPENSSL_NO_EC)
