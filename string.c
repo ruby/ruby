@@ -1235,13 +1235,13 @@ str_replace(VALUE str, VALUE str2)
 	RSTRING(str)->as.heap.len = len;
 	RSTRING(str)->as.heap.ptr = RSTRING_PTR(str2);
 	STR_SET_SHARED(str, shared);
+	rb_enc_cr_str_exact_copy(str, str2);
     }
     else {
 	str_replace_shared(str, str2);
     }
 
     OBJ_INFECT(str, str2);
-    rb_enc_cr_str_exact_copy(str, str2);
     return str;
 }
 
