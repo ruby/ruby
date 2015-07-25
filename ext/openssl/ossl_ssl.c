@@ -2122,7 +2122,7 @@ Init_ossl_ssl(void)
      * The callback must return an OpenSSL::PKey::DH instance of the correct
      * key length.
      */
-    rb_attr(cSSLContext, rb_intern("tmp_dh_callback"), 1, 1, Qfalse);
+    rb_attr(cSSLContext, rb_intern("tmp_dh_callback"), 1, 0, Qfalse);
 
     /*
      * Sets the context in which a session can be reused.  This allows
