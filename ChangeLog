@@ -1,3 +1,8 @@
+Sun Jul 26 04:08:27 2015  Aaron Patterson <tenderlove@ruby-lang.org>
+
+	* ext/openssl/lib/openssl/ssl.rb (module OpenSSL): add missing
+	  instance variables to squash warnings with alpn.
+
 Sun Jul 26 03:42:19 2015  Aaron Patterson <tenderlove@ruby-lang.org>
 
 	* ext/openssl/lib/openssl/ssl.rb (module OpenSSL): move
