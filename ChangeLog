@@ -1,3 +1,9 @@
+Sat Jul 25 21:03:45 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* random.c (fill_random_bytes_syscall): get rid of blocking when
+	  no entropy is available.  based on the patch by mame in
+	  [ruby-core:70114].  [Bug #11395]
+
 Sat Jul 25 11:05:31 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (str_replace_shared_without_enc): fill the terminator
