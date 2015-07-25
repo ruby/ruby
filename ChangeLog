@@ -1,3 +1,12 @@
+Sun Jul 26 03:42:19 2015  Aaron Patterson <tenderlove@ruby-lang.org>
+
+	* ext/openssl/lib/openssl/ssl.rb (module OpenSSL): move 
+	  OpenSSL::SSL::SSLContext#initialize implementation to pure Ruby.
+
+	* ext/openssl/ossl_ssl.c (ossl_sslctx_initialize): ditto
+
+	* ext/openssl/ossl_ssl.c (Init_ossl_ssl): ditto
+
 Sat Jul 25 21:03:45 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* random.c (fill_random_bytes_syscall): get rid of blocking when
