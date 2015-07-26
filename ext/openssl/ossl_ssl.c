@@ -1932,7 +1932,9 @@ ossl_ssl_npn_protocol(VALUE self)
     else
 	return rb_str_new((const char *) out, outlen);
 }
+# endif
 
+# ifdef HAVE_SSL_CTX_SET_ALPN_SELECT_CB
 /*
  * call-seq:
  *    ssl.alpn_protocol => String
