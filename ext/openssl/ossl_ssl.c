@@ -515,6 +515,7 @@ ossl_call_servername_cb(VALUE ary)
         GetSSL(ssl_obj, ssl);
         GetSSLCTX(ret_obj, ctx2);
         SSL_set_SSL_CTX(ssl, ctx2);
+        rb_iv_set(ssl_obj, "@context", ret_obj);
     } else if (!NIL_P(ret_obj)) {
             ossl_raise(rb_eArgError, "servername_cb must return an OpenSSL::SSL::SSLContext object or nil");
     }
