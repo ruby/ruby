@@ -1,3 +1,7 @@
+Sun Jul 26 09:10:32 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* gems/bundled_gems: update latest version of bundled power-assert.
+
 Sun Jul 26 08:49:28 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* test/rubygems/test_gem_remote_fetcher.rb: backport rubygems upstream
