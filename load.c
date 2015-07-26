@@ -46,7 +46,7 @@ enum expand_type {
    string objects in $LOAD_PATH are frozen.
  */
 static void
-rb_construct_expanded_load_path(int type, int *has_relative, int *has_non_cache)
+rb_construct_expanded_load_path(enum expand_type type, int *has_relative, int *has_non_cache)
 {
     rb_vm_t *vm = GET_VM();
     VALUE load_path = vm->load_path;
