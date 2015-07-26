@@ -607,6 +607,135 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     cert
   end
 
+  def test_servername_cb_raises_an_exception_on_unknown_objects
+    hostname = 'example.org'
+
+    ctx2 = OpenSSL::SSL::SSLContext.new
+    ctx2.ciphers = "DH"
+    ctx2.servername_cb = lambda { |args| Object.new }
+
+    sock1, sock2 = UNIXSocket.pair
+
+    s2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx2)
+
+    ctx1 = OpenSSL::SSL::SSLContext.new
+    ctx1.ciphers = "DH"
+
+    s1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx1)
+    s1.hostname = hostname
+    t = Thread.new {
+      assert_raises(OpenSSL::SSL::SSLError) do
+        s1.connect
+      end
+    }
+
+    assert_raises(ArgumentError) do
+      s2.accept
+    end
+
+    assert t.join
+  ensure
+    sock1.close if sock1
+    sock2.close if sock2
+  end
+
+  def test_servername_cb_calls_setup_on_returned_ctx
+    hostname = 'example.org'
+
+    ctx3 = OpenSSL::SSL::SSLContext.new
+    ctx3.ciphers = "DH"
+    refute_predicate ctx3, :frozen?
+
+    ctx2 = OpenSSL::SSL::SSLContext.new
+    ctx2.ciphers = "DH"
+    ctx2.servername_cb = lambda { |args| ctx3 }
+
+    sock1, sock2 = UNIXSocket.pair
+
+    s2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx2)
+
+    ctx1 = OpenSSL::SSL::SSLContext.new
+    ctx1.ciphers = "DH"
+
+    s1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx1)
+    s1.hostname = hostname
+    t = Thread.new { s1.connect }
+
+    accepted = s2.accept
+    assert t.value
+    assert_predicate ctx3, :frozen?
+  ensure
+    s1.close if s1
+    s2.close if s2
+    sock1.close if sock1
+    sock2.close if sock2
+    accepted.close if accepted.respond_to?(:close)
+  end
+
+  def test_servername_cb_can_return_nil
+    hostname = 'example.org'
+
+    ctx2 = OpenSSL::SSL::SSLContext.new
+    ctx2.ciphers = "DH"
+    ctx2.servername_cb = lambda { |args| nil }
+
+    sock1, sock2 = UNIXSocket.pair
+
+    s2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx2)
+
+    ctx1 = OpenSSL::SSL::SSLContext.new
+    ctx1.ciphers = "DH"
+
+    s1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx1)
+    s1.hostname = hostname
+    t = Thread.new { s1.connect }
+
+    accepted = s2.accept
+    assert t.value
+  ensure
+    s1.close if s1
+    s2.close if s2
+    sock1.close if sock1
+    sock2.close if sock2
+    accepted.close if accepted.respond_to?(:close)
+  end
+
+  def test_servername_cb
+    lambda_called = nil
+    cb_socket = nil
+    hostname = 'example.org'
+
+    ctx2 = OpenSSL::SSL::SSLContext.new
+    ctx2.ciphers = "DH"
+    ctx2.servername_cb = lambda do |args|
+      cb_socket     = args[0]
+      lambda_called = args[1]
+      ctx2
+    end
+
+    sock1, sock2 = UNIXSocket.pair
+
+    s2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx2)
+
+    ctx1 = OpenSSL::SSL::SSLContext.new
+    ctx1.ciphers = "DH"
+
+    s1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx1)
+    s1.hostname = hostname
+    t = Thread.new { s1.connect }
+
+    accepted = s2.accept
+    assert t.value
+    assert_equal hostname, lambda_called
+    assert_equal s2, cb_socket
+  ensure
+    s1.close if s1
+    s2.close if s2
+    sock1.close if sock1
+    sock2.close if sock2
+    accepted.close if accepted.respond_to?(:close)
+  end
+
   def test_tlsext_hostname
     return unless OpenSSL::SSL::SSLSocket.instance_methods.include?(:hostname)
 
