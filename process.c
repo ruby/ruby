@@ -1136,30 +1136,10 @@ proc_detach(VALUE obj, VALUE pid)
     return rb_detach_process(NUM2PIDT(pid));
 }
 
-#ifdef SIGPIPE
-static RETSIGTYPE (*saved_sigpipe_handler)(int) = 0;
-#endif
-
-#ifdef SIGPIPE
-static RETSIGTYPE
-sig_do_nothing(int sig)
-{
-}
-#endif
-
 /* This function should be async-signal-safe.  Actually it is. */
 static void
 before_exec_async_signal_safe(void)
 {
-#ifdef SIGPIPE
-    /*
-     * Some OS commands don't initialize signal handler properly. Thus we have
-     * to reset signal handler before exec(). Otherwise, system() and similar
-     * child process interaction might fail. (e.g. ruby -e "system 'yes | ls'")
-     * [ruby-dev:12261]
-     */
-    saved_sigpipe_handler = signal(SIGPIPE, sig_do_nothing); /* async-signal-safe */
-#endif
 }
 
 static void
@@ -1186,9 +1166,6 @@ before_exec(void)
 static void
 after_exec_async_signal_safe(void)
 {
-#ifdef SIGPIPE
-    signal(SIGPIPE, saved_sigpipe_handler); /* async-signal-safe */
-#endif
 }
 
 static void
