@@ -1,3 +1,8 @@
+Sun Jul 26 11:29:01 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* signal.c (default_handler, Init_signal): discard SIGSYS, ENOSYS
+	  should raise a SystemCallError always instead.
+
 Sun Jul 26 10:26:35 2015  Aaron Patterson <tenderlove@ruby-lang.org>
 
 	* ext/openssl/ossl_ssl.c (ossl_call_servername_cb): set the ssl context
