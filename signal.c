@@ -935,7 +935,7 @@ check_reserved_signal_(const char *name, size_t name_len)
 }
 #endif
 
-#ifdef SIGSYS
+#if defined SIGPIPE || defined SIGSYS
 static RETSIGTYPE
 sig_do_nothing(int sig)
 {
@@ -1066,7 +1066,7 @@ default_handler(int sig)
 #endif
 #ifdef SIGPIPE
       case SIGPIPE:
-        func = SIG_IGN;
+        func = sig_do_nothing;
         break;
 #endif
 #ifdef SIGSYS
@@ -1487,7 +1487,7 @@ Init_signal(void)
 #endif
     }
 #ifdef SIGPIPE
-    install_sighandler(SIGPIPE, SIG_IGN);
+    install_sighandler(SIGPIPE, sig_do_nothing);
 #endif
 #ifdef SIGSYS
     install_sighandler(SIGSYS, sig_do_nothing);
