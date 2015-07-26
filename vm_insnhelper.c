@@ -765,7 +765,7 @@ vm_setivar(VALUE obj, ID id, VALUE val, IC ic, rb_call_info_t *ci, int is_attr)
 	if (LIKELY(
 	    (!is_attr && ic->ic_serial == RCLASS_SERIAL(klass)) ||
 	    (is_attr && ci->aux.index > 0))) {
-	    long index = !is_attr ? (long)ic->ic_value.index : ci->aux.index-1;
+	    long index = !is_attr ? (long)ic->ic_value.index : (long)ci->aux.index-1;
 	    long len = ROBJECT_NUMIV(obj);
 	    VALUE *ptr = ROBJECT_IVPTR(obj);
 
