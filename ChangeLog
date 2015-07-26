@@ -1,3 +1,13 @@
+Sun Jul 26 10:26:35 2015  Aaron Patterson <tenderlove@ruby-lang.org>
+
+	* ext/openssl/ossl_ssl.c (ossl_call_servername_cb): set the ssl context
+	  object returned by the servername callback on to the socket as an
+	  instance variable.  If the callback allocated a new context object
+	  and didn't keep a reference to it, it could be GC'd out from under
+	  the socket object.
+
+	* test/openssl/test_ssl.rb (class OpenSSL): test for change.
+
 Sun Jul 26 10:07:26 2015  Aaron Patterson <tenderlove@ruby-lang.org>
 
 	* test/openssl/test_ssl.rb (class OpenSSL): add test coverage around

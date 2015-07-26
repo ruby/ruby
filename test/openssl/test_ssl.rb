@@ -607,6 +607,39 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     cert
   end
 
+  def test_servername_cb_sets_context_on_the_socket
+    hostname = 'example.org'
+
+    ctx3 = OpenSSL::SSL::SSLContext.new
+    ctx3.ciphers = "DH"
+
+    ctx2 = OpenSSL::SSL::SSLContext.new
+    ctx2.ciphers = "DH"
+    ctx2.servername_cb = lambda { |args| ctx3 }
+
+    sock1, sock2 = UNIXSocket.pair
+
+    s2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx2)
+
+    ctx1 = OpenSSL::SSL::SSLContext.new
+    ctx1.ciphers = "DH"
+
+    s1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx1)
+    s1.hostname = hostname
+    t = Thread.new { s1.connect }
+
+    assert_equal ctx2, s2.context
+    accepted = s2.accept
+    assert_equal ctx3, s2.context
+    assert t.value
+  ensure
+    s1.close if s1
+    s2.close if s2
+    sock1.close if sock1
+    sock2.close if sock2
+    accepted.close if accepted.respond_to?(:close)
+  end
+
   def test_servername_cb_raises_an_exception_on_unknown_objects
     hostname = 'example.org'
 
