@@ -1,3 +1,8 @@
+Sun Jul 26 19:21:31 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/openssl/ossl_ssl.c (ossl_ssl_alpn_protocol): fix condition
+	  to compile, needs ALPN to be available.  [Feature #9390]
+
 Sun Jul 26 11:29:01 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* signal.c (default_handler, Init_signal): discard SIGSYS, ENOSYS
