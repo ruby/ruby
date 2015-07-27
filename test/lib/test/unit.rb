@@ -223,6 +223,10 @@ module Test
         def died(*additional)
           @status = :quit
           @io.close
+          status = $?
+          if status and status.signaled?
+            additional[0] ||= SignalException.new(status.termsig)
+          end
 
           call_hook(:dead,*additional)
         end
