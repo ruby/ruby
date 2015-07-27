@@ -25,6 +25,7 @@
 
 struct RSymbol {
     struct RBasic basic;
+    st_index_t hashval;
     VALUE fstr;
     ID id;
 };
