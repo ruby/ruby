@@ -54,8 +54,6 @@ enum ruby_id_types {
 #define ID_JUNK        RUBY_ID_JUNK
 #define ID_INTERNAL    RUBY_ID_INTERNAL
 
-#define ID2ATTRSET(id) (((id)&~ID_SCOPE_MASK)|ID_ATTRSET)
-
 #define symIFUNC ID2SYM(idIFUNC)
 #define symCFUNC ID2SYM(idCFUNC)
 
