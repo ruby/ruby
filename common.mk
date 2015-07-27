@@ -487,7 +487,7 @@ clean-docs: clean-rdoc clean-html clean-capi
 
 distclean: distclean-ext distclean-enc distclean-golf distclean-extout distclean-local distclean-platform
 distclean-local:: clean-local
-	$(Q)$(RM) $(MKFILES) yasmdata.rb *.inc $(arch)-fake.rb
+	$(Q)$(RM) $(MKFILES) yasmdata.rb *.inc $(PRELUDES)
 	$(Q)$(RM) config.cache config.status config.status.lineno
 	$(Q)$(RM) *~ *.bak *.stackdump core *.core gmon.out $(PREP)
 	-$(Q)$(RMALL) $(srcdir)/autom4te.cache
@@ -501,7 +501,7 @@ distclean-platform: clean-platform
 
 realclean:: realclean-ext realclean-local realclean-enc realclean-golf realclean-extout
 realclean-local:: distclean-local
-	$(Q)$(RM) parse.c parse.h lex.c enc/trans/newline.c $(PRELUDES) revision.h
+	$(Q)$(RM) parse.c parse.h lex.c enc/trans/newline.c revision.h
 	$(Q)$(RM) id.c id.h probes.dmyh
 	$(Q)$(CHDIR) $(srcdir) && $(exec) $(RM) parse.c parse.h lex.c enc/trans/newline.c $(PRELUDES) revision.h
 	$(Q)$(CHDIR) $(srcdir) && $(exec) $(RM) id.c id.h probes.dmyh
