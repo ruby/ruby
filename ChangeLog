@@ -1,3 +1,7 @@
+Mon Jul 27 13:24:11 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* template/id.h.tmpl (ID2ATTRSET): remove an unused macro.
+
 Mon Jul 27 12:21:15 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/openssl/tset_ssl.rb: run tests on non-Unix platforms.
