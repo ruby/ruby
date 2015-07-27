@@ -33,7 +33,7 @@ Sun Jul 26 10:07:26 2015  Aaron Patterson <tenderlove@ruby-lang.org>
 
 Sun Jul 26 09:10:32 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
-	* gems/bundled_gems: update latest version of bundled power-assert.
+	* gems/bundled_gems: update latest version of bundled power_assert.
 
 Sun Jul 26 08:49:28 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
