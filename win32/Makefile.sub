@@ -1032,14 +1032,13 @@ distclean-local::
 		-$(Q)$(RMDIRS) $(arch_hdrdir:/=\)\ruby
 
 clean-ext distclean-ext realclean-ext::
-!if "$(EXTS)" != ""
-		@for %I in ($(EXTS)) \
-!else
-		@for /R ext %I in (.) \
-!endif
+		@cd ext && for /R $(EXTS) %I in (.) \
 		do @if exist %I\Makefile ( \
 		    cd %I && ( \
-		    echo $(@:-ext=)ing %~nI & \
+		    call set n=%I && \
+		    call set n=%n:%CD%\ext\=% && \
+		    call set n=%n:\.=% && \
+		    call echo $(@:-ext=)ing %n:\=/% & \
 		    $(MAKE) $(MFLAGS) $(@:-ext=) & \
 		    cd %CD% & \
 		    $(RMDIRS) %I \
