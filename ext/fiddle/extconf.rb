@@ -140,7 +140,8 @@ types.each do |type, signed|
 end
 
 if libffi
-  $LOCAL_LIBS.prepend("./#{libffi.a} ").strip!
+  $LOCAL_LIBS.prepend("./$(LIBFFI_A) ").strip!
+  $INCFLAGS.gsub!(/-I#{libffi.dir}/, '-I$(LIBFFI_DIR)')
 end
 create_makefile 'fiddle' do |conf|
   if !libffi
@@ -161,9 +162,9 @@ create_makefile 'fiddle' do |conf|
    PWD =
    LIBFFI_CONFIGURE = #{cmd}
    LIBFFI_ARCH = #{libffi.arch}
-   LIBFFI_SRCDIR = #{libffi.srcdir}
+   LIBFFI_SRCDIR = #{libffi.srcdir.sub(libffi.dir, '$(LIBFFI_DIR)')}
    LIBFFI_DIR = #{libffi.dir}
-   LIBFFI_A = #{libffi.a}
+   LIBFFI_A = #{libffi.a.sub(libffi.dir, '$(LIBFFI_DIR)')}
    LIBFFI_CFLAGS = #{libffi.cflags}
    LIBFFI_LDFLAGS = #{libffi.ldflags}
    FFI_H = $(LIBFFI_DIR)/include/ffi.h
