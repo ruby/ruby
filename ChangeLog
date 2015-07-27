@@ -1,3 +1,7 @@
+Mon Jul 27 12:21:15 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/openssl/tset_ssl.rb: run tests on non-Unix platforms.
+
 Sun Jul 26 19:21:31 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/openssl/ossl_ssl.c (ossl_ssl_alpn_protocol): fix condition
