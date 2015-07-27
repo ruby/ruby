@@ -986,11 +986,12 @@ end
 
 class MiniTest::Unit::TestCase # :nodoc: all
   test_order = self.test_order
-  def self.test_order
-    @test_order || superclass.test_order
-  end
   class << self
     attr_writer :test_order
+    undef test_order
+  end
+  def self.test_order
+    defined?(@test_order) ? @test_order : superclass.test_order
   end
   self.test_order = test_order
   undef run_test
