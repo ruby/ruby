@@ -88,6 +88,10 @@ module Test
         opts.on '-n', '--name PATTERN', "Filter test method names on pattern: /REGEXP/ or STRING" do |a|
           options[:filter] = a
         end
+
+        opts.on '--test-order=random|alpha|sorted', [:random, :alpha, :sorted] do |a|
+          MiniTest::Unit::TestCase.test_order = a
+        end
       end
 
       def non_options(files, options)
@@ -981,6 +985,14 @@ module MiniTest # :nodoc: all
 end
 
 class MiniTest::Unit::TestCase # :nodoc: all
+  test_order = self.test_order
+  def self.test_order
+    @test_order || superclass.test_order
+  end
+  class << self
+    attr_writer :test_order
+  end
+  self.test_order = test_order
   undef run_test
   RUN_TEST_TRACE = "#{__FILE__}:#{__LINE__+3}:in `run_test'".freeze
   def run_test(name)
