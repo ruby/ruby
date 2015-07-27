@@ -4,7 +4,7 @@ Mon Jul 27 13:24:11 2015  Koichi Sasada  <ko1@atdot.net>
 
 Mon Jul 27 12:21:15 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* test/openssl/tset_ssl.rb: run tests on non-Unix platforms.
+	* test/openssl/test_ssl.rb: run tests on non-Unix platforms.
 
 Sun Jul 26 19:21:31 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -47,7 +47,7 @@ Sun Jul 26 08:33:03 2015  Aaron Patterson <tenderlove@ruby-lang.org>
 	  DEFAULT_1024 constants in Ruby.
 
 	* ext/openssl/lib/openssl/ssl.rb (module OpenSSL): Ask PKey for the
-	  default DH callback since it aleady must check whether openssl has
+	  default DH callback since it already must check whether openssl has
 	  been compiled with DH support.
 
 	* ext/openssl/ossl_pkey_dh.c (OSSL_PKEY_BN): Remove C definitions of
