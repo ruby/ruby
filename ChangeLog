@@ -1,3 +1,12 @@
+Tue Jul 28 03:26:15 2015  Aaron Patterson <tenderlove@ruby-lang.org>
+
+	* ext/openssl/lib/openssl/ssl.rb (module OpenSSL): raise a more
+	  helpful exception when verifying the peer connection and an
+	  anonymous cipher has been selected. [ruby-core:68330] [Bug #10910]
+	  Thanks to Chris Sinjakli <chris@sinjakli.co.uk> for the patch.
+
+	* test/openssl/test_ssl.rb (class OpenSSL): test for change
+
 Mon Jul 27 13:24:11 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* template/id.h.tmpl (ID2ATTRSET): remove an unused macro.
