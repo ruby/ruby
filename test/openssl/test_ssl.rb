@@ -607,6 +607,14 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     cert
   end
 
+  def socketpair
+    if defined? UNIXSocket
+      UNIXSocket.pair
+    else
+      Socket.pair(Socket::AF_INET, Socket::SOCK_STREAM, 0)
+    end
+  end
+
   def test_servername_cb_sets_context_on_the_socket
     hostname = 'example.org'
 
@@ -617,7 +625,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     ctx2.ciphers = "DH"
     ctx2.servername_cb = lambda { |args| ctx3 }
 
-    sock1, sock2 = UNIXSocket.pair
+    sock1, sock2 = socketpair
 
     s2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx2)
 
@@ -647,7 +655,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     ctx2.ciphers = "DH"
     ctx2.servername_cb = lambda { |args| Object.new }
 
-    sock1, sock2 = UNIXSocket.pair
+    sock1, sock2 = socketpair
 
     s2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx2)
 
@@ -683,7 +691,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     ctx2.ciphers = "DH"
     ctx2.servername_cb = lambda { |args| ctx3 }
 
-    sock1, sock2 = UNIXSocket.pair
+    sock1, sock2 = socketpair
 
     s2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx2)
 
@@ -712,7 +720,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     ctx2.ciphers = "DH"
     ctx2.servername_cb = lambda { |args| nil }
 
-    sock1, sock2 = UNIXSocket.pair
+    sock1, sock2 = socketpair
 
     s2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx2)
 
@@ -746,7 +754,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       ctx2
     end
 
-    sock1, sock2 = UNIXSocket.pair
+    sock1, sock2 = socketpair
 
     s2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx2)
 
