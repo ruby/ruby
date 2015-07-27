@@ -1,3 +1,12 @@
+Tue Jul 28 07:23:03 2015  Eric Wong  <e@80x24.org>
+
+	* symbol.h (struct RSymbol): add hashval field
+	* symbol.c (dsymbol_alloc): setup hashval field once
+	* hash.c (rb_any_hash): return RSymbol->hashval directly
+	* common.mk: hash.o depends on symbol.h
+	  Thanks to Bruno Escherl <bruno@escherl.net> for the bug report
+	  [ruby-core:70129] [Bug #11396]
+
 Tue Jul 28 03:26:15 2015  Aaron Patterson <tenderlove@ruby-lang.org>
 
 	* ext/openssl/lib/openssl/ssl.rb (module OpenSSL): raise a more
