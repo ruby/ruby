@@ -1611,20 +1611,20 @@ EOH
 ])dnl
 ])dnl
 
-dnl RUBY_FUNC_ATTRIBUTE(attrib, macroname, cachevar, condition)
-AC_DEFUN([RUBY_FUNC_ATTRIBUTE], [dnl
+dnl RUBY_DECL_ATTRIBUTE(attrib, macroname, cachevar, condition, type, code)
+AC_DEFUN([RUBY_DECL_ATTRIBUTE], [dnl
 m4_ifval([$2], dnl
   [AS_VAR_PUSHDEF([attrib], m4_bpatsubst([$2], [(.*)], []))], dnl
-  [AS_VAR_PUSHDEF([attrib],[FUNC_]AS_TR_CPP($1))] dnl
+  [AS_VAR_PUSHDEF([attrib], m4_toupper(m4_format(%.4s, [$5]))[_]AS_TR_CPP($1))] dnl
 )dnl
 m4_ifval([$3], dnl
   [AS_VAR_PUSHDEF([rbcv],[$3])], dnl
-  [AS_VAR_PUSHDEF([rbcv],[rb_cv_func_][$1])]dnl
+  [AS_VAR_PUSHDEF([rbcv],[rb_cv_]m4_format(%.4s, [$5])[_][$1])]dnl
 )dnl
 m4_pushdef([attrib_code],[m4_bpatsubst([$1],["],[\\"])])dnl
 m4_pushdef([attrib_params],[m4_bpatsubst([$2(x)],[^[^()]*(\([^()]*\)).*],[\1])])dnl
 m4_ifval([$4], [rbcv_cond=["$4"]; test "$rbcv_cond" || unset rbcv_cond])
-AC_CACHE_CHECK(for m4_ifval([$2],[m4_bpatsubst([$2], [(.*)], [])],[$1]) function attribute, rbcv, dnl
+AC_CACHE_CHECK(for m4_ifval([$2],[m4_bpatsubst([$2], [(.*)], [])],[$1]) [$5] attribute, rbcv, dnl
 [rbcv=x
 RUBY_WERROR_FLAG([
 for mac in \
@@ -1639,7 +1639,7 @@ for mac in \
 m4_ifval([$4],${rbcv_cond+[@%:@else]}
 ${rbcv_cond+[@%:@define ]attrib[](attrib_params)[ x]}
 ${rbcv_cond+[@%:@endif]})
-[@%:@define x void conftest_attribute_check(void)]
+$6
     attrib[](attrib_params)[;], [],
     [rbcv="$mac"; break])
 done
@@ -1654,9 +1654,26 @@ AS_VAR_POPDEF([attrib])dnl
 AS_VAR_POPDEF([rbcv])dnl
 ])
 
+dnl RUBY_FUNC_ATTRIBUTE(attrib, macroname, cachevar, condition)
+AC_DEFUN([RUBY_FUNC_ATTRIBUTE], [dnl
+    RUBY_DECL_ATTRIBUTE([$1], [$2], [$3], [$4],
+	[function], [@%:@define x void conftest_attribute_check(void)]
+    )
+])
+
+dnl RUBY_TYPE_ATTRIBUTE(attrib, macroname, cachevar, condition)
+AC_DEFUN([RUBY_TYPE_ATTRIBUTE], [dnl
+    RUBY_DECL_ATTRIBUTE([$1], [$2], [$3], [$4],
+	[type], [
+@%:@define x struct conftest_attribute_check {int i;}
+@%:@define mesg ("")
+])
+])
+
 RUBY_FUNC_ATTRIBUTE(noreturn, NORETURN)
 RUBY_FUNC_ATTRIBUTE(deprecated, DEPRECATED)
 RUBY_FUNC_ATTRIBUTE(deprecated("by "@%:@n), DEPRECATED_BY(n,x), rb_cv_func_deprecated_by)
+RUBY_TYPE_ATTRIBUTE(deprecated mesg, DEPRECATED_TYPE(mesg,x), rb_cv_type_deprecated)
 RUBY_FUNC_ATTRIBUTE(noinline, NOINLINE)
 
 if_i386=${universal_binary+[defined __i386__]}

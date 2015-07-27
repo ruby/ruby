@@ -1,3 +1,8 @@
+Tue Jul 28 08:48:29 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_TYPE_ATTRIBUTE): attribute declaration for
+	  types.
+
 Tue Jul 28 07:23:03 2015  Eric Wong  <e@80x24.org>
 
 	* symbol.h (struct RSymbol): add hashval field
