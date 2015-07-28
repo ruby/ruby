@@ -38,6 +38,9 @@ extern "C" {
 #ifndef DEPRECATED_BY
 # define DEPRECATED_BY(n,x) DEPRECATED(x)
 #endif
+#ifndef DEPRECATED_TYPE
+# define DEPRECATED_TYPE(mesg, decl) decl
+#endif
 #ifndef NOINLINE
 # define NOINLINE(x) x
 #endif
@@ -821,15 +824,11 @@ struct RObject {
      RCLASS_IV_INDEX_TBL(rb_obj_class(o)) : \
      ROBJECT(o)->as.heap.iv_index_tbl)
 
-/** @internal */
-typedef struct rb_classext_struct rb_classext_t;
-
+#define RClass RClassDeprecated
+DEPRECATED_TYPE(("RClass is internal use only"),
 struct RClass {
     struct RBasic basic;
-    VALUE super;
-    rb_classext_t *ptr;
-    struct st_table *m_tbl;
-};
+});
 #define RCLASS_SUPER(c) rb_class_get_superclass(c)
 #define RMODULE_IV_TBL(m) RCLASS_IV_TBL(m)
 #define RMODULE_CONST_TBL(m) RCLASS_CONST_TBL(m)
