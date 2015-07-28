@@ -565,11 +565,7 @@ module RSS
           end
 
           def xhtml
-            if inline_xhtml?
-              xml
-            else
-              nil
-            end
+            inline_xhtml? ? xml : nil
           end
 
           def atom_validate(ignore_unknown_element, tags, uri)
