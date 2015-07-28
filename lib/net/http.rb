@@ -1055,20 +1055,12 @@ module Net   #:nodoc:
 
     # The address of the proxy server, if one is configured.
     def proxy_address
-      if @proxy_from_env then
-        proxy_uri && proxy_uri.hostname
-      else
-        @proxy_address
-      end
+      @proxy_from_env ? proxy_uri && proxy_uri.hostname : @proxy_address
     end
 
     # The port of the proxy server, if one is configured.
     def proxy_port
-      if @proxy_from_env then
-        proxy_uri && proxy_uri.port
-      else
-        @proxy_port
-      end
+      @proxy_from_env ? proxy_uri && proxy_uri.port : @proxy_port
     end
 
     # The proxy username, if one is configured
