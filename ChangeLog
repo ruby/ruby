@@ -1,3 +1,8 @@
+Wed Jul 29 04:54:47 2015  Eric Wong  <e@80x24.org>
+
+	* test/rubygems/test_gem_remote_fetcher.rb: pre-generate test key
+	  [ruby-core:70151] [Bug #11397]
+
 Tue Jul 28 10:32:09 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* internal.h (struct RClass): moved from ruby/ruby.h to hide the
