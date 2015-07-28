@@ -479,6 +479,16 @@ struct rb_classext_struct {
     rb_alloc_func_t allocator;
 };
 
+typedef struct rb_classext_struct rb_classext_t;
+
+#undef RClass
+struct RClass {
+    struct RBasic basic;
+    VALUE super;
+    rb_classext_t *ptr;
+    struct st_table *m_tbl;
+};
+
 void rb_class_subclass_add(VALUE super, VALUE klass);
 void rb_class_remove_from_super_subclasses(VALUE);
 
