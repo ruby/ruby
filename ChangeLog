@@ -1,3 +1,11 @@
+Thu Jul 30 08:48:42 2015  Eric Wong  <e@80x24.org>
+
+	* st.c (find_entry): constify st_table*
+	  (find_packed_index_from): ditto
+	  (find_packed_index): ditto
+	  (get_keys): ditto
+	  (get_values): ditto
+
 Thu Jul 30 04:29:25 2015  Eric Wong  <e@80x24.org>
 
 	* benchmark/bm_hash_aref_dsym.rb: new benchmark
