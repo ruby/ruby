@@ -910,23 +910,16 @@ end
 
 define rb_ps_vm
   print $ps_vm = (rb_vm_t*)$arg0
-  set $ps_threads = (st_table*)$ps_vm->living_threads
-  if $ps_threads->entries_packed
-    set $ps_threads_i = 0
-    while $ps_threads_i < $ps_threads->num_entries
-      set $ps_threads_key = (st_data_t)$ps_threads->as.packed.entries[$ps_threads_i].key
-      set $ps_threads_val = (st_data_t)$ps_threads->as.packed.entries[$ps_threads_i].val
-      rb_ps_thread $ps_threads_key $ps_threads_val
-      set $ps_threads_i = $ps_threads_i + 1
+  set $ps_thread_ln = $ps_vm->living_threads.n.next
+  set $ps_thread_ln_last = $ps_vm->living_threads.n.prev
+  while 1
+    set $ps_thread_th = (rb_thread_t *)$ps_thread_ln
+    set $ps_thread = (VALUE)($ps_thread_th->self)
+    rb_ps_thread $ps_thread
+    if $ps_thread_ln == $ps_thread_ln_last
+      loop_break
     end
-  else
-    set $ps_threads_ptr = (st_table_entry*)$ps_threads->as.big.private_list_head[0]
-    while $ps_threads_ptr
-      set $ps_threads_key = (st_data_t)$ps_threads_ptr->key
-      set $ps_threads_val = (st_data_t)$ps_threads_ptr->record
-      rb_ps_thread $ps_threads_key $ps_threads_val
-      set $ps_threads_ptr = (st_table_entry*)$ps_threads_ptr->olist.next
-    end
+    set $ps_thread_ln = $ps_thread_ln->next
   end
 end
 document rb_ps_vm
@@ -935,8 +928,9 @@ end
 
 define rb_ps_thread
   set $ps_thread = (struct RTypedData*)$arg0
-  set $ps_thread_id = $arg1
-  print $ps_thread_th = (rb_thread_t*)$ps_thread->data
+  set $ps_thread_th = (rb_thread_t*)$ps_thread->data
+  printf "* #<Thread:%p rb_thread_t:%p native_thread:%p>\n", \
+    $ps_thread, $ps_thread_th, $ps_thread_th->thread_id
 end
 
 # Details: https://bugs.ruby-lang.org/projects/ruby-trunk/wiki/MachineInstructionsTraceWithGDB
