@@ -3232,21 +3232,21 @@ End
 
   def test_open_flag
     make_tempfile do |t|
-      assert_raise(Errno::EEXIST){ open(t, File::WRONLY|File::CREAT, flags: File::EXCL){} }
-      assert_raise(Errno::EEXIST){ open(t, 'w', flags: File::EXCL){} }
-      assert_raise(Errno::EEXIST){ open(t, mode: 'w', flags: File::EXCL){} }
+      assert_raise(Errno::EEXIST){ open(t.path, File::WRONLY|File::CREAT, flags: File::EXCL){} }
+      assert_raise(Errno::EEXIST){ open(t.path, 'w', flags: File::EXCL){} }
+      assert_raise(Errno::EEXIST){ open(t.path, mode: 'w', flags: File::EXCL){} }
     end
   end
 
   def test_open_flag_binar
     make_tempfile do |t|
-      open(t, File::RDONLY, flags: File::BINARY) do |f|
+      open(t.path, File::RDONLY, flags: File::BINARY) do |f|
         assert_equal true, f.binmode
       end
-      open(t, 'r', flags: File::BINARY) do |f|
+      open(t.path, 'r', flags: File::BINARY) do |f|
         assert_equal true, f.binmode
       end
-      open(t, mode: 'r', flags: File::BINARY) do |f|
+      open(t.path, mode: 'r', flags: File::BINARY) do |f|
         assert_equal true, f.binmode
       end
     end
