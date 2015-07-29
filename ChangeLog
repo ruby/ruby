@@ -1,4 +1,7 @@
-Wed Jul 29 14:53:32 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Jul 29 14:54:16 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (rb_sym_hash): return same value as rb_any_hash() of
+	  Symbol.  [Bug #9381]
 
 	* hash.c (rb_any_hash): fix Float hash.  rb_dbl_hash() returns a
 	  Fixnum, but not a long.  [Bug #9381]
