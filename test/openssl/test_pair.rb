@@ -368,6 +368,7 @@ module OpenSSL::TestPairM
     sock1.close if sock1
     sock2.close if sock2
     accepted.close if accepted.respond_to?(:close)
+    th.join rescue nil
   end
 
   def test_connect_accept_nonblock_no_exception
