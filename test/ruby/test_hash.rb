@@ -1282,6 +1282,7 @@ class TestHash < Test::Unit::TestCase
     bad = [
       5, true, false, nil,
       0.0, 1.72723e-77,
+      :foo, "dsym_#{self.object_id.to_s(16)}_#{Time.now.to_i.to_s(16)}".to_sym,
     ].select do |x|
       hash = {x => bug9381}
       hash[wrapper.new(x)] != bug9381

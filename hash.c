@@ -129,6 +129,21 @@ rb_hash(VALUE obj)
 
 long rb_objid_hash(st_index_t index);
 
+VALUE
+rb_sym_hash(VALUE sym)
+{
+    st_index_t hnum;
+
+    if (STATIC_SYM_P(sym)) {
+	sym >>= (RUBY_SPECIAL_SHIFT + ID_SCOPE_SHIFT);
+	hnum = rb_objid_hash((st_index_t)sym);
+    }
+    else {
+	hnum = RSYMBOL(sym)->hashval;
+    }
+    return LONG2FIX(hnum);
+}
+
 static st_index_t
 rb_any_hash(VALUE a)
 {
