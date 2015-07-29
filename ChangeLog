@@ -1,3 +1,10 @@
+Wed Jul 29 15:25:19 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (send_internal): set method_missing_reason before
+	  invoking overriding method_missing method so that the default
+	  method_missing can achieve it properly.
+	  [ruby-core:68515] [Bug #10969]
+
 Wed Jul 29 14:54:16 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (rb_sym_hash): return same value as rb_any_hash() of
