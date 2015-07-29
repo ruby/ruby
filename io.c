@@ -173,7 +173,7 @@ static VALUE argf;
 
 #define id_exception idException
 static ID id_write, id_read, id_getc, id_flush, id_readpartial, id_set_encoding;
-static VALUE sym_mode, sym_perm, sym_extenc, sym_intenc, sym_encoding, sym_open_args;
+static VALUE sym_mode, sym_perm, sym_flags, sym_extenc, sym_intenc, sym_encoding, sym_open_args;
 static VALUE sym_textmode, sym_binmode, sym_autoclose;
 static VALUE sym_SET, sym_CUR, sym_END;
 static VALUE sym_wait_readable, sym_wait_writable;
@@ -5340,6 +5340,24 @@ rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
     }
     else {
 	VALUE v;
+	if (!has_vmode) {
+	    v = rb_hash_aref(opthash, sym_mode);
+	    if (!NIL_P(v)) {
+		if (!NIL_P(vmode)) {
+		    rb_raise(rb_eArgError, "mode specified twice");
+		}
+		has_vmode = 1;
+		vmode = v;
+		goto vmode_handle;
+	    }
+	}
+	v = rb_hash_aref(opthash, sym_flags);
+	if (!NIL_P(v)) {
+	    v = rb_to_int(v);
+	    oflags |= NUM2INT(v);
+	    vmode = INT2NUM(oflags);
+	    fmode = rb_io_oflags_fmode(oflags);
+	}
 	extract_binmode(opthash, &fmode);
 	if (fmode & FMODE_BINMODE) {
 #ifdef O_BINARY
@@ -5353,17 +5371,6 @@ rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
 	    fmode |= DEFAULT_TEXTMODE;
 	}
 #endif
-	if (!has_vmode) {
-	    v = rb_hash_aref(opthash, sym_mode);
-	    if (!NIL_P(v)) {
-		if (!NIL_P(vmode)) {
-		    rb_raise(rb_eArgError, "mode specified twice");
-		}
-		has_vmode = 1;
-		vmode = v;
-		goto vmode_handle;
-	    }
-	}
 	v = rb_hash_aref(opthash, sym_perm);
 	if (!NIL_P(v)) {
 	    if (vperm_p) {
@@ -7521,6 +7528,10 @@ rb_io_make_open_file(VALUE obj)
  *
  *  :mode ::
  *    Same as +mode+ parameter
+ *
+ *  :flags ::
+ *    Specifies file open flags as integer.
+ *    If +mode+ parameter is given, this parameter will be bitwise-ORed.
  *
  *  :\external_encoding ::
  *    External encoding for the IO.  "-" is a synonym for the default external
@@ -12493,6 +12504,7 @@ Init_IO(void)
 
     sym_mode = ID2SYM(rb_intern("mode"));
     sym_perm = ID2SYM(rb_intern("perm"));
+    sym_flags = ID2SYM(rb_intern("flags"));
     sym_extenc = ID2SYM(rb_intern("external_encoding"));
     sym_intenc = ID2SYM(rb_intern("internal_encoding"));
     sym_encoding = ID2SYM(rb_intern("encoding"));
