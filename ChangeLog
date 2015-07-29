@@ -1,3 +1,8 @@
+Wed Jul 29 10:44:43 2015  Alex Dowad  <alexinbeijing@gmail.com>
+
+	* gc.c: document argument passed to finalizer proc.
+	  [fix GH-976][ci skip] Patch by @alexdowad
+
 Wed Jul 29 10:36:58 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* io.c (rb_io_extract_modeenc): add option parameter `flags'
