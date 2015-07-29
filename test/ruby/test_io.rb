@@ -3238,16 +3238,16 @@ End
     end
   end
 
-  def test_open_flag_binar
+  def test_open_flag_binary
     make_tempfile do |t|
       open(t.path, File::RDONLY, flags: File::BINARY) do |f|
-        assert_equal true, f.binmode
+        assert_equal true, f.binmode?
       end
       open(t.path, 'r', flags: File::BINARY) do |f|
-        assert_equal true, f.binmode
+        assert_equal true, f.binmode?
       end
       open(t.path, mode: 'r', flags: File::BINARY) do |f|
-        assert_equal true, f.binmode
+        assert_equal true, f.binmode?
       end
     end
   end if File::BINARY != 0
