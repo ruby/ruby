@@ -142,6 +142,7 @@ rb_obj_equal(VALUE obj1, VALUE obj2)
     return Qfalse;
 }
 
+#if 0
 /*
  * call-seq:
  *    obj.hash    -> fixnum
@@ -171,6 +172,9 @@ rb_obj_hash(VALUE obj)
 #endif
     return LONG2FIX(rb_objid_hash(index));
 }
+#else
+VALUE rb_obj_hash(VALUE obj);
+#endif
 
 /*
  *  call-seq:
