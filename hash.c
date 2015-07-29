@@ -129,23 +129,8 @@ rb_hash(VALUE obj)
 
 long rb_objid_hash(st_index_t index);
 
-VALUE
-rb_sym_hash(VALUE sym)
-{
-    st_index_t hnum;
-
-    if (STATIC_SYM_P(sym)) {
-	sym >>= (RUBY_SPECIAL_SHIFT + ID_SCOPE_SHIFT);
-	hnum = rb_objid_hash((st_index_t)sym);
-    }
-    else {
-	hnum = RSYMBOL(sym)->hashval;
-    }
-    return LONG2FIX(hnum);
-}
-
 static st_index_t
-rb_any_hash(VALUE a)
+any_hash(VALUE a, st_index_t (*other_func)(VALUE))
 {
     VALUE hval;
     st_index_t hnum;
@@ -173,11 +158,23 @@ rb_any_hash(VALUE a)
 	hnum = FIX2LONG(hval);
     }
     else {
-        hval = rb_hash(a);
-	hnum = FIX2LONG(hval);
+	hnum = other_func(a);
     }
     hnum <<= 1;
     return (st_index_t)RSHIFT(hnum, 1);
+}
+
+static st_index_t
+obj_any_hash(VALUE obj)
+{
+    obj = rb_hash(obj);
+    return FIX2LONG(obj);
+}
+
+static st_index_t
+rb_any_hash(VALUE a)
+{
+    return any_hash(a, obj_any_hash);
 }
 
 long
@@ -187,6 +184,19 @@ rb_objid_hash(st_index_t index)
     hnum = rb_hash_uint(hnum, (st_index_t)rb_any_hash);
     hnum = rb_hash_end(hnum);
     return hnum;
+}
+
+static st_index_t
+objid_hash(VALUE obj)
+{
+    return rb_objid_hash((st_index_t)obj);
+}
+
+VALUE
+rb_obj_hash(VALUE obj)
+{
+    st_index_t hnum = any_hash(obj, objid_hash);
+    return LONG2FIX(hnum);
 }
 
 int

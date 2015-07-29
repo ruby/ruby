@@ -9154,8 +9154,6 @@ rb_to_symbol(VALUE name)
     return rb_str_intern(name);
 }
 
-VALUE rb_sym_hash(VALUE);
-
 /*
  *  A <code>String</code> object holds and manipulates an arbitrary sequence of
  *  bytes, typically representing characters. String objects may be created
@@ -9318,7 +9316,6 @@ Init_String(void)
     rb_undef_method(CLASS_OF(rb_cSymbol), "new");
     rb_define_singleton_method(rb_cSymbol, "all_symbols", rb_sym_all_symbols, 0); /* in symbol.c */
 
-    rb_define_method(rb_cSymbol, "hash", rb_sym_hash, 0); /* in hash.c */
     rb_define_method(rb_cSymbol, "==", sym_equal, 1);
     rb_define_method(rb_cSymbol, "===", sym_equal, 1);
     rb_define_method(rb_cSymbol, "inspect", sym_inspect, 0);
