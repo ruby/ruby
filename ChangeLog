@@ -1,3 +1,9 @@
+Thu Jul 30 04:29:25 2015  Eric Wong  <e@80x24.org>
+
+	* benchmark/bm_hash_aref_dsym.rb: new benchmark
+	* benchmark/bm_hash_aref_dsym_long.rb: ditto
+	* benchmark/bm_hash_aref_fix.rb: ditto
+
 Wed Jul 29 21:38:41 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (any_hash), symbol.c (dsymbol_alloc): fix dynamic symbol
