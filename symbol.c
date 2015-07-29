@@ -505,7 +505,7 @@ static VALUE
 dsymbol_alloc(const VALUE klass, const VALUE str, rb_encoding * const enc, const ID type)
 {
     const VALUE dsym = rb_newobj_of(klass, T_SYMBOL | FL_WB_PROTECTED);
-    st_index_t hashval;
+    long hashval;
 
     rb_enc_associate(dsym, enc);
     OBJ_FREEZE(dsym);
@@ -513,9 +513,8 @@ dsymbol_alloc(const VALUE klass, const VALUE str, rb_encoding * const enc, const
     RSYMBOL(dsym)->id = type;
 
     /* we want hashval to be in Fixnum range [ruby-core:15713] r15672 */
-    hashval = rb_str_hash(str);
-    hashval <<= 1;
-    RSYMBOL(dsym)->hashval = (st_index_t)RSHIFT(hashval, 1);
+    hashval = (long)rb_str_hash(str);
+    RSYMBOL(dsym)->hashval = RSHIFT((long)hashval, 1);
 
     register_sym(str, dsym);
     rb_hash_aset(global_symbols.dsymbol_fstr_hash, str, Qtrue);
