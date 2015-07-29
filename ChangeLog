@@ -1,3 +1,7 @@
+Wed Jul 29 11:07:10 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* internal.h (LIKELY, UNLIKELY): make a boolean to enforce 1 or 0.
+
 Wed Jul 29 10:44:43 2015  Alex Dowad  <alexinbeijing@gmail.com>
 
 	* gc.c: document argument passed to finalizer proc.
