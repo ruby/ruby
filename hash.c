@@ -150,7 +150,7 @@ any_hash(VALUE a, st_index_t (*other_func)(VALUE))
 	hnum = rb_str_hash(a);
     }
     else if (BUILTIN_TYPE(a) == T_SYMBOL) {
-	return RSYMBOL(a)->hashval;
+	hnum = RSYMBOL(a)->hashval;
     }
     else if (BUILTIN_TYPE(a) == T_FLOAT) {
       flt:

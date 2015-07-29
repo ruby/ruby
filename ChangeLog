@@ -1,3 +1,8 @@
+Wed Jul 29 21:38:41 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (any_hash), symbol.c (dsymbol_alloc): fix dynamic symbol
+	  hash value by restricting in Fixnum range, that is `long`.
+
 Wed Jul 29 17:25:46 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (rb_obj_hash): move in order to share with rb_any_hash.
