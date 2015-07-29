@@ -4202,7 +4202,8 @@ Init_Numeric(void)
     rb_undef_method(CLASS_OF(rb_cFloat), "new");
 
     /*
-     *  Represents the rounding mode for floating point addition.
+     *  Represents the rounding mode for floating-point addition
+     *  at the time of definition.
      *
      *  Usually defaults to 1, rounding to the nearest number.
      *
@@ -4216,68 +4217,74 @@ Init_Numeric(void)
      */
     rb_define_const(rb_cFloat, "ROUNDS", INT2FIX(FLT_ROUNDS));
     /*
-     *	The base of the floating point, or number of unique digits used to
-     *	represent the number.
+     *	The radix (or integer base) of the exponent representation.
      *
-     *  Usually defaults to 2 on most systems, which would represent a base-10 decimal.
+     *  Usually defaults to 2.
      */
     rb_define_const(rb_cFloat, "RADIX", INT2FIX(FLT_RADIX));
     /*
-     * The number of base digits for the +double+ data type.
+     * The number of base-<code>Float::RADIX</code> digits in the
+     * floating-point significand (or mantissa).
      *
      * Usually defaults to 53.
      */
     rb_define_const(rb_cFloat, "MANT_DIG", INT2FIX(DBL_MANT_DIG));
     /*
-     *	The minimum number of significant decimal digits in a double-precision
-     *	floating point.
+     *	The number of decimal digits that can be represented without
+     *	change due to rounding or overflow.
      *
      *	Usually defaults to 15.
      */
     rb_define_const(rb_cFloat, "DIG", INT2FIX(DBL_DIG));
     /*
-     *	The smallest posable exponent value in a double-precision floating
-     *	point.
+     *	The smallest negative integer for which the result of Float::RADIX
+     *	raised to that power minus 1 is a normalized floating-point number.
      *
      *	Usually defaults to -1021.
      */
     rb_define_const(rb_cFloat, "MIN_EXP", INT2FIX(DBL_MIN_EXP));
     /*
-     *	The largest possible exponent value in a double-precision floating
-     *	point.
+     *	The largest positive integer for which the result of Float::RADIX
+     *	raised to that power minus 1 is a representable finite
+     *	floating-point number.
      *
      *	Usually defaults to 1024.
      */
     rb_define_const(rb_cFloat, "MAX_EXP", INT2FIX(DBL_MAX_EXP));
     /*
-     *	The smallest negative exponent in a double-precision floating point
-     *	where 10 raised to this power minus 1.
+     *	The smallest negative integer for which the result of 10.0 raised to
+     *	that power is in the range of normalized floating-point numbers.
      *
      *	Usually defaults to -307.
      */
     rb_define_const(rb_cFloat, "MIN_10_EXP", INT2FIX(DBL_MIN_10_EXP));
     /*
-     *	The largest positive exponent in a double-precision floating point where
-     *	10 raised to this power minus 1.
+     *	The largest positive integer for which the result of 10.0 raised to
+     *	that power is in the range of representable finite floating-point
+     *	numbers.
      *
      *	Usually defaults to 308.
      */
     rb_define_const(rb_cFloat, "MAX_10_EXP", INT2FIX(DBL_MAX_10_EXP));
     /*
-     *	The smallest positive integer in a double-precision floating point.
+     *	The smallest normalized positive floating-point number.
+     *
+     *	To get the the smallest, usually not normalized, positive
+     *  floating-point number, use <code>0.0.next_float</code>.
      *
      *	Usually defaults to 2.2250738585072014e-308.
      */
     rb_define_const(rb_cFloat, "MIN", DBL2NUM(DBL_MIN));
     /*
-     *	The largest possible integer in a double-precision floating point number.
+     *	The largest representable finite floating-point number.
+     *	Equivalent to <code>Float::INFINITY.prev_float</code>.
      *
      *	Usually defaults to 1.7976931348623157e+308.
      */
     rb_define_const(rb_cFloat, "MAX", DBL2NUM(DBL_MAX));
     /*
-     *	The difference between 1 and the smallest double-precision floating
-     *	point number.
+     *	The difference between 1.0 and the next representable floating-point
+     *	number. Equivalent to <code>1.0.next_float - 1.0</code>.
      *
      *	Usually defaults to 2.2204460492503131e-16.
      */
