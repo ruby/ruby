@@ -1281,6 +1281,7 @@ class TestHash < Test::Unit::TestCase
 
     bad = [
       5, true, false, nil,
+      0.0, 1.72723e-77,
     ].select do |x|
       hash = {x => bug9381}
       hash[wrapper.new(x)] != bug9381
