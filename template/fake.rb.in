@@ -5,8 +5,8 @@ while /\A(\w+)=(.*)/ =~ ARGV[0]
   arg[$1].tr!(File::ALT_SEPARATOR, File::SEPARATOR) if File::ALT_SEPARATOR
   ARGV.shift
 end
-if arg['i']
-  src = File.read(arg['i'])
+if inc = arg['i']
+  src = inc == '-' ? STDIN.read : File.read(inc)
   arg['versions'] = version = {}
   File.read(File.join(arg['srcdir'], 'version.c')).
     scan(/rb_define_global_const\("(RUBY_\w+)",[^;]*?\bMK(?:INT|STR)\(([^()]*)\)/m) do |n, v|
