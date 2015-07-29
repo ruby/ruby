@@ -2292,12 +2292,17 @@ str_buf_cat(VALUE str, const char *ptr, long len)
     }
     total = olen + len;
     if (capa <= total) {
-	while (total > capa) {
-	    if (capa > LONG_MAX / 2) {
-		capa = (total + 4095) / 4096 * 4096;
-		break;
+	if (LIKELY(capa > 0)) {
+	    while (total > capa) {
+		if (capa > LONG_MAX / 2) {
+		    capa = (total + 4095) / 4096 * 4096;
+		    break;
+		}
+		capa = 2 * capa;
 	    }
-	    capa = 2 * capa;
+	}
+	else {
+	    capa = total;
 	}
 	RESIZE_CAPA_TERM(str, capa, termlen);
 	sptr = RSTRING_PTR(str);
