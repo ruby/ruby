@@ -390,8 +390,17 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
 
     start_server(OpenSSL::SSL::VERIFY_NONE, true, {use_anon_cipher: true, ctx_proc: ctx_proc}){|server, port|
       ctx = OpenSSL::SSL::SSLContext.new
-      ctx.ciphers = "ADH"
+      ctx.ciphers = cipher
       ctx.options = OpenSSL::SSL::OP_ALL
+
+      puts
+      puts
+      puts
+      puts "CLIENT CIPHER"
+      p ctx.ciphers
+      puts
+      puts
+
       server_connect(port, ctx) { |ssl|
         msg = "Peer verification enabled, but no certificate received. Anonymous cipher suite " \
           "#{cipher} was negotiated. Anonymous suites must be disabled to use peer verification."
