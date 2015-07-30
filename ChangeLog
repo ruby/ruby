@@ -7,8 +7,8 @@ Thu Jul 30 13:19:54 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Thu Jul 30 11:53:54 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* thread.c (rb_thread_s_handle_interrupt): make identical hash,
-	  to compare masking classes just by their IDs.
+	* thread.c (rb_thread_s_handle_interrupt): make identity hash, to
+	  compare masking classes just by their IDs.
 
 Thu Jul 30 11:52:55 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
