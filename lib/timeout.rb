@@ -120,3 +120,6 @@ end
 # Another name for Timeout::Error, defined for backwards compatibility with
 # earlier versions of timeout.rb.
 TimeoutError = Timeout::Error
+class Object
+  deprecate_constant :TimeoutError
+end
