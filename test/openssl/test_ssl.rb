@@ -380,6 +380,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     ctx = OpenSSL::SSL::SSLContext.new
     ctx.ciphers = "ADH"
     p ctx.ciphers
+    p self
     puts
     puts
 
