@@ -86,7 +86,7 @@ module OpenSSL::TestEOF1M
     th = Thread.new { s2 << content; s2.close }
     yield s1
   ensure
-    th.join
+    th.join if th
     s1.close
   end
 end
@@ -97,7 +97,7 @@ module OpenSSL::TestEOF2M
     th = Thread.new { s1 << content; s1.close }
     yield s2
   ensure
-    th.join
+    th.join if th
     s2.close
   end
 end
@@ -301,7 +301,7 @@ module OpenSSL::TestPairM
     assert_equal s1, t.value
     assert accept
   ensure
-    t.join
+    t.join if t
     s1.close if s1
     s2.close if s2
     sock1.close if sock1
@@ -325,7 +325,7 @@ module OpenSSL::TestPairM
     assert_equal s1, t.value
     assert accept
   ensure
-    t.join
+    t.join if t
     s1.close if s1
     s2.close if s2
     sock1.close if sock1
@@ -365,7 +365,7 @@ module OpenSSL::TestPairM
 
     assert called, 'ecdh callback should be called'
   ensure
-    th.join
+    th.join if th
     s1.close if s1
     s2.close if s2
     sock1.close if sock1
@@ -413,7 +413,7 @@ module OpenSSL::TestPairM
       assert_includes([s1, :wait_readable, :wait_writable ], rv)
     end
   ensure
-    th.join
+    th.join if th
     s1.close if s1
     s2.close if s2
     sock1.close if sock1
@@ -465,7 +465,7 @@ module OpenSSL::TestPairM
     s1.print "a\ndef"
     assert_equal("a\n", s2.gets)
   ensure
-    th.join
+    th.join if th
     s1.close if s1 && !s1.closed?
     s2.close if s2 && !s2.closed?
     sock1.close if sock1 && !sock1.closed?
