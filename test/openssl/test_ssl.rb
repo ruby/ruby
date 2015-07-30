@@ -367,14 +367,28 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
 
   def test_post_connect_check_with_anon_ciphers
     cipher = pick_anon_cipher
+    ctx = OpenSSL::SSL::SSLContext.new
+    ctx.ciphers = "aNULL"
 
     return skip "no ciphers to use" unless cipher
+    return skip "no ciphers to use" unless ctx.ciphers.map(&:first).grep(cipher).any?
+
+    puts
+    puts
+    puts
+    puts OpenSSL::OPENSSL_VERSION
+    ctx = OpenSSL::SSL::SSLContext.new
+    ctx.ciphers = "ADH"
+    p ctx.ciphers
+    puts
+    puts
+
 
     sslerr = OpenSSL::SSL::SSLError
 
     start_server(OpenSSL::SSL::VERIFY_NONE, true, {use_anon_cipher: true}){|server, port|
       ctx = OpenSSL::SSL::SSLContext.new
-      ctx.ciphers = cipher
+      ctx.ciphers = "aNULL"
       server_connect(port, ctx) { |ssl|
         msg = "Peer verification enabled, but no certificate received. Anonymous cipher suite " \
           "#{cipher} was negotiated. Anonymous suites must be disabled to use peer verification."
