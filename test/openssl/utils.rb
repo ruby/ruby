@@ -283,7 +283,16 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
         store.add_cert(@ca_cert)
         store.purpose = OpenSSL::X509::PURPOSE_SSL_CLIENT
         ctx = OpenSSL::SSL::SSLContext.new
-        ctx.ciphers = pick_anon_cipher if use_anon_cipher
+        if use_anon_cipher
+          ctx.ciphers = pick_anon_cipher
+          puts
+          puts
+          puts
+          puts "SERVER CIPHERS"
+          p ctx.ciphers
+          puts
+          puts
+        end
         ctx.cert_store = store
         #ctx.extra_chain_cert = [ ca_cert ]
         ctx.cert = @svr_cert
