@@ -1695,11 +1695,18 @@ rb_threadptr_pending_interrupt_active_p(rb_thread_t *th)
 }
 
 static int
-handle_interrupt_arg_check_i(VALUE key, VALUE val)
+handle_interrupt_arg_check_i(VALUE key, VALUE val, VALUE args)
 {
+    VALUE *maskp = (VALUE *)args;
+
     if (val != sym_immediate && val != sym_on_blocking && val != sym_never) {
 	rb_raise(rb_eArgError, "unknown mask signature");
     }
+
+    if (!*maskp) {
+	*maskp = rb_ident_hash_new();
+    }
+    rb_hash_aset(*maskp, key, val);
 
     return ST_CONTINUE;
 }
@@ -1822,8 +1829,12 @@ rb_thread_s_handle_interrupt(VALUE self, VALUE mask_arg)
 	rb_raise(rb_eArgError, "block is needed.");
     }
 
-    mask = rb_convert_type(mask_arg, T_HASH, "Hash", "to_hash");
-    rb_hash_foreach(mask, handle_interrupt_arg_check_i, 0);
+    mask = 0;
+    mask_arg = rb_convert_type(mask_arg, T_HASH, "Hash", "to_hash");
+    rb_hash_foreach(mask_arg, handle_interrupt_arg_check_i, (VALUE)&mask);
+    if (!mask) {
+	return rb_yield(Qnil);
+    }
     rb_ary_push(th->pending_interrupt_mask_stack, mask);
     if (!rb_threadptr_pending_interrupt_empty_p(th)) {
 	th->pending_interrupt_queue_checked = 0;
