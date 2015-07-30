@@ -1040,7 +1040,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
   def test_isolated_raise_in_trace
     bug9088 = '[ruby-dev:47793] [Bug #9088]'
-    assert_ruby_status([], <<-END, bug9088)
+    assert_in_out_err([], <<-END, [], [], bug9088)
     set_trace_func proc {raise rescue nil}
     1.times {break}
     END
@@ -1212,16 +1212,13 @@ class TestSetTraceFunc < Test::Unit::TestCase
   end
 
   def test_recursive
-    assert_ruby_status [], %q{
-      stack = []
+    assert_in_out_err([], %q{\
       TracePoint.new(:c_call){|tp|
-        p 2
-        stack << tp.method_id
+        p tp.method_id
       }.enable{
         p 1
       }
-      raise if stack != [:p, :hash, :inspect]
-    }, '[Bug #9940]'
+    }, %w[:p :inspect 1], [], '[Bug #9940]')
   end
 
   def method_prefix event
