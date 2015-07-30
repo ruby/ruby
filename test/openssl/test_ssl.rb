@@ -387,7 +387,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     sslerr = OpenSSL::SSL::SSLError
 
     start_server(OpenSSL::SSL::VERIFY_NONE, true, {use_anon_cipher: true}){|server, port|
-      ctx = OpenSSL::SSL::SSLContext.new
+      ctx = OpenSSL::SSL::SSLContext.new "SSLv23"
       ctx.ciphers = "aNULL"
       server_connect(port, ctx) { |ssl|
         msg = "Peer verification enabled, but no certificate received. Anonymous cipher suite " \
