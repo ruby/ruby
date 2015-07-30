@@ -726,7 +726,7 @@ class TestRequire < Test::Unit::TestCase
 
         assert_throw(:blah) do
           x = Thread.current
-          y = Thread.start {
+          Thread.start {
             sleep 0.00001
             x.raise Error.new
           }
