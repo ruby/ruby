@@ -370,6 +370,15 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     ctx = OpenSSL::SSL::SSLContext.new
     ctx.ciphers = "aNULL"
 
+    puts
+    puts
+    puts "#" * 90
+    puts cipher
+    p ctx.ciphers
+    puts "#" * 90
+    puts
+    puts
+
     return skip "no ciphers to use" unless cipher
     return skip "no ciphers to use" unless ctx.ciphers.map(&:first).grep(cipher).any?
 
