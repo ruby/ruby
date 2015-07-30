@@ -5275,7 +5275,7 @@ rb_reset_coverages(void)
 VALUE
 rb_uninterruptible(VALUE (*b_proc)(ANYARGS), VALUE data)
 {
-    VALUE interrupt_mask = rb_hash_new();
+    VALUE interrupt_mask = rb_ident_hash_new();
     rb_thread_t *cur_th = GET_THREAD();
 
     rb_hash_aset(interrupt_mask, rb_cObject, sym_never);
