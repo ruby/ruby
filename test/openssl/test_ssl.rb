@@ -366,6 +366,9 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   end
 
   def test_post_connect_check_with_anon_ciphers
+    cipher = pick_anon_cipher
+    return skip "no ciphers to use" unless cipher
+
     sslerr = OpenSSL::SSL::SSLError
 
     start_server(OpenSSL::SSL::VERIFY_NONE, true, {use_anon_cipher: true}){|server, port|
@@ -373,7 +376,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       ctx.ciphers = "aNULL"
       server_connect(port, ctx) { |ssl|
         msg = "Peer verification enabled, but no certificate received. Anonymous cipher suite " \
-          "ADH-AES256-GCM-SHA384 was negotiated. Anonymous suites must be disabled to use peer verification."
+          "#{cipher} was negotiated. Anonymous suites must be disabled to use peer verification."
         assert_raise_with_message(sslerr,msg){ssl.post_connection_check("localhost.localdomain")}
       }
     }

@@ -265,6 +265,12 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
       end
     end
 
+    def pick_anon_cipher
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.ciphers = "ADH"
+      ctx.ciphers.map(&:first).first
+    end
+
     def start_server(verify_mode, start_immediately, args = {}, &block)
       IO.pipe {|stop_pipe_r, stop_pipe_w|
         ctx_proc = args[:ctx_proc]
@@ -277,7 +283,7 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
         store.add_cert(@ca_cert)
         store.purpose = OpenSSL::X509::PURPOSE_SSL_CLIENT
         ctx = OpenSSL::SSL::SSLContext.new
-        ctx.ciphers = "ADH-AES256-GCM-SHA384" if use_anon_cipher
+        ctx.ciphers = pick_anon_cipher if use_anon_cipher
         ctx.cert_store = store
         #ctx.extra_chain_cert = [ ca_cert ]
         ctx.cert = @svr_cert
