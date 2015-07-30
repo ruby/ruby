@@ -1,3 +1,10 @@
+Thu Jul 30 10:42:27 2015  Alex Dowad  <alexinbeijing@gmail.com>
+
+	* load.c (rb_load_internal0): extra check before returning
+	  TAG_RAISE when a non-local transfer of control happens while
+	  loading and parsing a Ruby source file.
+	  [ruby-core:70169] [Bug #11404]
+
 Thu Jul 30 08:48:42 2015  Eric Wong  <e@80x24.org>
 
 	* st.c (find_entry): constify st_table*

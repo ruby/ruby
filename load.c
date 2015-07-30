@@ -621,7 +621,7 @@ rb_load_internal0(rb_thread_t *th, VALUE fname, int wrap)
     th->top_self = self;
     th->top_wrapper = wrapper;
 
-    if (!loaded && !FIXNUM_P(th->errinfo)) {
+    if (!loaded && !FIXNUM_P(th->errinfo) && state != TAG_THROW) {
 	/* an error on loading don't include INT2FIX(TAG_FATAL) see r35625 */
 	return TAG_RAISE;
     }
