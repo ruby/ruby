@@ -367,20 +367,8 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
 
   def test_post_connect_check_with_anon_ciphers
     cipher = pick_anon_cipher
-    ctx = OpenSSL::SSL::SSLContext.new
-    ctx.ciphers = "aNULL"
-
-    puts
-    puts
-    puts "#" * 90
-    puts cipher
-    p ctx.ciphers
-    puts "#" * 90
-    puts
-    puts
 
     return skip "no ciphers to use" unless cipher
-    return skip "no ciphers to use" unless ctx.ciphers.map(&:first).grep(cipher).any?
 
     sslerr = OpenSSL::SSL::SSLError
 
