@@ -579,7 +579,6 @@ rb_load_internal0(rb_thread_t *th, VALUE fname, int wrap)
     int state;
     volatile VALUE wrapper = th->top_wrapper;
     volatile VALUE self = th->top_self;
-    volatile int loaded = FALSE;
     volatile int mild_compile_error;
 #if !defined __GNUC__
     rb_thread_t *volatile th0 = th;
@@ -606,7 +605,6 @@ rb_load_internal0(rb_thread_t *th, VALUE fname, int wrap)
 
 	th->mild_compile_error++;
 	node = (NODE *)rb_load_file_str(fname);
-	loaded = TRUE;
 	iseq = rb_iseq_new_top(node, rb_str_new2("<top (required)>"), fname, rb_realpath_internal(Qnil, fname, 1), NULL);
 	th->mild_compile_error--;
 	rb_iseq_eval(iseq);
@@ -621,10 +619,6 @@ rb_load_internal0(rb_thread_t *th, VALUE fname, int wrap)
     th->top_self = self;
     th->top_wrapper = wrapper;
 
-    if (!loaded && !FIXNUM_P(th->errinfo) && state != TAG_THROW) {
-	/* an error on loading don't include INT2FIX(TAG_FATAL) see r35625 */
-	return TAG_RAISE;
-    }
     if (state) {
 	VALUE exc = rb_vm_make_jump_tag_but_local_jump(state, Qundef);
 	if (NIL_P(exc)) return state;
