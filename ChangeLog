@@ -1,3 +1,10 @@
+Sat Aug  1 03:43:10 2015  Aaron Patterson <tenderlove@ruby-lang.org>
+
+	* ext/openssl/ossl_ssl.c (ossl_call_tmp_dh_callback): create an array
+	  and use `rb_apply` to clean up calls to `rb_protect`.
+
+	* ext/openssl/ossl_ssl.c (ossl_tmp_dh_callback): ditto
+
 Sat Aug  1 03:27:12 2015  Aaron Patterson <tenderlove@ruby-lang.org>
 
 	* ext/openssl/ossl_ssl.c (ossl_call_tmp_ecdh_callback): The SSL socket
