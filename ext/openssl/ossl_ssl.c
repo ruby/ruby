@@ -49,7 +49,6 @@ static VALUE eSSLErrorWaitWritable;
 #define ossl_sslctx_set_cert_store(o,v)  	rb_iv_set((o),"@cert_store",(v))
 #define ossl_sslctx_set_extra_cert(o,v)  	rb_iv_set((o),"@extra_chain_cert",(v))
 #define ossl_sslctx_set_client_cert_cb(o,v) 	rb_iv_set((o),"@client_cert_cb",(v))
-#define ossl_sslctx_set_tmp_dh_cb(o,v)   	rb_iv_set((o),"@tmp_dh_callback",(v))
 #define ossl_sslctx_set_sess_id_ctx(o, v) 	rb_iv_set((o),"@session_id_context",(v))
 
 #define ossl_sslctx_get_cert(o)          	rb_iv_get((o),"@cert")
@@ -66,7 +65,7 @@ static VALUE eSSLErrorWaitWritable;
 #define ossl_sslctx_get_extra_cert(o)    	rb_iv_get((o),"@extra_chain_cert")
 #define ossl_sslctx_get_client_cert_cb(o) 	rb_iv_get((o),"@client_cert_cb")
 #define ossl_sslctx_get_tmp_ecdh_cb(o)          rb_iv_get((o),"@tmp_ecdh_callback")
-#define ossl_sslctx_get_tmp_dh_cb(o)     	rb_iv_get((o),"@tmp_dh_callback")
+#define ossl_sslctx_get_tmp_dh_cb(o)     	rb_funcall((o),rb_intern("tmp_dh_callback"),0)
 #define ossl_sslctx_get_sess_id_ctx(o)   	rb_iv_get((o),"@session_id_context")
 
 #define ossl_ssl_get_io(o)           rb_iv_get((o),"@io")
@@ -2114,18 +2113,6 @@ Init_ossl_ssl(void)
      * key length.
      */
     rb_attr(cSSLContext, rb_intern("tmp_ecdh_callback"), 1, 1, Qfalse);
-
-     /*
-     * A callback invoked when DH parameters are required.
-     *
-     * The callback is invoked with the Session for the key exchange, an
-     * flag indicating the use of an export cipher and the keylength
-     * required.
-     *
-     * The callback must return an OpenSSL::PKey::DH instance of the correct
-     * key length.
-     */
-    rb_attr(cSSLContext, rb_intern("tmp_dh_callback"), 1, 0, Qfalse);
 
     /*
      * Sets the context in which a session can be reused.  This allows

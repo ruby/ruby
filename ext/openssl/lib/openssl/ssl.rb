@@ -77,11 +77,22 @@ module OpenSSL
       INIT_VARS = ["cert", "key", "client_ca", "ca_file", "ca_path",
         "timeout", "verify_mode", "verify_depth", "renegotiation_cb",
         "verify_callback", "options", "cert_store", "extra_chain_cert",
-        "client_cert_cb", "session_id_context",
+        "client_cert_cb", "session_id_context", "tmp_dh_callback",
         "session_get_cb", "session_new_cb", "session_remove_cb",
         "tmp_ecdh_callback", "servername_cb", "npn_protocols",
         "alpn_protocols", "alpn_select_cb",
         "npn_select_cb"].map { |x| "@#{x}" }
+
+      # A callback invoked when DH parameters are required.
+      #
+      # The callback is invoked with the Session for the key exchange, an
+      # flag indicating the use of an export cipher and the keylength
+      # required.
+      #
+      # The callback must return an OpenSSL::PKey::DH instance of the correct
+      # key length.
+
+      attr_writer :tmp_dh_callback
 
       # call-seq:
       #    SSLContext.new => ctx
@@ -91,7 +102,6 @@ module OpenSSL
       # You can get a list of valid methods with OpenSSL::SSL::SSLContext::METHODS
       def initialize(version = nil)
         INIT_VARS.each { |v| instance_variable_set v, nil }
-        @tmp_dh_callback = OpenSSL::PKey::DEFAULT_TMP_DH_CALLBACK
         return unless version
         self.ssl_version = version
       end
@@ -115,8 +125,8 @@ module OpenSSL
         return params
       end
 
-      def tmp_dh_callback=(value)
-        @tmp_dh_callback = value || OpenSSL::PKey::DEFAULT_TMP_DH_CALLBACK
+      def tmp_dh_callback
+        @tmp_dh_callback || OpenSSL::PKey::DEFAULT_TMP_DH_CALLBACK
       end
     end
 

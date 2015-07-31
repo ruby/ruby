@@ -1,3 +1,13 @@
+Sat Aug  1 03:14:07 2015  Aaron Patterson <tenderlove@ruby-lang.org>
+
+	* ext/openssl/lib/openssl/ssl.rb (module OpenSSL): convert
+	  `tmp_dh_callback` to Ruby, and call it when setting up an SSL
+	  connection.  This allows us to move the "default" behavior to the
+	  reader method.
+
+	* ext/openssl/ossl_ssl.c: call the tmp_dh_callback instead of
+	  accessing the SSLContext's internals.
+
 Fri Jul 31 23:34:27 2015  Aaron Patterson <tenderlove@ruby-lang.org>
 
 	* .travis.yml: update libssl before running tests.
