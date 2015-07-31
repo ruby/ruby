@@ -40,10 +40,10 @@ module RSS
 
     def test_xml_stylesheets
       [
-        [{:href => "a.xsl", :type => "text/xsl"}],
+        [{href: "a.xsl", type: "text/xsl"}],
         [
-          {:href => "a.xsl", :type => "text/xsl"},
-          {:href => "a.css", :type => "text/css"},
+          {href: "a.xsl", type: "text/xsl"},
+          {href: "a.css", type: "text/css"},
         ],
       ].each do |attrs_ary|
         rss = Rss.new(@rss_version)
@@ -71,11 +71,11 @@ module RSS
       }
       categories = [
         {
-          :content => "Newspapers",
+          content: "Newspapers",
         },
         {
-          :domain => "Syndic8",
-          :content => "1765",
+          domain: "Syndic8",
+          content: "1765",
         }
       ]
 
@@ -117,8 +117,8 @@ module RSS
         cat[:domain] ||= nil
         category = c.elements["category[#{i+1}]"]
         actual = {
-          :domain => category.attributes["domain"],
-          :content => category.text,
+          domain: category.attributes["domain"],
+          content: category.text,
         }
         assert_equal(cat, actual)
       end
@@ -126,11 +126,11 @@ module RSS
 
     def test_channel_cloud
       cloud_params = {
-        :domain => "rpc.sys.com",
-        :port => "80",
-        :path => "/RPC2",
-        :registerProcedure => "myCloud.rssPleaseNotify",
-        :protocol => "xml-rpc",
+        domain: "rpc.sys.com",
+        port: "80",
+        path: "/RPC2",
+        registerProcedure: "myCloud.rssPleaseNotify",
+        protocol: "xml-rpc",
       }
       cloud = Rss::Channel::Cloud.new(cloud_params[:domain],
                                       cloud_params[:port],
@@ -152,12 +152,12 @@ module RSS
 
     def test_channel_image
       image_params = {
-        :url => "http://hoge.com/hoge.png",
-        :title => "fugafuga",
-        :link => "http://hoge.com",
-        :width => "144",
-        :height => "400",
-        :description => "an image",
+        url: "http://hoge.com/hoge.png",
+        title: "fugafuga",
+        link: "http://hoge.com",
+        width: "144",
+        height: "400",
+        description: "an image",
       }
       image = Rss::Channel::Image.new(image_params[:url],
                                       image_params[:title],
@@ -179,10 +179,10 @@ module RSS
 
     def test_channel_textInput
       textInput_params = {
-        :title => "fugafuga",
-        :description => "text hoge fuga",
-        :name => "hoge",
-        :link => "http://hoge.com",
+        title: "fugafuga",
+        description: "text hoge fuga",
+        name: "hoge",
+        link: "http://hoge.com",
       }
       textInput = Rss::Channel::TextInput.new(textInput_params[:title],
                                               textInput_params[:description],
@@ -246,11 +246,11 @@ module RSS
       }
       categories = [
         {
-          :content => "Newspapers",
+          content: "Newspapers",
         },
         {
-          :domain => "Syndic8",
-          :content => "1765",
+          domain: "Syndic8",
+          content: "1765",
         }
       ]
 
@@ -294,8 +294,8 @@ module RSS
         cat[:domain] ||= nil
         category = item_elem.elements["category[#{i+1}]"]
         actual = {
-          :domain => category.attributes["domain"],
-          :content => category.text,
+          domain: category.attributes["domain"],
+          content: category.text,
         }
         assert_equal(cat, actual)
       end
@@ -303,9 +303,9 @@ module RSS
 
     def test_item_enclosure
       enclosure_params = {
-        :url => "http://www.scripting.com/mp3s/weatherReportSuite.mp3",
-        :length => "12216320",
-        :type => "audio/mpeg",
+        url: "http://www.scripting.com/mp3s/weatherReportSuite.mp3",
+        length: "12216320",
+        type: "audio/mpeg",
       }
 
       enclosure = Rss::Channel::Item::Enclosure.new(enclosure_params[:url],
@@ -327,11 +327,11 @@ module RSS
     def test_item_guid
       test_params = [
         {
-          :content => "http://some.server.com/weblogItem3207",
+          content: "http://some.server.com/weblogItem3207",
         },
         {
-          :isPermaLink => "true",
-          :content => "http://inessential.com/2002/09/01.php#a2",
+          isPermaLink: "true",
+          content: "http://inessential.com/2002/09/01.php#a2",
         },
       ]
 
@@ -362,8 +362,8 @@ module RSS
 
     def test_item_source
       source_params = {
-        :url => "http://www.tomalak.org/links2.xml",
-        :content => "Tomalak's Realm",
+        url: "http://www.tomalak.org/links2.xml",
+        content: "Tomalak's Realm",
       }
 
       source = Rss::Channel::Item::Source.new(source_params[:url],

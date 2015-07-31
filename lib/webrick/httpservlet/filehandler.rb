@@ -185,7 +185,7 @@ module WEBrick
         @logger = @config[:Logger]
         @root = File.expand_path(root)
         if options == true || options == false
-          options = { :FancyIndexing => options }
+          options = { FancyIndexing: options }
         end
         @options = default.dup.update(options)
       end

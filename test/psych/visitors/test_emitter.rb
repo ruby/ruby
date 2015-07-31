@@ -11,7 +11,7 @@ module Psych
 
       def test_options
         io = StringIO.new
-        visitor = Visitors::Emitter.new io, :indentation => 3
+        visitor = Visitors::Emitter.new io, indentation: 3
 
         s       = Nodes::Stream.new
         doc     = Nodes::Document.new

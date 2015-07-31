@@ -170,7 +170,7 @@ class RDoc::TomDoc < RDoc::Markup::Parser
   # Returns an RDoc::Markup::Paragraph.
 
   def build_paragraph margin
-    p :paragraph_start => margin if @debug
+    p paragraph_start: margin if @debug
 
     paragraph = RDoc::Markup::Paragraph.new
 
@@ -194,7 +194,7 @@ class RDoc::TomDoc < RDoc::Markup::Parser
       end
     end
 
-    p :paragraph_end => margin if @debug
+    p paragraph_end: margin if @debug
 
     paragraph
   end

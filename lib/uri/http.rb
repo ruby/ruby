@@ -48,8 +48,8 @@ module URI
     #
     # Example:
     #
-    #     newuri = URI::HTTP.build({:host => 'www.example.com',
-    #       :path => '/foo/bar'})
+    #     newuri = URI::HTTP.build({host: 'www.example.com',
+    #       path: '/foo/bar'})
     #
     #     newuri = URI::HTTP.build([nil, "www.example.com", nil, "/path",
     #       "query", 'fragment'])

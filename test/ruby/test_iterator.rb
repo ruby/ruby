@@ -353,7 +353,7 @@ class TestIterator < Test::Unit::TestCase
   end
 
   def test_assoc_yield
-     [{:key=>:value}, H.new].each {|h|
+     [{key::value}, H.new].each {|h|
        h.each{|a| assert_equal([:key, :value], a)}
        h.each{|a,| assert_equal(:key, a)}
        h.each{|*a| assert_equal([[:key, :value]], a)}

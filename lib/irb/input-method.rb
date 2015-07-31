@@ -48,8 +48,8 @@ module IRB
       super
       @line_no = 0
       @line = []
-      @stdin = IO.open(STDIN.to_i, :external_encoding => IRB.conf[:LC_MESSAGES].encoding, :internal_encoding => "-")
-      @stdout = IO.open(STDOUT.to_i, 'w', :external_encoding => IRB.conf[:LC_MESSAGES].encoding, :internal_encoding => "-")
+      @stdin = IO.open(STDIN.to_i, external_encoding: IRB.conf[:LC_MESSAGES].encoding, internal_encoding: "-")
+      @stdout = IO.open(STDOUT.to_i, 'w', external_encoding: IRB.conf[:LC_MESSAGES].encoding, internal_encoding: "-")
     end
 
     # Reads the next line from this input method.
@@ -137,8 +137,8 @@ module IRB
         @line = []
         @eof = false
 
-        @stdin = IO.open(STDIN.to_i, :external_encoding => IRB.conf[:LC_MESSAGES].encoding, :internal_encoding => "-")
-        @stdout = IO.open(STDOUT.to_i, 'w', :external_encoding => IRB.conf[:LC_MESSAGES].encoding, :internal_encoding => "-")
+        @stdin = IO.open(STDIN.to_i, external_encoding: IRB.conf[:LC_MESSAGES].encoding, internal_encoding: "-")
+        @stdout = IO.open(STDOUT.to_i, 'w', external_encoding: IRB.conf[:LC_MESSAGES].encoding, internal_encoding: "-")
       end
 
       # Reads the next line from this input method.

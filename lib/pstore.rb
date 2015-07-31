@@ -39,9 +39,9 @@ require "digest/md5"
 #    attr_reader :page_name
 #
 #    def add_revision( author, contents )
-#      @revisions << { :created  => Time.now,
-#                      :author   => author,
-#                      :contents => contents }
+#      @revisions << { created: Time.now,
+#                      author: author,
+#                      contents: contents }
 #    end
 #
 #    def wiki_page_references

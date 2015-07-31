@@ -26,7 +26,7 @@ command.  For further discussion see the help for the yank command.
   end
 
   def initialize
-    super 'push', 'Push a gem up to the gem server', :host => self.host
+    super 'push', 'Push a gem up to the gem server', host: self.host
 
     add_proxy_option
     add_key_option

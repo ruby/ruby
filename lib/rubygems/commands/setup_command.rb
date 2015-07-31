@@ -12,9 +12,9 @@ class Gem::Commands::SetupCommand < Gem::Command
     require 'tmpdir'
 
     super 'setup', 'Install RubyGems',
-          :format_executable => true, :document => %w[ri],
-          :site_or_vendor => 'sitelibdir',
-          :destdir => '', :prefix => '', :previous_version => ''
+          format_executable: true, document: %w[ri],
+          site_or_vendor: 'sitelibdir',
+          destdir: '', prefix: '', previous_version: ''
 
     add_option '--previous-version=VERSION',
                'Previous version of rubygems',
@@ -229,7 +229,7 @@ By default, this RubyGems will install gem as:
             fp.puts bin.join
           end
 
-          install bin_tmp_file, dest_file, :mode => 0755
+          install bin_tmp_file, dest_file, mode: 0755
           @bin_file_names << dest_file
         ensure
           rm bin_tmp_file
@@ -251,7 +251,7 @@ GOTO :EOF
 TEXT
           end
 
-          install bin_cmd_file, "#{dest_file}.bat", :mode => 0755
+          install bin_cmd_file, "#{dest_file}.bat", mode: 0755
         ensure
           rm bin_cmd_file
         end
@@ -264,7 +264,7 @@ TEXT
     dest_dir = File.dirname dest_file
     mkdir_p dest_dir unless File.directory? dest_dir
 
-    install file, dest_file, :mode => 0644
+    install file, dest_file, mode: 0644
   end
 
   def install_lib(lib_dir)
@@ -473,8 +473,8 @@ abort "#{deprecation_message}"
   def uninstall_old_gemcutter
     require 'rubygems/uninstaller'
 
-    ui = Gem::Uninstaller.new('gemcutter', :all => true, :ignore => true,
-                              :version => '< 0.4')
+    ui = Gem::Uninstaller.new('gemcutter', all: true, ignore: true,
+                              version: '< 0.4')
     ui.uninstall
   rescue Gem::InstallError
   end

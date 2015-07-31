@@ -62,10 +62,10 @@ module WEBrick
         httpv = $1
       end
       @config = WEBrick::Config::HTTP.dup.update(
-        :ServerSoftware => ENV["SERVER_SOFTWARE"] || "null",
-        :HTTPVersion    => HTTPVersion.new(httpv || "1.0"),
-        :RunOnCGI       => true,   # to detect if it runs on CGI.
-        :NPH            => false   # set true to run as NPH script.
+        ServerSoftware: ENV["SERVER_SOFTWARE"] || "null",
+        HTTPVersion: HTTPVersion.new(httpv || "1.0"),
+        RunOnCGI: true,   # to detect if it runs on CGI.
+        NPH: false   # set true to run as NPH script.
       )
       if config = args.shift
         @config.update(config)

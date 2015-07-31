@@ -51,8 +51,8 @@ class RDoc::Generator::POT::MessageExtractor
     return if text.nil?
 
     options = {
-      :extracted_comment => comment,
-      :references => [location].compact,
+      extracted_comment: comment,
+      references: [location].compact,
     }
     i18n_text = RDoc::I18n::Text.new(text)
     i18n_text.extract_messages do |part|

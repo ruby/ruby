@@ -148,8 +148,8 @@ module TkItemConfigMethod
 
   def __item_configinfo_struct(id)
     # maybe need to override
-    {:key=>0, :alias=>1, :db_name=>1, :db_class=>2,
-      :default_value=>3, :current_value=>4}
+    {key:0, alias:1, db_name:1, db_class:2,
+      default_value:3, current_value:4}
   end
   private :__item_configinfo_struct
 

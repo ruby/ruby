@@ -19,8 +19,8 @@ class TestGemServer < Gem::TestCase
     @a3_p = quick_gem 'a', '3.a'
 
     @server = Gem::Server.new Gem.dir, process_based_port, false
-    @req = WEBrick::HTTPRequest.new :Logger => nil
-    @res = WEBrick::HTTPResponse.new :HTTPVersion => '1.0'
+    @req = WEBrick::HTTPRequest.new Logger: nil
+    @res = WEBrick::HTTPResponse.new HTTPVersion: '1.0'
   end
 
   def test_doc_root_3
@@ -203,8 +203,8 @@ class TestGemServer < Gem::TestCase
 
     data.rewind
 
-    req = WEBrick::HTTPRequest.new :Logger => nil
-    res = WEBrick::HTTPResponse.new :HTTPVersion => '1.0'
+    req = WEBrick::HTTPRequest.new Logger: nil
+    res = WEBrick::HTTPResponse.new HTTPVersion: '1.0'
     req.parse data
 
     server.quick req, res

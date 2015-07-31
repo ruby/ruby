@@ -496,7 +496,7 @@ EOL
       assert_equal( txt, out )
 
       txt = '<sean><russell>abc&#248;def</russell></sean>'
-      a = Document.new( txt, { :raw => ["russell"] } )
+      a = Document.new( txt, { raw: ["russell"] } )
       f.write(a,out="")
       assert_equal( txt, out )
     end

@@ -16,7 +16,7 @@ $bind_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
-base_frame = TkFrame.new($bind_demo).pack(:fill=>:both, :expand=>true)
+base_frame = TkFrame.new($bind_demo).pack(fill::both, expand:true)
 
 # frame 生成
 TkFrame.new(base_frame) {|frame|

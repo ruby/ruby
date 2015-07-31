@@ -4,8 +4,8 @@ class TestSetTraceFunc < Test::Unit::TestCase
   def setup
     @original_compile_option = RubyVM::InstructionSequence.compile_option
     RubyVM::InstructionSequence.compile_option = {
-      :trace_instruction => true,
-      :specialized_instruction => false
+      trace_instruction: true,
+      specialized_instruction: false
     }
     @target_thread = Thread.current
   end
@@ -303,7 +303,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
   end
 
   def test_thread_trace
-    events = {:set => [], :add => []}
+    events = {set: [], add: []}
     prc = Proc.new { |event, file, lineno, mid, binding, klass|
       events[:set] << [event, lineno, mid, klass, :set]
     }

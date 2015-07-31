@@ -1784,8 +1784,8 @@ module Tk::BLT
         keys.delete('without_creating')
       end
 
-      legend = self.class.new(parent, :without_creating=>true,
-                              :widgetname=>widgetname)
+      legend = self.class.new(parent, without_creating:true,
+                              widgetname:widgetname)
       class << legend
         def __destroy_hook__
           TkCore::INTERP.tk_windows.delete(@path)

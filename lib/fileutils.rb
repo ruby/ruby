@@ -115,7 +115,7 @@ module FileUtils
   # If this method is called with block, resumes to the old
   # working directory after the block execution finished.
   #
-  #   FileUtils.cd('/', :verbose => true)   # chdir and report it
+  #   FileUtils.cd('/', verbose: true)   # chdir and report it
   #
   #   FileUtils.cd('/') do  # chdir
   #     [...]               # do something
@@ -168,8 +168,8 @@ module FileUtils
   #
   #   FileUtils.mkdir 'test'
   #   FileUtils.mkdir %w( tmp data )
-  #   FileUtils.mkdir 'notexist', :noop => true  # Does not really create.
-  #   FileUtils.mkdir 'tmp', :mode => 0700
+  #   FileUtils.mkdir 'notexist', noop: true  # Does not really create.
+  #   FileUtils.mkdir 'tmp', mode: 0700
   #
   def mkdir(list, options = {})
     fu_check_options options, OPT_TABLE['mkdir']
@@ -262,7 +262,7 @@ module FileUtils
   #   FileUtils.rmdir 'somedir'
   #   FileUtils.rmdir %w(somedir anydir otherdir)
   #   # Does not really remove directory; outputs message.
-  #   FileUtils.rmdir 'somedir', :verbose => true, :noop => true
+  #   FileUtils.rmdir 'somedir', verbose: true, noop: true
   #
   def rmdir(list, options = {})
     fu_check_options options, OPT_TABLE['rmdir']
@@ -297,7 +297,7 @@ module FileUtils
   # If +new+ already exists and it is not a directory, raises Errno::EEXIST.
   # But if :force option is set, overwrite +new+.
   #
-  #   FileUtils.ln 'gcc', 'cc', :verbose => true
+  #   FileUtils.ln 'gcc', 'cc', verbose: true
   #   FileUtils.ln '/usr/bin/emacs21', '/usr/bin/emacs'
   #
   # <b><tt>ln(list, destdir, options = {})</tt></b>
@@ -337,7 +337,7 @@ module FileUtils
   # :force option is set, overwrite +new+.
   #
   #   FileUtils.ln_s '/usr/bin/ruby', '/usr/local/bin/ruby'
-  #   FileUtils.ln_s 'verylongsourcefilename.c', 'c', :force => true
+  #   FileUtils.ln_s 'verylongsourcefilename.c', 'c', force: true
   #
   # <b><tt>ln_s(list, destdir, options = {})</tt></b>
   #
@@ -369,7 +369,7 @@ module FileUtils
   # Options: noop verbose
   #
   # Same as
-  #   #ln_s(src, dest, :force => true)
+  #   #ln_s(src, dest, force: true)
   #
   def ln_sf(src, dest, options = {})
     fu_check_options options, OPT_TABLE['ln_sf']
@@ -391,7 +391,7 @@ module FileUtils
   #
   #   FileUtils.cp 'eval.c', 'eval.c.org'
   #   FileUtils.cp %w(cgi.rb complex.rb date.rb), '/usr/lib/ruby/1.6'
-  #   FileUtils.cp %w(cgi.rb complex.rb date.rb), '/usr/lib/ruby/1.6', :verbose => true
+  #   FileUtils.cp %w(cgi.rb complex.rb date.rb), '/usr/lib/ruby/1.6', verbose: true
   #   FileUtils.cp 'symlink', 'dest'   # copy content, "dest" is not a symlink
   #
   def cp(src, dest, options = {})
@@ -425,7 +425,7 @@ module FileUtils
   #
   #   # Examples of copying several files to target directory.
   #   FileUtils.cp_r %w(mail.rb field.rb debug/), site_ruby + '/tmail'
-  #   FileUtils.cp_r Dir.glob('*.rb'), '/home/aamine/lib/ruby', :noop => true, :verbose => true
+  #   FileUtils.cp_r Dir.glob('*.rb'), '/home/aamine/lib/ruby', noop: true, verbose: true
   #
   #   # If you want to copy all contents of a directory instead of the
   #   # directory itself, c.f. src/x -> dest/x, src/y -> dest/y,
@@ -504,10 +504,10 @@ module FileUtils
   # disk partition, the file is copied then the original file is removed.
   #
   #   FileUtils.mv 'badname.rb', 'goodname.rb'
-  #   FileUtils.mv 'stuff.rb', '/notexist/lib/ruby', :force => true  # no error
+  #   FileUtils.mv 'stuff.rb', '/notexist/lib/ruby', force: true  # no error
   #
   #   FileUtils.mv %w(junk.txt dust.txt), '/home/aamine/.trash/'
-  #   FileUtils.mv Dir.glob('test*.rb'), 'test', :noop => true, :verbose => true
+  #   FileUtils.mv Dir.glob('test*.rb'), 'test', noop: true, verbose: true
   #
   def mv(src, dest, options = {})
     fu_check_options options, OPT_TABLE['mv']
@@ -559,7 +559,7 @@ module FileUtils
   #
   #   FileUtils.rm %w( junk.txt dust.txt )
   #   FileUtils.rm Dir.glob('*.so')
-  #   FileUtils.rm 'NotExistFile', :force => true   # never raises exception
+  #   FileUtils.rm 'NotExistFile', force: true   # never raises exception
   #
   def rm(list, options = {})
     fu_check_options options, OPT_TABLE['rm']
@@ -584,7 +584,7 @@ module FileUtils
   #
   # Equivalent to
   #
-  #   #rm(list, :force => true)
+  #   #rm(list, force: true)
   #
   def rm_f(list, options = {})
     fu_check_options options, OPT_TABLE['rm_f']
@@ -608,7 +608,7 @@ module FileUtils
   # StandardError when :force option is set.
   #
   #   FileUtils.rm_r Dir.glob('/tmp/*')
-  #   FileUtils.rm_r '/', :force => true          #  :-)
+  #   FileUtils.rm_r '/', force: true          #  :-)
   #
   # WARNING: This method causes local vulnerability
   # if one of parent directories or removing directory tree are world
@@ -616,7 +616,7 @@ module FileUtils
   # process has strong privilege such as Unix super user (root), and the
   # system has symbolic link.  For secure removing, read the documentation
   # of #remove_entry_secure carefully, and set :secure option to true.
-  # Default is :secure=>false.
+  # Default is secure:false.
   #
   # NOTE: This method calls #remove_entry_secure if :secure option is set.
   # See also #remove_entry_secure.
@@ -644,7 +644,7 @@ module FileUtils
   #
   # Equivalent to
   #
-  #   #rm_r(list, :force => true)
+  #   #rm_r(list, force: true)
   #
   # WARNING: This method causes local vulnerability.
   # Read the documentation of #rm_r first.
@@ -849,8 +849,8 @@ module FileUtils
   # mode to +mode+.  If +dest+ is a directory, destination is +dest+/+src+.
   # This method removes destination before copy.
   #
-  #   FileUtils.install 'ruby', '/usr/local/bin/ruby', :mode => 0755, :verbose => true
-  #   FileUtils.install 'lib.rb', '/usr/local/lib/ruby/site_ruby', :verbose => true
+  #   FileUtils.install 'ruby', '/usr/local/bin/ruby', mode: 0755, verbose: true
+  #   FileUtils.install 'lib.rb', '/usr/local/lib/ruby/site_ruby', verbose: true
   #
   def install(src, dest, options = {})
     fu_check_options options, OPT_TABLE['install']
@@ -968,12 +968,12 @@ module FileUtils
   # Absolute mode is
   #   FileUtils.chmod 0755, 'somecommand'
   #   FileUtils.chmod 0644, %w(my.rb your.rb his.rb her.rb)
-  #   FileUtils.chmod 0755, '/usr/bin/ruby', :verbose => true
+  #   FileUtils.chmod 0755, '/usr/bin/ruby', verbose: true
   #
   # Symbolic mode is
   #   FileUtils.chmod "u=wrx,go=rx", 'somecommand'
   #   FileUtils.chmod "u=wr,go=rr", %w(my.rb your.rb his.rb her.rb)
-  #   FileUtils.chmod "u=wrx,go=rx", '/usr/bin/ruby', :verbose => true
+  #   FileUtils.chmod "u=wrx,go=rx", '/usr/bin/ruby', verbose: true
   #
   # "a" :: is user, group, other mask.
   # "u" :: is user's mask.
@@ -1043,7 +1043,7 @@ module FileUtils
   # the attribute.
   #
   #   FileUtils.chown 'root', 'staff', '/usr/local/bin/ruby'
-  #   FileUtils.chown nil, 'bin', Dir.glob('/usr/bin/*'), :verbose => true
+  #   FileUtils.chown nil, 'bin', Dir.glob('/usr/bin/*'), verbose: true
   #
   def chown(user, group, list, options = {})
     fu_check_options options, OPT_TABLE['chown']
@@ -1072,7 +1072,7 @@ module FileUtils
   # method does not change the attribute.
   #
   #   FileUtils.chown_R 'www', 'www', '/var/www/htdocs'
-  #   FileUtils.chown_R 'cvs', 'cvs', '/var/cvs', :verbose => true
+  #   FileUtils.chown_R 'cvs', 'cvs', '/var/cvs', verbose: true
   #
   def chown_R(user, group, list, options = {})
     fu_check_options options, OPT_TABLE['chown_R']
@@ -1692,7 +1692,7 @@ module FileUtils
     ::FileUtils.collect_method(:verbose).each do |name|
       module_eval(<<-EOS, __FILE__, __LINE__ + 1)
         def #{name}(*args)
-          super(*fu_update_option(args, :verbose => true))
+          super(*fu_update_option(args, verbose: true))
         end
         private :#{name}
       EOS
@@ -1718,7 +1718,7 @@ module FileUtils
     ::FileUtils.collect_method(:noop).each do |name|
       module_eval(<<-EOS, __FILE__, __LINE__ + 1)
         def #{name}(*args)
-          super(*fu_update_option(args, :noop => true))
+          super(*fu_update_option(args, noop: true))
         end
         private :#{name}
       EOS
@@ -1745,7 +1745,7 @@ module FileUtils
     ::FileUtils.collect_method(:noop).each do |name|
       module_eval(<<-EOS, __FILE__, __LINE__ + 1)
         def #{name}(*args)
-          super(*fu_update_option(args, :noop => true, :verbose => true))
+          super(*fu_update_option(args, noop: true, verbose: true))
         end
         private :#{name}
       EOS

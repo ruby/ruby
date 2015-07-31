@@ -3,21 +3,21 @@
 
 require "tk"
 
-root = TkRoot.new(:title=>'realtime timer sample')
+root = TkRoot.new(title:'realtime timer sample')
 
-f1 = TkFrame.new(:borderwidth=>2, :relief=>:ridge)
-f1.pack(:side=>:bottom, :fill=>:both)
-TkLabel.new(f1, :text=>'use TkTimer (TkAfter) class').pack(:anchor=>:center)
-label1 = TkLabel.new(:parent=>f1, :relief=>:raised,
-                     :width=>10).pack(:fill=>:both)
+f1 = TkFrame.new(borderwidth:2, relief::ridge)
+f1.pack(side::bottom, fill::both)
+TkLabel.new(f1, text:'use TkTimer (TkAfter) class').pack(anchor::center)
+label1 = TkLabel.new(parent:f1, relief::raised,
+                     width:10).pack(fill::both)
 
-f2 = TkFrame.new(:borderwidth=>2, :relief=>:ridge)
-f2.pack(:side=>:bottom, :fill=>:both)
-TkLabel.new(f2, :text=>'use TkRTTimer class').pack
-label2 = TkLabel.new(:parent=>f2, :relief=>:raised,
-                     :width=>10).pack(:fill=>:both)
+f2 = TkFrame.new(borderwidth:2, relief::ridge)
+f2.pack(side::bottom, fill::both)
+TkLabel.new(f2, text:'use TkRTTimer class').pack
+label2 = TkLabel.new(parent:f2, relief::raised,
+                     width:10).pack(fill::both)
 
-TkLabel.new(:padx=>10, :pady=>5, :justify=>'left', :text=><<EOT).pack
+TkLabel.new(padx:10, pady:5, justify:'left', text:<<EOT).pack
 Interval setting of each timer object is 10 ms.
 Each timer object counts up the value on each callback
 (the value is not the clock data).
@@ -44,11 +44,11 @@ timer2 = TkRTTimer.new(10, -1, [tick, label2])  # 10 ms interval
 timer1.start(0, proc{ label1.text('0.00'); 0 })
 timer2.start(0, proc{ label2.text('0.00'); 0 })
 
-b_start = TkButton.new(:text=>'Start', :state=>:disabled) {
-  pack(:side=>:left, :fill=>:both, :expand=>true)
+b_start = TkButton.new(text:'Start', state::disabled) {
+  pack(side::left, fill::both, expand:true)
 }
 
-b_stop  = TkButton.new(:text=>'Stop', :state=>:normal) {
+b_stop  = TkButton.new(text:'Stop', state::normal) {
   pack('side'=>'left', 'fill'=>'both', 'expand'=>'yes')
 }
 
@@ -66,9 +66,9 @@ b_stop.command {
   b_stop.state(:disabled)
 }
 
-TkButton.new(:text=>'Reset', :state=>:normal) {
+TkButton.new(text:'Reset', state::normal) {
   command { timer1.reset; timer2.reset }
-  pack(:side=>:right, :fill=>:both, :expand=>:yes)
+  pack(side::right, fill::both, expand::yes)
 }
 
 ev_quit = TkVirtualEvent.new('Control-c', 'Control-q')

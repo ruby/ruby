@@ -16,7 +16,7 @@ $label_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
-base_frame = TkFrame.new($label_demo).pack(:fill=>:both, :expand=>true)
+base_frame = TkFrame.new($label_demo).pack(fill::both, expand:true)
 
 # label 生成
 msg = TkLabel.new(base_frame) {

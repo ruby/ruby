@@ -39,7 +39,7 @@ module Psych
     end
 
     def test_recursive_quick_emit
-      hash  = { :qe => @qe }
+      hash  = { qe: @qe }
       hash2 = Psych.load Psych.dump hash
       qe    = hash2[:qe]
 
@@ -74,7 +74,7 @@ module Psych
     # encode_with.
     def test_recursive_quick_emit_encode_with
       qeew = QuickEmitterEncodeWith.new
-      hash  = { :qe => qeew }
+      hash  = { qe: qeew }
       hash2 = Psych.load Psych.dump hash
       qe    = hash2[:qe]
 
@@ -98,7 +98,7 @@ module Psych
     end
 
     def test_yaml_initialize
-      hash  = { :yi => YamlInit.new }
+      hash  = { yi: YamlInit.new }
       hash2 = Psych.load Psych.dump hash
       yi    = hash2[:yi]
 
@@ -129,7 +129,7 @@ module Psych
     # An object that implements both yaml_initialize and init_with should not
     # receive the yaml_initialize call.
     def test_yaml_initialize_and_init_with
-      hash  = { :yi => YamlInitAndInitWith.new }
+      hash  = { yi: YamlInitAndInitWith.new }
       hash2 = Psych.load Psych.dump hash
       yi    = hash2[:yi]
 

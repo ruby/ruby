@@ -146,7 +146,7 @@ class TestFile < Test::Unit::TestCase
   end
 
   def test_read_all_extended_file
-    [nil, {:textmode=>true}, {:binmode=>true}].each do |mode|
+    [nil, {textmode:true}, {binmode:true}].each do |mode|
       Tempfile.create("test-extended-file", mode) {|f|
         assert_nil(f.getc)
         f.print "a"
@@ -157,7 +157,7 @@ class TestFile < Test::Unit::TestCase
   end
 
   def test_gets_extended_file
-    [nil, {:textmode=>true}, {:binmode=>true}].each do |mode|
+    [nil, {textmode:true}, {binmode:true}].each do |mode|
       Tempfile.create("test-extended-file", mode) {|f|
         assert_nil(f.getc)
         f.print "a"
@@ -168,7 +168,7 @@ class TestFile < Test::Unit::TestCase
   end
 
   def test_gets_para_extended_file
-    [nil, {:textmode=>true}, {:binmode=>true}].each do |mode|
+    [nil, {textmode:true}, {binmode:true}].each do |mode|
       Tempfile.create("test-extended-file", mode) {|f|
         assert_nil(f.getc)
         f.print "\na"
@@ -179,7 +179,7 @@ class TestFile < Test::Unit::TestCase
   end
 
   def test_each_char_extended_file
-    [nil, {:textmode=>true}, {:binmode=>true}].each do |mode|
+    [nil, {textmode:true}, {binmode:true}].each do |mode|
       Tempfile.create("test-extended-file", mode) {|f|
         assert_nil(f.getc)
         f.print "a"
@@ -192,7 +192,7 @@ class TestFile < Test::Unit::TestCase
   end
 
   def test_each_byte_extended_file
-    [nil, {:textmode=>true}, {:binmode=>true}].each do |mode|
+    [nil, {textmode:true}, {binmode:true}].each do |mode|
       Tempfile.create("test-extended-file", mode) {|f|
         assert_nil(f.getc)
         f.print "a"
@@ -205,7 +205,7 @@ class TestFile < Test::Unit::TestCase
   end
 
   def test_getc_extended_file
-    [nil, {:textmode=>true}, {:binmode=>true}].each do |mode|
+    [nil, {textmode:true}, {binmode:true}].each do |mode|
       Tempfile.create("test-extended-file", mode) {|f|
         assert_nil(f.getc)
         f.print "a"
@@ -216,7 +216,7 @@ class TestFile < Test::Unit::TestCase
   end
 
   def test_getbyte_extended_file
-    [nil, {:textmode=>true}, {:binmode=>true}].each do |mode|
+    [nil, {textmode:true}, {binmode:true}].each do |mode|
       Tempfile.create("test-extended-file", mode) {|f|
         assert_nil(f.getc)
         f.print "a"
@@ -358,8 +358,8 @@ class TestFile < Test::Unit::TestCase
   def test_file_open_permissions
     Dir.mktmpdir(__method__.to_s) do |tmpdir|
       tmp = File.join(tmpdir, 'x')
-      File.open(tmp, :mode     => IO::RDWR | IO::CREAT | IO::BINARY,
-                     :encoding => Encoding::ASCII_8BIT) do |x|
+      File.open(tmp, mode: IO::RDWR | IO::CREAT | IO::BINARY,
+                     encoding: Encoding::ASCII_8BIT) do |x|
 
         assert_predicate(x, :autoclose?)
         assert_equal Encoding::ASCII_8BIT, x.external_encoding
@@ -375,7 +375,7 @@ class TestFile < Test::Unit::TestCase
 
   def test_file_open_double_mode
     assert_raise_with_message(ArgumentError, 'mode specified twice') {
-      File.open("a", 'w', :mode => 'rw+')
+      File.open("a", 'w', mode: 'rw+')
     }
   end
 
@@ -395,7 +395,7 @@ class TestFile < Test::Unit::TestCase
   def test_conflicting_encodings
     Dir.mktmpdir(__method__.to_s) do |tmpdir|
       tmp = File.join(tmpdir, 'x')
-      File.open(tmp, 'wb', :encoding => Encoding::EUC_JP) do |x|
+      File.open(tmp, 'wb', encoding: Encoding::EUC_JP) do |x|
         assert_equal Encoding::EUC_JP, x.external_encoding
       end
     end

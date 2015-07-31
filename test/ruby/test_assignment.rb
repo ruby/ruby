@@ -556,26 +556,26 @@ end
 require_relative 'sentence'
 class TestAssignmentGen < Test::Unit::TestCase
   Syntax = {
-    :exp => [["0"],
+    exp: [["0"],
              ["nil"],
              ["false"],
              ["[]"],
              ["[",:exps,"]"]],
-    :exps => [[:exp],
+    exps: [[:exp],
               [:exp,",",:exps]],
-    :arg => [[:exp]],
-    :mrhs => [[:args,",",:arg],
+    arg: [[:exp]],
+    mrhs: [[:args,",",:arg],
               [:args,",","*",:arg],
               ["*",:arg]],
-    :args => [[:arg],
+    args: [[:arg],
               ["*",:arg],
               [:args,",",:arg],
               [:args,",","*",:arg]],
-    :mlhs => [[:mlhs_basic],
+    mlhs: [[:mlhs_basic],
               ["(",:mlhs_inner,")"]],
-    :mlhs_inner => [[:mlhs_basic],
+    mlhs_inner: [[:mlhs_basic],
               ["(",:mlhs_inner,")"]],
-    :mlhs_basic => [[:mlhs_head],
+    mlhs_basic: [[:mlhs_head],
                     [:mlhs_head,:mlhs_item],
                     [:mlhs_head,"*",:mlhs_node],
                     [:mlhs_head,"*",:mlhs_node,",",:mlhs_post],
@@ -585,14 +585,14 @@ class TestAssignmentGen < Test::Unit::TestCase
                     [           "*",:mlhs_node,",",:mlhs_post],
                     [           "*"],
                     [           "*",",",           :mlhs_post]],
-    :mlhs_head => [[:mlhs_item,","],
+    mlhs_head: [[:mlhs_item,","],
                    [:mlhs_head,:mlhs_item,","]],
-    :mlhs_post => [[:mlhs_item],
+    mlhs_post: [[:mlhs_item],
                    [:mlhs_post,",",:mlhs_item]],
-    :mlhs_item => [[:mlhs_node],
+    mlhs_item: [[:mlhs_node],
                    ["(",:mlhs_inner,")"]],
-    :mlhs_node => [["var"]],
-    :xassign => [["var"," = ",:exp],
+    mlhs_node: [["var"]],
+    xassign: [["var"," = ",:exp],
                  ["var"," = ",:mrhs],
                  [:mlhs," = ",:exp],
                  [:mlhs," = ",:mrhs]],
@@ -719,12 +719,12 @@ class TestAssignmentGen < Test::Unit::TestCase
     begin
       vals1 = eval(code1)
     rescue Exception
-      return {:ex=>$!.message}
+      return {ex:$!.message}
     end
     begin
       vals2 = eval(code2)
     rescue Exception
-      return {:ex=>$!.message}
+      return {ex:$!.message}
     end
     assert_equal(vals1, vals2, code1)
     vals = vals1

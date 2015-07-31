@@ -16,7 +16,7 @@ $text_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
-base_frame = TkFrame.new($text_demo).pack(:fill=>:both, :expand=>true)
+base_frame = TkFrame.new($text_demo).pack(fill::both, expand:true)
 
 # version check
 if ((Tk::TK_VERSION.split('.').collect{|n| n.to_i} <=> [8,4]) < 0)

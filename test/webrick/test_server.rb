@@ -40,9 +40,9 @@ class TestWEBrickServer < Test::Unit::TestCase
       end
 
       server = WEBrick::HTTPServer.new({
-        :BindAddress => "127.0.0.1", :Port => 0,
-        :StopCallback => Proc.new{ stopped += 1 },
-        :Logger => logger,
+        BindAddress: "127.0.0.1", Port: 0,
+        StopCallback: Proc.new{ stopped += 1 },
+        Logger: logger,
       })
       server.listeners[0].close
       server.listeners[0] = listener
@@ -58,9 +58,9 @@ class TestWEBrickServer < Test::Unit::TestCase
   def test_callbacks
     accepted = started = stopped = 0
     config = {
-      :AcceptCallback => Proc.new{ accepted += 1 },
-      :StartCallback => Proc.new{ started += 1 },
-      :StopCallback => Proc.new{ stopped += 1 },
+      AcceptCallback: Proc.new{ accepted += 1 },
+      StartCallback: Proc.new{ started += 1 },
+      StopCallback: Proc.new{ stopped += 1 },
     }
     TestWEBrick.start_server(Echo, config){|server, addr, port, log|
       true while server.status != :Running
@@ -102,9 +102,9 @@ class TestWEBrickServer < Test::Unit::TestCase
     port = 0
     log = []
     config = {
-      :BindAddress => address,
-      :Port => port,
-      :Logger => WEBrick::Log.new(log, WEBrick::BasicLog::WARN),
+      BindAddress: address,
+      Port: port,
+      Logger: WEBrick::Log.new(log, WEBrick::BasicLog::WARN),
     }
     server = Echo.new(config)
     client_proc = lambda {|str|
@@ -141,11 +141,11 @@ class TestWEBrickServer < Test::Unit::TestCase
     wakeup = -> {client_thread.wakeup}
     warn_flunk = WEBrick::Log.new(log, WEBrick::BasicLog::WARN)
     server = WEBrick::HTTPServer.new(
-      :StartCallback => wakeup,
-      :StopCallback => wakeup,
-      :BindAddress => '0.0.0.0',
-      :Port => 0,
-      :Logger => warn_flunk)
+      StartCallback: wakeup,
+      StopCallback: wakeup,
+      BindAddress: '0.0.0.0',
+      Port: 0,
+      Logger: warn_flunk)
     2.times {
       server_thread = Thread.start {
         server.start

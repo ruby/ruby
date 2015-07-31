@@ -6,20 +6,20 @@ subject = [["O", "ruby-lang.org"], ["OU", "sample"], ["CN", hostname]]
 comment = "Comment for self-signed certificate"
 
 httpd = WEBrick::HTTPServer.new(
-  :DocumentRoot   => File::dirname(__FILE__),
-  :Port           => 10443,
-  :SSLEnable      => true,
+  DocumentRoot: File::dirname(__FILE__),
+  Port: 10443,
+  SSLEnable: true,
 
   # Specify key pair and server certificate.
-  # :SSLPrivateKey  => OpenSSL::PKey::RSA.new(File.read("server.key")),
-  # :SSLCertificate => OpenSSL::X509::Certificate.new(File.read("server.crt")),
+  # SSLPrivateKey: OpenSSL::PKey::RSA.new(File.read("server.key")),
+  # SSLCertificate: OpenSSL::X509::Certificate.new(File.read("server.crt")),
 
   # specify the following SSL options if you want to use auto
   # generated self-signed certificate.
-  :SSLCertName    => subject,
-  :SSLComment     => comment,
+  SSLCertName: subject,
+  SSLComment: comment,
 
-  :CGIPathEnv     => ENV["PATH"]  # PATH environment variable for CGI.
+  CGIPathEnv: ENV["PATH"]  # PATH environment variable for CGI.
 )
 
 require "./hello"

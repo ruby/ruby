@@ -93,7 +93,7 @@ unless $host
   abort usage
 end
 
-imap = Net::IMAP.new($host, :port => $port, :ssl => $ssl)
+imap = Net::IMAP.new($host, port: $port, ssl: $ssl)
 begin
   imap.starttls if $starttls
   class << password = method(:get_password)

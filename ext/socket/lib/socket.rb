@@ -331,8 +331,8 @@ class Socket < BasicSocket
       end
       begin
         sock = local_addr ?
-          ai.connect_from(local_addr, :timeout => connect_timeout) :
-          ai.connect(:timeout => connect_timeout)
+          ai.connect_from(local_addr, timeout: connect_timeout) :
+          ai.connect(timeout: connect_timeout)
       rescue SystemCallError
         last_error = $!
         next

@@ -13,7 +13,7 @@ module RSS
       duration_components = [0, 4, 5]
       explicit = true
       keywords = ["salt", "pepper", "shaker", "exciting"]
-      owner = {:name => "John Doe", :email => "john.doe@example.com"}
+      owner = {name: "John Doe", email: "john.doe@example.com"}
       subtitle = "A show about everything"
       summary = "All About Everything is a show about " +
         "everything. Each week we dive into any " +
@@ -82,8 +82,8 @@ module RSS
 
       assert_equal(owner,
                    {
-                     :name => channel.itunes_owner.itunes_name,
-                     :email => channel.itunes_owner.itunes_email
+                     name: channel.itunes_owner.itunes_name,
+                     email: channel.itunes_owner.itunes_email
                    })
 
       assert_equal(subtitle, channel.itunes_subtitle)

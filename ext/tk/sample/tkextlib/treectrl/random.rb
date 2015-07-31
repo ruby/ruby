@@ -11,58 +11,58 @@ def demoRandom(t)
 
   height = t.font.metrics(:linespace)
   height = 18 if height < 18
-  t.configure(:itemheight=>height, :selectmode=>:extended,
-              :showroot=>true, :showrootbutton=>true, :showbuttons=>true,
-              :showlines=>true, :scrollmargin=>16,
-              :xscrolldelay=>[500, 50], :yscrolldelay=>[500, 50])
+  t.configure(itemheight:height, selectmode::extended,
+              showroot:true, showrootbutton:true, showbuttons:true,
+              showlines:true, scrollmargin:16,
+              xscrolldelay:[500, 50], yscrolldelay:[500, 50])
 
   if $Version_1_1_OrLater
-    t.column_create(:expand=>true, :text=>'Item',
-                    :itembackground=>['#e0e8f0', []], :tag=>'item')
-    t.column_create(:text=>'Parent', :justify=>:center,
-                    :itembackground=>['gray90', []], :tag=>'parent')
-    t.column_create(:text=>'Depth', :justify=>:center,
-                    :itembackground=>['linen', []], :tag=>'depth')
+    t.column_create(expand:true, text:'Item',
+                    itembackground:['#e0e8f0', []], tag:'item')
+    t.column_create(text:'Parent', justify::center,
+                    itembackground:['gray90', []], tag:'parent')
+    t.column_create(text:'Depth', justify::center,
+                    itembackground:['linen', []], tag:'depth')
   else # TreeCtrl 1.0
-    t.column_configure(0, :expand=>true, :text=>'Item',
-                       :itembackground=>['#e0e8f0', []], :tag=>'item')
-    t.column_configure(1, :text=>'Parent', :justify=>:center,
-                       :itembackground=>['gray90', []], :tag=>'parent')
-    t.column_configure(2, :text=>'Depth', :justify=>:center,
-                       :itembackground=>['linen', []], :tag=>'depth')
+    t.column_configure(0, expand:true, text:'Item',
+                       itembackground:['#e0e8f0', []], tag:'item')
+    t.column_configure(1, text:'Parent', justify::center,
+                       itembackground:['gray90', []], tag:'parent')
+    t.column_configure(2, text:'Depth', justify::center,
+                       itembackground:['linen', []], tag:'depth')
   end
 
-  t.element_create('e1', :image, :image=>[
+  t.element_create('e1', :image, image:[
                      @images['folder-open'], ['open'],
                      @images['folder-closed'], []
                    ])
-  t.element_create('e2', :image, :image=>@images['small-file'])
+  t.element_create('e2', :image, image:@images['small-file'])
   t.element_create('e3', :text,
-                   :fill=>[@SystemHighlightText, ['selected', 'focus']])
-  t.element_create('e4', :text, :fill=>'blue')
+                   fill:[@SystemHighlightText, ['selected', 'focus']])
+  t.element_create('e4', :text, fill:'blue')
   t.element_create('e6', :text)
-  t.element_create('e5', :rect, :showfocus=>true,
-                   :fill=>[
+  t.element_create('e5', :rect, showfocus:true,
+                   fill:[
                      @SystemHighlight, ['selected', 'focus'],
                      'gray', ['selected', '!focus']
                    ])
 
   s = t.style_create('s1')
   t.style_elements(s, ['e5', 'e1', 'e3', 'e4'])
-  t.style_layout(s, 'e1', :padx=>[0,4], :expand=>:ns)
-  t.style_layout(s, 'e3', :padx=>[0,4], :expand=>:ns)
-  t.style_layout(s, 'e4', :padx=>[0,6], :expand=>:ns)
-  t.style_layout(s, 'e5', :union=>['e3'], :iexpand=>:ns, :ipadx=>2)
+  t.style_layout(s, 'e1', padx:[0,4], expand::ns)
+  t.style_layout(s, 'e3', padx:[0,4], expand::ns)
+  t.style_layout(s, 'e4', padx:[0,6], expand::ns)
+  t.style_layout(s, 'e5', union:['e3'], iexpand::ns, ipadx:2)
 
   s = t.style_create('s2')
   t.style_elements(s, ['e5', 'e2', 'e3'])
-  t.style_layout(s, 'e2', :padx=>[0,4], :expand=>:ns)
-  t.style_layout(s, 'e3', :padx=>[0,4], :expand=>:ns)
-  t.style_layout(s, 'e5', :union=>['e3'], :iexpand=>:ns, :ipadx=>2)
+  t.style_layout(s, 'e2', padx:[0,4], expand::ns)
+  t.style_layout(s, 'e3', padx:[0,4], expand::ns)
+  t.style_layout(s, 'e5', union:['e3'], iexpand::ns, ipadx:2)
 
   s = t.style_create('s3')
   t.style_elements(s, ['e6'])
-  t.style_layout(s, 'e6', :padx=>6, :expand=>:ns)
+  t.style_layout(s, 'e6', padx:6, expand::ns)
 
   @Priv[:sensitive, t] = [
     [:item, 's1',  'e5', 'e1', 'e3'],
@@ -103,22 +103,22 @@ def demoRandom(t)
     numChildren = t.item_numchildren(item_i)
     if numChildren > 0
       if $Version_1_1_OrLater
-        t.item_configure(item_i, :button=>true)
+        t.item_configure(item_i, button:true)
       else # TreeCtrl 1.0
         t.item_hasbutton(item_i, true)
       end
       t.item_style_set(item_i, 0, 's1', 1, 's3', 2, 's3')
       t.item_complex(item_i,
-                     [ ['e3', {:text=>"Item #{i}"}],
-                       ['e4', {:text=>"(#{numChildren})"}] ],
-                     [ ['e6', {:text=>"#{t.item_parent(item_i)}"}] ],
-                     [ ['e6', {:text=>"#{t.depth(item_i)}"}] ])
+                     [ ['e3', {text:"Item #{i}"}],
+                       ['e4', {text:"(#{numChildren})"}] ],
+                     [ ['e6', {text:"#{t.item_parent(item_i)}"}] ],
+                     [ ['e6', {text:"#{t.depth(item_i)}"}] ])
     else
       t.item_style_set(item_i, 1, 's3', 2, 's3', 0, 's2')
       t.item_complex(item_i,
-                     [ ['e3', {:text=>"Item #{i}"}] ],
-                     [ ['e6', {:text=>"#{t.item_parent(item_i)}"}] ],
-                     [ ['e6', {:text=>"#{t.depth(item_i)}"}] ])
+                     [ ['e3', {text:"Item #{i}"}] ],
+                     [ ['e6', {text:"#{t.item_parent(item_i)}"}] ],
+                     [ ['e6', {text:"#{t.depth(item_i)}"}] ])
     end
   }
   puts "configured #{random_N()} items in #{Tk::Clock.clicks - clicks} clicks"
@@ -339,7 +339,7 @@ def randomMotion(t, x, y)
     x = t.canvasx(x) - @Priv.numeric_element(:drag,:x)
     y = t.canvasx(y) - @Priv.numeric_element(:drag,:y)
     t.dragimage_offset(x, y)
-    t.dragimage_configure(:visible=>true)
+    t.dragimage_configure(visible:true)
   end
 end
 
@@ -359,7 +359,7 @@ def randomRelease1(t, x, y)
     Tk::TreeCtrl::BindCallback.release1(t, x, y)
   when 'drag'
     Tk::TreeCtrl::BindCallback.autoScanCancel(t)
-    t.dragimage_configure(:visible=>false)
+    t.dragimage_configure(visible:false)
     t.selection_modify('', @Priv[:drop])
     t[:cursor] = ''
     if @Priv[:drop] != ''
@@ -400,10 +400,10 @@ def randomDrop(t, target, src, pos)
     t.__send__("item_#{pos}", target, item)
 
     # Update text: parent
-    t.item_element_configure(item, 'parent', 'e6', :text=>parent)
+    t.item_element_configure(item, 'parent', 'e6', text:parent)
 
     # Update text: depth
-    t.item_element_configure(item, 'depth', 'e6', :text=>t.depth(item))
+    t.item_element_configure(item, 'depth', 'e6', text:t.depth(item))
 
     # Recursively update text: depth
     itemList = []
@@ -411,7 +411,7 @@ def randomDrop(t, target, src, pos)
     itemList << item if item != ''
 
     while item = itemList.pop
-      t.item_element_configure(item, 'depth', 'e6', :text=>t.depth(item))
+      t.item_element_configure(item, 'depth', 'e6', text:t.depth(item))
 
       item2 = t.item_nextsibling(item)
       itemList << item2 if item2 != ''
@@ -426,27 +426,27 @@ def randomDrop(t, target, src, pos)
     numChildren = t.item_numchildren(item)
     if numChildren == 0
       if $Version_1_1_OrLater
-        t.item_configure(item, :button=>false)
+        t.item_configure(item, button:false)
       else # TreeCtrl 1.0
         t.item_hasbutton(item, false)
       end
       t.item_style_map(item, 'item', 's2', ['e3', 'e3'])
     else
-      t.item_element_configure(item, 'item', 'e4', :text=>"(#{numChildren})")
+      t.item_element_configure(item, 'item', 'e4', text:"(#{numChildren})")
     end
   }
 
   # Update the target that gained some children
   if t.item_style_set(parent, 0) != 's1'
     if $Version_1_1_OrLater
-      t.item_configure(parent, :button=>true)
+      t.item_configure(parent, button:true)
     else # TreeCtrl 1.0
       t.item_hasbutton(parent, true)
     end
     t.item_style_map(parent, 'item', 's1', ['e3', 'e3'])
   end
   numChildren = t.item_numchildren(parent)
-  t.item_element_configure(parent, 'item', 'e4', :text=>"(#{numChildren})")
+  t.item_element_configure(parent, 'item', 'e4', text:"(#{numChildren})")
 end
 
 # Same as TreeCtrl::AutoScanCheck, but calls RandomMotion and
@@ -502,7 +502,7 @@ def demoRandom2(t)
 
   init_pics('mac-*')
 
-  t.configure(:openbuttonimage=>@images['mac-collapse'],
-              :closedbuttonimage=>@images['mac-expand'],
-              :showlines=>false)
+  t.configure(openbuttonimage:@images['mac-collapse'],
+              closedbuttonimage:@images['mac-expand'],
+              showlines:false)
 end

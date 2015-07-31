@@ -586,19 +586,19 @@ racc_shift_n = 89
 
 racc_token_table = {
   false => 0,
-  :error => 1,
-  :DUMMY => 2,
-  :ITEMLISTLINE => 3,
-  :ENUMLISTLINE => 4,
-  :DESCLISTLINE => 5,
-  :METHODLISTLINE => 6,
-  :STRINGLINE => 7,
-  :WHITELINE => 8,
-  :SUBTREE => 9,
-  :HEADLINE => 10,
-  :INCLUDE => 11,
-  :INDENT => 12,
-  :DEDENT => 13 }
+  error: 1,
+  DUMMY: 2,
+  ITEMLISTLINE: 3,
+  ENUMLISTLINE: 4,
+  DESCLISTLINE: 5,
+  METHODLISTLINE: 6,
+  STRINGLINE: 7,
+  WHITELINE: 8,
+  SUBTREE: 9,
+  HEADLINE: 10,
+  INCLUDE: 11,
+  INDENT: 12,
+  DEDENT: 13 }
 
 racc_nt_base = 14
 

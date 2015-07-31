@@ -84,8 +84,8 @@ class Knights_Tour
   def move_piece(last, square)
     @log.insert(:end, "#{@visited.length}. #{_N last} -> #{_N square}\n", '')
     @log.see(:end)
-    @board.itemconfigure(1+last, :state=>:normal, :outline=>'black')
-    @board.itemconfigure(1+square, :state=>:normal, :outline=>'red')
+    @board.itemconfigure(1+last, state::normal, outline:'black')
+    @board.itemconfigure(1+square, state::normal, outline:'red')
     @knight.coords(@board.coords(1+square)[0..1])
     @visited << square
     if (nxt = next_square(square)) != -1
@@ -111,7 +111,7 @@ class Knights_Tour
     @log.clear
     @start_btn.state :disabled
     1.upto(64){|n|
-      @board.itemconfigure(n, :state=>:disabled, :outline=>'black')
+      @board.itemconfigure(n, state::disabled, outline:'black')
     }
     unless square
       square = @board.find_closest(*(@knight.coords << 0 << 65))[0].to_i - 1
@@ -156,30 +156,30 @@ class Knights_Tour
     ## See Code / Dismiss
     frame = Ttk::Frame.new($knightstour)
     sep = Ttk::Separator.new(frame)
-    Tk.grid(sep, :columnspan=>4, :row=>0, :sticky=>'ew', :pady=>2)
+    Tk.grid(sep, columnspan:4, row:0, sticky:'ew', pady:2)
     TkGrid('x',
-           Ttk::Button.new(frame, :text=>'コード参照',
-                           :image=>$image['view'], :compound=>:left,
-                           :command=>proc{showCode 'knightstour'}),
-           Ttk::Button.new(frame, :text=>'閉じる',
-                           :image=>$image['delete'], :compound=>:left,
-                           :command=>proc{
+           Ttk::Button.new(frame, text:'コード参照',
+                           image:$image['view'], compound::left,
+                           command:proc{showCode 'knightstour'}),
+           Ttk::Button.new(frame, text:'閉じる',
+                           image:$image['delete'], compound::left,
+                           command:proc{
                              $knightstour.destroy
                              $knightstour = nil
                            }),
-           :padx=>4, :pady=>4)
-    frame.grid_columnconfigure(0, :weight=>1)
+           padx:4, pady:4)
+    frame.grid_columnconfigure(0, weight:1)
     frame
   end
 
   def create_gui(parent = nil)
     $knightstour.destroy rescue nil
-    $knightstour = Tk::Toplevel.new(parent, :title=>"Knight's tour")
+    $knightstour = Tk::Toplevel.new(parent, title:"Knight's tour")
     $knightstour.withdraw
     base_f = Ttk::Frame.new($knightstour)
-    @board = Tk::Canvas.new(base_f, :width=>240, :height=>240)
-    @log = Tk::Text.new(base_f, :width=>12, :height=>1,
-                        :font=>'Arial 8', :background=>'white')
+    @board = Tk::Canvas.new(base_f, width:240, height:240)
+    @log = Tk::Text.new(base_f, width:12, height:1,
+                        font:'Arial 8', background:'white')
     scr = @log.yscrollbar(Ttk::Scrollbar.new(base_f))
 
     @visited = []
@@ -187,15 +187,15 @@ class Knights_Tour
     @continuous = TkVariable.new(false)
 
     tool_f = Ttk::Frame.new($knightstour)
-    label = Ttk::Label.new(tool_f, :text=>'実行速度')
-    scale = Ttk::Scale.new(tool_f, :from=>8, :to=>2000, :variable=>@delay,
-                           :command=>proc{|n| set_delay(n)})
-    check = Ttk::Checkbutton.new(tool_f, :text=>'反復',
-                                 :variable=>@continuous)
-    @start_btn = Ttk::Button.new(tool_f, :text=>'開始',
-                                 :command=>proc{tour()})
-    @exit_btn = Ttk::Button.new(tool_f, :text=>'終了',
-                                :command=>proc{_exit()})
+    label = Ttk::Label.new(tool_f, text:'実行速度')
+    scale = Ttk::Scale.new(tool_f, from:8, to:2000, variable:@delay,
+                           command:proc{|n| set_delay(n)})
+    check = Ttk::Checkbutton.new(tool_f, text:'反復',
+                                 variable:@continuous)
+    @start_btn = Ttk::Button.new(tool_f, text:'開始',
+                                 command:proc{tour()})
+    @exit_btn = Ttk::Button.new(tool_f, text:'終了',
+                                command:proc{_exit()})
 
     7.downto(0){|row|
       0.upto(7){|col|
@@ -208,50 +208,50 @@ class Knights_Tour
         end
         coords = [col * 30 + 4, row * 30 + 4, col * 30 + 30, row * 30 + 30]
         @board.create(TkcRectangle, coords,
-                      :fill=>fill, :disabledfill=>dfill,
-                      :width=>2, :state=>:disabled)
+                      fill:fill, disabledfill:dfill,
+                      width:2, state::disabled)
       }
     }
 
-    @knight_font = TkFont.new(:size=>-24)
-    @knight = TkcText.new(@board, 0, 0, :font=>@knight_font,
-                          :text=>Tk::UTF8_String.new('\u265e'),
-                          :anchor=>'nw', # :tags=>'knight',
-                          :fill=>'black', :activefill=>'#600000')
+    @knight_font = TkFont.new(size:-24)
+    @knight = TkcText.new(@board, 0, 0, font:@knight_font,
+                          text:Tk::UTF8_String.new('\u265e'),
+                          anchor:'nw', # tags:'knight',
+                          fill:'black', activefill:'#600000')
     @knight.coords(@board.coords(rand(64)+1)[0..1])
     @knight.bind('ButtonPress-1', '%W %x %y'){|w,x,y| drag_start(w,x,y)}
     @knight.bind('Motion', '%W %x %y'){|w,x,y| drag_motion(w,x,y)}
     @knight.bind('ButtonRelease-1', '%W %x %y'){|w,x,y| drag_end(w,x,y)}
 
-    Tk.grid(@board, @log, scr, :sticky=>'news')
-    base_f.grid_rowconfigure(0, :weight=>1)
-    base_f.grid_columnconfigure(0, :weight=>1)
+    Tk.grid(@board, @log, scr, sticky:'news')
+    base_f.grid_rowconfigure(0, weight:1)
+    base_f.grid_columnconfigure(0, weight:1)
 
-    Tk.grid(base_f, '-', '-', '-', '-', '-', :sticky=>'news')
+    Tk.grid(base_f, '-', '-', '-', '-', '-', sticky:'news')
     widgets = [label, scale, check, @start_btn]
     sg = nil
     unless $RubyTk_WidgetDemo
       widgets << @exit_btn
       if Tk.windowingsystem != 'aqua'
         #widgets.unshift(Ttk::SizeGrip.new(tool_f))
-        Ttk::SizeGrip.new(tool_f).pack(:side=>:right, :anchor=>'se')
+        Ttk::SizeGrip.new(tool_f).pack(side::right, anchor:'se')
       end
     end
-    Tk.pack(widgets, :side=>:right)
+    Tk.pack(widgets, side::right)
     if Tk.windowingsystem == 'aqua'
-      TkPack.configure(widgets, :padx=>[4, 4], :pady=>[12, 12])
-      TkPack.configure(widgets[0], :padx=>[4, 24])
-      TkPack.configure(widgets[-1], :padx=>[16, 4])
+      TkPack.configure(widgets, padx:[4, 4], pady:[12, 12])
+      TkPack.configure(widgets[0], padx:[4, 24])
+      TkPack.configure(widgets[-1], padx:[16, 4])
     end
 
-    Tk.grid(tool_f, '-', '-', '-', '-', '-', :sticky=>'ew')
+    Tk.grid(tool_f, '-', '-', '-', '-', '-', sticky:'ew')
 
     if $RubyTk_WidgetDemo
-      Tk.grid(make_SeeDismiss(), '-', '-', '-', '-', '-', :sticky=>'ew')
+      Tk.grid(make_SeeDismiss(), '-', '-', '-', '-', '-', sticky:'ew')
     end
 
-    $knightstour.grid_rowconfigure(0, :weight=>1)
-    $knightstour.grid_columnconfigure(0, :weight=>1)
+    $knightstour.grid_rowconfigure(0, weight:1)
+    $knightstour.grid_columnconfigure(0, weight:1)
 
     $knightstour.bind('Control-F2'){TkConsole.show}
     $knightstour.bind('Return'){@start_btn.invoke}

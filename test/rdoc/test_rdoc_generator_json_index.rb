@@ -61,10 +61,10 @@ class TestRDocGeneratorJsonIndex < RDoc::TestCase
     index = @g.build_index
 
     expected = {
-      :index => {
-        :searchIndex     => %w[c d meth() meth() page],
-        :longSearchIndex => %w[c c::d c#meth() c::d#meth()],
-        :info            => [
+      index: {
+        searchIndex: %w[c d meth() meth() page],
+        longSearchIndex: %w[c c::d c#meth() c::d#meth()],
+        info: [
           @klass.search_record[2..-1],
           @nest_klass.search_record[2..-1],
           @meth.search_record[2..-1],
@@ -255,9 +255,9 @@ class TestRDocGeneratorJsonIndex < RDoc::TestCase
     @g.index_classes
 
     expected = {
-      :searchIndex     => %w[c d],
-      :longSearchIndex => %w[c c::d],
-      :info            => [
+      searchIndex: %w[c d],
+      longSearchIndex: %w[c c::d],
+      info: [
         @klass.search_record[2..-1],
         @nest_klass.search_record[2..-1],
       ],
@@ -277,9 +277,9 @@ class TestRDocGeneratorJsonIndex < RDoc::TestCase
     @g.index_classes
 
     expected = {
-      :searchIndex     => [],
-      :longSearchIndex => [],
-      :info            => [],
+      searchIndex: [],
+      longSearchIndex: [],
+      info: [],
     }
 
     assert_equal expected, @g.index
@@ -291,9 +291,9 @@ class TestRDocGeneratorJsonIndex < RDoc::TestCase
     @g.index_methods
 
     expected = {
-      :searchIndex     => %w[meth() meth()],
-      :longSearchIndex => %w[c#meth() c::d#meth()],
-      :info            => [
+      searchIndex: %w[meth() meth()],
+      longSearchIndex: %w[c#meth() c::d#meth()],
+      info: [
         @meth.search_record[2..-1],
         @nest_meth.search_record[2..-1],
       ],
@@ -308,9 +308,9 @@ class TestRDocGeneratorJsonIndex < RDoc::TestCase
     @g.index_pages
 
     expected = {
-      :searchIndex     => %w[page],
-      :longSearchIndex => [''],
-      :info            => [@page.search_record[2..-1]],
+      searchIndex: %w[page],
+      longSearchIndex: [''],
+      info: [@page.search_record[2..-1]],
     }
 
     assert_equal expected, @g.index

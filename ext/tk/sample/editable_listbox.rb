@@ -64,9 +64,9 @@ class Tk::RbWidget::Editable_Listbox < TkListbox
     return nil if cget(:state) == 'disabled'
     x, y, w, h = bbox(idx)
     return nil unless y && h
-    @ebox.place(:x => 0, :relwidth => 1.0,
-                :y => y - selectborderwidth,
-                :height => h + 2 * selectborderwidth)
+    @ebox.place(x: 0, relwidth: 1.0,
+                y: y - selectborderwidth,
+                height: h + 2 * selectborderwidth)
     @ebox.pos = idx
     @ebox.focus
   end
@@ -130,13 +130,13 @@ class Tk::RbWidget::Editable_Listbox < TkListbox
 end
 
 if $0 == __FILE__
-  #lbox0 = TkListbox.new.pack(:side=>:left)
+  #lbox0 = TkListbox.new.pack(side::left)
   #lbox0.insert(:end,     0,1,2,3,4,5,6,7,8,9,0,1,2,3)
 
-  scr = TkScrollbar.new.pack(:side=>:right, :fill=>:y)
+  scr = TkScrollbar.new.pack(side::right, fill::y)
 
-  lbox1 = Tk::RbWidget::Editable_Listbox.new.pack(:side=>:left)
-  lbox2 = Tk::RbWidget::Editable_Listbox.new.pack(:side=>:left)
+  lbox1 = Tk::RbWidget::Editable_Listbox.new.pack(side::left)
+  lbox2 = Tk::RbWidget::Editable_Listbox.new.pack(side::left)
 
   scr.assign(lbox1, lbox2)
 

@@ -6,8 +6,8 @@ class TestRubyMode < Test::Unit::TestCase
   e = ENV["EMACS"] || "emacs"
   emacs = %W"#{e} -q --no-site-file --batch --load #{MISCDIR}/ruby-mode.el"
   begin
-    raise if IO.popen([e, "--version", :err=>[:child, :out]]) {|f| f.read}[/[0-9]+/].to_i < 23
-    IO.popen([*emacs, :err=>[:child, :out]]) {|f| f.read}
+    raise if IO.popen([e, "--version", err:[:child, :out]]) {|f| f.read}[/[0-9]+/].to_i < 23
+    IO.popen([*emacs, err:[:child, :out]]) {|f| f.read}
   rescue
     EMACS = nil
   else

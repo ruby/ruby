@@ -183,7 +183,7 @@ class TestGc < Test::Unit::TestCase
       "RUBY_GC_MALLOC_LIMIT" => "60000000",
       "RUBY_GC_HEAP_INIT_SLOTS" => "100000"
     }
-    assert_normal_exit("exit", "[ruby-core:39777]", :child_env => env)
+    assert_normal_exit("exit", "[ruby-core:39777]", child_env: env)
 
     env = {
       "RUBYOPT" => "",
@@ -198,7 +198,7 @@ class TestGc < Test::Unit::TestCase
       "RUBY_GC_HEAP_GROWTH_FACTOR" => "2.0",
       "RUBY_GC_HEAP_GROWTH_MAX_SLOTS" => "10000"
     }
-    assert_normal_exit("exit", "", :child_env => env)
+    assert_normal_exit("exit", "", child_env: env)
     assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_HEAP_GROWTH_FACTOR=2.0/, "")
     assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_HEAP_GROWTH_MAX_SLOTS=10000/, "[ruby-core:57928]")
 
@@ -207,7 +207,7 @@ class TestGc < Test::Unit::TestCase
       "RUBY_GC_HEAP_FREE_SLOTS" => "10000",
       "RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR" => "0.9",
     }
-    assert_normal_exit("exit", "", :child_env => env)
+    assert_normal_exit("exit", "", child_env: env)
     assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR=0\.9/, "")
 
     # always full GC when RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR < 1.0
@@ -224,7 +224,7 @@ class TestGc < Test::Unit::TestCase
       "RUBY_GC_MALLOC_LIMIT_MAX"           => "160000000",
       "RUBY_GC_MALLOC_LIMIT_GROWTH_FACTOR" => "2.0"
     }
-    assert_normal_exit("exit", "", :child_env => env)
+    assert_normal_exit("exit", "", child_env: env)
     assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_MALLOC_LIMIT=6000000/, "")
     assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_MALLOC_LIMIT_MAX=16000000/, "")
     assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_MALLOC_LIMIT_GROWTH_FACTOR=2.0/, "")
@@ -235,7 +235,7 @@ class TestGc < Test::Unit::TestCase
         "RUBY_GC_OLDMALLOC_LIMIT_MAX"           => "160000000",
         "RUBY_GC_OLDMALLOC_LIMIT_GROWTH_FACTOR" => "2.0"
       }
-      assert_normal_exit("exit", "", :child_env => env)
+      assert_normal_exit("exit", "", child_env: env)
       assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_OLDMALLOC_LIMIT=6000000/, "")
       assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_OLDMALLOC_LIMIT_MAX=16000000/, "")
       assert_in_out_err([env, "-w", "-e", "exit"], "", [], /RUBY_GC_OLDMALLOC_LIMIT_GROWTH_FACTOR=2.0/, "")

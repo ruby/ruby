@@ -9,31 +9,31 @@
 require 'tk'
 require 'tkextlib/tkHTML'
 
-root = TkRoot.new(:title=>'HTML File Viewer', :iconname=>'HV')
+root = TkRoot.new(title:'HTML File Viewer', iconname:'HV')
 
 file = ARGV[0]
 
 #
 # These images are used in place of GIFs or of form elements
 #
-biggray = TkPhotoImage.new(:data=><<'EOD')
+biggray = TkPhotoImage.new(data:<<'EOD')
     R0lGODdhPAA+APAAALi4uAAAACwAAAAAPAA+AAACQISPqcvtD6OctNqLs968+w+G4kiW5omm
     6sq27gvH8kzX9o3n+s73/g8MCofEovGITCqXzKbzCY1Kp9Sq9YrNFgsAO///
 EOD
 
-smgray = TkPhotoImage.new(:data=><<'EOD')
+smgray = TkPhotoImage.new(data:<<'EOD')
     R0lGODdhOAAYAPAAALi4uAAAACwAAAAAOAAYAAACI4SPqcvtD6OctNqLs968+w+G4kiW5omm
     6sq27gvH8kzX9m0VADv/
 EOD
 
-nogifbig = TkPhotoImage.new(:data=><<'EOD')
+nogifbig = TkPhotoImage.new(data:<<'EOD')
     R0lGODdhJAAkAPEAAACQkADQ0PgAAAAAACwAAAAAJAAkAAACmISPqcsQD6OcdJqKM71PeK15
     AsSJH0iZY1CqqKSurfsGsex08XuTuU7L9HywHWZILAaVJssvgoREk5PolFo1XrHZ29IZ8oo0
     HKEYVDYbyc/jFhz2otvdcyZdF68qeKh2DZd3AtS0QWcDSDgWKJXY+MXS9qY4+JA2+Vho+YPp
     FzSjiTIEWslDQ1rDhPOY2sXVOgeb2kBbu1AAADv/
 EOD
 
-nogifsm = TkPhotoImage.new(:data=><<'EOD')
+nogifsm = TkPhotoImage.new(data:<<'EOD')
     R0lGODdhEAAQAPEAAACQkADQ0PgAAAAAACwAAAAAEAAQAAACNISPacHtD4IQz80QJ60as25d
     3idKZdR0IIOm2ta0Lhw/Lz2S1JqvK8ozbTKlEIVYceWSjwIAO///
 EOD
@@ -64,7 +64,7 @@ form_cmd = proc{|n, cmd, style, *args|
   # puts "FormCmd: $n $cmd $args"
   case cmd
   when 'select', 'textarea', 'input'
-    TkLabel.new(:widgetname=>args[0], :image=>nogifsm)
+    TkLabel.new(widgetname:args[0], image:nogifsm)
   end
 }
 
@@ -99,12 +99,12 @@ image_cmd = proc{|*args|
 
     else
       begin
-        img = TkPhotoImage.new(:file=>fn)
+        img = TkPhotoImage.new(file:fn)
       rescue
         smgray
       else
         if img.width * img.height > 20000
-          b = TkPhotoImage.new(:width=>img.width, :height=>img.height)
+          b = TkPhotoImage.new(width:img.width, height:img.height)
           big_imgs[b] = img
           img = b
           Tk.after_idle(proc{ move_big_image.call(b) })
@@ -128,28 +128,28 @@ script_cmd = proc{|*args|
 #
 applet_cmd = proc{|w, arglist|
   # puts "AppletCmd: w=#{w} arglist=#{arglist}"
-  TkLabel.new(w, :text=>"The Applet #{w}", :bd=>2, :relief=>raised)
+  TkLabel.new(w, text:"The Applet #{w}", bd:2, relief:raised)
 }
 
 #
 # Construct the main HTML viewer
 #
-html = Tk::HTML_Widget.new(:padx=>5, :pady=>9,
-                           :formcommand=>form_cmd,
-                           :imagecommand=>image_cmd,
-                           :scriptcommand=>script_cmd,
-                           :appletcommand=>applet_cmd,
-                           :underlinehyperlinks=>0,
-                           :bg=>'white', :tablerelief=>:raised)
+html = Tk::HTML_Widget.new(padx:5, pady:9,
+                           formcommand:form_cmd,
+                           imagecommand:image_cmd,
+                           scriptcommand:script_cmd,
+                           appletcommand:applet_cmd,
+                           underlinehyperlinks:0,
+                           bg:'white', tablerelief::raised)
 vscr = html.yscrollbar(TkScrollbar.new)
 hscr = html.xscrollbar(TkScrollbar.new)
 
-Tk.grid(html, vscr, :sticky=>:news)
-Tk.grid(hscr,       :sticky=>:ew)
-Tk.root.grid_columnconfigure(0, :weight=>1)
-Tk.root.grid_columnconfigure(1, :weight=>0)
-Tk.root.grid_rowconfigure(0, :weight=>1)
-Tk.root.grid_rowconfigure(1, :weight=>0)
+Tk.grid(html, vscr, sticky::news)
+Tk.grid(hscr,       sticky::ew)
+Tk.root.grid_columnconfigure(0, weight:1)
+Tk.root.grid_columnconfigure(1, weight:0)
+Tk.root.grid_rowconfigure(0, weight:1)
+Tk.root.grid_rowconfigure(1, weight:0)
 
 #
 # This procedure is called when the user clicks on a hyperlink.
@@ -166,8 +166,8 @@ read_file = proc{|name|
   rescue
     ret = nil
     fp = nil
-    Tk.messageBox(:icon=>'error', :message=>"fail to open '#{name}'",
-                  :type=>:ok)
+    Tk.messageBox(icon:'error', message:"fail to open '#{name}'",
+                  type::ok)
   ensure
     fp.close if fp
   end
@@ -191,7 +191,7 @@ load_file = proc{|name|
   if (doc = read_file.call(name))
     clear_screen.call
     last_file = name
-    html.configure(:base=>name)
+    html.configure(base:name)
     html.parse(doc)
     old_imgs.clear
   end
@@ -239,7 +239,7 @@ sel_load = proc{
     ['All Files', '*']
   ]
 
-  f = Tk.getOpenFile(:initialdir=>last_dir, :filetypes=>filetypes)
+  f = Tk.getOpenFile(initialdir:last_dir, filetypes:filetypes)
   if f != ''
     load_file.call(f)
     last_dir = File.dirname(f)

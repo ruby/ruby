@@ -213,7 +213,7 @@ class RDoc::Generator::Darkfish
 
   def write_style_sheet
     debug_msg "Copying static files"
-    options = { :verbose => $DEBUG_RDOC, :noop => @dry_run }
+    options = { verbose: $DEBUG_RDOC, noop: @dry_run }
 
     BUILTIN_STYLE_ITEMS.each do |item|
       install_rdoc_static_file @template_dir + item, "./#{item}", options
@@ -264,11 +264,11 @@ class RDoc::Generator::Darkfish
   def copy_static
     return if @options.static_path.empty?
 
-    fu_options = { :verbose => $DEBUG_RDOC, :noop => @dry_run }
+    fu_options = { verbose: $DEBUG_RDOC, noop: @dry_run }
 
     @options.static_path.each do |path|
       unless File.directory? path then
-        FileUtils.install path, @outputdir, fu_options.merge(:mode => 0644)
+        FileUtils.install path, @outputdir, fu_options.merge(mode: 0644)
         next
       end
 
@@ -279,7 +279,7 @@ class RDoc::Generator::Darkfish
           if File.directory? entry then
             FileUtils.mkdir_p entry, fu_options
           else
-            FileUtils.install entry, dest_file, fu_options.merge(:mode => 0644)
+            FileUtils.install entry, dest_file, fu_options.merge(mode: 0644)
           end
         end
       end
@@ -630,11 +630,11 @@ class RDoc::Generator::Darkfish
     commitdate = Time.parse "#{date} #{time}"
 
     return {
-      :filename    => filename,
-      :rev         => Integer(rev),
-      :commitdate  => commitdate,
-      :commitdelta => time_delta_string(Time.now - commitdate),
-      :committer   => committer,
+      filename: filename,
+      rev: Integer(rev),
+      commitdate: commitdate,
+      commitdelta: time_delta_string(Time.now - commitdate),
+      committer: committer,
     }
   end
 

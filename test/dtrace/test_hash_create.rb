@@ -21,7 +21,7 @@ module DTrace
     end
 
     def test_hash_lit_elements
-      trap_probe(probe, '{ :foo => :bar }') { |_,rbfile,saw|
+      trap_probe(probe, '{ foo: :bar }') { |_,rbfile,saw|
         saw = saw.map(&:split).find_all { |num, file, line|
           file == rbfile && num == '2'
         }
@@ -30,7 +30,7 @@ module DTrace
     end
 
     def test_hash_lit_elements_string
-      trap_probe(probe, '{ :foo => :bar, :bar => "baz" }') { |_,rbfile,saw|
+      trap_probe(probe, '{ foo: :bar, bar: "baz" }') { |_,rbfile,saw|
         saw = saw.map(&:split).find_all { |num, file, line|
           file == rbfile && num == '4'
         }

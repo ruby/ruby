@@ -52,7 +52,7 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
           return
         end
         assert_equal(1, ret)
-        ret = s2.recvmsg(:scm_rights=>true)
+        ret = s2.recvmsg(scm_rights:true)
         _, _, _, *ctls = ret
         recv_io_ary = []
         begin
@@ -93,7 +93,7 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
           return
         end
         assert_equal(1, ret)
-        ret = s2.recvmsg(:scm_rights=>true)
+        ret = s2.recvmsg(scm_rights:true)
         _, _, _, *ctls = ret
         recv_io_ary = []
         begin
@@ -220,7 +220,7 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
     IO.pipe {|r1, w|
       UNIXSocket.pair {|s1, s2|
         s1.send_io(r1)
-        ret = s2.recvmsg(:scm_rights=>true)
+        ret = s2.recvmsg(scm_rights:true)
         data, srcaddr, flags, *ctls = ret
         assert_equal("\0", data)
 	if flags == nil

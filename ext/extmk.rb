@@ -102,7 +102,7 @@ def extract_makefile(makefile, keep = true)
         config = CONFIG.dup
         install_dirs(target_prefix).each {|var, val| config[var] = val}
         FileUtils.rm_f(installrb.values.collect {|f| RbConfig.expand(f, config)},
-                       :verbose => verbose?)
+                       verbose: verbose?)
       end
     end
     return false

@@ -51,37 +51,37 @@ def validate_proc(c, val)
   end
 end
 
-lbl = TkLabel.new(:text=>"TkTable v1 Validated Table Example")
+lbl = TkLabel.new(text:"TkTable v1 Validated Table Example")
 
-table = Tk::TkTable.new(:rows=>rows, :cols=>cols, :cache=>1,
-                        :width=>5, :height=>5, :titlerows=>1, :titlecols=>1,
-                        :coltagcommand=>proc{|n| colorize(n)},
-                        :flashmode=>true, :selectmode=>:extended,
-                        :colstretch=>:unset, :rowstretch=>:unset,
-                        :validate=>true,
-                        :validatecommand=>proc{|e|
+table = Tk::TkTable.new(rows:rows, cols:cols, cache:1,
+                        width:5, height:5, titlerows:1, titlecols:1,
+                        coltagcommand:proc{|n| colorize(n)},
+                        flashmode:true, selectmode::extended,
+                        colstretch::unset, rowstretch::unset,
+                        validate:true,
+                        validatecommand:proc{|e|
                           unless e.widget.tag_include?('title', e.index)
                             validate_proc(e.column, e.new_value)
                           end } )
 
 fill_headers(table)
 
-table.tag_configure('colored', :bg=>'lightblue')
-table.tag_configure('title',   :fg=>'red')
+table.tag_configure('colored', bg:'lightblue')
+table.tag_configure('title',   fg:'red')
 table.set_width(0,3)
 
 sx = table.xscrollbar(TkScrollbar.new)
 sy = table.yscrollbar(TkScrollbar.new)
 
-btn = TkButton.new(:text=>'Exit', :command=>proc{exit})
+btn = TkButton.new(text:'Exit', command:proc{exit})
 
-Tk.grid(lbl, '-', :sticky=>:ew)
-Tk.grid(table, sy, :sticky=>:news)
-Tk.grid(sx, :sticky=>:ew)
-Tk.grid(btn, '-', :sticky=>:ew)
+Tk.grid(lbl, '-', sticky::ew)
+Tk.grid(table, sy, sticky::news)
+Tk.grid(sx, sticky::ew)
+Tk.grid(btn, '-', sticky::ew)
 
-Tk.root.grid_columnconfig(0, :weight=>1)
-Tk.root.grid_rowconfig(1, :weight=>1)
+Tk.root.grid_columnconfig(0, weight:1)
+Tk.root.grid_rowconfig(1, weight:1)
 
 puts "Table is #{table.path}"
 

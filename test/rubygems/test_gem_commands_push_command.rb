@@ -126,7 +126,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     @api_key = "EYKEY"
 
     keys = {
-      :rubygems_api_key => 'KEY',
+      rubygems_api_key: 'KEY',
       @host => @api_key
     }
 
@@ -160,7 +160,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     @api_key = "PRIVKEY"
 
     keys = {
-      :rubygems_api_key => 'KEY',
+      rubygems_api_key: 'KEY',
       @host => @api_key
     }
 
@@ -201,7 +201,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     @api_key = "PRIVKEY"
 
     keys = {
-      :rubygems_api_key => 'KEY',
+      rubygems_api_key: 'KEY',
       @host => @api_key
     }
 

@@ -99,17 +99,17 @@ class RDoc::I18n::Text
 
   def emit_empty_line_event(line, line_no)
     part = {
-      :type => :empty_line,
-      :line => line,
-      :line_no => line_no,
+      type: :empty_line,
+      line: line,
+      line_no: line_no,
     }
     yield(part)
   end
 
   def emit_paragraph_event(paragraph, paragraph_start_line, line_no, &block)
     paragraph_part = {
-      :type => :paragraph,
-      :line_no => paragraph_start_line,
+      type: :paragraph,
+      line_no: paragraph_start_line,
     }
     match_data = /(\s*)\z/.match(paragraph)
     if match_data

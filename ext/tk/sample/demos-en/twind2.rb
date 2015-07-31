@@ -15,26 +15,26 @@ $twind2_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
-base_frame = TkFrame.new($twind2_demo).pack(:fill=>:both, :expand=>true)
+base_frame = TkFrame.new($twind2_demo).pack(fill::both, expand:true)
 
 # frame
 $twind2_buttons = TkFrame.new(base_frame) {|frame|
-  TkGrid(TkFrame.new(frame, :height=>2, :relief=>:sunken, :bd=>2),
-         :columnspan=>4, :row=>0, :sticky=>'ew', :pady=>2)
+  TkGrid(TkFrame.new(frame, height:2, relief::sunken, bd:2),
+         columnspan:4, row:0, sticky:'ew', pady:2)
   TkGrid('x',
-         TkButton.new(frame, :text=>'See Code',
-                      :image=>$image['view'], :compound=>:left,
-                      :command=>proc{showCode 'twind2'}),
-         TkButton.new(frame, :text=>'Dismiss',
-                      :image=>$image['delete'], :compound=>:left,
-                      :command=>proc{
+         TkButton.new(frame, text:'See Code',
+                      image:$image['view'], compound::left,
+                      command:proc{showCode 'twind2'}),
+         TkButton.new(frame, text:'Dismiss',
+                      image:$image['delete'], compound::left,
+                      command:proc{
                         tmppath = $twind2_demo
                         $twind2_demo = nil
                         $showVarsWin[tmppath.path] = nil
                         tmppath.destroy
                       }),
-         :padx=>4, :pady=>4)
-  frame.grid_columnconfigure(0, :weight=>1)
+         padx:4, pady:4)
+  frame.grid_columnconfigure(0, weight:1)
 }
 $twind2_buttons.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
@@ -188,43 +188,43 @@ $twind2_text.insert('end', "\nYou can also change the usual border width and ")
 $twind2_text.insert('end', "highlightthickness and padding.\n")
 
 TkTextWindow.new($twind2_text, 'end',
-                 'window'=>TkButton.new($twind2_text, :text=>"Big borders",
-                                        :cursor=>'top_left_arrow',
+                 'window'=>TkButton.new($twind2_text, text:"Big borders",
+                                        cursor:'top_left_arrow',
                                         'command'=>proc{
                                           textWinBigB2 $twind2_text
                                         }))
 
 TkTextWindow.new($twind2_text, 'end',
-                 'window'=>TkButton.new($twind2_text, :text=>"Small borders",
-                                        :cursor=>'top_left_arrow',
+                 'window'=>TkButton.new($twind2_text, text:"Small borders",
+                                        cursor:'top_left_arrow',
                                         'command'=>proc{
                                           textWinSmallB2 $twind2_text
                                         }))
 
 TkTextWindow.new($twind2_text, 'end',
-                 'window'=>TkButton.new($twind2_text, :text=>"Big highlight",
-                                        :cursor=>'top_left_arrow',
+                 'window'=>TkButton.new($twind2_text, text:"Big highlight",
+                                        cursor:'top_left_arrow',
                                         'command'=>proc{
                                           textWinBigH2 $twind2_text
                                         }))
 
 TkTextWindow.new($twind2_text, 'end',
-                 'window'=>TkButton.new($twind2_text, :text=>"Small highlight",
-                                        :cursor=>'top_left_arrow',
+                 'window'=>TkButton.new($twind2_text, text:"Small highlight",
+                                        cursor:'top_left_arrow',
                                         'command'=>proc{
                                           textWinSmallH2 $twind2_text
                                         }))
 
 TkTextWindow.new($twind2_text, 'end',
-                 'window'=>TkButton.new($twind2_text, :text=>"Big pad",
-                                        :cursor=>'top_left_arrow',
+                 'window'=>TkButton.new($twind2_text, text:"Big pad",
+                                        cursor:'top_left_arrow',
                                         'command'=>proc{
                                           textWinBigP2 $twind2_text
                                         }))
 
 TkTextWindow.new($twind2_text, 'end',
-                 'window'=>TkButton.new($twind2_text, :text=>"Small pad",
-                                        :cursor=>'top_left_arrow',
+                 'window'=>TkButton.new($twind2_text, text:"Small pad",
+                                        cursor:'top_left_arrow',
                                         'command'=>proc{
                                           textWinSmallP2 $twind2_text
                                         }))
@@ -233,7 +233,7 @@ $twind2_text.insert('end',
                     "\n\nFinally, images fit comfortably in text widgets too:")
 
 TkTextImage.new($twind2_text, 'end',
-                'image'=>TkBitmapImage.new(:file=>[
+                'image'=>TkBitmapImage.new(file:[
                                              $demo_dir, '..',
                                              'images', 'face.xbm'
                                            ].join(File::Separator)))
@@ -252,10 +252,10 @@ def textWinSmallH2(w)
   w.highlightthickness $text_normal2['highlight']
 end
 def textWinBigP2(w)
-  w.configure(:padx=>15, :pady=>15)
+  w.configure(padx:15, pady:15)
 end
 def textWinSmallP2(w)
-  w.configure(:padx=>$text_normal2['pad'], :pady=>$text_normal2['pad'])
+  w.configure(padx:$text_normal2['pad'], pady:$text_normal2['pad'])
 end
 
 def textWindOn2 (w,f)

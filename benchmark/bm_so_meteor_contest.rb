@@ -20,8 +20,8 @@ class Rotation
 
   # maps a direction to a relative location.  these differ depending on whether it is an even or
   # odd row being mapped from
-  @@rotation_even_adder = { :west => -1, :east => 1, :nw => -7, :ne => -6, :sw => 5, :se => 6 }
-  @@rotation_odd_adder = { :west => -1, :east => 1, :nw => -6, :ne => -5, :sw => 6, :se => 7 }
+  @@rotation_even_adder = { west: -1, east: 1, nw: -7, ne: -6, sw: 5, se: 6 }
+  @@rotation_odd_adder = { west: -1, east: 1, nw: -6, ne: -5, sw: 6, se: 7 }
 
   def initialize( directions )
     @even_offsets, @odd_offsets = normalize_offsets( get_values( directions ))
@@ -183,8 +183,8 @@ class Piece
   attr_accessor :placed
 
   # transform hashes that change one direction into another when you either flip or rotate a set of directions
-  @@flip_converter = { :west => :west, :east => :east, :nw => :sw, :ne => :se, :sw => :nw, :se => :ne }
-  @@rotate_converter = { :west => :nw, :east => :se, :nw => :ne, :ne => :east, :sw => :west, :se => :sw }
+  @@flip_converter = { west: :west, east: :east, nw: :sw, ne: :se, sw: :nw, se: :ne }
+  @@rotate_converter = { west: :nw, east: :se, nw: :ne, ne: :east, sw: :west, se: :sw }
 
   def initialize( directions, type )
     @type = type

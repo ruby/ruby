@@ -42,10 +42,10 @@ module RSS
 
     def test_xml_stylesheets
       [
-        [{:href => "a.xsl", :type => "text/xsl"}],
+        [{href: "a.xsl", type: "text/xsl"}],
         [
-          {:href => "a.xsl", :type => "text/xsl"},
-          {:href => "a.css", :type => "text/css"},
+          {href: "a.xsl", type: "text/xsl"},
+          {href: "a.css", type: "text/css"},
         ],
       ].each do |attrs_ary|
         assert_xml_stylesheet_pis(attrs_ary)

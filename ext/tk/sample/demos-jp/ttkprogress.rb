@@ -17,10 +17,10 @@ $ttkprogress_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
-base_frame = TkFrame.new($ttkprogress_demo).pack(:fill=>:both, :expand=>true)
+base_frame = TkFrame.new($ttkprogress_demo).pack(fill::both, expand:true)
 
-Ttk::Label.new(base_frame, :font=>$font, :wraplength=>'4i', :justify=>:left,
-               :text=><<EOL).pack(:side=>:top, :fill=>:x)
+Ttk::Label.new(base_frame, font:$font, wraplength:'4i', justify::left,
+               text:<<EOL).pack(side::top, fill::x)
 下にあるのは二つのプログレスバーです．\
 上のものは"determinate"タイプのプログレスバーで，\
 例えばプログラムが与えられたタスクを終了するまでにどのくらいかかるかを\
@@ -36,36 +36,36 @@ EOL
 ## See Code / Dismiss buttons
 Ttk::Frame.new(base_frame) {|frame|
   sep = Ttk::Separator.new(frame)
-  Tk.grid(sep, :columnspan=>4, :row=>0, :sticky=>'ew', :pady=>2)
+  Tk.grid(sep, columnspan:4, row:0, sticky:'ew', pady:2)
   TkGrid('x',
-         Ttk::Button.new(frame, :text=>'コード参照',
-                         :image=>$image['view'], :compound=>:left,
-                         :command=>proc{showCode 'ttkprogress'}),
-         Ttk::Button.new(frame, :text=>'閉じる',
-                         :image=>$image['delete'], :compound=>:left,
-                         :command=>proc{
+         Ttk::Button.new(frame, text:'コード参照',
+                         image:$image['view'], compound::left,
+                         command:proc{showCode 'ttkprogress'}),
+         Ttk::Button.new(frame, text:'閉じる',
+                         image:$image['delete'], compound::left,
+                         command:proc{
                            $ttkprogress_demo.destroy
                            $ttkprogress_demo = nil
                          }),
-         :padx=>4, :pady=>4)
-  grid_columnconfigure(0, :weight=>1)
-  pack(:side=>:bottom, :fill=>:x)
+         padx:4, pady:4)
+  grid_columnconfigure(0, weight:1)
+  pack(side::bottom, fill::x)
 }
 
-frame = Ttk::Frame.new(base_frame).pack(:fill=>:both, :expand=>true)
+frame = Ttk::Frame.new(base_frame).pack(fill::both, expand:true)
 
-p1 = Ttk::Progressbar.new(frame, :mode=>:determinate)
-p2 = Ttk::Progressbar.new(frame, :mode=>:indeterminate)
+p1 = Ttk::Progressbar.new(frame, mode::determinate)
+p2 = Ttk::Progressbar.new(frame, mode::indeterminate)
 
-start = Ttk::Button.new(frame, :text=>'Start Progress',
-                        :command=>proc{ p1.start; p2.start })
-stop  = Ttk::Button.new(frame, :text=>'Stop Progress',
-                        :command=>proc{ p1.stop; p2.stop })
+start = Ttk::Button.new(frame, text:'Start Progress',
+                        command:proc{ p1.start; p2.start })
+stop  = Ttk::Button.new(frame, text:'Stop Progress',
+                        command:proc{ p1.stop; p2.stop })
 
-Tk.grid(p1, '-', :pady=>5, :padx=>10)
-Tk.grid(p2, '-', :pady=>5, :padx=>10)
-Tk.grid(start, stop, :padx=>10, :pady=>5)
-start.grid_configure(:sticky=>'e')
-stop.grid_configure(:sticky=>'w')
-frame.grid_columnconfigure(:all, :weight=>1)
+Tk.grid(p1, '-', pady:5, padx:10)
+Tk.grid(p2, '-', pady:5, padx:10)
+Tk.grid(start, stop, padx:10, pady:5)
+start.grid_configure(sticky:'e')
+stop.grid_configure(sticky:'w')
+frame.grid_columnconfigure(:all, weight:1)
 

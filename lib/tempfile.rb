@@ -113,10 +113,10 @@ class Tempfile < DelegateClass(File)
   # +File.open+. This is mostly useful for specifying encoding
   # options, e.g.:
   #
-  #   Tempfile.new('hello', '/home/aisaka', :encoding => 'ascii-8bit')
+  #   Tempfile.new('hello', '/home/aisaka', encoding: 'ascii-8bit')
   #
   #   # You can also omit the 'tmpdir' parameter:
-  #   Tempfile.new('hello', :encoding => 'ascii-8bit')
+  #   Tempfile.new('hello', encoding: 'ascii-8bit')
   #
   # === Exceptions
   #

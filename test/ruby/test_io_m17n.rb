@@ -336,7 +336,7 @@ EOT
   end
 
   def test_s_pipe_invalid
-    pipe("utf-8", "euc-jp", { :invalid=>:replace },
+    pipe("utf-8", "euc-jp", { invalid::replace },
         proc do |w|
           w << "\x80"
           w.close
@@ -347,7 +347,7 @@ EOT
   end
 
   def test_s_pipe_undef
-    pipe("utf-8:euc-jp", { :undef=>:replace },
+    pipe("utf-8:euc-jp", { undef::replace },
          proc do |w|
            w << "\ufffd"
            w.close
@@ -358,7 +358,7 @@ EOT
   end
 
   def test_s_pipe_undef_replace_string
-    pipe("utf-8:euc-jp", { :undef=>:replace, :replace=>"X" },
+    pipe("utf-8:euc-jp", { undef::replace, replace:"X" },
          proc do |w|
            w << "\ufffd"
            w.close
@@ -385,7 +385,7 @@ EOT
   end
 
   def test_dup_undef
-    pipe("utf-8:euc-jp", { :undef=>:replace },
+    pipe("utf-8:euc-jp", { undef::replace },
          proc do |w|
            w << "\uFFFD"
            w.close
@@ -908,7 +908,7 @@ EOT
     invalid = "\x00\xd8".force_encoding("utf-16le")
     after1 = "\x46\x30".force_encoding("utf-16le")
     after2 = "\x48\x30".force_encoding("utf-16le")
-    pipe("utf-16le:euc-jp", { :binmode => true },
+    pipe("utf-16le:euc-jp", { binmode: true },
          proc do |w|
            w << before1 + before2 + invalid + after1 + after2
            w.close
@@ -955,7 +955,7 @@ EOT
     with_tmpdir {
       generate_file('tst', 'a' * 8191 + "\xa1\xa1")
       assert_nothing_raised {
-        File.foreach('tst', :encoding=>"euc-jp") {|line| line.inspect }
+        File.foreach('tst', encoding:"euc-jp") {|line| line.inspect }
       }
     }
   end
@@ -1026,7 +1026,7 @@ EOT
            w.close
          end,
          proc do |r|
-           r.set_encoding("utf-8:euc-jp", :invalid=>:replace)
+           r.set_encoding("utf-8:euc-jp", invalid::replace)
            assert_equal("?", r.read)
          end)
   end
@@ -1064,7 +1064,7 @@ EOT
            w.close
          end,
          proc do |r|
-           r.set_encoding("utf-8", "euc-jp", :undef=>:replace)
+           r.set_encoding("utf-8", "euc-jp", undef::replace)
            assert_equal("?", r.read)
          end)
   end
@@ -1075,7 +1075,7 @@ EOT
            w.close
          end,
          proc do |r|
-           r.set_encoding("utf-8", "euc-jp", :undef=>:replace, :replace=>"ZZZ")
+           r.set_encoding("utf-8", "euc-jp", undef::replace, replace:"ZZZ")
            assert_equal("ZZZ", r.read)
          end)
     pipe(proc do |w|
@@ -1083,7 +1083,7 @@ EOT
            w.close
          end,
          proc do |r|
-           r.set_encoding("utf-8:euc-jp", :undef=>:replace, :replace=>"ZZZ")
+           r.set_encoding("utf-8:euc-jp", undef::replace, replace:"ZZZ")
            assert_equal("ZZZ", r.read)
          end)
   end
@@ -1333,7 +1333,7 @@ EOT
   def test_s_foreach_enc
     with_tmpdir {
       generate_file("t", "\xff")
-      IO.foreach("t", :mode => "r:ascii-8bit") {|s|
+      IO.foreach("t", mode: "r:ascii-8bit") {|s|
         assert_equal(Encoding::ASCII_8BIT, s.encoding)
         assert_equal("\xff".force_encoding("ascii-8bit"), s)
       }
@@ -1343,7 +1343,7 @@ EOT
   def test_s_foreach_enc_in_opt
     with_tmpdir {
       generate_file("t", "\xff")
-      IO.foreach("t", :encoding => "ascii-8bit") {|s|
+      IO.foreach("t", encoding: "ascii-8bit") {|s|
         assert_equal(Encoding::ASCII_8BIT, s.encoding)
         assert_equal("\xff".force_encoding("ascii-8bit"), s)
       }
@@ -1353,7 +1353,7 @@ EOT
   def test_s_foreach_enc_in_opt2
     with_tmpdir {
       generate_file("t", "\xff")
-      IO.foreach("t", :external_encoding => "ascii-8bit") {|s|
+      IO.foreach("t", external_encoding: "ascii-8bit") {|s|
         assert_equal(Encoding::ASCII_8BIT, s.encoding)
         assert_equal("\xff".force_encoding("ascii-8bit"), s)
       }
@@ -1363,7 +1363,7 @@ EOT
   def test_s_foreach_enc_enc
     with_tmpdir {
       generate_file("t", "\u3042")
-      IO.foreach("t", :mode => "r:utf-8:euc-jp") {|s|
+      IO.foreach("t", mode: "r:utf-8:euc-jp") {|s|
         assert_equal(Encoding::EUC_JP, s.encoding)
         assert_equal("\xa4\xa2".force_encoding("euc-jp"), s)
       }
@@ -1373,7 +1373,7 @@ EOT
   def test_s_foreach_enc_enc_in_opt
     with_tmpdir {
       generate_file("t", "\u3042")
-      IO.foreach("t", :mode => "r", :encoding => "utf-8:euc-jp") {|s|
+      IO.foreach("t", mode: "r", encoding: "utf-8:euc-jp") {|s|
         assert_equal(Encoding::EUC_JP, s.encoding)
         assert_equal("\xa4\xa2".force_encoding("euc-jp"), s)
       }
@@ -1383,7 +1383,7 @@ EOT
   def test_s_foreach_enc_enc_in_opt2
     with_tmpdir {
       generate_file("t", "\u3042")
-      IO.foreach("t", :mode => "r", :external_encoding => "utf-8", :internal_encoding => "euc-jp") {|s|
+      IO.foreach("t", mode: "r", external_encoding: "utf-8", internal_encoding: "euc-jp") {|s|
         assert_equal(Encoding::EUC_JP, s.encoding)
         assert_equal("\xa4\xa2".force_encoding("euc-jp"), s)
       }
@@ -1393,7 +1393,7 @@ EOT
   def test_s_foreach_open_args_enc
     with_tmpdir {
       generate_file("t", "\xff")
-      IO.foreach("t", :open_args => ["r:ascii-8bit"]) {|s|
+      IO.foreach("t", open_args: ["r:ascii-8bit"]) {|s|
         assert_equal(Encoding::ASCII_8BIT, s.encoding)
         assert_equal("\xff".force_encoding("ascii-8bit"), s)
       }
@@ -1403,7 +1403,7 @@ EOT
   def test_s_foreach_open_args_enc_in_opt
     with_tmpdir {
       generate_file("t", "\xff")
-      IO.foreach("t", :open_args => ["r", encoding: "ascii-8bit"]) {|s|
+      IO.foreach("t", open_args: ["r", encoding: "ascii-8bit"]) {|s|
         assert_equal(Encoding::ASCII_8BIT, s.encoding)
         assert_equal("\xff".force_encoding("ascii-8bit"), s)
       }
@@ -1413,7 +1413,7 @@ EOT
   def test_s_foreach_open_args_enc_in_opt2
     with_tmpdir {
       generate_file("t", "\xff")
-      IO.foreach("t", :open_args => ["r", external_encoding: "ascii-8bit"]) {|s|
+      IO.foreach("t", open_args: ["r", external_encoding: "ascii-8bit"]) {|s|
         assert_equal(Encoding::ASCII_8BIT, s.encoding)
         assert_equal("\xff".force_encoding("ascii-8bit"), s)
       }
@@ -1423,7 +1423,7 @@ EOT
   def test_s_foreach_open_args_enc_enc
     with_tmpdir {
       generate_file("t", "\u3042")
-      IO.foreach("t", :open_args => ["r:utf-8:euc-jp"]) {|s|
+      IO.foreach("t", open_args: ["r:utf-8:euc-jp"]) {|s|
         assert_equal(Encoding::EUC_JP, s.encoding)
         assert_equal("\xa4\xa2".force_encoding("euc-jp"), s)
       }
@@ -1433,7 +1433,7 @@ EOT
   def test_s_foreach_open_args_enc_enc_in_opt
     with_tmpdir {
       generate_file("t", "\u3042")
-      IO.foreach("t", :open_args => ["r", encoding: "utf-8:euc-jp"]) {|s|
+      IO.foreach("t", open_args: ["r", encoding: "utf-8:euc-jp"]) {|s|
         assert_equal(Encoding::EUC_JP, s.encoding)
         assert_equal("\xa4\xa2".force_encoding("euc-jp"), s)
       }
@@ -1443,7 +1443,7 @@ EOT
   def test_s_foreach_open_args_enc_enc_in_opt2
     with_tmpdir {
       generate_file("t", "\u3042")
-      IO.foreach("t", :open_args => ["r", external_encoding: "utf-8", internal_encoding: "euc-jp"]) {|s|
+      IO.foreach("t", open_args: ["r", external_encoding: "utf-8", internal_encoding: "euc-jp"]) {|s|
         assert_equal(Encoding::EUC_JP, s.encoding)
         assert_equal("\xa4\xa2".force_encoding("euc-jp"), s)
       }
@@ -1452,11 +1452,11 @@ EOT
 
   def test_both_textmode_binmode
     bug5918 = '[ruby-core:42199]'
-    assert_raise(ArgumentError, bug5918) { open("not-exist", "r", :textmode=>true, :binmode=>true) }
-    assert_raise(ArgumentError, bug5918) { open("not-exist", "rt", :binmode=>true) }
-    assert_raise(ArgumentError, bug5918) { open("not-exist", "rt", :binmode=>false) }
-    assert_raise(ArgumentError, bug5918) { open("not-exist", "rb", :textmode=>true) }
-    assert_raise(ArgumentError, bug5918) { open("not-exist", "rb", :textmode=>false) }
+    assert_raise(ArgumentError, bug5918) { open("not-exist", "r", textmode:true, binmode:true) }
+    assert_raise(ArgumentError, bug5918) { open("not-exist", "rt", binmode:true) }
+    assert_raise(ArgumentError, bug5918) { open("not-exist", "rt", binmode:false) }
+    assert_raise(ArgumentError, bug5918) { open("not-exist", "rb", textmode:true) }
+    assert_raise(ArgumentError, bug5918) { open("not-exist", "rb", textmode:false) }
   end
 
   def test_textmode_decode_universal_newline_read
@@ -1466,7 +1466,7 @@ EOT
       assert_equal("a\nb\nc\n", File.read("t.crlf", mode:"rt"))
       open("t.crlf", "rt:euc-jp:utf-8") {|f| assert_equal("a\nb\nc\n", f.read) }
       open("t.crlf", "rt") {|f| assert_equal("a\nb\nc\n", f.read) }
-      open("t.crlf", "r", :textmode=>true) {|f| assert_equal("a\nb\nc\n", f.read) }
+      open("t.crlf", "r", textmode:true) {|f| assert_equal("a\nb\nc\n", f.read) }
       open("t.crlf", "r", textmode: true, universal_newline: false) {|f|
         assert_equal("a\r\nb\r\nc\r\n", f.read)
       }
@@ -1588,7 +1588,7 @@ EOT
         f.puts "abc"
         f.puts "def"
       }
-      content = File.read("t.txt", :mode=>"rb")
+      content = File.read("t.txt", mode:"rb")
       nl = system_newline
       assert_equal("abc#{nl}def#{nl}", content)
     }
@@ -1600,7 +1600,7 @@ EOT
         f.puts "abc\u3042"
         f.puts "def\u3044"
       }
-      content = File.read("t.txt", :mode=>"rb:ascii-8bit")
+      content = File.read("t.txt", mode:"rb:ascii-8bit")
       nl = system_newline
       assert_equal("abc\xA4\xA2#{nl}def\xA4\xA4#{nl}", content)
     }
@@ -1709,7 +1709,7 @@ EOT
       open("t", mode) {|f|
         args.each {|arg| f.print arg }
       }
-      content = File.read("t", :mode=>"rb:ascii-8bit")
+      content = File.read("t", mode:"rb:ascii-8bit")
       assert_equal(expected.dup.force_encoding("ascii-8bit"),
                    content.force_encoding("ascii-8bit"))
     }
@@ -1820,13 +1820,13 @@ EOT
       open("t.utf8.lf", "wb:utf-8:utf-16be") {|f|
         f.print "\0a\0\n\0b\0\n".force_encoding("UTF-16BE")
       }
-      content = File.read("t.utf8.lf", :mode=>"rb:ascii-8bit")
+      content = File.read("t.utf8.lf", mode:"rb:ascii-8bit")
       assert_equal("a\nb\n", content)
 
       open("t.utf8.lf", "wb:utf-16be") {|f|
         f.print "\0a\0\n\0b\0\n".force_encoding("UTF-16BE")
       }
-      content = File.read("t.utf8.lf", :mode=>"rb:ascii-8bit")
+      content = File.read("t.utf8.lf", mode:"rb:ascii-8bit")
       assert_equal("\0a\0\n\0b\0\n", content)
     }
   end
@@ -1838,7 +1838,7 @@ EOT
       open("t.txt", "rb") {|f|
         assert_equal(src, f.read)
       }
-      open("t.txt", "r", :binmode=>true) {|f|
+      open("t.txt", "r", binmode:true) {|f|
         assert_equal(src, f.read)
       }
       if system_newline == "\n"
@@ -1904,17 +1904,17 @@ EOT
   def test_invalid_r
     with_tmpdir {
       generate_file("t.txt", "a\x80b")
-      open("t.txt", "r:utf-8:euc-jp", :invalid => :replace) {|f|
+      open("t.txt", "r:utf-8:euc-jp", invalid: :replace) {|f|
         assert_equal("a?b", f.read)
       }
-      open("t.txt", "r:utf-8:euc-jp", :invalid => :replace, :replace => "") {|f|
+      open("t.txt", "r:utf-8:euc-jp", invalid: :replace, replace: "") {|f|
         assert_equal("ab", f.read)
       }
-      open("t.txt", "r:utf-8:euc-jp", :undef => :replace) {|f|
+      open("t.txt", "r:utf-8:euc-jp", undef: :replace) {|f|
         assert_raise(Encoding::InvalidByteSequenceError) { f.read }
         assert_equal("b", f.read)
       }
-      open("t.txt", "r:utf-8:euc-jp", :undef => :replace, :replace => "") {|f|
+      open("t.txt", "r:utf-8:euc-jp", undef: :replace, replace: "") {|f|
         assert_raise(Encoding::InvalidByteSequenceError) { f.read }
         assert_equal("b", f.read)
       }
@@ -1924,17 +1924,17 @@ EOT
   def test_undef_r
     with_tmpdir {
       generate_file("t.txt", "a\uFFFDb")
-      open("t.txt", "r:utf-8:euc-jp", :undef => :replace) {|f|
+      open("t.txt", "r:utf-8:euc-jp", undef: :replace) {|f|
         assert_equal("a?b", f.read)
       }
-      open("t.txt", "r:utf-8:euc-jp", :undef => :replace, :replace => "") {|f|
+      open("t.txt", "r:utf-8:euc-jp", undef: :replace, replace: "") {|f|
         assert_equal("ab", f.read)
       }
-      open("t.txt", "r:utf-8:euc-jp", :invalid => :replace) {|f|
+      open("t.txt", "r:utf-8:euc-jp", invalid: :replace) {|f|
         assert_raise(Encoding::UndefinedConversionError) { f.read }
         assert_equal("b", f.read)
       }
-      open("t.txt", "r:utf-8:euc-jp", :invalid => :replace, :replace => "") {|f|
+      open("t.txt", "r:utf-8:euc-jp", invalid: :replace, replace: "") {|f|
         assert_raise(Encoding::UndefinedConversionError) { f.read }
         assert_equal("b", f.read)
       }
@@ -1944,20 +1944,20 @@ EOT
   def test_invalid_w
     with_tmpdir {
       invalid_utf8 = "a\x80b".force_encoding("utf-8")
-      open("t.txt", "w:euc-jp", :invalid => :replace) {|f|
+      open("t.txt", "w:euc-jp", invalid: :replace) {|f|
         assert_nothing_raised { f.write invalid_utf8 }
       }
       assert_equal("a?b", File.read("t.txt"))
 
-      open("t.txt", "w:euc-jp", :invalid => :replace, :replace => "") {|f|
+      open("t.txt", "w:euc-jp", invalid: :replace, replace: "") {|f|
         assert_nothing_raised { f.write invalid_utf8 }
       }
       assert_equal("ab", File.read("t.txt"))
 
-      open("t.txt", "w:euc-jp", :undef => :replace) {|f|
+      open("t.txt", "w:euc-jp", undef: :replace) {|f|
         assert_raise(Encoding::InvalidByteSequenceError) { f.write invalid_utf8 }
       }
-      open("t.txt", "w:euc-jp", :undef => :replace, :replace => "") {|f|
+      open("t.txt", "w:euc-jp", undef: :replace, replace: "") {|f|
         assert_raise(Encoding::InvalidByteSequenceError) { f.write invalid_utf8 }
       }
     }
@@ -1966,18 +1966,18 @@ EOT
   def test_undef_w_stateless
     with_tmpdir {
       generate_file("t.txt", "a\uFFFDb")
-      open("t.txt", "w:euc-jp:utf-8", :undef => :replace) {|f|
+      open("t.txt", "w:euc-jp:utf-8", undef: :replace) {|f|
         assert_nothing_raised { f.write "a\uFFFDb" }
       }
       assert_equal("a?b", File.read("t.txt"))
-      open("t.txt", "w:euc-jp:utf-8", :undef => :replace, :replace => "") {|f|
+      open("t.txt", "w:euc-jp:utf-8", undef: :replace, replace: "") {|f|
         assert_nothing_raised { f.write "a\uFFFDb" }
       }
       assert_equal("ab", File.read("t.txt"))
-      open("t.txt", "w:euc-jp:utf-8", :invalid => :replace) {|f|
+      open("t.txt", "w:euc-jp:utf-8", invalid: :replace) {|f|
         assert_raise(Encoding::UndefinedConversionError) { f.write "a\uFFFDb" }
       }
-      open("t.txt", "w:euc-jp:utf-8", :invalid => :replace, :replace => "") {|f|
+      open("t.txt", "w:euc-jp:utf-8", invalid: :replace, replace: "") {|f|
         assert_raise(Encoding::UndefinedConversionError) { f.write "a\uFFFDb" }
       }
     }
@@ -1986,18 +1986,18 @@ EOT
   def test_undef_w_stateful
     with_tmpdir {
       generate_file("t.txt", "a\uFFFDb")
-      open("t.txt", "w:iso-2022-jp:utf-8", :undef => :replace) {|f|
+      open("t.txt", "w:iso-2022-jp:utf-8", undef: :replace) {|f|
         assert_nothing_raised { f.write "a\uFFFDb" }
       }
       assert_equal("a?b", File.read("t.txt"))
-      open("t.txt", "w:iso-2022-jp:utf-8", :undef => :replace, :replace => "") {|f|
+      open("t.txt", "w:iso-2022-jp:utf-8", undef: :replace, replace: "") {|f|
         assert_nothing_raised { f.write "a\uFFFDb" }
       }
       assert_equal("ab", File.read("t.txt"))
-      open("t.txt", "w:iso-2022-jp:utf-8", :invalid => :replace) {|f|
+      open("t.txt", "w:iso-2022-jp:utf-8", invalid: :replace) {|f|
         assert_raise(Encoding::UndefinedConversionError) { f.write "a\uFFFDb" }
       }
-      open("t.txt", "w:iso-2022-jp:utf-8", :invalid => :replace, :replace => "") {|f|
+      open("t.txt", "w:iso-2022-jp:utf-8", invalid: :replace, replace: "") {|f|
         assert_raise(Encoding::UndefinedConversionError) { f.write "a\uFFFDb" }
       }
     }
@@ -2006,37 +2006,37 @@ EOT
   def test_w_xml_attr
     with_tmpdir {
       open("raw.txt", "wb", xml: :attr) {|f| f.print '&<>"\''; f.puts "\u4E02\u3042" }
-      content = File.read("raw.txt", :mode=>"rb:ascii-8bit")
+      content = File.read("raw.txt", mode:"rb:ascii-8bit")
       assert_equal("\"&amp;&lt;&gt;&quot;'\u4E02\u3042\n\"".force_encoding("ascii-8bit"), content)
 
       open("ascii.txt", "wb:us-ascii", xml: :attr) {|f| f.print '&<>"\''; f.puts "\u4E02\u3042" }
-      content = File.read("ascii.txt", :mode=>"rb:ascii-8bit")
+      content = File.read("ascii.txt", mode:"rb:ascii-8bit")
       assert_equal("\"&amp;&lt;&gt;&quot;'&#x4E02;&#x3042;\n\"".force_encoding("ascii-8bit"), content)
 
       open("iso-2022-jp.txt", "wb:iso-2022-jp", xml: :attr) {|f| f.print '&<>"\''; f.puts "\u4E02\u3042" }
-      content = File.read("iso-2022-jp.txt", :mode=>"rb:ascii-8bit")
+      content = File.read("iso-2022-jp.txt", mode:"rb:ascii-8bit")
       assert_equal("\"&amp;&lt;&gt;&quot;'&#x4E02;\e$B$\"\e(B\n\"".force_encoding("ascii-8bit"), content)
 
       open("utf-16be.txt", "wb:utf-16be", xml: :attr) {|f| f.print '&<>"\''; f.puts "\u4E02\u3042" }
-      content = File.read("utf-16be.txt", :mode=>"rb:ascii-8bit")
+      content = File.read("utf-16be.txt", mode:"rb:ascii-8bit")
       assert_equal("\0\"\0&\0a\0m\0p\0;\0&\0l\0t\0;\0&\0g\0t\0;\0&\0q\0u\0o\0t\0;\0'\x4E\x02\x30\x42\0\n\0\"".force_encoding("ascii-8bit"), content)
 
       open("eucjp.txt", "w:euc-jp:utf-8", xml: :attr) {|f|
         f.print "\u4E02" # U+4E02 is 0x3021 in JIS X 0212
       }
-      content = File.read("eucjp.txt", :mode=>"rb:ascii-8bit")
+      content = File.read("eucjp.txt", mode:"rb:ascii-8bit")
       assert_equal("\"\x8F\xB0\xA1\"".force_encoding("ascii-8bit"), content)
 
       open("sjis.txt", "w:sjis:utf-8", xml: :attr) {|f|
         f.print "\u4E02" # U+4E02 is 0x3021 in JIS X 0212
       }
-      content = File.read("sjis.txt", :mode=>"rb:ascii-8bit")
+      content = File.read("sjis.txt", mode:"rb:ascii-8bit")
       assert_equal("\"&#x4E02;\"".force_encoding("ascii-8bit"), content)
 
       open("iso-2022-jp.txt", "w:iso-2022-jp:utf-8", xml: :attr) {|f|
         f.print "\u4E02" # U+4E02 is 0x3021 in JIS X 0212
       }
-      content = File.read("iso-2022-jp.txt", :mode=>"rb:ascii-8bit")
+      content = File.read("iso-2022-jp.txt", mode:"rb:ascii-8bit")
       assert_equal("\"&#x4E02;\"".force_encoding("ascii-8bit"), content)
     }
   end
@@ -2114,7 +2114,7 @@ EOT
   end
 
   def test_cbuf_select
-    pipe("US-ASCII:UTF-8", { :universal_newline => true },
+    pipe("US-ASCII:UTF-8", { universal_newline: true },
          proc do |w|
            w << "\r\n"
          end,
@@ -2125,7 +2125,7 @@ EOT
   end
 
   def test_textmode_paragraphmode
-    pipe("US-ASCII:UTF-8", { :universal_newline => true },
+    pipe("US-ASCII:UTF-8", { universal_newline: true },
          proc do |w|
            w << "a\n\n\nc".gsub(/\n/, "\r\n")
            w.close
@@ -2137,7 +2137,7 @@ EOT
   end
 
   def test_textmode_paragraph_binaryread
-    pipe("US-ASCII:UTF-8", { :universal_newline => true },
+    pipe("US-ASCII:UTF-8", { universal_newline: true },
          proc do |w|
            w << "a\n\n\ncdefgh".gsub(/\n/, "\r\n")
            w.close

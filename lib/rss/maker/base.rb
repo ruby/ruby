@@ -355,8 +355,8 @@ module RSS
       private
       def _set_default_values
         keep = {
-          :date => date,
-          :dc_dates => dc_dates.to_a.dup,
+          date: date,
+          dc_dates: dc_dates.to_a.dup,
         }
         _date = _parse_date_if_needed(date)
         if _date and !dc_dates.any? {|dc_date| dc_date.value == _date}
@@ -381,7 +381,7 @@ module RSS
       private
       def _set_default_values
         keep = {
-          :dc_languages => dc_languages.to_a.dup,
+          dc_languages: dc_languages.to_a.dup,
         }
         _language = language
         if _language and

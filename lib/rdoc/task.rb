@@ -87,8 +87,8 @@ require 'rake/tasklib'
 #
 #   require 'rdoc/task'
 #
-#   RDoc::Task.new(:rdoc => "rdoc", :clobber_rdoc => "rdoc:clean",
-#                  :rerdoc => "rdoc:force")
+#   RDoc::Task.new(rdoc: "rdoc", clobber_rdoc: "rdoc:clean",
+#                  rerdoc: "rdoc:force")
 #
 # This will create the tasks <tt>:rdoc</tt>, <tt>:rdoc:clean</tt> and
 # <tt>:rdoc:force</tt>.
@@ -230,7 +230,7 @@ class RDoc::Task < Rake::TaskLib
       rm_r @rdoc_dir rescue nil
     end
 
-    task :clobber => [clobber_task_name]
+    task clobber: [clobber_task_name]
 
     directory @rdoc_dir
 

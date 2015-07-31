@@ -78,7 +78,7 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
   end
 
   def test_filehandler
-    config = { :DocumentRoot => File.dirname(__FILE__), }
+    config = { DocumentRoot: File.dirname(__FILE__), }
     this_file = File.basename(__FILE__)
     filesize = File.size(__FILE__)
     this_data = File.open(__FILE__, "rb") {|f| f.read}
@@ -164,7 +164,7 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
   end
 
   def test_non_disclosure_name
-    config = { :DocumentRoot => File.dirname(__FILE__), }
+    config = { DocumentRoot: File.dirname(__FILE__), }
     log_tester = lambda {|log, access_log|
       log = log.reject {|s| /ERROR `.*\' not found\./ =~ s }
       log = log.reject {|s| /WARN  the request refers nondisclosure name/ =~ s }
@@ -195,7 +195,7 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
   def test_directory_traversal
     return if File.executable?(__FILE__) # skip on strange file system
 
-    config = { :DocumentRoot => File.dirname(__FILE__), }
+    config = { DocumentRoot: File.dirname(__FILE__), }
     log_tester = lambda {|log, access_log|
       log = log.reject {|s| /ERROR bad URI/ =~ s }
       log = log.reject {|s| /ERROR `.*\' not found\./ =~ s }
@@ -214,7 +214,7 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
 
   def test_unwise_in_path
     if windows?
-      config = { :DocumentRoot => File.dirname(__FILE__), }
+      config = { DocumentRoot: File.dirname(__FILE__), }
       TestWEBrick.start_httpserver(config) do |server, addr, port, log|
         http = Net::HTTP.new(addr, port)
         req = Net::HTTP::Get.new("/..%5c..")
@@ -227,9 +227,9 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
     return if File.executable?(__FILE__) # skip on strange file system
 
     config = {
-      :CGIInterpreter => TestWEBrick::RubyBin,
-      :DocumentRoot => File.dirname(__FILE__),
-      :CGIPathEnv => ENV['PATH'],
+      CGIInterpreter: TestWEBrick::RubyBin,
+      DocumentRoot: File.dirname(__FILE__),
+      CGIPathEnv: ENV['PATH'],
     }
     log_tester = lambda {|log, access_log|
       log = log.reject {|s| /ERROR `.*\' not found\./ =~ s }
@@ -272,10 +272,10 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
     return if File.executable?(__FILE__) # skip on strange file system
 
     config = {
-      :CGIInterpreter => TestWEBrick::RubyBin,
-      :DocumentRoot => File.dirname(__FILE__),
-      :CGIPathEnv => ENV['PATH'],
-      :RequestCallback => Proc.new{|req, res|
+      CGIInterpreter: TestWEBrick::RubyBin,
+      DocumentRoot: File.dirname(__FILE__),
+      CGIPathEnv: ENV['PATH'],
+      RequestCallback: Proc.new{|req, res|
         def req.meta_vars
           meta = super
           meta["RUBYLIB"] = $:.join(File::PATH_SEPARATOR)

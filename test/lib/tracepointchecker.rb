@@ -51,7 +51,7 @@ module TracePointChecker
   end
 
   def self.verbose_out label, method
-    puts label => call_stack, :count => STATE[:count], :method => method
+    puts label => call_stack, count: STATE[:count], method: method
   end
 
   def self.method_label tp

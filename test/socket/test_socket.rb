@@ -547,7 +547,7 @@ class TestSocket < Test::Unit::TestCase
     server = TCPServer.new(host, 0)
     port = server.addr[1]
     serv_thread = Thread.new {server.accept}
-    sock = Socket.tcp(host, port, :connect_timeout => 30)
+    sock = Socket.tcp(host, port, connect_timeout: 30)
     accepted = serv_thread.value
     assert_kind_of TCPSocket, accepted
     assert_equal sock, IO.select(nil, [ sock ])[1][0], "not writable"
@@ -558,7 +558,7 @@ class TestSocket < Test::Unit::TestCase
     # TCPServer.
     assert_raise(Errno::ETIMEDOUT) do
       (Socket::SOMAXCONN*2).times do |i|
-        sock = Socket.tcp(host, port, :connect_timeout => 0)
+        sock = Socket.tcp(host, port, connect_timeout: 0)
         assert_equal sock, IO.select(nil, [ sock ])[1][0],
                      "not writable (#{i})"
         sock.close

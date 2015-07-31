@@ -35,9 +35,9 @@ require 'rdoc/task'
 class RDoc::RI::Task < RDoc::Task
 
   DEFAULT_NAMES = { # :nodoc:
-    :clobber_rdoc => :clobber_ri,
-    :rdoc         => :ri,
-    :rerdoc       => :reri,
+    clobber_rdoc: :clobber_ri,
+    rdoc: :ri,
+    rerdoc: :reri,
   }
 
   ##

@@ -17,8 +17,8 @@ module Tk::Tile::TreeviewConfig
 
   def __item_configinfo_struct(id)
     # maybe need to override
-    {:key=>0, :alias=>nil, :db_name=>nil, :db_class=>nil,
-      :default_value=>nil, :current_value=>1}
+    {key:0, alias:nil, db_name:nil, db_class:nil,
+      default_value:nil, current_value:1}
   end
   private :__item_configinfo_struct
 

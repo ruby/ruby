@@ -66,7 +66,7 @@ end
 # test script
 ##########################################################################
 if __FILE__ == $0
-  TkLabel.new(:text=><<EOL, :relief=>:ridge, :justify=>:left).pack
+  TkLabel.new(text:<<EOL, relief::ridge, justify::left).pack
 
  This is a sample to use a Tcl library script on Ruby/Tk.
  This sample loads tktree.tcl (see <http://wiki.tcl.tk/10615>)
@@ -75,28 +75,28 @@ EOL
 
   items = %w(/group1/item1 /group1/item2 /group1/subgroup/item1 /group2/item1 /item1)
 
-  tr1 = TkTree.new.pack(:expand=>true, :fill=>:both)
+  tr1 = TkTree.new.pack(expand:true, fill::both)
   tr1.focus
 
   items.each{|item|
     tr1.newitem(item,
-                :command=>proc{Tk.messageBox(:message=>"#{item} executed")})
+                command:proc{Tk.messageBox(message:"#{item} executed")})
   }
 
-  f = TkFrame.new.pack(:expand=>true, :fill=>:both)
-  tr2 = TkTree.new(f, :bg=>'black', #:itemfont=>{:family=>'Times', :size=>14},
-                   :textcolor=>'red', :bd=>4, :relief=>:ridge,
-                   :selectbackground=>'darkBlue', :selectforeground=>'yellow',
-                   :selectborderwidth=>3, :linecolor=>'yellow') {
-    yscrollbar(TkScrollbar.new(f, :width=>10).pack(:side=>:right, :fill=>:y))
-    xscrollbar(TkScrollbar.new(f, :width=>10).pack(:side=>:bottom, :fill=>:x))
-    pack(:expand=>true, :fill=>:both)
+  f = TkFrame.new.pack(expand:true, fill::both)
+  tr2 = TkTree.new(f, bg:'black', #itemfont:{family:'Times', size:14},
+                   textcolor:'red', bd:4, relief::ridge,
+                   selectbackground:'darkBlue', selectforeground:'yellow',
+                   selectborderwidth:3, linecolor:'yellow') {
+    yscrollbar(TkScrollbar.new(f, width:10).pack(side::right, fill::y))
+    xscrollbar(TkScrollbar.new(f, width:10).pack(side::bottom, fill::x))
+    pack(expand:true, fill::both)
   }
 
   items.each{|item|
-    tr2.newitem(item, :textcolor=>'green', :image=>'',
-                :itemfont=>{:family=>'Times', :size=>10},
-                :command=>proc{Tk.messageBox(:message=>"#{item} executed")})
+    tr2.newitem(item, textcolor:'green', image:'',
+                itemfont:{family:'Times', size:10},
+                command:proc{Tk.messageBox(message:"#{item} executed")})
   }
 
   Tk.mainloop

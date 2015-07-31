@@ -11,18 +11,18 @@ module DemoTree
   @@top = nil
 
   def self.create(nb)
-    frame = nb.insert('end', 'demoTree', :text=>'Tree')
-    pw = Tk::BWidget::PanedWindow.new(frame, :side=>:top)
+    frame = nb.insert('end', 'demoTree', text:'Tree')
+    pw = Tk::BWidget::PanedWindow.new(frame, side::top)
 
-    pane = pw.add(:weight=>1)
-    title = Tk::BWidget::TitleFrame.new(pane, :text=>'Directory tree')
+    pane = pw.add(weight:1)
+    title = Tk::BWidget::TitleFrame.new(pane, text:'Directory tree')
     sw = Tk::BWidget::ScrolledWindow.new(title.get_frame,
-                                         :relief=>:sunken, :borderwidth=>2)
-    tree = Tk::BWidget::Tree.new(sw, :relief=>:flat, :borderwidth=>0,
-                                 :width=>15, :highlightthickness=>0,
-                                 :redraw=>false, :dropenabled=>true,
-                                 :dragenabled=>true, :dragevent=>3,
-                                 :droptypes=>[
+                                         relief::sunken, borderwidth:2)
+    tree = Tk::BWidget::Tree.new(sw, relief::flat, borderwidth:0,
+                                 width:15, highlightthickness:0,
+                                 redraw:false, dropenabled:true,
+                                 dragenabled:true, dragevent:3,
+                                 droptypes:[
                                    'TREE_NODE', [
                                      :copy, [],
                                      :move, [],
@@ -34,30 +34,30 @@ module DemoTree
                                      :link, []
                                    ]
                                  ],
-                                 :opencmd=>proc{|node|
+                                 opencmd:proc{|node|
                                    moddir(1, tree, node)
                                  },
-                                 :closecmd=>proc{|node|
+                                 closecmd:proc{|node|
                                    moddir(0, tree, node)
                                  })
     sw.set_widget(tree)
 
-    sw.pack(:side=>:top, :expand=>true, :fill=>:both)
-    title.pack(:fill=>:both, :expand=>true)
+    sw.pack(side::top, expand:true, fill::both)
+    title.pack(fill::both, expand:true)
 
-    pane = pw.add(:weight=>2)
-    lf = Tk::BWidget::TitleFrame.new(pane, :text=>'Content')
+    pane = pw.add(weight:2)
+    lf = Tk::BWidget::TitleFrame.new(pane, text:'Content')
     sw = Tk::BWidget::ScrolledWindow.new(lf.get_frame,
-                                         :scrollbar=>:horizontal,
-                                         :auto=>:none, :relief=>:sunken,
-                                         :borderwidth=>2)
+                                         scrollbar::horizontal,
+                                         auto::none, relief::sunken,
+                                         borderwidth:2)
 
-    list = Tk::BWidget::ListBox.new(sw, :relief=>:flat, :borderwidth=>0,
-                                    :highlightthickness=>0, :width=>20,
-                                    :multicolumn=>true, :redraw=>false,
-                                    :dragevent=>3, :dropenabled=>true,
-                                    :dragenabled=>true,
-                                 :droptypes=>[
+    list = Tk::BWidget::ListBox.new(sw, relief::flat, borderwidth:0,
+                                    highlightthickness:0, width:20,
+                                    multicolumn:true, redraw:false,
+                                    dragevent:3, dropenabled:true,
+                                    dragenabled:true,
+                                 droptypes:[
                                       'TREE_NODE', [
                                         :copy, [],
                                         :move, [],
@@ -71,9 +71,9 @@ module DemoTree
                                     ])
     sw.set_widget(list)
 
-    Tk.pack(sw, lf, :fill=>:both, :expand=>true)
+    Tk.pack(sw, lf, fill::both, expand:true)
 
-    pw.pack(:fill=>:both, :expand=>true)
+    pw.pack(fill::both, expand:true)
 
     tree.textbind('ButtonPress-1',
                   proc{|node, ev| select('tree', 1, tree, list, node)})
@@ -89,8 +89,8 @@ module DemoTree
                    proc{|node, ev| select('list', 2, tree, list, node)})
 
     nb.itemconfigure('demoTree',
-                     :createcmd=>proc{|*args| init(tree, list, *args)},
-                     :raisecmd=>proc{
+                     createcmd:proc{|*args| init(tree, list, *args)},
+                     raisecmd:proc{
                        Tk.root.geometry =~
                          /\d+x\d+([+-]{1,2}\d+)([+-]{1,2}\d+)/
                        global_w = ($1 || 0).to_i
@@ -114,7 +114,7 @@ module DemoTree
                          }, '%W')
                        end
                      },
-                     :leavecmd=>proc{
+                     leavecmd:proc{
                        @@top.withdraw if @@top
                        Tk.root.bind_remove('Unmap')
                        Tk.root.bind_remove('Map')
@@ -132,8 +132,8 @@ module DemoTree
     end
 
     tree.insert('end', 'root', 'home',
-                :text=>rootdir, :data=>rootdir, :open=>true,
-                :image=>Tk::BWidget::Bitmap.new('openfold'))
+                text:rootdir, data:rootdir, open:true,
+                image:Tk::BWidget::Bitmap.new('openfold'))
     getdir(tree, 'home', rootdir)
     select('tree', 1, tree, list, 'home')
     tree.redraw(true)
@@ -147,9 +147,9 @@ module DemoTree
     @@top.resizable(false, false)
     @@top.title('Drag rectangle to scroll directory tree')
     @@top.transient(Tk.root)
-    Tk::BWidget::ScrollView.new(@@top, :window=>tree, :fill=>'white',
-                                :width=>300, :height=>300, :relief=>:sunken,
-                                :bd=>1).pack(:fill=>:both, :expand=>true)
+    Tk::BWidget::ScrollView.new(@@top, window:tree, fill:'white',
+                                width:300, height:300, relief::sunken,
+                                bd:1).pack(fill::both, expand:true)
   end
 
   def self.getdir(tree, node, path)
@@ -159,28 +159,28 @@ module DemoTree
       basename = File.basename(f)
       if File.directory?(f)
         Tk::BWidget::Tree::Node.new(tree, node,
-                                    :index=>'end', :text=>basename,
-                                    :image=>Tk::BWidget::Bitmap.new('folder'),
-                                    :drawcross=>:allways, :data=>f)
+                                    index:'end', text:basename,
+                                    image:Tk::BWidget::Bitmap.new('folder'),
+                                    drawcross::allways, data:f)
         @@count += 1
       else
         lfiles << basename
       end
     }
-    tree.itemconfigure(node, :drawcross=>:auto, :data=>lfiles)
+    tree.itemconfigure(node, drawcross::auto, data:lfiles)
   end
 
   def self.moddir(idx, tree, node)
     if (idx != 0 && tree.itemcget(node, :drawcross).to_s == 'allways')
       getdir(tree, node, tree.itemcget(node, :data))
       if tree.nodes(node).empty?
-        tree.itemconfigure(node, :image=>Tk::BWidget::Bitmap.new('folder'))
+        tree.itemconfigure(node, image:Tk::BWidget::Bitmap.new('folder'))
       else
-        tree.itemconfigure(node, :image=>Tk::BWidget::Bitmap.new('openfold'))
+        tree.itemconfigure(node, image:Tk::BWidget::Bitmap.new('openfold'))
       end
     else
       img = %w(folder openfold)[idx] || 'openfold'
-      tree.itemconfigure(node, :image=>Tk::BWidget::Bitmap.new(img))
+      tree.itemconfigure(node, image:Tk::BWidget::Bitmap.new(img))
     end
   end
 
@@ -211,7 +211,7 @@ module DemoTree
     elsif (where == 'list' && tree.exist?(node))
       parent = tree.parent(node)
       while TkUtil._get_eval_string(parent) != 'root'
-        tree.itemconfigure(parent, :open=>true)
+        tree.itemconfigure(parent, open:true)
         parent = tree.parent(parent)
       end
       select_node(tree, list, node)
@@ -231,13 +231,13 @@ module DemoTree
 
     tree.nodes(node).each{|subnode|
       list.insert('end', subnode,
-                  :text=>tree.itemcget(subnode, :text),
-                  :image=>Tk::BWidget::Bitmap.new('folder'))
+                  text:tree.itemcget(subnode, :text),
+                  image:Tk::BWidget::Bitmap.new('folder'))
     }
 
     TkComm.simplelist(dir).each{|f|
-      Tk::BWidget::ListBox::Item.new(list, 'end', :text=>f,
-                                     :image=>Tk::BWidget::Bitmap.new('file'))
+      Tk::BWidget::ListBox::Item.new(list, 'end', text:f,
+                                     image:Tk::BWidget::Bitmap.new('file'))
     }
   end
 
@@ -250,9 +250,9 @@ module DemoTree
         })
       res = tree.edit(node, tree.itemcget(node, :text))
       if res != ''
-        tree.itemconfigure(node, :text=>res)
+        tree.itemconfigure(node, text:res)
         if list.exist?(node)
-          list.itemconfigure(node, :text=>res)
+          list.itemconfigure(node, text:res)
         end
         tree.selection_set(node)
       end
@@ -262,15 +262,15 @@ module DemoTree
     if (where == 'list')
       res = list.edit(node, list.igemcget(node, :text))
       if res != ''
-        list.itemconfigure(node, :text=>res)
+        list.itemconfigure(node, text:res)
         if tree.exist?(node)
-          tree.itemconfigure(node, :text=>res)
+          tree.itemconfigure(node, text:res)
         else
           cursel = tree.selection_get[0]
           index  = list.index(node) - tree.nodes(cursel).size
           data   = TkComm.simplelist(tree.itemcget(cursel, :data))
           data[index] = res
-          tree.itemconfigure(cursel, :date=>data)
+          tree.itemconfigure(cursel, date:data)
         end
         list.selection_set(node)
       end

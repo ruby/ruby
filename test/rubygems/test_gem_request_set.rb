@@ -55,7 +55,7 @@ class TestGemRequestSet < Gem::TestCase
       io.puts 'gem "a"'
       io.flush
 
-      result = rs.install_from_gemdeps :gemdeps => io.path do |req, installer|
+      result = rs.install_from_gemdeps gemdeps: io.path do |req, installer|
         installed << req.full_name
       end
 
@@ -87,7 +87,7 @@ Gems to install:
       EXPECTED
 
       assert_output expected do
-        rs.install_from_gemdeps :gemdeps => io.path, :explain => true
+        rs.install_from_gemdeps gemdeps: io.path, explain: true
       end
     end
   end
@@ -108,8 +108,8 @@ Gems to install:
     end
 
     options = {
-      :gemdeps     => 'gem.deps.rb',
-      :install_dir => "#{@gemhome}2",
+      gemdeps: 'gem.deps.rb',
+      install_dir: "#{@gemhome}2",
     }
 
     rs.install_from_gemdeps options do |req, installer|
@@ -132,7 +132,7 @@ Gems to install:
       io.flush
 
       assert_raises Gem::UnsatisfiableDependencyError do
-        rs.install_from_gemdeps :gemdeps => io.path, :domain => :local
+        rs.install_from_gemdeps gemdeps: io.path, domain: :local
       end
     end
 
@@ -170,7 +170,7 @@ DEPENDENCIES
       io.puts 'gem "b"'
     end
 
-    rs.install_from_gemdeps :gemdeps => 'gem.deps.rb' do |req, installer|
+    rs.install_from_gemdeps gemdeps: 'gem.deps.rb' do |req, installer|
       installed << req.full_name
     end
 
@@ -197,7 +197,7 @@ ruby "0"
 
       io.flush
 
-      rs.install_from_gemdeps :gemdeps => io.path do |req, installer|
+      rs.install_from_gemdeps gemdeps: io.path do |req, installer|
         installed << req.full_name
       end
     end
@@ -247,7 +247,7 @@ ruby "0"
     rs = Gem::RequestSet.new
 
     tf = Tempfile.open 'gem.deps.rb' do |io|
-      io.puts 'gem "a", :group => :test'
+      io.puts 'gem "a", group: :test'
       io.flush
 
       rs.load_gemdeps io.path, [:test]
@@ -337,7 +337,7 @@ ruby "0"
 
     tf = Tempfile.open 'gem.deps.rb' do |io|
       io.puts <<-gems_deps_rb
-        gem "#{name}", :git => "#{repository}"
+        gem "#{name}", git: "#{repository}"
       gems_deps_rb
 
       io.flush
@@ -400,8 +400,8 @@ ruby "0"
 
     tf = Tempfile.open 'gem.deps.rb' do |io|
       io.puts <<-gems_deps_rb
-        gem "#{a_name}", :path => "#{a_directory}"
-        gem "#{b_name}", :path => "#{b_directory}"
+        gem "#{a_name}", path: "#{a_directory}"
+        gem "#{b_name}", path: "#{b_directory}"
       gems_deps_rb
 
       io.flush
@@ -515,8 +515,8 @@ ruby "0"
     rs.resolve
 
     options = {
-      :development         => true,
-      :development_shallow => true,
+      development: true,
+      development_shallow: true,
     }
 
     installed = rs.install_into @tempdir, true, options do

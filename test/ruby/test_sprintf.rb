@@ -169,8 +169,8 @@ class TestSprintf < Test::Unit::TestCase
   end
 
   def test_hash
-    options = {:capture=>/\d+/}
-    assert_equal("with options {:capture=>/\\d+/}", sprintf("with options %p" % options))
+    options = {capture:/\d+/}
+    assert_equal("with options {capture:/\\d+/}", sprintf("with options %p" % options))
   end
 
   def test_invalid
@@ -360,10 +360,10 @@ class TestSprintf < Test::Unit::TestCase
   end
 
   def test_named_untyped
-    assert_equal("value", sprintf("%<key>s", :key => "value"))
-    assert_raise_with_message(ArgumentError, "named<key2> after numbered") {sprintf("%1$<key2>s", :key => "value")}
-    assert_raise_with_message(ArgumentError, "named<key2> after unnumbered(2)") {sprintf("%s%s%<key2>s", "foo", "bar", :key => "value")}
-    assert_raise_with_message(ArgumentError, "named<key2> after <key>") {sprintf("%<key><key2>s", :key => "value")}
+    assert_equal("value", sprintf("%<key>s", key: "value"))
+    assert_raise_with_message(ArgumentError, "named<key2> after numbered") {sprintf("%1$<key2>s", key: "value")}
+    assert_raise_with_message(ArgumentError, "named<key2> after unnumbered(2)") {sprintf("%s%s%<key2>s", "foo", "bar", key: "value")}
+    assert_raise_with_message(ArgumentError, "named<key2> after <key>") {sprintf("%<key><key2>s", key: "value")}
     assert_raise_with_message(KeyError, "key<key> not found") {sprintf("%<key>s", {})}
   end
 
@@ -385,11 +385,11 @@ class TestSprintf < Test::Unit::TestCase
   end
 
   def test_named_typed
-    assert_equal("value", sprintf("%{key}", :key => "value"))
-    assert_raise_with_message(ArgumentError, "named{key2} after numbered") {sprintf("%1${key2}", :key => "value")}
-    assert_raise_with_message(ArgumentError, "named{key2} after unnumbered(2)") {sprintf("%s%s%{key2}", "foo", "bar", :key => "value")}
-    assert_raise_with_message(ArgumentError, "named{key2} after <key>") {sprintf("%<key>{key2}", :key => "value")}
-    assert_equal("value{key2}", sprintf("%{key}{key2}", :key => "value"))
+    assert_equal("value", sprintf("%{key}", key: "value"))
+    assert_raise_with_message(ArgumentError, "named{key2} after numbered") {sprintf("%1${key2}", key: "value")}
+    assert_raise_with_message(ArgumentError, "named{key2} after unnumbered(2)") {sprintf("%s%s%{key2}", "foo", "bar", key: "value")}
+    assert_raise_with_message(ArgumentError, "named{key2} after <key>") {sprintf("%<key>{key2}", key: "value")}
+    assert_equal("value{key2}", sprintf("%{key}{key2}", key: "value"))
     assert_raise_with_message(KeyError, "key{key} not found") {sprintf("%{key}", {})}
   end
 

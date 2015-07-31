@@ -23,14 +23,14 @@ documentation tree starting in the subdirectory +doc+.
 
     expected = [
       {
-        :type      => :paragraph,
-        :paragraph => paragraph1,
-        :line_no   => 1,
+        type: :paragraph,
+        paragraph: paragraph1,
+        line_no: 1,
       },
       {
-        :type      => :paragraph,
-        :paragraph => paragraph2,
-        :line_no   => 5,
+        type: :paragraph,
+        paragraph: paragraph2,
+        line_no: 5,
       },
     ]
     assert_equal expected, extract_messages(raw)

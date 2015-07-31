@@ -12,37 +12,37 @@ module RSS
       end
 
       @dc_elems = {
-        :title => "hoge",
-        :description =>
+        title: "hoge",
+        description:
           " XML is placing increasingly heavy loads on
           the existing technical infrastructure of the Internet.",
-        :creator => "Rael Dornfest (mailto:rael@oreilly.com)",
-        :subject => "XML",
-        :publisher => "The O'Reilly Network",
-        :contributor => "hogehoge",
-        :type => "fugafuga",
-        :format => "hohoho",
-        :identifier => "fufufu",
-        :source => "barbar",
-        :language => "ja",
-        :relation => "cococo",
-        :rights => "Copyright (c) 2000 O'Reilly &amp; Associates, Inc.",
-        :date => t,
+        creator: "Rael Dornfest (mailto:rael@oreilly.com)",
+        subject: "XML",
+        publisher: "The O'Reilly Network",
+        contributor: "hogehoge",
+        type: "fugafuga",
+        format: "hohoho",
+        identifier: "fufufu",
+        source: "barbar",
+        language: "ja",
+        relation: "cococo",
+        rights: "Copyright (c) 2000 O'Reilly &amp; Associates, Inc.",
+        date: t,
       }
 
       @sy_elems = {
-        :updatePeriod => "hourly",
-        :updateFrequency => "2",
-        :updateBase => t,
+        updatePeriod: "hourly",
+        updateFrequency: "2",
+        updateBase: t,
       }
 
       @content_elems = {
-        :encoded => "<em>ATTENTION</em>",
+        encoded: "<em>ATTENTION</em>",
       }
 
       @trackback_elems = {
-        :ping => "http://bar.com/tb.cgi?tb_id=rssplustrackback",
-        :about => [
+        ping: "http://bar.com/tb.cgi?tb_id=rssplustrackback",
+        about: [
           "http://foo.com/trackback/tb.cgi?tb_id=20020923",
           "http://foo.com/trackback/tb.cgi?tb_id=20021010",
         ],
@@ -50,16 +50,16 @@ module RSS
 
       @taxo_topic_elems = [
         {
-          :link => "http://meerkat.oreillynet.com/?c=cat23",
-          :title => "Data: XML",
-          :description => "A Meerkat channel",
+          link: "http://meerkat.oreillynet.com/?c=cat23",
+          title: "Data: XML",
+          description: "A Meerkat channel",
         },
         {
-          :link => "http://dmoz.org/Computers/Data_Formats/Markup_Languages/XML/",
-          :title => "XML",
-          :subject => "XML",
-          :description => "DMOZ category",
-          :topics => [
+          link: "http://dmoz.org/Computers/Data_Formats/Markup_Languages/XML/",
+          title: "XML",
+          subject: "XML",
+          description: "DMOZ category",
+          topics: [
             "http://meerkat.oreillynet.com/?c=cat23",
             "http://dmoz.org/Computers/Data_Formats/Markup_Languages/SGML/",
             "http://dmoz.org/Computers/Programming/Internet/",

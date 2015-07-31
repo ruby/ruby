@@ -14,22 +14,22 @@ module RSS
       end
 
       @elements = {
-        :title => "hoge",
-        :description =>
+        title: "hoge",
+        description:
           " XML is placing increasingly heavy loads on
           the existing technical infrastructure of the Internet.",
-        :creator => "Rael Dornfest (mailto:rael@oreilly.com)",
-        :subject => "XML",
-        :publisher => "The O'Reilly Network",
-        :contributor => "hogehoge",
-        :type => "fugafuga",
-        :format => "hohoho",
-        :identifier => "fufufu",
-        :source => "barbar",
-        :language => "ja",
-        :relation => "cococo",
-        :rights => "Copyright (c) 2000 O'Reilly &amp; Associates, Inc.",
-        :date => t,
+        creator: "Rael Dornfest (mailto:rael@oreilly.com)",
+        subject: "XML",
+        publisher: "The O'Reilly Network",
+        contributor: "hogehoge",
+        type: "fugafuga",
+        format: "hohoho",
+        identifier: "fufufu",
+        source: "barbar",
+        language: "ja",
+        relation: "cococo",
+        rights: "Copyright (c) 2000 O'Reilly &amp; Associates, Inc.",
+        date: t,
       }
     end
 

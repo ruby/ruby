@@ -3509,15 +3509,15 @@ module Net
           raise Error, "Server does not support auth (qop = #{sparams['qop'].join(',')})" unless sparams['qop'].include?("auth")
 
           response = {
-            :nonce => sparams['nonce'],
-            :username => @user,
-            :realm => sparams['realm'],
-            :cnonce => Digest::MD5.hexdigest("%.15f:%.15f:%d" % [Time.now.to_f, rand, Process.pid.to_s]),
+            nonce: sparams['nonce'],
+            username: @user,
+            realm: sparams['realm'],
+            cnonce: Digest::MD5.hexdigest("%.15f:%.15f:%d" % [Time.now.to_f, rand, Process.pid.to_s]),
             :'digest-uri' => 'imap/' + sparams['realm'],
-            :qop => 'auth',
-            :maxbuf => 65535,
-            :nc => "%08d" % nc(sparams['nonce']),
-            :charset => sparams['charset'],
+            qop: 'auth',
+            maxbuf: 65535,
+            nc: "%08d" % nc(sparams['nonce']),
+            charset: sparams['charset'],
           }
 
           response[:authzid] = @authname unless @authname.nil?

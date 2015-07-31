@@ -21,7 +21,7 @@ module WEBrick
     #
     # Here is an example of how to set up a BasicAuth:
     #
-    #   config = { :Realm => 'BasicAuth example realm' }
+    #   config = { Realm: 'BasicAuth example realm' }
     #
     #   htpasswd = WEBrick::HTTPAuth::Htpasswd.new 'my_password_file'
     #   htpasswd.set_passwd config[:Realm], 'username', 'password'

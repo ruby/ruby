@@ -39,15 +39,15 @@ module RDoc::Text
 
   TO_HTML_CHARACTERS = Hash.new do |h, encoding|
     h[encoding] = {
-      :close_dquote => encode_fallback('”', encoding, '"'),
-      :close_squote => encode_fallback('’', encoding, '\''),
-      :copyright    => encode_fallback('©', encoding, '(c)'),
-      :ellipsis     => encode_fallback('…', encoding, '...'),
-      :em_dash      => encode_fallback('—', encoding, '---'),
-      :en_dash      => encode_fallback('–', encoding, '--'),
-      :open_dquote  => encode_fallback('“', encoding, '"'),
-      :open_squote  => encode_fallback('‘', encoding, '\''),
-      :trademark    => encode_fallback('®', encoding, '(r)'),
+      close_dquote: encode_fallback('”', encoding, '"'),
+      close_squote: encode_fallback('’', encoding, '\''),
+      copyright: encode_fallback('©', encoding, '(c)'),
+      ellipsis: encode_fallback('…', encoding, '...'),
+      em_dash: encode_fallback('—', encoding, '---'),
+      en_dash: encode_fallback('–', encoding, '--'),
+      open_dquote: encode_fallback('“', encoding, '"'),
+      open_squote: encode_fallback('‘', encoding, '\''),
+      trademark: encode_fallback('®', encoding, '(r)'),
     }
   end if Object.const_defined? :Encoding
 
@@ -55,8 +55,8 @@ module RDoc::Text
   # Transcodes +character+ to +encoding+ with a +fallback+ character.
 
   def self.encode_fallback character, encoding, fallback
-    character.encode(encoding, :fallback => { character => fallback },
-                     :undef => :replace, :replace => fallback)
+    character.encode(encoding, fallback: { character => fallback },
+                     undef: :replace, replace: fallback)
   end
 
   ##
@@ -203,15 +203,15 @@ module RDoc::Text
     else
       html = ''
       encoded = {
-        :close_dquote => '”',
-        :close_squote => '’',
-        :copyright    => '©',
-        :ellipsis     => '…',
-        :em_dash      => '—',
-        :en_dash      => '–',
-        :open_dquote  => '“',
-        :open_squote  => '‘',
-        :trademark    => '®',
+        close_dquote: '”',
+        close_squote: '’',
+        copyright: '©',
+        ellipsis: '…',
+        em_dash: '—',
+        en_dash: '–',
+        open_dquote: '“',
+        open_squote: '‘',
+        trademark: '®',
       }
     end
 

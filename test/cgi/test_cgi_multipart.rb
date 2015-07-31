@@ -155,7 +155,7 @@ class CGIMultipartTest < Test::Unit::TestCase
     #testname = $1
     #$stderr.puts "*** debug: testname=#{testname.inspect}"
     _prepare(@data)
-    options = {:accept_charset=>"UTF-8"}
+    options = {accept_charset:"UTF-8"}
     options.merge! cgi_options
     cgi = CGI.new(options)
     expected_names = @data.collect{|hash| hash[:name] }.sort
@@ -201,12 +201,12 @@ class CGIMultipartTest < Test::Unit::TestCase
   def test_cgi_multipart_stringio
     @boundary = '----WebKitFormBoundaryAAfvAII+YL9102cX'
     @data = [
-      {:name=>'hidden1', :value=>'foobar'},
-      {:name=>'text1',   :value=>"\xE3\x81\x82\xE3\x81\x84\xE3\x81\x86\xE3\x81\x88\xE3\x81\x8A"},
-      {:name=>'file1',   :value=>_read('file1.html'),
-       :filename=>'file1.html', :content_type=>'text/html'},
-      {:name=>'image1',  :value=>_read('small.png'),
-       :filename=>'small.png',  :content_type=>'image/png'},  # small image
+      {name:'hidden1', value:'foobar'},
+      {name:'text1',   value:"\xE3\x81\x82\xE3\x81\x84\xE3\x81\x86\xE3\x81\x88\xE3\x81\x8A"},
+      {name:'file1',   value:_read('file1.html'),
+       filename:'file1.html', content_type:'text/html'},
+      {name:'image1',  value:_read('small.png'),
+       filename:'small.png',  content_type:'image/png'},  # small image
     ]
     @data[1][:value].force_encoding(::Encoding::UTF_8) if defined?(::Encoding)
     @expected_class = StringIO
@@ -217,12 +217,12 @@ class CGIMultipartTest < Test::Unit::TestCase
   def test_cgi_multipart_tempfile
     @boundary = '----WebKitFormBoundaryAAfvAII+YL9102cX'
     @data = [
-      {:name=>'hidden1', :value=>'foobar'},
-      {:name=>'text1',   :value=>"\xE3\x81\x82\xE3\x81\x84\xE3\x81\x86\xE3\x81\x88\xE3\x81\x8A"},
-      {:name=>'file1',   :value=>_read('file1.html'),
-       :filename=>'file1.html', :content_type=>'text/html'},
-      {:name=>'image1',  :value=>_read('large.png'),
-       :filename=>'large.png',  :content_type=>'image/png'},  # large image
+      {name:'hidden1', value:'foobar'},
+      {name:'text1',   value:"\xE3\x81\x82\xE3\x81\x84\xE3\x81\x86\xE3\x81\x88\xE3\x81\x8A"},
+      {name:'file1',   value:_read('file1.html'),
+       filename:'file1.html', content_type:'text/html'},
+      {name:'image1',  value:_read('large.png'),
+       filename:'large.png',  content_type:'image/png'},  # large image
     ]
     @data[1][:value].force_encoding(::Encoding::UTF_8) if defined?(::Encoding)
     @expected_class = Tempfile
@@ -243,12 +243,12 @@ class CGIMultipartTest < Test::Unit::TestCase
 
   def test_cgi_multipart_maxmultipartlength
     @data = [
-      {:name=>'image1', :value=>_read('large.png'),
-       :filename=>'large.png', :content_type=>'image/png'},  # large image
+      {name:'image1', value:_read('large.png'),
+       filename:'large.png', content_type:'image/png'},  # large image
     ]
     begin
       ex = assert_raise(StandardError) do
-        _test_multipart(:max_multipart_length=>2 * 1024) # set via simple scalar
+        _test_multipart(max_multipart_length:2 * 1024) # set via simple scalar
       end
       assert_equal("too large multipart data.", ex.message)
     ensure
@@ -258,12 +258,12 @@ class CGIMultipartTest < Test::Unit::TestCase
 
   def test_cgi_multipart_maxmultipartlength_lambda
     @data = [
-      {:name=>'image1', :value=>_read('large.png'),
-       :filename=>'large.png', :content_type=>'image/png'},  # large image
+      {name:'image1', value:_read('large.png'),
+       filename:'large.png', content_type:'image/png'},  # large image
     ]
     begin
       ex = assert_raise(StandardError) do
-        _test_multipart(:max_multipart_length=>lambda{2*1024}) # set via lambda
+        _test_multipart(max_multipart_length:lambda{2*1024}) # set via lambda
       end
       assert_equal("too large multipart data.", ex.message)
     ensure
@@ -273,8 +273,8 @@ class CGIMultipartTest < Test::Unit::TestCase
 
   def test_cgi_multipart_maxmultipartcount
     @data = [
-      {:name=>'file1', :value=>_read('file1.html'),
-       :filename=>'file1.html', :content_type=>'text/html'},
+      {name:'file1', value:_read('file1.html'),
+       filename:'file1.html', content_type:'text/html'},
     ]
     item = @data.first
     500.times { @data << item }
@@ -292,8 +292,8 @@ class CGIMultipartTest < Test::Unit::TestCase
 
   def test_cgi_multipart_badbody   ## [ruby-dev:28470]
     @data = [
-      {:name=>'file1', :value=>_read('file1.html'),
-       :filename=>'file1.html', :content_type=>'text/html'},
+      {name:'file1', value:_read('file1.html'),
+       filename:'file1.html', content_type:'text/html'},
     ]
     _prepare(@data) do |input|
       input2 = input.sub(/--(\r\n)?\z/, "\r\n")
@@ -302,7 +302,7 @@ class CGIMultipartTest < Test::Unit::TestCase
       input2
     end
     ex = assert_raise(EOFError) do
-      CGI.new(:accept_charset=>"UTF-8")
+      CGI.new(accept_charset:"UTF-8")
     end
     assert_equal("bad content body", ex.message)
     #
@@ -313,7 +313,7 @@ class CGIMultipartTest < Test::Unit::TestCase
       input2
     end
     ex = assert_raise(EOFError) do
-      CGI.new(:accept_charset=>"UTF-8")
+      CGI.new(accept_charset:"UTF-8")
     end
     assert_equal("bad content body", ex.message)
   end
@@ -322,28 +322,28 @@ class CGIMultipartTest < Test::Unit::TestCase
   def test_cgi_multipart_quoteboundary  ## [JVN#84798830]
     @boundary = '(.|\n)*'
     @data = [
-      {:name=>'hidden1', :value=>'foobar'},
-      {:name=>'text1',   :value=>"\xE3\x81\x82\xE3\x81\x84\xE3\x81\x86\xE3\x81\x88\xE3\x81\x8A"},
-      {:name=>'file1',   :value=>_read('file1.html'),
-       :filename=>'file1.html', :content_type=>'text/html'},
-      {:name=>'image1',  :value=>_read('small.png'),
-       :filename=>'small.png',  :content_type=>'image/png'},  # small image
+      {name:'hidden1', value:'foobar'},
+      {name:'text1',   value:"\xE3\x81\x82\xE3\x81\x84\xE3\x81\x86\xE3\x81\x88\xE3\x81\x8A"},
+      {name:'file1',   value:_read('file1.html'),
+       filename:'file1.html', content_type:'text/html'},
+      {name:'image1',  value:_read('small.png'),
+       filename:'small.png',  content_type:'image/png'},  # small image
     ]
     @data[1][:value].force_encoding("UTF-8")
     _prepare(@data)
-    cgi = CGI.new(:accept_charset=>"UTF-8")
+    cgi = CGI.new(accept_charset:"UTF-8")
     assert_equal('file1.html', cgi['file1'].original_filename)
   end
 
   def test_cgi_multipart_boundary_10240 # [Bug #3866]
     @boundary = 'AaB03x'
     @data = [
-      {:name=>'file',   :value=>"b"*10134,
-       :filename=>'file.txt', :content_type=>'text/plain'},
-      {:name=>'foo',  :value=>"bar"},
+      {name:'file',   value:"b"*10134,
+       filename:'file.txt', content_type:'text/plain'},
+      {name:'foo',  value:"bar"},
     ]
     _prepare(@data)
-    cgi = CGI.new(:accept_charset=>"UTF-8")
+    cgi = CGI.new(accept_charset:"UTF-8")
     assert_equal(cgi['foo'], 'bar')
     assert_equal(cgi['file'].read, 'b'*10134)
     cgi['file'].close! if cgi['file'].kind_of? Tempfile

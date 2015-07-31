@@ -32,7 +32,7 @@
 # underline, accelerator, and configs are optional pearameters.
 # Hashes are OK instead of Arrays. Then the entry type ('command',
 # 'checkbutton', 'radiobutton' or 'cascade') is given by 'type' key
-# (e.g. :type=>'cascade'). When type is 'cascade', an array of menu_info
+# (e.g. type:'cascade'). When type is 'cascade', an array of menu_info
 # is acceptable for 'menu' key (then, create sub-menu).
 #
 # If the value of underline is true instead of an integer,
@@ -50,7 +50,7 @@
 #   menu button/entry information.
 #
 # NOTE: (*2)
-#   If you want to configure a cascade menu, add :menu_config=>{...configs..}
+#   If you want to configure a cascade menu, add menu_config:{...configs..}
 #   to the configs of the cascade entry.
 
 module TkMenuSpec
@@ -81,13 +81,13 @@ module TkMenuSpec
     tearoff = false unless tearoff # nil --> false
 
     if menu_name
-      #menu = Tk::Menu.new(parent, :widgetname=>menu_name, :tearoff=>tearoff)
+      #menu = Tk::Menu.new(parent, widgetname:menu_name, tearoff:tearoff)
       # --> use current TkMenu class
-      menu = TkMenu.new(parent, :widgetname=>menu_name, :tearoff=>tearoff)
+      menu = TkMenu.new(parent, widgetname:menu_name, tearoff:tearoff)
     else
-      #menu = Tk::Menu.new(parent, :tearoff=>tearoff)
+      #menu = Tk::Menu.new(parent, tearoff:tearoff)
       # --> use current TkMenu class
-      menu = TkMenu.new(parent, :tearoff=>tearoff)
+      menu = TkMenu.new(parent, tearoff:tearoff)
     end
 
     for item_info in menu_info
@@ -225,8 +225,8 @@ module TkMenuSpec
     # --> use current TkMenu class
     mbar = parent.menu
     unless mbar.kind_of?(Tk::Menu) || mbar.kind_of?(TkMenu)
-      #mbar = Tk::Menu.new(parent, :tearoff=>false)
-      mbar = TkMenu.new(parent, :tearoff=>false)
+      #mbar = Tk::Menu.new(parent, tearoff:false)
+      mbar = TkMenu.new(parent, tearoff:false)
       parent.menu(mbar)
     end
     mbar
@@ -257,7 +257,7 @@ module TkMenuSpec
       when :vertical, 'vertical', :vertical_left, 'vertical_left'
         layout_proc = proc{|_parent, _mbtn|
           _mbtn.direction :right
-          _mbtn.pack(:side=>:top, :fill=>:x)
+          _mbtn.pack(side::top, fill::x)
 
           menu = _mbtn.menu
           menu.bind('Tab', _vertical_mbar_bind_proc, :widget, 'forward')
@@ -266,14 +266,14 @@ module TkMenuSpec
       when :vertical_right, 'vertical_right'
         layout_proc = proc{|_parent, _mbtn|
           _mbtn.direction :left
-          _mbtn.pack(:side=>:top, :fill=>:x)
+          _mbtn.pack(side::top, fill::x)
 
           menu = _mbtn.menu
           menu.bind('Tab', _vertical_mbar_bind_proc, :widget, 'forward')
           menu.bind('Alt-Tab', _vertical_mbar_bind_proc, :widget, 'backward')
         }
       when :horizontal, 'horizontal'
-        layout_proc = proc{|_parent, _mbtn| _mbtn.pack(:side=>:left)}
+        layout_proc = proc{|_parent, _mbtn| _mbtn.pack(side::left)}
       else
         # do nothing
       end
@@ -340,7 +340,7 @@ module TkMenuSpec
         end
 
       else
-        keys = {:label=>btn_info}
+        keys = {label:btn_info}
       end
 
       menu = _create_menu(mbar, menu_info[1..-1], menu_name,
@@ -418,7 +418,7 @@ module TkMenuSpec
 
       if layout_proc.kind_of?(Proc) || layout_proc.kind_of?(Method)
         # e.g. make a vertical menubar
-        #  :layout_proc => proc{|parent, btn| btn.pack(:side=>:top, :fill=>:x)}
+        #  layout_proc: proc{|parent, btn| btn.pack(side::top, fill::x)}
         layout_proc.call(parent, mbtn)
       else
         mbtn.pack('side' => 'left')

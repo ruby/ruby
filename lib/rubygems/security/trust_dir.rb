@@ -8,8 +8,8 @@ class Gem::Security::TrustDir
   # Default permissions for the trust directory and its contents
 
   DEFAULT_PERMISSIONS = {
-    :trust_dir    => 0700,
-    :trusted_cert => 0600,
+    trust_dir: 0700,
+    trusted_cert: 0600,
   }
 
   ##
@@ -110,7 +110,7 @@ class Gem::Security::TrustDir
 
       FileUtils.chmod 0700, @dir
     else
-      FileUtils.mkdir_p @dir, :mode => @permissions[:trust_dir]
+      FileUtils.mkdir_p @dir, mode: @permissions[:trust_dir]
     end
   end
 

@@ -40,7 +40,7 @@ $bitmap_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
-base_frame = TkFrame.new($bitmap_demo).pack(:fill=>:both, :expand=>true)
+base_frame = TkFrame.new($bitmap_demo).pack(fill::both, expand:true)
 
 # label
 TkLabel.new(base_frame,'font'=>$font,'wraplength'=>'4i','justify'=>'left',

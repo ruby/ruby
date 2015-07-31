@@ -124,36 +124,36 @@ class Gem::Specification < Gem::BasicSpecification
   # Map of attribute names to default values.
 
   @@default_value = {
-    :authors                   => [],
-    :autorequire               => nil,
-    :bindir                    => 'bin',
-    :cert_chain                => [],
-    :date                      => TODAY,
-    :dependencies              => [],
-    :description               => nil,
-    :email                     => nil,
-    :executables               => [],
-    :extensions                => [],
-    :extra_rdoc_files          => [],
-    :files                     => [],
-    :homepage                  => nil,
-    :licenses                  => [],
-    :metadata                  => {},
-    :name                      => nil,
-    :platform                  => Gem::Platform::RUBY,
-    :post_install_message      => nil,
-    :rdoc_options              => [],
-    :require_paths             => ['lib'],
-    :required_ruby_version     => Gem::Requirement.default,
-    :required_rubygems_version => Gem::Requirement.default,
-    :requirements              => [],
-    :rubyforge_project         => nil,
-    :rubygems_version          => Gem::VERSION,
-    :signing_key               => nil,
-    :specification_version     => CURRENT_SPECIFICATION_VERSION,
-    :summary                   => nil,
-    :test_files                => [],
-    :version                   => nil,
+    authors: [],
+    autorequire: nil,
+    bindir: 'bin',
+    cert_chain: [],
+    date: TODAY,
+    dependencies: [],
+    description: nil,
+    email: nil,
+    executables: [],
+    extensions: [],
+    extra_rdoc_files: [],
+    files: [],
+    homepage: nil,
+    licenses: [],
+    metadata: {},
+    name: nil,
+    platform: Gem::Platform::RUBY,
+    post_install_message: nil,
+    rdoc_options: [],
+    require_paths: ['lib'],
+    required_ruby_version: Gem::Requirement.default,
+    required_rubygems_version: Gem::Requirement.default,
+    requirements: [],
+    rubyforge_project: nil,
+    rubygems_version: Gem::VERSION,
+    signing_key: nil,
+    specification_version: CURRENT_SPECIFICATION_VERSION,
+    summary: nil,
+    test_files: [],
+    version: nil,
   }
 
   Dupable = { } # :nodoc:
@@ -850,7 +850,7 @@ class Gem::Specification < Gem::BasicSpecification
     warn "Gem::Specification.add_spec is deprecated and will be removed in Rubygems 3.0" unless Gem::Deprecate.skip
     # TODO: find all extraneous adds
     # puts
-    # p :add_spec => [spec.full_name, caller.reject { |s| s =~ /minitest/ }]
+    # p add_spec: [spec.full_name, caller.reject { |s| s =~ /minitest/ }]
 
     # TODO: flush the rest of the crap from the tests
     # raise "no dupes #{spec.full_name} in #{all_names.inspect}" if
@@ -1112,7 +1112,7 @@ class Gem::Specification < Gem::BasicSpecification
     return unless File.file?(file)
 
     code = if defined? Encoding
-             File.read file, :mode => 'r:UTF-8:-'
+             File.read file, mode: 'r:UTF-8:-'
            else
              File.read file
            end

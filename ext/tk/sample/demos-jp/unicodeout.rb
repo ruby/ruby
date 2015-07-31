@@ -18,11 +18,11 @@ $unicodeout_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
-base_frame = TkFrame.new($unicodeout_demo).pack(:fill=>:both, :expand=>true)
+base_frame = TkFrame.new($unicodeout_demo).pack(fill::both, expand:true)
 
 TkLabel.new(base_frame,
-            :font=>$font, :wraplength=>'5.4i', :justify=>:left,
-            :text=><<EOL).pack(:side=>:top)
+            font:$font, wraplength:'5.4i', justify::left,
+            text:<<EOL).pack(side::top)
 これは，Tkにおける非欧米文字集合を用いる言語に対するサポートについての\
 サンプルです．ただし，下の表示においてあなたが実際にどのような表示を\
 目にするかは，あなたの環境にどのような文字集合がインストールされているかに\
@@ -43,22 +43,22 @@ EOL
 #'
 
 TkFrame.new(base_frame){|f|
-  pack(:side=>:bottom, :fill=>:x, :pady=>'2m')
+  pack(side::bottom, fill::x, pady:'2m')
 
-  TkButton.new(f, :text=>'閉じる', :width=>15, :command=>proc{
+  TkButton.new(f, text:'閉じる', width:15, command:proc{
                  $unicodeout_demo.destroy
                  $unicodeout_demo = nil
-               }).pack(:side=>:left, :expand=>true)
+               }).pack(side::left, expand:true)
 
-  TkButton.new(f, :text=>'コード参照', :width=>15, :command=>proc{
+  TkButton.new(f, text:'コード参照', width:15, command:proc{
                  showCode 'unicodeout'
-               }).pack(:side=>:left, :expand=>true)
+               }).pack(side::left, expand:true)
 }
 
 wait_msg = TkLabel.new(base_frame,
-                       :text=>"フォント読み込みの完了まで" +
+                       text:"フォント読み込みの完了まで" +
                               "しばらくお待ち下さい．．．",
-                       :font=>"Helvetica 12 italic").pack
+                       font:"Helvetica 12 italic").pack
 
 class Unicodeout_SampleFrame < TkFrame
   @@font = $font
@@ -72,22 +72,22 @@ class Unicodeout_SampleFrame < TkFrame
 
   def initialize(base)
     super(base)
-    grid_columnconfig(1, :weight=>1)
+    grid_columnconfig(1, weight:1)
   end
 
   def add_sample(lang, *args)
     sample_txt = Tk::UTF8_String(args.join(''))
-    l = TkLabel.new(self, :font=>@@font, :text=>lang+':',
-                    :anchor=>:nw, :pady=>0)
-    #s = TkLabel.new(self, :font=>@@font, :text=>sample_txt,
-    s = TkLabel.new(self, :font=>TkFont.new(@@font), :text=>sample_txt,
-                    :anchor=>:nw, :width=>30, :pady=>0)
-    Tk.grid(l, s, :sticky=>:ew, :pady=>0)
+    l = TkLabel.new(self, font:@@font, text:lang+':',
+                    anchor::nw, pady:0)
+    #s = TkLabel.new(self, font:@@font, text:sample_txt,
+    s = TkLabel.new(self, font:TkFont.new(@@font), text:sample_txt,
+                    anchor::nw, width:30, pady:0)
+    Tk.grid(l, s, sticky::ew, pady:0)
     l.grid_config(:padx, '1m')
   end
 end
 f = Unicodeout_SampleFrame.new(base_frame)
-f.pack(:expand=>true, :fill=>:both, :padx=>'2m', :pady=>'1m')
+f.pack(expand:true, fill::both, padx:'2m', pady:'1m')
 
 # Processing when some characters are missing might take a while, so make
 # sure we're displaying something in the meantime...

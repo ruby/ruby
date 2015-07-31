@@ -86,7 +86,7 @@ class TestGemSecurityTrustDir < Gem::TestCase
   end
 
   def test_verify_wrong_permissions
-    FileUtils.mkdir_p @dest_dir, :mode => 0777
+    FileUtils.mkdir_p @dest_dir, mode: 0777
 
     @trust_dir.verify
 

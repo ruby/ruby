@@ -41,7 +41,7 @@ module Tk
                                    args.flatten))
       end
 
-      icons.collect{|icon| self.new(icon, :without_creating=>true)}
+      icons.collect{|icon| self.new(icon, without_creating:true)}
     end
 
     def self.delete(*icons)  # icon, icon, ...

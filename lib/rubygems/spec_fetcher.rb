@@ -68,9 +68,9 @@ class Gem::SpecFetcher
     @prerelease_specs = {}
 
     @caches = {
-      :latest => @latest_specs,
-      :prerelease => @prerelease_specs,
-      :released => @specs,
+      latest: @latest_specs,
+      prerelease: @prerelease_specs,
+      released: @specs,
     }
 
     @fetcher = Gem::RemoteFetcher.fetcher
@@ -209,10 +209,10 @@ class Gem::SpecFetcher
   # Returns a list of gems available for each source in Gem::sources.
   #
   # +type+ can be one of 3 values:
-  # :released   => Return the list of all released specs
-  # :complete   => Return the list of all specs
-  # :latest     => Return the list of only the highest version of each gem
-  # :prerelease => Return the list of all prerelease only specs
+  # released: Return the list of all released specs
+  # complete: Return the list of all specs
+  # latest: Return the list of only the highest version of each gem
+  # prerelease: Return the list of all prerelease only specs
   #
 
   def available_specs(type)

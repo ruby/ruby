@@ -15,7 +15,7 @@ mkconfig = File.basename($0)
 
 rbconfig_rb = ARGV[0] || 'rbconfig.rb'
 unless File.directory?(dir = File.dirname(rbconfig_rb))
-  FileUtils.makedirs(dir, :verbose => true)
+  FileUtils.makedirs(dir, verbose: true)
 end
 
 config = ""

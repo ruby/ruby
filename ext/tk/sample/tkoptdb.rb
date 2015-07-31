@@ -38,68 +38,68 @@ cmd = TkOptionDB.new_proc_class(:BTN_CMD, [:show_msg, :bye_msg], 3) {
 }
 
 # following two frame widgets use same database entry
-TkFrame.new(:class=>'BtnFrame'){|f|
-  pack(:padx=>5, :pady=>5)
-  TkButton.new(:parent=>f, :widgetname=>'hello'){
+TkFrame.new(class:'BtnFrame'){|f|
+  pack(padx:5, pady:5)
+  TkButton.new(parent:f, widgetname:'hello'){
     command proc{
       print "($SAFE=#{$SAFE} >>>) : "
       cmd.show_msg(TkOptionDB.inspect)
       print "(<<< $SAFE=#{$SAFE})"
     }
-    pack(:fill=>:x, :padx=>10, :pady=>10)
+    pack(fill::x, padx:10, pady:10)
   }
-  TkButton.new(:command=>proc{
+  TkButton.new(command:proc{
                  print "($SAFE=#{$SAFE} >>>) : "
                  cmd.bye_msg
                  print "(<<< $SAFE=#{$SAFE} ) : "
                  exit
                },
-               :parent=>f, :widgetname=>'quit'){
-    pack(:fill=>:x, :padx=>10, :pady=>10)
+               parent:f, widgetname:'quit'){
+    pack(fill::x, padx:10, pady:10)
   }
 }
 
 class BtnFrame < TkFrame; end
 BtnFrame.new{|f|
-  pack(:padx=>5, :pady=>5)
-  TkButton.new(:parent=>f, :widgetname=>'hello'){
+  pack(padx:5, pady:5)
+  TkButton.new(parent:f, widgetname:'hello'){
     command proc{
       print "($SAFE=#{$SAFE} >>>) : "
       cmd.show_msg(TkOptionDB.inspect)
       print "(<<< $SAFE=#{$SAFE})"
     }
-    pack(:fill=>:x, :padx=>10, :pady=>10)
+    pack(fill::x, padx:10, pady:10)
   }
-  TkButton.new(:command=>proc{
+  TkButton.new(command:proc{
                  print "($SAFE=#{$SAFE} >>>) : "
                  cmd.bye_msg
                  print "(<<< $SAFE=#{$SAFE})"
                  exit
                },
-               :parent=>f, :widgetname=>'quit'){
-    pack(:fill=>:x, :padx=>10, :pady=>10)
+               parent:f, widgetname:'quit'){
+    pack(fill::x, padx:10, pady:10)
   }
 }
 
 # if unknown class, use default option values
-TkFrame.new(:class=>'BtnFrame2'){|f|
-  pack(:padx=>5, :pady=>5)
-  TkButton.new(:parent=>f, :widgetname=>'hello'){
+TkFrame.new(class:'BtnFrame2'){|f|
+  pack(padx:5, pady:5)
+  TkButton.new(parent:f, widgetname:'hello'){
     command proc{
       print "($SAFE=#{$SAFE} >>>) : "
       cmd.show_msg(TkOptionDB.inspect)
       print "(<<< $SAFE=#{$SAFE})"
     }
-    pack(:fill=>:x, :padx=>10, :pady=>10)
+    pack(fill::x, padx:10, pady:10)
   }
-  TkButton.new(:command=>proc{
+  TkButton.new(command:proc{
                  print "($SAFE=#{$SAFE} >>>) : "
                  cmd.bye_msg
                  print "(<<< $SAFE=#{$SAFE})"
                  exit
                },
-               :parent=>f, :widgetname=>'quit'){
-    pack(:fill=>:x, :padx=>10, :pady=>10)
+               parent:f, widgetname:'quit'){
+    pack(fill::x, padx:10, pady:10)
   }
 }
 

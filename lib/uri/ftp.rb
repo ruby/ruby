@@ -88,8 +88,8 @@ module URI
     #       '/path/file.> zip', 'i'])
     #     puts uri.to_s  ->  ftp://user:password@ftp.example.com/%2Fpath/file.zip;type=a
     #
-    #     uri2 = URI::FTP.build({:host => 'ftp.example.com',
-    #       :path => 'ruby/src'})
+    #     uri2 = URI::FTP.build({host: 'ftp.example.com',
+    #       path: 'ruby/src'})
     #     puts uri2.to_s  ->  ftp://ftp.example.com/ruby/src
     #
     def self.build(args)

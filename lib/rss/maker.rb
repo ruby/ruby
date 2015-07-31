@@ -37,7 +37,7 @@ module RSS
 
       # Adds a maker to the set of supported makers
       def add_maker(version, normalized_version, maker)
-        MAKERS[version] = {:maker => maker, :version => normalized_version}
+        MAKERS[version] = {maker: maker, version: normalized_version}
       end
 
       # Returns collection of supported maker versions

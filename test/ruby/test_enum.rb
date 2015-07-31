@@ -157,10 +157,10 @@ class TestEnumerable < Test::Unit::TestCase
     end
     obj.extend Enumerable
     assert_equal({
-      :hello => :world,
-      :key => :value,
-      :other_key => :other_value,
-      :obtained => :via_to_ary,
+      hello: :world,
+      key: :value,
+      other_key: :other_value,
+      obtained: :via_to_ary,
     }, obj.to_h(:hello, :world))
 
     e = assert_raise(TypeError) {

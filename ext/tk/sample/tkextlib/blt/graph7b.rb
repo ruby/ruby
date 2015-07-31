@@ -3,12 +3,12 @@ require 'tk'
 require 'tkextlib/blt'
 
 length = 250000
-graph = Tk::BLT::Graph.new(:title=>"Scatter Plot\n#{length} points")
-graph.xaxis_configure(:loose=>false, :title=>'X Axis Label')
-graph.yaxis_configure(:title=>'Y Axis Label')
-graph.legend_configure(:activerelief=>:sunken, :background=>'')
+graph = Tk::BLT::Graph.new(title:"Scatter Plot\n#{length} points")
+graph.xaxis_configure(loose:false, title:'X Axis Label')
+graph.yaxis_configure(title:'Y Axis Label')
+graph.legend_configure(activerelief::sunken, background:'')
 
-Tk::BLT::Table.add(Tk.root, graph, [0,0], :fill=>:both)
+Tk::BLT::Table.add(Tk.root, graph, [0,0], fill::both)
 
 x = Array.new(length)
 y = Array.new(length)
@@ -17,11 +17,11 @@ y = Array.new(length)
   y[i] = rand
 }
 
-plot = Tk::BLT::PlotComponent::Element.new(graph, :symbol=>:square,
-                                           :color=>'green4', :fill=>'green2',
-                                           :linewidth=>0, :outlinewidth=>1,
-                                           :pixels=>4, :label=>'plot',
-                                           :xdata=>x, :ydata=>y)
+plot = Tk::BLT::PlotComponent::Element.new(graph, symbol::square,
+                                           color:'green4', fill:'green2',
+                                           linewidth:0, outlinewidth:1,
+                                           pixels:4, label:'plot',
+                                           xdata:x, ydata:y)
 
 Tk.root.minsize(0, 0)
 

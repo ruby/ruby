@@ -29,7 +29,7 @@ $ruler_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
-base_frame = TkFrame.new($ruler_demo).pack(:fill=>:both, :expand=>true)
+base_frame = TkFrame.new($ruler_demo).pack(fill::both, expand:true)
 
 # label 生成
 TkLabel.new(base_frame, 'font'=>$font, 'wraplength'=>'5i', 'justify'=>'left',

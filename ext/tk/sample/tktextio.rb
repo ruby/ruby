@@ -126,7 +126,7 @@ class TkTextIO < TkText
     @prompt = opts['prompt']
     @prompt_cmd = opts['prompt_cmd']
 
-    @open  = {:r => true,  :w => true}  # default is 'r+'
+    @open  = {r: true,  w: true}  # default is 'r+'
 
     @console_mode = false
     @end_of_stream = false
@@ -138,8 +138,8 @@ class TkTextIO < TkText
 
     when :console, 'console'
       @console_mode = true
-      # @console_buffer = TkTextIO.new(:mode=>'r')
-      @console_buffer = self.class.new(:mode=>'r')
+      # @console_buffer = TkTextIO.new(mode:'r')
+      @console_buffer = self.class.new(mode:'r')
       self.show_mode = :insert
 
     when 'r', 'rb'
@@ -316,7 +316,7 @@ class TkTextIO < TkText
         # paste a text at 'insert' only
         x1, y1, x2, y2 =  bbox(ins_mark)
         unless x == x1 && y == y1
-          Tk.event_generate(self, 'ButtonRelease-2', :x=>x1, :y=>y1)
+          Tk.event_generate(self, 'ButtonRelease-2', x:x1, y:y1)
           Tk.callback_break
         end
       end
@@ -921,12 +921,12 @@ if __FILE__ == $0
   ev_loop = Thread.new{Tk.mainloop}
 
   f = TkFrame.new.pack
-  #tio = TkTextIO.new(f, :show=>:nil,
-  #tio = TkTextIO.new(f, :show=>:pos,
-  tio = TkTextIO.new(f, :show=>:insert,
-                     :text=>">>> This is an initial text line. <<<\n\n"){
-#    yscrollbar(TkScrollbar.new(f).pack(:side=>:right, :fill=>:y))
-    pack(:side=>:left, :fill=>:both, :expand=>true)
+  #tio = TkTextIO.new(f, show::nil,
+  #tio = TkTextIO.new(f, show::pos,
+  tio = TkTextIO.new(f, show::insert,
+                     text:">>> This is an initial text line. <<<\n\n"){
+#    yscrollbar(TkScrollbar.new(f).pack(side::right, fill::y))
+    pack(side::left, fill::both, expand:true)
   }
 
   Tk.update
@@ -1043,15 +1043,15 @@ if __FILE__ == $0
 =end
 
   num = 0
-#  io = TkTextIO.new(:mode=>:console, :prompt=>'').pack
+#  io = TkTextIO.new(mode::console, prompt:'').pack
 #=begin
-  io = TkTextIO.new(:mode=>:console,
-                    :prompt_cmd=>proc{
+  io = TkTextIO.new(mode::console,
+                    prompt_cmd:proc{
                       s = "[#{num}]"
                       num += 1
                       s
                     },
-                    :prompt=>'-> ').pack
+                    prompt:'-> ').pack
 #=end
   Thread.new{loop{sleep 2; io.puts 'hoge'}}
   Thread.new{loop{p io.gets}}

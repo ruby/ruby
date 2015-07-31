@@ -16,7 +16,7 @@ $twind_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
-base_frame = TkFrame.new($twind_demo).pack(:fill=>:both, :expand=>true)
+base_frame = TkFrame.new($twind_demo).pack(fill::both, expand:true)
 
 # frame 生成
 $twind_buttons = TkFrame.new(base_frame) {|frame|

@@ -2,18 +2,18 @@ require File.expand_path('../jisx0208', __FILE__)
 
 ENCODES = [
   {
-    :name => "SHIFT_JIS-DOCOMO",
-    :src_zone => [0xF8..0xFC, 0x40..0xFC, 8],
-    :dst_ilseq => 0xFFFE,
-    :map => [
+    name: "SHIFT_JIS-DOCOMO",
+    src_zone: [0xF8..0xFC, 0x40..0xFC, 8],
+    dst_ilseq: 0xFFFE,
+    map: [
       [0xE63E..0xE757, JISX0208::Char.from_sjis(0xF89F)],
     ],
   },
   {
-    :name => "ISO-2022-JP-KDDI",
-    :src_zone => [0x21..0x7E, 0x21..0x7E, 8],
-    :dst_ilseq => 0xFFFE,
-    :map => [
+    name: "ISO-2022-JP-KDDI",
+    src_zone: [0x21..0x7E, 0x21..0x7E, 8],
+    dst_ilseq: 0xFFFE,
+    map: [
       [0xE468..0xE5B4, JISX0208::Char.new(0x7521)],
       [0xE5B5..0xE5CC, JISX0208::Char.new(0x7867)],
       [0xE5CD..0xE5DF, JISX0208::Char.new(0x7921)],
@@ -23,10 +23,10 @@ ENCODES = [
     ],
   },
   {
-    :name => "SHIFT_JIS-KDDI",
-    :src_zone => [0xF3..0xFC, 0x40..0xFC, 8],
-    :dst_ilseq => 0xFFFE,
-    :map => [
+    name: "SHIFT_JIS-KDDI",
+    src_zone: [0xF3..0xFC, 0x40..0xFC, 8],
+    dst_ilseq: 0xFFFE,
+    map: [
       [0xE468..0xE5B4, JISX0208::Char.from_sjis(0xF640)],
       [0xE5B5..0xE5CC, JISX0208::Char.from_sjis(0xF7E5)],
       [0xE5CD..0xE5DF, JISX0208::Char.from_sjis(0xF340)],
@@ -36,10 +36,10 @@ ENCODES = [
     ],
   },
   {
-    :name => "SHIFT_JIS-SOFTBANK",
-    :src_zone => [0xF3..0xFC, 0x40..0xFC, 8],
-    :dst_ilseq => 0xFFFE,
-    :map => [
+    name: "SHIFT_JIS-SOFTBANK",
+    src_zone: [0xF3..0xFC, 0x40..0xFC, 8],
+    dst_ilseq: 0xFFFE,
+    map: [
       [0xE001..0xE05A, JISX0208::Char.from_sjis(0xF941)],
       [0xE101..0xE15A, JISX0208::Char.from_sjis(0xF741)],
       [0xE201..0xE25A, JISX0208::Char.from_sjis(0xF7A1)],
@@ -110,9 +110,9 @@ pairs = kddi_sjis_map.inject([]) {|acc, (range, ch)|
   acc += range.map{|uni| pair = [ch.to_sjis - 0x700, Integer(ch)]; ch = ch.succ; next pair }
 }
 params = {
-  :name => "SHIFT_JIS-KDDI-UNDOC",
-  :src_zone => [0xF3..0xFC, 0x40..0xFC, 8],
-  :dst_ilseq => 0xFFFE,
+  name: "SHIFT_JIS-KDDI-UNDOC",
+  src_zone: [0xF3..0xFC, 0x40..0xFC, 8],
+  dst_ilseq: 0xFFFE,
 }
 generate_from_ucs(params, pairs)
 generate_to_ucs(params, pairs)
@@ -124,8 +124,8 @@ pairs = kddi_2022_map.each_with_index.inject([]) {|acc, ((range, ch), i)|
   acc += range.map{|uni| pair = [sjis.to_sjis - 0x700, Integer(ch)]; ch = ch.succ; sjis = sjis.succ; next pair }
 }
 params = {
-  :name => "ISO-2022-JP-KDDI-UNDOC",
-  :src_zone => [0x21..0x7E, 0x21..0x7E, 8],
-  :dst_ilseq => 0xFFFE,
+  name: "ISO-2022-JP-KDDI-UNDOC",
+  src_zone: [0x21..0x7E, 0x21..0x7E, 8],
+  dst_ilseq: 0xFFFE,
 }
 generate_from_ucs(params, pairs)

@@ -17,9 +17,9 @@ def upstream_proxy
 end
 
 httpd = WEBrick::HTTPProxyServer.new(
-  :Port     => 10080,
-  :ProxyContentHandler => pch,
-  :ProxyURI => upstream_proxy
+  Port: 10080,
+  ProxyContentHandler: pch,
+  ProxyURI: upstream_proxy
 )
 Signal.trap(:INT){ httpd.shutdown }
 httpd.start

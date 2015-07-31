@@ -125,9 +125,9 @@ end
 
 def parse_scripts(data, categories)
   files = [
-    {:fn => 'DerivedCoreProperties.txt', :title => 'Derived Property'},
-    {:fn => 'Scripts.txt', :title => 'Script'},
-    {:fn => 'PropList.txt', :title => 'Binary Property'}
+    {fn: 'DerivedCoreProperties.txt', title: 'Derived Property'},
+    {fn: 'Scripts.txt', title: 'Script'},
+    {fn: 'PropList.txt', title: 'Binary Property'}
   ]
   current = nil
   cps = []

@@ -19,7 +19,7 @@ $radio3_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
-base_frame = TkFrame.new($radio3_demo).pack(:fill=>:both, :expand=>true)
+base_frame = TkFrame.new($radio3_demo).pack(fill::both, expand:true)
 
 # label
 msg = TkLabel.new(base_frame) {
@@ -28,7 +28,7 @@ msg = TkLabel.new(base_frame) {
   justify 'left'
   text "Three groups of radiobuttons are displayed below.  If you click on a button then the button will become selected exclusively among all the buttons in its group.  A Tcl variable is associated with each group to indicate which of the group's buttons is selected.  When the 'Tristate' button is pressed, the radio buttons will display the tri-state mode. Selecting any radio button will return the buttons to their respective on/off state. Click the \"See Variables\" button to see the current values of the variables."
 }
-msg.grid(:row=>0, :column=>0, :columnspan=>3, :sticky=>'nsew')
+msg.grid(row:0, column:0, columnspan:3, sticky:'nsew')
 
 # variable
 size = TkVariable.new
@@ -37,29 +37,29 @@ align = TkVariable.new
 
 # frame
 TkFrame.new(base_frame) {|frame|
-  TkGrid(TkFrame.new(frame, :height=>2, :relief=>:sunken, :bd=>2),
-         :columnspan=>4, :row=>0, :sticky=>'ew', :pady=>2)
+  TkGrid(TkFrame.new(frame, height:2, relief::sunken, bd:2),
+         columnspan:4, row:0, sticky:'ew', pady:2)
   TkGrid('x',
-         TkButton.new(frame, :text=>'See Variables',
-                      :image=>$image['view'], :compound=>:left,
-                      :command=>proc{
+         TkButton.new(frame, text:'See Variables',
+                      image:$image['view'], compound::left,
+                      command:proc{
                         showVars(base_frame, ['size', size],
                                  ['color', color], ['compound', align])
                       }),
-         TkButton.new(frame, :text=>'See Code',
-                      :image=>$image['view'], :compound=>:left,
-                      :command=>proc{showCode 'radio3'}),
-         TkButton.new(frame, :text=>'Dismiss',
-                      :image=>$image['delete'], :compound=>:left,
-                      :command=>proc{
+         TkButton.new(frame, text:'See Code',
+                      image:$image['view'], compound::left,
+                      command:proc{showCode 'radio3'}),
+         TkButton.new(frame, text:'Dismiss',
+                      image:$image['delete'], compound::left,
+                      command:proc{
                         tmppath = $radio3_demo
                         $radio3_demo = nil
                         $showVarsWin[tmppath.path] = nil
                         tmppath.destroy
                       }),
-         :padx=>4, :pady=>4)
-  frame.grid_columnconfigure(0, :weight=>1)
-  TkGrid(frame, :row=>3, :column=>0, :columnspan=>3, :sticky=>'nsew')
+         padx:4, pady:4)
+  frame.grid_columnconfigure(0, weight:1)
+  TkGrid(frame, row:3, column:0, columnspan:3, sticky:'nsew')
 }
 
 # frame

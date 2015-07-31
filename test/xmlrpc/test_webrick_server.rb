@@ -15,9 +15,9 @@ class Test_Webrick < Test::Unit::TestCase
     s = XMLRPC::WEBrickServlet.new
 
     basic_auth = WEBrick::HTTPAuth::BasicAuth.new(
-      :Realm => 'auth',
-      :UserDB => WEBrick::HTTPAuth::Htpasswd.new(File.expand_path('./htpasswd', File.dirname(__FILE__))),
-      :Logger => server.logger,
+      Realm: 'auth',
+      UserDB: WEBrick::HTTPAuth::Htpasswd.new(File.expand_path('./htpasswd', File.dirname(__FILE__))),
+      Logger: server.logger,
     )
 
     class << s; self end.send(:define_method, :service) {|req, res|
@@ -49,15 +49,15 @@ class Test_Webrick < Test::Unit::TestCase
 
   def setup_http_server_option(use_ssl)
     option = {
-      :BindAddress => "localhost",
-      :Port => 0,
-      :SSLEnable => use_ssl,
+      BindAddress: "localhost",
+      Port: 0,
+      SSLEnable: use_ssl,
     }
     if use_ssl
       require 'webrick/https'
       option.update(
-        :SSLVerifyClient => ::OpenSSL::SSL::VERIFY_NONE,
-        :SSLCertName => []
+        SSLVerifyClient: ::OpenSSL::SSL::VERIFY_NONE,
+        SSLCertName: []
       )
     end
 
@@ -69,14 +69,14 @@ class Test_Webrick < Test::Unit::TestCase
     [false].each do |use_ssl|
       option = setup_http_server_option(use_ssl)
       with_server(option, method(:create_servlet)) {|addr|
-        @s = XMLRPC::Client.new3(:host => addr.ip_address, :port => addr.ip_port, :use_ssl => use_ssl)
+        @s = XMLRPC::Client.new3(host: addr.ip_address, port: addr.ip_port, use_ssl: use_ssl)
         @s.user = 'admin'
         @s.password = 'admin'
         silent do
           do_test
         end
         @s.http.finish
-        @s = XMLRPC::Client.new3(:host => addr.ip_address, :port => addr.ip_port, :use_ssl => use_ssl)
+        @s = XMLRPC::Client.new3(host: addr.ip_address, port: addr.ip_port, use_ssl: use_ssl)
         @s.user = '01234567890123456789012345678901234567890123456789012345678901234567890123456789'
         @s.password = 'guest'
         silent do

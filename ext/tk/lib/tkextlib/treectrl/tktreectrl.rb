@@ -291,11 +291,11 @@ module Tk::TreeCtrl::ConfigMethod
 
   def __item_configinfo_struct(id)
     if id.kind_of?(Array) && id[0].to_s == 'notify'
-      {:key=>0, :alias=>nil, :db_name=>nil, :db_class=>nil,
-        :default_value=>nil, :current_value=>1}
+      {key:0, alias:nil, db_name:nil, db_class:nil,
+        default_value:nil, current_value:1}
     else
-      {:key=>0, :alias=>1, :db_name=>1, :db_class=>2,
-        :default_value=>3, :current_value=>4}
+      {key:0, alias:1, db_name:1, db_class:2,
+        default_value:3, current_value:4}
     end
   end
   private :__item_configinfo_struct

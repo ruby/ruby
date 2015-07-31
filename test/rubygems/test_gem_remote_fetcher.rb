@@ -762,7 +762,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     skip 'openssl is missing' unless defined?(OpenSSL::SSL)
 
     ssl_server = self.class.start_ssl_server({
-      :SSLVerifyClient =>
+      SSLVerifyClient:
         OpenSSL::SSL::VERIFY_PEER|OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT})
 
     temp_ca_cert = File.join(DIR, 'ca_cert.pem')
@@ -779,7 +779,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     skip 'openssl is missing' unless defined?(OpenSSL::SSL)
 
     ssl_server = self.class.start_ssl_server({
-      :SSLVerifyClient =>
+      SSLVerifyClient:
         OpenSSL::SSL::VERIFY_PEER|OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT})
 
     temp_ca_cert = File.join(DIR, 'ca_cert.pem')
@@ -908,15 +908,15 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
       null_logger = NilLog.new
       server = WEBrick::HTTPServer.new({
-        :Port => 0,
-        :Logger => null_logger,
-        :AccessLog => [],
-        :SSLEnable => true,
-        :SSLCACertificateFile => File.join(DIR, 'ca_cert.pem'),
-        :SSLCertificate => cert('ssl_cert.pem'),
-        :SSLPrivateKey => key('ssl_key.pem'),
-        :SSLVerifyClient => nil,
-        :SSLCertName => nil
+        Port: 0,
+        Logger: null_logger,
+        AccessLog: [],
+        SSLEnable: true,
+        SSLCACertificateFile: File.join(DIR, 'ca_cert.pem'),
+        SSLCertificate: cert('ssl_cert.pem'),
+        SSLPrivateKey: key('ssl_key.pem'),
+        SSLVerifyClient: nil,
+        SSLCertName: nil
       }.merge(config))
       server.mount_proc("/yaml") { |req, res|
         res.body = "--- true\n"
@@ -952,10 +952,10 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     def start_server(data)
       null_logger = NilLog.new
       s = WEBrick::HTTPServer.new(
-        :Port            => 0,
-        :DocumentRoot    => nil,
-        :Logger          => null_logger,
-        :AccessLog       => null_logger
+        Port: 0,
+        DocumentRoot: nil,
+        Logger: null_logger,
+        AccessLog: null_logger
         )
       s.mount_proc("/kill") { |req, res| s.shutdown }
       s.mount_proc("/yaml") { |req, res|

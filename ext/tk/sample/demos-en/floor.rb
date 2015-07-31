@@ -1590,7 +1590,7 @@ $floor_demo = TkToplevel.new {|w|
   minsize(100,100)
 }
 
-base_frame = TkFrame.new($floor_demo).pack(:fill=>:both, :expand=>true)
+base_frame = TkFrame.new($floor_demo).pack(fill::both, expand:true)
 
 # label
 TkLabel.new(base_frame, 'font'=>$font, 'wraplength'=>'8i', 'justify'=>'left',

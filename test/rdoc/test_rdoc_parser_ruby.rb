@@ -2185,8 +2185,8 @@ class Foo
   ]
 
   THIRD_CONSTANT = {
-     :foo => 'bar',
-     :x => 'y'
+     foo: 'bar',
+     x: 'y'
   }
 
   FOURTH_CONSTANT = SECOND_CONSTANT.map do |element|
@@ -2220,7 +2220,7 @@ EOF
 
     constant = constants[2]
     assert_equal 'THIRD_CONSTANT', constant.name
-    assert_equal "{\n:foo => 'bar',\n:x => 'y'\n}", constant.value
+    assert_equal "{\nfoo: 'bar',\nx: 'y'\n}", constant.value
     assert_equal @top_level, constant.file
 
     constant = constants[3]

@@ -249,7 +249,7 @@ class VCS
           subdir = nil if subdir.empty?
           FileUtils.mkdir_p(svndir = dir+"/.svn")
           FileUtils.ln_s(Dir.glob(rootdir+"/.svn/*"), svndir)
-          system("svn", "-q", "revert", "-R", subdir || ".", :chdir => dir) or return false
+          system("svn", "-q", "revert", "-R", subdir || ".", chdir: dir) or return false
           FileUtils.rm_rf(svndir) unless keep_temp
           if subdir
             tmpdir = Dir.mktmpdir("tmp-co.", "#{dir}/#{subdir}")
@@ -283,20 +283,20 @@ class VCS
       logcmd = gitcmd + %W[log -n1 --date=iso]
       logcmd << "--grep=^ *git-svn-id: .*@[0-9][0-9]*"
       idpat = /git-svn-id: .*?@(\d+) \S+\Z/
-      log = IO.pread(logcmd, :chdir => srcdir)
+      log = IO.pread(logcmd, chdir: srcdir)
       commit = log[/\Acommit (\w+)/, 1]
       last = log[idpat, 1]
       if path
         cmd = logcmd
         cmd += [path] unless path == '.'
-        log = IO.pread(cmd, :chdir => srcdir)
+        log = IO.pread(cmd, chdir: srcdir)
         changed = log[idpat, 1]
       else
         changed = last
       end
       modified = log[/^Date:\s+(.*)/, 1]
-      branch = IO.pread(gitcmd + %W[symbolic-ref HEAD], :chdir => srcdir)[%r'\A(?:refs/heads/)?(.+)', 1]
-      title = IO.pread(gitcmd + %W[log --format=%s -n1 #{commit}..HEAD], :chdir => srcdir)
+      branch = IO.pread(gitcmd + %W[symbolic-ref HEAD], chdir: srcdir)[%r'\A(?:refs/heads/)?(.+)', 1]
+      title = IO.pread(gitcmd + %W[log --format=%s -n1 #{commit}..HEAD], chdir: srcdir)
       title = nil if title.empty?
       [last, changed, modified, branch, title]
     end
@@ -315,12 +315,12 @@ class VCS
 
     def stable
       cmd = %W"git for-each-ref --format=\%(refname:short) refs/heads/ruby_[0-9]*"
-      branch(IO.pread(cmd, :chdir => srcdir)[/.*^(ruby_\d+_\d+)$/m, 1])
+      branch(IO.pread(cmd, chdir: srcdir)[/.*^(ruby_\d+_\d+)$/m, 1])
     end
 
     def branch_list(pat)
       cmd = %W"git for-each-ref --format=\%(refname:short) refs/heads/#{pat}"
-      IO.popen(cmd, :chdir => srcdir) {|f|
+      IO.popen(cmd, chdir: srcdir) {|f|
         f.each {|line|
           line.chomp!
           yield line
@@ -331,7 +331,7 @@ class VCS
     def grep(pat, tag, *files, &block)
       cmd = %W[git grep -h --perl-regexp #{tag} --]
       set = block.binding.eval("proc {|match| $~ = match}")
-      IO.popen([cmd, *files], :chdir => srcdir) do |f|
+      IO.popen([cmd, *files], chdir: srcdir) do |f|
         f.grep(pat) do |s|
           set[$~]
           yield s

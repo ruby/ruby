@@ -318,18 +318,18 @@ class Resolv
     #
     # The value of :nameserver should be an address string or
     # an array of address strings.
-    # - :nameserver => '8.8.8.8'
-    # - :nameserver => ['8.8.8.8', '8.8.4.4']
+    # - nameserver: '8.8.8.8'
+    # - nameserver: ['8.8.8.8', '8.8.4.4']
     #
     # The value of :nameserver_port should be an array of
     # pair of nameserver address and port number.
-    # - :nameserver_port => [['8.8.8.8', 53], ['8.8.4.4', 53]]
+    # - nameserver_port: [['8.8.8.8', 53], ['8.8.4.4', 53]]
     #
     # Example:
     #
-    #   Resolv::DNS.new(:nameserver => ['210.251.121.21'],
-    #                   :search => ['ruby-lang.org'],
-    #                   :ndots => 1)
+    #   Resolv::DNS.new(nameserver: ['210.251.121.21'],
+    #                   search: ['ruby-lang.org'],
+    #                   ndots: 1)
 
     def initialize(config_info=nil)
       @mutex = Mutex.new
@@ -958,7 +958,7 @@ class Resolv
             end
           }
         }
-        return { :nameserver => nameserver, :search => search, :ndots => ndots }
+        return { nameserver: nameserver, search: search, ndots: ndots }
       end
 
       def Config.default_config_hash(filename="/etc/resolv.conf")

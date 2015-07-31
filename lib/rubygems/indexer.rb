@@ -58,7 +58,7 @@ class Gem::Indexer
             "\n\tgem install builder"
     end
 
-    options = { :build_modern => true }.merge options
+    options = { build_modern: true }.merge options
 
     @build_modern = options[:build_modern]
 
@@ -309,10 +309,10 @@ class Gem::Indexer
 
       dst_name = File.join(@dest_directory, @quick_marshal_dir_base)
 
-      FileUtils.mkdir_p File.dirname(dst_name), :verbose => verbose
-      FileUtils.rm_rf dst_name, :verbose => verbose
+      FileUtils.mkdir_p File.dirname(dst_name), verbose: verbose
+      FileUtils.rm_rf dst_name, verbose: verbose
       FileUtils.mv(@quick_marshal_dir, dst_name,
-                   :verbose => verbose, :force => true)
+                   verbose: verbose, force: true)
     end
 
     files = files.map do |path|
@@ -323,9 +323,9 @@ class Gem::Indexer
       src_name = File.join @directory, file
       dst_name = File.join @dest_directory, file
 
-      FileUtils.rm_rf dst_name, :verbose => verbose
+      FileUtils.rm_rf dst_name, verbose: verbose
       FileUtils.mv(src_name, @dest_directory,
-                   :verbose => verbose, :force => true)
+                   verbose: verbose, force: true)
     end
   end
 
@@ -334,7 +334,7 @@ class Gem::Indexer
 
   def make_temp_directories
     FileUtils.rm_rf @directory
-    FileUtils.mkdir_p @directory, :mode => 0700
+    FileUtils.mkdir_p @directory, mode: 0700
     FileUtils.mkdir_p @quick_marshal_dir
   end
 
@@ -404,8 +404,8 @@ class Gem::Indexer
       src_name = File.join @directory, file
       dst_name = File.join @dest_directory, file # REFACTOR: duped above
 
-      FileUtils.mv src_name, dst_name, :verbose => verbose,
-                   :force => true
+      FileUtils.mv src_name, dst_name, verbose: verbose,
+                   force: true
 
       File.utime newest_mtime, newest_mtime, dst_name
     end

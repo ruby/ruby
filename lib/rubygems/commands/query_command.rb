@@ -13,8 +13,8 @@ class Gem::Commands::QueryCommand < Gem::Command
   def initialize(name = 'query',
                  summary = 'Query gem information in local or remote repositories')
     super name, summary,
-         :name => //, :domain => :local, :details => false, :versions => true,
-         :installed => nil, :version => Gem::Requirement.default
+         name: //, domain: :local, details: false, versions: true,
+         installed: nil, version: Gem::Requirement.default
 
     add_option('-i', '--[no-]installed',
                'Check for installed gem') do |value, options|

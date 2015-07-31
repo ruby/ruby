@@ -275,7 +275,7 @@ gem 'other', version
     end
 
     policy = Gem::Security::HighSecurity
-    installer = Gem::Installer.at a_gem, :security_policy => policy
+    installer = Gem::Installer.at a_gem, security_policy: policy
 
     assert_raises Gem::Security::Exception do
       installer.ensure_loadable_spec
@@ -318,8 +318,8 @@ gem 'other', version
                                   "/usr/bin"
 
     options = {
-      :bin_dir => bin_dir,
-      :install_dir => "/non/existent"
+      bin_dir: bin_dir,
+      install_dir: "/non/existent"
     }
 
     inst = Gem::Installer.at '', options
@@ -679,7 +679,7 @@ gem 'other', version
   end
 
   def test_initialize_user_install
-    installer = Gem::Installer.at @gem, :user_install => true
+    installer = Gem::Installer.at @gem, user_install: true
 
     assert_equal File.join(Gem.user_dir, 'gems', @spec.full_name),
                  installer.gem_dir
@@ -688,7 +688,7 @@ gem 'other', version
 
   def test_initialize_user_install_bin_dir
     installer =
-      Gem::Installer.at @gem, :user_install => true, :bin_dir => @tempdir
+      Gem::Installer.at @gem, user_install: true, bin_dir: @tempdir
 
     assert_equal File.join(Gem.user_dir, 'gems', @spec.full_name),
                  installer.gem_dir
@@ -884,7 +884,7 @@ gem 'other', version
 
   def test_install_force
     use_ui @ui do
-      installer = Gem::Installer.at old_ruby_required, :force => true
+      installer = Gem::Installer.at old_ruby_required, force: true
       installer.install
     end
 
@@ -1016,7 +1016,7 @@ gem 'other', version
     use_ui @ui do
       path = Gem::Package.build @spec
 
-      installer = Gem::Installer.at path, :install_dir => gemhome2
+      installer = Gem::Installer.at path, install_dir: gemhome2
       installer.install
     end
 
@@ -1175,7 +1175,7 @@ gem 'other', version
     # that it work everything out on it's own.
     Gem::Specification.reset
 
-    installer = Gem::Installer.at gem, :install_dir => gemhome2
+    installer = Gem::Installer.at gem, install_dir: gemhome2
 
     build_rake_in do
       use_ui @ui do
@@ -1231,7 +1231,7 @@ gem 'other', version
   def test_process_options_build_root
     build_root = File.join @tempdir, 'build_root'
 
-    @installer = Gem::Installer.at @gem, :build_root => build_root
+    @installer = Gem::Installer.at @gem, build_root: build_root
 
     assert_equal Pathname(build_root), @installer.build_root
     assert_equal File.join(build_root, @gemhome, 'bin'), @installer.bin_dir
@@ -1406,7 +1406,7 @@ gem 'other', version
   end
 
   def test_write_build_info_file_install_dir
-    installer = Gem::Installer.at @gem, :install_dir => "#{@gemhome}2"
+    installer = Gem::Installer.at @gem, install_dir: "#{@gemhome}2"
 
     installer.build_args = %w[
       --with-libyaml-dir /usr/local/Cellar/libyaml/0.1.4
@@ -1475,7 +1475,7 @@ gem 'other', version
 
   def test_default_gem_loaded_from
     spec = util_spec 'a'
-    installer = Gem::Installer.for_spec spec, :install_as_default => true
+    installer = Gem::Installer.for_spec spec, install_as_default: true
     installer.install
     assert_predicate spec, :default_gem?
   end

@@ -46,20 +46,20 @@ module TestNetHTTPUtils
     @log_tester = lambda {|log| assert_equal([], log ) }
     @config = self.class::CONFIG
     server_config = {
-      :BindAddress => config('host'),
-      :Port => 0,
-      :Logger => WEBrick::Log.new(@log, WEBrick::BasicLog::WARN),
-      :AccessLog => [],
-      :ServerType => Thread,
+      BindAddress: config('host'),
+      Port: 0,
+      Logger: WEBrick::Log.new(@log, WEBrick::BasicLog::WARN),
+      AccessLog: [],
+      ServerType: Thread,
     }
     server_config[:OutputBufferSize] = 4 if config('chunked')
     server_config[:RequestTimeout] = config('RequestTimeout') if config('RequestTimeout')
     if defined?(OpenSSL) and config('ssl_enable')
       server_config.update({
-        :SSLEnable      => true,
-        :SSLCertificate => config('ssl_certificate'),
-        :SSLPrivateKey  => config('ssl_private_key'),
-        :SSLTmpDhCallback => proc { OpenSSL::TestUtils::TEST_KEY_DH1024 },
+        SSLEnable: true,
+        SSLCertificate: config('ssl_certificate'),
+        SSLPrivateKey: config('ssl_private_key'),
+        SSLTmpDhCallback: proc { OpenSSL::TestUtils::TEST_KEY_DH1024 },
       })
     end
     @server = WEBrick::HTTPServer.new(server_config)

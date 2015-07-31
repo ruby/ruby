@@ -9,14 +9,14 @@ puts "Show off barchart and dial widgets"
 
 speed = TkVariable.new(0)
 
-dial = Tk::Vu::Dial.new(:resolution=>0.001, :from=>-0.1, :to=>0.1,
-                        :showvalue=>true, :minortickinterval=>0.01,
-                        :tickinterval=>0.1, :radius=>50, :label=>"Dial",
-                        :beginangle=>-20, :endangle=>260, :dialcolor=>'red3',
-                        :active=>'red2', :variable=>speed)
+dial = Tk::Vu::Dial.new(resolution:0.001, from:-0.1, to:0.1,
+                        showvalue:true, minortickinterval:0.01,
+                        tickinterval:0.1, radius:50, label:"Dial",
+                        beginangle:-20, endangle:260, dialcolor:'red3',
+                        active:'red2', variable:speed)
 
-bar = Tk::Vu::Bargraph.new(:from=>0, :to=>100, :relief=>:groove,
-                           :border=>2, :label=>"Bar Chart")
+bar = Tk::Vu::Bargraph.new(from:0, to:100, relief::groove,
+                           border:2, label:"Bar Chart")
 
 #######################################
 
@@ -51,16 +51,16 @@ update = TkTimer.new(200, -1, proc{
 
 #######################################
 
-gobar = TkButton.new(:text=>"Start", :command=>proc{update.start})
-nobar = TkButton.new(:text=>"Stop",  :command=>proc{update.stop})
-quit  = TkButton.new(:text=>"Exit",  :command=>proc{exit})
+gobar = TkButton.new(text:"Start", command:proc{update.start})
+nobar = TkButton.new(text:"Stop",  command:proc{update.stop})
+quit  = TkButton.new(text:"Exit",  command:proc{exit})
 
-Tk.grid('x', gobar, :sticky=>:ew, :padx=>4, :pady=>4)
-Tk.grid(dial, bar, :sticky=>:news)
-Tk.grid('x', nobar, :sticky=>:ew, :padx=>4, :pady=>4)
-Tk.grid(quit, '-', '-', :sticky=>:ew, :padx=>4, :pady=>4)
-Tk.root.grid_columnconfigure(2, :weight=>1)
-Tk.root.grid_rowconfigure(1, :weight=>1)
+Tk.grid('x', gobar, sticky::ew, padx:4, pady:4)
+Tk.grid(dial, bar, sticky::news)
+Tk.grid('x', nobar, sticky::ew, padx:4, pady:4)
+Tk.grid(quit, '-', '-', sticky::ew, padx:4, pady:4)
+Tk.root.grid_columnconfigure(2, weight:1)
+Tk.root.grid_rowconfigure(1, weight:1)
 
 #######################################
 

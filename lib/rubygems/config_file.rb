@@ -306,7 +306,7 @@ if you believe they were disclosed to a third party.
   def rubygems_api_key= api_key
     check_credentials_permissions
 
-    config = load_file(credentials_path).merge(:rubygems_api_key => api_key)
+    config = load_file(credentials_path).merge(rubygems_api_key: api_key)
 
     dirname = File.dirname credentials_path
     Dir.mkdir(dirname) unless File.exist? dirname

@@ -15,7 +15,7 @@ $form_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
-base_frame = TkFrame.new($form_demo).pack(:fill=>:both, :expand=>true)
+base_frame = TkFrame.new($form_demo).pack(fill::both, expand:true)
 
 # label
 msg = TkLabel.new(base_frame) {

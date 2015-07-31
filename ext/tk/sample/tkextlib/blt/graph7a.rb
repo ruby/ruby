@@ -4,7 +4,7 @@ require 'tkextlib/blt'
 
 file = File.join(File.dirname(File.expand_path(__FILE__)),
                  'images', 'buckskin.gif')
-bgTexture = TkPhotoImage.new(:file=>file)
+bgTexture = TkPhotoImage.new(file:file)
 
 TkOption.add('*Graph.Tile', bgTexture)
 TkOption.add('*Label.Tile', bgTexture)
@@ -26,12 +26,12 @@ if Tk.root.winfo_screenvisual != 'staticgray'
 end
 
 length = 250000
-graph = Tk::BLT::Graph.new(:title=>"Scatter Plot\n#{length} points")
-graph.xaxis_configure(:loose=>false, :title=>'X Axis Label')
-graph.yaxis_configure(:title=>'Y Axis Label')
-graph.legend_configure(:activerelief=>:sunken, :background=>'')
+graph = Tk::BLT::Graph.new(title:"Scatter Plot\n#{length} points")
+graph.xaxis_configure(loose:false, title:'X Axis Label')
+graph.yaxis_configure(title:'Y Axis Label')
+graph.legend_configure(activerelief::sunken, background:'')
 
-Tk::BLT::Table.add(Tk.root, graph, [0,0], :fill=>:both)
+Tk::BLT::Table.add(Tk.root, graph, [0,0], fill::both)
 
 v_x = Tk::BLT::Vector.new(length)
 v_y = Tk::BLT::Vector.new(length)
@@ -39,11 +39,11 @@ v_x.expr("random(#{v_x})")
 v_y.expr("random(#{v_y})")
 v_x.sort(v_y)
 
-plot = Tk::BLT::PlotComponent::Element.new(graph, :symbol=>:square,
-                                           :color=>'green4', :fill=>'green2',
-                                           :linewidth=>0, :outlinewidth=>1,
-                                           :pixels=>4, :label=>'plot',
-                                           :xdata=>v_x, :ydata=>v_y)
+plot = Tk::BLT::PlotComponent::Element.new(graph, symbol::square,
+                                           color:'green4', fill:'green2',
+                                           linewidth:0, outlinewidth:1,
+                                           pixels:4, label:'plot',
+                                           xdata:v_x, ydata:v_y)
 
 Tk.root.minsize(0, 0)
 

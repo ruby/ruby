@@ -102,7 +102,7 @@ class CGICoreTest < Test::Unit::TestCase
     $stdin.rewind
     if defined?(::Encoding)
       hash={}
-      cgi = CGI.new(:accept_charset=>"UTF-8"){|key,val|hash[key]=val}
+      cgi = CGI.new(accept_charset:"UTF-8"){|key,val|hash[key]=val}
       ## cgi[]
       assert_equal("\xBE\xBE\xB9\xBE".force_encoding("UTF-8"), cgi['str'])
       ## cgi.params
@@ -112,11 +112,11 @@ class CGICoreTest < Test::Unit::TestCase
 
       $stdin.rewind
       assert_raise(CGI::InvalidEncoding) do
-        cgi = CGI.new(:accept_charset=>"UTF-8")
+        cgi = CGI.new(accept_charset:"UTF-8")
       end
 
       $stdin.rewind
-      cgi = CGI.new(:accept_charset=>"EUC-JP")
+      cgi = CGI.new(accept_charset:"EUC-JP")
       ## cgi[]
       assert_equal("\xBE\xBE\xB9\xBE".force_encoding("EUC-JP"), cgi['str'])
       ## cgi.params

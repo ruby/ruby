@@ -9,8 +9,8 @@ module RSS
       @uri = "http://madskills.com/public/xml/rss/module/trackback/"
 
       @elements = {
-        :ping => "http://bar.com/tb.cgi?tb_id=rssplustrackback",
-        :abouts => [
+        ping: "http://bar.com/tb.cgi?tb_id=rssplustrackback",
+        abouts: [
           "http://foo.com/trackback/tb.cgi?tb_id=20020923",
           "http://bar.com/trackback/tb.cgi?tb_id=20041114",
         ],

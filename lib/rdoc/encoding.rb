@@ -54,8 +54,8 @@ module RDoc::Encoding
         if force_transcode then
           content.force_encoding orig_encoding
           content.encode!(encoding,
-                          :invalid => :replace, :undef => :replace,
-                          :replace => '?')
+                          invalid: :replace, undef: :replace,
+                          replace: '?')
           return content
         else
           warn "unable to convert #{e.message} for #{filename}, skipping"

@@ -30,7 +30,7 @@
 # An OpenStruct employs a Hash internally to store the methods and values and
 # can even be initialized with one:
 #
-#   australia = OpenStruct.new(:country => "Australia", :population => 20_000_000)
+#   australia = OpenStruct.new(country: "Australia", population: 20_000_000)
 #   p australia   # -> <OpenStruct country="Australia" population=20000000>
 #
 # Hash keys with spaces or characters that would normally not be able to use for
@@ -49,9 +49,9 @@
 # Removing the presence of a method requires the execution the delete_field
 # method as setting the property value to +nil+ will not remove the method.
 #
-#   first_pet = OpenStruct.new(:name => 'Rowdy', :owner => 'John Smith')
+#   first_pet = OpenStruct.new(name: 'Rowdy', owner: 'John Smith')
 #   first_pet.owner = nil
-#   second_pet = OpenStruct.new(:name => 'Rowdy')
+#   second_pet = OpenStruct.new(name: 'Rowdy')
 #
 #   first_pet == second_pet   # -> false
 #
@@ -79,7 +79,7 @@ class OpenStruct
   # For example:
   #
   #   require 'ostruct'
-  #   hash = { "country" => "Australia", :population => 20_000_000 }
+  #   hash = { "country" => "Australia", population: 20_000_000 }
   #   data = OpenStruct.new(hash)
   #
   #   p data        # -> <OpenStruct country="Australia" population=20000000>
@@ -108,8 +108,8 @@ class OpenStruct
   # Example:
   #
   #   require 'ostruct'
-  #   data = OpenStruct.new("country" => "Australia", :population => 20_000_000)
-  #   data.to_h   # => {:country => "Australia", :population => 20000000 }
+  #   data = OpenStruct.new("country" => "Australia", population: 20_000_000)
+  #   data.to_h   # => {country: "Australia", population: 20000000 }
   #
   def to_h
     @table.dup
@@ -121,7 +121,7 @@ class OpenStruct
   # Example:
   #
   #   require 'ostruct'
-  #   data = OpenStruct.new("country" => "Australia", :population => 20_000_000)
+  #   data = OpenStruct.new("country" => "Australia", population: 20_000_000)
   #   data.each_pair.to_a  # => [[:country, "Australia"], [:population, 20000000]]
   #
   def each_pair

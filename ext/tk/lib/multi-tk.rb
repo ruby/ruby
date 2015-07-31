@@ -1157,27 +1157,27 @@ class MultiTkIp
     top.bindtags = top.bindtags.unshift(tag)
 
     # create control frame
-    TkFrame.new(top, :bg=>'red', :borderwidth=>3, :relief=>'ridge') {|fc|
+    TkFrame.new(top, bg:'red', borderwidth:3, relief:'ridge') {|fc|
       fc.bindtags = fc.bindtags.unshift(tag)
 
-      TkFrame.new(fc, :bd=>0){|f|
+      TkFrame.new(fc, bd:0){|f|
         TkButton.new(f,
-                     :text=>'Delete', :bd=>1, :padx=>2, :pady=>0,
-                     :highlightthickness=>0, :command=>slave_delete_proc
-                     ).pack(:side=>:right, :fill=>:both)
-        f.pack(:side=>:right, :fill=>:both, :expand=>true)
+                     text:'Delete', bd:1, padx:2, pady:0,
+                     highlightthickness:0, command:slave_delete_proc
+                     ).pack(side::right, fill::both)
+        f.pack(side::right, fill::both, expand:true)
       }
 
-      TkLabel.new(fc, :text=>msg, :padx=>2, :pady=>0,
-                  :anchor=>:w).pack(:side=>:left, :fill=>:both, :expand=>true)
+      TkLabel.new(fc, text:msg, padx:2, pady:0,
+                  anchor::w).pack(side::left, fill::both, expand:true)
 
-      fc.pack(:side=>:bottom, :fill=>:x)
+      fc.pack(side::bottom, fill::x)
     }
 
     # container frame for slave interpreter
     dup_keys['fill'] = :both  unless dup_keys.key?('fill')
     dup_keys['expand'] = true unless dup_keys.key?('expand')
-    c = TkFrame.new(top, :container=>true).pack(dup_keys)
+    c = TkFrame.new(top, container:true).pack(dup_keys)
     c.bind('Destroy', proc{top.destroy})
 
     # return keys

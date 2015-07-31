@@ -19,7 +19,7 @@ module WEBrick
   #     [$stderr, WEBrick::AccessLog::REFERER_LOG_FORMAT],
   #   ]
   #
-  #   server = WEBrick::HTTPServer.new :AccessLog => access_log
+  #   server = WEBrick::HTTPServer.new AccessLog: access_log
   #
   # Custom log formats may be defined.  WEBrick::AccessLog provides a subset
   # of the formatting from Apache's mod_log_config

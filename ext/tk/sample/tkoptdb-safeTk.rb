@@ -2,7 +2,7 @@
 
 require 'multi-tk'
 
-TkMessage.new(:text => <<EOM).pack
+TkMessage.new(text: <<EOM).pack
 This is a sample of the safe-Tk slave interpreter. \
 On the slave interpreter, 'tkoptdb.rb' demo is running.
 ( NOTE:: a safe-Tk interpreter can't read options \

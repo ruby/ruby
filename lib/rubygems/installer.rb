@@ -519,7 +519,7 @@ class Gem::Installer
       File.unlink dst
     end
 
-    FileUtils.symlink src, dst, :verbose => Gem.configuration.really_verbose
+    FileUtils.symlink src, dst, verbose: Gem.configuration.really_verbose
   end
 
   ##
@@ -623,10 +623,10 @@ class Gem::Installer
 
   def process_options # :nodoc:
     @options = {
-      :bin_dir      => nil,
-      :env_shebang  => false,
-      :force        => false,
-      :only_install_dir => false
+      bin_dir: nil,
+      env_shebang: false,
+      force: false,
+      only_install_dir: false
     }.merge options
 
     @env_shebang         = options[:env_shebang]

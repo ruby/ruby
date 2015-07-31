@@ -19,30 +19,30 @@ geo_ch1 = [10, 90, 210, 180]
 geo_t1  = [15, 88]
 
 #---GUI
-c = TkCanvas.new(:width=>220, :height=>190).pack(:fill=>:both, :expand=>true)
+c = TkCanvas.new(width:220, height:190).pack(fill::both, expand:true)
 
 #---background
-TkcRectangle.new(c, geo_fr, :width=>4, :fill=>'aquamarine3',
-                 :tags=>['osc', 'frbg'])
+TkcRectangle.new(c, geo_fr, width:4, fill:'aquamarine3',
+                 tags:['osc', 'frbg'])
 
 #---channel 0
 ch0 = Tk::Vu::TkcStripchart.new(c, geo_ch0,
-                                :fill=>'', :jumpscroll=>false,
-                                :outline=>'', :scaleline=>'',
-                                :stripline=>'cyan', :tags=>['osc', 'ch0'])
+                                fill:'', jumpscroll:false,
+                                outline:'', scaleline:'',
+                                stripline:'cyan', tags:['osc', 'ch0'])
 
 #---channel 1
 ch1 = Tk::Vu::TkcStripchart.new(c, geo_ch1,
-                                :fill=>'', :jumpscroll=>0,
-                                :outline=>'', :scaleline=>'',
-                                :stripline=>'red', :tags=>['osc', 'ch1'])
+                                fill:'', jumpscroll:0,
+                                outline:'', scaleline:'',
+                                stripline:'red', tags:['osc', 'ch1'])
 
 #---frame
-TkcRectangle.new(c, geo_fr, :width=>4, :tags=>['osc', 'frfg'])
+TkcRectangle.new(c, geo_fr, width:4, tags:['osc', 'frfg'])
 
 #---position
-txt1 = TkcText.new(c, geo_t1, :text=>"B1-Motion: X:%X\tY:%Y",
-                   :anchor=>:nw, :tags=>['osc', 'txt1'])
+txt1 = TkcText.new(c, geo_t1, text:"B1-Motion: X:%X\tY:%Y",
+                   anchor::nw, tags:['osc', 'txt1'])
 
 #---BINDINGS
 c.bind('B1-Motion', proc{|x, y, xx, yy|
@@ -57,7 +57,7 @@ Tk.root.bind('v', proc{
              })
 
 Tk.root.bind('p', proc{
-               c.postscript(:file=>'DEMO.ps')
+               c.postscript(file:'DEMO.ps')
                puts "DEMO.ps printed"
              })
 

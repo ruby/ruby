@@ -44,7 +44,7 @@ class TestGemIndexer < Gem::TestCase
     indexer = Gem::Indexer.new @tempdir
     assert indexer.build_modern
 
-    indexer = Gem::Indexer.new @tempdir, :build_modern => true
+    indexer = Gem::Indexer.new @tempdir, build_modern: true
     assert indexer.build_modern
   end
 

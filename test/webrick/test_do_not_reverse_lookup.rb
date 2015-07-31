@@ -40,31 +40,31 @@ class TestDoNotReverseLookup < Test::Unit::TestCase
 
   def test_socket_dnrl_true_server_dnrl_true
     Socket.do_not_reverse_lookup = true
-    assert_equal(true, do_not_reverse_lookup?(:DoNotReverseLookup => true))
+    assert_equal(true, do_not_reverse_lookup?(DoNotReverseLookup: true))
   end
 
   def test_socket_dnrl_true_server_dnrl_false
     Socket.do_not_reverse_lookup = true
-    assert_equal(false, do_not_reverse_lookup?(:DoNotReverseLookup => false))
+    assert_equal(false, do_not_reverse_lookup?(DoNotReverseLookup: false))
   end
 
   def test_socket_dnrl_true_server_dnrl_nil
     Socket.do_not_reverse_lookup = true
-    assert_equal(true, do_not_reverse_lookup?(:DoNotReverseLookup => nil))
+    assert_equal(true, do_not_reverse_lookup?(DoNotReverseLookup: nil))
   end
 
   def test_socket_dnrl_false_server_dnrl_true
     Socket.do_not_reverse_lookup = false
-    assert_equal(true, do_not_reverse_lookup?(:DoNotReverseLookup => true))
+    assert_equal(true, do_not_reverse_lookup?(DoNotReverseLookup: true))
   end
 
   def test_socket_dnrl_false_server_dnrl_false
     Socket.do_not_reverse_lookup = false
-    assert_equal(false, do_not_reverse_lookup?(:DoNotReverseLookup => false))
+    assert_equal(false, do_not_reverse_lookup?(DoNotReverseLookup: false))
   end
 
   def test_socket_dnrl_false_server_dnrl_nil
     Socket.do_not_reverse_lookup = false
-    assert_equal(false, do_not_reverse_lookup?(:DoNotReverseLookup => nil))
+    assert_equal(false, do_not_reverse_lookup?(DoNotReverseLookup: nil))
   end
 end

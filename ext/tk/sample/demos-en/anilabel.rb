@@ -15,7 +15,7 @@ $anilabel_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
-base_frame = TkFrame.new($anilabel_demo).pack(:fill=>:both, :expand=>true)
+base_frame = TkFrame.new($anilabel_demo).pack(fill::both, expand:true)
 
 # label
 msg = TkLabel.new(base_frame) {
@@ -45,8 +45,8 @@ TkFrame.new(base_frame) {|frame|
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
 # create frame for label demo
-f_left = TkLabelFrame.new(base_frame,  :text=>'Scrolling Texts')
-f_right = TkLabelFrame.new(base_frame, :text=>'GIF Image')
+f_left = TkLabelFrame.new(base_frame,  text:'Scrolling Texts')
+f_right = TkLabelFrame.new(base_frame, text:'GIF Image')
 Tk.pack(f_left, f_right, 'side'=>'left', 'expand'=>'yes', 'fill'=>'both',
         'padx'=>10, 'pady'=>10)
 
@@ -121,17 +121,17 @@ class AnimatedImageLabel < AnimatedTextLabel
 end
 
 # create labels
-l1 = AnimatedTextLabel.new(f_left, :borderwidth=>4, :relief=>:ridge,
-                           :font=>{:family=>'Courier', :size=>10})
-l2 = AnimatedTextLabel.new(f_left, :borderwidth=>4, :relief=>:groove,
-                           :font=>{:family=>'Courier', :size=>10})
-l3 = AnimatedTextLabel.new(f_left, :borderwidth=>4, :relief=>:flat,
-                           :font=>{:family=>'Courier', :size=>10}, :width=>18)
+l1 = AnimatedTextLabel.new(f_left, borderwidth:4, relief::ridge,
+                           font:{family:'Courier', size:10})
+l2 = AnimatedTextLabel.new(f_left, borderwidth:4, relief::groove,
+                           font:{family:'Courier', size:10})
+l3 = AnimatedTextLabel.new(f_left, borderwidth:4, relief::flat,
+                           font:{family:'Courier', size:10}, width:18)
 Tk.pack(l1, l2, l3,
-        :side=>:top, :expand=>true, :anchor=>:w, :padx=>10, :pady=>10)
+        side::top, expand:true, anchor::w, padx:10, pady:10)
 
-limg = AnimatedImageLabel.new(f_right, :borderwidth=>0)
-limg.pack(:side=>:top, :expand=>true, :padx=>10, :pady=>10)
+limg = AnimatedImageLabel.new(f_right, borderwidth:0)
+limg.pack(side::top, expand:true, padx:10, pady:10)
 
 # base64-encoded animated GIF file
 tclPowerdData = <<EOD
@@ -171,4 +171,4 @@ l2.text('* Fast Animation *').start(80)
 l3.text('This is a longer scrolling text in a widget that will not show the whole message at once. ').start(150)
 
 limg.destroy_image = true
-limg.image(TkPhotoImage.new(:format=>'GIF', :data=>tclPowerdData)).start(100)
+limg.image(TkPhotoImage.new(format:'GIF', data:tclPowerdData)).start(100)

@@ -574,8 +574,8 @@ class Server < WEBrickServlet
   def initialize(port=8080, host="127.0.0.1", maxConnections=4, stdlog=$stdout, audit=true, debug=true, *a)
     super(*a)
     require 'webrick'
-    @server = WEBrick::HTTPServer.new(:Port => port, :BindAddress => host, :MaxClients => maxConnections,
-                                      :Logger => WEBrick::Log.new(stdlog))
+    @server = WEBrick::HTTPServer.new(Port: port, BindAddress: host, MaxClients: maxConnections,
+                                      Logger: WEBrick::Log.new(stdlog))
     @server.mount("/", self)
   end
 
@@ -620,7 +620,7 @@ end
 #                                        " or wrong number of parameters!")
 #     end
 #
-#     httpserver = WEBrick::HTTPServer.new(:Port => 8080)
+#     httpserver = WEBrick::HTTPServer.new(Port: 8080)
 #     httpserver.mount("/RPC2", s)
 #     trap("HUP") { httpserver.shutdown }   # use 1 instead of "HUP" on Windows
 #     httpserver.start

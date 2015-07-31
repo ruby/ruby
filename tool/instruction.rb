@@ -17,7 +17,7 @@ class RubyVM
       @opes = opes # [[type, name], ...]
       @pops = pops # [[type, name], ...]
       @rets = rets # [[type, name], ...]
-      @comm = comm # {:c => category, :e => en desc, :j => ja desc}
+      @comm = comm # {c: category, e: en desc, j: ja desc}
       @body = body # '...'
 
       @orig    = orig
@@ -207,9 +207,9 @@ class RubyVM
           j = ''
         end
       }
-      { :c => c,
-        :e => e,
-        :j => j,
+      { c: c,
+        e: e,
+        j: j,
       }
     end
 
@@ -416,9 +416,9 @@ class RubyVM
       pops = []
       rets = []
       comm = {
-        :c => 'optimize',
-        :e => 'unified insn',
-        :j => 'unified insn',
+        c: 'optimize',
+        e: 'unified insn',
+        j: 'unified insn',
       }
       body = ''
       passed = []

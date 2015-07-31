@@ -794,7 +794,7 @@ EOC
         when :csv
           csv_attr_reader name
         when :csv_integer
-          csv_attr_reader name, :separator => ","
+          csv_attr_reader name, separator: ","
         else
           convert_attr_reader name
         end

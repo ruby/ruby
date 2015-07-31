@@ -107,7 +107,7 @@ $arrow_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
-base_frame = TkFrame.new($arrow_demo).pack(:fill=>:both, :expand=>true)
+base_frame = TkFrame.new($arrow_demo).pack(fill::both, expand:true)
 
 # label
 TkLabel.new(base_frame, 'font'=>$font, 'wraplength'=>'5i', 'justify'=>'left',

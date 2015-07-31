@@ -26,7 +26,7 @@ def create_win32ole_makefile
     spec = nil
     checking_for('thread_specific', '%s') do
       spec = %w[__declspec(thread) __thread].find {|th|
-        try_compile("#{th} int foo;", "", :werror => true)
+        try_compile("#{th} int foo;", "", werror: true)
       }
       spec or 'no'
     end

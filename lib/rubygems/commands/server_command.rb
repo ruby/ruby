@@ -5,7 +5,7 @@ class Gem::Commands::ServerCommand < Gem::Command
 
   def initialize
     super 'server', 'Documentation and gem repository HTTP server',
-          :port => 8808, :gemdir => [], :daemon => false
+          port: 8808, gemdir: [], daemon: false
 
     OptionParser.accept :Port do |port|
       if port =~ /\A\d+\z/ then

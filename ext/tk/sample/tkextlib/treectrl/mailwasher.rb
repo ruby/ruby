@@ -7,81 +7,81 @@ def demoMailWasher(t)
   height = t.font.metrics(:linespace) + 2
   height = 18 if height < 18
 
-  t.configure(:showroot=>false, :showrootbutton=>false, :showbuttons=>false,
-              :showlines=>false, :itemheight=>height, :selectmode=>:browse,
-              :xscrollincrement=>1)
+  t.configure(showroot:false, showrootbutton:false, showbuttons:false,
+              showlines:false, itemheight:height, selectmode::browse,
+              xscrollincrement:1)
 
   pad = 4
 
   if $Version_1_1_OrLater
-    t.column_create(:text=>'Delete', :textpadx=>pad, :tag=>'delete')
-    t.column_create(:text=>'Bounce', :textpadx=>pad, :tag=>'bounce')
-    t.column_create(:text=>'Status', :width=>80, :textpadx=>pad,
-                    :tag=>'status')
-    t.column_create(:text=>'Size', :width=>40, :textpadx=>pad,
-                    :justify=>:right, :tag=>'size')
-    t.column_create(:text=>'From', :width=>140, :textpadx=>pad, :tag=>'from')
-    t.column_create(:text=>'Subject', :width=>240, :textpadx=>pad,
-                    :tag=>'subject')
-    t.column_create(:text=>'Received', :textpadx=>pad, :arrow=>:up,
-                    :arrowpad=>[4,0], :tag=>'received')
-    t.column_create(:text=>'Attachments', :textpadx=>pad, :tag=>'attachments')
+    t.column_create(text:'Delete', textpadx:pad, tag:'delete')
+    t.column_create(text:'Bounce', textpadx:pad, tag:'bounce')
+    t.column_create(text:'Status', width:80, textpadx:pad,
+                    tag:'status')
+    t.column_create(text:'Size', width:40, textpadx:pad,
+                    justify::right, tag:'size')
+    t.column_create(text:'From', width:140, textpadx:pad, tag:'from')
+    t.column_create(text:'Subject', width:240, textpadx:pad,
+                    tag:'subject')
+    t.column_create(text:'Received', textpadx:pad, arrow::up,
+                    arrowpad:[4,0], tag:'received')
+    t.column_create(text:'Attachments', textpadx:pad, tag:'attachments')
 
     t.state_define('CHECK')
 
-    t.element_create('imgCheck', :image, :image=>[
+    t.element_create('imgCheck', :image, image:[
                        @images['checked'], ['CHECK'], @images['unchecked'], []
                      ])
 
   else # TreeCtrl 1.0
-    t.column_configure(0, :text=>'Delete', :textpadx=>pad, :tag=>'delete')
-    t.column_configure(1, :text=>'Bounce', :textpadx=>pad, :tag=>'bounce')
-    t.column_configure(2, :text=>'Status', :width=>80, :textpadx=>pad,
-                       :tag=>'status')
-    t.column_configure(3, :text=>'Size', :width=>40, :textpadx=>pad,
-                       :justify=>:right, :tag=>'size')
-    t.column_configure(4, :text=>'From', :width=>140, :textpadx=>pad,
-                       :tag=>'from')
-    t.column_configure(5, :text=>'Subject', :width=>240, :textpadx=>pad,
-                       :tag=>'subject')
-    t.column_configure(6, :text=>'Received', :textpadx=>pad, :arrow=>:up,
-                       :arrowpad=>[4,0], :tag=>'received')
-    t.column_configure(7, :text=>'Attachments', :textpadx=>pad,
-                       :tag=>'attachments')
+    t.column_configure(0, text:'Delete', textpadx:pad, tag:'delete')
+    t.column_configure(1, text:'Bounce', textpadx:pad, tag:'bounce')
+    t.column_configure(2, text:'Status', width:80, textpadx:pad,
+                       tag:'status')
+    t.column_configure(3, text:'Size', width:40, textpadx:pad,
+                       justify::right, tag:'size')
+    t.column_configure(4, text:'From', width:140, textpadx:pad,
+                       tag:'from')
+    t.column_configure(5, text:'Subject', width:240, textpadx:pad,
+                       tag:'subject')
+    t.column_configure(6, text:'Received', textpadx:pad, arrow::up,
+                       arrowpad:[4,0], tag:'received')
+    t.column_configure(7, text:'Attachments', textpadx:pad,
+                       tag:'attachments')
 
-    t.element_create('imgOff', :image, :image=>@images['unchecked'])
-    t.element_create('imgOn', :image, :image=>@images['checked'])
+    t.element_create('imgOff', :image, image:@images['unchecked'])
+    t.element_create('imgOn', :image, image:@images['checked'])
   end
 
-  t.element_create('border', :rect, :open=>:nw, :outline=>'gray',
-                   :outlinewidth=>1, :fill=>[@SystemHighlight, ['selected']])
-  t.element_create('txtAny', :text, :lines=>1,
-                   :fill=>[@SystemHighlightText, ['selected']])
-  t.element_create('txtNone', :text, :text=>'none', :lines=>1,
-                   :fill=>[@SystemHighlightText, ['selected']])
-  t.element_create('txtYes', :text, :text=>'yes', :lines=>1,
-                   :fill=>[@SystemHighlightText, ['selected']])
-  t.element_create('txtNormal', :text, :text=>'Normal', :lines=>1,
-                   :fill=>[@SystemHighlightText, ['selected'], '#006800', []])
-  t.element_create('txtPossSpam', :text, :text=>'Possible Spam', :lines=>1,
-                   :fill=>[@SystemHighlightText, ['selected'], '#787800', []])
-  t.element_create('txtProbSpam', :text, :text=>'Probably Spam', :lines=>1,
-                   :fill=>[@SystemHighlightText, ['selected'], '#FF9000', []])
-  t.element_create('txtBlacklist', :text, :text=>'Blacklisted', :lines=>1,
-                   :fill=>[@SystemHighlightText, ['selected'], '#FF5800', []])
+  t.element_create('border', :rect, open::nw, outline:'gray',
+                   outlinewidth:1, fill:[@SystemHighlight, ['selected']])
+  t.element_create('txtAny', :text, lines:1,
+                   fill:[@SystemHighlightText, ['selected']])
+  t.element_create('txtNone', :text, text:'none', lines:1,
+                   fill:[@SystemHighlightText, ['selected']])
+  t.element_create('txtYes', :text, text:'yes', lines:1,
+                   fill:[@SystemHighlightText, ['selected']])
+  t.element_create('txtNormal', :text, text:'Normal', lines:1,
+                   fill:[@SystemHighlightText, ['selected'], '#006800', []])
+  t.element_create('txtPossSpam', :text, text:'Possible Spam', lines:1,
+                   fill:[@SystemHighlightText, ['selected'], '#787800', []])
+  t.element_create('txtProbSpam', :text, text:'Probably Spam', lines:1,
+                   fill:[@SystemHighlightText, ['selected'], '#FF9000', []])
+  t.element_create('txtBlacklist', :text, text:'Blacklisted', lines:1,
+                   fill:[@SystemHighlightText, ['selected'], '#FF5800', []])
 
   if $Version_1_1_OrLater
     s = t.style_create('styCheck')
     t.style_elements(s, ['border', 'imgCheck'])
-    t.style_layout(s, 'border', :detach=>true, :iexpand=>:es)
-    t.style_layout(s, 'imgCheck', :expand=>:news)
+    t.style_layout(s, 'border', detach:true, iexpand::es)
+    t.style_layout(s, 'imgCheck', expand::news)
   else
     ['Off', 'On'].each{|name|
       s = t.style_create('sty' << name)
       i = 'img' << name
       t.style_elements(s, ['border', i])
-      t.style_layout(s, 'border', :detach=>true, :iexpand=>:es)
-      t.style_layout(s, i, :expand=>:news)
+      t.style_layout(s, 'border', detach:true, iexpand::es)
+      t.style_layout(s, i, expand::news)
     }
   end
 
@@ -91,8 +91,8 @@ def demoMailWasher(t)
     s = t.style_create('sty' << name)
     e = 'txt' << name
     t.style_elements(s, ['border', e])
-    t.style_layout(s, 'border', :detach=>true, :iexpand=>:es)
-    t.style_layout(s, e, :padx=>pad, :squeeze=>:x, :expand=>:ns)
+    t.style_layout(s, 'border', detach:true, iexpand::es)
+    t.style_layout(s, e, padx:pad, squeeze::x, expand::ns)
   }
 
   [
@@ -156,42 +156,42 @@ def demoMailWasher(t)
                       order = :increasing
                       arrow = :up
                     end
-                    w.column_configure(sortColumn, :arrow=>:none)
+                    w.column_configure(sortColumn, arrow::none)
                     sortColumn = c
                   end
-                  w.column_configure(c, :arrow=>arrow)
+                  w.column_configure(c, arrow:arrow)
                   case w.column_cget(c, :tag)
                   when 'bounce', 'delete'
                     w.item_sort(:root, order,
                                 {
-                                  :column=>c,
-                                  :command=>proc{|item1, item2|
+                                  column:c,
+                                  command:proc{|item1, item2|
                                     compareOnOff(w, c, item1, item2)
                                   }
                                 },
-                                { :column=>'subject', :dictionary=>true })
+                                { column:'subject', dictionary:true })
                   when 'status'
                     w.item_sort(:root, order,
-                                { :column=>c, :dictionary=>true })
+                                { column:c, dictionary:true })
                   when 'from'
                     w.item_sort(:root, order,
-                                { :column=>c, :dictionary=>true },
-                                { :column=>'subject', :dictionary=>true })
+                                { column:c, dictionary:true },
+                                { column:'subject', dictionary:true })
                   when 'subject'
                     w.item_sort(:root, order,
-                                { :column=>c, :dictionary=>true })
+                                { column:c, dictionary:true })
                   when 'size'
                     w.item_sort(:root, order,
-                                { :column=>c, :dictionary=>true },
-                                { :column=>'subject', :dictionary=>true })
+                                { column:c, dictionary:true },
+                                { column:'subject', dictionary:true })
                   when 'received'
                     w.item_sort(:root, order,
-                                { :column=>c, :dictionary=>true },
-                                { :column=>'subject', :dictionary=>true })
+                                { column:c, dictionary:true },
+                                { column:'subject', dictionary:true })
                   when 'attachments'
                     w.item_sort(:root, order,
-                                { :column=>c, :dictionary=>true },
-                                { :column=>'subject', :dictionary=>true })
+                                { column:c, dictionary:true },
+                                { column:'subject', dictionary:true })
                   end
                 }, '%C %T')
 

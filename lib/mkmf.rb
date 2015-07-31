@@ -611,7 +611,7 @@ MSG
   end
 
   def try_cppflags(flags, opts = {})
-    try_header(MAIN_DOES_NOTHING, flags, {:werror => true}.update(opts))
+    try_header(MAIN_DOES_NOTHING, flags, {werror: true}.update(opts))
   end
 
   def append_cppflags(flags, *opts)
@@ -633,7 +633,7 @@ MSG
   end
 
   def try_cflags(flags, opts = {})
-    try_compile(MAIN_DOES_NOTHING, flags, {:werror => true}.update(opts))
+    try_compile(MAIN_DOES_NOTHING, flags, {werror: true}.update(opts))
   end
 
   def append_cflags(flags, *opts)
@@ -655,7 +655,7 @@ MSG
   end
 
   def try_ldflags(flags, opts = {})
-    try_link(MAIN_DOES_NOTHING, flags, {:werror => true}.update(opts))
+    try_link(MAIN_DOES_NOTHING, flags, {werror: true}.update(opts))
   end
 
   def append_ldflags(flags, *opts)
@@ -1405,7 +1405,7 @@ SRC
           u = "unsigned " if signed > 0
           prelude << "extern rbcv_typedef_ foo();"
           compat = UNIVERSAL_INTS.find {|t|
-            try_compile([prelude, "extern #{u}#{t} foo();"].join("\n"), opts, :werror=>true, &b)
+            try_compile([prelude, "extern #{u}#{t} foo();"].join("\n"), opts, werror:true, &b)
           }
         end
         if compat

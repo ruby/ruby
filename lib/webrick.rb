@@ -22,7 +22,7 @@
 #   require 'webrick'
 #
 #   root = File.expand_path '~/public_html'
-#   server = WEBrick::HTTPServer.new :Port => 8000, :DocumentRoot => root
+#   server = WEBrick::HTTPServer.new Port: 8000, DocumentRoot: root
 #
 # To run the server you will need to provide a suitable shutdown hook as
 # starting the server blocks the current thread:
@@ -75,8 +75,8 @@
 #
 #   server = WEBrick::HTTPServer.new # ...
 #
-#   vhost = WEBrick::HTTPServer.new :ServerName => 'vhost.example',
-#                                   :DoNotListen => true, # ...
+#   vhost = WEBrick::HTTPServer.new ServerName: 'vhost.example',
+#                                   DoNotListen: true, # ...
 #   vhost.mount '/', ...
 #
 #   server.virtual_host vhost
@@ -96,9 +96,9 @@
 #     %w[CN localhost],
 #   ]
 #
-#   server = WEBrick::HTTPServer.new(:Port => 8000,
-#                                    :SSLEnable => true,
-#                                    :SSLCertName => cert_name)
+#   server = WEBrick::HTTPServer.new(Port: 8000,
+#                                    SSLEnable: true,
+#                                    SSLCertName: cert_name)
 #
 # This will start the server with a self-generated self-signed certificate.
 # The certificate will be changed every time the server is restarted.
@@ -113,10 +113,10 @@
 #   cert = OpenSSL::X509::Certificate.new File.read '/path/to/cert.pem'
 #   pkey = OpenSSL::PKey::RSA.new File.read '/path/to/pkey.pem'
 #
-#   server = WEBrick::HTTPServer.new(:Port => 8000,
-#                                    :SSLEnable => true,
-#                                    :SSLCertificate => cert,
-#                                    :SSLPrivateKey => pkey)
+#   server = WEBrick::HTTPServer.new(Port: 8000,
+#                                    SSLEnable: true,
+#                                    SSLCertificate: cert,
+#                                    SSLPrivateKey: pkey)
 #
 # == Proxy Server
 #
@@ -125,7 +125,7 @@
 #   require 'webrick'
 #   require 'webrick/httpproxy'
 #
-#   proxy = WEBrick::HTTPProxyServer.new :Port => 8000
+#   proxy = WEBrick::HTTPProxyServer.new Port: 8000
 #
 #   trap 'INT' do proxy.shutdown end
 #
@@ -161,7 +161,7 @@
 #
 # Then create a server that does not listen by default:
 #
-#   server = WEBrick::HTTPServer.new :DoNotListen => true, # ...
+#   server = WEBrick::HTTPServer.new DoNotListen: true, # ...
 #
 # Then overwrite the listening sockets with the port 80 sockets:
 #
@@ -181,7 +181,7 @@
 #     [log_file, WEBrick::AccessLog::COMBINED_LOG_FORMAT],
 #   ]
 #
-#   server = WEBrick::HTTPServer.new :Logger => log, :AccessLog => access_log
+#   server = WEBrick::HTTPServer.new Logger: log, AccessLog: access_log
 #
 # See WEBrick::AccessLog for further log formats.
 #

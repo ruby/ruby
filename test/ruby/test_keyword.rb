@@ -34,7 +34,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(["bar", 424242, {}], f3(str: "bar"))
     assert_equal(["foo", 111111, {}], f3(num: 111111))
     assert_equal(["bar", 111111, {}], f3(str: "bar", num: 111111))
-    assert_equal(["bar", 424242, {:check=>true}], f3(str: "bar", check: true))
+    assert_equal(["bar", 424242, {check:true}], f3(str: "bar", check: true))
     assert_raise(ArgumentError) { f3("string") }
   end
 
@@ -58,7 +58,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(["bar", 424242, {}], f5(str: "bar"))
     assert_equal(["foo", 111111, {}], f5(num: 111111))
     assert_equal(["bar", 111111, {}], f5(str: "bar", num: 111111))
-    assert_equal(["bar", 424242, {:check=>true}], f5(str: "bar", check: true))
+    assert_equal(["bar", 424242, {check:true}], f5(str: "bar", check: true))
     assert_raise(ArgumentError) { f5("string") }
   end
 
@@ -72,7 +72,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(["bar", 424242, {}, nil], f6(str: "bar"))
     assert_equal(["foo", 111111, {}, nil], f6(num: 111111))
     assert_equal(["bar", 111111, {}, nil], f6(str: "bar", num: 111111))
-    assert_equal(["bar", 424242, {:check=>true}, nil], f6(str: "bar", check: true))
+    assert_equal(["bar", 424242, {check:true}, nil], f6(str: "bar", check: true))
     a = f6 {|x| x + 42 }
     assert_equal(["foo", 424242, {}], a[0, 3])
     assert_equal(43, a.last.call(1))
@@ -186,7 +186,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(["bar", 424242, {}], p3[str: "bar"])
     assert_equal(["foo", 111111, {}], p3[num: 111111])
     assert_equal(["bar", 111111, {}], p3[str: "bar", num: 111111])
-    assert_equal(["bar", 424242, {:check=>true}], p3[str: "bar", check: true])
+    assert_equal(["bar", 424242, {check:true}], p3[str: "bar", check: true])
     assert_equal(["foo", 424242, {}], p3["string"])
   end
 
@@ -202,7 +202,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(["bar", 424242, {}, nil], p4[str: "bar"])
     assert_equal(["foo", 111111, {}, nil], p4[num: 111111])
     assert_equal(["bar", 111111, {}, nil], p4[str: "bar", num: 111111])
-    assert_equal(["bar", 424242, {:check=>true}, nil], p4[str: "bar", check: true])
+    assert_equal(["bar", 424242, {check:true}, nil], p4[str: "bar", check: true])
     a = p4.call {|x| x + 42 }
     assert_equal(["foo", 424242, {}], a[0, 3])
     assert_equal(43, a.last.call(1))
@@ -408,8 +408,8 @@ class TestKeywordArguments < Test::Unit::TestCase
         super
       end
     end
-    assert_equal([42, {:bar=>"x"}], a.new.foo(42), bug8236)
-    assert_equal([42, {:bar=>"x"}], b.new.foo(42), bug8236)
+    assert_equal([42, {bar:"x"}], a.new.foo(42), bug8236)
+    assert_equal([42, {bar:"x"}], b.new.foo(42), bug8236)
   end
 
   def test_zsuper_only_named_kwrest
@@ -424,7 +424,7 @@ class TestKeywordArguments < Test::Unit::TestCase
         super
       end
     end
-    assert_equal({:bar=>"x"}, a.new.foo(bar: "x"), bug8416)
+    assert_equal({bar:"x"}, a.new.foo(bar: "x"), bug8416)
   end
 
   def test_zsuper_only_anonymous_kwrest
@@ -439,7 +439,7 @@ class TestKeywordArguments < Test::Unit::TestCase
         super
       end
     end
-    assert_equal({:bar=>"x"}, a.new.foo(bar: "x"), bug8416)
+    assert_equal({bar:"x"}, a.new.foo(bar: "x"), bug8416)
   end
 
   def test_precedence_of_keyword_arguments
@@ -450,7 +450,7 @@ class TestKeywordArguments < Test::Unit::TestCase
       end
     end
     assert_equal([{}, {}], a.new.foo({}))
-    assert_equal([{}, {:bar=>"x"}], a.new.foo({}, bar: "x"), bug8040)
+    assert_equal([{}, {bar:"x"}], a.new.foo({}, bar: "x"), bug8040)
   end
 
   def test_precedence_of_keyword_arguments_with_post_argument
@@ -460,7 +460,7 @@ class TestKeywordArguments < Test::Unit::TestCase
         [a, b, c, d, e, f, g]
       end
     end
-    assert_equal([1, 2, 1, [], {:f=>5}, 2, {}], a.new.foo(1, 2, f:5), bug8993)
+    assert_equal([1, 2, 1, [], {f:5}, 2, {}], a.new.foo(1, 2, f:5), bug8993)
   end
 
   def test_splat_keyword_nondestructive
@@ -556,7 +556,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     end
 
     assert_nothing_raised(TypeError, bug10659) {
-      assert_equal({:bar => "bar"}, obj.foo, bug10659)
+      assert_equal({bar: "bar"}, obj.foo, bug10659)
     }
   end
 

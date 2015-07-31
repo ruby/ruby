@@ -24,7 +24,7 @@ class TC_OpenStruct < Test::Unit::TestCase
     assert_not_equal(o1, o2)
 
     o2 = Object.new
-    o2.instance_eval{@table = {:a => 'b'}}
+    o2.instance_eval{@table = {a: 'b'}}
     assert_not_equal(o1, o2)
   end
 
@@ -50,7 +50,7 @@ class TC_OpenStruct < Test::Unit::TestCase
     assert_not_respond_to(o, :b)
     assert_raise(RuntimeError) {o.a = 'z'}
     assert_equal('a', o.a)
-    o = OpenStruct.new :a => 42
+    o = OpenStruct.new a: 42
     def o.frozen?; nil end
     o.freeze
     assert_raise(RuntimeError, '[ruby-core:22559]') {o.a = 1764}

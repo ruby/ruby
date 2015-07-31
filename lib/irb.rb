@@ -137,11 +137,11 @@ STDOUT.sync = true
 # This example can be used in your +.irbrc+
 #
 #     IRB.conf[:PROMPT][:MY_PROMPT] = { # name of prompt mode
-#       :AUTO_INDENT => true,           # enables auto-indent mode
-#       :PROMPT_I =>  ">> ",		# simple prompt
-#       :PROMPT_S => nil,		# prompt for continuated strings
-#       :PROMPT_C => nil,		# prompt for continuated statement
-#       :RETURN => "    ==>%s\n"	# format to return value
+#       AUTO_INDENT: true,           # enables auto-indent mode
+#       PROMPT_I:  ">> ",		# simple prompt
+#       PROMPT_S: nil,		# prompt for continuated strings
+#       PROMPT_C: nil,		# prompt for continuated statement
+#       RETURN: "    ==>%s\n"	# format to return value
 #     }
 #
 #     IRB.conf[:PROMPT_MODE] = :MY_PROMPT
@@ -165,10 +165,10 @@ STDOUT.sync = true
 # For instance, the default prompt mode is defined as follows:
 #
 #     IRB.conf[:PROMPT_MODE][:DEFAULT] = {
-#       :PROMPT_I => "%N(%m):%03n:%i> ",
-#       :PROMPT_S => "%N(%m):%03n:%i%l ",
-#       :PROMPT_C => "%N(%m):%03n:%i* ",
-#       :RETURN => "%s\n" # used to printf
+#       PROMPT_I: "%N(%m):%03n:%i> ",
+#       PROMPT_S: "%N(%m):%03n:%i%l ",
+#       PROMPT_C: "%N(%m):%03n:%i* ",
+#       RETURN: "%s\n" # used to printf
 #     }
 #
 # irb comes with a number of available modes:

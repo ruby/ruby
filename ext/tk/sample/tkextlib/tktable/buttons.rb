@@ -14,26 +14,26 @@ tab  = TkVariable.new_hash
 rows = 20
 cols = 20
 
-table = Tk::TkTable.new(:rows=>rows + 1, :cols=>cols + 1,
-                        :variable=>tab, :titlerows=>1, :titlecols=>1,
-                        :roworigin=>-1, :colorigin=>-1,
-                        :colwidth=>4, :width=>8, :height=>8,
-                        :cursor=>'top_left_arrow', :borderwidth=>2,
-                        :flashmode=>false, :state=>:disabled)
+table = Tk::TkTable.new(rows:rows + 1, cols:cols + 1,
+                        variable:tab, titlerows:1, titlecols:1,
+                        roworigin:-1, colorigin:-1,
+                        colwidth:4, width:8, height:8,
+                        cursor:'top_left_arrow', borderwidth:2,
+                        flashmode:false, state::disabled)
 
 sx = table.xscrollbar(TkScrollbar.new)
 sy = table.yscrollbar(TkScrollbar.new)
 
-Tk.grid(table, sy, :sticky=>:news)
-Tk.grid(sx, :sticky=>:ew)
+Tk.grid(table, sy, sticky::news)
+Tk.grid(sx, sticky::ew)
 
-Tk.root.grid_columnconfig(0, :weight=>1)
-Tk.root.grid_rowconfig(0, :weight=>1)
+Tk.root.grid_columnconfig(0, weight:1)
+Tk.root.grid_rowconfig(0, weight:1)
 
 # set up tags for the various states of the buttons
-table.tag_configure('OFF', :bg=>'red',    :relief=>:raised)
-table.tag_configure('ON',  :bg=>'green',  :relief=>:sunken)
-table.tag_configure('sel', :bg=>'gray75', :relief=>:flat)
+table.tag_configure('OFF', bg:'red',    relief::raised)
+table.tag_configure('ON',  bg:'green',  relief::sunken)
+table.tag_configure('sel', bg:'gray75', relief::flat)
 
 # clean up if mouse leaves the widget
 table.bind('Leave', proc{|w| w.selection_clear_all}, '%W')

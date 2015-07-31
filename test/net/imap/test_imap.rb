@@ -66,8 +66,8 @@ class IMAPTest < Test::Unit::TestCase
         imaps_test do |port|
           begin
             Net::IMAP.new("localhost",
-                          :port => port,
-                          :ssl => true)
+                          port: port,
+                          ssl: true)
           rescue SystemCallError
             skip $!
           end
@@ -80,8 +80,8 @@ class IMAPTest < Test::Unit::TestCase
         imaps_test do |port|
           begin
             Net::IMAP.new("localhost",
-                          :port => port,
-                          :ssl => { :ca_file => CA_FILE })
+                          port: port,
+                          ssl: { ca_file: CA_FILE })
           rescue SystemCallError
             skip $!
           end
@@ -93,8 +93,8 @@ class IMAPTest < Test::Unit::TestCase
       assert_nothing_raised do
         imaps_test do |port|
           Net::IMAP.new(SERVER_ADDR,
-                        :port => port,
-                        :ssl => { :verify_mode => OpenSSL::SSL::VERIFY_NONE })
+                        port: port,
+                        ssl: { verify_mode: OpenSSL::SSL::VERIFY_NONE })
         end
       end
     end
@@ -105,8 +105,8 @@ class IMAPTest < Test::Unit::TestCase
           # SERVER_ADDR is different from the hostname in the certificate,
           # so the following code should raise a SSLError.
           Net::IMAP.new(SERVER_ADDR,
-                        :port => port,
-                        :ssl => { :ca_file => CA_FILE })
+                        port: port,
+                        ssl: { ca_file: CA_FILE })
         end
       end
     end
@@ -116,8 +116,8 @@ class IMAPTest < Test::Unit::TestCase
     def test_starttls
       imap = nil
       starttls_test do |port|
-        imap = Net::IMAP.new("localhost", :port => port)
-        imap.starttls(:ca_file => CA_FILE)
+        imap = Net::IMAP.new("localhost", port: port)
+        imap.starttls(ca_file: CA_FILE)
         imap
       end
     rescue SystemCallError
@@ -145,7 +145,7 @@ class IMAPTest < Test::Unit::TestCase
       end
     end
     begin
-      imap = Net::IMAP.new(SERVER_ADDR, :port => port)
+      imap = Net::IMAP.new(SERVER_ADDR, port: port)
       assert_raise(EOFError) do
         imap.logout
       end
@@ -178,7 +178,7 @@ class IMAPTest < Test::Unit::TestCase
     end
 
     begin
-      imap = Net::IMAP.new(SERVER_ADDR, :port => port)
+      imap = Net::IMAP.new(SERVER_ADDR, port: port)
       responses = []
       imap.idle do |res|
         responses.push(res)
@@ -224,7 +224,7 @@ class IMAPTest < Test::Unit::TestCase
       end
     end
     begin
-      imap = Net::IMAP.new(SERVER_ADDR, :port => port)
+      imap = Net::IMAP.new(SERVER_ADDR, port: port)
       begin
         th = Thread.current
         m = Monitor.new
@@ -273,7 +273,7 @@ class IMAPTest < Test::Unit::TestCase
       end
     end
     begin
-      imap = Net::IMAP.new(SERVER_ADDR, :port => port)
+      imap = Net::IMAP.new(SERVER_ADDR, port: port)
       assert_raise(Net::IMAP::Error) do
         imap.idle_done
       end
@@ -297,7 +297,7 @@ class IMAPTest < Test::Unit::TestCase
       end
     end
     begin
-      imap = Net::IMAP.new(SERVER_ADDR, :port => port)
+      imap = Net::IMAP.new(SERVER_ADDR, port: port)
       assert_raise(Net::IMAP::ByeResponseError) do
         imap.login("user", "password")
       end
@@ -320,7 +320,7 @@ class IMAPTest < Test::Unit::TestCase
       end
     end
     begin
-      imap = Net::IMAP.new(SERVER_ADDR, :port => port)
+      imap = Net::IMAP.new(SERVER_ADDR, port: port)
       imap.instance_eval do
         def @sock.shutdown(*args)
           super
@@ -354,7 +354,7 @@ class IMAPTest < Test::Unit::TestCase
       end
     end
     threads << Thread.start do
-      imap = Net::IMAP.new(SERVER_ADDR, :port => port)
+      imap = Net::IMAP.new(SERVER_ADDR, port: port)
       begin
         m = Monitor.new
         in_idle = false
@@ -405,7 +405,7 @@ class IMAPTest < Test::Unit::TestCase
       end
     end
     assert_raise(Net::IMAP::Error) do
-      Net::IMAP.new(SERVER_ADDR, :port => port)
+      Net::IMAP.new(SERVER_ADDR, port: port)
     end
   end
 
@@ -441,7 +441,7 @@ class IMAPTest < Test::Unit::TestCase
       end
     end
     begin
-      imap = Net::IMAP.new(SERVER_ADDR, :port => port)
+      imap = Net::IMAP.new(SERVER_ADDR, port: port)
       assert_raise(Net::IMAP::DataFormatError) do
         imap.send(:send_command, "TEST", -1)
       end

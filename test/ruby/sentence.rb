@@ -11,7 +11,7 @@
 #
 #  require 'sentence'
 #  Sentence.each({
-#    :exp => [["num"],
+#    exp: [["num"],
 #             [:exp, "+", :exp],
 #             [:exp, "-", :exp],
 #             [:exp, "*", :exp],
@@ -35,12 +35,12 @@
 # Some arithmetic expressions including parenthesis can be generated as follows.
 #
 #  syntax = {
-#    :factor => [["n"],
+#    factor: [["n"],
 #                ["(", :exp, ")"]],
-#    :term => [[:factor],
+#    term: [[:factor],
 #              [:term, "*", :factor],
 #              [:term, "/", :factor]],
-#    :exp => [[:term],
+#    exp: [[:term],
 #             [:exp, "+", :term],
 #             [:exp, "-", :term]]
 #  }
@@ -315,7 +315,7 @@ class Sentence
   # Sentence.each yields the block with a generated sentence.
   #
   #  Sentence.each({
-  #    :exp => [["n"],
+  #    exp: [["n"],
   #             [:exp, "+", :exp],
   #             [:exp, "*", :exp]]
   #    }, :exp, 1) {|sent| p sent }
@@ -325,7 +325,7 @@ class Sentence
   #  #<Sentence: ("n") "*" ("n")>
   #
   #  Sentence.each({
-  #    :exp => [["n"],
+  #    exp: [["n"],
   #             [:exp, "+", :exp],
   #             [:exp, "*", :exp]]
   #    }, :exp, 2) {|sent| p sent }
@@ -358,57 +358,57 @@ class Sentence
   # sequences are modified to derive only non-empty sequences.
   #
   #  Sentence.expand_syntax({
-  #    :underivable1 => [],
-  #    :underivable2 => [[:underivable1]],
-  #    :underivable3 => [[:underivable3]],
-  #    :empty_only1 => [[]],
-  #    :empty_only2 => [[:just_empty1, :just_empty1]],
-  #    :empty_or_not => [[], ["foo"]],
-  #    :empty_or_not_2 => [[:empty_or_not, :empty_or_not]],
-  #    :empty_or_not_3 => [[:empty_or_not, :empty_or_not, :empty_or_not]],
-  #    :empty_or_not_4 => [[:empty_or_not_2, :empty_or_not_2]],
-  #    :channel1 => [[:channeled_data]],
-  #    :channeled_data => [["a", "b"], ["c", "d"]],
-  #    :single_choice => [["single", "choice"]],
-  #    :single_choice_2 => [[:single_choice, :single_choice]],
+  #    underivable1: [],
+  #    underivable2: [[:underivable1]],
+  #    underivable3: [[:underivable3]],
+  #    empty_only1: [[]],
+  #    empty_only2: [[:just_empty1, :just_empty1]],
+  #    empty_or_not: [[], ["foo"]],
+  #    empty_or_not_2: [[:empty_or_not, :empty_or_not]],
+  #    empty_or_not_3: [[:empty_or_not, :empty_or_not, :empty_or_not]],
+  #    empty_or_not_4: [[:empty_or_not_2, :empty_or_not_2]],
+  #    channel1: [[:channeled_data]],
+  #    channeled_data: [["a", "b"], ["c", "d"]],
+  #    single_choice: [["single", "choice"]],
+  #    single_choice_2: [[:single_choice, :single_choice]],
   #  })
   #  #=>
   #  {
-  #   :underivable1=>[], # underivable rules are simplified to [].
-  #   :underivable2=>[],
-  #   :underivable3=>[],
-  #   :empty_only1=>[], # derivation to empty sequence are removed.
-  #   :empty_only2=>[],
-  #   :empty_or_not=>[["foo"]], # empty sequences are removed too.
-  #   :empty_or_not_2=>[["foo"], ["foo", "foo"]],
-  #   :empty_or_not_3=>[["foo"], ["foo", "foo"], ["foo", "foo", "foo"]],
-  #   :empty_or_not_4=> [["foo"], ["foo", "foo"], [:empty_or_not_2, :empty_or_not_2]],
-  #   :channel1=>[["a", "b"], ["c", "d"]], # channel rules are removed.
-  #   :channeled_data=>[["a", "b"], ["c", "d"]],
-  #   :single_choice=>[["single", "choice"]], # single choice rules are expanded.
-  #   :single_choice_2=>[["single", "choice", "single", "choice"]],
+  #   underivable1:[], # underivable rules are simplified to [].
+  #   underivable2:[],
+  #   underivable3:[],
+  #   empty_only1:[], # derivation to empty sequence are removed.
+  #   empty_only2:[],
+  #   empty_or_not:[["foo"]], # empty sequences are removed too.
+  #   empty_or_not_2:[["foo"], ["foo", "foo"]],
+  #   empty_or_not_3:[["foo"], ["foo", "foo"], ["foo", "foo", "foo"]],
+  #   empty_or_not_4: [["foo"], ["foo", "foo"], [:empty_or_not_2, :empty_or_not_2]],
+  #   channel1:[["a", "b"], ["c", "d"]], # channel rules are removed.
+  #   channeled_data:[["a", "b"], ["c", "d"]],
+  #   single_choice:[["single", "choice"]], # single choice rules are expanded.
+  #   single_choice_2:[["single", "choice", "single", "choice"]],
   #  }
   #
   #  Sentence.expand_syntax({
-  #    :factor => [["n"],
+  #    factor: [["n"],
   #                ["(", :exp, ")"]],
-  #    :term => [[:factor],
+  #    term: [[:factor],
   #              [:term, "*", :factor],
   #              [:term, "/", :factor]],
-  #    :exp => [[:term],
+  #    exp: [[:term],
   #             [:exp, "+", :term],
   #             [:exp, "-", :term]]
   #  })
   #  #=>
-  #  {:exp=> [["n"],
+  #  {exp: [["n"],
   #           ["(", :exp, ")"],
   #           [:exp, "+", :term],
   #           [:exp, "-", :term],
   #           [:term, "*", :factor],
   #           [:term, "/", :factor]],
-  #   :factor=> [["n"],
+  #   factor: [["n"],
   #              ["(", :exp, ")"]],
-  #   :term=> [["n"],
+  #   term: [["n"],
   #            ["(", :exp, ")"],
   #            [:term, "*", :factor],
   #            [:term, "/", :factor]]

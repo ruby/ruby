@@ -17,10 +17,10 @@ cmd = Proc.new{|txt|
   if TkCore::INTERP.safe?
     # safeTk doesn't have permission to call 'wm' command
   else
-    root = TkRoot.new(:title=>'timer sample')
+    root = TkRoot.new(title:'timer sample')
   end
-  label = TkLabel.new(:parent=>root, :relief=>:raised, :width=>10) \
-                  .pack(:side=>:bottom, :fill=>:both)
+  label = TkLabel.new(parent:root, relief::raised, width:10) \
+                  .pack(side::bottom, fill::both)
 
   tick = proc{|aobj|
     cnt = aobj.return_value + 5
@@ -31,24 +31,24 @@ cmd = Proc.new{|txt|
   timer = TkTimer.new(50, -1, tick).start(0, proc{ label.text('0.00'); 0 })
 
 =begin
-  TkButton.new(:text=>'Start') {
+  TkButton.new(text:'Start') {
     command proc{ timer.continue unless timer.running? }
-    pack(:side=>:left, :fill=>:both, :expand=>true)
+    pack(side::left, fill::both, expand:true)
   }
-  TkButton.new(:text=>'Restart') {
+  TkButton.new(text:'Restart') {
     command proc{ timer.restart(0, proc{ label.text('0.00'); 0 }) }
     pack('side'=>'right','fill'=>'both','expand'=>'yes')
   }
-  TkButton.new(:text=>'Stop') {
+  TkButton.new(text:'Stop') {
     command proc{ timer.stop if timer.running? }
     pack('side'=>'right','fill'=>'both','expand'=>'yes')
   }
 =end
-  b_start = TkButton.new(:text=>'Start', :state=>:disabled) {
-    pack(:side=>:left, :fill=>:both, :expand=>true)
+  b_start = TkButton.new(text:'Start', state::disabled) {
+    pack(side::left, fill::both, expand:true)
   }
 
-  b_stop  = TkButton.new(:text=>'Stop', :state=>:normal) {
+  b_stop  = TkButton.new(text:'Stop', state::normal) {
     pack('side'=>'left', 'fill'=>'both', 'expand'=>'yes')
   }
 
@@ -64,7 +64,7 @@ cmd = Proc.new{|txt|
     b_stop.state(:disabled)
   }
 
-  TkButton.new(:text=>'Reset', :state=>:normal) {
+  TkButton.new(text:'Reset', state::normal) {
     command { timer.reset }
     pack('side'=>'right', 'fill'=>'both', 'expand'=>'yes')
   }
@@ -80,7 +80,7 @@ safe_slave2.eval_proc(cmd, 'safe2')      # label -> .w00020
 cmd.call('master')                       # label -> .w00024
 
 #second_master = MultiTkIp.new(&cmd)
-#second_master = MultiTkIp.new(:safe=>2){p [:second_master, $SAFE]}
+#second_master = MultiTkIp.new(safe:2){p [:second_master, $SAFE]}
 
 TkTimer.new(2000, -1, proc{p ['safe1', safe_slave1.deleted?]}).start
 TkTimer.new(2000, -1, proc{p ['safe2', safe_slave2.deleted?]}).start

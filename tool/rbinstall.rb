@@ -188,7 +188,7 @@ def makedirs(dirs)
       File.directory?(realdir)
     end
   end.compact!
-  super(dirs, :mode => $dir_mode) unless dirs.empty?
+  super(dirs, mode: $dir_mode) unless dirs.empty?
 end
 
 FalseProc = proc {false}
@@ -341,23 +341,23 @@ load_relative = config_h[/^\s*#\s*define\s+LOAD_RELATIVE\s+(\d+)/, 1].to_i.nonze
 install?(:local, :arch, :bin, :'bin-arch') do
   prepare "binary commands", bindir
 
-  install ruby_install_name+exeext, bindir, :mode => $prog_mode, :strip => $strip
+  install ruby_install_name+exeext, bindir, mode: $prog_mode, strip: $strip
   if rubyw_install_name and !rubyw_install_name.empty?
-    install rubyw_install_name+exeext, bindir, :mode => $prog_mode, :strip => $strip
+    install rubyw_install_name+exeext, bindir, mode: $prog_mode, strip: $strip
   end
   if File.exist? goruby_install_name+exeext
-    install goruby_install_name+exeext, bindir, :mode => $prog_mode, :strip => $strip
+    install goruby_install_name+exeext, bindir, mode: $prog_mode, strip: $strip
   end
   if enable_shared and dll != lib
-    install dll, bindir, :mode => $prog_mode, :strip => $strip
+    install dll, bindir, mode: $prog_mode, strip: $strip
   end
 end
 
 install?(:local, :arch, :lib) do
   prepare "base libraries", libdir
 
-  install lib, libdir, :mode => $prog_mode, :strip => $strip unless lib == arc
-  install arc, libdir, :mode => $data_mode
+  install lib, libdir, mode: $prog_mode, strip: $strip unless lib == arc
+  install arc, libdir, mode: $data_mode
   if dll == lib and dll != arc
     for link in CONFIG["LIBRUBY_ALIASES"].split
       ln_sf(dll, File.join(libdir, link))
@@ -365,10 +365,10 @@ install?(:local, :arch, :lib) do
   end
 
   prepare "arch files", archlibdir
-  install "rbconfig.rb", archlibdir, :mode => $data_mode
+  install "rbconfig.rb", archlibdir, mode: $data_mode
   if CONFIG["ARCHFILE"]
     for file in CONFIG["ARCHFILE"].split
-      install file, archlibdir, :mode => $data_mode
+      install file, archlibdir, mode: $data_mode
     end
   end
 end
@@ -377,43 +377,43 @@ install?(:local, :arch, :data) do
   pc = CONFIG["ruby_pc"]
   if pc and File.file?(pc) and File.size?(pc)
     prepare "pkgconfig data", pkgconfigdir = File.join(libdir, "pkgconfig")
-    install pc, pkgconfigdir, :mode => $data_mode
+    install pc, pkgconfigdir, mode: $data_mode
   end
 end
 
 install?(:ext, :arch, :'ext-arch') do
   prepare "extension objects", archlibdir
   noinst = %w[-* -*/] | (CONFIG["no_install_files"] || "").split
-  install_recursive("#{$extout}/#{CONFIG['arch']}", archlibdir, :no_install => noinst, :mode => $prog_mode, :strip => $strip)
+  install_recursive("#{$extout}/#{CONFIG['arch']}", archlibdir, no_install: noinst, mode: $prog_mode, strip: $strip)
   prepare "extension objects", sitearchlibdir
   prepare "extension objects", vendorarchlibdir
 end
 install?(:ext, :arch, :hdr, :'arch-hdr') do
   prepare "extension headers", archhdrdir
-  install_recursive("#{$extout}/include/#{CONFIG['arch']}", archhdrdir, :glob => "*.h", :mode => $data_mode)
+  install_recursive("#{$extout}/include/#{CONFIG['arch']}", archhdrdir, glob: "*.h", mode: $data_mode)
 end
 install?(:ext, :comm, :'ext-comm') do
   prepare "extension scripts", rubylibdir
-  install_recursive("#{$extout}/common", rubylibdir, :mode => $data_mode)
+  install_recursive("#{$extout}/common", rubylibdir, mode: $data_mode)
   prepare "extension scripts", sitelibdir
   prepare "extension scripts", vendorlibdir
 end
 install?(:ext, :comm, :hdr, :'comm-hdr') do
   hdrdir = rubyhdrdir + "/ruby"
   prepare "extension headers", hdrdir
-  install_recursive("#{$extout}/include/ruby", hdrdir, :glob => "*.h", :mode => $data_mode)
+  install_recursive("#{$extout}/include/ruby", hdrdir, glob: "*.h", mode: $data_mode)
 end
 
 install?(:doc, :rdoc) do
   if $rdocdir
     ridatadir = File.join(CONFIG['ridir'], CONFIG['ruby_version'], "system")
     prepare "rdoc", ridatadir
-    install_recursive($rdocdir, ridatadir, :mode => $data_mode)
+    install_recursive($rdocdir, ridatadir, mode: $data_mode)
   end
 end
 install?(:doc, :capi) do
   prepare "capi-docs", docdir
-  install_recursive "doc/capi", docdir+"/capi", :mode => $data_mode
+  install_recursive "doc/capi", docdir+"/capi", mode: $data_mode
 end
 
 if load_relative
@@ -471,7 +471,7 @@ install?(:local, :comm, :bin, :'bin-comm') do
   postbatch = PROLOG_SCRIPT ? "};{\n#{PROLOG_SCRIPT.sub(/\A(?:#.*\n)*/, '')}" : ''
   postbatch << ">,\n}\n"
   postbatch.gsub!(/(?=\n)/, ' #')
-  install_recursive(File.join(srcdir, "bin"), bindir, :maxdepth => 1) do |src, cmd|
+  install_recursive(File.join(srcdir, "bin"), bindir, maxdepth: 1) do |src, cmd|
     cmd = cmd.sub(/[^\/]*\z/m) {|n| RbConfig.expand(trans[n])}
 
     shebang, body = open(src, "rb") do |f|
@@ -506,7 +506,7 @@ end
 install?(:local, :comm, :lib) do
   prepare "library scripts", rubylibdir
   noinst = %w[README* *.txt *.rdoc *.gemspec]
-  install_recursive(File.join(srcdir, "lib"), rubylibdir, :no_install => noinst, :mode => $data_mode)
+  install_recursive(File.join(srcdir, "lib"), rubylibdir, no_install: noinst, mode: $data_mode)
 end
 
 install?(:local, :comm, :hdr, :'comm-hdr') do
@@ -517,7 +517,7 @@ install?(:local, :comm, :hdr, :'comm-hdr') do
     noinst << "win32.h"
   end
   noinst = nil if noinst.empty?
-  install_recursive(File.join(srcdir, "include"), rubyhdrdir, :no_install => noinst, :glob => "*.h", :mode => $data_mode)
+  install_recursive(File.join(srcdir, "include"), rubyhdrdir, no_install: noinst, glob: "*.h", mode: $data_mode)
 end
 
 install?(:local, :comm, :man) do
@@ -539,7 +539,7 @@ install?(:local, :comm, :man) do
     destfile = File.join(destdir, "#{destname}.#{section}")
 
     if $mantype == "doc"
-      install mdoc, destfile, :mode => $data_mode
+      install mdoc, destfile, mode: $data_mode
     else
       class << (w = [])
         alias print push
@@ -645,9 +645,9 @@ module RbInstall
         File.chmod(0700, destination_dir)
         mode = pattern == "bin/*" ? $script_mode : $data_mode
         install_recursive(path, without_destdir(destination_dir),
-                          :glob => pattern,
-                          :no_install => "*.gemspec",
-                          :mode => mode)
+                          glob: pattern,
+                          no_install: "*.gemspec",
+                          mode: mode)
         File.chmod($dir_mode, destination_dir)
       end
     end
@@ -680,7 +680,7 @@ end
 
 install?(:ext, :comm, :gem) do
   gem_dir = Gem.default_dir
-  directories = Gem.ensure_gem_subdirectories(gem_dir, :mode => $dir_mode)
+  directories = Gem.ensure_gem_subdirectories(gem_dir, mode: $dir_mode)
   prepare "default gems", gem_dir, directories
 
   spec_dir = File.join(gem_dir, directories.grep(/^spec/)[0])
@@ -709,27 +709,27 @@ install?(:ext, :comm, :gem) do
       makedirs(bin_dir)
 
       execs = gemspec.executables.map {|exec| File.join(srcdir, 'bin', exec)}
-      install(execs, bin_dir, :mode => $script_mode)
+      install(execs, bin_dir, mode: $script_mode)
     end
   end
 end
 
 install?(:ext, :comm, :gem) do
   gem_dir = Gem.default_dir
-  directories = Gem.ensure_gem_subdirectories(gem_dir, :mode => $dir_mode)
+  directories = Gem.ensure_gem_subdirectories(gem_dir, mode: $dir_mode)
   prepare "bundle gems", gem_dir, directories
   install_dir = with_destdir(gem_dir)
   installed_gems = {}
   options = {
-    :install_dir => install_dir,
-    :bin_dir => with_destdir(bindir),
-    :domain => :local,
-    :ignore_dependencies => true,
-    :dir_mode => $dir_mode,
-    :data_mode => $data_mode,
-    :prog_mode => $prog_mode,
-    :wrappers => true,
-    :format_executable => true,
+    install_dir: install_dir,
+    bin_dir: with_destdir(bindir),
+    domain: :local,
+    ignore_dependencies: true,
+    dir_mode: $dir_mode,
+    data_mode: $data_mode,
+    prog_mode: $prog_mode,
+    wrappers: true,
+    format_executable: true,
   }
   Gem::Specification.each_spec([srcdir+'/gems/*']) do |spec|
     ins = RbInstall::UnpackedInstaller.new(spec, options)

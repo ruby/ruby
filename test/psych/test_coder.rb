@@ -85,7 +85,7 @@ module Psych
       end
 
       def encode_with coder
-        coder.represent_map self.class.name, { "string" => 'a', :symbol => 'b' }
+        coder.represent_map self.class.name, { "string" => 'a', symbol: 'b' }
       end
     end
 
@@ -153,7 +153,7 @@ module Psych
 
     def test_represent_map
       thing = Psych.load(Psych.dump(RepresentWithMap.new))
-      assert_equal({ "string" => 'a', :symbol => 'b' }, thing.map)
+      assert_equal({ "string" => 'a', symbol: 'b' }, thing.map)
     end
 
     def test_represent_sequence

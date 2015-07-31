@@ -155,7 +155,7 @@ class TkPhotoImage<TkImage
   # == Examples of use :
   # === Create an empty image of 300x200 pixels
   #
-  #		image = TkPhotoImage.new(:height => 200, :width => 300)
+  #		image = TkPhotoImage.new(height: 200, width: 300)
   #
   # === Create an image from a file
   #

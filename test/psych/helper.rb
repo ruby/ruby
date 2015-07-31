@@ -52,7 +52,7 @@ module Psych
       assert_equal( obj, Psych::parse( obj.psych_to_yaml ).transform )
       assert_equal( obj, Psych::load(
         obj.psych_to_yaml(
-          :UseVersion => true, :UseHeader => true, :SortKeys => true
+          UseVersion: true, UseHeader: true, SortKeys: true
         )
       ))
     end

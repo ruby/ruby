@@ -767,7 +767,7 @@ class CGI
   #
   # <tt>tag_maker</tt>::
   #   This is the same as using the +options_hash+ form with the value <tt>{
-  #   :tag_maker => tag_maker }</tt> Note that it is recommended to use the
+  #   tag_maker: tag_maker }</tt> Note that it is recommended to use the
   #   +options_hash+ form, since it also allows you specify the charset you
   #   will accept.
   # <tt>options_hash</tt>::
@@ -786,7 +786,7 @@ class CGI
   #
   #     when specified as "EUC-JP":
   #
-  #         cgi=CGI.new(:accept_charset => "EUC-JP") # => "EUC-JP"
+  #         cgi=CGI.new(accept_charset: "EUC-JP") # => "EUC-JP"
   #
   #   <tt>:tag_maker</tt>::
   #     String that specifies which version of the HTML generation methods to
@@ -808,16 +808,16 @@ class CGI
   #
   #     Default is 128 * 1024 * 1024 bytes
   #
-  #         cgi=CGI.new(:max_multipart_length => 268435456) # simple scalar
+  #         cgi=CGI.new(max_multipart_length: 268435456) # simple scalar
   #
-  #         cgi=CGI.new(:max_multipart_length => -> {check_filesystem}) # lambda
+  #         cgi=CGI.new(max_multipart_length: -> {check_filesystem}) # lambda
   #
   # <tt>block</tt>::
   #   If provided, the block is called when an invalid encoding is
   #   encountered. For example:
   #
   #     encoding_errors={}
-  #     cgi=CGI.new(:accept_charset=>"EUC-JP") do |name,value|
+  #     cgi=CGI.new(accept_charset:"EUC-JP") do |name,value|
   #       encoding_errors[name] = value
   #     end
   #
@@ -830,8 +830,8 @@ class CGI
   def initialize(options = {}, &block) # :yields: name, value
     @accept_charset_error_block = block_given? ? block : nil
     @options={
-      :accept_charset=>@@accept_charset,
-      :max_multipart_length=>@@max_multipart_length
+      accept_charset:@@accept_charset,
+      max_multipart_length:@@max_multipart_length
     }
     case options
     when Hash

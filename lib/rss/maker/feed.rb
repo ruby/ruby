@@ -72,7 +72,7 @@ module RSS
 
           def _set_default_values(&block)
             keep = {
-              :id => id,
+              id: id,
             }
             self.id ||= about
             super(&block)
@@ -215,7 +215,7 @@ module RSS
 
             def _set_default_values(&block)
               keep = {
-                :id => id,
+                id: id,
               }
               self.id ||= link
               super(&block)

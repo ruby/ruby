@@ -122,9 +122,9 @@ class Gem::Package::TarWriter
     final_pos = @io.pos
     @io.pos = init_pos
 
-    header = Gem::Package::TarHeader.new :name => name, :mode => mode,
-                                         :size => size, :prefix => prefix,
-                                         :mtime => Time.now
+    header = Gem::Package::TarHeader.new name: name, mode: mode,
+                                         size: size, prefix: prefix,
+                                         mtime: Time.now
 
     @io.write header
     @io.pos = final_pos
@@ -215,9 +215,9 @@ class Gem::Package::TarWriter
 
     name, prefix = split_name name
 
-    header = Gem::Package::TarHeader.new(:name => name, :mode => mode,
-                                         :size => size, :prefix => prefix,
-                                         :mtime => Time.now).to_s
+    header = Gem::Package::TarHeader.new(name: name, mode: mode,
+                                         size: size, prefix: prefix,
+                                         mtime: Time.now).to_s
 
     @io.write header
     os = BoundedStream.new @io, size
@@ -241,11 +241,11 @@ class Gem::Package::TarWriter
 
     name, prefix = split_name name
 
-    header = Gem::Package::TarHeader.new(:name => name, :mode => mode,
-                                         :size => 0, :typeflag => "2",
-                                         :linkname => target,
-                                         :prefix => prefix,
-                                         :mtime => Time.now).to_s
+    header = Gem::Package::TarHeader.new(name: name, mode: mode,
+                                         size: 0, typeflag: "2",
+                                         linkname: target,
+                                         prefix: prefix,
+                                         mtime: Time.now).to_s
 
     @io.write header
 
@@ -295,10 +295,10 @@ class Gem::Package::TarWriter
 
     name, prefix = split_name(name)
 
-    header = Gem::Package::TarHeader.new :name => name, :mode => mode,
-                                         :typeflag => "5", :size => 0,
-                                         :prefix => prefix,
-                                         :mtime => Time.now
+    header = Gem::Package::TarHeader.new name: name, mode: mode,
+                                         typeflag: "5", size: 0,
+                                         prefix: prefix,
+                                         mtime: Time.now
 
     @io.write header
 

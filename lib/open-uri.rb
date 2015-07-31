@@ -73,7 +73,7 @@ end
 # The environment variables such as http_proxy, https_proxy and ftp_proxy
 # are in effect by default. Here we disable proxy:
 #
-#   open("http://www.ruby-lang.org/en/", :proxy => nil) {|f|
+#   open("http://www.ruby-lang.org/en/", proxy: nil) {|f|
 #     # ...
 #   }
 #
@@ -96,17 +96,17 @@ end
 
 module OpenURI
   Options = {
-    :proxy => true,
-    :proxy_http_basic_authentication => true,
-    :progress_proc => true,
-    :content_length_proc => true,
-    :http_basic_authentication => true,
-    :read_timeout => true,
-    :open_timeout => true,
-    :ssl_ca_cert => nil,
-    :ssl_verify_mode => nil,
-    :ftp_active_mode => false,
-    :redirect => true,
+    proxy: true,
+    proxy_http_basic_authentication: true,
+    progress_proc: true,
+    content_length_proc: true,
+    http_basic_authentication: true,
+    read_timeout: true,
+    open_timeout: true,
+    ssl_ca_cert: nil,
+    ssl_verify_mode: nil,
+    ftp_active_mode: false,
+    redirect: true,
   }
 
   def OpenURI.check_options(options) # :nodoc:
@@ -580,11 +580,11 @@ module OpenURI
     #
     # [:proxy]
     #  Synopsis:
-    #    :proxy => "http://proxy.foo.com:8000/"
-    #    :proxy => URI.parse("http://proxy.foo.com:8000/")
-    #    :proxy => true
-    #    :proxy => false
-    #    :proxy => nil
+    #    proxy: "http://proxy.foo.com:8000/"
+    #    proxy: URI.parse("http://proxy.foo.com:8000/")
+    #    proxy: true
+    #    proxy: false
+    #    proxy: nil
     #
     #  If :proxy option is specified, the value should be String, URI,
     #  boolean or nil.
@@ -600,9 +600,9 @@ module OpenURI
     #
     # [:proxy_http_basic_authentication]
     #  Synopsis:
-    #    :proxy_http_basic_authentication =>
+    #    proxy_http_basic_authentication:
     #      ["http://proxy.foo.com:8000/", "proxy-user", "proxy-password"]
-    #    :proxy_http_basic_authentication =>
+    #    proxy_http_basic_authentication:
     #      [URI.parse("http://proxy.foo.com:8000/"),
     #       "proxy-user", "proxy-password"]
     #
@@ -618,7 +618,7 @@ module OpenURI
     #
     # [:http_basic_authentication]
     #  Synopsis:
-    #    :http_basic_authentication=>[user, password]
+    #    http_basic_authentication:[user, password]
     #
     #  If :http_basic_authentication is specified,
     #  the value should be an array which contains 2 strings:
@@ -627,7 +627,7 @@ module OpenURI
     #
     # [:content_length_proc]
     #  Synopsis:
-    #    :content_length_proc => lambda {|content_length| ... }
+    #    content_length_proc: lambda {|content_length| ... }
     #
     #  If :content_length_proc option is specified, the option value procedure
     #  is called before actual transfer is started.
@@ -641,7 +641,7 @@ module OpenURI
     #
     # [:progress_proc]
     #  Synopsis:
-    #    :progress_proc => lambda {|size| ...}
+    #    progress_proc: lambda {|size| ...}
     #
     #  If :progress_proc option is specified, the proc is called with one
     #  argument each time when `open' gets content fragment from network.
@@ -656,56 +656,56 @@ module OpenURI
     #
     #    pbar = nil
     #    open("http://...",
-    #      :content_length_proc => lambda {|t|
+    #      content_length_proc: lambda {|t|
     #        if t && 0 < t
     #          pbar = ProgressBar.new("...", t)
     #          pbar.file_transfer_mode
     #        end
     #      },
-    #      :progress_proc => lambda {|s|
+    #      progress_proc: lambda {|s|
     #        pbar.set s if pbar
     #      }) {|f| ... }
     #
     # [:read_timeout]
     #  Synopsis:
-    #    :read_timeout=>nil     (no timeout)
-    #    :read_timeout=>10      (10 second)
+    #    read_timeout:nil     (no timeout)
+    #    read_timeout:10      (10 second)
     #
     #  :read_timeout option specifies a timeout of read for http connections.
     #
     # [:open_timeout]
     #  Synopsis:
-    #    :open_timeout=>nil     (no timeout)
-    #    :open_timeout=>10      (10 second)
+    #    open_timeout:nil     (no timeout)
+    #    open_timeout:10      (10 second)
     #
     #  :open_timeout option specifies a timeout of open for http connections.
     #
     # [:ssl_ca_cert]
     #  Synopsis:
-    #    :ssl_ca_cert=>filename or an Array of filenames
+    #    ssl_ca_cert:filename or an Array of filenames
     #
     #  :ssl_ca_cert is used to specify CA certificate for SSL.
     #  If it is given, default certificates are not used.
     #
     # [:ssl_verify_mode]
     #  Synopsis:
-    #    :ssl_verify_mode=>mode
+    #    ssl_verify_mode:mode
     #
     #  :ssl_verify_mode is used to specify openssl verify mode.
     #
     # [:ftp_active_mode]
     #  Synopsis:
-    #    :ftp_active_mode=>bool
+    #    ftp_active_mode:bool
     #
-    #  <tt>:ftp_active_mode => true</tt> is used to make ftp active mode.
+    #  <tt>ftp_active_mode: true</tt> is used to make ftp active mode.
     #  Ruby 1.9 uses passive mode by default.
     #  Note that the active mode is default in Ruby 1.8 or prior.
     #
     # [:redirect]
     #  Synopsis:
-    #    :redirect=>bool
+    #    redirect:bool
     #
-    #  +:redirect+ is true by default.  <tt>:redirect => false</tt> is used to
+    #  +:redirect+ is true by default.  <tt>redirect: false</tt> is used to
     #  disable all HTTP redirects.
     #
     #  OpenURI::HTTPRedirect exception raised on redirection.

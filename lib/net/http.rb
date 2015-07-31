@@ -66,7 +66,7 @@ module Net   #:nodoc:
   # === GET with Dynamic Parameters
   #
   #   uri = URI('http://example.com/index.html')
-  #   params = { :limit => 10, :page => 3 }
+  #   params = { limit: 10, page: 3 }
   #   uri.query = URI.encode_www_form(params)
   #
   #   res = Net::HTTP.get_response(uri)
@@ -260,7 +260,7 @@ module Net   #:nodoc:
   #   uri = URI('https://secure.example.com/some_path?query=string')
   #
   #   Net::HTTP.start(uri.host, uri.port,
-  #     :use_ssl => uri.scheme == 'https') do |http|
+  #     use_ssl: uri.scheme == 'https') do |http|
   #     request = Net::HTTP::Get.new uri
   #
   #     response = http.request request # Net::HTTPResponse object
@@ -476,7 +476,7 @@ module Net   #:nodoc:
       else
         uri = uri_or_host
         start(uri.hostname, uri.port,
-              :use_ssl => uri.scheme == 'https') {|http|
+              use_ssl: uri.scheme == 'https') {|http|
           return http.request_get(uri, &block)
         }
       end
@@ -505,7 +505,7 @@ module Net   #:nodoc:
       req.form_data = params
       req.basic_auth url.user, url.password if url.user
       start(url.hostname, url.port,
-            :use_ssl => url.scheme == 'https' ) {|http|
+            use_ssl: url.scheme == 'https' ) {|http|
         http.request(req)
       }
     end

@@ -14,18 +14,18 @@ class TkHTML_File_Viewer
 # These are images to use with the actual image specified in a
 # "<img>" markup can't be found.
 #
-@@biggray = TkPhotoImage.new(:data=><<'EOD')
+@@biggray = TkPhotoImage.new(data:<<'EOD')
     R0lGODdhPAA+APAAALi4uAAAACwAAAAAPAA+AAACQISPqcvtD6OctNqLs968+w+G4kiW5omm
     6sq27gvH8kzX9o3n+s73/g8MCofEovGITCqXzKbzCY1Kp9Sq9YrNFgsAO///
 EOD
 
-@@smgray = TkPhotoImage.new(:data=><<'EOD')
+@@smgray = TkPhotoImage.new(data:<<'EOD')
     R0lGODdhOAAYAPAAALi4uAAAACwAAAAAOAAYAAACI4SPqcvtD6OctNqLs968+w+G4kiW5omm
     6sq27gvH8kzX9m0VADv/
 EOD
 
   def initialize(file = nil)
-    @root  = TkRoot.new(:title=>'HTML File Viewer', :iconname=>'HV')
+    @root  = TkRoot.new(title:'HTML File Viewer', iconname:'HV')
     @fswin = nil
 
     @html = nil
@@ -74,40 +74,40 @@ EOD
 
     mbar = @root.add_menubar(menu_spec)
 
-    @html = Tk::HTML_Widget.new(:width=>512, :height=>384,
-                                :padx=>5, :pady=>9,
-                                :formcommand=>proc{|*args| form_cmd(*args)},
-                                :imagecommand=>proc{|*args|
+    @html = Tk::HTML_Widget.new(width:512, height:384,
+                                padx:5, pady:9,
+                                formcommand:proc{|*args| form_cmd(*args)},
+                                imagecommand:proc{|*args|
                                   image_cmd(1, *args)
                                 },
-                                :scriptcommand=>proc{|*args|
+                                scriptcommand:proc{|*args|
                                   script_cmd(*args)
                                 },
-                                :appletcommand=>proc{|*args|
+                                appletcommand:proc{|*args|
                                   applet_cmd(*args)
                                 },
-                                :hyperlinkcommand=>proc{|*args|
+                                hyperlinkcommand:proc{|*args|
                                   hyper_cmd(*args)
                                 },
-                                :fontcommand=>proc{|*args|
+                                fontcommand:proc{|*args|
                                   pick_font(*args)
                                 },
-                                :appletcommand=>proc{|*args|
+                                appletcommand:proc{|*args|
                                   run_applet('small', *args)
                                 },
-                                :bg=>'white', :tablerelief=>:raised)
+                                bg:'white', tablerelief::raised)
 
     @html.token_handler('meta', proc{|*args| meta(@html, *args)})
 
     vscr = @html.yscrollbar(TkScrollbar.new)
     hscr = @html.xscrollbar(TkScrollbar.new)
 
-    Tk.grid(@html, vscr, :sticky=>:news)
-    Tk.grid(hscr,       :sticky=>:ew)
-    @root.grid_columnconfigure(0, :weight=>1)
-    @root.grid_columnconfigure(1, :weight=>0)
-    @root.grid_rowconfigure(0, :weight=>1)
-    @root.grid_rowconfigure(1, :weight=>0)
+    Tk.grid(@html, vscr, sticky::news)
+    Tk.grid(hscr,       sticky::ew)
+    @root.grid_columnconfigure(0, weight:1)
+    @root.grid_columnconfigure(1, weight:0)
+    @root.grid_rowconfigure(0, weight:1)
+    @root.grid_rowconfigure(1, weight:0)
 
     ############################################
 
@@ -193,20 +193,20 @@ EOD
     end
 
     begin
-      img = TkPhotoImage.new(:file=>fn)
+      img = TkPhotoImage.new(file:fn)
     rescue
       return ((hs)? @@smallgray: @@biggray)
     end
 
     if hs
       img2 = TkPhotoImage.new
-      img2.copy(img, :subsample=>[2,2])
+      img2.copy(img, subsample:[2,2])
       img.delete
       img = img2
     end
 
     if img.width * img.height > 20000
-      b = TkPhotoImage.new(:width=>img.width, :height=>img.height)
+      b = TkPhotoImage.new(width:img.width, height:img.height)
       @big_imgs[b] = img
       img = b
       Tk.after_idle(proc{ move_big_image(b) })
@@ -228,7 +228,7 @@ EOD
   #
   def applet_cmd(w, arglist)
     # puts "AppletCmd: w=#{w} arglist=#{arglist}"
-    #TkLabel.new(w, :text=>"The Applet #{w}", :bd=>2, :relief=>raised)
+    #TkLabel.new(w, text:"The Applet #{w}", bd:2, relief:raised)
   end
 
   # This binding fires when there is a click on a hyperlink
@@ -248,7 +248,7 @@ EOD
       ['All Files', '*']
     ]
 
-    f = Tk.getOpenFile(:initialdir=>@last_dir, :filetypes=>filetypes)
+    f = Tk.getOpenFile(initialdir:@last_dir, filetypes:filetypes)
     if f != ''
       load_file(f)
       @last_dir = File.dirname(f)
@@ -280,8 +280,8 @@ EOD
     rescue
       ret = nil
       fp = nil
-      Tk.messageBox(:icon=>'error', :message=>"fail to open '#{name}'",
-                    :type=>:ok)
+      Tk.messageBox(icon:'error', message:"fail to open '#{name}'",
+                    type::ok)
     ensure
       fp.close if fp
     end
@@ -312,9 +312,9 @@ EOD
     else
       w = @html
     end
-    w.configure(:base=>name)
+    w.configure(base:name)
     w.parse(doc)
-    w.configure(:cursor=>'top_left_arrow')
+    w.configure(cursor:'top_left_arrow')
     @old_imgs.clear
   end
 
@@ -371,34 +371,34 @@ EOD
 
     width  =  @root.winfo_screenwidth
     height =  @root.winfo_screenheight
-    @fswin = TkToplevel.new(:overrideredirect=>true,
-                            :geometry=>"#{width}x#{height}+0+0")
+    @fswin = TkToplevel.new(overrideredirect:true,
+                            geometry:"#{width}x#{height}+0+0")
 
-    @html_fs = Tk::HTML_Widget.new(@fswin, :padx=>5, :pady=>9,
-                                   :formcommand=>proc{|*args|
+    @html_fs = Tk::HTML_Widget.new(@fswin, padx:5, pady:9,
+                                   formcommand:proc{|*args|
                                      form_cmd(*args)
                                    },
-                                   :imagecommand=>proc{|*args|
+                                   imagecommand:proc{|*args|
                                      image_cmd(0, *args)
                                    },
-                                   :scriptcommand=>proc{|*args|
+                                   scriptcommand:proc{|*args|
                                      script_cmd(*args)
                                    },
-                                   :appletcommand=>proc{|*args|
+                                   appletcommand:proc{|*args|
                                      applet_cmd(*args)
                                    },
-                                   :hyperlinkcommand=>proc{|*args|
+                                   hyperlinkcommand:proc{|*args|
                                      hyper_cmd(*args)
                                    },
-                                   :appletcommand=>proc{|*args|
+                                   appletcommand:proc{|*args|
                                      run_applet('big', *args)
                                    },
-                                   :fontcommand=>proc{|*args|
+                                   fontcommand:proc{|*args|
                                      pick_font_fs(*args)
                                    },
-                                   :bg=>'white', :tablerelief=>:raised,
-                                   :cursor=>:tcross) {
-      pack(:fill=>:both, :expand=>true)
+                                   bg:'white', tablerelief::raised,
+                                   cursor::tcross) {
+      pack(fill::both, expand:true)
       token_handler('meta', proc{|*args| meta(self, *args)})
     }
 

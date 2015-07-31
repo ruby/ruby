@@ -27,8 +27,8 @@ class TestRDocServlet < RDoc::TestCase
 
     @s = RDoc::Servlet.new @server, @stores, @cache, nil, @extra_dirs
 
-    @req = WEBrick::HTTPRequest.new :Logger => nil
-    @res = WEBrick::HTTPResponse.new :HTTPVersion => '1.0'
+    @req = WEBrick::HTTPRequest.new Logger: nil
+    @res = WEBrick::HTTPResponse.new HTTPVersion: '1.0'
 
     def @req.path= path
       instance_variable_set :@path, path

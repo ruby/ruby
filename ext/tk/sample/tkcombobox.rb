@@ -17,7 +17,7 @@ end
 class Tk::RbWidget::AutoScrollListbox
   include TkComposite
 
-  @@up_bmp = TkBitmapImage.new(:data=><<EOD)
+  @@up_bmp = TkBitmapImage.new(data:<<EOD)
 #define up_arrow_width 9
 #define up_arrow_height 9
 static unsigned char up_arrow_bits[] = {
@@ -25,7 +25,7 @@ static unsigned char up_arrow_bits[] = {
    0x7c, 0x00, 0xfe, 0x00, 0x00, 0x00};
 EOD
 
-  @@down_bmp = TkBitmapImage.new(:data=><<EOD)
+  @@down_bmp = TkBitmapImage.new(data:<<EOD)
 #define up_arrow_width 9
 #define up_arrow_height 9
 static unsigned char down_arrow_bits[] = {
@@ -44,23 +44,23 @@ EOD
     @initwait -= @interval
     @initwait = 0 if @initwait < 0
 
-    @lbox = TkListbox.new(@frame, :borderwidth=>0)
+    @lbox = TkListbox.new(@frame, borderwidth:0)
     @path = @lbox.path
     TkPack.propagate(@lbox, false)
 
-    @scr = TkScrollbar.new(@frame, :width=>10)
+    @scr = TkScrollbar.new(@frame, width:10)
 
     @lbox.yscrollcommand(proc{|*args| @scr.set(*args); _config_proc})
     @scr.command(proc{|*args| @lbox.yview(*args); _config_proc})
 
-    @up_arrow   = TkLabel.new(@lbox, :image=>@@up_bmp,
-                              :relief=>:raised, :borderwidth=>1)
-    @down_arrow = TkLabel.new(@lbox, :image=>@@down_bmp,
-                              :relief=>:raised, :borderwidth=>1)
+    @up_arrow   = TkLabel.new(@lbox, image:@@up_bmp,
+                              relief::raised, borderwidth:1)
+    @down_arrow = TkLabel.new(@lbox, image:@@down_bmp,
+                              relief::raised, borderwidth:1)
 
     _init_binding
 
-    @lbox.pack(:side=>:left, :fill=>:both, :expand=>:true)
+    @lbox.pack(side::left, fill::both, expand::true)
 
     delegate('DEFAULT', @lbox)
     delegate('background', @frame, @scr)
@@ -81,13 +81,13 @@ EOD
 
   def _show_up_arrow
     unless @up_arrow.winfo_mapped?
-      @up_arrow.pack(:side=>:top, :fill=>:x)
+      @up_arrow.pack(side::top, fill::x)
     end
   end
 
   def _show_down_arrow
     unless @down_arrow.winfo_mapped?
-      @down_arrow.pack(:side=>:bottom, :fill=>:x)
+      @down_arrow.pack(side::bottom, fill::x)
     end
   end
 
@@ -221,7 +221,7 @@ EOD
   ############################
   def scrollbar(mode)
     if mode
-      @scr.pack(:side=>:right, :fill=>:y)
+      @scr.pack(side::right, fill::y)
     else
       @scr.pack_forget
     end
@@ -233,7 +233,7 @@ end
 class Tk::RbWidget::Combobox < TkEntry
   include TkComposite
 
-  @@down_btn_bmp = TkBitmapImage.new(:data=><<EOD)
+  @@down_btn_bmp = TkBitmapImage.new(data:<<EOD)
 #define down_arrow_width 11
 #define down_arrow_height 11
 static unsigned char down_arrow_bits[] = {
@@ -241,7 +241,7 @@ static unsigned char down_arrow_bits[] = {
    0x70, 0x00, 0x70, 0x00, 0x20, 0x00, 0x20, 0x00, 0x00, 0x00};
 EOD
 
-  @@up_btn_bmp = TkBitmapImage.new(:data=><<EOD)
+  @@up_btn_bmp = TkBitmapImage.new(data:<<EOD)
 #define up_arrow_width 11
 #define up_arrow_height 11
 static unsigned char up_arrow_bits[] = {
@@ -356,13 +356,13 @@ EOD
   def initialize_composite(keys={})
     keys = _symbolkey2str(keys)
 
-    @btn = TkLabel.new(@frame, :relief=>:raised, :borderwidth=>2,
-                       :image=>@@down_btn_bmp).pack(:side=>:right,
-                                                    :ipadx=>2, :fill=>:y)
-    @ent = TkEntry.new(@frame).pack(:side=>:left)
+    @btn = TkLabel.new(@frame, relief::raised, borderwidth:2,
+                       image:@@down_btn_bmp).pack(side::right,
+                                                    ipadx:2, fill::y)
+    @ent = TkEntry.new(@frame).pack(side::left)
     @path = @ent.path
 
-    @top = TkToplevel.new(@btn, :borderwidth=>1, :relief=>:raised) {
+    @top = TkToplevel.new(@btn, borderwidth:1, relief::raised) {
       withdraw
       transient
       overrideredirect(true)
@@ -370,10 +370,10 @@ EOD
 
     startwait = keys.delete('startwait'){300}
     interval = keys.delete('interval'){150}
-    @lst = Tk::RbWidget::AutoScrollListbox.new(@top, :scrollbar=>true,
-                                               :startwait=>startwait,
-                                               :interval=>interval)
-    @lst.pack(:fill=>:both, :expand=>true)
+    @lst = Tk::RbWidget::AutoScrollListbox.new(@top, scrollbar:true,
+                                               startwait:startwait,
+                                               interval:interval)
+    @lst.pack(fill::both, expand:true)
     @ent_list = []
 
     @wait_var = TkVariable.new
@@ -464,34 +464,34 @@ if __FILE__ == $0
 # e0.values(%w(aa bb cc dd ee ff gg hh ii jj kk ll mm nn oo pp qq rr ss tt uu))
 
   v = TkVariable.new
-  e = Tk::RbWidget::Combobox.new(:height=>7, :scrollbar=>true,
-                                 :textvariable=>v,
-                                 :arrowrelief=>:flat, :arrowborderwidth=>0,
-                                 :startwait=>400, :interval=>200).pack
+  e = Tk::RbWidget::Combobox.new(height:7, scrollbar:true,
+                                 textvariable:v,
+                                 arrowrelief::flat, arrowborderwidth:0,
+                                 startwait:400, interval:200).pack
   e.values(%w(aa bb cc dd ee ff gg hh ii jj kk ll mm nn oo pp qq rr ss tt uu))
   #e.see(e.list_index('end') - 2)
   e.value = 'cc'
   TkFrame.new{|f|
     fnt = TkFont.new('Helvetica 10')
-    TkLabel.new(f, :font=>fnt, :text=>'TkCombobox value :').pack(:side=>:left)
-    TkLabel.new(f, :font=>fnt, :textvariable=>v).pack(:side=>:left)
+    TkLabel.new(f, font:fnt, text:'TkCombobox value :').pack(side::left)
+    TkLabel.new(f, font:fnt, textvariable:v).pack(side::left)
   }.pack
 
-  TkFrame.new(:relief=>:raised, :borderwidth=>2,
-              :height=>3).pack(:fill=>:x, :expand=>true, :padx=>5, :pady=>3)
+  TkFrame.new(relief::raised, borderwidth:2,
+              height:3).pack(fill::x, expand:true, padx:5, pady:3)
 
-  l = Tk::RbWidget::AutoScrollListbox.new(nil, :relief=>:groove,
-                                          :borderwidth=>4,:height=>7,
-                                          :width=>20).pack(:fill=>:both,
-                                                           :expand=>true)
+  l = Tk::RbWidget::AutoScrollListbox.new(nil, relief::groove,
+                                          borderwidth:4,height:7,
+                                          width:20).pack(fill::both,
+                                                           expand:true)
   (0..20).each{|i| l.insert('end', "line #{i}")}
 
-  TkFrame.new(:relief=>:ridge, :borderwidth=>3){
-    TkButton.new(self, :text=>'ON',
-                 :command=>proc{l.scrollbar(true)}).pack(:side=>:left)
-    TkButton.new(self, :text=>'OFF',
-                 :command=>proc{l.scrollbar(false)}).pack(:side=>:right)
-    pack(:fill=>:x)
+  TkFrame.new(relief::ridge, borderwidth:3){
+    TkButton.new(self, text:'ON',
+                 command:proc{l.scrollbar(true)}).pack(side::left)
+    TkButton.new(self, text:'OFF',
+                 command:proc{l.scrollbar(false)}).pack(side::right)
+    pack(fill::x)
   }
   Tk.mainloop
 end

@@ -11,7 +11,7 @@ module Psych
 
     def setup
       super
-      @list = [{ :a => 'b' }, 'foo']
+      @list = [{ a: 'b' }, 'foo']
     end
 
     def test_another_subclass_with_attributes

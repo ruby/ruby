@@ -40,7 +40,7 @@ msgstr ""
   end
 
   def test_translator_comment_normal
-    options = {:translator_comment => "Greeting"}
+    options = {translator_comment: "Greeting"}
     assert_equal <<-'ENTRY', entry("Hello", options).to_s
 # Greeting
 msgid "Hello"
@@ -49,7 +49,7 @@ msgstr ""
   end
 
   def test_translator_comment_multiple_lines
-    options = {:translator_comment => "Greeting\nfor morning"}
+    options = {translator_comment: "Greeting\nfor morning"}
     assert_equal <<-'ENTRY', entry("Hello", options).to_s
 # Greeting
 # for morning
@@ -59,7 +59,7 @@ msgstr ""
   end
 
   def test_extracted_comment_normal
-    options = {:extracted_comment => "Object"}
+    options = {extracted_comment: "Object"}
     assert_equal <<-'ENTRY', entry("Hello", options).to_s
 #. Object
 msgid "Hello"
@@ -68,7 +68,7 @@ msgstr ""
   end
 
   def test_extracted_comment_multiple_lines
-    options = {:extracted_comment => "Object\nMorning#greeting"}
+    options = {extracted_comment: "Object\nMorning#greeting"}
     assert_equal <<-'ENTRY', entry("Hello", options).to_s
 #. Object
 #. Morning#greeting
@@ -78,7 +78,7 @@ msgstr ""
   end
 
   def test_references_normal
-    options = {:references => [["lib/rdoc.rb", 29]]}
+    options = {references: [["lib/rdoc.rb", 29]]}
     assert_equal <<-'ENTRY', entry("Hello", options).to_s
 #: lib/rdoc.rb:29
 msgid "Hello"
@@ -87,7 +87,7 @@ msgstr ""
   end
 
   def test_references_multiple
-    options = {:references => [["lib/rdoc.rb", 29], ["lib/rdoc/i18n.rb", 9]]}
+    options = {references: [["lib/rdoc.rb", 29], ["lib/rdoc/i18n.rb", 9]]}
     assert_equal <<-'ENTRY', entry("Hello", options).to_s
 #: lib/rdoc.rb:29
 #: lib/rdoc/i18n.rb:9
@@ -97,7 +97,7 @@ msgstr ""
   end
 
   def test_flags_normal
-    options = {:flags => ["fuzzy"]}
+    options = {flags: ["fuzzy"]}
     assert_equal <<-'ENTRY', entry("Hello", options).to_s
 #, fuzzy
 msgid "Hello"
@@ -106,7 +106,7 @@ msgstr ""
   end
 
   def test_flags_multiple
-    options = {:flags => ["fuzzy", "ruby-format"]}
+    options = {flags: ["fuzzy", "ruby-format"]}
     assert_equal <<-'ENTRY', entry("Hello", options).to_s
 #, fuzzy,ruby-format
 msgid "Hello"
@@ -116,10 +116,10 @@ msgstr ""
 
   def test_full
     options = {
-      :translator_comment => "Greeting",
-      :extracted_comment  => "Morning#greeting",
-      :references         => [["lib/rdoc.rb", 29]],
-      :flags              => ["fuzzy"],
+      translator_comment: "Greeting",
+      extracted_comment: "Morning#greeting",
+      references: [["lib/rdoc.rb", 29]],
+      flags: ["fuzzy"],
     }
     assert_equal <<-'ENTRY', entry("Hello", options).to_s
 # Greeting

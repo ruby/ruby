@@ -6,26 +6,26 @@ def demoOutlookNewsgroup(t)
 
   height = t.font.metrics(:linespace)
   height = 18 if height < 18
-  t.configure(:itemheight=>height, :selectmode=>:browse, :showlines=>false,
-              :showroot=>false, :showrootbutton=>false, :showbuttons=>true)
+  t.configure(itemheight:height, selectmode::browse, showlines:false,
+              showroot:false, showrootbutton:false, showbuttons:true)
 
   if $Version_1_1_OrLater
-    t.column_create(:image=>@images['outlook-clip'], :tag=>'clip')
-    t.column_create(:image=>@images['outlook-arrow'], :tag=>'arrow')
-    t.column_create(:image=>@images['outlook-watch'], :tag=>'watch')
-    t.column_create(:text=>'Subject', :width=>250, :tag=>'subject')
-    t.column_create(:text=>'From', :width=>150, :tag=>'from')
-    t.column_create(:text=>'Sent', :width=>150, :tag=>'sent')
-    t.column_create(:text=>'Size', :width=>60, :justify=>:right, :tag=>'size')
+    t.column_create(image:@images['outlook-clip'], tag:'clip')
+    t.column_create(image:@images['outlook-arrow'], tag:'arrow')
+    t.column_create(image:@images['outlook-watch'], tag:'watch')
+    t.column_create(text:'Subject', width:250, tag:'subject')
+    t.column_create(text:'From', width:150, tag:'from')
+    t.column_create(text:'Sent', width:150, tag:'sent')
+    t.column_create(text:'Size', width:60, justify::right, tag:'size')
   else # TreeCtrl 1.0
-    t.column_configure(0, :image=>@images['outlook-clip'], :tag=>'clip')
-    t.column_configure(1, :image=>@images['outlook-arrow'], :tag=>'arrow')
-    t.column_configure(2, :image=>@images['outlook-watch'], :tag=>'watch')
-    t.column_configure(3, :text=>'Subject', :width=>250, :tag=>'subject')
-    t.column_configure(4, :text=>'From', :width=>150, :tag=>'from')
-    t.column_configure(5, :text=>'Sent', :width=>150, :tag=>'sent')
-    t.column_configure(6, :text=>'Size', :width=>60, :justify=>:right,
-                       :tag=>'size')
+    t.column_configure(0, image:@images['outlook-clip'], tag:'clip')
+    t.column_configure(1, image:@images['outlook-arrow'], tag:'arrow')
+    t.column_configure(2, image:@images['outlook-watch'], tag:'watch')
+    t.column_configure(3, text:'Subject', width:250, tag:'subject')
+    t.column_configure(4, text:'From', width:150, tag:'from')
+    t.column_configure(5, text:'Sent', width:150, tag:'sent')
+    t.column_configure(6, text:'Size', width:60, justify::right,
+                       tag:'size')
   end
 
   # Would be nice if I could specify a column -tag too
@@ -38,7 +38,7 @@ def demoOutlookNewsgroup(t)
   t.state_define('unread')
 
   t.element_create('elemImg', :image,
-                   :image=>[
+                   image:[
                      @sel_images['outlook-read-2'],
                           ['selected', 'read', 'unread', '!open'],
                      @images['outlook-read-2'], ['read', 'unread', '!open'],
@@ -47,24 +47,24 @@ def demoOutlookNewsgroup(t)
                      @sel_images['outlook-unread'], ['selected'],
                      @images['outlook-unread'], []
                    ])
-  t.element_create('elemTxt', :text, :lines=>1,
-                   :fill=>[@SystemHighlightText, ['selected', 'focus']],
-                   :font=>[
+  t.element_create('elemTxt', :text, lines:1,
+                   fill:[@SystemHighlightText, ['selected', 'focus']],
+                   font:[
                      t.font.dup.weight(:bold), ['read', 'unread', '!open'],
                      t.font.dup.weight(:bold), ['!read']
                    ])
-  t.element_create('sel.e', :rect, :open=>:e, :showfocus=>true,
-                   :fill=>[
+  t.element_create('sel.e', :rect, open::e, showfocus:true,
+                   fill:[
                      @SystemHighlight, ['selected', 'focus'],
                      'gray',  ['selected', '!focus']
                    ])
-  t.element_create('sel.w', :rect, :open=>:w, :showfocus=>true,
-                   :fill=>[
+  t.element_create('sel.w', :rect, open::w, showfocus:true,
+                   fill:[
                      @SystemHighlight, ['selected', 'focus'],
                      'gray',  ['selected', '!focus']
                    ])
-  t.element_create('sel.we', :rect, :open=>:we, :showfocus=>true,
-                   :fill=>[
+  t.element_create('sel.we', :rect, open::we, showfocus:true,
+                   fill:[
                      @SystemHighlight, ['selected', 'focus'],
                      'gray',  ['selected', '!focus']
                    ])
@@ -72,22 +72,22 @@ def demoOutlookNewsgroup(t)
   # Image + text
   s = t.style_create('s1')
   t.style_elements(s, ['sel.e', 'elemImg', 'elemTxt'])
-  t.style_layout(s, 'elemImg', :expand=>:ns)
-  t.style_layout(s, 'elemTxt', :padx=>[2,6], :squeeze=>:x, :expand=>:ns)
-  t.style_layout(s, 'sel.e', :union=>['elemTxt'],
-                 :iexpand=>:nes, :ipadx=>[2,0])
+  t.style_layout(s, 'elemImg', expand::ns)
+  t.style_layout(s, 'elemTxt', padx:[2,6], squeeze::x, expand::ns)
+  t.style_layout(s, 'sel.e', union:['elemTxt'],
+                 iexpand::nes, ipadx:[2,0])
 
   # Text
   s = t.style_create('s2.we')
   t.style_elements(s, ['sel.we', 'elemTxt'])
-  t.style_layout(s, 'elemTxt', :padx=>6, :squeeze=>:x, :expand=>:ns)
-  t.style_layout(s, 'sel.we', :detach=>true, :iexpand=>:es)
+  t.style_layout(s, 'elemTxt', padx:6, squeeze::x, expand::ns)
+  t.style_layout(s, 'sel.we', detach:true, iexpand::es)
 
   # Text
   s = t.style_create('s2.w')
   t.style_elements(s, ['sel.w', 'elemTxt'])
-  t.style_layout(s, 'elemTxt', :padx=>6, :squeeze=>:x, :expand=>:ns)
-  t.style_layout(s, 'sel.w', :detach=>true, :iexpand=>:es)
+  t.style_layout(s, 'elemTxt', padx:6, squeeze::x, expand::ns)
+  t.style_layout(s, 'sel.w', detach:true, iexpand::es)
 
   # Set default item style
   if $Version_1_1_OrLater
@@ -148,7 +148,7 @@ def demoOutlookNewsgroup(t)
 
     if t.item_numchildren(item_i) > 0
       if $Version_1_1_OrLater
-        t.item_configure(item_i, :button=>true)
+        t.item_configure(item_i, button:true)
       else # TreeCtrl 1.0
         t.item_hasbutton(item_i, true)
       end
@@ -208,50 +208,50 @@ def demoOutlookNewsgroup2(t)
 
   height = t.font.metrics(:linespace)
   height = 18 if height < 18
-  t.configure(:itemheight=>height, :selectmode=>:browse, :showlines=>false,
-              :showroot=>false, :showrootbutton=>false, :showbuttons=>true)
+  t.configure(itemheight:height, selectmode::browse, showlines:false,
+              showroot:false, showrootbutton:false, showbuttons:true)
 
   if $Version_1_1_OrLater
-    t.column_create(:image=>@images['outlook-clip'], :tag=>'clip')
-    t.column_create(:image=>@images['outlook-arrow'], :tag=>'arrow')
-    t.column_create(:image=>@images['outlook-watch'], :tag=>'watch')
-    t.column_create(:text=>'Subject', :width=>250, :tag=>'subject')
-    t.column_create(:text=>'From', :width=>150, :tag=>'from')
-    t.column_create(:text=>'Sent', :width=>150, :tag=>'sent')
-    t.column_create(:text=>'Size', :width=>60, :justify=>:right, :tag=>'size')
+    t.column_create(image:@images['outlook-clip'], tag:'clip')
+    t.column_create(image:@images['outlook-arrow'], tag:'arrow')
+    t.column_create(image:@images['outlook-watch'], tag:'watch')
+    t.column_create(text:'Subject', width:250, tag:'subject')
+    t.column_create(text:'From', width:150, tag:'from')
+    t.column_create(text:'Sent', width:150, tag:'sent')
+    t.column_create(text:'Size', width:60, justify::right, tag:'size')
   else # TreeCtrl 1.0
-    t.column_configure(0, :image=>@images['outlook-clip'], :tag=>'clip')
-    t.column_configure(1, :image=>@images['outlook-arrow'], :tag=>'arrow')
-    t.column_configure(2, :image=>@images['outlook-watch'], :tag=>'watch')
-    t.column_configure(3, :text=>'Subject', :width=>250, :tag=>'subject')
-    t.column_configure(4, :text=>'From', :width=>150, :tag=>'from')
-    t.column_configure(5, :text=>'Sent', :width=>150, :tag=>'sent')
-    t.column_configure(6, :text=>'Size', :width=>60, :justify=>:right,
-                       :tag=>'size')
+    t.column_configure(0, image:@images['outlook-clip'], tag:'clip')
+    t.column_configure(1, image:@images['outlook-arrow'], tag:'arrow')
+    t.column_configure(2, image:@images['outlook-watch'], tag:'watch')
+    t.column_configure(3, text:'Subject', width:250, tag:'subject')
+    t.column_configure(4, text:'From', width:150, tag:'from')
+    t.column_configure(5, text:'Sent', width:150, tag:'sent')
+    t.column_configure(6, text:'Size', width:60, justify::right,
+                       tag:'size')
   end
 
   t.treecolumn = 3
 
-  t.element_create('image.unread', :image, :image=>@images['outlook-unread'])
-  t.element_create('image.read', :image, :image=>@images['outlook-read'])
-  t.element_create('image.read2', :image, :image=>@images['outlook-read-2'])
-  t.element_create('text.read', :text, :lines=>1,
-                   :fill=>[@SystemHighlightText, ['selected', 'focus']])
-  t.element_create('text.unread', :text, :lines=>1,
-                   :fill=>[@SystemHighlightText, ['selected', 'focus']],
-                   :font=>t.font.dup.weight(:bold))
-  t.element_create('sel.e', :rect, :open=>:e, :showfocus=>true,
-                   :fill=>[
+  t.element_create('image.unread', :image, image:@images['outlook-unread'])
+  t.element_create('image.read', :image, image:@images['outlook-read'])
+  t.element_create('image.read2', :image, image:@images['outlook-read-2'])
+  t.element_create('text.read', :text, lines:1,
+                   fill:[@SystemHighlightText, ['selected', 'focus']])
+  t.element_create('text.unread', :text, lines:1,
+                   fill:[@SystemHighlightText, ['selected', 'focus']],
+                   font:t.font.dup.weight(:bold))
+  t.element_create('sel.e', :rect, open::e, showfocus:true,
+                   fill:[
                      @SystemHighlight, ['selected', 'focus'],
                      'gray',  ['selected', '!focus']
                    ])
-  t.element_create('sel.w', :rect, :open=>:w, :showfocus=>true,
-                   :fill=>[
+  t.element_create('sel.w', :rect, open::w, showfocus:true,
+                   fill:[
                      @SystemHighlight, ['selected', 'focus'],
                      'gray',  ['selected', '!focus']
                    ])
-  t.element_create('sel.we', :rect, :open=>:we, :showfocus=>true,
-                   :fill=>[
+  t.element_create('sel.we', :rect, open::we, showfocus:true,
+                   fill:[
                      @SystemHighlight, ['selected', 'focus'],
                      'gray',  ['selected', '!focus']
                    ])
@@ -259,50 +259,50 @@ def demoOutlookNewsgroup2(t)
   # Image + text
   s = t.style_create('unread')
   t.style_elements(s, ['sel.e', 'image.unread', 'text.unread'])
-  t.style_layout(s, 'image.unread', :expand=>:ns)
-  t.style_layout(s, 'text.unread', :padx=>[2,6], :squeeze=>:x, :expand=>:ns)
-  t.style_layout(s, 'sel.e', :union=>['text.unread'],
-                 :iexpand=>:nes, :ipadx=>[2,0])
+  t.style_layout(s, 'image.unread', expand::ns)
+  t.style_layout(s, 'text.unread', padx:[2,6], squeeze::x, expand::ns)
+  t.style_layout(s, 'sel.e', union:['text.unread'],
+                 iexpand::nes, ipadx:[2,0])
 
   # Image + text
   s = t.style_create('read')
   t.style_elements(s, ['sel.e', 'image.read', 'text.read'])
-  t.style_layout(s, 'image.read', :expand=>:ns)
-  t.style_layout(s, 'text.read', :padx=>[2,6], :squeeze=>:x, :expand=>:ns)
-  t.style_layout(s, 'sel.e', :union=>['text.read'],
-                 :iexpand=>:nes, :ipadx=>[2,0])
+  t.style_layout(s, 'image.read', expand::ns)
+  t.style_layout(s, 'text.read', padx:[2,6], squeeze::x, expand::ns)
+  t.style_layout(s, 'sel.e', union:['text.read'],
+                 iexpand::nes, ipadx:[2,0])
 
   # Image + text
   s = t.style_create('read2')
   t.style_elements(s, ['sel.e', 'image.read2', 'text.unread'])
-  t.style_layout(s, 'image.read2', :expand=>:ns)
-  t.style_layout(s, 'text.unread', :padx=>[2,6], :squeeze=>:x, :expand=>:ns)
-  t.style_layout(s, 'sel.e', :union=>['text.unread'],
-                 :iexpand=>:nes, :ipadx=>[2,0])
+  t.style_layout(s, 'image.read2', expand::ns)
+  t.style_layout(s, 'text.unread', padx:[2,6], squeeze::x, expand::ns)
+  t.style_layout(s, 'sel.e', union:['text.unread'],
+                 iexpand::nes, ipadx:[2,0])
 
   # Text
   s = t.style_create('unread.we')
   t.style_elements(s, ['sel.we', 'text.unread'])
-  t.style_layout(s, 'text.unread', :padx=>6, :squeeze=>:x, :expand=>:ns)
-  t.style_layout(s, 'sel.we', :detach=>true, :iexpand=>:es)
+  t.style_layout(s, 'text.unread', padx:6, squeeze::x, expand::ns)
+  t.style_layout(s, 'sel.we', detach:true, iexpand::es)
 
   # Text
   s = t.style_create('read.we')
   t.style_elements(s, ['sel.we', 'text.read'])
-  t.style_layout(s, 'text.read', :padx=>6, :squeeze=>:x, :expand=>:ns)
-  t.style_layout(s, 'sel.we', :detach=>true, :iexpand=>:es)
+  t.style_layout(s, 'text.read', padx:6, squeeze::x, expand::ns)
+  t.style_layout(s, 'sel.we', detach:true, iexpand::es)
 
   # Text
   s = t.style_create('unread.w')
   t.style_elements(s, ['sel.w', 'text.unread'])
-  t.style_layout(s, 'text.unread', :padx=>6, :squeeze=>:x, :expand=>:ns)
-  t.style_layout(s, 'sel.w', :detach=>true, :iexpand=>:es)
+  t.style_layout(s, 'text.unread', padx:6, squeeze::x, expand::ns)
+  t.style_layout(s, 'sel.w', detach:true, iexpand::es)
 
   # Text
   s = t.style_create('read.w')
   t.style_elements(s, ['sel.w', 'text.read'])
-  t.style_layout(s, 'text.read', :padx=>6, :squeeze=>:x, :expand=>:ns)
-  t.style_layout(s, 'sel.w', :detach=>true, :iexpand=>:es)
+  t.style_layout(s, 'text.read', padx:6, squeeze::x, expand::ns)
+  t.style_layout(s, 'sel.w', detach:true, iexpand::es)
 
   msgCnt = 100
   thread = 0
@@ -354,7 +354,7 @@ def demoOutlookNewsgroup2(t)
                      6, "#{style2}.w")
     t.item_text(i, 3, subject, 4, from, 5, sent, 6, size)
     if t.item_numchildren(i) > 0
-      t.item_configure(item_i, :button=>true)
+      t.item_configure(item_i, button:true)
     end
   }
 

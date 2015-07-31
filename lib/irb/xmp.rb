@@ -70,9 +70,9 @@ class XMP
   #   require 'irb/xmp'
   #   x = XMP.new
   #
-  #   x.puts '{:a => 1, :b => 2, :c => 3}'
-  #   #=> {:a => 1, :b => 2, :c => 3}
-  #     # ==>{:a=>1, :b=>2, :c=>3}
+  #   x.puts '{a: 1, b: 2, c: 3}'
+  #   #=> {a: 1, b: 2, c: 3}
+  #     # ==>{a:1, b:2, c:3}
   #   x.puts 'foo = "bar"'
   #   # => foo = "bar"
   #     # ==>"bar"

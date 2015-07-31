@@ -143,7 +143,7 @@ module REXMLTests
       source = '<!DOCTYPE foo [
 <!ENTITY ent "replace">
 ]><a>replace &ent;</a>'
-      doc = REXML::Document.new( source, {:raw=>:all})
+      doc = REXML::Document.new( source, {raw::all})
       assert_equal('replace &ent;', doc.root.get_text.to_s)
       assert_equal(source, doc.to_s)
     end

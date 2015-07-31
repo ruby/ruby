@@ -64,7 +64,7 @@ module URI
     #
     # Example:
     #
-    #     newuri = URI::LDAP.build({:host => 'ldap.example.com',
+    #     newuri = URI::LDAP.build({host: 'ldap.example.com',
     #       :dn> => '/dc=example'})
     #
     #     newuri = URI::LDAP.build(["ldap.example.com", nil,

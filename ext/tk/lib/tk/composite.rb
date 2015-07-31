@@ -111,9 +111,9 @@ module TkComposite
     end
 
     if base_class_name
-      # @frame = Tk::Frame.new(parent, :class=>base_class_name)
+      # @frame = Tk::Frame.new(parent, class:base_class_name)
       # --> use current TkFrame class
-      @frame = TkFrame.new(parent, :class=>base_class_name)
+      @frame = TkFrame.new(parent, class:base_class_name)
     else
       # @frame = Tk::Frame.new(parent)
       # --> use current TkFrame class
@@ -161,7 +161,7 @@ module TkComposite
       opts[0].each{|name, arg|
         m_set, m_cget, m_info = _get_opt_method_list(arg)
         @option_methods[name.to_s] = {
-          :set => m_set, :cget => m_cget, :info => m_info
+          set: m_set, cget: m_cget, info: m_info
         }
       }
     else
@@ -169,7 +169,7 @@ module TkComposite
       opts.each{|arg|
         m_set, m_cget, m_info = _get_opt_method_list(arg)
         @option_methods[m_set] = {
-          :set => m_set, :cget => m_cget, :info => m_info
+          set: m_set, cget: m_cget, info: m_info
         }
       }
     end

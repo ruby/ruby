@@ -36,7 +36,7 @@ class TestGemCommandsEnvironmentCommand < Gem::TestCase
     assert_match %r|- #{Regexp.escape @gemhome}|, @ui.output
     assert_match %r|GEM CONFIGURATION:|, @ui.output
     assert_match %r|"gemcutter_key" => "\*\*\*\*"|, @ui.output
-    assert_match %r|:verbose => |, @ui.output
+    assert_match %r|verbose: |, @ui.output
     assert_match %r|REMOTE SOURCES:|, @ui.output
 
     assert_match %r|- SHELL PATH:|,     @ui.output

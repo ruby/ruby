@@ -170,7 +170,7 @@ class TestGemRequest < Gem::TestCase
 
   def test_fetch
     uri = URI.parse "#{@gem_repo}/specs.#{Gem.marshal_version}"
-    response = util_stub_net_http(:body => :junk, :code => 200) do
+    response = util_stub_net_http(body: :junk, code: 200) do
       @request = make_request(uri, Net::HTTP::Get, nil, nil)
 
       @request.fetch
@@ -182,7 +182,7 @@ class TestGemRequest < Gem::TestCase
 
   def test_fetch_basic_auth
     uri = URI.parse "https://user:pass@example.rubygems/specs.#{Gem.marshal_version}"
-    conn = util_stub_net_http(:body => :junk, :code => 200) do |c|
+    conn = util_stub_net_http(body: :junk, code: 200) do |c|
       @request = make_request(uri, Net::HTTP::Get, nil, nil)
       @request.fetch
       c
@@ -194,7 +194,7 @@ class TestGemRequest < Gem::TestCase
 
   def test_fetch_basic_auth_encoded
     uri = URI.parse "https://user:%7BDEScede%7Dpass@example.rubygems/specs.#{Gem.marshal_version}"
-    conn = util_stub_net_http(:body => :junk, :code => 200) do |c|
+    conn = util_stub_net_http(body: :junk, code: 200) do |c|
       @request = make_request(uri, Net::HTTP::Get, nil, nil)
       @request.fetch
       c
@@ -206,7 +206,7 @@ class TestGemRequest < Gem::TestCase
 
   def test_fetch_head
     uri = URI.parse "#{@gem_repo}/specs.#{Gem.marshal_version}"
-    response = util_stub_net_http(:body => '', :code => 200) do |conn|
+    response = util_stub_net_http(body: '', code: 200) do |conn|
       @request = make_request(uri, Net::HTTP::Get, nil, nil)
       @request.fetch
     end
@@ -218,7 +218,7 @@ class TestGemRequest < Gem::TestCase
   def test_fetch_unmodified
     uri = URI.parse "#{@gem_repo}/specs.#{Gem.marshal_version}"
     t = Time.utc(2013, 1, 2, 3, 4, 5)
-    conn, response = util_stub_net_http(:body => '', :code => 304) do |c|
+    conn, response = util_stub_net_http(body: '', code: 304) do |c|
       @request = make_request(uri, Net::HTTP::Get, t, nil)
       [c, @request.fetch]
     end

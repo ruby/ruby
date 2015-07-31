@@ -150,7 +150,7 @@ module TupleSpaceTestModule
     assert(!tmpl.match({"message"=>"Hello", "no_name"=>"Foo"}))
 
     assert_raise(Rinda::InvalidHashTupleKey) do
-      Rinda::Template.new({:message=>String, "name"=>String})
+      Rinda::Template.new({message:String, "name"=>String})
     end
     tmpl = Rinda::Template.new({"name"=>String})
     assert_equal(1, tmpl.size)
@@ -183,7 +183,7 @@ module TupleSpaceTestModule
     assert(!tmpl.match({"message"=>"Hello", "no_name"=>"Foo"}))
 
     assert_raise(Rinda::InvalidHashTupleKey) do
-      @ts.write({:message=>String, "name"=>String})
+      @ts.write({message:String, "name"=>String})
     end
 
     @ts.write([1, 2, 3])

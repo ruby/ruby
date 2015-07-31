@@ -27,7 +27,7 @@ module WEBrick
     #
     # Here is an example of how to set up DigestAuth:
     #
-    #   config = { :Realm => 'DigestAuth example realm' }
+    #   config = { Realm: 'DigestAuth example realm' }
     #
     #   htdigest = WEBrick::HTTPAuth::Htdigest.new 'my_password_file'
     #   htdigest.set_passwd config[:Realm], 'username', 'password'
