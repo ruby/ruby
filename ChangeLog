@@ -1,3 +1,9 @@
+Fri Jul 31 23:34:27 2015  Aaron Patterson <tenderlove@ruby-lang.org>
+
+	* .travis.yml: update libssl before running tests. 
+	  Thanks to Chris Sinjakli <chris@sinjakli.co.uk> for figuring out the
+	  travis settings!
+
 Fri Jul 31 21:34:49 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* load.c (rb_require_internal): use rb_load_internal0 not to raise
