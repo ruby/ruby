@@ -1006,7 +1006,7 @@ rb_require_internal(VALUE fname, int safe)
 	    else {
 		switch (found) {
 		  case 'r':
-		    rb_load_internal(path, 0);
+		    state = rb_load_internal0(th, path, 0);
 		    break;
 
 		  case 's':
@@ -1015,8 +1015,10 @@ rb_require_internal(VALUE fname, int safe)
 		    rb_ary_push(ruby_dln_librefs, LONG2NUM(handle));
 		    break;
 		}
-		rb_provide_feature(path);
-		result = TAG_RETURN;
+		if (!state) {
+		    rb_provide_feature(path);
+		    result = TAG_RETURN;
+		}
 	    }
 	}
     }

@@ -1,3 +1,8 @@
+Fri Jul 31 21:34:49 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* load.c (rb_require_internal): use rb_load_internal0 not to raise
+	  a exception to be caught.
+
 Thu Jul 30 13:19:54 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* variable.c (rb_const_get_0): warn deprecated constant reference.
