@@ -250,19 +250,19 @@ ossl_client_cert_cb(SSL *ssl, X509 **x509, EVP_PKEY **pkey)
 
 #if !defined(OPENSSL_NO_DH)
 static VALUE
-ossl_call_tmp_dh_callback(VALUE *args)
+ossl_call_tmp_dh_callback(VALUE args)
 {
     SSL *ssl;
     VALUE cb, dh;
     EVP_PKEY *pkey;
 
-    GetSSL(args[0], ssl);
+    GetSSL(rb_ary_entry(args, 0), ssl);
     cb = (VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_tmp_dh_callback_idx);
     if (NIL_P(cb)) return Qfalse;
-    dh = rb_funcall(cb, rb_intern("call"), 3, args[0], args[1], args[2]);
+    dh = rb_apply(cb, rb_intern("call"), args);
     pkey = GetPKeyPtr(dh);
     if (EVP_PKEY_type(pkey->type) != EVP_PKEY_DH) return Qfalse;
-    ossl_ssl_set_tmp_dh(args[0], dh);
+    ossl_ssl_set_tmp_dh(rb_ary_entry(args, 0), dh);
 
     return Qtrue;
 }
@@ -270,16 +270,16 @@ ossl_call_tmp_dh_callback(VALUE *args)
 static DH*
 ossl_tmp_dh_callback(SSL *ssl, int is_export, int keylength)
 {
-    VALUE args[3], success;
+    VALUE args, success, rb_ssl;
 
-    args[0] = (VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx);
-    args[1] = INT2FIX(is_export);
-    args[2] = INT2FIX(keylength);
-    success = rb_protect((VALUE(*)_((VALUE)))ossl_call_tmp_dh_callback,
-                         (VALUE)args, NULL);
+    rb_ssl = (VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx);
+
+    args = rb_ary_new_from_args(3, rb_ssl, INT2FIX(is_export), INT2FIX(keylength));
+
+    success = rb_protect(ossl_call_tmp_dh_callback, args, NULL);
     if (!RTEST(success)) return NULL;
 
-    return GetPKeyPtr(ossl_ssl_get_tmp_dh(args[0]))->pkey.dh;
+    return GetPKeyPtr(ossl_ssl_get_tmp_dh(rb_ssl))->pkey.dh;
 }
 #endif /* OPENSSL_NO_DH */
 
