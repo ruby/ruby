@@ -1,3 +1,15 @@
+Sat Aug  1 04:06:29 2015  Aaron Patterson <tenderlove@ruby-lang.org>
+
+	* ext/openssl/ossl_ssl.c (ossl_call_tmp_dh_callback): change callback
+	  to return the Ruby dh (or ecdh) object that the caller cares about
+	  instead of doing rb_iv_get / set to communicate.  This means we can
+	  remove an rb_iv_get call, and only use the set calls for their
+	  intended purpose (to prevent the object from being GC'd).
+
+	* ext/openssl/ossl_ssl.c (ossl_tmp_dh_callback): ditto
+	* ext/openssl/ossl_ssl.c (ossl_call_tmp_ecdh_callback): ditto
+	* ext/openssl/ossl_ssl.c (ossl_tmp_ecdh_callback): ditto
+
 Sat Aug  1 03:49:31 2015  Aaron Patterson <tenderlove@ruby-lang.org>
 
 	* ext/openssl/ossl_ssl.c (ossl_call_tmp_dh_callback): Similarly to the
