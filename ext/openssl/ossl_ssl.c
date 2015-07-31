@@ -139,7 +139,6 @@ int ossl_ssl_ex_store_p;
 int ossl_ssl_ex_ptr_idx;
 int ossl_ssl_ex_client_cert_cb_idx;
 int ossl_ssl_ex_tmp_dh_callback_idx;
-int ossl_ssl_ex_tmp_ecdh_callback_idx;
 
 static void
 ossl_sslctx_free(void *ptr)
@@ -288,12 +287,12 @@ ossl_tmp_dh_callback(SSL *ssl, int is_export, int keylength)
 static VALUE
 ossl_call_tmp_ecdh_callback(VALUE args)
 {
-    SSL *ssl;
-    VALUE cb, ecdh;
+    VALUE cb, ecdh, ctx;
     EVP_PKEY *pkey;
 
-    GetSSL(rb_ary_entry(args, 0), ssl);
-    cb = (VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_tmp_ecdh_callback_idx);
+    ctx = rb_funcall(rb_ary_entry(args, 0), rb_intern("context"), 0);
+    cb = rb_funcall(ctx, rb_intern("tmp_ecdh_callback"), 0);
+
     if (NIL_P(cb)) return Qfalse;
     ecdh = rb_apply(cb, rb_intern("call"), args);
     pkey = GetPKeyPtr(ecdh);
@@ -1259,8 +1258,6 @@ ossl_ssl_setup(VALUE self)
 	SSL_set_ex_data(ssl, ossl_ssl_ex_client_cert_cb_idx, (void*)cb);
 	cb = ossl_sslctx_get_tmp_dh_cb(v_ctx);
 	SSL_set_ex_data(ssl, ossl_ssl_ex_tmp_dh_callback_idx, (void*)cb);
-	cb = ossl_sslctx_get_tmp_ecdh_cb(v_ctx);
-	SSL_set_ex_data(ssl, ossl_ssl_ex_tmp_ecdh_callback_idx, (void*)cb);
 	SSL_set_info_callback(ssl, ssl_info_cb);
     }
 
@@ -1978,8 +1975,6 @@ Init_ossl_ssl(void)
 	SSL_get_ex_new_index(0,(void *)"ossl_ssl_ex_client_cert_cb_idx",0,0,0);
     ossl_ssl_ex_tmp_dh_callback_idx =
 	SSL_get_ex_new_index(0,(void *)"ossl_ssl_ex_tmp_dh_callback_idx",0,0,0);
-    ossl_ssl_ex_tmp_ecdh_callback_idx =
-	SSL_get_ex_new_index(0,(void *)"ossl_ssl_ex_tmp_ecdh_callback_idx",0,0,0);
 
     /* Document-module: OpenSSL::SSL
      *
