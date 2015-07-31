@@ -65,7 +65,6 @@ static VALUE eSSLErrorWaitWritable;
 #define ossl_sslctx_get_extra_cert(o)    	rb_iv_get((o),"@extra_chain_cert")
 #define ossl_sslctx_get_client_cert_cb(o) 	rb_iv_get((o),"@client_cert_cb")
 #define ossl_sslctx_get_tmp_ecdh_cb(o)          rb_iv_get((o),"@tmp_ecdh_callback")
-#define ossl_sslctx_get_tmp_dh_cb(o)     	rb_funcall((o),rb_intern("tmp_dh_callback"),0)
 #define ossl_sslctx_get_sess_id_ctx(o)   	rb_iv_get((o),"@session_id_context")
 
 #define ossl_ssl_get_io(o)           rb_iv_get((o),"@io")
@@ -138,7 +137,6 @@ int ossl_ssl_ex_vcb_idx;
 int ossl_ssl_ex_store_p;
 int ossl_ssl_ex_ptr_idx;
 int ossl_ssl_ex_client_cert_cb_idx;
-int ossl_ssl_ex_tmp_dh_callback_idx;
 
 static void
 ossl_sslctx_free(void *ptr)
@@ -252,12 +250,12 @@ ossl_client_cert_cb(SSL *ssl, X509 **x509, EVP_PKEY **pkey)
 static VALUE
 ossl_call_tmp_dh_callback(VALUE args)
 {
-    SSL *ssl;
-    VALUE cb, dh;
+    VALUE cb, dh, ctx;
     EVP_PKEY *pkey;
 
-    GetSSL(rb_ary_entry(args, 0), ssl);
-    cb = (VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_tmp_dh_callback_idx);
+    ctx = rb_funcall(rb_ary_entry(args, 0), rb_intern("context"), 0);
+    cb = rb_funcall(ctx, rb_intern("tmp_dh_callback"), 0);
+
     if (NIL_P(cb)) return Qfalse;
     dh = rb_apply(cb, rb_intern("call"), args);
     pkey = GetPKeyPtr(dh);
@@ -1256,8 +1254,6 @@ ossl_ssl_setup(VALUE self)
 	SSL_set_ex_data(ssl, ossl_ssl_ex_vcb_idx, (void*)cb);
 	cb = ossl_sslctx_get_client_cert_cb(v_ctx);
 	SSL_set_ex_data(ssl, ossl_ssl_ex_client_cert_cb_idx, (void*)cb);
-	cb = ossl_sslctx_get_tmp_dh_cb(v_ctx);
-	SSL_set_ex_data(ssl, ossl_ssl_ex_tmp_dh_callback_idx, (void*)cb);
 	SSL_set_info_callback(ssl, ssl_info_cb);
     }
 
@@ -1973,8 +1969,6 @@ Init_ossl_ssl(void)
     ossl_ssl_ex_ptr_idx = SSL_get_ex_new_index(0,(void *)"ossl_ssl_ex_ptr_idx",0,0,0);
     ossl_ssl_ex_client_cert_cb_idx =
 	SSL_get_ex_new_index(0,(void *)"ossl_ssl_ex_client_cert_cb_idx",0,0,0);
-    ossl_ssl_ex_tmp_dh_callback_idx =
-	SSL_get_ex_new_index(0,(void *)"ossl_ssl_ex_tmp_dh_callback_idx",0,0,0);
 
     /* Document-module: OpenSSL::SSL
      *

@@ -1,3 +1,12 @@
+Sat Aug  1 03:49:31 2015  Aaron Patterson <tenderlove@ruby-lang.org>
+
+	* ext/openssl/ossl_ssl.c (ossl_call_tmp_dh_callback): Similarly to the
+	  tmp_ecdh_callback, the SSLSocket instance always holds a reference
+	  to the SSLContext object (it's always set in `initialize`).  The
+	  SSLContext holds a reference to the tmp_dh_callback.  Ask the
+	  context for the callback instead of storing the callback in two
+	  places.
+
 Sat Aug  1 03:43:10 2015  Aaron Patterson <tenderlove@ruby-lang.org>
 
 	* ext/openssl/ossl_ssl.c (ossl_call_tmp_dh_callback): create an array
