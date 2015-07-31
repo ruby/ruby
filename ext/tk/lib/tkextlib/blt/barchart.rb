@@ -45,7 +45,7 @@ module Tk::BLT
         BarElement_ID[1].succ!
       end
       tk_send('bar', elem, keys)
-      Element.new(self, elem, :without_creating=>true)
+      Element.new(self, elem, without_creating:true)
     end
 =end
 

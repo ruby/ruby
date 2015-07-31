@@ -11,12 +11,12 @@ require 'fileutils'
 # contains the following structures:
 #
 #    @cache = {
-#      :ancestors        => {}, # class name => ancestor names
-#      :attributes       => {}, # class name => attributes
-#      :class_methods    => {}, # class name => class methods
-#      :instance_methods => {}, # class name => instance methods
-#      :modules          => [], # classes and modules in this store
-#      :pages            => [], # page names
+#      ancestors: {}, # class name => ancestor names
+#      attributes: {}, # class name => attributes
+#      class_methods: {}, # class name => class methods
+#      instance_methods: {}, # class name => instance methods
+#      modules: [], # classes and modules in this store
+#      pages: [], # page names
 #    }
 #--
 # TODO need to prune classes
@@ -126,17 +126,17 @@ class RDoc::Store
     @type     = type
 
     @cache = {
-      :ancestors                   => {},
-      :attributes                  => {},
-      :class_methods               => {},
-      :c_class_variables           => {},
-      :c_singleton_class_variables => {},
-      :encoding                    => @encoding,
-      :instance_methods            => {},
-      :main                        => nil,
-      :modules                     => [],
-      :pages                       => [],
-      :title                       => nil,
+      ancestors: {},
+      attributes: {},
+      class_methods: {},
+      c_class_variables: {},
+      c_singleton_class_variables: {},
+      encoding: @encoding,
+      instance_methods: {},
+      main: nil,
+      modules: [],
+      pages: [],
+      title: nil,
     }
 
     @classes_hash = {}

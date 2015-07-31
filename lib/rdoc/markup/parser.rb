@@ -110,7 +110,7 @@ class RDoc::Markup::Parser
   # Builds a List flush to +margin+
 
   def build_list margin
-    p :list_start => margin if @debug
+    p list_start: margin if @debug
 
     list = RDoc::Markup::List.new
     label = nil
@@ -193,7 +193,7 @@ class RDoc::Markup::Parser
       end
     end
 
-    p :list_end => margin if @debug
+    p list_end: margin if @debug
 
     if list.empty? then
       return nil unless label
@@ -210,7 +210,7 @@ class RDoc::Markup::Parser
   # Builds a Paragraph that is flush to +margin+
 
   def build_paragraph margin
-    p :paragraph_start => margin if @debug
+    p paragraph_start: margin if @debug
 
     paragraph = RDoc::Markup::Paragraph.new
 
@@ -231,7 +231,7 @@ class RDoc::Markup::Parser
 
     paragraph.parts.last.sub!(/ \z/, '') # cleanup
 
-    p :paragraph_end => margin if @debug
+    p paragraph_end: margin if @debug
 
     paragraph
   end
@@ -245,7 +245,7 @@ class RDoc::Markup::Parser
   # character, and there is never a single newline at the end of the verbatim.
 
   def build_verbatim margin
-    p :verbatim_begin => margin if @debug
+    p verbatim_begin: margin if @debug
     verbatim = RDoc::Markup::Verbatim.new
 
     min_indent = nil
@@ -314,7 +314,7 @@ class RDoc::Markup::Parser
     verbatim.parts.each { |p| p.slice!(0, min_indent) unless p == "\n" } if min_indent > 0
     verbatim.normalize
 
-    p :verbatim_end => margin if @debug
+    p verbatim_end: margin if @debug
 
     verbatim
   end
@@ -339,7 +339,7 @@ class RDoc::Markup::Parser
 
   def get
     @current_token = @tokens.shift
-    p :get => @current_token if @debug
+    p get: @current_token if @debug
     @current_token
   end
 
@@ -353,7 +353,7 @@ class RDoc::Markup::Parser
   # Returns +parent+.
 
   def parse parent, indent = 0
-    p :parse_start => indent if @debug
+    p parse_start: indent if @debug
 
     until @tokens.empty? do
       type, data, column, = get
@@ -399,7 +399,7 @@ class RDoc::Markup::Parser
       end
     end
 
-    p :parse_end => indent if @debug
+    p parse_end: indent if @debug
 
     parent
 
@@ -417,7 +417,7 @@ class RDoc::Markup::Parser
 
   def peek_token
     token = @tokens.first || []
-    p :peek => token if @debug
+    p peek: token if @debug
     token
   end
 
@@ -549,7 +549,7 @@ class RDoc::Markup::Parser
 
   def unget
     token = @current_token
-    p :unget => token if @debug
+    p unget: token if @debug
     raise Error, 'too many #ungets' if token == @tokens.first
     @tokens.unshift token if token
   end

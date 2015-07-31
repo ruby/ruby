@@ -24,12 +24,12 @@ class TkScrolledCanvas < TkCanvas
     @canvas.xscrollbar(@h_scr)
     @canvas.yscrollbar(@v_scr)
 
-    TkGrid.rowconfigure(@frame, 0, :weight=>1, :minsize=>0)
-    TkGrid.columnconfigure(@frame, 0, :weight=>1, :minsize=>0)
+    TkGrid.rowconfigure(@frame, 0, weight:1, minsize:0)
+    TkGrid.columnconfigure(@frame, 0, weight:1, minsize:0)
 
-    @canvas.grid(:row=>0, :column=>0, :sticky=>'news')
-    @h_scr.grid(:row=>1, :column=>0, :sticky=>'ew')
-    @v_scr.grid(:row=>0, :column=>1, :sticky=>'ns')
+    @canvas.grid(row:0, column:0, sticky:'news')
+    @h_scr.grid(row:1, column:0, sticky:'ew')
+    @v_scr.grid(row:0, column:1, sticky:'ns')
 
     delegate('DEFAULT', @canvas)
     delegate('background', @canvas, @h_scr, @v_scr)
@@ -87,7 +87,7 @@ EOT
     self.selectborderwidth = 0
 
     @photo = TkPhotoImage.new
-    @img = TkcImage.new(self, 0, 0, :image=>@photo)
+    @img = TkcImage.new(self, 0, 0, image:@photo)
 
     width  = self.width
     height = self.height
@@ -108,9 +108,9 @@ EOT
     @border = 2
     @selectborder = 1
     @delta = @border + @selectborder
-    @entry = TkEntry.new(self, :relief=>:ridge, :borderwidth=>@border,
-                         :selectborderwidth=>@selectborder,
-                         :highlightthickness=>0)
+    @entry = TkEntry.new(self, relief::ridge, borderwidth:@border,
+                         selectborderwidth:@selectborder,
+                         highlightthickness:0)
     @entry.bind('Return'){@state.value = 0}
 
     @mode = old_mode = 0
@@ -163,7 +163,7 @@ EOT
 
     @target = TkcOval.new(self,
                           [canvasx(x), canvasy(y)], [canvasx(x), canvasy(y)],
-                          :outline=>@col, :width=>3, :tags=>[@memo_id_tag])
+                          outline:@col, width:3, tags:[@memo_id_tag])
     @items << @target
     @mark = [x,y]
 
@@ -184,8 +184,8 @@ EOT
 
     @target = TkcLine.new(self,
                           [canvasx(x), canvasy(y)], [canvasx(x), canvasy(y)],
-                          :arrow=>:first, :arrowshape=>[10, 14, 5],
-                          :fill=>@col, :tags=>[@memo_id_tag])
+                          arrow::first, arrowshape:[10, 14, 5],
+                          fill:@col, tags:[@memo_id_tag])
     @items << @target
     @mark = [x, y]
 
@@ -230,11 +230,11 @@ EOT
     bind_remove('Motion')
 
     @entry.value = ''
-    @entry.configure(:justify=>justify, :font=>@font, :foreground=>@col)
+    @entry.configure(justify:justify, font:@font, foreground:@col)
 
     ewin = TkcWindow.new(self, [canvasx(x)+dx, canvasy(y)+dy],
-                         :window=>@entry, :state=>:normal, :anchor=>anchor,
-                         :tags=>[@memo_id_tag])
+                         window:@entry, state::normal, anchor:anchor,
+                         tags:[@memo_id_tag])
 
     @entry.focus
     @entry.grab
@@ -244,9 +244,9 @@ EOT
     ewin.delete
 
     @target = TkcText.new(self, [canvasx(x), canvasy(y)],
-                          :anchor=>anchor, :justify=>justify,
-                          :fill=>@col, :font=>@font, :text=>@entry.value,
-                          :tags=>[@memo_id_tag])
+                          anchor:anchor, justify:justify,
+                          fill:@col, font:@font, text:@entry.value,
+                          tags:[@memo_id_tag])
 
     _state0()
   end
@@ -254,7 +254,7 @@ EOT
   #-----------------------------------
   public
   def load_photo(filename)
-    @photo.configure(:file=>filename)
+    @photo.configure(file:filename)
   end
 
   def modified?
@@ -299,8 +299,8 @@ end
 # define methods for menu
 def open_file(canvas, fname)
   if canvas.modified?
-    ret = Tk.messageBox(:icon=>'warning',:type=>'okcancel',:default=>'cancel',
-                        :message=>'Canvas may be modified. Really erase? ')
+    ret = Tk.messageBox(icon:'warning',type:'okcancel',default:'cancel',
+                        message:'Canvas may be modified. Really erase? ')
     return if ret == 'cancel'
   end
 
@@ -333,14 +333,14 @@ def open_file(canvas, fname)
 
   filetypes << ['ALL Files', '*']
 
-  fpath = Tk.getOpenFile(:filetypes=>filetypes)
+  fpath = Tk.getOpenFile(filetypes:filetypes)
   return if fpath.empty?
 
   begin
     canvas.load_photo(fpath)
   rescue => e
-    Tk.messageBox(:icon=>'error', :type=>'ok',
-                  :message=>"Fail to read '#{fpath}'.\n#{e.message}")
+    Tk.messageBox(icon:'error', type:'ok',
+                  message:"Fail to read '#{fpath}'.\n#{e.message}")
   end
 
   canvas.fig_erase
@@ -354,11 +354,11 @@ def save_memo(canvas, fname)
   initname = fname.value
   if initname != '-'
     initname = File.basename(initname, File.extname(initname))
-    fpath = Tk.getSaveFile(:filetypes=>[ ['Text Files', '.txt'],
+    fpath = Tk.getSaveFile(filetypes:[ ['Text Files', '.txt'],
                                          ['ALL Files', '*'] ],
-                           :initialfile=>initname)
+                           initialfile:initname)
   else
-    fpath = Tk.getSaveFile(:filetypes=>[ ['Text Files', '.txt'],
+    fpath = Tk.getSaveFile(filetypes:[ ['Text Files', '.txt'],
                                          ['ALL Files', '*'] ])
   end
   return if fpath.empty?
@@ -366,8 +366,8 @@ def save_memo(canvas, fname)
   begin
     fid = open(fpath, 'w')
   rescue => e
-    Tk.messageBox(:icon=>'error', :type=>'ok',
-                  :message=>"Fail to open '#{fname.value}'.\n#{e.message}")
+    Tk.messageBox(icon:'error', type:'ok',
+                  message:"Fail to open '#{fname.value}'.\n#{e.message}")
   end
 
   begin
@@ -384,51 +384,51 @@ def ps_print(canvas, fname)
   initname = fname.value
   if initname != '-'
     initname = File.basename(initname, File.extname(initname))
-    fpath = Tk.getSaveFile(:filetypes=>[ ['Postscript Files', '.ps'],
+    fpath = Tk.getSaveFile(filetypes:[ ['Postscript Files', '.ps'],
                                          ['ALL Files', '*'] ],
-                           :initialfile=>initname)
+                           initialfile:initname)
   else
-    fpath = Tk.getSaveFile(:filetypes=>[ ['Postscript Files', '.ps'],
+    fpath = Tk.getSaveFile(filetypes:[ ['Postscript Files', '.ps'],
                                          ['ALL Files', '*'] ])
   end
   return if fpath.empty?
 
   bbox = canvas.bbox('all')
-  canvas.postscript(:file=>fpath, :x=>bbox[0], :y=>bbox[1],
-                    :width=>bbox[2] - bbox[0], :height=>bbox[3] - bbox[1])
+  canvas.postscript(file:fpath, x:bbox[0], y:bbox[1],
+                    width:bbox[2] - bbox[0], height:bbox[3] - bbox[1])
 end
 
 # --------------------------------
 def quit(canvas)
-  ret = Tk.messageBox(:icon=>'warning', :type=>'okcancel',
-                      :default=>'cancel',
-                      :message=>'Realy quit? ')
+  ret = Tk.messageBox(icon:'warning', type:'okcancel',
+                      default:'cancel',
+                      message:'Realy quit? ')
   exit if ret == 'ok'
 end
 
 # --------------------------------
 # setup root
-root = TkRoot.new(:title=>'Fig Memo')
+root = TkRoot.new(title:'Fig Memo')
 
 # create canvas frame
-canvas = PhotoCanvas.new(root).pack(:fill=>:both, :expand=>true)
-usage_frame = TkFrame.new(root, :relief=>:ridge, :borderwidth=>2)
-hide_btn = TkButton.new(usage_frame, :text=>'hide usage',
-                        :font=>{:size=>8}, :pady=>1,
-                        :command=>proc{usage_frame.unpack})
-hide_btn.pack(:anchor=>'e', :padx=>5)
-usage = TkLabel.new(usage_frame, :text=>PhotoCanvas::USAGE,
-                    :font=>'Helvetica 8', :justify=>:left).pack
+canvas = PhotoCanvas.new(root).pack(fill::both, expand:true)
+usage_frame = TkFrame.new(root, relief::ridge, borderwidth:2)
+hide_btn = TkButton.new(usage_frame, text:'hide usage',
+                        font:{size:8}, pady:1,
+                        command:proc{usage_frame.unpack})
+hide_btn.pack(anchor:'e', padx:5)
+usage = TkLabel.new(usage_frame, text:PhotoCanvas::USAGE,
+                    font:'Helvetica 8', justify::left).pack
 
 show_usage = proc{
-  usage_frame.pack(:before=>canvas, :fill=>:x, :expand=>true)
+  usage_frame.pack(before:canvas, fill::x, expand:true)
 }
 
 fname = TkVariable.new('-')
-f = TkFrame.new(root, :relief=>:sunken, :borderwidth=>1).pack(:fill=>:x)
-label = TkLabel.new(f, :textvariable=>fname,
-                    :font=>{:size=>-12, :weight=>:bold},
-                    :anchor=>'w').pack(:side=>:left, :fill=>:x, :padx=>10)
+f = TkFrame.new(root, relief::sunken, borderwidth:1).pack(fill::x)
+label = TkLabel.new(f, textvariable:fname,
+                    font:{size:-12, weight::bold},
+                    anchor:'w').pack(side::left, fill::x, padx:10)
 
 # create menu
 mspec = [

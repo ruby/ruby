@@ -8,9 +8,9 @@ module WEBrick_Testing
 
     @__server = WEBrick::HTTPServer.new(
       {
-        :BindAddress => "localhost",
-        :Logger => logger,
-        :AccessLog => [],
+        BindAddress: "localhost",
+        Logger: logger,
+        AccessLog: [],
       }.update(config))
     yield @__server
     @__started = true

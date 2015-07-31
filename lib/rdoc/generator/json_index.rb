@@ -113,7 +113,7 @@ class RDoc::Generator::JsonIndex
     index_methods
     index_pages
 
-    { :index => @index }
+    { index: @index }
   end
 
   ##
@@ -138,7 +138,7 @@ class RDoc::Generator::JsonIndex
     out_dir = @base_dir + @options.op_dir
     index_file = out_dir + SEARCH_INDEX_FILE
 
-    FileUtils.mkdir_p index_file.dirname, :verbose => $DEBUG_RDOC
+    FileUtils.mkdir_p index_file.dirname, verbose: $DEBUG_RDOC
 
     index_file.open 'w', 0644 do |io|
       io.set_encoding Encoding::UTF_8 if Object.const_defined? :Encoding
@@ -151,7 +151,7 @@ class RDoc::Generator::JsonIndex
       Dir['**/*.js'].each do |source|
         dest = File.join out_dir, source
 
-        FileUtils.install source, dest, :mode => 0644, :verbose => $DEBUG_RDOC
+        FileUtils.install source, dest, mode: 0644, verbose: $DEBUG_RDOC
       end
     end
   end
@@ -280,9 +280,9 @@ class RDoc::Generator::JsonIndex
     @classes = classes
 
     @index = {
-      :searchIndex => [],
-      :longSearchIndex => [],
-      :info => []
+      searchIndex: [],
+      longSearchIndex: [],
+      info: []
     }
   end
 

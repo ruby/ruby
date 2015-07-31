@@ -38,27 +38,27 @@ class EmojiTable
           tos = str_to.split('+')
           to_utf8 = tos.map(&:hex).pack("U*").unpack("H*").first
           comment = "[%s] U+%X -> %s" % [name, from.hex, tos.map{|c| "U+%X"%c.hex}.join(' ')]
-          block.call(:from => from_utf8,
-                     :to => to_utf8,
-                     :comment => comment,
-                     :fallback => false,
-                     :proposal => proposal)
+          block.call(from: from_utf8,
+                     to: to_utf8,
+                     comment: comment,
+                     fallback: false,
+                     proposal: proposal)
         elsif to.empty?
           if text_fallback.empty?
             comment = "[%s] U+%X -> U+3013 (GETA)" % [name, from.hex]
-            block.call(:from => from_utf8,
-                       :to => "\u{3013}".unpack("H*").first,
-                       :comment => comment, # geta
-                       :fallback => true,
-                       :proposal => false)
+            block.call(from: from_utf8,
+                       to: "\u{3013}".unpack("H*").first,
+                       comment: comment, # geta
+                       fallback: true,
+                       proposal: false)
           else
             to_utf8 = text_fallback.unpack("H*").first
             comment = %([%s] U+%X -> "%s") % [name, from.hex, text_fallback]
-            block.call(:from => from_utf8,
-                       :to => to_utf8,
-                       :comment => comment,
-                       :fallback => true,
-                       :proposal => false)
+            block.call(from: from_utf8,
+                       to: to_utf8,
+                       comment: comment,
+                       fallback: true,
+                       proposal: false)
           end
         else
           raise "something wrong: %s -> %s" % [from, to]

@@ -440,7 +440,7 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
     @addresses = addresses
 
     logger  = WEBrick::Log.new nil, WEBrick::BasicLog::FATAL
-    @server = WEBrick::HTTPServer.new :DoNotListen => true, :Logger => logger
+    @server = WEBrick::HTTPServer.new DoNotListen: true, Logger: logger
 
     @spec_dirs = @gem_dirs.map { |gem_dir| File.join gem_dir, 'specifications' }
     @spec_dirs.reject! { |spec_dir| !File.directory? spec_dir }
@@ -760,9 +760,9 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
       found_gems.each do |file_name|
         base_name = File.basename(file_name)
         doc_items << {
-          :name    => base_name,
-          :url     => doc_root(new_path),
-          :summary => ''
+          name: base_name,
+          url: doc_root(new_path),
+          summary: ''
         }
       end
 

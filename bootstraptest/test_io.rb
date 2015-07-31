@@ -102,7 +102,7 @@ assert_normal_exit %q{
     r1.close
     t1.join
     t2.join
-  }, 'megacontent-copy_stream', ["INT"], :timeout => 10 or break
+  }, 'megacontent-copy_stream', ["INT"], timeout: 10 or break
 end
 
 assert_normal_exit %q{

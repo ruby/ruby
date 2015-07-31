@@ -287,7 +287,7 @@ class TestCSV::Features < TestCSV
 
   def test_accepts_comment_skip_lines_option
     assert_nothing_raised(ArgumentError) do
-      CSV.new(@sample_data, :skip_lines => /\A\s*#/)
+      CSV.new(@sample_data, skip_lines: /\A\s*#/)
     end
   end
 
@@ -302,25 +302,25 @@ class TestCSV::Features < TestCSV
   def test_requires_skip_lines_to_call_match
     regex_stub = RegexStub.new
     assert_raise_with_message(ArgumentError, /skip_lines/) do
-      CSV.new(@sample_data, :skip_lines => regex_stub)
+      CSV.new(@sample_data, skip_lines: regex_stub)
     end
   end
 
   def test_comment_rows_are_ignored
     sample_data = "line,1,a\n#not,a,line\nline,2,b\n   #also,no,line"
-    c = CSV.new sample_data, :skip_lines => /\A\s*#/
+    c = CSV.new sample_data, skip_lines: /\A\s*#/
     assert_equal [["line", "1", "a"], ["line", "2", "b"]], c.each.to_a
   end
 
   def test_quoted_skip_line_markers_are_ignored
     sample_data = "line,1,a\n\"#not\",a,line\nline,2,b"
-    c = CSV.new sample_data, :skip_lines => /\A\s*#/
+    c = CSV.new sample_data, skip_lines: /\A\s*#/
     assert_equal [["line", "1", "a"], ["#not", "a", "line"], ["line", "2", "b"]], c.each.to_a
   end
 
   def test_string_works_like_a_regexp
     sample_data = "line,1,a\n#(not,a,line\nline,2,b\n   also,#no,line"
-    c = CSV.new sample_data, :skip_lines => "#"
+    c = CSV.new sample_data, skip_lines: "#"
     assert_equal [["line", "1", "a"], ["line", "2", "b"]], c.each.to_a
   end
 

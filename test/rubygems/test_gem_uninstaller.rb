@@ -21,7 +21,7 @@ class TestGemUninstaller < Gem::InstallerTestCase
   end
 
   def test_initialize_expand_path
-    uninstaller = Gem::Uninstaller.new nil, :install_dir => '/foo//bar'
+    uninstaller = Gem::Uninstaller.new nil, install_dir: '/foo//bar'
 
     assert_match %r|/foo/bar$|, uninstaller.instance_variable_get(:@gem_home)
   end
@@ -55,7 +55,7 @@ class TestGemUninstaller < Gem::InstallerTestCase
   end
 
   def test_remove_executables_force_keep
-    uninstaller = Gem::Uninstaller.new nil, :executables => false
+    uninstaller = Gem::Uninstaller.new nil, executables: false
 
     executable = File.join Gem.bindir(@user_spec.base_dir), 'executable'
     assert File.exist?(executable), 'executable not written'
@@ -70,7 +70,7 @@ class TestGemUninstaller < Gem::InstallerTestCase
   end
 
   def test_remove_executables_force_remove
-    uninstaller = Gem::Uninstaller.new nil, :executables => true
+    uninstaller = Gem::Uninstaller.new nil, executables: true
 
     executable = File.join Gem.bindir(@user_spec.base_dir), 'executable'
     assert File.exist?(executable), 'executable not written'
@@ -85,7 +85,7 @@ class TestGemUninstaller < Gem::InstallerTestCase
   end
 
   def test_remove_executables_user
-    uninstaller = Gem::Uninstaller.new nil, :executables => true
+    uninstaller = Gem::Uninstaller.new nil, executables: true
 
     use_ui @ui do
       uninstaller.remove_executables @user_spec
@@ -100,7 +100,7 @@ class TestGemUninstaller < Gem::InstallerTestCase
   def test_remove_executables_user_format
     Gem::Installer.exec_format = 'foo-%s-bar'
 
-    uninstaller = Gem::Uninstaller.new nil, :executables => true, :format_executable => true
+    uninstaller = Gem::Uninstaller.new nil, executables: true, format_executable: true
 
     use_ui @ui do
       uninstaller.remove_executables @user_spec
@@ -117,7 +117,7 @@ class TestGemUninstaller < Gem::InstallerTestCase
   def test_remove_executables_user_format_disabled
     Gem::Installer.exec_format = 'foo-%s-bar'
 
-    uninstaller = Gem::Uninstaller.new nil, :executables => true
+    uninstaller = Gem::Uninstaller.new nil, executables: true
 
     use_ui @ui do
       uninstaller.remove_executables @user_spec
@@ -132,7 +132,7 @@ class TestGemUninstaller < Gem::InstallerTestCase
   end
 
   def test_remove_not_in_home
-    uninstaller = Gem::Uninstaller.new nil, :install_dir => "#{@gemhome}2"
+    uninstaller = Gem::Uninstaller.new nil, install_dir: "#{@gemhome}2"
 
     e = assert_raises Gem::GemNotInHomeException do
       use_ui ui do
@@ -171,7 +171,7 @@ class TestGemUninstaller < Gem::InstallerTestCase
   end
 
   def test_uninstall
-    uninstaller = Gem::Uninstaller.new @spec.name, :executables => true
+    uninstaller = Gem::Uninstaller.new @spec.name, executables: true
 
     gem_dir = File.join @gemhome, 'gems', @spec.full_name
 
@@ -196,7 +196,7 @@ class TestGemUninstaller < Gem::InstallerTestCase
 
     install_default_gems spec
 
-    uninstaller = Gem::Uninstaller.new spec.name, :executables => true
+    uninstaller = Gem::Uninstaller.new spec.name, executables: true
 
     e = assert_raises Gem::InstallError do
       uninstaller.uninstall
@@ -216,7 +216,7 @@ class TestGemUninstaller < Gem::InstallerTestCase
 
     Gem::Specification.reset
 
-    uninstaller = Gem::Uninstaller.new spec.name, :executables => true
+    uninstaller = Gem::Uninstaller.new spec.name, executables: true
 
     uninstaller.uninstall
 
@@ -243,14 +243,14 @@ create_makefile '#{@spec.name}'
 
     assert_path_exists @spec.extension_dir, 'sanity check'
 
-    uninstaller = Gem::Uninstaller.new @spec.name, :executables => true
+    uninstaller = Gem::Uninstaller.new @spec.name, executables: true
     uninstaller.uninstall
 
     refute_path_exists @spec.extension_dir
   end
 
   def test_uninstall_nonexistent
-    uninstaller = Gem::Uninstaller.new 'bogus', :executables => true
+    uninstaller = Gem::Uninstaller.new 'bogus', executables: true
 
     e = assert_raises Gem::InstallError do
       uninstaller.uninstall
@@ -288,8 +288,8 @@ create_makefile '#{@spec.name}'
     @user_spec = Gem::Specification.find_by_name 'b'
 
     uninstaller = Gem::Uninstaller.new(@user_spec.name,
-                                       :executables  => true,
-                                       :user_install => true)
+                                       executables: true,
+                                       user_install: true)
 
     gem_dir = File.join @user_spec.gem_dir
 
@@ -312,7 +312,7 @@ create_makefile '#{@spec.name}'
   def test_uninstall_wrong_repo
     Gem.use_paths "#{@gemhome}2", [@gemhome]
 
-    uninstaller = Gem::Uninstaller.new @spec.name, :executables => true
+    uninstaller = Gem::Uninstaller.new @spec.name, executables: true
 
     e = assert_raises Gem::InstallError do
       uninstaller.uninstall
@@ -392,7 +392,7 @@ create_makefile '#{@spec.name}'
     quick_gem 'q', '1.0'
     quick_gem 'q', '1.1'
 
-    un = Gem::Uninstaller.new('q', :version => "1.0")
+    un = Gem::Uninstaller.new('q', version: "1.0")
     ui = Gem::MockGemUi.new("y\n")
 
     use_ui ui do
@@ -415,7 +415,7 @@ create_makefile '#{@spec.name}'
     quick_gem 'q', '1.0'
     quick_gem 'q', '1.1'
 
-    un = Gem::Uninstaller.new('q', :version => "1.0")
+    un = Gem::Uninstaller.new('q', version: "1.0")
     ui = Gem::MockGemUi.new("y\n")
 
     use_ui ui do
@@ -431,7 +431,7 @@ create_makefile '#{@spec.name}'
     quick_gem 'r', '1' do |s| s.add_development_dependency 'q', '= 1.0' end
     quick_gem 'q', '1.0'
 
-    un = Gem::Uninstaller.new('q', :version => "1.0")
+    un = Gem::Uninstaller.new('q', version: "1.0")
     ui = Gem::MockGemUi.new("y\n")
 
     use_ui ui do
@@ -447,7 +447,7 @@ create_makefile '#{@spec.name}'
     quick_gem 'r', '1' do |s| s.add_dependency 'q', '= 1' end
     quick_gem 'q', '1'
 
-    un = Gem::Uninstaller.new('q', :abort_on_dependent => true)
+    un = Gem::Uninstaller.new('q', abort_on_dependent: true)
     ui = Gem::MockGemUi.new("y\n")
 
     assert_raises Gem::DependencyRemovalException do
@@ -464,7 +464,7 @@ create_makefile '#{@spec.name}'
 
     quick_gem 'q', '1'
 
-    un = Gem::Uninstaller.new('q', :check_dev => true)
+    un = Gem::Uninstaller.new('q', check_dev: true)
     ui = Gem::MockGemUi.new("y\n")
 
     use_ui ui do

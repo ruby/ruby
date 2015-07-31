@@ -926,9 +926,9 @@ EOA
           targets = chain_reader(maker, maker_readers)
           targets.each do |target|
             person = {
-              :name => target.name,
-              :uri => target.uri,
-              :email => target.email,
+              name: target.name,
+              uri: target.uri,
+              email: target.email,
             }
             persons << person if person[:name]
           end
@@ -937,9 +937,9 @@ EOA
         actual_persons = chain_reader(feed, feed_readers) || []
         actual_persons = actual_persons.collect do |person|
           {
-            :name => person.name ? person.name.content : nil,
-            :uri => person.uri ? person.uri.content : nil,
-            :email => person.email ? person.email.content : nil,
+            name: person.name ? person.name.content : nil,
+            uri: person.uri ? person.uri.content : nil,
+            email: person.email ? person.email.content : nil,
           }
         end
         assert_equal(persons, actual_persons)
@@ -1080,9 +1080,9 @@ EOA
                                           feed_readers, &block)
       maker_extractor = Proc.new do |target|
         text = {
-          :type => target.type,
-          :content => target.content,
-          :xml_content => target.xml_content,
+          type: target.type,
+          content: target.content,
+          xml_content: target.xml_content,
         }
         if text[:type] == "xhtml"
           if text[:xml_content]
@@ -1107,9 +1107,9 @@ EOA
       end
       feed_extractor = Proc.new do |target|
         {
-          :type => target.type,
-          :content => target.content,
-          :xml_content => target.xhtml,
+          type: target.type,
+          content: target.content,
+          xml_content: target.xhtml,
         }
       end
       _assert_maker_atom_element(feed_type, maker_readers, feed_readers,
@@ -1205,13 +1205,13 @@ EOA
                                           feed_readers, &block)
       maker_extractor = Proc.new do |target|
         date = {
-          :content => target,
+          content: target,
         }
         date[:content] ? date : nil
       end
       feed_extractor = Proc.new do |target|
         {
-          :content => target.content,
+          content: target.content,
         }
       end
       _assert_maker_atom_element(feed_type, maker_readers, feed_readers,
@@ -1403,17 +1403,17 @@ EOA
                                       feed_readers, &block)
       maker_extractor = Proc.new do |target|
         category = {
-          :term => target.term,
-          :scheme => target.scheme,
-          :label => target.label,
+          term: target.term,
+          scheme: target.scheme,
+          label: target.label,
         }
         category[:term] ? category : nil
       end
       feed_extractor = Proc.new do |target|
         {
-          :term => target.term,
-          :scheme => target.scheme,
-          :label => target.label,
+          term: target.term,
+          scheme: target.scheme,
+          label: target.label,
         }
       end
       _assert_maker_atom_elements(feed_type, maker_readers, feed_readers,
@@ -1448,17 +1448,17 @@ EOA
                                      feed_readers, &block)
       maker_extractor = Proc.new do |target|
         generator = {
-          :uri => target.uri,
-          :version => target.version,
-          :content => target.content,
+          uri: target.uri,
+          version: target.version,
+          content: target.content,
         }
         generator[:content] ? generator : nil
       end
       feed_extractor = Proc.new do |target|
         {
-          :uri => target.uri,
-          :version => target.version,
-          :content => target.content,
+          uri: target.uri,
+          version: target.version,
+          content: target.content,
         }
       end
       _assert_maker_atom_element(feed_type, maker_readers, feed_readers,
@@ -1495,13 +1495,13 @@ EOA
                                 accessor_base, &block)
       maker_extractor = Proc.new do |target|
         icon = {
-          :content => target.__send__(accessor_base),
+          content: target.__send__(accessor_base),
         }
         icon[:content] ? icon : nil
       end
       feed_extractor = Proc.new do |target|
         {
-          :content => target.content,
+          content: target.content,
         }
       end
       _assert_maker_atom_element(feed_type, maker_readers, feed_readers,
@@ -1533,23 +1533,23 @@ EOA
                                  allow_duplication=false, &block)
       maker_extractor = Proc.new do |target|
         link = {
-          :href => target.href,
-          :rel => target.rel,
-          :type => target.type,
-          :hreflang => target.hreflang,
-          :title => target.title,
-          :length => target.length,
+          href: target.href,
+          rel: target.rel,
+          type: target.type,
+          hreflang: target.hreflang,
+          title: target.title,
+          length: target.length,
         }
         link[:href] ? link : nil
       end
       feed_extractor = Proc.new do |target|
         {
-          :href => target.href,
-          :rel => target.rel,
-          :type => target.type,
-          :hreflang => target.hreflang,
-          :title => target.title,
-          :length => target.length,
+          href: target.href,
+          rel: target.rel,
+          type: target.type,
+          hreflang: target.hreflang,
+          title: target.title,
+          length: target.length,
         }
       end
 
@@ -1613,13 +1613,13 @@ EOA
                                 accessor_base, &block)
       maker_extractor = Proc.new do |target|
         logo = {
-          :uri => target.__send__(accessor_base),
+          uri: target.__send__(accessor_base),
         }
         logo[:uri] ? logo : nil
       end
       feed_extractor = Proc.new do |target|
         {
-          :uri => target.content,
+          uri: target.content,
         }
       end
       _assert_maker_atom_element(feed_type, maker_readers, feed_readers,
@@ -1650,14 +1650,14 @@ EOA
     def _assert_maker_atom_id(feed_type, maker_readers, feed_readers, &block)
       maker_extractor = Proc.new do |target|
         id = {
-          :uri => target.id,
+          uri: target.id,
         }
         id[:uri] ? id : nil
       end
       feed_extractor = Proc.new do |target|
         if target.id
           {
-            :uri => target.id.content,
+            uri: target.id.content,
           }
         else
           nil
@@ -1690,18 +1690,18 @@ EOA
                                    feed_readers, &block)
       maker_extractor = Proc.new do |target|
         content = {
-          :type => target.type,
-          :src => target.src,
-          :content => target.content,
-          :xml => target.xml,
-          :inline_text => target.inline_text?,
-          :inline_html => target.inline_html?,
-          :inline_xhtml => target.inline_xhtml?,
-          :inline_other => target.inline_other?,
-          :inline_other_text => target.inline_other_text?,
-          :inline_other_xml => target.inline_other_xml?,
-          :inline_other_base64 => target.inline_other_base64?,
-          :out_of_line => target.out_of_line?,
+          type: target.type,
+          src: target.src,
+          content: target.content,
+          xml: target.xml,
+          inline_text: target.inline_text?,
+          inline_html: target.inline_html?,
+          inline_xhtml: target.inline_xhtml?,
+          inline_other: target.inline_other?,
+          inline_other_text: target.inline_other_text?,
+          inline_other_xml: target.inline_other_xml?,
+          inline_other_base64: target.inline_other_base64?,
+          out_of_line: target.out_of_line?,
         }
         content[:src] = nil if content[:src] and content[:content]
         if content[:type] or content[:content]
@@ -1712,18 +1712,18 @@ EOA
       end
       feed_extractor = Proc.new do |target|
         {
-          :type => target.type,
-          :src => target.src,
-          :content => target.content,
-          :xml => target.xml,
-          :inline_text => target.inline_text?,
-          :inline_html => target.inline_html?,
-          :inline_xhtml => target.inline_xhtml?,
-          :inline_other => target.inline_other?,
-          :inline_other_text => target.inline_other_text?,
-          :inline_other_xml => target.inline_other_xml?,
-          :inline_other_base64 => target.inline_other_base64?,
-          :out_of_line => target.out_of_line?,
+          type: target.type,
+          src: target.src,
+          content: target.content,
+          xml: target.xml,
+          inline_text: target.inline_text?,
+          inline_html: target.inline_html?,
+          inline_xhtml: target.inline_xhtml?,
+          inline_other: target.inline_other?,
+          inline_other_text: target.inline_other_text?,
+          inline_other_xml: target.inline_other_xml?,
+          inline_other_base64: target.inline_other_base64?,
+          out_of_line: target.out_of_line?,
         }
       end
       _assert_maker_atom_element(feed_type, maker_readers, feed_readers,

@@ -83,7 +83,7 @@ class TestGem < Gem::TestCase
 
     gemhome2 = "#{@gemhome}2"
 
-    installed = Gem.install 'a', '= 1', :install_dir => gemhome2
+    installed = Gem.install 'a', '= 1', install_dir: gemhome2
 
     assert_equal %w[a-1], installed.map { |spec| spec.full_name }
 
@@ -102,7 +102,7 @@ class TestGem < Gem::TestCase
       begin
         raise 'Error'
       rescue StandardError
-        Gem.install 'a', '= 1', :install_dir => gemhome2
+        Gem.install 'a', '= 1', install_dir: gemhome2
       end
     assert_equal %w[a-1], installed.map { |spec| spec.full_name }
   end
@@ -1169,9 +1169,9 @@ class TestGem < Gem::TestCase
     g = new_spec 'g', '1', nil, "lib/g.rb"
     m = new_spec 'm', '1', nil, "lib/m.rb"
 
-    install_gem g, :install_dir => Gem.dir
-    m0 = install_gem m, :install_dir => Gem.dir
-    m1 = install_gem m, :install_dir => Gem.user_dir
+    install_gem g, install_dir: Gem.dir
+    m0 = install_gem m, install_dir: Gem.dir
+    m1 = install_gem m, install_dir: Gem.user_dir
 
     assert_equal m0.gem_dir, File.join(Gem.dir, "gems", "m-1")
     assert_equal m1.gem_dir, File.join(Gem.user_dir, "gems", "m-1")
@@ -1225,9 +1225,9 @@ class TestGem < Gem::TestCase
     g = new_spec 'g', '1', nil, "lib/g.rb"
     m = new_spec 'm', '1', nil, "lib/m.rb"
 
-    install_gem g, :install_dir => Gem.dir
-    install_gem m, :install_dir => Gem.dir
-    install_gem m, :install_dir => Gem.user_dir
+    install_gem g, install_dir: Gem.dir
+    install_gem m, install_dir: Gem.dir
+    install_gem m, install_dir: Gem.user_dir
 
     Gem.use_paths Gem.dir, [ Gem.dir, Gem.user_dir]
 
@@ -1304,9 +1304,9 @@ class TestGem < Gem::TestCase
     end
 
     path = File.join(@tempdir, "gd-tmp")
-    install_gem a, :install_dir => path
-    install_gem b, :install_dir => path
-    install_gem c, :install_dir => path
+    install_gem a, install_dir: path
+    install_gem b, install_dir: path
+    install_gem c, install_dir: path
 
     ENV['GEM_PATH'] = path
     ENV['RUBYGEMS_GEMDEPS'] = "-"
@@ -1334,9 +1334,9 @@ class TestGem < Gem::TestCase
     end
 
     path = File.join(@tempdir, "gd-tmp")
-    install_gem a, :install_dir => path
-    install_gem b, :install_dir => path
-    install_gem c, :install_dir => path
+    install_gem a, install_dir: path
+    install_gem b, install_dir: path
+    install_gem c, install_dir: path
 
     ENV['GEM_PATH'] = path
     ENV['RUBYGEMS_GEMDEPS'] = "-"

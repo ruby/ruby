@@ -10,8 +10,8 @@ c = TkCanvas.new.pack
 begin
   st = Tk::Vu::TkcSticker.new(c, 0, 0, 10, 10)
 rescue
-  Tk.messageBox(:type=>'ok', :title=>"No sticker Item",
-                :message=>"This build of vu does not include the sticker item")
+  Tk.messageBox(type:'ok', title:"No sticker Item",
+                message:"This build of vu does not include the sticker item")
   exit
 end
 
@@ -34,7 +34,7 @@ txt_conf = [ [250, 250],
 fnt = TkFont.new('Helvetica 24 bold')
 
 #---GUI
-c = TkCanvas.new(:width=>500, :height=>500, :bg=>'aquamarine3').pack
+c = TkCanvas.new(width:500, height:500, bg:'aquamarine3').pack
 
 #---CRRW Use the technique of eval the coord ...
 sti = Tk::Vu::TkcSticker.new(c, sti_conf[0]){
@@ -90,7 +90,7 @@ c.bind('3', proc{
        })
 
 Tk.root.bind('p', proc{
-               c.postscript(:file=>'DEMO.ps')
+               c.postscript(file:'DEMO.ps')
                puts "DEMO.ps printed"
              })
 

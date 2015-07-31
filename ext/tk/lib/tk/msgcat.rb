@@ -202,7 +202,7 @@ class TkMsgCatalog < TkObject
       if File.readable?(file)
         count += 1
         if TkCore::WITH_ENCODING
-          eval(IO.read(file, :encoding=>"ASCII-8BIT"))
+          eval(IO.read(file, encoding:"ASCII-8BIT"))
         else
           eval(IO.read(file))
         end
@@ -222,7 +222,7 @@ class TkMsgCatalog < TkObject
       if File.readable?(file)
         count += 1
         if TkCore::WITH_ENCODING
-          @namespace.eval(IO.read(file, :encoding=>"ASCII-8BIT"))
+          @namespace.eval(IO.read(file, encoding:"ASCII-8BIT"))
         else
           @namespace.eval(IO.read(file))
         end

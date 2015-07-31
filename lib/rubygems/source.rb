@@ -12,9 +12,9 @@ class Gem::Source
   include Comparable
 
   FILES = { # :nodoc:
-    :released   => 'specs',
-    :latest     => 'latest_specs',
-    :prerelease => 'prerelease_specs',
+    released: 'specs',
+    latest: 'latest_specs',
+    prerelease: 'prerelease_specs',
   }
 
   ##
@@ -170,9 +170,9 @@ class Gem::Source
   #
   # +type+ is one of the following:
   #
-  # :released   => Return the list of all released specs
-  # :latest     => Return the list of only the highest version of each gem
-  # :prerelease => Return the list of all prerelease only specs
+  # released: Return the list of all released specs
+  # latest: Return the list of only the highest version of each gem
+  # prerelease: Return the list of all prerelease only specs
   #
 
   def load_specs(type)

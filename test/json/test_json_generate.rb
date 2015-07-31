@@ -52,7 +52,7 @@ EOT
     parsed_json = parse(json)
     assert_equal({"1"=>2}, parsed_json)
     assert_raise(GeneratorError) { generate(666) }
-    assert_equal '666', generate(666, :quirks_mode => true)
+    assert_equal '666', generate(666, quirks_mode: true)
   end
 
   def test_generate_pretty
@@ -70,11 +70,11 @@ EOT
     parsed_json = parse(json)
     assert_equal({"1"=>2}, parsed_json)
     assert_raise(GeneratorError) { pretty_generate(666) }
-    assert_equal '666', pretty_generate(666, :quirks_mode => true)
+    assert_equal '666', pretty_generate(666, quirks_mode: true)
   end
 
   def test_generate_custom
-    state = State.new(:space_before => " ", :space => "   ", :indent => "<i>", :object_nl => "\n", :array_nl => "<a_nl>")
+    state = State.new(space_before: " ", space: "   ", indent: "<i>", object_nl: "\n", array_nl: "<a_nl>")
     json = generate({1=>{2=>3,4=>[5,6]}}, state)
     assert_equal(<<'EOT'.chomp, json)
 {
@@ -96,7 +96,7 @@ EOT
     parsed_json = parse(json)
     assert_equal({"1"=>2}, parsed_json)
     assert_raise(GeneratorError) { fast_generate(666) }
-    assert_equal '666', fast_generate(666, :quirks_mode => true)
+    assert_equal '666', fast_generate(666, quirks_mode: true)
   end
 
   def test_own_state
@@ -136,70 +136,70 @@ EOT
   def test_pretty_state
     state = PRETTY_STATE_PROTOTYPE.dup
     assert_equal({
-      :allow_nan             => false,
-      :array_nl              => "\n",
-      :ascii_only            => false,
-      :buffer_initial_length => 1024,
-      :quirks_mode           => false,
-      :depth                 => 0,
-      :indent                => "  ",
-      :max_nesting           => 100,
-      :object_nl             => "\n",
-      :space                 => " ",
-      :space_before          => "",
+      allow_nan: false,
+      array_nl: "\n",
+      ascii_only: false,
+      buffer_initial_length: 1024,
+      quirks_mode: false,
+      depth: 0,
+      indent: "  ",
+      max_nesting: 100,
+      object_nl: "\n",
+      space: " ",
+      space_before: "",
     }.sort_by { |n,| n.to_s }, state.to_h.sort_by { |n,| n.to_s })
   end
 
   def test_safe_state
     state = SAFE_STATE_PROTOTYPE.dup
     assert_equal({
-      :allow_nan             => false,
-      :array_nl              => "",
-      :ascii_only            => false,
-      :buffer_initial_length => 1024,
-      :quirks_mode           => false,
-      :depth                 => 0,
-      :indent                => "",
-      :max_nesting           => 100,
-      :object_nl             => "",
-      :space                 => "",
-      :space_before          => "",
+      allow_nan: false,
+      array_nl: "",
+      ascii_only: false,
+      buffer_initial_length: 1024,
+      quirks_mode: false,
+      depth: 0,
+      indent: "",
+      max_nesting: 100,
+      object_nl: "",
+      space: "",
+      space_before: "",
     }.sort_by { |n,| n.to_s }, state.to_h.sort_by { |n,| n.to_s })
   end
 
   def test_fast_state
     state = FAST_STATE_PROTOTYPE.dup
     assert_equal({
-      :allow_nan             => false,
-      :array_nl              => "",
-      :ascii_only            => false,
-      :buffer_initial_length => 1024,
-      :quirks_mode           => false,
-      :depth                 => 0,
-      :indent                => "",
-      :max_nesting           => 0,
-      :object_nl             => "",
-      :space                 => "",
-      :space_before          => "",
+      allow_nan: false,
+      array_nl: "",
+      ascii_only: false,
+      buffer_initial_length: 1024,
+      quirks_mode: false,
+      depth: 0,
+      indent: "",
+      max_nesting: 0,
+      object_nl: "",
+      space: "",
+      space_before: "",
     }.sort_by { |n,| n.to_s }, state.to_h.sort_by { |n,| n.to_s })
   end
 
   def test_allow_nan
     assert_raises(GeneratorError) { generate([JSON::NaN]) }
-    assert_equal '[NaN]', generate([JSON::NaN], :allow_nan => true)
+    assert_equal '[NaN]', generate([JSON::NaN], allow_nan: true)
     assert_raises(GeneratorError) { fast_generate([JSON::NaN]) }
     assert_raises(GeneratorError) { pretty_generate([JSON::NaN]) }
-    assert_equal "[\n  NaN\n]", pretty_generate([JSON::NaN], :allow_nan => true)
+    assert_equal "[\n  NaN\n]", pretty_generate([JSON::NaN], allow_nan: true)
     assert_raises(GeneratorError) { generate([JSON::Infinity]) }
-    assert_equal '[Infinity]', generate([JSON::Infinity], :allow_nan => true)
+    assert_equal '[Infinity]', generate([JSON::Infinity], allow_nan: true)
     assert_raises(GeneratorError) { fast_generate([JSON::Infinity]) }
     assert_raises(GeneratorError) { pretty_generate([JSON::Infinity]) }
-    assert_equal "[\n  Infinity\n]", pretty_generate([JSON::Infinity], :allow_nan => true)
+    assert_equal "[\n  Infinity\n]", pretty_generate([JSON::Infinity], allow_nan: true)
     assert_raises(GeneratorError) { generate([JSON::MinusInfinity]) }
-    assert_equal '[-Infinity]', generate([JSON::MinusInfinity], :allow_nan => true)
+    assert_equal '[-Infinity]', generate([JSON::MinusInfinity], allow_nan: true)
     assert_raises(GeneratorError) { fast_generate([JSON::MinusInfinity]) }
     assert_raises(GeneratorError) { pretty_generate([JSON::MinusInfinity]) }
-    assert_equal "[\n  -Infinity\n]", pretty_generate([JSON::MinusInfinity], :allow_nan => true)
+    assert_equal "[\n  -Infinity\n]", pretty_generate([JSON::MinusInfinity], allow_nan: true)
   end
 
   def test_depth
@@ -244,11 +244,11 @@ EOT
 
   def test_configure_using_configure_and_merge
     numbered_state = {
-      :indent       => "1",
-      :space        => '2',
-      :space_before => '3',
-      :object_nl    => '4',
-      :array_nl     => '5'
+      indent: "1",
+      space: '2',
+      space_before: '3',
+      object_nl: '4',
+      array_nl: '5'
     }
     state1 = JSON.state.new
     state1.merge(numbered_state)
@@ -268,7 +268,7 @@ EOT
 
   def test_configure_hash_conversion
     state = JSON.state.new
-    state.configure(:indent => '1')
+    state.configure(indent: '1')
     assert_equal '1', state.indent
     state = JSON.state.new
     foo = 'foo'
@@ -276,7 +276,7 @@ EOT
       state.configure(foo)
     end
     def foo.to_h
-      { :indent => '2' }
+      { indent: '2' }
     end
     state.configure(foo)
     assert_equal '2', state.indent

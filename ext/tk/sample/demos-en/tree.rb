@@ -16,12 +16,12 @@ $tree_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
-base_frame = TkFrame.new($tree_demo).pack(:fill=>:both, :expand=>true)
+base_frame = TkFrame.new($tree_demo).pack(fill::both, expand:true)
 
 ## Explanatory text
-Ttk::Label.new(base_frame, :font=>$font, :wraplength=>'4i',
-               :justify=>:left, :anchor=>'n', :padding=>[10, 2, 10, 6],
-               :text=><<EOL).pack(:fill=>:x)
+Ttk::Label.new(base_frame, font:$font, wraplength:'4i',
+               justify::left, anchor:'n', padding:[10, 2, 10, 6],
+               text:<<EOL).pack(fill::x)
 Ttk is the new Tk themed widget set. \
 One of the widgets it includes is a tree widget, \
 which allows the user to browse a hierarchical data-set such as a filesystem. \
@@ -36,27 +36,27 @@ EOL
 ## See Code / Dismiss
 Ttk::Frame.new(base_frame) {|frame|
   sep = Ttk::Separator.new(frame)
-  Tk.grid(sep, :columnspan=>4, :row=>0, :sticky=>'ew', :pady=>2)
+  Tk.grid(sep, columnspan:4, row:0, sticky:'ew', pady:2)
   TkGrid('x',
-         Ttk::Button.new(frame, :text=>'See Code',
-                         :image=>$image['view'], :compound=>:left,
-                         :command=>proc{showCode 'tree'}),
-         Ttk::Button.new(frame, :text=>'Dismiss',
-                         :image=>$image['delete'], :compound=>:left,
-                         :command=>proc{
+         Ttk::Button.new(frame, text:'See Code',
+                         image:$image['view'], compound::left,
+                         command:proc{showCode 'tree'}),
+         Ttk::Button.new(frame, text:'Dismiss',
+                         image:$image['delete'], compound::left,
+                         command:proc{
                            $tree_demo.destroy
                            $tree_demo = nil
                          }),
-         :padx=>4, :pady=>4)
-  grid_columnconfigure(0, :weight=>1)
-  pack(:side=>:bottom, :fill=>:x)
+         padx:4, pady:4)
+  grid_columnconfigure(0, weight:1)
+  pack(side::bottom, fill::x)
 }
 
 ## Code to populate the roots of the tree (can be more than one on Windows)
 def populate_roots(tree)
   TkComm.simplelist(Tk.tk_call('file', 'volumes')).sort.each{|dir|
-    populate_tree(tree, tree.insert(nil, :end, :text=>dir,
-                                    :values=>[dir, 'directory']))
+    populate_tree(tree, tree.insert(nil, :end, text:dir,
+                                    values:[dir, 'directory']))
   }
 end
 
@@ -69,11 +69,11 @@ def populate_tree(tree, node)
   Dir.glob("#{path}/*").sort.each{|f|
     type = File.ftype(f) rescue nil
     id = tree.insert(node, :end,
-                     :text=>File.basename(f), :values=>[f, type]).id
+                     text:File.basename(f), values:[f, type]).id
     if type == 'directory'
       ## Make it so that this node is openable
-      tree.insert(id, 0, :text=>'dummy')
-      tree.itemconfigure(id, :text=>File.basename(f))
+      tree.insert(id, 0, text:'dummy')
+      tree.itemconfigure(id, text:File.basename(f))
     elsif type == 'file'
       size = File.size(f)
       if size >= 1024*1024*1024
@@ -94,8 +94,8 @@ def populate_tree(tree, node)
 end
 
 ## Create the tree and set it up
-tree = Ttk::Treeview.new(base_frame, :columns=>%w(fullpath type size),
-                         :displaycolumns=>['size'])
+tree = Ttk::Treeview.new(base_frame, columns:%w(fullpath type size),
+                         displaycolumns:['size'])
 if Tk.windowingsystem != 'aqua'
   vsb = tree.yscrollbar(Ttk::Scrollbar.new(base_frame))
   hsb = tree.xscrollbar(Ttk::Scrollbar.new(base_frame))
@@ -104,16 +104,16 @@ else
   hsb = tree.xscrollbar(Tk::Scrollbar.new(base_frame))
 end
 
-tree.heading_configure('#0', :text=>'Directory Structure')
-tree.heading_configure('size', :text=>'File Size')
-tree.column_configure('size', :stretch=>0, :width=>70)
+tree.heading_configure('#0', text:'Directory Structure')
+tree.heading_configure('size', text:'File Size')
+tree.column_configure('size', stretch:0, width:70)
 populate_roots(tree)
 tree.bind('<TreeviewOpen>', '%W'){|w| populate_tree(w, w.focus_item)}
 
 ## Arrange the tree and its scrollbars in the toplevel
-container = Ttk::Frame.new(base_frame).pack(:fill=>:both, :expand=>true)
+container = Ttk::Frame.new(base_frame).pack(fill::both, expand:true)
 container.lower
-Tk.grid(tree, vsb, :in=>container, :sticky=>'nsew')
-Tk.grid(hsb,       :in=>container, :sticky=>'nsew')
-container.grid_columnconfigure(0, :weight=>1)
-container.grid_rowconfigure(0, :weight=>1)
+Tk.grid(tree, vsb, in:container, sticky:'nsew')
+Tk.grid(hsb,       in:container, sticky:'nsew')
+container.grid_columnconfigure(0, weight:1)
+container.grid_rowconfigure(0, weight:1)

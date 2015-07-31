@@ -14,8 +14,8 @@ c = TkCanvas.new.pack
 begin
   st = Tk::Vu::TkcSticker.new(c, 0, 0, 10, 10)
 rescue
-  Tk.messageBox(:type=>'ok', :title=>"No sticker Item",
-                :message=>"This build of vu does not include the sticker item")
+  Tk.messageBox(type:'ok', title:"No sticker Item",
+                message:"This build of vu does not include the sticker item")
   exit
 end
 #st.delete
@@ -25,7 +25,7 @@ steps = []
 steps << proc{
   # I used a 75dpi screen for testing, but others should make no difference!
   puts 'You\'ll see a small upright rectangle with "He" inside.'
-  st = Tk::Vu::TkcSticker.new(c, '6m', '10m', '13m', '27m', :text=>'Hello')
+  st = Tk::Vu::TkcSticker.new(c, '6m', '10m', '13m', '27m', text:'Hello')
 }
 
 steps << proc{
@@ -56,8 +56,8 @@ steps << proc{
 
 steps << proc{
   puts 'A vertical bar appears in the lower right region and text jumps to the left.'
-  st.configure(:anchor=>:n, :relw=>0.3, :relh=>0.7,
-               :relx=>0.6, :rely=>0.3, :bar=>'red')
+  st.configure(anchor::n, relw:0.3, relh:0.7,
+               relx:0.6, rely:0.3, bar:'red')
 }
 
 steps << proc{

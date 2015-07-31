@@ -27,7 +27,7 @@ class TestSignal < Test::Unit::TestCase
   def test_signal_process_group
     bug4362 = '[ruby-dev:43169]'
     assert_nothing_raised(bug4362) do
-      pid = Process.spawn(EnvUtil.rubybin, '-e', 'sleep 10', :pgroup => true)
+      pid = Process.spawn(EnvUtil.rubybin, '-e', 'sleep 10', pgroup: true)
       Process.kill(:"-TERM", pid)
       Process.waitpid(pid)
       assert_equal(true, $?.signaled?)
@@ -228,7 +228,7 @@ class TestSignal < Test::Unit::TestCase
 
   def test_signame_delivered
     10.times do
-      IO.popen([EnvUtil.rubybin, "-e", <<EOS, :err => File::NULL]) do |child|
+      IO.popen([EnvUtil.rubybin, "-e", <<EOS, err: File::NULL]) do |child|
         Signal.trap("INT") do |signo|
           signame = Signal.signame(signo)
           Marshal.dump(signame, STDOUT)

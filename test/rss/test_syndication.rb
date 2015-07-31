@@ -21,9 +21,9 @@ module RSS
       end
 
       @elems = {
-        :updatePeriod => "hourly",
-        :updateFrequency => "2",
-        :updateBase => t,
+        updatePeriod: "hourly",
+        updateFrequency: "2",
+        updateBase: t,
       }
 
       @sy_nodes = @elems.collect do |name, value|
@@ -67,9 +67,9 @@ EOR
       end
 
       new_value = {
-        :updatePeriod => "daily",
-        :updateFrequency => "11",
-        :updateBase => t,
+        updatePeriod: "daily",
+        updateFrequency: "11",
+        updateBase: t,
       }
 
       @elems.each do |name, value|

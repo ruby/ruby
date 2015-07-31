@@ -5,9 +5,9 @@ require 'tkextlib/tcllib/plotchart'
 
 ###############################
 
-c1 = TkCanvas.new(:background=>'white', :width=>400, :height=>200)
-c2 = TkCanvas.new(:background=>'white', :width=>400, :height=>200)
-Tk.pack(c1,c2, :fill=>:both, :side=>:top)
+c1 = TkCanvas.new(background:'white', width:400, height:200)
+c2 = TkCanvas.new(background:'white', width:400, height:200)
+Tk.pack(c1,c2, fill::both, side::top)
 
 ###############################
 # Set up a strip chart
@@ -47,20 +47,20 @@ s.plot('circle',           [70.0, 70.0, 42.0])
 ###############################
 # Check the symbols
 ###############################
-h = TkToplevel.new(:title=>'h')
-c = TkCanvas.new(h, :bg=>'white', :width=>400, :height=>200).pack(:fill=>:both)
+h = TkToplevel.new(title:'h')
+c = TkCanvas.new(h, bg:'white', width:400, height:200).pack(fill::both)
 
 s = Tk::Tcllib::Plotchart::XYPlot.new(c, [0.0, 100.0, 10.0],
                                          [0.0, 100.0, 20.0])
-s.dataconfig('series1', :colour=>'red',   :type=>:symbol)
-s.dataconfig('series2', :colour=>'green', :type=>:both)
+s.dataconfig('series1', colour:'red',   type::symbol)
+s.dataconfig('series2', colour:'green', type::both)
 
-s.yconfig(:format=>"%12.2e")
+s.yconfig(format:"%12.2e")
 
 x = 5.0
 %w(plus cross circle up down dot upfilled downfilled).each{|sym|
-  s.dataconfig('series1', :symbol=>sym)
-  s.dataconfig('series2', :symbol=>sym)
+  s.dataconfig('series1', symbol:sym)
+  s.dataconfig('series2', symbol:sym)
   s.plot('series1', x, 50.0)
   s.plot('series2', x, 20)
   x += 10

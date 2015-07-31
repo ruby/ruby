@@ -10,9 +10,9 @@ module RSS
 
     def test_accessor
       [
-        {:href => "a.xsl", :type => "text/xsl"},
-        {:media => "print", :title => "FOO"},
-        {:charset => "UTF-8", :alternate => "yes"},
+        {href: "a.xsl", type: "text/xsl"},
+        {media: "print", title: "FOO"},
+        {charset: "UTF-8", alternate: "yes"},
       ].each do |attrs|
         assert_xml_stylesheet_attrs(attrs, XMLStyleSheet.new(attrs))
       end
@@ -20,20 +20,20 @@ module RSS
 
     def test_to_s
       [
-        {:href => "a.xsl", :type => "text/xsl"},
-        {:type => "text/xsl"},
-        {:href => "a.xsl", :guess_type => "text/xsl"},
-        {:href => "a.css", :type => "text/css"},
-        {:href => "a.css", :type => "text/xsl",
-         :guess_type => "text/css"},
-        {:href => "a.xsl", :type => "text/xsl",
-         :title => "sample", :media => "printer",
-         :charset => "UTF-8", :alternate => "yes"},
-        {:href => "a.css", :guess_type => "text/css",
-         :alternate => "no"},
-        {:type => "text/xsl", :title => "sample",
-         :media => "printer", :charset => "UTF-8",
-         :alternate => "yes"},
+        {href: "a.xsl", type: "text/xsl"},
+        {type: "text/xsl"},
+        {href: "a.xsl", guess_type: "text/xsl"},
+        {href: "a.css", type: "text/css"},
+        {href: "a.css", type: "text/xsl",
+         guess_type: "text/css"},
+        {href: "a.xsl", type: "text/xsl",
+         title: "sample", media: "printer",
+         charset: "UTF-8", alternate: "yes"},
+        {href: "a.css", guess_type: "text/css",
+         alternate: "no"},
+        {type: "text/xsl", title: "sample",
+         media: "printer", charset: "UTF-8",
+         alternate: "yes"},
       ].each do |attrs|
         target, contents = parse_pi(XMLStyleSheet.new(attrs).to_s)
         assert_xml_stylesheet(target, attrs, XMLStyleSheet.new(contents))
@@ -56,23 +56,23 @@ module RSS
 
     def test_parse
       [
-        [{:href => "a.xsl", :type => "text/xsl"},],
-        [{:media => "print", :title => "FOO"},],
-        [{:charset => "UTF-8", :alternate => "yes"},],
-        [{:href => "a.xsl", :type => "text/xsl"},
-         {:type => "text/xsl"},
-         {:href => "a.xsl", :guess_type => "text/xsl"},
-         {:href => "a.css", :type => "text/css"},
-         {:href => "a.css", :type => "text/xsl",
-          :guess_type => "text/css"},
-         {:href => "a.xsl", :type => "text/xsl",
-          :title => "sample", :media => "printer",
-          :charset => "UTF-8", :alternate => "yes"},
-         {:href => "a.css", :guess_type => "text/css",
-          :alternate => "no"},
-         {:type => "text/xsl", :title => "sample",
-          :media => "printer", :charset => "UTF-8",
-          :alternate => "yes"},],
+        [{href: "a.xsl", type: "text/xsl"},],
+        [{media: "print", title: "FOO"},],
+        [{charset: "UTF-8", alternate: "yes"},],
+        [{href: "a.xsl", type: "text/xsl"},
+         {type: "text/xsl"},
+         {href: "a.xsl", guess_type: "text/xsl"},
+         {href: "a.css", type: "text/css"},
+         {href: "a.css", type: "text/xsl",
+          guess_type: "text/css"},
+         {href: "a.xsl", type: "text/xsl",
+          title: "sample", media: "printer",
+          charset: "UTF-8", alternate: "yes"},
+         {href: "a.css", guess_type: "text/css",
+          alternate: "no"},
+         {type: "text/xsl", title: "sample",
+          media: "printer", charset: "UTF-8",
+          alternate: "yes"},],
       ].each do |xsss|
         doc = REXML::Document.new(make_sample_RDF)
         root = doc.root

@@ -1298,7 +1298,7 @@ class TestHash < Test::Unit::TestCase
     hash = assert_nothing_raised(SyntaxError, feature4935) do
       break eval(%q({foo: 1, "foo-bar": 2, "hello-#{x}": 3, 'hello-#{x}': 4, 'bar': {}}))
     end
-    assert_equal({:foo => 1, :'foo-bar' => 2, :'hello-world' => 3, :'hello-#{x}' => 4, :bar => {}}, hash, feature4935)
+    assert_equal({foo: 1, :'foo-bar' => 2, :'hello-world' => 3, :'hello-#{x}' => 4, bar: {}}, hash, feature4935)
     x = x
   end
 

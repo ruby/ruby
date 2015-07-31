@@ -218,7 +218,7 @@ if defined?(WIN32OLE_EVENT)
       def test_on_event_hash_return
         ev = WIN32OLE_EVENT.new(@db)
         ev.on_event('WillConnect'){|*args|
-          {:return => 1, :ConnectionString => CONNSTR}
+          {return: 1, ConnectionString: CONNSTR}
         }
         @db.connectionString = 'XXX'
         @db.open
@@ -228,7 +228,7 @@ if defined?(WIN32OLE_EVENT)
       def test_on_event_hash_return2
         ev = WIN32OLE_EVENT.new(@db)
         ev.on_event('WillConnect'){|*args|
-          {:ConnectionString => CONNSTR}
+          {ConnectionString: CONNSTR}
         }
         @db.connectionString = 'XXX'
         @db.open

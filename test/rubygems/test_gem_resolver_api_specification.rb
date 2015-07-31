@@ -5,10 +5,10 @@ class TestGemResolverAPISpecification < Gem::TestCase
   def test_initialize
     set = Gem::Resolver::APISet.new
     data = {
-      :name     => 'rails',
-      :number   => '3.0.3',
-      :platform => Gem::Platform.local.to_s,
-      :dependencies => [
+      name: 'rails',
+      number: '3.0.3',
+      platform: Gem::Platform.local.to_s,
+      dependencies: [
         ['bundler',  '~> 1.0'],
         ['railties', '= 3.0.3'],
       ],
@@ -44,10 +44,10 @@ class TestGemResolverAPISpecification < Gem::TestCase
     set = Gem::Resolver::APISet.new repo
 
     data = {
-      :name     => 'rails',
-      :number   => '3.0.3',
-      :platform => 'ruby',
-      :dependencies => [
+      name: 'rails',
+      number: '3.0.3',
+      platform: 'ruby',
+      dependencies: [
         ['bundler',  '~> 1.0'],
         ['railties', '= 3.0.3'],
       ],
@@ -71,10 +71,10 @@ class TestGemResolverAPISpecification < Gem::TestCase
   def test_installable_platform_eh
     set = Gem::Resolver::APISet.new
     data = {
-      :name     => 'a',
-      :number   => '1',
-      :platform => 'ruby',
-      :dependencies => [],
+      name: 'a',
+      number: '1',
+      platform: 'ruby',
+      dependencies: [],
     }
 
     a_spec = Gem::Resolver::APISpecification.new set, data
@@ -82,10 +82,10 @@ class TestGemResolverAPISpecification < Gem::TestCase
     assert a_spec.installable_platform?
 
     data = {
-      :name     => 'b',
-      :number   => '1',
-      :platform => 'cpu-other_platform-1',
-      :dependencies => [],
+      name: 'b',
+      number: '1',
+      platform: 'cpu-other_platform-1',
+      dependencies: [],
     }
 
     b_spec = Gem::Resolver::APISpecification.new set, data
@@ -93,10 +93,10 @@ class TestGemResolverAPISpecification < Gem::TestCase
     refute b_spec.installable_platform?
 
     data = {
-      :name     => 'c',
-      :number   => '1',
-      :platform => Gem::Platform.local.to_s,
-      :dependencies => [],
+      name: 'c',
+      number: '1',
+      platform: Gem::Platform.local.to_s,
+      dependencies: [],
     }
 
     c_spec = Gem::Resolver::APISpecification.new set, data
@@ -107,10 +107,10 @@ class TestGemResolverAPISpecification < Gem::TestCase
   def test_source
     set = Gem::Resolver::APISet.new
     data = {
-      :name         => 'a',
-      :number       => '1',
-      :platform     => 'ruby',
-      :dependencies => [],
+      name: 'a',
+      number: '1',
+      platform: 'ruby',
+      dependencies: [],
     }
 
     api_spec = Gem::Resolver::APISpecification.new set, data
@@ -126,10 +126,10 @@ class TestGemResolverAPISpecification < Gem::TestCase
     dep_uri = URI(@gem_repo) + 'api/v1/dependencies'
     set = Gem::Resolver::APISet.new dep_uri
     data = {
-      :name         => 'a',
-      :number       => '1',
-      :platform     => 'ruby',
-      :dependencies => [],
+      name: 'a',
+      number: '1',
+      platform: 'ruby',
+      dependencies: [],
     }
 
     api_spec = Gem::Resolver::APISpecification.new set, data

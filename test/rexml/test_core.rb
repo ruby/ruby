@@ -161,7 +161,7 @@ module REXMLTests
       source = "<a>#{text}<b>#{text}</b><c>#{text}</c>#{text}</a>"
 
       doc = Document.new( source, {
-        :respect_whitespace => %w{ a c }
+        respect_whitespace: %w{ a c }
       } )
       assert_equal text, doc.elements["//c"].text
       string = ""
@@ -175,7 +175,7 @@ module REXMLTests
       assert_equal string, doc.elements["/a/d/c"].text
       assert string != doc.elements["/a/e"].text, "Text wasn't properly compressed"
 
-      doc = Document.new source, { :respect_whitespace => :all }
+      doc = Document.new source, { respect_whitespace: :all }
       doc.root.add_element("d").text = string
       assert_equal text, doc.root.text
       nxt = ""
@@ -363,7 +363,7 @@ module REXMLTests
 
       string2 = "<a>#{string}</a>"
       doc = Document.new( string2, {
-        :raw => %w{ a b }
+        raw: %w{ a b }
       } )
       f.write(doc,out="")
       assert_equal(string2, out)
@@ -377,7 +377,7 @@ module REXMLTests
 
       # test all
       string = "<a>&amp;<b>&lt;</b><c>&gt;<d>&quot;</d></c></a>"
-      doc = Document.new(string, { :raw => :all })
+      doc = Document.new(string, { raw: :all })
       assert_equal( "&amp;", doc.elements["/a"][0].to_s )
       assert_equal( "&", doc.elements["/a"].text )
       assert_equal( "&lt;", doc.elements["/a/b"][0].to_s )
@@ -906,9 +906,9 @@ EOL
     def test_ignore_whitespace
       source = "<a> <b/> abc <![CDATA[def]]>  </a>"
 
-      context_all = {:ignore_whitespace_nodes => :all}
-      context_a = {:ignore_whitespace_nodes => %(a)}
-      context_b = {:ignore_whitespace_nodes => %(b)}
+      context_all = {ignore_whitespace_nodes: :all}
+      context_a = {ignore_whitespace_nodes: %(a)}
+      context_b = {ignore_whitespace_nodes: %(b)}
 
       tests = [[[" abc ", "def"], context_all],
                [[" abc ", "def"], context_a],
@@ -1338,7 +1338,7 @@ ENDXML
 
       # The pretty printer ignores all whitespace, anyway so output1 == output2
       f = REXML::Formatters::Pretty.new( 2 )
-      d = Document.new( xml, :ignore_whitespace_nodes=>:all )
+      d = Document.new( xml, ignore_whitespace_nodes::all )
       f.write( d, output1="" )
 
       d = Document.new( xml )

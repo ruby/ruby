@@ -1,15 +1,15 @@
 require "webrick"
 
 httpd = WEBrick::HTTPServer.new(
-  :DocumentRoot => File::dirname(__FILE__),
-  :Port         => 10080,
-  :Logger       => WEBrick::Log.new($stderr, WEBrick::Log::DEBUG),
-  :AccessLog    => [
+  DocumentRoot: File::dirname(__FILE__),
+  Port: 10080,
+  Logger: WEBrick::Log.new($stderr, WEBrick::Log::DEBUG),
+  AccessLog: [
     [ $stderr, WEBrick::AccessLog::COMMON_LOG_FORMAT  ],
     [ $stderr, WEBrick::AccessLog::REFERER_LOG_FORMAT ],
     [ $stderr, WEBrick::AccessLog::AGENT_LOG_FORMAT   ],
   ],
-  :CGIPathEnv   => ENV["PATH"]   # PATH environment variable for CGI.
+  CGIPathEnv: ENV["PATH"]   # PATH environment variable for CGI.
 )
 
 require "./hello"

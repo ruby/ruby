@@ -878,7 +878,7 @@ class CSV
     # then all of the field rows.
     #
     # This method assumes you want the Table.headers(), unless you explicitly
-    # pass <tt>:write_headers => false</tt>.
+    # pass <tt>write_headers: false</tt>.
     #
     def to_csv(options = Hash.new)
       wh = options.fetch(:write_headers, true)

@@ -50,38 +50,38 @@ class Button_clone < TkLabel
   end
 end
 
-TkLabel.new(:text=><<EOT).pack
+TkLabel.new(text:<<EOT).pack
 This is a sample of 'event binding'.
 The first button is a normal button widget.
 And the second one is a normal label widget
 but with some bindings like a button widget.
 EOT
 
-lbl = TkLabel.new(:foreground=>'red').pack(:pady=>3)
+lbl = TkLabel.new(foreground:'red').pack(pady:3)
 
 v = TkVariable.new(0)
 
 TkFrame.new{|f|
-  TkLabel.new(f, :text=>'click count : ').pack(:side=>:left)
-  TkLabel.new(f, :textvariable=>v).pack(:side=>:left)
+  TkLabel.new(f, text:'click count : ').pack(side::left)
+  TkLabel.new(f, textvariable:v).pack(side::left)
 }.pack
 
-TkButton.new(:text=>'normal Button widget',
-             :command=>proc{
+TkButton.new(text:'normal Button widget',
+             command:proc{
                puts 'button is clicked!!'
                lbl.text 'button is clicked!!'
                v.numeric += 1
              }){
-  pack(:fill=>:x, :expand=>true)
+  pack(fill::x, expand:true)
 }
 
-Button_clone.new(:text=>'Label with Button binding',
-                 :command=>proc{
+Button_clone.new(text:'Label with Button binding',
+                 command:proc{
                    puts 'label is clicked!!'
                    lbl.text 'label is clicked!!'
                    v.numeric += 1
                  }){
-  pack(:fill=>:x, :expand=>true)
+  pack(fill::x, expand:true)
 }
 
 Tk.mainloop

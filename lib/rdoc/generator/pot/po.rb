@@ -62,9 +62,9 @@ Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;
     CONTENT
 
     options = {
-      :msgstr => content,
-      :translator_comment => comment,
-      :flags => ['fuzzy'],
+      msgstr: content,
+      translator_comment: comment,
+      flags: ['fuzzy'],
     }
     RDoc::Generator::POT::POEntry.new('', options)
   end

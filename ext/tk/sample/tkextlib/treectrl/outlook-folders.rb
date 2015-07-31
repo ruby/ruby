@@ -7,24 +7,24 @@ def demoOutlookFolders(t)
   height = t.font.metrics(:linespace) + 2
   height = 18 if height < 18
 
-  t.configure(:itemheight=>height, :selectmode=>:browse, :showlines=>true,
-              :showroot=>true, :showrootbutton=>false, :showbuttons=>true)
+  t.configure(itemheight:height, selectmode::browse, showlines:true,
+              showroot:true, showrootbutton:false, showbuttons:true)
 
   if $HasColumnCreate
-    t.column_create(:text=>'Folders')
+    t.column_create(text:'Folders')
   else
-    t.column_configure(0, :text=>'Folders')
+    t.column_configure(0, text:'Folders')
   end
 
   t.element_create('e1', :image)
-  t.element_create('e2', :text, :lines=>1,
-                   :fill=>[@SystemHighlightText, ['selected', 'focus']])
-  t.element_create('e3', :text, :lines=>1, :font=>t.font.dup.weight(:bold),
-                   :fill=>[@SystemHighlightText, ['selected', 'focus']])
-  t.element_create('e4', :text, :fill=>'blue')
-  t.element_create('e5', :image, :image=>@images['outlook-folder'])
-  t.element_create('e6', :rect, :showfocus=>true,
-                   :fill=>[
+  t.element_create('e2', :text, lines:1,
+                   fill:[@SystemHighlightText, ['selected', 'focus']])
+  t.element_create('e3', :text, lines:1, font:t.font.dup.weight(:bold),
+                   fill:[@SystemHighlightText, ['selected', 'focus']])
+  t.element_create('e4', :text, fill:'blue')
+  t.element_create('e5', :image, image:@images['outlook-folder'])
+  t.element_create('e6', :rect, showfocus:true,
+                   fill:[
                      @SystemHighlight, ['selected', 'focus'],
                      'gray', ['selected', '!focus']
                    ])
@@ -32,38 +32,38 @@ def demoOutlookFolders(t)
   # image + text
   s = t.style_create('s1')
   t.style_elements(s, ['e6', 'e1', 'e2'])
-  t.style_layout(s, 'e1', :expand=>:ns)
-  t.style_layout(s, 'e2', :padx=>[4,0], :expand=>:ns, :squeeze=>:x)
-  t.style_layout(s, 'e6', :union=>['e2'], :iexpand=>:ns, :ipadx=>2)
+  t.style_layout(s, 'e1', expand::ns)
+  t.style_layout(s, 'e2', padx:[4,0], expand::ns, squeeze::x)
+  t.style_layout(s, 'e6', union:['e2'], iexpand::ns, ipadx:2)
 
   # image + text + text
   s = t.style_create('s2')
   t.style_elements(s, ['e6', 'e1', 'e3', 'e4'])
-  t.style_layout(s, 'e1', :expand=>:ns)
-  t.style_layout(s, 'e3', :padx=>4, :expand=>:ns, :squeeze=>:x)
-  t.style_layout(s, 'e4', :expand=>:ns)
-  t.style_layout(s, 'e6', :union=>['e3'], :iexpand=>:ns, :ipadx=>2)
+  t.style_layout(s, 'e1', expand::ns)
+  t.style_layout(s, 'e3', padx:4, expand::ns, squeeze::x)
+  t.style_layout(s, 'e4', expand::ns)
+  t.style_layout(s, 'e6', union:['e3'], iexpand::ns, ipadx:2)
 
   # folder + text
   s = t.style_create('s3')
   t.style_elements(s, ['e6', 'e5', 'e2'])
-  t.style_layout(s, 'e5', :expand=>:ns)
-  t.style_layout(s, 'e2', :padx=>[4,0], :expand=>:ns, :squeeze=>:x)
-  t.style_layout(s, 'e6', :union=>['e2'], :iexpand=>:ns, :ipadx=>2)
+  t.style_layout(s, 'e5', expand::ns)
+  t.style_layout(s, 'e2', padx:[4,0], expand::ns, squeeze::x)
+  t.style_layout(s, 'e6', union:['e2'], iexpand::ns, ipadx:2)
 
   # folder + text + text
   s = t.style_create('s4')
   t.style_elements(s, ['e6', 'e5', 'e3', 'e4'])
-  t.style_layout(s, 'e5', :expand=>:ns)
-  t.style_layout(s, 'e3', :padx=>4, :expand=>:ns, :squeeze=>:x)
-  t.style_layout(s, 'e4', :expand=>:ns)
-  t.style_layout(s, 'e6', :union=>['e3'], :iexpand=>:ns, :ipadx=>2)
+  t.style_layout(s, 'e5', expand::ns)
+  t.style_layout(s, 'e3', padx:4, expand::ns, squeeze::x)
+  t.style_layout(s, 'e4', expand::ns)
+  t.style_layout(s, 'e6', union:['e3'], iexpand::ns, ipadx:2)
 
   t.item_style_set(:root, 0, 's1')
   t.item_complex(:root,
                  [
-                   ['e1', {:image=>@images['outlook-main']}],
-                   ['e2', {:text=>'Outlook Express'}]
+                   ['e1', {image:@images['outlook-main']}],
+                   ['e2', {text:'Outlook Express'}]
                  ])
 
   parentList = [:root, '', '', '', '', '', '']
@@ -85,7 +85,7 @@ def demoOutlookFolders(t)
         [1, :group, "gmane.comp.lang.lua.general", false, 498]
   ].each{|depth, img, text, button, unread|
     if $Version_1_1_OrLater
-      item = t.item_create(:button=>button)
+      item = t.item_create(button:button)
     else
       item = t.item_create
       t.item_hasbutton(item, button)
@@ -94,26 +94,26 @@ def demoOutlookFolders(t)
       if unread != 0
         t.item_style_set(item, 0, 's4')
         t.item_complex(item,
-                       [['e3', {:text=>text}], ['e4', {:text=>"(#{unread})"}]])
+                       [['e3', {text:text}], ['e4', {text:"(#{unread})"}]])
       else
         t.item_style_set(item, 0, 's3')
-        t.item_complex(item, [['e2', {:text=>text}]])
+        t.item_complex(item, [['e2', {text:text}]])
       end
     else
       if unread != 0
         t.item_style_set(item, 0, 's2')
         t.item_complex(item,
                        [
-                         ['e1', {:image=>@images["outlook-#{img}"]}],
-                         ['e3', {:text=>text}],
-                         ['e4', {:text=>"(#{unread})"}]
+                         ['e1', {image:@images["outlook-#{img}"]}],
+                         ['e3', {text:text}],
+                         ['e4', {text:"(#{unread})"}]
                        ])
       else
         t.item_style_set(item, 0, 's1')
         t.item_complex(item,
                        [
-                         ['e1', {:image=>@images["outlook-#{img}"]}],
-                         ['e2', {:text=>text}]
+                         ['e1', {image:@images["outlook-#{img}"]}],
+                         ['e2', {text:text}]
                        ])
       end
     end

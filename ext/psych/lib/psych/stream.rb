@@ -7,7 +7,7 @@ module Psych
   #
   #   stream = Psych::Stream.new($stdout)
   #   stream.start
-  #   stream.push({:foo => 'bar'})
+  #   stream.push({foo: 'bar'})
   #   stream.finish
   #
   # YAML will be immediately emitted to $stdout with no buffering.
@@ -17,7 +17,7 @@ module Psych
   #
   #   stream = Psych::Stream.new($stdout)
   #   stream.start do |em|
-  #     em.push(:foo => 'bar')
+  #     em.push(foo: 'bar')
   #   end
   #
   class Stream < Psych::Visitors::YAMLTree

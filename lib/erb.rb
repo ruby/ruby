@@ -754,9 +754,9 @@ class ERB
   #
   #  # build data class
   #  class Listings
-  #    PRODUCT = { :name => "Chicken Fried Steak",
-  #                :desc => "A well messages pattie, breaded and fried.",
-  #                :cost => 9.95 }
+  #    PRODUCT = { name: "Chicken Fried Steak",
+  #                desc: "A well messages pattie, breaded and fried.",
+  #                cost: 9.95 }
   #
   #    attr_reader :product, :price
   #

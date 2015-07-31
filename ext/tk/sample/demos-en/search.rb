@@ -79,7 +79,7 @@ $search_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
-base_frame = TkFrame.new($search_demo).pack(:fill=>:both, :expand=>true)
+base_frame = TkFrame.new($search_demo).pack(fill::both, expand:true)
 
 # frame
 $search_buttons = TkFrame.new(base_frame) {|frame|

@@ -68,11 +68,11 @@ module DRb
       def setup_webrick(uri)
         logger = WEBrick::Log::new($stderr, WEBrick::Log::FATAL)
         u = URI.parse(uri)
-        s = WEBrick::HTTPServer.new(:Port => u.port,
-          :AddressFamily => Socket::AF_INET,
-          :BindAddress => u.host,
-          :Logger => logger,
-          :ServerType => Thread)
+        s = WEBrick::HTTPServer.new(Port: u.port,
+          AddressFamily: Socket::AF_INET,
+          BindAddress: u.host,
+          Logger: logger,
+          ServerType: Thread)
         s.mount(u.path, Callback, self)
         @server = s
         s.start

@@ -193,8 +193,8 @@ module Tk
         pat ||= TkComm::None
         images = Hash[*TkComm.simplelist(Tk.tk_call(cmd, imgdir, pat))]
         images.keys.each{|k|
-          images[k] = TkPhotoImage.new(:imagename=>images[k],
-                                       :without_creating=>true)
+          images[k] = TkPhotoImage.new(imagename:images[k],
+                                       without_creating:true)
         }
       else ## TILE_SPEC_VERSION_ID >= 8
         pat ||= '*.gif'
@@ -216,8 +216,8 @@ module Tk
         }
         images = Hash[*TkComm.simplelist(Tk.tk_call('array', 'get', 'images'))]
         images.keys.each{|k|
-          images[k] = TkPhotoImage.new(:imagename=>images[k],
-                                       :without_creating=>true)
+          images[k] = TkPhotoImage.new(imagename:images[k],
+                                       without_creating:true)
         }
       end
 

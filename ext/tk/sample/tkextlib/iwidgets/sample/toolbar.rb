@@ -4,7 +4,7 @@ require 'tkextlib/iwidgets'
 
 ##########################################
 # icon images
-editcopy22 = TkPhotoImage.new(:data=><<'EOD')
+editcopy22 = TkPhotoImage.new(data:<<'EOD')
    R0lGODlhFgAWAIUAAPwCBBQSFPz+/DQyNISChDw6PMzKzMTGxERGRIyKjFxa
    XMTCvKSmpHR2dPz6/Pz29PTq3MS2rPz69MTCxFxWVHx6dJyWjNzSzPz27Pzy
    7Pzu5PTm3NTKvIR+fJyGfHxuZHxqXNTCtPTq5PTi1PTezNS+rExOTFRORMyy
@@ -20,7 +20,7 @@ editcopy22 = TkPhotoImage.new(:data=><<'EOD')
    ZWxjb3IuY29tADs=
 EOD
 
-editcut22 = TkPhotoImage.new(:data=><<'EOD')
+editcut22 = TkPhotoImage.new(data:<<'EOD')
    R0lGODlhFgAWAIMAAPwCBAQCBAwCBPz+/OTi5JyanOzq7DQyNGxqbAAAAAAA
    AAAAAAAAAAAAAAAAAAAAACH5BAEAAAAALAAAAAAWABYAAARbEMhJq704gxBE
    0Bf3cZo4kRJqBQNRfBucyudgvJS6VaxLzyMa6/bLiWA9HOg4VIIkL5vzuRkc
@@ -30,7 +30,7 @@ editcut22 = TkPhotoImage.new(:data=><<'EOD')
    dmVsY29yLmNvbQA7
 EOD
 
-editpaste22 = TkPhotoImage.new(:data=><<'EOD')
+editpaste22 = TkPhotoImage.new(data:<<'EOD')
    R0lGODlhFgAWAIYAAPwCBBQWFDw6FHRuFGRaBFxSBAQCBAQKBCQiBIx6HPz6
    /NTOfKyiXDQuFOTm5Pz+/Ozu7PTq5Pz63PTyxNTOjKSeRExGLMTGxMzKzNTS
    1NTW1Dw2NKSmpKyqrKSipJyanNzWlLy6ZLSuVIx6FISChIyKhJSSlCQiJLS2
@@ -54,7 +54,7 @@ editpaste22 = TkPhotoImage.new(:data=><<'EOD')
    LmNvbQA7
 EOD
 
-editdelete22 = TkPhotoImage.new(:data=><<'EOD')
+editdelete22 = TkPhotoImage.new(data:<<'EOD')
    R0lGODlhFgAWAIYAAASC/FRSVExKTERCRDw6PDQyNCwuLBweHBwaHAwODAwK
    DAQCBExOTNze3NTW1MTGxLS2tJyanPz+/Ozu7BQSFCwqLDw+POTi5PTu7MzK
    xIR+fCQmJPz6/Oze1NTGvPz69Pzy7Pz29LyyrPy+vPyupPTm1BQWFIQCBPwC
@@ -75,7 +75,7 @@ editdelete22 = TkPhotoImage.new(:data=><<'EOD')
    ZGV2ZWxjb3IuY29tADs=
 EOD
 
-text22 = TkPhotoImage.new(:data=><<'EOD')
+text22 = TkPhotoImage.new(data:<<'EOD')
    R0lGODlhFgAWAIQAAPwCBAQCBBwaHAwKDBQSFLy+vLS2tJSWlBQWFKyqrFRS
    VCwqLDQyNNTS1GxqbFxaXJyanIyOjAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
    AAAAAAAAAAAAAAAAAAAAAAAAACH5BAEAAAAALAAAAAAWABYAAAVcICCOZGmK
@@ -98,55 +98,55 @@ radio_var  = TkVariable.new
 check_var1 = TkVariable.new
 check_var2 = TkVariable.new
 
-tb = Tk::Iwidgets::Toolbar.new(:helpvariable=>status_var)
+tb = Tk::Iwidgets::Toolbar.new(helpvariable:status_var)
 
 ##########################################
 
-tb.add(:button, :helpstr=>'Copy It', :image=>editcopy22,
-       :balloonstr=>'Copy', :command=>proc{puts 'Copy It'})
+tb.add(:button, helpstr:'Copy It', image:editcopy22,
+       balloonstr:'Copy', command:proc{puts 'Copy It'})
 
-tb.add(:button, :helpstr=>'Cut It', :image=>editcut22,
-       :balloonstr=>'Cut', :command=>proc{puts 'Cut It'})
+tb.add(:button, helpstr:'Cut It', image:editcut22,
+       balloonstr:'Cut', command:proc{puts 'Cut It'})
 
-tb.add(:button, :helpstr=>'Paste It', :image=>editpaste22,
-       :balloonstr=>'Paste', :command=>proc{puts 'Paste It'})
+tb.add(:button, helpstr:'Paste It', image:editpaste22,
+       balloonstr:'Paste', command:proc{puts 'Paste It'})
 
-tb.add(:button, :helpstr=>'Delete It', :image=>editdelete22,
-       :balloonstr=>'Delete', :command=>proc{puts 'Delete It'})
-
-#--------------------------------
-
-tb.add(:frame, :borderwidth=>1, :width=>10, :height=>10)
+tb.add(:button, helpstr:'Delete It', image:editdelete22,
+       balloonstr:'Delete', command:proc{puts 'Delete It'})
 
 #--------------------------------
 
-tb.add(:radiobutton, :variable=>radio_var, :value=>'Box',
-       :bitmap=>"@#{bmp_dir}/box.xbm",
-       :helpstr=>'Radio Button #1', :balloonstr=>'Radio',
-       :command=>proc{puts 'Radio Button "Box"'})
-
-tb.add(:radiobutton, :variable=>radio_var, :value=>'Line',
-       :bitmap=>"@#{bmp_dir}/line.xbm",
-       :helpstr=>'Radio Button #2', :balloonstr=>'Radio',
-       :command=>proc{puts 'Radio Button "Line"'})
-
-tb.add(:radiobutton, :variable=>radio_var, :value=>'Oval',
-       :bitmap=>"@#{bmp_dir}/oval.xbm",
-       :helpstr=>'Radio Button #3', :balloonstr=>'Radio',
-       :command=>proc{puts 'Radio Button "Oval"'})
+tb.add(:frame, borderwidth:1, width:10, height:10)
 
 #--------------------------------
 
-tb.add(:frame, :borderwidth=>1, :width=>10, :height=>10)
+tb.add(:radiobutton, variable:radio_var, value:'Box',
+       bitmap:"@#{bmp_dir}/box.xbm",
+       helpstr:'Radio Button #1', balloonstr:'Radio',
+       command:proc{puts 'Radio Button "Box"'})
+
+tb.add(:radiobutton, variable:radio_var, value:'Line',
+       bitmap:"@#{bmp_dir}/line.xbm",
+       helpstr:'Radio Button #2', balloonstr:'Radio',
+       command:proc{puts 'Radio Button "Line"'})
+
+tb.add(:radiobutton, variable:radio_var, value:'Oval',
+       bitmap:"@#{bmp_dir}/oval.xbm",
+       helpstr:'Radio Button #3', balloonstr:'Radio',
+       command:proc{puts 'Radio Button "Oval"'})
 
 #--------------------------------
 
-tb.add(:checkbutton, :variable=>check_var1, :onvalue=>'yes', :offvalue=>'no',
-       :image=>text22, :command=>proc{puts 'Checkbutton 1'})
+tb.add(:frame, borderwidth:1, width:10, height:10)
 
-tb.add(:checkbutton, :variable=>check_var2, :onvalue=>'yes', :offvalue=>'no',
-       :bitmap=>"@#{bmp_dir}/points.xbm", :command=>proc{puts 'Checkbutton 2'})
+#--------------------------------
 
-tb.pack(:side=>:top, :anchor=>:nw)
+tb.add(:checkbutton, variable:check_var1, onvalue:'yes', offvalue:'no',
+       image:text22, command:proc{puts 'Checkbutton 1'})
+
+tb.add(:checkbutton, variable:check_var2, onvalue:'yes', offvalue:'no',
+       bitmap:"@#{bmp_dir}/points.xbm", command:proc{puts 'Checkbutton 2'})
+
+tb.pack(side::top, anchor::nw)
 
 Tk.mainloop

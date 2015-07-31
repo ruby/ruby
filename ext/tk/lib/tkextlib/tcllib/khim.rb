@@ -34,7 +34,7 @@ class Tk::Tcllib::KHIM
 
   def self.get_options(parent='')
     path = parent + '.tcllib_widget_khim_dialog'
-    self.new(:widgetname => path)
+    self.new(widgetname: path)
   end
 
   def self.get_config #=> cmd_string

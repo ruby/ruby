@@ -17,46 +17,46 @@ class ViewIcons
   def _create_controls
     @controls = base = TkFrame.new
     columns = TkFrame.new(base)
-    line1 = TkFrame.new(base, :height=>2, :borderwidth=>1, :relief=>:sunken)
-    line2 = TkFrame.new(base, :height=>2, :borderwidth=>1, :relief=>:sunken)
+    line1 = TkFrame.new(base, height:2, borderwidth:1, relief::sunken)
+    line2 = TkFrame.new(base, height:2, borderwidth:1, relief::sunken)
 
-    lbl_library = TkLabel.new(base, :font=>@boldfont, :text=>'Library')
-    lbl_groups  = TkLabel.new(base, :font=>@boldfont, :text=>'Groups')
-    lbl_columns = TkLabel.new(base, :font=>@boldfont, :text=>'Columns')
+    lbl_library = TkLabel.new(base, font:@boldfont, text:'Library')
+    lbl_groups  = TkLabel.new(base, font:@boldfont, text:'Groups')
+    lbl_columns = TkLabel.new(base, font:@boldfont, text:'Columns')
 
-    ent_library = TkEntry.new(base, :width=>50, :textvariable=>@library)
-    ent_groups  = TkEntry.new(base, :width=>50, :textvariable=>@groups)
+    ent_library = TkEntry.new(base, width:50, textvariable:@library)
+    ent_groups  = TkEntry.new(base, width:50, textvariable:@groups)
 
-    btn_browse = TkButton.new(base, :text=>'Browse',
-                                    :command=>method(:select_icons))
-    btn_view   = TkButton.new(base, :text=>'View',
-                                    :command=>method(:display_icons))
-    btn_exit   = TkButton.new(base, :text=>'Exit', :command=>proc{exit})
+    btn_browse = TkButton.new(base, text:'Browse',
+                                    command:method(:select_icons))
+    btn_view   = TkButton.new(base, text:'View',
+                                    command:method(:display_icons))
+    btn_exit   = TkButton.new(base, text:'Exit', command:proc{exit})
 
     @column_btns = {}
     6.step(20, 2){|i|
       @column_btns[i] = TkButton.new(columns,
-                                     :text=>i.to_s, :width=>2,
-                                     :command=>proc{set_columns(i)}
-                                     ).pack(:side=>:left)
+                                     text:i.to_s, width:2,
+                                     command:proc{set_columns(i)}
+                                     ).pack(side::left)
     }
     @column_btns[@columns][:relief] = :sunken
 
-    lbl_library.grid(:row=>0, :column=>0, :padx=>4)
-    ent_library.grid(:row=>0, :column=>1)
-    btn_browse.grid(:row=>0, :column=>2, :padx=>4, :pady=>2, :sticky=>:ew)
+    lbl_library.grid(row:0, column:0, padx:4)
+    ent_library.grid(row:0, column:1)
+    btn_browse.grid(row:0, column:2, padx:4, pady:2, sticky::ew)
 
-    line1.grid(:row=>1, :column=>0, :pady=>2, :columnspan=>3, :sticky=>:ew)
+    line1.grid(row:1, column:0, pady:2, columnspan:3, sticky::ew)
 
-    lbl_groups.grid(:row=>2, :column=>0, :padx=>4)
-    ent_groups.grid(:row=>2, :column=>1)
-    btn_view.grid(:row=>2, :column=>2, :padx=>4, :pady=>2, :sticky=>:ew)
+    lbl_groups.grid(row:2, column:0, padx:4)
+    ent_groups.grid(row:2, column:1)
+    btn_view.grid(row:2, column:2, padx:4, pady:2, sticky::ew)
 
-    line1.grid(:row=>3, :column=>0, :pady=>2, :columnspan=>3, :sticky=>:ew)
+    line1.grid(row:3, column:0, pady:2, columnspan:3, sticky::ew)
 
-    lbl_columns.grid(:row=>4, :column=>0, :padx=>4)
-    columns.grid(:row=>4, :column=>1, :padx=>2, :sticky=>:ew)
-    btn_exit.grid(:row=>4, :column=>2, :padx=>4, :pady=>2, :sticky=>:ew)
+    lbl_columns.grid(row:4, column:0, padx:4)
+    columns.grid(row:4, column:1, padx:2, sticky::ew)
+    btn_exit.grid(row:4, column:2, padx:4, pady:2, sticky::ew)
 
     base.pack
 
@@ -65,56 +65,56 @@ class ViewIcons
   end
 
   def _create_display
-    base = TkFrame.new(:borderwidth=>2, :relief=>:sunken)
+    base = TkFrame.new(borderwidth:2, relief::sunken)
 
     @icons_window = icons = TkCanvas.new(base)
     xscr = icons.xscrollbar(TkScrollbar.new(base))
     yscr = icons.yscrollbar(TkScrollbar.new(base))
 
-    icons.grid(:row=>0, :column=>0, :sticky=>:news)
-    yscr.grid(:row=>0, :column=>1, :sticky=>:ns)
-    xscr.grid(:row=>1, :column=>0, :sticky=>:ew)
-    base.grid_columnconfigure(0, :weight=>1)
-    base.grid_columnconfigure(1, :weight=>0)
-    base.grid_rowconfigure(0, :weight=>1)
-    base.grid_rowconfigure(1, :weight=>0)
-    # yscr.pack(:side=>:right, :fill=>:y)
-    # xscr.pack(:side=>:bottom, :fill=>:x)
-    # icons.pack(:side=>:left, :fill=>:both, :expand=>true)
+    icons.grid(row:0, column:0, sticky::news)
+    yscr.grid(row:0, column:1, sticky::ns)
+    xscr.grid(row:1, column:0, sticky::ew)
+    base.grid_columnconfigure(0, weight:1)
+    base.grid_columnconfigure(1, weight:0)
+    base.grid_rowconfigure(0, weight:1)
+    base.grid_rowconfigure(1, weight:0)
+    # yscr.pack(side::right, fill::y)
+    # xscr.pack(side::bottom, fill::x)
+    # icons.pack(side::left, fill::both, expand:true)
 
     @icons_layout = TkFrame.new(icons).pack
-    TkcWindow.create(icons, 0, 0, :anchor=>:nw, :window=>@icons_layout)
+    TkcWindow.create(icons, 0, 0, anchor::nw, window:@icons_layout)
     @icons_layout.bind('Configure', method(:layout_resize), '')
 
-    base.pack(:expand=>true, :fill=>:both)
+    base.pack(expand:true, fill::both)
   end
 
   def _create_info_window
-    @info_window = TkToplevel.new(:background=>'lightyellow', :borderwidth=>1,
-                                  :relief=>:solid){|w|
-      lbl_name = TkLabel.new(w, :text=>'Name', :background=>'lightyellow',
-                             :font=>@boldfont, :justify=>:left)
-      lbl_grps = TkLabel.new(w, :text=>'Groups', :background=>'lightyellow',
-                             :font=>@boldfont, :justify=>:left)
-      lbl_type = TkLabel.new(w, :text=>'Type', :background=>'lightyellow',
-                             :font=>@boldfont, :justify=>:left)
-      lbl_size = TkLabel.new(w, :text=>'Size', :background=>'lightyellow',
-                             :font=>@boldfont, :justify=>:left)
+    @info_window = TkToplevel.new(background:'lightyellow', borderwidth:1,
+                                  relief::solid){|w|
+      lbl_name = TkLabel.new(w, text:'Name', background:'lightyellow',
+                             font:@boldfont, justify::left)
+      lbl_grps = TkLabel.new(w, text:'Groups', background:'lightyellow',
+                             font:@boldfont, justify::left)
+      lbl_type = TkLabel.new(w, text:'Type', background:'lightyellow',
+                             font:@boldfont, justify::left)
+      lbl_size = TkLabel.new(w, text:'Size', background:'lightyellow',
+                             font:@boldfont, justify::left)
 
-      lbl_name.grid(:row=>0, :column=>0, :sticky=>:w)
-      lbl_grps.grid(:row=>1, :column=>0, :sticky=>:w)
-      lbl_type.grid(:row=>2, :column=>0, :sticky=>:w)
-      lbl_size.grid(:row=>3, :column=>0, :sticky=>:w)
+      lbl_name.grid(row:0, column:0, sticky::w)
+      lbl_grps.grid(row:1, column:0, sticky::w)
+      lbl_type.grid(row:2, column:0, sticky::w)
+      lbl_size.grid(row:3, column:0, sticky::w)
 
-      @name = TkLabel.new(w, :background=>'lightyellow', :justify=>:left)
-      @grps = TkLabel.new(w, :background=>'lightyellow', :justify=>:left)
-      @type = TkLabel.new(w, :background=>'lightyellow', :justify=>:left)
-      @size = TkLabel.new(w, :background=>'lightyellow', :justify=>:left)
+      @name = TkLabel.new(w, background:'lightyellow', justify::left)
+      @grps = TkLabel.new(w, background:'lightyellow', justify::left)
+      @type = TkLabel.new(w, background:'lightyellow', justify::left)
+      @size = TkLabel.new(w, background:'lightyellow', justify::left)
 
-      @name.grid(:row=>0, :column=>1, :sticky=>:w)
-      @grps.grid(:row=>1, :column=>1, :sticky=>:w)
-      @type.grid(:row=>2, :column=>1, :sticky=>:w)
-      @size.grid(:row=>3, :column=>1, :sticky=>:w)
+      @name.grid(row:0, column:1, sticky::w)
+      @grps.grid(row:1, column:1, sticky::w)
+      @type.grid(row:2, column:1, sticky::w)
+      @size.grid(row:3, column:1, sticky::w)
 
       def name(txt)
         @name['text'] = txt
@@ -156,7 +156,7 @@ class ViewIcons
 
     dummy = TkLabel.new
     @font = dummy.font
-    @boldfont = TkFont.new(@font, :weight=>:bold)
+    @boldfont = TkFont.new(@font, weight::bold)
     @icons = {}
     @icon_name = {}
     @icon_info = {}
@@ -228,9 +228,9 @@ class ViewIcons
     name = @icon_name[item]
     data_width = 60
 
-    cmd = "#{name} = TkPhotoImage.new(:data=><<'EOD')\n"
+    cmd = "#{name} = TkPhotoImage.new(data:<<'EOD')\n"
 
-    icon_data = Tk::ICONS.query(name, :file=>@library.value, :items=>'d')[0][0]
+    icon_data = Tk::ICONS.query(name, file:@library.value, items:'d')[0][0]
 
     icon_data.scan(/.{1,#{data_width}}/m){|s| cmd << '   ' << s << "\n"}
 
@@ -243,9 +243,9 @@ class ViewIcons
 
     if Tk::PLATFORM['platform'] == 'unix'
       TkSelection.handle(Tk.root, method(:primary_transfer),
-                         :selection=>'PRIMARY')
-      TkSelection.set_owner(Tk.root, :selection=>'PRIMARY',
-                            :command=>method(:lost_selection))
+                         selection:'PRIMARY')
+      TkSelection.set_owner(Tk.root, selection:'PRIMARY',
+                            command:method(:lost_selection))
     end
 
     Tk.bell
@@ -256,16 +256,16 @@ class ViewIcons
     bbox = @icons_window.bbox('all')
     width = @controls.winfo_width - @icons_window.yscrollbar.winfo_width - 8
 
-    @icons_window.configure(:width=>width, :scrollregion=>bbox,
-                            :xscrollincrement=>'0.1i',
-                            :yscrollincrement=>'0.1i')
+    @icons_window.configure(width:width, scrollregion:bbox,
+                            xscrollincrement:'0.1i',
+                            yscrollincrement:'0.1i')
   end
 
   def select_icons
-    new_lib = Tk.getOpenFile(:initialdir=>@initial_dir,
-                             :initialfile=>'tkIcons',
-                             :title=>'Select Icon Library',
-                             :filetypes=>[
+    new_lib = Tk.getOpenFile(initialdir:@initial_dir,
+                             initialfile:'tkIcons',
+                             title:'Select Icon Library',
+                             filetypes:[
                                ['Icon Libraries', ['tkIcons*']],
                                ['All Files', ['*']]
                              ])
@@ -280,8 +280,8 @@ class ViewIcons
     row = 0
 
     unless File.exist?(@library.value)
-      Tk.messageBox(:icon=>'warning', :message=>'File does not exist',
-                    :title=>'viewIcons')
+      Tk.messageBox(icon:'warning', message:'File does not exist',
+                    title:'viewIcons')
       return
     end
 
@@ -293,14 +293,14 @@ class ViewIcons
     @icons_frame.destroy if @icons_frame
     @icons_frame = TkFrame.new(@icons_layout).pack
 
-    @icons = Tk::ICONS.create(:file=>@library.value, :group=>@groups.value)
+    @icons = Tk::ICONS.create(file:@library.value, group:@groups.value)
 
-    Tk::ICONS.query(:file=>@library.value, :group=>@groups.value).each{|inf|
+    Tk::ICONS.query(file:@library.value, group:@groups.value).each{|inf|
       name = inf[0]
       @icon_info[name] = inf
 
-      lbl = TkLabel.new(@icons_frame, :image=>"::icon::#{name}")
-      lbl.grid(:column=>column, :row=>row, :padx=>3, :pady=>3)
+      lbl = TkLabel.new(@icons_frame, image:"::icon::#{name}")
+      lbl.grid(column:column, row:row, padx:3, pady:3)
       # lbl.grid_columnconfigure column
 
       init_info(lbl, name)

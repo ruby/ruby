@@ -29,7 +29,7 @@ permission to.
     super 'owner', 'Manage gem owners of a gem on the push server'
     add_proxy_option
     add_key_option
-    defaults.merge! :add => [], :remove => []
+    defaults.merge! add: [], remove: []
 
     add_option '-a', '--add EMAIL', 'Add an owner' do |value, options|
       options[:add] << value

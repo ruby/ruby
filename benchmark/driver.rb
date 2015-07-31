@@ -329,17 +329,17 @@ end
 
 if __FILE__ == $0
   opt = {
-    :execs => [],
-    :dir => File.dirname(__FILE__),
-    :repeat => 1,
-    :output => nil,
-    :raw_output => nil,
-    :format => :tsv,
+    execs: [],
+    dir: File.dirname(__FILE__),
+    repeat: 1,
+    output: nil,
+    raw_output: nil,
+    format: :tsv,
   }
   formats = {
-    :tsv => ".tsv",
-    :markdown => ".md",
-    :plain => ".txt",
+    tsv: ".tsv",
+    markdown: ".md",
+    plain: ".txt",
   }
 
   parser = OptionParser.new{|o|

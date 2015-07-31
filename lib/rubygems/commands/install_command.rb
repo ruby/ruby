@@ -20,11 +20,11 @@ class Gem::Commands::InstallCommand < Gem::Command
 
   def initialize
     defaults = Gem::DependencyInstaller::DEFAULT_OPTIONS.merge({
-      :format_executable => false,
-      :lock              => true,
-      :suggest_alternate => true,
-      :version           => Gem::Requirement.default,
-      :without_groups    => [],
+      format_executable: false,
+      lock: true,
+      suggest_alternate: true,
+      version: Gem::Requirement.default,
+      without_groups: [],
     })
 
     super 'install', 'Install a gem into the local repository', defaults

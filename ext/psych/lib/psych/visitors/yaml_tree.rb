@@ -8,7 +8,7 @@ module Psych
     # YAMLTree builds a YAML ast given a Ruby object.  For example:
     #
     #   builder = Psych::Visitors::YAMLTree.new
-    #   builder << { :foo => 'bar' }
+    #   builder << { foo: 'bar' }
     #   builder.tree # => #<Psych::Nodes::Stream .. }
     #
     class YAMLTree < Psych::Visitors::Visitor
@@ -139,7 +139,7 @@ module Psych
                   warn "implementing to_yaml is deprecated, please implement \"encode_with\""
                 end
 
-                target.to_yaml(:nodump => true)
+                target.to_yaml(nodump: true)
               end
             end
           rescue

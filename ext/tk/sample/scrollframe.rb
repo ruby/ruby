@@ -22,7 +22,7 @@ class Tk::RbWidget::ScrollFrame < TkFrame
   DEFAULT_HEIGHT = 200
 
   def initialize_composite(keys={})
-    @frame.configure(:width=>DEFAULT_WIDTH, :height=>DEFAULT_HEIGHT)
+    @frame.configure(width:DEFAULT_WIDTH, height:DEFAULT_HEIGHT)
 
     # create scrollbars
     @h_scroll = TkScrollbar.new(@frame, 'orient'=>'horizontal')
@@ -30,8 +30,8 @@ class Tk::RbWidget::ScrollFrame < TkFrame
 
     # create a canvas widget
     @canvas = TkCanvas.new(@frame,
-                           :borderwidth=>0, :selectborderwidth=>0,
-                           :highlightthickness=>0)
+                           borderwidth:0, selectborderwidth:0,
+                           highlightthickness:0)
 
     # allignment
     TkGrid.rowconfigure(@frame, 0, 'weight'=>1, 'minsize'=>0)
@@ -77,7 +77,7 @@ class Tk::RbWidget::ScrollFrame < TkFrame
     @base = TkFrame.new(@canvas, framekeys)
 
     # embed base frame
-    @cwin = TkcWindow.new(@canvas, [0, 0], :window=>@base, :anchor=>'nw')
+    @cwin = TkcWindow.new(@canvas, [0, 0], window:@base, anchor:'nw')
     @canvas.scrollregion(@cwin.bbox)
 
     # binding to reset scrollregion
@@ -211,21 +211,21 @@ end
 
 # test
 if __FILE__ == $0
-  f = Tk::RbWidget::ScrollFrame.new(:scrollbarwidth=>10,
-                                    :width=>300, :height=>200)
-  f.pack(:expand=>true, :fill=>:both)
+  f = Tk::RbWidget::ScrollFrame.new(scrollbarwidth:10,
+                                    width:300, height:200)
+  f.pack(expand:true, fill::both)
 
-  TkButton.new(f, :text=>'foo button', :command=>proc{puts 'foo'}).pack
-  TkButton.new(f, :text=>'baaar button', :command=>proc{puts 'baaar'}).pack
-  TkButton.new(f, :text=>'baz button', :command=>proc{puts 'baz'}).pack
-  TkButton.new(f, :text=>'hoge hoge button',
-               :command=>proc{puts 'hoge hoge'}).pack(:side=>:bottom)
+  TkButton.new(f, text:'foo button', command:proc{puts 'foo'}).pack
+  TkButton.new(f, text:'baaar button', command:proc{puts 'baaar'}).pack
+  TkButton.new(f, text:'baz button', command:proc{puts 'baz'}).pack
+  TkButton.new(f, text:'hoge hoge button',
+               command:proc{puts 'hoge hoge'}).pack(side::bottom)
 
   # f.hscroll(false)
 
   # add a text widget
   Tk.after(3000){
-    t = TkText.new(f).pack(:expand=>true, :fill=>:both)
+    t = TkText.new(f).pack(expand:true, fill::both)
     t.insert(:end, "An example of Tk::RbWidget::ScrollFrame widget.\n\n")
     t.insert(:end, "Here is a text widget.\n")
     t.insert(:end, "Please resize the application window, ")

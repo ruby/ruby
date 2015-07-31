@@ -188,47 +188,47 @@ end
 # test
 ################################################
 if __FILE__ == $0
-  f = Tk::RbWidget::HBox.new(:borderwidth=>3, :relief=>'ridge').pack
-  f.add(TkButton.new(f, :text=>'a'),
-        TkButton.new(f, :text=>'aa', :font=>'Helvetica 16'),
-        TkButton.new(f, :text=>'aaa'),
-        TkButton.new(f, :text=>'aaaa'))
+  f = Tk::RbWidget::HBox.new(borderwidth:3, relief:'ridge').pack
+  f.add(TkButton.new(f, text:'a'),
+        TkButton.new(f, text:'aa', font:'Helvetica 16'),
+        TkButton.new(f, text:'aaa'),
+        TkButton.new(f, text:'aaaa'))
 
-  f = Tk::RbWidget::HBox.new(:borderwidth=>3, :relief=>'ridge',
-                             :padx=>7, :pady=>3, :background=>'yellow').pack
-  f.add(TkButton.new(f, :text=>'a'),
-        TkButton.new(f, :text=>'aa', :font=>'Helvetica 16'),
-        TkButton.new(f, :text=>'aaa'),
-        TkButton.new(f, :text=>'aaaa'))
+  f = Tk::RbWidget::HBox.new(borderwidth:3, relief:'ridge',
+                             padx:7, pady:3, background:'yellow').pack
+  f.add(TkButton.new(f, text:'a'),
+        TkButton.new(f, text:'aa', font:'Helvetica 16'),
+        TkButton.new(f, text:'aaa'),
+        TkButton.new(f, text:'aaaa'))
 
-  f = Tk::RbWidget::VBox.new(:borderwidth=>5,
-                             :relief=>'groove').pack(:fill=>:y, :expand=>true)
-  f.add(TkButton.new(f, :text=>'a'),
-        TkButton.new(f, :text=>'aa', :font=>'Helvetica 30'),
-        TkButton.new(f, :text=>'aaa'),
-        TkButton.new(f, :text=>'aaaa'))
+  f = Tk::RbWidget::VBox.new(borderwidth:5,
+                             relief:'groove').pack(fill::y, expand:true)
+  f.add(TkButton.new(f, text:'a'),
+        TkButton.new(f, text:'aa', font:'Helvetica 30'),
+        TkButton.new(f, text:'aaa'),
+        TkButton.new(f, text:'aaaa'))
 
-  f = Tk::RbWidget::HRBox.new(:borderwidth=>3,
-                              :relief=>'raised').pack(:fill=>:x)
-  f.add(TkButton.new(f, :text=>'a'),
-        TkButton.new(f, :text=>'aa'),
-        TkButton.new(f, :text=>'aaa'))
+  f = Tk::RbWidget::HRBox.new(borderwidth:3,
+                              relief:'raised').pack(fill::x)
+  f.add(TkButton.new(f, text:'a'),
+        TkButton.new(f, text:'aa'),
+        TkButton.new(f, text:'aaa'))
 
-  f = Tk::RbWidget::VBBox.new(:borderwidth=>3,
-                              :relief=>'ridge').pack(:fill=>:x)
+  f = Tk::RbWidget::VBBox.new(borderwidth:3,
+                              relief:'ridge').pack(fill::x)
   f.propagate = false
   f.height 100
   f.add(TkFrame.new(f){|ff|
-          TkButton.new(ff, :text=>'a').pack(:pady=>4, :padx=>6,
-                                            :fill=>:both, :expand=>true)
+          TkButton.new(ff, text:'a').pack(pady:4, padx:6,
+                                            fill::both, expand:true)
         },
         TkFrame.new(f){|ff|
-          TkButton.new(ff, :text=>'aa').pack(:pady=>4, :padx=>6,
-                                             :fill=>:both, :expand=>true)
+          TkButton.new(ff, text:'aa').pack(pady:4, padx:6,
+                                             fill::both, expand:true)
         },
         TkFrame.new(f){|ff|
-          TkButton.new(ff, :text=>'aaaa').pack(:pady=>4, :padx=>6,
-                                               :fill=>:both, :expand=>true)
+          TkButton.new(ff, text:'aaaa').pack(pady:4, padx:6,
+                                               fill::both, expand:true)
         })
 
   Tk.mainloop

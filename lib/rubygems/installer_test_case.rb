@@ -185,8 +185,8 @@ class Gem::InstallerTestCase < Gem::TestCase
 
   def util_installer(spec, gem_home, user=false)
     Gem::Installer.at(spec.cache_file,
-                       :install_dir => gem_home,
-                       :user_install => user)
+                       install_dir: gem_home,
+                       user_install: user)
   end
 
 end

@@ -15,11 +15,11 @@ $toolbar_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
-base_frame = Ttk::Frame.new($toolbar_demo).pack(:fill=>:both, :expand=>true)
+base_frame = Ttk::Frame.new($toolbar_demo).pack(fill::both, expand:true)
 
 if Tk.windowingsystem != 'aqua'
-  msg = Ttk::Label.new(base_frame, :wraplength=>'4i',
-                       :text=>Tk::UTF8_String.new(<<EOL))
+  msg = Ttk::Label.new(base_frame, wraplength:'4i',
+                       text:Tk::UTF8_String.new(<<EOL))
 This is a demonstration of how to do \
 a toolbar that is styled correctly \
 and which can be torn off (this feature reqrires Tcl/Tk8.5). \
@@ -32,8 +32,8 @@ toolbar is no longer needed, just close it like any normal toplevel \
 and it will reattach to the window it was torn off from.
 EOL
 else
-  msg = Ttk::Label.new(base_frame, :wraplength=>'4i',
-                       :text=>Tk::UTF8_String.new(<<EOL))
+  msg = Ttk::Label.new(base_frame, wraplength:'4i',
+                       text:Tk::UTF8_String.new(<<EOL))
 This is a demonstration of how to do \
 a toolbar that is styled correctly. The buttons are configured to \
 be \\u201Ctoolbar style\\u201D buttons by telling them that they are \
@@ -43,20 +43,20 @@ end
 
 ## Set up the toolbar hull
 tbar_base = Tk::Frame.new(base_frame, # Must be a starndard Tk frame!
-                          :widgetname=>'toolbar') # for window title
+                          widgetname:'toolbar') # for window title
 sep = Ttk::Separator.new(base_frame)
-to_base = Ttk::Frame.new(tbar_base, :cursor=>'fleur')
+to_base = Ttk::Frame.new(tbar_base, cursor:'fleur')
 if Tk.windowingsystem != 'aqua'
-  to  = Ttk::Separator.new(to_base, :orient=>:vertical)
-  to2 = Ttk::Separator.new(to_base, :orient=>:vertical)
-  to.pack(:fill=>:y, :expand=>true, :padx=>2, :side=>:left)
-  to2.pack(:fill=>:y, :expand=>true, :side=>:left)
+  to  = Ttk::Separator.new(to_base, orient::vertical)
+  to2 = Ttk::Separator.new(to_base, orient::vertical)
+  to.pack(fill::y, expand:true, padx:2, side::left)
+  to2.pack(fill::y, expand:true, side::left)
 end
 
 contents = Ttk::Frame.new(tbar_base)
-Tk.grid(to_base, contents, :sticky=>'nsew')
-tbar_base.grid_columnconfigure(contents, :weight=>1)
-contents.grid_columnconfigure(1000, :weight=>1)
+Tk.grid(to_base, contents, sticky:'nsew')
+tbar_base.grid_columnconfigure(contents, weight:1)
+contents.grid_columnconfigure(1000, weight:1)
 
 if Tk.windowingsystem != 'aqua'
   ## Bindings so that the toolbar can be torn off and reattached
@@ -80,51 +80,51 @@ if Tk.windowingsystem != 'aqua'
 end
 
 ## Some content for the rest of the toplevel
-text = TkText.new(base_frame, :width=>40, :height=>10)
+text = TkText.new(base_frame, width:40, height:10)
 
 ## Toolbar contents
-tb_btn = Ttk::Button.new(tbar_base, :text=>'Button', :style=>'Toolbutton',
-                         :command=>proc{text.insert(:end, "Button Pressed\n")})
-tb_chk = Ttk::Checkbutton.new(tbar_base, :text=>'Check', :style=>'Toolbutton',
-                              :variable=>(check = TkVariable.new),
-                              :command=>proc{
+tb_btn = Ttk::Button.new(tbar_base, text:'Button', style:'Toolbutton',
+                         command:proc{text.insert(:end, "Button Pressed\n")})
+tb_chk = Ttk::Checkbutton.new(tbar_base, text:'Check', style:'Toolbutton',
+                              variable:(check = TkVariable.new),
+                              command:proc{
                                 text.insert(:end, "Check is #{check.value}\n")
                               })
-tb_mbtn = Ttk::Menubutton.new(tbar_base, :text=>'Menu')
-tb_combo = Ttk::Combobox.new(tbar_base, :value=>TkFont.families,
-                             :state=>:readonly)
+tb_mbtn = Ttk::Menubutton.new(tbar_base, text:'Menu')
+tb_combo = Ttk::Combobox.new(tbar_base, value:TkFont.families,
+                             state::readonly)
 tb_mbtn.menu(menu = Tk::Menu.new(tb_mbtn))
-menu.add(:command, :label=>'Just', :command=>proc{text.insert(:end, "Just\n")})
-menu.add(:command, :label=>'An', :command=>proc{text.insert(:end, "An\n")})
-menu.add(:command, :label=>'Example',
-         :command=>proc{text.insert(:end, "Example\n")})
+menu.add(:command, label:'Just', command:proc{text.insert(:end, "Just\n")})
+menu.add(:command, label:'An', command:proc{text.insert(:end, "An\n")})
+menu.add(:command, label:'Example',
+         command:proc{text.insert(:end, "Example\n")})
 tb_combo.bind('<ComboboxSelected>'){ text.font.family = tb_combo.get }
 
 ## Arrange contents
 Tk.grid(tb_btn, tb_chk, tb_mbtn, tb_combo,
-        :in=>contents, :padx=>2, :sticky=>'ns')
-Tk.grid(tbar_base, :sticky=>'ew')
-Tk.grid(sep, :sticky=>'ew')
-Tk.grid(msg, :sticky=>'ew')
-Tk.grid(text, :sticky=>'nsew')
-base_frame.grid_rowconfigure(text, :weight=>1)
-base_frame.grid_columnconfigure(text, :weight=>1)
+        in:contents, padx:2, sticky:'ns')
+Tk.grid(tbar_base, sticky:'ew')
+Tk.grid(sep, sticky:'ew')
+Tk.grid(msg, sticky:'ew')
+Tk.grid(text, sticky:'nsew')
+base_frame.grid_rowconfigure(text, weight:1)
+base_frame.grid_columnconfigure(text, weight:1)
 
 ## See Code / Dismiss buttons
 Ttk::Frame.new(base_frame) {|frame|
   sep = Ttk::Separator.new(frame)
-  Tk.grid(sep, :columnspan=>4, :row=>0, :sticky=>'ew', :pady=>2)
+  Tk.grid(sep, columnspan:4, row:0, sticky:'ew', pady:2)
   TkGrid('x',
-         Ttk::Button.new(frame, :text=>'See Code',
-                         :image=>$image['view'], :compound=>:left,
-                         :command=>proc{showCode 'toolbar'}),
-         Ttk::Button.new(frame, :text=>'Dismiss',
-                         :image=>$image['delete'], :compound=>:left,
-                         :command=>proc{
+         Ttk::Button.new(frame, text:'See Code',
+                         image:$image['view'], compound::left,
+                         command:proc{showCode 'toolbar'}),
+         Ttk::Button.new(frame, text:'Dismiss',
+                         image:$image['delete'], compound::left,
+                         command:proc{
                            $toolbar_demo.destroy
                            $toolbar_demo = nil
                          }),
-         :padx=>4, :pady=>4)
-  grid_columnconfigure(0, :weight=>1)
-  Tk.grid(frame, :sticky=>'ew')
+         padx:4, pady:4)
+  grid_columnconfigure(0, weight:1)
+  Tk.grid(frame, sticky:'ew')
 }

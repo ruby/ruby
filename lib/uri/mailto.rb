@@ -79,7 +79,7 @@ module URI
     #    m2 = URI::MailTo.build(['john@example.com', [['Subject', 'Ruby'], ['Cc', 'jack@example.com']]])
     #    puts m2.to_s  ->  mailto:john@example.com?Subject=Ruby&Cc=jack@example.com
     #
-    #    m3 = URI::MailTo.build({:to => 'listman@example.com', :headers => [['subject', 'subscribe']]})
+    #    m3 = URI::MailTo.build({to: 'listman@example.com', headers: [['subject', 'subscribe']]})
     #    puts m3.to_s  ->  mailto:listman@example.com?subject=subscribe
     #
     def self.build(args)

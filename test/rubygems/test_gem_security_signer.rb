@@ -140,7 +140,7 @@ c7NM7KZZjj7G++SXjYTEI1PHSA7aFQ/i/+qSUvx+Pg==
   end
 
   def test_sign_expired_auto_update
-    FileUtils.mkdir_p File.join(Gem.user_home, '.gem'), :mode => 0700
+    FileUtils.mkdir_p File.join(Gem.user_home, '.gem'), mode: 0700
 
     private_key_path = File.join(Gem.user_home, '.gem', 'gem-private_key.pem')
     Gem::Security.write PRIVATE_KEY, private_key_path
@@ -167,7 +167,7 @@ c7NM7KZZjj7G++SXjYTEI1PHSA7aFQ/i/+qSUvx+Pg==
   end
 
   def test_sign_expired_auto_update_exists
-    FileUtils.mkdir_p File.join(Gem.user_home, '.gem'), :mode => 0700
+    FileUtils.mkdir_p File.join(Gem.user_home, '.gem'), mode: 0700
 
     expiry = EXPIRED_CERT.not_after.strftime "%Y%m%d%H%M%S"
     expired_path =

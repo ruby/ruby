@@ -13,12 +13,12 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
   # Maps RDoc::Markup::Parser::LIST_TOKENS types to HTML tags
 
   LIST_TYPE_TO_HTML = {
-    :BULLET => ['<ul>',                                      '</ul>'],
-    :LABEL  => ['<dl class="rdoc-list label-list">',         '</dl>'],
-    :LALPHA => ['<ol style="list-style-type: lower-alpha">', '</ol>'],
-    :NOTE   => ['<dl class="rdoc-list note-list">',          '</dl>'],
-    :NUMBER => ['<ol>',                                      '</ol>'],
-    :UALPHA => ['<ol style="list-style-type: upper-alpha">', '</ol>'],
+    BULLET: ['<ul>',                                      '</ul>'],
+    LABEL: ['<dl class="rdoc-list label-list">',         '</dl>'],
+    LALPHA: ['<ol style="list-style-type: lower-alpha">', '</ol>'],
+    NOTE: ['<dl class="rdoc-list note-list">',          '</dl>'],
+    NUMBER: ['<ol>',                                      '</ol>'],
+    UALPHA: ['<ol style="list-style-type: upper-alpha">', '</ol>'],
   }
 
   attr_reader :res # :nodoc:

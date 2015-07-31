@@ -61,29 +61,29 @@ Tk::TCL_PRECISION.value = 15
 
 class BLT_Graph_Demo
   def initialize
-    @graph = Tk::BLT::Graph.new(:widgetname=>'graph')
+    @graph = Tk::BLT::Graph.new(widgetname:'graph')
 
     @root = Tk.root
     @root.minsize(0, 0)
 
     _set_vectors()
-    (1..39).each{|i| @graph.element_create("V#{i}", :x=>@x, :y=>@v[i])}
+    (1..39).each{|i| @graph.element_create("V#{i}", x:@x, y:@v[i])}
 
     @top = Tk::BLT::Tile::Toplevel.new
 =begin
-    legend = Tk::BLT::Graph.new(@top, :widgetname=>'legend',
-                                :without_creating=>true)
-    @graph.legend_configure(:position=>legend)
+    legend = Tk::BLT::Graph.new(@top, widgetname:'legend',
+                                without_creating:true)
+    @graph.legend_configure(position:legend)
 =end
-    # legend = @graph.legend_window_create(@top, :widgetname=>'legend')
+    # legend = @graph.legend_window_create(@top, widgetname:'legend')
     legend = @graph.legend_window_create(@top)
-    legend.pack(:fill=>:both, :expand=>true)
+    legend.pack(fill::both, expand:true)
 
-    Tk::BLT::Table.add(@root, @graph, [0,0], :fill=>:both)
+    Tk::BLT::Table.add(@root, @graph, [0,0], fill::both)
 
-    @quit_btn = Tk::BLT::Tile::Button.new(:text=>' quit ', :background=>'red',
-                                          :command=>proc{exit})
-    Tk::BLT::Table.add(@root, @quit_btn, [1,0], :anchor=>:e, :padx=>10)
+    @quit_btn = Tk::BLT::Tile::Button.new(text:' quit ', background:'red',
+                                          command:proc{exit})
+    Tk::BLT::Table.add(@root, @quit_btn, [1,0], anchor::e, padx:10)
 
     @graph.zoom_stack
     @graph.crosshairs
@@ -103,9 +103,9 @@ class BLT_Graph_Demo
   private
 
   def _set_vectors
-    @x = Tk::BLT::Vector.new(:variable=>'')
+    @x = Tk::BLT::Vector.new(variable:'')
     @v = []
-    (1..39).each{|i| @v[i] = Tk::BLT::Vector.new(:variable=>'')}
+    (1..39).each{|i| @v[i] = Tk::BLT::Vector.new(variable:'')}
 
     @x.set(<<-'EOD')
     0 1e-10 2e-10 3e-10 4e-10 5e-10 6e-10 7e-10 8e-10 9e-10

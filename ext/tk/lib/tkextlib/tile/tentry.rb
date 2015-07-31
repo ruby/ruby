@@ -25,7 +25,7 @@ class Tk::Tile::TEntry < Tk::Entry
   WidgetClassNames[WidgetClassName] ||= self
 
   def __optkey_aliases
-    {:vcmd=>:validatecommand, :invcmd=>:invalidcommand}
+    {vcmd::validatecommand, invcmd::invalidcommand}
   end
   private :__optkey_aliases
 

@@ -15,11 +15,11 @@ $spin_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
-base_frame = TkFrame.new($spin_demo).pack(:fill=>:both, :expand=>true)
+base_frame = TkFrame.new($spin_demo).pack(fill::both, expand:true)
 
 TkLabel.new(base_frame,
-            :font=>$font, :wraplength=>'5i', :justify=>:left,
-            :text=><<EOL).pack(:side=>:top)
+            font:$font, wraplength:'5i', justify::left,
+            text:<<EOL).pack(side::top)
 Three different spin-boxes are displayed below.  \
 You can add characters by pointing, clicking and typing.  \
 The normal Motif editing characters are supported, along with \
@@ -37,16 +37,16 @@ which supports a 'spinbox' widget.
 EOL
 
 TkFrame.new(base_frame){|f|
-  pack(:side=>:bottom, :fill=>:x, :pady=>'2m')
+  pack(side::bottom, fill::x, pady:'2m')
 
-  TkButton.new(f, :text=>'Dismiss', :width=>15, :command=>proc{
+  TkButton.new(f, text:'Dismiss', width:15, command:proc{
                  $spin_demo.destroy
                  $spin_demo = nil
-               }).pack(:side=>:left, :expand=>true)
+               }).pack(side::left, expand:true)
 
-  TkButton.new(f, :text=>'See Code', :width=>15, :command=>proc{
+  TkButton.new(f, text:'See Code', width:15, command:proc{
                  showCode 'spin'
-               }).pack(:side=>:left, :expand=>true)
+               }).pack(side::left, expand:true)
 }
 
 australianCities = [
@@ -55,11 +55,11 @@ australianCities = [
 ]
 
 [
-  TkSpinbox.new(base_frame, :from=>1, :to=>10, :width=>10, :validate=>:key,
-                :validatecommand=>[
+  TkSpinbox.new(base_frame, from:1, to:10, width:10, validate::key,
+                validatecommand:[
                   proc{|s| s == '' || /^[+-]?\d+$/ =~ s }, '%P'
                 ]),
-  TkSpinbox.new(base_frame, :from=>0, :to=>3, :increment=>0.5,
-                :format=>'%05.2f', :width=>10),
-  TkSpinbox.new(base_frame, :values=>australianCities, :width=>10)
-].each{|sbox| sbox.pack(:side=>:top, :pady=>5, :padx=>10)}
+  TkSpinbox.new(base_frame, from:0, to:3, increment:0.5,
+                format:'%05.2f', width:10),
+  TkSpinbox.new(base_frame, values:australianCities, width:10)
+].each{|sbox| sbox.pack(side::top, pady:5, padx:10)}

@@ -228,7 +228,7 @@ class TestFileUtils < Test::Unit::TestCase
       assert cmp(fname, fname), 'not same?'
     end
     assert_raise(ArgumentError) {
-      cmp TARGETS[0], TARGETS[0], :undefinedoption => true
+      cmp TARGETS[0], TARGETS[0], undefinedoption: true
     }
 
     # pathname
@@ -253,7 +253,7 @@ class TestFileUtils < Test::Unit::TestCase
       cp srcpath, File.dirname(destpath) + '/'
       assert_same_file srcpath, destpath
 
-      cp srcpath, destpath, :preserve => true
+      cp srcpath, destpath, preserve: true
       assert_same_file srcpath, destpath
       assert_same_entry srcpath, destpath
     end
@@ -285,7 +285,7 @@ class TestFileUtils < Test::Unit::TestCase
     chmod 0745, 'tmp/cptmp/d1'
     mkdir 'tmp/cptmp/d2'
     chmod 0700, 'tmp/cptmp/d2'
-    cp_r 'tmp/cptmp', 'tmp/cptmp2', :preserve => true
+    cp_r 'tmp/cptmp', 'tmp/cptmp2', preserve: true
     assert_equal_filemode('tmp/cptmp/d1', 'tmp/cptmp2/d1', bug7246)
     assert_equal_filemode('tmp/cptmp/d2', 'tmp/cptmp2/d2', bug7246)
   end
@@ -327,7 +327,7 @@ class TestFileUtils < Test::Unit::TestCase
       assert_same_file fname, "tmp/#{fname}"
     end
 
-    cp_r 'data', 'tmp2', :preserve => true
+    cp_r 'data', 'tmp2', preserve: true
     TARGETS.each do |fname|
       assert_same_entry fname, "tmp2/#{File.basename(fname)}"
       assert_same_file fname, "tmp2/#{File.basename(fname)}"
@@ -384,7 +384,7 @@ class TestFileUtils < Test::Unit::TestCase
     ln_s '../a/f', 'tmp/cross/b/l'
     ln_s '../b/f', 'tmp/cross/a/l'
     assert_nothing_raised {
-      cp_r 'tmp/cross', 'tmp/cross2', :preserve => true
+      cp_r 'tmp/cross', 'tmp/cross2', preserve: true
     }
   end if have_symlink?
 
@@ -579,7 +579,7 @@ class TestFileUtils < Test::Unit::TestCase
     Dir.mkdir 'tmp/tmpdir'
     File.open('tmp/tmpdir/a', 'w') {|f| f.puts 'dummy' }
     File.open('tmp/tmpdir/c', 'w') {|f| f.puts 'dummy' }
-    rm_r ['tmp/tmpdir/a', 'tmp/tmpdir/b', 'tmp/tmpdir/c'], :force => true
+    rm_r ['tmp/tmpdir/a', 'tmp/tmpdir/b', 'tmp/tmpdir/c'], force: true
     assert_file_not_exist 'tmp/tmpdir/a'
     assert_file_not_exist 'tmp/tmpdir/c'
     Dir.rmdir 'tmp/tmpdir'
@@ -796,7 +796,7 @@ class TestFileUtils < Test::Unit::TestCase
     assert_directory 'tmp/mkdirdest'
     Dir.rmdir 'tmp/mkdirdest'
 
-    mkdir 'tmp/tmp', :mode => 0700
+    mkdir 'tmp/tmp', mode: 0700
     assert_directory 'tmp/tmp'
     assert_filemode 0700, 'tmp/tmp', mask: 0777 if have_file_perm?
     Dir.rmdir 'tmp/tmp'
@@ -808,7 +808,7 @@ class TestFileUtils < Test::Unit::TestCase
   end
 
   def test_mkdir_file_perm
-    mkdir 'tmp/tmp', :mode => 07777
+    mkdir 'tmp/tmp', mode: 07777
     assert_directory 'tmp/tmp'
     assert_filemode 07777, 'tmp/tmp'
     Dir.rmdir 'tmp/tmp'
@@ -864,14 +864,14 @@ class TestFileUtils < Test::Unit::TestCase
     end
     rm_rf 'tmpdir'
 
-    mkdir_p 'tmp/tmp/tmp', :mode => 0700
+    mkdir_p 'tmp/tmp/tmp', mode: 0700
     assert_directory 'tmp/tmp'
     assert_directory 'tmp/tmp/tmp'
     assert_filemode 0700, 'tmp/tmp', mask: 0777 if have_file_perm?
     assert_filemode 0700, 'tmp/tmp/tmp', mask: 0777 if have_file_perm?
     rm_rf 'tmp/tmp'
 
-    mkdir_p 'tmp/tmp', :mode => 0
+    mkdir_p 'tmp/tmp', mode: 0
     assert_directory 'tmp/tmp'
     assert_filemode 0, 'tmp/tmp', mask: 0777 if have_file_perm?
     # DO NOT USE rm_rf here.
@@ -883,7 +883,7 @@ class TestFileUtils < Test::Unit::TestCase
   end
 
   def test_mkdir_p_file_perm
-    mkdir_p 'tmp/tmp/tmp', :mode => 07777
+    mkdir_p 'tmp/tmp/tmp', mode: 07777
     assert_directory 'tmp/tmp/tmp'
     assert_filemode 07777, 'tmp/tmp/tmp'
     Dir.rmdir 'tmp/tmp/tmp'
@@ -902,7 +902,7 @@ class TestFileUtils < Test::Unit::TestCase
 
     File.open('tmp/aaa', 'w') {|f| f.puts 'aaa' }
     File.open('tmp/bbb', 'w') {|f| f.puts 'bbb' }
-    install 'tmp/aaa', 'tmp/bbb', :mode => 0600
+    install 'tmp/aaa', 'tmp/bbb', mode: 0600
     assert_equal "aaa\n", File.read('tmp/bbb')
     assert_filemode 0600, 'tmp/bbb', mask: 0777 if have_file_perm?
 
@@ -1121,9 +1121,9 @@ class TestFileUtils < Test::Unit::TestCase
     return unless @groups[1]
     assert_output_lines([]) {
       touch 'tmp/a'
-      chown nil, @groups[0], 'tmp/a', :noop => false
+      chown nil, @groups[0], 'tmp/a', noop: false
       assert_ownership_group @groups[0], 'tmp/a'
-      chown nil, @groups[1], 'tmp/a', :noop => true
+      chown nil, @groups[1], 'tmp/a', noop: true
       assert_ownership_group @groups[0], 'tmp/a'
       chown nil, @groups[1], 'tmp/a'
       assert_ownership_group @groups[1], 'tmp/a'
@@ -1204,7 +1204,7 @@ class TestFileUtils < Test::Unit::TestCase
         list = ['tmp/dir', 'tmp/dir/a', 'tmp/dir/a/b', 'tmp/dir/a/b/c']
         mkdir_p 'tmp/dir/a/b/c'
         touch 'tmp/d'
-        chown_R nil, @groups[0], ['tmp/dir', 'tmp/d'], :verbose => true
+        chown_R nil, @groups[0], ['tmp/dir', 'tmp/d'], verbose: true
         list.each {|dir|
           assert_ownership_group @groups[0], dir
         }
@@ -1217,11 +1217,11 @@ class TestFileUtils < Test::Unit::TestCase
       assert_output_lines([]) {
         list = ['tmp/dir', 'tmp/dir/a', 'tmp/dir/a/b', 'tmp/dir/a/b/c']
         mkdir_p 'tmp/dir/a/b/c'
-        chown_R nil, @groups[0], 'tmp/dir', :noop => false
+        chown_R nil, @groups[0], 'tmp/dir', noop: false
         list.each {|dir|
           assert_ownership_group @groups[0], dir
         }
-        chown_R nil, @groups[1], 'tmp/dir', :noop => true
+        chown_R nil, @groups[1], 'tmp/dir', noop: true
         list.each {|dir|
           assert_ownership_group @groups[0], dir
         }
@@ -1233,9 +1233,9 @@ class TestFileUtils < Test::Unit::TestCase
         list = ['tmp/dir', 'tmp/dir/a', 'tmp/dir/a/b', 'tmp/dir/a/b/c']
         mkdir_p 'tmp/dir/a/b/c'
         assert_raise_with_message(Errno::ENOENT, /No such file or directory/) {
-            chown_R nil, @groups[0], ['tmp/dir', 'invalid'], :force => false
+            chown_R nil, @groups[0], ['tmp/dir', 'invalid'], force: false
         }
-        chown_R nil, @groups[0], ['tmp/dir', 'invalid'], :force => true
+        chown_R nil, @groups[0], ['tmp/dir', 'invalid'], force: true
         list.each {|dir|
           assert_ownership_group @groups[0], dir
         }

@@ -63,8 +63,8 @@ class TestWEBrickHTTPAuth < Test::Unit::TestCase
 
         server.mount_proc(path){|req, res|
           auth = WEBrick::HTTPAuth::BasicAuth.new(
-            :Realm => realm, :UserDB => htpasswd,
-            :Logger => server.logger
+            Realm: realm, UserDB: htpasswd,
+            Logger: server.logger
           )
           auth.authenticate(req, res)
           res.body = "hoge"
@@ -140,9 +140,9 @@ class TestWEBrickHTTPAuth < Test::Unit::TestCase
         assert(users.member?("foo"), log.call)
 
         auth = WEBrick::HTTPAuth::DigestAuth.new(
-          :Realm => realm, :UserDB => htdigest,
-          :Algorithm => 'MD5',
-          :Logger => server.logger
+          Realm: realm, UserDB: htdigest,
+          Algorithm: 'MD5',
+          Logger: server.logger
         )
         server.mount_proc(path){|req, res|
           auth.authenticate(req, res)

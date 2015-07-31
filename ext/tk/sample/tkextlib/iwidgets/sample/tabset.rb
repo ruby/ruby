@@ -3,7 +3,7 @@ require 'tk'
 require 'tkextlib/iwidgets'
 
 # Create a listbox with two items (one and two)
-l = TkListbox.new(:selectmode=>:single, :exportselection=>false).pack
+l = TkListbox.new(selectmode::single, exportselection:false).pack
 l.insert('end', 'one')
 l.insert('end', 'two')
 l.selection_set(0)
@@ -18,11 +18,11 @@ selectItem = proc{|item|
 
 # Create a tabset, set its -command to call selectItem
 # Add two labels to the tabset (one and two).
-ts = Tk::Iwidgets::Tabset.new(:command=>selectItem)
-ts.add(:label=>1)
-ts.add(:label=>2)
+ts = Tk::Iwidgets::Tabset.new(command:selectItem)
+ts.add(label:1)
+ts.add(label:2)
 ts.select(0)
-ts.pack(:fill=>:x, :expand=>true)
+ts.pack(fill::x, expand:true)
 
 # Define a proc that knows how to select a tab
 # given a y pixel coordinate from the list..

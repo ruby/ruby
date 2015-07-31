@@ -49,11 +49,11 @@
 # radio_var = TkVariable.new('y')
 # menu_spec = [
 #   [['File', 0],
-#     {:label=>'Open', :command=>proc{puts('Open clicked')}, :underline=>0},
+#     {label:'Open', command:proc{puts('Open clicked')}, underline:0},
 #     '---',
 #     ['Check_A', TkVariable.new(true), 6],
-#     {:type=>'checkbutton', :label=>'Check_B',
-#                 :variable=>TkVariable.new, :underline=>6},
+#     {type:'checkbutton', label:'Check_B',
+#                 variable:TkVariable.new, underline:6},
 #     '---',
 #     ['Radio_X', [radio_var, 'x'], 6],
 #     ['Radio_Y', [radio_var, 'y'], 6],

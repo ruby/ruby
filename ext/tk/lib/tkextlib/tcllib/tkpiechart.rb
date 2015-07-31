@@ -52,8 +52,8 @@ module Tk::Tcllib::Tkpiechart
     private :__config_cmd
 
     def __configinfo_struct
-      {:key=>0, :alias=>nil, :db_name=>nil, :db_class=>nil,
-        :default_value=>1, :current_value=>2}
+      {key:0, alias:nil, db_name:nil, db_class:nil,
+        default_value:1, current_value:2}
     end
     private :__configinfo_struct
 

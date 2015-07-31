@@ -4,63 +4,63 @@ require 'date'
 class TestDateStrptime < Test::Unit::TestCase
 
   STRFTIME_2001_02_03 = {
-    '%A'=>['Saturday',{:wday=>6}],
-    '%a'=>['Sat',{:wday=>6}],
-    '%B'=>['February',{:mon=>2}],
-    '%b'=>['Feb',{:mon=>2}],
+    '%A'=>['Saturday',{wday:6}],
+    '%a'=>['Sat',{wday:6}],
+    '%B'=>['February',{mon:2}],
+    '%b'=>['Feb',{mon:2}],
     '%c'=>['Sat Feb  3 00:00:00 2001',
-      {:wday=>6,:mon=>2,:mday=>3,:hour=>0,:min=>0,:sec=>0,:year=>2001}],
-    '%d'=>['03',{:mday=>3}],
-    '%e'=>[' 3',{:mday=>3}],
-    '%H'=>['00',{:hour=>0}],
-    '%I'=>['12',{:hour=>0}],
-    '%j'=>['034',{:yday=>34}],
-    '%M'=>['00',{:min=>0}],
-    '%m'=>['02',{:mon=>2}],
+      {wday:6,mon:2,mday:3,hour:0,min:0,sec:0,year:2001}],
+    '%d'=>['03',{mday:3}],
+    '%e'=>[' 3',{mday:3}],
+    '%H'=>['00',{hour:0}],
+    '%I'=>['12',{hour:0}],
+    '%j'=>['034',{yday:34}],
+    '%M'=>['00',{min:0}],
+    '%m'=>['02',{mon:2}],
     '%p'=>['AM',{}],
-    '%S'=>['00',{:sec=>0}],
-    '%U'=>['04',{:wnum0=>4}],
-    '%W'=>['05',{:wnum1=>5}],
-    '%X'=>['00:00:00',{:hour=>0,:min=>0,:sec=>0}],
-    '%x'=>['02/03/01',{:mon=>2,:mday=>3,:year=>2001}],
-    '%Y'=>['2001',{:year=>2001}],
-    '%y'=>['01',{:year=>2001}],
-    '%Z'=>['+00:00',{:zone=>'+00:00',:offset=>0}],
+    '%S'=>['00',{sec:0}],
+    '%U'=>['04',{wnum0:4}],
+    '%W'=>['05',{wnum1:5}],
+    '%X'=>['00:00:00',{hour:0,min:0,sec:0}],
+    '%x'=>['02/03/01',{mon:2,mday:3,year:2001}],
+    '%Y'=>['2001',{year:2001}],
+    '%y'=>['01',{year:2001}],
+    '%Z'=>['+00:00',{zone:'+00:00',offset:0}],
     '%%'=>['%',{}],
     '%C'=>['20',{}],
-    '%D'=>['02/03/01',{:mon=>2,:mday=>3,:year=>2001}],
-    '%F'=>['2001-02-03',{:year=>2001,:mon=>2,:mday=>3}],
-    '%G'=>['2001',{:cwyear=>2001}],
-    '%g'=>['01',{:cwyear=>2001}],
-    '%h'=>['Feb',{:mon=>2}],
-    '%k'=>[' 0',{:hour=>0}],
-    '%L'=>['000',{:sec_fraction=>0}],
-    '%l'=>['12',{:hour=>0}],
-    '%N'=>['000000000',{:sec_fraction=>0}],
+    '%D'=>['02/03/01',{mon:2,mday:3,year:2001}],
+    '%F'=>['2001-02-03',{year:2001,mon:2,mday:3}],
+    '%G'=>['2001',{cwyear:2001}],
+    '%g'=>['01',{cwyear:2001}],
+    '%h'=>['Feb',{mon:2}],
+    '%k'=>[' 0',{hour:0}],
+    '%L'=>['000',{sec_fraction:0}],
+    '%l'=>['12',{hour:0}],
+    '%N'=>['000000000',{sec_fraction:0}],
     '%n'=>["\n",{}],
     '%P'=>['am',{}],
-    '%Q'=>['981158400000',{:seconds=>981158400.to_r}],
-    '%R'=>['00:00',{:hour=>0,:min=>0}],
-    '%r'=>['12:00:00 AM',{:hour=>0,:min=>0,:sec=>0}],
-    '%s'=>['981158400',{:seconds=>981158400}],
-    '%T'=>['00:00:00',{:hour=>0,:min=>0,:sec=>0}],
+    '%Q'=>['981158400000',{seconds:981158400.to_r}],
+    '%R'=>['00:00',{hour:0,min:0}],
+    '%r'=>['12:00:00 AM',{hour:0,min:0,sec:0}],
+    '%s'=>['981158400',{seconds:981158400}],
+    '%T'=>['00:00:00',{hour:0,min:0,sec:0}],
     '%t'=>["\t",{}],
-    '%u'=>['6',{:cwday=>6}],
-    '%V'=>['05',{:cweek=>5}],
-    '%v'=>[' 3-Feb-2001',{:mday=>3,:mon=>2,:year=>2001}],
-    '%z'=>['+0000',{:zone=>'+0000',:offset=>0}],
+    '%u'=>['6',{cwday:6}],
+    '%V'=>['05',{cweek:5}],
+    '%v'=>[' 3-Feb-2001',{mday:3,mon:2,year:2001}],
+    '%z'=>['+0000',{zone:'+0000',offset:0}],
     '%+'=>['Sat Feb  3 00:00:00 +00:00 2001',
-      {:wday=>6,:mon=>2,:mday=>3,
-	:hour=>0,:min=>0,:sec=>0,:zone=>'+00:00',:offset=>0,:year=>2001}],
+      {wday:6,mon:2,mday:3,
+	hour:0,min:0,sec:0,zone:'+00:00',offset:0,year:2001}],
   }
 
   STRFTIME_2001_02_03_CVS19 = {
   }
 
   STRFTIME_2001_02_03_GNUext = {
-    '%:z'=>['+00:00',{:zone=>'+00:00',:offset=>0}],
-    '%::z'=>['+00:00:00',{:zone=>'+00:00:00',:offset=>0}],
-    '%:::z'=>['+00',{:zone=>'+00',:offset=>0}],
+    '%:z'=>['+00:00',{zone:'+00:00',offset:0}],
+    '%::z'=>['+00:00:00',{zone:'+00:00:00',offset:0}],
+    '%:::z'=>['+00',{zone:'+00',offset:0}],
   }
 
   STRFTIME_2001_02_03.update(STRFTIME_2001_02_03_CVS19)
@@ -103,16 +103,16 @@ class TestDateStrptime < Test::Unit::TestCase
 		 h.values_at(:year,:mon,:mday,:hour,:min,:sec))
 
     assert_equal({}, Date._strptime('', ''))
-    assert_equal({:leftover=>"\s"*3}, Date._strptime("\s"*3, ''))
-    assert_equal({:leftover=>'x'}, Date._strptime("\nx", "\n"))
+    assert_equal({leftover:"\s"*3}, Date._strptime("\s"*3, ''))
+    assert_equal({leftover:'x'}, Date._strptime("\nx", "\n"))
     assert_equal({}, Date._strptime('', "\s"*3))
     assert_equal({}, Date._strptime("\s"*3, "\s"*3))
     assert_equal({}, Date._strptime("\tfoo\n\000\r", "\tfoo\n\000\r"))
     assert_equal({}, Date._strptime("foo\n\nbar", "foo\sbar"))
     assert_equal({}, Date._strptime("%\n", "%\n")) # gnu
     assert_equal({}, Date._strptime('%%', '%%%'))
-    assert_equal({:wday=>6}, Date._strptime('Saturday'*1024 + ',', '%A'*1024 + ','))
-    assert_equal({:wday=>6}, Date._strptime('Saturday'*1024 + ',', '%a'*1024 + ','))
+    assert_equal({wday:6}, Date._strptime('Saturday'*1024 + ',', '%A'*1024 + ','))
+    assert_equal({wday:6}, Date._strptime('Saturday'*1024 + ',', '%a'*1024 + ','))
     assert_equal({}, Date._strptime('Anton von Webern', 'Anton von Webern'))
   end
 

@@ -24,7 +24,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
 
   def test_alternate_key_alternate_host
     keys = {
-      :rubygems_api_key => 'KEY',
+      rubygems_api_key: 'KEY',
       "http://rubygems.engineyard.com" => "EYKEY"
     }
 
@@ -42,7 +42,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
   end
 
   def test_api_key
-    keys = { :rubygems_api_key => 'KEY' }
+    keys = { rubygems_api_key: 'KEY' }
     FileUtils.mkdir_p File.dirname Gem.configuration.credentials_path
 
     open Gem.configuration.credentials_path, 'w' do |f|
@@ -55,7 +55,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
   end
 
   def test_api_key_override
-    keys = { :rubygems_api_key => 'KEY', :other => 'OTHER' }
+    keys = { rubygems_api_key: 'KEY', other: 'OTHER' }
     FileUtils.mkdir_p File.dirname Gem.configuration.credentials_path
 
     open Gem.configuration.credentials_path, 'w' do |f|
@@ -214,7 +214,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
   end
 
   def test_verify_api_key
-    keys = {:other => 'a5fdbb6ba150cbb83aad2bb2fede64cf040453903'}
+    keys = {other: 'a5fdbb6ba150cbb83aad2bb2fede64cf040453903'}
     FileUtils.mkdir_p File.dirname(Gem.configuration.credentials_path)
     File.open Gem.configuration.credentials_path, 'w' do |f|
       f.write keys.to_yaml

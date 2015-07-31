@@ -276,7 +276,7 @@ EOX
       class OptionsTest < self
         def test_output
           output = ""
-          @document.write(:output => output)
+          @document.write(output: output)
           assert_equal(<<-EOX, output)
 <?xml version='1.0' encoding='UTF-8'?>
 <message>Hello world!</message>
@@ -285,7 +285,7 @@ EOX
 
         def test_indent
           output = ""
-          @document.write(:output => output, :indent => 2)
+          @document.write(output: output, indent: 2)
           assert_equal(<<-EOX.chomp, output)
 <?xml version='1.0' encoding='UTF-8'?>
 <message>
@@ -296,7 +296,7 @@ EOX
 
         def test_transitive
           output = ""
-          @document.write(:output => output, :indent => 2, :transitive => true)
+          @document.write(output: output, indent: 2, transitive: true)
           assert_equal(<<-EOX, output)
 <?xml version='1.0' encoding='UTF-8'?>
 <message
@@ -308,7 +308,7 @@ EOX
         def test_ie_hack
           output = ""
           document = REXML::Document.new("<empty/>")
-          document.write(:output => output, :ie_hack => true)
+          document.write(output: output, ie_hack: true)
           assert_equal("<empty />", output)
         end
 
@@ -318,7 +318,7 @@ EOX
           @document.xml_decl.encoding = "Shift_JIS"
           japanese_text = "こんにちは"
           @document.root.text = japanese_text
-          @document.write(:output => output, :encoding => encoding)
+          @document.write(output: output, encoding: encoding)
           assert_equal(<<-EOX.encode(encoding), output)
 <?xml version='1.0' encoding='SHIFT_JIS'?>
 <message>#{japanese_text}</message>

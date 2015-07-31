@@ -8,10 +8,10 @@ class TestWEBrickCGI < Test::Unit::TestCase
 
   def start_cgi_server(log_tester=TestWEBrick::DefaultLogTester, &block)
     config = {
-      :CGIInterpreter => TestWEBrick::RubyBin,
-      :DocumentRoot => File.dirname(__FILE__),
-      :DirectoryIndex => ["webrick.cgi"],
-      :RequestCallback => Proc.new{|req, res|
+      CGIInterpreter: TestWEBrick::RubyBin,
+      DocumentRoot: File.dirname(__FILE__),
+      DirectoryIndex: ["webrick.cgi"],
+      RequestCallback: Proc.new{|req, res|
         def req.meta_vars
           meta = super
           meta["RUBYLIB"] = $:.join(File::PATH_SEPARATOR)

@@ -19,16 +19,16 @@ class TkImg_demo
     @typeFrame = Hash.new
     @imgPriv = Hash.new
 
-    root = TkRoot.new(:title=>'Tests for available image formats')
+    root = TkRoot.new(title:'Tests for available image formats')
 
     root.winfo_children.each{|w| w.destroy}
     TkImage.names{|img| img.delete}
 
     f = TkFrame.new
-    TkButton.new(f, :text=>'Dismiss', :command=>proc{exit}).pack(:side=>:left)
-    f.pack(:side=>:top, :expand=>:y, :fill=>:both)
+    TkButton.new(f, text:'Dismiss', command:proc{exit}).pack(side::left)
+    f.pack(side::top, expand::y, fill::both)
 
-    TkMessage.new(:aspect=>900, :text=>format('This page shows the available image formats of the Img extension (Img version %s, using Tcl/Tk %s)', img_version, Tk::TK_PATCHLEVEL)).pack(:side=>:top, :expand=>:y, :fill=>:both)
+    TkMessage.new(aspect:900, text:format('This page shows the available image formats of the Img extension (Img version %s, using Tcl/Tk %s)', img_version, Tk::TK_PATCHLEVEL)).pack(side::top, expand::y, fill::both)
   end
 
 ##############################
@@ -41,8 +41,8 @@ class TkImg_demo
       im.copy(@imgPriv[w][num])
       num += 1
       begin
-        im.configure(@imgPriv[w][:args].merge(:format=>[:gif, {:index=>num}]))
-        im.configure(:data=>'', :file=>'') #free storage
+        im.configure(@imgPriv[w][:args].merge(format:[:gif, {index:num}]))
+        im.configure(data:'', file:'') #free storage
         @imgPriv[w][num] = im
       rescue
         @imgPriv[w].delete(:args)
@@ -76,8 +76,8 @@ class TkImg_demo
   def show_animated_gif(keys)
     w = TkLabel.new
     begin
-      im = TkPhotoImage.new(keys.merge(:format=>[:gif, {:index=>0}]))
-      im.configure(:data=>'', :file=>'', :format=>'') #free storage
+      im = TkPhotoImage.new(keys.merge(format:[:gif, {index:0}]))
+      im.configure(data:'', file:'', format:'') #free storage
       w.image(im)
       @imgPriv[w] ||= Hash.new
       @imgPriv[w][0] = im
@@ -85,8 +85,8 @@ class TkImg_demo
       Tk.update_idletasks
       Tk.after(20, proc{update_animated_gif(w, :image, 0)})
     rescue => e
-      w.configure(:text=>"error displaying animated gif:\n#{e.message}",
-                  :image=>'', :relief=>:ridge)
+      w.configure(text:"error displaying animated gif:\n#{e.message}",
+                  image:'', relief::ridge)
     end
     w.pack
   end
@@ -94,20 +94,20 @@ class TkImg_demo
   def show_image(fmt, type, data)
     fmt = fmt.to_s.capitalize
     unless @typeFrame[fmt]
-      @typeFrame[fmt] = TkFrame.new.pack(:side=>:top, :expand=>true, :fill=>:x)
-      TkLabel.new(@typeFrame[fmt], :text=>"#{fmt} :  ").pack(:side=>:left)
+      @typeFrame[fmt] = TkFrame.new.pack(side::top, expand:true, fill::x)
+      TkLabel.new(@typeFrame[fmt], text:"#{fmt} :  ").pack(side::left)
     end
     begin
       f = TkFrame.new(@typeFrame[fmt],
-                      :borderwidth=>2, :relief=>:ridge).pack(:side=>:left)
-      im = TkPhotoImage.new(:data=>data)
+                      borderwidth:2, relief::ridge).pack(side::left)
+      im = TkPhotoImage.new(data:data)
       im['data'] = ''
-      TkLabel.new(f, :image=>im).pack
-      TkLabel.new(f, :text=>type, :borderwidth=>0, :pady=>0, :padx=>2,
-                  :font=>'Helvetica 8').pack
+      TkLabel.new(f, image:im).pack
+      TkLabel.new(f, text:type, borderwidth:0, pady:0, padx:2,
+                  font:'Helvetica 8').pack
     rescue => e
-      TkMessage.new(f, :text=>"error displaying #{type} image: #{e.message}",
-                    :aspect=>250).pack
+      TkMessage.new(f, text:"error displaying #{type} image: #{e.message}",
+                    aspect:250).pack
     end
     Tk.update
   end
@@ -120,7 +120,7 @@ demo = TkImg_demo.new
 
 ##############
 
-demo.show_animated_gif(:data=><<'ENDofIMG')
+demo.show_animated_gif(data:<<'ENDofIMG')
 R0lGODlhYgIEAIIAAQAAACQAJEkASW0AbZIAkrYAttsA2/8A/yH/C05FVFNDQVBFMi4wAwEA
 AAAh+QQABgD/ACwAAAAAYgIEAAIDuUg63CMwwiCCvQAHwLv/YCiOZGmeaKqubOu+pZXNV03d
 kuAwysLoucjNlpFtYMikcslsOp+ijbRow1EiD12jtyA4INnJZGg8HmfQtHrNbrPP6KqlEgRq

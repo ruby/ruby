@@ -18,12 +18,12 @@ class TestOpenURI < Test::Unit::TestCase
     logger = WEBrick::Log.new(log, WEBrick::BasicLog::WARN)
     Dir.mktmpdir {|dr|
       srv = WEBrick::HTTPServer.new({
-        :DocumentRoot => dr,
-        :ServerType => Thread,
-        :Logger => logger,
-        :AccessLog => [[NullLog, ""]],
-        :BindAddress => '127.0.0.1',
-        :Port => 0})
+        DocumentRoot: dr,
+        ServerType: Thread,
+        Logger: logger,
+        AccessLog: [[NullLog, ""]],
+        BindAddress: '127.0.0.1',
+        Port: 0})
       _, port, _, host = srv.listeners[0].addr
       server_thread = srv.start
       server_thread2 = Thread.new {
@@ -128,7 +128,7 @@ class TestOpenURI < Test::Unit::TestCase
         end
       }
       begin
-        assert_raise(Net::ReadTimeout) { URI("http://127.0.0.1:#{port}/foo/bar").read(:read_timeout=>0.1) }
+        assert_raise(Net::ReadTimeout) { URI("http://127.0.0.1:#{port}/foo/bar").read(read_timeout:0.1) }
       ensure
         Thread.kill(th)
         th.join
@@ -155,7 +155,7 @@ class TestOpenURI < Test::Unit::TestCase
   end
 
   def test_invalid_option
-    assert_raise(ArgumentError) { open("http://127.0.0.1/", :invalid_option=>true) {} }
+    assert_raise(ArgumentError) { open("http://127.0.0.1/", invalid_option:true) {} }
   end
 
   def test_mode
@@ -230,13 +230,13 @@ class TestOpenURI < Test::Unit::TestCase
 
   def test_multi_proxy_opt
     assert_raise(ArgumentError) {
-      open("http://127.0.0.1/", :proxy_http_basic_authentication=>true, :proxy=>true) {}
+      open("http://127.0.0.1/", proxy_http_basic_authentication:true, proxy:true) {}
     }
   end
 
   def test_non_http_proxy
     assert_raise(RuntimeError) {
-      open("http://127.0.0.1/", :proxy=>URI("ftp://127.0.0.1/")) {}
+      open("http://127.0.0.1/", proxy:URI("ftp://127.0.0.1/")) {}
     }
   end
 
@@ -246,36 +246,36 @@ class TestOpenURI < Test::Unit::TestCase
       proxy_logger = WEBrick::Log.new(proxy_log, WEBrick::BasicLog::WARN)
       proxy_auth_log = ''
       proxy = WEBrick::HTTPProxyServer.new({
-        :ServerType => Thread,
-        :Logger => proxy_logger,
-        :AccessLog => [[NullLog, ""]],
-        :ProxyAuthProc => lambda {|req, res|
+        ServerType: Thread,
+        Logger: proxy_logger,
+        AccessLog: [[NullLog, ""]],
+        ProxyAuthProc: lambda {|req, res|
           proxy_auth_log << req.request_line
         },
-        :BindAddress => '127.0.0.1',
-        :Port => 0})
+        BindAddress: '127.0.0.1',
+        Port: 0})
       _, proxy_port, _, proxy_host = proxy.listeners[0].addr
       proxy_url = "http://#{proxy_host}:#{proxy_port}/"
       begin
         proxy_thread = proxy.start
         srv.mount_proc("/proxy", lambda { |req, res| res.body = "proxy" } )
-        open("#{url}/proxy", :proxy=>proxy_url) {|f|
+        open("#{url}/proxy", proxy:proxy_url) {|f|
           assert_equal("200", f.status[0])
           assert_equal("proxy", f.read)
         }
         assert_match(/#{Regexp.quote url}/, proxy_auth_log); proxy_auth_log.clear
-        open("#{url}/proxy", :proxy=>URI(proxy_url)) {|f|
+        open("#{url}/proxy", proxy:URI(proxy_url)) {|f|
           assert_equal("200", f.status[0])
           assert_equal("proxy", f.read)
         }
         assert_match(/#{Regexp.quote url}/, proxy_auth_log); proxy_auth_log.clear
-        open("#{url}/proxy", :proxy=>nil) {|f|
+        open("#{url}/proxy", proxy:nil) {|f|
           assert_equal("200", f.status[0])
           assert_equal("proxy", f.read)
         }
         assert_equal("", proxy_auth_log); proxy_auth_log.clear
         assert_raise(ArgumentError) {
-          open("#{url}/proxy", :proxy=>:invalid) {}
+          open("#{url}/proxy", proxy::invalid) {}
         }
         assert_equal("", proxy_auth_log); proxy_auth_log.clear
         with_env("http_proxy"=>proxy_url) {
@@ -300,23 +300,23 @@ class TestOpenURI < Test::Unit::TestCase
       proxy_logger = WEBrick::Log.new(proxy_log, WEBrick::BasicLog::WARN)
       proxy_auth_log = ''
       proxy = WEBrick::HTTPProxyServer.new({
-        :ServerType => Thread,
-        :Logger => proxy_logger,
-        :AccessLog => [[NullLog, ""]],
-        :ProxyAuthProc => lambda {|req, res|
+        ServerType: Thread,
+        Logger: proxy_logger,
+        AccessLog: [[NullLog, ""]],
+        ProxyAuthProc: lambda {|req, res|
           proxy_auth_log << req.request_line
           if req["Proxy-Authorization"] != "Basic #{['user:pass'].pack('m').chomp}"
             raise WEBrick::HTTPStatus::ProxyAuthenticationRequired
           end
         },
-        :BindAddress => '127.0.0.1',
-        :Port => 0})
+        BindAddress: '127.0.0.1',
+        Port: 0})
       _, proxy_port, _, proxy_host = proxy.listeners[0].addr
       proxy_url = "http://#{proxy_host}:#{proxy_port}/"
       begin
         th = proxy.start
         srv.mount_proc("/proxy", lambda { |req, res| res.body = "proxy" } )
-        exc = assert_raise(OpenURI::HTTPError) { open("#{url}/proxy", :proxy=>proxy_url) {} }
+        exc = assert_raise(OpenURI::HTTPError) { open("#{url}/proxy", proxy:proxy_url) {} }
         assert_equal("407", exc.io.status[0])
         assert_match(/#{Regexp.quote url}/, proxy_auth_log); proxy_auth_log.clear
       ensure
@@ -333,31 +333,31 @@ class TestOpenURI < Test::Unit::TestCase
       proxy_logger = WEBrick::Log.new(proxy_log, WEBrick::BasicLog::WARN)
       proxy_auth_log = ''
       proxy = WEBrick::HTTPProxyServer.new({
-        :ServerType => Thread,
-        :Logger => proxy_logger,
-        :AccessLog => [[NullLog, ""]],
-        :ProxyAuthProc => lambda {|req, res|
+        ServerType: Thread,
+        Logger: proxy_logger,
+        AccessLog: [[NullLog, ""]],
+        ProxyAuthProc: lambda {|req, res|
           proxy_auth_log << req.request_line
           if req["Proxy-Authorization"] != "Basic #{['user:pass'].pack('m').chomp}"
             raise WEBrick::HTTPStatus::ProxyAuthenticationRequired
           end
         },
-        :BindAddress => '127.0.0.1',
-        :Port => 0})
+        BindAddress: '127.0.0.1',
+        Port: 0})
       _, proxy_port, _, proxy_host = proxy.listeners[0].addr
       proxy_url = "http://#{proxy_host}:#{proxy_port}/"
       begin
         th = proxy.start
         srv.mount_proc("/proxy", lambda { |req, res| res.body = "proxy" } )
         open("#{url}/proxy",
-            :proxy_http_basic_authentication=>[proxy_url, "user", "pass"]) {|f|
+            proxy_http_basic_authentication:[proxy_url, "user", "pass"]) {|f|
           assert_equal("200", f.status[0])
           assert_equal("proxy", f.read)
         }
         assert_match(/#{Regexp.quote url}/, proxy_auth_log); proxy_auth_log.clear
         assert_raise(ArgumentError) {
           open("#{url}/proxy",
-              :proxy_http_basic_authentication=>[true, "user", "pass"]) {}
+              proxy_http_basic_authentication:[true, "user", "pass"]) {}
         }
         assert_equal("", proxy_auth_log); proxy_auth_log.clear
       ensure
@@ -377,7 +377,7 @@ class TestOpenURI < Test::Unit::TestCase
         assert_equal("#{url}/r2", f.base_uri.to_s)
         assert_equal("r2", f.read)
       }
-      assert_raise(OpenURI::HTTPRedirect) { open("#{url}/r1/", :redirect=>false) {} }
+      assert_raise(OpenURI::HTTPRedirect) { open("#{url}/r1/", redirect:false) {} }
       assert_raise(RuntimeError) { open("#{url}/to-file/") {} }
     }
   end
@@ -465,7 +465,7 @@ class TestOpenURI < Test::Unit::TestCase
   def test_redirect_auth_success
     with_http {|srv, dr, url|
       setup_redirect_auth(srv, url)
-      open("#{url}/r2/", :http_basic_authentication=>['user', 'pass']) {|f|
+      open("#{url}/r2/", http_basic_authentication:['user', 'pass']) {|f|
         assert_equal("r2", f.read)
       }
     }
@@ -490,7 +490,7 @@ class TestOpenURI < Test::Unit::TestCase
     }
     with_http(log_tester) {|srv, dr, url, server_thread, server_log|
       setup_redirect_auth(srv, url)
-      exc = assert_raise(OpenURI::HTTPError) { open("#{url}/r1/", :http_basic_authentication=>['user', 'pass']) {} }
+      exc = assert_raise(OpenURI::HTTPError) { open("#{url}/r1/", http_basic_authentication:['user', 'pass']) {} }
       assert_equal("401", exc.io.status[0])
     }
   end
@@ -506,8 +506,8 @@ class TestOpenURI < Test::Unit::TestCase
       length = []
       progress = []
       open("#{url}/data/",
-           :content_length_proc => lambda {|n| length << n },
-           :progress_proc => lambda {|n| progress << n }
+           content_length_proc: lambda {|n| length << n },
+           progress_proc: lambda {|n| progress << n }
           ) {|f|
         assert_equal(1, length.length)
         assert_equal(content.length, length[0])
@@ -526,8 +526,8 @@ class TestOpenURI < Test::Unit::TestCase
       length = []
       progress = []
       open("#{url}/data/",
-           :content_length_proc => lambda {|n| length << n },
-           :progress_proc => lambda {|n| progress << n }
+           content_length_proc: lambda {|n| length << n },
+           progress_proc: lambda {|n| progress << n }
           ) {|f|
         assert_equal(1, length.length)
         assert_equal(nil, length[0])
@@ -715,7 +715,7 @@ class TestOpenURI < Test::Unit::TestCase
         end
       }
       begin
-        content = URI("ftp://#{host}:#{port}/foo/bar").read(:ftp_active_mode=>true)
+        content = URI("ftp://#{host}:#{port}/foo/bar").read(ftp_active_mode:true)
         assert_equal("content", content)
       ensure
         Thread.kill(th)
@@ -762,8 +762,8 @@ class TestOpenURI < Test::Unit::TestCase
         length = []
         progress = []
         content = URI("ftp://#{host}:#{port}/%2Ffoo/b%61r;type=a").read(
-         :content_length_proc => lambda {|n| length << n },
-         :progress_proc => lambda {|n| progress << n })
+         content_length_proc: lambda {|n| length << n },
+         progress_proc: lambda {|n| progress << n })
         assert_equal("content", content)
         assert_equal([7], length)
         assert_equal(7, progress.inject(&:+))
@@ -819,7 +819,7 @@ class TestOpenURI < Test::Unit::TestCase
       }
       begin
         content = URI("ftp://192.0.2.1/foo/bar").read(
-          :proxy_http_basic_authentication => ["http://127.0.0.1:#{proxy_port}", "proxy-user", "proxy-password"])
+          proxy_http_basic_authentication: ["http://127.0.0.1:#{proxy_port}", "proxy-user", "proxy-password"])
         assert_equal("ab\r\n", content)
       ensure
         Thread.kill(th)

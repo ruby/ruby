@@ -17,8 +17,8 @@ module RSS
       @parents = %w(item)
 
       @elems = {
-        :ping => "http://bar.com/tb.cgi?tb_id=rssplustrackback",
-        :about => "http://foo.com/trackback/tb.cgi?tb_id=20020923",
+        ping: "http://bar.com/tb.cgi?tb_id=rssplustrackback",
+        about: "http://foo.com/trackback/tb.cgi?tb_id=20020923",
       }
 
       @content_nodes = @elems.collect do |name, value|
@@ -81,8 +81,8 @@ EOR
     def test_accessor
 
       new_value = {
-        :ping => "http://baz.com/trackback/tb.cgi?tb_id=20030808",
-        :about => "http://hoge.com/trackback/tb.cgi?tb_id=90030808",
+        ping: "http://baz.com/trackback/tb.cgi?tb_id=20030808",
+        about: "http://hoge.com/trackback/tb.cgi?tb_id=90030808",
       }
 
       @elems.each do |name, value|

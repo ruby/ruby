@@ -23,7 +23,7 @@ module WEBrick
   # database and an authenticator.  To start, here's an Htpasswd database for
   # use with a DigestAuth authenticator:
   #
-  #   config = { :Realm => 'DigestAuth example realm' }
+  #   config = { Realm: 'DigestAuth example realm' }
   #
   #   htpasswd = WEBrick::HTTPAuth::Htpasswd.new 'my_password_file'
   #   htpasswd.auth_type = WEBrick::HTTPAuth::DigestAuth

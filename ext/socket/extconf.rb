@@ -654,7 +654,7 @@ EOS
   end
 
   hdr = "netinet6/in6.h"
-  if /darwin/ =~ RUBY_PLATFORM and !try_compile(<<"SRC", nil, :werror=>true)
+  if /darwin/ =~ RUBY_PLATFORM and !try_compile(<<"SRC", nil, werror:true)
 #include <netinet/in.h>
 int t(struct in6_addr *addr) {return IN6_IS_ADDR_UNSPECIFIED(addr);}
 SRC

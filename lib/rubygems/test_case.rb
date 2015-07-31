@@ -161,9 +161,9 @@ class Gem::TestCase < MiniTest::Unit::TestCase
     targets << '' if targets.empty?
 
     {
-      :command => command,
-      :targets => targets,
-      :macros => macros,
+      command: command,
+      targets: targets,
+      macros: macros,
     }
   end
 
@@ -506,14 +506,14 @@ class Gem::TestCase < MiniTest::Unit::TestCase
       gem = File.join(@tempdir, File.basename(spec.cache_file)).untaint
     end
 
-    Gem::Installer.at(gem, options.merge({:wrappers => true})).install
+    Gem::Installer.at(gem, options.merge({wrappers: true})).install
   end
 
   ##
   # Builds and installs the Gem::Specification +spec+ into the user dir
 
   def install_gem_user spec
-    install_gem spec, :user_install => true
+    install_gem spec, user_install: true
   end
 
   ##
@@ -525,7 +525,7 @@ class Gem::TestCase < MiniTest::Unit::TestCase
       def ask_if_ok spec
         true
       end
-    }.new(spec.name, :executables => true, :user_install => true).uninstall
+    }.new(spec.name, executables: true, user_install: true).uninstall
   end
 
   ##
@@ -700,7 +700,7 @@ class Gem::TestCase < MiniTest::Unit::TestCase
 
   def install_default_specs(*specs)
     specs.each do |spec|
-      installer = Gem::Installer.for_spec(spec, :install_as_default => true)
+      installer = Gem::Installer.for_spec(spec, install_as_default: true)
       installer.install
       Gem.register_default_spec(spec)
     end

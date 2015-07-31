@@ -266,7 +266,7 @@ module REXML
 
         when :predicate
           new_nodeset = []
-          subcontext = { :size => nodeset.size }
+          subcontext = { size: nodeset.size }
           pred = path_stack.shift
           nodeset.each_with_index { |node, index|
             subcontext[ :node ] = node
@@ -433,7 +433,7 @@ module REXML
         when :function
           func_name = path_stack.shift.tr('-','_')
           arguments = path_stack.shift
-          subcontext = context ? nil : { :size => nodeset.size }
+          subcontext = context ? nil : { size: nodeset.size }
 
           res = []
           cont = context

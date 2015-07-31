@@ -20,51 +20,51 @@ module WEBrick
 
     # for GenericServer
     General = {
-      :ServerName     => Utils::getservername,
-      :BindAddress    => nil,   # "0.0.0.0" or "::" or nil
-      :Port           => nil,   # users MUST specify this!!
-      :MaxClients     => 100,   # maximum number of the concurrent connections
-      :ServerType     => nil,   # default: WEBrick::SimpleServer
-      :Logger         => nil,   # default: WEBrick::Log.new
-      :ServerSoftware => "WEBrick/#{WEBrick::VERSION} " +
+      ServerName: Utils::getservername,
+      BindAddress: nil,   # "0.0.0.0" or "::" or nil
+      Port: nil,   # users MUST specify this!!
+      MaxClients: 100,   # maximum number of the concurrent connections
+      ServerType: nil,   # default: WEBrick::SimpleServer
+      Logger: nil,   # default: WEBrick::Log.new
+      ServerSoftware: "WEBrick/#{WEBrick::VERSION} " +
                          "(Ruby/#{RUBY_VERSION}/#{RUBY_RELEASE_DATE})",
-      :TempDir        => ENV['TMPDIR']||ENV['TMP']||ENV['TEMP']||'/tmp',
-      :DoNotListen    => false,
-      :StartCallback  => nil,
-      :StopCallback   => nil,
-      :AcceptCallback => nil,
-      :DoNotReverseLookup => nil,
-      :ShutdownSocketWithoutClose => false,
+      TempDir: ENV['TMPDIR']||ENV['TMP']||ENV['TEMP']||'/tmp',
+      DoNotListen: false,
+      StartCallback: nil,
+      StopCallback: nil,
+      AcceptCallback: nil,
+      DoNotReverseLookup: nil,
+      ShutdownSocketWithoutClose: false,
     }
 
     # for HTTPServer, HTTPRequest, HTTPResponse ...
     HTTP = General.dup.update(
-      :Port           => 80,
-      :RequestTimeout => 30,
-      :HTTPVersion    => HTTPVersion.new("1.1"),
-      :AccessLog      => nil,
-      :MimeTypes      => HTTPUtils::DefaultMimeTypes,
-      :DirectoryIndex => ["index.html","index.htm","index.cgi","index.rhtml"],
-      :DocumentRoot   => nil,
-      :DocumentRootOptions => { :FancyIndexing => true },
-      :RequestCallback => nil,
-      :ServerAlias    => nil,
-      :InputBufferSize  => 65536, # input buffer size in reading request body
-      :OutputBufferSize => 65536, # output buffer size in sending File or IO
+      Port: 80,
+      RequestTimeout: 30,
+      HTTPVersion: HTTPVersion.new("1.1"),
+      AccessLog: nil,
+      MimeTypes: HTTPUtils::DefaultMimeTypes,
+      DirectoryIndex: ["index.html","index.htm","index.cgi","index.rhtml"],
+      DocumentRoot: nil,
+      DocumentRootOptions: { FancyIndexing: true },
+      RequestCallback: nil,
+      ServerAlias: nil,
+      InputBufferSize: 65536, # input buffer size in reading request body
+      OutputBufferSize: 65536, # output buffer size in sending File or IO
 
       # for HTTPProxyServer
-      :ProxyAuthProc  => nil,
-      :ProxyContentHandler => nil,
-      :ProxyVia       => true,
-      :ProxyTimeout   => true,
-      :ProxyURI       => nil,
+      ProxyAuthProc: nil,
+      ProxyContentHandler: nil,
+      ProxyVia: true,
+      ProxyTimeout: true,
+      ProxyURI: nil,
 
-      :CGIInterpreter => nil,
-      :CGIPathEnv     => nil,
+      CGIInterpreter: nil,
+      CGIPathEnv: nil,
 
       # workaround: if Request-URIs contain 8bit chars,
       # they should be escaped before calling of URI::parse().
-      :Escape8bitURI  => false
+      Escape8bitURI: false
     )
 
     ##
@@ -92,14 +92,14 @@ module WEBrick
     #   Only works if mounted on /.  Disabled by default.
 
     FileHandler = {
-      :NondisclosureName => [".ht*", "*~"],
-      :FancyIndexing     => false,
-      :HandlerTable      => {},
-      :HandlerCallback   => nil,
-      :DirectoryCallback => nil,
-      :FileCallback      => nil,
-      :UserDir           => nil,  # e.g. "public_html"
-      :AcceptableLanguages => []  # ["en", "ja", ... ]
+      NondisclosureName: [".ht*", "*~"],
+      FancyIndexing: false,
+      HandlerTable: {},
+      HandlerCallback: nil,
+      DirectoryCallback: nil,
+      FileCallback: nil,
+      UserDir: nil,  # e.g. "public_html"
+      AcceptableLanguages: []  # ["en", "ja", ... ]
     }
 
     ##
@@ -109,7 +109,7 @@ module WEBrick
     #                     automatically?
 
     BasicAuth = {
-      :AutoReloadUserDB     => true,
+      AutoReloadUserDB: true,
     }
 
     ##
@@ -134,18 +134,18 @@ module WEBrick
     # :OperaHack:: Hack which allows Opera to work.
 
     DigestAuth = {
-      :Algorithm            => 'MD5-sess', # or 'MD5'
-      :Domain               => nil,        # an array includes domain names.
-      :Qop                  => [ 'auth' ], # 'auth' or 'auth-int' or both.
-      :UseOpaque            => true,
-      :UseNextNonce         => false,
-      :CheckNc              => false,
-      :UseAuthenticationInfoHeader => true,
-      :AutoReloadUserDB     => true,
-      :NonceExpirePeriod    => 30*60,
-      :NonceExpireDelta     => 60,
-      :InternetExplorerHack => true,
-      :OperaHack            => true,
+      Algorithm: 'MD5-sess', # or 'MD5'
+      Domain: nil,        # an array includes domain names.
+      Qop: [ 'auth' ], # 'auth' or 'auth-int' or both.
+      UseOpaque: true,
+      UseNextNonce: false,
+      CheckNc: false,
+      UseAuthenticationInfoHeader: true,
+      AutoReloadUserDB: true,
+      NonceExpirePeriod: 30*60,
+      NonceExpireDelta: 60,
+      InternetExplorerHack: true,
+      OperaHack: true,
     }
   end
 end

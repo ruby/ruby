@@ -16,7 +16,7 @@ $menu_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
-base_frame = TkFrame.new($menu_demo).pack(:fill=>:both, :expand=>true)
+base_frame = TkFrame.new($menu_demo).pack(fill::both, expand:true)
 
 # menu frame 生成
 $menu_frame = TkFrame.new(base_frame, 'relief'=>'raised', 'bd'=>2)

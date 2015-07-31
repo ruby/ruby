@@ -20,38 +20,38 @@ cols = 8
   }
 }
 
-lbl = TkLabel.new(:text=>"TkTable v1 Example")
+lbl = TkLabel.new(text:"TkTable v1 Example")
 
-table = Tk::TkTable.new(:rows=>rows, :cols=>cols, :variable=>ary,
-                        :width=>6, :height=>6,
-                        :titlerows=>1, :titlecols=>2,
-                        :roworigin=>-1, :colorigin=>-2,
-                        :rowstretchmode=>:last, :colstretchmode=>:last,
-                        :rowtagcommand=>proc{|row|
+table = Tk::TkTable.new(rows:rows, cols:cols, variable:ary,
+                        width:6, height:6,
+                        titlerows:1, titlecols:2,
+                        roworigin:-1, colorigin:-2,
+                        rowstretchmode::last, colstretchmode::last,
+                        rowtagcommand:proc{|row|
                           row = Integer(row)
                           (row>0 && row%2 == 1)? 'OddRow': ''
                         },
-                        :coltagcommand=>proc{|col|
+                        coltagcommand:proc{|col|
                           col = Integer(col)
                           (col>0 && col%2 == 1)? 'OddCol': ''
                         },
-                        :selectmode=>:extended, :sparsearray=>false)
+                        selectmode::extended, sparsearray:false)
 
 sx = table.xscrollbar(TkScrollbar.new)
 sy = table.yscrollbar(TkScrollbar.new)
 
-btn = TkButton.new(:text=>'Exit', :command=>proc{exit})
+btn = TkButton.new(text:'Exit', command:proc{exit})
 
-Tk.grid(lbl, '-', :sticky=>:ew)
-Tk.grid(table, sy, :sticky=>:news)
-Tk.grid(sx, :sticky=>:ew)
-Tk.grid(btn, :sticky=>:ew, :columnspan=>2)
+Tk.grid(lbl, '-', sticky::ew)
+Tk.grid(table, sy, sticky::news)
+Tk.grid(sx, sticky::ew)
+Tk.grid(btn, sticky::ew, columnspan:2)
 
-Tk.root.grid_columnconfig(0, :weight=>1)
-Tk.root.grid_rowconfig(1, :weight=>1)
+Tk.root.grid_columnconfig(0, weight:1)
+Tk.root.grid_rowconfig(1, weight:1)
 
-table.tag_configure('OddRow', :bg=>'orange', :fg=>'purple')
-table.tag_configure('OddCol', :bg=>'brown', :fg=>'pink')
+table.tag_configure('OddRow', bg:'orange', fg:'purple')
+table.tag_configure('OddCol', bg:'brown', fg:'pink')
 
 table.set_width([-2, 7], [-1, 7], [1, 5], [2, 8], [4, 14])
 

@@ -118,7 +118,7 @@ class TkTreeCtrl_demo
       unless TkImage.names.find{|img| (name = @images.key(img)) && File.fnmatch(pat, name)}
         Dir.glob(File.join(@ScriptDir, 'pics', "#{pat}.gif")).each{|file|
           name = File.basename(file, '.gif')
-          img = TkPhotoImage.new(:file=>file)
+          img = TkPhotoImage.new(file:file)
           @images[name] = img
           @sel_images[name] = TkPhotoImage.new
           @sel_images[name].copy(img)
@@ -154,7 +154,7 @@ class TkTreeCtrl_demo
 
   def make_source_window
     @src_top = TkToplevel.new
-    f = TkFrame.new(@src_top, :borderwidth=>0)
+    f = TkFrame.new(@src_top, borderwidth:0)
     case @thisPlatform
     when 'unix'
       font = TkFont.new(['Courier', -12])
@@ -162,17 +162,17 @@ class TkTreeCtrl_demo
       font = TkFont.new(['Courier', 9])
     end
 
-    @src_txt = TkText.new(f, :font=>font, :tabs=>font.measure('1234'),
-                          :wrap=>:none)
+    @src_txt = TkText.new(f, font:font, tabs:font.measure('1234'),
+                          wrap::none)
     xscr = @src_txt.xscrollbar(TkScrollbar.new(f))
     yscr = @src_txt.yscrollbar(TkScrollbar.new(f))
 
-    f.pack(:expand=>true, :fill=>:both)
-    f.grid_columnconfigure(0, :weight=>1)
-    f.grid_rowconfigure(0, :weight=>1)
-    @src_txt.grid(:row=>0, :column=>0, :sticky=>:news)
-    xscr.grid(:row=>1, :column=>0, :sticky=>:we)
-    yscr.grid(:row=>0, :column=>1, :sticky=>:ns)
+    f.pack(expand:true, fill::both)
+    f.grid_columnconfigure(0, weight:1)
+    f.grid_rowconfigure(0, weight:1)
+    @src_txt.grid(row:0, column:0, sticky::news)
+    xscr.grid(row:1, column:0, sticky::we)
+    yscr.grid(row:0, column:1, sticky::ns)
 
     @src_top.protocol('WM_DELETE_WINDOW', proc{@src_top.withdraw})
     @src_top.geometry('-0+0')
@@ -194,7 +194,7 @@ class TkTreeCtrl_demo
   end
 
   def tree_plus_scrollbars_in_a_frame(parent, h, v)
-    f = TkFrame.new(parent, :borderwidth=>1, :relief=>:sunken)
+    f = TkFrame.new(parent, borderwidth:1, relief::sunken)
     case @thisPlatform
     when 'unix'
       font = TkFont.new(['Helvetica', -12])
@@ -204,32 +204,32 @@ class TkTreeCtrl_demo
       font = TkFont.new(['MS Sans', 8])
     end
 
-    tree = Tk::TreeCtrl.new(f, :highlightthickness=>0,
-                            :borderwidth=>0, :font=>font)
+    tree = Tk::TreeCtrl.new(f, highlightthickness:0,
+                            borderwidth:0, font:font)
     tree[:xscrollincrement] = 20
-    tree.debug_configure(:enable=>false, :display=>false)
+    tree.debug_configure(enable:false, display:false)
 
     if h
-      h_scr = TkScrollbar.new(f, :orient=>:horizontal,
-                              :command=>proc{|*args| tree.xview(*args)})
+      h_scr = TkScrollbar.new(f, orient::horizontal,
+                              command:proc{|*args| tree.xview(*args)})
       tree.notify_bind(h_scr, 'Scroll-x',
                        proc{|w, l, u| w.set(l, u)}, '%W %l %u')
       h_scr.bind('ButtonPress-1', proc{tree.set_focus})
     end
 
     if v
-      v_scr = TkScrollbar.new(f, :orient=>:vertical,
-                              :command=>proc{|*args| tree.yview(*args)})
+      v_scr = TkScrollbar.new(f, orient::vertical,
+                              command:proc{|*args| tree.yview(*args)})
       tree.notify_bind(v_scr, 'Scroll-y',
                        proc{|w, l, u| w.set(l, u)}, '%W %l %u')
       v_scr.bind('ButtonPress-1', proc{tree.set_focus})
     end
 
-    f.grid_columnconfigure(0, :weight=>1)
-    f.grid_rowconfigure(0, :weight=>1)
-    tree.grid(:row=>0, :column=>0, :sticky=>:news)
-    h_scr.grid(:row=>1, :column=>0, :sticky=>:we) if h
-    v_scr.grid(:row=>0, :column=>1, :sticky=>:ns) if v
+    f.grid_columnconfigure(0, weight:1)
+    f.grid_rowconfigure(0, weight:1)
+    tree.grid(row:0, column:0, sticky::news)
+    h_scr.grid(row:1, column:0, sticky::we) if h
+    v_scr.grid(row:0, column:1, sticky::ns) if v
 
     [f, tree]
   end
@@ -244,66 +244,66 @@ class TkTreeCtrl_demo
       Tk.root.geometry('+0+30')
     end
 
-    pane1 = TkPanedWindow.new(:orient=>:vertical, :borderwidth=>0)
-    pane2 = TkPanedWindow.new(:orient=>:horizontal, :borderwidth=>0)
+    pane1 = TkPanedWindow.new(orient::vertical, borderwidth:0)
+    pane2 = TkPanedWindow.new(orient::horizontal, borderwidth:0)
 
     # Tree + scrollbar: demos
     f1, @tree1 = tree_plus_scrollbars_in_a_frame(nil, false, true)
-    @tree1.configure(:showbuttons=>false, :showlines=>:false,
-                    :showroot=>false, :height=>100)
+    @tree1.configure(showbuttons:false, showlines::false,
+                    showroot:false, height:100)
     if $HasColumnCreate
-      @tree1.column_create(:text=>'List of Demos',
-                           :expand=>true, :button=>false)
+      @tree1.column_create(text:'List of Demos',
+                           expand:true, button:false)
     else
-      @tree1.column_configure(0, :text=>'List of Demos',
-                              :expand=>true, :button=>false)
+      @tree1.column_configure(0, text:'List of Demos',
+                              expand:true, button:false)
     end
 
     # Tree + scrollbar: styles + elements in list
     f4, @tree4 = tree_plus_scrollbars_in_a_frame(nil, false, true)
-    @tree4.configure(:showroot=>false, :height=>140)
+    @tree4.configure(showroot:false, height:140)
     if $HasColumnCreate
-      @tree4.column_create(:text=>'Elements and Styles',
-                           :expand=>true, :button=>false)
+      @tree4.column_create(text:'Elements and Styles',
+                           expand:true, button:false)
     else
-      @tree4.column_configure(0, :text=>'Elements and Styles',
-                              :expand=>true, :button=>false)
+      @tree4.column_configure(0, text:'Elements and Styles',
+                              expand:true, button:false)
     end
 
     # Tree + scrollbar: styles + elements in selected item
     f3, @tree3 = tree_plus_scrollbars_in_a_frame(nil, false, true)
-    @tree3.configure(:showroot=>false)
+    @tree3.configure(showroot:false)
     if $HasColumnCreate
-      @tree3.column_create(:text=>'Styles in Item',
-                           :expand=>true, :button=>false)
+      @tree3.column_create(text:'Styles in Item',
+                           expand:true, button:false)
     else
-      @tree3.column_configure(0, :text=>'Styles in Item',
-                              :expand=>true, :button=>false)
+      @tree3.column_configure(0, text:'Styles in Item',
+                              expand:true, button:false)
     end
 
-    pane1.add(f1, f4, f3, :height=>150)
-    pane1.pack(:expand=>true, :fill=>:both)
+    pane1.add(f1, f4, f3, height:150)
+    pane1.pack(expand:true, fill::both)
 
     # Frame on right
     f2_base = TkFrame.new
 
     # Tree + scrollbars
     f2, @tree2 = tree_plus_scrollbars_in_a_frame(f2_base, true, true)
-    @tree2.configure(:indent=>19)
-    @tree2.debug_configure(:enable=>false, :display=>true,
-                           :erasecolor=>'pink', :displaydelay=>30)
+    @tree2.configure(indent:19)
+    @tree2.debug_configure(enable:false, display:true,
+                           erasecolor:'pink', displaydelay:30)
 
     # Give it a big border to debug drawing
-    @tree2.configure(:borderwidth=>6, :relief=>:ridge, :highlightthickness=>3)
+    @tree2.configure(borderwidth:6, relief::ridge, highlightthickness:3)
 
-    f2_base.grid_columnconfigure(0, :weight=>1)
-    f2_base.grid_rowconfigure(0, :weight=>1)
-    f2.grid(:row=>0, :column=>0, :sticky=>:news, :pady=>0)
+    f2_base.grid_columnconfigure(0, weight:1)
+    f2_base.grid_rowconfigure(0, weight:1)
+    f2.grid(row:0, column:0, sticky::news, pady:0)
 
-    pane2.add(pane1, :width=>200)
-    pane2.add(f2_base, :width=>450)
+    pane2.add(pane1, width:200)
+    pane2.add(f2_base, width:450)
 
-    pane2.pack(:expand=>true, :fill=>:both)
+    pane2.pack(expand:true, fill::both)
 
     ###
     # A treectrl widget can generate the following built-in events:
@@ -343,9 +343,9 @@ class TkTreeCtrl_demo
     @popup[:show] = Hash.new{|h, k| h[k] = TkVariable.new}
 
     menuspec = [
-      [ 'Collapse', [], nil, '', {:menu_config=>{:tearoff=>false}} ],
+      [ 'Collapse', [], nil, '', {menu_config:{tearoff:false}} ],
 
-      [ 'Expand',   [], nil, '', {:menu_config=>{:tearoff=>false}} ]
+      [ 'Expand',   [], nil, '', {menu_config:{tearoff:false}} ]
     ]
 
     # if $Version_1_1_OrLater
@@ -354,12 +354,12 @@ class TkTreeCtrl_demo
       [ 'Background Image',
         [
           [ 'none', [@popup[:bgimg], 'none'], nil, '',
-            {:command=>proc{@tree2.backgroundimage = ''}} ],
+            {command:proc{@tree2.backgroundimage = ''}} ],
           [ 'sky',  [@popup[:bgimg], 'sky'],  nil, '',
-            {:command=>proc{
+            {command:proc{
                 @tree2.backgroundimage = @images[@popup[:bgimg].value]}} ]
         ],
-        nil, '', {:menu_config=>{:tearoff=>false}}
+        nil, '', {menu_config:{tearoff:false}}
       ]
     end
 
@@ -367,113 +367,113 @@ class TkTreeCtrl_demo
       [ 'Background Mode',
         %w(column index row visindex).collect{|val|
           [ val, [@popup[:bgmode], val] , nil, '',
-            {:command=>proc{@tree2.backgroundmode = @popup[:bgmode].value}} ]
+            {command:proc{@tree2.backgroundmode = @popup[:bgmode].value}} ]
         },
-        nil, '', {:menu_config=>{:tearoff=>false}}
+        nil, '', {menu_config:{tearoff:false}}
       ],
 
       [ 'Debug',
         [
           [ 'Data',    @popup[:debug][:data],    nil, '',
-            {:command=>proc{
-                @tree2.debug_configure(:data=>@popup[:debug][:data].value)
+            {command:proc{
+                @tree2.debug_configure(data:@popup[:debug][:data].value)
               }
             } ],
           [ 'Display', @popup[:debug][:display], nil, '',
-            {:command=>proc{
-                @tree2.debug_configure(:display=>@popup[:debug][:display].value)
+            {command:proc{
+                @tree2.debug_configure(display:@popup[:debug][:display].value)
               }
             } ],
           [ 'Enable',  @popup[:debug][:enable],  nil, '',
-            {:command=>proc{
-                @tree2.debug_configure(:enable=>@popup[:debug][:enable].value)
+            {command:proc{
+                @tree2.debug_configure(enable:@popup[:debug][:enable].value)
               }
             } ]
         ],
-        nil, '', {:menu_config=>{:tearoff=>false}}
+        nil, '', {menu_config:{tearoff:false}}
       ],
 
       [ 'Buffering',
         [
           [ 'none',   [@popup[:doublebuffer], 'none'],   nil, '',
-            {:command=>proc{
+            {command:proc{
                 @tree2.doublebuffer = @popup[:doublebuffer].value
               }
             } ],
           [ 'item',   [@popup[:doublebuffer], 'item'],   nil, '',
-            {:command=>proc{
+            {command:proc{
                 @tree2.doublebuffer = @popup[:doublebuffer].value
               }
             } ],
           [ 'window', [@popup[:doublebuffer], 'window'], nil, '',
-            {:command=>proc{
+            {command:proc{
                 @tree2.doublebuffer = @popup[:doublebuffer].value
               }
             } ]
         ],
-        nil, '', {:menu_config=>{:tearoff=>false}}
+        nil, '', {menu_config:{tearoff:false}}
       ],
 
       [ 'Line style',
         [
           [ 'dot',   [@popup[:linestyle], 'dot'],   nil, '',
-            {:command=>proc{@tree2.linestyle = @popup[:linestyle].value}} ],
+            {command:proc{@tree2.linestyle = @popup[:linestyle].value}} ],
           [ 'solid', [@popup[:linestyle], 'solid'], nil, '',
-            {:command=>proc{@tree2.linestyle = @popup[:linestyle].value}} ]
+            {command:proc{@tree2.linestyle = @popup[:linestyle].value}} ]
         ],
-        nil, '', {:menu_config=>{:tearoff=>false}}
+        nil, '', {menu_config:{tearoff:false}}
       ],
 
       [ 'Orient',
         [
           [ 'Horizontal', [@popup[:orient], 'horizontal'], nil, '',
-            {:command=>proc{@tree2.orient = @popup[:orient].value}} ],
+            {command:proc{@tree2.orient = @popup[:orient].value}} ],
           [ 'Vertical',   [@popup[:orient], 'vertical'],   nil, '',
-            {:command=>proc{@tree2.orient = @popup[:orient].value}} ]
+            {command:proc{@tree2.orient = @popup[:orient].value}} ]
         ],
-        nil, '', {:menu_config=>{:tearoff=>false}}
+        nil, '', {menu_config:{tearoff:false}}
       ],
 
       [ 'Selectmode',
         %w(list browse extended multiple single).collect{|val|
           [ val, [@popup[:selectmode], val] , nil, '',
-            {:command=>proc{@tree2.selectmode = @popup[:selectmode].value}} ]
+            {command:proc{@tree2.selectmode = @popup[:selectmode].value}} ]
         },
-        nil, '', {:menu_config=>{:tearoff=>false}}
+        nil, '', {menu_config:{tearoff:false}}
       ],
 
       [ 'Show',
         [
           [ 'Buttons', @popup[:show][:buttons], nil, '',
-            {:command=>proc{
+            {command:proc{
                 @tree2.showbuttons = @popup[:show][:buttons].value
               }
             } ],
           [ 'Header', @popup[:show][:header], nil, '',
-            {:command=>proc{
+            {command:proc{
                 @tree2.showheader = @popup[:show][:header].value
               }
             } ],
           [ 'Lines', @popup[:show][:lines], nil, '',
-            {:command=>proc{
+            {command:proc{
                 @tree2.showlines = @popup[:show][:lines].value
               }
             } ],
           [ 'Root', @popup[:show][:root], nil, '',
-            {:command=>proc{
+            {command:proc{
                 @tree2.showroot = @popup[:show][:root].value
               }
             } ],
           [ 'Root Button', @popup[:show][:rootbutton], nil, '',
-            {:command=>proc{
+            {command:proc{
                 @tree2.showrootbutton = @popup[:show][:rootbutton].value
               }
             } ]
         ],
-        nil, '', {:menu_config=>{:tearoff=>false}}
+        nil, '', {menu_config:{tearoff:false}}
       ],
 
-      [ 'Visible', [], nil, '', {:menu_config=>{:tearoff=>false}} ]
+      [ 'Visible', [], nil, '', {menu_config:{tearoff:false}} ]
     ])
 
     m = TkMenu.new_menuspec(menuspec, @tree2, false)
@@ -501,23 +501,23 @@ class TkTreeCtrl_demo
     m = @mTree[w].entrycget('Collapse', :menu)
     m.delete(0, :end)
     if $Version_1_1_OrLater
-      m.add_command(:label=>'All', :command=>proc{w.item_collapse(:all)})
+      m.add_command(label:'All', command:proc{w.item_collapse(:all)})
     else
-      m.add_command(:label=>'All', :command=>proc{w.collapse(:all)})
+      m.add_command(label:'All', command:proc{w.collapse(:all)})
     end
     unless id.empty?
       if id[0] == 'item'
         item = id[1]
         if $Version_1_1_OrLater
-          m.add_command(:label=>"Item #{item}",
-                        :command=>proc{w.item_collapse(item)})
-          m.add_command(:label=>"Item #{item} (recurse)",
-                        :command=>proc{w.item_collapse_recurse(item)})
+          m.add_command(label:"Item #{item}",
+                        command:proc{w.item_collapse(item)})
+          m.add_command(label:"Item #{item} (recurse)",
+                        command:proc{w.item_collapse_recurse(item)})
         else
-          m.add_command(:label=>"Item #{item}",
-                        :command=>proc{w.collapse(item)})
-          m.add_command(:label=>"Item #{item} (recurse)",
-                        :command=>proc{w.collapse_recurse(item)})
+          m.add_command(label:"Item #{item}",
+                        command:proc{w.collapse(item)})
+          m.add_command(label:"Item #{item} (recurse)",
+                        command:proc{w.collapse_recurse(item)})
         end
       end
     end
@@ -525,23 +525,23 @@ class TkTreeCtrl_demo
     m = @mTree[w].entrycget('Expand', :menu)
     m.delete(0, :end)
     if $Version_1_1_OrLater
-      m.add_command(:label=>'All', :command=>proc{w.item_expand(:all)})
+      m.add_command(label:'All', command:proc{w.item_expand(:all)})
     else
-      m.add_command(:label=>'All', :command=>proc{w.expand(:all)})
+      m.add_command(label:'All', command:proc{w.expand(:all)})
     end
     unless id.empty?
       if id[0] == 'item'
         item = id[1]
         if $Version_1_1_OrLater
-          m.add_command(:label=>"Item #{item}",
-                        :command=>proc{w.item_expand(item)})
-          m.add_command(:label=>"Item #{item} (recurse)",
-                        :command=>proc{w.item_expand_recurse(item)})
+          m.add_command(label:"Item #{item}",
+                        command:proc{w.item_expand(item)})
+          m.add_command(label:"Item #{item} (recurse)",
+                        command:proc{w.item_expand_recurse(item)})
         else
-          m.add_command(:label=>"Item #{item}",
-                        :command=>proc{w.expand(item)})
-          m.add_command(:label=>"Item #{item} (recurse)",
-                        :command=>proc{w.expand_recurse(item)})
+          m.add_command(label:"Item #{item}",
+                        command:proc{w.expand(item)})
+          m.add_command(label:"Item #{item} (recurse)",
+                        command:proc{w.expand_recurse(item)})
         end
       end
     end
@@ -572,9 +572,9 @@ class TkTreeCtrl_demo
       txt = w.column_cget(i, :text)
       img_name = w.column_cget(i, :image)
       img_name = @images.key(img_name) if img_name.kind_of?(TkImage)
-      m.add_checkbutton(:variable=>@popup[:visible][i],
-                        :label=>"Column #{i} \"#{txt}\" [#{img_name}]",
-                        :command=>proc{w.column_configure(i, :visible=>@popup[:visible][i].value)})
+      m.add_checkbutton(variable:@popup[:visible][i],
+                        label:"Column #{i} \"#{txt}\" [#{img_name}]",
+                        command:proc{w.column_configure(i, visible:@popup[:visible][i].value)})
     }
 
     @mTree[w].popup(rootx, rooty)
@@ -593,88 +593,88 @@ class TkTreeCtrl_demo
       [ 'Arrow',
         [
           [ 'None', [@popup[:arrow], 'none'], nil, '',
-            {:command=>proc{
-                @tree2.column_configure(@popup[:column].value, :arrow=>:none)
+            {command:proc{
+                @tree2.column_configure(@popup[:column].value, arrow::none)
               }
             } ],
           [ 'Up', [@popup[:arrow], 'up'], nil, '',
-            {:command=>proc{
-                @tree2.column_configure(@popup[:column].value, :arrow=>:up)
+            {command:proc{
+                @tree2.column_configure(@popup[:column].value, arrow::up)
               }
             } ],
           [ 'Down', [@popup[:arrow], 'down'], nil, '',
-            {:command=>proc{
-                @tree2.column_configure(@popup[:column].value, :arrow=>:down)
+            {command:proc{
+                @tree2.column_configure(@popup[:column].value, arrow::down)
               }
             } ],
 
           '---',
 
           [ 'Side Left', [@popup[:arrowside], 'left'], nil, '',
-            {:command=>proc{
+            {command:proc{
                 @tree2.column_configure(@popup[:column].value,
-                                        :arrowside=>:left)
+                                        arrowside::left)
               }
             } ],
           [ 'Side Right', [@popup[:arrowside], 'right'], nil, '',
-            {:command=>proc{
+            {command:proc{
                 @tree2.column_configure(@popup[:column].value,
-                                        :arrowside=>:right)
+                                        arrowside::right)
               }
             } ],
 
           '---',
 
           [ 'Gravity Left', [@popup[:arrowgravity], 'left'], nil, '',
-            {:command=>proc{
+            {command:proc{
                 @tree2.column_configure(@popup[:column].value,
-                                        :arrowgravity=>:left)
+                                        arrowgravity::left)
               }
             } ],
           [ 'Gravity Right', [@popup[:arrowgravity], 'right'], nil, '',
-            {:command=>proc{
+            {command:proc{
                 @tree2.column_configure(@popup[:column].value,
-                                        :arrowgravity=>:right)
+                                        arrowgravity::right)
               }
             } ],
         ],
-        nil, '', {:menu_config=>{:tearoff=>false}} ],
+        nil, '', {menu_config:{tearoff:false}} ],
 
       [ 'Expand',  @popup[:expand],  nil, '',
-        {:command=>proc{
+        {command:proc{
             @tree2.column_configure(@popup[:column].value,
-                                    :expand=>@popup[:expand].value)
+                                    expand:@popup[:expand].value)
           }
         } ],
 
       [ 'Squeeze', @popup[:squeeze], nil, '',
-        {:command=>proc{
+        {command:proc{
             @tree2.column_configure(@popup[:column].value,
-                                    :squeeze=>@popup[:squeeze].value)
+                                    squeeze:@popup[:squeeze].value)
           }
         } ],
 
       [ 'Justify',
         [
           [ 'Left', [@popup[:justify], 'left'], nil, '',
-            {:command=>proc{
-                @tree2.column_configure(@popup[:column].value, :justify=>:left)
+            {command:proc{
+                @tree2.column_configure(@popup[:column].value, justify::left)
               }
             } ],
           [ 'Center', [@popup[:justify], 'center'], nil, '',
-            {:command=>proc{
+            {command:proc{
                 @tree2.column_configure(@popup[:column].value,
-                                        :justify=>:center)
+                                        justify::center)
               }
             } ],
           [ 'Right', [@popup[:justify], 'right'], nil, '',
-            {:command=>proc{
+            {command:proc{
                 @tree2.column_configure(@popup[:column].value,
-                                        :justify=>:right)
+                                        justify::right)
               }
             } ]
         ],
-        nil, '', {:menu_config=>{:tearoff=>false}} ]
+        nil, '', {menu_config:{tearoff:false}} ]
     ]
 
     m = TkMenu.new_menuspec(menuspec, @tree2, false)
@@ -790,9 +790,9 @@ class TkTreeCtrl_demo
 
   def init_demo_list
     @tree1.element_create('e1', :text,
-                          :fill=>[@SystemHighlightText, ['selected', 'focus']])
-    @tree1.element_create('e2', :rect, :showfocus=>true,
-                          :fill=>[
+                          fill:[@SystemHighlightText, ['selected', 'focus']])
+    @tree1.element_create('e2', :rect, showfocus:true,
+                          fill:[
                             @SystemHighlight, ['selected', 'focus'],
                             'gray', ['selected', '!focus'],
                           ])
@@ -800,8 +800,8 @@ class TkTreeCtrl_demo
     @tree1.style_elements('s1', ['e2', 'e1'])
 
     # Tk listbox has linespace + 1 height
-    @tree1.style_layout('s1', 'e2', :union=>['e1'],
-                        :ipadx=>2, :ipady=>[0, 1], :iexpand=>:e)
+    @tree1.style_layout('s1', 'e2', union:['e1'],
+                        ipadx:2, ipady:[0, 1], iexpand::e)
 
     if $Version_1_1_OrLater
       @tree1.defaultstyle = 's1'
@@ -854,28 +854,28 @@ class TkTreeCtrl_demo
     # Create elements and styles the first time this is called
     if @tree4.style_names.empty?
       @tree4.element_create('e1', :text,
-                            :fill=>[@SystemHighlightText,['selected','focus']])
+                            fill:[@SystemHighlightText,['selected','focus']])
       @tree4.element_create('e2', :text,
-                            :fill=>[
+                            fill:[
                               @SystemHighlightText, ['selected','focus'],
                               '', ['selected','!focus'],
                               'blue', []
                             ])
-      @tree4.element_create('e3', :rect, :showfocus=>true,
-                            :fill=>[
+      @tree4.element_create('e3', :rect, showfocus:true,
+                            fill:[
                               @SystemHighlight, ['selected','focus'],
                               'gray', ['selected', '!focus']
                             ])
 
       @tree4.style_create('s1')
       @tree4.style_elements('s1', ['e3', 'e1'])
-      @tree4.style_layout('s1', 'e3', :union=>['e1'], :ipadx=>1, :ipady=>[0,1])
+      @tree4.style_layout('s1', 'e3', union:['e1'], ipadx:1, ipady:[0,1])
 
       @tree4.style_create('s2')
       @tree4.style_elements('s2', ['e3', 'e1', 'e2'])
-      @tree4.style_layout('s2', 'e1', :padx=>[0,4])
-      @tree4.style_layout('s2', 'e3', :union=>['e1', 'e2'],
-                          :ipadx=>1, :ipady=>[0,1])
+      @tree4.style_layout('s2', 'e1', padx:[0,4])
+      @tree4.style_layout('s2', 'e3', union:['e1', 'e2'],
+                          ipadx:1, ipady:[0,1])
     end
 
     # Clear the list
@@ -884,7 +884,7 @@ class TkTreeCtrl_demo
     # One item for each element in the demo list
     @tree2.element_names.sort.each{|elem|
       if $Version_1_1_OrLater
-        item = @tree4.item_create(:button=>true)
+        item = @tree4.item_create(button:true)
         @tree4.item_collapse(item)
       else
         item = @tree4.item_create
@@ -902,13 +902,13 @@ class TkTreeCtrl_demo
         if default == current
           @tree4.item_style_set(item2, 0, 's1')
           @tree4.item_complex(item2, [
-                                ['e1', {:text=>"#{name} #{current.inspect}"}]
+                                ['e1', {text:"#{name} #{current.inspect}"}]
                               ])
         else
           @tree4.item_style_set(item2, 0, 's2')
           @tree4.item_complex(item2, [
-                                ['e1', {:text=>name}],
-                                ['e2', {:text=>current.inspect}]
+                                ['e1', {text:name}],
+                                ['e2', {text:current.inspect}]
                               ])
         end
 
@@ -921,7 +921,7 @@ class TkTreeCtrl_demo
     # One item for each style in the demo list
     @tree2.style_names.sort.each{|sty|
       if $Version_1_1_OrLater
-        item = @tree4.item_create(:button=>true)
+        item = @tree4.item_create(button:true)
         @tree4.item_collapse(item)
       else
         item = @tree4.item_create
@@ -934,7 +934,7 @@ class TkTreeCtrl_demo
       # One item for each element in the style
       @tree2.style_elements(sty).each{|elem|
         if $Version_1_1_OrLater
-          item2 = @tree4.item_create(:button=>true)
+          item2 = @tree4.item_create(button:true)
           @tree4.item_collapse(item2)
         else
           item2 = @tree4.item_create
@@ -967,33 +967,33 @@ class TkTreeCtrl_demo
   end
 
   def display_styles_in_item(item)
-    @tree3.column_configure(0, :text=>"Styles in item #{@tree2.index(item)}")
+    @tree3.column_configure(0, text:"Styles in item #{@tree2.index(item)}")
 
     # Create elements and styles the first time this is called
     if @tree3.style_names.empty?
       @tree3.element_create('e1', :text,
-                            :fill=>[@SystemHighlightText,['selected','focus']])
+                            fill:[@SystemHighlightText,['selected','focus']])
       @tree3.element_create('e2', :text,
-                            :fill=>[
+                            fill:[
                               @SystemHighlightText, ['selected','focus'],
                               '', ['selected','!focus'],
                               'blue', []
                             ])
-      @tree3.element_create('e3', :rect, :showfocus=>true,
-                            :fill=>[
+      @tree3.element_create('e3', :rect, showfocus:true,
+                            fill:[
                               @SystemHighlight, ['selected','focus'],
                               'gray', ['selected', '!focus']
                             ])
 
       @tree3.style_create('s1')
       @tree3.style_elements('s1', ['e3', 'e1'])
-      @tree3.style_layout('s1', 'e3', :union=>['e1'], :ipadx=>1, :ipady=>[0,1])
+      @tree3.style_layout('s1', 'e3', union:['e1'], ipadx:1, ipady:[0,1])
 
       @tree3.style_create('s2')
       @tree3.style_elements('s2', ['e3', 'e1', 'e2'])
-      @tree3.style_layout('s2', 'e1', :padx=>[0,4])
-      @tree3.style_layout('s2', 'e3', :union=>['e1', 'e2'],
-                          :ipadx=>1, :ipady=>[0,1])
+      @tree3.style_layout('s2', 'e1', padx:[0,4])
+      @tree3.style_layout('s2', 'e3', union:['e1', 'e2'],
+                          ipadx:1, ipady:[0,1])
     end
     # Clear the list
     @tree3.item_delete(:all)
@@ -1009,7 +1009,7 @@ class TkTreeCtrl_demo
       end
       @tree3.item_style_set(item2, 0, 's1')
       @tree3.item_element_configure(item2, 0, 'e1',
-                                    :text=>"Column #{column}: Style #{sty}")
+                                    text:"Column #{column}: Style #{sty}")
 
       button = false
 
@@ -1018,7 +1018,7 @@ class TkTreeCtrl_demo
         @tree2.item_style_elements(item, column).each{|elem|
           button = true
           if $Version_1_1_OrLater
-            item3 = @tree3.item_create(:button=>true)
+            item3 = @tree3.item_create(button:true)
           else
             item3 = @tree3.item_create
             @tree3.item_hasbutton(item3, true)
@@ -1030,7 +1030,7 @@ class TkTreeCtrl_demo
           end
           @tree3.item_style_set(item3, 0, 's1')
           @tree3.item_element_configure(item3, 0, 'e1',
-                                        :text=>"Element #{elem} (#{@tree2.element_type(elem)})")
+                                        text:"Element #{elem} (#{@tree2.element_type(elem)})")
 
           # One item for each configuration option in this element
           @tree2.item_element_configinfo(item, column, elem) \
@@ -1047,13 +1047,13 @@ class TkTreeCtrl_demo
               @tree3.item_style_set(item4, 0, 's1')
               @tree3.item_complex(item4, [
                                     ['e1',
-                                      {:text=>"#{name} #{current.inspect}"}]
+                                      {text:"#{name} #{current.inspect}"}]
                                   ])
             else
               @tree3.item_style_set(item4, 0, 's2')
               @tree3.item_complex(item4, [
-                                    ['e1', {:text=>name}],
-                                    ['e2', {:text=>current.inspect}]
+                                    ['e1', {text:name}],
+                                    ['e2', {text:current.inspect}]
                                   ])
             end
             @tree3.item_lastchild(item3, item4)
@@ -1061,7 +1061,7 @@ class TkTreeCtrl_demo
           @tree3.item_lastchild(item2, item3)
         }
         if $Version_1_1_OrLater
-          @tree3.item_configure(item2, :button=>true) if button
+          @tree3.item_configure(item2, button:true) if button
         else
           @tree3.item_hasbutton(item2, true) if button
         end
@@ -1102,7 +1102,7 @@ class TkTreeCtrl_demo
     @tree2.element_delete(*(@tree2.element_names))
 
     if $Version_1_1_OrLater
-      @tree2.item_configure(:root, :button=>false)
+      @tree2.item_configure(:root, button:false)
       @tree2.item_expand(:root)
     else
       @tree2.item_hasbutton(:root, false)
@@ -1112,22 +1112,22 @@ class TkTreeCtrl_demo
     # Restore some happy defaults to the demo list
     # if $Version_1_1_OrLater
     if @has_bgimg
-      @tree2.configure(:orient=>:vertical, :wrap=>'',
-                       :xscrollincrement=>0, :yscrollincrement=>0,
-                       :itemheight=>0, :showheader=>true,
-                       :background=>'white', :scrollmargin=>0,
-                       :xscrolldelay=>50, :yscrolldelay=>50,
-                       :openbuttonimage=>'', :closedbuttonimage=>'',
-                       :backgroundmode=>:row, :treecolumn=>0, :indent=>19,
-                       :defaultstyle=>'', :backgroundimage=>'')
+      @tree2.configure(orient::vertical, wrap:'',
+                       xscrollincrement:0, yscrollincrement:0,
+                       itemheight:0, showheader:true,
+                       background:'white', scrollmargin:0,
+                       xscrolldelay:50, yscrolldelay:50,
+                       openbuttonimage:'', closedbuttonimage:'',
+                       backgroundmode::row, treecolumn:0, indent:19,
+                       defaultstyle:'', backgroundimage:'')
     else
-      @tree2.configure(:orient=>:vertical, :wrap=>'',
-                       :xscrollincrement=>0, :yscrollincrement=>0,
-                       :itemheight=>0, :showheader=>true,
-                       :background=>'white', :scrollmargin=>0,
-                       :xscrolldelay=>50, :yscrolldelay=>50,
-                       :openbuttonimage=>'', :closedbuttonimage=>'',
-                       :backgroundmode=>:row, :treecolumn=>0, :indent=>19)
+      @tree2.configure(orient::vertical, wrap:'',
+                       xscrollincrement:0, yscrollincrement:0,
+                       itemheight:0, showheader:true,
+                       background:'white', scrollmargin:0,
+                       xscrolldelay:50, yscrolldelay:50,
+                       openbuttonimage:'', closedbuttonimage:'',
+                       backgroundmode::row, treecolumn:0, indent:19)
     end
 
     # Restore default bindings to the demo list
@@ -1145,11 +1145,11 @@ TkTreeCtrl_demo.new($ScriptDir)
 
 def cursor_window(top = nil)
   top.destroy if top.kind_of?(TkWindow) && top.winfo_exist?
-  top = TkToplevel.new(:title=>'Cursor Window')
+  top = TkToplevel.new(title:'Cursor Window')
 
-  c = TkCanvas.new(top, :background=>'white',
-                   :width=>50*10, :highlightthickness=>0,
-                   :borderwidth=>0).pack(:expand=>true, :fill=>:both)
+  c = TkCanvas.new(top, background:'white',
+                   width:50*10, highlightthickness:0,
+                   borderwidth:0).pack(expand:true, fill::both)
   cursors = %w(
 	X_cursor
 	arrow
@@ -1242,8 +1242,8 @@ def cursor_window(top = nil)
       c.cursor = cur
 
       r = TkcRectangle.new(c, x, y, x+50, y+40,
-                           :fill=>'gray90', :outline=>'black', :width=>2)
-      t = TkcText.new(c, x+50/2, y+4, :text=>cur, :anchor=>:n, :width=>42)
+                           fill:'gray90', outline:'black', width:2)
+      t = TkcText.new(c, x+50/2, y+4, text:cur, anchor::n, width:42)
 
       col += 1
       if col >= 10
@@ -1279,11 +1279,11 @@ if Tk::PLATFORM['platform'] == 'unix' && Tk.windowingsystem != 'aqua'
     loupe[:auto] = true unless loupe[:auto]
     loupe[:delay] = 500 unless loupe[:delay]
     loupe[:image] =
-      TkPhotoImage.new(:width=>150, :height=>150) unless loupe[:image]
+      TkPhotoImage.new(width:150, height:150) unless loupe[:image]
 
-    top = TkToplevel.new(:geometry=>'-0+30',
-                         :title=>'A little screen magnifier for X11')
-    TkLabel.new(top, :image=>loupe[:image]).pack
+    top = TkToplevel.new(geometry:'-0+30',
+                         title:'A little screen magnifier for X11')
+    TkLabel.new(top, image:loupe[:image]).pack
 
     TkTimer.new(proc{loupe[:delay]}, -1, proc{
                   x, y = TkWinfo.pointerxy(Tk.root)

@@ -31,9 +31,9 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
     #
     proxy_handler_called = request_handler_called = 0
     config = {
-      :ServerName => "localhost.localdomain",
-      :ProxyContentHandler => Proc.new{|req, res| proxy_handler_called += 1 },
-      :RequestCallback => Proc.new{|req, res| request_handler_called += 1 }
+      ServerName: "localhost.localdomain",
+      ProxyContentHandler: Proc.new{|req, res| proxy_handler_called += 1 },
+      RequestCallback: Proc.new{|req, res| request_handler_called += 1 }
     }
     TestWEBrick.start_httpproxy(config){|server, addr, port, log|
       server.mount_proc("/"){|req, res|
@@ -76,9 +76,9 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
     #
     proxy_handler_called = request_handler_called = 0
     config = {
-      :ServerName => "localhost.localdomain",
-      :ProxyContentHandler => Proc.new{|req, res| proxy_handler_called += 1 },
-      :RequestCallback => Proc.new{|req, res| request_handler_called += 1 }
+      ServerName: "localhost.localdomain",
+      ProxyContentHandler: Proc.new{|req, res| proxy_handler_called += 1 },
+      RequestCallback: Proc.new{|req, res| request_handler_called += 1 }
     }
     TestWEBrick.start_httpproxy(config){|server, addr, port, log|
       server.mount_proc("/"){|req, res|
@@ -136,14 +136,14 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
     key = OpenSSL::TestUtils::TEST_KEY_RSA1024
     cert = make_certificate(key, "127.0.0.1")
     s_config = {
-      :SSLEnable =>true,
-      :ServerName => "localhost",
-      :SSLCertificate => cert,
-      :SSLPrivateKey => key,
+      SSLEnable:true,
+      ServerName: "localhost",
+      SSLCertificate: cert,
+      SSLPrivateKey: key,
     }
     config = {
-      :ServerName => "localhost.localdomain",
-      :RequestCallback => Proc.new{|req, res|
+      ServerName: "localhost.localdomain",
+      RequestCallback: Proc.new{|req, res|
         assert_equal("CONNECT", req.request_method)
       },
     }
@@ -185,19 +185,19 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
     up_proxy_handler_called = up_request_handler_called = 0
     proxy_handler_called = request_handler_called = 0
     up_config = {
-      :ServerName => "localhost.localdomain",
-      :ProxyContentHandler => Proc.new{|req, res| up_proxy_handler_called += 1},
-      :RequestCallback => Proc.new{|req, res| up_request_handler_called += 1}
+      ServerName: "localhost.localdomain",
+      ProxyContentHandler: Proc.new{|req, res| up_proxy_handler_called += 1},
+      RequestCallback: Proc.new{|req, res| up_request_handler_called += 1}
     }
     TestWEBrick.start_httpproxy(up_config){|up_server, up_addr, up_port, up_log|
       up_server.mount_proc("/"){|req, res|
         res.body = "#{req.request_method} #{req.path} #{req.body}"
       }
       config = {
-        :ServerName => "localhost.localdomain",
-        :ProxyURI => URI.parse("http://localhost:#{up_port}"),
-        :ProxyContentHandler => Proc.new{|req, res| proxy_handler_called += 1},
-        :RequestCallback => Proc.new{|req, res| request_handler_called += 1},
+        ServerName: "localhost.localdomain",
+        ProxyURI: URI.parse("http://localhost:#{up_port}"),
+        ProxyContentHandler: Proc.new{|req, res| proxy_handler_called += 1},
+        RequestCallback: Proc.new{|req, res| request_handler_called += 1},
       }
       TestWEBrick.start_httpproxy(config){|server, addr, port, log|
         http = Net::HTTP.new(up_addr, up_port, addr, port)
@@ -251,10 +251,10 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
           key = OpenSSL::TestUtils::TEST_KEY_RSA1024
           cert = make_certificate(key, "127.0.0.1")
           s_config = {
-            :SSLEnable =>true,
-            :ServerName => "localhost",
-            :SSLCertificate => cert,
-            :SSLPrivateKey => key,
+            SSLEnable:true,
+            ServerName: "localhost",
+            SSLCertificate: cert,
+            SSLPrivateKey: key,
           }
           TestWEBrick.start_httpserver(s_config){|s_server, s_addr, s_port, s_log|
             s_server.mount_proc("/"){|req2, res|

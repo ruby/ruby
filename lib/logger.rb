@@ -315,8 +315,8 @@ class Logger
     @formatter = nil
     @logdev = nil
     if logdev
-      @logdev = LogDevice.new(logdev, :shift_age => shift_age,
-        :shift_size => shift_size)
+      @logdev = LogDevice.new(logdev, shift_age: shift_age,
+        shift_size: shift_size)
     end
   end
 

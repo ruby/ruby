@@ -17,7 +17,7 @@ $aniwave_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
-base_frame = TkFrame.new($aniwave_demo).pack(:fill=>:both, :expand=>true)
+base_frame = TkFrame.new($aniwave_demo).pack(fill::both, expand:true)
 
 # create label
 msg = TkLabel.new(base_frame) {
@@ -53,9 +53,9 @@ class AnimatedWaveDemo
     @direction = dir
 
     # create canvas widget
-    @c = TkCanvas.new(frame, :width=>300, :height=>200,
-                      :background=>'black')
-    @c.pack(:padx=>10, :pady=>10, :expand=>true)
+    @c = TkCanvas.new(frame, width:300, height:200,
+                      background:'black')
+    @c.pack(padx:10, pady:10, expand:true)
 
     # Creates a coordinates list of a wave.
     @waveCoords = []
@@ -70,7 +70,7 @@ class AnimatedWaveDemo
     # Create a smoothed line and arrange for its coordinates to be the
     # contents of the variable waveCoords.
     @line = TkcLine.new(@c, @waveCoords,
-                        :width=>1, :fill=>'green', :smooth=>true)
+                        width:1, fill:'green', smooth:true)
 
     # Main animation "loop".
     # Theoretically 100 frames-per-second (==10ms between frames)

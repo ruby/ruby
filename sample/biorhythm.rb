@@ -53,9 +53,9 @@ end
 # main program
 #
 options = {
-  :graph => true,
-  :date  => Date.today,
-  :days  => 9,
+  graph: true,
+  date: Date.today,
+  days: 9,
 }
 ARGV.options do |opts|
   opts.on("-b", "--birthday=DATE", Date, "specify your birthday"){|v|

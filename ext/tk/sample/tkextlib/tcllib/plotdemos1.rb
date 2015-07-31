@@ -5,21 +5,21 @@ require 'tkextlib/tcllib/plotchart'
 
 ###############################
 
-c1 = TkCanvas.new(:background=>'white', :width=>400, :height=>200)
-c2 = TkCanvas.new(:background=>'white', :width=>400, :height=>200)
-c3 = TkCanvas.new(:background=>'white', :width=>400, :height=>200)
-Tk.pack(c1,c2,c3, :fill=>:both, :side=>:top)
+c1 = TkCanvas.new(background:'white', width:400, height:200)
+c2 = TkCanvas.new(background:'white', width:400, height:200)
+c3 = TkCanvas.new(background:'white', width:400, height:200)
+Tk.pack(c1,c2,c3, fill::both, side::top)
 
-h = TkToplevel.new(:title=>'h')
-hc1 = TkCanvas.new(h, :background=>'white', :width=>400, :height=>200)
-hc2 = TkCanvas.new(h, :background=>'white', :width=>400, :height=>200)
-Tk.pack(hc1,hc2, :fill=>:both, :side=>:top)
+h = TkToplevel.new(title:'h')
+hc1 = TkCanvas.new(h, background:'white', width:400, height:200)
+hc2 = TkCanvas.new(h, background:'white', width:400, height:200)
+Tk.pack(hc1,hc2, fill::both, side::top)
 
-v = TkToplevel.new(:title=>'v')
-vc1 = TkCanvas.new(v, :background=>'white', :width=>400, :height=>200)
-vc2 = TkCanvas.new(v, :background=>'white', :width=>400, :height=>200)
-vc3 = TkCanvas.new(v, :background=>'white', :width=>400, :height=>200)
-Tk.pack(vc1,vc2,vc3, :fill=>:both, :side=>:top)
+v = TkToplevel.new(title:'v')
+vc1 = TkCanvas.new(v, background:'white', width:400, height:200)
+vc2 = TkCanvas.new(v, background:'white', width:400, height:200)
+vc3 = TkCanvas.new(v, background:'white', width:400, height:200)
+Tk.pack(vc1,vc2,vc3, fill::both, side::top)
 
 ###############################
 
@@ -32,7 +32,7 @@ yd =   20.0
 xold =  0.0
 yold = 50.0
 
-s.dataconfig('series1', :color=>'red')
+s.dataconfig('series1', color:'red')
 
 (0..19).each{|i|
   xnew = xold + xd
@@ -128,10 +128,10 @@ s.title "Seasons (northern hemisphere)"
 
 ###############################
 
-z = TkToplevel.new(:title=>'3D')
+z = TkToplevel.new(title:'3D')
 
-zc1 = TkCanvas.new(z, :background=>'white', :width=>400, :height=>300)
-zc2 = TkCanvas.new(z, :background=>'white', :width=>400, :height=>250)
+zc1 = TkCanvas.new(z, background:'white', width:400, height:300)
+zc2 = TkCanvas.new(z, background:'white', width:400, height:250)
 Tk.pack(zc1,zc2)
 
 s = Tk::Tcllib::Plotchart::Plot3D.new(zc1,

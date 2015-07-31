@@ -9,7 +9,7 @@ module REXMLTests
     include REXML
 
     def setup
-      @@docDd = Document.new(<<-EOS, :ignore_whitespace_nodes => :all)
+      @@docDd = Document.new(<<-EOS, ignore_whitespace_nodes: :all)
         <a>
           <b x='ab01A'>
             <c y='abc01A'>Success</c>

@@ -52,37 +52,37 @@ def changepage(tbl_list, tbl, ent, col, var, elem, op)
     tbl.variable(tbl_list[page])
     ent.textvariable(tbl_list[page].ref('active'))
     tbl.activate('origin')
-    tbl.tag_configure('colored', :bg=>col[page])
+    tbl.tag_configure('colored', bg:col[page])
     tbl.see('active')
   end
 end
 
-lbl = TkLabel.new(:text=>"TkTable v1 Spreadsheet Example")
+lbl = TkLabel.new(text:"TkTable v1 Spreadsheet Example")
 
-current = TkLabel.new(:textvariable=>cur_var, :width=>5)
-entry = TkEntry.new(:textvariable=>table_list[page.value].ref('active'))
-lpage = TkLabel.new(:text=>'PAGE:', :width=>6, :anchor=>:e)
+current = TkLabel.new(textvariable:cur_var, width:5)
+entry = TkEntry.new(textvariable:table_list[page.value].ref('active'))
+lpage = TkLabel.new(text:'PAGE:', width:6, anchor::e)
 optmenu = TkOptionMenubutton.new(page, *(%w(AA BB CC DD)))
 
 fill_table(table_list, page.value)
 fill_table(table_list, 'BB', Integer(rows/2), Integer(cols/2))
 
-table = Tk::TkTable.new(:rows=>rows, :cols=>cols, :width=>5, :height=>5,
-                        :variable=>table_list[page.value],
-                        :titlerows=>1, :titlecols=>1,
-                        :coltagcommand=>proc{|n| colorize(n)},
-                        :flashmode=>true, :selectmode=>:extended,
-                        :colstretch=>:unset, :rowstretch=>:unset,
-                        :browsecommand=>proc{|e| cur_var.value = e.new_index})
+table = Tk::TkTable.new(rows:rows, cols:cols, width:5, height:5,
+                        variable:table_list[page.value],
+                        titlerows:1, titlecols:1,
+                        coltagcommand:proc{|n| colorize(n)},
+                        flashmode:true, selectmode::extended,
+                        colstretch::unset, rowstretch::unset,
+                        browsecommand:proc{|e| cur_var.value = e.new_index})
 
 page.trace(:w, proc{|var, elem, op|
              changepage(table_list, table, entry, color, var, elem, op)
            })
 
-table.tag_configure('colored', :bg=>color[page.value])
-table.tag_configure('title',   :fg=>'red', :relief=>:groove)
-table.tag_configure('blue',    :bg=>'blue')
-table.tag_configure('green',   :bg=>'green')
+table.tag_configure('colored', bg:color[page.value])
+table.tag_configure('title',   fg:'red', relief::groove)
+table.tag_configure('blue',    bg:'blue')
+table.tag_configure('green',   bg:'green')
 
 table.tag_cell('green', [6,3], [5,7], [4,9])
 table.tag_cell('blue', [8,8])
@@ -93,18 +93,18 @@ table.set_width([0, 3], [2, 7])
 sx = table.xscrollbar(TkScrollbar.new)
 sy = table.yscrollbar(TkScrollbar.new)
 
-btn = TkButton.new(:text=>'Exit', :command=>proc{exit})
+btn = TkButton.new(text:'Exit', command:proc{exit})
 
-Tk.grid(lbl, '-', '-', '-', '-', :sticky=>:ew)
-Tk.grid(current, entry, lpage, optmenu, '-', :sticky=>:ew)
-Tk.grid(table, '-', '-', '-', sy, :sticky=>:ns)
-Tk.grid(sx, '-', '-', '-', :sticky=>:ew)
-Tk.grid(btn, '-', '-', '-', '-', :sticky=>:ew)
+Tk.grid(lbl, '-', '-', '-', '-', sticky::ew)
+Tk.grid(current, entry, lpage, optmenu, '-', sticky::ew)
+Tk.grid(table, '-', '-', '-', sy, sticky::ns)
+Tk.grid(sx, '-', '-', '-', sticky::ew)
+Tk.grid(btn, '-', '-', '-', '-', sticky::ew)
 
-Tk.root.grid_columnconfig(1, :weight=>1)
-Tk.root.grid_rowconfig(2, :weight=>1)
+Tk.root.grid_columnconfig(1, weight:1)
+Tk.root.grid_rowconfig(2, weight:1)
 
-table.grid_configure(:sticky=>:news)
+table.grid_configure(sticky::news)
 
 entry.bind('Return', proc{
              r = table.row_index(:active)
@@ -127,10 +127,10 @@ entry.bind('Return', proc{
 menu = TkMenu.new
 m_file = TkMenu.new(menu)
 Tk.root.menu(menu)
-menu.add(:cascade, :label=>'File', :underline=>0, :menu=>m_file)
-m_file.add(:command, :label=>'Fill Array',
-           :command=>proc{ fill_table(table_list, page.value) })
-m_file.add(:command, :label=>'Quit', :command=>proc{exit})
+menu.add(:cascade, label:'File', underline:0, menu:m_file)
+m_file.add(:command, label:'Fill Array',
+           command:proc{ fill_table(table_list, page.value) })
+m_file.add(:command, label:'Quit', command:proc{exit})
 
 puts "Table is #{table.path} with array #{(table['variable'])}"
 

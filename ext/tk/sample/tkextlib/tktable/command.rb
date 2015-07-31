@@ -21,14 +21,14 @@ cols = 10
   }
 }
 
-lbl = TkLabel.new(:text=>"TkTable :command Example")
+lbl = TkLabel.new(text:"TkTable :command Example")
 cur_var = TkVariable.new
-current = TkLabel.new(:textvariable=>cur_var, :width=>5)
+current = TkLabel.new(textvariable:cur_var, width:5)
 ent_var = TkVariable.new
-entry = TkEntry.new(:textvariable=>ent_var)
+entry = TkEntry.new(textvariable:ent_var)
 
-table = Tk::TkTable.new(:rows=>rows, :cols=>cols,
-                        :command=>[proc{|mode, cell, val|
+table = Tk::TkTable.new(rows:rows, cols:cols,
+                        command:[proc{|mode, cell, val|
                           if (mode == :w)
                             data[cell] = val
                           else
@@ -39,30 +39,30 @@ table = Tk::TkTable.new(:rows=>rows, :cols=>cols,
                             end
                           end
                         }, '%i %C %s'],
-                        :width=>6, :height=>6,
-                        :titlerows=>1, :titlecols=>1,
-                        :roworigin=>-1, :colorigin=>-1,
-                        :rowstretchmode=>:last, :colstretchmode=>:last,
-                        :rowtagcommand=>proc{|row|
+                        width:6, height:6,
+                        titlerows:1, titlecols:1,
+                        roworigin:-1, colorigin:-1,
+                        rowstretchmode::last, colstretchmode::last,
+                        rowtagcommand:proc{|row|
                           row = Integer(row)
                           (row>0 && row%2 == 1)? 'OddRow': ''
                         },
-                        :coltagcommand=>proc{|col|
+                        coltagcommand:proc{|col|
                           col = Integer(col)
                           (col>0 && col%2 == 1)? 'OddCol': ''
                         },
-                        :selectmode=>:extended, :flashmode=>true,
-                        :rowstretch=>:unset, :colstretch=>:unset,
-                        :browsecommand=>[proc{|w, s|
+                        selectmode::extended, flashmode:true,
+                        rowstretch::unset, colstretch::unset,
+                        browsecommand:[proc{|w, s|
                           cur_var.value = s
                           ent_var.value = w.get(s)
                         }, '%W %S'],
-                        :validate=>true,
-                        :validatecommand=>proc{|e|
+                        validate:true,
+                        validatecommand:proc{|e|
                           ent_var.value = e.new_value; true
                         })
 =begin
-                        :validatecommand=>[
+                        validatecommand:[
                           proc{|s|
                             ent_var.value = s; true
                           }, '%S'])
@@ -73,16 +73,16 @@ sy = table.yscrollbar(TkScrollbar.new)
 
 entry.bind('Return', proc{|w| table.curvalue = w.value}, '%W')
 
-Tk.grid(lbl, '-', '-', :sticky=>:ew)
-Tk.grid(current, entry, '-', :sticky=>:ew)
-Tk.grid(table, '-', sy, :sticky=>:news)
-Tk.grid(sx, '-', :sticky=>:ew)
+Tk.grid(lbl, '-', '-', sticky::ew)
+Tk.grid(current, entry, '-', sticky::ew)
+Tk.grid(table, '-', sy, sticky::news)
+Tk.grid(sx, '-', sticky::ew)
 
-Tk.root.grid_columnconfig(1, :weight=>1)
-Tk.root.grid_rowconfig(2, :weight=>1)
+Tk.root.grid_columnconfig(1, weight:1)
+Tk.root.grid_rowconfig(2, weight:1)
 
-table.tag_configure('OddRow', :bg=>'orange', :fg=>'purple')
-table.tag_configure('OddCol', :bg=>'brown', :fg=>'pink')
+table.tag_configure('OddRow', bg:'orange', fg:'purple')
+table.tag_configure('OddCol', bg:'brown', fg:'pink')
 
 puts "Table is #{table.path}"
 

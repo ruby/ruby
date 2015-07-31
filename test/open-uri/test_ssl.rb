@@ -23,16 +23,16 @@ class TestOpenURISSL
     logger = WEBrick::Log.new(log, WEBrick::BasicLog::WARN)
     Dir.mktmpdir {|dr|
       srv = WEBrick::HTTPServer.new({
-        :DocumentRoot => dr,
-        :ServerType => Thread,
-        :Logger => logger,
-        :AccessLog => [[NullLog, ""]],
-        :SSLEnable => true,
-        :SSLCertificate => OpenSSL::X509::Certificate.new(SERVER_CERT),
-        :SSLPrivateKey => OpenSSL::PKey::RSA.new(SERVER_KEY),
-        :SSLTmpDhCallback => proc { OpenSSL::TestUtils::TEST_KEY_DH1024 },
-        :BindAddress => '127.0.0.1',
-        :Port => 0})
+        DocumentRoot: dr,
+        ServerType: Thread,
+        Logger: logger,
+        AccessLog: [[NullLog, ""]],
+        SSLEnable: true,
+        SSLCertificate: OpenSSL::X509::Certificate.new(SERVER_CERT),
+        SSLPrivateKey: OpenSSL::PKey::RSA.new(SERVER_KEY),
+        SSLTmpDhCallback: proc { OpenSSL::TestUtils::TEST_KEY_DH1024 },
+        BindAddress: '127.0.0.1',
+        Port: 0})
       _, port, _, host = srv.listeners[0].addr
       threads = []
       server_thread = srv.start
@@ -73,7 +73,7 @@ class TestOpenURISSL
   def test_validation_success
     with_https {|srv, dr, url|
       cacert_filename = setup_validation(srv, dr)
-      open("#{url}/data", :ssl_ca_cert => cacert_filename) {|f|
+      open("#{url}/data", ssl_ca_cert: cacert_filename) {|f|
         assert_equal("200", f.status[0])
         assert_equal("ddd", f.read)
       }
@@ -83,7 +83,7 @@ class TestOpenURISSL
   def test_validation_noverify
     with_https {|srv, dr, url|
       setup_validation(srv, dr)
-      open("#{url}/data", :ssl_verify_mode => OpenSSL::SSL::VERIFY_NONE) {|f|
+      open("#{url}/data", ssl_verify_mode: OpenSSL::SSL::VERIFY_NONE) {|f|
         assert_equal("200", f.status[0])
         assert_equal("ddd", f.read)
       }
@@ -117,11 +117,11 @@ class TestOpenURISSL
       hashed_name = "%08x.0" % OpenSSL::X509::Certificate.new(CA_CERT).subject.hash
       open("#{cacert_directory}/#{hashed_name}", "w") {|f| f << CA_CERT }
       proxy = WEBrick::HTTPProxyServer.new({
-        :ServerType => Thread,
-        :Logger => proxy_logger,
-        :AccessLog => [[proxy_access_log=[], WEBrick::AccessLog::COMMON_LOG_FORMAT]],
-        :BindAddress => '127.0.0.1',
-        :Port => 0})
+        ServerType: Thread,
+        Logger: proxy_logger,
+        AccessLog: [[proxy_access_log=[], WEBrick::AccessLog::COMMON_LOG_FORMAT]],
+        BindAddress: '127.0.0.1',
+        Port: 0})
       _, proxy_port, _, proxy_host = proxy.listeners[0].addr
       proxy_thread = proxy.start
       threads << Thread.new {
@@ -147,7 +147,7 @@ class TestOpenURISSL
     }
     with_https_proxy(proxy_log_tester) {|srv, dr, url_, cacert_filename, cacert_directory, proxy_host, proxy_port|
       url = url_
-      open("#{url}/proxy", :proxy=>"http://#{proxy_host}:#{proxy_port}/", :ssl_ca_cert => cacert_filename) {|f|
+      open("#{url}/proxy", proxy:"http://#{proxy_host}:#{proxy_port}/", ssl_ca_cert: cacert_filename) {|f|
         assert_equal("200", f.status[0])
         assert_equal("proxy", f.read)
       }
@@ -163,7 +163,7 @@ class TestOpenURISSL
     }
     with_https_proxy(proxy_log_tester) {|srv, dr, url_, cacert_filename, cacert_directory, proxy_host, proxy_port|
       url = url_
-      open("#{url}/proxy", :proxy=>"http://#{proxy_host}:#{proxy_port}/", :ssl_ca_cert => cacert_directory) {|f|
+      open("#{url}/proxy", proxy:"http://#{proxy_host}:#{proxy_port}/", ssl_ca_cert: cacert_directory) {|f|
         assert_equal("200", f.status[0])
         assert_equal("proxy", f.read)
       }

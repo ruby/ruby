@@ -639,7 +639,7 @@ class TestRubyOptions < Test::Unit::TestCase
         PTY.open {|m, s|
           s.echo = false
           m.print("\C-d")
-          pid = spawn(EnvUtil.rubybin, :in => s, :out => w)
+          pid = spawn(EnvUtil.rubybin, in: s, out: w)
           w.close
           assert_nothing_raised('[ruby-dev:37798]') do
             result = Timeout.timeout(3) {r.read}
@@ -654,7 +654,7 @@ class TestRubyOptions < Test::Unit::TestCase
     IO.pipe {|r, w|
       PTY.open {|m, s|
 	s.echo = false
-	pid = spawn(EnvUtil.rubybin, :in => s, :out => w)
+	pid = spawn(EnvUtil.rubybin, in: s, out: w)
 	w.close
 	m.print("$stdin.read; p $stdin.gets\n\C-d")
 	m.print("abc\n\C-d")

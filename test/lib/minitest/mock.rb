@@ -52,10 +52,10 @@ module MiniTest # :nodoc:
     def expect(name, retval, args=[], &blk)
       if block_given?
         raise ArgumentError, "args ignored when block given" unless args.empty?
-        @expected_calls[name] << { :retval => retval, :block => blk }
+        @expected_calls[name] << { retval: retval, block: blk }
       else
         raise ArgumentError, "args must be an array" unless Array === args
-        @expected_calls[name] << { :retval => retval, :args => args }
+        @expected_calls[name] << { retval: retval, args: args }
       end
       self
     end
@@ -133,8 +133,8 @@ module MiniTest # :nodoc:
       end
 
       @actual_calls[sym] << {
-        :retval => retval,
-        :args => expected_args.zip(args).map { |mod, a| mod === a ? mod : a }
+        retval: retval,
+        args: expected_args.zip(args).map { |mod, a| mod === a ? mod : a }
       }
 
       retval

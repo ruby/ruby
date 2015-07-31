@@ -20,7 +20,7 @@ $clrpick_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
-base_frame = TkFrame.new($clrpick_demo).pack(:fill=>:both, :expand=>true)
+base_frame = TkFrame.new($clrpick_demo).pack(fill::both, expand:true)
 
 # label
 #TkLabel.new($clrpick_demo,'font'=>$font,'wraplength'=>'4i','justify'=>'left',

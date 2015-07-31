@@ -1160,46 +1160,46 @@ class TestTranscode < Test::Unit::TestCase
       "\x80".encode("UTF-32LE", "UTF-8", invalid: :replace))
 
     assert_equal("\uFFFD!",
-      "\xdc\x00\x00!".encode("utf-8", "utf-16be", :invalid=>:replace))
+      "\xdc\x00\x00!".encode("utf-8", "utf-16be", invalid::replace))
     assert_equal("\uFFFD!",
-      "\xd8\x00\x00!".encode("utf-8", "utf-16be", :invalid=>:replace))
+      "\xd8\x00\x00!".encode("utf-8", "utf-16be", invalid::replace))
 
     assert_equal("\uFFFD!",
-      "\x00\xdc!\x00".encode("utf-8", "utf-16le", :invalid=>:replace))
+      "\x00\xdc!\x00".encode("utf-8", "utf-16le", invalid::replace))
     assert_equal("\uFFFD!",
-      "\x00\xd8!\x00".encode("utf-8", "utf-16le", :invalid=>:replace))
+      "\x00\xd8!\x00".encode("utf-8", "utf-16le", invalid::replace))
 
     assert_equal("\uFFFD!",
-      "\x01\x00\x00\x00\x00\x00\x00!".encode("utf-8", "utf-32be", :invalid=>:replace), "[ruby-dev:35726]")
+      "\x01\x00\x00\x00\x00\x00\x00!".encode("utf-8", "utf-32be", invalid::replace), "[ruby-dev:35726]")
     assert_equal("\uFFFD!",
-      "\x00\xff\x00\x00\x00\x00\x00!".encode("utf-8", "utf-32be", :invalid=>:replace))
+      "\x00\xff\x00\x00\x00\x00\x00!".encode("utf-8", "utf-32be", invalid::replace))
     assert_equal("\uFFFD!",
-      "\x00\x00\xd8\x00\x00\x00\x00!".encode("utf-8", "utf-32be", :invalid=>:replace))
+      "\x00\x00\xd8\x00\x00\x00\x00!".encode("utf-8", "utf-32be", invalid::replace))
 
     assert_equal("\uFFFD!",
-      "\x00\x00\x00\xff!\x00\x00\x00".encode("utf-8", "utf-32le", :invalid=>:replace))
+      "\x00\x00\x00\xff!\x00\x00\x00".encode("utf-8", "utf-32le", invalid::replace))
     assert_equal("\uFFFD!",
-      "\x00\x00\xff\x00!\x00\x00\x00".encode("utf-8", "utf-32le", :invalid=>:replace))
+      "\x00\x00\xff\x00!\x00\x00\x00".encode("utf-8", "utf-32le", invalid::replace))
     assert_equal("\uFFFD!",
-      "\x00\xd8\x00\x00!\x00\x00\x00".encode("utf-8", "utf-32le", :invalid=>:replace))
+      "\x00\xd8\x00\x00!\x00\x00\x00".encode("utf-8", "utf-32le", invalid::replace))
 
     assert_equal("\uFFFD!",
-      "\xff!".encode("utf-8", "euc-jp", :invalid=>:replace))
+      "\xff!".encode("utf-8", "euc-jp", invalid::replace))
     assert_equal("\uFFFD!",
-      "\xff!".encode("utf-8", "euc-jis-2004", :invalid=>:replace))
+      "\xff!".encode("utf-8", "euc-jis-2004", invalid::replace))
     assert_equal("\uFFFD!",
-      "\xa1!".encode("utf-8", "euc-jp", :invalid=>:replace))
+      "\xa1!".encode("utf-8", "euc-jp", invalid::replace))
     assert_equal("\uFFFD!",
-      "\xa1!".encode("utf-8", "euc-jis-2004", :invalid=>:replace))
+      "\xa1!".encode("utf-8", "euc-jis-2004", invalid::replace))
     assert_equal("\uFFFD!",
-      "\x8f\xa1!".encode("utf-8", "euc-jp", :invalid=>:replace))
+      "\x8f\xa1!".encode("utf-8", "euc-jp", invalid::replace))
     assert_equal("\uFFFD!",
-      "\x8f\xa1!".encode("utf-8", "euc-jis-2004", :invalid=>:replace))
+      "\x8f\xa1!".encode("utf-8", "euc-jis-2004", invalid::replace))
 
     assert_equal("?",
-      "\xdc\x00".encode("EUC-JP", "UTF-16BE", :invalid=>:replace), "[ruby-dev:35776]")
+      "\xdc\x00".encode("EUC-JP", "UTF-16BE", invalid::replace), "[ruby-dev:35776]")
     assert_equal("ab?cd?ef",
-      "\0a\0b\xdc\x00\0c\0d\xdf\x00\0e\0f".encode("EUC-JP", "UTF-16BE", :invalid=>:replace))
+      "\0a\0b\xdc\x00\0c\0d\xdf\x00\0e\0f".encode("EUC-JP", "UTF-16BE", invalid::replace))
 
     assert_equal("\e$B!!\e(B?".force_encoding("ISO-2022-JP"),
       "\xA1\xA1\xFF".encode("ISO-2022-JP", "EUC-JP", invalid: :replace))
@@ -1210,16 +1210,16 @@ class TestTranscode < Test::Unit::TestCase
   end
 
   def test_invalid_replace_string
-    assert_equal("a<x>A", "a\x80A".encode("us-ascii", "euc-jp", :invalid=>:replace, :replace=>"<x>"))
-    assert_equal("a<x>A", "a\x80A".encode("us-ascii", "euc-jis-2004", :invalid=>:replace, :replace=>"<x>"))
+    assert_equal("a<x>A", "a\x80A".encode("us-ascii", "euc-jp", invalid::replace, replace:"<x>"))
+    assert_equal("a<x>A", "a\x80A".encode("us-ascii", "euc-jis-2004", invalid::replace, replace:"<x>"))
   end
 
   def test_undef_replace
-    assert_equal("?", "\u20AC".encode("EUC-JP", :undef=>:replace), "[ruby-dev:35709]")
+    assert_equal("?", "\u20AC".encode("EUC-JP", undef::replace), "[ruby-dev:35709]")
   end
 
   def test_undef_replace_string
-    assert_equal("a<x>A", "a\u3042A".encode("us-ascii", :undef=>:replace, :replace=>"<x>"))
+    assert_equal("a<x>A", "a\u3042A".encode("us-ascii", undef::replace, replace:"<x>"))
   end
 
   def test_shift_jis

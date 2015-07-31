@@ -19,7 +19,7 @@ $items_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
-base_frame = TkFrame.new($items_demo).pack(:fill=>:both, :expand=>true)
+base_frame = TkFrame.new($items_demo).pack(fill::both, expand:true)
 
 # label
 TkLabel.new(base_frame) {

@@ -628,14 +628,14 @@ class TestRDocContext < XrefTestCase
   def test_methods_by_type
     expected = {
       'instance' => {
-        :private   => [],
-        :protected => [],
-        :public    => [@c1_m],
+        private: [],
+        protected: [],
+        public: [@c1_m],
       },
       'class' => {
-        :private   => [],
-        :protected => [],
-        :public    => [@c1__m],
+        private: [],
+        protected: [],
+        public: [@c1__m],
       },
     }
 
@@ -648,14 +648,14 @@ class TestRDocContext < XrefTestCase
 
     expected = {
       'instance' => {
-        :private   => [],
-        :protected => [],
-        :public    => [@c1_m],
+        private: [],
+        protected: [],
+        public: [@c1_m],
       },
       'class' => {
-        :private   => [],
-        :protected => [],
-        :public    => [],
+        private: [],
+        protected: [],
+        public: [],
       },
     }
 

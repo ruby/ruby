@@ -16,7 +16,7 @@ $menu8x_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
-base_frame = TkFrame.new($menu8x_demo).pack(:fill=>:both, :expand=>true)
+base_frame = TkFrame.new($menu8x_demo).pack(fill::both, expand:true)
 
 # version check
 if $tk_version.to_f < 8.0

@@ -300,14 +300,14 @@ puts Tempfile.new('foo').path
   end
 
   def test_tempfile_encoding_ascii8bit
-    t = tempfile("TEST",:encoding=>"ascii-8bit")
+    t = tempfile("TEST",encoding:"ascii-8bit")
     t.write("\xE6\x9D\xBE\xE6\xB1\x9F")
     t.rewind
     assert_equal(Encoding::ASCII_8BIT,t.read.encoding)
   end
 
   def test_tempfile_encoding_ascii8bit2
-    t = tempfile("TEST",Dir::tmpdir,:encoding=>"ascii-8bit")
+    t = tempfile("TEST",Dir::tmpdir,encoding:"ascii-8bit")
     t.write("\xE6\x9D\xBE\xE6\xB1\x9F")
     t.rewind
     assert_equal(Encoding::ASCII_8BIT,t.read.encoding)

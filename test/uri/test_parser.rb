@@ -30,7 +30,7 @@ class URI::TestParser < Test::Unit::TestCase
   def test_parse
     escaped = URI::REGEXP::PATTERN::ESCAPED
     hex = URI::REGEXP::PATTERN::HEX
-    p1 = URI::Parser.new(:ESCAPED => "(?:#{escaped}|%u[#{hex}]{4})")
+    p1 = URI::Parser.new(ESCAPED: "(?:#{escaped}|%u[#{hex}]{4})")
     u1 = p1.parse('http://a/b/%uABCD')
     assert_equal(['http', nil, 'a', URI::HTTP.default_port, '/b/%uABCD', nil, nil],
 		 uri_to_ary(u1))

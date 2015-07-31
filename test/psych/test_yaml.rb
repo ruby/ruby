@@ -1101,7 +1101,7 @@ EOY
 	## Test the Psych::Stream class -- INACTIVE at the moment
 	##
 	#def test_document
-	#	y = Psych::Stream.new( :Indent => 2, :UseVersion => 0 )
+	#	y = Psych::Stream.new( Indent: 2, UseVersion: 0 )
 	#	y.add(
 	#		{ 'hi' => 'hello', 'map' =>
 	#			{ 'good' => 'two' },

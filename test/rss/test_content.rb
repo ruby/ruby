@@ -12,7 +12,7 @@ module RSS
       @uri = "http://purl.org/rss/1.0/modules/content/"
 
       @elems = {
-        :encoded => "<em>ATTENTION</em>",
+        encoded: "<em>ATTENTION</em>",
       }
 
       @content_nodes = @elems.collect do |name, value|
@@ -66,7 +66,7 @@ EOR
 
     def test_accessor
       new_value = {
-        :encoded => "<![CDATA[<it>hoge</it>]]>",
+        encoded: "<![CDATA[<it>hoge</it>]]>",
       }
 
       @elems.each do |name, value|

@@ -55,7 +55,7 @@ $goldberg_demo = TkToplevel.new {|w|
 #  positionWindow(w)
 }
 
-base_frame = TkFrame.new($goldberg_demo).pack(:fill=>:both, :expand=>true)
+base_frame = TkFrame.new($goldberg_demo).pack(fill::both, expand:true)
 
 =begin
 # label
@@ -162,16 +162,16 @@ class TkGoldberg_Demo
   end
 
   def do_display()
-    @ctrl = TkFrame.new(@parent, :relief=>:ridge, :bd=>2, :padx=>5, :pady=>5)
-    @screen = TkFrame.new(@parent, :bd=>2,
-                         :relief=>:raised).pack(:side=>:left, :fill=>:both,
-                                                :expand=>true)
+    @ctrl = TkFrame.new(@parent, relief::ridge, bd:2, padx:5, pady:5)
+    @screen = TkFrame.new(@parent, bd:2,
+                         relief::raised).pack(side::left, fill::both,
+                                                expand:true)
 
-    @canvas = TkCanvas.new(@parent, :width=>850, :height=>700,
-                          :bg=>@C['bg'], :highlightthickness=>0){
+    @canvas = TkCanvas.new(@parent, width:850, height:700,
+                          bg:@C['bg'], highlightthickness:0){
       scrollregion([0, 0, 1000, 1000]) # Kludge to move everything up
       yview_moveto(0.05)
-    }.pack(:in=>@screen, :side=>:top, :fill=>:both, :expand=>true)
+    }.pack(in:@screen, side::top, fill::both, expand:true)
 
     @canvas.bind('3'){ @pause.invoke }
     @canvas.bind('Destroy'){ @timer.stop }
@@ -179,19 +179,19 @@ class TkGoldberg_Demo
     do_ctrl_frame
     do_detail_frame
 
-    # msg = TkLabel.new(@parent, :bg=>@C['bg'], :fg=>'white') {
-    msg = Tk::Label.new(@parent, :bg=>@C['bg'], :fg=>'white') {
+    # msg = TkLabel.new(@parent, bg:@C['bg'], fg:'white') {
+    msg = Tk::Label.new(@parent, bg:@C['bg'], fg:'white') {
       font 'Arial 10'
       wraplength 600
       justify 'left'
       text "これは、あなたが自分のアニメーションをいかに入り組んだものにできるかを示すというだけのためのデモです。ボールをクリックすれば物が動き始めます！\n\"Man will always find a difficult means to perform a simple task\" - Rube Goldberg"
     }
-    msg.place(:in=>@canvas, :relx=>0, :rely=>0, :anchor=>:nw)
+    msg.place(in:@canvas, relx:0, rely:0, anchor::nw)
 
-    frame = TkFrame.new(@parent, :bg=>@C['bg'])
+    frame = TkFrame.new(@parent, bg:@C['bg'])
 
-    # TkButton.new(frame, :bg=>@C['bg'], :activebackground=>@C['bg']) {
-    Tk::Button.new(frame, :bg=>@C['bg'], :activebackground=>@C['bg']) {
+    # TkButton.new(frame, bg:@C['bg'], activebackground:@C['bg']) {
+    Tk::Button.new(frame, bg:@C['bg'], activebackground:@C['bg']) {
       text '閉じる'
       command proc{
         tmppath = $goldberg_demo
@@ -200,70 +200,70 @@ class TkGoldberg_Demo
       }
     }.pack('side'=>'left')
 
-    # TkButton.new(frame, :bg=>@C['bg'], :activebackground=>@C['bg']) {
-    Tk::Button.new(frame, :bg=>@C['bg'], :activebackground=>@C['bg']) {
+    # TkButton.new(frame, bg:@C['bg'], activebackground:@C['bg']) {
+    Tk::Button.new(frame, bg:@C['bg'], activebackground:@C['bg']) {
       text 'コード参照'
       command proc{showCode 'goldberg'}
     }.pack('side'=>'left', 'padx'=>5)
 
-    # @show = TkButton.new(frame, :text=>'>>', :command=>proc{show_ctrl},
-    @show = Tk::Button.new(frame, :text=>'>>', :command=>proc{show_ctrl},
-                         :bg=>@C['bg'], :activebackground=>@C['bg'])
+    # @show = TkButton.new(frame, text:'>>', command:proc{show_ctrl},
+    @show = Tk::Button.new(frame, text:'>>', command:proc{show_ctrl},
+                         bg:@C['bg'], activebackground:@C['bg'])
     @show.pack('side'=>'left')
-    frame.place(:in=>@canvas, :relx=>1, :rely=>0, :anchor=>:ne)
+    frame.place(in:@canvas, relx:1, rely:0, anchor::ne)
 
     Tk.update
   end
 
   def do_ctrl_frame
-    @start = Tk::Button.new(@parent, :text=>'Start', :bd=>6,
-                          :command=>proc{do_button(0)})
+    @start = Tk::Button.new(@parent, text:'Start', bd:6,
+                          command:proc{do_button(0)})
     if font = @start['font']
       @start.font(font.weight('bold'))
     end
 
-    @pause = TkCheckbutton.new(@parent, :text=>'Pause', :font=>font,
-                               :command=>proc{do_button(1)}, :relief=>:raised,
-                               :variable=>@S['pause'])
+    @pause = TkCheckbutton.new(@parent, text:'Pause', font:font,
+                               command:proc{do_button(1)}, relief::raised,
+                               variable:@S['pause'])
 
-    @step  = TkButton.new(@parent, :text=>'Single Step', :font=>font,
-                          :command=>proc{do_button(2)})
-    @bstep = TkButton.new(@parent, :text=>'Big Step', :font=>font,
-                          :command=>proc{do_button(4)})
-    @reset = TkButton.new(@parent, :text=>'Reset', :font=>font,
-                          :command=>proc{do_button(3)})
+    @step  = TkButton.new(@parent, text:'Single Step', font:font,
+                          command:proc{do_button(2)})
+    @bstep = TkButton.new(@parent, text:'Big Step', font:font,
+                          command:proc{do_button(4)})
+    @reset = TkButton.new(@parent, text:'Reset', font:font,
+                          command:proc{do_button(3)})
 
-    @details = TkFrame.new(@parent, :bd=>2, :relief=>:ridge)
-    @detail = TkCheckbutton.new(@parent, :text=>'Details', :font=>font,
-                               :relief=>:raised, :variable=>@S['details'])
+    @details = TkFrame.new(@parent, bd:2, relief::ridge)
+    @detail = TkCheckbutton.new(@parent, text:'Details', font:font,
+                               relief::raised, variable:@S['details'])
 
-    @msg_entry = TkEntry.new(@parent, :textvariable=>@S['message'],
-                             :justify=>:center)
-    @speed_scale = TkScale.new(@parent, :orient=>:horizontal,
-                               :from=>1, :to=>10, :font=>font,
-                               :variable=>@S['speed'], :bd=>2,
-                               :relief=>:ridge, :showvalue=>false)
-    @about = TkButton.new(@parent, :text=>'About',
-                          :command=>proc{about}, :font=>font)
+    @msg_entry = TkEntry.new(@parent, textvariable:@S['message'],
+                             justify::center)
+    @speed_scale = TkScale.new(@parent, orient::horizontal,
+                               from:1, to:10, font:font,
+                               variable:@S['speed'], bd:2,
+                               relief::ridge, showvalue:false)
+    @about = TkButton.new(@parent, text:'About',
+                          command:proc{about}, font:font)
 
-    Tk.grid(@start, :in=>@ctrl, :row=>0, :sticky=>:ew)
-    @ctrl.grid_rowconfigure(1, :minsize=>10)
-    Tk.grid(@pause, :in=>@ctrl, :row=>2, :sticky=>:ew)
-    Tk.grid(@step,  :in=>@ctrl, :sticky=>:ew)
-    Tk.grid(@bstep, :in=>@ctrl, :sticky=>:ew)
-    Tk.grid(@reset, :in=>@ctrl, :sticky=>:ew)
-    @ctrl.grid_rowconfigure(10, :minsize=>20)
-    Tk.grid(@details, :in=>@ctrl, :row=>11, :sticky=>:ew)
-    Tk.grid(@detail, :in=>@details, :row=>0, :sticky=>:ew)
-    @ctrl.grid_rowconfigure(50, :weight=>1)
+    Tk.grid(@start, in:@ctrl, row:0, sticky::ew)
+    @ctrl.grid_rowconfigure(1, minsize:10)
+    Tk.grid(@pause, in:@ctrl, row:2, sticky::ew)
+    Tk.grid(@step,  in:@ctrl, sticky::ew)
+    Tk.grid(@bstep, in:@ctrl, sticky::ew)
+    Tk.grid(@reset, in:@ctrl, sticky::ew)
+    @ctrl.grid_rowconfigure(10, minsize:20)
+    Tk.grid(@details, in:@ctrl, row:11, sticky::ew)
+    Tk.grid(@detail, in:@details, row:0, sticky::ew)
+    @ctrl.grid_rowconfigure(50, weight:1)
 
     @S['mode'].trace('w', proc{|*args| active_GUI(*args)})
     @S['details'].trace('w', proc{|*args| active_GUI(*args)})
     @S['speed'].trace('w', proc{|*args| active_GUI(*args)})
 
-    Tk.grid(@msg_entry, :in=>@ctrl, :row=>98, :sticky=>:ew, :pady=>5)
-    Tk.grid(@speed_scale, :in=>@ctrl, :row=>99, :sticky=>:ew)
-    Tk.grid(@about, :in=>@ctrl, :row=>100, :sticky=>:ew)
+    Tk.grid(@msg_entry, in:@ctrl, row:98, sticky::ew, pady:5)
+    Tk.grid(@speed_scale, in:@ctrl, row:99, sticky::ew)
+    Tk.grid(@about, in:@ctrl, row:100, sticky::ew)
 
     @reset.bind('3'){@S['mode'].value = -1}  # Debugging
   end
@@ -271,25 +271,25 @@ class TkGoldberg_Demo
   def do_detail_frame
     @f_details = TkFrame.new(@details)
 
-    @label = TkLabel.new(@f_details, :textvariable=>@S['cnt'],
-                         :bd=>1, :relief=>:solid, :bg=>'white')
-    Tk.grid(@label, '-', '-', '-', :sticky=>:ew, :row=>0)
+    @label = TkLabel.new(@f_details, textvariable:@S['cnt'],
+                         bd:1, relief::solid, bg:'white')
+    Tk.grid(@label, '-', '-', '-', sticky::ew, row:0)
 
     idx = 1
     loop {
       break unless respond_to?("move#{idx}")
-      l = TkLabel.new(@f_details, :text=>idx, :anchor=>:e,
-                      :width=>2, :bd=>1, :relief=>:solid, :bg=>'white')
+      l = TkLabel.new(@f_details, text:idx, anchor::e,
+                      width:2, bd:1, relief::solid, bg:'white')
       @STEP[idx] = 0
-      ll = TkLabel.new(@f_details, :textvariable=>@STEP.ref(idx),
-                       :width=>5, :bd=>1, :relief=>:solid, :bg=>'white')
+      ll = TkLabel.new(@f_details, textvariable:@STEP.ref(idx),
+                       width:5, bd:1, relief::solid, bg:'white')
       row = (idx + 1)/2
       col = ((idx + 1) & 1) * 2
-      Tk.grid(l, :sticky=>:ew, :row=>row, :column=>col)
-      Tk.grid(ll, :sticky=>:ew, :row=>row, :column=>(col + 1))
+      Tk.grid(l, sticky::ew, row:row, column:col)
+      Tk.grid(ll, sticky::ew, row:row, column:(col + 1))
       idx += 1
     }
-    @f_details.grid_columnconfigure(1, :weight=>1)
+    @f_details.grid_columnconfigure(1, weight:1)
   end
 
   def show_ctrl
@@ -297,7 +297,7 @@ class TkGoldberg_Demo
       @ctrl.pack_forget
       @show.text('>>')
     else
-      @ctrl.pack(:side=>:right, :fill=>:both, :ipady=>5)
+      @ctrl.pack(side::right, fill::both, ipady:5)
       @show.text('<<')
     end
   end
@@ -326,7 +326,7 @@ class TkGoldberg_Demo
     @reset.state(st[m != :MSTART])
 
     if @S['details'].bool
-      Tk.grid(@f_details, :in=>@details, :row=>2, :sticky=>:ew)
+      Tk.grid(@f_details, in:@details, row:2, sticky::ew)
     else
       Tk.grid_forget(@f_details)
     end
@@ -407,7 +407,7 @@ class TkGoldberg_Demo
     msg += "#{@S['title']}\nby Keith Vetter, March 2003\n(Reproduced by kind permission of the author)\n\n"
     msg += "Man will always find a difficult means to perform a simple task"
     msg += "\nRube Goldberg"
-    Tk.messageBox(:message=>msg, :title=>'About')
+    Tk.messageBox(message:msg, title:'About')
   end
 
   ################################################################
@@ -419,12 +419,12 @@ class TkGoldberg_Demo
   def draw0
     color = @C['0']
     TkcText.new(@canvas,
-                # [579, 119], :text=>'START HERE!',
-                [558, 119], :text=>'ここからスタート！',
-                :fill=>color, :anchor=>:w,
-                :tag=>'I0', :font=>['Times Roman', 12, :italic, :bold])
-    TkcLine.new(@canvas, [719, 119, 763, 119], :tag=>'I0', :fill=>color,
-                :width=>5, :arrow=>:last, :arrowshape=>[18, 18, 5])
+                # [579, 119], text:'START HERE!',
+                [558, 119], text:'ここからスタート！',
+                fill:color, anchor::w,
+                tag:'I0', font:['Times Roman', 12, :italic, :bold])
+    TkcLine.new(@canvas, [719, 119, 763, 119], tag:'I0', fill:color,
+                width:5, arrow::last, arrowshape:[18, 18, 5])
     @canvas.itembind('I0', '1'){ start }
   end
 
@@ -452,13 +452,13 @@ class TkGoldberg_Demo
     TkcPolygon.new(@canvas,
                    [ 844, 133, 800, 133, 800, 346, 820, 346,
                      820, 168, 844, 168, 844, 133 ],
-                   :width=>3, :fill=>color, :outline=>'')
+                   width:3, fill:color, outline:'')
     TkcPolygon.new(@canvas,
                    [ 771, 133, 685, 133, 685, 168, 751, 168,
                      751, 346, 771, 346, 771, 133 ],
-                   :width=>3, :fill=>color, :outline=>'')
+                   width:3, fill:color, outline:'')
     TkcOval.new(@canvas, box(812, 122, 9),
-                :tag=>'I1', :fill=>color2, :outline=>'')
+                tag:'I1', fill:color2, outline:'')
 
     @canvas.itembind('I1', '1'){ start }
   end
@@ -485,40 +485,40 @@ class TkGoldberg_Demo
 
     # Fulcrum
     TkcPolygon.new(@canvas, [750, 369, 740, 392, 760, 392],
-                   :fill=>@C['fg'], :outline=>@C['fg'])
+                   fill:@C['fg'], outline:@C['fg'])
 
     # Strike box
     TkcRectangle.new(@canvas, [628, 335, 660, 383],
-                     :fill=>'', :outline=>@C['fg'])
+                     fill:'', outline:@C['fg'])
     (0..2).each{|y|
       yy = 335 + y*16
-      TkcBitmap.new(@canvas, [628, yy], :bitmap=>'gray25',
-                    :anchor=>:nw, :foreground=>@C['fg'])
-      TkcBitmap.new(@canvas, [644, yy], :bitmap=>'gray25',
-                    :anchor=>:nw, :foreground=>@C['fg'])
+      TkcBitmap.new(@canvas, [628, yy], bitmap:'gray25',
+                    anchor::nw, foreground:@C['fg'])
+      TkcBitmap.new(@canvas, [644, yy], bitmap:'gray25',
+                    anchor::nw, foreground:@C['fg'])
     }
 
     # Lever
     TkcLine.new(@canvas, [702, 366, 798, 366],
-                :fill=>@C['fg'], :width=>6, :tag=>'I2_0')
+                fill:@C['fg'], width:6, tag:'I2_0')
 
     # R strap
     TkcLine.new(@canvas, [712, 363, 712, 355],
-                :fill=>@C['fg'], :width=>3, :tag=>'I2_1')
+                fill:@C['fg'], width:3, tag:'I2_1')
 
     # L strap
     TkcLine.new(@canvas, [705, 363, 705, 355],
-                :fill=>@C['fg'], :width=>3, :tag=>'I2_2')
+                fill:@C['fg'], width:3, tag:'I2_2')
 
     # Match stick
     TkcLine.new(@canvas, [679, 356, 679, 360, 717, 360, 717, 356, 679, 356],
-                :fill=>@C['fg'], :width=>3, :tag=>'I2_3')
+                fill:@C['fg'], width:3, tag:'I2_3')
 
     # Match head
     TkcPolygon.new(@canvas,
                    [ 671, 352, 677.4, 353.9, 680, 358.5, 677.4, 363.1,
                      671, 365, 664.6, 363.1, 662, 358.5, 664.6, 353.9 ],
-                   :fill=>color, :outline=>color, :tag=>'I2_4')
+                   fill:color, outline:color, tag:'I2_4')
   end
 
   def move2(step = nil)
@@ -556,7 +556,7 @@ class TkGoldberg_Demo
       end
 
       # For the flame
-      TkcPolygon.new(@canvas, [], :tag=>'I2', :smooth=>true, :fill=>@C['2'])
+      TkcPolygon.new(@canvas, [], tag:'I2', smooth:true, fill:@C['2'])
 
       return 1
     end
@@ -572,52 +572,52 @@ class TkGoldberg_Demo
     xy = [ [602, 296], [577, 174], [518, 174] ]
     xy.each{|x, y| # 3 Pulleys
       TkcOval.new(@canvas, box(x, y, 13),
-                  :fill=>color, :outline=>@C['fg'], :width=>3)
-      TkcOval.new(@canvas, box(x, y, 2), :fill=>@C['fg'], :outline=>@C['fg'])
+                  fill:color, outline:@C['fg'], width:3)
+      TkcOval.new(@canvas, box(x, y, 2), fill:@C['fg'], outline:@C['fg'])
     }
 
     # Wall to flame
-    TkcLine.new(@canvas, [750, 309, 670, 309], :tag=>'I3_s',
-                :width=>3, :fill=>@C['fg'], :smooth=>true)
+    TkcLine.new(@canvas, [750, 309, 670, 309], tag:'I3_s',
+                width:3, fill:@C['fg'], smooth:true)
 
     # Flame to pulley 1
-    TkcLine.new(@canvas, [670, 309, 650, 309], :tag=>'I3_0',
-                :width=>3, :fill=>@C['fg'], :smooth=>true)
-    TkcLine.new(@canvas, [650, 309, 600, 309], :tag=>'I3_1',
-                :width=>3, :fill=>@C['fg'], :smooth=>true)
+    TkcLine.new(@canvas, [670, 309, 650, 309], tag:'I3_0',
+                width:3, fill:@C['fg'], smooth:true)
+    TkcLine.new(@canvas, [650, 309, 600, 309], tag:'I3_1',
+                width:3, fill:@C['fg'], smooth:true)
 
     # Pulley 1 half way to 2
-    TkcLine.new(@canvas, [589, 296, 589, 235], :tag=>'I3_2',
-                :width=>3, :fill=>@C['fg'])
+    TkcLine.new(@canvas, [589, 296, 589, 235], tag:'I3_2',
+                width:3, fill:@C['fg'])
 
     # Pulley 1 other half to 2
-    TkcLine.new(@canvas, [589, 235, 589, 174], :width=>3, :fill=>@C['fg'])
+    TkcLine.new(@canvas, [589, 235, 589, 174], width:3, fill:@C['fg'])
 
     # Across the top
-    TkcLine.new(@canvas, [577, 161, 518, 161], :width=>3, :fill=>@C['fg'])
+    TkcLine.new(@canvas, [577, 161, 518, 161], width:3, fill:@C['fg'])
 
     # Down to weight
-    TkcLine.new(@canvas, [505, 174, 505, 205], :tag=>'I3_w',
-                :width=>3, :fill=>@C['fg'])
+    TkcLine.new(@canvas, [505, 174, 505, 205], tag:'I3_w',
+                width:3, fill:@C['fg'])
 
     # Draw the weight as 2 circles, two rectangles and 1 rounded rectangle
     x1, y1, x2, y2 = [515, 207, 495, 207]
     TkcOval.new(@canvas, box(x1, y1, 6),
-                :tag=>'I3_', :fill=>color2, :outline=>color2)
+                tag:'I3_', fill:color2, outline:color2)
     TkcOval.new(@canvas, box(x2, y2, 6),
-                :tag=>'I3_', :fill=>color2, :outline=>color2)
+                tag:'I3_', fill:color2, outline:color2)
     TkcRectangle.new(@canvas, x1, y1 - 6, x2, y2 + 6,
-                     :tag=>'I3_', :fill=>color2, :outline=>color2)
+                     tag:'I3_', fill:color2, outline:color2)
 
     TkcPolygon.new(@canvas, round_rect([492, 220, 518, 263], 15),
-                   :smooth=>true, :tag=>'I3_', :fill=>color2, :outline=>color2)
+                   smooth:true, tag:'I3_', fill:color2, outline:color2)
 
     TkcLine.new(@canvas, [500, 217, 511, 217],
-                :tag=>'I3_', :fill=>color2, :width=>10)
+                tag:'I3_', fill:color2, width:10)
 
     # Bottom weight target
     TkcLine.new(@canvas, [502, 393, 522, 393, 522, 465],
-                :tag=>'I3__', :fill=>@C['fg'], :joinstyle=>:miter, :width=>10)
+                tag:'I3__', fill:@C['fg'], joinstyle::miter, width:10)
   end
 
   def move3(step = nil)
@@ -650,17 +650,17 @@ class TkGoldberg_Demo
 
     # Horizontal bars
     y0.step(y1, 12){|y|
-      TkcLine.new(@canvas, [x0, y, x1, y], :fill=>color, :width=>1)
+      TkcLine.new(@canvas, [x0, y, x1, y], fill:color, width:1)
     }
 
     # Vertical bars
     x0.step(x1, 12){|x|
-      TkcLine.new(@canvas, [x, y0, x, y1], :fill=>color, :width=>1)
+      TkcLine.new(@canvas, [x, y0, x, y1], fill:color, width:1)
     }
 
     # Swing gate
     TkcLine.new(@canvas, [518, 464, 518, 428],
-                :tag=>'I4', :fill=>color, :width=>1)
+                tag:'I4', fill:color, width:1)
   end
 
   def move4(step = nil)
@@ -683,33 +683,33 @@ class TkGoldberg_Demo
     xy = [377, 248, 410, 248, 410, 465, 518, 465]  # Mouse course
     xy.concat [518, 428, 451, 428, 451, 212, 377, 212]
 
-    TkcPolygon.new(@canvas, xy, :fill=>color2, :outline=>@C['fg'], :width=>3)
+    TkcPolygon.new(@canvas, xy, fill:color2, outline:@C['fg'], width:3)
 
     xy = [
       534.5, 445.5, 541, 440, 552, 436, 560, 436, 569, 440, 574, 446,
       575, 452, 574, 454, 566, 456, 554, 456, 545, 456, 537, 454, 530, 452
     ]
-    TkcPolygon.new(@canvas, xy, :tag=>['I5', 'I5_0'], :fill=>color)
+    TkcPolygon.new(@canvas, xy, tag:['I5', 'I5_0'], fill:color)
 
     TkcLine.new(@canvas, [573, 452, 592, 458, 601, 460, 613, 456], # Tail
-                :tag=>['I5', 'I5_1'], :fill=>color, :smooth=>true, :width=>3)
+                tag:['I5', 'I5_1'], fill:color, smooth:true, width:3)
 
     xy = box(540, 446, 2)   # Eye
     xy = [540, 444, 541, 445, 541, 447, 540, 448, 538, 447, 538, 445]
-    TkcPolygon.new(@canvas, xy, :tag=>['I5', 'I5_2'], :fill=>@C['bg'],
-                   :outline=>'', :smooth=>true)
+    TkcPolygon.new(@canvas, xy, tag:['I5', 'I5_2'], fill:@C['bg'],
+                   outline:'', smooth:true)
 
     xy = [538, 454, 535, 461] # Front leg
-    TkcLine.new(@canvas, xy, :tag=>['I5', 'I5_3'], :fill=>color, :width=>2)
+    TkcLine.new(@canvas, xy, tag:['I5', 'I5_3'], fill:color, width:2)
 
     xy = [566, 455, 569, 462] # Back leg
-    TkcLine.new(@canvas, xy, :tag=>['I5', 'I5_4'], :fill=>color, :width=>2)
+    TkcLine.new(@canvas, xy, tag:['I5', 'I5_4'], fill:color, width:2)
 
     xy = [544, 455, 545, 460] # 2nd front leg
-    TkcLine.new(@canvas, xy, :tag=>['I5', 'I5_5'], :fill=>color, :width=>2)
+    TkcLine.new(@canvas, xy, tag:['I5', 'I5_5'], fill:color, width:2)
 
     xy = [560, 455, 558, 460] # 2nd back leg
-    TkcLine.new(@canvas, xy, :tag=>['I5', 'I5_6'], :fill=>color, :width=>2)
+    TkcLine.new(@canvas, xy, tag:['I5', 'I5_6'], fill:color, width:2)
   end
 
   def move5(step = nil)
@@ -739,49 +739,49 @@ class TkGoldberg_Demo
     color = @C['6']
     xy = [324, 130, 391, 204] # Ball holder
     xy = round_rect(xy, 10)
-    TkcPolygon.new(@canvas, xy, :smooth=>true,
-                   :outline=>@C['fg'], :width=>3, :fill=>color)
+    TkcPolygon.new(@canvas, xy, smooth:true,
+                   outline:@C['fg'], width:3, fill:color)
     xy = [339, 204, 376, 253] # Below the ball holder
-    TkcRectangle.new(@canvas, xy, :outline=>@C['fg'], :width=>3,
-                     :fill=>color, :tag=>'I6c')
+    TkcRectangle.new(@canvas, xy, outline:@C['fg'], width:3,
+                     fill:color, tag:'I6c')
     xy = box(346, 339, 28)
-    TkcOval.new(@canvas, xy, :fill=>color, :outline=>'') # Roter
-    TkcArc.new(@canvas, xy, :outline=>@C['fg'], :width=>2, :style=>:arc,
-               :start=>80, :extent=>205)
-    TkcArc.new(@canvas, xy, :outline=>@C['fg'], :width=>2, :style=>:arc,
-               :start=>-41, :extent=>85)
+    TkcOval.new(@canvas, xy, fill:color, outline:'') # Roter
+    TkcArc.new(@canvas, xy, outline:@C['fg'], width:2, style::arc,
+               start:80, extent:205)
+    TkcArc.new(@canvas, xy, outline:@C['fg'], width:2, style::arc,
+               start:-41, extent:85)
 
     xy = box(346, 339, 15) # Center of rotor
-    TkcOval.new(@canvas, xy, :outline=>@C['fg'], :fill=>@C['fg'], :tag=>'I6m')
+    TkcOval.new(@canvas, xy, outline:@C['fg'], fill:@C['fg'], tag:'I6m')
     xy = [352, 312, 352, 254, 368, 254, 368, 322] # Top drop to rotor
-    TkcPolygon.new(@canvas, xy, :fill=>color, :outline=>'')
-    TkcLine.new(@canvas, xy, :fill=>@C['fg'], :width=>2)
+    TkcPolygon.new(@canvas, xy, fill:color, outline:'')
+    TkcLine.new(@canvas, xy, fill:@C['fg'], width:2)
 
     xy = [353, 240, 367, 300] # Poke bottom hole
-    TkcRectangle.new(@canvas, xy, :fill=>color, :outline=>'')
+    TkcRectangle.new(@canvas, xy, fill:color, outline:'')
     xy = [341, 190, 375, 210] # Poke another hole
-    TkcRectangle.new(@canvas, xy, :fill=>color, :outline=>'')
+    TkcRectangle.new(@canvas, xy, fill:color, outline:'')
 
     xy = [
       368, 356, 368, 403, 389, 403, 389, 464, 320, 464, 320, 403,
       352, 403, 352, 366
     ]
-    TkcPolygon.new(@canvas, xy, :fill=>color, :outline=>'',
-                   :width=>2) # Below rotor
-    TkcLine.new(@canvas, xy, :fill=>@C['fg'], :width=>2)
+    TkcPolygon.new(@canvas, xy, fill:color, outline:'',
+                   width:2) # Below rotor
+    TkcLine.new(@canvas, xy, fill:@C['fg'], width:2)
     xy = box(275, 342, 7) # On/off rotor
-    TkcOval.new(@canvas, xy, :outline=>@C['fg'], :fill=>@C['fg'])
+    TkcOval.new(@canvas, xy, outline:@C['fg'], fill:@C['fg'])
     xy = [276, 334, 342, 325] # Fan belt top
-    TkcLine.new(@canvas, xy, :fill=>@C['fg'], :width=>3)
+    TkcLine.new(@canvas, xy, fill:@C['fg'], width:3)
     xy = [276, 349, 342, 353] # Fan belt bottom
-    TkcLine.new(@canvas, xy, :fill=>@C['fg'], :width=>3)
+    TkcLine.new(@canvas, xy, fill:@C['fg'], width:3)
 
     xy = [337, 212, 337, 247] # What the mouse pushes
-    TkcLine.new(@canvas, xy, :fill=>@C['fg'], :width=>3, :tag=>'I6_')
+    TkcLine.new(@canvas, xy, fill:@C['fg'], width:3, tag:'I6_')
     xy = [392, 212, 392, 247]
-    TkcLine.new(@canvas, xy, :fill=>@C['fg'], :width=>3, :tag=>'I6_')
+    TkcLine.new(@canvas, xy, fill:@C['fg'], width:3, tag:'I6_')
     xy = [337, 230, 392, 230]
-    TkcLine.new(@canvas, xy, :fill=>@C['fg'], :width=>7, :tag=>'I6_')
+    TkcLine.new(@canvas, xy, fill:@C['fg'], width:7, tag:'I6_')
 
     who = -1 # All the balls
     colors = %w(red cyan orange green blue darkblue)
@@ -792,7 +792,7 @@ class TkGoldberg_Demo
       color = colors[i]
       x, y = @XY6["#{loc}"]
       TkcOval.new(@canvas, box(x, y, 5),
-                  :fill=>color, :outline=>color, :tag=>"I6_b#{i}")
+                  fill:color, outline:color, tag:"I6_b#{i}")
     }
     draw6a(12) # The wheel
   end
@@ -804,7 +804,7 @@ class TkGoldberg_Demo
       b = beta + i * 45
       x, y = rotate_c(28, 0, 0, 0, b)
       xy = [ox + x, oy + y, ox - x, oy - y]
-      TkcLine.new(@canvas, xy, :tag=>'I6_0', :fill=>@C['fg'], :width=>2)
+      TkcLine.new(@canvas, xy, tag:'I6_0', fill:@C['fg'], width:2)
     }
   end
 
@@ -817,8 +817,8 @@ class TkGoldberg_Demo
       @canvas.move('I6_', -7, 0)
       if step == 1  # Poke a hole
         xy = [348, 226, 365, 240]
-        TkcRectangle.new(@canvas, xy, :fill=>@canvas.itemcget('I6c', :fill),
-                         :outline=>'')
+        TkcRectangle.new(@canvas, xy, fill:@canvas.itemcget('I6c', :fill),
+                         outline:'')
       end
       return 1
     end
@@ -857,25 +857,25 @@ class TkGoldberg_Demo
   def draw7
     color = @C['7']
     xy = [198, 306, 277, 374]  # Box
-    TkcRectangle.new(@canvas, xy, :outline=>@C['fg'], :width=>2,
-                     :fill=>color, :tag=>'I7z')
+    TkcRectangle.new(@canvas, xy, outline:@C['fg'], width:2,
+                     fill:color, tag:'I7z')
     @canvas.lower('I7z')
     xy = [275, 343, 230, 349]
-    TkcLine.new(@canvas, xy, :tag=>'I7', :fill=>@C['fg'], :arrow=>:last,
-                :arrowshape=>[23, 23, 8], :width=>6)
+    TkcLine.new(@canvas, xy, tag:'I7', fill:@C['fg'], arrow::last,
+                arrowshape:[23, 23, 8], width:6)
     xy = [225, 324]  # On button
     x, y = xy
-    TkcOval.new(@canvas, box(x, y, 3), :fill=>@C['fg'], :outline=>@C['fg'])
+    TkcOval.new(@canvas, box(x, y, 3), fill:@C['fg'], outline:@C['fg'])
     xy = [218, 323]  # On text
     font = ['Times Roman', 8]
-    TkcText.new(@canvas, xy, :text=>'on', :anchor=>:e,
-                :fill=>@C['fg'], :font=>font)
+    TkcText.new(@canvas, xy, text:'on', anchor::e,
+                fill:@C['fg'], font:font)
     xy = [225, 350]  # Off button
     x, y = xy
-    TkcOval.new(@canvas, box(x, y, 3), :fill=>@C['fg'], :outline=>@C['fg'])
+    TkcOval.new(@canvas, box(x, y, 3), fill:@C['fg'], outline:@C['fg'])
     xy = [218, 349]  # Off text
-    TkcText.new(@canvas, xy, :text=>'off', :anchor=>:e,
-                :fill=>@C['fg'], :font=>font)
+    TkcText.new(@canvas, xy, text:'off', anchor::e,
+                fill:@C['fg'], font:font)
   end
 
   def move7(step = nil)
@@ -891,7 +891,7 @@ class TkGoldberg_Demo
 
   # Electricity to the fan
   def draw8
-    sine([271, 248, 271, 306], 5, 8, :tag=>'I8_s', :fill=>@C['8'], :width=>3)
+    sine([271, 248, 271, 306], 5, 8, tag:'I8_s', fill:@C['8'], width:3)
   end
 
   def move8(step = nil)
@@ -915,42 +915,42 @@ class TkGoldberg_Demo
   def draw9
     color = @C['9']
     xy = [266, 194, 310, 220]
-    TkcOval.new(@canvas, xy, :outline=>color, :fill=>color)
+    TkcOval.new(@canvas, xy, outline:color, fill:color)
     xy = [280, 209, 296, 248]
-    TkcOval.new(@canvas, xy, :outline=>color, :fill=>color)
+    TkcOval.new(@canvas, xy, outline:color, fill:color)
     xy = [
       288, 249, 252, 249, 260, 240, 280, 234,
       296, 234, 316, 240, 324, 249, 288, 249
     ]
-    TkcPolygon.new(@canvas, xy, :fill=>color, :smooth=>true)
+    TkcPolygon.new(@canvas, xy, fill:color, smooth:true)
 
     xy = [248, 205, 265, 214, 264, 205, 265, 196]  # Spinner
-    TkcPolygon.new(@canvas, xy, :fill=>color)
+    TkcPolygon.new(@canvas, xy, fill:color)
 
     xy = [255, 206, 265, 234]  # Fan blades
-    TkcOval.new(@canvas, xy, :fill=>'', :outline=>@C['fg'],
-                :width=>3, :tag=>'I9_0')
+    TkcOval.new(@canvas, xy, fill:'', outline:@C['fg'],
+                width:3, tag:'I9_0')
     xy = [255, 176, 265, 204]
-    TkcOval.new(@canvas, xy, :fill=>'', :outline=>@C['fg'],
-                :width=>3, :tag=>'I9_0')
+    TkcOval.new(@canvas, xy, fill:'', outline:@C['fg'],
+                width:3, tag:'I9_0')
     xy = [255, 206, 265, 220]
-    TkcOval.new(@canvas, xy, :fill=>'', :outline=>@C['fg'],
-                :width=>1, :tag=>'I9_1')
+    TkcOval.new(@canvas, xy, fill:'', outline:@C['fg'],
+                width:1, tag:'I9_1')
     xy = [255, 190, 265, 204]
-    TkcOval.new(@canvas, xy, :fill=>'', :outline=>@C['fg'],
-                :width=>1, :tag=>'I9_1')
+    TkcOval.new(@canvas, xy, fill:'', outline:@C['fg'],
+                width:1, tag:'I9_1')
   end
 
   def move9(step = nil)
     step = get_step(9, step)
 
     if (step & 1).nonzero?
-      @canvas.itemconfigure('I9_0', :width=>4)
-      @canvas.itemconfigure('I9_1', :width=>1)
+      @canvas.itemconfigure('I9_0', width:4)
+      @canvas.itemconfigure('I9_1', width:1)
       @canvas.lower('I9_1', 'I9_0')
     else
-      @canvas.itemconfigure('I9_0', :width=>1)
-      @canvas.itemconfigure('I9_1', :width=>4)
+      @canvas.itemconfigure('I9_0', width:1)
+      @canvas.itemconfigure('I9_1', width:4)
       @canvas.lower('I9_0', 'I9_1')
     end
     return 3 if step == 0
@@ -962,41 +962,41 @@ class TkGoldberg_Demo
     color  = @C['10a']
     color2 = @C['10b']
     xy = [191, 230, 233, 230, 233, 178, 191, 178]  # Sail
-    TkcPolygon.new(@canvas, xy, :fill=>color, :width=>3, :outline=>@C['fg'],
-                   :tag=>'I10')
+    TkcPolygon.new(@canvas, xy, fill:color, width:3, outline:@C['fg'],
+                   tag:'I10')
     xy = box(209, 204, 31)  # Front
-    TkcArc.new(@canvas, xy, :outline=>'', :fill=>color, :style=>:pie,
-               :start=>120, :extent=>120, :tag=>'I10')
-    TkcArc.new(@canvas, xy, :outline=>@C['fg'], :width=>3, :style=>:arc,
-               :start=>120, :extent=>120, :tag=>'I10')
+    TkcArc.new(@canvas, xy, outline:'', fill:color, style::pie,
+               start:120, extent:120, tag:'I10')
+    TkcArc.new(@canvas, xy, outline:@C['fg'], width:3, style::arc,
+               start:120, extent:120, tag:'I10')
     xy = box(249, 204, 31)  # Back
-    TkcArc.new(@canvas, xy, :outline=>'', :fill=>@C['bg'], :width=>3,
-               :style=>:pie, :start=>120, :extent=>120, :tag=>'I10')
-    TkcArc.new(@canvas, xy, :outline=>@C['fg'], :width=>3, :style=>:arc,
-               :start=>120, :extent=>120, :tag=>'I10')
+    TkcArc.new(@canvas, xy, outline:'', fill:@C['bg'], width:3,
+               style::pie, start:120, extent:120, tag:'I10')
+    TkcArc.new(@canvas, xy, outline:@C['fg'], width:3, style::arc,
+               start:120, extent:120, tag:'I10')
 
     xy = [200, 171, 200, 249]  # Mast
-    TkcLine.new(@canvas, xy, :fill=>@C['fg'], :width=>3, :tag=>'I10')
+    TkcLine.new(@canvas, xy, fill:@C['fg'], width:3, tag:'I10')
     xy = [159, 234, 182, 234]  # Bow sprit
-    TkcLine.new(@canvas, xy, :fill=>@C['fg'], :width=>3, :tag=>'I10')
+    TkcLine.new(@canvas, xy, fill:@C['fg'], width:3, tag:'I10')
     xy = [180, 234, 180, 251, 220, 251]  # Hull
-    TkcLine.new(@canvas, xy, :fill=>@C['fg'], :width=>6, :tag=>'I10')
+    TkcLine.new(@canvas, xy, fill:@C['fg'], width:6, tag:'I10')
 
     xy = [92, 255, 221, 255]  # Waves
-    sine(xy, 2, 25, :fill=>color2, :width=>1, :tag=>'I10w')
+    sine(xy, 2, 25, fill:color2, width:1, tag:'I10w')
 
     xy = @canvas.coords('I10w')[4..-5]  # Water
     xy.concat([222, 266, 222, 277, 99, 277])
-    TkcPolygon.new(@canvas, xy, :fill=>color2, :outline=>color2)
+    TkcPolygon.new(@canvas, xy, fill:color2, outline:color2)
     xy = [222, 266, 222, 277, 97, 277, 97, 266]  # Water bottom
-    TkcLine.new(@canvas, xy, :fill=>@C['fg'], :width=>3)
+    TkcLine.new(@canvas, xy, fill:@C['fg'], width:3)
 
     xy = box(239, 262, 17)
-    TkcArc.new(@canvas, xy, :outline=>@C['fg'], :width=>3, :style=>:arc,
-               :start=>95, :extent=>103)
+    TkcArc.new(@canvas, xy, outline:@C['fg'], width:3, style::arc,
+               start:95, extent:103)
     xy = box(76, 266, 21)
-    TkcArc.new(@canvas, xy, :outline=>@C['fg'], :width=>3, :style=>:arc,
-               :extent=>190)
+    TkcArc.new(@canvas, xy, outline:@C['fg'], width:3, style::arc,
+               extent:190)
   end
 
   def move10(step = nil)
@@ -1023,31 +1023,31 @@ class TkGoldberg_Demo
     color  = @C['11a']
     color2 = @C['11b']
     xy = [23, 264, 55, 591]  # Color the down tube
-    TkcRectangle.new(@canvas, xy, :fill=>color, :outline=>'')
+    TkcRectangle.new(@canvas, xy, fill:color, outline:'')
     xy = box(71, 460, 48)    # Color the outer loop
-    TkcOval.new(@canvas, xy, :fill=>color, :outline=>'')
+    TkcOval.new(@canvas, xy, fill:color, outline:'')
 
     xy = [55, 264, 55, 458]  # Top right side
-    TkcLine.new(@canvas, xy, :fill=>@C['fg'], :width=>3)
+    TkcLine.new(@canvas, xy, fill:@C['fg'], width:3)
     xy = [55, 504, 55, 591]  # Bottom right side
-    TkcLine.new(@canvas, xy, :fill=>@C['fg'], :width=>3)
+    TkcLine.new(@canvas, xy, fill:@C['fg'], width:3)
     xy = box(71, 460, 48)    # Outer loop
-    TkcArc.new(@canvas, xy, :outline=>@C['fg'], :width=>3, :style=>:arc,
-               :start=>110, :extent=>-290, :tag=>'I11i')
+    TkcArc.new(@canvas, xy, outline:@C['fg'], width:3, style::arc,
+               start:110, extent:-290, tag:'I11i')
     xy = box(71, 460, 16)    # Inner loop
-    TkcOval.new(@canvas, xy, :outline=>@C['fg'], :fill=>'',
-                :width=>3, :tag=>'I11i')
-    TkcOval.new(@canvas, xy, :outline=>@C['fg'], :fill=>@C['bg'], :width=>3)
+    TkcOval.new(@canvas, xy, outline:@C['fg'], fill:'',
+                width:3, tag:'I11i')
+    TkcOval.new(@canvas, xy, outline:@C['fg'], fill:@C['bg'], width:3)
 
     xy = [23, 264, 23, 591]  # Left side
-    TkcLine.new(@canvas, xy, :fill=>@C['fg'], :width=>3)
+    TkcLine.new(@canvas, xy, fill:@C['fg'], width:3)
     xy = box(1, 266, 23)     # Top left curve
-    TkcArc.new(@canvas, xy, :outline=>@C['fg'], :width=>3,
-               :style=>:arc, :extent=>90)
+    TkcArc.new(@canvas, xy, outline:@C['fg'], width:3,
+               style::arc, extent:90)
 
     xy = box(75, 235, 9)     # The ball
-    TkcOval.new(@canvas, xy, :fill=>color2, :outline=>'',
-                :width=>3, :tag=>'I11')
+    TkcOval.new(@canvas, xy, fill:color2, outline:'',
+                width:3, tag:'I11')
   end
 
   def move11(step = nil)
@@ -1083,8 +1083,8 @@ class TkGoldberg_Demo
       x2 = x - 10
       xy << x << y0 << x1 << y1 << x2 << y0
     }
-    TkcPolygon.new(@canvas, xy, :fill=>@C['12'], :outline=>@C['fg'],
-                   :smooth=>true, :tag=>'I12', :width=>3)
+    TkcPolygon.new(@canvas, xy, fill:@C['12'], outline:@C['fg'],
+                   smooth:true, tag:'I12', width:3)
   end
 
   def move12(step = nil)
@@ -1107,34 +1107,34 @@ class TkGoldberg_Demo
     ]
     radii = [2, 9, 9, 8, 5, 5, 2]
 
-    round_poly(@canvas, xy, radii, :width=>3,
-               :outline=>@C['fg'], :fill=>color)
-    round_poly(@canvas, xy2, radii, :width=>3,
-               :outline=>@C['fg'], :fill=>color)
+    round_poly(@canvas, xy, radii, width:3,
+               outline:@C['fg'], fill:color)
+    round_poly(@canvas, xy2, radii, width:3,
+               outline:@C['fg'], fill:color)
 
     xy = [56, 677]
     x, y = xy
-    TkcRectangle.new(@canvas, box(x, y, 4), :fill=>'', :outline=>@C['fg'],
-                     :width=>3, :tag=>'I13')
+    TkcRectangle.new(@canvas, box(x, y, 4), fill:'', outline:@C['fg'],
+                     width:3, tag:'I13')
     xy = [809, 677]
     x, y = xy
-    TkcRectangle.new(@canvas, box(x, y, 4), :fill=>'', :outline=>@C['fg'],
-                     :width=>3, :tag=>'I13R')
+    TkcRectangle.new(@canvas, box(x, y, 4), fill:'', outline:@C['fg'],
+                     width:3, tag:'I13R')
 
     xy = [112, 687]  # Label
-    TkcText.new(@canvas, xy, :text=>'FAX', :fill=>@C['fg'],
-                :font=>['Times Roman', 12, :bold])
+    TkcText.new(@canvas, xy, text:'FAX', fill:@C['fg'],
+                font:['Times Roman', 12, :bold])
     xy = [762, 687]
-    TkcText.new(@canvas, xy, :text=>'FAX', :fill=>@C['fg'],
-                :font=>['Times Roman', 12, :bold])
+    TkcText.new(@canvas, xy, text:'FAX', fill:@C['fg'],
+                font:['Times Roman', 12, :bold])
 
     xy = [138, 663, 148, 636, 178, 636]  # Paper guide
-    TkcLine.new(@canvas, xy, :smooth=>true, :fill=>@C['fg'], :width=>3)
+    TkcLine.new(@canvas, xy, smooth:true, fill:@C['fg'], width:3)
     xy = [732, 663, 722, 636, 692, 636]
-    TkcLine.new(@canvas, xy, :smooth=>true, :fill=>@C['fg'], :width=>3)
+    TkcLine.new(@canvas, xy, smooth:true, fill:@C['fg'], width:3)
 
     sine([149, 688, 720, 688], 5, 15,
-         :tag=>'I13_s', :fill=>@C['fg'],  :width=>3)
+         tag:'I13_s', fill:@C['fg'],  width:3)
   end
 
   def move13(step = nil)
@@ -1144,7 +1144,7 @@ class TkGoldberg_Demo
 
     if step == numsteps + 2
       move_abs('I13_star', [-100, -100])
-      @canvas.itemconfigure('I13R', :fill=>@C['13b'], :width=>2)
+      @canvas.itemconfigure('I13R', fill:@C['13b'], width:2)
       return 2
     end
     if step == 0  # Button down
@@ -1163,26 +1163,26 @@ class TkGoldberg_Demo
   def draw14
     color = @C['14']
     xy = [102, 661, 113, 632, 130, 618]  # Left paper edge
-    TkcLine.new(@canvas, xy, :smooth=>true, :fill=>color,
-                :width=>3, :tag=>'I14L_0')
+    TkcLine.new(@canvas, xy, smooth:true, fill:color,
+                width:3, tag:'I14L_0')
     xy = [148, 629, 125, 640, 124, 662]  # Right paper edge
-    TkcLine.new(@canvas, xy, :smooth=>true, :fill=>color,
-                :width=>3, :tag=>'I14L_1')
+    TkcLine.new(@canvas, xy, smooth:true, fill:color,
+                width:3, tag:'I14L_1')
     draw14a('L')
 
     xy = [
       768.0, 662.5, 767.991316225, 662.433786215, 767.926187912, 662.396880171
     ]
-    TkcLine.new(@canvas, xy, :smooth=>true, :fill=>color,
-                :width=>3, :tag=>'I14R_0')
+    TkcLine.new(@canvas, xy, smooth:true, fill:color,
+                width:3, tag:'I14R_0')
     @canvas.lower('I14R_0')
     # NB. these numbers are VERY sensitive, you must start with final size
     # and shrink down to get the values
     xy = [
       745.947897349, 662.428358855, 745.997829056, 662.452239237, 746.0, 662.5
     ]
-    TkcLine.new(@canvas, xy, :smooth=>true, :fill=>color,
-                :width=>3, :tag=>'I14R_1')
+    TkcLine.new(@canvas, xy, smooth:true, fill:color,
+                width:3, tag:'I14R_1')
     @canvas.lower('I14R_1')
   end
 
@@ -1198,8 +1198,8 @@ class TkGoldberg_Demo
       x3, y3, x3, y3, xy2, x5, y5, x5, y5
     ].flatten
     @canvas.delete("I14#{side}")
-    TkcPolygon.new(@canvas, zz, :tag=>"I14#{side}", :smooth=>true,
-                   :fill=>color, :outline=>color, :width=>3)
+    TkcPolygon.new(@canvas, zz, tag:"I14#{side}", smooth:true,
+                   fill:color, outline:color, width:3)
     @canvas.lower("I14#{side}")
   end
 
@@ -1236,30 +1236,30 @@ class TkGoldberg_Demo
   def draw15
     color = @C['15a']
     xy = [824, 599, 824, 585, 820, 585, 829, 585]
-    TkcLine.new(@canvas, xy, :fill=>@C['fg'], :width=>3, :tag=>'I15a')
+    TkcLine.new(@canvas, xy, fill:@C['fg'], width:3, tag:'I15a')
     xy = [789, 599, 836, 643]
-    TkcRectangle.new(@canvas, xy, :fill=>color, :outline=>@C['fg'], :width=>3)
+    TkcRectangle.new(@canvas, xy, fill:color, outline:@C['fg'], width:3)
     xy = [778, 610, 788, 632]
-    TkcRectangle.new(@canvas, xy, :fill=>color, :outline=>@C['fg'], :width=>3)
+    TkcRectangle.new(@canvas, xy, fill:color, outline:@C['fg'], width:3)
     xy = [766, 617, 776, 625]
-    TkcRectangle.new(@canvas, xy, :fill=>color, :outline=>@C['fg'], :width=>3)
+    TkcRectangle.new(@canvas, xy, fill:color, outline:@C['fg'], width:3)
 
     xy = [633, 600, 681, 640]
-    TkcRectangle.new(@canvas, xy, :fill=>color, :outline=>@C['fg'], :width=>3)
+    TkcRectangle.new(@canvas, xy, fill:color, outline:@C['fg'], width:3)
     xy = [635, 567, 657, 599]
-    TkcRectangle.new(@canvas, xy, :fill=>color, :outline=>@C['fg'], :width=>2)
+    TkcRectangle.new(@canvas, xy, fill:color, outline:@C['fg'], width:2)
     xy = [765, 557, 784, 583]
-    TkcRectangle.new(@canvas, xy, :fill=>color, :outline=>@C['fg'], :width=>2)
+    TkcRectangle.new(@canvas, xy, fill:color, outline:@C['fg'], width:2)
 
     sine([658, 580, 765, 580], 3, 15,
-         :tag=>'I15_s', :fill=>@C['fg'], :width=>3)
+         tag:'I15_s', fill:@C['fg'], width:3)
   end
 
   def move15a
     color = @C['15b']
     @canvas.scale('I15a', 824, 599, 1, 0.3)  # Button down
     xy = [765, 621, 681, 621]
-    TkcLine.new(@canvas, xy, :dash=>'-', :width=>3, :fill=>color, :tag=>'I15')
+    TkcLine.new(@canvas, xy, dash:'-', width:3, fill:color, tag:'I15')
   end
 
   def move15(step = nil)
@@ -1288,17 +1288,17 @@ class TkGoldberg_Demo
   def draw16
     color = @C['16']
     xy = [722, 485, 791, 556]
-    TkcRectangle.new(@canvas, xy, :fill=>'', :outline=>@C['fg'], :width=>3)
+    TkcRectangle.new(@canvas, xy, fill:'', outline:@C['fg'], width:3)
     xy = box(752, 515, 25)  # Bell
-    TkcOval.new(@canvas, xy, :fill=>color, :outline=>'black',
-                :tag=>'I16b', :width=>2)
+    TkcOval.new(@canvas, xy, fill:color, outline:'black',
+                tag:'I16b', width:2)
     xy = box(752, 515, 5)   # Bell button
-    TkcOval.new(@canvas, xy, :fill=>'black', :outline=>'black', :tag=>'I16b')
+    TkcOval.new(@canvas, xy, fill:'black', outline:'black', tag:'I16b')
 
     xy = [784, 523, 764, 549]  # Clapper
-    TkcLine.new(@canvas, xy, :width=>3, :tag=>'I16c', :fill=>@C['fg'])
+    TkcLine.new(@canvas, xy, width:3, tag:'I16c', fill:@C['fg'])
     xy = box(784, 523, 4)
-    TkcOval.new(@canvas, xy, :fill=>@C['fg'], :outline=>@C['fg'], :tag=>'I16d')
+    TkcOval.new(@canvas, xy, fill:@C['fg'], outline:@C['fg'], tag:'I16d')
   end
 
   def move16(step = nil)
@@ -1324,56 +1324,56 @@ class TkGoldberg_Demo
     color = @C['17']
 
     xy = [584, 556, 722, 556]
-    TkcLine.new(@canvas, xy, :fill=>@C['fg'], :width=>3)
+    TkcLine.new(@canvas, xy, fill:@C['fg'], width:3)
     xy = [584, 485, 722, 485]
-    TkcLine.new(@canvas, xy, :fill=>@C['fg'], :width=>3)
+    TkcLine.new(@canvas, xy, fill:@C['fg'], width:3)
 
     xy = [664, 523, 717, 549]  # Body
-    TkcArc.new(@canvas, xy, :outline=>@C['fg'], :fill=>color, :width=>3,
-               :style=>:chord, :start=>128, :extent=>260, :tag=>'I17')
+    TkcArc.new(@canvas, xy, outline:@C['fg'], fill:color, width:3,
+               style::chord, start:128, extent:260, tag:'I17')
 
     xy = [709, 554, 690, 543]  # Paw
-    TkcOval.new(@canvas, xy, :outline=>@C['fg'], :fill=>color,
-                :width=>3, :tag=>'I17')
+    TkcOval.new(@canvas, xy, outline:@C['fg'], fill:color,
+                width:3, tag:'I17')
     xy = [657, 544, 676, 555]
-    TkcOval.new(@canvas, xy, :outline=>@C['fg'], :fill=>color,
-                :width=>3, :tag=>'I17')
+    TkcOval.new(@canvas, xy, outline:@C['fg'], fill:color,
+                width:3, tag:'I17')
 
     xy = box(660, 535, 15)     # Lower face
-    TkcArc.new(@canvas, xy, :outline=>@C['fg'], :width=>3, :style=>:arc,
-               :start=>150, :extent=>240, :tag=>'I17_')
-    TkcArc.new(@canvas, xy, :outline=>'', :fill=>color, :width=>1,
-               :style=>:chord, :start=>150, :extent=>240, :tag=>'I17_')
+    TkcArc.new(@canvas, xy, outline:@C['fg'], width:3, style::arc,
+               start:150, extent:240, tag:'I17_')
+    TkcArc.new(@canvas, xy, outline:'', fill:color, width:1,
+               style::chord, start:150, extent:240, tag:'I17_')
     xy = [674, 529, 670, 513, 662, 521, 658, 521, 650, 513, 647, 529]  # Ears
-    TkcLine.new(@canvas, xy, :fill=>@C['fg'], :width=>3, :tag=>'I17_')
-    TkcPolygon.new(@canvas, xy, :fill=>color, :outline=>'', :width=>1,
-                   :tag=>['I17_', 'I17_c'])
+    TkcLine.new(@canvas, xy, fill:@C['fg'], width:3, tag:'I17_')
+    TkcPolygon.new(@canvas, xy, fill:color, outline:'', width:1,
+                   tag:['I17_', 'I17_c'])
     xy = [652, 542, 628, 539]  # Whiskers
-    TkcLine.new(@canvas, xy, :fill=>@C['fg'], :width=>3, :tag=>'I17_')
+    TkcLine.new(@canvas, xy, fill:@C['fg'], width:3, tag:'I17_')
     xy = [652, 543, 632, 545]
-    TkcLine.new(@canvas, xy, :fill=>@C['fg'], :width=>3, :tag=>'I17_')
+    TkcLine.new(@canvas, xy, fill:@C['fg'], width:3, tag:'I17_')
     xy = [652, 546, 632, 552]
-    TkcLine.new(@canvas, xy, :fill=>@C['fg'], :width=>3, :tag=>'I17_')
+    TkcLine.new(@canvas, xy, fill:@C['fg'], width:3, tag:'I17_')
 
     xy = [668, 543, 687, 538]
-    TkcLine.new(@canvas, xy, :fill=>@C['fg'], :width=>3,
-                :tag=>['I17_', 'I17_w'])
+    TkcLine.new(@canvas, xy, fill:@C['fg'], width:3,
+                tag:['I17_', 'I17_w'])
     xy = [668, 544, 688, 546]
-    TkcLine.new(@canvas, xy, :fill=>@C['fg'], :width=>3,
-                :tag=>['I17_', 'I17_w'])
+    TkcLine.new(@canvas, xy, fill:@C['fg'], width:3,
+                tag:['I17_', 'I17_w'])
     xy = [668, 547, 688, 553]
-    TkcLine.new(@canvas, xy, :fill=>@C['fg'], :width=>3,
-                :tag=>['I17_', 'I17_w'])
+    TkcLine.new(@canvas, xy, fill:@C['fg'], width:3,
+                tag:['I17_', 'I17_w'])
 
     xy = [649, 530, 654, 538, 659, 530]  # Left eye
-    TkcLine.new(@canvas, xy, :fill=>@C['fg'], :width=>2,
-                :smooth=>true, :tag=>'I17')
+    TkcLine.new(@canvas, xy, fill:@C['fg'], width:2,
+                smooth:true, tag:'I17')
     xy = [671, 530, 666, 538, 661, 530]  # Right eye
-    TkcLine.new(@canvas, xy, :fill=>@C['fg'], :width=>2,
-                :smooth=>true, :tag=>'I17')
+    TkcLine.new(@canvas, xy, fill:@C['fg'], width:2,
+                smooth:true, tag:'I17')
     xy = [655, 543, 660, 551, 665, 543]  # Mouth
-    TkcLine.new(@canvas, xy, :fill=>@C['fg'], :width=>2,
-                :smooth=>true, :tag=>'I17')
+    TkcLine.new(@canvas, xy, fill:@C['fg'], width:2,
+                smooth:true, tag:'I17')
   end
 
   def move17(step = nil)
@@ -1382,36 +1382,36 @@ class TkGoldberg_Demo
     if step == 0
       @canvas.delete('I17')  # Delete most of the cat
       xy = [655, 543, 660, 535, 665, 543]  # Mouth
-      TkcLine.new(@canvas, xy, :fill=>@C['fg'], :width=>3,
-                  :smooth=>true, :tag=>'I17_')
+      TkcLine.new(@canvas, xy, fill:@C['fg'], width:3,
+                  smooth:true, tag:'I17_')
       xy = box(654, 530, 4)  # Left eye
-      TkcOval.new(@canvas, xy, :outline=>@C['fg'], :width=>3, :fill=>'',
-                  :tag=>'I17_')
+      TkcOval.new(@canvas, xy, outline:@C['fg'], width:3, fill:'',
+                  tag:'I17_')
       xy = box(666, 530, 4)  # Right eye
-      TkcOval.new(@canvas, xy, :outline=>@C['fg'], :width=>3, :fill=>'',
-                  :tag=>'I17_')
+      TkcOval.new(@canvas, xy, outline:@C['fg'], width:3, fill:'',
+                  tag:'I17_')
 
       @canvas.move('I17_', 0, -20) # Move face up
       xy = [652, 528, 652, 554]    # Front leg
-      TkcLine.new(@canvas, xy, :fill=>@C['fg'], :width=>3, :tag=>'I17_')
+      TkcLine.new(@canvas, xy, fill:@C['fg'], width:3, tag:'I17_')
       xy = [670, 528, 670, 554]    # 2nd front leg
-      TkcLine.new(@canvas, xy, :fill=>@C['fg'], :width=>3, :tag=>'I17_')
+      TkcLine.new(@canvas, xy, fill:@C['fg'], width:3, tag:'I17_')
 
       xy = [ # Body
         675, 506, 694, 489, 715, 513, 715, 513, 715, 513, 716, 525,
         716, 525, 716, 525, 706, 530, 695, 530, 679, 535, 668, 527,
         668, 527, 668, 527, 675, 522, 676, 517, 677, 512
       ]
-      TkcPolygon.new(@canvas, xy, :fill=>@canvas.itemcget('I17_c', :fill),
-                     :outline=>@C['fg'], :width=>3, :smooth=>true,
-                     :tag=>'I17_')
+      TkcPolygon.new(@canvas, xy, fill:@canvas.itemcget('I17_c', :fill),
+                     outline:@C['fg'], width:3, smooth:true,
+                     tag:'I17_')
       xy = [716, 514, 716, 554]  # Back leg
-      TkcLine.new(@canvas, xy, :fill=>@C['fg'], :width=>3, :tag=>'I17_')
+      TkcLine.new(@canvas, xy, fill:@C['fg'], width:3, tag:'I17_')
       xy = [694, 532, 694, 554]  # 2nd back leg
-      TkcLine.new(@canvas, xy, :fill=>@C['fg'], :width=>3, :tag=>'I17_')
+      TkcLine.new(@canvas, xy, fill:@C['fg'], width:3, tag:'I17_')
       xy = [715, 514, 718, 506, 719, 495, 716, 488]  # Tail
-      TkcLine.new(@canvas, xy, :fill=>@C['fg'], :width=>3,
-                  :smooth=>true, :tag=>'I17_')
+      TkcLine.new(@canvas, xy, fill:@C['fg'], width:3,
+                  smooth:true, tag:'I17_')
 
       @canvas.raise('I17w')       # Make whiskers visible
       @canvas.move('I17_', -5, 0) # Move away from the wall a bit
@@ -1424,15 +1424,15 @@ class TkGoldberg_Demo
   def draw18
     color = @C['18']
     xy = [721, 506, 627, 506]  # Sling hold
-    TkcLine.new(@canvas, xy, :width=>4, :fill=>@C['fg'], :tag=>'I18')
+    TkcLine.new(@canvas, xy, width:4, fill:@C['fg'], tag:'I18')
 
     xy = [607, 500, 628, 513]  # Sling rock
-    TkcOval.new(@canvas, xy, :fill=>color, :outline=>'', :tag=>'I18a')
+    TkcOval.new(@canvas, xy, fill:color, outline:'', tag:'I18a')
 
     xy = [526, 513, 606, 507, 494, 502]  # Sling band
-    TkcLine.new(@canvas, xy, :fill=>@C['fg'], :width=>4, :tag=>'I18b')
+    TkcLine.new(@canvas, xy, fill:@C['fg'], width:4, tag:'I18b')
     xy = [485, 490, 510, 540, 510, 575, 510, 540, 535, 491]  # Sling
-    TkcLine.new(@canvas, xy, :fill=>@C['fg'], :width=>6)
+    TkcLine.new(@canvas, xy, fill:@C['fg'], width:6)
   end
 
   def move18(step = nil)
@@ -1460,7 +1460,7 @@ class TkGoldberg_Demo
 
     if step == 0
       @canvas.delete('I18')
-      @canvas.itemconfigure('I18b', :smooth=>true)
+      @canvas.itemconfigure('I18b', smooth:true)
     end
     if b[step]
       @canvas.coords('I18b', b[step])
@@ -1478,70 +1478,70 @@ class TkGoldberg_Demo
     xx = [[249, 181], [155, 118], [86, 55], [22, 0]]
     xx.each{|x1, x2|
       TkcRectangle.new(@canvas, x1, 453, x2, 467,
-                       :fill=>color, :outline=>'', :tag=>'I19')
+                       fill:color, outline:'', tag:'I19')
       TkcLine.new(@canvas, x1, 453, x2, 453,
-                  :fill=>@C['fg'], :width=>1) # Pipe top
+                  fill:@C['fg'], width:1) # Pipe top
       TkcLine.new(@canvas, x1, 467, x2, 467,
-                  :fill=>@C['fg'], :width=>1) # Pipe bottom
+                  fill:@C['fg'], width:1) # Pipe bottom
     }
     @canvas.raise('I11i')
 
     xy = box(168, 460, 16)  # Bulge by the joint
-    TkcOval.new(@canvas, xy, :fill=>color, :outline=>'')
-    TkcArc.new(@canvas, xy, :outline=>@C['fg'], :width=>1, :style=>:arc,
-               :start=>21, :extent=>136)
-    TkcArc.new(@canvas, xy, :outline=>@C['fg'], :width=>1, :style=>:arc,
-               :start=>-21, :extent=>-130)
+    TkcOval.new(@canvas, xy, fill:color, outline:'')
+    TkcArc.new(@canvas, xy, outline:@C['fg'], width:1, style::arc,
+               start:21, extent:136)
+    TkcArc.new(@canvas, xy, outline:@C['fg'], width:1, style::arc,
+               start:-21, extent:-130)
 
     xy = [249, 447, 255, 473]  # First joint 26x6
-    TkcRectangle.new(@canvas, xy, :fill=>color, :outline=>@C['fg'], :width=>1)
+    TkcRectangle.new(@canvas, xy, fill:color, outline:@C['fg'], width:1)
 
     xy = box(257, 433, 34)     # Bend up
-    TkcArc.new(@canvas, xy, :outline=>'', :fill=>color, :width=>1,
-               :style=>:pie, :start=>0, :extent=>-91)
-    TkcArc.new(@canvas, xy, :outline=>@C['fg'], :width=>1,
-               :style=>:arc, :start=>0, :extent=>-90)
+    TkcArc.new(@canvas, xy, outline:'', fill:color, width:1,
+               style::pie, start:0, extent:-91)
+    TkcArc.new(@canvas, xy, outline:@C['fg'], width:1,
+               style::arc, start:0, extent:-90)
     xy = box(257, 433, 20)
-    TkcArc.new(@canvas, xy, :outline=>'', :fill=>@C['bg'], :width=>1,
-               :style=>:pie, :start=>0, :extent=>-92)
-    TkcArc.new(@canvas, xy, :outline=>@C['fg'], :width=>1,
-               :style=>:arc, :start=>0, :extent=>-90)
+    TkcArc.new(@canvas, xy, outline:'', fill:@C['bg'], width:1,
+               style::pie, start:0, extent:-92)
+    TkcArc.new(@canvas, xy, outline:@C['fg'], width:1,
+               style::arc, start:0, extent:-90)
     xy = box(257, 421, 34)     # Bend left
-    TkcArc.new(@canvas, xy, :outline=>'', :fill=>color, :width=>1,
-               :style=>:pie, :start=>0, :extent=>91)
-    TkcArc.new(@canvas, xy, :outline=>@C['fg'], :width=>1,
-               :style=>:arc, :start=>0, :extent=>90)
+    TkcArc.new(@canvas, xy, outline:'', fill:color, width:1,
+               style::pie, start:0, extent:91)
+    TkcArc.new(@canvas, xy, outline:@C['fg'], width:1,
+               style::arc, start:0, extent:90)
     xy = box(257, 421, 20)
-    TkcArc.new(@canvas, xy, :outline=>'', :fill=>@C['bg'], :width=>1,
-               :style=>:pie, :start=>0, :extent=>90)
-    TkcArc.new(@canvas, xy, :outline=>@C['fg'], :width=>1,
-               :style=>:arc, :start=>0, :extent=>90)
+    TkcArc.new(@canvas, xy, outline:'', fill:@C['bg'], width:1,
+               style::pie, start:0, extent:90)
+    TkcArc.new(@canvas, xy, outline:@C['fg'], width:1,
+               style::arc, start:0, extent:90)
     xy = box(243, 421, 34)     # Bend down
-    TkcArc.new(@canvas, xy, :outline=>'', :fill=>color, :width=>1,
-               :style=>:pie, :start=>90, :extent=>90)
-    TkcArc.new(@canvas, xy, :outline=>@C['fg'], :width=>1,
-               :style=>:arc, :start=>90, :extent=>90)
+    TkcArc.new(@canvas, xy, outline:'', fill:color, width:1,
+               style::pie, start:90, extent:90)
+    TkcArc.new(@canvas, xy, outline:@C['fg'], width:1,
+               style::arc, start:90, extent:90)
     xy = box(243, 421, 20)
-    TkcArc.new(@canvas, xy, :outline=>'', :fill=>@C['bg'], :width=>1,
-               :style=>:pie, :start=>90, :extent=>90)
-    TkcArc.new(@canvas, xy, :outline=>@C['fg'], :width=>1,
-               :style=>:arc, :start=>90, :extent=>90)
+    TkcArc.new(@canvas, xy, outline:'', fill:@C['bg'], width:1,
+               style::pie, start:90, extent:90)
+    TkcArc.new(@canvas, xy, outline:@C['fg'], width:1,
+               style::arc, start:90, extent:90)
 
     xy = [270, 427, 296, 433]  # 2nd joint bottom
-    TkcRectangle.new(@canvas, xy, :fill=>color, :outline=>@C['fg'], :width=>1)
+    TkcRectangle.new(@canvas, xy, fill:color, outline:@C['fg'], width:1)
     xy = [270, 421, 296, 427]  # 2nd joint top
-    TkcRectangle.new(@canvas, xy, :fill=>color, :outline=>@C['fg'], :width=>1)
+    TkcRectangle.new(@canvas, xy, fill:color, outline:@C['fg'], width:1)
     xy = [249, 382, 255, 408]  # Third joint right
-    TkcRectangle.new(@canvas, xy, :fill=>color, :outline=>@C['fg'], :width=>1)
+    TkcRectangle.new(@canvas, xy, fill:color, outline:@C['fg'], width:1)
     xy = [243, 382, 249, 408]  # Third joint left
-    TkcRectangle.new(@canvas, xy, :fill=>color, :outline=>@C['fg'], :width=>1)
+    TkcRectangle.new(@canvas, xy, fill:color, outline:@C['fg'], width:1)
     xy = [203, 420, 229, 426]  # Last joint
-    TkcRectangle.new(@canvas, xy, :fill=>color, :outline=>@C['fg'], :width=>1)
+    TkcRectangle.new(@canvas, xy, fill:color, outline:@C['fg'], width:1)
 
     xy = box(168, 460, 6)      # Handle joint
-    TkcOval.new(@canvas, xy, :fill=>@C['fg'], :outline=>'', :tag=>'I19a')
+    TkcOval.new(@canvas, xy, fill:@C['fg'], outline:'', tag:'I19a')
     xy = [168, 460, 168, 512]  # Handle bar
-    TkcLine.new(@canvas, xy, :fill=>@C['fg'], :width=>5, :tag=>'I19b')
+    TkcLine.new(@canvas, xy, fill:@C['fg'], width:5, tag:'I19b')
   end
 
   def move19(step = nil)
@@ -1583,12 +1583,12 @@ class TkGoldberg_Demo
     color = @C['20']
     @canvas.delete('I20')
 
-    sine([208, 428, 208, y], 4, f, :tag=>['I20', 'I20s'],
-         :width=>3, :fill=>color, :smooth=>true)
-    TkcLine.new(@canvas, @canvas.coords('I20s'), :width=>3,
-                :fill=>color, :smooth=>1, :tag=>['I20', 'I20a'])
-    TkcLine.new(@canvas, @canvas.coords('I20s'), :width=>3,
-                :fill=>color, :smooth=>1, :tag=>['I20', 'I20b'])
+    sine([208, 428, 208, y], 4, f, tag:['I20', 'I20s'],
+         width:3, fill:color, smooth:true)
+    TkcLine.new(@canvas, @canvas.coords('I20s'), width:3,
+                fill:color, smooth:1, tag:['I20', 'I20a'])
+    TkcLine.new(@canvas, @canvas.coords('I20s'), width:3,
+                fill:color, smooth:1, tag:['I20', 'I20b'])
     @canvas.move('I20a', 8, 0)
     @canvas.move('I20b', 16, 0)
   end
@@ -1597,25 +1597,25 @@ class TkGoldberg_Demo
   def draw21
     color = @C['21']
     xy = [217, 451, 244, 490]  # Right handle
-    TkcLine.new(@canvas, xy, :fill=>@C['fg'], :width=>2, :tag=>'I21_a')
+    TkcLine.new(@canvas, xy, fill:@C['fg'], width:2, tag:'I21_a')
     xy = [201, 467, 182, 490]  # Left handle
-    TkcLine.new(@canvas, xy, :fill=>@C['fg'], :width=>2, :tag=>'I21_a')
+    TkcLine.new(@canvas, xy, fill:@C['fg'], width:2, tag:'I21_a')
 
     xy = [245, 490, 237, 535]  # Right side
     xy2 = [189, 535, 181, 490] # Left side
-    TkcPolygon.new(@canvas, xy + xy2, :fill=>color, :outline=>'',
-                   :tag=>['I21', 'I21f'])
-    TkcLine.new(@canvas, xy, :fill=>@C['fg'], :width=>2, :tag=>'I21')
-    TkcLine.new(@canvas, xy2, :fill=>@C['fg'], :width=>2, :tag=>'I21')
+    TkcPolygon.new(@canvas, xy + xy2, fill:color, outline:'',
+                   tag:['I21', 'I21f'])
+    TkcLine.new(@canvas, xy, fill:@C['fg'], width:2, tag:'I21')
+    TkcLine.new(@canvas, xy2, fill:@C['fg'], width:2, tag:'I21')
 
     xy = [182, 486, 244, 498]  # Top
-    TkcOval.new(@canvas, xy, :fill=>color, :outline=>'', :width=>2,
-                :tag=>['I21', 'I21f'])
-    TkcOval.new(@canvas, xy, :fill=>'', :outline=>@C['fg'], :width=>2,
-                :tag=>['I21', 'I21t'])
+    TkcOval.new(@canvas, xy, fill:color, outline:'', width:2,
+                tag:['I21', 'I21f'])
+    TkcOval.new(@canvas, xy, fill:'', outline:@C['fg'], width:2,
+                tag:['I21', 'I21t'])
     xy = [189, 532, 237, 540]  # Bottom
-    TkcOval.new(@canvas, xy, :fill=>color, :outline=>@C['fg'], :width=>2,
-                :tag=>['I21', 'I21b'])
+    TkcOval.new(@canvas, xy, fill:color, outline:@C['fg'], width:2,
+                tag:['I21', 'I21b'])
   end
 
   def move21(step = nil)
@@ -1635,10 +1635,10 @@ class TkGoldberg_Demo
     xx2 = x2 + (lx2 - x2) * f
     yy2 = y2 + (ly2 - y2) * f
 
-    @canvas.itemconfigure('I21b', :fill=>@C['20'])
+    @canvas.itemconfigure('I21b', fill:@C['20'])
     @canvas.delete('I21w')
     TkcPolygon.new(@canvas, x2, y2, x1, y1, xx1, yy1, xx2, yy1,
-                   :tag=>['I21', 'I21w'], :outline=>'', :fill=>@C['20'])
+                   tag:['I21', 'I21w'], outline:'', fill:@C['20'])
     @canvas.lower('I21w', 'I21')
     @canvas.raise('I21b')
     @canvas.lower('I21f')
@@ -1655,7 +1655,7 @@ class TkGoldberg_Demo
     step = get_step(22, step)
     pos = [[213, 513], [213, 523], [213, 543, :x], [213, 583], [213, 593]]
 
-    @canvas.itemconfigure('I21f', :fill=>@C['22']) if step == 0
+    @canvas.itemconfigure('I21f', fill:@C['22']) if step == 0
     return 0 if step >= pos.length
     where = pos[step]
     move_abs('I21', where)
@@ -1673,26 +1673,26 @@ class TkGoldberg_Demo
     color3 = @C['23c']
 
     xy = [185, 623, 253, 650]  # Block
-    TkcRectangle.new(@canvas, xy, :fill=>'black', :outline=>@C['fg'],
-                     :width=>2, :tag=>'I23a')
+    TkcRectangle.new(@canvas, xy, fill:'black', outline:@C['fg'],
+                     width:2, tag:'I23a')
     xy = [187, 592, 241, 623]  # Balloon
-    TkcOval.new(@canvas, xy, :outline=>'', :fill=>color, :tag=>'I23b')
-    TkcArc.new(@canvas, xy, :outline=>@C['fg'], :width=>3, :tag=>'I23b',
-               :style=>:arc, :start=>12, :extent=>336)
+    TkcOval.new(@canvas, xy, outline:'', fill:color, tag:'I23b')
+    TkcArc.new(@canvas, xy, outline:@C['fg'], width:3, tag:'I23b',
+               style::arc, start:12, extent:336)
     xy = [239, 604, 258, 589, 258, 625, 239, 610]  # Balloon nozzle
-    TkcPolygon.new(@canvas, xy, :outline=>'', :fill=>color, :tag=>'I23b')
-    TkcLine.new(@canvas, xy, :fill=>@C['fg'], :width=>3, :tag=>'I23b')
+    TkcPolygon.new(@canvas, xy, outline:'', fill:color, tag:'I23b')
+    TkcLine.new(@canvas, xy, fill:@C['fg'], width:3, tag:'I23b')
 
     xy = [285, 611, 250, 603]  # Dart body
-    TkcOval.new(@canvas, xy, :fill=>color2, :outline=>@C['fg'],
-                :width=>3, :tag=>'I23d')
+    TkcOval.new(@canvas, xy, fill:color2, outline:@C['fg'],
+                width:3, tag:'I23d')
     xy = [249, 596, 249, 618, 264, 607, 249, 596]  # Dart tail
-    TkcPolygon.new(@canvas, xy, :fill=>color3, :outline=>@C['fg'],
-                   :width=>3, :tag=>'I23d')
+    TkcPolygon.new(@canvas, xy, fill:color3, outline:@C['fg'],
+                   width:3, tag:'I23d')
     xy = [249, 607, 268, 607]  # Dart detail
-    TkcLine.new(@canvas, xy, :fill=>@C['fg'], :width=>3, :tag=>'I23d')
+    TkcLine.new(@canvas, xy, fill:@C['fg'], width:3, tag:'I23d')
     xy = [285, 607, 305, 607]  # Dart needle
-    TkcLine.new(@canvas, xy, :fill=>@C['fg'], :width=>3, :tag=>'I23d')
+    TkcLine.new(@canvas, xy, fill:@C['fg'], width:3, tag:'I23d')
   end
 
   def move23(step = nil)
@@ -1719,26 +1719,26 @@ class TkGoldberg_Demo
   def draw24
     color = @C['24a']
     xy = [366, 518, 462, 665]  # Balloon
-    TkcOval.new(@canvas, xy, :fill=>color, :outline=>@C['fg'],
-                :width=>3, :tag=>'I24')
+    TkcOval.new(@canvas, xy, fill:color, outline:@C['fg'],
+                width:3, tag:'I24')
     xy = [414, 666, 414, 729]  # String
-    TkcLine.new(@canvas, xy, :fill=>@C['fg'], :width=>3, :tag=>'I24')
+    TkcLine.new(@canvas, xy, fill:@C['fg'], width:3, tag:'I24')
     xy = [410, 666, 404, 673, 422, 673, 418, 666]  # Nozzle
-    TkcPolygon.new(@canvas, xy, :fill=>color, :outline=>@C['fg'],
-                   :width=>3, :tag=>'I24')
+    TkcPolygon.new(@canvas, xy, fill:color, outline:@C['fg'],
+                   width:3, tag:'I24')
 
     xy = [387, 567, 390, 549, 404, 542]  # Reflections
-    TkcLine.new(@canvas, xy, :fill=>@C['fg'], :smooth=>true,
-                :width=>2, :tag=>'I24')
+    TkcLine.new(@canvas, xy, fill:@C['fg'], smooth:true,
+                width:2, tag:'I24')
     xy = [395, 568, 399, 554, 413, 547]
-    TkcLine.new(@canvas, xy, :fill=>@C['fg'], :smooth=>true,
-                :width=>2, :tag=>'I24')
+    TkcLine.new(@canvas, xy, fill:@C['fg'], smooth:true,
+                width:2, tag:'I24')
     xy = [403, 570, 396, 555, 381, 553]
-    TkcLine.new(@canvas, xy, :fill=>@C['fg'], :smooth=>true,
-                :width=>2, :tag=>'I24')
+    TkcLine.new(@canvas, xy, fill:@C['fg'], smooth:true,
+                width:2, tag:'I24')
     xy = [408, 564, 402, 547, 386, 545]
-    TkcLine.new(@canvas, xy, :fill=>@C['fg'], :smooth=>true,
-                :width=>2, :tag=>'I24')
+    TkcLine.new(@canvas, xy, fill:@C['fg'], smooth:true,
+                width:2, tag:'I24')
   end
 
   def move24(step = nil)
@@ -1756,15 +1756,15 @@ class TkGoldberg_Demo
         548, 613, 480, 574, 577, 473, 577, 473, 474, 538, 445, 508,
         431, 441, 431, 440, 400, 502, 347, 465, 347, 465
       ]
-      TkcPolygon.new(@canvas, xy, :tag=>'I24', :fill=>@C['24b'],
-                     :outline=>@C['24a'], :width=>10, :smooth=>true)
+      TkcPolygon.new(@canvas, xy, tag:'I24', fill:@C['24b'],
+                     outline:@C['24a'], width:10, smooth:true)
       msg = Tk.subst(@S['message'].value)
-      TkcText.new(@canvas, centroid('I24'), :text=>msg, :tag=>['I24', 'I24t'],
-                  :justify=>:center, :font=>['Times Roman', 18, :bold])
+      TkcText.new(@canvas, centroid('I24'), text:msg, tag:['I24', 'I24t'],
+                  justify::center, font:['Times Roman', 18, :bold])
       return 1
     end
 
-    @canvas.itemconfigure('I24t', :font=>['Times Roman', 18 + 6*step, :bold])
+    @canvas.itemconfigure('I24t', font:['Times Roman', 18 + 6*step, :bold])
     @canvas.move('I24', 0, -60)
     ox, oy = centroid('I24')
     @canvas.scale('I24', ox, oy, 1.25, 1.25)
@@ -1790,10 +1790,10 @@ class TkGoldberg_Demo
 
     if step >= 3
       @canvas.delete('I24', 'I26')
-      TkcText.new(@canvas, 430, 735, :anchor=>:s, :tag=>'I26',
-                  #:text=>'click to continue',
-                  :text=>'クリックでリセットします',
-                  :font=>['Times Roman', 20, :bold])
+      TkcText.new(@canvas, 430, 735, anchor::s, tag:'I26',
+                  #text:'click to continue',
+                  text:'クリックでリセットします',
+                  font:['Times Roman', 20, :bold])
       @canvas.bind('1', proc{reset})
       return 4
     end
@@ -1801,7 +1801,7 @@ class TkGoldberg_Demo
     ox, oy = centroid('I24')
     @canvas.scale('I24', ox, oy, 0.8, 0.8)
     @canvas.move('I24', 0, 60)
-    @canvas.itemconfigure('I24t', :font=>['Times Roman', 30 - 6*step, :bold])
+    @canvas.itemconfigure('I24t', font:['Times Roman', 30 - 6*step, :bold])
     return 1
   end
 
@@ -1940,7 +1940,7 @@ class TkGoldberg_Demo
       x0 = x1;  y0 = y1
       x1 = x2;  y1 = y2
     }
-    TkcPolygon.new(canv, knots, {:smooth=>true}.update(opts))
+    TkcPolygon.new(canv, knots, {smooth:true}.update(opts))
   end
 
   def _round_poly2(x0, y0, x1, y1, x2, y2, radius)
@@ -1977,7 +1977,7 @@ class TkGoldberg_Demo
     ]
     xy.each{|x, y|
       TkcLine.new(@canvas, 271, 304, x, y,
-                  :fill=>'white', :width=>3, :tag=>tag)
+                  fill:'white', width:3, tag:tag)
     }
     move_abs(tag, oxy)
   end

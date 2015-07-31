@@ -66,17 +66,17 @@ module JSON
       const_set :State, self.state
       const_set :SAFE_STATE_PROTOTYPE, State.new
       const_set :FAST_STATE_PROTOTYPE, State.new(
-        :indent         => '',
-        :space          => '',
-        :object_nl      => "",
-        :array_nl       => "",
-        :max_nesting    => false
+        indent: '',
+        space: '',
+        object_nl: "",
+        array_nl: "",
+        max_nesting: false
       )
       const_set :PRETTY_STATE_PROTOTYPE, State.new(
-        :indent         => '  ',
-        :space          => ' ',
-        :object_nl      => "\n",
-        :array_nl       => "\n"
+        indent: '  ',
+        space: ' ',
+        object_nl: "\n",
+        array_nl: "\n"
       )
     ensure
       $VERBOSE = old
@@ -138,7 +138,7 @@ module JSON
   # _opts_ can have the following
   # keys:
   # * *max_nesting*: The maximum depth of nesting allowed in the parsed data
-  #   structures. Disable depth checking with :max_nesting => false. It defaults
+  #   structures. Disable depth checking with max_nesting: false. It defaults
   #   to 100.
   # * *allow_nan*: If set to true, allow NaN, Infinity and -Infinity in
   #   defiance of RFC 4627 to be parsed by the Parser. This option defaults
@@ -161,7 +161,7 @@ module JSON
   #
   # _opts_ can have the following keys:
   # * *max_nesting*: The maximum depth of nesting allowed in the parsed data
-  #   structures. Enable depth checking with :max_nesting => anInteger. The parse!
+  #   structures. Enable depth checking with max_nesting: anInteger. The parse!
   #   methods defaults to not doing max depth checking: This can be dangerous
   #   if someone wants to fill up your stack.
   # * *allow_nan*: If set to true, allow NaN, Infinity, and -Infinity in
@@ -172,8 +172,8 @@ module JSON
   #   defaults to false.
   def parse!(source, opts = {})
     opts = {
-      :max_nesting  => false,
-      :allow_nan    => true
+      max_nesting: false,
+      allow_nan: true
     }.update(opts)
     Parser.new(source, opts).parse
   end
@@ -199,7 +199,7 @@ module JSON
   #   encountered. This options defaults to false.
   # * *max_nesting*: The maximum depth of nesting allowed in the data
   #   structures from which JSON is to be generated. Disable depth checking
-  #   with :max_nesting => false, it defaults to 100.
+  #   with max_nesting: false, it defaults to 100.
   #
   # See also the fast_generate for the fastest creation method with the least
   # amount of sanity checks, and the pretty_generate method for some
@@ -299,10 +299,10 @@ module JSON
     attr_accessor :load_default_options
   end
   self.load_default_options = {
-    :max_nesting      => false,
-    :allow_nan        => true,
-    :quirks_mode      => true,
-    :create_additions => true,
+    max_nesting: false,
+    allow_nan: true,
+    quirks_mode: true,
+    create_additions: true,
   }
 
   # Load a ruby data structure from a JSON _source_ and return it. A source can
@@ -361,9 +361,9 @@ module JSON
     attr_accessor :dump_default_options
   end
   self.dump_default_options = {
-    :max_nesting => false,
-    :allow_nan   => true,
-    :quirks_mode => true,
+    max_nesting: false,
+    allow_nan: true,
+    quirks_mode: true,
   }
 
   # Dumps _obj_ as a JSON string, i.e. calls generate on the object and returns
@@ -390,7 +390,7 @@ module JSON
       end
     end
     opts = JSON.dump_default_options
-    opts = opts.merge(:max_nesting => limit) if limit
+    opts = opts.merge(max_nesting: limit) if limit
     result = generate(obj, opts)
     if anIO
       anIO.write result
@@ -443,7 +443,7 @@ module ::Kernel
   # one line.
   def j(*objs)
     objs.each do |obj|
-      puts JSON::generate(obj, :allow_nan => true, :max_nesting => false)
+      puts JSON::generate(obj, allow_nan: true, max_nesting: false)
     end
     nil
   end
@@ -452,7 +452,7 @@ module ::Kernel
   # indentation and over many lines.
   def jj(*objs)
     objs.each do |obj|
-      puts JSON::pretty_generate(obj, :allow_nan => true, :max_nesting => false)
+      puts JSON::pretty_generate(obj, allow_nan: true, max_nesting: false)
     end
     nil
   end

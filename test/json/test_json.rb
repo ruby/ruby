@@ -78,11 +78,11 @@ class TestJSON < Test::Unit::TestCase
     assert_equal_float [-3.141], parse('[-3141.0e-3]')
     assert_equal_float [-3.141], parse('[-3141e-3]')
     assert_raises(ParserError) { parse('[NaN]') }
-    assert parse('[NaN]', :allow_nan => true).first.nan?
+    assert parse('[NaN]', allow_nan: true).first.nan?
     assert_raises(ParserError) { parse('[Infinity]') }
-    assert_equal [1.0/0], parse('[Infinity]', :allow_nan => true)
+    assert_equal [1.0/0], parse('[Infinity]', allow_nan: true)
     assert_raises(ParserError) { parse('[-Infinity]') }
-    assert_equal [-1.0/0], parse('[-Infinity]', :allow_nan => true)
+    assert_equal [-1.0/0], parse('[-Infinity]', allow_nan: true)
     assert_equal([""], parse('[""]'))
     assert_equal(["foobar"], parse('["foobar"]'))
     assert_equal([{}], parse('[{}]'))
@@ -108,42 +108,42 @@ class TestJSON < Test::Unit::TestCase
 
   def test_parse_json_primitive_values
     assert_raise(JSON::ParserError) { JSON.parse('') }
-    assert_raise(JSON::ParserError) { JSON.parse('', :quirks_mode => true) }
+    assert_raise(JSON::ParserError) { JSON.parse('', quirks_mode: true) }
     assert_raise(TypeError) { JSON::Parser.new(nil).parse }
-    assert_raise(TypeError) { JSON::Parser.new(nil, :quirks_mode => true).parse }
+    assert_raise(TypeError) { JSON::Parser.new(nil, quirks_mode: true).parse }
     assert_raise(TypeError) { JSON.parse(nil) }
-    assert_raise(TypeError) { JSON.parse(nil, :quirks_mode => true) }
+    assert_raise(TypeError) { JSON.parse(nil, quirks_mode: true) }
     assert_raise(JSON::ParserError) { JSON.parse('  /* foo */ ') }
-    assert_raise(JSON::ParserError) { JSON.parse('  /* foo */ ', :quirks_mode => true) }
+    assert_raise(JSON::ParserError) { JSON.parse('  /* foo */ ', quirks_mode: true) }
     parser = JSON::Parser.new('null')
     assert_equal false, parser.quirks_mode?
     assert_raise(JSON::ParserError) { parser.parse }
     assert_raise(JSON::ParserError) { JSON.parse('null') }
-    assert_equal nil, JSON.parse('null', :quirks_mode => true)
-    parser = JSON::Parser.new('null', :quirks_mode => true)
+    assert_equal nil, JSON.parse('null', quirks_mode: true)
+    parser = JSON::Parser.new('null', quirks_mode: true)
     assert_equal true, parser.quirks_mode?
     assert_equal nil, parser.parse
     assert_raise(JSON::ParserError) { JSON.parse('false') }
-    assert_equal false, JSON.parse('false', :quirks_mode => true)
+    assert_equal false, JSON.parse('false', quirks_mode: true)
     assert_raise(JSON::ParserError) { JSON.parse('true') }
-    assert_equal true, JSON.parse('true', :quirks_mode => true)
+    assert_equal true, JSON.parse('true', quirks_mode: true)
     assert_raise(JSON::ParserError) { JSON.parse('23') }
-    assert_equal 23, JSON.parse('23', :quirks_mode => true)
+    assert_equal 23, JSON.parse('23', quirks_mode: true)
     assert_raise(JSON::ParserError) { JSON.parse('1') }
-    assert_equal 1, JSON.parse('1', :quirks_mode => true)
+    assert_equal 1, JSON.parse('1', quirks_mode: true)
     assert_raise(JSON::ParserError) { JSON.parse('3.141') }
-    assert_in_delta 3.141, JSON.parse('3.141', :quirks_mode => true), 1E-3
+    assert_in_delta 3.141, JSON.parse('3.141', quirks_mode: true), 1E-3
     assert_raise(JSON::ParserError) { JSON.parse('18446744073709551616') }
-    assert_equal 2 ** 64, JSON.parse('18446744073709551616', :quirks_mode => true)
+    assert_equal 2 ** 64, JSON.parse('18446744073709551616', quirks_mode: true)
     assert_raise(JSON::ParserError) { JSON.parse('"foo"') }
-    assert_equal 'foo', JSON.parse('"foo"', :quirks_mode => true)
-    assert_raise(JSON::ParserError) { JSON.parse('NaN', :allow_nan => true) }
-    assert JSON.parse('NaN', :quirks_mode => true, :allow_nan => true).nan?
-    assert_raise(JSON::ParserError) { JSON.parse('Infinity', :allow_nan => true) }
-    assert JSON.parse('Infinity', :quirks_mode => true, :allow_nan => true).infinite?
-    assert_raise(JSON::ParserError) { JSON.parse('-Infinity', :allow_nan => true) }
-    assert JSON.parse('-Infinity', :quirks_mode => true, :allow_nan => true).infinite?
-    assert_raise(JSON::ParserError) { JSON.parse('[ 1, ]', :quirks_mode => true) }
+    assert_equal 'foo', JSON.parse('"foo"', quirks_mode: true)
+    assert_raise(JSON::ParserError) { JSON.parse('NaN', allow_nan: true) }
+    assert JSON.parse('NaN', quirks_mode: true, allow_nan: true).nan?
+    assert_raise(JSON::ParserError) { JSON.parse('Infinity', allow_nan: true) }
+    assert JSON.parse('Infinity', quirks_mode: true, allow_nan: true).infinite?
+    assert_raise(JSON::ParserError) { JSON.parse('-Infinity', allow_nan: true) }
+    assert JSON.parse('-Infinity', quirks_mode: true, allow_nan: true).infinite?
+    assert_raise(JSON::ParserError) { JSON.parse('[ 1, ]', quirks_mode: true) }
   end
 
   if Array.method_defined?(:permutation)
@@ -243,14 +243,14 @@ class TestJSON < Test::Unit::TestCase
   end
 
   def test_parse_array_custom_array_derived_class
-    res = parse('[1,2]', :array_class => SubArray)
+    res = parse('[1,2]', array_class: SubArray)
     assert_equal([1,2], res)
     assert_equal(SubArray, res.class)
     assert res.shifted?
   end
 
   def test_parse_array_custom_non_array_derived_class
-    res = parse('[1,2]', :array_class => SubArrayWrapper)
+    res = parse('[1,2]', array_class: SubArrayWrapper)
     assert_equal([1,2], res.data)
     assert_equal(SubArrayWrapper, res.class)
     assert res.shifted?
@@ -303,21 +303,21 @@ class TestJSON < Test::Unit::TestCase
   end
 
   def test_parse_object_custom_hash_derived_class
-    res = parse('{"foo":"bar"}', :object_class => SubHash)
+    res = parse('{"foo":"bar"}', object_class: SubHash)
     assert_equal({"foo" => "bar"}, res)
     assert_equal(SubHash, res.class)
     assert res.item_set?
   end
 
   def test_parse_object_custom_non_hash_derived_class
-    res = parse('{"foo":"bar"}', :object_class => SubOpenStruct)
+    res = parse('{"foo":"bar"}', object_class: SubOpenStruct)
     assert_equal "bar", res.foo
     assert_equal(SubOpenStruct, res.class)
     assert res.item_set?
   end
 
   def test_parse_generic_object
-    res = parse('{"foo":"bar", "baz":{}}', :object_class => JSON::GenericObject)
+    res = parse('{"foo":"bar", "baz":{}}', object_class: JSON::GenericObject)
     assert_equal(JSON::GenericObject, res.class)
     assert_equal "bar", res.foo
     assert_equal "bar", res["foo"]
@@ -329,12 +329,12 @@ class TestJSON < Test::Unit::TestCase
   def test_generate_core_subclasses_with_new_to_json
     obj = SubHash2["foo" => SubHash2["bar" => true]]
     obj_json = JSON(obj)
-    obj_again = JSON.parse(obj_json, :create_additions => true)
+    obj_again = JSON.parse(obj_json, create_additions: true)
     assert_kind_of SubHash2, obj_again
     assert_kind_of SubHash2, obj_again['foo']
     assert obj_again['foo']['bar']
     assert_equal obj, obj_again
-    assert_equal ["foo"], JSON(JSON(SubArray2["foo"]), :create_additions => true)
+    assert_equal ["foo"], JSON(JSON(SubArray2["foo"]), create_additions: true)
   end
 
   def test_generate_core_subclasses_with_default_to_json
@@ -443,41 +443,41 @@ EOT
   end
 
   def test_nesting
-    assert_raises(JSON::NestingError) { JSON.parse '[[]]', :max_nesting => 1 }
-    assert_raises(JSON::NestingError) { JSON.parser.new('[[]]', :max_nesting => 1).parse }
-    assert_equal [[]], JSON.parse('[[]]', :max_nesting => 2)
+    assert_raises(JSON::NestingError) { JSON.parse '[[]]', max_nesting: 1 }
+    assert_raises(JSON::NestingError) { JSON.parser.new('[[]]', max_nesting: 1).parse }
+    assert_equal [[]], JSON.parse('[[]]', max_nesting: 2)
     too_deep = '[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[["Too deep"]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]'
     too_deep_ary = eval too_deep
     assert_raises(JSON::NestingError) { JSON.parse too_deep }
     assert_raises(JSON::NestingError) { JSON.parser.new(too_deep).parse }
-    assert_raises(JSON::NestingError) { JSON.parse too_deep, :max_nesting => 100 }
-    ok = JSON.parse too_deep, :max_nesting => 101
+    assert_raises(JSON::NestingError) { JSON.parse too_deep, max_nesting: 100 }
+    ok = JSON.parse too_deep, max_nesting: 101
     assert_equal too_deep_ary, ok
-    ok = JSON.parse too_deep, :max_nesting => nil
+    ok = JSON.parse too_deep, max_nesting: nil
     assert_equal too_deep_ary, ok
-    ok = JSON.parse too_deep, :max_nesting => false
+    ok = JSON.parse too_deep, max_nesting: false
     assert_equal too_deep_ary, ok
-    ok = JSON.parse too_deep, :max_nesting => 0
+    ok = JSON.parse too_deep, max_nesting: 0
     assert_equal too_deep_ary, ok
-    assert_raises(JSON::NestingError) { JSON.generate [[]], :max_nesting => 1 }
-    assert_equal '[[]]', JSON.generate([[]], :max_nesting => 2)
+    assert_raises(JSON::NestingError) { JSON.generate [[]], max_nesting: 1 }
+    assert_equal '[[]]', JSON.generate([[]], max_nesting: 2)
     assert_raises(JSON::NestingError) { JSON.generate too_deep_ary }
-    assert_raises(JSON::NestingError) { JSON.generate too_deep_ary, :max_nesting => 100 }
-    ok = JSON.generate too_deep_ary, :max_nesting => 101
+    assert_raises(JSON::NestingError) { JSON.generate too_deep_ary, max_nesting: 100 }
+    ok = JSON.generate too_deep_ary, max_nesting: 101
     assert_equal too_deep, ok
-    ok = JSON.generate too_deep_ary, :max_nesting => nil
+    ok = JSON.generate too_deep_ary, max_nesting: nil
     assert_equal too_deep, ok
-    ok = JSON.generate too_deep_ary, :max_nesting => false
+    ok = JSON.generate too_deep_ary, max_nesting: false
     assert_equal too_deep, ok
-    ok = JSON.generate too_deep_ary, :max_nesting => 0
+    ok = JSON.generate too_deep_ary, max_nesting: 0
     assert_equal too_deep, ok
   end
 
   def test_symbolize_names
     assert_equal({ "foo" => "bar", "baz" => "quux" },
       JSON.parse('{"foo":"bar", "baz":"quux"}'))
-    assert_equal({ :foo => "bar", :baz => "quux" },
-      JSON.parse('{"foo":"bar", "baz":"quux"}', :symbolize_names => true))
+    assert_equal({ foo: "bar", baz: "quux" },
+      JSON.parse('{"foo":"bar", "baz":"quux"}', symbolize_names: true))
   end
 
   def test_load
@@ -497,8 +497,8 @@ EOT
 
   def test_load_with_options
     small_hash  = JSON("foo" => 'bar')
-    symbol_hash = { :foo => 'bar' }
-    assert_equal symbol_hash, JSON.load(small_hash, nil, :symbolize_names => true)
+    symbol_hash = { foo: 'bar' }
+    assert_equal symbol_hash, JSON.load(small_hash, nil, symbolize_names: true)
   end
 
   def test_dump

@@ -25,7 +25,7 @@ class TestResolvDNS < Test::Unit::TestCase
 
   # [ruby-core:65836]
   def test_resolve_with_2_ndots
-    conf = Resolv::DNS::Config.new :nameserver => ['127.0.0.1'], :ndots => 2
+    conf = Resolv::DNS::Config.new nameserver: ['127.0.0.1'], ndots: 2
     assert conf.single?
 
     candidates = []
@@ -48,7 +48,7 @@ class TestResolvDNS < Test::Unit::TestCase
       _, server_port, _, server_address = u.addr
       begin
         client_thread = Thread.new {
-          Resolv::DNS.open(:nameserver_port => [[server_address, server_port]]) {|dns|
+          Resolv::DNS.open(nameserver_port: [[server_address, server_port]]) {|dns|
             dns.getresources("foo.example.org", Resolv::DNS::Resource::IN::A)
           }
         }
@@ -130,7 +130,7 @@ class TestResolvDNS < Test::Unit::TestCase
     with_udp('127.0.0.1', 0) {|u|
       _, port , _, host = u.addr
       start = nil
-      rv = Resolv::DNS.open(:nameserver_port => [[host, port]]) {|dns|
+      rv = Resolv::DNS.open(nameserver_port: [[host, port]]) {|dns|
         dns.timeouts = 0.1
         start = Time.now
         dns.getresources("foo.example.org", Resolv::DNS::Resource::IN::A)
@@ -140,7 +140,7 @@ class TestResolvDNS < Test::Unit::TestCase
       assert rv.empty?, "unexpected: #{rv.inspect} (expected empty)"
       assert_operator 0.1, :<=, diff
 
-      rv = Resolv::DNS.open(:nameserver_port => [[host, port]]) {|dns|
+      rv = Resolv::DNS.open(nameserver_port: [[host, port]]) {|dns|
         dns.timeouts = [ 0.1, 0.2 ]
         start = Time.now
         dns.getresources("foo.example.org", Resolv::DNS::Resource::IN::A)
@@ -161,7 +161,7 @@ class TestResolvDNS < Test::Unit::TestCase
     # Another program may use the port.
     # But no way to prevent it.
     Timeout.timeout(5) do
-      Resolv::DNS.open(:nameserver_port => [[host, port]]) {|dns|
+      Resolv::DNS.open(nameserver_port: [[host, port]]) {|dns|
         assert_equal([], dns.getresources("test-no-server.example.org", Resolv::DNS::Resource::IN::A))
       }
     end

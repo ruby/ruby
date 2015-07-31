@@ -4,47 +4,47 @@
 def demoHelpContents(t)
   height = t.font.metrics(:linespace)
   height = 18 if height < 18
-  t.configure(:showroot=>false, :showbuttons=>false, :showlines=>false,
-              :itemheight=>height, :selectmode=>:browse)
+  t.configure(showroot:false, showbuttons:false, showlines:false,
+              itemheight:height, selectmode::browse)
 
   init_pics('help-*')
 
   if $Version_1_1_OrLater
-    t.column_create(:text=>'Help Contents')
+    t.column_create(text:'Help Contents')
   else # TreeCtrl 1.0
-    t.column_configure(0, :text=>'Help Contents')
+    t.column_configure(0, text:'Help Contents')
   end
 
   # Define a new item state
   t.state_define('mouseover')
 
-  t.element_create('e1', :image, :image=>@images['help-page'])
-  t.element_create('e2', :image, :image=>[
+  t.element_create('e1', :image, image:@images['help-page'])
+  t.element_create('e2', :image, image:[
                      @images['help-book-open'], ['open'],
                      @images['help-book-closed'], [],
                    ])
   t.element_create('e3', :text,
-                   :font=>[t.font.dup.underline(true), ['mouseover']],
-                   :fill=>[
+                   font:[t.font.dup.underline(true), ['mouseover']],
+                   fill:[
                      @SystemHighlightText, ['selected', 'focus'],
                      'blue', ['mouseover']
                    ])
-  t.element_create('e4', :rect, :showfocus=>true,
-                   :fill=>[@SystemHighlight, ['selected', 'focus']])
+  t.element_create('e4', :rect, showfocus:true,
+                   fill:[@SystemHighlight, ['selected', 'focus']])
 
   # book
   s = t.style_create('s1')
   t.style_elements(s, ['e4', 'e1', 'e3'])
-  t.style_layout(s, 'e1', :padx=>[0,4], :expand=>:ns)
-  t.style_layout(s, 'e3', :expand=>:ns)
-  t.style_layout(s, 'e4', :union=>['e3'], :iexpand=>:ns, :ipadx=>2)
+  t.style_layout(s, 'e1', padx:[0,4], expand::ns)
+  t.style_layout(s, 'e3', expand::ns)
+  t.style_layout(s, 'e4', union:['e3'], iexpand::ns, ipadx:2)
 
   # page
   s = t.style_create('s2')
   t.style_elements(s, ['e4', 'e2', 'e3'])
-  t.style_layout(s, 'e2', :padx=>[0,4], :expand=>:ns)
-  t.style_layout(s, 'e3', :expand=>:ns)
-  t.style_layout(s, 'e4', :union=>['e3'], :iexpand=>:ns, :ipadx=>2)
+  t.style_layout(s, 'e2', padx:[0,4], expand::ns)
+  t.style_layout(s, 'e3', expand::ns)
+  t.style_layout(s, 'e4', union:['e3'], iexpand::ns, ipadx:2)
 
   parentList = [:root, '', '', '', '', '', '']
   parent = :root
@@ -68,7 +68,7 @@ def demoHelpContents(t)
   ].each{|depth, style, text|
     item = t.item_create
     t.item_style_set(item, 0, style)
-    t.item_element_configure(item, 0, 'e3', :text=>text)
+    t.item_element_configure(item, 0, 'e3', text:text)
     if $Version_1_1_OrLater
       t.item_collapse(item)
     else # TreeCtrl 1.0
@@ -141,31 +141,31 @@ end
 def demoHelpContents2(t)
   height = t.font.metrics(:linespace)
   height = 18 if height < 18
-  t.configure(:showroot=>false, :showbuttons=>false, :showlines=>false,
-              :itemheight=>height, :selectmode=>:browse)
+  t.configure(showroot:false, showbuttons:false, showlines:false,
+              itemheight:height, selectmode::browse)
 
   init_pics('help-*')
 
   if $Version_1_1_OrLater
-    t.column_create(:text=>'Help Contents')
+    t.column_create(text:'Help Contents')
   else # TreeCtrl 1.0
-    t.column_configure(0, :text=>'Help Contents')
+    t.column_configure(0, text:'Help Contents')
   end
 
-  t.element_create('e1', :image, :image=>@images['help-page'])
-  t.element_create('e2', :image, :image=>[
+  t.element_create('e1', :image, image:@images['help-page'])
+  t.element_create('e2', :image, image:[
                      @images['help-book-open'], ['open'],
                      @images['help-book-closed'], [],
                    ])
   t.element_create('e3', :text,
-                   :fill=>[
+                   fill:[
                      @SystemHighlightText, ['selected', 'focus'],
                      'blue', []
                    ])
-  t.element_create('e4', :rect, :showfocus=>true,
-                   :fill=>[@SystemHighligh, ['selected', 'focus']])
-  t.element_create('e5', :text, :font=>t.font.dup.underline(true),
-                   :fill=>[
+  t.element_create('e4', :rect, showfocus:true,
+                   fill:[@SystemHighligh, ['selected', 'focus']])
+  t.element_create('e5', :text, font:t.font.dup.underline(true),
+                   fill:[
                      @SystemHighlightText, ['selected', 'focus'],
                      'blue', []
                    ])
@@ -173,30 +173,30 @@ def demoHelpContents2(t)
   # book
   s = t.style_create('s1')
   t.style_elements(s, ['e4', 'e1', 'e3'])
-  t.style_layout(s, 'e1', :padx=>[0,4], :expand=>:ns)
-  t.style_layout(s, 'e3', :expand=>:ns)
-  t.style_layout(s, 'e4', :union=>['e3'], :iexpand=>:ns, :ipadx=>2)
+  t.style_layout(s, 'e1', padx:[0,4], expand::ns)
+  t.style_layout(s, 'e3', expand::ns)
+  t.style_layout(s, 'e4', union:['e3'], iexpand::ns, ipadx:2)
 
   # page
   s = t.style_create('s2')
   t.style_elements(s, ['e4', 'e2', 'e3'])
-  t.style_layout(s, 'e2', :padx=>[0,4], :expand=>:ns)
-  t.style_layout(s, 'e3', :expand=>:ns)
-  t.style_layout(s, 'e4', :union=>['e3'], :iexpand=>:ns, :ipadx=>2)
+  t.style_layout(s, 'e2', padx:[0,4], expand::ns)
+  t.style_layout(s, 'e3', expand::ns)
+  t.style_layout(s, 'e4', union:['e3'], iexpand::ns, ipadx:2)
 
   # book (focus)
   s = t.style_create('s1.f')
   t.style_elements(s, ['e4', 'e1', 'e5'])
-  t.style_layout(s, 'e1', :padx=>[0,4], :expand=>:ns)
-  t.style_layout(s, 'e5', :expand=>:ns)
-  t.style_layout(s, 'e4', :union=>['e5'], :iexpand=>:ns, :ipadx=>2)
+  t.style_layout(s, 'e1', padx:[0,4], expand::ns)
+  t.style_layout(s, 'e5', expand::ns)
+  t.style_layout(s, 'e4', union:['e5'], iexpand::ns, ipadx:2)
 
   # page (focus)
   s = t.style_create('s2')
   t.style_elements(s, ['e4', 'e2', 'e5'])
-  t.style_layout(s, 'e2', :padx=>[0,4], :expand=>:ns)
-  t.style_layout(s, 'e5', :expand=>:ns)
-  t.style_layout(s, 'e4', :union=>['e5'], :iexpand=>:ns, :ipadx=>2)
+  t.style_layout(s, 'e2', padx:[0,4], expand::ns)
+  t.style_layout(s, 'e5', expand::ns)
+  t.style_layout(s, 'e4', union:['e5'], iexpand::ns, ipadx:2)
 
   parentList = [:root, '', '', '', '', '', '']
   parent = :root
@@ -220,7 +220,7 @@ def demoHelpContents2(t)
   ].each{|depth, style, text|
     item = t.item_create
     t.item_style_set(item, 0, style)
-    t.item_element_configure(item, 0, 'e3', :text=>text)
+    t.item_element_configure(item, 0, 'e3', text:text)
     if $Version_1_1_OrLater
       t.item_collapse(item)
     else # TreeCtrl 1.0
@@ -340,7 +340,7 @@ def helpLeave1(w, x, y)
   return unless @Priv.exist?('buttonMode')
   case @Priv['buttonMode']
   when 'header'
-    w.column_configure(@Priv['column'], :sunken=>false)
+    w.column_configure(@Priv['column'], sunken:false)
   end
 end
 

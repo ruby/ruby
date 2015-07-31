@@ -1,15 +1,15 @@
 require 'tk'
 
-TkMessage.new(:width=>400, :text=><<EOM).pack
+TkMessage.new(width:400, text:<<EOM).pack
 This sample shows how to use Tk::EncodedString class. \
 This reads 'iso2022-kr' text (from discription of \
 Korean language environment of GNU Emacs 20.7.2) \
 and inserts the text into the text widget.
 EOM
 
-t1 = TkText.new(:height=>5).pack
-t2 = TkText.new(:height=>5).pack
-t3 = TkText.new(:height=>5).pack
+t1 = TkText.new(height:5).pack
+t2 = TkText.new(height:5).pack
+t3 = TkText.new(height:5).pack
 
 src_str = IO.readlines(File.join(File.dirname(__FILE__),'iso2022-kr.txt')).join
 

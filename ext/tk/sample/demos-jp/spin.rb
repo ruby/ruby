@@ -17,11 +17,11 @@ $spin_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
-base_frame = TkFrame.new($spin_demo).pack(:fill=>:both, :expand=>true)
+base_frame = TkFrame.new($spin_demo).pack(fill::both, expand:true)
 
 TkLabel.new(base_frame,
-            :font=>$font, :wraplength=>'5i', :justify=>:left,
-            :text=><<EOL).pack(:side=>:top)
+            font:$font, wraplength:'5i', justify::left,
+            text:<<EOL).pack(side::top)
 下には３種類のスピンボックスが表示されています。
 それぞれ、マウスで選択して文字を入力することができます。
 編集操作としては、Emacs 形式の多くに加えて、一般的な
@@ -43,16 +43,16 @@ Backspace と Control-h とは入力カーソルの左側の文字を
 EOL
 
 TkFrame.new(base_frame){|f|
-  pack(:side=>:bottom, :fill=>:x, :pady=>'2m')
+  pack(side::bottom, fill::x, pady:'2m')
 
-  TkButton.new(f, :text=>'閉じる', :width=>15, :command=>proc{
+  TkButton.new(f, text:'閉じる', width:15, command:proc{
                  $spin_demo.destroy
                  $spin_demo = nil
-               }).pack(:side=>:left, :expand=>true)
+               }).pack(side::left, expand:true)
 
-  TkButton.new(f, :text=>'コード参照', :width=>15, :command=>proc{
+  TkButton.new(f, text:'コード参照', width:15, command:proc{
                  showCode 'spin'
-               }).pack(:side=>:left, :expand=>true)
+               }).pack(side::left, expand:true)
 }
 
 australianCities = [
@@ -61,11 +61,11 @@ australianCities = [
 ]
 
 [
-  TkSpinbox.new(base_frame, :from=>1, :to=>10, :width=>10, :validate=>:key,
-                :validatecommand=>[
+  TkSpinbox.new(base_frame, from:1, to:10, width:10, validate::key,
+                validatecommand:[
                   proc{|s| s == '' || /^[+-]?\d+$/ =~ s }, '%P'
                 ]),
-  TkSpinbox.new(base_frame, :from=>0, :to=>3, :increment=>0.5,
-                :format=>'%05.2f', :width=>10),
-  TkSpinbox.new(base_frame, :values=>australianCities, :width=>10)
-].each{|sbox| sbox.pack(:side=>:top, :pady=>5, :padx=>10)}
+  TkSpinbox.new(base_frame, from:0, to:3, increment:0.5,
+                format:'%05.2f', width:10),
+  TkSpinbox.new(base_frame, values:australianCities, width:10)
+].each{|sbox| sbox.pack(side::top, pady:5, padx:10)}

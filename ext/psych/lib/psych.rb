@@ -33,7 +33,7 @@ require 'psych/class_loader'
 #
 #   # Emit some YAML
 #   Psych.dump("foo")     # => "--- foo\n...\n"
-#   { :a => 'b'}.to_yaml  # => "---\n:a: b\n"
+#   { a: 'b'}.to_yaml  # => "---\n:a: b\n"
 #
 # Got more time on your hands?  Keep on reading!
 #
@@ -94,10 +94,10 @@ require 'psych/class_loader'
 #   Psych.dump(['a', 'b'], StringIO.new)  # => #<StringIO:0x000001009d0890>
 #
 #   # Dump an array with indentation set
-#   Psych.dump(['a', ['b']], :indentation => 3) # => "---\n- a\n-  - b\n"
+#   Psych.dump(['a', ['b']], indentation: 3) # => "---\n- a\n-  - b\n"
 #
 #   # Dump an array to an IO with indentation set
-#   Psych.dump(['a', ['b']], StringIO.new, :indentation => 3)
+#   Psych.dump(['a', ['b']], StringIO.new, indentation: 3)
 #
 # ==== Writing to a file
 #
@@ -395,10 +395,10 @@ module Psych
   #   Psych.dump(['a', 'b'], StringIO.new)  # => #<StringIO:0x000001009d0890>
   #
   #   # Dump an array with indentation set
-  #   Psych.dump(['a', ['b']], :indentation => 3) # => "---\n- a\n-  - b\n"
+  #   Psych.dump(['a', ['b']], indentation: 3) # => "---\n- a\n-  - b\n"
   #
   #   # Dump an array to an IO with indentation set
-  #   Psych.dump(['a', ['b']], StringIO.new, :indentation => 3)
+  #   Psych.dump(['a', ['b']], StringIO.new, indentation: 3)
   def self.dump o, io = nil, options = {}
     if Hash === io
       options = io

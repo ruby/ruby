@@ -47,16 +47,16 @@ module RSS
       @topic_contents = \
       [
        {
-         :link => "http://meerkat.oreillynet.com/?c=cat23",
-         :title => "Data: XML",
-         :description => "A Meerkat channel",
+         link: "http://meerkat.oreillynet.com/?c=cat23",
+         title: "Data: XML",
+         description: "A Meerkat channel",
        },
        {
-         :link => "http://dmoz.org/Computers/Data_Formats/Markup_Languages/XML/",
-         :title => "XML",
-         :subject => "XML",
-         :description => "DMOZ category",
-         :topics => @topic_topics_lis,
+         link: "http://dmoz.org/Computers/Data_Formats/Markup_Languages/XML/",
+         title: "XML",
+         subject: "XML",
+         description: "DMOZ category",
+         topics: @topic_topics_lis,
        }
       ]
 

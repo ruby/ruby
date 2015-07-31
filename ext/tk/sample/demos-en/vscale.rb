@@ -15,7 +15,7 @@ $vscale_demo = TkToplevel.new {|w|
 }
 positionWindow($vscale_demo)
 
-base_frame = TkFrame.new($vscale_demo).pack(:fill=>:both, :expand=>true)
+base_frame = TkFrame.new($vscale_demo).pack(fill::both, expand:true)
 
 msg = TkLabel.new(base_frame) {
   font $font

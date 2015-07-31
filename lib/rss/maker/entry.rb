@@ -101,14 +101,14 @@ module RSS
 
             def _set_default_values
               keep = {
-                :authors => authors.to_a.dup,
-                :contributors => contributors.to_a.dup,
-                :categories => categories.to_a.dup,
-                :id => id,
-                :links => links.to_a.dup,
-                :rights => @rights,
-                :title => @title,
-                :updated => updated,
+                authors: authors.to_a.dup,
+                contributors: contributors.to_a.dup,
+                categories: categories.to_a.dup,
+                id: id,
+                links: links.to_a.dup,
+                rights: @rights,
+                title: @title,
+                updated: updated,
               }
               authors.replace(@maker.channel.authors) if keep[:authors].empty?
               if keep[:contributors].empty?

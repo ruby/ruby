@@ -874,7 +874,7 @@ module DRb
     def self.open_server(uri, config)
       uri = 'druby://:0' unless uri
       host, port, _ = parse_uri(uri)
-      config = {:tcp_original_host => host}.update(config)
+      config = {tcp_original_host: host}.update(config)
       if host.size == 0
         host = getservername
         soc = open_server_inaddr_any(host, port)
@@ -1333,12 +1333,12 @@ module DRb
 
     def self.make_config(hash={})  # :nodoc:
       default_config = {
-        :idconv => @@idconv,
-        :verbose => @@verbose,
-        :tcp_acl => @@acl,
-        :load_limit => @@load_limit,
-        :argc_limit => @@argc_limit,
-        :safe_level => @@safe_level
+        idconv: @@idconv,
+        verbose: @@verbose,
+        tcp_acl: @@acl,
+        load_limit: @@load_limit,
+        argc_limit: @@argc_limit,
+        safe_level: @@safe_level
       }
       default_config.update(hash)
     end
@@ -1395,7 +1395,7 @@ module DRb
       else
         acl = config_or_acl || @@acl
         config = {
-          :tcp_acl => acl
+          tcp_acl: acl
         }
       end
 

@@ -2195,15 +2195,15 @@ End
       assert_equal(["foo\n", "bar\n", "baz\n"], a)
 
       a = []
-      IO.foreach(t.path, {:mode => "r" }) {|x| a << x }
+      IO.foreach(t.path, {mode: "r" }) {|x| a << x }
       assert_equal(["foo\n", "bar\n", "baz\n"], a)
 
       a = []
-      IO.foreach(t.path, {:open_args => [] }) {|x| a << x }
+      IO.foreach(t.path, {open_args: [] }) {|x| a << x }
       assert_equal(["foo\n", "bar\n", "baz\n"], a)
 
       a = []
-      IO.foreach(t.path, {:open_args => ["r"] }) {|x| a << x }
+      IO.foreach(t.path, {open_args: ["r"] }) {|x| a << x }
       assert_equal(["foo\n", "bar\n", "baz\n"], a)
 
       a = []
@@ -2412,7 +2412,7 @@ End
         open("slnk", File::RDONLY|File::NOFOLLOW) {}
       }
       assert_raise(Errno::EMLINK, Errno::ELOOP) {
-        File.foreach("slnk", :open_args=>[File::RDONLY|File::NOFOLLOW]) {}
+        File.foreach("slnk", open_args:[File::RDONLY|File::NOFOLLOW]) {}
       }
     }
   end if /freebsd|linux/ =~ RUBY_PLATFORM and defined? File::NOFOLLOW
@@ -2723,9 +2723,9 @@ End
       f.close
       assert_not_nil(f = File.open('numeric',  File::WRONLY|File::TRUNC|File::CREAT))
       f.close
-      assert_not_nil(f = File.open('hash-symbolic', :mode => 'w'))
+      assert_not_nil(f = File.open('hash-symbolic', mode: 'w'))
       f.close
-      assert_not_nil(f = File.open('hash-numeric', :mode => File::WRONLY|File::TRUNC|File::CREAT), feature4742)
+      assert_not_nil(f = File.open('hash-numeric', mode: File::WRONLY|File::TRUNC|File::CREAT), feature4742)
       f.close
       assert_nothing_raised(bug6055) {f = File.open('hash-symbolic', binmode: true)}
       f.close

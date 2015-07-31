@@ -15,7 +15,7 @@ $menu84_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
-base_frame = TkFrame.new($menu84_demo).pack(:fill=>:both, :expand=>true)
+base_frame = TkFrame.new($menu84_demo).pack(fill::both, expand:true)
 
 begin
   windowingsystem = Tk.windowingsystem()
@@ -170,7 +170,7 @@ TkMenu.new($menu84_frame, 'tearoff'=>false) {|m|
         'command'=>proc{print "You invoked the #{icon} bitmap\n"})
   }
 
-  entryconfigure(2, :columnbreak=>true)
+  entryconfigure(2, columnbreak:true)
 }
 
 TkMenu.new($menu84_frame, 'tearoff'=>false) {|m|

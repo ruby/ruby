@@ -82,17 +82,17 @@ class TestRDocStore < XrefTestCase
     @s.clean_cache_collection ancestors
 
     expected = {
-      :ancestors                   => ancestors,
-      :attributes                  => attrs,
-      :class_methods               => cmethods,
-      :c_class_variables           => {},
-      :c_singleton_class_variables => {},
-      :encoding                    => nil,
-      :instance_methods            => imethods,
-      :modules                     => modules,
-      :pages                       => pages,
-      :main                        => main,
-      :title                       => title,
+      ancestors: ancestors,
+      attributes: attrs,
+      class_methods: cmethods,
+      c_class_variables: {},
+      c_singleton_class_variables: {},
+      encoding: nil,
+      instance_methods: imethods,
+      modules: modules,
+      pages: pages,
+      main: main,
+      title: title,
     }
 
     @s.save_cache
@@ -393,15 +393,15 @@ class TestRDocStore < XrefTestCase
 
   def test_load_cache
     cache = {
-      :c_class_variables           =>
+      c_class_variables:
         { 'file.c' => { 'cKlass' => 'Klass' } },
-      :c_singleton_class_variables =>
+      c_singleton_class_variables:
         { 'file.c' => { 'sKlass' => 'KlassSingle' } },
-      :encoding                    => :encoding_value,
-      :methods                     => { "Object" => %w[Object#method] },
-      :main                        => @page.full_name,
-      :modules                     => %w[Object],
-      :pages                       => [],
+      encoding: :encoding_value,
+      methods: { "Object" => %w[Object#method] },
+      main: @page.full_name,
+      modules: %w[Object],
+      pages: [],
     }
 
     Dir.mkdir @tmpdir
@@ -431,13 +431,13 @@ class TestRDocStore < XrefTestCase
     skip "Encoding not implemented" unless Object.const_defined? :Encoding
 
     cache = {
-      :c_class_variables           => {},
-      :c_singleton_class_variables => {},
-      :encoding                    => Encoding::ISO_8859_1,
-      :main                        => nil,
-      :methods                     => { "Object" => %w[Object#method] },
-      :modules                     => %w[Object],
-      :pages                       => [],
+      c_class_variables: {},
+      c_singleton_class_variables: {},
+      encoding: Encoding::ISO_8859_1,
+      main: nil,
+      methods: { "Object" => %w[Object#method] },
+      modules: %w[Object],
+      pages: [],
     }
 
     Dir.mkdir @tmpdir
@@ -457,17 +457,17 @@ class TestRDocStore < XrefTestCase
 
   def test_load_cache_no_cache
     cache = {
-      :ancestors                   => {},
-      :attributes                  => {},
-      :class_methods               => {},
-      :c_class_variables           => {},
-      :c_singleton_class_variables => {},
-      :encoding                    => nil,
-      :instance_methods            => {},
-      :main                        => nil,
-      :modules                     => [],
-      :pages                       => [],
-      :title                       => nil,
+      ancestors: {},
+      attributes: {},
+      class_methods: {},
+      c_class_variables: {},
+      c_singleton_class_variables: {},
+      encoding: nil,
+      instance_methods: {},
+      main: nil,
+      modules: [],
+      pages: [],
+      title: nil,
     }
 
     @s.load_cache
@@ -477,12 +477,12 @@ class TestRDocStore < XrefTestCase
 
   def test_load_cache_legacy
     cache = {
-      :ancestors        => {},
-      :attributes       => {},
-      :class_methods    => {},
-      :encoding         => :encoding_value,
-      :instance_methods => { "Object" => %w[Object#method] },
-      :modules          => %w[Object],
+      ancestors: {},
+      attributes: {},
+      class_methods: {},
+      encoding: :encoding_value,
+      instance_methods: { "Object" => %w[Object#method] },
+      modules: %w[Object],
       # no :pages
       # no :main
       # no :c_class_variables
@@ -498,16 +498,16 @@ class TestRDocStore < XrefTestCase
     @s.load_cache
 
     expected = {
-      :ancestors                   => {},
-      :attributes                  => {},
-      :class_methods               => {},
-      :c_class_variables           => {},
-      :c_singleton_class_variables => {},
-      :encoding                    => :encoding_value,
-      :instance_methods            => { "Object" => %w[Object#method] },
-      :main                        => nil,
-      :modules                     => %w[Object],
-      :pages                       => [],
+      ancestors: {},
+      attributes: {},
+      class_methods: {},
+      c_class_variables: {},
+      c_singleton_class_variables: {},
+      encoding: :encoding_value,
+      instance_methods: { "Object" => %w[Object#method] },
+      main: nil,
+      modules: %w[Object],
+      pages: [],
     }
 
     assert_equal expected, @s.cache
@@ -614,22 +614,22 @@ class TestRDocStore < XrefTestCase
     assert_file File.join(@tmpdir, 'cache.ri')
 
     expected = {
-      :ancestors => {
+      ancestors: {
         'Object::SubClass' => %w[Incl Object],
       },
-      :attributes => { 'Object' => ['attr_accessor attr'] },
-      :class_methods => { 'Object' => %w[cmethod] },
-      :c_class_variables => {},
-      :c_singleton_class_variables => {},
-      :instance_methods => {
+      attributes: { 'Object' => ['attr_accessor attr'] },
+      class_methods: { 'Object' => %w[cmethod] },
+      c_class_variables: {},
+      c_singleton_class_variables: {},
+      instance_methods: {
         'Object' => %w[attr method method! method_bang],
         'Object::SubClass' => %w[method],
       },
-      :main => nil,
-      :modules => %w[Mod Object Object::SubClass],
-      :encoding => nil,
-      :pages => %w[README.txt],
-      :title => nil,
+      main: nil,
+      modules: %w[Mod Object Object::SubClass],
+      encoding: nil,
+      pages: %w[README.txt],
+      title: nil,
     }
 
     expected[:ancestors]['Object'] = %w[BasicObject] if defined?(::BasicObject)
@@ -682,22 +682,22 @@ class TestRDocStore < XrefTestCase
     }
 
     expected = {
-      :ancestors => {
+      ancestors: {
         'Object::SubClass' => %w[Incl Object],
       },
-      :attributes => { 'Object' => ['attr_accessor attr'] },
-      :class_methods => { 'Object' => %w[cmethod] },
-      :c_class_variables => c_class_variables,
-      :c_singleton_class_variables => c_singleton_class_variables,
-      :instance_methods => {
+      attributes: { 'Object' => ['attr_accessor attr'] },
+      class_methods: { 'Object' => %w[cmethod] },
+      c_class_variables: c_class_variables,
+      c_singleton_class_variables: c_singleton_class_variables,
+      instance_methods: {
         'Object' => %w[method method! method_bang],
         'Object::SubClass' => %w[method],
       },
-      :main => @page.full_name,
-      :modules => %w[Object Object::SubClass],
-      :encoding => :encoding_value,
-      :pages => %w[README.txt],
-      :title => 'title',
+      main: @page.full_name,
+      modules: %w[Object Object::SubClass],
+      encoding: :encoding_value,
+      pages: %w[README.txt],
+      title: 'title',
     }
 
     expected[:ancestors]['Object'] = %w[BasicObject] if defined?(::BasicObject)

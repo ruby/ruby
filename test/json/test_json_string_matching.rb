@@ -27,13 +27,13 @@ class TestJSONStringMatching < Test::Unit::TestCase
     t = TestTime.new
     t_json = [ t ].to_json
     assert_equal [ t ],
-      JSON.parse(t_json, :create_additions => true,
-        :match_string => { /\A\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{4}\z/ => TestTime })
+      JSON.parse(t_json, create_additions: true,
+        match_string: { /\A\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{4}\z/ => TestTime })
     assert_equal [ t.strftime('%FT%T%z') ],
-      JSON.parse(t_json, :create_additions => true,
-        :match_string => { /\A\d{3}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{4}\z/ => TestTime })
+      JSON.parse(t_json, create_additions: true,
+        match_string: { /\A\d{3}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{4}\z/ => TestTime })
     assert_equal [ t.strftime('%FT%T%z') ],
       JSON.parse(t_json,
-        :match_string => { /\A\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{4}\z/ => TestTime })
+        match_string: { /\A\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{4}\z/ => TestTime })
   end
 end

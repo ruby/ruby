@@ -221,12 +221,12 @@ end
 # test
 ################################################
 if __FILE__ == $0
-  TkLabel.new(:text=>'TkTextFrame is an example of Tk::ScrollbarComposite module.').pack
+  TkLabel.new(text:'TkTextFrame is an example of Tk::ScrollbarComposite module.').pack
   f = TkFrame.new.pack('fill'=>'x')
   #t = TkTextFrame.new.pack
-  t = TkTextFrame.new(:textborderwidth=>3,
-                      :textrelief=>:ridge,
-                      :scrollbarrelief=>:ridge).pack
+  t = TkTextFrame.new(textborderwidth:3,
+                      textrelief::ridge,
+                      scrollbarrelief::ridge).pack
   p t.configinfo
   TkButton.new(f, 'text'=>'vscr OFF',
                'command'=>proc{t.vscroll(false)}).pack('side'=>'right')
@@ -241,8 +241,8 @@ if __FILE__ == $0
 
   # Tk.default_widget_set = :Ttk
 
-  TkFrame.new.pack(:pady=>10)
-  TkLabel.new(:text=>'The following is another example of Tk::ScrollbarComposite module.').pack
+  TkFrame.new.pack(pady:10)
+  TkLabel.new(text:'The following is another example of Tk::ScrollbarComposite module.').pack
 
   #----------------------------------
   class ScrListbox < TkListbox
@@ -257,23 +257,23 @@ if __FILE__ == $0
   end
   #----------------------------------
 
-  f = TkFrame.new.pack(:pady=>5)
-  lbox = ScrListbox.new(f).pack(:side=>:left)
+  f = TkFrame.new.pack(pady:5)
+  lbox = ScrListbox.new(f).pack(side::left)
   lbox.value = %w(aa bb cc dd eeeeeeeeeeeeeeeeeeeeeeeeee ffffffffff gg hh ii jj kk ll mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm nn oo pp qq)
-  fb = TkFrame.new(f).pack(:expand=>true, :fill=>:y, :padx=>5)
+  fb = TkFrame.new(f).pack(expand:true, fill::y, padx:5)
   TkButton.new(fb, 'text'=>'lbox hscr OFF',
-               'command'=>proc{lbox.hscroll(false)}).pack(:side=>:bottom,
-                                                          :fill=>:x)
+               'command'=>proc{lbox.hscroll(false)}).pack(side::bottom,
+                                                          fill::x)
   TkButton.new(fb, 'text'=>'lbox hscr ON',
-               'command'=>proc{lbox.hscroll(true)}).pack(:side=>:bottom,
-                                                          :fill=>:x)
-  TkFrame.new(fb).pack(:pady=>5, :side=>:bottom)
+               'command'=>proc{lbox.hscroll(true)}).pack(side::bottom,
+                                                          fill::x)
+  TkFrame.new(fb).pack(pady:5, side::bottom)
   TkButton.new(fb, 'text'=>'lbox vscr OFF',
-               'command'=>proc{lbox.vscroll(false)}).pack(:side=>:bottom,
-                                                          :fill=>:x)
+               'command'=>proc{lbox.vscroll(false)}).pack(side::bottom,
+                                                          fill::x)
   TkButton.new(fb, 'text'=>'lbox vscr ON',
-               'command'=>proc{lbox.vscroll(true)}).pack(:side=>:bottom,
-                                                          :fill=>:x)
+               'command'=>proc{lbox.vscroll(true)}).pack(side::bottom,
+                                                          fill::x)
 
   ############################################
 

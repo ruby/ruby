@@ -13,8 +13,8 @@ class TestWEBrickHTTPServer < Test::Unit::TestCase
 
   def test_mount
     httpd = WEBrick::HTTPServer.new(
-      :Logger => NoLog,
-      :DoNotListen=>true
+      Logger: NoLog,
+      DoNotListen:true
     )
     httpd.mount("/", :Root)
     httpd.mount("/foo", :Foo)
@@ -82,12 +82,12 @@ class TestWEBrickHTTPServer < Test::Unit::TestCase
 
   def httpd(addr, port, host, ali)
     config ={
-      :Logger      => NoLog,
-      :DoNotListen => true,
-      :BindAddress => addr,
-      :Port        => port,
-      :ServerName  => host,
-      :ServerAlias => ali,
+      Logger: NoLog,
+      DoNotListen: true,
+      BindAddress: addr,
+      Port: port,
+      ServerName: host,
+      ServerAlias: ali,
     }
     return WEBrick::HTTPServer.new(config)
   end
@@ -224,11 +224,11 @@ class TestWEBrickHTTPServer < Test::Unit::TestCase
     accepted = started = stopped = 0
     requested0 = requested1 = 0
     config = {
-      :ServerName => "localhost",
-      :AcceptCallback => Proc.new{ accepted += 1 },
-      :StartCallback => Proc.new{ started += 1 },
-      :StopCallback => Proc.new{ stopped += 1 },
-      :RequestCallback => Proc.new{|req, res| requested0 += 1 },
+      ServerName: "localhost",
+      AcceptCallback: Proc.new{ accepted += 1 },
+      StartCallback: Proc.new{ started += 1 },
+      StopCallback: Proc.new{ stopped += 1 },
+      RequestCallback: Proc.new{|req, res| requested0 += 1 },
     }
     log_tester = lambda {|log, access_log|
       assert(log.find {|s| %r{ERROR `/' not found\.} =~ s })
@@ -236,13 +236,13 @@ class TestWEBrickHTTPServer < Test::Unit::TestCase
     }
     TestWEBrick.start_httpserver(config, log_tester){|server, addr, port, log|
       vhost_config = {
-        :ServerName => "myhostname",
-        :BindAddress => addr,
-        :Port => port,
-        :DoNotListen => true,
-        :Logger => NoLog,
-        :AccessLog => [],
-        :RequestCallback => Proc.new{|req, res| requested1 += 1 },
+        ServerName: "myhostname",
+        BindAddress: addr,
+        Port: port,
+        DoNotListen: true,
+        Logger: NoLog,
+        AccessLog: [],
+        RequestCallback: Proc.new{|req, res| requested1 += 1 },
       }
       server.virtual_host(WEBrick::HTTPServer.new(vhost_config))
 
@@ -289,7 +289,7 @@ class TestWEBrickHTTPServer < Test::Unit::TestCase
     t = Thread.new do
       begin
         config = {
-          :ServerName => "localhost"
+          ServerName: "localhost"
         }
         TestWEBrick.start_httpserver(config) do |server, addr, port, log|
           body_strs = [ 'aaaaaa', 'bb', 'cccc' ]
@@ -335,7 +335,7 @@ class TestWEBrickHTTPServer < Test::Unit::TestCase
 
   def test_response_io_without_chunked_set
     config = {
-      :ServerName => "localhost"
+      ServerName: "localhost"
     }
     log_tester = lambda {|log, access_log|
       assert_equal(1, log.length)
@@ -367,8 +367,8 @@ class TestWEBrickHTTPServer < Test::Unit::TestCase
   def test_request_handler_callback_is_deprecated
     requested = 0
     config = {
-      :ServerName => "localhost",
-      :RequestHandler => Proc.new{|req, res| requested += 1 },
+      ServerName: "localhost",
+      RequestHandler: Proc.new{|req, res| requested += 1 },
     }
     log_tester = lambda {|log, access_log|
       assert_equal(2, log.length)
@@ -390,7 +390,7 @@ class TestWEBrickHTTPServer < Test::Unit::TestCase
   def test_shutdown_with_busy_keepalive_connection
     requested = 0
     config = {
-      :ServerName => "localhost",
+      ServerName: "localhost",
     }
     TestWEBrick.start_httpserver(config){|server, addr, port, log|
       server.mount_proc("/", lambda {|req, res| res.body = "heffalump" })

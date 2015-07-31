@@ -17,7 +17,7 @@ class Tk::Root<TkWindow
   def Root.new(keys=nil, &b)
     unless TkCore::INTERP.tk_windows['.']
       TkCore::INTERP.tk_windows['.'] =
-        super(:without_creating=>true, :widgetname=>'.'){}
+        super(without_creating:true, widgetname:'.'){}
     end
     root = TkCore::INTERP.tk_windows['.']
 

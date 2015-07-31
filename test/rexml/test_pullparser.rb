@@ -10,7 +10,7 @@ module REXMLTests
       <!DOCTYPE blah>
       <a>foo &lt;<b attribute="value">bar</b> nooo</a>'
       parser = REXML::Parsers::PullParser.new(source)
-      res = { :text=>0 }
+      res = { text:0 }
       until parser.empty?
         results = parser.pull
         res[ :xmldecl ] = true if results.xmldecl?

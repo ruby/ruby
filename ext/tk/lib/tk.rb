@@ -3766,8 +3766,8 @@ module TkConfigMethod
   private :__confinfo_cmd
 
   def __configinfo_struct
-    {:key=>0, :alias=>1, :db_name=>1, :db_class=>2,
-      :default_value=>3, :current_value=>4}
+    {key:0, alias:1, db_name:1, db_class:2,
+      default_value:3, current_value:4}
   end
   private :__configinfo_struct
 

@@ -286,7 +286,7 @@ class TkWarningObj < TkDialogObj
         parent = nil
       end
     end
-    super(parent, :message=>mes)
+    super(parent, message:mes)
   end
 
   def show(mes = nil)

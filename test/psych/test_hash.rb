@@ -20,7 +20,7 @@ module Psych
 
     def setup
       super
-      @hash = { :a => 'b' }
+      @hash = { a: 'b' }
     end
 
     def test_referenced_hash_with_ivar

@@ -11,57 +11,57 @@ module RSS
       end
 
       @dc_elems = {
-        :title => "hoge",
-        :description =>
+        title: "hoge",
+        description:
           " XML is placing increasingly heavy loads on
           the existing technical infrastructure of the Internet.",
-        :creator => "Rael Dornfest (mailto:rael@oreilly.com)",
-        :subject => "XML",
-        :publisher => "The O'Reilly Network",
-        :contributor => "hogehoge",
-        :type => "fugafuga",
-        :format => "hohoho",
-        :identifier => "fufufu",
-        :source => "barbar",
-        :language => "ja",
-        :relation => "cococo",
-        :rights => "Copyright (c) 2000 O'Reilly &amp; Associates, Inc.",
-        :date => t,
+        creator: "Rael Dornfest (mailto:rael@oreilly.com)",
+        subject: "XML",
+        publisher: "The O'Reilly Network",
+        contributor: "hogehoge",
+        type: "fugafuga",
+        format: "hohoho",
+        identifier: "fufufu",
+        source: "barbar",
+        language: "ja",
+        relation: "cococo",
+        rights: "Copyright (c) 2000 O'Reilly &amp; Associates, Inc.",
+        date: t,
       }
     end
 
     def test_setup_maker_entry(with_dc=true)
       authors = [
                  {
-                   :name => "Bob",
-                   :uri => "http://example.com/~bob/",
-                   :email => "bob@example.com",
+                   name: "Bob",
+                   uri: "http://example.com/~bob/",
+                   email: "bob@example.com",
                  },
                  {
-                   :name => "Alice",
-                   :uri => "http://example.com/~alice/",
-                   :email => "alice@example.com",
+                   name: "Alice",
+                   uri: "http://example.com/~alice/",
+                   email: "alice@example.com",
                  },
                 ]
       categories = [
                     {
-                      :term => "music",
-                      :label => "Music",
+                      term: "music",
+                      label: "Music",
                     },
                     {
-                      :term => "book",
-                      :scheme => "http://example.com/category/book/",
-                      :label => "Book",
+                      term: "book",
+                      scheme: "http://example.com/category/book/",
+                      label: "Book",
                     },
                    ]
       contributors = [
                       {
-                        :name => "Chris",
-                        :email => "chris@example.com",
+                        name: "Chris",
+                        email: "chris@example.com",
                       },
                       {
-                        :name => "Eva",
-                        :uri => "http://example.com/~eva/",
+                        name: "Eva",
+                        uri: "http://example.com/~eva/",
                       },
                      ]
       id = "urn:uuid:8b105336-7e20-45fc-bb78-37fb3e1db25a"
@@ -126,18 +126,18 @@ module RSS
 
       new_authors = new_feed.authors.collect do |author|
         {
-          :name => author.name.content,
-          :uri => author.uri.content,
-          :email => author.email.content,
+          name: author.name.content,
+          uri: author.uri.content,
+          email: author.email.content,
         }
       end
       assert_equal(authors, new_authors)
 
       new_categories = new_feed.categories.collect do |category|
         {
-          :term => category.term,
-          :scheme => category.scheme,
-          :label => category.label,
+          term: category.term,
+          scheme: category.scheme,
+          label: category.label,
         }.reject {|key, value| value.nil?}
       end
       assert_equal(categories, new_categories)
@@ -232,10 +232,10 @@ module RSS
         feed_size.times do |i|
           entry_class = RSS::Atom::Entry
           entry = entry_class.new
-          entry.title = entry_class::Title.new(:content => "#{title}#{i}")
-          entry.links << entry_class::Link.new(:href => "#{link}#{i}")
-          entry.summary = entry_class::Summary.new(:content => "#{summary}#{i}")
-          entry.updated = entry_class::Updated.new(:content => updated + i * 60)
+          entry.title = entry_class::Title.new(content: "#{title}#{i}")
+          entry.links << entry_class::Link.new(href: "#{link}#{i}")
+          entry.summary = entry_class::Summary.new(content: "#{summary}#{i}")
+          entry.updated = entry_class::Updated.new(content: updated + i * 60)
           entry.setup_maker(maker.items)
         end
         maker.items.do_sort = false
@@ -253,10 +253,10 @@ module RSS
         feed_size.times do |i|
           entry_class = RSS::Atom::Entry
           entry = entry_class.new
-          entry.title = entry_class::Title.new(:content => "#{title}#{i}")
-          entry.links << entry_class::Link.new(:href => "#{link}#{i}")
-          entry.summary = entry_class::Summary.new(:content => "#{summary}#{i}")
-          entry.updated = entry_class::Updated.new(:content => updated + i * 60)
+          entry.title = entry_class::Title.new(content: "#{title}#{i}")
+          entry.links << entry_class::Link.new(href: "#{link}#{i}")
+          entry.summary = entry_class::Summary.new(content: "#{summary}#{i}")
+          entry.updated = entry_class::Updated.new(content: updated + i * 60)
           entry.setup_maker(maker.items)
         end
         maker.items.do_sort = true

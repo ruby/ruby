@@ -81,8 +81,8 @@ class RDoc::Servlet < WEBrick::HTTPServlet::AbstractServlet
     end
 
     @asset_dirs = {
-      :darkfish   => darkfish_dir,
-      :json_index =>
+      darkfish: darkfish_dir,
+      json_index:
         File.expand_path('../generator/template/json_index/', __FILE__),
     }
   end
@@ -367,10 +367,10 @@ version.  If you're viewing Ruby's documentation, include the version of ruby.
     end
 
     index = {
-      :index => {
-        :searchIndex     => search_index,
-        :longSearchIndex => search_index,
-        :info            => info,
+      index: {
+        searchIndex: search_index,
+        longSearchIndex: search_index,
+        info: info,
       }
     }
 

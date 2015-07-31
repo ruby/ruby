@@ -1481,7 +1481,7 @@ The ri pager can be set with the 'RI_PAGER' environment variable or the
   def start_server
     require 'webrick'
 
-    server = WEBrick::HTTPServer.new :Port => @server
+    server = WEBrick::HTTPServer.new Port: @server
 
     extra_doc_dirs = @stores.map {|s| s.type == :extra ? s.path : nil}.compact
 

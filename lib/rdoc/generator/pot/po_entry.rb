@@ -54,13 +54,13 @@ msgstr #{format_message(@msgstr)}
 
   def merge other_entry
     options = {
-      :extracted_comment  => merge_string(@extracted_comment,
+      extracted_comment: merge_string(@extracted_comment,
                                           other_entry.extracted_comment),
-      :translator_comment => merge_string(@translator_comment,
+      translator_comment: merge_string(@translator_comment,
                                           other_entry.translator_comment),
-      :references         => merge_array(@references,
+      references: merge_array(@references,
                                          other_entry.references),
-      :flags              => merge_array(@flags,
+      flags: merge_array(@flags,
                                          other_entry.flags),
     }
     self.class.new(@msgid, options)

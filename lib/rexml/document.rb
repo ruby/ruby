@@ -147,7 +147,7 @@ module REXML
 
     # :call-seq:
     #    doc.write(output=$stdout, indent=-1, transtive=false, ie_hack=false, encoding=nil)
-    #    doc.write(options={:output => $stdout, :indent => -1, :transtive => false, :ie_hack => false, :encoding => nil})
+    #    doc.write(options={output: $stdout, indent: -1, transtive: false, ie_hack: false, encoding: nil})
     #
     # Write the XML tree out, optionally with indent.  This writes out the
     # entire XML document, including XML declarations, doctype declarations,
@@ -170,7 +170,7 @@ module REXML
     #   Document.new("<a><b/></a>").write(output)
     #
     #   output = ""
-    #   Document.new("<a><b/></a>").write(:output => output, :indent => 2)
+    #   Document.new("<a><b/></a>").write(output: output, indent: 2)
     #
     # See also the classes in the rexml/formatters package for the proper way
     # to change the default formatting of XML output.

@@ -20,8 +20,8 @@ class Gem::Commands::UpdateCommand < Gem::Command
 
   def initialize
     super 'update', 'Update installed gems to the latest version',
-      :document => %w[rdoc ri],
-      :force    => false
+      document: %w[rdoc ri],
+      force: false
 
     add_install_update_options
 

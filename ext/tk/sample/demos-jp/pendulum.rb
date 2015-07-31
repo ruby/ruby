@@ -19,7 +19,7 @@ $pendulum_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
-base_frame = TkFrame.new($pendulum_demo).pack(:fill=>:both, :expand=>true)
+base_frame = TkFrame.new($pendulum_demo).pack(fill::both, expand:true)
 
 # create label
 msg = TkLabel.new(base_frame) {
@@ -53,51 +53,51 @@ TkFrame.new(base_frame) {|frame|
 class PendulumAnimationDemo
   def initialize(frame)
     # Create some structural widgets
-    @pane = TkPanedWindow.new(frame, :orient=>:horizontal).pack(:fill=>:both, :expand=>true)
-#    @pane.add(@lf1 = TkLabelFrame.new(@pane, :text=>'Pendulum Simulation'))
-#    @pane.add(@lf2 = TkLabelFrame.new(@pane, :text=>'Phase Space'))
-    @lf1 = TkLabelFrame.new(@pane, :text=>'Pendulum Simulation')
-    @lf2 = TkLabelFrame.new(@pane, :text=>'Phase Space')
+    @pane = TkPanedWindow.new(frame, orient::horizontal).pack(fill::both, expand:true)
+#    @pane.add(@lf1 = TkLabelFrame.new(@pane, text:'Pendulum Simulation'))
+#    @pane.add(@lf2 = TkLabelFrame.new(@pane, text:'Phase Space'))
+    @lf1 = TkLabelFrame.new(@pane, text:'Pendulum Simulation')
+    @lf2 = TkLabelFrame.new(@pane, text:'Phase Space')
 
     # Create the canvas containing the graphical representation of the
     # simulated system.
-    @c = TkCanvas.new(@lf1, :width=>320, :height=>200, :background=>'white',
-                      :borderwidth=>2, :relief=>:sunken)
-    TkcText.new(@c, 5, 5, :anchor=>:nw,
-                :text=>'Click to Adjust Bob Start Position')
+    @c = TkCanvas.new(@lf1, width:320, height:200, background:'white',
+                      borderwidth:2, relief::sunken)
+    TkcText.new(@c, 5, 5, anchor::nw,
+                text:'Click to Adjust Bob Start Position')
     # Coordinates of these items don't matter; they will be set properly below
-    @plate = TkcLine.new(@c, 0, 25, 320, 25, :width=>2, :fill=>'grey50')
-    @rod = TkcLine.new(@c, 1, 1, 1, 1, :width=>3, :fill=>'black')
+    @plate = TkcLine.new(@c, 0, 25, 320, 25, width:2, fill:'grey50')
+    @rod = TkcLine.new(@c, 1, 1, 1, 1, width:3, fill:'black')
     @bob = TkcOval.new(@c, 1, 1, 2, 2,
-                       :width=>3, :fill=>'yellow', :outline=>'black')
-    TkcOval.new(@c, 155, 20, 165, 30, :fill=>'grey50', :outline=>'')
+                       width:3, fill:'yellow', outline:'black')
+    TkcOval.new(@c, 155, 20, 165, 30, fill:'grey50', outline:'')
 
     # pack
-    @c.pack(:fill=>:both, :expand=>true)
+    @c.pack(fill::both, expand:true)
 
     # Create the canvas containing the phase space graph; this consists of
     # a line that gets gradually paler as it ages, which is an extremely
     # effective visual trick.
-    @k = TkCanvas.new(@lf2, :width=>320, :height=>200, :background=>'white',
-                      :borderwidth=>2, :relief=>:sunken)
-    @y_axis = TkcLine.new(@k, 160, 200, 160, 0, :fill=>'grey75', :arrow=>:last)
-    @x_axis = TkcLine.new(@k, 0, 100, 320, 100, :fill=>'grey75', :arrow=>:last)
+    @k = TkCanvas.new(@lf2, width:320, height:200, background:'white',
+                      borderwidth:2, relief::sunken)
+    @y_axis = TkcLine.new(@k, 160, 200, 160, 0, fill:'grey75', arrow::last)
+    @x_axis = TkcLine.new(@k, 0, 100, 320, 100, fill:'grey75', arrow::last)
 
     @graph = {}
     90.step(0, -10){|i|
       # Coordinates of these items don't matter;
       # they will be set properly below
-      @graph[i] = TkcLine.new(@k, 0, 0, 1, 1, :smooth=>true, :fill=>"grey#{i}")
+      @graph[i] = TkcLine.new(@k, 0, 0, 1, 1, smooth:true, fill:"grey#{i}")
     }
 
     # labels
-    @label_theta = TkcText.new(@k, 0, 0, :anchor=>:ne,
-                               :text=>'q', :font=>'Symbol 8')
-    @label_dtheta = TkcText.new(@k, 0, 0, :anchor=>:ne,
-                               :text=>'dq', :font=>'Symbol 8')
+    @label_theta = TkcText.new(@k, 0, 0, anchor::ne,
+                               text:'q', font:'Symbol 8')
+    @label_dtheta = TkcText.new(@k, 0, 0, anchor::ne,
+                               text:'dq', font:'Symbol 8')
 
     # pack
-    @k.pack(:fill=>:both, :expand=>true)
+    @k.pack(fill::both, expand:true)
 
     # Initialize some variables
     @points = []

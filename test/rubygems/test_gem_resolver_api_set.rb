@@ -36,10 +36,10 @@ class TestGemResolverAPISet < Gem::TestCase
     spec_fetcher
 
     data = [
-      { :name         => 'a',
-        :number       => '1',
-        :platform     => 'ruby',
-        :dependencies => [], },
+      { name: 'a',
+        number: '1',
+        platform: 'ruby',
+        dependencies: [], },
     ]
 
     @fetcher.data["#{@dep_uri}?gems=a"] = Marshal.dump data
@@ -59,10 +59,10 @@ class TestGemResolverAPISet < Gem::TestCase
     spec_fetcher
 
     data = [
-      { :name         => 'a',
-        :number       => '1',
-        :platform     => 'ruby',
-        :dependencies => [], },
+      { name: 'a',
+        number: '1',
+        platform: 'ruby',
+        dependencies: [], },
     ]
 
     @fetcher.data["#{@dep_uri}?gems=a"] = Marshal.dump data
@@ -111,10 +111,10 @@ class TestGemResolverAPISet < Gem::TestCase
     spec_fetcher
 
     data = [
-      { :name         => 'a',
-        :number       => '1',
-        :platform     => 'ruby',
-        :dependencies => [], },
+      { name: 'a',
+        number: '1',
+        platform: 'ruby',
+        dependencies: [], },
     ]
 
     @fetcher.data["#{@dep_uri}?gems=a,b"] = Marshal.dump data
@@ -135,10 +135,10 @@ class TestGemResolverAPISet < Gem::TestCase
     spec_fetcher
 
     data = [
-      { :name         => 'a',
-        :number       => '1',
-        :platform     => 'ruby',
-        :dependencies => [], },
+      { name: 'a',
+        number: '1',
+        platform: 'ruby',
+        dependencies: [], },
     ]
 
     @fetcher.data["#{@dep_uri}?gems=a"] = Marshal.dump data
@@ -160,10 +160,10 @@ class TestGemResolverAPISet < Gem::TestCase
     spec_fetcher
 
     data = [
-      { :name         => 'a',
-        :number       => '1',
-        :platform     => 'ruby',
-        :dependencies => [], },
+      { name: 'a',
+        number: '1',
+        platform: 'ruby',
+        dependencies: [], },
     ]
 
     @fetcher.data["#{@dep_uri}?gems=a,b"] = Marshal.dump data
@@ -184,10 +184,10 @@ class TestGemResolverAPISet < Gem::TestCase
     spec_fetcher
 
     data = [
-      { :name         => 'a',
-        :number       => '1',
-        :platform     => 'ruby',
-        :dependencies => [], },
+      { name: 'a',
+        number: '1',
+        platform: 'ruby',
+        dependencies: [], },
     ]
 
     @fetcher.data["#{@dep_uri}?gems=a,b"] = Marshal.dump data
