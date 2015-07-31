@@ -72,8 +72,6 @@ static VALUE eSSLErrorWaitWritable;
 #define ossl_ssl_get_sync_close(o)   rb_iv_get((o),"@sync_close")
 #define ossl_ssl_get_x509(o)         rb_iv_get((o),"@x509")
 #define ossl_ssl_get_key(o)          rb_iv_get((o),"@key")
-#define ossl_ssl_get_tmp_dh(o)       rb_iv_get((o),"@tmp_dh")
-#define ossl_ssl_get_tmp_ecdh(o)     rb_iv_get((o),"@tmp_ecdh")
 
 #define ossl_ssl_set_io(o,v)         rb_iv_set((o),"@io",(v))
 #define ossl_ssl_set_ctx(o,v)        rb_iv_set((o),"@context",(v))
@@ -260,24 +258,24 @@ ossl_call_tmp_dh_callback(VALUE args)
     dh = rb_apply(cb, rb_intern("call"), args);
     pkey = GetPKeyPtr(dh);
     if (EVP_PKEY_type(pkey->type) != EVP_PKEY_DH) return Qfalse;
-    ossl_ssl_set_tmp_dh(rb_ary_entry(args, 0), dh);
 
-    return Qtrue;
+    return dh;
 }
 
 static DH*
 ossl_tmp_dh_callback(SSL *ssl, int is_export, int keylength)
 {
-    VALUE args, success, rb_ssl;
+    VALUE args, dh, rb_ssl;
 
     rb_ssl = (VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx);
 
     args = rb_ary_new_from_args(3, rb_ssl, INT2FIX(is_export), INT2FIX(keylength));
 
-    success = rb_protect(ossl_call_tmp_dh_callback, args, NULL);
-    if (!RTEST(success)) return NULL;
+    dh = rb_protect(ossl_call_tmp_dh_callback, args, NULL);
+    if (!RTEST(dh)) return NULL;
+    ossl_ssl_set_tmp_dh(rb_ssl, dh);
 
-    return GetPKeyPtr(ossl_ssl_get_tmp_dh(rb_ssl))->pkey.dh;
+    return GetPKeyPtr(dh)->pkey.dh;
 }
 #endif /* OPENSSL_NO_DH */
 
@@ -295,24 +293,24 @@ ossl_call_tmp_ecdh_callback(VALUE args)
     ecdh = rb_apply(cb, rb_intern("call"), args);
     pkey = GetPKeyPtr(ecdh);
     if (EVP_PKEY_type(pkey->type) != EVP_PKEY_EC) return Qfalse;
-    ossl_ssl_set_tmp_ecdh(rb_ary_entry(args, 0), ecdh);
 
-    return Qtrue;
+    return ecdh;
 }
 
 static EC_KEY*
 ossl_tmp_ecdh_callback(SSL *ssl, int is_export, int keylength)
 {
-    VALUE args, success, rb_ssl;
+    VALUE args, ecdh, rb_ssl;
 
     rb_ssl = (VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx);
 
     args = rb_ary_new_from_args(3, rb_ssl, INT2FIX(is_export), INT2FIX(keylength));
 
-    success = rb_protect(ossl_call_tmp_ecdh_callback, args, NULL);
-    if (!RTEST(success)) return NULL;
+    ecdh = rb_protect(ossl_call_tmp_ecdh_callback, args, NULL);
+    if (!RTEST(ecdh)) return NULL;
+    ossl_ssl_set_tmp_ecdh(rb_ssl, ecdh);
 
-    return GetPKeyPtr(ossl_ssl_get_tmp_ecdh(rb_ssl))->pkey.ec;
+    return GetPKeyPtr(ecdh)->pkey.ec;
 }
 #endif
 
