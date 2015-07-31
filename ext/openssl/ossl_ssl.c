@@ -2347,7 +2347,7 @@ Init_ossl_ssl(void)
 # endif
 #endif
 
-#define ossl_ssl_def_const(x) rb_define_const(mSSL, #x, INT2NUM(SSL_##x))
+#define ossl_ssl_def_const(x) rb_define_const(mSSL, #x, LONG2NUM(SSL_##x))
 
     ossl_ssl_def_const(VERIFY_NONE);
     ossl_ssl_def_const(VERIFY_PEER);

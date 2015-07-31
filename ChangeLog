@@ -1,3 +1,9 @@
+Sat Aug  1 06:54:36 2015  Aaron Patterson <tenderlove@ruby-lang.org>
+
+	* ext/openssl/ossl_ssl.c (Init_ossl_ssl): OpenSSL declares these
+	  constants as longs, so we should follow that and use LONG2NUM.
+	  http://git.io/vOqxD
+
 Sat Aug  1 04:06:29 2015  Aaron Patterson <tenderlove@ruby-lang.org>
 
 	* ext/openssl/ossl_ssl.c (ossl_call_tmp_dh_callback): change callback
