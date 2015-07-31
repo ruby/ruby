@@ -1,3 +1,10 @@
+Sat Aug  1 03:27:12 2015  Aaron Patterson <tenderlove@ruby-lang.org>
+
+	* ext/openssl/ossl_ssl.c (ossl_call_tmp_ecdh_callback): The SSL socket
+	  always holds a reference to the SSLContext object, which will have
+	  the callback object.  Ask the context for the callback instead of
+	  storing the callback in two places.
+
 Sat Aug  1 03:14:07 2015  Aaron Patterson <tenderlove@ruby-lang.org>
 
 	* ext/openssl/lib/openssl/ssl.rb (module OpenSSL): convert
