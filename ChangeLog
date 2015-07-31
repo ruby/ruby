@@ -1,6 +1,6 @@
 Fri Jul 31 23:34:27 2015  Aaron Patterson <tenderlove@ruby-lang.org>
 
-	* .travis.yml: update libssl before running tests. 
+	* .travis.yml: update libssl before running tests.
 	  Thanks to Chris Sinjakli <chris@sinjakli.co.uk> for figuring out the
 	  travis settings!
 
