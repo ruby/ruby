@@ -10,6 +10,34 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     assert_equal(ctx.setup, nil)
   end
 
+  def test_options_defaults_to_OP_ALL
+    ctx = OpenSSL::SSL::SSLContext.new
+    assert_equal OpenSSL::SSL::OP_ALL, ctx.options
+  end
+
+  def test_setting_twice
+    ctx = OpenSSL::SSL::SSLContext.new
+    ctx.options = 4
+    assert_equal 4, ctx.options
+    ctx.options = OpenSSL::SSL::OP_ALL
+    assert_equal OpenSSL::SSL::OP_ALL, ctx.options
+  end
+
+  def test_options_setting_nil_means_all
+    ctx = OpenSSL::SSL::SSLContext.new
+    ctx.options = nil
+    assert_equal OpenSSL::SSL::OP_ALL, ctx.options
+  end
+
+  def test_setting_options_raises_after_setup
+    ctx = OpenSSL::SSL::SSLContext.new
+    options = ctx.options
+    ctx.setup
+    assert_raises(RuntimeError) do
+      ctx.options = options
+    end
+  end
+
   def test_ctx_setup_no_compression
     ctx = OpenSSL::SSL::SSLContext.new
     ctx.options = OpenSSL::SSL::OP_ALL | OpenSSL::SSL::OP_NO_COMPRESSION
