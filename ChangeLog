@@ -1,3 +1,12 @@
+Sun Aug  2 07:01:17 2015  Eric Wong  <e@80x24.org>
+
+	* ext/openssl/lib/openssl/buffering.rb (gets):
+	  avoid comparing fixnum with nil
+	* test/openssl/test_pair.rb: test gets with limit when EOF is hit
+	  Thanks to Bar Hofesh <bar.hofesh@safe-t.com> for the bug report
+	  and testing.
+	  [ruby-core:70149] [Bug #11400]
+
 Sat Aug  1 17:13:15 2015  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* lib/net/http/response.rb (Net::HTTPResponse::Inflater#finish):
