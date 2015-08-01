@@ -359,6 +359,7 @@ class Net::HTTPResponse
     # Finishes the inflate stream.
 
     def finish
+      return if @inflate.total_in == 0
       @inflate.finish
     end
 
