@@ -4713,13 +4713,22 @@ rb_thread_shield_wait(VALUE self)
     return rb_thread_shield_waiting(self) > 0 ? Qnil : Qfalse;
 }
 
+static VALUE
+thread_shield_get_mutex(VALUE self)
+{
+    VALUE mutex = GetThreadShieldPtr(self);
+    if (!mutex)
+	rb_raise(rb_eThreadError, "destroyed thread shield - %p", (void *)mutex);
+    return mutex;
+}
+
 /*
  * Release a thread shield, and return true if it has waiting threads.
  */
 VALUE
 rb_thread_shield_release(VALUE self)
 {
-    VALUE mutex = GetThreadShieldPtr(self);
+    VALUE mutex = thread_shield_get_mutex(self);
     rb_mutex_unlock(mutex);
     return rb_thread_shield_waiting(self) > 0 ? Qtrue : Qfalse;
 }
@@ -4730,7 +4739,7 @@ rb_thread_shield_release(VALUE self)
 VALUE
 rb_thread_shield_destroy(VALUE self)
 {
-    VALUE mutex = GetThreadShieldPtr(self);
+    VALUE mutex = thread_shield_get_mutex(self);
     DATA_PTR(self) = 0;
     rb_mutex_unlock(mutex);
     return rb_thread_shield_waiting(self) > 0 ? Qtrue : Qfalse;
