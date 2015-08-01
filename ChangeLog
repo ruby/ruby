@@ -1,3 +1,13 @@
+Sat Aug  1 09:09:46 2015  Aaron Patterson <tenderlove@ruby-lang.org>
+
+	* ext/openssl/ossl_ssl.c (ossl_sslctx_setup): Implement
+	  SSLContext#options and options= using SSL_CTX_set_options and
+	  SSL_CTX_get_options. This reduces the number of ivars we need and
+	  simplifies `ossl_sslctx_setup`.
+
+	* ext/openssl/lib/openssl/ssl.rb (module OpenSSL): Default `options`
+	  to SSL_OP_ALL
+
 Sat Aug  1 06:54:36 2015  Aaron Patterson <tenderlove@ruby-lang.org>
 
 	* ext/openssl/ossl_ssl.c (Init_ossl_ssl): OpenSSL declares these

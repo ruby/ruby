@@ -45,7 +45,6 @@ static VALUE eSSLErrorWaitWritable;
 #define ossl_sslctx_set_verify_mode(o,v) 	rb_iv_set((o),"@verify_mode",(v))
 #define ossl_sslctx_set_verify_dep(o,v)  	rb_iv_set((o),"@verify_depth",(v))
 #define ossl_sslctx_set_verify_cb(o,v)   	rb_iv_set((o),"@verify_callback",(v))
-#define ossl_sslctx_set_options(o,v)     	rb_iv_set((o),"@options",(v))
 #define ossl_sslctx_set_cert_store(o,v)  	rb_iv_set((o),"@cert_store",(v))
 #define ossl_sslctx_set_extra_cert(o,v)  	rb_iv_set((o),"@extra_chain_cert",(v))
 #define ossl_sslctx_set_client_cert_cb(o,v) 	rb_iv_set((o),"@client_cert_cb",(v))
@@ -60,7 +59,6 @@ static VALUE eSSLErrorWaitWritable;
 #define ossl_sslctx_get_verify_mode(o)   	rb_iv_get((o),"@verify_mode")
 #define ossl_sslctx_get_verify_dep(o)    	rb_iv_get((o),"@verify_depth")
 #define ossl_sslctx_get_verify_cb(o)     	rb_iv_get((o),"@verify_callback")
-#define ossl_sslctx_get_options(o)       	rb_iv_get((o),"@options")
 #define ossl_sslctx_get_cert_store(o)    	rb_iv_get((o),"@cert_store")
 #define ossl_sslctx_get_extra_cert(o)    	rb_iv_get((o),"@extra_chain_cert")
 #define ossl_sslctx_get_client_cert_cb(o) 	rb_iv_get((o),"@client_cert_cb")
@@ -666,6 +664,39 @@ ssl_info_cb(const SSL *ssl, int where, int val)
 }
 
 /*
+ * Gets various OpenSSL options.
+ */
+static VALUE
+ossl_sslctx_get_options(VALUE self)
+{
+    SSL_CTX *ctx;
+    GetSSLCTX(self, ctx);
+    return LONG2NUM(SSL_CTX_get_options(ctx));
+}
+
+/*
+ * Sets various OpenSSL options.
+ */
+static VALUE
+ossl_sslctx_set_options(VALUE self, VALUE options)
+{
+    SSL_CTX *ctx;
+
+    rb_check_frozen(self);
+    GetSSLCTX(self, ctx);
+
+    SSL_CTX_clear_options(ctx, SSL_CTX_get_options(ctx));
+
+    if (NIL_P(options)) {
+	SSL_CTX_set_options(ctx, SSL_OP_ALL);
+    } else {
+	SSL_CTX_set_options(ctx, NUM2LONG(options));
+    }
+
+    return self;
+}
+
+/*
  * call-seq:
  *    ctx.setup => Qtrue # first time
  *    ctx.setup => nil # thereafter
@@ -777,13 +808,6 @@ ossl_sslctx_setup(VALUE self)
 
     val = ossl_sslctx_get_verify_dep(self);
     if(!NIL_P(val)) SSL_CTX_set_verify_depth(ctx, NUM2INT(val));
-
-    val = ossl_sslctx_get_options(self);
-    if(!NIL_P(val)) {
-    	SSL_CTX_set_options(ctx, NUM2LONG(val));
-    } else {
-	SSL_CTX_set_options(ctx, SSL_OP_ALL);
-    }
 
 #ifdef HAVE_OPENSSL_NPN_NEGOTIATED
     val = rb_iv_get(self, "@npn_protocols");
@@ -2064,11 +2088,6 @@ Init_ossl_ssl(void)
     rb_attr(cSSLContext, rb_intern("verify_callback"), 1, 1, Qfalse);
 
     /*
-     * Sets various OpenSSL options.
-     */
-    rb_attr(cSSLContext, rb_intern("options"), 1, 1, Qfalse);
-
-    /*
      * An OpenSSL::X509::Store used for certificate verification
      */
     rb_attr(cSSLContext, rb_intern("cert_store"), 1, 1, Qfalse);
@@ -2291,6 +2310,8 @@ Init_ossl_ssl(void)
     rb_define_method(cSSLContext, "session_cache_size=",     ossl_sslctx_set_session_cache_size, 1);
     rb_define_method(cSSLContext, "session_cache_stats",     ossl_sslctx_get_session_cache_stats, 0);
     rb_define_method(cSSLContext, "flush_sessions",     ossl_sslctx_flush_sessions, -1);
+    rb_define_method(cSSLContext, "options",     ossl_sslctx_get_options, 0);
+    rb_define_method(cSSLContext, "options=",     ossl_sslctx_set_options, 1);
 
     ary = rb_ary_new2(numberof(ossl_ssl_method_tab));
     for (i = 0; i < numberof(ossl_ssl_method_tab); i++) {

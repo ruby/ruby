@@ -76,7 +76,7 @@ module OpenSSL
 
       INIT_VARS = ["cert", "key", "client_ca", "ca_file", "ca_path",
         "timeout", "verify_mode", "verify_depth", "renegotiation_cb",
-        "verify_callback", "options", "cert_store", "extra_chain_cert",
+        "verify_callback", "cert_store", "extra_chain_cert",
         "client_cert_cb", "session_id_context", "tmp_dh_callback",
         "session_get_cb", "session_new_cb", "session_remove_cb",
         "tmp_ecdh_callback", "servername_cb", "npn_protocols",
@@ -102,6 +102,7 @@ module OpenSSL
       # You can get a list of valid methods with OpenSSL::SSL::SSLContext::METHODS
       def initialize(version = nil)
         INIT_VARS.each { |v| instance_variable_set v, nil }
+        self.options = OpenSSL::SSL::OP_ALL
         return unless version
         self.ssl_version = version
       end
