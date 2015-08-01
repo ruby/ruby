@@ -110,6 +110,14 @@ module OpenSSL::TestPairM
     }
   end
 
+  def test_gets_eof_limit
+    ssl_pair {|s1, s2|
+      s1.write("hello")
+      s1.close # trigger EOF
+      assert_match "hello", s2.gets("\n", 6), "[ruby-core:70149] [Bug #11140]"
+    }
+  end
+
   def test_readpartial
     ssl_pair {|s1, s2|
       s2.write "a\nbcd"
