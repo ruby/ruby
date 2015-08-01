@@ -2454,6 +2454,10 @@ zip_i(RB_BLOCK_CALL_FUNC_ARGLIST(val, memoval))
  *     [1, 2].zip(a, b)         #=> [[1, 4, 7], [2, 5, 8]]
  *     a.zip([1, 2], [8])       #=> [[4, 1, 8], [5, 2, nil], [6, nil, nil]]
  *
+ *     c = []
+ *     a.zip(b) { |x, y| c << x + y }  #=> nil
+ *     c                               #=> [11, 13, 15]
+ *
  */
 
 static VALUE
