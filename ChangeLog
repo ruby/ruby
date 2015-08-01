@@ -1,3 +1,9 @@
+Sat Aug  1 17:05:18 2015  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* lib/net/http/response.rb (Net::HTTPResponse#inflater):
+	  fix TypeError. An exception object might be nil.
+	  [ruby-core:68846] [Bug #11058]
+
 Sat Aug  1 09:09:46 2015  Aaron Patterson <tenderlove@ruby-lang.org>
 
 	* ext/openssl/ossl_ssl.c (ossl_sslctx_setup): Implement

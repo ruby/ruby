@@ -260,11 +260,11 @@ class Net::HTTPResponse
       begin
         yield inflate_body_io
       ensure
-        e = $!
+        orig_err = $!
         begin
           inflate_body_io.finish
-        rescue
-          raise e
+        rescue => err
+          raise orig_err || err
         end
       end
     when 'none', 'identity' then
