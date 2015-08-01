@@ -1,3 +1,11 @@
+Sat Aug  1 17:13:15 2015  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* lib/net/http/response.rb (Net::HTTPResponse::Inflater#finish):
+	  fix a bug that empty gzipped response body causes Zlib::BufError.
+	  [ruby-core:68846] [Bug #11058]
+
+	* test/net/http/test_httpresponse.rb: tests for the above.
+
 Sat Aug  1 17:05:18 2015  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* lib/net/http/response.rb (Net::HTTPResponse#inflater):
