@@ -729,13 +729,18 @@ int
 rb_freopen(VALUE fname, const char *mode, FILE *file)
 {
     WCHAR *wname, wmode[4];
+    VALUE wtmp;
+    char *name;
     long len;
     int e = 0, n = MultiByteToWideChar(CP_ACP, 0, mode, -1, NULL, 0);
     if (n > numberof(wmode)) return EINVAL;
     MultiByteToWideChar(CP_ACP, 0, mode, -1, wmode, numberof(wmode));
-    wname = rb_w32_mbstr_to_wstr(CP_UTF8, RSTRING_PTR(fname),
-				 rb_long2int(RSTRING_LEN(fname)) + 1, &len);
-    wname[len - 1] = L'\0';
+    RSTRING_GETMEM(fname, name, len);
+    n = rb_long2int(len);
+    len = MultiByteToWideChar(CP_UTF8, 0, name, n, NULL, 0);
+    wname = ALLOCV_N(WCHAR, wtmp, len + 1);
+    len = MultiByteToWideChar(CP_UTF8, 0, name, n, wname, len);
+    wname[len] = L'\0';
     RB_GC_GUARD(fname);
 #if RUBY_MSVCRT_VERSION < 80 && !defined(HAVE__WFREOPEN_S)
     e = _wfreopen(wname, wmode, file) ? 0 : errno;
@@ -745,7 +750,7 @@ rb_freopen(VALUE fname, const char *mode, FILE *file)
 	e = _wfreopen_s(&newfp, wname, wmode, file);
     }
 #endif
-    free(wname);
+    ALLOCV_END(wtmp);
     return e;
 }
 
