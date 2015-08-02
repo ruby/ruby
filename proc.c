@@ -1909,7 +1909,7 @@ rb_method_call_with_block(int argc, const VALUE *argv, VALUE method, VALUE pass_
  *  these is an <code>UnboundMethod</code> object.
  *
  *  Unbound methods can only be called after they are bound to an
- *  object. That object must be be a kind_of? the method's original
+ *  object. That object must be a kind_of? the method's original
  *  class.
  *
  *     class Square
