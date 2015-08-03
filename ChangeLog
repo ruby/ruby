@@ -1,3 +1,8 @@
+Tue Aug  4 04:11:34 2015  Tanaka Akira  <akr@fsij.org>
+
+	* lib/time.rb (strptime): Support %s.%N.
+	  [ruby-core:68301] [Bug #10904] Patch by Sadayuki Furuhashi.
+
 Tue Aug  4 03:43:15 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* transcode.c (load_transcoder_entry): fix transcoder loading race

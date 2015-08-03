@@ -448,6 +448,17 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
     assert_equal(true, t.utc?)
   end
 
+  def test_strptime_s_N
+    assert_equal(Time.at(1, 500000), Time.strptime("1.5", "%s.%N"))
+    assert_equal(Time.at(-2, 500000), Time.strptime("-1.5", "%s.%N"))
+    t = Time.strptime("1.000000000001", "%s.%N")
+    assert_equal(1, t.to_i)
+    assert_equal(Rational("0.000000000001"), t.subsec)
+    t = Time.strptime("-1.000000000001", "%s.%N")
+    assert_equal(-2, t.to_i)
+    assert_equal(1-Rational("0.000000000001"), t.subsec)
+  end
+
   def test_strptime_Ymd_z
     t = Time.strptime('20010203 -0200', '%Y%m%d %z')
     assert_equal(2001, t.year)
