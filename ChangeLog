@@ -1,3 +1,11 @@
+Tue Aug  4 03:13:59 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (ary_ensure_room_for_push): check if array size will
+	  exceed maximum size to get rid of buffer overflow.
+	  [ruby-dev:49043] [Bug #11235]
+
+	* array.c (ary_ensure_room_for_unshift, rb_ary_splice): ditto.
+
 Sat Jul  4 23:08:32 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_load_ok): try opening file without gvl not to
