@@ -4718,7 +4718,7 @@ thread_shield_get_mutex(VALUE self)
 {
     VALUE mutex = GetThreadShieldPtr(self);
     if (!mutex)
-	rb_raise(rb_eThreadError, "destroyed thread shield - %p", (void *)mutex);
+	rb_raise(rb_eThreadError, "destroyed thread shield - %p", (void *)self);
     return mutex;
 }
 
