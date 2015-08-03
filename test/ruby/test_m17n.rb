@@ -1236,6 +1236,9 @@ class TestM17N < Test::Unit::TestCase
     each_encoding("abc,def", ",", "abc", "def") do |str, sep, *expected|
       assert_equal(expected, str.split(sep, -1))
     end
+    each_encoding("abc\0def", "\0", "abc", "def") do |str, sep, *expected|
+      assert_equal(expected, str.split(sep, -1))
+    end
   end
 
   def test_nonascii_method_name

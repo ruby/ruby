@@ -221,6 +221,32 @@ rb_memsearch_qs_utf8(const unsigned char *xs, long m, const unsigned char *ys, l
     return -1;
 }
 
+static inline long
+rb_memsearch_wchar(const unsigned char *xs, long m, const unsigned char *ys, long n)
+{
+    const unsigned char *x = xs, x0 = *xs, *y = ys;
+    enum {char_size = 2};
+
+    for (n -= m; n > 0; n -= char_size, y += char_size) {
+	if (x0 == *y && memcmp(x+1, y+1, m-1) == 0)
+	    return y - ys;
+    }
+    return -1;
+}
+
+static inline long
+rb_memsearch_qchar(const unsigned char *xs, long m, const unsigned char *ys, long n)
+{
+    const unsigned char *x = xs, x0 = *xs, *y = ys;
+    enum {char_size = 4};
+
+    for (n -= m; n > 0; n -= char_size, y += char_size) {
+	if (x0 == *y && memcmp(x+1, y+1, m-1) == 0)
+	    return y - ys;
+    }
+    return -1;
+}
+
 long
 rb_memsearch(const void *x0, long m, const void *y0, long n, rb_encoding *enc)
 {
@@ -241,15 +267,21 @@ rb_memsearch(const void *x0, long m, const void *y0, long n, rb_encoding *enc)
 	else
 	    return -1;
     }
-    else if (m <= SIZEOF_VALUE) {
-	return rb_memsearch_ss(x0, m, y0, n);
+    else if (LIKELY(rb_enc_mbminlen(enc) == 1)) {
+	if (m <= SIZEOF_VALUE) {
+	    return rb_memsearch_ss(x0, m, y0, n);
+	}
+	else if (enc == rb_utf8_encoding()){
+	    return rb_memsearch_qs_utf8(x0, m, y0, n);
+	}
     }
-    else if (enc == rb_utf8_encoding()){
-	return rb_memsearch_qs_utf8(x0, m, y0, n);
+    else if (LIKELY(rb_enc_mbminlen(enc) == 2)) {
+	return rb_memsearch_wchar(x0, m, y0, n);
     }
-    else {
-	return rb_memsearch_qs(x0, m, y0, n);
+    else if (LIKELY(rb_enc_mbminlen(enc) == 4)) {
+	return rb_memsearch_qchar(x0, m, y0, n);
     }
+    return rb_memsearch_qs(x0, m, y0, n);
 }
 
 #define REG_LITERAL FL_USER5

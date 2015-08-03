@@ -1,3 +1,8 @@
+Mon Aug  3 10:08:33 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* re.c (rb_memsearch): should match only char boundaries in wide
+	  character encodings.  [ruby-core:70220] [Bug #11413]
+
 Sun Aug  2 07:01:17 2015  Eric Wong  <e@80x24.org>
 
 	* ext/openssl/lib/openssl/buffering.rb (gets):
