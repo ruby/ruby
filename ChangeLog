@@ -1,3 +1,8 @@
+Tue Aug  4 03:43:15 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* transcode.c (load_transcoder_entry): fix transcoder loading race
+	  condition, by waiting in require.  [ruby-dev:49106] [Bug #11277]
+
 Tue Aug  4 03:13:59 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (ary_ensure_room_for_push): check if array size will
