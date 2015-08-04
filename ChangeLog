@@ -1,3 +1,8 @@
+Tue Aug  4 09:32:30 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* proc.c: Removing duplicate doc [fix GH-987][ci skip]
+	  Patch by @ronakjangir47
+
 Tue Aug  4 09:21:58 2015  Richard Schneeman  <richard.schneeman+foo@gmail.com>
 
 	* doc/contributing.rdoc: fixed wrong instructions with OS X
