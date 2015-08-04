@@ -5,7 +5,7 @@ Tue Aug  4 16:40:26 2015  Koichi Sasada  <ko1@atdot.net>
 
 Tue Aug 04 15:30:04 2015  Koichi Sasada  <ko1@atdot.net>
 
-	* proc.c (rb_block_clear_env_self): clear by Qfalse intead of Qnil.
+	* proc.c (rb_block_clear_env_self): clear by Qfalse instead of Qnil.
 	  [Bug #11409]
 
 	* test/ruby/test_eval.rb: add tests for this issue,
