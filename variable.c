@@ -157,7 +157,8 @@ find_class_path(VALUE klass, ID preferred)
 	if (!RCLASS_IV_TBL(klass)) {
 	    RCLASS_IV_TBL(klass) = st_init_numtable();
 	}
-	rb_st_insert_id_and_value(klass, RCLASS_IV_TBL(klass), (st_data_t)classpath, arg.path);
+	rb_st_insert_id_and_value(klass, RCLASS_IV_TBL(klass),
+	                          (st_data_t)classpath, arg.path);
 
 	st_delete(RCLASS_IV_TBL(klass), &tmp, 0);
 	return arg.path;
@@ -1246,7 +1247,8 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
 	break;
       case T_CLASS:
       case T_MODULE:
-	if (RCLASS_IV_TBL(obj) && st_lookup(RCLASS_IV_TBL(obj), (st_data_t)id, &index))
+	if (RCLASS_IV_TBL(obj) &&
+		st_lookup(RCLASS_IV_TBL(obj), (st_data_t)id, &index))
 	    return (VALUE)index;
 	break;
       default:
@@ -1300,7 +1302,8 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
 	break;
       case T_CLASS:
       case T_MODULE:
-	if (RCLASS_IV_TBL(obj) && st_delete(RCLASS_IV_TBL(obj), (st_data_t *)&id, &index))
+	if (RCLASS_IV_TBL(obj) &&
+		st_delete(RCLASS_IV_TBL(obj), (st_data_t *)&id, &index))
 	    return (VALUE)index;
 	break;
       default:
@@ -1869,7 +1872,8 @@ autoload_data(VALUE mod, ID id)
     st_data_t val;
 
     if (!st_lookup(RCLASS_IV_TBL(mod), autoload, &val) ||
-	    !(tbl = check_autoload_table((VALUE)val)) || !st_lookup(tbl, (st_data_t)id, &val)) {
+	    !(tbl = check_autoload_table((VALUE)val)) ||
+	    !st_lookup(tbl, (st_data_t)id, &val)) {
 	return 0;
     }
     return (VALUE)val;
@@ -2056,7 +2060,8 @@ autoload_const_set(VALUE arg)
     VALUE klass = args->mod;
     ID id = args->id;
     check_before_mod_set(klass, id, args->value, "constant");
-    st_update(RCLASS_CONST_TBL(klass), (st_data_t)id, const_update, (st_data_t)args);
+    st_update(RCLASS_CONST_TBL(klass), (st_data_t)id,
+	      const_update, (st_data_t)args);
     return 0;			/* ignored */
 }
 
@@ -2110,7 +2115,8 @@ rb_autoload_load(VALUE mod, ID id)
 	    args.value = ele->value;
 	    safe_backup = rb_safe_level();
 	    rb_set_safe_level_force(ele->safe_level);
-	    rb_ensure(autoload_const_set, (VALUE)&args, reset_safe, (VALUE)safe_backup);
+	    rb_ensure(autoload_const_set, (VALUE)&args,
+		      reset_safe, (VALUE)safe_backup);
 	}
     }
     RB_GC_GUARD(load);
@@ -2418,7 +2424,8 @@ rb_const_defined_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
 	    if (visibility && RB_CONST_PRIVATE_P(ce)) {
 		return (int)Qfalse;
 	    }
-	    if (ce->value == Qundef && !check_autoload_required(tmp, id, 0) && !rb_autoloading_value(tmp, id, 0))
+	    if (ce->value == Qundef && !check_autoload_required(tmp, id, 0) &&
+		    !rb_autoloading_value(tmp, id, 0))
 		return (int)Qfalse;
 	    return (int)Qtrue;
 	}
@@ -2522,7 +2529,8 @@ const_update(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
 
 		load = autoload_data(klass, id);
 		/* for autoloading thread, keep the defined value to autoloading storage */
-		if (load && (ele = check_autoload_data(load)) && (ele->thread == rb_thread_current())) {
+		if (load && (ele = check_autoload_data(load)) &&
+			    (ele->thread == rb_thread_current())) {
 		    rb_clear_constant_cache();
 
 		    ele->value = val; /* autoload_i is non-WB-protected */
@@ -2559,7 +2567,8 @@ const_update(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
 }
 
 static void
-setup_const_entry(rb_const_entry_t *ce, VALUE klass, VALUE val, rb_const_flag_t visibility)
+setup_const_entry(rb_const_entry_t *ce, VALUE klass, VALUE val,
+		  rb_const_flag_t visibility)
 {
     ce->flag = visibility;
     ce->line = rb_sourceline();
@@ -2585,7 +2594,8 @@ rb_define_global_const(const char *name, VALUE val)
 }
 
 static void
-set_const_visibility(VALUE mod, int argc, const VALUE *argv, rb_const_flag_t flag, rb_const_flag_t mask)
+set_const_visibility(VALUE mod, int argc, const VALUE *argv,
+		     rb_const_flag_t flag, rb_const_flag_t mask)
 {
     int i;
     rb_const_entry_t *ce;
@@ -2727,7 +2737,8 @@ rb_cvar_set(VALUE klass, ID id, VALUE val)
 	RCLASS_IV_TBL(target) = st_init_numtable();
     }
 
-    rb_st_insert_id_and_value(target, RCLASS_IV_TBL(target), (st_data_t)id, (st_data_t)val);
+    rb_st_insert_id_and_value(target, RCLASS_IV_TBL(target),
+			      (st_data_t)id, (st_data_t)val);
 }
 
 VALUE
