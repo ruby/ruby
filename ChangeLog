@@ -1,3 +1,14 @@
+Tue Aug  4 16:53:43 2015  Aaron Patterson <tenderlove@ruby-lang.org>
+
+	* ext/openssl/lib/openssl/ssl.rb (module OpenSSL): extract callback
+	  lookup to private Ruby methods. This means we can keep the default
+	  DH callback logic hidden from consumers.  Also, since the SSLSocket
+	  always has a context, we can remove conditionals about that
+	  instance.
+
+	* ext/openssl/ossl_ssl.c: move callback lookup methods to private Ruby
+	  methods.
+
 Tue Aug  4 16:40:26 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_module.rb: should not expect a method table ordering.
