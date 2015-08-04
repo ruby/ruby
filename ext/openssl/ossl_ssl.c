@@ -132,7 +132,6 @@ static const struct {
 int ossl_ssl_ex_vcb_idx;
 int ossl_ssl_ex_store_p;
 int ossl_ssl_ex_ptr_idx;
-int ossl_ssl_ex_client_cert_cb_idx;
 
 static void
 ossl_sslctx_free(void *ptr)
@@ -169,6 +168,8 @@ ossl_sslctx_s_alloc(VALUE klass)
     }
     SSL_CTX_set_mode(ctx, mode);
     RTYPEDDATA_DATA(obj) = ctx;
+    SSL_CTX_set_ex_data(ctx, ossl_ssl_ex_ptr_idx, (void*)obj);
+
     return obj;
 }
 
@@ -211,11 +212,9 @@ ossl_sslctx_set_ssl_version(VALUE self, VALUE ssl_method)
 static VALUE
 ossl_call_client_cert_cb(VALUE obj)
 {
-    VALUE cb, ary, cert, key;
-    SSL *ssl;
+    VALUE cb, ary, cert, key, ctx;
 
-    GetSSL(obj, ssl);
-    cb = (VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_client_cert_cb_idx);
+    cb = rb_funcall(obj, rb_intern("client_cert_cb"), 0);
     if (NIL_P(cb)) return Qfalse;
     ary = rb_funcall(cb, rb_intern("call"), 1, obj);
     Check_Type(ary, T_ARRAY);
@@ -233,8 +232,7 @@ ossl_client_cert_cb(SSL *ssl, X509 **x509, EVP_PKEY **pkey)
     VALUE obj, success;
 
     obj = (VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx);
-    success = rb_protect((VALUE(*)_((VALUE)))ossl_call_client_cert_cb,
-                         obj, NULL);
+    success = rb_protect(ossl_call_client_cert_cb, obj, NULL);
     if (!RTEST(success)) return 0;
     *x509 = DupX509CertPtr(ossl_ssl_get_x509(obj));
     *pkey = DupPKeyPtr(ossl_ssl_get_key(obj));
@@ -249,8 +247,7 @@ ossl_call_tmp_dh_callback(VALUE args)
     VALUE cb, dh, ctx;
     EVP_PKEY *pkey;
 
-    ctx = rb_funcall(rb_ary_entry(args, 0), rb_intern("context"), 0);
-    cb = rb_funcall(ctx, rb_intern("tmp_dh_callback"), 0);
+    cb = rb_funcall(rb_ary_entry(args, 0), rb_intern("tmp_dh_callback"), 0);
 
     if (NIL_P(cb)) return Qfalse;
     dh = rb_apply(cb, rb_intern("call"), args);
@@ -284,8 +281,7 @@ ossl_call_tmp_ecdh_callback(VALUE args)
     VALUE cb, ecdh, ctx;
     EVP_PKEY *pkey;
 
-    ctx = rb_funcall(rb_ary_entry(args, 0), rb_intern("context"), 0);
-    cb = rb_funcall(ctx, rb_intern("tmp_ecdh_callback"), 0);
+    cb = rb_funcall(rb_ary_entry(args, 0), rb_intern("tmp_ecdh_callback"), 0);
 
     if (NIL_P(cb)) return Qfalse;
     ecdh = rb_apply(cb, rb_intern("call"), args);
@@ -332,9 +328,7 @@ ossl_call_session_get_cb(VALUE ary)
     Check_Type(ary, T_ARRAY);
     ssl_obj = rb_ary_entry(ary, 0);
 
-    sslctx_obj = rb_iv_get(ssl_obj, "@context");
-    if (NIL_P(sslctx_obj)) return Qnil;
-    cb = rb_iv_get(sslctx_obj, "@session_get_cb");
+    cb = rb_funcall(ssl_obj, rb_intern("session_get_cb"), 0);
     if (NIL_P(cb)) return Qnil;
 
     return rb_funcall(cb, rb_intern("call"), 1, ary);
@@ -357,7 +351,7 @@ ossl_sslctx_session_get_cb(SSL *ssl, unsigned char *buf, int len, int *copy)
     rb_ary_push(ary, ssl_obj);
     rb_ary_push(ary, rb_str_new((const char *)buf, len));
 
-    ret_obj = rb_protect((VALUE(*)_((VALUE)))ossl_call_session_get_cb, ary, &state);
+    ret_obj = rb_protect(ossl_call_session_get_cb, ary, &state);
     if (state) {
         rb_ivar_set(ssl_obj, ID_callback_state, INT2NUM(state));
         return NULL;
@@ -379,9 +373,7 @@ ossl_call_session_new_cb(VALUE ary)
     Check_Type(ary, T_ARRAY);
     ssl_obj = rb_ary_entry(ary, 0);
 
-    sslctx_obj = rb_iv_get(ssl_obj, "@context");
-    if (NIL_P(sslctx_obj)) return Qnil;
-    cb = rb_iv_get(sslctx_obj, "@session_new_cb");
+    cb = rb_funcall(ssl_obj, rb_intern("session_new_cb"), 0);
     if (NIL_P(cb)) return Qnil;
 
     return rb_funcall(cb, rb_intern("call"), 1, ary);
@@ -408,7 +400,7 @@ ossl_sslctx_session_new_cb(SSL *ssl, SSL_SESSION *sess)
     rb_ary_push(ary, ssl_obj);
     rb_ary_push(ary, sess_obj);
 
-    rb_protect((VALUE(*)_((VALUE)))ossl_call_session_new_cb, ary, &state);
+    rb_protect(ossl_call_session_new_cb, ary, &state);
     if (state) {
         rb_ivar_set(ssl_obj, ID_callback_state, INT2NUM(state));
     }
@@ -728,8 +720,6 @@ ossl_sslctx_setup(VALUE self)
 	SSL_CTX_set_tmp_ecdh_callback(ctx, ossl_tmp_ecdh_callback);
     }
 #endif
-
-    SSL_CTX_set_ex_data(ctx, ossl_ssl_ex_ptr_idx, (void*)self);
 
     val = ossl_sslctx_get_cert_store(self);
     if(!NIL_P(val)){
@@ -1274,8 +1264,6 @@ ossl_ssl_setup(VALUE self)
 	SSL_set_ex_data(ssl, ossl_ssl_ex_ptr_idx, (void*)self);
 	cb = ossl_sslctx_get_verify_cb(v_ctx);
 	SSL_set_ex_data(ssl, ossl_ssl_ex_vcb_idx, (void*)cb);
-	cb = ossl_sslctx_get_client_cert_cb(v_ctx);
-	SSL_set_ex_data(ssl, ossl_ssl_ex_client_cert_cb_idx, (void*)cb);
 	SSL_set_info_callback(ssl, ssl_info_cb);
     }
 
@@ -1989,8 +1977,6 @@ Init_ossl_ssl(void)
     ossl_ssl_ex_vcb_idx = SSL_get_ex_new_index(0,(void *)"ossl_ssl_ex_vcb_idx",0,0,0);
     ossl_ssl_ex_store_p = SSL_get_ex_new_index(0,(void *)"ossl_ssl_ex_store_p",0,0,0);
     ossl_ssl_ex_ptr_idx = SSL_get_ex_new_index(0,(void *)"ossl_ssl_ex_ptr_idx",0,0,0);
-    ossl_ssl_ex_client_cert_cb_idx =
-	SSL_get_ex_new_index(0,(void *)"ossl_ssl_ex_client_cert_cb_idx",0,0,0);
 
     /* Document-module: OpenSSL::SSL
      *

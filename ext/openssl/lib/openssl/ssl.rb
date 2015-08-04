@@ -92,7 +92,7 @@ module OpenSSL
       # The callback must return an OpenSSL::PKey::DH instance of the correct
       # key length.
 
-      attr_writer :tmp_dh_callback
+      attr_accessor :tmp_dh_callback
 
       # call-seq:
       #    SSLContext.new => ctx
@@ -124,10 +124,6 @@ module OpenSSL
           end
         end
         return params
-      end
-
-      def tmp_dh_callback
-        @tmp_dh_callback || OpenSSL::PKey::DEFAULT_TMP_DH_CALLBACK
       end
     end
 
@@ -289,6 +285,26 @@ module OpenSSL
         ctx = OpenSSL::SSL::SSLContext.new
         ctx.ciphers = "aNULL"
         ctx.ciphers.include?(cipher)
+      end
+
+      def client_cert_cb
+        @context.client_cert_cb
+      end
+
+      def tmp_dh_callback
+        @context.tmp_dh_callback || OpenSSL::PKey::DEFAULT_TMP_DH_CALLBACK
+      end
+
+      def tmp_ecdh_callback
+        @context.tmp_ecdh_callback
+      end
+
+      def session_new_cb
+        @context.session_new_cb
+      end
+
+      def session_get_cb
+        @context.session_get_cb
       end
     end
 
