@@ -1114,13 +1114,13 @@ class TestModule < Test::Unit::TestCase
     assert_equal [:f], memo.shift, '[ruby-core:25536]'
     assert_equal mod.instance_method(:f), memo.shift
     assert_equal :g, memo.shift
-    assert_equal [:f, :g], memo.shift
+    assert_equal [:f, :g].sort, memo.shift.sort
     assert_equal mod.instance_method(:f), memo.shift
     assert_equal :a, memo.shift
-    assert_equal [:f, :g, :a], memo.shift
+    assert_equal [:f, :g, :a].sort, memo.shift.sort
     assert_equal mod.instance_method(:a), memo.shift
     assert_equal :a=, memo.shift
-    assert_equal [:f, :g, :a, :a=], memo.shift
+    assert_equal [:f, :g, :a, :a=].sort, memo.shift.sort
     assert_equal mod.instance_method(:a=), memo.shift
   end
 

@@ -1,3 +1,8 @@
+Tue Aug  4 16:40:26 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/test_module.rb: should not expect a method table ordering.
+	  [Feature #11414]
+
 Tue Aug 04 15:30:04 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* proc.c (rb_block_clear_env_self): clear by Qfalse intead of Qnil.
