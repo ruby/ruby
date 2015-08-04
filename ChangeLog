@@ -1,3 +1,8 @@
+Tue Aug  4 09:21:58 2015  Richard Schneeman  <richard.schneeman+foo@gmail.com>
+
+	* doc/contributing.rdoc: fixed wrong instructions with OS X
+	[fix GH-989][ci skip] Patch by @schneems
+
 Mon Aug  3 10:08:33 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* re.c (rb_memsearch): should match only char boundaries in wide
