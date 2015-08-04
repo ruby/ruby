@@ -670,7 +670,7 @@ rb_block_clear_env_self(VALUE proc)
     rb_env_t *env;
     GetProcPtr(proc, po);
     GetEnvPtr(rb_vm_proc_envval(po), env);
-    env->env[0] = Qnil;
+    env->env[0] = Qfalse;
     return proc;
 }
 

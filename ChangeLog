@@ -1,3 +1,12 @@
+Tue Aug 04 15:30:04 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* proc.c (rb_block_clear_env_self): clear by Qfalse intead of Qnil.
+	  [Bug #11409]
+
+	* test/ruby/test_eval.rb: add tests for this issue,
+	  written by @0x0dea.
+	  https://github.com/ruby/ruby/pull/988
+
 Tue Aug  4 12:12:14 2015  Eric Wong  <e@80x24.org>
 
 	* variable.c: wrap long lines
