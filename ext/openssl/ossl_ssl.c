@@ -68,7 +68,6 @@ static VALUE eSSLErrorWaitWritable;
 
 #define ossl_ssl_get_io(o)           rb_iv_get((o),"@io")
 #define ossl_ssl_get_ctx(o)          rb_iv_get((o),"@context")
-#define ossl_ssl_get_sync_close(o)   rb_iv_get((o),"@sync_close")
 #define ossl_ssl_get_x509(o)         rb_iv_get((o),"@x509")
 #define ossl_ssl_get_key(o)          rb_iv_get((o),"@key")
 
@@ -1590,31 +1589,25 @@ ossl_ssl_write_nonblock(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *    ssl.sysclose => nil
+ *    ssl.stop => nil
  *
- * Shuts down the SSL connection and prepares it for another connection.
+ * Stops the SSL connection and prepares it for another connection.
  */
 static VALUE
-ossl_ssl_close(VALUE self)
+ossl_ssl_stop(VALUE self)
 {
     SSL *ssl;
-    VALUE io;
 
     /* ossl_ssl_data_get_struct() is not usable here because it may return
      * from this function; */
 
     GetSSL(self, ssl);
 
-    io = ossl_ssl_get_io(self);
-    if (!RTEST(rb_funcall(io, rb_intern("closed?"), 0))) {
-        if (ssl) {
-            ossl_ssl_shutdown(ssl);
-            SSL_free(ssl);
-        }
-        DATA_PTR(self) = NULL;
-        if (RTEST(ossl_ssl_get_sync_close(self)))
-            rb_funcall(io, rb_intern("close"), 0);
+    if (ssl) {
+	ossl_ssl_shutdown(ssl);
+	SSL_free(ssl);
     }
+    DATA_PTR(self) = NULL;
 
     return Qnil;
 }
@@ -2287,7 +2280,7 @@ Init_ossl_ssl(void)
     rb_define_private_method(cSSLSocket, "sysread_nonblock",    ossl_ssl_read_nonblock, -1);
     rb_define_method(cSSLSocket, "syswrite",   ossl_ssl_write, 1);
     rb_define_private_method(cSSLSocket, "syswrite_nonblock",    ossl_ssl_write_nonblock, -1);
-    rb_define_method(cSSLSocket, "sysclose",   ossl_ssl_close, 0);
+    rb_define_private_method(cSSLSocket, "stop",   ossl_ssl_stop, 0);
     rb_define_method(cSSLSocket, "cert",       ossl_ssl_get_cert, 0);
     rb_define_method(cSSLSocket, "peer_cert",  ossl_ssl_get_peer_cert, 0);
     rb_define_method(cSSLSocket, "peer_cert_chain", ossl_ssl_get_peer_cert_chain, 0);

@@ -291,6 +291,16 @@ module OpenSSL
         end
       end
 
+      # call-seq:
+      #    ssl.sysclose => nil
+      #
+      # Shuts down the SSL connection and prepares it for another connection.
+      def sysclose
+        return if closed?
+        stop
+        io.close if sync_close
+      end
+
       ##
       # Perform hostname verification after an SSL connection is established
       #
