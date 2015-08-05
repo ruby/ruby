@@ -993,6 +993,7 @@ rb_econv_open0(const char *sname, const char *dname, int ecflags)
     if (*sname == '\0' && *dname == '\0') {
         num_trans = 0;
         entries = NULL;
+	sname = dname = "";
     }
     else {
         struct trans_open_t toarg;
@@ -3246,10 +3247,10 @@ rb_econv_init_by_convpath(VALUE self, VALUE convpath,
     }
 
     if (first) {
-      *senc_p = NULL;
-      *denc_p = NULL;
-      *sname_p = "";
-      *dname_p = "";
+	*senc_p = NULL;
+	*denc_p = NULL;
+	*sname_p = "";
+	*dname_p = "";
     }
 
     ec->source_encoding_name = *sname_p;
