@@ -166,13 +166,6 @@ module OpenSSL
       end
     end
 
-    module Nonblock
-      def initialize(*args)
-        @io.nonblock = true if @io.respond_to?(:nonblock=)
-        super
-      end
-    end
-
     def verify_certificate_identity(cert, hostname)
       should_verify_common_name = true
       cert.extensions.each{|ext|
@@ -260,7 +253,6 @@ module OpenSSL
     class SSLSocket
       include Buffering
       include SocketForwarder
-      include Nonblock
 
       if ExtConfig::OPENSSL_NO_SOCK
         def initialize(io, ctx = nil); raise NotImplmentedError; end
@@ -293,6 +285,7 @@ module OpenSSL
           @context    = context
           @sync_close = false
           @hostname   = nil
+          @io.nonblock = true if @io.respond_to?(:nonblock=)
           context.setup
           super()
         end
