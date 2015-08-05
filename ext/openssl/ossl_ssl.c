@@ -29,6 +29,7 @@
 } while (0)
 
 VALUE mSSL;
+VALUE mSSLExtConfig;
 VALUE eSSLError;
 VALUE cSSLContext;
 VALUE cSSLSocket;
@@ -71,21 +72,10 @@ static VALUE eSSLErrorWaitWritable;
 #define ossl_ssl_get_x509(o)         rb_iv_get((o),"@x509")
 #define ossl_ssl_get_key(o)          rb_iv_get((o),"@key")
 
-#define ossl_ssl_set_io(o,v)         rb_iv_set((o),"@io",(v))
-#define ossl_ssl_set_ctx(o,v)        rb_iv_set((o),"@context",(v))
-#define ossl_ssl_set_sync_close(o,v) rb_iv_set((o),"@sync_close",(v))
 #define ossl_ssl_set_x509(o,v)       rb_iv_set((o),"@x509",(v))
 #define ossl_ssl_set_key(o,v)        rb_iv_set((o),"@key",(v))
 #define ossl_ssl_set_tmp_dh(o,v)     rb_iv_set((o),"@tmp_dh",(v))
 #define ossl_ssl_set_tmp_ecdh(o,v)   rb_iv_set((o),"@tmp_ecdh",(v))
-
-static const char *ossl_ssl_attr_readers[] = { "io", "context", };
-static const char *ossl_ssl_attrs[] = {
-#ifdef HAVE_SSL_SET_TLSEXT_HOST_NAME
-    "hostname",
-#endif
-    "sync_close",
-};
 
 ID ID_callback_state;
 
@@ -1189,44 +1179,6 @@ ossl_ssl_s_alloc(VALUE klass)
     return TypedData_Wrap_Struct(klass, &ossl_ssl_type, NULL);
 }
 
-/*
- * call-seq:
- *    SSLSocket.new(io) => aSSLSocket
- *    SSLSocket.new(io, ctx) => aSSLSocket
- *
- * Creates a new SSL socket from +io+ which must be a real ruby object (not an
- * IO-like object that responds to read/write).
- *
- * If +ctx+ is provided the SSL Sockets initial params will be taken from
- * the context.
- *
- * The OpenSSL::Buffering module provides additional IO methods.
- *
- * This method will freeze the SSLContext if one is provided;
- * however, session management is still allowed in the frozen SSLContext.
- */
-static VALUE
-ossl_ssl_initialize(int argc, VALUE *argv, VALUE self)
-{
-    VALUE io, ctx;
-
-    if (rb_scan_args(argc, argv, "11", &io, &ctx) == 1) {
-        ctx = rb_funcall(cSSLContext, rb_intern("new"), 0);
-    }
-    OSSL_Check_Kind(ctx, cSSLContext);
-    Check_Type(io, T_FILE);
-    ossl_ssl_set_io(self, io);
-    ossl_ssl_set_ctx(self, ctx);
-    ossl_ssl_set_sync_close(self, Qfalse);
-    ossl_sslctx_setup(ctx);
-
-    rb_iv_set(self, "@hostname", Qnil);
-
-    rb_call_super(0, 0);
-
-    return self;
-}
-
 static VALUE
 ossl_ssl_setup(VALUE self)
 {
@@ -1986,6 +1938,17 @@ Init_ossl_ssl(void)
      * of SSLContext to set up connections.
      */
     mSSL = rb_define_module_under(mOSSL, "SSL");
+
+    /* Document-module: OpenSSL::ExtConfig
+     *
+     * This module contains configuration information about the SSL extension,
+     * for example if socket support is enabled, or the host name TLS extension
+     * is enabled.  Constants in this module will always be defined, but contain
+     * `true` or `false` values depending on the configuration of your OpenSSL
+     * installation.
+     */
+    mSSLExtConfig = rb_define_module_under(mOSSL, "ExtConfig");
+
     /* Document-class: OpenSSL::SSL::SSLError
      *
      * Generic error class raised by SSLSocket and SSLContext.
@@ -2138,15 +2101,11 @@ Init_ossl_ssl(void)
     rb_attr(cSSLContext, rb_intern("session_remove_cb"), 1, 1, Qfalse);
 
 #ifdef HAVE_SSL_SET_TLSEXT_HOST_NAME
-    /*
-     * A callback invoked at connect time to distinguish between multiple
-     * server names.
-     *
-     * The callback is invoked with an SSLSocket and a server name.  The
-     * callback must return an SSLContext for the server name or nil.
-     */
-    rb_attr(cSSLContext, rb_intern("servername_cb"), 1, 1, Qfalse);
+    rb_define_const(mSSLExtConfig, "HAVE_TLSEXT_HOST_NAME", Qtrue);
+#else
+    rb_define_const(mSSLExtConfig, "HAVE_TLSEXT_HOST_NAME", Qfalse);
 #endif
+
     /*
      * A callback invoked whenever a new handshake is initiated. May be used
      * to disable renegotiation entirely.
@@ -2316,15 +2275,10 @@ Init_ossl_ssl(void)
      */
     cSSLSocket = rb_define_class_under(mSSL, "SSLSocket", rb_cObject);
 #ifdef OPENSSL_NO_SOCK
-    rb_define_method(cSSLSocket, "initialize", rb_notimplement, -1);
+    rb_define_const(mSSLExtConfig, "OPENSSL_NO_SOCK", Qtrue);
 #else
+    rb_define_const(mSSLExtConfig, "OPENSSL_NO_SOCK", Qfalse);
     rb_define_alloc_func(cSSLSocket, ossl_ssl_s_alloc);
-    for(i = 0; i < numberof(ossl_ssl_attr_readers); i++)
-        rb_attr(cSSLSocket, rb_intern(ossl_ssl_attr_readers[i]), 1, 0, Qfalse);
-    for(i = 0; i < numberof(ossl_ssl_attrs); i++)
-        rb_attr(cSSLSocket, rb_intern(ossl_ssl_attrs[i]), 1, 1, Qfalse);
-    rb_define_alias(cSSLSocket, "to_io", "io");
-    rb_define_method(cSSLSocket, "initialize", ossl_ssl_initialize, -1);
     rb_define_method(cSSLSocket, "connect",    ossl_ssl_connect, 0);
     rb_define_method(cSSLSocket, "connect_nonblock",    ossl_ssl_connect_nonblock, -1);
     rb_define_method(cSSLSocket, "accept",     ossl_ssl_accept, 0);

@@ -1,3 +1,10 @@
+Thu Aug  6 07:53:47 2015  Aaron Patterson <tenderlove@ruby-lang.org>
+
+	* ext/openssl/lib/openssl/ssl.rb (module OpenSSL): move
+	  OpenSSL::SSL::SSLSocket#initialize to Ruby.
+
+	* ext/openssl/ossl_ssl.c: ditto
+
 Thu Aug  6 02:25:31 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* node.c (rb_alloc_tmp_buffer): use NODE_ALLOCA to mark locations
