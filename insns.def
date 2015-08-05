@@ -1027,9 +1027,10 @@ leave
 (VALUE val)
 {
     if (OPT_CHECKED_RUN) {
-	if (reg_cfp->sp != vm_base_ptr(reg_cfp)) {
+	const VALUE *const bp = vm_base_ptr(reg_cfp);
+	if (reg_cfp->sp != bp) {
 	    rb_bug("Stack consistency error (sp: %"PRIdPTRDIFF", bp: %"PRIdPTRDIFF")",
-		   VM_SP_CNT(th, reg_cfp->sp), VM_SP_CNT(th, vm_base_ptr(reg_cfp)));
+		   VM_SP_CNT(th, reg_cfp->sp), VM_SP_CNT(th, bp));
 	}
     }
 
