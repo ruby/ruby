@@ -1789,7 +1789,7 @@ socket_s_ip_address_list(VALUE self)
     int ret;
     struct lifnum ln;
     struct lifconf lc;
-    char *reason = NULL;
+    const char *reason = NULL;
     int save_errno;
     int i;
     VALUE list = Qnil;
