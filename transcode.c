@@ -3391,7 +3391,10 @@ econv_init(int argc, VALUE *argv, VALUE self)
     }
 
     if (!ec) {
-        rb_exc_raise(rb_econv_open_exc(sname, dname, ecflags));
+	VALUE exc = rb_econv_open_exc(sname, dname, ecflags);
+	RB_GC_GUARD(snamev);
+	RB_GC_GUARD(dnamev);
+	rb_exc_raise(exc);
     }
 
     if (!DECORATOR_P(sname, dname)) {
@@ -3399,6 +3402,8 @@ econv_init(int argc, VALUE *argv, VALUE self)
             senc = make_dummy_encoding(sname);
         if (!denc)
             denc = make_dummy_encoding(dname);
+	RB_GC_GUARD(snamev);
+	RB_GC_GUARD(dnamev);
     }
 
     ec->source_encoding = senc;
