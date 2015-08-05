@@ -2172,4 +2172,14 @@ EOS
     w.close if w
     r.close if r
   end if defined?(fork)
+
+  def test_many_args
+    bug11418 = '[ruby-core:70251] [Bug #11418]'
+    assert_in_out_err([], <<-"end;", ["x"]*256, [], bug11418)
+      bin = "#{EnvUtil.rubybin}"
+      args = Array.new(256) {"x"}
+      GC.stress = true
+      system(bin, "--disable=gems", "-w", "-e", "puts ARGV", *args)
+    end;
+  end
 end

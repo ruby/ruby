@@ -1116,22 +1116,6 @@ rb_str_tmp_new(long len)
     return str_new(0, 0, len);
 }
 
-void *
-rb_alloc_tmp_buffer(volatile VALUE *store, long len)
-{
-    VALUE s = rb_str_tmp_new(len);
-    *store = s;
-    return RSTRING_PTR(s);
-}
-
-void
-rb_free_tmp_buffer(volatile VALUE *store)
-{
-    VALUE s = *store;
-    *store = 0;
-    if (s) rb_str_clear(s);
-}
-
 void
 rb_str_free(VALUE str)
 {
