@@ -212,7 +212,7 @@ ossl_sslctx_set_ssl_version(VALUE self, VALUE ssl_method)
 static VALUE
 ossl_call_client_cert_cb(VALUE obj)
 {
-    VALUE cb, ary, cert, key, ctx;
+    VALUE cb, ary, cert, key;
 
     cb = rb_funcall(obj, rb_intern("client_cert_cb"), 0);
     if (NIL_P(cb)) return Qfalse;
@@ -244,7 +244,7 @@ ossl_client_cert_cb(SSL *ssl, X509 **x509, EVP_PKEY **pkey)
 static VALUE
 ossl_call_tmp_dh_callback(VALUE args)
 {
-    VALUE cb, dh, ctx;
+    VALUE cb, dh;
     EVP_PKEY *pkey;
 
     cb = rb_funcall(rb_ary_entry(args, 0), rb_intern("tmp_dh_callback"), 0);
@@ -278,7 +278,7 @@ ossl_tmp_dh_callback(SSL *ssl, int is_export, int keylength)
 static VALUE
 ossl_call_tmp_ecdh_callback(VALUE args)
 {
-    VALUE cb, ecdh, ctx;
+    VALUE cb, ecdh;
     EVP_PKEY *pkey;
 
     cb = rb_funcall(rb_ary_entry(args, 0), rb_intern("tmp_ecdh_callback"), 0);
@@ -323,7 +323,7 @@ ossl_ssl_verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
 static VALUE
 ossl_call_session_get_cb(VALUE ary)
 {
-    VALUE ssl_obj, sslctx_obj, cb;
+    VALUE ssl_obj, cb;
 
     Check_Type(ary, T_ARRAY);
     ssl_obj = rb_ary_entry(ary, 0);
@@ -368,7 +368,7 @@ ossl_sslctx_session_get_cb(SSL *ssl, unsigned char *buf, int len, int *copy)
 static VALUE
 ossl_call_session_new_cb(VALUE ary)
 {
-    VALUE ssl_obj, sslctx_obj, cb;
+    VALUE ssl_obj, cb;
 
     Check_Type(ary, T_ARRAY);
     ssl_obj = rb_ary_entry(ary, 0);
