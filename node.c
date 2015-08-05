@@ -1075,3 +1075,27 @@ rb_gc_mark_node(NODE *obj)
     }
     return 0;
 }
+
+void *
+rb_alloc_tmp_buffer(volatile VALUE *store, long len)
+{
+    NODE *s = rb_node_newnode(NODE_ALLOCA, 0, 0, 0);
+    void *ptr = xmalloc(len);
+    s->u1.node = ptr;
+    s->u3.cnt = len / sizeof(VALUE);
+    *store = (VALUE)s;
+    return ptr;
+}
+
+void
+rb_free_tmp_buffer(volatile VALUE *store)
+{
+    VALUE s = *store;
+    *store = 0;
+    if (s) {
+	void *ptr = RNODE(s)->u1.node;
+	RNODE(s)->u1.node = 0;
+	RNODE(s)->u3.cnt = 0;
+	xfree(ptr);
+    }
+}

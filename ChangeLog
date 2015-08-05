@@ -1,3 +1,8 @@
+Thu Aug  6 02:25:31 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* node.c (rb_alloc_tmp_buffer): use NODE_ALLOCA to mark locations
+	  like as builtin alloca.  [ruby-core:70251] [Bug #11418]
+
 Wed Aug  5 14:37:55 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* transcode.c (rb_econv_open0): rb_econv_t::source_encoding_name
