@@ -2633,7 +2633,7 @@ finalize_deferred(rb_objspace_t *objspace)
 {
     VALUE zombie;
 
-    while ((zombie = (VALUE)ATOMIC_PTR_EXCHANGE(heap_pages_deferred_final, 0)) != 0) {
+    while ((zombie = ATOMIC_VALUE_EXCHANGE(heap_pages_deferred_final, 0)) != 0) {
 	finalize_list(objspace, zombie);
     }
 }

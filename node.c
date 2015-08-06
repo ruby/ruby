@@ -1090,11 +1090,9 @@ rb_alloc_tmp_buffer(volatile VALUE *store, long len)
 void
 rb_free_tmp_buffer(volatile VALUE *store)
 {
-    VALUE s = *store;
-    *store = 0;
+    VALUE s = ATOMIC_VALUE_EXCHANGE(*store, 0);
     if (s) {
-	void *ptr = RNODE(s)->u1.node;
-	RNODE(s)->u1.node = 0;
+	void *ptr = ATOMIC_PTR_EXCHANGE(RNODE(s)->u1.node, 0);
 	RNODE(s)->u3.cnt = 0;
 	xfree(ptr);
     }

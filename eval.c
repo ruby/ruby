@@ -200,7 +200,7 @@ ruby_cleanup(volatile int ex)
 
     state = 0;
     for (nerr = 0; nerr < numberof(errs); ++nerr) {
-	VALUE err = ATOMIC_SIZE_EXCHANGE(errs[nerr], Qnil);
+	VALUE err = ATOMIC_VALUE_EXCHANGE(errs[nerr], Qnil);
 
 	if (!RTEST(err)) continue;
 
