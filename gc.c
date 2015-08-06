@@ -7766,6 +7766,36 @@ ruby_mimfree(void *ptr)
     free(mem);
 }
 
+void *
+rb_alloc_tmp_buffer(volatile VALUE *store, long len)
+{
+    NODE *s;
+    long cnt;
+    void *ptr;
+
+    if (len < 0 || (cnt = (long)roomof(len, sizeof(VALUE))) < 0) {
+	rb_raise(rb_eArgError, "negative buffer size (or size too big)");
+    }
+
+    s = rb_node_newnode(NODE_ALLOCA, 0, 0, 0);
+    ptr = ruby_xmalloc(cnt * sizeof(VALUE));
+    s->u1.value = (VALUE)ptr;
+    s->u3.cnt = cnt;
+    *store = (VALUE)s;
+    return ptr;
+}
+
+void
+rb_free_tmp_buffer(volatile VALUE *store)
+{
+    VALUE s = ATOMIC_VALUE_EXCHANGE(*store, 0);
+    if (s) {
+	void *ptr = ATOMIC_PTR_EXCHANGE(RNODE(s)->u1.node, 0);
+	RNODE(s)->u3.cnt = 0;
+	ruby_xfree(ptr);
+    }
+}
+
 #if MALLOC_ALLOCATED_SIZE
 /*
  *  call-seq:
