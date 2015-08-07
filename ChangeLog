@@ -1,3 +1,8 @@
+Fri Aug  7 17:23:06 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (yylex): non-pure parser has not been supported since
+	  merger of ripper.  change argument types from void pointers.
+
 Fri Aug  7 17:07:56 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (method_super_method): uncallable method entry does not
