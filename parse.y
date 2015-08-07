@@ -250,8 +250,6 @@ struct parser_params {
     } lex;
     stack_type cond_stack;
     stack_type cmdarg_stack;
-    int in_single; /* counter */
-    int in_def; /* counter */
     int tokidx;
     int toksiz;
     int tokline;
@@ -277,6 +275,8 @@ struct parser_params {
     unsigned int in_defined: 1;
     unsigned int compile_for_eval: 1;
     unsigned int in_kwarg: 1;
+    unsigned int in_single: 1;
+    unsigned int in_def: 1;
 
 #ifndef RIPPER
     /* Ruby core only */
@@ -2956,27 +2956,24 @@ primary		: literal
 		    }
 		| k_class tLSHFT expr
 		    {
-			$<num>$ = in_def;
+			$<num>$ = (in_def << 1) | in_single;
 			in_def = 0;
-		    }
-		  term
-		    {
-			$<num>$ = in_single;
 			in_single = 0;
 			local_push(0);
 		    }
+		  term
 		  bodystmt
 		  k_end
 		    {
 		    /*%%%*/
-			$$ = NEW_SCLASS($3, $7);
+			$$ = NEW_SCLASS($3, $6);
 			fixpos($$, $3);
 		    /*%
-			$$ = dispatch2(sclass, $3, $7);
+			$$ = dispatch2(sclass, $3, $6);
 		    %*/
 			local_pop();
-			in_def = $<num>4;
-			in_single = $<num>6;
+			in_def = ($<num>4 >> 1) & 1;
+			in_single = $<num>4 & 1;
 		    }
 		| k_module cpath
 		    {
@@ -3001,30 +2998,34 @@ primary		: literal
 		    }
 		| k_def fname
 		    {
-			in_def++;
 			local_push(0);
 			$<id>$ = current_arg;
 			current_arg = 0;
+		    }
+		    {
+			$<num>$ = in_def;
+			in_def = 1;
 		    }
 		  f_arglist
 		  bodystmt
 		  k_end
 		    {
 		    /*%%%*/
-			NODE *body = remove_begin($5);
+			NODE *body = remove_begin($6);
 			reduce_nodes(&body);
-			$$ = NEW_DEFN($2, $4, body, METHOD_VISI_PRIVATE);
+			$$ = NEW_DEFN($2, $5, body, METHOD_VISI_PRIVATE);
 			nd_set_line($$, $<num>1);
 		    /*%
-			$$ = dispatch3(def, $2, $4, $5);
+			$$ = dispatch3(def, $2, $5, $6);
 		    %*/
 			local_pop();
-			in_def--;
+			in_def = $<num>4 & 1;
 			current_arg = $<id>3;
 		    }
 		| k_def singleton dot_or_colon {lex_state = EXPR_FNAME;} fname
 		    {
-			in_single++;
+			$<num>4 = in_single;
+			in_single = 1;
 			lex_state = EXPR_ENDFN; /* force for args */
 			local_push(0);
 			$<id>$ = current_arg;
@@ -3043,7 +3044,7 @@ primary		: literal
 			$$ = dispatch5(defs, $2, $3, $5, $7, $8);
 		    %*/
 			local_pop();
-			in_single--;
+			in_single = $<num>4 & 1;
 			current_arg = $<id>6;
 		    }
 		| keyword_break
