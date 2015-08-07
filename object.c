@@ -1521,9 +1521,9 @@ rb_mod_freeze(VALUE mod)
  *     mod === obj    -> true or false
  *
  *  Case Equality---Returns <code>true</code> if <i>obj</i> is an
- *  instance of <i>mod</i> or one of <i>mod</i>'s descendants. Of
- *  limited use for modules, but can be used in <code>case</code>
- *  statements to classify objects by class.
+ *  instance of <i>mod</i> or and instance of one of <i>mod</i>'s descendants.
+ *  Of limited use for modules, but can be used in <code>case</code> statements
+ *  to classify objects by class.
  */
 
 static VALUE

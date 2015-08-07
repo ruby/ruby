@@ -1,3 +1,9 @@
+Sat Aug  8 03:59:51 2015  Zachary Scott  <zzak@ruby-lang.org>
+
+        * object.c: [DOC] Improve grammar for Module#===
+          Patch by @SkyBirdSoar in documenting-ruby/ruby#52:
+          https://github.com/documenting-ruby/ruby/pull/52
+
 Sat Aug  8 03:39:33 2015  Zachary Scott  <zzak@ruby-lang.org>
 
         * hash.c: [DOC] Improve description of symbol key syntax
