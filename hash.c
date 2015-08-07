@@ -3909,7 +3909,7 @@ env_update(VALUE env, VALUE hash)
  *
  *    grades = { "Jane Doe" => 10, "Jim Doe" => 6 }
  *
- *  Hashes allow an alternate syntax form when your keys are always symbols.
+ *  Hashes allow an alternate syntax for keys that are symbols.
  *  Instead of
  *
  *    options = { :font_size => 10, :font_family => "Arial" }
