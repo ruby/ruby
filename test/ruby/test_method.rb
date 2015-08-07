@@ -868,6 +868,11 @@ class TestMethod < Test::Unit::TestCase
     assert_equal(Base.instance_method(:foo), m, Feature9781)
     m = assert_nothing_raised(NameError, Feature9781) {break m.super_method}
     assert_nil(m, Feature9781)
+
+    bug11419 = '[ruby-core:70254]'
+    m = Object.instance_method(:tap)
+    m = assert_nothing_raised(NameError, bug11419) {break m.super_method}
+    assert_nil(m, bug11419)
   end
 
   def test_super_method_module

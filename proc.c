@@ -1249,6 +1249,12 @@ mnew(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
     return mnew_from_me(me, klass, obj, id, mclass, scope);
 }
 
+static inline VALUE
+method_entry_defined_class(const rb_method_entry_t *me)
+{
+    VALUE defined_class = me->defined_class;
+    return defined_class ? defined_class : me->owner;
+}
 
 /**********************************************************************
  *
@@ -1299,8 +1305,8 @@ method_eq(VALUE method, VALUE other)
     m1 = (struct METHOD *)DATA_PTR(method);
     m2 = (struct METHOD *)DATA_PTR(other);
 
-    klass1 = m1->me->defined_class ? m1->me->defined_class : m1->me->owner;
-    klass2 = m2->me->defined_class ? m2->me->defined_class : m2->me->owner;
+    klass1 = method_entry_defined_class(m1->me);
+    klass2 = method_entry_defined_class(m2->me);
 
     if (!rb_method_entry_eq(m1->me, m2->me) ||
 	klass1 != klass2 ||
@@ -2326,7 +2332,7 @@ method_inspect(VALUE method)
 	defined_class = data->me->def->body.alias.original_me->owner;
     }
     else {
-	defined_class = data->me->defined_class ? data->me->defined_class : data->me->owner;
+	defined_class = method_entry_defined_class(data->me);
     }
 
     if (RB_TYPE_P(defined_class, T_ICLASS)) {
@@ -2451,7 +2457,7 @@ method_super_method(VALUE method)
     const rb_method_entry_t *me;
 
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
-    super_class = RCLASS_SUPER(data->me->defined_class);
+    super_class = RCLASS_SUPER(method_entry_defined_class(data->me));
     if (!super_class) return Qnil;
     me = (rb_method_entry_t *)rb_callable_method_entry_without_refinements(super_class, data->me->called_id);
     if (!me) return Qnil;

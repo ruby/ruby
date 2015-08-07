@@ -1,3 +1,12 @@
+Fri Aug  7 17:07:56 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (method_super_method): uncallable method entry does not
+	  have the defined class, use the owner instead.
+	  [ruby-core:70254] [Bug #11419]
+
+	* test/ruby/test_method.rb (test_super_method_unbound): add test
+	  by Akira Matsuda.
+
 Thu Aug  6 10:49:57 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* node.c (rb_alloc_tmp_buffer): round up the size and check the
