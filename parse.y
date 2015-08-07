@@ -231,65 +231,67 @@ typedef struct token_info {
 struct parser_params {
     NODE *heap;
 
-    YYSTYPE *parser_yylval;
+    YYSTYPE *lval;
 
-    NODE *parser_lex_strterm;
-    stack_type parser_cond_stack;
-    stack_type parser_cmdarg_stack;
-    enum lex_state_e parser_lex_state;
-    int parser_paren_nest;
-    int parser_lpar_beg;
-    int parser_in_single; /* counter */
-    int parser_in_def; /* counter */
-    int parser_brace_nest;
-    int parser_tokidx;
-    int parser_toksiz;
-    int parser_tokline;
-    int parser_heredoc_end;
-    char *parser_tokenbuf;
-    VALUE parser_lex_input;
-    VALUE parser_lex_lastline;
-    VALUE parser_lex_nextline;
-    const char *parser_lex_pbeg;
-    const char *parser_lex_p;
-    const char *parser_lex_pend;
-    NODE *parser_deferred_nodes;
-    long parser_lex_gets_ptr;
-    VALUE (*parser_lex_gets)(struct parser_params*,VALUE);
-    struct local_vars *parser_lvtbl;
+    struct {
+	NODE *strterm;
+	VALUE (*gets)(struct parser_params*,VALUE);
+	VALUE input;
+	VALUE lastline;
+	VALUE nextline;
+	const char *pbeg;
+	const char *pcur;
+	const char *pend;
+	long gets_ptr;
+	enum lex_state_e state;
+	int paren_nest;
+	int lpar_beg;
+	int brace_nest;
+    } lex;
+    stack_type cond_stack;
+    stack_type cmdarg_stack;
+    int in_single; /* counter */
+    int in_def; /* counter */
+    int tokidx;
+    int toksiz;
+    int tokline;
+    int heredoc_end;
+    char *tokenbuf;
+    NODE *deferred_nodes;
+    struct local_vars *lvtbl;
     int line_count;
-    int parser_ruby_sourceline;	/* current line no. */
-    char *parser_ruby_sourcefile; /* current source file */
-    VALUE parser_ruby_sourcefile_string;
+    int ruby_sourceline;	/* current line no. */
+    char *ruby_sourcefile; /* current source file */
+    VALUE ruby_sourcefile_string;
     rb_encoding *enc;
 
     ID cur_arg;
 
     int last_cr_line;
 
-    unsigned int parser_command_start:1;
+    unsigned int command_start:1;
     unsigned int eofp: 1;
-    unsigned int parser_ruby__end__seen: 1;
-    unsigned int parser_yydebug: 1;
+    unsigned int ruby__end__seen: 1;
+    unsigned int yydebug: 1;
     unsigned int has_shebang: 1;
-    unsigned int parser_in_defined: 1;
-    unsigned int parser_compile_for_eval: 1;
-    unsigned int parser_in_kwarg: 1;
+    unsigned int in_defined: 1;
+    unsigned int compile_for_eval: 1;
+    unsigned int in_kwarg: 1;
 
 #ifndef RIPPER
     /* Ruby core only */
-    unsigned int parser_token_info_enabled: 1;
+    unsigned int token_info_enabled: 1;
 # if WARN_PAST_SCOPE
-    unsigned int parser_past_scope_enabled: 1;
+    unsigned int past_scope_enabled: 1;
 # endif
     unsigned int has_err: 1;
 
-    NODE *parser_eval_tree_begin;
-    NODE *parser_eval_tree;
+    NODE *eval_tree_begin;
+    NODE *eval_tree;
     VALUE debug_lines;
     VALUE coverage;
 
-    token_info *parser_token_info;
+    token_info *token_info;
 #else
     /* Ripper only */
     unsigned int toplevel_p: 1;
@@ -321,44 +323,44 @@ struct parser_params {
 static int parser_yyerror(struct parser_params*, const char*);
 #define yyerror(msg) parser_yyerror(parser, (msg))
 
-#define lex_strterm		(parser->parser_lex_strterm)
-#define lex_state		(parser->parser_lex_state)
-#define cond_stack		(parser->parser_cond_stack)
-#define cmdarg_stack		(parser->parser_cmdarg_stack)
-#define paren_nest		(parser->parser_paren_nest)
-#define lpar_beg		(parser->parser_lpar_beg)
-#define brace_nest		(parser->parser_brace_nest)
-#define in_single		(parser->parser_in_single)
-#define in_def			(parser->parser_in_def)
-#define compile_for_eval	(parser->parser_compile_for_eval)
-#define in_defined		(parser->parser_in_defined)
-#define tokenbuf		(parser->parser_tokenbuf)
-#define tokidx			(parser->parser_tokidx)
-#define toksiz			(parser->parser_toksiz)
-#define tokline			(parser->parser_tokline)
-#define lex_input		(parser->parser_lex_input)
-#define lex_lastline		(parser->parser_lex_lastline)
-#define lex_nextline		(parser->parser_lex_nextline)
-#define lex_pbeg		(parser->parser_lex_pbeg)
-#define lex_p			(parser->parser_lex_p)
-#define lex_pend		(parser->parser_lex_pend)
-#define heredoc_end		(parser->parser_heredoc_end)
-#define command_start		(parser->parser_command_start)
-#define deferred_nodes		(parser->parser_deferred_nodes)
-#define lex_gets_ptr		(parser->parser_lex_gets_ptr)
-#define lex_gets		(parser->parser_lex_gets)
-#define lvtbl			(parser->parser_lvtbl)
-#define ruby__end__seen		(parser->parser_ruby__end__seen)
-#define ruby_sourceline		(parser->parser_ruby_sourceline)
-#define ruby_sourcefile		(parser->parser_ruby_sourcefile)
-#define ruby_sourcefile_string	(parser->parser_ruby_sourcefile_string)
+#define lex_strterm		(parser->lex.strterm)
+#define lex_state		(parser->lex.state)
+#define cond_stack		(parser->cond_stack)
+#define cmdarg_stack		(parser->cmdarg_stack)
+#define paren_nest		(parser->lex.paren_nest)
+#define lpar_beg		(parser->lex.lpar_beg)
+#define brace_nest		(parser->lex.brace_nest)
+#define in_single		(parser->in_single)
+#define in_def			(parser->in_def)
+#define compile_for_eval	(parser->compile_for_eval)
+#define in_defined		(parser->in_defined)
+#define tokenbuf		(parser->tokenbuf)
+#define tokidx			(parser->tokidx)
+#define toksiz			(parser->toksiz)
+#define tokline 		(parser->tokline)
+#define lex_input		(parser->lex.input)
+#define lex_lastline		(parser->lex.lastline)
+#define lex_nextline		(parser->lex.nextline)
+#define lex_pbeg		(parser->lex.pbeg)
+#define lex_p			(parser->lex.pcur)
+#define lex_pend		(parser->lex.pend)
+#define heredoc_end		(parser->heredoc_end)
+#define command_start		(parser->command_start)
+#define deferred_nodes		(parser->deferred_nodes)
+#define lex_gets_ptr		(parser->lex.gets_ptr)
+#define lex_gets		(parser->lex.gets)
+#define lvtbl			(parser->lvtbl)
+#define ruby__end__seen 	(parser->ruby__end__seen)
+#define ruby_sourceline 	(parser->ruby_sourceline)
+#define ruby_sourcefile 	(parser->ruby_sourcefile)
+#define ruby_sourcefile_string	(parser->ruby_sourcefile_string)
 #define current_enc		(parser->enc)
 #define current_arg		(parser->cur_arg)
-#define yydebug			(parser->parser_yydebug)
+#define yydebug 		(parser->yydebug)
 #ifdef RIPPER
 #else
-#define ruby_eval_tree		(parser->parser_eval_tree)
-#define ruby_eval_tree_begin	(parser->parser_eval_tree_begin)
+#define ruby_eval_tree		(parser->eval_tree)
+#define ruby_eval_tree_begin	(parser->eval_tree_begin)
 #define ruby_debug_lines	(parser->debug_lines)
 #define ruby_coverage		(parser->coverage)
 #endif
@@ -4502,12 +4504,12 @@ f_arglist	: '(' f_args rparen
 			command_start = TRUE;
 		    }
 		|   {
-			$<num>$ = parser->parser_in_kwarg;
-			parser->parser_in_kwarg = 1;
+			$<num>$ = parser->in_kwarg;
+			parser->in_kwarg = 1;
 		    }
 		    f_args term
 		    {
-			parser->parser_in_kwarg = !!$<num>1;
+			parser->in_kwarg = !!$<num>1;
 			$$ = $2;
 			lex_state = EXPR_BEG;
 			command_start = TRUE;
@@ -5155,7 +5157,7 @@ none		: /* none */
 # undef parser
 # undef yylex
 # undef yylval
-# define yylval  (*((YYSTYPE*)(parser->parser_yylval)))
+# define yylval  (*parser->lval)
 
 static int parser_regx_options(struct parser_params*);
 static int parser_tokadd_string(struct parser_params*,int,int,int,long*,rb_encoding**);
@@ -5210,7 +5212,7 @@ ripper_yylval_id(ID x)
 #ifndef RIPPER
 #define ripper_flush(p) (void)(p)
 #else
-#define ripper_flush(p) ((p)->tokp = (p)->parser_lex_p)
+#define ripper_flush(p) ((p)->tokp = (p)->lex.pcur)
 
 #define yylval_rval (*(RB_TYPE_P(yylval.val, T_NODE) ? &yylval.node->nd_rval : &yylval.val))
 
@@ -5323,15 +5325,15 @@ token_info_push(struct parser_params *parser, const char *token)
 {
     token_info *ptinfo;
 
-    if (!parser->parser_token_info_enabled) return;
+    if (!parser->token_info_enabled) return;
     ptinfo = ALLOC(token_info);
     ptinfo->token = token;
     ptinfo->linenum = ruby_sourceline;
     ptinfo->column = token_info_get_column(parser, token);
     ptinfo->nonspc = token_info_has_nonspaces(parser, token);
-    ptinfo->next = parser->parser_token_info;
+    ptinfo->next = parser->token_info;
 
-    parser->parser_token_info = ptinfo;
+    parser->token_info = ptinfo;
 }
 
 #undef token_info_pop
@@ -5339,10 +5341,10 @@ static void
 token_info_pop(struct parser_params *parser, const char *token)
 {
     int linenum;
-    token_info *ptinfo = parser->parser_token_info;
+    token_info *ptinfo = parser->token_info;
 
     if (!ptinfo) return;
-    parser->parser_token_info = ptinfo->next;
+    parser->token_info = ptinfo->next;
     if (token_info_get_column(parser, token) == ptinfo->column) { /* OK */
 	goto finish;
     }
@@ -5353,7 +5355,7 @@ token_info_pop(struct parser_params *parser, const char *token)
     if (token_info_has_nonspaces(parser, token) || ptinfo->nonspc) { /* SKIP */
 	goto finish;
     }
-    if (parser->parser_token_info_enabled) {
+    if (parser->token_info_enabled) {
 	rb_compile_warn(ruby_sourcefile, linenum,
 			"mismatched indentations at '%s' with '%s' at %d",
 			token, ptinfo->token, ptinfo->linenum);
@@ -5490,19 +5492,19 @@ yycompile0(VALUE arg)
     parser_prepare(parser);
     deferred_nodes = 0;
 #ifndef RIPPER
-    parser->parser_token_info_enabled = !compile_for_eval && RTEST(ruby_verbose);
+    parser->token_info_enabled = !compile_for_eval && RTEST(ruby_verbose);
 #endif
 #ifndef RIPPER
     if (RUBY_DTRACE_PARSE_BEGIN_ENABLED()) {
-	RUBY_DTRACE_PARSE_BEGIN(parser->parser_ruby_sourcefile,
-				parser->parser_ruby_sourceline);
+	RUBY_DTRACE_PARSE_BEGIN(ruby_sourcefile,
+				ruby_sourceline);
     }
 #endif
     n = yyparse((void*)parser);
 #ifndef RIPPER
     if (RUBY_DTRACE_PARSE_END_ENABLED()) {
-	RUBY_DTRACE_PARSE_END(parser->parser_ruby_sourcefile,
-			      parser->parser_ruby_sourceline);
+	RUBY_DTRACE_PARSE_END(ruby_sourcefile,
+			      ruby_sourceline);
     }
 #endif
     ruby_debug_lines = 0;
@@ -5568,7 +5570,7 @@ lex_get_str(struct parser_params *parser, VALUE s)
 static VALUE
 lex_getline(struct parser_params *parser)
 {
-    VALUE line = (*parser->parser_lex_gets)(parser, parser->parser_lex_input);
+    VALUE line = (*lex_gets)(parser, lex_input);
     if (NIL_P(line)) return line;
     must_be_ascii_compatible(line);
 #ifndef RIPPER
@@ -5714,7 +5716,7 @@ parser_str_new(const char *p, long n, rb_encoding *enc, int func, rb_encoding *e
     return str;
 }
 
-#define lex_goto_eol(parser) ((parser)->parser_lex_p = (parser)->parser_lex_pend)
+#define lex_goto_eol(parser) ((parser)->lex.pcur = (parser)->lex.pend)
 #define lex_eol_p() (lex_p >= lex_pend)
 #define peek(c) peek_n((c), 0)
 #define peek_n(c,n) (lex_p+(n) < lex_pend && (c) == (unsigned char)lex_p[n])
@@ -6896,7 +6898,7 @@ static void
 parser_set_token_info(struct parser_params *parser, const char *name, const char *val)
 {
     int b = parser_get_bool(parser, name, val);
-    if (b >= 0) parser->parser_token_info_enabled = b;
+    if (b >= 0) parser->token_info_enabled = b;
 }
 
 # if WARN_PAST_SCOPE
@@ -6904,7 +6906,7 @@ static void
 parser_set_past_scope(struct parser_params *parser, const char *name, const char *val)
 {
     int b = parser_get_bool(parser, name, val);
-    if (b >= 0) parser->parser_past_scope_enabled = b;
+    if (b >= 0) parser->past_scope_enabled = b;
 }
 # endif
 #endif
@@ -7950,7 +7952,7 @@ parser_yylex(struct parser_params *parser)
             }
             fallthru = FALSE;
 #endif
-	    if (IS_lex_state(EXPR_LABELARG) && parser->parser_in_kwarg) {
+	    if (IS_lex_state(EXPR_LABELARG) && parser->in_kwarg) {
 		goto normal_newline;
 	    }
 	    goto retry;
@@ -8530,7 +8532,7 @@ yylex(YYSTYPE *lval, struct parser_params *parser)
 {
     int t;
 
-    parser->parser_yylval = lval;
+    parser->lval = lval;
     lval->val = Qundef;
     t = parser_yylex(parser);
 #ifdef RIPPER
@@ -10188,7 +10190,7 @@ dyna_pop_vtable(struct parser_params *parser, struct vtable **vtblp)
     struct vtable *tmp = *vtblp;
     *vtblp = tmp->prev;
 # if WARN_PAST_SCOPE
-    if (parser->parser_past_scope_enabled) {
+    if (parser->past_scope_enabled) {
 	tmp->prev = lvtbl->past;
 	lvtbl->past = tmp;
 	return;
@@ -10541,8 +10543,8 @@ static void
 parser_initialize(struct parser_params *parser)
 {
     /* note: we rely on TypedData_Make_Struct to set most fields to 0 */
-    parser->parser_command_start = TRUE;
-    parser->parser_ruby_sourcefile_string = Qnil;
+    command_start = TRUE;
+    ruby_sourcefile_string = Qnil;
 #ifdef RIPPER
     parser->delayed = Qnil;
     parser->result = Qnil;
@@ -10560,56 +10562,56 @@ parser_initialize(struct parser_params *parser)
 static void
 parser_mark(void *ptr)
 {
-    struct parser_params *p = (struct parser_params*)ptr;
+    struct parser_params *parser = (struct parser_params*)ptr;
 
-    rb_gc_mark((VALUE)p->parser_lex_strterm);
-    rb_gc_mark((VALUE)p->parser_deferred_nodes);
-    rb_gc_mark(p->parser_lex_input);
-    rb_gc_mark(p->parser_lex_lastline);
-    rb_gc_mark(p->parser_lex_nextline);
-    rb_gc_mark(p->parser_ruby_sourcefile_string);
+    rb_gc_mark((VALUE)lex_strterm);
+    rb_gc_mark((VALUE)deferred_nodes);
+    rb_gc_mark(lex_input);
+    rb_gc_mark(lex_lastline);
+    rb_gc_mark(lex_nextline);
+    rb_gc_mark(ruby_sourcefile_string);
 #ifndef RIPPER
-    rb_gc_mark((VALUE)p->parser_eval_tree_begin) ;
-    rb_gc_mark((VALUE)p->parser_eval_tree) ;
-    rb_gc_mark(p->debug_lines);
+    rb_gc_mark((VALUE)ruby_eval_tree_begin);
+    rb_gc_mark((VALUE)ruby_eval_tree);
+    rb_gc_mark(ruby_debug_lines);
 #else
-    rb_gc_mark(p->delayed);
-    rb_gc_mark(p->value);
-    rb_gc_mark(p->result);
-    rb_gc_mark(p->parsing_thread);
+    rb_gc_mark(parser->delayed);
+    rb_gc_mark(parser->value);
+    rb_gc_mark(parser->result);
+    rb_gc_mark(parser->parsing_thread);
 #endif
 #ifdef YYMALLOC
-    rb_gc_mark((VALUE)p->heap);
+    rb_gc_mark((VALUE)parser->heap);
 #endif
 }
 
 static void
 parser_free(void *ptr)
 {
-    struct parser_params *p = (struct parser_params*)ptr;
+    struct parser_params *parser = (struct parser_params*)ptr;
     struct local_vars *local, *prev;
 
-    if (p->parser_tokenbuf) {
-        xfree(p->parser_tokenbuf);
+    if (tokenbuf) {
+        xfree(tokenbuf);
     }
-    for (local = p->parser_lvtbl; local; local = prev) {
+    for (local = lvtbl; local; local = prev) {
 	if (local->vars) xfree(local->vars);
 	prev = local->prev;
 	xfree(local);
     }
-    xfree(p);
+    xfree(ptr);
 }
 
 static size_t
 parser_memsize(const void *ptr)
 {
-    struct parser_params *p = (struct parser_params*)ptr;
+    struct parser_params *parser = (struct parser_params*)ptr;
     struct local_vars *local;
-    size_t size = sizeof(*p);
+    size_t size = sizeof(*parser);
 
     if (!ptr) return 0;
-    size += p->parser_toksiz;
-    for (local = p->parser_lvtbl; local; local = local->prev) {
+    size += toksiz;
+    for (local = lvtbl; local; local = local->prev) {
 	size += sizeof(*local);
 	if (local->vars) size += local->vars->capa * sizeof(ID);
     }
@@ -11100,7 +11102,7 @@ ripper_s_allocate(VALUE klass)
     return self;
 }
 
-#define ripper_initialized_p(r) ((r)->parser_lex_input != 0)
+#define ripper_initialized_p(r) ((r)->lex.input != 0)
 
 /*
  *  call-seq:
@@ -11121,13 +11123,13 @@ ripper_initialize(int argc, VALUE *argv, VALUE self)
     TypedData_Get_Struct(self, struct parser_params, &parser_data_type, parser);
     rb_scan_args(argc, argv, "12", &src, &fname, &lineno);
     if (RB_TYPE_P(src, T_FILE)) {
-        parser->parser_lex_gets = ripper_lex_get_generic;
+        lex_gets = ripper_lex_get_generic;
     }
     else {
         StringValue(src);
-        parser->parser_lex_gets = lex_get_str;
+        lex_gets = lex_get_str;
     }
-    parser->parser_lex_input = src;
+    lex_input = src;
     parser->eofp = 0;
     if (NIL_P(fname)) {
         fname = STR_NEW2("(ripper)");
@@ -11139,9 +11141,9 @@ ripper_initialize(int argc, VALUE *argv, VALUE self)
     }
     parser_initialize(parser);
 
-    parser->parser_ruby_sourcefile_string = fname;
-    parser->parser_ruby_sourcefile = RSTRING_PTR(fname);
-    parser->parser_ruby_sourceline = NIL_P(lineno) ? 0 : NUM2INT(lineno) - 1;
+    ruby_sourcefile_string = fname;
+    ruby_sourcefile = RSTRING_PTR(fname);
+    ruby_sourceline = NIL_P(lineno) ? 0 : NUM2INT(lineno) - 1;
 
     return Qnil;
 }
@@ -11218,7 +11220,7 @@ ripper_column(VALUE self)
         rb_raise(rb_eArgError, "method called for uninitialized object");
     }
     if (NIL_P(parser->parsing_thread)) return Qnil;
-    col = parser->tokp - parser->parser_lex_pbeg;
+    col = parser->tokp - lex_pbeg;
     return LONG2NUM(col);
 }
 
@@ -11237,7 +11239,7 @@ ripper_filename(VALUE self)
     if (!ripper_initialized_p(parser)) {
         rb_raise(rb_eArgError, "method called for uninitialized object");
     }
-    return parser->parser_ruby_sourcefile_string;
+    return ruby_sourcefile_string;
 }
 
 /*
@@ -11257,7 +11259,7 @@ ripper_lineno(VALUE self)
         rb_raise(rb_eArgError, "method called for uninitialized object");
     }
     if (NIL_P(parser->parsing_thread)) return Qnil;
-    return INT2NUM(parser->parser_ruby_sourceline);
+    return INT2NUM(ruby_sourceline);
 }
 
 #ifdef RIPPER_DEBUG

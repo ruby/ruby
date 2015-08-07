@@ -1,4 +1,6 @@
-Fri Aug  7 17:23:06 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Aug  7 17:30:19 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_params): remove redundant prefixes.
 
 	* parse.y (yylex): non-pure parser has not been supported since
 	  merger of ripper.  change argument types from void pointers.
