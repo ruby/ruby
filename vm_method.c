@@ -783,7 +783,7 @@ rb_callable_method_entry(VALUE klass, ID id)
 static const rb_method_entry_t *resolve_refined_method(VALUE refinements, const rb_method_entry_t *me, VALUE *defined_class_ptr);
 
 static const rb_method_entry_t *
-method_entry_resolve_refienment(VALUE klass, ID id, int with_refinement, VALUE *defined_class_ptr)
+method_entry_resolve_refinement(VALUE klass, ID id, int with_refinement, VALUE *defined_class_ptr)
 {
     const rb_method_entry_t *me = method_entry_get(klass, id, defined_class_ptr);
 
@@ -808,33 +808,33 @@ method_entry_resolve_refienment(VALUE klass, ID id, int with_refinement, VALUE *
 const rb_method_entry_t *
 rb_method_entry_with_refinements(VALUE klass, ID id)
 {
-    return method_entry_resolve_refienment(klass, id, TRUE, NULL);
+    return method_entry_resolve_refinement(klass, id, TRUE, NULL);
 }
 
 const rb_callable_method_entry_t *
 rb_callable_method_entry_with_refinements(VALUE klass, ID id)
 {
     VALUE defined_class;
-    const rb_method_entry_t *me = method_entry_resolve_refienment(klass, id, TRUE, &defined_class);
+    const rb_method_entry_t *me = method_entry_resolve_refinement(klass, id, TRUE, &defined_class);
     return prepare_callable_method_entry(defined_class, id, me);
 }
 
 const rb_method_entry_t *
 rb_method_entry_without_refinements(VALUE klass, ID id)
 {
-    return method_entry_resolve_refienment(klass, id, FALSE, NULL);
+    return method_entry_resolve_refinement(klass, id, FALSE, NULL);
 }
 
 const rb_callable_method_entry_t *
 rb_callable_method_entry_without_refinements(VALUE klass, ID id)
 {
     VALUE defined_class;
-    const rb_method_entry_t *me = method_entry_resolve_refienment(klass, id, FALSE, &defined_class);
+    const rb_method_entry_t *me = method_entry_resolve_refinement(klass, id, FALSE, &defined_class);
     return prepare_callable_method_entry(defined_class, id, me);
 }
 
 static const rb_method_entry_t *
-refiend_method_original_method_entry(VALUE refinements, const rb_method_entry_t *me, VALUE *defined_class_ptr)
+refined_method_original_method_entry(VALUE refinements, const rb_method_entry_t *me, VALUE *defined_class_ptr)
 {
     VALUE super;
 
@@ -861,7 +861,7 @@ resolve_refined_method(VALUE refinements, const rb_method_entry_t *me, VALUE *de
 
 	refinement = find_refinement(refinements, me->owner);
 	if (NIL_P(refinement)) {
-	    return refiend_method_original_method_entry(refinements, me, defined_class_ptr);
+	    return refined_method_original_method_entry(refinements, me, defined_class_ptr);
 	}
 	else {
 	    tmp_me = method_entry_get(refinement, me->called_id, defined_class_ptr);
@@ -870,7 +870,7 @@ resolve_refined_method(VALUE refinements, const rb_method_entry_t *me, VALUE *de
 		return tmp_me;
 	    }
 	    else {
-		return refiend_method_original_method_entry(refinements, me, defined_class_ptr);
+		return refined_method_original_method_entry(refinements, me, defined_class_ptr);
 	    }
 	}
     }
