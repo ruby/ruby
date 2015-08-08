@@ -149,6 +149,11 @@ RUBY_INSTALL_NAME = $(RUBY_INSTALL_NAME)
 !ifdef RUBY_SO_NAME
 RUBY_SO_NAME = $(RUBY_SO_NAME)
 !endif
+!ifdef RUBY_DEBUG
+OPTFLAGS = -Od
+RUNTIMEFLAG = -MDd
+RUBY_DEBUG = 1
+!endif
 <<
 
 -generic-: nul
