@@ -56,7 +56,7 @@ RUBY_SYMBOL_EXPORT_BEGIN
 			       0xffffffffU))
 #define o4(b0,b1,b2,b3)	(PType(((((unsigned char)(b1))<<8)|\
 				(((unsigned char)(b2))<<16)|\
-				(((unsigned char)(b3))<<24)|\
+				(((unsigned int)(unsigned char)(b3))<<24)|\
 				((((unsigned char)(b0))&0x07)<<5)|\
 				FOURbt)&\
 			       0xffffffffU))
