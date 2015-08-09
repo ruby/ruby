@@ -1,3 +1,8 @@
+Sun Aug  9 14:15:54 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm.c (Init_vm_objects, rb_vm_fstring_table): use frozen_strings
+	  table in rb_vm_t.  [ruby-core:70274] [Bug #11423]
+
 Sat Aug  8 03:59:51 2015  Zachary Scott  <zzak@ruby-lang.org>
 
         * object.c: [DOC] Improve grammar for Module#===

@@ -216,17 +216,11 @@ mustnot_wchar(VALUE str)
 
 static int fstring_cmp(VALUE a, VALUE b);
 
-/* in case we restart MVM development, this needs to be per-VM */
-static st_table* frozen_strings;
 static VALUE register_fstring(VALUE str);
 
-static inline st_table*
-rb_vm_fstring_table(void)
-{
-    return frozen_strings;
-}
+st_table *rb_vm_fstring_table(void);
 
-static const struct st_hash_type fstring_hash_type = {
+const struct st_hash_type rb_fstring_hash_type = {
     fstring_cmp,
     rb_str_hash,
 };
@@ -308,10 +302,11 @@ static VALUE
 register_fstring(VALUE str)
 {
     VALUE ret;
+    st_table *frozen_strings = rb_vm_fstring_table();
 
     do {
 	ret = str;
-	st_update(rb_vm_fstring_table(), (st_data_t)str,
+	st_update(frozen_strings, (st_data_t)str,
 		  fstr_update_callback, (st_data_t)&ret);
     } while (ret == Qundef);
 
@@ -9326,11 +9321,4 @@ Init_String(void)
 
     assert(rb_vm_fstring_table());
     st_foreach(rb_vm_fstring_table(), fstring_set_class_i, rb_cString);
-}
-
-void
-Init_frozen_strings(void)
-{
-    assert(!frozen_strings);
-    frozen_strings = st_init_table_with_size(&fstring_hash_type, 1000);
 }

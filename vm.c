@@ -2786,6 +2786,8 @@ rb_vm_set_progname(VALUE filename)
 struct rb_objspace *rb_objspace_alloc(void);
 #endif
 
+extern const struct st_hash_type rb_fstring_hash_type;
+
 void
 Init_BareVM(void)
 {
@@ -2821,6 +2823,7 @@ Init_vm_objects(void)
     /* initialize mark object array, hash */
     vm->mark_object_ary = rb_ary_tmp_new(128);
     vm->loading_table = st_init_strtable();
+    vm->frozen_strings = st_init_table_with_size(&rb_fstring_hash_type, 1000);
 }
 
 /* top self */
@@ -2875,6 +2878,12 @@ rb_ruby_debug_ptr(void)
 VALUE rb_insn_operand_intern(const rb_iseq_t *iseq,
 			     VALUE insn, int op_no, VALUE op,
 			     int len, size_t pos, VALUE *pnop, VALUE child);
+
+st_table *
+rb_vm_fstring_table(void)
+{
+    return GET_VM()->frozen_strings;
+}
 
 #if VM_COLLECT_USAGE_DETAILS
 
