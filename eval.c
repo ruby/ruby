@@ -44,18 +44,15 @@ ID ruby_static_id_signo, ruby_static_id_status;
 int
 ruby_setup(void)
 {
-    static int initialized = 0;
     int state;
 
-    if (initialized)
+    if (GET_VM())
 	return 0;
-    initialized = 1;
 
     ruby_init_stack((void *)&state);
     Init_BareVM();
     Init_heap();
     Init_vm_objects();
-    Init_frozen_strings();
 
     PUSH_TAG();
     if ((state = EXEC_TAG()) == 0) {
