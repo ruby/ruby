@@ -154,6 +154,9 @@ OPTFLAGS = -Od
 RUNTIMEFLAG = -MDd
 RUBY_DEBUG = 1
 !endif
+!ifdef EMBED_DEBUG
+DEBUGFLAGS = -Z7
+!endif
 <<
 
 -generic-: nul
