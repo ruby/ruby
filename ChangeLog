@@ -1,3 +1,8 @@
+Tue Aug 11 00:42:53 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (lambda_body): pop cmdarg stack for lookahead
+	  token.  [ruby-core:70067] [Bug #11380]
+
 Tue Aug 11 00:21:56 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/socket/extconf.rb: Solaris 11 has struct tcp_info.tcpi_ca_state,

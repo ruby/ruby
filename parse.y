@@ -3540,6 +3540,7 @@ lambda		:   {
 		    {
 			lpar_beg = $<num>2;
 			cmdarg_stack = $<val>5;
+			CMDARG_LEXPOP();
 		    /*%%%*/
 			$$ = NEW_LAMBDA($3, $6);
 			nd_set_line($$, $<num>4);
