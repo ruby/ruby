@@ -23,6 +23,7 @@
 
 #include "ruby/ruby.h"
 #include "ruby/encoding.h"
+#include "ruby/util.h"
 #include <fcntl.h>
 #include <process.h>
 #include <sys/stat.h>
@@ -3937,12 +3938,10 @@ getifaddrs(struct ifaddrs **ifap)
 	if (pConvertInterfaceGuidToLuid && pConvertInterfaceLuidToNameA &&
 	    pConvertInterfaceGuidToLuid(&guid, &luid) == NO_ERROR &&
 	    pConvertInterfaceLuidToNameA(&luid, name, sizeof(name)) == NO_ERROR) {
-	    ifa->ifa_name = ruby_xmalloc(lstrlen(name) + 1);
-	    lstrcpy(ifa->ifa_name, name);
+	    ifa->ifa_name = ruby_strdup(name);
 	}
 	else {
-	    ifa->ifa_name = ruby_xmalloc(lstrlen(addr->AdapterName) + 1);
-	    lstrcpy(ifa->ifa_name, addr->AdapterName);
+	    ifa->ifa_name = ruby_strdup(addr->AdapterName);
 	}
 
 	if (addr->IfType & IF_TYPE_SOFTWARE_LOOPBACK)
@@ -3962,9 +3961,7 @@ getifaddrs(struct ifaddrs **ifap)
 			prev = ifa;
 			ifa = ruby_xcalloc(1, sizeof(*ifa));
 			prev->ifa_next = ifa;
-			ifa->ifa_name =
-			    ruby_xmalloc(lstrlen(prev->ifa_name) + 1);
-			lstrcpy(ifa->ifa_name, prev->ifa_name);
+			ifa->ifa_name = ruby_strdup(prev->ifa_name);
 			ifa->ifa_flags = prev->ifa_flags;
 		    }
 		    ifa->ifa_addr = ruby_xmalloc(cur->Address.iSockaddrLength);
