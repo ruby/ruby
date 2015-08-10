@@ -192,7 +192,9 @@ class TestRubyLiteral < Test::Unit::TestCase
     assert_normal_exit %q{GC.disable=true; x = nil; raise if eval("[#{(1..1_000_000).to_a.join(", ")}]").size != 1_000_000}, "", timeout: 300, child_env: %[--disable-gems]
     assert_normal_exit %q{GC.disable=true; x = nil; raise if eval("{#{(1..1_000_000).map{|n| "#{n} => x"}.join(', ')}}").size != 1_000_000}, "", timeout: 300, child_env: %[--disable-gems]
     assert_normal_exit %q{GC.disable=true; x = nil; raise if eval("{#{(1..1_000_000).map{|n| "#{n} => #{n}"}.join(', ')}}").size != 1_000_000}, "", timeout: 300, child_env: %[--disable-gems]
+  end
 
+  def test_big_hash_literal
     bug7466 = '[ruby-dev:46658]'
     h = {
       0xFE042 => 0xE5CD,
@@ -327,6 +329,19 @@ class TestRubyLiteral < Test::Unit::TestCase
     }
     k = h.keys
     assert_equal([129, 0xFE331], [k.size, k.last], bug7466)
+
+    code = [
+      "h = {",
+      (1..128).map {|i| "#{i} => 0,"},
+      (129..140).map {|i| "#{i} => [],"},
+      "}",
+    ].join
+    assert_separately([], <<-"end;")
+      GC.stress = true
+      #{code}
+      GC.stress = false
+      assert_equal(140, h.size)
+    end;
   end
 
   def test_range
