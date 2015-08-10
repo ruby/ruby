@@ -1088,9 +1088,8 @@ rb_mod_prepend(int argc, VALUE *argv, VALUE module)
 static VALUE
 hidden_identity_hash_new(void)
 {
-    VALUE hash = rb_hash_new();
+    VALUE hash = rb_ident_hash_new();
 
-    rb_funcall(hash, rb_intern("compare_by_identity"), 0);
     RBASIC_CLEAR_CLASS(hash); /* hide from ObjectSpace */
     return hash;
 }
