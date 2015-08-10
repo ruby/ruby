@@ -384,7 +384,9 @@ if have_type("struct tcp_info", headers)
   have_const("TCP_LISTEN", headers)
   have_const("TCP_CLOSING", headers)
   have_struct_member('struct tcp_info', 'tcpi_state', headers)
-  have_struct_member('struct tcp_info', 'tcpi_ca_state', headers)
+  if /solaris/ !~ RUBY_PLATFORM
+    have_struct_member('struct tcp_info', 'tcpi_ca_state', headers)
+  end
   have_struct_member('struct tcp_info', 'tcpi_retransmits', headers)
   have_struct_member('struct tcp_info', 'tcpi_probes', headers)
   have_struct_member('struct tcp_info', 'tcpi_backoff', headers)

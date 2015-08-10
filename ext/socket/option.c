@@ -883,14 +883,14 @@ inspect_ipv6_mreq(int level, int optname, VALUE data, VALUE ret)
 #endif
 
 static void
-inspect_tcpi_options(VALUE ret, u_int8_t options)
+inspect_tcpi_options(VALUE ret, uint8_t options)
 {
     int sep = '=';
 
     rb_str_cat2(ret, " options");
 #define INSPECT_TCPI_OPTION(optval, name) \
     if (options & (optval)) { \
-        options &= ~(u_int8_t)(optval); \
+        options &= ~(uint8_t)(optval); \
         rb_str_catf(ret, "%c%s", sep, name); \
         sep = ','; \
     }
@@ -923,14 +923,14 @@ inspect_tcpi_options(VALUE ret, u_int8_t options)
 }
 
 static void
-inspect_tcpi_usec(VALUE ret, const char *prefix, u_int32_t t)
+inspect_tcpi_usec(VALUE ret, const char *prefix, uint32_t t)
 {
     rb_str_catf(ret, "%s%u.%06us", prefix, t / 1000000, t % 1000000);
 }
 
-#ifdef __linux__
+#if defined(__linux__) || defined(__sun)
 static void
-inspect_tcpi_msec(VALUE ret, const char *prefix, u_int32_t t)
+inspect_tcpi_msec(VALUE ret, const char *prefix, uint32_t t)
 {
     rb_str_catf(ret, "%s%u.%03us", prefix, t / 1000, t % 1000);
 }
