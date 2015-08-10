@@ -1,3 +1,15 @@
+Tue Aug 11 01:51:53 2015 CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* lib/timeout.rb (ExitException): leave Timeout::ExitException as an
+	  alias of Timeout::Error for backward compatibility in stable branch.
+	  [ruby-dev:49179] [Bug #11344]
+
+Tue Aug 11 01:51:53 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/timeout.rb (ExitException): removed internal exception class
+	  and use Timeout::Error instead, as using throw/catch to isolate
+	  each timeouts now.  [ruby-dev:49179] [Bug #11344]
+
 Tue Aug 11 01:37:28 2015  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/net/http/test_httpresponse.rb
