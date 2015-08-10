@@ -843,7 +843,6 @@ struct st_table *rb_hash_tbl_raw(VALUE hash);
 VALUE rb_hash_has_key(VALUE hash, VALUE key);
 VALUE rb_hash_set_default_proc(VALUE hash, VALUE proc);
 long rb_objid_hash(st_index_t index);
-VALUE rb_ident_hash_new(void);
 st_table *rb_init_identtable(void);
 st_table *rb_init_identtable_with_size(st_index_t size);
 
@@ -1268,6 +1267,7 @@ VALUE rb_str_normalize_ospath(const char *ptr, long len);
 
 /* hash.c (export) */
 VALUE rb_hash_delete_entry(VALUE hash, VALUE key);
+VALUE rb_ident_hash_new(void);
 
 /* io.c (export) */
 void rb_maygvl_fd_fix_cloexec(int fd);
