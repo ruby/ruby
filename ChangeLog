@@ -1,3 +1,10 @@
+Tue Aug 11 10:48:16 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* enum.c: added doc for Enumerable#zip
+	  [fix GH-985] Patch by @yui-knk
+	* test/ruby/test_enum.rb: added tests for Enumerable#zip
+	  [fix GH-985] Patch @yui-knk
+
 Tue Aug 11 10:33:26 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* vm_method.c: typo fix [fix GH-993][ci skip] Patch by @0x0dea
