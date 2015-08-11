@@ -1,3 +1,8 @@
+Tue Aug 11 10:58:42 2015  Juanito Fatas  <juanitofatas@gmail.com>
+
+	* string.c: [DOC] Make #end_with? example doc symmetry
+	  with #start_with? [fix GH-992][ci skip]
+
 Tue Aug 11 10:51:19 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* test/ruby/test_array.rb: Add test for `Array#flatten` with level 1
