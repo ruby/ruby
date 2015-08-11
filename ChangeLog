@@ -1,3 +1,8 @@
+Tue Aug 11 11:54:13 2015  Alexey Lipnyagov  <liptonshmidt@gmail.com>
+
+	* string.c: Fix documentation for String#slice
+	  [ruby-core:70298][Bug #11427]
+
 Tue Aug 11 11:53:28 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (superclass): make superclass rule optional and allow
