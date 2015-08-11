@@ -5580,7 +5580,7 @@ static const rb_data_type_t parser_data_type;
 
 #ifndef RIPPER
 static NODE*
-parser_compile_string(volatile VALUE vparser, VALUE fname, VALUE s, int line)
+parser_compile_string(VALUE vparser, VALUE fname, VALUE s, int line)
 {
     struct parser_params *parser;
     NODE *node;
@@ -5606,13 +5606,13 @@ rb_compile_string(const char *f, VALUE s, int line)
 }
 
 NODE*
-rb_parser_compile_string(volatile VALUE vparser, const char *f, VALUE s, int line)
+rb_parser_compile_string(VALUE vparser, const char *f, VALUE s, int line)
 {
     return rb_parser_compile_string_path(vparser, rb_filesystem_str_new_cstr(f), s, line);
 }
 
 NODE*
-rb_parser_compile_string_path(volatile VALUE vparser, VALUE f, VALUE s, int line)
+rb_parser_compile_string_path(VALUE vparser, VALUE f, VALUE s, int line)
 {
     must_be_ascii_compatible(s);
     return parser_compile_string(vparser, f, s, line);
@@ -5626,7 +5626,7 @@ rb_compile_cstr(const char *f, const char *s, int len, int line)
 }
 
 NODE*
-rb_parser_compile_cstr(volatile VALUE vparser, const char *f, const char *s, int len, int line)
+rb_parser_compile_cstr(VALUE vparser, const char *f, const char *s, int len, int line)
 {
     VALUE str = rb_str_new(s, len);
     return parser_compile_string(vparser, rb_filesystem_str_new_cstr(f), str, line);
@@ -5641,19 +5641,19 @@ lex_io_gets(struct parser_params *parser, VALUE io)
 NODE*
 rb_compile_file(const char *f, VALUE file, int start)
 {
-    VALUE volatile vparser = rb_parser_new();
+    VALUE vparser = rb_parser_new();
 
     return rb_parser_compile_file(vparser, f, file, start);
 }
 
 NODE*
-rb_parser_compile_file(volatile VALUE vparser, const char *f, VALUE file, int start)
+rb_parser_compile_file(VALUE vparser, const char *f, VALUE file, int start)
 {
     return rb_parser_compile_file_path(vparser, rb_filesystem_str_new_cstr(f), file, start);
 }
 
 NODE*
-rb_parser_compile_file_path(volatile VALUE vparser, VALUE fname, VALUE file, int start)
+rb_parser_compile_file_path(VALUE vparser, VALUE fname, VALUE file, int start)
 {
     struct parser_params *parser;
     NODE *node;
