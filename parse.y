@@ -4465,15 +4465,7 @@ backref		: tNTH_REF
 		| tBACK_REF
 		;
 
-superclass	: term
-		    {
-		    /*%%%*/
-			$$ = 0;
-		    /*%
-			$$ = Qnil;
-		    %*/
-		    }
-		| '<'
+superclass	: '<'
 		    {
 			lex_state = EXPR_BEG;
 			command_start = TRUE;
@@ -4482,13 +4474,11 @@ superclass	: term
 		    {
 			$$ = $3;
 		    }
-		| error term
+		| /* none */
 		    {
 		    /*%%%*/
-			yyerrok;
 			$$ = 0;
 		    /*%
-			yyerrok;
 			$$ = Qnil;
 		    %*/
 		    }
