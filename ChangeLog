@@ -1,3 +1,8 @@
+Tue Aug 11 14:57:09 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_repeated_permutation): fix buffer size, ALLOCV_N
+	  already multiplies element size.
+
 Tue Aug 11 12:13:20 2015  Jeremy Evans  <merch-redmine@jeremyevans.net>
 
 	* test/openssl/test_ssl.rb: Fix LocalJumpErrors being raised

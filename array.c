@@ -5179,7 +5179,7 @@ rb_ary_repeated_permutation(VALUE ary, VALUE num)
     }
     else {             /* this is the general case */
 	volatile VALUE t0;
-	long *p = ALLOCV_N(long, t0, r * sizeof(long));
+	long *p = ALLOCV_N(long, t0, r);
 	VALUE ary0 = ary_make_shared_copy(ary); /* private defensive copy of ary */
 	RBASIC_CLEAR_CLASS(ary0);
 
