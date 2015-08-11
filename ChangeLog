@@ -1,3 +1,12 @@
+Wed Aug 12 05:19:11 2015  Eric Wong  <e@80x24.org>
+
+	* parse.y (rb_parser_compile_cstr): remove volatile arg
+	  (rb_parser_compile_string): ditto
+	  (rb_parser_compile_file): ditto
+	  (rb_parser_compile_string_path): ditto
+	  (rb_parser_compile_file_path): ditto
+	  [ruby-core:70323] [Misc #11431]
+
 Tue Aug 11 22:59:57 2015  Tanaka Akira  <akr@fsij.org>
 
 	* numeric.c (Init_Numeric): Fix document for Float::MIN and
