@@ -138,8 +138,12 @@ sitearch = $(ARCH)-$(RT)
 ruby_version = $(MAJOR).$(MINOR).$(TEENY)
 !endif
 
+!ifdef RUBY_DEBUG
+RUBY_DEBUG_SUFFIX = _d
+!endif
+
 !ifndef RUBY_SO_NAME
-RUBY_SO_NAME = $(RT)-$(RUBY_BASE_NAME)$(MAJOR)$(MINOR)$(TEENY)
+RUBY_SO_NAME = $(RT)-$(RUBY_BASE_NAME)$(MAJOR)$(MINOR)$(TEENY)$(RUBY_DEBUG_SUFFIX)
 !if "$(ARCH)" != "i386"
 RUBY_SO_NAME = $(ARCH)-$(RUBY_SO_NAME)
 !endif
@@ -603,7 +607,9 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 !else
 #define PACKED_STRUCT_UNALIGNED(x) x
 !endif
+#ifndef RUBY_STATIC
 #define RUBY_EXTERN extern __declspec(dllimport)
+#endif
 #define HAVE_DECL_SYS_NERR 1
 #define HAVE_LIMITS_H 1
 #define HAVE_FCNTL_H 1

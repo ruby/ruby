@@ -28,6 +28,8 @@ if "%1" == "--program-suffix" goto :suffix
 if "%1" == "--program-name" goto :installname
 if "%1" == "--install-name" goto :installname
 if "%1" == "--so-name" goto :soname
+if "%1" == "--debug" goto :debug
+if "%1" == "--embed-debug" goto :embed-debug
 if "%1" == "--enable-install-doc" goto :enable-rdoc
 if "%1" == "--disable-install-doc" goto :disable-rdoc
 if "%1" == "--enable-debug-env" goto :enable-debug-env
@@ -88,6 +90,16 @@ goto :loop
   echo>> ~tmp~.mak 	"RUBY_SO_NAME=%~2" \
   echo>>confargs.tmp  %1=%2 \
   shift
+  shift
+goto :loop
+:debug
+  echo>> ~tmp~.mak 	"RUBY_DEBUG=1" \
+  echo>>confargs.tmp  %1 \
+  shift
+goto :loop
+:embed-debug
+  echo>> ~tmp~.mak 	"EMBED_DEBUG=1" \
+  echo>>confargs.tmp  %1 \
   shift
 goto :loop
 :target
