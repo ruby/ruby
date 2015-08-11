@@ -1,3 +1,8 @@
+Wed Aug 12 00:54:29 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_repeated_permutation): fix buffer size, ALLOCV_N
+	  already multiplies element size.
+
 Tue Aug 11 01:51:53 2015 CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* lib/timeout.rb (ExitException): leave Timeout::ExitException as an
