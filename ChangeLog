@@ -1,3 +1,8 @@
+Tue Aug 11 10:51:19 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* test/ruby/test_array.rb: Add test for `Array#flatten` with level 1
+	  [fix GH-986] Patch @yui-knk
+
 Tue Aug 11 10:48:16 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* enum.c: added doc for Enumerable#zip
