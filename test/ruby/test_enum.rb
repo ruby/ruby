@@ -434,8 +434,11 @@ class TestEnumerable < Test::Unit::TestCase
 
   def test_zip
     assert_equal([[1,1],[2,2],[3,3],[1,1],[2,2]], @obj.zip(@obj))
+    assert_equal([["a",1],["b",2],["c",3]], ["a", "b", "c"].zip(@obj))
+
     a = []
-    @obj.zip([:a, :b, :c]) {|x,y| a << [x, y] }
+    result = @obj.zip([:a, :b, :c]) {|x,y| a << [x, y] }
+    assert_nil result
     assert_equal([[1,:a],[2,:b],[3,:c],[1,nil],[2,nil]], a)
 
     a = []
