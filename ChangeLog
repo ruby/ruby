@@ -1,3 +1,8 @@
+Tue Aug 11 10:33:26 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* vm_method.c: typo fix [fix GH-993][ci skip] Patch by @0x0dea
+	* test/ruby/test_refinement.rb: ditto.
+
 Sun Aug  9 14:15:54 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm.c (Init_vm_objects, rb_vm_fstring_table): use frozen_strings
