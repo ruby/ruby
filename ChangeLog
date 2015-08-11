@@ -1,3 +1,8 @@
+Wed Aug 12 01:05:58 2015  Jeremy Evans  <merch-redmine@jeremyevans.net>
+
+	* test/openssl/test_ssl.rb: Fix LocalJumpErrors being raised
+	  in OpenSSL tests. [ruby-core:70020][Bug #11368]
+
 Wed Aug 12 00:54:29 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_repeated_permutation): fix buffer size, ALLOCV_N
