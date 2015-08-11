@@ -8219,6 +8219,12 @@ rb_str_start_with(int argc, VALUE *argv, VALUE str)
  *     str.end_with?([suffixes]+)   -> true or false
  *
  *  Returns true if +str+ ends with one of the +suffixes+ given.
+ *
+ *    "hello".end_with?("ello")               #=> true
+ *
+ *    # returns true if one of the +suffixes+ matches.
+ *    "hello".end_with?("heaven", "ello")     #=> true
+ *    "hello".end_with?("heaven", "paradise") #=> false
  */
 
 static VALUE
