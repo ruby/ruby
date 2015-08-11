@@ -1,3 +1,8 @@
+Tue Aug 11 11:53:28 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (superclass): make superclass rule optional and allow
+	  any contents without a terminator.  [EXPERIMENTAL]
+
 Tue Aug 11 10:58:42 2015  Juanito Fatas  <juanitofatas@gmail.com>
 
 	* string.c: [DOC] Make #end_with? example doc symmetry
