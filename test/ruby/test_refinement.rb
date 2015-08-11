@@ -1467,7 +1467,7 @@ class TestRefinement < Test::Unit::TestCase
       module M
         refine C do
           def foo
-            puts "Refiend C"
+            puts "Refined C"
           end
         end
       end
