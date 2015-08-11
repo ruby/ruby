@@ -1,3 +1,8 @@
+Tue Aug 11 12:13:20 2015  Jeremy Evans  <merch-redmine@jeremyevans.net>
+
+	* test/openssl/test_ssl.rb: Fix LocalJumpErrors being raised
+	  in OpenSSL tests. [ruby-core:70020][Bug #11368]
+
 Tue Aug 11 11:54:13 2015  Alexey Lipnyagov  <liptonshmidt@gmail.com>
 
 	* string.c: Fix documentation for String#slice
