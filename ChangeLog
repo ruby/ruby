@@ -1,3 +1,8 @@
+Tue Aug 11 15:22:31 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (ALLOCV_N): check integer overflow, as well
+	  as ruby_xmalloc2.  pointed out by Paul <pawlkt AT gmail.com>.
+
 Tue Aug 11 14:57:09 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_repeated_permutation): fix buffer size, ALLOCV_N

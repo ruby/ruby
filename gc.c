@@ -7649,15 +7649,15 @@ ruby_xmalloc(size_t size)
     return objspace_xmalloc(&rb_objspace, size);
 }
 
-static inline size_t
-xmalloc2_size(size_t n, size_t size)
+void
+ruby_malloc_size_overflow(size_t count, size_t elsize)
 {
-    size_t len = size * n;
-    if (n != 0 && size != len / n) {
-	rb_raise(rb_eArgError, "malloc: possible integer overflow");
-    }
-    return len;
+    rb_raise(rb_eArgError,
+	     "malloc: possible integer overflow (%"PRIdSIZE"*%"PRIdSIZE")",
+	     count, elsize);
 }
+
+#define xmalloc2_size ruby_xmalloc2_size
 
 void *
 ruby_xmalloc2(size_t n, size_t size)
