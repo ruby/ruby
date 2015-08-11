@@ -1,3 +1,8 @@
+Tue Aug 11 22:59:57 2015  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (Init_Numeric): Fix document for Float::MIN and
+	  Float::EPSILON.
+
 Tue Aug 11 15:22:31 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (ALLOCV_N): check integer overflow, as well
