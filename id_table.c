@@ -1503,24 +1503,24 @@ mix_id_table_foreach_values(struct mix_id_table *tbl, enum rb_id_table_iterator_
 #endif /* ID_TABLE_USE_MIX */
 
 /* IMPL(create) will be "hash_id_table_create" and so on */
-#define IMPL2(name, op) name##_id_table_##op
+#define IMPL2(name, op) name##_id_table##op
 #define IMPL1(name, op) IMPL2(name, op)
 #define IMPL(op)        IMPL1(ID_TABLE_NAME, op)
 
-struct rb_id_table *rb_id_table_create(size_t size) {return (struct rb_id_table *)IMPL(create)(size);}
-void rb_id_table_free(struct rb_id_table *tbl)      {       IMPL(free)((ID_TABLE_IMPL_TYPE *)tbl);}
-void rb_id_table_clear(struct rb_id_table *tbl)     {       IMPL(clear)((ID_TABLE_IMPL_TYPE *)tbl);}
-size_t rb_id_table_size(struct rb_id_table *tbl)    {return IMPL(size)((ID_TABLE_IMPL_TYPE *)tbl);}
-size_t rb_id_table_memsize(struct rb_id_table *tbl) {return IMPL(memsize)((ID_TABLE_IMPL_TYPE *)tbl);}
+struct rb_id_table *rb_id_table_create(size_t size) {return (struct rb_id_table *)IMPL(_create)(size);}
+void rb_id_table_free(struct rb_id_table *tbl)      {       IMPL(_free)((ID_TABLE_IMPL_TYPE *)tbl);}
+void rb_id_table_clear(struct rb_id_table *tbl)     {       IMPL(_clear)((ID_TABLE_IMPL_TYPE *)tbl);}
+size_t rb_id_table_size(struct rb_id_table *tbl)    {return IMPL(_size)((ID_TABLE_IMPL_TYPE *)tbl);}
+size_t rb_id_table_memsize(struct rb_id_table *tbl) {return IMPL(_memsize)((ID_TABLE_IMPL_TYPE *)tbl);}
 
-int rb_id_table_insert(struct rb_id_table *tbl, ID id, VALUE val)   {return IMPL(insert)((ID_TABLE_IMPL_TYPE *)tbl, id, val);}
-int rb_id_table_lookup(struct rb_id_table *tbl, ID id, VALUE *valp) {return IMPL(lookup)((ID_TABLE_IMPL_TYPE *)tbl, id, valp);}
-int rb_id_table_delete(struct rb_id_table *tbl, ID id)              {return IMPL(delete)((ID_TABLE_IMPL_TYPE *)tbl, id);}
+int rb_id_table_insert(struct rb_id_table *tbl, ID id, VALUE val)   {return IMPL(_insert)((ID_TABLE_IMPL_TYPE *)tbl, id, val);}
+int rb_id_table_lookup(struct rb_id_table *tbl, ID id, VALUE *valp) {return IMPL(_lookup)((ID_TABLE_IMPL_TYPE *)tbl, id, valp);}
+int rb_id_table_delete(struct rb_id_table *tbl, ID id)              {return IMPL(_delete)((ID_TABLE_IMPL_TYPE *)tbl, id);}
 
 void rb_id_table_foreach(struct rb_id_table *tbl, enum rb_id_table_iterator_result (*func)(ID id, VALUE val, void *data), void *data) {
-     IMPL(foreach)((ID_TABLE_IMPL_TYPE *)tbl, func, data);}
+     IMPL(_foreach)((ID_TABLE_IMPL_TYPE *)tbl, func, data);}
 void rb_id_table_foreach_values(struct rb_id_table *tbl, enum rb_id_table_iterator_result (*func)(VALUE val, void *data), void *data) {
-     IMPL(foreach_values)((ID_TABLE_IMPL_TYPE *)tbl, func, data);}
+     IMPL(_foreach_values)((ID_TABLE_IMPL_TYPE *)tbl, func, data);}
 
 #if ID_TABLE_STARTUP_SIG
 __attribute__((constructor))
