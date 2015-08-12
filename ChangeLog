@@ -1,3 +1,8 @@
+Wed Aug 12 17:57:53 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* class.c, gc.c vm.c: use ID_TABLE_* instead of ST_*
+	  (such as ST_CONTINUE) for enum rb_id_table_iterator_result.
+
 Wed Aug 12 17:05:36 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* id_table.h: introduce ID key table.

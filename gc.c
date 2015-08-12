@@ -3967,7 +3967,7 @@ mark_method_entry_i(VALUE me, void *data)
     rb_objspace_t *objspace = (rb_objspace_t *)data;
 
     gc_mark(objspace, me);
-    return ST_CONTINUE;
+    return ID_TABLE_CONTINUE;
 }
 
 static void

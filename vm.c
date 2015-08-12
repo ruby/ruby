@@ -1251,7 +1251,7 @@ check_redefined_method(ID mid, VALUE value, void *data)
 
     if (newme != me) rb_vm_check_redefinition_opt_method(me, me->owner);
 
-    return ST_CONTINUE;
+    return ID_TABLE_CONTINUE;
 }
 
 void
