@@ -1,3 +1,8 @@
+Wed Aug 12 21:57:31 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* id_table.c: IMPL() macro accept op as _opname instead of opname
+	  because jemalloc seems to replace the word `free' to `je_free'.
+
 Wed Aug 12 21:51:11 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* id_table.c (mix_id_table_insert): fix memory leak.
