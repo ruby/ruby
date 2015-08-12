@@ -1,3 +1,12 @@
+Wed Aug 12 23:57:01 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/date/extconf.rb: try_cflags("-std=iso9899:1999") [Bug #10906]
+	  ruby itself (including numeric.c) is built with strict compile
+	  options including -std=iso9899:1999, but ext/date is not.
+	  By the way -std=iso9899:1999 is not only a warning option but also
+	  changes behavior like MACRO definitions for example INFINITY.
+	  gcc on Solaris affect this.
+
 Wed Aug 12 23:53:39 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (waitpid): return immediately if interrupted.
