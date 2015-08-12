@@ -269,7 +269,7 @@ clone_method_i(ID key, VALUE value, void *data)
 {
     const struct clone_method_arg *arg = (struct clone_method_arg *)data;
     clone_method(arg->old_klass, arg->new_klass, key, (const rb_method_entry_t *)value);
-    return ST_CONTINUE;
+    return ID_TABLE_CONTINUE;
 }
 
 struct clone_const_arg {
@@ -846,7 +846,7 @@ static enum rb_id_table_iterator_result
 add_refined_method_entry_i(ID key, VALUE value, void *data)
 {
     rb_add_refined_method_entry((VALUE)data, key);
-    return ST_CONTINUE;
+    return ID_TABLE_CONTINUE;
 }
 
 static int
@@ -924,11 +924,11 @@ move_refined_method(ID key, VALUE value, void *data)
 	}
 	else {
 	    rb_id_table_insert(tbl, key, (VALUE)me);
-	    return ST_DELETE;
+	    return ID_TABLE_DELETE;
 	}
     }
     else {
-	return ST_CONTINUE;
+	return ID_TABLE_CONTINUE;
     }
 }
 
@@ -1121,8 +1121,8 @@ method_entry_i(ID key, VALUE value, void *data)
     if (me->def->type == VM_METHOD_TYPE_REFINED) {
 	VALUE owner = me->owner;
 	me = rb_resolve_refined_method(Qnil, me);
-	if (!me) return ST_CONTINUE;
-	if (!arg->recur && me->owner != owner) return ST_CONTINUE;
+	if (!me) return ID_TABLE_CONTINUE;
+	if (!arg->recur && me->owner != owner) return ID_TABLE_CONTINUE;
     }
     if (!st_lookup(arg->list, key, 0)) {
 	if (UNDEFINED_METHOD_ENTRY_P(me)) {
@@ -1133,7 +1133,7 @@ method_entry_i(ID key, VALUE value, void *data)
 	}
 	st_add_direct(arg->list, key, (st_data_t)type);
     }
-    return ST_CONTINUE;
+    return ID_TABLE_CONTINUE;
 }
 
 static VALUE
