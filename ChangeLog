@@ -1,3 +1,7 @@
+Wed Aug 12 21:51:11 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* id_table.c (mix_id_table_insert): fix memory leak.
+
 Wed Aug 12 21:17:38 2015  Eric Wong  <e@80x24.org>
 
 	* iseq.c (iseq_memsize): reimplement for wrapper

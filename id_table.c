@@ -1458,6 +1458,11 @@ mix_id_table_insert(struct mix_id_table *tbl, ID id, VALUE val)
 		hash_id_table_insert_key(hash, keys[i], values[i]);
 	    }
 
+	    /* free list keys/values */
+	    xfree(keys);
+#if ID_TABLE_USE_CALC_VALUES == 0
+	    xfree(values);
+#endif
 	    assert(LIST_P(tbl) == 0);
 	}
 	return r;
