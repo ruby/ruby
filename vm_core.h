@@ -180,6 +180,12 @@ typedef struct rb_call_info_kw_arg_struct {
     VALUE keywords[1];
 } rb_call_info_kw_arg_t;
 
+static inline size_t
+rb_call_info_kw_arg_bytes(int keyword_len)
+{
+    return sizeof(rb_call_info_kw_arg_t) + sizeof(VALUE) * (keyword_len - 1);
+}
+
 enum method_missing_reason {
     MISSING_NOENTRY   = 0x00,
     MISSING_PRIVATE   = 0x01,
