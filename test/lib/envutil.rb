@@ -73,12 +73,14 @@ module EnvUtil
       th_stderr = Thread.new { err_p.read } if capture_stderr && capture_stderr != :merge_to_stdout
       in_p.write stdin_data.to_str unless stdin_data.empty?
       in_p.close
-      unless (!th_stdout || th_stdout.join(timeout)) && (!th_stderr || th_stderr.join(timeout))
+      if (!th_stdout || th_stdout.join(timeout)) && (!th_stderr || th_stderr.join(timeout))
+        timeout_error = nil
+      else
         signals = Array(signal).select do |sig|
           DEFAULT_SIGNALS[sig.to_s] or
             DEFAULT_SIGNALS[Signal.signame(sig)] rescue false
         end
-        signals |= [:KILL]
+        signals |= [:ABRT, :KILL]
         case pgroup = opt[:pgroup]
         when 0, true
           pgroup = -pid
@@ -102,10 +104,6 @@ module EnvUtil
             end
           end
         end
-        if timeout_error
-          bt = caller_locations
-          raise timeout_error, "execution of #{bt.shift.label} expired", bt.map(&:to_s)
-        end
         status = $?
       end
       stdout = th_stdout.value if capture_stdout
@@ -115,6 +113,12 @@ module EnvUtil
       status ||= Process.wait2(pid)[1]
       stdout = stdout_filter.call(stdout) if stdout_filter
       stderr = stderr_filter.call(stderr) if stderr_filter
+      if timeout_error
+        bt = caller_locations
+        msg = "execution of #{bt.shift.label} expired"
+        msg = Test::Unit::Assertions::FailDesc[status, msg, [stdout, stderr].join("\n")].()
+        raise timeout_error, msg, bt.map(&:to_s)
+      end
       return stdout, stderr, status
     end
   ensure
