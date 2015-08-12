@@ -29,7 +29,6 @@
 #define ISEQ_MINOR_VERSION 2
 
 VALUE rb_cISeq;
-ID iseqw_iseq_key;
 
 #define hidden_obj_p(obj) (!SPECIAL_CONST_P(obj) && !RBASIC(obj)->klass)
 
@@ -130,47 +129,81 @@ rb_iseq_mark(const rb_iseq_t *iseq)
     RUBY_MARK_LEAVE("iseq");
 }
 
-#if 0 /* TODO */
+static size_t
+param_keyword_size(const struct rb_iseq_param_keyword *pkw)
+{
+    size_t size = 0;
+
+    if (!pkw) return size;
+
+    size += sizeof(struct rb_iseq_param_keyword);
+    size += sizeof(VALUE) * (pkw->num - pkw->required_num);
+
+    return size;
+}
+
 static size_t
 iseq_memsize(const void *ptr)
 {
-    size_t size = sizeof(rb_iseq_t);
+    const rb_iseq_t *iseq = ptr;
+    size_t size = 0; /* struct already counted as RVALUE size */
+    const struct rb_iseq_variable_body *variable_body;
+    const struct rb_iseq_constant_body *body;
+    const struct iseq_compile_data *compile_data;
 
-    if (ptr) {
-	const rb_iseq_t *iseq = ptr;
+    variable_body = iseq->variable_body;
+    body = iseq->body;
 
-	size += iseq->body->iseq_size * sizeof(VALUE);
-	size += iseq->body->line_info_size * sizeof(struct iseq_line_info_entry);
-	size += iseq->body->local_table_size * sizeof(ID);
-	if (iseq->body->catch_table) {
-	    size += iseq_catch_table_bytes(iseq->body->catch_table->size);
+    if (variable_body) {
+	size += sizeof(struct rb_iseq_variable_body);
+	if (variable_body->iseq && body) {
+	    size += body->iseq_size * sizeof(VALUE);
 	}
-	size += (iseq->body->param.opt_num + 1) * sizeof(VALUE);
-	if (iseq->body->param.keyword != NULL) {
-	    size += sizeof(struct rb_iseq_param_keyword);
-	    size += sizeof(VALUE) * (iseq->body->param.keyword->num - iseq->body->param.keyword->required_num);
+    }
+
+    if (body) {
+	rb_call_info_t *ci_entries = body->callinfo_entries;
+
+	size += sizeof(struct rb_iseq_constant_body);
+	size += body->iseq_size * sizeof(VALUE);
+	size += body->line_info_size * sizeof(struct iseq_line_info_entry);
+	size += body->local_table_size * sizeof(ID);
+	if (body->catch_table) {
+	    size += iseq_catch_table_bytes(body->catch_table->size);
 	}
-	size += iseq->body->is_size * sizeof(union iseq_inline_storage_entry);
-	size += iseq->body->callinfo_size * sizeof(rb_call_info_t);
+	size += (body->param.opt_num + 1) * sizeof(VALUE);
+	size += param_keyword_size(body->param.keyword);
+	size += body->is_size * sizeof(union iseq_inline_storage_entry);
+	size += body->callinfo_size * sizeof(rb_call_info_t);
 
-	if (iseq->compile_data) {
-	    struct iseq_compile_data_storage *cur;
+	if (ci_entries) {
+	    unsigned int i;
 
-	    cur = iseq->compile_data->storage_head;
-	    while (cur) {
-		size += cur->size + SIZEOF_ISEQ_COMPILE_DATA_STORAGE;
-		cur = cur->next;
+	    for (i = 0; i < body->callinfo_size; i++) {
+		const rb_call_info_kw_arg_t *kw_arg = ci_entries[i].kw_arg;
+
+		if (kw_arg) {
+		    size += rb_call_info_kw_arg_bytes(kw_arg->keyword_len);
+		}
 	    }
-	    size += sizeof(struct iseq_compile_data);
 	}
-	if (iseq->body->iseq) {
-	    size += iseq->body->iseq_size * sizeof(VALUE);
+    }
+
+    compile_data = iseq->compile_data;
+    if (compile_data) {
+	struct iseq_compile_data_storage *cur;
+
+	size += sizeof(struct iseq_compile_data);
+
+	cur = compile_data->storage_head;
+	while (cur) {
+	    size += cur->size + SIZEOF_ISEQ_COMPILE_DATA_STORAGE;
+	    cur = cur->next;
 	}
     }
 
     return size;
 }
-#endif
 
 static rb_iseq_t *
 iseq_alloc(void)
@@ -639,12 +672,29 @@ rb_iseq_method_name(const rb_iseq_t *iseq)
 
 /* define wrapper class methods (RubyVM::InstructionSequence) */
 
+static void
+iseqw_mark(void *ptr)
+{
+    rb_gc_mark((VALUE)ptr);
+}
+
+static const rb_data_type_t iseqw_data_type = {
+    "T_IMEMO/iseq",
+    {iseqw_mark, NULL, iseq_memsize,},
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY|RUBY_TYPED_WB_PROTECTED
+};
+
 static VALUE
 iseqw_new(const rb_iseq_t *iseq)
 {
-    VALUE iseqw = rb_obj_alloc(rb_cISeq);
-    rb_ivar_set(iseqw, iseqw_iseq_key, (VALUE)iseq);
-    return iseqw;
+    union { const rb_iseq_t *in; void *out; } deconst;
+    VALUE obj;
+
+    deconst.in = iseq;
+    obj = TypedData_Wrap_Struct(rb_cISeq, &iseqw_data_type, deconst.out);
+    RB_OBJ_WRITTEN(obj, Qundef, iseq);
+
+    return obj;
 }
 
 VALUE
@@ -795,7 +845,7 @@ iseqw_s_compile_option_get(VALUE self)
 static const rb_iseq_t *
 iseqw_check(VALUE iseqw)
 {
-    const rb_iseq_t *iseq = (rb_iseq_t *)rb_ivar_get(iseqw, iseqw_iseq_key);
+    const rb_iseq_t *iseq = DATA_PTR(iseqw);
 
     if (!iseq->body->location.label) {
 	rb_raise(rb_eTypeError, "uninitialized InstructionSequence");
@@ -2282,6 +2332,4 @@ Init_ISeq(void)
     rb_define_singleton_method(rb_cISeq, "disasm", iseqw_s_disasm, 1);
     rb_define_singleton_method(rb_cISeq, "disassemble", iseqw_s_disasm, 1);
     rb_define_singleton_method(rb_cISeq, "of", iseqw_s_of, 1);
-
-    iseqw_iseq_key = rb_intern("T_IMEMO/iseq");
 }

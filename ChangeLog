@@ -1,3 +1,15 @@
+Wed Aug 12 21:17:38 2015  Eric Wong  <e@80x24.org>
+
+	* iseq.c (iseq_memsize): reimplement for wrapper
+	  (param_keyword_size): extracted from iseq_memsize
+	  (iseqw_mark): new mark function
+	  (iseqw_data_type): new data type
+	  (iseqw_new): wrap as iseqw_data_type
+	  (iseqw_check): adjust for wrapper
+	  (Init_ISeq): remove iseqw_iseq_key initialization
+	* test/objspace/test_objspace.rb: new test
+	  [ruby-core:70344] [Feature #11435]
+
 Wed Aug 12 21:15:27 2015  Eric Wong  <e@80x24.org>
 
 	* vm_core.h (rb_call_info_kw_arg_bytes): extract from compile.c

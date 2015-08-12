@@ -88,6 +88,12 @@ class TestObjSpace < Test::Unit::TestCase
     assert_not_empty(res)
   end
 
+  def test_memsize_of_iseq
+    iseqw = RubyVM::InstructionSequence.compile('def a; a = :b; end')
+    base_obj_size = ObjectSpace.memsize_of(Object.new)
+    assert_operator(ObjectSpace.memsize_of(iseqw), :>, base_obj_size)
+  end
+
   def test_reachable_objects_from
     assert_separately %w[--disable-gem -robjspace], __FILE__, __LINE__, <<-'eom'
     assert_equal(nil, ObjectSpace.reachable_objects_from(nil))
