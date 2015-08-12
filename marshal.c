@@ -17,6 +17,7 @@
 #include "ruby/io.h"
 #include "ruby/st.h"
 #include "ruby/util.h"
+#include "id_table.h"
 
 #include <math.h>
 #ifdef HAVE_FLOAT_H
@@ -474,7 +475,7 @@ hash_each(VALUE key, VALUE value, struct dump_call_arg *arg)
 }
 
 #define SINGLETON_DUMP_UNABLE_P(klass) \
-    (RCLASS_M_TBL(klass)->num_entries || \
+    (rb_id_table_size(RCLASS_M_TBL(klass)) > 0 || \
      (RCLASS_IV_TBL(klass) && RCLASS_IV_TBL(klass)->num_entries > 1))
 
 static void

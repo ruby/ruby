@@ -1,3 +1,38 @@
+Wed Aug 12 17:05:36 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* id_table.h: introduce ID key table.
+	  [Feature #11420]
+
+	  This table only manage ID->VALUE table to reduce overhead of st.
+
+	  Some functions prefixed rb_id_table_* are provided.
+
+	* id_table.c: implement rb_id_table_*.
+
+	  There are several algorithms to implement it.
+
+	  Now, there are roughly 4 types:
+
+	    * st
+	    * array
+	    * hash (implemented by  Yura Sokolov)
+	    * mix of array and hash
+
+	  The macro ID_TABLE_IMPL can choose implementation.
+	  You can see detailes about them at the head of id_table.c.
+
+	  At the default, I choose 34 (mix of list and hash).
+	  This is not final decision.
+	  Please report your suitable parameters or
+	  your data structure.
+
+	  * symbol.c: introduce rb_id_serial_t and rb_id_to_serial()
+	    to represent ID by serial number.
+
+	  * internal.h: use id_table for method tables.
+
+	  * class.c, gc.c, marshal.c, vm.c, vm_method.c: ditto.
+
 Wed Aug 12 05:19:11 2015  Eric Wong  <e@80x24.org>
 
 	* parse.y (rb_parser_compile_cstr): remove volatile arg

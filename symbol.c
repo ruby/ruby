@@ -107,7 +107,7 @@ enum id_entry_type {
 };
 
 static struct symbols {
-    ID last_id;
+    rb_id_serial_t last_id;
     st_table *str_sym;
     VALUE ids;
     VALUE dsymbol_fstr_hash;
@@ -142,8 +142,6 @@ WARN_UNUSED_RESULT(static VALUE lookup_id_str(ID id));
 WARN_UNUSED_RESULT(static ID attrsetname_to_attr(VALUE name));
 WARN_UNUSED_RESULT(static ID attrsetname_to_attr_id(VALUE name));
 WARN_UNUSED_RESULT(static ID intern_str(VALUE str, int mutable));
-
-#define id_to_serial(id) (is_notop_id(id) ? id >> ID_SCOPE_SHIFT : id)
 
 ID
 rb_id_attrset(ID id)
@@ -373,7 +371,7 @@ rb_str_symname_type(VALUE name, unsigned int allowed_attrset)
 }
 
 static void
-set_id_entry(ID num, VALUE str, VALUE sym)
+set_id_entry(rb_id_serial_t num, VALUE str, VALUE sym)
 {
     size_t idx = num / ID_ENTRY_UNIT;
     VALUE ary, ids = global_symbols.ids;
@@ -387,7 +385,7 @@ set_id_entry(ID num, VALUE str, VALUE sym)
 }
 
 static VALUE
-get_id_entry(ID num, const enum id_entry_type t)
+get_id_entry(rb_id_serial_t num, const enum id_entry_type t)
 {
     if (num && num <= global_symbols.last_id) {
 	size_t idx = num / ID_ENTRY_UNIT;
@@ -399,6 +397,18 @@ get_id_entry(ID num, const enum id_entry_type t)
 	}
     }
     return 0;
+}
+
+static inline ID
+rb_id_serial_to_id(rb_id_serial_t num)
+{
+    if (is_notop_id((ID)num)) {
+	VALUE sym = get_id_entry(num, ID_ENTRY_SYM);
+	return SYM2ID(sym);
+    }
+    else {
+	return (ID)num;
+    }
 }
 
 #if SYMBOL_DEBUG
@@ -444,7 +454,7 @@ register_static_symid(ID id, const char *name, long len, rb_encoding *enc)
 static ID
 register_static_symid_str(ID id, VALUE str)
 {
-    ID num = id_to_serial(id);
+    rb_id_serial_t num = rb_id_to_serial(id);
     VALUE sym = STATIC_ID2SYM(id);
 
     OBJ_FREEZE(str);
@@ -584,7 +594,7 @@ lookup_str_sym(const VALUE str)
 static VALUE
 lookup_id_str(ID id)
 {
-    return get_id_entry(id_to_serial(id), ID_ENTRY_STR);
+    return get_id_entry(rb_id_to_serial(id), ID_ENTRY_STR);
 }
 
 ID
@@ -604,7 +614,9 @@ rb_intern3(const char *name, long len, rb_encoding *enc)
 static ID
 next_id_base(void)
 {
-    if (global_symbols.last_id >= ~(ID)0 >> (ID_SCOPE_SHIFT+RUBY_SPECIAL_SHIFT)) {
+    rb_id_serial_t next_serial = global_symbols.last_id + 1;
+
+    if (next_serial == 0) {
 	return (ID)-1;
     }
     else {
@@ -744,7 +756,7 @@ rb_sym2id(VALUE sym)
 
 	    RSYMBOL(sym)->id = id |= num;
 	    /* make it permanent object */
-	    set_id_entry(num >>= ID_SCOPE_SHIFT, fstr, sym);
+	    set_id_entry(rb_id_to_serial(num), fstr, sym);
 	    rb_hash_delete_entry(global_symbols.dsymbol_fstr_hash, fstr);
 	}
     }
@@ -760,7 +772,7 @@ VALUE
 rb_id2sym(ID x)
 {
     if (!DYNAMIC_ID_P(x)) return STATIC_ID2SYM(x);
-    return get_id_entry(id_to_serial(x), ID_ENTRY_SYM);
+    return get_id_entry(rb_id_to_serial(x), ID_ENTRY_SYM);
 }
 
 
@@ -1122,3 +1134,5 @@ rb_is_junk_name(VALUE name)
 {
     return rb_str_symname_type(name, IDSET_ATTRSET_FOR_SYNTAX) == -1;
 }
+
+#include "id_table.c"

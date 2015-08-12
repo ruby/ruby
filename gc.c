@@ -27,6 +27,7 @@
 #include "constant.h"
 #include "ruby_atomic.h"
 #include "probes.h"
+#include "id_table.h"
 #include <stdio.h>
 #include <stdarg.h>
 #include <setjmp.h>
@@ -1928,14 +1929,6 @@ is_pointer_to_heap(rb_objspace_t *objspace, void *ptr)
     return FALSE;
 }
 
-static void
-rb_free_m_tbl(st_table *tbl)
-{
-    if (tbl) {
-	st_free_table(tbl);
-    }
-}
-
 static int
 free_const_entry_i(st_data_t key, st_data_t value, st_data_t data)
 {
@@ -2010,7 +2003,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	break;
       case T_MODULE:
       case T_CLASS:
-	rb_free_m_tbl(RCLASS_M_TBL(obj));
+	rb_id_table_free(RCLASS_M_TBL(obj));
 	if (RCLASS_IV_TBL(obj)) {
 	    st_free_table(RCLASS_IV_TBL(obj));
 	}
@@ -2104,9 +2097,11 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
       case T_ICLASS:
 	/* Basically , T_ICLASS shares table with the module */
 	if (FL_TEST(obj, RICLASS_IS_ORIGIN)) {
-	    rb_free_m_tbl(RCLASS_M_TBL(obj));
+	    rb_id_table_free(RCLASS_M_TBL(obj));
 	}
-	rb_free_m_tbl(RCLASS_CALLABLE_M_TBL(obj));
+	if (RCLASS_CALLABLE_M_TBL(obj) != NULL) {
+	    rb_id_table_free(RCLASS_CALLABLE_M_TBL(obj));
+	}
 	if (RCLASS_EXT(obj)->subclasses) {
 	    rb_class_detach_subclasses(obj);
 	    RCLASS_EXT(obj)->subclasses = NULL;
@@ -3001,7 +2996,7 @@ obj_memsize_of(VALUE obj, int use_all_types)
       case T_MODULE:
       case T_CLASS:
 	if (RCLASS_M_TBL(obj)) {
-	    size += st_memsize(RCLASS_M_TBL(obj));
+	    size += rb_id_table_memsize(RCLASS_M_TBL(obj));
 	}
 	if (RCLASS_EXT(obj)) {
 	    if (RCLASS_IV_TBL(obj)) {
@@ -3022,7 +3017,7 @@ obj_memsize_of(VALUE obj, int use_all_types)
       case T_ICLASS:
 	if (FL_TEST(obj, RICLASS_IS_ORIGIN)) {
 	    if (RCLASS_M_TBL(obj)) {
-		size += st_memsize(RCLASS_M_TBL(obj));
+		size += rb_id_table_memsize(RCLASS_M_TBL(obj));
 	    }
 	}
 	break;
@@ -3966,10 +3961,9 @@ mark_method_entry(rb_objspace_t *objspace, const rb_method_entry_t *me)
     }
 }
 
-static int
-mark_method_entry_i(st_data_t key, st_data_t value, st_data_t data)
+static enum rb_id_table_iterator_result
+mark_method_entry_i(VALUE me, void *data)
 {
-    VALUE me = (VALUE)value;
     rb_objspace_t *objspace = (rb_objspace_t *)data;
 
     gc_mark(objspace, me);
@@ -3977,10 +3971,10 @@ mark_method_entry_i(st_data_t key, st_data_t value, st_data_t data)
 }
 
 static void
-mark_m_tbl(rb_objspace_t *objspace, struct st_table *tbl)
+mark_m_tbl(rb_objspace_t *objspace, struct rb_id_table *tbl)
 {
     if (tbl) {
-	st_foreach(tbl, mark_method_entry_i, (st_data_t)objspace);
+	rb_id_table_foreach_values(tbl, mark_method_entry_i, objspace);
     }
 }
 

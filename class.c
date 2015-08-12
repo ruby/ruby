@@ -27,6 +27,7 @@
 #include "ruby/st.h"
 #include "constant.h"
 #include "vm_core.h"
+#include "id_table.h"
 #include <ctype.h>
 
 #define id_attached id__attached__
@@ -181,6 +182,11 @@ class_alloc(VALUE flags, VALUE klass)
     return (VALUE)obj;
 }
 
+static void
+RCLASS_M_TBL_INIT(VALUE c)
+{
+    RCLASS_M_TBL(c) = rb_id_table_create(0);
+}
 
 /*!
  * A utility function that wraps class_alloc.
@@ -258,11 +264,11 @@ struct clone_method_arg {
     VALUE old_klass;
 };
 
-static int
-clone_method_i(st_data_t key, st_data_t value, st_data_t data)
+static enum rb_id_table_iterator_result
+clone_method_i(ID key, VALUE value, void *data)
 {
     const struct clone_method_arg *arg = (struct clone_method_arg *)data;
-    clone_method(arg->old_klass, arg->new_klass, (ID)key, (const rb_method_entry_t *)value);
+    clone_method(arg->old_klass, arg->new_klass, key, (const rb_method_entry_t *)value);
     return ST_CONTINUE;
 }
 
@@ -350,7 +356,7 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
 	arg.old_klass = orig;
 	arg.new_klass = clone;
 	RCLASS_M_TBL_INIT(clone);
-	st_foreach(RCLASS_M_TBL(orig), clone_method_i, (st_data_t)&arg);
+	rb_id_table_foreach(RCLASS_M_TBL(orig), clone_method_i, &arg);
     }
 
     return clone;
@@ -400,7 +406,7 @@ rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach)
 	    struct clone_method_arg arg;
 	    arg.old_klass = klass;
 	    arg.new_klass = clone;
-	    st_foreach(RCLASS_M_TBL(klass), clone_method_i, (st_data_t)&arg);
+	    rb_id_table_foreach(RCLASS_M_TBL(klass), clone_method_i, &arg);
 	}
 	rb_singleton_class_attached(RBASIC(clone)->klass, clone);
 	FL_SET(clone, FL_SINGLETON);
@@ -836,10 +842,10 @@ rb_include_module(VALUE klass, VALUE module)
 	rb_raise(rb_eArgError, "cyclic include detected");
 }
 
-static int
-add_refined_method_entry_i(st_data_t key, st_data_t value, st_data_t data)
+static enum rb_id_table_iterator_result
+add_refined_method_entry_i(ID key, VALUE value, void *data)
 {
-    rb_add_refined_method_entry((VALUE) data, (ID) key);
+    rb_add_refined_method_entry((VALUE)data, key);
     return ST_CONTINUE;
 }
 
@@ -848,7 +854,7 @@ include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super)
 {
     VALUE p, iclass;
     int method_changed = 0, constant_changed = 0;
-    const st_table *const klass_m_tbl = RCLASS_M_TBL(RCLASS_ORIGIN(klass));
+    struct rb_id_table *const klass_m_tbl = RCLASS_M_TBL(RCLASS_ORIGIN(klass));
 
     while (module) {
 	int superclass_seen = FALSE;
@@ -886,14 +892,11 @@ include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super)
 	    VALUE refined_class =
 		rb_refinement_module_get_refined_class(klass);
 
-	    st_foreach(RMODULE_M_TBL(module), add_refined_method_entry_i,
-		       (st_data_t) refined_class);
+	    rb_id_table_foreach(RMODULE_M_TBL(module), add_refined_method_entry_i, (void *)refined_class);
 	    FL_SET(c, RMODULE_INCLUDED_INTO_REFINEMENT);
 	}
-	if (RMODULE_M_TBL(module) && RMODULE_M_TBL(module)->num_entries)
-	    method_changed = 1;
-	if (RMODULE_CONST_TBL(module) && RMODULE_CONST_TBL(module)->num_entries)
-	    constant_changed = 1;
+	if (RMODULE_M_TBL(module) && rb_id_table_size(RMODULE_M_TBL(module))) method_changed = 1;
+	if (RMODULE_CONST_TBL(module) && RMODULE_CONST_TBL(module)->num_entries) constant_changed = 1;
       skip:
 	module = RCLASS_SUPER(module);
     }
@@ -904,23 +907,23 @@ include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super)
     return method_changed;
 }
 
-static int
-move_refined_method(st_data_t key, st_data_t value, st_data_t data)
+static enum rb_id_table_iterator_result
+move_refined_method(ID key, VALUE value, void *data)
 {
     rb_method_entry_t *me = (rb_method_entry_t *) value;
-    st_table *tbl = (st_table *) data;
+    struct rb_id_table *tbl = (struct rb_id_table *) data;
 
     if (me->def->type == VM_METHOD_TYPE_REFINED) {
 	if (me->def->body.refined.orig_me) {
 	    const rb_method_entry_t *orig_me = me->def->body.refined.orig_me, *new_me;
 	    RB_OBJ_WRITE(me, &me->def->body.refined.orig_me, NULL);
 	    new_me = rb_method_entry_clone(me);
-	    st_add_direct(tbl, key, (st_data_t) new_me);
+	    rb_id_table_insert(tbl, key, (VALUE)new_me);
 	    rb_method_entry_copy(me, orig_me);
 	    return ST_CONTINUE;
 	}
 	else {
-	    st_add_direct(tbl, key, (st_data_t) me);
+	    rb_id_table_insert(tbl, key, (VALUE)me);
 	    return ST_DELETE;
 	}
     }
@@ -950,8 +953,7 @@ rb_prepend_module(VALUE klass, VALUE module)
 	RCLASS_SET_ORIGIN(klass, origin);
 	RCLASS_M_TBL(origin) = RCLASS_M_TBL(klass);
 	RCLASS_M_TBL_INIT(klass);
-	st_foreach(RCLASS_M_TBL(origin), move_refined_method,
-		   (st_data_t) RCLASS_M_TBL(klass));
+	rb_id_table_foreach(RCLASS_M_TBL(origin), move_refined_method, (void *)RCLASS_M_TBL(klass));
     }
     changed = include_modules_at(klass, klass, module, FALSE);
     if (changed < 0)
@@ -1109,8 +1111,8 @@ struct method_entry_arg {
     int recur;
 };
 
-static int
-method_entry_i(st_data_t key, st_data_t value, st_data_t data)
+static enum rb_id_table_iterator_result
+method_entry_i(ID key, VALUE value, void *data)
 {
     const rb_method_entry_t *me = (const rb_method_entry_t *)value;
     struct method_entry_arg *arg = (struct method_entry_arg *)data;
@@ -1158,7 +1160,7 @@ class_instance_method_list(int argc, const VALUE *argv, VALUE mod, int obj, int 
     me_arg.list = st_init_numtable();
     me_arg.recur = recur;
     for (; mod; mod = RCLASS_SUPER(mod)) {
-	if (RCLASS_M_TBL(mod)) st_foreach(RCLASS_M_TBL(mod), method_entry_i, (st_data_t)&me_arg);
+	if (RCLASS_M_TBL(mod)) rb_id_table_foreach(RCLASS_M_TBL(mod), method_entry_i, &me_arg);
 	if (BUILTIN_TYPE(mod) == T_ICLASS && !prepended) continue;
 	if (obj && FL_TEST(mod, FL_SINGLETON)) continue;
 	if (!recur) break;
@@ -1379,7 +1381,7 @@ rb_obj_singleton_methods(int argc, const VALUE *argv, VALUE obj)
 {
     VALUE recur, ary, klass, origin;
     struct method_entry_arg me_arg;
-    st_table *mtbl;
+    struct rb_id_table *mtbl;
 
     if (argc == 0) {
 	recur = Qtrue;
@@ -1392,14 +1394,12 @@ rb_obj_singleton_methods(int argc, const VALUE *argv, VALUE obj)
     me_arg.list = st_init_numtable();
     me_arg.recur = RTEST(recur);
     if (klass && FL_TEST(klass, FL_SINGLETON)) {
-	if ((mtbl = RCLASS_M_TBL(origin)) != 0)
-	    st_foreach(mtbl, method_entry_i, (st_data_t)&me_arg);
+	if ((mtbl = RCLASS_M_TBL(origin)) != 0) rb_id_table_foreach(mtbl, method_entry_i, &me_arg);
 	klass = RCLASS_SUPER(klass);
     }
     if (RTEST(recur)) {
 	while (klass && (FL_TEST(klass, FL_SINGLETON) || RB_TYPE_P(klass, T_ICLASS))) {
-	    if (klass != origin && (mtbl = RCLASS_M_TBL(klass)) != 0)
-		st_foreach(mtbl, method_entry_i, (st_data_t)&me_arg);
+	    if (klass != origin && (mtbl = RCLASS_M_TBL(klass)) != 0) rb_id_table_foreach(mtbl, method_entry_i, &me_arg);
 	    klass = RCLASS_SUPER(klass);
 	}
     }
@@ -1989,8 +1989,7 @@ rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optional, V
 int
 rb_class_has_methods(VALUE c)
 {
-    st_table *mtbl = RCLASS_M_TBL(c);
-    return mtbl && mtbl->num_entries ? TRUE : FALSE;
+    return rb_id_table_size(RCLASS_M_TBL(c)) == 0 ? FALSE : TRUE;
 }
 
 /*!

@@ -464,7 +464,7 @@ struct rb_classext_struct {
     struct st_table *iv_index_tbl;
     struct st_table *iv_tbl;
     struct st_table *const_tbl;
-    struct st_table *callable_m_tbl;
+    struct rb_id_table *callable_m_tbl;
     rb_subclass_entry_t *subclasses;
     rb_subclass_entry_t **parent_subclasses;
     /**
@@ -486,7 +486,7 @@ struct RClass {
     struct RBasic basic;
     VALUE super;
     rb_classext_t *ptr;
-    struct st_table *m_tbl;
+    struct rb_id_table *m_tbl;
 };
 
 void rb_class_subclass_add(VALUE super, VALUE klass);
@@ -509,12 +509,6 @@ RCLASS_SET_ORIGIN(VALUE klass, VALUE origin)
 {
     RB_OBJ_WRITE(klass, &RCLASS_ORIGIN(klass), origin);
     if (klass != origin) FL_SET(origin, RICLASS_IS_ORIGIN);
-}
-
-static inline void
-RCLASS_M_TBL_INIT(VALUE c)
-{
-    RCLASS_M_TBL(c) = st_init_numtable();
 }
 
 #undef RCLASS_SUPER

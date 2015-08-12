@@ -1117,6 +1117,7 @@ class.$(OBJEXT): {$(VPATH)}constant.h
 class.$(OBJEXT): {$(VPATH)}defines.h
 class.$(OBJEXT): {$(VPATH)}encoding.h
 class.$(OBJEXT): {$(VPATH)}id.h
+class.$(OBJEXT): {$(VPATH)}id_table.h
 class.$(OBJEXT): {$(VPATH)}intern.h
 class.$(OBJEXT): {$(VPATH)}internal.h
 class.$(OBJEXT): {$(VPATH)}io.h
@@ -1456,6 +1457,7 @@ gc.$(OBJEXT): {$(VPATH)}eval_intern.h
 gc.$(OBJEXT): {$(VPATH)}gc.c
 gc.$(OBJEXT): {$(VPATH)}gc.h
 gc.$(OBJEXT): {$(VPATH)}id.h
+gc.$(OBJEXT): {$(VPATH)}id_table.h
 gc.$(OBJEXT): {$(VPATH)}intern.h
 gc.$(OBJEXT): {$(VPATH)}internal.h
 gc.$(OBJEXT): {$(VPATH)}io.h
@@ -1668,7 +1670,8 @@ marshal.$(OBJEXT): $(top_srcdir)/include/ruby.h
 marshal.$(OBJEXT): {$(VPATH)}config.h
 marshal.$(OBJEXT): {$(VPATH)}defines.h
 marshal.$(OBJEXT): {$(VPATH)}encoding.h
-marshal.$(OBJEXT): {$(VPATH)}intern.h
+marshal.$(OBJEXT): {$(VPATH)}id_table.h
+marshal.$(OBJEXT): {$(VPATH)}intern.h 
 marshal.$(OBJEXT): {$(VPATH)}internal.h
 marshal.$(OBJEXT): {$(VPATH)}io.h
 marshal.$(OBJEXT): {$(VPATH)}marshal.c
@@ -2215,6 +2218,8 @@ symbol.$(OBJEXT): {$(VPATH)}probes.h
 symbol.$(OBJEXT): {$(VPATH)}st.h
 symbol.$(OBJEXT): {$(VPATH)}subst.h
 symbol.$(OBJEXT): {$(VPATH)}symbol.c
+symbol.$(OBJEXT): {$(VPATH)}id_table.c
+symbol.$(OBJEXT): {$(VPATH)}id_table.h
 symbol.$(OBJEXT): {$(VPATH)}symbol.h
 symbol.$(OBJEXT): {$(VPATH)}vm_opts.h
 thread.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
@@ -2330,6 +2335,7 @@ vm.$(OBJEXT): {$(VPATH)}encoding.h
 vm.$(OBJEXT): {$(VPATH)}eval_intern.h
 vm.$(OBJEXT): {$(VPATH)}gc.h
 vm.$(OBJEXT): {$(VPATH)}id.h
+vm.$(OBJEXT): {$(VPATH)}id_table.h
 vm.$(OBJEXT): {$(VPATH)}insns.def
 vm.$(OBJEXT): {$(VPATH)}insns.inc
 vm.$(OBJEXT): {$(VPATH)}intern.h
