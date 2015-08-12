@@ -228,6 +228,14 @@ module OpenSSL
       # This method MUST be called after calling #connect to ensure that the
       # hostname of a remote peer has been verified.
       def post_connection_check(hostname)
+        if peer_cert.nil?
+          msg = "Peer verification enabled, but no certificate received."
+          if using_anon_cipher?
+            msg += " Anonymous cipher suite #{cipher[0]} was negotiated. Anonymous suites must be disabled to use peer verification."
+          end
+          raise SSLError, msg
+        end
+
         unless OpenSSL::SSL.verify_certificate_identity(peer_cert, hostname)
           raise SSLError, "hostname \"#{hostname}\" does not match the server certificate"
         end
@@ -238,6 +246,14 @@ module OpenSSL
         SSL::Session.new(self)
       rescue SSL::Session::SessionError
         nil
+      end
+
+      private
+
+      def using_anon_cipher?
+        ctx = OpenSSL::SSL::SSLContext.new
+        ctx.ciphers = "aNULL"
+        ctx.ciphers.include?(cipher)
       end
     end
 

@@ -35,6 +35,8 @@ os:
 # far since the 1.9.1 release.
 before_install:
   - "if [[ $TRAVIS_OS_NAME = 'linux' ]]; then sudo apt-get -qq update; fi"
+  # Travis ships an outdated, broken version of libssl by default
+  - "if [[ $TRAVIS_OS_NAME = 'linux' ]]; then sudo apt-get -qq --only-upgrade install '^libssl.*'; fi"
   - "if [[ $TRAVIS_OS_NAME = 'linux' ]]; then sudo apt-get -qq install $CC; fi" # upgrade if any
   - "if [[ $TRAVIS_OS_NAME = 'linux' ]]; then JOBS='-j'; fi"
   - "if [[ $TRAVIS_OS_NAME = 'osx' ]]; then brew install autoconf openssl; fi"

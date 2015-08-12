@@ -1,3 +1,18 @@
+Thu Aug 13 00:03:24 2015  Aaron Patterson <tenderlove@ruby-lang.org>
+
+	* .travis.yml: update libssl before running tests. 
+	  Thanks to Chris Sinjakli <chris@sinjakli.co.uk> for figuring out the
+	  travis settings!
+
+Thu Aug 13 00:03:24 2015  Aaron Patterson <tenderlove@ruby-lang.org>
+
+	* ext/openssl/lib/openssl/ssl.rb (module OpenSSL): raise a more
+	  helpful exception when verifying the peer connection and an
+	  anonymous cipher has been selected. [ruby-core:68330] [Bug #10910]
+	  Thanks to Chris Sinjakli <chris@sinjakli.co.uk> for the patch.
+
+	* test/openssl/test_ssl.rb (class OpenSSL): test for change
+
 Wed Aug 12 23:57:01 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/date/extconf.rb: try_cflags("-std=iso9899:1999") [Bug #10906]
