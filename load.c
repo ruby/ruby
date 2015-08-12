@@ -215,8 +215,8 @@ features_index_add_single(VALUE short_feature, VALUE offset)
 /* Add to the loaded-features index all the required entries for
    `feature`, located at `offset` in $LOADED_FEATURES.  We add an
    index entry at each string `short_feature` for which
-     feature == "#{prefix}#{short_feature}#{e}"
-   where `e` is empty or matches %r{^\.[^./]*$}, and `prefix` is empty
+     feature == "#{prefix}#{short_feature}#{ext}"
+   where `ext` is empty or matches %r{^\.[^./]*$}, and `prefix` is empty
    or ends in '/'.  This maintains the invariant that `rb_feature_p()`
    relies on for its fast lookup.
 */
