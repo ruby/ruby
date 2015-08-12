@@ -920,7 +920,7 @@ move_refined_method(ID key, VALUE value, void *data)
 	    new_me = rb_method_entry_clone(me);
 	    rb_id_table_insert(tbl, key, (VALUE)new_me);
 	    rb_method_entry_copy(me, orig_me);
-	    return ST_CONTINUE;
+	    return ID_TABLE_CONTINUE;
 	}
 	else {
 	    rb_id_table_insert(tbl, key, (VALUE)me);

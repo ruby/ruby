@@ -1,3 +1,7 @@
+Wed Aug 12 18:00:17 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* class.c (move_refined_method): same as the last commit.
+
 Wed Aug 12 17:57:53 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* class.c, gc.c vm.c: use ID_TABLE_* instead of ST_*
