@@ -1671,7 +1671,7 @@ marshal.$(OBJEXT): {$(VPATH)}config.h
 marshal.$(OBJEXT): {$(VPATH)}defines.h
 marshal.$(OBJEXT): {$(VPATH)}encoding.h
 marshal.$(OBJEXT): {$(VPATH)}id_table.h
-marshal.$(OBJEXT): {$(VPATH)}intern.h 
+marshal.$(OBJEXT): {$(VPATH)}intern.h
 marshal.$(OBJEXT): {$(VPATH)}internal.h
 marshal.$(OBJEXT): {$(VPATH)}io.h
 marshal.$(OBJEXT): {$(VPATH)}marshal.c
