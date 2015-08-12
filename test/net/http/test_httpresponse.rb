@@ -237,6 +237,59 @@ EOS
     assert_equal "\x1F\x8B\b\x00\x00\x00\x00\x00\x00\x03", body
   end
 
+  def test_read_body_content_encoding_deflate_empty_body
+    io = dummy_io(<<EOS)
+HTTP/1.1 200 OK
+Connection: close
+Content-Encoding: deflate
+Content-Length: 0
+
+EOS
+
+    res = Net::HTTPResponse.read_new(io)
+    res.decode_content = true
+
+    body = nil
+
+    res.reading_body io, true do
+      body = res.read_body
+    end
+
+    if Net::HTTP::HAVE_ZLIB
+      assert_equal nil, res['content-encoding']
+      assert_equal '', body
+    else
+      assert_equal 'deflate', res['content-encoding']
+      assert_equal '', body
+    end
+  end
+
+  def test_read_body_content_encoding_deflate_empty_body_no_length
+    io = dummy_io(<<EOS)
+HTTP/1.1 200 OK
+Connection: close
+Content-Encoding: deflate
+
+EOS
+
+    res = Net::HTTPResponse.read_new(io)
+    res.decode_content = true
+
+    body = nil
+
+    res.reading_body io, true do
+      body = res.read_body
+    end
+
+    if Net::HTTP::HAVE_ZLIB
+      assert_equal nil, res['content-encoding']
+      assert_equal '', body
+    else
+      assert_equal 'deflate', res['content-encoding']
+      assert_equal '', body
+    end
+  end
+
   def test_read_body_string
     io = dummy_io(<<EOS)
 HTTP/1.1 200 OK
