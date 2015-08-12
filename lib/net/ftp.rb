@@ -377,15 +377,9 @@ module Net
     end
     private :sendport
 
-    # Constructs a TCPServer socket, and sends it the PORT command
-    #
-    # Returns the constructed TCPServer socket
+    # Constructs a TCPServer socket
     def makeport # :nodoc:
-      sock = TCPServer.open(@sock.addr[3], 0)
-      port = sock.addr[1]
-      host = sock.addr[3]
-      sendport(host, port)
-      return sock
+      TCPServer.open(@sock.addr[3], 0)
     end
     private :makeport
 
@@ -421,6 +415,7 @@ module Net
       else
         sock = makeport
         begin
+          sendport(sock.addr[3], sock.addr[1])
           if @resume and rest_offset
             resp = sendcmd("REST " + rest_offset.to_s)
             if resp[0] != ?3
