@@ -5917,7 +5917,7 @@ iseq_build_callinfo_from_hash(rb_iseq_t *iseq, VALUE op)
 	if (!NIL_P(vkw_arg)) {
 	    int i;
 	    int len = RARRAY_LENINT(vkw_arg);
-	    size_t n = sizeof(rb_call_info_kw_arg_t) + sizeof(VALUE) * (len - 1);
+	    size_t n = rb_call_info_kw_arg_bytes(len);
 
 	    kw_arg = xmalloc(n);
 	    kw_arg->keyword_len = len;
