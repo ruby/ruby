@@ -340,9 +340,6 @@ class TestGc < Test::Unit::TestCase
           sleep 0.1
           Process.kill("INT", pid) rescue break
         }
-        sleep 5
-        Process.kill("SEGV", pid) rescue nil
-        Process.kill("KILL", pid) rescue nil
       end
       f = proc {1000.times {}}
       loop do
