@@ -4297,7 +4297,9 @@ waitpid(rb_pid_t pid, int *stat_loc, int options)
 
 	while (!(pid = poll_child_status(child, stat_loc))) {
 	    /* wait... */
-	    if (rb_w32_wait_events_blocking(&child->hProcess, 1, timeout) != WAIT_OBJECT_0) {
+	    int ret = rb_w32_wait_events_blocking(&child->hProcess, 1, timeout);
+	    if (ret == WAIT_OBJECT_0 + 1) return -1; /* maybe EINTR */
+	    if (ret != WAIT_OBJECT_0) {
 		/* still active */
 		if (options & WNOHANG) {
 		    pid = 0;

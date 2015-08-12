@@ -1299,6 +1299,29 @@ class TestProcess < Test::Unit::TestCase
     end
   end
 
+  def test_wait_exception
+    bug11340 = '[ruby-dev:49176] [Bug #11340]'
+    t0 = t1 = nil
+    IO.popen([RUBY, '-e', 'puts;STDOUT.flush;Thread.start{gets;exit};sleep(3)'], 'r+') do |f|
+      pid = f.pid
+      f.gets
+      t0 = Time.now
+      th = Thread.start(Thread.current) do |main|
+        Thread.pass until main.stop?
+        main.raise Interrupt
+      end
+      begin
+        assert_raise(Interrupt) {Process.wait(pid)}
+      ensure
+        th.kill.join
+      end
+      t1 = Time.now
+      f.puts
+    end
+    assert_operator(t1 - t0, :<, 3,
+                    ->{"#{bug11340}: #{t1-t0} seconds to interrupt Process.wait"})
+  end
+
   def test_abort
     with_tmpchdir do
       s = run_in_child("abort")
