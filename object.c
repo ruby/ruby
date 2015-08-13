@@ -2903,32 +2903,83 @@ rb_str_to_dbl(VALUE str, int badcheck)
     return ret;
 }
 
+#define fix2dbl_without_to_f(x) (double)FIX2LONG(x)
+#define big2dbl_without_to_f(x) rb_big2dbl(x)
+#define int2dbl_without_to_f(x) \
+    (FIXNUM_P(x) ? fix2dbl_without_to_f(x) : big2dbl_without_to_f(x))
+#define rat2dbl_without_to_f(x) \
+    (int2dbl_without_to_f(rb_rational_num(x)) / \
+     int2dbl_without_to_f(rb_rational_den(x)))
+
+#define special_const_to_float(val, pre, post) \
+    switch (val) { \
+      case Qnil: \
+	rb_raise(rb_eTypeError, pre "nil" post); \
+      case Qtrue: \
+	rb_raise(rb_eTypeError, pre "true" post); \
+      case Qfalse: \
+	rb_raise(rb_eTypeError, pre "false" post); \
+    }
+
+static inline void
+conversion_to_float(VALUE val)
+{
+    special_const_to_float(val, "can't convert ", " into Float");
+}
+
+static inline void
+implicit_conversion_to_float(VALUE val)
+{
+    special_const_to_float(val, "no implicit conversion to float from ", "");
+}
+
+static int
+to_float(VALUE *valp)
+{
+    VALUE val = *valp;
+    if (SPECIAL_CONST_P(val)) {
+	if (FIXNUM_P(val)) {
+	    *valp = DBL2NUM(fix2dbl_without_to_f(val));
+	    return T_FLOAT;
+	}
+	else if (FLONUM_P(val)) {
+	    return T_FLOAT;
+	}
+	else {
+	    conversion_to_float(val);
+	}
+    }
+    else {
+	int type = BUILTIN_TYPE(val);
+	switch (type) {
+	  case T_FLOAT:
+	    return T_FLOAT;
+	  case T_BIGNUM:
+	    *valp = DBL2NUM(big2dbl_without_to_f(val));
+	    return T_FLOAT;
+	  case T_RATIONAL:
+	    *valp = DBL2NUM(rat2dbl_without_to_f(val));
+	    return T_FLOAT;
+	  case T_STRING:
+	    return T_STRING;
+	}
+    }
+    return T_NONE;
+}
+
 VALUE
 rb_Float(VALUE val)
 {
-    switch (TYPE(val)) {
-      case T_FIXNUM:
-	return DBL2NUM((double)FIX2LONG(val));
-
+    switch (to_float(&val)) {
       case T_FLOAT:
 	return val;
-
-      case T_BIGNUM:
-	return DBL2NUM(rb_big2dbl(val));
-
       case T_STRING:
 	return DBL2NUM(rb_str_to_dbl(val, TRUE));
-
-      case T_NIL:
-	rb_raise(rb_eTypeError, "can't convert nil into Float");
-	break;
-
-      default:
-	return rb_convert_type(val, T_FLOAT, "Float", "to_f");
     }
-
-    UNREACHABLE;
+    return rb_convert_type(val, T_FLOAT, "Float", "to_f");
 }
+
+FUNC_MINIMIZED(static VALUE rb_f_float(VALUE obj, VALUE arg));
 
 /*
  *  call-seq:
@@ -2948,18 +2999,24 @@ rb_f_float(VALUE obj, VALUE arg)
     return rb_Float(arg);
 }
 
+static VALUE
+numeric_to_float(VALUE val)
+{
+    if (!rb_obj_is_kind_of(val, rb_cNumeric)) {
+	rb_raise(rb_eTypeError, "can't convert %"PRIsVALUE" into Float",
+		 rb_obj_class(val));
+    }
+    return rb_convert_type(val, T_FLOAT, "Float", "to_f");
+}
+
 VALUE
 rb_to_float(VALUE val)
 {
-    if (RB_TYPE_P(val, T_FLOAT)) return val;
-    if (!rb_obj_is_kind_of(val, rb_cNumeric)) {
-	rb_raise(rb_eTypeError, "can't convert %s into Float",
-		 NIL_P(val) ? "nil" :
-		 val == Qtrue ? "true" :
-		 val == Qfalse ? "false" :
-		 rb_obj_classname(val));
+    switch (to_float(&val)) {
+      case T_FLOAT:
+	return val;
     }
-    return rb_convert_type(val, T_FLOAT, "Float", "to_f");
+    return numeric_to_float(val);
 }
 
 VALUE
@@ -2972,26 +3029,75 @@ rb_check_to_float(VALUE val)
     return rb_check_convert_type(val, T_FLOAT, "Float", "to_f");
 }
 
+static ID id_to_f;
+
+static inline int
+basic_to_f_p(VALUE klass)
+{
+    return rb_method_basic_definition_p(klass, id_to_f);
+}
+
+double
+rb_num_to_dbl(VALUE val)
+{
+    if (SPECIAL_CONST_P(val)) {
+	if (FIXNUM_P(val)) {
+	    if (basic_to_f_p(rb_cFixnum))
+		return fix2dbl_without_to_f(val);
+	}
+	else if (FLONUM_P(val)) {
+	    return rb_float_flonum_value(val);
+	}
+	else {
+	    conversion_to_float(val);
+	}
+    }
+    else {
+	switch (BUILTIN_TYPE(val)) {
+	  case T_FLOAT:
+	    return rb_float_noflonum_value(val);
+	  case T_BIGNUM:
+	    if (basic_to_f_p(rb_cBignum))
+		return big2dbl_without_to_f(val);
+	    break;
+	  case T_RATIONAL:
+	    if (basic_to_f_p(rb_cRational))
+		return rat2dbl_without_to_f(val);
+	    break;
+	}
+    }
+    val = numeric_to_float(val);
+    return RFLOAT_VALUE(val);
+}
+
 double
 rb_num2dbl(VALUE val)
 {
-    switch (TYPE(val)) {
-      case T_FLOAT:
-	return RFLOAT_VALUE(val);
-
-      case T_STRING:
-	rb_raise(rb_eTypeError, "no implicit conversion to float from string");
-	break;
-
-      case T_NIL:
-	rb_raise(rb_eTypeError, "no implicit conversion to float from nil");
-	break;
-
-      default:
-	break;
+    if (SPECIAL_CONST_P(val)) {
+	if (FIXNUM_P(val)) {
+	    return fix2dbl_without_to_f(val);
+	}
+	else if (FLONUM_P(val)) {
+	    return rb_float_flonum_value(val);
+	}
+	else {
+	    implicit_conversion_to_float(val);
+	}
     }
-
-    return RFLOAT_VALUE(rb_Float(val));
+    else {
+	switch (BUILTIN_TYPE(val)) {
+	  case T_FLOAT:
+	    return rb_float_noflonum_value(val);
+	  case T_BIGNUM:
+	    return big2dbl_without_to_f(val);
+	  case T_RATIONAL:
+	    return rat2dbl_without_to_f(val);
+	  case T_STRING:
+	    rb_raise(rb_eTypeError, "no implicit conversion to float from string");
+	}
+    }
+    val = rb_convert_type(val, T_FLOAT, "Float", "to_f");
+    return RFLOAT_VALUE(val);
 }
 
 VALUE
@@ -3243,7 +3349,7 @@ rb_f_hash(VALUE obj, VALUE arg)
  */
 
 void
-Init_Object(void)
+InitVM_Object(void)
 {
     Init_class_hierarchy();
 
@@ -3460,4 +3566,11 @@ Init_Object(void)
      * An alias of +false+
      */
     rb_define_global_const("FALSE", Qfalse);
+}
+
+void
+Init_Object(void)
+{
+    id_to_f = rb_intern_const("to_f");
+    InitVM(Object);
 }

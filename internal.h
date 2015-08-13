@@ -903,29 +903,39 @@ VALUE rb_dbl_hash(double d);
 #endif
 
 static inline double
-rb_float_value_inline(VALUE v)
+rb_float_flonum_value(VALUE v)
 {
 #if USE_FLONUM
-    if (FLONUM_P(v)) {
-	if (v != (VALUE)0x8000000000000002) { /* LIKELY */
-	    union {
-		double d;
-		VALUE v;
-	    } t;
+    if (v != (VALUE)0x8000000000000002) { /* LIKELY */
+	union {
+	    double d;
+	    VALUE v;
+	} t;
 
-	    VALUE b63 = (v >> 63);
-	    /* e: xx1... -> 011... */
-	    /*    xx0... -> 100... */
-	    /*      ^b63           */
-	    t.v = RUBY_BIT_ROTR((2 - b63) | (v & ~0x03), 3);
-	    return t.d;
-	}
-	else {
-	    return 0.0;
-	}
+	VALUE b63 = (v >> 63);
+	/* e: xx1... -> 011... */
+	/*    xx0... -> 100... */
+	/*      ^b63           */
+	t.v = RUBY_BIT_ROTR((2 - b63) | (v & ~0x03), 3);
+	return t.d;
     }
 #endif
+    return 0.0;
+}
+
+static inline double
+rb_float_noflonum_value(VALUE v)
+{
     return ((struct RFloat *)v)->float_value;
+}
+
+static inline double
+rb_float_value_inline(VALUE v)
+{
+    if (FLONUM_P(v)) {
+	return rb_float_flonum_value(v);
+    }
+    return rb_float_noflonum_value(v);
 }
 
 static inline VALUE
@@ -965,6 +975,7 @@ rb_float_new_inline(double d)
 void rb_obj_copy_ivar(VALUE dest, VALUE obj);
 VALUE rb_obj_equal(VALUE obj1, VALUE obj2);
 VALUE rb_class_search_ancestor(VALUE klass, VALUE super);
+double rb_num_to_dbl(VALUE val);
 
 struct RBasicRaw {
     VALUE flags;

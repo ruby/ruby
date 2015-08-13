@@ -1,3 +1,7 @@
+Thu Aug 13 14:36:31 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* object.c (rb_num_to_dbl): move from num2dbl_with_to_f in math.c.
+
 Thu Aug 13 09:01:25 2015  Eric Wong  <e@80x24.org>
 
 	* load.c (features_index_add): avoid repeat calculation
