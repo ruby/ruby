@@ -1,3 +1,7 @@
+Thu Aug 13 09:01:25 2015  Eric Wong  <e@80x24.org>
+
+	* load.c (features_index_add): avoid repeat calculation
+
 Wed Aug 12 21:57:31 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* id_table.c: IMPL() macro accept op as _opname instead of opname
