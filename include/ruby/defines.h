@@ -245,11 +245,11 @@ void rb_ia64_flushrs(void);
 #endif
 #ifndef RUBY_ALIAS_FUNCTION_TYPE
 #define RUBY_ALIAS_FUNCTION_TYPE(type, prot, name, args) \
-    FUNC_MINIMIZED(type prot) {return name args;}
+    FUNC_MINIMIZED(type prot) {return (type)name args;}
 #endif
 #ifndef RUBY_ALIAS_FUNCTION_VOID
 #define RUBY_ALIAS_FUNCTION_VOID(prot, name, args) \
-    void prot {name args;}
+    FUNC_MINIMIZED(void prot) {name args;}
 #endif
 #ifndef RUBY_ALIAS_FUNCTION
 #define RUBY_ALIAS_FUNCTION(prot, name, args) \
