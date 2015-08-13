@@ -71,7 +71,7 @@ module Timeout
   # a module method, so you can call it directly as Timeout.timeout().
   def timeout(sec, klass = nil)   #:yield: +sec+
     return yield(sec) if sec == nil or sec.zero?
-    message = "execution expired"
+    message = "execution expired".freeze
     e = Error
     bl = proc do |exception|
       begin
