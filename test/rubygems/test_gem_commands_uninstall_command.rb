@@ -5,6 +5,7 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
 
   def setup
     super
+    common_installer_setup
 
     build_rake_in do
       use_ui @ui do
