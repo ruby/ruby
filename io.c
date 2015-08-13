@@ -5038,6 +5038,9 @@ rb_io_oflags_modestr(int oflags)
       case O_WRONLY:
 	return MODE_BINARY("w", "wb");
       case O_RDWR:
+	if (oflags & O_TRUNC) {
+	    return MODE_BINARY("w+", "wb+");
+	}
 	return MODE_BINARY("r+", "rb+");
     }
 }

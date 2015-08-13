@@ -2050,6 +2050,15 @@ End
     }
   end
 
+  def test_reopen_stdio
+    mkcdtmpdir {
+      fname = 'bug11319'
+      File.write(fname, 'hello')
+      system(EnvUtil.rubybin, '-e', "STDOUT.reopen('#{fname}', 'w+')")
+      assert_equal('', File.read(fname))
+    }
+  end
+
   def test_reopen_mode
     feature7067 = '[ruby-core:47694]'
     make_tempfile {|t|
