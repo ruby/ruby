@@ -1835,6 +1835,7 @@ rb_thread_s_handle_interrupt(VALUE self, VALUE mask_arg)
     if (!mask) {
 	return rb_yield(Qnil);
     }
+    OBJ_FREEZE_RAW(mask);
     rb_ary_push(th->pending_interrupt_mask_stack, mask);
     if (!rb_threadptr_pending_interrupt_empty_p(th)) {
 	th->pending_interrupt_queue_checked = 0;
@@ -5288,6 +5289,7 @@ rb_uninterruptible(VALUE (*b_proc)(ANYARGS), VALUE data)
     rb_thread_t *cur_th = GET_THREAD();
 
     rb_hash_aset(interrupt_mask, rb_cObject, sym_never);
+    OBJ_FREEZE_RAW(interrupt_mask);
     rb_ary_push(cur_th->pending_interrupt_mask_stack, interrupt_mask);
 
     return rb_ensure(b_proc, data, rb_ary_pop, cur_th->pending_interrupt_mask_stack);
