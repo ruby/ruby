@@ -12,6 +12,12 @@
 #ifndef RUBY_COMPILE_H
 #define RUBY_COMPILE_H
 
+static inline size_t
+rb_call_info_kw_arg_bytes(int keyword_len)
+{
+    return sizeof(rb_call_info_kw_arg_t) + sizeof(VALUE) * (keyword_len - 1);
+}
+
 RUBY_SYMBOL_EXPORT_BEGIN
 
 /* compile.c */
