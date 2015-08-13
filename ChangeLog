@@ -1,3 +1,8 @@
+Thu Aug 13 17:42:34 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h (rb_call_info_kw_arg_bytes): move the definition
+	  to iseq.h because this function is shared with iseq.c and compile.c.
+
 Thu Aug 13 14:36:31 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* object.c (rb_num_to_dbl): move from num2dbl_with_to_f in math.c.
