@@ -21,54 +21,10 @@
 
 #define RB_BIGNUM_TYPE_P(x) RB_TYPE_P((x), T_BIGNUM)
 
-static ID id_to_f;
-
 VALUE rb_mMath;
 VALUE rb_eMathDomainError;
 
-static inline int
-basic_to_f_p(VALUE klass)
-{
-    return rb_method_basic_definition_p(klass, id_to_f);
-}
-
-#define fix2dbl_without_to_f(x) (double)FIX2LONG(x)
-#define big2dbl_without_to_f(x) rb_big2dbl(x)
-#define int2dbl_without_to_f(x) (FIXNUM_P(x) ? fix2dbl_without_to_f(x) : big2dbl_without_to_f(x))
-#define rat2dbl_without_to_f(x) \
-    (int2dbl_without_to_f(rb_rational_num(x)) / \
-     int2dbl_without_to_f(rb_rational_den(x)))
-
-static inline double
-num2dbl_with_to_f(VALUE num)
-{
-    if (SPECIAL_CONST_P(num)) {
-	if (FIXNUM_P(num)) {
-	    if (basic_to_f_p(rb_cFixnum))
-		return fix2dbl_without_to_f(num);
-	}
-	else if (FLONUM_P(num)) {
-	    return RFLOAT_VALUE(num);
-	}
-    }
-    else {
-	switch (BUILTIN_TYPE(num)) {
-	  case T_FLOAT:
-	    return RFLOAT_VALUE(num);
-	  case T_BIGNUM:
-	    if (basic_to_f_p(rb_cBignum))
-		return big2dbl_without_to_f(num);
-	    break;
-	  case T_RATIONAL:
-	    if (basic_to_f_p(rb_cRational))
-		return rat2dbl_without_to_f(num);
-	    break;
-	}
-    }
-    return RFLOAT_VALUE(rb_to_float(num));
-}
-
-#define Get_Double(x) num2dbl_with_to_f(x)
+#define Get_Double(x) rb_num_to_dbl(x)
 
 #define domain_error(msg) \
     rb_raise(rb_eMathDomainError, "Numerical argument is out of domain - " #msg)
@@ -1024,6 +980,5 @@ InitVM_Math(void)
 void
 Init_Math(void)
 {
-    id_to_f = rb_intern_const("to_f");
     InitVM(Math);
 }
