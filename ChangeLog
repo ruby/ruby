@@ -1,3 +1,8 @@
+Thu Aug 13 22:49:42 2015  Juanito Fatas  <katehuang0320@gmail.com>
+
+	* lib/timeout.rb (Timeout#timeout): freeze a string message to
+	  reduce string allocations.  [Fix GH-996]
+
 Thu Aug 13 17:42:34 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h (rb_call_info_kw_arg_bytes): move the definition
