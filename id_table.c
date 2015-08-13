@@ -1503,9 +1503,8 @@ mix_id_table_foreach_values(struct mix_id_table *tbl, enum rb_id_table_iterator_
 #endif /* ID_TABLE_USE_MIX */
 
 /* IMPL(create) will be "hash_id_table_create" and so on */
-#define IMPL2(name, op) name##_##op
-#define IMPL1(name, op) IMPL2(name, op)
-#define IMPL(op)        IMPL1(ID_TABLE_NAME, id_table##op)
+#define IMPL1(name, op) TOKEN_PASTE(name, _id##op) /* expand `name' */
+#define IMPL(op)        IMPL1(ID_TABLE_NAME, _table##op) /* but prevent `op' */
 
 struct rb_id_table *rb_id_table_create(size_t size) {return (struct rb_id_table *)IMPL(_create)(size);}
 void rb_id_table_free(struct rb_id_table *tbl)      {       IMPL(_free)((ID_TABLE_IMPL_TYPE *)tbl);}
