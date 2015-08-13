@@ -222,6 +222,7 @@ class TestMath < Test::Unit::TestCase
 
   def test_hypot
     check(5, Math.hypot(3, 4))
+    check(13, Math.hypot(3, 4, 12))
   end
 
   def test_erf
