@@ -1,3 +1,11 @@
+Sat Aug 15 04:33:39 2015  Eric Wong  <e@80x24.org>
+
+	* hash.c (any_hash): skip rb_objid_hash for static syms
+	  (rb_num_hash_start): extract from rb_ident_hash
+	  (rb_objid_hash): call rb_num_hash_start
+	  (rb_ident_hash): ditto
+	  [ruby-core:70181] [Feature #11405]
+
 Sat Aug 15 04:16:13 2015  Eric Wong  <e@80x24.org>
 
 	* iseq.c (rb_iseq_mark): reduce NULL checks

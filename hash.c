@@ -138,7 +138,8 @@ any_hash(VALUE a, st_index_t (*other_func)(VALUE))
     if (SPECIAL_CONST_P(a)) {
 	if (a == Qundef) return 0;
 	if (STATIC_SYM_P(a)) {
-	    a >>= (RUBY_SPECIAL_SHIFT + ID_SCOPE_SHIFT);
+	    hnum = a >> (RUBY_SPECIAL_SHIFT + ID_SCOPE_SHIFT);
+	    goto out;
 	}
 	else if (FLONUM_P(a)) {
 	    /* prevent pathological behavior: [Bug #10761] */
@@ -160,6 +161,7 @@ any_hash(VALUE a, st_index_t (*other_func)(VALUE))
     else {
 	hnum = other_func(a);
     }
+  out:
     hnum <<= 1;
     return (st_index_t)RSHIFT(hnum, 1);
 }
@@ -177,10 +179,31 @@ rb_any_hash(VALUE a)
     return any_hash(a, obj_any_hash);
 }
 
+static st_index_t
+rb_num_hash_start(st_index_t n)
+{
+    /*
+     * This hash function is lightly-tuned for Ruby.  Further tuning
+     * should be possible.  Notes:
+     *
+     * - (n >> 3) alone is great for heap objects and OK for fixnum,
+     *   however symbols perform poorly.
+     * - (n >> (RUBY_SPECIAL_SHIFT+3)) was added to make symbols hash well,
+     *   n.b.: +3 to remove most ID scope, +1 worked well initially, too
+     *   n.b.: +1 (instead of 3) worked well initially, too
+     * - (n << 3) was finally added to avoid losing bits for fixnums
+     * - avoid expensive modulo instructions, it is currently only
+     *   shifts and bitmask operations.
+     */
+    return (n >> (RUBY_SPECIAL_SHIFT + 3) | (n << 3)) ^ (n >> 3);
+}
+
 long
 rb_objid_hash(st_index_t index)
 {
-    st_index_t hnum = rb_hash_start(index);
+    st_index_t hnum = rb_num_hash_start(index);
+
+    hnum = rb_hash_start(hnum);
     hnum = rb_hash_uint(hnum, (st_index_t)rb_any_hash);
     hnum = rb_hash_end(hnum);
     return hnum;
@@ -215,28 +238,18 @@ static const struct st_hash_type objhash = {
 static st_index_t
 rb_ident_hash(st_data_t n)
 {
+#ifdef USE_FLONUM /* RUBY */
     /*
-     * This hash function is lightly-tuned for Ruby.  Further tuning
-     * should be possible.  Notes:
-     *
-     * - (n >> 3) alone is great for heap objects and OK for fixnum,
-     *   however symbols perform poorly.
-     * - (n >> (RUBY_SPECIAL_SHIFT+3)) was added to make symbols hash well,
-     *   n.b.: +3 to remove ID scope, +1 worked well initially, too
-     * - (n << 3) was finally added to avoid losing bits for fixnums
-     * - avoid expensive modulo instructions, it is currently only
-     *   shifts and bitmask operations.
      * - flonum (on 64-bit) is pathologically bad, mix the actual
      *   float value in, but do not use the float value as-is since
      *   many integers get interpreted as 2.0 or -2.0 [Bug #10761]
      */
-#ifdef USE_FLONUM /* RUBY */
     if (FLONUM_P(n)) {
 	n ^= (st_data_t)rb_float_value(n);
     }
 #endif
 
-    return (st_index_t)((n>>(RUBY_SPECIAL_SHIFT+3)|(n<<3)) ^ (n>>3));
+    return (st_index_t)rb_num_hash_start((st_index_t)n);
 }
 
 static const struct st_hash_type identhash = {
