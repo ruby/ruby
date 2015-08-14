@@ -31,6 +31,7 @@ Fri Aug 14 18:43:11 2015  Eric Wong  <e@80x24.org>
 	* thread_win32.c (native_stop_timer_thread): adjust (untested)
 	  (rb_divert_reserved_fd): remove
 	* vm_core.h: adjust prototype
+	  [ruby-core:70386] [Bug #11336]
 
 Fri Aug 14 18:40:43 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
