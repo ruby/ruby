@@ -1,3 +1,8 @@
+Fri Aug 14 15:24:12 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (rb_any_hash): fix Float hash.  rb_dbl_hash() returns a
+	  Fixnum, but not a long.  [Bug #9381]
+
 Fri Aug 14 15:09:34 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/json/parser/parser.rl: raise with messages in UTF-8
