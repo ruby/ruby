@@ -312,6 +312,9 @@ __EOS__
   end
 
   def test_ctx_server_session_cb
+    method = "SSLv3"
+    assert_include(OpenSSL::SSL::SSLContext::METHODS.map(&:to_s), method)
+
     called = {}
 
     ctx_proc = Proc.new { |ctx, ssl|
@@ -355,7 +358,7 @@ __EOS__
       3.times do
         sock = TCPSocket.new("127.0.0.1", port)
         begin
-          ssl = OpenSSL::SSL::SSLSocket.new(sock, OpenSSL::SSL::SSLContext.new("SSLv3"))
+          ssl = OpenSSL::SSL::SSLSocket.new(sock, OpenSSL::SSL::SSLContext.new(method))
           ssl.sync_close = true
           ssl.session = last_client_session if last_client_session
           ssl.connect
