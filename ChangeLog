@@ -1,3 +1,8 @@
+Fri Aug 14 15:09:34 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/json/parser/parser.rl: raise with messages in UTF-8
+	  encoding.  [ruby-core:67386] [Bug #10705]
+
 Fri Aug 14 00:44:34 2015  Eric Wong  <e@80x24.org>
 
 	* io.c (rb_io_oflags_modestr): handle O_TRUNC correctly
