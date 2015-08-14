@@ -297,22 +297,12 @@ extern ID ruby_static_id_status;
 static inline int
 close_unless_reserved(int fd)
 {
-    /* Do nothing to the reserved fd because it should be closed in exec(2)
-       due to the O_CLOEXEC or FD_CLOEXEC flag. */
+    /* We should not have reserved FDs at this point */
     if (rb_reserved_fd_p(fd)) { /* async-signal-safe */
+        rb_async_bug_errno("BUG timer thread still running", 0 /* EDOOFUS */);
         return 0;
     }
     return close(fd); /* async-signal-safe */
-}
-
-static inline int
-dup2_with_divert(int oldfd, int newfd)
-{
-    if (rb_divert_reserved_fd(newfd) == -1) { /* async-signal-safe if no error occurred */
-        return -1;
-    } else {
-        return dup2(oldfd, newfd); /* async-signal-safe */
-    }
 }
 
 /*#define DEBUG_REDIRECT*/
@@ -354,7 +344,7 @@ static int
 redirect_dup2(int oldfd, int newfd)
 {
     int ret;
-    ret = dup2_with_divert(oldfd, newfd);
+    ret = dup2(oldfd, newfd);
     ttyprintf("dup2(%d, %d) => %d\n", oldfd, newfd, ret);
     return ret;
 }
@@ -388,7 +378,7 @@ parent_redirect_close(int fd)
 
 #else
 #define redirect_dup(oldfd) dup(oldfd)
-#define redirect_dup2(oldfd, newfd) dup2_with_divert((oldfd), (newfd))
+#define redirect_dup2(oldfd, newfd) dup2((oldfd), (newfd))
 #define redirect_close(fd) close_unless_reserved(fd)
 #define parent_redirect_open(pathname, flags, perm) rb_cloexec_open((pathname), (flags), (perm))
 #define parent_redirect_close(fd) close_unless_reserved(fd)
@@ -1151,8 +1141,10 @@ before_exec_non_async_signal_safe(void)
      * internal threads temporary. [ruby-core:10583]
      * This is also true on Haiku. It returns Errno::EPERM against exec()
      * in multiple threads.
+     *
+     * Nowadays, we always stop the timer thread completely to allow redirects.
      */
-    rb_thread_stop_timer_thread(0);
+    rb_thread_stop_timer_thread();
 }
 
 static void
@@ -2472,10 +2464,6 @@ rb_execarg_parent_end(VALUE execarg_obj)
     RB_GC_GUARD(execarg_obj);
 }
 
-#if defined(__APPLE__) || defined(__HAIKU__)
-static int rb_exec_without_timer_thread(const struct rb_execarg *eargp, char *errmsg, size_t errmsg_buflen);
-#endif
-
 /*
  *  call-seq:
  *     exec([env,] command... [,options])
@@ -2559,16 +2547,14 @@ rb_f_exec(int argc, const VALUE *argv)
 
     execarg_obj = rb_execarg_new(argc, argv, TRUE);
     eargp = rb_execarg_get(execarg_obj);
+    before_exec(); /* stop timer thread before redirects */
     rb_execarg_parent_start(execarg_obj);
     fail_str = eargp->use_shell ? eargp->invoke.sh.shell_script : eargp->invoke.cmd.command_name;
 
-#if defined(__APPLE__) || defined(__HAIKU__)
-    rb_exec_without_timer_thread(eargp, errmsg, sizeof(errmsg));
-#else
-    before_exec_async_signal_safe(); /* async-signal-safe */
     rb_exec_async_signal_safe(eargp, errmsg, sizeof(errmsg));
-    preserving_errno(after_exec_async_signal_safe()); /* async-signal-safe */
-#endif
+
+    preserving_errno(after_exec()); /* restart timer thread */
+
     RB_GC_GUARD(execarg_obj);
     if (errmsg[0])
         rb_sys_fail(errmsg);
@@ -3075,18 +3061,6 @@ rb_exec_async_signal_safe(const struct rb_execarg *eargp, char *errmsg, size_t e
 failure:
     return -1;
 }
-
-#if defined(__APPLE__) || defined(__HAIKU__)
-static int
-rb_exec_without_timer_thread(const struct rb_execarg *eargp, char *errmsg, size_t errmsg_buflen)
-{
-    int ret;
-    before_exec();
-    ret = rb_exec_async_signal_safe(eargp, errmsg, errmsg_buflen); /* hopefully async-signal-safe */
-    preserving_errno(after_exec()); /* not async-signal-safe because it calls rb_thread_start_timer_thread.  */
-    return ret;
-}
-#endif
 
 #ifdef HAVE_WORKING_FORK
 /* This function should be async-signal-safe.  Hopefully it is. */

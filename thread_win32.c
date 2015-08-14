@@ -730,7 +730,7 @@ rb_thread_create_timer_thread(void)
 }
 
 static int
-native_stop_timer_thread(int close_anyway)
+native_stop_timer_thread(void)
 {
     int stopped = --system_working <= 0;
     if (stopped) {
@@ -784,12 +784,6 @@ ruby_alloca_chkstk(size_t len, void *sp)
 #endif
 int
 rb_reserved_fd_p(int fd)
-{
-    return 0;
-}
-
-int
-rb_divert_reserved_fd(int fd)
 {
     return 0;
 }
