@@ -1660,7 +1660,7 @@ native_stop_timer_thread(void)
 	 * captured and in the middle of a write while we are running,
 	 * so wait for that to finish:
 	 */
-	while (ATOMIC_CAS(timer_thread_pipe.writing, 0, 0)) {
+	while (ATOMIC_CAS(timer_thread_pipe.writing, (rb_atomic_t)0, 0)) {
 	    native_thread_yield();
 	}
 
