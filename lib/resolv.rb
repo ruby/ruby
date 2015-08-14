@@ -931,6 +931,7 @@ class Resolv
         nameserver = []
         search = nil
         ndots = 1
+        timeouts = []
         open(filename, 'rb') {|f|
           f.each {|line|
             line.sub!(/[#;].*/, '')
@@ -953,12 +954,14 @@ class Resolv
                 case arg
                 when /\Andots:(\d+)\z/
                   ndots = $1.to_i
+                when /\Atimeout:(\d+)\z/
+                  4.times { timeouts << $1.to_i }
                 end
               }
             end
           }
         }
-        return { :nameserver => nameserver, :search => search, :ndots => ndots }
+        return { :nameserver => nameserver, :search => search, :ndots => ndots, :timeouts => timeouts }
       end
 
       def Config.default_config_hash(filename="/etc/resolv.conf")
@@ -982,6 +985,7 @@ class Resolv
             @nameserver_port = []
             @search = nil
             @ndots = 1
+            timeouts = []
             case @config_info
             when nil
               config_hash = Config.default_config_hash
@@ -1006,6 +1010,7 @@ class Resolv
             end
             @search = config_hash[:search] if config_hash.include? :search
             @ndots = config_hash[:ndots] if config_hash.include? :ndots
+            timeouts = config_hash[:timeouts] if config_hash.include? :timeouts
 
             if @nameserver_port.empty?
               @nameserver_port << ['0.0.0.0', Port]
@@ -1019,6 +1024,10 @@ class Resolv
               else
                 @search = [[]]
               end
+            end
+
+            unless timeouts.empty?
+              @timeouts = timeouts
             end
 
             if !@nameserver_port.kind_of?(Array) ||
