@@ -2199,7 +2199,7 @@ rb_econv_set_replacement(rb_econv_t *ec,
 
     encname2 = rb_econv_encoding_to_insert_output(ec);
 
-    if (encoding_equal(encname, encname2)) {
+    if (!*encname2 || encoding_equal(encname, encname2)) {
         str2 = xmalloc(len);
         MEMCPY(str2, str, unsigned char, len); /* xxx: str may be invalid */
         len2 = len;

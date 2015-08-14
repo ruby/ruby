@@ -1,3 +1,8 @@
+Fri Aug 14 16:30:43 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* transcode.c (rb_econv_set_replacement): target encoding name can
+	  be empty now.  [ruby-core:69841] [Bug #11324]
+
 Fri Aug 14 15:24:12 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (rb_any_hash): fix Float hash.  rb_dbl_hash() returns a
