@@ -1134,7 +1134,8 @@ range_inspect(VALUE range)
 static VALUE
 range_eqq(VALUE range, VALUE val)
 {
-    return rb_funcall(range, rb_intern("include?"), 1, val);
+	return rb_funcall(range, rb_intern("cover?"),val);
+    //return rb_funcall(range, rb_intern("include?"), 1, val);
 }
 
 
