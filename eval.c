@@ -223,7 +223,7 @@ ruby_cleanup(volatile int ex)
     /* unlock again if finalizer took mutexes. */
     rb_threadptr_unlock_all_locking_mutexes(GET_THREAD());
     TH_POP_TAG();
-    rb_thread_stop_timer_thread(1);
+    rb_thread_stop_timer_thread();
     ruby_vm_destruct(GET_VM());
     if (state) ruby_default_signal(state);
 

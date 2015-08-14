@@ -1,3 +1,32 @@
+Fri Aug 14 18:43:11 2015  Eric Wong  <e@80x24.org>
+
+	* process.c (close_unless_reserved): add extra check
+	  (dup2_with_divert): remove
+	  (redirect_dup2): use dup2 without divert
+	  (before_exec_non_async_signal_safe): adjust call + comment
+	  (rb_f_exec): stop timer thread for all OSes
+	  (rb_exec_without_timer_thread): remove
+	* eval.c (ruby_cleanup): adjust call
+	* thread.c (rb_thread_stop_timer_thread): always close pipes
+	* thread_pthread.c (struct timer_thread_pipe): add writing field,
+	  mark owner_process volatile for signal handlers
+	  (rb_thread_wakeup_timer_thread_fd): check valid FD
+	  (rb_thread_wakeup_timer_thread): set writing flag to prevent close
+	  (rb_thread_wakeup_timer_thread_low): ditto
+	  (CLOSE_INVALIDATE): new macro
+	  (close_invalidate): new function
+	  (close_communication_pipe): removed
+	  (setup_communication_pipe_internal): make errors non-fatal
+	  (setup_communication_pipe): ditto
+	  (thread_timer): close reading ends inside timer thread
+	  (rb_thread_create_timer_thread): make errors non-fatal
+	  (native_stop_timer_thread): close write ends only, always,
+	   wait for signal handlers to finish
+	  (rb_divert_reserved_fd): remove
+	* thread_win32.c (native_stop_timer_thread): adjust (untested)
+	  (rb_divert_reserved_fd): remove
+	* vm_core.h: adjust prototype
+
 Fri Aug 14 18:40:43 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/win32/lib/win32/registry.rb (API#SetValue): add terminator

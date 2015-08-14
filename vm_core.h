@@ -979,7 +979,7 @@ VALUE rb_vm_call(rb_thread_t *th, VALUE recv, VALUE id, int argc,
 		 const VALUE *argv, const rb_callable_method_entry_t *me);
 
 void rb_thread_start_timer_thread(void);
-void rb_thread_stop_timer_thread(int);
+void rb_thread_stop_timer_thread(void);
 void rb_thread_reset_timer_thread(void);
 void rb_thread_wakeup_timer_thread(void);
 
