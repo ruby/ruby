@@ -326,7 +326,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
         case type
         when REG_SZ, REG_EXPAND_SZ, REG_MULTI_SZ
           data = data.encode(WCHAR)
-          size ||= data.size + 1
+          size ||= data.size + WCHAR_SIZE
         end
         check RegSetValueExW.call(hkey, make_wstr(name), 0, type, data, size)
       end

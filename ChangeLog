@@ -1,3 +1,8 @@
+Fri Aug 14 18:40:43 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/win32/lib/win32/registry.rb (API#SetValue): add terminator
+	  size, not 1 byte.  [ruby-core:70365] [Bug #11439]
+
 Thu Aug 13 22:49:42 2015  Juanito Fatas  <katehuang0320@gmail.com>
 
 	* lib/timeout.rb (Timeout#timeout): freeze a string message to
