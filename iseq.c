@@ -108,9 +108,9 @@ rb_iseq_mark(const rb_iseq_t *iseq)
 	const struct rb_iseq_constant_body *body = iseq->body;
 
 	RUBY_MARK_UNLESS_NULL(body->mark_ary);
-	RUBY_MARK_UNLESS_NULL(body->location.label);
-	RUBY_MARK_UNLESS_NULL(body->location.base_label);
-	RUBY_MARK_UNLESS_NULL(body->location.path);
+	rb_gc_mark(body->location.label);
+	rb_gc_mark(body->location.base_label);
+	rb_gc_mark(body->location.path);
 	RUBY_MARK_UNLESS_NULL(body->location.absolute_path);
     }
 

@@ -1,3 +1,7 @@
+Sat Aug 15 04:16:13 2015  Eric Wong  <e@80x24.org>
+
+	* iseq.c (rb_iseq_mark): reduce NULL checks
+
 Fri Aug 14 18:50:57 2015  Eric Wong  <e@80x24.org>
 
 	* method.h (METHOD_ENTRY_VISI_SET): cast visi to int
