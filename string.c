@@ -6373,15 +6373,10 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
     }
 
     enc = STR_ENC_GET(str);
-    if (NIL_P(spat)) {
-	if (!NIL_P(rb_fs)) {
-	    spat = rb_fs;
-	    goto fs_set;
-	}
+    if (NIL_P(spat) && NIL_P(spat = rb_fs)) {
 	split_type = awk;
     }
     else {
-      fs_set:
 	spat = get_pat_quoted(spat, 0);
 	if (BUILTIN_TYPE(spat) == T_STRING) {
 	    rb_encoding *enc2 = STR_ENC_GET(spat);
