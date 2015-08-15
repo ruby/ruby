@@ -1,3 +1,8 @@
+Sat Aug 15 10:15:20 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_each_codepoint): read more data when read partially.
+	  [ruby-core:70379] [Bug #11444]
+
 Sat Aug 15 04:33:39 2015  Eric Wong  <e@80x24.org>
 
 	* hash.c (any_hash): skip rb_objid_hash for static syms
