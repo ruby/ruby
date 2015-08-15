@@ -33,7 +33,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     ctx = OpenSSL::SSL::SSLContext.new
     options = ctx.options
     ctx.setup
-    assert_raises(RuntimeError) do
+    assert_raise(RuntimeError) do
       ctx.options = options
     end
   end
@@ -707,12 +707,12 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     s1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx1)
     s1.hostname = hostname
     t = Thread.new {
-      assert_raises(OpenSSL::SSL::SSLError) do
+      assert_raise(OpenSSL::SSL::SSLError) do
         s1.connect
       end
     }
 
-    assert_raises(ArgumentError) do
+    assert_raise(ArgumentError) do
       s2.accept
     end
 
@@ -1029,7 +1029,7 @@ if OpenSSL::OPENSSL_VERSION_NUMBER >= 0x10002000
     ctx_proc = Proc.new { |ctx|
       ctx.alpn_select_cb = -> (protocols) { nil }
     }
-    assert_raises(MiniTest::Assertion) do # minitest/assertion comes from `assert_join_threads`
+    assert_raise(MiniTest::Assertion) do # minitest/assertion comes from `assert_join_threads`
       start_server_version(:SSLv23, ctx_proc) { |server, port|
         ctx = OpenSSL::SSL::SSLContext.new
         ctx.alpn_protocols = ["http/1.1"]
