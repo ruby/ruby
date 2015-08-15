@@ -1,3 +1,8 @@
+Sat Aug 15 10:51:08 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/win32/lib/win32/registry.rb (API#SetValue): data size should
+	  be in bytes, not in chars.  [ruby-core:70365] [Bug #11439]
+
 Sat Aug 15 10:15:20 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_each_codepoint): read more data when read partially.
