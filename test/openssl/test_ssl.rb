@@ -10,6 +10,16 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     assert_equal(ctx.setup, nil)
   end
 
+  def test_ctx_setup_invalid
+    m = OpenSSL::SSL::SSLContext::METHODS.first
+    assert_raise_with_message(ArgumentError, /null/) {
+      OpenSSL::SSL::SSLContext.new("#{m}\0")
+    }
+    assert_raise_with_message(ArgumentError, /\u{ff33 ff33 ff2c}/) {
+      OpenSSL::SSL::SSLContext.new("\u{ff33 ff33 ff2c}")
+    }
+  end
+
   def test_options_defaults_to_OP_ALL
     ctx = OpenSSL::SSL::SSLContext.new
     assert_equal OpenSSL::SSL::OP_ALL, ctx.options

@@ -180,7 +180,7 @@ ossl_sslctx_set_ssl_version(VALUE self, VALUE ssl_method)
     SSL_CTX *ctx;
     if (RB_TYPE_P(ssl_method, T_SYMBOL))
 	m = rb_sym2str(ssl_method);
-    s = StringValuePtr(m);
+    s = StringValueCStr(m);
     for (i = 0; i < numberof(ossl_ssl_method_tab); i++) {
         if (strcmp(ossl_ssl_method_tab[i].name, s) == 0) {
             method = ossl_ssl_method_tab[i].func();
@@ -188,7 +188,7 @@ ossl_sslctx_set_ssl_version(VALUE self, VALUE ssl_method)
         }
     }
     if (!method) {
-        ossl_raise(rb_eArgError, "unknown SSL method `%s'.", s);
+        ossl_raise(rb_eArgError, "unknown SSL method `%"PRIsVALUE"'.", m);
     }
     GetSSLCTX(self, ctx);
     if (SSL_CTX_set_ssl_version(ctx, method) != 1) {
