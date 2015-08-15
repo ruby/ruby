@@ -17,6 +17,7 @@
 #include <errno.h>
 #include "probes.h"
 #include "id.h"
+#include "symbol.h"
 
 #ifdef __APPLE__
 # ifdef HAVE_CRT_EXTERNS_H
@@ -150,7 +151,7 @@ rb_any_hash(VALUE a)
 	hnum = rb_str_hash(a);
     }
     else if (BUILTIN_TYPE(a) == T_SYMBOL) {
-	hnum = rb_objid_hash((st_index_t)a);
+	return RSYMBOL(a)->hashval;
     }
     else if (BUILTIN_TYPE(a) == T_FLOAT) {
       flt:

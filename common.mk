@@ -1450,6 +1450,7 @@ hash.$(OBJEXT): {$(VPATH)}oniguruma.h
 hash.$(OBJEXT): {$(VPATH)}probes.h
 hash.$(OBJEXT): {$(VPATH)}st.h
 hash.$(OBJEXT): {$(VPATH)}subst.h
+hash.$(OBJEXT): {$(VPATH)}symbol.h
 hash.$(OBJEXT): {$(VPATH)}util.h
 hash.$(OBJEXT): {$(VPATH)}vm_opts.h
 inits.$(OBJEXT): $(hdrdir)/ruby/ruby.h
