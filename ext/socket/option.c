@@ -1244,7 +1244,7 @@ sockopt_inspect(VALUE self)
 
 	v = optname_to_sym(level, optname);
 	if (SYMBOL_P(v))
-	    rb_str_catf(ret, " %s", rb_id2name(SYM2ID(v)));
+	    rb_str_catf(ret, " %"PRIsVALUE, rb_sym2str(v));
 	else
 	    rb_str_catf(ret, " optname:%d", optname);
     }

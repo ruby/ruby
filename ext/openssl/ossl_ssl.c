@@ -174,13 +174,13 @@ ossl_sslctx_set_ssl_version(VALUE self, VALUE ssl_method)
 {
     SSL_METHOD *method = NULL;
     const char *s;
+    VALUE m = ssl_method;
     int i;
 
     SSL_CTX *ctx;
     if (RB_TYPE_P(ssl_method, T_SYMBOL))
-	s = rb_id2name(SYM2ID(ssl_method));
-    else
-	s =  StringValuePtr(ssl_method);
+	m = rb_sym2str(ssl_method);
+    s = StringValuePtr(m);
     for (i = 0; i < numberof(ossl_ssl_method_tab); i++) {
         if (strcmp(ossl_ssl_method_tab[i].name, s) == 0) {
             method = ossl_ssl_method_tab[i].func();

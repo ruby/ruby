@@ -990,7 +990,7 @@ ancillary_inspect(VALUE self)
 
         vtype = ip_cmsg_type_to_sym(level, type);
         if (SYMBOL_P(vtype))
-            rb_str_catf(ret, " %s", rb_id2name(SYM2ID(vtype)));
+            rb_str_catf(ret, " %"PRIsVALUE, rb_sym2str(vtype));
         else
             rb_str_catf(ret, " cmsg_type:%d", type);
     }
