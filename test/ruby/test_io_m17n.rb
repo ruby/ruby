@@ -2562,4 +2562,24 @@ EOT
     a.close rescue nil
     b.close rescue nil
   end
+
+  def test_each_codepoint_need_more
+    code = <<-'end;'
+      c = nil
+      begin
+        STDIN.set_encoding(Encoding::UTF_8).each_codepoint{|i| c = i}
+      rescue ArgumentError => e
+        STDERR.puts e.message
+      else
+        printf "%x", c
+      end
+    end;
+    args = ['-e', code]
+    bug11444 = '[ruby-core:70379] [Bug #11444]'
+    assert_in_out_err(args, "\u{1f376}".b[0,3], [],
+                      ["invalid byte sequence in UTF-8"],
+                      bug11444, timeout: 1)
+    assert_in_out_err(args, "x"*8190+"\u{1f376}", ["1f376"], [],
+                      bug11444, timeout: 1)
+  end
 end
