@@ -110,7 +110,7 @@ module Random::Formatter
   # If a secure random number generator is not available,
   # +NotImplementedError+ is raised.
   def hex(n=nil)
-    random_bytes(n).unpack("H*")[0]
+    random_bytes(n).unpack('H*'.freeze)[0]
   end
 
   # SecureRandom.base64 generates a random base64 string.
@@ -227,13 +227,14 @@ module Random::Formatter
   # See RFC 4122 for details of UUID.
   #
   def uuid
-    ary = random_bytes(16).unpack("NnnnnN")
+    ary = random_bytes(16).unpack('NnnnnN'.freeze)
     ary[2] = (ary[2] & 0x0fff) | 0x4000
     ary[3] = (ary[3] & 0x3fff) | 0x8000
-    "%08x-%04x-%04x-%04x-%04x%08x" % ary
+    '%08x-%04x-%04x-%04x-%04x%08x'.freeze % ary
   end
 
   private
+
   def gen_random(n)
     self.bytes(n)
   end
