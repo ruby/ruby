@@ -1,3 +1,11 @@
+Sun Aug 16 17:24:10 2015  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* gc.c (gc_mark_children): check if RCLASS_EXT is valid
+	  before marking. This fixes the following test failure
+	  introduced in r51126:
+
+	    make test-all TESTOPTS='--gc-stress ruby/test_refinement.rb'
+
 Sat Aug 15 10:51:08 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/win32/lib/win32/registry.rb (API#SetValue): data size should
