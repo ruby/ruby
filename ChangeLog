@@ -1,3 +1,8 @@
+Sun Aug 16 17:33:45 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* gems/bundled_gems: update latest version of bundled gems.
+	  It includes minitest-5.8.0 and test-unit 3.1.3.
+
 Sun Aug 16 17:24:10 2015  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* gc.c (gc_mark_children): check if RCLASS_EXT is valid
