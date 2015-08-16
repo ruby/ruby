@@ -4331,8 +4331,8 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 	if (FL_TEST(obj, RICLASS_IS_ORIGIN)) {
 	    mark_m_tbl(objspace, RCLASS_M_TBL(obj));
 	}
-	mark_m_tbl(objspace, RCLASS_CALLABLE_M_TBL(obj));
 	if (!RCLASS_EXT(obj)) break;
+	mark_m_tbl(objspace, RCLASS_CALLABLE_M_TBL(obj));
 	gc_mark(objspace, RCLASS_SUPER((VALUE)obj));
 	break;
 
