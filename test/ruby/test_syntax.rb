@@ -304,6 +304,12 @@ WARN
     assert_syntax_error("{%q'a': 1}", /unexpected ':'/)
   end
 
+  def test_block_after_cond
+    bug10653 = '[ruby-dev:48790] [Bug #10653]'
+    assert_valid_syntax("false ? raise {} : tap {}", bug10653)
+    assert_valid_syntax("false ? raise do end : tap do end", bug10653)
+  end
+
   def test_duplicated_arg
     assert_syntax_error("def foo(a, a) end", /duplicated argument name/)
     assert_nothing_raised { def foo(_, _) end }

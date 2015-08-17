@@ -1,3 +1,9 @@
+Mon Aug 17 20:56:36 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y: fix syntax error at do-block after a conditional
+	  operator.  separate label-allowed and after-a-label states from
+	  others as bit flags.  [ruby-dev:48790] [Bug #10653]
+
 Mon Aug 17 11:57:36 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_each_codepoint): raise an exception at incomplete
