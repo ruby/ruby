@@ -1,3 +1,10 @@
+Mon Aug 17 17:43:56 2015  Eric Wong  <e@80x24.org>
+
+	* io.c (rb_io_oflags_modestr): handle O_TRUNC correctly
+	* test/ruby/test_io.rb (test_reopen_stdio): new test
+	  Patch-by: cremno phobia <cremno@mail.ru>
+	  [ruby-core:69779] [Bug #11319]
+
 Mon Aug 17 17:42:18 2015  Benoit Daloze  <eregontp@gmail.com>
 
 	* lib/net/ftp.rb (makeport): close the TCPServer
