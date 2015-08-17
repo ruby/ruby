@@ -1,3 +1,8 @@
+Mon Aug 17 17:12:46 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (waitpid): return immediately if interrupted.
+	  reported by <takkanm AT gmail.com> [ruby-dev:49176] [Bug #11340]
+
 Mon Aug 17 17:09:02 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (lambda_body): pop cmdarg stack for lookahead
