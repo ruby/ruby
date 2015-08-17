@@ -1,3 +1,9 @@
+Mon Aug 17 16:14:38 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/win32/lib/win32/registry.rb (Win32::Registry::API): use wide
+	  versions of RegDeleteValue and RegDeleteKey.
+	  [ruby-core:67958] [Bug #10820]
+
 Tue Jul  7 13:39:46 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* ext/zlib/zlib.c: Fix indentation for rdoc.
