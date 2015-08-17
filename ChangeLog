@@ -1,3 +1,8 @@
+Mon Aug 17 17:04:57 2015  Jeremy Evans  <merch-redmine@jeremyevans.net>
+
+	* test/openssl/test_ssl.rb: Fix LocalJumpErrors being raised
+	  in OpenSSL tests. [ruby-core:70020][Bug #11368]
+
 Mon Aug 17 16:51:45 2015  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* lib/timeout.rb (ExitException): leave Timeout::ExitException as an
