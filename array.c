@@ -354,9 +354,13 @@ rb_ary_modify(VALUE ary)
 static void
 ary_ensure_room_for_push(VALUE ary, long add_len)
 {
-    long new_len = RARRAY_LEN(ary) + add_len;
+    long old_len = RARRAY_LEN(ary);
+    long new_len = old_len + add_len;
     long capa;
 
+    if (old_len > ARY_MAX_SIZE - add_len) {
+	rb_raise(rb_eIndexError, "index %ld too big", new_len);
+    }
     if (ARY_SHARED_P(ary)) {
 	if (new_len > RARRAY_EMBED_LEN_MAX) {
 	    VALUE shared = ARY_SHARED(ary);
@@ -1078,6 +1082,10 @@ ary_ensure_room_for_unshift(VALUE ary, int argc)
     long capa;
     const VALUE *head, *sharedp;
 
+    if (len > ARY_MAX_SIZE - argc) {
+	rb_raise(rb_eIndexError, "index %ld too big", new_len);
+    }
+
     if (ARY_SHARED_P(ary)) {
 	VALUE shared = ARY_SHARED(ary);
 	capa = RARRAY_LEN(shared);
@@ -1569,6 +1577,9 @@ rb_ary_splice(VALUE ary, long beg, long len, VALUE rpl)
     else {
 	long alen;
 
+	if (olen - len > ARY_MAX_SIZE - rlen) {
+	    rb_raise(rb_eIndexError, "index %ld too big", olen + rlen - len);
+	}
 	rb_ary_modify(ary);
 	alen = olen + rlen - len;
 	if (alen >= ARY_CAPA(ary)) {

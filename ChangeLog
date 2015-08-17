@@ -1,3 +1,11 @@
+Mon Aug 17 16:18:13 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (ary_ensure_room_for_push): check if array size will
+	  exceed maximum size to get rid of buffer overflow.
+	  [ruby-dev:49043] [Bug #11235]
+
+	* array.c (ary_ensure_room_for_unshift, rb_ary_splice): ditto.
+
 Mon Aug 17 16:14:38 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/win32/lib/win32/registry.rb (Win32::Registry::API): use wide
