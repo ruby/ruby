@@ -1,3 +1,8 @@
+Mon Aug 17 17:52:11 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (rb_any_hash): fix Float hash.  rb_dbl_hash() returns a
+	  Fixnum, but not a long.  [Bug #9381]
+
 Mon Aug 17 17:43:56 2015  Eric Wong  <e@80x24.org>
 
 	* io.c (rb_io_oflags_modestr): handle O_TRUNC correctly

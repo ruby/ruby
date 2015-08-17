@@ -1262,8 +1262,14 @@ class TestHash < Test::Unit::TestCase
       end
     end
 
-    hash = {5 => bug9381}
-    assert_equal(bug9381, hash[wrapper.new(5)])
+    bad = [
+      5, true, false, nil,
+      0.0, 1.72723e-77,
+    ].select do |x|
+      hash = {x => bug9381}
+      hash[wrapper.new(x)] != bug9381
+    end
+    assert_empty(bad, bug9381)
   end
 
   class TestSubHash < TestHash
