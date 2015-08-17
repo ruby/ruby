@@ -31,6 +31,8 @@ compiler:
 # far since the 1.9.1 release.
 before_install:
   - "sudo apt-get -qq update"
+  # Travis ships an outdated, broken version of libssl by default
+  - "sudo apt-get -qq --only-upgrade install '^libssl.*'"
   - "sudo apt-get -qq install $CC" # upgrade if any
 install: "sudo apt-get -qq build-dep ruby1.9.1 2>/dev/null"
 

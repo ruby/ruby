@@ -259,6 +259,7 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
 
     def start_server(port0, verify_mode, start_immediately, args = {}, &block)
       ctx_proc = args[:ctx_proc]
+      use_anon_cipher = args.fetch(:use_anon_cipher, false)
       server_proc = args[:server_proc]
       server_proc ||= method(:readwrite_loop)
 
@@ -266,6 +267,7 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
       store.add_cert(@ca_cert)
       store.purpose = OpenSSL::X509::PURPOSE_SSL_CLIENT
       ctx = OpenSSL::SSL::SSLContext.new
+      ctx.ciphers = "ADH-AES256-GCM-SHA384" if use_anon_cipher
       ctx.cert_store = store
       #ctx.extra_chain_cert = [ ca_cert ]
       ctx.cert = @svr_cert
