@@ -393,10 +393,16 @@ class Time
       d = Date._strptime(date, format)
       raise ArgumentError, "invalid strptime format - `#{format}'" unless d
       if seconds = d[:seconds]
-        if offset = d[:offset]
-          Time.at(seconds).localtime(offset)
+        if sec_fraction = d[:sec_fraction]
+          usec = sec_fraction * 1000000
+          usec *= -1 if seconds < 0
         else
-          Time.at(seconds)
+          usec = 0
+        end
+        if offset = d[:offset]
+          Time.at(seconds, usec).localtime(offset)
+        else
+          Time.at(seconds, usec)
         end
       else
         year = d[:year]
