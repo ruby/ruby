@@ -2091,4 +2091,22 @@ class TestTranscode < Test::Unit::TestCase
     assert_equal("\x00\x00\xFE\xFF\x00\x00\x00t\x00\x00\x00e\x00\x00\x00s\x00\x00\x00t", result.b, bug)
     end;
   end
+
+  def test_loading_race
+    assert_separately([], <<-'end;') #do
+      bug11277 = '[ruby-dev:49106] [Bug #11277]'
+      num = 2
+      th = (0...num).map do |i|
+        Thread.new {"\u3042".encode("EUC-JP")}
+      end
+      result = nil
+      assert_warning("", bug11277) do
+        assert_nothing_raised(Encoding::ConverterNotFoundError, bug11277) do
+          result = th.map(&:value)
+        end
+      end
+      expected = "\xa4\xa2".force_encoding(Encoding::EUC_JP)
+      assert_equal([expected]*num, result, bug11277)
+    end;
+  end
 end
