@@ -1,3 +1,13 @@
+Mon Aug 17 16:46:28 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm.c (m_core_hash_merge_ptr): copy the arguments to the machine
+	  stack before rewinding the control frame pointer and leaving the
+	  arguments outside valid region of the value stack.
+	  [ruby-core:69969] [Bug #11352]
+
+	* vm.c (REWIND_CFP): keep the arguments region inside the valid
+	  value stack.  [ruby-core:69969] [Bug #11352]
+
 Mon Aug 17 16:44:01 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_reverse): reversed string is not a substring,

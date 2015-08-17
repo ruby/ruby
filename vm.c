@@ -2269,7 +2269,11 @@ vm_define_method(rb_thread_t *th, VALUE obj, ID id, VALUE iseqval,
 
 #define REWIND_CFP(expr) do { \
     rb_thread_t *th__ = GET_THREAD(); \
-    th__->cfp++; expr; th__->cfp--; \
+    VALUE *const curr_sp = (th__->cfp++)->sp; \
+    VALUE *const saved_sp = th__->cfp->sp; \
+    th__->cfp->sp = curr_sp; \
+    expr; \
+    (th__->cfp--)->sp = saved_sp; \
 } while (0)
 
 static VALUE
