@@ -260,7 +260,12 @@ class Net::HTTPResponse
       begin
         yield inflate_body_io
       ensure
-        inflate_body_io.finish
+        orig_err = $!
+        begin
+          inflate_body_io.finish
+        rescue => err
+          raise orig_err || err
+        end
       end
     when 'none', 'identity' then
       self.delete 'content-encoding'
@@ -355,6 +360,7 @@ class Net::HTTPResponse
     # Finishes the inflate stream.
 
     def finish
+      return if @inflate.total_in == 0
       @inflate.finish
     end
 

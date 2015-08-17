@@ -1,3 +1,23 @@
+Mon Aug 17 17:38:15 2015  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* lib/net/http/response.rb (Net::HTTPResponse::Inflater#finish):
+	  fix a bug that empty gzipped response body causes Zlib::BufError.
+	  [ruby-core:68846] [Bug #11058]
+
+	* test/net/http/test_httpresponse.rb: tests for the above.
+
+Mon Aug 17 17:38:15 2015  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* lib/net/http/response.rb (Net::HTTPResponse#inflater):
+	  fix TypeError. An exception object might be nil.
+	  [ruby-core:68846] [Bug #11058]
+
+Mon Aug 17 17:38:15 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/net/http/response.rb (Net::HTTPResponse.each_response_header):
+	  raise first exception even if inflate_body_io.finish raises error.
+	  when begin block raises error, finish usually raises error too.
+
 Mon Aug 17 17:16:22 2015  Aaron Patterson <tenderlove@ruby-lang.org>
 
 	* .travis.yml: update libssl before running tests. 
