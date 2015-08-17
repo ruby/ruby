@@ -1,3 +1,13 @@
+Mon Aug 17 23:27:45 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/win32/lib/win32/registry.rb (API#SetValue): data size should
+	  be in bytes, not in chars.  [ruby-core:70365] [Bug #11439]
+
+Mon Aug 17 23:27:45 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/win32/lib/win32/registry.rb (API#SetValue): add terminator
+	  size, not 1 byte.  [ruby-core:70365] [Bug #11439]
+
 Mon Aug 17 17:57:12 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* re.c (rb_memsearch): should match only char boundaries in wide
