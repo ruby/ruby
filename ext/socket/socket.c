@@ -23,10 +23,8 @@ rsock_syserr_fail_host_port(int err, const char *mesg, VALUE host, VALUE port)
 {
     VALUE message;
 
-    port = rb_String(port);
-
-    message = rb_sprintf("%s for \"%s\" port %s",
-	    mesg, StringValueCStr(host), StringValueCStr(port));
+    message = rb_sprintf("%s for %+"PRIsVALUE" port % "PRIsVALUE"",
+			 mesg, host, port);
 
     rb_syserr_fail_str(err, message);
 }
@@ -43,15 +41,7 @@ rsock_syserr_fail_path(int err, const char *mesg, VALUE path)
     VALUE message;
 
     if (RB_TYPE_P(path, T_STRING)) {
-        if (memchr(RSTRING_PTR(path), '\0', RSTRING_LEN(path))) {
-            path = rb_str_inspect(path);
-            message = rb_sprintf("%s for %s", mesg,
-                    StringValueCStr(path));
-        }
-        else {
-            message = rb_sprintf("%s for \"%s\"", mesg,
-                    StringValueCStr(path));
-        }
+	message = rb_sprintf("%s for % "PRIsVALUE"", mesg, path);
 	rb_syserr_fail_str(err, message);
     }
     else {
@@ -87,7 +77,7 @@ rsock_syserr_fail_raddrinfo(int err, const char *mesg, VALUE rai)
     VALUE str, message;
 
     str = rsock_addrinfo_inspect_sockaddr(rai);
-    message = rb_sprintf("%s for %s", mesg, StringValueCStr(str));
+    message = rb_sprintf("%s for %"PRIsVALUE"", mesg, str);
 
     rb_syserr_fail_str(err, message);
 }
