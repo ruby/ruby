@@ -1,3 +1,9 @@
+Mon Aug 17 16:44:01 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_reverse): reversed string is not a substring,
+	  and should not set coderange of the original string.
+	  [ruby-dev:49189] [Bug #11387]
+
 Mon Aug 17 16:24:10 2015  Tanaka Akira  <akr@fsij.org>
 
 	* lib/time.rb (strptime): Support %s.%N.
