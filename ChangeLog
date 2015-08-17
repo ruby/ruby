@@ -1,3 +1,8 @@
+Mon Aug 17 17:57:12 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* re.c (rb_memsearch): should match only char boundaries in wide
+	  character encodings.  [ruby-core:70220] [Bug #11413]
+
 Mon Aug 17 17:54:33 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* transcode.c (rb_econv_set_replacement): target encoding name can
