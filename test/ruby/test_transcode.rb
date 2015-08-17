@@ -2109,4 +2109,13 @@ class TestTranscode < Test::Unit::TestCase
       assert_equal([expected]*num, result, bug11277)
     end;
   end
+
+  def test_universal_newline
+    bug11324 = '[ruby-core:69841] [Bug #11324]'
+    usascii = Encoding::US_ASCII
+    s = "A\nB\r\nC".force_encoding(usascii)
+    assert_equal("A\nB\nC", s.encode(usascii, universal_newline: true), bug11324)
+    assert_equal("A\nB\nC", s.encode(usascii, universal_newline: true, undef: :replace), bug11324)
+    assert_equal("A\nB\nC", s.encode(usascii, universal_newline: true, undef: :replace, replace: ''), bug11324)
+  end
 end
