@@ -1,3 +1,10 @@
+Mon Aug 17 23:07:47 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/rubygems.rb: bump version to 2.4.5.1. this version fixed
+	  CVE-2015-3900.
+	* lib/rubygems/remote_fetcher.rb: ditto.
+	* test/rubygems/test_gem_remote_fetcher.rb: added testcase for CVE-2015-3900
+
 Mon Aug 17 23:00:56 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/win32/lib/win32/registry.rb (API#SetValue): data size should
