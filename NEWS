@@ -80,6 +80,8 @@ with all sufficient information, see the ChangeLog file.
 
 * IO
   * IO#close doesn't raise when the IO object is closed.  [Feature #10718]
+  * IO#each_codepoint raises an exception at incomplete character
+    before EOF when conversion takes place.  [Bug #11444]
 
 * Module
   * Module#define_method and Object.define_singleton_method now
