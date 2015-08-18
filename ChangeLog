@@ -1,3 +1,8 @@
+Tue Aug 18 11:40:51 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (RClass): move `__attribute__` after the
+	  keyword `struct` for g++.  [ruby-core:70297] [Bug #11426]
+
 Mon Aug 17 20:56:36 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y: fix syntax error at do-block after a conditional
