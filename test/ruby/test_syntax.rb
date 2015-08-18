@@ -310,6 +310,12 @@ WARN
     assert_valid_syntax("false ? raise do end : tap do end", bug10653)
   end
 
+  def test_paren_after_label
+    bug11456 = '[ruby-dev:49221] [Bug #11456]'
+    assert_valid_syntax("{foo: (1 rescue 0)}", bug11456)
+    assert_valid_syntax("{foo: /=/}", bug11456)
+  end
+
   def test_duplicated_arg
     assert_syntax_error("def foo(a, a) end", /duplicated argument name/)
     assert_nothing_raised { def foo(_, _) end }
