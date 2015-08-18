@@ -1,3 +1,8 @@
+Tue Aug 18 20:05:49 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* thread_pthread.c (reserve_stack): ensure the memory is really
+	  allocated. [Bug #11457]
+
 Tue Aug 18 17:19:21 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (IS_BEG): include labeled argument state, which was
