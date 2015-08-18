@@ -4179,9 +4179,14 @@ Init_Numeric(void)
      */
     rb_define_const(rb_cFloat, "MAX_10_EXP", INT2FIX(DBL_MAX_10_EXP));
     /*
-     *	The smallest positive integer in a double-precision floating point.
+     *	The smallest positive normalized number in a double-precision floating point.
      *
      *	Usually defaults to 2.2250738585072014e-308.
+     *
+     *	If the platform supports denormalized numbers,
+     *	there are numbers between zero and Float::MIN.
+     *	0.0.next_float returns the smallest positive floating point number
+     *	including denormalized numbers.
      */
     rb_define_const(rb_cFloat, "MIN", DBL2NUM(DBL_MIN));
     /*
@@ -4192,7 +4197,7 @@ Init_Numeric(void)
     rb_define_const(rb_cFloat, "MAX", DBL2NUM(DBL_MAX));
     /*
      *	The difference between 1 and the smallest double-precision floating
-     *	point number.
+     *	point number greater than 1.
      *
      *	Usually defaults to 2.2204460492503131e-16.
      */
