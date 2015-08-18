@@ -1,3 +1,8 @@
+Tue Aug 18 17:19:21 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (IS_BEG): include labeled argument state, which was
+	  EXPR_LABELARG.  [ruby-dev:49221] [Bug #11456]
+
 Tue Aug 18 16:16:21 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (RClass): define only in C, `__attribute__`
