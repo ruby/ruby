@@ -1,3 +1,12 @@
+Tue Aug 18 22:00:12 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/rubygems.rb: bump version to 2.0.14.1. this version fixed
+	  CVE-2015-3900.
+
+	* lib/rubygems/remote_fetcher.rb: ditto.
+
+	* test/rubygems/test_gem_remote_fetcher.rb: added testcase for CVE-2015-3900
+
 Tue Jun  2 00:10:14 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/resolv.rb (Requester#request): typo, regression introduced at
