@@ -825,10 +825,12 @@ struct RObject {
      ROBJECT(o)->as.heap.iv_index_tbl)
 
 #define RClass RClassDeprecated
-struct DEPRECATED_TYPE(("RClass is internal use only"),
-RClass {
+#ifndef __cplusplus
+DEPRECATED_TYPE(("RClass is internal use only"),
+struct RClass {
     struct RBasic basic;
 });
+#endif
 #define RCLASS_SUPER(c) rb_class_get_superclass(c)
 #define RMODULE_IV_TBL(m) RCLASS_IV_TBL(m)
 #define RMODULE_CONST_TBL(m) RCLASS_CONST_TBL(m)
