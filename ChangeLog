@@ -1,3 +1,10 @@
+Tue Aug 18 22:52:50 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* tool/downloader.rb: support old versions of ruby.
+
+	* tool/downloader.rb: now can download gems by http if openssl is not
+	  available (this may be danger!)
+
 Tue Aug 18 20:10:13 2015  Tanaka Akira  <akr@fsij.org>
 
 	* numeric.c (Init_Numeric): Fix document for Float::MIN and
