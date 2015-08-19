@@ -1833,22 +1833,28 @@ int
 rb_obj_respond_to(VALUE obj, ID id, int priv)
 {
     VALUE klass = CLASS_OF(obj);
+    VALUE defined_class;
+    const ID resid = idRespond_to;
+    const rb_method_entry_t *const me =
+	method_entry_get(klass, resid, &defined_class);
 
-    if (rb_method_basic_definition_p(klass, idRespond_to)) {
+    if (!me) return FALSE;
+    if (METHOD_ENTRY_BASIC(me)) {
 	return basic_obj_respond_to(obj, id, !priv);
     }
     else {
 	int argc = 1;
 	VALUE args[2];
+	const rb_callable_method_entry_t *cme;
+
 	args[0] = ID2SYM(id);
 	args[1] = Qtrue;
 	if (priv) {
-	    if (rb_obj_method_arity(obj, idRespond_to) != 1) {
+	    if (rb_method_entry_arity(me) != 1) {
 		argc = 2;
 	    }
 	    else if (!NIL_P(ruby_verbose)) {
-		VALUE klass = CLASS_OF(obj);
-		VALUE location = rb_mod_method_location(klass, idRespond_to);
+		VALUE location = rb_method_entry_location(me);
 		rb_warn("%"PRIsVALUE"%c""respond_to?(:%"PRIsVALUE") is"
 			" old fashion which takes only one parameter",
 			(FL_TEST(klass, FL_SINGLETON) ? obj : klass),
@@ -1864,7 +1870,8 @@ rb_obj_respond_to(VALUE obj, ID id, int priv)
 		}
 	    }
 	}
-	return RTEST(rb_funcall2(obj, idRespond_to, argc,  args));
+	cme = prepare_callable_method_entry(defined_class, resid, me);
+	return RTEST(vm_call0(GET_THREAD(), obj, resid, argc, args, cme));
     }
 }
 
