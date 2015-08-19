@@ -105,6 +105,8 @@ static char *w32_getenv(const char *name, UINT cp);
 
 #define TO_SOCKET(x)	_get_osfhandle(x)
 
+int rb_w32_reparse_symlink_p(const WCHAR *path);
+
 static struct ChildRecord *CreateChild(const WCHAR *, const WCHAR *, SECURITY_ATTRIBUTES *, HANDLE, HANDLE, HANDLE, DWORD);
 static int has_redirection(const char *, UINT);
 int rb_w32_wait_events(HANDLE *events, int num, DWORD timeout);
@@ -1873,6 +1875,7 @@ opendir_internal(WCHAR *wpath, const char *filename)
     WIN32_FIND_DATAW fd;
     HANDLE fh;
     DIR *p;
+    long pathlen;
     long len;
     long altlen;
     long idx;
@@ -1885,6 +1888,7 @@ opendir_internal(WCHAR *wpath, const char *filename)
     if (wstati64(wpath, &sbuf) < 0) {
 	return NULL;
     }
+    pathlen = lstrlenW(wpath);
     if (!(sbuf.st_mode & S_IFDIR) &&
 	(!ISALPHA(filename[0]) || filename[1] != ':' || filename[2] != '\0' ||
 	 ((1 << ((filename[0] & 0x5f) - 'A')) & GetLogicalDrives()) == 0)) {
@@ -1941,8 +1945,15 @@ opendir_internal(WCHAR *wpath, const char *filename)
 	}
 	if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 	    SetBit(p->bits, BitOfIsDir(p->nfiles));
-	if (fd.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)
-	    SetBit(p->bits, BitOfIsRep(p->nfiles));
+	if (fd.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) {
+	    WCHAR *tmppath = malloc((pathlen + len + 1) * sizeof(WCHAR));
+	    memcpy(tmppath, wpath, pathlen * sizeof(WCHAR));
+	    tmppath[pathlen] = L'\\';
+	    memcpy(tmppath + pathlen, fd.cFileName, len * sizeof(WCHAR));
+	    if (rb_w32_reparse_symlink_p(tmppath))
+		SetBit(p->bits, BitOfIsRep(p->nfiles));
+	    free(tmppath);
+	}
 
 	p->nfiles++;
 	idx += len + altlen;
@@ -4720,6 +4731,14 @@ reparse_symlink(const WCHAR *path, reparse_buffer_t *rp)
     return e;
 }
 
+/* License: Ruby's */
+int
+rb_w32_reparse_symlink_p(const WCHAR *path)
+{
+    reparse_buffer_t rp;
+    return reparse_symlink(path, &rp) == 0;
+}
+
 ssize_t
 rb_w32_wreadlink(const WCHAR *path, WCHAR *buf, size_t bufsize)
 {
@@ -5288,10 +5307,9 @@ winnt_lstat(const WCHAR *path, struct stati64 *st)
 	return -1;
     }
     if (GetFileAttributesExW(path, GetFileExInfoStandard, (void*)&wfa)) {
-	reparse_buffer_t rp;
 	if (wfa.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) {
 	    /* TODO: size in which encoding? */
-	    if (reparse_symlink(path, &rp) == 0)
+	    if (rb_w32_reparse_symlink_p(path))
 		st->st_size = 0;
 	    else
 		wfa.dwFileAttributes &= ~FILE_ATTRIBUTE_REPARSE_POINT;
