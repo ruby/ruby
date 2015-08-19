@@ -1,3 +1,8 @@
+Wed Aug 19 23:55:29 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (rb_f_spawn): [DOC] elaborate environment variable
+	  values.  [ruby-core:70456] [Bug #11463]
+
 Wed Aug 19 23:48:06 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (winnt_lstat): check reparse point tags and treat
