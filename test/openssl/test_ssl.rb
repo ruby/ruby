@@ -20,9 +20,9 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     }
   end
 
-  def test_options_defaults_to_OP_ALL
+  def test_options_defaults_to_OP_ALL_on
     ctx = OpenSSL::SSL::SSLContext.new
-    assert_equal OpenSSL::SSL::OP_ALL, ctx.options
+    assert_equal(OpenSSL::SSL::OP_ALL, (OpenSSL::SSL::OP_ALL & ctx.options))
   end
 
   def test_setting_twice

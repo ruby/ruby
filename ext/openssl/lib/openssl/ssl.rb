@@ -111,7 +111,7 @@ module OpenSSL
       # You can get a list of valid methods with OpenSSL::SSL::SSLContext::METHODS
       def initialize(version = nil)
         INIT_VARS.each { |v| instance_variable_set v, nil }
-        self.options = OpenSSL::SSL::OP_ALL
+        self.options = self.options | OpenSSL::SSL::OP_ALL
         return unless version
         self.ssl_version = version
       end

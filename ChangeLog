@@ -1,3 +1,14 @@
+Wed Aug 19 23:59:28 2015  Aaron Patterson <tenderlove@ruby-lang.org>
+
+	* ext/openssl/lib/openssl/ssl.rb (module OpenSSL): add OP_ALL to
+	  existing options rather than just setting it.  Some vendors apply
+	  custom patches to their versions of OpenSSL that set default values
+	  for options.  This commit respects the custom patches they've
+	  applied.
+
+	* test/openssl/test_ssl.rb (class OpenSSL): check that OP_ALL has been
+	  added to the options.
+
 Wed Aug 19 23:55:29 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (rb_f_spawn): [DOC] elaborate environment variable
