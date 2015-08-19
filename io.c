@@ -3709,6 +3709,7 @@ rb_io_each_codepoint(VALUE io)
     READ_CHECK(fptr);
     if (NEED_READCONV(fptr)) {
 	SET_BINARY_MODE(fptr);
+	r = 1;		/* no invalid char yet */
 	for (;;) {
 	    make_readconv(fptr, 0);
 	    for (;;) {
