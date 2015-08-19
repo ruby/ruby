@@ -4017,7 +4017,7 @@ rb_f_system(int argc, VALUE *argv)
  *      name => val : set the environment variable
  *      name => nil : unset the environment variable
  *
- *      the keys must be strings.
+ *      the keys and the values except for +nil+ must be strings.
  *    command...:
  *      commandline                 : command line string which is passed to the standard shell
  *      cmdname, arg1, ...          : command name and one or more arguments (This form does not use the shell. See below for caveats.)
