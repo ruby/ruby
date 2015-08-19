@@ -4656,31 +4656,33 @@ link(const char *from, const char *to)
 #endif
 
 /* License: Ruby's */
-ssize_t
-rb_w32_wreadlink(const WCHAR *path, WCHAR *buf, size_t bufsize)
+typedef struct {
+    ULONG  ReparseTag;
+    USHORT ReparseDataLength;
+    USHORT Reserved;
+    union {
+	struct {
+	    USHORT SubstituteNameOffset;
+	    USHORT SubstituteNameLength;
+	    USHORT PrintNameOffset;
+	    USHORT PrintNameLength;
+	    ULONG  Flags;
+	    WCHAR  PathBuffer[MAXPATHLEN * 2];
+	} SymbolicLinkReparseBuffer;
+	struct {
+	    USHORT SubstituteNameOffset;
+	    USHORT SubstituteNameLength;
+	    USHORT PrintNameOffset;
+	    USHORT PrintNameLength;
+	    WCHAR  PathBuffer[MAXPATHLEN * 2];
+	} MountPointReparseBuffer;
+    };
+} reparse_buffer_t;
+
+/* License: Ruby's */
+static int
+reparse_symlink(const WCHAR *path, reparse_buffer_t *rp)
 {
-    struct {
-	ULONG  ReparseTag;
-	USHORT ReparseDataLength;
-	USHORT Reserved;
-	union {
-	    struct {
-		USHORT SubstituteNameOffset;
-		USHORT SubstituteNameLength;
-		USHORT PrintNameOffset;
-		USHORT PrintNameLength;
-		ULONG  Flags;
-		WCHAR  PathBuffer[MAXPATHLEN * 2];
-	    } SymbolicLinkReparseBuffer;
-	    struct {
-		USHORT SubstituteNameOffset;
-		USHORT SubstituteNameLength;
-		USHORT PrintNameOffset;
-		USHORT PrintNameLength;
-		WCHAR  PathBuffer[MAXPATHLEN * 2];
-	    } MountPointReparseBuffer;
-	};
-    } rp;
     HANDLE f;
     DWORD ret;
     int e = 0;
@@ -4695,8 +4697,7 @@ rb_w32_wreadlink(const WCHAR *path, WCHAR *buf, size_t bufsize)
 	    get_proc_address("kernel32", "DeviceIoControl", NULL);
     }
     if (!device_io_control) {
-	errno = ENOSYS;
-	return -1;
+	return ENOSYS;
     }
 
     f = CreateFileW(path, 0, FILE_SHARE_READ|FILE_SHARE_WRITE,
@@ -4704,19 +4705,29 @@ rb_w32_wreadlink(const WCHAR *path, WCHAR *buf, size_t bufsize)
 		    FILE_FLAG_BACKUP_SEMANTICS|FILE_FLAG_OPEN_REPARSE_POINT,
 		    NULL);
     if (f == INVALID_HANDLE_VALUE) {
-	errno = map_errno(GetLastError());
-	return -1;
+	return map_errno(GetLastError());
     }
 
     if (!device_io_control(f, FSCTL_GET_REPARSE_POINT, NULL, 0,
-			 &rp, sizeof(rp), &ret, NULL)) {
+			   rp, sizeof(*rp), &ret, NULL)) {
 	e = map_errno(GetLastError());
     }
-    else if (rp.ReparseTag != IO_REPARSE_TAG_SYMLINK &&
-	     rp.ReparseTag != IO_REPARSE_TAG_MOUNT_POINT){
+    else if (rp->ReparseTag != IO_REPARSE_TAG_SYMLINK &&
+	     rp->ReparseTag != IO_REPARSE_TAG_MOUNT_POINT){
 	e = EINVAL;
     }
-    else {
+    CloseHandle(f);
+    return e;
+}
+
+ssize_t
+rb_w32_wreadlink(const WCHAR *path, WCHAR *buf, size_t bufsize)
+{
+    reparse_buffer_t rp;
+    int e = reparse_symlink(path, &rp);
+    DWORD ret;
+
+    if (!e) {
 	void *name;
 	if (rp.ReparseTag == IO_REPARSE_TAG_SYMLINK) {
 	    name = ((char *)rp.SymbolicLinkReparseBuffer.PathBuffer +
@@ -4736,9 +4747,7 @@ rb_w32_wreadlink(const WCHAR *path, WCHAR *buf, size_t bufsize)
 	bufsize *= sizeof(WCHAR);
 	memcpy(buf, name, ret > bufsize ? bufsize : ret);
     }
-
-    CloseHandle(f);
-    if (e) {
+    else {
 	errno = e;
 	return -1;
     }
@@ -5279,11 +5288,15 @@ winnt_lstat(const WCHAR *path, struct stati64 *st)
 	return -1;
     }
     if (GetFileAttributesExW(path, GetFileExInfoStandard, (void*)&wfa)) {
+	reparse_buffer_t rp;
 	if (wfa.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) {
 	    /* TODO: size in which encoding? */
-	    st->st_size = 0;
+	    if (reparse_symlink(path, &rp) == 0)
+		st->st_size = 0;
+	    else
+		wfa.dwFileAttributes &= ~FILE_ATTRIBUTE_REPARSE_POINT;
 	}
-	else if (wfa.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+	if (wfa.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
 	    if (check_valid_dir(path)) return -1;
 	    st->st_size = 0;
 	}

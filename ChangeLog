@@ -1,3 +1,9 @@
+Wed Aug 19 23:48:06 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (winnt_lstat): check reparse point tags and treat
+	  supported tags only as symbolic links.
+	  [ruby-core:70454] [Bug #11462]
+
 Tue Aug 18 20:05:49 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* thread_pthread.c (reserve_stack): ensure the memory is really
