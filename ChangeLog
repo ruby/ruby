@@ -1,3 +1,8 @@
+Thu Aug 20 08:53:09 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_method.c (rb_obj_respond_to): reuse found method entry
+	  instead of searching same entry repeatedly.
+
 Thu Aug 20 08:31:17 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (replace_real_basename), win32/win32.c (opendir_internal):
