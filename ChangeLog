@@ -302,15 +302,15 @@ Sun Aug  9 14:15:54 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Sat Aug  8 03:59:51 2015  Zachary Scott  <zzak@ruby-lang.org>
 
-        * object.c: [DOC] Improve grammar for Module#===
-          Patch by @SkyBirdSoar in documenting-ruby/ruby#52:
-          https://github.com/documenting-ruby/ruby/pull/52
+	* object.c: [DOC] Improve grammar for Module#===
+	  Patch by @SkyBirdSoar in documenting-ruby/ruby#52:
+	  https://github.com/documenting-ruby/ruby/pull/52
 
 Sat Aug  8 03:39:33 2015  Zachary Scott  <zzak@ruby-lang.org>
 
-        * hash.c: [DOC] Improve description of symbol key syntax
-          Patch by Raphael Das Gupta in documenting-ruby/ruby#51:
-          https://github.com/documenting-ruby/ruby/pull/51
+	* hash.c: [DOC] Improve description of symbol key syntax
+	  Patch by Raphael Das Gupta in documenting-ruby/ruby#51:
+	  https://github.com/documenting-ruby/ruby/pull/51
 
 Fri Aug  7 21:04:19 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
