@@ -1811,19 +1811,44 @@ rb_method_basic_definition_p(VALUE klass, ID id)
     return (me && METHOD_ENTRY_BASIC(me)) ? TRUE : FALSE;
 }
 
+static VALUE
+call_method_entry(rb_thread_t *th, VALUE defined_class, VALUE obj, ID id,
+		  const rb_method_entry_t *me, int argc, const VALUE *argv)
+{
+    const rb_callable_method_entry_t *cme =
+	prepare_callable_method_entry(defined_class, id, me);
+    const rb_block_t *passed_block = th->passed_block;
+    VALUE result = vm_call0(th, obj, id, argc, argv, cme);
+    th->passed_block = passed_block;
+    return result;
+}
+
+static VALUE
+basic_obj_respond_to_missing(rb_thread_t *th, VALUE klass, VALUE obj,
+			     VALUE mid, VALUE priv)
+{
+    VALUE defined_class, args[2];
+    const ID rtmid = idRespond_to_missing;
+    const rb_method_entry_t *const me =
+	method_entry_get(klass, rtmid, &defined_class);
+
+    if (!me || METHOD_ENTRY_BASIC(me)) return Qfalse;
+    args[0] = mid;
+    args[1] = priv;
+    return call_method_entry(th, defined_class, obj, rtmid, me, 2, args);
+}
+
 static inline int
-basic_obj_respond_to(VALUE obj, ID id, int pub)
+basic_obj_respond_to(rb_thread_t *th, VALUE obj, ID id, int pub)
 {
     VALUE klass = CLASS_OF(obj);
-    VALUE args[2];
 
     switch (rb_method_boundp(klass, id, pub|BOUND_RESPONDS)) {
       case 2:
 	return FALSE;
       case 0:
-	args[0] = ID2SYM(id);
-	args[1] = pub ? Qfalse : Qtrue;
-	return RTEST(rb_funcall2(obj, idRespond_to_missing, 2, args));
+	return RTEST(basic_obj_respond_to_missing(th, klass, obj, ID2SYM(id),
+						  pub ? Qfalse : Qtrue));
       default:
 	return TRUE;
     }
@@ -1837,16 +1862,14 @@ vm_respond_to(rb_thread_t *th, VALUE klass, VALUE obj, ID id, int priv)
     const rb_method_entry_t *const me =
 	method_entry_get(klass, resid, &defined_class);
 
-    if (!me) return FALSE;
+    if (!me) return TRUE;
     if (METHOD_ENTRY_BASIC(me)) {
-	return basic_obj_respond_to(obj, id, !priv);
+	return basic_obj_respond_to(th, obj, id, !priv);
     }
     else {
 	int argc = 1;
 	VALUE args[2];
 	VALUE result;
-	const rb_callable_method_entry_t *cme;
-	const rb_block_t *passed_block = th->passed_block;
 
 	args[0] = ID2SYM(id);
 	args[1] = Qtrue;
@@ -1877,9 +1900,7 @@ vm_respond_to(rb_thread_t *th, VALUE klass, VALUE obj, ID id, int priv)
 		}
 	    }
 	}
-	cme = prepare_callable_method_entry(defined_class, resid, me);
-	result = vm_call0(th, obj, resid, argc, args, cme);
-	th->passed_block = passed_block;
+	result = call_method_entry(th, defined_class, obj, resid, me, argc, args);
 	return RTEST(result);
     }
 }
@@ -1922,18 +1943,14 @@ obj_respond_to(int argc, VALUE *argv, VALUE obj)
 {
     VALUE mid, priv;
     ID id;
+    rb_thread_t *th = GET_THREAD();
 
     rb_scan_args(argc, argv, "11", &mid, &priv);
     if (!(id = rb_check_id(&mid))) {
-	if (!rb_method_basic_definition_p(CLASS_OF(obj), idRespond_to_missing)) {
-	    VALUE args[2];
-	    args[0] = rb_to_symbol(mid);
-	    args[1] = priv;
-	    return rb_funcall2(obj, idRespond_to_missing, 2, args);
-	}
-	return Qfalse;
+	return basic_obj_respond_to_missing(th, CLASS_OF(obj), obj,
+					    rb_to_symbol(mid), priv);
     }
-    if (basic_obj_respond_to(obj, id, !RTEST(priv)))
+    if (basic_obj_respond_to(th, obj, id, !RTEST(priv)))
 	return Qtrue;
     return Qfalse;
 }
