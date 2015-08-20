@@ -378,27 +378,7 @@ check_funcall_failed(struct rescue_funcall_args *args, VALUE e)
 static int
 check_funcall_respond_to(rb_thread_t *th, VALUE klass, VALUE recv, ID mid)
 {
-    const rb_callable_method_entry_t *me = rb_callable_method_entry(klass, idRespond_to);
-
-    if (me && !METHOD_ENTRY_BASIC(me)) {
-	const rb_block_t *passed_block = th->passed_block;
-	VALUE args[2], result;
-	int arity = rb_method_entry_arity((const rb_method_entry_t *)me);
-
-	if (arity > 2)
-	    rb_raise(rb_eArgError, "respond_to? must accept 1 or 2 arguments (requires %d)", arity);
-
-	if (arity < 1) arity = 2;
-
-	args[0] = ID2SYM(mid);
-	args[1] = Qtrue;
-	result = vm_call0(th, recv, idRespond_to, arity, args, me);
-	th->passed_block = passed_block;
-	if (!RTEST(result)) {
-	    return FALSE;
-	}
-    }
-    return TRUE;
+    return vm_respond_to(th, klass, recv, mid, 1);
 }
 
 static int

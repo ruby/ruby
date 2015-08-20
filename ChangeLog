@@ -1,3 +1,11 @@
+Thu Aug 20 14:13:27 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (check_funcall_respond_to): share the behavior with
+	  rb_obj_respond_to.  [ruby-core:70460] [Bug #11465]
+
+	* vm_method.c (vm_respond_to): extract from rb_obj_respond_to and
+	  merge r39881.
+
 Thu Aug 20 08:53:09 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_method.c (rb_obj_respond_to): reuse found method entry
