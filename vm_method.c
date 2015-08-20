@@ -1829,10 +1829,9 @@ basic_obj_respond_to(VALUE obj, ID id, int pub)
     }
 }
 
-int
-rb_obj_respond_to(VALUE obj, ID id, int priv)
+static int
+vm_respond_to(rb_thread_t *th, VALUE klass, VALUE obj, ID id, int priv)
 {
-    VALUE klass = CLASS_OF(obj);
     VALUE defined_class;
     const ID resid = idRespond_to;
     const rb_method_entry_t *const me =
@@ -1845,12 +1844,20 @@ rb_obj_respond_to(VALUE obj, ID id, int priv)
     else {
 	int argc = 1;
 	VALUE args[2];
+	VALUE result;
 	const rb_callable_method_entry_t *cme;
+	const rb_block_t *passed_block = th->passed_block;
 
 	args[0] = ID2SYM(id);
 	args[1] = Qtrue;
 	if (priv) {
-	    if (rb_method_entry_arity(me) != 1) {
+	    argc = rb_method_entry_arity(me);
+	    if (argc > 2) {
+		rb_raise(rb_eArgError,
+			 "respond_to? must accept 1 or 2 arguments (requires %d)",
+			 argc);
+	    }
+	    if (argc != 1) {
 		argc = 2;
 	    }
 	    else if (!NIL_P(ruby_verbose)) {
@@ -1871,8 +1878,16 @@ rb_obj_respond_to(VALUE obj, ID id, int priv)
 	    }
 	}
 	cme = prepare_callable_method_entry(defined_class, resid, me);
-	return RTEST(vm_call0(GET_THREAD(), obj, resid, argc, args, cme));
+	result = vm_call0(th, obj, resid, argc, args, cme);
+	th->passed_block = passed_block;
+	return RTEST(result);
     }
+}
+
+int
+rb_obj_respond_to(VALUE obj, ID id, int priv)
+{
+    return vm_respond_to(GET_THREAD(), CLASS_OF(obj), obj, id, priv);
 }
 
 int
