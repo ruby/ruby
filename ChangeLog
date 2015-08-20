@@ -1,3 +1,10 @@
+Fri Aug 21 06:35:50 2015  Aaron Patterson <tenderlove@ruby-lang.org>
+
+	* test/openssl/test_ssl_session.rb: Fix tests so that they take in to
+	  account OpenSSL installations that have SSLv3 disabled by default.
+	  Thanks Jeremy Evans <code@jeremyevans.net> for the patches.
+	  [Bug #11366] [Bug #11367]
+
 Thu Aug 20 22:19:17 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_method.c (basic_obj_respond_to): call respond_to_missing?
