@@ -1,3 +1,9 @@
+Fri Aug 21 19:48:17 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/Makefile.sub ($(LIBRUBY_SO)): needs additional libraries
+	  for extension libraries to link statically.
+	  [ruby-core:70499] [Feature #9018]
+
 Fri Aug 21 18:49:22 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/ruby.h, cont.c, vm_trace.c: add a new event
