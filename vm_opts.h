@@ -23,7 +23,7 @@
 #define OPT_PEEPHOLE_OPTIMIZATION    1
 #define OPT_SPECIALISED_INSTRUCTION  1
 #define OPT_INLINE_CONST_CACHE       1
-
+#define OPT_FROZEN_STRING_LITERAL    0
 
 /* Build Options.
  * You can't change these options at runtime.
