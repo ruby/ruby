@@ -2336,10 +2336,11 @@ vm_invoke_block(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci
     }
     else {
 	VALUE val;
+	int argc = ci->argc;
 	CALLER_SETUP_ARG(th->cfp, ci);
-	val = vm_yield_with_cfunc(th, block, block->self,
-				  ci->argc, STACK_ADDR_FROM_TOP(ci->argc), 0);
-	POPN(ci->argc); /* TODO: should put before C/yield? */
+
+	val = vm_yield_with_cfunc(th, block, block->self, argc, STACK_ADDR_FROM_TOP(argc), 0);
+	POPN(argc); /* TODO: should put before C/yield? */
 	return val;
     }
 }
