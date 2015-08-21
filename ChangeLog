@@ -1,3 +1,9 @@
+Sat Aug 22 02:53:12 2015  Aaron Patterson <tenderlove@ruby-lang.org>
+
+	* ext/psych/*: update to Psych 2.0.14
+
+	* test/psych/*: ditto
+
 Fri Aug 21 19:58:48 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* ext/objspace/objspace.c: add a new method ObjectSpace.count_symbols.
