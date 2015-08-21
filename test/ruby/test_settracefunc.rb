@@ -1349,4 +1349,55 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
     assert_equal([:call, :return], evs)
   end
+
+  require 'fiber'
+  def test_fiber_switch
+    # test for resume/yield
+    evs = []
+    TracePoint.new(:fiber_switch){|tp|
+      next unless target_thread?
+      evs << tp.event
+    }.enable{
+      f = Fiber.new{
+        Fiber.yield
+        Fiber.yield
+        Fiber.yield
+      }
+      f.resume
+      f.resume
+      f.resume
+      f.resume
+      begin
+        f.resume
+      rescue FiberError
+      end
+    }
+    assert_equal 8, evs.size
+    evs.each{|ev|
+      assert_equal ev, :fiber_switch
+    }
+
+    # test for transfer
+    evs = []
+    TracePoint.new(:fiber_switch){|tp|
+      next unless target_thread?
+      evs << tp.event
+    }.enable{
+      f1 = f2 = nil
+      f1 = Fiber.new{
+        f2.transfer
+        f2.transfer
+        Fiber.yield :ok
+      }
+      f2 = Fiber.new{
+        f1.transfer
+        f1.transfer
+      }
+      assert_equal :ok, f1.resume
+    }
+    assert_equal 6, evs.size
+    evs.each{|ev|
+      assert_equal ev, :fiber_switch
+    }
+  end
 end
