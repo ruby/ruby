@@ -18,6 +18,7 @@
 #include <ruby/re.h>
 #include "node.h"
 #include "gc.h"
+#include "symbol.h"
 
 /*
  *  call-seq:
@@ -246,6 +247,84 @@ count_objects_size(int argc, VALUE *argv, VALUE os)
 	}
     }
     rb_hash_aset(hash, ID2SYM(rb_intern("TOTAL")), SIZET2NUM(total));
+    return hash;
+}
+
+struct dynamic_symbol_counts {
+    size_t mortal;
+    size_t immortal;
+};
+
+static int
+cs_i(void *vstart, void *vend, size_t stride, void *n)
+{
+    struct dynamic_symbol_counts *counts = (struct dynamic_symbol_counts *)n;
+    VALUE v = (VALUE)vstart;
+
+    for (; v != (VALUE)vend; v += stride) {
+	if (RBASIC(v)->flags && BUILTIN_TYPE(v) == T_SYMBOL) {
+	    ID id = RSYMBOL(v)->id;
+	    if ((id & ~ID_SCOPE_MASK) == 0) {
+		counts->mortal++;
+	    }
+	    else {
+		counts->immortal++;
+	    }
+	}
+    }
+
+    return 0;
+}
+
+size_t rb_sym_immortal_count(void);
+
+/*
+ *  call-seq:
+ *     ObjectSpace.count_symbols([result_hash]) -> hash
+ *
+ *  Counts symbols for each Symbol type.
+ *
+ *  This method is only for MRI developers interested in performance and memory
+ *  usage of Ruby programs.
+ *
+ *  If the optional argument, result_hash, is given, it is overwritten and
+ *  returned. This is intended to avoid probe effect.
+ *
+ *  Note:
+ *  The contents of the returned hash is implementation defined.
+ *  It may be changed in future.
+ *
+ *  This method is only expected to work with C Ruby.
+ *
+ *  On this version of MRI, they have 3 types of Symbols (and 1 total counts).
+ *
+ *   * mortal_dynamic_symbol: GC target symbols (collected by GC)
+ *   * immortal_dynamic_symbol: Immortal symbols promoted from dynamic symbols (do not collected by GC)
+ *   * immortal_static_symbol: Immortal symbols (do not collected by GC)
+ *   * immortal_symbol: total immortal symbols (immortal_dynamic_symbol+immortal_static_symbol)
+ */
+
+static VALUE
+count_symbols(int argc, VALUE *argv, VALUE os)
+{
+    struct dynamic_symbol_counts dynamic_counts = {0, 0};
+    VALUE hash = setup_hash(argc, argv);
+
+    size_t immortal_symbols = rb_sym_immortal_count();
+    rb_objspace_each_objects(cs_i, &dynamic_counts);
+
+    if (hash == Qnil) {
+        hash = rb_hash_new();
+    }
+    else if (!RHASH_EMPTY_P(hash)) {
+        st_foreach(RHASH_TBL(hash), set_zero_i, hash);
+    }
+
+    rb_hash_aset(hash, ID2SYM(rb_intern("mortal_dynamic_symbol")),   SIZET2NUM(dynamic_counts.mortal));
+    rb_hash_aset(hash, ID2SYM(rb_intern("immortal_dynamic_symbol")), SIZET2NUM(dynamic_counts.immortal));
+    rb_hash_aset(hash, ID2SYM(rb_intern("immortal_static_symbol")),  SIZET2NUM(immortal_symbols - dynamic_counts.immortal));
+    rb_hash_aset(hash, ID2SYM(rb_intern("immortal_symbol")),         SIZET2NUM(immortal_symbols));
+
     return hash;
 }
 
@@ -887,6 +966,7 @@ Init_objspace(void)
     rb_define_module_function(rb_mObjSpace, "memsize_of_all", memsize_of_all_m, -1);
 
     rb_define_module_function(rb_mObjSpace, "count_objects_size", count_objects_size, -1);
+    rb_define_module_function(rb_mObjSpace, "count_symbols", count_symbols, -1);
     rb_define_module_function(rb_mObjSpace, "count_nodes", count_nodes, -1);
     rb_define_module_function(rb_mObjSpace, "count_tdata_objects", count_tdata_objects, -1);
     rb_define_module_function(rb_mObjSpace, "count_imemo_objects", count_imemo_objects, -1);

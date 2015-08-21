@@ -100,4 +100,9 @@ is_global_name_punct(const int c)
 
 ID rb_intern_cstr_without_pindown(const char *, long, rb_encoding *);
 
+RUBY_SYMBOL_EXPORT_BEGIN
+
+size_t rb_sym_immortal_count(void);
+
+RUBY_SYMBOL_EXPORT_END
 #endif

@@ -106,6 +106,7 @@ with all sufficient information, see the ChangeLog file.
     GC overhead
 
 * ObjectSpace (objspace)
+  * ObjectSpace.count_symbols is added.
   * ObjectSpace.count_imemo_objects is added.
   * ObjectSpace.internal_class_of is added.
   * ObjectSpace.internal_super_of is added.
