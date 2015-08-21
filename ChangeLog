@@ -1,3 +1,16 @@
+Fri Aug 21 19:58:48 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/objspace/objspace.c: add a new method ObjectSpace.count_symbols.
+	  [Feature #11158]
+
+	* symbol.c (rb_sym_immortal_count): added to count immortal symbols.
+
+	* symbol.h: ditto.
+
+	* test/objspace/test_objspace.rb: add a test for this method.
+
+	* NEWS: describe about this method.
+
 Fri Aug 21 19:48:17 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/Makefile.sub ($(LIBRUBY_SO)): needs additional libraries

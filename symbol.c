@@ -864,6 +864,12 @@ rb_sym_all_symbols(void)
     return ary;
 }
 
+size_t
+rb_sym_immortal_count(void)
+{
+    return (size_t)global_symbols.last_id;
+}
+
 int
 rb_is_const_id(ID id)
 {
