@@ -595,6 +595,7 @@ get_event_id(rb_event_flag_t event)
 	C(b_return, B_RETURN);
 	C(thread_begin, THREAD_BEGIN);
 	C(thread_end, THREAD_END);
+	C(fiber_switch, FIBER_SWITCH);
 	C(specified_line, SPECIFIED_LINE);
       case RUBY_EVENT_LINE | RUBY_EVENT_SPECIFIED_LINE: CONST_ID(id, "line"); return id;
 #undef C
@@ -700,6 +701,7 @@ symbol2event_flag(VALUE v)
     C(b_return, B_RETURN);
     C(thread_begin, THREAD_BEGIN);
     C(thread_end, THREAD_END);
+    C(fiber_switch, FIBER_SWITCH);
     C(specified_line, SPECIFIED_LINE);
     C(a_call, A_CALL);
     C(a_return, A_RETURN);
@@ -1445,6 +1447,7 @@ Init_vm_trace(void)
      * +:b_return+:: event hook at block ending
      * +:thread_begin+:: event hook at thread beginning
      * +:thread_end+:: event hook at thread ending
+     * +:fiber_siwtch+:: event hook at fiber switch
      *
      */
     rb_cTracePoint = rb_define_class("TracePoint", rb_cObject);

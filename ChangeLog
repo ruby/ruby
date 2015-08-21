@@ -1,3 +1,12 @@
+Fri Aug 21 18:49:22 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/ruby.h, cont.c, vm_trace.c: add a new event
+	  fiber_switch. We need more discussion about this feature
+	  so that I don't write it on NEWS.
+	  [Feature #11348]
+
+	* test/ruby/test_settracefunc.rb: add tests.
+
 Fri Aug 21 17:32:42 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c (vm_invoke_block): we should not expect ci->argc is
