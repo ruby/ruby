@@ -61,6 +61,7 @@ struct rb_compile_option_struct {
     int instructions_unification;
     int stack_caching;
     int trace_instruction;
+    int frozen_string_literal;
     int debug_level;
 };
 

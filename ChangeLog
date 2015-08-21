@@ -1,3 +1,38 @@
+Sat Aug 22 05:31:37 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_opts.h, iseq.c, iseq.h: add compile option to force frozen
+	  string literals.
+	  [Feature #11473]
+
+	  This addition is not specification change, but to try frozen
+	  string literal world discussed on [Feature #11473].
+
+	  You can try frozen string literal world using this magical line:
+
+	    RubyVM::InstructionSequence.compile_option =
+	      {frozen_string_literal: true}
+
+	  Note that this is a global compilation option, so that you need to
+	  compile another script like that:
+
+	    p 'foo'.frozen? #=> false
+	    RubyVM::InstructionSequence.compile_option =
+	      {frozen_string_literal: true}
+	    p 'foo'.frozen? #=> false, because this line is already compiled.
+	    p eval("'foo'.frozen?") #=> true
+
+	  Details:
+	    * String literals are deduped by rb_fstring().
+	    * Dynamic string literals ("...#{xyz}...") is now only frozen,
+	      not deduped. Maybe you have other ideas.
+
+	  Now, please do not use this option on your productions :)
+	  Of course, current specification can be changed.
+
+	* compile.c: ditto.
+
+	* test/ruby/test_iseq.rb: add a test.
+
 Sat Aug 22 02:53:12 2015  Aaron Patterson <tenderlove@ruby-lang.org>
 
 	* ext/psych/*: update to Psych 2.0.14
