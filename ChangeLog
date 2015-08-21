@@ -1,3 +1,26 @@
+Sat Aug 22 08:23:32 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/thread/thread.c: move definitions of Queue, SizedQueue
+	  and ConditionalVariables to thread_tools.c. In other wowrds,
+	  such classes are built-in.
+	  [Feature #8919]
+
+	  At first, I planned to embed only a Queue class.
+	  However, rubygems requires 'thread.rb' (rubygems are
+	  required at first, when launch MRI without --disable-gems).
+	  So most of people require 'thread.rb' as an embedded library.
+
+	  Now, ext/thread/thread.c is empty, only for a dummy for
+	  compatibility.
+
+	* thread.c: move a definition of Mutex class to thread_tools.c.
+
+	  And define Mutex class under Thread (so now Mutex is Thread::Mutex).
+	  Because other thread related classes are also defined under Thread.
+	  We remain ::Mutex as Thread::Mutex. Only an inspect result is changed.
+
+	* common.mk: add dependency from thread.o to thraed_tools.c.
+
 Sat Aug 22 05:31:37 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_opts.h, iseq.c, iseq.h: add compile option to force frozen
