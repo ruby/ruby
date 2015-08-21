@@ -1551,7 +1551,7 @@ rb_file_exists_p(VALUE obj, VALUE fname)
  *    File.readable?(file_name)   -> true or false
  *
  * Returns <code>true</code> if the named file is readable by the effective
- * user id of this process.
+ * user and group id of this process. See eaccess(3).
  */
 
 static VALUE
@@ -1568,7 +1568,7 @@ rb_file_readable_p(VALUE obj, VALUE fname)
  *    File.readable_real?(file_name)   -> true or false
  *
  * Returns <code>true</code> if the named file is readable by the real
- * user id of this process.
+ * user and group id of this process. See access(3).
  */
 
 static VALUE
@@ -1623,7 +1623,7 @@ rb_file_world_readable_p(VALUE obj, VALUE fname)
  *    File.writable?(file_name)   -> true or false
  *
  * Returns <code>true</code> if the named file is writable by the effective
- * user id of this process.
+ * user and group id of this process. See eaccess(3).
  */
 
 static VALUE
@@ -1640,7 +1640,7 @@ rb_file_writable_p(VALUE obj, VALUE fname)
  *    File.writable_real?(file_name)   -> true or false
  *
  * Returns <code>true</code> if the named file is writable by the real
- * user id of this process.
+ * user and group id of this process. See access(3)
  */
 
 static VALUE
@@ -1687,7 +1687,7 @@ rb_file_world_writable_p(VALUE obj, VALUE fname)
  *    File.executable?(file_name)   -> true or false
  *
  * Returns <code>true</code> if the named file is executable by the effective
- * user id of this process.
+ * user and group id of this process. See eaccess(3).
  */
 
 static VALUE
@@ -1704,7 +1704,7 @@ rb_file_executable_p(VALUE obj, VALUE fname)
  *    File.executable_real?(file_name)   -> true or false
  *
  * Returns <code>true</code> if the named file is executable by the real
- * user id of this process.
+ * user and group id of this process. See access(3).
  */
 
 static VALUE
