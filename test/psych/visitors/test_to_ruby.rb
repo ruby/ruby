@@ -321,6 +321,13 @@ description:
         assert_equal %w{ foo foo }, list
         assert_equal list[0].object_id, list[1].object_id
       end
+
+      def test_mapping_with_str_tag
+        mapping = Nodes::Mapping.new(nil, '!strawberry')
+        mapping.children << Nodes::Scalar.new('foo')
+        mapping.children << Nodes::Scalar.new('bar')
+        assert_equal({'foo' => 'bar'}, mapping.to_ruby)
+      end
     end
   end
 end

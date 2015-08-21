@@ -2,6 +2,7 @@ require 'minitest/autorun'
 require 'stringio'
 require 'tempfile'
 require 'date'
+
 require 'psych'
 
 module Psych
