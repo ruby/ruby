@@ -289,6 +289,8 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal(%w[albatross dog], ary.min(2))
     assert_equal(%w[dog horse],
                  ary.min(2) {|a,b| a.length <=> b.length })
+    assert_equal([13, 14], [20, 32, 32, 21, 30, 25, 29, 13, 14].min(2))
+    assert_equal([2, 4, 6, 7], [2, 4, 8, 6, 7].min(4))
   end
 
   def test_max
@@ -303,6 +305,7 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal(%w[horse dog], ary.max(2))
     assert_equal(%w[albatross horse],
                  ary.max(2) {|a,b| a.length <=> b.length })
+    assert_equal([3, 2], [0, 0, 0, 0, 0, 0, 1, 3, 2].max(2))
   end
 
   def test_minmax
@@ -325,6 +328,7 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal("dog", a.min_by {|x| x.length })
     assert_equal(3, [2,3,1].min_by {|x| -x })
     assert_equal(%w[dog horse], a.min_by(2) {|x| x.length })
+    assert_equal([13, 14], [20, 32, 32, 21, 30, 25, 29, 13, 14].min_by(2) {|x| x})
   end
 
   def test_max_by
@@ -335,6 +339,7 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal("albatross", a.max_by {|x| x.length })
     assert_equal(1, [2,3,1].max_by {|x| -x })
     assert_equal(%w[albatross horse], a.max_by(2) {|x| x.length })
+    assert_equal([3, 2], [0, 0, 0, 0, 0, 0, 1, 3, 2].max_by(2) {|x| x})
   end
 
   def test_minmax_by
