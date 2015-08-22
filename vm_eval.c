@@ -352,6 +352,8 @@ struct rescue_funcall_args {
     VALUE recv;
     ID mid;
     const rb_method_entry_t *me;
+    unsigned int respond: 1;
+    unsigned int respond_to_missing: 1;
     int argc;
     const VALUE *argv;
 };
@@ -364,10 +366,27 @@ check_funcall_exec(struct rescue_funcall_args *args)
 			     args->me, args->argc, args->argv);
 }
 
+#define PRIV Qfalse	 /* TODO: for rubyspec now, should be Qtrue */
+
 static VALUE
 check_funcall_failed(struct rescue_funcall_args *args, VALUE e)
 {
-    if (rb_respond_to(args->recv, args->mid)) {
+    int ret = args->respond;
+    if (!ret) {
+	switch (rb_method_boundp(args->defined_class, args->mid,
+				 BOUND_PRIVATE|BOUND_RESPONDS)) {
+	  case 2:
+	    ret = TRUE;
+	    break;
+	  case 0:
+	    ret = args->respond_to_missing;
+	    break;
+	  default:
+	    ret = FALSE;
+	    break;
+	}
+    }
+    if (ret) {
 	rb_exc_raise(e);
     }
     return Qundef;
@@ -376,7 +395,7 @@ check_funcall_failed(struct rescue_funcall_args *args, VALUE e)
 static int
 check_funcall_respond_to(rb_thread_t *th, VALUE klass, VALUE recv, ID mid)
 {
-    return vm_respond_to(th, klass, recv, mid, 1);
+    return vm_respond_to(th, klass, recv, mid, TRUE);
 }
 
 static int
@@ -386,12 +405,19 @@ check_funcall_callable(rb_thread_t *th, const rb_callable_method_entry_t *me)
 }
 
 static VALUE
-check_funcall_missing(rb_thread_t *th, VALUE klass, VALUE recv, ID mid, int argc, const VALUE *argv)
+check_funcall_missing(rb_thread_t *th, VALUE klass, VALUE recv, ID mid, int argc, const VALUE *argv, int respond)
 {
     struct rescue_funcall_args args;
+    const rb_method_entry_t *me;
     VALUE ret = Qundef;
-    const rb_method_entry_t *const me =
-	method_entry_get(klass, idMethodMissing, &args.defined_class);
+
+    ret = basic_obj_respond_to_missing(th, klass, recv,
+				       ID2SYM(mid), PRIV);
+    if (!RTEST(ret)) return Qundef;
+    args.respond = respond > 0;
+    args.respond_to_missing = (ret != Qundef);
+    ret = Qundef;
+    me = method_entry_get(klass, idMethodMissing, &args.defined_class);
     if (me && !METHOD_ENTRY_BASIC(me)) {
 	VALUE argbuf, *new_args = ALLOCV_N(VALUE, argbuf, argc+1);
 
@@ -418,13 +444,14 @@ rb_check_funcall(VALUE recv, ID mid, int argc, const VALUE *argv)
     VALUE klass = CLASS_OF(recv);
     const rb_callable_method_entry_t *me;
     rb_thread_t *th = GET_THREAD();
+    int respond = check_funcall_respond_to(th, klass, recv, mid);
 
-    if (!check_funcall_respond_to(th, klass, recv, mid))
+    if (!respond)
 	return Qundef;
 
     me = rb_search_method_entry(recv, mid);
     if (!check_funcall_callable(th, me)) {
-	return check_funcall_missing(th, klass, recv, mid, argc, argv);
+	return check_funcall_missing(th, klass, recv, mid, argc, argv, respond);
     }
     stack_check();
     return vm_call0(th, recv, mid, argc, argv, me);
@@ -437,14 +464,15 @@ rb_check_funcall_with_hook(VALUE recv, ID mid, int argc, const VALUE *argv,
     VALUE klass = CLASS_OF(recv);
     const rb_callable_method_entry_t *me;
     rb_thread_t *th = GET_THREAD();
+    int respond = check_funcall_respond_to(th, klass, recv, mid);
 
-    if (!check_funcall_respond_to(th, klass, recv, mid))
+    if (!respond)
 	return Qundef;
 
     me = rb_search_method_entry(recv, mid);
     if (!check_funcall_callable(th, me)) {
 	(*hook)(FALSE, recv, mid, argc, argv, arg);
-	return check_funcall_missing(th, klass, recv, mid, argc, argv);
+	return check_funcall_missing(th, klass, recv, mid, argc, argv, respond);
     }
     stack_check();
     (*hook)(TRUE, recv, mid, argc, argv, arg);
