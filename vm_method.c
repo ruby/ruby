@@ -1832,7 +1832,7 @@ basic_obj_respond_to_missing(rb_thread_t *th, VALUE klass, VALUE obj,
     const rb_method_entry_t *const me =
 	method_entry_get(klass, rtmid, &defined_class);
 
-    if (!me || METHOD_ENTRY_BASIC(me)) return Qfalse;
+    if (!me || METHOD_ENTRY_BASIC(me)) return Qundef;
     args[0] = mid;
     args[1] = priv;
     return call_method_entry(th, defined_class, obj, rtmid, me, 2, args);
@@ -1842,13 +1842,15 @@ static inline int
 basic_obj_respond_to(rb_thread_t *th, VALUE obj, ID id, int pub)
 {
     VALUE klass = CLASS_OF(obj);
+    VALUE ret;
 
     switch (rb_method_boundp(klass, id, pub|BOUND_RESPONDS)) {
       case 2:
 	return FALSE;
       case 0:
-	return RTEST(basic_obj_respond_to_missing(th, klass, obj, ID2SYM(id),
-						  pub ? Qfalse : Qtrue));
+	ret = basic_obj_respond_to_missing(th, klass, obj, ID2SYM(id),
+					   pub ? Qfalse : Qtrue);
+	return RTEST(ret) && ret != Qundef;
       default:
 	return TRUE;
     }
@@ -1864,7 +1866,7 @@ vm_respond_to(rb_thread_t *th, VALUE klass, VALUE obj, ID id, int priv)
 
     if (!me) return TRUE;
     if (METHOD_ENTRY_BASIC(me)) {
-	return basic_obj_respond_to(th, obj, id, !priv);
+	return -1;
     }
     else {
 	int argc = 1;
@@ -1908,7 +1910,11 @@ vm_respond_to(rb_thread_t *th, VALUE klass, VALUE obj, ID id, int priv)
 int
 rb_obj_respond_to(VALUE obj, ID id, int priv)
 {
-    return vm_respond_to(GET_THREAD(), CLASS_OF(obj), obj, id, priv);
+    rb_thread_t *th = GET_THREAD();
+    VALUE klass = CLASS_OF(obj);
+    int ret = vm_respond_to(th, klass, obj, id, priv);
+    if (ret == -1) ret = basic_obj_respond_to(th, obj, id, !priv);
+    return ret;
 }
 
 int
@@ -1947,8 +1953,10 @@ obj_respond_to(int argc, VALUE *argv, VALUE obj)
 
     rb_scan_args(argc, argv, "11", &mid, &priv);
     if (!(id = rb_check_id(&mid))) {
-	return basic_obj_respond_to_missing(th, CLASS_OF(obj), obj,
-					    rb_to_symbol(mid), priv);
+	VALUE ret = basic_obj_respond_to_missing(th, CLASS_OF(obj), obj,
+						 rb_to_symbol(mid), priv);
+	if (ret == Qundef) ret = Qfalse;
+	return ret;
     }
     if (basic_obj_respond_to(th, obj, id, !RTEST(priv)))
 	return Qtrue;
