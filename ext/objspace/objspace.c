@@ -495,6 +495,7 @@ count_nodes(int argc, VALUE *argv, VALUE os)
 		COUNT_NODE(NODE_ATTRASGN);
 		COUNT_NODE(NODE_PRELUDE);
 		COUNT_NODE(NODE_LAMBDA);
+		COUNT_NODE(NODE_FILES);
 #undef COUNT_NODE
 	      default: node = INT2FIX(i);
 	    }

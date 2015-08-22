@@ -1210,7 +1210,7 @@ rb_sourcefilename(void)
     rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
 
     if (cfp) {
-	return cfp->iseq->body->location.path;
+	return rb_vm_get_sourcefilename(cfp);
     }
     else {
 	return Qnil;
@@ -1224,7 +1224,7 @@ rb_sourcefile(void)
     rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
 
     if (cfp) {
-	return RSTRING_PTR(cfp->iseq->body->location.path);
+	return RSTRING_PTR(rb_vm_get_sourcefilename(cfp));
     }
     else {
 	return 0;

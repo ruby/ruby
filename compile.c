@@ -1119,11 +1119,13 @@ new_child_iseq(rb_iseq_t *iseq, NODE *node,
 	       VALUE name, const rb_iseq_t *parent, enum iseq_type type, int line_no)
 {
     rb_iseq_t *ret_iseq;
+    VALUE path = iseq_path(iseq);
+    VALUE path_array = iseq->body->location.path_array;
 
     debugs("[new_child_iseq]> ---------------------------------------\n");
     ret_iseq = rb_iseq_new_with_opt(node, name,
-				    iseq_path(iseq), iseq_absolute_path(iseq),
-				    INT2FIX(line_no), parent, type, ISEQ_COMPILE_DATA(iseq)->option);
+			            path_array == Qnil ? path : path_array, iseq_absolute_path(iseq),
+			            INT2FIX(line_no), parent, type, ISEQ_COMPILE_DATA(iseq)->option);
     debugs("[new_child_iseq]< ---------------------------------------\n");
     iseq_add_mark_object(iseq, (VALUE)ret_iseq);
     return ret_iseq;
@@ -6321,6 +6323,18 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	    ADD_INSN(ret, line, pop);
 	}
 	break;
+      }
+      case NODE_FILES:{
+        VALUE path_array = iseq->body->location.path_array;
+        rb_iseq_location_t *loc = &iseq->body->location;
+	if (TYPE( path_array ) != T_NIL)
+	    rb_bug("NODE_FILE: path array must be nil");
+
+	path_array = node->u1.value;
+	if (TYPE( path_array ) != T_ARRAY)
+	    rb_bug("NODE_FILES: must be array");
+	RB_OBJ_WRITE(iseq, &loc->path_array, path_array);
+        break;
       }
       default:
 	UNKNOWN_NODE("iseq_compile_each", node);

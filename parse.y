@@ -279,6 +279,9 @@ struct parser_params {
     int ruby_sourceline;	/* current line no. */
     char *ruby_sourcefile; /* current source file */
     VALUE ruby_sourcefile_string;
+    unsigned char ruby_sourcefile_count;
+    VALUE ruby_sourcefile_array;
+    VALUE ruby_sourcefile_hash;
     rb_encoding *enc;
     token_info *token_info;
     VALUE compile_option;
@@ -375,6 +378,30 @@ static int parser_yyerror(struct parser_params*, const char*);
 #define ruby_sourceline 	(parser->ruby_sourceline)
 #define ruby_sourcefile 	(parser->ruby_sourcefile)
 #define ruby_sourcefile_string	(parser->ruby_sourcefile_string)
+#define ruby_sourcefile_array	(parser->ruby_sourcefile_array)
+#define ruby_sourcefile_hash	(parser->ruby_sourcefile_hash)
+#define ruby_sourcefile_count 	(parser->ruby_sourcefile_count)
+#if FILE_CNT_BITS > 0
+# define FILE_LINE_BITS         ((sizeof(ruby_sourceline) * 8) - FILE_CNT_BITS)
+# define FILE_SET(lineno)       (((ruby_sourcefile_count) << FILE_LINE_BITS) + lineno)
+# define FILE_LINE_MASK         ((UINT_MAX >> FILE_CNT_BITS))
+# define FIX_LINE(line)         ((UINT_MAX >> FILE_CNT_BITS) & (line))
+# define disp_ruby_sourceline   ((UINT_MAX >> FILE_CNT_BITS) & ruby_sourceline)
+# define disp_ruby_sourcefile   ((ruby_sourceline >> FILE_LINE_BITS) ? \
+                                RSTRING_PTR(rb_ary_entry(ruby_sourcefile_array, (ruby_sourceline >> FILE_LINE_BITS))) : \
+                                ruby_sourcefile)
+# define disp_ruby_sourcefile_line(line) \
+                                (((line) >> FILE_LINE_BITS) ? \
+                                RSTRING_PTR(rb_ary_entry(ruby_sourcefile_array, ((line) >> FILE_LINE_BITS))) : \
+                                ruby_sourcefile)
+# define disp_ruby_sourcefile_string \
+                                ((ruby_sourceline >> FILE_LINE_BITS) ? \
+                                rb_ary_entry(ruby_sourcefile_array, (ruby_sourceline >> FILE_LINE_BITS)) : \
+                                ruby_sourcefile_string)
+#else
+# define FILE_SET(lineno)       (lineno)
+# define FILE_LINE_MASK         (UINT_MAX)
+#endif
 #define current_enc		(parser->enc)
 #define current_arg		(parser->cur_arg)
 #define yydebug 		(parser->yydebug)
@@ -1058,7 +1085,12 @@ program		:  {
 				void_expr(node->nd_head);
 			    }
 			}
-			ruby_eval_tree = NEW_SCOPE(0, block_append(ruby_eval_tree, $2));
+			if (ruby_sourcefile_array == Qnil)
+			    ruby_sourcefile_array = rb_ary_new3(1, ruby_sourcefile_string);
+                        if ($2)
+			    ruby_eval_tree = NEW_SCOPE(0, block_append(ruby_eval_tree, block_append(NEW_FILES(ruby_sourcefile_array), $2)));
+			else
+			    ruby_eval_tree = NEW_SCOPE(0, block_append(ruby_eval_tree, $2));
 		    /*%
 			$$ = $2;
 			parser->result = dispatch1(program, $$);
@@ -6776,6 +6808,57 @@ magic_comment_encoding(struct parser_params *parser, const char *name, const cha
     parser_set_encode(parser, val);
 }
 
+static void
+magic_line(struct parser_params *parser, const char *name, const char *val)
+{
+    char *str = RSTRING_PTR(lex_lastline);
+    char *b;
+    unsigned long line = 0;
+    const char *file = NULL;
+    char *beg = strchr(str, ':') + 1;
+    char *end = strrchr(str, '-') - 2;
+
+    for (b = end; b > beg; b--)
+	if (isdigit(*b))
+	    break;
+    if (b > str) {
+	char *l = beg;
+	while (isdigit(*(b-1))) b--;
+        while (isspace(*l)) l++;
+	end = NULL;
+	line = ruby_strtoul(b, &end, 10);
+	if (b != l)
+	    file = val;
+    }
+
+    if (line > 0) {
+	if (file) {
+	    VALUE val;
+	    long  idx = -1;
+	    if (ruby_sourcefile_hash == Qnil) {
+		ruby_sourcefile_hash = rb_hash_new();
+	    }
+	    if (ruby_sourcefile_array == Qnil) {
+		ruby_sourcefile_array = rb_ary_new();
+		rb_ary_push(ruby_sourcefile_array, ruby_sourcefile_string);
+		rb_hash_aset(ruby_sourcefile_hash,ruby_sourcefile_string, INT2FIX(0));
+	    }
+	    val = rb_hash_aref(ruby_sourcefile_hash, rb_str_new2(file));
+	    if (val == Qnil) {
+		VALUE string;
+		string = rb_str_new2(file);
+		idx = RARRAY_LEN(ruby_sourcefile_array);
+		rb_ary_push(ruby_sourcefile_array, string);
+		rb_hash_aset(ruby_sourcefile_hash, string, INT2FIX(idx));
+	    } else {
+	        idx = FIX2LONG(val);
+	    }
+	    ruby_sourcefile_count = idx;
+	}
+	ruby_sourceline = (((unsigned int)ruby_sourcefile_count) << FILE_LINE_BITS) | (unsigned int)(line - 1);
+    }
+}
+
 static int
 parser_get_bool(struct parser_params *parser, const char *name, const char *val)
 {
@@ -6840,6 +6923,7 @@ static const struct magic_comment magic_comments[] = {
     {"coding", magic_comment_encoding, parser_encode_length},
     {"encoding", magic_comment_encoding, parser_encode_length},
     {"frozen_string_literal", parser_set_compile_option_flag},
+    {"line", magic_line},
     {"warn_indent", parser_set_token_info},
 # if WARN_PAST_SCOPE
     {"warn_past_scope", parser_set_past_scope},
@@ -7884,6 +7968,7 @@ parser_yylex(struct parser_params *parser)
 		set_file_encoding(parser, lex_p, lex_pend);
 	    }
 	}
+
 	lex_p = lex_pend;
         dispatch_scan_event(tCOMMENT);
         fallthru = TRUE;
@@ -8848,9 +8933,9 @@ gettable_gen(struct parser_params *parser, ID id)
       case keyword_false:
 	return NEW_FALSE();
       case keyword__FILE__:
-	return NEW_STR(rb_str_dup(ruby_sourcefile_string));
+	return NEW_STR(rb_str_dup(disp_ruby_sourcefile_string));
       case keyword__LINE__:
-	return NEW_LIT(INT2FIX(tokline));
+	return NEW_LIT(INT2FIX(FIX_LINE(tokline)));
       case keyword__ENCODING__:
 	return NEW_LIT(rb_enc_from_encoding(current_enc));
     }
@@ -10620,6 +10705,8 @@ parser_initialize(struct parser_params *parser)
     /* note: we rely on TypedData_Make_Struct to set most fields to 0 */
     command_start = TRUE;
     ruby_sourcefile_string = Qnil;
+    ruby_sourcefile_hash = Qnil;
+    ruby_sourcefile_array = Qnil;
 #ifdef RIPPER
     parser->delayed = Qnil;
     parser->result = Qnil;
