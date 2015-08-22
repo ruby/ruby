@@ -2,7 +2,7 @@ Sat Aug 22 15:43:12 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_eval.c (check_funcall_failed, check_funcall_missing): cache
 	  results of respond_to? and respond_to_missing?, and search a
-	  pulibc method only for compatibility with rb_respond_to.
+	  public method only for compatibility with rb_respond_to.
 
 Sat Aug 22 08:23:32 2015  Koichi Sasada  <ko1@atdot.net>
 
