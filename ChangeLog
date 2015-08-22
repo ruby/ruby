@@ -19,7 +19,7 @@ Sat Aug 22 08:23:32 2015  Koichi Sasada  <ko1@atdot.net>
 	  Because other thread related classes are also defined under Thread.
 	  We remain ::Mutex as Thread::Mutex. Only an inspect result is changed.
 
-	* common.mk: add dependency from thread.o to thraed_tools.c.
+	* common.mk: add dependency from thread.o to thread_tools.c.
 
 Sat Aug 22 05:31:37 2015  Koichi Sasada  <ko1@atdot.net>
 
