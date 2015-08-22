@@ -7,7 +7,7 @@ Sat Aug 22 15:43:12 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Sat Aug 22 08:23:32 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* ext/thread/thread.c: move definitions of Queue, SizedQueue
-	  and ConditionalVariables to thread_tools.c. In other wowrds,
+	  and ConditionalVariables to thread_tools.c. In other words,
 	  such classes are built-in.
 	  [Feature #8919]
 
