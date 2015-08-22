@@ -8811,29 +8811,26 @@ rb_id_quote_unprintable(ID id)
 static VALUE
 sym_inspect(VALUE sym)
 {
-    VALUE str;
+    VALUE str = rb_sym2str(sym);
     const char *ptr;
     long len;
     char *dest;
 
-    sym = rb_sym2str(sym);
-    if (!rb_str_symname_p(sym)) {
-	str = rb_str_inspect(sym);
+    if (!rb_str_symname_p(str)) {
+	str = rb_str_inspect(str);
 	len = RSTRING_LEN(str);
 	rb_str_resize(str, len + 1);
 	dest = RSTRING_PTR(str);
 	memmove(dest + 1, dest, len);
-	dest[0] = ':';
     }
     else {
-	rb_encoding *enc = STR_ENC_GET(sym);
-	ptr = RSTRING_PTR(sym);
-	len = RSTRING_LEN(sym);
+	rb_encoding *enc = STR_ENC_GET(str);
+	RSTRING_GETMEM(str, ptr, len);
 	str = rb_enc_str_new(0, len + 1, enc);
 	dest = RSTRING_PTR(str);
-	dest[0] = ':';
 	memcpy(dest + 1, ptr, len);
     }
+    dest[0] = ':';
     return str;
 }
 
