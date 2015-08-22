@@ -347,8 +347,10 @@ rb_call0(VALUE recv, ID mid, int argc, const VALUE *argv,
 }
 
 struct rescue_funcall_args {
+    VALUE defined_class;
     VALUE recv;
     ID mid;
+    const rb_method_entry_t *me;
     int argc;
     const VALUE *argv;
 };
@@ -356,14 +358,9 @@ struct rescue_funcall_args {
 static VALUE
 check_funcall_exec(struct rescue_funcall_args *args)
 {
-    VALUE new_args = rb_ary_new4(args->argc, args->argv);
-    VALUE ret;
-
-    rb_ary_unshift(new_args, ID2SYM(args->mid));
-    ret = rb_funcall2(args->recv, idMethodMissing,
-		       args->argc+1, RARRAY_CONST_PTR(new_args));
-    RB_GC_GUARD(new_args);
-    return ret;
+    return call_method_entry(GET_THREAD(), args->defined_class,
+			     args->recv, idMethodMissing,
+			     args->me, args->argc, args->argv);
 }
 
 static VALUE
@@ -390,21 +387,27 @@ check_funcall_callable(rb_thread_t *th, const rb_callable_method_entry_t *me)
 static VALUE
 check_funcall_missing(rb_thread_t *th, VALUE klass, VALUE recv, ID mid, int argc, const VALUE *argv)
 {
-    if (rb_method_basic_definition_p(klass, idMethodMissing)) {
-	return Qundef;
-    }
-    else {
-	struct rescue_funcall_args args;
+    struct rescue_funcall_args args;
+    VALUE ret = Qundef;
+    const rb_method_entry_t *const me =
+	method_entry_get(klass, idMethodMissing, &args.defined_class);
+    if (me && !METHOD_ENTRY_BASIC(me)) {
+	VALUE argbuf, *new_args = ALLOCV_N(VALUE, argbuf, argc+1);
 
+	new_args[0] = ID2SYM(mid);
+	MEMCPY(new_args+1, argv, VALUE, argc);
 	th->method_missing_reason = MISSING_NOENTRY;
 	args.recv = recv;
+	args.me = me;
 	args.mid = mid;
-	args.argc = argc;
-	args.argv = argv;
-	return rb_rescue2(check_funcall_exec, (VALUE)&args,
-			  check_funcall_failed, (VALUE)&args,
-			  rb_eNoMethodError, (VALUE)0);
+	args.argc = argc + 1;
+	args.argv = new_args;
+	ret = rb_rescue2(check_funcall_exec, (VALUE)&args,
+			 check_funcall_failed, (VALUE)&args,
+			 rb_eNoMethodError, (VALUE)0);
+	ALLOCV_END(argbuf);
     }
+    return ret;
 }
 
 VALUE
