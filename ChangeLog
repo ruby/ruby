@@ -1,3 +1,8 @@
+Mon Aug 24 16:01:19 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (rb_locale_encindex): find encoding index without
+	  making a string object every time.  [ruby-core:58160] [Bug #9080]
+
 Sat Aug 22 15:43:12 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_eval.c (check_funcall_failed, check_funcall_missing): cache
