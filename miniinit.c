@@ -20,7 +20,14 @@ const char ruby_initial_load_paths[] = "";
 VALUE
 rb_locale_charmap(VALUE klass)
 {
-    return rb_usascii_str_new2("ASCII-8BIT");
+    /* never used */
+    return Qnil;
+}
+
+int
+rb_locale_charmap_index(void)
+{
+    return -1;
 }
 
 int

@@ -22,8 +22,8 @@
 #define CP_FORMAT(buf, codepage) snprintf(buf, sizeof(buf), "CP%u", (codepage))
 #endif
 
-VALUE
-rb_locale_charmap(VALUE klass)
+static VALUE
+locale_charmap(VALUE (*conv)(const char *))
 {
 #if defined NO_LOCALE_CHARMAP
 # error NO_LOCALE_CHARMAP defined
@@ -40,14 +40,32 @@ rb_locale_charmap(VALUE klass)
 	CP_FORMAT(cp, codepage);
 	codeset = cp;
     }
-    return rb_usascii_str_new2(codeset);
+    return (*conv)(codeset);
 #elif defined HAVE_LANGINFO_H
     char *codeset;
     codeset = nl_langinfo(CODESET);
-    return rb_usascii_str_new2(codeset);
+    return (*conv)(codeset);
 #else
-    return Qnil;
+    return ENCINDEX_US_ASCII;
 #endif
+}
+
+VALUE
+rb_locale_charmap(VALUE klass)
+{
+    return locale_charmap(rb_usascii_str_new_cstr);
+}
+
+static VALUE
+enc_find_index(const char *name)
+{
+    return (VALUE)rb_enc_find_index(name);
+}
+
+int
+rb_locale_charmap_index(VALUE klass)
+{
+    return (int)locale_charmap(enc_find_index);
 }
 
 int

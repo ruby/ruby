@@ -1275,16 +1275,14 @@ rb_usascii_encindex(void)
     return ENCINDEX_US_ASCII;
 }
 
+int rb_locale_charmap_index(void);
+
 int
 rb_locale_encindex(void)
 {
-    VALUE charmap = rb_locale_charmap(rb_cEncoding);
-    int idx;
+    int idx = rb_locale_charmap_index();
 
-    if (NIL_P(charmap))
-        idx = ENCINDEX_US_ASCII;
-    else if ((idx = rb_enc_find_index(StringValueCStr(charmap))) < 0)
-        idx = ENCINDEX_ASCII;
+    if (idx < 0) idx = ENCINDEX_ASCII;
 
     if (rb_enc_registered("locale") < 0) {
 # if defined _WIN32
