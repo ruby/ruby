@@ -735,7 +735,7 @@ math_hypot(int argc, VALUE *argv, VALUE unused_obj)
     double x, y;
     rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
     x = Get_Double(argv[0]);
-    if (argc == 1) return DBL2NUM(x);
+    if (argc == 1) return DBL2NUM(fabs(x));
     y = Get_Double(argv[1]);
     if (argc == 2) return DBL2NUM(hypot(x, y));
     x *= x;
