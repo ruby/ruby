@@ -289,6 +289,8 @@ extern int rb_w32_ulink(const char *, const char *);
 extern ssize_t readlink(const char *, char *, size_t);
 extern ssize_t rb_w32_ureadlink(const char *, char *, size_t);
 extern ssize_t rb_w32_wreadlink(const WCHAR *, WCHAR *, size_t);
+extern int symlink(const char *src, const char *link);
+extern int rb_w32_usymlink(const char *src, const char *link);
 extern int gettimeofday(struct timeval *, struct timezone *);
 extern int clock_gettime(clockid_t, struct timespec *);
 extern int clock_getres(clockid_t, struct timespec *);

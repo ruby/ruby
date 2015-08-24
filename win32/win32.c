@@ -210,6 +210,7 @@ static struct {
     {	ERROR_OPERATION_ABORTED,	EINTR		},
     {	ERROR_NOT_ENOUGH_QUOTA,		ENOMEM		},
     {	ERROR_MOD_NOT_FOUND,		ENOENT		},
+    {	ERROR_PRIVILEGE_NOT_HELD,	EACCES,		},
     {	WSAEINTR,			EINTR		},
     {	WSAEBADF,			EBADF		},
     {	WSAEACCES,			EACCES		},
@@ -4813,6 +4814,68 @@ ssize_t
 readlink(const char *path, char *buf, size_t bufsize)
 {
     return w32_readlink(filecp(), path, buf, bufsize);
+}
+
+#ifndef SYMBOLIC_LINK_FLAG_DIRECTORY
+#define SYMBOLIC_LINK_FLAG_DIRECTORY (0x1)
+#endif
+
+/* License: Ruby's */
+static int
+w32_symlink(UINT cp, const char *src, const char *link)
+{
+    int atts, len1, len2;
+    VALUE buf;
+    WCHAR *wsrc, *wlink;
+    DWORD flag = 0;
+    BOOLEAN ret;
+
+    typedef DWORD (WINAPI *create_symbolic_link_func)(WCHAR*, WCHAR*, DWORD);
+    static create_symbolic_link_func create_symbolic_link =
+	(create_symbolic_link_func)-1;
+
+    if (create_symbolic_link == (create_symbolic_link_func)-1) {
+	create_symbolic_link = (create_symbolic_link_func)
+	    get_proc_address("kernel32", "CreateSymbolicLinkW", NULL);
+    }
+    if (!create_symbolic_link) {
+	errno = ENOSYS;
+	return -1;
+    }
+
+    len1 = MultiByteToWideChar(cp, 0, src, -1, NULL, 0);
+    len2 = MultiByteToWideChar(cp, 0, link, -1, NULL, 0);
+    wsrc = ALLOCV_N(WCHAR, buf, len1+len2);
+    wlink = wsrc + len1;
+    MultiByteToWideChar(cp, 0, src, -1, wsrc, len1);
+    MultiByteToWideChar(cp, 0, link, -1, wlink, len2);
+
+    atts = GetFileAttributesW(wsrc);
+    if (atts != -1 && atts & FILE_ATTRIBUTE_DIRECTORY)
+	flag = SYMBOLIC_LINK_FLAG_DIRECTORY;
+    ret = create_symbolic_link(wlink, wsrc, flag);
+    ALLOCV_END(buf);
+
+    if (!ret) {
+	int e = GetLastError();
+	errno = map_errno(e);
+	return -1;
+    }
+    return 0;
+}
+
+/* License: Ruby's */
+int
+rb_w32_usymlink(const char *src, const char *link)
+{
+    return w32_symlink(CP_UTF8, src, link);
+}
+
+/* License: Ruby's */
+int
+symlink(const char *src, const char *link)
+{
+    return w32_symlink(filecp(), src, link);
 }
 
 /* License: Ruby's */

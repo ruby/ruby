@@ -1,3 +1,7 @@
+Tue Aug 25 06:34:43 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (w32_symlink): implement symlink().
+
 Mon Aug 24 16:01:19 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (rb_locale_encindex): find encoding index without

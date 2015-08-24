@@ -719,6 +719,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define HAVE_FCNTL 1
 #define HAVE_LINK 1
 #define HAVE_READLINK 1
+#define HAVE_SYMLINK 1
 #define HAVE__SETJMP 1
 #define HAVE_TELLDIR 1
 #define HAVE_SEEKDIR 1
