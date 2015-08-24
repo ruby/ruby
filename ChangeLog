@@ -1,3 +1,16 @@
+Tue Aug 25 01:01:01 2015  Koichi Sasada <ko1@atdot.net>
+
+	* insns.def (defineclass): introduce an ad-hoc patch to avoid
+	  an issue reported on [Bug #10871].
+
+	  This patch does not fix completely. For example, method definition
+	  in a block (like 1.times{def ...; end}) still causes same issue.
+	  To solve all, we need a huge patch and it seems difficult for
+	  stable branch.
+
+	  Use Ruby 2.3 and later to solve this issue completely.
+	  (See [Bug #10943])
+
 Tue Aug 18 22:52:50 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* tool/downloader.rb: support old versions of ruby.

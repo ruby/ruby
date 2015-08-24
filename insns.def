@@ -914,6 +914,8 @@ defineclass
 (VALUE val)
 {
     VALUE klass;
+    VALUE class_iseq_val = class_iseq->self;
+    rb_iseq_t *orig_class_iseq = NULL;
     rb_vm_defineclass_type_t type = VM_DEFINECLASS_TYPE(flags);
 
     switch (type) {
@@ -963,7 +965,18 @@ defineclass
       case VM_DEFINECLASS_TYPE_SINGLETON_CLASS:
 	/* val is dummy.  classdef returns class scope value */
 	/* super is dummy */
-	klass = rb_singleton_class(cbase);
+	{
+	    klass = rb_singleton_class(cbase);
+
+	    /* Copy iseq to duplicate cref_stack place.
+	     * This is ad-hoc solution for [Bug #10871].
+	     * and this does not solve more complicated source code with singleton class.
+	     * If you need to solve everything, use Ruby 2.3 and later.
+	     */
+	    orig_class_iseq = class_iseq;
+	    class_iseq_val = rb_iseq_clone(class_iseq->self, cbase);
+	    GetISeqPtr(class_iseq_val, class_iseq);
+	}
 	break;
       case VM_DEFINECLASS_TYPE_MODULE:
 	/* val is dummy.  classdef returns class scope value */
@@ -992,12 +1005,18 @@ defineclass
     }
 
     COPY_CREF(class_iseq->cref_stack, vm_cref_push(th, klass, NOEX_PUBLIC, NULL));
+    if (orig_class_iseq) {
+	COPY_CREF(orig_class_iseq->cref_stack, vm_cref_push(th, klass, NOEX_PUBLIC, NULL));
+    }
 
     /* enter scope */
     vm_push_frame(th, class_iseq, VM_FRAME_MAGIC_CLASS,
 		  klass, 0, VM_ENVVAL_BLOCK_PTR(GET_BLOCK_PTR()),
 		  class_iseq->iseq_encoded, GET_SP(),
 		  class_iseq->local_size, 0, class_iseq->stack_max);
+
+    RB_GC_GUARD(class_iseq_val);
+
     RESTORE_REGS();
     NEXT_INSN();
 }
