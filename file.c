@@ -111,6 +111,8 @@ int flock(int, int);
 #define unlink(p)	rb_w32_uunlink(p)
 #undef rename
 #define rename(f, t)	rb_w32_urename((f), (t))
+#undef symlink
+#define symlink(s, l)	rb_w32_usymlink((s), (l))
 #else
 #define STAT(p, s)	stat((p), (s))
 #endif
