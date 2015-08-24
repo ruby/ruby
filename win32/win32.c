@@ -4724,7 +4724,7 @@ reparse_symlink(const WCHAR *path, reparse_buffer_t *rp)
 	e = map_errno(GetLastError());
     }
     else if (rp->ReparseTag != IO_REPARSE_TAG_SYMLINK &&
-	     rp->ReparseTag != IO_REPARSE_TAG_MOUNT_POINT){
+	     rp->ReparseTag != IO_REPARSE_TAG_MOUNT_POINT) {
 	e = EINVAL;
     }
     CloseHandle(f);
@@ -4739,6 +4739,7 @@ rb_w32_reparse_symlink_p(const WCHAR *path)
     return reparse_symlink(path, &rp) == 0;
 }
 
+/* License: Ruby's */
 ssize_t
 rb_w32_wreadlink(const WCHAR *path, WCHAR *buf, size_t bufsize)
 {
@@ -5876,6 +5877,7 @@ rb_w32_open(const char *file, int oflag, ...)
     return ret;
 }
 
+/* License: Ruby's */
 int
 rb_w32_wopen(const WCHAR *file, int oflag, ...)
 {
