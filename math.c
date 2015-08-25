@@ -731,18 +731,33 @@ math_ldexp(VALUE unused_obj, VALUE x, VALUE n)
 static VALUE
 math_hypot(int argc, VALUE *argv, VALUE unused_obj)
 {
-    int i;
-    double x, y;
+    int i, expx;
+    double x, y, x0;
+
     rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
     x = Get_Double(argv[0]);
-    if (argc == 1) return DBL2NUM(fabs(x));
+    x = fabs(x);
+    if (argc == 1) return DBL2NUM(x);
     y = Get_Double(argv[1]);
+    y = fabs(y);
     if (argc == 2) return DBL2NUM(hypot(x, y));
+    x0 = frexp(x, &expx);
+    if ((expx -= DBL_MAX_EXP / 2) >= 0) {
+	x = ldexp(x0, expx);
+	y = ldexp(y, -(DBL_MAX_EXP / 2));
+    }
     x *= x;
     for (i = 2; x += y * y, i < argc; ++i) {
 	y = Get_Double(argv[i]);
+	if (expx >= 0) {
+	    y = ldexp(y, -(DBL_MAX_EXP / 2));
+	}
     }
-    return DBL2NUM(sqrt(x));
+    x = sqrt(x);
+    if (expx >= 0) {
+	x = ldexp(x, (DBL_MAX_EXP / 2));
+    }
+    return DBL2NUM(x);
 }
 
 VALUE

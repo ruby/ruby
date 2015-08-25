@@ -224,6 +224,10 @@ class TestMath < Test::Unit::TestCase
     check(1, Math.hypot(-1))
     check(5, Math.hypot(3, 4))
     check(13, Math.hypot(3, -4, 12))
+    x = Float::MAX / Math.sqrt(2.0).next_float
+    check(Float::MAX, Math.hypot(x, x, 0))
+    x = Float::MAX / Math.sqrt(3.0).next_float
+    check(Float::MAX, Math.hypot(x, x, x))
   end
 
   def test_erf
