@@ -9,6 +9,7 @@
 #include <winbase.h>
 #include <wchar.h>
 #include <shlwapi.h>
+#include "win32/file.h"
 
 #ifndef INVALID_FILE_ATTRIBUTES
 # define INVALID_FILE_ATTRIBUTES ((DWORD)-1)
@@ -658,15 +659,16 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     return result;
 }
 
-ssize_t rb_w32_wreadlink(const WCHAR *path, WCHAR *buf, size_t bufsize);
-
 VALUE
 rb_readlink(VALUE path)
 {
-    ssize_t len;
-    WCHAR *wpath, wbuf[MAX_PATH];
+    DWORD len;
+    VALUE wtmp = 0, str;
+    rb_w32_reparse_buffer_t rbuf, *rp = &rbuf;
+    WCHAR *wpath, *wbuf;
     rb_encoding *enc;
     UINT cp, path_cp;
+    int e;
 
     FilePathValue(path);
     enc = rb_enc_get(path);
@@ -678,13 +680,23 @@ rb_readlink(VALUE path)
     wpath = mbstr_to_wstr(cp, RSTRING_PTR(path),
 			  RSTRING_LEN(path)+rb_enc_mbminlen(enc), NULL);
     if (!wpath) rb_memerror();
-    len = rb_w32_wreadlink(wpath, wbuf, numberof(wbuf));
+    e = rb_w32_read_reparse_point(wpath, rp, sizeof(rbuf), &wbuf, &len);
+    if (e == ERROR_MORE_DATA) {
+	size_t size = rb_w32_reparse_buffer_size(len + 1);
+	rp = ALLOCV(wtmp, size);
+	e = rb_w32_read_reparse_point(wpath, rp, size, &wbuf, &len);
+    }
     free(wpath);
-    if (len < 0) rb_sys_fail_path(path);
+    if (e) {
+	ALLOCV_END(wtmp);
+	rb_syserr_fail_path(rb_w32_map_errno(e), path);
+    }
     enc = rb_filesystem_encoding();
     cp = path_cp = code_page(enc);
     if (cp == INVALID_CODE_PAGE) cp = CP_UTF8;
-    return append_wstr(rb_enc_str_new(0, 0, enc), wbuf, len, cp, path_cp, enc);
+    str = append_wstr(rb_enc_str_new(0, 0, enc), wbuf, len, cp, path_cp, enc);
+    ALLOCV_END(wtmp);
+    return str;
 }
 
 static void *

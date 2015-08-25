@@ -50,6 +50,7 @@
 #endif
 #include "ruby/win32.h"
 #include "win32/dir.h"
+#include "win32/file.h"
 #include "internal.h"
 #define isdirsep(x) ((x) == '/' || (x) == '\\')
 
@@ -4668,32 +4669,8 @@ link(const char *from, const char *to)
 #endif
 
 /* License: Ruby's */
-typedef struct {
-    ULONG  ReparseTag;
-    USHORT ReparseDataLength;
-    USHORT Reserved;
-    union {
-	struct {
-	    USHORT SubstituteNameOffset;
-	    USHORT SubstituteNameLength;
-	    USHORT PrintNameOffset;
-	    USHORT PrintNameLength;
-	    ULONG  Flags;
-	    WCHAR  PathBuffer[MAXPATHLEN * 2];
-	} SymbolicLinkReparseBuffer;
-	struct {
-	    USHORT SubstituteNameOffset;
-	    USHORT SubstituteNameLength;
-	    USHORT PrintNameOffset;
-	    USHORT PrintNameLength;
-	    WCHAR  PathBuffer[MAXPATHLEN * 2];
-	} MountPointReparseBuffer;
-    };
-} reparse_buffer_t;
-
-/* License: Ruby's */
 static int
-reparse_symlink(const WCHAR *path, reparse_buffer_t *rp)
+reparse_symlink(const WCHAR *path, rb_w32_reparse_buffer_t *rp, size_t size)
 {
     HANDLE f;
     DWORD ret;
@@ -4721,12 +4698,12 @@ reparse_symlink(const WCHAR *path, reparse_buffer_t *rp)
     }
 
     if (!device_io_control(f, FSCTL_GET_REPARSE_POINT, NULL, 0,
-			   rp, sizeof(*rp), &ret, NULL)) {
-	e = map_errno(GetLastError());
+			   rp, size, &ret, NULL)) {
+	e = GetLastError();
     }
     else if (rp->ReparseTag != IO_REPARSE_TAG_SYMLINK &&
 	     rp->ReparseTag != IO_REPARSE_TAG_MOUNT_POINT) {
-	e = EINVAL;
+	e = ERROR_INVALID_PARAMETER;
     }
     CloseHandle(f);
     return e;
@@ -4736,68 +4713,86 @@ reparse_symlink(const WCHAR *path, reparse_buffer_t *rp)
 int
 rb_w32_reparse_symlink_p(const WCHAR *path)
 {
-    reparse_buffer_t rp;
-    return reparse_symlink(path, &rp) == 0;
+    rb_w32_reparse_buffer_t rp;
+    switch (reparse_symlink(path, &rp, sizeof(rp))) {
+      case 0:
+      case ERROR_MORE_DATA:
+	return TRUE;
+    }
+    return FALSE;
 }
 
 /* License: Ruby's */
-ssize_t
-rb_w32_wreadlink(const WCHAR *path, WCHAR *buf, size_t bufsize)
+int
+rb_w32_read_reparse_point(const WCHAR *path, rb_w32_reparse_buffer_t *rp,
+			  size_t bufsize, WCHAR **result, DWORD *len)
 {
-    reparse_buffer_t rp;
-    int e = reparse_symlink(path, &rp);
+    int e = reparse_symlink(path, rp, bufsize);
     DWORD ret;
 
-    if (!e) {
+    if (!e || e == ERROR_MORE_DATA) {
 	void *name;
-	if (rp.ReparseTag == IO_REPARSE_TAG_SYMLINK) {
-	    name = ((char *)rp.SymbolicLinkReparseBuffer.PathBuffer +
-		    rp.SymbolicLinkReparseBuffer.PrintNameOffset);
-	    ret = rp.SymbolicLinkReparseBuffer.PrintNameLength;
+	if (rp->ReparseTag == IO_REPARSE_TAG_SYMLINK) {
+	    name = ((char *)rp->SymbolicLinkReparseBuffer.PathBuffer +
+		    rp->SymbolicLinkReparseBuffer.PrintNameOffset);
+	    ret = rp->SymbolicLinkReparseBuffer.PrintNameLength;
 	}
 	else { /* IO_REPARSE_TAG_MOUNT_POINT */
 	    /* +4/-4 means to drop "\??\" */
-	    name = ((char *)rp.MountPointReparseBuffer.PathBuffer +
-		    rp.MountPointReparseBuffer.SubstituteNameOffset +
+	    name = ((char *)rp->MountPointReparseBuffer.PathBuffer +
+		    rp->MountPointReparseBuffer.SubstituteNameOffset +
 		    4 * sizeof(WCHAR));
-	    ret = rp.MountPointReparseBuffer.SubstituteNameLength -
+	    ret = rp->MountPointReparseBuffer.SubstituteNameLength -
 		  4 * sizeof(WCHAR);
+	}
+	*result = name;
+	*len = ret / sizeof(WCHAR);
+	if (e) {
+	    if ((char *)name + ret + sizeof(WCHAR) > (char *)rp + bufsize)
+		return e;
+	    /* SubstituteName is not used */
 	}
 	((WCHAR *)name)[ret/sizeof(WCHAR)] = L'\0';
 	translate_wchar(name, L'\\', L'/');
-	bufsize *= sizeof(WCHAR);
-	memcpy(buf, name, ret > bufsize ? bufsize : ret);
+	return 0;
     }
     else {
-	errno = e;
-	return -1;
+	return e;
     }
-    return ret / sizeof(WCHAR);
 }
 
 /* License: Ruby's */
 static ssize_t
 w32_readlink(UINT cp, const char *path, char *buf, size_t bufsize)
 {
-    WCHAR *wpath;
-    WCHAR wbuf[MAXPATHLEN];
+    WCHAR *wpath, *wname;
+    VALUE wtmp;
+    size_t size = rb_w32_reparse_buffer_size(bufsize);
+    rb_w32_reparse_buffer_t *rp = ALLOCV(wtmp, size);
+    DWORD len;
     ssize_t ret;
+    int e;
 
     wpath = mbstr_to_wstr(cp, path, -1, NULL);
-    if (!wpath) return -1;
-    ret = rb_w32_wreadlink(wpath, wbuf, MAXPATHLEN);
+    if (!wpath) {
+	ALLOCV_END(wtmp);
+	return -1;
+    }
+    e = rb_w32_read_reparse_point(wpath, rp, size, &wname, &len);
     free(wpath);
-    if (ret < 0) return ret;
-    ret = WideCharToMultiByte(cp, 0, wbuf, ret, buf, bufsize, NULL, NULL);
-    if (!ret) {
-	int e = GetLastError();
-	if (e == ERROR_INSUFFICIENT_BUFFER) {
-	    ret = bufsize;
-	}
-	else {
-	    errno = map_errno(e);
-	    ret = -1;
-	}
+    if (e && e != ERROR_MORE_DATA) {
+	ALLOCV_END(wtmp);
+	errno = map_errno(e);
+	return -1;
+    }
+    ret = WideCharToMultiByte(cp, 0, wname, len, buf, bufsize, NULL, NULL);
+    if (e) {
+	ret = bufsize;
+    }
+    else if (!ret) {
+	e = GetLastError();
+	errno = map_errno(e);
+	ret = -1;
     }
     return ret;
 }

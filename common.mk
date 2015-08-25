@@ -710,9 +710,10 @@ prelude.$(OBJEXT): {$(VPATH)}prelude.c
 # dependencies for optional sources.
 compile.$(OBJEXT): {$(VPATH)}opt_sc.inc {$(VPATH)}optunifs.inc
 
-win32/win32.$(OBJEXT): {$(VPATH)}win32/win32.c {$(VPATH)}dln.h {$(VPATH)}dln_find.c \
+win32/win32.$(OBJEXT): {$(VPATH)}win32/win32.c {$(VPATH)}win32/file.h \
+  {$(VPATH)}dln.h {$(VPATH)}dln_find.c \
   {$(VPATH)}internal.h {$(VPATH)}util.h $(RUBY_H_INCLUDES) $(PLATFORM_D)
-win32/file.$(OBJEXT): {$(VPATH)}win32/file.c {$(VPATH)}thread.h \
+win32/file.$(OBJEXT): {$(VPATH)}win32/file.c {$(VPATH)}win32/file.h {$(VPATH)}thread.h \
   $(RUBY_H_INCLUDES) $(PLATFORM_D)
 
 $(NEWLINE_C): $(srcdir)/enc/trans/newline.trans $(srcdir)/tool/transcode-tblgen.rb
