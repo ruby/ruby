@@ -1951,7 +1951,7 @@ opendir_internal(WCHAR *wpath, const char *filename)
 	    WCHAR *tmppath = malloc((pathlen + len + 1) * sizeof(WCHAR));
 	    memcpy(tmppath, wpath, pathlen * sizeof(WCHAR));
 	    tmppath[pathlen] = L'\\';
-	    memcpy(tmppath + pathlen, fd.cFileName, len * sizeof(WCHAR));
+	    memcpy(tmppath + pathlen + 1, fd.cFileName, len * sizeof(WCHAR));
 	    if (rb_w32_reparse_symlink_p(tmppath))
 		SetBit(p->bits, BitOfIsRep(p->nfiles));
 	    free(tmppath);
