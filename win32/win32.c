@@ -4885,6 +4885,7 @@ w32_symlink(UINT cp, const char *src, const char *link)
     wlink = wsrc + len1;
     MultiByteToWideChar(cp, 0, src, -1, wsrc, len1);
     MultiByteToWideChar(cp, 0, link, -1, wlink, len2);
+    translate_wchar(wsrc, L'/', L'\\');
 
     atts = GetFileAttributesW(wsrc);
     if (atts != -1 && atts & FILE_ATTRIBUTE_DIRECTORY)
