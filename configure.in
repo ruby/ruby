@@ -1106,6 +1106,7 @@ main()
 		ac_cv_func_isinf=yes
 		ac_cv_func_isnan=yes
 		ac_cv_func_finite=yes
+		ac_cv_func_lchown=yes
 		ac_cv_func_link=yes
 		ac_cv_func_readlink=yes
 		ac_cv_func_symlink=yes

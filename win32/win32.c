@@ -4482,6 +4482,18 @@ rb_w32_uchown(const char *path, int owner, int group)
     return 0;
 }
 
+int
+lchown(const char *path, int owner, int group)
+{
+    return 0;
+}
+
+int
+rb_w32_ulchown(const char *path, int owner, int group)
+{
+    return 0;
+}
+
 /* License: Ruby's */
 int
 kill(int pid, int sig)

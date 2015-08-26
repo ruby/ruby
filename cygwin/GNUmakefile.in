@@ -87,6 +87,7 @@ ifeq (@target_os@,mingw32)
 $(OBJS) $(MAINOBJ): win32.h
 
 dir.$(OBJEXT) win32/win32.$(OBJEXT): win32/dir.h
+file.$(OBJEXT) win32/win32.$(OBJEXT): win32/file.h
 endif
 
 $(LIBRUBY_SO): $(RUBYDEF)
