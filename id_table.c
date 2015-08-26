@@ -822,13 +822,13 @@ find_empty(register sa_table* table, register sa_index_t pos)
 {
     sa_index_t new_pos = table->free_pos-1;
     sa_entry *entry;
-    static unsigned offsets[][3] = {
-	    {1, 2, 3},
-	    {2, 3, 0},
-	    {3, 1, 0},
-	    {2, 1, 0}
+    static const unsigned offsets[][3] = {
+	{1, 2, 3},
+	{2, 3, 0},
+	{3, 1, 0},
+	{2, 1, 0}
     };
-    unsigned *check = offsets[pos&3];
+    const unsigned *const check = offsets[pos&3];
     pos &= FLOOR_TO_4;
     entry = table->entries+pos;
 
