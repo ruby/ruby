@@ -4735,7 +4735,7 @@ reparse_symlink(const WCHAR *path, rb_w32_reparse_buffer_t *rp, size_t size)
 		    FILE_FLAG_BACKUP_SEMANTICS|FILE_FLAG_OPEN_REPARSE_POINT,
 		    NULL);
     if (f == INVALID_HANDLE_VALUE) {
-	return map_errno(GetLastError());
+	return GetLastError();
     }
 
     if (!device_io_control(f, FSCTL_GET_REPARSE_POINT, NULL, 0,
