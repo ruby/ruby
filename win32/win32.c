@@ -5009,6 +5009,18 @@ wrename(const WCHAR *oldpath, const WCHAR *newpath)
 	errno = map_errno(GetLastError());
 	return -1;
     }
+    if (oldatts & FILE_ATTRIBUTE_REPARSE_POINT) {
+	HANDLE fh = CreateFileW(oldpath, 0, 0, NULL, OPEN_EXISTING,
+				FILE_FLAG_BACKUP_SEMANTICS, NULL);
+	if (fh == INVALID_HANDLE_VALUE) {
+	    int e = GetLastError();
+	    if (e == ERROR_CANT_RESOLVE_FILENAME) {
+		errno = ELOOP;
+		return -1;
+	    }
+	}
+	CloseHandle(fh);
+    }
 
     RUBY_CRITICAL({
 	if (newatts != -1 && newatts & FILE_ATTRIBUTE_READONLY)
