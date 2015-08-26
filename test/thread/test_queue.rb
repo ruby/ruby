@@ -43,6 +43,7 @@ class TestQueue < Test::Unit::TestCase
       }
     }.join
 
+    # close the queue the old way to test for backwards-compatibility
     num_threads.times { to_workers.push nil }
     workers.each { |t| t.join }
 
@@ -276,5 +277,294 @@ class TestQueue < Test::Unit::TestCase
     assert_raise_with_message(TypeError, /internal Array/, bug9674) do
       Marshal.dump(q)
     end
+  end
+
+  def test_close
+    [->{Queue.new}, ->{SizedQueue.new 3}].each do |qcreate|
+      q = qcreate.call
+      assert_equal false, q.closed?
+      q << :something
+      assert_equal q, q.close
+      assert q.closed?
+      assert_raise_with_message(ClosedQueueError, /closed/){q << :nothing}
+      assert_equal q.pop, :something
+      assert_nil q.pop
+      # non-blocking
+      assert_raise_with_message(ThreadError, /queue empty/){q.pop(non_block=true)}
+    end
+  end
+
+  # test that waiting producers are woken up on close
+  def close_wakeup( num_items, num_threads, &qcreate )
+    raise "This test won't work with num_items(#{num_items}) >= num_threads(#{num_threads})" if num_items >= num_threads
+
+    # create the Queue
+    q = yield
+    threads = num_threads.times.map{Thread.new{q.pop}}
+    num_items.times{|i| q << i}
+
+    # wait until queue empty
+    (Thread.pass; sleep 0.01) until q.size == 0
+
+    # now there should be some waiting consumers
+    assert_equal num_threads - num_items, threads.count{|thr| thr.status}
+
+    # tell them all to go away
+    q.close
+
+    # wait for them to go away
+    Thread.pass until threads.all?{|thr| thr.status == false}
+
+    # check that they've gone away. Convert nil to -1 so we can sort and do the comparison
+    expected_values = [-1] * (num_threads - num_items) + num_items.times.to_a
+    assert_equal expected_values, threads.map{|thr| thr.value || -1 }.sort
+  end
+
+  def test_queue_close_wakeup
+    close_wakeup(15, 18){Queue.new}
+  end
+
+  def test_size_queue_close_wakeup
+    close_wakeup(5, 8){SizedQueue.new 9}
+  end
+
+  def test_sized_queue_one_closed_interrupt
+    q = SizedQueue.new 1
+    q << :one
+    t1 = Thread.new { q << :two }
+    sleep 0.01 until t1.stop?
+    q.close
+
+    t1.kill.join
+    assert_equal 1, q.size
+    assert_equal :one, q.pop
+    assert q.empty?, "queue not empty"
+  end
+
+  # make sure that shutdown state is handled properly by empty? for the non-blocking case
+  def test_empty_non_blocking
+    return
+    q = SizedQueue.new 3
+    3.times{|i| q << i}
+
+    # these all block cos the queue is full
+    prod_threads = 4.times.map{|i| Thread.new{q << 3+i}}
+    sleep 0.01 until prod_threads.all?{|thr| thr.status == 'sleep'}
+    q.close
+
+    items = []
+    # sometimes empty? is false but pop will raise ThreadError('empty'),
+    # meaning a value is not immediately available but will be soon.
+    until q.empty?
+      items << q.pop(non_block=true) rescue nil
+    end
+    items.compact!
+
+    assert_equal 7.times.to_a, items.sort
+    assert q.empty?
+  end
+
+  def test_sized_queue_closed_push_non_blocking
+    q = SizedQueue.new 7
+    q.close
+    assert_raise_with_message(ClosedQueueError, /queue closed/){q.push(non_block=true)}
+  end
+
+  def test_blocked_pushers
+    q = SizedQueue.new 3
+    prod_threads = 6.times.map do |i|
+      thr = Thread.new{q << i}; thr[:pc] = i; thr
+    end
+
+    # wait until some producer threads have finished, and the other 3 are blocked
+    sleep 0.01 while prod_threads.reject{|t| t.status}.count < 3
+    # this would ensure that all producer threads call push before close
+    # sleep 0.01 while prod_threads.select{|t| t.status == 'sleep'}.count < 3
+    q.close
+
+    # more than prod_threads
+    cons_threads = 10.times.map do |i|
+      thr = Thread.new{q.pop}; thr[:pc] = i; thr
+    end
+
+    # values that came from the queue
+    popped_values = cons_threads.map &:value
+
+    # wait untl all threads have finished
+    sleep 0.01 until prod_threads.find_all{|t| t.status}.count == 0
+
+    # pick only the producer threads that got in before close
+    successful_prod_threads = prod_threads.reject{|thr| thr.status == nil}
+    assert_nothing_raised{ successful_prod_threads.map(&:value) }
+
+    # the producer threads that tried to push after q.close should all fail
+    unsuccessful_prod_threads = prod_threads - successful_prod_threads
+    unsuccessful_prod_threads.each do |thr|
+      assert_raise(ClosedQueueError){ thr.value }
+    end
+
+    assert_equal cons_threads.size, popped_values.size
+    assert_equal 0, q.size
+
+    # check that consumer threads with values match producers that called push before close
+    assert_equal successful_prod_threads.map{|thr| thr[:pc]}, popped_values.compact.sort
+    assert_nil q.pop
+  end
+
+  def test_deny_pushers
+    [->{Queue.new}, ->{SizedQueue.new 3}].each do |qcreate|
+      prod_threads = nil
+      q = qcreate[]
+      synq = Queue.new
+      producers_start = Thread.new do
+        prod_threads = 20.times.map do |i|
+          Thread.new{ synq.pop; q << i }
+        end
+      end
+      q.close
+      synq.close # start producer threads
+
+      # wait for all threads to be finished, because of exceptions
+      # NOTE: thr.status will be nil (raised) or false (terminated)
+      sleep 0.01 until prod_threads && prod_threads.all?{|thr| !thr.status}
+
+      # check that all threads failed to call push
+      prod_threads.each do |thr|
+        assert_kind_of ClosedQueueError, (thr.value rescue $!)
+      end
+    end
+  end
+
+  # size should account for waiting pushers during shutdown
+  def sized_queue_size_close
+    q = SizedQueue.new 4
+    4.times{|i| q << i}
+    Thread.new{ q << 5 }
+    Thread.new{ q << 6 }
+    assert_equal 4, q.size
+    assert_equal 4, q.items
+    q.close
+    assert_equal 6, q.size
+    assert_equal 4, q.items
+  end
+
+  def test_blocked_pushers_empty
+    q = SizedQueue.new 3
+    prod_threads = 6.times.map do |i|
+      Thread.new{ q << i}
+    end
+
+    # this ensures that all producer threads call push before close
+    sleep 0.01 while prod_threads.select{|t| t.status == 'sleep'}.count < 3
+    q.close
+
+    ary = []
+    until q.empty?
+      ary << q.pop
+    end
+    assert_equal 0, q.size
+
+    assert_equal 3, ary.size
+    ary.each{|e| assert [0,1,2,3,4,5].include?(e)}
+    assert_nil q.pop
+
+    prod_threads.each{|t|
+      begin
+        t.join
+      rescue => e
+      end
+    }
+  end
+
+  # test thread wakeup on one-element SizedQueue with close
+  def test_one_element_sized_queue
+    q = SizedQueue.new 1
+    t = Thread.new{ q.pop }
+    q.close
+    assert_nil t.value
+  end
+
+  def test_close_token_exception
+    [->{Queue.new}, ->{SizedQueue.new 3}].each do |qcreate|
+      q = qcreate[]
+      q.close true
+      assert_raise(ClosedQueueError){q.pop}
+    end
+  end
+
+  def test_close_token_loop
+    [->{Queue.new}, ->{SizedQueue.new 3}].each do |qcreate|
+      q = qcreate[]
+      popped_items = []
+      consumer_thread = Thread.new{loop{popped_items << q.pop}; :done}
+      7.times{|i| q << i}
+      q.close true
+      sleep 0.1 unless q.empty?
+      assert_equal :done, consumer_thread.value
+      assert_equal 7.times.to_a, popped_items
+    end
+  end
+
+  def test_close_twice
+    [->{Queue.new}, ->{SizedQueue.new 3}].each do |qcreate|
+      q = qcreate[]
+      q.close
+      assert_raise(ClosedQueueError){q.close}
+
+      q = qcreate[]
+      q.close(true)
+      assert_raise(ClosedQueueError){q.close(false)}
+    end
+  end
+
+  def test_queue_close_multi_multi
+    q = SizedQueue.new rand(800..1200)
+
+    count_items = rand(3000..5000)
+    count_producers = rand(10..20)
+
+    producers = count_producers.times.map do
+      Thread.new do
+        sleep(rand / 100)
+        count_items.times{|i| q << [i,"#{i} for #{Thread.current.inspect}"]}
+      end
+    end
+
+    consumers = rand(7..12).times.map do
+      Thread.new do
+        count = 0
+        loop do
+          i, st = q.pop
+          count += 1 if i.is_a?(Fixnum) && st.is_a?(String)
+        end
+        count
+      end
+    end
+
+    # No dead or finished threads
+    assert (consumers + producers).all?{|thr| thr.status =~ /\Arun|sleep\Z/}, 'no threads runnning'
+
+    # just exercising the concurrency of the support methods.
+    counter = Thread.new do
+      until q.closed? && q.empty?
+        raise if q.size > q.max
+        # otherwise this exercise causes too much contention on the lock
+        sleep 0.01
+      end
+    end
+
+    producers.each &:join
+    q.close true
+
+    # results not randomly distributed. Not sure why.
+    # consumers.map{|thr| thr.value}.each do |x|
+    #   assert_not_equal 0, x
+    # end
+
+    all_items_count = consumers.map{|thr| thr.value}.inject(:+)
+    assert_equal count_items * count_producers, all_items_count
+
+    # don't leak this thread
+    assert_nothing_raised{counter.join}
   end
 end

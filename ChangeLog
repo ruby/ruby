@@ -1,3 +1,34 @@
+Thu Aug 27 07:45:34 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* thread_tools.c: add Queue#close(exception=false) and
+	  SizedQueue#close(exception=false).
+	  [Feature #10600]
+
+	  Trying to deq from a closed empty queue return nil
+	  if exception parameter equals to false (default).
+
+	  If exception parameter is truthy, it raises
+	  ClosedQueueError (< StopIteration).
+	  ClosedQueueError inherits StopIteration so that you can write:
+
+	    loop{ e = q.deq; (using e) }
+
+	  Trying to close a closed queue raises ClosedQueueError.
+
+	  Blocking threads to wait deq for Queue and SizedQueue will be
+	  restarted immediately by returning nil (exception=false) or
+	  raising a ClosedQueueError (exception=true).
+
+	  Blocking threads to wait enq for SizedQueue will be
+	  restarted by raising a ClosedQueueError immediately.
+
+	  The above specification is not proposed specification, so that
+	  we need to continue discussion to conclude specification this
+	  method.
+
+	* test/thread/test_queue.rb: add tests originally written by
+	  John Anderson and modify detailed behavior.
+
 Wed Aug 26 10:52:02 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* re.c (rb_memsearch_wchar, rb_memsearch_qchar): test matching
