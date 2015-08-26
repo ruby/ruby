@@ -1822,6 +1822,21 @@ w32_cmdvector(const WCHAR *cmd, char ***vec, UINT cp, rb_encoding *enc)
 // UNIX compatible directory access functions for NT
 //
 
+static DWORD
+get_final_path(HANDLE f, WCHAR *buf, DWORD len, DWORD flag)
+{
+    typedef DWORD (WINAPI *get_final_path_func)(HANDLE, WCHAR*, DWORD, DWORD);
+    static get_final_path_func func = (get_final_path_func)-1;
+
+    if (func == (get_final_path_func)-1) {
+	func = (get_final_path_func)
+	    get_proc_address("kernel32", "GetFinalPathNameByHandleW", NULL);
+    }
+
+    if (!func) return 0;
+    return func(f, buf, len, flag);
+}
+
 //
 // The idea here is to read all the directory names into a string table
 // (separated by nulls) and when one of the other dir functions is called
@@ -1842,6 +1857,7 @@ open_dir_handle(const WCHAR *filename, WIN32_FIND_DATAW *fd)
 {
     HANDLE fh;
     static const WCHAR wildcard[] = L"\\*";
+    WCHAR fullname[MAX_PATH];
     WCHAR *scanname;
     WCHAR *p;
     int len;
@@ -1850,7 +1866,17 @@ open_dir_handle(const WCHAR *filename, WIN32_FIND_DATAW *fd)
     //
     // Create the search pattern
     //
-    len = lstrlenW(filename);
+
+    fh = CreateFileW(filename, 0, 0, NULL, OPEN_EXISTING,
+		     FILE_FLAG_BACKUP_SEMANTICS, NULL);
+    if (fh != INVALID_HANDLE_VALUE) {
+	len = get_final_path(fh, fullname, numberof(fullname), 0);
+	CloseHandle(fh);
+	filename = fullname;
+    }
+    else {
+	len = lstrlenW(filename);
+    }
     scanname = ALLOCV_N(WCHAR, v, len + numberof(wildcard));
     lstrcpyW(scanname, filename);
     p = CharPrevW(scanname, scanname + len);
@@ -5325,22 +5351,13 @@ winnt_stat(const WCHAR *path, struct stati64 *st)
 {
     HANDLE f;
 
-    typedef DWORD (WINAPI *get_final_path_func)(HANDLE, WCHAR*, DWORD, DWORD);
-    static get_final_path_func get_final_path = (get_final_path_func)-1;
-
-    if (get_final_path == (get_final_path_func)-1) {
-	get_final_path = (get_final_path_func)
-	    get_proc_address("kernel32", "GetFinalPathNameByHandleW", NULL);
-    }
-
     memset(st, 0, sizeof(*st));
     f = CreateFileW(path, 0, 0, NULL, OPEN_EXISTING,
 		    FILE_FLAG_BACKUP_SEMANTICS, NULL);
     if (f != INVALID_HANDLE_VALUE) {
 	WCHAR finalname[MAX_PATH];
 	const DWORD attr = stati64_handle(f, st);
-	const DWORD len = get_final_path ?
-	    get_final_path(f, finalname, numberof(finalname), 0) : 0;
+	const DWORD len = get_final_path(f, finalname, numberof(finalname), 0);
 	CloseHandle(f);
 	if (attr & FILE_ATTRIBUTE_DIRECTORY) {
 	    if (check_valid_dir(path)) return -1;
