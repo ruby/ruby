@@ -1860,7 +1860,7 @@ open_dir_handle(const WCHAR *filename, WIN32_FIND_DATAW *fd)
     WCHAR fullname[MAX_PATH];
     WCHAR *scanname;
     WCHAR *p;
-    int len;
+    int len = 0;
     VALUE v;
 
     //
@@ -1872,6 +1872,8 @@ open_dir_handle(const WCHAR *filename, WIN32_FIND_DATAW *fd)
     if (fh != INVALID_HANDLE_VALUE) {
 	len = get_final_path(fh, fullname, numberof(fullname), 0);
 	CloseHandle(fh);
+    }
+    if (len) {
 	filename = fullname;
     }
     else {
