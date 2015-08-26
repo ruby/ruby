@@ -450,7 +450,10 @@ list_table_extend(struct list_id_table *tbl)
 	     */
 
 	    /* memmove */
-	    // fprintf(stderr, "memmove: %p -> %p (%d, capa: %d)\n", old_values, new_values, num, capa);
+	    if (0) {
+		fprintf(stderr, "memmove: %p -> %p (%d, capa: %d)\n",
+			old_values, new_values, num, capa);
+	    }
 	    assert(num < capa);
 	    assert(num == 0 || old_values < new_values);
 
@@ -1274,7 +1277,8 @@ hash_table_extend(struct hash_id_table* tbl)
 	int new_cap = round_capa(tbl->num + (tbl->num >> 1));
 	int i;
 	item_t* old;
-	struct hash_id_table tmp_tbl = {new_cap, 0, 0};
+	struct hash_id_table tmp_tbl = {0, 0, 0};
+	tmp_tbl.capa = new_cap;
 	tmp_tbl.items = ZALLOC_N(item_t, new_cap);
 	for (i = 0; i < tbl->capa; i++) {
 	    id_key_t key = ITEM_GET_KEY(tbl, i);
