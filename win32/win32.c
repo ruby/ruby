@@ -7235,12 +7235,21 @@ static int
 wunlink(const WCHAR *path)
 {
     int ret = 0;
+    const DWORD SYMLINKD = FILE_ATTRIBUTE_REPARSE_POINT|FILE_ATTRIBUTE_DIRECTORY;
     RUBY_CRITICAL({
 	const DWORD attr = GetFileAttributesW(path);
-	if (attr != (DWORD)-1 && (attr & FILE_ATTRIBUTE_READONLY)) {
-	    SetFileAttributesW(path, attr & ~FILE_ATTRIBUTE_READONLY);
+	if (attr == (DWORD)-1) {
 	}
-	if (!DeleteFileW(path)) {
+	else if ((attr & SYMLINKD) == SYMLINKD) {
+	    ret = RemoveDirectoryW(path);
+	}
+	else {
+	    if (attr & FILE_ATTRIBUTE_READONLY) {
+		SetFileAttributesW(path, attr & ~FILE_ATTRIBUTE_READONLY);
+	    }
+	    ret = DeleteFileW(path);
+	}
+	if (!ret) {
 	    errno = map_errno(GetLastError());
 	    ret = -1;
 	    if (attr != (DWORD)-1 && (attr & FILE_ATTRIBUTE_READONLY)) {
