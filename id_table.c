@@ -1510,20 +1510,35 @@ mix_id_table_foreach_values(struct mix_id_table *tbl, rb_id_table_foreach_values
 #define IMPL1(name, op) TOKEN_PASTE(name, _id##op) /* expand `name' */
 #define IMPL(op)        IMPL1(ID_TABLE_NAME, _table##op) /* but prevent `op' */
 
-struct rb_id_table *rb_id_table_create(size_t size) {return (struct rb_id_table *)IMPL(_create)(size);}
-void rb_id_table_free(struct rb_id_table *tbl)      {       IMPL(_free)((ID_TABLE_IMPL_TYPE *)tbl);}
-void rb_id_table_clear(struct rb_id_table *tbl)     {       IMPL(_clear)((ID_TABLE_IMPL_TYPE *)tbl);}
-size_t rb_id_table_size(struct rb_id_table *tbl)    {return IMPL(_size)((ID_TABLE_IMPL_TYPE *)tbl);}
-size_t rb_id_table_memsize(struct rb_id_table *tbl) {return IMPL(_memsize)((ID_TABLE_IMPL_TYPE *)tbl);}
+#define IMPL_TYPE1(type, prot, name, args) \
+    RUBY_ALIAS_FUNCTION_TYPE(type, prot, name, args)
+#define IMPL_TYPE(type, name, prot, args) \
+    IMPL_TYPE1(type, rb_id_table_##name prot, IMPL(_##name), args)
+#define IMPL_VOID1(prot, name, args) \
+    RUBY_ALIAS_FUNCTION_VOID(prot, name, args)
+#define IMPL_VOID(name, prot, args) \
+    IMPL_VOID1(rb_id_table_##name prot, IMPL(_##name), args)
+#define id_tbl (ID_TABLE_IMPL_TYPE *)tbl
 
-int rb_id_table_insert(struct rb_id_table *tbl, ID id, VALUE val)   {return IMPL(_insert)((ID_TABLE_IMPL_TYPE *)tbl, id, val);}
-int rb_id_table_lookup(struct rb_id_table *tbl, ID id, VALUE *valp) {return IMPL(_lookup)((ID_TABLE_IMPL_TYPE *)tbl, id, valp);}
-int rb_id_table_delete(struct rb_id_table *tbl, ID id)              {return IMPL(_delete)((ID_TABLE_IMPL_TYPE *)tbl, id);}
+IMPL_TYPE(struct rb_id_table *, create, (size_t size), (size))
+IMPL_VOID(free, (struct rb_id_table *tbl), (id_tbl))
+IMPL_VOID(clear, (struct rb_id_table *tbl), (id_tbl))
+IMPL_TYPE(size_t, size, (struct rb_id_table *tbl), (id_tbl))
+IMPL_TYPE(size_t, memsize, (struct rb_id_table *tbl), (id_tbl))
 
-void rb_id_table_foreach(struct rb_id_table *tbl, rb_id_table_foreach_func_t *func, void *data) {
-     IMPL(_foreach)((ID_TABLE_IMPL_TYPE *)tbl, func, data);}
-void rb_id_table_foreach_values(struct rb_id_table *tbl, rb_id_table_foreach_values_func_t *func, void *data) {
-     IMPL(_foreach_values)((ID_TABLE_IMPL_TYPE *)tbl, func, data);}
+IMPL_TYPE(int , insert, (struct rb_id_table *tbl, ID id, VALUE val),
+	  (id_tbl, id, val))
+IMPL_TYPE(int, lookup, (struct rb_id_table *tbl, ID id, VALUE *valp),
+	  (id_tbl, id, valp))
+IMPL_TYPE(int, delete, (struct rb_id_table *tbl, ID id),
+	  (id_tbl, id))
+
+IMPL_VOID(foreach,
+	  (struct rb_id_table *tbl, rb_id_table_foreach_func_t *func, void *data),
+	  (id_tbl, func, data))
+IMPL_VOID(foreach_values,
+	  (struct rb_id_table *tbl, rb_id_table_foreach_values_func_t *func, void *data),
+	  (id_tbl, func, data))
 
 #if ID_TABLE_STARTUP_SIG
 __attribute__((constructor))
