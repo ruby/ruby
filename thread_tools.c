@@ -717,7 +717,7 @@ queue_do_push(VALUE self, VALUE obj)
  * ClosedQueueError is inherited from StopIteration, so that you can break loop block.
  *
  *  Example:
- * 
+ *
  *    	q = Queue.new
  *      Thread.new{
  *        while e = q.deq # wait for nil to break loop
