@@ -37,4 +37,7 @@ typedef struct {
 int rb_w32_read_reparse_point(const WCHAR *path, rb_w32_reparse_buffer_t *rp,
 			      size_t bufsize, WCHAR **result, DWORD *len);
 
+int lchown(const char *path, int owner, int group);
+int rb_w32_ulchown(const char *path, int owner, int group);
+
 #endif	/* RUBY_WIN32_FILE_H */

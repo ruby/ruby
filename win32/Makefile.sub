@@ -720,6 +720,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define HAVE_LINK 1
 #define HAVE_READLINK 1
 #define HAVE_SYMLINK 1
+#define HAVE_LCHOWN 1
 #define HAVE__SETJMP 1
 #define HAVE_TELLDIR 1
 #define HAVE_SEEKDIR 1
@@ -1138,6 +1139,7 @@ enc/jis/props.h: {$(srcdir)}enc/jis/props.h.blt
 $(OBJS): {$(hdrdir)/ruby}win32.h
 
 dir.$(OBJEXT) win32/win32.$(OBJEXT): {$(srcdir)}win32/dir.h
+file.$(OBJEXT) win32/win32.$(OBJEXT): {$(VPATH)}win32/file.h
 
 ext/extinit.obj: ext/extinit.c $(SETUP)
 	$(ECHO) compiling ext/extinit.c
