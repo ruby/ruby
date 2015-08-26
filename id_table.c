@@ -427,15 +427,15 @@ list_table_extend(struct list_id_table *tbl)
 		}
 
 		if (0)
-		  for (i=0; i< 2 * num; i++) {
-		    unsigned char *cs = (unsigned char *)&tbl->keys[i];
-		    size_t j;
-		    fprintf(stderr, ">> %3d | %p - ", i, cs);
-		    for (j=0; j<sizeof(VALUE); j++) {
-			fprintf(stderr, "%x ", cs[j]);
+		    for (i=0; i< 2 * num; i++) {
+			unsigned char *cs = (unsigned char *)&tbl->keys[i];
+			size_t j;
+			fprintf(stderr, ">> %3d | %p - ", i, cs);
+			for (j=0; j<sizeof(VALUE); j++) {
+			    fprintf(stderr, "%x ", cs[j]);
+			}
+			fprintf(stderr, "\n");
 		    }
-		    fprintf(stderr, "\n");
-		  }
 	    }
 
 	    tbl->keys = (id_key_t *)xrealloc(tbl->keys, size);
@@ -812,8 +812,8 @@ calc_pos(register sa_table* table, id_key_t key)
 static void
 fix_empty(register sa_table* table)
 {
-    while(--table->free_pos &&
-            table->entries[table->free_pos-1].next != SA_EMPTY);
+    while (--table->free_pos &&
+	   table->entries[table->free_pos-1].next != SA_EMPTY);
 }
 
 #define FLOOR_TO_4 ((~((sa_index_t)0)) << 2)
@@ -1008,7 +1008,7 @@ hash_id_table_lookup(register sa_table *table, ID id, VALUE *valuep)
         if (entry->key == key) goto found;
     }
     return 0;
-found:
+  found:
     if (valuep) *valuep = entry->value;
     return 1;
 }
@@ -1058,7 +1058,7 @@ hash_id_table_delete(sa_table *table, ID id)
         entry = table->entries + pos;
     } while(1);
 
-not_found:
+  not_found:
     return 0;
 }
 
@@ -1382,7 +1382,7 @@ hash_id_table_foreach_values(struct hash_id_table *tbl, enum rb_id_table_iterato
 	    enum rb_id_table_iterator_result ret = (*func)(tbl->items[i].val, data);
 
 	    if (ret == ID_TABLE_DELETE)
-	      hash_delete_index(tbl, i);
+		hash_delete_index(tbl, i);
 	    else if (ret == ID_TABLE_STOP)
 		return;
 	}
