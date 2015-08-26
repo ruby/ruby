@@ -1066,6 +1066,10 @@ class TestM17N < Test::Unit::TestCase
     assert_equal(false, e("\xa1\xa2\xa3\xa4").include?(e("\xa3")))
     s = e("\xa3\xb0\xa3\xb1\xa3\xb2\xa3\xb3\xa3\xb4")
     assert_equal(false, s.include?(e("\xb0\xa3")))
+    bug11488 = '[ruby-core:70592] [Bug #11488]'
+    each_encoding("abcdef", "def") do |str, substr|
+      assert_equal(true, str.include?(substr), bug11488)
+    end
   end
 
   def test_index
@@ -1075,6 +1079,10 @@ class TestM17N < Test::Unit::TestCase
     assert_nil(e("\xa1\xa2\xa3\xa4").rindex(e("\xa3")))
     s = e("\xa3\xb0\xa3\xb1\xa3\xb2\xa3\xb3\xa3\xb4")
     assert_raise(Encoding::CompatibilityError){s.rindex(a("\xb1\xa3"))}
+    bug11488 = '[ruby-core:70592] [Bug #11488]'
+    each_encoding("abcdef", "def") do |str, substr|
+      assert_equal(3, str.index(substr), bug11488)
+    end
   end
 
   def test_next
