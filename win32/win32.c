@@ -5970,7 +5970,16 @@ rb_w32_wopen(const WCHAR *file, int oflag, ...)
 	pmode = va_arg(arg, int);
 	va_end(arg);
 	fd = _wopen(file, oflag, pmode);
-	if (fd == -1 && errno == EACCES) check_if_wdir(file);
+	if (fd == -1) {
+	    switch (errno) {
+	      case EACCES:
+		check_if_wdir(file);
+		break;
+	      case EINVAL:
+		errno = map_errno(GetLastError());
+		break;
+	    }
+	}
 	return fd;
     }
 
