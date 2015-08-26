@@ -19,5 +19,8 @@ size_t rb_id_table_memsize(struct rb_id_table *tbl);
 int rb_id_table_insert(struct rb_id_table *tbl, ID id, VALUE val);
 int rb_id_table_lookup(struct rb_id_table *tbl, ID id, VALUE *valp);
 int rb_id_table_delete(struct rb_id_table *tbl, ID id);
-void rb_id_table_foreach(struct rb_id_table *tbl, enum rb_id_table_iterator_result (*func)(ID id, VALUE val, void *data), void *data);
-void rb_id_table_foreach_values(struct rb_id_table *tbl, enum rb_id_table_iterator_result (*func)(VALUE val, void *data), void *data);
+
+typedef enum rb_id_table_iterator_result rb_id_table_foreach_func_t(ID id, VALUE val, void *data);
+typedef enum rb_id_table_iterator_result rb_id_table_foreach_values_func_t(VALUE val, void *data);
+void rb_id_table_foreach(struct rb_id_table *tbl, rb_id_table_foreach_func_t *func, void *data);
+void rb_id_table_foreach_values(struct rb_id_table *tbl, rb_id_table_foreach_values_func_t *func, void *data);

@@ -306,13 +306,13 @@ st_id_table_delete(struct st_id_table *tbl, ID id)
 }
 
 static void
-st_id_table_foreach(struct st_id_table *tbl, enum rb_id_table_iterator_result (*func)(ID id, VALUE val, void *data), void *data)
+st_id_table_foreach(struct st_id_table *tbl, rb_id_table_foreach_func_t *func, void *data)
 {
     st_foreach(tbl2st(tbl), (int (*)(ANYARGS))func, (st_data_t)data);
 }
 
 struct values_iter_data {
-    enum rb_id_table_iterator_result (*values_i)(VALUE val, void *data);
+    rb_id_table_foreach_values_func_t *values_i;
     void *data;
 };
 
@@ -324,7 +324,7 @@ each_values(st_data_t key, st_data_t val, st_data_t ptr)
 }
 
 static void
-st_id_table_foreach_values(struct st_id_table *tbl, enum rb_id_table_iterator_result (*func)(VALUE val, void *data), void *data)
+st_id_table_foreach_values(struct st_id_table *tbl, rb_id_table_foreach_values_func_t *func, void *data)
 {
     struct values_iter_data values_iter_data;
     values_iter_data.values_i = func;
@@ -702,7 +702,7 @@ list_id_table_delete(struct list_id_table *tbl, ID id)
 } while (0)
 
 static void
-list_id_table_foreach(struct list_id_table *tbl, enum rb_id_table_iterator_result (*func)(ID id, VALUE val, void *data), void *data)
+list_id_table_foreach(struct list_id_table *tbl, rb_id_table_foreach_func_t *func, void *data)
 {
     int num = tbl->num;
     int i;
@@ -720,7 +720,7 @@ list_id_table_foreach(struct list_id_table *tbl, enum rb_id_table_iterator_resul
 }
 
 static void
-list_id_table_foreach_values(struct list_id_table *tbl, enum rb_id_table_iterator_result (*func)(VALUE val, void *data), void *data)
+list_id_table_foreach_values(struct list_id_table *tbl, rb_id_table_foreach_values_func_t *func, void *data)
 {
     int num = tbl->num;
     int i;
@@ -1354,7 +1354,7 @@ hash_id_table_delete(struct hash_id_table *tbl, ID id)
 }
 
 static void
-hash_id_table_foreach(struct hash_id_table *tbl, enum rb_id_table_iterator_result (*func)(ID id, VALUE val, void *data), void *data)
+hash_id_table_foreach(struct hash_id_table *tbl, rb_id_table_foreach_func_t *func, void *data)
 {
     int i, capa = tbl->capa;
 
@@ -1373,7 +1373,7 @@ hash_id_table_foreach(struct hash_id_table *tbl, enum rb_id_table_iterator_resul
 }
 
 static void
-hash_id_table_foreach_values(struct hash_id_table *tbl, enum rb_id_table_iterator_result (*func)(VALUE val, void *data), void *data)
+hash_id_table_foreach_values(struct hash_id_table *tbl, rb_id_table_foreach_values_func_t *func, void *data)
 {
     int i, capa = tbl->capa;
 
@@ -1491,14 +1491,14 @@ mix_id_table_delete(struct mix_id_table *tbl, ID id)
 }
 
 static void
-mix_id_table_foreach(struct mix_id_table *tbl, enum rb_id_table_iterator_result (*func)(ID id, VALUE val, void *data), void *data)
+mix_id_table_foreach(struct mix_id_table *tbl, rb_id_table_foreach_func_t *func, void *data)
 {
     if (LIST_P(tbl)) list_id_table_foreach(&tbl->aux.list, func, data);
     else             hash_id_table_foreach(&tbl->aux.hash, func, data);
 }
 
 static void
-mix_id_table_foreach_values(struct mix_id_table *tbl, enum rb_id_table_iterator_result (*func)(VALUE val, void *data), void *data)
+mix_id_table_foreach_values(struct mix_id_table *tbl, rb_id_table_foreach_values_func_t *func, void *data)
 {
     if (LIST_P(tbl)) list_id_table_foreach_values(&tbl->aux.list, func, data);
     else             hash_id_table_foreach_values(&tbl->aux.hash, func, data);
@@ -1520,9 +1520,9 @@ int rb_id_table_insert(struct rb_id_table *tbl, ID id, VALUE val)   {return IMPL
 int rb_id_table_lookup(struct rb_id_table *tbl, ID id, VALUE *valp) {return IMPL(_lookup)((ID_TABLE_IMPL_TYPE *)tbl, id, valp);}
 int rb_id_table_delete(struct rb_id_table *tbl, ID id)              {return IMPL(_delete)((ID_TABLE_IMPL_TYPE *)tbl, id);}
 
-void rb_id_table_foreach(struct rb_id_table *tbl, enum rb_id_table_iterator_result (*func)(ID id, VALUE val, void *data), void *data) {
+void rb_id_table_foreach(struct rb_id_table *tbl, rb_id_table_foreach_func_t *func, void *data) {
      IMPL(_foreach)((ID_TABLE_IMPL_TYPE *)tbl, func, data);}
-void rb_id_table_foreach_values(struct rb_id_table *tbl, enum rb_id_table_iterator_result (*func)(VALUE val, void *data), void *data) {
+void rb_id_table_foreach_values(struct rb_id_table *tbl, rb_id_table_foreach_values_func_t *func, void *data) {
      IMPL(_foreach_values)((ID_TABLE_IMPL_TYPE *)tbl, func, data);}
 
 #if ID_TABLE_STARTUP_SIG
