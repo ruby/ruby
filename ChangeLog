@@ -1,3 +1,8 @@
+Wed Aug 26 09:26:00 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* id_table.c (list_table_extend, hash_table_extend): remove C99
+	  features.  [ruby-dev:49239] [Bug #11487]
+
 Tue Aug 25 06:34:43 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (w32_symlink): implement symlink().
