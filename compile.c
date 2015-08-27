@@ -1445,25 +1445,25 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
     LINK_ELEMENT *list;
     VALUE *generated_iseq;
 
-    int k, pos, sp, stack_max = 0, line = 0;
+    int insn_num, code_index, line_info_index, sp, stack_max = 0, line = 0;
 
-    /* set label position */
+    /* fix label position */
     list = FIRST_ELEMENT(anchor);
-    k = pos = 0;
+    insn_num = code_index = 0;
     while (list) {
 	switch (list->type) {
 	  case ISEQ_ELEMENT_INSN:
 	    {
 		iobj = (INSN *)list;
 		line = iobj->line_no;
-		pos += insn_data_length(iobj);
-		k++;
+		code_index += insn_data_length(iobj);
+		insn_num++;
 		break;
 	    }
 	  case ISEQ_ELEMENT_LABEL:
 	    {
 		lobj = (LABEL *)list;
-		lobj->position = pos;
+		lobj->position = code_index;
 		lobj->set = TRUE;
 		break;
 	    }
@@ -1476,8 +1476,8 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 	    {
 		ADJUST *adjust = (ADJUST *)list;
 		if (adjust->line_no != -1) {
-		    pos += 2 /* insn + 1 operand */;
-		    k++;
+		    code_index += 2 /* insn + 1 operand */;
+		    insn_num++;
 		}
 		break;
 	    }
@@ -1492,14 +1492,14 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
     }
 
     /* make instruction sequence */
-    generated_iseq = ALLOC_N(VALUE, pos);
-    line_info_table = ALLOC_N(struct iseq_line_info_entry, k);
+    generated_iseq = ALLOC_N(VALUE, code_index);
+    line_info_table = ALLOC_N(struct iseq_line_info_entry, insn_num);
     iseq->body->is_entries = ZALLOC_N(union iseq_inline_storage_entry, iseq->body->is_size);
     iseq->body->callinfo_entries = ALLOC_N(rb_call_info_t, iseq->body->callinfo_size);
     /* MEMZERO(iseq->body->callinfo_entries, rb_call_info_t, iseq->body->callinfo_size); */
 
     list = FIRST_ELEMENT(anchor);
-    k = pos = sp = 0;
+    line_info_index = code_index = sp = 0;
 
     while (list) {
 	switch (list->type) {
@@ -1520,7 +1520,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 		/* fprintf(stderr, "insn: %-16s, sp: %d\n", insn_name(iobj->insn_id), sp); */
 		operands = iobj->operands;
 		insn = iobj->insn_id;
-		generated_iseq[pos] = insn;
+		generated_iseq[code_index] = insn;
 		types = insn_op_types(insn);
 		len = insn_len(insn);
 
@@ -1551,7 +1551,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 			    if (lobj->sp == -1) {
 				lobj->sp = sp;
 			    }
-			    generated_iseq[pos + 1 + j] = lobj->position - (pos + len);
+			    generated_iseq[code_index + 1 + j] = lobj->position - (code_index + len);
 			    break;
 			}
 		      case TS_CDHASH:
@@ -1559,28 +1559,28 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 			    VALUE map = operands[j];
 			    struct cdhash_set_label_struct data;
                             data.hash = map;
-                            data.pos = pos;
+                            data.pos = code_index;
                             data.len = len;
 			    rb_hash_foreach(map, cdhash_set_label_i, (VALUE)&data);
 
 			    freeze_hide_obj(map);
-			    generated_iseq[pos + 1 + j] = map;
+			    generated_iseq[code_index + 1 + j] = map;
 			    break;
 			}
 		      case TS_LINDEX:
 		      case TS_NUM:	/* ulong */
-			generated_iseq[pos + 1 + j] = FIX2INT(operands[j]);
+			generated_iseq[code_index + 1 + j] = FIX2INT(operands[j]);
 			break;
 		      case TS_ISEQ:	/* iseq */
 			{
 			    VALUE v = operands[j];
-			    generated_iseq[pos + 1 + j] = v;
+			    generated_iseq[code_index + 1 + j] = v;
 			    break;
 			}
 		      case TS_VALUE:	/* VALUE */
 			{
 			    VALUE v = operands[j];
-			    generated_iseq[pos + 1 + j] = v;
+			    generated_iseq[code_index + 1 + j] = v;
 			    /* to mark ruby object */
 			    iseq_add_mark_object(iseq, v);
 			    break;
@@ -1592,7 +1592,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 			    if (UNLIKELY(ic_index >= iseq->body->is_size)) {
 				rb_bug("iseq_set_sequence: ic_index overflow: index: %d, size: %d", ic_index, iseq->body->is_size);
 			    }
-			    generated_iseq[pos + 1 + j] = (VALUE)ic;
+			    generated_iseq[code_index + 1 + j] = (VALUE)ic;
 			    break;
 			}
 		      case TS_CALLINFO: /* call info */
@@ -1604,21 +1604,21 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 			    if (UNLIKELY(base_ci->aux.index >= iseq->body->callinfo_size)) {
 				rb_bug("iseq_set_sequence: ci_index overflow: index: %d, size: %d", base_ci->argc, iseq->body->callinfo_size);
 			    }
-			    generated_iseq[pos + 1 + j] = (VALUE)ci;
+			    generated_iseq[code_index + 1 + j] = (VALUE)ci;
 			    break;
 			}
 		      case TS_ID: /* ID */
-			generated_iseq[pos + 1 + j] = SYM2ID(operands[j]);
+			generated_iseq[code_index + 1 + j] = SYM2ID(operands[j]);
 			break;
 		      case TS_GENTRY:
 			{
 			    struct rb_global_entry *entry =
 				(struct rb_global_entry *)(operands[j] & (~1));
-			    generated_iseq[pos + 1 + j] = (VALUE)entry;
+			    generated_iseq[code_index + 1 + j] = (VALUE)entry;
 			}
 			break;
 		      case TS_FUNCPTR:
-			generated_iseq[pos + 1 + j] = operands[j];
+			generated_iseq[code_index + 1 + j] = operands[j];
 			break;
 		      default:
 			rb_compile_error(RSTRING_PTR(iseq->body->location.path), iobj->line_no,
@@ -1629,11 +1629,11 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 		    }
 		}
 		if (last_line != iobj->line_no) {
-		    line_info_table[k].line_no = last_line = iobj->line_no;
-		    line_info_table[k].position = pos;
-		    k++;
+		    line_info_table[line_info_index].line_no = last_line = iobj->line_no;
+		    line_info_table[line_info_index].position = code_index;
+		    line_info_index++;
 		}
-		pos += len;
+		code_index += len;
 		break;
 	    }
 	  case ISEQ_ELEMENT_LABEL:
@@ -1662,22 +1662,22 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 		if (adjust->line_no != -1) {
 		    if (orig_sp - sp > 0) {
 			if (last_line != (unsigned int)adjust->line_no) {
-			    line_info_table[k].line_no = last_line = adjust->line_no;
-			    line_info_table[k].position = pos;
-			    k++;
+			    line_info_table[line_info_index].line_no = last_line = adjust->line_no;
+			    line_info_table[line_info_index].position = code_index;
+			    line_info_index++;
 			}
-			generated_iseq[pos++] = BIN(adjuststack);
-			generated_iseq[pos++] = orig_sp - sp;
+			generated_iseq[code_index++] = BIN(adjuststack);
+			generated_iseq[code_index++] = orig_sp - sp;
 		    }
 		    else if (orig_sp - sp == 0) {
 			/* jump to next insn */
 			if (last_line != (unsigned int)adjust->line_no) {
-			    line_info_table[k].line_no = last_line = adjust->line_no;
-			    line_info_table[k].position = pos;
-			    k++;
+			    line_info_table[line_info_index].line_no = last_line = adjust->line_no;
+			    line_info_table[line_info_index].position = code_index;
+			    line_info_index++;
 			}
-			generated_iseq[pos++] = BIN(nop);
-			generated_iseq[pos++] = BIN(nop);
+			generated_iseq[code_index++] = BIN(nop);
+			generated_iseq[code_index++] = BIN(nop);
 		    }
 		    else {
 			rb_bug("iseq_set_sequence: adjust bug");
@@ -1693,12 +1693,12 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
     }
 
     iseq->body->iseq_encoded = (void *)generated_iseq;
-    iseq->body->iseq_size = pos;
+    iseq->body->iseq_size = code_index;
     iseq->body->stack_max = stack_max;
 
-    REALLOC_N(line_info_table, struct iseq_line_info_entry, k);
+    REALLOC_N(line_info_table, struct iseq_line_info_entry, line_info_index);
     iseq->body->line_info_table = line_info_table;
-    iseq->body->line_info_size = k;
+    iseq->body->line_info_size = line_info_index;
 
     return COMPILE_OK;
 }
