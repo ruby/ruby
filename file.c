@@ -2687,9 +2687,14 @@ rb_file_s_utime(int argc, VALUE *argv)
     return LONG2FIX(n);
 }
 
-NORETURN(static void sys_fail2(VALUE,VALUE));
+#ifdef RUBY_FUNCTION_NAME_STRING
+# define sys_fail2(s1, s2) sys_fail2_in(RUBY_FUNCTION_NAME_STRING, s1, s2)
+#else
+# define sys_fail2_in(func, s1, s2) sys_fail2(s1, s2)
+#endif
+NORETURN(static void sys_fail2_in(const char *,VALUE,VALUE));
 static void
-sys_fail2(VALUE s1, VALUE s2)
+sys_fail2_in(const char *func, VALUE s1, VALUE s2)
 {
     VALUE str;
 #ifdef MAX_PATH
@@ -2706,7 +2711,11 @@ sys_fail2(VALUE s1, VALUE s2)
     rb_str_cat2(str, ", ");
     rb_str_append(str, rb_str_ellipsize(s2, max_pathlen));
     rb_str_cat2(str, ")");
+#ifdef RUBY_FUNCTION_NAME_STRING
+    rb_sys_fail_path_in(func, str);
+#else
     rb_sys_fail_path(str);
+#endif
 }
 
 #ifdef HAVE_LINK
