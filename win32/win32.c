@@ -1837,6 +1837,17 @@ get_final_path(HANDLE f, WCHAR *buf, DWORD len, DWORD flag)
     return func(f, buf, len, flag);
 }
 
+/* License: Ruby's */
+/* TODO: better name */
+static HANDLE
+open_special(const WCHAR *path, DWORD access, DWORD flags)
+{
+    const DWORD share_mode =
+	FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE;
+    return CreateFileW(path, access, share_mode, NULL, OPEN_EXISTING,
+		       FILE_FLAG_BACKUP_SEMANTICS|flags, NULL);
+}
+
 //
 // The idea here is to read all the directory names into a string table
 // (separated by nulls) and when one of the other dir functions is called
@@ -1867,8 +1878,7 @@ open_dir_handle(const WCHAR *filename, WIN32_FIND_DATAW *fd)
     // Create the search pattern
     //
 
-    fh = CreateFileW(filename, 0, 0, NULL, OPEN_EXISTING,
-		     FILE_FLAG_BACKUP_SEMANTICS, NULL);
+    fh = open_special(filename, 0, 0);
     if (fh != INVALID_HANDLE_VALUE) {
 	len = get_final_path(fh, fullname, numberof(fullname), 0);
 	CloseHandle(fh);
@@ -4730,10 +4740,7 @@ reparse_symlink(const WCHAR *path, rb_w32_reparse_buffer_t *rp, size_t size)
 	return ENOSYS;
     }
 
-    f = CreateFileW(path, 0, FILE_SHARE_READ|FILE_SHARE_WRITE,
-		    NULL, OPEN_EXISTING,
-		    FILE_FLAG_BACKUP_SEMANTICS|FILE_FLAG_OPEN_REPARSE_POINT,
-		    NULL);
+    f = open_special(path, 0, FILE_FLAG_OPEN_REPARSE_POINT);
     if (f == INVALID_HANDLE_VALUE) {
 	return GetLastError();
     }
@@ -4974,11 +4981,8 @@ rb_w32_getenv(const char *name)
 static DWORD
 get_volume_serial_number(const WCHAR *path)
 {
-    const DWORD share_mode = FILE_SHARE_READ | FILE_SHARE_WRITE;
-    const DWORD creation = OPEN_EXISTING;
-    const DWORD flags = FILE_FLAG_BACKUP_SEMANTICS;
     BY_HANDLE_FILE_INFORMATION st = {0};
-    HANDLE h = CreateFileW(path, 0, share_mode, NULL, creation, flags, NULL);
+    HANDLE h = open_special(path, 0, 0);
     BOOL ret;
 
     if (h == INVALID_HANDLE_VALUE) return 0;
@@ -5011,10 +5015,9 @@ wrename(const WCHAR *oldpath, const WCHAR *newpath)
 	return -1;
     }
     if (oldatts & FILE_ATTRIBUTE_REPARSE_POINT) {
-	HANDLE fh = CreateFileW(oldpath, 0, 0, NULL, OPEN_EXISTING,
-				FILE_FLAG_BACKUP_SEMANTICS, NULL);
+	HANDLE fh = open_special(oldpath, 0, 0);
 	if (fh == INVALID_HANDLE_VALUE) {
-	    int e = GetLastError();
+	    DWORD e = GetLastError();
 	    if (e == ERROR_CANT_RESOLVE_FILENAME) {
 		errno = ELOOP;
 		return -1;
@@ -5367,8 +5370,7 @@ winnt_stat(const WCHAR *path, struct stati64 *st)
     HANDLE f;
 
     memset(st, 0, sizeof(*st));
-    f = CreateFileW(path, 0, 0, NULL, OPEN_EXISTING,
-		    FILE_FLAG_BACKUP_SEMANTICS, NULL);
+    f = open_special(path, 0, 0);
     if (f != INVALID_HANDLE_VALUE) {
 	WCHAR finalname[MAX_PATH];
 	const DWORD attr = stati64_handle(f, st);
@@ -7084,8 +7086,7 @@ wutime(const WCHAR *path, const struct utimbuf *times)
 	const DWORD attr = GetFileAttributesW(path);
 	if (attr != (DWORD)-1 && (attr & FILE_ATTRIBUTE_READONLY))
 	    SetFileAttributesW(path, attr & ~FILE_ATTRIBUTE_READONLY);
-	hFile = CreateFileW(path, GENERIC_WRITE, 0, 0, OPEN_EXISTING,
-			    FILE_FLAG_BACKUP_SEMANTICS, 0);
+	hFile = open_special(path, GENERIC_WRITE, 0);
 	if (hFile == INVALID_HANDLE_VALUE) {
 	    errno = map_errno(GetLastError());
 	    ret = -1;
