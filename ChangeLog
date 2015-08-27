@@ -1,3 +1,8 @@
+Thu Aug 27 18:05:42 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/webrick/server.rb: use IO::NULL instead of '/dev/null'
+	* test/ruby/test_string.rb: ditto.
+
 Thu Aug 27 15:24:57 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (iseq_set_sequence): rename variable names
