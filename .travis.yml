@@ -16,6 +16,10 @@
 #
 # is also a good place to look at.
 
+# new infrastructure
+# http://docs.travis-ci.com/user/migrating-from-legacy/
+sudo: false
+
 # Language specification.
 language: c
 
