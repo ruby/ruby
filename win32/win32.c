@@ -4979,24 +4979,22 @@ rb_w32_getenv(const char *name)
 
 /* License: Ruby's */
 static DWORD
-get_volume_serial_number(const WCHAR *path)
+get_attr_vsn(const WCHAR *path, DWORD *atts, DWORD *vsn)
 {
     BY_HANDLE_FILE_INFORMATION st = {0};
-    HANDLE h = open_special(path, 0, 0);
-    BOOL ret;
+    DWORD e = 0;
+    HANDLE h = open_special(path, 0, FILE_FLAG_OPEN_REPARSE_POINT);
 
-    if (h == INVALID_HANDLE_VALUE) return 0;
-    ret = GetFileInformationByHandle(h, &st);
+    if (h == INVALID_HANDLE_VALUE) return GetLastError();
+    if (!GetFileInformationByHandle(h, &st)) {
+	e = GetLastError();
+    }
+    else {
+	*atts = st.dwFileAttributes;
+	*vsn = st.dwVolumeSerialNumber;
+    }
     CloseHandle(h);
-    if (!ret) return 0;
-    return st.dwVolumeSerialNumber;
-}
-
-/* License: Ruby's */
-static int
-different_device_p(const WCHAR *oldpath, const WCHAR *newpath)
-{
-    return get_volume_serial_number(oldpath) != get_volume_serial_number(newpath);
+    return e;
 }
 
 /* License: Artistic or GPL */
@@ -5004,20 +5002,18 @@ static int
 wrename(const WCHAR *oldpath, const WCHAR *newpath)
 {
     int res = 0;
-    int oldatts;
-    int newatts;
+    int oldatts = -1, newatts = -1;
+    DWORD oldvsn = 0, newvsn = 0, e;
 
-    oldatts = GetFileAttributesW(oldpath);
-    newatts = GetFileAttributesW(newpath);
-
-    if (oldatts == -1) {
-	errno = map_errno(GetLastError());
+    e = get_attr_vsn(oldpath, &oldatts, &oldvsn);
+    if (e) {
+	errno = map_errno(e);
 	return -1;
     }
     if (oldatts & FILE_ATTRIBUTE_REPARSE_POINT) {
 	HANDLE fh = open_special(oldpath, 0, 0);
 	if (fh == INVALID_HANDLE_VALUE) {
-	    DWORD e = GetLastError();
+	    e = GetLastError();
 	    if (e == ERROR_CANT_RESOLVE_FILENAME) {
 		errno = ELOOP;
 		return -1;
@@ -5025,6 +5021,7 @@ wrename(const WCHAR *oldpath, const WCHAR *newpath)
 	}
 	CloseHandle(fh);
     }
+    get_attr_vsn(newpath, &newatts, &newvsn);
 
     RUBY_CRITICAL({
 	if (newatts != -1 && newatts & FILE_ATTRIBUTE_READONLY)
@@ -5036,7 +5033,7 @@ wrename(const WCHAR *oldpath, const WCHAR *newpath)
 	if (res) {
 	    DWORD e = GetLastError();
 	    if ((e == ERROR_ACCESS_DENIED) && (oldatts & FILE_ATTRIBUTE_DIRECTORY) &&
-		different_device_p(oldpath, newpath))
+		oldvsn != newvsn)
 		errno = EXDEV;
 	    else
 		errno = map_errno(e);
