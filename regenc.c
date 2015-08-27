@@ -790,7 +790,7 @@ onigenc_mb4_code_to_mbc(OnigEncoding enc, OnigCodePoint code, UChar *buf)
 }
 
 extern int
-onigenc_minimum_property_name_to_ctype(OnigEncoding enc, UChar* p, UChar* end)
+onigenc_minimum_property_name_to_ctype(OnigEncoding enc, const UChar* p, const UChar* end)
 {
   static const PosixBracketEntryType PBS[] = {
     POSIX_BRACKET_ENTRY_INIT("Alnum",  ONIGENC_CTYPE_ALNUM),

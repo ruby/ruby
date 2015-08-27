@@ -149,8 +149,8 @@ ONIG_EXTERN OnigCodePoint onigenc_mbn_mbc_to_code P_((OnigEncoding enc, const UC
 ONIG_EXTERN int onigenc_mbn_mbc_case_fold P_((OnigEncoding enc, OnigCaseFoldType flag, const UChar** p, const UChar* end, UChar* lower));
 ONIG_EXTERN int onigenc_mb2_code_to_mbclen P_((OnigCodePoint code, OnigEncoding enc));
 ONIG_EXTERN int onigenc_mb2_code_to_mbc P_((OnigEncoding enc, OnigCodePoint code, UChar *buf));
-ONIG_EXTERN int onigenc_minimum_property_name_to_ctype P_((OnigEncoding enc, UChar* p, UChar* end));
-ONIG_EXTERN int onigenc_unicode_property_name_to_ctype P_((OnigEncoding enc, UChar* p, UChar* end));
+ONIG_EXTERN int onigenc_minimum_property_name_to_ctype P_((OnigEncoding enc, const UChar* p, const UChar* end));
+ONIG_EXTERN int onigenc_unicode_property_name_to_ctype P_((OnigEncoding enc, const UChar* p, const UChar* end));
 ONIG_EXTERN int onigenc_mb2_is_code_ctype P_((OnigEncoding enc, OnigCodePoint code, unsigned int ctype));
 ONIG_EXTERN int onigenc_mb4_code_to_mbclen P_((OnigCodePoint code, OnigEncoding enc));
 ONIG_EXTERN int onigenc_mb4_code_to_mbc P_((OnigEncoding enc, OnigCodePoint code, UChar *buf));

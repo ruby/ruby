@@ -188,12 +188,12 @@ onigenc_utf16_32_get_ctype_code_range(OnigCtype ctype, OnigCodePoint* sb_out,
 #define PROPERTY_NAME_MAX_SIZE    (MAX_WORD_LENGTH + 1)
 
 extern int
-onigenc_unicode_property_name_to_ctype(OnigEncoding enc, UChar* name, UChar* end)
+onigenc_unicode_property_name_to_ctype(OnigEncoding enc, const UChar* name, const UChar* end)
 {
   int len;
   int ctype;
   UChar buf[PROPERTY_NAME_MAX_SIZE];
-  UChar *p;
+  const UChar *p;
   OnigCodePoint code;
 
   len = 0;
