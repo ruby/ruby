@@ -7315,6 +7315,47 @@ rb_w32_uchmod(const char *path, int mode)
 
 /* License: Ruby's */
 int
+fchmod(int fd, int mode)
+{
+    typedef BOOL (WINAPI *set_file_information_by_handle_func)
+	(HANDLE, int, void*, DWORD);
+    static set_file_information_by_handle_func set_file_info =
+	(set_file_information_by_handle_func)-1;
+
+    /* from winbase.h of the mingw-w64 runtime package. */
+    struct {
+	LARGE_INTEGER CreationTime;
+	LARGE_INTEGER LastAccessTime;
+	LARGE_INTEGER LastWriteTime;
+	LARGE_INTEGER ChangeTime;
+	DWORD         FileAttributes;
+    } info = {0, 0, 0};		/* fields with 0 are unchanged */
+    HANDLE h = (HANDLE)_get_osfhandle(fd);
+
+    if (h == INVALID_HANDLE_VALUE) {
+	errno = EBADF;
+	return -1;
+    }
+    if (set_file_info == (set_file_information_by_handle_func)-1) {
+	set_file_info = (set_file_information_by_handle_func)
+	    get_proc_address("kernel32", "SetFileInformationByHandle", NULL);
+    }
+    if (!set_file_info) {
+	errno = ENOSYS;
+	return -1;
+    }
+
+    info.FileAttributes = FILE_ATTRIBUTE_NORMAL;
+    if (!(mode & 0200)) info.FileAttributes |= FILE_ATTRIBUTE_READONLY;
+    if (!set_file_info(h, 0, &info, sizeof(info))) {
+	errno = map_errno(GetLastError());
+	return -1;
+    }
+    return 0;
+}
+
+/* License: Ruby's */
+int
 rb_w32_isatty(int fd)
 {
     DWORD mode;
