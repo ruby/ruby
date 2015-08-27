@@ -2357,7 +2357,7 @@ rb_file_chmod(VALUE obj, VALUE vmode)
 {
     rb_io_t *fptr;
     int mode;
-#ifndef HAVE_FCHMOD
+#if !defined HAVE_FCHMOD || !HAVE_FCHMOD
     VALUE path;
 #endif
 
@@ -2365,9 +2365,15 @@ rb_file_chmod(VALUE obj, VALUE vmode)
 
     GetOpenFile(obj, fptr);
 #ifdef HAVE_FCHMOD
-    if (fchmod(fptr->fd, mode) == -1)
-	rb_sys_fail_path(fptr->pathv);
-#else
+    if (fchmod(fptr->fd, mode) == -1) {
+	if (HAVE_FCHMOD || errno != ENOSYS)
+	    rb_sys_fail_path(fptr->pathv);
+    }
+    else {
+	if (!HAVE_FCHMOD) return INT2FIX(0);
+    }
+#endif
+#if !defined HAVE_FCHMOD || !HAVE_FCHMOD
     if (NIL_P(fptr->pathv)) return Qnil;
     path = rb_str_encode_ospath(fptr->pathv);
     if (chmod(RSTRING_PTR(path), mode) == -1)

@@ -39,5 +39,7 @@ int rb_w32_read_reparse_point(const WCHAR *path, rb_w32_reparse_buffer_t *rp,
 
 int lchown(const char *path, int owner, int group);
 int rb_w32_ulchown(const char *path, int owner, int group);
+int fchmod(int fd, int mode);
+#define HAVE_FCHMOD 0
 
 #endif	/* RUBY_WIN32_FILE_H */
