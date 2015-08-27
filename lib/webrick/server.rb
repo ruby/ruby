@@ -48,9 +48,9 @@ module WEBrick
       exit!(0) if fork
       Dir::chdir("/")
       File::umask(0)
-      STDIN.reopen("/dev/null")
-      STDOUT.reopen("/dev/null", "w")
-      STDERR.reopen("/dev/null", "w")
+      STDIN.reopen(IO::NULL)
+      STDOUT.reopen(IO::NULL, "w")
+      STDERR.reopen(IO::NULL, "w")
       yield if block_given?
     end
   end
