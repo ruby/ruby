@@ -183,8 +183,6 @@ onigenc_utf16_32_get_ctype_code_range(OnigCtype ctype, OnigCodePoint* sb_out,
   return onigenc_unicode_ctype_code_range(ctype, ranges);
 }
 
-#include "ruby/st.h"
-
 #define PROPERTY_NAME_MAX_SIZE    (MAX_WORD_LENGTH + 1)
 
 extern int
