@@ -48,7 +48,7 @@ class TestFileUtils < Test::Unit::TestCase
 
     def check_have_symlink?
       File.symlink nil, nil
-    rescue NotImplementedError
+    rescue NotImplementedError, Errno::EACCES
       return false
     rescue
       return true
