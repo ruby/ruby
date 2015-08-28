@@ -7329,7 +7329,7 @@ fchmod(int fd, int mode)
 	LARGE_INTEGER LastWriteTime;
 	LARGE_INTEGER ChangeTime;
 	DWORD         FileAttributes;
-    } info = {0, 0, 0};		/* fields with 0 are unchanged */
+    } info = {{{0}}, {{0}}, {{0}},}; /* fields with 0 are unchanged */
     HANDLE h = (HANDLE)_get_osfhandle(fd);
 
     if (h == INVALID_HANDLE_VALUE) {
