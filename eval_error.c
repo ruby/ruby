@@ -258,6 +258,9 @@ sysexit_status(VALUE err)
     return NUM2INT(st);
 }
 
+#define unknown_longjmp_status(status) \
+    rb_bug("Unknown longjmp status %d", status)
+
 static int
 error_handle(int ex)
 {
@@ -314,7 +317,7 @@ error_handle(int ex)
 	error_print();
 	break;
       default:
-	rb_bug("Unknown longjmp status %d", ex);
+	unknown_longjmp_status(ex);
 	break;
     }
     rb_threadptr_reset_raised(th);

@@ -1,5 +1,5 @@
 require 'test/unit'
-require "-test-/string/string"
+require "-test-/string"
 
 class Test_StringCStr < Test::Unit::TestCase
   Bug4319 = '[ruby-dev:43094]'
@@ -83,6 +83,14 @@ class Test_StringCStr < Test::Unit::TestCase
     assert_wchars_term_char("\u{3042}foobar") {|s|
       enc = s.encoding
       s.tr_s!("\u{3042}".encode(enc), "c".encode(enc))
+    }
+  end
+
+  def test_wchar_replace
+    assert_wchars_term_char("abc") {|s|
+      w = s.dup
+      s.replace("abcdefghijklmnop")
+      s.replace(w)
     }
   end
 

@@ -38,11 +38,21 @@ extern "C" {
 #ifndef DEPRECATED_BY
 # define DEPRECATED_BY(n,x) DEPRECATED(x)
 #endif
+#ifndef DEPRECATED_TYPE
+# define DEPRECATED_TYPE(mesg, decl) decl
+#endif
 #ifndef NOINLINE
 # define NOINLINE(x) x
 #endif
+#ifndef ASSUME
+# ifdef UNREACHABLE
+#   define ASSUME(x) (LIKELY(!!(x)) ? (void)0 : UNREACHABLE)
+# else
+#   define ASSUME(x) ((void)0)
+# endif
+#endif
 #ifndef UNREACHABLE
-# define UNREACHABLE		/* unreachable */
+# define UNREACHABLE ((void)0)	/* unreachable */
 #endif
 
 #ifdef __GNUC__
@@ -814,15 +824,13 @@ struct RObject {
      RCLASS_IV_INDEX_TBL(rb_obj_class(o)) : \
      ROBJECT(o)->as.heap.iv_index_tbl)
 
-/** @internal */
-typedef struct rb_classext_struct rb_classext_t;
-
+#define RClass RClassDeprecated
+#ifndef __cplusplus
+DEPRECATED_TYPE(("RClass is internal use only"),
 struct RClass {
     struct RBasic basic;
-    VALUE super;
-    rb_classext_t *ptr;
-    struct st_table *m_tbl;
-};
+});
+#endif
 #define RCLASS_SUPER(c) rb_class_get_superclass(c)
 #define RMODULE_IV_TBL(m) RCLASS_IV_TBL(m)
 #define RMODULE_CONST_TBL(m) RCLASS_CONST_TBL(m)
@@ -1158,20 +1166,28 @@ struct RStruct {
 #define FL_ABLE(x) (!SPECIAL_CONST_P(x) && BUILTIN_TYPE(x) != T_NODE)
 #define FL_TEST_RAW(x,f) (RBASIC(x)->flags&(f))
 #define FL_TEST(x,f) (FL_ABLE(x)?FL_TEST_RAW((x),(f)):0)
+#define FL_ANY_RAW(x,f) FL_TEST_RAW((x),(f))
 #define FL_ANY(x,f) FL_TEST((x),(f))
+#define FL_ALL_RAW(x,f) (FL_TEST_RAW((x),(f)) == (f))
 #define FL_ALL(x,f) (FL_TEST((x),(f)) == (f))
-#define FL_SET(x,f) do {if (FL_ABLE(x)) RBASIC(x)->flags |= (f);} while (0)
-#define FL_UNSET(x,f) do {if (FL_ABLE(x)) RBASIC(x)->flags &= ~(f);} while (0)
-#define FL_REVERSE(x,f) do {if (FL_ABLE(x)) RBASIC(x)->flags ^= (f);} while (0)
+#define FL_SET_RAW(x,f) (RBASIC(x)->flags |= (f))
+#define FL_SET(x,f) (FL_ABLE(x) ? FL_SET_RAW(x, f) : 0)
+#define FL_UNSET_RAW(x,f) (RBASIC(x)->flags &= ~(f))
+#define FL_UNSET(x,f) (FL_ABLE(x) ? FL_UNSET_RAW(x, f) : 0)
+#define FL_REVERSE_RAW(x,f) (RBASIC(x)->flags ^= (f))
+#define FL_REVERSE(x,f) (FL_ABLE(x) ? FL_REVERSE_RAW(x, f) : 0)
 
 #define OBJ_TAINTABLE(x) (FL_ABLE(x) && BUILTIN_TYPE(x) != T_BIGNUM && BUILTIN_TYPE(x) != T_FLOAT)
+#define OBJ_TAINTED_RAW(x) FL_TEST_RAW(x, FL_TAINT)
 #define OBJ_TAINTED(x) (!!FL_TEST((x), FL_TAINT))
-#define OBJ_TAINT(x) (OBJ_TAINTABLE(x) ? (RBASIC(x)->flags |= FL_TAINT) : 0)
+#define OBJ_TAINT_RAW(x) FL_SET_RAW(x, FL_TAINT)
+#define OBJ_TAINT(x) (OBJ_TAINTABLE(x) ? OBJ_TAINT_RAW(x) : 0)
 #define OBJ_UNTRUSTED(x) OBJ_TAINTED(x)
 #define OBJ_UNTRUST(x) OBJ_TAINT(x)
+#define OBJ_INFECT_RAW(x,s) FL_SET_RAW(x, OBJ_TAINTED_RAW(s))
 #define OBJ_INFECT(x,s) ( \
     (OBJ_TAINTABLE(x) && FL_ABLE(s)) ? \
-    RBASIC(x)->flags |= RBASIC(s)->flags & FL_TAINT : 0)
+    OBJ_INFECT_RAW(x, s) : 0)
 
 #define OBJ_FROZEN(x) (FL_ABLE(x) ? !!(RBASIC(x)->flags&FL_FREEZE) : 1)
 #define OBJ_FREEZE_RAW(x) (RBASIC(x)->flags |= FL_FREEZE)
@@ -1417,14 +1433,31 @@ rb_num2char_inline(VALUE x)
 
 void *rb_alloc_tmp_buffer(volatile VALUE *store, long len) RUBY_ATTR_ALLOC_SIZE((2));
 void rb_free_tmp_buffer(volatile VALUE *store);
+NORETURN(void ruby_malloc_size_overflow(size_t, size_t));
+static inline size_t
+ruby_xmalloc2_size(const size_t count, const size_t elsize)
+{
+    if (count > SIZE_MAX / elsize) {
+	ruby_malloc_size_overflow(count, elsize);
+    }
+    return count * elsize;
+}
 /* allocates _n_ bytes temporary buffer and stores VALUE including it
  * in _v_.  _n_ may be evaluated twice. */
 #ifdef C_ALLOCA
 # define ALLOCV(v, n) rb_alloc_tmp_buffer(&(v), (n))
+# define ALLOCV_N(type, v, n) \
+    ((type*)ALLOCV((v), ruby_xmalloc2_size((n), sizeof(type))))
 #else
-# define ALLOCV(v, n) ((n) < 1024 ? (RB_GC_GUARD(v) = 0, alloca(n)) : rb_alloc_tmp_buffer(&(v), (n)))
+# define ALLOCV_LIMIT 1024
+# define ALLOCV(v, n) ((n) < ALLOCV_LIMIT ? \
+		       (RB_GC_GUARD(v) = 0, alloca(n)) : \
+		       rb_alloc_tmp_buffer(&(v), (n)))
+# define ALLOCV_N(type, v, n) \
+    ((type*)(ruby_xmalloc2_size((n), sizeof(type)) < ALLOCV_LIMIT ? \
+	     (RB_GC_GUARD(v) = 0, alloca((n) * sizeof(type))) : \
+	     rb_alloc_tmp_buffer(&(v), (n) * sizeof(type))))
 #endif
-#define ALLOCV_N(type, v, n) ((type*)ALLOCV((v), sizeof(type)*(n)))
 #define ALLOCV_END(v) rb_free_tmp_buffer(&(v))
 
 #define MEMZERO(p,type,n) memset((p), 0, sizeof(type)*(n))
@@ -1792,6 +1825,7 @@ int ruby_native_thread_p(void);
 #define RUBY_EVENT_B_RETURN          0x0200
 #define RUBY_EVENT_THREAD_BEGIN      0x0400
 #define RUBY_EVENT_THREAD_END        0x0800
+#define RUBY_EVENT_FIBER_SWITCH      0x1000
 #define RUBY_EVENT_TRACEPOINT_ALL    0xffff
 
 /* special events */

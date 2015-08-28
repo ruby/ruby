@@ -1,5 +1,5 @@
 require 'test/unit'
-require "-test-/string/string"
+require "-test-/string"
 
 class Test_StringEllipsize < Test::Unit::TestCase
   def setup

@@ -88,6 +88,10 @@ module Test
         opts.on '-n', '--name PATTERN', "Filter test method names on pattern: /REGEXP/ or STRING" do |a|
           options[:filter] = a
         end
+
+        opts.on '--test-order=random|alpha|sorted', [:random, :alpha, :sorted] do |a|
+          MiniTest::Unit::TestCase.test_order = a
+        end
       end
 
       def non_options(files, options)
@@ -219,6 +223,10 @@ module Test
         def died(*additional)
           @status = :quit
           @io.close
+          status = $?
+          if status and status.signaled?
+            additional[0] ||= SignalException.new(status.termsig)
+          end
 
           call_hook(:dead,*additional)
         end
@@ -292,7 +300,7 @@ module Test
         return if @workers.empty?
         @workers.reject! do |worker|
           begin
-            timeout(1) do
+            Timeout.timeout(1) do
               worker.quit
             end
           rescue Errno::EPIPE
@@ -303,7 +311,7 @@ module Test
 
         return if @workers.empty?
         begin
-          timeout(0.2 * @workers.size) do
+          Timeout.timeout(0.2 * @workers.size) do
             Process.waitall
           end
         rescue Timeout::Error
@@ -981,6 +989,15 @@ module MiniTest # :nodoc: all
 end
 
 class MiniTest::Unit::TestCase # :nodoc: all
+  test_order = self.test_order
+  class << self
+    attr_writer :test_order
+    undef test_order
+  end
+  def self.test_order
+    defined?(@test_order) ? @test_order : superclass.test_order
+  end
+  self.test_order = test_order
   undef run_test
   RUN_TEST_TRACE = "#{__FILE__}:#{__LINE__+3}:in `run_test'".freeze
   def run_test(name)

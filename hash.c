@@ -17,6 +17,7 @@
 #include <errno.h>
 #include "probes.h"
 #include "id.h"
+#include "symbol.h"
 
 #ifdef __APPLE__
 # ifdef HAVE_CRT_EXTERNS_H
@@ -129,7 +130,7 @@ rb_hash(VALUE obj)
 long rb_objid_hash(st_index_t index);
 
 static st_index_t
-rb_any_hash(VALUE a)
+any_hash(VALUE a, st_index_t (*other_func)(VALUE))
 {
     VALUE hval;
     st_index_t hnum;
@@ -137,11 +138,12 @@ rb_any_hash(VALUE a)
     if (SPECIAL_CONST_P(a)) {
 	if (a == Qundef) return 0;
 	if (STATIC_SYM_P(a)) {
-	    a >>= (RUBY_SPECIAL_SHIFT + ID_SCOPE_SHIFT);
+	    hnum = a >> (RUBY_SPECIAL_SHIFT + ID_SCOPE_SHIFT);
+	    goto out;
 	}
 	else if (FLONUM_P(a)) {
 	    /* prevent pathological behavior: [Bug #10761] */
-	    return rb_dbl_hash(rb_float_value(a));
+	    goto flt;
 	}
 	hnum = rb_objid_hash((st_index_t)a);
     }
@@ -149,26 +151,75 @@ rb_any_hash(VALUE a)
 	hnum = rb_str_hash(a);
     }
     else if (BUILTIN_TYPE(a) == T_SYMBOL) {
-	hnum = rb_objid_hash((st_index_t)a);
+	hnum = RSYMBOL(a)->hashval;
     }
     else if (BUILTIN_TYPE(a) == T_FLOAT) {
-	return rb_dbl_hash(rb_float_value(a));
-    }
-    else {
-        hval = rb_hash(a);
+      flt:
+	hval = rb_dbl_hash(rb_float_value(a));
 	hnum = FIX2LONG(hval);
     }
+    else {
+	hnum = other_func(a);
+    }
+  out:
     hnum <<= 1;
     return (st_index_t)RSHIFT(hnum, 1);
+}
+
+static st_index_t
+obj_any_hash(VALUE obj)
+{
+    obj = rb_hash(obj);
+    return FIX2LONG(obj);
+}
+
+static st_index_t
+rb_any_hash(VALUE a)
+{
+    return any_hash(a, obj_any_hash);
+}
+
+static st_index_t
+rb_num_hash_start(st_index_t n)
+{
+    /*
+     * This hash function is lightly-tuned for Ruby.  Further tuning
+     * should be possible.  Notes:
+     *
+     * - (n >> 3) alone is great for heap objects and OK for fixnum,
+     *   however symbols perform poorly.
+     * - (n >> (RUBY_SPECIAL_SHIFT+3)) was added to make symbols hash well,
+     *   n.b.: +3 to remove most ID scope, +1 worked well initially, too
+     *   n.b.: +1 (instead of 3) worked well initially, too
+     * - (n << 3) was finally added to avoid losing bits for fixnums
+     * - avoid expensive modulo instructions, it is currently only
+     *   shifts and bitmask operations.
+     */
+    return (n >> (RUBY_SPECIAL_SHIFT + 3) | (n << 3)) ^ (n >> 3);
 }
 
 long
 rb_objid_hash(st_index_t index)
 {
-    st_index_t hnum = rb_hash_start(index);
+    st_index_t hnum = rb_num_hash_start(index);
+
+    hnum = rb_hash_start(hnum);
     hnum = rb_hash_uint(hnum, (st_index_t)rb_any_hash);
     hnum = rb_hash_end(hnum);
     return hnum;
+}
+
+static st_index_t
+objid_hash(VALUE obj)
+{
+    return rb_objid_hash((st_index_t)obj);
+}
+
+VALUE
+rb_obj_hash(VALUE obj)
+{
+    st_index_t hnum = any_hash(obj, objid_hash);
+    return LONG2FIX(hnum);
 }
 
 int
@@ -187,28 +238,18 @@ static const struct st_hash_type objhash = {
 static st_index_t
 rb_ident_hash(st_data_t n)
 {
+#ifdef USE_FLONUM /* RUBY */
     /*
-     * This hash function is lightly-tuned for Ruby.  Further tuning
-     * should be possible.  Notes:
-     *
-     * - (n >> 3) alone is great for heap objects and OK for fixnum,
-     *   however symbols perform poorly.
-     * - (n >> (RUBY_SPECIAL_SHIFT+3)) was added to make symbols hash well,
-     *   n.b.: +3 to remove ID scope, +1 worked well initially, too
-     * - (n << 3) was finally added to avoid losing bits for fixnums
-     * - avoid expensive modulo instructions, it is currently only
-     *   shifts and bitmask operations.
      * - flonum (on 64-bit) is pathologically bad, mix the actual
      *   float value in, but do not use the float value as-is since
      *   many integers get interpreted as 2.0 or -2.0 [Bug #10761]
      */
-#ifdef USE_FLONUM /* RUBY */
     if (FLONUM_P(n)) {
 	n ^= (st_data_t)rb_float_value(n);
     }
 #endif
 
-    return (st_index_t)((n>>(RUBY_SPECIAL_SHIFT+3)|(n<<3)) ^ (n>>3));
+    return (st_index_t)rb_num_hash_start((st_index_t)n);
 }
 
 static const struct st_hash_type identhash = {
@@ -3881,7 +3922,7 @@ env_update(VALUE env, VALUE hash)
  *
  *    grades = { "Jane Doe" => 10, "Jim Doe" => 6 }
  *
- *  Hashes allow an alternate syntax form when your keys are always symbols.
+ *  Hashes allow an alternate syntax for keys that are symbols.
  *  Instead of
  *
  *    options = { :font_size => 10, :font_family => "Arial" }

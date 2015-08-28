@@ -7745,7 +7745,8 @@ ip_cancel_eval_core(interp, msg, flag)
     if (NIL_P(msg)) {
       msg_obj = NULL;
     } else {
-      msg_obj = Tcl_NewStringObj(RSTRING_PTR(msg), RSTRING_LEN(msg));
+      char *s = StringValuePtr(msg);
+      msg_obj = Tcl_NewStringObj(s, RSTRING_LENINT(msg));
       Tcl_IncrRefCount(msg_obj);
     }
 

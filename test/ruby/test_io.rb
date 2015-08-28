@@ -3230,4 +3230,25 @@ End
     }
   end if /mswin|mingw|bccwin/ !~ RUBY_PLATFORM
 
+  def test_open_flag
+    make_tempfile do |t|
+      assert_raise(Errno::EEXIST){ open(t.path, File::WRONLY|File::CREAT, flags: File::EXCL){} }
+      assert_raise(Errno::EEXIST){ open(t.path, 'w', flags: File::EXCL){} }
+      assert_raise(Errno::EEXIST){ open(t.path, mode: 'w', flags: File::EXCL){} }
+    end
+  end
+
+  def test_open_flag_binary
+    make_tempfile do |t|
+      open(t.path, File::RDONLY, flags: File::BINARY) do |f|
+        assert_equal true, f.binmode?
+      end
+      open(t.path, 'r', flags: File::BINARY) do |f|
+        assert_equal true, f.binmode?
+      end
+      open(t.path, mode: 'r', flags: File::BINARY) do |f|
+        assert_equal true, f.binmode?
+      end
+    end
+  end if File::BINARY != 0
 end

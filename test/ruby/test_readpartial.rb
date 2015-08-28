@@ -51,7 +51,7 @@ class TestReadPartial < Test::Unit::TestCase
       assert_equal('ab', r.readpartial(2))
       assert_equal('c', r.readpartial(2))
       assert_raise(Timeout::Error) {
-        timeout(0.1) { r.readpartial(2) }
+        Timeout.timeout(0.1) { r.readpartial(2) }
       }
     }
   end
@@ -65,7 +65,7 @@ class TestReadPartial < Test::Unit::TestCase
       assert_equal("f\n", r.readpartial(4096))
       assert_equal("ghi\n", r.readpartial(4096))
       assert_raise(Timeout::Error) {
-        timeout(0.1) { r.readpartial(2) }
+        Timeout.timeout(0.1) { r.readpartial(2) }
       }
     }
   end

@@ -17,6 +17,7 @@
 require 'openssl.so'
 
 require 'openssl/bn'
+require 'openssl/pkey'
 require 'openssl/cipher'
 require 'openssl/config'
 require 'openssl/digest'

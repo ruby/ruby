@@ -519,7 +519,7 @@ cont_capture(volatile int *stat)
     }
 
     if (ruby_setjmp(cont->jmpbuf)) {
-	volatile VALUE value;
+	VALUE value;
 
 	VAR_INITIALIZED(cont);
 	value = cont->value;
@@ -659,6 +659,10 @@ fiber_initialize_machine_stack_context(rb_fiber_t *fib, size_t size)
     rb_thread_t *sth = &fib->cont.saved_thread;
 
 #ifdef _WIN32
+# if defined(_MSC_VER) && _MSC_VER <= 0x1200
+#   define CreateFiberEx(cs, stacksize, flags, entry, param) \
+    CreateFiber((stacksize), (entry), (param))
+# endif
     fib->fib_handle = CreateFiberEx(size - 1, size, 0, fiber_entry, NULL);
     if (!fib->fib_handle) {
 	/* try to release unnecessary fibers & retry to create */
@@ -1256,8 +1260,9 @@ rb_fiber_start(void)
 	th->errinfo = Qnil;
 	th->root_lep = rb_vm_ep_local_ep(proc->block.ep);
 	th->root_svar = Qfalse;
-
 	fib->status = RUNNING;
+
+	EXEC_EVENT_HOOK(th, RUBY_EVENT_FIBER_SWITCH, th->self, 0, 0, Qnil);
 	cont->value = rb_vm_invoke_proc(th, proc, argc, argv, 0);
     }
     TH_POP_TAG();
@@ -1446,6 +1451,8 @@ fiber_switch(rb_fiber_t *fib, int argc, const VALUE *argv, int is_resume)
 
     value = fiber_store(fib, th);
     RUBY_VM_CHECK_INTS(th);
+
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_FIBER_SWITCH, th->self, 0, 0, Qnil);
 
     return value;
 }

@@ -1066,6 +1066,10 @@ class TestM17N < Test::Unit::TestCase
     assert_equal(false, e("\xa1\xa2\xa3\xa4").include?(e("\xa3")))
     s = e("\xa3\xb0\xa3\xb1\xa3\xb2\xa3\xb3\xa3\xb4")
     assert_equal(false, s.include?(e("\xb0\xa3")))
+    bug11488 = '[ruby-core:70592] [Bug #11488]'
+    each_encoding("abcdef", "def") do |str, substr|
+      assert_equal(true, str.include?(substr), bug11488)
+    end
   end
 
   def test_index
@@ -1075,6 +1079,10 @@ class TestM17N < Test::Unit::TestCase
     assert_nil(e("\xa1\xa2\xa3\xa4").rindex(e("\xa3")))
     s = e("\xa3\xb0\xa3\xb1\xa3\xb2\xa3\xb3\xa3\xb4")
     assert_raise(Encoding::CompatibilityError){s.rindex(a("\xb1\xa3"))}
+    bug11488 = '[ruby-core:70592] [Bug #11488]'
+    each_encoding("abcdef", "def") do |str, substr|
+      assert_equal(3, str.index(substr), bug11488)
+    end
   end
 
   def test_next
@@ -1142,7 +1150,12 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_reverse
-    assert_equal(u("\xf0jihgfedcba"), u("abcdefghij\xf0").reverse)
+    bug11387 = '[ruby-dev:49189] [Bug #11387]'
+    s1 = u("abcdefghij\xf0")
+    s2 = s1.reverse
+    assert_not_predicate(s1, :valid_encoding?, bug11387)
+    assert_equal(u("\xf0jihgfedcba"), s2)
+    assert_not_predicate(s2, :valid_encoding?, bug11387)
   end
 
   def test_reverse_bang
@@ -1229,6 +1242,9 @@ class TestM17N < Test::Unit::TestCase
                  '[ruby-dev:32452]')
 
     each_encoding("abc,def", ",", "abc", "def") do |str, sep, *expected|
+      assert_equal(expected, str.split(sep, -1))
+    end
+    each_encoding("abc\0def", "\0", "abc", "def") do |str, sep, *expected|
       assert_equal(expected, str.split(sep, -1))
     end
   end

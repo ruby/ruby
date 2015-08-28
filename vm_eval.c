@@ -20,7 +20,7 @@ static inline VALUE vm_yield_with_cref(rb_thread_t *th, int argc, const VALUE *a
 static inline VALUE vm_yield(rb_thread_t *th, int argc, const VALUE *argv);
 static inline VALUE vm_yield_with_block(rb_thread_t *th, int argc, const VALUE *argv, const rb_block_t *blockargptr);
 static VALUE vm_exec(rb_thread_t *th);
-static void vm_set_eval_stack(rb_thread_t * th, VALUE iseqval, const rb_cref_t *cref, rb_block_t *base_block);
+static void vm_set_eval_stack(rb_thread_t * th, const rb_iseq_t *iseq, const rb_cref_t *cref, rb_block_t *base_block);
 static int vm_collect_local_variables_in_heap(rb_thread_t *th, const VALUE *dfp, const struct local_var_list *vars);
 
 static VALUE rb_eUncaughtThrow;
@@ -347,8 +347,13 @@ rb_call0(VALUE recv, ID mid, int argc, const VALUE *argv,
 }
 
 struct rescue_funcall_args {
+    rb_thread_t *th;
+    VALUE defined_class;
     VALUE recv;
     ID mid;
+    const rb_method_entry_t *me;
+    unsigned int respond: 1;
+    unsigned int respond_to_missing: 1;
     int argc;
     const VALUE *argv;
 };
@@ -356,20 +361,32 @@ struct rescue_funcall_args {
 static VALUE
 check_funcall_exec(struct rescue_funcall_args *args)
 {
-    VALUE new_args = rb_ary_new4(args->argc, args->argv);
-    VALUE ret;
-
-    rb_ary_unshift(new_args, ID2SYM(args->mid));
-    ret = rb_funcall2(args->recv, idMethodMissing,
-		       args->argc+1, RARRAY_CONST_PTR(new_args));
-    RB_GC_GUARD(new_args);
-    return ret;
+    return call_method_entry(args->th, args->defined_class,
+			     args->recv, idMethodMissing,
+			     args->me, args->argc, args->argv);
 }
+
+#define PRIV Qfalse	 /* TODO: for rubyspec now, should be Qtrue */
 
 static VALUE
 check_funcall_failed(struct rescue_funcall_args *args, VALUE e)
 {
-    if (rb_respond_to(args->recv, args->mid)) {
+    int ret = args->respond;
+    if (!ret) {
+	switch (rb_method_boundp(args->defined_class, args->mid,
+				 BOUND_PRIVATE|BOUND_RESPONDS)) {
+	  case 2:
+	    ret = TRUE;
+	    break;
+	  case 0:
+	    ret = args->respond_to_missing;
+	    break;
+	  default:
+	    ret = FALSE;
+	    break;
+	}
+    }
+    if (ret) {
 	rb_exc_raise(e);
     }
     return Qundef;
@@ -378,27 +395,7 @@ check_funcall_failed(struct rescue_funcall_args *args, VALUE e)
 static int
 check_funcall_respond_to(rb_thread_t *th, VALUE klass, VALUE recv, ID mid)
 {
-    const rb_callable_method_entry_t *me = rb_callable_method_entry(klass, idRespond_to);
-
-    if (me && !METHOD_ENTRY_BASIC(me)) {
-	const rb_block_t *passed_block = th->passed_block;
-	VALUE args[2], result;
-	int arity = rb_method_entry_arity((const rb_method_entry_t *)me);
-
-	if (arity > 2)
-	    rb_raise(rb_eArgError, "respond_to? must accept 1 or 2 arguments (requires %d)", arity);
-
-	if (arity < 1) arity = 2;
-
-	args[0] = ID2SYM(mid);
-	args[1] = Qtrue;
-	result = vm_call0(th, recv, idRespond_to, arity, args, me);
-	th->passed_block = passed_block;
-	if (!RTEST(result)) {
-	    return FALSE;
-	}
-    }
-    return TRUE;
+    return vm_respond_to(th, klass, recv, mid, TRUE);
 }
 
 static int
@@ -408,23 +405,37 @@ check_funcall_callable(rb_thread_t *th, const rb_callable_method_entry_t *me)
 }
 
 static VALUE
-check_funcall_missing(rb_thread_t *th, VALUE klass, VALUE recv, ID mid, int argc, const VALUE *argv)
+check_funcall_missing(rb_thread_t *th, VALUE klass, VALUE recv, ID mid, int argc, const VALUE *argv, int respond)
 {
-    if (rb_method_basic_definition_p(klass, idMethodMissing)) {
-	return Qundef;
-    }
-    else {
-	struct rescue_funcall_args args;
+    struct rescue_funcall_args args;
+    const rb_method_entry_t *me;
+    VALUE ret = Qundef;
 
+    ret = basic_obj_respond_to_missing(th, klass, recv,
+				       ID2SYM(mid), PRIV);
+    if (!RTEST(ret)) return Qundef;
+    args.respond = respond > 0;
+    args.respond_to_missing = (ret != Qundef);
+    ret = Qundef;
+    me = method_entry_get(klass, idMethodMissing, &args.defined_class);
+    if (me && !METHOD_ENTRY_BASIC(me)) {
+	VALUE argbuf, *new_args = ALLOCV_N(VALUE, argbuf, argc+1);
+
+	new_args[0] = ID2SYM(mid);
+	MEMCPY(new_args+1, argv, VALUE, argc);
 	th->method_missing_reason = MISSING_NOENTRY;
+	args.th = th;
 	args.recv = recv;
+	args.me = me;
 	args.mid = mid;
-	args.argc = argc;
-	args.argv = argv;
-	return rb_rescue2(check_funcall_exec, (VALUE)&args,
-			  check_funcall_failed, (VALUE)&args,
-			  rb_eNoMethodError, (VALUE)0);
+	args.argc = argc + 1;
+	args.argv = new_args;
+	ret = rb_rescue2(check_funcall_exec, (VALUE)&args,
+			 check_funcall_failed, (VALUE)&args,
+			 rb_eNoMethodError, (VALUE)0);
+	ALLOCV_END(argbuf);
     }
+    return ret;
 }
 
 VALUE
@@ -433,13 +444,14 @@ rb_check_funcall(VALUE recv, ID mid, int argc, const VALUE *argv)
     VALUE klass = CLASS_OF(recv);
     const rb_callable_method_entry_t *me;
     rb_thread_t *th = GET_THREAD();
+    int respond = check_funcall_respond_to(th, klass, recv, mid);
 
-    if (!check_funcall_respond_to(th, klass, recv, mid))
+    if (!respond)
 	return Qundef;
 
     me = rb_search_method_entry(recv, mid);
     if (!check_funcall_callable(th, me)) {
-	return check_funcall_missing(th, klass, recv, mid, argc, argv);
+	return check_funcall_missing(th, klass, recv, mid, argc, argv, respond);
     }
     stack_check();
     return vm_call0(th, recv, mid, argc, argv, me);
@@ -452,14 +464,15 @@ rb_check_funcall_with_hook(VALUE recv, ID mid, int argc, const VALUE *argv,
     VALUE klass = CLASS_OF(recv);
     const rb_callable_method_entry_t *me;
     rb_thread_t *th = GET_THREAD();
+    int respond = check_funcall_respond_to(th, klass, recv, mid);
 
-    if (!check_funcall_respond_to(th, klass, recv, mid))
+    if (!respond)
 	return Qundef;
 
     me = rb_search_method_entry(recv, mid);
     if (!check_funcall_callable(th, me)) {
 	(*hook)(FALSE, recv, mid, argc, argv, arg);
-	return check_funcall_missing(th, klass, recv, mid, argc, argv);
+	return check_funcall_missing(th, klass, recv, mid, argc, argv, respond);
     }
     stack_check();
     (*hook)(TRUE, recv, mid, argc, argv, arg);
@@ -913,6 +926,7 @@ send_internal(int argc, const VALUE *argv, VALUE recv, call_type scope)
 	    }
 	}
 	id = idMethodMissing;
+	th->method_missing_reason = MISSING_NOENTRY;
     }
     else {
 	argv++; argc--;
@@ -1234,8 +1248,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_
     if ((state = TH_EXEC_TAG()) == 0) {
 	rb_cref_t *cref = cref_arg;
 	rb_binding_t *bind = 0;
-	rb_iseq_t *iseq;
-	volatile VALUE iseqval;
+	const rb_iseq_t *iseq;
 	VALUE absolute_path = Qnil;
 	VALUE fname;
 
@@ -1282,7 +1295,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_
 	/* make eval iseq */
 	th->parse_in_eval++;
 	th->mild_compile_error++;
-	iseqval = rb_iseq_compile_with_option(src, fname, absolute_path, INT2FIX(line), base_block, Qnil);
+	iseq = rb_iseq_compile_with_option(src, fname, absolute_path, INT2FIX(line), base_block, Qnil);
 	th->mild_compile_error--;
 	th->parse_in_eval--;
 
@@ -1297,18 +1310,17 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_
 		cref = rb_vm_get_cref(base_block->ep);
 	    }
 	}
-	vm_set_eval_stack(th, iseqval, cref, base_block);
+	vm_set_eval_stack(th, iseq, cref, base_block);
 	RB_GC_GUARD(crefval);
 
 	if (0) {		/* for debug */
-	    VALUE disasm = rb_iseq_disasm(iseqval);
+	    VALUE disasm = rb_iseq_disasm(iseq);
 	    printf("%s\n", StringValuePtr(disasm));
 	}
 
 	/* save new env */
-	GetISeqPtr(iseqval, iseq);
-	if (bind && iseq->local_table_size > 0) {
-	    bind->env = rb_vm_make_env_object(th, th->cfp);
+	if (bind && iseq->body->local_table_size > 0) {
+	    bind->env = vm_make_env_object(th, th->cfp);
 	}
 
 	/* kick */
@@ -1502,7 +1514,7 @@ rb_eval_cmd(VALUE cmd, VALUE arg, int level)
     volatile int safe = rb_safe_level();
 
     if (OBJ_TAINTED(cmd)) {
-	level = 4;
+	level = RUBY_SAFE_LEVEL_MAX;
     }
 
     if (!RB_TYPE_P(cmd, T_STRING)) {
@@ -2045,13 +2057,13 @@ rb_f_local_variables(void)
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp =
 	vm_get_ruby_level_caller_cfp(th, RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp));
-    int i;
+    unsigned int i;
 
     local_var_list_init(&vars);
     while (cfp) {
 	if (cfp->iseq) {
-	    for (i = 0; i < cfp->iseq->local_table_size; i++) {
-		local_var_list_add(&vars, cfp->iseq->local_table[i]);
+	    for (i = 0; i < cfp->iseq->body->local_table_size; i++) {
+		local_var_list_add(&vars, cfp->iseq->body->local_table[i]);
 	    }
 	}
 	if (!VM_EP_LEP_P(cfp->ep)) {
@@ -2117,7 +2129,7 @@ rb_current_realfilepath(void)
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp = th->cfp;
     cfp = vm_get_ruby_level_caller_cfp(th, RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp));
-    if (cfp != 0) return cfp->iseq->location.absolute_path;
+    if (cfp != 0) return cfp->iseq->body->location.absolute_path;
     return Qnil;
 }
 

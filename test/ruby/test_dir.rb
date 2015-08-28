@@ -224,7 +224,7 @@ class TestDir < Test::Unit::TestCase
 	File.symlink(File.join(@root, f),
 		     File.join(@root, "symlink-#{ f }"))
       end
-    rescue NotImplementedError
+    rescue NotImplementedError, Errno::EACCES
       return
     end
 
@@ -303,7 +303,7 @@ class TestDir < Test::Unit::TestCase
       Dir.chdir(dirname) do
         begin
           File.symlink('some-dir', 'dir-symlink')
-        rescue NotImplementedError
+        rescue NotImplementedError, Errno::EACCES
           return
         end
 

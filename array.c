@@ -1811,10 +1811,9 @@ ary_enum_length(VALUE ary, VALUE args, VALUE eobj)
  */
 
 VALUE
-rb_ary_each(VALUE array)
+rb_ary_each(VALUE ary)
 {
     long i;
-    volatile VALUE ary = array;
 
     RETURN_SIZED_ENUMERATOR(ary, 0, 0, ary_enum_length);
     for (i=0; i<RARRAY_LEN(ary); i++) {
@@ -5180,7 +5179,7 @@ rb_ary_repeated_permutation(VALUE ary, VALUE num)
     }
     else {             /* this is the general case */
 	volatile VALUE t0;
-	long *p = ALLOCV_N(long, t0, r * sizeof(long));
+	long *p = ALLOCV_N(long, t0, r);
 	VALUE ary0 = ary_make_shared_copy(ary); /* private defensive copy of ary */
 	RBASIC_CLEAR_CLASS(ary0);
 

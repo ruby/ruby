@@ -173,7 +173,7 @@ static VALUE argf;
 
 #define id_exception idException
 static ID id_write, id_read, id_getc, id_flush, id_readpartial, id_set_encoding;
-static VALUE sym_mode, sym_perm, sym_extenc, sym_intenc, sym_encoding, sym_open_args;
+static VALUE sym_mode, sym_perm, sym_flags, sym_extenc, sym_intenc, sym_encoding, sym_open_args;
 static VALUE sym_textmode, sym_binmode, sym_autoclose;
 static VALUE sym_SET, sym_CUR, sym_END;
 static VALUE sym_wait_readable, sym_wait_writable;
@@ -2619,6 +2619,15 @@ io_readpartial(int argc, VALUE *argv, VALUE io)
     return ret;
 }
 
+static VALUE
+io_nonblock_eof(VALUE opts)
+{
+    if (!no_exception_p(opts)) {
+        rb_eof_error();
+    }
+    return Qnil;
+}
+
 /*
  *  call-seq:
  *     ios.read_nonblock(maxlen)              -> string
@@ -2680,10 +2689,7 @@ io_read_nonblock(int argc, VALUE *argv, VALUE io)
     ret = io_getpartial(argc, argv, io, opts, 1);
 
     if (NIL_P(ret)) {
-	if (no_exception_p(opts))
-	    return Qnil;
-	else
-	    rb_eof_error();
+	return io_nonblock_eof(opts);
     }
     return ret;
 }
@@ -3703,6 +3709,7 @@ rb_io_each_codepoint(VALUE io)
     READ_CHECK(fptr);
     if (NEED_READCONV(fptr)) {
 	SET_BINARY_MODE(fptr);
+	r = 1;		/* no invalid char yet */
 	for (;;) {
 	    make_readconv(fptr, 0);
 	    for (;;) {
@@ -3721,13 +3728,16 @@ rb_io_each_codepoint(VALUE io)
 		}
 		if (more_char(fptr) == MORE_CHAR_FINISHED) {
                     clear_readconv(fptr);
-		    /* ignore an incomplete character before EOF */
+		    if (!MBCLEN_CHARFOUND_P(r)) {
+			enc = fptr->encs.enc;
+			goto invalid;
+		    }
 		    return io;
 		}
 	    }
 	    if (MBCLEN_INVALID_P(r)) {
-		rb_raise(rb_eArgError, "invalid byte sequence in %s",
-			 rb_enc_name(fptr->encs.enc));
+		enc = fptr->encs.enc;
+		goto invalid;
 	    }
 	    n = MBCLEN_CHARFOUND_LEN(r);
 	    if (fptr->encs.enc) {
@@ -3757,7 +3767,24 @@ rb_io_each_codepoint(VALUE io)
 	    rb_yield(UINT2NUM(c));
 	}
 	else if (MBCLEN_INVALID_P(r)) {
+	  invalid:
 	    rb_raise(rb_eArgError, "invalid byte sequence in %s", rb_enc_name(enc));
+	}
+	else if (MBCLEN_NEEDMORE_P(r)) {
+	    char cbuf[8], *p = cbuf;
+	    int more = MBCLEN_NEEDMORE_LEN(r);
+	    if (more > numberof(cbuf)) goto invalid;
+	    more += n = fptr->rbuf.len;
+	    if (more > numberof(cbuf)) goto invalid;
+	    while ((n = (int)read_buffered_data(p, more, fptr)) > 0 &&
+		   (p += n, (more -= n) > 0)) {
+		if (io_fillbuf(fptr) < 0) goto invalid;
+		if ((n = fptr->rbuf.len) > more) n = more;
+	    }
+	    r = rb_enc_precise_mbclen(cbuf, p, enc);
+	    if (!MBCLEN_CHARFOUND_P(r)) goto invalid;
+	    c = rb_enc_codepoint(cbuf, p, enc);
+	    rb_yield(UINT2NUM(c));
 	}
 	else {
 	    continue;
@@ -5334,6 +5361,24 @@ rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
     }
     else {
 	VALUE v;
+	if (!has_vmode) {
+	    v = rb_hash_aref(opthash, sym_mode);
+	    if (!NIL_P(v)) {
+		if (!NIL_P(vmode)) {
+		    rb_raise(rb_eArgError, "mode specified twice");
+		}
+		has_vmode = 1;
+		vmode = v;
+		goto vmode_handle;
+	    }
+	}
+	v = rb_hash_aref(opthash, sym_flags);
+	if (!NIL_P(v)) {
+	    v = rb_to_int(v);
+	    oflags |= NUM2INT(v);
+	    vmode = INT2NUM(oflags);
+	    fmode = rb_io_oflags_fmode(oflags);
+	}
 	extract_binmode(opthash, &fmode);
 	if (fmode & FMODE_BINMODE) {
 #ifdef O_BINARY
@@ -5347,17 +5392,6 @@ rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
 	    fmode |= DEFAULT_TEXTMODE;
 	}
 #endif
-	if (!has_vmode) {
-	    v = rb_hash_aref(opthash, sym_mode);
-	    if (!NIL_P(v)) {
-		if (!NIL_P(vmode)) {
-		    rb_raise(rb_eArgError, "mode specified twice");
-		}
-		has_vmode = 1;
-		vmode = v;
-		goto vmode_handle;
-	    }
-	}
 	v = rb_hash_aref(opthash, sym_perm);
 	if (!NIL_P(v)) {
 	    if (vperm_p) {
@@ -7515,6 +7549,10 @@ rb_io_make_open_file(VALUE obj)
  *
  *  :mode ::
  *    Same as +mode+ parameter
+ *
+ *  :flags ::
+ *    Specifies file open flags as integer.
+ *    If +mode+ parameter is given, this parameter will be bitwise-ORed.
  *
  *  :\external_encoding ::
  *    External encoding for the IO.  "-" is a synonym for the default external
@@ -10081,6 +10119,49 @@ maygvl_copy_stream_continue_p(int has_gvl, struct copy_stream_struct *stp)
     return FALSE;
 }
 
+/* non-Linux poll may not work on all FDs */
+#if defined(HAVE_POLL) && defined(__linux__)
+#  define USE_POLL 1
+#  define IOWAIT_SYSCALL "poll"
+#else
+#  define IOWAIT_SYSCALL "select"
+#  define USE_POLL 0
+#endif
+
+#if USE_POLL
+static int
+nogvl_wait_for_single_fd(int fd, short events)
+{
+    struct pollfd fds;
+
+    fds.fd = fd;
+    fds.events = events;
+
+    return poll(&fds, 1, 0);
+}
+
+static int
+maygvl_copy_stream_wait_read(int has_gvl, struct copy_stream_struct *stp)
+{
+    int ret;
+
+    do {
+	if (has_gvl) {
+	    ret = rb_wait_for_single_fd(stp->src_fd, RB_WAITFD_IN, NULL);
+	}
+	else {
+	    ret = nogvl_wait_for_single_fd(stp->src_fd, POLLIN);
+	}
+    } while (ret == -1 && maygvl_copy_stream_continue_p(has_gvl, stp));
+
+    if (ret == -1) {
+        stp->syserr = "poll";
+        stp->error_no = errno;
+        return -1;
+    }
+    return 0;
+}
+#else /* !USE_POLL */
 static int
 maygvl_select(int has_gvl, int n, rb_fdset_t *rfds, rb_fdset_t *wfds, rb_fdset_t *efds, struct timeval *timeout)
 {
@@ -10108,6 +10189,7 @@ maygvl_copy_stream_wait_read(int has_gvl, struct copy_stream_struct *stp)
     }
     return 0;
 }
+#endif /* !USE_POLL */
 
 static int
 nogvl_copy_stream_wait_write(struct copy_stream_struct *stp)
@@ -10115,13 +10197,17 @@ nogvl_copy_stream_wait_write(struct copy_stream_struct *stp)
     int ret;
 
     do {
+#if USE_POLL
+	ret = nogvl_wait_for_single_fd(stp->dst_fd, POLLOUT);
+#else
 	rb_fd_zero(&stp->fds);
 	rb_fd_set(stp->dst_fd, &stp->fds);
         ret = rb_fd_select(rb_fd_max(&stp->fds), NULL, &stp->fds, NULL, NULL);
+#endif
     } while (ret == -1 && maygvl_copy_stream_continue_p(0, stp));
 
     if (ret == -1) {
-        stp->syserr = "select";
+        stp->syserr = IOWAIT_SYSCALL;
         stp->error_no = errno;
         return -1;
     }
@@ -11139,7 +11225,8 @@ argf_forward_call(VALUE arg)
     return Qnil;
 }
 
-static VALUE argf_getpartial(int argc, VALUE *argv, VALUE argf, int nonblock);
+static VALUE argf_getpartial(int argc, VALUE *argv, VALUE argf, VALUE opts,
+                             int nonblock);
 
 /*
  *  call-seq:
@@ -11164,7 +11251,7 @@ static VALUE argf_getpartial(int argc, VALUE *argv, VALUE argf, int nonblock);
 static VALUE
 argf_readpartial(int argc, VALUE *argv, VALUE argf)
 {
-    return argf_getpartial(argc, argv, argf, 0);
+    return argf_getpartial(argc, argv, argf, Qnil, 0);
 }
 
 /*
@@ -11178,11 +11265,18 @@ argf_readpartial(int argc, VALUE *argv, VALUE argf)
 static VALUE
 argf_read_nonblock(int argc, VALUE *argv, VALUE argf)
 {
-    return argf_getpartial(argc, argv, argf, 1);
+    VALUE opts;
+
+    rb_scan_args(argc, argv, "11:", NULL, NULL, &opts);
+
+    if (!NIL_P(opts))
+        argc--;
+
+    return argf_getpartial(argc, argv, argf, opts, 1);
 }
 
 static VALUE
-argf_getpartial(int argc, VALUE *argv, VALUE argf, int nonblock)
+argf_getpartial(int argc, VALUE *argv, VALUE argf, VALUE opts, int nonblock)
 {
     VALUE tmp, str, length;
 
@@ -11205,16 +11299,17 @@ argf_getpartial(int argc, VALUE *argv, VALUE argf, int nonblock)
 			 RUBY_METHOD_FUNC(0), Qnil, rb_eEOFError, (VALUE)0);
     }
     else {
-        tmp = io_getpartial(argc, argv, ARGF.current_file, Qnil, nonblock);
+        tmp = io_getpartial(argc, argv, ARGF.current_file, opts, nonblock);
     }
     if (NIL_P(tmp)) {
         if (ARGF.next_p == -1) {
-            rb_eof_error();
+	    return io_nonblock_eof(opts);
         }
         argf_close(argf);
         ARGF.next_p = 1;
-        if (RARRAY_LEN(ARGF.argv) == 0)
-            rb_eof_error();
+        if (RARRAY_LEN(ARGF.argv) == 0) {
+	    return io_nonblock_eof(opts);
+	}
         if (NIL_P(str))
             str = rb_str_new(NULL, 0);
         return str;
@@ -12430,6 +12525,7 @@ Init_IO(void)
 
     sym_mode = ID2SYM(rb_intern("mode"));
     sym_perm = ID2SYM(rb_intern("perm"));
+    sym_flags = ID2SYM(rb_intern("flags"));
     sym_extenc = ID2SYM(rb_intern("external_encoding"));
     sym_intenc = ID2SYM(rb_intern("internal_encoding"));
     sym_encoding = ID2SYM(rb_intern("encoding"));

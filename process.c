@@ -294,6 +294,17 @@ extern ID ruby_static_id_status;
 #define ALWAYS_NEED_ENVP 0
 #endif
 
+static inline int
+close_unless_reserved(int fd)
+{
+    /* We should not have reserved FDs at this point */
+    if (rb_reserved_fd_p(fd)) { /* async-signal-safe */
+        rb_async_bug_errno("BUG timer thread still running", 0 /* EDOOFUS */);
+        return 0;
+    }
+    return close(fd); /* async-signal-safe */
+}
+
 /*#define DEBUG_REDIRECT*/
 #if defined(DEBUG_REDIRECT)
 
@@ -342,7 +353,7 @@ static int
 redirect_close(int fd)
 {
     int ret;
-    ret = close(fd);
+    ret = close_unless_reserved(fd);
     ttyprintf("close(%d) => %d\n", fd, ret);
     return ret;
 }
@@ -360,7 +371,7 @@ static int
 parent_redirect_close(int fd)
 {
     int ret;
-    ret = close(fd);
+    ret = close_unless_reserved(fd);
     ttyprintf("parent_close(%d) => %d\n", fd, ret);
     return ret;
 }
@@ -368,9 +379,9 @@ parent_redirect_close(int fd)
 #else
 #define redirect_dup(oldfd) dup(oldfd)
 #define redirect_dup2(oldfd, newfd) dup2((oldfd), (newfd))
-#define redirect_close(fd) close(fd)
+#define redirect_close(fd) close_unless_reserved(fd)
 #define parent_redirect_open(pathname, flags, perm) rb_cloexec_open((pathname), (flags), (perm))
-#define parent_redirect_close(fd) close(fd)
+#define parent_redirect_close(fd) close_unless_reserved(fd)
 #endif
 
 /*
@@ -866,7 +877,8 @@ rb_waitpid(rb_pid_t pid, int *st, int flags)
 							 RUBY_UBF_PROCESS, 0);
     if (result < 0) {
 	if (errno == EINTR) {
-            RUBY_VM_CHECK_INTS(GET_THREAD());
+            rb_thread_t *th = GET_THREAD();
+            RUBY_VM_CHECK_INTS(th);
             goto retry;
         }
 	return (rb_pid_t)-1;
@@ -1114,30 +1126,10 @@ proc_detach(VALUE obj, VALUE pid)
     return rb_detach_process(NUM2PIDT(pid));
 }
 
-#ifdef SIGPIPE
-static RETSIGTYPE (*saved_sigpipe_handler)(int) = 0;
-#endif
-
-#ifdef SIGPIPE
-static RETSIGTYPE
-sig_do_nothing(int sig)
-{
-}
-#endif
-
 /* This function should be async-signal-safe.  Actually it is. */
 static void
 before_exec_async_signal_safe(void)
 {
-#ifdef SIGPIPE
-    /*
-     * Some OS commands don't initialize signal handler properly. Thus we have
-     * to reset signal handler before exec(). Otherwise, system() and similar
-     * child process interaction might fail. (e.g. ruby -e "system 'yes | ls'")
-     * [ruby-dev:12261]
-     */
-    saved_sigpipe_handler = signal(SIGPIPE, sig_do_nothing); /* async-signal-safe */
-#endif
 }
 
 static void
@@ -1149,8 +1141,10 @@ before_exec_non_async_signal_safe(void)
      * internal threads temporary. [ruby-core:10583]
      * This is also true on Haiku. It returns Errno::EPERM against exec()
      * in multiple threads.
+     *
+     * Nowadays, we always stop the timer thread completely to allow redirects.
      */
-    rb_thread_stop_timer_thread(0);
+    rb_thread_stop_timer_thread();
 }
 
 static void
@@ -1164,9 +1158,6 @@ before_exec(void)
 static void
 after_exec_async_signal_safe(void)
 {
-#ifdef SIGPIPE
-    signal(SIGPIPE, saved_sigpipe_handler); /* async-signal-safe */
-#endif
 }
 
 static void
@@ -2473,8 +2464,6 @@ rb_execarg_parent_end(VALUE execarg_obj)
     RB_GC_GUARD(execarg_obj);
 }
 
-static int rb_exec_without_timer_thread(const struct rb_execarg *eargp, char *errmsg, size_t errmsg_buflen);
-
 /*
  *  call-seq:
  *     exec([env,] command... [,options])
@@ -2558,10 +2547,14 @@ rb_f_exec(int argc, const VALUE *argv)
 
     execarg_obj = rb_execarg_new(argc, argv, TRUE);
     eargp = rb_execarg_get(execarg_obj);
+    before_exec(); /* stop timer thread before redirects */
     rb_execarg_parent_start(execarg_obj);
     fail_str = eargp->use_shell ? eargp->invoke.sh.shell_script : eargp->invoke.cmd.command_name;
 
-    rb_exec_without_timer_thread(eargp, errmsg, sizeof(errmsg));
+    rb_exec_async_signal_safe(eargp, errmsg, sizeof(errmsg));
+
+    preserving_errno(after_exec()); /* restart timer thread */
+
     RB_GC_GUARD(execarg_obj);
     if (errmsg[0])
         rb_sys_fail(errmsg);
@@ -3067,16 +3060,6 @@ rb_exec_async_signal_safe(const struct rb_execarg *eargp, char *errmsg, size_t e
 
 failure:
     return -1;
-}
-
-static int
-rb_exec_without_timer_thread(const struct rb_execarg *eargp, char *errmsg, size_t errmsg_buflen)
-{
-    int ret;
-    before_exec();
-    ret = rb_exec_async_signal_safe(eargp, errmsg, errmsg_buflen); /* hopefully async-signal-safe */
-    preserving_errno(after_exec()); /* not async-signal-safe because it calls rb_thread_start_timer_thread.  */
-    return ret;
 }
 
 #ifdef HAVE_WORKING_FORK
@@ -4034,7 +4017,7 @@ rb_f_system(int argc, VALUE *argv)
  *      name => val : set the environment variable
  *      name => nil : unset the environment variable
  *
- *      the keys must be strings.
+ *      the keys and the values except for +nil+ must be strings.
  *    command...:
  *      commandline                 : command line string which is passed to the standard shell
  *      cmdname, arg1, ...          : command name and one or more arguments (This form does not use the shell. See below for caveats.)

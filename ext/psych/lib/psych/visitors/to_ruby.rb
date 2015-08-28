@@ -61,7 +61,7 @@ module Psych
         case o.tag
         when '!binary', 'tag:yaml.org,2002:binary'
           o.value.unpack('m').first
-        when /^!(?:str|ruby\/string)(?::(.*))?/, 'tag:yaml.org,2002:str'
+        when /^!(?:str|ruby\/string)(?::(.*))?$/, 'tag:yaml.org,2002:str'
           klass = resolve_class($1)
           if klass
             klass.allocate.replace o.value
@@ -208,7 +208,7 @@ module Psych
             obj
           end
 
-        when /^!(?:str|ruby\/string)(?::(.*))?/, 'tag:yaml.org,2002:str'
+        when /^!(?:str|ruby\/string)(?::(.*))?$/, 'tag:yaml.org,2002:str'
           klass   = resolve_class($1)
           members = {}
           string  = nil

@@ -556,6 +556,20 @@ static void Init_ossl_locks(void)
  * OpenSSL provides SSL, TLS and general purpose cryptography.  It wraps the
  * OpenSSL[http://www.openssl.org/] library.
  *
+ * = Install
+ *
+ * OpenSSL comes bundled with the Standard Library of Ruby.
+ *
+ * This means the OpenSSL extension is compiled with Ruby and packaged on
+ * build. During compile time, Ruby will need to link against the OpenSSL
+ * library on your system. However, you cannot use openssl provided by Apple to
+ * build standard library openssl.
+ *
+ * If you use OSX, you should install another openssl and run ```./configure
+ * --with-openssl-dir=/path/to/another-openssl```. For Homebrew user, run `brew
+ * install openssl` and then ```./configure --with-openssl-dir=`brew prefix
+ * openssl` ```.
+ *
  * = Examples
  *
  * All examples assume you have loaded OpenSSL with:

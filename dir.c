@@ -1512,6 +1512,7 @@ replace_real_basename(char *path, long base, rb_encoding *enc, int norm_p, int f
 }
 #elif defined _WIN32
 VALUE rb_w32_conv_from_wchar(const WCHAR *wstr, rb_encoding *enc);
+int rb_w32_reparse_symlink_p(const WCHAR *path);
 
 static char *
 replace_real_basename(char *path, long base, rb_encoding *enc, int norm_p, int flags, rb_pathtype_t *type)
@@ -1538,6 +1539,10 @@ replace_real_basename(char *path, long base, rb_encoding *enc, int norm_p, int f
     if (GetFileAttributesExW(wplain, GetFileExInfoStandard, &fa)) {
 	h = FindFirstFileW(wplain, &fd);
 	e = rb_w32_map_errno(GetLastError());
+    }
+    if (fa.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) {
+	if (!rb_w32_reparse_symlink_p(wplain))
+	    fa.dwFileAttributes &= ~FILE_ATTRIBUTE_REPARSE_POINT;
     }
     free(wplain);
     if (h == INVALID_HANDLE_VALUE) {

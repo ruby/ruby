@@ -1279,8 +1279,15 @@ class TestHash < Test::Unit::TestCase
       end
     end
 
-    hash = {5 => bug9381}
-    assert_equal(bug9381, hash[wrapper.new(5)])
+    bad = [
+      5, true, false, nil,
+      0.0, 1.72723e-77,
+      :foo, "dsym_#{self.object_id.to_s(16)}_#{Time.now.to_i.to_s(16)}".to_sym,
+    ].select do |x|
+      hash = {x => bug9381}
+      hash[wrapper.new(x)] != bug9381
+    end
+    assert_empty(bad, bug9381)
   end
 
   def test_label_syntax
@@ -1288,10 +1295,11 @@ class TestHash < Test::Unit::TestCase
 
     feature4935 = '[ruby-core:37553] [Feature #4935]'
     x = 'world'
-    hash = assert_nothing_raised(SyntaxError) do
+    hash = assert_nothing_raised(SyntaxError, feature4935) do
       break eval(%q({foo: 1, "foo-bar": 2, "hello-#{x}": 3, 'hello-#{x}': 4, 'bar': {}}))
     end
-    assert_equal({:foo => 1, :'foo-bar' => 2, :'hello-world' => 3, :'hello-#{x}' => 4, :bar => {}}, hash)
+    assert_equal({:foo => 1, :'foo-bar' => 2, :'hello-world' => 3, :'hello-#{x}' => 4, :bar => {}}, hash, feature4935)
+    x = x
   end
 
   class TestSubHash < TestHash

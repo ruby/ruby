@@ -547,7 +547,7 @@ module FileUtils
   OPT_TABLE['move'] = [:force, :noop, :verbose, :secure]
 
   def rename_cannot_overwrite_file?   #:nodoc:
-    /cygwin|mswin|mingw|bccwin|emx/ =~ RUBY_PLATFORM
+    /emx/ =~ RUBY_PLATFORM
   end
   private_module_function :rename_cannot_overwrite_file?
 

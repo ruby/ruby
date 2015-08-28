@@ -44,7 +44,7 @@ tddwpBAEDjcwMzA5NTYzMTU1MzAwpQMCARM=
   end
 
   def test_session
-    timeout(5) do
+    Timeout.timeout(5) do
       start_server(OpenSSL::SSL::VERIFY_NONE, true) do |server, port|
         sock = TCPSocket.new("127.0.0.1", port)
         ctx = OpenSSL::SSL::SSLContext.new("TLSv1")
@@ -316,6 +316,7 @@ __EOS__
 
     ctx_proc = Proc.new { |ctx, ssl|
       ctx.session_cache_mode = OpenSSL::SSL::SSLContext::SESSION_CACHE_SERVER
+      ctx.options = OpenSSL::SSL::OP_NO_TICKET
       last_server_session = nil
 
       # get_cb is called whenever a client proposed to resume a session but
@@ -355,13 +356,13 @@ __EOS__
       3.times do
         sock = TCPSocket.new("127.0.0.1", port)
         begin
-          ssl = OpenSSL::SSL::SSLSocket.new(sock, OpenSSL::SSL::SSLContext.new("SSLv3"))
+          ssl = OpenSSL::SSL::SSLSocket.new(sock, OpenSSL::SSL::SSLContext.new())
           ssl.sync_close = true
           ssl.session = last_client_session if last_client_session
           ssl.connect
           last_client_session = ssl.session
           ssl.close
-          timeout(5) do
+          Timeout.timeout(5) do
             Thread.pass until called.key?(:new)
             assert(called.delete(:new))
             Thread.pass until called.key?(:remove)

@@ -572,7 +572,7 @@ class TestProcess < Test::Unit::TestCase
       t2 = Thread.new {
         IO.popen([*CAT, :in=>"fifo"]) {|f| f.read }
       }
-      v1, v2 = assert_join_threads([t1, t2])
+      _, v2 = assert_join_threads([t1, t2])
       assert_equal("output to fifo\n", v2)
     }
   end unless windows? # does not support fifo
@@ -768,6 +768,11 @@ class TestProcess < Test::Unit::TestCase
       IO.popen("#{RUBY} -e 'puts :foo'") {|io| assert_equal("foo\n", io.read) }
       assert_raise(Errno::ENOENT) { IO.popen(["echo bar"]) {} } # assuming "echo bar" command not exist.
       IO.popen(ECHO["baz"]) {|io| assert_equal("baz\n", io.read) }
+    }
+  end
+
+  def test_execopts_popen_stdio
+    with_tmpchdir {|d|
       assert_raise(ArgumentError) {
         IO.popen([*ECHO["qux"], STDOUT=>STDOUT]) {|io| }
       }
@@ -777,7 +782,12 @@ class TestProcess < Test::Unit::TestCase
       assert_raise(ArgumentError) {
         IO.popen([*ECHO["fuga"], STDOUT=>"out"]) {|io| }
       }
-      skip "inheritance of fd other than stdin,stdout and stderr is not supported" if windows?
+    }
+  end
+
+  def test_execopts_popen_extra_fd
+    skip "inheritance of fd other than stdin,stdout and stderr is not supported" if windows?
+    with_tmpchdir {|d|
       with_pipe {|r, w|
         IO.popen([RUBY, '-e', 'IO.new(3, "w").puts("a"); puts "b"', 3=>w]) {|io|
           assert_equal("b\n", io.read)
@@ -1591,7 +1601,7 @@ class TestProcess < Test::Unit::TestCase
 
     with_tmpchdir do
       assert_nothing_raised('[ruby-dev:12261]') do
-        timeout(3) do
+        Timeout.timeout(3) do
           pid = spawn('yes | ls')
           Process.waitpid pid
         end
@@ -2017,7 +2027,7 @@ EOS
   end
 
   def test_deadlock_by_signal_at_forking
-    assert_separately(["-", EnvUtil.rubybin], <<-INPUT, timeout: 60)
+    assert_separately(["-", RUBY], <<-INPUT, timeout: 60)
       ruby = ARGV.shift
       GC.start # reduce garbage
       GC.disable # avoid triggering CoW after forks
@@ -2050,7 +2060,7 @@ EOS
       th.kill
       th.join(0.1)
     }
-    assert_equal(th, x)
+    assert_equal(th, x, bug11166)
   end if defined?(fork)
 
   def test_exec_fd_3_redirect
@@ -2077,4 +2087,99 @@ EOS
       end
     INPUT
   end if defined?(fork)
+
+  def test_exec_close_reserved_fd
+    cmd = ".#{File::ALT_SEPARATOR || File::SEPARATOR}bug11353"
+    with_tmpchdir {
+      (3..6).each do |i|
+        ret = run_in_child(<<-INPUT)
+          begin
+            Process.exec('#{cmd}', 'dummy', #{i} => :close)
+          rescue SystemCallError
+          end
+        INPUT
+        assert_equal(0, ret)
+      end
+    }
+  end
+
+  def test_signals_work_after_exec_fail
+    r, w = IO.pipe
+    pid = status = nil
+    Timeout.timeout(30) do
+      pid = fork do
+        r.close
+        begin
+          trap(:USR1) { w.syswrite("USR1\n"); exit 0 }
+          exec "/path/to/non/existent/#$$/#{rand}.ex"
+        rescue SystemCallError
+          w.syswrite("exec failed\n")
+        end
+        sleep
+        exit 1
+      end
+      w.close
+      assert_equal "exec failed\n", r.gets
+      Process.kill(:USR1, pid)
+      assert_equal "USR1\n", r.gets
+      assert_nil r.gets
+      _, status = Process.waitpid2(pid)
+    end
+    assert_predicate status, :success?
+  rescue Timeout::Error
+    begin
+      Process.kill(:KILL, pid)
+    rescue Errno::ESRCH
+    end
+    raise
+  ensure
+    w.close if w
+    r.close if r
+  end if defined?(fork)
+
+  def test_threading_works_after_exec_fail
+    r, w = IO.pipe
+    pid = status = nil
+    Timeout.timeout(30) do
+      pid = fork do
+        r.close
+        begin
+          exec "/path/to/non/existent/#$$/#{rand}.ex"
+        rescue SystemCallError
+          w.syswrite("exec failed\n")
+        end
+        run = true
+        th1 = Thread.new { i = 0; i += 1 while run; i }
+        th2 = Thread.new { j = 0; j += 1 while run && Thread.pass.nil?; j }
+        sleep 0.5
+        run = false
+        w.syswrite "#{th1.value} #{th2.value}\n"
+      end
+      w.close
+      assert_equal "exec failed\n", r.gets
+      vals = r.gets.chomp.split.map!(&:to_i)
+      assert_operator vals[0], :>, vals[1], vals.inspect
+      _, status = Process.waitpid2(pid)
+    end
+    assert_predicate status, :success?
+  rescue Timeout::Error
+    begin
+      Process.kill(:KILL, pid)
+    rescue Errno::ESRCH
+    end
+    raise
+  ensure
+    w.close if w
+    r.close if r
+  end if defined?(fork)
+
+  def test_many_args
+    bug11418 = '[ruby-core:70251] [Bug #11418]'
+    assert_in_out_err([], <<-"end;", ["x"]*256, [], bug11418, timeout: 60)
+      bin = "#{EnvUtil.rubybin}"
+      args = Array.new(256) {"x"}
+      GC.stress = true
+      system(bin, "--disable=gems", "-w", "-e", "puts ARGV", *args)
+    end;
+  end
 end

@@ -935,6 +935,13 @@ check_reserved_signal_(const char *name, size_t name_len)
 }
 #endif
 
+#if defined SIGPIPE || defined SIGSYS
+static RETSIGTYPE
+sig_do_nothing(int sig)
+{
+}
+#endif
+
 static void
 signal_exec(VALUE cmd, int safe, int sig)
 {
@@ -1059,7 +1066,12 @@ default_handler(int sig)
 #endif
 #ifdef SIGPIPE
       case SIGPIPE:
-        func = SIG_IGN;
+        func = sig_do_nothing;
+        break;
+#endif
+#ifdef SIGSYS
+      case SIGSYS:
+        func = sig_do_nothing;
         break;
 #endif
       default:
@@ -1086,40 +1098,43 @@ trap_handler(VALUE *cmd, int sig)
 	    if (!command) rb_raise(rb_eArgError, "bad handler");
 	}
 	if (!NIL_P(command)) {
+	    const char *cptr;
+	    long len;
 	    SafeStringValue(command);	/* taint check */
 	    *cmd = command;
-	    switch (RSTRING_LEN(command)) {
+	    RSTRING_GETMEM(command, cptr, len);
+	    switch (len) {
 	      case 0:
                 goto sig_ign;
 		break;
               case 14:
-		if (strncmp(RSTRING_PTR(command), "SYSTEM_DEFAULT", 14) == 0) {
+		if (memcmp(cptr, "SYSTEM_DEFAULT", 14) == 0) {
                     func = SIG_DFL;
                     *cmd = 0;
 		}
                 break;
 	      case 7:
-		if (strncmp(RSTRING_PTR(command), "SIG_IGN", 7) == 0) {
+		if (memcmp(cptr, "SIG_IGN", 7) == 0) {
 sig_ign:
                     func = SIG_IGN;
                     *cmd = Qtrue;
 		}
-		else if (strncmp(RSTRING_PTR(command), "SIG_DFL", 7) == 0) {
+		else if (memcmp(cptr, "SIG_DFL", 7) == 0) {
 sig_dfl:
                     func = default_handler(sig);
                     *cmd = 0;
 		}
-		else if (strncmp(RSTRING_PTR(command), "DEFAULT", 7) == 0) {
+		else if (memcmp(cptr, "DEFAULT", 7) == 0) {
                     goto sig_dfl;
 		}
 		break;
 	      case 6:
-		if (strncmp(RSTRING_PTR(command), "IGNORE", 6) == 0) {
+		if (memcmp(cptr, "IGNORE", 6) == 0) {
                     goto sig_ign;
 		}
 		break;
 	      case 4:
-		if (strncmp(RSTRING_PTR(command), "EXIT", 4) == 0) {
+		if (memcmp(cptr, "EXIT", 4) == 0) {
 		    *cmd = Qundef;
 		}
 		break;
@@ -1472,7 +1487,10 @@ Init_signal(void)
 #endif
     }
 #ifdef SIGPIPE
-    install_sighandler(SIGPIPE, SIG_IGN);
+    install_sighandler(SIGPIPE, sig_do_nothing);
+#endif
+#ifdef SIGSYS
+    install_sighandler(SIGSYS, sig_do_nothing);
 #endif
 
 #if defined(SIGCLD)

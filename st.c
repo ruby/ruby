@@ -86,7 +86,7 @@ static void rehash(st_table *);
 #define free(x) xfree(x)
 #endif
 
-#define EQUAL(table,x,y) ((x)==(y) || (*(table)->type->compare)((x),(y)) == 0)
+#define EQUAL(table,x,ent) ((x)==(ent)->key || (*(table)->type->compare)((x),(ent)->key) == 0)
 
 #define do_hash(key,table) (st_index_t)(*(table)->type->hash)((key))
 #define hash_pos(h,n) ((h) & (n - 1))
@@ -319,7 +319,7 @@ st_memsize(const st_table *table)
 }
 
 #define PTR_NOT_EQUAL(table, ptr, hash_val, key) \
-((ptr) != 0 && ((ptr)->hash != (hash_val) || !EQUAL((table), (key), (ptr)->key)))
+((ptr) != 0 && ((ptr)->hash != (hash_val) || !EQUAL((table), (key), (ptr))))
 
 #ifdef HASH_LOG
 static void
@@ -347,7 +347,8 @@ count_collision(const struct st_hash_type *type)
     ((ptr) = find_entry((table), key, (hash_val), ((bin_pos) = hash_pos(hash_val, (table)->num_bins))))
 
 static st_table_entry *
-find_entry(st_table *table, st_data_t key, st_index_t hash_val, st_index_t bin_pos)
+find_entry(const st_table *table, st_data_t key, st_index_t hash_val,
+           st_index_t bin_pos)
 {
     register st_table_entry *ptr = table->bins[bin_pos];
     FOUND_ENTRY;
@@ -362,17 +363,18 @@ find_entry(st_table *table, st_data_t key, st_index_t hash_val, st_index_t bin_p
 }
 
 static inline st_index_t
-find_packed_index_from(st_table *table, st_index_t hash_val, st_data_t key, st_index_t i)
+find_packed_index_from(const st_table *table, st_index_t hash_val,
+		       st_data_t key, st_index_t i)
 {
     while (i < table->real_entries &&
-	   (PHASH(table, i) != hash_val || !EQUAL(table, key, PKEY(table, i)))) {
+	   (PHASH(table, i) != hash_val || !EQUAL(table, key, &PACKED_ENT(table, i)))) {
 	i++;
     }
     return i;
 }
 
 static inline st_index_t
-find_packed_index(st_table *table, st_index_t hash_val, st_data_t key)
+find_packed_index(const st_table *table, st_index_t hash_val, st_data_t key)
 {
     return find_packed_index_from(table, hash_val, key, 0);
 }
@@ -685,7 +687,7 @@ st_delete(register st_table *table, register st_data_t *key, st_data_t *value)
 
     prev = &table->bins[hash_pos(hash_val, table->num_bins)];
     for (;(ptr = *prev) != 0; prev = &ptr->next) {
-	if (EQUAL(table, *key, ptr->key)) {
+	if (EQUAL(table, *key, ptr)) {
 	    *prev = ptr->next;
 	    remove_entry(table, ptr);
 	    if (value != 0) *value = ptr->record;
@@ -722,7 +724,7 @@ st_delete_safe(register st_table *table, register st_data_t *key, st_data_t *val
     ptr = table->bins[hash_pos(hash_val, table->num_bins)];
 
     for (; ptr != 0; ptr = ptr->next) {
-	if ((ptr->key != never) && EQUAL(table, ptr->key, *key)) {
+	if ((ptr->key != never) && EQUAL(table, *key, ptr)) {
 	    remove_entry(table, ptr);
 	    *key = ptr->key;
 	    if (value != 0) *value = ptr->record;
@@ -1038,7 +1040,8 @@ st_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
 }
 
 static st_index_t
-get_keys(st_table *table, st_data_t *keys, st_index_t size, int check, st_data_t never)
+get_keys(const st_table *table, st_data_t *keys, st_index_t size,
+         int check, st_data_t never)
 {
     st_data_t key;
     st_data_t *keys_start = keys;
@@ -1081,7 +1084,8 @@ st_keys_check(st_table *table, st_data_t *keys, st_index_t size, st_data_t never
 }
 
 static st_index_t
-get_values(st_table *table, st_data_t *values, st_index_t size, int check, st_data_t never)
+get_values(const st_table *table, st_data_t *values, st_index_t size,
+           int check, st_data_t never)
 {
     st_data_t key;
     st_data_t *values_start = values;

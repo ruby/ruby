@@ -4,6 +4,12 @@ require 'timeout'
 require 'bigdecimal'
 
 class TestRange < Test::Unit::TestCase
+  def test_new
+    assert_equal((0..2), Range.new(0, 2))
+    assert_equal((0..2), Range.new(0, 2, false))
+    assert_equal((0...2), Range.new(0, 2, true))
+  end
+
   def test_range_string
     # XXX: Is this really the test of Range?
     assert_equal([], ("a" ... "a").to_a)
@@ -132,6 +138,8 @@ class TestRange < Test::Unit::TestCase
 
   def test_hash
     assert_kind_of(Fixnum, (0..1).hash)
+    assert_equal((0..1).hash, (0..1).hash)
+    assert_not_equal((0..1).hash, (0...1).hash)
   end
 
   def test_step
@@ -251,6 +259,7 @@ class TestRange < Test::Unit::TestCase
   def test_begin_end
     assert_equal(0, (0..1).begin)
     assert_equal(1, (0..1).end)
+    assert_equal(1, (0...1).end)
   end
 
   def test_first_last
@@ -265,7 +274,10 @@ class TestRange < Test::Unit::TestCase
     assert_equal([0, 1, 2], (0...10).first(3))
     assert_equal([7, 8, 9], (0...10).last(3))
     assert_equal(0, (0...10).first)
+    assert_equal(10, (0...10).last)
     assert_equal("a", ("a"..."c").first)
+    assert_equal("c", ("a"..."c").last)
+    assert_equal(0, (2...0).last)
   end
 
   def test_to_s

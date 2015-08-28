@@ -94,6 +94,7 @@ int flock(int, int);
 
 /* define system APIs */
 #ifdef _WIN32
+#include "win32/file.h"
 #define STAT(p, s)	rb_w32_ustati64((p), (s))
 #undef lstat
 #define lstat(p, s)	rb_w32_ulstati64((p), (s))
@@ -103,6 +104,8 @@ int flock(int, int);
 #define chmod(p, m)	rb_w32_uchmod((p), (m))
 #undef chown
 #define chown(p, o, g)	rb_w32_uchown((p), (o), (g))
+#undef lchown
+#define lchown(p, o, g)	rb_w32_ulchown((p), (o), (g))
 #undef utime
 #define utime(p, t)	rb_w32_uutime((p), (t))
 #undef link
@@ -111,6 +114,8 @@ int flock(int, int);
 #define unlink(p)	rb_w32_uunlink(p)
 #undef rename
 #define rename(f, t)	rb_w32_urename((f), (t))
+#undef symlink
+#define symlink(s, l)	rb_w32_usymlink((s), (l))
 #else
 #define STAT(p, s)	stat((p), (s))
 #endif
@@ -2352,7 +2357,7 @@ rb_file_chmod(VALUE obj, VALUE vmode)
 {
     rb_io_t *fptr;
     int mode;
-#ifndef HAVE_FCHMOD
+#if !defined HAVE_FCHMOD || !HAVE_FCHMOD
     VALUE path;
 #endif
 
@@ -2360,9 +2365,15 @@ rb_file_chmod(VALUE obj, VALUE vmode)
 
     GetOpenFile(obj, fptr);
 #ifdef HAVE_FCHMOD
-    if (fchmod(fptr->fd, mode) == -1)
-	rb_sys_fail_path(fptr->pathv);
-#else
+    if (fchmod(fptr->fd, mode) == -1) {
+	if (HAVE_FCHMOD || errno != ENOSYS)
+	    rb_sys_fail_path(fptr->pathv);
+    }
+    else {
+	if (!HAVE_FCHMOD) return INT2FIX(0);
+    }
+#endif
+#if !defined HAVE_FCHMOD || !HAVE_FCHMOD
     if (NIL_P(fptr->pathv)) return Qnil;
     path = rb_str_encode_ospath(fptr->pathv);
     if (chmod(RSTRING_PTR(path), mode) == -1)
@@ -2682,9 +2693,14 @@ rb_file_s_utime(int argc, VALUE *argv)
     return LONG2FIX(n);
 }
 
-NORETURN(static void sys_fail2(VALUE,VALUE));
+#ifdef RUBY_FUNCTION_NAME_STRING
+# define sys_fail2(s1, s2) sys_fail2_in(RUBY_FUNCTION_NAME_STRING, s1, s2)
+#else
+# define sys_fail2_in(func, s1, s2) sys_fail2(s1, s2)
+#endif
+NORETURN(static void sys_fail2_in(const char *,VALUE,VALUE));
 static void
-sys_fail2(VALUE s1, VALUE s2)
+sys_fail2_in(const char *func, VALUE s1, VALUE s2)
 {
     VALUE str;
 #ifdef MAX_PATH
@@ -2701,7 +2717,11 @@ sys_fail2(VALUE s1, VALUE s2)
     rb_str_cat2(str, ", ");
     rb_str_append(str, rb_str_ellipsize(s2, max_pathlen));
     rb_str_cat2(str, ")");
+#ifdef RUBY_FUNCTION_NAME_STRING
+    rb_sys_fail_path_in(func, str);
+#else
     rb_sys_fail_path(str);
+#endif
 }
 
 #ifdef HAVE_LINK
@@ -4237,6 +4257,7 @@ ruby_enc_find_extname(const char *name, long *len, rb_encoding *enc)
  *
  *     File.extname("test.rb")         #=> ".rb"
  *     File.extname("a/b/d/test.rb")   #=> ".rb"
+ *     File.extname(".a/b/d/test.rb")  #=> ".rb"
  *     File.extname("foo.")	       #=> ""
  *     File.extname("test")            #=> ""
  *     File.extname(".profile")        #=> ""

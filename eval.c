@@ -44,18 +44,15 @@ ID ruby_static_id_signo, ruby_static_id_status;
 int
 ruby_setup(void)
 {
-    static int initialized = 0;
     int state;
 
-    if (initialized)
+    if (GET_VM())
 	return 0;
-    initialized = 1;
 
     ruby_init_stack((void *)&state);
     Init_BareVM();
     Init_heap();
     Init_vm_objects();
-    Init_frozen_strings();
 
     PUSH_TAG();
     if ((state = EXEC_TAG()) == 0) {
@@ -164,6 +161,7 @@ ruby_cleanup(volatile int ex)
     volatile VALUE errs[2];
     rb_thread_t *th = GET_THREAD();
     int nerr;
+    volatile int sysex = EXIT_SUCCESS;
 
     rb_threadptr_interrupt(th);
     rb_threadptr_check_signal(th);
@@ -195,22 +193,11 @@ ruby_cleanup(volatile int ex)
 	ex = state;
     }
     th->errinfo = errs[1];
-    ex = error_handle(ex);
-
-#if EXIT_SUCCESS != 0 || EXIT_FAILURE != 1
-    switch (ex) {
-#if EXIT_SUCCESS != 0
-      case 0: ex = EXIT_SUCCESS; break;
-#endif
-#if EXIT_FAILURE != 1
-      case 1: ex = EXIT_FAILURE; break;
-#endif
-    }
-#endif
+    sysex = error_handle(ex);
 
     state = 0;
     for (nerr = 0; nerr < numberof(errs); ++nerr) {
-	VALUE err = errs[nerr];
+	VALUE err = ATOMIC_VALUE_EXCHANGE(errs[nerr], Qnil);
 
 	if (!RTEST(err)) continue;
 
@@ -218,7 +205,7 @@ ruby_cleanup(volatile int ex)
 	if (THROW_DATA_P(err)) continue;
 
 	if (rb_obj_is_kind_of(err, rb_eSystemExit)) {
-	    ex = sysexit_status(err);
+	    sysex = sysexit_status(err);
 	    break;
 	}
 	else if (rb_obj_is_kind_of(err, rb_eSignal)) {
@@ -226,8 +213,8 @@ ruby_cleanup(volatile int ex)
 	    state = NUM2INT(sig);
 	    break;
 	}
-	else if (ex == EXIT_SUCCESS) {
-	    ex = EXIT_FAILURE;
+	else if (sysex == EXIT_SUCCESS) {
+	    sysex = EXIT_FAILURE;
 	}
     }
 
@@ -236,18 +223,18 @@ ruby_cleanup(volatile int ex)
     /* unlock again if finalizer took mutexes. */
     rb_threadptr_unlock_all_locking_mutexes(GET_THREAD());
     TH_POP_TAG();
-    rb_thread_stop_timer_thread(1);
+    rb_thread_stop_timer_thread();
     ruby_vm_destruct(GET_VM());
     if (state) ruby_default_signal(state);
 
-    return ex;
+    return sysex;
 }
 
 static int
 ruby_exec_internal(void *n)
 {
     volatile int state;
-    VALUE iseq = (VALUE)n;
+    rb_iseq_t *iseq = (rb_iseq_t *)n;
     rb_thread_t *th = GET_THREAD();
 
     if (!n) return 0;
@@ -765,6 +752,9 @@ rb_raise_jump(VALUE mesg, VALUE cause)
 void
 rb_jump_tag(int tag)
 {
+    if (UNLIKELY(tag < TAG_RETURN || tag > TAG_FATAL)) {
+	unknown_longjmp_status(tag);
+    }
     JUMP_TAG(tag);
 }
 
@@ -1098,9 +1088,8 @@ rb_mod_prepend(int argc, VALUE *argv, VALUE module)
 static VALUE
 hidden_identity_hash_new(void)
 {
-    VALUE hash = rb_hash_new();
+    VALUE hash = rb_ident_hash_new();
 
-    rb_funcall(hash, rb_intern("compare_by_identity"), 0);
     RBASIC_CLEAR_CLASS(hash); /* hide from ObjectSpace */
     return hash;
 }
@@ -1455,10 +1444,10 @@ errinfo_place(rb_thread_t *th)
 
     while (RUBY_VM_VALID_CONTROL_FRAME_P(cfp, end_cfp)) {
 	if (RUBY_VM_NORMAL_ISEQ_P(cfp->iseq)) {
-	    if (cfp->iseq->type == ISEQ_TYPE_RESCUE) {
+	    if (cfp->iseq->body->type == ISEQ_TYPE_RESCUE) {
 		return &cfp->ep[-2];
 	    }
-	    else if (cfp->iseq->type == ISEQ_TYPE_ENSURE &&
+	    else if (cfp->iseq->body->type == ISEQ_TYPE_ENSURE &&
 		     !THROW_DATA_P(cfp->ep[-2]) &&
 		     !FIXNUM_P(cfp->ep[-2])) {
 		return &cfp->ep[-2];

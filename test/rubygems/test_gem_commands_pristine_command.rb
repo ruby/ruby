@@ -5,6 +5,8 @@ class TestGemCommandsPristineCommand < Gem::TestCase
 
   def setup
     super
+    common_installer_setup
+
     @cmd = Gem::Commands::PristineCommand.new
   end
 

@@ -74,6 +74,48 @@ module OpenSSL
         DEFAULT_CERT_STORE.flags = OpenSSL::X509::V_FLAG_CRL_CHECK_ALL
       end
 
+      INIT_VARS = ["cert", "key", "client_ca", "ca_file", "ca_path",
+        "timeout", "verify_mode", "verify_depth", "renegotiation_cb",
+        "verify_callback", "cert_store", "extra_chain_cert",
+        "client_cert_cb", "session_id_context", "tmp_dh_callback",
+        "session_get_cb", "session_new_cb", "session_remove_cb",
+        "tmp_ecdh_callback", "servername_cb", "npn_protocols",
+        "alpn_protocols", "alpn_select_cb",
+        "npn_select_cb"].map { |x| "@#{x}" }
+
+      # A callback invoked when DH parameters are required.
+      #
+      # The callback is invoked with the Session for the key exchange, an
+      # flag indicating the use of an export cipher and the keylength
+      # required.
+      #
+      # The callback must return an OpenSSL::PKey::DH instance of the correct
+      # key length.
+
+      attr_accessor :tmp_dh_callback
+
+      if ExtConfig::HAVE_TLSEXT_HOST_NAME
+        # A callback invoked at connect time to distinguish between multiple
+        # server names.
+        #
+        # The callback is invoked with an SSLSocket and a server name.  The
+        # callback must return an SSLContext for the server name or nil.
+        attr_accessor :servername_cb
+      end
+
+      # call-seq:
+      #    SSLContext.new => ctx
+      #    SSLContext.new(:TLSv1) => ctx
+      #    SSLContext.new("SSLv23_client") => ctx
+      #
+      # You can get a list of valid methods with OpenSSL::SSL::SSLContext::METHODS
+      def initialize(version = nil)
+        INIT_VARS.each { |v| instance_variable_set v, nil }
+        self.options = self.options | OpenSSL::SSL::OP_ALL
+        return unless version
+        self.ssl_version = version
+      end
+
       ##
       # Sets the parameters for this SSL context to the values in +params+.
       # The keys in +params+ must be assignment methods on SSLContext.
@@ -121,13 +163,6 @@ module OpenSSL
 
       def do_not_reverse_lookup=(flag)
         to_io.do_not_reverse_lookup = flag
-      end
-    end
-
-    module Nonblock
-      def initialize(*args)
-        @io.nonblock = true if @io.respond_to?(:nonblock=)
-        super
       end
     end
 
@@ -218,7 +253,53 @@ module OpenSSL
     class SSLSocket
       include Buffering
       include SocketForwarder
-      include Nonblock
+
+      if ExtConfig::OPENSSL_NO_SOCK
+        def initialize(io, ctx = nil); raise NotImplmentedError; end
+      else
+        if ExtConfig::HAVE_TLSEXT_HOST_NAME
+          attr_accessor :hostname
+        end
+
+        attr_reader :io, :context
+        attr_accessor :sync_close
+        alias :to_io :io
+
+        # call-seq:
+        #    SSLSocket.new(io) => aSSLSocket
+        #    SSLSocket.new(io, ctx) => aSSLSocket
+        #
+        # Creates a new SSL socket from +io+ which must be a real ruby object (not an
+        # IO-like object that responds to read/write).
+        #
+        # If +ctx+ is provided the SSL Sockets initial params will be taken from
+        # the context.
+        #
+        # The OpenSSL::Buffering module provides additional IO methods.
+        #
+        # This method will freeze the SSLContext if one is provided;
+        # however, session management is still allowed in the frozen SSLContext.
+
+        def initialize(io, context = OpenSSL::SSL::SSLContext.new)
+          @io         = io
+          @context    = context
+          @sync_close = false
+          @hostname   = nil
+          @io.nonblock = true if @io.respond_to?(:nonblock=)
+          context.setup
+          super()
+        end
+      end
+
+      # call-seq:
+      #    ssl.sysclose => nil
+      #
+      # Shuts down the SSL connection and prepares it for another connection.
+      def sysclose
+        return if closed?
+        stop
+        io.close if sync_close
+      end
 
       ##
       # Perform hostname verification after an SSL connection is established
@@ -226,6 +307,14 @@ module OpenSSL
       # This method MUST be called after calling #connect to ensure that the
       # hostname of a remote peer has been verified.
       def post_connection_check(hostname)
+        if peer_cert.nil?
+          msg = "Peer verification enabled, but no certificate received."
+          if using_anon_cipher?
+            msg += " Anonymous cipher suite #{cipher[0]} was negotiated. Anonymous suites must be disabled to use peer verification."
+          end
+          raise SSLError, msg
+        end
+
         unless OpenSSL::SSL.verify_certificate_identity(peer_cert, hostname)
           raise SSLError, "hostname \"#{hostname}\" does not match the server certificate"
         end
@@ -236,6 +325,34 @@ module OpenSSL
         SSL::Session.new(self)
       rescue SSL::Session::SessionError
         nil
+      end
+
+      private
+
+      def using_anon_cipher?
+        ctx = OpenSSL::SSL::SSLContext.new
+        ctx.ciphers = "aNULL"
+        ctx.ciphers.include?(cipher)
+      end
+
+      def client_cert_cb
+        @context.client_cert_cb
+      end
+
+      def tmp_dh_callback
+        @context.tmp_dh_callback || OpenSSL::PKey::DEFAULT_TMP_DH_CALLBACK
+      end
+
+      def tmp_ecdh_callback
+        @context.tmp_ecdh_callback
+      end
+
+      def session_new_cb
+        @context.session_new_cb
+      end
+
+      def session_get_cb
+        @context.session_get_cb
       end
     end
 

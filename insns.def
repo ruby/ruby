@@ -337,7 +337,7 @@ putiseq
 ()
 (VALUE ret)
 {
-    ret = iseq->self;
+    ret = (VALUE)iseq;
 }
 
 /**
@@ -917,8 +917,8 @@ defineclass
     vm_push_frame(th, class_iseq, VM_FRAME_MAGIC_CLASS, klass,
 		  VM_ENVVAL_BLOCK_PTR(GET_BLOCK_PTR()),
 		  (VALUE)vm_cref_push(th, klass, NULL),
-		  class_iseq->iseq_encoded, GET_SP(),
-		  class_iseq->local_size, class_iseq->stack_max);
+		  class_iseq->body->iseq_encoded, GET_SP(),
+		  class_iseq->body->local_size, class_iseq->body->stack_max);
 
     RESTORE_REGS();
     NEXT_INSN();
@@ -1027,9 +1027,10 @@ leave
 (VALUE val)
 {
     if (OPT_CHECKED_RUN) {
-	if (reg_cfp->sp != vm_base_ptr(reg_cfp)) {
+	const VALUE *const bp = vm_base_ptr(reg_cfp);
+	if (reg_cfp->sp != bp) {
 	    rb_bug("Stack consistency error (sp: %"PRIdPTRDIFF", bp: %"PRIdPTRDIFF")",
-		   VM_SP_CNT(th, reg_cfp->sp), VM_SP_CNT(th, vm_base_ptr(reg_cfp)));
+		   VM_SP_CNT(th, reg_cfp->sp), VM_SP_CNT(th, bp));
 	}
     }
 

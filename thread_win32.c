@@ -730,7 +730,7 @@ rb_thread_create_timer_thread(void)
 }
 
 static int
-native_stop_timer_thread(int close_anyway)
+native_stop_timer_thread(void)
 {
     int stopped = --system_working <= 0;
     if (stopped) {

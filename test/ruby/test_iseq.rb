@@ -141,4 +141,17 @@ class TestISeq < Test::Unit::TestCase
     assert_raise(TypeError, bug11159) {ISeq.compile(:foo)}
     assert_raise(TypeError, bug11159) {ISeq.compile(1)}
   end
+
+  def test_frozen_string_literal_compile_option
+    $f = 'f'
+    line = __LINE__ + 2
+    code = <<-'EOS'
+    ['foo', 'foo', "#{$f}foo"]
+    EOS
+    s1, s2, s3 = RubyVM::InstructionSequence.compile(code, __FILE__, __FILE__, line, {frozen_string_literal: true}).eval
+    assert(s1.frozen?)
+    assert(s2.frozen?)
+    assert(s3.frozen?)
+    assert(s1.object_id == s2.object_id)
+  end
 end

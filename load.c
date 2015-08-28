@@ -8,7 +8,7 @@
 #include "eval_intern.h"
 #include "probes.h"
 
-VALUE ruby_dln_librefs;
+static VALUE ruby_dln_librefs;
 
 #define IS_RBEXT(e) (strcmp((e), ".rb") == 0)
 #define IS_SOEXT(e) (strcmp((e), ".so") == 0 || strcmp((e), ".o") == 0)
@@ -46,7 +46,7 @@ enum expand_type {
    string objects in $LOAD_PATH are frozen.
  */
 static void
-rb_construct_expanded_load_path(int type, int *has_relative, int *has_non_cache)
+rb_construct_expanded_load_path(enum expand_type type, int *has_relative, int *has_non_cache)
 {
     rb_vm_t *vm = GET_VM();
     VALUE load_path = vm->load_path;
@@ -87,7 +87,7 @@ rb_construct_expanded_load_path(int type, int *has_relative, int *has_non_cache)
 	as_str = rb_get_path_check_convert(path, as_str, level);
 	expanded_path = rb_file_expand_path_fast(as_str, Qnil);
 	rb_str_freeze(expanded_path);
-	rb_ary_push(ary, expanded_path);
+	rb_ary_push(ary, rb_fstring(expanded_path));
     }
     rb_obj_freeze(ary);
     vm->expanded_load_path = ary;
@@ -215,8 +215,8 @@ features_index_add_single(VALUE short_feature, VALUE offset)
 /* Add to the loaded-features index all the required entries for
    `feature`, located at `offset` in $LOADED_FEATURES.  We add an
    index entry at each string `short_feature` for which
-     feature == "#{prefix}#{short_feature}#{e}"
-   where `e` is empty or matches %r{^\.[^./]*$}, and `prefix` is empty
+     feature == "#{prefix}#{short_feature}#{ext}"
+   where `ext` is empty or matches %r{^\.[^./]*$}, and `prefix` is empty
    or ends in '/'.  This maintains the invariant that `rb_feature_p()`
    relies on for its fast lookup.
 */
@@ -239,16 +239,19 @@ features_index_add(VALUE feature, VALUE offset)
 
     p = ext ? ext : feature_end;
     while (1) {
+	long beg;
+
 	p--;
 	while (p >= feature_str && *p != '/')
 	    p--;
 	if (p < feature_str)
 	    break;
 	/* Now *p == '/'.  We reach this point for every '/' in `feature`. */
-	short_feature = rb_str_subseq(feature, p + 1 - feature_str, feature_end - p - 1);
+	beg = p + 1 - feature_str;
+	short_feature = rb_str_subseq(feature, beg, feature_end - p - 1);
 	features_index_add_single(short_feature, offset);
 	if (ext) {
-	    short_feature = rb_str_subseq(feature, p + 1 - feature_str, ext - p - 1);
+	    short_feature = rb_str_subseq(feature, beg, ext - p - 1);
 	    features_index_add_single(short_feature, offset);
 	}
     }
@@ -287,9 +290,9 @@ get_loaded_features_index(void)
 	    VALUE entry, as_str;
 	    as_str = entry = rb_ary_entry(features, i);
 	    StringValue(as_str);
+	    as_str = rb_fstring(rb_str_freeze(as_str));
 	    if (as_str != entry)
 		rb_ary_store(features, i, as_str);
-	    rb_str_freeze(as_str);
 	    features_index_add(as_str, INT2FIX(i));
 	}
 	reset_loaded_features_snapshot();
@@ -560,7 +563,7 @@ rb_provide_feature(VALUE feature)
     }
     rb_str_freeze(feature);
 
-    rb_ary_push(features, feature);
+    rb_ary_push(features, rb_fstring(feature));
     features_index_add(feature, INT2FIX(RARRAY_LEN(features)-1));
     reset_loaded_features_snapshot();
 }
@@ -573,13 +576,12 @@ rb_provide(const char *feature)
 
 NORETURN(static void load_failed(VALUE));
 
-static inline void
+static int
 rb_load_internal0(rb_thread_t *th, VALUE fname, int wrap)
 {
     int state;
     volatile VALUE wrapper = th->top_wrapper;
     volatile VALUE self = th->top_self;
-    volatile int loaded = FALSE;
     volatile int mild_compile_error;
 #if !defined __GNUC__
     rb_thread_t *volatile th0 = th;
@@ -602,12 +604,11 @@ rb_load_internal0(rb_thread_t *th, VALUE fname, int wrap)
     state = EXEC_TAG();
     if (state == 0) {
 	NODE *node;
-	VALUE iseq;
+	rb_iseq_t *iseq;
 
 	th->mild_compile_error++;
 	node = (NODE *)rb_load_file_str(fname);
-	loaded = TRUE;
-	iseq = rb_iseq_new_top(node, rb_str_new2("<top (required)>"), fname, rb_realpath_internal(Qnil, fname, 1), Qfalse);
+	iseq = rb_iseq_new_top(node, rb_str_new2("<top (required)>"), fname, rb_realpath_internal(Qnil, fname, 1), NULL);
 	th->mild_compile_error--;
 	rb_iseq_eval(iseq);
     }
@@ -621,44 +622,57 @@ rb_load_internal0(rb_thread_t *th, VALUE fname, int wrap)
     th->top_self = self;
     th->top_wrapper = wrapper;
 
-    if (!loaded && !FIXNUM_P(th->errinfo)) {
-	/* an error on loading don't include INT2FIX(TAG_FATAL) see r35625 */
-	rb_exc_raise(th->errinfo);
-    }
     if (state) {
-	rb_vm_jump_tag_but_local_jump(state);
+	VALUE exc = rb_vm_make_jump_tag_but_local_jump(state, Qundef);
+	if (NIL_P(exc)) return state;
+	th->errinfo = exc;
+	return TAG_RAISE;
     }
 
     if (!NIL_P(th->errinfo)) {
 	/* exception during load */
-	rb_exc_raise(th->errinfo);
+	return TAG_RAISE;
     }
+    return state;
 }
 
 static void
 rb_load_internal(VALUE fname, int wrap)
 {
-    rb_load_internal0(GET_THREAD(), fname, wrap);
+    rb_thread_t *curr_th = GET_THREAD();
+    int state = rb_load_internal0(curr_th, fname, wrap);
+    if (state) {
+	if (state == TAG_RAISE) rb_exc_raise(curr_th->errinfo);
+	JUMP_TAG(state);
+    }
+}
+
+static VALUE
+file_to_load(VALUE fname)
+{
+    VALUE tmp = rb_find_file(FilePathValue(fname));
+    if (!tmp) load_failed(fname);
+    return tmp;
 }
 
 void
 rb_load(VALUE fname, int wrap)
 {
-    VALUE tmp = rb_find_file(FilePathValue(fname));
-    if (!tmp) load_failed(fname);
-    rb_load_internal(tmp, wrap);
+    rb_load_internal(file_to_load(fname), wrap);
 }
 
 void
 rb_load_protect(VALUE fname, int wrap, int *state)
 {
     int status;
+    volatile VALUE path = 0;
 
     PUSH_TAG();
     if ((status = EXEC_TAG()) == 0) {
-	rb_load(fname, wrap);
+	path = file_to_load(fname);
     }
     POP_TAG();
+    if (!status) status = rb_load_internal0(GET_THREAD(), path, wrap);
     if (state)
 	*state = status;
 }
@@ -990,12 +1004,12 @@ rb_require_internal(VALUE fname, int safe)
 	    }
 	    else if (!*ftptr) {
 		rb_provide_feature(path);
-		result = 1;
+		result = TAG_RETURN;
 	    }
 	    else {
 		switch (found) {
 		  case 'r':
-		    rb_load_internal(path, 0);
+		    state = rb_load_internal0(th, path, 0);
 		    break;
 
 		  case 's':
@@ -1004,8 +1018,10 @@ rb_require_internal(VALUE fname, int safe)
 		    rb_ary_push(ruby_dln_librefs, LONG2NUM(handle));
 		    break;
 		}
-		rb_provide_feature(path);
-		result = 1;
+		if (!state) {
+		    rb_provide_feature(path);
+		    result = TAG_RETURN;
+		}
 	    }
 	}
     }
@@ -1035,9 +1051,8 @@ ruby_require_internal(const char *fname, unsigned int len)
     struct RString fake;
     VALUE str = rb_setup_fake_str(&fake, fname, len, 0);
     int result = rb_require_internal(str, 0);
-    if (result > 1) result = -1;
     rb_set_errinfo(Qnil);
-    return result;
+    return result == TAG_RETURN ? 1 : result ? -1 : 0;
 }
 
 VALUE
@@ -1045,7 +1060,7 @@ rb_require_safe(VALUE fname, int safe)
 {
     int result = rb_require_internal(fname, safe);
 
-    if (result > 1) {
+    if (result > TAG_RETURN) {
 	JUMP_TAG(result);
     }
     if (result < 0) {

@@ -206,9 +206,9 @@ class TestParse < Test::Unit::TestCase
       END
     end
 
-    assert_raise(SyntaxError) do
+    assert_nothing_raised(SyntaxError) do
       eval <<-END, nil, __FILE__, __LINE__+1
-        class Foo Bar; end
+        class Foo 1; end
       END
     end
   end

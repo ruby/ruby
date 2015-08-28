@@ -3,7 +3,6 @@ require 'pathname'
 
 require 'fileutils'
 require 'tmpdir'
-require 'enumerator'
 
 
 class TestPathname < Test::Unit::TestCase
@@ -341,7 +340,7 @@ class TestPathname < Test::Unit::TestCase
   def has_symlink?
     begin
       File.symlink(nil, nil)
-    rescue NotImplementedError
+    rescue NotImplementedError, Errno::EACCES
       return false
     rescue TypeError
     end
@@ -402,6 +401,7 @@ class TestPathname < Test::Unit::TestCase
       File.symlink("f/g", "h")
       assert_equal("#{dir}/f/g", realpath("h"))
       File.chmod(0000, "f")
+      next if File.readable?("f")
       assert_raise(Errno::EACCES) { realpath("h") }
       File.chmod(0755, "f")
     }

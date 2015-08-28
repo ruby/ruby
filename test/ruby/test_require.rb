@@ -403,7 +403,7 @@ class TestRequire < Test::Unit::TestCase
           File.symlink("../a/tst.rb", "b/tst.rb")
           result = IO.popen([EnvUtil.rubybin, "b/tst.rb"], &:read)
           assert_equal("a/lib.rb\n", result, "[ruby-dev:40040]")
-        rescue NotImplementedError
+        rescue NotImplementedError, Errno::EACCES
           skip "File.symlink is not implemented"
         end
       }
@@ -706,4 +706,33 @@ class TestRequire < Test::Unit::TestCase
       END
     }
   end unless /mswin|mingw/ =~ RUBY_PLATFORM
+
+  def test_throw_while_loading
+    Tempfile.create(%w'bug-11404 .rb') do |f|
+      f.puts 'sleep'
+      f.close
+
+      assert_separately(["-", f.path], <<-'end;')
+        path = ARGV[0]
+        class Error < RuntimeError
+          def exception(*)
+            begin
+              throw :blah
+            rescue UncaughtThrowError
+            end
+            self
+          end
+        end
+
+        assert_throw(:blah) do
+          x = Thread.current
+          Thread.start {
+            sleep 0.00001
+            x.raise Error.new
+          }
+          load path
+        end
+      end;
+    end
+  end
 end

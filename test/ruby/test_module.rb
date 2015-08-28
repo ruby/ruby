@@ -1114,13 +1114,13 @@ class TestModule < Test::Unit::TestCase
     assert_equal [:f], memo.shift, '[ruby-core:25536]'
     assert_equal mod.instance_method(:f), memo.shift
     assert_equal :g, memo.shift
-    assert_equal [:f, :g], memo.shift
+    assert_equal [:f, :g].sort, memo.shift.sort
     assert_equal mod.instance_method(:f), memo.shift
     assert_equal :a, memo.shift
-    assert_equal [:f, :g, :a], memo.shift
+    assert_equal [:f, :g, :a].sort, memo.shift.sort
     assert_equal mod.instance_method(:a), memo.shift
     assert_equal :a=, memo.shift
-    assert_equal [:f, :g, :a, :a=], memo.shift
+    assert_equal [:f, :g, :a, :a=].sort, memo.shift.sort
     assert_equal mod.instance_method(:a=), memo.shift
   end
 
@@ -1358,6 +1358,13 @@ class TestModule < Test::Unit::TestCase
     assert_equal("foo", c.class_eval("FOO"))
     c.public_constant(:FOO)
     assert_equal("foo", c::FOO)
+  end
+
+  def test_deprecate_constant
+    c = Class.new
+    c.const_set(:FOO, "foo")
+    c.deprecate_constant(:FOO)
+    assert_warn(/deprecated/) {c::FOO}
   end
 
   def test_constants_with_private_constant

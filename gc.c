@@ -27,6 +27,7 @@
 #include "constant.h"
 #include "ruby_atomic.h"
 #include "probes.h"
+#include "id_table.h"
 #include <stdio.h>
 #include <stdarg.h>
 #include <setjmp.h>
@@ -34,10 +35,6 @@
 #include <assert.h>
 
 #undef rb_data_object_wrap
-
-#ifndef __has_feature
-# define __has_feature(x) 0
-#endif
 
 #ifndef HAVE_MALLOC_USABLE_SIZE
 # ifdef _WIN32
@@ -408,6 +405,7 @@ typedef struct RVALUE {
 	    struct vm_ifunc ifunc;
 	    struct MEMO memo;
 	    struct rb_method_entry_struct ment;
+	    const rb_iseq_t iseq;
 	} imemo;
 	struct {
 	    struct RBasic basic;
@@ -703,6 +701,7 @@ static rb_objspace_t rb_objspace = {{GC_MALLOC_LIMIT_MIN}};
 #endif
 
 #define ruby_initial_gc_stress	gc_params.gc_stress
+
 VALUE *ruby_initial_gc_stress_ptr = &ruby_initial_gc_stress;
 
 #define malloc_limit		objspace->malloc_params.limit
@@ -781,6 +780,9 @@ struct RZombie {
 int ruby_gc_debug_indent = 0;
 VALUE rb_mGC;
 int ruby_disable_gc = 0;
+
+void rb_iseq_mark(const rb_iseq_t *iseq);
+void rb_iseq_free(const rb_iseq_t *iseq);
 
 void rb_gcdebug_print_obj_condition(VALUE obj);
 
@@ -1927,14 +1929,6 @@ is_pointer_to_heap(rb_objspace_t *objspace, void *ptr)
     return FALSE;
 }
 
-static void
-rb_free_m_tbl(st_table *tbl)
-{
-    if (tbl) {
-	st_free_table(tbl);
-    }
-}
-
 static int
 free_const_entry_i(st_data_t key, st_data_t value, st_data_t data)
 {
@@ -2009,7 +2003,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	break;
       case T_MODULE:
       case T_CLASS:
-	rb_free_m_tbl(RCLASS_M_TBL(obj));
+	rb_id_table_free(RCLASS_M_TBL(obj));
 	if (RCLASS_IV_TBL(obj)) {
 	    st_free_table(RCLASS_IV_TBL(obj));
 	}
@@ -2103,9 +2097,11 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
       case T_ICLASS:
 	/* Basically , T_ICLASS shares table with the module */
 	if (FL_TEST(obj, RICLASS_IS_ORIGIN)) {
-	    rb_free_m_tbl(RCLASS_M_TBL(obj));
+	    rb_id_table_free(RCLASS_M_TBL(obj));
 	}
-	rb_free_m_tbl(RCLASS_CALLABLE_M_TBL(obj));
+	if (RCLASS_CALLABLE_M_TBL(obj) != NULL) {
+	    rb_id_table_free(RCLASS_CALLABLE_M_TBL(obj));
+	}
 	if (RCLASS_EXT(obj)->subclasses) {
 	    rb_class_detach_subclasses(obj);
 	    RCLASS_EXT(obj)->subclasses = NULL;
@@ -2144,11 +2140,18 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 
       case T_IMEMO:
 	{
-	    if (imemo_type(obj) == imemo_ment) {
+	    switch (imemo_type(obj)) {
+	      case imemo_ment:
 		rb_free_method_entry(&RANY(obj)->as.imemo.ment);
+		break;
+	      case imemo_iseq:
+		rb_iseq_free(&RANY(obj)->as.imemo.iseq);
+		break;
+	      default:
+		break;
 	    }
 	}
-	break;
+	return 0;
 
       default:
 	rb_bug("gc_sweep(): unknown data type 0x%x(%p) 0x%"PRIxVALUE,
@@ -2323,9 +2326,6 @@ internal_object_p(VALUE obj)
 	  case T_NODE:
 	  case T_ZOMBIE:
 	    break;
-	  case T_CLASS:
-	    if (FL_TEST(p, FL_SINGLETON))
-	      break;
 	  default:
 	    if (!p->as.basic.klass) break;
 	    return 0;
@@ -2469,7 +2469,9 @@ should_be_finalizable(VALUE obj)
  *     ObjectSpace.define_finalizer(obj, aProc=proc())
  *
  *  Adds <i>aProc</i> as a finalizer, to be called after <i>obj</i>
- *  was destroyed.
+ *  was destroyed. The object ID of the <i>obj</i> will be passed
+ *  as an argument to <i>aProc</i>. If <i>aProc</i> is a lambda or
+ *  method, make sure it can be called with a single argument.
  *
  */
 
@@ -2555,34 +2557,32 @@ static VALUE
 run_single_final(VALUE arg)
 {
     VALUE *args = (VALUE *)arg;
-    rb_eval_cmd(args[0], args[1], (int)args[2]);
-    return Qnil;
+
+    return rb_check_funcall(args[0], idCall, 1, args+1);
 }
 
 static void
 run_finalizer(rb_objspace_t *objspace, VALUE obj, VALUE table)
 {
     long i;
-    int status;
-    VALUE args[3];
-    VALUE objid = nonspecial_obj_id(obj);
+    VALUE args[2];
+    const int safe = rb_safe_level();
+    const VALUE errinfo = rb_errinfo();
 
-    if (RARRAY_LEN(table) > 0) {
-	args[1] = rb_obj_freeze(rb_ary_new3(1, objid));
-    }
-    else {
-	args[1] = 0;
-    }
+    args[1] = nonspecial_obj_id(obj);
 
-    args[2] = (VALUE)rb_safe_level();
     for (i=0; i<RARRAY_LEN(table); i++) {
-	VALUE final = RARRAY_AREF(table, i);
-	args[0] = RARRAY_AREF(final, 1);
-	args[2] = FIX2INT(RARRAY_AREF(final, 0));
-	status = 0;
+	const VALUE final = RARRAY_AREF(table, i);
+	const VALUE cmd = RARRAY_AREF(final, 1);
+	const int level = OBJ_TAINTED(cmd) ?
+	    RUBY_SAFE_LEVEL_MAX : FIX2INT(RARRAY_AREF(final, 0));
+	int status = 0;
+
+	args[0] = cmd;
+	rb_set_safe_level_force(level);
 	rb_protect(run_single_final, (VALUE)args, &status);
-	if (status)
-	    rb_set_errinfo(Qnil);
+	rb_set_safe_level_force(safe);
+	rb_set_errinfo(errinfo);
     }
 }
 
@@ -2628,7 +2628,7 @@ finalize_deferred(rb_objspace_t *objspace)
 {
     VALUE zombie;
 
-    while ((zombie = (VALUE)ATOMIC_PTR_EXCHANGE(heap_pages_deferred_final, 0)) != 0) {
+    while ((zombie = ATOMIC_VALUE_EXCHANGE(heap_pages_deferred_final, 0)) != 0) {
 	finalize_list(objspace, zombie);
     }
 }
@@ -2996,7 +2996,7 @@ obj_memsize_of(VALUE obj, int use_all_types)
       case T_MODULE:
       case T_CLASS:
 	if (RCLASS_M_TBL(obj)) {
-	    size += st_memsize(RCLASS_M_TBL(obj));
+	    size += rb_id_table_memsize(RCLASS_M_TBL(obj));
 	}
 	if (RCLASS_EXT(obj)) {
 	    if (RCLASS_IV_TBL(obj)) {
@@ -3017,7 +3017,7 @@ obj_memsize_of(VALUE obj, int use_all_types)
       case T_ICLASS:
 	if (FL_TEST(obj, RICLASS_IS_ORIGIN)) {
 	    if (RCLASS_M_TBL(obj)) {
-		size += st_memsize(RCLASS_M_TBL(obj));
+		size += rb_id_table_memsize(RCLASS_M_TBL(obj));
 	    }
 	}
 	break;
@@ -3933,7 +3933,7 @@ mark_method_entry(rb_objspace_t *objspace, const rb_method_entry_t *me)
     if (def) {
 	switch (def->type) {
 	  case VM_METHOD_TYPE_ISEQ:
-	    if (def->body.iseq.iseqptr) gc_mark(objspace, def->body.iseq.iseqptr->self);
+	    if (def->body.iseq.iseqptr) gc_mark(objspace, (VALUE)def->body.iseq.iseqptr);
 	    gc_mark(objspace, (VALUE)def->body.iseq.cref);
 	    break;
 	  case VM_METHOD_TYPE_ATTRSET:
@@ -3961,21 +3961,20 @@ mark_method_entry(rb_objspace_t *objspace, const rb_method_entry_t *me)
     }
 }
 
-static int
-mark_method_entry_i(st_data_t key, st_data_t value, st_data_t data)
+static enum rb_id_table_iterator_result
+mark_method_entry_i(VALUE me, void *data)
 {
-    VALUE me = (VALUE)value;
     rb_objspace_t *objspace = (rb_objspace_t *)data;
 
     gc_mark(objspace, me);
-    return ST_CONTINUE;
+    return ID_TABLE_CONTINUE;
 }
 
 static void
-mark_m_tbl(rb_objspace_t *objspace, struct st_table *tbl)
+mark_m_tbl(rb_objspace_t *objspace, struct rb_id_table *tbl)
 {
     if (tbl) {
-	st_foreach(tbl, mark_method_entry_i, (st_data_t)objspace);
+	rb_id_table_foreach_values(tbl, mark_method_entry_i, objspace);
     }
 }
 
@@ -4281,6 +4280,9 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 
       case T_IMEMO:
 	switch (imemo_type(obj)) {
+	  case imemo_none:
+	    rb_bug("unreachable");
+	    return;
 	  case imemo_cref:
 	    gc_mark(objspace, RANY(obj)->as.imemo.cref.klass);
 	    gc_mark(objspace, (VALUE)RANY(obj)->as.imemo.cref.next);
@@ -4306,9 +4308,11 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 	  case imemo_ment:
 	    mark_method_entry(objspace, &RANY(obj)->as.imemo.ment);
 	    return;
-	  default:
-	    rb_bug("T_IMEMO: unreachable");
+	  case imemo_iseq:
+	    rb_iseq_mark((rb_iseq_t *)obj);
+	    return;
 	}
+	rb_bug("T_IMEMO: unreachable");
     }
 
     gc_mark(objspace, any->as.basic.klass);
@@ -4327,8 +4331,8 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 	if (FL_TEST(obj, RICLASS_IS_ORIGIN)) {
 	    mark_m_tbl(objspace, RCLASS_M_TBL(obj));
 	}
-	mark_m_tbl(objspace, RCLASS_CALLABLE_M_TBL(obj));
 	if (!RCLASS_EXT(obj)) break;
+	mark_m_tbl(objspace, RCLASS_CALLABLE_M_TBL(obj));
 	gc_mark(objspace, RCLASS_SUPER((VALUE)obj));
 	break;
 
@@ -7639,15 +7643,15 @@ ruby_xmalloc(size_t size)
     return objspace_xmalloc(&rb_objspace, size);
 }
 
-static inline size_t
-xmalloc2_size(size_t n, size_t size)
+void
+ruby_malloc_size_overflow(size_t count, size_t elsize)
 {
-    size_t len = size * n;
-    if (n != 0 && size != len / n) {
-	rb_raise(rb_eArgError, "malloc: possible integer overflow");
-    }
-    return len;
+    rb_raise(rb_eArgError,
+	     "malloc: possible integer overflow (%"PRIdSIZE"*%"PRIdSIZE")",
+	     count, elsize);
 }
+
+#define xmalloc2_size ruby_xmalloc2_size
 
 void *
 ruby_xmalloc2(size_t n, size_t size)
@@ -7754,6 +7758,36 @@ ruby_mimfree(void *ptr)
     mem = mem - 1;
 #endif
     free(mem);
+}
+
+void *
+rb_alloc_tmp_buffer(volatile VALUE *store, long len)
+{
+    NODE *s;
+    long cnt;
+    void *ptr;
+
+    if (len < 0 || (cnt = (long)roomof(len, sizeof(VALUE))) < 0) {
+	rb_raise(rb_eArgError, "negative buffer size (or size too big)");
+    }
+
+    s = rb_node_newnode(NODE_ALLOCA, 0, 0, 0);
+    ptr = ruby_xmalloc(cnt * sizeof(VALUE));
+    s->u1.value = (VALUE)ptr;
+    s->u3.cnt = cnt;
+    *store = (VALUE)s;
+    return ptr;
+}
+
+void
+rb_free_tmp_buffer(volatile VALUE *store)
+{
+    VALUE s = ATOMIC_VALUE_EXCHANGE(*store, 0);
+    if (s) {
+	void *ptr = ATOMIC_PTR_EXCHANGE(RNODE(s)->u1.node, 0);
+	RNODE(s)->u3.cnt = 0;
+	ruby_xfree(ptr);
+    }
 }
 
 #if MALLOC_ALLOCATED_SIZE
@@ -8926,15 +8960,7 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
       }
       case T_DATA: {
 	  const char * const type_name = rb_objspace_data_type_name(obj);
-	  if (type_name && strcmp(type_name, "iseq") == 0) {
-	      rb_iseq_t *iseq;
-	      GetISeqPtr(obj, iseq);
-	      if (iseq->location.label) {
-		  snprintf(buff, buff_size, "%s %s@%s:%d", buff,
-			   RSTRING_PTR(iseq->location.label), RSTRING_PTR(iseq->location.path), (int)iseq->location.first_lineno);
-	      }
-	  }
-	  else if (type_name) {
+	  if (type_name) {
 	      snprintf(buff, buff_size, "%s %s", buff, type_name);
 	  }
 	  break;
@@ -8954,10 +8980,25 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 #undef IMEMO_NAME
 	  }
 	  snprintf(buff, buff_size, "%s %s", buff, imemo_name);
-	  if (imemo_type(obj) == imemo_ment) {
-	      const rb_method_entry_t *me = &RANY(obj)->as.imemo.ment;
-	      snprintf(buff, buff_size, "%s (called_id: %s, type: %s, alias: %d, class: %s)", buff,
-		       rb_id2name(me->called_id), method_type_name(me->def->type), me->def->alias_count, obj_info(me->defined_class));
+
+	  switch (imemo_type(obj)) {
+	    case imemo_ment: {
+		const rb_method_entry_t *me = &RANY(obj)->as.imemo.ment;
+		snprintf(buff, buff_size, "%s (called_id: %s, type: %s, alias: %d, class: %s)", buff,
+			 rb_id2name(me->called_id), method_type_name(me->def->type), me->def->alias_count, obj_info(me->defined_class));
+		break;
+	    }
+	    case imemo_iseq: {
+		const rb_iseq_t *iseq = (const rb_iseq_t *)obj;
+
+		if (iseq->body->location.label) {
+		    snprintf(buff, buff_size, "%s %s@%s:%d", buff,
+			     RSTRING_PTR(iseq->body->location.label), RSTRING_PTR(iseq->body->location.path), (int)iseq->body->location.first_lineno);
+		}
+		break;
+	    }
+	    default:
+	      break;
 	  }
       }
       default:

@@ -88,6 +88,12 @@ class TestObjSpace < Test::Unit::TestCase
     assert_not_empty(res)
   end
 
+  def test_memsize_of_iseq
+    iseqw = RubyVM::InstructionSequence.compile('def a; a = :b; end')
+    base_obj_size = ObjectSpace.memsize_of(Object.new)
+    assert_operator(ObjectSpace.memsize_of(iseqw), :>, base_obj_size)
+  end
+
   def test_reachable_objects_from
     assert_separately %w[--disable-gem -robjspace], __FILE__, __LINE__, <<-'eom'
     assert_equal(nil, ObjectSpace.reachable_objects_from(nil))
@@ -344,5 +350,16 @@ class TestObjSpace < Test::Unit::TestCase
       i += 1
     }
     assert_operator i, :>, 0
+  end
+
+  def test_count_symbols
+    syms = (1..128).map{|i| ("xyzzy#{i}" * 128).to_sym}
+    c = Class.new{define_method(syms[-1]){}}
+
+    h = ObjectSpace.count_symbols
+    assert_operator h[:mortal_dynamic_symbol],   :>=, 128, h.inspect
+    assert_operator h[:immortal_dynamic_symbol], :>=, 1, h.inspect
+    assert_operator h[:immortal_static_symbol],  :>=, Object.methods.size, h.inspect
+    assert_equal h[:immortal_symbol], h[:immortal_dynamic_symbol] + h[:immortal_static_symbol], h.inspect
   end
 end

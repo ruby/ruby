@@ -86,7 +86,7 @@ module OpenSSL::TestEOF1M
     th = Thread.new { s2 << content; s2.close }
     yield s1
   ensure
-    th.join
+    th.join if th
     s1.close
   end
 end
@@ -97,7 +97,7 @@ module OpenSSL::TestEOF2M
     th = Thread.new { s1 << content; s1.close }
     yield s2
   ensure
-    th.join
+    th.join if th
     s2.close
   end
 end
@@ -107,6 +107,14 @@ module OpenSSL::TestPairM
     ssl_pair {|s1, s2|
       s1 << "a"
       assert_equal(?a, s2.getc)
+    }
+  end
+
+  def test_gets_eof_limit
+    ssl_pair {|s1, s2|
+      s1.write("hello")
+      s1.close # trigger EOF
+      assert_match "hello", s2.gets("\n", 6), "[ruby-core:70149] [Bug #11140]"
     }
   end
 
@@ -283,6 +291,96 @@ module OpenSSL::TestPairM
     serv.close if serv && !serv.closed?
   end
 
+  def test_connect_works_when_setting_dh_callback_to_nil
+    ctx2 = OpenSSL::SSL::SSLContext.new
+    ctx2.ciphers = "DH"
+    ctx2.tmp_dh_callback = nil
+    sock1, sock2 = tcp_pair
+    s2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx2)
+    accepted = s2.accept_nonblock(exception: false)
+
+    ctx1 = OpenSSL::SSL::SSLContext.new
+    ctx1.ciphers = "DH"
+    ctx1.tmp_dh_callback = nil
+    s1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx1)
+    t = Thread.new { s1.connect }
+
+    accept = s2.accept
+    assert_equal s1, t.value
+    assert accept
+  ensure
+    t.join if t
+    s1.close if s1
+    s2.close if s2
+    sock1.close if sock1
+    sock2.close if sock2
+    accepted.close if accepted.respond_to?(:close)
+  end
+
+  def test_connect_without_setting_dh_callback
+    ctx2 = OpenSSL::SSL::SSLContext.new
+    ctx2.ciphers = "DH"
+    sock1, sock2 = tcp_pair
+    s2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx2)
+    accepted = s2.accept_nonblock(exception: false)
+
+    ctx1 = OpenSSL::SSL::SSLContext.new
+    ctx1.ciphers = "DH"
+    s1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx1)
+    t = Thread.new { s1.connect }
+
+    accept = s2.accept
+    assert_equal s1, t.value
+    assert accept
+  ensure
+    t.join if t
+    s1.close if s1
+    s2.close if s2
+    sock1.close if sock1
+    sock2.close if sock2
+    accepted.close if accepted.respond_to?(:close)
+  end
+
+  def test_ecdh_callback
+    called = false
+    ctx2 = OpenSSL::SSL::SSLContext.new
+    ctx2.ciphers = "ECDH"
+    ctx2.tmp_ecdh_callback = ->(*args) {
+      called = true
+      OpenSSL::PKey::EC.new "prime256v1"
+    }
+
+    sock1, sock2 = tcp_pair
+
+    s2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx2)
+    ctx1 = OpenSSL::SSL::SSLContext.new
+    ctx1.ciphers = "ECDH"
+
+    s1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx1)
+    th = Thread.new do
+      begin
+        rv = s1.connect_nonblock(exception: false)
+        case rv
+        when :wait_writable
+          IO.select(nil, [s1], nil, 5)
+        when :wait_readable
+          IO.select([s1], nil, nil, 5)
+        end
+      end until rv == s1
+    end
+
+    accepted = s2.accept
+
+    assert called, 'ecdh callback should be called'
+  ensure
+    th.join if th
+    s1.close if s1
+    s2.close if s2
+    sock1.close if sock1
+    sock2.close if sock2
+    accepted.close if accepted.respond_to?(:close)
+  end
+
   def test_connect_accept_nonblock_no_exception
     ctx2 = OpenSSL::SSL::SSLContext.new
     ctx2.ciphers = "ADH"
@@ -323,6 +421,7 @@ module OpenSSL::TestPairM
       assert_includes([s1, :wait_readable, :wait_writable ], rv)
     end
   ensure
+    th.join if th
     s1.close if s1
     s2.close if s2
     sock1.close if sock1
@@ -374,7 +473,7 @@ module OpenSSL::TestPairM
     s1.print "a\ndef"
     assert_equal("a\n", s2.gets)
   ensure
-    th.join
+    th.join if th
     s1.close if s1 && !s1.closed?
     s2.close if s2 && !s2.closed?
     sock1.close if sock1 && !sock1.closed?

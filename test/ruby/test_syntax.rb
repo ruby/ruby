@@ -304,6 +304,18 @@ WARN
     assert_syntax_error("{%q'a': 1}", /unexpected ':'/)
   end
 
+  def test_block_after_cond
+    bug10653 = '[ruby-dev:48790] [Bug #10653]'
+    assert_valid_syntax("false ? raise {} : tap {}", bug10653)
+    assert_valid_syntax("false ? raise do end : tap do end", bug10653)
+  end
+
+  def test_paren_after_label
+    bug11456 = '[ruby-dev:49221] [Bug #11456]'
+    assert_valid_syntax("{foo: (1 rescue 0)}", bug11456)
+    assert_valid_syntax("{foo: /=/}", bug11456)
+  end
+
   def test_duplicated_arg
     assert_syntax_error("def foo(a, a) end", /duplicated argument name/)
     assert_nothing_raised { def foo(_, _) end }
@@ -412,6 +424,11 @@ WARN
   def test_do_block_in_lambda
     bug11107 = '[ruby-core:69017] [Bug #11107]'
     assert_valid_syntax('p ->() do a() do end end', bug11107)
+  end
+
+  def test_do_block_after_lambda
+    bug11380 = '[ruby-core:70067] [Bug #11380]'
+    assert_valid_syntax('p -> { :hello }, a: 1 do end', bug11380)
   end
 
   def test_reserved_method_no_args

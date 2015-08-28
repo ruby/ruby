@@ -25,8 +25,8 @@ extern "C" {
 
 /* likely */
 #if __GNUC__ >= 3
-#define LIKELY(x)   (__builtin_expect((x), 1))
-#define UNLIKELY(x) (__builtin_expect((x), 0))
+#define LIKELY(x)   (__builtin_expect(!!(x), 1))
+#define UNLIKELY(x) (__builtin_expect(!!(x), 0))
 #else /* __GNUC__ >= 3 */
 #define LIKELY(x)   (x)
 #define UNLIKELY(x) (x)
@@ -73,7 +73,15 @@ extern "C" {
     (__GNUC__ == (major) && __GNUC_MINOR__ > (minor)) || \
     (__GNUC__ == (major) && __GNUC_MINOR__ == (minor) && __GNUC_PATCHLEVEL__ >= (patchlevel))))
 
-#if GCC_VERSION_SINCE(4, 6, 0)
+#ifndef __has_feature
+# define __has_feature(x) 0
+#endif
+
+#ifndef __has_extension
+# define __has_extension __has_feature
+#endif
+
+#if GCC_VERSION_SINCE(4, 6, 0) || __has_extension(c_static_assert)
 # define STATIC_ASSERT(name, expr) _Static_assert(expr, #name ": " #expr)
 #else
 # define STATIC_ASSERT(name, expr) typedef int static_assert_##name##_check[1 - 2*!(expr)]
@@ -456,7 +464,7 @@ struct rb_classext_struct {
     struct st_table *iv_index_tbl;
     struct st_table *iv_tbl;
     struct st_table *const_tbl;
-    struct st_table *callable_m_tbl;
+    struct rb_id_table *callable_m_tbl;
     rb_subclass_entry_t *subclasses;
     rb_subclass_entry_t **parent_subclasses;
     /**
@@ -469,6 +477,16 @@ struct rb_classext_struct {
     const VALUE origin_;
     VALUE refined_class;
     rb_alloc_func_t allocator;
+};
+
+typedef struct rb_classext_struct rb_classext_t;
+
+#undef RClass
+struct RClass {
+    struct RBasic basic;
+    VALUE super;
+    rb_classext_t *ptr;
+    struct rb_id_table *m_tbl;
 };
 
 void rb_class_subclass_add(VALUE super, VALUE klass);
@@ -491,12 +509,6 @@ RCLASS_SET_ORIGIN(VALUE klass, VALUE origin)
 {
     RB_OBJ_WRITE(klass, &RCLASS_ORIGIN(klass), origin);
     if (klass != origin) FL_SET(origin, RICLASS_IS_ORIGIN);
-}
-
-static inline void
-RCLASS_M_TBL_INIT(VALUE c)
-{
-    RCLASS_M_TBL(c) = st_init_numtable();
 }
 
 #undef RCLASS_SUPER
@@ -538,6 +550,7 @@ enum imemo_type {
     imemo_ifunc = 4,
     imemo_memo = 5,
     imemo_ment = 6,
+    imemo_iseq = 7,
     imemo_mask = 0x07
 };
 
@@ -824,7 +837,6 @@ struct st_table *rb_hash_tbl_raw(VALUE hash);
 VALUE rb_hash_has_key(VALUE hash, VALUE key);
 VALUE rb_hash_set_default_proc(VALUE hash, VALUE proc);
 long rb_objid_hash(st_index_t index);
-VALUE rb_ident_hash_new(void);
 st_table *rb_init_identtable(void);
 st_table *rb_init_identtable_with_size(st_index_t size);
 
@@ -845,14 +857,6 @@ void rb_stdio_set_default_encoding(void);
 void rb_write_error_str(VALUE mesg);
 VALUE rb_io_flush_raw(VALUE, int);
 size_t rb_io_memsize(const rb_io_t *);
-
-/* iseq.c */
-VALUE rb_iseq_path(VALUE iseqval);
-VALUE rb_iseq_absolute_path(VALUE iseqval);
-VALUE rb_iseq_label(VALUE iseqval);
-VALUE rb_iseq_base_label(VALUE iseqval);
-VALUE rb_iseq_first_lineno(VALUE iseqval);
-VALUE rb_iseq_method_name(VALUE self);
 
 /* load.c */
 VALUE rb_get_load_path(void);
@@ -899,29 +903,39 @@ VALUE rb_dbl_hash(double d);
 #endif
 
 static inline double
-rb_float_value_inline(VALUE v)
+rb_float_flonum_value(VALUE v)
 {
 #if USE_FLONUM
-    if (FLONUM_P(v)) {
-	if (v != (VALUE)0x8000000000000002) { /* LIKELY */
-	    union {
-		double d;
-		VALUE v;
-	    } t;
+    if (v != (VALUE)0x8000000000000002) { /* LIKELY */
+	union {
+	    double d;
+	    VALUE v;
+	} t;
 
-	    VALUE b63 = (v >> 63);
-	    /* e: xx1... -> 011... */
-	    /*    xx0... -> 100... */
-	    /*      ^b63           */
-	    t.v = RUBY_BIT_ROTR((2 - b63) | (v & ~0x03), 3);
-	    return t.d;
-	}
-	else {
-	    return 0.0;
-	}
+	VALUE b63 = (v >> 63);
+	/* e: xx1... -> 011... */
+	/*    xx0... -> 100... */
+	/*      ^b63           */
+	t.v = RUBY_BIT_ROTR((2 - b63) | (v & ~0x03), 3);
+	return t.d;
     }
 #endif
+    return 0.0;
+}
+
+static inline double
+rb_float_noflonum_value(VALUE v)
+{
     return ((struct RFloat *)v)->float_value;
+}
+
+static inline double
+rb_float_value_inline(VALUE v)
+{
+    if (FLONUM_P(v)) {
+	return rb_float_flonum_value(v);
+    }
+    return rb_float_noflonum_value(v);
 }
 
 static inline VALUE
@@ -961,6 +975,7 @@ rb_float_new_inline(double d)
 void rb_obj_copy_ivar(VALUE dest, VALUE obj);
 VALUE rb_obj_equal(VALUE obj1, VALUE obj2);
 VALUE rb_class_search_ancestor(VALUE klass, VALUE super);
+double rb_num_to_dbl(VALUE val);
 
 struct RBasicRaw {
     VALUE flags;
@@ -1113,8 +1128,8 @@ VALUE rb_external_str_with_enc(VALUE str, rb_encoding *eenc);
 #endif
 #define STR_NOEMBED      FL_USER1
 #define STR_SHARED       FL_USER2 /* = ELTS_SHARED */
-#define STR_EMBED_P(str) (!FL_TEST((str), STR_NOEMBED))
-#define STR_SHARED_P(s)  FL_ALL((s), STR_NOEMBED|ELTS_SHARED)
+#define STR_EMBED_P(str) (!FL_TEST_RAW((str), STR_NOEMBED))
+#define STR_SHARED_P(s)  FL_ALL_RAW((s), STR_NOEMBED|ELTS_SHARED)
 #define is_ascii_string(str) (rb_enc_str_coderange(str) == ENC_CODERANGE_7BIT)
 #define is_broken_string(str) (rb_enc_str_coderange(str) == ENC_CODERANGE_BROKEN)
 size_t rb_str_memsize(VALUE);
@@ -1142,6 +1157,7 @@ void ruby_kill(rb_pid_t pid, int sig);
 
 /* thread_pthread.c, thread_win32.c */
 void Init_native_thread(void);
+int rb_divert_reserved_fd(int fd);
 
 /* transcode.c */
 extern VALUE rb_cEncodingConverter;
@@ -1256,6 +1272,7 @@ VALUE rb_str_normalize_ospath(const char *ptr, long len);
 
 /* hash.c (export) */
 VALUE rb_hash_delete_entry(VALUE hash, VALUE key);
+VALUE rb_ident_hash_new(void);
 
 /* io.c (export) */
 void rb_maygvl_fd_fix_cloexec(int fd);

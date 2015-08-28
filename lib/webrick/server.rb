@@ -48,9 +48,9 @@ module WEBrick
       exit!(0) if fork
       Dir::chdir("/")
       File::umask(0)
-      STDIN.reopen("/dev/null")
-      STDOUT.reopen("/dev/null", "w")
-      STDERR.reopen("/dev/null", "w")
+      STDIN.reopen(IO::NULL)
+      STDOUT.reopen(IO::NULL, "w")
+      STDERR.reopen(IO::NULL, "w")
       yield if block_given?
     end
   end
@@ -172,8 +172,13 @@ module WEBrick
         begin
           while @status == :Running
             begin
-              if svrs = IO.select([shutdown_pipe[0], *@listeners], nil, nil, 2.0)
-                if svrs[0].include? shutdown_pipe[0]
+              sp = shutdown_pipe[0]
+              if svrs = IO.select([sp, *@listeners], nil, nil, 2.0)
+                if svrs[0].include? sp
+                  # swallow shutdown pipe
+                  buf = String.new
+                  nil while String ===
+                            sp.read_nonblock([sp.nread, 8].max, buf, exception: false)
                   break
                 end
                 svrs[0].each{|svr|
@@ -221,6 +226,8 @@ module WEBrick
       if @status == :Running
         @status = :Shutdown
       end
+
+      alarm_shutdown_pipe {|f| f.write_nonblock("\0")}
     end
 
     ##
@@ -230,15 +237,7 @@ module WEBrick
     def shutdown
       stop
 
-      shutdown_pipe = @shutdown_pipe # another thread may modify @shutdown_pipe.
-      if shutdown_pipe
-        if !shutdown_pipe[1].closed?
-          begin
-            shutdown_pipe[1].close
-          rescue IOError # closed by another thread.
-          end
-        end
-      end
+      alarm_shutdown_pipe {|f| f.close}
     end
 
     ##
@@ -341,6 +340,18 @@ module WEBrick
           end
         end
       }
+    end
+
+    def alarm_shutdown_pipe
+      _, pipe = @shutdown_pipe # another thread may modify @shutdown_pipe.
+      if pipe
+        if !pipe.closed?
+          begin
+            yield pipe
+          rescue IOError # closed by another thread.
+          end
+        end
+      end
     end
 
     def cleanup_listener

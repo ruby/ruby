@@ -102,7 +102,7 @@ class TestSocketNonblock < Test::Unit::TestCase
     assert_raise(IO::WaitReadable) { u1.recvfrom_nonblock(100) }
     u2.send("", 0, u1.getsockname)
     assert_nothing_raised("cygwin 1.5.19 has a problem to send an empty UDP packet. [ruby-dev:28915]") {
-      timeout(1) { IO.select [u1] }
+      Timeout.timeout(1) { IO.select [u1] }
     }
     mesg, inet_addr = u1.recvfrom_nonblock(100)
     assert_equal("", mesg)
@@ -124,7 +124,7 @@ class TestSocketNonblock < Test::Unit::TestCase
     assert_raise(IO::WaitReadable) { u1.recv_nonblock(100) }
     u2.send("", 0, u1.getsockname)
     assert_nothing_raised("cygwin 1.5.19 has a problem to send an empty UDP packet. [ruby-dev:28915]") {
-      timeout(1) { IO.select [u1] }
+      Timeout.timeout(1) { IO.select [u1] }
     }
     mesg = u1.recv_nonblock(100)
     assert_equal("", mesg)
@@ -299,7 +299,7 @@ class TestSocketNonblock < Test::Unit::TestCase
 
   if defined?(UNIXSocket) && defined?(Socket::SOCK_SEQPACKET)
     def test_sendmsg_nonblock_seqpacket
-      buf = '*' * 8192
+      buf = '*' * 4096
       UNIXSocket.pair(:SEQPACKET) do |s1, s2|
         assert_raise(IO::WaitWritable) do
           loop { s1.sendmsg_nonblock(buf) }
@@ -310,7 +310,7 @@ class TestSocketNonblock < Test::Unit::TestCase
     end
 
     def test_sendmsg_nonblock_no_exception
-      buf = '*' * 128
+      buf = '*' * 4096
       UNIXSocket.pair(:SEQPACKET) do |s1, s2|
         n = 0
         Timeout.timeout(60) do

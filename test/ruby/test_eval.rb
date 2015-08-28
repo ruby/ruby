@@ -126,6 +126,10 @@ class TestEval < Test::Unit::TestCase
     }
   end
 
+  def test_module_eval_block_symbol
+    assert_equal "Math", Math.module_eval(&:to_s)
+  end
+
   def forall_TYPE
     objects = [Object.new, [], nil, true, false] # TODO: check
     objects.each do |obj|
@@ -197,6 +201,12 @@ class TestEval < Test::Unit::TestCase
     o = Object.new
     assert_equal o, o.instance_eval(&pr)
     assert_equal self, pr.call
+  end
+
+  def test_instance_eval_block_symbol
+    forall_TYPE do |o|
+      assert_equal o.to_s, o.instance_eval(&:to_s)
+    end
   end
 
   def test_instance_eval_cvar

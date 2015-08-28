@@ -68,7 +68,7 @@ typedef struct rb_callable_method_entry_struct { /* same fields with rb_method_e
 static inline void
 METHOD_ENTRY_VISI_SET(rb_method_entry_t *me, rb_method_visibility_t visi)
 {
-    VM_ASSERT(visi >= 0 && visi <= 3);
+    VM_ASSERT((int)visi >= 0 && visi <= 3);
     me->flags = (me->flags & ~(IMEMO_FL_USER0 | IMEMO_FL_USER1)) | (visi << IMEMO_FL_USHIFT+0);
 }
 static inline void
@@ -86,7 +86,7 @@ METHOD_ENTRY_SAFE_SET(rb_method_entry_t *me, unsigned int safe)
 static inline void
 METHOD_ENTRY_FLAGS_SET(rb_method_entry_t *me, rb_method_visibility_t visi, unsigned int basic, unsigned int safe)
 {
-    VM_ASSERT(visi >= 0 && visi <= 3);
+    VM_ASSERT((int)visi >= 0 && visi <= 3);
     VM_ASSERT(basic <= 1);
     VM_ASSERT(safe <= 1);
     me->flags =
@@ -121,7 +121,7 @@ typedef enum {
 typedef struct rb_iseq_struct rb_iseq_t;
 
 typedef struct rb_method_iseq_struct {
-    rb_iseq_t * const iseqptr;                    /* should be separated from iseqval */
+    const rb_iseq_t * const iseqptr;              /* should be separated from iseqval */
     rb_cref_t * const cref;                       /* shoudl be marked */
 } rb_method_iseq_t; /* check rb_add_method_iseq() when modify the fields */
 
@@ -174,7 +174,7 @@ typedef struct rb_method_definition_struct {
      UNDEFINED_METHOD_ENTRY_P((def)->body.refined.orig_me))
 
 void rb_add_method_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, rb_method_visibility_t visi);
-void rb_add_method_iseq(VALUE klass, ID mid, VALUE iseqval, rb_cref_t *cref, rb_method_visibility_t visi);
+void rb_add_method_iseq(VALUE klass, ID mid, const rb_iseq_t *iseq, rb_cref_t *cref, rb_method_visibility_t visi);
 void rb_add_refined_method_entry(VALUE refined_class, ID mid);
 
 rb_method_entry_t *rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *option, rb_method_visibility_t visi);
@@ -197,6 +197,7 @@ int rb_method_entry_arity(const rb_method_entry_t *me);
 int rb_method_entry_eq(const rb_method_entry_t *m1, const rb_method_entry_t *m2);
 st_index_t rb_hash_method_entry(st_index_t hash, const rb_method_entry_t *me);
 
+VALUE rb_method_entry_location(const rb_method_entry_t *me);
 VALUE rb_mod_method_location(VALUE mod, ID id);
 VALUE rb_obj_method_location(VALUE obj, ID id);
 

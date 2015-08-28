@@ -677,6 +677,7 @@ enc_autoload(rb_encoding *enc)
 	i = enc->ruby_encoding_index;
 	enc_register_at(i & ENC_INDEX_MASK, rb_enc_name(enc), base);
 	((rb_raw_encoding *)enc)->ruby_encoding_index = i;
+	i &= ENC_INDEX_MASK;
     }
     else {
 	i = load_encoding(rb_enc_name(enc));
@@ -1274,16 +1275,14 @@ rb_usascii_encindex(void)
     return ENCINDEX_US_ASCII;
 }
 
+int rb_locale_charmap_index(void);
+
 int
 rb_locale_encindex(void)
 {
-    VALUE charmap = rb_locale_charmap(rb_cEncoding);
-    int idx;
+    int idx = rb_locale_charmap_index();
 
-    if (NIL_P(charmap))
-        idx = ENCINDEX_US_ASCII;
-    else if ((idx = rb_enc_find_index(StringValueCStr(charmap))) < 0)
-        idx = ENCINDEX_ASCII;
+    if (idx < 0) idx = ENCINDEX_ASCII;
 
     if (rb_enc_registered("locale") < 0) {
 # if defined _WIN32

@@ -49,6 +49,12 @@ RUBY_SYMBOL_EXPORT_BEGIN
 #define ENC_CODERANGE_7BIT	((int)FL_USER8)
 #define ENC_CODERANGE_VALID	((int)FL_USER9)
 #define ENC_CODERANGE_BROKEN	((int)(FL_USER8|FL_USER9))
+static inline int
+rb_enc_coderange_clean_p(int cr)
+{
+    return (cr ^ (cr >> 1)) & ENC_CODERANGE_7BIT;
+}
+#define ENC_CODERANGE_CLEAN_P(cr) rb_enc_coderange_clean_p(cr)
 #define ENC_CODERANGE(obj) ((int)RBASIC(obj)->flags & ENC_CODERANGE_MASK)
 #define ENC_CODERANGE_ASCIIONLY(obj) (ENC_CODERANGE(obj) == ENC_CODERANGE_7BIT)
 #define ENC_CODERANGE_SET(obj,cr) (RBASIC(obj)->flags = \

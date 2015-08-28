@@ -10,6 +10,44 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     assert_equal(ctx.setup, nil)
   end
 
+  def test_ctx_setup_invalid
+    m = OpenSSL::SSL::SSLContext::METHODS.first
+    assert_raise_with_message(ArgumentError, /null/) {
+      OpenSSL::SSL::SSLContext.new("#{m}\0")
+    }
+    assert_raise_with_message(ArgumentError, /\u{ff33 ff33 ff2c}/) {
+      OpenSSL::SSL::SSLContext.new("\u{ff33 ff33 ff2c}")
+    }
+  end
+
+  def test_options_defaults_to_OP_ALL_on
+    ctx = OpenSSL::SSL::SSLContext.new
+    assert_equal(OpenSSL::SSL::OP_ALL, (OpenSSL::SSL::OP_ALL & ctx.options))
+  end
+
+  def test_setting_twice
+    ctx = OpenSSL::SSL::SSLContext.new
+    ctx.options = 4
+    assert_equal 4, ctx.options
+    ctx.options = OpenSSL::SSL::OP_ALL
+    assert_equal OpenSSL::SSL::OP_ALL, ctx.options
+  end
+
+  def test_options_setting_nil_means_all
+    ctx = OpenSSL::SSL::SSLContext.new
+    ctx.options = nil
+    assert_equal OpenSSL::SSL::OP_ALL, ctx.options
+  end
+
+  def test_setting_options_raises_after_setup
+    ctx = OpenSSL::SSL::SSLContext.new
+    options = ctx.options
+    ctx.setup
+    assert_raise(RuntimeError) do
+      ctx.options = options
+    end
+  end
+
   def test_ctx_setup_no_compression
     ctx = OpenSSL::SSL::SSLContext.new
     ctx.options = OpenSSL::SSL::OP_ALL | OpenSSL::SSL::OP_NO_COMPRESSION
@@ -365,6 +403,20 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     }
   end
 
+  def test_post_connect_check_with_anon_ciphers
+    sslerr = OpenSSL::SSL::SSLError
+
+    start_server(OpenSSL::SSL::VERIFY_NONE, true, {use_anon_cipher: true}){|server, port|
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.ciphers = "aNULL"
+      server_connect(port, ctx) { |ssl|
+        msg = "Peer verification enabled, but no certificate received. Anonymous cipher suite " \
+          "ADH-AES256-GCM-SHA384 was negotiated. Anonymous suites must be disabled to use peer verification."
+        assert_raise_with_message(sslerr,msg){ssl.post_connection_check("localhost.localdomain")}
+      }
+    }
+  end
+
   def test_post_connection_check
     sslerr = OpenSSL::SSL::SSLError
 
@@ -607,6 +659,176 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     cert
   end
 
+  def socketpair
+    if defined? UNIXSocket
+      UNIXSocket.pair
+    else
+      Socket.pair(Socket::AF_INET, Socket::SOCK_STREAM, 0)
+    end
+  end
+
+  def test_servername_cb_sets_context_on_the_socket
+    hostname = 'example.org'
+
+    ctx3 = OpenSSL::SSL::SSLContext.new
+    ctx3.ciphers = "DH"
+
+    ctx2 = OpenSSL::SSL::SSLContext.new
+    ctx2.ciphers = "DH"
+    ctx2.servername_cb = lambda { |args| ctx3 }
+
+    sock1, sock2 = socketpair
+
+    s2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx2)
+
+    ctx1 = OpenSSL::SSL::SSLContext.new
+    ctx1.ciphers = "DH"
+
+    s1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx1)
+    s1.hostname = hostname
+    t = Thread.new { s1.connect }
+
+    assert_equal ctx2, s2.context
+    accepted = s2.accept
+    assert_equal ctx3, s2.context
+    assert t.value
+  ensure
+    s1.close if s1
+    s2.close if s2
+    sock1.close if sock1
+    sock2.close if sock2
+    accepted.close if accepted.respond_to?(:close)
+  end
+
+  def test_servername_cb_raises_an_exception_on_unknown_objects
+    hostname = 'example.org'
+
+    ctx2 = OpenSSL::SSL::SSLContext.new
+    ctx2.ciphers = "DH"
+    ctx2.servername_cb = lambda { |args| Object.new }
+
+    sock1, sock2 = socketpair
+
+    s2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx2)
+
+    ctx1 = OpenSSL::SSL::SSLContext.new
+    ctx1.ciphers = "DH"
+
+    s1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx1)
+    s1.hostname = hostname
+    t = Thread.new {
+      assert_raise(OpenSSL::SSL::SSLError) do
+        s1.connect
+      end
+    }
+
+    assert_raise(ArgumentError) do
+      s2.accept
+    end
+
+    assert t.join
+  ensure
+    sock1.close if sock1
+    sock2.close if sock2
+  end
+
+  def test_servername_cb_calls_setup_on_returned_ctx
+    hostname = 'example.org'
+
+    ctx3 = OpenSSL::SSL::SSLContext.new
+    ctx3.ciphers = "DH"
+    refute_predicate ctx3, :frozen?
+
+    ctx2 = OpenSSL::SSL::SSLContext.new
+    ctx2.ciphers = "DH"
+    ctx2.servername_cb = lambda { |args| ctx3 }
+
+    sock1, sock2 = socketpair
+
+    s2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx2)
+
+    ctx1 = OpenSSL::SSL::SSLContext.new
+    ctx1.ciphers = "DH"
+
+    s1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx1)
+    s1.hostname = hostname
+    t = Thread.new { s1.connect }
+
+    accepted = s2.accept
+    assert t.value
+    assert_predicate ctx3, :frozen?
+  ensure
+    s1.close if s1
+    s2.close if s2
+    sock1.close if sock1
+    sock2.close if sock2
+    accepted.close if accepted.respond_to?(:close)
+  end
+
+  def test_servername_cb_can_return_nil
+    hostname = 'example.org'
+
+    ctx2 = OpenSSL::SSL::SSLContext.new
+    ctx2.ciphers = "DH"
+    ctx2.servername_cb = lambda { |args| nil }
+
+    sock1, sock2 = socketpair
+
+    s2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx2)
+
+    ctx1 = OpenSSL::SSL::SSLContext.new
+    ctx1.ciphers = "DH"
+
+    s1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx1)
+    s1.hostname = hostname
+    t = Thread.new { s1.connect }
+
+    accepted = s2.accept
+    assert t.value
+  ensure
+    s1.close if s1
+    s2.close if s2
+    sock1.close if sock1
+    sock2.close if sock2
+    accepted.close if accepted.respond_to?(:close)
+  end
+
+  def test_servername_cb
+    lambda_called = nil
+    cb_socket = nil
+    hostname = 'example.org'
+
+    ctx2 = OpenSSL::SSL::SSLContext.new
+    ctx2.ciphers = "DH"
+    ctx2.servername_cb = lambda do |args|
+      cb_socket     = args[0]
+      lambda_called = args[1]
+      ctx2
+    end
+
+    sock1, sock2 = socketpair
+
+    s2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx2)
+
+    ctx1 = OpenSSL::SSL::SSLContext.new
+    ctx1.ciphers = "DH"
+
+    s1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx1)
+    s1.hostname = hostname
+    t = Thread.new { s1.connect }
+
+    accepted = s2.accept
+    assert t.value
+    assert_equal hostname, lambda_called
+    assert_equal s2, cb_socket
+  ensure
+    s1.close if s1
+    s2.close if s2
+    sock1.close if sock1
+    sock2.close if sock2
+    accepted.close if accepted.respond_to?(:close)
+  end
+
   def test_tlsext_hostname
     return unless OpenSSL::SSL::SSLSocket.instance_methods.include?(:hostname)
 
@@ -795,6 +1017,38 @@ end
     }
   end
 
+if OpenSSL::OPENSSL_VERSION_NUMBER >= 0x10002000
+  def test_alpn_protocol_selection_ary
+    advertised = ["http/1.1", "spdy/2"]
+    ctx_proc = Proc.new { |ctx|
+      ctx.alpn_select_cb = -> (protocols) {
+        protocols.first
+      }
+      ctx.alpn_protocols = advertised
+    }
+    start_server_version(:SSLv23, ctx_proc) { |server, port|
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.alpn_protocols = advertised
+      server_connect(port, ctx) { |ssl|
+        assert_equal(advertised.first, ssl.alpn_protocol)
+      }
+    }
+  end
+
+  def test_alpn_protocol_selection_cancel
+    ctx_proc = Proc.new { |ctx|
+      ctx.alpn_select_cb = -> (protocols) { nil }
+    }
+    assert_raise(MiniTest::Assertion) do # minitest/assertion comes from `assert_join_threads`
+      start_server_version(:SSLv23, ctx_proc) { |server, port|
+        ctx = OpenSSL::SSL::SSLContext.new
+        ctx.alpn_protocols = ["http/1.1"]
+        assert_raise(OpenSSL::SSL::SSLError) { server_connect(port, ctx) }
+      }
+    end
+  end
+end
+
 if OpenSSL::OPENSSL_VERSION_NUMBER > 0x10001000
 
   def test_npn_protocol_selection_ary
@@ -920,7 +1174,7 @@ end
     ssl = ctx ? OpenSSL::SSL::SSLSocket.new(sock, ctx) : OpenSSL::SSL::SSLSocket.new(sock)
     ssl.sync_close = true
     ssl.connect
-    yield ssl
+    yield ssl if block_given?
   ensure
     if ssl
       ssl.close

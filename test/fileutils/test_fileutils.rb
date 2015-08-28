@@ -48,7 +48,7 @@ class TestFileUtils < Test::Unit::TestCase
 
     def check_have_symlink?
       File.symlink nil, nil
-    rescue NotImplementedError
+    rescue NotImplementedError, Errno::EACCES
       return false
     rescue
       return true
@@ -123,7 +123,9 @@ class TestFileUtils < Test::Unit::TestCase
 
   def my_rm_rf(path)
     if File.exist?('/bin/rm')
-      system %Q[/bin/rm -rf "#{path}"]
+      system "/bin/rm", "-rf", path
+    elsif /mswin|mingw/ =~ RUBY_PLATFORM
+      system "rmdir", "/q/s", path.gsub('/', '\\'), err: IO::NULL
     else
       FileUtils.rm_rf path
     end

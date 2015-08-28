@@ -464,8 +464,7 @@ class TestString < Test::Unit::TestCase
       end
     end
 
-    null = File.exist?("/dev/null") ? "/dev/null" : "NUL" # maybe DOSISH
-    assert_equal("", File.read(null).clone, '[ruby-dev:32819] reported by Kazuhiro NISHIYAMA')
+    assert_equal("", File.read(IO::NULL).clone, '[ruby-dev:32819] reported by Kazuhiro NISHIYAMA')
   end
 
   def test_concat

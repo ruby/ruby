@@ -2,6 +2,8 @@
  * This file is included by vm.c
  */
 
+#include "id_table.h"
+
 #define METHOD_DEBUG 0
 
 #if OPT_GLOBAL_METHOD_CACHE
@@ -98,8 +100,8 @@ rb_clear_method_cache_by_class(VALUE klass)
 	    rb_subclass_entry_t *entry = RCLASS_EXT(klass)->subclasses;
 
 	    for (; entry != NULL; entry = entry->next) {
-		struct st_table *table = RCLASS_CALLABLE_M_TBL(entry->klass);
-		if (table) st_clear(table);
+		struct rb_id_table *table = RCLASS_CALLABLE_M_TBL(entry->klass);
+		if (table)rb_id_table_clear(table);
 	    }
 	}
     }
@@ -165,8 +167,9 @@ static inline rb_method_entry_t *
 lookup_method_table(VALUE klass, ID id)
 {
     st_data_t body;
-    st_table *m_tbl = RCLASS_M_TBL(klass);
-    if (st_lookup(m_tbl, id, &body)) {
+    struct rb_id_table *m_tbl = RCLASS_M_TBL(klass);
+
+    if (rb_id_table_lookup(m_tbl, id, &body)) {
 	return (rb_method_entry_t *) body;
     }
     else {
@@ -254,7 +257,7 @@ method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *def, 
 		cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
 
 		if (cfp && (line = rb_vm_get_sourceline(cfp))) {
-		    VALUE location = rb_ary_new3(2, cfp->iseq->location.path, INT2FIX(line));
+		    VALUE location = rb_ary_new3(2, cfp->iseq->body->location.path, INT2FIX(line));
 		    RB_OBJ_WRITE(me, &def->body.attr.location, rb_ary_freeze(location));
 		}
 		else {
@@ -296,7 +299,7 @@ method_definition_reset(const rb_method_entry_t *me)
 
     switch(def->type) {
       case VM_METHOD_TYPE_ISEQ:
-	RB_OBJ_WRITTEN(me, Qundef, def->body.iseq.iseqptr->self);
+	RB_OBJ_WRITTEN(me, Qundef, def->body.iseq.iseqptr);
 	RB_OBJ_WRITTEN(me, Qundef, def->body.iseq.cref);
 	break;
       case VM_METHOD_TYPE_ATTRSET:
@@ -448,7 +451,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
 {
     rb_method_entry_t *me;
 
-    st_table *mtbl;
+    struct rb_id_table *mtbl;
     st_data_t data;
     int make_refined = 0;
 
@@ -484,7 +487,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
     mtbl = RCLASS_M_TBL(klass);
 
     /* check re-definition */
-    if (st_lookup(mtbl, mid, &data)) {
+    if (rb_id_table_lookup(mtbl, mid, &data)) {
 	rb_method_entry_t *old_me = (rb_method_entry_t *)data;
 	rb_method_definition_t *old_def = old_me->def;
 
@@ -512,9 +515,9 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
 	      default:
 		break;
 	    }
-	    if (iseq && !NIL_P(iseq->location.path)) {
-		int line = iseq->line_info_table ? FIX2INT(rb_iseq_first_lineno(iseq->self)) : 0;
-		rb_compile_warning(RSTRING_PTR(iseq->location.path), line,
+	    if (iseq && !NIL_P(iseq->body->location.path)) {
+		int line = iseq->body->line_info_table ? FIX2INT(rb_iseq_first_lineno(iseq)) : 0;
+		rb_compile_warning(RSTRING_PTR(iseq->body->location.path), line,
 				   "previous definition of %"PRIsVALUE" was here",
 				   rb_id2str(old_def->original_id));
 	    }
@@ -543,7 +546,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
 	make_method_entry_refined(klass, me);
     }
 
-    st_insert(mtbl, mid, (st_data_t) me);
+    rb_id_table_insert(mtbl, mid, (VALUE)me);
     RB_OBJ_WRITTEN(klass, Qundef, (VALUE)me);
 
     VM_ASSERT(me->def != NULL);
@@ -583,19 +586,16 @@ rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_
 }
 
 void
-rb_add_method_iseq(VALUE klass, ID mid, VALUE iseqval, rb_cref_t *cref, rb_method_visibility_t visi)
+rb_add_method_iseq(VALUE klass, ID mid, const rb_iseq_t *iseq, rb_cref_t *cref, rb_method_visibility_t visi)
 {
-    rb_iseq_t *iseq;
     struct { /* should be same fields with rb_method_iseq_struct */
-	rb_iseq_t *iseqptr;
+	const rb_iseq_t *iseqptr;
 	rb_cref_t *cref;
     } iseq_body;
 
-    GetISeqPtr(iseqval, iseq);
     iseq_body.iseqptr = iseq;
     iseq_body.cref = cref;
     rb_add_method(klass, mid, VM_METHOD_TYPE_ISEQ, &iseq_body, visi);
-    RB_GC_GUARD(iseqval);
 }
 
 static rb_method_entry_t *
@@ -746,7 +746,7 @@ rb_method_entry(VALUE klass, ID id)
 static const rb_callable_method_entry_t *
 prepare_callable_method_entry(VALUE defined_class, ID id, const rb_method_entry_t *me)
 {
-    struct st_table *mtbl;
+    struct rb_id_table *mtbl;
     const rb_callable_method_entry_t *cme;
 
     if (me && me->defined_class == 0) {
@@ -754,16 +754,16 @@ prepare_callable_method_entry(VALUE defined_class, ID id, const rb_method_entry_
 	VM_ASSERT(me->defined_class == 0);
 
 	if ((mtbl = RCLASS_EXT(defined_class)->callable_m_tbl) == NULL) {
-	    mtbl = RCLASS_EXT(defined_class)->callable_m_tbl = st_init_numtable();
+	    mtbl = RCLASS_EXT(defined_class)->callable_m_tbl = rb_id_table_create(0);
 	}
 
-	if (st_lookup(mtbl, id, (st_data_t *)&me)) {
+	if (rb_id_table_lookup(mtbl, id, (VALUE *)&me)) {
 	    cme = (rb_callable_method_entry_t *)me;
 	    VM_ASSERT(callable_method_entry_p(cme));
 	}
 	else {
 	    cme = rb_method_entry_complement_defined_class(me, defined_class);
-	    st_insert(mtbl, id, (st_data_t)cme);
+	    rb_id_table_insert(mtbl, id, (VALUE)cme);
 	    VM_ASSERT(callable_method_entry_p(cme));
 	}
     }
@@ -786,7 +786,7 @@ rb_callable_method_entry(VALUE klass, ID id)
 static const rb_method_entry_t *resolve_refined_method(VALUE refinements, const rb_method_entry_t *me, VALUE *defined_class_ptr);
 
 static const rb_method_entry_t *
-method_entry_resolve_refienment(VALUE klass, ID id, int with_refinement, VALUE *defined_class_ptr)
+method_entry_resolve_refinement(VALUE klass, ID id, int with_refinement, VALUE *defined_class_ptr)
 {
     const rb_method_entry_t *me = method_entry_get(klass, id, defined_class_ptr);
 
@@ -811,33 +811,33 @@ method_entry_resolve_refienment(VALUE klass, ID id, int with_refinement, VALUE *
 const rb_method_entry_t *
 rb_method_entry_with_refinements(VALUE klass, ID id)
 {
-    return method_entry_resolve_refienment(klass, id, TRUE, NULL);
+    return method_entry_resolve_refinement(klass, id, TRUE, NULL);
 }
 
 const rb_callable_method_entry_t *
 rb_callable_method_entry_with_refinements(VALUE klass, ID id)
 {
     VALUE defined_class;
-    const rb_method_entry_t *me = method_entry_resolve_refienment(klass, id, TRUE, &defined_class);
+    const rb_method_entry_t *me = method_entry_resolve_refinement(klass, id, TRUE, &defined_class);
     return prepare_callable_method_entry(defined_class, id, me);
 }
 
 const rb_method_entry_t *
 rb_method_entry_without_refinements(VALUE klass, ID id)
 {
-    return method_entry_resolve_refienment(klass, id, FALSE, NULL);
+    return method_entry_resolve_refinement(klass, id, FALSE, NULL);
 }
 
 const rb_callable_method_entry_t *
 rb_callable_method_entry_without_refinements(VALUE klass, ID id)
 {
     VALUE defined_class;
-    const rb_method_entry_t *me = method_entry_resolve_refienment(klass, id, FALSE, &defined_class);
+    const rb_method_entry_t *me = method_entry_resolve_refinement(klass, id, FALSE, &defined_class);
     return prepare_callable_method_entry(defined_class, id, me);
 }
 
 static const rb_method_entry_t *
-refiend_method_original_method_entry(VALUE refinements, const rb_method_entry_t *me, VALUE *defined_class_ptr)
+refined_method_original_method_entry(VALUE refinements, const rb_method_entry_t *me, VALUE *defined_class_ptr)
 {
     VALUE super;
 
@@ -864,7 +864,7 @@ resolve_refined_method(VALUE refinements, const rb_method_entry_t *me, VALUE *de
 
 	refinement = find_refinement(refinements, me->owner);
 	if (NIL_P(refinement)) {
-	    return refiend_method_original_method_entry(refinements, me, defined_class_ptr);
+	    return refined_method_original_method_entry(refinements, me, defined_class_ptr);
 	}
 	else {
 	    tmp_me = method_entry_get(refinement, me->called_id, defined_class_ptr);
@@ -873,7 +873,7 @@ resolve_refined_method(VALUE refinements, const rb_method_entry_t *me, VALUE *de
 		return tmp_me;
 	    }
 	    else {
-		return refiend_method_original_method_entry(refinements, me, defined_class_ptr);
+		return refined_method_original_method_entry(refinements, me, defined_class_ptr);
 	    }
 	}
     }
@@ -905,7 +905,7 @@ rb_resolve_refined_method_callable(VALUE refinements, const rb_callable_method_e
 static void
 remove_method(VALUE klass, ID mid)
 {
-    st_data_t key, data;
+    VALUE data;
     rb_method_entry_t *me = 0;
     VALUE self = klass;
 
@@ -915,7 +915,7 @@ remove_method(VALUE klass, ID mid)
 	rb_warn("removing `%s' may cause serious problems", rb_id2name(mid));
     }
 
-    if (!st_lookup(RCLASS_M_TBL(klass), mid, &data) ||
+    if (!rb_id_table_lookup(RCLASS_M_TBL(klass), mid, &data) ||
 	!(me = (rb_method_entry_t *)data) ||
 	(!me->def || me->def->type == VM_METHOD_TYPE_UNDEF) ||
         UNDEFINED_REFINED_METHOD_P(me->def)) {
@@ -923,8 +923,7 @@ remove_method(VALUE klass, ID mid)
 		      rb_id2str(mid), rb_class_path(klass));
     }
 
-    key = (st_data_t)mid;
-    st_delete(RCLASS_M_TBL(klass), &key, &data);
+    rb_id_table_delete(RCLASS_M_TBL(klass), mid);
 
     rb_vm_check_redefinition_opt_method(me, klass);
     rb_clear_method_cache_by_class(klass);
@@ -1812,44 +1811,82 @@ rb_method_basic_definition_p(VALUE klass, ID id)
     return (me && METHOD_ENTRY_BASIC(me)) ? TRUE : FALSE;
 }
 
+static VALUE
+call_method_entry(rb_thread_t *th, VALUE defined_class, VALUE obj, ID id,
+		  const rb_method_entry_t *me, int argc, const VALUE *argv)
+{
+    const rb_callable_method_entry_t *cme =
+	prepare_callable_method_entry(defined_class, id, me);
+    const rb_block_t *passed_block = th->passed_block;
+    VALUE result = vm_call0(th, obj, id, argc, argv, cme);
+    th->passed_block = passed_block;
+    return result;
+}
+
+static VALUE
+basic_obj_respond_to_missing(rb_thread_t *th, VALUE klass, VALUE obj,
+			     VALUE mid, VALUE priv)
+{
+    VALUE defined_class, args[2];
+    const ID rtmid = idRespond_to_missing;
+    const rb_method_entry_t *const me =
+	method_entry_get(klass, rtmid, &defined_class);
+
+    if (!me || METHOD_ENTRY_BASIC(me)) return Qundef;
+    args[0] = mid;
+    args[1] = priv;
+    return call_method_entry(th, defined_class, obj, rtmid, me, 2, args);
+}
+
 static inline int
-basic_obj_respond_to(VALUE obj, ID id, int pub)
+basic_obj_respond_to(rb_thread_t *th, VALUE obj, ID id, int pub)
 {
     VALUE klass = CLASS_OF(obj);
-    VALUE args[2];
+    VALUE ret;
 
     switch (rb_method_boundp(klass, id, pub|BOUND_RESPONDS)) {
       case 2:
 	return FALSE;
       case 0:
-	args[0] = ID2SYM(id);
-	args[1] = pub ? Qfalse : Qtrue;
-	return RTEST(rb_funcall2(obj, idRespond_to_missing, 2, args));
+	ret = basic_obj_respond_to_missing(th, klass, obj, ID2SYM(id),
+					   pub ? Qfalse : Qtrue);
+	return RTEST(ret) && ret != Qundef;
       default:
 	return TRUE;
     }
 }
 
-int
-rb_obj_respond_to(VALUE obj, ID id, int priv)
+static int
+vm_respond_to(rb_thread_t *th, VALUE klass, VALUE obj, ID id, int priv)
 {
-    VALUE klass = CLASS_OF(obj);
+    VALUE defined_class;
+    const ID resid = idRespond_to;
+    const rb_method_entry_t *const me =
+	method_entry_get(klass, resid, &defined_class);
 
-    if (rb_method_basic_definition_p(klass, idRespond_to)) {
-	return basic_obj_respond_to(obj, id, !priv);
+    if (!me) return TRUE;
+    if (METHOD_ENTRY_BASIC(me)) {
+	return -1;
     }
     else {
 	int argc = 1;
 	VALUE args[2];
+	VALUE result;
+
 	args[0] = ID2SYM(id);
 	args[1] = Qtrue;
 	if (priv) {
-	    if (rb_obj_method_arity(obj, idRespond_to) != 1) {
+	    argc = rb_method_entry_arity(me);
+	    if (argc > 2) {
+		rb_raise(rb_eArgError,
+			 "respond_to? must accept 1 or 2 arguments (requires %d)",
+			 argc);
+	    }
+	    if (argc != 1) {
 		argc = 2;
 	    }
 	    else if (!NIL_P(ruby_verbose)) {
-		VALUE klass = CLASS_OF(obj);
-		VALUE location = rb_mod_method_location(klass, idRespond_to);
+		VALUE location = rb_method_entry_location(me);
 		rb_warn("%"PRIsVALUE"%c""respond_to?(:%"PRIsVALUE") is"
 			" old fashion which takes only one parameter",
 			(FL_TEST(klass, FL_SINGLETON) ? obj : klass),
@@ -1865,8 +1902,19 @@ rb_obj_respond_to(VALUE obj, ID id, int priv)
 		}
 	    }
 	}
-	return RTEST(rb_funcall2(obj, idRespond_to, argc,  args));
+	result = call_method_entry(th, defined_class, obj, resid, me, argc, args);
+	return RTEST(result);
     }
+}
+
+int
+rb_obj_respond_to(VALUE obj, ID id, int priv)
+{
+    rb_thread_t *th = GET_THREAD();
+    VALUE klass = CLASS_OF(obj);
+    int ret = vm_respond_to(th, klass, obj, id, priv);
+    if (ret == -1) ret = basic_obj_respond_to(th, obj, id, !priv);
+    return ret;
 }
 
 int
@@ -1901,18 +1949,16 @@ obj_respond_to(int argc, VALUE *argv, VALUE obj)
 {
     VALUE mid, priv;
     ID id;
+    rb_thread_t *th = GET_THREAD();
 
     rb_scan_args(argc, argv, "11", &mid, &priv);
     if (!(id = rb_check_id(&mid))) {
-	if (!rb_method_basic_definition_p(CLASS_OF(obj), idRespond_to_missing)) {
-	    VALUE args[2];
-	    args[0] = rb_to_symbol(mid);
-	    args[1] = priv;
-	    return rb_funcall2(obj, idRespond_to_missing, 2, args);
-	}
-	return Qfalse;
+	VALUE ret = basic_obj_respond_to_missing(th, CLASS_OF(obj), obj,
+						 rb_to_symbol(mid), priv);
+	if (ret == Qundef) ret = Qfalse;
+	return ret;
     }
-    if (basic_obj_respond_to(obj, id, !RTEST(priv)))
+    if (basic_obj_respond_to(th, obj, id, !RTEST(priv)))
 	return Qtrue;
     return Qfalse;
 }

@@ -213,7 +213,7 @@ module OpenSSL::Buffering
     else
       size = idx ? idx+eol.size : nil
     end
-    if limit and limit >= 0
+    if size && limit && limit >= 0
       size = [size, limit].min
     end
     consume_rbuff(size)

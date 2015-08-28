@@ -1305,7 +1305,7 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 {
     NODE *tree = 0;
     VALUE parser;
-    VALUE iseq;
+    const rb_iseq_t *iseq;
     rb_encoding *enc, *lenc;
     const char *s;
     char fbuf[MAXPATHLEN];
@@ -1544,7 +1544,7 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
     });
 
     if (opt->dump & DUMP_BIT(insns)) {
-	rb_io_write(rb_stdout, rb_iseq_disasm(iseq));
+	rb_io_write(rb_stdout, rb_iseq_disasm((const rb_iseq_t *)iseq));
 	rb_io_flush(rb_stdout);
 	return Qtrue;
     }
@@ -1555,7 +1555,7 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 
     rb_set_safe_level(opt->safe_level);
 
-    return iseq;
+    return (VALUE)iseq;
 }
 
 struct load_file_arg {

@@ -767,6 +767,7 @@ class TestArray < Test::Unit::TestCase
 
     a5 = @cls[ a1, @cls[], a3 ]
     assert_equal(@cls[1, 2, 3, 4, 5, 6], a5.flatten)
+    assert_equal(@cls[1, 2, 3, 4, [5, 6]], a5.flatten(1))
     assert_equal(@cls[], @cls[].flatten)
     assert_equal(@cls[],
                  @cls[@cls[@cls[@cls[],@cls[]],@cls[@cls[]],@cls[]],@cls[@cls[@cls[]]]].flatten)
@@ -852,6 +853,28 @@ class TestArray < Test::Unit::TestCase
     end
     assert_instance_of(RuntimeError, e, '[ruby-dev:34798]')
     assert_match(/reentered/, e.message, '[ruby-dev:34798]')
+  end
+
+  def test_flatten_respond_to_missing
+    bug11465 = '[ruby-core:70460] [Bug #11465]'
+
+    obj = Class.new do
+      def respond_to_missing?(method, stuff)
+        return false if method == :to_ary
+        super
+      end
+
+      def method_missing(*args)
+        super
+      end
+    end.new
+
+    ex = nil
+    trace = TracePoint.new(:raise) do |tp|
+      ex = tp.raised_exception
+    end
+    trace.enable {[obj].flatten}
+    assert_nil(ex, bug11465)
   end
 
   def test_permutation_with_callcc

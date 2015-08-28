@@ -46,13 +46,11 @@ static void
 proc_mark(void *ptr)
 {
     rb_proc_t *proc = ptr;
-    RUBY_MARK_ENTER("proc");
-    RUBY_MARK_UNLESS_NULL(proc->envval);
-    RUBY_MARK_UNLESS_NULL(proc->blockprocval);
     RUBY_MARK_UNLESS_NULL(proc->block.proc);
     RUBY_MARK_UNLESS_NULL(proc->block.self);
+    RUBY_MARK_UNLESS_NULL(rb_vm_proc_envval(proc));
     if (proc->block.iseq && RUBY_VM_IFUNC_P(proc->block.iseq)) {
-	RUBY_MARK_UNLESS_NULL((VALUE)(proc->block.iseq));
+	rb_gc_mark((VALUE)(proc->block.iseq));
     }
     RUBY_MARK_LEAVE("proc");
 }
@@ -245,14 +243,13 @@ binding_free(void *ptr)
 static void
 binding_mark(void *ptr)
 {
-    rb_binding_t *bind;
+    rb_binding_t *bind = ptr;
+
     RUBY_MARK_ENTER("binding");
-    if (ptr) {
-	bind = ptr;
-	RUBY_MARK_UNLESS_NULL(bind->env);
-	RUBY_MARK_UNLESS_NULL(bind->path);
-	RUBY_MARK_UNLESS_NULL(bind->blockprocval);
-    }
+
+    RUBY_MARK_UNLESS_NULL(bind->env);
+    RUBY_MARK_UNLESS_NULL(bind->path);
+
     RUBY_MARK_LEAVE("binding");
 }
 
@@ -291,7 +288,6 @@ binding_dup(VALUE self)
     GetBindingPtr(bindval, dst);
     dst->env = src->env;
     dst->path = src->path;
-    dst->blockprocval = src->blockprocval;
     dst->first_lineno = src->first_lineno;
     return bindval;
 }
@@ -367,14 +363,14 @@ get_local_variable_ptr(VALUE envval, ID lid)
 
     do {
 	const rb_iseq_t *iseq;
-	int i;
+	unsigned int i;
 
 	GetEnvPtr(envval, env);
 	iseq = env->block.iseq;
 
 	if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
-	    for (i=0; i<iseq->local_table_size; i++) {
-		if (iseq->local_table[i] == lid) {
+	    for (i=0; i<iseq->body->local_table_size; i++) {
+		if (iseq->body->local_table[i] == lid) {
 		    return &env->env[i];
 		}
 	    }
@@ -382,7 +378,7 @@ get_local_variable_ptr(VALUE envval, ID lid)
 	else {
 	    return NULL;
 	}
-    } while ((envval = env->prev_envval) != 0);
+    } while ((envval = rb_vm_env_prev_envval(env)) != Qfalse);
 
     return NULL;
 }
@@ -435,9 +431,12 @@ static VALUE
 bind_local_variables(VALUE bindval)
 {
     const rb_binding_t *bind;
+    const rb_env_t *env;
 
     GetBindingPtr(bindval, bind);
-    return rb_vm_env_local_variables(bind->env);
+    GetEnvPtr(bind->env, env);
+
+    return rb_vm_env_local_variables(env);
 }
 
 /*
@@ -670,8 +669,8 @@ rb_block_clear_env_self(VALUE proc)
     rb_proc_t *po;
     rb_env_t *env;
     GetProcPtr(proc, po);
-    GetEnvPtr(po->envval, env);
-    env->env[0] = Qnil;
+    GetEnvPtr(rb_vm_proc_envval(po), env);
+    env->env[0] = Qfalse;
     return proc;
 }
 
@@ -736,7 +735,7 @@ proc_call(int argc, VALUE *argv, VALUE procval)
     GetProcPtr(procval, proc);
 
     iseq = proc->block.iseq;
-    if (RUBY_VM_IFUNC_P(iseq) || iseq->param.flags.has_block) {
+    if (RUBY_VM_IFUNC_P(iseq) || iseq->body->param.flags.has_block) {
 	if (rb_block_given_p()) {
 	    rb_proc_t *passed_proc;
 	    RB_GC_GUARD(passed_procval) = rb_block_proc();
@@ -848,11 +847,11 @@ proc_arity(VALUE self)
 static inline int
 rb_iseq_min_max_arity(const rb_iseq_t *iseq, int *max)
 {
-    *max = iseq->param.flags.has_rest == FALSE ?
-      iseq->param.lead_num + iseq->param.opt_num + iseq->param.post_num +
-      (iseq->param.flags.has_kw == TRUE || iseq->param.flags.has_kwrest == TRUE)
+    *max = iseq->body->param.flags.has_rest == FALSE ?
+      iseq->body->param.lead_num + iseq->body->param.opt_num + iseq->body->param.post_num +
+      (iseq->body->param.flags.has_kw == TRUE || iseq->body->param.flags.has_kwrest == TRUE)
       : UNLIMITED_ARGUMENTS;
-    return iseq->param.lead_num + iseq->param.post_num + (iseq->param.flags.has_kw && iseq->param.keyword->required_num > 0);
+    return iseq->body->param.lead_num + iseq->body->param.post_num + (iseq->body->param.flags.has_kw && iseq->body->param.keyword->required_num > 0);
 }
 
 static int
@@ -951,9 +950,9 @@ iseq_location(const rb_iseq_t *iseq)
     VALUE loc[2];
 
     if (!iseq) return Qnil;
-    loc[0] = iseq->location.path;
-    if (iseq->line_info_table) {
-	loc[1] = rb_iseq_first_lineno(iseq->self);
+    loc[0] = iseq->body->location.path;
+    if (iseq->body->line_info_table) {
+	loc[1] = rb_iseq_first_lineno(iseq);
     }
     else {
 	loc[1] = Qnil;
@@ -1021,7 +1020,6 @@ rb_hash_proc(st_index_t hash, VALUE prc)
     rb_proc_t *proc;
     GetProcPtr(prc, proc);
     hash = rb_hash_uint(hash, (st_index_t)proc->block.iseq);
-    hash = rb_hash_uint(hash, (st_index_t)proc->envval);
     return rb_hash_uint(hash, (st_index_t)proc->block.ep >> 16);
 }
 
@@ -1068,11 +1066,11 @@ proc_to_s(VALUE self)
     if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
 	int first_lineno = 0;
 
-	if (iseq->line_info_table) {
-	    first_lineno = FIX2INT(rb_iseq_first_lineno(iseq->self));
+	if (iseq->body->line_info_table) {
+	    first_lineno = FIX2INT(rb_iseq_first_lineno(iseq));
 	}
 	str = rb_sprintf("#<%s:%p@%"PRIsVALUE":%d%s>", cname, (void *)self,
-			 iseq->location.path, first_lineno, is_lambda);
+			 iseq->body->location.path, first_lineno, is_lambda);
     }
     else {
 	str = rb_sprintf("#<%s:%p%s>", cname, (void *)proc->block.iseq,
@@ -1251,6 +1249,12 @@ mnew(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
     return mnew_from_me(me, klass, obj, id, mclass, scope);
 }
 
+static inline VALUE
+method_entry_defined_class(const rb_method_entry_t *me)
+{
+    VALUE defined_class = me->defined_class;
+    return defined_class ? defined_class : me->owner;
+}
 
 /**********************************************************************
  *
@@ -1301,8 +1305,8 @@ method_eq(VALUE method, VALUE other)
     m1 = (struct METHOD *)DATA_PTR(method);
     m2 = (struct METHOD *)DATA_PTR(other);
 
-    klass1 = m1->me->defined_class ? m1->me->defined_class : m1->me->owner;
-    klass2 = m2->me->defined_class ? m2->me->defined_class : m2->me->owner;
+    klass1 = method_entry_defined_class(m1->me);
+    klass2 = method_entry_defined_class(m2->me);
 
     if (!rb_method_entry_eq(m1->me, m2->me) ||
 	klass1 != klass2 ||
@@ -1911,7 +1915,7 @@ rb_method_call_with_block(int argc, const VALUE *argv, VALUE method, VALUE pass_
  *  these is an <code>UnboundMethod</code> object.
  *
  *  Unbound methods can only be called after they are bound to an
- *  object. That object must be be a kind_of? the method's original
+ *  object. That object must be a kind_of? the method's original
  *  class.
  *
  *     class Square
@@ -2058,7 +2062,7 @@ rb_method_entry_min_max_arity(const rb_method_entry_t *me, int *max)
       case VM_METHOD_TYPE_BMETHOD:
 	return rb_proc_min_max_arity(def->body.proc, max);
       case VM_METHOD_TYPE_ISEQ: {
-	rb_iseq_t *iseq = def->body.iseq.iseqptr;
+	const rb_iseq_t *iseq = def->body.iseq.iseqptr;
 	return rb_iseq_min_max_arity(iseq, max);
       }
       case VM_METHOD_TYPE_UNDEF:
@@ -2245,8 +2249,8 @@ method_def_location(const rb_method_definition_t *def)
     return iseq_location(method_def_iseq(def));
 }
 
-static VALUE
-method_entry_location(const rb_method_entry_t *me)
+VALUE
+rb_method_entry_location(const rb_method_entry_t *me)
 {
     if (!me) return Qnil;
     return method_def_location(me->def);
@@ -2256,7 +2260,7 @@ VALUE
 rb_mod_method_location(VALUE mod, ID id)
 {
     const rb_method_entry_t *me = original_method_entry(mod, id);
-    return method_entry_location(me);
+    return rb_method_entry_location(me);
 }
 
 VALUE
@@ -2328,7 +2332,7 @@ method_inspect(VALUE method)
 	defined_class = data->me->def->body.alias.original_me->owner;
     }
     else {
-	defined_class = data->me->defined_class ? data->me->defined_class : data->me->owner;
+	defined_class = method_entry_defined_class(data->me);
     }
 
     if (RB_TYPE_P(defined_class, T_ICLASS)) {
@@ -2453,7 +2457,7 @@ method_super_method(VALUE method)
     const rb_method_entry_t *me;
 
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
-    super_class = RCLASS_SUPER(data->me->defined_class);
+    super_class = RCLASS_SUPER(method_entry_defined_class(data->me));
     if (!super_class) return Qnil;
     me = (rb_method_entry_t *)rb_callable_method_entry_without_refinements(super_class, data->me->called_id);
     if (!me) return Qnil;
@@ -2500,7 +2504,7 @@ env_clone(VALUE envval, VALUE receiver, const rb_cref_t *cref)
     }
 
     GetEnvPtr(envval, env);
-    envsize = sizeof(rb_env_t) + (env->local_size + 1) * sizeof(VALUE);
+    envsize = sizeof(rb_env_t) + (env->env_size - 1) * sizeof(VALUE);
     newenv = xmalloc(envsize);
     memcpy(newenv, env, envsize);
     RTYPEDDATA_DATA(newenvval) = newenv;
@@ -2533,7 +2537,7 @@ proc_binding(VALUE self)
     rb_binding_t *bind;
 
     GetProcPtr(self, proc);
-    envval = proc->envval;
+    envval = rb_vm_proc_envval(proc);
     iseq = proc->block.iseq;
     if (RUBY_VM_IFUNC_P(iseq)) {
 	if (IS_METHOD_PROC_ISEQ(iseq)) {
@@ -2548,7 +2552,6 @@ proc_binding(VALUE self)
     bindval = rb_binding_alloc(rb_cBinding);
     GetBindingPtr(bindval, bind);
     bind->env = envval;
-    bind->blockprocval = proc->blockprocval;
 
     if (!RUBY_VM_NORMAL_ISEQ_P(iseq)) {
 	if (RUBY_VM_IFUNC_P(iseq) && IS_METHOD_PROC_ISEQ(iseq)) {
@@ -2561,8 +2564,8 @@ proc_binding(VALUE self)
     }
 
     if (iseq) {
-	bind->path = iseq->location.path;
-	bind->first_lineno = FIX2INT(rb_iseq_first_lineno(iseq->self));
+	bind->path = iseq->body->location.path;
+	bind->first_lineno = FIX2INT(rb_iseq_first_lineno(iseq));
     }
     else {
 	bind->path = Qnil;
