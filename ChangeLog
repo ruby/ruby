@@ -1,3 +1,9 @@
+Fri Aug 28 16:05:09 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/rdoc/*: Update rdoc master(cfffed5)
+	  https://github.com/rdoc/rdoc/pull/337
+	  https://github.com/rdoc/rdoc/pull/367
+
 Fri Aug 28 10:16:20 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (hook_before_rewind): prevent kicking :return event while
