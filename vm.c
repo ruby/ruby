@@ -1332,7 +1332,7 @@ vm_frametype_name(const rb_control_frame_t *cfp)
 #endif
 
 static void
-hook_before_rewind(rb_thread_t *th, rb_control_frame_t *cfp)
+hook_before_rewind(rb_thread_t *th, rb_control_frame_t *cfp, int will_finish_vm_exec)
 {
     switch (VM_FRAME_TYPE(th->cfp)) {
       case VM_FRAME_MAGIC_METHOD:
@@ -1343,9 +1343,13 @@ hook_before_rewind(rb_thread_t *th, rb_control_frame_t *cfp)
       case VM_FRAME_MAGIC_LAMBDA:
 	if (VM_FRAME_TYPE_BMETHOD_P(th->cfp)) {
 	    EXEC_EVENT_HOOK(th, RUBY_EVENT_B_RETURN, th->cfp->self, 0, 0, Qnil);
-	    EXEC_EVENT_HOOK_AND_POP_FRAME(th, RUBY_EVENT_RETURN, th->cfp->self,
-					  rb_vm_frame_method_entry(th->cfp)->called_id,
-					  rb_vm_frame_method_entry(th->cfp)->owner, Qnil);
+
+	    if (!will_finish_vm_exec) {
+		/* kick RUBY_EVENT_RETURN at invoke_block_from_c() for bmethod */
+		EXEC_EVENT_HOOK_AND_POP_FRAME(th, RUBY_EVENT_RETURN, th->cfp->self,
+					      rb_vm_frame_method_entry(th->cfp)->called_id,
+					      rb_vm_frame_method_entry(th->cfp)->owner, Qnil);
+	    }
 	}
 	else {
 	    EXEC_EVENT_HOOK_AND_POP_FRAME(th, RUBY_EVENT_B_RETURN, th->cfp->self, 0, 0, Qnil);
@@ -1531,7 +1535,7 @@ vm_exec(rb_thread_t *th)
 			if (!catch_iseq) {
 			    th->errinfo = Qnil;
 			    result = THROW_DATA_VAL(err);
-			    hook_before_rewind(th, th->cfp);
+			    hook_before_rewind(th, th->cfp, TRUE);
 			    vm_pop_frame(th);
 			    goto finish_vme;
 			}
@@ -1671,7 +1675,7 @@ vm_exec(rb_thread_t *th)
 	}
 	else {
 	    /* skip frame */
-	    hook_before_rewind(th, th->cfp);
+	    hook_before_rewind(th, th->cfp, FALSE);
 
 	    if (VM_FRAME_TYPE_FINISH_P(th->cfp)) {
 		vm_pop_frame(th);
