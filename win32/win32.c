@@ -5002,7 +5002,7 @@ static int
 wrename(const WCHAR *oldpath, const WCHAR *newpath)
 {
     int res = 0;
-    int oldatts = -1, newatts = -1;
+    DWORD oldatts, newatts = (DWORD)-1;
     DWORD oldvsn = 0, newvsn = 0, e;
 
     e = get_attr_vsn(oldpath, &oldatts, &oldvsn);
@@ -5024,7 +5024,7 @@ wrename(const WCHAR *oldpath, const WCHAR *newpath)
     get_attr_vsn(newpath, &newatts, &newvsn);
 
     RUBY_CRITICAL({
-	if (newatts != -1 && newatts & FILE_ATTRIBUTE_READONLY)
+	if (newatts != (DWORD)-1 && newatts & FILE_ATTRIBUTE_READONLY)
 	    SetFileAttributesW(newpath, newatts & ~ FILE_ATTRIBUTE_READONLY);
 
 	if (!MoveFileExW(oldpath, newpath, MOVEFILE_REPLACE_EXISTING | MOVEFILE_COPY_ALLOWED))
