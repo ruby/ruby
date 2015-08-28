@@ -47,7 +47,7 @@ class TestFind < Test::Unit::TestCase
       File.open("#{d}/b/b", "w"){}
       begin
         File.symlink("#{d}/b", "#{d}/c")
-      rescue NotImplementedError
+      rescue NotImplementedError, Errno::EACCES
         skip "symlink is not supported."
       end
       a = []
@@ -168,7 +168,7 @@ class TestFind < Test::Unit::TestCase
     Dir.mktmpdir {|d|
       begin
         File.symlink("foo", "#{d}/bar")
-      rescue NotImplementedError
+      rescue NotImplementedError, Errno::EACCES
         skip "symlink is not supported."
       end
       a = []
@@ -182,7 +182,7 @@ class TestFind < Test::Unit::TestCase
     Dir.mktmpdir {|d|
       begin
         File.symlink("foo", "#{d}/bar")
-      rescue NotImplementedError
+      rescue NotImplementedError, Errno::EACCES
         skip "symlink is not supported."
       end
       assert_raise(Errno::ENOENT) {
@@ -228,7 +228,7 @@ class TestFind < Test::Unit::TestCase
           File.rename(dir_1, dir_2)
           begin
             File.symlink("d1", dir_1)
-          rescue NotImplementedError
+          rescue NotImplementedError, Errno::EACCES
             skip "symlink is not supported."
           end
         end

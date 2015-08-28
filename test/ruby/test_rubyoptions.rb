@@ -437,10 +437,14 @@ class TestRubyOptions < Test::Unit::TestCase
       }
       if File.respond_to? :symlink
         n2 = File.join(d, 't2')
-        File.symlink(n1, n2)
-        IO.popen([ruby, n2]) {|f|
-          assert_equal(n2, f.read)
-        }
+        begin
+          File.symlink(n1, n2)
+        rescue Errno::EACCES
+        else
+          IO.popen([ruby, n2]) {|f|
+            assert_equal(n2, f.read)
+          }
+        end
       end
       Dir.chdir(d) {
         n3 = '-e'

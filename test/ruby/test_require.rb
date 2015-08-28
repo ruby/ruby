@@ -403,7 +403,7 @@ class TestRequire < Test::Unit::TestCase
           File.symlink("../a/tst.rb", "b/tst.rb")
           result = IO.popen([EnvUtil.rubybin, "b/tst.rb"], &:read)
           assert_equal("a/lib.rb\n", result, "[ruby-dev:40040]")
-        rescue NotImplementedError
+        rescue NotImplementedError, Errno::EACCES
           skip "File.symlink is not implemented"
         end
       }
