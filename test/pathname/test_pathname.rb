@@ -339,7 +339,7 @@ class TestPathname < Test::Unit::TestCase
 
   def has_symlink?
     begin
-      File.symlink(nil, nil)
+      File.symlink("", "")
     rescue NotImplementedError, Errno::EACCES
       return false
     rescue TypeError
