@@ -342,7 +342,7 @@ class TestPathname < Test::Unit::TestCase
       File.symlink("", "")
     rescue NotImplementedError, Errno::EACCES
       return false
-    rescue TypeError
+    rescue Errno::ENOENT
     end
     return true
   end
