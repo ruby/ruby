@@ -505,7 +505,7 @@ enc_ascii_compatible_p(VALUE enc)
 }
 
 /*
- * Returns 1 when the encoding is Unicode series other than UTF-7 else 0.
+ * Returns non-zero when the encoding is Unicode series other than UTF-7 else 0.
  */
 int
 rb_enc_unicode_p(rb_encoding *enc)
