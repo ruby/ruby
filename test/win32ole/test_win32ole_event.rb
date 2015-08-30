@@ -91,7 +91,7 @@ if defined?(WIN32OLE_EVENT)
       end
 
       def test_s_new_loop
-        @wmi.ExecNotificationQueryAsync(@sws, @sql)
+        exec_notification_query_async
         ev = WIN32OLE_EVENT.new(@sws)
         ev.on_event {|*args| default_handler(*args)}
         message_loop
@@ -104,7 +104,7 @@ if defined?(WIN32OLE_EVENT)
       end
 
       def test_on_event
-        @wmi.ExecNotificationQueryAsync(@sws, @sql)
+        exec_notification_query_async
         ev = WIN32OLE_EVENT.new(@sws, 'ISWbemSinkEvents')
         ev.on_event {|*args| default_handler(*args)}
         message_loop
@@ -112,7 +112,7 @@ if defined?(WIN32OLE_EVENT)
       end
 
       def test_on_event_symbol
-        @wmi.ExecNotificationQueryAsync(@sws, @sql)
+        exec_notification_query_async
         ev = WIN32OLE_EVENT.new(@sws)
         ev.on_event(:OnObjectReady) {|*args|
           handler1
@@ -121,6 +121,14 @@ if defined?(WIN32OLE_EVENT)
         assert_equal("handler1", @event1)
       end
 
+      private
+      def exec_notification_query_async
+        @wmi.ExecNotificationQueryAsync(@sws, @sql)
+      rescue => e
+        # No administrator privilege?
+        skip if /OLE error code:80041008 in SWbemServicesEx/ =~ e.message
+        raise
+      end
     end
   end
 
