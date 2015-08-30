@@ -1,6 +1,6 @@
 Sun Aug 30 02:42:22 2015  Aaron Patterson <tenderlove@ruby-lang.org>
 
-	* ext/openssl/ossl_ssl.c (static const struct): Only add SSLv3 support
+	* ext/openssl/ossl_ssl.c (ossl_ssl_method_tab): Only add SSLv3 support
 	  if the SSL library supports it.  Thanks Kurt Roeckx <kurt@roeckx.be>
 	  [Bug #11376]
 
