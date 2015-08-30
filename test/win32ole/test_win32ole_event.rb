@@ -125,8 +125,9 @@ if defined?(WIN32OLE_EVENT)
       def exec_notification_query_async
         @wmi.ExecNotificationQueryAsync(@sws, @sql)
       rescue => e
-        # No administrator privilege?
-        skip if /OLE error code:80041008 in SWbemServicesEx/ =~ e.message
+        if /OLE error code:80041008 in SWbemServicesEx/ =~ e.message
+          skip "No administrator privilege?"
+        end
         raise
       end
     end
