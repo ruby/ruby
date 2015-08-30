@@ -110,7 +110,7 @@ class Delegator < BasicObject
   # of this object's and \_\_getobj\_\_ methods.
   #
   def methods(all=true)
-    __getobj__.methods(all) | super
+    __getobj__.methods(all).sort | super
   end
 
   #
@@ -118,7 +118,7 @@ class Delegator < BasicObject
   # of this object's and \_\_getobj\_\_ public methods.
   #
   def public_methods(all=true)
-    __getobj__.public_methods(all) | super
+    __getobj__.public_methods(all).sort | super
   end
 
   #
@@ -126,7 +126,7 @@ class Delegator < BasicObject
   # of this object's and \_\_getobj\_\_ protected methods.
   #
   def protected_methods(all=true)
-    __getobj__.protected_methods(all) | super
+    __getobj__.protected_methods(all).sort | super
   end
 
   # Note: no need to specialize private_methods, since they are not forwarded
