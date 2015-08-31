@@ -1,3 +1,10 @@
+Mon Aug 31 17:04:45 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* class.c (move_refined_method): should insert a write barrier
+	  from an original class to a created (cloned) method entry.
+
+	* test/ruby/test_refinement.rb: add a test.
+
 Sun Aug 30 02:42:22 2015  Aaron Patterson <tenderlove@ruby-lang.org>
 
 	* ext/openssl/ossl_ssl.c (ossl_ssl_method_tab): Only add SSLv3 support

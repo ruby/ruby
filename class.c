@@ -911,7 +911,8 @@ static enum rb_id_table_iterator_result
 move_refined_method(ID key, VALUE value, void *data)
 {
     rb_method_entry_t *me = (rb_method_entry_t *) value;
-    struct rb_id_table *tbl = (struct rb_id_table *) data;
+    VALUE klass = (VALUE)data;
+    struct rb_id_table *tbl = RCLASS_M_TBL(klass);
 
     if (me->def->type == VM_METHOD_TYPE_REFINED) {
 	if (me->def->body.refined.orig_me) {
@@ -919,6 +920,7 @@ move_refined_method(ID key, VALUE value, void *data)
 	    RB_OBJ_WRITE(me, &me->def->body.refined.orig_me, NULL);
 	    new_me = rb_method_entry_clone(me);
 	    rb_id_table_insert(tbl, key, (VALUE)new_me);
+	    RB_OBJ_WRITTEN(klass, Qundef, new_me);
 	    rb_method_entry_copy(me, orig_me);
 	    return ID_TABLE_CONTINUE;
 	}
@@ -953,7 +955,7 @@ rb_prepend_module(VALUE klass, VALUE module)
 	RCLASS_SET_ORIGIN(klass, origin);
 	RCLASS_M_TBL(origin) = RCLASS_M_TBL(klass);
 	RCLASS_M_TBL_INIT(klass);
-	rb_id_table_foreach(RCLASS_M_TBL(origin), move_refined_method, (void *)RCLASS_M_TBL(klass));
+	rb_id_table_foreach(RCLASS_M_TBL(origin), move_refined_method, (void *)klass);
     }
     changed = include_modules_at(klass, klass, module, FALSE);
     if (changed < 0)
