@@ -744,6 +744,7 @@ class TestRefinement < Test::Unit::TestCase
                  PrependIntoRefinement::User.invoke_baz_on(x))
   end
 
+  PrependAfterRefine_CODE = <<-EOC
   module PrependAfterRefine
     class C
       def foo
@@ -776,6 +777,18 @@ class TestRefinement < Test::Unit::TestCase
     class C
       prepend Mixin
     end
+  end
+  EOC
+  eval PrependAfterRefine_CODE
+
+  def test_prepend_after_refine_wb_miss
+    assert_normal_exit %Q{
+      GC.stress = true
+      10.times{
+        #{PrependAfterRefine_CODE}
+        undef PrependAfterRefine
+      }
+    }
   end
 
   def test_prepend_after_refine
