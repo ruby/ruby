@@ -1,3 +1,7 @@
+Tue Sep  1 18:37:15 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* test/thread/test_queue.rb: catch up last commit.
+
 Tue Sep  1 18:16:32 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* thread_sync.c (queue_do_close): ignore multiple close to allow
