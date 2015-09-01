@@ -331,7 +331,7 @@ rb_thread_debug(
 }
 #endif
 
-#include "thread_tools.c"
+#include "thread_sync.c"
 
 void
 rb_vm_gvl_destroy(rb_vm_t *vm)
@@ -4656,7 +4656,7 @@ Init_Thread(void)
     /* suppress warnings on cygwin, mingw and mswin.*/
     (void)native_mutex_trylock;
 
-    Init_thread_tools();
+    Init_thread_sync();
 }
 
 int

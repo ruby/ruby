@@ -1240,7 +1240,7 @@ undumpable(VALUE obj)
 }
 
 static void
-Init_thread_tools(void)
+Init_thread_sync(void)
 {
 #if 0
     rb_cConditionVariable = rb_define_class("ConditionVariable", rb_cObject); /* teach rdoc ConditionVariable */
