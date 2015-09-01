@@ -619,23 +619,23 @@ queue_do_close(VALUE self, int argc, VALUE *argv, int is_szq)
 {
     VALUE exception = Qfalse;
 
-    if (queue_closed_p(self)) raise_closed_queue_error(self);
+    if (!queue_closed_p(self)) {
+	rb_scan_args(argc, argv, "01", &exception);
+	FL_SET(self, QUEUE_CLOSED);
 
-    rb_scan_args(argc, argv, "01", &exception);
-    FL_SET(self, QUEUE_CLOSED);
+	if (RTEST(exception)) {
+	    FL_SET(self, QUEUE_CLOSE_EXCEPTION);
+	}
 
-    if (RTEST(exception)) {
-	FL_SET(self, QUEUE_CLOSE_EXCEPTION);
-    }
+	if (queue_num_waiting(self) > 0) {
+	    VALUE waiters = GET_QUEUE_WAITERS(self);
+	    wakeup_all_threads(waiters);
+	}
 
-    if (queue_num_waiting(self) > 0) {
-	VALUE waiters = GET_QUEUE_WAITERS(self);
-	wakeup_all_threads(waiters);
-    }
-
-    if (is_szq && szqueue_num_waiting_producer(self) > 0) {
-	VALUE waiters = GET_SZQUEUE_WAITERS(self);
-	wakeup_all_threads(waiters);
+	if (is_szq && szqueue_num_waiting_producer(self) > 0) {
+	    VALUE waiters = GET_SZQUEUE_WAITERS(self);
+	    wakeup_all_threads(waiters);
+	}
     }
 
     return self;
@@ -704,6 +704,8 @@ queue_do_push(VALUE self, VALUE obj)
  * After the call to close completes, the following are true:
  *
  * - +closed?+ will return true
+ *
+ * - +close+ will be ignored.
  *
  * - calling enq/push/<< will raise ClosedQueueError('queue closed')
  *
