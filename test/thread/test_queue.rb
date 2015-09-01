@@ -509,11 +509,11 @@ class TestQueue < Test::Unit::TestCase
     [->{Queue.new}, ->{SizedQueue.new 3}].each do |qcreate|
       q = qcreate[]
       q.close
-      assert_raise(ClosedQueueError){q.close}
+      assert_nothing_raised(ClosedQueueError){q.close}
 
       q = qcreate[]
       q.close(true)
-      assert_raise(ClosedQueueError){q.close(false)}
+      assert_nothing_raised(ClosedQueueError){q.close(false)}
     end
   end
 
