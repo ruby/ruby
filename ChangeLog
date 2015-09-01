@@ -1,3 +1,7 @@
+Tue Sep  1 18:06:26 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* thread_tools.c: rename thread_tools.c to thread_sync.c.
+
 Mon Aug 31 17:04:45 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* class.c (move_refined_method): should insert a write barrier
