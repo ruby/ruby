@@ -694,7 +694,7 @@ raise_method_missing(rb_thread_t *th, int argc, const VALUE *argv, VALUE obj,
     const char *format = 0;
 
     if (argc == 0 || !SYMBOL_P(argv[0])) {
-	rb_raise(rb_eArgError, "no id given");
+	rb_raise(rb_eArgError, "no symbol given");
     }
 
     stack_check();
