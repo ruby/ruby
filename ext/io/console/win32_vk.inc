@@ -1,3 +1,484 @@
+#define UNDEFINED_VK (unsigned short)-1
+#ifndef VK_LBUTTON
+# define VK_LBUTTON UNDEFINED_VK
+#endif
+#ifndef VK_RBUTTON
+# define VK_RBUTTON UNDEFINED_VK
+#endif
+#ifndef VK_CANCEL
+# define VK_CANCEL UNDEFINED_VK
+#endif
+#ifndef VK_MBUTTON
+# define VK_MBUTTON UNDEFINED_VK
+#endif
+#ifndef VK_XBUTTON1
+# define VK_XBUTTON1 UNDEFINED_VK
+#endif
+#ifndef VK_XBUTTON2
+# define VK_XBUTTON2 UNDEFINED_VK
+#endif
+#ifndef VK_BACK
+# define VK_BACK UNDEFINED_VK
+#endif
+#ifndef VK_TAB
+# define VK_TAB UNDEFINED_VK
+#endif
+#ifndef VK_CLEAR
+# define VK_CLEAR UNDEFINED_VK
+#endif
+#ifndef VK_RETURN
+# define VK_RETURN UNDEFINED_VK
+#endif
+#ifndef VK_SHIFT
+# define VK_SHIFT UNDEFINED_VK
+#endif
+#ifndef VK_CONTROL
+# define VK_CONTROL UNDEFINED_VK
+#endif
+#ifndef VK_MENU
+# define VK_MENU UNDEFINED_VK
+#endif
+#ifndef VK_PAUSE
+# define VK_PAUSE UNDEFINED_VK
+#endif
+#ifndef VK_CAPITAL
+# define VK_CAPITAL UNDEFINED_VK
+#endif
+#ifndef VK_KANA
+# define VK_KANA UNDEFINED_VK
+#endif
+#ifndef VK_HANGEUL
+# define VK_HANGEUL UNDEFINED_VK
+#endif
+#ifndef VK_HANGUL
+# define VK_HANGUL UNDEFINED_VK
+#endif
+#ifndef VK_JUNJA
+# define VK_JUNJA UNDEFINED_VK
+#endif
+#ifndef VK_FINAL
+# define VK_FINAL UNDEFINED_VK
+#endif
+#ifndef VK_HANJA
+# define VK_HANJA UNDEFINED_VK
+#endif
+#ifndef VK_KANJI
+# define VK_KANJI UNDEFINED_VK
+#endif
+#ifndef VK_ESCAPE
+# define VK_ESCAPE UNDEFINED_VK
+#endif
+#ifndef VK_CONVERT
+# define VK_CONVERT UNDEFINED_VK
+#endif
+#ifndef VK_NONCONVERT
+# define VK_NONCONVERT UNDEFINED_VK
+#endif
+#ifndef VK_ACCEPT
+# define VK_ACCEPT UNDEFINED_VK
+#endif
+#ifndef VK_MODECHANGE
+# define VK_MODECHANGE UNDEFINED_VK
+#endif
+#ifndef VK_SPACE
+# define VK_SPACE UNDEFINED_VK
+#endif
+#ifndef VK_PRIOR
+# define VK_PRIOR UNDEFINED_VK
+#endif
+#ifndef VK_NEXT
+# define VK_NEXT UNDEFINED_VK
+#endif
+#ifndef VK_END
+# define VK_END UNDEFINED_VK
+#endif
+#ifndef VK_HOME
+# define VK_HOME UNDEFINED_VK
+#endif
+#ifndef VK_LEFT
+# define VK_LEFT UNDEFINED_VK
+#endif
+#ifndef VK_UP
+# define VK_UP UNDEFINED_VK
+#endif
+#ifndef VK_RIGHT
+# define VK_RIGHT UNDEFINED_VK
+#endif
+#ifndef VK_DOWN
+# define VK_DOWN UNDEFINED_VK
+#endif
+#ifndef VK_SELECT
+# define VK_SELECT UNDEFINED_VK
+#endif
+#ifndef VK_PRINT
+# define VK_PRINT UNDEFINED_VK
+#endif
+#ifndef VK_EXECUTE
+# define VK_EXECUTE UNDEFINED_VK
+#endif
+#ifndef VK_SNAPSHOT
+# define VK_SNAPSHOT UNDEFINED_VK
+#endif
+#ifndef VK_INSERT
+# define VK_INSERT UNDEFINED_VK
+#endif
+#ifndef VK_DELETE
+# define VK_DELETE UNDEFINED_VK
+#endif
+#ifndef VK_HELP
+# define VK_HELP UNDEFINED_VK
+#endif
+#ifndef VK_LWIN
+# define VK_LWIN UNDEFINED_VK
+#endif
+#ifndef VK_RWIN
+# define VK_RWIN UNDEFINED_VK
+#endif
+#ifndef VK_APPS
+# define VK_APPS UNDEFINED_VK
+#endif
+#ifndef VK_SLEEP
+# define VK_SLEEP UNDEFINED_VK
+#endif
+#ifndef VK_NUMPAD0
+# define VK_NUMPAD0 UNDEFINED_VK
+#endif
+#ifndef VK_NUMPAD1
+# define VK_NUMPAD1 UNDEFINED_VK
+#endif
+#ifndef VK_NUMPAD2
+# define VK_NUMPAD2 UNDEFINED_VK
+#endif
+#ifndef VK_NUMPAD3
+# define VK_NUMPAD3 UNDEFINED_VK
+#endif
+#ifndef VK_NUMPAD4
+# define VK_NUMPAD4 UNDEFINED_VK
+#endif
+#ifndef VK_NUMPAD5
+# define VK_NUMPAD5 UNDEFINED_VK
+#endif
+#ifndef VK_NUMPAD6
+# define VK_NUMPAD6 UNDEFINED_VK
+#endif
+#ifndef VK_NUMPAD7
+# define VK_NUMPAD7 UNDEFINED_VK
+#endif
+#ifndef VK_NUMPAD8
+# define VK_NUMPAD8 UNDEFINED_VK
+#endif
+#ifndef VK_NUMPAD9
+# define VK_NUMPAD9 UNDEFINED_VK
+#endif
+#ifndef VK_MULTIPLY
+# define VK_MULTIPLY UNDEFINED_VK
+#endif
+#ifndef VK_ADD
+# define VK_ADD UNDEFINED_VK
+#endif
+#ifndef VK_SEPARATOR
+# define VK_SEPARATOR UNDEFINED_VK
+#endif
+#ifndef VK_SUBTRACT
+# define VK_SUBTRACT UNDEFINED_VK
+#endif
+#ifndef VK_DECIMAL
+# define VK_DECIMAL UNDEFINED_VK
+#endif
+#ifndef VK_DIVIDE
+# define VK_DIVIDE UNDEFINED_VK
+#endif
+#ifndef VK_F1
+# define VK_F1 UNDEFINED_VK
+#endif
+#ifndef VK_F2
+# define VK_F2 UNDEFINED_VK
+#endif
+#ifndef VK_F3
+# define VK_F3 UNDEFINED_VK
+#endif
+#ifndef VK_F4
+# define VK_F4 UNDEFINED_VK
+#endif
+#ifndef VK_F5
+# define VK_F5 UNDEFINED_VK
+#endif
+#ifndef VK_F6
+# define VK_F6 UNDEFINED_VK
+#endif
+#ifndef VK_F7
+# define VK_F7 UNDEFINED_VK
+#endif
+#ifndef VK_F8
+# define VK_F8 UNDEFINED_VK
+#endif
+#ifndef VK_F9
+# define VK_F9 UNDEFINED_VK
+#endif
+#ifndef VK_F10
+# define VK_F10 UNDEFINED_VK
+#endif
+#ifndef VK_F11
+# define VK_F11 UNDEFINED_VK
+#endif
+#ifndef VK_F12
+# define VK_F12 UNDEFINED_VK
+#endif
+#ifndef VK_F13
+# define VK_F13 UNDEFINED_VK
+#endif
+#ifndef VK_F14
+# define VK_F14 UNDEFINED_VK
+#endif
+#ifndef VK_F15
+# define VK_F15 UNDEFINED_VK
+#endif
+#ifndef VK_F16
+# define VK_F16 UNDEFINED_VK
+#endif
+#ifndef VK_F17
+# define VK_F17 UNDEFINED_VK
+#endif
+#ifndef VK_F18
+# define VK_F18 UNDEFINED_VK
+#endif
+#ifndef VK_F19
+# define VK_F19 UNDEFINED_VK
+#endif
+#ifndef VK_F20
+# define VK_F20 UNDEFINED_VK
+#endif
+#ifndef VK_F21
+# define VK_F21 UNDEFINED_VK
+#endif
+#ifndef VK_F22
+# define VK_F22 UNDEFINED_VK
+#endif
+#ifndef VK_F23
+# define VK_F23 UNDEFINED_VK
+#endif
+#ifndef VK_F24
+# define VK_F24 UNDEFINED_VK
+#endif
+#ifndef VK_NUMLOCK
+# define VK_NUMLOCK UNDEFINED_VK
+#endif
+#ifndef VK_SCROLL
+# define VK_SCROLL UNDEFINED_VK
+#endif
+#ifndef VK_OEM_NEC_EQUAL
+# define VK_OEM_NEC_EQUAL UNDEFINED_VK
+#endif
+#ifndef VK_OEM_FJ_JISHO
+# define VK_OEM_FJ_JISHO UNDEFINED_VK
+#endif
+#ifndef VK_OEM_FJ_MASSHOU
+# define VK_OEM_FJ_MASSHOU UNDEFINED_VK
+#endif
+#ifndef VK_OEM_FJ_TOUROKU
+# define VK_OEM_FJ_TOUROKU UNDEFINED_VK
+#endif
+#ifndef VK_OEM_FJ_LOYA
+# define VK_OEM_FJ_LOYA UNDEFINED_VK
+#endif
+#ifndef VK_OEM_FJ_ROYA
+# define VK_OEM_FJ_ROYA UNDEFINED_VK
+#endif
+#ifndef VK_LSHIFT
+# define VK_LSHIFT UNDEFINED_VK
+#endif
+#ifndef VK_RSHIFT
+# define VK_RSHIFT UNDEFINED_VK
+#endif
+#ifndef VK_LCONTROL
+# define VK_LCONTROL UNDEFINED_VK
+#endif
+#ifndef VK_RCONTROL
+# define VK_RCONTROL UNDEFINED_VK
+#endif
+#ifndef VK_LMENU
+# define VK_LMENU UNDEFINED_VK
+#endif
+#ifndef VK_RMENU
+# define VK_RMENU UNDEFINED_VK
+#endif
+#ifndef VK_BROWSER_BACK
+# define VK_BROWSER_BACK UNDEFINED_VK
+#endif
+#ifndef VK_BROWSER_FORWARD
+# define VK_BROWSER_FORWARD UNDEFINED_VK
+#endif
+#ifndef VK_BROWSER_REFRESH
+# define VK_BROWSER_REFRESH UNDEFINED_VK
+#endif
+#ifndef VK_BROWSER_STOP
+# define VK_BROWSER_STOP UNDEFINED_VK
+#endif
+#ifndef VK_BROWSER_SEARCH
+# define VK_BROWSER_SEARCH UNDEFINED_VK
+#endif
+#ifndef VK_BROWSER_FAVORITES
+# define VK_BROWSER_FAVORITES UNDEFINED_VK
+#endif
+#ifndef VK_BROWSER_HOME
+# define VK_BROWSER_HOME UNDEFINED_VK
+#endif
+#ifndef VK_VOLUME_MUTE
+# define VK_VOLUME_MUTE UNDEFINED_VK
+#endif
+#ifndef VK_VOLUME_DOWN
+# define VK_VOLUME_DOWN UNDEFINED_VK
+#endif
+#ifndef VK_VOLUME_UP
+# define VK_VOLUME_UP UNDEFINED_VK
+#endif
+#ifndef VK_MEDIA_NEXT_TRACK
+# define VK_MEDIA_NEXT_TRACK UNDEFINED_VK
+#endif
+#ifndef VK_MEDIA_PREV_TRACK
+# define VK_MEDIA_PREV_TRACK UNDEFINED_VK
+#endif
+#ifndef VK_MEDIA_STOP
+# define VK_MEDIA_STOP UNDEFINED_VK
+#endif
+#ifndef VK_MEDIA_PLAY_PAUSE
+# define VK_MEDIA_PLAY_PAUSE UNDEFINED_VK
+#endif
+#ifndef VK_LAUNCH_MAIL
+# define VK_LAUNCH_MAIL UNDEFINED_VK
+#endif
+#ifndef VK_LAUNCH_MEDIA_SELECT
+# define VK_LAUNCH_MEDIA_SELECT UNDEFINED_VK
+#endif
+#ifndef VK_LAUNCH_APP1
+# define VK_LAUNCH_APP1 UNDEFINED_VK
+#endif
+#ifndef VK_LAUNCH_APP2
+# define VK_LAUNCH_APP2 UNDEFINED_VK
+#endif
+#ifndef VK_OEM_1
+# define VK_OEM_1 UNDEFINED_VK
+#endif
+#ifndef VK_OEM_PLUS
+# define VK_OEM_PLUS UNDEFINED_VK
+#endif
+#ifndef VK_OEM_COMMA
+# define VK_OEM_COMMA UNDEFINED_VK
+#endif
+#ifndef VK_OEM_MINUS
+# define VK_OEM_MINUS UNDEFINED_VK
+#endif
+#ifndef VK_OEM_PERIOD
+# define VK_OEM_PERIOD UNDEFINED_VK
+#endif
+#ifndef VK_OEM_2
+# define VK_OEM_2 UNDEFINED_VK
+#endif
+#ifndef VK_OEM_3
+# define VK_OEM_3 UNDEFINED_VK
+#endif
+#ifndef VK_OEM_4
+# define VK_OEM_4 UNDEFINED_VK
+#endif
+#ifndef VK_OEM_5
+# define VK_OEM_5 UNDEFINED_VK
+#endif
+#ifndef VK_OEM_6
+# define VK_OEM_6 UNDEFINED_VK
+#endif
+#ifndef VK_OEM_7
+# define VK_OEM_7 UNDEFINED_VK
+#endif
+#ifndef VK_OEM_8
+# define VK_OEM_8 UNDEFINED_VK
+#endif
+#ifndef VK_OEM_AX
+# define VK_OEM_AX UNDEFINED_VK
+#endif
+#ifndef VK_OEM_102
+# define VK_OEM_102 UNDEFINED_VK
+#endif
+#ifndef VK_ICO_HELP
+# define VK_ICO_HELP UNDEFINED_VK
+#endif
+#ifndef VK_ICO_00
+# define VK_ICO_00 UNDEFINED_VK
+#endif
+#ifndef VK_PROCESSKEY
+# define VK_PROCESSKEY UNDEFINED_VK
+#endif
+#ifndef VK_ICO_CLEAR
+# define VK_ICO_CLEAR UNDEFINED_VK
+#endif
+#ifndef VK_PACKET
+# define VK_PACKET UNDEFINED_VK
+#endif
+#ifndef VK_OEM_RESET
+# define VK_OEM_RESET UNDEFINED_VK
+#endif
+#ifndef VK_OEM_JUMP
+# define VK_OEM_JUMP UNDEFINED_VK
+#endif
+#ifndef VK_OEM_PA1
+# define VK_OEM_PA1 UNDEFINED_VK
+#endif
+#ifndef VK_OEM_PA2
+# define VK_OEM_PA2 UNDEFINED_VK
+#endif
+#ifndef VK_OEM_PA3
+# define VK_OEM_PA3 UNDEFINED_VK
+#endif
+#ifndef VK_OEM_WSCTRL
+# define VK_OEM_WSCTRL UNDEFINED_VK
+#endif
+#ifndef VK_OEM_CUSEL
+# define VK_OEM_CUSEL UNDEFINED_VK
+#endif
+#ifndef VK_OEM_ATTN
+# define VK_OEM_ATTN UNDEFINED_VK
+#endif
+#ifndef VK_OEM_FINISH
+# define VK_OEM_FINISH UNDEFINED_VK
+#endif
+#ifndef VK_OEM_COPY
+# define VK_OEM_COPY UNDEFINED_VK
+#endif
+#ifndef VK_OEM_AUTO
+# define VK_OEM_AUTO UNDEFINED_VK
+#endif
+#ifndef VK_OEM_ENLW
+# define VK_OEM_ENLW UNDEFINED_VK
+#endif
+#ifndef VK_OEM_BACKTAB
+# define VK_OEM_BACKTAB UNDEFINED_VK
+#endif
+#ifndef VK_ATTN
+# define VK_ATTN UNDEFINED_VK
+#endif
+#ifndef VK_CRSEL
+# define VK_CRSEL UNDEFINED_VK
+#endif
+#ifndef VK_EXSEL
+# define VK_EXSEL UNDEFINED_VK
+#endif
+#ifndef VK_EREOF
+# define VK_EREOF UNDEFINED_VK
+#endif
+#ifndef VK_PLAY
+# define VK_PLAY UNDEFINED_VK
+#endif
+#ifndef VK_ZOOM
+# define VK_ZOOM UNDEFINED_VK
+#endif
+#ifndef VK_NONAME
+# define VK_NONAME UNDEFINED_VK
+#endif
+#ifndef VK_PA1
+# define VK_PA1 UNDEFINED_VK
+#endif
+#ifndef VK_OEM_CLEAR
+# define VK_OEM_CLEAR UNDEFINED_VK
+#endif
 /* C code produced by gperf version 3.0.4 */
 /* Command-line: gperf --ignore-case -E -C -P -p -j1 -i 1 -g -o -t -K ofs -N console_win32_vk -k'*' win32_vk.list  */
 
