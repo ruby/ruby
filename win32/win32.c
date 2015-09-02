@@ -4813,27 +4813,23 @@ rb_w32_read_reparse_point(const WCHAR *path, rb_w32_reparse_buffer_t *rp,
 static ssize_t
 w32_readlink(UINT cp, const char *path, char *buf, size_t bufsize)
 {
-    WCHAR *wpath, *wname;
     VALUE wtmp;
-    size_t size = rb_w32_reparse_buffer_size(bufsize);
-    rb_w32_reparse_buffer_t *rp = ALLOCV(wtmp, size);
-    DWORD len;
+    DWORD len = MultiByteToWideChar(cp, 0, path, -1, NULL, 0);
+    size_t size = rb_w32_reparse_buffer_size(len);
+    WCHAR *wname, *wpath = ALLOCV(wtmp, size + sizeof(WCHAR) * len);
+    rb_w32_reparse_buffer_t *rp = (void *)(wpath + len);
     ssize_t ret;
     int e;
 
-    wpath = mbstr_to_wstr(cp, path, -1, NULL);
-    if (!wpath) {
-	ALLOCV_END(wtmp);
-	return -1;
-    }
+    MultiByteToWideChar(cp, 0, path, -1, wpath, len);
     e = rb_w32_read_reparse_point(wpath, rp, size, &wname, &len);
-    free(wpath);
     if (e && e != ERROR_MORE_DATA) {
 	ALLOCV_END(wtmp);
 	errno = map_errno(e);
 	return -1;
     }
     ret = WideCharToMultiByte(cp, 0, wname, len, buf, bufsize, NULL, NULL);
+    ALLOCV_END(wtmp);
     if (e) {
 	ret = bufsize;
     }
