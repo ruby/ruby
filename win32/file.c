@@ -660,7 +660,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 }
 
 VALUE
-rb_readlink(VALUE path)
+rb_readlink(VALUE path, rb_encoding *resultenc)
 {
     DWORD len;
     VALUE wtmp = 0, wpathbuf, str;
@@ -692,7 +692,7 @@ rb_readlink(VALUE path)
 	ALLOCV_END(wtmp);
 	rb_syserr_fail_path(rb_w32_map_errno(e), path);
     }
-    enc = rb_filesystem_encoding();
+    enc = resultenc;
     cp = path_cp = code_page(enc);
     if (cp == INVALID_CODE_PAGE) cp = CP_UTF8;
     str = append_wstr(rb_enc_str_new(0, 0, enc), wbuf, len, cp, path_cp, enc);
