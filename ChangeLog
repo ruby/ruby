@@ -1,3 +1,10 @@
+Wed Sep  2 18:49:55 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ext/psych/*: merge psych master(8737e5b). It contains following fixes.
+	  https://github.com/tenderlove/psych/pull/242
+	  https://github.com/tenderlove/psych/pull/246 [ruby-list:50219]
+	* test/psych/*: ditto.
+
 Wed Sep  2 18:04:13 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.h (GET_PC_COUNT): remove unused macro.
