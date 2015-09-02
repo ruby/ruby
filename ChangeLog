@@ -1,3 +1,8 @@
+Wed Sep  2 17:18:37 2015  Chris Schneider  <chris@christopher-schneider.com>
+
+	* process.c (proc_detach): [DOC] fix typo "intent" as "intend" in
+	  rdoc.  [Fix GH-1011]
+
 Wed Sep  2 16:58:21 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_realpath_internal): use filesystem encoding if the

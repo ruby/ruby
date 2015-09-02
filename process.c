@@ -1084,7 +1084,7 @@ rb_detach_process(rb_pid_t pid)
  *  <code>Process::detach</code> prevents this by setting up a
  *  separate Ruby thread whose sole job is to reap the status of the
  *  process _pid_ when it terminates. Use <code>detach</code>
- *  only when you do not intent to explicitly wait for the child to
+ *  only when you do not intend to explicitly wait for the child to
  *  terminate.
  *
  *  The waiting thread returns the exit status of the detached process
