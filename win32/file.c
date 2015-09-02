@@ -663,7 +663,7 @@ VALUE
 rb_readlink(VALUE path)
 {
     DWORD len;
-    VALUE wtmp = 0, str;
+    VALUE wtmp = 0, wpathbuf, str;
     rb_w32_reparse_buffer_t rbuf, *rp = &rbuf;
     WCHAR *wpath, *wbuf;
     rb_encoding *enc;
@@ -677,16 +677,17 @@ rb_readlink(VALUE path)
 	path = fix_string_encoding(path, enc);
 	cp = CP_UTF8;
     }
-    wpath = mbstr_to_wstr(cp, RSTRING_PTR(path),
-			  RSTRING_LEN(path)+rb_enc_mbminlen(enc), NULL);
-    if (!wpath) rb_memerror();
+    len = MultiByteToWideChar(cp, 0, RSTRING_PTR(path), RSTRING_LEN(path), NULL, 0);
+    wpath = ALLOCV_N(WCHAR, wpathbuf, len+1);
+    MultiByteToWideChar(cp, 0, RSTRING_PTR(path), RSTRING_LEN(path), wpath, len);
+    wpath[len] = L'\0';
     e = rb_w32_read_reparse_point(wpath, rp, sizeof(rbuf), &wbuf, &len);
     if (e == ERROR_MORE_DATA) {
 	size_t size = rb_w32_reparse_buffer_size(len + 1);
 	rp = ALLOCV(wtmp, size);
 	e = rb_w32_read_reparse_point(wpath, rp, size, &wbuf, &len);
     }
-    free(wpath);
+    ALLOCV_END(wpathbuf);
     if (e) {
 	ALLOCV_END(wtmp);
 	rb_syserr_fail_path(rb_w32_map_errno(e), path);
