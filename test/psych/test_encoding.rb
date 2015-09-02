@@ -249,6 +249,15 @@ module Psych
       assert_encodings @utf8, @handler.strings
     end
 
+    def test_dump_non_ascii_string_to_file
+      Tempfile.create(['utf8', 'yml'], :encoding => 'UTF-8') do |t|
+        h = {'one' => 'いち'}
+        Psych.dump(h, t)
+        t.close
+        assert_equal h, Psych.load_file(t.path)
+      end
+    end
+
     private
     def assert_encodings encoding, strings
       strings.each do |str|

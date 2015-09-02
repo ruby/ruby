@@ -156,7 +156,7 @@ module Psych
       end
 
       def visit_Psych_Omap o
-        seq = @emitter.start_sequence(nil, '!omap', false, Nodes::Sequence::BLOCK)
+        seq = @emitter.start_sequence(nil, 'tag:yaml.org,2002:omap', false, Nodes::Sequence::BLOCK)
         register(o, seq)
 
         o.each { |k,v| visit_Hash k => v }
