@@ -8994,7 +8994,9 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 
 		if (iseq->body->location.label) {
 		    snprintf(buff, buff_size, "%s %s@%s:%d", buff,
-			     RSTRING_PTR(iseq->body->location.label), RSTRING_PTR(iseq->body->location.path), (int)iseq->body->location.first_lineno);
+			     RSTRING_PTR(iseq->body->location.label),
+			     RSTRING_PTR(iseq->body->location.path),
+			     FIX2INT(iseq->body->location.first_lineno));
 		}
 		break;
 	    }
