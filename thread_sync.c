@@ -1,4 +1,4 @@
-/* included by thraed.c */
+/* included by thread.c */
 
 VALUE rb_cMutex, rb_cQueue, rb_cSizedQueue, rb_cConditionVariable;
 VALUE rb_eClosedQueueError;
@@ -731,7 +731,7 @@ queue_do_push(VALUE self, VALUE obj)
  *    	q = Queue.new
  *      Thread.new{
  *        loop{
- *          e = q.deq; ...  # braek with ClosedQueueError
+ *          e = q.deq; ...  # break with ClosedQueueError
  *        }
  *      }
  *      q.close(true)
