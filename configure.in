@@ -3435,10 +3435,7 @@ else
   RUNRUBY='$(RUNRUBY_COMMAND) --'
   XRUBY='$(RUNRUBY)'
   BOOTSTRAPRUBY='$(MINIRUBY)'
-  if test x"${HAVE_BASERUBY}" = xyes; then
-    PREP='$(arch)-fake.rb '"$PREP"
-    BOOTSTRAPRUBY='$(BASERUBY) -r./$(arch)-fake'
-  fi
+  test x"${HAVE_BASERUBY}" = xyes && BOOTSTRAPRUBY='$(BASERUBY)'
   TEST_RUNNABLE=yes
   CROSS_COMPILING=no
 fi
