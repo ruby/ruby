@@ -693,8 +693,13 @@ raise_method_missing(rb_thread_t *th, int argc, const VALUE *argv, VALUE obj,
     VALUE exc = rb_eNoMethodError;
     const char *format = 0;
 
-    if (argc == 0 || !SYMBOL_P(argv[0])) {
-	rb_raise(rb_eArgError, "no id given");
+    if (UNLIKELY(argc == 0)) {
+	rb_raise(rb_eArgError, "no method names given");
+    }
+    else if (UNLIKELY(!SYMBOL_P(argv[0]))) {
+	const VALUE e = rb_eArgError; /* TODO: TypeError? */
+	rb_raise(e, "method name must be a Symbol but %"PRIsVALUE" is given",
+		 rb_obj_class(argv[0]));
     }
 
     stack_check();

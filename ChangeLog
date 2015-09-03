@@ -1,3 +1,8 @@
+Thu Sep  3 10:07:49 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (raise_method_missing): refine error messages when a
+	  symbol is not given.  [Fix GH-1013]
+
 Wed Sep  2 18:49:55 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* ext/psych/*: merge psych master(8737e5b). It contains following fixes.
