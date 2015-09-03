@@ -1232,7 +1232,7 @@ class TestHash < Test::Unit::TestCase
     end
   end
 
-  def test_exception_in_rehash
+  def test_exception_in_rehash_memory_leak
     return unless @cls == Hash
 
     bug9187 = '[ruby-core:58728] [Bug #9187]'
