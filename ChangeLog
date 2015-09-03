@@ -1,3 +1,8 @@
+Fri Sep  4 04:46:54 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.c (iseq_memsize): functions for wrapper object should have
+	  iseqw_ prefix.
+
 Thu Sep  3 21:12:12 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/cgi/session.rb (create_new_id): use SHA512 instead of MD5.

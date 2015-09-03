@@ -143,9 +143,8 @@ param_keyword_size(const struct rb_iseq_param_keyword *pkw)
 }
 
 static size_t
-iseq_memsize(const void *ptr)
+iseq_memsize(const rb_iseq_t *iseq)
 {
-    const rb_iseq_t *iseq = ptr;
     size_t size = 0; /* struct already counted as RVALUE size */
     const struct rb_iseq_variable_body *variable_body;
     const struct rb_iseq_constant_body *body;
@@ -681,9 +680,15 @@ iseqw_mark(void *ptr)
     rb_gc_mark((VALUE)ptr);
 }
 
+static size_t
+iseqw_memsize(const void *ptr)
+{
+    return iseq_memsize((const rb_iseq_t *)ptr);
+}
+
 static const rb_data_type_t iseqw_data_type = {
     "T_IMEMO/iseq",
-    {iseqw_mark, NULL, iseq_memsize,},
+    {iseqw_mark, NULL, iseqw_memsize,},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY|RUBY_TYPED_WB_PROTECTED
 };
 
