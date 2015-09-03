@@ -8976,6 +8976,7 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 	      IMEMO_NAME(ifunc);
 	      IMEMO_NAME(memo);
 	      IMEMO_NAME(ment);
+	      IMEMO_NAME(iseq);
 	    default: rb_bug("unknown IMEMO");
 #undef IMEMO_NAME
 	  }
