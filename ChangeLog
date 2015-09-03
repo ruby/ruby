@@ -1,3 +1,8 @@
+Thu Sep  3 21:12:12 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/cgi/session.rb (create_new_id): use SHA512 instead of MD5.
+	  pointed out by SARWAR JAHAN.
+
 Thu Sep  3 20:29:18 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (rb_raw_obj_info): iseq->body->location.first_lineno is Fixnum.
