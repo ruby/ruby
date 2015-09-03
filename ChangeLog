@@ -1,3 +1,8 @@
+Thu Sep  3 17:54:26 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (raise_method_missing): "names" should be singular.
+	  pointed out by Filip Bartuzi.
+
 Thu Sep  3 17:50:09 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (rb_raw_obj_info): should support IMEMO/iseq.

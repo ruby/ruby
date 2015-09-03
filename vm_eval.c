@@ -694,7 +694,7 @@ raise_method_missing(rb_thread_t *th, int argc, const VALUE *argv, VALUE obj,
     const char *format = 0;
 
     if (UNLIKELY(argc == 0)) {
-	rb_raise(rb_eArgError, "no method names given");
+	rb_raise(rb_eArgError, "no method name given");
     }
     else if (UNLIKELY(!SYMBOL_P(argv[0]))) {
 	const VALUE e = rb_eArgError; /* TODO: TypeError? */
