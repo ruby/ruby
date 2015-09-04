@@ -6,27 +6,56 @@ class File
   end
 end
 
+static = !!$static
 $:.unshift(builddir)
 posthook = proc do
+  config = RbConfig::CONFIG
   mkconfig = RbConfig::MAKEFILE_CONFIG
   extout = File.expand_path(mkconfig["EXTOUT"], builddir)
-  $arch_hdrdir = "#{extout}/include/$(arch)"
-  $ruby = baseruby
+  [
+    ["top_srcdir", $top_srcdir],
+    ["topdir", $topdir],
+  ].each do |var, val|
+    next unless val
+    mkconfig[var] = config[var] = val
+    t = /\A#{Regexp.quote(val)}(?=\/)/
+    $hdrdir.sub!(t) {"$(#{var})"}
+    mkconfig.keys.grep(/dir\z/) do |k|
+      mkconfig[k] = "$(#{var})#$'" if t =~ mkconfig[k]
+    end
+  end
+  if $extmk
+    $ruby = "$(topdir)/miniruby -I'$(topdir)' -I'$(top_srcdir)/lib' -I'$(extout)/$(arch)' -I'$(extout)/common'"
+  else
+    $ruby = baseruby
+  end
+  $static = static
   untrace_var(:$ruby, posthook)
 end
 prehook = proc do |extmk|
-  unless extmk
-    config = RbConfig::CONFIG
-    mkconfig = RbConfig::MAKEFILE_CONFIG
-    mkconfig["top_srcdir"] = $top_srcdir = top_srcdir
-    mkconfig["rubyhdrdir"] = "$(top_srcdir)/include"
-    mkconfig["rubyarchhdrdir"] = "$(builddir)/$(EXTOUT)/include/$(arch)"
-    mkconfig["builddir"] = config["builddir"] = builddir
-    config["rubyhdrdir"] = File.join(mkconfig["top_srcdir"], "include")
-    config["rubyarchhdrdir"] = File.join(builddir, config["EXTOUT"], "include", config["arch"])
-    mkconfig["libdirname"] = "builddir"
-    trace_var(:$ruby, posthook)
+  pat = %r[(?:\A(?:\w:|//[^/]+)|\G)/[^/]*]
+  dir = builddir.scan(pat)
+  pwd = Dir.pwd.scan(pat)
+  if dir[0] == pwd[0]
+    while dir[0] and dir[0] == pwd[0]
+      dir.shift
+      pwd.shift
+    end
+    builddir = File.join([".."]*pwd.size + dir)
   end
+  $topdir ||= builddir
+  $top_srcdir ||= File.join($topdir, srcdir)
+  $extout = '$(topdir)/.ext'
+  $extout_prefix = '$(extout)$(target_prefix)/'
+  config = RbConfig::CONFIG
+  mkconfig = RbConfig::MAKEFILE_CONFIG
+  mkconfig["builddir"] = config["builddir"] = builddir
+  mkconfig["top_srcdir"] = $top_srcdir if $top_srcdir
+  config["top_srcdir"] = File.expand_path($top_srcdir ||= top_srcdir)
+  config["rubyhdrdir"] = File.join($top_srcdir, "include")
+  config["rubyarchhdrdir"] = File.join(builddir, config["EXTOUT"], "include", config["arch"])
+  mkconfig["libdirname"] = "builddir"
+  trace_var(:$ruby, posthook)
   untrace_var(:$extmk, prehook)
 end
 trace_var(:$extmk, prehook)
