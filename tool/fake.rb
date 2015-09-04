@@ -6,7 +6,7 @@ class File
   end
 end
 
-static = !!$static
+static = !!(defined?($static) && $static)
 $:.unshift(builddir)
 posthook = proc do
   config = RbConfig::CONFIG
