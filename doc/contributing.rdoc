@@ -312,7 +312,7 @@ Now let's build CRuby:
     autoconf
     mkdir build && cd build # its good practice to build outside of source dir
     mkdir ~/.rubies # we will install to .rubies/ruby-trunk in our home dir
-    ../configure --prefix="$HOME/.rubies/ruby-trunk"
+    ../configure --prefix="${HOME}/.rubies/ruby-trunk"
     make && make install
 
 After adding Ruby to your PATH, you should be ready to run the test suite:
