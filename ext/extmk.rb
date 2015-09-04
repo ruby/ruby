@@ -244,14 +244,7 @@ def extmake(target)
     end
     ok &&= File.open(makefile){|f| s = f.gets and !s[DUMMY_SIGNATURE]}
     ok = yield(ok) if block_given?
-    if ok
-      open(makefile, "r+b") do |f|
-        s = f.read.sub!(/^(static:)\s(?!all\b).*/, '\1 all') or break
-        f.rewind
-        f.print(s)
-        f.truncate(f.pos)
-      end unless $static
-    else
+    unless ok
       atomic_write_open(makefile) do |f|
         f.puts "# " + DUMMY_SIGNATURE
 	f.print(*dummy_makefile(CONFIG["srcdir"]))
