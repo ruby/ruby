@@ -170,7 +170,7 @@ typedef int clockid_t;
 #define off_t __int64
 #define stat stati64
 #define fstat(fd,st)		fstati64(fd,st)
-#if !defined(_MSC_VER) || RT_VER < 80
+#if !defined(_MSC_VER) || RUBY_MSVCRT_VERSION < 80
 #define stati64 _stati64
 #ifndef _stati64
 #define _stati64(path, st) rb_w32_stati64(path, st)
