@@ -42,6 +42,7 @@ prehook = proc do |extmk|
       pwd.shift
     end
     builddir = File.join([".."]*pwd.size + dir)
+    builddir = "." if builddir.empty?
   end
   $topdir ||= builddir
   $top_srcdir ||= File.join($topdir, srcdir)
