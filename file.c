@@ -2786,8 +2786,6 @@ rb_file_s_symlink(VALUE klass, VALUE from, VALUE to)
 #endif
 
 #ifdef HAVE_READLINK
-VALUE rb_readlink(VALUE path, rb_encoding *enc);
-
 /*
  *  call-seq:
  *     File.readlink(link_name)  ->  file_name
