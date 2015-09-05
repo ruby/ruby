@@ -382,9 +382,8 @@ dladdr_path(const void* addr)
     }
 #ifdef __linux__
     else if (dli.dli_fname == origarg.argv[0]) {
-	VALUE rb_readlink(VALUE);
 	fname = rb_str_new_cstr("/proc/self/exe");
-	path = rb_readlink(fname);
+	path = rb_readlink(fname, NULL);
     }
 #endif
     else {
