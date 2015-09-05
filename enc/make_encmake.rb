@@ -9,6 +9,7 @@ if $".grep(/mkmf/).empty?
 end
 require 'erb'
 
+CONFIG['srcdir'] = RbConfig::CONFIG['srcdir']
 CONFIG["MAKEDIRS"] ||= '$(MINIRUBY) -run -e mkdir -- -p'
 
 BUILTIN_ENCS = []
