@@ -53,7 +53,7 @@ class Time
       if usec.zero?
         fraction_digits = 0
       else
-        fraction_digits = strftime('%6N').sub!(/0*\z/, '').size
+        fraction_digits = strftime('%6N').index(/0*\z/)
       end
       xmlschema(fraction_digits)
     end
