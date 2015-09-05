@@ -4981,9 +4981,12 @@ get_attr_vsn(const WCHAR *path, DWORD *atts, DWORD *vsn)
     DWORD e = 0;
     HANDLE h = open_special(path, 0, FILE_FLAG_OPEN_REPARSE_POINT);
 
-    if (h == INVALID_HANDLE_VALUE) return GetLastError();
+    if (h == INVALID_HANDLE_VALUE) {
+	ASSUME(e = GetLastError());
+	return e;
+    }
     if (!GetFileInformationByHandle(h, &st)) {
-	e = GetLastError();
+	ASSUME(e = GetLastError());
     }
     else {
 	*atts = st.dwFileAttributes;
