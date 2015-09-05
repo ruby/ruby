@@ -1,3 +1,8 @@
+Sat Sep  5 11:39:52 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rss/rss.rb (Time#w3cdtf): fix zero-trimmed width of fraction
+	  digits.  [ruby-core:70667] [Bug #11509]
+
 Sat Sep  5 08:28:58 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (rb_hash_equal, rb_hash_eql): [DOC] the orders of each
