@@ -102,6 +102,12 @@ module RSS
       assert_textinput20(@textinput_info, rss.textinput)
     end
 
+    def test_time_w3cdtf
+      assert_equal("2015-09-05T01:25:48.0001Z",
+                   Time.utc(2015, 9, 5, 1, 25, 48, 100).w3cdtf,
+                   '[ruby-core:70667] [Bug #11509]')
+    end
+
     private
     def setup_xml_declaration_info
       @version = "1.0"
