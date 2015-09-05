@@ -44,8 +44,9 @@ prehook = proc do |extmk|
     builddir = File.join([".."]*pwd.size + dir)
     builddir = "." if builddir.empty?
   end
+  join = proc {|*args| File.join(*args).sub!(/\A(?:\.\/)*/, '')}
   $topdir ||= builddir
-  $top_srcdir ||= File.join($topdir, srcdir)
+  $top_srcdir ||= join[$topdir, srcdir]
   $extout = '$(topdir)/.ext'
   $extout_prefix = '$(extout)$(target_prefix)/'
   config = RbConfig::CONFIG
@@ -53,8 +54,8 @@ prehook = proc do |extmk|
   mkconfig["builddir"] = config["builddir"] = builddir
   mkconfig["top_srcdir"] = $top_srcdir if $top_srcdir
   config["top_srcdir"] = File.expand_path($top_srcdir ||= top_srcdir)
-  config["rubyhdrdir"] = File.join($top_srcdir, "include")
-  config["rubyarchhdrdir"] = File.join(builddir, config["EXTOUT"], "include", config["arch"])
+  config["rubyhdrdir"] = join[$top_srcdir, "include"]
+  config["rubyarchhdrdir"] = join[builddir, config["EXTOUT"], "include", config["arch"]]
   mkconfig["libdirname"] = "builddir"
   trace_var(:$ruby, posthook)
   untrace_var(:$extmk, prehook)
