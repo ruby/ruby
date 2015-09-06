@@ -3392,6 +3392,8 @@ rb_fd_select(int n, rb_fdset_t *readfds, rb_fdset_t *writefds, rb_fdset_t *excep
     return select(n, r, w, e, timeout);
 }
 
+#define rb_fd_no_init(fds) ASSUME(!(fds)->maxfd)
+
 #undef FD_ZERO
 #undef FD_SET
 #undef FD_CLR
@@ -3457,6 +3459,10 @@ rb_fd_set(int fd, rb_fdset_t *set)
 
 #endif
 
+#ifndef rb_fd_no_init
+#define rb_fd_no_init(fds) (void)(fds)
+#endif
+
 static inline int
 retryable(int e)
 {
@@ -3510,12 +3516,12 @@ do_select(int n, rb_fdset_t *readfds, rb_fdset_t *writefds,
 	timeout = &wait_rest;
     }
 
-    if (readfds)
-	rb_fd_init_copy(&orig_read, readfds);
-    if (writefds)
-	rb_fd_init_copy(&orig_write, writefds);
-    if (exceptfds)
-	rb_fd_init_copy(&orig_except, exceptfds);
+#define fd_init_copy(f) \
+    (f##fds) ? rb_fd_init_copy(&orig_##f, f##fds) : rb_fd_no_init(&orig_##f)
+    fd_init_copy(read);
+    fd_init_copy(write);
+    fd_init_copy(except);
+#undef fd_init_copy
 
     do {
 	lerrno = 0;
@@ -3529,12 +3535,11 @@ do_select(int n, rb_fdset_t *readfds, rb_fdset_t *writefds,
 	RUBY_VM_CHECK_INTS_BLOCKING(th);
     } while (result < 0 && retryable(errno = lerrno) && do_select_update());
 
-    if (readfds)
-	rb_fd_term(&orig_read);
-    if (writefds)
-	rb_fd_term(&orig_write);
-    if (exceptfds)
-	rb_fd_term(&orig_except);
+#define fd_term(f) if (f##fds) rb_fd_term(&orig_##f)
+    fd_term(read);
+    fd_term(write);
+    fd_term(except);
+#undef fd_term
 
     return result;
 }
