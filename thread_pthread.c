@@ -1285,6 +1285,18 @@ static struct {
     {-1, -1}, /* low priority */
 };
 
+NORETURN(static void async_bug_fd(const char *mesg, int errno_arg, int fd));
+static void
+async_bug_fd(const char *mesg, int errno_arg, int fd)
+{
+    char buff[64];
+    size_t n = strlcpy(buff, mesg, sizeof(buff));
+    if (n < sizeof(buff)-3) {
+	ruby_snprintf(buff, sizeof(buff)-n, "(%d)", fd);
+    }
+    rb_async_bug_errno(buff, errno_arg);
+}
+
 /* only use signal-safe system calls here */
 static void
 rb_thread_wakeup_timer_thread_fd(volatile int *fdp)
@@ -1306,7 +1318,7 @@ rb_thread_wakeup_timer_thread_fd(volatile int *fdp)
 #endif
 		break;
 	      default:
-		rb_async_bug_errno("rb_thread_wakeup_timer_thread - write", e);
+		async_bug_fd("rb_thread_wakeup_timer_thread: write", e, fd);
 	    }
 	}
 	if (TT_DEBUG) WRITE_CONST(2, "rb_thread_wakeup_timer_thread: write\n");
@@ -1358,7 +1370,7 @@ consume_communication_pipe(int fd)
 #endif
 		return;
 	      default:
-		rb_async_bug_errno("consume_communication_pipe: read", e);
+		async_bug_fd("consume_communication_pipe: read", e, fd);
 	    }
 	}
     }
@@ -1373,7 +1385,7 @@ close_invalidate(volatile int *fdp, const char *msg)
 
     *fdp = -1;
     if (close(fd) < 0) {
-	rb_async_bug_errno(msg, errno);
+	async_bug_fd(msg, errno, fd);
     }
 }
 
