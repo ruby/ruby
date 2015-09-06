@@ -1,3 +1,8 @@
+Sun Sep  6 16:07:22 2015  Eric Wong  <e@80x24.org>
+
+	* ccan/list/list.h: suppress unused argument warnings
+	  [ccan commit 6aaca17e07588997417a73fac19dcf0ff17ed81b]
+
 Sat Sep  5 11:39:52 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rss/rss.rb (Time#w3cdtf): fix zero-trimmed width of fraction
