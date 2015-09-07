@@ -1514,31 +1514,6 @@ set_default_internal(VALUE klass, VALUE encoding)
     return encoding;
 }
 
-/*
- * call-seq:
- *   Encoding.locale_charmap -> string
- *
- * Returns the locale charmap name.
- * It returns nil if no appropriate information.
- *
- *   Debian GNU/Linux
- *     LANG=C
- *       Encoding.locale_charmap  #=> "ANSI_X3.4-1968"
- *     LANG=ja_JP.EUC-JP
- *       Encoding.locale_charmap  #=> "EUC-JP"
- *
- *   SunOS 5
- *     LANG=C
- *       Encoding.locale_charmap  #=> "646"
- *     LANG=ja
- *       Encoding.locale_charmap  #=> "eucJP"
- *
- * The result is highly platform dependent.
- * So Encoding.find(Encoding.locale_charmap) may cause an error.
- * If you need some encoding object even for unknown locale,
- * Encoding.find("locale") can be used.
- *
- */
 static void
 set_encoding_const(const char *name, rb_encoding *enc)
 {
@@ -1900,7 +1875,7 @@ Init_Encoding(void)
     rb_define_singleton_method(rb_cEncoding, "default_external=", set_default_external, 1);
     rb_define_singleton_method(rb_cEncoding, "default_internal", get_default_internal, 0);
     rb_define_singleton_method(rb_cEncoding, "default_internal=", set_default_internal, 1);
-    rb_define_singleton_method(rb_cEncoding, "locale_charmap", rb_locale_charmap, 0);
+    rb_define_singleton_method(rb_cEncoding, "locale_charmap", rb_locale_charmap, 0); /* in localeinit.c */
 
     list = rb_ary_new2(enc_table.count);
     RBASIC_CLEAR_CLASS(list);
