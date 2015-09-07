@@ -3435,7 +3435,9 @@ else
   RUNRUBY='$(RUNRUBY_COMMAND) --'
   XRUBY='$(RUNRUBY)'
   BOOTSTRAPRUBY='$(MINIRUBY)'
-  test x"${HAVE_BASERUBY}" = xyes && BOOTSTRAPRUBY='$(BASERUBY)'
+  test x"${HAVE_BASERUBY}" = xyes &&
+  ${BASERUBY} -e 'exit module A;def foo;end;instance_methods;end.include?(:foo)' &&
+  BOOTSTRAPRUBY='$(BASERUBY)'
   TEST_RUNNABLE=yes
   CROSS_COMPILING=no
 fi
