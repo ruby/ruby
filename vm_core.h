@@ -409,10 +409,9 @@ enum ruby_basic_operators {
 #define GetVMPtr(obj, ptr) \
   GetCoreDataFromValue((obj), rb_vm_t, (ptr))
 
-#if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
 struct rb_objspace;
+struct rb_objspace *rb_objspace_alloc(void);
 void rb_objspace_free(struct rb_objspace *);
-#endif
 
 typedef struct rb_hook_list_struct {
     struct rb_event_hook_struct *hooks;
@@ -476,9 +475,7 @@ typedef struct rb_vm_struct {
 
     VALUE defined_module_hash;
 
-#if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
     struct rb_objspace *objspace;
-#endif
 
     /*
      * @shyouhei notes that this is not for storing normal Ruby

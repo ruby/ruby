@@ -2784,10 +2784,6 @@ rb_vm_set_progname(VALUE filename)
     RB_OBJ_WRITE(cfp->iseq, &cfp->iseq->body->location.path, filename);
 }
 
-#if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
-struct rb_objspace *rb_objspace_alloc(void);
-#endif
-
 extern const struct st_hash_type rb_fstring_hash_type;
 
 void
