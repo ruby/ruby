@@ -2464,6 +2464,26 @@ rb_execarg_parent_end(VALUE execarg_obj)
     RB_GC_GUARD(execarg_obj);
 }
 
+static void
+rb_exec_fail(struct rb_execarg *eargp, int err, const char *errmsg)
+{
+    if (!errmsg || !*errmsg) return;
+    if (strcmp(errmsg, "chdir") == 0) {
+	rb_sys_fail_str(eargp->chdir_dir);
+    }
+    rb_sys_fail(errmsg);
+}
+
+#if 0
+void
+rb_execarg_fail(VALUE execarg_obj, int err, const char *errmsg)
+{
+    if (!errmsg || !*errmsg) return;
+    rb_exec_fail(rb_execarg_get(execarg_obj), err, errmsg);
+    RB_GC_GUARD(execarg_obj);
+}
+#endif
+
 /*
  *  call-seq:
  *     exec([env,] command... [,options])
@@ -2544,6 +2564,7 @@ rb_f_exec(int argc, const VALUE *argv)
     struct rb_execarg *eargp;
 #define CHILD_ERRMSG_BUFLEN 80
     char errmsg[CHILD_ERRMSG_BUFLEN] = { '\0' };
+    int err;
 
     execarg_obj = rb_execarg_new(argc, argv, TRUE);
     eargp = rb_execarg_get(execarg_obj);
@@ -2553,16 +2574,18 @@ rb_f_exec(int argc, const VALUE *argv)
 
     rb_exec_async_signal_safe(eargp, errmsg, sizeof(errmsg));
 
-    preserving_errno(after_exec()); /* restart timer thread */
+    err = errno;
+    after_exec(); /* restart timer thread */
 
+    rb_exec_fail(eargp, err, errmsg);
     RB_GC_GUARD(execarg_obj);
-    if (errmsg[0])
-        rb_sys_fail(errmsg);
-    rb_sys_fail_str(fail_str);
+    rb_syserr_fail_str(err, fail_str);
     return Qnil;		/* dummy */
 }
 
 #define ERRMSG(str) do { if (errmsg && 0 < errmsg_buflen) strlcpy(errmsg, (str), errmsg_buflen); } while (0)
+#define ERRMSG1(str, a) do { if (errmsg && 0 < errmsg_buflen) snprintf(errmsg, errmsg_buflen, (str), (a)); } while (0)
+#define ERRMSG2(str, a, b) do { if (errmsg && 0 < errmsg_buflen) snprintf(errmsg, errmsg_buflen, (str), (a), (b)); } while (0)
 
 static int
 save_redirect_fd(int fd, struct rb_execarg *sargp, char *errmsg, size_t errmsg_buflen)
@@ -4271,11 +4294,10 @@ rb_f_spawn(int argc, VALUE *argv)
     pid = rb_execarg_spawn(execarg_obj, errmsg, sizeof(errmsg));
 
     if (pid == -1) {
-	const char *prog = errmsg;
-	if (!prog[0]) {
-	    rb_sys_fail_str(fail_str);
-	}
-	rb_sys_fail(prog);
+	int err = errno;
+	rb_exec_fail(eargp, err, errmsg);
+	RB_GC_GUARD(execarg_obj);
+	rb_syserr_fail_str(err, fail_str);
     }
 #if defined(HAVE_WORKING_FORK) || defined(HAVE_SPAWNV)
     return PIDT2NUM(pid);
