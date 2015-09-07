@@ -1,3 +1,8 @@
+Mon Sep  7 23:45:28 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (rb_exec_fail): raise with the target directory name
+	  when chdir() failed.  pointed out by sorah.
+
 Mon Sep  7 22:05:28 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (insert): should use plain strdup() instead of
