@@ -168,7 +168,7 @@ ruby_atomic_size_exchange(size_t *ptr, size_t val)
 #   define ATOMIC_VALUE_EXCHANGE(var, val) ATOMIC_EXCHANGE(var, val)
 # endif
 # ifndef ATOMIC_VALUE_CAS
-#   define ATOMIC_VALUE_CAS(var, oldval, val) ATOMIC_CAS(var, oldval, newval)
+#   define ATOMIC_VALUE_CAS(var, oldval, val) ATOMIC_CAS(var, oldval, val)
 # endif
 #endif
 
