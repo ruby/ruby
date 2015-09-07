@@ -2334,7 +2334,7 @@ rb_execarg_parent_start1(VALUE execarg_obj)
                         rb_thread_check_ints();
                         goto again;
                     }
-                    rb_sys_fail("open");
+                    rb_syserr_fail_str(open_data.err, vpath);
                 }
                 fd2 = open_data.ret;
                 rb_update_max_fd(fd2);
