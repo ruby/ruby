@@ -50,6 +50,31 @@ locale_charmap(VALUE (*conv)(const char *))
 #endif
 }
 
+/*
+ * call-seq:
+ *   Encoding.locale_charmap -> string
+ *
+ * Returns the locale charmap name.
+ * It returns nil if no appropriate information.
+ *
+ *   Debian GNU/Linux
+ *     LANG=C
+ *       Encoding.locale_charmap  #=> "ANSI_X3.4-1968"
+ *     LANG=ja_JP.EUC-JP
+ *       Encoding.locale_charmap  #=> "EUC-JP"
+ *
+ *   SunOS 5
+ *     LANG=C
+ *       Encoding.locale_charmap  #=> "646"
+ *     LANG=ja
+ *       Encoding.locale_charmap  #=> "eucJP"
+ *
+ * The result is highly platform dependent.
+ * So Encoding.find(Encoding.locale_charmap) may cause an error.
+ * If you need some encoding object even for unknown locale,
+ * Encoding.find("locale") can be used.
+ *
+ */
 VALUE
 rb_locale_charmap(VALUE klass)
 {
