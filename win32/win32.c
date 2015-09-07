@@ -90,6 +90,7 @@ static char *w32_getenv(const char *name, UINT cp);
 #undef close
 #undef setsockopt
 #undef dup2
+#undef strdup
 
 #if RUBY_MSVCRT_VERSION >= 140
 # define _filbuf _fgetc_nolock

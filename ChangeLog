@@ -1,3 +1,8 @@
+Mon Sep  7 22:05:28 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (insert): should use plain strdup() instead of
+	  ruby_strdup() at startup time, and plain free()ed in cmdglob().
+
 Mon Sep  7 16:50:07 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_core.h (rb_vm_struct): define objspace always regardless
