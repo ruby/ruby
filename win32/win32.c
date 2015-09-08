@@ -4777,7 +4777,7 @@ rb_w32_read_reparse_point(const WCHAR *path, rb_w32_reparse_buffer_t *rp,
 			  size_t bufsize, WCHAR **result, DWORD *len)
 {
     int e = reparse_symlink(path, rp, bufsize);
-    DWORD ret;
+    DWORD ret = 0;
 
     if (!e || e == ERROR_MORE_DATA) {
 	void *name;
@@ -4785,17 +4785,18 @@ rb_w32_read_reparse_point(const WCHAR *path, rb_w32_reparse_buffer_t *rp,
 	    name = ((char *)rp->SymbolicLinkReparseBuffer.PathBuffer +
 		    rp->SymbolicLinkReparseBuffer.PrintNameOffset);
 	    ret = rp->SymbolicLinkReparseBuffer.PrintNameLength;
+	    *len = ret / sizeof(WCHAR);
 	}
 	else { /* IO_REPARSE_TAG_MOUNT_POINT */
 	    /* +4/-4 means to drop "\??\" */
 	    name = ((char *)rp->MountPointReparseBuffer.PathBuffer +
 		    rp->MountPointReparseBuffer.SubstituteNameOffset +
 		    4 * sizeof(WCHAR));
-	    ret = rp->MountPointReparseBuffer.SubstituteNameLength -
-		  4 * sizeof(WCHAR);
+	    ret = rp->MountPointReparseBuffer.SubstituteNameLength;
+	    *len = ret / sizeof(WCHAR);
+	    ret -= 4 * sizeof(WCHAR);
 	}
 	*result = name;
-	*len = ret / sizeof(WCHAR);
 	if (e) {
 	    if ((char *)name + ret + sizeof(WCHAR) > (char *)rp + bufsize)
 		return e;
