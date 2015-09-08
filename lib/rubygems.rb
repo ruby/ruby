@@ -1203,6 +1203,7 @@ module Gem
   autoload :DependencyList,     'rubygems/dependency_list'
   autoload :DependencyResolver, 'rubygems/resolver'
   autoload :Installer,          'rubygems/installer'
+  autoload :Licenses,           'rubygems/util/licenses'
   autoload :PathSupport,        'rubygems/path_support'
   autoload :Platform,           'rubygems/platform'
   autoload :RequestSet,         'rubygems/request_set'

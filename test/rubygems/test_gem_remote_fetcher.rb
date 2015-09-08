@@ -252,6 +252,31 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     dns.verify
   end
 
+  def test_api_endpoint_timeout_warning
+    uri = URI.parse "http://gems.example.com/foo"
+
+    dns = MiniTest::Mock.new
+    def dns.getresource arg, *rest
+      raise Resolv::ResolvError.new('timeout!')
+    end
+
+    fetch = Gem::RemoteFetcher.new nil, dns
+    begin
+      old_verbose, Gem.configuration.verbose = Gem.configuration.verbose, 1
+      endpoint = use_ui @ui do
+        fetch.api_endpoint(uri)
+      end
+    ensure
+      Gem.configuration.verbose = old_verbose
+    end
+
+    assert_equal uri, endpoint
+
+    assert_equal "Getting SRV record failed: timeout!\n", @ui.output
+
+    dns.verify
+  end
+
   def test_cache_update_path
     uri = URI 'http://example/file'
     path = File.join @tempdir, 'file'
@@ -1010,3 +1035,4 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   end
 
 end
+

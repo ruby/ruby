@@ -396,7 +396,7 @@ Gem dependencies file #{@path} requires #{name} more than once.
   ##
   # Handles the git: option from +options+ for gem +name+.
   #
-  # Returns +true+ if the path option was handled.
+  # Returns +true+ if the gist or git option was handled.
 
   def gem_git name, options # :nodoc:
     if gist = options.delete(:gist) then
