@@ -4392,8 +4392,8 @@ rb_io_memsize(const rb_io_t *fptr)
     return size;
 }
 
-VALUE
-rb_io_close(VALUE io)
+static rb_io_t *
+io_close_fptr(VALUE io)
 {
     rb_io_t *fptr;
     int fd;
@@ -4409,19 +4409,31 @@ rb_io_close(VALUE io)
     }
 
     fptr = RFILE(io)->fptr;
-    if (!fptr) return Qnil;
-    if (fptr->fd < 0) return Qnil;
+    if (!fptr) return 0;
+    if (fptr->fd < 0) return 0;
 
     fd = fptr->fd;
     rb_thread_fd_close(fd);
     rb_io_fptr_cleanup(fptr, FALSE);
+    return fptr;
+}
 
+static void
+fptr_waitpid(rb_io_t *fptr, int nohang)
+{
+    int status;
     if (fptr->pid) {
-        rb_last_status_clear();
-	rb_syswait(fptr->pid);
+	rb_last_status_clear();
+	rb_waitpid(fptr->pid, &status, nohang ? WNOHANG : 0);
 	fptr->pid = 0;
     }
+}
 
+VALUE
+rb_io_close(VALUE io)
+{
+    rb_io_t *fptr = io_close_fptr(io);
+    if (fptr) fptr_waitpid(fptr, 0);
     return Qnil;
 }
 
@@ -6184,6 +6196,16 @@ pipe_open_s(VALUE prog, const char *modestr, int fmode, convconfig_t *convconfig
     return pipe_open(execarg_obj, modestr, fmode, convconfig);
 }
 
+static VALUE
+pipe_close(VALUE io)
+{
+    rb_io_t *fptr = io_close_fptr(io);
+    if (fptr) {
+	fptr_waitpid(fptr, rb_thread_to_be_killed(rb_thread_current()));
+    }
+    return Qnil;
+}
+
 /*
  *  call-seq:
  *     IO.popen([env,] cmd, mode="r" [, opt])               -> io
@@ -6334,7 +6356,7 @@ rb_io_s_popen(int argc, VALUE *argv, VALUE klass)
     }
     RBASIC_SET_CLASS(port, klass);
     if (rb_block_given_p()) {
-	return rb_ensure(rb_yield, port, io_close, port);
+	return rb_ensure(rb_yield, port, pipe_close, port);
     }
     return port;
 }
