@@ -296,6 +296,16 @@ class TestFile < Test::Unit::TestCase
     end
   end
 
+  def test_realdirpath_junktion
+    Dir.mktmpdir('rubytest-realpath') {|tmpdir|
+      Dir.chdir(tmpdir) do
+        Dir.mkdir('foo')
+        skip "cannot run mklink" unless system('mklink /j bar foo > nul')
+        assert_equal(File.realpath('foo'), File.realpath('bar'))
+      end
+    }
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
+
   def test_utime_with_minus_time_segv
     bug5596 = '[ruby-dev:44838]'
     assert_in_out_err([], <<-EOS, [bug5596], [])
