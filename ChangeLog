@@ -1,3 +1,7 @@
+Tue Sep  8 23:17:36 2015  Yuki Nishijima  <mail@yukinishijima.net>
+
+	* gems/bundled_gems: Upgrade the did_you_mean gem to 1.0.0.beta2.
+
 Tue Sep  8 23:09:28 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_s_popen): do not wait the child process during being
