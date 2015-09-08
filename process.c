@@ -863,25 +863,28 @@ rb_waitpid_blocking(void *data)
     return (void *)(VALUE)result;
 }
 
+static rb_pid_t
+do_waitpid_nonblocking(rb_pid_t pid, int *st, int flags)
+{
+    void *result;
+    struct waitpid_arg arg;
+    arg.pid = pid;
+    arg.st = st;
+    arg.flags = flags;
+    result = rb_thread_call_without_gvl(rb_waitpid_blocking, &arg,
+					RUBY_UBF_PROCESS, 0);
+    return (rb_pid_t)(VALUE)result;
+}
+
 rb_pid_t
 rb_waitpid(rb_pid_t pid, int *st, int flags)
 {
     rb_pid_t result;
-    struct waitpid_arg arg;
 
-  retry:
-    arg.pid = pid;
-    arg.st = st;
-    arg.flags = flags;
-    result = (rb_pid_t)(VALUE)rb_thread_call_without_gvl(rb_waitpid_blocking, &arg,
-							 RUBY_UBF_PROCESS, 0);
-    if (result < 0) {
-	if (errno == EINTR) {
-            rb_thread_t *th = GET_THREAD();
-            RUBY_VM_CHECK_INTS(th);
-            goto retry;
-        }
-	return (rb_pid_t)-1;
+    while ((result = do_waitpid_nonblocking(pid, st, flags)) < 0 &&
+	   (errno == EINTR)) {
+	rb_thread_t *th = GET_THREAD();
+	RUBY_VM_CHECK_INTS(th);
     }
     if (result > 0) {
 	rb_last_status_set(*st, result);
