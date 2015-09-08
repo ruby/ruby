@@ -755,15 +755,14 @@ module Net
       args.each do |arg|
         cmd = "#{cmd} #{arg}"
       end
-      if block
-        retrlines(cmd, &block)
-      else
-        lines = []
-        retrlines(cmd) do |line|
-          lines << line
-        end
-        return lines
+      lines = []
+      retrlines(cmd) do |line|
+        lines << line
       end
+      if block
+        lines.each(&block)
+      end
+      return lines
     end
     alias ls list
     alias dir list

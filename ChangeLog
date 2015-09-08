@@ -1,3 +1,9 @@
+Tue Sep  8 15:01:19 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/ftp.rb (list): fetch all the lines before yielding a block
+	  to allow other commands in the block.  [Feature #11454]
+	  Patched by Srikanth Shreenivas.
+
 Tue Sep  8 12:05:00 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_read_reparse_point): return correct required
