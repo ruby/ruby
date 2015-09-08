@@ -296,7 +296,7 @@ class TestFile < Test::Unit::TestCase
     end
   end
 
-  def test_realdirpath_junktion
+  def test_realdirpath_junction
     Dir.mktmpdir('rubytest-realpath') {|tmpdir|
       Dir.chdir(tmpdir) do
         Dir.mkdir('foo')
