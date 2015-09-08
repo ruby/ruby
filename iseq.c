@@ -26,7 +26,7 @@
 #include "insns_info.inc"
 
 #define ISEQ_MAJOR_VERSION 2
-#define ISEQ_MINOR_VERSION 2
+#define ISEQ_MINOR_VERSION 3
 
 VALUE rb_cISeq;
 
@@ -1279,12 +1279,6 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
 	    if (ci->kw_arg) {
 		rb_ary_push(ary, rb_sprintf("kw:%d", ci->kw_arg->keyword_len));
 	    }
-	    if (ci->blockiseq) {
-		if (child) {
-		    rb_ary_push(child, (VALUE)ci->blockiseq);
-		}
-		rb_ary_push(ary, rb_sprintf("block:%"PRIsVALUE, ci->blockiseq->body->location.label));
-	    }
 
 	    if (ci->flag) {
 		VALUE flags = rb_ary_new();
@@ -1895,7 +1889,6 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 
 		    rb_hash_aset(e, ID2SYM(rb_intern("mid")), ci->mid ? ID2SYM(ci->mid) : Qnil);
 		    rb_hash_aset(e, ID2SYM(rb_intern("flag")), UINT2NUM(ci->flag));
-		    rb_hash_aset(e, ID2SYM(rb_intern("blockptr")), ci->blockiseq ? iseq_data_to_ary(ci->blockiseq) : Qnil);
 
 		    if (ci->kw_arg) {
 			int i;
@@ -2329,7 +2322,7 @@ Init_ISeq(void)
     rb_define_private_method(rb_cISeq, "marshal_load", iseqw_marshal_load, 1);
 #endif
     /* disable this feature because there is no verifier. */
-    /* rb_define_singleton_method(rb_cISeq, "load", iseq_s_load, -1); */
+    rb_define_singleton_method(rb_cISeq, "load", iseq_s_load, -1);
     (void)iseq_s_load;
 
     rb_define_singleton_method(rb_cISeq, "compile", iseqw_s_compile, -1);

@@ -1,3 +1,18 @@
+Tue Sep  8 17:17:48 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h: remove rb_call_info_t::blockiseq.
+
+	* insns.def (send, invokesuper): pass blockiseq explicitly.
+
+	* compile.c: catch up this fix.
+
+	* iseq.c: ditto.
+
+	* vm_args.c: ditto.
+
+	* iseq.c (ISEQ_MINOR_VERSION): 2->3 because instruction spec was
+	  changed.
+
 Tue Sep  8 15:01:19 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/ftp.rb (list): fetch all the lines before yielding a block

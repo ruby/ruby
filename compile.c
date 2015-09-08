@@ -945,7 +945,7 @@ new_insn_body(rb_iseq_t *iseq, int line_no, enum ruby_vminsn_type insn_id, int a
 }
 
 static rb_call_info_t *
-new_callinfo(rb_iseq_t *iseq, ID mid, int argc, const rb_iseq_t *blockiseq, unsigned int flag, rb_call_info_kw_arg_t *kw_arg)
+new_callinfo(rb_iseq_t *iseq, ID mid, int argc, unsigned int flag, rb_call_info_kw_arg_t *kw_arg, int has_blockiseq)
 {
     rb_call_info_t *ci = (rb_call_info_t *)compile_data_alloc(iseq, sizeof(rb_call_info_t));
 
@@ -960,10 +960,8 @@ new_callinfo(rb_iseq_t *iseq, ID mid, int argc, const rb_iseq_t *blockiseq, unsi
 	ci->orig_argc += kw_arg->keyword_len;
     }
 
-    ci->blockiseq = blockiseq;
-
     if (!(ci->flag & (VM_CALL_ARGS_SPLAT | VM_CALL_ARGS_BLOCKARG)) &&
-	ci->blockiseq == NULL && ci->kw_arg == NULL) {
+	ci->kw_arg == NULL && !has_blockiseq) {
 	ci->flag |= VM_CALL_ARGS_SIMPLE;
     }
 
@@ -979,11 +977,12 @@ new_callinfo(rb_iseq_t *iseq, ID mid, int argc, const rb_iseq_t *blockiseq, unsi
 }
 
 static INSN *
-new_insn_send(rb_iseq_t *iseq, int line_no, ID id, VALUE argc, const rb_iseq_t *block, VALUE flag, rb_call_info_kw_arg_t *keywords)
+new_insn_send(rb_iseq_t *iseq, int line_no, ID id, VALUE argc, const rb_iseq_t *blockiseq, VALUE flag, rb_call_info_kw_arg_t *keywords)
 {
-    VALUE *operands = (VALUE *)compile_data_alloc(iseq, sizeof(VALUE) * 1);
-    operands[0] = (VALUE)new_callinfo(iseq, id, FIX2INT(argc), block, FIX2INT(flag), keywords);
-    return new_insn_core(iseq, line_no, BIN(send), 1, operands);
+    VALUE *operands = (VALUE *)compile_data_alloc(iseq, sizeof(VALUE) * 2);
+    operands[0] = (VALUE)new_callinfo(iseq, id, FIX2INT(argc), FIX2INT(flag), keywords, blockiseq != NULL);
+    operands[1] = (VALUE)blockiseq;
+    return new_insn_core(iseq, line_no, BIN(send), 2, operands);
 }
 
 static rb_iseq_t *
@@ -1947,7 +1946,8 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 
 	if (previ == BIN(send) || previ == BIN(opt_send_without_block) || previ == BIN(invokesuper)) {
 	    rb_call_info_t *ci = (rb_call_info_t *)piobj->operands[0];
-	    if (ci->blockiseq == 0) {
+	    rb_iseq_t *blockiseq = (rb_iseq_t *)piobj->operands[1];
+	    if (blockiseq == 0) {
 		ci->flag |= VM_CALL_TAILCALL;
 	    }
 	}
@@ -1958,18 +1958,14 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 static int
 insn_set_specialized_instruction(rb_iseq_t *iseq, INSN *iobj, int insn_id)
 {
-    int old_opsize = iobj->operand_size;
     iobj->insn_id = insn_id;
     iobj->operand_size = insn_len(insn_id) - 1;
 
-    if (iobj->operand_size > old_opsize) {
+    if (insn_id == BIN(opt_neq)) {
 	VALUE *old_operands = iobj->operands;
-	if (insn_id != BIN(opt_neq)) {
-	    rb_bug("insn_set_specialized_instruction: unknown insn: %d", insn_id);
-	}
 	iobj->operands = (VALUE *)compile_data_alloc(iseq, iobj->operand_size * sizeof(VALUE));
 	iobj->operands[0] = old_operands[0];
-	iobj->operands[1] = (VALUE)new_callinfo(iseq, idEq, 1, 0, 0, NULL);
+	iobj->operands[1] = (VALUE)new_callinfo(iseq, idEq, 1, 0, NULL, FALSE);
     }
 
     return COMPILE_OK;
@@ -1980,6 +1976,7 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
 {
     if (iobj->insn_id == BIN(send)) {
 	rb_call_info_t *ci = (rb_call_info_t *)OPERAND_AT(iobj, 0);
+	const rb_iseq_t *blockiseq = (rb_iseq_t *)OPERAND_AT(iobj, 1);
 
 #define SP_INSN(opt) insn_set_specialized_instruction(iseq, iobj, BIN(opt_##opt))
 	if (ci->flag & VM_CALL_ARGS_SIMPLE) {
@@ -2018,8 +2015,9 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
 	    }
 	}
 
-	if ((ci->flag & VM_CALL_ARGS_BLOCKARG) == 0 && ci->blockiseq == NULL) {
+	if ((ci->flag & VM_CALL_ARGS_BLOCKARG) == 0 && blockiseq == NULL) {
 	    iobj->insn_id = BIN(opt_send_without_block);
+	    iobj->operand_size = 1;
 	}
     }
 #undef SP_INSN
@@ -4504,7 +4502,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    node->nd_args->nd_head->nd_lit = str;
 	    COMPILE(ret, "recv", node->nd_recv);
 	    ADD_INSN2(ret, line, opt_aref_with,
-		      new_callinfo(iseq, idAREF, 1, 0, 0, NULL), str);
+		      new_callinfo(iseq, idAREF, 1, 0, NULL, FALSE), str);
 	    if (poped) {
 		ADD_INSN(ret, line, pop);
 	    }
@@ -4741,8 +4739,9 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	/* dummy receiver */
 	ADD_INSN1(ret, line, putobject, nd_type(node) == NODE_ZSUPER ? Qfalse : Qtrue);
 	ADD_SEQ(ret, args);
-	ADD_INSN1(ret, line, invokesuper, new_callinfo(iseq, 0, argc, parent_block,
-						       flag | VM_CALL_SUPER | VM_CALL_FCALL, keywords));
+	ADD_INSN2(ret, line, invokesuper,
+		  new_callinfo(iseq, 0, argc, flag | VM_CALL_SUPER | VM_CALL_FCALL, keywords, parent_block != NULL),
+		  parent_block);
 
 	if (poped) {
 	    ADD_INSN(ret, line, pop);
@@ -4852,7 +4851,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	}
 
 	ADD_SEQ(ret, args);
-	ADD_INSN1(ret, line, invokeblock, new_callinfo(iseq, 0, FIX2INT(argc), 0, flag, keywords));
+	ADD_INSN1(ret, line, invokeblock, new_callinfo(iseq, 0, FIX2INT(argc), flag, keywords, FALSE));
 
 	if (poped) {
 	    ADD_INSN(ret, line, pop);
@@ -4980,7 +4979,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    else {
 		ADD_SEQ(ret, recv);
 		ADD_SEQ(ret, val);
-		ADD_INSN1(ret, line, opt_regexpmatch2, new_callinfo(iseq, idEqTilde, 1, 0, 0, NULL));
+		ADD_INSN1(ret, line, opt_regexpmatch2, new_callinfo(iseq, idEqTilde, 1, 0, NULL, FALSE));
 	    }
 	}
 	else {
@@ -5515,7 +5514,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		ADD_INSN1(ret, line, topn, INT2FIX(1));
 	    }
 	    ADD_INSN2(ret, line, opt_aset_with,
-		      new_callinfo(iseq, idASET, 2, 0, 0, NULL), str);
+		      new_callinfo(iseq, idASET, 2, 0, NULL, FALSE), str);
 	    ADD_INSN(ret, line, pop);
 	    break;
 	}
@@ -5908,7 +5907,6 @@ iseq_build_callinfo_from_hash(rb_iseq_t *iseq, VALUE op)
 {
     ID mid = 0;
     int orig_argc = 0;
-    const rb_iseq_t *block = NULL;
     unsigned int flag = 0;
     rb_call_info_kw_arg_t *kw_arg = 0;
 
@@ -5916,13 +5914,11 @@ iseq_build_callinfo_from_hash(rb_iseq_t *iseq, VALUE op)
 	VALUE vmid = rb_hash_aref(op, ID2SYM(rb_intern("mid")));
 	VALUE vflag = rb_hash_aref(op, ID2SYM(rb_intern("flag")));
 	VALUE vorig_argc = rb_hash_aref(op, ID2SYM(rb_intern("orig_argc")));
-	VALUE vblock = rb_hash_aref(op, ID2SYM(rb_intern("blockptr")));
 	VALUE vkw_arg = rb_hash_aref(op, ID2SYM(rb_intern("kw_arg")));
 
 	if (!NIL_P(vmid)) mid = SYM2ID(vmid);
 	if (!NIL_P(vflag)) flag = NUM2UINT(vflag);
 	if (!NIL_P(vorig_argc)) orig_argc = FIX2INT(vorig_argc);
-	if (!NIL_P(vblock)) block = iseq_build_load_iseq(iseq, vblock);
 
 	if (!NIL_P(vkw_arg)) {
 	    int i;
@@ -5939,8 +5935,9 @@ iseq_build_callinfo_from_hash(rb_iseq_t *iseq, VALUE op)
 	}
     }
 
-    return (VALUE)new_callinfo(iseq, mid, orig_argc, block, flag, kw_arg);
+    return (VALUE)new_callinfo(iseq, mid, orig_argc, flag, kw_arg, (flag & VM_CALL_ARGS_SIMPLE) == 0);
 }
+
 static int
 iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 		VALUE body, struct st_table *labels_table)

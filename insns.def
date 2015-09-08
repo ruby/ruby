@@ -936,12 +936,12 @@ defineclass
  */
 DEFINE_INSN
 send
-(CALL_INFO ci)
+(CALL_INFO ci, ISEQ iseq)
 (...)
 (VALUE val) // inc += - (int)(ci->orig_argc + ((ci->flag & VM_CALL_ARGS_BLOCKARG) ? 1 : 0));
 {
     ci->argc = ci->orig_argc;
-    vm_caller_setup_arg_block(th, reg_cfp, ci, FALSE);
+    vm_caller_setup_arg_block(th, reg_cfp, ci, iseq, FALSE);
     vm_search_method(ci, ci->recv = TOPN(ci->argc));
     CALL_METHOD(ci);
 }
@@ -983,12 +983,12 @@ opt_send_without_block
  */
 DEFINE_INSN
 invokesuper
-(CALL_INFO ci)
+(CALL_INFO ci, ISEQ iseq)
 (...)
 (VALUE val) // inc += - (int)(ci->orig_argc + ((ci->flag & VM_CALL_ARGS_BLOCKARG) ? 1 : 0));
 {
     ci->argc = ci->orig_argc;
-    vm_caller_setup_arg_block(th, reg_cfp, ci, TRUE);
+    vm_caller_setup_arg_block(th, reg_cfp, ci, iseq, TRUE);
     ci->recv = GET_SELF();
     vm_search_super_method(th, GET_CFP(), ci);
     CALL_METHOD(ci);
