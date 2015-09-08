@@ -846,20 +846,23 @@ struct waitpid_arg {
     int *st;
 };
 
-static void *
-rb_waitpid_blocking(void *data)
+static rb_pid_t
+do_waitpid(rb_pid_t pid, int *st, int flags)
 {
-    rb_pid_t result;
-    struct waitpid_arg *arg = data;
-
 #if defined HAVE_WAITPID
-    result = waitpid(arg->pid, arg->st, arg->flags);
+    return waitpid(pid, st, flags);
 #elif defined HAVE_WAIT4
-    result = wait4(arg->pid, arg->st, arg->flags, NULL);
+    return wait4(pid, st, flags, NULL);
 #else
 #  error waitpid or wait4 is required.
 #endif
+}
 
+static void *
+rb_waitpid_blocking(void *data)
+{
+    struct waitpid_arg *arg = data;
+    rb_pid_t result = do_waitpid(arg->pid, arg->st, arg->flags);
     return (void *)(VALUE)result;
 }
 
@@ -881,10 +884,15 @@ rb_waitpid(rb_pid_t pid, int *st, int flags)
 {
     rb_pid_t result;
 
-    while ((result = do_waitpid_nonblocking(pid, st, flags)) < 0 &&
-	   (errno == EINTR)) {
-	rb_thread_t *th = GET_THREAD();
-	RUBY_VM_CHECK_INTS(th);
+    if (flags & WNOHANG) {
+	result = do_waitpid(pid, st, flags);
+    }
+    else {
+	while ((result = do_waitpid_nonblocking(pid, st, flags)) < 0 &&
+	       (errno == EINTR)) {
+	    rb_thread_t *th = GET_THREAD();
+	    RUBY_VM_CHECK_INTS(th);
+	}
     }
     if (result > 0) {
 	rb_last_status_set(*st, result);
