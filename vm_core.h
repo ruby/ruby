@@ -194,10 +194,8 @@ enum method_missing_reason {
 typedef struct rb_call_info_struct {
     /* fixed at compile time */
     ID mid;
-
     unsigned int flag;
     int orig_argc;
-    const rb_iseq_t *blockiseq;
     const rb_call_info_kw_arg_t *kw_arg;
 
     /* inline cache: keys */
@@ -839,7 +837,7 @@ enum vm_check_match_type {
 #define VM_CALL_TAILCALL        (0x01 << 5) /* located at tail position */
 #define VM_CALL_SUPER           (0x01 << 6) /* super */
 #define VM_CALL_OPT_SEND        (0x01 << 7) /* internal flag */
-#define VM_CALL_ARGS_SIMPLE     (0x01 << 8) /* (ci->flag & (SPLAT|BLOCKARG)) && ci->blockiseq == NULL && ci->kw_arg == NULL */
+#define VM_CALL_ARGS_SIMPLE     (0x01 << 8) /* (ci->flag & (SPLAT|BLOCKARG)) && blockiseq == NULL && ci->kw_arg == NULL */
 
 enum vm_special_object_type {
     VM_SPECIAL_OBJECT_VMCORE = 1,
