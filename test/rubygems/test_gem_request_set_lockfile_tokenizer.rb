@@ -19,7 +19,7 @@ class TestGemRequestSetLockfileTokenizer < Gem::TestCase
 
     assert_equal :newline, tokenizer.next_token.first
 
-    assert_equal [:EOF], tokenizer.peek
+    assert_equal :EOF, tokenizer.peek.first
   end
 
   def test_skip

@@ -563,7 +563,7 @@ class Gem::Specification < Gem::BasicSpecification
   # Ideally you should pick one that is OSI (Open Source Initiative)
   # http://opensource.org/licenses/alphabetical approved.
   #
-  # The most commonly used OSI approved licenses are BSD-3-Clause and MIT.
+  # The most commonly used OSI approved licenses are MIT and Apache-2.0.
   # GitHub also provides a license picker at http://choosealicense.com/.
   #
   # You should specify a license for your gem so that people know how they are
@@ -592,7 +592,7 @@ class Gem::Specification < Gem::BasicSpecification
   # See #license= for more discussion
   #
   # Usage:
-  #   spec.licenses = ['MIT', 'GPL-2']
+  #   spec.licenses = ['MIT', 'GPL-2.0']
 
   def licenses= licenses
     @licenses = Array licenses
@@ -619,6 +619,10 @@ class Gem::Specification < Gem::BasicSpecification
   #   ruby 2.0.0p247 (2013-06-27 revision 41674) [x86_64-darwin12.4.0]
   #   #<Gem::Version "2.0.0.247">
   #
+  # Because patch-level is taken into account, be very careful specifying using
+  # `<=`: `<= 2.2.2` will not match any patch-level of 2.2.2 after the `p0`
+  # release. It is much safer to specify `< 2.2.3` instead
+  #
   # Usage:
   #
   #  # This gem will work with 1.8.6 or greater...
@@ -626,6 +630,9 @@ class Gem::Specification < Gem::BasicSpecification
   #
   #  # Only with ruby 2.0.x
   #  spec.required_ruby_version = '~> 2.0'
+  #
+  #  # Only with ruby between 2.2.0 and 2.2.2
+  #  spec.required_ruby_version = ['>= 2.2.0', '< 2.2.3']
 
   def required_ruby_version= req
     @required_ruby_version = Gem::Requirement.create req
@@ -1000,7 +1007,7 @@ class Gem::Specification < Gem::BasicSpecification
 
   def self.find_by_path path
     stub = stubs.find { |spec|
-      spec.contains_requirable_file? path
+      spec.contains_requirable_file? path if spec
     }
     stub && stub.to_spec
   end
@@ -1011,7 +1018,7 @@ class Gem::Specification < Gem::BasicSpecification
 
   def self.find_inactive_by_path path
     stub = stubs.find { |s|
-      s.contains_requirable_file? path unless s.activated?
+      s.contains_requirable_file? path unless s.nil? || s.activated?
     }
     stub && stub.to_spec
   end
@@ -1023,7 +1030,7 @@ class Gem::Specification < Gem::BasicSpecification
     # TODO: do we need these?? Kill it
     specs = unresolved_deps.values.map { |dep| dep.to_specs }.flatten
 
-    specs.find_all { |spec| spec.contains_requirable_file? path }
+    specs.find_all { |spec| spec.contains_requirable_file? path if spec }
   end
 
   ##
@@ -2712,11 +2719,18 @@ class Gem::Specification < Gem::BasicSpecification
         raise Gem::InvalidSpecificationException,
           "each license must be 64 characters or less"
       end
+
+      if !Gem::Licenses::IDENTIFIERS.include?(license) && !license.eql?(Gem::Licenses::NONSTANDARD)
+        warning <<-warning
+WARNING: license value '#{license}' is invalid.  Use a license identifier from
+http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard license.
+        warning
+      end
     }
 
     warning <<-warning if licenses.empty?
-licenses is empty, but is recommended.  Use a license abbreviation from:
-http://opensource.org/licenses/alphabetical
+licenses is empty, but is recommended.  Use a license identifier from
+http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard license.
     warning
 
     validate_permissions
@@ -2788,23 +2802,26 @@ http://opensource.org/licenses/alphabetical
   # versioning.
 
   def validate_dependencies # :nodoc:
-    seen = {}
+    # NOTE: see REFACTOR note in Gem::Dependency about types - this might be brittle
+    seen = Gem::Dependency::TYPES.inject({}) { |types, type| types.merge({ type => {}}) }
 
+    error_messages = []
+    warning_messages = []
     dependencies.each do |dep|
-      if prev = seen[dep.name] then
-        raise Gem::InvalidSpecificationException, <<-MESSAGE
+      if prev = seen[dep.type][dep.name] then
+        error_messages << <<-MESSAGE
 duplicate dependency on #{dep}, (#{prev.requirement}) use:
-    add_runtime_dependency '#{dep.name}', '#{dep.requirement}', '#{prev.requirement}'
+    add_#{dep.type}_dependency '#{dep.name}', '#{dep.requirement}', '#{prev.requirement}'
         MESSAGE
       end
 
-      seen[dep.name] = dep
+      seen[dep.type][dep.name] = dep
 
       prerelease_dep = dep.requirements_list.any? do |req|
         Gem::Requirement.new(req).prerelease?
       end
 
-      warning "prerelease dependency on #{dep} is not recommended" if
+      warning_messages << "prerelease dependency on #{dep} is not recommended" if
         prerelease_dep
 
       overly_strict = dep.requirement.requirements.length == 1 &&
@@ -2820,7 +2837,7 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
 
         base = dep_version.segments.first 2
 
-        warning <<-WARNING
+        warning_messages << <<-WARNING
 pessimistic dependency on #{dep} may be overly strict
   if #{dep.name} is semantically versioned, use:
     add_#{dep.type}_dependency '#{dep.name}', '~> #{base.join '.'}', '>= #{dep_version}'
@@ -2842,12 +2859,18 @@ pessimistic dependency on #{dep} may be overly strict
                    ", '>= #{dep_version}'"
                  end
 
-        warning <<-WARNING
+        warning_messages << <<-WARNING
 open-ended dependency on #{dep} is not recommended
   if #{dep.name} is semantically versioned, use:
     add_#{dep.type}_dependency '#{dep.name}', '~> #{base.join '.'}'#{bugfix}
         WARNING
       end
+    end
+    if error_messages.any?
+      raise Gem::InvalidSpecificationException, error_messages.join
+    end
+    if warning_messages.any?
+      warning_messages.each { |warning_message| warning warning_message }
     end
   end
 

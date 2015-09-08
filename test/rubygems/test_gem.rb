@@ -1311,7 +1311,7 @@ class TestGem < Gem::TestCase
     ENV['GEM_PATH'] = path
     ENV['RUBYGEMS_GEMDEPS'] = "-"
 
-    out = `#{Gem.ruby.dup.untaint} -I #{LIB_PATH.untaint} -rubygems -e "p Gem.loaded_specs.values.map(&:full_name).sort"`
+    out = `#{Gem.ruby.dup.untaint} -I "#{LIB_PATH.untaint}" -rubygems -e "p Gem.loaded_specs.values.map(&:full_name).sort"`
 
     assert_equal '["a-1", "b-1", "c-1"]', out.strip
   end
@@ -1343,7 +1343,7 @@ class TestGem < Gem::TestCase
 
     Dir.mkdir "sub1"
     out = Dir.chdir "sub1" do
-      `#{Gem.ruby.dup.untaint} -I #{LIB_PATH.untaint} -rubygems -e "p Gem.loaded_specs.values.map(&:full_name).sort"`
+      `#{Gem.ruby.dup.untaint} -I "#{LIB_PATH.untaint}" -rubygems -e "p Gem.loaded_specs.values.map(&:full_name).sort"`
     end
 
     Dir.rmdir "sub1"
