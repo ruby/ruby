@@ -2229,6 +2229,18 @@ rb_thread_kill(VALUE thread)
     return thread;
 }
 
+int
+rb_thread_to_be_killed(VALUE thread)
+{
+    rb_thread_t *th;
+
+    GetThreadPtr(thread, th);
+
+    if (th->to_kill || th->status == THREAD_KILLED) {
+	return TRUE;
+    }
+    return FALSE;
+}
 
 /*
  *  call-seq:

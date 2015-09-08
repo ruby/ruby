@@ -1715,6 +1715,30 @@ class TestProcess < Test::Unit::TestCase
     }
   end
 
+  def test_popen_exit
+    bug11510 = '[ruby-core:70671] [Bug #11510]'
+    pid = nil
+    opt = {timeout: 10, pgroup: true, stdout_filter: ->(s) {pid = s}}
+    assert_ruby_status(["-", RUBY], <<-'end;', bug11510, **opt)
+      RUBY = ARGV[0]
+      th = Thread.start {
+        Thread.current.abort_on_exception = true
+        IO.popen([RUBY, "-esleep 15", err: [:child, :out]]) {|f|
+          STDOUT.puts f.pid
+          STDOUT.flush
+          sleep(2)
+        }
+      }
+      sleep(0.001) until th.stop?
+    end;
+    assert_match(/\A\d+\Z/, pid)
+  ensure
+    if pid
+      pid = pid.to_i
+      [:TERM, :KILL].each {|sig| Process.kill(sig, pid) rescue break}
+    end
+  end
+
   def test_execopts_new_pgroup
     return unless windows?
 
