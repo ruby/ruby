@@ -1,3 +1,10 @@
+Wed Sep  9 13:38:56 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/extlibs.rb (do_patch): let "patch" command change the
+	  working directory and open the patch file there, instead of
+	  spawn options, so that proper error message will be shown by the
+	  command not just "chdir" or "open".
+
 Wed Sep  9 11:33:05 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* common.mk (update-gems): use BASERUBY instead of RUNRUBY.
