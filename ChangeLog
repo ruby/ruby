@@ -7,7 +7,7 @@ Wed Sep  9 18:16:14 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 Wed Sep  9 16:55:45 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ruby.c (usage, enable_option, disable_option, process_options): new
-	  option `--disable_did_you_mean`.
+	  option `--disable-did_you_mean`.
 
 	* gem_prelude.rb: now requires did_you_mean gem by default if available.
 
