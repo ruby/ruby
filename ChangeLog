@@ -1,3 +1,10 @@
+Wed Sep  9 16:55:45 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ruby.c (usage, enable_option, disable_option, process_options): new
+	  option `--disable_did_you_mean`.
+
+	* gem_prelude.rb: now requires did_you_mean gem by default if available.
+
 Wed Sep  9 13:38:56 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/extlibs.rb (do_patch): let "patch" command change the
