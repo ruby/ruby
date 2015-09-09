@@ -96,6 +96,10 @@
 #include <sys/uio.h>
 #endif
 
+#ifdef HAVE_SYS_WAIT_H
+# include <sys/wait.h>		/* for WNOHANG on BSD */
+#endif
+
 #if defined(__BEOS__) || defined(__HAIKU__)
 # ifndef NOFILE
 #  define NOFILE (OPEN_MAX)
