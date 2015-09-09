@@ -62,6 +62,7 @@ char *getenv();
 #define DISABLE_BIT(bit) (1U << disable_##bit)
 enum disable_flag_bits {
     disable_gems,
+    disable_did_you_mean,
     disable_rubyopt,
     disable_flag_count
 };
@@ -192,6 +193,7 @@ usage(const char *name, int help)
     };
     static const struct message features[] = {
 	M("gems",    "",        "rubygems (default: "DEFAULT_RUBYGEMS_ENABLED")"),
+	M("did_you_mean", "",   "did_you_mean (default: "DEFAULT_RUBYGEMS_ENABLED")"),
 	M("rubyopt", "",        "RUBYOPT environment variable (default: enabled)"),
     };
     int i;
@@ -710,6 +712,7 @@ enable_option(const char *str, int len, void *arg)
 {
 #define UNSET_WHEN_DISABLE(bit) UNSET_WHEN(#bit, DISABLE_BIT(bit), str, len)
     UNSET_WHEN_DISABLE(gems);
+    UNSET_WHEN_DISABLE(did_you_mean);
     UNSET_WHEN_DISABLE(rubyopt);
     if (NAME_MATCH_P("all", str, len)) {
 	*(unsigned int *)arg = 0U;
@@ -723,6 +726,7 @@ disable_option(const char *str, int len, void *arg)
 {
 #define SET_WHEN_DISABLE(bit) SET_WHEN(#bit, DISABLE_BIT(bit), str, len)
     SET_WHEN_DISABLE(gems);
+    SET_WHEN_DISABLE(did_you_mean);
     SET_WHEN_DISABLE(rubyopt);
     if (NAME_MATCH_P("all", str, len)) {
 	*(unsigned int *)arg = ~0U;
@@ -1434,6 +1438,9 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
     Init_ext();		/* load statically linked extensions before rubygems */
     if (!(opt->disable & DISABLE_BIT(gems))) {
 	rb_define_module("Gem");
+    }
+    if (!(opt->disable & DISABLE_BIT(did_you_mean))) {
+	rb_define_module("DidYouMean");
     }
     ruby_init_prelude();
 #if UTF8_PATH
