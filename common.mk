@@ -934,7 +934,7 @@ update-config_files: PHONY
 
 update-gems: PHONY
 	$(ECHO) Downloading bundled gem files...
-	$(Q) $(RUNRUBY) -C "$(srcdir)/gems" \
+	$(Q) $(BASERUBY) -C "$(srcdir)/gems" \
 	    -I../tool -rdownloader -answ \
 	    -e 'gem, ver = *$$F' \
 	    -e 'old = Dir.glob("#{gem}-*.gem")' \
