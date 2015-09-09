@@ -1718,7 +1718,8 @@ class TestProcess < Test::Unit::TestCase
   def test_popen_exit
     bug11510 = '[ruby-core:70671] [Bug #11510]'
     pid = nil
-    opt = {timeout: 10, pgroup: true, stdout_filter: ->(s) {pid = s}}
+    opt = {timeout: 10, stdout_filter: ->(s) {pid = s}}
+    opt[:pgroup] = true unless windows?
     assert_ruby_status(["-", RUBY], <<-'end;', bug11510, **opt)
       RUBY = ARGV[0]
       th = Thread.start {
