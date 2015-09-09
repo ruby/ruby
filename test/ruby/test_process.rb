@@ -1719,7 +1719,11 @@ class TestProcess < Test::Unit::TestCase
     bug11510 = '[ruby-core:70671] [Bug #11510]'
     pid = nil
     opt = {timeout: 10, stdout_filter: ->(s) {pid = s}}
-    opt[:pgroup] = true unless windows?
+    if windows?
+      opt[:new_pgroup] = true
+    else
+      opt[:pgroup] = true
+    end
     assert_ruby_status(["-", RUBY], <<-'end;', bug11510, **opt)
       RUBY = ARGV[0]
       th = Thread.start {
