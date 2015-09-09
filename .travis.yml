@@ -62,7 +62,7 @@ before_script:
   - "make reconfig"
   - "cp -pr config.status .ext/include config_2nd"
   - "diff -ru config_1st config_2nd"
-  - "make after-update"
+  - "make after-update BASERUBY=ruby"
   - "make -s $JOBS encs"
   - "make -s $JOBS exts"
   - "make update-rubyspec"
