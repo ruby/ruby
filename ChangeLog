@@ -1,3 +1,9 @@
+Wed Sep  9 11:08:59 2015  Zachary Scott  <zzak@ruby-lang.org>
+
+	* lib/delegate.rb: Remove backtrace cleaning for delegated methods
+          This patch was provided by Rafael França and greatly improves
+          performance when an exception is raised. [Bug #11461]
+
 Wed Sep  9 10:05:41 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* test/rubygems/test_config.rb: fix broken tests for Windows platform.
