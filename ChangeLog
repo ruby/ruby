@@ -82,7 +82,7 @@ Tue Sep  8 22:18:04 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 Tue Sep  8 21:48:22 2015  Yuki Nishijima  <mail@yukinishijima.net>
 
 	* gems/bundled_gems: Automatically install the did_you_mean gem
-	  as a bunlded gem.  [Feature #11252]
+	  as a bundled gem.  [Feature #11252]
 
 Tue Sep  8 17:17:48 2015  Koichi Sasada  <ko1@atdot.net>
 
