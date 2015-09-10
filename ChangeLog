@@ -1,3 +1,7 @@
+Thu Sep 10 15:16:02 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/ftp.rb (getmultiline): refactor.
+
 Thu Sep 10 12:17:28 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (iseq_build_from_ary_body): register cdhash to the

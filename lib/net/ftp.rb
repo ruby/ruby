@@ -298,16 +298,16 @@ module Net
 
     # Receive a section of lines until the response code's match.
     def getmultiline # :nodoc:
-      line = getline
-      buff = line
-      if line[3] == ?-
-          code = line[0, 3]
+      lines = []
+      lines << getline
+      code = lines.last.slice(/\A([0-9a-zA-Z]{3})-/, 1)
+      if code
+        delimiter = code + " "
         begin
-          line = getline
-          buff << "\n" << line
-        end until line[0, 3] == code and line[3] != ?-
+          lines << getline
+        end until lines.last.start_with?(delimiter)
       end
-      return buff << "\n"
+      return lines.join("\n") + "\n"
     end
     private :getmultiline
 
