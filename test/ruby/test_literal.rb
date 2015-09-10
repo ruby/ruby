@@ -102,6 +102,15 @@ class TestRubyLiteral < Test::Unit::TestCase
     assert_equal('FooBar', b, 'r3842')
   end
 
+  def test_dstring_encoding
+    bug11519 = '[ruby-core:70703] [Bug #11519]'
+    ['"foo#{}"', '"#{}foo"', '"#{}"'].each do |code|
+      a = eval("#-*- coding: utf-8 -*-\n#{code}")
+      assert_equal(Encoding::UTF_8, a.encoding,
+                   proc{"#{bug11519}: #{code}.encoding"})
+    end
+  end
+
   def test_dsymbol
     assert_equal :a3c, :"a#{1+2}c"
   end
