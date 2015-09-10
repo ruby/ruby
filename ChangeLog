@@ -1,3 +1,9 @@
+Thu Sep 10 12:17:28 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_build_from_ary_body): register cdhash to the
+	  iseq constant body instead of compile time mark array, not to
+	  get GCed.  [ruby-core:70708] [Feature #8543]
+
 Wed Sep  9 18:16:14 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/rubygems/stub_specification.rb (Gem::StubSpecification#data):
