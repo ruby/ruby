@@ -1,3 +1,9 @@
+Thu Sep 10 22:48:49 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (literal_concat_gen, evstr2dstr_gen): keep literal
+	  encoding beginning with an interpolation same as the source file
+	  encoding.  [ruby-core:70703] [Bug #11519]
+
 Thu Sep 10 22:15:51 2015  Joe Rafaniello  <jrafanie@redhat.com>
 
 	* process.c (rb_f_spawn): Be more specific regarding "other
