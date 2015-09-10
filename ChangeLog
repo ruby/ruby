@@ -305,7 +305,7 @@ Wed Aug 26 10:52:02 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* re.c (rb_memsearch_wchar, rb_memsearch_qchar): test matching
 	  till the end of string.  [ruby-core:70592] [Bug #11488]
 
-	* test/ruby/test_m17n.rb (test_include?, tet_index): add tests by
+	* test/ruby/test_m17n.rb (test_include?, test_index): add tests by
 	  Tom Stuart.
 
 Wed Aug 26 09:26:00 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
