@@ -1,3 +1,12 @@
+Thu Sep 10 22:15:51 2015  Joe Rafaniello  <jrafanie@redhat.com>
+
+	* process.c (rb_f_spawn): Be more specific regarding "other
+	  values" by having "non-zero positive integers" Add nil, the
+	  default value, as a possible value and what it means.
+
+	  Try to use more consistent language.
+	  [Fix GH-1008]
+
 Thu Sep 10 15:16:02 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/ftp.rb (getmultiline): refactor.
