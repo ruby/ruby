@@ -1025,6 +1025,34 @@ EOF
     end
   end
 
+  def test_getmultiline
+    server = create_ftp_server { |sock|
+      sock.print("220 (test_ftp).\r\n")
+      sock.print("123- foo\r\n")
+      sock.print("bar\r\n")
+      sock.print(" 123 baz\r\n")
+      sock.print("123 quux\r\n")
+      sock.print("123 foo\r\n")
+      sock.print("foo\r\n")
+      sock.print("\r\n")
+    }
+    begin
+      begin
+        ftp = Net::FTP.new
+        ftp.connect(SERVER_ADDR, server.port)
+        assert_equal("123- foo\nbar\n 123 baz\n123 quux\n",
+                     ftp.send(:getmultiline))
+        assert_equal("123 foo\n", ftp.send(:getmultiline))
+        assert_equal("foo\n", ftp.send(:getmultiline))
+        assert_equal("\n", ftp.send(:getmultiline))
+      ensure
+        ftp.close if ftp
+      end
+    ensure
+      server.close
+    end
+  end
+
   private
 
 
