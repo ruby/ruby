@@ -4062,7 +4062,7 @@ rb_f_system(int argc, VALUE *argv)
  *        :unsetenv_others => false  : don't clear (default)
  *      process group:
  *        :pgroup => true or 0 : make a new process group
- *        :pgroup => pgid      : join to specified process group
+ *        :pgroup => pgid      : join the specified process group
  *        :pgroup => nil       : don't change the process group (default)
  *      create new process group: Windows only
  *        :new_pgroup => true  : the new process is the root process of a new process group
@@ -4127,10 +4127,10 @@ rb_f_system(int argc, VALUE *argv)
  *    pid = spawn({"FOO"=>"BAR"}, command, :unsetenv_others=>true) # FOO only
  *
  *  The <code>:pgroup</code> key in +options+ specifies a process group.
- *  The corresponding value should be true, zero or positive integer.
- *  true and zero means the process should be a process leader of a new
- *  process group.
- *  Other values specifies a process group to be belongs.
+ *  The corresponding value should be true, zero, a positive integer, or nil.
+ *  true and zero cause the process to be a process leader of a new process group.
+ *  A non-zero positive integer causes the process to join the provided process group.
+ *  The default value, nil, causes the process to remain in the same process group.
  *
  *    pid = spawn(command, :pgroup=>true) # process leader
  *    pid = spawn(command, :pgroup=>10) # belongs to the process group 10
