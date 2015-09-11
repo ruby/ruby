@@ -2327,9 +2327,8 @@ string_to_r_strict(VALUE self)
 	s = (char *)"";
 
     if (!parse_rat(s, 1, &num)) {
-	VALUE ins = f_inspect(self);
-	rb_raise(rb_eArgError, "invalid value for convert(): %s",
-		 StringValuePtr(ins));
+	rb_raise(rb_eArgError, "invalid value for convert(): %+"PRIsVALUE,
+		 self);
     }
 
     if (RB_TYPE_P(num, T_FLOAT))
