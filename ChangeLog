@@ -1,3 +1,10 @@
+Fri Sep 11 11:15:12 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/ftp.rb (size, mdtm, system): parse responses according to
+	  RFC 959 and 3659, where reply codes must be followed by SP.
+
+	* lib/net/ftp.rb (system): remove LF from the return value.
+
 Thu Sep 10 22:48:49 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (literal_concat_gen, evstr2dstr_gen): keep literal
