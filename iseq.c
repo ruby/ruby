@@ -2320,9 +2320,9 @@ Init_ISeq(void)
 #if 0 /* TBD */
     rb_define_private_method(rb_cISeq, "marshal_dump", iseqw_marshal_dump, 0);
     rb_define_private_method(rb_cISeq, "marshal_load", iseqw_marshal_load, 1);
-#endif
     /* disable this feature because there is no verifier. */
     rb_define_singleton_method(rb_cISeq, "load", iseq_s_load, -1);
+#endif
     (void)iseq_s_load;
 
     rb_define_singleton_method(rb_cISeq, "compile", iseqw_s_compile, -1);
