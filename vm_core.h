@@ -210,7 +210,6 @@ typedef struct rb_call_info_struct {
     VALUE recv;
     int argc;
     union {
-	int opt_pc; /* used by iseq */
 	unsigned int index; /* used by ivar */
 	enum method_missing_reason method_missing_reason; /* used by method_missing */
 	int inc_sp; /* used by cfunc */
