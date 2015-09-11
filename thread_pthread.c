@@ -1285,6 +1285,18 @@ static struct {
     {-1, -1}, /* low priority */
 };
 
+NORETURN(static void async_bug_fd(const char *mesg, int errno_arg, int fd));
+static void
+async_bug_fd(const char *mesg, int errno_arg, int fd)
+{
+    char buff[64];
+    size_t n = strlcpy(buff, mesg, sizeof(buff));
+    if (n < sizeof(buff)-3) {
+	ruby_snprintf(buff, sizeof(buff)-n, "(%d)", fd);
+    }
+    rb_async_bug_errno(buff, errno_arg);
+}
+
 /* only use signal-safe system calls here */
 static void
 rb_thread_wakeup_timer_thread_fd(volatile int *fdp)
@@ -1294,7 +1306,7 @@ rb_thread_wakeup_timer_thread_fd(volatile int *fdp)
 
     /* already opened */
     if (fd >= 0 && timer_thread_pipe.owner_process == getpid()) {
-	const char *buff = "!";
+	static const char buff[1] = {'!'};
       retry:
 	if ((result = write(fd, buff, 1)) <= 0) {
 	    int e = errno;
@@ -1306,7 +1318,7 @@ rb_thread_wakeup_timer_thread_fd(volatile int *fdp)
 #endif
 		break;
 	      default:
-		rb_async_bug_errno("rb_thread_wakeup_timer_thread - write", e);
+		async_bug_fd("rb_thread_wakeup_timer_thread: write", e, fd);
 	    }
 	}
 	if (TT_DEBUG) WRITE_CONST(2, "rb_thread_wakeup_timer_thread: write\n");
@@ -1358,13 +1370,14 @@ consume_communication_pipe(int fd)
 #endif
 		return;
 	      default:
-		rb_async_bug_errno("consume_communication_pipe: read\n", e);
+		async_bug_fd("consume_communication_pipe: read", e, fd);
 	    }
 	}
     }
 }
 
-#define CLOSE_INVALIDATE(expr) close_invalidate(&expr,#expr)
+#define CLOSE_INVALIDATE(expr) \
+    close_invalidate(&timer_thread_pipe.expr,"close_invalidate: "#expr)
 static void
 close_invalidate(volatile int *fdp, const char *msg)
 {
@@ -1372,7 +1385,7 @@ close_invalidate(volatile int *fdp, const char *msg)
 
     *fdp = -1;
     if (close(fd) < 0) {
-	rb_async_bug_errno(msg, errno);
+	async_bug_fd(msg, errno, fd);
     }
 }
 
@@ -1424,8 +1437,8 @@ setup_communication_pipe(void)
     }
     if (setup_communication_pipe_internal(timer_thread_pipe.low) < 0) {
 	int e = errno;
-	CLOSE_INVALIDATE(timer_thread_pipe.normal[0]);
-	CLOSE_INVALIDATE(timer_thread_pipe.normal[1]);
+	CLOSE_INVALIDATE(normal[0]);
+	CLOSE_INVALIDATE(normal[1]);
 	return e;
     }
 
@@ -1569,8 +1582,8 @@ thread_timer(void *p)
 	timer_thread_sleep(gvl);
     }
 #if USE_SLEEPY_TIMER_THREAD
-    CLOSE_INVALIDATE(timer_thread_pipe.normal[0]);
-    CLOSE_INVALIDATE(timer_thread_pipe.low[0]);
+    CLOSE_INVALIDATE(normal[0]);
+    CLOSE_INVALIDATE(low[0]);
 #else
     native_mutex_unlock(&timer_thread_lock);
     native_cond_destroy(&timer_thread_cond);
@@ -1631,10 +1644,10 @@ rb_thread_create_timer_thread(void)
 	if (err != 0) {
 	    rb_warn("pthread_create failed for timer: %s, scheduling broken",
 		    strerror(err));
-	    CLOSE_INVALIDATE(timer_thread_pipe.normal[0]);
-	    CLOSE_INVALIDATE(timer_thread_pipe.normal[1]);
-	    CLOSE_INVALIDATE(timer_thread_pipe.low[0]);
-	    CLOSE_INVALIDATE(timer_thread_pipe.low[1]);
+	    CLOSE_INVALIDATE(normal[0]);
+	    CLOSE_INVALIDATE(normal[1]);
+	    CLOSE_INVALIDATE(low[0]);
+	    CLOSE_INVALIDATE(low[1]);
 	    return;
 	}
 	timer_thread.created = 1;
@@ -1665,8 +1678,8 @@ native_stop_timer_thread(void)
 	}
 
 	/* stop writing ends of pipes so timer thread notices EOF */
-	CLOSE_INVALIDATE(timer_thread_pipe.normal[1]);
-	CLOSE_INVALIDATE(timer_thread_pipe.low[1]);
+	CLOSE_INVALIDATE(normal[1]);
+	CLOSE_INVALIDATE(low[1]);
 
 	/* timer thread will stop looping when system_working <= 0: */
 	native_thread_join(timer_thread.id);

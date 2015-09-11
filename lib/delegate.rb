@@ -77,16 +77,13 @@ class Delegator < BasicObject
   def method_missing(m, *args, &block)
     r = true
     target = self.__getobj__ {r = false}
-    begin
-      if r && target.respond_to?(m)
-        target.__send__(m, *args, &block)
-      elsif ::Kernel.respond_to?(m, true)
-        ::Kernel.instance_method(m).bind(self).(*args, &block)
-      else
-        super(m, *args, &block)
-      end
-    ensure
-      $@.delete_if {|t| %r"\A#{Regexp.quote(__FILE__)}:(?:#{[__LINE__-7, __LINE__-5, __LINE__-3].join('|')}):"o =~ t} if $@
+
+    if r && target.respond_to?(m)
+      target.__send__(m, *args, &block)
+    elsif ::Kernel.respond_to?(m, true)
+      ::Kernel.instance_method(m).bind(self).(*args, &block)
+    else
+      super(m, *args, &block)
     end
   end
 
@@ -340,11 +337,7 @@ end
 def Delegator.delegating_block(mid) # :nodoc:
   lambda do |*args, &block|
     target = self.__getobj__
-    begin
-      target.__send__(mid, *args, &block)
-    ensure
-      $@.delete_if {|t| /\A#{Regexp.quote(__FILE__)}:#{__LINE__-2}:/o =~ t} if $@
-    end
+    target.__send__(mid, *args, &block)
   end
 end
 

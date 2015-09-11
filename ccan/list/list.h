@@ -42,8 +42,8 @@ struct list_head
 };
 
 #define LIST_LOC __FILE__  ":" stringify(__LINE__)
-#define list_debug(h, loc) (h)
-#define list_debug_node(n, loc) (n)
+#define list_debug(h, loc) ((void)loc, h)
+#define list_debug_node(n, loc) ((void)loc, n)
 
 /**
  * LIST_HEAD_INIT - initializer for an empty list_head

@@ -48,7 +48,7 @@ extern "C" {
 # ifdef UNREACHABLE
 #   define ASSUME(x) (LIKELY(!!(x)) ? (void)0 : UNREACHABLE)
 # else
-#   define ASSUME(x) ((void)0)
+#   define ASSUME(x) ((void)(x))
 # endif
 #endif
 #ifndef UNREACHABLE

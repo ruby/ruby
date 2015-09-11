@@ -1150,6 +1150,7 @@ VALUE rb_thread_shield_new(void);
 VALUE rb_thread_shield_wait(VALUE self);
 VALUE rb_thread_shield_release(VALUE self);
 VALUE rb_thread_shield_destroy(VALUE self);
+int rb_thread_to_be_killed(VALUE thread);
 void rb_mutex_allow_trap(VALUE self, int val);
 VALUE rb_uninterruptible(VALUE (*b_proc)(ANYARGS), VALUE data);
 VALUE rb_mutex_owned_p(VALUE self);
@@ -1266,6 +1267,9 @@ VALUE rb_str2big_gmp(VALUE arg, int base, int badcheck);
 int rb_bug_reporter_add(void (*func)(FILE *, void *), void *data);
 
 /* file.c (export) */
+#ifdef HAVE_READLINK
+VALUE rb_readlink(VALUE path, rb_encoding *enc);
+#endif
 #ifdef __APPLE__
 VALUE rb_str_normalize_ospath(const char *ptr, long len);
 #endif

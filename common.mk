@@ -143,7 +143,7 @@ PRE_LIBRUBY_UPDATE = $(MINIRUBY) -e 'ARGV[1] or File.unlink(ARGV[0]) rescue nil'
 			$(LIBRUBY_EXTS) $(LIBRUBY_SO_UPDATE)
 
 TESTSDIR      = $(srcdir)/test
-TEST_EXCLUDES = --excludes=$(TESTSDIR)/excludes
+TEST_EXCLUDES = --excludes=$(TESTSDIR)/excludes -x /memory_leak/
 TESTWORKDIR   = testwork
 TESTOPTS      = $(RUBY_TESTOPTS)
 
@@ -934,7 +934,7 @@ update-config_files: PHONY
 
 update-gems: PHONY
 	$(ECHO) Downloading bundled gem files...
-	$(Q) $(RUNRUBY) -C "$(srcdir)/gems" \
+	$(Q) $(BASERUBY) -C "$(srcdir)/gems" \
 	    -I../tool -rdownloader -answ \
 	    -e 'gem, ver = *$$F' \
 	    -e 'old = Dir.glob("#{gem}-*.gem")' \
@@ -2250,7 +2250,7 @@ thread.$(OBJEXT): {$(VPATH)}thread.h
 thread.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).c
 thread.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 thread.$(OBJEXT): {$(VPATH)}thread_native.h
-thread.$(OBJEXT): {$(VPATH)}thread_tools.c
+thread.$(OBJEXT): {$(VPATH)}thread_sync.c
 thread.$(OBJEXT): {$(VPATH)}timev.h
 thread.$(OBJEXT): {$(VPATH)}vm_core.h
 thread.$(OBJEXT): {$(VPATH)}vm_debug.h

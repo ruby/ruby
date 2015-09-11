@@ -73,18 +73,23 @@ class Gem::StubSpecification < Gem::BasicSpecification
     unless @data
       @extensions = []
 
-      open loaded_from, OPEN_MODE do |file|
-        begin
-          file.readline # discard encoding line
-          stubline = file.readline.chomp
-          if stubline.start_with?(PREFIX) then
-            @data = StubLine.new stubline
+      begin
+        saved_lineno = $.
+        open loaded_from, OPEN_MODE do |file|
+          begin
+            file.readline # discard encoding line
+            stubline = file.readline.chomp
+            if stubline.start_with?(PREFIX) then
+              @data = StubLine.new stubline
 
-            @extensions = $'.split "\0" if
-              /\A#{PREFIX}/ =~ file.readline.chomp
+              @extensions = $'.split "\0" if
+                /\A#{PREFIX}/ =~ file.readline.chomp
+            end
+          rescue EOFError
           end
-        rescue EOFError
         end
+      ensure
+        $. = saved_lineno
       end
     end
 

@@ -203,7 +203,9 @@ COMPILERFLAG  = -Zm600
 !endif
 !if !defined(WARNFLAGS)
 !if $(MSC_VER) >= 1400
-WARNFLAGS = -W2 -wd4996 -we4028 -we4142
+WARNFLAGS = -W2 -wd4100 -wd4127 -wd4210 -wd4214 -wd4255 -wd4574 \
+	    -wd4668 -wd4710 -wd4711 -wd4820 -wd4996 \
+	    -we4028 -we4142
 !else
 WARNFLAGS = -W2
 !endif

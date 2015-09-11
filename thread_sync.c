@@ -1,4 +1,4 @@
-/* included by thraed.c */
+/* included by thread.c */
 
 VALUE rb_cMutex, rb_cQueue, rb_cSizedQueue, rb_cConditionVariable;
 VALUE rb_eClosedQueueError;
@@ -619,23 +619,23 @@ queue_do_close(VALUE self, int argc, VALUE *argv, int is_szq)
 {
     VALUE exception = Qfalse;
 
-    if (queue_closed_p(self)) raise_closed_queue_error(self);
+    if (!queue_closed_p(self)) {
+	rb_scan_args(argc, argv, "01", &exception);
+	FL_SET(self, QUEUE_CLOSED);
 
-    rb_scan_args(argc, argv, "01", &exception);
-    FL_SET(self, QUEUE_CLOSED);
+	if (RTEST(exception)) {
+	    FL_SET(self, QUEUE_CLOSE_EXCEPTION);
+	}
 
-    if (RTEST(exception)) {
-	FL_SET(self, QUEUE_CLOSE_EXCEPTION);
-    }
+	if (queue_num_waiting(self) > 0) {
+	    VALUE waiters = GET_QUEUE_WAITERS(self);
+	    wakeup_all_threads(waiters);
+	}
 
-    if (queue_num_waiting(self) > 0) {
-	VALUE waiters = GET_QUEUE_WAITERS(self);
-	wakeup_all_threads(waiters);
-    }
-
-    if (is_szq && szqueue_num_waiting_producer(self) > 0) {
-	VALUE waiters = GET_SZQUEUE_WAITERS(self);
-	wakeup_all_threads(waiters);
+	if (is_szq && szqueue_num_waiting_producer(self) > 0) {
+	    VALUE waiters = GET_SZQUEUE_WAITERS(self);
+	    wakeup_all_threads(waiters);
+	}
     }
 
     return self;
@@ -705,6 +705,8 @@ queue_do_push(VALUE self, VALUE obj)
  *
  * - +closed?+ will return true
  *
+ * - +close+ will be ignored.
+ *
  * - calling enq/push/<< will raise ClosedQueueError('queue closed')
  *
  * - when +empty?+ is false, calling deq/pop/shift will return an object
@@ -729,7 +731,7 @@ queue_do_push(VALUE self, VALUE obj)
  *    	q = Queue.new
  *      Thread.new{
  *        loop{
- *          e = q.deq; ...  # braek with ClosedQueueError
+ *          e = q.deq; ...  # break with ClosedQueueError
  *        }
  *      }
  *      q.close(true)
@@ -1240,7 +1242,7 @@ undumpable(VALUE obj)
 }
 
 static void
-Init_thread_tools(void)
+Init_thread_sync(void)
 {
 #if 0
     rb_cConditionVariable = rb_define_class("ConditionVariable", rb_cObject); /* teach rdoc ConditionVariable */

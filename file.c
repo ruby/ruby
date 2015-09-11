@@ -2694,13 +2694,14 @@ rb_file_s_utime(int argc, VALUE *argv)
 }
 
 #ifdef RUBY_FUNCTION_NAME_STRING
-# define sys_fail2(s1, s2) sys_fail2_in(RUBY_FUNCTION_NAME_STRING, s1, s2)
+# define syserr_fail2(e, s1, s2) syserr_fail2_in(RUBY_FUNCTION_NAME_STRING, e, s1, s2)
 #else
-# define sys_fail2_in(func, s1, s2) sys_fail2(s1, s2)
+# define syserr_fail2_in(func, e, s1, s2) syserr_fail2(e, s1, s2)
 #endif
-NORETURN(static void sys_fail2_in(const char *,VALUE,VALUE));
+#define sys_fail2(s1, s2) syserr_fail2(errno, s1, s2)
+NORETURN(static void syserr_fail2_in(const char *,int,VALUE,VALUE));
 static void
-sys_fail2_in(const char *func, VALUE s1, VALUE s2)
+syserr_fail2_in(const char *func, int e, VALUE s1, VALUE s2)
 {
     VALUE str;
 #ifdef MAX_PATH
@@ -2709,7 +2710,7 @@ sys_fail2_in(const char *func, VALUE s1, VALUE s2)
     const int max_pathlen = MAXPATHLEN;
 #endif
 
-    if (errno == EEXIST) {
+    if (e == EEXIST) {
 	rb_sys_fail_path(rb_str_ellipsize(s2, max_pathlen));
     }
     str = rb_str_new_cstr("(");
@@ -2718,9 +2719,9 @@ sys_fail2_in(const char *func, VALUE s1, VALUE s2)
     rb_str_append(str, rb_str_ellipsize(s2, max_pathlen));
     rb_str_cat2(str, ")");
 #ifdef RUBY_FUNCTION_NAME_STRING
-    rb_sys_fail_path_in(func, str);
+    rb_syserr_fail_path_in(func, e, str);
 #else
-    rb_sys_fail_path(str);
+    rb_syserr_fail_path(e, str);
 #endif
 }
 
@@ -2785,8 +2786,6 @@ rb_file_s_symlink(VALUE klass, VALUE from, VALUE to)
 #endif
 
 #ifdef HAVE_READLINK
-VALUE rb_readlink(VALUE path);
-
 /*
  *  call-seq:
  *     File.readlink(link_name)  ->  file_name
@@ -2801,12 +2800,12 @@ VALUE rb_readlink(VALUE path);
 static VALUE
 rb_file_s_readlink(VALUE klass, VALUE path)
 {
-    return rb_readlink(path);
+    return rb_readlink(path, rb_filesystem_encoding());
 }
 
 #ifndef _WIN32
 VALUE
-rb_readlink(VALUE path)
+rb_readlink(VALUE path, rb_encoding *enc)
 {
     int size = 100;
     ssize_t rv;
@@ -2814,7 +2813,7 @@ rb_readlink(VALUE path)
 
     FilePathValue(path);
     path = rb_str_encode_ospath(path);
-    v = rb_enc_str_new(0, size, rb_filesystem_encoding());
+    v = rb_enc_str_new(0, size, enc);
     while ((rv = readlink(RSTRING_PTR(path), RSTRING_PTR(v), size)) == size
 #ifdef _AIX
 	    || (rv < 0 && errno == ERANGE) /* quirky behavior of GPFS */
@@ -2889,8 +2888,9 @@ rb_file_s_rename(VALUE klass, VALUE from, VALUE to)
     errno = 0;
 #endif
     if (rename(src, dst) < 0) {
+	int e = errno;
 #if defined DOSISH
-	switch (errno) {
+	switch (e) {
 	  case EEXIST:
 #if defined (__EMX__)
 	  case EACCES:
@@ -2901,7 +2901,7 @@ rb_file_s_rename(VALUE klass, VALUE from, VALUE to)
 		return INT2FIX(0);
 	}
 #endif
-	sys_fail2(from, to);
+	syserr_fail2(e, from, to);
     }
 
     return INT2FIX(0);
@@ -3808,7 +3808,7 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved, VALUE l
 		    const char *link_prefix, *link_names;
                     long link_prefixlen;
                     rb_hash_aset(loopcheck, testpath, ID2SYM(resolving));
-		    link = rb_readlink(testpath);
+		    link = rb_readlink(testpath, enc);
                     link_prefix = RSTRING_PTR(link);
 		    link_names = skipprefixroot(link_prefix, link_prefix + RSTRING_LEN(link), rb_enc_get(link));
 		    link_prefixlen = link_names - link_prefix;
@@ -3853,7 +3853,7 @@ rb_realpath_internal(VALUE basedir, VALUE path, int strict)
     VALUE loopcheck;
     volatile VALUE curdir = Qnil;
 
-    rb_encoding *enc;
+    rb_encoding *enc, *origenc;
     char *path_names = NULL, *basedir_names = NULL, *curdir_names = NULL;
     char *ptr, *prefixptr = NULL, *pend;
     long len;
@@ -3905,12 +3905,22 @@ rb_realpath_internal(VALUE basedir, VALUE path, int strict)
     }
 #endif
 
+    origenc = enc;
+    switch (rb_enc_to_index(enc)) {
+      case ENCINDEX_ASCII:
+      case ENCINDEX_US_ASCII:
+	rb_enc_associate(resolved, rb_filesystem_encoding());
+    }
+
     loopcheck = rb_hash_new();
     if (curdir_names)
         realpath_rec(&prefixlen, &resolved, curdir_names, loopcheck, 1, 0);
     if (basedir_names)
         realpath_rec(&prefixlen, &resolved, basedir_names, loopcheck, 1, 0);
     realpath_rec(&prefixlen, &resolved, path_names, loopcheck, strict, 1);
+
+    if (origenc != enc && rb_enc_str_asciionly_p(resolved))
+	rb_enc_associate(resolved, origenc);
 
     OBJ_TAINT(resolved);
     return resolved;

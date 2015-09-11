@@ -1,3 +1,256 @@
+Fri Sep 11 11:15:12 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/ftp.rb (size, mdtm, system): parse responses according to
+	  RFC 959 and 3659, where reply codes must be followed by SP.
+
+	* lib/net/ftp.rb (system): remove LF from the return value.
+
+Thu Sep 10 22:48:49 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (literal_concat_gen, evstr2dstr_gen): keep literal
+	  encoding beginning with an interpolation same as the source file
+	  encoding.  [ruby-core:70703] [Bug #11519]
+
+Thu Sep 10 22:15:51 2015  Joe Rafaniello  <jrafanie@redhat.com>
+
+	* process.c (rb_f_spawn): Be more specific regarding "other
+	  values" by having "non-zero positive integers" Add nil, the
+	  default value, as a possible value and what it means.
+
+	  Try to use more consistent language.
+	  [Fix GH-1008]
+
+Thu Sep 10 15:16:02 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/ftp.rb (getmultiline): refactor.
+
+Thu Sep 10 12:17:28 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_build_from_ary_body): register cdhash to the
+	  iseq constant body instead of compile time mark array, not to
+	  get GCed.  [ruby-core:70708] [Feature #8543]
+
+Wed Sep  9 18:16:14 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/rubygems/stub_specification.rb (Gem::StubSpecification#data):
+	  should not change the value of $. when `require`ing gems.
+	  this fixed test failures introduced by r51813.
+
+Wed Sep  9 16:55:45 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ruby.c (usage, enable_option, disable_option, process_options): new
+	  option `--disable-did_you_mean`.
+
+	* gem_prelude.rb: now requires did_you_mean gem by default if available.
+
+Wed Sep  9 13:38:56 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/extlibs.rb (do_patch): let "patch" command change the
+	  working directory and open the patch file there, instead of
+	  spawn options, so that proper error message will be shown by the
+	  command not just "chdir" or "open".
+
+Wed Sep  9 11:33:05 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* common.mk (update-gems): use BASERUBY instead of RUNRUBY.
+
+Wed Sep  9 11:08:59 2015  Zachary Scott  <zzak@ruby-lang.org>
+
+	* lib/delegate.rb: Remove backtrace cleaning for delegated methods
+          This patch was provided by Rafael França and greatly improves
+          performance when an exception is raised. [Bug #11461]
+
+Wed Sep  9 10:05:41 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* test/rubygems/test_config.rb: fix broken tests for Windows platform.
+
+Wed Sep  9 07:46:32 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/rubygems: Update to RubyGems HEAD(fe61e4c112).
+	  this version contains new feature that warn invalid SPDX license
+	  identifiers. https://github.com/rubygems/rubygems/pull/1249
+	  and #1032, #1023, #1332, #1328, #1306, #1321, #1324
+	* test/rubygems: ditto.
+
+Tue Sep  8 23:17:36 2015  Yuki Nishijima  <mail@yukinishijima.net>
+
+	* gems/bundled_gems: Upgrade the did_you_mean gem to 1.0.0.beta2.
+
+Tue Sep  8 23:09:28 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_s_popen): do not wait the child process during being
+	  killed.  [ruby-core:70671] [Bug #11510]
+
+Tue Sep  8 22:18:04 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* gems/bundled_gems: revert because ruby trunk never be able to install
+	  the did_you_mean gem.  retry after enough test.
+
+Tue Sep  8 21:48:22 2015  Yuki Nishijima  <mail@yukinishijima.net>
+
+	* gems/bundled_gems: Automatically install the did_you_mean gem
+	  as a bundled gem.  [Feature #11252]
+
+Tue Sep  8 17:17:48 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h: remove rb_call_info_t::blockiseq.
+
+	* insns.def (send, invokesuper): pass blockiseq explicitly.
+
+	* compile.c: catch up this fix.
+
+	* iseq.c: ditto.
+
+	* vm_args.c: ditto.
+
+	* iseq.c (ISEQ_MINOR_VERSION): 2->3 because instruction spec was
+	  changed.
+
+Tue Sep  8 15:01:19 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/ftp.rb (list): fetch all the lines before yielding a block
+	  to allow other commands in the block.  [Feature #11454]
+	  Patched by Srikanth Shreenivas.
+
+Tue Sep  8 12:05:00 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_read_reparse_point): return correct required
+	  buffer size for IO_REPARSE_TAG_MOUNT_POINT.
+
+Tue Sep  8 00:14:43 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (rb_execarg_parent_start1): raise with the target path
+	  name when open() failed.
+
+Mon Sep  7 23:45:28 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (rb_exec_fail): raise with the target directory name
+	  when chdir() failed.  pointed out by sorah.
+
+Mon Sep  7 22:05:28 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (insert): should use plain strdup() instead of
+	  ruby_strdup() at startup time, and plain free()ed in cmdglob().
+
+Mon Sep  7 16:49:30 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_core.h (rb_vm_struct): define objspace always regardless
+	  ENABLE_VM_OBJSPACE.
+
+Mon Sep  7 15:54:58 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby_atomic.h (ATOMIC_VALUE_CAS): fix typo.
+	  TODO: make arguments of all CAS macros consistent.
+
+Sun Sep  6 16:07:22 2015  Eric Wong  <e@80x24.org>
+
+	* ccan/list/list.h: suppress unused argument warnings
+	  [ccan commit 6aaca17e07588997417a73fac19dcf0ff17ed81b]
+
+Sat Sep  5 11:39:52 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rss/rss.rb (Time#w3cdtf): fix zero-trimmed width of fraction
+	  digits.  [ruby-core:70667] [Bug #11509]
+
+Sat Sep  5 08:28:58 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (rb_hash_equal, rb_hash_eql): [DOC] the orders of each
+	  hashes are not compared.  [Bug #11508]
+
+Fri Sep  4 23:26:22 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/win32.h: fix macro name for VC runtime version,
+	  RT_VER is only in Makefile.
+
+Fri Sep  4 17:46:17 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* doc/contributing.rdoc: fix configuration option.
+	  [ci skip] [fix GH-1009]
+
+Fri Sep  4 04:46:54 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.c (iseq_memsize): functions for wrapper object should have
+	  iseqw_ prefix.
+
+Thu Sep  3 21:12:12 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/cgi/session.rb (create_new_id): use SHA512 instead of MD5.
+	  pointed out by SARWAR JAHAN.
+
+Thu Sep  3 20:29:18 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (rb_raw_obj_info): iseq->body->location.first_lineno is Fixnum.
+
+Thu Sep  3 17:54:26 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (raise_method_missing): "names" should be singular.
+	  pointed out by Filip Bartuzi.
+
+Thu Sep  3 17:50:09 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (rb_raw_obj_info): should support IMEMO/iseq.
+
+Thu Sep  3 10:07:49 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (raise_method_missing): refine error messages when a
+	  symbol is not given.  [Fix GH-1013]
+
+Wed Sep  2 18:49:55 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ext/psych/*: merge psych master(8737e5b). It contains following fixes.
+	  https://github.com/tenderlove/psych/pull/242
+	  https://github.com/tenderlove/psych/pull/246 [ruby-list:50219]
+	* test/psych/*: ditto.
+
+Wed Sep  2 18:04:13 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.h (GET_PC_COUNT): remove unused macro.
+
+Wed Sep  2 17:18:37 2015  Chris Schneider  <chris@christopher-schneider.com>
+
+	* process.c (proc_detach): [DOC] fix typo "intent" as "intend" in
+	  rdoc.  [Fix GH-1011]
+
+Wed Sep  2 16:58:21 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_realpath_internal): use filesystem encoding if the
+	  argument is in ASCII encodings.
+
+	* win32/file.c (rb_readlink): needs the result encoding.
+
+Tue Sep  1 18:37:15 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* test/thread/test_queue.rb: catch up last commit.
+
+Tue Sep  1 18:16:32 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* thread_sync.c (queue_do_close): ignore multiple close to allow
+	  multiple producers.
+	  https://bugs.ruby-lang.org/issues/10600#note-14
+
+Tue Sep  1 18:06:26 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* thread_tools.c: rename thread_tools.c to thread_sync.c.
+
+Mon Aug 31 17:04:45 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* class.c (move_refined_method): should insert a write barrier
+	  from an original class to a created (cloned) method entry.
+
+	* test/ruby/test_refinement.rb: add a test.
+
+Sun Aug 30 02:42:22 2015  Aaron Patterson <tenderlove@ruby-lang.org>
+
+	* ext/openssl/ossl_ssl.c (ossl_ssl_method_tab): Only add SSLv3 support
+	  if the SSL library supports it.  Thanks Kurt Roeckx <kurt@roeckx.be>
+	  [Bug #11376]
+
+	* ext/openssl/extconf.rb: check for SSLv3 support in the SSL
+	  implementation.
+
+	* test/openssl/test_ssl.rb (class OpenSSL): Skip tests that need SSLv3
+	  if there is no support.
+
 Fri Aug 28 16:05:09 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/rdoc/*: Update rdoc master(cfffed5)
@@ -59,7 +312,7 @@ Wed Aug 26 10:52:02 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* re.c (rb_memsearch_wchar, rb_memsearch_qchar): test matching
 	  till the end of string.  [ruby-core:70592] [Bug #11488]
 
-	* test/ruby/test_m17n.rb (test_include?, tet_index): add tests by
+	* test/ruby/test_m17n.rb (test_include?, test_index): add tests by
 	  Tom Stuart.
 
 Wed Aug 26 09:26:00 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>

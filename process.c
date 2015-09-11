@@ -846,42 +846,53 @@ struct waitpid_arg {
     int *st;
 };
 
-static void *
-rb_waitpid_blocking(void *data)
+static rb_pid_t
+do_waitpid(rb_pid_t pid, int *st, int flags)
 {
-    rb_pid_t result;
-    struct waitpid_arg *arg = data;
-
 #if defined HAVE_WAITPID
-    result = waitpid(arg->pid, arg->st, arg->flags);
+    return waitpid(pid, st, flags);
 #elif defined HAVE_WAIT4
-    result = wait4(arg->pid, arg->st, arg->flags, NULL);
+    return wait4(pid, st, flags, NULL);
 #else
 #  error waitpid or wait4 is required.
 #endif
+}
 
+static void *
+rb_waitpid_blocking(void *data)
+{
+    struct waitpid_arg *arg = data;
+    rb_pid_t result = do_waitpid(arg->pid, arg->st, arg->flags);
     return (void *)(VALUE)result;
+}
+
+static rb_pid_t
+do_waitpid_nonblocking(rb_pid_t pid, int *st, int flags)
+{
+    void *result;
+    struct waitpid_arg arg;
+    arg.pid = pid;
+    arg.st = st;
+    arg.flags = flags;
+    result = rb_thread_call_without_gvl(rb_waitpid_blocking, &arg,
+					RUBY_UBF_PROCESS, 0);
+    return (rb_pid_t)(VALUE)result;
 }
 
 rb_pid_t
 rb_waitpid(rb_pid_t pid, int *st, int flags)
 {
     rb_pid_t result;
-    struct waitpid_arg arg;
 
-  retry:
-    arg.pid = pid;
-    arg.st = st;
-    arg.flags = flags;
-    result = (rb_pid_t)(VALUE)rb_thread_call_without_gvl(rb_waitpid_blocking, &arg,
-							 RUBY_UBF_PROCESS, 0);
-    if (result < 0) {
-	if (errno == EINTR) {
-            rb_thread_t *th = GET_THREAD();
-            RUBY_VM_CHECK_INTS(th);
-            goto retry;
-        }
-	return (rb_pid_t)-1;
+    if (flags & WNOHANG) {
+	result = do_waitpid(pid, st, flags);
+    }
+    else {
+	while ((result = do_waitpid_nonblocking(pid, st, flags)) < 0 &&
+	       (errno == EINTR)) {
+	    rb_thread_t *th = GET_THREAD();
+	    RUBY_VM_CHECK_INTS(th);
+	}
     }
     if (result > 0) {
 	rb_last_status_set(*st, result);
@@ -1084,7 +1095,7 @@ rb_detach_process(rb_pid_t pid)
  *  <code>Process::detach</code> prevents this by setting up a
  *  separate Ruby thread whose sole job is to reap the status of the
  *  process _pid_ when it terminates. Use <code>detach</code>
- *  only when you do not intent to explicitly wait for the child to
+ *  only when you do not intend to explicitly wait for the child to
  *  terminate.
  *
  *  The waiting thread returns the exit status of the detached process
@@ -2334,7 +2345,7 @@ rb_execarg_parent_start1(VALUE execarg_obj)
                         rb_thread_check_ints();
                         goto again;
                     }
-                    rb_sys_fail("open");
+                    rb_syserr_fail_str(open_data.err, vpath);
                 }
                 fd2 = open_data.ret;
                 rb_update_max_fd(fd2);
@@ -2464,6 +2475,26 @@ rb_execarg_parent_end(VALUE execarg_obj)
     RB_GC_GUARD(execarg_obj);
 }
 
+static void
+rb_exec_fail(struct rb_execarg *eargp, int err, const char *errmsg)
+{
+    if (!errmsg || !*errmsg) return;
+    if (strcmp(errmsg, "chdir") == 0) {
+	rb_sys_fail_str(eargp->chdir_dir);
+    }
+    rb_sys_fail(errmsg);
+}
+
+#if 0
+void
+rb_execarg_fail(VALUE execarg_obj, int err, const char *errmsg)
+{
+    if (!errmsg || !*errmsg) return;
+    rb_exec_fail(rb_execarg_get(execarg_obj), err, errmsg);
+    RB_GC_GUARD(execarg_obj);
+}
+#endif
+
 /*
  *  call-seq:
  *     exec([env,] command... [,options])
@@ -2544,6 +2575,7 @@ rb_f_exec(int argc, const VALUE *argv)
     struct rb_execarg *eargp;
 #define CHILD_ERRMSG_BUFLEN 80
     char errmsg[CHILD_ERRMSG_BUFLEN] = { '\0' };
+    int err;
 
     execarg_obj = rb_execarg_new(argc, argv, TRUE);
     eargp = rb_execarg_get(execarg_obj);
@@ -2553,16 +2585,18 @@ rb_f_exec(int argc, const VALUE *argv)
 
     rb_exec_async_signal_safe(eargp, errmsg, sizeof(errmsg));
 
-    preserving_errno(after_exec()); /* restart timer thread */
+    err = errno;
+    after_exec(); /* restart timer thread */
 
+    rb_exec_fail(eargp, err, errmsg);
     RB_GC_GUARD(execarg_obj);
-    if (errmsg[0])
-        rb_sys_fail(errmsg);
-    rb_sys_fail_str(fail_str);
+    rb_syserr_fail_str(err, fail_str);
     return Qnil;		/* dummy */
 }
 
 #define ERRMSG(str) do { if (errmsg && 0 < errmsg_buflen) strlcpy(errmsg, (str), errmsg_buflen); } while (0)
+#define ERRMSG1(str, a) do { if (errmsg && 0 < errmsg_buflen) snprintf(errmsg, errmsg_buflen, (str), (a)); } while (0)
+#define ERRMSG2(str, a, b) do { if (errmsg && 0 < errmsg_buflen) snprintf(errmsg, errmsg_buflen, (str), (a), (b)); } while (0)
 
 static int
 save_redirect_fd(int fd, struct rb_execarg *sargp, char *errmsg, size_t errmsg_buflen)
@@ -4028,7 +4062,7 @@ rb_f_system(int argc, VALUE *argv)
  *        :unsetenv_others => false  : don't clear (default)
  *      process group:
  *        :pgroup => true or 0 : make a new process group
- *        :pgroup => pgid      : join to specified process group
+ *        :pgroup => pgid      : join the specified process group
  *        :pgroup => nil       : don't change the process group (default)
  *      create new process group: Windows only
  *        :new_pgroup => true  : the new process is the root process of a new process group
@@ -4093,10 +4127,10 @@ rb_f_system(int argc, VALUE *argv)
  *    pid = spawn({"FOO"=>"BAR"}, command, :unsetenv_others=>true) # FOO only
  *
  *  The <code>:pgroup</code> key in +options+ specifies a process group.
- *  The corresponding value should be true, zero or positive integer.
- *  true and zero means the process should be a process leader of a new
- *  process group.
- *  Other values specifies a process group to be belongs.
+ *  The corresponding value should be true, zero, a positive integer, or nil.
+ *  true and zero cause the process to be a process leader of a new process group.
+ *  A non-zero positive integer causes the process to join the provided process group.
+ *  The default value, nil, causes the process to remain in the same process group.
  *
  *    pid = spawn(command, :pgroup=>true) # process leader
  *    pid = spawn(command, :pgroup=>10) # belongs to the process group 10
@@ -4271,11 +4305,10 @@ rb_f_spawn(int argc, VALUE *argv)
     pid = rb_execarg_spawn(execarg_obj, errmsg, sizeof(errmsg));
 
     if (pid == -1) {
-	const char *prog = errmsg;
-	if (!prog[0]) {
-	    rb_sys_fail_str(fail_str);
-	}
-	rb_sys_fail(prog);
+	int err = errno;
+	rb_exec_fail(eargp, err, errmsg);
+	RB_GC_GUARD(execarg_obj);
+	rb_syserr_fail_str(err, fail_str);
     }
 #if defined(HAVE_WORKING_FORK) || defined(HAVE_SPAWNV)
     return PIDT2NUM(pid);

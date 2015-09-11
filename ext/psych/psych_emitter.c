@@ -15,7 +15,11 @@ static void emit(yaml_emitter_t * emitter, yaml_event_t * event)
 static int writer(void *ctx, unsigned char *buffer, size_t size)
 {
     VALUE io = (VALUE)ctx;
+#ifdef HAVE_RUBY_ENCODING_H
+    VALUE str = rb_enc_str_new((const char *)buffer, (long)size, rb_utf8_encoding());
+#else
     VALUE str = rb_str_new((const char *)buffer, (long)size);
+#endif
     VALUE wrote = rb_funcall(io, id_write, 1, str);
     return (int)NUM2INT(wrote);
 }

@@ -90,6 +90,7 @@ static char *w32_getenv(const char *name, UINT cp);
 #undef close
 #undef setsockopt
 #undef dup2
+#undef strdup
 
 #if RUBY_MSVCRT_VERSION >= 140
 # define _filbuf _fgetc_nolock
@@ -4776,7 +4777,7 @@ rb_w32_read_reparse_point(const WCHAR *path, rb_w32_reparse_buffer_t *rp,
 			  size_t bufsize, WCHAR **result, DWORD *len)
 {
     int e = reparse_symlink(path, rp, bufsize);
-    DWORD ret;
+    DWORD ret = 0;
 
     if (!e || e == ERROR_MORE_DATA) {
 	void *name;
@@ -4784,17 +4785,18 @@ rb_w32_read_reparse_point(const WCHAR *path, rb_w32_reparse_buffer_t *rp,
 	    name = ((char *)rp->SymbolicLinkReparseBuffer.PathBuffer +
 		    rp->SymbolicLinkReparseBuffer.PrintNameOffset);
 	    ret = rp->SymbolicLinkReparseBuffer.PrintNameLength;
+	    *len = ret / sizeof(WCHAR);
 	}
 	else { /* IO_REPARSE_TAG_MOUNT_POINT */
 	    /* +4/-4 means to drop "\??\" */
 	    name = ((char *)rp->MountPointReparseBuffer.PathBuffer +
 		    rp->MountPointReparseBuffer.SubstituteNameOffset +
 		    4 * sizeof(WCHAR));
-	    ret = rp->MountPointReparseBuffer.SubstituteNameLength -
-		  4 * sizeof(WCHAR);
+	    ret = rp->MountPointReparseBuffer.SubstituteNameLength;
+	    *len = ret / sizeof(WCHAR);
+	    ret -= 4 * sizeof(WCHAR);
 	}
 	*result = name;
-	*len = ret / sizeof(WCHAR);
 	if (e) {
 	    if ((char *)name + ret + sizeof(WCHAR) > (char *)rp + bufsize)
 		return e;
@@ -4813,27 +4815,23 @@ rb_w32_read_reparse_point(const WCHAR *path, rb_w32_reparse_buffer_t *rp,
 static ssize_t
 w32_readlink(UINT cp, const char *path, char *buf, size_t bufsize)
 {
-    WCHAR *wpath, *wname;
     VALUE wtmp;
-    size_t size = rb_w32_reparse_buffer_size(bufsize);
-    rb_w32_reparse_buffer_t *rp = ALLOCV(wtmp, size);
-    DWORD len;
+    DWORD len = MultiByteToWideChar(cp, 0, path, -1, NULL, 0);
+    size_t size = rb_w32_reparse_buffer_size(len);
+    WCHAR *wname, *wpath = ALLOCV(wtmp, size + sizeof(WCHAR) * len);
+    rb_w32_reparse_buffer_t *rp = (void *)(wpath + len);
     ssize_t ret;
     int e;
 
-    wpath = mbstr_to_wstr(cp, path, -1, NULL);
-    if (!wpath) {
-	ALLOCV_END(wtmp);
-	return -1;
-    }
+    MultiByteToWideChar(cp, 0, path, -1, wpath, len);
     e = rb_w32_read_reparse_point(wpath, rp, size, &wname, &len);
-    free(wpath);
     if (e && e != ERROR_MORE_DATA) {
 	ALLOCV_END(wtmp);
 	errno = map_errno(e);
 	return -1;
     }
     ret = WideCharToMultiByte(cp, 0, wname, len, buf, bufsize, NULL, NULL);
+    ALLOCV_END(wtmp);
     if (e) {
 	ret = bufsize;
     }
@@ -4985,9 +4983,12 @@ get_attr_vsn(const WCHAR *path, DWORD *atts, DWORD *vsn)
     DWORD e = 0;
     HANDLE h = open_special(path, 0, FILE_FLAG_OPEN_REPARSE_POINT);
 
-    if (h == INVALID_HANDLE_VALUE) return GetLastError();
+    if (h == INVALID_HANDLE_VALUE) {
+	ASSUME(e = GetLastError());
+	return e;
+    }
     if (!GetFileInformationByHandle(h, &st)) {
-	e = GetLastError();
+	ASSUME(e = GetLastError());
     }
     else {
 	*atts = st.dwFileAttributes;
@@ -5002,7 +5003,7 @@ static int
 wrename(const WCHAR *oldpath, const WCHAR *newpath)
 {
     int res = 0;
-    int oldatts = -1, newatts = -1;
+    DWORD oldatts, newatts = (DWORD)-1;
     DWORD oldvsn = 0, newvsn = 0, e;
 
     e = get_attr_vsn(oldpath, &oldatts, &oldvsn);
@@ -5024,7 +5025,7 @@ wrename(const WCHAR *oldpath, const WCHAR *newpath)
     get_attr_vsn(newpath, &newatts, &newvsn);
 
     RUBY_CRITICAL({
-	if (newatts != -1 && newatts & FILE_ATTRIBUTE_READONLY)
+	if (newatts != (DWORD)-1 && newatts & FILE_ATTRIBUTE_READONLY)
 	    SetFileAttributesW(newpath, newatts & ~ FILE_ATTRIBUTE_READONLY);
 
 	if (!MoveFileExW(oldpath, newpath, MOVEFILE_REPLACE_EXISTING | MOVEFILE_COPY_ALLOWED))
@@ -7329,7 +7330,7 @@ fchmod(int fd, int mode)
 	LARGE_INTEGER LastWriteTime;
 	LARGE_INTEGER ChangeTime;
 	DWORD         FileAttributes;
-    } info = {0, 0, 0};		/* fields with 0 are unchanged */
+    } info = {{{0}}, {{0}}, {{0}},}; /* fields with 0 are unchanged */
     HANDLE h = (HANDLE)_get_osfhandle(fd);
 
     if (h == INVALID_HANDLE_VALUE) {

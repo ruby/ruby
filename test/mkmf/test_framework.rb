@@ -20,12 +20,12 @@ class TestMkmf
       end
     end
 
-    def test_core_foundation_framework
-      assert(have_framework("CoreFoundation"), mkmflog("try as Objective-C"))
+    def test_single_framework
+      assert(have_framework("Ruby"), mkmflog("try as Objective-C"))
     end
 
     def test_multi_frameworks
-      assert(have_framework("CoreFoundation"), mkmflog("try as Objective-C"))
+      assert(have_framework("Ruby"), mkmflog("try as Objective-C"))
       create_framework("MkmfTest") do |fw|
         assert(have_framework(fw), MKMFLOG)
       end

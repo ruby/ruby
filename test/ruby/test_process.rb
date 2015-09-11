@@ -404,8 +404,12 @@ class TestProcess < Test::Unit::TestCase
       IO.popen([*PWD, :chdir => d]) {|io|
         assert_equal(d, io.read.chomp)
       }
-      assert_raise(Errno::ENOENT) {
+      assert_raise_with_message(Errno::ENOENT, %r"d/notexist") {
         Process.wait Process.spawn(*PWD, :chdir => "d/notexist")
+      }
+      n = "d/\u{1F37A}"
+      assert_raise_with_message(Errno::ENOENT, /#{n}/) {
+        Process.wait Process.spawn(*PWD, :chdir => n)
       }
     }
   end
@@ -417,6 +421,24 @@ class TestProcess < Test::Unit::TestCase
       assert_file.exist?("open_chdir_test")
       assert_file.not_exist?("foo/open_chdir_test")
       assert_equal("#{d}/foo", File.read("open_chdir_test").chomp)
+    }
+  end
+
+  def test_execopts_open_failure
+    with_tmpchdir {|d|
+      assert_raise_with_message(Errno::ENOENT, %r"d/notexist") {
+        Process.wait Process.spawn(*PWD, :in => "d/notexist")
+      }
+      assert_raise_with_message(Errno::ENOENT, %r"d/notexist") {
+        Process.wait Process.spawn(*PWD, :out => "d/notexist")
+      }
+      n = "d/\u{1F37A}"
+      assert_raise_with_message(Errno::ENOENT, /#{n}/) {
+        Process.wait Process.spawn(*PWD, :in => n)
+      }
+      assert_raise_with_message(Errno::ENOENT, /#{n}/) {
+        Process.wait Process.spawn(*PWD, :out => n)
+      }
     }
   end
 
@@ -1693,6 +1715,35 @@ class TestProcess < Test::Unit::TestCase
     }
   end
 
+  def test_popen_exit
+    bug11510 = '[ruby-core:70671] [Bug #11510]'
+    pid = nil
+    opt = {timeout: 10, stdout_filter: ->(s) {pid = s}}
+    if windows?
+      opt[:new_pgroup] = true
+    else
+      opt[:pgroup] = true
+    end
+    assert_ruby_status(["-", RUBY], <<-'end;', bug11510, **opt)
+      RUBY = ARGV[0]
+      th = Thread.start {
+        Thread.current.abort_on_exception = true
+        IO.popen([RUBY, "-esleep 15", err: [:child, :out]]) {|f|
+          STDOUT.puts f.pid
+          STDOUT.flush
+          sleep(2)
+        }
+      }
+      sleep(0.001) until th.stop?
+    end;
+    assert_match(/\A\d+\Z/, pid)
+  ensure
+    if pid
+      pid = pid.to_i
+      [:TERM, :KILL].each {|sig| Process.kill(sig, pid) rescue break}
+    end
+  end
+
   def test_execopts_new_pgroup
     return unless windows?
 
@@ -2094,6 +2145,7 @@ EOS
       (3..6).each do |i|
         ret = run_in_child(<<-INPUT)
           begin
+            $VERBOSE = nil
             Process.exec('#{cmd}', 'dummy', #{i} => :close)
           rescue SystemCallError
           end

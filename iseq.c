@@ -26,7 +26,7 @@
 #include "insns_info.inc"
 
 #define ISEQ_MAJOR_VERSION 2
-#define ISEQ_MINOR_VERSION 2
+#define ISEQ_MINOR_VERSION 3
 
 VALUE rb_cISeq;
 
@@ -143,9 +143,8 @@ param_keyword_size(const struct rb_iseq_param_keyword *pkw)
 }
 
 static size_t
-iseq_memsize(const void *ptr)
+iseq_memsize(const rb_iseq_t *iseq)
 {
-    const rb_iseq_t *iseq = ptr;
     size_t size = 0; /* struct already counted as RVALUE size */
     const struct rb_iseq_variable_body *variable_body;
     const struct rb_iseq_constant_body *body;
@@ -681,9 +680,15 @@ iseqw_mark(void *ptr)
     rb_gc_mark((VALUE)ptr);
 }
 
+static size_t
+iseqw_memsize(const void *ptr)
+{
+    return iseq_memsize((const rb_iseq_t *)ptr);
+}
+
 static const rb_data_type_t iseqw_data_type = {
     "T_IMEMO/iseq",
-    {iseqw_mark, NULL, iseq_memsize,},
+    {iseqw_mark, NULL, iseqw_memsize,},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY|RUBY_TYPED_WB_PROTECTED
 };
 
@@ -1273,12 +1278,6 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
 
 	    if (ci->kw_arg) {
 		rb_ary_push(ary, rb_sprintf("kw:%d", ci->kw_arg->keyword_len));
-	    }
-	    if (ci->blockiseq) {
-		if (child) {
-		    rb_ary_push(child, (VALUE)ci->blockiseq);
-		}
-		rb_ary_push(ary, rb_sprintf("block:%"PRIsVALUE, ci->blockiseq->body->location.label));
 	    }
 
 	    if (ci->flag) {
@@ -1890,7 +1889,6 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 
 		    rb_hash_aset(e, ID2SYM(rb_intern("mid")), ci->mid ? ID2SYM(ci->mid) : Qnil);
 		    rb_hash_aset(e, ID2SYM(rb_intern("flag")), UINT2NUM(ci->flag));
-		    rb_hash_aset(e, ID2SYM(rb_intern("blockptr")), ci->blockiseq ? iseq_data_to_ary(ci->blockiseq) : Qnil);
 
 		    if (ci->kw_arg) {
 			int i;
@@ -2324,7 +2322,7 @@ Init_ISeq(void)
     rb_define_private_method(rb_cISeq, "marshal_load", iseqw_marshal_load, 1);
 #endif
     /* disable this feature because there is no verifier. */
-    /* rb_define_singleton_method(rb_cISeq, "load", iseq_s_load, -1); */
+    rb_define_singleton_method(rb_cISeq, "load", iseq_s_load, -1);
     (void)iseq_s_load;
 
     rb_define_singleton_method(rb_cISeq, "compile", iseqw_s_compile, -1);

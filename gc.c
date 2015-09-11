@@ -184,9 +184,7 @@ static ruby_gc_params_t gc_params = {
     GC_OLDMALLOC_LIMIT_MIN,
     GC_OLDMALLOC_LIMIT_MAX,
     GC_OLDMALLOC_LIMIT_GROWTH_FACTOR,
-#if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
     FALSE,
-#endif
 };
 
 /* GC_DEBUG:
@@ -1267,9 +1265,7 @@ rb_objspace_alloc(void)
 
     return objspace;
 }
-#endif
 
-#if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
 static void free_stack_chunks(mark_stack_t *);
 static void heap_page_free(rb_objspace_t *objspace, struct heap_page *page);
 
@@ -8976,6 +8972,7 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 	      IMEMO_NAME(ifunc);
 	      IMEMO_NAME(memo);
 	      IMEMO_NAME(ment);
+	      IMEMO_NAME(iseq);
 	    default: rb_bug("unknown IMEMO");
 #undef IMEMO_NAME
 	  }
@@ -8993,7 +8990,9 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 
 		if (iseq->body->location.label) {
 		    snprintf(buff, buff_size, "%s %s@%s:%d", buff,
-			     RSTRING_PTR(iseq->body->location.label), RSTRING_PTR(iseq->body->location.path), (int)iseq->body->location.first_lineno);
+			     RSTRING_PTR(iseq->body->location.label),
+			     RSTRING_PTR(iseq->body->location.path),
+			     FIX2INT(iseq->body->location.first_lineno));
 		}
 		break;
 	    }

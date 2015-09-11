@@ -2139,6 +2139,12 @@ hash_equal(VALUE hash1, VALUE hash2, int eql)
  *     h2 == h3   #=> true
  *     h3 == h4   #=> false
  *
+ *  The orders of each hashes are not compared.
+ *
+ *     h1 = { "a" => 1, "c" => 2 }
+ *     h2 = { "c" => 2, "a" => 1 }
+ *     h1 == h2   #=> true
+ *
  */
 
 static VALUE
@@ -2153,6 +2159,7 @@ rb_hash_equal(VALUE hash1, VALUE hash2)
  *
  *  Returns <code>true</code> if <i>hash</i> and <i>other</i> are
  *  both hashes with the same content.
+ *  The orders of each hashes are not compared.
  */
 
 static VALUE

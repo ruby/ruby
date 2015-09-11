@@ -698,7 +698,6 @@ console_cursor_set(VALUE io, VALUE cpos)
     return console_goto(io, RARRAY_AREF(cpos, 0), RARRAY_AREF(cpos, 1));
 }
 
-#include "win32_vk.h"
 #include "win32_vk.inc"
 
 static VALUE

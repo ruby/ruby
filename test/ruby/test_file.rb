@@ -258,6 +258,26 @@ class TestFile < Test::Unit::TestCase
     }
   end
 
+  def test_realpath_encoding
+    fsenc = Encoding.find("filesystem")
+    nonascii = "\u{0391 0410 0531 10A0 05d0 2C00 3042}"
+    tst = "A"
+    nonascii.each_char {|c| tst << c.encode(fsenc) rescue nil}
+    Dir.mktmpdir('rubytest-realpath') {|tmpdir|
+      realdir = File.realpath(tmpdir)
+      open(File.join(tmpdir, tst), "w") {}
+      a = File.join(tmpdir, "a")
+      File.symlink(tst, a)
+      assert_equal(File.join(realdir, tst), File.realpath(a))
+      File.unlink(a)
+
+      tst = "A" + nonascii
+      open(File.join(tmpdir, tst), "w") {}
+      File.symlink(tst, a)
+      assert_equal(File.join(realdir, tst), File.realpath(a.encode("UTF-8")))
+    }
+  end
+
   def test_realdirpath
     Dir.mktmpdir('rubytest-realdirpath') {|tmpdir|
       realdir = File.realpath(tmpdir)
@@ -275,6 +295,16 @@ class TestFile < Test::Unit::TestCase
       end
     end
   end
+
+  def test_realdirpath_junction
+    Dir.mktmpdir('rubytest-realpath') {|tmpdir|
+      Dir.chdir(tmpdir) do
+        Dir.mkdir('foo')
+        skip "cannot run mklink" unless system('mklink /j bar foo > nul')
+        assert_equal(File.realpath('foo'), File.realpath('bar'))
+      end
+    }
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
 
   def test_utime_with_minus_time_segv
     bug5596 = '[ruby-dev:44838]'

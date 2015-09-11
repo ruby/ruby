@@ -8725,7 +8725,7 @@ literal_concat_gen(struct parser_params *parser, NODE *head, NODE *tail)
 
     htype = nd_type(head);
     if (htype == NODE_EVSTR) {
-	NODE *node = NEW_DSTR(Qnil);
+	NODE *node = NEW_DSTR(STR_NEW0());
 	head = list_append(node, head);
 	htype = NODE_DSTR;
     }
@@ -8798,7 +8798,7 @@ static NODE *
 evstr2dstr_gen(struct parser_params *parser, NODE *node)
 {
     if (nd_type(node) == NODE_EVSTR) {
-	node = list_append(NEW_DSTR(Qnil), node);
+	node = list_append(NEW_DSTR(STR_NEW0()), node);
     }
     return node;
 }

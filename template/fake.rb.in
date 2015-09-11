@@ -32,8 +32,8 @@ class Object
 % }
 end
 builddir = File.dirname(File.expand_path(__FILE__))
-top_srcdir = File.expand_path("<%=arg['srcdir']%>", builddir)
-$:.unshift(builddir)
+srcdir = "<%=arg['srcdir']%>"
+top_srcdir = File.realpath(srcdir, builddir)
 fake = File.join(top_srcdir, "tool/fake.rb")
 eval(File.read(fake), nil, fake)
 ENV["RUBYOPT"] = ["-r#{__FILE__}", ENV["RUBYOPT"]].compact.join(" ")

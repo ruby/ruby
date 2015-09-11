@@ -1,23 +1,21 @@
 $(OBJS): $(HDRS) $(ruby_headers) \
-  $(VK_HEADER) $(VK_HEADER:.chksum=.h) \
+  $(VK_HEADER) \
   $(hdrdir)/ruby/io.h \
   $(hdrdir)/ruby/encoding.h \
   $(hdrdir)/ruby/oniguruma.h
 
 win32_vk.inc: win32_vk.list
 
-win32_vk.h: win32_vk.list
-
 .list.inc:
+	( \
+	$(RUBY) -anF, \
+	-e 'BEGIN {puts "#define UNDEFINED_VK (unsigned short)-1"}' \
+	-e 'n=$$F[1] and (n.strip!; /\AVK_/=~n) and' \
+	-e   'puts(%[#ifndef #{n}\n# define #{n} UNDEFINED_VK\n#endif])' \
+	$< && \
 	gperf --ignore-case -E -C -P -p -j1 -i 1 -g -o -t -K ofs -N console_win32_vk -k* $< \
 	| sed 's/(int)(long)&((\(struct stringpool_t\) *\*)0)->\(stringpool_[a-z0-9]*\)/offsetof(\1, \2)/g' \
-	> $(@F)
-
-.list.h:
-	$(RUBY) -anF, \
-	-e '(n=$$F[1]) and (n.strip!; /\AVK_/=~n) and' \
-	-e   'puts %[#ifndef #{n}\n# define #{n} (unsigned short)-1\n#endif]' \
-	$< > $@
+	) > $(@F)
 
 .SUFFIXES: .chksum .list .inc
 
