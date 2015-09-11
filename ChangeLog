@@ -1,3 +1,10 @@
+Fri Sep 11 20:23:35 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h: remove rb_call_info_t::aux.opt_pc.
+
+	* vm_insnhelper.c: introduce shortcut functions for opt_pc == 0
+	  because opt_pc is always 0 on shortcut function.
+
 Fri Sep 11 17:49:36 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* iseq.c: disable ISeq.load. It enabled accidentally at r51794.

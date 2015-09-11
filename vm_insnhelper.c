@@ -1221,9 +1221,11 @@ vm_base_ptr(rb_control_frame_t *cfp)
 
 #include "vm_args.c"
 
-static VALUE vm_call_iseq_setup_2(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci);
-static inline VALUE vm_call_iseq_setup_normal(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci);
-static inline VALUE vm_call_iseq_setup_tailcall(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci);
+static VALUE vm_call_iseq_setup_2(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci, int opt_pc);
+static inline VALUE vm_call_iseq_setup_normal_0start(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci);
+static inline VALUE vm_call_iseq_setup_tailcall_0start(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci);
+static inline VALUE vm_call_iseq_setup_normal(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci, int opt_pc);
+static inline VALUE vm_call_iseq_setup_tailcall(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci, int opt_pc);
 
 
 static inline VALUE
@@ -1261,7 +1263,7 @@ simple_iseq_p(const rb_iseq_t *iseq)
 	   iseq->body->param.flags.has_block == FALSE;
 }
 
-static inline void
+static inline int
 vm_callee_setup_block_arg(rb_thread_t *th, rb_call_info_t *ci, const rb_iseq_t *iseq, VALUE *argv, const enum arg_setup_type arg_setup_type)
 {
     if (LIKELY(simple_iseq_p(iseq))) {
@@ -1301,14 +1303,14 @@ vm_callee_setup_block_arg(rb_thread_t *th, rb_call_info_t *ci, const rb_iseq_t *
 	    }
 	}
 
-	ci->aux.opt_pc = 0;
+	return 0;
     }
     else {
-	ci->aux.opt_pc = setup_parameters_complex(th, iseq, ci, argv, arg_setup_type);
+	return setup_parameters_complex(th, iseq, ci, argv, arg_setup_type);
     }
 }
 
-static inline void
+static inline int
 vm_callee_setup_arg(rb_thread_t *th, rb_call_info_t *ci, const rb_iseq_t *iseq, VALUE *argv)
 {
     if (LIKELY(simple_iseq_p(iseq))) {
@@ -1320,14 +1322,15 @@ vm_callee_setup_arg(rb_thread_t *th, rb_call_info_t *ci, const rb_iseq_t *iseq, 
 	    argument_arity_error(th, iseq, ci->argc, iseq->body->param.lead_num, iseq->body->param.lead_num);
 	}
 
-	ci->aux.opt_pc = 0;
-
 	CI_SET_FASTPATH(ci,
-			(UNLIKELY(ci->flag & VM_CALL_TAILCALL) ? vm_call_iseq_setup_tailcall : vm_call_iseq_setup_normal),
+			(UNLIKELY(ci->flag & VM_CALL_TAILCALL) ? vm_call_iseq_setup_tailcall_0start :
+			                                         vm_call_iseq_setup_normal_0start),
 			(!IS_ARGS_SPLAT(ci) && !IS_ARGS_KEYWORD(ci) && !(METHOD_ENTRY_VISI(ci->me) == METHOD_VISI_PROTECTED)));
+
+	return 0;
     }
     else {
-	ci->aux.opt_pc = setup_parameters_complex(th, iseq, ci, argv, arg_setup_method);
+	return setup_parameters_complex(th, iseq, ci, argv, arg_setup_method);
     }
 }
 
@@ -1343,23 +1346,23 @@ def_iseq_ptr(rb_method_definition_t *def)
 static VALUE
 vm_call_iseq_setup(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 {
-    vm_callee_setup_arg(th, ci, def_iseq_ptr(ci->me->def), cfp->sp - ci->argc);
-    return vm_call_iseq_setup_2(th, cfp, ci);
+    int opt_pc = vm_callee_setup_arg(th, ci, def_iseq_ptr(ci->me->def), cfp->sp - ci->argc);
+    return vm_call_iseq_setup_2(th, cfp, ci, opt_pc);
 }
 
 static VALUE
-vm_call_iseq_setup_2(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
+vm_call_iseq_setup_2(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci, int opt_pc)
 {
     if (LIKELY(!(ci->flag & VM_CALL_TAILCALL))) {
-	return vm_call_iseq_setup_normal(th, cfp, ci);
+	return vm_call_iseq_setup_normal(th, cfp, ci, opt_pc);
     }
     else {
-	return vm_call_iseq_setup_tailcall(th, cfp, ci);
+	return vm_call_iseq_setup_tailcall(th, cfp, ci, opt_pc);
     }
 }
 
 static inline VALUE
-vm_call_iseq_setup_normal(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
+vm_call_iseq_setup_normal(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci, int opt_pc)
 {
     int i, local_size;
     VALUE *argv = cfp->sp - ci->argc;
@@ -1374,14 +1377,14 @@ vm_call_iseq_setup_normal(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info
 
     vm_push_frame(th, iseq, VM_FRAME_MAGIC_METHOD, ci->recv,
 		  VM_ENVVAL_BLOCK_PTR(ci->blockptr), (VALUE)me,
-		  iseq->body->iseq_encoded + ci->aux.opt_pc, sp, 0, iseq->body->stack_max);
+		  iseq->body->iseq_encoded + opt_pc, sp, 0, iseq->body->stack_max);
 
     cfp->sp = argv - 1 /* recv */;
     return Qundef;
 }
 
 static inline VALUE
-vm_call_iseq_setup_tailcall(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
+vm_call_iseq_setup_tailcall(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci, int opt_pc)
 {
     unsigned int i;
     VALUE *argv = cfp->sp - ci->argc;
@@ -1413,10 +1416,22 @@ vm_call_iseq_setup_tailcall(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_in
 
     vm_push_frame(th, iseq, VM_FRAME_MAGIC_METHOD | finish_flag,
 		  ci->recv, VM_ENVVAL_BLOCK_PTR(ci->blockptr), (VALUE)me,
-		  iseq->body->iseq_encoded + ci->aux.opt_pc, sp, 0, iseq->body->stack_max);
+		  iseq->body->iseq_encoded + opt_pc, sp, 0, iseq->body->stack_max);
 
     cfp->sp = sp_orig;
     return Qundef;
+}
+
+static inline VALUE
+vm_call_iseq_setup_normal_0start(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
+{
+    return vm_call_iseq_setup_normal(th, cfp, ci, 0);
+}
+
+static inline VALUE
+vm_call_iseq_setup_tailcall_0start(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
+{
+    return vm_call_iseq_setup_tailcall(th, cfp, ci, 0);
 }
 
 static VALUE
@@ -2284,8 +2299,7 @@ vm_yield_with_cfunc(rb_thread_t *th, const rb_block_t *block, VALUE self,
 static int
 vm_yield_callee_setup_arg(rb_thread_t *th, rb_call_info_t *ci, const rb_iseq_t *iseq, VALUE *argv, enum arg_setup_type arg_setup_type)
 {
-    vm_callee_setup_block_arg(th, ci, iseq, argv, arg_setup_type);
-    return ci->aux.opt_pc;
+    return vm_callee_setup_block_arg(th, ci, iseq, argv, arg_setup_type);
 }
 
 static int
@@ -2315,12 +2329,10 @@ vm_invoke_block(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci
     iseq = block->iseq;
 
     if (!RUBY_VM_IFUNC_P(iseq)) {
-	int opt_pc;
 	const int arg_size = iseq->body->param.size;
 	int is_lambda = block_proc_is_lambda(block->proc);
 	VALUE * const rsp = GET_SP() - ci->argc;
-
-	opt_pc = vm_yield_callee_setup_arg(th, ci, iseq, rsp, is_lambda ? arg_setup_lambda : arg_setup_block);
+	int opt_pc = vm_yield_callee_setup_arg(th, ci, iseq, rsp, is_lambda ? arg_setup_lambda : arg_setup_block);
 
 	SET_SP(rsp);
 
