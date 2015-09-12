@@ -4144,8 +4144,10 @@ fcntl(int fd, int cmd, ...)
 {
     va_list va;
     int arg;
+    DWORD flag;
 
-    if (cmd == F_SETFL) {
+    switch (cmd) {
+      case F_SETFL: {
 	SOCKET sock = TO_SOCKET(fd);
 	if (!is_socket(sock)) {
 	    errno = EBADF;
@@ -4156,13 +4158,14 @@ fcntl(int fd, int cmd, ...)
 	arg = va_arg(va, int);
 	va_end(va);
 	return setfl(sock, arg);
-    }
-    else if (cmd == F_DUPFD) {
+      }
+      case F_DUPFD: case F_DUPFD_CLOEXEC: {
 	int ret;
 	HANDLE hDup;
+	flag = _osfile(fd);
 	if (!(DuplicateHandle(GetCurrentProcess(), (HANDLE)_get_osfhandle(fd),
 			      GetCurrentProcess(), &hDup, 0L,
-			      !(_osfile(fd) & FNOINHERIT),
+			      cmd == F_DUPFD && !(flag & FNOINHERIT),
 			      DUPLICATE_SAME_ACCESS))) {
 	    errno = map_errno(GetLastError());
 	    return -1;
@@ -4172,11 +4175,41 @@ fcntl(int fd, int cmd, ...)
 	arg = va_arg(va, int);
 	va_end(va);
 
-	if ((ret = dupfd(hDup, _osfile(fd), arg)) == -1)
+	if (cmd != F_DUPFD)
+	    flag |= FNOINHERIT;
+	else
+	    flag &= ~FNOINHERIT;
+	if ((ret = dupfd(hDup, flag, arg)) == -1)
 	    CloseHandle(hDup);
 	return ret;
-    }
-    else {
+      }
+      case F_GETFD: {
+	SIGNED_VALUE h = _get_osfhandle(fd);
+	if (h == -1) return -1;
+	if (!GetHandleInformation((HANDLE)h, &flag)) {
+	    errno = map_errno(GetLastError());
+	    return -1;
+	}
+	return (flag & HANDLE_FLAG_INHERIT) ? 0 : FD_CLOEXEC;
+      }
+      case F_SETFD: {
+	SIGNED_VALUE h = _get_osfhandle(fd);
+	if (h == -1) return -1;
+	va_start(va, cmd);
+	arg = va_arg(va, int);
+	va_end(va);
+	if (!SetHandleInformation((HANDLE)h, HANDLE_FLAG_INHERIT,
+				  (arg & FD_CLOEXEC) ? 0 : HANDLE_FLAG_INHERIT)) {
+	    errno = map_errno(GetLastError());
+	    return -1;
+	}
+	if (arg & FD_CLOEXEC)
+	    _osfile(fd) |= FNOINHERIT;
+	else
+	    _osfile(fd) &= ~FNOINHERIT;
+	return 0;
+      }
+      default:
 	errno = EINVAL;
 	return -1;
     }

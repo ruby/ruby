@@ -577,15 +577,14 @@ extern char *rb_w32_strerror(int);
 #endif
 
 #define F_DUPFD 0
-#if 0
 #define F_GETFD 1
 #define F_SETFD 2
+#if 0
 #define F_GETFL 3
 #endif
 #define F_SETFL 4
-#if 0
+#define F_DUPFD_CLOEXEC 67
 #define FD_CLOEXEC 1 /* F_GETFD, F_SETFD */
-#endif
 #define O_NONBLOCK 1
 
 #undef FD_SET
