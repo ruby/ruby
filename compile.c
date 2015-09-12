@@ -548,7 +548,7 @@ rb_iseq_compile_node(rb_iseq_t *iseq, NODE *node)
 	    COMPILE_POPED(ret, "ensure", node);
 	    break;
 	  case ISEQ_TYPE_DEFINED_GUARD:
-	    iseq_set_local_table(iseq, 0);
+	    iseq_set_exception_local_table(iseq);
 	    COMPILE(ret, "defined guard", node);
 	    break;
 	  default:
@@ -1054,6 +1054,9 @@ iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 static int
 iseq_set_exception_local_table(rb_iseq_t *iseq)
 {
+    /* TODO: every id table is same -> share it.
+     * Current problem is iseq_free().
+     */
     ID id_dollar_bang;
     ID *ids = (ID *)ALLOC_N(ID, 1);
 
