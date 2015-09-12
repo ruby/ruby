@@ -5934,8 +5934,9 @@ rb_w32_dup2(int oldfd, int newfd)
 
     if (oldfd == newfd) return newfd;
     ret = dup2(oldfd, newfd);
+    if (ret < 0) return ret;
     set_new_std_fd(newfd);
-    return ret;
+    return newfd;
 }
 
 /* License: Ruby's */
