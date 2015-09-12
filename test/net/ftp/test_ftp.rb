@@ -1125,7 +1125,7 @@ EOF
       sock.print("220 (test_ftp).\r\n")
       commands.push(sock.gets)
       sock.print("250- Listing foo\r\n")
-      sock.print(" Type=file;Unique=FC00U1E554A;Size=1234567;Modify=20131220035929;Perm=r; /foo\r\n")
+      sock.print(" Type=file;Unique=FC00U1E554A;Size=1234567;Modify=20131220035929;Perm=r;Unix.mode=0644;Unix.owner=122;Unix.group=0;Unix.ctime=20131220120140;Unix.atime=20131220131139; /foo\r\n")
       sock.print("250 End\r\n")
       commands.push(sock.gets)
       sock.print("250 Malformed response\r\n")
@@ -1148,6 +1148,9 @@ EOF
         assert_equal("FC00U1E554A", entry.facts["unique"])
         assert_equal(1234567, entry.facts["size"])
         assert_equal("r", entry.facts["perm"])
+        assert_equal(0644, entry.facts["unix.mode"])
+        assert_equal(122, entry.facts["unix.owner"])
+        assert_equal(0, entry.facts["unix.group"])
         modify = entry.facts["modify"]
         assert_equal(2013, modify.year)
         assert_equal(12, modify.month)
@@ -1156,6 +1159,14 @@ EOF
         assert_equal(59, modify.min)
         assert_equal(29, modify.sec)
         assert_equal(true, modify.utc?)
+        ctime = entry.facts["unix.ctime"]
+        assert_equal(12, ctime.hour)
+        assert_equal(1, ctime.min)
+        assert_equal(40, ctime.sec)
+        atime = entry.facts["unix.atime"]
+        assert_equal(13, atime.hour)
+        assert_equal(11, atime.min)
+        assert_equal(39, atime.sec)
         assert_match("MLST foo\r\n", commands.shift)
         assert_raise(Net::FTPProtoError) do
           ftp.mlst("foo")

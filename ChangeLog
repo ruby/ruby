@@ -1,3 +1,8 @@
+Sat Sep 12 21:27:22 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/ftp.rb (FACT_PARSERS): support system dependent facts
+	  UNIX.mode, UNIX.owner, UNIX.group, UNIX.ctime, and UNIX.atime.
+
 Sat Sep 12 19:08:58 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_dup2): should return the new fd on
