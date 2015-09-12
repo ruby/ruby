@@ -1,4 +1,9 @@
-Sat Sep 12 14:23:20 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Sep 12 14:30:03 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (save_redirect_fd): make saved FDs close-on-exec not
+	  to be inherited.
+
+	* process.c (run_exec_dup2): restore close-on-exec flags too.
 
 	* win32/win32.c (fcntl): implement F_GETFD, F_SETFD, and
 	  F_DUPFD_CLOEXEC.
