@@ -796,7 +796,7 @@ module Net
       def directory?
         if /\A[cp]?dir\z/.match(facts["type"])
           return true
-        else 
+        else
           return false
         end
       end
