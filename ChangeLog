@@ -1,3 +1,8 @@
+Sat Sep 12 18:00:35 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/ftp.rb (TIME_PARSER): use "Z" instead of "+00:00" to
+	  get UTC time.  Thanks, Wilson Bilkovich.
+
 Sat Sep 12 17:55:24 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/ftp.rb (mlst, mlsd): support new commands MLST and MLSD

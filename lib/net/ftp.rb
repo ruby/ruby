@@ -774,8 +774,7 @@ module Net
     CASE_INDEPENDENT_PARSER = ->(value) { value.downcase }
     INTEGER_PARSER = ->(value) { value.to_i }
     TIME_PARSER = ->(value) {
-      t = Time.strptime(value.sub(/\.\d+\z/, "") + "+00:00",
-                        "%Y%m%d%H%M%S%z").utc
+      t = Time.strptime(value.sub(/\.\d+\z/, "") + "Z", "%Y%m%d%H%M%S%z")
       fractions = value.slice(/\.(\d+)\z/, 1)
       if fractions
         t + fractions.to_i.quo(10 ** fractions.size)
