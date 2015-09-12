@@ -769,7 +769,7 @@ module Net
     alias dir list
 
     MLSxEntry = Struct.new(:facts, :pathname)
-    
+
     CASE_DEPENDENT_PARSER = ->(value) { value }
     CASE_INDEPENDENT_PARSER = ->(value) { value.downcase }
     INTEGER_PARSER = ->(value) { value.to_i }
