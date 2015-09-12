@@ -110,7 +110,11 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal(Rational(1),Rational('3/3','3/3'))
     assert_raise(TypeError){Rational(nil)}
     assert_raise(ArgumentError){Rational('')}
-    assert_raise_with_message(ArgumentError, /\u{221a 2668}/) {Rational("\u{221a 2668}")}
+    assert_raise_with_message(ArgumentError, /\u{221a 2668}/) {
+      EnvUtil.with_default_external(Encoding::UTF_8) {
+        Rational("\u{221a 2668}")
+      }
+    }
     assert_raise(TypeError){Rational(Object.new)}
     assert_raise(ArgumentError){Rational()}
     assert_raise(ArgumentError){Rational(1,2,3)}
