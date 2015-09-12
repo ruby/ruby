@@ -1,3 +1,18 @@
+Sat Sep 12 19:43:49 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c (vm_call_iseq_setup_normal): do not clear local
+	  variables here. vm_push_frame() clears.
+
+	* vm_insnhelper.c (vm_call_iseq_setup_tailcall): ditto.
+
+	* vm_insnhelper.c (vm_push_frame): move check code to
+	  vm_check_frame().
+
+	  Reorder initialization timing to reuse same values (sp).
+
+	* compile.c (rb_iseq_compile_node): use
+	  iseq_set_exception_local_table() for ISEQ_TYPE_DEFINED_GUARD.
+
 Sat Sep 12 23:06:51 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/ftp.rb (file?, directory?, appendable?, creatable?,

@@ -39,7 +39,6 @@ vm_stackoverflow(void)
 }
 
 #if VM_CHECK_MODE > 0
-
 static int
 callable_class_p(VALUE klass)
 {
@@ -68,7 +67,7 @@ callable_method_entry_p(const rb_callable_method_entry_t *me)
 }
 
 static void
-check_frame(int magic, int req_block, int req_me, int req_cref, VALUE specval, VALUE cref_or_me)
+vm_check_frame_detail(int magic, int req_block, int req_me, int req_cref, VALUE specval, VALUE cref_or_me)
 {
     enum imemo_type cref_or_me_type = imemo_none;
 
@@ -112,27 +111,15 @@ check_frame(int magic, int req_block, int req_me, int req_cref, VALUE specval, V
 	}
     }
 }
-#endif
 
-static inline rb_control_frame_t *
-vm_push_frame(rb_thread_t *th,
-	      const rb_iseq_t *iseq,
-	      VALUE type,
-	      VALUE self,
-	      VALUE specval,
-	      VALUE cref_or_me,
-	      const VALUE *pc,
-	      VALUE *sp,
-	      int local_size,
-	      int stack_max)
+static void
+vm_check_frame(VALUE type,
+	       VALUE specval,
+	       VALUE cref_or_me)
 {
-    rb_control_frame_t *const cfp = th->cfp - 1;
-    int i;
-
-#if VM_CHECK_MODE > 0
     int magic = (int)(type & VM_FRAME_MAGIC_MASK);
 
-#define CHECK(magic, req_block, req_me, req_cref) case magic: check_frame(magic, req_block, req_me, req_cref, specval, cref_or_me); break;
+#define CHECK(magic, req_block, req_me, req_cref) case magic: vm_check_frame_detail(magic, req_block, req_me, req_cref, specval, cref_or_me); break;
     switch (magic) {
 	/*                           BLK    ME     CREF */
 	CHECK(VM_FRAME_MAGIC_METHOD, TRUE,  TRUE,  FALSE);
@@ -149,7 +136,29 @@ vm_push_frame(rb_thread_t *th,
       default:
 	rb_bug("vm_push_frame: unknown type (%x)", magic);
     }
-#endif
+#undef CHECK
+}
+#else
+#define vm_check_frame(a, b, c)
+#endif /* VM_CHECK_MODE > 0 */
+
+static inline rb_control_frame_t *
+vm_push_frame(rb_thread_t *th,
+	      const rb_iseq_t *iseq,
+	      VALUE type,
+	      VALUE self,
+	      VALUE specval,
+	      VALUE cref_or_me,
+	      const VALUE *pc,
+	      VALUE *sp,
+	      int local_size,
+	      int stack_max)
+{
+    rb_control_frame_t *const cfp = th->cfp - 1;
+    int i;
+
+    vm_check_frame(type, specval, cref_or_me);
+    VM_ASSERT(local_size >= 1);
 
     /* check stack overflow */
     CHECK_VM_STACK_OVERFLOW0(cfp, sp, local_size + stack_max);
@@ -159,26 +168,26 @@ vm_push_frame(rb_thread_t *th,
     /* setup vm value stack */
 
     /* initialize local variables */
-    for (i=0; i < local_size; i++) {
+    for (i=0; i < local_size - 1; i++) {
 	*sp++ = Qnil;
     }
 
     /* set special val */
-    sp[-1] = cref_or_me; /* Qnil or T_IMEMO(cref) or T_IMEMO(ment) */
-    sp[ 0] = specval;
+    *sp++ = cref_or_me; /* Qnil or T_IMEMO(cref) or T_IMEMO(ment) */
+    *sp = specval;
 
     /* setup vm control frame stack */
 
-    cfp->pc = (VALUE *)pc;
+    cfp->ep = sp;
     cfp->sp = sp + 1;
 #if VM_DEBUG_BP_CHECK
     cfp->bp_check = sp + 1;
 #endif
-    cfp->ep = sp;
-    cfp->iseq = (rb_iseq_t *) iseq;
+    cfp->pc = (VALUE *)pc;
+    cfp->iseq = (rb_iseq_t *)iseq;
     cfp->flag = type;
     cfp->self = self;
-    cfp->block_iseq = 0;
+    cfp->block_iseq = NULL;
     cfp->proc = 0;
 
     if (VMDEBUG == 2) {
@@ -1364,20 +1373,16 @@ vm_call_iseq_setup_2(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *c
 static inline VALUE
 vm_call_iseq_setup_normal(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci, int opt_pc)
 {
-    int i, local_size;
     VALUE *argv = cfp->sp - ci->argc;
     const rb_callable_method_entry_t *me = ci->me;
     const rb_iseq_t *iseq = def_iseq_ptr(me->def);
     VALUE *sp = argv + iseq->body->param.size;
 
-    /* clear local variables (arg_size...local_size) */
-    for (i = iseq->body->param.size, local_size = iseq->body->local_size; i < local_size; i++) {
-	*sp++ = Qnil;
-    }
-
     vm_push_frame(th, iseq, VM_FRAME_MAGIC_METHOD, ci->recv,
 		  VM_ENVVAL_BLOCK_PTR(ci->blockptr), (VALUE)me,
-		  iseq->body->iseq_encoded + opt_pc, sp, 0, iseq->body->stack_max);
+		  iseq->body->iseq_encoded + opt_pc, sp,
+		  iseq->body->local_size - iseq->body->param.size,
+		  iseq->body->stack_max);
 
     cfp->sp = argv - 1 /* recv */;
     return Qundef;
@@ -1409,14 +1414,11 @@ vm_call_iseq_setup_tailcall(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_in
 	*sp++ = src_argv[i];
     }
 
-    /* clear local variables */
-    for (i = 0; i < iseq->body->local_size - iseq->body->param.size; i++) {
-	*sp++ = Qnil;
-    }
-
     vm_push_frame(th, iseq, VM_FRAME_MAGIC_METHOD | finish_flag,
 		  ci->recv, VM_ENVVAL_BLOCK_PTR(ci->blockptr), (VALUE)me,
-		  iseq->body->iseq_encoded + opt_pc, sp, 0, iseq->body->stack_max);
+		  iseq->body->iseq_encoded + opt_pc, sp,
+		  iseq->body->local_size - iseq->body->param.size,
+		  iseq->body->stack_max);
 
     cfp->sp = sp_orig;
     return Qundef;
