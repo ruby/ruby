@@ -1119,6 +1119,117 @@ EOF
     end
   end
 
+  def test_mlst
+    commands = []
+    server = create_ftp_server { |sock|
+      sock.print("220 (test_ftp).\r\n")
+      commands.push(sock.gets)
+      sock.print("250- Listing foo\r\n")
+      sock.print(" Type=file;Unique=FC00U1E554A;Size=1234567;Modify=20131220035929;Perm=r; /foo\r\n")
+      sock.print("250 End\r\n")
+    }
+    begin
+      begin
+        ftp = Net::FTP.new
+        ftp.connect(SERVER_ADDR, server.port)
+        entry = ftp.mlst("foo")
+        assert_equal("file", entry.facts["type"])
+        assert_equal("FC00U1E554A", entry.facts["unique"])
+        assert_equal(1234567, entry.facts["size"])
+        assert_equal("r", entry.facts["perm"])
+        modify = entry.facts["modify"]
+        assert_equal(2013, modify.year)
+        assert_equal(12, modify.month)
+        assert_equal(20, modify.day)
+        assert_equal(3, modify.hour)
+        assert_equal(59, modify.min)
+        assert_equal(29, modify.sec)
+        assert_equal(true, modify.utc?)
+        assert_match("MLST foo\r\n", commands.shift)
+        assert_equal(nil, commands.shift)
+      ensure
+        ftp.close if ftp
+      end
+    ensure
+      server.close
+    end
+  end
+
+  def test_mlsd
+    commands = []
+    entry_lines = [
+      "Type=file;Unique=FC00U1E554A;Size=1234567;Modify=20131220035929.123456;Perm=r; foo",
+      "Type=cdir;Unique=FC00U1E554B;Modify=20131220035929;Perm=flcdmpe; .",
+      "Type=pdir;Unique=FC00U1E554C;Modify=20131220035929;Perm=flcdmpe; ..",
+    ]
+    server = create_ftp_server { |sock|
+      sock.print("220 (test_ftp).\r\n")
+      commands.push(sock.gets)
+      sock.print("331 Please specify the password.\r\n")
+      commands.push(sock.gets)
+      sock.print("230 Login successful.\r\n")
+      commands.push(sock.gets)
+      sock.print("200 Switching to Binary mode.\r\n")
+      commands.push(sock.gets)
+      sock.print("200 Switching to ASCII mode.\r\n")
+      line = sock.gets
+      commands.push(line)
+      port_args = line.slice(/\APORT (.*)/, 1).split(/,/)
+      host = port_args[0, 4].join(".")
+      port = port_args[4, 2].map(&:to_i).inject {|x, y| (x << 8) + y}
+      sock.print("200 PORT command successful.\r\n")
+      commands.push(sock.gets)
+      sock.print("150 Here comes the directory listing.\r\n")
+      begin
+        conn = TCPSocket.new(host, port)
+        entry_lines.each do |line|
+          conn.print(line, "\r\n")
+        end
+      rescue Errno::EPIPE
+      ensure
+        assert_nil($!)
+        conn.close
+      end
+      sock.print("226 Directory send OK.\r\n")
+      commands.push(sock.gets)
+      sock.print("200 Switching to Binary mode.\r\n")
+    }
+    begin
+      begin
+        ftp = Net::FTP.new
+        ftp.connect(SERVER_ADDR, server.port)
+        ftp.login
+        assert_match(/\AUSER /, commands.shift)
+        assert_match(/\APASS /, commands.shift)
+        assert_equal("TYPE I\r\n", commands.shift)
+        entries = ftp.mlsd("/")
+        assert_equal(3, entries.size)
+        assert_equal("file", entries[0].facts["type"])
+        assert_equal("cdir", entries[1].facts["type"])
+        assert_equal("pdir", entries[2].facts["type"])
+        assert_equal("flcdmpe", entries[1].facts["perm"])
+        modify = entries[0].facts["modify"]
+        assert_equal(2013, modify.year)
+        assert_equal(12, modify.month)
+        assert_equal(20, modify.day)
+        assert_equal(3, modify.hour)
+        assert_equal(59, modify.min)
+        assert_equal(29, modify.sec)
+        assert_equal(123456, modify.usec)
+        assert_equal(true, modify.utc?)
+        assert_equal("TYPE A\r\n", commands.shift)
+        assert_match(/\APORT /, commands.shift)
+        assert_match("MLSD /\r\n", commands.shift)
+        assert_equal("TYPE I\r\n", commands.shift)
+        assert_equal(nil, commands.shift)
+      ensure
+        ftp.close if ftp
+      end
+    ensure
+      server.close
+    end
+  end
+
   private
 
 
