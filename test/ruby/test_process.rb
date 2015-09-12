@@ -970,7 +970,7 @@ class TestProcess < Test::Unit::TestCase
     rescue NotImplementedError
       skip "IO#close_on_exec= is not supported"
     end
-  end
+  end unless windows? # passing non-stdio fds is not supported on Windows
 
   def test_execopts_redirect_tempfile
     bug6269 = '[ruby-core:44181]'
