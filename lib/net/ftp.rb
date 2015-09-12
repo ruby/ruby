@@ -768,7 +768,113 @@ module Net
     alias ls list
     alias dir list
 
-    MLSxEntry = Struct.new(:facts, :pathname)
+    #
+    # MLSxEntry represents an entry in responses of MLST/MLSD.
+    # Each entry has the facts (e.g., size, last modification time, etc.)
+    # and the pathname.
+    #
+    class MLSxEntry
+      attr_reader :facts, :pathname
+
+      def initialize(facts, pathname)
+        @facts = facts
+        @pathname = pathname
+      end
+
+      #
+      # Returns +true+ if the entry is a file (i.e., the value of the type
+      # fact is file).
+      #
+      def file?
+        return facts["type"] == "file"
+      end
+
+      #
+      # Returns +true+ if the entry is a directory (i.e., the value of the
+      # type fact is dir, cdir, or pdir).
+      #
+      def directory?
+        if /\A[cp]?dir\z/.match(facts["type"])
+          return true
+        else 
+          return false
+        end
+      end
+
+      #
+      # Returns +true+ if the APPE command may be applied to the file.
+      #
+      def appendable?
+        return facts["perm"].include?(?a)
+      end
+
+      #
+      # Returns +true+ if files may be created in the directory by STOU,
+      # STOR, APPE, and RNTO.
+      #
+      def creatable?
+        return facts["perm"].include?(?c)
+      end
+
+      #
+      # Returns +true+ if the file or directory may be deleted by DELE/RMD.
+      #
+      def deletable?
+        return facts["perm"].include?(?d)
+      end
+
+      #
+      # Returns +true+ if the directory may be entered by CWD/CDUP.
+      #
+      def enterable?
+        return facts["perm"].include?(?e)
+      end
+
+      #
+      # Returns +true+ if the file or directory may be renamed by RNFR.
+      #
+      def renamable?
+        return facts["perm"].include?(?f)
+      end
+
+      #
+      # Returns +true+ if the listing commands, LIST, NLST, and MLSD are
+      # applied to the directory.
+      #
+      def listable?
+        return facts["perm"].include?(?l)
+      end
+
+      #
+      # Returns +true+ if the MKD command may be used to create a new
+      # directory within the directory.
+      #
+      def directory_makable?
+        return facts["perm"].include?(?m)
+      end
+
+      #
+      # Returns +true+ if the objects in the directory may be deleted, or
+      # the directory may be purged.
+      #
+      def purgeable?
+        return facts["perm"].include?(?p)
+      end
+
+      #
+      # Returns +true+ if the RETR command may be applied to the file.
+      #
+      def readable?
+        return facts["perm"].include?(?r)
+      end
+
+      #
+      # Returns +true+ if the STOR command may be applied to the file.
+      #
+      def writable?
+        return facts["perm"].include?(?w)
+      end
+    end
 
     CASE_DEPENDENT_PARSER = ->(value) { value }
     CASE_INDEPENDENT_PARSER = ->(value) { value.downcase }
