@@ -17,6 +17,7 @@
 require "socket"
 require "monitor"
 require "net/protocol"
+require "time"
 
 module Net
 
@@ -766,6 +767,79 @@ module Net
     end
     alias ls list
     alias dir list
+
+    MLSxEntry = Struct.new(:facts, :pathname)
+    
+    CASE_DEPENDENT_PARSER = ->(value) { value }
+    CASE_INDEPENDENT_PARSER = ->(value) { value.downcase }
+    INTEGER_PARSER = ->(value) { value.to_i }
+    TIME_PARSER = ->(value) {
+      t = Time.strptime(value.sub(/\.\d+\z/, "") + "+00:00",
+                        "%Y%m%d%H%M%S%z").utc
+      fractions = value.slice(/\.(\d+)\z/, 1)
+      if fractions
+        t + fractions.to_i.quo(10 ** fractions.size)
+      else
+        t
+      end
+    }
+    FACT_PARSERS = Hash.new(CASE_DEPENDENT_PARSER)
+    FACT_PARSERS["size"] = INTEGER_PARSER
+    FACT_PARSERS["modify"] = TIME_PARSER
+    FACT_PARSERS["create"] = TIME_PARSER
+    FACT_PARSERS["type"] = CASE_INDEPENDENT_PARSER
+    FACT_PARSERS["unique"] = CASE_DEPENDENT_PARSER
+    FACT_PARSERS["perm"] = CASE_INDEPENDENT_PARSER
+    FACT_PARSERS["lang"] = CASE_INDEPENDENT_PARSER
+    FACT_PARSERS["media-type"] = CASE_INDEPENDENT_PARSER
+    FACT_PARSERS["charset"] = CASE_INDEPENDENT_PARSER
+
+    def parse_mlsx_entry(entry)
+      facts, pathname = entry.split(" ")
+      return MLSxEntry.new(
+        facts.scan(/(.*?)=(.*?);/).each_with_object({}) {
+          |(factname, value), h|
+          name = factname.downcase
+          h[name] = FACT_PARSERS[name].(value)
+        },
+        pathname)
+    end
+    private :parse_mlsx_entry
+
+    #
+    # Returns data (e.g., size, last modification time, entry type, etc.)
+    # about the file or directory specified by +pathname+.
+    # If +pathname+ is omitted, the current directory is assumed.
+    #
+    def mlst(pathname = nil)
+      cmd = pathname ? "MLST #{pathname}" : "MLST"
+      resp = sendcmd(cmd)
+      if !resp.start_with?("250")
+        raise FTPReplyError, resp
+      end
+      entry = resp.lines[1].sub(/\A(250-| *)/, "")
+      return parse_mlsx_entry(entry)
+    end
+
+    #
+    # Returns an array of the entries of the directory specified by
+    # +pathname+.
+    # Each entry has the facts (e.g., size, last modification time, etc.)
+    # and the pathname.
+    # If a block is given, it iterates through the listing.
+    # If +pathname+ is omitted, the current directory is assumed.
+    #
+    def mlsd(pathname = nil, &block) # :yield: entry
+      cmd = pathname ? "MLSD #{pathname}" : "MLSD"
+      entries = []
+      retrlines(cmd) do |line|
+        entries << parse_mlsx_entry(line)
+      end
+      if block
+        entries.each(&block)
+      end
+      return entries
+    end
 
     #
     # Renames a file on the server.
