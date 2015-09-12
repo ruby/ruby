@@ -795,6 +795,9 @@ module Net
 
     def parse_mlsx_entry(entry)
       facts, pathname = entry.split(" ")
+      unless pathname
+        raise FTPProtoError, entry
+      end
       return MLSxEntry.new(
         facts.scan(/(.*?)=(.*?);/).each_with_object({}) {
           |(factname, value), h|
@@ -816,7 +819,11 @@ module Net
       if !resp.start_with?("250")
         raise FTPReplyError, resp
       end
-      entry = resp.lines[1].sub(/\A(250-| *)/, "")
+      line = resp.lines[1]
+      unless line
+        raise FTPProtoError, resp
+      end
+      entry = line.sub(/\A(250-| *)/, "")
       return parse_mlsx_entry(entry)
     end
 
