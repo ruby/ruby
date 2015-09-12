@@ -73,9 +73,9 @@ This is what you need to do to compile and install Ruby:
     win32/README.win32 instead of this document.
 
 2.  If `./configure` does not exist or is older than configure.in, run
-    autoconf to (re)generate configure.
+    `autoconf` to (re)generate configure.
 
-3.  Run `./configure`, which will generate config.h and Makefile.
+3.  Run `./configure`, which will generate `config.h` and `Makefile`.
 
     Some C compiler flags may be added by default depending on your
     environment.  Specify `optflags=..` and `warnflags=..` as necessary to
