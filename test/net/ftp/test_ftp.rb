@@ -1127,12 +1127,23 @@ EOF
       sock.print("250- Listing foo\r\n")
       sock.print(" Type=file;Unique=FC00U1E554A;Size=1234567;Modify=20131220035929;Perm=r; /foo\r\n")
       sock.print("250 End\r\n")
+      commands.push(sock.gets)
+      sock.print("250 Malformed response\r\n")
+      commands.push(sock.gets)
+      sock.print("250- Listing foo\r\n")
+      sock.print("\r\n")
+      sock.print("250 End\r\n")
+      commands.push(sock.gets)
+      sock.print("250- Listing foo\r\n")
+      sock.print(" abc /foo\r\n")
+      sock.print("250 End\r\n")
     }
     begin
       begin
         ftp = Net::FTP.new
         ftp.connect(SERVER_ADDR, server.port)
         entry = ftp.mlst("foo")
+        assert_equal("/foo", entry.pathname)
         assert_equal("file", entry.facts["type"])
         assert_equal("FC00U1E554A", entry.facts["unique"])
         assert_equal(1234567, entry.facts["size"])
@@ -1145,6 +1156,17 @@ EOF
         assert_equal(59, modify.min)
         assert_equal(29, modify.sec)
         assert_equal(true, modify.utc?)
+        assert_match("MLST foo\r\n", commands.shift)
+        assert_raise(Net::FTPProtoError) do
+          ftp.mlst("foo")
+        end
+        assert_match("MLST foo\r\n", commands.shift)
+        assert_raise(Net::FTPProtoError) do
+          ftp.mlst("foo")
+        end
+        assert_match("MLST foo\r\n", commands.shift)
+        entry = ftp.mlst("foo")
+        assert_equal("/foo", entry.pathname)
         assert_match("MLST foo\r\n", commands.shift)
         assert_equal(nil, commands.shift)
       ensure
@@ -1204,6 +1226,9 @@ EOF
         assert_equal("TYPE I\r\n", commands.shift)
         entries = ftp.mlsd("/")
         assert_equal(3, entries.size)
+        assert_equal("foo", entries[0].pathname)
+        assert_equal(".", entries[1].pathname)
+        assert_equal("..", entries[2].pathname)
         assert_equal("file", entries[0].facts["type"])
         assert_equal("cdir", entries[1].facts["type"])
         assert_equal("pdir", entries[2].facts["type"])
