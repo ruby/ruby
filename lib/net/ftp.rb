@@ -772,7 +772,8 @@ module Net
 
     CASE_DEPENDENT_PARSER = ->(value) { value }
     CASE_INDEPENDENT_PARSER = ->(value) { value.downcase }
-    INTEGER_PARSER = ->(value) { value.to_i }
+    DECIMAL_PARSER = ->(value) { value.to_i }
+    OCTAL_PARSER = ->(value) { value.to_i(8) }
     TIME_PARSER = ->(value) {
       t = Time.strptime(value.sub(/\.\d+\z/, "") + "Z", "%Y%m%d%H%M%S%z")
       fractions = value.slice(/\.(\d+)\z/, 1)
@@ -783,7 +784,7 @@ module Net
       end
     }
     FACT_PARSERS = Hash.new(CASE_DEPENDENT_PARSER)
-    FACT_PARSERS["size"] = INTEGER_PARSER
+    FACT_PARSERS["size"] = DECIMAL_PARSER
     FACT_PARSERS["modify"] = TIME_PARSER
     FACT_PARSERS["create"] = TIME_PARSER
     FACT_PARSERS["type"] = CASE_INDEPENDENT_PARSER
@@ -792,6 +793,11 @@ module Net
     FACT_PARSERS["lang"] = CASE_INDEPENDENT_PARSER
     FACT_PARSERS["media-type"] = CASE_INDEPENDENT_PARSER
     FACT_PARSERS["charset"] = CASE_INDEPENDENT_PARSER
+    FACT_PARSERS["unix.mode"] = OCTAL_PARSER
+    FACT_PARSERS["unix.owner"] = DECIMAL_PARSER
+    FACT_PARSERS["unix.group"] = DECIMAL_PARSER
+    FACT_PARSERS["unix.ctime"] = TIME_PARSER
+    FACT_PARSERS["unix.atime"] = TIME_PARSER
 
     def parse_mlsx_entry(entry)
       facts, pathname = entry.split(" ")
