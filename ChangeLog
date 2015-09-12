@@ -1,3 +1,8 @@
+Sat Sep 12 19:08:58 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_dup2): should return the new fd on
+	  success, while msvcrt returns 0 wrongly.
+
 Sat Sep 12 18:14:11 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/ftp.rb (parse_mlsx_entry, mlst) raise an FTPProtoError
