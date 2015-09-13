@@ -781,6 +781,14 @@ module Net
         @pathname = pathname
       end
 
+      standard_facts = %w(size modify create type unique perm
+                          lang media-type charset)
+      standard_facts.each do |factname|
+        define_method factname.gsub(/-/, "_") do
+          facts[factname]
+        end
+      end
+
       #
       # Returns +true+ if the entry is a file (i.e., the value of the type
       # fact is file).
