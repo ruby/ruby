@@ -1775,6 +1775,32 @@ if test "$rb_cv_function_name_string" != no; then
     AC_DEFINE_UNQUOTED(RUBY_FUNCTION_NAME_STRING, [$rb_cv_function_name_string])
 fi
 
+AC_CACHE_CHECK(if enum over int is allowed, rb_cv_enum_over_int, [
+    rb_cv_enum_over_int=no
+    if test "x$ac_cv_type_long_long" = xyes; then
+	type="unsigned long long" max="ULONG_LONG_MAX"
+    else
+	type="unsigned long" max="ULONG_MAX"
+    fi
+    RUBY_WERROR_FLAG([
+        AC_COMPILE_IFELSE([
+            AC_LANG_BOOL_COMPILE_TRY([
+                    @%:@include <limits.h>
+                    enum {conftest_max = $max};
+                ], [
+                    (conftest_max == $max) &&
+                    (sizeof(conftest_max) == sizeof($type))
+                ]
+	    )],
+	    [rb_cv_enum_over_int=yes],
+	    [rb_cv_enum_over_int=no]
+	)
+    ])
+])
+if test $rb_cv_enum_over_int = yes; then
+    AC_DEFINE(ENUM_OVER_INT, 1)
+fi
+
 dnl Check whether we need to define sys_nerr locally
 AC_CHECK_DECLS([sys_nerr], [], [], [$ac_includes_default
 @%:@include <errno.h>])
