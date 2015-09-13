@@ -63,7 +63,7 @@ Sat Sep 12 16:14:31 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 Sat Sep 12 16:07:01 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
-	* README.md: improve markdown rendering for readablity.
+	* README.md: improve markdown rendering for readability.
 	  [fix GH-1015][ci skip] Patch by @Matrixbirds
 
 Sat Sep 12 14:30:03 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
