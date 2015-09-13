@@ -1778,7 +1778,7 @@ fi
 AC_CACHE_CHECK(if enum over int is allowed, rb_cv_enum_over_int, [
     rb_cv_enum_over_int=no
     if test "x$ac_cv_type_long_long" = xyes; then
-	type="unsigned long long" max="ULONG_LONG_MAX"
+	type="unsigned long long" max="ULLONG_MAX"
     else
 	type="unsigned long" max="ULONG_MAX"
     fi
