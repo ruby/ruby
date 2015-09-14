@@ -148,7 +148,7 @@ class HTTPHeaderTest < Test::Unit::TestCase
       assert_equal "My_header", k
       assert_equal 'a, b', v
     end
-  end  
+  end
 
   def test_key?
     @c['My-Header'] = 'test'
