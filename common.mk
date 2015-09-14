@@ -590,7 +590,7 @@ no-test-all: PHONY
 test-ruby: $(TEST_RUNNABLE)-test-ruby
 no-test-ruby: PHONY
 yes-test-ruby: prog encs PHONY
-	$(RUNRUBY) "$(srcdir)/test/runner.rb" -q $(TESTOPTS) -- ruby -ext-
+	$(RUNRUBY) "$(srcdir)/test/runner.rb" $(TEST_EXCLUDES) $(TESTOPTS) -- ruby -ext-
 
 extconf: $(PREP)
 	$(Q) $(MAKEDIRS) "$(EXTCONFDIR)"
