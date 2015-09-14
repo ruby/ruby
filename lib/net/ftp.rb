@@ -914,7 +914,7 @@ module Net
     FACT_PARSERS["unix.atime"] = TIME_PARSER
 
     def parse_mlsx_entry(entry)
-      facts, pathname = entry.split(" ")
+      facts, pathname = entry.chomp.split(/ /, 2)
       unless pathname
         raise FTPProtoError, entry
       end
