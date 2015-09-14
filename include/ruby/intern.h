@@ -287,8 +287,9 @@ rb_check_trusted_inline(VALUE obj)
 #endif
 void rb_check_copyable(VALUE obj, VALUE orig);
 
-#define OBJ_INIT_COPY(obj, orig) \
+#define RB_OBJ_INIT_COPY(obj, orig) \
     ((obj) != (orig) && (rb_obj_init_copy((obj), (orig)), 1))
+#define OBJ_INIT_COPY(obj, orig) RB_OBJ_INIT_COPY(obj, orig)
 
 /* eval.c */
 int rb_sourceline(void);

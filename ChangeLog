@@ -1,3 +1,101 @@
+Mon Sep 14 11:12:10 2015  Anton Davydov  <antondavydov.o@gmail.com>
+
+	* lib/racc/rdoc/grammar.en.rdoc: [DOC] fix typo, "convertion" to
+	  "conversion".  [Fix GH-1016]
+
+Sun Sep 13 11:03:13 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h: prefix RUBY or RB to global symbols to get
+	  rid of name conflicts with other headers.
+
+	* include/ruby/encoding.h, include/ruby/intern.h: ditto.
+
+Sun Sep 13 09:38:51 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/ftp.rb (size, modify, create, type, unique, perm, lang,
+	  media_type, charset): new methods to return standard facts.
+
+Sat Sep 12 19:43:49 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c (vm_call_iseq_setup_normal): do not clear local
+	  variables here. vm_push_frame() clears.
+
+	* vm_insnhelper.c (vm_call_iseq_setup_tailcall): ditto.
+
+	* vm_insnhelper.c (vm_push_frame): move check code to
+	  vm_check_frame().
+
+	  Reorder initialization timing to reuse same values (sp).
+
+	* compile.c (rb_iseq_compile_node): use
+	  iseq_set_exception_local_table() for ISEQ_TYPE_DEFINED_GUARD.
+
+Sat Sep 12 23:06:51 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/ftp.rb (file?, directory?, appendable?, creatable?,
+	  deletable?, enterable?, renamable?, listable?, directory_makable?,
+	  purgeable?, readable?, writable?): new methods.
+
+Sat Sep 12 21:27:22 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/ftp.rb (FACT_PARSERS): support system dependent facts
+	  UNIX.mode, UNIX.owner, UNIX.group, UNIX.ctime, and UNIX.atime.
+
+Sat Sep 12 19:08:58 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_dup2): should return the new fd on
+	  success, while msvcrt returns 0 wrongly.
+
+Sat Sep 12 18:14:11 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/ftp.rb (parse_mlsx_entry, mlst) raise an FTPProtoError
+	  when parsing failed.
+
+Sat Sep 12 18:00:35 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/ftp.rb (TIME_PARSER): use "Z" instead of "+00:00" to
+	  get UTC time.  Thanks, Wilson Bilkovich.
+
+Sat Sep 12 17:55:24 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/ftp.rb (mlst, mlsd): support new commands MLST and MLSD
+	  specified in RFC 3659.
+
+Sat Sep 12 16:14:31 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* file.c: access()/eaccess() wrapping methods check more than just uid.
+	  [fix GH-1007][ci skip] Patch by @eam
+
+Sat Sep 12 16:07:01 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* README.md: improve markdown rendering for readability.
+	  [fix GH-1015][ci skip] Patch by @Matrixbirds
+
+Sat Sep 12 14:30:03 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (save_redirect_fd): make saved FDs close-on-exec not
+	  to be inherited.
+
+	* process.c (run_exec_dup2): restore close-on-exec flags too.
+
+	* win32/win32.c (fcntl): implement F_GETFD, F_SETFD, and
+	  F_DUPFD_CLOEXEC.
+
+Sat Sep 12 05:35:24 2015  Eric Wong  <e@80x24.org>
+
+	* rational.c (string_to_r_strict): preserve encoding in exception
+
+Fri Sep 11 20:23:35 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h: remove rb_call_info_t::aux.opt_pc.
+
+	* vm_insnhelper.c: introduce shortcut functions for opt_pc == 0
+	  because opt_pc is always 0 on shortcut function.
+
+Fri Sep 11 17:49:36 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.c: disable ISeq.load. It enabled accidentally at r51794.
+
 Fri Sep 11 11:15:12 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/ftp.rb (size, mdtm, system): parse responses according to
@@ -57,7 +155,7 @@ Wed Sep  9 11:33:05 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 Wed Sep  9 11:08:59 2015  Zachary Scott  <zzak@ruby-lang.org>
 
 	* lib/delegate.rb: Remove backtrace cleaning for delegated methods
-          This patch was provided by Rafael França and greatly improves
+          This patch was provided by Rafael Franca and greatly improves
           performance when an exception is raised. [Bug #11461]
 
 Wed Sep  9 10:05:41 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>

@@ -17,6 +17,7 @@
 require "socket"
 require "monitor"
 require "net/protocol"
+require "time"
 
 module Net
 
@@ -766,6 +767,205 @@ module Net
     end
     alias ls list
     alias dir list
+
+    #
+    # MLSxEntry represents an entry in responses of MLST/MLSD.
+    # Each entry has the facts (e.g., size, last modification time, etc.)
+    # and the pathname.
+    #
+    class MLSxEntry
+      attr_reader :facts, :pathname
+
+      def initialize(facts, pathname)
+        @facts = facts
+        @pathname = pathname
+      end
+
+      standard_facts = %w(size modify create type unique perm
+                          lang media-type charset)
+      standard_facts.each do |factname|
+        define_method factname.gsub(/-/, "_") do
+          facts[factname]
+        end
+      end
+
+      #
+      # Returns +true+ if the entry is a file (i.e., the value of the type
+      # fact is file).
+      #
+      def file?
+        return facts["type"] == "file"
+      end
+
+      #
+      # Returns +true+ if the entry is a directory (i.e., the value of the
+      # type fact is dir, cdir, or pdir).
+      #
+      def directory?
+        if /\A[cp]?dir\z/.match(facts["type"])
+          return true
+        else
+          return false
+        end
+      end
+
+      #
+      # Returns +true+ if the APPE command may be applied to the file.
+      #
+      def appendable?
+        return facts["perm"].include?(?a)
+      end
+
+      #
+      # Returns +true+ if files may be created in the directory by STOU,
+      # STOR, APPE, and RNTO.
+      #
+      def creatable?
+        return facts["perm"].include?(?c)
+      end
+
+      #
+      # Returns +true+ if the file or directory may be deleted by DELE/RMD.
+      #
+      def deletable?
+        return facts["perm"].include?(?d)
+      end
+
+      #
+      # Returns +true+ if the directory may be entered by CWD/CDUP.
+      #
+      def enterable?
+        return facts["perm"].include?(?e)
+      end
+
+      #
+      # Returns +true+ if the file or directory may be renamed by RNFR.
+      #
+      def renamable?
+        return facts["perm"].include?(?f)
+      end
+
+      #
+      # Returns +true+ if the listing commands, LIST, NLST, and MLSD are
+      # applied to the directory.
+      #
+      def listable?
+        return facts["perm"].include?(?l)
+      end
+
+      #
+      # Returns +true+ if the MKD command may be used to create a new
+      # directory within the directory.
+      #
+      def directory_makable?
+        return facts["perm"].include?(?m)
+      end
+
+      #
+      # Returns +true+ if the objects in the directory may be deleted, or
+      # the directory may be purged.
+      #
+      def purgeable?
+        return facts["perm"].include?(?p)
+      end
+
+      #
+      # Returns +true+ if the RETR command may be applied to the file.
+      #
+      def readable?
+        return facts["perm"].include?(?r)
+      end
+
+      #
+      # Returns +true+ if the STOR command may be applied to the file.
+      #
+      def writable?
+        return facts["perm"].include?(?w)
+      end
+    end
+
+    CASE_DEPENDENT_PARSER = ->(value) { value }
+    CASE_INDEPENDENT_PARSER = ->(value) { value.downcase }
+    DECIMAL_PARSER = ->(value) { value.to_i }
+    OCTAL_PARSER = ->(value) { value.to_i(8) }
+    TIME_PARSER = ->(value) {
+      t = Time.strptime(value.sub(/\.\d+\z/, "") + "Z", "%Y%m%d%H%M%S%z")
+      fractions = value.slice(/\.(\d+)\z/, 1)
+      if fractions
+        t + fractions.to_i.quo(10 ** fractions.size)
+      else
+        t
+      end
+    }
+    FACT_PARSERS = Hash.new(CASE_DEPENDENT_PARSER)
+    FACT_PARSERS["size"] = DECIMAL_PARSER
+    FACT_PARSERS["modify"] = TIME_PARSER
+    FACT_PARSERS["create"] = TIME_PARSER
+    FACT_PARSERS["type"] = CASE_INDEPENDENT_PARSER
+    FACT_PARSERS["unique"] = CASE_DEPENDENT_PARSER
+    FACT_PARSERS["perm"] = CASE_INDEPENDENT_PARSER
+    FACT_PARSERS["lang"] = CASE_INDEPENDENT_PARSER
+    FACT_PARSERS["media-type"] = CASE_INDEPENDENT_PARSER
+    FACT_PARSERS["charset"] = CASE_INDEPENDENT_PARSER
+    FACT_PARSERS["unix.mode"] = OCTAL_PARSER
+    FACT_PARSERS["unix.owner"] = DECIMAL_PARSER
+    FACT_PARSERS["unix.group"] = DECIMAL_PARSER
+    FACT_PARSERS["unix.ctime"] = TIME_PARSER
+    FACT_PARSERS["unix.atime"] = TIME_PARSER
+
+    def parse_mlsx_entry(entry)
+      facts, pathname = entry.split(" ")
+      unless pathname
+        raise FTPProtoError, entry
+      end
+      return MLSxEntry.new(
+        facts.scan(/(.*?)=(.*?);/).each_with_object({}) {
+          |(factname, value), h|
+          name = factname.downcase
+          h[name] = FACT_PARSERS[name].(value)
+        },
+        pathname)
+    end
+    private :parse_mlsx_entry
+
+    #
+    # Returns data (e.g., size, last modification time, entry type, etc.)
+    # about the file or directory specified by +pathname+.
+    # If +pathname+ is omitted, the current directory is assumed.
+    #
+    def mlst(pathname = nil)
+      cmd = pathname ? "MLST #{pathname}" : "MLST"
+      resp = sendcmd(cmd)
+      if !resp.start_with?("250")
+        raise FTPReplyError, resp
+      end
+      line = resp.lines[1]
+      unless line
+        raise FTPProtoError, resp
+      end
+      entry = line.sub(/\A(250-| *)/, "")
+      return parse_mlsx_entry(entry)
+    end
+
+    #
+    # Returns an array of the entries of the directory specified by
+    # +pathname+.
+    # Each entry has the facts (e.g., size, last modification time, etc.)
+    # and the pathname.
+    # If a block is given, it iterates through the listing.
+    # If +pathname+ is omitted, the current directory is assumed.
+    #
+    def mlsd(pathname = nil, &block) # :yield: entry
+      cmd = pathname ? "MLSD #{pathname}" : "MLSD"
+      entries = []
+      retrlines(cmd) do |line|
+        entries << parse_mlsx_entry(line)
+      end
+      if block
+        entries.each(&block)
+      end
+      return entries
+    end
 
     #
     # Renames a file on the server.

@@ -20,7 +20,7 @@ The class block is formed like this:
     [token declarations]
     [expected number of S/R conflicts]
     [options]
-    [semantic value convertion]
+    [semantic value conversion]
     [start rule]
   rule
     GRAMMARS
