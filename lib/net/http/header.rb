@@ -13,6 +13,7 @@ module Net::HTTPHeader
     @header = {}
     return unless initheader
     initheader.each do |key, value|
+      warn "net/http: warning: duplicated HTTP header: #{key}" if key?(key) and $VERBOSE
       @header[key.downcase] = [value.strip]
     end
   end
