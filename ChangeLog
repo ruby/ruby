@@ -1,3 +1,8 @@
+Mon Sep 14 11:12:10 2015  Anton Davydov  <antondavydov.o@gmail.com>
+
+	* lib/racc/rdoc/grammar.en.rdoc: [DOC] fix typo, "convertion" to
+	  "conversion".  [Fix GH-1016]
+
 Sun Sep 13 11:03:13 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h: prefix RUBY or RB to global symbols to get
