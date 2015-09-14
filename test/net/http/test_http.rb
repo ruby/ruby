@@ -866,31 +866,42 @@ class TestNetHTTPKeepAlive < Test::Unit::TestCase
   include TestNetHTTPUtils
 
   def test_keep_alive_get_auto_reconnect
-    start {|http|
+    http = new
+    res = http.get('/')
+    http.keep_alive_timeout = 1
+    assert_kind_of Net::HTTPResponse, res
+    assert_kind_of String, res.body
+    sleep 1.5
+    assert_nothing_raised {
       res = http.get('/')
-      http.keep_alive_timeout = 1
-      assert_kind_of Net::HTTPResponse, res
-      assert_kind_of String, res.body
-      sleep 1.5
-      assert_nothing_raised {
-        res = http.get('/')
-      }
-      assert_kind_of Net::HTTPResponse, res
-      assert_kind_of String, res.body
     }
+    assert_kind_of Net::HTTPResponse, res
+    assert_kind_of String, res.body
   end
 
   def test_keep_alive_get_auto_retry
-    start {|http|
+    http = new
+    res = http.get('/')
+    http.keep_alive_timeout = 5
+    assert_kind_of Net::HTTPResponse, res
+    assert_kind_of String, res.body
+    sleep 1.5
+    res = http.get('/')
+    assert_kind_of Net::HTTPResponse, res
+    assert_kind_of String, res.body
+  end
+
+  def test_keep_alive_no_auto_retry_block
+    start do |http|
       res = http.get('/')
       http.keep_alive_timeout = 5
       assert_kind_of Net::HTTPResponse, res
       assert_kind_of String, res.body
       sleep 1.5
-      res = http.get('/')
+      assert_raises(EOFError) { res = http.get('/') }
       assert_kind_of Net::HTTPResponse, res
       assert_kind_of String, res.body
-    }
+    end
   end
 
   def test_keep_alive_server_close
