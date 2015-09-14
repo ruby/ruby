@@ -13,7 +13,6 @@ module Net::HTTPHeader
     @header = {}
     return unless initheader
     initheader.each do |key, value|
-      warn "net/http: warning: duplicated HTTP header: #{key}" if key?(key) and $VERBOSE
       @header[key.downcase] = [value.strip]
     end
   end
@@ -289,8 +288,8 @@ module Net::HTTPHeader
   # fits inside the full entity body, as range of byte offsets.
   def content_range
     return nil unless @header['content-range']
-    m = %r<bytes\s+(\d+)-(\d+)/(\d+|\*)>i.match(self['Content-Range']) or
-        raise Net::HTTPHeaderSyntaxError, 'wrong Content-Range format'
+    m = %r<bytes\s+(\d+)-(\d+)/(\d+|\*)>i.match(self['Content-Range'])
+    return nil if m.nil?
     m[1].to_i .. m[2].to_i
   end
 
