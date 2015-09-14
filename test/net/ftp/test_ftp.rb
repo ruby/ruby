@@ -1191,7 +1191,7 @@ EOF
   def test_mlsd
     commands = []
     entry_lines = [
-      "Type=file;Unique=FC00U1E554A;Size=1234567;Modify=20131220035929.123456;Perm=r; foo",
+      "Type=file;Unique=FC00U1E554A;Size=1234567;Modify=20131220035929.123456;Perm=r; foo bar",
       "Type=cdir;Unique=FC00U1E554B;Modify=20131220035929;Perm=flcdmpe; .",
       "Type=pdir;Unique=FC00U1E554C;Modify=20131220035929;Perm=flcdmpe; ..",
     ]
@@ -1237,7 +1237,7 @@ EOF
         assert_equal("TYPE I\r\n", commands.shift)
         entries = ftp.mlsd("/")
         assert_equal(3, entries.size)
-        assert_equal("foo", entries[0].pathname)
+        assert_equal("foo bar", entries[0].pathname)
         assert_equal(".", entries[1].pathname)
         assert_equal("..", entries[2].pathname)
         assert_equal("file", entries[0].facts["type"])

@@ -1,3 +1,8 @@
+Mon Sep 14 19:26:34 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/ftp.rb (parse_mlsx_entry): parse pathnames including
+	  space correctly.
+
 Mon Sep 14 11:12:10 2015  Anton Davydov  <antondavydov.o@gmail.com>
 
 	* lib/racc/rdoc/grammar.en.rdoc: [DOC] fix typo, "convertion" to
