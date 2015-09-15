@@ -1,3 +1,7 @@
+Tue Sep 15 14:49:15 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encindex.h: separate encoding index constants from internal.h.
+
 Tue Sep 15 13:13:13 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_sort_bang, rb_ary_sort): [DOC] correct block
