@@ -1,4 +1,7 @@
-Tue Sep 15 14:49:43 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Sep 15 15:06:16 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (fundamental_encoding_p, push_glob): compare by encoding
+	  index immediately.
 
 	* enc/{ascii,us_ascii,utf_8}.c: set encoding indexes of
 	  fundamental built-in encodings so that usable as well as
