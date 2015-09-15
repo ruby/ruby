@@ -1,3 +1,7 @@
+Tue Sep 15 12:44:32 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* util.c (ruby_qsort): use BSD-style qsort_r if available.
+
 Mon Sep 14 19:26:34 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/ftp.rb (parse_mlsx_entry): parse pathnames including
