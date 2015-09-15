@@ -1256,11 +1256,14 @@ RVALUE_WHITE_P(VALUE obj)
   --------------------------- ObjectSpace -----------------------------
 */
 
-#if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
 rb_objspace_t *
 rb_objspace_alloc(void)
 {
+#if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
     rb_objspace_t *objspace = calloc(1, sizeof(rb_objspace_t));
+#else
+    rb_objspace_t *objspace = &rb_objspace;
+#endif
     malloc_limit = gc_params.malloc_limit_min;
 
     return objspace;
@@ -1303,9 +1306,11 @@ rb_objspace_free(rb_objspace_t *objspace)
 	objspace->eden_heap.pages = NULL;
     }
     free_stack_chunks(&objspace->mark_stack);
+#if !(defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE)
+    if (objspace == &rb_objspace) return;
+#endif
     free(objspace);
 }
-#endif
 
 static void
 heap_pages_expand_sorted(rb_objspace_t *objspace)
@@ -3662,7 +3667,6 @@ pop_mark_stack_chunk(mark_stack_t *stack)
     stack->index = stack->limit;
 }
 
-#if (defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE) || (RGENGC_CHECK_MODE >= 4)
 static void
 free_stack_chunks(mark_stack_t *stack)
 {
@@ -3675,7 +3679,6 @@ free_stack_chunks(mark_stack_t *stack)
         chunk = next;
     }
 }
-#endif
 
 static void
 push_mark_stack(mark_stack_t *stack, VALUE data)
