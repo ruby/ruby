@@ -97,21 +97,24 @@ class TestThread < Test::Unit::TestCase
   def test_mutex_synchronize
     m = Mutex.new
     r = 0
-    max = 10
-    (1..max).map{
+    num_threads = 10
+    loop=100
+    (1..num_threads).map{
       Thread.new{
-        i=0
-        while i<max*max
-          i+=1
+        loop.times{
           m.synchronize{
-            r += 1
+            tmp = r
+            # empty and waste loop for making thread preemption
+            100.times {
+            }
+            r = tmp + 1
           }
-        end
+        }
       }
     }.each{|e|
       e.join
     }
-    assert_equal(max * max * max, r)
+    assert_equal(num_threads*loop, r)
   end
 
   def test_mutex_synchronize_yields_no_block_params
