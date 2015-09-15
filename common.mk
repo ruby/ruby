@@ -1246,6 +1246,7 @@ dir.$(OBJEXT): $(top_srcdir)/include/ruby.h
 dir.$(OBJEXT): {$(VPATH)}config.h
 dir.$(OBJEXT): {$(VPATH)}defines.h
 dir.$(OBJEXT): {$(VPATH)}dir.c
+dir.$(OBJEXT): {$(VPATH)}encindex.h
 dir.$(OBJEXT): {$(VPATH)}encoding.h
 dir.$(OBJEXT): {$(VPATH)}intern.h
 dir.$(OBJEXT): {$(VPATH)}internal.h
