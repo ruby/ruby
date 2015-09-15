@@ -1861,9 +1861,7 @@ ruby_vm_destruct(rb_vm_t *vm)
 
     if (vm) {
 	rb_thread_t *th = vm->main_thread;
-#if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
 	struct rb_objspace *objspace = vm->objspace;
-#endif
 	vm->main_thread = 0;
 	if (th) {
 	    rb_fiber_reset_root_local_storage(th->self);
@@ -1872,11 +1870,9 @@ ruby_vm_destruct(rb_vm_t *vm)
 	rb_vm_living_threads_init(vm);
 	ruby_vm_run_at_exit_hooks(vm);
 	rb_vm_gvl_destroy(vm);
-#if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
 	if (objspace) {
 	    rb_objspace_free(objspace);
 	}
-#endif
 	/* after freeing objspace, you *can't* use ruby_xfree() */
 	ruby_mimfree(vm);
 	ruby_current_vm = 0;
@@ -2800,9 +2796,7 @@ Init_BareVM(void)
     rb_thread_set_current_raw(th);
 
     vm_init2(vm);
-#if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
     vm->objspace = rb_objspace_alloc();
-#endif
     ruby_current_vm = vm;
 
     Init_native_thread();

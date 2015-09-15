@@ -1,3 +1,8 @@
+Tue Sep 15 19:38:55 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (rb_objspace_alloc, rb_objspace_free): define always
+	  regardless ENABLE_VM_OBJSPACE, and free heap pages.
+
 Tue Sep 15 15:15:41 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_sysinit, rb_w32_readdir): compare by
