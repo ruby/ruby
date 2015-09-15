@@ -10,6 +10,7 @@
 **********************************************************************/
 
 #include "internal.h"
+#include "encindex.h"
 #ifdef __CYGWIN__
 #include <windows.h>
 #endif
