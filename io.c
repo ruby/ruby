@@ -15,6 +15,7 @@
 #include "ruby/io.h"
 #include "ruby/thread.h"
 #include "dln.h"
+#include "encindex.h"
 #include "id.h"
 #include <ctype.h>
 #include <errno.h>

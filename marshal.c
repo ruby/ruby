@@ -17,6 +17,7 @@
 #include "ruby/io.h"
 #include "ruby/st.h"
 #include "ruby/util.h"
+#include "encindex.h"
 #include "id_table.h"
 
 #include <math.h>

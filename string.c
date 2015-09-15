@@ -13,6 +13,7 @@
 
 #include "internal.h"
 #include "ruby/re.h"
+#include "encindex.h"
 #include "probes.h"
 #include "gc.h"
 #include <assert.h>

@@ -28,6 +28,7 @@
 #include "ruby/util.h"
 #include "ruby/thread.h"
 #include "dln.h"
+#include "encindex.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>

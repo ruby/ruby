@@ -10,6 +10,7 @@
 **********************************************************************/
 
 #include "internal.h"
+#include "encindex.h"
 #include "regenc.h"
 #include <ctype.h>
 #include "ruby/util.h"

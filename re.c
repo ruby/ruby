@@ -13,6 +13,7 @@
 #include "ruby/re.h"
 #include "ruby/util.h"
 #include "regint.h"
+#include "encindex.h"
 #include <ctype.h>
 
 VALUE rb_eRegexpError;

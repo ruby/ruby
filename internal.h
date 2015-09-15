@@ -713,30 +713,6 @@ void Init_enc(void);
 void Init_ext(void);
 
 /* encoding.c */
-enum ruby_preserved_encindex {
-    ENCINDEX_ASCII,
-    ENCINDEX_UTF_8,
-    ENCINDEX_US_ASCII,
-
-    /* preserved indexes */
-    ENCINDEX_UTF_16BE,
-    ENCINDEX_UTF_16LE,
-    ENCINDEX_UTF_32BE,
-    ENCINDEX_UTF_32LE,
-    ENCINDEX_UTF_16,
-    ENCINDEX_UTF_32,
-    ENCINDEX_UTF8_MAC,
-
-    /* for old options of regexp */
-    ENCINDEX_EUC_JP,
-    ENCINDEX_Windows_31J,
-
-    ENCINDEX_BUILTIN_MAX
-};
-
-#define rb_ascii8bit_encindex() ENCINDEX_ASCII
-#define rb_utf8_encindex()      ENCINDEX_UTF_8
-#define rb_usascii_encindex()   ENCINDEX_US_ASCII
 ID rb_id_encoding(void);
 void rb_gc_mark_encodings(void);
 rb_encoding *rb_enc_get_from_index(int index);
