@@ -1,4 +1,8 @@
-Tue Sep 15 14:49:15 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Sep 15 14:49:43 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/{ascii,us_ascii,utf_8}.c: set encoding indexes of
+	  fundamental built-in encodings so that usable as well as
+	  allocated rb_encoding before rb_enc_init().
 
 	* encindex.h: separate encoding index constants from internal.h.
 
