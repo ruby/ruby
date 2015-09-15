@@ -1,4 +1,8 @@
-Tue Sep 15 15:06:16 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Sep 15 15:15:41 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_sysinit, rb_w32_readdir): compare by
+	  encoding index to get rid of encoding initialization before VM
+	  object space allocation.
 
 	* dir.c (fundamental_encoding_p, push_glob): compare by encoding
 	  index immediately.

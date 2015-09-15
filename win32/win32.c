@@ -779,7 +779,7 @@ rb_w32_sysinit(int *argc, char ***argv)
     //
     // subvert cmd.exe's feeble attempt at command line parsing
     //
-    *argc = w32_cmdvector(GetCommandLineW(), argv, CP_UTF8, rb_utf8_encoding());
+    *argc = w32_cmdvector(GetCommandLineW(), argv, CP_UTF8, &OnigEncodingUTF_8);
 
     //
     // Now set up the correct time stuff
@@ -2222,11 +2222,12 @@ readdir_internal(DIR *dirp, BOOL (*conv)(const WCHAR *, const WCHAR *, struct di
 struct direct  *
 rb_w32_readdir(DIR *dirp, rb_encoding *enc)
 {
-    if (!enc || enc == rb_ascii8bit_encoding()) {
+    int idx = rb_enc_to_index(enc);
+    if (idx == ENCINDEX_ASCII) {
 	const UINT cp = filecp();
 	return readdir_internal(dirp, win32_direct_conv, &cp);
     }
-    else if (enc == rb_utf8_encoding()) {
+    else if (idx == ENCINDEX_UTF_8) {
 	const UINT cp = CP_UTF8;
 	return readdir_internal(dirp, win32_direct_conv, &cp);
     }
