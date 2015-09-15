@@ -2314,6 +2314,9 @@ void qsort_r(void *base, size_t nmemb, size_t size,
   AS_CASE("$rb_cv_gnu_qsort_r:$rb_cv_bsd_qsort_r",
   [yes:no], [
     AC_DEFINE(HAVE_GNU_QSORT_R, 1)
+  ],
+  [no:yes], [
+    AC_DEFINE(HAVE_BSD_QSORT_R, 1)
   ])
 fi
 
