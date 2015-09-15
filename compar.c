@@ -179,7 +179,7 @@ cmp_between(VALUE x, VALUE min, VALUE max)
  *     obj.clamp(min, max) ->  obj
  *
  * Returns <i>min</i> if <i>obj</i> <code><=></code> <i>min</i> is less
- * than zero, <i>max</i> if <i>obj</i> <code><=></code> <i>min</i> is
+ * than zero, <i>max</i> if <i>obj</i> <code><=></code> <i>max</i> is
  * greater than zero and <i>obj</i> otherwise.
  *
  *     12.clamp(0, 100)         #=> 12
