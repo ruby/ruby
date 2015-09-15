@@ -1,3 +1,9 @@
+Tue Sep 15 13:13:13 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_sort_bang, rb_ary_sort): [DOC] correct block
+	  return values, which may be a negative or positive integer, not
+	  ony -1 or +1.
+
 Tue Sep 15 12:49:10 2015  Jason Barnabe  <jason.barnabe@gmail.com>
 
 	* array.c (rb_ary_sort_bang, rb_ary_sort): [DOC] Correct
