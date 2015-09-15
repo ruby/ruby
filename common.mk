@@ -1286,6 +1286,7 @@ dmyext.$(OBJEXT): {$(VPATH)}dmyext.c
 enc/ascii.$(OBJEXT): {$(VPATH)}config.h
 enc/ascii.$(OBJEXT): {$(VPATH)}defines.h
 enc/ascii.$(OBJEXT): {$(VPATH)}enc/ascii.c
+enc/ascii.$(OBJEXT): {$(VPATH)}encindex.h
 enc/ascii.$(OBJEXT): {$(VPATH)}missing.h
 enc/ascii.$(OBJEXT): {$(VPATH)}oniguruma.h
 enc/ascii.$(OBJEXT): {$(VPATH)}regenc.h
@@ -1314,12 +1315,14 @@ enc/unicode.$(OBJEXT): {$(VPATH)}subst.h
 enc/us_ascii.$(OBJEXT): {$(VPATH)}config.h
 enc/us_ascii.$(OBJEXT): {$(VPATH)}defines.h
 enc/us_ascii.$(OBJEXT): {$(VPATH)}enc/us_ascii.c
+enc/us_ascii.$(OBJEXT): {$(VPATH)}encindex.h
 enc/us_ascii.$(OBJEXT): {$(VPATH)}missing.h
 enc/us_ascii.$(OBJEXT): {$(VPATH)}oniguruma.h
 enc/us_ascii.$(OBJEXT): {$(VPATH)}regenc.h
 enc/utf_8.$(OBJEXT): {$(VPATH)}config.h
 enc/utf_8.$(OBJEXT): {$(VPATH)}defines.h
 enc/utf_8.$(OBJEXT): {$(VPATH)}enc/utf_8.c
+enc/utf_8.$(OBJEXT): {$(VPATH)}encindex.h
 enc/utf_8.$(OBJEXT): {$(VPATH)}missing.h
 enc/utf_8.$(OBJEXT): {$(VPATH)}oniguruma.h
 enc/utf_8.$(OBJEXT): {$(VPATH)}regenc.h
