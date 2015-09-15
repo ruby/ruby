@@ -1,3 +1,9 @@
+Tue Sep 15 12:49:10 2015  Jason Barnabe  <jason.barnabe@gmail.com>
+
+	* array.c (rb_ary_sort_bang, rb_ary_sort): [DOC] Correct
+	  description of array sort block return values.  And also fix up
+	  the grammar a bit.  [Fix GH-1020]
+
 Tue Sep 15 12:44:32 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* util.c (ruby_qsort): use BSD-style qsort_r if available.
