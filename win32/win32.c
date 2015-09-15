@@ -52,6 +52,7 @@
 #include "win32/dir.h"
 #include "win32/file.h"
 #include "internal.h"
+#include "encindex.h"
 #define isdirsep(x) ((x) == '/' || (x) == '\\')
 
 #if defined _MSC_VER && _MSC_VER <= 1200
