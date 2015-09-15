@@ -1652,6 +1652,7 @@ localeinit.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 localeinit.$(OBJEXT): $(top_srcdir)/include/ruby.h
 localeinit.$(OBJEXT): {$(VPATH)}config.h
 localeinit.$(OBJEXT): {$(VPATH)}defines.h
+localeinit.$(OBJEXT): {$(VPATH)}encindex.h
 localeinit.$(OBJEXT): {$(VPATH)}encoding.h
 localeinit.$(OBJEXT): {$(VPATH)}intern.h
 localeinit.$(OBJEXT): {$(VPATH)}internal.h
