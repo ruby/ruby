@@ -49,7 +49,16 @@
 #endif
 
 #ifndef ENABLE_VM_OBJSPACE
+#ifdef _WIN32
+/*
+ * TODO: object space independent st_table.
+ * socklist and conlist will be freed exit_handler(), after object
+ * space destruction.
+ */
+#define ENABLE_VM_OBJSPACE 0
+#else
 #define ENABLE_VM_OBJSPACE 1
+#endif
 #endif
 
 #include <setjmp.h>
