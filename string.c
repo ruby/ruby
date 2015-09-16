@@ -4702,15 +4702,56 @@ rb_str_setbyte(VALUE str, VALUE index, VALUE value)
     long pos = NUM2LONG(index);
     int byte = NUM2INT(value);
     long len = RSTRING_LEN(str);
+    char *head, *ptr, *left = 0;
+    rb_encoding *enc;
+    int cr = ENC_CODERANGE_UNKNOWN, width, nlen;
 
     if (pos < -len || len <= pos)
         rb_raise(rb_eIndexError, "index %ld out of string", pos);
     if (pos < 0)
         pos += len;
 
-    rb_str_modify(str);
+    if (!str_independent(str))
+	str_make_independent(str);
+    enc = STR_ENC_GET(str);
+    head = RSTRING_PTR(str);
+    ptr = &head[pos];
+    if (len > RSTRING_EMBED_LEN_MAX) {
+	cr = ENC_CODERANGE(str);
+	switch (cr) {
+	  case ENC_CODERANGE_7BIT:
+	    left = ptr;
+	    width = 1;
+	    break;
+	  case ENC_CODERANGE_VALID:
+	    left = rb_enc_left_char_head(head, ptr, head+len, enc);
+	    width = rb_enc_precise_mbclen(left, head+len, enc);
+	    break;
+	  default:
+	    ENC_CODERANGE_CLEAR(str);
+	}
+    }
+    else {
+	ENC_CODERANGE_CLEAR(str);
+    }
 
-    RSTRING_PTR(str)[pos] = byte;
+    *ptr = byte;
+
+    switch (cr) {
+      case ENC_CODERANGE_7BIT:
+	if (ISASCII(byte)) break;
+      case ENC_CODERANGE_VALID:
+	nlen = rb_enc_precise_mbclen(left, head+len, enc);
+	if (!MBCLEN_CHARFOUND_P(nlen))
+	    ENC_CODERANGE_SET(str, ENC_CODERANGE_BROKEN);
+	else if (cr == ENC_CODERANGE_7BIT)
+	    ENC_CODERANGE_SET(str, ENC_CODERANGE_VALID);
+	else if (MBCLEN_CHARFOUND_LEN(nlen) != width)
+	    ENC_CODERANGE_CLEAR(str);
+	else if (ISASCII(byte)) /* may become 7BIT */
+	    ENC_CODERANGE_CLEAR(str);
+	break;
+    }
 
     return value;
 }
