@@ -105,6 +105,9 @@ sequences are as follows:
   \cx or \C-x    control character, where x is an ASCII printable character
   \M-x           meta character, where x is an ASCII printable character
   \M-\C-x        meta control character, where x is an ASCII printable character
+  \M-\cx         same as above
+  \c\M-x         same as above
+  \c? or \C-?    delete, ASCII 7Fh (DEL)
 
 Any other charater followed by a backslash is interpreted as the
 character itself.
