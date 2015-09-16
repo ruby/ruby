@@ -83,8 +83,31 @@ Any internal <tt>"</tt> must be escaped:
 
   "This string has a quote: \".  As you can see, it is escaped"
 
-Double-quote strings allow escaped characters such as <tt>\n</tt> for newline,
-<tt>\t</tt> for tab, etc.
+Double-quote strings allow escaped characters such as <tt>\n</tt> for
+newline, <tt>\t</tt> for tab, etc.  The full list of supported escape
+sequences are as follows:
+
+  \0             null, ASCII 00h (NUL)
+  \a             bell, ASCII 07h (BEL)
+  \b             backspace, ASCII 08h (BS)
+  \t             horizontal tab, ASCII 09h (TAB)
+  \n             newline (line feed), ASCII 0Ah (LF)
+  \v             vertical tab, ASCII 0Bh (VT)
+  \f             form feed, ASCII 0Ch (FF)
+  \r             carriage return, ASCII 0Dh (CR)
+  \e             escape, ASCII 1Bh (ESC)
+  \s             space, ASCII 20h (SPC)
+  \\             backslash, \
+  \nnn           octal bit pattern, where nnn is 1-3 octal digits ([0-7])
+  \xnn           hexadecimal bit pattern, where nn is 1-2 hexadecimal digits ([0-9a-fA-F])
+  \unnnn         Unicode character, where nnnn is exactly 4 hexadecimal digits ([0-9a-fA-F])
+  \u{nnnn ...}   Unicode character(s), where each nnnn is 1-6 hexadecimal digits ([0-9a-fA-F])
+  \cx or \C-x    control character, where x is an ASCII printable character
+  \M-x           meta character, where x is an ASCII printable character
+  \M-\C-x        meta control character, where x is an ASCII printable character
+
+Any other charater followed by a backslash is interpreted as the
+character itself.
 
 Double-quote strings allow interpolation of other values using
 <tt>#{...}</tt>:
