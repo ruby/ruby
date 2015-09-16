@@ -1,3 +1,8 @@
+Wed Sep 16 15:08:17 2015  Akinori MUSHA  <knu@iDaemons.org>
+
+	* doc/syntax/literals.rdoc (Strings): [DOC] Revise the character
+	  literal part.
+
 Wed Sep 16 14:55:33 2015  Akinori MUSHA  <knu@iDaemons.org>
 
 	* doc/syntax/literals.rdoc (Strings): [DOC] Document the full list

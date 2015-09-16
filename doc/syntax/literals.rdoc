@@ -147,22 +147,22 @@ be concatenated as long as a percent-string is not last.
   %q{a} 'b' "c" #=> "abc"
   "a" 'b' %q{c} #=> NameError: uninitialized constant q
 
-One more way of writing strings is using <tt>?</tt>:
+There is also a character literal notation to represent single
+character strings, which syntax is a question mark (<tt>?</tt>)
+followed by a single character or escape sequence that corresponds to
+a single codepoint in the script encoding:
 
-  ?a #=> "a"
-
-Basically only one character can be placed after <tt>?</tt>:
-
-  ?abc #=> SyntaxError
-
-Exceptionally, <tt>\C-</tt>, <tt>\M-</tt> and their combination are allowed
-before a character.  They mean "control", "meta" and "control-meta"
-respectively:
-
+  ?a       #=> "a"
+  ?abc     #=> SyntaxError
+  ?\n      #=> "\n"
+  ?\s      #=> " "
+  ?\\      #=> "\\"
+  ?\u{41}  #=> "A"
   ?\C-a    #=> "\x01"
   ?\M-a    #=> "\xE1"
   ?\M-\C-a #=> "\x81"
   ?\C-\M-a #=> "\x81", same as above
+  ?あ      #=> "あ"
 
 === Here Documents
 
@@ -350,4 +350,3 @@ one of the array entries you must escape it with a "\\" character:
 If you are using "(", "[", "{", "<" you must close it with ")", "]", "}", ">"
 respectively.  You may use most other non-alphanumeric characters for percent
 string delimiters such as "%", "|", "^", etc.
-
