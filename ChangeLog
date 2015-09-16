@@ -1,3 +1,9 @@
+Wed Sep 16 17:16:43 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_core.h (ENABLE_VM_OBJSPACE): enable per-VM object space on
+	  Windows by default, as rb_w32_sysinit() no longer depends on
+	  ruby_xmalloc.
+
 Wed Sep 16 15:08:17 2015  Akinori MUSHA  <knu@iDaemons.org>
 
 	* doc/syntax/literals.rdoc (Strings): [DOC] Revise the character

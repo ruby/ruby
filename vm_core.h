@@ -49,18 +49,7 @@
 #endif
 
 #ifndef ENABLE_VM_OBJSPACE
-#ifdef _WIN32
-/*
- * TODO: object space independent st_table.
- * socklist needs st_table in rb_w32_sysinit(), before object space
- * initialization.
- * It is too early now to change st_hash_type, since it breaks binary
- * compatibility.
- */
-#define ENABLE_VM_OBJSPACE 0
-#else
 #define ENABLE_VM_OBJSPACE 1
-#endif
 #endif
 
 #include <setjmp.h>
