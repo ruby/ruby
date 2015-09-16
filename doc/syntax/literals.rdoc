@@ -124,6 +124,23 @@ be concatenated as long as a percent-string is not last.
   %q{a} 'b' "c" #=> "abc"
   "a" 'b' %q{c} #=> NameError: uninitialized constant q
 
+One more way of writing strings is using <tt>?</tt>:
+
+  ?a #=> "a"
+
+Basically only one character can be placed after <tt>?</tt>:
+
+  ?abc #=> SyntaxError
+
+Exceptionally, <tt>\C-</tt>, <tt>\M-</tt> and their combination are allowed
+before a character.  They means "control", "meta" and "control-meta"
+respectively:
+
+  ?\C-a    #=> "\x01"
+  ?\M-a    #=> "\xE1"
+  ?\M-\C-a #=> "\x81"
+  ?\C-\A-a #=> "\x81", same as above
+
 === Here Documents
 
 If you are writing a large block of text you may use a "here document" or
