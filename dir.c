@@ -1801,15 +1801,18 @@ glob_helper(
 	    }
 	    name = buf + pathlen + (dirsep != 0);
 	    if (recursive && dotfile < ((flags & FNM_DOTMATCH) ? 2 : 1)) {
+#ifdef DT_UNKNOWN
+		if ((new_pathtype = dp->d_type) != (rb_pathtype_t)DT_UNKNOWN)
+		    /* Got it. We need nothing more. */
+		    ;
+		else
+		    /* fall back to call lstat(2) */
+#endif
 		/* RECURSIVE never match dot files unless FNM_DOTMATCH is set */
-#ifndef DT_DIR
 		if (do_lstat(buf, &st, flags, enc) == 0)
 		    new_pathtype = IFTODT(st.st_mode);
 		else
 		    new_pathtype = path_noent;
-#else
-		new_pathtype = dp->d_type;
-#endif
 	    }
 
 	    new_beg = new_end = GLOB_ALLOC_N(struct glob_pattern *, (end - beg) * 2);

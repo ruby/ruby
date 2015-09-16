@@ -1,3 +1,8 @@
+Wed Sep 16 12:06:53 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* dir.c (glob_helper): check pathtype once again by lstat(2) if
+	  dp->d_type is DT_UNKNOWN. XFS may return DT_UNKNOWN.
+
 Wed Sep 16 03:49:19 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/ruby/test_thread.rb (TestThread#test_mutex_synchronize):
