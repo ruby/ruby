@@ -2601,6 +2601,7 @@ set_const_visibility(VALUE mod, int argc, const VALUE *argv,
     rb_const_entry_t *ce;
     ID id;
 
+    rb_frozen_class_p(mod);
     if (argc == 0) {
 	rb_warning("%"PRIsVALUE" with no argument is just ignored",
 		   QUOTE_ID(rb_frame_callee()));

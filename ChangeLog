@@ -1,3 +1,8 @@
+Wed Sep 16 20:39:26 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* variable.c (set_const_visibility): fail if the class/module is
+	  frozen.  [ruby-core:70828] [Bug #11532]
+
 Wed Sep 16 17:16:43 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_core.h (ENABLE_VM_OBJSPACE): enable per-VM object space on
