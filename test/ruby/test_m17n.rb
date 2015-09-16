@@ -1488,6 +1488,31 @@ class TestM17N < Test::Unit::TestCase
     s = u("\xE3\x81\x82\xE3\x81\x84")
     s.setbyte(-4, 0x84)
     assert_equal(u("\xE3\x81\x84\xE3\x81\x84"), s)
+
+    x = "x" * 100
+    t = nil
+    failure = proc {"#{i}: #{encdump(t)}"}
+
+    s = "\u{3042 3044}"
+    s.bytesize.times {|i|
+      t = s + x
+      t.setbyte(i, t.getbyte(i)+1)
+      assert_predicate(t, :valid_encoding?, failure)
+      assert_not_predicate(t, :ascii_only?, failure)
+      t = s + x
+      t.setbyte(i, 0x20)
+      assert_not_predicate(t, :valid_encoding?, failure)
+    }
+
+    s = "\u{41 42 43}"
+    s.bytesize.times {|i|
+      t = s + x
+      t.setbyte(i, 0x20)
+      assert_predicate(t, :valid_encoding?, failure)
+      assert_predicate(t, :ascii_only?, failure)
+      t.setbyte(i, 0xe3)
+      assert_not_predicate(t, :valid_encoding?, failure)
+    }
   end
 
   def test_compatible

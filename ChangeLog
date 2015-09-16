@@ -1,3 +1,7 @@
+Wed Sep 16 14:49:58 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_setbyte): keep the code range as possible.
+
 Wed Sep 16 13:23:48 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* doc/syntax/literals.rdoc (Strings): mention about ?a literal.
