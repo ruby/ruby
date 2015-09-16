@@ -1,3 +1,7 @@
+Wed Sep 16 20:49:56 2015  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* encindex.h: fix typo of last #endif comment. [ci skip]
+
 Wed Sep 16 20:39:26 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* variable.c (set_const_visibility): fail if the class/module is

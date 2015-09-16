@@ -64,4 +64,4 @@ enum ruby_preserved_encindex {
 }  /* extern "C" { */
 #endif
 
-#endif /* RUBY_INTERNAL_H */
+#endif /* RUBY_ENCINDEX_H */
