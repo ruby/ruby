@@ -842,8 +842,8 @@ find_empty(register sa_table* table, register sa_index_t pos)
 }
 
 static void resize(register sa_table* table);
-static int insert_into_chain(register sa_table*, register sa_index_t, st_data_t, sa_index_t pos);
-static int insert_into_main(register sa_table*, sa_index_t, st_data_t, sa_index_t pos, sa_index_t prev_pos);
+static int insert_into_chain(register sa_table*, register id_key_t, st_data_t, sa_index_t pos);
+static int insert_into_main(register sa_table*, id_key_t, st_data_t, sa_index_t pos, sa_index_t prev_pos);
 
 static int
 sa_insert(register sa_table* table, id_key_t key, VALUE value)
