@@ -143,7 +143,7 @@ PRE_LIBRUBY_UPDATE = $(MINIRUBY) -e 'ARGV[1] or File.unlink(ARGV[0]) rescue nil'
 			$(LIBRUBY_EXTS) $(LIBRUBY_SO_UPDATE)
 
 TESTSDIR      = $(srcdir)/test
-TEST_EXCLUDES = --excludes=$(TESTSDIR)/excludes -x /memory_leak/
+TEST_EXCLUDES = --excludes=$(TESTSDIR)/excludes -x /testunit/ -x /minitest/ -x /memory_leak/
 TESTWORKDIR   = testwork
 TESTOPTS      = $(RUBY_TESTOPTS)
 
@@ -578,9 +578,14 @@ no-test-knownbug: PHONY
 yes-test-knownbug: prog PHONY
 	-$(exec) $(RUNRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(PROGRAM) $(RUN_OPTS)" $(OPTS) $(TESTOPTS) $(srcdir)/KNOWNBUGS.rb
 
+test-testframework: $(TEST_RUNNABLE)-test-testframework
+no-test-testframework: PHONY
+yes-test-testframework: prog PHONY
+	$(Q)$(exec) $(RUNRUBY) "$(srcdir)/test/runner.rb" --ruby="$(RUNRUBY)" $(TESTOPTS) test/testunit test/minitest
+
 test: test-sample btest-ruby test-knownbug
 
-test-all: $(TEST_RUNNABLE)-test-all
+test-all: test-testframework $(TEST_RUNNABLE)-test-all
 yes-test-all: prog PHONY
 	$(Q)$(exec) $(RUNRUBY) "$(srcdir)/test/runner.rb" --ruby="$(RUNRUBY)" $(TEST_EXCLUDES) $(TESTOPTS) $(TESTS)
 TESTS_BUILD = mkmf

@@ -1,3 +1,8 @@
+Thu Sep 17 17:42:09 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* common.mk: separated test for test-framework from test-all task.
+	  They should be invoke at first before tests of test-all.
+
 Thu Sep 17 12:05:54 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/ruby/test_dir.rb (TestDir#test_fileno): s/?x/"x"/. Don't
