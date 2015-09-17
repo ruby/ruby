@@ -1,3 +1,7 @@
+Thu Sep 17 22:33:07 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* common.mk: fix command error with outside builddir.
+
 Thu Sep 17 17:42:09 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* common.mk: separated test for test-framework from test-all task.
