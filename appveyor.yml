@@ -1,0 +1,37 @@
+---
+branches:
+  only:
+    - msvc14
+shallow_clone: true
+platform: x64
+install:
+  - SET
+  - '"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" amd64'
+  - SET PATH=C:\Ruby22-x64\bin;%PATH%
+  - ruby --version
+  - 'cl'
+  - SET
+  - ps: Start-FileDownload 'http://openssl.org/source/openssl-1.0.2d.tar.gz'
+  - 7z x openssl-1.0.2d.tar.gz
+  - 7z x openssl-1.0.2d.tar
+  - cd openssl-1.0.2d
+  - perl Configure VC-WIN64A --prefix=/projects/%APPVEYOR_PROJECT_SLUG% no-asm
+  - ms\do_win64a
+  - nmake -f ms\ntdll.mak
+  - nmake -f ms\ntdll.mak install
+  - cd ..
+  - ps: Start-FileDownload 'http://zlib.net/zlib128.zip'
+  - 7z x zlib128.zip
+  - cd zlib-1.2.8
+  - nmake -f win32/Makefile.msc
+  - move zlib1.dll ..
+  - cd ..
+build_script:
+  - cd %APPVEYOR_BUILD_FOLDER%
+  - win32\configure.bat --with-opt-dir=/projects/%APPVEYOR_PROJECT_SLUG% --with-zlib-include=/projects/%APPVEYOR_PROJECT_SLUG%/zlib-1.2.8 --with-zlib-lib=/projects/%APPVEYOR_PROJECT_SLUG%/zlib-1.2.8
+  - nmake up
+  - nmake
+test_script:
+  - nmake btest
+  - nmake test
+  - nmake RUBYOPT=-w TESTS="-v -j 2" test-all
