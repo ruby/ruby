@@ -1,3 +1,7 @@
+Fri Sep 18 16:56:19 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* NEWS: add Net::FTP#mlst and Net::FTP#mlsd.
+
 Fri Sep 18 07:39:22 2015  Aaron Patterson <tenderlove@ruby-lang.org>
 
 	* ext/objspace/objspace_dump.c (obj_type): add IMEMO types to the heap
