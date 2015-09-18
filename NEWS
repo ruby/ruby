@@ -126,6 +126,10 @@ with all sufficient information, see the ChangeLog file.
 * timeout
   * Object#timeout is now warned as deprecated when called.
 
+* Net::FTP
+  * Net::FTP#mlst is added.
+  * Net::FTP#mlsd is added.
+
 === Stdlib compatibility issues (excluding feature bug fixes)
 
 * lib/webrick/utils.rb
