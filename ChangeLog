@@ -1,3 +1,8 @@
+Fri Sep 18 20:11:11 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_file_s_mkfifo): implement File.mkfifo.
+	  [Feature #11536]
+
 Fri Sep 18 16:56:19 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* NEWS: add Net::FTP#mlst and Net::FTP#mlsd.
