@@ -57,7 +57,7 @@ module IRB
     # Calls #print on each element in the given +objs+, followed by a newline
     # character.
     def puts(*objs)
-      for obj in objs
+      objs.each do |obj|
         print(*obj)
         print "\n"
       end

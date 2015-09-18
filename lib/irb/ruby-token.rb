@@ -259,7 +259,7 @@ module RubyToken
     TkSymbol2Token[token_n.intern] = token_c
   end
 
-  for defs in TokenDefinitions
+  TokenDefinitions.each do |defs|
     def_token(*defs)
   end
 end

@@ -42,7 +42,7 @@ module IRB
       if block_given?
         p = block
       end
-      for token in tokens
+      tokens.each do |token|
         def_rule(token, nil, p)
       end
     end

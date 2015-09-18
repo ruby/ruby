@@ -82,7 +82,7 @@ module IRB
     #
     # See Thread#exit for more information.
     def kill(*keys)
-      for key in keys
+      keys.each do |key|
         th, _ = search(key)
         IRB.fail IrbAlreadyDead unless th.alive?
         th.exit

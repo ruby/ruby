@@ -116,7 +116,7 @@ module IRB # :nodoc:
     # +irb_kill+::                        JobManager#kill
     # +irb_help+::                        IRB@Command+line+options
     def self.install_extend_commands
-      for args in @EXTEND_COMMANDS
+      @EXTEND_COMMANDS.each do |args|
         def_extend_command(*args)
       end
     end
@@ -161,7 +161,7 @@ module IRB # :nodoc:
         ], nil, __FILE__, line
       end
 
-      for ali, flag in aliases
+      aliases.each do |ali, flag|
         @ALIASES.push [ali, cmd_name, flag]
       end
     end
@@ -197,7 +197,7 @@ module IRB # :nodoc:
     def self.extend_object(obj)
       unless (class << obj; ancestors; end).include?(EXCB)
         super
-        for ali, com, flg in @ALIASES
+        @ALIASES.each do |ali, com, flg|
           obj.install_alias_method(ali, com, flg)
         end
       end
@@ -226,7 +226,7 @@ module IRB # :nodoc:
     # Context#use_loader=::     +irb/ext/use-loader.rb+
     # Context#save_history=::   +irb/ext/save-history.rb+
     def self.install_extend_commands
-      for args in @EXTEND_COMMANDS
+      @EXTEND_COMMANDS.each do |args|
         def_extend_command(*args)
       end
     end
@@ -242,7 +242,7 @@ module IRB # :nodoc:
           require "#{load_file}"
           send :#{cmd_name}, *opts, &b
         end
-        for ali in aliases
+        aliases.each do |ali|
           alias_method ali, cmd_name
         end
       ], __FILE__, line
