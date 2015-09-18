@@ -3404,7 +3404,9 @@ rb_fd_select(int n, rb_fdset_t *readfds, rb_fdset_t *writefds, rb_fdset_t *excep
     return select(n, r, w, e, timeout);
 }
 
+#if defined __GNUC__ && __GNUC__ >= 6
 #define rb_fd_no_init(fds) ASSUME(!(fds)->maxfd)
+#endif
 
 #undef FD_ZERO
 #undef FD_SET
