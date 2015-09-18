@@ -581,7 +581,7 @@ yes-test-knownbug: prog PHONY
 test-testframework: $(TEST_RUNNABLE)-test-testframework
 no-test-testframework: PHONY
 yes-test-testframework: prog PHONY
-	$(Q)$(exec) $(RUNRUBY) "$(srcdir)/test/runner.rb" --ruby="$(RUNRUBY)" $(TESTOPTS) $(srcdir)/test/testunit $(srcdir)/test/minitest
+	$(Q)$(exec) $(RUNRUBY) "$(srcdir)/test/runner.rb" --ruby="$(RUNRUBY)" $(TESTOPTS) testunit minitest
 
 test: test-sample btest-ruby test-knownbug
 
