@@ -30,6 +30,10 @@ with all sufficient information, see the ChangeLog file.
     [Feature #11049]
   * Enumerable#chunk_while [Feature #10769]
 
+* File
+
+  * File.mkfifo [Feature #11536]
+
 * Hash
 
   * Hash#fetch_values [Feature #10017]

@@ -4,10 +4,9 @@ require "timeout"
 require_relative "find_executable"
 
 def File.mkfifo(fn)
-  raise NotImplementedError, "does not support fifo" if /mswin|mingw|bccwin/ =~ RUBY_PLATFORM
   ret = system("mkfifo", fn)
   raise NotImplementedError, "mkfifo fails" if !ret
-end
+end unless File.respond_to?(:mkfifo) or /mswin|mingw|bccwin/ =~ RUBY_PLATFORM
 
 module EnvUtil
   def rubybin

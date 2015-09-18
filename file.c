@@ -5508,6 +5508,44 @@ rb_stat_sticky(VALUE obj)
     return Qfalse;
 }
 
+#if !defined HAVE_MKFIFO && defined HAVE_MKNOD && defined S_IFIFO
+#define mkfifo(path, mode) mknod(path, (mode)&~S_IFMT|S_IFIFO, 0)
+#define HAVE_MKFIFO
+#endif
+
+/*
+ *  call-seq:
+ *     File.mkfifo(file_name, mode)  => 0
+ *
+ *  Creates a FIFO special file with name _file_name_.  _mode_
+ *  specifies the FIFO's permissions. It is modified by the process's
+ *  umask in the usual way: the permissions of the created file are
+ *  (mode & ~umask).
+ */
+
+#ifdef HAVE_MKFIFO
+static VALUE
+rb_file_s_mkfifo(int argc, VALUE *argv)
+{
+    VALUE path;
+    int mode = 0666;
+
+    rb_check_arity(argc, 1, 2);
+    if (argc > 1) {
+	mode = NUM2INT(argv[1]);
+    }
+    path = argv[0];
+    FilePathValue(path);
+    path = rb_str_encode_ospath(path);
+    if (mkfifo(RSTRING_PTR(path), mode)) {
+	rb_sys_fail_path(path);
+    }
+    return INT2FIX(0);
+}
+#else
+#define rb_file_s_mkfifo rb_f_notimplement
+#endif
+
 VALUE rb_mFConst;
 
 void
@@ -5917,6 +5955,7 @@ Init_File(void)
     rb_define_singleton_method(rb_cFile, "rename", rb_file_s_rename, 2);
     rb_define_singleton_method(rb_cFile, "umask", rb_file_s_umask, -1);
     rb_define_singleton_method(rb_cFile, "truncate", rb_file_s_truncate, 2);
+    rb_define_singleton_method(rb_cFile, "mkfifo", rb_file_s_mkfifo, -1);
     rb_define_singleton_method(rb_cFile, "expand_path", rb_file_s_expand_path, -1);
     rb_define_singleton_method(rb_cFile, "absolute_path", rb_file_s_absolute_path, -1);
     rb_define_singleton_method(rb_cFile, "realpath", rb_file_s_realpath, -1);
