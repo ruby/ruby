@@ -162,8 +162,8 @@ enum vm_regan_acttype {
   } \
 } while (0)
 
-#define CALL_METHOD(ci) do { \
-    VALUE v = (*(ci)->call)(th, GET_CFP(), (ci)); \
+#define CALL_METHOD(calling, ci, cc) do { \
+    VALUE v = (*(cc)->call)(th, GET_CFP(), (calling), (ci), (cc)); \
     if (v == Qundef) { \
 	RESTORE_REGS(); \
 	NEXT_INSN(); \
@@ -182,8 +182,8 @@ enum vm_regan_acttype {
 #endif
 
 #if OPT_CALL_FASTPATH
-#define CI_SET_FASTPATH(ci, func, enabled) do { \
-    if (LIKELY(enabled)) ((ci)->call = (func)); \
+#define CI_SET_FASTPATH(cc, func, enabled) do { \
+    if (LIKELY(enabled)) ((cc)->call = (func)); \
 } while (0)
 #else
 #define CI_SET_FASTPATH(ci, func, enabled) /* do nothing */
@@ -213,9 +213,11 @@ enum vm_regan_acttype {
 #endif
 
 #define CALL_SIMPLE_METHOD(recv_) do { \
-    ci->blockptr = 0; ci->argc = ci->orig_argc; \
-    vm_search_method(ci, ci->recv = (recv_)); \
-    CALL_METHOD(ci); \
+    struct rb_calling_info calling; \
+    calling.blockptr = NULL; \
+    calling.argc = ci->orig_argc; \
+    vm_search_method(ci, cc, calling.recv = (recv_)); \
+    CALL_METHOD(&calling, ci, cc); \
 } while (0)
 
 #define NEXT_CLASS_SERIAL() (++ruby_vm_class_serial)
