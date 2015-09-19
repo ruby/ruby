@@ -9,8 +9,8 @@
 
 **********************************************************************/
 
-#ifndef RUBY_COMPILE_H
-#define RUBY_COMPILE_H
+#ifndef RUBY_ISEQ_H
+#define RUBY_ISEQ_H 1
 
 static inline size_t
 rb_call_info_kw_arg_bytes(int keyword_len)
@@ -169,4 +169,4 @@ VALUE rb_iseq_defined_string(enum defined_type type);
 
 RUBY_SYMBOL_EXPORT_END
 
-#endif /* RUBY_COMPILE_H */
+#endif /* RUBY_ISEQ_H */
