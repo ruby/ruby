@@ -82,6 +82,7 @@ rb_iseq_free(const rb_iseq_t *iseq)
 		ruby_xfree((void *)kw_arg);
 	    }
 	    ruby_xfree(iseq->body->ci_entries);
+	    ruby_xfree(iseq->body->cc_entries);
 	}
 	ruby_xfree((void *)iseq->body->catch_table);
 	ruby_xfree((void *)iseq->body->param.opt_table);
