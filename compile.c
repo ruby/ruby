@@ -944,45 +944,42 @@ new_insn_body(rb_iseq_t *iseq, int line_no, enum ruby_vminsn_type insn_id, int a
     return new_insn_core(iseq, line_no, insn_id, argc, operands);
 }
 
-static rb_call_info_t *
-new_callinfo(rb_iseq_t *iseq, ID mid, int argc, unsigned int flag, rb_call_info_kw_arg_t *kw_arg, int has_blockiseq)
+static struct rb_call_info *
+new_callinfo(rb_iseq_t *iseq, ID mid, int argc, unsigned int flag, struct rb_call_info_kw_arg *kw_arg, int has_blockiseq)
 {
-    rb_call_info_t *ci = (rb_call_info_t *)compile_data_alloc(iseq, sizeof(rb_call_info_t));
+    size_t size = kw_arg != NULL ? sizeof(struct rb_call_info_with_kwarg) : sizeof(struct rb_call_info);
+    struct rb_call_info *ci = (struct rb_call_info *)compile_data_alloc(iseq, size);
+    struct rb_call_info_with_kwarg *ci_kw = (struct rb_call_info_with_kwarg *)ci;
 
     ci->mid = mid;
     ci->flag = flag;
     ci->orig_argc = argc;
-    ci->argc = argc;
-    ci->kw_arg = kw_arg;
 
     if (kw_arg) {
-	ci->argc += kw_arg->keyword_len;
+	ci->flag |= VM_CALL_KWARG;
+	ci_kw->kw_arg = kw_arg;
 	ci->orig_argc += kw_arg->keyword_len;
+	iseq->body->ci_kw_size++;
+    }
+    else {
+	iseq->body->ci_size++;
     }
 
     if (!(ci->flag & (VM_CALL_ARGS_SPLAT | VM_CALL_ARGS_BLOCKARG)) &&
-	ci->kw_arg == NULL && !has_blockiseq) {
+	kw_arg == NULL && !has_blockiseq) {
 	ci->flag |= VM_CALL_ARGS_SIMPLE;
     }
-
-    ci->method_state = 0;
-    ci->class_serial = 0;
-    ci->blockptr = 0;
-    ci->recv = Qundef;
-    ci->call = 0; /* TODO: should set default function? */
-
-    ci->aux.index = iseq->body->callinfo_size++;
-
     return ci;
 }
 
 static INSN *
-new_insn_send(rb_iseq_t *iseq, int line_no, ID id, VALUE argc, const rb_iseq_t *blockiseq, VALUE flag, rb_call_info_kw_arg_t *keywords)
+new_insn_send(rb_iseq_t *iseq, int line_no, ID id, VALUE argc, const rb_iseq_t *blockiseq, VALUE flag, struct rb_call_info_kw_arg *keywords)
 {
-    VALUE *operands = (VALUE *)compile_data_alloc(iseq, sizeof(VALUE) * 2);
+    VALUE *operands = (VALUE *)compile_data_alloc(iseq, sizeof(VALUE) * 3);
     operands[0] = (VALUE)new_callinfo(iseq, id, FIX2INT(argc), FIX2INT(flag), keywords, blockiseq != NULL);
-    operands[1] = (VALUE)blockiseq;
-    return new_insn_core(iseq, line_no, BIN(send), 2, operands);
+    operands[1] = Qfalse; /* cache */
+    operands[2] = (VALUE)blockiseq;
+    return new_insn_core(iseq, line_no, BIN(send), 3, operands);
 }
 
 static rb_iseq_t *
@@ -1497,8 +1494,11 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
     generated_iseq = ALLOC_N(VALUE, code_index);
     line_info_table = ALLOC_N(struct iseq_line_info_entry, insn_num);
     iseq->body->is_entries = ZALLOC_N(union iseq_inline_storage_entry, iseq->body->is_size);
-    iseq->body->callinfo_entries = ALLOC_N(rb_call_info_t, iseq->body->callinfo_size);
-    /* MEMZERO(iseq->body->callinfo_entries, rb_call_info_t, iseq->body->callinfo_size); */
+    iseq->body->ci_entries = (struct rb_call_info *)ruby_xmalloc(sizeof(struct rb_call_info) * iseq->body->ci_size +
+								 sizeof(struct rb_call_info_with_kwarg) * iseq->body->ci_kw_size);
+    iseq->body->cc_entries = ZALLOC_N(struct rb_call_cache, iseq->body->ci_size + iseq->body->ci_kw_size);
+
+    iseq->compile_data->ci_index = iseq->compile_data->ci_kw_index = 0;
 
     list = FIRST_ELEMENT(anchor);
     line_info_index = code_index = sp = 0;
@@ -1599,14 +1599,29 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 			}
 		      case TS_CALLINFO: /* call info */
 			{
-			    rb_call_info_t *base_ci = (rb_call_info_t *)operands[j];
-			    rb_call_info_t *ci = &iseq->body->callinfo_entries[base_ci->aux.index];
-			    *ci = *base_ci;
+			    struct rb_call_info *base_ci = (struct rb_call_info *)operands[j];
+			    struct rb_call_info *ci;
 
-			    if (UNLIKELY(base_ci->aux.index >= iseq->body->callinfo_size)) {
-				rb_bug("iseq_set_sequence: ci_index overflow: index: %d, size: %d", base_ci->argc, iseq->body->callinfo_size);
+			    if (base_ci->flag & VM_CALL_KWARG) {
+				struct rb_call_info_with_kwarg *ci_kw_entries = (struct rb_call_info_with_kwarg *)&iseq->body->ci_entries[iseq->body->ci_size];
+				struct rb_call_info_with_kwarg *ci_kw = &ci_kw_entries[iseq->compile_data->ci_kw_index++];
+				*ci_kw = *((struct rb_call_info_with_kwarg *)base_ci);
+				ci = (struct rb_call_info *)ci_kw;
+				assert(iseq->compile_data->ci_kw_index <= iseq->body->ci_kw_size);
 			    }
+			    else {
+				ci = &iseq->body->ci_entries[iseq->compile_data->ci_index++];
+				*ci = *base_ci;
+				assert(iseq->compile_data->ci_index <= iseq->body->ci_size);
+			    }
+
 			    generated_iseq[code_index + 1 + j] = (VALUE)ci;
+			    break;
+			}
+		      case TS_CALLCACHE:
+			{
+			    struct rb_call_cache *cc = &iseq->body->cc_entries[iseq->compile_data->ci_index + iseq->compile_data->ci_kw_index - 1];
+			    generated_iseq[code_index + 1 + j] = (VALUE)cc;
 			    break;
 			}
 		      case TS_ID: /* ID */
@@ -1948,7 +1963,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	enum ruby_vminsn_type previ = piobj->insn_id;
 
 	if (previ == BIN(send) || previ == BIN(opt_send_without_block) || previ == BIN(invokesuper)) {
-	    rb_call_info_t *ci = (rb_call_info_t *)piobj->operands[0];
+	    struct rb_call_info *ci = (struct rb_call_info *)piobj->operands[0];
 	    rb_iseq_t *blockiseq = (rb_iseq_t *)piobj->operands[1];
 	    if (blockiseq == 0) {
 		ci->flag |= VM_CALL_TAILCALL;
@@ -1966,9 +1981,12 @@ insn_set_specialized_instruction(rb_iseq_t *iseq, INSN *iobj, int insn_id)
 
     if (insn_id == BIN(opt_neq)) {
 	VALUE *old_operands = iobj->operands;
+	iobj->operand_size = 4;
 	iobj->operands = (VALUE *)compile_data_alloc(iseq, iobj->operand_size * sizeof(VALUE));
 	iobj->operands[0] = old_operands[0];
-	iobj->operands[1] = (VALUE)new_callinfo(iseq, idEq, 1, 0, NULL, FALSE);
+	iobj->operands[1] = Qfalse; /* CALL_CACHE */
+	iobj->operands[2] = (VALUE)new_callinfo(iseq, idEq, 1, 0, NULL, FALSE);
+	iobj->operands[3] = Qfalse; /* CALL_CACHE */
     }
 
     return COMPILE_OK;
@@ -1978,8 +1996,8 @@ static int
 iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
 {
     if (iobj->insn_id == BIN(send)) {
-	rb_call_info_t *ci = (rb_call_info_t *)OPERAND_AT(iobj, 0);
-	const rb_iseq_t *blockiseq = (rb_iseq_t *)OPERAND_AT(iobj, 1);
+	struct rb_call_info *ci = (struct rb_call_info *)OPERAND_AT(iobj, 0);
+	const rb_iseq_t *blockiseq = (rb_iseq_t *)OPERAND_AT(iobj, 2);
 
 #define SP_INSN(opt) insn_set_specialized_instruction(iseq, iobj, BIN(opt_##opt))
 	if (ci->flag & VM_CALL_ARGS_SIMPLE) {
@@ -2020,7 +2038,7 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
 
 	if ((ci->flag & VM_CALL_ARGS_BLOCKARG) == 0 && blockiseq == NULL) {
 	    iobj->insn_id = BIN(opt_send_without_block);
-	    iobj->operand_size = 1;
+	    iobj->operand_size = insn_len(iobj->insn_id) - 1;
 	}
     }
 #undef SP_INSN
@@ -2402,7 +2420,7 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * cond,
 }
 
 static int
-compile_array_keyword_arg(rb_iseq_t *iseq, LINK_ANCHOR *ret, const NODE * const root_node, rb_call_info_kw_arg_t ** const kw_arg_ptr)
+compile_array_keyword_arg(rb_iseq_t *iseq, LINK_ANCHOR *ret, const NODE * const root_node, struct rb_call_info_kw_arg ** const kw_arg_ptr)
 {
     if (kw_arg_ptr == NULL) return FALSE;
 
@@ -2427,7 +2445,7 @@ compile_array_keyword_arg(rb_iseq_t *iseq, LINK_ANCHOR *ret, const NODE * const 
 	node = root_node->nd_head;
 	{
 	    int len = (int)node->nd_alen / 2;
-	    rb_call_info_kw_arg_t *kw_arg  = (rb_call_info_kw_arg_t *)ruby_xmalloc(sizeof(rb_call_info_kw_arg_t) + sizeof(VALUE) * (len - 1));
+	    struct rb_call_info_kw_arg *kw_arg  = (struct rb_call_info_kw_arg *)ruby_xmalloc(sizeof(struct rb_call_info_kw_arg) + sizeof(VALUE) * (len - 1));
 	    VALUE *keywords = kw_arg->keywords;
 	    int i = 0;
 	    kw_arg->keyword_len = len;
@@ -2455,7 +2473,7 @@ enum compile_array_type_t {
 
 static int
 compile_array_(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE* node_root,
-	       enum compile_array_type_t type, rb_call_info_kw_arg_t **keywords_ptr, int poped)
+	       enum compile_array_type_t type, struct rb_call_info_kw_arg **keywords_ptr, int poped)
 {
     NODE *node = node_root;
     int line = (int)nd_line(node);
@@ -2680,15 +2698,15 @@ compile_massign_lhs(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE *node)
     switch (nd_type(node)) {
       case NODE_ATTRASGN: {
 	INSN *iobj;
-	rb_call_info_t *ci;
+	struct rb_call_info *ci;
 	VALUE dupidx;
 
 	COMPILE_POPED(ret, "masgn lhs (NODE_ATTRASGN)", node);
 
 	POP_ELEMENT(ret);        /* pop pop insn */
 	iobj = (INSN *)POP_ELEMENT(ret); /* pop send insn */
-	ci = (rb_call_info_t *)iobj->operands[0];
-	ci->orig_argc += 1; ci->argc = ci->orig_argc;
+	ci = (struct rb_call_info *)iobj->operands[0];
+	ci->orig_argc += 1;
 	dupidx = INT2FIX(ci->orig_argc);
 
 	ADD_INSN1(ret, nd_line(node), topn, dupidx);
@@ -3228,7 +3246,7 @@ add_ensure_iseq(LINK_ANCHOR *ret, rb_iseq_t *iseq, int is_return)
 }
 
 static VALUE
-setup_args(rb_iseq_t *iseq, LINK_ANCHOR *args, NODE *argn, unsigned int *flag, rb_call_info_kw_arg_t **keywords)
+setup_args(rb_iseq_t *iseq, LINK_ANCHOR *args, NODE *argn, unsigned int *flag, struct rb_call_info_kw_arg **keywords)
 {
     VALUE argc = INT2FIX(0);
     int nsplat = 0;
@@ -4504,8 +4522,10 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    VALUE str = rb_fstring(node->nd_args->nd_head->nd_lit);
 	    node->nd_args->nd_head->nd_lit = str;
 	    COMPILE(ret, "recv", node->nd_recv);
-	    ADD_INSN2(ret, line, opt_aref_with,
-		      new_callinfo(iseq, idAREF, 1, 0, NULL, FALSE), str);
+	    ADD_INSN3(ret, line, opt_aref_with,
+		      new_callinfo(iseq, idAREF, 1, 0, NULL, FALSE),
+		      Qnil, /* CALL_CACHE */
+		      str);
 	    if (poped) {
 		ADD_INSN(ret, line, pop);
 	    }
@@ -4523,7 +4543,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	ID mid = node->nd_mid;
 	VALUE argc;
 	unsigned int flag = 0;
-	rb_call_info_kw_arg_t *keywords = NULL;
+	struct rb_call_info_kw_arg *keywords = NULL;
 	const rb_iseq_t *parent_block = iseq->compile_data->current_block;
 	iseq->compile_data->current_block = NULL;
 
@@ -4635,7 +4655,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	DECL_ANCHOR(args);
 	int argc;
 	unsigned int flag = 0;
-	rb_call_info_kw_arg_t *keywords = NULL;
+	struct rb_call_info_kw_arg *keywords = NULL;
 	const rb_iseq_t *parent_block = iseq->compile_data->current_block;
 
 	INIT_ANCHOR(args);
@@ -4742,8 +4762,9 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	/* dummy receiver */
 	ADD_INSN1(ret, line, putobject, nd_type(node) == NODE_ZSUPER ? Qfalse : Qtrue);
 	ADD_SEQ(ret, args);
-	ADD_INSN2(ret, line, invokesuper,
+	ADD_INSN3(ret, line, invokesuper,
 		  new_callinfo(iseq, 0, argc, flag | VM_CALL_SUPER | VM_CALL_FCALL, keywords, parent_block != NULL),
+		  Qnil, /* CALL_CACHE */
 		  parent_block);
 
 	if (poped) {
@@ -4839,7 +4860,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	DECL_ANCHOR(args);
 	VALUE argc;
 	unsigned int flag = 0;
-	rb_call_info_kw_arg_t *keywords = NULL;
+	struct rb_call_info_kw_arg *keywords = NULL;
 
 	INIT_ANCHOR(args);
 	if (iseq->body->type == ISEQ_TYPE_TOP) {
@@ -4982,7 +5003,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    else {
 		ADD_SEQ(ret, recv);
 		ADD_SEQ(ret, val);
-		ADD_INSN1(ret, line, opt_regexpmatch2, new_callinfo(iseq, idEqTilde, 1, 0, NULL, FALSE));
+		ADD_INSN2(ret, line, opt_regexpmatch2, new_callinfo(iseq, idEqTilde, 1, 0, NULL, FALSE), Qnil);
 	    }
 	}
 	else {
@@ -5516,8 +5537,9 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		ADD_INSN(ret, line, swap);
 		ADD_INSN1(ret, line, topn, INT2FIX(1));
 	    }
-	    ADD_INSN2(ret, line, opt_aset_with,
-		      new_callinfo(iseq, idASET, 2, 0, NULL, FALSE), str);
+	    ADD_INSN3(ret, line, opt_aset_with,
+		      new_callinfo(iseq, idASET, 2, 0, NULL, FALSE),
+		      Qnil/* CALL_CACHE */, str);
 	    ADD_INSN(ret, line, pop);
 	    break;
 	}
@@ -5687,11 +5709,15 @@ insn_data_to_s_detail(INSN *iobj)
 		break;
 	      case TS_CALLINFO: /* call info */
 		{
-		    rb_call_info_t *ci = (rb_call_info_t *)OPERAND_AT(iobj, j);
+		    struct rb_call_info *ci = (struct rb_call_info *)OPERAND_AT(iobj, j);
 		    rb_str_cat2(str, "<callinfo:");
-		    if (ci->mid)
-			rb_str_catf(str, "%"PRIsVALUE, rb_id2str(ci->mid));
+		    if (ci->mid) rb_str_catf(str, "%"PRIsVALUE, rb_id2str(ci->mid));
 		    rb_str_catf(str, ", %d>", ci->orig_argc);
+		    break;
+		}
+	      case TS_CALLCACHE: /* call cache */
+		{
+		    rb_str_catf(str, "<call cache>");
 		    break;
 		}
 	      case TS_CDHASH:	/* case/when condition cache */
@@ -5911,7 +5937,7 @@ iseq_build_callinfo_from_hash(rb_iseq_t *iseq, VALUE op)
     ID mid = 0;
     int orig_argc = 0;
     unsigned int flag = 0;
-    rb_call_info_kw_arg_t *kw_arg = 0;
+    struct rb_call_info_kw_arg *kw_arg = 0;
 
     if (!NIL_P(op)) {
 	VALUE vmid = rb_hash_aref(op, ID2SYM(rb_intern("mid")));
@@ -6029,6 +6055,9 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 			break;
 		      case TS_CALLINFO:
 			argv[j] = iseq_build_callinfo_from_hash(iseq, op);
+			break;
+		      case TS_CALLCACHE:
+			argv[j] = Qfalse;
 			break;
 		      case TS_ID:
 			argv[j] = rb_convert_type(op, T_SYMBOL,

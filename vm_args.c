@@ -15,9 +15,10 @@ VALUE rb_keyword_error_new(const char *error, VALUE keys); /* class.c */
 
 struct args_info {
     /* basic args info */
-    rb_call_info_t *ci;
+    struct rb_calling_info *calling;
     VALUE *argv;
     int argc;
+    const struct rb_call_info_kw_arg *kw_arg;
 
     /* additional args info */
     int rest_index;
@@ -235,8 +236,9 @@ args_pop_keyword_hash(struct args_info *args, VALUE *kw_hash_ptr, rb_thread_t *t
 static int
 args_kw_argv_to_hash(struct args_info *args)
 {
-    const VALUE *const passed_keywords = args->ci->kw_arg->keywords;
-    const int kw_len = args->ci->kw_arg->keyword_len;
+    const struct rb_call_info_kw_arg *kw_arg = args->kw_arg;
+    const VALUE *const passed_keywords = kw_arg->keywords;
+    const int kw_len = kw_arg->keyword_len;
     VALUE h = rb_hash_new();
     const int kw_start = args->argc - kw_len;
     const VALUE * const kw_argv = args->argv + kw_start;
@@ -257,8 +259,9 @@ args_stored_kw_argv_to_hash(struct args_info *args)
 {
     VALUE h = rb_hash_new();
     int i;
-    const VALUE *const passed_keywords = args->ci->kw_arg->keywords;
-    const int passed_keyword_len = args->ci->kw_arg->keyword_len;
+    const struct rb_call_info_kw_arg *kw_arg = args->kw_arg;
+    const VALUE *const passed_keywords = kw_arg->keywords;
+    const int passed_keyword_len = kw_arg->keyword_len;
 
     for (i=0; i<passed_keyword_len; i++) {
 	rb_hash_aset(h, passed_keywords[i], args->kw_argv[i]);
@@ -462,10 +465,10 @@ args_setup_kw_rest_parameter(VALUE keyword_hash, VALUE *locals)
 }
 
 static inline void
-args_setup_block_parameter(rb_thread_t *th, rb_call_info_t *ci, VALUE *locals)
+args_setup_block_parameter(rb_thread_t *th, struct rb_calling_info *calling, VALUE *locals)
 {
     VALUE blockval = Qnil;
-    const rb_block_t *blockptr = ci->blockptr;
+    const rb_block_t *blockptr = calling->blockptr;
 
     if (blockptr) {
 	/* make Proc object */
@@ -473,7 +476,7 @@ args_setup_block_parameter(rb_thread_t *th, rb_call_info_t *ci, VALUE *locals)
 	    rb_proc_t *proc;
 	    blockval = rb_vm_make_proc(th, blockptr, rb_cProc);
 	    GetProcPtr(blockval, proc);
-	    ci->blockptr = &proc->block;
+	    calling->blockptr = &proc->block;
 	}
 	else {
 	    blockval = blockptr->proc;
@@ -499,7 +502,9 @@ fill_keys_values(st_data_t key, st_data_t val, st_data_t ptr)
 }
 
 static int
-setup_parameters_complex(rb_thread_t * const th, const rb_iseq_t * const iseq, rb_call_info_t * const ci,
+setup_parameters_complex(rb_thread_t * const th, const rb_iseq_t * const iseq,
+			 struct rb_calling_info *const calling,
+			 const struct rb_call_info *ci,
 			 VALUE * const locals, const enum arg_setup_type arg_setup_type)
 {
     const int min_argc = iseq->body->param.lead_num + iseq->body->param.post_num;
@@ -525,20 +530,22 @@ setup_parameters_complex(rb_thread_t * const th, const rb_iseq_t * const iseq, r
      * <- iseq->body->param.size------------>
      * ^ locals                             ^ sp
      */
-    for (i=ci->argc; i<iseq->body->param.size; i++) {
+    for (i=calling->argc; i<iseq->body->param.size; i++) {
 	locals[i] = Qnil;
     }
     th->cfp->sp = &locals[i];
 
     /* setup args */
     args = &args_body;
-    args->ci = ci;
-    given_argc = args->argc = ci->argc;
+    args->calling = calling;
+    given_argc = args->argc = calling->argc;
     args->argv = locals;
 
-    if (ci->kw_arg) {
+    if (ci->flag & VM_CALL_KWARG) {
+	args->kw_arg = ((struct rb_call_info_with_kwarg *)ci)->kw_arg;
+
 	if (iseq->body->param.flags.has_kw) {
-	    int kw_len = ci->kw_arg->keyword_len;
+	    int kw_len = args->kw_arg->keyword_len;
 	    /* copy kw_argv */
 	    args->kw_argv = ALLOCA_N(VALUE, kw_len);
 	    args->argc -= kw_len;
@@ -551,6 +558,7 @@ setup_parameters_complex(rb_thread_t * const th, const rb_iseq_t * const iseq, r
 	}
     }
     else {
+	args->kw_arg = NULL;
 	args->kw_argv = NULL;
     }
 
@@ -642,7 +650,8 @@ setup_parameters_complex(rb_thread_t * const th, const rb_iseq_t * const iseq, r
 	VALUE * const klocals = locals + iseq->body->param.keyword->bits_start - iseq->body->param.keyword->num;
 
 	if (args->kw_argv != NULL) {
-	    args_setup_kw_parameters(args->kw_argv, args->ci->kw_arg->keyword_len, args->ci->kw_arg->keywords, iseq, klocals);
+	    const struct rb_call_info_kw_arg *kw_arg = args->kw_arg;
+	    args_setup_kw_parameters(args->kw_argv, kw_arg->keyword_len, kw_arg->keywords, iseq, klocals);
 	}
 	else if (!NIL_P(keyword_hash)) {
 	    int kw_len = rb_long2int(RHASH_SIZE(keyword_hash));
@@ -665,7 +674,7 @@ setup_parameters_complex(rb_thread_t * const th, const rb_iseq_t * const iseq, r
     }
 
     if (iseq->body->param.flags.has_block) {
-	args_setup_block_parameter(th, ci, locals + iseq->body->param.block_start);
+	args_setup_block_parameter(th, calling, locals + iseq->body->param.block_start);
     }
 
 #if 0
@@ -717,10 +726,11 @@ argument_kw_error(rb_thread_t *th, const rb_iseq_t *iseq, const char *error, con
 }
 
 static inline void
-vm_caller_setup_arg_splat(rb_control_frame_t *cfp, rb_call_info_t *ci)
+vm_caller_setup_arg_splat(rb_control_frame_t *cfp, struct rb_calling_info *calling)
 {
-    VALUE *argv = cfp->sp - ci->argc;
-    VALUE ary = argv[ci->argc-1];
+    int argc = calling->argc;
+    VALUE *argv = cfp->sp - argc;
+    VALUE ary = argv[argc-1];
 
     cfp->sp--;
 
@@ -733,15 +743,16 @@ vm_caller_setup_arg_splat(rb_control_frame_t *cfp, rb_call_info_t *ci)
 	for (i = 0; i < len; i++) {
 	    *cfp->sp++ = ptr[i];
 	}
-	ci->argc += i - 1;
+	calling->argc += i - 1;
     }
 }
 
 static inline void
-vm_caller_setup_arg_kw(rb_control_frame_t *cfp, rb_call_info_t *ci)
+vm_caller_setup_arg_kw(rb_control_frame_t *cfp, struct rb_calling_info *calling, const struct rb_call_info *ci)
 {
-    const VALUE *const passed_keywords = ci->kw_arg->keywords;
-    const int kw_len = ci->kw_arg->keyword_len;
+    struct rb_call_info_with_kwarg *ci_kw = (struct rb_call_info_with_kwarg *)ci;
+    const VALUE *const passed_keywords = ci_kw->kw_arg->keywords;
+    const int kw_len = ci_kw->kw_arg->keyword_len;
     const VALUE h = rb_hash_new();
     VALUE *sp = cfp->sp;
     int i;
@@ -752,18 +763,12 @@ vm_caller_setup_arg_kw(rb_control_frame_t *cfp, rb_call_info_t *ci)
     (sp-kw_len)[0] = h;
 
     cfp->sp -= kw_len - 1;
-    ci->argc -= kw_len - 1;
+    calling->argc -= kw_len - 1;
 }
 
-#define SAVE_RESTORE_CI(expr, ci) do { \
-    int saved_argc = (ci)->argc; rb_block_t *saved_blockptr = (ci)->blockptr; /* save */ \
-    expr; \
-    (ci)->argc = saved_argc; (ci)->blockptr = saved_blockptr; /* restore */ \
-} while (0)
-
 static void
-vm_caller_setup_arg_block(const rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_call_info_t *ci,
-			  rb_iseq_t *blockiseq, const int is_super)
+vm_caller_setup_arg_block(const rb_thread_t *th, rb_control_frame_t *reg_cfp,
+			  struct rb_calling_info *calling, const struct rb_call_info *ci, rb_iseq_t *blockiseq, const int is_super)
 {
     if (ci->flag & VM_CALL_ARGS_BLOCKARG) {
 	rb_proc_t *po;
@@ -774,8 +779,7 @@ vm_caller_setup_arg_block(const rb_thread_t *th, rb_control_frame_t *reg_cfp, rb
 	if (proc != Qnil) {
 	    if (!rb_obj_is_proc(proc)) {
 		VALUE b;
-
-		SAVE_RESTORE_CI(b = rb_check_convert_type(proc, T_DATA, "Proc", "to_proc"), ci);
+		b = rb_check_convert_type(proc, T_DATA, "Proc", "to_proc");
 
 		if (NIL_P(b) || !rb_obj_is_proc(b)) {
 		    rb_raise(rb_eTypeError,
@@ -785,32 +789,32 @@ vm_caller_setup_arg_block(const rb_thread_t *th, rb_control_frame_t *reg_cfp, rb
 		proc = b;
 	    }
 	    GetProcPtr(proc, po);
-	    ci->blockptr = &po->block;
+	    calling->blockptr = &po->block;
 	    RUBY_VM_GET_BLOCK_PTR_IN_CFP(reg_cfp)->proc = proc;
 	}
 	else {
-	    ci->blockptr = NULL;
+	    calling->blockptr = NULL;
 	}
     }
     else if (blockiseq != 0) { /* likely */
-	ci->blockptr = RUBY_VM_GET_BLOCK_PTR_IN_CFP(reg_cfp);
-	ci->blockptr->iseq = blockiseq;
-	ci->blockptr->proc = 0;
+	rb_block_t *blockptr = calling->blockptr = RUBY_VM_GET_BLOCK_PTR_IN_CFP(reg_cfp);
+	blockptr->iseq = blockiseq;
+	blockptr->proc = 0;
     }
     else {
 	if (is_super) {
-	    ci->blockptr = GET_BLOCK_PTR();
+	    calling->blockptr = GET_BLOCK_PTR();
 	}
 	else {
-	    ci->blockptr = NULL;
+	    calling->blockptr = NULL;
 	}
     }
 }
 
-#define IS_ARGS_SPLAT(ci) ((ci)->flag & VM_CALL_ARGS_SPLAT)
-#define IS_ARGS_KEYWORD(ci) ((ci)->kw_arg != NULL)
+#define IS_ARGS_SPLAT(ci)   ((ci)->flag & VM_CALL_ARGS_SPLAT)
+#define IS_ARGS_KEYWORD(ci) ((ci)->flag & VM_CALL_KWARG)
 
-#define CALLER_SETUP_ARG(cfp, ci) do { \
-    if (UNLIKELY(IS_ARGS_SPLAT(ci))) vm_caller_setup_arg_splat((cfp), (ci)); \
-    if (UNLIKELY(IS_ARGS_KEYWORD(ci))) vm_caller_setup_arg_kw((cfp), (ci)); \
+#define CALLER_SETUP_ARG(cfp, calling, ci) do { \
+    if (UNLIKELY(IS_ARGS_SPLAT(ci))) vm_caller_setup_arg_splat((cfp), (calling)); \
+    if (UNLIKELY(IS_ARGS_KEYWORD(ci))) vm_caller_setup_arg_kw((cfp), (calling), (ci)); \
 } while (0)

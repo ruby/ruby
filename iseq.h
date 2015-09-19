@@ -20,7 +20,7 @@ typedef struct rb_iseq_struct rb_iseq_t;
 static inline size_t
 rb_call_info_kw_arg_bytes(int keyword_len)
 {
-    return sizeof(rb_call_info_kw_arg_t) + sizeof(VALUE) * (keyword_len - 1);
+    return sizeof(struct rb_call_info_kw_arg) + sizeof(VALUE) * (keyword_len - 1);
 }
 
 RUBY_SYMBOL_EXPORT_BEGIN
@@ -142,6 +142,8 @@ struct iseq_compile_data {
     int last_coverable_line;
     int label_no;
     int node_level;
+    unsigned int ci_index;
+    unsigned int ci_kw_index;
     const rb_compile_option_t *option;
 #if SUPPORT_JOKE
     st_table *labels_table;

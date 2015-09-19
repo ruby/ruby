@@ -74,14 +74,14 @@ rb_iseq_free(const rb_iseq_t *iseq)
 	ruby_xfree((void *)iseq->body->local_table);
 	ruby_xfree((void *)iseq->body->is_entries);
 
-	if (iseq->body->callinfo_entries) {
+	if (iseq->body->ci_entries) {
 	    unsigned int i;
-	    for (i=0; i<iseq->body->callinfo_size; i++) {
-		/* TODO: revisit callinfo data structure */
-		const rb_call_info_kw_arg_t *kw_arg = iseq->body->callinfo_entries[i].kw_arg;
+	    struct rb_call_info_with_kwarg *ci_kw_entries = (struct rb_call_info_with_kwarg *)&iseq->body->ci_entries[iseq->body->ci_size];
+	    for (i=0; i<iseq->body->ci_kw_size; i++) {
+		const struct rb_call_info_kw_arg *kw_arg = ci_kw_entries[i].kw_arg;
 		ruby_xfree((void *)kw_arg);
 	    }
-	    ruby_xfree(iseq->body->callinfo_entries);
+	    ruby_xfree(iseq->body->ci_entries);
 	}
 	ruby_xfree((void *)iseq->body->catch_table);
 	ruby_xfree((void *)iseq->body->param.opt_table);
@@ -161,7 +161,7 @@ iseq_memsize(const rb_iseq_t *iseq)
     }
 
     if (body) {
-	rb_call_info_t *ci_entries = body->callinfo_entries;
+	struct rb_call_info_with_kwarg *ci_kw_entries = (struct rb_call_info_with_kwarg *)&body->ci_entries[body->ci_size];
 
 	size += sizeof(struct rb_iseq_constant_body);
 	size += body->iseq_size * sizeof(VALUE);
@@ -173,13 +173,14 @@ iseq_memsize(const rb_iseq_t *iseq)
 	size += (body->param.opt_num + 1) * sizeof(VALUE);
 	size += param_keyword_size(body->param.keyword);
 	size += body->is_size * sizeof(union iseq_inline_storage_entry);
-	size += body->callinfo_size * sizeof(rb_call_info_t);
+	size += body->ci_size * sizeof(struct rb_call_info);
+	size += body->ci_kw_size * sizeof(struct rb_call_info_with_kwarg);
 
-	if (ci_entries) {
+	if (ci_kw_entries) {
 	    unsigned int i;
 
-	    for (i = 0; i < body->callinfo_size; i++) {
-		const rb_call_info_kw_arg_t *kw_arg = ci_entries[i].kw_arg;
+	    for (i = 0; i < body->ci_kw_size; i++) {
+		const struct rb_call_info_kw_arg *kw_arg = ci_kw_entries[i].kw_arg;
 
 		if (kw_arg) {
 		    size += rb_call_info_kw_arg_bytes(kw_arg->keyword_len);
@@ -1267,7 +1268,7 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
 
       case TS_CALLINFO:
 	{
-	    rb_call_info_t *ci = (rb_call_info_t *)op;
+	    struct rb_call_info *ci = (struct rb_call_info *)op;
 	    VALUE ary = rb_ary_new();
 
 	    if (ci->mid) {
@@ -1276,8 +1277,8 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
 
 	    rb_ary_push(ary, rb_sprintf("argc:%d", ci->orig_argc));
 
-	    if (ci->kw_arg) {
-		rb_ary_push(ary, rb_sprintf("kw:%d", ci->kw_arg->keyword_len));
+	    if (ci->flag & VM_CALL_KWARG) {
+		rb_ary_push(ary, rb_sprintf("kw:%d", ((struct rb_call_info_with_kwarg *)ci)->kw_arg->keyword_len));
 	    }
 
 	    if (ci->flag) {
@@ -1288,12 +1289,17 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
 		if (ci->flag & VM_CALL_VCALL) rb_ary_push(flags, rb_str_new2("VCALL"));
 		if (ci->flag & VM_CALL_TAILCALL) rb_ary_push(flags, rb_str_new2("TAILCALL"));
 		if (ci->flag & VM_CALL_SUPER) rb_ary_push(flags, rb_str_new2("SUPER"));
+		if (ci->flag & VM_CALL_KWARG) rb_ary_push(flags, rb_str_new2("KWARG"));
 		if (ci->flag & VM_CALL_OPT_SEND) rb_ary_push(flags, rb_str_new2("SNED")); /* maybe not reachable */
 		if (ci->flag & VM_CALL_ARGS_SIMPLE) rb_ary_push(flags, rb_str_new2("ARGS_SIMPLE")); /* maybe not reachable */
 		rb_ary_push(ary, rb_ary_join(flags, rb_str_new2("|")));
 	    }
 	    ret = rb_sprintf("<callinfo!%"PRIsVALUE">", rb_ary_join(ary, rb_str_new2(", ")));
 	}
+	break;
+
+      case TS_CALLCACHE:
+	ret = rb_str_new2("<callcache>");
 	break;
 
       case TS_CDHASH:
@@ -1883,20 +1889,21 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 		break;
 	      case TS_CALLINFO:
 		{
-		    rb_call_info_t *ci = (rb_call_info_t *)*seq;
+		    struct rb_call_info *ci = (struct rb_call_info *)*seq;
 		    VALUE e = rb_hash_new();
 		    int orig_argc = ci->orig_argc;
 
 		    rb_hash_aset(e, ID2SYM(rb_intern("mid")), ci->mid ? ID2SYM(ci->mid) : Qnil);
 		    rb_hash_aset(e, ID2SYM(rb_intern("flag")), UINT2NUM(ci->flag));
 
-		    if (ci->kw_arg) {
+		    if (ci->flag & VM_CALL_KWARG) {
+			struct rb_call_info_with_kwarg *ci_kw = (struct rb_call_info_with_kwarg *)ci;
 			int i;
-			VALUE kw = rb_ary_new2((long)ci->kw_arg->keyword_len);
+			VALUE kw = rb_ary_new2((long)ci_kw->kw_arg->keyword_len);
 
-			orig_argc -= ci->kw_arg->keyword_len;
-			for (i = 0; i < ci->kw_arg->keyword_len; i++) {
-			    rb_ary_push(kw, ci->kw_arg->keywords[i]);
+			orig_argc -= ci_kw->kw_arg->keyword_len;
+			for (i = 0; i < ci_kw->kw_arg->keyword_len; i++) {
+			    rb_ary_push(kw, ci_kw->kw_arg->keywords[i]);
 			}
 			rb_hash_aset(e, ID2SYM(rb_intern("kw_arg")), kw);
 		    }
@@ -1905,6 +1912,9 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 				INT2FIX(orig_argc));
 		    rb_ary_push(ary, e);
 	        }
+		break;
+	      case TS_CALLCACHE:
+		rb_ary_push(ary, Qfalse);
 		break;
 	      case TS_ID:
 		rb_ary_push(ary, ID2SYM(*seq));

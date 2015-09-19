@@ -1,3 +1,42 @@
+Sun Sep 20 02:46:34 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h: split rb_call_info_t into several structs.
+	  * rb_call_info (ci) has compiled fixed information.
+	  * if ci->flag & VM_CALL_KWARG, then rb_call_info is
+	    also rb_call_info_with_kwarg. This technique reduce one word
+	    for major rb_call_info data.
+	  * rb_calling_info has temporary data (argc, blockptr, recv).
+	    for each method dispatch. This data is allocated only on
+	    machine stack.
+	  * rb_call_cache is for inline method cache.
+
+	  Before this patch, only rb_call_info_t data is passed.
+	  After this patch, above three structs are passed.
+
+	  This patch improves:
+	  * data locarity (rb_call_info is now read-only data).
+	  * reduce memory consumption (rb_call_info_with_kwarg,
+	    rb_calling_info).
+
+	* compile.c: use above data.
+
+	* insns.def: ditto.
+
+	* iseq.c: ditto.
+
+	* vm_args.c: ditto.
+
+	* vm_eval.c: ditto.
+
+	* vm_insnhelper.c: ditto.
+
+	* vm_insnhelper.h: ditto.
+
+	* iseq.h: add iseq_compile_data::ci_index and
+	  iseq_compile_data::ci_kw_indx.
+
+	* tool/instruction.rb: introduce TS_CALLCACHE operand type.
+
 Sun Sep 20 02:18:10 2015  Tanaka Akira  <akr@fsij.org>
 
 	* test/lib/envutil.rb: mkfifo command based File.mkfifo method

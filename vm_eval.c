@@ -39,43 +39,48 @@ typedef enum call_type {
 
 static VALUE send_internal(int argc, const VALUE *argv, VALUE recv, call_type scope);
 
-static VALUE vm_call0_body(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv);
+static VALUE vm_call0_body(rb_thread_t* th, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc, const VALUE *argv);
 
 static VALUE
 vm_call0(rb_thread_t* th, VALUE recv, ID id, int argc, const VALUE *argv, const rb_callable_method_entry_t *me)
 {
-    rb_call_info_t ci_entry, *ci = &ci_entry;
+    struct rb_calling_info calling_entry, *calling;
+    struct rb_call_info ci_entry;
+    struct rb_call_cache cc_entry;
 
-    ci->flag = 0;
-    ci->mid = id;
-    ci->recv = recv;
-    ci->argc = argc;
-    ci->me = me;
-    ci->kw_arg = NULL;
+    calling = &calling_entry;
 
-    return vm_call0_body(th, ci, argv);
+    ci_entry.flag = 0;
+    ci_entry.mid = id;
+
+    cc_entry.me = me;
+
+    calling->recv = recv;
+    calling->argc = argc;
+
+    return vm_call0_body(th, calling, &ci_entry, &cc_entry, argv);
 }
 
 #if OPT_CALL_CFUNC_WITHOUT_FRAME
 static VALUE
-vm_call0_cfunc(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
+vm_call0_cfunc(rb_thread_t* th, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc, const VALUE *argv)
 {
     VALUE val;
 
-    RUBY_DTRACE_CMETHOD_ENTRY_HOOK(th, ci->me->owner, ci->mid);
-    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, ci->recv, ci->mid, ci->me->owner, Qnil);
+    RUBY_DTRACE_CMETHOD_ENTRY_HOOK(th, cc->me->owner, ci->mid);
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, calling->recv, ci->mid, cc->me->owner, Qnil);
     {
 	rb_control_frame_t *reg_cfp = th->cfp;
-	const rb_callable_method_entry_t *me = ci->me;
+	const rb_callable_method_entry_t *me = cc->me;
 	const rb_method_cfunc_t *cfunc = &me->def->body.cfunc;
 	int len = cfunc->argc;
-	VALUE recv = ci->recv;
-	int argc = ci->argc;
+	VALUE recv = calling->recv;
+	int argc = calling->argc;
 
-	if (len >= 0) rb_check_arity(ci->argc, len, len);
+	if (len >= 0) rb_check_arity(argc, len, len);
 
 	th->passed_ci = ci;
-	ci->aux.inc_sp = 0;
+	cc->aux.inc_sp = 0;
 	VM_PROFILE_UP(2);
 	val = (*cfunc->invoker)(cfunc->func, recv, argc, argv);
 
@@ -93,23 +98,23 @@ vm_call0_cfunc(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
 	    vm_pop_frame(th);
 	}
     }
-    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, ci->recv, ci->mid, ci->me->owner, val);
-    RUBY_DTRACE_CMETHOD_RETURN_HOOK(th, ci->me->owner, ci->mid);
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, calling->recv, ci->mid, callnig->cc->me->owner, val);
+    RUBY_DTRACE_CMETHOD_RETURN_HOOK(th, cc->me->owner, ci->mid);
 
     return val;
 }
 #else
 static VALUE
-vm_call0_cfunc_with_frame(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
+vm_call0_cfunc_with_frame(rb_thread_t* th, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc, const VALUE *argv)
 {
     VALUE val;
-    const rb_callable_method_entry_t *me = ci->me;
+    const rb_callable_method_entry_t *me = cc->me;
     const rb_method_cfunc_t *cfunc = &me->def->body.cfunc;
     int len = cfunc->argc;
-    VALUE recv = ci->recv;
-    int argc = ci->argc;
+    VALUE recv = calling->recv;
+    int argc = calling->argc;
     ID mid = ci->mid;
-    rb_block_t *blockptr = ci->blockptr;
+    rb_block_t *blockptr = calling->blockptr;
 
     RUBY_DTRACE_CMETHOD_ENTRY_HOOK(th, me->owner, mid);
     EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, recv, mid, me->owner, Qnil);
@@ -138,114 +143,114 @@ vm_call0_cfunc_with_frame(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv
 }
 
 static VALUE
-vm_call0_cfunc(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
+vm_call0_cfunc(rb_thread_t* th, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc, const VALUE *argv)
 {
-    return vm_call0_cfunc_with_frame(th, ci, argv);
+    return vm_call0_cfunc_with_frame(th, calling, ci, cc, argv);
 }
 #endif
 
 /* `ci' should point temporal value (on stack value) */
 static VALUE
-vm_call0_body(rb_thread_t* th, rb_call_info_t *ci, const VALUE *argv)
+vm_call0_body(rb_thread_t* th, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc, const VALUE *argv)
 {
     VALUE ret;
 
     if (th->passed_block) {
-	ci->blockptr = (rb_block_t *)th->passed_block;
+	calling->blockptr = (rb_block_t *)th->passed_block;
 	th->passed_block = 0;
     }
     else {
-	ci->blockptr = 0;
+	calling->blockptr = 0;
     }
 
   again:
-    switch (ci->me->def->type) {
+    switch (cc->me->def->type) {
       case VM_METHOD_TYPE_ISEQ:
 	{
 	    rb_control_frame_t *reg_cfp = th->cfp;
 	    int i;
 
-	    CHECK_VM_STACK_OVERFLOW(reg_cfp, ci->argc + 1);
+	    CHECK_VM_STACK_OVERFLOW(reg_cfp, calling->argc + 1);
 
-	    *reg_cfp->sp++ = ci->recv;
-	    for (i = 0; i < ci->argc; i++) {
+	    *reg_cfp->sp++ = calling->recv;
+	    for (i = 0; i < calling->argc; i++) {
 		*reg_cfp->sp++ = argv[i];
 	    }
 
-	    vm_call_iseq_setup(th, reg_cfp, ci);
+	    vm_call_iseq_setup(th, reg_cfp, calling, ci, cc);
 	    th->cfp->flag |= VM_FRAME_FLAG_FINISH;
 	    return vm_exec(th); /* CHECK_INTS in this function */
 	}
       case VM_METHOD_TYPE_NOTIMPLEMENTED:
       case VM_METHOD_TYPE_CFUNC:
-	ret = vm_call0_cfunc(th, ci, argv);
+	ret = vm_call0_cfunc(th, calling, ci, cc, argv);
 	goto success;
       case VM_METHOD_TYPE_ATTRSET:
-	rb_check_arity(ci->argc, 1, 1);
-	ret = rb_ivar_set(ci->recv, ci->me->def->body.attr.id, argv[0]);
+	rb_check_arity(calling->argc, 1, 1);
+	ret = rb_ivar_set(calling->recv, cc->me->def->body.attr.id, argv[0]);
 	goto success;
       case VM_METHOD_TYPE_IVAR:
-	rb_check_arity(ci->argc, 0, 0);
-	ret = rb_attr_get(ci->recv, ci->me->def->body.attr.id);
+	rb_check_arity(calling->argc, 0, 0);
+	ret = rb_attr_get(calling->recv, cc->me->def->body.attr.id);
 	goto success;
       case VM_METHOD_TYPE_BMETHOD:
-	ret = vm_call_bmethod_body(th, ci, argv);
+	ret = vm_call_bmethod_body(th, calling, ci, cc, argv);
 	goto success;
       case VM_METHOD_TYPE_ZSUPER:
       case VM_METHOD_TYPE_REFINED:
 	{
-	    const rb_method_type_t type = ci->me->def->type;
+	    const rb_method_type_t type = cc->me->def->type;
 	    VALUE super_class;
 
-	    if (type == VM_METHOD_TYPE_REFINED && ci->me->def->body.refined.orig_me) {
-		ci->me = refined_method_callable_without_refinement(ci->me);
+	    if (type == VM_METHOD_TYPE_REFINED && cc->me->def->body.refined.orig_me) {
+		cc->me = refined_method_callable_without_refinement(cc->me);
 		goto again;
 	    }
 
-	    super_class = RCLASS_SUPER(ci->me->defined_class);
+	    super_class = RCLASS_SUPER(cc->me->defined_class);
 
-	    if (!super_class || !(ci->me = rb_callable_method_entry(super_class, ci->mid))) {
+	    if (!super_class || !(cc->me = rb_callable_method_entry(super_class, ci->mid))) {
 		enum method_missing_reason ex = (type == VM_METHOD_TYPE_ZSUPER) ? MISSING_SUPER : 0;
-		ret = method_missing(ci->recv, ci->mid, ci->argc, argv, ex);
+		ret = method_missing(calling->recv, ci->mid, calling->argc, argv, ex);
 		goto success;
 	    }
 	    RUBY_VM_CHECK_INTS(th);
 	    goto again;
 	}
       case VM_METHOD_TYPE_ALIAS:
-	ci->me = aliased_callable_method_entry(ci->me);
+	cc->me = aliased_callable_method_entry(cc->me);
 	goto again;
       case VM_METHOD_TYPE_MISSING:
 	{
-	    VALUE new_args = rb_ary_new4(ci->argc, argv);
+	    VALUE new_args = rb_ary_new4(calling->argc, argv);
 
 	    rb_ary_unshift(new_args, ID2SYM(ci->mid));
-	    th->passed_block = ci->blockptr;
-	    ret = rb_funcall2(ci->recv, idMethodMissing, ci->argc+1,
+	    th->passed_block = calling->blockptr;
+	    ret = rb_funcall2(calling->recv, idMethodMissing, calling->argc+1,
 	                      RARRAY_CONST_PTR(new_args));
 	    RB_GC_GUARD(new_args);
 	    return ret;
 	}
       case VM_METHOD_TYPE_OPTIMIZED:
-	switch (ci->me->def->body.optimize_type) {
+	switch (cc->me->def->body.optimize_type) {
 	  case OPTIMIZED_METHOD_TYPE_SEND:
-	    ret = send_internal(ci->argc, argv, ci->recv, CALL_FCALL);
+	    ret = send_internal(calling->argc, argv, calling->recv, CALL_FCALL);
 	    goto success;
 	  case OPTIMIZED_METHOD_TYPE_CALL:
 	    {
 		rb_proc_t *proc;
-		GetProcPtr(ci->recv, proc);
-		ret = rb_vm_invoke_proc(th, proc, ci->argc, argv, ci->blockptr);
+		GetProcPtr(calling->recv, proc);
+		ret = rb_vm_invoke_proc(th, proc, calling->argc, argv, calling->blockptr);
 		goto success;
 	    }
 	  default:
-	    rb_bug("vm_call0: unsupported optimized method type (%d)", ci->me->def->body.optimize_type);
+	    rb_bug("vm_call0: unsupported optimized method type (%d)", cc->me->def->body.optimize_type);
 	}
 	break;
       case VM_METHOD_TYPE_UNDEF:
 	break;
     }
-    rb_bug("vm_call0: unsupported method type (%d)", ci->me->def->type);
+    rb_bug("vm_call0: unsupported method type (%d)", cc->me->def->type);
     return Qundef;
 
   success:

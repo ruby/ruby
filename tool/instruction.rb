@@ -715,7 +715,7 @@ class RubyVM
         # skip make operands when body has no reference to this operand
         # TODO: really needed?
         re = /\b#{var}\b/n
-        if re =~ insn.body or re =~ insn.sp_inc or insn.rets.any?{|t, v| re =~ v} or re =~ 'ic' or re =~ 'ci'
+        if re =~ insn.body or re =~ insn.sp_inc or insn.rets.any?{|t, v| re =~ v} or re =~ 'ic' or re =~ 'ci' or re =~ 'cc'
           ops << "  #{type} #{var} = (#{type})GET_OPERAND(#{i+1});"
         end
 
@@ -949,6 +949,8 @@ class RubyVM
         "TS_IC"
       when /^CALL_INFO/
         "TS_CALLINFO"
+      when /^CALL_CACHE/
+        "TS_CALLCACHE"
       when /^\.\.\./
         "TS_VARIABLE"
       when /^CDHASH/
@@ -971,6 +973,7 @@ class RubyVM
       'TS_GENTRY'    => 'G',
       'TS_IC'        => 'K',
       'TS_CALLINFO'  => 'C',
+      'TS_CALLCACHE' => 'E',
       'TS_CDHASH'    => 'H',
       'TS_ISEQ'      => 'S',
       'TS_VARIABLE'  => '.',
