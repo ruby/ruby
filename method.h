@@ -118,7 +118,10 @@ typedef enum {
     END_OF_ENUMERATION(VM_METHOD_TYPE)
 } rb_method_type_t;
 
+#ifndef rb_iseq_t
 typedef struct rb_iseq_struct rb_iseq_t;
+#define rb_iseq_t rb_iseq_t
+#endif
 
 typedef struct rb_method_iseq_struct {
     const rb_iseq_t * const iseqptr;              /* should be separated from iseqval */
