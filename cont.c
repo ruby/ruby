@@ -881,8 +881,8 @@ cont_restore_0(rb_context_t *cont, VALUE *addr_in_prev_frame)
  *  For instance:
  *
  *     require "continuation"
- *     arr = [ "Freddie", "Herbie", "Ron", "Max", "Ringo" ]
- *     callcc{|cc| $cc = cc}
+ *     arr = %w[ Freddie Herbie Ron Max Ringo ]
+ *     callcc{ |cc| $cc = cc }
  *     puts(message = arr.shift)
  *     $cc.call unless message =~ /Max/
  *
@@ -893,20 +893,38 @@ cont_restore_0(rb_context_t *cont, VALUE *addr_in_prev_frame)
  *     Ron
  *     Max
  *
+ *  Also you can call callcc in other methods:
+ *
+ *     require "continuation"
+ *
+ *     def g
+ *       arr = %w[ Freddie Herbie Ron Max Ringo ]
+ *       cc = callcc { |cc| cc }
+ *       puts arr.shift
+ *       return cc, arr.size
+ *     end
+ *
+ *     def f
+ *       c, size = g
+ *       c.call(c) if size > 0
+ *     end
+ *
+ *     f
+ *
  *  This (somewhat contrived) example allows the inner loop to abandon
  *  processing early:
  *
  *     require "continuation"
- *     callcc {|cont|
- *       for i in 0..4
+ *     callcc do |cont|
+ *       5.times do |i|
  *         print "\n#{i}: "
- *         for j in i*5...(i+1)*5
+ *
+ *         (i*5...(i+1)*5).each do |j|
  *           cont.call() if j == 17
  *           printf "%3d", j
  *         end
  *       end
- *     }
- *     puts
+ *     end
  *
  *  <em>produces:</em>
  *
@@ -918,7 +936,7 @@ cont_restore_0(rb_context_t *cont, VALUE *addr_in_prev_frame)
 
 /*
  *  call-seq:
- *     callcc {|cont| block }   ->  obj
+ *     callcc { |cont| block }   ->  obj
  *
  *  Generates a Continuation object, which it passes to
  *  the associated block. You need to <code>require
