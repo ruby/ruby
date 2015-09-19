@@ -1,3 +1,8 @@
+Sun Sep 20 02:18:10 2015  Tanaka Akira  <akr@fsij.org>
+
+	* test/lib/envutil.rb: mkfifo command based File.mkfifo method
+	  definition removed.
+
 Fri Sep 18 20:11:11 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_s_mkfifo): implement File.mkfifo.
