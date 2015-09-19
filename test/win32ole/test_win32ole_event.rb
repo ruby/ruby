@@ -21,7 +21,7 @@ def ado_installed?
   installed
 end
 
-def swbemsink_avairable?
+def swbemsink_available?
   available = false
   if defined?(WIN32OLE)
     wmi = nil
@@ -50,7 +50,7 @@ if defined?(WIN32OLE_EVENT)
   end
 
   class TestWIN32OLE_EVENT_SWbemSink < Test::Unit::TestCase
-    unless swbemsink_avairable?
+    unless swbemsink_available?
       def test_dummy_for_skip_message
         skip "'WbemScripting.SWbemSink' is not available"
       end
