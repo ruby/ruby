@@ -12,6 +12,11 @@
 #ifndef RUBY_ISEQ_H
 #define RUBY_ISEQ_H 1
 
+#ifndef rb_iseq_t
+typedef struct rb_iseq_struct rb_iseq_t;
+#define rb_iseq_t rb_iseq_t
+#endif
+
 static inline size_t
 rb_call_info_kw_arg_bytes(int keyword_len)
 {
