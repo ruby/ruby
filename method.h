@@ -8,8 +8,8 @@
   Copyright (C) 2009 Koichi Sasada
 
 **********************************************************************/
-#ifndef METHOD_H
-#define METHOD_H
+#ifndef RUBY_METHOD_H
+#define RUBY_METHOD_H 1
 
 #include "internal.h"
 
@@ -210,4 +210,4 @@ void rb_method_entry_copy(rb_method_entry_t *dst, const rb_method_entry_t *src);
 
 void rb_scope_visibility_set(rb_method_visibility_t);
 
-#endif /* METHOD_H */
+#endif /* RUBY_METHOD_H */
