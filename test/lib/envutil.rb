@@ -3,11 +3,6 @@ require "open3"
 require "timeout"
 require_relative "find_executable"
 
-def File.mkfifo(fn)
-  ret = system("mkfifo", fn)
-  raise NotImplementedError, "mkfifo fails" if !ret
-end unless File.respond_to?(:mkfifo) or /mswin|mingw|bccwin/ =~ RUBY_PLATFORM
-
 module EnvUtil
   def rubybin
     if ruby = ENV["RUBY"]
