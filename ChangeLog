@@ -1,3 +1,8 @@
+Sun Sep 20 10:07:35 2015  Anton Davydov  <antondavydov.o@gmail.com>
+
+	* cont.c (rb_callcc): [DOC] append continuations example accros
+	  methods.  [Fix GH-1026]
+
 Sun Sep 20 03:20:21 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* iseq.c (rb_iseq_free): free rb_iseq_t::body::cc_entries.

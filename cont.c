@@ -893,6 +893,24 @@ cont_restore_0(rb_context_t *cont, VALUE *addr_in_prev_frame)
  *     Ron
  *     Max
  *
+ *  Also you can call callcc in other methods:
+ *
+ *     require "continuation"
+ *
+ *     def g
+ *       arr = [ "Freddie", "Herbie", "Ron", "Max", "Ringo" ]
+ *       cc = callcc { |cc| cc }
+ *       puts arr.shift
+ *       return cc, arr.size
+ *     end
+ *
+ *     def f
+ *       c, size = g
+ *       c.call(c) if size > 1
+ *     end
+ *
+ *     f
+ *
  *  This (somewhat contrived) example allows the inner loop to abandon
  *  processing early:
  *
