@@ -4721,38 +4721,30 @@ rb_str_setbyte(VALUE str, VALUE index, VALUE value)
 	switch (cr) {
 	  case ENC_CODERANGE_7BIT:
 	    left = ptr;
-	    width = 1;
-	    break;
+	    *ptr = byte;
+	    if (ISASCII(byte)) break;
+	    nlen = rb_enc_precise_mbclen(left, head+len, enc);
+	    if (!MBCLEN_CHARFOUND_P(nlen))
+		ENC_CODERANGE_SET(str, ENC_CODERANGE_BROKEN);
+	    else
+		ENC_CODERANGE_SET(str, ENC_CODERANGE_VALID);
+	    goto end;
 	  case ENC_CODERANGE_VALID:
 	    left = rb_enc_left_char_head(head, ptr, head+len, enc);
 	    width = rb_enc_precise_mbclen(left, head+len, enc);
-	    break;
-	  default:
-	    ENC_CODERANGE_CLEAR(str);
+	    *ptr = byte;
+	    nlen = rb_enc_precise_mbclen(left, head+len, enc);
+	    if (!MBCLEN_CHARFOUND_P(nlen))
+		ENC_CODERANGE_SET(str, ENC_CODERANGE_BROKEN);
+	    else if (MBCLEN_CHARFOUND_LEN(nlen) != width || ISASCII(byte))
+		ENC_CODERANGE_CLEAR(str);
+	    goto end;
 	}
     }
-    else {
-	ENC_CODERANGE_CLEAR(str);
-    }
-
+    ENC_CODERANGE_CLEAR(str);
     *ptr = byte;
 
-    switch (cr) {
-      case ENC_CODERANGE_7BIT:
-	if (ISASCII(byte)) break;
-      case ENC_CODERANGE_VALID:
-	nlen = rb_enc_precise_mbclen(left, head+len, enc);
-	if (!MBCLEN_CHARFOUND_P(nlen))
-	    ENC_CODERANGE_SET(str, ENC_CODERANGE_BROKEN);
-	else if (cr == ENC_CODERANGE_7BIT)
-	    ENC_CODERANGE_SET(str, ENC_CODERANGE_VALID);
-	else if (MBCLEN_CHARFOUND_LEN(nlen) != width)
-	    ENC_CODERANGE_CLEAR(str);
-	else if (ISASCII(byte)) /* may become 7BIT */
-	    ENC_CODERANGE_CLEAR(str);
-	break;
-    }
-
+  end:
     return value;
 }
 
