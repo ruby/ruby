@@ -3283,7 +3283,7 @@ fole_missing(int argc, VALUE *argv, VALUE self)
     rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
     mid = argv[0];
     sym = rb_check_symbol(&mid);
-    if (sym) mid = rb_sym2str(sym);
+    if (!NIL_P(sym)) mid = rb_sym2str(sym);
     mname = StringValueCStr(mid);
     if(!mname) {
         rb_raise(rb_eRuntimeError, "fail: unknown method or property");
