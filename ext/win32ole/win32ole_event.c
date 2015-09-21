@@ -48,7 +48,7 @@ struct IEventSinkVtbl {
 };
 
 typedef struct tagIEVENTSINKOBJ {
-    IEventSinkVtbl *lpVtbl;
+    const IEventSinkVtbl *lpVtbl;
     DWORD m_cRef;
     IID m_iid;
     long  m_event_id;
@@ -67,9 +67,23 @@ static ID id_events;
 
 VALUE cWIN32OLE_EVENT;
 
-static BOOL g_IsEventSinkVtblInitialized = FALSE;
+STDMETHODIMP EVENTSINK_QueryInterface(PEVENTSINK, REFIID, LPVOID*);
+STDMETHODIMP_(ULONG) EVENTSINK_AddRef(PEVENTSINK);
+STDMETHODIMP_(ULONG) EVENTSINK_Release(PEVENTSINK);
+STDMETHODIMP EVENTSINK_GetTypeInfoCount(PEVENTSINK, UINT*);
+STDMETHODIMP EVENTSINK_GetTypeInfo(PEVENTSINK, UINT, LCID, ITypeInfo**);
+STDMETHODIMP EVENTSINK_GetIDsOfNames(PEVENTSINK, REFIID, OLECHAR**, UINT, LCID, DISPID*);
+STDMETHODIMP EVENTSINK_Invoke(PEVENTSINK, DISPID, REFIID, LCID, WORD, DISPPARAMS*, VARIANT*, EXCEPINFO*, UINT*);
 
-static IEventSinkVtbl vtEventSink;
+static const IEventSinkVtbl vtEventSink = {
+    EVENTSINK_QueryInterface,
+    EVENTSINK_AddRef,
+    EVENTSINK_Release,
+    EVENTSINK_GetTypeInfoCount,
+    EVENTSINK_GetTypeInfo,
+    EVENTSINK_GetIDsOfNames,
+    EVENTSINK_Invoke,
+};
 
 void EVENTSINK_Destructor(PIEVENTSINKOBJ);
 static void ole_val2ptr_variant(VALUE val, VARIANT *var);
@@ -294,17 +308,6 @@ PIEVENTSINKOBJ
 EVENTSINK_Constructor(void)
 {
     PIEVENTSINKOBJ pEv;
-    if (!g_IsEventSinkVtblInitialized) {
-        vtEventSink.QueryInterface=EVENTSINK_QueryInterface;
-        vtEventSink.AddRef = EVENTSINK_AddRef;
-        vtEventSink.Release = EVENTSINK_Release;
-        vtEventSink.Invoke = EVENTSINK_Invoke;
-        vtEventSink.GetIDsOfNames = EVENTSINK_GetIDsOfNames;
-        vtEventSink.GetTypeInfoCount = EVENTSINK_GetTypeInfoCount;
-        vtEventSink.GetTypeInfo = EVENTSINK_GetTypeInfo;
-
-        g_IsEventSinkVtblInitialized = TRUE;
-    }
     pEv = ALLOC_N(IEVENTSINKOBJ, 1);
     if(pEv == NULL) return NULL;
     pEv->lpVtbl = &vtEventSink;
