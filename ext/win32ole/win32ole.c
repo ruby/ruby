@@ -690,6 +690,25 @@ ole_cp2encoding(UINT cp)
     return rb_enc_from_index(idx);
 }
 
+#ifndef pIMultiLanguage
+static HRESULT
+ole_ml_wc2mb_conv0(LPWSTR pw, LPSTR pm, UINT *size)
+{
+    DWORD dw = 0;
+    return pIMultiLanguage->lpVtbl->ConvertStringFromUnicode(pIMultiLanguage,
+		    &dw, cWIN32OLE_cp, pw, NULL, pm, size);
+}
+#define ole_ml_wc2mb_conv(pw, pm, size, onfailure) do { \
+	HRESULT hr = ole_ml_wc2mb_conv0(pw, pm, &size); \
+	if (FAILED(hr)) { \
+	    onfailure; \
+	    ole_raise(hr, eWIN32OLERuntimeError, "fail to convert Unicode to CP%d", cWIN32OLE_cp); \
+	} \
+    } while (0)
+#endif
+
+#define ole_wc2mb_conv(pw, pm, size) WideCharToMultiByte(cWIN32OLE_cp, 0, (pw), -1, (pm), (size), NULL, NULL)
+
 static char *
 ole_wc2mb_alloc(LPWSTR pw, char *(alloc)(UINT size, void *arg), void *arg)
 {
@@ -697,32 +716,17 @@ ole_wc2mb_alloc(LPWSTR pw, char *(alloc)(UINT size, void *arg), void *arg)
     UINT size = 0;
     if (conv_51932(cWIN32OLE_cp)) {
 #ifndef pIMultiLanguage
-	DWORD dw = 0;
-	HRESULT hr = pIMultiLanguage->lpVtbl->ConvertStringFromUnicode(pIMultiLanguage,
-		&dw, cWIN32OLE_cp, pw, NULL, NULL, &size);
-	if (FAILED(hr)) {
-            ole_raise(hr, eWIN32OLERuntimeError, "fail to convert Unicode to CP%d", cWIN32OLE_cp);
-	}
+	ole_ml_wc2mb_conv(pw, NULL, size, {});
 	pm = alloc(size, arg);
-	hr = pIMultiLanguage->lpVtbl->ConvertStringFromUnicode(pIMultiLanguage,
-		&dw, cWIN32OLE_cp, pw, NULL, pm, &size);
-	if (FAILED(hr)) {
-            ole_raise(hr, eWIN32OLERuntimeError, "fail to convert Unicode to CP%d", cWIN32OLE_cp);
-	}
+	if (size) ole_ml_wc2mb_conv(pw, pm, size, xfree(pm));
 	pm[size] = '\0';
 	return pm;
 #endif
     }
-    size = WideCharToMultiByte(cWIN32OLE_cp, 0, pw, -1, NULL, 0, NULL, NULL);
-    if (size) {
-        pm = alloc(size, arg);
-        WideCharToMultiByte(cWIN32OLE_cp, 0, pw, -1, pm, size, NULL, NULL);
-        pm[size] = '\0';
-    }
-    else {
-        pm = alloc(0, arg);
-        *pm = '\0';
-    }
+    size = ole_wc2mb_conv(pw, NULL, 0);
+    pm = alloc(size, arg);
+    if (size) ole_wc2mb_conv(pw, pm, size);
+    pm[size] = '\0';
     return pm;
 }
 
