@@ -1,3 +1,10 @@
+Tue Sep 22 04:20:01 2015  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* test/drb/test_drb.rb: Run Rinda/DRb tests on localhost. [Fix GH-1027]
+	  patch by voxik.
+
+	* test/rinda/test_rinda.rb: ditto
+
 Mon Sep 21 20:53:39 2015  tbpgr  <tbpgr@tbpgr.jp>
 
 	* test/win32ole/test_win32ole_event.rb: fix typo.

@@ -488,7 +488,7 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
   end
 
   def test_take_bug_8215
-    service = DRb.start_service(nil, @ts_base)
+    service = DRb.start_service("druby://localhost:0", @ts_base)
 
     uri = service.uri
 
@@ -496,7 +496,7 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
 
     take = spawn(*args, <<-'end;', uri)
       uri = ARGV[0]
-      DRb.start_service
+      DRb.start_service("druby://localhost:0")
       ro = DRbObject.new_with_uri(uri)
       ts = Rinda::TupleSpaceProxy.new(ro)
       th = Thread.new do
@@ -512,7 +512,7 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
 
     write = spawn(*args, <<-'end;', uri)
       uri = ARGV[0]
-      DRb.start_service
+      DRb.start_service("druby://localhost:0")
       ro = DRbObject.new_with_uri(uri)
       ts = Rinda::TupleSpaceProxy.new(ro)
       ts.write([:test_take, 42])
@@ -531,7 +531,7 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
     Process.wait(take)  if take
   end
 
-  @server = DRb.primary_server || DRb.start_service
+  @server = DRb.primary_server || DRb.start_service("druby://localhost:0")
 end
 
 module RingIPv6
