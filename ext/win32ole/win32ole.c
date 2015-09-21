@@ -99,7 +99,7 @@ static void ole_freeexceptinfo(EXCEPINFO *pExInfo);
 static VALUE ole_excepinfo2msg(EXCEPINFO *pExInfo);
 static void ole_free(void *ptr);
 static size_t ole_size(const void *ptr);
-static LPWSTR ole_mb2wc(char *pm, int len);
+static LPWSTR ole_mb2wc(char *pm, int len, UINT cp);
 static VALUE ole_ary_m_entry(VALUE val, LONG *pid);
 static VALUE is_all_index_under(LONG *pid, long *pub, long dim);
 static void * get_ptr_of_variant(VARIANT *pvar);
@@ -853,7 +853,6 @@ ole_vstr2wc(VALUE vstr)
 {
     rb_encoding *enc;
     int cp;
-    UINT size = 0;
     LPWSTR pw;
     st_data_t data;
     struct st_table *tbl = DATA_PTR(enc2cp_hash);
@@ -877,58 +876,40 @@ ole_vstr2wc(VALUE vstr)
             rb_raise(eWIN32OLERuntimeError, "not installed Windows codepage(%d) according to `%s'", cp, rb_enc_name(enc));
         }
     }
-    if (conv_51932(cp)) {
-#ifndef pIMultiLanguage
-	DWORD dw = 0;
-	UINT len = RSTRING_LENINT(vstr);
-	HRESULT hr = pIMultiLanguage->lpVtbl->ConvertStringToUnicode(pIMultiLanguage,
-		&dw, cp, RSTRING_PTR(vstr), &len, NULL, &size);
-	if (FAILED(hr)) {
-            ole_raise(hr, eWIN32OLERuntimeError, "fail to convert CP%d to Unicode", cp);
-	}
-	pw = SysAllocStringLen(NULL, size);
-	len = RSTRING_LEN(vstr);
-	hr = pIMultiLanguage->lpVtbl->ConvertStringToUnicode(pIMultiLanguage,
-		&dw, cp, RSTRING_PTR(vstr), &len, pw, &size);
-	if (FAILED(hr)) {
-            ole_raise(hr, eWIN32OLERuntimeError, "fail to convert CP%d to Unicode", cp);
-	}
-	return pw;
-#endif
-    }
-    size = MultiByteToWideChar(cp, 0, RSTRING_PTR(vstr), RSTRING_LEN(vstr), NULL, 0);
-    pw = SysAllocStringLen(NULL, size);
-    MultiByteToWideChar(cp, 0, RSTRING_PTR(vstr), RSTRING_LEN(vstr), pw, size);
+    pw = ole_mb2wc(RSTRING_PTR(vstr), RSTRING_LENINT(vstr), cp);
+    RB_GC_GUARD(vstr);
     return pw;
 }
 
 static LPWSTR
-ole_mb2wc(char *pm, int len)
+ole_mb2wc(char *pm, int len, UINT cp)
 {
     UINT size = 0;
     LPWSTR pw;
 
-    if (conv_51932(cWIN32OLE_cp)) {
+    if (conv_51932(cp)) {
 #ifndef pIMultiLanguage
 	DWORD dw = 0;
 	UINT n = len;
 	HRESULT hr = pIMultiLanguage->lpVtbl->ConvertStringToUnicode(pIMultiLanguage,
-		&dw, cWIN32OLE_cp, pm, &n, NULL, &size);
+		&dw, cp, pm, &n, NULL, &size);
 	if (FAILED(hr)) {
-            ole_raise(hr, eWIN32OLERuntimeError, "fail to convert CP%d to Unicode", cWIN32OLE_cp);
+            ole_raise(hr, eWIN32OLERuntimeError, "fail to convert CP%d to Unicode", cp);
 	}
 	pw = SysAllocStringLen(NULL, size);
+	n = len;
 	hr = pIMultiLanguage->lpVtbl->ConvertStringToUnicode(pIMultiLanguage,
-		&dw, cWIN32OLE_cp, pm, &n, pw, &size);
+		&dw, cp, pm, &n, pw, &size);
 	if (FAILED(hr)) {
-            ole_raise(hr, eWIN32OLERuntimeError, "fail to convert CP%d to Unicode", cWIN32OLE_cp);
+            ole_raise(hr, eWIN32OLERuntimeError, "fail to convert CP%d to Unicode", cp);
 	}
 	return pw;
 #endif
     }
-    size = MultiByteToWideChar(cWIN32OLE_cp, 0, pm, len, NULL, 0);
-    pw = SysAllocStringLen(NULL, size - 1);
-    MultiByteToWideChar(cWIN32OLE_cp, 0, pm, len, pw, size);
+    size = MultiByteToWideChar(cp, 0, pm, len, NULL, 0);
+    pw = SysAllocStringLen(NULL, size);
+    pw[size-1] = 0;
+    MultiByteToWideChar(cp, 0, pm, len, pw, size);
     return pw;
 }
 
@@ -1839,7 +1820,7 @@ clsid_from_remote(VALUE host, VALUE com, CLSID *pclsid)
         len = sizeof(clsid);
         err = RegQueryValueEx(hpid, "", NULL, &dwtype, (BYTE *)clsid, &len);
         if (err == ERROR_SUCCESS && dwtype == REG_SZ) {
-            pbuf  = ole_mb2wc(clsid, -1);
+            pbuf = ole_mb2wc(clsid, -1, cWIN32OLE_cp);
             hr = CLSIDFromString(pbuf, pclsid);
             SysFreeString(pbuf);
         }
