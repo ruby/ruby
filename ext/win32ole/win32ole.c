@@ -349,7 +349,7 @@ static HRESULT ( STDMETHODCALLTYPE GetIDsOfNames )(
     Win32OLEIDispatch* p = (Win32OLEIDispatch*)This;
     */
     char* psz = ole_wc2mb(*rgszNames); // support only one method
-    ID nameid = rb_intern(psz);
+    ID nameid = rb_check_id_cstr(psz, (long)strlen(psz), cWIN32OLE_enc);
     free(psz);
     if ((ID)(DISPID)nameid != nameid) return E_NOINTERFACE;
     *rgDispId = (DISPID)nameid;
@@ -3277,16 +3277,18 @@ fole_each(VALUE self)
 static VALUE
 fole_missing(int argc, VALUE *argv, VALUE self)
 {
-    ID id;
+    VALUE mid, sym;
     const char* mname;
-    size_t n;
+    long n;
     rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
-    id = rb_to_id(argv[0]);
-    mname = rb_id2name(id);
+    mid = argv[0];
+    sym = rb_check_symbol(&mid);
+    if (sym) mid = rb_sym2str(sym);
+    mname = StringValueCStr(mid);
     if(!mname) {
         rb_raise(rb_eRuntimeError, "fail: unknown method or property");
     }
-    n = strlen(mname);
+    n = RSTRING_LEN(mid);
 #if SIZEOF_SIZE_T > SIZEOF_LONG
     if (n >= LONG_MAX) {
 	rb_raise(rb_eRuntimeError, "too long method or property name");
@@ -3294,12 +3296,12 @@ fole_missing(int argc, VALUE *argv, VALUE self)
 #endif
     if(mname[n-1] == '=') {
         rb_check_arity(argc, 2, 2);
-        argv[0] = rb_enc_str_new(mname, (long)(n-1), cWIN32OLE_enc);
+        argv[0] = rb_enc_str_new(mname, (n-1), cWIN32OLE_enc);
 
         return ole_propertyput(self, argv[0], argv[1]);
     }
     else {
-        argv[0] = rb_enc_str_new(mname, (long)n, cWIN32OLE_enc);
+        argv[0] = rb_enc_str_new(mname, n, cWIN32OLE_enc);
         return ole_invoke(argc, argv, self, DISPATCH_METHOD|DISPATCH_PROPERTYGET, FALSE);
     }
 }
