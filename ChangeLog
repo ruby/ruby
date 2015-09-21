@@ -1,3 +1,8 @@
+Mon Sep 21 20:53:39 2015  tbpgr  <tbpgr@tbpgr.jp>
+
+	* test/win32ole/test_win32ole_event.rb: fix typo.
+	  swbemsink_avairable? => swbemsink_available?  [Fix GH-1025]
+
 Sun Sep 20 10:07:35 2015  Anton Davydov  <antondavydov.o@gmail.com>
 
 	* cont.c (rb_callcc): [DOC] append continuations example accros
