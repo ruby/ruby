@@ -1,7 +1,5 @@
 # -*- coding: us-ascii -*-
 =begin
-= $RCSfile$ -- Generator for Makefile
-
 = Info
   'OpenSSL for Ruby 2' project
   Copyright (C) 2002  Michal Rokos <m.rokos@sh.cvut.cz>
@@ -10,9 +8,6 @@
 = Licence
   This program is licensed under the same licence as Ruby.
   (See the file 'LICENCE'.)
-
-= Version
-  $Id$
 =end
 
 require "mkmf"

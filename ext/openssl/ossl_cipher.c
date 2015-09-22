@@ -1,5 +1,4 @@
 /*
- * $Id$
  * 'OpenSSL for Ruby' project
  * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.
@@ -1010,4 +1009,3 @@ Init_ossl_cipher(void)
     rb_define_method(cCipher, "block_size", ossl_cipher_block_size, 0);
     rb_define_method(cCipher, "padding=", ossl_cipher_set_padding, 1);
 }
-

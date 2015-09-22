@@ -1,5 +1,4 @@
 /*
- * $Id$
  * 'OpenSSL for Ruby' project
  * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.
@@ -18,4 +17,3 @@ extern VALUE eSPKIError;
 void Init_ossl_ns_spki(void);
 
 #endif /* _OSSL_NS_SPKI_H_ */
-

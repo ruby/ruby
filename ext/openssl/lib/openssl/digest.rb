@@ -1,7 +1,4 @@
 #--
-#
-# $RCSfile$
-#
 # = Ruby-space predefined Digest subclasses
 #
 # = Info
@@ -12,10 +9,6 @@
 # = Licence
 # This program is licensed under the same licence as Ruby.
 # (See the file 'LICENCE'.)
-#
-# = Version
-# $Id$
-#
 #++
 
 module OpenSSL
@@ -85,4 +78,3 @@ module OpenSSL
   module_function :Digest
 
 end # OpenSSL
-

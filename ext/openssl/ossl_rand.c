@@ -1,5 +1,4 @@
 /*
- * $Id$
  * 'OpenSSL for Ruby' project
  * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  *
@@ -227,4 +226,3 @@ Init_ossl_rand(void)
 #endif /* HAVE_RAND_EGD */
     rb_define_module_function(mRandom, "status?", ossl_rand_status, 0);
 }
-

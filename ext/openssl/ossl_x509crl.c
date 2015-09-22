@@ -1,5 +1,4 @@
 /*
- * $Id$
  * 'OpenSSL for Ruby' project
  * Copyright (C) 2001-2002 Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.
@@ -552,4 +551,3 @@ Init_ossl_x509crl(void)
     rb_define_method(cX509CRL, "extensions=", ossl_x509crl_set_extensions, 1);
     rb_define_method(cX509CRL, "add_extension", ossl_x509crl_add_extension, 1);
 }
-

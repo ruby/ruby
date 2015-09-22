@@ -1,5 +1,4 @@
 /*
- * $Id$
  * 'OpenSSL for Ruby' project
  * Copyright (C) 2001-2002  Technorama team <oss-ruby@technorama.net>
  * All rights reserved.
@@ -1051,4 +1050,3 @@ Init_ossl_bn(void)
      */
     rb_define_method(cBN, "prime_fasttest?", ossl_bn_is_prime_fasttest, -1);
 }
-

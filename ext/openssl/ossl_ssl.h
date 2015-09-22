@@ -1,5 +1,4 @@
 /*
- * $Id$
  * 'OpenSSL for Ruby' project
  * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.
@@ -39,4 +38,3 @@ void Init_ossl_ssl(void);
 void Init_ossl_ssl_session(void);
 
 #endif /* _OSSL_SSL_H_ */
-
