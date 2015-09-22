@@ -5975,19 +5975,7 @@ check_if_wdir(const WCHAR *wfile)
     return TRUE;
 }
 
-/* License: Ruby's */
-static int
-check_if_dir(const char *file)
-{
-    WCHAR *wfile;
-    int ret;
-
-    if (!(wfile = filecp_to_wstr(file, NULL)))
-	return FALSE;
-    ret = check_if_wdir(wfile);
-    free(wfile);
-    return ret;
-}
+static int w32_wopen(const WCHAR *file, int oflag, int perm);
 
 /* License: Ruby's */
 int
@@ -6002,16 +5990,9 @@ rb_w32_open(const char *file, int oflag, ...)
     pmode = va_arg(arg, int);
     va_end(arg);
 
-    if ((oflag & O_TEXT) || !(oflag & O_BINARY)) {
-	oflag &= ~O_SHARE_DELETE;
-	ret = _open(file, oflag, pmode);
-	if (ret == -1 && errno == EACCES) check_if_dir(file);
-	return ret;
-    }
-
     if (!(wfile = filecp_to_wstr(file, NULL)))
 	return -1;
-    ret = rb_w32_wopen(wfile, oflag, pmode);
+    ret = w32_wopen(wfile, oflag, pmode);
     free(wfile);
     return ret;
 }
@@ -6019,6 +6000,21 @@ rb_w32_open(const char *file, int oflag, ...)
 /* License: Ruby's */
 int
 rb_w32_wopen(const WCHAR *file, int oflag, ...)
+{
+    int pmode = 0;
+
+    if (oflag & O_CREAT) {
+	va_list arg;
+	va_start(arg, oflag);
+	pmode = va_arg(arg, int);
+	va_end(arg);
+    }
+
+    return w32_wopen(file, oflag, pmode);
+}
+
+static int
+w32_wopen(const WCHAR *file, int oflag, int pmode)
 {
     char flags = 0;
     int fd;
@@ -6032,11 +6028,6 @@ rb_w32_wopen(const WCHAR *file, int oflag, ...)
     share_delete = oflag & O_SHARE_DELETE ? FILE_SHARE_DELETE : 0;
     oflag &= ~O_SHARE_DELETE;
     if ((oflag & O_TEXT) || !(oflag & O_BINARY)) {
-	va_list arg;
-	int pmode;
-	va_start(arg, oflag);
-	pmode = va_arg(arg, int);
-	va_end(arg);
 	fd = _wopen(file, oflag, pmode);
 	if (fd == -1) {
 	    switch (errno) {
@@ -6105,11 +6096,6 @@ rb_w32_wopen(const WCHAR *file, int oflag, ...)
 	return -1;
     }
     if (oflag & O_CREAT) {
-	va_list arg;
-	int pmode;
-	va_start(arg, oflag);
-	pmode = va_arg(arg, int);
-	va_end(arg);
 	/* TODO: we need to check umask here, but it's not exported... */
 	if (!(pmode & S_IWRITE))
 	    attr = FILE_ATTRIBUTE_READONLY;
