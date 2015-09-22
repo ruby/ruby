@@ -1,7 +1,4 @@
 #--
-#
-# $RCSfile$
-#
 # = Ruby-space predefined Cipher subclasses
 #
 # = Info
@@ -12,10 +9,6 @@
 # = Licence
 # This program is licensed under the same licence as Ruby.
 # (See the file 'LICENCE'.)
-#
-# = Version
-# $Id$
-#
 #++
 
 module OpenSSL

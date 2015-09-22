@@ -1,5 +1,4 @@
 /*
- * $Id$
  * 'OpenSSL for Ruby' project
  * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.
@@ -451,4 +450,3 @@ Init_ossl_pkey(void)
     Init_ossl_dh();
     Init_ossl_ec();
 }
-

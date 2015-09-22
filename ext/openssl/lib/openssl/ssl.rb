@@ -1,6 +1,4 @@
 =begin
-= $RCSfile$ -- Ruby-space definitions that completes C-space funcs for SSL
-
 = Info
   'OpenSSL for Ruby 2' project
   Copyright (C) 2001 GOTOU YUUZOU <gotoyuzo@notwork.org>
@@ -9,9 +7,6 @@
 = Licence
   This program is licensed under the same licence as Ruby.
   (See the file 'LICENCE'.)
-
-= Version
-  $Id$
 =end
 
 require "openssl/buffering"

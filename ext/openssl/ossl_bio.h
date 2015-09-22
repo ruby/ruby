@@ -1,5 +1,4 @@
 /*
- * $Id$
  * 'OpenSSL for Ruby' team members
  * Copyright (C) 2003
  * All rights reserved.
@@ -18,4 +17,3 @@ VALUE ossl_membio2str(BIO*);
 VALUE ossl_protect_membio2str(BIO*,int*);
 
 #endif
-

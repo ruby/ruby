@@ -12,4 +12,3 @@ extern VALUE ePKCS12Error;
 void Init_ossl_pkcs12(void);
 
 #endif /* _OSSL_PKCS12_H_ */
-

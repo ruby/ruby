@@ -1,3 +1,7 @@
+Wed Sep 23 01:11:28 2015  Zachary Scott  <zzak@ruby-lang.org>
+
+        * ext/openssl/*: Remove svn commit id macros to make sync easier
+
 Tue Sep 22 04:20:01 2015  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* test/drb/test_drb.rb: Run Rinda/DRb tests on localhost. [Fix GH-1027]

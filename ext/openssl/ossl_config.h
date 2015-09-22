@@ -1,5 +1,4 @@
 /*
- * $Id$
  * 'OpenSSL for Ruby' project
  * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.
@@ -19,4 +18,3 @@ CONF* DupConfigPtr(VALUE obj);
 void Init_ossl_config(void);
 
 #endif /* _OSSL_CONFIG_H_ */
-

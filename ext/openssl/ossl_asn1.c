@@ -1,5 +1,4 @@
 /*
- * $Id$
  * 'OpenSSL for Ruby' team members
  * Copyright (C) 2003
  * All rights reserved.

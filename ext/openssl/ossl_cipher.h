@@ -1,5 +1,4 @@
 /*
- * $Id$
  * 'OpenSSL for Ruby' project
  * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.
@@ -19,4 +18,3 @@ VALUE ossl_cipher_new(const EVP_CIPHER *);
 void Init_ossl_cipher(void);
 
 #endif /* _OSSL_CIPHER_H_ */
-

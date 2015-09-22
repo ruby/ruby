@@ -1,5 +1,4 @@
 /*
- * $Id$
  * 'OpenSSL for Ruby' project
  * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.
@@ -101,4 +100,3 @@ Init_ossl_x509(void)
     DefX509Default(CERT_FILE_ENV, cert_file_env);
     DefX509Default(PRIVATE_DIR, private_dir);
 }
-

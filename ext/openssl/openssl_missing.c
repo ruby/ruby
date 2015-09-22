@@ -1,5 +1,4 @@
 /*
- * $Id$
  * 'OpenSSL for Ruby' project
  * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.
@@ -353,4 +352,3 @@ ASN1_put_eoc(unsigned char **pp)
     return 2;
 }
 #endif
-

@@ -1,5 +1,4 @@
 /*
- * $Id$
  * 'OpenSSL for Ruby' project
  * Copyright (C) 2003  GOTOU Yuuzou <gotoyuzo@notwork.org>
  * All rights reserved.

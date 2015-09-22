@@ -1,5 +1,4 @@
 /*
- * $Id$
  * 'OpenSSL for Ruby' project
  * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.
@@ -483,4 +482,3 @@ Init_ossl_x509req(void)
     rb_define_method(cX509Req, "attributes=", ossl_x509req_set_attributes, 1);
     rb_define_method(cX509Req, "add_attribute", ossl_x509req_add_attribute, 1);
 }
-

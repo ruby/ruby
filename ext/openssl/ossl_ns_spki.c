@@ -1,5 +1,4 @@
 /*
- * $Id$
  * 'OpenSSL for Ruby' project
  * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.
@@ -404,4 +403,3 @@ Init_ossl_ns_spki(void)
     rb_define_method(cSPKI, "challenge", ossl_spki_get_challenge, 0);
     rb_define_method(cSPKI, "challenge=", ossl_spki_set_challenge, 1);
 }
-
