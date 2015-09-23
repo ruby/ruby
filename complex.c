@@ -5,6 +5,7 @@
   which is written in ruby.
 */
 
+#include "ruby/config.h"
 #if defined _MSC_VER
 /* Microsoft Visual C does not define M_PI and others by default */
 # define _USE_MATH_DEFINES 1
