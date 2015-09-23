@@ -1,7 +1,6 @@
 /*
  * This program is licensed under the same licence as Ruby.
  * (See the file 'LICENCE'.)
- * $Id$
  */
 #include "ossl.h"
 
