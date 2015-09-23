@@ -1,3 +1,7 @@
+Wed Sep 23 22:22:38 2015  Zachary Scott  <zzak@ruby-lang.org>
+
+        * ext/openssl/ossl_pkcs12*: Remove svn commit id macro
+
 Wed Sep 23 01:11:28 2015  Zachary Scott  <zzak@ruby-lang.org>
 
         * ext/openssl/*: Remove svn commit id macros to make sync easier
