@@ -1327,7 +1327,7 @@ proc_exec_sh(const char *str, VALUE envp_str)
     rb_w32_uspawn(P_OVERLAY, (char *)str, 0);
     return -1;
 #else
-#if defined(__CYGWIN32__) || defined(__EMX__)
+#if defined(__EMX__)
     {
         char fbuf[MAXPATHLEN];
         char *shell = dln_find_exe_r("sh", 0, fbuf, sizeof(fbuf));
