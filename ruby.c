@@ -59,12 +59,12 @@ char *getenv();
 #define DEFAULT_RUBYGEMS_ENABLED "enabled"
 #endif
 
-#define DISABLE_BIT(bit) (1U << disable_##bit)
-enum disable_flag_bits {
-    disable_gems,
-    disable_did_you_mean,
-    disable_rubyopt,
-    disable_flag_count
+#define FEATURE_BIT(bit) (1U << feature_##bit)
+enum feature_flag_bits {
+    feature_gems,
+    feature_did_you_mean,
+    feature_rubyopt,
+    feature_flag_count
 };
 
 #define DUMP_BIT(bit) (1U << dump_##bit)
@@ -87,7 +87,7 @@ struct cmdline_options {
     int do_loop, do_print;
     int do_line, do_split;
     int do_search;
-    unsigned int disable;
+    unsigned int features;
     int verbose;
     int safe_level;
     unsigned int setids;
@@ -116,8 +116,9 @@ cmdline_options_init(struct cmdline_options *opt)
     opt->src.enc.index = src_encoding_index;
     opt->ext.enc.index = -1;
     opt->intern.enc.index = -1;
+    opt->features = ~0U;
 #if DISABLE_RUBYGEMS
-    opt->disable |= DISABLE_BIT(gems);
+    opt->features &= ~FEATURE_BIT(gems);
 #endif
     return opt;
 }
@@ -710,12 +711,12 @@ moreswitches(const char *s, struct cmdline_options *opt, int envopt)
 static void
 enable_option(const char *str, int len, void *arg)
 {
-#define UNSET_WHEN_DISABLE(bit) UNSET_WHEN(#bit, DISABLE_BIT(bit), str, len)
-    UNSET_WHEN_DISABLE(gems);
-    UNSET_WHEN_DISABLE(did_you_mean);
-    UNSET_WHEN_DISABLE(rubyopt);
+#define SET_WHEN_ENABLE(bit) SET_WHEN(#bit, FEATURE_BIT(bit), str, len)
+    SET_WHEN_ENABLE(gems);
+    SET_WHEN_ENABLE(did_you_mean);
+    SET_WHEN_ENABLE(rubyopt);
     if (NAME_MATCH_P("all", str, len)) {
-	*(unsigned int *)arg = 0U;
+	*(unsigned int *)arg = ~0U;
 	return;
     }
     rb_warn("unknown argument for --enable: `%.*s'", len, str);
@@ -724,12 +725,12 @@ enable_option(const char *str, int len, void *arg)
 static void
 disable_option(const char *str, int len, void *arg)
 {
-#define SET_WHEN_DISABLE(bit) SET_WHEN(#bit, DISABLE_BIT(bit), str, len)
-    SET_WHEN_DISABLE(gems);
-    SET_WHEN_DISABLE(did_you_mean);
-    SET_WHEN_DISABLE(rubyopt);
+#define UNSET_WHEN_DISABLE(bit) UNSET_WHEN(#bit, FEATURE_BIT(bit), str, len)
+    UNSET_WHEN_DISABLE(gems);
+    UNSET_WHEN_DISABLE(did_you_mean);
+    UNSET_WHEN_DISABLE(rubyopt);
     if (NAME_MATCH_P("all", str, len)) {
-	*(unsigned int *)arg = ~0U;
+	*(unsigned int *)arg = 0U;
 	return;
     }
     rb_warn("unknown argument for --disable: `%.*s'", len, str);
@@ -1065,10 +1066,10 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
                 ruby_verbose = Qtrue;
             }
 	    else if (is_option_with_arg("enable", Qtrue, Qtrue)) {
-		ruby_each_words(s, enable_option, &opt->disable);
+		ruby_each_words(s, enable_option, &opt->features);
 	    }
 	    else if (is_option_with_arg("disable", Qtrue, Qtrue)) {
-		ruby_each_words(s, disable_option, &opt->disable);
+		ruby_each_words(s, disable_option, &opt->features);
 	    }
 	    else if (is_option_with_arg("encoding", Qfalse, Qtrue)) {
 		char *p;
@@ -1324,7 +1325,7 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 	return Qtrue;
     }
 
-    if (!(opt->disable & DISABLE_BIT(rubyopt)) &&
+    if ((opt->features & FEATURE_BIT(rubyopt)) &&
 	opt->safe_level == 0 && (s = getenv("RUBYOPT"))) {
 	VALUE src_enc_name = opt->src.enc.name;
 	VALUE ext_enc_name = opt->ext.enc.name;
@@ -1436,10 +1437,10 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 	}
     }
     Init_ext();		/* load statically linked extensions before rubygems */
-    if (!(opt->disable & DISABLE_BIT(gems))) {
+    if (opt->features & FEATURE_BIT(gems)) {
 	rb_define_module("Gem");
     }
-    if (!(opt->disable & DISABLE_BIT(did_you_mean))) {
+    if (opt->features & FEATURE_BIT(did_you_mean)) {
 	rb_define_module("DidYouMean");
     }
     ruby_init_prelude();

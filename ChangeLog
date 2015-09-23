@@ -1,3 +1,10 @@
+Thu Sep 24 00:00:17 2015  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* complex.c: ruby/config.h must be included before math.h
+	  because it defines _LARGE_FILES on AIX and _LARGE_FILES
+	  must be defined before sys/types.h is included from math.h.
+	  [Bug #11483]
+
 Wed Sep 23 22:22:38 2015  Zachary Scott  <zzak@ruby-lang.org>
 
         * ext/openssl/ossl_pkcs12*: Remove svn commit id macro
