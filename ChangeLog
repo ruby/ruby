@@ -55,7 +55,7 @@ Sun Sep 20 02:46:34 2015  Koichi Sasada  <ko1@atdot.net>
 	  After this patch, above three structs are passed.
 
 	  This patch improves:
-	  * data locarity (rb_call_info is now read-only data).
+	  * data locality (rb_call_info is now read-only data).
 	  * reduce memory consumption (rb_call_info_with_kwarg,
 	    rb_calling_info).
 
@@ -74,7 +74,7 @@ Sun Sep 20 02:46:34 2015  Koichi Sasada  <ko1@atdot.net>
 	* vm_insnhelper.h: ditto.
 
 	* iseq.h: add iseq_compile_data::ci_index and
-	  iseq_compile_data::ci_kw_indx.
+	  iseq_compile_data::ci_kw_index.
 
 	* tool/instruction.rb: introduce TS_CALLCACHE operand type.
 
