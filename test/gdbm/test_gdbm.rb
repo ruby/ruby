@@ -146,7 +146,7 @@ if defined? GDBM
     end
 
     def test_s_open_lock
-      skip "GDBM.open would block when opening already locked gdbm file on platforms without flock and with lockf" if /solaris/ =~ RUBY_PLATFORM
+      skip "GDBM.open would block when opening already locked gdbm file on platforms without flock and with lockf" if /solaris|aix/ =~ RUBY_PLATFORM
 
       dbname = "#{@tmpdir}/#{@prefix}"
 

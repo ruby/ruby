@@ -1,3 +1,9 @@
+Fri Sep 25 07:54:05 2015  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* test/gdbm/test_gdbm.rb (TestGDBM#test_s_open_lock): skip
+	  this test on AIX. The issue is the same as on Solaris.
+	  [ruby-dev:47631]
+
 Thu Sep 24 17:25:09 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (paren_args): fix separator token at `foo::bar()` in
