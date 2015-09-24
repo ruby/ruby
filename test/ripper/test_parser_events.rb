@@ -346,12 +346,41 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     }
     assert_equal true, thru_call
     assert_equal "[call(ref(self),.,foo)]", tree
+
+    thru_call = false
+    assert_nothing_raised {
+      tree = parse("self.foo()", :on_call) {thru_call = true}
+    }
+    assert_equal true, thru_call
+    assert_equal "[call(ref(self),.,foo,[])]", tree
+
     thru_call = false
     assert_nothing_raised(bug2233) {
       tree = parse("foo.()", :on_call) {thru_call = true}
     }
     assert_equal true, thru_call
     assert_equal "[call(vcall(foo),.,call,[])]", tree
+
+    thru_call = false
+    assert_nothing_raised {
+      tree = parse("self::foo", :on_call) {thru_call = true}
+    }
+    assert_equal true, thru_call
+    assert_equal "[call(ref(self),::,foo)]", tree
+
+    thru_call = false
+    assert_nothing_raised {
+      tree = parse("self::foo()", :on_call) {thru_call = true}
+    }
+    assert_equal true, thru_call
+    assert_equal "[call(ref(self),::,foo,[])]", tree
+
+    thru_call = false
+    assert_nothing_raised(bug2233) {
+      tree = parse("foo::()", :on_call) {thru_call = true}
+    }
+    assert_equal true, thru_call
+    assert_equal "[call(vcall(foo),::,call,[])]", tree
   end
 
   def test_excessed_comma

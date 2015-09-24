@@ -1,3 +1,8 @@
+Thu Sep 24 17:25:09 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (paren_args): fix separator token at `foo::bar()` in
+	  ripper.
+
 Thu Sep 24 00:00:17 2015  Rei Odaira  <Rei.Odaira@gmail.com>
 
 	* complex.c: ruby/config.h must be included before math.h
