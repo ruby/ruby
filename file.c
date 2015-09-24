@@ -2686,7 +2686,10 @@ rb_file_s_utime(int argc, VALUE *argv)
     if (!NIL_P(args.atime) || !NIL_P(args.mtime)) {
 	tsp = tss;
 	tsp[0] = rb_time_timespec(args.atime);
-	tsp[1] = rb_time_timespec(args.mtime);
+	if (args.atime == args.mtime)
+	    tsp[1] = tsp[0];
+	else
+	    tsp[1] = rb_time_timespec(args.mtime);
     }
     args.tsp = tsp;
 
