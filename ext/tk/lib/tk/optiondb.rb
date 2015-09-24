@@ -22,15 +22,9 @@ module TkOptionDB
   end
 
   def add(pat, value, pri=None)
-    # if $SAFE >= 4
-    #   fail SecurityError, "can't call 'TkOptionDB.add' at $SAFE >= 4"
-    # end
     tk_call('option', 'add', pat, value, pri)
   end
   def clear
-    # if $SAFE >= 4
-    #   fail SecurityError, "can't call 'TkOptionDB.crear' at $SAFE >= 4"
-    # end
     tk_call_without_enc('option', 'clear')
   end
   def get(win, name, klass)

@@ -117,9 +117,6 @@ p ip.eval_str("
                                      :padx=>10, :pady=>7)
 ", bind)
 
-puts "\n---- change the safe slave IP's safe-level ==> 4 ----------"
-ip.safe_level = 4
-
 puts "\n---- call 3rd and 4th eval_proc ----------"
 p ip.eval_proc{
   TkLabel.new(:text=>"3rd and 4th eval_proc : $SAFE == #{$SAFE}").pack

@@ -360,9 +360,6 @@ class TkVariable
   end
 
   def wait(on_thread = false, check_root = false)
-    if $SAFE >= 4
-      fail SecurityError, "can't wait variable at $SAFE >= 4"
-    end
     on_thread &= (Thread.list.size != 1)
     if on_thread
       if check_root

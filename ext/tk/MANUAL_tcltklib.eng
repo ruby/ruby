@@ -171,7 +171,7 @@ module TclTklib
        : a target event.
        : If set DONT_WAIT flag and no event for processing, returns
        : false immediately.
-       : If $SAFE >= 4,  or $SAFE >= 1 and the flag is tainted,
+       : If $SAFE >= 1 and the flag is tainted,
        : force to set DONT_WAIT flag.
 
     set_eventloop_tick(timer_tick)
@@ -183,7 +183,6 @@ module TclTklib
        : However, if the eventloop thread is the only thread,
        : timer_tick cannot be set to 0. If 0, then is set to 100 ms
        : automatically (see NO_THREAD_INTERRUPT_TIME on tcltklib.c).
-       : On $SAFE >= 4, cannot call this method.
 
     get_eventloop_tick
        : Get current value of 'timer_tick'
@@ -194,7 +193,6 @@ module TclTklib
        : Default value is 20 (ms).
        : If the eventloop thread is the only thread, this value is
        : invalid.
-       : On $SAFE >= 4, cannot call this method.
 
     get_no_event_wait
        : Get current value of 'no_event_wait'.
@@ -207,7 +205,6 @@ module TclTklib
        : when no event for processing (And then, the eventloop thread
        : sleeps 'no_event_wait' mili-seconds).
        : 'loop_max == 800' and 'no_event_tick == 10' are default.
-       : On $SAFE >= 4, cannot call this method.
 
     get_eventloop_weight
        : Get current values of 'loop_max' and 'no_event_tick'.
@@ -223,7 +220,6 @@ module TclTklib
        : interpreter kills the eventloop thread. Even if such
        : situation, when abort_on_exception == false or nil,
        : the eventloop ignores the exception and continue to working.
-       : On $SAFE >= 4, cannot call this method.
 
     mainloop_abort_on_exception
        : Get current status of that.
@@ -294,7 +290,6 @@ class TclTkIp
        : interpreter. Default is false. However, if the parent
        : interpreter is a safe interpreter, the created interpreter is
        : a safe interpreter (ignore 'safe' argument value).
-       : If $SAFE >= 4, can create a safe interpreter only.
 
     make_safe
        : Make the interpreter to the safe interpreter, and returns
@@ -314,7 +309,7 @@ class TclTkIp
 
     allow_ruby_exit=(mode)
        : Change the mode of 'allow_ruby_exit?'.
-       : If $SAFE >= 4 or the interpreter is a "safe" interpreter,
+       : If the interpreter is a "safe" interpreter,
        : this is not permitted (raise an exception).
 
     delete
@@ -335,7 +330,6 @@ class TclTkIp
        : Restart Tk part of the interpreter.
        : Use this when you need Tk functions after destroying the
        : root widget.
-       : On $SAFE >= 4, cannot call this method.
 
     _eval(str)
     _invoke(*args)
