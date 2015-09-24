@@ -124,7 +124,6 @@ module TkItemConfigMethod
     @mode || false
   end
   def TkItemConfigMethod.__set_IGNORE_UNKNOWN_CONFIGURE_OPTION__!(mode)
-    fail SecurityError, "can't change the mode" if $SAFE>=4
     @mode = (mode)? true: false
   end
 
