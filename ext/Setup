@@ -1,8 +1,11 @@
 #option nodynamic
 
-#Win32API
 #bigdecimal
+#continuation
+#coverage
+#date
 #dbm
+#digest/bubblebabble
 #digest
 #digest/md5
 #digest/rmd160
@@ -10,12 +13,25 @@
 #digest/sha2
 #etc
 #fcntl
+#fiber
+#fiddle
 #gdbm
+#io/console
+#io/nonblock
 #io/wait
+#json
+#json/generator
+#json/parser
+#mathn/complex
+#mathn/rational
 #nkf
+#objspace
 #openssl
+#pathname
+#psych
 #pty
 #racc/cparse
+#rbconfig/sizeof
 #readline
 #ripper
 #sdbm
@@ -23,6 +39,9 @@
 #stringio
 #strscan
 #syslog
+#thread
 #tk
+#tk/tkutil
+#win32
 #win32ole
 #zlib
