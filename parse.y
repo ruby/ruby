@@ -3663,7 +3663,7 @@ method_call	: fcall paren_args
 			$$ = NEW_CALL($1, $3, $5);
 			nd_set_line($$, $<num>4);
 		    /*%
-			$$ = dispatch3(call, $1, ripper_id2sym('.'), $3);
+			$$ = dispatch3(call, $1, ripper_id2sym(idCOLON2), $3);
 			$$ = method_optarg($$, $5);
 		    %*/
 		    }
@@ -10979,7 +10979,7 @@ ripper_id2sym(ID id)
     const char *name;
     char buf[8];
 
-    if (id <= 256) {
+    if (ISASCII(id)) {
         buf[0] = (char)id;
         buf[1] = '\0';
         return ID2SYM(rb_intern2(buf, 1));
