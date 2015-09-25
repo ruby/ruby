@@ -696,7 +696,7 @@ list_id_table_delete(struct list_id_table *tbl, ID id)
 	list_delete_index(tbl, key, i); \
 	values = TABLE_VALUES(tbl);     \
 	num = tbl->num;                 \
-	i--; /* redo smae index */      \
+	i--; /* redo same index */      \
 	break; \
     } \
 } while (0)
