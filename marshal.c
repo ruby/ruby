@@ -109,6 +109,8 @@ typedef struct {
 
 static st_table *compat_allocator_tbl;
 static VALUE compat_allocator_tbl_wrapper;
+static VALUE rb_marshal_dump_limited(VALUE obj, VALUE port, int limit);
+static VALUE rb_marshal_load_with_proc(VALUE port, VALUE proc);
 
 static int
 mark_marshal_compat_i(st_data_t key, st_data_t value)
@@ -991,8 +993,6 @@ marshal_dump(int argc, VALUE *argv)
 {
     VALUE obj, port, a1, a2;
     int limit = -1;
-    struct dump_arg *arg;
-    VALUE wrapper; /* used to avoid memory leak in case of exception */
 
     port = Qnil;
     rb_scan_args(argc, argv, "12", &obj, &a1, &a2);
@@ -1006,6 +1006,15 @@ marshal_dump(int argc, VALUE *argv)
 	else if (NIL_P(a1)) io_needed();
 	else port = a1;
     }
+    return rb_marshal_dump_limited(obj, port, limit);
+}
+
+VALUE
+rb_marshal_dump_limited(VALUE obj, VALUE port, int limit)
+{
+    struct dump_arg *arg;
+    VALUE wrapper; /* used to avoid memory leak in case of exception */
+
     wrapper = TypedData_Make_Struct(rb_cData, struct dump_arg, &dump_arg_data, arg);
     arg->dest = 0;
     arg->symbols = st_init_numtable();
@@ -2005,12 +2014,21 @@ static VALUE
 marshal_load(int argc, VALUE *argv)
 {
     VALUE port, proc;
+
+    rb_check_arity(argc, 1, 2);
+    port = argv[0];
+    proc = argc > 1 ? argv[1] : Qnil;
+    return rb_marshal_load_with_proc(port, proc);
+}
+
+VALUE
+rb_marshal_load_with_proc(VALUE port, VALUE proc)
+{
     int major, minor, infection = 0;
     VALUE v;
     VALUE wrapper; /* used to avoid memory leak in case of exception */
     struct load_arg *arg;
 
-    rb_scan_args(argc, argv, "11", &port, &proc);
     v = rb_check_string_type(port);
     if (!NIL_P(v)) {
 	infection = (int)FL_TEST(port, MARSHAL_INFECTION); /* original taintedness */
@@ -2212,17 +2230,11 @@ Init_marshal(void)
 VALUE
 rb_marshal_dump(VALUE obj, VALUE port)
 {
-    int argc = 1;
-    VALUE argv[2];
-
-    argv[0] = obj;
-    argv[1] = port;
-    if (!NIL_P(port)) argc = 2;
-    return marshal_dump(argc, argv);
+    return rb_marshal_dump_limited(obj, port, -1);
 }
 
 VALUE
 rb_marshal_load(VALUE port)
 {
-    return marshal_load(1, &port);
+    return rb_marshal_load_with_proc(port, Qnil);
 }
