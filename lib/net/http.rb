@@ -656,7 +656,6 @@ module Net   #:nodoc:
       @use_ssl = false
       @ssl_context = nil
       @ssl_session = nil
-      @enable_post_connection_check = true
       @sspi_enabled = false
       SSL_IVNAMES.each do |ivname|
         instance_variable_set ivname, nil
@@ -1579,4 +1578,3 @@ require 'net/http/responses'
 require 'net/http/proxy_delta'
 
 require 'net/http/backward'
-
