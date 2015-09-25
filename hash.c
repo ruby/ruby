@@ -2816,6 +2816,7 @@ env_delete(VALUE obj, VALUE name)
 
 	ruby_setenv(nam, 0);
 	if (ENVMATCH(nam, PATH_ENV)) {
+	    RB_GC_GUARD(name);
 	    path_tainted = 0;
 	}
 	return value;
@@ -3151,6 +3152,7 @@ env_aset(VALUE obj, VALUE nm, VALUE val)
 
     ruby_setenv(name, value);
     if (ENVMATCH(name, PATH_ENV)) {
+	RB_GC_GUARD(nm);
 	if (OBJ_TAINTED(val)) {
 	    /* already tainted, no check */
 	    path_tainted = 1;
