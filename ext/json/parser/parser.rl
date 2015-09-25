@@ -570,7 +570,7 @@ static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *resu
 
 static VALUE convert_encoding(VALUE source)
 {
-    char *ptr = RSTRING_PTR(source);
+    const char *ptr = RSTRING_PTR(source);
     long len = RSTRING_LEN(source);
     if (len < 2) {
         rb_raise(eParserError, "A JSON text must at least contain two octets!");
@@ -643,12 +643,18 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
     if (json->Vsource) {
         rb_raise(rb_eTypeError, "already initialized instance");
     }
+#ifdef HAVE_RB_SCAN_ARGS_OPTIONAL_HASH
+    rb_scan_args(argc, argv, "1:", &source, &opts);
+#else
     rb_scan_args(argc, argv, "11", &source, &opts);
+#endif
     if (!NIL_P(opts)) {
+#ifndef HAVE_RB_SCAN_ARGS_OPTIONAL_HASH
         opts = rb_convert_type(opts, T_HASH, "Hash", "to_hash");
         if (NIL_P(opts)) {
             rb_raise(rb_eArgError, "opts needs to be like a hash");
         } else {
+#endif
             VALUE tmp = ID2SYM(i_max_nesting);
             if (option_given_p(opts, tmp)) {
                 VALUE max_nesting = rb_hash_aref(opts, tmp);
@@ -711,7 +717,9 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
             } else {
                 json->match_string = Qnil;
             }
+#ifndef HAVE_RB_SCAN_ARGS_OPTIONAL_HASH
         }
+#endif
     } else {
         json->max_nesting = 100;
         json->allow_nan = 0;
