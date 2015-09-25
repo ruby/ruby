@@ -1,3 +1,7 @@
+Fri Sep 25 09:48:27 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* gems/bundled_gems: upgrade to minitest-5.8.1
+
 Fri Sep 25 09:47:12 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* id_table.c: fix typo. [ci skip][fix GH-1031] Patch @davydovanton
