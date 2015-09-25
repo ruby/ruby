@@ -148,7 +148,7 @@ rb_marshal_define_compat(VALUE newclass, VALUE oldclass, VALUE (*dumper)(VALUE),
 }
 
 #define MARSHAL_INFECTION FL_TAINT
-typedef char ruby_check_marshal_viral_flags[MARSHAL_INFECTION == (int)MARSHAL_INFECTION ? 1 : -1];
+STATIC_ASSERT(marshal_infection_is_int, MARSHAL_INFECTION == (int)MARSHAL_INFECTION);
 
 struct dump_arg {
     VALUE str, dest;
