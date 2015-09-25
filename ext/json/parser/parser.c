@@ -1586,7 +1586,7 @@ case 7:
 
 static VALUE convert_encoding(VALUE source)
 {
-    char *ptr = RSTRING_PTR(source);
+    const char *ptr = RSTRING_PTR(source);
     long len = RSTRING_LEN(source);
     if (len < 2) {
         rb_raise(eParserError, "A JSON text must at least contain two octets!");
@@ -1659,12 +1659,18 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
     if (json->Vsource) {
         rb_raise(rb_eTypeError, "already initialized instance");
     }
+#ifdef HAVE_RB_SCAN_ARGS_OPTIONAL_HASH
+    rb_scan_args(argc, argv, "1:", &source, &opts);
+#else
     rb_scan_args(argc, argv, "11", &source, &opts);
+#endif
     if (!NIL_P(opts)) {
+#ifndef HAVE_RB_SCAN_ARGS_OPTIONAL_HASH
         opts = rb_convert_type(opts, T_HASH, "Hash", "to_hash");
         if (NIL_P(opts)) {
             rb_raise(rb_eArgError, "opts needs to be like a hash");
         } else {
+#endif
             VALUE tmp = ID2SYM(i_max_nesting);
             if (option_given_p(opts, tmp)) {
                 VALUE max_nesting = rb_hash_aref(opts, tmp);
@@ -1727,7 +1733,9 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
             } else {
                 json->match_string = Qnil;
             }
+#ifndef HAVE_RB_SCAN_ARGS_OPTIONAL_HASH
         }
+#endif
     } else {
         json->max_nesting = 100;
         json->allow_nan = 0;
@@ -1748,7 +1756,7 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
 }
 
 
-#line 1752 "parser.c"
+#line 1760 "parser.c"
 enum {JSON_start = 1};
 enum {JSON_first_final = 10};
 enum {JSON_error = 0};
@@ -1756,7 +1764,7 @@ enum {JSON_error = 0};
 enum {JSON_en_main = 1};
 
 
-#line 759 "parser.rl"
+#line 767 "parser.rl"
 
 
 static VALUE cParser_parse_strict(VALUE self)
@@ -1767,16 +1775,16 @@ static VALUE cParser_parse_strict(VALUE self)
     GET_PARSER;
 
 
-#line 1771 "parser.c"
+#line 1779 "parser.c"
 	{
 	cs = JSON_start;
 	}
 
-#line 769 "parser.rl"
+#line 777 "parser.rl"
     p = json->source;
     pe = p + json->len;
 
-#line 1780 "parser.c"
+#line 1788 "parser.c"
 	{
 	if ( p == pe )
 		goto _test_eof;
@@ -1832,7 +1840,7 @@ case 5:
 		goto st1;
 	goto st5;
 tr3:
-#line 748 "parser.rl"
+#line 756 "parser.rl"
 	{
         char *np;
         json->current_nesting = 1;
@@ -1841,7 +1849,7 @@ tr3:
     }
 	goto st10;
 tr4:
-#line 741 "parser.rl"
+#line 749 "parser.rl"
 	{
         char *np;
         json->current_nesting = 1;
@@ -1853,7 +1861,7 @@ st10:
 	if ( ++p == pe )
 		goto _test_eof10;
 case 10:
-#line 1857 "parser.c"
+#line 1865 "parser.c"
 	switch( (*p) ) {
 		case 13: goto st10;
 		case 32: goto st10;
@@ -1910,7 +1918,7 @@ case 9:
 	_out: {}
 	}
 
-#line 772 "parser.rl"
+#line 780 "parser.rl"
 
     if (cs >= JSON_first_final && p == pe) {
         return result;
@@ -1922,7 +1930,7 @@ case 9:
 
 
 
-#line 1926 "parser.c"
+#line 1934 "parser.c"
 enum {JSON_quirks_mode_start = 1};
 enum {JSON_quirks_mode_first_final = 10};
 enum {JSON_quirks_mode_error = 0};
@@ -1930,7 +1938,7 @@ enum {JSON_quirks_mode_error = 0};
 enum {JSON_quirks_mode_en_main = 1};
 
 
-#line 797 "parser.rl"
+#line 805 "parser.rl"
 
 
 static VALUE cParser_parse_quirks_mode(VALUE self)
@@ -1941,16 +1949,16 @@ static VALUE cParser_parse_quirks_mode(VALUE self)
     GET_PARSER;
 
 
-#line 1945 "parser.c"
+#line 1953 "parser.c"
 	{
 	cs = JSON_quirks_mode_start;
 	}
 
-#line 807 "parser.rl"
+#line 815 "parser.rl"
     p = json->source;
     pe = p + json->len;
 
-#line 1954 "parser.c"
+#line 1962 "parser.c"
 	{
 	if ( p == pe )
 		goto _test_eof;
@@ -1984,7 +1992,7 @@ st0:
 cs = 0;
 	goto _out;
 tr2:
-#line 789 "parser.rl"
+#line 797 "parser.rl"
 	{
         char *np = JSON_parse_value(json, p, pe, &result);
         if (np == NULL) { p--; {p++; cs = 10; goto _out;} } else {p = (( np))-1;}
@@ -1994,7 +2002,7 @@ st10:
 	if ( ++p == pe )
 		goto _test_eof10;
 case 10:
-#line 1998 "parser.c"
+#line 2006 "parser.c"
 	switch( (*p) ) {
 		case 13: goto st10;
 		case 32: goto st10;
@@ -2083,7 +2091,7 @@ case 9:
 	_out: {}
 	}
 
-#line 810 "parser.rl"
+#line 818 "parser.rl"
 
     if (cs >= JSON_quirks_mode_first_final && p == pe) {
         return result;
