@@ -199,6 +199,8 @@ module Forwardable
   alias delegate instance_delegate
   alias def_delegators def_instance_delegators
   alias def_delegator def_instance_delegator
+
+  private(*instance_methods)
 end
 
 # SingleForwardable can be used to setup delegation at the object level as well.
@@ -286,4 +288,6 @@ module SingleForwardable
   alias delegate single_delegate
   alias def_delegators def_single_delegators
   alias def_delegator def_single_delegator
+
+  private(*instance_methods)
 end
