@@ -102,24 +102,33 @@ class TestSyntax < Test::Unit::TestCase
     assert_nothing_raised(ArgumentError, bug7922) {o.bug7922(foo: 42)}
   end
 
+  class KW2
+    def kw(k1: 1, k2: 2) [k1, k2] end
+  end
+
   def test_keyword_splat
     assert_valid_syntax("foo(**h)", __FILE__)
-    o = Object.new
-    def o.kw(k1: 1, k2: 2) [k1, k2] end
+    o = KW2.new
     h = {k1: 11, k2: 12}
     assert_equal([11, 12], o.kw(**h))
     assert_equal([11, 12], o.kw(k2: 22, **h))
     assert_equal([11, 22], o.kw(**h, **{k2: 22}))
     assert_equal([11, 12], o.kw(**{k2: 22}, **h))
+  end
 
+  def test_keyword_duplicated_splat
     bug10315 = '[ruby-core:65368] [Bug #10315]'
+
+    o = KW2.new
     assert_equal([23, 2], o.kw(**{k1: 22}, **{k1: 23}), bug10315)
 
     h = {k3: 31}
     assert_raise(ArgumentError) {o.kw(**h)}
     h = {"k1"=>11, k2: 12}
     assert_raise(TypeError) {o.kw(**h)}
+  end
 
+  def test_keyword_duplicated
     bug10315 = '[ruby-core:65625] [Bug #10315]'
     a = []
     def a.add(x) push(x); x; end
