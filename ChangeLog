@@ -1,3 +1,8 @@
+Sun Sep 27 00:34:31 2015  Zachary Scott  <zzak@ruby-lang.org>
+
+        * lib/ostruct.rb: Move method definitions for getter/setter to be lazy
+          Patch by @sferik in [GH-1033]: https://github.com/ruby/ruby/pull/1033
+
 Fri Sep 25 10:07:25 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/net/http.rb: removed unused variable. It's removed at r13648.

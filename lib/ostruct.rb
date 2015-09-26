@@ -90,7 +90,6 @@ class OpenStruct
       hash.each_pair do |k, v|
         k = k.to_sym
         @table[k] = v
-        new_ostruct_member(k)
       end
     end
   end
