@@ -1,3 +1,13 @@
+Sun Sep 27 08:16:35 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/ostruct.rb (delete_field): do not raise NameError for
+	  existing keys.  [Fix GH-1033]
+
+Sun Sep 27 08:16:20 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/ostruct.rb (delete_field): do not raise NameError for
+	  existing keys.  [Fix GH-1033]
+
 Sun Sep 27 00:34:31 2015  Zachary Scott  <zzak@ruby-lang.org>
 
         * lib/ostruct.rb: Move method definitions for getter/setter to be lazy
