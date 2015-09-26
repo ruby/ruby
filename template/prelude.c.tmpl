@@ -77,10 +77,10 @@ Prelude.new(output && output[/\w+(?=_prelude.c\b)/] || 'prelude', ARGV, vpath).i
 % preludes = @preludes.values.sort
 % preludes.each {|i, prelude, lines, sub|
 
-static const char prelude_name<%=i%>[] = <%=c_esc(prelude_name(*prelude))%>;
-static const char prelude_code<%=i%>[] =
+static const char prelude_name<%=i%><%=%>[] = <%=c_esc(prelude_name(*prelude))%><%=%>;
+static const char prelude_code<%=i%><%=%>[] =
 %   lines.each {|line|
-<%=line%>
+<%=line%><%=%>
 %   }
 ;
 % }
@@ -125,9 +125,9 @@ prelude_require(VALUE self, VALUE nth)
     switch (n) {
 %   @preludes.each_value do |i, prelude, lines, sub|
 %     if sub
-      case <%=i%>:
-	code = rb_usascii_str_new(prelude_code<%=i%>, sizeof(prelude_code<%=i%>) - 1);
-        name = rb_usascii_str_new(prelude_name<%=i%>, sizeof(prelude_name<%=i%>) - 1);
+      case <%=i%><%=%>:
+	code = rb_usascii_str_new(prelude_code<%=i%><%=%>, sizeof(prelude_code<%=i%><%=%>) - 1);
+	name = rb_usascii_str_new(prelude_name<%=i%><%=%>, sizeof(prelude_name<%=i%><%=%>) - 1);
 	break;
 %     end
 %   end
@@ -141,7 +141,7 @@ prelude_require(VALUE self, VALUE nth)
 % end
 %end
 void
-Init_<%=@init_name%>(void)
+Init_<%=@init_name%><%=%>(void)
 {
 %unless @preludes.empty?
 % if @have_sublib
@@ -160,8 +160,8 @@ Init_<%=@init_name%>(void)
 % preludes.each do |i, prelude, lines, sub|
 %   next if sub
     prelude_eval(
-      rb_usascii_str_new(prelude_code<%=i%>, sizeof(prelude_code<%=i%>) - 1),
-      rb_usascii_str_new(prelude_name<%=i%>, sizeof(prelude_name<%=i%>) - 1),
+      rb_usascii_str_new(prelude_code<%=i%><%=%>, sizeof(prelude_code<%=i%><%=%>) - 1),
+      rb_usascii_str_new(prelude_name<%=i%><%=%>, sizeof(prelude_name<%=i%><%=%>) - 1),
       INT2FIX(1));
 % end
 % if @have_sublib
@@ -170,7 +170,7 @@ Init_<%=@init_name%>(void)
 
 #if 0
 % preludes.length.times {|i|
-    puts(prelude_code<%=i%>);
+    puts(prelude_code<%=i%><%=%>);
 % }
 #endif
 %end
