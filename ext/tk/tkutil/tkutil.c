@@ -1615,14 +1615,15 @@ cbsubst_table_setup(argc, argv, self)
    */
   len = RARRAY_LEN(proc_inf);
   for(idx = 0; idx < len; idx++) {
+    VALUE type, proc;
     inf = RARRAY_PTR(proc_inf)[idx];
     if (!RB_TYPE_P(inf, T_ARRAY)) continue;
     if (RARRAY_LEN(inf) < 2) continue;
-    rb_hash_aset(subst_inf->proc,
-		 (RB_TYPE_P(RARRAY_PTR(inf)[0], T_STRING)?
-		  INT2FIX(*(RSTRING_PTR(RARRAY_PTR(inf)[0]))) :
-		  RARRAY_PTR(inf)[0]),
-		 RARRAY_PTR(inf)[1]);
+    type = rb_ary_entry(inf, 0);
+    proc = rb_ary_entry(inf, 1);
+    if (RB_TYPE_P(type, T_STRING))
+      type = INT2FIX(*(RSTRING_PTR(type)));
+    rb_hash_aset(subst_inf->proc, type, proc);
   }
 
   rb_const_set(self, ID_SUBST_INFO, cbsubst_obj);
