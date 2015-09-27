@@ -693,8 +693,26 @@ moreswitches(const char *s, struct cmdline_options *opt, int envopt)
     rb_str_resize(argstr, 0);
 }
 
+static int
+name_match_p(const char *name, const char *str, size_t len)
+{
+    if (len == 0) return 0;
+    do {
+	while (TOLOWER(*str) == *name) {
+	    if (!--len || !*++str) return 1;
+	    ++name;
+	}
+	if (*str != '-' && *str != '_') return 0;
+	while (ISALNUM(*name)) name++;
+	if (*name != '-' && *name != '_') return 0;
+	++name;
+	++str;
+    } while (len > 0);
+    return !*name;
+}
+
 #define NAME_MATCH_P(name, str, len) \
-    ((len) < (int)sizeof(name) && strncmp((str), (name), (len)) == 0)
+    ((len) < (int)sizeof(name) && name_match_p((name), (str), (len)))
 
 #define UNSET_WHEN(name, bit, str, len)	\
     if (NAME_MATCH_P((name), (str), (len))) { \
