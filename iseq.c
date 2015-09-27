@@ -345,6 +345,39 @@ static rb_compile_option_t COMPILE_OPTION_DEFAULT = {
 static const rb_compile_option_t COMPILE_OPTION_FALSE = {0};
 
 static void
+set_compile_option_from_hash(rb_compile_option_t *option, VALUE opt)
+{
+#define SET_COMPILE_OPTION(o, h, mem) \
+  { VALUE flag = rb_hash_aref((h), ID2SYM(rb_intern(#mem))); \
+      if (flag == Qtrue)  { (o)->mem = 1; } \
+      else if (flag == Qfalse)  { (o)->mem = 0; } \
+  }
+#define SET_COMPILE_OPTION_NUM(o, h, mem) \
+  { VALUE num = rb_hash_aref(opt, ID2SYM(rb_intern(#mem))); \
+      if (!NIL_P(num)) (o)->mem = NUM2INT(num); \
+  }
+    SET_COMPILE_OPTION(option, opt, inline_const_cache);
+    SET_COMPILE_OPTION(option, opt, peephole_optimization);
+    SET_COMPILE_OPTION(option, opt, tailcall_optimization);
+    SET_COMPILE_OPTION(option, opt, specialized_instruction);
+    SET_COMPILE_OPTION(option, opt, operands_unification);
+    SET_COMPILE_OPTION(option, opt, instructions_unification);
+    SET_COMPILE_OPTION(option, opt, stack_caching);
+    SET_COMPILE_OPTION(option, opt, trace_instruction);
+    SET_COMPILE_OPTION(option, opt, frozen_string_literal);
+    SET_COMPILE_OPTION_NUM(option, opt, debug_level);
+#undef SET_COMPILE_OPTION
+#undef SET_COMPILE_OPTION_NUM
+}
+
+void
+rb_iseq_make_compile_option(rb_compile_option_t *option, VALUE opt)
+{
+    Check_Type(opt, T_HASH);
+    set_compile_option_from_hash(option, opt);
+}
+
+static void
 make_compile_option(rb_compile_option_t *option, VALUE opt)
 {
     if (opt == Qnil) {
@@ -360,28 +393,7 @@ make_compile_option(rb_compile_option_t *option, VALUE opt)
     }
     else if (CLASS_OF(opt) == rb_cHash) {
 	*option = COMPILE_OPTION_DEFAULT;
-
-#define SET_COMPILE_OPTION(o, h, mem) \
-  { VALUE flag = rb_hash_aref((h), ID2SYM(rb_intern(#mem))); \
-      if (flag == Qtrue)  { (o)->mem = 1; } \
-      else if (flag == Qfalse)  { (o)->mem = 0; } \
-  }
-#define SET_COMPILE_OPTION_NUM(o, h, mem) \
-  { VALUE num = rb_hash_aref(opt, ID2SYM(rb_intern(#mem))); \
-      if (!NIL_P(num)) (o)->mem = NUM2INT(num); \
-  }
-	SET_COMPILE_OPTION(option, opt, inline_const_cache);
-	SET_COMPILE_OPTION(option, opt, peephole_optimization);
-	SET_COMPILE_OPTION(option, opt, tailcall_optimization);
-	SET_COMPILE_OPTION(option, opt, specialized_instruction);
-	SET_COMPILE_OPTION(option, opt, operands_unification);
-	SET_COMPILE_OPTION(option, opt, instructions_unification);
-	SET_COMPILE_OPTION(option, opt, stack_caching);
-	SET_COMPILE_OPTION(option, opt, trace_instruction);
-	SET_COMPILE_OPTION(option, opt, frozen_string_literal);
-	SET_COMPILE_OPTION_NUM(option, opt, debug_level);
-#undef SET_COMPILE_OPTION
-#undef SET_COMPILE_OPTION_NUM
+	set_compile_option_from_hash(option, opt);
     }
     else {
 	rb_raise(rb_eTypeError, "Compile option must be Hash/true/false/nil");

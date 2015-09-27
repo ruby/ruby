@@ -5588,8 +5588,15 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	break;
       }
       case NODE_PRELUDE:{
+	const rb_compile_option_t *orig_opt = iseq->compile_data->option;
+	if (node->nd_orig) {
+	    rb_compile_option_t new_opt = *orig_opt;
+	    rb_iseq_make_compile_option(&new_opt, node->nd_orig);
+	    iseq->compile_data->option = &new_opt;
+	}
 	COMPILE_POPED(ret, "prelude", node->nd_head);
 	COMPILE_(ret, "body", node->nd_body, poped);
+	iseq->compile_data->option = orig_opt;
 	break;
       }
       case NODE_LAMBDA:{

@@ -288,6 +288,7 @@ struct parser_params {
     unsigned int past_scope_enabled: 1;
 # endif
     unsigned int has_err: 1;
+    unsigned int token_seen: 1;
 
     NODE *eval_tree_begin;
     NODE *eval_tree;
@@ -295,6 +296,8 @@ struct parser_params {
     VALUE coverage;
 
     token_info *token_info;
+
+    VALUE compile_option;
 #else
     /* Ripper only */
     unsigned int toplevel_p: 1;
@@ -5506,8 +5509,8 @@ yycompile0(VALUE arg)
     if (!tree) {
 	tree = NEW_NIL();
     }
-    else if (ruby_eval_tree_begin) {
-	tree->nd_body = NEW_PRELUDE(ruby_eval_tree_begin, tree->nd_body);
+    else {
+	tree->nd_body = NEW_PRELUDE(ruby_eval_tree_begin, tree->nd_body, parser->compile_option);
     }
     return (VALUE)tree;
 }
@@ -6887,6 +6890,25 @@ parser_set_token_info(struct parser_params *parser, const char *name, const char
     if (b >= 0) parser->token_info_enabled = b;
 }
 
+static void
+parser_set_compile_option_flag(struct parser_params *parser, const char *name, const char *val)
+{
+    int b;
+
+    if (parser->token_seen) {
+	rb_warningS("`%s' is ignored after any tokens", name);
+	return;
+    }
+
+    b = parser_get_bool(parser, name, val);
+    if (b < 0) return;
+
+    if (!parser->compile_option)
+	parser->compile_option = rb_ident_hash_new();
+    rb_hash_aset(parser->compile_option, ID2SYM(rb_intern(name)),
+		 (b ? Qtrue : Qfalse));
+}
+
 # if WARN_PAST_SCOPE
 static void
 parser_set_past_scope(struct parser_params *parser, const char *name, const char *val)
@@ -6907,6 +6929,7 @@ static const struct magic_comment magic_comments[] = {
     {"coding", magic_comment_encoding, parser_encode_length},
     {"encoding", magic_comment_encoding, parser_encode_length},
 #ifndef RIPPER
+    {"frozen_string_literal", parser_set_compile_option_flag},
     {"warn_indent", parser_set_token_info},
 # if WARN_PAST_SCOPE
     {"warn_past_scope", parser_set_past_scope},
@@ -7861,6 +7884,8 @@ parser_yylex(struct parser_params *parser)
     enum lex_state_e last_state;
 #ifdef RIPPER
     int fallthru = FALSE;
+#else
+    int token_seen = parser->token_seen;
 #endif
 
     if (lex_strterm) {
@@ -7891,6 +7916,9 @@ parser_yylex(struct parser_params *parser)
     }
     cmd_state = command_start;
     command_start = FALSE;
+#ifndef RIPPER
+    parser->token_seen = TRUE;
+#endif
   retry:
     last_state = lex_state;
     switch (c = nextc()) {
@@ -7921,6 +7949,9 @@ parser_yylex(struct parser_params *parser)
 	goto retry;
 
       case '#':		/* it's a comment */
+#ifndef RIPPER
+	parser->token_seen = token_seen;
+#endif
 	/* no magic_comment in shebang line */
 	if (!parser_magic_comment(parser, lex_p, lex_pend - lex_p)) {
 	    if (comment_at_top(parser)) {
@@ -7934,6 +7965,9 @@ parser_yylex(struct parser_params *parser)
 #endif
 	/* fall through */
       case '\n':
+#ifndef RIPPER
+	parser->token_seen = token_seen;
+#endif
 	c = (IS_lex_state(EXPR_BEG|EXPR_CLASS|EXPR_FNAME|EXPR_DOT) &&
 	     !IS_lex_state(EXPR_LABELED));
 	if (c || IS_lex_state_all(EXPR_ARG|EXPR_LABELED)) {

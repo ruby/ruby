@@ -121,6 +121,19 @@ class TestRubyLiteral < Test::Unit::TestCase
     assert_equal "foo\n", `echo #{s}`
   end
 
+  def test_frozen_string
+    all_assertions do |a|
+      a.for("false") do
+        str = eval("# -*- frozen-string-literal: false -*-\n""'foo'")
+        assert_not_predicate(str, :frozen?)
+      end
+      a.for("true") do
+        str = eval("# -*- frozen-string-literal: true -*-\n""'foo'")
+        assert_predicate(str, :frozen?)
+      end
+    end
+  end
+
   def test_regexp
     assert_instance_of Regexp, //
     assert_match(//, 'a')
