@@ -64,6 +64,7 @@ enum feature_flag_bits {
     feature_gems,
     feature_did_you_mean,
     feature_rubyopt,
+    feature_frozen_string_literal,
     feature_flag_count
 };
 
@@ -120,6 +121,7 @@ cmdline_options_init(struct cmdline_options *opt)
 #if DISABLE_RUBYGEMS
     opt->features &= ~FEATURE_BIT(gems);
 #endif
+    opt->features &= ~FEATURE_BIT(frozen_string_literal);
     return opt;
 }
 
@@ -196,6 +198,7 @@ usage(const char *name, int help)
 	M("gems",    "",        "rubygems (default: "DEFAULT_RUBYGEMS_ENABLED")"),
 	M("did_you_mean", "",   "did_you_mean (default: "DEFAULT_RUBYGEMS_ENABLED")"),
 	M("rubyopt", "",        "RUBYOPT environment variable (default: enabled)"),
+	M("frozen-string-literal", "", "freeze all string literals (default: disabled)"),
     };
     int i;
     const int num = numberof(usage_msg) - (help ? 1 : 0);
@@ -733,6 +736,7 @@ enable_option(const char *str, int len, void *arg)
     SET_WHEN_ENABLE(gems);
     SET_WHEN_ENABLE(did_you_mean);
     SET_WHEN_ENABLE(rubyopt);
+    SET_WHEN_ENABLE(frozen_string_literal);
     if (NAME_MATCH_P("all", str, len)) {
 	*(unsigned int *)arg = ~0U;
 	return;
@@ -747,6 +751,7 @@ disable_option(const char *str, int len, void *arg)
     UNSET_WHEN_DISABLE(gems);
     UNSET_WHEN_DISABLE(did_you_mean);
     UNSET_WHEN_DISABLE(rubyopt);
+    UNSET_WHEN_DISABLE(frozen_string_literal);
     if (NAME_MATCH_P("all", str, len)) {
 	*(unsigned int *)arg = 0U;
 	return;
@@ -1462,6 +1467,11 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 	rb_define_module("DidYouMean");
     }
     ruby_init_prelude();
+    if (opt->features & FEATURE_BIT(frozen_string_literal)) {
+	VALUE option = rb_hash_new();
+	rb_hash_aset(option, ID2SYM(rb_intern_const("frozen_string_literal")), Qtrue);
+	rb_funcallv(rb_cISeq, rb_intern_const("compile_option="), 1, &option);
+    }
 #if UTF8_PATH
     opt->script_name = str_conv_enc(opt->script_name, rb_utf8_encoding(), lenc);
     opt->script = RSTRING_PTR(opt->script_name);

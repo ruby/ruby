@@ -1,4 +1,7 @@
-Sun Sep 27 15:43:59 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Sep 27 15:46:58 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (process_options): add an option to enable/disable
+	  frozen-string-literal.  [Feature #8976]
 
 	* compile.c (iseq_compile_each): override compile option by option
 	  given by pragma.
