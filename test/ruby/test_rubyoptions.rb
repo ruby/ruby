@@ -785,17 +785,23 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_frozen_string_literal
-    results = {}
-    %W[frozen_string_literal frozen_string_literal].each do |arg|
+    all_assertions do |a|
       [["disable", "false"], ["enable", "true"]].each do |opt, exp|
-        key = "#{opt}=#{arg}"
-        begin
-          assert_in_out_err(["--disable=gems", "--#{key}"], 'p("foo".frozen?)', [exp])
-        rescue MiniTest::Assertion => e
-          results[key] = e
+        %W[frozen_string_literal frozen-string-literal].each do |arg|
+          key = "#{opt}=#{arg}"
+          a.for(key) do
+            assert_in_out_err(["--disable=gems", "--#{key}"], 'p("foo".frozen?)', [exp])
+          end
+        end
+      end
+      %W"disable enable".product(%W[false true]) do |opt, exp|
+        a.for("#{opt}=>#{exp}") do
+          assert_in_out_err(["-w", "--disable=gems", "--#{opt}=frozen-string-literal"], <<-"end;", [exp])
+            #-*- frozen-string-literal: #{exp} -*-
+            p("foo".frozen?)
+          end;
         end
       end
     end
-    assert_empty(results)
   end
 end
