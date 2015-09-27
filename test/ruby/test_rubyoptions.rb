@@ -783,4 +783,19 @@ class TestRubyOptions < Test::Unit::TestCase
   def test_dump_insns_with_rflag
     assert_norun_with_rflag('--dump=insns')
   end
+
+  def test_frozen_string_literal
+    results = {}
+    %W[frozen_string_literal frozen_string_literal].each do |arg|
+      [["disable", "false"], ["enable", "true"]].each do |opt, exp|
+        key = "#{opt}=#{arg}"
+        begin
+          assert_in_out_err(["--disable=gems", "--#{key}"], 'p("foo".frozen?)', [exp])
+        rescue MiniTest::Assertion => e
+          results[key] = e
+        end
+      end
+    end
+    assert_empty(results)
+  end
 end
