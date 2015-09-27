@@ -187,6 +187,27 @@
 #error
 #endif
 
+/* IMPL(create) will be "hash_id_table_create" and so on */
+#define IMPL1(name, op) TOKEN_PASTE(name, _id##op) /* expand `name' */
+#define IMPL(op)        IMPL1(ID_TABLE_NAME, _table##op) /* but prevent `op' */
+
+#ifdef __GNUC__
+# define UNUSED(func) static func __attribute__((unused))
+#else
+# define UNUSED(func) static func
+#endif
+
+UNUSED(ID_TABLE_IMPL_TYPE *IMPL(create)(size_t));
+UNUSED(void IMPL(free)(ID_TABLE_IMPL_TYPE *));
+UNUSED(void IMPL(clear)(ID_TABLE_IMPL_TYPE *));
+UNUSED(size_t IMPL(size)(ID_TABLE_IMPL_TYPE *));
+UNUSED(size_t IMPL(memsize)(ID_TABLE_IMPL_TYPE *));
+UNUSED(int IMPL(insert)(ID_TABLE_IMPL_TYPE *, ID, VALUE));
+UNUSED(int IMPL(lookup)(ID_TABLE_IMPL_TYPE *, ID, VALUE *));
+UNUSED(int IMPL(delete)(ID_TABLE_IMPL_TYPE *, ID));
+UNUSED(void IMPL(foreach)(ID_TABLE_IMPL_TYPE *, rb_id_table_foreach_func_t *, void *));
+UNUSED(void IMPL(foreach_values)(ID_TABLE_IMPL_TYPE *, rb_id_table_foreach_values_func_t *, void *));
+
 #if ID_TABLE_USE_ID_SERIAL
 typedef rb_id_serial_t id_key_t;
 static inline ID
@@ -222,7 +243,8 @@ struct st_id_table {
 };
 
 static struct st_table *
-tbl2st(struct st_id_table *tbl) {
+tbl2st(struct st_id_table *tbl)
+{
     if (tbl->check != ID_TABLE_MARK) rb_bug("tbl2st: check error %x", tbl->check);
     return tbl->st;
 }
@@ -250,7 +272,8 @@ struct st_id_table {
 };
 
 static struct st_table *
-tbl2st(struct st_id_table *tbl) {
+tbl2st(struct st_id_table *tbl)
+{
     return (struct st_table *)tbl;
 }
 
@@ -1157,7 +1180,8 @@ ITEM_SET_KEY(struct hash_id_table *tbl, int i, id_key_t key)
 #endif
 
 static inline int
-round_capa(int capa) {
+round_capa(int capa)
+{
     /* minsize is 4 */
     capa >>= 2;
     capa |= capa >> 1;
@@ -1505,10 +1529,6 @@ mix_id_table_foreach_values(struct mix_id_table *tbl, rb_id_table_foreach_values
 }
 
 #endif /* ID_TABLE_USE_MIX */
-
-/* IMPL(create) will be "hash_id_table_create" and so on */
-#define IMPL1(name, op) TOKEN_PASTE(name, _id##op) /* expand `name' */
-#define IMPL(op)        IMPL1(ID_TABLE_NAME, _table##op) /* but prevent `op' */
 
 #define IMPL_TYPE1(type, prot, name, args) \
     RUBY_ALIAS_FUNCTION_TYPE(type, prot, name, args)
