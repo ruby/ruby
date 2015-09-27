@@ -1,3 +1,11 @@
+Sun Sep 27 23:32:46 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* class.c (rb_define_class, rb_define_class_id_under): refine
+	  error messages.
+
+	* class.c (rb_define_module, rb_define_module_id_under): ditto,
+	  and make consistent with class.
+
 Sun Sep 27 18:44:43 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* ChangeLog: removed duplicated message.

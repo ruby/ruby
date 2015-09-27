@@ -2103,6 +2103,13 @@ class TestModule < Test::Unit::TestCase
     assert_raise_with_message(TypeError, "#{n} is not a module") {
       m.module_eval "module #{n}; end"
     }
+
+    assert_separately([], <<-"end;")
+      Etc = (class C\u{1f5ff}; self; end).new
+      assert_raise_with_message(TypeError, /C\u{1f5ff}/) {
+        require 'etc'
+      }
+    end;
   end
 
   private
