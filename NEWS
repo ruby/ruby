@@ -13,6 +13,9 @@ with all sufficient information, see the ChangeLog file.
 
 === Language changes
 
+* frozen-string-literal pragma:
+  * new pragma, frozen-string-literal has been experimentally introduced.
+
 === Core classes updates (outstanding ones only)
 
 * ARGF
