@@ -547,5 +547,12 @@ class TestClass < Test::Unit::TestCase
     assert_raise_with_message(TypeError, "#{n} is not a class") {
       m.module_eval "class #{n}; end"
     }
+
+    assert_separately([], <<-"end;")
+      Date = (class C\u{1f5ff}; self; end).new
+      assert_raise_with_message(TypeError, /C\u{1f5ff}/) {
+        require 'date'
+      }
+    end;
   end
 end
