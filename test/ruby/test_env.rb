@@ -10,15 +10,13 @@ class TestEnv < Test::Unit::TestCase
   ]
 
   def assert_invalid_env(msg = nil)
-    failed = {}
-    INVALID_ENVVARS.select do |v|
-      begin
-        assert_raise(ArgumentError) {yield v}
-      rescue MiniTest::Assertion => e
-        failed[v] = e
+    all_assertions(msg) do |a|
+      INVALID_ENVVARS.each do |v|
+        a.for(v) do
+          assert_raise(ArgumentError) {yield v}
+        end
       end
     end
-    assert(failed.empty?, message(msg) {mu_pp(failed)})
   end
 
   def setup
