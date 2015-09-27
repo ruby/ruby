@@ -197,7 +197,7 @@
 # define UNUSED(func) static func
 #endif
 
-UNUSED(ID_TABLE_IMPL_TYPE *IMPL(create)(size_t));
+UNUSED(ID_TABLE_IMPL_TYPE *IMPL(_create)(size_t));
 UNUSED(void IMPL(_free)(ID_TABLE_IMPL_TYPE *));
 UNUSED(void IMPL(_clear)(ID_TABLE_IMPL_TYPE *));
 UNUSED(size_t IMPL(_size)(ID_TABLE_IMPL_TYPE *));
