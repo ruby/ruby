@@ -198,15 +198,15 @@
 #endif
 
 UNUSED(ID_TABLE_IMPL_TYPE *IMPL(create)(size_t));
-UNUSED(void IMPL(free)(ID_TABLE_IMPL_TYPE *));
-UNUSED(void IMPL(clear)(ID_TABLE_IMPL_TYPE *));
-UNUSED(size_t IMPL(size)(ID_TABLE_IMPL_TYPE *));
-UNUSED(size_t IMPL(memsize)(ID_TABLE_IMPL_TYPE *));
-UNUSED(int IMPL(insert)(ID_TABLE_IMPL_TYPE *, ID, VALUE));
-UNUSED(int IMPL(lookup)(ID_TABLE_IMPL_TYPE *, ID, VALUE *));
-UNUSED(int IMPL(delete)(ID_TABLE_IMPL_TYPE *, ID));
-UNUSED(void IMPL(foreach)(ID_TABLE_IMPL_TYPE *, rb_id_table_foreach_func_t *, void *));
-UNUSED(void IMPL(foreach_values)(ID_TABLE_IMPL_TYPE *, rb_id_table_foreach_values_func_t *, void *));
+UNUSED(void IMPL(_free)(ID_TABLE_IMPL_TYPE *));
+UNUSED(void IMPL(_clear)(ID_TABLE_IMPL_TYPE *));
+UNUSED(size_t IMPL(_size)(ID_TABLE_IMPL_TYPE *));
+UNUSED(size_t IMPL(_memsize)(ID_TABLE_IMPL_TYPE *));
+UNUSED(int IMPL(_insert)(ID_TABLE_IMPL_TYPE *, ID, VALUE));
+UNUSED(int IMPL(_lookup)(ID_TABLE_IMPL_TYPE *, ID, VALUE *));
+UNUSED(int IMPL(_delete)(ID_TABLE_IMPL_TYPE *, ID));
+UNUSED(void IMPL(_foreach)(ID_TABLE_IMPL_TYPE *, rb_id_table_foreach_func_t *, void *));
+UNUSED(void IMPL(_foreach_values)(ID_TABLE_IMPL_TYPE *, rb_id_table_foreach_values_func_t *, void *));
 
 #if ID_TABLE_USE_ID_SERIAL
 typedef rb_id_serial_t id_key_t;
