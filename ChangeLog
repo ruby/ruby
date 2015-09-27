@@ -1,3 +1,7 @@
+Sun Sep 27 18:44:43 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ChangeLog: removed duplicated message.
+
 Sun Sep 27 15:46:58 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (process_options): add an option to enable/disable
@@ -16,11 +20,6 @@ Sun Sep 27 15:46:58 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  [Feature #8976]
 
 Sun Sep 27 08:16:35 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* lib/ostruct.rb (delete_field): do not raise NameError for
-	  existing keys.  [Fix GH-1033]
-
-Sun Sep 27 08:16:20 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/ostruct.rb (delete_field): do not raise NameError for
 	  existing keys.  [Fix GH-1033]
