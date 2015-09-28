@@ -177,7 +177,7 @@ typedef	struct __sFILE {
 	struct	__sbuf _bf;	/* the buffer (at least 1 byte, if !NULL) */
 	size_t	_lbfsize;	/* 0 or -_bf._size, for inline putc */
 	int	(*vwrite)(/* struct __sFILE*, struct __suio * */);
-	char	*(*vextra)(/* struct __sFILE*, size_t, void*, long*, int */);
+	const char *(*vextra)(/* struct __sFILE*, size_t, void*, long*, int */);
 } FILE;
 
 
