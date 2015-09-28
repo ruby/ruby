@@ -302,6 +302,10 @@ class TestException < Test::Unit::TestCase
     assert_raise_with_message(TypeError, /C\u{4032}/) do
       [*o]
     end
+    obj = eval("class C\u{1f5ff}; self; end").new
+    assert_raise_with_message(TypeError, /C\u{1f5ff}/) do
+      Class.new {include obj}
+    end
   end
 
   def test_errat

@@ -1020,8 +1020,8 @@ nucomp_coerce(VALUE self, VALUE other)
     if (RB_TYPE_P(other, T_COMPLEX))
 	return rb_assoc_new(other, self);
 
-    rb_raise(rb_eTypeError, "%s can't be coerced into %s",
-	     rb_obj_classname(other), rb_obj_classname(self));
+    rb_raise(rb_eTypeError, "%"PRIsVALUE" can't be coerced into %"PRIsVALUE,
+	     rb_obj_class(other), rb_obj_class(self));
     return Qnil;
 }
 

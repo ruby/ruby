@@ -568,6 +568,8 @@ class TestBignum < Test::Unit::TestCase
   def test_coerce
     assert_equal([T64P, T31P], T31P.coerce(T64P))
     assert_raise(TypeError) { T31P.coerce(nil) }
+    obj = eval("class C\u{1f5ff}; self; end").new
+    assert_raise_with_message(TypeError, /C\u{1f5ff}/) { T31P.coerce(obj) }
   end
 
   def test_abs

@@ -520,9 +520,8 @@ rb_builtin_type_name(int t)
     return 0;
 }
 
-#define builtin_class_name rb_builtin_class_name
-const char *
-rb_builtin_class_name(VALUE x)
+static const char *
+builtin_class_name(VALUE x)
 {
     const char *etype;
 
@@ -542,6 +541,17 @@ rb_builtin_class_name(VALUE x)
 	etype = "false";
     }
     else {
+	etype = NULL;
+    }
+    return etype;
+}
+
+const char *
+rb_builtin_class_name(VALUE x)
+{
+    const char *etype = builtin_class_name(x);
+
+    if (!etype) {
 	etype = rb_obj_classname(x);
     }
     return etype;
@@ -560,8 +570,13 @@ rb_check_type(VALUE x, int t)
     if (xt != t || (xt == T_DATA && RTYPEDDATA_P(x))) {
 	const char *tname = rb_builtin_type_name(t);
 	if (tname) {
-	    rb_raise(rb_eTypeError, "wrong argument type %s (expected %s)",
-		     builtin_class_name(x), tname);
+	    const char *cname = builtin_class_name(x);
+	    if (cname)
+		rb_raise(rb_eTypeError, "wrong argument type %s (expected %s)",
+			 cname, tname);
+	    else
+		rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (expected %s)",
+			 rb_obj_class(x), tname);
 	}
 	if (xt > T_MASK && xt <= 0x3f) {
 	    rb_fatal("unknown type 0x%x (0x%x given, probably comes from extension library for ruby 1.8)", t, xt);
@@ -594,19 +609,23 @@ void *
 rb_check_typeddata(VALUE obj, const rb_data_type_t *data_type)
 {
     const char *etype;
-    static const char mesg[] = "wrong argument type %s (expected %s)";
 
     if (!RB_TYPE_P(obj, T_DATA)) {
+      wrong_type:
 	etype = builtin_class_name(obj);
-	rb_raise(rb_eTypeError, mesg, etype, data_type->wrap_struct_name);
+	if (!etype)
+	    rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (expected %s)",
+		     rb_obj_class(obj), data_type->wrap_struct_name);
+      wrong_datatype:
+	rb_raise(rb_eTypeError, "wrong argument type %s (expected %s)",
+		 etype, data_type->wrap_struct_name);
     }
     if (!RTYPEDDATA_P(obj)) {
-	etype = rb_obj_classname(obj);
-	rb_raise(rb_eTypeError, mesg, etype, data_type->wrap_struct_name);
+	goto wrong_type;
     }
     else if (!rb_typeddata_inherited_p(RTYPEDDATA_TYPE(obj), data_type)) {
 	etype = RTYPEDDATA_TYPE(obj)->wrap_struct_name;
-	rb_raise(rb_eTypeError, mesg, etype, data_type->wrap_struct_name);
+	goto wrong_datatype;
     }
     return DATA_PTR(obj);
 }

@@ -1245,8 +1245,8 @@ generator_initialize(int argc, VALUE *argv, VALUE obj)
 
 	if (!rb_obj_is_proc(proc))
 	    rb_raise(rb_eTypeError,
-		     "wrong argument type %s (expected Proc)",
-		     rb_obj_classname(proc));
+		     "wrong argument type %"PRIsVALUE" (expected Proc)",
+		     rb_obj_class(proc));
 
 	if (rb_block_given_p()) {
 	    rb_warn("given block not used");
@@ -1771,8 +1771,8 @@ lazy_zip(int argc, VALUE *argv, VALUE obj)
 	if (NIL_P(v)) {
 	    for (; i < argc; i++) {
 		if (!rb_respond_to(argv[i], id_each)) {
-		    rb_raise(rb_eTypeError, "wrong argument type %s (must respond to :each)",
-			rb_obj_classname(argv[i]));
+		    rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (must respond to :each)",
+			     rb_obj_class(argv[i]));
 		}
 	    }
 	    ary = rb_ary_new4(argc, argv);

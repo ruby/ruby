@@ -6834,8 +6834,8 @@ rb_big_coerce(VALUE x, VALUE y)
 	y = rb_int2big(FIX2LONG(y));
     }
     else if (!RB_BIGNUM_TYPE_P(y)) {
-	rb_raise(rb_eTypeError, "can't coerce %s to Bignum",
-		 rb_obj_classname(y));
+	rb_raise(rb_eTypeError, "can't coerce %"PRIsVALUE" to Bignum",
+		 rb_obj_class(y));
     }
     return rb_assoc_new(y, x);
 }

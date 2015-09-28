@@ -2170,10 +2170,11 @@ rb_ary_to_h(VALUE ary)
     long i;
     VALUE hash = rb_hash_new();
     for (i=0; i<RARRAY_LEN(ary); i++) {
-	VALUE key_value_pair = rb_check_array_type(rb_ary_elt(ary, i));
+	const VALUE elt = rb_ary_elt(ary, i);
+	const VALUE key_value_pair = rb_check_array_type(elt);
 	if (NIL_P(key_value_pair)) {
-	    rb_raise(rb_eTypeError, "wrong element type %s at %ld (expected array)",
-		rb_builtin_class_name(rb_ary_elt(ary, i)), i);
+	    rb_raise(rb_eTypeError, "wrong element type %"PRIsVALUE" at %ld (expected array)",
+		     rb_obj_class(elt), i);
 	}
 	if (RARRAY_LEN(key_value_pair) != 2) {
 	    rb_raise(rb_eArgError, "wrong array length at %ld (expected 2, was %ld)",
