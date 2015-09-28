@@ -1,3 +1,9 @@
+Mon Sep 28 17:40:17 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/ftp.rb (mtime): use usec instead of fractions to parse
+	  decimal fractions of a second correctly when the number of digits
+	  is not 6.
+
 Mon Sep 28 16:07:08 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/ftp.rb (mtime): parse decimal fractions of a second as
