@@ -738,7 +738,7 @@ proc_call(int argc, VALUE *argv, VALUE procval)
     if (RUBY_VM_IFUNC_P(iseq) || iseq->body->param.flags.has_block) {
 	if (rb_block_given_p()) {
 	    rb_proc_t *passed_proc;
-	    RB_GC_GUARD(passed_procval) = rb_block_proc();
+	    passed_procval = rb_block_proc();
 	    GetProcPtr(passed_procval, passed_proc);
 	    blockptr = &passed_proc->block;
 	}
@@ -746,6 +746,7 @@ proc_call(int argc, VALUE *argv, VALUE procval)
 
     vret = rb_vm_invoke_proc(GET_THREAD(), proc, argc, argv, blockptr);
     RB_GC_GUARD(procval);
+    RB_GC_GUARD(passed_procval);
     return vret;
 }
 
