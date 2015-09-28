@@ -1,3 +1,8 @@
+Mon Sep 28 10:31:12 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* test/test_forwardable.rb: Write basic tests for lib/forwardable.
+	  [fix GH-1035] Patch by @kachick
+
 Sun Sep 27 23:32:46 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* class.c (rb_define_class, rb_define_class_id_under): refine
