@@ -295,7 +295,8 @@ do_coerce(VALUE *x, VALUE *y, int err)
     if (!RB_TYPE_P(ary, T_ARRAY) || RARRAY_LEN(ary) != 2) {
 	if (err) {
 	    rb_raise(rb_eTypeError, "coerce must return [x, y]");
-	} else if (!NIL_P(ary)) {
+	}
+	else if (!NIL_P(ary)) {
 	    rb_warn("Bad return value for #coerce, called by numerical comparison operators.");
 	    rb_warn("#coerce must return [x, y]. The next release will raise an error for this.");
 	}

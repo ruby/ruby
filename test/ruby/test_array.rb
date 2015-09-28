@@ -1543,6 +1543,8 @@ class TestArray < Test::Unit::TestCase
       [[:first_one, :ok], :not_ok].to_h
     }
     assert_equal "wrong element type Symbol at 1 (expected array)", e.message
+    array = [eval("class C\u{1f5ff}; self; end").new]
+    assert_raise_with_message(TypeError, /C\u{1f5ff}/) {array.to_h}
     e = assert_raise(ArgumentError) {
       [[:first_one, :ok], [1, 2], [:not_ok]].to_h
     }

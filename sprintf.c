@@ -1338,6 +1338,26 @@ ruby__sfvextra(rb_printf_buffer *fp, size_t valsize, void *valp, long *sz, int s
 	rb_raise(rb_eRuntimeError, "rb_vsprintf reentered");
     }
     if (sign == '+') {
+	if (RB_TYPE_P(value, T_CLASS)) {
+# define LITERAL(str) (*sz = rb_strlen_lit(str), str)
+
+	    if (value == rb_cNilClass) {
+		return LITERAL("nil");
+	    }
+	    else if (value == rb_cFixnum) {
+		return LITERAL("Fixnum");
+	    }
+	    else if (value == rb_cSymbol) {
+		return LITERAL("Symbol");
+	    }
+	    else if (value == rb_cTrueClass) {
+		return LITERAL("true");
+	    }
+	    else if (value == rb_cFalseClass) {
+		return LITERAL("false");
+	    }
+# undef LITERAL
+	}
 	value = rb_inspect(value);
     }
     else {

@@ -427,6 +427,9 @@ class Complex_Test < Test::Unit::TestCase
     assert_equal([Complex(Rational(2)),Complex(1)],
 		 Complex(1).coerce(Rational(2)))
     assert_equal([Complex(2),Complex(1)], Complex(1).coerce(Complex(2)))
+
+    obj = eval("class C\u{1f5ff}; self; end").new
+    assert_raise_with_message(TypeError, /C\u{1f5ff}/) { Complex(1).coerce(obj) }
   end
 
   class ObjectX

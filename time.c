@@ -202,8 +202,8 @@ divmodv(VALUE n, VALUE d, VALUE *q, VALUE *r)
     tmp = rb_funcall(n, id_divmod, 1, d);
     ary = rb_check_array_type(tmp);
     if (NIL_P(ary)) {
-        rb_raise(rb_eTypeError, "unexpected divmod result: into %s",
-                 rb_obj_classname(tmp));
+	rb_raise(rb_eTypeError, "unexpected divmod result: into %"PRIsVALUE,
+		 rb_obj_class(tmp));
     }
     *q = rb_ary_entry(ary, 0);
     *r = rb_ary_entry(ary, 1);
@@ -560,8 +560,8 @@ wdivmod(wideval_t wn, wideval_t wd, wideval_t *wq, wideval_t *wr)
     tmp = rb_funcall(w2v(wn), id_divmod, 1, w2v(wd));
     ary = rb_check_array_type(tmp);
     if (NIL_P(ary)) {
-        rb_raise(rb_eTypeError, "unexpected divmod result: into %s",
-                 rb_obj_classname(tmp));
+	rb_raise(rb_eTypeError, "unexpected divmod result: into %"PRIsVALUE,
+		 rb_obj_class(tmp));
     }
     *wq = v2w(rb_ary_entry(ary, 0));
     *wr = v2w(rb_ary_entry(ary, 1));
@@ -641,8 +641,10 @@ num_exact(VALUE v)
 
       default:
       typeerror:
-        rb_raise(rb_eTypeError, "can't convert %s into an exact number",
-                                NIL_P(v) ? "nil" : rb_obj_classname(v));
+	if (NIL_P(v))
+	    rb_raise(rb_eTypeError, "can't convert nil into an exact number");
+	rb_raise(rb_eTypeError, "can't convert %"PRIsVALUE" into an exact number",
+		 rb_obj_class(v));
     }
     return v;
 }
@@ -2322,7 +2324,7 @@ static struct timespec
 time_timespec(VALUE num, int interval)
 {
     struct timespec t;
-    const char *tstr = interval ? "time interval" : "time";
+    const char *const tstr = interval ? "time interval" : "time";
     VALUE i, f, ary;
 
 #ifndef NEGATIVE_TIME_T
@@ -2382,8 +2384,8 @@ time_timespec(VALUE num, int interval)
             t.tv_nsec = NUM2LONG(f);
         }
         else {
-            rb_raise(rb_eTypeError, "can't convert %s into %s",
-                     rb_obj_classname(num), tstr);
+	    rb_raise(rb_eTypeError, "can't convert %"PRIsVALUE" into %s",
+		     rb_obj_class(num), tstr);
         }
 	break;
     }

@@ -417,6 +417,11 @@ class TestTime < Test::Unit::TestCase
       }
     }
     assert_raise(ArgumentError) { m.sleep(-1) }
+    assert_raise(TypeError) { m.sleep("") }
+    assert_raise(TypeError) { sleep("") }
+    obj = eval("class C\u{1f5ff}; self; end").new
+    assert_raise_with_message(TypeError, /C\u{1f5ff}/) {m.sleep(obj)}
+    assert_raise_with_message(TypeError, /C\u{1f5ff}/) {sleep(obj)}
   end
 
   def test_to_f
