@@ -1097,6 +1097,44 @@ EOF
     end
   end
 
+  def test_mtime
+    commands = []
+    server = create_ftp_server { |sock|
+      sock.print("220 (test_ftp).\r\n")
+      commands.push(sock.gets)
+      sock.print("213 20150910161739\r\n")
+      commands.push(sock.gets)
+      sock.print("213 20150910161739\r\n")
+      commands.push(sock.gets)
+      sock.print("213 20150910161739.123456\r\n")
+      commands.push(sock.gets)
+      sock.print("213 2015091016173\r\n")
+    }
+    begin
+      begin
+        ftp = Net::FTP.new
+        ftp.connect(SERVER_ADDR, server.port)
+        assert_equal(Time.utc(2015, 9, 10, 16, 17, 39), ftp.mtime("foo.txt"))
+        assert_equal(Time.local(2015, 9, 10, 16, 17, 39),
+                     ftp.mtime("foo.txt", true))
+        assert_equal(Time.utc(2015, 9, 10, 16, 17, 39, 123456),
+                     ftp.mtime("bar.txt"))
+        assert_raise(Net::FTPProtoError) do
+          ftp.mtime("quux.txt")
+        end
+        assert_match("MDTM foo.txt\r\n", commands.shift)
+        assert_match("MDTM foo.txt\r\n", commands.shift)
+        assert_match("MDTM bar.txt\r\n", commands.shift)
+        assert_match("MDTM quux.txt\r\n", commands.shift)
+        assert_equal(nil, commands.shift)
+      ensure
+        ftp.close if ftp
+      end
+    ensure
+      server.close
+    end
+  end
+
   def test_system
     commands = []
     server = create_ftp_server { |sock|

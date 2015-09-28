@@ -1,3 +1,8 @@
+Mon Sep 28 16:07:08 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/ftp.rb (mtime): parse decimal fractions of a second as
+	  specified in RFC 3659.
+
 Mon Sep 28 10:31:12 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* test/test_forwardable.rb: Write basic tests for lib/forwardable.
