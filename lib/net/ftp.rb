@@ -888,14 +888,15 @@ module Net
     CASE_INDEPENDENT_PARSER = ->(value) { value.downcase }
     DECIMAL_PARSER = ->(value) { value.to_i }
     OCTAL_PARSER = ->(value) { value.to_i(8) }
-    TIME_PARSER = ->(value) {
-      t = Time.strptime(value.sub(/\.\d+\z/, "") + "Z", "%Y%m%d%H%M%S%z")
-      fractions = value.slice(/\.(\d+)\z/, 1)
-      if fractions
-        t + fractions.to_i.quo(10 ** fractions.size)
-      else
-        t
+    TIME_PARSER = ->(value, local = false) {
+      unless /\A(?<year>\d{4})(?<month>\d{2})(?<day>\d{2})
+            (?<hour>\d{2})(?<min>\d{2})(?<sec>\d{2})
+            (\.(?<fractions>\d+))?/x =~ value
+        raise FTPProtoError, "invalid time-val: #{value}"
       end
+      usec = fractions.to_i * 10 ** (6 - fractions.to_s.size)
+      Time.send(local ? :local : :utc,
+                year, month, day, hour, min, sec, fractions)
     }
     FACT_PARSERS = Hash.new(CASE_DEPENDENT_PARSER)
     FACT_PARSERS["size"] = DECIMAL_PARSER
@@ -1028,16 +1029,12 @@ module Net
       end
     end
 
-    MDTM_REGEXP = /^(\d\d\d\d)(\d\d)(\d\d)(\d\d)(\d\d)(\d\d)/  # :nodoc:
-
     #
     # Returns the last modification time of the (remote) file.  If +local+ is
     # +true+, it is returned as a local time, otherwise it's a UTC time.
     #
     def mtime(filename, local = false)
-      str = mdtm(filename)
-      ary = str.scan(MDTM_REGEXP)[0].collect {|i| i.to_i}
-      return local ? Time.local(*ary) : Time.gm(*ary)
+      return TIME_PARSER.(mdtm(filename), local)
     end
 
     #
