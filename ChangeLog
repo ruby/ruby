@@ -1,3 +1,8 @@
+Tue Sep 29 22:27:50 2015  Benoit Daloze  <eregontp@gmail.com>
+
+	* parse.y: fix minor typo. [ci skip][fix GH-1038].
+	  Patch by @ltratt.
+
 Tue Sep 29 16:53:53 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* tool/unicode_norm_gen.tmpl, lib/unicode_normalize/tables.rb:
