@@ -1,3 +1,9 @@
+Tue Sep 29 16:53:53 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* tool/unicode_norm_gen.tmpl, lib/unicode_normalize/tables.rb:
+	  get rid of many .freeze commands by using frozen_string_literal
+	  pragma.
+
 Tue Sep 29 16:37:29 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (compile_dstr_fragments): fix performance by omitting
