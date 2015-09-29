@@ -10604,6 +10604,7 @@ parser_mark(void *ptr)
     rb_gc_mark((VALUE)ruby_eval_tree_begin);
     rb_gc_mark((VALUE)ruby_eval_tree);
     rb_gc_mark(ruby_debug_lines);
+    rb_gc_mark(parser->compile_option);
 #else
     rb_gc_mark(parser->delayed);
     rb_gc_mark(parser->value);
