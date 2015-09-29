@@ -686,8 +686,8 @@ reserve_stack(volatile char *limit, size_t size)
 	limit -= size;
 	if (buf > limit) {
 	    limit = alloca(buf - limit);
+	    limit[0] = 0; /* ensure alloca is called */
 	    limit -= stack_check_margin;
-	    limit[0] = 0;
 	}
     }
 }

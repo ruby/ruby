@@ -1,3 +1,8 @@
+Wed Sep 30 03:24:29 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* thread_pthread.c (reserve_stack): ensure the memory is really
+	  allocated. [Bug #11457]
+
 Tue Aug 25 01:01:01 2015  Koichi Sasada <ko1@atdot.net>
 
 	* insns.def (defineclass): introduce an ad-hoc patch to avoid
