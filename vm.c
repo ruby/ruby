@@ -21,6 +21,8 @@
 #include "probes.h"
 #include "probes_helper.h"
 
+VALUE rb_str_append_literal(VALUE str, VALUE str2);
+
 static inline VALUE *
 VM_EP_LEP(VALUE *ep)
 {

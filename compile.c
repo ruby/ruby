@@ -788,6 +788,12 @@ FIRST_ELEMENT(LINK_ANCHOR *anchor)
 }
 
 static LINK_ELEMENT *
+LAST_ELEMENT(LINK_ANCHOR *anchor)
+{
+    return anchor->last;
+}
+
+static LINK_ELEMENT *
 POP_ELEMENT(ISEQ_ARG_DECLARE LINK_ANCHOR *anchor)
 {
     LINK_ELEMENT *elem = anchor->last;
@@ -2329,6 +2335,7 @@ compile_dstr_fragments(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE *node, int *cntp)
 {
     NODE *list = node->nd_next;
     VALUE lit = node->nd_lit;
+    LINK_ELEMENT *first_lit = 0;
     int cnt = 0;
 
     debugp_param("nd_lit", lit);
@@ -2337,6 +2344,7 @@ compile_dstr_fragments(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE *node, int *cntp)
 	if (RB_TYPE_P(lit, T_STRING))
 	    lit = node->nd_lit = rb_fstring(node->nd_lit);
 	ADD_INSN1(ret, nd_line(node), putobject, lit);
+	if (RSTRING_LEN(lit) == 0) first_lit = LAST_ELEMENT(ret);
     }
 
     while (list) {
@@ -2344,12 +2352,17 @@ compile_dstr_fragments(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE *node, int *cntp)
 	if (nd_type(node) == NODE_STR) {
 	    node->nd_lit = rb_fstring(node->nd_lit);
 	    ADD_INSN1(ret, nd_line(node), putobject, node->nd_lit);
+	    lit = Qnil;
 	}
 	else {
 	    COMPILE(ret, "each string", node);
 	}
 	cnt++;
 	list = list->nd_next;
+    }
+    if (NIL_P(lit) && first_lit) {
+	REMOVE_ELEM(first_lit);
+	--cnt;
     }
     *cntp = cnt;
 

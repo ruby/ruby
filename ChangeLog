@@ -1,3 +1,12 @@
+Tue Sep 29 16:37:29 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (compile_dstr_fragments): fix performance by omitting
+	  the first empty string only for keeping literal encoding if
+	  other literals are too.  [ruby-core:70930] [Bug #11556]
+
+	* string.c (rb_str_append_literal): append but keep encoding non
+	  US-ASCII.
+
 Mon Sep 28 17:40:17 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/ftp.rb (mtime): use usec instead of fractions to parse

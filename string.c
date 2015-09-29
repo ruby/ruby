@@ -2460,6 +2460,18 @@ rb_str_append(VALUE str, VALUE str2)
     return rb_str_buf_append(str, str2);
 }
 
+VALUE
+rb_str_append_literal(VALUE str, VALUE str2)
+{
+    int encidx = rb_enc_get_index(str2);
+    rb_str_buf_append(str, str2);
+    if (encidx != ENCINDEX_US_ASCII) {
+	if (rb_enc_get_index(str) == ENCINDEX_US_ASCII)
+	    rb_enc_associate_index(str, encidx);
+    }
+    return str;
+}
+
 /*
  *  call-seq:
  *     str << integer       -> str
