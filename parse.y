@@ -10630,6 +10630,15 @@ parser_free(void *ptr)
 	prev = local->prev;
 	xfree(local);
     }
+#ifndef RIPPER
+    {
+	token_info *ptinfo;
+	while ((ptinfo = parser->token_info) != 0) {
+	    parser->token_info = ptinfo->next;
+	    xfree(ptinfo);
+	}
+    }
+#endif
     xfree(ptr);
 }
 
