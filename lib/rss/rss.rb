@@ -53,7 +53,7 @@ class Time
       if usec.zero?
         fraction_digits = 0
       else
-        fraction_digits = Math.log10(usec.to_s.sub(/0*$/, '').to_i).floor + 1
+        fraction_digits = strftime('%6N').index(/0*\z/)
       end
       xmlschema(fraction_digits)
     end
