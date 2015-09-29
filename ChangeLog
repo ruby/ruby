@@ -1,3 +1,11 @@
+Wed Sep 30 03:34:25 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* re.c (rb_memsearch_wchar, rb_memsearch_qchar): test matching
+	  till the end of string.  [ruby-core:70592] [Bug #11488]
+
+	* test/ruby/test_m17n.rb (test_include?, test_index): add tests by
+	  Tom Stuart.
+
 Wed Sep 30 03:24:29 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* thread_pthread.c (reserve_stack): ensure the memory is really
