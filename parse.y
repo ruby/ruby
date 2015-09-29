@@ -729,10 +729,10 @@ static void ripper_compile_error(struct parser_params*, const char *fmt, ...);
 #endif
 
 #ifndef RIPPER
-static void token_info_push(struct parser_params*, const char *token);
-static void token_info_pop(struct parser_params*, const char *token);
-#define token_info_push(token) (RTEST(ruby_verbose) ? token_info_push(parser, (token)) : (void)0)
-#define token_info_pop(token) (RTEST(ruby_verbose) ? token_info_pop(parser, (token)) : (void)0)
+static void token_info_push(struct parser_params*, const char *token, size_t len);
+static void token_info_pop(struct parser_params*, const char *token, size_t len);
+#define token_info_push(token) (RTEST(ruby_verbose) ? token_info_push(parser, (token), rb_strlen_lit(token)) : (void)0)
+#define token_info_pop(token) (RTEST(ruby_verbose) ? token_info_pop(parser, (token), rb_strlen_lit(token)) : (void)0)
 #else
 #define token_info_push(token) /* nothing */
 #define token_info_pop(token) /* nothing */
@@ -5282,10 +5282,10 @@ ripper_dispatch_delayed_token(struct parser_params *parser, int t)
 
 #ifndef RIPPER
 static int
-token_info_get_column(struct parser_params *parser, const char *token)
+token_info_get_column(struct parser_params *parser, const char *pend)
 {
     int column = 1;
-    const char *p, *pend = lex_p - strlen(token);
+    const char *p;
     for (p = lex_pbeg; p < pend; p++) {
 	if (*p == '\t') {
 	    column = (((column - 1) / 8) + 1) * 8;
@@ -5296,9 +5296,9 @@ token_info_get_column(struct parser_params *parser, const char *token)
 }
 
 static int
-token_info_has_nonspaces(struct parser_params *parser, const char *token)
+token_info_has_nonspaces(struct parser_params *parser, const char *pend)
 {
-    const char *p, *pend = lex_p - strlen(token);
+    const char *p;
     for (p = lex_pbeg; p < pend; p++) {
 	if (*p != ' ' && *p != '\t') {
 	    return 1;
@@ -5309,16 +5309,17 @@ token_info_has_nonspaces(struct parser_params *parser, const char *token)
 
 #undef token_info_push
 static void
-token_info_push(struct parser_params *parser, const char *token)
+token_info_push(struct parser_params *parser, const char *token, size_t len)
 {
     token_info *ptinfo;
+    const char *t = lex_p - len;
 
     if (!parser->token_info_enabled) return;
     ptinfo = ALLOC(token_info);
     ptinfo->token = token;
     ptinfo->linenum = ruby_sourceline;
-    ptinfo->column = token_info_get_column(parser, token);
-    ptinfo->nonspc = token_info_has_nonspaces(parser, token);
+    ptinfo->column = token_info_get_column(parser, t);
+    ptinfo->nonspc = token_info_has_nonspaces(parser, t);
     ptinfo->next = parser->token_info;
 
     parser->token_info = ptinfo;
@@ -5326,21 +5327,22 @@ token_info_push(struct parser_params *parser, const char *token)
 
 #undef token_info_pop
 static void
-token_info_pop(struct parser_params *parser, const char *token)
+token_info_pop(struct parser_params *parser, const char *token, size_t len)
 {
     int linenum;
     token_info *ptinfo = parser->token_info;
+    const char *t = lex_p - len;
 
     if (!ptinfo) return;
     parser->token_info = ptinfo->next;
-    if (token_info_get_column(parser, token) == ptinfo->column) { /* OK */
+    if (token_info_get_column(parser, t) == ptinfo->column) { /* OK */
 	goto finish;
     }
     linenum = ruby_sourceline;
     if (linenum == ptinfo->linenum) { /* SKIP */
 	goto finish;
     }
-    if (token_info_has_nonspaces(parser, token) || ptinfo->nonspc) { /* SKIP */
+    if (token_info_has_nonspaces(parser, t) || ptinfo->nonspc) { /* SKIP */
 	goto finish;
     }
     if (parser->token_info_enabled) {
