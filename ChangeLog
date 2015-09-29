@@ -1,3 +1,8 @@
+Wed Sep 30 03:44:36 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rss/rss.rb (Time#w3cdtf): fix zero-trimmed width of fraction
+	  digits.  [ruby-core:70667] [Bug #11509]
+
 Wed Sep 30 03:34:25 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* re.c (rb_memsearch_wchar, rb_memsearch_qchar): test matching
