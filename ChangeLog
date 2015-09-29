@@ -1,3 +1,8 @@
+Wed Sep 30 01:34:34 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_free): fix memory leak at syntax error when
+	  warn-indent is enabled.
+
 Tue Sep 29 22:27:50 2015  Benoit Daloze  <eregontp@gmail.com>
 
 	* parse.y: fix minor typo. [ci skip][fix GH-1038].
