@@ -5335,23 +5335,16 @@ token_info_pop(struct parser_params *parser, const char *token, size_t len)
 
     if (!ptinfo) return;
     parser->token_info = ptinfo->next;
-    if (token_info_get_column(parser, t) == ptinfo->column) { /* OK */
-	goto finish;
-    }
     linenum = ruby_sourceline;
-    if (linenum == ptinfo->linenum) { /* SKIP */
-	goto finish;
-    }
-    if (token_info_has_nonspaces(parser, t) || ptinfo->nonspc) { /* SKIP */
-	goto finish;
-    }
-    if (parser->token_info_enabled) {
+    if (parser->token_info_enabled &&
+	linenum != ptinfo->linenum && !ptinfo->nonspc &&
+	!token_info_has_nonspaces(parser, t) &&
+	token_info_get_column(parser, t) != ptinfo->column) {
 	rb_compile_warn(ruby_sourcefile, linenum,
 			"mismatched indentations at '%s' with '%s' at %d",
 			token, ptinfo->token, ptinfo->linenum);
     }
 
-  finish:
     xfree(ptinfo);
 }
 #endif	/* RIPPER */
