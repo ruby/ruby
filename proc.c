@@ -1059,6 +1059,7 @@ proc_to_s(VALUE self)
     const char *cname = rb_obj_classname(self);
     const rb_iseq_t *iseq;
     const char *is_lambda;
+    const struct vm_ifunc *ifunc;
 
     GetProcPtr(self, proc);
     iseq = proc->block.iseq;
@@ -1072,6 +1073,10 @@ proc_to_s(VALUE self)
 	}
 	str = rb_sprintf("#<%s:%p@%"PRIsVALUE":%d%s>", cname, (void *)self,
 			 iseq->body->location.path, first_lineno, is_lambda);
+    }
+    else if ((ifunc = (struct vm_ifunc *)iseq)->func == rb_sym_proc_call) {
+	str = rb_sprintf("#<%s:%p(&%+"PRIsVALUE")%s>", cname, (void *)self,
+			 ID2SYM((ID)ifunc->data), is_lambda);
     }
     else {
 	str = rb_sprintf("#<%s:%p%s>", cname, (void *)proc->block.iseq,
