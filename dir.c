@@ -1645,6 +1645,7 @@ dirent_match(const char *pat, rb_encoding *enc, const char *name, const struct d
 static int
 glob_helper(
     const char *path,
+    long pathlen,
     int dirsep, /* '/' should be placed before appending child entry's name to 'path'. */
     rb_pathtype_t pathtype, /* type of 'path' */
     struct glob_pattern **beg,
@@ -1659,7 +1660,6 @@ glob_helper(
     struct glob_pattern **cur, **new_beg, **new_end;
     int plain = 0, magical = 0, recursive = 0, match_all = 0, match_dir = 0;
     int escape = !(flags & FNM_NOESCAPE);
-    long pathlen;
 
     for (cur = beg; cur < end; ++cur) {
 	struct glob_pattern *p = *cur;
@@ -1692,7 +1692,6 @@ glob_helper(
 	}
     }
 
-    pathlen = strlen(path);
     if (*path) {
 	if (match_all && pathtype == path_unknown) {
 	    if (do_lstat(path, &st, flags, enc) == 0) {
@@ -1847,7 +1846,8 @@ glob_helper(
 		}
 	    }
 
-	    status = glob_helper(buf, 1, new_pathtype, new_beg, new_end,
+	    status = glob_helper(buf, name - buf + namlen, 1,
+				 new_pathtype, new_beg, new_end,
 				 flags, func, arg, enc);
 	    GLOB_FREE(buf);
 	    GLOB_FREE(new_beg);
@@ -1910,8 +1910,9 @@ glob_helper(
 						flags, &new_pathtype);
 		}
 #endif
-		status = glob_helper(buf, 1, new_pathtype, new_beg,
-				     new_end, flags, func, arg, enc);
+		status = glob_helper(buf, pathlen + strlen(buf + pathlen), 1,
+				     new_pathtype, new_beg, new_end,
+				     flags, func, arg, enc);
 		GLOB_FREE(buf);
 		GLOB_FREE(new_beg);
 		if (status) break;
@@ -1952,7 +1953,8 @@ ruby_glob0(const char *path, int flags, ruby_glob_func *func, VALUE arg, rb_enco
 	GLOB_FREE(buf);
 	return -1;
     }
-    status = glob_helper(buf, 0, path_unknown, &list, &list + 1, flags, func, arg, enc);
+    status = glob_helper(buf, n, 0, path_unknown, &list, &list + 1,
+			 flags, func, arg, enc);
     glob_free_pattern(list);
     GLOB_FREE(buf);
 
