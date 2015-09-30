@@ -1,3 +1,8 @@
+Wed Sep 30 15:47:13 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_args.c (vm_caller_setup_arg_block): bypass Symbol#to_proc
+	  call to optimize symbol block passing.
+
 Wed Sep 30 01:34:34 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_free): fix memory leak at syntax error when
