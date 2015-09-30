@@ -8915,8 +8915,8 @@ sym_to_sym(VALUE sym)
     return sym;
 }
 
-static VALUE
-sym_call(VALUE args, VALUE sym, int argc, VALUE *argv, VALUE passed_proc)
+VALUE
+rb_sym_proc_call(VALUE args, VALUE sym, int argc, VALUE *argv, VALUE passed_proc)
 {
     VALUE obj;
 
@@ -8959,7 +8959,7 @@ sym_to_proc(VALUE sym)
 	return aryp[index + 1];
     }
     else {
-	proc = rb_proc_new(sym_call, (VALUE)id);
+	proc = rb_proc_new(rb_sym_proc_call, (VALUE)id);
 	rb_block_clear_env_self(proc);
 	aryp[index] = sym;
 	aryp[index + 1] = proc;
