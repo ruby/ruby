@@ -941,10 +941,10 @@ send
 (VALUE val) // inc += - (int)(ci->orig_argc + ((ci->flag & VM_CALL_ARGS_BLOCKARG) ? 1 : 0));
 {
     struct rb_calling_info calling;
-    VALUE mark = vm_caller_setup_arg_block(th, reg_cfp, &calling, ci, blockiseq, FALSE);
+
+    vm_caller_setup_arg_block(th, reg_cfp, &calling, ci, blockiseq, FALSE);
     vm_search_method(ci, cc, calling.recv = TOPN(calling.argc = ci->orig_argc));
     CALL_METHOD(&calling, ci, cc);
-    RB_GC_GUARD(mark);
 }
 
 DEFINE_INSN
@@ -989,15 +989,13 @@ invokesuper
 (...)
 (VALUE val) // inc += - (int)(ci->orig_argc + ((ci->flag & VM_CALL_ARGS_BLOCKARG) ? 1 : 0));
 {
-    VALUE mark;
     struct rb_calling_info calling;
     calling.argc = ci->orig_argc;
 
-    mark = vm_caller_setup_arg_block(th, reg_cfp, &calling, ci, blockiseq, TRUE);
+    vm_caller_setup_arg_block(th, reg_cfp, &calling, ci, blockiseq, TRUE);
     calling.recv = GET_SELF();
     vm_search_super_method(th, GET_CFP(), &calling, ci, cc);
     CALL_METHOD(&calling, ci, cc);
-    RB_GC_GUARD(mark);
 }
 
 /**
