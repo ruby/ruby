@@ -7186,7 +7186,8 @@ datetime_s_jd(int argc, VALUE *argv, VALUE klass)
 
     jd = INT2FIX(0);
 
-    h = min = s = 0;
+    h   = 12;
+    min = s = 0;
     fr2 = INT2FIX(0);
     rof = 0;
     sg = DEFAULT_SG;
