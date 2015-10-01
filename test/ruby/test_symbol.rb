@@ -123,7 +123,7 @@ class TestSymbol < Test::Unit::TestCase
       true.tap(&:itself)
     end;
 
-    assert_ruby_status([], <<-"end;", timeout: 0.1)
+    assert_ruby_status([], <<-"end;", timeout: 5.0)
       GC.stress = true
       100.times {Proc.new(&:itself)}
     end;
