@@ -117,6 +117,11 @@ class TestSymbol < Test::Unit::TestCase
       ary_ids = ary.collect{|x| x.object_id }
       assert_equal ary_ids, ary.collect(&:object_id)
     end
+
+    assert_ruby_status([], <<-"end;", timeout: 0.1)
+      GC.stress = true
+      true.tap(&:itself)
+    end;
   end
 
   def test_call
