@@ -48,7 +48,9 @@ proc_mark(void *ptr)
     rb_proc_t *proc = ptr;
     RUBY_MARK_UNLESS_NULL(proc->block.proc);
     RUBY_MARK_UNLESS_NULL(proc->block.self);
-    RUBY_MARK_UNLESS_NULL(rb_vm_proc_envval(proc));
+    if (proc->block.ep) {
+	RUBY_MARK_UNLESS_NULL(rb_vm_proc_envval(proc));
+    }
     if (proc->block.iseq && RUBY_VM_IFUNC_P(proc->block.iseq)) {
 	rb_gc_mark((VALUE)(proc->block.iseq));
     }
