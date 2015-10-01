@@ -8916,7 +8916,7 @@ sym_to_sym(VALUE sym)
 }
 
 VALUE
-rb_sym_proc_call(VALUE args, VALUE sym, int argc, VALUE *argv, VALUE passed_proc)
+rb_sym_proc_call(VALUE args, VALUE sym, int argc, const VALUE *argv, VALUE passed_proc)
 {
     VALUE obj;
 
@@ -8942,7 +8942,8 @@ sym_to_proc(VALUE sym)
     static VALUE sym_proc_cache = Qfalse;
     enum {SYM_PROC_CACHE_SIZE = 67};
     VALUE proc;
-    long id, index;
+    long index;
+    ID id;
     VALUE *aryp;
 
     if (!sym_proc_cache) {
