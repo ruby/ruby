@@ -1,3 +1,8 @@
+Fri Oct  2 00:18:39 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (proc_mark): block.ep of Proc from Symbol is now NULL.
+	  [ruby-core:70961] [Bug #11560]
+
 Wed Sep 30 15:47:13 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_args.c (vm_caller_setup_arg_block): bypass Symbol#to_proc
