@@ -596,6 +596,13 @@ proc_new(VALUE klass, int8_t is_lambda)
     procval = block->proc;
 
     if (procval) {
+	if (RUBY_VM_IFUNC_P(procval)) {
+	    VALUE newprocval = rb_proc_alloc(klass);
+	    rb_proc_t *proc = RTYPEDDATA_DATA(newprocval);
+	    proc->block.iseq = (rb_iseq_t *)procval;
+	    proc->block.proc = newprocval;
+	    return newprocval;
+	}
 	if (RBASIC(procval)->klass == klass) {
 	    return procval;
 	}

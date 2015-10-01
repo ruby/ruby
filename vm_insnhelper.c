@@ -2297,11 +2297,10 @@ vm_yield_with_cfunc(rb_thread_t *th, const rb_block_t *block, VALUE self,
 {
     const struct vm_ifunc *ifunc = (struct vm_ifunc *)block->iseq;
     VALUE val, arg, blockarg;
-    int lambda = block_proc_is_lambda(block->proc);
     const rb_callable_method_entry_t *me = th->passed_bmethod_me;
     th->passed_bmethod_me = NULL;
 
-    if (lambda) {
+    if (!RUBY_VM_IFUNC_P(block->proc) && block_proc_is_lambda(block->proc)) {
 	arg = rb_ary_new4(argc, argv);
     }
     else if (argc == 0) {
