@@ -1,3 +1,9 @@
+Fri Oct  2 09:20:20 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* common.mk, lib/unicode_normalize/tables.rb: Change Unicode
+	  Version for character normalization data from 7.0.0 to
+	  8.0.0.
+
 Fri Oct  2 00:18:39 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (proc_mark): block.ep of Proc from Symbol is now NULL.

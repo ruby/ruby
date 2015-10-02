@@ -11,7 +11,7 @@ Q = $(Q1:0=@)
 ECHO0 = $(ECHO1:0=echo)
 ECHO = @$(ECHO0)
 
-UNICODE_VERSION = 7.0.0
+UNICODE_VERSION = 8.0.0
 
 RUBYLIB       = $(PATH_SEPARATOR)
 RUBYOPT       = -
