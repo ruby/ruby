@@ -637,15 +637,15 @@ class TestThread < Test::Unit::TestCase
       th = Thread.start{
         Thread.handle_interrupt(Object => :on_blocking){
           begin
+            sleep 0.0001 until r == :ok
             Thread.current.raise RuntimeError
-            r=:ok
             sleep
           ensure
-            th_s.raise e
+            th_s.raise e, "raise from ensure", $@
           end
         }
       }
-      assert_raise(e) {sleep 1}
+      assert_raise(e) {r = :ok; sleep 1}
     ensure
       assert_raise(RuntimeError) {th.join(0)}
     end
