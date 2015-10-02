@@ -770,18 +770,6 @@ class TestMethod < Test::Unit::TestCase
     }, '[Bug #7825]'
   end
 
-  def test_unlinked_method_entry_in_method_object_bug
-    bug8100 = '[ruby-core:53640] [Bug #8100]'
-    assert_normal_exit %q{
-      1_000_000.times do
-        def x
-          "hello" * 1000
-        end
-        method(:x).call
-      end
-    }, bug8100
-  end
-
   def test_singleton_method
     feature8391 = '[ruby-core:54914] [Feature #8391]'
     c1 = Class.new
