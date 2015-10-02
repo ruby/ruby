@@ -645,11 +645,9 @@ class TestThread < Test::Unit::TestCase
           end
         }
       }
-      sleep 1
-      r=:ng
-      th.raise RuntimeError
-      th.join
-    rescue e
+      assert_raise(e) {sleep 1}
+    ensure
+      assert_raise(RuntimeError) {th.join(0)}
     end
     assert_equal(:ok,r)
   end
