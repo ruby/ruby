@@ -772,19 +772,14 @@ class TestMethod < Test::Unit::TestCase
 
   def test_unlinked_method_entry_in_method_object_bug
     bug8100 = '[ruby-core:53640] [Bug #8100]'
-    begin
-      assert_normal_exit %q{
-      loop do
+    assert_normal_exit %q{
+      1_000_000.times do
         def x
           "hello" * 1000
         end
         method(:x).call
       end
-      }, bug8100, timeout: 2
-    rescue Timeout::Error => e
-    else
-    end
-    assert_raise(Timeout::Error, bug8100) {raise e if e}
+    }, bug8100
   end
 
   def test_singleton_method
