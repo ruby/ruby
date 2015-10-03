@@ -125,7 +125,7 @@ class TestSymbol < Test::Unit::TestCase
 
     assert_ruby_status([], <<-"end;", timeout: 5.0)
       GC.stress = true
-      10.times {Proc.new(&:itself)}
+      2.times {Proc.new(&:itself)}
     end;
   end
 
