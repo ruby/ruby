@@ -256,7 +256,7 @@ ruby-runner.c: template/ruby-runner.c.in
 		@./config.status --file=$@:$(srcdir)/template/$(@F).in
 
 ruby-runner$(EXEEXT): ruby-runner.c
-	$(Q) $(PURIFY) $(CC) $(LDFLAGS) $(LIBS) $(OUTFLAG)$@ ruby-runner.c
+	$(Q) $(PURIFY) $(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) $(LIBS) $(OUTFLAG)$@ ruby-runner.c
 
 $(RBCONFIG): $($(CROSS_COMPILING:no=)PREP)
 
