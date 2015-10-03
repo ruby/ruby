@@ -66,7 +66,7 @@ config["bindir"] = abs_archdir
 
 env = {}
 
-env["RUBY"] = File.expand_path(ruby)
+env["RUBY"] = File.join(abs_archdir, "ruby-runner#{config['EXEEXT']}")
 env["PATH"] = [abs_archdir, ENV["PATH"]].compact.join(File::PATH_SEPARATOR)
 
 if e = ENV["RUBYLIB"]

@@ -1,0 +1,27 @@
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+#define BUILDDIR "@abs_top_builddir@"
+#define LIBPATHENV "@LIBPATHENV@"
+
+int
+main(int argc, char **argv)
+{
+    static const char builddir[] = BUILDDIR;
+    const char *libpath = getenv(LIBPATHENV);
+    if (libpath) {
+	size_t n = strlen(libpath);
+	char *e = malloc(sizeof(builddir)+n+1);
+	memcpy(e, builddir, sizeof(builddir)-1);
+	e[sizeof(builddir)-1] = '@PATH_SEPARATOR@';
+	memcpy(e+sizeof(builddir), libpath, n+1);
+	libpath = e;
+    }
+    else {
+	libpath = builddir;
+    }
+    setenv(LIBPATHENV, libpath, 1);
+    execv(BUILDDIR"/@RUBY_BASE_NAME@", argv);
+    return -1;
+}

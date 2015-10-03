@@ -1,3 +1,14 @@
+Sun Oct  4 00:09:45 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* template/ruby-runner.c.in: wrapper to set dynamic loading path
+	  environment variable.  /bin/sh on Mac OS X 10.11 (El Capitan)
+	  clears DYLD_LIBRARY_PATH.
+
+	  it must:
+	  - do nothing even if current directory is not present
+	  - do not set other environment variables, e.g. PWD, SHLVL, etc
+	  - do not open other FDs, e.g. pipes for timer thread
+
 Fri Oct  2 09:20:20 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* common.mk, lib/unicode_normalize/tables.rb: Change Unicode

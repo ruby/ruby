@@ -147,7 +147,7 @@ DTRACE_DEPENDENT_OBJS = array.$(OBJEXT) \
 
 THREAD_MODEL  = @THREAD_MODEL@
 
-PREP          = @PREP@
+PREP          = @PREP@ ruby-runner
 ARCHFILE      = @ARCHFILE@
 SETUP         =
 EXTSTATIC     = @EXTSTATIC@
@@ -251,6 +251,12 @@ $(LIBRUBY_SO):
 ruby_pc = @ruby_pc@
 $(ruby_pc):
 		@./config.status --file=$@:$(srcdir)/template/ruby.pc.in
+
+ruby-runner.c: template/ruby-runner.c.in
+		@./config.status --file=$@:$(srcdir)/template/$(@F).in
+
+ruby-runner$(EXEEXT): ruby-runner.c
+	$(Q) $(PURIFY) $(CC) $(LDFLAGS) $(LIBS) $(OUTFLAG)$@ ruby-runner.c
 
 $(RBCONFIG): $($(CROSS_COMPILING:no=)PREP)
 
