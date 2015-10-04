@@ -1010,7 +1010,9 @@ rb_dir_getwd(void)
 {
     char *path;
     VALUE cwd;
+    int fsenc = rb_enc_to_index(rb_filesystem_encoding());
 
+    if (fsenc == ENCINDEX_US_ASCII) fsenc = ENCINDEX_ASCII;
     path = my_getcwd();
 #ifdef __APPLE__
     cwd = rb_str_normalize_ospath(path, strlen(path));
@@ -1018,7 +1020,7 @@ rb_dir_getwd(void)
 #else
     cwd = rb_tainted_str_new2(path);
 #endif
-    rb_enc_associate(cwd, rb_filesystem_encoding());
+    rb_enc_associate_index(cwd, fsenc);
 
     xfree(path);
     return cwd;

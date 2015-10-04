@@ -1,3 +1,8 @@
+Mon Oct  5 00:53:51 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (rb_dir_getwd): make ASCII-8BIT if filesystem encoding is
+	  US-ASCII, like as Dir.glob.
+
 Sun Oct  4 23:39:09 2015  Tanaka Akira  <akr@fsij.org>
 
 	* enum.c (nmin_filter): Fix limit value.
