@@ -9,6 +9,19 @@ class TC_OpenStruct < Test::Unit::TestCase
     assert_equal h, OpenStruct.new(Struct.new(*h.keys).new(*h.values)).to_h
   end
 
+  def test_respond_to
+    o = OpenStruct.new
+    o.a = 1
+    assert_respond_to(o, :a)
+    assert_respond_to(o, :a=)
+  end
+
+  def test_respond_to_with_lazy_getter
+    o = OpenStruct.new a: 1
+    assert_respond_to(o, :a)
+    assert_respond_to(o, :a=)
+  end
+
   def test_equality
     o1 = OpenStruct.new
     o2 = OpenStruct.new
