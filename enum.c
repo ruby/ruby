@@ -1261,7 +1261,7 @@ nmin_filter(struct nmin_data *data)
 #undef GETPTR
 #undef SWAP
 
-    data->limit = RARRAY_PTR(data->buf)[store_index*eltsize];
+    data->limit = RARRAY_PTR(data->buf)[store_index*eltsize]; /* the last pivot */
     data->curlen = data->n;
     rb_ary_resize(data->buf, data->n * eltsize);
 }
