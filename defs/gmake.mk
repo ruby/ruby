@@ -46,13 +46,16 @@ yes-btest-ruby: $(TEST_DEPENDS) yes-test-sample
 yes-test-sample: $(TEST_DEPENDS)
 endif
 ifneq ($(filter $(CHECK_TARGETS),$(MAKECMDGOALS)) $(filter test-all,$(TEST_TARGETS)),)
-yes-test-all yes-test-ruby: $(filter-out %test-all %test-ruby check%,$(TEST_TARGETS))
+test-testframework test-almost yes-test-ruby: $(filter-out %test-all %test-ruby check%,$(TEST_TARGETS))
 endif
 ifneq ($(filter $(CHECK_TARGETS),$(MAKECMDGOALS))$(if $(filter test-all,$(MAKECMDGOALS)),$(filter test-knownbug,$(MAKECMDGOALS))),)
-yes-test-all yes-test-ruby: yes-test-knownbug
+test-testframework test-almost yes-test-ruby: yes-test-knownbug
 endif
 
 $(TEST_TARGETS): $(TEST_DEPENDS)
+
+test-almost: TEST_EXCLUDES += $(EXCLUDE_TESTFRAMEWORK)
+test-almost: test-testframework
 
 ifneq ($(if $(filter install,$(MAKECMDGOALS)),$(filter uninstall,$(MAKECMDGOALS))),)
 install-targets := $(filter install uninstall,$(MAKECMDGOALS))

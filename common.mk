@@ -546,9 +546,7 @@ clean-platform:
 	$(Q) $(RM) $(PLATFORM_D)
 	-$(Q) $(RMDIR) $(PLATFORM_DIR) 2> $(NULL) || exit 0
 
-check: main test
-	$(MAKE) test-testframework
-	$(MAKE) test-all TEST_EXCLUDES="$(TEST_EXCLUDES) $(EXCLUDE_TESTFRAMEWORK)"
+check: main test test-all
 	$(ECHO) check succeeded
 check-ruby: test test-ruby
 
@@ -585,15 +583,14 @@ no-test-knownbug: PHONY
 yes-test-knownbug: prog PHONY
 	-$(exec) $(RUNRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(PROGRAM) $(RUN_OPTS)" $(OPTS) $(TESTOPTS) $(srcdir)/KNOWNBUGS.rb
 
-test-testframework: $(TEST_RUNNABLE)-test-testframework
-no-test-testframework: PHONY
-yes-test-testframework: prog PHONY
+test-testframework: prog PHONY
 	$(Q)$(exec) $(RUNRUBY) "$(srcdir)/test/runner.rb" --ruby="$(RUNRUBY)" $(TESTOPTS) testunit minitest
 
 test: test-sample btest-ruby test-knownbug
 
 test-all: $(TEST_RUNNABLE)-test-all
-yes-test-all: prog PHONY
+yes-test-all: prog test-testframework test-almost PHONY
+test-almost:
 	$(Q)$(exec) $(RUNRUBY) "$(srcdir)/test/runner.rb" --ruby="$(RUNRUBY)" $(TEST_EXCLUDES) $(TESTOPTS) $(TESTS)
 TESTS_BUILD = mkmf
 no-test-all: PHONY
