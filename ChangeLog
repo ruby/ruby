@@ -1,3 +1,8 @@
+Sun Oct  4 15:11:48 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/euc_jp.c (mbc_case_fold): check given string is valid or not,
+	  and if invalid, return 1. [Bug #11486]
+
 Sun Oct  4 10:09:57 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (rb_dir_getwd): normalize OS path to UTF-8 on OS X.
