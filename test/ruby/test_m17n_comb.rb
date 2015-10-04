@@ -1637,6 +1637,6 @@ class TestM17NComb < Test::Unit::TestCase
 
   def test_bug11486
     bug11486 = '[Bug #11486]'
-    assert_nil ("\u3042"*19+"\r"*19+"\u3042"*20+"\r"*20).encode("euc-jp").gsub!(/xxx/i, "")
+    assert_nil ("\u3042"*19+"\r"*19+"\u3042"*20+"\r"*20).encode("euc-jp").gsub!(/xxx/i, ""), bug11486
   end
 end
