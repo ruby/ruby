@@ -378,11 +378,12 @@ mbc_case_fold(OnigCaseFoldType flag,
     return 1;
   }
   else {
-    OnigCodePoint code;
     int len;
 
+    len = mbc_enc_len(p, end, enc);
+    if (len <= 0) return 1;
     code = get_lower_case(mbc_to_code(p, end, enc));
-    len = code_to_mbc(code, lower, enc);
+    /* assuming case folding in euc-jp doesn't change length */
     (*pp) += len;
     return len; /* return byte length of converted char to lower */
   }
