@@ -1,3 +1,9 @@
+Sun Oct  4 23:39:09 2015  Tanaka Akira  <akr@fsij.org>
+
+	* enum.c (nmin_filter): Fix limit value.
+	  patch by Helder Pereira.
+	  [Bug #11471] [ruby-core:70477]
+
 Sun Oct  4 15:11:48 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enc/euc_jp.c (mbc_case_fold): check given string is valid or not,
