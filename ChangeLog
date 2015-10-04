@@ -18,6 +18,11 @@ Sun Oct  4 00:09:45 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  - do not set other environment variables, e.g. PWD, SHLVL, etc
 	  - do not open other FDs, e.g. pipes for timer thread
 
+Sun Oct 2 10:59:00 2015  schneems  <richard.schneeman@gmail.com>
+
+	* ext/pathname/lib/pathname.rb: freeze string literals for
+	  reduced object allocation.
+
 Fri Oct  2 09:20:20 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* common.mk, lib/unicode_normalize/tables.rb: Change Unicode
