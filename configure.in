@@ -3704,6 +3704,15 @@ if test "$EXEEXT" = .exe; then
     AC_SUBST(EXECUTABLE_EXTS)
 fi
 
+AS_CASE("$cross_compiling:${LIBPATHENV}", [yes:* | no:], [], [
+    AC_MSG_CHECKING(whether wrapper for $LIBPATHENV is needed)
+    AS_IF([env ${LIBPATHENV}=/lib /bin/sh -c ': ${'${LIBPATHENV}'?}' 2>/dev/null],
+	[AC_MSG_RESULT(no)],
+    	[PREP="$PREP"' ruby-runner$(EXEEXT)'
+	AC_MSG_RESULT(yes)]
+    )
+])
+
 AC_ARG_ENABLE(dtrace,
         AS_HELP_STRING([--enable-dtrace],
         [enable DTrace for tracing inside ruby. enabled by default on systems having dtrace]),

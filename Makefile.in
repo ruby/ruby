@@ -147,7 +147,7 @@ DTRACE_DEPENDENT_OBJS = array.$(OBJEXT) \
 
 THREAD_MODEL  = @THREAD_MODEL@
 
-PREP          = @PREP@ ruby-runner$(EXEEXT)
+PREP          = @PREP@
 ARCHFILE      = @ARCHFILE@
 SETUP         =
 EXTSTATIC     = @EXTSTATIC@
