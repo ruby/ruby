@@ -259,9 +259,8 @@ rb_str_encode_ospath(VALUE path)
 
 #ifdef __APPLE__
 static VALUE
-rb_str_normalize_ospath0(const char *ptr, long len)
+rb_str_append_normalized_ospath(VALUE str, const char *ptr, long len)
 {
-    VALUE str;
     CFIndex buflen = 0;
     CFRange all;
     CFStringRef s = CFStringCreateWithBytesNoCopy(kCFAllocatorDefault,
@@ -269,14 +268,15 @@ rb_str_normalize_ospath0(const char *ptr, long len)
 						  kCFStringEncodingUTF8, FALSE,
 						  kCFAllocatorNull);
     CFMutableStringRef m = CFStringCreateMutableCopy(kCFAllocatorDefault, len, s);
+    long oldlen = RSTRING_LEN(str);
 
     CFStringNormalize(m, kCFStringNormalizationFormC);
     all = CFRangeMake(0, CFStringGetLength(m));
     CFStringGetBytes(m, all, kCFStringEncodingUTF8, '?', FALSE, NULL, 0, &buflen);
-    str = rb_enc_str_new(0, buflen, rb_utf8_encoding());
-    CFStringGetBytes(m, all, kCFStringEncodingUTF8, '?', FALSE, (UInt8 *)RSTRING_PTR(str),
-		     buflen, &buflen);
-    rb_str_set_len(str, buflen);
+    rb_str_modify_expand(str, buflen);
+    CFStringGetBytes(m, all, kCFStringEncodingUTF8, '?', FALSE,
+		     (UInt8 *)(RSTRING_PTR(str) + oldlen), buflen, &buflen);
+    rb_str_set_len(str, oldlen + buflen);
     CFRelease(m);
     CFRelease(s);
     return str;
@@ -297,8 +297,9 @@ rb_str_normalize_ospath(const char *ptr, long len)
 	int r = rb_enc_precise_mbclen(p, e, enc);
 	if (!MBCLEN_CHARFOUND_P(r)) {
 	    /* invalid byte shall not happen but */
-	    rb_str_append(str, rb_str_normalize_ospath0(p1, p-p1));
-	    rb_str_cat2(str, "\xEF\xBF\xBD");
+	    static const char invalid[3] = "\xEF\xBF\xBD";
+	    rb_str_append_normalized_ospath(str, p1, p-p1);
+	    rb_str_cat(str, invalid, sizeof(invalid));
 	    p += 1;
 	    p1 = p;
 	    continue;
@@ -308,7 +309,7 @@ rb_str_normalize_ospath(const char *ptr, long len)
 	if ((0x2000 <= c && c <= 0x2FFF) || (0xF900 <= c && c <= 0xFAFF) ||
 		(0x2F800 <= c && c <= 0x2FAFF)) {
 	    if (p - p1 > 0) {
-		rb_str_append(str, rb_str_normalize_ospath0(p1, p-p1));
+		rb_str_append_normalized_ospath(str, p1, p-p1);
 	    }
 	    rb_str_cat(str, p, l);
 	    p += l;
@@ -319,7 +320,7 @@ rb_str_normalize_ospath(const char *ptr, long len)
 	}
     }
     if (p - p1 > 0) {
-	rb_str_append(str, rb_str_normalize_ospath0(p1, p-p1));
+	rb_str_append_normalized_ospath(str, p1, p-p1);
     }
 
     return str;
