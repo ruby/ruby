@@ -3708,7 +3708,7 @@ AS_CASE("$cross_compiling:${LIBPATHENV}", [yes:* | no:], [], [
     AC_MSG_CHECKING(whether wrapper for $LIBPATHENV is needed)
     AS_IF([env ${LIBPATHENV}=/lib /bin/sh -c ': ${'${LIBPATHENV}'?}' 2>/dev/null],
 	[AC_MSG_RESULT(no)],
-    	[PREP="$PREP"' ruby-runner$(EXEEXT)'
+	[PREP="$PREP"' ruby-runner$(EXEEXT)'
 	AC_MSG_RESULT(yes)]
     )
 ])
