@@ -22,6 +22,7 @@ Sun Oct 2 10:59:00 2015  schneems  <richard.schneeman@gmail.com>
 
 	* ext/pathname/lib/pathname.rb: freeze string literals for
 	  reduced object allocation.
+	  [Feature #11375] [ruby-core:70043]
 
 Fri Oct  2 09:20:20 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
