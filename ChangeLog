@@ -1,3 +1,9 @@
+Mon Oct  5 03:29:23 2015  Tanaka Akira  <akr@fsij.org>
+
+	* enum.c (nmin_filter): Fix limit value.
+	  patch by Helder Pereira.
+	  [Bug #11471] [ruby-core:70477]
+
 Wed Sep 30 03:44:36 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rss/rss.rb (Time#w3cdtf): fix zero-trimmed width of fraction
