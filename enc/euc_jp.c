@@ -382,7 +382,7 @@ mbc_case_fold(OnigCaseFoldType flag,
 
     len = mbc_enc_len(p, end, enc);
     if (len <= 0) return 1;
-    code = get_lower_case(mbc_to_code(p, end, enc));
+    get_lower_case(mbc_to_code(p, end, enc));
     /* assuming case folding in euc-jp doesn't change length */
     (*pp) += len;
     return len; /* return byte length of converted char to lower */
