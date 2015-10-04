@@ -172,6 +172,14 @@ class OpenStruct
   end
   protected :new_ostruct_member
 
+  def respond_to_missing?(mid, include_private = false) # :nodoc:
+    if mname = mid[/.*(?==\z)/m]
+      @table.include? mname.to_sym
+    else
+      @table.include? mid
+    end
+  end
+
   def method_missing(mid, *args) # :nodoc:
     len = args.length
     if mname = mid[/.*(?==\z)/m]
