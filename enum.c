@@ -1192,6 +1192,7 @@ nmin_filter(struct nmin_data *data)
     long numelts;
 
     long left, right;
+    long store_index;
 
     long i, j;
 
@@ -1217,7 +1218,6 @@ nmin_filter(struct nmin_data *data)
 
     while (1) {
 	long pivot_index = left + (right-left)/2;
-	long store_index;
 	long num_pivots = 1;
 
 	SWAP(pivot_index, right);
@@ -1261,9 +1261,9 @@ nmin_filter(struct nmin_data *data)
 #undef GETPTR
 #undef SWAP
 
+    data->limit = RARRAY_PTR(data->buf)[store_index*eltsize];
     data->curlen = data->n;
     rb_ary_resize(data->buf, data->n * eltsize);
-    data->limit = RARRAY_PTR(data->buf)[(data->n-1)*eltsize];
 }
 
 static VALUE
@@ -1283,7 +1283,7 @@ nmin_i(VALUE i, VALUE *_data, int argc, VALUE *argv)
         int c = data->cmpfunc(&cmpv, &data->limit, data);
         if (data->rev)
             c = -c;
-        if (c > 0)
+        if (c >= 0)
             return Qnil;
     }
 
