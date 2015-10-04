@@ -1,3 +1,7 @@
+Sun Oct  4 10:09:57 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (rb_dir_getwd): normalize OS path to UTF-8 on OS X.
+
 Sun Oct  4 00:09:45 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* template/ruby-runner.c.in: wrapper to set dynamic loading path
