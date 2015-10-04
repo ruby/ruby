@@ -395,4 +395,14 @@ class TestDir_M17N < Test::Unit::TestCase
       pp.assert_equal(orig, ents, bug7267)
     }
   end
+
+  def test_pwd
+    with_tmpdir {|d|
+      orig = %W"d\u{e9}tente x\u{304c 304e 3050 3052 3054}"
+      orig.each do |n|
+        Dir.mkdir(n)
+        assert_equal(n, File.basename(Dir.chdir(n) {Dir.pwd}))
+      end
+    }
+  end
 end

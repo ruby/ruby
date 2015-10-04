@@ -1012,7 +1012,12 @@ rb_dir_getwd(void)
     VALUE cwd;
 
     path = my_getcwd();
+#ifdef __APPLE__
+    cwd = rb_str_normalize_ospath(path, strlen(path));
+    OBJ_TAINT(cwd);
+#else
     cwd = rb_tainted_str_new2(path);
+#endif
     rb_enc_associate(cwd, rb_filesystem_encoding());
 
     xfree(path);
