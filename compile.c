@@ -2341,8 +2341,11 @@ compile_dstr_fragments(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE *node, int *cntp)
     debugp_param("nd_lit", lit);
     if (!NIL_P(lit)) {
 	cnt++;
-	if (RB_TYPE_P(lit, T_STRING))
-	    lit = node->nd_lit = rb_fstring(node->nd_lit);
+	if (!RB_TYPE_P(lit, T_STRING)) {
+	    rb_compile_bug(ERROR_ARGS "dstr: must be string: %s",
+			   rb_builtin_type_name(TYPE(lit)));
+	}
+	lit = node->nd_lit = rb_fstring(lit);
 	ADD_INSN1(ret, nd_line(node), putobject, lit);
 	if (RSTRING_LEN(lit) == 0) first_lit = LAST_ELEMENT(ret);
     }
