@@ -859,7 +859,7 @@ rb_funcallv_public(VALUE recv, ID mid, int argc, const VALUE *argv)
 VALUE
 rb_funcall_passing_block(VALUE recv, ID mid, int argc, const VALUE *argv)
 {
-    PASS_PASSED_BLOCK_TH(GET_THREAD());
+    PASS_PASSED_BLOCK();
 
     return rb_call(recv, mid, argc, argv, CALL_PUBLIC);
 }
