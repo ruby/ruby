@@ -1,3 +1,8 @@
+Tue Oct  6 02:29:38 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_resurrect): optimize by short circuit to copy
+	  hidden string without checking length, encoding and so on.
+
 Mon Oct  5 23:08:17 2015  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* test/ruby/test_thread.rb (test_handle_interrupt_blocking): check if

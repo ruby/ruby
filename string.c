@@ -1250,11 +1250,30 @@ rb_str_dup(VALUE str)
 VALUE
 rb_str_resurrect(VALUE str)
 {
+    VALUE dup;
+    VALUE flags = FL_TEST_RAW(str,
+			      RSTRING_NOEMBED |
+			      RSTRING_EMBED_LEN_MASK |
+			      ENC_CODERANGE_MASK |
+			      ENCODING_MASK |
+			      FL_TAINT | FL_FREEZE);
+
     if (RUBY_DTRACE_STRING_CREATE_ENABLED()) {
 	RUBY_DTRACE_STRING_CREATE(RSTRING_LEN(str),
 				  rb_sourcefile(), rb_sourceline());
     }
-    return str_duplicate(rb_cString, str);
+    dup = str_alloc(rb_cString);
+    MEMCPY(RSTRING(dup)->as.ary, RSTRING(str)->as.ary, VALUE, 3);
+    if (flags & STR_NOEMBED) {
+	if (UNLIKELY(!(flags & FL_FREEZE))) {
+	    str = str_new_frozen(rb_cString, str);
+	    FL_SET_RAW(str, flags & FL_TAINT);
+	}
+	RB_OBJ_WRITE(dup, &RSTRING(dup)->as.heap.aux.shared, str);
+	flags |= STR_SHARED;
+    }
+    FL_SET_RAW(dup, flags & ~FL_FREEZE);
+    return dup;
 }
 
 /*
