@@ -1,3 +1,12 @@
+Tue Oct  6 06:32:52 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* proc.c: enable optimization of Proc#call.
+	  [Feature #11569]
+
+	* NEWS: write about this optimization and incompatibilities.
+
+	* test/ruby/test_backtrace.rb: catch up this fix.
+
 Tue Oct  6 04:41:03 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c: solve goto spaghetti.

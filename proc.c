@@ -733,7 +733,7 @@ rb_block_clear_env_self(VALUE proc)
  *     	from prog.rb:5:in `<main>'
  *
  */
-
+#if 0
 static VALUE
 proc_call(int argc, VALUE *argv, VALUE procval)
 {
@@ -759,6 +759,7 @@ proc_call(int argc, VALUE *argv, VALUE procval)
     RB_GC_GUARD(passed_procval);
     return vret;
 }
+#endif
 
 #if SIZEOF_LONG > SIZEOF_INT
 static inline int
@@ -2803,7 +2804,6 @@ Init_Proc(void)
     rb_undef_alloc_func(rb_cProc);
     rb_define_singleton_method(rb_cProc, "new", rb_proc_s_new, -1);
 
-#if 0 /* incomplete. */
     rb_add_method(rb_cProc, rb_intern("call"), VM_METHOD_TYPE_OPTIMIZED,
 		  (void *)OPTIMIZED_METHOD_TYPE_CALL, 0);
     rb_add_method(rb_cProc, rb_intern("[]"), VM_METHOD_TYPE_OPTIMIZED,
@@ -2812,12 +2812,7 @@ Init_Proc(void)
 		  (void *)OPTIMIZED_METHOD_TYPE_CALL, 0);
     rb_add_method(rb_cProc, rb_intern("yield"), VM_METHOD_TYPE_OPTIMIZED,
 		  (void *)OPTIMIZED_METHOD_TYPE_CALL, 0);
-#else
-    rb_define_method(rb_cProc, "call", proc_call, -1);
-    rb_define_method(rb_cProc, "[]", proc_call, -1);
-    rb_define_method(rb_cProc, "===", proc_call, -1);
-    rb_define_method(rb_cProc, "yield", proc_call, -1);
-#endif
+
     rb_define_method(rb_cProc, "to_proc", proc_to_proc, 0);
     rb_define_method(rb_cProc, "arity", proc_arity, 0);
     rb_define_method(rb_cProc, "clone", proc_clone, 0);

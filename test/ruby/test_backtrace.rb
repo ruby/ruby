@@ -79,10 +79,10 @@ class TestBacktrace < Test::Unit::TestCase
         cs << caller(5)
       }.call
     }.resume
-    assert_equal(3, cs[0].size)
-    assert_equal(2, cs[1].size)
-    assert_equal(1, cs[2].size)
-    assert_equal(0, cs[3].size)
+    assert_equal(2, cs[0].size)
+    assert_equal(1, cs[1].size)
+    assert_equal(0, cs[2].size)
+    assert_equal(nil, cs[3])
     assert_equal(nil, cs[4])
 
     #
