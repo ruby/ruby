@@ -1,3 +1,9 @@
+Tue Oct  6 04:41:03 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c: solve goto spaghetti.
+
+	  Change all goto statement across blocks to tail call functions.
+
 Tue Oct  6 02:29:38 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_resurrect): optimize by short circuit to copy
