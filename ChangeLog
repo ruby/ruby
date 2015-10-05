@@ -155,7 +155,7 @@ Sun Sep 27 15:46:58 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* parse.y (parser_set_compile_option_flag): introduce pragma to
 	  override compile options.
 
-	* parse.y (magic_comments): new pragma "fronzen-string-literal".
+	* parse.y (magic_comments): new pragma "frozen-string-literal".
 	  [Feature #8976]
 
 Sun Sep 27 08:16:35 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
