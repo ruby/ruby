@@ -914,9 +914,8 @@ q.pop
         sleep
       }
 
-      Thread.pass until th.status == "sleep"
-      # acquired another thread.
-      assert_equal(mutex.locked?, true)
+      # acquired by another thread.
+      Thread.pass until mutex.locked?
       assert_equal(mutex.owned?, false)
     ensure
       th.kill if th

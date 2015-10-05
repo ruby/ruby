@@ -1,3 +1,9 @@
+Mon Oct  5 20:39:32 2015  Benoit Daloze  <eregontp@gmail.com>
+
+	* test/ruby/test_thread.rb: fix potential race condition.
+	  The thread could have a "sleep" status because it tries
+	  to acquire the mutex, but does not have it yet.
+
 Mon Oct  5 15:39:30 2015  Zachary Scott  <zzak@ruby-lang.org>
 
 	* numeric.c: [DOC] Overview for Numeric class by Joe Corcoran
