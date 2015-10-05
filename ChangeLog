@@ -1,3 +1,8 @@
+Mon Oct  5 23:08:17 2015  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* test/ruby/test_thread.rb (test_handle_interrupt_blocking): check if
+	  exception handling was postponed until sleep.
+
 Mon Oct  5 22:25:49 2015  Tanaka Akira  <akr@fsij.org>
 
 	* lib/pp.rb: Use frozen_string_literal: true.
