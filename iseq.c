@@ -93,6 +93,7 @@ rb_iseq_free(const rb_iseq_t *iseq)
 	}
 	compile_data_free(iseq->compile_data);
 	ruby_xfree(iseq->variable_body->iseq);
+	ruby_xfree(iseq->variable_body);
 	ruby_xfree(iseq->body);
     }
     RUBY_FREE_LEAVE("iseq");
