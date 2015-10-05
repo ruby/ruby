@@ -1,3 +1,8 @@
+Mon Oct  5 15:34:56 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (proc_new): link ep to calling block.
+	  [ruby-core:70980] [Bug #11566]
+
 Mon Oct  5 00:53:51 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (rb_dir_getwd): make ASCII-8BIT if filesystem encoding is
