@@ -65,6 +65,12 @@ with all sufficient information, see the ChangeLog file.
     true when the receiver is positive and negative respectively.
     [Feature #11151]
 
+* Proc
+
+  * Proc#call (and also #[], #===, #yield) are optimized.
+    Backtrace doesn't show each methods (show block lines directly).
+    TracePoint also ignore these calls. [Feature #11569]
+
 * Thread
   * Thread#name, Thread#name= are added to handle thread names [Feature #11251]
 
