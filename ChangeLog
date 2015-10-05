@@ -1,3 +1,14 @@
+Tue Oct  6 01:29:02 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (IS_BEG): include labeled argument state, which was
+	  EXPR_LABELARG.  [ruby-dev:49221] [Bug #11456]
+
+Tue Oct  6 01:29:02 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y: fix syntax error at do-block after a conditional
+	  operator.  separate label-allowed and after-a-label states from
+	  others as bit flags.  [ruby-dev:48790] [Bug #10653]
+
 Mon Oct  5 03:29:23 2015  Tanaka Akira  <akr@fsij.org>
 
 	* enum.c (nmin_filter): Fix limit value.

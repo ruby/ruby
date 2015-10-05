@@ -295,6 +295,27 @@ WARN
     assert_not_label(:foo, 'class Foo < not_label:foo; end', bug6347)
   end
 
+  def test_no_label_with_percent
+    assert_syntax_error('{%"a": 1}', /unexpected ':'/)
+    assert_syntax_error("{%'a': 1}", /unexpected ':'/)
+    assert_syntax_error('{%Q"a": 1}', /unexpected ':'/)
+    assert_syntax_error("{%Q'a': 1}", /unexpected ':'/)
+    assert_syntax_error('{%q"a": 1}', /unexpected ':'/)
+    assert_syntax_error("{%q'a': 1}", /unexpected ':'/)
+  end
+
+  def test_block_after_cond
+    bug10653 = '[ruby-dev:48790] [Bug #10653]'
+    assert_valid_syntax("false ? raise {} : tap {}", bug10653)
+    assert_valid_syntax("false ? raise do end : tap do end", bug10653)
+  end
+
+  def test_paren_after_label
+    bug11456 = '[ruby-dev:49221] [Bug #11456]'
+    assert_valid_syntax("{foo: (1 rescue 0)}", bug11456)
+    assert_valid_syntax("{foo: /=/}", bug11456)
+  end
+
   def test_duplicated_arg
     assert_syntax_error("def foo(a, a) end", /duplicated argument name/)
     assert_nothing_raised { def foo(_, _) end }
