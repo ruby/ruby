@@ -14,6 +14,9 @@ main(int argc, char **argv)
     static const char builddir[] = BUILDDIR;
     const char *libpath = getenv(LIBPATHENV);
     if (libpath) {
+	while (*libpath == PATH_SEP) ++libpath;
+    }
+    if (libpath && *libpath) {
 	size_t n = strlen(libpath);
 	char *e = malloc(sizeof(builddir)+n+1);
 	memcpy(e, builddir, sizeof(builddir)-1);
