@@ -1,3 +1,4 @@
+#
 # -*- frozen_string_literal: true -*-
 #
 # tmpdir - retrieve temporary directory path
