@@ -1,3 +1,8 @@
+Tue Oct  6 06:54:34 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.c (rb_iseq_free): free iseq::variable_body to avoid memory
+	  leak.
+
 Tue Oct  6 06:32:52 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* proc.c: enable optimization of Proc#call.
