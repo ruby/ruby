@@ -117,15 +117,26 @@ class TestSymbol < Test::Unit::TestCase
       ary_ids = ary.collect{|x| x.object_id }
       assert_equal ary_ids, ary.collect(&:object_id)
     end
+  end
 
+  def test_to_proc_yield
     assert_ruby_status([], <<-"end;", timeout: 5.0)
       GC.stress = true
       true.tap(&:itself)
     end;
+  end
 
+  def test_to_proc_new_proc
     assert_ruby_status([], <<-"end;", timeout: 5.0)
       GC.stress = true
       2.times {Proc.new(&:itself)}
+    end;
+  end
+
+  def test_to_proc_no_method
+    assert_separately([], <<-"end;", timeout: 5.0)
+      bug11566 = '[ruby-core:70980] [Bug #11566]'
+      assert_raise(NoMethodError, bug11566) {Proc.new(&:foo).(1)}
     end;
   end
 
