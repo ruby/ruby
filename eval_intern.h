@@ -4,15 +4,14 @@
 #include "ruby/ruby.h"
 #include "vm_core.h"
 
-#define PASS_PASSED_BLOCK_TH(th) do { \
-    (th)->passed_block = rb_vm_control_frame_block_ptr(th->cfp); \
-    (th)->cfp->flag |= VM_FRAME_FLAG_PASSED; \
-} while (0)
-
-#define PASS_PASSED_BLOCK() do { \
-    rb_thread_t * const __th__ = GET_THREAD(); \
-    PASS_PASSED_BLOCK_TH(__th__); \
-} while (0)
+static inline void
+pass_passed_block(rb_thread_t *th)
+{
+    th->passed_block = rb_vm_control_frame_block_ptr(th->cfp);
+    th->cfp->flag |= VM_FRAME_FLAG_PASSED;
+}
+#define PASS_PASSED_BLOCK_TH(th) pass_passed_block(th)
+#define PASS_PASSED_BLOCK() pass_passed_block(GET_THREAD())
 
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
