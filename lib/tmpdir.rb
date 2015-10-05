@@ -1,3 +1,4 @@
+# -*- frozen_string_literal: true -*-
 #
 # tmpdir - retrieve temporary directory path
 #
@@ -111,7 +112,7 @@ class Dir
       suffix &&= (String.try_convert(suffix) or
                   raise ArgumentError, "unexpected suffix: #{suffix.inspect}")
       t = Time.now.strftime("%Y%m%d")
-      path = "#{prefix}#{t}-#{$$}-#{rand(0x100000000).to_s(36)}"
+      path = "#{prefix}#{t}-#{$$}-#{rand(0x100000000).to_s(36)}".dup
       path << "-#{n}" if n
       path << suffix if suffix
       path

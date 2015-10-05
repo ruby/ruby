@@ -1,3 +1,19 @@
+Mon Oct  5 22:25:49 2015  Tanaka Akira  <akr@fsij.org>
+
+	* lib/pp.rb: Use frozen_string_literal: true.
+
+	* lib/prettyprint.rb: Ditto.
+
+	* lib/resolv.rb: Ditto.
+
+	* lib/tmpdir.rb: Ditto.
+
+	* test/test_pp.rb: Ditto.
+
+	* test/test_prettyprint.rb: Ditto.
+
+	* tool/transcode-tblgen.rb: Ditto.
+
 Mon Oct  5 20:39:32 2015  Benoit Daloze  <eregontp@gmail.com>
 
 	* test/ruby/test_thread.rb: fix potential race condition.

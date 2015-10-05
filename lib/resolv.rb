@@ -1,3 +1,5 @@
+# -*- frozen_string_literal: true -*-
+
 require 'socket'
 require 'timeout'
 require 'thread'
@@ -1426,7 +1428,7 @@ class Resolv
 
       class MessageEncoder # :nodoc:
         def initialize
-          @data = ''
+          @data = ''.dup
           @names = {}
           yield self
         end
