@@ -1,3 +1,8 @@
+Mon Oct  5 15:39:30 2015  Zachary Scott  <zzak@ruby-lang.org>
+
+	* numeric.c: [DOC] Overview for Numeric class by Joe Corcoran
+	  This patch was created at ROSSConf Berlin 2015 [Bug #11555]
+
 Mon Oct  5 15:34:56 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (proc_new): link ep to calling block.
