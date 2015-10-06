@@ -304,13 +304,12 @@ WARN
     assert_not_label(:foo, 'class Foo < not_label:foo; end', bug6347)
   end
 
-  def test_no_label_with_percent
-    assert_syntax_error('{%"a": 1}', /unexpected ':'/)
-    assert_syntax_error("{%'a': 1}", /unexpected ':'/)
-    assert_syntax_error('{%Q"a": 1}', /unexpected ':'/)
-    assert_syntax_error("{%Q'a': 1}", /unexpected ':'/)
-    assert_syntax_error('{%q"a": 1}', /unexpected ':'/)
-    assert_syntax_error("{%q'a': 1}", /unexpected ':'/)
+  def test_label_with_percent
+    ["", "Q", "q"].product(%w[" ']) {|c, q|
+      code = "{%#{c}#{q}a#{q}: 1}"
+      assert_valid_syntax(code)
+      assert_equal({:a => 1}, eval(code), code)
+    }
   end
 
   def test_block_after_cond
