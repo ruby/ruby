@@ -767,17 +767,8 @@ VALUE rb_obj_setup(VALUE obj, VALUE klass, VALUE type);
 #define NEWOBJ(obj,type) RB_NEWOBJ(obj,type)
 #define NEWOBJ_OF(obj,type,klass,flags) RB_NEWOBJ_OF(obj,type,klass,flags)
 #define OBJSETUP(obj,c,t) rb_obj_setup(obj, c, t) /* use NEWOBJ_OF instead of NEWOBJ()+OBJSETUP() */
-#define RB_CLONESETUP(clone,obj) do {\
-    rb_obj_setup((clone),rb_singleton_class_clone((VALUE)(obj)),RBASIC(obj)->flags);\
-    rb_singleton_class_attached(RBASIC(clone)->klass, (VALUE)(clone));\
-    if (RB_FL_TEST((obj), RUBY_FL_EXIVAR)) rb_copy_generic_ivar((VALUE)(clone),(VALUE)(obj));\
-} while (0)
-#define RB_DUPSETUP(dup,obj) do {\
-    rb_obj_setup((dup),rb_obj_class(obj), (RBASIC(obj)->flags)&(RUBY_T_MASK|RUBY_FL_EXIVAR|RUBY_FL_TAINT)); \
-    if (RB_FL_TEST((obj), RUBY_FL_EXIVAR)) rb_copy_generic_ivar((VALUE)(dup),(VALUE)(obj));\
-} while (0)
-#define CLONESETUP(clone,obj) RB_CLONESETUP(clone,obj)
-#define DUPSETUP(dup,obj) RB_DUPSETUP(dup,obj)
+#define CLONESETUP(clone,obj) rb_clone_setup(clone,obj)
+#define DUPSETUP(dup,obj) rb_dup_setup(dup,obj)
 
 #ifndef USE_RGENGC
 #define USE_RGENGC 1
@@ -882,6 +873,18 @@ struct RBasic {
 
 VALUE rb_obj_hide(VALUE obj);
 VALUE rb_obj_reveal(VALUE obj, VALUE klass); /* do not use this API to change klass information */
+
+#if defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P)
+# define RB_OBJ_WB_UNPROTECT_FOR(type, obj) \
+    __extension__( \
+	__builtin_choose_expr( \
+	    RGENGC_WB_PROTECTED_##type, \
+	    OBJ_WB_UNPROTECT((VALUE)(obj)), ((VALUE)(obj))))
+#else
+# define RB_OBJ_WB_UNPROTECT_FOR(type, obj) \
+    (RGENGC_WB_PROTECTED_##type ? \
+     OBJ_WB_UNPROTECT((VALUE)(obj)) : ((VALUE)(obj)))
+#endif
 
 #define RBASIC_CLASS(obj) (RBASIC(obj)->klass)
 
@@ -1028,18 +1031,12 @@ struct RArray {
 	const VALUE ary[RARRAY_EMBED_LEN_MAX];
     } as;
 };
-#define RARRAY_LEN(a) \
-    ((RBASIC(a)->flags & RARRAY_EMBED_FLAG) ? \
-     (long)((RBASIC(a)->flags >> RARRAY_EMBED_LEN_SHIFT) & \
-	 (RARRAY_EMBED_LEN_MASK >> RARRAY_EMBED_LEN_SHIFT)) : \
-     RARRAY(a)->as.heap.len)
-
+#define RARRAY_EMBED_LEN(a) \
+    (long)((RBASIC(a)->flags >> RARRAY_EMBED_LEN_SHIFT) & \
+	   (RARRAY_EMBED_LEN_MASK >> RARRAY_EMBED_LEN_SHIFT))
+#define RARRAY_LEN(a) rb_array_len(a)
 #define RARRAY_LENINT(ary) rb_long2int(RARRAY_LEN(ary))
-
-#define RARRAY_CONST_PTR(a) \
-  ((const VALUE *)((RBASIC(a)->flags & RARRAY_EMBED_FLAG) ? \
-		   RARRAY(a)->as.ary : \
-		   RARRAY(a)->as.heap.ptr))
+#define RARRAY_CONST_PTR(a) rb_array_const_ptr(a)
 
 #define RARRAY_PTR_USE_START(a) ((VALUE *)RARRAY_CONST_PTR(a))
 #define RARRAY_PTR_USE_END(a) /* */
@@ -1059,7 +1056,7 @@ struct RArray {
     RARRAY_PTR_USE_END(_ary); \
 } while (0)
 
-#define RARRAY_PTR(a) ((VALUE *)RARRAY_CONST_PTR(RGENGC_WB_PROTECTED_ARRAY ? OBJ_WB_UNPROTECT((VALUE)a) : ((VALUE)a)))
+#define RARRAY_PTR(a) ((VALUE *)RARRAY_CONST_PTR(RB_OBJ_WB_UNPROTECT_FOR(ARRAY, a)))
 
 struct RRegexp {
     struct RBasic basic;
@@ -1224,17 +1221,14 @@ struct RStruct {
 	const VALUE ary[RSTRUCT_EMBED_LEN_MAX];
     } as;
 };
-#define RSTRUCT_LEN(st) \
-    ((RBASIC(st)->flags & RSTRUCT_EMBED_LEN_MASK) ? \
-     (long)((RBASIC(st)->flags >> RSTRUCT_EMBED_LEN_SHIFT) & \
-            (RSTRUCT_EMBED_LEN_MASK >> RSTRUCT_EMBED_LEN_SHIFT)) : \
-     RSTRUCT(st)->as.heap.len)
+
+#define RSTRUCT_EMBED_LEN(st) \
+    (long)((RBASIC(st)->flags >> RSTRUCT_EMBED_LEN_SHIFT) & \
+	   (RSTRUCT_EMBED_LEN_MASK >> RSTRUCT_EMBED_LEN_SHIFT))
+#define RSTRUCT_LEN(st) rb_struct_len(st)
 #define RSTRUCT_LENINT(st) rb_long2int(RSTRUCT_LEN(st))
-#define RSTRUCT_CONST_PTR(st) \
-  ((RBASIC(st)->flags & RSTRUCT_EMBED_LEN_MASK) ? \
-   RSTRUCT(st)->as.ary : \
-   RSTRUCT(st)->as.heap.ptr)
-#define RSTRUCT_PTR(st) ((VALUE *)RSTRUCT_CONST_PTR(RGENGC_WB_PROTECTED_STRUCT ? OBJ_WB_UNPROTECT((VALUE)st) : (VALUE)st))
+#define RSTRUCT_CONST_PTR(st) rb_struct_const_ptr(st)
+#define RSTRUCT_PTR(st) ((VALUE *)RSTRUCT_CONST_PTR(RB_OBJ_WB_UNPROTECT_FOR(STRUCT, st))
 
 #define RSTRUCT_SET(st, idx, v) RB_OBJ_WRITE(st, &RSTRUCT_CONST_PTR(st)[idx], (v))
 #define RSTRUCT_GET(st, idx)    (RSTRUCT_CONST_PTR(st)[idx])
@@ -1979,6 +1973,49 @@ rb_special_const_p(VALUE obj)
 #endif
 
 #include "ruby/intern.h"
+
+static inline void
+rb_clone_setup(VALUE clone, VALUE obj)
+{
+    rb_obj_setup(clone, rb_singleton_class_clone(obj), RBASIC(obj)->flags);
+    rb_singleton_class_attached(RBASIC_CLASS(clone), clone);
+    if (RB_FL_TEST(obj, RUBY_FL_EXIVAR)) rb_copy_generic_ivar(clone, obj);
+}
+
+static inline void
+rb_dup_setup(VALUE dup, VALUE obj)
+{
+    rb_obj_setup(dup, rb_obj_class(obj), RB_FL_TEST_RAW(obj, RUBY_FL_DUPPED));
+    if (RB_FL_TEST(obj, RUBY_FL_EXIVAR)) rb_copy_generic_ivar(dup, obj);
+}
+
+static inline long
+rb_array_len(VALUE a)
+{
+    return (RBASIC(a)->flags & RARRAY_EMBED_FLAG) ?
+	RARRAY_EMBED_LEN(a) : RARRAY(a)->as.heap.len;
+}
+
+static inline const VALUE *
+rb_array_const_ptr(VALUE a)
+{
+    return (RBASIC(a)->flags & RARRAY_EMBED_FLAG) ?
+	RARRAY(a)->as.ary : RARRAY(a)->as.heap.ptr;
+}
+
+static inline long
+rb_struct_len(VALUE st)
+{
+    return (RBASIC(st)->flags & RSTRUCT_EMBED_LEN_MASK) ?
+	RSTRUCT_EMBED_LEN(st) : RSTRUCT(st)->as.heap.len;
+}
+
+static inline const VALUE *
+rb_struct_const_ptr(VALUE st)
+{
+    return (RBASIC(st)->flags & RSTRUCT_EMBED_LEN_MASK) ?
+	RSTRUCT(st)->as.ary : RSTRUCT(st)->as.heap.ptr;
+}
 
 #if defined(EXTLIB) && defined(USE_DLN_A_OUT)
 /* hook for external modules */
