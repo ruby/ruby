@@ -1,3 +1,8 @@
+Tue Oct  6 23:43:10 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* proc.c (rb_method_entry_min_max_arity): should support
+	  OPTIMIZED_METHOD_TYPE_CALL.
+
 Tue Oct  6 21:29:08 2015  Tanaka Akira  <akr@fsij.org>
 
 	* lib/tmpdir.rb (Dir.tmpdir): return duplicated string to be
