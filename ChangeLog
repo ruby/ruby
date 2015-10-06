@@ -1,3 +1,7 @@
+Tue Oct  6 18:51:51 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* method.h: IMEMO_FL_USER3 and IMEMO_FL_USER4 is not needed any more.
+
 Tue Oct  6 18:47:45 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* method.h: remove METHOD_ENTRY_SAFE(me) and related code
