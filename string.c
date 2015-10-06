@@ -8946,7 +8946,6 @@ rb_sym_proc_call(VALUE args, VALUE sym, int argc, const VALUE *argv, VALUE passe
     return rb_funcall_with_block(obj, (ID)sym, argc - 1, argv + 1, passed_proc);
 }
 
-#define sym_to_proc rb_sym_to_proc
 /*
  * call-seq:
  *   sym.to_proc
@@ -8957,7 +8956,7 @@ rb_sym_proc_call(VALUE args, VALUE sym, int argc, const VALUE *argv, VALUE passe
  */
 
 VALUE
-sym_to_proc(VALUE sym)
+rb_sym_to_proc(VALUE sym)
 {
     static VALUE sym_proc_cache = Qfalse;
     enum {SYM_PROC_CACHE_SIZE = 67};
@@ -9367,7 +9366,7 @@ Init_String(void)
     rb_define_method(rb_cSymbol, "id2name", rb_sym_to_s, 0);
     rb_define_method(rb_cSymbol, "intern", sym_to_sym, 0);
     rb_define_method(rb_cSymbol, "to_sym", sym_to_sym, 0);
-    rb_define_method(rb_cSymbol, "to_proc", sym_to_proc, 0);
+    rb_define_method(rb_cSymbol, "to_proc", rb_sym_to_proc, 0);
     rb_define_method(rb_cSymbol, "succ", sym_succ, 0);
     rb_define_method(rb_cSymbol, "next", sym_succ, 0);
 
