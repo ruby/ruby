@@ -1,3 +1,8 @@
+Wed Oct  7 01:20:46 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.h, gc.c: introduce new debug function rb_obj_info_dump(VALUE obj)	
+	  which prints the result of rb_raw_obj_info(..., obj).
+
 Wed Oct  7 01:16:11 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_args.c: remove an unused field args_info::calling.
