@@ -63,7 +63,6 @@ typedef struct rb_callable_method_entry_struct { /* same fields with rb_method_e
 
 #define METHOD_ENTRY_VISI(me)  (rb_method_visibility_t)(((me)->flags & (IMEMO_FL_USER0 | IMEMO_FL_USER1)) >> (IMEMO_FL_USHIFT+0))
 #define METHOD_ENTRY_BASIC(me) (int)                   (((me)->flags & (IMEMO_FL_USER2                 )) >> (IMEMO_FL_USHIFT+2))
-#define METHOD_ENTRY_SAFE(me)  (int)                   (((me)->flags & (IMEMO_FL_USER3 | IMEMO_FL_USER4)) >> (IMEMO_FL_USHIFT+3))
 
 static inline void
 METHOD_ENTRY_VISI_SET(rb_method_entry_t *me, rb_method_visibility_t visi)
@@ -78,20 +77,13 @@ METHOD_ENTRY_BASIC_SET(rb_method_entry_t *me, unsigned int basic)
     me->flags = (me->flags & ~(IMEMO_FL_USER2                 )) | (basic << IMEMO_FL_USHIFT+2);
 }
 static inline void
-METHOD_ENTRY_SAFE_SET(rb_method_entry_t *me, unsigned int safe)
-{
-    VM_ASSERT(safe <= 1);
-    me->flags = (me->flags & ~(IMEMO_FL_USER3 | IMEMO_FL_USER4)) | (safe << IMEMO_FL_USHIFT+3);
-}
-static inline void
-METHOD_ENTRY_FLAGS_SET(rb_method_entry_t *me, rb_method_visibility_t visi, unsigned int basic, unsigned int safe)
+METHOD_ENTRY_FLAGS_SET(rb_method_entry_t *me, rb_method_visibility_t visi, unsigned int basic)
 {
     VM_ASSERT((int)visi >= 0 && visi <= 3);
     VM_ASSERT(basic <= 1);
-    VM_ASSERT(safe <= 1);
     me->flags =
       (me->flags & ~(IMEMO_FL_USER0|IMEMO_FL_USER1|IMEMO_FL_USER2|IMEMO_FL_USER3|IMEMO_FL_USER4)) |
-	((visi << IMEMO_FL_USHIFT+0) | (basic << (IMEMO_FL_USHIFT+2)) | (safe << IMEMO_FL_USHIFT+3));
+	((visi << IMEMO_FL_USHIFT+0) | (basic << (IMEMO_FL_USHIFT+2)));
 }
 static inline void
 METHOD_ENTRY_FLAGS_COPY(rb_method_entry_t *dst, const rb_method_entry_t *src)
