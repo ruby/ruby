@@ -8946,6 +8946,7 @@ rb_sym_proc_call(VALUE args, VALUE sym, int argc, const VALUE *argv, VALUE passe
     return rb_funcall_with_block(obj, (ID)sym, argc - 1, argv + 1, passed_proc);
 }
 
+#define sym_to_proc rb_sym_to_proc
 /*
  * call-seq:
  *   sym.to_proc
@@ -8955,7 +8956,7 @@ rb_sym_proc_call(VALUE args, VALUE sym, int argc, const VALUE *argv, VALUE passe
  *   (1..3).collect(&:to_s)  #=> ["1", "2", "3"]
  */
 
-static VALUE
+VALUE
 sym_to_proc(VALUE sym)
 {
     static VALUE sym_proc_cache = Qfalse;
