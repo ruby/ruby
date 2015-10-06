@@ -125,7 +125,7 @@ typedef struct rb_iseq_struct rb_iseq_t;
 
 typedef struct rb_method_iseq_struct {
     const rb_iseq_t * const iseqptr;              /* should be separated from iseqval */
-    rb_cref_t * const cref;                       /* shoudl be marked */
+    rb_cref_t * const cref;                       /* should be marked */
 } rb_method_iseq_t; /* check rb_add_method_iseq() when modify the fields */
 
 typedef struct rb_method_cfunc_struct {
