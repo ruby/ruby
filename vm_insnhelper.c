@@ -2114,12 +2114,12 @@ vm_call_method0(rb_thread_t *th, rb_control_frame_t *cfp, struct rb_calling_info
     VM_ASSERT(callable_method_entry_p(cc->me));
 
     if (cc->me != NULL) {
-	if (LIKELY(METHOD_ENTRY_VISI(cc->me) == METHOD_VISI_PUBLIC)) {
-	    VM_ASSERT(callable_method_entry_p(cc->me));
+	switch (METHOD_ENTRY_VISI(cc->me)) {
+	  case METHOD_VISI_PUBLIC: /* likely */
 	    return vm_call_method_each_type(th, cfp, calling, ci, cc, enable_fastpath);
-	}
-	else {
-	    if (!(ci->flag & VM_CALL_FCALL) && (METHOD_ENTRY_VISI(cc->me) == METHOD_VISI_PRIVATE)) {
+
+	  case METHOD_VISI_PRIVATE:
+	    if (!(ci->flag & VM_CALL_FCALL)) {
 		enum method_missing_reason stat = MISSING_PRIVATE;
 		if (ci->flag & VM_CALL_VCALL) stat |= MISSING_VCALL;
 
@@ -2127,7 +2127,10 @@ vm_call_method0(rb_thread_t *th, rb_control_frame_t *cfp, struct rb_calling_info
 		CI_SET_FASTPATH(cc, vm_call_method_missing, 1);
 		return vm_call_method_missing(th, cfp, calling, ci, cc);
 	    }
-	    else if (!(ci->flag & VM_CALL_OPT_SEND) && (METHOD_ENTRY_VISI(cc->me) == METHOD_VISI_PROTECTED)) {
+	    return vm_call_method_each_type(th, cfp, calling, ci, cc, enable_fastpath);
+
+	  case METHOD_VISI_PROTECTED:
+	    if (!(ci->flag & VM_CALL_OPT_SEND)) {
 		if (!rb_obj_is_kind_of(cfp->self, cc->me->defined_class)) {
 		    cc->aux.method_missing_reason = MISSING_PROTECTED;
 		    return vm_call_method_missing(th, cfp, calling, ci, cc);
@@ -2137,16 +2140,15 @@ vm_call_method0(rb_thread_t *th, rb_control_frame_t *cfp, struct rb_calling_info
 		    return vm_call_method_each_type(th, cfp, calling, ci, cc, FALSE);
 		}
 	    }
-	    else {
-		return vm_call_method_each_type(th, cfp, calling, ci, cc, enable_fastpath);
-	    }
+	    return vm_call_method_each_type(th, cfp, calling, ci, cc, enable_fastpath);
+
+	  default:
+	    rb_bug("unreachable");
 	}
     }
     else {
 	return vm_call_method_nome(th, cfp, calling, ci, cc);
     }
-
-    rb_bug("vm_call_method: unreachable");
 }
 
 static VALUE

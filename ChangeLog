@@ -1,3 +1,8 @@
+Tue Oct  6 19:24:38 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c (vm_call_method0): use switch() for visibilities
+	  (for readability).
+
 Tue Oct  6 19:23:58 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* proc.c (Init_Proc): Proc#call and others should be public.
