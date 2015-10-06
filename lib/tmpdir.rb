@@ -21,7 +21,7 @@ class Dir
 
   def self.tmpdir
     if $SAFE > 0
-      @@systmpdir
+      @@systmpdir.dup
     else
       tmp = nil
       [ENV['TMPDIR'], ENV['TMP'], ENV['TEMP'], @@systmpdir, '/tmp', '.'].each do |dir|
