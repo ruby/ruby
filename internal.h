@@ -1110,6 +1110,7 @@ VALUE rb_external_str_with_enc(VALUE str, rb_encoding *eenc);
 #define is_broken_string(str) (rb_enc_str_coderange(str) == ENC_CODERANGE_BROKEN)
 size_t rb_str_memsize(VALUE);
 VALUE rb_sym_proc_call(VALUE args, VALUE sym, int argc, const VALUE *argv, VALUE passed_proc);
+VALUE rb_sym_to_proc(VALUE sym);
 
 /* struct.c */
 VALUE rb_struct_init_copy(VALUE copy, VALUE s);

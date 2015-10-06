@@ -140,6 +140,13 @@ class TestSymbol < Test::Unit::TestCase
     end;
   end
 
+  def test_to_proc_arg
+    assert_separately([], <<-"end;", timeout: 5.0)
+      def (obj = Object.new).proc(&b) b; end
+      assert_same(:itself.to_proc, obj.proc(&:itself))
+    end;
+  end
+
   def test_call
     o = Object.new
     def o.foo(x, y); x + y; end

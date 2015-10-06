@@ -478,6 +478,10 @@ args_setup_block_parameter(rb_thread_t *th, struct rb_calling_info *calling, VAL
 	    GetProcPtr(blockval, proc);
 	    calling->blockptr = &proc->block;
 	}
+	else if (RUBY_VM_IFUNC_P(blockptr->proc)) {
+	    const ID mid = (ID)((struct vm_ifunc *)blockptr->proc)->data;
+	    blockval = rb_sym_to_proc(ID2SYM(mid));
+	}
 	else {
 	    blockval = blockptr->proc;
 	}
