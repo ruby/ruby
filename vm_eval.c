@@ -601,10 +601,6 @@ rb_method_call_status(rb_thread_t *th, const rb_callable_method_entry_t *me, cal
 		    return MISSING_PROTECTED;
 		}
 	    }
-
-	    if (METHOD_ENTRY_SAFE(me) > th->safe_level) {
-		rb_raise(rb_eSecurityError, "calling insecure method: %"PRIsVALUE, rb_id2str(me->called_id));
-	    }
 	}
     }
 

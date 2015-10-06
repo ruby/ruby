@@ -369,7 +369,7 @@ rb_method_entry_t *
 rb_method_entry_create(ID called_id, VALUE klass, rb_method_visibility_t visi, const rb_method_definition_t *def)
 {
     rb_method_entry_t *me = rb_method_entry_alloc(called_id, klass, filter_defined_class(klass), def);
-    METHOD_ENTRY_FLAGS_SET(me, visi, ruby_running ? FALSE : TRUE, rb_safe_level());
+    METHOD_ENTRY_FLAGS_SET(me, visi, ruby_running ? FALSE : TRUE);
     if (def != NULL) method_definition_reset(me);
     return me;
 }
@@ -604,7 +604,6 @@ method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *me,
 {
     rb_method_entry_t *newme = rb_method_entry_make(klass, mid, defined_class, visi,
 						    me->def->type, method_definition_addref(me->def), 0, NULL);
-    METHOD_ENTRY_SAFE_SET(newme, METHOD_ENTRY_SAFE(me));
     method_added(klass, mid);
     return newme;
 }
@@ -1504,7 +1503,6 @@ rb_alias(VALUE klass, ID alias_name, ID original_name)
 
 	alias_me = rb_add_method(target_klass, alias_name, VM_METHOD_TYPE_ALIAS, (void *)rb_method_entry_clone(orig_me), visi);
 	alias_me->def->original_id = orig_me->called_id;
-	METHOD_ENTRY_SAFE_SET(alias_me, METHOD_ENTRY_SAFE(orig_me));
     }
     else {
 	rb_method_entry_t *alias_me;
