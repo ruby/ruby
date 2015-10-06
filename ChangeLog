@@ -1,4 +1,7 @@
-Tue Oct  6 13:54:08 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Oct  6 13:56:14 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h: turn function macros into inline functions,
+	  for debuggers.
 
 	* include/ruby/ruby.h: turn constant macros into enums, for
 	  debuggers.
