@@ -1,3 +1,7 @@
+Wed Oct  7 01:16:11 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_args.c: remove an unused field args_info::calling.
+
 Tue Oct  6 23:43:10 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* proc.c (rb_method_entry_min_max_arity): should support
