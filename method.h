@@ -82,15 +82,15 @@ METHOD_ENTRY_FLAGS_SET(rb_method_entry_t *me, rb_method_visibility_t visi, unsig
     VM_ASSERT((int)visi >= 0 && visi <= 3);
     VM_ASSERT(basic <= 1);
     me->flags =
-      (me->flags & ~(IMEMO_FL_USER0|IMEMO_FL_USER1|IMEMO_FL_USER2|IMEMO_FL_USER3|IMEMO_FL_USER4)) |
+      (me->flags & ~(IMEMO_FL_USER0|IMEMO_FL_USER1|IMEMO_FL_USER2)) |
 	((visi << IMEMO_FL_USHIFT+0) | (basic << (IMEMO_FL_USHIFT+2)));
 }
 static inline void
 METHOD_ENTRY_FLAGS_COPY(rb_method_entry_t *dst, const rb_method_entry_t *src)
 {
     dst->flags =
-      (dst->flags & ~(IMEMO_FL_USER0|IMEMO_FL_USER1|IMEMO_FL_USER2|IMEMO_FL_USER3|IMEMO_FL_USER4)) |
-	(src->flags & (IMEMO_FL_USER0|IMEMO_FL_USER1|IMEMO_FL_USER2|IMEMO_FL_USER3|IMEMO_FL_USER4));
+      (dst->flags & ~(IMEMO_FL_USER0|IMEMO_FL_USER1|IMEMO_FL_USER2)) |
+	(src->flags & (IMEMO_FL_USER0|IMEMO_FL_USER1|IMEMO_FL_USER2));
 }
 
 typedef enum {
