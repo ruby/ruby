@@ -1,3 +1,7 @@
+Tue Oct  6 13:48:05 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* method.h: typo fix. Patch by @davydovanton [fix GH-1032][ci skip]
+
 Tue Oct  6 06:54:34 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* iseq.c (rb_iseq_free): free iseq::variable_body to avoid memory
