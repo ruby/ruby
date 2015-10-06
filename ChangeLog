@@ -1,3 +1,8 @@
+Tue Oct  6 21:29:08 2015  Tanaka Akira  <akr@fsij.org>
+
+	* lib/tmpdir.rb (Dir.tmpdir): return duplicated string to be
+	  modify safely even when $SAFE > 0.
+
 Tue Oct  6 19:24:38 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c (vm_call_method0): use switch() for visibilities
