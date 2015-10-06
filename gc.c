@@ -9049,6 +9049,13 @@ rb_obj_info(VALUE obj)
     }
 }
 
+void
+rb_obj_info_dump(VALUE obj)
+{
+    char buff[0x100];
+    fprintf(stderr, "rb_obj_info_dump: %s\n", rb_raw_obj_info(buff, 0x100, obj));
+}
+
 #if GC_DEBUG
 
 void

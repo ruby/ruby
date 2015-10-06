@@ -88,6 +88,7 @@ int ruby_get_stack_grow_direction(volatile VALUE *addr);
 
 const char *rb_obj_info(VALUE obj);
 const char *rb_raw_obj_info(char *buff, const int buff_size, VALUE obj);
+void rb_obj_info_dump(VALUE obj);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 
