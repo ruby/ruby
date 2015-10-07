@@ -288,8 +288,6 @@ class RDoc::Markdown::Literals
         else
           return ans
         end
-
-        return ans
       end
     end
 
@@ -322,8 +320,6 @@ class RDoc::Markdown::Literals
         else
           return ans
         end
-
-        return ans
       end
     end
 

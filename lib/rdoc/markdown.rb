@@ -446,8 +446,6 @@ class RDoc::Markdown
         else
           return ans
         end
-
-        return ans
       end
     end
 
@@ -480,8 +478,6 @@ class RDoc::Markdown
         else
           return ans
         end
-
-        return ans
       end
     end
 
