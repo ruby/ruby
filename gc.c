@@ -2003,6 +2003,7 @@ make_io_zombie(rb_objspace_t *objspace, VALUE obj)
 struct obj_free_info_t {
     int empty_slots;
     int final_slots;
+    int obj_freed;
 };
 
 static inline void obj_free_prologue(rb_objspace_t *objspace, VALUE obj)
@@ -2021,31 +2022,19 @@ static inline void obj_free_prologue(rb_objspace_t *objspace, VALUE obj)
 #endif
 }
 
-static inline int obj_free_epilogue(rb_objspace_t *objspace, VALUE obj, struct obj_free_info_t *info)
-{
-    if (FL_TEST(obj, FL_FINALIZE)) {
-	make_zombie(objspace, obj, 0, 0);
-	++info->final_slots;
-	return 1;
-    } else {
-	return 0;
-    }
-}
-
-static int obj_free_fatal(rb_objspace_t *objspace, VALUE obj, struct obj_free_info_t *info)
+static void obj_free_fatal(rb_objspace_t *objspace, VALUE obj, struct obj_free_info_t *info)
 {
     rb_bug("gc_sweep(): unknown data type 0x%x(%p) 0x%"PRIxVALUE,
 	   BUILTIN_TYPE(obj), (void*)obj, RBASIC(obj)->flags);
-    return 1;
+    info->obj_freed = 0;
 }
 
-static int obj_free_simple(rb_objspace_t *objspace, VALUE obj, struct obj_free_info_t *info)
+static void obj_free_simple(rb_objspace_t *objspace, VALUE obj, struct obj_free_info_t *info)
 {
     obj_free_prologue(objspace, obj);
-    return obj_free_epilogue(objspace, obj, info);
 }
 
-static int obj_free_object(rb_objspace_t *objspace, VALUE obj, struct obj_free_info_t *info)
+static void obj_free_object(rb_objspace_t *objspace, VALUE obj, struct obj_free_info_t *info)
 {
     obj_free_prologue(objspace, obj);
 
@@ -2053,11 +2042,9 @@ static int obj_free_object(rb_objspace_t *objspace, VALUE obj, struct obj_free_i
 	RANY(obj)->as.object.as.heap.ivptr) {
 	xfree(RANY(obj)->as.object.as.heap.ivptr);
     }
-
-    return obj_free_epilogue(objspace, obj, info);
 }
 
-static int obj_free_class_or_module(rb_objspace_t *objspace, VALUE obj, struct obj_free_info_t *info)
+static void obj_free_class_or_module(rb_objspace_t *objspace, VALUE obj, struct obj_free_info_t *info)
 {
     obj_free_prologue(objspace, obj);
 
@@ -2085,43 +2072,37 @@ static int obj_free_class_or_module(rb_objspace_t *objspace, VALUE obj, struct o
     if (RANY(obj)->as.klass.ptr)
 	xfree(RANY(obj)->as.klass.ptr);
     RANY(obj)->as.klass.ptr = NULL;
-
-    return obj_free_epilogue(objspace, obj, info);
 }
 
-static int obj_free_string(rb_objspace_t *objspace, VALUE obj, struct obj_free_info_t *info)
+static void obj_free_string(rb_objspace_t *objspace, VALUE obj, struct obj_free_info_t *info)
 {
     obj_free_prologue(objspace, obj);
     rb_str_free(obj);
-    return obj_free_epilogue(objspace, obj, info);
 }
 
-static int obj_free_array(rb_objspace_t *objspace, VALUE obj, struct obj_free_info_t *info)
+static void obj_free_array(rb_objspace_t *objspace, VALUE obj, struct obj_free_info_t *info)
 {
     obj_free_prologue(objspace, obj);
     rb_ary_free(obj);
-    return obj_free_epilogue(objspace, obj, info);
 }
 
-static int obj_free_hash(rb_objspace_t *objspace, VALUE obj, struct obj_free_info_t *info)
+static void obj_free_hash(rb_objspace_t *objspace, VALUE obj, struct obj_free_info_t *info)
 {
     obj_free_prologue(objspace, obj);
     if (RANY(obj)->as.hash.ntbl) {
 	st_free_table(RANY(obj)->as.hash.ntbl);
     }
-    return obj_free_epilogue(objspace, obj, info);
 }
 
-static int obj_free_regexp(rb_objspace_t *objspace, VALUE obj, struct obj_free_info_t *info)
+static void obj_free_regexp(rb_objspace_t *objspace, VALUE obj, struct obj_free_info_t *info)
 {
     obj_free_prologue(objspace, obj);
     if (RANY(obj)->as.regexp.ptr) {
 	onig_free(RANY(obj)->as.regexp.ptr);
     }
-    return obj_free_epilogue(objspace, obj, info);
 }
 
-static int obj_free_data(rb_objspace_t *objspace, VALUE obj, struct obj_free_info_t *info)
+static void obj_free_data(rb_objspace_t *objspace, VALUE obj, struct obj_free_info_t *info)
 {
     obj_free_prologue(objspace, obj);
 
@@ -2152,15 +2133,13 @@ static int obj_free_data(rb_objspace_t *objspace, VALUE obj, struct obj_free_inf
 	    else {
 		make_zombie(objspace, obj, dfree, data);
 		++info->final_slots;
-		return 1;
+		info->obj_freed = 0;
 	    }
 	}
     }
-
-    return obj_free_epilogue(objspace, obj, info);
 }
 
-static int obj_free_match(rb_objspace_t *objspace, VALUE obj, struct obj_free_info_t *info)
+static void obj_free_match(rb_objspace_t *objspace, VALUE obj, struct obj_free_info_t *info)
 {
     obj_free_prologue(objspace, obj);
     if (RANY(obj)->as.match.rmatch) {
@@ -2170,21 +2149,19 @@ static int obj_free_match(rb_objspace_t *objspace, VALUE obj, struct obj_free_in
 	    xfree(rm->char_offset);
 	xfree(rm);
     }
-    return obj_free_epilogue(objspace, obj, info);
 }
 
-static int obj_free_file(rb_objspace_t *objspace, VALUE obj, struct obj_free_info_t *info)
+static void obj_free_file(rb_objspace_t *objspace, VALUE obj, struct obj_free_info_t *info)
 {
     obj_free_prologue(objspace, obj);
     if (RANY(obj)->as.file.fptr) {
 	++info->final_slots;
 	make_io_zombie(objspace, obj);
-	return 1;
+	info->obj_freed = 0;
     }
-    return obj_free_epilogue(objspace, obj, info);
 }
 
-static int obj_free_iclass(rb_objspace_t *objspace, VALUE obj, struct obj_free_info_t *info)
+static void obj_free_iclass(rb_objspace_t *objspace, VALUE obj, struct obj_free_info_t *info)
 {
     obj_free_prologue(objspace, obj);
 
@@ -2203,45 +2180,39 @@ static int obj_free_iclass(rb_objspace_t *objspace, VALUE obj, struct obj_free_i
     rb_class_remove_from_super_subclasses(obj);
     xfree(RANY(obj)->as.klass.ptr);
     RANY(obj)->as.klass.ptr = NULL;
-
-    return obj_free_epilogue(objspace, obj, info);
 }
 
-static int obj_free_bignum(rb_objspace_t *objspace, VALUE obj, struct obj_free_info_t *info)
+static void obj_free_bignum(rb_objspace_t *objspace, VALUE obj, struct obj_free_info_t *info)
 {
     obj_free_prologue(objspace, obj);
     if (!(RBASIC(obj)->flags & BIGNUM_EMBED_FLAG) && BIGNUM_DIGITS(obj)) {
 	xfree(BIGNUM_DIGITS(obj));
     }
-    return obj_free_epilogue(objspace, obj, info);
 }
 
-static int obj_free_node(rb_objspace_t *objspace, VALUE obj, struct obj_free_info_t *info)
+static void obj_free_node(rb_objspace_t *objspace, VALUE obj, struct obj_free_info_t *info)
 {
     obj_free_prologue(objspace, obj);
     rb_gc_free_node(obj);
     /* no need to free iv_tbl */
-    return obj_free_epilogue(objspace, obj, info);
 }
 
-static int obj_free_struct(rb_objspace_t *objspace, VALUE obj, struct obj_free_info_t *info)
+static void obj_free_struct(rb_objspace_t *objspace, VALUE obj, struct obj_free_info_t *info)
 {
     obj_free_prologue(objspace, obj);
     if ((RBASIC(obj)->flags & RSTRUCT_EMBED_LEN_MASK) == 0 &&
 	RANY(obj)->as.rstruct.as.heap.ptr) {
 	xfree((void *)RANY(obj)->as.rstruct.as.heap.ptr);
     }
-    return obj_free_epilogue(objspace, obj, info);
 }
 
-static int obj_free_symbol(rb_objspace_t *objspace, VALUE obj, struct obj_free_info_t *info)
+static void obj_free_symbol(rb_objspace_t *objspace, VALUE obj, struct obj_free_info_t *info)
 {
     obj_free_prologue(objspace, obj);
     rb_gc_free_dsymbol(obj);
-    return obj_free_epilogue(objspace, obj, info);
 }
 
-static int obj_free_imemo(rb_objspace_t *objspace, VALUE obj, struct obj_free_info_t *info)
+static void obj_free_imemo(rb_objspace_t *objspace, VALUE obj, struct obj_free_info_t *info)
 {
     obj_free_prologue(objspace, obj);
     switch (imemo_type(obj)) {
@@ -2254,22 +2225,21 @@ static int obj_free_imemo(rb_objspace_t *objspace, VALUE obj, struct obj_free_in
       default:
 	break;
     }
-    return obj_free_epilogue(objspace, obj, info);
 }
 
-static int obj_free_zombie(rb_objspace_t *objspace, VALUE obj, struct obj_free_info_t *info)
+static void obj_free_zombie(rb_objspace_t *objspace, VALUE obj, struct obj_free_info_t *info)
 {
     /* already counted */
-    return 1;
+    info->obj_freed = 0;
 }
 
-static int obj_free_none(rb_objspace_t *objspace, VALUE obj, struct obj_free_info_t *info)
+static void obj_free_none(rb_objspace_t *objspace, VALUE obj, struct obj_free_info_t *info)
 {
     ++info->empty_slots; /* already freed */
-    return 1;
+    info->obj_freed = 0;
 }
 
-static int (* const obj_free_handlers[])(rb_objspace_t *, VALUE, struct obj_free_info_t *) = {
+static void (* const obj_free_handlers[])(rb_objspace_t *, VALUE, struct obj_free_info_t *) = {
     obj_free_none, //    RUBY_T_NONE   = 0x00,
     obj_free_object, //    RUBY_T_OBJECT = 0x01,
     obj_free_class_or_module, //    RUBY_T_CLASS  = 0x02,
@@ -3447,11 +3417,18 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
 			rb_free_generic_ivar((VALUE)p);
 			FL_UNSET((VALUE)p, FL_EXIVAR);
 		    }
-		    if (obj_free_handlers[BUILTIN_TYPE(p)](objspace, (VALUE)p, &free_info) == 0) {
-			++freed_slots;
-			(void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, sizeof(RVALUE));
-			heap_page_add_freeobj(objspace, sweep_page, (VALUE)p);
-			gc_report(3, objspace, "page_sweep: %s is added to freelist\n", obj_info((VALUE)p));
+		    free_info.obj_freed = 1;
+		    obj_free_handlers[BUILTIN_TYPE(p)](objspace, (VALUE)p, &free_info);
+		    if (free_info.obj_freed) {
+			if (FL_TEST((VALUE)p, FL_FINALIZE)) {
+			    make_zombie(objspace, (VALUE)p, 0, 0);
+			    ++free_info.final_slots;
+			} else {
+			    ++freed_slots;
+			    (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, sizeof(RVALUE));
+			    heap_page_add_freeobj(objspace, sweep_page, (VALUE)p);
+			    gc_report(3, objspace, "page_sweep: %s is added to freelist\n", obj_info((VALUE)p));
+			}
 		    }
 		}
 		p++;
