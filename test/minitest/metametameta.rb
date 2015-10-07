@@ -57,12 +57,13 @@ class MetaMetaMetaTestCase < MiniTest::Unit::TestCase
   def with_output
     synchronize do
       begin
+        save = MiniTest::Unit.output
         @output = StringIO.new("")
         MiniTest::Unit.output = @output
 
         yield
       ensure
-        MiniTest::Unit.output = STDOUT
+        MiniTest::Unit.output = save
       end
     end
   end

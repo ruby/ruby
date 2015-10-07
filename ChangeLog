@@ -1,3 +1,8 @@
+Wed Oct  7 22:55:02 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/minitest/metametameta.rb (with_output): restore output to
+	  fix mixing test result output in worker responses.
+
 Wed Oct  7 21:32:51 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (str_duplicate): move from rb_str_resurrect to short
