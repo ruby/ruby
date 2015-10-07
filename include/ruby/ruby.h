@@ -1312,7 +1312,8 @@ struct RStruct {
     (RB_OBJ_TAINTABLE(x) && RB_FL_ABLE(s)) ? \
     RB_OBJ_INFECT_RAW(x, s) : 0)
 
-#define RB_OBJ_FROZEN(x) (RB_FL_ABLE(x) ? !!(RBASIC(x)->flags&RUBY_FL_FREEZE) : 1)
+#define RB_OBJ_FROZEN_RAW(x) (RBASIC(x)->flags&RUBY_FL_FREEZE)
+#define RB_OBJ_FROZEN(x) (!RB_FL_ABLE(x) || RB_OBJ_FROZEN_RAW(x))
 #define RB_OBJ_FREEZE_RAW(x) (RBASIC(x)->flags |= RUBY_FL_FREEZE)
 #define RB_OBJ_FREEZE(x) rb_obj_freeze_inline((VALUE)x)
 
@@ -1339,6 +1340,7 @@ struct RStruct {
 #define OBJ_UNTRUST(x) RB_OBJ_UNTRUST(x)
 #define OBJ_INFECT_RAW(x,s) RB_OBJ_INFECT_RAW(x,s)
 #define OBJ_INFECT(x,s) RB_OBJ_INFECT(x,s)
+#define OBJ_FROZEN_RAW(x) RB_OBJ_FROZEN_RAW(x)
 #define OBJ_FROZEN(x) RB_OBJ_FROZEN(x)
 #define OBJ_FREEZE_RAW(x) RB_OBJ_FREEZE_RAW(x)
 #define OBJ_FREEZE(x) RB_OBJ_FREEZE(x)
