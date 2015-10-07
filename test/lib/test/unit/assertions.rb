@@ -454,14 +454,24 @@ EOT
         rescue Exception => e
           @failures[key] = e
         end
+
+        def message
+          i = 0
+          @failures.map {|k, v|
+            "\n#{i+=1}. Assertion for #{k.inspect}\n#{v.message.gsub(/^/, '   | ')}"
+          }.join("\n")
+        end
+
+        def pass?
+          @failures.empty?
+        end
       end
 
       def all_assertions(msg = nil)
         all = AllFailures.new
         yield all
       ensure
-        failures = all.failures
-        assert(failures.empty?, message(msg) {mu_pp(failures)})
+        assert(all.pass?, message(msg) {all.message})
       end
 
       def build_message(head, template=nil, *arguments) #:nodoc:
