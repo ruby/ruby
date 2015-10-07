@@ -1236,20 +1236,6 @@ str_replace(VALUE str, VALUE str2)
 static VALUE
 str_duplicate(VALUE klass, VALUE str)
 {
-    VALUE dup = str_alloc(klass);
-    str_replace(dup, str);
-    return dup;
-}
-
-VALUE
-rb_str_dup(VALUE str)
-{
-    return str_duplicate(rb_obj_class(str), str);
-}
-
-VALUE
-rb_str_resurrect(VALUE str)
-{
     enum {embed_size = RSTRING_EMBED_LEN_MAX + 1};
     const VALUE flag_mask =
 	RSTRING_NOEMBED | RSTRING_EMBED_LEN_MASK |
@@ -1257,18 +1243,12 @@ rb_str_resurrect(VALUE str)
 	FL_TAINT | FL_FREEZE
 	;
     VALUE flags = FL_TEST_RAW(str, flag_mask);
-    VALUE dup;
-
-    if (RUBY_DTRACE_STRING_CREATE_ENABLED()) {
-	RUBY_DTRACE_STRING_CREATE(RSTRING_LEN(str),
-				  rb_sourcefile(), rb_sourceline());
-    }
-    dup = str_alloc(rb_cString);
+    VALUE dup = str_alloc(klass);
     MEMCPY(RSTRING(dup)->as.ary, RSTRING(str)->as.ary,
 	   char, embed_size);
     if (flags & STR_NOEMBED) {
 	if (UNLIKELY(!(flags & FL_FREEZE))) {
-	    str = str_new_frozen(rb_cString, str);
+	    str = str_new_frozen(klass, str);
 	    FL_SET_RAW(str, flags & FL_TAINT);
 	    flags = FL_TEST_RAW(str, flag_mask);
 	}
@@ -1283,6 +1263,22 @@ rb_str_resurrect(VALUE str)
     }
     FL_SET_RAW(dup, flags & ~FL_FREEZE);
     return dup;
+}
+
+VALUE
+rb_str_dup(VALUE str)
+{
+    return str_duplicate(rb_obj_class(str), str);
+}
+
+VALUE
+rb_str_resurrect(VALUE str)
+{
+    if (RUBY_DTRACE_STRING_CREATE_ENABLED()) {
+	RUBY_DTRACE_STRING_CREATE(RSTRING_LEN(str),
+				  rb_sourcefile(), rb_sourceline());
+    }
+    return str_duplicate(rb_cString, str);
 }
 
 /*
