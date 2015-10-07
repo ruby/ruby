@@ -1,3 +1,10 @@
+Wed Oct 07 20:17:29 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (newobj_of): divide fast path and slow path
+	  to avoid register savings for fast path.
+
+	  This idea is given by Kazuho Oku <kazuho@natadeco.co>.
+
 Wed Oct  7 17:30:50 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_times): optimize for the argument 0 and 1.

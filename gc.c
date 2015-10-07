@@ -1655,6 +1655,16 @@ heap_get_freeobj_from_next_freepage(rb_objspace_t *objspace, rb_heap_t *heap)
 }
 
 static inline VALUE
+heap_get_freeobj_head(rb_objspace_t *objspace, rb_heap_t *heap)
+{
+    RVALUE *p = heap->freelist;
+    if (LIKELY(p != NULL)) {
+	heap->freelist = p->as.free.next;
+    }
+    return (VALUE)p;
+}
+
+static inline VALUE
 heap_get_freeobj(rb_objspace_t *objspace, rb_heap_t *heap)
 {
     RVALUE *p = heap->freelist;
@@ -1683,44 +1693,17 @@ gc_event_hook_body(rb_thread_t *th, rb_objspace_t *objspace, const rb_event_flag
     EXEC_EVENT_HOOK(th, event, th->cfp->self, 0, 0, data);
 }
 
+#define gc_event_hook_needed_p(objspace, event) ((objspace)->hook_events & (event))
+
 #define gc_event_hook(objspace, event, data) do { \
-    if (UNLIKELY((objspace)->hook_events & (event))) { \
+    if (gc_event_hook_needed_p(objspace, event)) { \
 	gc_event_hook_body(GET_THREAD(), (objspace), (event), (data)); \
     } \
 } while (0)
 
-static VALUE
-newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3)
+static inline VALUE
+newobj_of_init(rb_objspace_t *objspace, VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, VALUE obj, int hook_needed)
 {
-    rb_objspace_t *objspace = &rb_objspace;
-    VALUE obj;
-
-#if GC_DEBUG_STRESS_TO_CLASS
-    if (UNLIKELY(stress_to_class)) {
-	long i, cnt = RARRAY_LEN(stress_to_class);
-	const VALUE *ptr = RARRAY_CONST_PTR(stress_to_class);
-	for (i = 0; i < cnt; ++i) {
-	    if (klass == ptr[i]) rb_memerror();
-	}
-    }
-#endif
-
-    if (UNLIKELY(during_gc || ruby_gc_stressful)) {
-	if (during_gc) {
-	    dont_gc = 1;
-	    during_gc = 0;
-	    rb_bug("object allocation during garbage collection phase");
-	}
-
-	if (ruby_gc_stressful) {
-	    if (!garbage_collect(objspace, FALSE, FALSE, FALSE, GPR_FLAG_NEWOBJ)) {
-		rb_memerror();
-	    }
-	}
-    }
-
-    obj = heap_get_freeobj(objspace, heap_eden);
-
     if (RGENGC_CHECK_MODE > 0) assert(BUILTIN_TYPE(obj) == T_NONE);
 
     /* OBJSETUP */
@@ -1773,7 +1756,10 @@ newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3)
 #endif
 
     objspace->total_allocated_objects++;
-    gc_event_hook(objspace, RUBY_INTERNAL_EVENT_NEWOBJ, obj);
+
+    if (hook_needed) {
+	gc_event_hook(objspace, RUBY_INTERNAL_EVENT_NEWOBJ, obj);
+    }
     gc_report(5, objspace, "newobj: %s\n", obj_info(obj));
 
 #if RGENGC_OLD_NEWOBJ_CHECK > 0
@@ -1796,6 +1782,57 @@ newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3)
 #endif
     check_rvalue_consistency(obj);
     return obj;
+}
+
+NOINLINE(static VALUE newobj_of_slowpass(rb_objspace_t *objspace, VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, int hook_needed));
+
+static VALUE
+newobj_of_slowpass(rb_objspace_t *objspace, VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, int hook_needed)
+{
+    VALUE obj;
+
+    if (UNLIKELY(during_gc || ruby_gc_stressful)) {
+	if (during_gc) {
+	    dont_gc = 1;
+	    during_gc = 0;
+	    rb_bug("object allocation during garbage collection phase");
+	}
+
+	if (ruby_gc_stressful) {
+	    if (!garbage_collect(objspace, FALSE, FALSE, FALSE, GPR_FLAG_NEWOBJ)) {
+		rb_memerror();
+	    }
+	}
+    }
+
+    obj = heap_get_freeobj(objspace, heap_eden);
+    return newobj_of_init(objspace, klass, flags, v1, v2, v3, obj, hook_needed);
+}
+
+static VALUE
+newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    VALUE obj;
+    int hook_needed = gc_event_hook_needed_p(objspace, RUBY_INTERNAL_EVENT_NEWOBJ);
+
+#if GC_DEBUG_STRESS_TO_CLASS
+    if (UNLIKELY(stress_to_class)) {
+	long i, cnt = RARRAY_LEN(stress_to_class);
+	const VALUE *ptr = RARRAY_CONST_PTR(stress_to_class);
+	for (i = 0; i < cnt; ++i) {
+	    if (klass == ptr[i]) rb_memerror();
+	}
+    }
+#endif
+
+    if (LIKELY(!(during_gc || ruby_gc_stressful) && hook_needed == FALSE &&
+	       (obj = heap_get_freeobj_head(objspace, heap_eden)) != Qfalse)) {
+	return newobj_of_init(objspace, klass, flags, v1, v2, v3, obj, FALSE);
+    }
+    else {
+	return newobj_of_slowpass(objspace, klass, flags, v1, v2, v3, hook_needed);
+    }
 }
 
 VALUE
