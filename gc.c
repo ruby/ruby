@@ -2007,8 +2007,6 @@ struct obj_free_info_t {
 
 static inline void obj_free_prologue(rb_objspace_t *objspace, VALUE obj)
 {
-    gc_event_hook(objspace, RUBY_INTERNAL_EVENT_FREEOBJ, obj);
-
     if (FL_TEST(obj, FL_EXIVAR)) {
 	rb_free_generic_ivar((VALUE)obj);
 	FL_UNSET(obj, FL_EXIVAR);
@@ -3411,6 +3409,7 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
 {
     int i;
     int freed_slots = 0;
+    int call_freeobj_event = 0;
     struct obj_free_info_t free_info;
     RVALUE *p, *pend,*offset;
     bits_t *bits, bitset;
@@ -3430,12 +3429,25 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
     bits[BITMAP_INDEX(p)] |= BITMAP_BIT(p)-1;
     bits[BITMAP_INDEX(pend)] |= ~(BITMAP_BIT(pend) - 1);
 
+    if (UNLIKELY(objspace->hook_events & RUBY_INTERNAL_EVENT_FREEOBJ))
+	call_freeobj_event = 1;
+
     for (i=0; i < HEAP_BITMAP_LIMIT; i++) {
 	bitset = ~bits[i];
 	if (bitset) {
 	    p = offset  + i * BITS_BITLENGTH;
 	    do {
 		if (bitset & 1) {
+		    if (UNLIKELY(call_freeobj_event)) {
+			switch (BUILTIN_TYPE(p)) {
+			case T_ZOMBIE:
+			case T_NONE:
+			    break;
+			default:
+			    gc_event_hook_body(GET_THREAD(), objspace, RUBY_INTERNAL_EVENT_FREEOBJ, (VALUE)p);
+			    break;
+			}
+		    }
 		    if (obj_free_handlers[BUILTIN_TYPE(p)](objspace, (VALUE)p, &free_info) == 0) {
 			++freed_slots;
 			(void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, sizeof(RVALUE));
