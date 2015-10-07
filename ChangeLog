@@ -1,3 +1,8 @@
+Wed Oct  7 21:32:51 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (str_duplicate): move from rb_str_resurrect to short
+	  circuit initialization.
+
 Wed Oct  7 20:43:14 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_resurrect): fix resurrection of short enough to
