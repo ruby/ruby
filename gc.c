@@ -2007,11 +2007,6 @@ struct obj_free_info_t {
 
 static inline void obj_free_prologue(rb_objspace_t *objspace, VALUE obj)
 {
-    if (FL_TEST(obj, FL_EXIVAR)) {
-	rb_free_generic_ivar((VALUE)obj);
-	FL_UNSET(obj, FL_EXIVAR);
-    }
-
 #if USE_RGENGC
     if (RVALUE_WB_UNPROTECTED(obj)) CLEAR_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(obj), obj);
 
@@ -3447,6 +3442,10 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
 			    gc_event_hook_body(GET_THREAD(), objspace, RUBY_INTERNAL_EVENT_FREEOBJ, (VALUE)p);
 			    break;
 			}
+		    }
+		    if (FL_TEST((VALUE)p, FL_EXIVAR)) {
+			rb_free_generic_ivar((VALUE)p);
+			FL_UNSET((VALUE)p, FL_EXIVAR);
 		    }
 		    if (obj_free_handlers[BUILTIN_TYPE(p)](objspace, (VALUE)p, &free_info) == 0) {
 			++freed_slots;
