@@ -305,11 +305,14 @@ WARN
   end
 
   def test_label_with_percent
-    ["", "Q", "q"].product(%w[" ']) {|c, q|
-      code = "{%#{c}#{q}a#{q}: 1}"
-      assert_valid_syntax(code)
-      assert_equal({:a => 1}, eval(code), code)
-    }
+    all_assertions do |a|
+      ["", "Q", "q"].product(%w[" ']) {|c, q|
+        a.for(code = "{%#{c}#{q}a#{q}: 1}") {
+          assert_valid_syntax(code)
+          assert_equal({:a => 1}, eval(code), code)
+        }
+      }
+    end
   end
 
   def test_block_after_cond
