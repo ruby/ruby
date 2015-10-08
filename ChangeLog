@@ -1,3 +1,10 @@
+Fri Oct  9 06:18:04 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+	* benchmark/bm_require.rb: new benchmark for require.
+	* benchmark/bm_require_thread.rb: new benchmark for conflicting
+	  require vs thread. like [Bug #11559]
+	* prepare_require.rb: new file for preparing above tests.
+	* prepare_require.rb: ditto.
+
 Thu Oct  8 14:10:45 2015  Zachary Scott  <zzak@ruby-lang.org>
 
 	* ext/openssl/lib/openssl/ssl.rb: Default to TLSv1.2 and drop TLS v1
