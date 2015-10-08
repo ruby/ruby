@@ -1,3 +1,8 @@
+Fri Oct  9 06:52:49 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* benchmark/prepare_require.rb: skip file creation if it already
+	  exist. Suggested by ko1.
+
 Fri Oct  9 06:18:04 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 	* benchmark/bm_require.rb: new benchmark for require.
 	* benchmark/bm_require_thread.rb: new benchmark for conflicting
