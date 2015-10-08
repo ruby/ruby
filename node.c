@@ -22,27 +22,32 @@
 #define A_LIT(lit) AR(rb_inspect(lit))
 #define A_NODE_HEADER(node, term) \
     rb_str_catf(buf, "@ %s (line: %d)"term, ruby_node_name(nd_type(node)), nd_line(node))
-#define A_FIELD_HEADER(name, term) \
-    rb_str_catf(buf, "+- %s:"term, (name))
-#define D_FIELD_HEADER(name, term) (A_INDENT, A_FIELD_HEADER(name, term))
+#define A_FIELD_HEADER(len, name, term) \
+    rb_str_catf(buf, "+- %.*s:"term, (len), (name))
+#define D_FIELD_HEADER(len, name, term) (A_INDENT, A_FIELD_HEADER(len, name, term))
 
 #define D_NULL_NODE (A_INDENT, A("(null node)\n"))
 #define D_NODE_HEADER(node) (A_INDENT, A_NODE_HEADER(node, "\n"))
 
-#define COMPOUND_FIELD(name, name2, block) \
+#define COMPOUND_FIELD(len, name, block) \
     do { \
-	D_FIELD_HEADER(comment ? (name2) : (name), "\n"); \
+	D_FIELD_HEADER((len), (name), "\n");	\
 	rb_str_cat2(indent, next_indent); \
 	block; \
 	rb_str_resize(indent, RSTRING_LEN(indent) - 4); \
     } while (0)
 
-#define SIMPLE_FIELD(name, name2) \
-    for (D_FIELD_HEADER(comment ? (name2) : (name), " "), field_flag = 1; \
+#define FIELD_NAME_DESC(name, ann) name " (" ann ")"
+#define FIELD_NAME_LEN(name, ann) (int)( \
+	comment ? \
+	rb_strlen_lit(FIELD_NAME_DESC(name, ann)) : \
+	rb_strlen_lit(name))
+#define SIMPLE_FIELD(len, name) \
+    for (D_FIELD_HEADER((len), (name), " "), field_flag = 1; \
 	 field_flag; /* should be optimized away */ \
 	 A("\n"), field_flag = 0)
 
-#define SIMPLE_FIELD1(name, ann)    SIMPLE_FIELD(name, name " (" ann ")")
+#define SIMPLE_FIELD1(name, ann)    SIMPLE_FIELD(FIELD_NAME_LEN(name, ann), FIELD_NAME_DESC(name, ann))
 #define F_CUSTOM1(name, ann)	    SIMPLE_FIELD1(#name, ann)
 #define F_ID(name, ann) 	    SIMPLE_FIELD1(#name, ann) A_ID(node->name)
 #define F_GENTRY(name, ann)	    SIMPLE_FIELD1(#name, ann) A_ID((node->name)->id)
@@ -52,11 +57,13 @@
 #define F_MSG(name, ann, desc)	    SIMPLE_FIELD1(#name, ann) A(desc)
 
 #define F_NODE(name, ann) \
-    COMPOUND_FIELD(#name, #name " (" ann ")", dump_node(buf, indent, comment, node->name))
+    COMPOUND_FIELD(FIELD_NAME_LEN(#name, ann), \
+		   FIELD_NAME_DESC(#name, ann), \
+		   dump_node(buf, indent, comment, node->name))
 
 #define ANN(ann) \
     if (comment) { \
-	A_INDENT; A("| # "); A(ann); A("\n"); \
+	A_INDENT; A("| # " ann "\n"); \
     }
 
 #define LAST_NODE (next_indent = "    ")
