@@ -1809,7 +1809,7 @@ newobj_of_slowpass(rb_objspace_t *objspace, VALUE klass, VALUE flags, VALUE v1, 
     return newobj_of_init(objspace, klass, flags, v1, v2, v3, obj, gc_event_hook_needed_p(objspace, RUBY_INTERNAL_EVENT_NEWOBJ));
 }
 
-static VALUE
+static inline VALUE
 newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3)
 {
     rb_objspace_t *objspace = &rb_objspace;
