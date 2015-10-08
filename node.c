@@ -149,8 +149,8 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	ANN("example: until x == 1; foo; end");
       loop:
 	F_CUSTOM1(nd_state, "begin-end-while?", {
-	   A_INT((int)node->nd_state);
-	   A((node->nd_state == 1) ? " (while-end)" : " (begin-end-while)");
+	    A_INT((int)node->nd_state);
+	    A((node->nd_state == 1) ? " (while-end)" : " (begin-end-while)");
 	});
 	F_NODE(nd_cond, "condition");
 	LAST_NODE;
@@ -351,11 +351,11 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	F_ID(nd_next->nd_vid, "reader");
 	F_ID(nd_next->nd_aid, "writer");
 	F_CUSTOM1(nd_next->nd_mid, "operator", {
-	   switch (node->nd_next->nd_mid) {
-	     case 0: A("0 (||)"); break;
-	     case 1: A("1 (&&)"); break;
-	     default: A_ID(node->nd_next->nd_mid);
-	   }
+	    switch (node->nd_next->nd_mid) {
+	      case 0: A("0 (||)"); break;
+	      case 1: A("1 (&&)"); break;
+	      default: A_ID(node->nd_next->nd_mid);
+	    }
 	});
 	LAST_NODE;
 	F_NODE(nd_value, "rvalue");
@@ -501,11 +501,11 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	ANN("format: $[nd_nth]");
 	ANN("example: $&, $`, $', $+");
 	F_CUSTOM1(nd_nth, "variable", {
-	   char name[3];
-	   name[0] = '$';
-	   name[1] = (char)node->nd_nth;
-	   name[2] = '\0';
-	   A(name);
+	    char name[3];
+	    name[0] = '$';
+	    name[1] = (char)node->nd_nth;
+	    name[2] = '\0';
+	    A(name);
 	});
 	break;
 
@@ -871,13 +871,13 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	ANN("new scope");
 	ANN("format: [nd_tbl]: local table, [nd_args]: arguments, [nd_body]: body");
 	F_CUSTOM1(nd_tbl, "local table", {
-	   ID *tbl = node->nd_tbl;
-	   int i;
-	   int size = tbl ? (int)*tbl++ : 0;
-	   if (size == 0) A("(empty)");
-	   for (i = 0; i < size; i++) {
+	    ID *tbl = node->nd_tbl;
+	    int i;
+	    int size = tbl ? (int)*tbl++ : 0;
+	    if (size == 0) A("(empty)");
+	    for (i = 0; i < size; i++) {
 		A_ID(tbl[i]); if (i < size - 1) A(",");
-	   }
+	    }
 	});
 	F_NODE(nd_args, "arguments");
 	LAST_NODE;
