@@ -1,3 +1,8 @@
+Thu Oct  8 07:33:06 2015  Brian Black  <bblack@veracode.com>
+
+	* iseq.c (rb_insn_operand_intern): change kw in callinfo disasm from the
+	  number of keyword arguments to an ordered list of the keywords used.
+
 Wed Oct  7 22:55:02 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/minitest/metametameta.rb (with_output): restore output to
