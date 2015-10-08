@@ -2003,6 +2003,7 @@ make_io_zombie(rb_objspace_t *objspace, VALUE obj)
 struct obj_free_info_t {
     int empty_slots;
     int final_slots;
+    int freed_slots;
     int obj_freed;
 };
 
@@ -3373,7 +3374,6 @@ static inline void
 gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page)
 {
     int i;
-    int freed_slots = 0;
     int call_freeobj_event = 0;
     struct obj_free_info_t free_info;
     RVALUE *p, *pend,*offset;
@@ -3381,6 +3381,7 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
 
     free_info.empty_slots = 0;
     free_info.final_slots = 0;
+    free_info.freed_slots = 0;
 
     gc_report(2, objspace, "page_sweep: start.\n");
 
@@ -3413,18 +3414,18 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
 			    break;
 			}
 		    }
-		    if (FL_TEST((VALUE)p, FL_EXIVAR)) {
+		    if (UNLIKELY(FL_TEST((VALUE)p, FL_EXIVAR))) {
 			rb_free_generic_ivar((VALUE)p);
 			FL_UNSET((VALUE)p, FL_EXIVAR);
 		    }
 		    free_info.obj_freed = 1;
 		    obj_free_handlers[BUILTIN_TYPE(p)](objspace, (VALUE)p, &free_info);
-		    if (free_info.obj_freed) {
-			if (FL_TEST((VALUE)p, FL_FINALIZE)) {
+		    if (LIKELY(free_info.obj_freed)) {
+			if (UNLIKELY(FL_TEST((VALUE)p, FL_FINALIZE))) {
 			    make_zombie(objspace, (VALUE)p, 0, 0);
 			    ++free_info.final_slots;
 			} else {
-			    ++freed_slots;
+			    ++free_info.freed_slots;
 			    (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, sizeof(RVALUE));
 			    heap_page_add_freeobj(objspace, sweep_page, (VALUE)p);
 			    gc_report(3, objspace, "page_sweep: %s is added to freelist\n", obj_info((VALUE)p));
@@ -3442,17 +3443,17 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
 #if GC_PROFILE_MORE_DETAIL
     if (gc_prof_enabled(objspace)) {
 	gc_profile_record *record = gc_prof_record(objspace);
-	record->removing_objects += free_info.final_slots + freed_slots;
+	record->removing_objects += free_info.final_slots + free_info.freed_slots;
 	record->empty_objects += free_info.empty_slots;
     }
 #endif
     if (0) fprintf(stderr, "gc_page_sweep(%d): total_slots: %d, freed_slots: %d, empty_slots: %d, final_slots: %d\n",
 		   (int)rb_gc_count(),
 		   (int)sweep_page->total_slots,
-		   freed_slots, free_info.empty_slots, free_info.final_slots);
+		   free_info.freed_slots, free_info.empty_slots, free_info.final_slots);
 
-    heap_pages_swept_slots += sweep_page->free_slots = freed_slots + free_info.empty_slots;
-    objspace->profile.total_freed_objects += freed_slots;
+    heap_pages_swept_slots += sweep_page->free_slots = free_info.freed_slots + free_info.empty_slots;
+    objspace->profile.total_freed_objects += free_info.freed_slots;
     heap_pages_final_slots += free_info.final_slots;
     sweep_page->final_slots += free_info.final_slots;
 
