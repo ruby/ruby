@@ -129,6 +129,8 @@ with all sufficient information, see the ChangeLog file.
 * OpenSSL
   * OpenSSL::SSL::SSLSocket#accept_nonblock and
     OpenSSL::SSL::SSLSocket#connect_nonblock supports `exception: false`.
+  * OpenSSL::SSL::SSLContext defaults to TLS v1.2.
+    Please use `ctx.ssl_version = :TLSv1` or `:SSLv23` at your own risk.
 
 * Pathname
   * Pathname#descend and Pathname#ascend supported blockless form.

@@ -1,3 +1,9 @@
+Thu Oct  8 14:10:45 2015  Zachary Scott  <zzak@ruby-lang.org>
+
+	* ext/openssl/lib/openssl/ssl.rb: Default to TLSv1.2 and drop TLS v1
+	  Patch provided by @claudijd [Fixes GH-873] [Feature #11524]:
+	  https://github.com/ruby/ruby/pull/873
+
 Wed Oct  7 22:55:02 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/minitest/metametameta.rb (with_output): restore output to
