@@ -37,18 +37,19 @@
 	rb_str_resize(indent, RSTRING_LEN(indent) - 4); \
     } while (0)
 
-#define SIMPLE_FIELD(name, name2, block) \
-    do { \
-	D_FIELD_HEADER(comment ? (name2) : (name), " "); block; A("\n"); \
-    } while (0)
+#define SIMPLE_FIELD(name, name2) \
+    for (D_FIELD_HEADER(comment ? (name2) : (name), " "), field_flag = 1; \
+	 field_flag; /* should be optimized away */ \
+	 A("\n"), field_flag = 0)
 
-#define F_CUSTOM1(name, ann, block) SIMPLE_FIELD(#name, #name " (" ann ")", block)
-#define F_ID(name, ann)		    SIMPLE_FIELD(#name, #name " (" ann ")", A_ID(node->name))
-#define F_GENTRY(name, ann)	    SIMPLE_FIELD(#name, #name " (" ann ")", A_ID((node->name)->id))
-#define F_INT(name, ann)	    SIMPLE_FIELD(#name, #name " (" ann ")", A_INT(node->name))
-#define F_LONG(name, ann)	    SIMPLE_FIELD(#name, #name " (" ann ")", A_LONG(node->name))
-#define F_LIT(name, ann)	    SIMPLE_FIELD(#name, #name " (" ann ")", A_LIT(node->name))
-#define F_MSG(name, ann, desc)	    SIMPLE_FIELD(#name, #name " (" ann ")", A(desc))
+#define SIMPLE_FIELD1(name, ann)    SIMPLE_FIELD(name, name " (" ann ")")
+#define F_CUSTOM1(name, ann)	    SIMPLE_FIELD1(#name, ann)
+#define F_ID(name, ann) 	    SIMPLE_FIELD1(#name, ann) A_ID(node->name)
+#define F_GENTRY(name, ann)	    SIMPLE_FIELD1(#name, ann) A_ID((node->name)->id)
+#define F_INT(name, ann)	    SIMPLE_FIELD1(#name, ann) A_INT(node->name)
+#define F_LONG(name, ann)	    SIMPLE_FIELD1(#name, ann) A_LONG(node->name)
+#define F_LIT(name, ann)	    SIMPLE_FIELD1(#name, ann) A_LIT(node->name)
+#define F_MSG(name, ann, desc)	    SIMPLE_FIELD1(#name, ann) A(desc)
 
 #define F_NODE(name, ann) \
     COMPOUND_FIELD(#name, #name " (" ann ")", dump_node(buf, indent, comment, node->name))
@@ -86,6 +87,7 @@ add_id(VALUE buf, ID id)
 static void
 dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 {
+    int field_flag;
     const char *next_indent = "|   ";
 
     if (!node) {
@@ -149,10 +151,10 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	ANN("format: until [nd_cond]; [nd_body]; end");
 	ANN("example: until x == 1; foo; end");
       loop:
-	F_CUSTOM1(nd_state, "begin-end-while?", {
+	F_CUSTOM1(nd_state, "begin-end-while?") {
 	    A_INT((int)node->nd_state);
 	    A((node->nd_state == 1) ? " (while-end)" : " (begin-end-while)");
-	});
+	}
 	F_NODE(nd_cond, "condition");
 	LAST_NODE;
 	F_NODE(nd_body, "body");
@@ -351,13 +353,13 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	F_NODE(nd_recv, "receiver");
 	F_ID(nd_next->nd_vid, "reader");
 	F_ID(nd_next->nd_aid, "writer");
-	F_CUSTOM1(nd_next->nd_mid, "operator", {
+	F_CUSTOM1(nd_next->nd_mid, "operator") {
 	    switch (node->nd_next->nd_mid) {
 	      case 0: A("0 (||)"); break;
 	      case 1: A("1 (&&)"); break;
 	      default: A_ID(node->nd_next->nd_mid);
 	    }
-	});
+	}
 	LAST_NODE;
 	F_NODE(nd_value, "rvalue");
 	break;
@@ -494,20 +496,20 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	ANN("nth special variable reference");
 	ANN("format: $[nd_nth]");
 	ANN("example: $1, $2, ..");
-	F_CUSTOM1(nd_nth, "variable", { A("$"); A_LONG(node->nd_nth); });
+	F_CUSTOM1(nd_nth, "variable") { A("$"); A_LONG(node->nd_nth); }
 	break;
 
       case NODE_BACK_REF:
 	ANN("back special variable reference");
 	ANN("format: $[nd_nth]");
 	ANN("example: $&, $`, $', $+");
-	F_CUSTOM1(nd_nth, "variable", {
+	F_CUSTOM1(nd_nth, "variable") {
 	    char name[3];
 	    name[0] = '$';
 	    name[1] = (char)node->nd_nth;
 	    name[2] = '\0';
 	    A(name);
-	});
+	}
 	break;
 
       case NODE_MATCH:
@@ -871,7 +873,7 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
       case NODE_SCOPE:
 	ANN("new scope");
 	ANN("format: [nd_tbl]: local table, [nd_args]: arguments, [nd_body]: body");
-	F_CUSTOM1(nd_tbl, "local table", {
+	F_CUSTOM1(nd_tbl, "local table") {
 	    ID *tbl = node->nd_tbl;
 	    int i;
 	    int size = tbl ? (int)*tbl++ : 0;
@@ -879,7 +881,7 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	    for (i = 0; i < size; i++) {
 		A_ID(tbl[i]); if (i < size - 1) A(",");
 	    }
-	});
+	}
 	F_NODE(nd_args, "arguments");
 	LAST_NODE;
 	F_NODE(nd_body, "body");
