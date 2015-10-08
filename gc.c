@@ -1784,10 +1784,10 @@ newobj_of_init(rb_objspace_t *objspace, VALUE klass, VALUE flags, VALUE v1, VALU
     return obj;
 }
 
-NOINLINE(static VALUE newobj_of_slowpass(rb_objspace_t *objspace, VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3));
+NOINLINE(static VALUE newobj_of_slowpass(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, rb_objspace_t *objspace));
 
 static VALUE
-newobj_of_slowpass(rb_objspace_t *objspace, VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3)
+newobj_of_slowpass(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, rb_objspace_t *objspace)
 {
     VALUE obj;
 
@@ -1830,7 +1830,7 @@ newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3)
 	return newobj_of_init(objspace, klass, flags, v1, v2, v3, obj, FALSE);
     }
     else {
-	return newobj_of_slowpass(objspace, klass, flags, v1, v2, v3);
+	return newobj_of_slowpass(klass, flags, v1, v2, v3, objspace);
     }
 }
 
