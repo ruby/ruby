@@ -1,6 +1,6 @@
 Fri Oct  9 16:42:26 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
-	* lib/net/imap.rb: use frozen_string_literal: true. 
+	* lib/net/imap.rb: use frozen_string_literal: true.
 
 	* test/net/imap/test_imap.rb: ditto.
 
