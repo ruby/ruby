@@ -1,4 +1,6 @@
 #
+# -*- frozen_string_literal: true -*-
+#
 # = net/imap.rb
 #
 # Copyright (C) 2000  Shugo Maeda <shugo@ruby-lang.org>
@@ -1191,7 +1193,7 @@ module Net
     end
 
     def get_response
-      buff = ""
+      buff = String.new
       while true
         s = @sock.gets(CRLF)
         break unless s
@@ -2729,7 +2731,7 @@ module Net
       end
 
       def section
-        str = ""
+        str = String.new
         token = match(T_LBRA)
         str.concat(token.value)
         token = match(T_ATOM, T_NUMBER, T_RBRA)
@@ -3210,7 +3212,7 @@ module Net
       end
 
       def atom
-        result = ""
+        result = String.new
         while true
           token = lookahead
           if atom_token?(token)
