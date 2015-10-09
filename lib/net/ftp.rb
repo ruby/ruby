@@ -1,4 +1,6 @@
 #
+# -*- frozen_string_literal: true -*-
+#
 # = net/ftp.rb - FTP Client Library
 #
 # Written by Shugo Maeda <shugo@ruby-lang.org>.
@@ -610,7 +612,7 @@ module Net
           f = open(localfile, "w")
         end
       elsif !block_given?
-        result = ""
+        result = String.new
       end
       begin
         f.binmode if localfile
@@ -637,7 +639,7 @@ module Net
       if localfile
         f = open(localfile, "w")
       elsif !block_given?
-        result = ""
+        result = String.new
       end
       begin
         retrlines("RETR #{remotefile}") do |line, newline|
@@ -1287,11 +1289,11 @@ module Net
 
       def read(len = nil)
         if len
-          s = super(len, "", true)
+          s = super(len, String.new, true)
           return s.empty? ? nil : s
         else
           result = ""
-          while s = super(DEFAULT_BLOCKSIZE, "", true)
+          while s = super(DEFAULT_BLOCKSIZE, String.new, true)
             break if s.empty?
             result << s
           end

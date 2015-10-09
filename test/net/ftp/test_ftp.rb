@@ -1,3 +1,6 @@
+#
+# -*- frozen_string_literal: true -*-
+
 require "net/ftp"
 require "test/unit"
 require "ostruct"
@@ -545,7 +548,7 @@ class FTPTest < Test::Unit::TestCase
         assert_match(/\AUSER /, commands.shift)
         assert_match(/\APASS /, commands.shift)
         assert_equal("TYPE I\r\n", commands.shift)
-        buf = ""
+        buf = String.new
         assert_raise(Net::ReadTimeout) do
           ftp.retrbinary("RETR foo", 1024) do |s|
             buf << s
@@ -602,7 +605,7 @@ class FTPTest < Test::Unit::TestCase
         assert_match(/\AUSER /, commands.shift)
         assert_match(/\APASS /, commands.shift)
         assert_equal("TYPE I\r\n", commands.shift)
-        buf = ""
+        buf = String.new
         ftp.retrbinary("RETR foo", 1024) do |s|
           buf << s
         end
@@ -785,7 +788,7 @@ EOF
         assert_match(/\AUSER /, commands.shift)
         assert_match(/\APASS /, commands.shift)
         assert_equal("TYPE I\r\n", commands.shift)
-        buf = ""
+        buf = String.new
         ftp.retrlines("RETR foo") do |line|
           buf << line + "\r\n"
         end

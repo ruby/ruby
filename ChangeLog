@@ -1,3 +1,13 @@
+Fri Oct  9 15:52:28 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/ftp.rb: use frozen_string_literal: true.
+
+	* test/net/ftp/test_buffered_socket.rb: ditto.
+
+	* test/net/ftp/test_ftp.rb: ditto.
+
+	* test/net/ftp/test_mlsx_entry.rb: ditto.
+
 Fri Oct  9 14:12:35 2015  Shota Fukumori (sora_h)  <her@sorah.jp>
 
 	* ext/openssl/lib/openssl/ssl.rb: Revert r52082 because it was

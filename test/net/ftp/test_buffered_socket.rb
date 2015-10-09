@@ -1,3 +1,6 @@
+#
+# -*- frozen_string_literal: true -*-
+
 require "net/ftp"
 require "test/unit"
 require "ostruct"
