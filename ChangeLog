@@ -1,3 +1,16 @@
+Fri Oct  9 14:12:35 2015  Shota Fukumori (sora_h)  <her@sorah.jp>
+
+	* ext/openssl/lib/openssl/ssl.rb: Revert r52082 because it was
+	  dropping TLS v1.1 support too. Supporting only TLS v1.2 is too
+	  early, because many popular websites still don't support it.
+	  
+	  For instance, Servers where aws-sdk connects to still don't support
+	  TLS v1.2 and it became broken.
+
+	  We should consider more carefully about this.
+
+	  [Fix GH-873] [Feature #11524]
+
 Fri Oct  9 12:52:08 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* compile.c (iseq_compile_each): Dynamic string literals (e.g.,
