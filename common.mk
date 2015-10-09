@@ -546,7 +546,7 @@ clean-platform:
 	$(Q) $(RM) $(PLATFORM_D)
 	-$(Q) $(RMDIR) $(PLATFORM_DIR) 2> $(NULL) || exit 0
 
-check: main test test-all
+check: main test test-testframework test-almost
 	$(ECHO) check succeeded
 check-ruby: test test-ruby
 
@@ -583,18 +583,24 @@ no-test-knownbug: PHONY
 yes-test-knownbug: prog PHONY
 	-$(exec) $(RUNRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(PROGRAM) $(RUN_OPTS)" $(OPTS) $(TESTOPTS) $(srcdir)/KNOWNBUGS.rb
 
-test-testframework: prog PHONY
+test-testframework: $(TEST_RUNNABLE)-test-testframework
+yes-test-testframework: prog PHONY
 	$(Q)$(exec) $(RUNRUBY) "$(srcdir)/test/runner.rb" --ruby="$(RUNRUBY)" $(TESTOPTS) testunit minitest
+no-test-testframework: PHONY
 
 test: test-sample btest-ruby test-knownbug
 
 test-all: $(TEST_RUNNABLE)-test-all
-yes-test-all: prog test-testframework test-almost PHONY
-test-almost:
+yes-test-all: prog PHONY
 	$(Q)$(exec) $(RUNRUBY) "$(srcdir)/test/runner.rb" --ruby="$(RUNRUBY)" $(TEST_EXCLUDES) $(TESTOPTS) $(TESTS)
 TESTS_BUILD = mkmf
 no-test-all: PHONY
 	$(MINIRUBY) -I"$(srcdir)/lib" "$(srcdir)/test/runner.rb" $(TESTOPTS) $(TESTS_BUILD)
+
+test-almost: $(TEST_RUNNABLE)-test-almost
+yes-test-almost: prog PHONY
+	$(Q)$(exec) $(RUNRUBY) "$(srcdir)/test/runner.rb" --ruby="$(RUNRUBY)" $(TEST_EXCLUDES) $(TESTOPTS) $(EXCLUDE_TESTFRAMEWORK) $(TESTS)
+no-test-almost: PHONY
 
 test-ruby: $(TEST_RUNNABLE)-test-ruby
 no-test-ruby: PHONY
@@ -1029,7 +1035,7 @@ change: PHONY
 
 exam: check test-rubyspec
 
-love: sudo-precheck up all test install test-all
+love: sudo-precheck up all test install check
 	@echo love is all you need
 
 yes-test-all: sudo-precheck
