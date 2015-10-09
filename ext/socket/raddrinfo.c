@@ -519,12 +519,22 @@ rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_h
 }
 
 struct rb_addrinfo*
-rsock_addrinfo(VALUE host, VALUE port, int socktype, int flags)
+rsock_addrinfo(VALUE host, VALUE port, int fd, int socktype, int flags)
 {
     struct addrinfo hints;
+    struct sockaddr sa;
+    socklen_t sa_len;
+    int family = AF_UNSPEC;
+
+    if (fd >= 0) {
+        sa_len = sizeof(sa);
+        if (getsockname(fd, &sa, &sa_len) == 0) {
+            family = sa.sa_family;
+        }
+    }
 
     MEMZERO(&hints, struct addrinfo, 1);
-    hints.ai_family = AF_UNSPEC;
+    hints.ai_family = family;
     hints.ai_socktype = socktype;
     hints.ai_flags = flags;
     return rsock_getaddrinfo(host, port, &hints, 1);
