@@ -587,10 +587,10 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	ANN("format: [nd_lit]");
 	ANN("example: :\"foo#{ bar }baz\"");
       dlit:
-	F_LIT(nd_lit, "literal");
-	F_NODE(nd_next->nd_head, "preceding string");
+	F_LIT(nd_lit, "preceding string");
+	F_NODE(nd_next->nd_head, "interpolation");
 	LAST_NODE;
-	F_NODE(nd_next->nd_next, "interpolation");
+	F_NODE(nd_next->nd_next, "tailing strings");
 	break;
 
       case NODE_EVSTR:
