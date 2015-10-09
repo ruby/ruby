@@ -3,7 +3,7 @@ Fri Oct  9 14:12:35 2015  Shota Fukumori (sora_h)  <her@sorah.jp>
 	* ext/openssl/lib/openssl/ssl.rb: Revert r52082 because it was
 	  dropping TLS v1.1 support too. Supporting only TLS v1.2 is too
 	  early, because many popular websites still don't support it.
-	  
+
 	  For instance, Servers where aws-sdk connects to still don't support
 	  TLS v1.2 and it became broken.
 
