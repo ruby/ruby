@@ -1,3 +1,7 @@
+Fri Oct  9 17:29:07 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/ftp.rb (parse257): refactor.
+
 Fri Oct  9 16:42:26 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb: use frozen_string_literal: true.

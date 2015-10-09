@@ -1318,8 +1318,26 @@ EOF
     end
   end
 
-  private
+  def test_parse257
+    ftp = Net::FTP.new
+    assert_equal('/foo/bar',
+                 ftp.send(:parse257, '257 "/foo/bar" directory created'))
+    assert_equal('/foo/bar"baz',
+                 ftp.send(:parse257, '257 "/foo/bar""baz" directory created'))
+    assert_equal('/foo/x"y"z',
+                 ftp.send(:parse257, '257 "/foo/x""y""z" directory created'))
+    assert_equal('/foo/bar',
+                 ftp.send(:parse257, '257 "/foo/bar" "comment"'))
+    assert_equal('',
+                 ftp.send(:parse257, '257 "" directory created'))
+    assert_equal('',
+                 ftp.send(:parse257, '257 directory created'))
+    assert_raise(Net::FTPReplyError) do
+      ftp.send(:parse257, "500 Syntax error")
+    end
+  end
 
+  private
 
   def create_ftp_server(sleep_time = nil)
     server = TCPServer.new(SERVER_ADDR, 0)

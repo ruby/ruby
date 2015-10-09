@@ -1246,24 +1246,7 @@ module Net
       if !resp.start_with?("257")
         raise FTPReplyError, resp
       end
-      if resp[3, 2] != ' "'
-        return ""
-      end
-      dirname = ""
-      i = 5
-      n = resp.length
-      while i < n
-        c = resp[i, 1]
-        i = i + 1
-        if c == '"'
-          if i > n or resp[i, 1] != '"'
-            break
-          end
-          i = i + 1
-        end
-        dirname = dirname + c
-      end
-      return dirname
+      return resp.slice(/"(([^"]|"")*)"/, 1).to_s.gsub(/""/, '"')
     end
     private :parse257
 
