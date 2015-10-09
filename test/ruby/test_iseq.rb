@@ -169,10 +169,10 @@ class TestISeq < Test::Unit::TestCase
     ['foo', 'foo', "#{$f}foo", "#{'foo'}"]
     EOS
     s1, s2, s3, s4 = RubyVM::InstructionSequence.compile(code, __FILE__, __FILE__, line, {frozen_string_literal: true}).eval
-    assert_equal(true, s1.frozen?)
-    assert_equal(true, s2.frozen?)
-    assert_equal(false, s3.frozen?)
-    assert_equal(true, s4.frozen?)
-    assert_equal(s2.object_id, s2.object_id)
+    assert_predicate(s1, :frozen?)
+    assert_predicate(s2, :frozen?)
+    assert_not_predicate(s3, :frozen?)
+    assert_predicate(s4, :frozen?)
+    assert_same(s1, s2)
   end
 end
