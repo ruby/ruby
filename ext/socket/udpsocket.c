@@ -85,7 +85,7 @@ udp_connect(VALUE sock, VALUE host, VALUE port)
     VALUE ret;
 
     GetOpenFile(sock, fptr);
-    arg.res = rsock_addrinfo(host, port, arg.fd, SOCK_DGRAM, 0);
+    arg.res = rsock_addrinfo(host, port, fptr->fd, SOCK_DGRAM, 0);
     arg.fd = fptr->fd;
     ret = rb_ensure(udp_connect_internal, (VALUE)&arg,
 		    rsock_freeaddrinfo, (VALUE)arg.res);
