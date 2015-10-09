@@ -1,3 +1,12 @@
+Fri Oct  9 12:52:08 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* compile.c (iseq_compile_each): Dynamic string literals (e.g.,
+	  "#{x}") should not be frozen because they don't literally
+	  represent strings.
+	  https://twitter.com/shugomaeda/status/651937650027401216
+	  https://twitter.com/yukihiro_matz/status/651942882312482817
+	  https://twitter.com/yukihiro_matz/status/651980835181096960
+
 Fri Oct  9 06:52:49 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* benchmark/prepare_require.rb: skip file creation if it already

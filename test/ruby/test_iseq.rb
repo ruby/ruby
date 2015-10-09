@@ -166,12 +166,13 @@ class TestISeq < Test::Unit::TestCase
     $f = 'f'
     line = __LINE__ + 2
     code = <<-'EOS'
-    ['foo', 'foo', "#{$f}foo"]
+    ['foo', 'foo', "#{$f}foo", "#{'foo'}"]
     EOS
-    s1, s2, s3 = RubyVM::InstructionSequence.compile(code, __FILE__, __FILE__, line, {frozen_string_literal: true}).eval
-    assert(s1.frozen?)
-    assert(s2.frozen?)
-    assert(s3.frozen?)
-    assert(s1.object_id == s2.object_id)
+    s1, s2, s3, s4 = RubyVM::InstructionSequence.compile(code, __FILE__, __FILE__, line, {frozen_string_literal: true}).eval
+    assert_equal(true, s1.frozen?)
+    assert_equal(true, s2.frozen?)
+    assert_equal(false, s3.frozen?)
+    assert_equal(true, s4.frozen?)
+    assert_equal(s2.object_id, s2.object_id)
   end
 end
