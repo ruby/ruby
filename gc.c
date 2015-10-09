@@ -2010,7 +2010,7 @@ struct obj_free_info_t {
 static inline void obj_free_prologue(rb_objspace_t *objspace, VALUE obj)
 {
 #if USE_RGENGC
-    if (RVALUE_WB_UNPROTECTED(obj)) CLEAR_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(obj), obj);
+    CLEAR_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(obj), obj);
 
 #if RGENGC_CHECK_MODE
 #define CHECK(x) if (x(obj) != FALSE) rb_bug("obj_free: " #x "(%s) != FALSE", obj_info(obj))
