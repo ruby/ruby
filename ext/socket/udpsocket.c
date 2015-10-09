@@ -84,8 +84,8 @@ udp_connect(VALUE sock, VALUE host, VALUE port)
     struct udp_arg arg;
     VALUE ret;
 
-    arg.res = rsock_addrinfo(host, port, SOCK_DGRAM, 0);
     GetOpenFile(sock, fptr);
+    arg.res = rsock_addrinfo(host, port, SOCK_DGRAM, 0);
     arg.fd = fptr->fd;
     ret = rb_ensure(udp_connect_internal, (VALUE)&arg,
 		    rsock_freeaddrinfo, (VALUE)arg.res);
@@ -112,8 +112,8 @@ udp_bind(VALUE sock, VALUE host, VALUE port)
     struct rb_addrinfo *res0;
     struct addrinfo *res;
 
-    res0 = rsock_addrinfo(host, port, SOCK_DGRAM, 0);
     GetOpenFile(sock, fptr);
+    res0 = rsock_addrinfo(host, port, SOCK_DGRAM, 0);
     for (res = res0->ai; res; res = res->ai_next) {
 	if (bind(fptr->fd, res->ai_addr, res->ai_addrlen) < 0) {
 	    continue;
@@ -166,8 +166,8 @@ udp_send(int argc, VALUE *argv, VALUE sock)
     rb_scan_args(argc, argv, "4", &arg.mesg, &flags, &host, &port);
 
     StringValue(arg.mesg);
-    res0 = rsock_addrinfo(host, port, SOCK_DGRAM, 0);
     GetOpenFile(sock, fptr);
+    res0 = rsock_addrinfo(host, port, SOCK_DGRAM, 0);
     arg.fd = fptr->fd;
     arg.flags = NUM2INT(flags);
     for (res = res0->ai; res; res = res->ai_next) {
