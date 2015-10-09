@@ -3974,8 +3974,10 @@ regexp		: tREGEXP_BEG regexp_contents tREGEXP_END
 			    node->nd_cflag = options & RE_OPTION_MASK;
 			    if (!NIL_P(node->nd_lit)) reg_fragment_check(node->nd_lit, options);
 			    for (list = (prev = node)->nd_next; list; list = list->nd_next) {
-				if (nd_type(list->nd_head) == NODE_STR) {
-				    VALUE tail = list->nd_head->nd_lit;
+				NODE *nd = list->nd_head;
+				if (!nd) continue;
+				if (nd_type(nd) == NODE_STR || nd_type(nd) == NODE_DSTR) {
+				    VALUE tail = nd->nd_lit;
 				    if (reg_fragment_check(tail, options) && prev && !NIL_P(prev->nd_lit)) {
 					VALUE lit = prev == node ? prev->nd_lit : prev->nd_head->nd_lit;
 					if (!literal_concat0(parser, lit, tail)) {
@@ -3983,15 +3985,20 @@ regexp		: tREGEXP_BEG regexp_contents tREGEXP_END
 					    break;
 					}
 					rb_str_resize(tail, 0);
-					prev->nd_next = list->nd_next;
-					rb_gc_force_recycle((VALUE)list->nd_head);
-					rb_gc_force_recycle((VALUE)list);
-					list = prev;
+					if (nd_type(nd) == NODE_STR || !nd->nd_next) {
+					    prev->nd_next = list->nd_next;
+					    rb_gc_force_recycle((VALUE)nd);
+					    rb_gc_force_recycle((VALUE)list);
+					    list = prev;
+					}
+					else {
+					    prev = 0;
+					}
 				    }
 				    else {
 					prev = list;
 				    }
-                                }
+				}
 				else {
 				    prev = 0;
 				}
@@ -8770,13 +8777,16 @@ literal_concat_gen(struct parser_params *parser, NODE *head, NODE *tail)
     }
     switch (nd_type(tail)) {
       case NODE_STR:
-	if (htype == NODE_DSTR && (headlast = head->nd_next->nd_end->nd_head) &&
+	if (htype == NODE_DSTR &&
+	    (headlast = head->nd_next) != 0 &&
+	    (headlast = headlast->nd_end->nd_head) != 0 &&
 	    nd_type(headlast) == NODE_STR) {
 	    htype = NODE_STR;
 	    lit = headlast->nd_lit;
 	}
 	else {
 	    lit = head->nd_lit;
+	    if (!head->nd_next) htype = NODE_STR;
 	}
 	if (htype == NODE_STR) {
 	    if (!literal_concat0(parser, lit, tail->nd_lit)) {
@@ -8804,10 +8814,13 @@ literal_concat_gen(struct parser_params *parser, NODE *head, NODE *tail)
 	  append:
 	    head->nd_alen += tail->nd_alen - 1;
 	    head->nd_next->nd_end->nd_next = tail->nd_next;
-	    head->nd_next->nd_end = tail->nd_next->nd_end;
+	    if (tail->nd_next)
+		head->nd_next->nd_end = tail->nd_next->nd_end;
 	    rb_gc_force_recycle((VALUE)tail);
 	}
-	else if (htype == NODE_DSTR && (headlast = head->nd_next->nd_end->nd_head) &&
+	else if (htype == NODE_DSTR &&
+		 (headlast = head->nd_next) != 0 &&
+		 (headlast = headlast->nd_end->nd_head) != 0 &&
 		 nd_type(headlast) == NODE_STR) {
 	    lit = headlast->nd_lit;
 	    if (!literal_concat0(parser, lit, tail->nd_lit))
@@ -8849,7 +8862,10 @@ new_evstr_gen(struct parser_params *parser, NODE *node)
 
     if (node) {
 	switch (nd_type(node)) {
-	  case NODE_STR: case NODE_DSTR: case NODE_EVSTR:
+	  case NODE_STR:
+	    nd_set_type(node, NODE_DSTR);
+	    node->nd_alen = 1;
+	  case NODE_DSTR: case NODE_EVSTR:
 	    return node;
 	}
     }
