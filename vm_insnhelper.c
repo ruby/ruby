@@ -1387,14 +1387,13 @@ vm_call_iseq_setup_normal(rb_thread_t *th, rb_control_frame_t *cfp, struct rb_ca
     const rb_iseq_t *iseq = def_iseq_ptr(me->def);
     VALUE *argv = cfp->sp - calling->argc;
     VALUE *sp = argv + iseq->body->param.size;
+    cfp->sp = argv - 1 /* recv */;
 
     vm_push_frame(th, iseq, VM_FRAME_MAGIC_METHOD, calling->recv,
 		  VM_ENVVAL_BLOCK_PTR(calling->blockptr), (VALUE)me,
 		  iseq->body->iseq_encoded + opt_pc, sp,
 		  iseq->body->local_size - iseq->body->param.size,
 		  iseq->body->stack_max);
-
-    cfp->sp = argv - 1 /* recv */;
     return Qundef;
 }
 
