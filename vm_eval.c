@@ -1054,7 +1054,7 @@ rb_yield_splat(VALUE values)
 VALUE
 rb_yield_block(VALUE val, VALUE arg, int argc, const VALUE *argv, VALUE blockarg)
 {
-    const rb_block_t *blockptr = 0;
+    const rb_block_t *blockptr = NULL;
     if (!NIL_P(blockarg)) {
 	rb_proc_t *blockproc;
 	GetProcPtr(blockarg, blockproc);

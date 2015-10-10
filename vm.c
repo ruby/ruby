@@ -803,98 +803,127 @@ rb_binding_add_dynavars(rb_binding_t *bind, int dyncount, const ID *dynvars)
 /* C -> Ruby: block */
 
 static inline VALUE
-invoke_block_from_c(rb_thread_t *th, const rb_block_t *block,
-		    VALUE self, int argc, const VALUE *argv,
-		    const rb_block_t *blockptr, const rb_cref_t *cref,
-		    int splattable)
+invoke_block(rb_thread_t *th, const rb_iseq_t *iseq, VALUE self, const rb_block_t *block, const rb_cref_t *cref, int type, int opt_pc)
 {
-    if (SPECIAL_CONST_P(block->iseq)) {
+    int arg_size = iseq->body->param.size;
+
+    vm_push_frame(th, iseq, type | VM_FRAME_FLAG_FINISH, self,
+		  VM_ENVVAL_PREV_EP_PTR(block->ep),
+		  (VALUE)cref, /* cref or method */
+		  iseq->body->iseq_encoded + opt_pc,
+		  th->cfp->sp + arg_size, iseq->body->local_size - arg_size,
+		  iseq->body->stack_max);
+
+    return vm_exec(th);
+}
+
+static VALUE
+invoke_bmethod(rb_thread_t *th, const rb_iseq_t *iseq, VALUE self, const rb_block_t *block, int type, int opt_pc)
+{
+    /* bmethod */
+    int arg_size = iseq->body->param.size;
+    const rb_callable_method_entry_t *me = th->passed_bmethod_me;
+    VALUE ret;
+
+    th->passed_bmethod_me = NULL;
+
+    vm_push_frame(th, iseq, type | VM_FRAME_FLAG_FINISH | VM_FRAME_FLAG_BMETHOD, self,
+		  VM_ENVVAL_PREV_EP_PTR(block->ep),
+		  (VALUE)me, /* cref or method (TODO: can we ignore cref?) */
+		  iseq->body->iseq_encoded + opt_pc,
+		  th->cfp->sp + arg_size, iseq->body->local_size - arg_size,
+		  iseq->body->stack_max);
+
+    RUBY_DTRACE_METHOD_ENTRY_HOOK(th, me->owner, me->called_id);
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_CALL, self, me->called_id, me->owner, Qnil);
+    ret = vm_exec(th);
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_RETURN, self, me->called_id, me->owner, ret);
+    RUBY_DTRACE_METHOD_RETURN_HOOK(th, me->owner, me->called_id);
+    return ret;
+}
+
+static inline VALUE
+invoke_block_from_c_0(rb_thread_t *th, const rb_block_t *block,
+		      VALUE self, int argc, const VALUE *argv, const rb_block_t *blockptr,
+		      const rb_cref_t *cref, const int splattable)
+{
+    if (UNLIKELY(SPECIAL_CONST_P(block->iseq))) {
 	return Qnil;
     }
-    else if (!RUBY_VM_IFUNC_P(block->iseq)) {
-	VALUE ret;
+    else if (LIKELY(RUBY_VM_NORMAL_ISEQ_P(block->iseq))) {
 	const rb_iseq_t *iseq = block->iseq;
-	const rb_control_frame_t *cfp;
-	int i, opt_pc, arg_size = iseq->body->param.size;
+	int i, opt_pc;
 	int type = block_proc_is_lambda(block->proc) ? VM_FRAME_MAGIC_LAMBDA : VM_FRAME_MAGIC_BLOCK;
-	const rb_callable_method_entry_t *me = th->passed_bmethod_me;
-	th->passed_bmethod_me = NULL;
-	cfp = th->cfp;
+	VALUE *sp = th->cfp->sp;
 
 	for (i=0; i<argc; i++) {
-	    cfp->sp[i] = argv[i];
+	    sp[i] = argv[i];
 	}
 
-	opt_pc = vm_yield_setup_args(th, iseq, argc, cfp->sp, blockptr,
+	opt_pc = vm_yield_setup_args(th, iseq, argc, sp, blockptr,
 				     (type == VM_FRAME_MAGIC_LAMBDA ? (splattable ? arg_setup_lambda : arg_setup_method) : arg_setup_block));
 
-	if (me != 0) {
-	    /* bmethod */
-	    vm_push_frame(th, iseq, type | VM_FRAME_FLAG_FINISH | VM_FRAME_FLAG_BMETHOD, self,
-			  VM_ENVVAL_PREV_EP_PTR(block->ep),
-			  (VALUE)me, /* cref or method (TODO: can we ignore cref?) */
-			  iseq->body->iseq_encoded + opt_pc,
-			  cfp->sp + arg_size, iseq->body->local_size - arg_size,
-			  iseq->body->stack_max);
-
-	    RUBY_DTRACE_METHOD_ENTRY_HOOK(th, me->owner, me->called_id);
-	    EXEC_EVENT_HOOK(th, RUBY_EVENT_CALL, self, me->called_id, me->owner, Qnil);
+	if (th->passed_bmethod_me == NULL) {
+	    return invoke_block(th, iseq, self, block, cref, type, opt_pc);
 	}
 	else {
-	    vm_push_frame(th, iseq, type | VM_FRAME_FLAG_FINISH, self,
-			  VM_ENVVAL_PREV_EP_PTR(block->ep),
-			  (VALUE)cref, /* cref or method */
-			  iseq->body->iseq_encoded + opt_pc,
-			  cfp->sp + arg_size, iseq->body->local_size - arg_size,
-			  iseq->body->stack_max);
+	    return invoke_bmethod(th, iseq, self, block, type, opt_pc);
 	}
 
-	ret = vm_exec(th);
-
-	if (me) {
-	    /* bmethod */
-	    EXEC_EVENT_HOOK(th, RUBY_EVENT_RETURN, self, me->called_id, me->owner, ret);
-	    RUBY_DTRACE_METHOD_RETURN_HOOK(th, me->owner, me->called_id);
-	}
-
-	return ret;
     }
     else {
 	return vm_yield_with_cfunc(th, block, self, argc, argv, blockptr);
     }
 }
 
+static VALUE
+invoke_block_from_c_splattable(rb_thread_t *th, const rb_block_t *block,
+			       VALUE self, int argc, const VALUE *argv,
+			       const rb_block_t *blockptr, const rb_cref_t *cref)
+{
+    return invoke_block_from_c_0(th, block, self, argc, argv, blockptr, cref, TRUE);
+}
+
+static VALUE
+invoke_block_from_c_unsplattable(rb_thread_t *th, const rb_block_t *block,
+				 VALUE self, int argc, const VALUE *argv,
+				 const rb_block_t *blockptr, const rb_cref_t *cref)
+{
+    return invoke_block_from_c_0(th, block, self, argc, argv, blockptr, cref, FALSE);
+}
+
+
 static inline const rb_block_t *
 check_block(rb_thread_t *th)
 {
     const rb_block_t *blockptr = VM_CF_BLOCK_PTR(th->cfp);
 
-    if (blockptr == 0) {
+    if (UNLIKELY(blockptr == 0)) {
 	rb_vm_localjump_error("no block given", Qnil, 0);
     }
 
     return blockptr;
 }
 
-static inline VALUE
+static VALUE
 vm_yield_with_cref(rb_thread_t *th, int argc, const VALUE *argv, const rb_cref_t *cref)
 {
     const rb_block_t *blockptr = check_block(th);
-    return invoke_block_from_c(th, blockptr, blockptr->self, argc, argv, 0, cref, 1);
+    return invoke_block_from_c_splattable(th, blockptr, blockptr->self, argc, argv, NULL, cref);
 }
 
-static inline VALUE
+static VALUE
 vm_yield(rb_thread_t *th, int argc, const VALUE *argv)
 {
     const rb_block_t *blockptr = check_block(th);
-    return invoke_block_from_c(th, blockptr, blockptr->self, argc, argv, 0, 0, 1);
+    return invoke_block_from_c_splattable(th, blockptr, blockptr->self, argc, argv, NULL, NULL);
 }
 
-static inline VALUE
+static VALUE
 vm_yield_with_block(rb_thread_t *th, int argc, const VALUE *argv, const rb_block_t *blockargptr)
 {
     const rb_block_t *blockptr = check_block(th);
-    return invoke_block_from_c(th, blockptr, blockptr->self, argc, argv, blockargptr, 0, 1);
+    return invoke_block_from_c_splattable(th, blockptr, blockptr->self, argc, argv, blockargptr, NULL);
 }
 
 static VALUE
@@ -908,7 +937,7 @@ vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc, VALUE self,
     TH_PUSH_TAG(th);
     if ((state = EXEC_TAG()) == 0) {
 	th->safe_level = proc->safe_level;
-	val = invoke_block_from_c(th, &proc->block, self, argc, argv, blockptr, 0, 0);
+	val = invoke_block_from_c_unsplattable(th, &proc->block, self, argc, argv, blockptr, NULL);
     }
     TH_POP_TAG();
 
@@ -924,7 +953,7 @@ static VALUE
 vm_invoke_bmethod(rb_thread_t *th, rb_proc_t *proc, VALUE self,
 		  int argc, const VALUE *argv, const rb_block_t *blockptr)
 {
-    return invoke_block_from_c(th, &proc->block, self, argc, argv, blockptr, 0, 0);
+    return invoke_block_from_c_unsplattable(th, &proc->block, self, argc, argv, blockptr, NULL);
 }
 
 VALUE

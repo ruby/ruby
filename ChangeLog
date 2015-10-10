@@ -1,3 +1,11 @@
+Sun Oct 11 05:29:51 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (invoke_block_from_c): split this function into several
+	  functions.
+
+	* vm_insnhelper.c (vm_yield_callee_setup_arg): remove this function
+	  beacuse it is only delegation function.
+
 Sun Oct 11 03:48:46 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (newobj_of_slowpass): fix typo (pass -> path).
