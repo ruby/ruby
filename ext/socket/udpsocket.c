@@ -44,15 +44,18 @@ udp_init(int argc, VALUE *argv, VALUE sock)
 struct udp_arg
 {
     struct rb_addrinfo *res;
-    int fd;
+    VALUE io;
 };
 
 static VALUE
 udp_connect_internal(struct udp_arg *arg)
 {
-    int fd = arg->fd;
+    rb_io_t *fptr;
+    int fd;
     struct addrinfo *res;
 
+    GetOpenFile(arg->io, fptr);
+    fd = fptr->fd;
     for (res = arg->res->ai; res; res = res->ai_next) {
 	if (rsock_connect(fd, res->ai_addr, res->ai_addrlen, 0) >= 0) {
 	    return Qtrue;
@@ -80,17 +83,33 @@ udp_connect_internal(struct udp_arg *arg)
 static VALUE
 udp_connect(VALUE sock, VALUE host, VALUE port)
 {
-    rb_io_t *fptr;
     struct udp_arg arg;
     VALUE ret;
 
-    GetOpenFile(sock, fptr);
+    arg.io = sock;
     arg.res = rsock_addrinfo(host, port, SOCK_DGRAM, 0);
-    arg.fd = fptr->fd;
     ret = rb_ensure(udp_connect_internal, (VALUE)&arg,
 		    rsock_freeaddrinfo, (VALUE)arg.res);
     if (!ret) rsock_sys_fail_host_port("connect(2)", host, port);
     return INT2FIX(0);
+}
+
+static VALUE
+udp_bind_internal(struct udp_arg *arg)
+{
+    rb_io_t *fptr;
+    int fd;
+    struct addrinfo *res;
+
+    GetOpenFile(arg->io, fptr);
+    fd = fptr->fd;
+    for (res = arg->res->ai; res; res = res->ai_next) {
+	if (bind(fd, res->ai_addr, res->ai_addrlen) < 0) {
+	    continue;
+	}
+	return Qtrue;
+    }
+    return Qfalse;
 }
 
 /*
@@ -108,22 +127,14 @@ udp_connect(VALUE sock, VALUE host, VALUE port)
 static VALUE
 udp_bind(VALUE sock, VALUE host, VALUE port)
 {
-    rb_io_t *fptr;
-    struct rb_addrinfo *res0;
-    struct addrinfo *res;
+    struct udp_arg arg;
+    VALUE ret;
 
-    GetOpenFile(sock, fptr);
-    res0 = rsock_addrinfo(host, port, SOCK_DGRAM, 0);
-    for (res = res0->ai; res; res = res->ai_next) {
-	if (bind(fptr->fd, res->ai_addr, res->ai_addrlen) < 0) {
-	    continue;
-	}
-	rb_freeaddrinfo(res0);
-	return INT2FIX(0);
-    }
-    rb_freeaddrinfo(res0);
-
-    rsock_sys_fail_host_port("bind(2)", host, port);
+    arg.io = sock;
+    arg.res = rsock_addrinfo(host, port, SOCK_DGRAM, 0);
+    ret = rb_ensure(udp_bind_internal, (VALUE)&arg,
+		    rsock_freeaddrinfo, (VALUE)arg.res);
+    if (!ret) rsock_sys_fail_host_port("bind(2)", host, port);
 
     return INT2FIX(0);
 }
