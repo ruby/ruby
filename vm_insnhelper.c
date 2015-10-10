@@ -2275,7 +2275,7 @@ block_proc_is_lambda(const VALUE procval)
     }
 }
 
-static inline VALUE
+static VALUE
 vm_yield_with_cfunc(rb_thread_t *th, const rb_block_t *block, VALUE self,
 		    int argc, const VALUE *argv,
 		    const rb_block_t *blockargptr)
@@ -2318,14 +2318,6 @@ vm_yield_with_cfunc(rb_thread_t *th, const rb_block_t *block, VALUE self,
 }
 
 static int
-vm_yield_callee_setup_arg(rb_thread_t *th, struct rb_calling_info *calling,
-			  const struct rb_call_info *ci, const rb_iseq_t *iseq,
-			  VALUE *argv, enum arg_setup_type arg_setup_type)
-{
-    return vm_callee_setup_block_arg(th, calling, ci, iseq, argv, arg_setup_type);
-}
-
-static int
 vm_yield_setup_args(rb_thread_t *th, const rb_iseq_t *iseq, const int argc, VALUE *argv, const rb_block_t *blockptr, enum arg_setup_type arg_setup_type)
 {
     struct rb_calling_info calling_entry, *calling;
@@ -2338,10 +2330,11 @@ vm_yield_setup_args(rb_thread_t *th, const rb_iseq_t *iseq, const int argc, VALU
     ci_entry.flag = 0;
     ci = &ci_entry;
 
-    return vm_yield_callee_setup_arg(th, calling, ci, iseq, argv, arg_setup_type);
+    return vm_callee_setup_block_arg(th, calling, ci, iseq, argv, arg_setup_type);
 }
 
 /* ruby iseq -> ruby block iseq */
+
 static VALUE
 vm_invoke_block(rb_thread_t *th, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling, const struct rb_call_info *ci)
 {
@@ -2354,11 +2347,11 @@ vm_invoke_block(rb_thread_t *th, rb_control_frame_t *reg_cfp, struct rb_calling_
     }
     iseq = block->iseq;
 
-    if (!RUBY_VM_IFUNC_P(iseq)) {
+    if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
 	const int arg_size = iseq->body->param.size;
 	int is_lambda = block_proc_is_lambda(block->proc);
 	VALUE * const rsp = GET_SP() - calling->argc;
-	int opt_pc = vm_yield_callee_setup_arg(th, calling, ci, iseq, rsp, is_lambda ? arg_setup_lambda : arg_setup_block);
+	int opt_pc = vm_callee_setup_block_arg(th, calling, ci, iseq, rsp, is_lambda ? arg_setup_lambda : arg_setup_block);
 
 	SET_SP(rsp);
 
