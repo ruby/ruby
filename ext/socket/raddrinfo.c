@@ -529,7 +529,7 @@ rsock_addrinfo(VALUE host, VALUE port, VALUE sock, int socktype, int flags)
 
     if (sock != Qnil) {
         GetOpenFile(sock, fptr);
-        if (fptr->fd >= 0 && getsockname(fptr->fd, &sa, &sa_len) == 0) {
+        if (fptr && fptr->fd >= 0 && getsockname(fptr->fd, &sa, &sa_len) == 0) {
             family = sa.sa_family;
         }
     }
