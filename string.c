@@ -1233,7 +1233,7 @@ str_replace(VALUE str, VALUE str2)
     return str;
 }
 
-static VALUE
+static inline VALUE
 str_duplicate(VALUE klass, VALUE str)
 {
     enum {embed_size = RSTRING_EMBED_LEN_MAX + 1};
