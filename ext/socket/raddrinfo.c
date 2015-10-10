@@ -519,16 +519,17 @@ rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_h
 }
 
 struct rb_addrinfo*
-rsock_addrinfo(VALUE host, VALUE port, int fd, int socktype, int flags)
+rsock_addrinfo(VALUE host, VALUE port, VALUE sock, int socktype, int flags)
 {
     struct addrinfo hints;
-    struct sockaddr sa;
-    socklen_t sa_len;
+    rb_io_t *fptr;
+    struct sockaddr sa = { 0 };
+    socklen_t sa_len = sizeof(sa);
     int family = AF_UNSPEC;
 
-    if (fd >= 0) {
-        sa_len = sizeof(sa);
-        if (getsockname(fd, &sa, &sa_len) == 0) {
+    if (sock != Qnil) {
+        GetOpenFile(sock, fptr);
+        if (fptr->fd >= 0 && getsockname(fptr->fd, &sa, &sa_len) == 0) {
             family = sa.sa_family;
         }
     }
