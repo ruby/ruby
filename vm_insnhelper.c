@@ -165,6 +165,14 @@ vm_push_frame(rb_thread_t *th,
 
     th->cfp = cfp;
 
+    /* setup new frame */
+    cfp->pc = (VALUE *)pc;
+    cfp->iseq = (rb_iseq_t *)iseq;
+    cfp->flag = type;
+    cfp->self = self;
+    cfp->block_iseq = NULL;
+    cfp->proc = 0;
+
     /* setup vm value stack */
 
     /* initialize local variables */
@@ -180,15 +188,10 @@ vm_push_frame(rb_thread_t *th,
 
     cfp->ep = sp;
     cfp->sp = sp + 1;
+
 #if VM_DEBUG_BP_CHECK
     cfp->bp_check = sp + 1;
 #endif
-    cfp->pc = (VALUE *)pc;
-    cfp->iseq = (rb_iseq_t *)iseq;
-    cfp->flag = type;
-    cfp->self = self;
-    cfp->block_iseq = NULL;
-    cfp->proc = 0;
 
     if (VMDEBUG == 2) {
 	SDR();

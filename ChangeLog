@@ -1,3 +1,8 @@
+Sun Oct 11 07:09:19 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c (vm_push_frame): initialize other than sp (and ep)
+	  first for performance.
+
 Sun Oct 11 06:21:50 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_eval.c, internal.h (rb_yield_1): added for performance which
