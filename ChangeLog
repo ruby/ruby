@@ -1,3 +1,21 @@
+Sat Oct 10 15:28:45 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* import a github pull request
+	  https://github.com/ruby/ruby/pull/1050
+	  by Kazuho Oku <kazuho@natadeco.co>.
+
+	  This pull request has the following commits.
+
+	* gc.c: reduce # of args to 6 (max. of register args on x86-64) so
+	  that the `newobj_of_slowpass` can be called via TCO.
+
+	* gc.c (newobj_of), string.c (str_duplicate): for performance,
+	  the hot functions must be inlined.
+
+	* gc.c: for performance, preceding arguments of `.*newobj_of.*`
+	  must be same, so that the arg registers can be reused in case of
+	  TCO.
+
 Sat Oct 10 08:52:21 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/socket/udpsocket.c (udp_connect, udp_bind, udp_send): fix

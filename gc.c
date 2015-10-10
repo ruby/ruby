@@ -1784,10 +1784,10 @@ newobj_of_init(rb_objspace_t *objspace, VALUE klass, VALUE flags, VALUE v1, VALU
     return obj;
 }
 
-NOINLINE(static VALUE newobj_of_slowpass(rb_objspace_t *objspace, VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, int hook_needed));
+NOINLINE(static VALUE newobj_of_slowpass(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, rb_objspace_t *objspace));
 
 static VALUE
-newobj_of_slowpass(rb_objspace_t *objspace, VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, int hook_needed)
+newobj_of_slowpass(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, rb_objspace_t *objspace)
 {
     VALUE obj;
 
@@ -1806,15 +1806,14 @@ newobj_of_slowpass(rb_objspace_t *objspace, VALUE klass, VALUE flags, VALUE v1, 
     }
 
     obj = heap_get_freeobj(objspace, heap_eden);
-    return newobj_of_init(objspace, klass, flags, v1, v2, v3, obj, hook_needed);
+    return newobj_of_init(objspace, klass, flags, v1, v2, v3, obj, gc_event_hook_needed_p(objspace, RUBY_INTERNAL_EVENT_NEWOBJ));
 }
 
-static VALUE
+static inline VALUE
 newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3)
 {
     rb_objspace_t *objspace = &rb_objspace;
     VALUE obj;
-    int hook_needed = gc_event_hook_needed_p(objspace, RUBY_INTERNAL_EVENT_NEWOBJ);
 
 #if GC_DEBUG_STRESS_TO_CLASS
     if (UNLIKELY(stress_to_class)) {
@@ -1826,12 +1825,12 @@ newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3)
     }
 #endif
 
-    if (LIKELY(!(during_gc || ruby_gc_stressful) && hook_needed == FALSE &&
+    if (LIKELY(!(during_gc || ruby_gc_stressful) && gc_event_hook_needed_p(objspace, RUBY_INTERNAL_EVENT_NEWOBJ) == FALSE &&
 	       (obj = heap_get_freeobj_head(objspace, heap_eden)) != Qfalse)) {
 	return newobj_of_init(objspace, klass, flags, v1, v2, v3, obj, FALSE);
     }
     else {
-	return newobj_of_slowpass(objspace, klass, flags, v1, v2, v3, hook_needed);
+	return newobj_of_slowpass(klass, flags, v1, v2, v3, objspace);
     }
 }
 
