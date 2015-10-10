@@ -3949,7 +3949,7 @@ int_dotimes(VALUE num)
 
 	end = FIX2LONG(num);
 	for (i=0; i<end; i++) {
-	    rb_yield(LONG2FIX(i));
+	    rb_yield_1(LONG2FIX(i));
 	}
     }
     else {
