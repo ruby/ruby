@@ -1343,7 +1343,7 @@ vm_callee_setup_arg(rb_thread_t *th, struct rb_calling_info *calling, const stru
 
 	CI_SET_FASTPATH(cc,
 			(UNLIKELY(ci->flag & VM_CALL_TAILCALL) ? vm_call_iseq_setup_tailcall_0start :
-			                                                  vm_call_iseq_setup_normal_0start),
+			                                         vm_call_iseq_setup_normal_0start),
 			(!IS_ARGS_SPLAT(ci) && !IS_ARGS_KEYWORD(ci) &&
 			 !(METHOD_ENTRY_VISI(cc->me) == METHOD_VISI_PROTECTED)));
 	return 0;

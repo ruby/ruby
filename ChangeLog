@@ -1,3 +1,10 @@
+Sun Oct 11 03:48:46 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (newobj_of_slowpass): fix typo (pass -> path).
+	  Pointed out by Yukihiro Matsumoto  <matz@ruby-lang.org>.
+
+	* gc.c (newobj_of_...): `of' is unnecessary.
+
 Sat Oct 10 19:04:42 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/socket/udpsocket.c (udp_connect, udp_bind): get open files
