@@ -1702,7 +1702,7 @@ gc_event_hook_body(rb_thread_t *th, rb_objspace_t *objspace, const rb_event_flag
 } while (0)
 
 static inline VALUE
-newobj_of_init(rb_objspace_t *objspace, VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, VALUE obj, int hook_needed)
+newobj_init(rb_objspace_t *objspace, VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, VALUE obj, int hook_needed)
 {
     if (RGENGC_CHECK_MODE > 0) assert(BUILTIN_TYPE(obj) == T_NONE);
 
@@ -1784,10 +1784,10 @@ newobj_of_init(rb_objspace_t *objspace, VALUE klass, VALUE flags, VALUE v1, VALU
     return obj;
 }
 
-NOINLINE(static VALUE newobj_of_slowpass(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, rb_objspace_t *objspace));
+NOINLINE(static VALUE newobj_slowpath(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, rb_objspace_t *objspace));
 
 static VALUE
-newobj_of_slowpass(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, rb_objspace_t *objspace)
+newobj_slowpath(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, rb_objspace_t *objspace)
 {
     VALUE obj;
 
@@ -1806,7 +1806,7 @@ newobj_of_slowpass(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, rb_ob
     }
 
     obj = heap_get_freeobj(objspace, heap_eden);
-    return newobj_of_init(objspace, klass, flags, v1, v2, v3, obj, gc_event_hook_needed_p(objspace, RUBY_INTERNAL_EVENT_NEWOBJ));
+    return newobj_init(objspace, klass, flags, v1, v2, v3, obj, gc_event_hook_needed_p(objspace, RUBY_INTERNAL_EVENT_NEWOBJ));
 }
 
 static inline VALUE
@@ -1827,10 +1827,10 @@ newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3)
 
     if (LIKELY(!(during_gc || ruby_gc_stressful) && gc_event_hook_needed_p(objspace, RUBY_INTERNAL_EVENT_NEWOBJ) == FALSE &&
 	       (obj = heap_get_freeobj_head(objspace, heap_eden)) != Qfalse)) {
-	return newobj_of_init(objspace, klass, flags, v1, v2, v3, obj, FALSE);
+	return newobj_init(objspace, klass, flags, v1, v2, v3, obj, FALSE);
     }
     else {
-	return newobj_of_slowpass(klass, flags, v1, v2, v3, objspace);
+	return newobj_slowpath(klass, flags, v1, v2, v3, objspace);
     }
 }
 
