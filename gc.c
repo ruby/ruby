@@ -2010,8 +2010,6 @@ struct obj_free_info_t {
 static inline void obj_free_prologue(rb_objspace_t *objspace, VALUE obj)
 {
 #if USE_RGENGC
-    CLEAR_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(obj), obj);
-
 #if RGENGC_CHECK_MODE
 #define CHECK(x) if (x(obj) != FALSE) rb_bug("obj_free: " #x "(%s) != FALSE", obj_info(obj))
 	CHECK(RVALUE_WB_UNPROTECTED);
@@ -3377,7 +3375,7 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
     int call_freeobj_event = 0;
     struct obj_free_info_t free_info;
     RVALUE *p, *pend,*offset;
-    bits_t *bits, bitset;
+    bits_t *bits, bitset, bitmask;
 
     free_info.empty_slots = 0;
     free_info.final_slots = 0;
@@ -3401,9 +3399,10 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
     for (i=0; i < HEAP_BITMAP_LIMIT; i++) {
 	bitset = ~bits[i];
 	if (bitset) {
+	    bitmask = 1;
 	    p = offset  + i * BITS_BITLENGTH;
 	    while (1) {
-		if (bitset & 1) {
+		if (bitset & bitmask) {
 		    if (UNLIKELY(call_freeobj_event)) {
 			switch (BUILTIN_TYPE(p)) {
 			case T_ZOMBIE:
@@ -3418,6 +3417,7 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
 			rb_free_generic_ivar((VALUE)p);
 			FL_UNSET_RAW((VALUE)p, FL_EXIVAR);
 		    }
+		    sweep_page->wb_unprotected_bits[i] &= ~bitmask;
 		    free_info.obj_freed = 1;
 		    obj_free_handlers[BUILTIN_TYPE(p)](objspace, (VALUE)p, &free_info);
 		    if (LIKELY(free_info.obj_freed)) {
@@ -3432,12 +3432,13 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
 			}
 		    }
 		    p++;
-		    bitset >>= 1;
+		    bitset -= bitmask;
+		    bitmask <<= 1;
 		    if (!bitset)
 			break;
 		} else {
 		    p++;
-		    bitset >>= 1;
+		    bitmask <<= 1;
 		}
 	    }
 	}
