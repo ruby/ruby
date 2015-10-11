@@ -3402,7 +3402,7 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
 	bitset = ~bits[i];
 	if (bitset) {
 	    p = offset  + i * BITS_BITLENGTH;
-	    do {
+	    while (1) {
 		if (bitset & 1) {
 		    if (UNLIKELY(call_freeobj_event)) {
 			switch (BUILTIN_TYPE(p)) {
@@ -3431,10 +3431,15 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
 			    gc_report(3, objspace, "page_sweep: %s is added to freelist\n", obj_info((VALUE)p));
 			}
 		    }
+		    p++;
+		    bitset >>= 1;
+		    if (!bitset)
+			break;
+		} else {
+		    p++;
+		    bitset >>= 1;
 		}
-		p++;
-		bitset >>= 1;
-	    } while (bitset);
+	    }
 	}
     }
 
