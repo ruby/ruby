@@ -1000,13 +1000,19 @@ rb_yield_0(int argc, const VALUE * argv)
 }
 
 VALUE
+rb_yield_1(VALUE val)
+{
+    return rb_yield_0(1, &val);
+}
+
+VALUE
 rb_yield(VALUE val)
 {
     if (val == Qundef) {
 	return rb_yield_0(0, 0);
     }
     else {
-	return rb_yield_0(1, &val);
+	return rb_yield_1(val);
     }
 }
 

@@ -165,6 +165,14 @@ vm_push_frame(rb_thread_t *th,
 
     th->cfp = cfp;
 
+    /* setup new frame */
+    cfp->pc = (VALUE *)pc;
+    cfp->iseq = (rb_iseq_t *)iseq;
+    cfp->flag = type;
+    cfp->self = self;
+    cfp->block_iseq = NULL;
+    cfp->proc = 0;
+
     /* setup vm value stack */
 
     /* initialize local variables */
@@ -180,15 +188,10 @@ vm_push_frame(rb_thread_t *th,
 
     cfp->ep = sp;
     cfp->sp = sp + 1;
+
 #if VM_DEBUG_BP_CHECK
     cfp->bp_check = sp + 1;
 #endif
-    cfp->pc = (VALUE *)pc;
-    cfp->iseq = (rb_iseq_t *)iseq;
-    cfp->flag = type;
-    cfp->self = self;
-    cfp->block_iseq = NULL;
-    cfp->proc = 0;
 
     if (VMDEBUG == 2) {
 	SDR();
@@ -1387,14 +1390,13 @@ vm_call_iseq_setup_normal(rb_thread_t *th, rb_control_frame_t *cfp, struct rb_ca
     const rb_iseq_t *iseq = def_iseq_ptr(me->def);
     VALUE *argv = cfp->sp - calling->argc;
     VALUE *sp = argv + iseq->body->param.size;
+    cfp->sp = argv - 1 /* recv */;
 
     vm_push_frame(th, iseq, VM_FRAME_MAGIC_METHOD, calling->recv,
 		  VM_ENVVAL_BLOCK_PTR(calling->blockptr), (VALUE)me,
 		  iseq->body->iseq_encoded + opt_pc, sp,
 		  iseq->body->local_size - iseq->body->param.size,
 		  iseq->body->stack_max);
-
-    cfp->sp = argv - 1 /* recv */;
     return Qundef;
 }
 
