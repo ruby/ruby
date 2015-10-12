@@ -295,7 +295,7 @@ int rb_getaddrinfo(const char *node, const char *service, const struct addrinfo 
 void rb_freeaddrinfo(struct rb_addrinfo *ai);
 VALUE rsock_freeaddrinfo(VALUE arg);
 int rb_getnameinfo(const struct sockaddr *sa, socklen_t salen, char *host, size_t hostlen, char *serv, size_t servlen, int flags);
-struct rb_addrinfo *rsock_addrinfo(VALUE host, VALUE port, int socktype, int flags);
+struct rb_addrinfo *rsock_addrinfo(VALUE host, VALUE port, VALUE sock, int socktype, int flags);
 struct rb_addrinfo *rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_hack);
 VALUE rsock_fd_socket_addrinfo(int fd, struct sockaddr *addr, socklen_t len);
 VALUE rsock_io_socket_addrinfo(VALUE io, struct sockaddr *addr, socklen_t len);
