@@ -354,14 +354,10 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
       case NODE_OP_ASGN2:
 	ANN("attr assignment with operator");
 	ANN("format: [nd_value].[attr] [nd_next->nd_mid]= [nd_value]");
-	ANN("          where [attr] reader: [nd_next->nd_vid]");
-	ANN("                [attr] writer: [nd_next->nd_aid]");
+	ANN("          where [attr]: [nd_next->nd_vid]");
 	ANN("example: struct.field += foo");
 	F_NODE(nd_recv, "receiver");
-	F_CUSTOM1(nd_next->nd_vid, "attr") {
-	    if (node->nd_next->nd_aid) A("? ");
-	    A_ID(node->nd_next->nd_vid);
-	}
+	F_ID(nd_next->nd_vid, "attr");
 	F_CUSTOM1(nd_next->nd_mid, "operator") {
 	    switch (node->nd_next->nd_mid) {
 	      case 0: A("0 (||)"); break;
