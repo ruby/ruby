@@ -44,7 +44,7 @@ udp_init(int argc, VALUE *argv, VALUE sock)
 struct udp_arg
 {
     struct rb_addrinfo *res;
-    VALUE io;
+    rb_io_t *fptr;
 };
 
 static VALUE
@@ -54,7 +54,7 @@ udp_connect_internal(struct udp_arg *arg)
     int fd;
     struct addrinfo *res;
 
-    GetOpenFile(arg->io, fptr);
+    rb_io_check_closed(fptr = arg->fptr);
     fd = fptr->fd;
     for (res = arg->res->ai; res; res = res->ai_next) {
 	if (rsock_connect(fd, res->ai_addr, res->ai_addrlen, 0) >= 0) {
@@ -86,7 +86,7 @@ udp_connect(VALUE sock, VALUE host, VALUE port)
     struct udp_arg arg;
     VALUE ret;
 
-    arg.io = sock;
+    GetOpenFile(sock, arg.fptr);
     arg.res = rsock_addrinfo(host, port, SOCK_DGRAM, 0);
     ret = rb_ensure(udp_connect_internal, (VALUE)&arg,
 		    rsock_freeaddrinfo, (VALUE)arg.res);
@@ -101,7 +101,7 @@ udp_bind_internal(struct udp_arg *arg)
     int fd;
     struct addrinfo *res;
 
-    GetOpenFile(arg->io, fptr);
+    rb_io_check_closed(fptr = arg->fptr);
     fd = fptr->fd;
     for (res = arg->res->ai; res; res = res->ai_next) {
 	if (bind(fd, res->ai_addr, res->ai_addrlen) < 0) {
@@ -130,12 +130,11 @@ udp_bind(VALUE sock, VALUE host, VALUE port)
     struct udp_arg arg;
     VALUE ret;
 
-    arg.io = sock;
+    GetOpenFile(sock, arg.fptr);
     arg.res = rsock_addrinfo(host, port, SOCK_DGRAM, 0);
     ret = rb_ensure(udp_bind_internal, (VALUE)&arg,
 		    rsock_freeaddrinfo, (VALUE)arg.res);
     if (!ret) rsock_sys_fail_host_port("bind(2)", host, port);
-
     return INT2FIX(0);
 }
 
