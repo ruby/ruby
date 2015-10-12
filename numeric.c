@@ -107,7 +107,7 @@ static VALUE fix_uminus(VALUE num);
 static VALUE fix_mul(VALUE x, VALUE y);
 static VALUE int_pow(long x, unsigned long y);
 
-static ID id_coerce, id_div;
+static ID id_coerce, id_div, id_divmod;
 #define id_to_i idTo_i
 #define id_eq  idEq
 #define id_cmp idCmp
@@ -465,7 +465,7 @@ num_modulo(VALUE x, VALUE y)
 {
     return rb_funcall(x, '-', 1,
 		      rb_funcall(y, '*', 1,
-				 rb_funcall(x, rb_intern("div"), 1, y)));
+				 rb_funcall(x, id_div, 1, y)));
 }
 
 /*
@@ -587,7 +587,7 @@ static VALUE
 num_abs(VALUE num)
 {
     if (negative_int_p(num)) {
-	return rb_funcall(num, rb_intern("-@"), 0);
+	return rb_funcall(num, idUMinus, 0);
     }
     return num;
 }
@@ -1052,7 +1052,7 @@ flo_divmod(VALUE x, VALUE y)
 	fy = RFLOAT_VALUE(y);
     }
     else {
-	return rb_num_coerce_bin(x, y, rb_intern("divmod"));
+	return rb_num_coerce_bin(x, y, id_divmod);
     }
     flodivmod(RFLOAT_VALUE(x), fy, &div, &mod);
     a = dbl2ival(div);
@@ -1086,10 +1086,10 @@ flo_pow(VALUE x, VALUE y)
 	dx = RFLOAT_VALUE(x);
 	dy = RFLOAT_VALUE(y);
 	if (dx < 0 && dy != round(dy))
-	    return rb_funcall(rb_complex_raw1(x), rb_intern("**"), 1, y);
+	    return rb_funcall(rb_complex_raw1(x), idPow, 1, y);
     }
     else {
-	return rb_num_coerce_bin(x, y, rb_intern("**"));
+	return rb_num_coerce_bin(x, y, idPow);
     }
     return DBL2NUM(pow(dx, dy));
 }
@@ -1321,7 +1321,7 @@ flo_ge(VALUE x, VALUE y)
 #endif
     }
     else {
-	return rb_num_coerce_relop(x, y, rb_intern(">="));
+	return rb_num_coerce_relop(x, y, idGE);
     }
 #if defined(_MSC_VER) && _MSC_VER < 1300
     if (isnan(a)) return Qfalse;
@@ -1395,7 +1395,7 @@ flo_le(VALUE x, VALUE y)
 #endif
     }
     else {
-	return rb_num_coerce_relop(x, y, rb_intern("<="));
+	return rb_num_coerce_relop(x, y, idLE);
     }
 #if defined(_MSC_VER) && _MSC_VER < 1300
     if (isnan(a)) return Qfalse;
@@ -1749,7 +1749,7 @@ int_round_0(VALUE num, int ndigits)
     h = rb_funcall(f, '/', 1, INT2FIX(2));
     r = rb_funcall(num, '%', 1, f);
     n = rb_funcall(num, '-', 1, r);
-    op = negative_int_p(num) ? rb_intern("<=") : '<';
+    op = negative_int_p(num) ? idLE : '<';
     if (!RTEST(rb_funcall(r, op, 1, h))) {
 	n = rb_funcall(n, '+', 1, f);
     }
@@ -3163,7 +3163,7 @@ fix_div(VALUE x, VALUE y)
 static VALUE
 fix_idiv(VALUE x, VALUE y)
 {
-    return fix_divide(x, y, rb_intern("div"));
+    return fix_divide(x, y, id_div);
 }
 
 /*
@@ -3229,7 +3229,7 @@ fix_divmod(VALUE x, VALUE y)
 	}
     }
     else {
-	return rb_num_coerce_bin(x, y, rb_intern("divmod"));
+	return rb_num_coerce_bin(x, y, id_divmod);
     }
 }
 
@@ -3302,7 +3302,7 @@ fix_pow(VALUE x, VALUE y)
 		return INT2FIX(-1);
 	}
 	if (b < 0)
-	    return rb_funcall(rb_rational_raw1(x), rb_intern("**"), 1, y);
+	    return rb_funcall(rb_rational_raw1(x), idPow, 1, y);
 
 	if (b == 0) return INT2FIX(1);
 	if (b == 1) return x;
@@ -3319,7 +3319,7 @@ fix_pow(VALUE x, VALUE y)
 	    else return INT2FIX(-1);
 	}
 	if (negative_int_p(y))
-	    return rb_funcall(rb_rational_raw1(x), rb_intern("**"), 1, y);
+	    return rb_funcall(rb_rational_raw1(x), idPow, 1, y);
 	if (a == 0) return INT2FIX(0);
 	x = rb_int2big(FIX2LONG(x));
 	return rb_big_pow(x, y);
@@ -3333,12 +3333,12 @@ fix_pow(VALUE x, VALUE y)
 	{
 	    double dy = RFLOAT_VALUE(y);
 	    if (a < 0 && dy != round(dy))
-		return rb_funcall(rb_complex_raw1(x), rb_intern("**"), 1, y);
+		return rb_funcall(rb_complex_raw1(x), idPow, 1, y);
 	    return DBL2NUM(pow((double)a, dy));
 	}
     }
     else {
-	return rb_num_coerce_bin(x, y, rb_intern("**"));
+	return rb_num_coerce_bin(x, y, idPow);
     }
 }
 
@@ -3447,7 +3447,7 @@ fix_ge(VALUE x, VALUE y)
 	return rel == INT2FIX(1) || rel == INT2FIX(0) ? Qtrue : Qfalse;
     }
     else {
-	return rb_num_coerce_relop(x, y, rb_intern(">="));
+	return rb_num_coerce_relop(x, y, idGE);
     }
 }
 
@@ -3499,7 +3499,7 @@ fix_le(VALUE x, VALUE y)
 	return rel == INT2FIX(-1) || rel == INT2FIX(0) ? Qtrue : Qfalse;
     }
     else {
-	return rb_num_coerce_relop(x, y, rb_intern("<="));
+	return rb_num_coerce_relop(x, y, idLE);
     }
 }
 
@@ -3557,7 +3557,7 @@ fix_and(VALUE x, VALUE y)
     }
 
     bit_coerce(&x, &y);
-    return rb_funcall(x, rb_intern("&"), 1, y);
+    return rb_funcall(x, '&', 1, y);
 }
 
 /*
@@ -3580,7 +3580,7 @@ fix_or(VALUE x, VALUE y)
     }
 
     bit_coerce(&x, &y);
-    return rb_funcall(x, rb_intern("|"), 1, y);
+    return rb_funcall(x, '|', 1, y);
 }
 
 /*
@@ -3603,7 +3603,7 @@ fix_xor(VALUE x, VALUE y)
     }
 
     bit_coerce(&x, &y);
-    return rb_funcall(x, rb_intern("^"), 1, y);
+    return rb_funcall(x, '^', 1, y);
 }
 
 static VALUE fix_lshift(long, unsigned long);
@@ -4161,6 +4161,7 @@ Init_Numeric(void)
 #endif
     id_coerce = rb_intern("coerce");
     id_div = rb_intern("div");
+    id_divmod = rb_intern("divmod");
 
     rb_eZeroDivError = rb_define_class("ZeroDivisionError", rb_eStandardError);
     rb_eFloatDomainError = rb_define_class("FloatDomainError", rb_eRangeError);
