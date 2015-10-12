@@ -138,6 +138,37 @@ udp_bind(VALUE sock, VALUE host, VALUE port)
     return INT2FIX(0);
 }
 
+struct udp_send_arg {
+    struct rb_addrinfo *res;
+    rb_io_t *fptr;
+    struct rsock_send_arg sarg;
+};
+
+static VALUE
+udp_send_internal(struct udp_send_arg *arg)
+{
+    rb_io_t *fptr;
+    int n;
+    struct addrinfo *res;
+
+    rb_io_check_closed(fptr = arg->fptr);
+    for (res = arg->res->ai; res; res = res->ai_next) {
+      retry:
+	arg->sarg.fd = fptr->fd;
+	arg->sarg.to = res->ai_addr;
+	arg->sarg.tolen = res->ai_addrlen;
+	rsock_maybe_fd_writable(arg->sarg.fd);
+	n = (int)BLOCKING_REGION_FD(rsock_sendto_blocking, &arg->sarg);
+	if (n >= 0) {
+	    return INT2FIX(n);
+	}
+	if (rb_io_wait_writable(fptr->fd)) {
+	    goto retry;
+	}
+    }
+    return Qfalse;
+}
+
 /*
  * call-seq:
  *   udpsocket.send(mesg, flags, host, port)  => numbytes_sent
@@ -164,39 +195,23 @@ static VALUE
 udp_send(int argc, VALUE *argv, VALUE sock)
 {
     VALUE flags, host, port;
-    rb_io_t *fptr;
-    int n;
-    struct rb_addrinfo *res0;
-    struct addrinfo *res;
-    struct rsock_send_arg arg;
+    struct udp_send_arg arg;
+    VALUE ret;
 
     if (argc == 2 || argc == 3) {
 	return rsock_bsock_send(argc, argv, sock);
     }
-    rb_scan_args(argc, argv, "4", &arg.mesg, &flags, &host, &port);
+    rb_scan_args(argc, argv, "4", &arg.sarg.mesg, &flags, &host, &port);
 
-    StringValue(arg.mesg);
-    GetOpenFile(sock, fptr);
-    res0 = rsock_addrinfo(host, port, SOCK_DGRAM, 0);
-    arg.fd = fptr->fd;
-    arg.flags = NUM2INT(flags);
-    for (res = res0->ai; res; res = res->ai_next) {
-      retry:
-	arg.to = res->ai_addr;
-	arg.tolen = res->ai_addrlen;
-	rsock_maybe_fd_writable(arg.fd);
-	n = (int)BLOCKING_REGION_FD(rsock_sendto_blocking, &arg);
-	if (n >= 0) {
-	    rb_freeaddrinfo(res0);
-	    return INT2FIX(n);
-	}
-	if (rb_io_wait_writable(fptr->fd)) {
-	    goto retry;
-	}
-    }
-    rb_freeaddrinfo(res0);
-    rsock_sys_fail_host_port("sendto(2)", host, port);
-    return INT2FIX(n);
+    StringValue(arg.sarg.mesg);
+    GetOpenFile(sock, arg.fptr);
+    arg.sarg.fd = arg.fptr->fd;
+    arg.sarg.flags = NUM2INT(flags);
+    arg.res = rsock_addrinfo(host, port, SOCK_DGRAM, 0);
+    ret = rb_ensure(udp_send_internal, (VALUE)&arg,
+		    rsock_freeaddrinfo, (VALUE)arg.res);
+    if (!ret) rsock_sys_fail_host_port("sendto(2)", host, port);
+    return ret;
 }
 
 /*
