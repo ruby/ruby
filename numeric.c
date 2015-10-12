@@ -1073,24 +1073,25 @@ flo_divmod(VALUE x, VALUE y)
 static VALUE
 flo_pow(VALUE x, VALUE y)
 {
+    double dx, dy;
     if (RB_TYPE_P(y, T_FIXNUM)) {
-	return DBL2NUM(pow(RFLOAT_VALUE(x), (double)FIX2LONG(y)));
+	dx = RFLOAT_VALUE(x);
+	dy = (double)FIX2LONG(y);
     }
     else if (RB_TYPE_P(y, T_BIGNUM)) {
-	return DBL2NUM(pow(RFLOAT_VALUE(x), rb_big2dbl(y)));
+	dx = RFLOAT_VALUE(x);
+	dy = rb_big2dbl(y);
     }
     else if (RB_TYPE_P(y, T_FLOAT)) {
-	{
-	    double dx = RFLOAT_VALUE(x);
-	    double dy = RFLOAT_VALUE(y);
-	    if (dx < 0 && dy != round(dy))
-		return rb_funcall(rb_complex_raw1(x), rb_intern("**"), 1, y);
-	    return DBL2NUM(pow(dx, dy));
-	}
+	dx = RFLOAT_VALUE(x);
+	dy = RFLOAT_VALUE(y);
+	if (dx < 0 && dy != round(dy))
+	    return rb_funcall(rb_complex_raw1(x), rb_intern("**"), 1, y);
     }
     else {
 	return rb_num_coerce_bin(x, y, rb_intern("**"));
     }
+    return DBL2NUM(pow(dx, dy));
 }
 
 /*
