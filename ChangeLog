@@ -1,3 +1,7 @@
+Tue Oct 13 22:06:50 2015  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/raddrinfo.c (rsock_fd_family): Check sa_len.
+
 Tue Oct 13 12:14:10 2015  Craig Davison  <craig65535@gmail.com>
 
 	* ext/socket/rsock_addrinfo (rsock_addrinfo): specify address
