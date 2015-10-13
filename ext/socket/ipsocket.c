@@ -45,16 +45,19 @@ init_inetsock_internal(struct inetsock_arg *arg)
     int type = arg->type;
     struct addrinfo *res, *lres;
     int fd, status = 0, local = 0;
+    int family = AF_UNSPEC;
     const char *syscall = 0;
 
-    arg->remote.res = rsock_addrinfo(arg->remote.host, arg->remote.serv, SOCK_STREAM,
-				    (type == INET_SERVER) ? AI_PASSIVE : 0);
+    arg->remote.res = rsock_addrinfo(arg->remote.host, arg->remote.serv,
+				     family, SOCK_STREAM,
+				     (type == INET_SERVER) ? AI_PASSIVE : 0);
     /*
      * Maybe also accept a local address
      */
 
     if (type != INET_SERVER && (!NIL_P(arg->local.host) || !NIL_P(arg->local.serv))) {
-	arg->local.res = rsock_addrinfo(arg->local.host, arg->local.serv, SOCK_STREAM, 0);
+	arg->local.res = rsock_addrinfo(arg->local.host, arg->local.serv,
+					family, SOCK_STREAM, 0);
     }
 
     arg->fd = fd = -1;
@@ -308,7 +311,7 @@ static VALUE
 ip_s_getaddress(VALUE obj, VALUE host)
 {
     union_sockaddr addr;
-    struct rb_addrinfo *res = rsock_addrinfo(host, Qnil, SOCK_STREAM, 0);
+    struct rb_addrinfo *res = rsock_addrinfo(host, Qnil, AF_UNSPEC, SOCK_STREAM, 0);
     socklen_t len = res->ai->ai_addrlen;
 
     /* just take the first one */

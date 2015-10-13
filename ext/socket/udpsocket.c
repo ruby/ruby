@@ -87,7 +87,7 @@ udp_connect(VALUE sock, VALUE host, VALUE port)
     VALUE ret;
 
     GetOpenFile(sock, arg.fptr);
-    arg.res = rsock_addrinfo(host, port, SOCK_DGRAM, 0);
+    arg.res = rsock_addrinfo(host, port, rsock_fd_family(arg.fptr->fd), SOCK_DGRAM, 0);
     ret = rb_ensure(udp_connect_internal, (VALUE)&arg,
 		    rsock_freeaddrinfo, (VALUE)arg.res);
     if (!ret) rsock_sys_fail_host_port("connect(2)", host, port);
@@ -131,7 +131,7 @@ udp_bind(VALUE sock, VALUE host, VALUE port)
     VALUE ret;
 
     GetOpenFile(sock, arg.fptr);
-    arg.res = rsock_addrinfo(host, port, SOCK_DGRAM, 0);
+    arg.res = rsock_addrinfo(host, port, rsock_fd_family(arg.fptr->fd), SOCK_DGRAM, 0);
     ret = rb_ensure(udp_bind_internal, (VALUE)&arg,
 		    rsock_freeaddrinfo, (VALUE)arg.res);
     if (!ret) rsock_sys_fail_host_port("bind(2)", host, port);
@@ -207,7 +207,7 @@ udp_send(int argc, VALUE *argv, VALUE sock)
     GetOpenFile(sock, arg.fptr);
     arg.sarg.fd = arg.fptr->fd;
     arg.sarg.flags = NUM2INT(flags);
-    arg.res = rsock_addrinfo(host, port, SOCK_DGRAM, 0);
+    arg.res = rsock_addrinfo(host, port, rsock_fd_family(arg.fptr->fd), SOCK_DGRAM, 0);
     ret = rb_ensure(udp_send_internal, (VALUE)&arg,
 		    rsock_freeaddrinfo, (VALUE)arg.res);
     if (!ret) rsock_sys_fail_host_port("sendto(2)", host, port);
