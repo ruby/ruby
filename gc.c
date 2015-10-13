@@ -3414,9 +3414,9 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
 			    break;
 			}
 		    }
-		    if (UNLIKELY(FL_TEST((VALUE)p, FL_EXIVAR))) {
+		    if (UNLIKELY(FL_TEST_RAW((VALUE)p, FL_EXIVAR)) && LIKELY(FL_TEST((VALUE)p, FL_EXIVAR))) {
 			rb_free_generic_ivar((VALUE)p);
-			FL_UNSET((VALUE)p, FL_EXIVAR);
+			FL_UNSET_RAW((VALUE)p, FL_EXIVAR);
 		    }
 		    free_info.obj_freed = 1;
 		    obj_free_handlers[BUILTIN_TYPE(p)](objspace, (VALUE)p, &free_info);
