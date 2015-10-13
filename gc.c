@@ -626,7 +626,7 @@ typedef struct rb_objspace {
 
 #ifndef HEAP_ALIGN_LOG
 /* default tiny heap size: 16KB */
-#define HEAP_ALIGN_LOG 14
+#define HEAP_ALIGN_LOG 17
 #endif
 #define CEILDIV(i, mod) (((i) + (mod) - 1)/(mod))
 enum {
