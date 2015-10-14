@@ -1,3 +1,8 @@
+Wed Oct 14 16:56:50 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: check for libunwind.h, which is not available in
+	  very old OS X SDK.  [ruby-core:71080] [Bug #11591]
+
 Wed Oct 14 14:11:42 2015  Brian Black  <bblack@veracode.com>
 
 	* iseq.c (rb_insn_operand_intern): change kw in callinfo disasm from the

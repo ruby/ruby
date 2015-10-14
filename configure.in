@@ -3210,6 +3210,7 @@ AS_CASE(["$target_cpu-$target_os"],
     AC_CHECK_HEADERS([execinfo.h])
     if test "x$ac_cv_header_execinfo_h" = xyes; then
 	AC_CHECK_LIB([execinfo], [backtrace])
+	AC_CHECK_HEADERS([libunwind.h])
     fi],
 [*-freebsd*|x86_64-netbsd*], [
     AC_CHECK_HEADERS([execinfo.h])
