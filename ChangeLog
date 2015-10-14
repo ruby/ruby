@@ -1,3 +1,8 @@
+Thu Oct 15 01:53:38 2015  Benoit Daloze  <eregontp@gmail.com>
+
+	* test/ostruct/test_ostruct.rb: Add tests for OpenStruct#respond_to.
+	  Patch by @jeremy in [GH-1041]: https://github.com/ruby/ruby/pull/1041
+
 Thu Oct 15 01:49:25 2015  Benoit Daloze  <eregontp@gmail.com>
 
 	* lib/ostruct.rb: Finish defining OpenStruct attributes lazily.
