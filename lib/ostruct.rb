@@ -98,7 +98,6 @@ class OpenStruct
   def initialize_copy(orig)
     super
     @table = @table.dup
-    @table.each_key{|key| new_ostruct_member(key)}
   end
 
   #
@@ -140,7 +139,6 @@ class OpenStruct
   #
   def marshal_load(x)
     @table = x
-    @table.each_key{|key| new_ostruct_member(key)}
   end
 
   #
@@ -172,6 +170,11 @@ class OpenStruct
   end
   protected :new_ostruct_member
 
+  def respond_to_missing?(mid, include_private = false)
+    mname = mid.to_s.chomp("=").to_sym
+    @table.key?(mname) || super
+  end
+
   def method_missing(mid, *args) # :nodoc:
     len = args.length
     if mname = mid[/.*(?==\z)/m]
@@ -180,7 +183,10 @@ class OpenStruct
       end
       modifiable[new_ostruct_member(mname)] = args[0]
     elsif len == 0
-      @table[mid]
+      if @table.key?(mid)
+        new_ostruct_member(mid)
+        @table[mid]
+      end
     else
       err = NoMethodError.new "undefined method `#{mid}' for #{self}", mid, args
       err.set_backtrace caller(1)
