@@ -1292,7 +1292,9 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
 	    rb_ary_push(ary, rb_sprintf("argc:%d", ci->orig_argc));
 
 	    if (ci->flag & VM_CALL_KWARG) {
-		rb_ary_push(ary, rb_sprintf("kw:%d", ((struct rb_call_info_with_kwarg *)ci)->kw_arg->keyword_len));
+		struct rb_call_info_kw_arg *kw_args = ((struct rb_call_info_with_kwarg *)ci)->kw_arg;
+		VALUE kw_ary = rb_ary_new_from_values(kw_args->keyword_len, kw_args->keywords);
+		rb_ary_push(ary, rb_sprintf("kw:[%"PRIsVALUE"]", rb_ary_join(kw_ary, rb_str_new2(","))));
 	    }
 
 	    if (ci->flag) {

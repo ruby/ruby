@@ -1,3 +1,9 @@
+Wed Oct 14 14:11:42 2015  Brian Black  <bblack@veracode.com>
+
+	* iseq.c (rb_insn_operand_intern): change kw in callinfo disasm from the
+	  number of keyword arguments to an ordered list of the keywords used.
+	  [Feature #11589]
+
 Wed Oct 14 13:58:44 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_nextc): send a warning to ripper, not to STDERR
