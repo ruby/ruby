@@ -1,3 +1,10 @@
+Thu Oct 15 01:57:03 2015  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* test/objspace/test_objspace.rb
+	  (test_trace_object_allocations_start_stop_clear): clear object
+	  allocation table first to get rid of erronous detection for obj3.
+	  [ruby-dev:49095] [Bug #11271]
+
 Thu Oct 15 01:53:38 2015  Benoit Daloze  <eregontp@gmail.com>
 
 	* test/ostruct/test_ostruct.rb: Add tests for OpenStruct#respond_to.

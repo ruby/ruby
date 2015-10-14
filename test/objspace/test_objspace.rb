@@ -177,6 +177,8 @@ class TestObjSpace < Test::Unit::TestCase
   end
 
   def test_trace_object_allocations_start_stop_clear
+    ObjectSpace.trace_object_allocations_clear # clear object_table to get rid of erronous detection for obj3
+    GC.disable # suppress potential object reuse. see [Bug #11271]
     begin
       ObjectSpace.trace_object_allocations_start
       begin
@@ -207,6 +209,8 @@ class TestObjSpace < Test::Unit::TestCase
     assert_equal(nil, ObjectSpace.allocation_sourcefile(obj1))
     assert_equal(nil, ObjectSpace.allocation_sourcefile(obj2))
     assert_equal(nil, ObjectSpace.allocation_sourcefile(obj3))
+  ensure
+    GC.enable
   end
 
   def test_dump_flags
