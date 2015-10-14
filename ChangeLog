@@ -1,3 +1,13 @@
+Thu Oct 15 01:49:25 2015  Benoit Daloze  <eregontp@gmail.com>
+
+	* lib/ostruct.rb: Finish defining OpenStruct attributes lazily.
+	  Patch by @sferik in [GH-1037]: https://github.com/ruby/ruby/pull/1037
+	  This commit is an addendum to https://github.com/ruby/ruby/pull/1033.
+	  It:
+	  1. lazily defines attribute accessors for copied and marshaled objects,
+	  2. returns nil when an attribute reader is not defined, and
+	  3. defines respond_to_missing? to maintain the same respond_to? behavior
+
 Wed Oct 14 16:56:50 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: check for libunwind.h, which is not available in
