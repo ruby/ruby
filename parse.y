@@ -679,41 +679,51 @@ new_args_tail_gen(struct parser_params *parser, VALUE k, VALUE kr, VALUE b)
 # define ifndef_ripper(x)
 #endif
 
-#ifndef RIPPER
-# define rb_warn0(fmt)    rb_compile_warn(ruby_sourcefile, ruby_sourceline, (fmt))
-# define rb_warnI(fmt,a)  rb_compile_warn(ruby_sourcefile, ruby_sourceline, (fmt), (a))
-# define rb_warnS(fmt,a)  rb_compile_warn(ruby_sourcefile, ruby_sourceline, (fmt), (a))
-# define rb_warnV(fmt,a)  rb_compile_warn(ruby_sourcefile, ruby_sourceline, (fmt), (a))
-# define rb_warn4S(file,line,fmt,a)  rb_compile_warn((file), (line), (fmt), (a))
-# define rb_warn4V(file,line,fmt,a)  rb_compile_warn((file), (line), (fmt), (a))
-# define rb_warning0(fmt) rb_compile_warning(ruby_sourcefile, ruby_sourceline, (fmt))
-# define rb_warningS(fmt,a) rb_compile_warning(ruby_sourcefile, ruby_sourceline, (fmt), (a))
-# define rb_warningV(fmt,a) rb_compile_warning(ruby_sourcefile, ruby_sourceline, (fmt), (a))
-#else
-# define rb_warn0(fmt)    ripper_warn0(parser, (fmt))
-# define rb_warnI(fmt,a)  ripper_warnI(parser, (fmt), (a))
-# define rb_warnS(fmt,a)  ripper_warnS(parser, (fmt), (a))
-# define rb_warnV(fmt,a)  ripper_warnV(parser, (fmt), (a))
-# define rb_warn4S(file,line,fmt,a)  ripper_warnS(parser, (fmt), (a))
-# define rb_warn4V(file,line,fmt,a)  ripper_warnV(parser, (fmt), (a))
-# define rb_warning0(fmt) ripper_warning0(parser, (fmt))
-# define rb_warningS(fmt,a) ripper_warningS(parser, (fmt), (a))
-# define rb_warningV(fmt,a) ripper_warningV(parser, (fmt), (a))
-static void ripper_warn0(struct parser_params*, const char*);
-static void ripper_warnI(struct parser_params*, const char*, int);
-static void ripper_warnS(struct parser_params*, const char*, const char*);
-static void ripper_warnV(struct parser_params*, const char*, VALUE);
-static void ripper_warning0(struct parser_params*, const char*);
-static void ripper_warningS(struct parser_params*, const char*, const char*);
-static void ripper_warningV(struct parser_params*, const char*, VALUE);
-#endif
-
+# define rb_warn0(fmt)         WARN_CALL(WARN_ARGS(fmt, 1))
+# define rb_warn1(fmt,a)       WARN_CALL(WARN_ARGS(fmt, 2), (a))
+# define rb_warn2(fmt,a,b)     WARN_CALL(WARN_ARGS(fmt, 3), (a), (b))
+# define rb_warn3(fmt,a,b,c)   WARN_CALL(WARN_ARGS(fmt, 4), (a), (b), (c))
+# define rb_warn4(fmt,a,b,c,d) WARN_CALL(WARN_ARGS(fmt, 5), (a), (b), (c), (d))
+# define rb_warning0(fmt)         WARNING_CALL(WARNING_ARGS(fmt, 1))
+# define rb_warning1(fmt,a)       WARNING_CALL(WARNING_ARGS(fmt, 2), (a))
+# define rb_warning2(fmt,a,b)     WARNING_CALL(WARNING_ARGS(fmt, 3), (a), (b))
+# define rb_warning3(fmt,a,b,c)   WARNING_CALL(WARNING_ARGS(fmt, 4), (a), (b), (c))
+# define rb_warning4(fmt,a,b,c,d) WARNING_CALL(WARNING_ARGS(fmt, 5), (a), (b), (c), (d))
+# define rb_warn0L(l,fmt)         WARN_CALL(WARN_ARGS_L(l, fmt, 1))
+# define rb_warn1L(l,fmt,a)       WARN_CALL(WARN_ARGS_L(l, fmt, 2), (a))
+# define rb_warn2L(l,fmt,a,b)     WARN_CALL(WARN_ARGS_L(l, fmt, 3), (a), (b))
+# define rb_warn3L(l,fmt,a,b,c)   WARN_CALL(WARN_ARGS_L(l, fmt, 4), (a), (b), (c))
+# define rb_warn4L(l,fmt,a,b,c,d) WARN_CALL(WARN_ARGS_L(l, fmt, 5), (a), (b), (c), (d))
+# define rb_warning0L(l,fmt)         WARNING_CALL(WARNING_ARGS_L(l, fmt, 1))
+# define rb_warning1L(l,fmt,a)       WARNING_CALL(WARNING_ARGS_L(l, fmt, 2), (a))
+# define rb_warning2L(l,fmt,a,b)     WARNING_CALL(WARNING_ARGS_L(l, fmt, 3), (a), (b))
+# define rb_warning3L(l,fmt,a,b,c)   WARNING_CALL(WARNING_ARGS_L(l, fmt, 4), (a), (b), (c))
+# define rb_warning4L(l,fmt,a,b,c,d) WARNING_CALL(WARNING_ARGS_L(l, fmt, 5), (a), (b), (c), (d))
 #ifdef RIPPER
+static ID id_warn, id_warning;
+# define WARN_S(s) STR_NEW2(s)
+# define WARN_I(i) INT2NUM(i)
+# define PRIsWARN "s"
+# define WARN_ARGS(fmt,n) parser->value, id_warn, n, rb_usascii_str_new_lit(fmt)
+# define WARN_ARGS_L(l,fmt,n) WARN_ARGS(fmt,n)
+# define WARN_CALL rb_funcall
+# define WARNING_ARGS(fmt,n) parser->value, id_warning, n, rb_usascii_str_new_lit(fmt)
+# define WARNING_ARGS_L(l, fmt,n) WARNING_ARGS(fmt,n)
+# define WARNING_CALL rb_funcall
 static void ripper_compile_error(struct parser_params*, const char *fmt, ...);
 # define rb_compile_error ripper_compile_error
 # define compile_error ripper_compile_error
 # define PARSER_ARG parser,
 #else
+# define WARN_S(s) s
+# define WARN_I(i) i
+# define PRIsWARN PRIsVALUE
+# define WARN_ARGS(fmt,n) ruby_sourcefile, ruby_sourceline, (fmt)
+# define WARN_ARGS_L(l,fmt,n) ruby_sourcefile, (l), (fmt)
+# define WARN_CALL rb_compile_warn
+# define WARNING_ARGS(fmt,n) WARN_ARGS(fmt,n)
+# define WARNING_ARGS_L(l,fmt,n) WARN_ARGS_L(l,fmt,n)
+# define WARNING_CALL rb_compile_warning
 # define rb_compile_error rb_compile_error_with_enc
 # define compile_error (parser->has_err = 1),rb_compile_error_with_enc
 # define PARSER_ARG ruby_sourcefile, ruby_sourceline, (void *)current_enc,
@@ -5762,7 +5772,7 @@ parser_nextc(struct parser_params *parser)
 	}
 	else if (ruby_sourceline > parser->last_cr_line) {
 	    parser->last_cr_line = ruby_sourceline;
-	    rb_compile_warn(ruby_sourcefile, ruby_sourceline, "encountered \\r in middle of line, treated as a mere space");
+	    rb_warn0("encountered \\r in middle of line, treated as a mere space");
 	}
     }
 
@@ -6738,7 +6748,7 @@ static void
 arg_ambiguous_gen(struct parser_params *parser, char c)
 {
 #ifndef RIPPER
-    rb_warningS("ambiguous first argument; put parentheses or a space even after `%c' operator", c);
+    rb_warning1("ambiguous first argument; put parentheses or a space even after `%c' operator", WARN_I(c));
 #else
     dispatch1(arg_ambiguous, rb_usascii_str_new(&c, 1));
 #endif
@@ -6891,7 +6901,7 @@ parser_set_compile_option_flag(struct parser_params *parser, const char *name, c
     int b;
 
     if (parser->token_seen) {
-	rb_warningS("`%s' is ignored after any tokens", name);
+	rb_warning1("`%s' is ignored after any tokens", WARN_S(name));
 	return;
     }
 
@@ -7381,7 +7391,7 @@ parse_numeric(struct parser_params *parser, int c)
 	else {
 	    double d = strtod(tok(), 0);
 	    if (errno == ERANGE) {
-		rb_warningS("Float %s out of range", tok());
+		rb_warning1("Float %s out of range", WARN_S(tok()));
 		errno = 0;
 	    }
 	    v = DBL2NUM(d);
@@ -7431,7 +7441,7 @@ parse_qmark(struct parser_params *parser)
 		break;
 	    }
 	    if (c2) {
-		rb_warnI("invalid character syntax; use ?\\%c", c2);
+		rb_warn1("invalid character syntax; use ?\\%c", WARN_I(c2));
 	    }
 	}
       ternary:
@@ -7611,7 +7621,7 @@ parse_numvar(struct parser_params *parser)
 
     if (overflow || n > nth_ref_max) {
 	/* compile_error()? */
-	rb_warnS("`%s' is too big for a number variable, always nil", tok());
+	rb_warn1("`%s' is too big for a number variable, always nil", WARN_S(tok()));
 	return 0;		/* $0 is $PROGRAM_NAME, not NTH_REF */
     }
     else {
@@ -8931,19 +8941,19 @@ gettable_gen(struct parser_params *parser, ID id)
       case ID_LOCAL:
 	if (dyna_in_block() && dvar_defined(id)) {
 	    if (id == current_arg) {
-		rb_warnV("circular argument reference - %"PRIsVALUE, rb_id2str(id));
+		rb_warn1("circular argument reference - %"PRIsWARN, rb_id2str(id));
 	    }
 	    return NEW_DVAR(id);
 	}
 	if (local_id(id)) {
 	    if (id == current_arg) {
-		rb_warnV("circular argument reference - %"PRIsVALUE, rb_id2str(id));
+		rb_warn1("circular argument reference - %"PRIsWARN, rb_id2str(id));
 	    }
 	    return NEW_LVAR(id);
 	}
 # if WARN_PAST_SCOPE
 	if (!in_defined && RTEST(ruby_verbose) && past_dvar_p(parser, id)) {
-	    rb_warningV("possible reference to past scope - %"PRIsVALUE, rb_id2str(id));
+	    rb_warning1("possible reference to past scope - %"PRIsWARN, rb_id2str(id));
 	}
 # endif
 	/* method call without arguments */
@@ -9100,7 +9110,7 @@ shadowing_lvar_0(struct parser_params *parser, ID name)
 	    yyerror("duplicated argument name");
 	}
 	else if (dvar_defined_get(name) || local_id(name)) {
-	    rb_warningV("shadowing outer local variable - %"PRIsVALUE, rb_id2str(name));
+	    rb_warning1("shadowing outer local variable - %"PRIsWARN, rb_id2str(name));
 	    vtable_add(lvtbl->vars, name);
 	    if (lvtbl->used) {
 		vtable_add(lvtbl->used, (ID)ruby_sourceline | LVAR_USED);
@@ -9390,11 +9400,7 @@ void_expr_gen(struct parser_params *parser, NODE *node)
     }
 
     if (useless) {
-	int line = ruby_sourceline;
-
-	ruby_sourceline = nd_line(node);
-	rb_warnS("possibly useless use of %s in void context", useless);
-	ruby_sourceline = line;
+	rb_warn1L(nd_line(node), "possibly useless use of %s in void context", WARN_S(useless));
     }
 }
 
@@ -10083,7 +10089,7 @@ warn_unused_var(struct parser_params *parser, struct local_vars *local)
     for (i = 0; i < cnt; ++i) {
 	if (!v[i] || (u[i] & LVAR_USED)) continue;
 	if (is_private_local_id(v[i])) continue;
-	rb_warn4V(ruby_sourcefile, (int)u[i], "assigned but unused variable - %"PRIsVALUE, rb_id2str(v[i]));
+	rb_warn1L((int)u[i], "assigned but unused variable - %"PRIsWARN, rb_id2str(v[i]));
     }
 }
 
@@ -10383,7 +10389,7 @@ reg_named_capture_assign_iter(const OnigUChar *name, const OnigUChar *name_end,
     }
     var = intern_cstr(s, len, enc);
     if (dvar_defined(var) || local_id(var)) {
-        rb_warningV("named capture conflicts a local variable - %"PRIsVALUE,
+        rb_warning1("named capture conflicts a local variable - %"PRIsWARN,
                     rb_id2str(var));
     }
     arg->succ_block = block_append(arg->succ_block,
@@ -11070,55 +11076,6 @@ ripper_compile_error(struct parser_params *parser, const char *fmt, ...)
     va_end(args);
     rb_funcall(parser->value, rb_intern("compile_error"), 1, str);
     ripper_error_gen(parser);
-}
-
-static ID id_warn, id_warning;
-
-static void
-ripper_warn0(struct parser_params *parser, const char *fmt)
-{
-    rb_funcall(parser->value, id_warn, 1, STR_NEW2(fmt));
-}
-
-static void
-ripper_warnI(struct parser_params *parser, const char *fmt, int a)
-{
-    rb_funcall(parser->value, id_warn, 2,
-               STR_NEW2(fmt), INT2NUM(a));
-}
-
-static void
-ripper_warnS(struct parser_params *parser, const char *fmt, const char *str)
-{
-    rb_funcall(parser->value, id_warn, 2,
-               STR_NEW2(fmt), STR_NEW2(str));
-}
-
-static void
-ripper_warnV(struct parser_params *parser, const char *fmt, VALUE v)
-{
-    rb_funcall(parser->value, id_warn, 2,
-               STR_NEW2(fmt), v);
-}
-
-static void
-ripper_warning0(struct parser_params *parser, const char *fmt)
-{
-    rb_funcall(parser->value, id_warning, 1, STR_NEW2(fmt));
-}
-
-static void
-ripper_warningS(struct parser_params *parser, const char *fmt, const char *str)
-{
-    rb_funcall(parser->value, id_warning, 2,
-               STR_NEW2(fmt), STR_NEW2(str));
-}
-
-static void
-ripper_warningV(struct parser_params *parser, const char *fmt, VALUE v)
-{
-    rb_funcall(parser->value, id_warning, 2,
-               STR_NEW2(fmt), v);
 }
 
 static VALUE
