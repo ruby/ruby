@@ -1,3 +1,11 @@
+Wed Oct 14 13:58:44 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_nextc): send a warning to ripper, not to STDERR
+	  always.
+
+	* parse.y (rb_warn1, rb_warning1): move argument conversions to
+	  callers.  PRIsVALUE is not valid in String#%.
+
 Wed Oct 14 13:37:23 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/racc/rdoc/grammar.en.rdoc: fix spell error.

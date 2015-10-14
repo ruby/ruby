@@ -24,6 +24,14 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     parse(str, :compile_error) {|e, msg| return msg}
   end
 
+  def warning(str)
+    parse(str, :warning) {|e, *args| return args}
+  end
+
+  def warn(str)
+    parse(str, :warn) {|e, *args| return args}
+  end
+
   def test_program
     thru_program = false
     assert_equal '[void()]', parse('', :on_program) {thru_program = true}
@@ -1260,5 +1268,18 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
   def test_invalid_global_variable_name
     assert_equal("`$%' is not allowed as a global variable name", compile_error('$%'))
     assert_equal("`$' without identifiers is not allowed as a global variable name", compile_error('$'))
+  end
+
+  def test_warning_shadowing
+    fmt, *args = warning("x = 1; tap {|;x|}")
+    assert_match(/shadowing outer local variable/, fmt)
+    assert_equal("x", args[0])
+    assert_match(/x/, fmt % args)
+  end
+
+  def test_warn_cr_in_middle
+    fmt = nil
+    assert_warn("") {fmt, *args = warn("\r;")}
+    assert_match(/encountered/, fmt)
   end
 end if ripper_test
