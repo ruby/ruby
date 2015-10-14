@@ -1,3 +1,8 @@
+Wed Oct 14 13:37:23 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/racc/rdoc/grammar.en.rdoc: fix spell error.
+	  [fix GH-1053][ci skip] Patch by @Matrixbirds
+
 Tue Oct 13 22:06:50 2015  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/raddrinfo.c (rsock_fd_family): Check sa_len.
