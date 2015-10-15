@@ -872,7 +872,7 @@ rb_block_min_max_arity(rb_block_t *block, int *max)
     const rb_iseq_t *iseq = block->iseq;
 
     if (iseq) {
-	if (!RUBY_VM_IFUNC_P(iseq)) {
+	if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
 	    return rb_iseq_min_max_arity(iseq, max);
 	}
 	else {
@@ -1780,7 +1780,7 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
 	rb_proc_t *proc;
 	body = proc_dup(body);
 	GetProcPtr(body, proc);
-	if (!RUBY_VM_IFUNC_P(proc->block.iseq)) {
+	if (RUBY_VM_NORMAL_ISEQ_P(proc->block.iseq)) {
 	    proc->is_lambda = TRUE;
 	    proc->is_from_method = TRUE;
 	}
@@ -2610,7 +2610,7 @@ proc_binding(VALUE self)
     bind->env = envval;
 
     if (!RUBY_VM_NORMAL_ISEQ_P(iseq)) {
-	if (RUBY_VM_IFUNC_P(iseq) && IS_METHOD_PROC_ISEQ(iseq)) {
+	if (IS_METHOD_PROC_ISEQ(iseq)) {
 	    VALUE method = (VALUE)((struct vm_ifunc *)iseq)->data;
 	    iseq = rb_method_iseq(method);
 	}
