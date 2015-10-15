@@ -251,24 +251,11 @@ vm_stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
     VALUE *ep = cfp->ep;
 
     int argc = 0, local_size = 0;
-    const char *name;
     rb_iseq_t *iseq = cfp->iseq;
 
-    if (iseq == 0) {
-	if (RUBYVM_CFUNC_FRAME_P(cfp)) {
-	    name = rb_id2name(cfp->me->called_id);
-	}
-	else {
-	    name = "?";
-	}
-    }
-    else if (RUBY_VM_IFUNC_P(iseq)) {
-	name = "<ifunc>";
-    }
-    else {
+    if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
 	argc = iseq->body->param.lead_num;
 	local_size = iseq->body->local_size;
-	name = RSTRING_PTR(iseq->body->location.label);
     }
 
     /* stack trace header */
@@ -283,7 +270,7 @@ vm_stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_IFUNC ||
 	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_EVAL  ||
 	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_RESCUE)
-      {
+    {
 
 	VALUE *ptr = ep - local_size;
 
