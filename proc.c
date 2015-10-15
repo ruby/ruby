@@ -2614,6 +2614,7 @@ proc_binding(VALUE self)
 	if (IS_METHOD_PROC_IFUNC(ifunc)) {
 	    VALUE method = (VALUE)ifunc->data;
 	    envval = env_clone(envval, method_receiver(method), method_cref(method));
+	    iseq = rb_method_iseq(method);
 	}
 	else {
 	    rb_raise(rb_eArgError, "Can't create Binding from C level Proc");
@@ -2623,17 +2624,6 @@ proc_binding(VALUE self)
     bindval = rb_binding_alloc(rb_cBinding);
     GetBindingPtr(bindval, bind);
     bind->env = envval;
-
-    if (RUBY_VM_IFUNC_P(iseq)) {
-	struct vm_ifunc *ifunc = (struct vm_ifunc *)iseq;
-	if (IS_METHOD_PROC_IFUNC(ifunc)) {
-	    VALUE method = (VALUE)ifunc->data;
-	    iseq = rb_method_iseq(method);
-	}
-	else {
-	    iseq = NULL;
-	}
-    }
 
     if (iseq) {
 	bind->path = iseq->body->location.path;
