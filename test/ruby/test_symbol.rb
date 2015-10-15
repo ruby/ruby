@@ -147,6 +147,14 @@ class TestSymbol < Test::Unit::TestCase
     end;
   end
 
+  def test_to_proc_call_with_symbol_proc
+    first = 1
+    bug11594 = "[ruby-core:71088] [Bug #11594] corrupted the first local variable"
+    # symbol which does not have a Proc
+    ->(&blk) {}.call(&:test_to_proc_call_with_symbol_proc)
+    assert_equal(1, first, bug11594)
+  end
+
   def test_call
     o = Object.new
     def o.foo(x, y); x + y; end

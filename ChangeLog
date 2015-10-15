@@ -1,3 +1,8 @@
+Thu Oct 15 13:37:23 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (rb_sym_to_proc): move from string.c and create a Proc
+	  with no environments.  [ruby-core:71088] [Bug #11594]
+
 Thu Oct 15 01:57:03 2015  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* test/objspace/test_objspace.rb
