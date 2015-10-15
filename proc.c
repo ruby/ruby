@@ -57,9 +57,17 @@ proc_mark(void *ptr)
     RUBY_MARK_LEAVE("proc");
 }
 
+typedef struct {
+    rb_proc_t basic;
+    VALUE env[2]; /* specval, envval */
+} sym_proc_t;
+
 static size_t
 proc_memsize(const void *ptr)
 {
+    const rb_proc_t *proc = ptr;
+    if (proc->block.ep == ((const sym_proc_t *)ptr)->env)
+	return sizeof(sym_proc_t);
     return sizeof(rb_proc_t);
 }
 
@@ -1060,9 +1068,12 @@ rb_sym_to_proc(VALUE sym)
     }
     else {
 	rb_proc_t *ptr;
+	sym_proc_t *symproc;
 	VALUE ifunc = (VALUE)IFUNC_NEW(rb_sym_proc_call, (VALUE)id, 0);
-	proc = rb_proc_alloc(rb_cProc);
-	ptr = RTYPEDDATA_DATA(proc);
+	proc = TypedData_Make_Struct(rb_cProc, sym_proc_t, &proc_data_type, symproc);
+	symproc->env[0] = VM_ENVVAL_BLOCK_PTR(0);
+	ptr = &symproc->basic;
+	ptr->block.ep = symproc->env;
 	ptr->block.iseq = (rb_iseq_t *)ifunc;
 	ptr->block.proc = ifunc;
 	aryp[index] = sym;

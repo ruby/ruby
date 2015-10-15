@@ -1,3 +1,7 @@
+Thu Oct 15 23:56:03 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (rb_sym_to_proc): make void env.
+
 Thu Oct 15 13:37:23 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (rb_sym_to_proc): move from string.c and create a Proc
