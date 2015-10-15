@@ -137,6 +137,7 @@ class TestSymbol < Test::Unit::TestCase
     assert_separately([], <<-"end;", timeout: 5.0)
       bug11566 = '[ruby-core:70980] [Bug #11566]'
       assert_raise(NoMethodError, bug11566) {Proc.new(&:foo).(1)}
+      assert_raise(NoMethodError, bug11566) {:foo.to_proc.(1)}
     end;
   end
 
