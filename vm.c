@@ -414,15 +414,7 @@ env_mark(void * const ptr)
     RUBY_MARK_UNLESS_NULL(rb_vm_env_prev_envval(env));
     RUBY_MARK_UNLESS_NULL(env->block.self);
     RUBY_MARK_UNLESS_NULL(env->block.proc);
-
-    if (env->block.iseq) {
-	if (RUBY_VM_IFUNC_P(env->block.iseq)) {
-	    rb_gc_mark((VALUE)env->block.iseq);
-	}
-	else {
-	    RUBY_MARK_UNLESS_NULL((VALUE)env->block.iseq);
-	}
-    }
+    RUBY_MARK_UNLESS_NULL((VALUE)env->block.iseq);
     RUBY_MARK_LEAVE("env");
 }
 
