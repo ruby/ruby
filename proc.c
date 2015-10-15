@@ -40,7 +40,10 @@ static int method_min_max_arity(VALUE, int *max);
 
 /* Proc */
 
-#define IS_METHOD_PROC_ISEQ(iseq) (RUBY_VM_IFUNC_P(iseq) && ((struct vm_ifunc *)(iseq))->func == bmcall)
+#define IS_METHOD_PROC_IFUNC(ifunc) ((ifunc)->func == bmcall)
+#define IS_METHOD_PROC_ISEQ(iseq) \
+    (RUBY_VM_IFUNC_P(iseq) && \
+     IS_METHOD_PROC_IFUNC((struct vm_ifunc *)(iseq)))
 
 static void
 proc_mark(void *ptr)
@@ -952,10 +955,10 @@ rb_proc_get_iseq(VALUE self, int *is_proc)
     GetProcPtr(self, proc);
     iseq = proc->block.iseq;
     if (is_proc) *is_proc = !proc->is_lambda;
-    if (!RUBY_VM_NORMAL_ISEQ_P(iseq)) {
+    if (RUBY_VM_IFUNC_P(iseq)) {
 	const struct vm_ifunc *ifunc = (struct vm_ifunc *)iseq;
 	iseq = 0;
-	if (IS_METHOD_PROC_ISEQ(ifunc)) {
+	if (IS_METHOD_PROC_IFUNC(ifunc)) {
 	    /* method(:foo).to_proc */
 	    iseq = rb_method_iseq((VALUE)ifunc->data);
 	    if (is_proc) *is_proc = 0;
@@ -2607,8 +2610,9 @@ proc_binding(VALUE self)
     envval = rb_vm_proc_envval(proc);
     iseq = proc->block.iseq;
     if (RUBY_VM_IFUNC_P(iseq)) {
-	if (IS_METHOD_PROC_ISEQ(iseq)) {
-	    VALUE method = (VALUE)((struct vm_ifunc *)iseq)->data;
+	struct vm_ifunc *ifunc = (struct vm_ifunc *)iseq;
+	if (IS_METHOD_PROC_IFUNC(ifunc)) {
+	    VALUE method = (VALUE)ifunc->data;
 	    envval = env_clone(envval, method_receiver(method), method_cref(method));
 	}
 	else {
@@ -2620,9 +2624,10 @@ proc_binding(VALUE self)
     GetBindingPtr(bindval, bind);
     bind->env = envval;
 
-    if (!RUBY_VM_NORMAL_ISEQ_P(iseq)) {
-	if (IS_METHOD_PROC_ISEQ(iseq)) {
-	    VALUE method = (VALUE)((struct vm_ifunc *)iseq)->data;
+    if (RUBY_VM_IFUNC_P(iseq)) {
+	struct vm_ifunc *ifunc = (struct vm_ifunc *)iseq;
+	if (IS_METHOD_PROC_IFUNC(ifunc)) {
+	    VALUE method = (VALUE)ifunc->data;
 	    iseq = rb_method_iseq(method);
 	}
 	else {
