@@ -1035,6 +1035,42 @@ rb_hash_proc(st_index_t hash, VALUE prc)
     return rb_hash_uint(hash, (st_index_t)proc->block.ep >> 16);
 }
 
+VALUE
+rb_sym_to_proc(VALUE sym)
+{
+    static VALUE sym_proc_cache = Qfalse;
+    enum {SYM_PROC_CACHE_SIZE = 67};
+    VALUE proc;
+    long index;
+    ID id;
+    VALUE *aryp;
+
+    if (!sym_proc_cache) {
+	sym_proc_cache = rb_ary_tmp_new(SYM_PROC_CACHE_SIZE * 2);
+	rb_gc_register_mark_object(sym_proc_cache);
+	rb_ary_store(sym_proc_cache, SYM_PROC_CACHE_SIZE*2 - 1, Qnil);
+    }
+
+    id = SYM2ID(sym);
+    index = (id % SYM_PROC_CACHE_SIZE) << 1;
+
+    aryp = RARRAY_PTR(sym_proc_cache);
+    if (aryp[index] == sym) {
+	return aryp[index + 1];
+    }
+    else {
+	rb_proc_t *ptr;
+	VALUE ifunc = (VALUE)IFUNC_NEW(rb_sym_proc_call, (VALUE)id, 0);
+	proc = rb_proc_alloc(rb_cProc);
+	ptr = RTYPEDDATA_DATA(proc);
+	ptr->block.iseq = (rb_iseq_t *)ifunc;
+	ptr->block.proc = ifunc;
+	aryp[index] = sym;
+	aryp[index + 1] = proc;
+	return proc;
+    }
+}
+
 /*
  * call-seq:
  *   prc.hash   ->  integer
