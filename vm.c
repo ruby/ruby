@@ -839,7 +839,7 @@ invoke_block_from_c_0(rb_thread_t *th, const rb_block_t *block,
 		      VALUE self, int argc, const VALUE *argv, const rb_block_t *blockptr,
 		      const rb_cref_t *cref, const int splattable)
 {
-    if (UNLIKELY(SPECIAL_CONST_P(block->iseq))) {
+    if (UNLIKELY(!RTEST(block->iseq))) {
 	return Qnil;
     }
     else if (LIKELY(RUBY_VM_NORMAL_ISEQ_P(block->iseq))) {
