@@ -1,3 +1,9 @@
+Sat Oct 17 05:28:32 2015  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* test/ruby/test_symbol.rb (test_symbol_fstr_leak): add a warm-up
+	  code and check RSS to avoid false positive on AIX and false
+	  negative on Mac OS X. [Bug #10686]
+
 Fri Oct 16 15:54:37 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_load_ok): open in non-blocking mode withoout
