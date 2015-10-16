@@ -2283,11 +2283,13 @@ vm_yield_with_cfunc(rb_thread_t *th, const rb_block_t *block, VALUE self,
 		    const rb_block_t *blockargptr)
 {
     const struct vm_ifunc *ifunc = (struct vm_ifunc *)block->iseq;
-    VALUE val, arg, blockarg;
+    VALUE val, arg, blockarg, data;
+    rb_block_call_func *func;
     const rb_callable_method_entry_t *me = th->passed_bmethod_me;
     th->passed_bmethod_me = NULL;
 
-    if (!RUBY_VM_IFUNC_P(block->proc) && block_proc_is_lambda(block->proc)) {
+    if (!RUBY_VM_IFUNC_P(block->proc) && !SYMBOL_P(block->proc) &&
+	block_proc_is_lambda(block->proc)) {
 	arg = rb_ary_new4(argc, argv);
     }
     else if (argc == 0) {
@@ -2313,7 +2315,15 @@ vm_yield_with_cfunc(rb_thread_t *th, const rb_block_t *block, VALUE self,
 		  self, VM_ENVVAL_PREV_EP_PTR(block->ep), (VALUE)me,
 		  0, th->cfp->sp, 1, 0);
 
-    val = (*ifunc->func) (arg, ifunc->data, argc, argv, blockarg);
+    if (SYMBOL_P(ifunc)) {
+	func = rb_sym_proc_call;
+	data = SYM2ID((VALUE)ifunc);
+    }
+    else {
+	func = ifunc->func;
+	data = (VALUE)ifunc->data;
+    }
+    val = (*func)(arg, data, argc, argv, blockarg);
 
     th->cfp++;
     return val;

@@ -579,6 +579,20 @@ bind_receiver(VALUE bindval)
     return env->block.self;
 }
 
+static VALUE
+sym_proc_new(VALUE klass, VALUE sym)
+{
+    rb_proc_t *proc;
+    sym_proc_t *symproc;
+    VALUE procval = TypedData_Make_Struct(klass, sym_proc_t, &proc_data_type, symproc);
+    symproc->env[0] = VM_ENVVAL_BLOCK_PTR(0);
+    proc = &symproc->basic;
+    proc->block.ep = symproc->env;
+    proc->block.iseq = (rb_iseq_t *)sym;
+    proc->block.proc = procval;
+    return procval;
+}
+
 static const char proc_without_block[] = "tried to create Proc object without a block";
 
 static VALUE
@@ -609,13 +623,9 @@ proc_new(VALUE klass, int8_t is_lambda)
     procval = block->proc;
 
     if (procval) {
-	if (RUBY_VM_IFUNC_P(procval)) {
-	    VALUE newprocval = rb_proc_alloc(klass);
-	    rb_proc_t *proc = RTYPEDDATA_DATA(newprocval);
-	    proc->block = *block;
-	    proc->block.iseq = (rb_iseq_t *)procval;
-	    proc->block.proc = newprocval;
-	    return newprocval;
+	if (SYMBOL_P(procval)) {
+	    if (klass != rb_cProc) return sym_proc_new(klass, procval);
+	    return rb_sym_to_proc(procval);
 	}
 	if (RBASIC(procval)->klass == klass) {
 	    return procval;
@@ -952,6 +962,7 @@ rb_proc_get_iseq(VALUE self, int *is_proc)
     const rb_proc_t *proc;
     const rb_iseq_t *iseq;
 
+  again:
     GetProcPtr(self, proc);
     iseq = proc->block.iseq;
     if (is_proc) *is_proc = !proc->is_lambda;
@@ -963,6 +974,10 @@ rb_proc_get_iseq(VALUE self, int *is_proc)
 	    iseq = rb_method_iseq((VALUE)ifunc->data);
 	    if (is_proc) *is_proc = 0;
 	}
+    }
+    else if (SYMBOL_P(iseq)) {
+	self = rb_sym_to_proc((VALUE)iseq);
+	goto again;
     }
     return iseq;
 }
@@ -1070,15 +1085,7 @@ rb_sym_to_proc(VALUE sym)
 	return aryp[index + 1];
     }
     else {
-	rb_proc_t *ptr;
-	sym_proc_t *symproc;
-	VALUE ifunc = (VALUE)IFUNC_NEW(rb_sym_proc_call, (VALUE)id, 0);
-	proc = TypedData_Make_Struct(rb_cProc, sym_proc_t, &proc_data_type, symproc);
-	symproc->env[0] = VM_ENVVAL_BLOCK_PTR(0);
-	ptr = &symproc->basic;
-	ptr->block.ep = symproc->env;
-	ptr->block.iseq = (rb_iseq_t *)ifunc;
-	ptr->block.proc = ifunc;
+	proc = sym_proc_new(rb_cProc, ID2SYM(id));
 	aryp[index] = sym;
 	aryp[index + 1] = proc;
 	return proc;
@@ -1120,7 +1127,6 @@ proc_to_s(VALUE self)
     const char *cname = rb_obj_classname(self);
     const rb_iseq_t *iseq;
     const char *is_lambda;
-    const struct vm_ifunc *ifunc;
 
     GetProcPtr(self, proc);
     iseq = proc->block.iseq;
@@ -1135,9 +1141,9 @@ proc_to_s(VALUE self)
 	str = rb_sprintf("#<%s:%p@%"PRIsVALUE":%d%s>", cname, (void *)self,
 			 iseq->body->location.path, first_lineno, is_lambda);
     }
-    else if ((ifunc = (struct vm_ifunc *)iseq)->func == rb_sym_proc_call) {
+    else if (SYMBOL_P(iseq)) {
 	str = rb_sprintf("#<%s:%p(&%+"PRIsVALUE")%s>", cname, (void *)self,
-			 ID2SYM((ID)ifunc->data), is_lambda);
+			 (VALUE)iseq, is_lambda);
     }
     else {
 	str = rb_sprintf("#<%s:%p%s>", cname, (void *)proc->block.iseq,

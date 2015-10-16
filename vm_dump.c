@@ -98,6 +98,12 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
 	if (RUBY_VM_IFUNC_P(cfp->iseq)) {
 	    iseq_name = "<ifunc>";
 	}
+	else if (SYMBOL_P(cfp->iseq)) {
+	    tmp = rb_sym2str((VALUE)cfp->iseq);
+	    iseq_name = RSTRING_PTR(tmp);
+	    snprintf(posbuf, MAX_POSBUF, ":%s", iseq_name);
+	    line = -1;
+	}
 	else {
 	    pc = cfp->pc - cfp->iseq->body->iseq_encoded;
 	    iseq_name = RSTRING_PTR(cfp->iseq->body->location.label);

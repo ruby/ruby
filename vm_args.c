@@ -477,9 +477,8 @@ args_setup_block_parameter(rb_thread_t *th, struct rb_calling_info *calling, VAL
 	    GetProcPtr(blockval, proc);
 	    calling->blockptr = &proc->block;
 	}
-	else if (RUBY_VM_IFUNC_P(blockptr->proc)) {
-	    const ID mid = (ID)((struct vm_ifunc *)blockptr->proc)->data;
-	    blockval = rb_sym_to_proc(ID2SYM(mid));
+	else if (SYMBOL_P(blockptr->proc)) {
+	    blockval = rb_sym_to_proc(blockptr->proc);
 	}
 	else {
 	    blockval = blockptr->proc;
@@ -783,9 +782,8 @@ vm_caller_setup_arg_block(const rb_thread_t *th, rb_control_frame_t *reg_cfp,
 	}
 	else if (SYMBOL_P(proc) && rb_method_basic_definition_p(rb_cSymbol, idTo_proc)) {
 	    calling->blockptr = RUBY_VM_GET_BLOCK_PTR_IN_CFP(reg_cfp);
-	    blockiseq = (rb_iseq_t *)IFUNC_NEW(rb_sym_proc_call, SYM2ID(proc), 0);
-	    calling->blockptr->iseq = blockiseq;
-	    calling->blockptr->proc = (VALUE)blockiseq;
+	    calling->blockptr->iseq = (rb_iseq_t *)proc;
+	    calling->blockptr->proc = proc;
 	}
 	else if (RUBY_VM_IFUNC_P(proc)) {
 	    calling->blockptr = RUBY_VM_GET_BLOCK_PTR_IN_CFP(reg_cfp);
