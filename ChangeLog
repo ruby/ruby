@@ -1,3 +1,11 @@
+Fri Oct 16 15:54:37 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_file_load_ok): open in non-blocking mode withoout
+	  releasing GVL.  don't care about others than regular files and
+	  directories.  [ruby-dev:49272] [Bug #11559]
+
+	* ruby.c (load_file_internal): ditto.
+
 Thu Oct 15 23:56:03 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (rb_sym_to_proc): make void env.

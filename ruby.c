@@ -1739,6 +1739,11 @@ load_file_internal(VALUE arg)
     }
     else {
 	int fd, mode = O_RDONLY;
+#if defined O_NONBLOCK
+	mode |= O_NONBLOCK;
+#elif defined O_NDELAY
+	mod |= O_NDELAY;
+#endif
 #if defined DOSISH || defined __CYGWIN__
 	{
 	    const char *ext = strrchr(fname, '.');

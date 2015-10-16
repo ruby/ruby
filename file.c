@@ -26,7 +26,6 @@
 #include "internal.h"
 #include "ruby/io.h"
 #include "ruby/util.h"
-#include "ruby/thread.h"
 #include "dln.h"
 #include "encindex.h"
 
@@ -5665,25 +5664,24 @@ rb_path_check(const char *path)
 }
 
 #ifndef _WIN32
-static void *
-loadopen_func(void *arg)
-{
-    return (void *)(VALUE)rb_cloexec_open((const char *)arg, O_RDONLY, 0);
-}
-
 int
 rb_file_load_ok(const char *path)
 {
     int ret = 1;
-    int fd;
-
-    fd = (int)(VALUE)rb_thread_call_without_gvl(loadopen_func, (void *)path, RUBY_UBF_IO, 0);
+    int mode = (O_RDONLY |
+#if defined O_NONBLOCK
+		O_NONBLOCK |
+#elif defined O_NDELAY
+		O_NDELAY |
+#endif
+		0);
+    int fd = rb_cloexec_open(path, mode, 0);
     if (fd == -1) return 0;
     rb_update_max_fd(fd);
 #if !defined DOSISH
     {
 	struct stat st;
-	if (fstat(fd, &st) || !S_ISREG(st.st_mode)) {
+	if (fstat(fd, &st) || S_ISDIR(st.st_mode)) {
 	    ret = 0;
 	}
     }
