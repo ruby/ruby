@@ -728,7 +728,7 @@ compile.$(OBJEXT): {$(VPATH)}opt_sc.inc {$(VPATH)}optunifs.inc
 win32/win32.$(OBJEXT): {$(VPATH)}win32/win32.c {$(VPATH)}win32/file.h \
   {$(VPATH)}dln.h {$(VPATH)}dln_find.c {$(VPATH)}encindex.h \
   {$(VPATH)}internal.h {$(VPATH)}util.h $(RUBY_H_INCLUDES) $(PLATFORM_D)
-win32/file.$(OBJEXT): {$(VPATH)}win32/file.c {$(VPATH)}win32/file.h {$(VPATH)}thread.h \
+win32/file.$(OBJEXT): {$(VPATH)}win32/file.c {$(VPATH)}win32/file.h \
   $(RUBY_H_INCLUDES) $(PLATFORM_D)
 
 $(NEWLINE_C): $(srcdir)/enc/trans/newline.trans $(srcdir)/tool/transcode-tblgen.rb
@@ -1462,7 +1462,6 @@ file.$(OBJEXT): {$(VPATH)}missing.h
 file.$(OBJEXT): {$(VPATH)}oniguruma.h
 file.$(OBJEXT): {$(VPATH)}st.h
 file.$(OBJEXT): {$(VPATH)}subst.h
-file.$(OBJEXT): {$(VPATH)}thread.h
 file.$(OBJEXT): {$(VPATH)}util.h
 gc.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 gc.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
