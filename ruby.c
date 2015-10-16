@@ -1760,11 +1760,11 @@ load_file_internal(VALUE arg)
 #if !defined DOSISH && !defined __CYGWIN__
 	{
 	    struct stat st;
-	    if (fstat(fd, &st) != 0)
-		rb_load_fail(fname_v, strerror(errno));
-	    if (S_ISDIR(st.st_mode)) {
-		errno = EISDIR;
-		rb_load_fail(fname_v, strerror(EISDIR));
+	    int e;
+	    if ((fstat(fd, &st) != 0) && (e = errno, 1) ||
+		(S_ISDIR(st.st_mode) && (e = EISDIR, 1))) {
+		(void)close(fd);
+		rb_load_fail(fname_v, strerror(e));
 	    }
 	}
 #endif
