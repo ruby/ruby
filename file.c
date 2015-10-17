@@ -157,15 +157,17 @@ static VALUE
 file_path_convert(VALUE name)
 {
 #ifndef _WIN32 /* non Windows == Unix */
-    rb_encoding *fname_encoding = rb_enc_from_index(ENCODING_GET(name));
-    rb_encoding *fs_encoding;
-    if (rb_default_internal_encoding() != NULL
-	    && rb_usascii_encoding() != fname_encoding
-	    && rb_ascii8bit_encoding() != fname_encoding
-	    && (fs_encoding = rb_filesystem_encoding()) != fname_encoding
-	    && !rb_enc_str_asciionly_p(name)) {
+    int fname_encidx = ENCODING_GET(name);
+    int fs_encidx;
+    if (ENCINDEX_US_ASCII != fname_encidx &&
+	ENCINDEX_ASCII != fname_encidx &&
+	(fs_encidx = rb_filesystem_encindex()) != fname_encidx &&
+	rb_default_internal_encoding() &&
+	!rb_enc_str_asciionly_p(name)) {
 	/* Don't call rb_filesystem_encoding() before US-ASCII and ASCII-8BIT */
 	/* fs_encoding should be ascii compatible */
+	rb_encoding *fname_encoding = rb_enc_from_index(fname_encidx);
+	rb_encoding *fs_encoding = rb_enc_from_index(fs_encidx);
 	name = rb_str_conv_enc(name, fname_encoding, fs_encoding);
     }
 #endif
@@ -241,17 +243,18 @@ rb_get_path(VALUE obj)
 VALUE
 rb_str_encode_ospath(VALUE path)
 {
+#if defined _WIN32 || defined __APPLE__
+    int encidx = ENCODING_GET(path);
 #ifdef _WIN32
-    rb_encoding *enc = rb_enc_get(path);
-    rb_encoding *utf8 = rb_utf8_encoding();
-    if (enc == rb_ascii8bit_encoding()) {
-	enc = rb_filesystem_encoding();
+    if (encidx == ENCINDEX_ASCII) {
+	encidx = rb_filesystem_encindex();
     }
-    if (enc != utf8) {
+#endif
+    if (encidx != ENCINDEX_UTF_8) {
+	rb_encoding *enc = rb_enc_from_index(encidx);
+	rb_encoding *utf8 = rb_utf8_encoding();
 	path = rb_str_conv_enc(path, enc, utf8);
     }
-#elif defined __APPLE__
-    path = rb_str_conv_enc(path, NULL, rb_utf8_encoding());
 #endif
     return path;
 }
@@ -3205,16 +3208,18 @@ copy_home_path(VALUE result, const char *dir)
     char *buf;
 #if defined DOSISH || defined __CYGWIN__
     char *p, *bend;
+    rb_encoding *enc;
 #endif
     long dirlen;
-    rb_encoding *enc;
+    int encidx;
 
     dirlen = strlen(dir);
     rb_str_resize(result, dirlen);
     memcpy(buf = RSTRING_PTR(result), dir, dirlen);
-    enc = rb_filesystem_encoding();
-    rb_enc_associate(result, enc);
+    encidx = rb_filesystem_encindex();
+    rb_enc_associate_index(result, encidx);
 #if defined DOSISH || defined __CYGWIN__
+    enc = rb_enc_from_index(encidx);
     for (bend = (p = buf) + dirlen; p < bend; Inc(p, bend, enc)) {
 	if (*p == '\\') {
 	    *p = '/';
@@ -3520,7 +3525,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     if ((s = strrdirsep(b = buf, p, enc)) != 0 && !strpbrk(s, "*?")) {
 	VALUE tmp, v;
 	size_t len;
-	rb_encoding *enc;
+	int encidx;
 	WCHAR *wstr;
 	WIN32_FIND_DATAW wfd;
 	HANDLE h;
@@ -3573,15 +3578,15 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	*p = '/';
 #endif
 	rb_str_set_len(result, p - buf + strlen(p));
-	enc = rb_enc_get(result);
+	encidx = ENC_GET(result);
 	tmp = result;
-	if (enc != rb_utf8_encoding() && rb_enc_str_coderange(result) != ENC_CODERANGE_7BIT) {
+	if (encidx != ENCIDX_UTF_8 && rb_enc_str_coderange(result) != ENC_CODERANGE_7BIT) {
 	    tmp = rb_str_encode_ospath(result);
 	}
 	len = MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(tmp), -1, NULL, 0);
 	wstr = ALLOCV_N(WCHAR, v, len);
 	MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(tmp), -1, wstr, len);
-	if (tmp != result) rb_str_resize(tmp, 0);
+	if (tmp != result) rb_str_set_len(tmp, 0);
 	h = FindFirstFileW(wstr, &wfd);
 	ALLOCV_END(v);
 	if (h != INVALID_HANDLE_VALUE) {
@@ -3913,7 +3918,7 @@ rb_realpath_internal(VALUE basedir, VALUE path, int strict)
     switch (rb_enc_to_index(enc)) {
       case ENCINDEX_ASCII:
       case ENCINDEX_US_ASCII:
-	rb_enc_associate(resolved, rb_filesystem_encoding());
+	rb_enc_associate_index(resolved, rb_filesystem_encindex());
     }
 
     loopcheck = rb_hash_new();
