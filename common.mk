@@ -2062,6 +2062,7 @@ ruby.$(OBJEXT): {$(VPATH)}ruby.c
 ruby.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 ruby.$(OBJEXT): {$(VPATH)}st.h
 ruby.$(OBJEXT): {$(VPATH)}subst.h
+ruby.$(OBJEXT): {$(VPATH)}thread.h
 ruby.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 ruby.$(OBJEXT): {$(VPATH)}thread_native.h
 ruby.$(OBJEXT): {$(VPATH)}util.h

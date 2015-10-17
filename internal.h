@@ -762,6 +762,7 @@ VALUE rb_file_expand_path_internal(VALUE, VALUE, int, int, VALUE);
 VALUE rb_get_path_check_to_string(VALUE, int);
 VALUE rb_get_path_check_convert(VALUE, VALUE, int);
 void Init_File(void);
+int ruby_is_fd_loadable(int fd);
 
 #ifdef RUBY_FUNCTION_NAME_STRING
 # if defined __GNUC__ && __GNUC__ >= 4
