@@ -1803,7 +1803,7 @@ open_load_file(VALUE fname_v, int *xflag)
 	}
 #endif
 	if (!ruby_is_fd_loadable(fd)) {
-	    int e = errno;
+	    e = errno;
 	    (void)close(fd);
 	    rb_load_fail(fname_v, strerror(e));
 	}
