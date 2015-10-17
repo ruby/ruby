@@ -4981,7 +4981,7 @@ rb_io_oflags_fmode(int oflags)
 {
     int fmode = 0;
 
-    switch (oflags & (O_RDONLY|O_WRONLY|O_RDWR)) {
+    switch (oflags & O_ACCMODE) {
       case O_RDONLY:
 	fmode = FMODE_READABLE;
 	break;

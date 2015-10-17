@@ -43,6 +43,9 @@
 #ifndef MAXPATHLEN
 # define MAXPATHLEN 1024
 #endif
+#ifndef O_ACCMODE
+# define O_ACCMODE (O_RDONLY | O_WRONLY | O_RDWR)
+#endif
 
 #include "ruby/util.h"
 
@@ -1739,9 +1742,10 @@ load_file_internal(VALUE arg)
     }
     else {
 	int fd, mode = O_RDONLY;
-#if defined O_NONBLOCK
+#if defined O_NONBLOCK && !(O_NONBLOCK & O_ACCMODE)
+	/* TODO: fix conflicting O_NONBLOCK in ruby/win32.h */
 	mode |= O_NONBLOCK;
-#elif defined O_NDELAY
+#elif defined O_NDELAY && !(O_NDELAY & O_ACCMODE)
 	mod |= O_NDELAY;
 #endif
 #if defined DOSISH || defined __CYGWIN__
