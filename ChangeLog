@@ -1,3 +1,9 @@
+Sat Oct 17 13:19:10 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (load_file): unify each preparations and clean-ups by
+	  merging load_file_internal and load_file_internal2, and remove
+	  nested rb_protect and rb_ensure.
+
 Sat Oct 17 05:28:32 2015  Rei Odaira  <Rei.Odaira@gmail.com>
 
 	* test/ruby/test_symbol.rb (test_symbol_fstr_leak): add a warm-up

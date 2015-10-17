@@ -1603,10 +1603,11 @@ struct load_file_arg {
     int xflag;
     struct cmdline_options *opt;
     VALUE f;
+    VALUE lineno;
 };
 
 static VALUE
-load_file_internal2(VALUE argp_v)
+load_file_internal(VALUE argp_v)
 {
     struct load_file_arg *argp = (struct load_file_arg *)argp_v;
     VALUE parser = argp->parser;
@@ -1620,6 +1621,7 @@ load_file_internal2(VALUE argp_v)
     ID set_encoding;
     int xflag = argp->xflag;
 
+    argp->script = 0;
     CONST_ID(set_encoding, "set_encoding");
     if (script) {
 	VALUE c = 1;		/* something not nil */
@@ -1719,25 +1721,17 @@ load_file_internal2(VALUE argp_v)
     rb_funcall(f, set_encoding, 2, rb_enc_from_encoding(enc), rb_str_new_cstr("-"));
     tree = rb_parser_compile_file_path(parser, orig_fname, f, line_start);
     rb_funcall(f, set_encoding, 1, rb_parser_encoding(parser));
+    if (script && rb_parser_end_seen_p(parser)) argp->script = script;
     return (VALUE)tree;
 }
 
 static VALUE
-load_file_internal(VALUE arg)
+open_load_file(VALUE fname_v, int *xflag)
 {
-    extern VALUE rb_stdin;
-    struct load_file_arg *argp = (struct load_file_arg *)arg;
-    VALUE parser = argp->parser;
-    VALUE orig_fname = argp->fname;
-    VALUE fname_v = rb_str_encode_ospath(orig_fname);
     const char *fname = StringValueCStr(fname_v);
-    int script = argp->script;
     VALUE f;
-    NODE *tree;
-    int xflag = 0;
-    int state;
 
-    if (strcmp(fname, "-") == 0) {
+    if (RSTRING_LEN(fname_v) == 1 && fname[0] == '-') {
 	f = rb_stdin;
     }
     else {
@@ -1753,7 +1747,7 @@ load_file_internal(VALUE arg)
 	    const char *ext = strrchr(fname, '.');
 	    if (ext && STRCASECMP(ext, ".exe") == 0) {
 		mode |= O_BINARY;
-		xflag = 1;
+		*xflag = 1;
 	    }
 	}
 #endif
@@ -1774,17 +1768,17 @@ load_file_internal(VALUE arg)
 #endif
 	f = rb_io_fdopen(fd, mode, fname);
     }
+    return f;
+}
 
-    argp->f = f;
-    argp->xflag = xflag;
-    tree = (NODE *)rb_protect(load_file_internal2, (VALUE)argp, &state);
-    if (state) {
-        if (f != rb_stdin)
-            rb_io_close(f);
-        rb_jump_tag(state);
-    }
+static VALUE
+restore_load_file(VALUE arg)
+{
+    struct load_file_arg *argp = (struct load_file_arg *)arg;
+    VALUE f = argp->f;
+    VALUE lineno = argp->lineno;
 
-    if (script && tree && rb_parser_end_seen_p(parser)) {
+    if (argp->script) {
 	/*
 	 * DATA is a File that contains the data section of the executed file.
 	 * To create a data section use <tt>__END__</tt>:
@@ -1802,12 +1796,6 @@ load_file_internal(VALUE arg)
     else if (f != rb_stdin) {
 	rb_io_close(f);
     }
-    return (VALUE)tree;
-}
-
-static VALUE
-restore_lineno(VALUE lineno)
-{
     return rb_gv_set("$.", lineno);
 }
 
@@ -1819,7 +1807,11 @@ load_file(VALUE parser, VALUE fname, int script, struct cmdline_options *opt)
     arg.fname = fname;
     arg.script = script;
     arg.opt = opt;
-    return (NODE *)rb_ensure(load_file_internal, (VALUE)&arg, restore_lineno, rb_gv_get("$."));
+    arg.xflag = 0;
+    arg.lineno = rb_gv_get("$.");
+    arg.f = open_load_file(rb_str_encode_ospath(fname), &arg.xflag);
+    return (NODE *)rb_ensure(load_file_internal, (VALUE)&arg,
+			     restore_load_file, (VALUE)&arg);
 }
 
 void *
