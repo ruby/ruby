@@ -2320,7 +2320,7 @@ vm_yield_with_cfunc(rb_thread_t *th, const rb_block_t *block, VALUE self,
 	data = SYM2ID((VALUE)ifunc);
     }
     else {
-	func = ifunc->func;
+	func = (rb_block_call_func *)ifunc->func;
 	data = (VALUE)ifunc->data;
     }
     val = (*func)(arg, data, argc, argv, blockarg);
