@@ -16,6 +16,7 @@
 #include <sys/cygwin.h>
 #endif
 #include "internal.h"
+#include "ruby/thread.h"
 #include "eval_intern.h"
 #include "dln.h"
 #include <stdio.h>
@@ -1725,21 +1726,36 @@ load_file_internal(VALUE argp_v)
     return (VALUE)tree;
 }
 
+static void *
+loadopen_func(void *arg)
+{
+    int fd;
+    fd = rb_cloexec_open((const char *)arg, O_RDONLY, 0);
+    if (fd >= 0)
+	rb_update_max_fd(fd);
+
+    return (void *)(VALUE)fd;
+}
+
 static VALUE
 open_load_file(VALUE fname_v, int *xflag)
 {
     const char *fname = StringValueCStr(fname_v);
     VALUE f;
+    int e;
 
     if (RSTRING_LEN(fname_v) == 1 && fname[0] == '-') {
 	f = rb_stdin;
     }
     else {
-	int fd, mode = O_RDONLY;
-#if defined O_NONBLOCK && !(O_NONBLOCK & O_ACCMODE)
+	int fd;
+	/* open(2) may block if fname is point to FIFO and it's empty. Let's
+	   use O_NONBLOCK. */
+	int mode = O_RDONLY;
+#if defined O_NONBLOCK && HAVE_FCNTL && !(O_NONBLOCK & O_ACCMODE)
 	/* TODO: fix conflicting O_NONBLOCK in ruby/win32.h */
 	mode |= O_NONBLOCK;
-#elif defined O_NDELAY && !(O_NDELAY & O_ACCMODE)
+#elif defined O_NDELAY && HAVE_FCNTL && !(O_NDELAY & O_ACCMODE)
 	mod |= O_NDELAY;
 #endif
 #if defined DOSISH || defined __CYGWIN__
@@ -1751,21 +1767,44 @@ open_load_file(VALUE fname_v, int *xflag)
 	    }
 	}
 #endif
+
 	if ((fd = rb_cloexec_open(fname, mode, 0)) < 0) {
 	    rb_load_fail(fname_v, strerror(errno));
 	}
-        rb_update_max_fd(fd);
-#if !defined DOSISH && !defined __CYGWIN__
+	rb_update_max_fd(fd);
+
+#ifdef HAVE_FCNTL
+	/* disabling O_NONBLOCK */
+	if (fcntl(fd, F_SETFL, 0) < 0) {
+	    e = errno;
+	    close(fd);
+	    rb_load_fail(fname_v, strerror(e));
+	}
+#endif
+
+#ifdef S_ISFIFO
 	{
 	    struct stat st;
-	    int e;
-	    if ((fstat(fd, &st) != 0) && (e = errno, 1) ||
-		(S_ISDIR(st.st_mode) && (e = EISDIR, 1))) {
-		(void)close(fd);
+	    if (fstat(fd, &st) != 0) {
+		e = errno;
+		close(fd);
 		rb_load_fail(fname_v, strerror(e));
+	    }
+	    if (S_ISFIFO(st.st_mode)) {
+		/* We need to wait if FIFO is empty. So, let's reopen it. */
+		close(fd);
+		fd = (int)(VALUE)rb_thread_call_without_gvl(loadopen_func,
+						(void *)fname, RUBY_UBF_IO, 0);
+		if (fd < 0)
+		    rb_load_fail(fname_v, strerror(errno));
 	    }
 	}
 #endif
+	if (!ruby_is_fd_loadable(fd)) {
+	    close(fd);
+	    rb_load_fail(fname_v, strerror(errno));
+	}
+
 	f = rb_io_fdopen(fd, mode, fname);
     }
     return f;

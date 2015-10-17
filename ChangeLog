@@ -1,3 +1,33 @@
+Sun Oct 18 05:11:22 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* ruby.c (open_load_file): reset O_NONBLOCK after open.
+	  Even if S_ISREG() is true, the file may be file on FUSE filesystem
+	  or something. We can't assume O_NONBLOCK is safe.
+	  Moreover, we should wait if the path is point to FIFO. That's
+	  FIFO semantics. GVL should be transparent from ruby script.
+	  Thus, just reopen without O_NONBLOCK for filling the requirements.
+	  [Bug #11060][Bug #11559]
+
+	* ruby.c (loadopen_func): new for the above.
+
+	* file.c (ruby_is_fd_loadable): new. for checks loadable file type
+	  of not.
+	* file.c (rb_file_load_ok): use ruby_is_fd_loadble()
+	* internal.h: add ruby_is_fd_loadble()
+
+	* common.mk: now, ruby.o depend on thread.h.
+
+	* test/ruby/test_require.rb
+	(TestRequire#test_loading_fifo_threading_success): new test.
+	  This test successful case that loading from FIFO.
+
+	* test/ruby/test_require.rb
+	(TestRequire#test_loading_fifo_threading_raise): rename from
+	  test_loading_fifo_threading. You souldn't rescue an exception
+	  if you test raise or not.
+	  Moreover, this case should be caught IOError because load(FIFO)
+	  should be blocked until given any input.
+
 Sat Oct 17 13:55:32 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_expand_path_internal): concatenate converted

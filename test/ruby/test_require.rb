@@ -694,7 +694,7 @@ class TestRequire < Test::Unit::TestCase
     }
   end
 
-  def test_loading_fifo_threading
+  def test_loading_fifo_threading_raise
     Tempfile.create(%w'fifo .rb') {|f|
       f.close
       File.unlink(f.path)
@@ -702,15 +702,38 @@ class TestRequire < Test::Unit::TestCase
       assert_separately(["-", f.path], <<-END, timeout: 3)
       th = Thread.current
       Thread.start {begin sleep(0.001) end until th.stop?; th.raise(IOError)}
-      assert_nothing_raised do
-        begin
-          load(ARGV[0])
-        rescue IOError
-        end
+      assert_raise(IOError) do
+        load(ARGV[0])
       end
       END
     }
   end unless /mswin|mingw/ =~ RUBY_PLATFORM
+
+  def test_loading_fifo_threading_success
+    Tempfile.create(%w'fifo .rb') {|f|
+      f.close
+      File.unlink(f.path)
+      File.mkfifo(f.path)
+
+      assert_separately(["-", f.path], <<-INPUT, timeout: 3)
+      path = ARGV[0]
+      th = Thread.current
+      Thread.start {
+        begin
+          sleep(0.001)
+        end until th.stop?
+        open(path, File::WRONLY | File::NONBLOCK) {|fifo_w|
+          fifo_w.puts "class C1; FOO='foo'; end"
+        }
+      }
+
+      load(path)
+      assert_equal(C1::FOO, "foo")
+    INPUT
+    }
+
+  end unless /mswin|mingw/ =~ RUBY_PLATFORM
+
 
   def test_throw_while_loading
     Tempfile.create(%w'bug-11404 .rb') do |f|

@@ -5670,11 +5670,35 @@ rb_path_check(const char *path)
     return 1;
 }
 
+int
+ruby_is_fd_loadable(int fd)
+{
+#ifdef _WIN32
+    return 1;
+#else
+    struct stat st;
+
+    if (fstat(fd, &st) < 0)
+	return 0;
+
+    if (S_ISREG(st.st_mode))
+	return 1;
+    if (S_ISFIFO(st.st_mode))
+	return 1;
+
+    return 0;
+#endif
+}
+
 #ifndef _WIN32
 int
 rb_file_load_ok(const char *path)
 {
     int ret = 1;
+    /*
+      open(2) may block if path is FIFO and it's empty. Let's use O_NONBLOCK.
+      FIXME: Why O_NDELAY is checked?
+    */
     int mode = (O_RDONLY |
 #if defined O_NONBLOCK
 		O_NONBLOCK |
@@ -5685,14 +5709,7 @@ rb_file_load_ok(const char *path)
     int fd = rb_cloexec_open(path, mode, 0);
     if (fd == -1) return 0;
     rb_update_max_fd(fd);
-#if !defined DOSISH
-    {
-	struct stat st;
-	if (fstat(fd, &st) || S_ISDIR(st.st_mode)) {
-	    ret = 0;
-	}
-    }
-#endif
+    ret = ruby_is_fd_loadable(fd);
     (void)close(fd);
     return ret;
 }
