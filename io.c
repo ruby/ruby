@@ -4263,6 +4263,7 @@ fptr_finalize(rb_io_t *fptr, int noraise)
     VALUE err = Qnil;
     int fd = fptr->fd;
     FILE *stdio_file = fptr->stdio_file;
+    int mode = fptr->mode;
 
     if (fptr->writeconv) {
 	if (fptr->write_lock && !noraise) {
@@ -4303,7 +4304,11 @@ fptr_finalize(rb_io_t *fptr, int noraise)
 	/* fptr->fd may be closed even if close fails.
          * POSIX doesn't specify it.
          * We assumes it is closed.  */
-	if ((maygvl_close(fd, noraise) < 0) && NIL_P(err))
+
+	/**/
+	int keepgvl = !(mode & FMODE_WRITABLE);
+	keepgvl |= noraise;
+	if ((maygvl_close(fd, keepgvl) < 0) && NIL_P(err))
 	    err = noraise ? Qtrue : INT2NUM(errno);
     }
 
