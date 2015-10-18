@@ -1,3 +1,5 @@
+#
+# -*- frozen_string_literal: true -*-
 require 'test/unit'
 require 'open-uri'
 require 'webrick'
@@ -11,6 +13,7 @@ class TestOpenURI < Test::Unit::TestCase
 
   NullLog = Object.new
   def NullLog.<<(arg)
+    #puts arg if / INFO / !~ arg
   end
 
   def with_http(log_tester=lambda {|log| assert_equal([], log) })
@@ -242,9 +245,9 @@ class TestOpenURI < Test::Unit::TestCase
 
   def test_proxy
     with_http {|srv, dr, url|
-      proxy_log = StringIO.new('')
+      proxy_log = StringIO.new(''.dup)
       proxy_logger = WEBrick::Log.new(proxy_log, WEBrick::BasicLog::WARN)
-      proxy_auth_log = ''
+      proxy_auth_log = ''.dup
       proxy = WEBrick::HTTPProxyServer.new({
         :ServerType => Thread,
         :Logger => proxy_logger,
@@ -296,9 +299,9 @@ class TestOpenURI < Test::Unit::TestCase
 
   def test_proxy_http_basic_authentication_failure
     with_http {|srv, dr, url|
-      proxy_log = StringIO.new('')
+      proxy_log = StringIO.new(''.dup)
       proxy_logger = WEBrick::Log.new(proxy_log, WEBrick::BasicLog::WARN)
-      proxy_auth_log = ''
+      proxy_auth_log = ''.dup
       proxy = WEBrick::HTTPProxyServer.new({
         :ServerType => Thread,
         :Logger => proxy_logger,
@@ -329,9 +332,9 @@ class TestOpenURI < Test::Unit::TestCase
 
   def test_proxy_http_basic_authentication_success
     with_http {|srv, dr, url|
-      proxy_log = StringIO.new('')
+      proxy_log = StringIO.new(''.dup)
       proxy_logger = WEBrick::Log.new(proxy_log, WEBrick::BasicLog::WARN)
-      proxy_auth_log = ''
+      proxy_auth_log = ''.dup
       proxy = WEBrick::HTTPProxyServer.new({
         :ServerType => Thread,
         :Logger => proxy_logger,
@@ -551,7 +554,7 @@ class TestOpenURI < Test::Unit::TestCase
   def test_encoding
     with_http {|srv, dr, url|
       content_u8 = "\u3042"
-      content_ej = "\xa2\xa4".force_encoding("euc-jp")
+      content_ej = "\xa2\xa4".dup.force_encoding("euc-jp")
       srv.mount_proc("/u8/") {|req, res| res.body = content_u8; res['content-type'] = 'text/plain; charset=utf-8' }
       srv.mount_proc("/ej/") {|req, res| res.body = content_ej; res['content-type'] = 'TEXT/PLAIN; charset=EUC-JP' }
       srv.mount_proc("/nc/") {|req, res| res.body = "aa"; res['content-type'] = 'Text/Plain' }
@@ -599,7 +602,7 @@ class TestOpenURI < Test::Unit::TestCase
   def test_content_encoding
     with_http {|srv, dr, url|
       content = "abc" * 10000
-      Zlib::GzipWriter.wrap(StringIO.new(content_gz="".force_encoding("ascii-8bit"))) {|z| z.write content }
+      Zlib::GzipWriter.wrap(StringIO.new(content_gz="".dup.force_encoding("ascii-8bit"))) {|z| z.write content }
       srv.mount_proc("/data/") {|req, res| res.body = content_gz; res['content-encoding'] = 'gzip' }
       srv.mount_proc("/data2/") {|req, res| res.body = content_gz; res['content-encoding'] = 'gzip'; res.chunked = true }
       srv.mount_proc("/noce/") {|req, res| res.body = content_gz }
