@@ -74,7 +74,7 @@
 
 #include <sys/stat.h>
 
-#if defined(HAVE_SYS_PARAM_H) || defined(__HIUX_MPP__))
+#if defined(HAVE_SYS_PARAM_H) || defined(__HIUX_MPP__)
 # include <sys/param.h>
 #endif
 
