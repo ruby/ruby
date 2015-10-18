@@ -2887,7 +2887,6 @@ rb_file_s_rename(VALUE klass, VALUE from, VALUE to)
 #if defined DOSISH
 	switch (e) {
 	  case EEXIST:
-#endif
 	    if (chmod(dst, 0666) == 0 &&
 		unlink(dst) == 0 &&
 		rename(src, dst) == 0)
