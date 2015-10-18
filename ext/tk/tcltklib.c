@@ -394,7 +394,7 @@ Tcl_SetVar2Ex(interp, name1, name2, newValObj, flags)
 /* from tkAppInit.c */
 
 #if TCL_MAJOR_VERSION < 8 || (TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION < 4)
-#  if !defined __MINGW32__ && !defined __BORLANDC__
+#  if !defined __MINGW32__
 /*
  * The following variable is a special hack that is needed in order for
  * Sun shared libraries to be used for Tcl.

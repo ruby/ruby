@@ -56,10 +56,8 @@ end
     f.binmode if /mingw/ =~ RUBY_PLATFORM
 
     f.print <<EOF
-#ifndef __BORLANDC__
 #include <windows.h>
 #include <winver.h>
-#endif
 
 #{icon || ''}
 VS_VERSION_INFO VERSIONINFO

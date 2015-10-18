@@ -1,3 +1,18 @@
+Sun Oct 18 11:04:36 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* numeric.c: Good-by Borland-C.
+	* include/ruby/backward/rubyio.h: ditto.
+	* include/ruby/backward/st.h: ditto.
+	* include/ruby/backward/util.h: ditto.
+	* include/ruby/backward/rubysig.h: ditto.
+	* include/ruby/backward/classext.h: ditto.
+	* dln.c: ditto.
+	* gc.c: ditto.
+	* win32/resource.rb: ditto.
+	* win32/dir.h: ditto.
+	* ext/tk/tcltklib.c: ditto.
+	* NEWS: announce that Borland-C is no longer supported.
+
 Sun Oct 18 10:54:52 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* dln.c: simplify #ifdef. _WIN32 and __CYGWIN__ are exclusive.
