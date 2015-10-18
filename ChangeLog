@@ -1,3 +1,7 @@
+Sun Oct 18 10:42:19 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* ruby.c (open_load_file): add a comment.
+
 Sun Oct 18 10:12:46 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* file.c (rb_file_identical_p): simplify ifdefs
