@@ -708,7 +708,7 @@ class TestRequire < Test::Unit::TestCase
       end
       END
     }
-  end if defined?(File.mkfifo)
+  end if File.respond_to?(:mkfifo)
 
   def test_loading_fifo_threading_success
     Tempfile.create(%w'fifo .rb') {|f|
@@ -731,7 +731,7 @@ class TestRequire < Test::Unit::TestCase
       load(path)
     INPUT
     }
-  end if defined?(File.mkfifo)
+  end if File.respond_to?(:mkfifo)
 
   def test_throw_while_loading
     Tempfile.create(%w'bug-11404 .rb') do |f|
