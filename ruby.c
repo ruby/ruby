@@ -1738,13 +1738,15 @@ open_load_file(VALUE fname_v, int *xflag)
 	int fd;
 	/* open(2) may block if fname is point to FIFO and it's empty. Let's
 	   use O_NONBLOCK. */
-	int mode = O_RDONLY;
 #if defined O_NONBLOCK && HAVE_FCNTL && !(O_NONBLOCK & O_ACCMODE)
 	/* TODO: fix conflicting O_NONBLOCK in ruby/win32.h */
-	mode |= O_NONBLOCK;
+# define MODE_TO_LOAD (O_RDONLY | O_NONBLOCK)
 #elif defined O_NDELAY && HAVE_FCNTL && !(O_NDELAY & O_ACCMODE)
-	mod |= O_NDELAY;
+# define MODE_TO_LOAD (O_RDONLY | O_NDELAY)
+#else
+# define MODE_TO_LOAD (O_RDONLY)
 #endif
+	int mode = MODE_TO_LOAD;
 #if defined DOSISH || defined __CYGWIN__
 	{
 	    const char *ext = strrchr(fname, '.');
@@ -1760,7 +1762,7 @@ open_load_file(VALUE fname_v, int *xflag)
 	}
 	rb_update_max_fd(fd);
 
-#ifdef HAVE_FCNTL
+#if defined HAVE_FCNTL && MODE_TO_LOAD != O_RDONLY
 	/* disabling O_NONBLOCK */
 	if (fcntl(fd, F_SETFL, 0) < 0) {
 	    e = errno;
