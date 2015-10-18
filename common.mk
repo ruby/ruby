@@ -590,6 +590,8 @@ no-test-testframework: PHONY
 
 test: test-sample btest-ruby test-knownbug
 
+# $ make test-all TESTOPTS="--help" displays more detail
+# for example, make test-all TESTOPTS="-j2 -v -n test-name -- test-file-name"
 test-all: $(TEST_RUNNABLE)-test-all
 yes-test-all: prog PHONY
 	$(Q)$(exec) $(RUNRUBY) "$(srcdir)/test/runner.rb" --ruby="$(RUNRUBY)" $(TEST_EXCLUDES) $(TESTOPTS) $(TESTS)
@@ -1072,7 +1074,7 @@ help: PHONY
 	"  test-all:        all ruby tests [TESTS=<test files>]" \
 	"  test-rubyspec:   run RubySpec test suite" \
 	"  update-rubyspec: update local copy of RubySpec" \
-	"  benchmark:       benchmark this ruby and COMPARE_RUBY" \
+	"  benchmark:       benchmark this ruby and COMPARE_RUBY." \
 	"  gcbench:         gc benchmark [GCBENCH_ITEM=<item_name>]" \
 	"  gcbench-rdoc:    gc benchmark with GCBENCH_ITEM=rdoc" \
 	"  install:         install all ruby distributions" \
