@@ -1,3 +1,7 @@
+Sun Oct 18 13:03:52 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* include/ruby/backward/util.h: Good-by Borland-C.
+
 Sun Oct 18 13:03:09 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* common.mk: add a comment how to use "make test-all"
