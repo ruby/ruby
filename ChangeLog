@@ -1,3 +1,7 @@
+Sun Oct 18 12:59:22 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* common.mk: add comments how to use "make benchmark"
+
 Sun Oct 18 12:58:15 2015  Tanaka Akira  <akr@fsij.org>
 
 	* lib/securerandom.rb: Specify frozen_string_literal: true.

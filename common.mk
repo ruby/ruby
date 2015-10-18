@@ -893,6 +893,11 @@ COMPARE_RUBY = $(BASERUBY)
 ITEM =
 OPTS =
 
+# You can pass several options through OPTS environmanent variable.
+# $ make benchmark OPTS="--help" displays more dtail.
+# for example,
+#  $ make benchmark COMPARE_RUBY="ruby-trunk" OPTS="-e ruby-2.2.2"
+# This command compares trunk and built-ruby and 2.2.2
 benchmark: $(PROGRAM) PHONY
 	$(BASERUBY) $(srcdir)/benchmark/driver.rb -v \
 	            --executables="$(COMPARE_RUBY); built-ruby::$(RUNRUBY)" \
