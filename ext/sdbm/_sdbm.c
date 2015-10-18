@@ -372,7 +372,7 @@ makroom(register DBM *db, long int hash, int need)
 {
 	long newp;
 	char twin[PBLKSIZ];
-#if defined _WIN32 && !defined __CYGWIN__
+#if defined _WIN32
 	char zer[PBLKSIZ];
 	long oldtail;
 #endif
@@ -399,7 +399,7 @@ makroom(register DBM *db, long int hash, int need)
  * here, as sdbm_store will do so, after it inserts the incoming pair.
  */
 
-#if defined _WIN32 && !defined __CYGWIN__
+#if defined _WIN32
 	/*
 	 * Fill hole with 0 if made it.
 	 * (hole is NOT read as 0)

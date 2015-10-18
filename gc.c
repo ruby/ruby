@@ -7419,7 +7419,7 @@ aligned_malloc(size_t alignment, size_t size)
 
 #if defined __MINGW32__
     res = __mingw_aligned_malloc(size, alignment);
-#elif defined _WIN32 && !defined __CYGWIN__
+#elif defined _WIN32
     void *_aligned_malloc(size_t, size_t);
     res = _aligned_malloc(size, alignment);
 #elif defined(HAVE_POSIX_MEMALIGN)
@@ -7453,7 +7453,7 @@ aligned_free(void *ptr)
 {
 #if defined __MINGW32__
     __mingw_aligned_free(ptr);
-#elif defined _WIN32 && !defined __CYGWIN__
+#elif defined _WIN32
     _aligned_free(ptr);
 #elif defined(HAVE_MEMALIGN) || defined(HAVE_POSIX_MEMALIGN)
     free(ptr);
