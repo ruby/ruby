@@ -1369,6 +1369,7 @@ RUBY_UNTYPED_DATA_FUNC(static inline VALUE rb_data_object_wrap_warning(VALUE,voi
 #endif
 RUBY_UNTYPED_DATA_FUNC(static inline void *rb_data_object_get_warning(VALUE));
 
+#if defined(__GNUC__) && !defined(__NO_INLINE__)
 static inline VALUE
 rb_data_object_wrap_warning(VALUE klass, void *ptr, RUBY_DATA_FUNC mark, RUBY_DATA_FUNC free)
 {
@@ -1383,6 +1384,7 @@ rb_data_object_wrap_warning(VALUE klass, void *ptr, RUBY_DATA_FUNC mark, RUBY_DA
 	    rb_data_object_wrap(klass, ptr, mark, free), \
 	    rb_data_object_wrap_warning(klass, ptr, mark, free)))
 #endif
+#endif
 
 static inline void *
 rb_data_object_get(VALUE obj)
@@ -1391,11 +1393,13 @@ rb_data_object_get(VALUE obj)
     return ((struct RData *)obj)->data;
 }
 
+#if defined(__GNUC__) && !defined(__NO_INLINE__)
 static inline void *
 rb_data_object_get_warning(VALUE obj)
 {
     return rb_data_object_get(obj);
 }
+#endif
 
 static inline VALUE
 rb_data_object_make(VALUE klass, RUBY_DATA_FUNC mark_func, RUBY_DATA_FUNC free_func, void **datap, size_t size)
@@ -1429,6 +1433,7 @@ rb_data_typed_object_alloc(VALUE klass, void *datap, const rb_data_type_t *type)
 }
 #endif
 
+#if defined(__GNUC__) && !defined(__NO_INLINE__)
 #define rb_data_object_wrap_0 rb_data_object_wrap
 #define rb_data_object_wrap_1 rb_data_object_wrap_warning
 #define rb_data_object_wrap  RUBY_MACRO_SELECT(rb_data_object_wrap_, RUBY_UNTYPED_DATA_WARNING)
@@ -1438,6 +1443,7 @@ rb_data_typed_object_alloc(VALUE klass, void *datap, const rb_data_type_t *type)
 #define rb_data_object_make_0 rb_data_object_make
 #define rb_data_object_make_1 rb_data_object_make_warning
 #define rb_data_object_make   RUBY_MACRO_SELECT(rb_data_object_make_, RUBY_UNTYPED_DATA_WARNING)
+#endif
 
 #if USE_RGENGC
 #define RB_OBJ_PROMOTED_RAW(x)      RB_FL_ALL_RAW(x, RUBY_FL_PROMOTED)
