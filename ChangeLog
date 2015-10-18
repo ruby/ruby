@@ -1,3 +1,10 @@
+Sun Oct 18 10:54:52 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* dln.c: simplify #ifdef. _WIN32 and __CYGWIN__ are exclusive.
+	  see include/ruby/defines.h
+	* gc.c: ditto.
+	* ext/sdbm/_sdbm.c: ditto.
+
 Sun Oct 18 10:42:19 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* ruby.c (open_load_file): add a comment.

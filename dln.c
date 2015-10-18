@@ -1117,12 +1117,12 @@ dln_sym(const char *name)
 #endif
 #endif
 
-#if defined _WIN32 && !defined __CYGWIN__
+#ifdef _WIN32
 #include <windows.h>
 #include <imagehlp.h>
 #endif
 
-#if defined _WIN32 && !defined __CYGWIN__
+#ifdef _WIN32
 static const char *
 dln_strerror(char *message, size_t size)
 {
@@ -1254,7 +1254,7 @@ dln_load(const char *file)
 #define DLN_ERROR() (error = dln_strerror(), strcpy(ALLOCA_N(char, strlen(error) + 1), error))
 #endif
 
-#if defined _WIN32 && !defined __CYGWIN__
+#if defined _WIN32
     HINSTANCE handle;
     WCHAR *winfile;
     char message[1024];
