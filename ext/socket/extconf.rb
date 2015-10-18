@@ -441,9 +441,6 @@ when /beos/
 when /haiku/
   test_func = "socket(0,0,0)"
   have_library("network", "socket(0,0,0)", headers)
-when /i386-os2_emx/
-  test_func = "socket(0,0,0)"
-  have_library("socket", "socket(0,0,0)", headers)
 else
   test_func = "socket(0,0,0)"
   have_library("nsl", 't_open("", 0, (struct t_info *)NULL)', headers) # SunOS

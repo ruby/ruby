@@ -60,10 +60,6 @@
 #endif
 #include "ruby/st.h"
 
-#ifdef __EMX__
-#undef HAVE_GETPGRP
-#endif
-
 #include <sys/stat.h>
 #if defined(__native_client__) && defined(NACL_NEWLIB)
 # include <sys/unistd.h>
@@ -1249,9 +1245,6 @@ proc_exec_cmd(const char *prog, VALUE argv_str, VALUE envp_str)
 #else
     char **argv;
     char **envp;
-# if defined(__EMX__) || defined(OS2)
-    char **new_argv = NULL;
-# endif
 
     argv = ARGVSTR2ARGV(argv_str);
 
@@ -1260,46 +1253,12 @@ proc_exec_cmd(const char *prog, VALUE argv_str, VALUE envp_str)
 	return -1;
     }
 
-# if defined(__EMX__) || defined(OS2)
-    {
-#  define COMMAND "cmd.exe"
-	char *extension;
-
-	if ((extension = strrchr(prog, '.')) != NULL && STRCASECMP(extension, ".bat") == 0) {
-	    char *p;
-	    int n;
-
-	    for (n = 0; argv[n]; n++)
-		/* no-op */;
-	    new_argv = ALLOC_N(char*, n + 2);
-	    for (; n > 0; n--)
-		new_argv[n + 1] = argv[n];
-	    new_argv[1] = strcpy(ALLOC_N(char, strlen(argv[0]) + 1), argv[0]);
-	    for (p = new_argv[1]; *p != '\0'; p++)
-		if (*p == '/')
-		    *p = '\\';
-	    new_argv[0] = COMMAND;
-	    argv = new_argv;
-	    prog = dln_find_exe_r(argv[0], 0, fbuf, sizeof(fbuf));
-	    if (!prog) {
-		errno = ENOENT;
-		return -1;
-	    }
-	}
-    }
-# endif /* __EMX__ */
     envp = envp_str ? (char **)RSTRING_PTR(envp_str) : NULL;
     if (envp_str)
         execve(prog, argv, envp); /* async-signal-safe */
     else
         execv(prog, argv); /* async-signal-safe (since SUSv4) */
     preserving_errno(try_with_sh(prog, argv, envp)); /* try_with_sh() is async-signal-safe. */
-# if defined(__EMX__) || defined(OS2)
-    if (new_argv) {
-	xfree(new_argv[0]);
-	xfree(new_argv);
-    }
-# endif
     return -1;
 #endif
 }
@@ -1327,7 +1286,7 @@ proc_exec_sh(const char *str, VALUE envp_str)
     rb_w32_uspawn(P_OVERLAY, (char *)str, 0);
     return -1;
 #else
-#if defined(__CYGWIN32__) || defined(__EMX__)
+#if defined(__CYGWIN32__)
     {
         char fbuf[MAXPATHLEN];
         char *shell = dln_find_exe_r("sh", 0, fbuf, sizeof(fbuf));

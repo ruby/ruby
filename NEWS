@@ -187,3 +187,4 @@ with all sufficient information, see the ChangeLog file.
 === Build system updates
 
 === Implementation changes
+* OS/2 is no longer supported
