@@ -1939,6 +1939,7 @@ rb_file_identical_p(VALUE obj, VALUE fname1, VALUE fname2)
     if (rb_stat(fname2, &st2) < 0) return Qfalse;
     if (st1.st_dev != st2.st_dev) return Qfalse;
     if (st1.st_ino != st2.st_ino) return Qfalse;
+    return Qtrue;
 #else
     BY_HANDLE_FILE_INFORMATION st1, st2;
     HANDLE f1 = 0, f2 = 0;
@@ -1961,14 +1962,8 @@ rb_file_identical_p(VALUE obj, VALUE fname1, VALUE fname2)
 	st1.nFileIndexHigh == st2.nFileIndexHigh &&
 	st1.nFileIndexLow == st2.nFileIndexLow)
 	return Qtrue;
-    if (!f1 || !f2) return Qfalse;
-    fname1 = rb_file_expand_path(fname1, Qnil);
-    fname2 = rb_file_expand_path(fname2, Qnil);
-    if (RSTRING_LEN(fname1) != RSTRING_LEN(fname2)) return Qfalse;
-    if (rb_memcicmp(RSTRING_PTR(fname1), RSTRING_PTR(fname2), RSTRING_LEN(fname1)))
-	return Qfalse;
+    return Qfalse;
 #endif
-    return Qtrue;
 }
 
 /*
