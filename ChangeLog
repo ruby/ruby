@@ -1,3 +1,8 @@
+Sun Oct 18 09:32:58 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* file.c (ruby_is_fd_loadable): this should be fail if st_mode is
+	  not regular file nor FIFO.
+
 Sun Oct 18 09:20:17 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* ruby.c (open_load_file): use rb_thread_wait_fd() instead of reopen.

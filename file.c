@@ -5680,13 +5680,17 @@ ruby_is_fd_loadable(int fd)
 
     if (fstat(fd, &st) < 0)
 	return 0;
-
     if (S_ISREG(st.st_mode))
 	return 1;
-    if (!S_ISDIR(st.st_mode))
+
+    if (S_ISFIFO(st.st_mode))
 	return 1;
 
-    errno = EISDIR;
+    if (S_ISDIR(st.st_mode))
+	errno = EISDIR;
+    else
+	errno = ENXIO;
+
     return 0;
 #endif
 }
