@@ -1,3 +1,7 @@
+Sun Oct 18 08:50:15 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* include/ruby/defines.h (DOSISH): add comments.
+
 Sun Oct 18 08:26:51 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (fptr_finalize): don't release gvl if fptr is not writable.

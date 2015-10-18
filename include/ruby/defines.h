@@ -148,6 +148,11 @@ void xfree(void*);
 #endif
 
 #if defined(_WIN32) || defined(__EMX__)
+/*
+  DOSISH mean MS-Windows style filesystem.
+  But you should use more precise macros like DOSISH_DRIVE_LETTER, PATH_SEP,
+  ENV_IGNORECASE or CASEFOLD_FILESYSTEM.
+ */
 #define DOSISH 1
 # define DOSISH_DRIVE_LETTER
 #endif
