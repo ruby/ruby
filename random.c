@@ -455,6 +455,11 @@ random_init(int argc, VALUE *argv, VALUE obj)
 static int
 fill_random_bytes_urandom(void *seed, size_t size)
 {
+    /*
+      O_NONBLOCK and O_NOCTTY is meaningless if /dev/urandom correctly point
+      to urandom device. But it protect from several strange hazard if
+      /dev/urandom is not urandom device.
+    */
     int fd = rb_cloexec_open("/dev/urandom",
 # ifdef O_NONBLOCK
 			     O_NONBLOCK|
