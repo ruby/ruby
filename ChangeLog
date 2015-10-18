@@ -1,3 +1,8 @@
+Sun Oct 18 13:24:17 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* random.c (fill_random_bytes_syscall): use ATOMIC_SET() for
+	  updating try_syscall.
+
 Sun Oct 18 13:03:52 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* include/ruby/backward/util.h: Good-by Borland-C.
