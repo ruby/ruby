@@ -1932,7 +1932,7 @@ rb_file_sticky_p(VALUE obj, VALUE fname)
 static VALUE
 rb_file_identical_p(VALUE obj, VALUE fname1, VALUE fname2)
 {
-#ifndef DOSISH
+#ifndef _WIN32
     struct stat st1, st2;
 
     if (rb_stat(fname1, &st1) < 0) return Qfalse;
@@ -1940,12 +1940,9 @@ rb_file_identical_p(VALUE obj, VALUE fname1, VALUE fname2)
     if (st1.st_dev != st2.st_dev) return Qfalse;
     if (st1.st_ino != st2.st_ino) return Qfalse;
 #else
-# ifdef _WIN32
     BY_HANDLE_FILE_INFORMATION st1, st2;
     HANDLE f1 = 0, f2 = 0;
-# endif
 
-# ifdef _WIN32
     f1 = w32_io_info(&fname1, &st1);
     if (f1 == INVALID_HANDLE_VALUE) return Qfalse;
     if (f1) {
@@ -1965,15 +1962,6 @@ rb_file_identical_p(VALUE obj, VALUE fname1, VALUE fname2)
 	st1.nFileIndexLow == st2.nFileIndexLow)
 	return Qtrue;
     if (!f1 || !f2) return Qfalse;
-# else
-    FilePathValue(fname1);
-    fname1 = rb_str_new4(fname1);
-    fname1 = rb_str_encode_ospath(fname1);
-    FilePathValue(fname2);
-    fname2 = rb_str_encode_ospath(fname2);
-    if (access(RSTRING_PTR(fname1), 0)) return Qfalse;
-    if (access(RSTRING_PTR(fname2), 0)) return Qfalse;
-# endif
     fname1 = rb_file_expand_path(fname1, Qnil);
     fname2 = rb_file_expand_path(fname2, Qnil);
     if (RSTRING_LEN(fname1) != RSTRING_LEN(fname2)) return Qfalse;

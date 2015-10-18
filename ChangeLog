@@ -1,3 +1,7 @@
+Sun Oct 18 10:12:46 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* file.c (rb_file_identical_p): simplify ifdefs
+
 Sun Oct 18 10:01:40 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* ChangeLog: Good-bye OS/2.
