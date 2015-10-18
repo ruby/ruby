@@ -1,6 +1,6 @@
 #if   defined __GNUC__
 #warning use of RClass internals is deprecated
-#elif defined _MSC_VER || defined __BORLANDC__
+#elif defined _MSC_VER
 #pragma message("warning: use of RClass internals is deprecated")
 #endif
 

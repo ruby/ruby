@@ -1,13 +1,6 @@
 #ifndef RUBY_WIN32_DIR_H
 #define RUBY_WIN32_DIR_H
 
-#ifdef __BORLANDC__
-#  ifndef WIN32_DIR_H_
-#    define WIN32_DIR_H_
-#    include <sys/types.h>
-#  endif
-#endif
-
 #define DT_UNKNOWN 0
 #define DT_DIR (S_IFDIR>>12)
 #define DT_REG (S_IFREG>>12)
