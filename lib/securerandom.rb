@@ -1,4 +1,5 @@
 # -*- coding: us-ascii -*-
+# -*- frozen_string_literal: true -*-
 begin
   require 'openssl'
 rescue LoadError
