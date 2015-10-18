@@ -1,13 +1,3 @@
-Sun Oct 18 08:26:51 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
-
-	* io.c (fptr_finalize): don't release gvl if fptr is not writable.
-	  writable fd may block on close(2) when it's on NFS. But readonly
-	  fd doesn't. [Bug #11559]
-	  result: make benchmark OPTS="-p bm_require_t -e ruby-trunk -e ruby-2.2.2"
-	    build-ruby:             0.171
-	    ruby 2.3.0dev(r52151):  0.659
-	    ruby 2.2.0p95 (r50295): 0.834
-
 Sun Oct 18 05:11:22 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* ruby.c (open_load_file): reset O_NONBLOCK after open.
