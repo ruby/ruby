@@ -1,3 +1,8 @@
+Mon Oct 19 01:26:26 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* file.c (rb_file_identical_p): not necessary to compare the paths after
+	  comparing the file indexes on Windows.  designate by kosaki.
+
 Sun Oct 18 21:17:27 2015  Tanaka Akira  <akr@fsij.org>
 
 	* lib/open-uri.rb: Specify frozen_string_literal: true.
