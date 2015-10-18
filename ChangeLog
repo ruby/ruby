@@ -1,3 +1,7 @@
+Sun Oct 18 11:22:52 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* dln.c: remove defined(__WATCOMC__).
+
 Sun Oct 18 11:16:33 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* lib/mkmf.rb: Good-by Borland-C.
