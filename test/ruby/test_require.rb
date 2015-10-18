@@ -707,7 +707,7 @@ class TestRequire < Test::Unit::TestCase
       end
       END
     }
-  end unless /mswin|mingw/ =~ RUBY_PLATFORM
+  end if defined?(File.mkfifo)
 
   def test_loading_fifo_threading_success
     Tempfile.create(%w'fifo .rb') {|f|
@@ -731,9 +731,7 @@ class TestRequire < Test::Unit::TestCase
       assert_equal(C1::FOO, "foo")
     INPUT
     }
-
-  end unless /mswin|mingw/ =~ RUBY_PLATFORM
-
+  end if defined?(File.mkfifo)
 
   def test_throw_while_loading
     Tempfile.create(%w'bug-11404 .rb') do |f|
