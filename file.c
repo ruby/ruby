@@ -2899,8 +2899,6 @@ rb_file_s_rename(VALUE klass, VALUE from, VALUE to)
 #if defined DOSISH
 	switch (e) {
 	  case EEXIST:
-#if defined (__EMX__)
-	  case EACCES:
 #endif
 	    if (chmod(dst, 0666) == 0 &&
 		unlink(dst) == 0 &&

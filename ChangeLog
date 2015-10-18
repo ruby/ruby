@@ -1,3 +1,22 @@
+Sun Oct 18 10:01:40 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* ChangeLog: Good-bye OS/2.
+	* common.mk: ditto.
+	* configure.in: ditto.
+	* dln_find.c: ditto.
+	* ext/Setup.emx: ditto.
+	* ext/extmk.rb: ditto.
+	* ext/socket/extconf.rb: ditto.
+	* ext/zlib/extconf.rb: ditto.
+	* file.c: ditto.
+	* include/ruby/defines.h: ditto.
+	* io.c: ditto.
+	* lib/mkmf.rb: ditto.
+	* missing/os2.c: ditto.
+	* process.c: ditto.
+	* ruby.c: ditto.
+	* NEWS: announce OS/2 is no longer supported.
+
 Sun Oct 18 08:50:15 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* include/ruby/defines.h (DOSISH): add comments.

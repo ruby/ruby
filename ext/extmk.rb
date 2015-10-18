@@ -50,7 +50,6 @@ elsif !File.chardev?(@null = "/dev/null")
 end
 
 def sysquote(x)
-  @quote ||= /os2/ =~ (CROSS_COMPILING || RUBY_PLATFORM)
   @quote ? x.quote : x
 end
 

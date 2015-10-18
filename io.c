@@ -35,7 +35,7 @@
 # include <sys/socket.h>
 #endif
 
-#if defined(__BOW__) || defined(__CYGWIN__) || defined(_WIN32) || defined(__EMX__) || defined(__BEOS__) || defined(__HAIKU__)
+#if defined(__BOW__) || defined(__CYGWIN__) || defined(_WIN32) || defined(__BEOS__) || defined(__HAIKU__)
 # define NO_SAFE_RENAME
 #endif
 
@@ -74,8 +74,7 @@
 
 #include <sys/stat.h>
 
-/* EMX has sys/param.h, but.. */
-#if defined(HAVE_SYS_PARAM_H) && !(defined(__EMX__) || defined(__HIUX_MPP__))
+#if defined(HAVE_SYS_PARAM_H) || defined(__HIUX_MPP__))
 # include <sys/param.h>
 #endif
 

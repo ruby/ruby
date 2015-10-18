@@ -276,7 +276,7 @@ dln_find_1(const char *fname, const char *path, char *fbuf, size_t size,
 	    }
 	    goto next;
 	}
-#endif /* _WIN32 or __EMX__ */
+#endif
 
 #ifndef S_ISREG
 # define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)

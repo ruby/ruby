@@ -1135,8 +1135,6 @@ main()
 		AC_CHECK_FUNCS(_wfreopen_s)
 		AC_LIBOBJ([langinfo])
 		],
-[os2-emx*], [	LIBS="-lm $LIBS"
-		ac_cv_lib_dir_opendir=no],
 [bsdi*], [	LIBS="-lm $LIBS"
 		AC_DEFINE(BROKEN_SETREUID, 1)
 		AC_DEFINE(BROKEN_SETREGID, 1)
@@ -3120,8 +3118,6 @@ if test "$with_dln_a_out" != yes; then
 	[hiuxmpp], [	: ${LDSHARED='$(LD) -r'}],
 	[atheos*], [	: ${LDSHARED='$(CC) -shared'}
 			rb_cv_dlopen=yes],
-	[os2-emx*], [	LDFLAGS="$LDFLAGS -Zomf"
-			],
         [nacl], [ LDSHARED='$(CC) -shared' ],
 	[	: ${LDSHARED='$(LD)'}])
   AC_MSG_RESULT($rb_cv_dlopen)
@@ -3318,9 +3314,6 @@ else
     [darwin*], [
 	RUBY_APPEND_OPTION(XLDFLAGS, [-Wl,-u,_objc_msgSend])
 	DLEXT=bundle],
-    [os2-emx*], [
-	LOAD_RELATIVE=1
-	DLEXT=dll],
     [cygwin*|mingw*|*djgpp*], [
 	LOAD_RELATIVE=1
 	DLEXT=so],
@@ -3492,7 +3485,7 @@ LIBRUBYARG='$(LIBRUBYARG_STATIC)'
 SOLIBS=
 
 AS_CASE(["$target_os"],
-  [cygwin*|mingw*|beos*|haiku*|darwin*|os2-emx*], [
+  [cygwin*|mingw*|beos*|haiku*|darwin*], [
     : ${DLDLIBS=""}
     ],
   [
@@ -3832,13 +3825,6 @@ AS_CASE(["$target_os"],
 	RUBY_APPEND_OPTION(CFLAGS, -pipe)
 	RUBY_APPEND_OPTION(XLDFLAGS, [-framework CoreFoundation])
 	RUBY_APPEND_OPTION(LIBRUBYARG_STATIC, [-framework CoreFoundation])
-	],
-    [os2-emx], [
-	AC_LIBOBJ([os2])
-	CFLAGS="$CFLAGS -DOS2"
-	LIBRUBY_A=`echo $LIBRUBY_A | sed 's/^lib//'`
-	LIBRUBY_SO=`echo $LIBRUBY_SO | sed 's/^lib//'`
-	LIBRUBY_ALIASES=`for i in $LIBRUBY_ALIASES; do echo "$i"; done | sed 's/^lib//'`
 	],
     [osf*], [
 	if test "$GCC" != "yes" ; then

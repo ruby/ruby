@@ -432,8 +432,6 @@ ruby_init_loadpath_safe(int safe_level)
     sopath = rb_str_new(0, MAXPATHLEN);
     libpath = RSTRING_PTR(sopath);
     GetModuleFileName(libruby, libpath, MAXPATHLEN);
-#elif defined(__EMX__)
-    _execname(libpath, sizeof(libpath) - 1);
 #elif defined(HAVE_DLADDR)
     sopath = dladdr_path((void *)(VALUE)expand_include_path);
     libpath = RSTRING_PTR(sopath);
