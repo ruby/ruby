@@ -1,3 +1,7 @@
+Sun Oct 18 21:17:27 2015  Tanaka Akira  <akr@fsij.org>
+
+	* lib/open-uri.rb: Specify frozen_string_literal: true.
+
 Sun Oct 18 14:37:56 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* random.c (fill_random_bytes_urandom): add a comment why using
