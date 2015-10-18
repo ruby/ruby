@@ -1726,19 +1726,6 @@ load_file_internal(VALUE argp_v)
     return (VALUE)tree;
 }
 
-#ifdef S_ISFIFO
-static void *
-loadopen_func(void *arg)
-{
-    int fd;
-    fd = rb_cloexec_open((const char *)arg, O_RDONLY, 0);
-    if (fd >= 0)
-	rb_update_max_fd(fd);
-
-    return (void *)(VALUE)fd;
-}
-#endif
-
 static VALUE
 open_load_file(VALUE fname_v, int *xflag)
 {
@@ -1793,12 +1780,7 @@ open_load_file(VALUE fname_v, int *xflag)
 		rb_load_fail(fname_v, strerror(e));
 	    }
 	    if (S_ISFIFO(st.st_mode)) {
-		/* We need to wait if FIFO is empty. So, let's reopen it. */
-		(void)close(fd);
-		fd = (int)(VALUE)rb_thread_call_without_gvl(loadopen_func,
-						(void *)fname, RUBY_UBF_IO, 0);
-		if (fd < 0)
-		    rb_load_fail(fname_v, strerror(errno));
+		rb_thread_wait_fd(fd);
 	    }
 	}
 #endif
