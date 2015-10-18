@@ -1778,6 +1778,10 @@ open_load_file(VALUE fname_v, int *xflag)
 		rb_load_fail(fname_v, strerror(e));
 	    }
 	    if (S_ISFIFO(st.st_mode)) {
+		/*
+		  We need to wait if FIFO is empty. It's FIFO's semantics.
+		  rb_thread_wait_fd() release GVL. So, it's safe.
+		*/
 		rb_thread_wait_fd(fd);
 	    }
 	}
