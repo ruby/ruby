@@ -35,7 +35,9 @@ void
 rsock_raise_socket_error(const char *reason, int error)
 {
 #ifdef EAI_SYSTEM
-    if (error == EAI_SYSTEM) rb_sys_fail(reason);
+    int e;
+    if (error == EAI_SYSTEM && (e = errno) != 0)
+	rb_syserr_fail(e, reason);
 #endif
     rb_raise(rb_eSocket, "%s: %s", reason, gai_strerror(error));
 }
