@@ -1,3 +1,8 @@
+Mon Oct 19 10:33:46 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/socket/init.c (rsock_raise_socket_error): get rid of a glibc
+	  bug.  [ruby-core:71100] [Bug #11600]
+
 Mon Oct 19 01:26:26 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* file.c (rb_file_identical_p): not necessary to compare the paths after
