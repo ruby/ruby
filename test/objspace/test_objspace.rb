@@ -255,11 +255,17 @@ class TestObjSpace < Test::Unit::TestCase
 
   def test_dump_special_consts
     # [ruby-core:69692] [Bug #11291]
-    assert_equal('{}', ObjectSpace.dump(nil))
-    assert_equal('{}', ObjectSpace.dump(true))
-    assert_equal('{}', ObjectSpace.dump(false))
-    assert_equal('{}', ObjectSpace.dump(0))
-    assert_equal('{}', ObjectSpace.dump(:foo))
+    assert_equal('null', ObjectSpace.dump(nil))
+    assert_equal('true', ObjectSpace.dump(true))
+    assert_equal('false', ObjectSpace.dump(false))
+    assert_equal('0', ObjectSpace.dump(0))
+    assert_equal('{"type":"SYMBOL", "value":"foo"}', ObjectSpace.dump(:foo))
+  end
+
+  def test_dump_dynamic_symbol
+    dump = ObjectSpace.dump(("foobar%x" % rand(0x10000)).to_sym)
+    assert_match /"type":"SYMBOL"/, dump
+    assert_match /"value":"foobar\h+"/, dump
   end
 
   def test_dump_all
