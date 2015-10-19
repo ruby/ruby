@@ -143,7 +143,7 @@ Sun Oct 18 05:11:22 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/ruby/test_require.rb
 	(TestRequire#test_loading_fifo_threading_raise): rename from
-	  test_loading_fifo_threading. You souldn't rescue an exception
+	  test_loading_fifo_threading. You shouldn't rescue an exception
 	  if you test raise or not.
 	  Moreover, this case should be caught IOError because load(FIFO)
 	  should be blocked until given any input.
