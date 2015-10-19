@@ -3558,9 +3558,9 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	*p = '/';
 #endif
 	rb_str_set_len(result, p - buf + strlen(p));
-	encidx = ENC_GET(result);
+	encidx = ENCODING_GET(result);
 	tmp = result;
-	if (encidx != ENCIDX_UTF_8 && rb_enc_str_coderange(result) != ENC_CODERANGE_7BIT) {
+	if (encidx != ENCINDEX_UTF_8 && rb_enc_str_coderange(result) != ENC_CODERANGE_7BIT) {
 	    tmp = rb_str_encode_ospath(result);
 	}
 	len = MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(tmp), -1, NULL, 0);
