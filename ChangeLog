@@ -1,3 +1,7 @@
+Tue Oct 20 05:54:46 2015  Eric Wong  <e@80x24.org>
+
+	* ext/fiddle/closure.c (callback): static function
+
 Mon Oct 19 10:33:46 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/socket/init.c (rsock_raise_socket_error): get rid of a glibc

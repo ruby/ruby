@@ -55,7 +55,7 @@ const rb_data_type_t closure_data_type = {
     {0, dealloc, closure_memsize,},
 };
 
-void
+static void
 callback(ffi_cif *cif, void *resp, void **args, void *ctx)
 {
     VALUE self      = (VALUE)ctx;
