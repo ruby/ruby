@@ -51,8 +51,9 @@ dump_append(struct dump_config *dc, const char *format, ...)
 static void
 dump_append_string_value(struct dump_config *dc, VALUE obj)
 {
-    int i;
-    char c, *value;
+    long i;
+    char c;
+    const char *value;
 
     dump_append(dc, "\"");
     for (i = 0, value = RSTRING_PTR(obj); i < RSTRING_LEN(obj); i++) {
@@ -87,6 +88,14 @@ dump_append_string_value(struct dump_config *dc, VALUE obj)
 	}
     }
     dump_append(dc, "\"");
+}
+
+static void
+dump_append_symbol_value(struct dump_config *dc, VALUE obj)
+{
+    dump_append(dc, "{\"type\":\"SYMBOL\", \"value\":");
+    dump_append_string_value(dc, rb_sym2str(obj));
+    dump_append(dc, "}");
 }
 
 static inline const char *
@@ -126,6 +135,32 @@ obj_type(VALUE obj)
 }
 
 static void
+dump_append_special_const(struct dump_config *dc, VALUE value)
+{
+    if (value == Qtrue) {
+	dump_append(dc, "true");
+    }
+    else if (value == Qfalse) {
+	dump_append(dc, "false");
+    }
+    else if (value == Qnil) {
+	dump_append(dc, "null");
+    }
+    else if (FIXNUM_P(value)) {
+	dump_append(dc, "%ld", FIX2LONG(value));
+    }
+    else if (FLONUM_P(value)) {
+	dump_append(dc, "%#g", RFLOAT_VALUE(value));
+    }
+    else if (SYMBOL_P(value)) {
+	dump_append_symbol_value(dc, value);
+    }
+    else {
+	dump_append(dc, "{}");
+    }
+}
+
+static void
 reachable_object_i(VALUE ref, void *data)
 {
     struct dump_config *dc = (struct dump_config *)data;
@@ -142,6 +177,19 @@ reachable_object_i(VALUE ref, void *data)
 }
 
 static void
+dump_append_string_content(struct dump_config *dc, VALUE obj)
+{
+    dump_append(dc, ", \"bytesize\":%ld", RSTRING_LEN(obj));
+    if (!STR_EMBED_P(obj) && !STR_SHARED_P(obj) && (long)rb_str_capacity(obj) != RSTRING_LEN(obj))
+	dump_append(dc, ", \"capacity\":%ld", rb_str_capacity(obj));
+
+    if (is_ascii_string(obj)) {
+	dump_append(dc, ", \"value\":");
+	dump_append_string_value(dc, obj);
+    }
+}
+
+static void
 dump_object(VALUE obj, struct dump_config *dc)
 {
     size_t memsize;
@@ -151,7 +199,7 @@ dump_object(VALUE obj, struct dump_config *dc)
     size_t n, i;
 
     if (SPECIAL_CONST_P(obj)) {
-	dump_append(dc, "{}");
+	dump_append_special_const(dc, obj);
 	return;
     }
 
@@ -174,6 +222,10 @@ dump_object(VALUE obj, struct dump_config *dc)
 	dump_append(dc, ", \"node_type\":\"%s\"", ruby_node_name(nd_type(obj)));
 	break;
 
+      case T_SYMBOL:
+	dump_append_string_content(dc, rb_sym2str(obj));
+	break;
+
       case T_STRING:
 	if (STR_EMBED_P(obj))
 	    dump_append(dc, ", \"embedded\":true");
@@ -183,16 +235,8 @@ dump_object(VALUE obj, struct dump_config *dc)
 	    dump_append(dc, ", \"fstring\":true");
 	if (STR_SHARED_P(obj))
 	    dump_append(dc, ", \"shared\":true");
-	else {
-	    dump_append(dc, ", \"bytesize\":%ld", RSTRING_LEN(obj));
-	    if (!STR_EMBED_P(obj) && !STR_SHARED_P(obj) && (long)rb_str_capacity(obj) != RSTRING_LEN(obj))
-		dump_append(dc, ", \"capacity\":%ld", rb_str_capacity(obj));
-
-	    if (is_ascii_string(obj)) {
-		dump_append(dc, ", \"value\":");
-		dump_append_string_value(dc, obj);
-	    }
-	}
+	else
+	    dump_append_string_content(dc, obj);
 
 	if (!ENCODING_IS_ASCII8BIT(obj))
 	    dump_append(dc, ", \"encoding\":\"%s\"", rb_enc_name(rb_enc_from_index(ENCODING_GET(obj))));
