@@ -895,8 +895,8 @@ COMPARE_RUBY = $(BASERUBY)
 ITEM =
 OPTS =
 
-# You can pass several options through OPTS environmanent variable.
-# $ make benchmark OPTS="--help" displays more dtail.
+# You can pass several options through OPTS environment variable.
+# $ make benchmark OPTS="--help" displays more detail.
 # for example,
 #  $ make benchmark COMPARE_RUBY="ruby-trunk" OPTS="-e ruby-2.2.2"
 # This command compares trunk and built-ruby and 2.2.2
