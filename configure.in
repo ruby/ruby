@@ -839,6 +839,20 @@ if test "$GCC:${warnflags+set}:no" = yes::no; then
 fi
 RUBY_TRY_CFLAGS(-Qunused-arguments, [RUBY_APPEND_OPTIONS(rb_cv_wsuppress_flags, -Qunused-arguments)])
 
+for n in infinity nan; do
+    m=AS_TR_CPP($n)
+    AC_CACHE_CHECK([whether $m is available without C99 option], rb_cv_$n,
+	[AC_COMPILE_IFELSE(
+	    [AC_LANG_BOOL_COMPILE_TRY(AC_INCLUDES_DEFAULT([@%:@include <math.h>
+@%:@ifndef $m
+@%:@error no $m
+@%:@endif
+]), [1])], [eval rb_cv_$n=yes], [eval rb_cv_$n=no])])
+    if eval test '"$rb_cv_'$n'"' = yes; then
+	AC_DEFINE_UNQUOTED([HAVE_]$m)
+    fi
+done
+
 if test "$GCC" = yes; then
     # NaCl's glibc build generates undefined references to __memset_chk.
     # TODO(sbc): Remove this once NaCl's glibc is fixed.
