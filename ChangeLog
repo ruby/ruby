@@ -1,3 +1,8 @@
+Tue Oct 20 12:17:56 2015  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/prime.rb: Add basic argument checking to Prime.prime?
+	    [Bug #11606]
+
 Tue Oct 20 12:17:50 2015  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/prime.rb: Optimize Integer#prime?
