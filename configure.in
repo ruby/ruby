@@ -4317,7 +4317,7 @@ AC_SUBST(BUILTIN_TRANSOBJS)
 
 PACKAGE=$RUBY_BASE_NAME
 AC_SUBST(PACKAGE)
-AC_MSG_RESULT($PACKAGE library version = $ruby_version)
+AS_MESSAGE([$PACKAGE library version = $ruby_version])
 
 AS_CASE([" $CPP "], [*" $CC "*], [CPP=`echo " $CPP " | sed "s| $CC |"' $(CC) |;s/^ *//;s/  *$//'`])
 
