@@ -118,6 +118,11 @@ class TestPrime < Test::Unit::TestCase
     assert_not_respond_to(Prime.instance, :next)
   end
 
+  def test_prime_each_basic_argument_checking
+    assert_raise(ArgumentError) { Prime.prime?(1,2) }
+    assert_raise(ArgumentError) { Prime.prime?(1.2) }
+  end
+
   class TestInteger < Test::Unit::TestCase
     def test_prime_division
       pd = PRIMES.inject(&:*).prime_division
