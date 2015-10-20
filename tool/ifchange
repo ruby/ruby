@@ -38,7 +38,7 @@ if [ "$temp" = - ]; then
 fi
 
 msg_begin= msg_unchanged= msg_updated= msg_reset=
-if [ -t ]; then
+if [ -t 1 ]; then
     msg_begin="`tput smso 2>/dev/null`"
     case "$msg_begin" in
 	""*m)
