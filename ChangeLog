@@ -1,3 +1,8 @@
+Tue Oct 20 12:17:50 2015  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/prime.rb: Optimize Integer#prime?
+	  Patch by Nick Slocum [Bug #10354]
+
 Tue Oct 20 08:12:47 2015  Rei Odaira  <Rei.Odaira@gmail.com>
 
 	* configure.in: pthread_getattr_np is broken on AIX.
