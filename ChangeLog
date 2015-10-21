@@ -1,3 +1,8 @@
+Wed Oct 21 18:34:06 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_magic_comment): allow a sole magic comment without
+	  indicators, neither other non-space comments.  [Feature #8976]
+
 Tue Oct 20 12:17:56 2015  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/prime.rb: Add basic argument checking to Prime.prime?
