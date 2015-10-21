@@ -2,7 +2,7 @@
 
 AC_DEFUN([_COLORIZE_RESULT_PREPARE], [
     msg_checking= msg_result_yes= msg_result_no= msg_result_other= msg_reset=
-    AS_IF([test -t 1], [
+    AS_IF([test "x${CONFIGURE_TTY}" = xyes -o -t 1], [
 	msg_begin="`tput smso 2>/dev/null`"
     	AS_CASE(["$msg_begin"], ['@<:@'*m],
 	    [msg_begin="`echo "$msg_begin" | sed ['s/[0-9]*m$//']`"
