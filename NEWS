@@ -129,7 +129,7 @@ with all sufficient information, see the ChangeLog file.
   * Socket#connect_nonblock, Socket#accept_nonblock,
     TCPServer#accept_nonblock, UNIXServer#accept_nonblock,
     BasicSocket#recv_nonblock, BasicSocket#recvmsg_nonblock,
-    BasicSocket#sendmsg_nonblock all support `exception :false` to return
+    BasicSocket#sendmsg_nonblock all support `exception: false` to return
     :wait_readable or :wait_writable symbols instead of raising
     IO::WaitReadable or IO::WaitWritable exceptions
   * BasicSocket#recv and BasicSocket#recv_nonblock allow an output
