@@ -24,7 +24,7 @@ static void vm_set_eval_stack(rb_thread_t * th, const rb_iseq_t *iseq, const rb_
 static int vm_collect_local_variables_in_heap(rb_thread_t *th, const VALUE *dfp, const struct local_var_list *vars);
 
 static VALUE rb_eUncaughtThrow;
-static ID id_tag, id_value;
+static ID id_result, id_tag, id_value;
 #define id_mesg idMesg
 
 /* vm_backtrace.c */
@@ -1079,6 +1079,12 @@ loop_i(void)
 }
 
 static VALUE
+loop_stop(VALUE dummy, VALUE exc)
+{
+    return rb_attr_get(exc, id_result);
+}
+
+static VALUE
 rb_f_loop_size(VALUE self, VALUE args, VALUE eobj)
 {
     return DBL2NUM(INFINITY);
@@ -1100,15 +1106,25 @@ rb_f_loop_size(VALUE self, VALUE args, VALUE eobj)
  *       # ...
  *     end
  *
- *  StopIteration raised in the block breaks the loop.
+ *  StopIteration raised in the block breaks the loop.  In this case,
+ *  loop returns the "result" value stored in the exception.
+ *
+ *     enum = Enumerator.new { |y|
+ *       y << "one"
+ *       y << "two"
+ *       :ok
+ *     }
+ *
+ *     result = loop {
+ *       puts enum.next
+ *     } #=> :ok
  */
 
 static VALUE
 rb_f_loop(VALUE self)
 {
     RETURN_SIZED_ENUMERATOR(self, 0, 0, rb_f_loop_size);
-    rb_rescue2(loop_i, (VALUE)0, 0, 0, rb_eStopIteration, (VALUE)0);
-    return Qnil;		/* dummy */
+    return rb_rescue2(loop_i, (VALUE)0, loop_stop, (VALUE)0, rb_eStopIteration, (VALUE)0);
 }
 
 #if VMDEBUG
@@ -2184,6 +2200,7 @@ Init_vm_eval(void)
     rb_define_method(rb_eUncaughtThrow, "value", uncaught_throw_value, 0);
     rb_define_method(rb_eUncaughtThrow, "to_s", uncaught_throw_to_s, 0);
 
+    id_result = rb_intern_const("result");
     id_tag = rb_intern_const("tag");
     id_value = rb_intern_const("value");
 }
