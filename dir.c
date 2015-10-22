@@ -2038,17 +2038,17 @@ ruby_brace_expand(const char *str, int flags, ruby_glob_func *func, VALUE arg,
     int nest = 0, status = 0;
 
     while (*p) {
-	if (*p == '{' && nest++ == 0) {
-	    lbrace = p;
-	}
-	if (*p == '}' && --nest <= 0) {
-	    rbrace = p;
-	    break;
-	}
-	if (*p == '\\' && escape) {
-	    if (!*++p) break;
-	}
-	Inc(p, pend, enc);
+      if (*p == '{' && nest++ == 0) {
+        lbrace = p;
+      }
+      if (*p == '}' && lbrace && --nest == 0) {
+        rbrace = p;
+        break;
+      }
+      if (*p == '\\' && escape) {
+        if (!*++p) break;
+      }
+      Inc(p, pend, enc);
     }
 
     if (lbrace && rbrace) {
