@@ -39,7 +39,7 @@ fi
 
 msg_begin= msg_unchanged= msg_updated= msg_reset=
 if [ -t 1 ]; then
-    msg_begin="`tput smso 2>/dev/null`"
+    msg_begin="`tput smso 2>/dev/null`" || :
     case "$msg_begin" in
 	""*m)
 	    msg_begin="`echo "$msg_begin" | sed 's/[0-9]*m$//'`"
