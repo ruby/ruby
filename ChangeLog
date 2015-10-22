@@ -1,3 +1,8 @@
+Fri Oct 23 00:49:45 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/un.rb (help): change the name of a block parameter to avoid
+	  a warning when the command line option -w of ruby is specified.
+
 Fri Oct 23 00:22:20 2015  Josef Simanek  <josef.simanek@gmail.com>
 
 	* string.c (rb_str_tr): [DOC] Escape backslash in String#tr
