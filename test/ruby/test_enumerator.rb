@@ -46,6 +46,14 @@ class TestEnumerator < Test::Unit::TestCase
     }
   end
 
+  def test_loop_return_value
+    assert_equal nil, loop { break }
+    assert_equal 42,  loop { break 42 }
+
+    e = Enumerator.new { |y| y << 1; y << 2; :stopped }
+    assert_equal :stopped, loop { e.next while true }
+  end
+
   def test_nested_iteration
     def (o = Object.new).each
       yield :ok1

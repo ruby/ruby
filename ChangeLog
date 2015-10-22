@@ -1,3 +1,9 @@
+Thu Oct 22 18:52:53 2015  Akinori MUSHA  <knu@iDaemons.org>
+
+	* vm_eval.c (rb_f_loop): When a loop is stopped by a StopIteration
+	  exception, return what the enumerator has returned instead of
+	  nil. [ruby-core:71133] [Feature #11498]
+
 Thu Oct 22 18:25:10 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap (idle): add a new argument timeout for keep-alive.
