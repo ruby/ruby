@@ -1,3 +1,8 @@
+Thu Oct 22 13:13:49 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (argf_next_argv): check ARGV element type, and try
+	  conversion if necessary.  [ruby-core:71140] [Bug #11610]
+
 Thu Oct 22 11:11:16 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* test/net/ftp/test_ftp.rb: add tests for getbinaryfile and

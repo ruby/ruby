@@ -899,4 +899,12 @@ class TestArgf < Test::Unit::TestCase
       assert_equal "done with eof\n", f.gets
     end
   end
+
+  def test_wrong_type
+    assert_separately([], <<-'end;')
+      bug11610 = '[ruby-core:71140] [Bug #11610]'
+      ARGV[0] = nil
+      assert_raise(TypeError, bug11610) {gets}
+    end;
+  end
 end
