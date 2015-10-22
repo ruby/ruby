@@ -22,7 +22,7 @@ with all sufficient information, see the ChangeLog file.
 
   * new method call syntax, `object.?foo', method #foo is called on
     `object' if it is not nil.
-    this is similar to `try!' in ActiveSupport, except for:
+    this is similar to `try!' in Active Support, except for:
     * method name is syntactically required
           obj.try! {} # valid
           obj.? {}    # syntax error
