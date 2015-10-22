@@ -2041,7 +2041,7 @@ ruby_brace_expand(const char *str, int flags, ruby_glob_func *func, VALUE arg,
 	if (*p == '{' && nest++ == 0) {
 	    lbrace = p;
 	}
-	if (*p == '}' && --nest <= 0) {
+	if (*p == '}' && lbrace && --nest == 0) {
 	    rbrace = p;
 	    break;
 	}
