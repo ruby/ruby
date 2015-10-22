@@ -599,9 +599,12 @@ ssl_npn_select_cb(SSL *s, unsigned char **out, unsigned char *outlen, const unsi
 
     selected = rb_funcall(cb, rb_intern("call"), 1, protocols);
     StringValue(selected);
+    i = RSTRING_LENINT(selected);
+    if (i < 1 || i >= 256) {
+	    ossl_raise(eSSLError, "Selected protocol must have length 1..255");
+    }
     *out = (unsigned char *) StringValuePtr(selected);
-    *outlen = RSTRING_LENINT(selected);
-
+    *outlen = i;
     return SSL_TLSEXT_ERR_OK;
 }
 
