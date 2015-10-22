@@ -24,8 +24,8 @@ end
 unchanged = "unchanged"
 updated = "updated"
 if color or (color == nil && STDOUT.tty?)
-  if (/\A(\e\[).*m\z/ =~ IO.popen("tput smso", "r", err: IO::NULL, &:read) rescue nil)
-    beg = $1
+  if (/\A(?:\e\[.*m|)\z/ =~ IO.popen("tput smso", "r", err: IO::NULL, &:read) rescue nil)
+    beg = "\e["
     colors = (colors = ENV['TEST_COLORS']) ? Hash[colors.scan(/(\w+)=([^:\n]*)/)] : {}
     reset = "#{beg}m"
     unchanged = "#{beg}#{colors["pass"] || "32;1"}m#{unchanged}#{reset}"

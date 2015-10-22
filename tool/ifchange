@@ -5,6 +5,7 @@ set -e
 timestamp=
 keepsuffix=
 empty=
+color=auto
 until [ $# -eq 0 ]; do
     case "$1" in
 	--timestamp)
@@ -22,6 +23,12 @@ until [ $# -eq 0 ]; do
 	--empty)
 	    empty=yes
 	    ;;
+	--color)
+	    color=always
+	    ;;
+	--color=*)
+	    color=`expr \( "$1" : '[^=]*=\(.*\)' \)`
+	    ;;
 	*)
 	    break
 	    ;;
@@ -38,11 +45,10 @@ if [ "$temp" = - ]; then
 fi
 
 msg_begin= msg_unchanged= msg_updated= msg_reset=
-if [ -t 1 ]; then
-    msg_begin="`tput smso 2>/dev/null`" || :
-    case "$msg_begin" in
-	""*m)
-	    msg_begin="`echo "$msg_begin" | sed 's/[0-9]*m$//'`"
+if [ "$color" = always -o \( "$color" = auto -a -t 1 \) ]; then
+    msg_begin="["
+    case "`tput smso 2>/dev/null`" in
+	"$msg_begin"*m|"")
 	    if [ ${TEST_COLORS:+set} ]; then
 		msg_unchanged=`expr ":$TEST_COLORS:" : ".*:pass=\([^:]*\):"`
 		msg_updated=`expr ":$TEST_COLORS:" : ".*:fail=\([^:]*\):"`
