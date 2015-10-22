@@ -1,6 +1,6 @@
 Thu Oct 22 18:25:10 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
-	* lib/net/imap (idle): add a new argument timeout for keep-alive. 
+	* lib/net/imap (idle): add a new argument timeout for keep-alive.
 	  [ruby-core:63693] [Bug #10031]
 
 Thu Oct 22 15:30:08 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
