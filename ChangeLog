@@ -1,3 +1,8 @@
+Fri Oct 23 00:22:20 2015  Josef Simanek  <josef.simanek@gmail.com>
+
+	* string.c (rb_str_tr): [DOC] Escape backslash in String#tr
+	  documentation.  [Fix GH-1063]
+
 Fri Oct 23 00:19:04 2015  yui-knk  <spiketeika@gmail.com>
 
 	* array.c (rb_ary_collect): [DOC] Fix space of code example of
