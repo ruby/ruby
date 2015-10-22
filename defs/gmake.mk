@@ -18,7 +18,7 @@ ifeq ($(if $(filter all main exts enc trans libencs libenc libtrans \
 		    wprogram rubyw rubyw$(EXEEXT) \
 		    miniruby$(EXEEXT) mini,\
 	     $(MAKECMDGOALS)),,$(MAKECMDGOALS)),)
--include showflags
+-include $(SHOWFLAGS)
 endif
 
 ifneq ($(filter universal-%,$(arch)),)
