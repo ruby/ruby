@@ -367,7 +367,7 @@ module UN # :nodoc:
       end
     end
     if messages
-      argv.each {|cmd| output << messages[cmd]}
+      argv.each {|arg| output << messages[arg]}
     end
   end
 end
