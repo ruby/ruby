@@ -156,13 +156,15 @@ TESTRUN_SCRIPT = $(srcdir)/test.rb
 
 COMPILE_PRELUDE = $(srcdir)/tool/generic_erb.rb $(srcdir)/template/prelude.c.tmpl
 
-all: showflags main docs
+SHOWFLAGS = showflags
 
-main: showflags $(ENCSTATIC:static=lib)encs exts
+all: $(SHOWFLAGS) main docs
+
+main: $(SHOWFLAGS) $(ENCSTATIC:static=lib)encs exts
 	@$(NULLCMD)
 
 .PHONY: showflags
-exts enc trans: showflags
+exts enc trans: $(SHOWFLAGS)
 showflags:
 	$(MESSAGE_BEGIN) \
 	"	CC = $(CC)" \
@@ -219,8 +221,8 @@ Doxyfile: $(srcdir)/template/Doxyfile.tmpl $(PREP) $(srcdir)/tool/generic_erb.rb
 	$(Q) $(MINIRUBY) $(srcdir)/tool/generic_erb.rb -o $@ $(srcdir)/template/Doxyfile.tmpl \
 	--srcdir="$(srcdir)" --miniruby="$(MINIRUBY)"
 
-program: showflags $(PROGRAM)
-wprogram: showflags $(WPROGRAM)
+program: $(SHOWFLAGS) $(PROGRAM)
+wprogram: $(SHOWFLAGS) $(WPROGRAM)
 mini: PHONY miniruby$(EXEEXT)
 
 $(PROGRAM) $(WPROGRAM): $(LIBRUBY) $(MAINOBJ) $(OBJS) $(EXTOBJS) $(SETUP) $(PREP)
@@ -631,7 +633,7 @@ yes-runnable: PHONY
 
 encs: enc trans
 libencs: libenc libtrans
-encs enc trans libencs libenc libtrans: showflags $(ENC_MK) $(LIBRUBY) $(PREP) PHONY
+encs enc trans libencs libenc libtrans: $(SHOWFLAGS) $(ENC_MK) $(LIBRUBY) $(PREP) PHONY
 	$(ECHO) making $@
 	$(Q) $(MAKE) -f $(ENC_MK) V="$(V)" \
 		RUBY="$(MINIRUBY)" MINIRUBY="$(MINIRUBY)" \
