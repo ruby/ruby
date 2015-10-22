@@ -1135,6 +1135,8 @@ class TestIO < Test::Unit::TestCase
 
   def test_dup_many
     ruby('-e', <<-'End') {|f|
+      lim = Process.getrlimit(Process::RLIMIT_NOFILE)[0]
+      Process.setrlimit(Process::RLIMIT_NOFILE, [lim, 1024].min)
       ok = 0
       a = []
       begin
