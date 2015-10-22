@@ -31,4 +31,16 @@ class TestCall < Test::Unit::TestCase
     assert_nothing_raised(ArgumentError) {o.foo}
     assert_raise_with_message(ArgumentError, e.message, bug9622) {o.foo(100)}
   end
+
+  def test_safe_call
+    s = Struct.new(:x, :y)
+    o = s.new("x")
+    assert_equal("X", o.x.?upcase)
+    assert_nil(o.y.?upcase)
+    assert_equal("x", o.x)
+    o.?x = 6
+    assert_equal(6, o.x)
+    o.?x *= 7
+    assert_equal(42, o.x)
+  end
 end

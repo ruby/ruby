@@ -1942,6 +1942,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
     }
 
     if (iobj->insn_id == BIN(branchif) ||
+	iobj->insn_id == BIN(branchnil) ||
 	iobj->insn_id == BIN(branchunless)) {
 	/*
 	 *   if L1
@@ -1954,6 +1955,31 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	INSN *nobj = (INSN *)get_destination_insn(iobj);
 	if (nobj->insn_id == BIN(jump)) {
 	    OPERAND_AT(iobj, 0) = OPERAND_AT(nobj, 0);
+	}
+
+	if (nobj->insn_id == BIN(dup)) {
+	    /*
+	     *   dup
+	     *   if L1
+	     *   ...
+	     * L1:
+	     *   dup
+	     *   if L2
+	     * =>
+	     *   dup
+	     *   if L2
+	     *   ...
+	     * L1:
+	     *   dup
+	     *   if L2
+	     */
+	    INSN *pobj = (INSN *)iobj->link.prev;
+	    nobj = (INSN *)nobj->link.next;
+	    /* basic blocks, with no labels in the middle */
+	    if ((pobj && pobj->insn_id == BIN(dup)) &&
+		(nobj && nobj->insn_id == iobj->insn_id)) {
+		OPERAND_AT(iobj, 0) = OPERAND_AT(nobj, 0);
+	    }
 	}
     }
 
@@ -4319,6 +4345,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	VALUE asgnflag;
 	LABEL *lfin = NEW_LABEL(line);
 	LABEL *lcfin = NEW_LABEL(line);
+	LABEL *lskip = 0;
 	/*
 	  class C; attr_accessor :c; end
 	  r = C.new
@@ -4362,6 +4389,11 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	*/
 
 	asgnflag = COMPILE_RECV(ret, "NODE_OP_ASGN2#recv", node);
+	if (node->nd_next->nd_aid) {
+	    lskip = NEW_LABEL(line);
+	    ADD_INSN(ret, line, dup);
+	    ADD_INSNL(ret, line, branchnil, lskip);
+	}
 	ADD_INSN(ret, line, dup);
 	ADD_SEND(ret, line, vid, INT2FIX(0));
 
@@ -4385,6 +4417,9 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 
 	    ADD_LABEL(ret, lfin);
 	    ADD_INSN(ret, line, pop);
+	    if (lskip) {
+		ADD_LABEL(ret, lskip);
+	    }
 	    if (poped) {
 		/* we can apply more optimize */
 		ADD_INSN(ret, line, pop);
@@ -4392,14 +4427,16 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	}
 	else {
 	    COMPILE(ret, "NODE_OP_ASGN2 val", node->nd_value);
-	    ADD_SEND(ret, line, node->nd_next->nd_mid,
-		     INT2FIX(1));
+	    ADD_SEND(ret, line, atype, INT2FIX(1));
 	    if (!poped) {
 		ADD_INSN(ret, line, swap);
 		ADD_INSN1(ret, line, topn, INT2FIX(1));
 	    }
 	    ADD_SEND_WITH_FLAG(ret, line, aid, INT2FIX(1), INT2FIX(asgnflag));
 	    ADD_INSN(ret, line, pop);
+	    if (lskip) {
+		ADD_LABEL(ret, lskip);
+	    }
 	}
 	break;
       }
@@ -4548,6 +4585,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    }
 	    break;
 	}
+      case NODE_QCALL:
       case NODE_FCALL:
       case NODE_VCALL:{		/* VCALL: variable or call */
 	/*
@@ -4557,6 +4595,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	*/
 	DECL_ANCHOR(recv);
 	DECL_ANCHOR(args);
+	LABEL *lskip = 0;
 	ID mid = node->nd_mid;
 	VALUE argc;
 	unsigned int flag = 0;
@@ -4631,8 +4670,13 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	}
 #endif
 	/* receiver */
-	if (type == NODE_CALL) {
+	if (type == NODE_CALL || type == NODE_QCALL) {
 	    COMPILE(recv, "recv", node->nd_recv);
+	    if (type == NODE_QCALL) {
+		lskip = NEW_LABEL(line);
+		ADD_INSN(recv, line, dup);
+		ADD_INSNL(recv, line, branchnil, lskip);
+	    }
 	}
 	else if (type == NODE_FCALL || type == NODE_VCALL) {
 	    ADD_CALL_RECEIVER(recv, line);
@@ -4662,6 +4706,9 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 
 	ADD_SEND_R(ret, line, mid, argc, parent_block, INT2FIX(flag), keywords);
 
+	if (lskip) {
+	    ADD_LABEL(ret, lskip);
+	}
 	if (poped) {
 	    ADD_INSN(ret, line, pop);
 	}

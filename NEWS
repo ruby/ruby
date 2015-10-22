@@ -18,6 +18,17 @@ with all sufficient information, see the ChangeLog file.
   * besides, --enable/--disable=frozen-string-literal options also have
     been introduced.
 
+* safe navigation operator:
+
+  * new method call syntax, `object.?foo', method #foo is called on
+    `object' if it is not nil.
+    this is similar to `try!' in ActiveSupport, except for:
+    * method name is syntactically required
+          obj.try! {} # valid
+          obj.? {}    # syntax error
+    * attribute assignment is valid
+          obj.?attr += 1
+
 === Core classes updates (outstanding ones only)
 
 * ARGF
