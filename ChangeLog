@@ -1,3 +1,8 @@
+Fri Oct 23 00:19:04 2015  yui-knk  <spiketeika@gmail.com>
+
+	* array.c (rb_ary_collect): [DOC] Fix space of code example of
+	  Array#map.  [Fix GH-1062]
+
 Thu Oct 22 18:52:53 2015  Akinori MUSHA  <knu@iDaemons.org>
 
 	* vm_eval.c (rb_f_loop): When a loop is stopped by a StopIteration
