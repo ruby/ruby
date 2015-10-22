@@ -8004,9 +8004,11 @@ argf_next_argv(VALUE argf)
     if (ARGF.next_p == 1) {
       retry:
 	if (RARRAY_LEN(ARGF.argv) > 0) {
-	    ARGF.filename = rb_str_encode_ospath(rb_ary_shift(ARGF.argv));
-	    fn = StringValueCStr(ARGF.filename);
-	    if (strlen(fn) == 1 && fn[0] == '-') {
+	    VALUE filename = rb_ary_shift(ARGF.argv);
+	    StringValueCStr(filename);
+	    ARGF.filename = rb_str_encode_ospath(filename);
+	    fn = StringValueCStr(filename);
+	    if (RSTRING_LEN(filename) == 1 && fn[0] == '-') {
 		ARGF.current_file = rb_stdin;
 		if (ARGF.inplace) {
 		    rb_warn("Can't do inplace edit for stdio; skipping");
@@ -8015,7 +8017,7 @@ argf_next_argv(VALUE argf)
 	    }
 	    else {
 		VALUE write_io = Qnil;
-		int fr = rb_sysopen(ARGF.filename, O_RDONLY, 0);
+		int fr = rb_sysopen(filename, O_RDONLY, 0);
 
 		if (ARGF.inplace) {
 		    struct stat st;
@@ -8029,7 +8031,7 @@ argf_next_argv(VALUE argf)
 			rb_io_close(rb_stdout);
 		    }
 		    fstat(fr, &st);
-		    str = ARGF.filename;
+		    str = filename;
 		    if (*ARGF.inplace) {
 			str = rb_str_dup(str);
 			rb_str_cat2(str, ARGF.inplace);
@@ -8039,14 +8041,14 @@ argf_next_argv(VALUE argf)
 			(void)unlink(RSTRING_PTR(str));
 			if (rename(fn, RSTRING_PTR(str)) < 0) {
 			    rb_warn("Can't rename %"PRIsVALUE" to %"PRIsVALUE": %s, skipping file",
-				    ARGF.filename, str, strerror(errno));
+				    filename, str, strerror(errno));
 			    goto retry;
 			}
 			fr = rb_sysopen(str, O_RDONLY, 0);
 #else
 			if (rename(fn, RSTRING_PTR(str)) < 0) {
 			    rb_warn("Can't rename %"PRIsVALUE" to %"PRIsVALUE": %s, skipping file",
-				    ARGF.filename, str, strerror(errno));
+				    filename, str, strerror(errno));
 			    close(fr);
 			    goto retry;
 			}
@@ -8058,13 +8060,13 @@ argf_next_argv(VALUE argf)
 #else
 			if (unlink(fn) < 0) {
 			    rb_warn("Can't remove %"PRIsVALUE": %s, skipping file",
-				    ARGF.filename, strerror(errno));
+				    filename, strerror(errno));
 			    close(fr);
 			    goto retry;
 			}
 #endif
 		    }
-		    fw = rb_sysopen(ARGF.filename, O_WRONLY|O_CREAT|O_TRUNC, 0666);
+		    fw = rb_sysopen(filename, O_WRONLY|O_CREAT|O_TRUNC, 0666);
 #ifndef NO_SAFE_RENAME
 		    fstat(fw, &st2);
 #ifdef HAVE_FCHMOD
@@ -8080,9 +8082,9 @@ argf_next_argv(VALUE argf)
 			err = chown(fn, st.st_uid, st.st_gid);
 #endif
 			if (err && getuid() == 0 && st2.st_uid == 0) {
-			    const char *wkfn = RSTRING_PTR(ARGF.filename);
+			    const char *wkfn = RSTRING_PTR(filename);
 			    rb_warn("Can't set owner/group of %"PRIsVALUE" to same as %"PRIsVALUE": %s, skipping file",
-				    ARGF.filename, str, strerror(errno));
+				    filename, str, strerror(errno));
 			    (void)close(fr);
 			    (void)close(fw);
 			    (void)unlink(wkfn);
