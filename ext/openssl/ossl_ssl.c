@@ -581,56 +581,58 @@ ssl_npn_advertise_cb(SSL *ssl, const unsigned char **out, unsigned int *outlen, 
 }
 
 static int
-ssl_npn_select_cb(SSL *s, unsigned char **out, unsigned char *outlen, const unsigned char *in, unsigned int inlen, void *arg)
+ssl_npn_select_cb_common(VALUE cb, const unsigned char **out, unsigned char *outlen, const unsigned char *in, unsigned int inlen)
 {
-    int i = 0;
-    VALUE sslctx_obj, cb, protocols, selected;
-
-    sslctx_obj = (VALUE) arg;
-    cb = rb_iv_get(sslctx_obj, "@npn_select_cb");
-    protocols = rb_ary_new();
+    VALUE selected;
+    long len;
+    unsigned char l;
+    VALUE protocols = rb_ary_new();
 
     /* The format is len_1|proto_1|...|len_n|proto_n\0 */
-    while (in[i]) {
-	VALUE protocol = rb_str_new((const char *) &in[i + 1], in[i]);
+    while (l = *in++) {
+	VALUE protocol;
+	if (l > inlen) {
+	    ossl_raise(eSSLError, "Invalid protocol name list");
+	}
+	protocol = rb_str_new((const char *)in, l);
 	rb_ary_push(protocols, protocol);
-	i += in[i] + 1;
+	in += l;
+	inlen -= l;
     }
 
     selected = rb_funcall(cb, rb_intern("call"), 1, protocols);
     StringValue(selected);
-    i = RSTRING_LENINT(selected);
-    if (i < 1 || i >= 256) {
-	    ossl_raise(eSSLError, "Selected protocol must have length 1..255");
+    len = RSTRING_LEN(selected);
+    if (len < 1 || len >= 256) {
+	ossl_raise(eSSLError, "Selected protocol name must have length 1..255");
     }
-    *out = (unsigned char *) StringValuePtr(selected);
-    *outlen = i;
+    *out = (unsigned char *)RSTRING_PTR(selected);
+    *outlen = (unsigned char)len;
+
     return SSL_TLSEXT_ERR_OK;
+}
+
+static int
+ssl_npn_select_cb(SSL *s, unsigned char **out, unsigned char *outlen, const unsigned char *in, unsigned int inlen, void *arg)
+{
+    VALUE sslctx_obj, cb;
+
+    sslctx_obj = (VALUE) arg;
+    cb = rb_iv_get(sslctx_obj, "@npn_select_cb");
+
+    return ssl_npn_select_cb_common(cb, (const unsigned char **)out, outlen, in, inlen);
 }
 
 #ifdef HAVE_SSL_CTX_SET_ALPN_SELECT_CB
 static int
 ssl_alpn_select_cb(SSL *ssl, const unsigned char **out, unsigned char *outlen, const unsigned char *in, unsigned int inlen, void *arg)
 {
-    int i = 0;
-    VALUE sslctx_obj, cb, protocols, selected;
+    VALUE sslctx_obj, cb;
 
     sslctx_obj = (VALUE) arg;
     cb = rb_iv_get(sslctx_obj, "@alpn_select_cb");
-    protocols = rb_ary_new();
 
-    /* The format is len_1|proto_1|...|len_n|proto_n\0 */
-    while (in[i]) {
-	VALUE protocol = rb_str_new((const char *) &in[i + 1], in[i]);
-	rb_ary_push(protocols, protocol);
-	i += in[i] + 1;
-    }
-
-    selected = rb_funcall(cb, rb_intern("call"), 1, protocols);
-    *out = (unsigned char *) StringValuePtr(selected);
-    *outlen = RSTRING_LENINT(selected);
-
-    return SSL_TLSEXT_ERR_OK;
+    return ssl_npn_select_cb_common(cb, out, outlen, in, inlen);
 }
 #endif
 
