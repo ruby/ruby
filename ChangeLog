@@ -1,3 +1,10 @@
+Thu Oct 22 13:16:19 2015  Guilherme Reis Campos  <guilhermekbsa@gmail.com>
+
+	* dir.c (ruby_brace_expand): glob brace expansion edge case fix.
+	  When there are closing braces '}' before a open brace '{' it
+	  must be ignored and considered as literal.
+	  [ruby-core:71138] [Bug #11609]
+
 Thu Oct 22 13:13:49 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (argf_next_argv): check ARGV element type, and try
