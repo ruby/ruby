@@ -27,6 +27,10 @@ This sends the +my_method+ message to +my_object+.  Any object can be a
 receiver but depending on the method's visibility sending a message may raise a
 NoMethodError.
 
+You may use <code>.?</code> to designate a receiver, then +my_method+ is not
+invoked and the result is +nil+ when the receiver is +nil+.  In that case, the
+argument of +my_method+ are not evaluated.
+
 You may also use <code>::</code> to designate a receiver, but this is rarely
 used due to the potential for confusion with <code>::</code> for namespaces.
 

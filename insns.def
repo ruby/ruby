@@ -1132,6 +1132,23 @@ branchunless
     }
 }
 
+/**
+  @c jump
+  @e if val is nil, set PC to (PC + dst).
+  @j もし val が nil ならば、PC を (PC + dst) にする。
+ */
+DEFINE_INSN
+branchnil
+(OFFSET dst)
+(VALUE val)
+()
+{
+    if (NIL_P(val)) {
+	RUBY_VM_CHECK_INTS(th);
+	JUMP(dst);
+    }
+}
+
 
 /**********************************************************/
 /* for optimize                                           */

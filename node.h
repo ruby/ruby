@@ -96,6 +96,8 @@ enum node_type {
 #define NODE_FCALL       NODE_FCALL
     NODE_VCALL,
 #define NODE_VCALL       NODE_VCALL
+    NODE_QCALL,
+#define NODE_QCALL       NODE_QCALL
     NODE_SUPER,
 #define NODE_SUPER       NODE_SUPER
     NODE_ZSUPER,
@@ -394,8 +396,8 @@ typedef struct RNode {
 #define NEW_CVASGN(v,val) NEW_NODE(NODE_CVASGN,v,val,0)
 #define NEW_CVDECL(v,val) NEW_NODE(NODE_CVDECL,v,val,0)
 #define NEW_OP_ASGN1(p,id,a) NEW_NODE(NODE_OP_ASGN1,p,id,a)
-#define NEW_OP_ASGN2(r,i,o,val) NEW_NODE(NODE_OP_ASGN2,r,val,NEW_OP_ASGN22(i,o))
-#define NEW_OP_ASGN22(i,o) NEW_NODE(NODE_OP_ASGN2,i,o,0)
+#define NEW_OP_ASGN2(r,t,i,o,val) NEW_NODE(NODE_OP_ASGN2,r,val,NEW_OP_ASGN22(i,o,t))
+#define NEW_OP_ASGN22(i,o,t) NEW_NODE(NODE_OP_ASGN2,i,o,t)
 #define NEW_OP_ASGN_OR(i,val) NEW_NODE(NODE_OP_ASGN_OR,i,val,0)
 #define NEW_OP_ASGN_AND(i,val) NEW_NODE(NODE_OP_ASGN_AND,i,val,0)
 #define NEW_OP_CDECL(v,op,val) NEW_NODE(NODE_OP_CDECL,v,val,op)
