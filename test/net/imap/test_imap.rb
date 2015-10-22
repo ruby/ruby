@@ -285,6 +285,50 @@ class IMAPTest < Test::Unit::TestCase
     end
   end
 
+  def test_idle_timeout
+    server = create_tcp_server
+    port = server.addr[1]
+    requests = []
+    @threads << Thread.start do
+      sock = server.accept
+      begin
+        sock.print("* OK test server\r\n")
+        requests.push(sock.gets)
+        sock.print("+ idling\r\n")
+        sock.print("* 3 EXISTS\r\n")
+        sock.print("* 2 EXPUNGE\r\n")
+        requests.push(sock.gets)
+        sock.print("RUBY0001 OK IDLE terminated\r\n")
+        sock.gets
+        sock.print("* BYE terminating connection\r\n")
+        sock.print("RUBY0002 OK LOGOUT completed\r\n")
+      ensure
+        sock.close
+        server.close
+      end
+    end
+
+    begin
+      imap = Net::IMAP.new(SERVER_ADDR, :port => port)
+      responses = []
+      imap.idle(0.1) do |res|
+        responses.push(res)
+      end
+      assert_equal(3, responses.length)
+      assert_instance_of(Net::IMAP::ContinuationRequest, responses[0])
+      assert_equal("EXISTS", responses[1].name)
+      assert_equal(3, responses[1].data)
+      assert_equal("EXPUNGE", responses[2].name)
+      assert_equal(2, responses[2].data)
+      assert_equal(2, requests.length)
+      assert_equal("RUBY0001 IDLE\r\n", requests[0])
+      assert_equal("DONE\r\n", requests[1])
+      imap.logout
+    ensure
+      imap.disconnect if imap
+    end
+  end
+
   def test_unexpected_bye
     server = create_tcp_server
     port = server.addr[1]
