@@ -6106,7 +6106,7 @@ rb_str_tr_bang(VALUE str, VALUE src, VALUE repl)
  *     "hello".tr('a-y', 'b-z')    #=> "ifmmp"
  *     "hello".tr('^aeiou', '*')   #=> "*e**o"
  *
- *  The backslash character <code>\</code> can be used to escape
+ *  The backslash character <code>\\</code> can be used to escape
  *  <code>^</code> or <code>-</code> and is otherwise ignored unless it
  *  appears at the end of a range or the end of the +from_str+ or +to_str+:
  *
