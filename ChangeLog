@@ -1,3 +1,7 @@
+Fri Oct 23 07:17:11 2015  Eric Wong  <e@80x24.org>
+
+	* test/io/wait/test_io_wait.rb (test_wait_eof): test return value
+
 Fri Oct 23 00:32:02 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/openssl/ossl_ssl.c (ssl_npn_select_cb): explicitly raise error
