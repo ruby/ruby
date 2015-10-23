@@ -4259,7 +4259,7 @@ ruby_enc_find_extname(const char *name, long *len, rb_encoding *enc)
  *     File.extname("test.rb")         #=> ".rb"
  *     File.extname("a/b/d/test.rb")   #=> ".rb"
  *     File.extname(".a/b/d/test.rb")  #=> ".rb"
- *     File.extname("foo.")	       #=> ""
+ *     File.extname("foo.")            #=> ""
  *     File.extname("test")            #=> ""
  *     File.extname(".profile")        #=> ""
  *     File.extname(".profile.sh")     #=> ".sh"
