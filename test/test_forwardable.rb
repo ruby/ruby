@@ -94,6 +94,22 @@ class TestForwardable < Test::Unit::TestCase
     end
   end
 
+  class Foo
+    extend Forwardable
+
+    def_delegator :bar, :baz
+
+    class Exception
+    end
+  end
+
+  def test_backtrace_adjustment
+    e = assert_raise(NameError) {
+      Foo.new.baz
+    }
+    assert_not_match(/\/forwardable\.rb/, e.backtrace[0])
+  end
+
   private
 
   def forwardable_class(&block)
