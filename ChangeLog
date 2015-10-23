@@ -1,3 +1,10 @@
+Sat Oct 24 00:38:34 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/forwardable (def_instance_delegator, def_single_delegator):
+	  rescue ::Exception instead of Exception in case Exception is
+	  defined under the target class.
+	  [ruby-core:71175] [Ruby trunk - Bug #11615]
+
 Fri Oct 23 21:10:37 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (name_err_mesg_to_str): separate class names from the
