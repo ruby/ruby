@@ -2,7 +2,7 @@ Fri Oct 23 16:03:26 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* file.c: fix indent style. [fix GH-977]
 	* test/ruby/test_string.rb: indent. [fix GH-975]
-	[ci skip] These patches are contributed from @yui-knk
+	  [ci skip] These patches are contributed from @yui-knk
 
 Fri Oct 23 15:46:09 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
@@ -127,7 +127,7 @@ Wed Oct 21 18:34:06 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Tue Oct 20 12:17:56 2015  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/prime.rb: Add basic argument checking to Prime.prime?
-	    [Bug #11606]
+	  [Bug #11606]
 
 Tue Oct 20 12:17:50 2015  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
