@@ -18,8 +18,6 @@ require "irb/ruby-lex"
 require "irb/input-method"
 require "irb/locale"
 
-STDOUT.sync = true
-
 # IRB stands for "interactive Ruby" and is a tool to interactively execute Ruby
 # expressions read from the standard input.
 #
@@ -373,6 +371,7 @@ module IRB
 
   # Initializes IRB and creates a new Irb.irb object at the +TOPLEVEL_BINDING+
   def IRB.start(ap_path = nil)
+    STDOUT.sync = true
     $0 = File::basename(ap_path, ".rb") if ap_path
 
     IRB.setup(ap_path)
