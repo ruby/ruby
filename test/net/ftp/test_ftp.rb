@@ -1,10 +1,10 @@
-#
-# -*- frozen_string_literal: true -*-
+# frozen_string_literal: true
 
 require "net/ftp"
 require "test/unit"
 require "ostruct"
 require "stringio"
+require "tempfile"
 
 class FTPTest < Test::Unit::TestCase
   SERVER_ADDR = "127.0.0.1"
@@ -758,6 +758,64 @@ class FTPTest < Test::Unit::TestCase
     end
   end
 
+  def test_getbinaryfile_with_filename_and_block
+    commands = []
+    binary_data = (0..0xff).map {|i| i.chr}.join * 4 * 3
+    server = create_ftp_server { |sock|
+      sock.print("220 (test_ftp).\r\n")
+      commands.push(sock.gets)
+      sock.print("331 Please specify the password.\r\n")
+      commands.push(sock.gets)
+      sock.print("230 Login successful.\r\n")
+      commands.push(sock.gets)
+      sock.print("200 Switching to Binary mode.\r\n")
+      line = sock.gets
+      commands.push(line)
+      port_args = line.slice(/\APORT (.*)/, 1).split(/,/)
+      host = port_args[0, 4].join(".")
+      port = port_args[4, 2].map(&:to_i).inject {|x, y| (x << 8) + y}
+      sock.print("200 PORT command successful.\r\n")
+      commands.push(sock.gets)
+      sock.print("150 Opening BINARY mode data connection for foo (#{binary_data.size} bytes)\r\n")
+      conn = TCPSocket.new(host, port)
+      binary_data.scan(/.{1,1024}/nm) do |s|
+        conn.print(s)
+      end
+      conn.shutdown(Socket::SHUT_WR)
+      conn.read
+      conn.close
+      sock.print("226 Transfer complete.\r\n")
+    }
+    begin
+      begin
+        ftp = Net::FTP.new
+        ftp.read_timeout = 0.2
+        ftp.connect(SERVER_ADDR, server.port)
+        ftp.login
+        assert_match(/\AUSER /, commands.shift)
+        assert_match(/\APASS /, commands.shift)
+        assert_equal("TYPE I\r\n", commands.shift)
+        Tempfile.create("foo", external_encoding: "ASCII-8BIT") do |f|
+          buf = String.new
+          res = ftp.getbinaryfile("foo", f.path) { |s|
+            buf << s
+          }
+          assert_equal(nil, res)
+          assert_equal(binary_data, buf)
+          assert_equal(Encoding::ASCII_8BIT, buf.encoding)
+          assert_equal(binary_data, f.read)
+        end
+        assert_match(/\APORT /, commands.shift)
+        assert_equal("RETR foo\r\n", commands.shift)
+        assert_equal(nil, commands.shift)
+      ensure
+        ftp.close if ftp
+      end
+    ensure
+      server.close
+    end
+  end
+
   def test_storbinary
     commands = []
     binary_data = (0..0xff).map {|i| i.chr}.join * 4 * 3
@@ -953,6 +1011,73 @@ EOF
         buf = ftp.gettextfile("foo", nil)
         assert_equal(text_data.gsub(/\r\n/, "\n"), buf)
         assert_equal(Encoding::ASCII_8BIT, buf.encoding)
+        assert_equal("TYPE A\r\n", commands.shift)
+        assert_match(/\APORT /, commands.shift)
+        assert_equal("RETR foo\r\n", commands.shift)
+        assert_equal("TYPE I\r\n", commands.shift)
+        assert_equal(nil, commands.shift)
+      ensure
+        ftp.close if ftp
+      end
+    ensure
+      server.close
+    end
+  end
+
+  def test_gettextfile_with_filename_and_block
+    commands = []
+    text_data = <<EOF.gsub(/\n/, "\r\n")
+foo
+bar
+baz
+EOF
+    server = create_ftp_server { |sock|
+      sock.print("220 (test_ftp).\r\n")
+      commands.push(sock.gets)
+      sock.print("331 Please specify the password.\r\n")
+      commands.push(sock.gets)
+      sock.print("230 Login successful.\r\n")
+      commands.push(sock.gets)
+      sock.print("200 Switching to Binary mode.\r\n")
+      commands.push(sock.gets)
+      sock.print("200 Switching to ASCII mode.\r\n")
+      line = sock.gets
+      commands.push(line)
+      port_args = line.slice(/\APORT (.*)/, 1).split(/,/)
+      host = port_args[0, 4].join(".")
+      port = port_args[4, 2].map(&:to_i).inject {|x, y| (x << 8) + y}
+      sock.print("200 PORT command successful.\r\n")
+      commands.push(sock.gets)
+      sock.print("150 Opening TEXT mode data connection for foo (#{text_data.size} bytes)\r\n")
+      conn = TCPSocket.new(host, port)
+      text_data.each_line do |line|
+        conn.print(line)
+      end
+      conn.shutdown(Socket::SHUT_WR)
+      conn.read
+      conn.close
+      sock.print("226 Transfer complete.\r\n")
+      commands.push(sock.gets)
+      sock.print("200 Switching to Binary mode.\r\n")
+    }
+    begin
+      begin
+        ftp = Net::FTP.new
+        ftp.connect(SERVER_ADDR, server.port)
+        ftp.login
+        assert_match(/\AUSER /, commands.shift)
+        assert_match(/\APASS /, commands.shift)
+        assert_equal("TYPE I\r\n", commands.shift)
+        Tempfile.create("foo", external_encoding: "ascii-8bit") do |f|
+          buf = String.new
+          res = ftp.gettextfile("foo", f.path) { |s|
+            buf << s << "\n"
+          }
+          assert_equal(nil, res)
+          assert_equal(text_data.gsub(/\r\n/, "\n"), buf)
+          assert_equal(Encoding::ASCII_8BIT, buf.encoding)
+          assert_equal(buf, f.read)
+        end
         assert_equal("TYPE A\r\n", commands.shift)
         assert_match(/\APORT /, commands.shift)
         assert_equal("RETR foo\r\n", commands.shift)
