@@ -1,3 +1,8 @@
+Fri Oct 23 16:35:08 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/ipaddr.rb, test/test_ipaddr.rb: Reject invalid address contained
+	  EOL string. Patch by @kachick [fix GH-942][Bug #11513]
+
 Fri Oct 23 16:03:26 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* file.c: fix indent style. [fix GH-977]
