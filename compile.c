@@ -5588,12 +5588,14 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	DECL_ANCHOR(recv);
 	DECL_ANCHOR(args);
 	unsigned int flag = 0;
+	ID mid = node->nd_mid;
+	LABEL *lskip = 0;
 	VALUE argc;
 
 	/* optimization shortcut
 	 *   obj["literal"] = value -> opt_aset_with(obj, "literal", value)
 	 */
-	if (node->nd_mid == idASET && !private_recv_p(node) && node->nd_args &&
+	if (mid == idASET && !private_recv_p(node) && node->nd_args &&
 	    nd_type(node->nd_args) == NODE_ARRAY && node->nd_args->nd_alen == 2 &&
 	    nd_type(node->nd_args->nd_head) == NODE_STR &&
 	    iseq->compile_data->current_block == NULL &&
@@ -5622,8 +5624,15 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	flag |= COMPILE_RECV(recv, "recv", node);
 
 	debugp_param("argc", argc);
-	debugp_param("nd_mid", ID2SYM(node->nd_mid));
+	debugp_param("nd_mid", ID2SYM(mid));
 
+	if (!rb_is_attrset_id(mid)) {
+	    /* safe nav attr */
+	    mid = rb_id_attrset(mid);
+	    ADD_INSN(recv, line, dup);
+	    lskip = NEW_LABEL(line);
+	    ADD_INSNL(recv, line, branchnil, lskip);
+	}
 	if (!poped) {
 	    ADD_INSN(ret, line, putnil);
 	    ADD_SEQ(ret, recv);
@@ -5653,7 +5662,8 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    ADD_SEQ(ret, recv);
 	    ADD_SEQ(ret, args);
 	}
-	ADD_SEND_WITH_FLAG(ret, line, node->nd_mid, argc, INT2FIX(flag));
+	ADD_SEND_WITH_FLAG(ret, line, mid, argc, INT2FIX(flag));
+	if (lskip) ADD_LABEL(ret, lskip);
 	ADD_INSN(ret, line, pop);
 
 	break;

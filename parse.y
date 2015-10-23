@@ -451,8 +451,8 @@ static NODE *assignable_gen(struct parser_params*,ID,NODE*);
 
 static NODE *aryset_gen(struct parser_params*,NODE*,NODE*);
 #define aryset(node1,node2) aryset_gen(parser, (node1), (node2))
-static NODE *attrset_gen(struct parser_params*,NODE*,ID);
-#define attrset(node,id) attrset_gen(parser, (node), (id))
+static NODE *attrset_gen(struct parser_params*,NODE*,ID,ID);
+#define attrset(node,q,id) attrset_gen(parser, (node), (q), (id))
 
 static void rb_backref_error_gen(struct parser_params*,NODE*);
 #define rb_backref_error(n) rb_backref_error_gen(parser,(n))
@@ -1720,7 +1720,7 @@ mlhs_node	: user_variable
 		| primary_value call_op tIDENTIFIER
 		    {
 		    /*%%%*/
-			$$ = attrset($1, $3);
+			$$ = attrset($1, $2, $3);
 		    /*%
 			$$ = dispatch3(field, $1, ripper_id2sym($2), $3);
 		    %*/
@@ -1728,7 +1728,7 @@ mlhs_node	: user_variable
 		| primary_value tCOLON2 tIDENTIFIER
 		    {
 		    /*%%%*/
-			$$ = attrset($1, $3);
+			$$ = attrset($1, idCOLON2, $3);
 		    /*%
 			$$ = dispatch2(const_path_field, $1, $3);
 		    %*/
@@ -1736,7 +1736,7 @@ mlhs_node	: user_variable
 		| primary_value call_op tCONSTANT
 		    {
 		    /*%%%*/
-			$$ = attrset($1, $3);
+			$$ = attrset($1, $2, $3);
 		    /*%
 			$$ = dispatch3(field, $1, ripper_id2sym($2), $3);
 		    %*/
@@ -1811,7 +1811,7 @@ lhs		: user_variable
 		| primary_value call_op tIDENTIFIER
 		    {
 		    /*%%%*/
-			$$ = attrset($1, $3);
+			$$ = attrset($1, $2, $3);
 		    /*%
 			$$ = dispatch3(field, $1, ripper_id2sym($2), $3);
 		    %*/
@@ -1819,7 +1819,7 @@ lhs		: user_variable
 		| primary_value tCOLON2 tIDENTIFIER
 		    {
 		    /*%%%*/
-			$$ = attrset($1, $3);
+			$$ = attrset($1, idCOLON2, $3);
 		    /*%
 			$$ = dispatch3(field, $1, ID2SYM(idCOLON2), $3);
 		    %*/
@@ -1827,7 +1827,7 @@ lhs		: user_variable
 		| primary_value call_op tCONSTANT
 		    {
 		    /*%%%*/
-			$$ = attrset($1, $3);
+			$$ = attrset($1, $2, $3);
 		    /*%
 			$$ = dispatch3(field, $1, ripper_id2sym($2), $3);
 		    %*/
@@ -9187,9 +9187,10 @@ block_dup_check_gen(struct parser_params *parser, NODE *node1, NODE *node2)
 }
 
 static NODE *
-attrset_gen(struct parser_params *parser, NODE *recv, ID id)
+attrset_gen(struct parser_params *parser, NODE *recv, ID atype, ID id)
 {
-    return NEW_ATTRASGN(recv, rb_id_attrset(id), 0);
+    if (atype != tDOTQ) id = rb_id_attrset(id);
+    return NEW_ATTRASGN(recv, id, 0);
 }
 
 static void

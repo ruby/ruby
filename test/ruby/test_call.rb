@@ -42,5 +42,10 @@ class TestCall < Test::Unit::TestCase
     assert_equal(6, o.x)
     o.?x *= 7
     assert_equal(42, o.x)
+
+    o = nil
+    assert_nil(o.?x)
+    assert_nothing_raised(NoMethodError) {o.?x = 6}
+    assert_nothing_raised(NoMethodError) {o.?x *= 7}
   end
 end
