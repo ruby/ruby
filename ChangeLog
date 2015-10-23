@@ -1,3 +1,11 @@
+Fri Oct 23 21:10:37 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (name_err_mesg_to_str): separate class names from the
+	  receiver description.
+
+	* vm_eval.c (make_no_method_exception, raise_method_missing): add
+	  format specifiers for class names.
+
 Fri Oct 23 18:10:32 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* .gitignore: ignored environmantal wrapper files.

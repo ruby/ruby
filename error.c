@@ -1219,20 +1219,19 @@ name_err_mesg_to_str(VALUE obj)
     mesg = ptr[NAME_ERR_MESG__MESG];
     if (NIL_P(mesg)) return Qnil;
     else {
-	const char *desc = 0;
-	VALUE d = 0, args[NAME_ERR_MESG_COUNT];
-	int state = 0;
+	VALUE c, s, d = 0, args[4];
+	int state = 0, singleton = 0;
 
 	obj = ptr[NAME_ERR_MESG__RECV];
 	switch (obj) {
 	  case Qnil:
-	    desc = "nil";
+	    d = rb_fstring_cstr("nil");
 	    break;
 	  case Qtrue:
-	    desc = "true";
+	    d = rb_fstring_cstr("true");
 	    break;
 	  case Qfalse:
-	    desc = "false";
+	    d = rb_fstring_cstr("false");
 	    break;
 	  default:
 	    d = rb_protect(rb_inspect, obj, &state);
@@ -1241,18 +1240,22 @@ name_err_mesg_to_str(VALUE obj)
 	    if (NIL_P(d) || RSTRING_LEN(d) > 65) {
 		d = rb_any_to_s(obj);
 	    }
-	    desc = RSTRING_PTR(d);
+	    singleton = (RSTRING_LEN(d) > 0 && RSTRING_PTR(d)[0] == '#');
+	    d = QUOTE(d);
 	    break;
 	}
-	if (desc && desc[0] != '#') {
-	    d = d ? rb_str_dup(d) : rb_str_new2(desc);
-	    rb_str_cat2(d, ":");
-	    rb_str_append(d, rb_class_name(CLASS_OF(obj)));
+	if (!singleton) {
+	    s = rb_fstring_cstr(":");
+	    c = rb_class_name(CLASS_OF(obj));
 	}
-	args[0] = mesg;
-	args[1] = ptr[NAME_ERR_MESG__NAME];
-	args[2] = d;
-	mesg = rb_f_sprintf(NAME_ERR_MESG_COUNT, args);
+	else {
+	    c = s = rb_fstring_cstr("");
+	}
+	args[0] = ptr[NAME_ERR_MESG__NAME];
+	args[1] = d;
+	args[2] = s;
+	args[3] = c;
+	mesg = rb_str_format(4, args, mesg);
     }
     return mesg;
 }
