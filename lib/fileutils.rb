@@ -157,7 +157,7 @@ module FileUtils
   module_function :uptodate?
 
   def remove_tailing_slash(dir)
-    dir == '/' ? dir : dir.chomp(?/)
+    dir == '/'.freeze ? dir : dir.chomp(?/)
   end
   private_module_function :remove_tailing_slash
 

@@ -70,7 +70,7 @@ module Base64
   # ArgumentError is raised if +str+ is incorrectly padded or contains
   # non-alphabet characters.  Note that CR or LF are also rejected.
   def strict_decode64(str)
-    str.unpack("m0").first
+    str.unpack('m0'.freeze).first
   end
 
   # Returns the Base64-encoded version of +bin+.
