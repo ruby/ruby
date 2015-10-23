@@ -15,7 +15,7 @@ L = (1..6)
 def fname param, local
   "vm_call_iseq_setup_normal_0start_#{param}params_#{local}locals"
 end
-    
+
 P.each{|param|
   L.each{|local|
     puts <<EOS
