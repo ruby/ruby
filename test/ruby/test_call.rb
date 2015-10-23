@@ -33,7 +33,7 @@ class TestCall < Test::Unit::TestCase
   end
 
   def test_safe_call
-    s = Struct.new(:x, :y)
+    s = Struct.new(:x, :y, :z)
     o = s.new("x")
     assert_equal("X", o.x.?upcase)
     assert_nil(o.y.?upcase)
@@ -42,6 +42,10 @@ class TestCall < Test::Unit::TestCase
     assert_equal(6, o.x)
     o.?x *= 7
     assert_equal(42, o.x)
+    o.?y = 5
+    assert_equal(5, o.y)
+    o.?z ||= 6
+    assert_equal(6, o.z)
 
     o = nil
     assert_nil(o.?x)

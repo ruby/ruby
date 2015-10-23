@@ -1,3 +1,11 @@
+Fri Oct 23 13:51:33 2015  yui-knk  <spiketeika@gmail.com>
+
+	* test_call.rb (test_safe_call): Add test cases for safe
+	  navigation operator assignment.  [Fix GH-1064]
+	  Validate:
+	  * can assign an attribute which is `nil`
+	  * can "or assign" an attribute which is `nil`
+
 Fri Oct 23 11:58:21 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (iseq_peephole_optimize): optimize lengthy safe
