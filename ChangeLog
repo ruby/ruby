@@ -1,3 +1,8 @@
+Fri Oct 23 15:20:02 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/ftp.rb (gettextfile, getbinaryfile): use the safe
+	  navigation operator.
+
 Fri Oct 23 13:51:33 2015  yui-knk  <spiketeika@gmail.com>
 
 	* test_call.rb (test_safe_call): Add test cases for safe

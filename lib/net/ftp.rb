@@ -1,5 +1,4 @@
-#
-# -*- frozen_string_literal: true -*-
+# frozen_string_literal: true
 #
 # = net/ftp.rb - FTP Client Library
 #
@@ -601,7 +600,8 @@ module Net
     # chunks.
     #
     def getbinaryfile(remotefile, localfile = File.basename(remotefile),
-                      blocksize = DEFAULT_BLOCKSIZE) # :yield: data
+                      blocksize = DEFAULT_BLOCKSIZE, &block) # :yield: data
+      f = nil
       result = nil
       if localfile
         if @resume
@@ -615,15 +615,15 @@ module Net
         result = String.new
       end
       begin
-        f.binmode if localfile
+        f.?binmode
         retrbinary("RETR #{remotefile}", blocksize, rest_offset) do |data|
-          f.write(data) if localfile
-          yield(data) if block_given?
-          result.concat(data) if result
+          f.?write(data)
+          block.?(data)
+          result.?concat(data)
         end
         return result
       ensure
-        f.close if localfile
+        f.?close
       end
     end
 
@@ -634,7 +634,9 @@ module Net
     # If a block is supplied, it is passed the retrieved data one
     # line at a time.
     #
-    def gettextfile(remotefile, localfile = File.basename(remotefile)) # :yield: line
+    def gettextfile(remotefile, localfile = File.basename(remotefile),
+                    &block) # :yield: line
+      f = nil
       result = nil
       if localfile
         f = open(localfile, "w")
@@ -644,13 +646,13 @@ module Net
       begin
         retrlines("RETR #{remotefile}") do |line, newline|
           l = newline ? line + "\n" : line
-          f.print(l) if localfile
-          yield(line, newline) if block_given?
-          result.concat(l) if result
+          f.?print(l)
+          block.?(line, newline)
+          result.?concat(l)
         end
         return result
       ensure
-        f.close if localfile
+        f.?close
       end
     end
 
