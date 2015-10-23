@@ -1,3 +1,7 @@
+Fri Oct 23 18:10:32 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* .gitignore: ignored environmantal wrapper files.
+
 Fri Oct 23 17:55:29 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/irb.rb: Ignored assignment of STDOUT.sync = true

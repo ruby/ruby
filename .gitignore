@@ -98,6 +98,8 @@ y.tab.c
 /riscos
 /rubicon
 /ruby
+/ruby-runner
+/ruby-runner.c
 /ruby-man.rd.gz
 /sizes.c
 /test.rb
