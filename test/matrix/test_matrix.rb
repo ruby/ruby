@@ -582,4 +582,30 @@ class TestMatrix < Test::Unit::TestCase
     assert_equal @e2, @e2.vstack(@e2)
     assert_equal SubMatrix, SubMatrix.vstack(@e1).class
   end
+
+  def test_eigenvalues_and_eigenvectors_symmetric
+    m = Matrix[
+      [8, 1], 
+      [1, 8]
+    ]
+    values = m.eigensystem.eigenvalues
+    assert_in_epsilon(7.0, values[0])
+    assert_in_epsilon(9.0, values[1])
+    vectors = m.eigensystem.eigenvectors
+    assert_in_epsilon(-vectors[0][0], vectors[0][1])
+    assert_in_epsilon(vectors[1][0], vectors[1][1])
+  end
+
+  def test_eigenvalues_and_eigenvectors_nonsymmetric
+    m = Matrix[
+      [8, 1], 
+      [4, 5]
+    ]
+    values = m.eigensystem.eigenvalues
+    assert_in_epsilon(9.0, values[0])
+    assert_in_epsilon(4.0, values[1])
+    vectors = m.eigensystem.eigenvectors
+    assert_in_epsilon(vectors[0][0], vectors[0][1])
+    assert_in_epsilon(-4 * vectors[1][0], vectors[1][1])
+  end
 end
