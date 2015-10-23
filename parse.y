@@ -7074,7 +7074,7 @@ parser_magic_comment(struct parser_params *parser, const char *str, long len)
 		    n = (*p->length)(parser, vbeg, n);
 		}
 		str_copy(val, vbeg, n);
-		(*p->func)(parser, s, RSTRING_PTR(val));
+		(*p->func)(parser, p->name, RSTRING_PTR(val));
 		break;
 	    }
 	} while (++p < magic_comments + numberof(magic_comments));
