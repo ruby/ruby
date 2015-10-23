@@ -1477,6 +1477,25 @@ module Net   #:nodoc:
         D 'Conn close because of keep_alive_timeout'
         @socket.close
         connect
+      else
+        connection_error = nil
+
+        begin
+          # before sending an http request,
+          # the socket should not contain any data
+          @socket.io.read_nonblock(1)
+          connection_error = "unexpected data"
+        rescue IO::WaitReadable, IO::WaitWritable
+          # these errors indicate the connection is healthy
+        rescue => e
+          connection_error = e
+        end
+
+        if connection_error
+          D "Conn close because of #{connection_error}"
+          @socket.close
+          connect
+        end
       end
 
       if not req.response_body_permitted? and @close_on_empty_response
