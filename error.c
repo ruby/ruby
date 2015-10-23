@@ -1219,19 +1219,22 @@ name_err_mesg_to_str(VALUE obj)
     mesg = ptr[NAME_ERR_MESG__MESG];
     if (NIL_P(mesg)) return Qnil;
     else {
+	struct RString s_str, d_str;
 	VALUE c, s, d = 0, args[4];
 	int state = 0, singleton = 0;
+	rb_encoding *usascii = rb_usascii_encoding();
 
+#define FAKE_CSTR(v, str) rb_setup_fake_str((v), (str), rb_strlen_lit(str), usascii)
 	obj = ptr[NAME_ERR_MESG__RECV];
 	switch (obj) {
 	  case Qnil:
-	    d = rb_fstring_cstr("nil");
+	    d = FAKE_CSTR(&d_str, "nil");
 	    break;
 	  case Qtrue:
-	    d = rb_fstring_cstr("true");
+	    d = FAKE_CSTR(&d_str, "true");
 	    break;
 	  case Qfalse:
-	    d = rb_fstring_cstr("false");
+	    d = FAKE_CSTR(&d_str, "false");
 	    break;
 	  default:
 	    d = rb_protect(rb_inspect, obj, &state);
@@ -1245,11 +1248,11 @@ name_err_mesg_to_str(VALUE obj)
 	    break;
 	}
 	if (!singleton) {
-	    s = rb_fstring_cstr(":");
+	    s = FAKE_CSTR(&s_str, ":");
 	    c = rb_class_name(CLASS_OF(obj));
 	}
 	else {
-	    c = s = rb_fstring_cstr("");
+	    c = s = FAKE_CSTR(&s_str, "");
 	}
 	args[0] = ptr[NAME_ERR_MESG__NAME];
 	args[1] = d;
