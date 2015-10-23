@@ -1,3 +1,9 @@
+Fri Oct 23 15:46:09 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* string.c: Added method signature to include hash. It's inconsistency
+	  with `gsub` method signature.
+	  [ci skip][fix GH-1023] Patch by @danielevans
+
 Fri Oct 23 15:25:51 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb: remove an empty comment line and -*-.
