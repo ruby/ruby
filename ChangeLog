@@ -1,3 +1,10 @@
+Sat Oct 24 01:51:01 2015  Akinori MUSHA  <knu@iDaemons.org>
+
+	* NEWS: [DOC] In the new safe call syntax, arguments are evaluated
+	  only if a call is made.
+
+	* doc/syntax/calling_methods.rdoc: Fix a typo.
+
 Sat Oct 24 00:38:34 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/forwardable (def_instance_delegator, def_single_delegator):
