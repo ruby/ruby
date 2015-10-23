@@ -1,3 +1,9 @@
+Fri Oct 23 17:55:29 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/irb.rb: Ignored assignment of STDOUT.sync = true
+	  when irb.rb loaded. It's affected to IDE such as Jetbrain.
+	  [fix GH-864] Patch by @os97673
+
 Fri Oct 23 16:35:08 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/ipaddr.rb, test/test_ipaddr.rb: Reject invalid address contained
