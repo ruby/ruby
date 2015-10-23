@@ -1,3 +1,11 @@
+Sat Oct 24 04:10:13 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.c (make_compile_option_value): include frozen_string_literal*
+	  in a made option value.
+
+	* vm_opts.h: forgot to add OPT_FROZEN_STRING_LITERAL_DEBUG
+	  at last commit.
+
 Sat Oct 24 03:58:02 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* ruby.c: introduce --enable-frozen-string-literal-debug option.
