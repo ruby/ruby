@@ -11,7 +11,7 @@ Sat Oct 24 02:02:24 2015  Koichi Sasada  <ko1@atdot.net>
 	  generated in vm_call_iseq_optimized.inc by
 	  tool/mk_call_iseq_optimized.rb.
 
-	  This script makes 
+	  This script makes
 	    vm_call_iseq_setup_normal_0start_Xparams_Ylocals()
 	  where X is 0 to 3 and Y is 1 to 6 (as current setting).
 	  In this case, X * Y = 24 functions are created.
