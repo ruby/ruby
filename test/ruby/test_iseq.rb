@@ -8,8 +8,12 @@ class TestISeq < Test::Unit::TestCase
     assert_normal_exit('p RubyVM::InstructionSequence.compile("1", "mac", "", 0).to_a', bug5894)
   end
 
+  def compile(src, line = nil, opt = nil)
+    RubyVM::InstructionSequence.new(src, __FILE__, __FILE__, line, opt)
+  end
+
   def lines src
-    body = RubyVM::InstructionSequence.new(src).to_a[13]
+    body = compile(src).to_a[13]
     body.find_all{|e| e.kind_of? Fixnum}
   end
 
@@ -52,7 +56,7 @@ class TestISeq < Test::Unit::TestCase
   end if defined?(RubyVM::InstructionSequence.load)
 
   def test_loaded_cdhash_mark
-    iseq = RubyVM::InstructionSequence.compile(<<-'end;', __FILE__, __FILE__, __LINE__+1)
+    iseq = compile(<<-'end;', __LINE__+1)
       def bug(kw)
         case kw
         when "false" then false
@@ -73,11 +77,11 @@ class TestISeq < Test::Unit::TestCase
 
   def test_disasm_encoding
     src = "\u{3042} = 1; \u{3042}; \u{3043}"
-    asm = RubyVM::InstructionSequence.compile(src).disasm
+    asm = compile(src).disasm
     assert_equal(src.encoding, asm.encoding)
     assert_predicate(asm, :valid_encoding?)
     src.encode!(Encoding::Shift_JIS)
-    asm = RubyVM::InstructionSequence.compile(src).disasm
+    asm = compile(src).disasm
     assert_equal(src.encoding, asm.encoding)
     assert_predicate(asm, :valid_encoding?)
   end
@@ -147,7 +151,7 @@ class TestISeq < Test::Unit::TestCase
 
   def test_disable_opt
     src = "a['foo'] = a['bar']; 'a'.freeze"
-    _,_,_,_,_,_,_,_,_,_,_,_,_,body= RubyVM::InstructionSequence.compile(src, __FILE__, __FILE__, __LINE__, false).to_a
+    body= compile(src, __LINE__, false).to_a[13]
     body.each{|insn|
       next unless Array === insn
       op = insn.first
@@ -168,11 +172,18 @@ class TestISeq < Test::Unit::TestCase
     code = <<-'EOS'
     ['foo', 'foo', "#{$f}foo", "#{'foo'}"]
     EOS
-    s1, s2, s3, s4 = RubyVM::InstructionSequence.compile(code, __FILE__, __FILE__, line, {frozen_string_literal: true}).eval
+    s1, s2, s3, s4 = compile(code, line, {frozen_string_literal: true}).eval
     assert_predicate(s1, :frozen?)
     assert_predicate(s2, :frozen?)
     assert_not_predicate(s3, :frozen?)
     assert_predicate(s4, :frozen?)
     assert_same(s1, s2)
+  end
+
+  def test_safe_call_chain
+    src = "a.?a.?a.?a.?a.?a"
+    body = compile(src, __LINE__, {peephole_optimization: true}).to_a[13]
+    labels = body.select {|op, arg| op == :branchnil}.map {|op, arg| arg}
+    assert_equal(1, labels.uniq.size)
   end
 end

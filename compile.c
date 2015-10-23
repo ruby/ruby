@@ -1967,33 +1967,36 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	 *   if L2
 	 */
 	INSN *nobj = (INSN *)get_destination_insn(iobj);
-	if (nobj->insn_id == BIN(jump)) {
-	    OPERAND_AT(iobj, 0) = OPERAND_AT(nobj, 0);
-	}
+	INSN *pobj = (INSN *)iobj->link.prev;
+	int prev_dup = (pobj && pobj->insn_id == BIN(dup));
 
-	if (nobj->insn_id == BIN(dup)) {
-	    /*
-	     *   dup
-	     *   if L1
-	     *   ...
-	     * L1:
-	     *   dup
-	     *   if L2
-	     * =>
-	     *   dup
-	     *   if L2
-	     *   ...
-	     * L1:
-	     *   dup
-	     *   if L2
-	     */
-	    INSN *pobj = (INSN *)iobj->link.prev;
-	    nobj = (INSN *)nobj->link.next;
-	    /* basic blocks, with no labels in the middle */
-	    if ((pobj && pobj->insn_id == BIN(dup)) &&
-		(nobj && nobj->insn_id == iobj->insn_id)) {
+	for (;;) {
+	    if (nobj->insn_id == BIN(jump)) {
 		OPERAND_AT(iobj, 0) = OPERAND_AT(nobj, 0);
 	    }
+	    else if (prev_dup && nobj->insn_id == BIN(dup) &&
+		     !!(nobj = (INSN *)nobj->link.next) &&
+		     /* basic blocks, with no labels in the middle */
+		     nobj->insn_id == iobj->insn_id) {
+		/*
+		 *   dup
+		 *   if L1
+		 *   ...
+		 * L1:
+		 *   dup
+		 *   if L2
+		 * =>
+		 *   dup
+		 *   if L2
+		 *   ...
+		 * L1:
+		 *   dup
+		 *   if L2
+		 */
+		OPERAND_AT(iobj, 0) = OPERAND_AT(nobj, 0);
+	    }
+	    else break;
+	    nobj = (INSN *)get_destination_insn(nobj);
 	}
     }
 
