@@ -585,7 +585,7 @@ class TestMatrix < Test::Unit::TestCase
 
   def test_eigenvalues_and_eigenvectors_symmetric
     m = Matrix[
-      [8, 1], 
+      [8, 1],
       [1, 8]
     ]
     values = m.eigensystem.eigenvalues
@@ -598,7 +598,7 @@ class TestMatrix < Test::Unit::TestCase
 
   def test_eigenvalues_and_eigenvectors_nonsymmetric
     m = Matrix[
-      [8, 1], 
+      [8, 1],
       [4, 5]
     ]
     values = m.eigensystem.eigenvalues
