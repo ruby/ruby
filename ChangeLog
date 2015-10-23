@@ -1,3 +1,7 @@
+Fri Oct 23 15:25:51 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb: remove an empty comment line and -*-.
+
 Fri Oct 23 15:20:02 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/ftp.rb (gettextfile, getbinaryfile): use the safe
