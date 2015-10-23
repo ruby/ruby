@@ -110,6 +110,19 @@ class TestForwardable < Test::Unit::TestCase
     assert_not_match(/\/forwardable\.rb/, e.backtrace[0])
   end
 
+  class Foo2 < BasicObject
+    extend ::Forwardable
+
+    def_delegator :bar, :baz
+  end
+
+  def test_basicobject_subclass
+    bug11616 = '[ruby-core:71176] [Bug #11616]'
+    assert_raise_with_message(NameError, /`bar'/, bug11616) {
+      Foo2.new.baz
+    }
+  end
+
   private
 
   def forwardable_class(&block)
