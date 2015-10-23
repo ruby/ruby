@@ -2226,8 +2226,16 @@ rb_error_frozen(const char *what)
 void
 rb_error_frozen_object(VALUE frozen_obj)
 {
-    rb_raise(rb_eRuntimeError, "can't modify frozen %"PRIsVALUE,
-	     CLASS_OF(frozen_obj));
+    VALUE path, line;
+    if ((path = rb_iv_get(frozen_obj, "__object_created_path__")) != Qnil &&
+	(line = rb_iv_get(frozen_obj, "__object_created_line__")) != Qnil) {
+	rb_raise(rb_eRuntimeError, "can't modify frozen %"PRIsVALUE", created at %"PRIsVALUE":%"PRIsVALUE,
+		 CLASS_OF(frozen_obj), path, line);
+    }
+    else {
+	rb_raise(rb_eRuntimeError, "can't modify frozen %"PRIsVALUE,
+		 CLASS_OF(frozen_obj));
+    }
 }
 
 #undef rb_check_frozen

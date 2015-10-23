@@ -366,6 +366,7 @@ set_compile_option_from_hash(rb_compile_option_t *option, VALUE opt)
     SET_COMPILE_OPTION(option, opt, stack_caching);
     SET_COMPILE_OPTION(option, opt, trace_instruction);
     SET_COMPILE_OPTION(option, opt, frozen_string_literal);
+    SET_COMPILE_OPTION(option, opt, frozen_string_literal_debug);
     SET_COMPILE_OPTION_NUM(option, opt, debug_level);
 #undef SET_COMPILE_OPTION
 #undef SET_COMPILE_OPTION_NUM

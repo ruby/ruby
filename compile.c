@@ -5107,11 +5107,19 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	debugp_param("nd_lit", node->nd_lit);
 	if (!poped) {
 	    node->nd_lit = rb_fstring(node->nd_lit);
-	    if (iseq->compile_data->option->frozen_string_literal) {
-		ADD_INSN1(ret, line, putobject, node->nd_lit); /* already frozen */
+	    if (!iseq->compile_data->option->frozen_string_literal) {
+		ADD_INSN1(ret, line, putstring, node->nd_lit);
 	    }
 	    else {
-		ADD_INSN1(ret, line, putstring, node->nd_lit);
+		if (!iseq->compile_data->option->frozen_string_literal_debug) {
+		    ADD_INSN1(ret, line, putobject, node->nd_lit); /* already frozen */
+		}
+		else {
+		    VALUE str = rb_str_dup(node->nd_lit);
+		    rb_iv_set(str, "__object_created_path__", iseq->body->location.path);
+		    rb_iv_set(str, "__object_created_line__", INT2FIX(line));
+		    ADD_INSN1(ret, line, putobject, rb_obj_freeze(str));
+		}
 	    }
 	}
 	break;
