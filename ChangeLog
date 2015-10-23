@@ -1,3 +1,11 @@
+Fri Oct 23 10:49:36 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_compile_each): support safe navigation of simple
+	  attribute assignment.  [Feature #11537]
+
+	* parse.y (mlhs_node, lhs, attrset_gen): ditto.  keep mid
+	  non-attrset as the sign of safe navigation.
+
 Fri Oct 23 07:17:11 2015  Eric Wong  <e@80x24.org>
 
 	* test/io/wait/test_io_wait.rb (test_wait_eof): test return value

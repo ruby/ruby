@@ -149,7 +149,7 @@ class TestISeq < Test::Unit::TestCase
     src = "a['foo'] = a['bar']; 'a'.freeze"
     _,_,_,_,_,_,_,_,_,_,_,_,_,body= RubyVM::InstructionSequence.compile(src, __FILE__, __FILE__, __LINE__, false).to_a
     body.each{|insn|
-      next if Integer === insn
+      next unless Array === insn
       op = insn.first
       assert(!op.to_s.match(/^opt_/), "#{op}")
     }
