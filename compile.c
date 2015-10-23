@@ -757,6 +757,20 @@ INSERT_ELEM_NEXT(LINK_ELEMENT *elem1, LINK_ELEMENT *elem2)
 }
 
 /*
+ * elem1, elemX => elemX, elem2, elem1
+ */
+static void
+INSERT_ELEM_PREV(LINK_ELEMENT *elem1, LINK_ELEMENT *elem2)
+{
+    elem2->prev = elem1->prev;
+    elem2->next = elem1;
+    elem1->prev = elem2;
+    if (elem2->prev) {
+	elem2->prev->next = elem2;
+    }
+}
+
+/*
  * elemX, elem1, elemY => elemX, elem2, elemY
  */
 static void
@@ -2739,22 +2753,20 @@ compile_massign_lhs(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE *node)
 {
     switch (nd_type(node)) {
       case NODE_ATTRASGN: {
-	INSN *iobj;
+	INSN *iobj, *topdup;
 	struct rb_call_info *ci;
 	VALUE dupidx;
 
 	COMPILE_POPED(ret, "masgn lhs (NODE_ATTRASGN)", node);
 
-	POP_ELEMENT(ret);        /* pop pop insn */
-	iobj = (INSN *)POP_ELEMENT(ret); /* pop send insn */
+	iobj = (INSN *)get_prev_insn((INSN *)LAST_ELEMENT(ret)); /* send insn */
 	ci = (struct rb_call_info *)iobj->operands[0];
 	ci->orig_argc += 1;
 	dupidx = INT2FIX(ci->orig_argc);
 
-	ADD_INSN1(ret, nd_line(node), topn, dupidx);
-	ADD_ELEM(ret, (LINK_ELEMENT *)iobj);
+	topdup = new_insn_body(iseq, nd_line(node), BIN(topn), 1, dupidx);
+	INSERT_ELEM_PREV(&iobj->link, &topdup->link);
 	ADD_INSN(ret, nd_line(node), pop);	/* result */
-	ADD_INSN(ret, nd_line(node), pop);	/* rhs    */
 	break;
       }
       case NODE_MASGN: {
