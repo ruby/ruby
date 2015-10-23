@@ -12,28 +12,6 @@
 #ifndef RUBY_INSNHELPER_H
 #define RUBY_INSNHELPER_H
 
-/**
- * VM Debug Level
- *
- * debug level:
- *  0: no debug output
- *  1: show instruction name
- *  2: show stack frame when control stack frame is changed
- *  3: show stack status
- *  4: show register
- *  5:
- * 10: gc check
- */
-
-#ifndef VMDEBUG
-#define VMDEBUG 0
-#endif
-
-#if 0
-#undef  VMDEBUG
-#define VMDEBUG 3
-#endif
-
 extern VALUE ruby_vm_const_missing_count;
 
 #if VM_COLLECT_USAGE_DETAILS
