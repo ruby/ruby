@@ -20,6 +20,28 @@
 #define VM_CHECK_MODE 0
 #endif
 
+/**
+ * VM Debug Level
+ *
+ * debug level:
+ *  0: no debug output
+ *  1: show instruction name
+ *  2: show stack frame when control stack frame is changed
+ *  3: show stack status
+ *  4: show register
+ *  5:
+ * 10: gc check
+ */
+
+#ifndef VMDEBUG
+#define VMDEBUG 0
+#endif
+
+#if 0
+#undef  VMDEBUG
+#define VMDEBUG 3
+#endif
+
 #if VM_CHECK_MODE > 0
 #define VM_ASSERT(expr) ( \
 	LIKELY(expr) ? (void)0 : \
