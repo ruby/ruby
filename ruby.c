@@ -69,6 +69,7 @@ enum feature_flag_bits {
     feature_did_you_mean,
     feature_rubyopt,
     feature_frozen_string_literal,
+    feature_frozen_string_literal_debug,
     feature_flag_count
 };
 
@@ -126,6 +127,7 @@ cmdline_options_init(struct cmdline_options *opt)
     opt->features &= ~FEATURE_BIT(gems);
 #endif
     opt->features &= ~FEATURE_BIT(frozen_string_literal);
+    opt->features &= ~FEATURE_BIT(frozen_string_literal_debug);
     return opt;
 }
 
@@ -739,6 +741,7 @@ enable_option(const char *str, int len, void *arg)
     SET_WHEN_ENABLE(did_you_mean);
     SET_WHEN_ENABLE(rubyopt);
     SET_WHEN_ENABLE(frozen_string_literal);
+    SET_WHEN_ENABLE(frozen_string_literal_debug);
     if (NAME_MATCH_P("all", str, len)) {
 	*(unsigned int *)arg = ~0U;
 	return;
@@ -754,6 +757,7 @@ disable_option(const char *str, int len, void *arg)
     UNSET_WHEN_DISABLE(did_you_mean);
     UNSET_WHEN_DISABLE(rubyopt);
     UNSET_WHEN_DISABLE(frozen_string_literal);
+    UNSET_WHEN_DISABLE(frozen_string_literal_debug);
     if (NAME_MATCH_P("all", str, len)) {
 	*(unsigned int *)arg = 0U;
 	return;
@@ -1472,6 +1476,11 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
     if (opt->features & FEATURE_BIT(frozen_string_literal)) {
 	VALUE option = rb_hash_new();
 	rb_hash_aset(option, ID2SYM(rb_intern_const("frozen_string_literal")), Qtrue);
+	rb_funcallv(rb_cISeq, rb_intern_const("compile_option="), 1, &option);
+    }
+    if (opt->features & FEATURE_BIT(frozen_string_literal_debug)) {
+	VALUE option = rb_hash_new();
+	rb_hash_aset(option, ID2SYM(rb_intern_const("frozen_string_literal_debug")), Qtrue);
 	rb_funcallv(rb_cISeq, rb_intern_const("compile_option="), 1, &option);
     }
 #if UTF8_PATH

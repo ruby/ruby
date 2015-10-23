@@ -1,3 +1,20 @@
+Sat Oct 24 03:58:02 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* ruby.c: introduce --enable-frozen-string-literal-debug option.
+	  If this option is enabled, the modify error will be:
+	    can't modify frozen String (RuntimeError) =>
+	    can't modify frozen String, created at test.rb:3 (RuntimeError)
+
+	* iseq.h: add compile option frozen_string_literal_debug.
+
+	* compile.c: catch up this fix.
+
+	* error.c (rb_error_frozen): ditto.
+
+	* iseq.c (set_compile_option_from_hash): ditto.
+
+	* test/ruby/test_rubyoptions.rb: add a test for this fix.
+
 Sat Oct 24 02:02:24 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c: introduce new call handler for simple ISeqs.
