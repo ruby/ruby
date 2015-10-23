@@ -1,3 +1,39 @@
+Sat Oct 24 02:02:24 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c: introduce new call handler for simple ISeqs.
+
+	  vm_call_iseq_setup_normal_0start() is simple, however it has
+	  some loops/conditions depends on ISeq::param.size and
+	  ISeq::local_size (in vm_push_frame(), inlined into this function).
+
+	  There are many simple methods which has a few parameters and local
+	  variables. So that this patch introduces several special functions
+	  generated in vm_call_iseq_optimized.inc by
+	  tool/mk_call_iseq_optimized.rb.
+
+	  This script makes 
+	    vm_call_iseq_setup_normal_0start_Xparams_Ylocals()
+	  where X is 0 to 3 and Y is 1 to 6 (as current setting).
+	  In this case, X * Y = 24 functions are created.
+
+	  These functions creates fast method dispatch by inlining
+	  vm_push_frame() with immediate params/locals sizes.
+
+	  On my laptop, we can have the following results.
+
+	  vm2_method*       1.083 (8.3% faster)
+	  vm2_poly_method*  0.961 (3.4% slower)
+
+	  It shows 8.3% faster for inner loop method dispatch (hit inline
+	  cache), but 3.4% slower when inline cache miss because we need
+	  to find a suitable call handler.
+
+	* common.mk: add a rule for vm_call_iseq_optimized.inc.
+
+	* tool/mk_call_iseq_optimized.rb: added.
+
+	* vm.c: include vm_call_iseq_optimized.inc.
+
 Sat Oct 24 01:58:50 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h: define vm_call_handler.

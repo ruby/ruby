@@ -3111,3 +3111,5 @@ vm_collect_usage_register(int reg, int isset)
 	(*ruby_vm_collect_usage_func_register)(reg, isset);
 }
 #endif
+
+#include "vm_call_iseq_optimized.inc" /* required from vm_insnhelper.c */
