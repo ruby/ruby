@@ -1,3 +1,13 @@
+Fri Oct 23 10:58:41 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/matrix/eigenvalue_decomposition.rb (tridiagonalize): fix
+	  indentation to avoid a warning when the command line option -w of
+	  ruby is specified.
+
+	* lib/matrix/eigenvalue_decomposition.rb (hessenberg_to_real_schur):
+	  change the name of a block parameter to avoid a warning when the
+	  command line option -w of ruby is specified.
+
 Fri Oct 23 10:49:36 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (iseq_compile_each): support safe navigation of simple
