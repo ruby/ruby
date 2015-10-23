@@ -786,7 +786,7 @@ srcs-enc: $(ENC_MK)
 
 all-incs: incs {$(VPATH)}encdb.h {$(VPATH)}transdb.h
 incs: $(INSNS) {$(VPATH)}node_name.inc {$(VPATH)}known_errors.inc \
-      {$(VPATH)}/vm_call_iseq_optimized.inc $(srcdir)/revision.h \
+      {$(VPATH)}vm_call_iseq_optimized.inc $(srcdir)/revision.h \
       $(REVISION_H) enc/unicode/name2ctype.h enc/jis/props.h \
       {$(VPATH)}id.h {$(VPATH)}probes.dmyh
 
