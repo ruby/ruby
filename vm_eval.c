@@ -677,7 +677,7 @@ make_no_method_exception(VALUE exc, const char *format, VALUE obj, int argc, con
     VALUE args[3];
 
     if (!format) {
-	format = "undefined method `%s' for %s";
+	format = "undefined method `%s' for %s%s%s";
     }
     args[n++] = rb_name_err_mesg_new(rb_str_new_cstr(format), obj, argv[0]);
     args[n++] = argv[0];
@@ -706,17 +706,17 @@ raise_method_missing(rb_thread_t *th, int argc, const VALUE *argv, VALUE obj,
     stack_check();
 
     if (last_call_status & MISSING_PRIVATE) {
-	format = "private method `%s' called for %s";
+	format = "private method `%s' called for %s%s%s";
     }
     else if (last_call_status & MISSING_PROTECTED) {
-	format = "protected method `%s' called for %s";
+	format = "protected method `%s' called for %s%s%s";
     }
     else if (last_call_status & MISSING_VCALL) {
-	format = "undefined local variable or method `%s' for %s";
+	format = "undefined local variable or method `%s' for %s%s%s";
 	exc = rb_eNameError;
     }
     else if (last_call_status & MISSING_SUPER) {
-	format = "super: no superclass method `%s' for %s";
+	format = "super: no superclass method `%s' for %s%s%s";
     }
 
     {
