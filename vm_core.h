@@ -228,6 +228,9 @@ struct rb_calling_info {
     int argc;
 };
 
+struct rb_call_cache;
+typedef VALUE (*vm_call_handler)(struct rb_thread_struct *th, struct rb_control_frame_struct *cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc);
+
 struct rb_call_cache {
     /* inline cache: keys */
     rb_serial_t method_state;
@@ -236,7 +239,7 @@ struct rb_call_cache {
     /* inline cache: values */
     const rb_callable_method_entry_t *me;
 
-    VALUE (*call)(struct rb_thread_struct *th, struct rb_control_frame_struct *cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc);
+    vm_call_handler call;
 
     union {
 	unsigned int index; /* used by ivar */

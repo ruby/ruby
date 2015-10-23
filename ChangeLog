@@ -1,3 +1,7 @@
+Sat Oct 24 01:58:50 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h: define vm_call_handler.
+
 Sat Oct 24 01:56:01 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h, vm_insnhelper.h: move definition of VMDEBUG
