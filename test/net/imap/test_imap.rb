@@ -310,7 +310,8 @@ class IMAPTest < Test::Unit::TestCase
     begin
       imap = Net::IMAP.new(SERVER_ADDR, :port => port)
       responses = []
-      imap.idle(0.1) do |res|
+        Thread.pass
+      imap.idle(0.2) do |res|
         responses.push(res)
       end
       assert_equal(3, responses.length)
