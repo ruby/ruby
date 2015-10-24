@@ -1080,7 +1080,9 @@ class TestIO < Test::Unit::TestCase
   def ruby(*args)
     args = ['-e', '$>.write($<.read)'] if args.empty?
     ruby = EnvUtil.rubybin
-    f = IO.popen([ruby] + args, 'r+')
+    opts = {}
+    opts[:rlimit_nproc] = 1024 if /mswin|mingw/ =~ RUBY_PLATFORM
+    f = IO.popen([ruby] + args, 'r+', opts)
     pid = f.pid
     yield(f)
   ensure

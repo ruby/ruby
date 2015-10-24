@@ -1596,11 +1596,13 @@ class TestProcess < Test::Unit::TestCase
     cmds = Array.new(min, cmd)
     exs = [Errno::ENOENT]
     exs << Errno::E2BIG if defined?(Errno::E2BIG)
+    opts = {[STDOUT, STDERR]=>File::NULL}
+    opts[:rlimit_nproc] = 128 if /mswin|mingw/ =~ RUBY_PLATFORM
     EnvUtil.suppress_warning do
       assert_raise(*exs, mesg) do
         begin
           loop do
-            Process.spawn(cmds.join(sep), [STDOUT, STDERR]=>File::NULL, rlimit_nproc: 1)
+            Process.spawn(cmds.join(sep), opts)
             min = [cmds.size, min].max
             cmds *= 100
           end
