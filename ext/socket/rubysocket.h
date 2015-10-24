@@ -80,6 +80,9 @@
 #endif
 
 #ifdef HAVE_IFADDRS_H
+#  ifdef __HAIKU__
+#    define _BSD_SOURCE
+#  endif
 #  include <ifaddrs.h>
 #endif
 #ifdef HAVE_SYS_IOCTL_H
