@@ -1,7 +1,7 @@
 Sat Oct 24 21:06:43 2015  Shota Fukumori (sora_h)  <her@sorah.jp>
 
 	* lib/mkmf.rb: Revert r45640 because it may lead to link
-	  with different libruby. [Bug #9760] 
+	  with different libruby. [Bug #9760]
 
 Sat Oct 24 15:42:20 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
