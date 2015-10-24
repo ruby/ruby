@@ -1464,7 +1464,7 @@ class TestFileUtils < Test::Unit::TestCase
       uptodate? Pathname.new('tmp/a'), [Pathname.new('tmp/b'), Pathname.new('tmp/c')]
     }
     # [Bug #6708] [ruby-core:46256]
-    assert_raise_with_message(ArgumentError, "wrong number of arguments (3 for 2)") {
+    assert_raise_with_message(ArgumentError, /wrong number of arguments \(.*\b3\b.* 2\)/) {
       uptodate?('new',['old', 'oldest'], {})
     }
   end
