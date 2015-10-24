@@ -3,7 +3,7 @@ assert_equal '1',       'def m() 1 end; m()'
 assert_equal '1',       'def m(a) a end; m(1)'
 assert_equal '[1, 2]',  'def m(a,b) [a, b] end; m(1,2)'
 assert_equal '[1, 2, 3]', 'def m(a,b,c) [a, b, c] end; m(1,2,3)'
-assert_equal 'wrong number of arguments (1 for 0)', %q{
+assert_match /\Awrong number of arguments \(.*\b1\b.* 0\)\z/, %q{
   def m; end
   begin
     m(1)
@@ -12,7 +12,7 @@ assert_equal 'wrong number of arguments (1 for 0)', %q{
   end
 }
 
-assert_equal 'wrong number of arguments (0 for 1)', %q{
+assert_match /\Awrong number of arguments \(.*\b0\b.* 1\)\z/, %q{
   def m a; end
   begin
     m

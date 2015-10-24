@@ -1,3 +1,10 @@
+Sat Oct 24 15:42:20 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bootstraptest/test_method.rb: relax error message format.
+
+	* test/ruby/test_arity.rb (err_mess): ditto.
+	  [Feature #9025], [ruby-core:71178] [Bug #11617]
+
 Sat Oct 24 12:47:47 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* vm_insnhelper.c: improved error message for "wrong number
