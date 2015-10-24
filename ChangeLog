@@ -1,3 +1,9 @@
+Sat Oct 24 12:47:47 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* vm_insnhelper.c: improved error message for "wrong number
+	  of arguments", distinguishing given and expected argument
+	  numbers clearly. [Feature #9025]
+
 Sat Oct 24 11:57:59 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* vm_insnhelper.c: remove the typedef redeclaration of
