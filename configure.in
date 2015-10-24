@@ -3055,7 +3055,7 @@ if test "$with_dln_a_out" != yes; then
 	[bsdi3*], [	AS_CASE(["$CC"],
 			[*shlicc*], [	: ${LDSHARED='$(CC) -r'}
 					rb_cv_dlopen=yes])],
-	[linux* | gnu* | k*bsd*-gnu | netbsd* | bsdi* | kopensolaris*-gnu], [
+	[linux* | gnu* | k*bsd*-gnu | netbsd* | bsdi* | kopensolaris*-gnu | haiku*], [
 			: ${LDSHARED='$(CC) -shared'}
 			if test "$rb_cv_binary_elf" = yes; then
 			    LDFLAGS="$LDFLAGS -Wl,-export-dynamic"
@@ -3109,17 +3109,6 @@ if test "$with_dln_a_out" != yes; then
 			    ])
 			: ${LIBPATHENV=LIBRARY_PATH}
 			rb_cv_dlopen=yes],
-	[haiku*], [	AS_CASE(["$target_cpu"],
-			  [powerpc*], [
-			    : ${LDSHARED='$(LD) -xms'}
-			    EXTDLDFLAGS='-export $(TARGET_ENTRY)'
-			    DLDFLAGS="$DLDFLAGS -lroot glue-noinit.a init_term_dyn.o start_dyn.o"
-                            ],
-			  [i586*], [
-			    : ${LDSHARED='$(CC) -shared'}
-			    ])
-			: ${LIBPATHENV=LIBRARY_PATH}
-			rb_cv_dlopen=yes ],
 	[nto-qnx*], [	DLDFLAGS="$DLDFLAGS -L/lib -L/usr/lib -L/usr/local/lib"
 			: ${LDSHARED='$(LD) -Bshareable -x'}
 			LDFLAGS="$LDFLAGS -L/lib -L/usr/lib -L/usr/local/lib"

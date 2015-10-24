@@ -1,3 +1,11 @@
+Sat Oct 24 22:51:18 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* configure.in: fixed build failure of Haiku.
+	  [fix GH-984] Patch by @kallisti5
+	* ext/socket/getaddrinfo.c: ditto.
+	* ext/socket/getnameinfo.c: ditto.
+	* ext/socket/rubysocket.h: ditto.
+
 Sat Oct 24 21:16:53 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/fileutils/test_fileutils.rb (test_uptodate): relax error
