@@ -1,3 +1,8 @@
+Sat Oct 24 11:57:59 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* vm_insnhelper.c: remove the typedef redeclaration of
+	  vm_call_handler.
+
 Sat Oct 24 07:29:12 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/forwardable.rb (def_instance_delegator, def_single_delegator):
