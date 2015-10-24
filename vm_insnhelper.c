@@ -1243,7 +1243,6 @@ static VALUE vm_call_method_nome(rb_thread_t *th, rb_control_frame_t *cfp, struc
 static VALUE vm_call_method_each_type(rb_thread_t *th, rb_control_frame_t *cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc);
 static inline VALUE vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc);
 
-typedef VALUE (*vm_call_handler)(struct rb_thread_struct *th, struct rb_control_frame_struct *cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc);
 static vm_call_handler vm_call_iseq_setup_func(const struct rb_call_info *ci, const int param_size, const int local_size);
 
 static rb_method_definition_t *method_definition_create(rb_method_type_t type, ID mid);
