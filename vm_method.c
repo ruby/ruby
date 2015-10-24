@@ -1118,22 +1118,7 @@ rb_undef(VALUE klass, ID id)
 
     if (UNDEFINED_METHOD_ENTRY_P(me) ||
 	UNDEFINED_REFINED_METHOD_P(me->def)) {
-	const char *s0 = " class";
-	VALUE c = klass;
-
-	if (FL_TEST(c, FL_SINGLETON)) {
-	    VALUE obj = rb_ivar_get(klass, attached);
-
-	    if (RB_TYPE_P(obj, T_MODULE) || RB_TYPE_P(obj, T_CLASS)) {
-		c = obj;
-		s0 = "";
-	    }
-	}
-	else if (RB_TYPE_P(c, T_MODULE)) {
-	    s0 = " module";
-	}
-	rb_name_error(id, "undefined method `%"PRIsVALUE"' for%s `%"PRIsVALUE"'",
-		      QUOTE_ID(id), s0, rb_class_name(c));
+	rb_method_name_error(klass, rb_id2str(id));
     }
 
     rb_add_method(klass, id, VM_METHOD_TYPE_UNDEF, 0, METHOD_VISI_PUBLIC);
