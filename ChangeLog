@@ -1,3 +1,8 @@
+Sat Oct 24 21:16:53 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/fileutils/test_fileutils.rb (test_uptodate): relax error
+	  message format.  [Feature #9025], [ruby-core:71178] [Bug #11617]
+
 Sat Oct 24 21:06:43 2015  Shota Fukumori (sora_h)  <her@sorah.jp>
 
 	* lib/mkmf.rb: Revert r45640 because it may lead to link
