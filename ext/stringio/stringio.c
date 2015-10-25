@@ -1271,6 +1271,7 @@ strio_read(int argc, VALUE *argv, VALUE self)
     long len;
     int binary = 0;
 
+    rb_check_arity(argc, 0, 2);
     switch (argc) {
       case 2:
 	str = argv[1];
@@ -1307,8 +1308,6 @@ strio_read(int argc, VALUE *argv, VALUE self)
 	    len -= ptr->pos;
 	}
 	break;
-      default:
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for 0)", argc);
     }
     if (NIL_P(str)) {
 	str = strio_substr(ptr, ptr->pos, len);
