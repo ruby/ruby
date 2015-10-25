@@ -1,3 +1,8 @@
+Mon Oct 26 01:03:23 2015  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* thread_pthread.c: fix compile erros when
+	  USE_SLEEPY_TIMER_THREAD is disabled.
+
 Sun Oct 25 10:12:05 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* symbol.c (op_tbl): add DOTQ for ripper.  [Feature #11537]

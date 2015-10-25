@@ -1012,6 +1012,7 @@ native_thread_create(rb_thread_t *th)
     return err;
 }
 
+#if USE_SLEEPY_TIMER_THREAD
 static void
 native_thread_join(pthread_t th)
 {
@@ -1020,6 +1021,7 @@ native_thread_join(pthread_t th)
 	rb_raise(rb_eThreadError, "native_thread_join() failed (%d)", err);
     }
 }
+#endif
 
 
 #if USE_NATIVE_THREAD_PRIORITY
@@ -1644,10 +1646,12 @@ rb_thread_create_timer_thread(void)
 	if (err != 0) {
 	    rb_warn("pthread_create failed for timer: %s, scheduling broken",
 		    strerror(err));
+#if USE_SLEEPY_TIMER_THREAD
 	    CLOSE_INVALIDATE(normal[0]);
 	    CLOSE_INVALIDATE(normal[1]);
 	    CLOSE_INVALIDATE(low[0]);
 	    CLOSE_INVALIDATE(low[1]);
+#endif
 	    return;
 	}
 	timer_thread.created = 1;
@@ -1664,6 +1668,7 @@ native_stop_timer_thread(void)
     stopped = --system_working <= 0;
 
     if (TT_DEBUG) fprintf(stderr, "stop timer thread\n");
+#if USE_SLEEPY_TIMER_THREAD
     if (stopped) {
 	/* prevent wakeups from signal handler ASAP */
 	timer_thread_pipe.owner_process = 0;
@@ -1691,6 +1696,7 @@ native_stop_timer_thread(void)
 	if (TT_DEBUG) fprintf(stderr, "joined timer thread\n");
 	timer_thread.created = 0;
     }
+#endif
     return stopped;
 }
 
