@@ -749,7 +749,7 @@ rb_block_clear_env_self(VALUE proc)
  *
  *  <em>produces:</em>
  *
- *     prog.rb:4:in `block in <main>': wrong number of arguments (3 for 2) (ArgumentError)
+ *     prog.rb:4:in `block in <main>': wrong number of arguments (given 3, expected 2) (ArgumentError)
  *     	from prog.rb:5:in `call'
  *     	from prog.rb:5:in `<main>'
  *
@@ -2713,16 +2713,16 @@ curry(VALUE dummy, VALUE args, int argc, VALUE *argv, VALUE passed_proc)
   *
   *     b = lambda {|x, y, z| (x||0) + (y||0) + (z||0) }
   *     p b.curry[1][2][3]           #=> 6
-  *     p b.curry[1, 2][3, 4]        #=> wrong number of arguments (4 for 3)
-  *     p b.curry(5)                 #=> wrong number of arguments (5 for 3)
-  *     p b.curry(1)                 #=> wrong number of arguments (1 for 3)
+  *     p b.curry[1, 2][3, 4]        #=> wrong number of arguments (given 4, expected 3)
+  *     p b.curry(5)                 #=> wrong number of arguments (given 5, expected 3)
+  *     p b.curry(1)                 #=> wrong number of arguments (given 1, expected 3)
   *
   *     b = lambda {|x, y, z, *w| (x||0) + (y||0) + (z||0) + w.inject(0, &:+) }
   *     p b.curry[1][2][3]           #=> 6
   *     p b.curry[1, 2][3, 4]        #=> 10
   *     p b.curry(5)[1][2][3][4][5]  #=> 15
   *     p b.curry(5)[1, 2][3, 4][5]  #=> 15
-  *     p b.curry(1)                 #=> wrong number of arguments (1 for 3)
+  *     p b.curry(1)                 #=> wrong number of arguments (given 1, expected 3)
   *
   *     b = proc { :foo }
   *     p b.curry[]                  #=> :foo

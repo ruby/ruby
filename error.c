@@ -1592,7 +1592,7 @@ syserr_eqq(VALUE self, VALUE exc)
  *
  *  <em>raises the exception:</em>
  *
- *     ArgumentError: wrong number of arguments (2 for 1)
+ *     ArgumentError: wrong number of arguments (given 2, expected 1)
  *
  *  Ex: passing an argument that is not acceptable:
  *
