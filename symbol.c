@@ -50,6 +50,7 @@ static ID register_static_symid_str(ID, VALUE);
 #define tCOLON2 RUBY_TOKEN(COLON2)
 #define tANDOP  RUBY_TOKEN(ANDOP)
 #define tOROP   RUBY_TOKEN(OROP)
+#define tDOTQ   RUBY_TOKEN(DOTQ)
 
 static const struct {
     unsigned short token;
@@ -75,6 +76,7 @@ static const struct {
     {tCOLON2,   "::"},
     {tANDOP,    "&&"},
     {tOROP,     "||"},
+    {tDOTQ,     ".?"},
 };
 
 #define op_tbl_count numberof(op_tbl)
