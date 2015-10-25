@@ -1597,7 +1597,7 @@ class TestProcess < Test::Unit::TestCase
     exs = [Errno::ENOENT]
     exs << Errno::E2BIG if defined?(Errno::E2BIG)
     opts = {[STDOUT, STDERR]=>File::NULL}
-    opts[:rlimit_nproc] = 128 if /mswin|mingw/ =~ RUBY_PLATFORM
+    opts[:rlimit_nproc] = 128 if defined?(Process::RLIMIT_NPROC)
     EnvUtil.suppress_warning do
       assert_raise(*exs, mesg) do
         begin
