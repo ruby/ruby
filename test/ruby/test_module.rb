@@ -301,8 +301,8 @@ class TestModule < Test::Unit::TestCase
     classes = []
     klass = Class.new {
       define_singleton_method(:const_missing) { |name|
-	classes << name
-	klass
+        classes << name
+        klass
       }
     }
     klass.const_get("Foo::Bar::Baz")
