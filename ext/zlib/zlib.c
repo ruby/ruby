@@ -3097,9 +3097,7 @@ gzfile_s_open(int argc, VALUE *argv, VALUE klass, const char *mode)
 {
     VALUE io, filename;
 
-    if (argc < 1) {
-	rb_raise(rb_eArgError, "wrong number of arguments (0 for 1)");
-    }
+    rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
     filename = argv[0];
     io = rb_file_open_str(filename, mode);
     argv[0] = io;
