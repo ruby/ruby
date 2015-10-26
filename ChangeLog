@@ -1,3 +1,10 @@
+Mon Oct 26 22:43:03 2015  yui-knk  <spiketeika@gmail.com>
+
+	* test/ruby/test_module.rb (test_method_defined): Add test cases
+	  for `public/protected/private _method_defined?`
+	  These methods accept string as argument, so add string argument
+	  cases.  [Fix GH-1067]
+
 Mon Oct 26 22:23:30 2015  SimonDKnight  <simondknight@hotmail.com>
 
 	* lib/racc/rdoc/grammar.en.rdoc: Grammatical errors fixed.

@@ -964,13 +964,28 @@ class TestModule < Test::Unit::TestCase
     assert_equal(false, c.public_method_defined?(:bar))
     assert_equal(false, c.public_method_defined?(:baz))
 
+    # Test if string arguments are converted to symbols
+    assert_equal(true, c.public_method_defined?("foo"))
+    assert_equal(false, c.public_method_defined?("bar"))
+    assert_equal(false, c.public_method_defined?("baz"))
+
     assert_equal(false, c.protected_method_defined?(:foo))
     assert_equal(true, c.protected_method_defined?(:bar))
     assert_equal(false, c.protected_method_defined?(:baz))
 
+    # Test if string arguments are converted to symbols
+    assert_equal(false, c.protected_method_defined?("foo"))
+    assert_equal(true, c.protected_method_defined?("bar"))
+    assert_equal(false, c.protected_method_defined?("baz"))
+
     assert_equal(false, c.private_method_defined?(:foo))
     assert_equal(false, c.private_method_defined?(:bar))
     assert_equal(true, c.private_method_defined?(:baz))
+
+    # Test if string arguments are converted to symbols
+    assert_equal(false, c.private_method_defined?("foo"))
+    assert_equal(false, c.private_method_defined?("bar"))
+    assert_equal(true, c.private_method_defined?("baz"))
   end
 
   def test_top_public_private
