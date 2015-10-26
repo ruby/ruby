@@ -1,3 +1,8 @@
+Mon Oct 26 17:30:13 2015  Ryan Hosford  <tad.hosford@gmail.com>
+
+	* lib/fileutils.rb: rename tailing to trailing.
+	  [Misc #11548]
+
 Mon Oct 26 17:11:53 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (call_op, call_op2): fix values on ripper.  [Feature #11537]
