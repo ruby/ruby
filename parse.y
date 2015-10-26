@@ -847,7 +847,7 @@ static void token_info_pop(struct parser_params*, const char *token, size_t len)
 %type <node> mlhs mlhs_head mlhs_basic mlhs_item mlhs_node mlhs_post mlhs_inner
 %type <id>   fsym keyword_variable user_variable sym symbol operation operation2 operation3
 %type <id>   cname fname op f_rest_arg f_block_arg opt_f_block_arg f_norm_arg f_bad_arg
-%type <id>   f_kwrest f_label f_arg_asgn call_op
+%type <id>   f_kwrest f_label f_arg_asgn call_op call_op2
 /*%%%*/
 /*%
 %type <val> program reswords then do dot_or_colon
@@ -1395,7 +1395,7 @@ command_call	: command
 		;
 
 block_command	: block_call
-		| block_call dot_or_colon operation2 command_args
+		| block_call call_op2 operation2 command_args
 		    {
 		    /*%%%*/
 			$$ = NEW_CALL($1, $3, $4);
@@ -3608,7 +3608,7 @@ block_call	: command do_block
 			$$ = method_add_block($1, $2);
 		    %*/
 		    }
-		| block_call dot_or_colon operation2 opt_paren_args
+		| block_call call_op2 operation2 opt_paren_args
 		    {
 		    /*%%%*/
 			$$ = NEW_CALL($1, $3, $4);
@@ -3617,7 +3617,7 @@ block_call	: command do_block
 			$$ = method_optarg($$, $4);
 		    %*/
 		    }
-		| block_call dot_or_colon operation2 opt_paren_args brace_block
+		| block_call call_op2 operation2 opt_paren_args brace_block
 		    {
 		    /*%%%*/
 			block_dup_check($4, $5);
@@ -3629,7 +3629,7 @@ block_call	: command do_block
 			$$ = method_add_block($$, $5);
 		    %*/
 		    }
-		| block_call dot_or_colon operation2 command_args do_block
+		| block_call call_op2 operation2 command_args do_block
 		    {
 		    /*%%%*/
 			block_dup_check($4, $5);
@@ -5107,7 +5107,7 @@ operation3	: tIDENTIFIER
 		| op
 		;
 
-dot_or_colon	: call_op
+dot_or_colon	: '.'
 		    /*%c%*/
 		    /*%c
 		    { $$ = $<val>1; }
@@ -5121,6 +5121,10 @@ dot_or_colon	: call_op
 
 call_op 	: '.' {$$ = '.';}
 		| tDOTQ {$$ = tDOTQ;}
+		;
+
+call_op2	: call_op
+		| tCOLON2 {$$ = tCOLON2;}
 		;
 
 opt_terms	: /* none */
