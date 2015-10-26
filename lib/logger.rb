@@ -208,7 +208,7 @@ class Logger
     name = File.basename(__FILE__)
   end
   rev ||= "v#{VERSION}"
-  ProgName = "#{name}/#{rev}"
+  ProgName = "#{name}/#{rev}".freeze
 
   class Error < RuntimeError # :nodoc:
   end
@@ -481,7 +481,7 @@ class Logger
 private
 
   # Severity label for logging (max 5 chars).
-  SEV_LABEL = %w(DEBUG INFO WARN ERROR FATAL ANY)
+  SEV_LABEL = %w(DEBUG INFO WARN ERROR FATAL ANY).each(&:freeze).freeze
 
   def format_severity(severity)
     SEV_LABEL[severity] || 'ANY'
@@ -494,7 +494,7 @@ private
 
   # Default formatter for log messages.
   class Formatter
-    Format = "%s, [%s#%d] %5s -- %s: %s\n"
+    Format = "%s, [%s#%d] %5s -- %s: %s\n".freeze
 
     attr_accessor :datetime_format
 
