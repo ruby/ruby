@@ -1,3 +1,9 @@
+Mon Oct 26 18:36:43 2015  Shota Fukumori (sora_h) <her@sorah.jp>
+
+	* vm_method.c(rb_method_entry_make):
+	  [DOC] [ci skip] Remove a needless space from comment
+	  [Fixes GH-1069] Patch by @yui-knk
+
 Mon Oct 26 17:30:13 2015  Ryan Hosford  <tad.hosford@gmail.com>
 
 	* lib/fileutils.rb: rename tailing to trailing.
