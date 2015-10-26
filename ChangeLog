@@ -1,3 +1,7 @@
+Mon Oct 26 17:11:53 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (call_op, call_op2): fix values on ripper.  [Feature #11537]
+
 Mon Oct 26 12:55:06 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (call_op2): separate from call_op and also allow "::",

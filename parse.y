@@ -1466,7 +1466,7 @@ command		: fcall command_args       %prec tLOWEST
 			$$ = NEW_QCALL($2, $1, $3, $4);
 			fixpos($$, $1);
 		    /*%
-			$$ = dispatch4(command_call, $1, ripper_id2sym($2), $3, $4);
+			$$ = dispatch4(command_call, $1, $2, $3, $4);
 		    %*/
 		    }
 		| primary_value call_op operation2 command_args cmd_brace_block
@@ -1477,7 +1477,7 @@ command		: fcall command_args       %prec tLOWEST
 			$$ = $5;
 			fixpos($$, $1);
 		    /*%
-			$$ = dispatch4(command_call, $1, ripper_id2sym($2), $3, $4);
+			$$ = dispatch4(command_call, $1, $2, $3, $4);
 			$$ = method_add_block($$, $5);
 		    %*/
 		   }
@@ -1722,7 +1722,7 @@ mlhs_node	: user_variable
 		    /*%%%*/
 			$$ = attrset($1, $2, $3);
 		    /*%
-			$$ = dispatch3(field, $1, ripper_id2sym($2), $3);
+			$$ = dispatch3(field, $1, $2, $3);
 		    %*/
 		    }
 		| primary_value tCOLON2 tIDENTIFIER
@@ -1738,7 +1738,7 @@ mlhs_node	: user_variable
 		    /*%%%*/
 			$$ = attrset($1, $2, $3);
 		    /*%
-			$$ = dispatch3(field, $1, ripper_id2sym($2), $3);
+			$$ = dispatch3(field, $1, $2, $3);
 		    %*/
 		    }
 		| primary_value tCOLON2 tCONSTANT
@@ -1813,7 +1813,7 @@ lhs		: user_variable
 		    /*%%%*/
 			$$ = attrset($1, $2, $3);
 		    /*%
-			$$ = dispatch3(field, $1, ripper_id2sym($2), $3);
+			$$ = dispatch3(field, $1, $2, $3);
 		    %*/
 		    }
 		| primary_value tCOLON2 tIDENTIFIER
@@ -1829,7 +1829,7 @@ lhs		: user_variable
 		    /*%%%*/
 			$$ = attrset($1, $2, $3);
 		    /*%
-			$$ = dispatch3(field, $1, ripper_id2sym($2), $3);
+			$$ = dispatch3(field, $1, $2, $3);
 		    %*/
 		    }
 		| primary_value tCOLON2 tCONSTANT
@@ -3664,7 +3664,7 @@ method_call	: fcall paren_args
 			$$ = NEW_QCALL($2, $1, $3, $5);
 			nd_set_line($$, $<num>4);
 		    /*%
-			$$ = dispatch3(call, $1, ripper_id2sym($2), $3);
+			$$ = dispatch3(call, $1, $2, $3);
 			$$ = method_optarg($$, $5);
 		    %*/
 		    }
@@ -3704,8 +3704,7 @@ method_call	: fcall paren_args
 			$$ = NEW_QCALL($2, $1, idCall, $4);
 			nd_set_line($$, $<num>3);
 		    /*%
-			$$ = dispatch3(call, $1, ripper_id2sym($2),
-				       ID2SYM(idCall));
+			$$ = dispatch3(call, $1, $2, ID2SYM(idCall));
 			$$ = method_optarg($$, $4);
 		    %*/
 		    }
@@ -5119,12 +5118,33 @@ dot_or_colon	: '.'
 		    %*/
 		;
 
-call_op 	: '.' {$$ = '.';}
-		| tDOTQ {$$ = tDOTQ;}
+call_op 	: '.'
+		    {
+		    /*%%%*/
+			$$ = '.';
+		    /*%
+		        $$ = ripper_id2sym('.');
+		    %*/
+		    }
+		| tDOTQ
+		    {
+		    /*%%%*/
+			$$ = tDOTQ;
+		    /*%
+		        $$ = ripper_id2sym(idDOTQ);
+		    %*/
+		    }
 		;
 
 call_op2	: call_op
-		| tCOLON2 {$$ = tCOLON2;}
+		| tCOLON2
+		    {
+		    /*%%%*/
+			$$ = tCOLON2;
+		    /*%
+		        $$ = ripper_id2sym(idCOLON2);
+		    %*/
+		    }
 		;
 
 opt_terms	: /* none */
