@@ -1,3 +1,8 @@
+Mon Oct 26 22:23:30 2015  SimonDKnight  <simondknight@hotmail.com>
+
+	* lib/racc/rdoc/grammar.en.rdoc: Grammatical errors fixed.
+	  [Fix GH-1070]
+
 Mon Oct 26 18:36:43 2015  Shota Fukumori (sora_h) <her@sorah.jp>
 
 	* vm_method.c(rb_method_entry_make):
