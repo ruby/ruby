@@ -1,3 +1,13 @@
+Mon Oct 26 12:55:06 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (call_op2): separate from call_op and also allow "::",
+	  while dot_or_colon should not allow ".?".  [Feature #11537]
+
+Mon Oct 26 12:54:26 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (call_op2): separate from call_op and also allow "::",
+	  while dot_or_colon should not allow ".?".  [Feature #11537]
+
 Mon Oct 26 01:03:23 2015  Rei Odaira  <Rei.Odaira@gmail.com>
 
 	* thread_pthread.c: fix compile erros when
