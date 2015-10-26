@@ -494,7 +494,7 @@ private
 
   # Default formatter for log messages.
   class Formatter
-    Format = "%s, [%s#%d] %5s -- %s: %s\n"
+    FORMAT = "%s, [%s#%d] %5s -- %s: %s\n"
 
     attr_accessor :datetime_format
 
@@ -503,7 +503,7 @@ private
     end
 
     def call(severity, time, progname, msg)
-      Format % [severity[0..0], format_datetime(time), $$, severity, progname,
+      FORMAT % [severity[0..0], format_datetime(time), $$, severity, progname,
         msg2str(msg)]
     end
 
