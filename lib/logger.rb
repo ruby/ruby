@@ -533,11 +533,11 @@ private
 
     def next_rotate_time(now, shift_age)
       case shift_age
-      when /^daily$/
+      when 'daily'
         t = Time.mktime(now.year, now.month, now.mday) + SiD
-      when /^weekly$/
+      when 'weekly'
         t = Time.mktime(now.year, now.month, now.mday) + SiD * (7 - now.wday)
-      when /^monthly$/
+      when 'monthly'
         t = Time.mktime(now.year, now.month, 1) + SiD * 31
         mday = (1 if t.mday > 1)
       else
@@ -551,11 +551,11 @@ private
 
     def previous_period_end(now, shift_age)
       case shift_age
-      when /^daily$/
+      when 'daily'
         t = Time.mktime(now.year, now.month, now.mday) - SiD / 2
-      when /^weekly$/
+      when 'weekly'
         t = Time.mktime(now.year, now.month, now.mday) - (SiD * (now.wday + 1) + SiD / 2)
-      when /^monthly$/
+      when 'monthly'
         t = Time.mktime(now.year, now.month, 1) - SiD / 2
       else
         return now
