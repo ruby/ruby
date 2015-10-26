@@ -442,7 +442,7 @@ rb_add_refined_method_entry(VALUE refined_class, ID mid)
 /*
  * klass->method_table[mid] = method_entry(defined_class, visi, def)
  *
- * If def is given (!= NULL), then  just use it and ignore original_id and otps.
+ * If def is given (!= NULL), then just use it and ignore original_id and otps.
  * If not given, then make a new def with original_id and opts.
  */
 static rb_method_entry_t *
