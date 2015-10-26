@@ -92,6 +92,7 @@ enum ruby_method_ids {
     idCOLON2 = RUBY_TOKEN(COLON2),
     idANDOP = RUBY_TOKEN(ANDOP),
     idOROP = RUBY_TOKEN(OROP),
+    idDOTQ = RUBY_TOKEN(DOTQ),
     tPRESERVED_ID_BEGIN = <%=op_id_offset + token_op_ids.size - 1%>,
 % ids[:preserved].each do |token|
     id<%=token%>,
