@@ -694,17 +694,6 @@ rb_block_lambda(void)
     return proc_new(rb_cProc, TRUE);
 }
 
-VALUE
-rb_block_clear_env_self(VALUE proc)
-{
-    rb_proc_t *po;
-    rb_env_t *env;
-    GetProcPtr(proc, po);
-    GetEnvPtr(rb_vm_proc_envval(po), env);
-    env->env[0] = Qfalse;
-    return proc;
-}
-
 /*  Document-method: ===
  *
  *  call-seq:
