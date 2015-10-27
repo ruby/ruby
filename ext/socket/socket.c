@@ -1058,7 +1058,7 @@ sock_gethostname(VALUE obj)
 
     char buf[RUBY_MAX_HOST_NAME_LEN+1];
 
-    if (gethostname(buf, (int)sizeof buf - 1) < 0)
+    if (gethostname(buf, (int)sizeof buf) < 0)
 	rb_sys_fail("gethostname(3)");
 
     buf[sizeof buf - 1] = '\0';
