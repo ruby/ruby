@@ -5116,8 +5116,8 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		}
 		else {
 		    VALUE str = rb_str_dup(node->nd_lit);
-		    rb_iv_set(str, "__object_created_path__", iseq->body->location.path);
-		    rb_iv_set(str, "__object_created_line__", INT2FIX(line));
+		    rb_ivar_set(str, id_debug_created_path, iseq->body->location.path);
+		    rb_ivar_set(str, id_debug_created_line, INT2FIX(line));
 		    ADD_INSN1(ret, line, putobject, rb_obj_freeze(str));
 		}
 	    }

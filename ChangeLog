@@ -1,3 +1,7 @@
+Tue Oct 27 17:06:55 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* defs/id.def: move internal IDs for frozen-string-literal-debug.
+
 Tue Oct 27 16:41:05 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (rb_error_frozen_object): use rb_attr_get instead of
