@@ -48,6 +48,7 @@ require "cgi/util"
 #   % a line of Ruby code -- treated as <% line %> (optional -- see ERB.new)
 #   %% replaced with % if first thing on a line and % processing is used
 #   <%% or %%> -- replace with <% or %> respectively
+#   <#-- ERB comment. Ignores all enclosed HTML and embedded Ruby and removes from output --#>
 #
 # All other text is passed through ERB filtering unchanged.
 #
@@ -419,7 +420,7 @@ class ERB
       end
 
       def scan_line(line)
-        line.scan(/(.*?)(<%%|%%>|<%=|<%#|<%|%>|\n|\z)/m) do |tokens|
+        line.scan(/(.*?)(<#--|--#>|<%%|%%>|<%=|<%#|<%|%>|\n|\z)/m) do |tokens|
           tokens.each do |token|
             next if token.empty?
             yield(token)
@@ -428,7 +429,7 @@ class ERB
       end
 
       def trim_line1(line)
-        line.scan(/(.*?)(<%%|%%>|<%=|<%#|<%|%>\n|%>|\n|\z)/m) do |tokens|
+        line.scan(/(.*?)(<#--|--#>|<%%|%%>|<%=|<%#|<%|%>\n|%>|\n|\z)/m) do |tokens|
           tokens.each do |token|
             next if token.empty?
             if token == "%>\n"
@@ -443,7 +444,7 @@ class ERB
 
       def trim_line2(line)
         head = nil
-        line.scan(/(.*?)(<%%|%%>|<%=|<%#|<%|%>\n|%>|\n|\z)/m) do |tokens|
+        line.scan(/(.*?)(<#--|--#>|<%%|%%>|<%=|<%#|<%|%>\n|%>|\n|\z)/m) do |tokens|
           tokens.each do |token|
             next if token.empty?
             head = token unless head
@@ -464,7 +465,7 @@ class ERB
       end
 
       def explicit_trim_line(line)
-        line.scan(/(.*?)(^[ \t]*<%\-|<%\-|<%%|%%>|<%=|<%#|<%|-%>\n|-%>|%>|\z)/m) do |tokens|
+        line.scan(/(.*?)(^[ \t]*<%\-|<%\-|<#--|--#>|<%%|%%>|<%=|<%#|<%|-%>\n|-%>|%>|\z)/m) do |tokens|
           tokens.each do |token|
             next if token.empty?
             if @stag.nil? && /[ \t]*<%-/ =~ token
@@ -491,7 +492,7 @@ class ERB
 
     class SimpleScanner < Scanner # :nodoc:
       def scan
-        @src.scan(/(.*?)(<%%|%%>|<%=|<%#|<%|%>|\n|\z)/m) do |tokens|
+        @src.scan(/(.*?)(<#--|--#>|<%%|%%>|<%=|<%#|<%|%>|\n|\z)/m) do |tokens|
           tokens.each do |token|
             next if token.empty?
             yield(token)
@@ -499,14 +500,13 @@ class ERB
         end
       end
     end
-
     Scanner.regist_scanner(SimpleScanner, nil, false)
 
     begin
       require 'strscan'
       class SimpleScanner2 < Scanner # :nodoc:
         def scan
-          stag_reg = /(.*?)(<%%|<%=|<%#|<%|\z)/m
+          stag_reg = /(.*?)(<#--|--#>|<%%|<%=|<%#|<%|\z)/m
           etag_reg = /(.*?)(%%>|%>|\z)/m
           scanner = StringScanner.new(@src)
           while ! scanner.eos?
@@ -520,8 +520,8 @@ class ERB
 
       class ExplicitScanner < Scanner # :nodoc:
         def scan
-          stag_reg = /(.*?)(^[ \t]*<%-|<%%|<%=|<%#|<%-|<%|\z)/m
-          etag_reg = /(.*?)(%%>|-%>|%>|\z)/m
+          stag_reg = /(.*?)(^[ \t]*<%-|<#--|<%%|<%=|<%#|<%-|<%|\z)/m
+          etag_reg = /(.*?)(--#>|%%>|-%>|%>|\z)/m
           scanner = StringScanner.new(@src)
           while ! scanner.eos?
             scanner.scan(@stag ? etag_reg : stag_reg)
@@ -554,6 +554,7 @@ class ERB
         end
       end
       attr_reader :script
+      attr_reader :chars_uptil_comment
 
       def push(cmd)
         @line << cmd
@@ -563,6 +564,15 @@ class ERB
         @script << (@line.join('; '))
         @line = []
         @script << "\n"
+      end
+
+      def start_erb_comment
+        @chars_uptil_comment = @script.length
+      end
+
+      def end_erb_comment
+        @script = @script[0, @chars_uptil_comment ]
+        @chars_uptil_comment = nil
       end
 
       def close
@@ -591,6 +601,7 @@ class ERB
     def add_insert_cmd(out, content)
       out.push("#{@insert_cmd}((#{content}).to_s)")
     end
+
 
     # Compiles an ERB template into Ruby code.  Returns an array of the code
     # and encoding like ["code", Encoding].
@@ -625,6 +636,18 @@ class ERB
             content = ''
           when '<%%'
             content << '<%'
+          when '<#--'
+            add_put_cmd(out, content)
+            out.cr
+            out.start_erb_comment
+          when '--#>'
+            if out.chars_uptil_comment 
+              content = ''
+              out.cr
+              out.end_erb_comment
+            else
+              content << token 
+            end
           else
             content << token
           end
