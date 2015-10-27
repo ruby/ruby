@@ -70,7 +70,7 @@ with all sufficient information, see the ChangeLog file.
 * Kernel
 
   * Kernel#loop, when stopped by a StopIteration exception, returns
-    what the enumerator has returned instead of nil.
+    what the enumerator has returned instead of nil. [Feature #11498]
 
 * Module
   * Module#deprecate_constant [Feature #11398]
