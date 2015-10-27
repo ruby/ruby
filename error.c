@@ -2227,10 +2227,9 @@ void
 rb_error_frozen_object(VALUE frozen_obj)
 {
     VALUE path, line;
-    ID created_path, created_line;
+    const ID created_path = id_debug_created_path;
+    const ID created_line = id_debug_created_line;
 
-    CONST_ID(created_path, "__object_created_path__");
-    CONST_ID(created_line, "__object_created_line__");
     if (!NIL_P(path = rb_attr_get(frozen_obj, created_path)) &&
 	!NIL_P(line = rb_attr_get(frozen_obj, created_line))) {
 	rb_raise(rb_eRuntimeError, "can't modify frozen %"PRIsVALUE", created at %"PRIsVALUE":%"PRIsVALUE,

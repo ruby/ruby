@@ -60,6 +60,9 @@ firstline, predefined = __LINE__+1, %[\
   core#hash_merge_ary
   core#hash_merge_ptr
   core#hash_merge_kwd
+
+  debug#created_path
+  debug#created_line
 ]
 
 class KeywordError < RuntimeError
