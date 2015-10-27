@@ -61,8 +61,8 @@ firstline, predefined = __LINE__+1, %[\
   core#hash_merge_ptr
   core#hash_merge_kwd
 
-  debug#created_path
-  debug#created_line
+  -                                                     debug#created_path
+  -                                                     debug#created_line
 ]
 
 class KeywordError < RuntimeError
@@ -94,6 +94,10 @@ predefined.split(/^/).each_with_index do |line, num|
     token.sub!(/\A@@/, "_C_")
     token.sub!(/\A@/, "_I_")
     token.gsub!(/\W+/, "")
+  end
+  if name == '-'
+    preserved_ids << token
+    next
   end
   if prev = names[name]
     KeywordError.raise("#{name} is already registered at line #{prev+firstline}", firstline+num)
