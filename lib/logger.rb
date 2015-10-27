@@ -556,7 +556,7 @@ private
       when 'daily'
         t = Time.mktime(now.year, now.month, now.mday) - SiD / 2
       when 'weekly'
-        t = Time.mktime(now.year, now.month, now.mday) - (SiD * (now.wday + 1) + SiD / 2)
+        t = Time.mktime(now.year, now.month, now.mday) - (SiD * now.wday + SiD / 2)
       when 'monthly'
         t = Time.mktime(now.year, now.month, 1) - SiD / 2
       else

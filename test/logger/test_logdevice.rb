@@ -367,6 +367,49 @@ class TestLogDevice < Test::Unit::TestCase
 
   env_tz_works = /linux|darwin|freebsd/ =~ RUBY_PLATFORM # borrow from test/ruby/test_time_tz.rb
 
+  def test_shifting_weekly
+    Dir.mktmpdir do |tmpdir|
+      assert_in_out_err([{"TZ"=>"UTC"}, *%W"-rlogger -C#{tmpdir} -"], <<-'end;')
+        begin
+          module FakeTime
+            attr_accessor :now
+          end
+
+          class << Time
+            prepend FakeTime
+          end
+
+          log = "log"
+          File.open(log, "w") {}
+
+          Time.now = Time.utc(2015, 12, 14, 0, 1, 1)
+          dev = Logger::LogDevice.new("log", shift_age: 'weekly')
+
+          Time.now = Time.utc(2015, 12, 19, 12, 34, 56)
+          dev.write("#{Time.now} hello-1\n")
+          File.utime(Time.now, Time.now, log)
+
+          Time.now = Time.utc(2015, 12, 20, 0, 1, 1)
+          File.utime(Time.now, Time.now, log)
+          dev.write("#{Time.now} hello-2\n")
+        ensure
+          dev.close if dev
+        end
+      end;
+      log = File.join(tmpdir, "log")
+      cont = File.read(log)
+      assert_match(/hello-2/, cont)
+      assert_not_match(/hello-1/, cont)
+      log = Dir.glob(log+".*")
+      assert_equal(1, log.size)
+      log, = *log
+      cont = File.read(log)
+      assert_match(/hello-1/, cont)
+      assert_equal("2015-12-19", cont[/^[-\d]+/])
+      assert_equal("20151219", log[/\d+\z/])
+    end
+  end if env_tz_works
+
   def test_shifting_dst_change
     Dir.mktmpdir do |tmpdir|
       assert_in_out_err([{"TZ"=>"Europe/London"}, *%W"--disable=gems -rlogger -C#{tmpdir} -"], <<-'end;')
