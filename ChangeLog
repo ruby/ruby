@@ -1,3 +1,8 @@
+Tue Oct 27 23:14:14 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* defs/id.def: enable anonymous IDs not to expose internal IDs for
+	  frozen-string-literal-debug by Marshal.dump.
+
 Tue Oct 27 17:06:55 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* defs/id.def: move internal IDs for frozen-string-literal-debug.
