@@ -796,6 +796,7 @@ class FTPTest < Test::Unit::TestCase
         assert_match(/\APASS /, commands.shift)
         assert_equal("TYPE I\r\n", commands.shift)
         Tempfile.create("foo", external_encoding: "ASCII-8BIT") do |f|
+          f.binmode
           buf = String.new
           res = ftp.getbinaryfile("foo", f.path) { |s|
             buf << s
