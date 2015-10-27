@@ -1,3 +1,10 @@
+Tue Oct 27 23:32:51 2015  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* test/drb/test_drb.rb: Run Rinda/DRb tests on localhost. [Fix GH-1027]
+	  patch by voxik.
+
+	* test/rinda/test_rinda.rb: ditto
+
 Tue Oct  6 01:29:02 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (IS_BEG): include labeled argument state, which was
