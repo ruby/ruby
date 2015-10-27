@@ -539,12 +539,14 @@ private
         t = Time.mktime(now.year, now.month, now.mday) + SiD * (7 - now.wday)
       when 'monthly'
         t = Time.mktime(now.year, now.month, 1) + SiD * 31
-        mday = (1 if t.mday > 1)
+        return Time.mktime(t.year, t.month, 1) if t.mday > 1
       else
         return now
       end
-      if mday or t.hour.nonzero? or t.min.nonzero? or t.sec.nonzero?
-        t = Time.mktime(t.year, t.month, mday || (t.mday + (t.hour > 12 ? 1 : 0)))
+      if t.hour.nonzero? or t.min.nonzero? or t.sec.nonzero?
+        hour = t.hour
+        t = Time.mktime(t.year, t.month, t.mday)
+        t += SiD if hour > 12
       end
       t
     end

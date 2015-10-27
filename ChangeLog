@@ -1,3 +1,9 @@
+Tue Oct 27 12:00:33 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/logger.rb (Logger::Period#next_rotate_time): get rid of
+	  adding to mday not to exceed the days of the month.
+	  [ruby-core:71185] [Bug #11620]
+
 Mon Oct 26 22:43:03 2015  yui-knk  <spiketeika@gmail.com>
 
 	* test/ruby/test_module.rb (test_method_defined): Add test cases
