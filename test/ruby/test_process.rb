@@ -1364,7 +1364,8 @@ class TestProcess < Test::Unit::TestCase
     return unless Signal.list.include?("QUIT")
 
     with_tmpchdir do
-      s = assert_in_out_err([], "Process.kill(:SIGQUIT, $$);sleep 30", //, //)
+      cur, max = Process.getrlimit(:CORE)
+      s = assert_in_out_err([], "Process.kill(:SIGQUIT, $$);sleep 30", //, //, :rlimit_core=>[0,max])
       assert_equal([false, true, false, nil],
                    [s.exited?, s.signaled?, s.stopped?, s.success?],
                    "[s.exited?, s.signaled?, s.stopped?, s.success?]")
