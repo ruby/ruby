@@ -1,3 +1,9 @@
+Tue Oct 27 16:41:05 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (rb_error_frozen_object): use rb_attr_get instead of
+	  rb_ivar_get to get rid of warnings for string objects created
+	  when frozen-string-literal-debug is disabled.
+
 Tue Oct 27 16:18:12 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/logger.rb (Logger::Period#previous_period_end): as weekly

@@ -2227,8 +2227,12 @@ void
 rb_error_frozen_object(VALUE frozen_obj)
 {
     VALUE path, line;
-    if ((path = rb_iv_get(frozen_obj, "__object_created_path__")) != Qnil &&
-	(line = rb_iv_get(frozen_obj, "__object_created_line__")) != Qnil) {
+    ID created_path, created_line;
+
+    CONST_ID(created_path, "__object_created_path__");
+    CONST_ID(created_line, "__object_created_line__");
+    if (!NIL_P(path = rb_attr_get(frozen_obj, created_path)) &&
+	!NIL_P(line = rb_attr_get(frozen_obj, created_line))) {
 	rb_raise(rb_eRuntimeError, "can't modify frozen %"PRIsVALUE", created at %"PRIsVALUE":%"PRIsVALUE,
 		 CLASS_OF(frozen_obj), path, line);
     }
