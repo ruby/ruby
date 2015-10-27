@@ -12,10 +12,10 @@ class TestGc < Test::Unit::TestCase
     GC.stress = false
 
     assert_nothing_raised do
+      tmp = nil
       1.upto(10000) {
         tmp = [0,1,2,3,4,5,6,7,8,9]
       }
-      tmp = nil
     end
     l=nil
     100000.times {
@@ -348,7 +348,7 @@ class TestGc < Test::Unit::TestCase
     end;
     opts = {signal: :SEGV}
     begin
-      cur, max = Process.getrlimit(:CORE)
+      _, max = Process.getrlimit(:CORE)
       opts[:rlimit_core] = [0,max]
     rescue NotImplementedError
     end
