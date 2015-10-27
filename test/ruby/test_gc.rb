@@ -346,7 +346,13 @@ class TestGc < Test::Unit::TestCase
         ObjectSpace.define_finalizer(Object.new, f)
       end
     end;
-    out, err, status = assert_in_out_err(["-e", src], "", [], [], bug10595, signal: :SEGV) do |*result|
+    opts = {signal: :SEGV}
+    begin
+      cur, max = Process.getrlimit(:CORE)
+      opts[:rlimit_core] = [0,max]
+    rescue NotImplementedError
+    end
+    out, err, status = assert_in_out_err(["-e", src], "", [], [], bug10595, opts) do |*result|
       break result
     end
     unless /mswin|mingw/ =~ RUBY_PLATFORM
