@@ -1198,20 +1198,26 @@ rb_mod_undef_method(int argc, VALUE *argv, VALUE mod)
  *
  *     module A
  *       def method1()  end
+ *       def protected_method1()  end
+ *       protected :protected_method1
  *     end
  *     class B
  *       def method2()  end
+ *       def private_method2()  end
+ *       private :private_method2
  *     end
  *     class C < B
  *       include A
  *       def method3()  end
  *     end
  *
- *     A.method_defined? :method1    #=> true
- *     C.method_defined? "method1"   #=> true
- *     C.method_defined? "method2"   #=> true
- *     C.method_defined? "method3"   #=> true
- *     C.method_defined? "method4"   #=> false
+ *     A.method_defined? :method1              #=> true
+ *     C.method_defined? "method1"             #=> true
+ *     C.method_defined? "method2"             #=> true
+ *     C.method_defined? "method3"             #=> true
+ *     C.method_defined? "protected_method1"   #=> true
+ *     C.method_defined? "method4"             #=> false
+ *     C.method_defined? "private_method2"     #=> false
  */
 
 static VALUE
