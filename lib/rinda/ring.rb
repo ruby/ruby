@@ -137,7 +137,7 @@ module Rinda
       @sockets << socket
 
       if addrinfo.ipv4_multicast? or addrinfo.ipv6_multicast? then
-        if Socket.const_defined?(:SO_REUSEPORT) then
+        if Socket.const_defined?(:SO_REUSEPORT) && /linux/ !~ RUBY_PLATFORM then
           socket.setsockopt(:SOCKET, :SO_REUSEPORT, true)
         else
           socket.setsockopt(:SOCKET, :SO_REUSEADDR, true)
