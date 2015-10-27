@@ -60,7 +60,7 @@ Mon Oct 26 12:55:06 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Mon Oct 26 01:03:23 2015  Rei Odaira  <Rei.Odaira@gmail.com>
 
-	* thread_pthread.c: fix compile erros when
+	* thread_pthread.c: fix compile errors when
 	  USE_SLEEPY_TIMER_THREAD is disabled.
 
 Sun Oct 25 10:12:05 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -204,7 +204,7 @@ Fri Oct 23 21:10:37 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Fri Oct 23 18:10:32 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
-	* .gitignore: ignored environmantal wrapper files.
+	* .gitignore: ignored environmental wrapper files.
 
 Fri Oct 23 17:55:29 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
