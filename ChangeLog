@@ -1,3 +1,8 @@
+Tue Oct 27 23:38:26 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: check for libunwind.h, which is not available in
+	  very old OS X SDK.  [ruby-core:71080] [Bug #11591]
+
 Tue Oct 27 23:32:51 2015  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* test/drb/test_drb.rb: Run Rinda/DRb tests on localhost. [Fix GH-1027]
