@@ -64,8 +64,8 @@ class TestGemExtExtConfBuilder < Gem::TestCase
   end
 
   def test_class_build_env_make
-    env_make = ENV.delete 'make'
-    ENV['make'] = 'anothermake'
+    env_make = ENV.delete 'MAKE'
+    ENV['MAKE'] = 'anothermake'
 
     configure_args '' do
       File.open File.join(@ext, 'extconf.rb'), 'w' do |extconf|
@@ -84,7 +84,7 @@ class TestGemExtExtConfBuilder < Gem::TestCase
       assert_contains_make_command 'clean', output[4]
     end
   ensure
-    ENV['make'] = env_make
+    ENV['MAKE'] = env_make
   end
 
   def test_class_build_extconf_fail
