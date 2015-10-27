@@ -74,6 +74,14 @@ class TestModule < Test::Unit::TestCase
     include Mixin
     def user
     end
+
+    def user2
+    end
+    protected :user2
+
+    def user3
+    end
+    private :user3
   end
 
   module Other
@@ -442,8 +450,8 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_instance_methods
-    assert_equal([:user], User.instance_methods(false))
-    assert_equal([:user, :mixin].sort, User.instance_methods(true).sort)
+    assert_equal([:user, :user2], User.instance_methods(false))
+    assert_equal([:user, :user2, :mixin].sort, User.instance_methods(true).sort)
     assert_equal([:mixin], Mixin.instance_methods)
     assert_equal([:mixin], Mixin.instance_methods(true))
     assert_equal([:cClass], (class << CClass; self; end).instance_methods(false))
@@ -458,12 +466,17 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_method_defined?
-    assert_method_not_defined?(User, :wombat)
-    assert_method_defined?(User, :user)
-    assert_method_defined?(User, :mixin)
-    assert_method_not_defined?(User, :wombat)
-    assert_method_defined?(User, :user)
-    assert_method_defined?(User, :mixin)
+    assert !User.method_defined?(:wombat)
+    assert User.method_defined?(:mixin)
+    assert User.method_defined?(:user)
+    assert User.method_defined?(:user2)
+    assert !User.method_defined?(:user3)
+
+    assert !User.method_defined?("wombat")
+    assert User.method_defined?("mixin")
+    assert User.method_defined?("user")
+    assert User.method_defined?("user2")
+    assert !User.method_defined?("user3")
   end
 
   def module_exec_aux
