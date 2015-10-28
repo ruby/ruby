@@ -789,6 +789,16 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     tree = parse('a::X ||= c 1', :on_opassign) {thru_opassign = true}
     assert_equal true, thru_opassign
     assert_equal "[opassign(const_path_field(vcall(a),X),||=,command(c,[1]))]", tree
+
+    thru_opassign = false
+    tree = parse("self.foo += 1", :on_opassign) {thru_opassign = true}
+    assert_equal true, thru_opassign
+    assert_equal "[opassign(field(ref(self),.,foo),+=,1)]", tree
+
+    thru_opassign = false
+    tree = parse("self.?foo += 1", :on_opassign) {thru_opassign = true}
+    assert_equal true, thru_opassign
+    assert_equal "[opassign(field(ref(self),.?,foo),+=,1)]", tree
   end
 
   def test_opassign_error
