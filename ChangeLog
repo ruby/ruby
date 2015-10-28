@@ -1,3 +1,8 @@
+Wed Oct 28 13:29:39 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (new_attr_op_assign): fix op_assign type, which is
+	  already an ID since r52284.  [Feature #11537]
+
 Tue Oct 27 23:14:14 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* defs/id.def: enable anonymous IDs not to expose internal IDs for
