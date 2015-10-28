@@ -16,6 +16,7 @@
 #include "ruby/util.h"
 #include "constant.h"
 #include "id.h"
+#include "ccan/list/list.h"
 
 st_table *rb_global_tbl;
 static ID autoload, classpath, tmp_classpath, classid;
@@ -1896,6 +1897,7 @@ struct autoload_data_i {
     int safe_level;
     VALUE thread;
     VALUE value;
+    struct list_head waitq_head; /* links autoload_state.waitq_node */
 };
 
 static void
@@ -2077,20 +2079,71 @@ autoload_const_set(VALUE arg)
     return 0;			/* ignored */
 }
 
+/* this is on the thread stack, not heap */
+struct autoload_state {
+    struct autoload_data_i *ele;
+    VALUE mod;
+    VALUE result;
+    ID id;
+    struct list_node waitq_node; /* links autoload_data_i.waitq_head */
+    VALUE waiting_th;
+};
+
 static VALUE
 autoload_require(VALUE arg)
 {
-    struct autoload_data_i *ele = (struct autoload_data_i *)arg;
-    return rb_funcall(rb_vm_top_self(), rb_intern("require"), 1, ele->feature);
+    struct autoload_state *state = (struct autoload_state *)arg;
+
+    /* this may release GVL and switch threads: */
+    state->result = rb_funcall(rb_vm_top_self(), rb_intern("require"), 1,
+			       state->ele->feature);
+
+    return state->result;
 }
 
 static VALUE
 autoload_reset(VALUE arg)
 {
-    struct autoload_data_i *ele = (struct autoload_data_i *)arg;
-    if (ele->thread == rb_thread_current()) {
-	ele->thread = Qnil;
+    struct autoload_state *state = (struct autoload_state *)arg;
+    int need_wakeups = 0;
+
+    if (state->ele->thread == rb_thread_current()) {
+	need_wakeups = 1;
+	state->ele->thread = Qnil;
     }
+
+    /* At the last, move a value defined in autoload to constant table */
+    if (RTEST(state->result) && state->ele->value != Qundef) {
+	int safe_backup;
+	struct autoload_const_set_args args;
+
+	args.mod = state->mod;
+	args.id = state->id;
+	args.value = state->ele->value;
+	safe_backup = rb_safe_level();
+	rb_set_safe_level_force(state->ele->safe_level);
+	rb_ensure(autoload_const_set, (VALUE)&args,
+	          reset_safe, (VALUE)safe_backup);
+    }
+
+    /* wakeup any waiters we had */
+    if (need_wakeups) {
+	struct autoload_state *cur, *nxt;
+
+	list_for_each_safe(&state->ele->waitq_head, cur, nxt, waitq_node) {
+	    VALUE th = cur->waiting_th;
+
+	    cur->waiting_th = Qfalse;
+	    list_del(&cur->waitq_node);
+
+	    /*
+	     * cur is stored on the stack of cur->waiting_th,
+	     * do not touch cur after waking up waiting_th
+	     */
+	    rb_thread_wakeup_alive(th);
+	}
+    }
+
     return 0;			/* ignored */
 }
 
@@ -2100,6 +2153,7 @@ rb_autoload_load(VALUE mod, ID id)
     VALUE load, result;
     const char *loading = 0, *src;
     struct autoload_data_i *ele;
+    struct autoload_state state;
 
     if (!autoload_defined_p(mod, id)) return Qfalse;
     load = check_autoload_required(mod, id, &loading);
@@ -2111,26 +2165,35 @@ rb_autoload_load(VALUE mod, ID id)
     if (!(ele = check_autoload_data(load))) {
 	return Qfalse;
     }
+
+    state.ele = ele;
+    state.mod = mod;
+    state.id = id;
     if (ele->thread == Qnil) {
 	ele->thread = rb_thread_current();
-    }
-    /* autoload_data_i can be deleted by another thread while require */
-    result = rb_ensure(autoload_require, (VALUE)ele, autoload_reset, (VALUE)ele);
 
-    if (RTEST(result)) {
-	/* At the last, move a value defined in autoload to constant table */
-	if (ele->value != Qundef) {
-	    int safe_backup;
-	    struct autoload_const_set_args args;
-	    args.mod = mod;
-	    args.id = id;
-	    args.value = ele->value;
-	    safe_backup = rb_safe_level();
-	    rb_set_safe_level_force(ele->safe_level);
-	    rb_ensure(autoload_const_set, (VALUE)&args,
-		      reset_safe, (VALUE)safe_backup);
-	}
+	/*
+	 * autoload_reset will wake up any threads added to this
+	 * iff the GVL is released during autoload_require
+	 */
+	list_head_init(&ele->waitq_head);
     }
+    else {
+	state.waiting_th = rb_thread_current();
+	list_add_tail(&ele->waitq_head, &state.waitq_node);
+	/*
+	 * autoload_reset in other thread will resume us and remove us
+	 * from the waitq list
+	 */
+	do {
+	    rb_thread_sleep_deadly();
+	} while (state.waiting_th != Qfalse);
+    }
+
+    /* autoload_data_i can be deleted by another thread while require */
+    result = rb_ensure(autoload_require, (VALUE)&state,
+		       autoload_reset, (VALUE)&state);
+
     RB_GC_GUARD(load);
     return result;
 }
