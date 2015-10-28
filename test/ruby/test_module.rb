@@ -686,7 +686,7 @@ class TestModule < Test::Unit::TestCase
     assert_raise(NameError) { c1.const_set("X\u{3042}".encode("utf-32be"), :foo) }
     assert_raise(NameError) { c1.const_set("X\u{3042}".encode("utf-32le"), :foo) }
     cx = EnvUtil.labeled_class("X\u{3042}")
-    EnvUtil.with_default_internal(Encoding::UTF_8) {
+    EnvUtil.with_default_external(Encoding::UTF_8) {
       assert_raise_with_message(TypeError, /X\u{3042}/) { c1.const_set(cx, :foo) }
     }
   end
