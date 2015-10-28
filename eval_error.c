@@ -208,47 +208,53 @@ ruby_error_print(void)
     error_print();
 }
 
-static const char *
-method_visibility_name(rb_method_visibility_t visi)
-{
-    switch (visi) {
-      case METHOD_VISI_UNDEF:
-      case METHOD_VISI_PUBLIC:    return "";
-      case METHOD_VISI_PRIVATE:   return " private";
-      case METHOD_VISI_PROTECTED: return " protected";
-    }
-    rb_bug("method_visibility_name: unreachable (%d)", (int)visi);
-}
+#define undef_mesg_for(v, k) rb_fstring_cstr("undefined"v" method `%1$s' for "k" `%$s'")
+#define undef_mesg(v) ( \
+	is_mod ? \
+	undef_mesg_for(v, "module") : \
+	undef_mesg_for(v, "class"))
 
 void
 rb_print_undef(VALUE klass, ID id, int visi)
 {
-    const char *v = method_visibility_name(visi);
-
-    rb_name_error(id, "undefined%s method `%"PRIsVALUE"' for %s `% "PRIsVALUE"'", v,
-		  QUOTE_ID(id),
-		  (RB_TYPE_P(klass, T_MODULE)) ? "module" : "class",
-		  rb_class_name(klass));
+    const int is_mod = RB_TYPE_P(klass, T_MODULE);
+    VALUE mesg;
+    switch (visi & METHOD_VISI_MASK) {
+      case METHOD_VISI_UNDEF:
+      case METHOD_VISI_PUBLIC:    mesg = undef_mesg(""); break;
+      case METHOD_VISI_PRIVATE:   mesg = undef_mesg(" private"); break;
+      case METHOD_VISI_PROTECTED: mesg = undef_mesg(" protected"); break;
+      default: UNREACHABLE;
+    }
+    rb_name_err_raise_str(mesg, klass, ID2SYM(id));
 }
 
 void
 rb_print_undef_str(VALUE klass, VALUE name)
 {
-    rb_name_error_str(name, "undefined method `%"PRIsVALUE"' for %s `% "PRIsVALUE"'",
-		      QUOTE(name),
-		      (RB_TYPE_P(klass, T_MODULE)) ? "module" : "class",
-		      rb_class_name(klass));
+    const int is_mod = RB_TYPE_P(klass, T_MODULE);
+    rb_name_err_raise_str(undef_mesg(""), klass, name);
 }
+
+#define inaccessible_mesg_for(v, k) rb_fstring_cstr("method `%1$s' for "k" `%2$s' is "v)
+#define inaccessible_mesg(v) ( \
+	is_mod ? \
+	inaccessible_mesg_for(v, "module") : \
+	inaccessible_mesg_for(v, "class"))
 
 void
 rb_print_inaccessible(VALUE klass, ID id, rb_method_visibility_t visi)
 {
-    const char *v = method_visibility_name(visi);
-    rb_name_error(id, "method `%"PRIsVALUE"' for %s `% "PRIsVALUE"' is %s",
-		  QUOTE_ID(id),
-		  (RB_TYPE_P(klass, T_MODULE)) ? "module" : "class",
-		  rb_class_name(klass),
-		  v);
+    const int is_mod = RB_TYPE_P(klass, T_MODULE);
+    VALUE mesg;
+    switch (visi & METHOD_VISI_MASK) {
+      case METHOD_VISI_UNDEF:
+      case METHOD_VISI_PUBLIC:    mesg = inaccessible_mesg(""); break;
+      case METHOD_VISI_PRIVATE:   mesg = inaccessible_mesg(" private"); break;
+      case METHOD_VISI_PROTECTED: mesg = inaccessible_mesg(" protected"); break;
+      default: UNREACHABLE;
+    }
+    rb_name_err_raise_str(mesg, klass, ID2SYM(id));
 }
 
 static int

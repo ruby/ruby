@@ -27,7 +27,9 @@ typedef enum {
     METHOD_VISI_UNDEF     = 0x00,
     METHOD_VISI_PUBLIC    = 0x01,
     METHOD_VISI_PRIVATE   = 0x02,
-    METHOD_VISI_PROTECTED = 0x03
+    METHOD_VISI_PROTECTED = 0x03,
+
+    METHOD_VISI_MASK = 0x03
 } rb_method_visibility_t;
 
 typedef struct rb_scope_visi_struct {
