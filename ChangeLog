@@ -1,3 +1,12 @@
+Wed Oct 29 00:39:50 2015  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* test/rubygems/test_gem_commands_server_command.rb
+	  (test_handle_options_port): change port from http to discard.
+	  Solaris does not include "http 80/tcp" in its default
+	  /etc/inet/services. AFAIK, discard (9/tcp) is older than http
+	  and it is expected that all OS can resolve the service name.
+	  [Bug #10004] [ruby-core:63518]
+
 Wed Oct 28 23:52:48 2015  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* probes_helper.h (RUBY_DTRACE_HOOK): add RB_GC_GUARD, though paranoic.
