@@ -637,7 +637,7 @@ class TestThread < Test::Unit::TestCase
       th = Thread.start{
         Thread.handle_interrupt(Object => :on_blocking){
           begin
-            sleep 0.0001 until r == :wait
+            Thread.pass until r == :wait
             Thread.current.raise RuntimeError
             r = :ok
             sleep
@@ -647,8 +647,9 @@ class TestThread < Test::Unit::TestCase
         }
       }
       assert_raise(e) {r = :wait; sleep 1}
-    ensure
       assert_raise(RuntimeError) {th.join(0)}
+    ensure
+      th.kill
     end
     assert_equal(:ok,r)
   end
