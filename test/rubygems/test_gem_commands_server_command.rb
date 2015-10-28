@@ -37,11 +37,8 @@ class TestGemCommandsServerCommand < Gem::TestCase
     @cmd.send :handle_options, %w[-p 65535]
     assert_equal 65535, @cmd.options[:port]
 
-    if /solaris/ !~ RUBY_PLATFORM
-      # solaris will raise OptionParser::InvalidArgument
-      @cmd.send :handle_options, %w[-p http]
-      assert_equal 80, @cmd.options[:port]
-    end
+    @cmd.send :handle_options, %w[-p http]
+    assert_equal 80, @cmd.options[:port]
 
     e = assert_raises OptionParser::InvalidArgument do
       @cmd.send :handle_options, %w[-p nonexistent]
