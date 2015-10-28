@@ -347,11 +347,7 @@ class TestGc < Test::Unit::TestCase
       end
     end;
     opts = {signal: :SEGV}
-    begin
-      _, max = Process.getrlimit(:CORE)
-      opts[:rlimit_core] = [0,max]
-    rescue NotImplementedError
-    end
+    opts[:rlimit_core] = 0 if defined?(Process::RLIMIT_CORE)
     out, err, status = assert_in_out_err(["-e", src], "", [], [], bug10595, opts) do |*result|
       break result
     end
