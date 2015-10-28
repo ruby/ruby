@@ -738,44 +738,57 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
 
   def test_opassign
     thru_opassign = false
-    parse('a += b', :on_opassign) {thru_opassign = true}
+    tree = parse('a += b', :on_opassign) {thru_opassign = true}
+    assert_equal true, thru_opassign
+    assert_equal "[opassign(var_field(a),+=,vcall(b))]", tree
+    thru_opassign = false
+    tree = parse('a -= b', :on_opassign) {thru_opassign = true}
+    assert_equal true, thru_opassign
+    assert_equal "[opassign(var_field(a),-=,vcall(b))]", tree
+    thru_opassign = false
+    tree = parse('a *= b', :on_opassign) {thru_opassign = true}
+    assert_equal true, thru_opassign
+    assert_equal "[opassign(var_field(a),*=,vcall(b))]", tree
+    thru_opassign = false
+    tree = parse('a /= b', :on_opassign) {thru_opassign = true}
+    assert_equal true, thru_opassign
+    assert_equal "[opassign(var_field(a),/=,vcall(b))]", tree
+    thru_opassign = false
+    tree = parse('a %= b', :on_opassign) {thru_opassign = true}
+    assert_equal true, thru_opassign
+    assert_equal "[opassign(var_field(a),%=,vcall(b))]", tree
+    thru_opassign = false
+    tree = parse('a **= b', :on_opassign) {thru_opassign = true}
+    assert_equal true, thru_opassign
+    assert_equal "[opassign(var_field(a),**=,vcall(b))]", tree
+    thru_opassign = false
+    tree = parse('a &= b', :on_opassign) {thru_opassign = true}
+    assert_equal true, thru_opassign
+    assert_equal "[opassign(var_field(a),&=,vcall(b))]", tree
+    thru_opassign = false
+    tree = parse('a |= b', :on_opassign) {thru_opassign = true}
+    assert_equal "[opassign(var_field(a),|=,vcall(b))]", tree
     assert_equal true, thru_opassign
     thru_opassign = false
-    parse('a -= b', :on_opassign) {thru_opassign = true}
+    tree = parse('a <<= b', :on_opassign) {thru_opassign = true}
     assert_equal true, thru_opassign
+    assert_equal "[opassign(var_field(a),<<=,vcall(b))]", tree
     thru_opassign = false
-    parse('a *= b', :on_opassign) {thru_opassign = true}
+    tree = parse('a >>= b', :on_opassign) {thru_opassign = true}
     assert_equal true, thru_opassign
+    assert_equal "[opassign(var_field(a),>>=,vcall(b))]", tree
     thru_opassign = false
-    parse('a /= b', :on_opassign) {thru_opassign = true}
+    tree = parse('a &&= b', :on_opassign) {thru_opassign = true}
     assert_equal true, thru_opassign
+    assert_equal "[opassign(var_field(a),&&=,vcall(b))]", tree
     thru_opassign = false
-    parse('a %= b', :on_opassign) {thru_opassign = true}
+    tree = parse('a ||= b', :on_opassign) {thru_opassign = true}
     assert_equal true, thru_opassign
+    assert_equal "[opassign(var_field(a),||=,vcall(b))]", tree
     thru_opassign = false
-    parse('a **= b', :on_opassign) {thru_opassign = true}
+    tree = parse('a::X ||= c 1', :on_opassign) {thru_opassign = true}
     assert_equal true, thru_opassign
-    thru_opassign = false
-    parse('a &= b', :on_opassign) {thru_opassign = true}
-    assert_equal true, thru_opassign
-    thru_opassign = false
-    parse('a |= b', :on_opassign) {thru_opassign = true}
-    assert_equal true, thru_opassign
-    thru_opassign = false
-    parse('a <<= b', :on_opassign) {thru_opassign = true}
-    assert_equal true, thru_opassign
-    thru_opassign = false
-    parse('a >>= b', :on_opassign) {thru_opassign = true}
-    assert_equal true, thru_opassign
-    thru_opassign = false
-    parse('a &&= b', :on_opassign) {thru_opassign = true}
-    assert_equal true, thru_opassign
-    thru_opassign = false
-    parse('a ||= b', :on_opassign) {thru_opassign = true}
-    assert_equal true, thru_opassign
-    thru_opassign = false
-    parse('a::X ||= c 1', :on_opassign) {thru_opassign = true}
-    assert_equal true, thru_opassign
+    assert_equal "[opassign(const_path_field(vcall(a),X),||=,command(c,[1]))]", tree
   end
 
   def test_opassign_error
