@@ -1224,7 +1224,7 @@ gen_ivtbl_count(const struct gen_ivtbl *ivtbl)
     return n;
 }
 
-static VALUE
+VALUE
 rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
 {
     VALUE val, *ptr;

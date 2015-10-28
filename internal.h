@@ -1163,6 +1163,7 @@ extern rb_encoding OnigEncodingUTF_8;
 size_t rb_generic_ivar_memsize(VALUE);
 VALUE rb_search_class_path(VALUE);
 VALUE rb_attr_delete(VALUE, ID);
+VALUE rb_ivar_lookup(VALUE obj, ID id, VALUE undef);
 
 /* version.c */
 extern VALUE ruby_engine_name;

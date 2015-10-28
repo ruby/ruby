@@ -1,4 +1,9 @@
-Wed Oct 28 15:24:09 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Oct 28 15:36:11 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (rb_name_err_new): store the receiver directly.
+
+	* error.c (name_err_receiver): return directly stored receiver.
+	  [Feature #10881]
 
 	* error.c (name_err_mesg_to_str): quote the name if unprintable.
 

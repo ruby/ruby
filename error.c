@@ -662,6 +662,7 @@ static VALUE rb_eNOERROR;
 
 static ID id_new, id_cause, id_message, id_backtrace;
 static ID id_name, id_args, id_Errno, id_errno, id_i_path;
+static ID id_receiver;
 extern ID ruby_static_id_status;
 #define id_bt idBt
 #define id_bt_locations idBt_locations
@@ -1196,6 +1197,7 @@ rb_name_err_new(VALUE mesg, VALUE recv, VALUE method)
     rb_ivar_set(exc, id_mesg, rb_name_err_mesg_new(mesg, recv, method));
     rb_ivar_set(exc, id_bt, Qnil);
     rb_ivar_set(exc, id_name, method);
+    rb_ivar_set(exc, id_receiver, recv);
     return exc;
 }
 
@@ -1297,8 +1299,12 @@ name_err_mesg_load(VALUE klass, VALUE str)
 static VALUE
 name_err_receiver(VALUE self)
 {
-    VALUE *ptr, mesg = rb_attr_get(self, id_mesg);
+    VALUE *ptr, recv, mesg;
 
+    recv = rb_ivar_lookup(self, id_receiver, Qundef);
+    if (recv != Qundef) return recv;
+
+    mesg = rb_attr_get(self, id_mesg);
     if (!rb_typeddata_is_kind_of(mesg, &name_err_mesg_data_type)) {
 	rb_raise(rb_eArgError, "no receiver is available");
     }
@@ -1969,6 +1975,7 @@ Init_Exception(void)
     id_backtrace = rb_intern_const("backtrace");
     id_name = rb_intern_const("name");
     id_args = rb_intern_const("args");
+    id_receiver = rb_intern_const("receiver");
     id_Errno = rb_intern_const("Errno");
     id_errno = rb_intern_const("errno");
     id_i_path = rb_intern_const("@path");
