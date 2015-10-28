@@ -1,3 +1,8 @@
+Thu Oct 29 08:48:05 2015  Eric Wong  <e@80x24.org>
+
+	* variable.c: additional locking around autoload
+	  [ruby-core:70075] [ruby-core:71239] [Bug #11384]
+
 Wed Oct 29 00:39:50 2015  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* test/rubygems/test_gem_commands_server_command.rb
