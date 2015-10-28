@@ -739,6 +739,11 @@ const char *rb_builtin_class_name(VALUE x);
 PRINTF_ARGS(void rb_enc_warn(rb_encoding *enc, const char *fmt, ...), 2, 3);
 PRINTF_ARGS(void rb_enc_warning(rb_encoding *enc, const char *fmt, ...), 2, 3);
 PRINTF_ARGS(void rb_sys_enc_warning(rb_encoding *enc, const char *fmt, ...), 2, 3);
+VALUE rb_name_err_new(VALUE mesg, VALUE recv, VALUE method);
+#define rb_name_err_raise_str(mesg, recv, name) \
+    rb_exc_raise(rb_name_err_new(mesg, recv, name))
+#define rb_name_err_raise(mesg, recv, name) \
+    rb_name_err_raise_str(rb_fstring_cstr(mesg), (recv), (name))
 
 /* eval.c */
 VALUE rb_refinement_module_get_refined_class(VALUE module);
