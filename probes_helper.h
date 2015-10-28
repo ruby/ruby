@@ -45,10 +45,12 @@ do { \
 				filename, \
 				rb_sourceline()); \
 		    } \
+		    RB_GC_GUARD(_name); \
 		    break; \
 		} \
 	    } \
 	} \
+	RB_GC_GUARD(_klass); \
     } \
 } while (0)
 

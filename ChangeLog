@@ -1,3 +1,7 @@
+Wed Oct 28 23:52:48 2015  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* probes_helper.h (RUBY_DTRACE_HOOK): add RB_GC_GUARD, though paranoic.
+
 Wed Oct 28 15:36:11 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (rb_name_err_new): store the receiver directly.
