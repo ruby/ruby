@@ -1,7 +1,3 @@
-Wed Oct 28 05:59:19 2015  NARUSE, Yui  <naruse@ruby-lang.org>
-
-	* lib/rinda/ring.rb: Linux's SO_REUSEPORT is not for multicast.
-
 Tue Oct 27 23:14:14 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* defs/id.def: enable anonymous IDs not to expose internal IDs for
