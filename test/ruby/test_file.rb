@@ -266,7 +266,7 @@ class TestFile < Test::Unit::TestCase
     Dir.mktmpdir('rubytest-realpath') {|tmpdir|
       realdir = File.realpath(tmpdir)
       open(File.join(tmpdir, tst), "w") {}
-      a = File.join(tmpdir, "a")
+      a = File.join(tmpdir, "x")
       File.symlink(tst, a)
       assert_equal(File.join(realdir, tst), File.realpath(a))
       File.unlink(a)
