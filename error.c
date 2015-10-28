@@ -1189,6 +1189,16 @@ rb_name_err_mesg_new(VALUE mesg, VALUE recv, VALUE method)
     return result;
 }
 
+VALUE
+rb_name_err_new(VALUE mesg, VALUE recv, VALUE method)
+{
+    VALUE exc = rb_obj_alloc(rb_eNameError);
+    rb_ivar_set(exc, id_mesg, rb_name_err_mesg_new(mesg, recv, method));
+    rb_ivar_set(exc, id_bt, Qnil);
+    rb_ivar_set(exc, id_name, method);
+    return exc;
+}
+
 /* :nodoc: */
 static VALUE
 name_err_mesg_equal(VALUE obj1, VALUE obj2)

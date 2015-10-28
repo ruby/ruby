@@ -1,3 +1,8 @@
+Wed Oct 28 15:23:14 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (rb_name_err_new): new function to create NameError
+	  exception instance.  [Feature #10881]
+
 Wed Oct 28 13:29:39 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (new_attr_op_assign): fix op_assign type, which is
