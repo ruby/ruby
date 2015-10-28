@@ -918,8 +918,8 @@ remove_method(VALUE klass, ID mid)
 	!(me = (rb_method_entry_t *)data) ||
 	(!me->def || me->def->type == VM_METHOD_TYPE_UNDEF) ||
         UNDEFINED_REFINED_METHOD_P(me->def)) {
-	rb_name_error(mid, "method `%"PRIsVALUE"' not defined in %"PRIsVALUE,
-		      rb_id2str(mid), rb_class_path(klass));
+	rb_name_err_raise("method `%1$s' not defined in %2$s",
+			  klass, ID2SYM(mid));
     }
 
     rb_id_table_delete(RCLASS_M_TBL(klass), mid);
@@ -965,8 +965,8 @@ rb_mod_remove_method(int argc, VALUE *argv, VALUE mod)
 	VALUE v = argv[i];
 	ID id = rb_check_id(&v);
 	if (!id) {
-	    rb_name_error_str(v, "method `%"PRIsVALUE"' not defined in %"PRIsVALUE,
-			      v, rb_obj_class(mod));
+	    rb_name_err_raise("method `%1$s' not defined in %2$s",
+			      mod, v);
 	}
 	remove_method(mod, id);
     }

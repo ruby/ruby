@@ -201,13 +201,6 @@ rb_struct_members_m(VALUE obj)
     return rb_struct_s_members_m(rb_obj_class(obj));
 }
 
-NORETURN(static void not_a_member(ID id));
-static void
-not_a_member(ID id)
-{
-    rb_name_error(id, "`%"PRIsVALUE"' is not a struct member", QUOTE_ID(id));
-}
-
 VALUE
 rb_struct_getmember(VALUE obj, ID id)
 {
@@ -216,7 +209,7 @@ rb_struct_getmember(VALUE obj, ID id)
     if (i != -1) {
 	return RSTRUCT_GET(obj, i);
     }
-    not_a_member(id);
+    rb_name_err_raise("`%1$s' is not a struct member", obj, ID2SYM(id));
 
     UNREACHABLE;
 }
@@ -272,8 +265,8 @@ new_struct(VALUE name, VALUE super)
     ID id;
     name = rb_str_to_str(name);
     if (!rb_is_const_name(name)) {
-	rb_name_error_str(name, "identifier %"PRIsVALUE" needs to be constant",
-			  QUOTE(name));
+	rb_name_err_raise("identifier %1$s needs to be constant",
+			  super, name);
     }
     id = rb_to_id(name);
     if (rb_const_defined_at(super, id)) {
@@ -830,7 +823,7 @@ rb_struct_aref_sym(VALUE s, VALUE name)
     if (pos != -1) {
 	return RSTRUCT_GET(s, pos);
     }
-    rb_name_error_str(name, "no member '% "PRIsVALUE"' in struct", name);
+    rb_name_err_raise("no member '%1$s' in struct", s, name);
 
     UNREACHABLE;
 }
@@ -863,8 +856,8 @@ rb_struct_aref(VALUE s, VALUE idx)
     else if (RB_TYPE_P(idx, T_STRING)) {
 	ID id = rb_check_id(&idx);
 	if (!id) {
-	    rb_name_error_str(idx, "no member '%"PRIsVALUE"' in struct",
-			      QUOTE(idx));
+	    rb_name_err_raise("no member '%1$s' in struct",
+			      s, idx);
 	}
 	return rb_struct_aref_sym(s, ID2SYM(id));
     }
@@ -890,7 +883,7 @@ rb_struct_aset_sym(VALUE s, VALUE name, VALUE val)
 	return val;
     }
 
-    rb_name_error_str(name, "no member '% "PRIsVALUE"' in struct", name);
+    rb_name_err_raise("no member '%1$s' in struct", s, name);
 
     UNREACHABLE;
 }
@@ -925,8 +918,8 @@ rb_struct_aset(VALUE s, VALUE idx, VALUE val)
     if (RB_TYPE_P(idx, T_STRING)) {
 	ID id = rb_check_id(&idx);
 	if (!id) {
-	    rb_name_error_str(idx, "no member '%"PRIsVALUE"' in struct",
-			      QUOTE(idx));
+	    rb_name_err_raise("no member '%1$s' in struct",
+			      s, idx);
 	}
 	return rb_struct_aset_sym(s, ID2SYM(id), val);
     }

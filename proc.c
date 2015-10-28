@@ -405,18 +405,19 @@ static ID
 check_local_id(VALUE bindval, volatile VALUE *pname)
 {
     ID lid = rb_check_id(pname);
-    VALUE name = *pname, sym = name;
+    VALUE name = *pname;
 
     if (lid) {
 	if (!rb_is_local_id(lid)) {
-	    name = rb_id2str(lid);
-	  wrong:
-	    rb_name_error_str(sym, "wrong local variable name `% "PRIsVALUE"' for %"PRIsVALUE,
-			      name, bindval);
+	    rb_name_err_raise("wrong local variable name `%1$s' for %2$s",
+			      bindval, ID2SYM(lid));
 	}
     }
     else {
-	if (!rb_is_local_name(sym)) goto wrong;
+	if (!rb_is_local_name(name)) {
+	    rb_name_err_raise("wrong local variable name `%1$s' for %2$s",
+			      bindval, name);
+	}
 	return 0;
     }
     return lid;
@@ -481,9 +482,10 @@ bind_local_variable_get(VALUE bindval, VALUE sym)
     GetBindingPtr(bindval, bind);
 
     if ((ptr = get_local_variable_ptr(bind->env, lid)) == NULL) {
+	sym = ID2SYM(lid);
       undefined:
-	rb_name_error_str(sym, "local variable `%"PRIsVALUE"' not defined for %"PRIsVALUE,
-			  sym, bindval);
+	rb_name_err_raise("local variable `%1$s' not defined for %2$s",
+			  bindval, sym);
     }
 
     return *ptr;
@@ -1495,24 +1497,30 @@ method_owner(VALUE obj)
 void
 rb_method_name_error(VALUE klass, VALUE str)
 {
-    const char *s0 = " class";
+#define MSG(s) rb_fstring_cstr("undefined method `%1$s' for"s" `%2$s'")
     VALUE c = klass;
+    VALUE s;
 
     if (FL_TEST(c, FL_SINGLETON)) {
 	VALUE obj = rb_ivar_get(klass, attached);
 
-	switch (TYPE(obj)) {
+	switch (BUILTIN_TYPE(obj)) {
 	  case T_MODULE:
 	  case T_CLASS:
 	    c = obj;
-	    s0 = "";
+	    s = MSG("");
 	}
+	goto normal_class;
     }
     else if (RB_TYPE_P(c, T_MODULE)) {
-	s0 = " module";
+	s = MSG(" module");
     }
-    rb_name_error_str(str, "undefined method `%"PRIsVALUE"' for%s `%"PRIsVALUE"'",
-		      QUOTE(str), s0, rb_class_name(c));
+    else {
+      normal_class:
+	s = MSG(" class");
+    }
+    rb_name_err_raise_str(s, c, str);
+#undef MSG
 }
 
 static VALUE
@@ -1616,14 +1624,15 @@ rb_obj_singleton_method(VALUE obj, VALUE vid)
 	    id = rb_intern_str(vid);
 	    return mnew_missing(klass, obj, id, id, rb_cMethod);
 	}
-	rb_name_error_str(vid, "undefined singleton method `%"PRIsVALUE"' for `%"PRIsVALUE"'",
-			  QUOTE(vid), obj);
+      undef:
+	rb_name_err_raise("undefined singleton method `%1$s' for `%2$s'",
+			  obj, vid);
     }
     if (NIL_P(klass = rb_singleton_class_get(obj)) ||
 	UNDEFINED_METHOD_ENTRY_P(me = rb_method_entry_at(klass, id)) ||
 	UNDEFINED_REFINED_METHOD_P(me->def)) {
-	rb_name_error(id, "undefined singleton method `%"PRIsVALUE"' for `%"PRIsVALUE"'",
-		      QUOTE_ID(id), obj);
+	vid = ID2SYM(id);
+	goto undef;
     }
     return mnew_from_me(me, klass, obj, id, rb_cMethod, FALSE);
 }
