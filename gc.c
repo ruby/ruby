@@ -4250,6 +4250,8 @@ gc_aging(rb_objspace_t *objspace, VALUE obj)
     objspace->marked_slots++;
 }
 
+NOINLINE(static void gc_mark_ptr(rb_objspace_t *objspace, VALUE obj));
+
 static void
 gc_mark_ptr(rb_objspace_t *objspace, VALUE obj)
 {

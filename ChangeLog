@@ -1,3 +1,8 @@
+Thu Oct 29 18:42:30 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_mark_ptr): specify NOINLINE so that gc_mark() can return
+	  immediately when obj is not a markable object.
+
 Thu Oct 29 18:05:22 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* encoding.c (rb_enc_check_str): add for performance.
