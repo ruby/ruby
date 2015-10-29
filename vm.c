@@ -179,6 +179,46 @@ rb_vm_inc_const_missing_count(void)
     ruby_vm_const_missing_count +=1;
 }
 
+VALUE rb_class_path_no_cache(VALUE _klass);
+
+int
+ruby_th_dtrace_setup(rb_thread_t *th, VALUE klass, ID id,
+		     struct ruby_dtrace_method_hook_args *args)
+{
+    enum ruby_value_type type;
+    if (!klass) {
+	if (!th) th = GET_THREAD();
+	if (!rb_thread_method_id_and_class(th, &id, &klass) || !klass)
+	    return FALSE;
+    }
+    if (RB_TYPE_P(klass, T_ICLASS)) {
+	klass = RBASIC(klass)->klass;
+    }
+    else if (FL_TEST(klass, FL_SINGLETON)) {
+	klass = rb_attr_get(klass, id__attached__);
+	if (NIL_P(klass)) return FALSE;
+    }
+    type = BUILTIN_TYPE(klass);
+    if (type == T_CLASS || type == T_ICLASS || type == T_MODULE) {
+	VALUE name = rb_class_path_no_cache(klass);
+	const char *classname;
+	const char *methodname = rb_id2name(id);
+	const char *filename = rb_sourcefile();
+	if (methodname && filename) {
+	    if (NIL_P(name) || !(classname = StringValuePtr(name)))
+		classname = "<unknown>";
+	    args->classname = classname;
+	    args->methodname = methodname;
+	    args->filename = filename;
+	    args->line_no = rb_sourceline();
+	    args->klass = klass;
+	    args->name = name;
+	    return TRUE;
+	}
+    }
+    return FALSE;
+}
+
 /*
  *  call-seq:
  *    RubyVM.stat -> Hash
