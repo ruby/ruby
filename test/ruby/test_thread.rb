@@ -646,8 +646,8 @@ class TestThread < Test::Unit::TestCase
           end
         }
       }
-      assert_raise(e) {r = :wait; sleep 1}
-      assert_raise(RuntimeError) {th.join(0)}
+      assert_raise(e) {r = :wait; sleep 0.2}
+      assert_raise(RuntimeError) {th.join(0.2)}
     ensure
       th.kill
     end
