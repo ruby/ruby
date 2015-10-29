@@ -1164,7 +1164,7 @@ getinlinecache
 (VALUE val)
 {
     if (ic->ic_serial == GET_GLOBAL_CONSTANT_STATE() &&
-	ic->ic_cref == rb_vm_get_cref(GET_EP())) {
+	(ic->ic_cref == NULL || ic->ic_cref == rb_vm_get_cref(GET_EP()))) {
 	val = ic->ic_value.value;
 	JUMP(dst);
     }
@@ -1188,7 +1188,7 @@ setinlinecache
     VM_ASSERT(ic->ic_value.value != Qundef);
     ic->ic_value.value = val;
     ic->ic_serial = GET_GLOBAL_CONSTANT_STATE() - ruby_vm_const_missing_count;
-    ic->ic_cref = rb_vm_get_cref(GET_EP());
+    ic->ic_cref = vm_get_const_key_cref(GET_EP());
     ruby_vm_const_missing_count = 0;
 }
 

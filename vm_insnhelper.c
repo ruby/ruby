@@ -500,6 +500,23 @@ rb_vm_get_cref(const VALUE *ep)
     }
 }
 
+static const rb_cref_t *
+vm_get_const_key_cref(const VALUE *ep)
+{
+    const rb_cref_t *cref = rb_vm_get_cref(ep);
+    const rb_cref_t *key_cref = cref;
+
+    while (cref) {
+	if (FL_TEST(CREF_CLASS(cref), FL_SINGLETON)) {
+	    return key_cref;
+	}
+	cref = CREF_NEXT(cref);
+    }
+
+    /* does not incldue singleton class */
+    return NULL;
+}
+
 void
 rb_vm_rewrite_cref(rb_cref_t *cref, VALUE old_klass, VALUE new_klass, rb_cref_t **new_cref_ptr)
 {
