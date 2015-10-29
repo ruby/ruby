@@ -1,3 +1,9 @@
+Thu Oct 29 23:54:35 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (sym_to_proc), proc.c (rb_block_clear_env_self): clear
+	  caller's self which is useless, so that it can get collected.
+	  [Fixes GH-592]
+
 Thu Oct 29 23:30:20 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/ipaddr.rb, test/test_ipaddr.rb: Reject invalid address contained
