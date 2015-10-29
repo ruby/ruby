@@ -1111,6 +1111,29 @@ rb_sourceline(void)
     }
 }
 
+VALUE
+rb_source_location(int *pline)
+{
+    rb_thread_t *th = GET_THREAD();
+    rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
+
+    if (cfp) {
+	if (pline) *pline = rb_vm_get_sourceline(cfp);
+	return cfp->iseq->body->location.path;
+    }
+    else {
+	return 0;
+    }
+}
+
+const char *
+rb_source_loc(int *pline)
+{
+    VALUE path = rb_source_location(pline);
+    if (!path) return 0;
+    return RSTRING_PTR(path);
+}
+
 rb_cref_t *
 rb_vm_cref(void)
 {
@@ -2428,10 +2451,7 @@ core_hash_from_ary(VALUE ary)
 {
     VALUE hash = rb_hash_new();
 
-    if (RUBY_DTRACE_HASH_CREATE_ENABLED()) {
-	RUBY_DTRACE_HASH_CREATE(RARRAY_LEN(ary), rb_sourcefile(), rb_sourceline());
-    }
-
+    RUBY_DTRACE_CREATE_HOOK(HASH, RARRAY_LEN(ary));
     return core_hash_merge_ary(hash, ary);
 }
 

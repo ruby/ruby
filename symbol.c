@@ -465,9 +465,7 @@ register_static_symid_str(ID id, VALUE str)
     OBJ_FREEZE(str);
     str = rb_fstring(str);
 
-    if (RUBY_DTRACE_SYMBOL_CREATE_ENABLED()) {
-	RUBY_DTRACE_SYMBOL_CREATE(RSTRING_PTR(str), rb_sourcefile(), rb_sourceline());
-    }
+    RUBY_DTRACE_CREATE_HOOK(SYMBOL, RSTRING_PTR(str));
 
     register_sym(str, sym);
     set_id_entry(num, str, sym);
@@ -534,9 +532,7 @@ dsymbol_alloc(const VALUE klass, const VALUE str, rb_encoding * const enc, const
     register_sym(str, dsym);
     rb_hash_aset(global_symbols.dsymbol_fstr_hash, str, Qtrue);
 
-    if (RUBY_DTRACE_SYMBOL_CREATE_ENABLED()) {
-	RUBY_DTRACE_SYMBOL_CREATE(RSTRING_PTR(RSYMBOL(dsym)->fstr), rb_sourcefile(), rb_sourceline());
-    }
+    RUBY_DTRACE_CREATE_HOOK(SYMBOL, RSTRING_PTR(RSYMBOL(dsym)->fstr));
 
     return dsym;
 }

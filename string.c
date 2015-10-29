@@ -624,9 +624,7 @@ str_alloc(VALUE klass)
 static inline VALUE
 empty_str_alloc(VALUE klass)
 {
-    if (RUBY_DTRACE_STRING_CREATE_ENABLED()) {
-	RUBY_DTRACE_STRING_CREATE(0, rb_sourcefile(), rb_sourceline());
-    }
+    RUBY_DTRACE_CREATE_HOOK(STRING, 0);
     return str_alloc(klass);
 }
 
@@ -639,9 +637,7 @@ str_new0(VALUE klass, const char *ptr, long len, int termlen)
 	rb_raise(rb_eArgError, "negative string size (or size too big)");
     }
 
-    if (RUBY_DTRACE_STRING_CREATE_ENABLED()) {
-	RUBY_DTRACE_STRING_CREATE(len, rb_sourcefile(), rb_sourceline());
-    }
+    RUBY_DTRACE_CREATE_HOOK(STRING, len);
 
     str = str_alloc(klass);
     if (len > RSTRING_EMBED_LEN_MAX) {
@@ -746,9 +742,7 @@ str_new_static(VALUE klass, const char *ptr, long len, int encindex)
 	str = str_new(klass, ptr, len);
     }
     else {
-	if (RUBY_DTRACE_STRING_CREATE_ENABLED()) {
-	    RUBY_DTRACE_STRING_CREATE(len, rb_sourcefile(), rb_sourceline());
-	}
+	RUBY_DTRACE_CREATE_HOOK(STRING, len);
 	str = str_alloc(klass);
 	RSTRING(str)->as.heap.len = len;
 	RSTRING(str)->as.heap.ptr = (char *)ptr;
@@ -1314,10 +1308,7 @@ rb_str_dup(VALUE str)
 VALUE
 rb_str_resurrect(VALUE str)
 {
-    if (RUBY_DTRACE_STRING_CREATE_ENABLED()) {
-	RUBY_DTRACE_STRING_CREATE(RSTRING_LEN(str),
-				  rb_sourcefile(), rb_sourceline());
-    }
+    RUBY_DTRACE_CREATE_HOOK(STRING, RSTRING_LEN(str));
     return str_duplicate(rb_cString, str);
 }
 

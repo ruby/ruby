@@ -526,9 +526,7 @@ newhash
 {
     rb_num_t i;
 
-    if(RUBY_DTRACE_HASH_CREATE_ENABLED()) {
-	RUBY_DTRACE_HASH_CREATE(num, rb_sourcefile(), rb_sourceline());
-    }
+    RUBY_DTRACE_CREATE_HOOK(HASH, num);
 
     val = rb_hash_new();
 
@@ -796,7 +794,7 @@ trace
         RUBY_DTRACE_CMETHOD_ENTRY_ENABLED() ||
         RUBY_DTRACE_CMETHOD_RETURN_ENABLED()) {
 
-        switch(flag) {
+        switch (flag) {
           case RUBY_EVENT_CALL:
             RUBY_DTRACE_METHOD_ENTRY_HOOK(th, 0, 0);
             break;
