@@ -6,7 +6,7 @@ Thu Oct 29 18:42:30 2015  Koichi Sasada  <ko1@atdot.net>
 Thu Oct 29 18:05:22 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* encoding.c (rb_enc_check_str): add for performance.
-	  This function only accept T_STRING (and T_REGEXP).
+	  This function only accepts T_STRING (and T_REGEXP).
 
 	  This patch improves performance of a tiny_segmenter benchmark
 	  (num=2) 2.54sec -> 2.42sec on my machine.

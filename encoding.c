@@ -890,19 +890,19 @@ enc_compatible_latter(VALUE str1, VALUE str2, int idx1, int idx2)
 
     isstr2 = RB_TYPE_P(str2, T_STRING);
     if (isstr2 && RSTRING_LEN(str2) == 0)
-      return enc1;
+	return enc1;
     isstr1 = RB_TYPE_P(str1, T_STRING);
     if (isstr1 && RSTRING_LEN(str1) == 0)
-      return (rb_enc_asciicompat(enc1) && rb_enc_str_asciionly_p(str2)) ? enc1 : enc2;
+	return (rb_enc_asciicompat(enc1) && rb_enc_str_asciionly_p(str2)) ? enc1 : enc2;
     if (!rb_enc_asciicompat(enc1) || !rb_enc_asciicompat(enc2)) {
 	return 0;
     }
 
     /* objects whose encoding is the same of contents */
     if (!isstr2 && idx2 == ENCINDEX_US_ASCII)
-      return enc1;
+	return enc1;
     if (!isstr1 && idx1 == ENCINDEX_US_ASCII)
-      return enc2;
+	return enc2;
 
     if (!isstr1) {
 	VALUE tmp = str1;
@@ -931,7 +931,7 @@ enc_compatible_latter(VALUE str1, VALUE str2, int idx1, int idx2)
 	    }
 	}
 	if (cr1 == ENC_CODERANGE_7BIT)
-	  return enc2;
+	    return enc2;
     }
     return 0;
 }
