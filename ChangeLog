@@ -1,6 +1,13 @@
 Thu Oct 29 08:48:05 2015  Eric Wong  <e@80x24.org>
 
-	* variable.c: additional locking around autoload
+	* variable.c (struct autoload_data_i): add waitq_head
+	  (struct autoload_state): new struct
+	  (autoload_require): save result in autoload_state for use
+	    in autoload_reset
+	  (autoload_reset): wake up other waiters with open-coded
+	    wait-queues
+	  (rb_autoload_load): add ensure autoload_const_set happens
+	    atomically w.r.t. autoload-triggered "require"
 	  [ruby-core:70075] [ruby-core:71239] [Bug #11384]
 
 Wed Oct 29 00:39:50 2015  Naohisa Goto  <ngotogenome@gmail.com>
