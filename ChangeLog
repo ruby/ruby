@@ -1,3 +1,7 @@
+Fri Oct 30 06:20:40 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* insns.def: nobody set ic->ic_value.value to Qundef.
+
 Fri Oct 30 06:15:50 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c: add ifndef guard for VM_CHECK_MODE.

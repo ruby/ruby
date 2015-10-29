@@ -1185,9 +1185,7 @@ setinlinecache
 (VALUE val)
 (VALUE val)
 {
-    if (ic->ic_value.value == Qundef) {
-	rb_iseq_add_mark_object(GET_ISEQ(), val);
-    }
+    VM_ASSERT(ic->ic_value.value != Qundef);
     ic->ic_value.value = val;
     ic->ic_serial = GET_GLOBAL_CONSTANT_STATE() - ruby_vm_const_missing_count;
     ic->ic_cref = rb_vm_get_cref(GET_EP());
