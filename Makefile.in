@@ -389,7 +389,7 @@ enc/jis/props.h: enc/jis/props.kwd
 .d.h:
 	@$(ECHO) translating probes $<
 	$(Q) $(DTRACE) -o $@.tmp -h -C $(INCFLAGS) -s $<
-	$(Q) sed -e 's/RUBY_/RUBY_DTRACE_/g' -e 's/PROBES_H_TMP/PROBES_H/g' -e 's/(char \*/(const char */g' -e 's/, char \*/, const char */g' $@.tmp > $@
+	$(Q) sed -e 's/RUBY_/RUBY_DTRACE_/g' -e 's/PROBES_H_TMP/RUBY_PROBES_H/' -e 's/(char \*/(const char */g' -e 's/, char \*/, const char */g' $@.tmp > $@
 	$(Q) $(RM) $@.tmp
 
 .dmyh.h:
