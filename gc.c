@@ -1705,12 +1705,15 @@ gc_event_hook_body(rb_thread_t *th, rb_objspace_t *objspace, const rb_event_flag
 } while (0)
 
 static inline VALUE
-newobj_init(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, rb_objspace_t *objspace, VALUE obj, int hook_needed)
+newobj_init(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, int wb_protected, rb_objspace_t *objspace, VALUE obj, int hook_needed)
 {
-    if (RGENGC_CHECK_MODE > 0) assert(BUILTIN_TYPE(obj) == T_NONE);
+    if (RGENGC_CHECK_MODE > 0) {
+	assert(BUILTIN_TYPE(obj) == T_NONE);
+	assert((flags & FL_WB_PROTECTED) == 0);
+    }
 
     /* OBJSETUP */
-    RBASIC(obj)->flags = flags & ~FL_WB_PROTECTED;
+    RBASIC(obj)->flags = flags;
     RBASIC_SET_CLASS_RAW(obj, klass);
     RANY(obj)->as.values.v1 = v1;
     RANY(obj)->as.values.v2 = v2;
@@ -1732,13 +1735,13 @@ newobj_init(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, rb_objspace_
 #endif
 
 #if USE_RGENGC
-    if (UNLIKELY((flags & FL_WB_PROTECTED) == 0)) {
+    if (UNLIKELY(wb_protected == FALSE)) {
 	MARK_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(obj), obj);
     }
 #endif
 
 #if RGENGC_PROFILE
-    if (flags & FL_WB_PROTECTED) {
+    if (wb_protected) {
 	objspace->profile.total_generated_normal_object_count++;
 #if RGENGC_PROFILE >= 2
 	objspace->profile.generated_normal_object_count_types[BUILTIN_TYPE(obj)]++;
@@ -1787,10 +1790,10 @@ newobj_init(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, rb_objspace_
     return obj;
 }
 
-NOINLINE(static VALUE newobj_slowpath(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, rb_objspace_t *objspace));
+NOINLINE(static VALUE newobj_slowpath(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, int wb_protected, rb_objspace_t *objspace));
 
 static VALUE
-newobj_slowpath(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, rb_objspace_t *objspace)
+newobj_slowpath(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, int wb_protected, rb_objspace_t *objspace)
 {
     VALUE obj;
 
@@ -1809,11 +1812,11 @@ newobj_slowpath(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, rb_objsp
     }
 
     obj = heap_get_freeobj(objspace, heap_eden);
-    return newobj_init(klass, flags, v1, v2, v3, objspace, obj, gc_event_hook_needed_p(objspace, RUBY_INTERNAL_EVENT_NEWOBJ));
+    return newobj_init(klass, flags, v1, v2, v3, wb_protected, objspace, obj, gc_event_hook_needed_p(objspace, RUBY_INTERNAL_EVENT_NEWOBJ));
 }
 
 static inline VALUE
-newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3)
+newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, int wb_protected)
 {
     rb_objspace_t *objspace = &rb_objspace;
     VALUE obj;
@@ -1831,30 +1834,41 @@ newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3)
 		 ruby_gc_stressful ||
 		 gc_event_hook_available_p(objspace)) &&
 	       (obj = heap_get_freeobj_head(objspace, heap_eden)) != Qfalse)) {
-	return newobj_init(klass, flags, v1, v2, v3, objspace, obj, FALSE);
+	return newobj_init(klass, flags, v1, v2, v3, wb_protected, objspace, obj, FALSE);
     }
     else {
-	return newobj_slowpath(klass, flags, v1, v2, v3, objspace);
+	return newobj_slowpath(klass, flags, v1, v2, v3, wb_protected, objspace);
     }
 }
 
 VALUE
 rb_newobj(void)
 {
-    return newobj_of(0, T_NONE, 0, 0, 0);
+    return newobj_of(0, T_NONE, 0, 0, 0, FALSE);
+}
+
+VALUE
+rb_wb_unprotected_newobj_of(VALUE klass, VALUE flags)
+{
+    return newobj_of(klass, flags, 0, 0, 0, FALSE);
+}
+
+VALUE
+rb_wb_protected_newobj_of(VALUE klass, VALUE flags)
+{
+    return newobj_of(klass, flags, 0, 0, 0, TRUE);
 }
 
 VALUE
 rb_newobj_of(VALUE klass, VALUE flags)
 {
-    return newobj_of(klass, flags, 0, 0, 0);
+    return newobj_of(klass, flags & ~FL_WB_PROTECTED, 0, 0, 0, flags & FL_WB_PROTECTED);
 }
 
 NODE*
 rb_node_newnode(enum node_type type, VALUE a0, VALUE a1, VALUE a2)
 {
-    VALUE flags = 0;
-    NODE *n = (NODE *)newobj_of(0, T_NODE | flags, a0, a1, a2);
+    NODE *n = (NODE *)newobj_of(0, T_NODE, a0, a1, a2, FALSE); /* TODO: node also should be wb protected */
     nd_set_type(n, type);
     return n;
 }
@@ -1865,7 +1879,7 @@ VALUE
 rb_imemo_new(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VALUE v0)
 {
     VALUE flags = T_IMEMO | (type << FL_USHIFT) | FL_WB_PROTECTED;
-    return newobj_of(v0, flags, v1, v2, v3);
+    return newobj_of(v0, flags, v1, v2, v3, TRUE);
 }
 
 #if IMEMO_DEBUG
@@ -1882,7 +1896,7 @@ VALUE
 rb_data_object_wrap(VALUE klass, void *datap, RUBY_DATA_FUNC dmark, RUBY_DATA_FUNC dfree)
 {
     if (klass) Check_Type(klass, T_CLASS);
-    return newobj_of(klass, T_DATA, (VALUE)dmark, (VALUE)dfree, (VALUE)datap);
+    return newobj_of(klass, T_DATA, (VALUE)dmark, (VALUE)dfree, (VALUE)datap, FALSE);
 }
 
 #undef rb_data_object_alloc
@@ -1903,7 +1917,7 @@ VALUE
 rb_data_typed_object_wrap(VALUE klass, void *datap, const rb_data_type_t *type)
 {
     if (klass) Check_Type(klass, T_CLASS);
-    return newobj_of(klass, T_DATA | (type->flags & ~T_MASK), (VALUE)type, (VALUE)1, (VALUE)datap);
+    return newobj_of(klass, T_DATA, (VALUE)type, (VALUE)1, (VALUE)datap, type->flags & RUBY_FL_WB_PROTECTED);
 }
 
 #undef rb_data_typed_object_alloc
