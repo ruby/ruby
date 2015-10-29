@@ -814,9 +814,6 @@ void ruby_sized_xfree(void *x, size_t size);
 
 void rb_gc_resurrect(VALUE ptr);
 
-VALUE rb_wb_protected_newobj_of(VALUE, VALUE);
-VALUE rb_wb_unprotected_newobj_of(VALUE, VALUE);
-
 /* optimized version of NEWOBJ() */
 #undef NEWOBJF_OF
 #undef RB_NEWOBJ_OF
@@ -1324,6 +1321,9 @@ int rb_st_insert_id_and_value(VALUE obj, st_table *tbl, ID key, VALUE value);
 st_table *rb_st_copy(VALUE obj, struct st_table *orig_tbl);
 
 /* gc.c (export) */
+VALUE rb_wb_protected_newobj_of(VALUE, VALUE);
+VALUE rb_wb_unprotected_newobj_of(VALUE, VALUE);
+
 size_t rb_obj_memsize_of(VALUE);
 void rb_gc_verify_internal_consistency(void);
 
