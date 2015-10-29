@@ -1696,10 +1696,10 @@ gc_event_hook_body(rb_thread_t *th, rb_objspace_t *objspace, const rb_event_flag
 }
 
 #define gc_event_hook_available_p(objspace) ((objspace)->flags.has_hook)
-#define gc_event_hook_needed_p(objspace, event) (UNLIKELY((objspace)->hook_events & (event)))
+#define gc_event_hook_needed_p(objspace, event) ((objspace)->hook_events & (event))
 
 #define gc_event_hook(objspace, event, data) do { \
-    if (gc_event_hook_needed_p(objspace, event)) { \
+    if (UNLIKELY(gc_event_hook_needed_p(objspace, event))) { \
 	gc_event_hook_body(GET_THREAD(), (objspace), (event), (data)); \
     } \
 } while (0)
@@ -1760,7 +1760,7 @@ newobj_init(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, rb_objspace_
 
     objspace->total_allocated_objects++;
 
-    if (hook_needed) {
+    if (UNLIKELY(hook_needed)) {
 	gc_event_hook(objspace, RUBY_INTERNAL_EVENT_NEWOBJ, obj);
     }
     gc_report(5, objspace, "newobj: %s\n", obj_info(obj));
