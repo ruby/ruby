@@ -43,7 +43,7 @@ Thu Oct 29 16:20:26 2015  Koichi Sasada  <ko1@atdot.net>
 	  `flag' is immediate value, so that C compilers can
 	  solve them at compile time.
 
-	* include/ruby/ruby.h: add a commnent about that.
+	* include/ruby/ruby.h: add a comment about that.
 
 Thu Oct 29 14:52:03 2015  Koichi Sasada  <ko1@atdot.net>
 
