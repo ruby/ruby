@@ -1,3 +1,11 @@
+Thu Oct 29 23:30:20 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/ipaddr.rb, test/test_ipaddr.rb: Reject invalid address contained
+	  EOL string. Patch by @kachick [fix GH-942][Bug #11513]
+
+	* lib/ipaddr.rb, test/test_ipaddr.rb: split test code from library
+	  script and move to test script, just like trunk.
+
 Thu Oct 29 23:04:04 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/openssl/ossl_ssl.c (ssl_npn_select_cb): explicitly raise error
