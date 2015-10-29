@@ -674,7 +674,7 @@ dir_path(VALUE dir)
 static int
 fundamental_encoding_p(rb_encoding *enc)
 {
-    switch (enc_to_index(enc)) {
+    switch (rb_enc_to_index(enc)) {
       case ENCINDEX_ASCII:
       case ENCINDEX_US_ASCII:
       case ENCINDEX_UTF_8:
@@ -1010,7 +1010,7 @@ rb_dir_getwd(void)
 {
     char *path;
     VALUE cwd;
-    int fsenc = enc_to_index(rb_filesystem_encoding());
+    int fsenc = rb_enc_to_index(rb_filesystem_encoding());
 
     if (fsenc == ENCINDEX_US_ASCII) fsenc = ENCINDEX_ASCII;
     path = my_getcwd();
@@ -2139,9 +2139,9 @@ push_glob(VALUE ary, VALUE str, int flags)
 #ifdef __APPLE__
     str = rb_str_encode_ospath(str);
 #endif
-    if (enc_to_index(enc) == ENCINDEX_US_ASCII)
+    if (rb_enc_to_index(enc) == ENCINDEX_US_ASCII)
 	enc = rb_filesystem_encoding();
-    if (enc_to_index(enc) == ENCINDEX_US_ASCII)
+    if (rb_enc_to_index(enc) == ENCINDEX_US_ASCII)
 	enc = rb_ascii8bit_encoding();
     flags |= GLOB_VERBOSE;
     args.glob.func = push_pattern;

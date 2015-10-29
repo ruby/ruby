@@ -4235,6 +4235,17 @@ static void
 gc_mark_ptr(rb_objspace_t *objspace, VALUE obj)
 {
     if (LIKELY(objspace->mark_func_data == NULL)) {
+	/* check code for Bug #11244 */
+	if (BUILTIN_TYPE(obj) == T_NONE) {
+	    if (objspace->rgengc.parent_object) {
+		rb_bug("gc_mark_ptr: obj is %s (parent: %s)", obj_info(obj),
+		       obj_info(objspace->rgengc.parent_object));
+	    }
+	    else {
+		rb_bug("gc_mark_ptr: obj is %s (parent is not old)", obj_info(obj));
+	    }
+	}
+
 	rgengc_check_relation(objspace, obj);
 	if (!gc_mark_set(objspace, obj)) return; /* already marked */
 	gc_aging(objspace, obj);

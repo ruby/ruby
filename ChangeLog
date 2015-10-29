@@ -1,7 +1,3 @@
-Thu Oct 29 14:07:54 2015  Koichi Sasada  <ko1@atdot.net>
-
-	* gc.c (gc_mark_ptr): remove debug code for #11244.
-
 Thu Oct 29 10:08:33 2015  Eric Wong  <e@80x24.org>
 
 	* variable.c (struct autoload_state): usable as wait-queue head
