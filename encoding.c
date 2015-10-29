@@ -15,6 +15,12 @@
 #include <ctype.h>
 #include "ruby/util.h"
 
+#include <assert.h>
+#ifndef ENC_DEBUG
+#define ENC_DEBUG 0
+#endif
+#define ENC_ASSERT(expr) do { if (ENC_DEBUG) {assert(expr);} } while (0)
+
 #undef rb_ascii8bit_encindex
 #undef rb_utf8_encindex
 #undef rb_usascii_encindex
@@ -743,6 +749,19 @@ rb_id_encoding(void)
     return id_encoding;
 }
 
+static int
+enc_get_index_str(VALUE str)
+{
+    int i = ENCODING_GET_INLINED(str);
+    if (i == ENCODING_INLINE_MAX) {
+	VALUE iv;
+
+	iv = rb_ivar_get(str, rb_id_encoding());
+	i = NUM2INT(iv);
+    }
+    return i;
+}
+
 int
 rb_enc_get_index(VALUE obj)
 {
@@ -758,13 +777,7 @@ rb_enc_get_index(VALUE obj)
       default:
       case T_STRING:
       case T_REGEXP:
-	i = ENCODING_GET_INLINED(obj);
-	if (i == ENCODING_INLINE_MAX) {
-	    VALUE iv;
-
-	    iv = rb_ivar_get(obj, rb_id_encoding());
-	    i = NUM2INT(iv);
-	}
+	i = enc_get_index_str(obj);
 	break;
       case T_FILE:
 	tmp = rb_funcallv(obj, rb_intern("internal_encoding"), 0, 0);
@@ -842,6 +855,21 @@ rb_enc_get(VALUE obj)
     return rb_enc_from_index(rb_enc_get_index(obj));
 }
 
+static rb_encoding* enc_compatible_str(VALUE str1, VALUE str2);
+
+rb_encoding*
+rb_enc_check_str(VALUE str1, VALUE str2)
+{
+    rb_encoding *enc = enc_compatible_str(str1, str2);
+    ENC_ASSERT(TYPE(str1) == T_STRING);
+    ENC_ASSERT(TYPE(str2) == T_STRING);
+    if (!enc)
+	rb_raise(rb_eEncCompatError, "incompatible character encodings: %s and %s",
+		 rb_enc_name(rb_enc_get(str1)),
+		 rb_enc_name(rb_enc_get(str2)));
+    return enc;
+}
+
 rb_encoding*
 rb_enc_check(VALUE str1, VALUE str2)
 {
@@ -853,40 +881,28 @@ rb_enc_check(VALUE str1, VALUE str2)
     return enc;
 }
 
-rb_encoding*
-rb_enc_compatible(VALUE str1, VALUE str2)
+static rb_encoding*
+enc_compatible_latter(VALUE str1, VALUE str2, int idx1, int idx2)
 {
-    int idx1, idx2;
-    rb_encoding *enc1, *enc2;
     int isstr1, isstr2;
-
-    idx1 = rb_enc_get_index(str1);
-    idx2 = rb_enc_get_index(str2);
-
-    if (idx1 < 0 || idx2 < 0)
-        return 0;
-
-    if (idx1 == idx2) {
-	return rb_enc_from_index(idx1);
-    }
-    enc1 = rb_enc_from_index(idx1);
-    enc2 = rb_enc_from_index(idx2);
+    rb_encoding *enc1 = rb_enc_from_index(idx1);
+    rb_encoding *enc2 = rb_enc_from_index(idx2);
 
     isstr2 = RB_TYPE_P(str2, T_STRING);
     if (isstr2 && RSTRING_LEN(str2) == 0)
-	return enc1;
+      return enc1;
     isstr1 = RB_TYPE_P(str1, T_STRING);
     if (isstr1 && RSTRING_LEN(str1) == 0)
-	return (rb_enc_asciicompat(enc1) && rb_enc_str_asciionly_p(str2)) ? enc1 : enc2;
+      return (rb_enc_asciicompat(enc1) && rb_enc_str_asciionly_p(str2)) ? enc1 : enc2;
     if (!rb_enc_asciicompat(enc1) || !rb_enc_asciicompat(enc2)) {
 	return 0;
     }
 
     /* objects whose encoding is the same of contents */
     if (!isstr2 && idx2 == ENCINDEX_US_ASCII)
-	return enc1;
+      return enc1;
     if (!isstr1 && idx1 == ENCINDEX_US_ASCII)
-	return enc2;
+      return enc2;
 
     if (!isstr1) {
 	VALUE tmp = str1;
@@ -915,9 +931,42 @@ rb_enc_compatible(VALUE str1, VALUE str2)
 	    }
 	}
 	if (cr1 == ENC_CODERANGE_7BIT)
-	    return enc2;
+	  return enc2;
     }
     return 0;
+}
+
+static rb_encoding*
+enc_compatible_str(VALUE str1, VALUE str2)
+{
+    int idx1 = enc_get_index_str(str1);
+    int idx2 = enc_get_index_str(str2);
+
+    if (idx1 < 0 || idx2 < 0)
+        return 0;
+
+    if (idx1 == idx2) {
+	return rb_enc_from_index(idx1);
+    }
+    else {
+	return enc_compatible_latter(str1, str2, idx1, idx2);
+    }
+}
+
+rb_encoding*
+rb_enc_compatible(VALUE str1, VALUE str2)
+{
+    int idx1 = rb_enc_get_index(str1);
+    int idx2 = rb_enc_get_index(str2);
+
+    if (idx1 < 0 || idx2 < 0)
+        return 0;
+
+    if (idx1 == idx2) {
+	return rb_enc_from_index(idx1);
+    }
+
+    return enc_compatible_latter(str1, str2, idx1, idx2);
 }
 
 void
