@@ -496,6 +496,7 @@ typedef struct rb_objspace {
 	unsigned int dont_incremental : 1;
 	unsigned int during_gc : 1;
 	unsigned int gc_stressful: 1;
+	unsigned int has_hook: 1;
 #if USE_RGENGC
 	unsigned int during_minor_gc : 1;
 #endif
@@ -1685,6 +1686,7 @@ rb_objspace_set_event_hook(const rb_event_flag_t event)
 {
     rb_objspace_t *objspace = &rb_objspace;
     objspace->hook_events = event & RUBY_INTERNAL_EVENT_OBJSPACE_MASK;
+    objspace->flags.has_hook = (objspace->hook_events != 0);
 }
 
 static void
@@ -1693,7 +1695,8 @@ gc_event_hook_body(rb_thread_t *th, rb_objspace_t *objspace, const rb_event_flag
     EXEC_EVENT_HOOK(th, event, th->cfp->self, 0, 0, data);
 }
 
-#define gc_event_hook_needed_p(objspace, event) ((objspace)->hook_events & (event))
+#define gc_event_hook_available_p(objspace) ((objspace)->flags.has_hook)
+#define gc_event_hook_needed_p(objspace, event) (UNLIKELY((objspace)->hook_events & (event)))
 
 #define gc_event_hook(objspace, event, data) do { \
     if (gc_event_hook_needed_p(objspace, event)) { \
@@ -1702,7 +1705,7 @@ gc_event_hook_body(rb_thread_t *th, rb_objspace_t *objspace, const rb_event_flag
 } while (0)
 
 static inline VALUE
-newobj_init(rb_objspace_t *objspace, VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, VALUE obj, int hook_needed)
+newobj_init(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, rb_objspace_t *objspace, VALUE obj, int hook_needed)
 {
     if (RGENGC_CHECK_MODE > 0) assert(BUILTIN_TYPE(obj) == T_NONE);
 
@@ -1729,7 +1732,7 @@ newobj_init(rb_objspace_t *objspace, VALUE klass, VALUE flags, VALUE v1, VALUE v
 #endif
 
 #if USE_RGENGC
-    if ((flags & FL_WB_PROTECTED) == 0) {
+    if (UNLIKELY((flags & FL_WB_PROTECTED) == 0)) {
 	MARK_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(obj), obj);
     }
 #endif
@@ -1806,7 +1809,7 @@ newobj_slowpath(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, rb_objsp
     }
 
     obj = heap_get_freeobj(objspace, heap_eden);
-    return newobj_init(objspace, klass, flags, v1, v2, v3, obj, gc_event_hook_needed_p(objspace, RUBY_INTERNAL_EVENT_NEWOBJ));
+    return newobj_init(klass, flags, v1, v2, v3, objspace, obj, gc_event_hook_needed_p(objspace, RUBY_INTERNAL_EVENT_NEWOBJ));
 }
 
 static inline VALUE
@@ -1824,10 +1827,11 @@ newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3)
 	}
     }
 #endif
-
-    if (LIKELY(!(during_gc || ruby_gc_stressful) && gc_event_hook_needed_p(objspace, RUBY_INTERNAL_EVENT_NEWOBJ) == FALSE &&
+    if (LIKELY(!(during_gc ||
+		 ruby_gc_stressful ||
+		 gc_event_hook_available_p(objspace)) &&
 	       (obj = heap_get_freeobj_head(objspace, heap_eden)) != Qfalse)) {
-	return newobj_init(objspace, klass, flags, v1, v2, v3, obj, FALSE);
+	return newobj_init(klass, flags, v1, v2, v3, objspace, obj, FALSE);
     }
     else {
 	return newobj_slowpath(klass, flags, v1, v2, v3, objspace);
