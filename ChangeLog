@@ -1,3 +1,10 @@
+Thu Oct 29 22:51:59 2015  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* test/drb/test_drb.rb: Run Rinda/DRb tests on localhost. [Fix GH-1027]
+	  patch by voxik.
+
+	* test/rinda/test_rinda.rb: ditto
+
 Tue Sep 29 17:39:42 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (literal_concat_gen, evstr2dstr_gen): keep literal
