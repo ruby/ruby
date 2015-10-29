@@ -1,3 +1,17 @@
+Thu Oct 29 14:52:03 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: add rb_objspace::flags::has_hook to represent hook availability.
+
+	* gc.c: add gc_event_hook_available_p(objspace) to check that flag.
+
+	* gc.c (newobj_of): use gc_event_hook_available_p() instead of
+	  checking gc_event_hook_needed_p(objspace, RUBY_INTERNAL_EVENT_NEWOBJ).
+	  for performance.
+
+	* gc.c (newobj_init): add UNLIKELY() for FL_WB_PROTECTED flag.
+
+	* gc.c (newobj_init): change parameters order (trivial change).
+
 Thu Oct 29 14:45:15 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_core.h (rb_thread_struct): move forward declarations before
