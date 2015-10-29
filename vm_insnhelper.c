@@ -1568,17 +1568,24 @@ call_cfunc_15(VALUE (*func)(ANYARGS), VALUE recv, int argc, const VALUE *argv)
 #endif
 
 #if VM_PROFILE
-static int vm_profile_counter[4];
-#define VM_PROFILE_UP(x) (vm_profile_counter[x]++)
+enum {
+    VM_PROFILE_R2C_CALL,
+    VM_PROFILE_R2C_POPF,
+    VM_PROFILE_C2C_CALL,
+    VM_PROFILE_C2C_POPF,
+    VM_PROFILE_COUNT
+};
+static int vm_profile_counter[VM_PROFILE_COUNT];
+#define VM_PROFILE_UP(x) (vm_profile_counter[VM_PROFILE_##x]++)
 #define VM_PROFILE_ATEXIT() atexit(vm_profile_show_result)
 static void
 vm_profile_show_result(void)
 {
     fprintf(stderr, "VM Profile results: \n");
-    fprintf(stderr, "r->c call: %d\n", vm_profile_counter[0]);
-    fprintf(stderr, "r->c popf: %d\n", vm_profile_counter[1]);
-    fprintf(stderr, "c->c call: %d\n", vm_profile_counter[2]);
-    fprintf(stderr, "r->c popf: %d\n", vm_profile_counter[3]);
+    fprintf(stderr, "r->c call: %d\n", vm_profile_counter[VM_PROFILE_R2C_CALL]);
+    fprintf(stderr, "r->c popf: %d\n", vm_profile_counter[VM_PROFILE_R2C_POPF]);
+    fprintf(stderr, "c->c call: %d\n", vm_profile_counter[VM_PROFILE_C2C_CALL]);
+    fprintf(stderr, "c->c popf: %d\n", vm_profile_counter[VM_PROFILE_C2C_POPF]);
 }
 #else
 #define VM_PROFILE_UP(x)
@@ -1635,7 +1642,7 @@ vm_call_cfunc_with_frame(rb_thread_t *th, rb_control_frame_t *reg_cfp, struct rb
     if (len >= 0) rb_check_arity(argc, len, len);
 
     reg_cfp->sp -= argc + 1;
-    VM_PROFILE_UP(0);
+    VM_PROFILE_UP(R2C_CALL);
     val = (*cfunc->invoker)(cfunc->func, recv, argc, reg_cfp->sp + 1);
 
     if (reg_cfp != th->cfp + 1) {
@@ -1663,7 +1670,7 @@ vm_call_cfunc_latter(rb_thread_t *th, rb_control_frame_t *reg_cfp, struct rb_cal
     th->passed_calling = calling;
     reg_cfp->sp -= argc + 1;
     ci->aux.inc_sp = argc + 1;
-    VM_PROFILE_UP(0);
+    VM_PROFILE_UP(R2C_CALL);
     val = (*cfunc->invoker)(cfunc->func, recv, argc, argv);
 
     /* check */
@@ -1678,7 +1685,7 @@ vm_call_cfunc_latter(rb_thread_t *th, rb_control_frame_t *reg_cfp, struct rb_cal
 	    rb_bug("vm_call_cfunc_latter: cfp consistency error (%p, %p)", reg_cfp, th->cfp+1);
 	}
 	vm_pop_frame(th);
-	VM_PROFILE_UP(1);
+	VM_PROFILE_UP(R2C_POPF);
     }
 
     return val;
