@@ -57,6 +57,28 @@ enum ruby_preserved_encindex {
 #define rb_utf8_encindex()      RUBY_ENCINDEX_UTF_8
 #define rb_usascii_encindex()   RUBY_ENCINDEX_US_ASCII
 
+#ifdef RUBY_ENCODING_H
+#define ENC_INDEX_MASK (~(~0U<<24))
+#define ENC_TO_ENCINDEX(enc) (int)((enc)->ruby_encoding_index & ENC_INDEX_MASK)
+
+static inline int
+enc_to_index(rb_encoding *enc)
+{
+    return enc ? ENC_TO_ENCINDEX(enc) : 0;
+}
+
+static inline int
+str_enc_get_index(VALUE str)
+{
+    int i = ENCODING_GET_INLINED(str);
+    if (i == ENCODING_INLINE_MAX) {
+	VALUE iv = rb_ivar_get(str, rb_id_encoding());
+	i = NUM2INT(iv);
+    }
+    return i;
+}
+#endif
+
 #if defined(__cplusplus)
 #if 0
 { /* satisfy cc-mode */

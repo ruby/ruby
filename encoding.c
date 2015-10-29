@@ -52,9 +52,7 @@ static struct {
 } enc_table;
 
 #define ENC_DUMMY_FLAG (1<<24)
-#define ENC_INDEX_MASK (~(~0U<<24))
 
-#define ENC_TO_ENCINDEX(enc) (int)((enc)->ruby_encoding_index & ENC_INDEX_MASK)
 #define ENC_DUMMY_P(enc) ((enc)->ruby_encoding_index & ENC_DUMMY_FLAG)
 #define ENC_SET_DUMMY(enc) ((enc)->ruby_encoding_index |= ENC_DUMMY_FLAG)
 
@@ -112,7 +110,7 @@ rb_enc_from_encoding(rb_encoding *encoding)
 int
 rb_enc_to_index(rb_encoding *enc)
 {
-    return enc ? ENC_TO_ENCINDEX(enc) : 0;
+    return enc_to_index(enc);
 }
 
 int
@@ -758,13 +756,7 @@ rb_enc_get_index(VALUE obj)
       default:
       case T_STRING:
       case T_REGEXP:
-	i = ENCODING_GET_INLINED(obj);
-	if (i == ENCODING_INLINE_MAX) {
-	    VALUE iv;
-
-	    iv = rb_ivar_get(obj, rb_id_encoding());
-	    i = NUM2INT(iv);
-	}
+	i = str_enc_get_index(obj);
 	break;
       case T_FILE:
 	tmp = rb_funcallv(obj, rb_intern("internal_encoding"), 0, 0);
