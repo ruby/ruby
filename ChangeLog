@@ -1,3 +1,19 @@
+Fri Oct 30 07:38:29 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* insns.def (getinlinecache/setinlinecache): compare ic->ic_cref and
+	  current cref only when cached CREF list includes singleton class.
+
+	  Singleton classes have own namespaces, so that we need to check
+	  cref as a key (#10943).
+
+	  However, if current CREF list does not include singleton class,
+	  no need to check CREF beacuse it should be same name space.
+
+	* vm_insnhelper.c (vm_get_const_key_cref): add a function returns
+	  CREF only when it includes singleton class.
+
+	* vm_core.h: constify iseq_inline_cache_entry::ic_cref.
+
 Fri Oct 30 06:43:50 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c (vm_env_cref): make it inline for performance.

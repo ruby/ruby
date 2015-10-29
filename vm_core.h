@@ -180,7 +180,7 @@ typedef struct rb_compile_option_struct rb_compile_option_t;
 
 struct iseq_inline_cache_entry {
     rb_serial_t ic_serial;
-    rb_cref_t *ic_cref;
+    const rb_cref_t *ic_cref;
     union {
 	size_t index;
 	VALUE value;
