@@ -67,12 +67,16 @@ callable_method_entry_p(const rb_callable_method_entry_t *me)
 }
 
 static void
-vm_check_frame_detail(int magic, int req_block, int req_me, int req_cref, VALUE specval, VALUE cref_or_me)
+vm_check_frame_detail(VALUE type, int req_block, int req_me, int req_cref, VALUE specval, VALUE cref_or_me)
 {
+    int magic = (int)(type & VM_FRAME_MAGIC_MASK);
     enum imemo_type cref_or_me_type = imemo_none;
 
     if (RB_TYPE_P(cref_or_me, T_IMEMO)) {
 	cref_or_me_type = imemo_type(cref_or_me);
+    }
+    if (type & VM_FRAME_FLAG_BMETHOD) {
+	req_me = TRUE;
     }
 
     if (req_block && !VM_ENVVAL_BLOCK_PTR_P(specval)) {
@@ -119,7 +123,7 @@ vm_check_frame(VALUE type,
 {
     int magic = (int)(type & VM_FRAME_MAGIC_MASK);
 
-#define CHECK(magic, req_block, req_me, req_cref) case magic: vm_check_frame_detail(magic, req_block, req_me, req_cref, specval, cref_or_me); break;
+#define CHECK(magic, req_block, req_me, req_cref) case magic: vm_check_frame_detail(type, req_block, req_me, req_cref, specval, cref_or_me); break;
     switch (magic) {
 	/*                           BLK    ME     CREF */
 	CHECK(VM_FRAME_MAGIC_METHOD, TRUE,  TRUE,  FALSE);
