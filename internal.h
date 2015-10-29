@@ -1183,6 +1183,8 @@ void rb_vm_inc_const_missing_count(void);
 void rb_thread_mark(void *th);
 const void **rb_vm_get_insns_address_table(void);
 VALUE rb_sourcefilename(void);
+VALUE rb_source_location(int *pline);
+const char *rb_source_loc(int *pline);
 void rb_vm_pop_cfunc_frame(void);
 int rb_vm_add_root_module(ID id, VALUE module);
 void rb_vm_check_redefinition_by_prepend(VALUE klass);
@@ -1325,6 +1327,16 @@ VALUE rb_imemo_new(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VALUE v0)
 #endif
 
 RUBY_SYMBOL_EXPORT_END
+
+#define RUBY_DTRACE_CREATE_HOOK(name, arg) \
+do { \
+    if (UNLIKELY(RUBY_DTRACE_##name##_CREATE_ENABLED())) { \
+	int dtrace_line; \
+	const char *dtrace_file = rb_source_loc(&dtrace_line); \
+	if (!dtrace_file) dtrace_file = ""; \
+	RUBY_DTRACE_##name##_CREATE(arg, dtrace_file, dtrace_line); \
+    } \
+} while (0)
 
 #if defined(__cplusplus)
 #if 0

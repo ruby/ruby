@@ -381,9 +381,7 @@ hash_alloc(VALUE klass)
 static VALUE
 empty_hash_alloc(VALUE klass)
 {
-    if (RUBY_DTRACE_HASH_CREATE_ENABLED()) {
-	RUBY_DTRACE_HASH_CREATE(0, rb_sourcefile(), rb_sourceline());
-    }
+    RUBY_DTRACE_CREATE_HOOK(HASH, 0);
 
     return hash_alloc(klass);
 }
