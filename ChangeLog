@@ -1,3 +1,8 @@
+Thu Oct 29 17:16:40 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* internal.h: export rb_wb_(un)protected_newobj_of()
+	  because some extensions include internal.h.
+
 Thu Oct 29 16:42:19 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (rb_imemo_new): should not pass FL_WB_PROTECTED flag.
