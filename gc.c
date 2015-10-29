@@ -1850,12 +1850,14 @@ rb_newobj(void)
 VALUE
 rb_wb_unprotected_newobj_of(VALUE klass, VALUE flags)
 {
+    if (RGENGC_CHECK_MODE > 0) assert((flags & FL_WB_PROTECTED) == 0);
     return newobj_of(klass, flags, 0, 0, 0, FALSE);
 }
 
 VALUE
 rb_wb_protected_newobj_of(VALUE klass, VALUE flags)
 {
+    if (RGENGC_CHECK_MODE > 0) assert((flags & FL_WB_PROTECTED) == 0);
     return newobj_of(klass, flags, 0, 0, 0, TRUE);
 }
 
@@ -1878,7 +1880,7 @@ rb_node_newnode(enum node_type type, VALUE a0, VALUE a1, VALUE a2)
 VALUE
 rb_imemo_new(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VALUE v0)
 {
-    VALUE flags = T_IMEMO | (type << FL_USHIFT) | FL_WB_PROTECTED;
+    VALUE flags = T_IMEMO | (type << FL_USHIFT);
     return newobj_of(v0, flags, v1, v2, v3, TRUE);
 }
 
