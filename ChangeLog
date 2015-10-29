@@ -56,7 +56,7 @@ Tue Sep 29 17:18:40 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 Tue Aug 18 21:40:43 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
-	* lib/rubygems.rb: bump version to 2.4.5.1. this version fixed
+	* lib/rubygems.rb: bump version to 2.2.5. this version fixed
 	  CVE-2015-3900.
 
 	* lib/rubygems/remote_fetcher.rb: ditto.
