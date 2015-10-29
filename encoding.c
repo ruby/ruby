@@ -19,7 +19,8 @@
 #ifndef ENC_DEBUG
 #define ENC_DEBUG 0
 #endif
-#define ENC_ASSERT(expr) do { if (ENC_DEBUG) {assert(expr);} } while (0)
+#define ENC_ASSERT (!ENC_DEBUG)?(void)0:assert
+#define MUST_STRING(str) (ENC_ASSERT(RB_TYPE_P(str, T_STRING)), str)
 
 #undef rb_ascii8bit_encindex
 #undef rb_utf8_encindex
@@ -860,9 +861,7 @@ static rb_encoding* enc_compatible_str(VALUE str1, VALUE str2);
 rb_encoding*
 rb_enc_check_str(VALUE str1, VALUE str2)
 {
-    rb_encoding *enc = enc_compatible_str(str1, str2);
-    ENC_ASSERT(TYPE(str1) == T_STRING);
-    ENC_ASSERT(TYPE(str2) == T_STRING);
+    rb_encoding *enc = enc_compatible_str(MUST_STRING(str1), MUST_STRING(str2));
     if (!enc)
 	rb_raise(rb_eEncCompatError, "incompatible character encodings: %s and %s",
 		 rb_enc_name(rb_enc_get(str1)),
