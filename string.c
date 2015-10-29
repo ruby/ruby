@@ -1598,7 +1598,7 @@ rb_str_plus(VALUE str1, VALUE str2)
     long len1, len2;
 
     StringValue(str2);
-    enc = rb_enc_check(str1, str2);
+    enc = rb_enc_check_str(str1, str2);
     RSTRING_GETMEM(str1, ptr1, len1);
     RSTRING_GETMEM(str2, ptr2, len2);
     str3 = rb_str_new(0, len1+len2);
@@ -4072,7 +4072,7 @@ rb_str_subpat_set(VALUE str, VALUE re, VALUE backref, VALUE val)
     end = END(nth);
     len = end - start;
     StringValue(val);
-    enc = rb_enc_check(str, val);
+    enc = rb_enc_check_str(str, val);
     rb_str_splice_0(str, start, len, val);
     rb_enc_associate(str, enc);
 }

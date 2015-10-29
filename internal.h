@@ -716,6 +716,7 @@ void Init_ext(void);
 ID rb_id_encoding(void);
 void rb_gc_mark_encodings(void);
 rb_encoding *rb_enc_get_from_index(int index);
+rb_encoding *rb_enc_check_str(VALUE str1, VALUE str2);
 int rb_encdb_replicate(const char *alias, const char *orig);
 int rb_encdb_alias(const char *alias, const char *orig);
 int rb_encdb_dummy(const char *name);
