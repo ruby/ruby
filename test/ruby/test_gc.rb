@@ -335,6 +335,7 @@ class TestGc < Test::Unit::TestCase
     bug10595 = '[ruby-core:66825] [Bug #10595]'
     src = <<-'end;'
       pid = $$
+      $stderr.puts `/usr/bin/psig #{$$}` if RUBY_PLATFORM.include?('solaris')
       Thread.start do
         10.times {
           sleep 0.1
