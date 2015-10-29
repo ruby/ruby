@@ -1081,7 +1081,7 @@ class TestIO < Test::Unit::TestCase
     args = ['-e', '$>.write($<.read)'] if args.empty?
     ruby = EnvUtil.rubybin
     opts = {}
-    opts[:rlimit_nproc] = 1024 if /mswin|mingw/ =~ RUBY_PLATFORM
+    opts[:rlimit_nproc] = 1024 if defined?(Process::RLIMIT_NPROC)
     f = IO.popen([ruby] + args, 'r+', opts)
     pid = f.pid
     yield(f)
