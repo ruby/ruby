@@ -1,3 +1,14 @@
+Thu Oct 29 10:08:33 2015  Eric Wong  <e@80x24.org>
+
+	* variable.c (struct autoload_state): usable as wait-queue head
+	  (struct autoload_data_i): remove 2 words of overhead
+	  (autoload_i_mark): remove marking for thread
+	  (autoload_reset): adjust for struct changes
+	  (rb_autoload): ditto
+	  (rb_autoloading_value): ditto
+	  (rb_autoload_load): ditto
+	  (const_update): ditto
+
 Thu Oct 29 08:48:05 2015  Eric Wong  <e@80x24.org>
 
 	* variable.c (struct autoload_data_i): add waitq_head
