@@ -1,3 +1,8 @@
+Fri Oct 30 06:13:10 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c (vm_check_frame_detail): should require me for
+	  VM_FRAME_FLAG_BMETHOD type frame.
+
 Thu Oct 29 18:42:30 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_mark_ptr): specify NOINLINE so that gc_mark() can return
