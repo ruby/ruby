@@ -171,6 +171,10 @@ enum ruby_vm_throw_flags {
     VM_THROW_STATE_MASK = 0xff
 };
 
+/* forward declarations */
+struct rb_thread_struct;
+struct rb_control_frame_struct;
+
 /* iseq data type */
 typedef struct rb_compile_option_struct rb_compile_option_t;
 
@@ -190,10 +194,6 @@ union iseq_inline_storage_entry {
     } once;
     struct iseq_inline_cache_entry cache;
 };
-
-/* to avoid warning */
-struct rb_thread_struct;
-struct rb_control_frame_struct;
 
 enum method_missing_reason {
     MISSING_NOENTRY   = 0x00,
@@ -624,12 +624,10 @@ struct rb_unblock_callback {
 
 struct rb_mutex_struct;
 
-struct rb_thread_struct;
 typedef struct rb_thread_list_struct{
     struct rb_thread_list_struct *next;
     struct rb_thread_struct *th;
 } rb_thread_list_t;
-
 
 typedef struct rb_ensure_entry {
     VALUE marker;

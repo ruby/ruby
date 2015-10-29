@@ -1,3 +1,8 @@
+Thu Oct 29 14:45:15 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_core.h (rb_thread_struct): move forward declarations before
+	  used.
+
 Thu Oct 29 14:07:54 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_mark_ptr): remove debug code for #11244.
