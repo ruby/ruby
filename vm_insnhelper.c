@@ -448,7 +448,7 @@ check_cref(VALUE obj, int can_be_svar)
     }
 }
 
-static rb_cref_t *
+static inline rb_cref_t *
 vm_env_cref(const VALUE *ep)
 {
     rb_cref_t *cref;
@@ -492,11 +492,12 @@ rb_vm_get_cref(const VALUE *ep)
 {
     rb_cref_t *cref = vm_env_cref(ep);
 
-    if (cref == 0) {
+    if (cref != NULL) {
+	return cref;
+    }
+    else {
 	rb_bug("rb_vm_get_cref: unreachable");
     }
-
-    return cref;
 }
 
 void

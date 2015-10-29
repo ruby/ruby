@@ -1,3 +1,9 @@
+Fri Oct 30 06:43:50 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c (vm_env_cref): make it inline for performance.
+
+	* vm_insnhelper.c (rb_vm_get_cref): use NULL instead of 0.
+
 Fri Oct 30 06:20:40 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def: nobody set ic->ic_value.value to Qundef.
