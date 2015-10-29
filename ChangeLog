@@ -1,3 +1,15 @@
+Thu Oct 29 16:20:26 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: introduce rb_wb_unprotected_newobj_of() and
+	  rb_wb_protected_newobj_of(), pass the WB_PROTECTED
+	  information explicitly.
+
+	* internal.h: use introduced functions by NEWOBJ_OF().
+	  `flag' is immediate value, so that C compilers can
+	  solve them at compile time.
+
+	* include/ruby/ruby.h: add a commnent about that.
+
 Thu Oct 29 14:52:03 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: add rb_objspace::flags::has_hook to represent hook availability.

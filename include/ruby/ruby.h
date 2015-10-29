@@ -765,7 +765,7 @@ VALUE rb_obj_setup(VALUE obj, VALUE klass, VALUE type);
 #define RB_NEWOBJ(obj,type) type *(obj) = (type*)rb_newobj()
 #define RB_NEWOBJ_OF(obj,type,klass,flags) type *(obj) = (type*)rb_newobj_of(klass, flags)
 #define NEWOBJ(obj,type) RB_NEWOBJ(obj,type)
-#define NEWOBJ_OF(obj,type,klass,flags) RB_NEWOBJ_OF(obj,type,klass,flags)
+#define NEWOBJ_OF(obj,type,klass,flags) RB_NEWOBJ_OF(obj,type,klass,flags) /* core has special NEWOBJ_OF() in internal.h */
 #define OBJSETUP(obj,c,t) rb_obj_setup(obj, c, t) /* use NEWOBJ_OF instead of NEWOBJ()+OBJSETUP() */
 #define CLONESETUP(clone,obj) rb_clone_setup(clone,obj)
 #define DUPSETUP(dup,obj) rb_dup_setup(dup,obj)

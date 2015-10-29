@@ -814,6 +814,18 @@ void ruby_sized_xfree(void *x, size_t size);
 
 void rb_gc_resurrect(VALUE ptr);
 
+VALUE rb_wb_protected_newobj_of(VALUE, VALUE);
+VALUE rb_wb_unprotected_newobj_of(VALUE, VALUE);
+
+/* optimized version of NEWOBJ() */
+#undef NEWOBJF_OF
+#undef RB_NEWOBJ_OF
+#define RB_NEWOBJ_OF(obj,type,klass,flags) \
+  type *(obj) = (type*)(((flags) & FL_WB_PROTECTED) ? \
+			rb_wb_protected_newobj_of(klass, (flags) & ~FL_WB_PROTECTED) : \
+			rb_wb_unprotected_newobj_of(klass, flags))
+#define NEWOBJ_OF(obj,type,klass,flags) RB_NEWOBJ_OF(obj,type,klass,flags)
+
 /* hash.c */
 struct st_table *rb_hash_tbl_raw(VALUE hash);
 VALUE rb_hash_has_key(VALUE hash, VALUE key);
