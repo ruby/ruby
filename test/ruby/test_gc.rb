@@ -346,10 +346,7 @@ class TestGc < Test::Unit::TestCase
         ObjectSpace.define_finalizer(Object.new, f)
       end
     end;
-    opts = {signal: :SEGV, timeout: 60}
-    opts[:rlimit_core] = 0 if defined?(Process::RLIMIT_CORE)
-    GC.start(full_mark: true, immediate_sweep: true)
-    out, err, status = assert_in_out_err(["-e", src], "", [], [], bug10595, opts) do |*result|
+    out, err, status = assert_in_out_err(["-e", src], "", [], [], bug10595, signal: :SEGV) do |*result|
       break result
     end
     unless /mswin|mingw/ =~ RUBY_PLATFORM
