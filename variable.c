@@ -1892,12 +1892,24 @@ autoload_data(VALUE mod, ID id)
     return (VALUE)val;
 }
 
+/* always on stack, no need to mark */
+struct autoload_state {
+    struct autoload_data_i *ele;
+    VALUE mod;
+    VALUE result;
+    ID id;
+    VALUE thread;
+    union {
+	struct list_node node;
+	struct list_head head;
+    } waitq;
+};
+
 struct autoload_data_i {
     VALUE feature;
     int safe_level;
-    VALUE thread;
     VALUE value;
-    struct list_head waitq_head; /* links autoload_state.waitq_node */
+    struct autoload_state *state; /* points to on-stack struct */
 };
 
 static void
@@ -1905,7 +1917,6 @@ autoload_i_mark(void *ptr)
 {
     struct autoload_data_i *p = ptr;
     rb_gc_mark(p->feature);
-    rb_gc_mark(p->thread);
     rb_gc_mark(p->value);
 }
 
@@ -1965,8 +1976,8 @@ rb_autoload(VALUE mod, ID id, const char *file)
     ad = TypedData_Make_Struct(0, struct autoload_data_i, &autoload_data_i_type, ele);
     ele->feature = fn;
     ele->safe_level = rb_safe_level();
-    ele->thread = Qnil;
     ele->value = Qundef;
+    ele->state = 0;
     st_insert(tbl, (st_data_t)id, (st_data_t)ad);
 }
 
@@ -2039,7 +2050,7 @@ rb_autoloading_value(VALUE mod, ID id, VALUE* value)
     if (!(load = autoload_data(mod, id)) || !(ele = check_autoload_data(load))) {
 	return 0;
     }
-    if (ele->thread == rb_thread_current()) {
+    if (ele->state && ele->state->thread == rb_thread_current()) {
 	if (ele->value != Qundef) {
 	    if (value) {
 		*value = ele->value;
@@ -2079,16 +2090,6 @@ autoload_const_set(VALUE arg)
     return 0;			/* ignored */
 }
 
-/* this is on the thread stack, not heap */
-struct autoload_state {
-    struct autoload_data_i *ele;
-    VALUE mod;
-    VALUE result;
-    ID id;
-    struct list_node waitq_node; /* links autoload_data_i.waitq_head */
-    VALUE waiting_th;
-};
-
 static VALUE
 autoload_require(VALUE arg)
 {
@@ -2107,9 +2108,9 @@ autoload_reset(VALUE arg)
     struct autoload_state *state = (struct autoload_state *)arg;
     int need_wakeups = 0;
 
-    if (state->ele->thread == rb_thread_current()) {
+    if (state->ele->state == state) {
 	need_wakeups = 1;
-	state->ele->thread = Qnil;
+	state->ele->state = 0;
     }
 
     /* At the last, move a value defined in autoload to constant table */
@@ -2130,11 +2131,11 @@ autoload_reset(VALUE arg)
     if (need_wakeups) {
 	struct autoload_state *cur, *nxt;
 
-	list_for_each_safe(&state->ele->waitq_head, cur, nxt, waitq_node) {
-	    VALUE th = cur->waiting_th;
+	list_for_each_safe(&state->waitq.head, cur, nxt, waitq.node) {
+	    VALUE th = cur->thread;
 
-	    cur->waiting_th = Qfalse;
-	    list_del(&cur->waitq_node);
+	    cur->thread = Qfalse;
+	    list_del(&cur->waitq.node);
 
 	    /*
 	     * cur is stored on the stack of cur->waiting_th,
@@ -2161,7 +2162,7 @@ rb_autoload_load(VALUE mod, ID id)
     src = rb_sourcefile();
     if (src && loading && strcmp(src, loading) == 0) return Qfalse;
 
-    /* set ele->thread for a marker of autoloading thread */
+    /* set ele->state for a marker of autoloading thread */
     if (!(ele = check_autoload_data(load))) {
 	return Qfalse;
     }
@@ -2169,25 +2170,25 @@ rb_autoload_load(VALUE mod, ID id)
     state.ele = ele;
     state.mod = mod;
     state.id = id;
-    if (ele->thread == Qnil) {
-	ele->thread = rb_thread_current();
+    state.thread = rb_thread_current();
+    if (!ele->state) {
+	ele->state = &state;
 
 	/*
 	 * autoload_reset will wake up any threads added to this
 	 * iff the GVL is released during autoload_require
 	 */
-	list_head_init(&ele->waitq_head);
+	list_head_init(&state.waitq.head);
     }
     else {
-	state.waiting_th = rb_thread_current();
-	list_add_tail(&ele->waitq_head, &state.waitq_node);
+	list_add_tail(&ele->state->waitq.head, &state.waitq.node);
 	/*
 	 * autoload_reset in other thread will resume us and remove us
 	 * from the waitq list
 	 */
 	do {
 	    rb_thread_sleep_deadly();
-	} while (state.waiting_th != Qfalse);
+	} while (state.thread != Qfalse);
     }
 
     /* autoload_data_i can be deleted by another thread while require */
@@ -2594,8 +2595,8 @@ const_update(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
 
 		load = autoload_data(klass, id);
 		/* for autoloading thread, keep the defined value to autoloading storage */
-		if (load && (ele = check_autoload_data(load)) &&
-			    (ele->thread == rb_thread_current())) {
+		if (load && (ele = check_autoload_data(load)) && ele->state &&
+			    (ele->state->thread == rb_thread_current())) {
 		    rb_clear_constant_cache();
 
 		    ele->value = val; /* autoload_i is non-WB-protected */
