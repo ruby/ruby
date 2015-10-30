@@ -333,9 +333,9 @@ class TestGc < Test::Unit::TestCase
 
   def get_signal_info
     if RUBY_PLATFORM.include?('solaris')
-      `/usr/bin/psig #{$$}`
+      "\n"+`/usr/bin/psig #{$$}`
     elsif File.exist?('/proc/self/status')
-      IO.read('/proc/self/status')
+      "\n"+IO.read('/proc/self/status')
     else
       ''
     end
@@ -364,7 +364,7 @@ class TestGc < Test::Unit::TestCase
     unless /mswin|mingw/ =~ RUBY_PLATFORM
       assert_equal("INT", Signal.signame(status.termsig), bug10595)
     end
-    assert_match(/Interrupt/, err.first, proc {err.join("\n")}+get_signal_info)
+    assert_match(/Interrupt/, err.first, proc {err.join("\n")+get_signal_info})
     assert_empty(out)
   end
 
