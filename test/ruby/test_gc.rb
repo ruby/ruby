@@ -334,6 +334,7 @@ class TestGc < Test::Unit::TestCase
   def test_interrupt_in_finalizer
     bug10595 = '[ruby-core:66825] [Bug #10595]'
     src = <<-'end;'
+      Signal.trap(:INT, 'DEFAULT')
       pid = $$
       Thread.start do
         10.times {
