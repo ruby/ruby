@@ -236,17 +236,19 @@ class TestObject < Test::Unit::TestCase
       'T_CLASS,T_MODULE' => Class.new(Object),
       'generic ivar' => '',
     }.each do |desc, o|
-      assert_raises(NameError, "#{desc} iv removal raises before set") do
+      e = assert_raise(NameError, "#{desc} iv removal raises before set") do
         o.remove_instance_variable(:@foo)
       end
+      assert_equal([o, :@foo], [e.receiver, e.name])
       o.instance_eval { @foo = :foo }
       assert_equal(:foo, o.remove_instance_variable(:@foo),
                    "#{desc} iv removal returns original value")
-      assert_equal(false, o.instance_variable_defined?(:@foo),
-                   "#{desc} iv removed succesfully")
-      assert_raises(NameError, "#{desc} iv removal raises after removal") do
+      assert_not_send([o, :instance_variable_defined?, :@foo],
+                      "#{desc} iv removed succesfully")
+      e = assert_raise(NameError, "#{desc} iv removal raises after removal") do
         o.remove_instance_variable(:@foo)
       end
+      assert_equal([o, :@foo], [e.receiver, e.name])
     end
   end
 
