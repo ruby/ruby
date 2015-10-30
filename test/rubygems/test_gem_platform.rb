@@ -190,6 +190,17 @@ class TestGemPlatform < Gem::TestCase
     assert((x86_darwin8 === Gem::Platform.local), 'universal =~ x86')
   end
 
+  def test_nil_cpu_arch_is_treated_as_universal
+    with_nil_arch = Gem::Platform.new [nil, 'mingw32']
+    with_uni_arch = Gem::Platform.new ['universal', 'mingw32']
+    with_x86_arch = Gem::Platform.new ['x86', 'mingw32']
+
+    assert((with_nil_arch === with_uni_arch), 'nil =~ universal')
+    assert((with_uni_arch === with_nil_arch), 'universal =~ nil')
+    assert((with_nil_arch === with_x86_arch), 'nil =~ x86')
+    assert((with_x86_arch === with_nil_arch), 'x86 =~ nil')
+  end
+
   def test_equals3_cpu_arm
     arm   = Gem::Platform.new 'arm-linux'
     armv5 = Gem::Platform.new 'armv5-linux'

@@ -148,8 +148,8 @@ class Gem::Platform
     return nil unless Gem::Platform === other
 
     # cpu
-    (@cpu == 'universal' or other.cpu == 'universal' or @cpu == other.cpu or
-     (@cpu == 'arm' and other.cpu =~ /\Aarm/)) and
+    ([nil,'universal'].include?(@cpu) or [nil, 'universal'].include?(other.cpu) or @cpu == other.cpu or
+    (@cpu == 'arm' and other.cpu =~ /\Aarm/)) and
 
     # os
     @os == other.os and

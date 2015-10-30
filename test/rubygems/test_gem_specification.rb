@@ -1724,6 +1724,8 @@ dependencies: []
     class << Gem
       alias orig_default_ext_dir_for default_ext_dir_for
 
+      remove_method :default_ext_dir_for
+
       def Gem.default_ext_dir_for(base_dir)
         'elsewhere'
       end
@@ -2033,6 +2035,8 @@ dependencies: []
   def test_require_paths_default_ext_dir_for
     class << Gem
       send :alias_method, :orig_default_ext_dir_for, :default_ext_dir_for
+
+      remove_method :default_ext_dir_for
     end
 
     def Gem.default_ext_dir_for base_dir

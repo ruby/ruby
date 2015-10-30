@@ -19,7 +19,7 @@ class Gem::StubSpecification < Gem::BasicSpecification
 
     def initialize(data)
       parts          = data[PREFIX.length..-1].split(" ")
-      @name          = parts[0]
+      @name          = parts[0].freeze
       @version       = Gem::Version.new parts[1]
       @platform      = Gem::Platform.new parts[2]
       @require_paths = parts.drop(3).join(" ").split("\0")
@@ -35,6 +35,8 @@ class Gem::StubSpecification < Gem::BasicSpecification
   end
 
   def initialize filename, default_gem
+    filename.untaint
+
     self.loaded_from = filename
     @data            = nil
     @extensions      = nil

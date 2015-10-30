@@ -370,15 +370,5 @@ platform.
     end
   end
 
-  def show_help # :nodoc:
-    command = @command_manager[options[:help]]
-    if command then
-      # help with provided command
-      command.invoke("--help")
-    else
-      alert_error "Unknown command #{options[:help]}.  Try 'gem help commands'"
-    end
-  end
-
 end
 
