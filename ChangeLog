@@ -1,3 +1,7 @@
+Fri Oct 30 19:29:52 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (newobj_slowpath): do not need to use flags hack (commit miss).
+
 Fri Oct 30 19:08:48 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (heap_get_freeobj_from_next_freepage): not so UNLIKELY.

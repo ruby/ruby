@@ -1807,7 +1807,7 @@ newobj_slowpath(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, rb_objsp
     }
 
     obj = heap_get_freeobj(objspace, heap_eden);
-    newobj_init(klass, (flags & ~FL_WB_PROTECTED), v1, v2, v3, (flags & FL_WB_PROTECTED) ? TRUE : FALSE, objspace, obj);
+    newobj_init(klass, flags, v1, v2, v3, wb_protected, objspace, obj);
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_NEWOBJ, obj);
     return obj;
 }
