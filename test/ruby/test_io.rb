@@ -3067,13 +3067,20 @@ End
       # Unfortunately, ruby doesn't export FD_SETSIZE. then we assume it's 1024.
       fd_setsize = 1024
 
+      # try to raise RLIM_NOFILE to >FD_SETSIZE
+      begin
+        Process.setrlimit(Process::RLIMIT_NOFILE, fd_setsize+10)
+      rescue Errno::EPERM
+        exit 0
+      end
+
       tempfiles = []
       (0..fd_setsize+1).map {|i|
         tempfiles << Tempfile.open("test_io_select_with_many_files")
       }
 
       IO.select(tempfiles)
-    }, bug8080, timeout: 30, rlimit_nofile: 1024+10
+    }, bug8080, timeout: 30
   end if defined?(Process::RLIMIT_NOFILE)
 
   def test_read_32bit_boundary
