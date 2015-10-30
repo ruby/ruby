@@ -331,16 +331,27 @@ class TestGc < Test::Unit::TestCase
     end;
   end
 
+  def get_signal_info
+    if RUBY_PLATFORM.include?('solaris')
+      `/usr/bin/psig #{$$}`
+    elsif File.exist?('/proc/self/status')
+      IO.read('/proc/self/status')
+    else
+      ''
+    end
+  end
+
   def test_interrupt_in_finalizer
     bug10595 = '[ruby-core:66825] [Bug #10595]'
     src = <<-'end;'
       pid = $$
-      $stderr.puts `/usr/bin/psig #{$$}` if RUBY_PLATFORM.include?('solaris')
       Thread.start do
         10.times {
           sleep 0.1
           Process.kill("INT", pid) rescue break
         }
+        $stderr.puts `/usr/bin/psig #{$$}` if RUBY_PLATFORM.include?('solaris')
+        $stderr.puts IO.read('/proc/self/status') if File.exist?('/proc/self/status')
       end
       f = proc {1000.times {}}
       loop do
@@ -353,7 +364,7 @@ class TestGc < Test::Unit::TestCase
     unless /mswin|mingw/ =~ RUBY_PLATFORM
       assert_equal("INT", Signal.signame(status.termsig), bug10595)
     end
-    assert_match(/Interrupt/, err.first, proc {err.join("\n")})
+    assert_match(/Interrupt/, err.first, proc {err.join("\n")}+get_signal_info)
     assert_empty(out)
   end
 
