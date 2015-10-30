@@ -147,6 +147,8 @@ install:
     class << Gem
       alias orig_install_extension_in_lib install_extension_in_lib
 
+      remove_method :install_extension_in_lib
+
       def Gem.install_extension_in_lib
         false
       end

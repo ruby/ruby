@@ -113,6 +113,8 @@ lib/rubygems/defaults/operating_system.rb
 
     out << "  - INSTALLATION DIRECTORY: #{Gem.dir}\n"
 
+    out << "  - USER INSTALLATION DIRECTORY: #{Gem.user_dir}\n"
+
     out << "  - RUBYGEMS PREFIX: #{Gem.prefix}\n" unless Gem.prefix.nil?
 
     out << "  - RUBY EXECUTABLE: #{Gem.ruby}\n"

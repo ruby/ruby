@@ -80,6 +80,8 @@ class TestGemRequire < Gem::TestCase
   end
 
   def test_concurrent_require
+    skip 'deadlock' if /^1\.8\./ =~ RUBY_VERSION
+
     Object.const_set :FILE_ENTERED_LATCH, Latch.new(2)
     Object.const_set :FILE_EXIT_LATCH, Latch.new(1)
 
@@ -103,6 +105,8 @@ class TestGemRequire < Gem::TestCase
     assert t1.join, "thread 1 should exit"
     assert t2.join, "thread 2 should exit"
   ensure
+    return if $! # skipping
+
     Object.send :remove_const, :FILE_ENTERED_LATCH
     Object.send :remove_const, :FILE_EXIT_LATCH
   end
@@ -245,6 +249,32 @@ class TestGemRequire < Gem::TestCase
     end
 
     assert_equal "unable to find a version of 'b' to activate", e.message
+  end
+
+  def test_require_works_after_cleanup
+    a1 = new_default_spec "a", "1.0", nil, "a/b.rb"
+    b1 = new_default_spec "b", "1.0", nil, "b/c.rb"
+    b2 = new_default_spec "b", "2.0", nil, "b/d.rb"
+
+    install_default_gems a1
+    install_default_gems b1
+    install_default_gems b2
+
+    # Load default ruby gems fresh as if we've just started a ruby script.
+    Gem::Specification.reset
+    require 'rubygems'
+    Gem::Specification.stubs
+
+    # Remove an old default gem version directly from disk as if someone ran
+    # gem cleanup.
+    FileUtils.rm_rf(File.join @default_dir, "#{b1.full_name}")
+    FileUtils.rm_rf(File.join @default_spec_dir, "#{b1.full_name}.gemspec")
+
+    # Require gems that have not been removed.
+    assert_require 'a/b'
+    assert_equal %w(a-1.0), loaded_spec_names
+    assert_require 'b/d'
+    assert_equal %w(a-1.0 b-2.0), loaded_spec_names
   end
 
   def test_default_gem_only

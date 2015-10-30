@@ -280,7 +280,7 @@ class Gem::Dependency
 
     if platform_only
       matches.reject! { |spec|
-        not Gem::Platform.match spec.platform
+        spec.nil? || !Gem::Platform.match(spec.platform)
       }
     end
 
@@ -326,11 +326,11 @@ class Gem::Dependency
   def to_spec
     matches = self.to_specs
 
-    active = matches.find { |spec| spec.activated? }
+    active = matches.find { |spec| spec && spec.activated? }
 
     return active if active
 
-    matches.delete_if { |spec| spec.version.prerelease? } unless prerelease?
+    matches.delete_if { |spec| spec.nil? || spec.version.prerelease? } unless prerelease?
 
     matches.last
   end

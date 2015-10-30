@@ -51,6 +51,8 @@ class Gem::RemoteFetcher
     @fetcher ||= self.new Gem.configuration[:http_proxy]
   end
 
+  attr_accessor :headers
+
   ##
   # Initialize a remote fetcher using the source URI and possible proxy
   # information.
@@ -64,8 +66,11 @@ class Gem::RemoteFetcher
   #
   # +dns+: An object to use for DNS resolution of the API endpoint.
   #        By default, use Resolv::DNS.
+  #
+  # +headers+: A set of additional HTTP headers to be sent to the server when
+  #            fetching the gem.
 
-  def initialize(proxy=nil, dns=Resolv::DNS.new)
+  def initialize(proxy=nil, dns=Resolv::DNS.new, headers={})
     require 'net/http'
     require 'stringio'
     require 'time'
@@ -79,6 +84,7 @@ class Gem::RemoteFetcher
     @cert_files = Gem::Request.get_cert_files
 
     @dns = dns
+    @headers = headers
   end
 
   ##
@@ -235,7 +241,9 @@ class Gem::RemoteFetcher
 
   def fetch_http uri, last_modified = nil, head = false, depth = 0
     fetch_type = head ? Net::HTTP::Head : Net::HTTP::Get
-    response   = request uri, fetch_type, last_modified
+    response   = request uri, fetch_type, last_modified do |req|
+      headers.each { |k,v| req.add_field(k,v) }
+    end
 
     case response
     when Net::HTTPOK, Net::HTTPNotModified then
@@ -313,9 +321,19 @@ class Gem::RemoteFetcher
     end
 
     if update and path
-      open(path, 'wb') do |io|
-        io.flock(File::LOCK_EX)
-        io.write data
+      begin
+        open(path, 'wb') do |io|
+          io.flock(File::LOCK_EX)
+          io.write data
+        end
+      rescue Errno::ENOLCK # NFS
+        if Thread.main != Thread.current
+          raise
+        else
+          open(path, 'wb') do |io|
+            io.write data
+          end
+        end
       end
     end
 

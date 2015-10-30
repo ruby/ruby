@@ -282,7 +282,7 @@ class Gem::BasicSpecification
              self.require_paths.first
            end
 
-    "#{self.full_gem_path}/#{dirs}"
+    "#{self.full_gem_path}/#{dirs}".untaint
   end
 
   ##

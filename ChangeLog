@@ -1,3 +1,10 @@
+Fri Oct 30 09:54:05 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/rubygems: Update to RubyGems HEAD(60d7972).
+	  this version contains pull requests number of #1343, #1356, #1357, #1363
+	  at https://github.com/rubygems/rubygems/pulls
+	* test/rubygems: ditto.
+
 Fri Oct 30 07:38:29 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def (getinlinecache/setinlinecache): compare ic->ic_cref and
