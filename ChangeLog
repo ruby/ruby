@@ -1,3 +1,8 @@
+Fri Oct 30 12:06:59 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* variable.c (rb_class_ivar_set): rename as class specific ivar
+	  setter, and st_table is no longer involved.
+
 Fri Oct 30 11:36:33 2015  Eric Wong  <e@80x24.org>
 
 	* variable.c (generic_ivar_remove): adjust type, set valp
