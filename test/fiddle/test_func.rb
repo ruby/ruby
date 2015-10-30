@@ -12,7 +12,7 @@ module Fiddle
 
     def test_syscall_with_tainted_string
       f = Function.new(@libc['system'], [TYPE_VOIDP], TYPE_INT)
-      assert_raises(SecurityError) do
+      assert_raise(SecurityError) do
         Thread.new {
           $SAFE = 1
           f.call("uname -rs".taint)

@@ -123,12 +123,12 @@ EOT
     assert s[:check_circular?]
     h = { 1=>2 }
     h[3] = h
-    assert_raises(JSON::NestingError) {  generate(h) }
-    assert_raises(JSON::NestingError) {  generate(h, s) }
+    assert_raise(JSON::NestingError) {  generate(h) }
+    assert_raise(JSON::NestingError) {  generate(h, s) }
     s = JSON.state.new
     a = [ 1, 2 ]
     a << a
-    assert_raises(JSON::NestingError) {  generate(a, s) }
+    assert_raise(JSON::NestingError) {  generate(a, s) }
     assert s.check_circular?
     assert s[:check_circular?]
   end
@@ -185,34 +185,34 @@ EOT
   end
 
   def test_allow_nan
-    assert_raises(GeneratorError) { generate([JSON::NaN]) }
+    assert_raise(GeneratorError) { generate([JSON::NaN]) }
     assert_equal '[NaN]', generate([JSON::NaN], :allow_nan => true)
-    assert_raises(GeneratorError) { fast_generate([JSON::NaN]) }
-    assert_raises(GeneratorError) { pretty_generate([JSON::NaN]) }
+    assert_raise(GeneratorError) { fast_generate([JSON::NaN]) }
+    assert_raise(GeneratorError) { pretty_generate([JSON::NaN]) }
     assert_equal "[\n  NaN\n]", pretty_generate([JSON::NaN], :allow_nan => true)
-    assert_raises(GeneratorError) { generate([JSON::Infinity]) }
+    assert_raise(GeneratorError) { generate([JSON::Infinity]) }
     assert_equal '[Infinity]', generate([JSON::Infinity], :allow_nan => true)
-    assert_raises(GeneratorError) { fast_generate([JSON::Infinity]) }
-    assert_raises(GeneratorError) { pretty_generate([JSON::Infinity]) }
+    assert_raise(GeneratorError) { fast_generate([JSON::Infinity]) }
+    assert_raise(GeneratorError) { pretty_generate([JSON::Infinity]) }
     assert_equal "[\n  Infinity\n]", pretty_generate([JSON::Infinity], :allow_nan => true)
-    assert_raises(GeneratorError) { generate([JSON::MinusInfinity]) }
+    assert_raise(GeneratorError) { generate([JSON::MinusInfinity]) }
     assert_equal '[-Infinity]', generate([JSON::MinusInfinity], :allow_nan => true)
-    assert_raises(GeneratorError) { fast_generate([JSON::MinusInfinity]) }
-    assert_raises(GeneratorError) { pretty_generate([JSON::MinusInfinity]) }
+    assert_raise(GeneratorError) { fast_generate([JSON::MinusInfinity]) }
+    assert_raise(GeneratorError) { pretty_generate([JSON::MinusInfinity]) }
     assert_equal "[\n  -Infinity\n]", pretty_generate([JSON::MinusInfinity], :allow_nan => true)
   end
 
   def test_depth
     ary = []; ary << ary
     assert_equal 0, JSON::SAFE_STATE_PROTOTYPE.depth
-    assert_raises(JSON::NestingError) { JSON.generate(ary) }
+    assert_raise(JSON::NestingError) { JSON.generate(ary) }
     assert_equal 0, JSON::SAFE_STATE_PROTOTYPE.depth
     assert_equal 0, JSON::PRETTY_STATE_PROTOTYPE.depth
-    assert_raises(JSON::NestingError) { JSON.pretty_generate(ary) }
+    assert_raise(JSON::NestingError) { JSON.pretty_generate(ary) }
     assert_equal 0, JSON::PRETTY_STATE_PROTOTYPE.depth
     s = JSON.state.new
     assert_equal 0, s.depth
-    assert_raises(JSON::NestingError) { ary.to_json(s) }
+    assert_raise(JSON::NestingError) { ary.to_json(s) }
     assert_equal 100, s.depth
   end
 

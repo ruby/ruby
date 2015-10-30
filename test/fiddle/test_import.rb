@@ -44,7 +44,7 @@ module Fiddle
 
   class TestImport < TestCase
     def test_ensure_call_dlload
-      err = assert_raises(RuntimeError) do
+      err = assert_raise(RuntimeError) do
         Class.new do
           extend Importer
           extern "void *strcpy(char*, char*)"
