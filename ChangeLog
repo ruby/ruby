@@ -1,3 +1,11 @@
+Fri Oct 30 18:09:51 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (newobj_slowpath): reduce 1 parameter to use only registers
+	  for performance.
+
+	  On my laptop, 'N.times{x = []}' (where N = 29_000_000) is
+	  1.86 sec -> 1.74 sec.
+
 Fri Oct 30 12:53:21 2015  yui-knk  <spiketeika@gmail.com>
 
 	* test/ruby/test_call.rb: added test for safe navigation operator.
