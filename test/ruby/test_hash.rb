@@ -506,7 +506,7 @@ class TestHash < Test::Unit::TestCase
     assert_equal(4, res.length)
     assert_equal %w( three two one nil ), res
 
-    assert_raises KeyError do
+    assert_raise KeyError do
       @h.fetch_values(3, 'invalid')
     end
 

@@ -95,6 +95,10 @@ module Test
         flunk(message(msg) {"#{mu_pp(exp)} expected but nothing was raised"})
       end
 
+      def assert_raises(*exp, &b)
+        raise NoMethodError, "use assert_raise", caller
+      end
+
       # :call-seq:
       #   assert_raise_with_message(exception, expected, msg = nil, &block)
       #

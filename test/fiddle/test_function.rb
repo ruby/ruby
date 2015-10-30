@@ -23,15 +23,15 @@ module Fiddle
     end
 
     def test_argument_errors
-      assert_raises(TypeError) do
+      assert_raise(TypeError) do
         Function.new(@libm['sin'], TYPE_DOUBLE, TYPE_DOUBLE)
       end
 
-      assert_raises(TypeError) do
+      assert_raise(TypeError) do
         Function.new(@libm['sin'], ['foo'], TYPE_DOUBLE)
       end
 
-      assert_raises(TypeError) do
+      assert_raise(TypeError) do
         Function.new(@libm['sin'], [TYPE_DOUBLE], 'foo')
       end
     end
@@ -49,10 +49,10 @@ module Fiddle
       }.new(TYPE_INT, [TYPE_INT])
       func = Function.new(closure, [TYPE_INT], TYPE_INT)
 
-      assert_raises(ArgumentError) do
+      assert_raise(ArgumentError) do
         func.call(1,2,3)
       end
-      assert_raises(ArgumentError) do
+      assert_raise(ArgumentError) do
         func.call
       end
     end

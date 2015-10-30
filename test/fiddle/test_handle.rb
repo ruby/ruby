@@ -15,8 +15,8 @@ module Fiddle
     end
 
     def test_static_sym_unknown
-      assert_raises(DLError) { Fiddle::Handle.sym('fooo') }
-      assert_raises(DLError) { Fiddle::Handle['fooo'] }
+      assert_raise(DLError) { Fiddle::Handle.sym('fooo') }
+      assert_raise(DLError) { Fiddle::Handle['fooo'] }
     end
 
     def test_static_sym
@@ -41,20 +41,20 @@ module Fiddle
     def test_sym_closed_handle
       handle = Fiddle::Handle.new(LIBC_SO)
       handle.close
-      assert_raises(DLError) { handle.sym("calloc") }
-      assert_raises(DLError) { handle["calloc"] }
+      assert_raise(DLError) { handle.sym("calloc") }
+      assert_raise(DLError) { handle["calloc"] }
     end
 
     def test_sym_unknown
       handle = Fiddle::Handle.new(LIBC_SO)
-      assert_raises(DLError) { handle.sym('fooo') }
-      assert_raises(DLError) { handle['fooo'] }
+      assert_raise(DLError) { handle.sym('fooo') }
+      assert_raise(DLError) { handle['fooo'] }
     end
 
     def test_sym_with_bad_args
       handle = Handle.new(LIBC_SO)
-      assert_raises(TypeError) { handle.sym(nil) }
-      assert_raises(TypeError) { handle[nil] }
+      assert_raise(TypeError) { handle.sym(nil) }
+      assert_raise(TypeError) { handle[nil] }
     end
 
     def test_sym
@@ -71,7 +71,7 @@ module Fiddle
     def test_handle_close_twice
       handle = Handle.new(LIBC_SO)
       handle.close
-      assert_raises(DLError) do
+      assert_raise(DLError) do
         handle.close
       end
     end
