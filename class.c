@@ -426,7 +426,7 @@ rb_singleton_class_attached(VALUE klass, VALUE obj)
 	if (!RCLASS_IV_TBL(klass)) {
 	    RCLASS_IV_TBL(klass) = st_init_numtable();
 	}
-	rb_st_insert_id_and_value(klass, id_attached, obj);
+	rb_class_ivar_set(klass, id_attached, obj);
     }
 }
 

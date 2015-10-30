@@ -158,7 +158,7 @@ find_class_path(VALUE klass, ID preferred)
 	if (!RCLASS_IV_TBL(klass)) {
 	    RCLASS_IV_TBL(klass) = st_init_numtable();
 	}
-	rb_st_insert_id_and_value(klass, (st_data_t)classpath, arg.path);
+	rb_class_ivar_set(klass, (st_data_t)classpath, arg.path);
 
 	st_delete(RCLASS_IV_TBL(klass), &tmp, 0);
 	return arg.path;
@@ -1412,7 +1412,7 @@ rb_ivar_set(VALUE obj, ID id, VALUE val)
       case T_CLASS:
       case T_MODULE:
 	if (!RCLASS_IV_TBL(obj)) RCLASS_IV_TBL(obj) = st_init_numtable();
-	rb_st_insert_id_and_value(obj, (st_data_t)id, val);
+	rb_class_ivar_set(obj, (st_data_t)id, val);
         break;
       default:
 	generic_ivar_set(obj, id, val);
@@ -2803,7 +2803,7 @@ rb_cvar_set(VALUE klass, ID id, VALUE val)
 	RCLASS_IV_TBL(target) = st_init_numtable();
     }
 
-    rb_st_insert_id_and_value(target, (st_data_t)id, (st_data_t)val);
+    rb_class_ivar_set(target, (st_data_t)id, (st_data_t)val);
 }
 
 VALUE
@@ -3032,7 +3032,7 @@ rb_iv_set(VALUE obj, const char *name, VALUE val)
 
 /* tbl = xx(obj); tbl[key] = value; */
 int
-rb_st_insert_id_and_value(VALUE obj, ID key, VALUE value)
+rb_class_ivar_set(VALUE obj, ID key, VALUE value)
 {
     st_table *tbl = RCLASS_IV_TBL(obj);
     int result = st_insert(tbl, (st_data_t)key, (st_data_t)value);
