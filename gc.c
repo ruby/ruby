@@ -1787,10 +1787,8 @@ newobj_init(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, int wb_prote
     return obj;
 }
 
-NOINLINE(static VALUE newobj_slowpath(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, int wb_protected, rb_objspace_t *objspace));
-
-static VALUE
-newobj_slowpath(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, int wb_protected, rb_objspace_t *objspace)
+static inline VALUE
+newobj_slowpath(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, rb_objspace_t *objspace, int wb_protected)
 {
     VALUE obj;
 
@@ -1809,9 +1807,24 @@ newobj_slowpath(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, int wb_p
     }
 
     obj = heap_get_freeobj(objspace, heap_eden);
-    newobj_init(klass, flags, v1, v2, v3, wb_protected, objspace, obj);
+    newobj_init(klass, (flags & ~FL_WB_PROTECTED), v1, v2, v3, (flags & FL_WB_PROTECTED) ? TRUE : FALSE, objspace, obj);
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_NEWOBJ, obj);
     return obj;
+}
+
+NOINLINE(static VALUE newobj_slowpath_wb_protected(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, rb_objspace_t *objspace));
+NOINLINE(static VALUE newobj_slowpath_wb_unprotected(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, rb_objspace_t *objspace));
+
+static VALUE
+newobj_slowpath_wb_protected(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, rb_objspace_t *objspace)
+{
+    return newobj_slowpath(klass, flags, v1, v2, v3, objspace, TRUE);
+}
+
+static VALUE
+newobj_slowpath_wb_unprotected(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, rb_objspace_t *objspace)
+{
+    return newobj_slowpath(klass, flags, v1, v2, v3, objspace, FALSE);
 }
 
 static inline VALUE
@@ -1829,21 +1842,17 @@ newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, int wb_protect
 	}
     }
 #endif
-    if (LIKELY(!(during_gc ||
-		 ruby_gc_stressful ||
-		 gc_event_hook_available_p(objspace)) &&
-	       (obj = heap_get_freeobj_head(objspace, heap_eden)) != Qfalse)) {
+    if (!(during_gc ||
+	  ruby_gc_stressful ||
+	  gc_event_hook_available_p(objspace)) &&
+	(obj = heap_get_freeobj_head(objspace, heap_eden)) != Qfalse) {
 	return newobj_init(klass, flags, v1, v2, v3, wb_protected, objspace, obj);
     }
     else {
-	return newobj_slowpath(klass, flags, v1, v2, v3, wb_protected, objspace);
+	return wb_protected ?
+	  newobj_slowpath_wb_protected(klass, flags, v1, v2, v3, objspace) :
+	  newobj_slowpath_wb_unprotected(klass, flags, v1, v2, v3, objspace);
     }
-}
-
-VALUE
-rb_newobj(void)
-{
-    return newobj_of(0, T_NONE, 0, 0, 0, FALSE);
 }
 
 VALUE
@@ -1858,6 +1867,14 @@ rb_wb_protected_newobj_of(VALUE klass, VALUE flags)
 {
     if (RGENGC_CHECK_MODE > 0) assert((flags & FL_WB_PROTECTED) == 0);
     return newobj_of(klass, flags, 0, 0, 0, TRUE);
+}
+
+/* for compatibility */
+
+VALUE
+rb_newobj(void)
+{
+    return newobj_of(0, T_NONE, 0, 0, 0, FALSE);
 }
 
 VALUE
