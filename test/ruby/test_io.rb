@@ -1136,11 +1136,9 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_dup_many
-    assert_separately([], <<-'End')
-      if defined?(Process::RLIMIT_NOFILE)
-        lim = Process.getrlimit(Process::RLIMIT_NOFILE)[0]
-        Process.setrlimit(Process::RLIMIT_NOFILE, [lim, 1024].min)
-      end
+    opts = {}
+    opts[:rlimit_nofile] = 1024 if defined?(Process::RLIMIT_NOFILE)
+    assert_separately([], <<-'End', opts)
       a = []
       assert_raise(Errno::EMFILE, Errno::ENFILE, Errno::ENOMEM) do
         loop {a << IO.pipe}
@@ -3066,16 +3064,8 @@ End
     assert_normal_exit %q{
       require "tempfile"
 
-      # try to raise RLIM_NOFILE to >FD_SETSIZE
-      # Unfortunately, ruby export FD_SETSIZE. then we assume it's 1024.
+      # Unfortunately, ruby doesn't export FD_SETSIZE. then we assume it's 1024.
       fd_setsize = 1024
-
-      begin
-        Process.setrlimit(Process::RLIMIT_NOFILE, fd_setsize+10)
-      rescue =>e
-        # Process::RLIMIT_NOFILE couldn't be raised. skip the test
-        exit 0
-      end
 
       tempfiles = []
       (0..fd_setsize+1).map {|i|
@@ -3083,8 +3073,8 @@ End
       }
 
       IO.select(tempfiles)
-    }, bug8080, timeout: 30
-  end
+    }, bug8080, timeout: 30, rlimit_nofile: 1024+10
+  end if defined?(Process::RLIMIT_NOFILE)
 
   def test_read_32bit_boundary
     bug8431 = '[ruby-core:55098] [Bug #8431]'
