@@ -232,10 +232,22 @@ class TestObject < Test::Unit::TestCase
   end
 
   def test_remove_instance_variable
-    o = Object.new
-    o.instance_eval { @foo = :foo }
-    o.remove_instance_variable(:@foo)
-    assert_equal(false, o.instance_variable_defined?(:@foo))
+    { 'T_OBJECT' => Object.new,
+      'T_CLASS,T_MODULE' => Class.new(Object),
+      'generic ivar' => '',
+    }.each do |desc, o|
+      assert_raises(NameError, "#{desc} iv removal raises before set") do
+        o.remove_instance_variable(:@foo)
+      end
+      o.instance_eval { @foo = :foo }
+      assert_equal(:foo, o.remove_instance_variable(:@foo),
+                   "#{desc} iv removal returns original value")
+      assert_equal(false, o.instance_variable_defined?(:@foo),
+                   "#{desc} iv removed succesfully")
+      assert_raises(NameError, "#{desc} iv removal raises after removal") do
+        o.remove_instance_variable(:@foo)
+      end
+    end
   end
 
   def test_convert_string

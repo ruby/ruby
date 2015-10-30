@@ -1,3 +1,10 @@
+Fri Oct 30 11:36:33 2015  Eric Wong  <e@80x24.org>
+
+	* variable.c (generic_ivar_remove): adjust type, set valp
+	  (rb_obj_remove_instance_variable): simplify call
+	* test/ruby/test_object.rb (test_remove_instance_variable):
+	  expand for implementation details
+
 Fri Oct 30 10:37:56 2015  Eric Wong  <e@80x24.org>
 
 	* internal.h (rb_st_insert_id_and_value): update prototype
