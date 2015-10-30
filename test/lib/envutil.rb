@@ -330,11 +330,11 @@ module Test
           full_message << "pid #{pid}"
           full_message << " killed by #{sigdesc}" if sigdesc
           if out and !out.empty?
-            full_message << "\n#{out.gsub(/^/, '| ')}"
+            full_message << "\n#{out.b.gsub(/^/, '| ')}"
             full_message << "\n" if /\n\z/ !~ full_message
           end
           if log
-            full_message << "\n#{log.gsub(/^/, '| ')}"
+            full_message << "\n#{log.b.gsub(/^/, '| ')}"
           end
           full_message
         end
