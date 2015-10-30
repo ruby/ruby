@@ -76,7 +76,7 @@ Fri Oct 30 07:38:29 2015  Koichi Sasada  <ko1@atdot.net>
 	  cref as a key (#10943).
 
 	  However, if current CREF list does not include singleton class,
-	  no need to check CREF beacuse it should be same name space.
+	  no need to check CREF because it should be same name space.
 
 	* vm_insnhelper.c (vm_get_const_key_cref): add a function returns
 	  CREF only when it includes singleton class.
