@@ -1142,7 +1142,7 @@ generic_ivar_defined(VALUE obj, ID id)
 }
 
 static int
-generic_ivar_remove(VALUE obj, ID id, st_data_t *valp)
+generic_ivar_remove(VALUE obj, ID id, VALUE *valp)
 {
     struct gen_ivtbl *ivtbl;
     st_data_t key = (st_data_t)id;
@@ -1155,6 +1155,7 @@ generic_ivar_remove(VALUE obj, ID id, st_data_t *valp)
 
     if ((long)index < ivtbl->numiv) {
 	if (ivtbl->ivptr[index] != Qundef) {
+	    *valp = ivtbl->ivptr[index];
 	    ivtbl->ivptr[index] = Qundef;
 	    return 1;
 	}
@@ -1769,9 +1770,8 @@ rb_obj_remove_instance_variable(VALUE obj, VALUE name)
 	break;
       default:
 	if (FL_TEST(obj, FL_EXIVAR)) {
-	    v = val;
-	    if (generic_ivar_remove(obj, (st_data_t)id, &v)) {
-		return (VALUE)v;
+	    if (generic_ivar_remove(obj, id, &val)) {
+		return val;
 	    }
 	}
 	break;
