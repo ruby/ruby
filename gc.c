@@ -1641,7 +1641,7 @@ heap_get_freeobj_from_next_freepage(rb_objspace_t *objspace, rb_heap_t *heap)
     struct heap_page *page;
     RVALUE *p;
 
-    while (UNLIKELY(heap->free_pages == NULL)) {
+    while (heap->free_pages == NULL) {
 	heap_prepare(objspace, heap);
     }
     page = heap->free_pages;
