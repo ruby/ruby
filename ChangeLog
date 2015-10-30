@@ -1,3 +1,12 @@
+Fri Oct 30 10:37:56 2015  Eric Wong  <e@80x24.org>
+
+	* internal.h (rb_st_insert_id_and_value): update prototype
+	* variable.c (rb_st_insert_id_and_value): reduce args
+	  (find_class_path): adjust call for less args
+	  (rb_ivar_set): ditto
+	  (rb_cvar_set): ditto
+	* class.c (rb_singleton_class_attached): ditto
+
 Fri Oct 30 09:57:22 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* gems/bundled_gems: update latest gems.
