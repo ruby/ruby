@@ -6,15 +6,15 @@ end
 module Fiddle
   class TestClosure < Fiddle::TestCase
     def test_argument_errors
-      assert_raise(TypeError) do
+      assert_raises(TypeError) do
         Closure.new(TYPE_INT, TYPE_INT)
       end
 
-      assert_raise(TypeError) do
+      assert_raises(TypeError) do
         Closure.new('foo', [TYPE_INT])
       end
 
-      assert_raise(TypeError) do
+      assert_raises(TypeError) do
         Closure.new(TYPE_INT, ['meow!'])
       end
     end

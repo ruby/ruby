@@ -60,7 +60,7 @@ module Fiddle
     end
 
     def test_undefined_ctype
-      assert_raise(DLError) { parse_ctype('DWORD') }
+      assert_raises(DLError) { parse_ctype('DWORD') }
     end
 
     def test_undefined_ctype_with_type_alias
@@ -92,7 +92,7 @@ module Fiddle
     end
 
     def test_struct_undefined
-      assert_raise(DLError) { parse_struct_signature(['int i', 'DWORD cb']) }
+      assert_raises(DLError) { parse_struct_signature(['int i', 'DWORD cb']) }
     end
 
     def test_struct_undefined_with_type_alias
