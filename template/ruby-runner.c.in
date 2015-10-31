@@ -6,7 +6,9 @@
 #define BUILDDIR "@abs_top_builddir@"
 #define LIBPATHENV "@LIBPATHENV@"
 #define PATH_SEP '@PATH_SEPARATOR@'
-#define RUBY_INSTALL_NAME "@RUBY_BASE_NAME@"
+
+#define STRINGIZE(expr) STRINGIZE0(expr)
+#define STRINGIZE0(expr) #expr
 
 int
 main(int argc, char **argv)
@@ -28,6 +30,6 @@ main(int argc, char **argv)
 	libpath = builddir;
     }
     setenv(LIBPATHENV, libpath, 1);
-    execv(BUILDDIR"/"RUBY_INSTALL_NAME, argv);
+    execv(BUILDDIR"/"STRINGIZE(RUBY_INSTALL_NAME), argv);
     return -1;
 }
