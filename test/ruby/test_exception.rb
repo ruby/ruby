@@ -723,14 +723,10 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
   end
 
   def test_message_of_name_error
-    begin
+    assert_raise_with_message(NameError, /\Aundefined method `foo' for module `#<Module:.*>'$/) do
       Module.new do
         module_function :foo
       end
-    rescue => e
-      error = e
     end
-
-    assert_match /\Aundefined method `foo' for module `#<Module:.*>'\z/, error.message
   end
 end
