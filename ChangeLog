@@ -1,3 +1,10 @@
+Sun Nov  1 03:52:41 2015  Aaron Patterson <tenderlove@ruby-lang.org>
+
+	* test/openssl/test_ssl_session.rb: Fix tests so that they take in to
+	  account OpenSSL installations that have SSLv3 disabled by default.
+	  Thanks Jeremy Evans <code@jeremyevans.net> for the patches.
+	  [Bug #11366] [Bug #11367]
+
 Sun Nov  1 03:40:43 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
 	* test/openssl/test_ssl_session.rb (OpenSSL#test_ctx_client_session_cb):
