@@ -1756,8 +1756,7 @@ newobj_init(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, int wb_prote
 #endif
 
 #if GC_DEBUG
-    RANY(obj)->file = rb_sourcefile();
-    RANY(obj)->line = rb_sourceline();
+    RANY(obj)->file = rb_source_loc(&RANY(obj)->line);
     assert(!SPECIAL_CONST_P(obj)); /* check alignment */
 #endif
 

@@ -199,10 +199,10 @@ static VALUE
 warning_string(rb_encoding *enc, const char *fmt, va_list args)
 {
     VALUE str = rb_enc_str_new(0, 0, enc);
-    VALUE file = rb_sourcefilename();
+    int line;
+    VALUE file = rb_source_location(&line);
 
     if (!NIL_P(file)) {
-	int line = rb_sourceline();
 	str = rb_str_append(str, file);
 	if (line) rb_str_catf(str, ":%d", line);
 	rb_str_cat2(str, ": ");
@@ -399,8 +399,7 @@ rb_bug(const char *fmt, ...)
     int line = 0;
 
     if (GET_THREAD()) {
-	file = rb_sourcefile();
-	line = rb_sourceline();
+	file = rb_source_loc(&line);
     }
 
     report_bug(file, line, fmt, NULL);
@@ -415,8 +414,7 @@ rb_bug_context(const void *ctx, const char *fmt, ...)
     int line = 0;
 
     if (GET_THREAD()) {
-	file = rb_sourcefile();
-	line = rb_sourceline();
+	file = rb_source_loc(&line);
     }
 
     report_bug(file, line, fmt, ctx);

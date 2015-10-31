@@ -476,7 +476,7 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 {
     VALUE e;
     const char *file = 0;
-    volatile int line = 0;
+    int line;
     int nocause = 0;
 
     if (NIL_P(mesg)) {
@@ -493,8 +493,7 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
     }
     exc_setup_cause(mesg, cause);
 
-    file = rb_sourcefile();
-    if (file) line = rb_sourceline();
+    file = rb_source_loc(&line);
     if (file && !NIL_P(mesg)) {
 	VALUE at;
 	if (sysstack_error_p(mesg)) {
