@@ -1,3 +1,15 @@
+Sat Oct 31 14:58:10 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* man/ruby.1 (SYNOPSIS): remove extraneous space for -F option as
+	  it does not allow spaces before its argument.
+	  [ruby-core:71283] [Bug #11641]
+
+Sat Oct 31 14:58:01 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* man/ruby.1 (SYNOPSIS): remove extraneous space for -F option as
+	  it does not allow spaces before its argument.
+	  [ruby-core:71283] [Bug #11641]
+
 Sat Oct 31 10:22:49 2015  yui-knk  <spiketeika@gmail.com>
 
 	* eval_error.c (undef_mesg_for): fix typo.  Before this commit
