@@ -48,7 +48,7 @@ msg_begin= msg_unchanged= msg_updated= msg_reset=
 if [ "$color" = always -o \( "$color" = auto -a -t 1 \) ]; then
     msg_begin="["
     case "`tput smso 2>/dev/null`" in
-	"$msg_begin"*m|"")
+	"$msg_begin"*m)
 	    if [ ${TEST_COLORS:+set} ]; then
 		msg_unchanged=`expr ":$TEST_COLORS:" : ".*:pass=\([^:]*\):"`
 		msg_updated=`expr ":$TEST_COLORS:" : ".*:fail=\([^:]*\):"`
