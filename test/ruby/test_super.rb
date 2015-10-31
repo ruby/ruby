@@ -403,6 +403,13 @@ class TestSuper < Test::Unit::TestCase
     assert_equal([1, 2, 3, false, 5], y.foo(1, 2, 3, false, 5))
   end
 
+  def test_missing_super
+    o = Class.new {def foo; super; end}.new
+    e = assert_raise(NoMethodError) {o.foo}
+    assert_same(o, e.receiver)
+    assert_equal(:foo, e.name)
+  end
+
   def test_missing_super_in_method_module
     bug9315 = '[ruby-core:59358] [Bug #9315]'
     a = Module.new do
