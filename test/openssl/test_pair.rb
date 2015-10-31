@@ -372,6 +372,12 @@ module OpenSSL::TestPairM
     accepted = s2.accept
 
     assert called, 'ecdh callback should be called'
+  rescue OpenSSL::SSL::SSLError => e
+    if e.message =~ /no cipher match/
+      skip "ECDH cipher not supported."
+    else
+      raise e
+    end
   ensure
     th.join if th
     s1.close if s1
