@@ -1263,11 +1263,17 @@ setup_rubytkkit(void)
 #ifdef __WIN32__
     /* rbtk_win32_SetHINSTANCE("tcltklib.so"); */
     {
+# ifdef HAVE_RUBY_ENC_FIND_BASENAME
+      const char *base = ruby_enc_find_basename(rb_sourcefile(), NULL, NULL,
+						rb_filesystem_encoding());
+      rbtk_win32_SetHINSTANCE(base);
+# else
       VALUE basename;
       basename = rb_funcall(rb_cFile, rb_intern("basename"), 1,
 			    rb_str_new2(rb_sourcefile()));
       rbtk_win32_SetHINSTANCE(RSTRING_PTR(basename));
       RB_GC_GUARD(basename);
+# endif
     }
 #endif
     set_rubytk_kitpath(rb_sourcefile());
