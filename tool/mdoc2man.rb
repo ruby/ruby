@@ -92,6 +92,7 @@ class Mdoc2Man
     while word = words.shift
       case word
       when RE_PUNCT
+        next retval << word if word == ':'
 	while q = quote.pop
 	  case q
 	  when OPTION
