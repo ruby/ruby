@@ -1263,10 +1263,11 @@ setup_rubytkkit(void)
 #ifdef __WIN32__
     /* rbtk_win32_SetHINSTANCE("tcltklib.so"); */
     {
-      volatile VALUE basename;
+      VALUE basename;
       basename = rb_funcall(rb_cFile, rb_intern("basename"), 1,
 			    rb_str_new2(rb_sourcefile()));
       rbtk_win32_SetHINSTANCE(RSTRING_PTR(basename));
+      RB_GC_GUARD(basename);
     }
 #endif
     set_rubytk_kitpath(rb_sourcefile());
