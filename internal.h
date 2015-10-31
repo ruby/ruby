@@ -1341,12 +1341,14 @@ VALUE rb_imemo_new(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VALUE v0)
 RUBY_SYMBOL_EXPORT_END
 
 #define RUBY_DTRACE_CREATE_HOOK(name, arg) \
+    RUBY_DTRACE_HOOK(name##_CREATE, arg)
+#define RUBY_DTRACE_HOOK(name, arg) \
 do { \
-    if (UNLIKELY(RUBY_DTRACE_##name##_CREATE_ENABLED())) { \
+    if (UNLIKELY(RUBY_DTRACE_##name##_ENABLED())) { \
 	int dtrace_line; \
 	const char *dtrace_file = rb_source_loc(&dtrace_line); \
 	if (!dtrace_file) dtrace_file = ""; \
-	RUBY_DTRACE_##name##_CREATE(arg, dtrace_file, dtrace_line); \
+	RUBY_DTRACE_##name(arg, dtrace_file, dtrace_line); \
     } \
 } while (0)
 
