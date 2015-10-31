@@ -721,4 +721,16 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
     assert_raise(NameError) {a.instance_eval("foo")}
     assert_raise(NoMethodError, bug10969) {a.public_send("bar", true)}
   end
+
+  def test_message_of_name_error
+    begin
+      Module.new do
+        module_function :foo
+      end
+    rescue => e
+      error = e
+    end
+
+    assert_match /\Aundefined method `foo' for module `#<Module:.*>'\z/, error.message
+  end
 end
