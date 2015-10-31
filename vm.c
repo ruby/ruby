@@ -1124,6 +1124,7 @@ rb_source_location(int *pline)
 	return cfp->iseq->body->location.path;
     }
     else {
+	if (pline) *pline = 0;
 	return 0;
     }
 }
