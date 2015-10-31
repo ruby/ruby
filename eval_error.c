@@ -208,7 +208,7 @@ ruby_error_print(void)
     error_print();
 }
 
-#define undef_mesg_for(v, k) rb_fstring_cstr("undefined"v" method `%1$s' for "k" `%$s'")
+#define undef_mesg_for(v, k) rb_fstring_cstr("undefined"v" method `%1$s' for "k" `%2$s'")
 #define undef_mesg(v) ( \
 	is_mod ? \
 	undef_mesg_for(v, "module") : \

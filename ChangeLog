@@ -1,3 +1,10 @@
+Sat Oct 31 10:22:49 2015  yui-knk  <spiketeika@gmail.com>
+
+	* eval_error.c (undef_mesg_for): fix typo.  Before this commit
+	  `ArgumentError: malformed format string - %$` was raised when
+	  `NameError#message` is called.  [ruby-core:71282] [Bug #11640]
+	  [Fix GH-1077]
+
 Fri Oct 30 21:12:45 2015  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* gems/bundled_gems: update to power_assert 0.2.5.
