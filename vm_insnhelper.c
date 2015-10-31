@@ -1919,8 +1919,8 @@ vm_call_method_missing(rb_thread_t *th, rb_control_frame_t *reg_cfp, struct rb_c
 
     /* shift arguments: m(a, b, c) #=> method_missing(:m, a, b, c) */
     CHECK_VM_STACK_OVERFLOW(reg_cfp, 1);
-    if (argc > 0) {
-	MEMMOVE(argv+1, argv, VALUE, argc);
+    if (argc > 1) {
+	MEMMOVE(argv+1, argv, VALUE, argc-1);
     }
     argv[0] = ID2SYM(orig_ci->mid);
     INC_SP(1);
