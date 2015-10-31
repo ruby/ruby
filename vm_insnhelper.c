@@ -2246,12 +2246,11 @@ vm_super_outside(void)
 
 static void
 vm_search_super_method(rb_thread_t *th, rb_control_frame_t *reg_cfp,
-		       struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc)
+		       struct rb_calling_info *calling, struct rb_call_info *ci, struct rb_call_cache *cc)
 {
     VALUE current_defined_class, klass;
     VALUE sigval = TOPN(calling->argc);
     const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(reg_cfp);
-    ID mid;
 
     if (!me) {
 	vm_super_outside();
@@ -2283,7 +2282,7 @@ vm_search_super_method(rb_thread_t *th, rb_control_frame_t *reg_cfp,
 		 " Specify all arguments explicitly.");
     }
 
-    mid = me->def->original_id;
+    ci->mid = me->def->original_id;
     klass = vm_search_normal_superclass(me->defined_class);
 
     if (!klass) {
@@ -2293,7 +2292,7 @@ vm_search_super_method(rb_thread_t *th, rb_control_frame_t *reg_cfp,
     }
     else {
 	/* TODO: use inline cache */
-	cc->me = rb_callable_method_entry(klass, mid);
+	cc->me = rb_callable_method_entry(klass, ci->mid);
 	CI_SET_FASTPATH(cc, vm_call_super_method, 1);
     }
 }
