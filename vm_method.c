@@ -85,9 +85,7 @@ rb_clear_method_cache_by_class(VALUE klass)
     if (klass && klass != Qundef) {
 	int global = klass == rb_cBasicObject || klass == rb_cObject || klass == rb_mKernel;
 
-	if (RUBY_DTRACE_METHOD_CACHE_CLEAR_ENABLED()) {
-	    RUBY_DTRACE_METHOD_CACHE_CLEAR(global ? "global" : rb_class2name(klass), rb_sourcefile(), rb_sourceline());
-	}
+	RUBY_DTRACE_HOOK(METHOD_CACHE_CLEAR, (global ? "global" : rb_class2name(klass)));
 
 	if (global) {
 	    INC_GLOBAL_METHOD_STATE();

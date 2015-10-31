@@ -8414,12 +8414,12 @@ gc_prof_timer_stop(rb_objspace_t *objspace)
     }
 }
 
+#define RUBY_DTRACE_GC_HOOK(name) \
+    do {if (RUBY_DTRACE_GC_##name##_ENABLED()) RUBY_DTRACE_GC_##name();} while (0)
 static inline void
 gc_prof_mark_timer_start(rb_objspace_t *objspace)
 {
-    if (RUBY_DTRACE_GC_MARK_BEGIN_ENABLED()) {
-	RUBY_DTRACE_GC_MARK_BEGIN();
-    }
+    RUBY_DTRACE_GC_HOOK(MARK_BEGIN);
 #if GC_PROFILE_MORE_DETAIL
     if (gc_prof_enabled(objspace)) {
 	gc_prof_record(objspace)->gc_mark_time = getrusage_time();
@@ -8430,9 +8430,7 @@ gc_prof_mark_timer_start(rb_objspace_t *objspace)
 static inline void
 gc_prof_mark_timer_stop(rb_objspace_t *objspace)
 {
-    if (RUBY_DTRACE_GC_MARK_END_ENABLED()) {
-	RUBY_DTRACE_GC_MARK_END();
-    }
+    RUBY_DTRACE_GC_HOOK(MARK_END);
 #if GC_PROFILE_MORE_DETAIL
     if (gc_prof_enabled(objspace)) {
         gc_profile_record *record = gc_prof_record(objspace);
@@ -8444,9 +8442,7 @@ gc_prof_mark_timer_stop(rb_objspace_t *objspace)
 static inline void
 gc_prof_sweep_timer_start(rb_objspace_t *objspace)
 {
-    if (RUBY_DTRACE_GC_SWEEP_BEGIN_ENABLED()) {
-	RUBY_DTRACE_GC_SWEEP_BEGIN();
-    }
+    RUBY_DTRACE_GC_HOOK(SWEEP_BEGIN);
     if (gc_prof_enabled(objspace)) {
 	gc_profile_record *record = gc_prof_record(objspace);
 
@@ -8459,9 +8455,7 @@ gc_prof_sweep_timer_start(rb_objspace_t *objspace)
 static inline void
 gc_prof_sweep_timer_stop(rb_objspace_t *objspace)
 {
-    if (RUBY_DTRACE_GC_SWEEP_END_ENABLED()) {
-	RUBY_DTRACE_GC_SWEEP_END();
-    }
+    RUBY_DTRACE_GC_HOOK(SWEEP_END);
 
     if (gc_prof_enabled(objspace)) {
 	double sweep_time;
