@@ -607,11 +607,11 @@ get_event_id(rb_event_flag_t event)
 static void
 call_trace_func(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klass)
 {
-    const char *srcfile = rb_sourcefile();
+    int line;
+    const char *srcfile = rb_source_loc(&line);
     VALUE eventname = rb_str_new2(get_event_name(event));
     VALUE filename = srcfile ? rb_str_new2(srcfile) : Qnil;
     VALUE argv[6];
-    int line = rb_sourceline();
     rb_thread_t *th = GET_THREAD();
 
     if (!klass) {

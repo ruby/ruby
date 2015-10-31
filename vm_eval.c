@@ -1252,7 +1252,8 @@ rb_each(VALUE obj)
 }
 
 static VALUE
-eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_arg, volatile VALUE file, volatile int line)
+eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_arg,
+		      VALUE filename, int lineno)
 {
     int state;
     VALUE result = Qundef;
@@ -1264,11 +1265,11 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_
     volatile int mild_compile_error;
     rb_cref_t *orig_cref;
     VALUE crefval;
+    volatile VALUE file;
+    volatile int line;
 
-    if (file == 0) {
-	file = rb_sourcefilename();
-	line = rb_sourceline();
-    }
+    file = filename ? filename : rb_source_location(&lineno);
+    line = lineno;
 
     parse_in_eval = th->parse_in_eval;
     mild_compile_error = th->mild_compile_error;

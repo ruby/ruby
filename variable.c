@@ -2636,9 +2636,8 @@ setup_const_entry(rb_const_entry_t *ce, VALUE klass, VALUE val,
 		  rb_const_flag_t visibility)
 {
     ce->flag = visibility;
-    ce->line = rb_sourceline();
     RB_OBJ_WRITE(klass, &ce->value, val);
-    RB_OBJ_WRITE(klass, &ce->file, rb_sourcefilename());
+    RB_OBJ_WRITE(klass, &ce->file, rb_source_location(&ce->line));
 }
 
 void

@@ -203,16 +203,14 @@ ruby_th_dtrace_setup(rb_thread_t *th, VALUE klass, ID id,
     type = BUILTIN_TYPE(klass);
     if (type == T_CLASS || type == T_ICLASS || type == T_MODULE) {
 	VALUE name = rb_class_path_no_cache(klass);
-	const char *classname;
+	const char *classname, *filename;
 	const char *methodname = rb_id2name(id);
-	const char *filename = rb_sourcefile();
-	if (methodname && filename) {
+	if (methodname && (filename = rb_source_loc(&args->line_no)) != 0) {
 	    if (NIL_P(name) || !(classname = StringValuePtr(name)))
 		classname = "<unknown>";
 	    args->classname = classname;
 	    args->methodname = methodname;
 	    args->filename = filename;
-	    args->line_no = rb_sourceline();
 	    args->klass = klass;
 	    args->name = name;
 	    return TRUE;

@@ -22,8 +22,8 @@ warn_printf(const char *fmt, ...)
 static void
 error_pos(void)
 {
-    VALUE sourcefile = rb_sourcefilename();
-    int sourceline = rb_sourceline();
+    int sourceline;
+    VALUE sourcefile = rb_source_location(&sourceline);
 
     if (sourcefile) {
 	ID caller_name;
@@ -105,8 +105,8 @@ error_print(void)
 	goto no_message;
     }
     if (NIL_P(errat)) {
-	const char *file = rb_sourcefile();
-	int line = rb_sourceline();
+	int line;
+	const char *file = rb_source_loc(&line);
 	if (!file)
 	    warn_printf("%d", line);
 	else if (!line)
