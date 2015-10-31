@@ -1,3 +1,9 @@
+Sun Nov  1 03:40:43 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/openssl/test_ssl_session.rb (OpenSSL#test_ctx_client_session_cb):
+	  fix test failure with OpenSSL disabled SSLv3 protocol.
+	  [ruby-core:63772] [Bug #10046]
+
 Tue Oct 27 23:58:32 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (hook_before_rewind): prevent kicking :return event while
