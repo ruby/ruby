@@ -174,9 +174,17 @@ iseq_memsize(const rb_iseq_t *iseq)
 	}
 	size += (body->param.opt_num + 1) * sizeof(VALUE);
 	size += param_keyword_size(body->param.keyword);
+
+	/* body->is_entries */
 	size += body->is_size * sizeof(union iseq_inline_storage_entry);
+
+	/* body->ci_entries */
 	size += body->ci_size * sizeof(struct rb_call_info);
 	size += body->ci_kw_size * sizeof(struct rb_call_info_with_kwarg);
+
+	/* body->cc_entries */
+	size += body->ci_size * sizeof(struct rb_call_cache);
+	size += body->ci_kw_size * sizeof(struct rb_call_cache);
 
 	if (ci_kw_entries) {
 	    unsigned int i;
