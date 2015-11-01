@@ -1,3 +1,7 @@
+Sun Nov  1 11:07:31 2015  Eric Wong  <e@80x24.org>
+
+	* iseq.c (iseq_memsize): account for rb_call_cache entries
+
 Sun Nov  1 09:12:10 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_yylex): ':' separated by a comment and a newline
