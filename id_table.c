@@ -1427,7 +1427,8 @@ struct mix_id_table {
     } aux;
 };
 
-#define LIST_P(mix) ((mix)->aux.size.capa <= ID_TABLE_USE_MIX_LIST_MAX_CAPA)
+#define LIST_LIMIT_P(mix) ((mix)->aux.size.num == ID_TABLE_USE_MIX_LIST_MAX_CAPA)
+#define LIST_P(mix)       ((mix)->aux.size.capa <= ID_TABLE_USE_MIX_LIST_MAX_CAPA)
 
 static struct mix_id_table *
 mix_id_table_create(size_t size)
@@ -1468,36 +1469,45 @@ mix_id_table_memsize(struct mix_id_table *tbl)
 static int
 mix_id_table_insert(struct mix_id_table *tbl, ID id, VALUE val)
 {
-    if (LIST_P(tbl)) {
-	int r = list_id_table_insert(&tbl->aux.list, id, val);
+    int r;
 
-	if (!LIST_P(tbl)) {
+    if (LIST_P(tbl)) {
+	if (!LIST_LIMIT_P(tbl)) {
+	    r = list_id_table_insert(&tbl->aux.list, id, val);
+	}
+	else {
+	    /* convert to hash */
 	    /* overflow. TODO: this promotion should be done in list_extend_table */
 	    struct list_id_table *list = &tbl->aux.list;
-	    struct hash_id_table *hash = &tbl->aux.hash;
+	    struct hash_id_table hash_body;
 	    id_key_t *keys = list->keys;
 	    VALUE *values = TABLE_VALUES(list);
 	    const int num = list->num;
 	    int i;
 
-	    hash_id_table_init(hash, 0);
+	    hash_id_table_init(&hash_body, 0);
 
 	    for (i=0; i<num; i++) {
-		hash_id_table_insert_key(hash, keys[i], values[i]);
+		/* note that GC can run */
+		hash_id_table_insert_key(&hash_body, keys[i], values[i]);
 	    }
+
+	    tbl->aux.hash = hash_body;
 
 	    /* free list keys/values */
 	    xfree(keys);
 #if ID_TABLE_USE_CALC_VALUES == 0
 	    xfree(values);
 #endif
-	    assert(LIST_P(tbl) == 0);
+	    goto hash_insert;
 	}
-	return r;
     }
     else {
-	return hash_id_table_insert(&tbl->aux.hash, id, val);
+      hash_insert:
+	r = hash_id_table_insert(&tbl->aux.hash, id, val);
+	assert(!LIST_P(tbl));
     }
+    return r;
 }
 
 static int
