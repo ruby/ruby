@@ -1,3 +1,8 @@
+Sun Nov  1 09:12:10 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_yylex): ':' separated by a comment and a newline
+	  is not valid as symbol.
+
 Sat Oct 31 20:15:48 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* test/openssl/test_pair.rb: skipped tests if openssl doesn't support

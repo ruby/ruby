@@ -612,6 +612,12 @@ eom
     end
   end
 
+  def test_invalid_symbol_space
+    assert_syntax_error(": foo", /unexpected ':'/)
+    assert_syntax_error(": #\n foo", /unexpected ':'/)
+    assert_syntax_error(":#\n foo", /unexpected ':'/)
+  end
+
   private
 
   def not_label(x) @result = x; @not_label ||= nil end
