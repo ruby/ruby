@@ -17,8 +17,9 @@
 #include "constant.h"
 #include "id.h"
 #include "ccan/list/list.h"
+#include "id_table.h"
 
-st_table *rb_global_tbl;
+struct rb_id_table *rb_global_tbl;
 static ID autoload, classpath, tmp_classpath, classid;
 
 static void check_before_mod_set(VALUE, ID, VALUE, const char *);
@@ -45,7 +46,7 @@ struct ivar_update {
 void
 Init_var_tables(void)
 {
-    rb_global_tbl = st_init_numtable();
+    rb_global_tbl = rb_id_table_create(0);
     generic_iv_tbl = st_init_numtable();
     autoload = rb_intern_const("__autoload__");
     /* __classpath__: fully qualified class path */
@@ -499,9 +500,9 @@ struct global_entry*
 rb_global_entry(ID id)
 {
     struct global_entry *entry;
-    st_data_t data;
+    VALUE data;
 
-    if (!st_lookup(rb_global_tbl, (st_data_t)id, &data)) {
+    if (!rb_id_table_lookup(rb_global_tbl, id, &data)) {
 	struct global_variable *var;
 	entry = ALLOC(struct global_entry);
 	var = ALLOC(struct global_variable);
@@ -515,7 +516,7 @@ rb_global_entry(ID id)
 
 	var->block_trace = 0;
 	var->trace = 0;
-	st_add_direct(rb_global_tbl, id, (st_data_t)entry);
+	rb_id_table_insert(rb_global_tbl, id, (VALUE)entry);
     }
     else {
 	entry = (struct global_entry *)data;
@@ -591,8 +592,8 @@ readonly_setter(VALUE val, ID id, void *data, struct global_variable *gvar)
     rb_name_error(id, "%"PRIsVALUE" is a read-only variable", QUOTE_ID(id));
 }
 
-static int
-mark_global_entry(st_data_t k, st_data_t v, st_data_t a)
+static enum rb_id_table_iterator_result
+mark_global_entry(VALUE v, void *ignored)
 {
     struct global_entry *entry = (struct global_entry *)v;
     struct trace_var *trace;
@@ -604,14 +605,14 @@ mark_global_entry(st_data_t k, st_data_t v, st_data_t a)
 	if (trace->data) rb_gc_mark_maybe(trace->data);
 	trace = trace->next;
     }
-    return ST_CONTINUE;
+    return ID_TABLE_CONTINUE;
 }
 
 void
 rb_gc_mark_global_tbl(void)
 {
     if (rb_global_tbl)
-        st_foreach_safe(rb_global_tbl, mark_global_entry, 0);
+        rb_id_table_foreach_values(rb_global_tbl, mark_global_entry, 0);
 }
 
 static ID
@@ -767,14 +768,14 @@ rb_f_untrace_var(int argc, const VALUE *argv)
     ID id;
     struct global_entry *entry;
     struct trace_var *trace;
-    st_data_t data;
+    VALUE data;
 
     rb_scan_args(argc, argv, "11", &var, &cmd);
     id = rb_check_id(&var);
     if (!id) {
 	rb_name_error_str(var, "undefined global variable %"PRIsVALUE"", QUOTE(var));
     }
-    if (!st_lookup(rb_global_tbl, (st_data_t)id, &data)) {
+    if (!rb_id_table_lookup(rb_global_tbl, id, &data)) {
 	rb_name_error(id, "undefined global variable %"PRIsVALUE"", QUOTE_ID(id));
     }
 
@@ -880,13 +881,12 @@ rb_gvar_defined(struct global_entry *entry)
     return Qtrue;
 }
 
-static int
-gvar_i(st_data_t k, st_data_t v, st_data_t a)
+static enum rb_id_table_iterator_result
+gvar_i(ID key, VALUE val, void *a)
 {
-    ID key = (ID)k;
     VALUE ary = (VALUE)a;
     rb_ary_push(ary, ID2SYM(key));
-    return ST_CONTINUE;
+    return ID_TABLE_CONTINUE;
 }
 
 /*
@@ -905,7 +905,7 @@ rb_f_global_variables(void)
     char buf[2];
     int i;
 
-    st_foreach_safe(rb_global_tbl, gvar_i, ary);
+    rb_id_table_foreach(rb_global_tbl, gvar_i, (void *)ary);
     buf[0] = '$';
     for (i = 1; i <= 9; ++i) {
 	buf[1] = (char)(i + '0');
@@ -918,13 +918,13 @@ void
 rb_alias_variable(ID name1, ID name2)
 {
     struct global_entry *entry1, *entry2;
-    st_data_t data1;
+    VALUE data1;
 
     entry2 = rb_global_entry(name2);
-    if (!st_lookup(rb_global_tbl, (st_data_t)name1, &data1)) {
+    if (!rb_id_table_lookup(rb_global_tbl, name1, &data1)) {
 	entry1 = ALLOC(struct global_entry);
 	entry1->id = name1;
-	st_add_direct(rb_global_tbl, name1, (st_data_t)entry1);
+	rb_id_table_insert(rb_global_tbl, name1, (VALUE)entry1);
     }
     else if ((entry1 = (struct global_entry *)data1)->var != entry2->var) {
 	struct global_variable *var = entry1->var;
