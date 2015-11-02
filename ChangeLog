@@ -1,3 +1,9 @@
+Tue Nov  3 06:48:58 2015  Eric Wong  <e@80x24.org>
+
+	* variable.c (find_class_path): remove cast for rb_class_ivar_set
+	  (rb_ivar_set): ditto
+	  (rb_cvar_set): ditto
+
 Tue Nov  3 06:18:21 2015  Eric Wong  <e@80x24.org>
 
 	* variable.c (rb_global_tbl): convert to id_table
