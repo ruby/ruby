@@ -200,8 +200,8 @@
 UNUSED(ID_TABLE_IMPL_TYPE *IMPL(_create)(size_t));
 UNUSED(void IMPL(_free)(ID_TABLE_IMPL_TYPE *));
 UNUSED(void IMPL(_clear)(ID_TABLE_IMPL_TYPE *));
-UNUSED(size_t IMPL(_size)(ID_TABLE_IMPL_TYPE *));
-UNUSED(size_t IMPL(_memsize)(ID_TABLE_IMPL_TYPE *));
+UNUSED(size_t IMPL(_size)(const ID_TABLE_IMPL_TYPE *));
+UNUSED(size_t IMPL(_memsize)(const ID_TABLE_IMPL_TYPE *));
 UNUSED(int IMPL(_insert)(ID_TABLE_IMPL_TYPE *, ID, VALUE));
 UNUSED(int IMPL(_lookup)(ID_TABLE_IMPL_TYPE *, ID, VALUE *));
 UNUSED(int IMPL(_delete)(ID_TABLE_IMPL_TYPE *, ID));
@@ -298,13 +298,13 @@ st_id_table_clear(struct st_id_table *tbl)
 }
 
 static size_t
-st_id_table_size(struct st_id_table *tbl)
+st_id_table_size(const struct st_id_table *tbl)
 {
     return tbl2st(tbl)->num_entries;
 }
 
 static size_t
-st_id_table_memsize(struct st_id_table *tbl)
+st_id_table_memsize(const struct st_id_table *tbl)
 {
     size_t header_size = ID_TABLE_USE_ST_DEBUG ? sizeof(struct st_id_table) : 0;
     return header_size + st_memsize(tbl2st(tbl));
@@ -416,13 +416,13 @@ list_id_table_clear(struct list_id_table *tbl)
 }
 
 static size_t
-list_id_table_size(struct list_id_table *tbl)
+list_id_table_size(const struct list_id_table *tbl)
 {
     return (size_t)tbl->num;
 }
 
 static size_t
-list_id_table_memsize(struct list_id_table *tbl)
+list_id_table_memsize(const struct list_id_table *tbl)
 {
     return (sizeof(id_key_t) + sizeof(VALUE)) * tbl->capa + sizeof(struct list_id_table);
 }
@@ -821,7 +821,7 @@ hash_id_table_free(sa_table *table)
 }
 
 static size_t
-hash_id_table_memsize(sa_table *table)
+hash_id_table_memsize(const sa_table *table)
 {
     return sizeof(sa_table) + table->num_bins * sizeof (sa_entry);
 }
@@ -1037,7 +1037,7 @@ hash_id_table_lookup(register sa_table *table, ID id, VALUE *valuep)
 }
 
 static size_t
-hash_id_table_size(sa_table *table)
+hash_id_table_size(const sa_table *table)
 {
     return table->num_entries;
 }
@@ -1229,13 +1229,13 @@ hash_id_table_clear(struct hash_id_table *tbl)
 }
 
 static size_t
-hash_id_table_size(struct hash_id_table *tbl)
+hash_id_table_size(const struct hash_id_table *tbl)
 {
     return (size_t)tbl->num;
 }
 
 static size_t
-hash_id_table_memsize(struct hash_id_table *tbl)
+hash_id_table_memsize(const struct hash_id_table *tbl)
 {
     return sizeof(item_t) * tbl->capa + sizeof(struct hash_id_table);
 }
@@ -1453,14 +1453,14 @@ mix_id_table_clear(struct mix_id_table *tbl)
 }
 
 static size_t
-mix_id_table_size(struct mix_id_table *tbl)
+mix_id_table_size(const struct mix_id_table *tbl)
 {
     if (LIST_P(tbl)) return list_id_table_size(&tbl->aux.list);
     else             return hash_id_table_size(&tbl->aux.hash);
 }
 
 static size_t
-mix_id_table_memsize(struct mix_id_table *tbl)
+mix_id_table_memsize(const struct mix_id_table *tbl)
 {
     if (LIST_P(tbl)) return list_id_table_memsize(&tbl->aux.list) - sizeof(struct list_id_table) + sizeof(struct mix_id_table);
     else             return hash_id_table_memsize(&tbl->aux.hash);
@@ -1553,8 +1553,8 @@ mix_id_table_foreach_values(struct mix_id_table *tbl, rb_id_table_foreach_values
 IMPL_TYPE(struct rb_id_table *, create, (size_t size), (size))
 IMPL_VOID(free, (struct rb_id_table *tbl), (id_tbl))
 IMPL_VOID(clear, (struct rb_id_table *tbl), (id_tbl))
-IMPL_TYPE(size_t, size, (struct rb_id_table *tbl), (id_tbl))
-IMPL_TYPE(size_t, memsize, (struct rb_id_table *tbl), (id_tbl))
+IMPL_TYPE(size_t, size, (const struct rb_id_table *tbl), (id_tbl))
+IMPL_TYPE(size_t, memsize, (const struct rb_id_table *tbl), (id_tbl))
 
 IMPL_TYPE(int , insert, (struct rb_id_table *tbl, ID id, VALUE val),
 	  (id_tbl, id, val))
