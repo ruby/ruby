@@ -373,6 +373,9 @@ static int parser_yyerror(struct parser_params*, const char*);
 
 #define NODE_CALL_Q(q) (((q) == tDOTQ) ? NODE_QCALL : NODE_CALL)
 #define NEW_QCALL(q,r,m,a) NEW_NODE(NODE_CALL_Q(q),r,m,a)
+#define NO_QCALL(q, here) \
+	((q) != tDOTQ ? (void)0 : \
+	 yyerror(".? in "here" is not supported yet"))
 
 static int yylex(YYSTYPE*, struct parser_params*);
 
@@ -847,7 +850,7 @@ static void token_info_pop(struct parser_params*, const char *token, size_t len)
 %type <node> mlhs mlhs_head mlhs_basic mlhs_item mlhs_node mlhs_post mlhs_inner
 %type <id>   fsym keyword_variable user_variable sym symbol operation operation2 operation3
 %type <id>   cname fname op f_rest_arg f_block_arg opt_f_block_arg f_norm_arg f_bad_arg
-%type <id>   f_kwrest f_label f_arg_asgn call_op call_op2
+%type <id>   f_kwrest f_label f_arg_asgn call_op call_op2 lbracket
 /*%%%*/
 /*%
 %type <val> program reswords then do dot_or_colon
@@ -1243,11 +1246,15 @@ stmt		: keyword_alias fitem {lex_state = EXPR_FNAME;} fitem
 			value_expr($3);
 			$$ = new_op_assign($1, $2, $3);
 		    }
-		| primary_value '[' opt_call_args rbracket tOP_ASGN command_call
+		| primary_value lbracket opt_call_args rbracket tOP_ASGN command_call
 		    {
 		    /*%%%*/
 			NODE *args;
+		    /*%
+		    %*/
 
+			NO_QCALL($2, "lhs of op_asgn");
+		    /*%%%*/
 			value_expr($6);
 			if (!$3) $3 = NEW_ZARRAY();
 			args = arg_concat($3, $6);
@@ -1709,8 +1716,9 @@ mlhs_node	: user_variable
 		    {
 		        $$ = assignable($1, 0);
 		    }
-		| primary_value '[' opt_call_args rbracket
+		| primary_value lbracket opt_call_args rbracket
 		    {
+			NO_QCALL($2, "mlhs");
 		    /*%%%*/
 			$$ = aryset($1, $3);
 		    /*%
@@ -1800,8 +1808,9 @@ lhs		: user_variable
 		        $$ = dispatch1(var_field, $$);
 		    %*/
 		    }
-		| primary_value '[' opt_call_args rbracket
+		| primary_value lbracket opt_call_args rbracket
 		    {
+			NO_QCALL($2, "lhs");
 		    /*%%%*/
 			$$ = aryset($1, $3);
 		    /*%
@@ -2042,11 +2051,15 @@ arg		: lhs '=' arg
 		    %*/
 			$$ = new_op_assign($1, $2, $3);
 		    }
-		| primary_value '[' opt_call_args rbracket tOP_ASGN arg
+		| primary_value lbracket opt_call_args rbracket tOP_ASGN arg
 		    {
 		    /*%%%*/
 			NODE *args;
+		    /*%
+		    %*/
 
+			NO_QCALL($2, "lhs of op_asgn");
+		    /*%%%*/
 			value_expr($6);
 			if (!$3) $3 = NEW_ZARRAY();
 			if (nd_type($3) == NODE_BLOCK_PASS) {
@@ -3741,13 +3754,13 @@ method_call	: fcall paren_args
 			$$ = dispatch0(zsuper);
 		    %*/
 		    }
-		| primary_value '[' opt_call_args rbracket
+		| primary_value lbracket opt_call_args rbracket
 		    {
 		    /*%%%*/
-			if ($1 && nd_type($1) == NODE_SELF)
+			if ($2 != tDOTQ && $1 && nd_type($1) == NODE_SELF)
 			    $$ = NEW_FCALL(tAREF, $3);
 			else
-			    $$ = NEW_CALL($1, tAREF, $3);
+			    $$ = NEW_QCALL($2, $1, tAREF, $3);
 			fixpos($$, $1);
 		    /*%
 			$$ = dispatch2(aref, $1, escape_Qundef($3));
@@ -5156,6 +5169,10 @@ opt_nl		: /* none */
 		;
 
 rparen		: opt_nl ')'
+		;
+
+lbracket	: '[' {$$ = 0;}
+		| tDOTQ '[' {$$ = tDOTQ;}
 		;
 
 rbracket	: opt_nl ']'
