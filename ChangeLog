@@ -1,3 +1,7 @@
+Mon Nov  2 20:07:10 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (lbracket): support .? before aref.  [Feature #11537]
+
 Sun Nov  1 17:14:36 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* id_table.c (mix_id_table_insert): do not touch list during
