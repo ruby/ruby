@@ -328,7 +328,7 @@ lex.c: defs/keywords
 	else \
 	  [ $(Q) ] && echo generating $@ || set -x; \
 	  gperf -C -P -p -j1 -i 1 -g -o -t -N rb_reserved_word -k1,3,$$ $? \
-	  | sed 's/(int)(long)&((\(struct stringpool_t\) *\*)0)->\(stringpool_[a-z0-9]*\)/offsetof(\1, \2)/g' \
+	  | sed 's/(long)&((\(struct stringpool_t\) *\*)0)->\(stringpool_[a-z0-9]*\)/offsetof(\1, \2)/g' \
 	  > $@.tmp && \
 	  $(MV) $@.tmp $@ && \
 	  $(CP) $? $(srcdir)/defs/lex.c.src && \

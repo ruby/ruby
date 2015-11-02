@@ -30,7 +30,7 @@ error "gperf generated tables don't work with this execution character set. Plea
 
 #line 1 "defs/keywords"
 
-struct kwtable {unsigned int name, id[2], state;};
+struct kwtable {int name, id[2], state;};
 const struct kwtable *rb_reserved_word(const char *, unsigned int);
 #ifndef RIPPER
 static const struct kwtable *reserved_word(const char *, unsigned int);
