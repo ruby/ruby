@@ -159,7 +159,7 @@ find_class_path(VALUE klass, ID preferred)
 	if (!RCLASS_IV_TBL(klass)) {
 	    RCLASS_IV_TBL(klass) = st_init_numtable();
 	}
-	rb_class_ivar_set(klass, (st_data_t)classpath, arg.path);
+	rb_class_ivar_set(klass, classpath, arg.path);
 
 	st_delete(RCLASS_IV_TBL(klass), &tmp, 0);
 	return arg.path;
@@ -1412,7 +1412,7 @@ rb_ivar_set(VALUE obj, ID id, VALUE val)
       case T_CLASS:
       case T_MODULE:
 	if (!RCLASS_IV_TBL(obj)) RCLASS_IV_TBL(obj) = st_init_numtable();
-	rb_class_ivar_set(obj, (st_data_t)id, val);
+	rb_class_ivar_set(obj, id, val);
         break;
       default:
 	generic_ivar_set(obj, id, val);
@@ -2802,7 +2802,7 @@ rb_cvar_set(VALUE klass, ID id, VALUE val)
 	RCLASS_IV_TBL(target) = st_init_numtable();
     }
 
-    rb_class_ivar_set(target, (st_data_t)id, (st_data_t)val);
+    rb_class_ivar_set(target, id, val);
 }
 
 VALUE
