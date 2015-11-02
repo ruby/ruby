@@ -1,3 +1,9 @@
+Tue Nov  3 01:58:46 2015  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* parse.y (NO_QCALL): fix type mismatch of operands that causes
+	  compile error with Oracle Solaris Studio on Solaris.
+	  [Bug #11645] [ruby-dev:49327]
+
 Mon Nov  2 20:07:10 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (lbracket): support .? before aref.  [Feature #11537]

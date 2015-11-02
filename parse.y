@@ -375,7 +375,7 @@ static int parser_yyerror(struct parser_params*, const char*);
 #define NEW_QCALL(q,r,m,a) NEW_NODE(NODE_CALL_Q(q),r,m,a)
 #define NO_QCALL(q, here) \
 	((q) != tDOTQ ? (void)0 : \
-	 yyerror(".? in "here" is not supported yet"))
+	 (void)yyerror(".? in "here" is not supported yet"))
 
 static int yylex(YYSTYPE*, struct parser_params*);
 
