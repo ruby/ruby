@@ -8,16 +8,6 @@ Tue Nov  3 06:18:21 2015  Eric Wong  <e@80x24.org>
 
 	* variable.c (rb_global_tbl): convert to id_table
 
-Tue Nov  3 01:58:46 2015  Naohisa Goto  <ngotogenome@gmail.com>
-
-	* parse.y (NO_QCALL): fix type mismatch of operands that causes
-	  compile error with Oracle Solaris Studio on Solaris.
-	  [Bug #11645] [ruby-dev:49327]
-
-Mon Nov  2 20:07:10 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* parse.y (lbracket): support .? before aref.  [Feature #11537]
-
 Sun Nov  1 17:14:36 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* id_table.c (mix_id_table_insert): do not touch list during
