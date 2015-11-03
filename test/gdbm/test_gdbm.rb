@@ -65,6 +65,13 @@ if defined? GDBM
       ObjectSpace.each_object(GDBM) do |obj|
         obj.close unless obj.closed?
       end
+      begin
+        FileUtils.remove_entry_secure @tmpdir
+      rescue
+        system("ls", "-lR", @tmpdir)
+      else
+        return
+      end
       FileUtils.remove_entry_secure @tmpdir
     end
 
