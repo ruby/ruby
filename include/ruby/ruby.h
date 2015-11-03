@@ -903,7 +903,7 @@ struct RObject {
 	struct {
 	    long numiv; /* only uses 32-bits */
 	    VALUE *ivptr;
-            struct st_table *iv_index_tbl; /* shortcut for RCLASS_IV_INDEX_TBL(rb_obj_class(obj)) */
+            void *iv_index_tbl; /* shortcut for RCLASS_IV_INDEX_TBL(rb_obj_class(obj)) */
 	} heap;
 	VALUE ary[ROBJECT_EMBED_LEN_MAX];
     } as;
