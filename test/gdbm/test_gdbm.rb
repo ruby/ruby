@@ -68,7 +68,9 @@ if defined? GDBM
       begin
         FileUtils.remove_entry_secure @tmpdir
       rescue
-        system("ls", "-lR", @tmpdir)
+        system("ls", "-lRa", @tmpdir)
+        system("rmdir", @tmpdir)
+        raise
       else
         return
       end
