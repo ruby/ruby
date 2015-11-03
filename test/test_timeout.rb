@@ -49,7 +49,7 @@ class TestTimeout < Test::Unit::TestCase
         end
       end
     end
-    assert_raise_with_message(exc, /execution expired/) {raise e if e}
+    assert_raise_with_message(exc, 'execution expired') {raise e if e}
   end
 
   def test_custom_exception
@@ -60,7 +60,7 @@ class TestTimeout < Test::Unit::TestCase
     assert_nothing_raised(ArgumentError, bug9354) do
       assert_equal(:ok, Timeout.timeout(100, err) {:ok})
     end
-    assert_raise_with_message(err, /execution expired/) do
+    assert_raise_with_message(err, 'execution expired') do
       Timeout.timeout 0.01, err do
         sleep 3
       end
