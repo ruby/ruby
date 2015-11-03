@@ -4500,7 +4500,7 @@ proc_setpgid(VALUE obj, VALUE pid, VALUE pgrp)
  *     Process.getsid()      -> integer
  *     Process.getsid(pid)   -> integer
  *
- *  Returns the session ID for for the given process id. If not give,
+ *  Returns the session ID for the given process id. If not given,
  *  return current process sid. Not available on all platforms.
  *
  *     Process.getsid()                #=> 27422
