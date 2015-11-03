@@ -215,7 +215,7 @@ ruby_error_print(void)
 	undef_mesg_for(v, "class"))
 
 void
-rb_print_undef(VALUE klass, ID id, int visi)
+rb_print_undef(VALUE klass, ID id, rb_method_visibility_t visi)
 {
     const int is_mod = RB_TYPE_P(klass, T_MODULE);
     VALUE mesg;
