@@ -1,3 +1,8 @@
+Wed Nov  4 06:01:52 2015  Eric Wong  <e@80x24.org>
+
+	* include/ruby/ruby.h (struct RObject): hide iv_index_tbl type
+	  [ruby-core:71306] [Feature #11647]
+
 Tue Nov  3 06:48:58 2015  Eric Wong  <e@80x24.org>
 
 	* variable.c (find_class_path): remove cast for rb_class_ivar_set
