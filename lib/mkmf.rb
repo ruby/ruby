@@ -382,9 +382,7 @@ module MakeMakefile
       nil while command.gsub!(varpat) {vars[$1||$2]}
     end
     Logging::open do
-      msg = command.quote
-      puts msg
-      Logging.message "%s\n", msg
+      puts command.quote
       if opts and opts[:werror]
         result = nil
         Logging.postpone do |log|
@@ -401,15 +399,11 @@ module MakeMakefile
 
   def xpopen command, *mode, &block
     Logging::open do
-      msg = case mode[0]
+      case mode[0]
       when nil, /^r/
-        "#{command} |"
+        puts "#{command} |"
       else
-        "| #{command}"
-      end
-      if msg
-        puts msg
-        Logging.message "%s\n", msg
+        puts "| #{command}"
       end
       IO.popen(libpath_env, command, *mode, &block)
     end
@@ -814,16 +808,13 @@ SRC
     xpopen(cpp_command('', opt)) do |f|
       if Regexp === pat
         puts("    ruby -ne 'print if #{pat.inspect}'")
-        Logging::message("    ruby -ne 'print if %p'\n", pat)
         f.grep(pat) {|l|
           puts "#{f.lineno}: #{l}"
-          Logging::message "%d: %s", f.lineno, l
           return true
         }
         false
       else
         puts("    egrep '#{pat}'")
-        Logging::message("    egrep '%s'\n", pat)
         begin
           stdin = $stdin.dup
           $stdin.reopen(f)
@@ -1801,7 +1792,7 @@ SRC
       pkgconfig = $PKGCONFIG
       get = proc {|opt|
         opt = xpopen("#{$PKGCONFIG} --#{opt} #{pkg}", err:[:child, :out], &:read)
-        Logging.open {opt.each_line.map{|s|Logging.message "=> %p\n", s}}
+        Logging.open {puts opt.each_line.map{|s|"=> #{s.inspect}"}}
         opt.strip if $?.success?
       }
     elsif find_executable0(pkgconfig = "#{pkg}-config")
@@ -1812,7 +1803,7 @@ SRC
     if pkgconfig
       get ||= proc {|opt|
         opt = xpopen("#{pkgconfig} --#{opt}", err:[:child, :out], &:read)
-        Logging.open {opt.each_line.map{|s|Logging.message "=> %p\n", s}}
+        Logging.open {puts opt.each_line.map{|s|"=> #{s.inspect}"}}
         opt.strip if $?.success?
       }
     end
