@@ -68,9 +68,7 @@ if defined? GDBM
       begin
         FileUtils.remove_entry_secure @tmpdir
       rescue
-        system("ls", "-lRa", @tmpdir)
-        system("rmdir", @tmpdir)
-        raise
+        system("fuser", *Dir.entries(@tmpdir).grep(/\A(?!\.\.?\z)/), chdir: @chdir)
       else
         return
       end
@@ -595,6 +593,7 @@ if defined? GDBM
 
       size2 = File.size(@path)
       @gdbm.reorganize
+      @gdbm.sync
       size3 = File.size(@path)
 
       # p [size1, size2, size3]
