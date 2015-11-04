@@ -1,3 +1,8 @@
+Wed Nov  4 11:38:23 2015  Jake Worth  <jakeworth82@gmail.com>
+
+	* process.c (proc_getsid): [DOC] Fix double word 'for' and typo.
+	  [Fix GH-1080]
+
 Wed Nov  4 06:01:52 2015  Eric Wong  <e@80x24.org>
 
 	* include/ruby/ruby.h (struct RObject): hide iv_index_tbl type
