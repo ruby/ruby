@@ -90,6 +90,24 @@ static unsigned long CALLBACK_ID_NUM = 0;
 
 /*************************************/
 
+#ifndef HAVE_STRNDUP
+static char * strndup _((const char *, size_t));
+static char *
+strndup(ptr, len)
+    const char *ptr;
+    size_t len;
+{
+    char *newptr = malloc(len + 1);
+    if (newptr) {
+	memcpy(newptr, ptr, len);
+	newptr[len] = '\0';
+    }
+    return newptr;
+}
+#endif
+
+/*************************************/
+
 #if defined(HAVE_RB_OBJ_INSTANCE_EXEC) && !defined(RUBY_VM)
 extern VALUE rb_obj_instance_exec _((int, VALUE*, VALUE));
 #endif
@@ -1593,17 +1611,8 @@ cbsubst_table_setup(argc, argv, self)
 
     chr = (unsigned char)(0x80 + idx);
     subst_inf->keylen[chr] = RSTRING_LEN(infp[0]);
-#if HAVE_STRNDUP
     subst_inf->key[chr] = strndup(RSTRING_PTR(infp[0]),
 				  RSTRING_LEN(infp[0]));
-#else
-    subst_inf->key[chr] = malloc(RSTRING_LEN(infp[0]) + 1);
-    if (subst_inf->key[chr]) {
-      strncpy(subst_inf->key[chr], RSTRING_PTR(infp[0]),
-	      RSTRING_LEN(infp[0]) + 1);
-      subst_inf->key[chr][RSTRING_LEN(infp[0])] = '\0';
-    }
-#endif
     subst_inf->type[chr] = NUM2CHR(infp[1]);
 
     subst_inf->full_subst_length += (subst_inf->keylen[chr] + 2);
