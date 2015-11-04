@@ -106,6 +106,22 @@ strndup(ptr, len)
 }
 #endif
 
+#ifndef HAVE_RB_ARY_CAT
+static VALUE rb_ary_cat _((VALUE, const VALUE *, long));
+static VALUE
+rb_ary_cat(ary, argv, len)
+    VALUE ary;
+    const VALUE *argv;
+    long len;
+{
+    long i;
+    for (i = 0; i < len; i++) {
+	rb_ary_push(ary, argv[i]);
+    }
+    return ary;
+}
+#endif
+
 /*************************************/
 
 #if defined(HAVE_RB_OBJ_INSTANCE_EXEC) && !defined(RUBY_VM)
@@ -584,7 +600,7 @@ assoc2kv(assoc, ary, self)
     VALUE ary;
     VALUE self;
 {
-    long i, j, len;
+    long i, len;
     volatile VALUE pair;
     volatile VALUE val;
     volatile VALUE dst = rb_ary_new2(2 * RARRAY_LEN(assoc));
@@ -611,9 +627,7 @@ assoc2kv(assoc, ary, self)
             rb_ary_push(dst, key2keyname(RARRAY_CONST_PTR(pair)[0]));
 
             val = rb_ary_new2(RARRAY_LEN(pair) - 1);
-            for(j = 1; j < RARRAY_LEN(pair); j++) {
-                rb_ary_push(val, RARRAY_CONST_PTR(pair)[j]);
-            }
+            rb_ary_cat(val, RARRAY_CONST_PTR(pair) + 1, RARRAY_LEN(pair) - 1);
 
             rb_ary_push(dst, val);
         }
@@ -632,7 +646,7 @@ assoc2kv_enc(assoc, ary, self)
     VALUE ary;
     VALUE self;
 {
-    long i, j, len;
+    long i, len;
     volatile VALUE pair;
     volatile VALUE val;
     volatile VALUE dst = rb_ary_new2(2 * RARRAY_LEN(assoc));
@@ -659,9 +673,7 @@ assoc2kv_enc(assoc, ary, self)
             rb_ary_push(dst, key2keyname(RARRAY_CONST_PTR(pair)[0]));
 
             val = rb_ary_new2(RARRAY_LEN(pair) - 1);
-            for(j = 1; j < RARRAY_LEN(pair); j++) {
-                rb_ary_push(val, RARRAY_CONST_PTR(pair)[j]);
-            }
+            rb_ary_cat(val, RARRAY_CONST_PTR(pair) + 1, RARRAY_LEN(pair) - 1);
 
             rb_ary_push(dst, get_eval_string_core(val, Qtrue, self));
         }

@@ -6,6 +6,7 @@ begin
   have_func("rb_obj_taint", "ruby.h")
   have_func("rb_sym2str", "ruby.h")
   have_func("rb_id2str", "ruby.h")
+  have_func("rb_ary_cat", "ruby.h")
   have_func("strndup", "string.h")
 
   create_makefile('tkutil')
