@@ -41,7 +41,7 @@ prehook = proc do |extmk|
       dir.shift
       pwd.shift
     end
-    builddir = File.join([".."]*pwd.size + dir)
+    builddir = File.join((pwd.empty? ? ["."] : [".."]*pwd.size) + dir)
     builddir = "." if builddir.empty?
   end
   join = proc {|*args| File.join(*args).sub!(/\A(?:\.\/)*/, '')}
