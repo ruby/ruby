@@ -49,7 +49,11 @@ module TestMkmf::Base
       @filter = block
     end
     def write(s)
-      @buffer << s if @out
+      if @out
+        @buffer << s
+      elsif @origin
+        @origin << s
+      end
     end
   end
 
