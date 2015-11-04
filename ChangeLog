@@ -1,3 +1,8 @@
+Wed Nov  4 15:40:45 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* method.h: fix typo. Patch by @davydovanton
+	  [fix GH-1076][ci skip]
+
 Wed Nov  4 15:39:32 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* hash.c: use correct grammer. Patch by @tveastman
