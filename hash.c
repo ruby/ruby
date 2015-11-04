@@ -721,7 +721,7 @@ rb_hash_rehash_i(VALUE key, VALUE value, VALUE arg)
  *  Rebuilds the hash based on the current hash values for each key. If
  *  values of key objects have changed since they were inserted, this
  *  method will reindex <i>hsh</i>. If <code>Hash#rehash</code> is
- *  called while an iterator is traversing the hash, an
+ *  called while an iterator is traversing the hash, a
  *  <code>RuntimeError</code> will be raised in the iterator.
  *
  *     a = [ "a", "b" ]

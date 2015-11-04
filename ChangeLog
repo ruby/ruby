@@ -1,3 +1,8 @@
+Wed Nov  4 15:39:32 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* hash.c: use correct grammer. Patch by @tveastman
+	  [fix GH-1079][ci skip]
+
 Wed Nov  4 11:38:23 2015  Jake Worth  <jakeworth82@gmail.com>
 
 	* process.c (proc_getsid): [DOC] Fix double word 'for' and typo.
