@@ -130,7 +130,7 @@ typedef struct rb_method_cfunc_struct {
 
 typedef struct rb_method_attr_struct {
     ID id;
-    const VALUE location; /* sould be marked */
+    const VALUE location; /* should be marked */
 } rb_method_attr_t;
 
 typedef struct rb_method_alias_struct {
