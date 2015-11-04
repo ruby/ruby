@@ -159,7 +159,7 @@ static VALUE start_document(VALUE self, VALUE version, VALUE tags, VALUE imp)
     }
 
     if(RTEST(tags)) {
-	int i = 0;
+	long i = 0;
 #ifdef HAVE_RUBY_ENCODING_H
 	rb_encoding * encoding = rb_utf8_encoding();
 #endif

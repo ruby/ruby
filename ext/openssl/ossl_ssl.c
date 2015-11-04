@@ -701,7 +701,8 @@ ossl_sslctx_setup(VALUE self)
     X509_STORE *store;
     EVP_PKEY *key = NULL;
     char *ca_path = NULL, *ca_file = NULL;
-    int i, verify_mode;
+    int verify_mode;
+    long i;
     VALUE val;
 
     if(OBJ_FROZEN(self)) return Qnil;

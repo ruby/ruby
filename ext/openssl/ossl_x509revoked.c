@@ -188,7 +188,7 @@ ossl_x509revoked_set_extensions(VALUE self, VALUE ary)
 {
     X509_REVOKED *rev;
     X509_EXTENSION *ext;
-    int i;
+    long i;
     VALUE item;
 
     Check_Type(ary, T_ARRAY);

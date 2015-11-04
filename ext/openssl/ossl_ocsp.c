@@ -671,9 +671,9 @@ ossl_ocspbres_add_status(VALUE self, VALUE cid, VALUE status,
     OCSP_BASICRESP *bs;
     OCSP_SINGLERESP *single;
     OCSP_CERTID *id;
-    int st, rsn;
     ASN1_TIME *ths, *nxt, *rev;
-    int error, i, rstatus = 0;
+    int st, rsn, error, rstatus = 0;
+    long i;
     VALUE tmp;
 
     st = NUM2INT(status);
