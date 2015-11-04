@@ -2128,7 +2128,7 @@ autoload_reset(VALUE arg)
 
     /* wakeup any waiters we had */
     if (need_wakeups) {
-	struct autoload_state *cur, *nxt;
+	struct autoload_state *cur = 0, *nxt;
 
 	list_for_each_safe(&state->waitq.head, cur, nxt, waitq.node) {
 	    VALUE th = cur->thread;
