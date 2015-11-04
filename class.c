@@ -666,7 +666,7 @@ rb_define_class(const char *name, VALUE super)
  * \return the created class
  * \throw TypeError if the constant name \a name is already taken but
  *                  the constant is not a \c Class.
- * \throw NameError if the class is already defined but the class can not
+ * \throw TypeError if the class is already defined but the class can not
  *                  be reopened because its superclass is not \a super.
  * \post top-level constant named \a name refers the returned class.
  *
@@ -689,7 +689,7 @@ rb_define_class_under(VALUE outer, const char *name, VALUE super)
  * \return the created class
  * \throw TypeError if the constant name \a name is already taken but
  *                  the constant is not a \c Class.
- * \throw NameError if the class is already defined but the class can not
+ * \throw TypeError if the class is already defined but the class can not
  *                  be reopened because its superclass is not \a super.
  * \post top-level constant named \a name refers the returned class.
  *

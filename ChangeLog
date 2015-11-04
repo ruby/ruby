@@ -1,3 +1,8 @@
+Wed Nov  4 15:45:59 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* class.c: fix documentation for rb_define_class{_id}_under.
+	  [fix GH-991][ci skip] Patch by @kachick
+
 Wed Nov  4 15:40:45 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* method.h: fix typo. Patch by @davydovanton
