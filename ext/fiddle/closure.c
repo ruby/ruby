@@ -70,7 +70,7 @@ callback(ffi_cif *cif, void *resp, void **args, void *ctx)
     cPointer = rb_const_get(mFiddle, rb_intern("Pointer"));
 
     for (i = 0; i < argc; i++) {
-        type = NUM2INT(RARRAY_PTR(rbargs)[i]);
+        type = NUM2INT(RARRAY_CONST_PTR(rbargs)[i]);
         switch (type) {
 	  case TYPE_VOID:
 	    argc = 0;
@@ -123,7 +123,7 @@ callback(ffi_cif *cif, void *resp, void **args, void *ctx)
         }
     }
 
-    ret = rb_funcall2(self, rb_intern("call"), argc, RARRAY_PTR(params));
+    ret = rb_funcall2(self, rb_intern("call"), argc, RARRAY_CONST_PTR(params));
     RB_GC_GUARD(params);
 
     type = NUM2INT(ctype);
@@ -210,7 +210,7 @@ initialize(int rbargc, VALUE argv[], VALUE self)
     cl->argv = (ffi_type **)xcalloc(argc + 1, sizeof(ffi_type *));
 
     for (i = 0; i < argc; i++) {
-        int type = NUM2INT(RARRAY_PTR(args)[i]);
+        int type = NUM2INT(RARRAY_CONST_PTR(args)[i]);
         cl->argv[i] = INT2FFI_TYPE(type);
     }
     cl->argv[argc] = NULL;

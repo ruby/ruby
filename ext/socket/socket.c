@@ -1406,16 +1406,16 @@ sock_s_getnameinfo(int argc, VALUE *argv)
 	sa = tmp;
 	MEMZERO(&hints, struct addrinfo, 1);
 	if (RARRAY_LEN(sa) == 3) {
-	    af = RARRAY_PTR(sa)[0];
-	    port = RARRAY_PTR(sa)[1];
-	    host = RARRAY_PTR(sa)[2];
+	    af = RARRAY_CONST_PTR(sa)[0];
+	    port = RARRAY_CONST_PTR(sa)[1];
+	    host = RARRAY_CONST_PTR(sa)[2];
 	}
 	else if (RARRAY_LEN(sa) >= 4) {
-	    af = RARRAY_PTR(sa)[0];
-	    port = RARRAY_PTR(sa)[1];
-	    host = RARRAY_PTR(sa)[3];
+	    af = RARRAY_CONST_PTR(sa)[0];
+	    port = RARRAY_CONST_PTR(sa)[1];
+	    host = RARRAY_CONST_PTR(sa)[3];
 	    if (NIL_P(host)) {
-		host = RARRAY_PTR(sa)[2];
+		host = RARRAY_CONST_PTR(sa)[2];
 	    }
 	    else {
 		/*

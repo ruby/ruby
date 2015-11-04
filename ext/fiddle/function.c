@@ -110,7 +110,7 @@ initialize(int argc, VALUE argv[], VALUE self)
     arg_types = xcalloc(RARRAY_LEN(args) + 1, sizeof(ffi_type *));
 
     for (i = 0; i < RARRAY_LEN(args); i++) {
-	int type = NUM2INT(RARRAY_PTR(args)[i]);
+	int type = NUM2INT(RARRAY_CONST_PTR(args)[i]);
 	arg_types[i] = INT2FFI_TYPE(type);
     }
     arg_types[RARRAY_LEN(args)] = NULL;
@@ -164,7 +164,7 @@ function_call(int argc, VALUE argv[], VALUE self)
     values = (void **)((char *)generic_args + (size_t)argc * sizeof(fiddle_generic));
 
     for (i = 0; i < argc; i++) {
-	VALUE type = RARRAY_PTR(types)[i];
+	VALUE type = RARRAY_CONST_PTR(types)[i];
 	VALUE src = argv[i];
 
 	if(NUM2INT(type) == TYPE_VOIDP) {
