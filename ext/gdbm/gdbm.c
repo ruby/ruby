@@ -614,7 +614,8 @@ fgdbm_delete_if(VALUE obj)
     GDBM_FILE dbm;
     VALUE keystr, valstr;
     VALUE ret, ary = rb_ary_tmp_new(0);
-    int i, status = 0, n;
+    long i;
+    int status = 0, n;
 
     rb_gdbm_modify(obj);
     GetDBM2(obj, dbmp, dbm);

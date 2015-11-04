@@ -302,7 +302,7 @@ ossl_x509crl_set_revoked(VALUE self, VALUE ary)
 {
     X509_CRL *crl;
     X509_REVOKED *rev;
-    int i;
+    long i;
 
     Check_Type(ary, T_ARRAY);
     /* All ary members should be X509 Revoked */
@@ -476,7 +476,7 @@ ossl_x509crl_set_extensions(VALUE self, VALUE ary)
 {
     X509_CRL *crl;
     X509_EXTENSION *ext;
-    int i;
+    long i;
 
     Check_Type(ary, T_ARRAY);
     /* All ary members should be X509 Extensions */

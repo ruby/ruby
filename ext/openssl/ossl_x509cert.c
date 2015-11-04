@@ -663,7 +663,7 @@ ossl_x509_set_extensions(VALUE self, VALUE ary)
 {
     X509 *x509;
     X509_EXTENSION *ext;
-    int i;
+    long i;
 
     Check_Type(ary, T_ARRAY);
     /* All ary's members should be X509Extension */

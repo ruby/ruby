@@ -512,7 +512,8 @@ fsdbm_delete_if(VALUE obj)
     DBM *dbm;
     VALUE keystr, valstr;
     VALUE ret, ary = rb_ary_new();
-    int i, status = 0, n;
+    long i;
+    int status = 0, n;
 
     fdbm_modify(obj);
     GetDBM2(obj, dbmp, dbm);

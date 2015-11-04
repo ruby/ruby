@@ -90,7 +90,7 @@ initialize(int argc, VALUE argv[], VALUE self)
     ffi_type **arg_types;
     ffi_status result;
     VALUE ptr, args, ret_type, abi, kwds;
-    int i;
+    long i;
 
     rb_scan_args(argc, argv, "31:", &ptr, &args, &ret_type, &abi, &kwds);
     if(NIL_P(abi)) abi = INT2NUM(FFI_DEFAULT_ABI);

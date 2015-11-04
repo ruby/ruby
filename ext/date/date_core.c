@@ -3723,7 +3723,8 @@ static VALUE
 rt_complete_frags(VALUE klass, VALUE hash)
 {
     static VALUE tab = Qnil;
-    int g, e;
+    int g;
+    long e;
     VALUE k, a, d;
 
     if (NIL_P(tab)) {
@@ -3820,18 +3821,18 @@ rt_complete_frags(VALUE klass, VALUE hash)
     }
 
     {
-	int i, eno = 0, idx = 0;
+	long i, eno = 0, idx = 0;
 
-	for (i = 0; i < RARRAY_LENINT(tab); i++) {
+	for (i = 0; i < RARRAY_LEN(tab); i++) {
 	    VALUE x, a;
 
 	    x = RARRAY_PTR(tab)[i];
 	    a = RARRAY_PTR(x)[1];
 
 	    {
-		int j, n = 0;
+		long j, n = 0;
 
-		for (j = 0; j < RARRAY_LENINT(a); j++)
+		for (j = 0; j < RARRAY_LEN(a); j++)
 		    if (!NIL_P(ref_hash0(RARRAY_PTR(a)[j])))
 			n++;
 		if (n > eno) {
@@ -3852,7 +3853,7 @@ rt_complete_frags(VALUE klass, VALUE hash)
 
     d = Qnil;
 
-    if (g && !NIL_P(k) && (RARRAY_LENINT(a) - e)) {
+    if (g && !NIL_P(k) && (RARRAY_LEN(a) - e)) {
 	if (k == sym("ordinal")) {
 	    if (NIL_P(ref_hash("year"))) {
 		if (NIL_P(d))
@@ -3863,9 +3864,9 @@ rt_complete_frags(VALUE klass, VALUE hash)
 		set_hash("yday", INT2FIX(1));
 	}
 	else if (k == sym("civil")) {
-	    int i;
+	    long i;
 
-	    for (i = 0; i < RARRAY_LENINT(a); i++) {
+	    for (i = 0; i < RARRAY_LEN(a); i++) {
 		VALUE e = RARRAY_PTR(a)[i];
 
 		if (!NIL_P(ref_hash0(e)))
@@ -3880,9 +3881,9 @@ rt_complete_frags(VALUE klass, VALUE hash)
 		set_hash("mday", INT2FIX(1));
 	}
 	else if (k == sym("commercial")) {
-	    int i;
+	    long i;
 
-	    for (i = 0; i < RARRAY_LENINT(a); i++) {
+	    for (i = 0; i < RARRAY_LEN(a); i++) {
 		VALUE e = RARRAY_PTR(a)[i];
 
 		if (!NIL_P(ref_hash0(e)))
@@ -3904,9 +3905,9 @@ rt_complete_frags(VALUE klass, VALUE hash)
 					   ref_hash("wday"))));
 	}
 	else if (k == sym("wnum0")) {
-	    int i;
+	    long i;
 
-	    for (i = 0; i < RARRAY_LENINT(a); i++) {
+	    for (i = 0; i < RARRAY_LEN(a); i++) {
 		VALUE e = RARRAY_PTR(a)[i];
 
 		if (!NIL_P(ref_hash0(e)))
@@ -3921,9 +3922,9 @@ rt_complete_frags(VALUE klass, VALUE hash)
 		set_hash("wday", INT2FIX(0));
 	}
 	else if (k == sym("wnum1")) {
-	    int i;
+	    long i;
 
-	    for (i = 0; i < RARRAY_LENINT(a); i++) {
+	    for (i = 0; i < RARRAY_LEN(a); i++) {
 		VALUE e = RARRAY_PTR(a)[i];
 
 		if (!NIL_P(ref_hash0(e)))

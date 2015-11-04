@@ -418,7 +418,7 @@ ossl_x509req_set_attributes(VALUE self, VALUE ary)
 {
     X509_REQ *req;
     X509_ATTRIBUTE *attr;
-    int i;
+    long i;
     VALUE item;
 
     Check_Type(ary, T_ARRAY);
