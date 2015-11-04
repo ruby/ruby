@@ -582,7 +582,7 @@ module DRb
       begin
         str = soc.read(sz)
       rescue
-        raise(DRbConnError, $!.message, $!.backtrace)
+        raise(DRbConnError, $!.message + " peer: #{soc.peeraddr[2]}:#{soc.peeraddr[1]}, sz: #{sz}", $!.backtrace)
       end
       raise(DRbConnError, 'connection closed') if str.nil?
       raise(DRbConnError, 'premature marshal format(can\'t read)') if str.size < sz
