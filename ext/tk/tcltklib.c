@@ -42,6 +42,9 @@ int rb_thread_check_trap_pending(void);
 #define RARRAY_PTR(s) (RARRAY(s)->ptr)
 #define RARRAY_LEN(s) (RARRAY(s)->len)
 #endif
+#if !defined(RARRAY_CONST_PTR)
+#define RARRAY_CONST_PTR(s) (const VALUE *)RARRAY_PTR(s)
+#endif
 
 #ifdef OBJ_UNTRUST
 #define RbTk_OBJ_UNTRUST(x)  do {OBJ_TAINT(x); OBJ_UNTRUST(x);} while (0)
@@ -1889,15 +1892,15 @@ set_max_block_time(self, time)
     case T_BIGNUM:
         /* time is micro-second value */
         divmod = rb_funcall(time, rb_intern("divmod"), 1, LONG2NUM(1000000));
-        tcl_time.sec  = NUM2LONG(RARRAY_PTR(divmod)[0]);
-        tcl_time.usec = NUM2LONG(RARRAY_PTR(divmod)[1]);
+        tcl_time.sec  = NUM2LONG(RARRAY_CONST_PTR(divmod)[0]);
+        tcl_time.usec = NUM2LONG(RARRAY_CONST_PTR(divmod)[1]);
         break;
 
     case T_FLOAT:
         /* time is second value */
         divmod = rb_funcall(time, rb_intern("divmod"), 1, INT2FIX(1));
-        tcl_time.sec  = NUM2LONG(RARRAY_PTR(divmod)[0]);
-        tcl_time.usec = (long)(NUM2DBL(RARRAY_PTR(divmod)[1]) * 1000000);
+        tcl_time.sec  = NUM2LONG(RARRAY_CONST_PTR(divmod)[0]);
+        tcl_time.usec = (long)(NUM2DBL(RARRAY_CONST_PTR(divmod)[1]) * 1000000);
 
     default:
         {
@@ -7210,7 +7213,7 @@ tk_funcall(func, argc, argv, obj)
     DUMP2("back from handler (current thread:%"PRIxVALUE")", current);
 
     /* get result & free allocated memory */
-    ret = RARRAY_PTR(result)[0];
+    ret = RARRAY_CONST_PTR(result)[0];
 #if 0 /* use Tcl_EventuallyFree */
     Tcl_EventuallyFree((ClientData)alloc_done, TCL_DYNAMIC); /* XXXXXXXX */
 #else
@@ -7694,7 +7697,7 @@ ip_eval(self, str)
     DUMP2("back from handler (current thread:%"PRIxVALUE")", current);
 
     /* get result & free allocated memory */
-    ret = RARRAY_PTR(result)[0];
+    ret = RARRAY_CONST_PTR(result)[0];
 
 #if 0 /* use Tcl_EventuallyFree */
     Tcl_EventuallyFree((ClientData)alloc_done, TCL_DYNAMIC); /* XXXXXXXX */
@@ -9193,7 +9196,7 @@ ip_invoke_with_position(argc, argv, obj, position)
     DUMP2("back from handler (current thread:%"PRIxVALUE")", current);
 
     /* get result & free allocated memory */
-    ret = RARRAY_PTR(result)[0];
+    ret = RARRAY_CONST_PTR(result)[0];
 #if 0 /* use Tcl_EventuallyFree */
     Tcl_EventuallyFree((ClientData)alloc_done, TCL_DYNAMIC); /* XXXXXXXX */
 #else

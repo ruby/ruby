@@ -528,7 +528,7 @@ fdbm_delete_if(VALUE obj)
     }
 
     for (i = 0; i < RARRAY_LEN(ary); i++) {
-	keystr = RARRAY_PTR(ary)[i];
+	keystr = RARRAY_CONST_PTR(ary)[i];
 	key.dptr = RSTRING_PTR(keystr);
 	key.dsize = (DSIZE_TYPE)RSTRING_LEN(keystr);
 	if (dbm_delete(dbm, key)) {
@@ -599,11 +599,13 @@ static VALUE fdbm_store(VALUE,VALUE,VALUE);
 static VALUE
 update_i(RB_BLOCK_CALL_FUNC_ARGLIST(pair, dbm))
 {
+    const VALUE *ptr;
     Check_Type(pair, T_ARRAY);
     if (RARRAY_LEN(pair) < 2) {
 	rb_raise(rb_eArgError, "pair must be [key, value]");
     }
-    fdbm_store(dbm, RARRAY_PTR(pair)[0], RARRAY_PTR(pair)[1]);
+    ptr = RARRAY_CONST_PTR(pair);
+    fdbm_store(dbm, ptr[0], ptr[1]);
     return Qnil;
 }
 

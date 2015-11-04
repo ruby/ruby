@@ -699,7 +699,7 @@ BigDecimal_to_i(VALUE self)
     }
     else {
 	VALUE a = BigDecimal_split(self);
-	VALUE digits = RARRAY_PTR(a)[1];
+	VALUE digits = RARRAY_CONST_PTR(a)[1];
 	VALUE numerator = rb_funcall(digits, rb_intern("to_i"), 0);
 	VALUE ret;
 	ssize_t dpower = e - (ssize_t)RSTRING_LEN(digits);
@@ -788,7 +788,7 @@ BigDecimal_to_r(VALUE self)
     sign = VpGetSign(p);
     power = VpExponent10(p);
     a = BigDecimal_split(self);
-    digits = RARRAY_PTR(a)[1];
+    digits = RARRAY_CONST_PTR(a)[1];
     denomi_power = power - RSTRING_LEN(digits);
     numerator = rb_funcall(digits, rb_intern("to_i"), 0);
 

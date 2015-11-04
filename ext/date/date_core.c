@@ -3826,14 +3826,14 @@ rt_complete_frags(VALUE klass, VALUE hash)
 	for (i = 0; i < RARRAY_LEN(tab); i++) {
 	    VALUE x, a;
 
-	    x = RARRAY_PTR(tab)[i];
-	    a = RARRAY_PTR(x)[1];
+	    x = RARRAY_CONST_PTR(tab)[i];
+	    a = RARRAY_CONST_PTR(x)[1];
 
 	    {
 		long j, n = 0;
 
 		for (j = 0; j < RARRAY_LEN(a); j++)
-		    if (!NIL_P(ref_hash0(RARRAY_PTR(a)[j])))
+		    if (!NIL_P(ref_hash0(RARRAY_CONST_PTR(a)[j])))
 			n++;
 		if (n > eno) {
 		    eno = n;
@@ -3845,8 +3845,8 @@ rt_complete_frags(VALUE klass, VALUE hash)
 	    g = 0;
 	else {
 	    g = 1;
-	    k = RARRAY_PTR(RARRAY_PTR(tab)[idx])[0];
-	    a = RARRAY_PTR(RARRAY_PTR(tab)[idx])[1];
+	    k = RARRAY_CONST_PTR(RARRAY_CONST_PTR(tab)[idx])[0];
+	    a = RARRAY_CONST_PTR(RARRAY_CONST_PTR(tab)[idx])[1];
 	    e =	eno;
 	}
     }
@@ -3867,7 +3867,7 @@ rt_complete_frags(VALUE klass, VALUE hash)
 	    long i;
 
 	    for (i = 0; i < RARRAY_LEN(a); i++) {
-		VALUE e = RARRAY_PTR(a)[i];
+		VALUE e = RARRAY_CONST_PTR(a)[i];
 
 		if (!NIL_P(ref_hash0(e)))
 		    break;
@@ -3884,7 +3884,7 @@ rt_complete_frags(VALUE klass, VALUE hash)
 	    long i;
 
 	    for (i = 0; i < RARRAY_LEN(a); i++) {
-		VALUE e = RARRAY_PTR(a)[i];
+		VALUE e = RARRAY_CONST_PTR(a)[i];
 
 		if (!NIL_P(ref_hash0(e)))
 		    break;
@@ -3908,7 +3908,7 @@ rt_complete_frags(VALUE klass, VALUE hash)
 	    long i;
 
 	    for (i = 0; i < RARRAY_LEN(a); i++) {
-		VALUE e = RARRAY_PTR(a)[i];
+		VALUE e = RARRAY_CONST_PTR(a)[i];
 
 		if (!NIL_P(ref_hash0(e)))
 		    break;
@@ -3925,7 +3925,7 @@ rt_complete_frags(VALUE klass, VALUE hash)
 	    long i;
 
 	    for (i = 0; i < RARRAY_LEN(a); i++) {
-		VALUE e = RARRAY_PTR(a)[i];
+		VALUE e = RARRAY_CONST_PTR(a)[i];
 
 		if (!NIL_P(ref_hash0(e)))
 		    break;
@@ -7085,16 +7085,16 @@ d_lite_marshal_load(VALUE self, VALUE a)
 
 
 	    if  (RARRAY_LEN(a) == 2) {
-		ajd = f_sub(RARRAY_PTR(a)[0], half_days_in_day);
+		ajd = f_sub(RARRAY_CONST_PTR(a)[0], half_days_in_day);
 		of = INT2FIX(0);
-		sg = RARRAY_PTR(a)[1];
+		sg = RARRAY_CONST_PTR(a)[1];
 		if (!k_numeric_p(sg))
 		    sg = DBL2NUM(RTEST(sg) ? GREGORIAN : JULIAN);
 	    }
 	    else {
-		ajd = RARRAY_PTR(a)[0];
-		of = RARRAY_PTR(a)[1];
-		sg = RARRAY_PTR(a)[2];
+		ajd = RARRAY_CONST_PTR(a)[0];
+		of = RARRAY_CONST_PTR(a)[1];
+		sg = RARRAY_CONST_PTR(a)[2];
 	    }
 
 	    old_to_new(ajd, of, sg,
@@ -7119,12 +7119,12 @@ d_lite_marshal_load(VALUE self, VALUE a)
 	    int jd, df, of;
 	    double sg;
 
-	    nth = RARRAY_PTR(a)[0];
-	    jd = NUM2INT(RARRAY_PTR(a)[1]);
-	    df = NUM2INT(RARRAY_PTR(a)[2]);
-	    sf = RARRAY_PTR(a)[3];
-	    of = NUM2INT(RARRAY_PTR(a)[4]);
-	    sg = NUM2DBL(RARRAY_PTR(a)[5]);
+	    nth = RARRAY_CONST_PTR(a)[0];
+	    jd = NUM2INT(RARRAY_CONST_PTR(a)[1]);
+	    df = NUM2INT(RARRAY_CONST_PTR(a)[2]);
+	    sf = RARRAY_CONST_PTR(a)[3];
+	    of = NUM2INT(RARRAY_CONST_PTR(a)[4]);
+	    sg = NUM2DBL(RARRAY_CONST_PTR(a)[5]);
 	    if (!df && f_zero_p(sf) && !of) {
 		set_to_simple(self, &dat->s, nth, jd, sg, 0, 0, 0, HAVE_JD);
 	    } else {
