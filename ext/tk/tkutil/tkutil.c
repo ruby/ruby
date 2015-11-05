@@ -481,7 +481,7 @@ ary2list(ary, enc_flag, self)
             } else {
                 str_val = rb_funcall(cTclTkLib, ID_toUTF8, 1, str_val);
             }
-            RARRAY_PTR(dst)[idx] = str_val;
+            RARRAY_ASET(dst, idx, str_val);
         }
         val = rb_apply(cTclTkLib, ID_merge_tklist, dst);
         if (RB_TYPE_P(dst_enc, T_STRING)) {
@@ -575,7 +575,7 @@ ary2list2(ary, enc_flag, self)
             } else {
                 str_val = rb_funcall(cTclTkLib, ID_toUTF8, 1, str_val);
             }
-            RARRAY_PTR(dst)[idx] = str_val;
+            RARRAY_ASET(dst, idx, str_val);
         }
         val = rb_apply(cTclTkLib, ID_merge_tklist, dst);
         if (RB_TYPE_P(dst_enc, T_STRING)) {

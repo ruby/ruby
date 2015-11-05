@@ -1095,7 +1095,7 @@ make_addrinfo(struct rb_addrinfo *res0, int norevlookup)
     for (res = res0->ai; res; res = res->ai_next) {
 	ary = rsock_ipaddr(res->ai_addr, res->ai_addrlen, norevlookup);
 	if (res->ai_canonname) {
-	    RARRAY_PTR(ary)[2] = rb_str_new2(res->ai_canonname);
+	    RARRAY_ASET(ary, 2, rb_str_new2(res->ai_canonname));
 	}
 	rb_ary_push(ary, INT2FIX(res->ai_family));
 	rb_ary_push(ary, INT2FIX(res->ai_socktype));
