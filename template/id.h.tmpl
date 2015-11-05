@@ -15,12 +15,6 @@ require 'optparse'
 
 op_id_offset = 128
 
-token_op_ids = %w[
-  tDOT2 tDOT3 tUPLUS tUMINUS tPOW tDSTAR tCMP tLSHFT tRSHFT
-  tLEQ tGEQ tEQ tEQQ tNEQ tMATCH tNMATCH tAREF tASET
-  tCOLON2 tCOLON3 tANDOP tOROP tDOTQ
-]
-
 defs = File.join(File.dirname(File.dirname(erb.filename)), "defs/id.def")
 ids = eval(File.read(defs), binding, defs)
 types = ids.keys.grep(/^[A-Z]/)
@@ -57,43 +51,19 @@ enum ruby_id_types {
 #define symIFUNC ID2SYM(idIFUNC)
 #define symCFUNC ID2SYM(idCFUNC)
 
-% token_op_ids.each_with_index do |token, index|
-#define RUBY_TOKEN_<%=token[/\At(.+)\z/, 1]%> <%=op_id_offset + index%>
+% index = op_id_offset
+% ids[:token_op].each do |_id, _op, token|
+%   next unless token
+#define RUBY_TOKEN_<%=token%> <%=index%>
+%   index += 1
 % end
 #define RUBY_TOKEN(t) RUBY_TOKEN_##t
 
 enum ruby_method_ids {
-    idDot2 = RUBY_TOKEN(DOT2),
-    idDot3 = RUBY_TOKEN(DOT3),
-    idUPlus = RUBY_TOKEN(UPLUS),
-    idUMinus = RUBY_TOKEN(UMINUS),
-    idPow = RUBY_TOKEN(POW),
-    idCmp = RUBY_TOKEN(CMP),
-    idPLUS = '+',
-    idMINUS = '-',
-    idMULT = '*',
-    idDIV = '/',
-    idMOD = '%',
-    idLT = '<',
-    idLTLT = RUBY_TOKEN(LSHFT),
-    idLE = RUBY_TOKEN(LEQ),
-    idGT = '>',
-    idGTGT = RUBY_TOKEN(RSHFT),
-    idGE = RUBY_TOKEN(GEQ),
-    idEq = RUBY_TOKEN(EQ),
-    idEqq = RUBY_TOKEN(EQQ),
-    idNeq = RUBY_TOKEN(NEQ),
-    idNot = '!',
-    idBackquote = '`',
-    idEqTilde = RUBY_TOKEN(MATCH),
-    idNeqTilde = RUBY_TOKEN(NMATCH),
-    idAREF = RUBY_TOKEN(AREF),
-    idASET = RUBY_TOKEN(ASET),
-    idCOLON2 = RUBY_TOKEN(COLON2),
-    idANDOP = RUBY_TOKEN(ANDOP),
-    idOROP = RUBY_TOKEN(OROP),
-    idDOTQ = RUBY_TOKEN(DOTQ),
-    tPRESERVED_ID_BEGIN = <%=op_id_offset + token_op_ids.size - 1%>,
+% ids[:token_op].uniq {|_, op| op}.each do |id, op, token|
+    id<%=id%> = <%=token ? "RUBY_TOKEN(#{token})" : "'#{op}'"%>,
+% end
+    tPRESERVED_ID_BEGIN = <%=index-1%>,
 % ids[:preserved].each do |token|
     id<%=token%>,
 % end
