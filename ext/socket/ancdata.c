@@ -207,7 +207,7 @@ ancillary_s_unix_rights(int argc, VALUE *argv, VALUE klass)
     str = rb_str_buf_new(sizeof(int) * argc);
 
     for (i = 0 ; i < argc; i++) {
-        VALUE obj = RARRAY_CONST_PTR(ary)[i];
+        VALUE obj = RARRAY_AREF(ary, i);
         rb_io_t *fptr;
         int fd;
         GetOpenFile(obj, fptr);

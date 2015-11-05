@@ -170,7 +170,7 @@ static VALUE start_document(VALUE self, VALUE version, VALUE tags, VALUE imp)
 	tail  = head;
 
 	for(i = 0; i < RARRAY_LEN(tags); i++) {
-	    VALUE tuple = RARRAY_CONST_PTR(tags)[i];
+	    VALUE tuple = RARRAY_AREF(tags, i);
 	    VALUE name;
 	    VALUE value;
 
@@ -180,8 +180,8 @@ static VALUE start_document(VALUE self, VALUE version, VALUE tags, VALUE imp)
 		xfree(head);
 		rb_raise(rb_eRuntimeError, "tag tuple must be of length 2");
 	    }
-	    name  = RARRAY_CONST_PTR(tuple)[0];
-	    value = RARRAY_CONST_PTR(tuple)[1];
+	    name  = RARRAY_AREF(tuple, 0);
+	    value = RARRAY_AREF(tuple, 1);
 #ifdef HAVE_RUBY_ENCODING_H
 	    name = rb_str_export_to_enc(name, encoding);
 	    value = rb_str_export_to_enc(value, encoding);

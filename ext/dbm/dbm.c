@@ -528,7 +528,7 @@ fdbm_delete_if(VALUE obj)
     }
 
     for (i = 0; i < RARRAY_LEN(ary); i++) {
-	keystr = RARRAY_CONST_PTR(ary)[i];
+	keystr = RARRAY_AREF(ary, i);
 	key.dptr = RSTRING_PTR(keystr);
 	key.dsize = (DSIZE_TYPE)RSTRING_LEN(keystr);
 	if (dbm_delete(dbm, key)) {

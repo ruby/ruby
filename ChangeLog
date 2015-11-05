@@ -1,3 +1,9 @@
+Thu Nov  5 10:09:12 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/**/*.c: prefer RARRAY_AREF to indexing RARRAY_CONST_PTR.
+	  pointed out by hanmac.
+	  https://github.com/ruby/ruby/commit/3553a86#commitcomment-14187670
+
 Wed Nov  4 17:33:24 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/debug.rb: Add documentation for #thread_list_all.
