@@ -7033,7 +7033,7 @@ call_queue_handler(evPtr, flags)
     }
 
     /* set result */
-    RARRAY_PTR(q->result)[0] = ret;
+    RARRAY_ASET(q->result, 0, ret);
     ret = (VALUE)NULL;
 
     /* decr internal handler mark */
@@ -7525,7 +7525,7 @@ eval_queue_handler(evPtr, flags)
     }
 
     /* set result */
-    RARRAY_PTR(q->result)[0] = ret;
+    RARRAY_ASET(q->result, 0, ret);
     ret = (VALUE)NULL;
 
     /* decr internal handler mark */
@@ -9026,7 +9026,7 @@ invoke_queue_handler(evPtr, flags)
     }
 
     /* set result */
-    RARRAY_PTR(q->result)[0] = ret;
+    RARRAY_ASET(q->result, 0, ret);
     ret = (VALUE)NULL;
 
     /* decr internal handler mark */

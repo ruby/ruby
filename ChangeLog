@@ -1,3 +1,12 @@
+Thu Nov  5 10:17:17 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/socket/socket.c (make_addrinfo): use RARRAY_ASET for
+	  write-barrier.
+
+	* ext/tk/tcltklib.c ({call,eval,invoke}_queue_handler): ditto.
+
+	* ext/tk/tkutil/tkutil.c (ary2list, ary2list2): ditto.
+
 Thu Nov  5 10:09:12 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/**/*.c: prefer RARRAY_AREF to indexing RARRAY_CONST_PTR.
