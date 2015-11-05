@@ -45,6 +45,9 @@ int rb_thread_check_trap_pending(void);
 #if !defined(RARRAY_CONST_PTR)
 #define RARRAY_CONST_PTR(s) (const VALUE *)RARRAY_PTR(s)
 #endif
+#if !defined(RARRAY_AREF)
+#define RARRAY_AREF(a, i) RARRAY_CONST_PTR(a)[i]
+#endif
 
 #ifdef OBJ_UNTRUST
 #define RbTk_OBJ_UNTRUST(x)  do {OBJ_TAINT(x); OBJ_UNTRUST(x);} while (0)

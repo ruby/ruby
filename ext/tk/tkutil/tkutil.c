@@ -40,6 +40,9 @@ static int rb_thread_critical; /* dummy */
 #if !defined(RARRAY_CONST_PTR)
 #define RARRAY_CONST_PTR(s) (const VALUE *)RARRAY_PTR(s)
 #endif
+#if !defined(RARRAY_AREF)
+#define RARRAY_AREF(a, i) RARRAY_CONST_PTR(a)[i]
+#endif
 
 #if defined(HAVE_STRNDUP) && !defined(_GNU_SOURCE)
 extern char *strndup(const char* _ptr, size_t _len);
