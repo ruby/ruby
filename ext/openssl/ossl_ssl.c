@@ -759,7 +759,7 @@ ossl_sslctx_setup(VALUE self)
     if(!NIL_P(val)){
 	if (RB_TYPE_P(val, T_ARRAY)) {
 	    for(i = 0; i < RARRAY_LEN(val); i++){
-		client_ca = GetX509CertPtr(RARRAY_CONST_PTR(val)[i]);
+		client_ca = GetX509CertPtr(RARRAY_AREF(val, i));
         	if (!SSL_CTX_add_client_CA(ctx, client_ca)){
 		    /* Copies X509_NAME => FREE it. */
         	    ossl_raise(eSSLError, "SSL_CTX_add_client_CA");

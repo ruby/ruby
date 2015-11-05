@@ -963,7 +963,7 @@ readline_attempted_completion_function(const char *text, int start, int end)
     enc = rb_locale_encoding();
     encobj = rb_enc_from_encoding(enc);
     for (i = 0; i < matches; i++) {
-        temp = rb_obj_as_string(RARRAY_CONST_PTR(ary)[i]);
+        temp = rb_obj_as_string(RARRAY_AREF(ary, i));
         StringValueCStr(temp);  /* must be NUL-terminated */
         rb_enc_check(encobj, temp);
         result[i + 1] = (char*)malloc(RSTRING_LEN(temp) + 1);

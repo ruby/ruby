@@ -530,7 +530,7 @@ fsdbm_delete_if(VALUE obj)
     }
 
     for (i = 0; i < RARRAY_LEN(ary); i++) {
-	keystr = RARRAY_CONST_PTR(ary)[i];
+	keystr = RARRAY_AREF(ary, i);
 	ExportStringValue(keystr);
 	key.dptr = RSTRING_PTR(keystr);
 	key.dsize = RSTRING_LENINT(keystr);

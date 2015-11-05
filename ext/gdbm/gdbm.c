@@ -634,7 +634,7 @@ fgdbm_delete_if(VALUE obj)
     }
 
     for (i = 0; i < RARRAY_LEN(ary); i++)
-        rb_gdbm_delete(obj, RARRAY_CONST_PTR(ary)[i]);
+        rb_gdbm_delete(obj, RARRAY_AREF(ary, i));
     if (status) rb_jump_tag(status);
     if (n > 0) dbmp->di_size = n - (int)RARRAY_LEN(ary);
     rb_ary_clear(ary);
