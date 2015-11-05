@@ -371,7 +371,8 @@ static int parser_yyerror(struct parser_params*, const char*);
 #define ruby_coverage		(parser->coverage)
 #endif
 
-#define NODE_CALL_Q(q) (((q) == tDOTQ) ? NODE_QCALL : NODE_CALL)
+#define CALL_Q_P(q) ((q) == tDOTQ)
+#define NODE_CALL_Q(q) (CALL_Q_P(q) ? NODE_QCALL : NODE_CALL)
 #define NEW_QCALL(q,r,m,a) NEW_NODE(NODE_CALL_Q(q),r,m,a)
 
 static int yylex(YYSTYPE*, struct parser_params*);
@@ -9211,7 +9212,7 @@ block_dup_check_gen(struct parser_params *parser, NODE *node1, NODE *node2)
 static NODE *
 attrset_gen(struct parser_params *parser, NODE *recv, ID atype, ID id)
 {
-    if (atype != tDOTQ) id = rb_id_attrset(id);
+    if (!CALL_Q_P(atype)) id = rb_id_attrset(id);
     return NEW_ATTRASGN(recv, id, 0);
 }
 
@@ -10082,7 +10083,7 @@ new_attr_op_assign_gen(struct parser_params *parser, NODE *lhs,
     else if (op == tANDOP) {
 	op = 1;
     }
-    asgn = NEW_OP_ASGN2(lhs, (atype == tDOTQ), attr, op, rhs);
+    asgn = NEW_OP_ASGN2(lhs, CALL_Q_P(atype), attr, op, rhs);
     fixpos(asgn, lhs);
     return asgn;
 }
