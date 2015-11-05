@@ -30,55 +30,6 @@ static ID register_static_symid_str(ID, VALUE);
 
 #define is_identchar(p,e,enc) (rb_enc_isalnum((unsigned char)(*(p)),(enc)) || (*(p)) == '_' || !ISASCII(*(p)))
 
-#define tUPLUS  RUBY_TOKEN(UPLUS)
-#define tUMINUS RUBY_TOKEN(UMINUS)
-#define tPOW    RUBY_TOKEN(POW)
-#define tCMP    RUBY_TOKEN(CMP)
-#define tEQ     RUBY_TOKEN(EQ)
-#define tEQQ    RUBY_TOKEN(EQQ)
-#define tNEQ    RUBY_TOKEN(NEQ)
-#define tGEQ    RUBY_TOKEN(GEQ)
-#define tLEQ    RUBY_TOKEN(LEQ)
-#define tMATCH  RUBY_TOKEN(MATCH)
-#define tNMATCH RUBY_TOKEN(NMATCH)
-#define tDOT2   RUBY_TOKEN(DOT2)
-#define tDOT3   RUBY_TOKEN(DOT3)
-#define tAREF   RUBY_TOKEN(AREF)
-#define tASET   RUBY_TOKEN(ASET)
-#define tLSHFT  RUBY_TOKEN(LSHFT)
-#define tRSHFT  RUBY_TOKEN(RSHFT)
-#define tCOLON2 RUBY_TOKEN(COLON2)
-#define tANDOP  RUBY_TOKEN(ANDOP)
-#define tOROP   RUBY_TOKEN(OROP)
-#define tDOTQ   RUBY_TOKEN(DOTQ)
-
-static const struct {
-    unsigned short token;
-    const char name[3], term;
-} op_tbl[] = {
-    {tDOT2,	".."},
-    {tDOT3,	"..."},
-    {tPOW,	"**"},
-    {tUPLUS,	"+@"},
-    {tUMINUS,	"-@"},
-    {tCMP,	"<=>"},
-    {tGEQ,	">="},
-    {tLEQ,	"<="},
-    {tEQ,	"=="},
-    {tEQQ,	"==="},
-    {tNEQ,	"!="},
-    {tMATCH,	"=~"},
-    {tNMATCH,	"!~"},
-    {tAREF,	"[]"},
-    {tASET,	"[]="},
-    {tLSHFT,	"<<"},
-    {tRSHFT,	">>"},
-    {tCOLON2,   "::"},
-    {tANDOP,    "&&"},
-    {tOROP,     "||"},
-    {tDOTQ,     ".?"},
-};
-
 #define op_tbl_count numberof(op_tbl)
 STATIC_ASSERT(op_tbl_name_size, sizeof(op_tbl[0].name) == 3);
 #define op_tbl_len(i) (!op_tbl[i].name[1] ? 1 : !op_tbl[i].name[2] ? 2 : 3)

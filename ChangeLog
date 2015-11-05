@@ -1,3 +1,8 @@
+Thu Nov  5 13:03:58 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* defs/id.def (token_ops): gather associations between IDs,
+	  operators, and parser tokens.
+
 Thu Nov  5 10:17:17 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/socket/socket.c (make_addrinfo): use RARRAY_ASET for
