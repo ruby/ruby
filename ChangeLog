@@ -1,3 +1,7 @@
+Fri Nov  6 06:59:37 2015  Eric Wong  <e@80x24.org>
+
+	* test/ruby/test_autoload: hoist out ruby_impl_require
+
 Thu Nov  5 13:03:58 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* defs/id.def (token_ops): gather associations between IDs,
