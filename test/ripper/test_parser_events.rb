@@ -391,14 +391,14 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_equal "[call(vcall(foo),::,call,[])]", tree
 
     thru_call = false
-    tree = parse("self.?foo", :on_call) {thru_call = true}
+    tree = parse("self&.foo", :on_call) {thru_call = true}
     assert_equal true, thru_call
-    assert_equal "[call(ref(self),.?,foo)]", tree
+    assert_equal "[call(ref(self),&.,foo)]", tree
 
     thru_call = false
-    tree = parse("self.?foo()", :on_call) {thru_call = true}
+    tree = parse("self&.foo()", :on_call) {thru_call = true}
     assert_equal true, thru_call
-    assert_equal "[call(ref(self),.?,foo,[])]", tree
+    assert_equal "[call(ref(self),&.,foo,[])]", tree
   end
 
   def test_excessed_comma
@@ -569,7 +569,7 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_equal("[defs(vcall(foo),.,bar,[],bodystmt([void()]))]", tree)
 
     thru_parse_error = false
-    tree = parse('def foo.?bar; end', :on_parse_error) {thru_parse_error = true}
+    tree = parse('def foo&.bar; end', :on_parse_error) {thru_parse_error = true}
     assert_equal(true, thru_parse_error)
   end
 
@@ -796,9 +796,9 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_equal "[opassign(field(ref(self),.,foo),+=,1)]", tree
 
     thru_opassign = false
-    tree = parse("self.?foo += 1", :on_opassign) {thru_opassign = true}
+    tree = parse("self&.foo += 1", :on_opassign) {thru_opassign = true}
     assert_equal true, thru_opassign
-    assert_equal "[opassign(field(ref(self),.?,foo),+=,1)]", tree
+    assert_equal "[opassign(field(ref(self),&.,foo),+=,1)]", tree
   end
 
   def test_opassign_error

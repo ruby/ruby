@@ -35,22 +35,22 @@ class TestCall < Test::Unit::TestCase
   def test_safe_call
     s = Struct.new(:x, :y, :z)
     o = s.new("x")
-    assert_equal("X", o.x.?upcase)
-    assert_nil(o.y.?upcase)
+    assert_equal("X", o.x&.upcase)
+    assert_nil(o.y&.upcase)
     assert_equal("x", o.x)
-    o.?x = 6
+    o&.x = 6
     assert_equal(6, o.x)
-    o.?x *= 7
+    o&.x *= 7
     assert_equal(42, o.x)
-    o.?y = 5
+    o&.y = 5
     assert_equal(5, o.y)
-    o.?z ||= 6
+    o&.z ||= 6
     assert_equal(6, o.z)
 
     o = nil
-    assert_nil(o.?x)
-    assert_nothing_raised(NoMethodError) {o.?x = 6}
-    assert_nothing_raised(NoMethodError) {o.?x *= 7}
+    assert_nil(o&.x)
+    assert_nothing_raised(NoMethodError) {o&.x = 6}
+    assert_nothing_raised(NoMethodError) {o&.x *= 7}
   end
 
   def test_safe_call_evaluate_arguments_only_method_call_is_made
@@ -59,10 +59,10 @@ class TestCall < Test::Unit::TestCase
     s = Struct.new(:x, :y)
     o = s.new(["a", "b", "c"])
 
-    o.y.?at(proc.call)
+    o.y&.at(proc.call)
     assert_equal(0, count)
 
-    o.x.?at(proc.call)
+    o.x&.at(proc.call)
     assert_equal(1, count)
   end
 end

@@ -98,7 +98,7 @@ token_ops = %[\
   COLON3        ::
   ANDOP         &&
   OROP          ||
-  DOTQ          .?
+  DOTQ          &.
 ]
 
 class KeywordError < RuntimeError

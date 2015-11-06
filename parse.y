@@ -875,7 +875,7 @@ static void token_info_pop(struct parser_params*, const char *token, size_t len)
 %token tASET		RUBY_TOKEN(ASET)   "[]="
 %token tLSHFT		RUBY_TOKEN(LSHFT)  "<<"
 %token tRSHFT		RUBY_TOKEN(RSHFT)  ">>"
-%token tDOTQ		RUBY_TOKEN(DOTQ)   ".?"
+%token tDOTQ		RUBY_TOKEN(DOTQ)   "&."
 %token tCOLON2		"::"
 %token tCOLON3		":: at EXPR_BEG"
 %token <id> tOP_ASGN	/* +=, -=  etc. */
@@ -8276,6 +8276,10 @@ parser_yylex(struct parser_params *parser)
 	    lex_state = EXPR_BEG;
 	    return tOP_ASGN;
 	}
+	else if (c == '.') {
+	    lex_state = EXPR_DOT;
+	    return tDOTQ;
+	}
 	pushback(c);
 	if (IS_SPCARG(c)) {
 	    rb_warning0("`&' interpreted as argument prefix");
@@ -8379,10 +8383,6 @@ parser_yylex(struct parser_params *parser)
 	    }
 	    pushback(c);
 	    return tDOT2;
-	}
-	if (c == '?') {
-	    lex_state = EXPR_DOT;
-	    return tDOTQ;
 	}
 	pushback(c);
 	if (c != -1 && ISDIGIT(c)) {

@@ -20,17 +20,17 @@ with all sufficient information, see the ChangeLog file.
 
 * safe navigation operator:
 
-  * new method call syntax, `object.?foo', method #foo is called on
+  * new method call syntax, `object&.foo', method #foo is called on
     `object' if it is not nil.
     this is similar to `try!' in Active Support, except:
     * method name is syntactically required
           obj.try! {} # valid
-          obj.? {}    # syntax error
+          obj&. {}    # syntax error
     * arguments are evaluated only if a call is made:
           obj.try!(:foo, bar())  # bar() is always evaluated
-          obj.?foo(bar())        # bar() is conditionally evaluated
+          obj&.foo(bar())        # bar() is conditionally evaluated
     * attribute assignment is valid
-          obj.?attr += 1
+          obj&.attr += 1
 
 === Core classes updates (outstanding ones only)
 
