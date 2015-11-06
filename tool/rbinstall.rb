@@ -538,8 +538,13 @@ install?(:local, :comm, :man) do
     destname = ruby_install_name.sub(/ruby/, base.chomp(".#{section}"))
     destfile = File.join(destdir, "#{destname}.#{section}")
 
-    if $mantype == "doc"
+    if /\Adoc\b/ =~ $mantype
       install mdoc, destfile, :mode => $data_mode
+      case $mantype
+      when /\.(?:(gz)|bz2)\z/
+        compress = $1 ? "gzip" : "bzip2"
+        system(compress, dest)
+      end
     else
       class << (w = [])
         alias print push
