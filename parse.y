@@ -466,6 +466,8 @@ static NODE *new_attr_op_assign_gen(struct parser_params *parser, NODE *lhs, ID 
 static NODE *new_const_op_assign_gen(struct parser_params *parser, NODE *lhs, ID op, NODE *rhs);
 #define new_const_op_assign(lhs, op, rhs) new_const_op_assign_gen(parser, (lhs), (op), (rhs))
 
+static NODE *kwd_append(NODE*, NODE*);
+
 static NODE *new_hash_gen(struct parser_params *parser, NODE *hash);
 #define new_hash(hash) new_hash_gen(parser, (hash))
 
@@ -4779,13 +4781,7 @@ f_block_kwarg	: f_block_kw
 		| f_block_kwarg ',' f_block_kw
 		    {
 		    /*%%%*/
-			NODE *kws = $1;
-
-			while (kws->nd_next) {
-			    kws = kws->nd_next;
-			}
-			kws->nd_next = $3;
-			$$ = $1;
+			$$ = kwd_append($1, $3);
 		    /*%
 			$$ = rb_ary_push($1, $3);
 		    %*/
@@ -4804,13 +4800,7 @@ f_kwarg		: f_kw
 		| f_kwarg ',' f_kw
 		    {
 		    /*%%%*/
-			NODE *kws = $1;
-
-			while (kws->nd_next) {
-			    kws = kws->nd_next;
-			}
-			kws->nd_next = $3;
-			$$ = $1;
+			$$ = kwd_append($1, $3);
 		    /*%
 			$$ = rb_ary_push($1, $3);
 		    %*/
@@ -6804,6 +6794,9 @@ formal_argument_gen(struct parser_params *parser, ID lhs)
 	return 0;
       case ID_CLASS:
 	yyerror("formal argument cannot be a class variable");
+	return 0;
+      default:
+	yyerror("formal argument must be local variable");
 	return 0;
 #else
       default:
@@ -9017,6 +9010,19 @@ gettable_gen(struct parser_params *parser, ID id)
     }
     compile_error(PARSER_ARG "identifier %"PRIsVALUE" is not valid to get", rb_id2str(id));
     return 0;
+}
+
+static NODE *
+kwd_append(NODE *kwlist, NODE *kw)
+{
+    if (kwlist) {
+	NODE *kws = kwlist;
+	while (kws->nd_next) {
+	    kws = kws->nd_next;
+	}
+	kws->nd_next = kw;
+    }
+    return kwlist;
 }
 #else  /* !RIPPER */
 static int

@@ -193,6 +193,16 @@ class TestSyntax < Test::Unit::TestCase
     end
   end
 
+  def test_keyword_invalid_name
+    bug11663 = '[ruby-core:71356] [Bug #11663]'
+
+    o = Object.new
+    assert_syntax_error('def o.foo(arg1?:) end', /arg1\?/, bug11663)
+    assert_syntax_error('def o.foo(arg1?:, arg2:) end', /arg1\?/, bug11663)
+    assert_syntax_error('proc {|arg1?:|}', /arg1\?/, bug11663)
+    assert_syntax_error('proc {|arg1?:, arg2:|}', /arg1\?/, bug11663)
+  end
+
   def test_optional_self_reference
     bug9593 = '[ruby-core:61299] [Bug #9593]'
     o = Object.new
