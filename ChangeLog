@@ -1,3 +1,12 @@
+Sat Nov  7 01:32:06 2015  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* dir.c (dir_fileno, dirfd): support of Dir#fileno on Solaris 10.
+	  Solaris 10 does not have dirfd, but the file descriptor of a
+	  directory is stored in the d_fd or dd_fd member in the DIR struct.
+	  Note that Solaris 11 has dirfd(3C).
+
+	* configure.in: checks for DIR.d_fd and DIR.dd_fd on Solaris 10.
+
 Fri Nov  6 23:13:53 2015  Kazuki Tanaka  <gogotanaka@ruby-lang.org>
 
 	* array.c: clarifies Array#reject! documentation.
