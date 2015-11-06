@@ -1228,7 +1228,7 @@ struct RStruct {
 #define RSTRUCT_LEN(st) rb_struct_len(st)
 #define RSTRUCT_LENINT(st) rb_long2int(RSTRUCT_LEN(st))
 #define RSTRUCT_CONST_PTR(st) rb_struct_const_ptr(st)
-#define RSTRUCT_PTR(st) ((VALUE *)RSTRUCT_CONST_PTR(RB_OBJ_WB_UNPROTECT_FOR(STRUCT, st))
+#define RSTRUCT_PTR(st) ((VALUE *)RSTRUCT_CONST_PTR(RB_OBJ_WB_UNPROTECT_FOR(STRUCT, st)))
 
 #define RSTRUCT_SET(st, idx, v) RB_OBJ_WRITE(st, &RSTRUCT_CONST_PTR(st)[idx], (v))
 #define RSTRUCT_GET(st, idx)    (RSTRUCT_CONST_PTR(st)[idx])
