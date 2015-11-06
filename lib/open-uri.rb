@@ -749,23 +749,25 @@ module URI
       end
       require 'net/ftp'
 
-      path = self.path
-      path = path.sub(%r{\A/}, '%2F') # re-encode the beginning slash because uri library decodes it.
-      directories = path.split(%r{/}, -1)
-      directories.each {|d|
+      directories = get_directories
+      directories.each do |d|
         d.gsub!(/%([0-9A-Fa-f][0-9A-Fa-f])/) { [$1].pack("H2") }
-      }
+      end
+
       unless filename = directories.pop
         raise ArgumentError, "no filename: #{self.inspect}"
       end
-      directories.each {|d|
+
+      directories.each do |d|
         if /[\r\n]/ =~ d
           raise ArgumentError, "invalid directory: #{d.inspect}"
         end
-      }
+      end
+
       if /[\r\n]/ =~ filename
         raise ArgumentError, "invalid filename: #{filename.inspect}"
       end
+
       typecode = self.typecode
       if typecode && /\A[aid]\z/ !~ typecode
         raise ArgumentError, "invalid typecode: #{typecode.inspect}"
@@ -775,27 +777,39 @@ module URI
       ftp = Net::FTP.new
       ftp.connect(self.hostname, self.port)
       ftp.passive = true if !options[:ftp_active_mode]
-      # todo: extract user/passwd from .netrc.
-      user = 'anonymous'
-      passwd = nil
-      user, passwd = self.userinfo.split(/:/) if self.userinfo
-      ftp.login(user, passwd)
-      directories.each {|cwd|
+
+      ftp.login(*user_information)
+
+      directories.each do |cwd|
         ftp.voidcmd("CWD #{cwd}")
-      }
+      end
+
       if typecode
         # xxx: typecode D is not handled.
         ftp.voidcmd("TYPE #{typecode.upcase}")
       end
-      if options[:content_length_proc]
+
+      options[:content_length_proc] &&
         options[:content_length_proc].call(ftp.size(filename))
-      end
-      ftp.retrbinary("RETR #{filename}", 4096) { |str|
+
+      ftp.retrbinary("RETR #{filename}", 4096) do |str|
         buf << str
         options[:progress_proc].call(buf.size) if options[:progress_proc]
-      }
+      end
+
       ftp.close
       buf.io.rewind
+    end
+
+    def get_directories # :nodoc:
+      path = self.path.sub(%r{\A/}, '%2F') # re-encode the beginning slash because uri library decodes it.
+      path.split(%r{/}, -1)
+    end
+
+    def user_information # :nodoc:
+      # todo: extract user/passwd from .netrc.
+      return self.userinfo.split(/:/) if self.userinfo
+      ['anonymous', nil]
     end
 
     include OpenURI::OpenRead
