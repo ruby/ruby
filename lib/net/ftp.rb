@@ -615,15 +615,15 @@ module Net
         result = String.new
       end
       begin
-        f.?binmode
+        f&.binmode
         retrbinary("RETR #{remotefile}", blocksize, rest_offset) do |data|
-          f.?write(data)
-          block.?(data)
-          result.?concat(data)
+          f&.write(data)
+          block&.(data)
+          result&.concat(data)
         end
         return result
       ensure
-        f.?close
+        f&.close
       end
     end
 
@@ -646,13 +646,13 @@ module Net
       begin
         retrlines("RETR #{remotefile}") do |line, newline|
           l = newline ? line + "\n" : line
-          f.?print(l)
-          block.?(line, newline)
-          result.?concat(l)
+          f&.print(l)
+          block&.(line, newline)
+          result&.concat(l)
         end
         return result
       ensure
-        f.?close
+        f&.close
       end
     end
 

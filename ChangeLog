@@ -1,3 +1,8 @@
+Fri Nov  6 12:39:21 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* defs/id.def (token_ops), parse.y (parser_yylex): change DOTQ
+	  from ".?" to "&.".  [ruby-core:71363] [Feature #11537]
+
 Fri Nov  6 09:01:26 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (kwd_append): fix segv after invalid keyword argument,
