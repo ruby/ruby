@@ -2660,6 +2660,14 @@ if test "$ac_cv_func_setpgid:$ac_cv_func_setpgrp" = no:yes; then
 AC_FUNC_SETPGRP
 fi
 
+if test x"$ac_cv_func_dirfd" = xno; then
+  AS_CASE(["$target_os"],[solaris*],
+          [AC_CHECK_MEMBERS([DIR.d_fd, DIR.dd_fd],,,[
+#include <sys/types.h>
+#include <dirent.h>
+])])
+fi
+
 if test x"$target_cpu" = xia64; then
     AC_LIBOBJ([ia64])
     AC_CACHE_CHECK(for __libc_ia64_register_backing_store_base,

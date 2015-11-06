@@ -619,6 +619,19 @@ dir_inspect(VALUE dir)
     return rb_funcallv(dir, rb_intern("to_s"), 0, 0);
 }
 
+/* Workaround for Solaris 10 that does not have dirfd.
+   Note: Solaris 11 (POSIX.1-2008 compliant) has dirfd(3C).
+ */
+#if defined(__sun) && !defined(HAVE_DIRFD)
+# if defined(HAVE_DIR_D_FD)
+#  define dirfd(x) ((x)->d_fd)
+#  define HAVE_DIRFD 1
+# elif defined(HAVE_DIR_DD_FD)
+#  define dirfd(x) ((x)->dd_fd)
+#  define HAVE_DIRFD 1
+# endif
+#endif
+
 #ifdef HAVE_DIRFD
 /*
  *  call-seq:
