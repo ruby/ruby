@@ -1,3 +1,8 @@
+Fri Nov  6 20:18:25 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* test/runner.rb: extracted test helper.
+	* test/lib/zombie_hunter.rb: ditto.
+
 Fri Nov  6 18:07:47 2015  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* include/ruby/ruby.h (rb_array_const_ptr, rb_struct_const_ptr):
