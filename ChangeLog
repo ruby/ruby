@@ -1,3 +1,7 @@
+Sat Nov  7 03:32:27 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/ruby.h (RSTRUCT_PTR): need a close parenthese.
+
 Sat Nov  7 01:32:06 2015  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* dir.c (dir_fileno, dirfd): support of Dir#fileno on Solaris 10.
