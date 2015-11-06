@@ -181,9 +181,6 @@ with all sufficient information, see the ChangeLog file.
 * lib/matrix.rb
  * Add Vector#round. https://github.com/ruby/ruby/pull/802
 
-* lib/cmath.rb
- * methods which has suffix '!' are now deprecated.
-
 * ext/coverage/coverage.c
   * Coverage.peek_result: new method to allow coverage to be captured without
     stopping the coverage tool.
