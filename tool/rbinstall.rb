@@ -524,9 +524,14 @@ install?(:local, :comm, :man) do
   mdocs = Dir["#{srcdir}/man/*.[1-9]"]
   prepare "manpages", mandir, ([] | mdocs.collect {|mdoc| mdoc[/\d+$/]}).sort.collect {|sec| "man#{sec}"}
 
+  case $mantype
+  when /\.(?:(gz)|bz2)\z/
+    compress = $1 ? "gzip" : "bzip2"
+    suffix = $&
+  end
   mandir = File.join(mandir, "man")
   has_goruby = File.exist?(goruby_install_name+exeext)
-  require File.join(srcdir, "tool/mdoc2man.rb") if $mantype != "doc"
+  require File.join(srcdir, "tool/mdoc2man.rb") if /\Adoc\b/ !~ $mantype
   mdocs.each do |mdoc|
     next unless File.file?(mdoc) and open(mdoc){|fh| fh.read(1) == '.'}
     base = File.basename(mdoc)
@@ -539,11 +544,21 @@ install?(:local, :comm, :man) do
     destfile = File.join(destdir, "#{destname}.#{section}")
 
     if /\Adoc\b/ =~ $mantype
-      install mdoc, destfile, :mode => $data_mode
-      case $mantype
-      when /\.(?:(gz)|bz2)\z/
-        compress = $1 ? "gzip" : "bzip2"
-        system(compress, dest)
+      if compress
+        w = open(mdoc) {|f|
+          stdin = STDIN.dup
+          STDIN.reopen(f)
+          begin
+            destfile << suffix
+            IO.popen(compress) {|f| f.read}
+          ensure
+            STDIN.reopen(stdin)
+            stdin.close
+          end
+        }
+        open_for_install(destfile, $data_mode) {w}
+      else
+        install mdoc, destfile, :mode => $data_mode
       end
     else
       class << (w = [])
@@ -551,10 +566,7 @@ install?(:local, :comm, :man) do
       end
       open(mdoc) {|r| Mdoc2Man.mdoc2man(r, w)}
       w = w.join("")
-      case $mantype
-      when /\.(?:(gz)|bz2)\z/
-        suffix = $&
-        compress = $1 ? "gzip" : "bzip2"
+      if compress
         require 'tmpdir'
         Dir.mktmpdir("man") {|d|
           dest = File.join(d, File.basename(destfile))
