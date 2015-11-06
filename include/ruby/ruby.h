@@ -2004,11 +2004,19 @@ rb_array_len(VALUE a)
 	RARRAY_EMBED_LEN(a) : RARRAY(a)->as.heap.len;
 }
 
+#if defined(__fcc__) || defined(__fcc_version) || \
+    defined(__FCC__) || defined(__FCC_VERSION)
+/* workaround for old version of Fujitsu C Compiler (fcc) */
+# define FIX_CONST_VALUE_PTR(x) ((const VALUE *)(x))
+#else
+# define FIX_CONST_VALUE_PTR(x) (x)
+#endif
+
 static inline const VALUE *
 rb_array_const_ptr(VALUE a)
 {
-    return (RBASIC(a)->flags & RARRAY_EMBED_FLAG) ?
-	RARRAY(a)->as.ary : RARRAY(a)->as.heap.ptr;
+    return FIX_CONST_VALUE_PTR((RBASIC(a)->flags & RARRAY_EMBED_FLAG) ?
+	RARRAY(a)->as.ary : RARRAY(a)->as.heap.ptr);
 }
 
 static inline long
@@ -2021,8 +2029,8 @@ rb_struct_len(VALUE st)
 static inline const VALUE *
 rb_struct_const_ptr(VALUE st)
 {
-    return (RBASIC(st)->flags & RSTRUCT_EMBED_LEN_MASK) ?
-	RSTRUCT(st)->as.ary : RSTRUCT(st)->as.heap.ptr;
+    return FIX_CONST_VALUE_PTR((RBASIC(st)->flags & RSTRUCT_EMBED_LEN_MASK) ?
+	RSTRUCT(st)->as.ary : RSTRUCT(st)->as.heap.ptr);
 }
 
 #if defined(EXTLIB) && defined(USE_DLN_A_OUT)
