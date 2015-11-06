@@ -1,3 +1,8 @@
+Fri Nov  6 23:13:53 2015  Kazuki Tanaka  <gogotanaka@ruby-lang.org>
+
+	* array.c: clarifies Array#reject! documentation.
+	  [fix GH-894][ci skip] Patch by @GxSplinter
+
 Fri Nov  6 20:18:25 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* test/runner.rb: extracted test helper.

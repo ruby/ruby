@@ -3201,8 +3201,8 @@ ary_reject_bang(VALUE ary)
  *     ary.reject! { |item| block }  -> ary or nil
  *     ary.reject!                   -> Enumerator
  *
- *  Equivalent to Array#delete_if, deleting elements from +self+ for which the
- *  block evaluates to +true+, but returns +nil+ if no changes were made.
+ *  Deletes every element of +self+ for which the block evaluates to +true+,
+ *  if no changes were made returns +nil+.
  *
  *  The array may not be changed instantly every time the block is called.
  *
