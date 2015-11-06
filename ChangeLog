@@ -1,3 +1,9 @@
+Fri Nov  6 09:01:26 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (kwd_append): fix segv after invalid keyword argument,
+	  preceding keyword list is NULL when syntax error is there.
+	  [ruby-core:71356] [Bug #11663]
+
 Fri Nov  6 06:59:37 2015  Eric Wong  <e@80x24.org>
 
 	* test/ruby/test_autoload: hoist out ruby_impl_require
