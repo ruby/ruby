@@ -1,3 +1,8 @@
+Sun Nov  8 01:31:27 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/net/http.rb (Net::HTTP#initialize):
+	  default value of Net::HTTP#open_timeout is now 60 (was nil).
+
 Sat Nov  7 12:18:05 2015  Eric Wong  <e@80x24.org>
 
 	* string.c (id_to_s): remove redundant variable
