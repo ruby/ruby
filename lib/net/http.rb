@@ -641,7 +641,7 @@ module Net   #:nodoc:
       @close_on_empty_response = false
       @socket  = nil
       @started = false
-      @open_timeout = nil
+      @open_timeout = 60
       @read_timeout = 60
       @continue_timeout = nil
       @debug_output = nil

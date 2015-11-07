@@ -185,6 +185,9 @@ with all sufficient information, see the ChangeLog file.
   * Coverage.peek_result: new method to allow coverage to be captured without
     stopping the coverage tool.
 
+* Net::HTTP
+  * default value of Net::HTTP#open_timeout is now 60 (was nil).
+
 * Net::Telnet
   * Net::Telnet is extracted to net-telnet gem. It's unmaintain code.
 
