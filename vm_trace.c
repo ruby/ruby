@@ -171,7 +171,7 @@ remove_event_hook(rb_hook_list_t *list, rb_event_hook_func_t func, VALUE data)
 	    if (data == Qundef || hook->data == data) {
 		hook->hook_flags |= RUBY_EVENT_HOOK_FLAG_DELETED;
 		ret+=1;
-		list->need_clean++;
+		list->need_clean = TRUE;
 	    }
 	}
 	hook = hook->next;
@@ -230,7 +230,7 @@ clean_hooks(rb_hook_list_t *list)
     rb_event_hook_t *hook, **nextp = &list->hooks;
 
     list->events = 0;
-    list->need_clean = 0;
+    list->need_clean = FALSE;
 
     while ((hook = *nextp) != 0) {
 	if (hook->hook_flags & RUBY_EVENT_HOOK_FLAG_DELETED) {
@@ -265,14 +265,13 @@ exec_hooks_body(rb_thread_t *th, rb_hook_list_t *list, const rb_trace_arg_t *tra
 static int
 exec_hooks_precheck(rb_thread_t *th, rb_hook_list_t *list, const rb_trace_arg_t *trace_arg)
 {
-    if ((list->events & trace_arg->event) == 0) return 0;
-
-    if (UNLIKELY(list->need_clean > 0)) {
+    if (UNLIKELY(list->need_clean != FALSE)) {
 	if (th->vm->trace_running <= 1) { /* only running this hooks */
 	    clean_hooks(list);
 	}
     }
-    return 1;
+
+    return (list->events & trace_arg->event) != 0;
 }
 
 static void

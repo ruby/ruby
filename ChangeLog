@@ -1,3 +1,10 @@
+Sun Nov  8 08:10:31 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_trace.c (exec_hooks_precheck): check need_clean everytime
+	  to clean-up unused hooks.
+
+	* vm_trace.c (list->need_clean): use as boolean value.
+
 Sun Nov  8 01:31:27 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/net/http.rb (Net::HTTP#initialize):
