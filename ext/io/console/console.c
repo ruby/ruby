@@ -541,8 +541,12 @@ console_set_winsize(VALUE io, VALUE size)
     if (!setwinsize(fd, &ws)) rb_sys_fail(0);
 #elif defined _WIN32
     wh = (HANDLE)rb_w32_get_osfhandle(fd);
-    newrow = (SHORT)NUM2UINT(row);
-    newcol = (SHORT)NUM2UINT(col);
+#define SET(m) new##m = NIL_P(m) ? 0 : (unsigned short)NUM2UINT(m)
+    SET(row);
+    SET(col);
+#undef SET
+    if (!NIL_P(xpixel)) (void)NUM2UINT(xpixel);
+    if (!NIL_P(ypixel)) (void)NUM2UINT(ypixel);
     if (!GetConsoleScreenBufferInfo(wh, &ws)) {
 	rb_syserr_fail(LAST_ERROR, "GetConsoleScreenBufferInfo");
     }
