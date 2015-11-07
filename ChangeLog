@@ -1,3 +1,14 @@
+Sat Nov  7 12:18:05 2015  Eric Wong  <e@80x24.org>
+
+	* string.c (id_to_s): remove redundant variable
+	  (rb_obj_as_string): trade id_to_s for idTo_s
+	  (rb_str_equal): replace rb_intern(...) with pre-defined ID
+	  (rb_str_cmp_m): ditto
+	  (rb_str_match): ditto
+	  (str_upto_each): ditto
+	  (rb_str_sum): ditto
+	  (Init_String): remove id_to_s initialization
+
 Sat Nov  7 11:40:05 2015  Eric Wong  <e@80x24.org>
 
 	* thread.c (rb_cThreadShield): make static
