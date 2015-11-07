@@ -3291,6 +3291,15 @@ rb_io_gets(VALUE io)
  *
  *     File.new("testfile").gets   #=> "This is line one\n"
  *     $_                          #=> "This is line one\n"
+ *
+ *  If StringIO contains characters more than 1 byte
+ *  then <code>gets(1)</code> returns character entirely:
+ *
+ *     # cyrillic characters which represented by 2 bytes
+ *     StringIO.new("тест").gets(1) #=> "т"
+ *     StringIO.new("тест").gets(2) #=> "т"
+ *     StringIO.new("тест").gets(3) #=> "те"
+ *     StringIO.new("тест").gets(4) #=> "те"
  */
 
 static VALUE
