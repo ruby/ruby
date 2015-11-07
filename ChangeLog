@@ -1,6 +1,6 @@
 Sat Nov  7 09:51:38 2015  Koichi Sasada  <ko1@atdot.net>
 
-	* vm_trace.c (rb_threadptr_exec_event_hooks_orig): 
+	* vm_trace.c (rb_threadptr_exec_event_hooks_orig):
 	  maintain trace_running counter on internal events.
 
 	  This patch is made by Takashi Kokubun <takashikkbn@gmail.com>.
