@@ -75,7 +75,7 @@
 #define THREAD_DEBUG 0
 #endif
 
-VALUE rb_cThreadShield;
+static VALUE rb_cThreadShield;
 
 static VALUE sym_immediate;
 static VALUE sym_on_blocking;
