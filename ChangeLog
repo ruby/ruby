@@ -1,3 +1,8 @@
+Sun Nov  8 10:55:10 2015  Anton Davydov  <antondavydov.o@gmail.com>
+
+	* io.c (rb_io_gets_m): Update IO#gets doc for characters more than
+	  1 byte.  [Fix GH-1085]
+
 Sun Nov  8 10:37:58 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/uri/ftp.rb: fix a typo.

@@ -3291,6 +3291,16 @@ rb_io_gets(VALUE io)
  *
  *     File.new("testfile").gets   #=> "This is line one\n"
  *     $_                          #=> "This is line one\n"
+ *
+ *  If StringIO contains characters more than 1 byte
+ *  then <code>gets(1)</code> returns character entirely:
+ *
+ *     # russian characters take 2 bytes
+ *     File.write("testfile", "\u{442 435 441 442}")
+ *     File.open("testfile") {|f|f.gets(1)} #=> "\u0442"
+ *     File.open("testfile") {|f|f.gets(2)} #=> "\u0442"
+ *     File.open("testfile") {|f|f.gets(3)} #=> "\u0442\u0435"
+ *     File.open("testfile") {|f|f.gets(4)} #=> "\u0442\u0435"
  */
 
 static VALUE
