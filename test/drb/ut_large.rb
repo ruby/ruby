@@ -12,11 +12,19 @@ class DRbLarge
   end
 
   def sum(ary)
-    sum = 0
-    ary.each do |e|
-      sum += e.to_i
-    end
-    sum
+    ary.inject(:+)
+  end
+
+  def multiply(ary)
+    ary.inject(:+)
+  end
+
+  def avg(ary)
+    (ary.inject(:+).to_f) / (ary.count)
+  end
+
+  def median(ary)
+    (ary.sort[(ary.length - 1) / 2] + ary.sort[ary.length / 2]) / 2.0
   end
 
   def arg_test(*arg)
