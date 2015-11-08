@@ -1,3 +1,8 @@
+Sun Nov  8 14:24:43 2015  windwiny  <windwiny.ubt@gmail.com>
+
+	* method.h (METHOD_ENTRY_{VISI,BASIC,FLAGS}_SET): suppress
+	  shift-op-parentheses warnings.  [Fix GH-1082]
+
 Sun Nov  8 14:01:22 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* ext/psych/psych_emitter.c: bakcport 5bd7744 from tenderlove/psych.
