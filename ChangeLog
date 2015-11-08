@@ -1,3 +1,8 @@
+Sun Nov  8 14:01:22 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ext/psych/psych_emitter.c: bakcport 5bd7744 from tenderlove/psych.
+	  support backword compatibility of Ruby 2.0
+
 Sun Nov  8 10:55:10 2015  Anton Davydov  <antondavydov.o@gmail.com>
 
 	* io.c (rb_io_gets_m): Update IO#gets doc for characters more than
