@@ -68,7 +68,7 @@ if defined? GDBM
       begin
         FileUtils.remove_entry_secure @tmpdir
       rescue
-        system("fuser", *Dir.entries(@tmpdir).grep(/\A(?!\.\.?\z)/), chdir: @chdir)
+        system("fuser", *Dir.entries(@tmpdir).grep(/\A(?!\.\.?\z)/), chdir: @tmpdir)
       else
         return
       end
