@@ -1129,6 +1129,11 @@ size_t rb_str_memsize(VALUE);
 VALUE rb_sym_proc_call(VALUE args, VALUE sym, int argc, const VALUE *argv, VALUE passed_proc);
 VALUE rb_sym_to_proc(VALUE sym);
 
+/* symbol.c */
+#ifdef RUBY_ENCODING_H
+VALUE rb_cstr_intern(const char *ptr, long len, rb_encoding *enc);
+#endif
+
 /* struct.c */
 VALUE rb_struct_init_copy(VALUE copy, VALUE s);
 
