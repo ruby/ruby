@@ -16,7 +16,7 @@ class DRbLarge
   end
 
   def multiply(ary)
-    ary.inject(:+)
+    ary.inject(:*)
   end
 
   def avg(ary)
