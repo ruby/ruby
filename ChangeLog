@@ -1,3 +1,11 @@
+Sun Nov  8 23:30:56 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_trace.c (rb_threadptr_exec_event_hooks_orig):
+	  maintain trace_running counter on internal events.
+
+	  This patch is made by Takashi Kokubun <takashikkbn@gmail.com>.
+	  [Bug #11603] https://github.com/ruby/ruby/pull/1059
+
 Sun Nov  1 03:52:41 2015  Aaron Patterson <tenderlove@ruby-lang.org>
 
 	* test/openssl/test_ssl_session.rb: Fix tests so that they take in to
