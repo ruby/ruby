@@ -1,3 +1,8 @@
+Sun Nov  8 10:37:58 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/uri/ftp.rb: fix a typo.
+	  [fix GH-1084][ci skip] Patch by @windwiny
+
 Sun Nov  8 08:10:31 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_trace.c (exec_hooks_precheck): check need_clean everytime
