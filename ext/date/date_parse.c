@@ -530,13 +530,13 @@ date_zone_to_diff(VALUE str)
 
 		str = rb_str_new2(s);
 
-		if (p = strchr(s, ':')) {
+		if ((p = strchr(s, ':')) != NULL) {
 		    hour = rb_str_new(s, p - s);
 		    s = ++p;
-		    if (p = strchr(s, ':')) {
+		    if ((p = strchr(s, ':')) != NULL) {
 			min = rb_str_new(s, p - s);
 			s = ++p;
-			if (p = strchr(s, ':')) {
+			if ((p = strchr(s, ':')) != NULL) {
 			    sec = rb_str_new(s, p - s);
 			}
 			else

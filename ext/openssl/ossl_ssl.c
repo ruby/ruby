@@ -589,7 +589,7 @@ ssl_npn_select_cb_common(VALUE cb, const unsigned char **out, unsigned char *out
     VALUE protocols = rb_ary_new();
 
     /* The format is len_1|proto_1|...|len_n|proto_n\0 */
-    while (l = *in++) {
+    while ((l = *in++) != '\0') {
 	VALUE protocol;
 	if (l > inlen) {
 	    ossl_raise(eSSLError, "Invalid protocol name list");
