@@ -1,3 +1,7 @@
+Sun Nov  8 16:24:09 2015  Masaki Matsushita <glass.saga@gmail.com>
+
+	* NEWS: describe addition of File::TMPFILE
+
 Sun Nov  8 15:19:17 2015  Masaki Matsushita <glass.saga@gmail.com>
 
 	* file.c: Add O_TMPFILE.

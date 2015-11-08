@@ -52,6 +52,7 @@ with all sufficient information, see the ChangeLog file.
 * File
 
   * File.mkfifo [Feature #11536]
+  * Add File::TMPFILE corresponding to O_TMPFILE
 
 * Hash
 
