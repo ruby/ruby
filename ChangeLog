@@ -13,8 +13,8 @@ Sun Nov  8 14:24:43 2015  windwiny  <windwiny.ubt@gmail.com>
 
 Sun Nov  8 14:01:22 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
-	* ext/psych/psych_emitter.c: bakcport 5bd7744 from tenderlove/psych.
-	  support backword compatibility of Ruby 2.0
+	* ext/psych/psych_emitter.c: backport 5bd7744 from tenderlove/psych.
+	  support backward compatibility of Ruby 2.0
 
 Sun Nov  8 10:55:10 2015  Anton Davydov  <antondavydov.o@gmail.com>
 
@@ -63,7 +63,7 @@ Sat Nov  7 09:51:38 2015  Koichi Sasada  <ko1@atdot.net>
 
 Sat Nov  7 03:32:27 2015  Koichi Sasada  <ko1@atdot.net>
 
-	* include/ruby/ruby.h (RSTRUCT_PTR): need a close parenthese.
+	* include/ruby/ruby.h (RSTRUCT_PTR): need a close parenthesis.
 
 Sat Nov  7 01:32:06 2015  Naohisa Goto  <ngotogenome@gmail.com>
 
