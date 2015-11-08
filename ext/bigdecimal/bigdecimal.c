@@ -3858,7 +3858,7 @@ AddExponent(Real *a, SIGNED_VALUE n)
                 goto overflow;
 	    mb = m*(SIGNED_VALUE)BASE_FIG;
 	    eb = e*(SIGNED_VALUE)BASE_FIG;
-	    if (mb < eb) goto overflow;
+	    if (eb - mb > 0) goto overflow;
 	}
     }
     else if (n < 0) {
@@ -3867,7 +3867,7 @@ AddExponent(Real *a, SIGNED_VALUE n)
             goto underflow;
 	mb = m*(SIGNED_VALUE)BASE_FIG;
 	eb = e*(SIGNED_VALUE)BASE_FIG;
-	if (mb > eb) goto underflow;
+	if (mb - eb > 0) goto underflow;
     }
     a->exponent = m;
     return 1;
