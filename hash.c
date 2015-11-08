@@ -902,14 +902,15 @@ rb_hash_fetch(VALUE hash, VALUE key)
 static VALUE
 rb_hash_default(int argc, VALUE *argv, VALUE hash)
 {
-    VALUE key, ifnone;
+    VALUE args[2], ifnone;
 
     rb_check_arity(argc, 0, 1);
-    key = argv[0];
     ifnone = RHASH_IFNONE(hash);
     if (FL_TEST(hash, HASH_PROC_DEFAULT)) {
 	if (argc == 0) return Qnil;
-	return rb_funcall(ifnone, id_yield, 2, hash, key);
+	args[0] = hash;
+	args[1] = argv[0];
+	return rb_funcallv(ifnone, id_yield, 2, args);
     }
     return ifnone;
 }
