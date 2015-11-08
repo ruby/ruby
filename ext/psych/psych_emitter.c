@@ -1,5 +1,12 @@
 #include <psych.h>
 
+#if !defined(RARRAY_CONST_PTR)
+#define RARRAY_CONST_PTR(s) (const VALUE *)RARRAY_PTR(s)
+#endif
+#if !defined(RARRAY_AREF)
+#define RARRAY_AREF(a, i) RARRAY_CONST_PTR(a)[i]
+#endif
+
 VALUE cPsychEmitter;
 static ID id_write;
 static ID id_line_width;
