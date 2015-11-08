@@ -6082,6 +6082,10 @@ Init_File(void)
     /*  Try to minimize cache effects of the I/O to and from this file. */
     rb_define_const(rb_mFConst, "DIRECT", INT2FIX(O_DIRECT));
 #endif
+#ifdef O_TMPFILE
+    /* Create an unnamed temporary file */
+    rb_define_const(rb_mFConst, "TMPFILE", INT2FIX(O_TMPFILE));
+#endif
 
     /* shared lock. see File#flock */
     rb_define_const(rb_mFConst, "LOCK_SH", INT2FIX(LOCK_SH));

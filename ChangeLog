@@ -1,3 +1,7 @@
+Sun Nov  8 15:19:17 2015  Masaki Matsushita <glass.saga@gmail.com>
+
+	* file.c: Add O_TMPFILE.
+
 Sun Nov  8 14:24:43 2015  windwiny  <windwiny.ubt@gmail.com>
 
 	* method.h (METHOD_ENTRY_{VISI,BASIC,FLAGS}_SET): suppress
