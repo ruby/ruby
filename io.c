@@ -3292,6 +3292,8 @@ rb_io_gets(VALUE io)
  *     File.new("testfile").gets   #=> "This is line one\n"
  *     $_                          #=> "This is line one\n"
  *
+ *     File.new("testfile").gets(4)#=> "This"
+ *
  *  If IO contains multibyte characters byte then <code>gets(1)</code>
  *  returns character entirely:
  *
