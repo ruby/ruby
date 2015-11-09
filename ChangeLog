@@ -1,3 +1,9 @@
+Mon Nov  9 17:29:09 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* compile.c (iseq_compile_each): Dynamic string literals should be
+	  frozen.
+	  [ruby-core:57574] [Feature #8976]
+
 Mon Nov  9 15:56:07 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* common.mk: Use ruby organization url for simplecov repository.
