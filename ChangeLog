@@ -1,3 +1,7 @@
+Mon Nov  9 18:00:47 2015  Yuki Nishijima  <mail@yukinishijima.net>
+
+	* gems/bundled_gems: Upgrade the did_you_mean gem to 1.0.0.beta3
+
 Mon Nov  9 17:38:14 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* test/runner.rb: use official repository for coverage tool.
