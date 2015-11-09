@@ -305,11 +305,15 @@ class TestDRbLarge < Test::Unit::TestCase
     ary = [2] * 10240
     assert_equal(10240, @there.size(ary))
     assert_equal(20480, @there.sum(ary))
+    assert_equal(2 ** 10240, @there.multiply(ary))
+    assert_equal(2, @there.avg(ary))
+    assert_equal(2, @there.median(ary))
   end
 
   def test_02_large_ary
     ary = ["Hello, World"] * 10240
     assert_equal(10240, @there.size(ary))
+    assert_equal(ary[0..ary.length].inject(:+), @there.sum(ary))
   end
 
   def test_03_large_ary
@@ -332,6 +336,15 @@ class TestDRbLarge < Test::Unit::TestCase
       exception = $!
     end
     assert_kind_of(StandardError, exception)
+  end
+
+  def test_06_array_operations
+    ary = [1,50,3,844,7,45,23]
+    assert_equal(7, @there.size(ary))
+    assert_equal(973, @there.sum(ary))
+    assert_equal(917217000, @there.multiply(ary))
+    assert_equal(139.0, @there.avg(ary))
+    assert_equal(23.0, @there.median(ary))
   end
 end
 
