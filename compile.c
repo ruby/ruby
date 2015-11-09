@@ -5130,6 +5130,11 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	if (poped) {
 	    ADD_INSN(ret, line, pop);
 	}
+	else {
+	    if (iseq->compile_data->option->frozen_string_literal) {
+		ADD_SEND (ret, line, idFreeze, INT2FIX(0));
+	    }
+	}
 	break;
       }
       case NODE_XSTR:{
