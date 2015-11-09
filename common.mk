@@ -25,7 +25,12 @@ SPEC_GIT_BASE = git://github.com/ruby
 MSPEC_GIT_URL = $(SPEC_GIT_BASE)/mspec.git
 RUBYSPEC_GIT_URL = $(SPEC_GIT_BASE)/rubyspec.git
 
-SIMPLECOV_GIT_URL = git://github.com/ruby/simplecov.git
+SIMPLECOV_GIT_URL = git://github.com/colszowka/simplecov.git
+SIMPLECOV_GIT_REF = v0.10.0
+SIMPLECOV_HTML_GIT_URL = git://github.com/colszowka/simplecov-html.git
+SIMPLECOV_HTML_GIT_REF = v0.10.0
+DOCLIE_GIT_URL = git://github.com/ms-ati/docile.git
+DOCLIE_GIT_REF = v1.1.5
 
 STATIC_RUBY   = static-ruby
 

@@ -490,16 +490,43 @@ update-rubyspec: update-mspec
 test-rubyspec-precheck:
 	@if [ ! -d $(srcdir)/spec/rubyspec ]; then echo No rubyspec here.  make update-rubyspec first.; exit 1; fi
 
-update-coverage:
+update-doclie:
+	@$(CHDIR) $(srcdir); \
+	if [ -d coverage/doclie ]; then \
+	  cd coverage/doclie; \
+	  echo updating doclie ...; \
+	  exec git fetch; \
+		exec git checkout $(DOCLIE_GIT_REF); \
+	else \
+	  echo retrieving doclie ...; \
+	  exec git clone --branch $(DOCLIE_GIT_REF) $(DOCLIE_GIT_URL) coverage/doclie; \
+	fi
+
+update-simplecov-html:
+	@$(CHDIR) $(srcdir); \
+	if [ -d coverage/simplecov-html ]; then \
+	  cd coverage/simplecov-html; \
+	  echo updating simplecov-html ...; \
+	  exec git fetch; \
+		exec git checkout $(SIMPLECOV_HTML_GIT_REF); \
+	else \
+	  echo retrieving simplecov-html ...; \
+	  exec git clone --branch $(SIMPLECOV_HTML_GIT_REF) $(SIMPLECOV_HTML_GIT_URL) coverage/simplecov-html; \
+	fi
+
+update-simplecov:
 	@$(CHDIR) $(srcdir); \
 	if [ -d coverage/simplecov ]; then \
 	  cd coverage/simplecov; \
 	  echo updating simplecov ...; \
-	  exec git pull; \
+	  exec git fetch; \
+		exec git checkout $(SIMPLECOV_GIT_REF); \
 	else \
 	  echo retrieving simplecov ...; \
-	  exec git clone $(SIMPLECOV_GIT_URL) coverage/simplecov; \
+	  exec git clone --branch $(SIMPLECOV_GIT_REF) $(SIMPLECOV_GIT_URL) coverage/simplecov; \
 	fi
+
+update-coverage: update-simplecov update-simplecov-html update-doclie
 
 INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
 	  vmtc.inc vm.inc
