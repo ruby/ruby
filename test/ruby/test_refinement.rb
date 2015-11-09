@@ -1519,7 +1519,7 @@ class TestRefinement < Test::Unit::TestCase
         end
       end
 
-      assert_equal(:bar, C.new.m)
+      assert_equal(:bar, C.new.m, "[ruby-core:71423] [Bug #11672]")
     end;
   end
 
