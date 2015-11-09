@@ -1,3 +1,11 @@
+Mon Nov  9 21:48:17 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (rb_check_funcall_default): split from
+	  rb_check_funcall to return the given fallback value.
+
+	* object.c (rb_obj_dig): use rb_check_funcall_default so that tail
+	  call optimization will be possible.  [Feature #11643]
+
 Mon Nov  9 21:27:23 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_dig): new method Array#dig.
