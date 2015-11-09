@@ -410,7 +410,7 @@ check_funcall_callable(rb_thread_t *th, const rb_callable_method_entry_t *me)
 }
 
 static VALUE
-check_funcall_missing(rb_thread_t *th, VALUE klass, VALUE recv, ID mid, int argc, const VALUE *argv, int respond)
+check_funcall_missing(rb_thread_t *th, VALUE klass, VALUE recv, ID mid, int argc, const VALUE *argv, int respond, VALUE def)
 {
     struct rescue_funcall_args args;
     const rb_method_entry_t *me;
@@ -418,10 +418,10 @@ check_funcall_missing(rb_thread_t *th, VALUE klass, VALUE recv, ID mid, int argc
 
     ret = basic_obj_respond_to_missing(th, klass, recv,
 				       ID2SYM(mid), PRIV);
-    if (!RTEST(ret)) return Qundef;
+    if (!RTEST(ret)) return def;
     args.respond = respond > 0;
     args.respond_to_missing = (ret != Qundef);
-    ret = Qundef;
+    ret = def;
     me = method_entry_get(klass, idMethodMissing, &args.defined_class);
     if (me && !METHOD_ENTRY_BASIC(me)) {
 	VALUE argbuf, *new_args = ALLOCV_N(VALUE, argbuf, argc+1);
@@ -446,17 +446,24 @@ check_funcall_missing(rb_thread_t *th, VALUE klass, VALUE recv, ID mid, int argc
 VALUE
 rb_check_funcall(VALUE recv, ID mid, int argc, const VALUE *argv)
 {
+    return rb_check_funcall_default(recv, mid, argc, argv, Qundef);
+}
+
+VALUE
+rb_check_funcall_default(VALUE recv, ID mid, int argc, const VALUE *argv, VALUE def)
+{
     VALUE klass = CLASS_OF(recv);
     const rb_callable_method_entry_t *me;
     rb_thread_t *th = GET_THREAD();
     int respond = check_funcall_respond_to(th, klass, recv, mid);
 
     if (!respond)
-	return Qundef;
+	return def;
 
     me = rb_search_method_entry(recv, mid);
     if (!check_funcall_callable(th, me)) {
-	return check_funcall_missing(th, klass, recv, mid, argc, argv, respond);
+	return check_funcall_missing(th, klass, recv, mid, argc, argv,
+				     respond, def);
     }
     stack_check();
     return vm_call0(th, recv, mid, argc, argv, me);
@@ -477,7 +484,8 @@ rb_check_funcall_with_hook(VALUE recv, ID mid, int argc, const VALUE *argv,
     me = rb_search_method_entry(recv, mid);
     if (!check_funcall_callable(th, me)) {
 	(*hook)(FALSE, recv, mid, argc, argv, arg);
-	return check_funcall_missing(th, klass, recv, mid, argc, argv, respond);
+	return check_funcall_missing(th, klass, recv, mid, argc, argv,
+				     respond, Qundef);
     }
     stack_check();
     (*hook)(TRUE, recv, mid, argc, argv, arg);

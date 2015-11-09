@@ -3183,9 +3183,7 @@ rb_obj_dig(int argc, VALUE *argv, VALUE obj, VALUE notfound)
 		}
 	    }
 	}
-	obj = rb_check_funcall(obj, id_dig, argc, argv);
-	if (obj == Qundef) return notfound;
-	break;
+	return rb_check_funcall_default(obj, id_dig, argc, argv, notfound);
     }
     return obj;
 }
