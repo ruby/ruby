@@ -1,3 +1,11 @@
+Tue Nov 10 06:17:17 2015  Eric Wong  <e@80x24.org>
+
+	* variable.c (rb_autoload_load): allow recursive calls
+	  [ruby-core:71345] [Bug #11658]
+	* test/ruby/test_autoload.rb (test_autoload_while_autoloading):
+	  new test by: Hiroshi Shirosaki <h.shirosaki@gmail.com>
+	  [ruby-core:71390]
+
 Tue Nov 10 00:36:46 2015  Tanaka Akira  <akr@fsij.org>
 
 	* lib/resolv.rb (Resolv::DNS::Message::MessageEncoder#put_labels):

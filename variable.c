@@ -2179,6 +2179,9 @@ rb_autoload_load(VALUE mod, ID id)
 	 */
 	list_head_init(&state.waitq.head);
     }
+    else if (state.thread == ele->state->thread) {
+	return Qfalse;
+    }
     else {
 	list_add_tail(&ele->state->waitq.head, &state.waitq.node);
 	/*
