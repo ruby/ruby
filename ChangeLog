@@ -1,3 +1,7 @@
+Mon Nov  9 15:56:07 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* common.mk: Use ruby organization url for simplecov repository.
+
 Sun Nov  8 16:24:09 2015  Masaki Matsushita <glass.saga@gmail.com>
 
 	* NEWS: describe addition of File::TMPFILE
