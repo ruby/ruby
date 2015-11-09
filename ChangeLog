@@ -1,3 +1,9 @@
+Tue Nov 10 00:36:46 2015  Tanaka Akira  <akr@fsij.org>
+
+	* lib/resolv.rb (Resolv::DNS::Message::MessageEncoder#put_labels):
+	  Prevent overflow of pointer to labels.
+	  Patch by Hannes Georg.  [ruby-core:71248] [Bug #11632]
+
 Tue Nov 10 00:25:41 2015  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* gems/bundled_gems: update to power_assert 0.2.6.
