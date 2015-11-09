@@ -215,6 +215,25 @@ p Foo::Bar
     end
   end
 
+  def test_autoload_while_autoloading
+    ruby_impl_require do |called_with|
+      Tempfile.create(%w(a .rb)) do |a|
+        Tempfile.create(%w(b .rb)) do |b|
+          a.puts "require '#{b.path}'; class AutoloadTest; end"
+          b.puts "class AutoloadTest; module B; end; end"
+          [a, b].each(&:flush)
+          add_autoload(a.path)
+          begin
+            assert(Object::AutoloadTest)
+          ensure
+            remove_autoload_constant
+          end
+          assert_equal [a.path, b.path], called_with
+        end
+      end
+    end
+  end
+
   def add_autoload(path)
     (@autoload_paths ||= []) << path
     ::Object.class_eval {autoload(:AutoloadTest, path)}
