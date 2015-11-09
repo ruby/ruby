@@ -3144,6 +3144,52 @@ rb_f_hash(VALUE obj, VALUE arg)
     return rb_Hash(arg);
 }
 
+struct dig_method {
+    VALUE klass;
+    int basic;
+};
+
+static ID id_dig;
+
+static int
+dig_basic_p(VALUE obj, struct dig_method *cache)
+{
+    VALUE klass = RBASIC_CLASS(obj);
+    if (klass != cache->klass) {
+	cache->klass = klass;
+	cache->basic = rb_method_basic_definition_p(klass, id_dig);
+    }
+    return cache->basic;
+}
+
+VALUE
+rb_obj_dig(int argc, VALUE *argv, VALUE obj, VALUE notfound)
+{
+    struct dig_method hash = {Qnil}, ary = {Qnil};
+
+    for (; argc > 0; ++argv, --argc) {
+	if (!SPECIAL_CONST_P(obj)) {
+	    switch (BUILTIN_TYPE(obj)) {
+	      case T_HASH:
+		if (dig_basic_p(obj, &hash)) {
+		    obj = rb_hash_aref(obj, *argv);
+		    continue;
+		}
+		break;
+	      case T_ARRAY:
+		if (dig_basic_p(obj, &ary)) {
+		    obj = rb_ary_at(obj, *argv);
+		    continue;
+		}
+	    }
+	}
+	obj = rb_check_funcall(obj, id_dig, argc, argv);
+	if (obj == Qundef) return notfound;
+	break;
+    }
+    return obj;
+}
+
 /*
  *  Document-class: Class
  *
@@ -3521,5 +3567,6 @@ void
 Init_Object(void)
 {
     id_to_f = rb_intern_const("to_f");
+    id_dig = rb_intern_const("dig");
     InitVM(Object);
 }

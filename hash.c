@@ -2691,6 +2691,29 @@ rb_hash_any_p(VALUE hash)
     return ret;
 }
 
+/*
+ * call-seq:
+ *   hsh.dig(key, ...)                 -> object
+ *
+ * Retrieves the value object corresponding to the each <i>key</i>
+ * objects repeatedly.
+ *
+ *   h = { foo: {bar: {baz: 1}}}
+ *
+ *   h.dig(:foo, :bar, :baz)           #=> 1
+ *   h.dig(:foo, :zot)                 #=> nil
+ */
+
+VALUE
+rb_hash_dig(int argc, VALUE *argv, VALUE self)
+{
+    rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
+    self = rb_hash_aref(self, *argv);
+    if (!--argc) return self;
+    ++argv;
+    return rb_obj_dig(argc, argv, self, Qnil);
+}
+
 static int path_tainted = -1;
 
 static char **origenviron;
@@ -4114,6 +4137,7 @@ Init_Hash(void)
     rb_define_method(rb_cHash,"compare_by_identity?", rb_hash_compare_by_id_p, 0);
 
     rb_define_method(rb_cHash, "any?", rb_hash_any_p, 0);
+    rb_define_method(rb_cHash, "dig", rb_hash_dig, -1);
 
     /* Document-class: ENV
      *

@@ -653,6 +653,7 @@ VALUE rb_ary_last(int, const VALUE *, VALUE);
 void rb_ary_set_len(VALUE, long);
 void rb_ary_delete_same(VALUE, VALUE);
 VALUE rb_ary_tmp_new_fill(long capa);
+VALUE rb_ary_at(VALUE, VALUE);
 size_t rb_ary_memsize(VALUE);
 #ifdef __GNUC__
 #define rb_ary_new_from_args(n, ...) \
@@ -968,6 +969,7 @@ void rb_obj_copy_ivar(VALUE dest, VALUE obj);
 VALUE rb_obj_equal(VALUE obj1, VALUE obj2);
 VALUE rb_class_search_ancestor(VALUE klass, VALUE super);
 double rb_num_to_dbl(VALUE val);
+VALUE rb_obj_dig(int argc, VALUE *argv, VALUE self, VALUE notfound);
 
 struct RBasicRaw {
     VALUE flags;

@@ -2651,6 +2651,12 @@ class TestArray < Test::Unit::TestCase
     end
   end
 
+  def test_dig
+    h = @cls[@cls[{a: 1}], 0]
+    assert_equal(1, h.dig(0, 0, :a))
+    assert_nil(h.dig(1, 0))
+  end
+
   private
   def need_continuation
     unless respond_to?(:callcc, true)
