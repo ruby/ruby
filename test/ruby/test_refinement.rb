@@ -1494,6 +1494,35 @@ class TestRefinement < Test::Unit::TestCase
     INPUT
   end
 
+  def test_reopen_refinement_module
+    assert_separately([], <<-"end;")
+      $VERBOSE = nil
+      class C
+      end
+
+      module R
+        refine C do
+          def m
+            :foo
+          end
+        end
+      end
+
+      using R
+      assert_equal(:foo, C.new.m)
+
+      module R
+        refine C do
+          def m
+            :bar
+          end
+        end
+      end
+
+      assert_equal(:bar, C.new.m)
+    end;
+  end
+
   private
 
   def eval_using(mod, s)
