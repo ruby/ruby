@@ -197,4 +197,21 @@ class TestResolvDNS < Test::Unit::TestCase
     expected = (['0'] * 32 + ['ip6', 'arpa']).map {|label| Resolv::DNS::Label::Str.new(label) }
     assert_equal(expected, labels)
   end
+
+  def test_too_big_label_address
+    n = 2000
+    m = Resolv::DNS::Message::MessageEncoder.new {|msg|
+      2.times {
+        n.times {|i| msg.put_labels(["foo#{i}"]) }
+      }
+    }
+    Resolv::DNS::Message::MessageDecoder.new(m.to_s) {|msg|
+      2.times {
+        n.times {|i|
+          assert_equal(["foo#{i}"], msg.get_labels.map {|label| label.to_s })
+        }
+      }
+    }
+    assert_operator(2**14, :<, m.to_s.length)
+  end
 end
