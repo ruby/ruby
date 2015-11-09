@@ -1,3 +1,7 @@
+Tue Nov 10 00:25:41 2015  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* gems/bundled_gems: update to power_assert 0.2.6.
+
 Mon Nov  9 21:48:17 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_eval.c (rb_check_funcall_default): split from
