@@ -1,3 +1,12 @@
+Mon Nov  9 21:27:23 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_dig): new method Array#dig.
+
+	* hash.c (rb_hash_dig): new method Hash#dig.
+
+	* object.c (rb_obj_dig): dig in nested arrays/hashes.
+	  [Feature #11643]
+
 Mon Nov  9 18:00:47 2015  Yuki Nishijima  <mail@yukinishijima.net>
 
 	* gems/bundled_gems: Upgrade the did_you_mean gem to 1.0.0.beta3

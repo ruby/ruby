@@ -1302,6 +1302,12 @@ class TestHash < Test::Unit::TestCase
     x = x
   end
 
+  def test_dig
+    h = @cls[a: @cls[b: [1, 2, 3]], c: 4]
+    assert_equal(1, h.dig(:a, :b, 0))
+    assert_nil(h.dig(:c, 1))
+  end
+
   class TestSubHash < TestHash
     class SubHash < Hash
       def reject(*)
