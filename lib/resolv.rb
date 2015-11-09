@@ -1477,7 +1477,9 @@ class Resolv
               self.put_pack("n", 0xc000 | idx)
               return
             else
-              @names[domain] = @data.length
+              if @data.length < 0x4000
+                @names[domain] = @data.length
+              end
               self.put_label(d[i])
             end
           }
