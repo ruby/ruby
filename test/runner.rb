@@ -24,9 +24,14 @@ require_relative 'lib/tracepointchecker'
 require_relative 'lib/zombie_hunter'
 
 if ENV['COVERAGE']
-  $LOAD_PATH.unshift "#{src_testdir}/../coverage/simplecov/lib"
+  %w[doclie simplecov-html simplecov].each do |f|
+    $LOAD_PATH.unshift "#{src_testdir}/../coverage/#{f}/lib"
+  end
+
   require 'simplecov'
-  SimpleCov.start
+  SimpleCov.start do
+    add_filter "/test/"
+  end
 end
 
 begin
