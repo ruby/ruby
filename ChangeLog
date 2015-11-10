@@ -1,3 +1,8 @@
+Tue Nov 10 18:42:24 2015  Aleksandrs Ledovskis  <aleksandrs@ledovskis.lv>
+
+	* defs/id.def, parse.y: Switch internal token name to reflect
+	  current form of safe-call operator.  [Fix GH-1090]
+
 Tue Nov 10 18:25:56 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (rb_hash_to_proc): use rb_func_proc_new to make light

@@ -371,7 +371,7 @@ static int parser_yyerror(struct parser_params*, const char*);
 #define ruby_coverage		(parser->coverage)
 #endif
 
-#define CALL_Q_P(q) ((q) == tDOTQ)
+#define CALL_Q_P(q) ((q) == tANDDOT)
 #define NODE_CALL_Q(q) (CALL_Q_P(q) ? NODE_QCALL : NODE_CALL)
 #define NEW_QCALL(q,r,m,a) NEW_NODE(NODE_CALL_Q(q),r,m,a)
 
@@ -875,7 +875,7 @@ static void token_info_pop(struct parser_params*, const char *token, size_t len)
 %token tASET		RUBY_TOKEN(ASET)   "[]="
 %token tLSHFT		RUBY_TOKEN(LSHFT)  "<<"
 %token tRSHFT		RUBY_TOKEN(RSHFT)  ">>"
-%token tDOTQ		RUBY_TOKEN(DOTQ)   "&."
+%token tANDDOT		RUBY_TOKEN(ANDDOT) "&."
 %token tCOLON2		"::"
 %token tCOLON3		":: at EXPR_BEG"
 %token <id> tOP_ASGN	/* +=, -=  etc. */
@@ -5117,12 +5117,12 @@ call_op 	: '.'
 		        $$ = ripper_id2sym('.');
 		    %*/
 		    }
-		| tDOTQ
+		| tANDDOT
 		    {
 		    /*%%%*/
-			$$ = tDOTQ;
+			$$ = tANDDOT;
 		    /*%
-		        $$ = ripper_id2sym(idDOTQ);
+		        $$ = ripper_id2sym(idANDDOT);
 		    %*/
 		    }
 		;
@@ -8278,7 +8278,7 @@ parser_yylex(struct parser_params *parser)
 	}
 	else if (c == '.') {
 	    lex_state = EXPR_DOT;
-	    return tDOTQ;
+	    return tANDDOT;
 	}
 	pushback(c);
 	if (IS_SPCARG(c)) {
