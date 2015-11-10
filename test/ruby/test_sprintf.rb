@@ -361,16 +361,21 @@ class TestSprintf < Test::Unit::TestCase
 
   def test_named_untyped
     assert_equal("value", sprintf("%<key>s", :key => "value"))
+    assert_equal("", sprintf("%<key>s", {}))
+    assert_equal("value", sprintf("%<key>s", Hash.new('value')))
+    assert_equal("2", sprintf("%<key>s", Hash.new(2)))
     assert_raise_with_message(ArgumentError, "named<key2> after numbered") {sprintf("%1$<key2>s", :key => "value")}
     assert_raise_with_message(ArgumentError, "named<key2> after unnumbered(2)") {sprintf("%s%s%<key2>s", "foo", "bar", :key => "value")}
     assert_raise_with_message(ArgumentError, "named<key2> after <key>") {sprintf("%<key><key2>s", :key => "value")}
-    assert_raise_with_message(KeyError, "key<key> not found") {sprintf("%<key>s", {})}
   end
 
   def test_named_untyped_enc
     key = "\u{3012}"
     [Encoding::UTF_8, Encoding::EUC_JP].each do |enc|
       k = key.encode(enc)
+      assert_equal("", sprintf("%<#{k}>s", {}))
+      assert_equal("value", sprintf("%<#{k}>s", Hash.new('value')))
+      assert_equal("2", sprintf("%<#{k}>s", Hash.new(2)))
       e = assert_raise_with_message(ArgumentError, "named<#{k}> after numbered") {sprintf("%1$<#{k}>s", key: "value")}
       assert_equal(enc, e.message.encoding)
       e = assert_raise_with_message(ArgumentError, "named<#{k}> after unnumbered(2)") {sprintf("%s%s%<#{k}>s", "foo", "bar", key: "value")}
@@ -379,24 +384,25 @@ class TestSprintf < Test::Unit::TestCase
       assert_equal(enc, e.message.encoding)
       e = assert_raise_with_message(ArgumentError, "named<key> after <#{k}>") {sprintf("%<#{k}><key>s", k.to_sym => "value")}
       assert_equal(enc, e.message.encoding)
-      e = assert_raise_with_message(KeyError, "key<#{k}> not found") {sprintf("%<#{k}>s", {})}
-      assert_equal(enc, e.message.encoding)
     end
   end
 
   def test_named_typed
     assert_equal("value", sprintf("%{key}", :key => "value"))
+    assert_equal("value{key2}", sprintf("%{key}{key2}", :key => "value"))
+    assert_equal("value", sprintf("%{key}", Hash.new("value")))
+    assert_equal("", sprintf("%{key}", {}))
     assert_raise_with_message(ArgumentError, "named{key2} after numbered") {sprintf("%1${key2}", :key => "value")}
     assert_raise_with_message(ArgumentError, "named{key2} after unnumbered(2)") {sprintf("%s%s%{key2}", "foo", "bar", :key => "value")}
     assert_raise_with_message(ArgumentError, "named{key2} after <key>") {sprintf("%<key>{key2}", :key => "value")}
-    assert_equal("value{key2}", sprintf("%{key}{key2}", :key => "value"))
-    assert_raise_with_message(KeyError, "key{key} not found") {sprintf("%{key}", {})}
   end
 
   def test_named_typed_enc
     key = "\u{3012}"
     [Encoding::UTF_8, Encoding::EUC_JP].each do |enc|
       k = key.encode(enc)
+      assert_equal(k, sprintf("%{key}", Hash.new(k)))
+      assert_equal("", sprintf("%{key}", {}))
       e = assert_raise_with_message(ArgumentError, "named{#{k}} after numbered") {sprintf("%1${#{k}}s", key: "value")}
       assert_equal(enc, e.message.encoding)
       e = assert_raise_with_message(ArgumentError, "named{#{k}} after unnumbered(2)") {sprintf("%s%s%{#{k}}s", "foo", "bar", key: "value")}
@@ -404,8 +410,6 @@ class TestSprintf < Test::Unit::TestCase
       e = assert_raise_with_message(ArgumentError, "named{#{k}} after <key>") {sprintf("%<key>{#{k}}s", key: "value")}
       assert_equal(enc, e.message.encoding)
       e = assert_raise_with_message(ArgumentError, "named{key} after <#{k}>") {sprintf("%<#{k}>{key}s", k.to_sym => "value")}
-      assert_equal(enc, e.message.encoding)
-      e = assert_raise_with_message(KeyError, "key{#{k}} not found") {sprintf("%{#{k}}", {})}
       assert_equal(enc, e.message.encoding)
     end
   end
