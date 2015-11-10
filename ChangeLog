@@ -1,3 +1,10 @@
+Tue Nov 10 14:01:59 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (rb_hash_{le,lt,ge,gt}): new methods, Hash#<=, Hash#<,
+	  Hash#>=, Hash#>, to test if all elements of a hash are also
+	  included in another hash, and vice versa.
+	  [ruby-core:68561] [Feature #10984]
+
 Tue Nov 10 11:25:29 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* time.c (rb_timespec_now): added.
