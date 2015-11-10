@@ -1,3 +1,37 @@
+Tue Nov 10 20:35:12 2015  Tanaka Akira  <akr@fsij.org>
+
+	* lib/open-uri.rb: Remove indicator for "frozen_string_literal: true".
+
+	* lib/pp.rb: Ditto.
+
+	* lib/prettyprint.rb: Ditto.
+
+	* lib/resolv.rb: Ditto.
+
+	* lib/securerandom.rb: Ditto.
+
+	* lib/tmpdir.rb: Ditto.
+
+	* lib/unicode_normalize/tables.rb: Ditto.
+
+	* test/net/ftp/test_buffered_socket.rb: Ditto.
+
+	* test/net/ftp/test_mlsx_entry.rb: Ditto.
+
+	* test/open-uri/test_open-uri.rb: Ditto.
+
+	* test/open-uri/test_ssl.rb: Ditto.
+
+	* test/pathname/test_pathname.rb: Ditto.
+
+	* test/test_pp.rb: Ditto.
+
+	* test/test_prettyprint.rb: Ditto.
+
+	* tool/transcode-tblgen.rb: Ditto.
+
+	* ext/pathname/lib/pathname.rb: Ditto.
+
 Tue Nov 10 18:42:24 2015  Aleksandrs Ledovskis  <aleksandrs@ledovskis.lv>
 
 	* defs/id.def, parse.y: Switch internal token name to reflect
