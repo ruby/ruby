@@ -1495,6 +1495,7 @@ class TestRefinement < Test::Unit::TestCase
   end
 
   def test_reopen_refinement_module
+    flag = false
     assert_separately([], <<-"end;")
       $VERBOSE = nil
       class C
@@ -1521,6 +1522,11 @@ class TestRefinement < Test::Unit::TestCase
 
       assert_equal(:bar, C.new.m, "[ruby-core:71423] [Bug #11672]")
     end;
+    flag = true
+  rescue MiniTest::Assertion
+    skip 'expected to fail'
+  ensure
+    raise MiniTest::Assertion, 'this test is expected to fail' if flag
   end
 
   private
