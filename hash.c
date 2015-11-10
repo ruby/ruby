@@ -2769,13 +2769,14 @@ rb_hash_gt(VALUE hash, VALUE other)
 static VALUE
 hash_proc_call(VALUE key, VALUE hash, int argc, const VALUE *argv, VALUE passed_proc)
 {
-    return rb_hash_aref(hash, key);
+    rb_check_arity(argc, 1, 1);
+    return rb_hash_aref(hash, *argv);
 }
 
 static VALUE
 rb_hash_to_proc(VALUE hash)
 {
-    return rb_proc_new(hash_proc_call, hash);
+    return rb_func_proc_new(hash_proc_call, hash);
 }
 
 static int path_tainted = -1;
