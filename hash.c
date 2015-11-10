@@ -2714,6 +2714,58 @@ rb_hash_dig(int argc, VALUE *argv, VALUE self)
     return rb_obj_dig(argc, argv, self, Qnil);
 }
 
+static int
+hash_le_i(VALUE key, VALUE value, VALUE arg)
+{
+    VALUE *args = (VALUE *)arg;
+    VALUE v = rb_hash_lookup2(args[0], key, Qundef);
+    if (v != Qundef && rb_equal(value, v)) return ST_CONTINUE;
+    args[1] = Qfalse;
+    return ST_STOP;
+}
+
+static VALUE
+hash_le(VALUE hash1, VALUE hash2)
+{
+    VALUE args[2];
+    args[0] = hash2;
+    args[1] = Qtrue;
+    rb_hash_foreach(hash1, hash_le_i, (VALUE)args);
+    return args[1];
+}
+
+static VALUE
+rb_hash_le(VALUE hash, VALUE other)
+{
+    other = to_hash(other);
+    if (RHASH_SIZE(hash) > RHASH_SIZE(other)) return Qfalse;
+    return hash_le(hash, other);
+}
+
+static VALUE
+rb_hash_lt(VALUE hash, VALUE other)
+{
+    other = to_hash(other);
+    if (RHASH_SIZE(hash) >= RHASH_SIZE(other)) return Qfalse;
+    return hash_le(hash, other);
+}
+
+static VALUE
+rb_hash_ge(VALUE hash, VALUE other)
+{
+    other = to_hash(other);
+    if (RHASH_SIZE(hash) < RHASH_SIZE(other)) return Qfalse;
+    return hash_le(other, hash);
+}
+
+static VALUE
+rb_hash_gt(VALUE hash, VALUE other)
+{
+    other = to_hash(other);
+    if (RHASH_SIZE(hash) <= RHASH_SIZE(other)) return Qfalse;
+    return hash_le(other, hash);
+}
+
 static int path_tainted = -1;
 
 static char **origenviron;
@@ -4138,6 +4190,11 @@ Init_Hash(void)
 
     rb_define_method(rb_cHash, "any?", rb_hash_any_p, 0);
     rb_define_method(rb_cHash, "dig", rb_hash_dig, -1);
+
+    rb_define_method(rb_cHash, "<=", rb_hash_le, 1);
+    rb_define_method(rb_cHash, "<", rb_hash_lt, 1);
+    rb_define_method(rb_cHash, ">=", rb_hash_ge, 1);
+    rb_define_method(rb_cHash, ">", rb_hash_gt, 1);
 
     /* Document-class: ENV
      *
