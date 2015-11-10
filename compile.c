@@ -2000,6 +2000,18 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	}
     }
 
+    if (iobj->insn_id == BIN(pop)) {
+	LINK_ELEMENT *prev = iobj->link.prev;
+	if (prev->type == ISEQ_ELEMENT_INSN) {
+	    enum ruby_vminsn_type previ = ((INSN *)prev)->insn_id;
+	    if (previ == BIN(putobject) || previ == BIN(putnil) ||
+		previ == BIN(putself) || previ == BIN(putstring)) {
+		REMOVE_ELEM(prev);
+		REMOVE_ELEM(&iobj->link);
+	    }
+	}
+    }
+
     if (do_tailcallopt && iobj->insn_id == BIN(leave)) {
 	/*
 	 *  send ...
