@@ -209,6 +209,11 @@ with all sufficient information, see the ChangeLog file.
   class is already defined but its superclass does not match the given
   superclass, as well as definitions in ruby level.
 
+* rb_timespec_now() is added to fetch current datetime as struct timespec.
+
+* rb_time_timespec_new() is added to create a time object with epoch,
+  nanosecond, and UTC/localtime/time offset arguments.
+
 === Build system updates
 
 === Implementation changes
