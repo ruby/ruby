@@ -1,3 +1,8 @@
+Tue Nov 10 16:57:14 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (rb_hash_to_proc): new method Hash#to_proc.
+	  [Feature #11653]
+
 Tue Nov 10 14:34:09 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* time.c (rb_time_timespec_new): swap utc and localtime

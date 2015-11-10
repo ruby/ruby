@@ -1333,6 +1333,16 @@ class TestHash < Test::Unit::TestCase
     assert_not_operator(h2, :>, h2)
   end
 
+  def test_to_proc
+    h = {
+      1 => 10,
+      2 => 20,
+      3 => 30,
+    }
+
+    assert_equal([10, 20, 30], [1, 2, 3].map(&h))
+  end
+
   class TestSubHash < TestHash
     class SubHash < Hash
       def reject(*)

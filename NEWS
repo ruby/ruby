@@ -60,6 +60,7 @@ with all sufficient information, see the ChangeLog file.
   * Hash#fetch_values [Feature #10017]
   * Hash#dig [Feature #11643]
   * Hash#<=, Hash#<, Hash#>=, Hash#> [Feature #10984]
+  * Hash#to_proc [Feature #11653]
 
 * IO
 
