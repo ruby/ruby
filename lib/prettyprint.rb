@@ -1,5 +1,4 @@
-#
-# -*- frozen_string_literal: true -*-
+# frozen_string_literal: true
 #
 # This class implements a pretty printing algorithm. It finds line breaks and
 # nice indentations for grouped structure.
