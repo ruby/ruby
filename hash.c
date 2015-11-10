@@ -2766,6 +2766,18 @@ rb_hash_gt(VALUE hash, VALUE other)
     return hash_le(other, hash);
 }
 
+static VALUE
+hash_proc_call(VALUE key, VALUE hash, int argc, const VALUE *argv, VALUE passed_proc)
+{
+    return rb_hash_aref(hash, key);
+}
+
+static VALUE
+rb_hash_to_proc(VALUE hash)
+{
+    return rb_proc_new(hash_proc_call, hash);
+}
+
 static int path_tainted = -1;
 
 static char **origenviron;
@@ -4132,6 +4144,7 @@ Init_Hash(void)
     rb_define_method(rb_cHash,"to_a", rb_hash_to_a, 0);
     rb_define_method(rb_cHash,"inspect", rb_hash_inspect, 0);
     rb_define_alias(rb_cHash, "to_s", "inspect");
+    rb_define_method(rb_cHash,"to_proc", rb_hash_to_proc, 0);
 
     rb_define_method(rb_cHash,"==", rb_hash_equal, 1);
     rb_define_method(rb_cHash,"[]", rb_hash_aref, 1);
