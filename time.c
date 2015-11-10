@@ -2315,7 +2315,7 @@ rb_time_nano_new(time_t sec, long nsec)
 /**
  * Returns a time object with UTC/localtime/fixed offset
  *
- * offset is -86400 < fixoff < 86400 or INT_MAX (UTC) or INT_MAX-1 (localtime)
+ * offset is -86400 < fixoff < 86400 or INT_MAX (localtime) or INT_MAX-1 (utc)
  */
 VALUE
 rb_time_timespec_new(const struct timespec *ts, int offset)
@@ -2327,11 +2327,11 @@ rb_time_timespec_new(const struct timespec *ts, int offset)
 	GetTimeval(time, tobj);
 	TIME_SET_FIXOFF(tobj, INT2FIX(offset));
     }
-    else if (offset == INT_MAX) { /* UTC */
+    else if (offset == INT_MAX) { /* localtime */
+    }
+    else if (offset == INT_MAX-1) { /* UTC */
 	GetTimeval(time, tobj);
 	TIME_SET_UTC(tobj);
-    }
-    else if (offset == INT_MAX-1) { /* localtime */
     }
     else {
 	rb_raise(rb_eArgError, "utc_offset out of range");
