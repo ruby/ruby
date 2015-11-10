@@ -1,3 +1,12 @@
+Tue Nov 10 18:23:35 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (cfunc_proc_t): add room for me.
+
+	* proc.c (cfunc_proc_new): generalise for cfunc proc without env.
+
+	* proc.c (rb_func_proc_new, rb_func_lambda_new): new functions to
+	  make proc/lambda without env from cfunc.
+
 Tue Nov 10 17:32:35 2015  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* bootstraptest/test_fork.rb ([ruby-dev:37934]): :NPROC (RLIMIT_NPROC)
