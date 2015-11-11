@@ -409,4 +409,10 @@ class TestSprintf < Test::Unit::TestCase
       assert_equal(enc, e.message.encoding)
     end
   end
+
+  def test_named_default
+    h = Hash.new('world')
+    assert_equal("hello world", "hello %{location}" % h)
+    assert_equal("hello world", "hello %<location>s" % h)
+  end
 end
