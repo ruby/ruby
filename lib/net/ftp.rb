@@ -80,12 +80,13 @@ module Net
     FTP_PORT = 21
     CRLF = "\r\n"
     DEFAULT_BLOCKSIZE = BufferedIO::BUFSIZE
+    @@default_passive = true
     # :startdoc:
 
     # When +true+, transfers are performed in binary mode.  Default: +true+.
     attr_reader :binary
 
-    # When +true+, the connection is in passive mode.  Default: +false+.
+    # When +true+, the connection is in passive mode.  Default: +true+.
     attr_accessor :passive
 
     # When +true+, all traffic to and from the server is written
@@ -124,6 +125,18 @@ module Net
     # The server's last response.
     attr_reader :last_response
 
+    # When +true+, connections are in passive mode per default.
+    # Default: +true+.
+    def self.default_passive=(value)
+      @@default_passive = value
+    end
+
+    # When +true+, connections are in passive mode per default.
+    # Default: +true+.
+    def self.default_passive
+      @@default_passive
+    end
+
     #
     # A synonym for <tt>FTP.new</tt>, but with a mandatory host parameter.
     #
@@ -151,7 +164,7 @@ module Net
     def initialize(host = nil, user = nil, passwd = nil, acct = nil)
       super()
       @binary = true
-      @passive = false
+      @passive = @@default_passive
       @debug_mode = false
       @resume = false
       @sock = NullSocket.new
