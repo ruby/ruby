@@ -136,4 +136,15 @@ class TestVariable < Test::Unit::TestCase
       end
     end
   end
+
+  def test_local_variables_with_kwarg
+    bug11674 = '[ruby-core:71437] [Bug #11674]'
+    v = with_kwargs_11(v1:1,v2:2,v3:3,v4:4,v5:5,v6:6,v7:7,v8:8,v9:9,v10:10,v11:11)
+    assert_equal(%i(v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11), v, bug11674)
+  end
+
+  private
+  def with_kwargs_11(v1:, v2:, v3:, v4:, v5:, v6:, v7:, v8:, v9:, v10:, v11:)
+    local_variables
+  end
 end
