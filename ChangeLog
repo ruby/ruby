@@ -3,7 +3,7 @@ Wed Nov 11 11:58:38 2015  Shugo Maeda  <shugo@ruby-lang.org>
 	* lib/net/ftp.rb (initialize): Connections are in passive mode per
 	  default now.  The default mode can be changed by
 	  Net::FTP.default_passive=.
-	 
+
 	* lib/net/ftp.rb (default_passive=, default_passive): new methods.
 
 Wed Nov 11 09:03:12 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
