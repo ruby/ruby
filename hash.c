@@ -758,8 +758,8 @@ rb_hash_rehash(VALUE hash)
     return hash;
 }
 
-static VALUE
-hash_default_value(VALUE hash, VALUE key)
+VALUE
+rb_hash_default_value(VALUE hash, VALUE key)
 {
     if (rb_method_basic_definition_p(CLASS_OF(hash), id_default)) {
 	VALUE ifnone = RHASH_IFNONE(hash);
@@ -792,7 +792,7 @@ rb_hash_aref(VALUE hash, VALUE key)
     st_data_t val;
 
     if (!RHASH(hash)->ntbl || !st_lookup(RHASH(hash)->ntbl, key, &val)) {
-	return hash_default_value(hash, key);
+	return rb_hash_default_value(hash, key);
     }
     return (VALUE)val;
 }
@@ -1184,7 +1184,7 @@ rb_hash_shift(VALUE hash)
 	    }
 	}
     }
-    return hash_default_value(hash, Qnil);
+    return rb_hash_default_value(hash, Qnil);
 }
 
 static int

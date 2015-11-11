@@ -1,3 +1,9 @@
+Wed Nov 11 18:30:28 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* sprintf.c (rb_str_format): look up the key, then get default
+	  value and raise KeyError if the returned value is nil.
+	  [ruby-dev:49338] [Ruby trunk - Bug #11677]
+
 Wed Nov 11 17:38:24 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_eval.c (local_var_list_add): skip internal local variable
