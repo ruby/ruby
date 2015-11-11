@@ -198,7 +198,7 @@ with all sufficient information, see the ChangeLog file.
 
 * Net::FTP
   * Connections are in passive mode per default now.  The default mode can
-    be changed by Net::FTP.default_passive=.
+    be changed by Net::FTP.default_passive=.  [Feature #11612]
 
 * Rake
   * Rake is removed from stdlib.
@@ -216,9 +216,10 @@ with all sufficient information, see the ChangeLog file.
   superclass, as well as definitions in ruby level.
 
 * rb_timespec_now() is added to fetch current datetime as struct timespec.
+  [Feature #11558]
 
 * rb_time_timespec_new() is added to create a time object with epoch,
-  nanosecond, and UTC/localtime/time offset arguments.
+  nanosecond, and UTC/localtime/time offset arguments.  [Feature #11558]
 
 === Build system updates
 

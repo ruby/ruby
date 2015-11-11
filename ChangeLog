@@ -108,9 +108,9 @@ Tue Nov 10 14:01:59 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Tue Nov 10 11:25:29 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* time.c (rb_timespec_now): added.
+	* time.c (rb_timespec_now): added.  [Feature #11558]
 
-	* time.c (rb_time_timespec_new): added.
+	* time.c (rb_time_timespec_new): added.  [Feature #11558]
 
 Tue Nov 10 06:17:17 2015  Eric Wong  <e@80x24.org>
 
