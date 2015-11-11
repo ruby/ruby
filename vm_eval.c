@@ -2066,7 +2066,7 @@ local_var_list_update(st_data_t *key, st_data_t *value, st_data_t arg, int exist
 static void
 local_var_list_add(const struct local_var_list *vars, ID lid)
 {
-    if (lid && rb_id2str(lid)) {
+    if (lid && rb_is_local_id(lid)) {
 	/* should skip temporary variable */
 	st_table *tbl = RHASH_TBL_RAW(vars->tbl);
 	st_data_t idx = 0;	/* tbl->num_entries */
