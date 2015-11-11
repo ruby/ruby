@@ -415,4 +415,9 @@ class TestSprintf < Test::Unit::TestCase
     assert_equal("hello world", "hello %{location}" % h)
     assert_equal("hello world", "hello %<location>s" % h)
   end
+
+  def test_named_with_nil
+    h = { key: nil, key2: "key2_val" }
+    assert_equal("key is , key2 is key2_val", "key is %{key}, key2 is %{key2}" % h)
+  end
 end

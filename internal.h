@@ -828,6 +828,7 @@ void rb_gc_resurrect(VALUE ptr);
 /* hash.c */
 struct st_table *rb_hash_tbl_raw(VALUE hash);
 VALUE rb_hash_has_key(VALUE hash, VALUE key);
+VALUE rb_hash_default_value(VALUE hash, VALUE key);
 VALUE rb_hash_set_default_proc(VALUE hash, VALUE proc);
 long rb_objid_hash(st_index_t index);
 st_table *rb_init_identtable(void);

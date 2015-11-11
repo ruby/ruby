@@ -605,12 +605,20 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		}
 		CHECKNAMEARG(start, len, enc);
 		get_hash(&hash, argc, argv);
-		sym = rb_cstr_intern(start + 1,
-				     len - 2 /* without parenthesis */,
-				     enc);
-		nextvalue = rb_hash_aref(hash, sym);
-		if (NIL_P(nextvalue) && !FL_TEST(hash, HASH_PROC_DEFAULT)) {
-		    rb_enc_raise(enc, rb_eKeyError, "key%.*s not found", len, start);
+		sym = rb_check_symbol_cstr(start + 1,
+					   len - 2 /* without parenthesis */,
+					   enc);
+		if (!NIL_P(sym)) nextvalue = rb_hash_lookup2(hash, sym, Qundef);
+		if (nextvalue == Qundef) {
+		    if (NIL_P(sym)) {
+			sym = rb_cstr_intern(start + 1,
+					     len - 2 /* without parenthesis */,
+					     enc);
+		    }
+		    nextvalue = rb_hash_default_value(hash, sym);
+		    if (NIL_P(nextvalue)) {
+			rb_enc_raise(enc, rb_eKeyError, "key%.*s not found", len, start);
+		    }
 		}
 		if (term == '}') goto format_s;
 		p++;
