@@ -20,9 +20,9 @@ class  Bug::Time::Test_New < Test::Unit::TestCase
     assert_not_equal(Time.at(1447087832, 476451.128).localtime(32400),
                  Bug::Time.timespec_new(1447087832, 476451125, 32400))
     assert_equal(false, Bug::Time.timespec_new(1447087832, 476451125, 0).utc?)
-    assert_equal(true, Bug::Time.timespec_new(1447087832, 476451125, 0x7fffffff).utc?)
-    assert_equal(false, Bug::Time.timespec_new(1447087832, 476451125, 0x7ffffffe).utc?)
-    assert_equal(Time.now.gmtoff, Bug::Time.timespec_new(1447087832, 476451125, 0x7ffffffe).gmtoff)
+    assert_equal(true,  Bug::Time.timespec_new(1447087832, 476451125, 0x7ffffffe).utc?)
+    assert_equal(false, Bug::Time.timespec_new(1447087832, 476451125, 0x7fffffff).utc?)
+    assert_equal(Time.now.gmtoff, Bug::Time.timespec_new(1447087832, 476451125, 0x7fffffff).gmtoff)
     assert_time_equal(Time.at(1447087832, 476451.125).localtime(86399),
                  Bug::Time.timespec_new(1447087832, 476451125, 86399))
     assert_time_equal(Time.at(1447087832, 476451.125).localtime(-86399),
@@ -31,7 +31,7 @@ class  Bug::Time::Test_New < Test::Unit::TestCase
     assert_raise(ArgumentError){Bug::Time.timespec_new(1447087832, 476451125,-86400)}
   end
 
-  def test_timespec_new
+  def test_timespec_now
     t0 = Time.now.to_r
     t = Bug::Time.timespec_now
     assert_in_delta 3, t0, t
