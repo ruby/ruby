@@ -11,9 +11,12 @@ class FTPTest < Test::Unit::TestCase
 
   def setup
     @thread = nil
+    @default_passive = Net::FTP.default_passive
+    Net::FTP.default_passive = false
   end
 
   def teardown
+    Net::FTP.default_passive = @default_passive
     if @thread
       @thread.join
     end
