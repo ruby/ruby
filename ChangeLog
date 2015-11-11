@@ -1,3 +1,9 @@
+Wed Nov 11 09:03:12 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* sprintf.c (rb_str_format): respect default value of a hash.  no
+	  longer raises KeyError unless the default value of the hash is
+	  nil.  [ruby-core:71354] [Bug #11661]
+
 Tue Nov 10 20:35:12 2015  Tanaka Akira  <akr@fsij.org>
 
 	* lib/open-uri.rb: Remove indicator for "frozen_string_literal: true".
