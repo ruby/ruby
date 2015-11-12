@@ -1629,7 +1629,7 @@ rb_mod_gt(VALUE mod, VALUE arg)
  *
  *  Comparison---Returns -1, 0, +1 or nil depending on whether +module+
  *  includes +other_module+, they are the same, or if +module+ is included by
- *  +other_module+. This is the basis for the tests in Comparable.
+ *  +other_module+.
  *
  *  Returns +nil+ if +module+ has no relationship with +other_module+, if
  *  +other_module+ is not a module, or if the two values are incomparable.
