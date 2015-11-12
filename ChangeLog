@@ -1,3 +1,7 @@
+Thu Nov 12 16:16:20 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* template/prelude.c.tmpl: enable tail call optimization.
+
 Thu Nov 12 14:17:01 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_yylex): ANDDOT at the head of the line denote
