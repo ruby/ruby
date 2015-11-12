@@ -1,3 +1,9 @@
+Thu Nov 12 14:17:01 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_yylex): ANDDOT at the head of the line denote
+	  line continuation from previous one to support fluent interface,
+	  as well as single dot.
+
 Thu Nov 12 13:49:50 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/rubygems: Update to RubyGems 2.5.0+ HEAD(db78980).
