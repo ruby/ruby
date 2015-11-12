@@ -7088,7 +7088,7 @@ parser_magic_comment(struct parser_params *parser, const char *str, long len)
 	    if (s[i] == '-') s[i] = '_';
 	}
 	do {
-	    if (STRNCASECMP(p->name, s, n) == 0) {
+	    if (STRNCASECMP(p->name, s, n) == 0 && !p->name[n]) {
 		n = vend - vbeg;
 		if (p->length) {
 		    n = (*p->length)(parser, vbeg, n);
