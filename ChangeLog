@@ -1,3 +1,14 @@
+Thu Nov 12 10:53:41 2015  Eric Wong  <e@80x24.org>
+
+	* benchmark/bm_io_nonblock_noex2.rb: new benchmark based
+	  on bm_io_nonblock_noex.rb
+	* io.c (io_read_nonblock): move documentation to prelude.rb
+	  (io_write_nonblock): ditto
+	  (Init_io): private, internal methods for prelude.rb use only
+	* prelude.rb (IO#read_nonblock): wrapper + documentation
+	  (IO#write_nonblock): ditto
+	  [ruby-core:71439] [Feature #11339]
+
 Wed Nov 11 18:30:28 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sprintf.c (rb_str_format): look up the key, then get default
