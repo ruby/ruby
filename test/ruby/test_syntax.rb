@@ -628,6 +628,11 @@ eom
     assert_syntax_error(":#\n foo", /unexpected ':'/)
   end
 
+  def test_fluent_dot
+    assert_valid_syntax("a\n.foo")
+    assert_valid_syntax("a\n&.foo")
+  end
+
   private
 
   def not_label(x) @result = x; @not_label ||= nil end
