@@ -37,9 +37,6 @@ require 'tmpdir'
 require 'uri'
 require 'zlib'
 require 'benchmark' # stdlib
-
-Gem.load_yaml
-
 require 'rubygems/mock_gem_ui'
 
 module Gem

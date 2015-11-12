@@ -232,7 +232,7 @@ class Gem::Resolver
       exc.errors = @set.errors
       raise exc
     end
-    possibles.sort_by { |s| [s.source, s.version, s.platform == Gem::Platform.local.to_s ? 1 : 0] }.
+    possibles.sort_by { |s| [s.source, s.version, s.platform.to_s == Gem::Platform.local.to_s ? 1 : 0] }.
       map { |s| ActivationRequest.new s, dependency, [] }
   end
 
