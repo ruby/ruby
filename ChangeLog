@@ -1,3 +1,9 @@
+Thu Nov 12 13:49:50 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/rubygems: Update to RubyGems 2.5.0+ HEAD(db78980).
+	  this version includes #1367 , #1373 , #1375
+	* test/rubygems: ditto.
+
 Thu Nov 12 10:53:41 2015  Eric Wong  <e@80x24.org>
 
 	* benchmark/bm_io_nonblock_noex2.rb: new benchmark based
