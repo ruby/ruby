@@ -1333,6 +1333,31 @@ class TestHash < Test::Unit::TestCase
     assert_not_operator(h2, :>, h2)
   end
 
+  def test_cmp_samekeys
+    h1 = {a:1}
+    h2 = {a:2}
+
+    assert_operator(h1, :<=, h1)
+    assert_not_operator(h1, :<=, h2)
+    assert_not_operator(h2, :<=, h1)
+    assert_operator(h2, :<=, h2)
+
+    assert_operator(h1, :>=, h1)
+    assert_not_operator(h1, :>=, h2)
+    assert_not_operator(h2, :>=, h1)
+    assert_operator(h2, :>=, h2)
+
+    assert_not_operator(h1, :<, h1)
+    assert_not_operator(h1, :<, h2)
+    assert_not_operator(h2, :<, h1)
+    assert_not_operator(h2, :<, h2)
+
+    assert_not_operator(h1, :>, h1)
+    assert_not_operator(h1, :>, h2)
+    assert_not_operator(h2, :>, h1)
+    assert_not_operator(h2, :>, h2)
+  end
+
   def test_to_proc
     h = {
       1 => 10,
