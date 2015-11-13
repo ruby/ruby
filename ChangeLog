@@ -1,3 +1,11 @@
+Sat Nov 14 02:58:03 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (vm_define_method): refactoring.
+	  * get CREF in this function.
+	  * cbase is no longer needed (CREF_CLASS(cref) is enough).
+
+	* compile.c: RubyVM::FrozenCore.define_method only accept 2 args.
+
 Sat Nov 14 02:34:43 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (vm_define_method): do not use current CREF immediately,

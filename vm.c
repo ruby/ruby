@@ -2337,14 +2337,14 @@ rb_thread_alloc(VALUE klass)
 }
 
 static void
-vm_define_method(rb_thread_t *th, VALUE obj, ID id, VALUE iseqval,
-		 rb_num_t is_singleton, rb_cref_t *cref)
+vm_define_method(rb_thread_t *th, VALUE obj, ID id, VALUE iseqval, int is_singleton)
 {
     VALUE klass;
     rb_method_visibility_t visi;
+    rb_cref_t *cref = rb_vm_cref();
 
     if (!is_singleton) {
-	klass = obj;
+	klass = CREF_CLASS(cref);
 	visi = rb_scope_visibility_get();
     }
     else { /* singleton */
@@ -2374,10 +2374,10 @@ vm_define_method(rb_thread_t *th, VALUE obj, ID id, VALUE iseqval,
 } while (0)
 
 static VALUE
-m_core_define_method(VALUE self, VALUE cbase, VALUE sym, VALUE iseqval)
+m_core_define_method(VALUE self, VALUE sym, VALUE iseqval)
 {
     REWIND_CFP({
-	vm_define_method(GET_THREAD(), cbase, SYM2ID(sym), iseqval, 0, rb_vm_cref());
+	vm_define_method(GET_THREAD(), Qnil, SYM2ID(sym), iseqval, FALSE);
     });
     return sym;
 }
@@ -2386,7 +2386,7 @@ static VALUE
 m_core_define_singleton_method(VALUE self, VALUE cbase, VALUE sym, VALUE iseqval)
 {
     REWIND_CFP({
-	vm_define_method(GET_THREAD(), cbase, SYM2ID(sym), iseqval, 1, rb_vm_cref());
+	vm_define_method(GET_THREAD(), cbase, SYM2ID(sym), iseqval, TRUE);
     });
     return sym;
 }
@@ -2586,7 +2586,7 @@ Init_VM(void)
     rb_define_method_id(klass, id_core_set_method_alias, m_core_set_method_alias, 3);
     rb_define_method_id(klass, id_core_set_variable_alias, m_core_set_variable_alias, 2);
     rb_define_method_id(klass, id_core_undef_method, m_core_undef_method, 2);
-    rb_define_method_id(klass, id_core_define_method, m_core_define_method, 3);
+    rb_define_method_id(klass, id_core_define_method, m_core_define_method, 2);
     rb_define_method_id(klass, id_core_define_singleton_method, m_core_define_singleton_method, 3);
     rb_define_method_id(klass, id_core_set_postexe, m_core_set_postexe, 0);
     rb_define_method_id(klass, id_core_hash_from_ary, m_core_hash_from_ary, 1);
