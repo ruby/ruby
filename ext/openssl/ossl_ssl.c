@@ -2107,6 +2107,12 @@ Init_ossl_ssl(void)
     rb_define_const(mSSLExtConfig, "HAVE_TLSEXT_HOST_NAME", Qfalse);
 #endif
 
+#ifdef TLS_DH_anon_WITH_AES_256_GCM_SHA384
+    rb_define_const(mSSLExtConfig, "TLS_DH_anon_WITH_AES_256_GCM_SHA384", Qtrue);
+#else
+    rb_define_const(mSSLExtConfig, "TLS_DH_anon_WITH_AES_256_GCM_SHA384", Qfalse);
+#endif
+
     /*
      * A callback invoked whenever a new handshake is initiated. May be used
      * to disable renegotiation entirely.
