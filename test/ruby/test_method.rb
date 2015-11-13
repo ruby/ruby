@@ -919,4 +919,21 @@ class TestMethod < Test::Unit::TestCase
     assert_equal(456, b.local_variable_get(:bar))
     assert_equal([:bar, :foo], b.local_variables.sort)
   end
+
+  class MethodInMethodClass
+    def m1
+      def m2
+      end
+    end
+    private
+  end
+
+  def test_method_in_method_visibility_should_be_public
+    assert_equal([:m1].sort, MethodInMethodClass.public_instance_methods(false).sort)
+    assert_equal([].sort, MethodInMethodClass.private_instance_methods(false).sort)
+
+    MethodInMethodClass.new.m1
+    assert_equal([:m1, :m2].sort, MethodInMethodClass.public_instance_methods(false).sort)
+    assert_equal([].sort, MethodInMethodClass.private_instance_methods(false).sort)
+  end
 end

@@ -2340,22 +2340,25 @@ static void
 vm_define_method(rb_thread_t *th, VALUE obj, ID id, VALUE iseqval,
 		 rb_num_t is_singleton, rb_cref_t *cref)
 {
-    VALUE klass = CREF_CLASS(cref);
-    const rb_scope_visibility_t *scope_visi = CREF_SCOPE_VISI(cref);
-    rb_method_visibility_t visi = scope_visi->method_visi;
+    VALUE klass;
+    rb_method_visibility_t visi;
+
+    if (!is_singleton) {
+	klass = obj;
+	visi = rb_scope_visibility_get();
+    }
+    else { /* singleton */
+	klass = rb_singleton_class(obj); /* class and frozen checked in this API */
+	visi = METHOD_VISI_PUBLIC;
+    }
 
     if (NIL_P(klass)) {
 	rb_raise(rb_eTypeError, "no class/module to add method");
     }
 
-    if (is_singleton) {
-	klass = rb_singleton_class(obj); /* class and frozen checked in this API */
-	visi = METHOD_VISI_PUBLIC;
-    }
-
     rb_add_method_iseq(klass, id, (const rb_iseq_t *)iseqval, cref, visi);
 
-    if (!is_singleton && scope_visi->module_func) {
+    if (!is_singleton && rb_scope_module_func_check()) {
 	klass = rb_singleton_class(klass);
 	rb_add_method_iseq(klass, id, (const rb_iseq_t *)iseqval, cref, METHOD_VISI_PUBLIC);
     }

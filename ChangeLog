@@ -1,3 +1,15 @@
+Sat Nov 14 02:34:43 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (vm_define_method): do not use current CREF immediately,
+	  but check CREF in environment or methods. Methods defined in methods
+	  should be public.
+	  [Bug #11571]
+
+	* vm_method.c (rb_scope_module_func_check): check CREF in env or me.
+	  if CREF is contained by `me', then return FALSE.
+
+	* test/ruby/test_method.rb: add a test.
+
 Sat Nov 14 02:19:16 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* method.h: constify rb_cref_t::scope_visi;
