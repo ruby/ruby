@@ -1,3 +1,7 @@
+Fri Nov 13 14:00:43 2015  Zachary Scott  <zzak@ruby-lang.org>
+
+	* ext/openssl/ossl_pkey.c: Merge ruby/openssl@b9ea8ef [Bug #10735]
+
 Fri Nov 13 13:09:16 2015  Zachary Scott  <zzak@ruby-lang.org>
 
 	* ext/openssl/ossl_ssl.c: Merge ruby/openssl@81e1a30
