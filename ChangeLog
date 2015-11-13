@@ -1,3 +1,28 @@
+Sat Nov 14 04:55:36 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* refactoring CREF related code.
+
+	* eval_intern.h: remove unused setter functions.
+	  CREF_CLASS_SET()
+	  CREF_NEXT_SET()
+	  CREF_SCOPE_VISI_COPY()
+
+	* eval_intern.h: rename flags:
+	  * NODE_FL_CREF_PUSHED_BY_EVAL_ -> CREF_FL_PUSHED_BY_EVAL
+	  * NODE_FL_CREF_OMOD_SHARED_ -> CREF_FL_OMOD_SHARED
+	  and use IMEMO_FL_USER1/2.
+
+	* vm.c (vm_cref_new): accept push_by_eval parameter.
+
+	* vm.c (vm_cref_new_use_prev): added for rb_vm_rewrite_cref().
+
+	* vm_insnhelper.c (vm_cref_push): accept pushed_by_eval parameter.
+
+	* vm_insnhelper.h: remove unused macros:
+	  COPY_CREF_OMOD() and COPY_CREF().
+
+	* vm_eval.c, insns.def: catch up this fix.
+
 Sat Nov 14 02:58:03 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (vm_define_method): refactoring.

@@ -524,14 +524,11 @@ rb_vm_rewrite_cref(rb_cref_t *cref, VALUE old_klass, VALUE new_klass, rb_cref_t 
 
     while (cref) {
 	if (CREF_CLASS(cref) == old_klass) {
-	    new_cref = vm_cref_new(new_klass, METHOD_VISI_UNDEF, NULL);
-	    COPY_CREF_OMOD(new_cref, cref);
-	    CREF_NEXT_SET(new_cref, CREF_NEXT(cref));
+	    new_cref = vm_cref_new_use_prev(new_klass, METHOD_VISI_UNDEF, FALSE, cref, FALSE);
 	    *new_cref_ptr = new_cref;
 	    return;
 	}
-	new_cref = vm_cref_new(CREF_CLASS(cref), METHOD_VISI_UNDEF, NULL);
-	COPY_CREF_OMOD(new_cref, cref);
+	new_cref = vm_cref_new_use_prev(CREF_CLASS(cref), METHOD_VISI_UNDEF, FALSE, cref, FALSE);
 	cref = CREF_NEXT(cref);
 	*new_cref_ptr = new_cref;
 	new_cref_ptr = (rb_cref_t **)&new_cref->next;
@@ -540,10 +537,9 @@ rb_vm_rewrite_cref(rb_cref_t *cref, VALUE old_klass, VALUE new_klass, rb_cref_t 
 }
 
 static rb_cref_t *
-vm_cref_push(rb_thread_t *th, VALUE klass, rb_block_t *blockptr)
+vm_cref_push(rb_thread_t *th, VALUE klass, rb_block_t *blockptr, int pushed_by_eval)
 {
-    const rb_cref_t *prev_cref = NULL;
-    rb_cref_t *cref = NULL;
+    rb_cref_t *prev_cref = NULL;
 
     if (blockptr) {
 	prev_cref = vm_env_cref(blockptr->ep);
@@ -555,15 +551,8 @@ vm_cref_push(rb_thread_t *th, VALUE klass, rb_block_t *blockptr)
 	    prev_cref = vm_env_cref(cfp->ep);
 	}
     }
-    cref = vm_cref_new(klass, METHOD_VISI_PUBLIC, prev_cref);
 
-    /* TODO: why CREF_NEXT(cref) is 1? */
-    if (CREF_NEXT(cref) && CREF_NEXT(cref) != (void *) 1 &&
-	!NIL_P(CREF_REFINEMENTS(CREF_NEXT(cref)))) {
-	COPY_CREF_OMOD(cref, CREF_NEXT(cref));
-    }
-
-    return cref;
+    return vm_cref_new(klass, METHOD_VISI_PUBLIC, FALSE, prev_cref, pushed_by_eval);
 }
 
 static inline VALUE

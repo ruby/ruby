@@ -179,19 +179,13 @@ rb_threadptr_tag_jump(rb_thread_t *th, int st)
 
 /* CREF operators */
 
-#define NODE_FL_CREF_PUSHED_BY_EVAL_ (((VALUE)1)<<15)
-#define NODE_FL_CREF_OMOD_SHARED_    (((VALUE)1)<<16)
+#define CREF_FL_PUSHED_BY_EVAL IMEMO_FL_USER1
+#define CREF_FL_OMOD_SHARED    IMEMO_FL_USER2
 
 static inline VALUE
 CREF_CLASS(const rb_cref_t *cref)
 {
     return cref->klass;
-}
-
-static inline void
-CREF_CLASS_SET(rb_cref_t *cref, VALUE klass)
-{
-    RB_OBJ_WRITE(cref, &cref->klass, klass);
 }
 
 static inline rb_cref_t *
@@ -200,26 +194,10 @@ CREF_NEXT(const rb_cref_t *cref)
     return cref->next;
 }
 
-static inline void
-CREF_NEXT_SET(rb_cref_t *cref, const rb_cref_t *next_cref)
-{
-    RB_OBJ_WRITE(cref, &cref->next, next_cref);
-}
-
 static inline const rb_scope_visibility_t *
 CREF_SCOPE_VISI(const rb_cref_t *cref)
 {
     return &cref->scope_visi;
-}
-
-static inline void
-CREF_SCOPE_VISI_COPY(rb_cref_t *dst_cref, const rb_cref_t *src_cref)
-{
-    const rb_scope_visibility_t *src = &src_cref->scope_visi;
-    rb_scope_visibility_t *dst = (rb_scope_visibility_t *)&dst_cref->scope_visi; /* OK for const cast */
-
-    dst->method_visi = src->method_visi;
-    dst->module_func = src->module_func;
 }
 
 static inline VALUE
@@ -237,31 +215,31 @@ CREF_REFINEMENTS_SET(rb_cref_t *cref, VALUE refs)
 static inline int
 CREF_PUSHED_BY_EVAL(const rb_cref_t *cref)
 {
-    return cref->flags & NODE_FL_CREF_PUSHED_BY_EVAL_;
+    return cref->flags & CREF_FL_PUSHED_BY_EVAL;
 }
 
 static inline void
 CREF_PUSHED_BY_EVAL_SET(rb_cref_t *cref)
 {
-    cref->flags |= NODE_FL_CREF_PUSHED_BY_EVAL_;
+    cref->flags |= CREF_FL_PUSHED_BY_EVAL;
 }
 
 static inline int
 CREF_OMOD_SHARED(const rb_cref_t *cref)
 {
-    return cref->flags & NODE_FL_CREF_OMOD_SHARED_;
+    return cref->flags & CREF_FL_OMOD_SHARED;
 }
 
 static inline void
 CREF_OMOD_SHARED_SET(rb_cref_t *cref)
 {
-    cref->flags |= NODE_FL_CREF_OMOD_SHARED_;
+    cref->flags |= CREF_FL_OMOD_SHARED;
 }
 
 static inline void
 CREF_OMOD_SHARED_UNSET(rb_cref_t *cref)
 {
-    cref->flags &= ~NODE_FL_CREF_OMOD_SHARED_;
+    cref->flags &= ~CREF_FL_OMOD_SHARED;
 }
 
 void rb_thread_cleanup(void);
