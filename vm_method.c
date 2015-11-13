@@ -1048,20 +1048,24 @@ rb_scope_module_func_check(void)
     return CREF_SCOPE_VISI(rb_vm_cref())->module_func;
 }
 
+static void
+vm_cref_set_visibility(rb_method_visibility_t method_visi, int module_func)
+{
+    rb_scope_visibility_t *scope_visi = (rb_scope_visibility_t *)&rb_vm_cref()->scope_visi;
+    scope_visi->method_visi = method_visi;
+    scope_visi->module_func = module_func;
+}
+
 void
 rb_scope_visibility_set(rb_method_visibility_t visi)
 {
-    rb_scope_visibility_t *scope_visi = &rb_vm_cref()->scope_visi;
-    scope_visi->method_visi = visi;
-    scope_visi->module_func = FALSE;
+    vm_cref_set_visibility(visi, FALSE);
 }
 
 static void
 rb_scope_module_func_set(void)
 {
-    rb_scope_visibility_t *scope_visi = &rb_vm_cref()->scope_visi;
-    scope_visi->method_visi = METHOD_VISI_PRIVATE;
-    scope_visi->module_func = TRUE;
+    vm_cref_set_visibility(METHOD_VISI_PRIVATE, TRUE);
 }
 
 void

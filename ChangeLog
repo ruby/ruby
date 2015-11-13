@@ -1,3 +1,11 @@
+Sat Nov 14 02:19:16 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* method.h: constify rb_cref_t::scope_visi;
+
+	* eval_intern.h (CREF_SCOPE_VISI_COPY): catch up this fix.
+
+	* vm_method.c: ditto.
+
 Sat Nov 14 01:53:52 2015  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* pack.c (pack_unpack, AVOID_CC_BUG): Very ugly workaround for
