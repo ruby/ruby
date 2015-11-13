@@ -52,10 +52,9 @@ module WEBrick
           raise HTTPStatus::Forbidden, "ERBHandler cannot work."
         end
         begin
-          data = open(@script_filename){|io| io.read }
+          data = open(@script_filename){ |io| io.read }
           res.body = evaluate(ERB.new(data), req, res)
-          res['content-type'] ||=
-            HTTPUtils::mime_type(@script_filename, @config[:MimeTypes])
+          res['content-type'] ||= HTTPUtils::mime_type(@script_filename, @config[:MimeTypes])
         rescue StandardError
           raise
         rescue Exception => ex
@@ -76,11 +75,11 @@ module WEBrick
       # local variables.
 
       def evaluate(erb, servlet_request, servlet_response)
-        Module.new.module_eval{
+        Module.new.module_eval do
           servlet_request.meta_vars
           servlet_request.query
           erb.result(binding)
-        }
+        end
       end
     end
   end

@@ -90,8 +90,8 @@ module WEBrick
       # stored as-is in +@options+.  +@logger+ is also provided.
 
       def initialize(server, *options)
-        @server = @config = server
-        @logger = @server[:Logger]
+        @server  = @config = server
+        @logger  = @server[:Logger]
         @options = options
       end
 
@@ -101,12 +101,11 @@ module WEBrick
       # exception if the method is not implemented.
 
       def service(req, res)
-        method_name = "do_" + req.request_method.gsub(/-/, "_")
+        method_name = "do_#{req.request_method.gsub(/-/, "_")}"
         if respond_to?(method_name)
           __send__(method_name, req, res)
         else
-          raise HTTPStatus::MethodNotAllowed,
-                "unsupported method `#{req.request_method}'."
+          raise HTTPStatus::MethodNotAllowed, "unsupported method `#{req.request_method}'."
         end
       end
 
@@ -140,9 +139,9 @@ module WEBrick
 
       def redirect_to_directory_uri(req, res)
         if req.path[-1] != ?/
-          location = WEBrick::HTTPUtils.escape_path(req.path + "/")
+          location = WEBrick::HTTPUtils.escape_path("#{req.path}/")
           if req.query_string && req.query_string.bytesize > 0
-            location << "?" << req.query_string
+            location += "?#{req.query_string}"
           end
           res.set_redirect(HTTPStatus::MovedPermanently, location)
         end

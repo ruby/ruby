@@ -53,14 +53,9 @@ module WEBrick
       OpaqueInfo = Struct.new(:time, :nonce, :nc) # :nodoc:
 
       ##
-      # Digest authentication algorithm
+      # Digest authentication algorithm, Quality of protection.  RFC 2617 defines "auth" and "auth-int"
 
-      attr_reader :algorithm
-
-      ##
-      # Quality of protection.  RFC 2617 defines "auth" and "auth-int"
-
-      attr_reader :qop
+      attr_reader :algorithm, :qop
 
       ##
       # Used by UserDB to create a digest password entry
@@ -108,9 +103,7 @@ module WEBrick
         end
 
         @instance_key = hexdigest(self.__id__, Time.now.to_i, Process.pid)
-        @opaques = {}
-        @last_nonce_expire = Time.now
-        @mutex = Mutex.new
+        @opaques, @last_nonce_expire, @mutex = {}, Time.now, Mutex.new 
       end
 
       ##
@@ -118,13 +111,9 @@ module WEBrick
       # the authentication was not correct.
 
       def authenticate(req, res)
-        unless result = @mutex.synchronize{ _authenticate(req, res) }
-          challenge(req, res)
-        end
-        if result == :nonce_is_stale
-          challenge(req, res, true)
-        end
-        return true
+        challenge(req, res) unless result = @mutex.synchronize{ _authenticate(req, res) }
+        challenge(req, res, true) if result == :nonce_is_stale
+        true
       end
 
       ##
@@ -139,16 +128,15 @@ module WEBrick
         end
 
         param = Hash.new
-        param["realm"]  = HTTPUtils::quote(@realm)
-        param["domain"] = HTTPUtils::quote(@domain.to_a.join(" ")) if @domain
-        param["nonce"]  = HTTPUtils::quote(nonce)
-        param["opaque"] = HTTPUtils::quote(opaque) if opaque
-        param["stale"]  = stale.to_s
+        param["realm"]     = HTTPUtils::quote(@realm)
+        param["domain"]    = HTTPUtils::quote(@domain.to_a.join(" ")) if @domain
+        param["nonce"]     = HTTPUtils::quote(nonce)
+        param["opaque"]    = HTTPUtils::quote(opaque) if opaque
+        param["stale"]     = stale.to_s
         param["algorithm"] = @algorithm
-        param["qop"]    = HTTPUtils::quote(@qop.to_a.join(",")) if @qop
+        param["qop"]       = HTTPUtils::quote(@qop.to_a.join(",")) if @qop
 
-        res[@response_field] =
-          "#{@auth_scheme} " + param.map{|k,v| "#{k}=#{v}" }.join(", ")
+        res[@response_field] = "#{@auth_scheme} " + param.map{|k,v| "#{k}=#{v}" }.join(", ")
         info("%s: %s", @response_field, res[@response_field]) if $DEBUG
         raise @auth_exception
       end
@@ -157,13 +145,11 @@ module WEBrick
 
       # :stopdoc:
 
-      MustParams = ['username','realm','nonce','uri','response']
+      MustParams     = ['username','realm','nonce','uri','response']
       MustParamsAuth = ['cnonce','nc']
 
       def _authenticate(req, res)
-        unless digest_credentials = check_scheme(req)
-          return false
-        end
+        return false unless digest_credentials = check_scheme(req)
 
         auth_req = split_param_value(digest_credentials)
         if auth_req['qop'] == "auth" || auth_req['qop'] == "auth-int"
@@ -171,17 +157,15 @@ module WEBrick
         else
           req_params = MustParams
         end
-        req_params.each{|key|
+        req_params.each do |key|
           unless auth_req.has_key?(key)
             error('%s: parameter missing. "%s"', auth_req['username'], key)
             raise HTTPStatus::BadRequest
           end
-        }
-
-        if !check_uri(req, auth_req)
-          raise HTTPStatus::BadRequest
         end
 
+        raise HTTPStatus::BadRequest unless check_uri(req, auth_req)
+        
         if auth_req['realm'] != @realm
           error('%s: realm unmatch. "%s" for "%s"',
                 auth_req['username'], auth_req['realm'], @realm)
@@ -225,25 +209,22 @@ module WEBrick
           nonce_is_invalid = true
         end
 
-        if /-sess$/i =~ auth_req['algorithm']
-          ha1 = hexdigest(password, auth_req['nonce'], auth_req['cnonce'])
+        ha1 = if /-sess$/i =~ auth_req['algorithm']
+          hexdigest(password, auth_req['nonce'], auth_req['cnonce'])
         else
-          ha1 = password
+          password
         end
 
         if auth_req['qop'] == "auth" || auth_req['qop'] == nil
           ha2 = hexdigest(req.request_method, auth_req['uri'])
           ha2_res = hexdigest("", auth_req['uri'])
         elsif auth_req['qop'] == "auth-int"
-          ha2 = hexdigest(req.request_method, auth_req['uri'],
-                          hexdigest(req.body))
+          ha2 = hexdigest(req.request_method, auth_req['uri'], hexdigest(req.body))
           ha2_res = hexdigest("", auth_req['uri'], hexdigest(res.body))
         end
 
         if auth_req['qop'] == "auth" || auth_req['qop'] == "auth-int"
-          param2 = ['nonce', 'nc', 'cnonce', 'qop'].map{|key|
-            auth_req[key]
-          }.join(':')
+          param2 = ['nonce', 'nc', 'cnonce', 'qop'].map{ |k| auth_req[k] }.join(':')
           digest     = hexdigest(ha1, param2, ha2)
           digest_res = hexdigest(ha1, param2, ha2_res)
         else
@@ -255,8 +236,7 @@ module WEBrick
           error("%s: digest unmatch.", auth_req['username'])
           return false
         elsif nonce_is_invalid
-          error('%s: digest is valid, but nonce is not valid.',
-                auth_req['username'])
+          error('%s: digest is valid, but nonce is not valid.', auth_req['username'])
           return :nonce_is_stale
         elsif @use_auth_info_header
           auth_info = {
@@ -269,21 +249,15 @@ module WEBrick
             opaque_struct.nc    = "%08x" % (auth_req['nc'].hex + 1)
           end
           if auth_req['qop'] == "auth" || auth_req['qop'] == "auth-int"
-            ['qop','cnonce','nc'].each{|key|
-              auth_info[key] = auth_req[key]
-            }
+            ['qop','cnonce','nc'].each{ |k| auth_info[k] = auth_req[k] }
           end
-          res[@resp_info_field] = auth_info.keys.map{|key|
-            if key == 'nc'
-              key + '=' + auth_info[key]
-            else
-              key + "=" + HTTPUtils::quote(auth_info[key])
-            end
+          res[@resp_info_field] = auth_info.keys.map{ |key|
+            "#{key}=" + (key == 'nc' ? auth_info[key] : HTTPUtils::quote(auth_info[key]))
           }.join(', ')
         end
         info('%s: authentication succeeded.', auth_req['username'])
         req.user = auth_req['username']
-        return true
+        true
       end
 
       def split_param_value(string)
@@ -291,14 +265,10 @@ module WEBrick
         while string.bytesize != 0
           case string
           when /^\s*([\w\-\.\*\%\!]+)=\s*\"((\\.|[^\"])*)\"\s*,?/
-            key = $1
-            matched = $2
-            string = $'
+            key, matched, string = $1, $2, $'
             ret[key] = matched.gsub(/\\(.)/, "\\1")
           when /^\s*([\w\-\.\*\%\!]+)=\s*([^,\"]*),?/
-            key = $1
-            matched = $2
-            string = $'
+            key, matched, string = $1, $2, $'
             ret[key] = matched.clone
           when /^s*^,/
             string = $'
@@ -310,18 +280,17 @@ module WEBrick
       end
 
       def generate_next_nonce(req)
-        now = "%012d" % req.request_time.to_i
-        pk  = hexdigest(now, @instance_key)[0,32]
+        now   = "%012d" % req.request_time.to_i
+        pk    = hexdigest(now, @instance_key)[0,32]
         nonce = [now + ":" + pk].pack("m*").chop # it has 60 length of chars.
         nonce
       end
 
       def check_nonce(req, auth_req)
-        username = auth_req['username']
-        nonce = auth_req['nonce']
+        username, nonce = auth_req['username'], auth_req['nonce']
+        pub_time, pk    = nonce.unpack("m*")[0].split(":", 2)
 
-        pub_time, pk = nonce.unpack("m*")[0].split(":", 2)
-        if (!pub_time || !pk)
+        if !pub_time || !pk
           error("%s: empty nonce is given", username)
           return false
         elsif (hexdigest(pub_time, @instance_key)[0,32] != pk)
@@ -331,7 +300,7 @@ module WEBrick
         end
 
         diff_time = req.request_time.to_i - pub_time.to_i
-        if (diff_time < 0)
+        if diff_time < 0
           error("%s: difference of time-stamp is negative.", username)
           return false
         elsif diff_time > @nonce_expire_period
@@ -339,16 +308,14 @@ module WEBrick
           return false
         end
 
-        return true
+        true
       end
 
       def generate_opaque(req)
-        @mutex.synchronize{
+        @mutex.synchronize do
           now = req.request_time
           if now - @last_nonce_expire > @nonce_expire_delta
-            @opaques.delete_if{|key,val|
-              (now - val.time) > @nonce_expire_period
-            }
+            @opaques.delete_if{ |_,v| (now - v.time) > @nonce_expire_period }
             @last_nonce_expire = now
           end
           begin
@@ -356,7 +323,7 @@ module WEBrick
           end while @opaques[opaque]
           @opaques[opaque] = OpaqueInfo.new(now, nil, '00000001')
           opaque
-        }
+        end
       end
 
       def check_opaque(opaque_struct, req, auth_req)
@@ -401,7 +368,7 @@ module WEBrick
 
       private
       def check_uri(req, auth_req) # :nodoc:
-        return true
+        true
       end
     end
   end
