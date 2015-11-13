@@ -299,7 +299,7 @@ ossl_pkey_sign(VALUE self, VALUE digest, VALUE data)
     StringValue(data);
     EVP_SignUpdate(&ctx, RSTRING_PTR(data), RSTRING_LEN(data));
     str = rb_str_new(0, EVP_PKEY_size(pkey)+16);
-    result = EVP_SignFinal(&ctx, (unsigned char *)RSTRING_PTR(str), &buf_len, pkey)
+    result = EVP_SignFinal(&ctx, (unsigned char *)RSTRING_PTR(str), &buf_len, pkey);
     EVP_MD_CTX_cleanup(&ctx);
     if (!result)
 	ossl_raise(ePKeyError, NULL);
