@@ -1272,7 +1272,6 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_
     volatile int parse_in_eval;
     volatile int mild_compile_error;
     rb_cref_t *orig_cref;
-    VALUE crefval;
     volatile VALUE file;
     volatile int line;
 
@@ -1339,16 +1338,13 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_
 	if (!cref && base_block->iseq) {
 	    if (NIL_P(scope)) {
 		orig_cref = rb_vm_get_cref(base_block->ep);
-		cref = vm_cref_new(Qnil, METHOD_VISI_PUBLIC, NULL);
-		crefval = (VALUE) cref;
-		COPY_CREF(cref, orig_cref);
+		cref = vm_cref_dup(orig_cref);
 	    }
 	    else {
 		cref = rb_vm_get_cref(base_block->ep);
 	    }
 	}
 	vm_set_eval_stack(th, iseq, cref, base_block);
-	RB_GC_GUARD(crefval);
 
 	if (0) {		/* for debug */
 	    VALUE disasm = rb_iseq_disasm(iseq);
@@ -1595,8 +1591,7 @@ yield_under(VALUE under, VALUE self, VALUE values)
 	block.self = self;
 	VM_CF_LEP(th->cfp)[0] = VM_ENVVAL_BLOCK_PTR(&block);
     }
-    cref = vm_cref_push(th, under, blockptr);
-    CREF_PUSHED_BY_EVAL_SET(cref);
+    cref = vm_cref_push(th, under, blockptr, TRUE);
 
     if (values == Qundef) {
 	return vm_yield_with_cref(th, 1, &self, cref);
@@ -1618,8 +1613,7 @@ rb_yield_refine_block(VALUE refinement, VALUE refinements)
 	block.self = refinement;
 	VM_CF_LEP(th->cfp)[0] = VM_ENVVAL_BLOCK_PTR(&block);
     }
-    cref = vm_cref_push(th, refinement, blockptr);
-    CREF_PUSHED_BY_EVAL_SET(cref);
+    cref = vm_cref_push(th, refinement, blockptr, TRUE);
     CREF_REFINEMENTS_SET(cref, refinements);
 
     return vm_yield_with_cref(th, 0, NULL, cref);
@@ -1629,13 +1623,8 @@ rb_yield_refine_block(VALUE refinement, VALUE refinements)
 static VALUE
 eval_under(VALUE under, VALUE self, VALUE src, VALUE file, int line)
 {
-    rb_cref_t *cref = vm_cref_push(GET_THREAD(), under, NULL);
-
-    if (SPECIAL_CONST_P(self) && !NIL_P(under)) {
-	CREF_PUSHED_BY_EVAL_SET(cref);
-    }
+    rb_cref_t *cref = vm_cref_push(GET_THREAD(), under, NULL, SPECIAL_CONST_P(self) && !NIL_P(under));
     SafeStringValue(src);
-
     return eval_string_with_cref(self, src, Qnil, cref, file, line);
 }
 
