@@ -1100,6 +1100,15 @@ hex2num(char c)
 	rb_ary_store(ary, RARRAY_LEN(ary)+tmp_len-1, Qnil); \
 } while (0)
 
+/* Workaround for Oracle Solaris Studio 12.4 C compiler optimization bug
+ * with "-xO4" optimization option.
+ */
+#if defined(__SUNPRO_C) && __SUNPRO_C == 0x5130
+# define AVOID_CC_BUG volatile
+#else
+# define AVOID_CC_BUG
+#endif
+
 static VALUE
 infected_str_new(const char *ptr, long len, VALUE str)
 {
@@ -1231,7 +1240,8 @@ pack_unpack(VALUE str, VALUE fmt)
     char *p, *pend;
     VALUE ary;
     char type;
-    long len, tmp_len;
+    long len;
+    AVOID_CC_BUG long tmp_len;
     int star;
 #ifdef NATINT_PACK
     int natint;			/* native integer */
