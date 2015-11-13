@@ -35,9 +35,9 @@ module WEBrick
       # Open a password database at +path+
 
       def initialize(path)
-        @path = path
-        @mtime = Time.at(0)
-        @passwd = Hash.new
+        @path      = path
+        @mtime     = Time.at(0)
+        @passwd    = Hash.new
         @auth_type = BasicAuth
         open(@path,"a").close unless File::exist?(@path)
         reload
@@ -50,21 +50,20 @@ module WEBrick
         mtime = File::mtime(@path)
         if mtime > @mtime
           @passwd.clear
-          open(@path){|io|
+          open(@path) do |io|
             while line = io.gets
               line.chomp!
               case line
               when %r!\A[^:]+:[a-zA-Z0-9./]{13}\z!
                 user, pass = line.split(":")
               when /:\$/, /:{SHA}/
-                raise NotImplementedError,
-                      'MD5, SHA1 .htpasswd file not supported'
+                raise NotImplementedError, 'MD5, SHA1 .htpasswd file not supported'
               else
                 raise StandardError, 'bad .htpasswd file'
               end
               @passwd[user] = pass
             end
-          }
+          end
           @mtime = mtime
         end
       end
@@ -74,17 +73,17 @@ module WEBrick
       # be written there instead of to the original path.
 
       def flush(output=nil)
-        output ||= @path
-        tmp = Tempfile.create("htpasswd", File::dirname(output))
+        output  ||= @path
+        tmp     = Tempfile.create("htpasswd", File::dirname(output))
         renamed = false
         begin
-          each{|item| tmp.puts(item.join(":")) }
+          each{ |item| tmp.puts(item.join(":")) }
           tmp.close
           File::rename(tmp.path, output)
           renamed = true
         ensure
-          tmp.close if !tmp.closed?
-          File.unlink(tmp.path) if !renamed
+          tmp.close unless tmp.closed?
+          File.unlink(tmp.path) unless renamed
         end
       end
 
@@ -115,9 +114,7 @@ module WEBrick
       # Iterate passwords in the database.
 
       def each # :yields: [user, password]
-        @passwd.keys.sort.each{|user|
-          yield([user, @passwd[user]])
-        }
+        @passwd.keys.sort.each{ |user| yield([user, @passwd[user]]) }
       end
     end
   end

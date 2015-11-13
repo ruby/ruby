@@ -16,30 +16,20 @@ module WEBrick
 
     module Authenticator
 
-      RequestField      = "Authorization" # :nodoc:
-      ResponseField     = "WWW-Authenticate" # :nodoc:
-      ResponseInfoField = "Authentication-Info" # :nodoc:
+      RequestField      = "Authorization"          # :nodoc:
+      ResponseField     = "WWW-Authenticate"       # :nodoc:
+      ResponseInfoField = "Authentication-Info"    # :nodoc:
       AuthException     = HTTPStatus::Unauthorized # :nodoc:
 
       ##
       # Method of authentication, must be overridden by the including class
 
-      AuthScheme        = nil
+      AuthScheme = nil
 
       ##
-      # The realm this authenticator covers
+      # The realm this authenticator covers, user database and logger for this authenticator
 
-      attr_reader :realm
-
-      ##
-      # The user database for this authenticator
-
-      attr_reader :userdb
-
-      ##
-      # The logger for this authenticator
-
-      attr_reader :logger
+      attr_reader :realm, :userdb, :logger
 
       private
 
@@ -49,15 +39,15 @@ module WEBrick
       # Initializes the authenticator from +config+
 
       def check_init(config)
-        [:UserDB, :Realm].each{|sym|
-          unless config[sym]
-            raise ArgumentError, "Argument #{sym.inspect} missing."
-          end
-        }
+        [:UserDB, :Realm].each do |sym|
+          raise ArgumentError, "Argument #{sym.inspect} missing." unless config[sym]
+        end
+
         @realm     = config[:Realm]
         @userdb    = config[:UserDB]
         @logger    = config[:Logger] || Log::new($stderr)
         @reload_db = config[:AutoReloadUserDB]
+
         @request_field   = self::class::RequestField
         @response_field  = self::class::ResponseField
         @resp_info_field = self::class::ResponseInfoField
@@ -82,21 +72,16 @@ module WEBrick
       end
 
       def log(meth, fmt, *args)
-        msg = format("%s %s: ", @auth_scheme, @realm)
-        msg << fmt % args
+        msg = format("%s %s: ", @auth_scheme, @realm) + fmt % args
         @logger.send(meth, msg)
       end
 
       def error(fmt, *args)
-        if @logger.error?
-          log(:error, fmt, *args)
-        end
+        log(:error, fmt, *args) if @logger.error?
       end
 
       def info(fmt, *args)
-        if @logger.info?
-          log(:info, fmt, *args)
-        end
+        log(:info, fmt, *args) if @logger.info?
       end
 
       # :startdoc:

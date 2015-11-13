@@ -32,7 +32,7 @@ module WEBrick
       # Open a group database at +path+
 
       def initialize(path)
-        @path = path
+        @path  = path
         @mtime = Time.at(0)
         @group = Hash.new
         open(@path,"a").close unless File::exist?(@path)
@@ -45,13 +45,13 @@ module WEBrick
       def reload
         if (mtime = File::mtime(@path)) > @mtime
           @group.clear
-          open(@path){|io|
+          open(@path) do |io|
             while line = io.gets
               line.chomp!
               group, members = line.split(/:\s*/)
-              @group[group] = members.split(/\s+/)
+              @group[group]  = members.split(/\s+/)
             end
-          }
+          end
           @mtime = mtime
         end
       end
@@ -64,9 +64,9 @@ module WEBrick
         output ||= @path
         tmp = Tempfile.new("htgroup", File::dirname(output))
         begin
-          @group.keys.sort.each{|group|
+          @group.keys.sort.each do |group| 
             tmp.puts(format("%s: %s", group, self.members(group).join(" ")))
-          }
+          end
           tmp.close
           File::rename(tmp.path, output)
         rescue

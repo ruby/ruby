@@ -34,11 +34,12 @@ module WEBrick
       # Open a digest password database at +path+
 
       def initialize(path)
-        @path = path
-        @mtime = Time.at(0)
-        @digest = Hash.new
-        @mutex = Mutex::new
+        @path      = path
+        @mtime     = Time.at(0)
+        @digest    = Hash.new
+        @mutex     = Mutex::new
         @auth_type = DigestAuth
+
         open(@path,"a").close unless File::exist?(@path)
         reload
       end
@@ -50,7 +51,7 @@ module WEBrick
         mtime = File::mtime(@path)
         if mtime > @mtime
           @digest.clear
-          open(@path){|io|
+          open(@path) do |io|
             while line = io.gets
               line.chomp!
               user, realm, pass = line.split(/:/, 3)
@@ -59,7 +60,7 @@ module WEBrick
               end
               @digest[realm][user] = pass
             end
-          }
+          end
           @mtime = mtime
         end
       end
@@ -73,13 +74,13 @@ module WEBrick
         tmp = Tempfile.create("htpasswd", File::dirname(output))
         renamed = false
         begin
-          each{|item| tmp.puts(item.join(":")) }
+          each{ |item| tmp.puts(item.join(":")) }
           tmp.close
           File::rename(tmp.path, output)
           renamed = true
         ensure
-          tmp.close if !tmp.closed?
-          File.unlink(tmp.path) if !renamed
+          tmp.close unless tmp.closed?
+          File.unlink(tmp.path) unless renamed
         end
       end
 
@@ -88,43 +89,35 @@ module WEBrick
       # +reload_db+ is true the database will be reloaded first.
 
       def get_passwd(realm, user, reload_db)
-        reload() if reload_db
-        if hash = @digest[realm]
-          hash[user]
-        end
+        reload()   if reload_db
+        hash[user] if hash = @digest[realm]
       end
 
       ##
       # Sets a password in the database for +user+ in +realm+ to +pass+.
 
       def set_passwd(realm, user, pass)
-        @mutex.synchronize{
-          unless @digest[realm]
-            @digest[realm] = Hash.new
-          end
+        @mutex.synchronize do
+          @digest[realm] = {} unless @digest[realm]
           @digest[realm][user] = make_passwd(realm, user, pass)
-        }
+        end
       end
 
       ##
       # Removes a password from the database for +user+ in +realm+.
 
       def delete_passwd(realm, user)
-        if hash = @digest[realm]
-          hash.delete(user)
-        end
+        hash.delete(user) if hash = @digest[realm]
       end
 
       ##
       # Iterate passwords in the database.
 
       def each # :yields: [user, realm, password_hash]
-        @digest.keys.sort.each{|realm|
+        @digest.keys.sort.each do |realm|
           hash = @digest[realm]
-          hash.keys.sort.each{|user|
-            yield([user, realm, hash[user]])
-          }
-        }
+          hash.keys.sort.each{ |user| yield([user, realm, hash[user]]) }
+        end
       end
     end
   end
