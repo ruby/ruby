@@ -1,3 +1,7 @@
+Fri Nov 13 13:05:37 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* prelude.rb (Thread.exclusive): warn as deprecated.
+
 Fri Nov 13 10:36:39 2015  Victor Nawothnig  <Victor.Nawothnig@gmail.com>
 
 	* parse.y (new_unless): optimize constant condition for `unless`
