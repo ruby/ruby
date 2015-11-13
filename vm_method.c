@@ -1045,7 +1045,15 @@ rb_scope_visibility_get(void)
 static int
 rb_scope_module_func_check(void)
 {
-    return CREF_SCOPE_VISI(rb_vm_cref())->module_func;
+    rb_thread_t *th = GET_THREAD();
+    rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
+
+    if (!vm_env_cref_by_cref(cfp->ep)) {
+	return FALSE;
+    }
+    else {
+	return CREF_SCOPE_VISI(rb_vm_cref())->module_func;
+    }
 }
 
 static void
