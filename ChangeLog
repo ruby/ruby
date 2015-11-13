@@ -1,3 +1,9 @@
+Sat Nov 14 01:53:52 2015  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* pack.c (pack_unpack, AVOID_CC_BUG): Very ugly workaround for
+	  optimization bug of Oracle Solaris Studio 12.4 on Solaris
+	  with -xO4 optimization option. [Bug #11684]
+
 Fri Nov 13 23:00:23 2015  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* configure.in: unset LD_PRELOAD on mingw. msys2 child processes
