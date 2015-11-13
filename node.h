@@ -265,8 +265,6 @@ typedef struct RNode {
 /* NODE_FL: 0..4: T_TYPES, 5: KEEP_WB, 6: PROMOTED, 7: NODE_FL_NEWLINE|NODE_FL_CREF_PUSHED_BY_EVAL,
  *          8..14: nd_type,
  *          15..: nd_line or
- *          15: NODE_FL_CREF_PUSHED_BY_EVAL
- *          16: NODE_FL_CREF_OMOD_SHARED
  */
 #define NODE_FL_NEWLINE              (((VALUE)1)<<7)
 
