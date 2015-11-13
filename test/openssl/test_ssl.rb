@@ -415,7 +415,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
         assert_raise_with_message(sslerr,msg){ssl.post_connection_check("localhost.localdomain")}
       }
     }
-  end
+  end if OpenSSL::ExtConfig::TLS_DH_anon_WITH_AES_256_GCM_SHA384
 
   def test_post_connection_check
     sslerr = OpenSSL::SSL::SSLError

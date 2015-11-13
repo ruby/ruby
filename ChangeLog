@@ -1,3 +1,9 @@
+Fri Nov 13 13:09:16 2015  Zachary Scott  <zzak@ruby-lang.org>
+
+	* ext/openssl/ossl_ssl.c: Merge ruby/openssl@81e1a30
+
+	* test/openssl/test_ssl.rb: ditto
+
 Fri Nov 13 13:05:37 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* prelude.rb (Thread.exclusive): warn as deprecated.
