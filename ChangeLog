@@ -1,3 +1,7 @@
+Sat Nov 14 05:04:09 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* node.h: remove old comments.
+
 Sat Nov 14 04:55:36 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* refactoring CREF related code.
