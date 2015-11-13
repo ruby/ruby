@@ -42,7 +42,7 @@ typedef struct rb_cref_struct {
     const VALUE refinements;
     const VALUE klass;
     struct rb_cref_struct * const next;
-    rb_scope_visibility_t scope_visi;
+    const rb_scope_visibility_t scope_visi;
 } rb_cref_t;
 
 /* method data type */

@@ -216,7 +216,7 @@ static inline void
 CREF_SCOPE_VISI_COPY(rb_cref_t *dst_cref, const rb_cref_t *src_cref)
 {
     const rb_scope_visibility_t *src = &src_cref->scope_visi;
-    rb_scope_visibility_t *dst = &dst_cref->scope_visi;
+    rb_scope_visibility_t *dst = (rb_scope_visibility_t *)&dst_cref->scope_visi; /* OK for const cast */
 
     dst->method_visi = src->method_visi;
     dst->module_func = src->module_func;
