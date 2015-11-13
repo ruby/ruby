@@ -1,3 +1,8 @@
+Fri Nov 13 10:36:39 2015  Victor Nawothnig  <Victor.Nawothnig@gmail.com>
+
+	* parse.y (new_unless): optimize constant condition for `unless`
+	  as well as `if`.  [Fix GH-1092]
+
 Fri Nov 13 10:08:41 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* ext/psych/psych.gemspec: bump version to 2.0.15
