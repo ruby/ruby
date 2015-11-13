@@ -1,3 +1,7 @@
+Fri Nov 13 10:08:41 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ext/psych/psych.gemspec: bump version to 2.0.15
+
 Thu Nov 12 18:44:26 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_magic_comment): should match exactly.
