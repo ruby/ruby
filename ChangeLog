@@ -1,3 +1,9 @@
+Fri Nov 13 23:00:23 2015  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* configure.in: unset LD_PRELOAD on mingw. msys2 child processes
+	  crash at make test-all with LD_PRELOAD.
+	  [ruby-core:71461] [Bug #11680]
+
 Fri Nov 13 14:00:43 2015  Zachary Scott  <zzak@ruby-lang.org>
 
 	* ext/openssl/ossl_pkey.c: Merge ruby/openssl@b9ea8ef [Bug #10735]
