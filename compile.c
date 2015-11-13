@@ -5258,10 +5258,9 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	debugp_param("defn/iseq", (VALUE)method_iseq);
 
 	ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-	ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CBASE));
 	ADD_INSN1(ret, line, putobject, ID2SYM(node->nd_mid));
 	ADD_INSN1(ret, line, putiseq, method_iseq);
-	ADD_SEND (ret, line, id_core_define_method, INT2FIX(3));
+	ADD_SEND (ret, line, id_core_define_method, INT2FIX(2));
 
 	if (poped) {
 	    ADD_INSN(ret, line, pop);
