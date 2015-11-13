@@ -264,7 +264,7 @@ typedef struct RNode {
 /* FL     : 0..4: T_TYPES, 5: KEEP_WB, 6: PROMOTED, 7: FINALIZE, 8: TAINT, 9: UNTRUSTERD, 10: EXIVAR, 11: FREEZE */
 /* NODE_FL: 0..4: T_TYPES, 5: KEEP_WB, 6: PROMOTED, 7: NODE_FL_NEWLINE|NODE_FL_CREF_PUSHED_BY_EVAL,
  *          8..14: nd_type,
- *          15..: nd_line or
+ *          15..: nd_line
  */
 #define NODE_FL_NEWLINE              (((VALUE)1)<<7)
 
