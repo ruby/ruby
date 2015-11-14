@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'socket.so'
 require 'io/wait'
 
@@ -747,7 +749,7 @@ class Socket < BasicSocket
     attr_reader :local_address
 
     def inspect # :nodoc:
-      "\#<#{self.class}: #{@remote_address.inspect_sockaddr} to #{@local_address.inspect_sockaddr}>"
+      "\#<#{self.class}: #{@remote_address.inspect_sockaddr} to #{@local_address.inspect_sockaddr}>".dup
     end
 
     # Sends the String +msg+ to the source

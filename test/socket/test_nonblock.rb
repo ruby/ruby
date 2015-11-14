@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 begin
   require "socket"
   require "io/nonblock"
@@ -129,7 +131,7 @@ class TestSocketNonblock < Test::Unit::TestCase
     mesg = u1.recv_nonblock(100)
     assert_equal("", mesg)
 
-    buf = "short"
+    buf = "short".dup
     out = "hello world" * 4
     out.freeze
     u2.send(out, 0, u1.getsockname)
