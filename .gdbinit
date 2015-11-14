@@ -949,3 +949,18 @@ define SDR
   call rb_vmdebug_stack_dump_raw_current()
 end
 
+define rbi
+  if ((LINK_ELEMENT*)$arg0)->type == ISEQ_ELEMENT_LABEL
+    p *(LABEL*)$arg0
+  else
+  if ((LINK_ELEMENT*)$arg0)->type == ISEQ_ELEMENT_INSN
+    p *(INSN*)$arg0
+  else
+  if ((LINK_ELEMENT*)$arg0)->type == ISEQ_ELEMENT_ADJUST
+    p *(ADJUST*)$arg0
+  else
+    print *$arg0
+  end
+  end
+  end
+end

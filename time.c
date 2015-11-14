@@ -1747,7 +1747,7 @@ localtimew(wideval_t timew, struct vtm *result)
 PACKED_STRUCT_UNALIGNED(struct time_object {
     wideval_t timew; /* time_t value * TIME_SCALE.  possibly Rational. */
     struct vtm vtm;
-    uint8_t gmt:3; /* 0:utc 1:localtime 2:fixoff 3:init */
+    uint8_t gmt:3; /* 0:localtime 1:utc 2:fixoff 3:init */
     uint8_t tm_got:1;
 });
 
@@ -1892,6 +1892,25 @@ timew2timespec_exact(wideval_t timew, struct timespec *ts)
     return ts;
 }
 
+void
+rb_timespec_now(struct timespec *ts)
+{
+#ifdef HAVE_CLOCK_GETTIME
+    if (clock_gettime(CLOCK_REALTIME, ts) == -1) {
+	rb_sys_fail("clock_gettime");
+    }
+#else
+    {
+        struct timeval tv;
+        if (gettimeofday(&tv, 0) < 0) {
+            rb_sys_fail("gettimeofday");
+        }
+        ts->tv_sec = tv.tv_sec;
+        ts->tv_nsec = tv.tv_usec * 1000;
+    }
+#endif
+}
+
 static VALUE
 time_init_0(VALUE time)
 {
@@ -1903,20 +1922,7 @@ time_init_0(VALUE time)
     tobj->gmt = 0;
     tobj->tm_got=0;
     tobj->timew = WINT2FIXWV(0);
-#ifdef HAVE_CLOCK_GETTIME
-    if (clock_gettime(CLOCK_REALTIME, &ts) == -1) {
-	rb_sys_fail("clock_gettime");
-    }
-#else
-    {
-        struct timeval tv;
-        if (gettimeofday(&tv, 0) < 0) {
-            rb_sys_fail("gettimeofday");
-        }
-        ts.tv_sec = tv.tv_sec;
-        ts.tv_nsec = tv.tv_usec * 1000;
-    }
-#endif
+    rb_timespec_now(&ts);
     tobj->timew = timespec2timew(&ts);
 
     return time;
@@ -2299,10 +2305,39 @@ rb_time_new(time_t sec, long usec)
     return time_new_timew(rb_cTime, timew);
 }
 
+/* returns localtime time object */
 VALUE
 rb_time_nano_new(time_t sec, long nsec)
 {
     return time_new_timew(rb_cTime, nsec2timew(sec, nsec));
+}
+
+/**
+ * Returns a time object with UTC/localtime/fixed offset
+ *
+ * offset is -86400 < fixoff < 86400 or INT_MAX (localtime) or INT_MAX-1 (utc)
+ */
+VALUE
+rb_time_timespec_new(const struct timespec *ts, int offset)
+{
+    struct time_object *tobj;
+    VALUE time = time_new_timew(rb_cTime, nsec2timew(ts->tv_sec, ts->tv_nsec));
+
+    if (-86400 < offset && offset <  86400) { /* fixoff */
+	GetTimeval(time, tobj);
+	TIME_SET_FIXOFF(tobj, INT2FIX(offset));
+    }
+    else if (offset == INT_MAX) { /* localtime */
+    }
+    else if (offset == INT_MAX-1) { /* UTC */
+	GetTimeval(time, tobj);
+	TIME_SET_UTC(tobj);
+    }
+    else {
+	rb_raise(rb_eArgError, "utc_offset out of range");
+    }
+
+    return time;
 }
 
 VALUE

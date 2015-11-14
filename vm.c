@@ -86,25 +86,69 @@ rb_vm_control_frame_block_ptr(const rb_control_frame_t *cfp)
 }
 
 static rb_cref_t *
-vm_cref_new(VALUE klass, rb_method_visibility_t visi, const rb_cref_t *prev_cref)
+vm_cref_new0(VALUE klass, rb_method_visibility_t visi, int module_func, rb_cref_t *prev_cref, int pushed_by_eval, int use_prev_prev)
 {
+    VALUE refinements = Qnil;
+    int omod_shared = FALSE;
+     rb_cref_t *cref;
+
+    /* scope */
     union {
 	rb_scope_visibility_t visi;
 	VALUE value;
     } scope_visi;
-    scope_visi.visi.method_visi = visi;
-    scope_visi.visi.module_func = 0;
 
-    return (rb_cref_t *)rb_imemo_new(imemo_cref, klass, (VALUE)prev_cref, scope_visi.value, Qnil);
+    scope_visi.visi.method_visi = visi;
+    scope_visi.visi.module_func = module_func;
+
+    /* refinements */
+    if (prev_cref != NULL && prev_cref != (void *)1 /* TODO: why CREF_NEXT(cref) is 1? */) {
+	refinements = CREF_REFINEMENTS(prev_cref);
+
+	if (!NIL_P(refinements)) {
+	    omod_shared = TRUE;
+	    CREF_OMOD_SHARED_SET(prev_cref);
+	}
+    }
+
+    cref = (rb_cref_t *)rb_imemo_new(imemo_cref, klass, (VALUE)(use_prev_prev ? CREF_NEXT(prev_cref) : prev_cref), scope_visi.value, refinements);
+
+    if (pushed_by_eval) CREF_PUSHED_BY_EVAL_SET(cref);
+    if (omod_shared) CREF_OMOD_SHARED_SET(cref);
+
+    return cref;
+}
+
+static rb_cref_t *
+vm_cref_new(VALUE klass, rb_method_visibility_t visi, int module_func, rb_cref_t *prev_cref, int pushed_by_eval)
+{
+    return vm_cref_new0(klass, visi, module_func, prev_cref, pushed_by_eval, FALSE);
+}
+
+static rb_cref_t *
+vm_cref_new_use_prev(VALUE klass, rb_method_visibility_t visi, int module_func, rb_cref_t *prev_cref, int pushed_by_eval)
+{
+    return vm_cref_new0(klass, visi, module_func, prev_cref, pushed_by_eval, TRUE);
+}
+
+static rb_cref_t *
+vm_cref_dup(const rb_cref_t *cref)
+{
+    VALUE klass = CREF_CLASS(cref);
+    const rb_scope_visibility_t *visi = CREF_SCOPE_VISI(cref);
+    rb_cref_t *next_cref = CREF_NEXT(cref);
+    int pushed_by_eval = CREF_PUSHED_BY_EVAL(cref);
+
+    return vm_cref_new(klass, visi->method_visi, visi->module_func, next_cref, pushed_by_eval);
 }
 
 static rb_cref_t *
 vm_cref_new_toplevel(rb_thread_t *th)
 {
-    rb_cref_t *cref = vm_cref_new(rb_cObject, METHOD_VISI_PRIVATE /* toplevel visibility is private */, NULL);
+    rb_cref_t *cref = vm_cref_new(rb_cObject, METHOD_VISI_PRIVATE /* toplevel visibility is private */, FALSE, NULL, FALSE);
 
     if (th->top_wrapper) {
-	cref = vm_cref_new(th->top_wrapper, METHOD_VISI_PRIVATE, cref);
+	cref = vm_cref_new(th->top_wrapper, METHOD_VISI_PRIVATE, FALSE, cref, FALSE);
     }
 
     return cref;
@@ -2337,25 +2381,28 @@ rb_thread_alloc(VALUE klass)
 }
 
 static void
-vm_define_method(rb_thread_t *th, VALUE obj, ID id, VALUE iseqval,
-		 rb_num_t is_singleton, rb_cref_t *cref)
+vm_define_method(rb_thread_t *th, VALUE obj, ID id, VALUE iseqval, int is_singleton)
 {
-    VALUE klass = CREF_CLASS(cref);
-    const rb_scope_visibility_t *scope_visi = CREF_SCOPE_VISI(cref);
-    rb_method_visibility_t visi = scope_visi->method_visi;
+    VALUE klass;
+    rb_method_visibility_t visi;
+    rb_cref_t *cref = rb_vm_cref();
+
+    if (!is_singleton) {
+	klass = CREF_CLASS(cref);
+	visi = rb_scope_visibility_get();
+    }
+    else { /* singleton */
+	klass = rb_singleton_class(obj); /* class and frozen checked in this API */
+	visi = METHOD_VISI_PUBLIC;
+    }
 
     if (NIL_P(klass)) {
 	rb_raise(rb_eTypeError, "no class/module to add method");
     }
 
-    if (is_singleton) {
-	klass = rb_singleton_class(obj); /* class and frozen checked in this API */
-	visi = METHOD_VISI_PUBLIC;
-    }
-
     rb_add_method_iseq(klass, id, (const rb_iseq_t *)iseqval, cref, visi);
 
-    if (!is_singleton && scope_visi->module_func) {
+    if (!is_singleton && rb_scope_module_func_check()) {
 	klass = rb_singleton_class(klass);
 	rb_add_method_iseq(klass, id, (const rb_iseq_t *)iseqval, cref, METHOD_VISI_PUBLIC);
     }
@@ -2371,10 +2418,10 @@ vm_define_method(rb_thread_t *th, VALUE obj, ID id, VALUE iseqval,
 } while (0)
 
 static VALUE
-m_core_define_method(VALUE self, VALUE cbase, VALUE sym, VALUE iseqval)
+m_core_define_method(VALUE self, VALUE sym, VALUE iseqval)
 {
     REWIND_CFP({
-	vm_define_method(GET_THREAD(), cbase, SYM2ID(sym), iseqval, 0, rb_vm_cref());
+	vm_define_method(GET_THREAD(), Qnil, SYM2ID(sym), iseqval, FALSE);
     });
     return sym;
 }
@@ -2383,7 +2430,7 @@ static VALUE
 m_core_define_singleton_method(VALUE self, VALUE cbase, VALUE sym, VALUE iseqval)
 {
     REWIND_CFP({
-	vm_define_method(GET_THREAD(), cbase, SYM2ID(sym), iseqval, 1, rb_vm_cref());
+	vm_define_method(GET_THREAD(), cbase, SYM2ID(sym), iseqval, TRUE);
     });
     return sym;
 }
@@ -2583,7 +2630,7 @@ Init_VM(void)
     rb_define_method_id(klass, id_core_set_method_alias, m_core_set_method_alias, 3);
     rb_define_method_id(klass, id_core_set_variable_alias, m_core_set_variable_alias, 2);
     rb_define_method_id(klass, id_core_undef_method, m_core_undef_method, 2);
-    rb_define_method_id(klass, id_core_define_method, m_core_define_method, 3);
+    rb_define_method_id(klass, id_core_define_method, m_core_define_method, 2);
     rb_define_method_id(klass, id_core_define_singleton_method, m_core_define_singleton_method, 3);
     rb_define_method_id(klass, id_core_set_postexe, m_core_set_postexe, 0);
     rb_define_method_id(klass, id_core_hash_from_ary, m_core_hash_from_ary, 1);
@@ -2841,7 +2888,7 @@ Init_VM(void)
 	th->cfp->pc = iseq->body->iseq_encoded;
 	th->cfp->self = th->top_self;
 
-	th->cfp->ep[-1] = (VALUE)vm_cref_new(rb_cObject, METHOD_VISI_PRIVATE, NULL);
+	th->cfp->ep[-1] = (VALUE)vm_cref_new(rb_cObject, METHOD_VISI_PRIVATE, FALSE, NULL, FALSE);
 
 	/*
 	 * The Binding of the top level scope

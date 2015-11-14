@@ -1013,6 +1013,14 @@ rb_check_symbol_cstr(const char *ptr, long len, rb_encoding *enc)
     return Qnil;
 }
 
+VALUE
+rb_cstr_intern(const char *ptr, long len, rb_encoding *enc)
+{
+    struct RString fake_str;
+    const VALUE name = rb_setup_fake_str(&fake_str, ptr, len, enc);
+    return rb_str_intern(name);
+}
+
 static ID
 attrsetname_to_attr_id(VALUE name)
 {

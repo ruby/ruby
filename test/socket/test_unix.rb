@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 begin
   require "socket"
 rescue LoadError
@@ -386,7 +388,7 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
     assert_equal("", s1.recv(10))
     assert_raise(IO::EAGAINWaitReadable) { s1.recv_nonblock(10) }
 
-    buf = ""
+    buf = "".dup
     s2.send("BBBBBB", 0)
     IO.select([s1])
     rv = s1.recv(100, 0, buf)

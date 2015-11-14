@@ -1,5 +1,4 @@
-#
-# -*- frozen_string_literal: true -*-
+# frozen_string_literal: true
 require 'test/unit'
 require 'open-uri'
 require 'stringio'

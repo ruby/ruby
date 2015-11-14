@@ -38,6 +38,14 @@ class Gem::BasicSpecification
   end
 
   ##
+  # The path to the gem.build_complete file within the extension install
+  # directory.
+
+  def gem_build_complete_path # :nodoc:
+    File.join extension_dir, 'gem.build_complete'
+  end
+
+  ##
   # True when the gem has been activated
 
   def activated?
@@ -50,12 +58,7 @@ class Gem::BasicSpecification
   # eg: /usr/local/lib/ruby/gems/1.8
 
   def base_dir
-    return Gem.dir unless loaded_from
-    @base_dir ||= if default_gem? then
-                    File.dirname File.dirname File.dirname loaded_from
-                  else
-                    File.dirname File.dirname loaded_from
-                  end
+    raise NotImplementedError
   end
 
   ##
@@ -65,7 +68,7 @@ class Gem::BasicSpecification
     @contains_requirable_file ||= {}
     @contains_requirable_file[file] ||=
     begin
-      if instance_variable_defined?(:@ignored) then
+      if @ignored then
         return false
       elsif missing_extensions? then
         @ignored = true
@@ -75,12 +78,7 @@ class Gem::BasicSpecification
         return false
       end
 
-      suffixes = Gem.suffixes
-
-      full_require_paths.any? do |dir|
-        base = "#{dir}/#{file}"
-        suffixes.any? { |suf| File.file? "#{base}#{suf}" }
-      end
+      have_file? file, Gem.suffixes
     end ? :yes : :no
     @contains_requirable_file[file] == :yes
   end
@@ -94,7 +92,7 @@ class Gem::BasicSpecification
   # Returns full path to the directory where gem's extensions are installed.
 
   def extension_dir
-    @extension_dir ||= File.expand_path File.join(extensions_dir, full_name)
+    @extension_dir ||= File.expand_path(File.join(extensions_dir, full_name)).untaint
   end
 
   ##
@@ -110,7 +108,7 @@ class Gem::BasicSpecification
     # TODO: also, shouldn't it default to full_name if it hasn't been written?
     path = File.expand_path File.join(gems_dir, full_name)
     path.untaint
-    path if File.directory? path
+    path
   end
 
   private :find_full_gem_path
@@ -148,10 +146,18 @@ class Gem::BasicSpecification
         File.join full_gem_path, path.untaint
       end
 
-      full_paths << extension_dir unless @extensions.nil? || @extensions.empty?
+      full_paths << extension_dir if have_extensions?
 
       full_paths
     end
+  end
+
+  ##
+  # The path to the data directory for this gem.
+
+  def datadir
+# TODO: drop the extra ", gem_name" which is uselessly redundant
+    File.expand_path(File.join(gems_dir, full_name, "data", name)).untaint
   end
 
   ##
@@ -189,8 +195,7 @@ class Gem::BasicSpecification
   # gem directory. eg: /usr/local/lib/ruby/1.8/gems
 
   def gems_dir
-    # TODO: this logic seems terribly broken, but tests fail if just base_dir
-    @gems_dir ||= File.join(loaded_from && base_dir || Gem.dir, "gems")
+    raise NotImplementedError
   end
 
   def internal_init # :nodoc:
@@ -198,8 +203,7 @@ class Gem::BasicSpecification
     @extensions_dir = nil
     @full_gem_path         = nil
     @gem_dir               = nil
-    @gems_dir              = nil
-    @base_dir              = nil
+    @ignored = nil
   end
 
   ##
@@ -217,7 +221,7 @@ class Gem::BasicSpecification
   end
 
   def raw_require_paths # :nodoc:
-    Array(@require_paths)
+    raise NotImplementedError
   end
 
   ##
@@ -238,7 +242,7 @@ class Gem::BasicSpecification
   #   spec.require_path = '.'
 
   def require_paths
-    return raw_require_paths if @extensions.nil? || @extensions.empty?
+    return raw_require_paths unless have_extensions?
 
     [extension_dir].concat raw_require_paths
   end
@@ -250,8 +254,8 @@ class Gem::BasicSpecification
   def source_paths
     paths = raw_require_paths.dup
 
-    if @extensions then
-      ext_dirs = @extensions.map do |extension|
+    if have_extensions? then
+      ext_dirs = extensions.map do |extension|
         extension.split(File::SEPARATOR, 2).first
       end.uniq
 
@@ -305,6 +309,24 @@ class Gem::BasicSpecification
   # entire gemspec file.
   def stubbed?
     raise NotImplementedError
+  end
+
+  private
+
+  def have_extensions?; !extensions.empty?; end
+
+  def have_file? file, suffixes
+    return true if raw_require_paths.any? do |path|
+      base = File.join(gems_dir, full_name, path.untaint, file).untaint
+      suffixes.any? { |suf| File.file? base + suf }
+    end
+
+    if have_extensions?
+      base = File.join extension_dir, file
+      suffixes.any? { |suf| File.file? base + suf }
+    else
+      false
+    end
   end
 
 end

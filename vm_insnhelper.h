@@ -121,25 +121,6 @@ enum vm_regan_acttype {
 /* deal with control flow 2: method/iterator              */
 /**********************************************************/
 
-#define COPY_CREF_OMOD(c1, c2) do {  \
-  CREF_REFINEMENTS_SET(c1, CREF_REFINEMENTS(c2)); \
-  if (!NIL_P(CREF_REFINEMENTS(c2))) { \
-      CREF_OMOD_SHARED_SET(c1); \
-      CREF_OMOD_SHARED_SET(c2); \
-  } \
-} while (0)
-
-#define COPY_CREF(c1, c2) do {  \
-  rb_cref_t *__tmp_c2 = (c2); \
-  COPY_CREF_OMOD((c1), __tmp_c2); \
-  CREF_CLASS_SET((c1), CREF_CLASS(__tmp_c2));\
-  CREF_SCOPE_VISI_COPY((c1), __tmp_c2);\
-  CREF_NEXT_SET((c1), CREF_NEXT(__tmp_c2));\
-  if (CREF_PUSHED_BY_EVAL(__tmp_c2)) { \
-      CREF_PUSHED_BY_EVAL_SET(c1); \
-  } \
-} while (0)
-
 #define CALL_METHOD(calling, ci, cc) do { \
     VALUE v = (*(cc)->call)(th, GET_CFP(), (calling), (ci), (cc)); \
     if (v == Qundef) { \

@@ -154,7 +154,7 @@ struct rb_econv_t {
 typedef struct {
     const char *sname;
     const char *dname;
-    const char *lib; /* null means means no need to load a library */
+    const char *lib; /* null means no need to load a library */
     const rb_transcoder *transcoder;
 } transcoder_entry_t;
 

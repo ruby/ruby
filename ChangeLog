@@ -1,3 +1,329 @@
+Sat Nov 14 22:15:07 2015  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/lib/socket.rb: Specify frozen_string_literal: true.
+
+Sat Nov 14 21:44:56 2015  Tanaka Akira  <akr@fsij.org>
+
+	* lib/time.rb: Use "<<" to reduce string allocation.
+
+Sat Nov 14 17:45:49 2015  Tanaka Akira  <akr@fsij.org>
+
+	* lib/tsort.rb: Specify frozen_string_literal: true.
+
+Sat Nov 14 17:25:15 2015  Tanaka Akira  <akr@fsij.org>
+
+	* lib/resolv-replace.rb: Specify frozen_string_literal: true.
+
+Sat Nov 14 17:00:13 2015  Tanaka Akira  <akr@fsij.org>
+
+	* lib/time.rb: Specify frozen_string_literal: true.
+
+Sat Nov 14 16:43:02 2015  Tanaka Akira  <akr@fsij.org>
+
+	* lib/open3.rb: Specify frozen_string_literal: true.
+
+Sat Nov 14 05:04:09 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* node.h: remove old comments.
+
+Sat Nov 14 04:55:36 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* refactoring CREF related code.
+
+	* eval_intern.h: remove unused setter functions.
+	  CREF_CLASS_SET()
+	  CREF_NEXT_SET()
+	  CREF_SCOPE_VISI_COPY()
+
+	* eval_intern.h: rename flags:
+	  * NODE_FL_CREF_PUSHED_BY_EVAL_ -> CREF_FL_PUSHED_BY_EVAL
+	  * NODE_FL_CREF_OMOD_SHARED_ -> CREF_FL_OMOD_SHARED
+	  and use IMEMO_FL_USER1/2.
+
+	* vm.c (vm_cref_new): accept push_by_eval parameter.
+
+	* vm.c (vm_cref_new_use_prev): added for rb_vm_rewrite_cref().
+
+	* vm_insnhelper.c (vm_cref_push): accept pushed_by_eval parameter.
+
+	* vm_insnhelper.h: remove unused macros:
+	  COPY_CREF_OMOD() and COPY_CREF().
+
+	* vm_eval.c, insns.def: catch up this fix.
+
+Sat Nov 14 02:58:03 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (vm_define_method): refactoring.
+	  * get CREF in this function.
+	  * cbase is no longer needed (CREF_CLASS(cref) is enough).
+
+	* compile.c: RubyVM::FrozenCore.define_method only accept 2 args.
+
+Sat Nov 14 02:34:43 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (vm_define_method): do not use current CREF immediately,
+	  but check CREF in environment or methods. Methods defined in methods
+	  should be public.
+	  [Bug #11571]
+
+	* vm_method.c (rb_scope_module_func_check): check CREF in env or me.
+	  if CREF is contained by `me', then return FALSE.
+
+	* test/ruby/test_method.rb: add a test.
+
+Sat Nov 14 02:19:16 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* method.h: constify rb_cref_t::scope_visi;
+
+	* eval_intern.h (CREF_SCOPE_VISI_COPY): catch up this fix.
+
+	* vm_method.c: ditto.
+
+Sat Nov 14 01:53:52 2015  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* pack.c (pack_unpack, AVOID_CC_BUG): Very ugly workaround for
+	  optimization bug of Oracle Solaris Studio 12.4 on Solaris
+	  with -xO4 optimization option. [Bug #11684]
+
+Fri Nov 13 23:00:23 2015  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* configure.in: unset LD_PRELOAD on mingw. msys2 child processes
+	  crash at make test-all with LD_PRELOAD.
+	  [ruby-core:71461] [Bug #11680]
+
+Fri Nov 13 14:00:43 2015  Zachary Scott  <zzak@ruby-lang.org>
+
+	* ext/openssl/ossl_pkey.c: Merge ruby/openssl@b9ea8ef [Bug #10735]
+
+Fri Nov 13 13:09:16 2015  Zachary Scott  <zzak@ruby-lang.org>
+
+	* ext/openssl/ossl_ssl.c: Merge ruby/openssl@81e1a30
+
+	* test/openssl/test_ssl.rb: ditto
+
+Fri Nov 13 13:05:37 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* prelude.rb (Thread.exclusive): warn as deprecated.
+
+Fri Nov 13 10:36:39 2015  Victor Nawothnig  <Victor.Nawothnig@gmail.com>
+
+	* parse.y (new_unless): optimize constant condition for `unless`
+	  as well as `if`.  [Fix GH-1092]
+
+Fri Nov 13 10:08:41 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ext/psych/psych.gemspec: bump version to 2.0.15
+
+Thu Nov 12 18:44:26 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_magic_comment): should match exactly.
+	  [ruby-core:71460] [Bug #11679]
+
+Thu Nov 12 16:16:20 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* template/prelude.c.tmpl: enable tail call optimization.
+
+Thu Nov 12 14:17:01 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_yylex): ANDDOT at the head of the line denote
+	  line continuation from previous one to support fluent interface,
+	  as well as single dot.
+
+Thu Nov 12 13:49:50 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/rubygems: Update to RubyGems 2.5.0+ HEAD(db78980).
+	  this version includes #1367 , #1373 , #1375
+	* test/rubygems: ditto.
+
+Thu Nov 12 10:53:41 2015  Eric Wong  <e@80x24.org>
+
+	* benchmark/bm_io_nonblock_noex2.rb: new benchmark based
+	  on bm_io_nonblock_noex.rb
+	* io.c (io_read_nonblock): move documentation to prelude.rb
+	  (io_write_nonblock): ditto
+	  (Init_io): private, internal methods for prelude.rb use only
+	* prelude.rb (IO#read_nonblock): wrapper + documentation
+	  (IO#write_nonblock): ditto
+	  [ruby-core:71439] [Feature #11339]
+
+Wed Nov 11 18:30:28 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* sprintf.c (rb_str_format): look up the key, then get default
+	  value and raise KeyError if the returned value is nil.
+	  [ruby-dev:49338] [Ruby trunk - Bug #11677]
+
+Wed Nov 11 17:38:24 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (local_var_list_add): skip internal local variable
+	  name by its type but not if it has a name.  internal local
+	  variable names are just unique per frame, not globally.
+	  [ruby-core:71437] [Bug #11674]
+
+Wed Nov 11 14:14:33 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* transcode.c: fix a typo
+	[ci skip][fix GH-1091] Patch by @jwworth
+
+Wed Nov 11 11:58:38 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/ftp.rb (initialize): Connections are in passive mode per
+	  default now.  The default mode can be changed by
+	  Net::FTP.default_passive=.
+	  [ruby-core:71146] [Feature #11612]
+
+	* lib/net/ftp.rb (default_passive=, default_passive): new methods.
+
+Wed Nov 11 09:03:12 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* sprintf.c (rb_str_format): respect default value of a hash.  no
+	  longer raises KeyError unless the default value of the hash is
+	  nil.  [ruby-core:71354] [Bug #11661]
+
+Tue Nov 10 20:35:12 2015  Tanaka Akira  <akr@fsij.org>
+
+	* lib/open-uri.rb: Remove indicator for "frozen_string_literal: true".
+
+	* lib/pp.rb: Ditto.
+
+	* lib/prettyprint.rb: Ditto.
+
+	* lib/resolv.rb: Ditto.
+
+	* lib/securerandom.rb: Ditto.
+
+	* lib/tmpdir.rb: Ditto.
+
+	* lib/unicode_normalize/tables.rb: Ditto.
+
+	* test/net/ftp/test_buffered_socket.rb: Ditto.
+
+	* test/net/ftp/test_mlsx_entry.rb: Ditto.
+
+	* test/open-uri/test_open-uri.rb: Ditto.
+
+	* test/open-uri/test_ssl.rb: Ditto.
+
+	* test/pathname/test_pathname.rb: Ditto.
+
+	* test/test_pp.rb: Ditto.
+
+	* test/test_prettyprint.rb: Ditto.
+
+	* tool/transcode-tblgen.rb: Ditto.
+
+	* ext/pathname/lib/pathname.rb: Ditto.
+
+Tue Nov 10 18:42:24 2015  Aleksandrs Ledovskis  <aleksandrs@ledovskis.lv>
+
+	* defs/id.def, parse.y: Switch internal token name to reflect
+	  current form of safe-call operator.  [Fix GH-1090]
+
+Tue Nov 10 18:25:56 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (rb_hash_to_proc): use rb_func_proc_new to make light
+	  weight proc.  [Feature #11653]
+
+Tue Nov 10 18:23:35 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (cfunc_proc_t): add room for me.
+
+	* proc.c (cfunc_proc_new): generalise for cfunc proc without env.
+
+	* proc.c (rb_func_proc_new, rb_func_lambda_new): new functions to
+	  make proc/lambda without env from cfunc.
+
+Tue Nov 10 17:32:35 2015  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* bootstraptest/test_fork.rb ([ruby-dev:37934]): :NPROC (RLIMIT_NPROC)
+	  is not supported on some platforms (e.g. Solaris 10).
+
+Tue Nov 10 16:57:14 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (rb_hash_to_proc): new method Hash#to_proc.
+	  [Feature #11653]
+
+Tue Nov 10 14:34:09 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* time.c (rb_time_timespec_new): swap utc and localtime
+	  to generate gmt flag by INT_MAX - gmtoff.
+
+Tue Nov 10 14:01:59 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (rb_hash_{le,lt,ge,gt}): new methods, Hash#<=, Hash#<,
+	  Hash#>=, Hash#>, to test if all elements of a hash are also
+	  included in another hash, and vice versa.
+	  [ruby-core:68561] [Feature #10984]
+
+Tue Nov 10 11:25:29 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* time.c (rb_timespec_now): added.  [Feature #11558]
+
+	* time.c (rb_time_timespec_new): added.  [Feature #11558]
+
+Tue Nov 10 06:17:17 2015  Eric Wong  <e@80x24.org>
+
+	* variable.c (rb_autoload_load): allow recursive calls
+	  [ruby-core:71345] [Bug #11658]
+	* test/ruby/test_autoload.rb (test_autoload_while_autoloading):
+	  new test by: Hiroshi Shirosaki <h.shirosaki@gmail.com>
+	  [ruby-core:71390]
+
+Tue Nov 10 00:36:46 2015  Tanaka Akira  <akr@fsij.org>
+
+	* lib/resolv.rb (Resolv::DNS::Message::MessageEncoder#put_labels):
+	  Prevent overflow of pointer to labels.
+	  Patch by Hannes Georg.  [ruby-core:71248] [Bug #11632]
+
+Tue Nov 10 00:25:41 2015  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* gems/bundled_gems: update to power_assert 0.2.6.
+
+Mon Nov  9 21:48:17 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (rb_check_funcall_default): split from
+	  rb_check_funcall to return the given fallback value.
+
+	* object.c (rb_obj_dig): use rb_check_funcall_default so that tail
+	  call optimization will be possible.  [Feature #11643]
+
+Mon Nov  9 21:27:23 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_dig): new method Array#dig.
+
+	* hash.c (rb_hash_dig): new method Hash#dig.
+
+	* object.c (rb_obj_dig): dig in nested arrays/hashes.
+	  [Feature #11643]
+
+Mon Nov  9 18:00:47 2015  Yuki Nishijima  <mail@yukinishijima.net>
+
+	* gems/bundled_gems: Upgrade the did_you_mean gem to 1.0.0.beta3
+
+Mon Nov  9 17:38:14 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* test/runner.rb: use official repository for coverage tool.
+	* Makefile.in: ditto.
+	* common.mk: ditto.
+	* .gitignore: ignored third party repositories.
+
+Mon Nov  9 17:29:09 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* compile.c (iseq_compile_each): Dynamic string literals should be
+	  frozen.
+	  [ruby-core:57574] [Feature #8976]
+
+Mon Nov  9 15:56:07 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* common.mk: Use ruby organization url for simplecov repository.
+
+Sun Nov  8 16:24:09 2015  Masaki Matsushita <glass.saga@gmail.com>
+
+	* NEWS: describe addition of File::TMPFILE
+
+Sun Nov  8 15:19:17 2015  Masaki Matsushita <glass.saga@gmail.com>
+
+	* file.c: Add O_TMPFILE.
+
 Sun Nov  8 14:24:43 2015  windwiny  <windwiny.ubt@gmail.com>
 
 	* method.h (METHOD_ENTRY_{VISI,BASIC,FLAGS}_SET): suppress
@@ -5,8 +331,8 @@ Sun Nov  8 14:24:43 2015  windwiny  <windwiny.ubt@gmail.com>
 
 Sun Nov  8 14:01:22 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
-	* ext/psych/psych_emitter.c: bakcport 5bd7744 from tenderlove/psych.
-	  support backword compatibility of Ruby 2.0
+	* ext/psych/psych_emitter.c: backport 5bd7744 from tenderlove/psych.
+	  support backward compatibility of Ruby 2.0
 
 Sun Nov  8 10:55:10 2015  Anton Davydov  <antondavydov.o@gmail.com>
 
@@ -55,7 +381,7 @@ Sat Nov  7 09:51:38 2015  Koichi Sasada  <ko1@atdot.net>
 
 Sat Nov  7 03:32:27 2015  Koichi Sasada  <ko1@atdot.net>
 
-	* include/ruby/ruby.h (RSTRUCT_PTR): need a close parenthese.
+	* include/ruby/ruby.h (RSTRUCT_PTR): need a close parenthesis.
 
 Sat Nov  7 01:32:06 2015  Naohisa Goto  <ngotogenome@gmail.com>
 

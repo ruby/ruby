@@ -307,11 +307,10 @@ module Gem
   # package is not available as a gem, return nil.
 
   def self.datadir(gem_name)
-# TODO: deprecate and move to Gem::Specification
-#       and drop the extra ", gem_name" which is uselessly redundant
+# TODO: deprecate
     spec = @loaded_specs[gem_name]
     return nil if spec.nil?
-    File.join spec.full_gem_path, "data", gem_name
+    spec.datadir
   end
 
   ##

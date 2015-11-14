@@ -758,8 +758,8 @@ rb_hash_rehash(VALUE hash)
     return hash;
 }
 
-static VALUE
-hash_default_value(VALUE hash, VALUE key)
+VALUE
+rb_hash_default_value(VALUE hash, VALUE key)
 {
     if (rb_method_basic_definition_p(CLASS_OF(hash), id_default)) {
 	VALUE ifnone = RHASH_IFNONE(hash);
@@ -792,7 +792,7 @@ rb_hash_aref(VALUE hash, VALUE key)
     st_data_t val;
 
     if (!RHASH(hash)->ntbl || !st_lookup(RHASH(hash)->ntbl, key, &val)) {
-	return hash_default_value(hash, key);
+	return rb_hash_default_value(hash, key);
     }
     return (VALUE)val;
 }
@@ -902,14 +902,15 @@ rb_hash_fetch(VALUE hash, VALUE key)
 static VALUE
 rb_hash_default(int argc, VALUE *argv, VALUE hash)
 {
-    VALUE key, ifnone;
+    VALUE args[2], ifnone;
 
     rb_check_arity(argc, 0, 1);
-    key = argv[0];
     ifnone = RHASH_IFNONE(hash);
     if (FL_TEST(hash, HASH_PROC_DEFAULT)) {
 	if (argc == 0) return Qnil;
-	return rb_funcall(ifnone, id_yield, 2, hash, key);
+	args[0] = hash;
+	args[1] = argv[0];
+	return rb_funcallv(ifnone, id_yield, 2, args);
     }
     return ifnone;
 }
@@ -1183,7 +1184,7 @@ rb_hash_shift(VALUE hash)
 	    }
 	}
     }
-    return hash_default_value(hash, Qnil);
+    return rb_hash_default_value(hash, Qnil);
 }
 
 static int
@@ -2690,6 +2691,146 @@ rb_hash_any_p(VALUE hash)
     return ret;
 }
 
+/*
+ * call-seq:
+ *   hsh.dig(key, ...)                 -> object
+ *
+ * Retrieves the value object corresponding to the each <i>key</i>
+ * objects repeatedly.
+ *
+ *   h = { foo: {bar: {baz: 1}}}
+ *
+ *   h.dig(:foo, :bar, :baz)           #=> 1
+ *   h.dig(:foo, :zot)                 #=> nil
+ */
+
+VALUE
+rb_hash_dig(int argc, VALUE *argv, VALUE self)
+{
+    rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
+    self = rb_hash_aref(self, *argv);
+    if (!--argc) return self;
+    ++argv;
+    return rb_obj_dig(argc, argv, self, Qnil);
+}
+
+static int
+hash_le_i(VALUE key, VALUE value, VALUE arg)
+{
+    VALUE *args = (VALUE *)arg;
+    VALUE v = rb_hash_lookup2(args[0], key, Qundef);
+    if (v != Qundef && rb_equal(value, v)) return ST_CONTINUE;
+    args[1] = Qfalse;
+    return ST_STOP;
+}
+
+static VALUE
+hash_le(VALUE hash1, VALUE hash2)
+{
+    VALUE args[2];
+    args[0] = hash2;
+    args[1] = Qtrue;
+    rb_hash_foreach(hash1, hash_le_i, (VALUE)args);
+    return args[1];
+}
+
+/*
+ * call-seq:
+ *   hash <= other -> true or false
+ *
+ * Returns <code>true</code> if <i>hash</i> is subset of
+ * <i>other</i> or equals to <i>other</i>.
+ *
+ *    h1 = {a:1, b:2}
+ *    h2 = {a:1, b:2, c:3}
+ *    h1 <= h2   #=> true
+ *    h2 <= h1   #=> false
+ *    h1 <= h1   #=> true
+ */
+static VALUE
+rb_hash_le(VALUE hash, VALUE other)
+{
+    other = to_hash(other);
+    if (RHASH_SIZE(hash) > RHASH_SIZE(other)) return Qfalse;
+    return hash_le(hash, other);
+}
+
+/*
+ * call-seq:
+ *   hash < other -> true or false
+ *
+ * Returns <code>true</code> if <i>hash</i> is subset of
+ * <i>other</i>.
+ *
+ *    h1 = {a:1, b:2}
+ *    h2 = {a:1, b:2, c:3}
+ *    h1 < h2    #=> true
+ *    h2 < h1    #=> false
+ *    h1 < h1    #=> false
+ */
+static VALUE
+rb_hash_lt(VALUE hash, VALUE other)
+{
+    other = to_hash(other);
+    if (RHASH_SIZE(hash) >= RHASH_SIZE(other)) return Qfalse;
+    return hash_le(hash, other);
+}
+
+/*
+ * call-seq:
+ *   hash >= other -> true or false
+ *
+ * Returns <code>true</code> if <i>other</i> is subset of
+ * <i>hash</i> or equals to <i>hash</i>.
+ *
+ *    h1 = {a:1, b:2}
+ *    h2 = {a:1, b:2, c:3}
+ *    h1 >= h2   #=> false
+ *    h2 >= h1   #=> true
+ *    h1 >= h1   #=> true
+ */
+static VALUE
+rb_hash_ge(VALUE hash, VALUE other)
+{
+    other = to_hash(other);
+    if (RHASH_SIZE(hash) < RHASH_SIZE(other)) return Qfalse;
+    return hash_le(other, hash);
+}
+
+/*
+ * call-seq:
+ *   hash > other -> true or false
+ *
+ * Returns <code>true</code> if <i>other</i> is subset of
+ * <i>hash</i>.
+ *
+ *    h1 = {a:1, b:2}
+ *    h2 = {a:1, b:2, c:3}
+ *    h1 > h2    #=> false
+ *    h2 > h1    #=> true
+ *    h1 > h1    #=> false
+ */
+static VALUE
+rb_hash_gt(VALUE hash, VALUE other)
+{
+    other = to_hash(other);
+    if (RHASH_SIZE(hash) <= RHASH_SIZE(other)) return Qfalse;
+    return hash_le(other, hash);
+}
+
+static VALUE
+hash_proc_call(VALUE key, VALUE hash, int argc, const VALUE *argv, VALUE passed_proc)
+{
+    rb_check_arity(argc, 1, 1);
+    return rb_hash_aref(hash, *argv);
+}
+
+static VALUE
+rb_hash_to_proc(VALUE hash)
+{
+    return rb_func_proc_new(hash_proc_call, hash);
+}
+
 static int path_tainted = -1;
 
 static char **origenviron;
@@ -4056,6 +4197,7 @@ Init_Hash(void)
     rb_define_method(rb_cHash,"to_a", rb_hash_to_a, 0);
     rb_define_method(rb_cHash,"inspect", rb_hash_inspect, 0);
     rb_define_alias(rb_cHash, "to_s", "inspect");
+    rb_define_method(rb_cHash,"to_proc", rb_hash_to_proc, 0);
 
     rb_define_method(rb_cHash,"==", rb_hash_equal, 1);
     rb_define_method(rb_cHash,"[]", rb_hash_aref, 1);
@@ -4113,6 +4255,12 @@ Init_Hash(void)
     rb_define_method(rb_cHash,"compare_by_identity?", rb_hash_compare_by_id_p, 0);
 
     rb_define_method(rb_cHash, "any?", rb_hash_any_p, 0);
+    rb_define_method(rb_cHash, "dig", rb_hash_dig, -1);
+
+    rb_define_method(rb_cHash, "<=", rb_hash_le, 1);
+    rb_define_method(rb_cHash, "<", rb_hash_lt, 1);
+    rb_define_method(rb_cHash, ">=", rb_hash_ge, 1);
+    rb_define_method(rb_cHash, ">", rb_hash_gt, 1);
 
     /* Document-class: ENV
      *

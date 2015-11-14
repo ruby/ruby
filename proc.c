@@ -62,15 +62,15 @@ proc_mark(void *ptr)
 
 typedef struct {
     rb_proc_t basic;
-    VALUE env[2]; /* specval, envval */
-} sym_proc_t;
+    VALUE env[3]; /* me, specval, envval */
+} cfunc_proc_t;
 
 static size_t
 proc_memsize(const void *ptr)
 {
     const rb_proc_t *proc = ptr;
-    if (proc->block.ep == ((const sym_proc_t *)ptr)->env)
-	return sizeof(sym_proc_t);
+    if (proc->block.ep == ((const cfunc_proc_t *)ptr)->env+1)
+	return sizeof(cfunc_proc_t);
     return sizeof(rb_proc_t);
 }
 
@@ -582,17 +582,36 @@ bind_receiver(VALUE bindval)
 }
 
 static VALUE
-sym_proc_new(VALUE klass, VALUE sym)
+cfunc_proc_new(VALUE klass, VALUE ifunc, int8_t is_lambda)
 {
     rb_proc_t *proc;
-    sym_proc_t *symproc;
-    VALUE procval = TypedData_Make_Struct(klass, sym_proc_t, &proc_data_type, symproc);
-    symproc->env[0] = VM_ENVVAL_BLOCK_PTR(0);
-    proc = &symproc->basic;
-    proc->block.ep = symproc->env;
-    proc->block.iseq = (rb_iseq_t *)sym;
+    cfunc_proc_t *sproc;
+    VALUE procval = TypedData_Make_Struct(klass, cfunc_proc_t, &proc_data_type, sproc);
+    sproc->env[1] = VM_ENVVAL_BLOCK_PTR(0);
+    proc = &sproc->basic;
+    proc->block.ep = sproc->env+1;
+    proc->block.iseq = (rb_iseq_t *)ifunc;
     proc->block.proc = procval;
+    proc->is_lambda = is_lambda;
     return procval;
+}
+
+static VALUE
+sym_proc_new(VALUE klass, VALUE sym)
+{
+    return cfunc_proc_new(klass, sym, 0);
+}
+
+VALUE
+rb_func_proc_new(rb_block_call_func_t func, VALUE val)
+{
+    return cfunc_proc_new(rb_cProc, (VALUE)IFUNC_NEW(func, val, 0), 0);
+}
+
+VALUE
+rb_func_lambda_new(rb_block_call_func_t func, VALUE val)
+{
+    return cfunc_proc_new(rb_cProc, (VALUE)IFUNC_NEW(func, val, 0), 1);
 }
 
 static const char proc_without_block[] = "tried to create Proc object without a block";

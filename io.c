@@ -2632,74 +2632,56 @@ io_nonblock_eof(VALUE opts)
     return Qnil;
 }
 
-/*
- *  call-seq:
- *     ios.read_nonblock(maxlen)              -> string
- *     ios.read_nonblock(maxlen, outbuf)      -> outbuf
- *
- *  Reads at most <i>maxlen</i> bytes from <em>ios</em> using
- *  the read(2) system call after O_NONBLOCK is set for
- *  the underlying file descriptor.
- *
- *  If the optional <i>outbuf</i> argument is present,
- *  it must reference a String, which will receive the data.
- *  The <i>outbuf</i> will contain only the received data after the method call
- *  even if it is not empty at the beginning.
- *
- *  read_nonblock just calls the read(2) system call.
- *  It causes all errors the read(2) system call causes: Errno::EWOULDBLOCK, Errno::EINTR, etc.
- *  The caller should care such errors.
- *
- *  If the exception is Errno::EWOULDBLOCK or Errno::EAGAIN,
- *  it is extended by IO::WaitReadable.
- *  So IO::WaitReadable can be used to rescue the exceptions for retrying read_nonblock.
- *
- *  read_nonblock causes EOFError on EOF.
- *
- *  If the read byte buffer is not empty,
- *  read_nonblock reads from the buffer like readpartial.
- *  In this case, the read(2) system call is not called.
- *
- *  When read_nonblock raises an exception kind of IO::WaitReadable,
- *  read_nonblock should not be called
- *  until io is readable for avoiding busy loop.
- *  This can be done as follows.
- *
- *    # emulates blocking read (readpartial).
- *    begin
- *      result = io.read_nonblock(maxlen)
- *    rescue IO::WaitReadable
- *      IO.select([io])
- *      retry
- *    end
- *
- *  Although IO#read_nonblock doesn't raise IO::WaitWritable.
- *  OpenSSL::Buffering#read_nonblock can raise IO::WaitWritable.
- *  If IO and SSL should be used polymorphically,
- *  IO::WaitWritable should be rescued too.
- *  See the document of OpenSSL::Buffering#read_nonblock for sample code.
- *
- *  Note that this method is identical to readpartial
- *  except the non-blocking flag is set.
- */
-
+/* :nodoc: */
 static VALUE
-io_read_nonblock(int argc, VALUE *argv, VALUE io)
+io_read_nonblock(VALUE io, VALUE length, VALUE str, VALUE ex)
 {
-    VALUE ret, opts;
+    rb_io_t *fptr;
+    long n, len;
+    struct read_internal_arg arg;
 
-    rb_scan_args(argc, argv, "11:", NULL, NULL, &opts);
-
-    ret = io_getpartial(argc, argv, io, opts, 1);
-
-    if (NIL_P(ret)) {
-	return io_nonblock_eof(opts);
+    if ((len = NUM2LONG(length)) < 0) {
+	rb_raise(rb_eArgError, "negative length %ld given", len);
     }
-    return ret;
+
+    io_setstrbuf(&str,len);
+    OBJ_TAINT(str);
+    GetOpenFile(io, fptr);
+    rb_io_check_byte_readable(fptr);
+
+    if (len == 0)
+	return str;
+
+    n = read_buffered_data(RSTRING_PTR(str), len, fptr);
+    if (n <= 0) {
+	rb_io_set_nonblock(fptr);
+	io_setstrbuf(&str, len);
+	arg.fd = fptr->fd;
+	arg.str_ptr = RSTRING_PTR(str);
+	arg.len = len;
+	rb_str_locktmp_ensure(str, read_internal_call, (VALUE)&arg);
+	n = arg.len;
+        if (n < 0) {
+            if ((errno == EWOULDBLOCK || errno == EAGAIN)) {
+                if (ex == Qfalse) return sym_wait_readable;
+                rb_readwrite_sys_fail(RB_IO_WAIT_READABLE, "read would block");
+            }
+            rb_sys_fail_path(fptr->pathv);
+        }
+    }
+    io_set_read_length(str, n);
+
+    if (n == 0) {
+	if (ex == Qfalse) return Qnil;
+	rb_eof_error();
+    }
+
+    return str;
 }
 
+/* :nodoc: */
 static VALUE
-io_write_nonblock(VALUE io, VALUE str, VALUE opts)
+io_write_nonblock(VALUE io, VALUE str, VALUE ex)
 {
     rb_io_t *fptr;
     long n;
@@ -2719,7 +2701,7 @@ io_write_nonblock(VALUE io, VALUE str, VALUE opts)
 
     if (n == -1) {
         if (errno == EWOULDBLOCK || errno == EAGAIN) {
-	    if (no_exception_p(opts)) {
+	    if (ex == Qfalse) {
 		return sym_wait_writable;
 	    }
 	    else {
@@ -2730,74 +2712,6 @@ io_write_nonblock(VALUE io, VALUE str, VALUE opts)
     }
 
     return LONG2FIX(n);
-}
-
-/*
- *  call-seq:
- *     ios.write_nonblock(string)   -> integer
- *     ios.write_nonblock(string [, options])   -> integer
- *
- *  Writes the given string to <em>ios</em> using
- *  the write(2) system call after O_NONBLOCK is set for
- *  the underlying file descriptor.
- *
- *  It returns the number of bytes written.
- *
- *  write_nonblock just calls the write(2) system call.
- *  It causes all errors the write(2) system call causes: Errno::EWOULDBLOCK, Errno::EINTR, etc.
- *  The result may also be smaller than string.length (partial write).
- *  The caller should care such errors and partial write.
- *
- *  If the exception is Errno::EWOULDBLOCK or Errno::EAGAIN,
- *  it is extended by IO::WaitWritable.
- *  So IO::WaitWritable can be used to rescue the exceptions for retrying write_nonblock.
- *
- *    # Creates a pipe.
- *    r, w = IO.pipe
- *
- *    # write_nonblock writes only 65536 bytes and return 65536.
- *    # (The pipe size is 65536 bytes on this environment.)
- *    s = "a" * 100000
- *    p w.write_nonblock(s)     #=> 65536
- *
- *    # write_nonblock cannot write a byte and raise EWOULDBLOCK (EAGAIN).
- *    p w.write_nonblock("b")   # Resource temporarily unavailable (Errno::EAGAIN)
- *
- *  If the write buffer is not empty, it is flushed at first.
- *
- *  When write_nonblock raises an exception kind of IO::WaitWritable,
- *  write_nonblock should not be called
- *  until io is writable for avoiding busy loop.
- *  This can be done as follows.
- *
- *    begin
- *      result = io.write_nonblock(string)
- *    rescue IO::WaitWritable, Errno::EINTR
- *      IO.select(nil, [io])
- *      retry
- *    end
- *
- *  Note that this doesn't guarantee to write all data in string.
- *  The length written is reported as result and it should be checked later.
- *
- *  On some platforms such as Windows, write_nonblock is not supported
- *  according to the kind of the IO object.
- *  In such cases, write_nonblock raises <code>Errno::EBADF</code>.
- *
- *  By specifying `exception: false`, the options hash allows you to indicate
- *  that write_nonblock should not raise an IO::WaitWritable exception, but
- *  return the symbol :wait_writable instead.
- *
- */
-
-static VALUE
-rb_io_write_nonblock(int argc, VALUE *argv, VALUE io)
-{
-    VALUE str, opts;
-
-    rb_scan_args(argc, argv, "10:", &str, &opts);
-
-    return io_write_nonblock(io, str, opts);
 }
 
 /*
@@ -12386,8 +12300,10 @@ Init_IO(void)
 
     rb_define_method(rb_cIO, "readlines",  rb_io_readlines, -1);
 
-    rb_define_method(rb_cIO, "read_nonblock",  io_read_nonblock, -1);
-    rb_define_method(rb_cIO, "write_nonblock", rb_io_write_nonblock, -1);
+    /* for prelude.rb use only: */
+    rb_define_private_method(rb_cIO, "__read_nonblock", io_read_nonblock, 3);
+    rb_define_private_method(rb_cIO, "__write_nonblock", io_write_nonblock, 2);
+
     rb_define_method(rb_cIO, "readpartial",  io_readpartial, -1);
     rb_define_method(rb_cIO, "read",  io_read, -1);
     rb_define_method(rb_cIO, "write", io_write_m, 1);

@@ -416,7 +416,7 @@ if you believe they were disclosed to a third party.
 
   def test_ignore_invalid_config_file
     File.open @temp_conf, 'w' do |fp|
-      fp.puts "some-non-yaml-hash-string"
+      fp.puts "invalid: yaml:"
     end
 
     begin

@@ -409,4 +409,15 @@ class TestSprintf < Test::Unit::TestCase
       assert_equal(enc, e.message.encoding)
     end
   end
+
+  def test_named_default
+    h = Hash.new('world')
+    assert_equal("hello world", "hello %{location}" % h)
+    assert_equal("hello world", "hello %<location>s" % h)
+  end
+
+  def test_named_with_nil
+    h = { key: nil, key2: "key2_val" }
+    assert_equal("key is , key2 is key2_val", "key is %{key}, key2 is %{key2}" % h)
+  end
 end

@@ -653,6 +653,7 @@ VALUE rb_ary_last(int, const VALUE *, VALUE);
 void rb_ary_set_len(VALUE, long);
 void rb_ary_delete_same(VALUE, VALUE);
 VALUE rb_ary_tmp_new_fill(long capa);
+VALUE rb_ary_at(VALUE, VALUE);
 size_t rb_ary_memsize(VALUE);
 #ifdef __GNUC__
 #define rb_ary_new_from_args(n, ...) \
@@ -827,6 +828,7 @@ void rb_gc_resurrect(VALUE ptr);
 /* hash.c */
 struct st_table *rb_hash_tbl_raw(VALUE hash);
 VALUE rb_hash_has_key(VALUE hash, VALUE key);
+VALUE rb_hash_default_value(VALUE hash, VALUE key);
 VALUE rb_hash_set_default_proc(VALUE hash, VALUE proc);
 long rb_objid_hash(st_index_t index);
 st_table *rb_init_identtable(void);
@@ -968,6 +970,7 @@ void rb_obj_copy_ivar(VALUE dest, VALUE obj);
 VALUE rb_obj_equal(VALUE obj1, VALUE obj2);
 VALUE rb_class_search_ancestor(VALUE klass, VALUE super);
 double rb_num_to_dbl(VALUE val);
+VALUE rb_obj_dig(int argc, VALUE *argv, VALUE self, VALUE notfound);
 
 struct RBasicRaw {
     VALUE flags;
@@ -1011,6 +1014,8 @@ ID rb_id_attrget(ID id);
 VALUE rb_proc_location(VALUE self);
 st_index_t rb_hash_proc(st_index_t hash, VALUE proc);
 int rb_block_arity(void);
+VALUE rb_func_proc_new(rb_block_call_func_t func, VALUE val);
+VALUE rb_func_lambda_new(rb_block_call_func_t func, VALUE val);
 
 /* process.c */
 #define RB_MAX_GROUPS (65536)
@@ -1129,6 +1134,11 @@ size_t rb_str_memsize(VALUE);
 VALUE rb_sym_proc_call(VALUE args, VALUE sym, int argc, const VALUE *argv, VALUE passed_proc);
 VALUE rb_sym_to_proc(VALUE sym);
 
+/* symbol.c */
+#ifdef RUBY_ENCODING_H
+VALUE rb_cstr_intern(const char *ptr, long len, rb_encoding *enc);
+#endif
+
 /* struct.c */
 VALUE rb_struct_init_copy(VALUE copy, VALUE s);
 
@@ -1211,6 +1221,7 @@ VALUE rb_check_block_call(VALUE, ID, int, const VALUE *, rb_block_call_func_t, V
 typedef void rb_check_funcall_hook(int, VALUE, ID, int, const VALUE *, VALUE);
 VALUE rb_check_funcall_with_hook(VALUE recv, ID mid, int argc, const VALUE *argv,
 				 rb_check_funcall_hook *hook, VALUE arg);
+VALUE rb_check_funcall_default(VALUE, ID, int, const VALUE *, VALUE);
 VALUE rb_catch_protect(VALUE t, rb_block_call_func *func, VALUE data, int *stateptr);
 VALUE rb_yield_1(VALUE val);
 

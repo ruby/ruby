@@ -1302,7 +1302,7 @@ rb_ary_aref(int argc, const VALUE *argv, VALUE ary)
  *     a.at(-1)    #=> "e"
  */
 
-static VALUE
+VALUE
 rb_ary_at(VALUE ary, VALUE pos)
 {
     return rb_ary_entry(ary, NUM2LONG(pos));
@@ -5532,6 +5532,29 @@ rb_ary_any_p(VALUE ary)
 }
 
 /*
+ * call-seq:
+ *   ary.dig(idx, ...)                 -> object
+ *
+ * Retrieves the value object corresponding to the each <i>idx</i>
+ * objects repeatedly.
+ *
+ *   a = [[1, [2, 3]]]
+ *
+ *   a.dig(0, 1, 1)                    #=> 3
+ *   a.dig(0, 0, 0)                    #=> nil
+ */
+
+VALUE
+rb_ary_dig(int argc, VALUE *argv, VALUE self)
+{
+    rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
+    self = rb_ary_at(self, *argv);
+    if (!--argc) return self;
+    ++argv;
+    return rb_obj_dig(argc, argv, self, Qnil);
+}
+
+/*
  *  Arrays are ordered, integer-indexed collections of any object.
  *
  *  Array indexing starts at 0, as in C or Java.  A negative index is assumed
@@ -5882,6 +5905,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "bsearch", rb_ary_bsearch, 0);
     rb_define_method(rb_cArray, "bsearch_index", rb_ary_bsearch_index, 0);
     rb_define_method(rb_cArray, "any?", rb_ary_any_p, 0);
+    rb_define_method(rb_cArray, "dig", rb_ary_dig, -1);
 
     id_cmp = rb_intern("<=>");
     id_random = rb_intern("random");

@@ -608,9 +608,17 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		sym = rb_check_symbol_cstr(start + 1,
 					   len - 2 /* without parenthesis */,
 					   enc);
-		if (sym != Qnil) nextvalue = rb_hash_lookup2(hash, sym, Qundef);
+		if (!NIL_P(sym)) nextvalue = rb_hash_lookup2(hash, sym, Qundef);
 		if (nextvalue == Qundef) {
-		    rb_enc_raise(enc, rb_eKeyError, "key%.*s not found", len, start);
+		    if (NIL_P(sym)) {
+			sym = rb_cstr_intern(start + 1,
+					     len - 2 /* without parenthesis */,
+					     enc);
+		    }
+		    nextvalue = rb_hash_default_value(hash, sym);
+		    if (NIL_P(nextvalue)) {
+			rb_enc_raise(enc, rb_eKeyError, "key%.*s not found", len, start);
+		    }
 		}
 		if (term == '}') goto format_s;
 		p++;
