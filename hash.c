@@ -2734,6 +2734,19 @@ hash_le(VALUE hash1, VALUE hash2)
     return args[1];
 }
 
+/*
+ * call-seq:
+ *   hash <= other -> true or false
+ *
+ * Returns <code>true</code> if <i>hash</i> is subset of
+ * <i>other</i> or equals to <i>other</i>.
+ *
+ *    h1 = {a:1, b:2}
+ *    h2 = {a:1, b:2, c:3}
+ *    h1 <= h2   #=> true
+ *    h2 <= h1   #=> false
+ *    h1 <= h1   #=> true
+ */
 static VALUE
 rb_hash_le(VALUE hash, VALUE other)
 {
@@ -2742,6 +2755,19 @@ rb_hash_le(VALUE hash, VALUE other)
     return hash_le(hash, other);
 }
 
+/*
+ * call-seq:
+ *   hash < other -> true or false
+ *
+ * Returns <code>true</code> if <i>hash</i> is subset of
+ * <i>other</i>.
+ *
+ *    h1 = {a:1, b:2}
+ *    h2 = {a:1, b:2, c:3}
+ *    h1 < h2    #=> true
+ *    h2 < h1    #=> false
+ *    h1 < h1    #=> false
+ */
 static VALUE
 rb_hash_lt(VALUE hash, VALUE other)
 {
@@ -2750,6 +2776,19 @@ rb_hash_lt(VALUE hash, VALUE other)
     return hash_le(hash, other);
 }
 
+/*
+ * call-seq:
+ *   hash >= other -> true or false
+ *
+ * Returns <code>true</code> if <i>other</i> is subset of
+ * <i>hash</i> or equals to <i>hash</i>.
+ *
+ *    h1 = {a:1, b:2}
+ *    h2 = {a:1, b:2, c:3}
+ *    h1 >= h2   #=> false
+ *    h2 >= h1   #=> true
+ *    h1 >= h1   #=> true
+ */
 static VALUE
 rb_hash_ge(VALUE hash, VALUE other)
 {
@@ -2758,6 +2797,19 @@ rb_hash_ge(VALUE hash, VALUE other)
     return hash_le(other, hash);
 }
 
+/*
+ * call-seq:
+ *   hash > other -> true or false
+ *
+ * Returns <code>true</code> if <i>other</i> is subset of
+ * <i>hash</i>.
+ *
+ *    h1 = {a:1, b:2}
+ *    h2 = {a:1, b:2, c:3}
+ *    h1 > h2    #=> false
+ *    h2 > h1    #=> true
+ *    h1 > h1    #=> false
+ */
 static VALUE
 rb_hash_gt(VALUE hash, VALUE other)
 {
