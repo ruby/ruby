@@ -48,6 +48,7 @@ typedef struct iseq_label_data {
     int sc_state;
     int set;
     int sp;
+    int refcnt;
 } LABEL;
 
 typedef struct iseq_insn_data {
@@ -190,8 +191,10 @@ r_value(VALUE value)
   ADD_ELEM((seq), (LINK_ELEMENT *) \
            new_insn_body(iseq, (line), BIN(insn), 1, (VALUE)(op1)))
 
+#define LABEL_REF(label) ((label)->refcnt++)
+
 /* add an instruction with label operand (alias of ADD_INSN1) */
-#define ADD_INSNL(seq, line, insn, label) ADD_INSN1(seq, line, insn, label)
+#define ADD_INSNL(seq, line, insn, label) (ADD_INSN1(seq, line, insn, label), LABEL_REF(label))
 
 #define ADD_INSN2(seq, line, insn, op1, op2) \
   ADD_ELEM((seq), (LINK_ELEMENT *) \
@@ -253,6 +256,9 @@ r_value(VALUE value)
     VALUE _e = rb_ary_new3(5, (type),						\
 			   (VALUE)(ls) | 1, (VALUE)(le) | 1,			\
 			   (VALUE)(iseqv), (VALUE)(lc) | 1);			\
+    if (ls) LABEL_REF(ls);							\
+    if (le) LABEL_REF(le);							\
+    if (lc) LABEL_REF(lc);							\
     rb_ary_push(iseq->compile_data->catch_table_ary, freeze_hide_obj(_e));	\
 } while (0)
 
@@ -915,6 +921,7 @@ new_label_body(rb_iseq_t *iseq, long line)
     labelobj->label_no = iseq->compile_data->label_no++;
     labelobj->sc_state = 0;
     labelobj->sp = -1;
+    labelobj->refcnt = 0;
     return labelobj;
 }
 
@@ -1873,6 +1880,26 @@ get_prev_insn(INSN *iobj)
     return 0;
 }
 
+static void
+unref_destination(INSN *iobj)
+{
+    LABEL *lobj = (LABEL *)OPERAND_AT(iobj, 0);
+    --lobj->refcnt;
+    if (!lobj->refcnt) REMOVE_ELEM(&lobj->link);
+}
+
+static void
+replace_destination(INSN *dobj, INSN *nobj)
+{
+    VALUE n = OPERAND_AT(nobj, 0);
+    LABEL *dl = (LABEL *)OPERAND_AT(dobj, 0);
+    LABEL *nl = (LABEL *)n;
+    --dl->refcnt;
+    ++nl->refcnt;
+    OPERAND_AT(dobj, 0) = n;
+    if (!dl->refcnt) REMOVE_ELEM(&dl->link);
+}
+
 static int
 iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcallopt)
 {
@@ -1900,11 +1927,12 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	     * =>
 	     *   LABEL:
 	     */
+	    unref_destination(iobj);
 	    REMOVE_ELEM(&iobj->link);
 	}
 	else if (iobj != diobj && diobj->insn_id == BIN(jump)) {
 	    if (OPERAND_AT(iobj, 0) != OPERAND_AT(diobj, 0)) {
-		OPERAND_AT(iobj, 0) = OPERAND_AT(diobj, 0);
+		replace_destination(iobj, diobj);
 		goto again;
 	    }
 	}
@@ -1925,6 +1953,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	    INSN *popiobj = new_insn_core(iseq, iobj->line_no,
 					  BIN(pop), 0, 0);
 	    /* replace */
+	    unref_destination(iobj);
 	    REPLACE_ELEM((LINK_ELEMENT *)iobj, (LINK_ELEMENT *)eiobj);
 	    INSERT_ELEM_NEXT((LINK_ELEMENT *)eiobj, (LINK_ELEMENT *)popiobj);
 	    iobj = popiobj;
@@ -1949,7 +1978,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	    if (niobj == (INSN *)get_destination_insn(piobj)) {
 		piobj->insn_id = (piobj->insn_id == BIN(branchif))
 		  ? BIN(branchunless) : BIN(branchif);
-		OPERAND_AT(piobj, 0) = OPERAND_AT(iobj, 0);
+		replace_destination(piobj, iobj);
 		REMOVE_ELEM(&iobj->link);
 	    }
 	}
@@ -1972,7 +2001,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 
 	for (;;) {
 	    if (nobj->insn_id == BIN(jump)) {
-		OPERAND_AT(iobj, 0) = OPERAND_AT(nobj, 0);
+		replace_destination(iobj, nobj);
 	    }
 	    else if (prev_dup && nobj->insn_id == BIN(dup) &&
 		     !!(nobj = (INSN *)nobj->link.next) &&
@@ -1993,7 +2022,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 		 *   dup
 		 *   if L2
 		 */
-		OPERAND_AT(iobj, 0) = OPERAND_AT(nobj, 0);
+		replace_destination(iobj, nobj);
 	    }
 	    else break;
 	    nobj = (INSN *)get_destination_insn(nobj);
@@ -3595,6 +3624,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 
 	    ADD_INSN(ret, nd_line(tempnode), dup);
 	    ADD_INSN2(ret, nd_line(tempnode), opt_case_dispatch, literals, elselabel);
+	    LABEL_REF(elselabel);
 	}
 
 	ADD_SEQ(ret, cond_seq);
@@ -5948,6 +5978,7 @@ register_label(rb_iseq_t *iseq, struct st_table *labels_table, VALUE obj)
     else {
 	label = (LABEL *)tmp;
     }
+    LABEL_REF(label);
     return label;
 }
 
