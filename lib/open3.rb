@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #
 # = open3.rb: Popen, but with stderr, too
 #
