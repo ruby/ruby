@@ -2057,7 +2057,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	 *  send ..., ... | VM_CALL_TAILCALL, ...
 	 *  leave # unreachable
 	 */
-	INSN *piobj = (INSN *)get_prev_insn((INSN *)list);
+	INSN *piobj = (INSN *)get_prev_insn(iobj);
 	enum ruby_vminsn_type previ = piobj->insn_id;
 
 	if (previ == BIN(send) || previ == BIN(opt_send_without_block) || previ == BIN(invokesuper)) {
