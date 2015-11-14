@@ -1,3 +1,7 @@
+Sat Nov 14 21:44:56 2015  Tanaka Akira  <akr@fsij.org>
+
+	* lib/time.rb: Use "<<" to reduce string allocation.
+
 Sat Nov 14 17:45:49 2015  Tanaka Akira  <akr@fsij.org>
 
 	* lib/tsort.rb: Specify frozen_string_literal: true.
