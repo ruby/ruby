@@ -966,6 +966,33 @@ rb_struct_values_at(int argc, VALUE *argv, VALUE s)
 }
 
 /*
+ * call-seq:
+ *   struct.dig(name, ...)                 -> object
+ *   struct.dig(index, ...)                -> object
+ *
+ * Retrieves the value object corresponding to the each +name+ or +index+
+ * objects repeatedly.
+ *
+ *   RubyClass    = Struct.new(:name, :superclass)
+ *   object_class = RubyClass.new('Object', RubyClass.new('BasicObject'))
+ *   array_class  = RubyClass.new('Array', object_class)
+ *   array_class.dig(:superclass, :superclass, :name)  #=> 'BasicObject'
+ *   array_class.dig(1, 1, 0)                          #=> 'BasicObject'
+ *   object_class.dig(:superclass, :superclass, :name) #=> nil
+ *
+ */
+
+VALUE
+rb_struct_dig(int argc, VALUE *argv, VALUE s)
+{
+    rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
+    s = rb_struct_aref(s, *argv);
+    if (!--argc) return s;
+    ++argv;
+    return rb_obj_dig(argc, argv, s, Qnil);
+}
+
+/*
  *  call-seq:
  *     struct.select {|i| block }    -> array
  *     struct.select                 -> an_enumerator
@@ -1180,6 +1207,7 @@ InitVM_Struct(void)
     rb_define_method(rb_cStruct, "[]=", rb_struct_aset, 2);
     rb_define_method(rb_cStruct, "select", rb_struct_select, -1);
     rb_define_method(rb_cStruct, "values_at", rb_struct_values_at, -1);
+    rb_define_method(rb_cStruct, "dig", rb_struct_dig, -1);
 
     rb_define_method(rb_cStruct, "members", rb_struct_members_m, 0);
 }
