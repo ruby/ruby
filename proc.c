@@ -2558,6 +2558,30 @@ method_super_method(VALUE method)
 }
 
 /*
+ *  call-seq:
+ *    meth.visibility    -> symbol
+ *
+ *  Returns a symbol (:public, :private, or :protected).
+ */
+
+static VALUE
+rb_method_visibility(VALUE method)
+{
+    const struct METHOD *data;
+    VALUE sym;
+
+    TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
+    switch(METHOD_ENTRY_VISI(data->me)) {
+      case METHOD_VISI_UNDEF:
+      case METHOD_VISI_PUBLIC:    sym = ID2SYM(rb_intern("public")); break;
+      case METHOD_VISI_PRIVATE:   sym = ID2SYM(rb_intern("private")); break;
+      case METHOD_VISI_PROTECTED: sym = ID2SYM(rb_intern("protected")); break;
+      default: UNREACHABLE;
+    }
+    return sym;
+}
+
+/*
  * call-seq:
  *   local_jump_error.exit_value  -> obj
  *
@@ -2929,6 +2953,7 @@ Init_Proc(void)
     rb_define_method(rb_cMethod, "source_location", rb_method_location, 0);
     rb_define_method(rb_cMethod, "parameters", rb_method_parameters, 0);
     rb_define_method(rb_cMethod, "super_method", method_super_method, 0);
+    rb_define_method(rb_cMethod, "visibility", rb_method_visibility, 0);
     rb_define_method(rb_mKernel, "method", rb_obj_method, 1);
     rb_define_method(rb_mKernel, "public_method", rb_obj_public_method, 1);
     rb_define_method(rb_mKernel, "singleton_method", rb_obj_singleton_method, 1);
@@ -2951,6 +2976,7 @@ Init_Proc(void)
     rb_define_method(rb_cUnboundMethod, "source_location", rb_method_location, 0);
     rb_define_method(rb_cUnboundMethod, "parameters", rb_method_parameters, 0);
     rb_define_method(rb_cUnboundMethod, "super_method", method_super_method, 0);
+    rb_define_method(rb_cUnboundMethod, "visibility", rb_method_visibility, 0);
 
     /* Module#*_method */
     rb_define_method(rb_cModule, "instance_method", rb_mod_instance_method, 1);

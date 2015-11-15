@@ -888,6 +888,19 @@ class TestMethod < Test::Unit::TestCase
     assert_nil(m, Feature9781)
   end
 
+  def test_visibility_method
+    v = Visibility.new
+    assert_equal(:public, v.method(:mv1).visibility)
+    assert_equal(:private, v.method(:mv2).visibility)
+    assert_equal(:protected, v.method(:mv3).visibility)
+  end
+
+  def test_visibility_method_unbound
+    assert_equal(:public, Visibility.instance_method(:mv1).visibility)
+    assert_equal(:private, Visibility.instance_method(:mv2).visibility)
+    assert_equal(:protected, Visibility.instance_method(:mv3).visibility)
+  end
+
   def rest_parameter(*rest)
     rest
   end
