@@ -2540,8 +2540,13 @@ method_to_proc(VALUE method)
 }
 
 /*
- * Returns a Method of superclass, which would be called when super is used.
+ * call-seq:
+ *   meth.super_method  -> method
+ *
+ * Returns a Method of superclass which would be called when super is used
+ * or nil if there is no method on superclass.
  */
+
 static VALUE
 method_super_method(VALUE method)
 {
