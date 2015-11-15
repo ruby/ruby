@@ -20,11 +20,19 @@ class DRbLarge
   end
 
   def avg(ary)
-    (ary.inject(:+).to_f) / (ary.count)
+    if ary.any? {|n| n.is_a? String}
+      raise TypeError  
+    else
+      ary.empty? ? nil : sum(ary).to_f / ary.count
+    end
   end
 
   def median(ary)
-    (ary.sort[(ary.length - 1) / 2] + ary.sort[ary.length / 2]) / 2.0
+    if ary.any? {|n| n.is_a? String}
+      raise TypeError 
+    else
+      ary.empty? ? nil : (ary.sort[(ary.length - 1) / 2] + ary.sort[ary.length / 2]) / 2.0
+    end
   end
 
   def arg_test(*arg)
