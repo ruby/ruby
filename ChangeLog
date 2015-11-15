@@ -1,3 +1,8 @@
+Sun Nov 15 18:28:43 2015  Kenichi Kamiya  <kachick1@gmail.com>
+
+	* vm_method.c (set_method_visibility): should fail if the receiver
+	  is frozen.  [ruby-core:71489] [Bug #11687]
+
 Sat Nov 14 22:15:07 2015  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/lib/socket.rb: Specify frozen_string_literal: true.
