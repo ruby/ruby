@@ -624,12 +624,21 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_freeze
-    m = Module.new
+    m = Module.new do
+      def self.baz; end
+      def bar; end
+    end
     m.freeze
     assert_raise(RuntimeError) do
       m.module_eval do
         def foo; end
       end
+    end
+    assert_raise(RuntimeError) do
+      m.__send__ :private, :bar
+    end
+    assert_raise(RuntimeError) do
+      m.private_class_method :baz
     end
   end
 
