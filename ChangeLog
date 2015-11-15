@@ -1,3 +1,8 @@
+Mon Nov 16 03:39:59 2015  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* tool/runruby.rb: rubyspec now requires other FDs not to be closed
+	  since 7b6ce1fee.
+
 Sun Nov  8 23:30:56 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_trace.c (rb_threadptr_exec_event_hooks_orig):
