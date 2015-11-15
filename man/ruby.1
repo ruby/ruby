@@ -409,18 +409,40 @@ Disables (or enables) all features.
 .El
 .Pp
 .It Fl -dump Ns = Ns Ar target
-DO NOT USE.
+Dump some informations.
 .Pp
 Prints the specified target.
 .Ar target
 can be one of;
 .Bl -hang -offset indent
+.It Sy version
+version description same as
+.Fl -version
+.It Sy usage
+brief usage message same as
+.Fl h
+.It Sy help
+Show long help message same as
+.Fl -help
+.It Sy syntax
+check of syntax same as
+.Fl c
+.Fl -yydebug
+.It Sy yydebug
+compiler debug mode, same as
+.Fl -yydebug
+.Pp
+Only specify this switch if you are going to debug the Ruby interpreter.
+.It Sy parsetree
+.It Sy parsetree_with_comment
+AST nodes tree
+.Pp
+Only specify this switch if you are going to debug the Ruby interpreter.
 .It Sy insns
 disassembled instructions
 .Pp
-.El
-.Pp
 Only specify this switch if you are going to debug the Ruby interpreter.
+.El
 .Pp
 .It Fl -verbose
 Enables verbose mode without printing version message at the
