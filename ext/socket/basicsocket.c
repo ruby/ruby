@@ -643,59 +643,11 @@ bsock_recv(int argc, VALUE *argv, VALUE sock)
     return rsock_s_recvfrom(sock, argc, argv, RECV_RECV);
 }
 
-/*
- * call-seq:
- * 	basicsocket.recv_nonblock(maxlen [, flags [, options ]) => mesg
- *
- * Receives up to _maxlen_ bytes from +socket+ using recvfrom(2) after
- * O_NONBLOCK is set for the underlying file descriptor.
- * _flags_ is zero or more of the +MSG_+ options.
- * The result, _mesg_, is the data received.
- *
- * When recvfrom(2) returns 0, Socket#recv_nonblock returns
- * an empty string as data.
- * The meaning depends on the socket: EOF on TCP, empty packet on UDP, etc.
- *
- * === Parameters
- * * +maxlen+ - the number of bytes to receive from the socket
- * * +flags+ - zero or more of the +MSG_+ options
- * * +options+ - keyword hash, supporting `exception: false`
- *
- * === Example
- * 	serv = TCPServer.new("127.0.0.1", 0)
- * 	af, port, host, addr = serv.addr
- * 	c = TCPSocket.new(addr, port)
- * 	s = serv.accept
- * 	c.send "aaa", 0
- * 	begin # emulate blocking recv.
- * 	  p s.recv_nonblock(10) #=> "aaa"
- * 	rescue IO::WaitReadable
- * 	  IO.select([s])
- * 	  retry
- * 	end
- *
- * Refer to Socket#recvfrom for the exceptions that may be thrown if the call
- * to _recv_nonblock_ fails.
- *
- * BasicSocket#recv_nonblock may raise any error corresponding to recvfrom(2) failure,
- * including Errno::EWOULDBLOCK.
- *
- * If the exception is Errno::EWOULDBLOCK or Errno::EAGAIN,
- * it is extended by IO::WaitReadable.
- * So IO::WaitReadable can be used to rescue the exceptions for retrying recv_nonblock.
- *
- * By specifying `exception: false`, the options hash allows you to indicate
- * that recv_nonblock should not raise an IO::WaitWritable exception, but
- * return the symbol :wait_writable instead.
- *
- * === See
- * * Socket#recvfrom
- */
-
+/* :nodoc: */
 static VALUE
-bsock_recv_nonblock(int argc, VALUE *argv, VALUE sock)
+bsock_recv_nonblock(VALUE sock, VALUE len, VALUE flg, VALUE str, VALUE ex)
 {
-    return rsock_s_recvfrom_nonblock(sock, argc, argv, RECV_RECV);
+    return rsock_s_recvfrom_nonblock(sock, len, flg, str, ex, RECV_RECV);
 }
 
 /*
@@ -764,9 +716,13 @@ rsock_init_basicsocket(void)
     rb_define_method(rb_cBasicSocket, "remote_address", bsock_remote_address, 0);
     rb_define_method(rb_cBasicSocket, "send", rsock_bsock_send, -1);
     rb_define_method(rb_cBasicSocket, "recv", bsock_recv, -1);
-    rb_define_method(rb_cBasicSocket, "recv_nonblock", bsock_recv_nonblock, -1);
+
     rb_define_method(rb_cBasicSocket, "do_not_reverse_lookup", bsock_do_not_reverse_lookup, 0);
     rb_define_method(rb_cBasicSocket, "do_not_reverse_lookup=", bsock_do_not_reverse_lookup_set, 1);
+
+    /* for ext/socket/lib/socket.rb use only: */
+    rb_define_private_method(rb_cBasicSocket,
+			     "__recv_nonblock", bsock_recv_nonblock, 4);
 
     rb_define_method(rb_cBasicSocket, "sendmsg", rsock_bsock_sendmsg, -1); /* in ancdata.c */
     rb_define_method(rb_cBasicSocket, "sendmsg_nonblock", rsock_bsock_sendmsg_nonblock, -1); /* in ancdata.c */

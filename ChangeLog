@@ -1,3 +1,17 @@
+Tue Nov 17 08:16:09 2015  Eric Wong  <e@80x24.org>
+
+	* ext/socket/init.c (rsock_s_recvfrom_nonblock):
+	  avoid arg parsing with C API
+	  [ruby-core:71439] [Feature #11339]
+	* ext/socket/basicsocket.c (bsock_recv_nonblock):
+	  adjust for above change, make private
+	* ext/socket/socket.c (sock_recvfrom_nonblock): ditto
+	* ext/socket/udpsocket.c (udp_recvfrom_nonblock): ditto
+	* ext/socket/lib/socket.rb (BasicSocket#recv_nonblock):
+	  new wrapper for private method, move RDoc
+	  (Socket#recvfrom_nonblock): ditto
+	  (UDPSocket#recvfrom_nonblock): ditto
+
 Mon Nov 16 21:27:54 2015  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* test/dtrace/helper.rb (Dtrace::TestCase#trap_probe): dtrace buffer

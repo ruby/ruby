@@ -200,24 +200,19 @@ rsock_s_recvfrom(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from)
 }
 
 VALUE
-rsock_s_recvfrom_nonblock(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from)
+rsock_s_recvfrom_nonblock(VALUE sock, VALUE len, VALUE flg, VALUE str,
+			  VALUE ex, enum sock_recv_type from)
 {
     rb_io_t *fptr;
-    VALUE str;
     union_sockaddr buf;
     socklen_t alen = (socklen_t)sizeof buf;
-    VALUE len, flg;
     long buflen;
     long slen;
     int fd, flags;
     VALUE addr = Qnil;
-    VALUE opts = Qnil;
     socklen_t len0;
 
-    rb_scan_args(argc, argv, "12:", &len, &flg, &str, &opts);
-
-    if (flg == Qnil) flags = 0;
-    else             flags = NUM2INT(flg);
+    flags = NUM2INT(flg);
     buflen = NUM2INT(len);
     str = rsock_strbuf(str, buflen);
 
@@ -249,7 +244,7 @@ rsock_s_recvfrom_nonblock(VALUE sock, int argc, VALUE *argv, enum sock_recv_type
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
 	  case EWOULDBLOCK:
 #endif
-            if (rsock_opt_false_p(opts, sym_exception))
+            if (ex == Qfalse)
 		return sym_wait_readable;
             rb_readwrite_sys_fail(RB_IO_WAIT_READABLE, "recvfrom(2) would block");
 	}
