@@ -1,3 +1,9 @@
+Mon Nov 16 12:11:11 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/webrick/httpauth/basicauth.rb: fix a typo.
+	  [ci skip][fix GH-1099] Patch by @jwworth
+	* lib/webrick/httpauth/digestauth.rb: ditto.
+
 Sun Nov 15 18:28:43 2015  Kenichi Kamiya  <kachick1@gmail.com>
 
 	* vm_method.c (set_method_visibility): should fail if the receiver
