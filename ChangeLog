@@ -1,3 +1,8 @@
+Mon Nov 16 16:10:51 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* mkconfig.rb: Add some high-level documentation.
+	  [ci skip][fix GH-1081]
+
 Mon Nov 16 15:59:14 2015  yui-knk  <spiketeika@gmail.com>
 
 	* proc.c: Add call-seq of `Method#super_method`

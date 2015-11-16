@@ -1,5 +1,10 @@
 #!./miniruby -s
 
+# This script, which is run when ruby is built, generates rbconfig.rb by
+# parsing information from config.status.  rbconfig.rb contains build
+# information for ruby (compiler flags, paths, etc.) and is used e.g. by
+# mkmf to build compatible native extensions.
+
 # avoid warnings with -d.
 $install_name ||= nil
 $so_name ||= nil
@@ -167,8 +172,10 @@ prefix = vars.expand(vars["prefix"] ||= "")
 rubyarchdir = vars.expand(vars["rubyarchdir"] ||= "")
 relative_archdir = rubyarchdir.rindex(prefix, 0) ? rubyarchdir[prefix.size..-1] : rubyarchdir
 puts %[\
-# This file was created by #{mkconfig} when ruby was built.  Any
-# changes made to this file will be lost the next time ruby is built.
+# This file was created by #{mkconfig} when ruby was built.  It contains
+# build information for ruby which is used e.g. by mkmf to build
+# compatible native extensions.  Any changes made to this file will be
+# lost the next time ruby is built.
 
 module RbConfig
   RUBY_VERSION.start_with?("#{version[/^[0-9]+\.[0-9]+\./] || version}") or
