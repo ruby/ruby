@@ -34,14 +34,9 @@ module WEBrick
     CGIError = Class.new(StandardError)
 
     ##
-    # The CGI configuration.  This is based on WEBrick::Config::HTTP
+    # The CGI configuration, CGI logger.  This is based on WEBrick::Config::HTTP
 
-    attr_reader :config
-
-    ##
-    # The CGI logger
-
-    attr_reader :logger
+    attr_reader :config, :logger
 
     ##
     # Creates a new CGI interface.
@@ -54,13 +49,10 @@ module WEBrick
 
     def initialize(*args)
       if defined?(MOD_RUBY)
-        unless ENV.has_key?("GATEWAY_INTERFACE")
-          Apache.request.setup_cgi_env
-        end
+        Apache.request.setup_cgi_env unless ENV.has_key?("GATEWAY_INTERFACE")
       end
-      if %r{HTTP/(\d+\.\d+)} =~ ENV["SERVER_PROTOCOL"]
-        httpv = $1
-      end
+      httpv = $1 if %r{HTTP/(\d+\.\d+)} =~ ENV["SERVER_PROTOCOL"]
+
       @config = WEBrick::Config::HTTP.dup.update(
         :ServerSoftware => ENV["SERVER_SOFTWARE"] || "null",
         :HTTPVersion    => HTTPVersion.new(httpv || "1.0"),
@@ -71,7 +63,7 @@ module WEBrick
         @config.update(config)
       end
       @config[:Logger] ||= WEBrick::BasicLog.new($stderr)
-      @logger = @config[:Logger]
+      @logger  = @config[:Logger]
       @options = args
     end
 
@@ -88,8 +80,8 @@ module WEBrick
 
     def start(env=ENV, stdin=$stdin, stdout=$stdout)
       sock = WEBrick::CGI::Socket.new(@config, env, stdin, stdout)
-      req = HTTPRequest.new(@config)
-      res = HTTPResponse.new(@config)
+      req  = HTTPRequest.new(@config)
+      res  = HTTPResponse.new(@config)
       unless @config[:NPH] or defined?(MOD_RUBY)
         def res.setup_header
           unless @header["status"]
@@ -105,14 +97,14 @@ module WEBrick
 
       begin
         req.parse(sock)
-        req.script_name = (env["SCRIPT_NAME"] || File.expand_path($0)).dup
-        req.path_info = (env["PATH_INFO"] || "").dup
-        req.query_string = env["QUERY_STRING"]
-        req.user = env["REMOTE_USER"]
+        req.script_name    = (env["SCRIPT_NAME"] || File.expand_path($0)).dup
+        req.path_info      = (env["PATH_INFO"] || "").dup
+        req.query_string   = env["QUERY_STRING"]
+        req.user           = env["REMOTE_USER"]
         res.request_method = req.request_method
-        res.request_uri = req.request_uri
+        res.request_uri    = req.request_uri
+        res.keep_alive     = req.keep_alive?
         res.request_http_version = req.http_version
-        res.keep_alive = req.keep_alive?
         self.service(req, res)
       rescue HTTPStatus::Error => ex
         res.set_error(ex)
@@ -128,7 +120,7 @@ module WEBrick
           Apache.request.status_line = "#{res.status} #{res.reason_phrase}"
           Apache.request.status = res.status
           table = Apache.request.headers_out
-          res.header.each{|key, val|
+          res.header.each do |key, val|
             case key
             when /^content-encoding$/i
               Apache::request.content_encoding = val
@@ -137,10 +129,8 @@ module WEBrick
             else
               table[key] = val.to_s
             end
-          }
-          res.cookies.each{|cookie|
-            table.add("Set-Cookie", cookie.to_s)
-          }
+          end
+          res.cookies.each{ |cookie| table.add("Set-Cookie", cookie.to_s) }
           Apache.request.send_http_header
           res.send_body(sock)
         else
@@ -154,7 +144,7 @@ module WEBrick
     # WEBrick::HTTPServlet::AbstractServlet#service for details.
 
     def service(req, res)
-      method_name = "do_" + req.request_method.gsub(/-/, "_")
+      method_name = "do_#{req.request_method.gsub(/-/, "_")}"
       if respond_to?(method_name)
         __send__(method_name, req, res)
       else
@@ -172,11 +162,11 @@ module WEBrick
       private
 
       def initialize(config, env, stdin, stdout)
-        @config = config
-        @env = env
+        @config      = config
+        @env         = env
         @header_part = StringIO.new
-        @body_part = stdin
-        @out_port = stdout
+        @body_part   = stdin
+        @out_port    = stdout
         @out_port.binmode
 
         @server_addr = @env["SERVER_ADDR"] || "0.0.0.0"
@@ -200,12 +190,9 @@ module WEBrick
         meth = @env["REQUEST_METHOD"] || "GET"
         unless url = @env["REQUEST_URI"]
           url = (@env["SCRIPT_NAME"] || File.expand_path($0)).dup
-          url << @env["PATH_INFO"].to_s
-          url = WEBrick::HTTPUtils.escape_path(url)
+          url = WEBrick::HTTPUtils.escape_path(url + @env["PATH_INFO"].to_s)
           if query_string = @env["QUERY_STRING"]
-            unless query_string.empty?
-              url << "?" << query_string
-            end
+            url << "?#{query_string}" unless query_string.empty?
           end
         end
         # we cannot get real HTTP version of client ;)
@@ -214,20 +201,18 @@ module WEBrick
       end
 
       def setup_header
-        @env.each{|key, value|
+        @env.each do |key, value|
           case key
           when "CONTENT_TYPE", "CONTENT_LENGTH"
             add_header(key.gsub(/_/, "-"), value)
           when /^HTTP_(.*)/
             add_header($1.gsub(/_/, "-"), value)
           end
-        }
+        end
       end
 
       def add_header(hdrname, value)
-        unless value.empty?
-          @header_part << hdrname << ": " << value << CRLF
-        end
+        @header_part << hdrname << ": " << value << CRLF unless value.empty?
       end
 
       def input
@@ -282,13 +267,13 @@ module WEBrick
         return nil unless defined?(OpenSSL)
         if @env["SSL_CLIENT_CERT_CHAIN_0"]
           keys = @env.keys
-          certs = keys.sort.collect{|k|
+          certs = keys.sort.collect do |k|
             if /^SSL_CLIENT_CERT_CHAIN_\d+$/ =~ k
               if pem = @env[k]
                 OpenSSL::X509::Certificate.new(pem) unless pem.empty?
               end
             end
-          }
+          end
           certs.compact
         end
       end
@@ -296,11 +281,11 @@ module WEBrick
       def cipher
         return nil unless defined?(OpenSSL)
         if cipher = @env["SSL_CIPHER"]
-          ret = [ cipher ]
-          ret << @env["SSL_PROTOCOL"]
-          ret << @env["SSL_CIPHER_USEKEYSIZE"]
-          ret << @env["SSL_CIPHER_ALGKEYSIZE"]
-          ret
+          [ cipher,
+            @env["SSL_PROTOCOL"],
+            @env["SSL_CIPHER_USEKEYSIZE"],
+            @env["SSL_CIPHER_ALGKEYSIZE"]
+          ]
         end
       end
     end

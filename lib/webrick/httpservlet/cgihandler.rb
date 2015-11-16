@@ -46,7 +46,6 @@ module WEBrick
         cgi_out.set_encoding("ASCII-8BIT")
         cgi_err = Tempfile.new("webrick.cgierr.", @tempdir, mode: IO::BINARY)
         cgi_err.set_encoding("ASCII-8BIT")
-        data = cgi_out.read || ''
         begin
           cgi_in.sync = true
           meta = req.meta_vars
@@ -71,6 +70,7 @@ module WEBrick
           cgi_in.close
           status = $?.exitstatus
           sleep 0.1 if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
+          data = cgi_out.read || ''
           cgi_out.close(true)
           if errmsg = cgi_err.read
             if errmsg.bytesize > 0
