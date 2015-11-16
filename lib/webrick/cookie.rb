@@ -19,53 +19,20 @@ module WEBrick
   class Cookie
 
     ##
-    # The cookie name
+    # The cookie name attribute
 
     attr_reader :name
 
     ##
-    # The cookie value
+    # The cookie attributes (value, version, domain, path, secure, comment, max_age)
 
-    attr_accessor :value
-
-    ##
-    # The cookie version
-
-    attr_accessor :version
-
-    ##
-    # The cookie domain
-    attr_accessor :domain
-
-    ##
-    # The cookie path
-
-    attr_accessor :path
-
-    ##
-    # Is this a secure cookie?
-
-    attr_accessor :secure
-
-    ##
-    # The cookie comment
-
-    attr_accessor :comment
-
-    ##
-    # The maximum age of the cookie
-
-    attr_accessor :max_age
-
-    #attr_accessor :comment_url, :discard, :port
+    attr_accessor :value, :version, :domain, :path, :secure, :comment, :max_age#:comment_url, :discard, :port
 
     ##
     # Creates a new cookie with the given +name+ and +value+
 
     def initialize(name, value)
-      @name = name
-      @value = value
-      @version = 0     # Netscape Cookie
+      @name, @value, @version = name, value, 0 # set version for Netscape Cookie
 
       @domain = @path = @secure = @comment = @max_age =
       @expires = @comment_url = @discard = @port = nil
@@ -91,15 +58,14 @@ module WEBrick
     # The cookie string suitable for use in an HTTP header
 
     def to_s
-      ret = ""
-      ret << @name << "=" << @value
-      ret << "; " << "Version=" << @version.to_s if @version > 0
-      ret << "; " << "Domain="  << @domain  if @domain
-      ret << "; " << "Expires=" << @expires if @expires
-      ret << "; " << "Max-Age=" << @max_age.to_s if @max_age
-      ret << "; " << "Comment=" << @comment if @comment
-      ret << "; " << "Path="    << @path if @path
-      ret << "; " << "Secure"   if @secure
+      ret =  "#{@name}=#{@value}"
+      ret += "; Version=#{@version}" if @version > 0
+      ret += "; Domain=#{@domain}"   if @domain
+      ret += "; Expires=#{@expires}" if @expires
+      ret += "; Max-Age=#{@max_age}" if @max_age
+      ret += "; Comment=#{@comment}" if @comment
+      ret += "; Path=#{@path}" if @path
+      ret += "; Secure" if @secure
       ret
     end
 
@@ -109,10 +75,9 @@ module WEBrick
 
     def self.parse(str)
       if str
-        ret = []
-        cookie = nil
-        ver = 0
-        str.split(/[;,]\s+/).each{|x|
+        ret, cookie, ver = [], nil, 0
+
+        str.split(/[;,]\s+/).each do |x|
           key, val = x.split(/=/,2)
           val = val ? HTTPUtils::dequote(val) : ""
           case key
@@ -125,7 +90,7 @@ module WEBrick
             cookie = self.new(key, val)
             cookie.version = ver
           end
-        }
+        end
         ret << cookie if cookie
         ret
       end
@@ -140,7 +105,7 @@ module WEBrick
       first_elem.strip!
       key, value = first_elem.split(/=/, 2)
       cookie = new(key, HTTPUtils.dequote(value))
-      cookie_elem.each{|pair|
+      cookie_elem.each do |pair|
         pair.strip!
         key, value = pair.split(/=/, 2)
         if value
@@ -155,7 +120,7 @@ module WEBrick
         when "version" then cookie.version = Integer(value)
         when "secure"  then cookie.secure = true
         end
-      }
+      end
       return cookie
     end
 
@@ -163,9 +128,7 @@ module WEBrick
     # Parses the cookies in +str+
 
     def self.parse_set_cookies(str)
-      return str.split(/,(?=[^;,]*=)|,$/).collect{|c|
-        parse_set_cookie(c)
-      }
+      str.split(/,(?=[^;,]*=)|,$/).collect{ |c| parse_set_cookie(c) }
     end
   end
 end
