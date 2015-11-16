@@ -923,6 +923,23 @@ rb_struct_aset(VALUE s, VALUE idx, VALUE val)
     return val;
 }
 
+FUNC_MINIMIZED(VALUE rb_struct_lookup(VALUE s, VALUE idx));
+NOINLINE(static VALUE rb_struct_lookup_default(VALUE s, VALUE idx, VALUE notfound));
+
+VALUE
+rb_struct_lookup(VALUE s, VALUE idx)
+{
+    return rb_struct_lookup_default(s, idx, Qnil);
+}
+
+static VALUE
+rb_struct_lookup_default(VALUE s, VALUE idx, VALUE notfound)
+{
+    int i = rb_struct_pos(s, &idx);
+    if (i < 0) return notfound;
+    return RSTRUCT_GET(s, i);
+}
+
 static VALUE
 struct_entry(VALUE s, long n)
 {
@@ -1109,6 +1126,16 @@ rb_struct_size(VALUE s)
     return LONG2FIX(RSTRUCT_LEN(s));
 }
 
+static VALUE
+rb_struct_dig(int argc, VALUE *argv, VALUE self)
+{
+    rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
+    self = rb_struct_lookup(self, *argv);
+    if (!--argc) return self;
+    ++argv;
+    return rb_obj_dig(argc, argv, self, Qnil);
+}
+
 /*
  *  A Struct is a convenient way to bundle a number of attributes together,
  *  using accessor methods, without having to write an explicit class.
@@ -1166,6 +1193,7 @@ InitVM_Struct(void)
     rb_define_method(rb_cStruct, "values_at", rb_struct_values_at, -1);
 
     rb_define_method(rb_cStruct, "members", rb_struct_members_m, 0);
+    rb_define_method(rb_cStruct, "dig", rb_struct_dig, -1);
 }
 
 #undef rb_intern
