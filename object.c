@@ -3165,7 +3165,7 @@ dig_basic_p(VALUE obj, struct dig_method *cache)
 VALUE
 rb_obj_dig(int argc, VALUE *argv, VALUE obj, VALUE notfound)
 {
-    struct dig_method hash = {Qnil}, ary = {Qnil};
+    struct dig_method hash = {Qnil}, ary = {Qnil}, struct_obj = {Qnil};
 
     for (; argc > 0; ++argv, --argc) {
 	if (!SPECIAL_CONST_P(obj)) {
@@ -3179,6 +3179,12 @@ rb_obj_dig(int argc, VALUE *argv, VALUE obj, VALUE notfound)
 	      case T_ARRAY:
 		if (dig_basic_p(obj, &ary)) {
 		    obj = rb_ary_at(obj, *argv);
+		    continue;
+		}
+		break;
+	      case T_STRUCT:
+		if (dig_basic_p(obj, &struct_obj)) {
+		    obj = rb_struct_aref(obj, *argv);
 		    continue;
 		}
 	    }

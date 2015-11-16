@@ -329,6 +329,15 @@ module TestStruct
     assert_equal({a:1, b:2, c:3, d:4, e:5, f:6}, o.to_h)
   end
 
+  def test_dig
+    klass = @Struct.new(:a, :b)
+    o = klass.new klass.new({x: [1, 2]}), 2
+    assert_equal(1, o.dig(:a, 0, :x, 0))
+    assert_nil(o.dig(:b, :x))
+    assert_raise(NameError) { o.dig(:x) }
+    assert_raise(NameError) { o.dig(:a, :x) }
+  end
+
   def test_question_mark_in_member
     klass = @Struct.new(:a, :b?)
     x = Object.new

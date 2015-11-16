@@ -1303,8 +1303,8 @@ class TestHash < Test::Unit::TestCase
   end
 
   def test_dig
-    h = @cls[a: @cls[b: [1, 2, 3]], c: 4]
-    assert_equal(1, h.dig(:a, :b, 0))
+    h = @cls[a: @cls[b: [Struct.new(:x).new(1), 2, 3]], c: 4]
+    assert_equal(1, h.dig(:a, :b, 0, 0))
     assert_nil(h.dig(:c, 1))
   end
 

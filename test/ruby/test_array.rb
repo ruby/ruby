@@ -2652,8 +2652,8 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_dig
-    h = @cls[@cls[{a: 1}], 0]
-    assert_equal(1, h.dig(0, 0, :a))
+    h = @cls[@cls[{a: Struct.new(:x).new(1)}], 0]
+    assert_equal(1, h.dig(0, 0, :a, :x))
     assert_nil(h.dig(1, 0))
   end
 
