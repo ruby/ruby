@@ -151,7 +151,7 @@ class Set
       @hash.replace(enum.instance_variable_get(:@hash))
       self
     else
-      do_with_enum(enum)
+      do_with_enum(enum)  # make sure enum is enumerable before calling clear
       clear
       merge(enum)
     end
