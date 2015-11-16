@@ -54,9 +54,9 @@ module WEBrick
           raise HTTPStatus::PartialContent
         else
           mtype = HTTPUtils::mime_type(@local_path, @config[:MimeTypes])
-          res['content-type'] = mtype
+          res['content-type']   = mtype
           res['content-length'] = st.size
-          res['last-modified'] = mtime.httpdate
+          res['last-modified']  = mtime.httpdate
           res.body = open(@local_path, "rb")
         end
       end
@@ -64,18 +64,14 @@ module WEBrick
       def not_modified?(req, res, mtime, etag)
         if ir = req['if-range']
           begin
-            if Time.httpdate(ir) >= mtime
-              return true
-            end
+            return true unless Time.httpdate(ir) < mtime
           rescue
-            if HTTPUtils::split_header_value(ir).member?(res['etag'])
-              return true
-            end
+            return true if HTTPUtils::split_header_value(ir).member?(res['etag'])
           end
         end
 
-        if (ims = req['if-modified-since']) && Time.parse(ims) >= mtime
-          return true
+        if (ims = req['if-modified-since'])
+          return true unless Time.parse(ims) < mtime
         end
 
         if (inm = req['if-none-match']) &&
@@ -83,21 +79,19 @@ module WEBrick
           return true
         end
 
-        return false
+        false
       end
 
       def make_partial_content(req, res, filename, filesize)
         mtype = HTTPUtils::mime_type(filename, @config[:MimeTypes])
         unless ranges = HTTPUtils::parse_range_header(req['range'])
-          raise HTTPStatus::BadRequest,
-            "Unrecognized range-spec: \"#{req['range']}\""
+          raise HTTPStatus::BadRequest, "Unrecognized range-spec: \"#{req['range']}\""
         end
-        open(filename, "rb"){|io|
+        open(filename, "rb") do |io|
           if ranges.size > 1
-            time = Time.now
+            time, body = Time.now, ''
             boundary = "#{time.sec}_#{time.usec}_#{Process::pid}"
-            body = ''
-            ranges.each{|range|
+            ranges.each do |range|
               first, last = prepare_range(range, filesize)
               next if first < 0
               io.pos = first
@@ -108,7 +102,7 @@ module WEBrick
               body << CRLF
               body << content
               body << CRLF
-            }
+            end
             raise HTTPStatus::RequestRangeNotSatisfiable if body.empty?
             body << "--" << boundary << "--" << CRLF
             res["content-type"] = "multipart/byteranges; boundary=#{boundary}"
@@ -123,14 +117,14 @@ module WEBrick
               io.pos = first
               content = io.read(last-first+1)
             end
-            res['content-type'] = mtype
-            res['content-range'] = "bytes #{first}-#{last}/#{filesize}"
+            res['content-type']   = mtype
+            res['content-range']  = "bytes #{first}-#{last}/#{filesize}"
             res['content-length'] = last - first + 1
             res.body = content
           else
             raise HTTPStatus::BadRequest
           end
-        }
+        end
       end
 
       def prepare_range(range, filesize)
@@ -153,7 +147,7 @@ module WEBrick
     #   server.mount '/assets', WEBrick::FileHandler, '/path/to/assets'
 
     class FileHandler < AbstractServlet
-      HandlerTable = Hash.new # :nodoc:
+      HandlerTable = {} # :nodoc:
 
       ##
       # Allow custom handling of requests for files with +suffix+ by class
@@ -181,12 +175,10 @@ module WEBrick
       # disabled respectively.
 
       def initialize(server, root, options={}, default=Config::FileHandler)
-        @config = server.config
-        @logger = @config[:Logger]
-        @root = File.expand_path(root)
-        if options == true || options == false
-          options = { :FancyIndexing => options }
-        end
+        @config  = server.config
+        @logger  = @config[:Logger]
+        @root    = File.expand_path(root)
+        options  = {:FancyIndexing => options} if options == true || options == false
         @options = default.dup.update(options)
       end
 
@@ -197,13 +189,12 @@ module WEBrick
         # we're going to override path informations before invoking service.
         if defined?(Etc) && @options[:UserDir] && req.script_name.empty?
           if %r|^(/~([^/]+))| =~ req.path_info
-            script_name, user = $1, $2
-            path_info = $'
+            script_name, user, path_info = $1, $2, $'
             begin
               passwd = Etc::getpwnam(user)
-              @root = File::join(passwd.dir, @options[:UserDir])
+              @root  = File::join(passwd.dir, @options[:UserDir])
               req.script_name = script_name
-              req.path_info = path_info
+              req.path_info   = path_info
             rescue
               @logger.debug "#{self.class}#do_GET: getpwnam(#{user}) failed"
             end
@@ -214,9 +205,7 @@ module WEBrick
       end
 
       def do_GET(req, res)
-        unless exec_handler(req, res)
-          set_dir_list(req, res)
-        end
+        set_dir_list(req, res) unless exec_handler(req, res)
       end
 
       def do_POST(req, res)
@@ -226,9 +215,7 @@ module WEBrick
       end
 
       def do_OPTIONS(req, res)
-        unless exec_handler(req, res)
-          super(req, res)
-        end
+        super(req, res) unless exec_handler(req, res)
       end
 
       # ToDo
@@ -287,7 +274,7 @@ module WEBrick
           return true
         end
         call_callback(:HandlerCallback, req, res)
-        return false
+        false
       end
 
       def get_handler(req, res)
@@ -299,13 +286,13 @@ module WEBrick
         end
         handler_table = @options[:HandlerTable]
         return handler_table[suffix1] || handler_table[suffix2] ||
-               HandlerTable[suffix1] || HandlerTable[suffix2] ||
+               HandlerTable[suffix1]  || HandlerTable[suffix2]  ||
                DefaultFileHandler
       end
 
       def set_filename(req, res)
         res.filename = @root.dup
-        path_info = req.path_info.scan(%r|/[^/]*|)
+        path_info    = req.path_info.scan(%r|/[^/]*|)
 
         path_info.unshift("")  # dummy for checking @root dir
         while base = path_info.first
@@ -332,7 +319,7 @@ module WEBrick
           end
         end
 
-        return false
+        false
       end
 
       def check_filename(req, res, name)
@@ -343,7 +330,7 @@ module WEBrick
       end
 
       def shift_path_info(req, res, path_info, base=nil)
-        tmp = path_info.shift
+        tmp  = path_info.shift
         base = base || tmp
         req.path_info = path_info.join
         req.script_name << base
@@ -352,12 +339,12 @@ module WEBrick
       end
 
       def search_index_file(req, res)
-        @config[:DirectoryIndex].each{|index|
+        @config[:DirectoryIndex].each do |index|
           if file = search_file(req, res, "/"+index)
             return file
           end
-        }
-        return nil
+        end
+        nil
       end
 
       def search_file(req, res, basename)
@@ -366,20 +353,20 @@ module WEBrick
         if File.file?(path)
           return basename
         elsif langs.size > 0
-          req.accept_language.each{|lang|
+          req.accept_language.each do |lang|
             path_with_lang = path + ".#{lang}"
             if langs.member?(lang) && File.file?(path_with_lang)
-              return basename + ".#{lang}"
+              return "#{basename}.#{lang}"
             end
-          }
-          (langs - req.accept_language).each{|lang|
+          end
+          (langs - req.accept_language).each do |lang|
             path_with_lang = path + ".#{lang}"
             if File.file?(path_with_lang)
-              return basename + ".#{lang}"
+              return "#{basename}.#{lang}"
             end
-          }
+          end
         end
-        return nil
+        nil
       end
 
       def call_callback(callback_name, req, res)
@@ -391,16 +378,14 @@ module WEBrick
       def windows_ambiguous_name?(name)
         return true if /[. ]+\z/ =~ name
         return true if /::\$DATA\z/ =~ name
-        return false
+        false
       end
 
       def nondisclosure_name?(name)
-        @options[:NondisclosureName].each{|pattern|
-          if File.fnmatch(pattern, name, File::FNM_CASEFOLD)
-            return true
-          end
-        }
-        return false
+        @options[:NondisclosureName].each do |pattern|
+          return true if File.fnmatch(pattern, name, File::FNM_CASEFOLD)
+        end
+        false
       end
 
       def set_dir_list(req, res)
@@ -409,7 +394,7 @@ module WEBrick
           raise HTTPStatus::Forbidden, "no access permission to `#{req.path}'"
         end
         local_path = res.filename
-        list = Dir::entries(local_path).collect{|name|
+        list = Dir::entries(local_path).collect do |name|
           next if name == "." || name == ".."
           next if nondisclosure_name?(name)
           next if windows_ambiguous_name?(name)
@@ -417,24 +402,23 @@ module WEBrick
           if st.nil?
             [ name, nil, -1 ]
           elsif st.directory?
-            [ name + "/", st.mtime, -1 ]
+            [ "#{name}/", st.mtime, -1 ]
           else
             [ name, st.mtime, st.size ]
           end
-        }
+        end
         list.compact!
 
         query = req.query
 
-        d0 = nil
-        idx = nil
+        d0, idx = nil, nil
         %w[N M S].each_with_index do |q, i|
           if d = query.delete(q)
             idx ||= i
-            d0 ||= d
+            d0  ||= d
           end
         end
-        d0 ||= "A"
+        d0  ||= "A"
         idx ||= 0
         d1 = (d0 == "A") ? "D" : "A"
 
@@ -450,7 +434,7 @@ module WEBrick
         elsif !namewidth or (namewidth = namewidth.to_i) < 2
           namewidth = 25
         end
-        query = query.inject('') {|s, (k, v)| s << '&' << HTMLUtils::escape("#{k}=#{v}")}
+        query = query.inject(''){ |s, (k, v)| s << '&' << HTMLUtils::escape("#{k}=#{v}")}
 
         type = "text/html"
         case enc = Encoding.find('filesystem')
@@ -489,19 +473,19 @@ module WEBrick
 
         query.sub!(/\A&/, '?')
         list.unshift [ "..", File::mtime(local_path+"/.."), -1 ]
-        list.each{ |name, time, size|
-          if name == ".."
-            dname = "Parent Directory"
+        list.each do |name, time, size|
+          dname = if name == ".."
+            "Parent Directory"
           elsif namewidth and name.size > namewidth
-            dname = name[0...(namewidth - 2)] << '..'
+            name[0...(namewidth - 2)] << '..'
           else
-            dname = name
+            name
           end
           s =  "<TR><TD class=\"name\"><A HREF=\"#{HTTPUtils::escape(name)}#{query if name.end_with?('/')}\">#{HTMLUtils::escape(dname)}</A></TD>"
           s << "<TD class=\"mtime\">" << (time ? time.strftime("%Y/%m/%d %H:%M") : "") << "</TD>"
           s << "<TD class=\"size\">" << (size >= 0 ? size.to_s : "-") << "</TD></TR>\n"
           res.body << s
-        }
+        end
         res.body << "</TBODY></TABLE>"
         res.body << "<HR>"
 
