@@ -78,6 +78,9 @@ with all sufficient information, see the ChangeLog file.
     what the enumerator has returned instead of nil. [Feature #11498]
 
 * Logger
+
+  * Logger#level= now supports symbol and string levels such as :debug, :info,
+    :warn, :error, :fatal (case insensitive) [Feature #11695]
   * Logger#reopen is added to reopen a log device. [Feature #11696]
 
 * Module
