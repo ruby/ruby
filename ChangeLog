@@ -1,3 +1,8 @@
+Mon Nov 16 15:42:36 2015  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/set.rb (#>=, #>, #<=, #<): Make use of Hash#>=, #>, #<, and
+	  #<= when comparing against an instance of the same kind.
+
 Mon Nov 16 15:33:11 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* tool/rbinstall.rb: fix wrong permission for gem specification without
