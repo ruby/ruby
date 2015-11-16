@@ -2061,7 +2061,10 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	INSN *piobj = (INSN *)get_prev_insn(iobj);
 	enum ruby_vminsn_type previ = piobj->insn_id;
 
-	if (previ == BIN(send) || previ == BIN(opt_send_without_block) || previ == BIN(invokesuper)) {
+	if (previ == BIN(send) || previ == BIN(opt_send_without_block) ||
+	    previ == BIN(invokesuper) ||
+	    previ == BIN(opt_aref) || previ == BIN(opt_aref_with) ||
+	    previ == BIN(opt_aset) || previ == BIN(opt_aset_with)) {
 	    struct rb_call_info *ci = (struct rb_call_info *)piobj->operands[0];
 	    rb_iseq_t *blockiseq = (rb_iseq_t *)piobj->operands[1];
 	    if (blockiseq == 0) {
