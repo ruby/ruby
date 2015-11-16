@@ -27,19 +27,10 @@ module WEBrick
       AuthScheme        = nil
 
       ##
-      # The realm this authenticator covers
-
-      attr_reader :realm
-
-      ##
-      # The user database for this authenticator
-
-      attr_reader :userdb
-
-      ##
-      # The logger for this authenticator
-
-      attr_reader :logger
+      # realm  - the realm this authenticator covers
+      # userdb - the user database for this authenticator
+      # logger - the logger for this authenticator
+      attr_reader :realm, :userdb, :logger
 
       private
 
