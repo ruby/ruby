@@ -1,4 +1,6 @@
 #--
+# frozen_string_literal: true
+#
 # set.rb - defines the Set class
 #++
 # Copyright (c) 2002-2013 Akinori MUSHA <knu@iDaemons.org>
@@ -151,7 +153,7 @@ class Set
       @hash.replace(enum.instance_variable_get(:@hash))
       self
     else
-      do_with_enum(enum)
+      do_with_enum(enum)  # make sure enum is enumerable before calling clear
       clear
       merge(enum)
     end
@@ -200,11 +202,7 @@ class Set
   # Equivalent to Set#flatten, but replaces the receiver with the
   # result in place.  Returns nil if no modifications were made.
   def flatten!
-    if detect { |e| e.is_a?(Set) }
-      replace(flatten())
-    else
-      nil
-    end
+    replace(flatten()) if any? { |e| e.is_a?(Set) }
   end
 
   # Returns true if the set contains the given object.
@@ -220,33 +218,53 @@ class Set
 
   # Returns true if the set is a superset of the given set.
   def superset?(set)
-    set.is_a?(Set) or raise ArgumentError, "value must be a set"
-    return false if size < set.size
-    set.all? { |o| include?(o) }
+    case
+    when set.instance_of?(self.class)
+      @hash >= set.instance_variable_get(:@hash)
+    when set.is_a?(Set)
+      size >= set.size && set.all? { |o| include?(o) }
+    else
+      raise ArgumentError, "value must be a set"
+    end
   end
   alias >= superset?
 
   # Returns true if the set is a proper superset of the given set.
   def proper_superset?(set)
-    set.is_a?(Set) or raise ArgumentError, "value must be a set"
-    return false if size <= set.size
-    set.all? { |o| include?(o) }
+    case
+    when set.instance_of?(self.class)
+      @hash > set.instance_variable_get(:@hash)
+    when set.is_a?(Set)
+      size > set.size && set.all? { |o| include?(o) }
+    else
+      raise ArgumentError, "value must be a set"
+    end
   end
   alias > proper_superset?
 
   # Returns true if the set is a subset of the given set.
   def subset?(set)
-    set.is_a?(Set) or raise ArgumentError, "value must be a set"
-    return false if set.size < size
-    all? { |o| set.include?(o) }
+    case
+    when set.instance_of?(self.class)
+      @hash <= set.instance_variable_get(:@hash)
+    when set.is_a?(Set)
+      size <= set.size && all? { |o| set.include?(o) }
+    else
+      raise ArgumentError, "value must be a set"
+    end
   end
   alias <= subset?
 
   # Returns true if the set is a proper subset of the given set.
   def proper_subset?(set)
-    set.is_a?(Set) or raise ArgumentError, "value must be a set"
-    return false if set.size <= size
-    all? { |o| set.include?(o) }
+    case
+    when set.instance_of?(self.class)
+      @hash < set.instance_variable_get(:@hash)
+    when set.is_a?(Set)
+      size < set.size && all? { |o| set.include?(o) }
+    else
+      raise ArgumentError, "value must be a set"
+    end
   end
   alias < proper_subset?
 
@@ -300,11 +318,7 @@ class Set
   # Adds the given object to the set and returns self.  If the
   # object is already in the set, returns nil.
   def add?(o)
-    if include?(o)
-      nil
-    else
-      add(o)
-    end
+    add(o) unless include?(o)
   end
 
   # Deletes the given object from the set and returns self.  Use +subtract+ to
@@ -317,11 +331,7 @@ class Set
   # Deletes the given object from the set and returns self.  If the
   # object is not in the set, returns nil.
   def delete?(o)
-    if include?(o)
-      delete(o)
-    else
-      nil
-    end
+    delete(o) if include?(o)
   end
 
   # Deletes every element of the set for which block evaluates to
@@ -347,9 +357,7 @@ class Set
   # Replaces the elements with ones returned by collect().
   def collect!
     block_given? or return enum_for(__method__)
-    set = self.class.new
-    each { |o| set << yield(o) }
-    replace(set)
+    replace(self.class.new(self) { |o| yield(o) })
   end
   alias map! collect!
 
@@ -359,7 +367,7 @@ class Set
     block or return enum_for(__method__)
     n = size
     delete_if(&block)
-    size == n ? nil : self
+    self if size != n
   end
 
   # Equivalent to Set#keep_if, but returns nil if no changes were
@@ -368,7 +376,7 @@ class Set
     block or return enum_for(__method__)
     n = size
     keep_if(&block)
-    size == n ? nil : self
+    self if size != n
   end
 
   # Merges the elements of the given enumerable object to the set and
@@ -419,7 +427,7 @@ class Set
   # ((set | enum) - (set & enum)).
   def ^(enum)
     n = Set.new(enum)
-    each { |o| if n.include?(o) then n.delete(o) else n.add(o) end }
+    each { |o| n.add(o) unless n.delete?(o) }
     n
   end
 
@@ -465,8 +473,7 @@ class Set
     h = {}
 
     each { |i|
-      x = yield(i)
-      (h[x] ||= self.class.new).add(i)
+      (h[yield(i)] ||= self.class.new).add(i)
     }
 
     h
@@ -529,8 +536,8 @@ class Set
       return sprintf('#<%s: {...}>', self.class.name)
     end
 
+    ids << object_id
     begin
-      ids << object_id
       return sprintf('#<%s: {%s}>', self.class, to_a.inspect[1..-2])
     ensure
       ids.pop

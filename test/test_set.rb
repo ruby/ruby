@@ -2,6 +2,9 @@ require 'test/unit'
 require 'set'
 
 class TC_Set < Test::Unit::TestCase
+  class Set2 < Set
+  end
+
   def test_aref
     assert_nothing_raised {
       Set[]
@@ -211,16 +214,18 @@ class TC_Set < Test::Unit::TestCase
       set.superset?([2])
     }
 
-    assert_equal(true, set.superset?(Set[]))
-    assert_equal(true, set.superset?(Set[1,2]))
-    assert_equal(true, set.superset?(Set[1,2,3]))
-    assert_equal(false, set.superset?(Set[1,2,3,4]))
-    assert_equal(false, set.superset?(Set[1,4]))
+    [Set, Set2].each { |klass|
+      assert_equal(true, set.superset?(klass[]), klass.name)
+      assert_equal(true, set.superset?(klass[1,2]), klass.name)
+      assert_equal(true, set.superset?(klass[1,2,3]), klass.name)
+      assert_equal(false, set.superset?(klass[1,2,3,4]), klass.name)
+      assert_equal(false, set.superset?(klass[1,4]), klass.name)
 
-    assert_equal(true, set >= Set[1,2,3])
-    assert_equal(true, set >= Set[1,2])
+      assert_equal(true, set >= klass[1,2,3], klass.name)
+      assert_equal(true, set >= klass[1,2], klass.name)
 
-    assert_equal(true, Set[].superset?(Set[]))
+      assert_equal(true, Set[].superset?(klass[]), klass.name)
+    }
   end
 
   def test_proper_superset?
@@ -238,16 +243,18 @@ class TC_Set < Test::Unit::TestCase
       set.proper_superset?([2])
     }
 
-    assert_equal(true, set.proper_superset?(Set[]))
-    assert_equal(true, set.proper_superset?(Set[1,2]))
-    assert_equal(false, set.proper_superset?(Set[1,2,3]))
-    assert_equal(false, set.proper_superset?(Set[1,2,3,4]))
-    assert_equal(false, set.proper_superset?(Set[1,4]))
+    [Set, Set2].each { |klass|
+      assert_equal(true, set.proper_superset?(klass[]), klass.name)
+      assert_equal(true, set.proper_superset?(klass[1,2]), klass.name)
+      assert_equal(false, set.proper_superset?(klass[1,2,3]), klass.name)
+      assert_equal(false, set.proper_superset?(klass[1,2,3,4]), klass.name)
+      assert_equal(false, set.proper_superset?(klass[1,4]), klass.name)
 
-    assert_equal(false, set > Set[1,2,3])
-    assert_equal(true, set > Set[1,2])
+      assert_equal(false, set > klass[1,2,3], klass.name)
+      assert_equal(true, set > klass[1,2], klass.name)
 
-    assert_equal(false, Set[].proper_superset?(Set[]))
+      assert_equal(false, Set[].proper_superset?(klass[]), klass.name)
+    }
   end
 
   def test_subset?
@@ -265,16 +272,18 @@ class TC_Set < Test::Unit::TestCase
       set.subset?([2])
     }
 
-    assert_equal(true, set.subset?(Set[1,2,3,4]))
-    assert_equal(true, set.subset?(Set[1,2,3]))
-    assert_equal(false, set.subset?(Set[1,2]))
-    assert_equal(false, set.subset?(Set[]))
+    [Set, Set2].each { |klass|
+      assert_equal(true, set.subset?(klass[1,2,3,4]), klass.name)
+      assert_equal(true, set.subset?(klass[1,2,3]), klass.name)
+      assert_equal(false, set.subset?(klass[1,2]), klass.name)
+      assert_equal(false, set.subset?(klass[]), klass.name)
 
-    assert_equal(true, set <= Set[1,2,3])
-    assert_equal(true, set <= Set[1,2,3,4])
+      assert_equal(true, set <= klass[1,2,3], klass.name)
+      assert_equal(true, set <= klass[1,2,3,4], klass.name)
 
-    assert_equal(true, Set[].subset?(Set[1]))
-    assert_equal(true, Set[].subset?(Set[]))
+      assert_equal(true, Set[].subset?(klass[1]), klass.name)
+      assert_equal(true, Set[].subset?(klass[]), klass.name)
+    }
   end
 
   def test_proper_subset?
@@ -292,15 +301,17 @@ class TC_Set < Test::Unit::TestCase
       set.proper_subset?([2])
     }
 
-    assert_equal(true, set.proper_subset?(Set[1,2,3,4]))
-    assert_equal(false, set.proper_subset?(Set[1,2,3]))
-    assert_equal(false, set.proper_subset?(Set[1,2]))
-    assert_equal(false, set.proper_subset?(Set[]))
+    [Set, Set2].each { |klass|
+      assert_equal(true, set.proper_subset?(klass[1,2,3,4]), klass.name)
+      assert_equal(false, set.proper_subset?(klass[1,2,3]), klass.name)
+      assert_equal(false, set.proper_subset?(klass[1,2]), klass.name)
+      assert_equal(false, set.proper_subset?(klass[]), klass.name)
 
-    assert_equal(false, set < Set[1,2,3])
-    assert_equal(true, set < Set[1,2,3,4])
+      assert_equal(false, set < klass[1,2,3], klass.name)
+      assert_equal(true, set < klass[1,2,3,4], klass.name)
 
-    assert_equal(false, Set[].proper_subset?(Set[]))
+      assert_equal(false, Set[].proper_subset?(klass[]), klass.name)
+    }
   end
 
   def assert_intersect(expected, set, other)
