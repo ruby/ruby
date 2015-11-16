@@ -103,8 +103,8 @@ module WEBrick
         req.user           = env["REMOTE_USER"]
         res.request_method = req.request_method
         res.request_uri    = req.request_uri
-        res.keep_alive     = req.keep_alive?
         res.request_http_version = req.http_version
+        res.keep_alive     = req.keep_alive?
         self.service(req, res)
       rescue HTTPStatus::Error => ex
         res.set_error(ex)
