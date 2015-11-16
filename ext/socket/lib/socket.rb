@@ -274,6 +274,56 @@ class BasicSocket < IO
     end
     addr
   end
+
+  # call-seq:
+  # 	basicsocket.recv_nonblock(maxlen [, flags [, buf [, options ]]]) => mesg
+  #
+  # Receives up to _maxlen_ bytes from +socket+ using recvfrom(2) after
+  # O_NONBLOCK is set for the underlying file descriptor.
+  # _flags_ is zero or more of the +MSG_+ options.
+  # The result, _mesg_, is the data received.
+  #
+  # When recvfrom(2) returns 0, Socket#recv_nonblock returns
+  # an empty string as data.
+  # The meaning depends on the socket: EOF on TCP, empty packet on UDP, etc.
+  #
+  # === Parameters
+  # * +maxlen+ - the number of bytes to receive from the socket
+  # * +flags+ - zero or more of the +MSG_+ options
+  # * +options+ - keyword hash, supporting `exception: false`
+  #
+  # === Example
+  # 	serv = TCPServer.new("127.0.0.1", 0)
+  # 	af, port, host, addr = serv.addr
+  # 	c = TCPSocket.new(addr, port)
+  # 	s = serv.accept
+  # 	c.send "aaa", 0
+  # 	begin # emulate blocking recv.
+  # 	  p s.recv_nonblock(10) #=> "aaa"
+  # 	rescue IO::WaitReadable
+  # 	  IO.select([s])
+  # 	  retry
+  # 	end
+  #
+  # Refer to Socket#recvfrom for the exceptions that may be thrown if the call
+  # to _recv_nonblock_ fails.
+  #
+  # BasicSocket#recv_nonblock may raise any error corresponding to recvfrom(2) failure,
+  # including Errno::EWOULDBLOCK.
+  #
+  # If the exception is Errno::EWOULDBLOCK or Errno::EAGAIN,
+  # it is extended by IO::WaitReadable.
+  # So IO::WaitReadable can be used to rescue the exceptions for retrying recv_nonblock.
+  #
+  # By specifying `exception: false`, the options hash allows you to indicate
+  # that recv_nonblock should not raise an IO::WaitWritable exception, but
+  # return the symbol :wait_writable instead.
+  #
+  # === See
+  # * Socket#recvfrom
+  def recv_nonblock(len, flag = 0, str = nil, exception: true)
+    __recv_nonblock(len, flag, str, exception)
+  end
 end
 
 class Socket < BasicSocket
@@ -282,6 +332,70 @@ class Socket < BasicSocket
     if defined? Socket::IPV6_V6ONLY
       self.setsockopt(:IPV6, :V6ONLY, 1)
     end
+  end
+
+  # call-seq:
+  #   socket.recvfrom_nonblock(maxlen) => [mesg, sender_addrinfo]
+  #   socket.recvfrom_nonblock(maxlen, flags) => [mesg, sender_addrinfo]
+  #
+  # Receives up to _maxlen_ bytes from +socket+ using recvfrom(2) after
+  # O_NONBLOCK is set for the underlying file descriptor.
+  # _flags_ is zero or more of the +MSG_+ options.
+  # The first element of the results, _mesg_, is the data received.
+  # The second element, _sender_addrinfo_, contains protocol-specific address
+  # information of the sender.
+  #
+  # When recvfrom(2) returns 0, Socket#recvfrom_nonblock returns
+  # an empty string as data.
+  # The meaning depends on the socket: EOF on TCP, empty packet on UDP, etc.
+  #
+  # === Parameters
+  # * +maxlen+ - the maximum number of bytes to receive from the socket
+  # * +flags+ - zero or more of the +MSG_+ options
+  #
+  # === Example
+  #   # In one file, start this first
+  #   require 'socket'
+  #   include Socket::Constants
+  #   socket = Socket.new(AF_INET, SOCK_STREAM, 0)
+  #   sockaddr = Socket.sockaddr_in(2200, 'localhost')
+  #   socket.bind(sockaddr)
+  #   socket.listen(5)
+  #   client, client_addrinfo = socket.accept
+  #   begin # emulate blocking recvfrom
+  #     pair = client.recvfrom_nonblock(20)
+  #   rescue IO::WaitReadable
+  #     IO.select([client])
+  #     retry
+  #   end
+  #   data = pair[0].chomp
+  #   puts "I only received 20 bytes '#{data}'"
+  #   sleep 1
+  #   socket.close
+  #
+  #   # In another file, start this second
+  #   require 'socket'
+  #   include Socket::Constants
+  #   socket = Socket.new(AF_INET, SOCK_STREAM, 0)
+  #   sockaddr = Socket.sockaddr_in(2200, 'localhost')
+  #   socket.connect(sockaddr)
+  #   socket.puts "Watch this get cut short!"
+  #   socket.close
+  #
+  # Refer to Socket#recvfrom for the exceptions that may be thrown if the call
+  # to _recvfrom_nonblock_ fails.
+  #
+  # Socket#recvfrom_nonblock may raise any error corresponding to recvfrom(2) failure,
+  # including Errno::EWOULDBLOCK.
+  #
+  # If the exception is Errno::EWOULDBLOCK or Errno::EAGAIN,
+  # it is extended by IO::WaitReadable.
+  # So IO::WaitReadable can be used to rescue the exceptions for retrying recvfrom_nonblock.
+  #
+  # === See
+  # * Socket#recvfrom
+  def recvfrom_nonblock(len, flag = 0, str = nil, exception: true)
+    __recvfrom_nonblock(len, flag, str, exception)
   end
 
   # :call-seq:
@@ -868,3 +982,60 @@ class Socket < BasicSocket
 
 end
 
+class UDPSocket < IPSocket
+
+  # call-seq:
+  #   udpsocket.recvfrom_nonblock(maxlen [, flags [, options]]) => [mesg, sender_inet_addr]
+  #
+  # Receives up to _maxlen_ bytes from +udpsocket+ using recvfrom(2) after
+  # O_NONBLOCK is set for the underlying file descriptor.
+  # If _maxlen_ is omitted, its default value is 65536.
+  # _flags_ is zero or more of the +MSG_+ options.
+  # The first element of the results, _mesg_, is the data received.
+  # The second element, _sender_inet_addr_, is an array to represent the sender address.
+  #
+  # When recvfrom(2) returns 0,
+  # Socket#recvfrom_nonblock returns an empty string as data.
+  # It means an empty packet.
+  #
+  # === Parameters
+  # * +maxlen+ - the number of bytes to receive from the socket
+  # * +flags+ - zero or more of the +MSG_+ options
+  # * +options+ - keyword hash, supporting `exception: false`
+  #
+  # === Example
+  # 	require 'socket'
+  # 	s1 = UDPSocket.new
+  # 	s1.bind("127.0.0.1", 0)
+  # 	s2 = UDPSocket.new
+  # 	s2.bind("127.0.0.1", 0)
+  # 	s2.connect(*s1.addr.values_at(3,1))
+  # 	s1.connect(*s2.addr.values_at(3,1))
+  # 	s1.send "aaa", 0
+  # 	begin # emulate blocking recvfrom
+  # 	  p s2.recvfrom_nonblock(10)  #=> ["aaa", ["AF_INET", 33302, "localhost.localdomain", "127.0.0.1"]]
+  # 	rescue IO::WaitReadable
+  # 	  IO.select([s2])
+  # 	  retry
+  # 	end
+  #
+  # Refer to Socket#recvfrom for the exceptions that may be thrown if the call
+  # to _recvfrom_nonblock_ fails.
+  #
+  # UDPSocket#recvfrom_nonblock may raise any error corresponding to recvfrom(2) failure,
+  # including Errno::EWOULDBLOCK.
+  #
+  # If the exception is Errno::EWOULDBLOCK or Errno::EAGAIN,
+  # it is extended by IO::WaitReadable.
+  # So IO::WaitReadable can be used to rescue the exceptions for retrying recvfrom_nonblock.
+  #
+  # By specifying `exception: false`, the options hash allows you to indicate
+  # that recvmsg_nonblock should not raise an IO::WaitWritable exception, but
+  # return the symbol :wait_writable instead.
+  #
+  # === See
+  # * Socket#recvfrom
+  def recvfrom_nonblock(len, flag = 0, str = nil, exception: true)
+    __recvfrom_nonblock(len, flag, str, exception)
+  end
+end

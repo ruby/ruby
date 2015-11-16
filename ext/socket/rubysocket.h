@@ -347,7 +347,8 @@ enum sock_recv_type {
     RECV_SOCKET                 /* Socket#recvfrom */
 };
 
-VALUE rsock_s_recvfrom_nonblock(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from);
+VALUE rsock_s_recvfrom_nonblock(VALUE sock, VALUE len, VALUE flg, VALUE str,
+			        VALUE ex, enum sock_recv_type from);
 VALUE rsock_s_recvfrom(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from);
 
 int rsock_connect(int fd, const struct sockaddr *sockaddr, int len, int socks);

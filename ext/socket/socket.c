@@ -813,72 +813,11 @@ sock_recvfrom(int argc, VALUE *argv, VALUE sock)
     return rsock_s_recvfrom(sock, argc, argv, RECV_SOCKET);
 }
 
-/*
- * call-seq:
- *   socket.recvfrom_nonblock(maxlen) => [mesg, sender_addrinfo]
- *   socket.recvfrom_nonblock(maxlen, flags) => [mesg, sender_addrinfo]
- *
- * Receives up to _maxlen_ bytes from +socket+ using recvfrom(2) after
- * O_NONBLOCK is set for the underlying file descriptor.
- * _flags_ is zero or more of the +MSG_+ options.
- * The first element of the results, _mesg_, is the data received.
- * The second element, _sender_addrinfo_, contains protocol-specific address
- * information of the sender.
- *
- * When recvfrom(2) returns 0, Socket#recvfrom_nonblock returns
- * an empty string as data.
- * The meaning depends on the socket: EOF on TCP, empty packet on UDP, etc.
- *
- * === Parameters
- * * +maxlen+ - the maximum number of bytes to receive from the socket
- * * +flags+ - zero or more of the +MSG_+ options
- *
- * === Example
- *   # In one file, start this first
- *   require 'socket'
- *   include Socket::Constants
- *   socket = Socket.new(AF_INET, SOCK_STREAM, 0)
- *   sockaddr = Socket.sockaddr_in(2200, 'localhost')
- *   socket.bind(sockaddr)
- *   socket.listen(5)
- *   client, client_addrinfo = socket.accept
- *   begin # emulate blocking recvfrom
- *     pair = client.recvfrom_nonblock(20)
- *   rescue IO::WaitReadable
- *     IO.select([client])
- *     retry
- *   end
- *   data = pair[0].chomp
- *   puts "I only received 20 bytes '#{data}'"
- *   sleep 1
- *   socket.close
- *
- *   # In another file, start this second
- *   require 'socket'
- *   include Socket::Constants
- *   socket = Socket.new(AF_INET, SOCK_STREAM, 0)
- *   sockaddr = Socket.sockaddr_in(2200, 'localhost')
- *   socket.connect(sockaddr)
- *   socket.puts "Watch this get cut short!"
- *   socket.close
- *
- * Refer to Socket#recvfrom for the exceptions that may be thrown if the call
- * to _recvfrom_nonblock_ fails.
- *
- * Socket#recvfrom_nonblock may raise any error corresponding to recvfrom(2) failure,
- * including Errno::EWOULDBLOCK.
- *
- * If the exception is Errno::EWOULDBLOCK or Errno::EAGAIN,
- * it is extended by IO::WaitReadable.
- * So IO::WaitReadable can be used to rescue the exceptions for retrying recvfrom_nonblock.
- *
- * === See
- * * Socket#recvfrom
- */
+/* :nodoc: */
 static VALUE
-sock_recvfrom_nonblock(int argc, VALUE *argv, VALUE sock)
+sock_recvfrom_nonblock(VALUE sock, VALUE len, VALUE flg, VALUE str, VALUE ex)
 {
-    return rsock_s_recvfrom_nonblock(sock, argc, argv, RECV_SOCKET);
+    return rsock_s_recvfrom_nonblock(sock, len, flg, str, ex, RECV_SOCKET);
 }
 
 /*
@@ -2182,7 +2121,10 @@ Init_socket(void)
     rb_define_method(rb_cSocket, "sysaccept", sock_sysaccept, 0);
 
     rb_define_method(rb_cSocket, "recvfrom", sock_recvfrom, -1);
-    rb_define_method(rb_cSocket, "recvfrom_nonblock", sock_recvfrom_nonblock, -1);
+
+    /* for ext/socket/lib/socket.rb use only: */
+    rb_define_private_method(rb_cSocket,
+			     "__recvfrom_nonblock", sock_recvfrom_nonblock, 4);
 
     rb_define_singleton_method(rb_cSocket, "socketpair", rsock_sock_s_socketpair, -1);
     rb_define_singleton_method(rb_cSocket, "pair", rsock_sock_s_socketpair, -1);
