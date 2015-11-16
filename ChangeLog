@@ -1,3 +1,8 @@
+Mon Nov 16 15:59:14 2015  yui-knk  <spiketeika@gmail.com>
+
+	* proc.c: Add call-seq of `Method#super_method`
+	  [ci skip][fix GH-1094]
+
 Mon Nov 16 15:58:39 2015  Kenichi Kamiya  <kachick1@gmail.com>
 
 	* struct.c: Standardize a method signature of Struct#[]=.
