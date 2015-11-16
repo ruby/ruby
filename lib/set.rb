@@ -220,33 +220,53 @@ class Set
 
   # Returns true if the set is a superset of the given set.
   def superset?(set)
-    set.is_a?(Set) or raise ArgumentError, "value must be a set"
-    return false if size < set.size
-    set.all? { |o| include?(o) }
+    case
+    when set.instance_of?(self.class)
+      @hash >= set.instance_variable_get(:@hash)
+    when set.is_a?(Set)
+      size >= set.size && set.all? { |o| include?(o) }
+    else
+      raise ArgumentError, "value must be a set"
+    end
   end
   alias >= superset?
 
   # Returns true if the set is a proper superset of the given set.
   def proper_superset?(set)
-    set.is_a?(Set) or raise ArgumentError, "value must be a set"
-    return false if size <= set.size
-    set.all? { |o| include?(o) }
+    case
+    when set.instance_of?(self.class)
+      @hash > set.instance_variable_get(:@hash)
+    when set.is_a?(Set)
+      size > set.size && set.all? { |o| include?(o) }
+    else
+      raise ArgumentError, "value must be a set"
+    end
   end
   alias > proper_superset?
 
   # Returns true if the set is a subset of the given set.
   def subset?(set)
-    set.is_a?(Set) or raise ArgumentError, "value must be a set"
-    return false if set.size < size
-    all? { |o| set.include?(o) }
+    case
+    when set.instance_of?(self.class)
+      @hash <= set.instance_variable_get(:@hash)
+    when set.is_a?(Set)
+      size <= set.size && all? { |o| set.include?(o) }
+    else
+      raise ArgumentError, "value must be a set"
+    end
   end
   alias <= subset?
 
   # Returns true if the set is a proper subset of the given set.
   def proper_subset?(set)
-    set.is_a?(Set) or raise ArgumentError, "value must be a set"
-    return false if set.size <= size
-    all? { |o| set.include?(o) }
+    case
+    when set.instance_of?(self.class)
+      @hash < set.instance_variable_get(:@hash)
+    when set.is_a?(Set)
+      size < set.size && all? { |o| set.include?(o) }
+    else
+      raise ArgumentError, "value must be a set"
+    end
   end
   alias < proper_subset?
 
