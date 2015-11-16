@@ -53,8 +53,8 @@ module WEBrick
       OpaqueInfo = Struct.new(:time, :nonce, :nc) # :nodoc:
 
       ##
-      # algorithm - Digest authentication algorithm
-      # qop - Quality of protection.  RFC 2617 defines "auth" and "auth-int"
+      # Digest authentication algorithm; Quality of protection (RFC 2617 defines "auth", "auth-int")
+
       attr_reader :algorithm, :qop
 
       ##
@@ -120,10 +120,13 @@ module WEBrick
       # information
 
       def challenge(req, res, stale=false)
-        nonce = generate_next_nonce(req)
-        @opaques[ generate_opaque(req) ].nonce = nonce if @use_opaque
-        
-        param = {}
+        nonce, param = generate_next_nonce(req), {}
+
+        if @use_opaque
+          opaque = generate_opaque(req)
+          @opaques[opaque].nonce = nonce
+        end
+
         param["realm"]     = HTTPUtils::quote(@realm)
         param["domain"]    = HTTPUtils::quote(@domain.to_a.join(" ")) if @domain
         param["nonce"]     = HTTPUtils::quote(nonce)
