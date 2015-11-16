@@ -127,22 +127,21 @@ module WEBrick
 
       def challenge(req, res, stale=false)
         nonce = generate_next_nonce(req)
-        if @use_opaque
-          opaque = generate_opaque(req)
+
+        if @use_opaque && (opaque = generate_opaque(req))
           @opaques[opaque].nonce = nonce
         end
 
-        param = Hash.new
-        param["realm"]  = HTTPUtils::quote(@realm)
-        param["domain"] = HTTPUtils::quote(@domain.to_a.join(" ")) if @domain
-        param["nonce"]  = HTTPUtils::quote(nonce)
-        param["opaque"] = HTTPUtils::quote(opaque) if opaque
-        param["stale"]  = stale.to_s
+        param = {}
+        param["realm"]     = HTTPUtils::quote(@realm)
+        param["domain"]    = HTTPUtils::quote(@domain.to_a.join(" ")) if @domain
+        param["nonce"]     = HTTPUtils::quote(nonce)
+        param["opaque"]    = HTTPUtils::quote(opaque) if opaque
+        param["stale"]     = stale.to_s
         param["algorithm"] = @algorithm
-        param["qop"]    = HTTPUtils::quote(@qop.to_a.join(",")) if @qop
+        param["qop"]       = HTTPUtils::quote(@qop.to_a.join(",")) if @qop
 
-        res[@response_field] =
-          "#{@auth_scheme} " + param.map{ |k,v| "#{k}=#{v}" }.join(", ")
+        res[@response_field] = "#{@auth_scheme} #{param.map{|k,v|"#{k}=#{v}"}.join(", ")}"
         info("%s: %s", @response_field, res[@response_field]) if $DEBUG
         raise @auth_exception
       end
