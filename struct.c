@@ -896,11 +896,11 @@ rb_struct_aref(VALUE s, VALUE idx)
 
 /*
  *  call-seq:
- *     struct[name]  = obj    -> obj
- *     struct[index] = obj    -> obj
+ *     struct[member] = obj    -> obj
+ *     struct[index]  = obj    -> obj
  *
  *  Attribute Assignment---Sets the value of the given struct +member+ or
- *  the member at the given +index+.  Raises NameError if the +name+ does not
+ *  the member at the given +index+.  Raises NameError if the +member+ does not
  *  exist and IndexError if the +index+ is out of range.
  *
  *     Customer = Struct.new(:name, :address, :zip)
