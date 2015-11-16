@@ -225,6 +225,8 @@ module Random::Formatter
   # The version 4 UUID is purely random (except the version).
   # It doesn't contain meaningful information such as MAC addresses, timestamps, etc.
   #
+  # The result contains 122 random bits (15.25 random bytes).
+  #
   # See RFC 4122 for details of UUID.
   #
   def uuid
