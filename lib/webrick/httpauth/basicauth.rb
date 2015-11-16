@@ -89,8 +89,7 @@ module WEBrick
       end
 
       ##
-      # Returns a challenge response which asks for for authentication
-      # information
+      # Returns a challenge response which asks for authentication information
 
       def challenge(req, res)
         res[@response_field] = "#{@auth_scheme} realm=\"#{@realm}\""
