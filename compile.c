@@ -1956,7 +1956,8 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	    unref_destination(iobj);
 	    REPLACE_ELEM((LINK_ELEMENT *)iobj, (LINK_ELEMENT *)eiobj);
 	    INSERT_ELEM_NEXT((LINK_ELEMENT *)eiobj, (LINK_ELEMENT *)popiobj);
-	    iobj = popiobj;
+	    iobj = eiobj;
+	    goto again;
 	}
 	/*
 	 * useless jump elimination (if/unless destination):
