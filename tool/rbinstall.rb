@@ -752,6 +752,7 @@ install?(:ext, :comm, :gem) do
     ins = RbInstall::UnpackedInstaller.new(spec, options)
     puts "#{" "*30}#{spec.name} #{spec.version}"
     ins.install
+    File.chmod($data_mode, File.join(install_dir, "specifications", "#{spec.full_name}.gemspec"))
     installed_gems[spec.full_name] = true
   end
   installed_gems, gems = Dir.glob(srcdir+'/gems/*.gem').partition {|gem| installed_gems.key?(File.basename(gem, '.gem'))}
