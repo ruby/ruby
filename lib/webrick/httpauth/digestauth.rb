@@ -61,8 +61,7 @@ module WEBrick
       # Used by UserDB to create a digest password entry
 
       def self.make_passwd(realm, user, pass)
-        pass ||= ""
-        Digest::MD5::hexdigest([user, realm, pass].join(":"))
+        Digest::MD5::hexdigest("#{user}:#{realm}:#{pass ? pass : ''}")
       end
 
       ##
