@@ -1,4 +1,6 @@
 #--
+# frozen_string_literal: true
+#
 # set.rb - defines the Set class
 #++
 # Copyright (c) 2002-2013 Akinori MUSHA <knu@iDaemons.org>
@@ -534,8 +536,8 @@ class Set
       return sprintf('#<%s: {...}>', self.class.name)
     end
 
+    ids << object_id
     begin
-      ids << object_id
       return sprintf('#<%s: {%s}>', self.class, to_a.inspect[1..-2])
     ensure
       ids.pop
