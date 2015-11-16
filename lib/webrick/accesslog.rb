@@ -29,8 +29,7 @@ module WEBrick
   module AccessLog
 
     ##
-    # Raised if a parameter such as %e, %i, %o or %n is used without fetching
-    # a specific field.
+    # Raised if a parameter such as %e, %i, %o or %n is used without fetching a specific field.
 
     class AccessLogError < StandardError; end
 
@@ -92,7 +91,7 @@ module WEBrick
     # %%:: Literal %
 
     def setup_params(config, req, res)
-      params = Hash.new("")
+      params = {}
       params["a"] = req.peeraddr[3]
       params["b"] = res.sent_size
       params["e"] = ENV
@@ -120,7 +119,7 @@ module WEBrick
     # setup_params.
 
     def format(format_string, params)
-      format_string.gsub(/\%(?:\{(.*?)\})?>?([a-zA-Z%])/){
+      format_string.gsub(/\%(?:\{(.*?)\})?>?([a-zA-Z%])/) do
          param, spec = $1, $2
          case spec[0]
          when ?e, ?i, ?n, ?o
@@ -141,18 +140,16 @@ module WEBrick
          else
            escape(params[spec].to_s)
          end
-      }
+      end
     end
 
     ##
     # Escapes control characters in +data+
 
     def escape(data)
-      if data.tainted?
-        data.gsub(/[[:cntrl:]\\]+/) {$&.dump[1...-1]}.untaint
-      else
-        data
-      end
+      return data unless data.tainted?
+      data.gsub(/[[:cntrl:]\\]+/) {$&.dump[1...-1]}.untaint
     end
+
   end
 end
