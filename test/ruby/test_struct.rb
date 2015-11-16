@@ -353,6 +353,13 @@ module TestStruct
     assert_equal "[Bug #9353]", x.send(:a=, "[Bug #9353]")
   end
 
+  def test_dig
+    klass = @Struct.new(:a)
+    o = klass.new(klass.new({b: [1, 2, 3]}))
+    assert_equal(1, o.dig(:a, :a, :b, 0))
+    assert_nil(o.dig(:b, 0))
+  end
+
   class TopStruct < Test::Unit::TestCase
     include TestStruct
 
