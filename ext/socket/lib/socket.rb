@@ -980,6 +980,53 @@ class Socket < BasicSocket
     }
   end
 
+  # call-seq:
+  #   socket.connect_nonblock(remote_sockaddr, [options]) => 0
+  #
+  # Requests a connection to be made on the given +remote_sockaddr+ after
+  # O_NONBLOCK is set for the underlying file descriptor.
+  # Returns 0 if successful, otherwise an exception is raised.
+  #
+  # === Parameter
+  #  # +remote_sockaddr+ - the +struct+ sockaddr contained in a string or Addrinfo object
+  #
+  # === Example:
+  #   # Pull down Google's web page
+  #   require 'socket'
+  #   include Socket::Constants
+  #   socket = Socket.new(AF_INET, SOCK_STREAM, 0)
+  #   sockaddr = Socket.sockaddr_in(80, 'www.google.com')
+  #   begin # emulate blocking connect
+  #     socket.connect_nonblock(sockaddr)
+  #   rescue IO::WaitWritable
+  #     IO.select(nil, [socket]) # wait 3-way handshake completion
+  #     begin
+  #       socket.connect_nonblock(sockaddr) # check connection failure
+  #     rescue Errno::EISCONN
+  #     end
+  #   end
+  #   socket.write("GET / HTTP/1.0\r\n\r\n")
+  #   results = socket.read
+  #
+  # Refer to Socket#connect for the exceptions that may be thrown if the call
+  # to _connect_nonblock_ fails.
+  #
+  # Socket#connect_nonblock may raise any error corresponding to connect(2) failure,
+  # including Errno::EINPROGRESS.
+  #
+  # If the exception is Errno::EINPROGRESS,
+  # it is extended by IO::WaitWritable.
+  # So IO::WaitWritable can be used to rescue the exceptions for retrying connect_nonblock.
+  #
+  # By specifying `exception: false`, the options hash allows you to indicate
+  # that connect_nonblock should not raise an IO::WaitWritable exception, but
+  # return the symbol :wait_writable instead.
+  #
+  # === See
+  #  # Socket#connect
+  def connect_nonblock(addr, exception: true)
+    __connect_nonblock(addr, exception)
+  end
 end
 
 class UDPSocket < IPSocket

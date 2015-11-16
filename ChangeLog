@@ -1,3 +1,11 @@
+Tue Nov 17 08:25:57 2015  Eric Wong  <e@80x24.org>
+
+	* ext/socket/socket.c (sock_connect_nonblock):
+	  avoid argument parsing in C.
+	  [ruby-core:71439] [Feature #11339]
+	* ext/socket/lib/socket.rb (Socket#connect_nonblock):
+	  new wrapper for private method, move RDoc
+
 Tue Nov 17 08:16:09 2015  Eric Wong  <e@80x24.org>
 
 	* ext/socket/init.c (rsock_s_recvfrom_nonblock):
