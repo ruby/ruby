@@ -398,6 +398,63 @@ class Socket < BasicSocket
     __recvfrom_nonblock(len, flag, str, exception)
   end
 
+  # call-seq:
+  #   socket.accept_nonblock([options]) => [client_socket, client_addrinfo]
+  #
+  # Accepts an incoming connection using accept(2) after
+  # O_NONBLOCK is set for the underlying file descriptor.
+  # It returns an array containing the accepted socket
+  # for the incoming connection, _client_socket_,
+  # and an Addrinfo, _client_addrinfo_.
+  #
+  # === Example
+  #   # In one script, start this first
+  #   require 'socket'
+  #   include Socket::Constants
+  #   socket = Socket.new(AF_INET, SOCK_STREAM, 0)
+  #   sockaddr = Socket.sockaddr_in(2200, 'localhost')
+  #   socket.bind(sockaddr)
+  #   socket.listen(5)
+  #   begin # emulate blocking accept
+  #     client_socket, client_addrinfo = socket.accept_nonblock
+  #   rescue IO::WaitReadable, Errno::EINTR
+  #     IO.select([socket])
+  #     retry
+  #   end
+  #   puts "The client said, '#{client_socket.readline.chomp}'"
+  #   client_socket.puts "Hello from script one!"
+  #   socket.close
+  #
+  #   # In another script, start this second
+  #   require 'socket'
+  #   include Socket::Constants
+  #   socket = Socket.new(AF_INET, SOCK_STREAM, 0)
+  #   sockaddr = Socket.sockaddr_in(2200, 'localhost')
+  #   socket.connect(sockaddr)
+  #   socket.puts "Hello from script 2."
+  #   puts "The server said, '#{socket.readline.chomp}'"
+  #   socket.close
+  #
+  # Refer to Socket#accept for the exceptions that may be thrown if the call
+  # to _accept_nonblock_ fails.
+  #
+  # Socket#accept_nonblock may raise any error corresponding to accept(2) failure,
+  # including Errno::EWOULDBLOCK.
+  #
+  # If the exception is Errno::EWOULDBLOCK, Errno::EAGAIN, Errno::ECONNABORTED or Errno::EPROTO,
+  # it is extended by IO::WaitReadable.
+  # So IO::WaitReadable can be used to rescue the exceptions for retrying accept_nonblock.
+  #
+  # By specifying `exception: false`, the options hash allows you to indicate
+  # that accept_nonblock should not raise an IO::WaitReadable exception, but
+  # return the symbol :wait_readable instead.
+  #
+  # === See
+  # * Socket#accept
+  def accept_nonblock(exception: true)
+    __accept_nonblock(exception)
+  end
+
   # :call-seq:
   #   Socket.tcp(host, port, local_host=nil, local_port=nil, [opts]) {|socket| ... }
   #   Socket.tcp(host, port, local_host=nil, local_port=nil, [opts])
@@ -1084,5 +1141,88 @@ class UDPSocket < IPSocket
   # * Socket#recvfrom
   def recvfrom_nonblock(len, flag = 0, str = nil, exception: true)
     __recvfrom_nonblock(len, flag, str, exception)
+  end
+end
+
+class TCPServer < TCPSocket
+
+  # call-seq:
+  #   tcpserver.accept_nonblock([options]) => tcpsocket
+  #
+  # Accepts an incoming connection using accept(2) after
+  # O_NONBLOCK is set for the underlying file descriptor.
+  # It returns an accepted TCPSocket for the incoming connection.
+  #
+  # === Example
+  # 	require 'socket'
+  # 	serv = TCPServer.new(2202)
+  # 	begin # emulate blocking accept
+  # 	  sock = serv.accept_nonblock
+  # 	rescue IO::WaitReadable, Errno::EINTR
+  # 	  IO.select([serv])
+  # 	  retry
+  # 	end
+  # 	# sock is an accepted socket.
+  #
+  # Refer to Socket#accept for the exceptions that may be thrown if the call
+  # to TCPServer#accept_nonblock fails.
+  #
+  # TCPServer#accept_nonblock may raise any error corresponding to accept(2) failure,
+  # including Errno::EWOULDBLOCK.
+  #
+  # If the exception is Errno::EWOULDBLOCK, Errno::EAGAIN, Errno::ECONNABORTED, Errno::EPROTO,
+  # it is extended by IO::WaitReadable.
+  # So IO::WaitReadable can be used to rescue the exceptions for retrying accept_nonblock.
+  #
+  # By specifying `exception: false`, the options hash allows you to indicate
+  # that accept_nonblock should not raise an IO::WaitReadable exception, but
+  # return the symbol :wait_readable instead.
+  #
+  # === See
+  # * TCPServer#accept
+  # * Socket#accept
+  def accept_nonblock(exception: true)
+    __accept_nonblock(exception)
+  end
+end
+
+class UNIXServer < UNIXSocket
+  # call-seq:
+  #   unixserver.accept_nonblock([options]) => unixsocket
+  #
+  # Accepts an incoming connection using accept(2) after
+  # O_NONBLOCK is set for the underlying file descriptor.
+  # It returns an accepted UNIXSocket for the incoming connection.
+  #
+  # === Example
+  # 	require 'socket'
+  # 	serv = UNIXServer.new("/tmp/sock")
+  # 	begin # emulate blocking accept
+  # 	  sock = serv.accept_nonblock
+  # 	rescue IO::WaitReadable, Errno::EINTR
+  # 	  IO.select([serv])
+  # 	  retry
+  # 	end
+  # 	# sock is an accepted socket.
+  #
+  # Refer to Socket#accept for the exceptions that may be thrown if the call
+  # to UNIXServer#accept_nonblock fails.
+  #
+  # UNIXServer#accept_nonblock may raise any error corresponding to accept(2) failure,
+  # including Errno::EWOULDBLOCK.
+  #
+  # If the exception is Errno::EWOULDBLOCK, Errno::EAGAIN, Errno::ECONNABORTED or Errno::EPROTO,
+  # it is extended by IO::WaitReadable.
+  # So IO::WaitReadable can be used to rescue the exceptions for retrying accept_nonblock.
+  #
+  # By specifying `exception: false`, the options hash allows you to indicate
+  # that accept_nonblock should not raise an IO::WaitReadable exception, but
+  # return the symbol :wait_readable instead.
+  #
+  # === See
+  # * UNIXServer#accept
+  # * Socket#accept
+  def accept_nonblock(exception: true)
+    __accept_nonblock(exception)
   end
 end

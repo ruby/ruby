@@ -1,3 +1,16 @@
+Tue Nov 17 08:36:34 2015  Eric Wong  <e@80x24.org>
+
+	* ext/socket/init.c (rsock_s_accept_nonblock): avoid parsing args
+	  [ruby-core:71439] [Feature #11339]
+	* ext/socket/rubysocket.h: adjust prototype
+	* ext/socket/socket.c (sock_accept_nonblock): make private
+	* ext/socket/tcpserver.c (tcp_accept_nonblock): ditto
+	* ext/socket/unixserver.c (unix_accept_nonblock): ditto
+	* ext/socket/lib/socket.rb (Socket#accept_nonblock):
+	  implement as wrapper, move RDoc
+	  (TCPServer#accept_nonblock): ditto
+	  (UNIXServer#accept_nonblock): ditto
+
 Tue Nov 17 08:25:57 2015  Eric Wong  <e@80x24.org>
 
 	* ext/socket/socket.c (sock_connect_nonblock):

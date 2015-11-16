@@ -29,7 +29,7 @@ VALUE rb_cSOCKSSocket;
 #endif
 
 int rsock_do_not_reverse_lookup = 1;
-static VALUE sym_exception, sym_wait_readable;
+static VALUE sym_wait_readable;
 
 void
 rsock_raise_socket_error(const char *reason, int error)
@@ -544,13 +544,10 @@ cloexec_accept(int socket, struct sockaddr *address, socklen_t *address_len,
 }
 
 VALUE
-rsock_s_accept_nonblock(int argc, VALUE *argv, VALUE klass, rb_io_t *fptr,
+rsock_s_accept_nonblock(VALUE klass, VALUE ex, rb_io_t *fptr,
 			struct sockaddr *sockaddr, socklen_t *len)
 {
     int fd2;
-    VALUE opts = Qnil;
-
-    rb_scan_args(argc, argv, "0:", &opts);
 
     rb_io_set_nonblock(fptr);
     fd2 = cloexec_accept(fptr->fd, (struct sockaddr*)sockaddr, len, 1);
@@ -564,7 +561,7 @@ rsock_s_accept_nonblock(int argc, VALUE *argv, VALUE klass, rb_io_t *fptr,
 #if defined EPROTO
 	  case EPROTO:
 #endif
-            if (rsock_opt_false_p(opts, sym_exception))
+            if (ex == Qfalse)
 		return sym_wait_readable;
             rb_readwrite_sys_fail(RB_IO_WAIT_READABLE, "accept(2) would block");
 	}
@@ -673,6 +670,5 @@ rsock_init_socket_init(void)
     rsock_init_socket_constants();
 
 #undef rb_intern
-    sym_exception = ID2SYM(rb_intern("exception"));
     sym_wait_readable = ID2SYM(rb_intern("wait_readable"));
 }

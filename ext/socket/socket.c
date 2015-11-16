@@ -800,63 +800,9 @@ sock_accept(VALUE sock)
     return rb_assoc_new(sock2, rsock_io_socket_addrinfo(sock2, &buf.addr, len));
 }
 
-/*
- * call-seq:
- *   socket.accept_nonblock([options]) => [client_socket, client_addrinfo]
- *
- * Accepts an incoming connection using accept(2) after
- * O_NONBLOCK is set for the underlying file descriptor.
- * It returns an array containing the accepted socket
- * for the incoming connection, _client_socket_,
- * and an Addrinfo, _client_addrinfo_.
- *
- * === Example
- *   # In one script, start this first
- *   require 'socket'
- *   include Socket::Constants
- *   socket = Socket.new(AF_INET, SOCK_STREAM, 0)
- *   sockaddr = Socket.sockaddr_in(2200, 'localhost')
- *   socket.bind(sockaddr)
- *   socket.listen(5)
- *   begin # emulate blocking accept
- *     client_socket, client_addrinfo = socket.accept_nonblock
- *   rescue IO::WaitReadable, Errno::EINTR
- *     IO.select([socket])
- *     retry
- *   end
- *   puts "The client said, '#{client_socket.readline.chomp}'"
- *   client_socket.puts "Hello from script one!"
- *   socket.close
- *
- *   # In another script, start this second
- *   require 'socket'
- *   include Socket::Constants
- *   socket = Socket.new(AF_INET, SOCK_STREAM, 0)
- *   sockaddr = Socket.sockaddr_in(2200, 'localhost')
- *   socket.connect(sockaddr)
- *   socket.puts "Hello from script 2."
- *   puts "The server said, '#{socket.readline.chomp}'"
- *   socket.close
- *
- * Refer to Socket#accept for the exceptions that may be thrown if the call
- * to _accept_nonblock_ fails.
- *
- * Socket#accept_nonblock may raise any error corresponding to accept(2) failure,
- * including Errno::EWOULDBLOCK.
- *
- * If the exception is Errno::EWOULDBLOCK, Errno::EAGAIN, Errno::ECONNABORTED or Errno::EPROTO,
- * it is extended by IO::WaitReadable.
- * So IO::WaitReadable can be used to rescue the exceptions for retrying accept_nonblock.
- *
- * By specifying `exception: false`, the options hash allows you to indicate
- * that accept_nonblock should not raise an IO::WaitReadable exception, but
- * return the symbol :wait_readable instead.
- *
- * === See
- * * Socket#accept
- */
+/* :nodoc: */
 static VALUE
-sock_accept_nonblock(int argc, VALUE *argv, VALUE sock)
+sock_accept_nonblock(VALUE sock, VALUE ex)
 {
     rb_io_t *fptr;
     VALUE sock2;
@@ -865,7 +811,7 @@ sock_accept_nonblock(int argc, VALUE *argv, VALUE sock)
     socklen_t len = (socklen_t)sizeof buf;
 
     GetOpenFile(sock, fptr);
-    sock2 = rsock_s_accept_nonblock(argc, argv, rb_cSocket, fptr, addr, &len);
+    sock2 = rsock_s_accept_nonblock(rb_cSocket, ex, fptr, addr, &len);
 
     if (SYMBOL_P(sock2)) /* :wait_readable */
 	return sock2;
@@ -2073,7 +2019,11 @@ Init_socket(void)
     rb_define_method(rb_cSocket, "bind", sock_bind, 1);
     rb_define_method(rb_cSocket, "listen", rsock_sock_listen, 1);
     rb_define_method(rb_cSocket, "accept", sock_accept, 0);
-    rb_define_method(rb_cSocket, "accept_nonblock", sock_accept_nonblock, -1);
+
+    /* for ext/socket/lib/socket.rb use only: */
+    rb_define_private_method(rb_cSocket,
+			     "__accept_nonblock", sock_accept_nonblock, 1);
+
     rb_define_method(rb_cSocket, "sysaccept", sock_sysaccept, 0);
 
     rb_define_method(rb_cSocket, "recvfrom", sock_recvfrom, -1);
