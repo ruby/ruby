@@ -1,3 +1,11 @@
+Tue Nov 17 11:27:23 2015  Eric Wong  <e@80x24.org>
+
+	* ext/socket/lib/socket.rb (Socket#recvfrom_nonblock):
+	  UDPSocket#recvfrom_nonblock):
+	  update doc for `exception: false` and destination buffer
+	  [ruby-core:69542] [Feature #11229]
+	  [ruby-core:69543] [Feature #11242]
+
 Tue Nov 17 11:25:05 2015  Eric Turner  <ericturnerdev@gmail.com>
 
 	* array.c (rb_ary_dig), hash.c (rb_hash_dig): [DOC] Update

@@ -456,8 +456,7 @@ class Socket < BasicSocket
   end
 
   # call-seq:
-  #   socket.recvfrom_nonblock(maxlen) => [mesg, sender_addrinfo]
-  #   socket.recvfrom_nonblock(maxlen, flags) => [mesg, sender_addrinfo]
+  #   socket.recvfrom_nonblock(maxlen[, flags[, outbuf[, opts]]]) => [mesg, sender_addrinfo]
   #
   # Receives up to _maxlen_ bytes from +socket+ using recvfrom(2) after
   # O_NONBLOCK is set for the underlying file descriptor.
@@ -473,6 +472,8 @@ class Socket < BasicSocket
   # === Parameters
   # * +maxlen+ - the maximum number of bytes to receive from the socket
   # * +flags+ - zero or more of the +MSG_+ options
+  # * +outbuf+ - destination String buffer
+  # * +opts+ - keyword hash, supporting `exception: false`
   #
   # === Example
   #   # In one file, start this first
@@ -511,7 +512,12 @@ class Socket < BasicSocket
   #
   # If the exception is Errno::EWOULDBLOCK or Errno::EAGAIN,
   # it is extended by IO::WaitReadable.
-  # So IO::WaitReadable can be used to rescue the exceptions for retrying recvfrom_nonblock.
+  # So IO::WaitReadable can be used to rescue the exceptions for retrying
+  # recvfrom_nonblock.
+  #
+  # By specifying `exception: false`, the options hash allows you to indicate
+  # that accept_nonblock should not raise an IO::WaitReadable exception, but
+  # return the symbol :wait_readable instead.
   #
   # === See
   # * Socket#recvfrom
@@ -1204,7 +1210,7 @@ end
 class UDPSocket < IPSocket
 
   # call-seq:
-  #   udpsocket.recvfrom_nonblock(maxlen [, flags [, options]]) => [mesg, sender_inet_addr]
+  #   udpsocket.recvfrom_nonblock(maxlen [, flags[, outbuf [, options]]]) => [mesg, sender_inet_addr]
   #
   # Receives up to _maxlen_ bytes from +udpsocket+ using recvfrom(2) after
   # O_NONBLOCK is set for the underlying file descriptor.
@@ -1220,6 +1226,7 @@ class UDPSocket < IPSocket
   # === Parameters
   # * +maxlen+ - the number of bytes to receive from the socket
   # * +flags+ - zero or more of the +MSG_+ options
+  # * +outbuf+ - destination String buffer
   # * +options+ - keyword hash, supporting `exception: false`
   #
   # === Example
@@ -1254,8 +1261,8 @@ class UDPSocket < IPSocket
   #
   # === See
   # * Socket#recvfrom
-  def recvfrom_nonblock(len, flag = 0, str = nil, exception: true)
-    __recvfrom_nonblock(len, flag, str, exception)
+  def recvfrom_nonblock(len, flag = 0, outbuf = nil, exception: true)
+    __recvfrom_nonblock(len, flag, outbuf, exception)
   end
 end
 
