@@ -1,3 +1,8 @@
+Tue Nov 17 19:02:59 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* configure.in (BASERUBY): use Kernel#print instead of Kernel#p because
+	  the baseruby may output CRLF as end of line.
+
 Tue Nov 17 18:36:52 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* method.h: introduce rb_method_definition_t::complemented_count.
