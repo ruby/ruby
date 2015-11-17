@@ -1,3 +1,15 @@
+Tue Nov 17 09:45:18 2015  Eric Wong  <e@80x24.org>
+
+	* ext/socket/ancdata.c (bsock_recvmsg_internal): avoid arg parsing
+	  (rsock_bsock_recvmsg): adjust for above change
+	  (rsock_bsock_recvmsg_nonblock): ditto
+	  [ruby-core:71439] [Feature #11339]
+	* ext/socket/rubysocket.h: adjust prototypes for above
+	* ext/socket/basicsocket.c (rsock_init_basicsocket):
+	  adjust private methods
+	* ext/socket/lib/socket.rb (BasicSocket#recvmsg): wrapper method
+	  (BasicSocket#recvmsg_nonblock): ditto
+
 Tue Nov 17 08:36:34 2015  Eric Wong  <e@80x24.org>
 
 	* ext/socket/init.c (rsock_s_accept_nonblock): avoid parsing args

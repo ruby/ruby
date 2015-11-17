@@ -1487,11 +1487,11 @@ make_io_for_unix_rights(VALUE ctl, struct cmsghdr *cmh, char *msg_end)
 #endif
 
 static VALUE
-bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
+bsock_recvmsg_internal(VALUE sock,
+		VALUE vmaxdatlen, VALUE vflags, VALUE vmaxctllen,
+		VALUE scm_rights, VALUE ex, int nonblock)
 {
     rb_io_t *fptr;
-    VALUE vmaxdatlen, vmaxctllen, vflags;
-    VALUE vopts;
     int grow_buffer;
     size_t maxdatlen;
     int flags, orig_flags;
@@ -1512,17 +1512,14 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
     int gc_done = 0;
 #endif
 
-
-    rb_scan_args(argc, argv, "03:", &vmaxdatlen, &vflags, &vmaxctllen, &vopts);
-
-    maxdatlen = NIL_P(vmaxdatlen) ? 4096 : NUM2SIZET(vmaxdatlen);
+    maxdatlen = NUM2SIZET(vmaxdatlen);
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
-    maxctllen = NIL_P(vmaxctllen) ? 4096 : NUM2SIZET(vmaxctllen);
+    maxctllen = NUM2SIZET(vmaxctllen);
 #else
     if (!NIL_P(vmaxctllen))
         rb_raise(rb_eArgError, "control message not supported");
 #endif
-    flags = NIL_P(vflags) ? 0 : NUM2INT(vflags);
+    flags = NUM2INT(vflags);
 #ifdef MSG_DONTWAIT
     if (nonblock)
         flags |= MSG_DONTWAIT;
@@ -1532,7 +1529,7 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
     grow_buffer = NIL_P(vmaxdatlen) || NIL_P(vmaxctllen);
 
     request_scm_rights = 0;
-    if (!NIL_P(vopts) && RTEST(rb_hash_aref(vopts, ID2SYM(rb_intern("scm_rights")))))
+    if (RTEST(scm_rights))
         request_scm_rights = 1;
 #if !defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
     if (request_scm_rights)
@@ -1602,7 +1599,7 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
             goto retry;
         }
         if (nonblock && (errno == EWOULDBLOCK || errno == EAGAIN)) {
-            if (rsock_opt_false_p(vopts, sym_exception)) {
+            if (ex == Qfalse) {
                 return sym_wait_readable;
             }
             rb_readwrite_sys_fail(RB_IO_WAIT_READABLE, "recvmsg(2) would block");
@@ -1720,85 +1717,21 @@ bsock_recvmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
 #endif
 
 #if defined(HAVE_RECVMSG)
-/*
- * call-seq:
- *    basicsocket.recvmsg(maxmesglen=nil, flags=0, maxcontrollen=nil, opts={}) => [mesg, sender_addrinfo, rflags, *controls]
- *
- * recvmsg receives a message using recvmsg(2) system call in blocking manner.
- *
- * _maxmesglen_ is the maximum length of mesg to receive.
- *
- * _flags_ is bitwise OR of MSG_* constants such as Socket::MSG_PEEK.
- *
- * _maxcontrollen_ is the maximum length of controls (ancillary data) to receive.
- *
- * _opts_ is option hash.
- * Currently :scm_rights=>bool is the only option.
- *
- * :scm_rights option specifies that application expects SCM_RIGHTS control message.
- * If the value is nil or false, application don't expects SCM_RIGHTS control message.
- * In this case, recvmsg closes the passed file descriptors immediately.
- * This is the default behavior.
- *
- * If :scm_rights value is neither nil nor false, application expects SCM_RIGHTS control message.
- * In this case, recvmsg creates IO objects for each file descriptors for
- * Socket::AncillaryData#unix_rights method.
- *
- * The return value is 4-elements array.
- *
- * _mesg_ is a string of the received message.
- *
- * _sender_addrinfo_ is a sender socket address for connection-less socket.
- * It is an Addrinfo object.
- * For connection-oriented socket such as TCP, sender_addrinfo is platform dependent.
- *
- * _rflags_ is a flags on the received message which is bitwise OR of MSG_* constants such as Socket::MSG_TRUNC.
- * It will be nil if the system uses 4.3BSD style old recvmsg system call.
- *
- * _controls_ is ancillary data which is an array of Socket::AncillaryData objects such as:
- *
- *   #<Socket::AncillaryData: AF_UNIX SOCKET RIGHTS 7>
- *
- * _maxmesglen_ and _maxcontrollen_ can be nil.
- * In that case, the buffer will be grown until the message is not truncated.
- * Internally, MSG_PEEK is used and MSG_TRUNC/MSG_CTRUNC are checked.
- *
- * recvmsg can be used to implement recv_io as follows:
- *
- *   mesg, sender_sockaddr, rflags, *controls = sock.recvmsg(:scm_rights=>true)
- *   controls.each {|ancdata|
- *     if ancdata.cmsg_is?(:SOCKET, :RIGHTS)
- *       return ancdata.unix_rights[0]
- *     end
- *   }
- *
- */
 VALUE
-rsock_bsock_recvmsg(int argc, VALUE *argv, VALUE sock)
+rsock_bsock_recvmsg(VALUE sock, VALUE dlen, VALUE flags, VALUE clen,
+		    VALUE scm_rights)
 {
-    return bsock_recvmsg_internal(argc, argv, sock, 0);
+    VALUE ex = Qtrue;
+    return bsock_recvmsg_internal(sock, dlen, flags, clen, scm_rights, ex, 0);
 }
 #endif
 
 #if defined(HAVE_RECVMSG)
-/*
- * call-seq:
- *    basicsocket.recvmsg_nonblock(maxdatalen=nil, flags=0, maxcontrollen=nil, opts={}) => [data, sender_addrinfo, rflags, *controls]
- *
- * recvmsg receives a message using recvmsg(2) system call in non-blocking manner.
- *
- * It is similar to BasicSocket#recvmsg
- * but non-blocking flag is set before the system call
- * and it doesn't retry the system call.
- *
- * By specifying `exception: false`, the _opts_ hash allows you to indicate
- * that recvmsg_nonblock should not raise an IO::WaitWritable exception, but
- * return the symbol :wait_writable instead.
- */
 VALUE
-rsock_bsock_recvmsg_nonblock(int argc, VALUE *argv, VALUE sock)
+rsock_bsock_recvmsg_nonblock(VALUE sock, VALUE dlen, VALUE flags, VALUE clen,
+			     VALUE scm_rights, VALUE ex)
 {
-    return bsock_recvmsg_internal(argc, argv, sock, 1);
+    return bsock_recvmsg_internal(sock, dlen, flags, clen, scm_rights, ex, 1);
 }
 #endif
 
