@@ -1,3 +1,10 @@
+Tue Nov 17 11:25:05 2015  Eric Turner  <ericturnerdev@gmail.com>
+
+	* array.c (rb_ary_dig), hash.c (rb_hash_dig): [DOC] Update
+	  comments describing dig methods.  [Fix GH-1103]
+
+	* struct.c (rb_struct_dig): [DOC] add rdoc.
+
 Tue Nov 17 11:22:22 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
 	* NEWS: Small grammatical fix [ci skip]
 

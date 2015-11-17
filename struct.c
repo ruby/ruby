@@ -1126,6 +1126,20 @@ rb_struct_size(VALUE s)
     return LONG2FIX(RSTRUCT_LEN(s));
 }
 
+/*
+ * call-seq:
+ *   struct.dig(key, ...)              -> object
+ *
+ * Extracts the nested struct value specified by the sequence of <i>key</i>
+ * objects.
+ *
+ *   klass = Struct.new(:a)
+ *   o = klass.new(klass.new({b: [1, 2, 3]}))
+ *
+ *   o.dig(:a, :a, :b, 0)              #=> 1
+ *   o.dig(:b, 0)                      #=> nil
+ */
+
 static VALUE
 rb_struct_dig(int argc, VALUE *argv, VALUE self)
 {
