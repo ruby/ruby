@@ -276,6 +276,56 @@ class BasicSocket < IO
   end
 
   # call-seq:
+  #    basicsocket.sendmsg(mesg, flags=0, dest_sockaddr=nil, *controls) => numbytes_sent
+  #
+  # sendmsg sends a message using sendmsg(2) system call in blocking manner.
+  #
+  # _mesg_ is a string to send.
+  #
+  # _flags_ is bitwise OR of MSG_* constants such as Socket::MSG_OOB.
+  #
+  # _dest_sockaddr_ is a destination socket address for connection-less socket.
+  # It should be a sockaddr such as a result of Socket.sockaddr_in.
+  # An Addrinfo object can be used too.
+  #
+  # _controls_ is a list of ancillary data.
+  # The element of _controls_ should be Socket::AncillaryData or
+  # 3-elements array.
+  # The 3-element array should contains cmsg_level, cmsg_type and data.
+  #
+  # The return value, _numbytes_sent_ is an integer which is the number of bytes sent.
+  #
+  # sendmsg can be used to implement send_io as follows:
+  #
+  #   # use Socket::AncillaryData.
+  #   ancdata = Socket::AncillaryData.int(:UNIX, :SOCKET, :RIGHTS, io.fileno)
+  #   sock.sendmsg("a", 0, nil, ancdata)
+  #
+  #   # use 3-element array.
+  #   ancdata = [:SOCKET, :RIGHTS, [io.fileno].pack("i!")]
+  #   sock.sendmsg("\0", 0, nil, ancdata)
+  def sendmsg(mesg, flags = 0, dest_sockaddr = nil, *controls)
+    __sendmsg(mesg, flags, dest_sockaddr, controls)
+  end
+
+  # call-seq:
+  #    basicsocket.sendmsg_nonblock(mesg, flags=0, dest_sockaddr=nil, *controls, opts={}) => numbytes_sent
+  #
+  # sendmsg_nonblock sends a message using sendmsg(2) system call in non-blocking manner.
+  #
+  # It is similar to BasicSocket#sendmsg
+  # but the non-blocking flag is set before the system call
+  # and it doesn't retry the system call.
+  #
+  # By specifying `exception: false`, the _opts_ hash allows you to indicate
+  # that sendmsg_nonblock should not raise an IO::WaitWritable exception, but
+  # return the symbol :wait_writable instead.
+  def sendmsg_nonblock(mesg, flags = 0, dest_sockaddr = nil, *controls,
+                       exception: true)
+    __sendmsg_nonblock(mesg, flags, dest_sockaddr, controls, exception)
+  end
+
+  # call-seq:
   # 	basicsocket.recv_nonblock(maxlen [, flags [, buf [, options ]]]) => mesg
   #
   # Receives up to _maxlen_ bytes from +socket+ using recvfrom(2) after

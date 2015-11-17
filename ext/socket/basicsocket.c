@@ -724,10 +724,11 @@ rsock_init_basicsocket(void)
     rb_define_private_method(rb_cBasicSocket,
 			     "__recv_nonblock", bsock_recv_nonblock, 4);
 
-    rb_define_method(rb_cBasicSocket, "sendmsg", rsock_bsock_sendmsg, -1); /* in ancdata.c */
-    rb_define_method(rb_cBasicSocket, "sendmsg_nonblock", rsock_bsock_sendmsg_nonblock, -1); /* in ancdata.c */
-
     /* in ancdata.c */
+    rb_define_private_method(rb_cBasicSocket, "__sendmsg",
+			     rsock_bsock_sendmsg, 4);
+    rb_define_private_method(rb_cBasicSocket, "__sendmsg_nonblock",
+			     rsock_bsock_sendmsg_nonblock, 5);
     rb_define_private_method(rb_cBasicSocket, "__recvmsg",
 			     rsock_bsock_recvmsg, 4);
     rb_define_private_method(rb_cBasicSocket, "__recvmsg_nonblock",
