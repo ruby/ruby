@@ -1,3 +1,8 @@
+Tue Nov 17 15:30:30 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
+	* enc/unicode/casefold.h, name2ctype.h: Change Unicode
+	  Version for regular expressions from 7.0.0 to
+	  8.0.0 (with help from Kimihito Matsui) [Feature #11563]
+
 Tue Nov 17 14:36:00 2015  Kenichi Kamiya  <kachick1@gmail.com>
 
 	* lib/ostruct.rb (dig): Implement OpenStruct#dig
