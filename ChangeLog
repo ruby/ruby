@@ -121,6 +121,10 @@ Mon Nov 16 21:27:54 2015  Naohisa Goto  <ngotogenome@gmail.com>
 	* test/dtrace/helper.rb (Dtrace::TestCase#trap_probe): dtrace buffer
 	  size is set as 8m on Solaris (default 4m). [Bug #11697]
 
+Mon Nov 16 20:03:14 2015  Naotoshi Seo  <sonots@gmail.com>
+
+	* lib/logger.rb: Add Logger#reopen
+
 Mon Nov 16 18:21:52 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* object.c (rb_obj_dig): dig in nested structs too.
