@@ -42,23 +42,28 @@ rsock_raise_socket_error(const char *reason, int error)
     rb_raise(rb_eSocket, "%s: %s", reason, gai_strerror(error));
 }
 
-VALUE
-rsock_init_sock(VALUE sock, int fd)
+#ifdef _WIN32
+#define is_socket(fd) rb_w32_is_socket(fd)
+#else
+static int
+is_socket(int fd)
 {
-    rb_io_t *fp;
-#ifndef _WIN32
     struct stat sbuf;
 
     if (fstat(fd, &sbuf) < 0)
         rb_sys_fail("fstat(2)");
-    rb_update_max_fd(fd);
-    if (!S_ISSOCK(sbuf.st_mode))
-        rb_raise(rb_eArgError, "not a socket file descriptor");
-#else
-    rb_update_max_fd(fd);
-    if (!rb_w32_is_socket(fd))
-        rb_raise(rb_eArgError, "not a socket file descriptor");
+    return S_ISSOCK(sbuf.st_mode);
+}
 #endif
+
+VALUE
+rsock_init_sock(VALUE sock, int fd)
+{
+    rb_io_t *fp;
+
+    rb_update_max_fd(fd);
+    if (!is_socket(fd))
+        rb_raise(rb_eArgError, "not a socket file descriptor");
 
     MakeOpenFile(sock, fp);
     fp->fd = fd;
