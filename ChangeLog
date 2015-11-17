@@ -1,3 +1,8 @@
+Tue Nov 17 14:36:00 2015  Kenichi Kamiya  <kachick1@gmail.com>
+
+	* lib/ostruct.rb (dig): Implement OpenStruct#dig
+	  [Feature #11688]
+
 Tue Nov 17 14:04:14 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/socket/lib/socket.rb (Socket#recvmsg{,_nonblock}): default values

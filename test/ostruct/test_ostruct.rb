@@ -108,6 +108,17 @@ class TC_OpenStruct < Test::Unit::TestCase
     assert_equal :bar, os['foo']
   end
 
+  def test_dig
+    os1 = OpenStruct.new
+    os2 = OpenStruct.new
+    os1.child = os2
+    os2.foo = :bar
+    os2.child = [42]
+    assert_equal :bar, os1.dig("child", :foo)
+    assert_nil os1.dig("parent", :foo)
+    assert_nil os1.dig("child", 0)
+  end
+
   def test_to_h
     h = {name: "John Smith", age: 70, pension: 300}
     os = OpenStruct.new(h)
