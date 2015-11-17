@@ -3,7 +3,7 @@
 #include <time.h>
 
 int rsock_cmsg_cloexec_state = -1; /* <0: unknown, 0: ignored, >0: working */
-static VALUE sym_exception, sym_wait_readable, sym_wait_writable;
+static VALUE sym_wait_readable, sym_wait_writable;
 
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
 static VALUE rb_cAncillaryData;
@@ -1128,14 +1128,13 @@ rb_sendmsg(int fd, const struct msghdr *msg, int flags)
 }
 
 static VALUE
-bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
+bsock_sendmsg_internal(VALUE sock, VALUE data, VALUE vflags,
+		       VALUE dest_sockaddr, VALUE controls, VALUE ex,
+		       int nonblock)
 {
     rb_io_t *fptr;
-    VALUE data, vflags, dest_sockaddr;
     struct msghdr mh;
     struct iovec iov;
-    VALUE opts = Qnil;
-    VALUE controls = Qnil;
     int controls_num;
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
     VALUE controls_str = 0;
@@ -1149,15 +1148,11 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
     family = rsock_getfamily(fptr);
 #endif
 
-    data = vflags = dest_sockaddr = Qnil;
-
-    if (argc == 0)
-        rb_raise(rb_eArgError, "mesg argument required");
-
-    rb_scan_args(argc, argv, "12*:", &data, &vflags, &dest_sockaddr, &controls,
-                 &opts);
-
     StringValue(data);
+
+    if (!RB_TYPE_P(controls, T_ARRAY)) {
+	controls = rb_ary_new();
+    }
     controls_num = RARRAY_LENINT(controls);
 
     if (controls_num) {
@@ -1285,7 +1280,7 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
             goto retry;
         }
         if (nonblock && (errno == EWOULDBLOCK || errno == EAGAIN)) {
-	    if (rsock_opt_false_p(opts, sym_exception)) {
+	    if (ex == Qfalse) {
 		return sym_wait_writable;
 	    }
 	    rb_readwrite_sys_fail(RB_IO_WAIT_WRITABLE,
@@ -1302,64 +1297,22 @@ bsock_sendmsg_internal(int argc, VALUE *argv, VALUE sock, int nonblock)
 #endif
 
 #if defined(HAVE_SENDMSG)
-/*
- * call-seq:
- *    basicsocket.sendmsg(mesg, flags=0, dest_sockaddr=nil, *controls) => numbytes_sent
- *
- * sendmsg sends a message using sendmsg(2) system call in blocking manner.
- *
- * _mesg_ is a string to send.
- *
- * _flags_ is bitwise OR of MSG_* constants such as Socket::MSG_OOB.
- *
- * _dest_sockaddr_ is a destination socket address for connection-less socket.
- * It should be a sockaddr such as a result of Socket.sockaddr_in.
- * An Addrinfo object can be used too.
- *
- * _controls_ is a list of ancillary data.
- * The element of _controls_ should be Socket::AncillaryData or
- * 3-elements array.
- * The 3-element array should contains cmsg_level, cmsg_type and data.
- *
- * The return value, _numbytes_sent_ is an integer which is the number of bytes sent.
- *
- * sendmsg can be used to implement send_io as follows:
- *
- *   # use Socket::AncillaryData.
- *   ancdata = Socket::AncillaryData.int(:UNIX, :SOCKET, :RIGHTS, io.fileno)
- *   sock.sendmsg("a", 0, nil, ancdata)
- *
- *   # use 3-element array.
- *   ancdata = [:SOCKET, :RIGHTS, [io.fileno].pack("i!")]
- *   sock.sendmsg("\0", 0, nil, ancdata)
- *
- */
 VALUE
-rsock_bsock_sendmsg(int argc, VALUE *argv, VALUE sock)
+rsock_bsock_sendmsg(VALUE sock, VALUE data, VALUE flags, VALUE dest_sockaddr,
+		    VALUE controls)
 {
-    return bsock_sendmsg_internal(argc, argv, sock, 0);
+    return bsock_sendmsg_internal(sock, data, flags, dest_sockaddr, controls,
+				  Qtrue, 0);
 }
 #endif
 
 #if defined(HAVE_SENDMSG)
-/*
- * call-seq:
- *    basicsocket.sendmsg_nonblock(mesg, flags=0, dest_sockaddr=nil, *controls, opts={}) => numbytes_sent
- *
- * sendmsg_nonblock sends a message using sendmsg(2) system call in non-blocking manner.
- *
- * It is similar to BasicSocket#sendmsg
- * but the non-blocking flag is set before the system call
- * and it doesn't retry the system call.
- *
- * By specifying `exception: false`, the _opts_ hash allows you to indicate
- * that sendmsg_nonblock should not raise an IO::WaitWritable exception, but
- * return the symbol :wait_writable instead.
- */
 VALUE
-rsock_bsock_sendmsg_nonblock(int argc, VALUE *argv, VALUE sock)
+rsock_bsock_sendmsg_nonblock(VALUE sock, VALUE data, VALUE flags,
+			     VALUE dest_sockaddr, VALUE controls, VALUE ex)
 {
-    return bsock_sendmsg_internal(argc, argv, sock, 1);
+    return bsock_sendmsg_internal(sock, data, flags, dest_sockaddr,
+				  controls, ex, 1);
 }
 #endif
 
@@ -1773,7 +1726,6 @@ rsock_init_ancdata(void)
     rb_define_method(rb_cAncillaryData, "ipv6_pktinfo_ifindex", ancillary_ipv6_pktinfo_ifindex, 0);
 #endif
 #undef rb_intern
-    sym_exception = ID2SYM(rb_intern("exception"));
     sym_wait_readable = ID2SYM(rb_intern("wait_readable"));
     sym_wait_writable = ID2SYM(rb_intern("wait_writable"));
 }

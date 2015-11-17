@@ -1,3 +1,16 @@
+Tue Nov 17 09:59:00 2015  Eric Wong  <e@80x24.org>
+
+	* ext/socket/ancdata.c (bsock_sendmsg_internal): avoid arg parsing
+	  [ruby-core:71439] [Feature #11339]
+	  (rsock_bsock_sendmsg): make private, adjust for above
+	  (rsock_bsock_sendmsg_nonblock): ditto
+	* ext/socket/rubysocket.h: adjust prototypes
+	  (rsock_opt_false_p): remove
+	* ext/socket/basicsocket.c (rsock_init_basicsocket):
+	  define private methods
+	* ext/socket/lib/socket.rb (BasicSocket#sendmsg): new wrapper
+	  (BasicSocket#sendmsg_nonblock): ditto
+
 Tue Nov 17 09:45:18 2015  Eric Wong  <e@80x24.org>
 
 	* ext/socket/ancdata.c (bsock_recvmsg_internal): avoid arg parsing
