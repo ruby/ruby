@@ -653,4 +653,20 @@ class TestSocket < Test::Unit::TestCase
     end
   end
 
+  def test_recvmsg_udp_no_arg
+    n = 4097
+    s1 = Addrinfo.udp("127.0.0.1", 0).bind
+    s2 = s1.connect_address.connect
+    s2.send("a" * n, 0)
+    ret = s1.recvmsg
+    assert_equal n, ret[0].bytesize, '[ruby-core:71517] [Bug #11701]'
+
+    s2.send("a" * n, 0)
+    IO.select([s1])
+    ret = s1.recvmsg_nonblock
+    assert_equal n, ret[0].bytesize, 'non-blocking should also grow'
+  ensure
+    s1.close
+    s2.close
+  end
 end if defined?(Socket)
