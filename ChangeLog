@@ -1,3 +1,8 @@
+Tue Nov 17 10:12:30 2015  Eric Wong  <e@80x24.org>
+
+	* ext/socket/lib/socket.rb (Socket.accept_loop): avoid exceptions
+	  (Socket.udp_server_recv): ditto
+
 Tue Nov 17 09:59:00 2015  Eric Wong  <e@80x24.org>
 
 	* ext/socket/ancdata.c (bsock_sendmsg_internal): avoid arg parsing
