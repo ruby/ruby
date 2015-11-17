@@ -1,3 +1,12 @@
+Wed Nov 18 06:59:52 2015  Eric Wong  <e@80x24.org>
+
+	* ext/socket/ancdata.c (bsock_recvmsg_internal): grow buffer
+	  on unspecified maxdatlen
+	  [ruby-core:71517] [Bug #11701]
+	* ext/socket/lib/socket.rb (Socket#recvmsg): nil default for dlen
+	  (Socket#recvmsg_nonblock): ditto
+	* test/socket/test_socket.rb (test_recvmsg_udp_no_arg): new test
+
 Tue Nov 17 19:50:06 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (fstat): declare for mingw.

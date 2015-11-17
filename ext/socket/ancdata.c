@@ -1465,7 +1465,7 @@ bsock_recvmsg_internal(VALUE sock,
     int gc_done = 0;
 #endif
 
-    maxdatlen = NUM2SIZET(vmaxdatlen);
+    maxdatlen = NIL_P(vmaxdatlen) ? 4061 : NUM2SIZET(vmaxdatlen);
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
     maxctllen = NIL_P(vmaxctllen) ? 4096 : NUM2SIZET(vmaxctllen);
 #else
