@@ -1347,4 +1347,4 @@ class UNIXServer < UNIXSocket
   def accept_nonblock(exception: true)
     __accept_nonblock(exception)
   end
-end
+end if defined?(UNIXSocket)

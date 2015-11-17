@@ -1,3 +1,8 @@
+Tue Nov 17 13:43:46 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/socket/lib/socket.rb: UNIXSocket is not always exists.  fixes
+	  install error on Windows, introduced at r52601.
+
 Tue Nov 17 11:27:23 2015  Eric Wong  <e@80x24.org>
 
 	* ext/socket/lib/socket.rb (Socket#recvfrom_nonblock):
