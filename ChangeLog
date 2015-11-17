@@ -1,3 +1,18 @@
+Tue Nov 17 18:36:52 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* method.h: introduce rb_method_definition_t::complemented_count.
+
+	* vm_method.c (method_definition_addref_complement): introduced.
+
+	  def->alias_count is used to decide warn or do not warn at method
+	  redefinition. Complented methods should not prevent redefiniton
+	  warnings.
+
+	* vm_method.c (rb_method_definition_release): release def iff
+	  alias_count == 0 && complemented_count == 0.
+
+	* test/ruby/test_module.rb: add a test.
+
 Tue Nov 17 15:34:34 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
 	* NEWS: Added update from Unicode 7.0.0 to 8.0.0 [ci skip]
 
