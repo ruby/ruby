@@ -155,8 +155,8 @@ module TestStruct
     klass = @Struct.new(:a)
     o = klass.new(1)
     assert_equal(1, o[0])
-    assert_raise(IndexError) { o[-2] }
-    assert_raise(IndexError) { o[1] }
+    assert_raise_with_message(IndexError, /offset -2\b/) {o[-2]}
+    assert_raise_with_message(IndexError, /offset 1\b/) {o[1]}
     assert_raise_with_message(NameError, /foo/) {o["foo"]}
     assert_raise_with_message(NameError, /foo/) {o[:foo]}
   end
@@ -166,8 +166,8 @@ module TestStruct
     o = klass.new(1)
     o[0] = 2
     assert_equal(2, o[:a])
-    assert_raise(IndexError) { o[-2] = 3 }
-    assert_raise(IndexError) { o[1] = 3 }
+    assert_raise_with_message(IndexError, /offset -2\b/) {o[-2] = 3}
+    assert_raise_with_message(IndexError, /offset 1\b/) {o[1] = 3}
     assert_raise_with_message(NameError, /foo/) {o["foo"] = 3}
     assert_raise_with_message(NameError, /foo/) {o[:foo] = 3}
   end
@@ -351,6 +351,13 @@ module TestStruct
     klass = @Struct.new(:a)
     x = klass.new
     assert_equal "[Bug #9353]", x.send(:a=, "[Bug #9353]")
+  end
+
+  def test_dig
+    klass = @Struct.new(:a)
+    o = klass.new(klass.new({b: [1, 2, 3]}))
+    assert_equal(1, o.dig(:a, :a, :b, 0))
+    assert_nil(o.dig(:b, 0))
   end
 
   class TopStruct < Test::Unit::TestCase

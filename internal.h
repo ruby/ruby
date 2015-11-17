@@ -1141,6 +1141,7 @@ VALUE rb_cstr_intern(const char *ptr, long len, rb_encoding *enc);
 
 /* struct.c */
 VALUE rb_struct_init_copy(VALUE copy, VALUE s);
+VALUE rb_struct_lookup(VALUE s, VALUE idx);
 
 /* time.c */
 struct timeval rb_time_timeval(VALUE);

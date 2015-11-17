@@ -347,13 +347,15 @@ enum sock_recv_type {
     RECV_SOCKET                 /* Socket#recvfrom */
 };
 
-VALUE rsock_s_recvfrom_nonblock(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from);
+VALUE rsock_s_recvfrom_nonblock(VALUE sock, VALUE len, VALUE flg, VALUE str,
+			        VALUE ex, enum sock_recv_type from);
 VALUE rsock_s_recvfrom(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from);
 
 int rsock_connect(int fd, const struct sockaddr *sockaddr, int len, int socks);
 
 VALUE rsock_s_accept(VALUE klass, int fd, struct sockaddr *sockaddr, socklen_t *len);
-VALUE rsock_s_accept_nonblock(int argc, VALUE *argv, VALUE klass, rb_io_t *fptr, struct sockaddr *sockaddr, socklen_t *len);
+VALUE rsock_s_accept_nonblock(VALUE klass, VALUE ex, rb_io_t *fptr,
+			      struct sockaddr *sockaddr, socklen_t *len);
 VALUE rsock_sock_listen(VALUE sock, VALUE log);
 
 VALUE rsock_sockopt_new(int family, int level, int optname, VALUE data);

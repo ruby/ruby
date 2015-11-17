@@ -10,7 +10,7 @@
 
 #include "rubysocket.h"
 
-static VALUE sym_exception, sym_wait_writable;
+static VALUE sym_wait_writable;
 
 static VALUE sock_s_unpack_sockaddr_in(VALUE, VALUE);
 
@@ -439,62 +439,14 @@ sock_connect(VALUE sock, VALUE addr)
     return INT2FIX(n);
 }
 
-/*
- * call-seq:
- *   socket.connect_nonblock(remote_sockaddr, [options]) => 0
- *
- * Requests a connection to be made on the given +remote_sockaddr+ after
- * O_NONBLOCK is set for the underlying file descriptor.
- * Returns 0 if successful, otherwise an exception is raised.
- *
- * === Parameter
- * * +remote_sockaddr+ - the +struct+ sockaddr contained in a string or Addrinfo object
- *
- * === Example:
- *   # Pull down Google's web page
- *   require 'socket'
- *   include Socket::Constants
- *   socket = Socket.new(AF_INET, SOCK_STREAM, 0)
- *   sockaddr = Socket.sockaddr_in(80, 'www.google.com')
- *   begin # emulate blocking connect
- *     socket.connect_nonblock(sockaddr)
- *   rescue IO::WaitWritable
- *     IO.select(nil, [socket]) # wait 3-way handshake completion
- *     begin
- *       socket.connect_nonblock(sockaddr) # check connection failure
- *     rescue Errno::EISCONN
- *     end
- *   end
- *   socket.write("GET / HTTP/1.0\r\n\r\n")
- *   results = socket.read
- *
- * Refer to Socket#connect for the exceptions that may be thrown if the call
- * to _connect_nonblock_ fails.
- *
- * Socket#connect_nonblock may raise any error corresponding to connect(2) failure,
- * including Errno::EINPROGRESS.
- *
- * If the exception is Errno::EINPROGRESS,
- * it is extended by IO::WaitWritable.
- * So IO::WaitWritable can be used to rescue the exceptions for retrying connect_nonblock.
- *
- * By specifying `exception: false`, the options hash allows you to indicate
- * that connect_nonblock should not raise an IO::WaitWritable exception, but
- * return the symbol :wait_writable instead.
- *
- * === See
- * * Socket#connect
- */
+/* :nodoc: */
 static VALUE
-sock_connect_nonblock(int argc, VALUE *argv, VALUE sock)
+sock_connect_nonblock(VALUE sock, VALUE addr, VALUE ex)
 {
-    VALUE addr;
-    VALUE opts = Qnil;
     VALUE rai;
     rb_io_t *fptr;
     int n;
 
-    rb_scan_args(argc, argv, "1:", &addr, &opts);
     SockAddrStringValueWithAddrinfo(addr, rai);
     addr = rb_str_new4(addr);
     GetOpenFile(sock, fptr);
@@ -502,13 +454,13 @@ sock_connect_nonblock(int argc, VALUE *argv, VALUE sock)
     n = connect(fptr->fd, (struct sockaddr*)RSTRING_PTR(addr), RSTRING_SOCKLEN(addr));
     if (n < 0) {
         if (errno == EINPROGRESS) {
-           if (rsock_opt_false_p(opts, sym_exception)) {
+            if (ex == Qfalse) {
                 return sym_wait_writable;
             }
             rb_readwrite_sys_fail(RB_IO_WAIT_WRITABLE, "connect(2) would block");
 	}
 	if (errno == EISCONN) {
-           if (rsock_opt_false_p(opts, sym_exception)) {
+            if (ex == Qfalse) {
                 return INT2FIX(0);
             }
 	}
@@ -813,72 +765,11 @@ sock_recvfrom(int argc, VALUE *argv, VALUE sock)
     return rsock_s_recvfrom(sock, argc, argv, RECV_SOCKET);
 }
 
-/*
- * call-seq:
- *   socket.recvfrom_nonblock(maxlen) => [mesg, sender_addrinfo]
- *   socket.recvfrom_nonblock(maxlen, flags) => [mesg, sender_addrinfo]
- *
- * Receives up to _maxlen_ bytes from +socket+ using recvfrom(2) after
- * O_NONBLOCK is set for the underlying file descriptor.
- * _flags_ is zero or more of the +MSG_+ options.
- * The first element of the results, _mesg_, is the data received.
- * The second element, _sender_addrinfo_, contains protocol-specific address
- * information of the sender.
- *
- * When recvfrom(2) returns 0, Socket#recvfrom_nonblock returns
- * an empty string as data.
- * The meaning depends on the socket: EOF on TCP, empty packet on UDP, etc.
- *
- * === Parameters
- * * +maxlen+ - the maximum number of bytes to receive from the socket
- * * +flags+ - zero or more of the +MSG_+ options
- *
- * === Example
- *   # In one file, start this first
- *   require 'socket'
- *   include Socket::Constants
- *   socket = Socket.new(AF_INET, SOCK_STREAM, 0)
- *   sockaddr = Socket.sockaddr_in(2200, 'localhost')
- *   socket.bind(sockaddr)
- *   socket.listen(5)
- *   client, client_addrinfo = socket.accept
- *   begin # emulate blocking recvfrom
- *     pair = client.recvfrom_nonblock(20)
- *   rescue IO::WaitReadable
- *     IO.select([client])
- *     retry
- *   end
- *   data = pair[0].chomp
- *   puts "I only received 20 bytes '#{data}'"
- *   sleep 1
- *   socket.close
- *
- *   # In another file, start this second
- *   require 'socket'
- *   include Socket::Constants
- *   socket = Socket.new(AF_INET, SOCK_STREAM, 0)
- *   sockaddr = Socket.sockaddr_in(2200, 'localhost')
- *   socket.connect(sockaddr)
- *   socket.puts "Watch this get cut short!"
- *   socket.close
- *
- * Refer to Socket#recvfrom for the exceptions that may be thrown if the call
- * to _recvfrom_nonblock_ fails.
- *
- * Socket#recvfrom_nonblock may raise any error corresponding to recvfrom(2) failure,
- * including Errno::EWOULDBLOCK.
- *
- * If the exception is Errno::EWOULDBLOCK or Errno::EAGAIN,
- * it is extended by IO::WaitReadable.
- * So IO::WaitReadable can be used to rescue the exceptions for retrying recvfrom_nonblock.
- *
- * === See
- * * Socket#recvfrom
- */
+/* :nodoc: */
 static VALUE
-sock_recvfrom_nonblock(int argc, VALUE *argv, VALUE sock)
+sock_recvfrom_nonblock(VALUE sock, VALUE len, VALUE flg, VALUE str, VALUE ex)
 {
-    return rsock_s_recvfrom_nonblock(sock, argc, argv, RECV_SOCKET);
+    return rsock_s_recvfrom_nonblock(sock, len, flg, str, ex, RECV_SOCKET);
 }
 
 /*
@@ -909,63 +800,9 @@ sock_accept(VALUE sock)
     return rb_assoc_new(sock2, rsock_io_socket_addrinfo(sock2, &buf.addr, len));
 }
 
-/*
- * call-seq:
- *   socket.accept_nonblock([options]) => [client_socket, client_addrinfo]
- *
- * Accepts an incoming connection using accept(2) after
- * O_NONBLOCK is set for the underlying file descriptor.
- * It returns an array containing the accepted socket
- * for the incoming connection, _client_socket_,
- * and an Addrinfo, _client_addrinfo_.
- *
- * === Example
- *   # In one script, start this first
- *   require 'socket'
- *   include Socket::Constants
- *   socket = Socket.new(AF_INET, SOCK_STREAM, 0)
- *   sockaddr = Socket.sockaddr_in(2200, 'localhost')
- *   socket.bind(sockaddr)
- *   socket.listen(5)
- *   begin # emulate blocking accept
- *     client_socket, client_addrinfo = socket.accept_nonblock
- *   rescue IO::WaitReadable, Errno::EINTR
- *     IO.select([socket])
- *     retry
- *   end
- *   puts "The client said, '#{client_socket.readline.chomp}'"
- *   client_socket.puts "Hello from script one!"
- *   socket.close
- *
- *   # In another script, start this second
- *   require 'socket'
- *   include Socket::Constants
- *   socket = Socket.new(AF_INET, SOCK_STREAM, 0)
- *   sockaddr = Socket.sockaddr_in(2200, 'localhost')
- *   socket.connect(sockaddr)
- *   socket.puts "Hello from script 2."
- *   puts "The server said, '#{socket.readline.chomp}'"
- *   socket.close
- *
- * Refer to Socket#accept for the exceptions that may be thrown if the call
- * to _accept_nonblock_ fails.
- *
- * Socket#accept_nonblock may raise any error corresponding to accept(2) failure,
- * including Errno::EWOULDBLOCK.
- *
- * If the exception is Errno::EWOULDBLOCK, Errno::EAGAIN, Errno::ECONNABORTED or Errno::EPROTO,
- * it is extended by IO::WaitReadable.
- * So IO::WaitReadable can be used to rescue the exceptions for retrying accept_nonblock.
- *
- * By specifying `exception: false`, the options hash allows you to indicate
- * that accept_nonblock should not raise an IO::WaitReadable exception, but
- * return the symbol :wait_readable instead.
- *
- * === See
- * * Socket#accept
- */
+/* :nodoc: */
 static VALUE
-sock_accept_nonblock(int argc, VALUE *argv, VALUE sock)
+sock_accept_nonblock(VALUE sock, VALUE ex)
 {
     rb_io_t *fptr;
     VALUE sock2;
@@ -974,7 +811,7 @@ sock_accept_nonblock(int argc, VALUE *argv, VALUE sock)
     socklen_t len = (socklen_t)sizeof buf;
 
     GetOpenFile(sock, fptr);
-    sock2 = rsock_s_accept_nonblock(argc, argv, rb_cSocket, fptr, addr, &len);
+    sock2 = rsock_s_accept_nonblock(rb_cSocket, ex, fptr, addr, &len);
 
     if (SYMBOL_P(sock2)) /* :wait_readable */
 	return sock2;
@@ -2174,15 +2011,26 @@ Init_socket(void)
 
     rb_define_method(rb_cSocket, "initialize", sock_initialize, -1);
     rb_define_method(rb_cSocket, "connect", sock_connect, 1);
-    rb_define_method(rb_cSocket, "connect_nonblock", sock_connect_nonblock, -1);
+
+    /* for ext/socket/lib/socket.rb use only: */
+    rb_define_private_method(rb_cSocket,
+			     "__connect_nonblock", sock_connect_nonblock, 2);
+
     rb_define_method(rb_cSocket, "bind", sock_bind, 1);
     rb_define_method(rb_cSocket, "listen", rsock_sock_listen, 1);
     rb_define_method(rb_cSocket, "accept", sock_accept, 0);
-    rb_define_method(rb_cSocket, "accept_nonblock", sock_accept_nonblock, -1);
+
+    /* for ext/socket/lib/socket.rb use only: */
+    rb_define_private_method(rb_cSocket,
+			     "__accept_nonblock", sock_accept_nonblock, 1);
+
     rb_define_method(rb_cSocket, "sysaccept", sock_sysaccept, 0);
 
     rb_define_method(rb_cSocket, "recvfrom", sock_recvfrom, -1);
-    rb_define_method(rb_cSocket, "recvfrom_nonblock", sock_recvfrom_nonblock, -1);
+
+    /* for ext/socket/lib/socket.rb use only: */
+    rb_define_private_method(rb_cSocket,
+			     "__recvfrom_nonblock", sock_recvfrom_nonblock, 4);
 
     rb_define_singleton_method(rb_cSocket, "socketpair", rsock_sock_s_socketpair, -1);
     rb_define_singleton_method(rb_cSocket, "pair", rsock_sock_s_socketpair, -1);
@@ -2205,6 +2053,5 @@ Init_socket(void)
     rb_define_singleton_method(rb_cSocket, "ip_address_list", socket_s_ip_address_list, 0);
 
 #undef rb_intern
-    sym_exception = ID2SYM(rb_intern("exception"));
     sym_wait_writable = ID2SYM(rb_intern("wait_writable"));
 }

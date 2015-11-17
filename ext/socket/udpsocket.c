@@ -214,63 +214,11 @@ udp_send(int argc, VALUE *argv, VALUE sock)
     return ret;
 }
 
-/*
- * call-seq:
- *   udpsocket.recvfrom_nonblock(maxlen [, flags [, options]]) => [mesg, sender_inet_addr]
- *
- * Receives up to _maxlen_ bytes from +udpsocket+ using recvfrom(2) after
- * O_NONBLOCK is set for the underlying file descriptor.
- * If _maxlen_ is omitted, its default value is 65536.
- * _flags_ is zero or more of the +MSG_+ options.
- * The first element of the results, _mesg_, is the data received.
- * The second element, _sender_inet_addr_, is an array to represent the sender address.
- *
- * When recvfrom(2) returns 0,
- * Socket#recvfrom_nonblock returns an empty string as data.
- * It means an empty packet.
- *
- * === Parameters
- * * +maxlen+ - the number of bytes to receive from the socket
- * * +flags+ - zero or more of the +MSG_+ options
- * * +options+ - keyword hash, supporting `exception: false`
- *
- * === Example
- * 	require 'socket'
- * 	s1 = UDPSocket.new
- * 	s1.bind("127.0.0.1", 0)
- * 	s2 = UDPSocket.new
- * 	s2.bind("127.0.0.1", 0)
- * 	s2.connect(*s1.addr.values_at(3,1))
- * 	s1.connect(*s2.addr.values_at(3,1))
- * 	s1.send "aaa", 0
- * 	begin # emulate blocking recvfrom
- * 	  p s2.recvfrom_nonblock(10)  #=> ["aaa", ["AF_INET", 33302, "localhost.localdomain", "127.0.0.1"]]
- * 	rescue IO::WaitReadable
- * 	  IO.select([s2])
- * 	  retry
- * 	end
- *
- * Refer to Socket#recvfrom for the exceptions that may be thrown if the call
- * to _recvfrom_nonblock_ fails.
- *
- * UDPSocket#recvfrom_nonblock may raise any error corresponding to recvfrom(2) failure,
- * including Errno::EWOULDBLOCK.
- *
- * If the exception is Errno::EWOULDBLOCK or Errno::EAGAIN,
- * it is extended by IO::WaitReadable.
- * So IO::WaitReadable can be used to rescue the exceptions for retrying recvfrom_nonblock.
- *
- * By specifying `exception: false`, the options hash allows you to indicate
- * that recvmsg_nonblock should not raise an IO::WaitWritable exception, but
- * return the symbol :wait_writable instead.
- *
- * === See
- * * Socket#recvfrom
- */
+/* :nodoc: */
 static VALUE
-udp_recvfrom_nonblock(int argc, VALUE *argv, VALUE sock)
+udp_recvfrom_nonblock(VALUE sock, VALUE len, VALUE flg, VALUE str, VALUE ex)
 {
-    return rsock_s_recvfrom_nonblock(sock, argc, argv, RECV_IP);
+    return rsock_s_recvfrom_nonblock(sock, len, flg, str, ex, RECV_IP);
 }
 
 void
@@ -287,5 +235,8 @@ rsock_init_udpsocket(void)
     rb_define_method(rb_cUDPSocket, "connect", udp_connect, 2);
     rb_define_method(rb_cUDPSocket, "bind", udp_bind, 2);
     rb_define_method(rb_cUDPSocket, "send", udp_send, -1);
-    rb_define_method(rb_cUDPSocket, "recvfrom_nonblock", udp_recvfrom_nonblock, -1);
+
+    /* for ext/socket/lib/socket.rb use only: */
+    rb_define_private_method(rb_cUDPSocket,
+			     "__recvfrom_nonblock", udp_recvfrom_nonblock, 4);
 }
