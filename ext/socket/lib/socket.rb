@@ -792,11 +792,8 @@ class Socket < BasicSocket
     loop {
       readable, _, _ = IO.select(sockets)
       readable.each {|r|
-        begin
-          sock, addr = r.accept_nonblock
-        rescue IO::WaitReadable
-          next
-        end
+        sock, addr = r.accept_nonblock(exception: false)
+        next if sock == :wait_readable
         yield sock, addr
       }
     }
@@ -960,11 +957,8 @@ class Socket < BasicSocket
   #
   def self.udp_server_recv(sockets)
     sockets.each {|r|
-      begin
-        msg, sender_addrinfo, _, *controls = r.recvmsg_nonblock
-      rescue IO::WaitReadable
-        next
-      end
+      msg, sender_addrinfo, _, *controls = r.recvmsg_nonblock(exception: false)
+      next if msg == :wait_readable
       ai = r.local_address
       if ai.ipv6? and pktinfo = controls.find {|c| c.cmsg_is?(:IPV6, :PKTINFO) }
         ai = Addrinfo.udp(pktinfo.ipv6_pktinfo_addr.ip_address, ai.ip_port)
