@@ -160,7 +160,7 @@ rb_method_definition_release(rb_method_definition_t *def, int complemented)
 void
 rb_free_method_entry(const rb_method_entry_t *me)
 {
-    rb_method_definition_release(me->def, RB_TYPE_P(me->owner, T_MODULE) && RB_TYPE_P(me->defined_class, T_ICLASS));
+    rb_method_definition_release(me->def, METHOD_ENTRY_COMPLEMENTED(me));
 }
 
 static inline rb_method_entry_t *search_method(VALUE klass, ID id, VALUE *defined_class_ptr);
@@ -400,9 +400,9 @@ rb_method_entry_complement_defined_class(const rb_method_entry_t *src_me, VALUE 
     rb_method_entry_t *me = rb_method_entry_alloc(src_me->called_id, src_me->owner, defined_class,
 						  method_definition_addref_complement(src_me->def));
     METHOD_ENTRY_FLAGS_COPY(me, src_me);
+    METHOD_ENTRY_COMPLEMENTED_SET(me);
 
     VM_ASSERT(RB_TYPE_P(me->owner, T_MODULE));
-    VM_ASSERT(RB_TYPE_P(me->defined_class, T_ICLASS));
 
     return (rb_callable_method_entry_t *)me;
 }

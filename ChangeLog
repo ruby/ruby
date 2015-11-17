@@ -1,3 +1,12 @@
+Tue Nov 17 19:32:42 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* method.h (METHOD_ENTRY_COMPLEMENTED(_SET)): introduced to recognize
+	  complemented method entries or not. There are some cases that callabe
+	  method entries do not have defined_class.
+
+	* vm_method.c (rb_method_entry_complement_defined_class):
+	  use METHOD_ENTRY_COMPLEMENTED_SET().
+
 Tue Nov 17 19:02:59 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* configure.in (BASERUBY): use Kernel#print instead of Kernel#p because
