@@ -176,6 +176,13 @@ require 'monitor'
 #
 #      # DEBUG < INFO < WARN < ERROR < FATAL < UNKNOWN
 #
+# 3. Symbol or String (case insensitive)
+#
+#      logger.level = :info
+#      logger.level = 'INFO'
+#
+#      # :debug < :info < :warn < :error < :fatal < :unknown
+#
 # == Format
 #
 # Log messages are rendered in the output stream in a certain format by
@@ -234,7 +241,34 @@ class Logger
   include Severity
 
   # Logging severity threshold (e.g. <tt>Logger::INFO</tt>).
-  attr_accessor :level
+  attr_reader :level
+
+  # Set logging severity threshold.
+  #
+  # +severity+:: The Severity of the log message.
+  def level=(severity)
+    if severity.is_a?(Integer)
+      @level = severity
+    else
+      _severity = severity.to_s.downcase
+      case _severity
+      when 'debug'.freeze
+        @level = DEBUG
+      when 'info'.freeze
+        @level = INFO
+      when 'warn'.freeze
+        @level = WARN
+      when 'error'.freeze
+        @level = ERROR
+      when 'fatal'.freeze
+        @level = FATAL
+      when 'unknown'.freeze
+        @level = UNKNOWN
+      else
+        raise ArgumentError, "invalid log level: #{severity}"
+      end
+    end
+  end
 
   # Program name to include in log messages.
   attr_accessor :progname
