@@ -95,6 +95,8 @@ with all sufficient information, see the ChangeLog file.
     Backtrace doesn't show each method (show block lines directly).
     TracePoint also ignores these calls. [Feature #11569]
 
+* Regexp/String: Updated Unicode version from 7.0.0 to 8.0.0
+
 * Struct
   * Struct#dig [Feature #11686]
 
