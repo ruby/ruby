@@ -41,8 +41,8 @@ AC_ARG_WITH(baseruby,
 	[
 		BASERUBY="ruby"
 	])
-if test "`RUBYOPT=- $BASERUBY -e 'p 42' 2>/dev/null`" = 42; then
-    if test "`RUBYOPT=- $BASERUBY --disable=gems -e 'p 42' 2>/dev/null`" = 42; then
+if test "`RUBYOPT=- $BASERUBY -e 'print 42' 2>/dev/null`" = 42; then
+    if test "`RUBYOPT=- $BASERUBY --disable=gems -e 'print 42' 2>/dev/null`" = 42; then
 	BASERUBY="$BASERUBY --disable=gems"
     fi
     $BASERUBY -C "$srcdir/tool" downloader.rb -e gnu config.guess config.sub
