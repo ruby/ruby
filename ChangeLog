@@ -5,8 +5,8 @@ Tue Nov 17 18:36:52 2015  Koichi Sasada  <ko1@atdot.net>
 	* vm_method.c (method_definition_addref_complement): introduced.
 
 	  def->alias_count is used to decide warn or do not warn at method
-	  redefinition. Complented methods should not prevent redefiniton
-	  warnings.
+	  redefinition. Complemented method entries should not prevent
+	  redefiniton warnings.
 
 	* vm_method.c (rb_method_definition_release): release def iff
 	  alias_count == 0 && complemented_count == 0.
