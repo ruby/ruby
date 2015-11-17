@@ -425,7 +425,7 @@ class BasicSocket < IO
   #       return ancdata.unix_rights[0]
   #     end
   #   }
-  def recvmsg(dlen = 4096, flags = 0, clen = 4096, scm_rights: false)
+  def recvmsg(dlen = 4096, flags = 0, clen = nil, scm_rights: false)
     __recvmsg(dlen, flags, clen, scm_rights)
   end
 
@@ -441,7 +441,7 @@ class BasicSocket < IO
   # By specifying `exception: false`, the _opts_ hash allows you to indicate
   # that recvmsg_nonblock should not raise an IO::WaitWritable exception, but
   # return the symbol :wait_writable instead.
-  def recvmsg_nonblock(dlen = 4096, flags = 0, clen = 4096,
+  def recvmsg_nonblock(dlen = 4096, flags = 0, clen = nil,
                        scm_rights: false, exception: true)
     __recvmsg_nonblock(dlen, flags, clen, scm_rights, exception)
   end

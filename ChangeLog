@@ -1,3 +1,11 @@
+Tue Nov 17 14:04:14 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/socket/lib/socket.rb (Socket#recvmsg{,_nonblock}): default values
+	  of clen must be nil.
+
+	* ext/socket/ancdata.c (bsock_sendmsg_internal): handle nil of clen.
+	  fixes test errors introduced at r52602.
+
 Tue Nov 17 13:43:46 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/socket/lib/socket.rb: UNIXSocket is not always exists.  fixes
