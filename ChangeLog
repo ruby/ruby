@@ -1,3 +1,6 @@
+Tue Nov 17 11:22:22 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
+	* NEWS: Small grammatical fix [ci skip]
+
 Tue Nov 17 10:12:30 2015  Eric Wong  <e@80x24.org>
 
 	* ext/socket/lib/socket.rb (Socket.accept_loop): avoid exceptions
