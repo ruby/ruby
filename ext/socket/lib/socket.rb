@@ -324,6 +324,77 @@ class BasicSocket < IO
   def recv_nonblock(len, flag = 0, str = nil, exception: true)
     __recv_nonblock(len, flag, str, exception)
   end
+
+  # call-seq:
+  #    basicsocket.recvmsg(maxmesglen=nil, flags=0, maxcontrollen=nil, opts={}) => [mesg, sender_addrinfo, rflags, *controls]
+  #
+  # recvmsg receives a message using recvmsg(2) system call in blocking manner.
+  #
+  # _maxmesglen_ is the maximum length of mesg to receive.
+  #
+  # _flags_ is bitwise OR of MSG_* constants such as Socket::MSG_PEEK.
+  #
+  # _maxcontrollen_ is the maximum length of controls (ancillary data) to receive.
+  #
+  # _opts_ is option hash.
+  # Currently :scm_rights=>bool is the only option.
+  #
+  # :scm_rights option specifies that application expects SCM_RIGHTS control message.
+  # If the value is nil or false, application don't expects SCM_RIGHTS control message.
+  # In this case, recvmsg closes the passed file descriptors immediately.
+  # This is the default behavior.
+  #
+  # If :scm_rights value is neither nil nor false, application expects SCM_RIGHTS control message.
+  # In this case, recvmsg creates IO objects for each file descriptors for
+  # Socket::AncillaryData#unix_rights method.
+  #
+  # The return value is 4-elements array.
+  #
+  # _mesg_ is a string of the received message.
+  #
+  # _sender_addrinfo_ is a sender socket address for connection-less socket.
+  # It is an Addrinfo object.
+  # For connection-oriented socket such as TCP, sender_addrinfo is platform dependent.
+  #
+  # _rflags_ is a flags on the received message which is bitwise OR of MSG_* constants such as Socket::MSG_TRUNC.
+  # It will be nil if the system uses 4.3BSD style old recvmsg system call.
+  #
+  # _controls_ is ancillary data which is an array of Socket::AncillaryData objects such as:
+  #
+  #   #<Socket::AncillaryData: AF_UNIX SOCKET RIGHTS 7>
+  #
+  # _maxmesglen_ and _maxcontrollen_ can be nil.
+  # In that case, the buffer will be grown until the message is not truncated.
+  # Internally, MSG_PEEK is used and MSG_TRUNC/MSG_CTRUNC are checked.
+  #
+  # recvmsg can be used to implement recv_io as follows:
+  #
+  #   mesg, sender_sockaddr, rflags, *controls = sock.recvmsg(:scm_rights=>true)
+  #   controls.each {|ancdata|
+  #     if ancdata.cmsg_is?(:SOCKET, :RIGHTS)
+  #       return ancdata.unix_rights[0]
+  #     end
+  #   }
+  def recvmsg(dlen = 4096, flags = 0, clen = 4096, scm_rights: false)
+    __recvmsg(dlen, flags, clen, scm_rights)
+  end
+
+  # call-seq:
+  #    basicsocket.recvmsg_nonblock(maxdatalen=nil, flags=0, maxcontrollen=nil, opts={}) => [data, sender_addrinfo, rflags, *controls]
+  #
+  # recvmsg receives a message using recvmsg(2) system call in non-blocking manner.
+  #
+  # It is similar to BasicSocket#recvmsg
+  # but non-blocking flag is set before the system call
+  # and it doesn't retry the system call.
+  #
+  # By specifying `exception: false`, the _opts_ hash allows you to indicate
+  # that recvmsg_nonblock should not raise an IO::WaitWritable exception, but
+  # return the symbol :wait_writable instead.
+  def recvmsg_nonblock(dlen = 4096, flags = 0, clen = 4096,
+                       scm_rights: false, exception: true)
+    __recvmsg_nonblock(dlen, flags, clen, scm_rights, exception)
+  end
 end
 
 class Socket < BasicSocket
