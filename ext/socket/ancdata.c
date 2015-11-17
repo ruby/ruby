@@ -1467,7 +1467,7 @@ bsock_recvmsg_internal(VALUE sock,
 
     maxdatlen = NUM2SIZET(vmaxdatlen);
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
-    maxctllen = NUM2SIZET(vmaxctllen);
+    maxctllen = NIL_P(vmaxctllen) ? 4096 : NUM2SIZET(vmaxctllen);
 #else
     if (!NIL_P(vmaxctllen))
         rb_raise(rb_eArgError, "control message not supported");
