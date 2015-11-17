@@ -135,19 +135,24 @@ rb_add_method_cfunc(VALUE klass, ID mid, VALUE (*func)(ANYARGS), int argc, rb_me
 }
 
 static void
-rb_method_definition_release(rb_method_definition_t *def)
+rb_method_definition_release(rb_method_definition_t *def, int complemented)
 {
     if (def != NULL) {
-	const int count = def->alias_count;
-	VM_ASSERT(count >= 0);
+	const int alias_count = def->alias_count;
+	const int complemented_count = def->complemented_count;
+	VM_ASSERT(alias_count >= 0);
+	VM_ASSERT(complemented_count >= 0);
 
-	if (count == 0) {
-	    if (METHOD_DEBUG) fprintf(stderr, "-%p-%s:%d\n", def, rb_id2name(def->original_id), count);
+	if (alias_count + complemented_count == 0) {
+	    if (METHOD_DEBUG) fprintf(stderr, "-%p-%s:%d,%d (remove)\n", def, rb_id2name(def->original_id), alias_count, complemented_count);
 	    xfree(def);
 	}
 	else {
-	    if (METHOD_DEBUG) fprintf(stderr, "-%p-%s:%d->%d\n", def, rb_id2name(def->original_id), count, count-1);
-	    def->alias_count--;
+	    if (complemented) def->complemented_count--;
+	    else if (def->alias_count > 0) def->alias_count--;
+
+	    if (METHOD_DEBUG) fprintf(stderr, "-%p-%s:%d->%d,%d->%d (dec)\n", def, rb_id2name(def->original_id),
+				      alias_count, def->alias_count, complemented_count, def->complemented_count);
 	}
     }
 }
@@ -155,7 +160,7 @@ rb_method_definition_release(rb_method_definition_t *def)
 void
 rb_free_method_entry(const rb_method_entry_t *me)
 {
-    rb_method_definition_release(me->def);
+    rb_method_definition_release(me->def, RB_TYPE_P(me->owner, T_MODULE) && RB_TYPE_P(me->defined_class, T_ICLASS));
 }
 
 static inline rb_method_entry_t *search_method(VALUE klass, ID id, VALUE *defined_class_ptr);
@@ -342,6 +347,14 @@ method_definition_addref(rb_method_definition_t *def)
     return def;
 }
 
+static rb_method_definition_t *
+method_definition_addref_complement(rb_method_definition_t *def)
+{
+    def->complemented_count++;
+    if (METHOD_DEBUG) fprintf(stderr, "+%p-%s:%d\n", def, rb_id2name(def->original_id), def->alias_count);
+    return def;
+}
+
 static rb_method_entry_t *
 rb_method_entry_alloc(ID called_id, VALUE owner, VALUE defined_class, const rb_method_definition_t *def)
 {
@@ -385,8 +398,12 @@ const rb_callable_method_entry_t *
 rb_method_entry_complement_defined_class(const rb_method_entry_t *src_me, VALUE defined_class)
 {
     rb_method_entry_t *me = rb_method_entry_alloc(src_me->called_id, src_me->owner, defined_class,
-						  method_definition_addref(src_me->def));
+						  method_definition_addref_complement(src_me->def));
     METHOD_ENTRY_FLAGS_COPY(me, src_me);
+
+    VM_ASSERT(RB_TYPE_P(me->owner, T_MODULE));
+    VM_ASSERT(RB_TYPE_P(me->defined_class, T_ICLASS));
+
     return (rb_callable_method_entry_t *)me;
 }
 

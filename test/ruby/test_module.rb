@@ -1280,6 +1280,20 @@ class TestModule < Test::Unit::TestCase
         undef foo
       end
     end
+
+    stderr = EnvUtil.verbose_warning do
+      Module.new do
+        def foo; end
+        mod = self
+        c = Class.new do
+          include mod
+        end
+        c.new.foo
+        def foo; end
+      end
+    end
+    assert_match(/: warning: method redefined; discarding old foo/, stderr)
+    assert_match(/: warning: previous definition of foo/, stderr)
   end
 
   def test_protected_singleton_method

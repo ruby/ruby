@@ -143,8 +143,9 @@ typedef struct rb_method_refined_struct {
 } rb_method_refined_t;
 
 typedef struct rb_method_definition_struct {
-    rb_method_type_t type; /* method type */
-    int alias_count;
+    rb_method_type_t type :  8; /* method type */
+    int alias_count       : 28;
+    int complemented_count: 28;
 
     union {
 	rb_method_iseq_t iseq;
