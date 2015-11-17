@@ -1,3 +1,6 @@
+Tue Nov 17 15:34:34 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
+	* NEWS: Added update from Unicode 7.0.0 to 8.0.0 [ci skip]
+
 Tue Nov 17 15:30:30 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
 	* enc/unicode/casefold.h, name2ctype.h: Change Unicode
 	  Version for regular expressions from 7.0.0 to
