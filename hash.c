@@ -2695,8 +2695,8 @@ rb_hash_any_p(VALUE hash)
  * call-seq:
  *   hsh.dig(key, ...)                 -> object
  *
- * Retrieves the value object corresponding to the each <i>key</i>
- * objects repeatedly.
+ * Extracts the nested hash value specified by the sequence of <i>key</i>
+ * objects.
  *
  *   h = { foo: {bar: {baz: 1}}}
  *
