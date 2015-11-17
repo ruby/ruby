@@ -322,6 +322,26 @@ class Logger
 
   #
   # :call-seq:
+  #   Logger#reopen
+  #   Logger#reopen(logdev)
+  #
+  # === Args
+  #
+  # +logdev+::
+  #   The log device.  This is a filename (String) or IO object (typically
+  #   +STDOUT+, +STDERR+, or an open file).
+  #
+  # === Description
+  #
+  # Reopen a log device.
+  #
+  def reopen(logdev = nil)
+    @logdev.reopen(logdev)
+    self
+  end
+
+  #
+  # :call-seq:
   #   Logger#add(severity, message = nil, progname = nil) { ... }
   #
   # === Args
@@ -580,12 +600,8 @@ private
     def initialize(log = nil, opt = {})
       @dev = @filename = @shift_age = @shift_size = nil
       @mutex = LogDeviceMutex.new
-      if log.respond_to?(:write) and log.respond_to?(:close)
-        @dev = log
-      else
-        @dev = open_logfile(log)
-        @dev.sync = true
-        @filename = log
+      set_dev(log)
+      if @filename
         @shift_age = opt[:shift_age] || 7
         @shift_size = opt[:shift_size] || 1048576
         @next_rotate_time = next_rotate_time(Time.now, @shift_age) unless @shift_age.is_a?(Integer)
@@ -623,7 +639,32 @@ private
       end
     end
 
+    def reopen(log = nil)
+      # reopen the same filename if no argument, do nothing for IO
+      log ||= @filename if @filename
+      if log
+        @mutex.synchronize do
+          if @filename and @dev
+            @dev.close rescue nil # close only file opened by Logger
+            @filename = nil
+          end
+          set_dev(log)
+        end
+      end
+      self
+    end
+
   private
+
+    def set_dev(log)
+      if log.respond_to?(:write) and log.respond_to?(:close)
+        @dev = log
+      else
+        @dev = open_logfile(log)
+        @dev.sync = true
+        @filename = log
+      end
+    end
 
     def open_logfile(filename)
       begin

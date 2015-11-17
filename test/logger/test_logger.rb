@@ -121,6 +121,12 @@ class TestLogger < Test::Unit::TestCase
     assert_nil(logger.datetime_format)
   end
 
+  def test_reopen
+    logger = Logger.new(STDERR)
+    logger.reopen(STDOUT)
+    assert_equal(STDOUT, logger.instance_variable_get(:@logdev).dev)
+  end
+
   def test_add
     logger = Logger.new(nil)
     logger.progname = "my_progname"
