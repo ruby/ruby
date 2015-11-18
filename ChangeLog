@@ -1,3 +1,9 @@
+Wed Nov 18 10:05:25 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* doc/syntax/refinements.rdoc: update documentation to reflect
+	  recent changes.
+	  [ci skip] [ruby-core:71466] [Misc #11681] Patch by James Adam
+
 Wed Nov 18 09:50:21 2015  Naotoshi Seo  <sonots@gmail.com>
 
 	* test/logger/test_logdevice.rb: Fix tests of logger to make it work on
