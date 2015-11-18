@@ -273,7 +273,7 @@ __EOS__
 
   def test_ctx_client_session_cb
     called = {}
-    ctx = OpenSSL::SSL::SSLContext.new("SSLv3")
+    ctx = OpenSSL::SSL::SSLContext.new
     ctx.session_cache_mode = OpenSSL::SSL::SSLContext::SESSION_CACHE_CLIENT
 
     ctx.session_new_cb = lambda { |ary|

@@ -1,3 +1,9 @@
+Wed Nov 18 20:04:50 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* test/openssl/test_ssl_session.rb (OpenSSL#test_ctx_client_session_cb):
+	  fix test failure with OpenSSL disabled SSLv3 protocol.
+	  [ruby-core:63772] [Bug #10046]
+
 Thu Oct 29 23:54:35 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (sym_to_proc), proc.c (rb_block_clear_env_self): clear
