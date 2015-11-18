@@ -1,3 +1,24 @@
+Wed Nov 18 22:50:43 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_method.c (rb_class_clear_method_cache): should clear all
+	  RCLASS_CALLABLE_M_TBLs of all sub-classes (T_ICLASS).
+
+	  RCLASS_CALLABLE_M_TBL() caches complemented method entries.
+	  It should be cleared when the modules are cleared.
+	  On previous version clears only for direct children.
+	  It is enough for normal modules because corresponding T_ICLASSes
+	  are direct children.
+
+	  However, refinements create complex data structure. So that
+	  we need to clear all children (and descendants).
+	  [ruby-core:71423] [Bug #11672]
+
+	* vm_method.c (rb_clear_method_cache_by_class): rb_mKernel
+	  doesn't call rb_class_clear_method_cache, so that
+	  clear child T_ICLASSes.
+
+	* test/ruby/test_refinement.rb: enable disabled test.
+
 Wed Nov 18 21:09:08 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_method.c (prepare_callable_method_entry): use

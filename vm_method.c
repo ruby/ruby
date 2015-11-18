@@ -62,6 +62,20 @@ static void
 rb_class_clear_method_cache(VALUE klass, VALUE arg)
 {
     RCLASS_SERIAL(klass) = rb_next_class_serial();
+
+    if (RB_TYPE_P(klass, T_ICLASS)) {
+	struct rb_id_table *table = RCLASS_CALLABLE_M_TBL(klass);
+	if (table) {
+	    rb_id_table_clear(table);
+	}
+    }
+    else {
+	if (RCLASS_CALLABLE_M_TBL(klass) != 0) {
+	    rb_obj_info_dump(klass);
+	    rb_bug("RCLASS_CALLABLE_M_TBL(klass) != 0");
+	}
+    }
+
     rb_class_foreach_subclass(klass, rb_class_clear_method_cache, arg);
 }
 
@@ -93,14 +107,14 @@ rb_clear_method_cache_by_class(VALUE klass)
 	else {
 	    rb_class_clear_method_cache(klass, Qnil);
 	}
+    }
 
-	if (RB_TYPE_P(klass, T_MODULE)) {
-	    rb_subclass_entry_t *entry = RCLASS_EXT(klass)->subclasses;
+    if (klass == rb_mKernel) {
+	rb_subclass_entry_t *entry = RCLASS_EXT(klass)->subclasses;
 
-	    for (; entry != NULL; entry = entry->next) {
-		struct rb_id_table *table = RCLASS_CALLABLE_M_TBL(entry->klass);
-		if (table)rb_id_table_clear(table);
-	    }
+	for (; entry != NULL; entry = entry->next) {
+	    struct rb_id_table *table = RCLASS_CALLABLE_M_TBL(entry->klass);
+	    if (table)rb_id_table_clear(table);
 	}
     }
 }
