@@ -669,4 +669,54 @@ class TestSocket < Test::Unit::TestCase
     s1.close
     s2.close
   end
+
+  def test_udp_read_truncation
+    s1 = Addrinfo.udp("127.0.0.1", 0).bind
+    s2 = s1.connect_address.connect
+    s2.send("a" * 100, 0)
+    ret = s1.read(10)
+    assert_equal "a" * 10, ret
+    s2.send("b" * 100, 0)
+    ret = s1.read(10)
+    assert_equal "b" * 10, ret
+  ensure
+    s1.close
+    s2.close
+  end
+
+  def test_udp_recv_truncation
+    s1 = Addrinfo.udp("127.0.0.1", 0).bind
+    s2 = s1.connect_address.connect
+    s2.send("a" * 100, 0)
+    ret = s1.recv(10, Socket::MSG_PEEK)
+    assert_equal "a" * 10, ret
+    ret = s1.recv(10, 0)
+    assert_equal "a" * 10, ret
+    s2.send("b" * 100, 0)
+    ret = s1.recv(10, 0)
+    assert_equal "b" * 10, ret
+  ensure
+    s1.close
+    s2.close
+  end
+
+  def test_udp_recvmsg_truncation
+    s1 = Addrinfo.udp("127.0.0.1", 0).bind
+    s2 = s1.connect_address.connect
+    s2.send("a" * 100, 0)
+    ret, addr, rflags = s1.recvmsg(10, Socket::MSG_PEEK)
+    assert_equal "a" * 10, ret
+    assert_equal Socket::MSG_TRUNC, rflags & Socket::MSG_TRUNC
+    ret, addr, rflags = s1.recvmsg(10, 0)
+    assert_equal "a" * 10, ret
+    assert_equal Socket::MSG_TRUNC, rflags & Socket::MSG_TRUNC
+    s2.send("b" * 100, 0)
+    ret, addr, rflags = s1.recvmsg(10, 0)
+    assert_equal "b" * 10, ret
+    assert_equal Socket::MSG_TRUNC, rflags & Socket::MSG_TRUNC
+  ensure
+    s1.close
+    s2.close
+  end
+
 end if defined?(Socket)
