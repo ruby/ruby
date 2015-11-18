@@ -1,3 +1,15 @@
+Wed Nov 18 20:31:56 2015  Aaron Patterson <tenderlove@ruby-lang.org>
+
+	* ext/openssl/ossl_ssl.c (ossl_ssl_method_tab): Only add SSLv3 support
+	  if the SSL library supports it.  Thanks Kurt Roeckx <kurt@roeckx.be>
+	  [Bug #11376]
+
+	* ext/openssl/extconf.rb: check for SSLv3 support in the SSL
+	  implementation.
+
+	* test/openssl/test_ssl.rb (class OpenSSL): Skip tests that need SSLv3
+	  if there is no support.
+
 Wed Nov 18 20:26:08 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_trace.c (rb_threadptr_exec_event_hooks_orig):
