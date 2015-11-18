@@ -1,3 +1,9 @@
+Wed Nov 18 10:33:06 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/socket/ancdata.c (bsock_recvmsg_internal): stretch the buffer size
+	  when EMSGSIZE occurs on non HAVE_STRUCT_MSGHDR_MSG_CONTROL platforms
+	  (such as, Windows).  fixes a test error revealed by r52625.
+
 Wed Nov 18 10:12:36 2015  Eric Wong  <e@80x24.org>
 
 	* ext/socket/ancdata.c (bsock_recvmsg_internal): use 4096 as

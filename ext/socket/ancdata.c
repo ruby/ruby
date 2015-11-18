@@ -1570,6 +1570,10 @@ bsock_recvmsg_internal(VALUE sock,
             gc_done = 1;
 	    goto retry;
         }
+#else
+	if (grow_buffer && errno == EMSGSIZE)
+	    ss = (ssize_t)iov.iov_len;
+	else
 #endif
 	rb_sys_fail("recvmsg(2)");
     }
