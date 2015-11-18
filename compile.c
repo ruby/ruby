@@ -2031,6 +2031,33 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 		 */
 		replace_destination(iobj, nobj);
 	    }
+	    else if (pobj) {
+		int cond;
+		if (pobj->insn_id == BIN(putobject)) {
+		    cond = (iobj->insn_id == BIN(branchif) ?
+			    OPERAND_AT(pobj, 0) != Qfalse :
+			    iobj->insn_id == BIN(branchunless) ?
+			    OPERAND_AT(pobj, 0) == Qfalse :
+			    FALSE);
+		}
+		else if (pobj->insn_id == BIN(putstring)) {
+		    cond = iobj->insn_id == BIN(branchif);
+		}
+		else if (pobj->insn_id == BIN(putnil)) {
+		    cond = iobj->insn_id != BIN(branchif);
+		}
+		else break;
+		REMOVE_ELEM(&pobj->link);
+		if (cond) {
+		    iobj->insn_id = BIN(jump);
+		    goto again;
+		}
+		else {
+		    unref_destination(iobj);
+		    REMOVE_ELEM(&iobj->link);
+		}
+		break;
+	    }
 	    else break;
 	    nobj = (INSN *)get_destination_insn(nobj);
 	}
