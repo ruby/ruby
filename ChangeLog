@@ -1,3 +1,10 @@
+Wed Nov 18 11:32:15 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_peephole_optimize): eliminate always/never
+	  branches after a literal object.  this sequence typically
+	  appears by defined? operator for a method call on a local
+	  variable.
+
 Wed Nov 18 10:33:06 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/socket/ancdata.c (bsock_recvmsg_internal): stretch the buffer size
