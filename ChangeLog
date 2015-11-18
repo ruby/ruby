@@ -1,3 +1,7 @@
+Thu Nov 19 00:15:23 2015  Zachary Scott  <zzak@ruby-lang.org>
+
+	* ext/openssl/ossl_pkey.c: Merge ruby/openssl@b9ea8ef [Bug #10735]
+
 Thu Nov 19 00:01:14 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (argf_next_argv): check ARGV element type, and try
