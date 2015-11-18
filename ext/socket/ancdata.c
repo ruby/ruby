@@ -1571,7 +1571,7 @@ bsock_recvmsg_internal(VALUE sock,
 	    goto retry;
         }
 #else
-	if (grow_buffer && errno == EMSGSIZE)
+	if (NIL_P(vmaxdatlen) && grow_buffer && errno == EMSGSIZE)
 	    ss = (ssize_t)iov.iov_len;
 	else
 #endif
