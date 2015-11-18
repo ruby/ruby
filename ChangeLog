@@ -1,3 +1,10 @@
+Wed Nov 18 20:19:49 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (iseq_compile_each): remove duplicated line event.
+	  [Bug #10449]
+
+	* test/ruby/test_settracefunc.rb: add and fix tests.
+
 Wed Nov 18 20:14:38 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (hook_before_rewind): prevent kicking :return event while
