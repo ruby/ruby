@@ -1,3 +1,28 @@
+Wed Nov 18 17:08:18 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* method.h: introduce the folliwing field and macros.
+
+	  * rb_method_definition_t::complemented_count to count shared method
+	    entries because of complemented method entries and separate from
+	    alias_count.
+
+	    Shared `def' only by complemented method entries should not prevent
+	    method re-definition warning.
+
+	  * METHOD_ENTRY_COMPLEMENTED(me) to represent complemented method entry.
+	  * METHOD_ENTRY_COMPLEMENTED_SET(me) to check it as  complemented me.
+
+	* vm_insnhelper.c (aliased_callable_method_entry): should also
+	  check me->def->complemented_count.
+
+	* vm_method.c (method_definition_addref_complement): add to count
+	  complemented method entries number.
+
+	* vm_method.c (rb_method_definition_release): release `def' iff
+	  alias_count == 0 and complemented_count == 0.
+
+	* test/ruby/test_module.rb: add a test.
+
 Wed Nov 18 17:06:19 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (rb_raw_obj_info): fix trivial issues.

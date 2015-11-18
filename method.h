@@ -65,6 +65,8 @@ typedef struct rb_callable_method_entry_struct { /* same fields with rb_method_e
 
 #define METHOD_ENTRY_VISI(me)  (rb_method_visibility_t)(((me)->flags & (IMEMO_FL_USER0 | IMEMO_FL_USER1)) >> (IMEMO_FL_USHIFT+0))
 #define METHOD_ENTRY_BASIC(me) (int)                   (((me)->flags & (IMEMO_FL_USER2                 )) >> (IMEMO_FL_USHIFT+2))
+#define METHOD_ENTRY_COMPLEMENTED(me)     ((me)->flags & IMEMO_FL_USER3)
+#define METHOD_ENTRY_COMPLEMENTED_SET(me) ((me)->flags = (me)->flags | IMEMO_FL_USER3)
 
 static inline void
 METHOD_ENTRY_VISI_SET(rb_method_entry_t *me, rb_method_visibility_t visi)
@@ -143,8 +145,9 @@ typedef struct rb_method_refined_struct {
 } rb_method_refined_t;
 
 typedef struct rb_method_definition_struct {
-    rb_method_type_t type; /* method type */
-    int alias_count;
+    rb_method_type_t type :  8; /* method type */
+    int alias_count       : 28;
+    int complemented_count: 28;
 
     union {
 	rb_method_iseq_t iseq;
