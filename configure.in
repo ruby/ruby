@@ -944,6 +944,10 @@ if test "$GCC" = yes; then
 
     AS_CASE(["$target_os"], [mingw*], [
 	RUBY_TRY_CFLAGS(-fno-omit-frame-pointer, [optflags="${optflags+$optflags }-fno-omit-frame-pointer"])
+	RUBY_TRY_CFLAGS(-static-libgcc, [static_libgcc=yes], [static_libgcc=no])
+	if test "$static_libgcc" = yes; then
+	    RUBY_APPEND_OPTION(EXTLDFLAGS, -static-libgcc)
+	fi
     ])
 
     # disable fast-math
