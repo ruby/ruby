@@ -8966,7 +8966,7 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
     }
     else {
 	const int age = RVALUE_FLAGS_AGE(RBASIC(obj)->flags);
-	const int type = TYPE(obj);
+	const int type = BUILTIN_TYPE(obj);
 
 #define TF(c) ((c) != 0 ? "true" : "false")
 #define C(c, s) ((c) != 0 ? (s) : " ")
