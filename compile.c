@@ -1998,7 +1998,13 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	 */
 	INSN *nobj = (INSN *)get_destination_insn(iobj);
 	INSN *pobj = (INSN *)iobj->link.prev;
-	int prev_dup = (pobj && pobj->insn_id == BIN(dup));
+	int prev_dup = 0;
+	if (pobj) {
+	    if (pobj->link.type != ISEQ_ELEMENT_INSN)
+		pobj = 0;
+	    else if (pobj->insn_id == BIN(dup))
+		prev_dup = 1;
+	}
 
 	for (;;) {
 	    if (nobj->insn_id == BIN(jump)) {
