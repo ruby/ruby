@@ -8961,110 +8961,118 @@ method_type_name(rb_method_type_t type)
 const char *
 rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 {
-    const int age = RVALUE_FLAGS_AGE(RBASIC(obj)->flags);
-    const int type = BUILTIN_TYPE(obj);
+    if (SPECIAL_CONST_P(obj)) {
+	snprintf(buff, buff_size, "%s", obj_type_name(obj));
+    }
+    else {
+	const int age = RVALUE_FLAGS_AGE(RBASIC(obj)->flags);
+	const int type = TYPE(obj);
 
 #define TF(c) ((c) != 0 ? "true" : "false")
 #define C(c, s) ((c) != 0 ? (s) : " ")
-    snprintf(buff, buff_size, "%p [%d%s%s%s%s] %s",
-	     (void *)obj, age,
-	     C(RVALUE_UNCOLLECTIBLE_BITMAP(obj),  "L"),
-	     C(RVALUE_MARK_BITMAP(obj),           "M"),
-	     C(RVALUE_MARKING_BITMAP(obj),        "R"),
-	     C(RVALUE_WB_UNPROTECTED_BITMAP(obj), "U"),
-	     obj_type_name(obj));
+	snprintf(buff, buff_size, "%p [%d%s%s%s%s] %s",
+		 (void *)obj, age,
+		 C(RVALUE_UNCOLLECTIBLE_BITMAP(obj),  "L"),
+		 C(RVALUE_MARK_BITMAP(obj),           "M"),
+		 C(RVALUE_MARKING_BITMAP(obj),        "R"),
+		 C(RVALUE_WB_UNPROTECTED_BITMAP(obj), "U"),
+		 obj_type_name(obj));
 
-    if (internal_object_p(obj)) {
-	/* ignore */
-    }
-    else if (RBASIC(obj)->klass == 0) {
-	snprintf(buff, buff_size, "%s (temporary internal)", buff);
-    }
-    else {
-	VALUE class_path = rb_class_path_cached(RBASIC(obj)->klass);
-	if (!NIL_P(class_path)) {
-	    snprintf(buff, buff_size, "%s (%s)", buff, RSTRING_PTR(class_path));
+	if (internal_object_p(obj)) {
+	    /* ignore */
 	}
-    }
+	else if (RBASIC(obj)->klass == 0) {
+	    snprintf(buff, buff_size, "%s (temporary internal)", buff);
+	}
+	else {
+	    VALUE class_path = rb_class_path_cached(RBASIC(obj)->klass);
+	    if (!NIL_P(class_path)) {
+		snprintf(buff, buff_size, "%s (%s)", buff, RSTRING_PTR(class_path));
+	    }
+	}
 
 #if GC_DEBUG
-    snprintf(buff, buff_size, "%s @%s:%d", buff, RANY(obj)->file, RANY(obj)->line);
+	snprintf(buff, buff_size, "%s @%s:%d", buff, RANY(obj)->file, RANY(obj)->line);
 #endif
 
-    switch (type) {
-      case T_NODE:
-	snprintf(buff, buff_size, "%s (%s)", buff,
-		 ruby_node_name(nd_type(obj)));
-	break;
-      case T_ARRAY:
-	snprintf(buff, buff_size, "%s [%s%s] len: %d", buff,
-		 C(ARY_EMBED_P(obj),  "E"),
-		 C(ARY_SHARED_P(obj), "S"),
-		 (int)RARRAY_LEN(obj));
-	break;
-      case T_STRING: {
-	  snprintf(buff, buff_size, "%s %s", buff, RSTRING_PTR(obj));
-	  break;
-      }
-      case T_CLASS: {
-	  VALUE class_path = rb_class_path_cached(obj);
-	  if (!NIL_P(class_path)) {
-	      snprintf(buff, buff_size, "%s %s", buff, RSTRING_PTR(class_path));
-	  }
-	  break;
-      }
-      case T_DATA: {
-	  const char * const type_name = rb_objspace_data_type_name(obj);
-	  if (type_name) {
-	      snprintf(buff, buff_size, "%s %s", buff, type_name);
-	  }
-	  break;
-      }
-      case T_IMEMO: {
-	  const char *imemo_name;
-	  switch (imemo_type(obj)) {
-#define IMEMO_NAME(x) case imemo_##x: imemo_name = #x; break;
-	      IMEMO_NAME(none);
-	      IMEMO_NAME(cref);
-	      IMEMO_NAME(svar);
-	      IMEMO_NAME(throw_data);
-	      IMEMO_NAME(ifunc);
-	      IMEMO_NAME(memo);
-	      IMEMO_NAME(ment);
-	      IMEMO_NAME(iseq);
-	    default: rb_bug("unknown IMEMO");
-#undef IMEMO_NAME
-	  }
-	  snprintf(buff, buff_size, "%s %s", buff, imemo_name);
-
-	  switch (imemo_type(obj)) {
-	    case imemo_ment: {
-		const rb_method_entry_t *me = &RANY(obj)->as.imemo.ment;
-		snprintf(buff, buff_size, "%s (called_id: %s, type: %s, alias: %d, class: %s)", buff,
-			 rb_id2name(me->called_id), method_type_name(me->def->type), me->def->alias_count, obj_info(me->defined_class));
-		break;
-	    }
-	    case imemo_iseq: {
-		const rb_iseq_t *iseq = (const rb_iseq_t *)obj;
-
-		if (iseq->body->location.label) {
-		    snprintf(buff, buff_size, "%s %s@%s:%d", buff,
-			     RSTRING_PTR(iseq->body->location.label),
-			     RSTRING_PTR(iseq->body->location.path),
-			     FIX2INT(iseq->body->location.first_lineno));
-		}
-		break;
-	    }
-	    default:
+	switch (type) {
+	  case T_NODE:
+	    snprintf(buff, buff_size, "%s (%s)", buff,
+		     ruby_node_name(nd_type(obj)));
+	    break;
+	  case T_ARRAY:
+	    snprintf(buff, buff_size, "%s [%s%s] len: %d", buff,
+		     C(ARY_EMBED_P(obj),  "E"),
+		     C(ARY_SHARED_P(obj), "S"),
+		     (int)RARRAY_LEN(obj));
+	    break;
+	  case T_STRING: {
+	      snprintf(buff, buff_size, "%s %s", buff, RSTRING_PTR(obj));
 	      break;
 	  }
-      }
-      default:
-	break;
-    }
+	  case T_CLASS: {
+	      VALUE class_path = rb_class_path_cached(obj);
+	      if (!NIL_P(class_path)) {
+		  snprintf(buff, buff_size, "%s %s", buff, RSTRING_PTR(class_path));
+	      }
+	      break;
+	  }
+	  case T_DATA: {
+	      const char * const type_name = rb_objspace_data_type_name(obj);
+	      if (type_name) {
+		  snprintf(buff, buff_size, "%s %s", buff, type_name);
+	      }
+	      break;
+	  }
+	  case T_IMEMO: {
+	      const char *imemo_name;
+	      switch (imemo_type(obj)) {
+#define IMEMO_NAME(x) case imemo_##x: imemo_name = #x; break;
+		  IMEMO_NAME(none);
+		  IMEMO_NAME(cref);
+		  IMEMO_NAME(svar);
+		  IMEMO_NAME(throw_data);
+		  IMEMO_NAME(ifunc);
+		  IMEMO_NAME(memo);
+		  IMEMO_NAME(ment);
+		  IMEMO_NAME(iseq);
+		default: rb_bug("unknown IMEMO");
+#undef IMEMO_NAME
+	      }
+	      snprintf(buff, buff_size, "%s %s", buff, imemo_name);
+
+	      switch (imemo_type(obj)) {
+		case imemo_ment: {
+		    const rb_method_entry_t *me = &RANY(obj)->as.imemo.ment;
+		    snprintf(buff, buff_size, "%s (called_id: %s, type: %s, alias: %d, owner: %s, defined_class: %s)", buff,
+			     rb_id2name(me->called_id),
+			     method_type_name(me->def->type),
+			     me->def->alias_count,
+			     obj_info(me->owner),
+			     obj_info(me->defined_class));
+		    break;
+		}
+		case imemo_iseq: {
+		    const rb_iseq_t *iseq = (const rb_iseq_t *)obj;
+
+		    if (iseq->body->location.label) {
+			snprintf(buff, buff_size, "%s %s@%s:%d", buff,
+				 RSTRING_PTR(iseq->body->location.label),
+				 RSTRING_PTR(iseq->body->location.path),
+				 FIX2INT(iseq->body->location.first_lineno));
+		    }
+		    break;
+		}
+		default:
+		  break;
+	      }
+	  }
+	  default:
+	    break;
+	}
 #undef TF
 #undef C
-
+    }
     return buff;
 }
 
