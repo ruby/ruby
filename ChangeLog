@@ -1,3 +1,15 @@
+Wed Nov 18 23:29:32 2015  Aaron Patterson <tenderlove@ruby-lang.org>
+
+	* ext/openssl/ossl_ssl.c (ossl_ssl_method_tab): Only add SSLv3 support
+	  if the SSL library supports it.  Thanks Kurt Roeckx <kurt@roeckx.be>
+	  [Bug #11376]
+
+	* ext/openssl/extconf.rb: check for SSLv3 support in the SSL
+	  implementation.
+
+	* test/openssl/test_ssl.rb (class OpenSSL): Skip tests that need SSLv3
+	  if there is no support.
+
 Mon Nov 16 03:39:59 2015  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* tool/runruby.rb: rubyspec now requires other FDs not to be closed
