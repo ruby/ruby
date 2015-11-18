@@ -1,3 +1,8 @@
+Wed Nov 18 21:09:08 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_method.c (prepare_callable_method_entry): use
+	  RCLASS_CALLABLE_M_TBL() instead of accessing a filed directly.
+
 Wed Nov 18 17:08:18 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* method.h: introduce the folliwing field and macros.
