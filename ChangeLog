@@ -1,3 +1,9 @@
+Thu Nov 19 02:20:11 2015  Tanaka Akira  <akr@fsij.org>
+
+	* test/socket/test_socket.rb (test_udp_recvmsg_truncation): rflags is
+	  nil on Solaris 10 which have no HAVE_STRUCT_MSGHDR_MSG_CONTROL.
+	  Reported by Naohisa Goto. [ruby-core:71557] [Bug #11709]
+
 Thu Nov 19 01:48:05 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* configure.in: add -static-libgcc for mingw automatically if available.
