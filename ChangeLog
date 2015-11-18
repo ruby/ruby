@@ -1,3 +1,7 @@
+Wed Nov 18 20:38:15 2015  Zachary Scott  <zzak@ruby-lang.org>
+
+	* ext/openssl/ossl_pkey.c: Merge ruby/openssl@b9ea8ef [Bug #10735]
+
 Wed Nov 18 20:31:56 2015  Aaron Patterson <tenderlove@ruby-lang.org>
 
 	* ext/openssl/ossl_ssl.c (ossl_ssl_method_tab): Only add SSLv3 support
