@@ -324,10 +324,12 @@ rb_threadptr_exec_event_hooks_orig(rb_trace_arg_t *trace_arg, int pop_p)
 	}
 	else {
 	    rb_trace_arg_t *prev_trace_arg = th->trace_arg;
+	    th->vm->trace_running++;
 	    th->trace_arg = trace_arg;
 	    exec_hooks_unprotected(th, &th->event_hooks, trace_arg);
 	    exec_hooks_unprotected(th, &th->vm->event_hooks, trace_arg);
 	    th->trace_arg = prev_trace_arg;
+	    th->vm->trace_running--;
 	}
     }
     else {
