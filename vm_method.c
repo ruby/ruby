@@ -465,7 +465,6 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
 		     rb_method_type_t type, rb_method_definition_t *def, ID original_id, void *opts)
 {
     rb_method_entry_t *me;
-
     struct rb_id_table *mtbl;
     st_data_t data;
     int make_refined = 0;
@@ -767,7 +766,7 @@ prepare_callable_method_entry(VALUE defined_class, ID id, const rb_method_entry_
 	VM_ASSERT(RB_TYPE_P(defined_class, T_ICLASS));
 	VM_ASSERT(me->defined_class == 0);
 
-	if ((mtbl = RCLASS_EXT(defined_class)->callable_m_tbl) == NULL) {
+	if ((mtbl = RCLASS_CALLABLE_M_TBL(defined_class)) == NULL) {
 	    mtbl = RCLASS_EXT(defined_class)->callable_m_tbl = rb_id_table_create(0);
 	}
 
