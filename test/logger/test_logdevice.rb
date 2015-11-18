@@ -99,6 +99,78 @@ class TestLogDevice < Test::Unit::TestCase
     r.close
   end
 
+  def test_reopen_io
+    logdev  = d(STDERR)
+    old_dev = logdev.dev
+    logdev.reopen
+    assert_equal(STDERR, logdev.dev)
+    assert(!old_dev.closed?)
+  end
+
+  def test_reopen_io_by_io
+    logdev  = d(STDERR)
+    old_dev = logdev.dev
+    logdev.reopen(STDOUT)
+    assert_equal(STDOUT, logdev.dev)
+    assert(!old_dev.closed?)
+  end
+
+  def test_reopen_io_by_file
+    logdev  = d(STDERR)
+    old_dev = logdev.dev
+    logdev.reopen(@filename)
+    begin
+      assert(File.exist?(@filename))
+      assert_equal(@filename, logdev.filename)
+      assert(!old_dev.closed?)
+    ensure
+      logdev.close
+    end
+  end
+
+  def test_reopen_file
+    logdev = d(@filename)
+    old_dev = logdev.dev
+
+    logdev.reopen
+    begin
+      assert(File.exist?(@filename))
+      assert_equal(@filename, logdev.filename)
+      assert(old_dev.closed?)
+    ensure
+      logdev.close
+    end
+  end
+
+  def test_reopen_file_by_io
+    logdev = d(@filename)
+    old_dev = logdev.dev
+    logdev.reopen(STDOUT)
+    assert_equal(STDOUT, logdev.dev)
+    assert_nil(logdev.filename)
+    assert(old_dev.closed?)
+  end
+
+  def test_reopen_file_by_file
+    logdev = d(@filename)
+    old_dev = logdev.dev
+
+    tempfile2 = Tempfile.new("logger")
+    tempfile2.close
+    filename2 = tempfile2.path
+    File.unlink(filename2)
+
+    logdev.reopen(filename2)
+    begin
+      assert(File.exist?(filename2))
+      assert_equal(filename2, logdev.filename)
+      assert(old_dev.closed?)
+    ensure
+      logdev.close
+      tempfile2.close(true)
+    end
+  end
+
   def test_shifting_size
     tmpfile = Tempfile.new([File.basename(__FILE__, '.*'), '_1.log'])
     logfile = tmpfile.path

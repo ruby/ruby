@@ -92,8 +92,10 @@ with all sufficient information, see the ChangeLog file.
 * Proc
 
   * Proc#call (and also #[], #===, #yield) are optimized.
-    Backtrace doesn't show each methods (show block lines directly).
-    TracePoint also ignore these calls. [Feature #11569]
+    Backtrace doesn't show each method (show block lines directly).
+    TracePoint also ignores these calls. [Feature #11569]
+
+* Regexp/String: Updated Unicode version from 7.0.0 to 8.0.0
 
 * Struct
   * Struct#dig [Feature #11686]
@@ -135,6 +137,12 @@ with all sufficient information, see the ChangeLog file.
 
 
 === Stdlib updates (outstanding ones only)
+
+* Logger
+
+  * Logger#level= now supports symbol and string levels such as :debug, :info,
+    :warn, :error, :fatal (case insensitive) [Feature #11695]
+  * Logger#reopen is added to reopen a log device. [Feature #11696]
 
 * Socket
   * Socket#connect_nonblock, Socket#accept_nonblock,

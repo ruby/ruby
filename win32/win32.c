@@ -5164,7 +5164,7 @@ static DWORD stati64_handle(HANDLE h, struct stati64 *st);
 
 /* License: Ruby's */
 static void
-stati64_set_inode(PBY_HANDLE_FILE_INFORMATION pinfo, struct stati64 *st)
+stati64_set_inode(BY_HANDLE_FILE_INFORMATION *pinfo, struct stati64 *st)
 {
     /* struct stati64 layout
      *
@@ -5205,6 +5205,7 @@ stati64_set_inode_handle(HANDLE h, struct stati64 *st)
 }
 
 #undef fstat
+extern int fstat(int, struct stat *);
 /* License: Ruby's */
 int
 rb_w32_fstat(int fd, struct stat *st)

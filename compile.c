@@ -1998,7 +1998,13 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	 */
 	INSN *nobj = (INSN *)get_destination_insn(iobj);
 	INSN *pobj = (INSN *)iobj->link.prev;
-	int prev_dup = (pobj && pobj->insn_id == BIN(dup));
+	int prev_dup = 0;
+	if (pobj) {
+	    if (pobj->link.type != ISEQ_ELEMENT_INSN)
+		pobj = 0;
+	    else if (pobj->insn_id == BIN(dup))
+		prev_dup = 1;
+	}
 
 	for (;;) {
 	    if (nobj->insn_id == BIN(jump)) {
@@ -2024,6 +2030,50 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 		 *   if L2
 		 */
 		replace_destination(iobj, nobj);
+	    }
+	    else if (pobj) {
+		/*
+		 *   putnil
+		 *   if L1
+		 * =>
+		 *   # nothing
+		 *
+		 *   putobject true
+		 *   if L1
+		 * =>
+		 *   jump L1
+		 *
+		 *   putstring ".."
+		 *   if L1
+		 * =>
+		 *   jump L1
+		 *
+		 */
+		int cond;
+		if (pobj->insn_id == BIN(putobject)) {
+		    cond = (iobj->insn_id == BIN(branchif) ?
+			    OPERAND_AT(pobj, 0) != Qfalse :
+			    iobj->insn_id == BIN(branchunless) ?
+			    OPERAND_AT(pobj, 0) == Qfalse :
+			    FALSE);
+		}
+		else if (pobj->insn_id == BIN(putstring)) {
+		    cond = iobj->insn_id == BIN(branchif);
+		}
+		else if (pobj->insn_id == BIN(putnil)) {
+		    cond = iobj->insn_id != BIN(branchif);
+		}
+		else break;
+		REMOVE_ELEM(&pobj->link);
+		if (cond) {
+		    iobj->insn_id = BIN(jump);
+		    goto again;
+		}
+		else {
+		    unref_destination(iobj);
+		    REMOVE_ELEM(&iobj->link);
+		}
+		break;
 	    }
 	    else break;
 	    nobj = (INSN *)get_destination_insn(nobj);

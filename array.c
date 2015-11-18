@@ -5535,8 +5535,8 @@ rb_ary_any_p(VALUE ary)
  * call-seq:
  *   ary.dig(idx, ...)                 -> object
  *
- * Retrieves the value object corresponding to the each <i>idx</i>
- * objects repeatedly.
+ * Extracts the nested array value specified by the sequence of <i>idx</i>
+ * objects.
  *
  *   a = [[1, [2, 3]]]
  *

@@ -361,16 +361,20 @@ VALUE rsock_sock_listen(VALUE sock, VALUE log);
 VALUE rsock_sockopt_new(int family, int level, int optname, VALUE data);
 
 #if defined(HAVE_SENDMSG)
-VALUE rsock_bsock_sendmsg(int argc, VALUE *argv, VALUE sock);
-VALUE rsock_bsock_sendmsg_nonblock(int argc, VALUE *argv, VALUE sock);
+VALUE rsock_bsock_sendmsg(VALUE sock, VALUE data, VALUE flags,
+			  VALUE dest_sockaddr, VALUE controls);
+VALUE rsock_bsock_sendmsg_nonblock(VALUE sock, VALUE data, VALUE flags,
+			     VALUE dest_sockaddr, VALUE controls, VALUE ex);
 #else
 #define rsock_bsock_sendmsg rb_f_notimplement
 #define rsock_bsock_sendmsg_nonblock rb_f_notimplement
 #endif
 
 #if defined(HAVE_RECVMSG)
-VALUE rsock_bsock_recvmsg(int argc, VALUE *argv, VALUE sock);
-VALUE rsock_bsock_recvmsg_nonblock(int argc, VALUE *argv, VALUE sock);
+VALUE rsock_bsock_recvmsg(VALUE sock, VALUE dlen, VALUE clen, VALUE flags,
+			  VALUE scm_rights);
+VALUE rsock_bsock_recvmsg_nonblock(VALUE sock, VALUE dlen, VALUE clen,
+				   VALUE flags, VALUE scm_rights, VALUE ex);
 ssize_t rsock_recvmsg(int socket, struct msghdr *message, int flags);
 #else
 #define rsock_bsock_recvmsg rb_f_notimplement
@@ -434,13 +438,5 @@ static inline void rsock_maybe_wait_fd(int fd) { }
 #ifndef MSG_DONTWAIT_RELIABLE
 #  define MSG_DONTWAIT_RELIABLE 0
 #endif
-
-static inline int
-rsock_opt_false_p(VALUE opt, VALUE sym)
-{
-    if (!NIL_P(opt) && Qfalse == rb_hash_lookup2(opt, sym, Qundef))
-	return 1;
-    return 0;
-}
 
 #endif

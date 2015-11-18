@@ -276,6 +276,56 @@ class BasicSocket < IO
   end
 
   # call-seq:
+  #    basicsocket.sendmsg(mesg, flags=0, dest_sockaddr=nil, *controls) => numbytes_sent
+  #
+  # sendmsg sends a message using sendmsg(2) system call in blocking manner.
+  #
+  # _mesg_ is a string to send.
+  #
+  # _flags_ is bitwise OR of MSG_* constants such as Socket::MSG_OOB.
+  #
+  # _dest_sockaddr_ is a destination socket address for connection-less socket.
+  # It should be a sockaddr such as a result of Socket.sockaddr_in.
+  # An Addrinfo object can be used too.
+  #
+  # _controls_ is a list of ancillary data.
+  # The element of _controls_ should be Socket::AncillaryData or
+  # 3-elements array.
+  # The 3-element array should contains cmsg_level, cmsg_type and data.
+  #
+  # The return value, _numbytes_sent_ is an integer which is the number of bytes sent.
+  #
+  # sendmsg can be used to implement send_io as follows:
+  #
+  #   # use Socket::AncillaryData.
+  #   ancdata = Socket::AncillaryData.int(:UNIX, :SOCKET, :RIGHTS, io.fileno)
+  #   sock.sendmsg("a", 0, nil, ancdata)
+  #
+  #   # use 3-element array.
+  #   ancdata = [:SOCKET, :RIGHTS, [io.fileno].pack("i!")]
+  #   sock.sendmsg("\0", 0, nil, ancdata)
+  def sendmsg(mesg, flags = 0, dest_sockaddr = nil, *controls)
+    __sendmsg(mesg, flags, dest_sockaddr, controls)
+  end
+
+  # call-seq:
+  #    basicsocket.sendmsg_nonblock(mesg, flags=0, dest_sockaddr=nil, *controls, opts={}) => numbytes_sent
+  #
+  # sendmsg_nonblock sends a message using sendmsg(2) system call in non-blocking manner.
+  #
+  # It is similar to BasicSocket#sendmsg
+  # but the non-blocking flag is set before the system call
+  # and it doesn't retry the system call.
+  #
+  # By specifying `exception: false`, the _opts_ hash allows you to indicate
+  # that sendmsg_nonblock should not raise an IO::WaitWritable exception, but
+  # return the symbol :wait_writable instead.
+  def sendmsg_nonblock(mesg, flags = 0, dest_sockaddr = nil, *controls,
+                       exception: true)
+    __sendmsg_nonblock(mesg, flags, dest_sockaddr, controls, exception)
+  end
+
+  # call-seq:
   # 	basicsocket.recv_nonblock(maxlen [, flags [, buf [, options ]]]) => mesg
   #
   # Receives up to _maxlen_ bytes from +socket+ using recvfrom(2) after
@@ -324,6 +374,77 @@ class BasicSocket < IO
   def recv_nonblock(len, flag = 0, str = nil, exception: true)
     __recv_nonblock(len, flag, str, exception)
   end
+
+  # call-seq:
+  #    basicsocket.recvmsg(maxmesglen=nil, flags=0, maxcontrollen=nil, opts={}) => [mesg, sender_addrinfo, rflags, *controls]
+  #
+  # recvmsg receives a message using recvmsg(2) system call in blocking manner.
+  #
+  # _maxmesglen_ is the maximum length of mesg to receive.
+  #
+  # _flags_ is bitwise OR of MSG_* constants such as Socket::MSG_PEEK.
+  #
+  # _maxcontrollen_ is the maximum length of controls (ancillary data) to receive.
+  #
+  # _opts_ is option hash.
+  # Currently :scm_rights=>bool is the only option.
+  #
+  # :scm_rights option specifies that application expects SCM_RIGHTS control message.
+  # If the value is nil or false, application don't expects SCM_RIGHTS control message.
+  # In this case, recvmsg closes the passed file descriptors immediately.
+  # This is the default behavior.
+  #
+  # If :scm_rights value is neither nil nor false, application expects SCM_RIGHTS control message.
+  # In this case, recvmsg creates IO objects for each file descriptors for
+  # Socket::AncillaryData#unix_rights method.
+  #
+  # The return value is 4-elements array.
+  #
+  # _mesg_ is a string of the received message.
+  #
+  # _sender_addrinfo_ is a sender socket address for connection-less socket.
+  # It is an Addrinfo object.
+  # For connection-oriented socket such as TCP, sender_addrinfo is platform dependent.
+  #
+  # _rflags_ is a flags on the received message which is bitwise OR of MSG_* constants such as Socket::MSG_TRUNC.
+  # It will be nil if the system uses 4.3BSD style old recvmsg system call.
+  #
+  # _controls_ is ancillary data which is an array of Socket::AncillaryData objects such as:
+  #
+  #   #<Socket::AncillaryData: AF_UNIX SOCKET RIGHTS 7>
+  #
+  # _maxmesglen_ and _maxcontrollen_ can be nil.
+  # In that case, the buffer will be grown until the message is not truncated.
+  # Internally, MSG_PEEK is used and MSG_TRUNC/MSG_CTRUNC are checked.
+  #
+  # recvmsg can be used to implement recv_io as follows:
+  #
+  #   mesg, sender_sockaddr, rflags, *controls = sock.recvmsg(:scm_rights=>true)
+  #   controls.each {|ancdata|
+  #     if ancdata.cmsg_is?(:SOCKET, :RIGHTS)
+  #       return ancdata.unix_rights[0]
+  #     end
+  #   }
+  def recvmsg(dlen = nil, flags = 0, clen = nil, scm_rights: false)
+    __recvmsg(dlen, flags, clen, scm_rights)
+  end
+
+  # call-seq:
+  #    basicsocket.recvmsg_nonblock(maxdatalen=nil, flags=0, maxcontrollen=nil, opts={}) => [data, sender_addrinfo, rflags, *controls]
+  #
+  # recvmsg receives a message using recvmsg(2) system call in non-blocking manner.
+  #
+  # It is similar to BasicSocket#recvmsg
+  # but non-blocking flag is set before the system call
+  # and it doesn't retry the system call.
+  #
+  # By specifying `exception: false`, the _opts_ hash allows you to indicate
+  # that recvmsg_nonblock should not raise an IO::WaitWritable exception, but
+  # return the symbol :wait_writable instead.
+  def recvmsg_nonblock(dlen = nil, flags = 0, clen = nil,
+                       scm_rights: false, exception: true)
+    __recvmsg_nonblock(dlen, flags, clen, scm_rights, exception)
+  end
 end
 
 class Socket < BasicSocket
@@ -335,8 +456,7 @@ class Socket < BasicSocket
   end
 
   # call-seq:
-  #   socket.recvfrom_nonblock(maxlen) => [mesg, sender_addrinfo]
-  #   socket.recvfrom_nonblock(maxlen, flags) => [mesg, sender_addrinfo]
+  #   socket.recvfrom_nonblock(maxlen[, flags[, outbuf[, opts]]]) => [mesg, sender_addrinfo]
   #
   # Receives up to _maxlen_ bytes from +socket+ using recvfrom(2) after
   # O_NONBLOCK is set for the underlying file descriptor.
@@ -352,6 +472,8 @@ class Socket < BasicSocket
   # === Parameters
   # * +maxlen+ - the maximum number of bytes to receive from the socket
   # * +flags+ - zero or more of the +MSG_+ options
+  # * +outbuf+ - destination String buffer
+  # * +opts+ - keyword hash, supporting `exception: false`
   #
   # === Example
   #   # In one file, start this first
@@ -390,7 +512,12 @@ class Socket < BasicSocket
   #
   # If the exception is Errno::EWOULDBLOCK or Errno::EAGAIN,
   # it is extended by IO::WaitReadable.
-  # So IO::WaitReadable can be used to rescue the exceptions for retrying recvfrom_nonblock.
+  # So IO::WaitReadable can be used to rescue the exceptions for retrying
+  # recvfrom_nonblock.
+  #
+  # By specifying `exception: false`, the options hash allows you to indicate
+  # that accept_nonblock should not raise an IO::WaitReadable exception, but
+  # return the symbol :wait_readable instead.
   #
   # === See
   # * Socket#recvfrom
@@ -671,11 +798,8 @@ class Socket < BasicSocket
     loop {
       readable, _, _ = IO.select(sockets)
       readable.each {|r|
-        begin
-          sock, addr = r.accept_nonblock
-        rescue IO::WaitReadable
-          next
-        end
+        sock, addr = r.accept_nonblock(exception: false)
+        next if sock == :wait_readable
         yield sock, addr
       }
     }
@@ -839,11 +963,8 @@ class Socket < BasicSocket
   #
   def self.udp_server_recv(sockets)
     sockets.each {|r|
-      begin
-        msg, sender_addrinfo, _, *controls = r.recvmsg_nonblock
-      rescue IO::WaitReadable
-        next
-      end
+      msg, sender_addrinfo, _, *controls = r.recvmsg_nonblock(exception: false)
+      next if msg == :wait_readable
       ai = r.local_address
       if ai.ipv6? and pktinfo = controls.find {|c| c.cmsg_is?(:IPV6, :PKTINFO) }
         ai = Addrinfo.udp(pktinfo.ipv6_pktinfo_addr.ip_address, ai.ip_port)
@@ -1089,7 +1210,7 @@ end
 class UDPSocket < IPSocket
 
   # call-seq:
-  #   udpsocket.recvfrom_nonblock(maxlen [, flags [, options]]) => [mesg, sender_inet_addr]
+  #   udpsocket.recvfrom_nonblock(maxlen [, flags[, outbuf [, options]]]) => [mesg, sender_inet_addr]
   #
   # Receives up to _maxlen_ bytes from +udpsocket+ using recvfrom(2) after
   # O_NONBLOCK is set for the underlying file descriptor.
@@ -1105,6 +1226,7 @@ class UDPSocket < IPSocket
   # === Parameters
   # * +maxlen+ - the number of bytes to receive from the socket
   # * +flags+ - zero or more of the +MSG_+ options
+  # * +outbuf+ - destination String buffer
   # * +options+ - keyword hash, supporting `exception: false`
   #
   # === Example
@@ -1139,8 +1261,8 @@ class UDPSocket < IPSocket
   #
   # === See
   # * Socket#recvfrom
-  def recvfrom_nonblock(len, flag = 0, str = nil, exception: true)
-    __recvfrom_nonblock(len, flag, str, exception)
+  def recvfrom_nonblock(len, flag = 0, outbuf = nil, exception: true)
+    __recvfrom_nonblock(len, flag, outbuf, exception)
   end
 end
 
@@ -1225,4 +1347,4 @@ class UNIXServer < UNIXSocket
   def accept_nonblock(exception: true)
     __accept_nonblock(exception)
   end
-end
+end if defined?(UNIXSocket)
