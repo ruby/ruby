@@ -1,3 +1,7 @@
+Thu Nov 19 01:48:05 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* configure.in: add -static-libgcc for mingw automatically if available.
+
 Thu Nov 19 00:53:26 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/extmk.rb (--extflags): new option to pass EXTLDFLAGS to children,
