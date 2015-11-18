@@ -1,3 +1,10 @@
+Thu Nov 19 00:53:26 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/extmk.rb (--extflags): new option to pass EXTLDFLAGS to children,
+	  expecially exts.mk.
+
+	* common.mk (EXTMK_ARGS): use above option.
+
 Wed Nov 18 22:50:43 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_method.c (rb_class_clear_method_cache): should clear all

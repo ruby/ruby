@@ -369,6 +369,9 @@ def parse_args()
     opts.on('--gnumake=yes|no', true) do |v|
       $gnumake = v
     end
+    opts.on('--extflags=FLAGS') do |v|
+      $extflags = v || ""
+    end
   end
   begin
     $optparser.parse!(ARGV)
