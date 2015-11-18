@@ -2032,6 +2032,23 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 		replace_destination(iobj, nobj);
 	    }
 	    else if (pobj) {
+		/*
+		 *   putnil
+		 *   if L1
+		 * =>
+		 *   # nothing
+		 *
+		 *   putobject true
+		 *   if L1
+		 * =>
+		 *   jump L1
+		 *
+		 *   putstring ".."
+		 *   if L1
+		 * =>
+		 *   jump L1
+		 *
+		 */
 		int cond;
 		if (pobj->insn_id == BIN(putobject)) {
 		    cond = (iobj->insn_id == BIN(branchif) ?
