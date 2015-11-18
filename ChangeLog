@@ -1,3 +1,8 @@
+Thu Nov 19 00:01:14 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (argf_next_argv): check ARGV element type, and try
+	  conversion if necessary.  [ruby-core:71140] [Bug #11610]
+
 Wed Nov 18 23:29:32 2015  Aaron Patterson <tenderlove@ruby-lang.org>
 
 	* ext/openssl/ossl_ssl.c (ossl_ssl_method_tab): Only add SSLv3 support

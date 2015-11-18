@@ -856,4 +856,12 @@ class TestArgf < Test::Unit::TestCase
       assert_equal([49, 10, 50, 10, 51, 10, 52, 10, 53, 10, 54, 10], Marshal.load(f.read))
     end
   end
+
+  def test_wrong_type
+    assert_separately([], <<-'end;')
+      bug11610 = '[ruby-core:71140] [Bug #11610]'
+      ARGV[0] = nil
+      assert_raise(TypeError, bug11610) {gets}
+    end;
+  end
 end
