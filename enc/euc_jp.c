@@ -381,8 +381,10 @@ mbc_case_fold(OnigCaseFoldType flag,
     OnigCodePoint code;
     int len;
 
+    len = mbc_enc_len(p, end, enc);
     code = get_lower_case(mbc_to_code(p, end, enc));
     len = code_to_mbc(code, lower, enc);
+    if (len == ONIGERR_INVALID_CODE_POINT_VALUE) len = 1;
     (*pp) += len;
     return len; /* return byte length of converted char to lower */
   }

@@ -1,3 +1,8 @@
+Thu Nov 19 00:41:09 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/euc_jp.c (mbc_case_fold): check given string is valid or not,
+	  and if invalid, return 1. [Bug #11486]
+
 Thu Nov 19 00:15:23 2015  Zachary Scott  <zzak@ruby-lang.org>
 
 	* ext/openssl/ossl_pkey.c: Merge ruby/openssl@b9ea8ef [Bug #10735]
