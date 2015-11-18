@@ -1,3 +1,9 @@
+Wed Nov 18 10:12:36 2015  Eric Wong  <e@80x24.org>
+
+	* ext/socket/ancdata.c (bsock_recvmsg_internal): use 4096 as
+	  default size to match pre-r52610, which also maps to a common
+	  page size.
+
 Wed Nov 18 10:05:25 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* doc/syntax/refinements.rdoc: update documentation to reflect
