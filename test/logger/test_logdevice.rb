@@ -131,7 +131,7 @@ class TestLogDevice < Test::Unit::TestCase
   def test_reopen_file
     logdev = d(@filename)
     old_dev = logdev.dev
-    File.unlink(@filename) if File.exist?(@filename) # remove once, then reopen
+
     logdev.reopen
     begin
       assert(File.exist?(@filename))
@@ -154,14 +154,20 @@ class TestLogDevice < Test::Unit::TestCase
   def test_reopen_file_by_file
     logdev = d(@filename)
     old_dev = logdev.dev
-    File.unlink(@filename) if File.exist?(@filename) # remove once, then reopen
-    logdev.reopen(@filename)
+
+    tempfile2 = Tempfile.new("logger")
+    tempfile2.close
+    filename2 = tempfile2.path
+    File.unlink(filename2)
+
+    logdev.reopen(filename2)
     begin
-      assert(File.exist?(@filename))
-      assert_equal(@filename, logdev.filename)
+      assert(File.exist?(filename2))
+      assert_equal(filename2, logdev.filename)
       assert(old_dev.closed?)
     ensure
       logdev.close
+      tempfile2.close(true)
     end
   end
 

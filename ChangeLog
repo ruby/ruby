@@ -1,3 +1,8 @@
+Wed Nov 18 09:50:21 2015  Naotoshi Seo  <sonots@gmail.com>
+
+	* test/logger/test_logdevice.rb: Fix tests of logger to make it work on
+	  windows (windows can not remove opened file) [Bug #11702]
+
 Wed Nov 18 06:59:52 2015  Eric Wong  <e@80x24.org>
 
 	* ext/socket/ancdata.c (bsock_recvmsg_internal): grow buffer
