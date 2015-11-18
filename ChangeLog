@@ -1,3 +1,8 @@
+Thu Nov 19 02:52:30 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/socket/ancdata.c (bsock_recvmsg_internal): stretch the buffer size
+	  only when vmaxdatlen is nil.
+
 Thu Nov 19 02:20:11 2015  Tanaka Akira  <akr@fsij.org>
 
 	* test/socket/test_socket.rb (test_udp_recvmsg_truncation): rflags is
