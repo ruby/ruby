@@ -185,6 +185,10 @@ class Gem::Request
 
       bad_response = true
       retry
+    rescue Net::HTTPFatalError
+      verbose "fatal error"
+
+      raise Gem::RemoteFetcher::FetchError.new('fatal error', @uri)
     # HACK work around EOFError bug in Net::HTTP
     # NOTE Errno::ECONNABORTED raised a lot on Windows, and make impossible
     # to install gems.
@@ -241,4 +245,3 @@ end
 require 'rubygems/request/http_pool'
 require 'rubygems/request/https_pool'
 require 'rubygems/request/connection_pools'
-
