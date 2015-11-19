@@ -1,3 +1,9 @@
+Thu Nov 19 13:57:58 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (finish_overlapped_socket): ignore EMSGSIZE when input,
+	  because POSIX platforms just do so.  fixes test errors revealed by
+	  r52647.
+
 Thu Nov 19 02:52:30 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/socket/ancdata.c (bsock_recvmsg_internal): stretch the buffer size
