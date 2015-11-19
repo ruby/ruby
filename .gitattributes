@@ -1,0 +1,5 @@
+*.gemspec diff=ruby
+*.rb diff=ruby
+bin/* diff=ruby
+tool/update-deps diff=ruby
+tool/make-snapshot diff=ruby
