@@ -1,3 +1,10 @@
+Thu Nov 19 21:55:11 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_start): force to invoke GC by GC.start
+	  even if it is GC.disable'd.
+
+	* test/ruby/test_gc.rb: add a test.
+
 Thu Nov 19 20:08:59 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: trivial performance improvements.

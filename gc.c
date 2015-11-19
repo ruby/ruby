@@ -6158,8 +6158,8 @@ gc_start(rb_objspace_t *objspace, const int full_mark, const int immediate_mark,
     int do_full_mark = full_mark;
     objspace->flags.immediate_sweep = immediate_sweep;
 
-    if (!heap_allocated_pages) return FALSE;      /* heap is not ready */
-    if (!ready_to_gc(objspace)) return TRUE; /* GC is not allowed */
+    if (!heap_allocated_pages) return FALSE; /* heap is not ready */
+    if (reason != GPR_FLAG_METHOD && !ready_to_gc(objspace)) return TRUE; /* GC is not allowed */
 
     if (RGENGC_CHECK_MODE) {
 	assert(objspace->flags.stat == gc_stat_none);
