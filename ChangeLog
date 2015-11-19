@@ -1,3 +1,8 @@
+Thu Nov 19 15:53:21 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* signal.c: should also clear ruby_disable_gc.
+	  [Bug #11692]
+
 Thu Nov 19 15:31:45 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (iseq_compile_each): T_IMEMO/iseq objects should be
