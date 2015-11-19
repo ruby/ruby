@@ -2100,7 +2100,9 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	}
     }
 
-    if (do_tailcallopt && iobj->insn_id == BIN(leave)) {
+    if (do_tailcallopt &&
+	(iobj->insn_id == BIN(send) ||
+	 iobj->insn_id == BIN(invokesuper))) {
 	/*
 	 *  send ...
 	 *  leave
@@ -2108,13 +2110,29 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	 *  send ..., ... | VM_CALL_TAILCALL, ...
 	 *  leave # unreachable
 	 */
-	INSN *piobj = (INSN *)get_prev_insn(iobj);
-	enum ruby_vminsn_type previ = piobj->insn_id;
+	INSN *piobj = NULL;
+	if (iobj->link.next) {
+	    LINK_ELEMENT *next = iobj->link.next;
+	    do {
+		if (next->type != ISEQ_ELEMENT_INSN) {
+		    next = next->next;
+		    continue;
+		}
+		switch (INSN_OF(next)) {
+		  case BIN(nop):
+		  /*case BIN(trace):*/
+		    next = next->next;
+		    break;
+		  case BIN(leave):
+		    piobj = iobj;
+		  default:
+		    next = NULL;
+		    break;
+		}
+	    } while (next);
+	}
 
-	if (previ == BIN(send) || previ == BIN(opt_send_without_block) ||
-	    previ == BIN(invokesuper) ||
-	    previ == BIN(opt_aref) || previ == BIN(opt_aref_with) ||
-	    previ == BIN(opt_aset) || previ == BIN(opt_aset_with)) {
+	if (piobj) {
 	    struct rb_call_info *ci = (struct rb_call_info *)piobj->operands[0];
 	    rb_iseq_t *blockiseq = (rb_iseq_t *)piobj->operands[1];
 	    if (blockiseq == 0) {
