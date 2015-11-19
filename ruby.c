@@ -745,35 +745,36 @@ name_match_p(const char *name, const char *str, size_t len)
     }
 
 static void
-enable_option(const char *str, int len, void *arg)
+feature_option(const char *str, int len, void *arg, const unsigned int enable)
 {
-#define SET_WHEN_ENABLE(bit) SET_WHEN(#bit, FEATURE_BIT(bit), str, len)
-    SET_WHEN_ENABLE(gems);
-    SET_WHEN_ENABLE(did_you_mean);
-    SET_WHEN_ENABLE(rubyopt);
-    SET_WHEN_ENABLE(frozen_string_literal);
-    SET_WHEN_ENABLE(frozen_string_literal_debug);
+    unsigned int *argp = arg;
+    unsigned int mask = ~0U;
+#define SET_FEATURE(bit) \
+    if (NAME_MATCH_P(#bit, str, len)) {mask = FEATURE_BIT(bit); goto found;}
+    SET_FEATURE(gems);
+    SET_FEATURE(did_you_mean);
+    SET_FEATURE(rubyopt);
+    SET_FEATURE(frozen_string_literal);
+    SET_FEATURE(frozen_string_literal_debug);
     if (NAME_MATCH_P("all", str, len)) {
-	*(unsigned int *)arg = ~0U;
+      found:
+	*argp = (*argp & ~mask) | (mask & enable);
 	return;
     }
-    rb_warn("unknown argument for --enable: `%.*s'", len, str);
+    rb_warn("unknown argument for --%s: `%.*s'",
+	    enable ? "enable" : "disable", len, str);
+}
+
+static void
+enable_option(const char *str, int len, void *arg)
+{
+    feature_option(str, len, arg, ~0U);
 }
 
 static void
 disable_option(const char *str, int len, void *arg)
 {
-#define UNSET_WHEN_DISABLE(bit) UNSET_WHEN(#bit, FEATURE_BIT(bit), str, len)
-    UNSET_WHEN_DISABLE(gems);
-    UNSET_WHEN_DISABLE(did_you_mean);
-    UNSET_WHEN_DISABLE(rubyopt);
-    UNSET_WHEN_DISABLE(frozen_string_literal);
-    UNSET_WHEN_DISABLE(frozen_string_literal_debug);
-    if (NAME_MATCH_P("all", str, len)) {
-	*(unsigned int *)arg = 0U;
-	return;
-    }
-    rb_warn("unknown argument for --disable: `%.*s'", len, str);
+    feature_option(str, len, arg, 0U);
 }
 
 static void
