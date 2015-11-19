@@ -1,3 +1,8 @@
+Thu Nov 19 19:45:05 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (ruby_prog_init): [DOC] ARGV does not contain the name of
+	  the executable.  [ruby-core:71561] [Bug #11711]
+
 Thu Nov 19 15:53:21 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* signal.c: should also clear ruby_disable_gc.
