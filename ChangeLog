@@ -1,3 +1,8 @@
+Thu Nov 19 14:14:37 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (finish_overlapped_socket): return value of this
+	  function should be only 0 or SOCKET_ERROR.
+
 Thu Nov 19 14:12:12 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (iseq_tailcall_optimize): apply tail call optimization
