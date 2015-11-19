@@ -2035,8 +2035,7 @@ ruby_prog_init(void)
     rb_define_module_function(rb_mProcess, "setproctitle", proc_setproctitle, 1);
 
     /*
-     * ARGV contains the command line arguments used to run ruby with the
-     * first value containing the name of the executable.
+     * ARGV contains the command line arguments used to run ruby.
      *
      * A library like OptionParser can be used to process command-line
      * arguments.
