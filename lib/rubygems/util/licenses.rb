@@ -4,7 +4,8 @@ class Gem::Licenses
   # Software Package Data Exchange (SPDX) standard open-source software
   # license identifiers
   IDENTIFIERS = %w(
-    AAL
+      0BSD
+      AAL
       ADSL
       AFL-1.1
       AFL-1.2
@@ -89,6 +90,7 @@ class Gem::Licenses
       CECILL-1.0
       CECILL-1.1
       CECILL-2.0
+      CECILL-2.1
       CECILL-B
       CECILL-C
       CNRI-Jython
@@ -102,6 +104,7 @@ class Gem::Licenses
       ClArtistic
       Condor-1.1
       Crossword
+      CrystalStacker
       Cube
       D-FSL-1.0
       DOC
@@ -146,6 +149,7 @@ class Gem::Licenses
       Imlib2
       Intel
       Intel-ACPI
+      Interbase-1.0
       JSON
       JasPer-2.0
       LGPL-2.0
@@ -254,6 +258,7 @@ class Gem::Licenses
       SPL-1.0
       SWL
       Saxpath
+      Sendmail
       SimPL-2.0
       Sleepycat
       Spencer-86
@@ -306,4 +311,19 @@ class Gem::Licenses
       xpp
       zlib-acknowledgement
   ).freeze
+
+  REGEXP = %r{
+    \A
+    (
+      #{Regexp.union(IDENTIFIERS)}
+      \+?
+      (\s WITH \s .+)?
+      | #{NONSTANDARD}
+    )
+    \Z
+  }ox.freeze
+
+  def self.match?(license)
+    !REGEXP.match(license).nil?
+  end
 end

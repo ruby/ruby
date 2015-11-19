@@ -34,40 +34,34 @@ module Gem::Resolver::Molinillo
     # A directed edge of a {DependencyGraph}
     # @attr [Vertex] origin The origin of the directed edge
     # @attr [Vertex] destination The destination of the directed edge
-    # @attr [Array] requirements The requirements the directed edge represents
-    Edge = Struct.new(:origin, :destination, :requirements)
+    # @attr [Object] requirement The requirement the directed edge represents
+    Edge = Struct.new(:origin, :destination, :requirement)
 
-    # @return [{String => Vertex}] vertices that have no {Vertex#predecessors},
-    #   keyed by by {Vertex#name}
-    attr_reader :root_vertices
     # @return [{String => Vertex}] the vertices of the dependency graph, keyed
     #   by {Vertex#name}
     attr_reader :vertices
-    # @return [Set<Edge>] the edges of the dependency graph
-    attr_reader :edges
 
     def initialize
       @vertices = {}
-      @edges = Set.new
-      @root_vertices = {}
     end
 
     # Initializes a copy of a {DependencyGraph}, ensuring that all {#vertices}
-    # have the correct {Vertex#graph} set
+    # are properly copied.
     def initialize_copy(other)
       super
-      @vertices = other.vertices.reduce({}) do |vertices, (name, vertex)|
-        vertices.tap do |hash|
-          hash[name] = vertex.dup.tap { |v| v.graph = self }
+      @vertices = {}
+      traverse = lambda do |new_v, old_v|
+        return if new_v.outgoing_edges.size == old_v.outgoing_edges.size
+        old_v.outgoing_edges.each do |edge|
+          destination = add_vertex(edge.destination.name, edge.destination.payload)
+          add_edge_no_circular(new_v, destination, edge.requirement)
+          traverse.call(destination, edge.destination)
         end
       end
-      @root_vertices = Hash[@vertices.select { |n, _v| other.root_vertices[n] }]
-      @edges = other.edges.map do |edge|
-        Edge.new(
-          vertex_named(edge.origin.name),
-          vertex_named(edge.destination.name),
-          edge.requirements.dup
-        )
+      other.vertices.each do |name, vertex|
+        new_vertex = add_vertex(name, vertex.payload, vertex.root?)
+        new_vertex.explicit_requirements.replace(vertex.explicit_requirements)
+        traverse.call(new_vertex, vertex)
       end
     end
 
@@ -80,7 +74,12 @@ module Gem::Resolver::Molinillo
     #   by a recursive traversal of each {#root_vertices} and its
     #   {Vertex#successors}
     def ==(other)
-      root_vertices == other.root_vertices
+      return false unless other
+      vertices.each do |name, vertex|
+        other_vertex = other.vertex_named(name)
+        return false unless other_vertex
+        return false unless other_vertex.successors.map(&:name).to_set == vertex.successors.map(&:name).to_set
+      end
     end
 
     # @param [String] name
@@ -89,15 +88,13 @@ module Gem::Resolver::Molinillo
     # @param [Object] requirement the requirement that is requiring the child
     # @return [void]
     def add_child_vertex(name, payload, parent_names, requirement)
-      is_root = parent_names.include?(nil)
-      parent_nodes = parent_names.compact.map { |n| vertex_named(n) }
-      vertex = vertex_named(name) || if is_root
-                                       add_root_vertex(name, payload)
-                                     else
-                                       add_vertex(name, payload)
-                                     end
-      vertex.payload ||= payload
-      parent_nodes.each do |parent_node|
+      vertex = add_vertex(name, payload)
+      parent_names.each do |parent_name|
+        unless parent_name
+          vertex.root = true
+          next
+        end
+        parent_node = vertex_named(parent_name)
         add_edge(parent_node, vertex, requirement)
       end
       vertex
@@ -106,16 +103,11 @@ module Gem::Resolver::Molinillo
     # @param [String] name
     # @param [Object] payload
     # @return [Vertex] the vertex that was added to `self`
-    def add_vertex(name, payload)
-      vertex = vertices[name] ||= Vertex.new(self, name, payload)
-      vertex.tap { |v| v.payload = payload }
-    end
-
-    # @param [String] name
-    # @param [Object] payload
-    # @return [Vertex] the vertex that was added to `self`
-    def add_root_vertex(name, payload)
-      add_vertex(name, payload).tap { |v| root_vertices[name] = v }
+    def add_vertex(name, payload, root = false)
+      vertex = vertices[name] ||= Vertex.new(name, payload)
+      vertex.payload ||= payload
+      vertex.root ||= root
+      vertex
     end
 
     # Detaches the {#vertex_named} `name` {Vertex} from the graph, recursively
@@ -123,12 +115,12 @@ module Gem::Resolver::Molinillo
     # @param [String] name
     # @return [void]
     def detach_vertex_named(name)
-      vertex = vertex_named(name)
-      return unless vertex
-      successors = vertex.successors
-      vertices.delete(name)
-      edges.reject! { |e| e.origin == vertex || e.destination == vertex }
-      successors.each { |v| detach_vertex_named(v.name) unless root_vertices[v.name] || v.predecessors.any? }
+      return unless vertex = vertices.delete(name)
+      vertex.outgoing_edges.each do |e|
+        v = e.destination
+        v.incoming_edges.delete(e)
+        detach_vertex_named(v.name) unless v.root? || v.predecessors.any?
+      end
     end
 
     # @param [String] name
@@ -140,7 +132,8 @@ module Gem::Resolver::Molinillo
     # @param [String] name
     # @return [Vertex,nil] the root vertex with the given name
     def root_vertex_named(name)
-      root_vertices[name]
+      vertex = vertex_named(name)
+      vertex if vertex && vertex.root?
     end
 
     # Adds a new {Edge} to the dependency graph
@@ -149,18 +142,24 @@ module Gem::Resolver::Molinillo
     # @param [Object] requirement the requirement that this edge represents
     # @return [Edge] the added edge
     def add_edge(origin, destination, requirement)
-      if origin == destination || destination.path_to?(origin)
+      if destination.path_to?(origin)
         raise CircularDependencyError.new([origin, destination])
       end
-      Edge.new(origin, destination, [requirement]).tap { |e| edges << e }
+      add_edge_no_circular(origin, destination, requirement)
+    end
+
+    private
+
+    def add_edge_no_circular(origin, destination, requirement)
+      edge = Edge.new(origin, destination, requirement)
+      origin.outgoing_edges << edge
+      destination.incoming_edges << edge
+      edge
     end
 
     # A vertex in a {DependencyGraph} that encapsulates a {#name} and a
     # {#payload}
     class Vertex
-      # @return [DependencyGraph] the graph this vertex is a node of
-      attr_accessor :graph
-
       # @return [String] the name of the vertex
       attr_accessor :name
 
@@ -171,50 +170,62 @@ module Gem::Resolver::Molinillo
       #   this vertex
       attr_reader :explicit_requirements
 
-      # @param [DependencyGraph] graph see {#graph}
+      # @return [Boolean] whether the vertex is considered a root vertex
+      attr_accessor :root
+      alias_method :root?, :root
+
       # @param [String] name see {#name}
       # @param [Object] payload see {#payload}
-      def initialize(graph, name, payload)
-        @graph = graph
+      def initialize(name, payload)
         @name = name
         @payload = payload
         @explicit_requirements = []
+        @outgoing_edges = []
+        @incoming_edges = []
       end
 
       # @return [Array<Object>] all of the requirements that required
       #   this vertex
       def requirements
-        incoming_edges.map(&:requirements).flatten + explicit_requirements
+        incoming_edges.map(&:requirement) + explicit_requirements
       end
 
       # @return [Array<Edge>] the edges of {#graph} that have `self` as their
       #   {Edge#origin}
-      def outgoing_edges
-        graph.edges.select { |e| e.origin.shallow_eql?(self) }
-      end
+      attr_accessor :outgoing_edges
 
       # @return [Array<Edge>] the edges of {#graph} that have `self` as their
       #   {Edge#destination}
-      def incoming_edges
-        graph.edges.select { |e| e.destination.shallow_eql?(self) }
-      end
+      attr_accessor :incoming_edges
 
-      # @return [Set<Vertex>] the vertices of {#graph} that have an edge with
+      # @return [Array<Vertex>] the vertices of {#graph} that have an edge with
       #   `self` as their {Edge#destination}
       def predecessors
-        incoming_edges.map(&:origin).to_set
+        incoming_edges.map(&:origin)
       end
 
-      # @return [Set<Vertex>] the vertices of {#graph} that have an edge with
+      # @return [Array<Vertex>] the vertices of {#graph} where `self` is a
+      #   {#descendent?}
+      def recursive_predecessors
+        vertices = predecessors
+        vertices += vertices.map(&:recursive_predecessors).flatten(1)
+        vertices.uniq!
+        vertices
+      end
+
+      # @return [Array<Vertex>] the vertices of {#graph} that have an edge with
       #   `self` as their {Edge#origin}
       def successors
-        outgoing_edges.map(&:destination).to_set
+        outgoing_edges.map(&:destination)
       end
 
-      # @return [Set<Vertex>] the vertices of {#graph} where `self` is an
+      # @return [Array<Vertex>] the vertices of {#graph} where `self` is an
       #   {#ancestor?}
       def recursive_successors
-        successors + successors.map(&:recursive_successors).reduce(Set.new, &:+)
+        vertices = successors
+        vertices += vertices.map(&:recursive_successors).flatten(1)
+        vertices.uniq!
+        vertices
       end
 
       # @return [String] a string suitable for debugging
@@ -226,7 +237,7 @@ module Gem::Resolver::Molinillo
       #   by a recursive traversal of each {Vertex#successors}
       def ==(other)
         shallow_eql?(other) &&
-          successors == other.successors
+          successors.to_set == other.successors.to_set
       end
 
       # @return [Boolean] whether the two vertices are equal, determined
@@ -248,7 +259,7 @@ module Gem::Resolver::Molinillo
       # dependency graph?
       # @return true iff there is a path following edges within this {#graph}
       def path_to?(other)
-        successors.include?(other) || successors.any? { |v| v.path_to?(other) }
+        equal?(other) || successors.any? { |v| v.path_to?(other) }
       end
 
       alias_method :descendent?, :path_to?
@@ -257,7 +268,7 @@ module Gem::Resolver::Molinillo
       # dependency graph?
       # @return true iff there is a path following edges within this {#graph}
       def ancestor?(other)
-        predecessors.include?(other) || predecessors.any? { |v| v.ancestor?(other) }
+        other.path_to?(self)
       end
 
       alias_method :is_reachable_from?, :ancestor?

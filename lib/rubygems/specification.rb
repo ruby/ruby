@@ -2593,6 +2593,7 @@ class Gem::Specification < Gem::BasicSpecification
     trail.push(self)
     begin
       dependencies.each do |dep|
+        next unless dep.runtime?
         dep.to_specs.reverse_each do |dep_spec|
           next if visited.has_key?(dep_spec)
           visited[dep_spec] = true
@@ -2744,7 +2745,7 @@ class Gem::Specification < Gem::BasicSpecification
           "each license must be 64 characters or less"
       end
 
-      if !Gem::Licenses::IDENTIFIERS.include?(license) && !license.eql?(Gem::Licenses::NONSTANDARD)
+      if !Gem::Licenses.match?(license)
         warning <<-warning
 WARNING: license value '#{license}' is invalid.  Use a license identifier from
 http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard license.

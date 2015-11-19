@@ -277,6 +277,21 @@ class TestGemRequire < Gem::TestCase
     assert_equal %w(a-1.0 b-2.0), loaded_spec_names
   end
 
+  def test_require_doesnt_traverse_development_dependencies
+    a = new_spec("a", "1", nil, "lib/a.rb")
+    z = new_spec("z", "1", "w" => "> 0")
+    w1 = new_spec("w", "1") { |s| s.add_development_dependency "non-existent" }
+    w2 = new_spec("w", "2") { |s| s.add_development_dependency "non-existent" }
+
+    install_specs a, w1, w2, z
+
+    assert gem("z")
+    assert_equal %w(z-1), loaded_spec_names
+    assert_equal ["w (> 0)"], unresolved_names
+
+    assert require("a")
+  end
+
   def test_default_gem_only
     default_gem_spec = new_default_spec("default", "2.0.0.0",
                                         nil, "default/gem.rb")

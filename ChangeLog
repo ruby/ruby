@@ -1,3 +1,9 @@
+Thu Nov 19 15:16:12 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/rubygems: Update to RubyGems 2.5.0+ HEAD(c6b4946).
+	  this version includes #1114, #1314, #1322, #1375, #1383, #1387
+	* test/rubygems: ditto.
+
 Thu Nov 19 14:14:37 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (finish_overlapped_socket): return value of this
