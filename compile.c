@@ -5357,7 +5357,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 						rb_id2str(node->nd_mid),
 						ISEQ_TYPE_METHOD, line);
 
-	debugp_param("defn/iseq", (VALUE)method_iseq);
+	debugp_param("defn/iseq", rb_iseqw_new(method_iseq));
 
 	ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
 	ADD_INSN1(ret, line, putobject, ID2SYM(node->nd_mid));
@@ -5375,7 +5375,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 						      rb_id2str(node->nd_mid),
 						      ISEQ_TYPE_METHOD, line);
 
-	debugp_param("defs/iseq", (VALUE)singleton_method);
+	debugp_param("defs/iseq", rb_iseqw_new(singleton_method));
 
 	ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
 	COMPILE(ret, "defs: recv", node->nd_recv);
