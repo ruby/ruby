@@ -5654,10 +5654,10 @@ rgengc_mark_and_rememberset_clear(rb_objspace_t *objspace, rb_heap_t *heap)
 
 /* RGENGC: APIs */
 
-NOINLINE(static void gc_writebarrier_generational(rb_objspace_t *objspace, VALUE a, VALUE b));
+NOINLINE(static void gc_writebarrier_generational(VALUE a, VALUE b, rb_objspace_t *objspace));
 
 static void
-gc_writebarrier_generational(rb_objspace_t *objspace, VALUE a, VALUE b)
+gc_writebarrier_generational(VALUE a, VALUE b, rb_objspace_t *objspace)
 {
     if (RGENGC_CHECK_MODE) {
 	if (!RVALUE_OLD_P(a)) rb_bug("gc_writebarrier_generational: %s is not an old object.", obj_info(a));
@@ -5700,10 +5700,10 @@ gc_mark_from(rb_objspace_t *objspace, VALUE obj, VALUE parent)
     gc_grey(objspace, obj);
 }
 
-NOINLINE(static void gc_writebarrier_incremental(rb_objspace_t *objspace, VALUE a, VALUE b));
+NOINLINE(static void gc_writebarrier_incremental(VALUE a, VALUE b, rb_objspace_t *objspace));
 
 static void
-gc_writebarrier_incremental(rb_objspace_t *objspace, VALUE a, VALUE b)
+gc_writebarrier_incremental(VALUE a, VALUE b, rb_objspace_t *objspace)
 {
     gc_report(2, objspace, "gc_writebarrier_incremental: [LG] %s -> %s\n", obj_info(a), obj_info(b));
 
@@ -5731,7 +5731,7 @@ gc_writebarrier_incremental(rb_objspace_t *objspace, VALUE a, VALUE b)
     }
 }
 #else
-#define gc_writebarrier_incremental(objspace, a, b)
+#define gc_writebarrier_incremental(a, b, objspace)
 #endif
 
 void
@@ -5742,16 +5742,16 @@ rb_gc_writebarrier(VALUE a, VALUE b)
     if (RGENGC_CHECK_MODE && SPECIAL_CONST_P(a)) rb_bug("rb_gc_writebarrier: a is special const");
     if (RGENGC_CHECK_MODE && SPECIAL_CONST_P(b)) rb_bug("rb_gc_writebarrier: b is special const");
 
-    if (LIKELY(!is_incremental_marking(objspace))) {
+    if (!is_incremental_marking(objspace)) {
 	if (!RVALUE_OLD_P(a) || RVALUE_OLD_P(b)) {
 	    return;
 	}
 	else {
-	    gc_writebarrier_generational(objspace, a, b);
+	    gc_writebarrier_generational(a, b, objspace);
 	}
     }
     else { /* slow path */
-	gc_writebarrier_incremental(objspace, a, b);
+	gc_writebarrier_incremental(a, b, objspace);
     }
 }
 

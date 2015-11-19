@@ -1,3 +1,26 @@
+Thu Nov 19 20:08:59 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: trivial performance improvements.
+
+	    name    modified
+	    vm1_gc_short_lived*                1.015
+	    vm1_gc_short_with_complex_long*    1.014
+	    vm1_gc_short_with_long*            1.000
+	    vm1_gc_short_with_symbol*          1.016
+	    vm1_gc_wb_ary*                     1.002
+	    vm1_gc_wb_ary_promoted*            0.996
+	    vm1_gc_wb_obj*                     1.045
+	    vm1_gc_wb_obj_promoted*            1.014
+	    vm3_gc                             1.021
+
+	* gc.c (gc_writebarrier_generational): reorder parameters to optimize
+	  register passing function call.
+
+	* gc.c (gc_writebarrier_incremental): ditto.
+
+	* gc.c (rb_gc_writebarrier): remove LIKELY().
+	  LIKELY() seems to move related functions not better places.
+
 Thu Nov 19 19:45:05 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (ruby_prog_init): [DOC] ARGV does not contain the name of
