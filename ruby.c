@@ -114,6 +114,22 @@ static void init_ids(struct cmdline_options *);
 
 #define src_encoding_index GET_VM()->src_encoding_index
 
+enum {
+    COMPILATION_FEATURES = (
+	0
+	| FEATURE_BIT(frozen_string_literal)
+	| FEATURE_BIT(frozen_string_literal_debug)
+	),
+    DEFAULT_FEATURES = (
+	~0U
+#if DISABLE_RUBYGEMS
+	& ~FEATURE_BIT(gems)
+#endif
+	& ~FEATURE_BIT(frozen_string_literal)
+	& ~FEATURE_BIT(frozen_string_literal_debug)
+	)
+};
+
 static struct cmdline_options *
 cmdline_options_init(struct cmdline_options *opt)
 {
@@ -122,12 +138,7 @@ cmdline_options_init(struct cmdline_options *opt)
     opt->src.enc.index = src_encoding_index;
     opt->ext.enc.index = -1;
     opt->intern.enc.index = -1;
-    opt->features = ~0U;
-#if DISABLE_RUBYGEMS
-    opt->features &= ~FEATURE_BIT(gems);
-#endif
-    opt->features &= ~FEATURE_BIT(frozen_string_literal);
-    opt->features &= ~FEATURE_BIT(frozen_string_literal_debug);
+    opt->features = DEFAULT_FEATURES;
     return opt;
 }
 
@@ -1473,15 +1484,15 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 	rb_define_module("DidYouMean");
     }
     ruby_init_prelude();
-    if (opt->features & FEATURE_BIT(frozen_string_literal)) {
+    if ((opt->features ^ DEFAULT_FEATURES) & COMPILATION_FEATURES) {
 	VALUE option = rb_hash_new();
-	rb_hash_aset(option, ID2SYM(rb_intern_const("frozen_string_literal")), Qtrue);
+#define SET_COMPILE_OPTION(h, o, name) \
+	rb_hash_aset((h), ID2SYM(rb_intern_const(#name)),		\
+		     ((o)->features & FEATURE_BIT(name) ? Qtrue : Qfalse));
+	SET_COMPILE_OPTION(option, opt, frozen_string_literal);
+	SET_COMPILE_OPTION(option, opt, frozen_string_literal_debug);
 	rb_funcallv(rb_cISeq, rb_intern_const("compile_option="), 1, &option);
-    }
-    if (opt->features & FEATURE_BIT(frozen_string_literal_debug)) {
-	VALUE option = rb_hash_new();
-	rb_hash_aset(option, ID2SYM(rb_intern_const("frozen_string_literal_debug")), Qtrue);
-	rb_funcallv(rb_cISeq, rb_intern_const("compile_option="), 1, &option);
+#undef SET_COMPILE_OPTION
     }
 #if UTF8_PATH
     opt->script_name = str_conv_enc(opt->script_name, rb_utf8_encoding(), lenc);
