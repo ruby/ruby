@@ -1580,13 +1580,13 @@ bsock_recvmsg_internal(VALUE sock,
 
     if (grow_buffer) {
 	int grown = 0;
-#if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
-        if (NIL_P(vmaxdatlen) && (mh.msg_flags & MSG_TRUNC)) {
+	if (NIL_P(vmaxdatlen) && ss != -1 && ss == (ssize_t)iov.iov_len) {
             if (SIZE_MAX/2 < maxdatlen)
                 rb_raise(rb_eArgError, "max data length too big");
 	    maxdatlen *= 2;
 	    grown = 1;
 	}
+#if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
         if (NIL_P(vmaxctllen) && (mh.msg_flags & MSG_CTRUNC)) {
 #define BIG_ENOUGH_SPACE 65536
             if (BIG_ENOUGH_SPACE < maxctllen &&
@@ -1605,13 +1605,6 @@ bsock_recvmsg_internal(VALUE sock,
                 grown = 1;
             }
 #undef BIG_ENOUGH_SPACE
-	}
-#else
-	if (NIL_P(vmaxdatlen) && ss != -1 && ss == (ssize_t)iov.iov_len) {
-            if (SIZE_MAX/2 < maxdatlen)
-                rb_raise(rb_eArgError, "max data length too big");
-	    maxdatlen *= 2;
-	    grown = 1;
 	}
 #endif
 	if (grown) {

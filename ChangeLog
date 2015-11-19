@@ -1,3 +1,11 @@
+Thu Nov 19 22:35:31 2015  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/ancdata.c: Check buffer full and ignore MSG_TRUNC flag.
+	  buffer fullness is more robust to detect the message is too big for
+	  the buffer.
+	  AIX 7.1 recvmsg doesn't set MSG_TRUNC for rflags when MSG_PEEK is
+	  given.
+
 Thu Nov 19 21:55:11 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_start): force to invoke GC by GC.start
