@@ -488,6 +488,58 @@ vm_env_cref_by_cref(const VALUE *ep)
 }
 
 static rb_cref_t *
+cref_replace_with_duplicated_cref_each_frame(VALUE *vptr, int can_be_svar, VALUE parent)
+{
+    const VALUE v = *vptr;
+    rb_cref_t *cref, *new_cref;
+
+    if (RB_TYPE_P(v, T_IMEMO)) {
+	switch (imemo_type(v)) {
+	  case imemo_cref:
+	    cref = (rb_cref_t *)v;
+	    new_cref = vm_cref_dup(cref);
+	    if (parent) {
+		/* this pointer is in svar */
+		RB_OBJ_WRITE(parent, vptr, new_cref);
+	    }
+	    else {
+		*vptr = (VALUE)new_cref;
+	    }
+	    return (rb_cref_t *)new_cref;
+	  case imemo_svar:
+	    if (can_be_svar) {
+		return cref_replace_with_duplicated_cref_each_frame((VALUE *)&((struct vm_svar *)v)->cref_or_me, FALSE, v);
+	    }
+	  case imemo_ment:
+	    rb_bug("cref_replace_with_duplicated_cref_each_frame: unreachable");
+	  default:
+	    break;
+	}
+    }
+    return FALSE;
+}
+
+static rb_cref_t *
+vm_cref_replace_with_duplicated_cref(const VALUE *ep)
+{
+    if (vm_env_cref_by_cref(ep)) {
+	rb_cref_t *cref;
+
+	while (!VM_EP_LEP_P(ep)) {
+	    if ((cref = cref_replace_with_duplicated_cref_each_frame((VALUE *)&ep[-1], FALSE, Qfalse)) != NULL) {
+		return cref;
+	    }
+	    ep = VM_EP_PREV_EP(ep);
+	}
+	return cref_replace_with_duplicated_cref_each_frame((VALUE *)&ep[-1], TRUE, Qfalse);
+    }
+    else {
+	rb_bug("vm_cref_dup: unreachable");
+    }
+}
+
+
+static rb_cref_t *
 rb_vm_get_cref(const VALUE *ep)
 {
     rb_cref_t *cref = vm_env_cref(ep);

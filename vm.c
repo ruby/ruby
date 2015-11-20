@@ -136,10 +136,17 @@ vm_cref_dup(const rb_cref_t *cref)
 {
     VALUE klass = CREF_CLASS(cref);
     const rb_scope_visibility_t *visi = CREF_SCOPE_VISI(cref);
-    rb_cref_t *next_cref = CREF_NEXT(cref);
+    rb_cref_t *next_cref = CREF_NEXT(cref), *new_cref;
     int pushed_by_eval = CREF_PUSHED_BY_EVAL(cref);
 
-    return vm_cref_new(klass, visi->method_visi, visi->module_func, next_cref, pushed_by_eval);
+    new_cref = vm_cref_new(klass, visi->method_visi, visi->module_func, next_cref, pushed_by_eval);
+
+    if (!NIL_P(CREF_REFINEMENTS(cref))) {
+	CREF_REFINEMENTS_SET(new_cref, rb_hash_dup(CREF_REFINEMENTS(cref)));
+	CREF_OMOD_SHARED_UNSET(new_cref);
+    }
+
+    return new_cref;
 }
 
 static rb_cref_t *
@@ -1190,6 +1197,15 @@ rb_vm_cref(void)
     }
 
     return rb_vm_get_cref(cfp->ep);
+}
+
+rb_cref_t *
+rb_vm_cref_replace_with_duplicated_cref(void)
+{
+    rb_thread_t *th = GET_THREAD();
+    rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
+    rb_cref_t *cref = vm_cref_replace_with_duplicated_cref(cfp->ep);
+    return cref;
 }
 
 const rb_cref_t *

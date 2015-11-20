@@ -1,3 +1,24 @@
+Fri Nov 20 09:05:21 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (rb_vm_cref_replace_with_duplicated_cref): added.
+
+	  CREFs should not be shared by methods between `using'.
+	  [Bug #11247]
+
+	* vm_insnhelper.c (vm_cref_replace_with_duplicated_cref): ditto.
+
+	* vm.c (vm_cref_dup): should copy refinements correctly.
+
+	* eval.c: use rb_vm_cref_replace_with_duplicated_cref().
+
+	* eval_intern.h: add a decl. of
+	  rb_vm_cref_replace_with_duplicated_cref().
+
+	* vm_eval.c (eval_string_with_cref): do not need to pass
+	  scope's CREF because VM can find out CREF from stack frames.
+
+	* test/ruby/test_refinement.rb: add a test.
+
 Fri Nov 20 06:52:53 2015  Eric Wong  <e@80x24.org>
 
 	* .gitattributes: new file for git users
