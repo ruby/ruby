@@ -674,13 +674,14 @@ rb_str_intern(VALUE str)
 #if USE_SYMBOL_GC
     enc = rb_enc_get(str);
     ascii = rb_usascii_encoding();
-    if (enc != ascii) {
-	if (sym_check_asciionly(str)) {
-	    str = rb_str_dup(str);
-	    rb_enc_associate(str, ascii);
-	    OBJ_FREEZE(str);
-	    enc = ascii;
-	}
+    if (enc != ascii && sym_check_asciionly(str)) {
+	str = rb_str_dup(str);
+	rb_enc_associate(str, ascii);
+	OBJ_FREEZE(str);
+	enc = ascii;
+    }
+    else {
+	str = rb_str_new_frozen(str);
     }
     str = rb_fstring(str);
     type = rb_str_symname_type(str, IDSET_ATTRSET_FOR_INTERN);
