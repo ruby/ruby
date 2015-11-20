@@ -807,12 +807,14 @@ class TestRubyOptions < Test::Unit::TestCase
 
   def test_frozen_string_literal_debug
     assert_in_out_err(["--disable=gems", "--enable-frozen-string-literal",  "--enable-frozen-string-literal-debug" ], '"foo" << "bar"', [], /created at/)
-    assert_in_out_err(["--disable=gems", "--enable-frozen-string-literal",  "--disable-frozen-string-literal-debug"], '"foo" << "bar"', [], /can\'t modify frozen String \(RuntimeError\)\n\z/)
+    assert_in_out_err(["--disable=gems", "--enable-frozen-string-literal",  "--disable-frozen-string-literal-debug"], '"foo" << "bar"', [], /created at/)
+    assert_in_out_err(["--disable=gems", "--enable-frozen-string-literal",  "--enable-frozen-string-literal-debug" ], '"foo#{123}bar" << "bar"', [], /created at/)
+    assert_in_out_err(["--disable=gems", "--enable-frozen-string-literal",  "--disable-frozen-string-literal-debug"], '"foo#{123}bar" << "bar"', [], /can\'t modify frozen String \(RuntimeError\)\n\z/)
     assert_in_out_err(["--disable=gems", "--disable-frozen-string-literal", "--enable-frozen-string-literal-debug" ], '"foo" << "bar"', [], [])
     assert_in_out_err(["--disable=gems", "--disable-frozen-string-literal", "--disable-frozen-string-literal-debug"], '"foo" << "bar"', [], [])
     assert_in_out_err(["--disable=gems",                                    "--enable-frozen-string-literal-debug" ], '"foo" << "bar"', [], [])
     assert_in_out_err(["--disable=gems",                                    "--disable-frozen-string-literal-debug"], '"foo" << "bar"', [], [])
-    assert_in_out_err(["--disable=gems", "--enable-frozen-string-literal",                                         ], '"foo" << "bar"', [], /can\'t modify frozen String \(RuntimeError\)\n\z/)
-    assert_in_out_err(["--disable=gems", "--enable-frozen-string-literal",                                         ], '"foo" << "bar"', [], /can\'t modify frozen String \(RuntimeError\)\n\z/)
+    assert_in_out_err(["--disable=gems", "--enable-frozen-string-literal",                                         ], '"foo" << "bar"', [], /created at/)
+    assert_in_out_err(["--disable=gems", "--enable-frozen-string-literal",                                         ], '"foo#{123}bar" << "bar"', [], /can\'t modify frozen String \(RuntimeError\)\n\z/)
   end
 end

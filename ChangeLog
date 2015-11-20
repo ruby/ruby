@@ -1,3 +1,25 @@
+Sat Nov 21 08:44:21 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (iseq_compile_each): add debug information to NODE_STR
+	  strings as default.
+	  [Feature #11725]
+
+	* insns.def (freezestring): add new instruction to support adding
+	  debug information for dynamically constracted strings.
+
+	* compile.c (iseq_compile_each): support adding debug information
+	  for NODE_DSTR with freezestring instruction.
+
+	* error.c (rb_error_frozen): change the debug information ID name
+	  id_debug_created_info and this field should have a 2 element array
+	  containing path and line information.
+
+	* defs/id.def: ditto.
+
+	* test/ruby/test_rubyoptions.rb: catch up this fix.
+
+	* test/ruby/test_iseq.rb: now frozen strings are not same.
+
 Sat Nov 21 04:34:16 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* symbol.c (rb_str_intern): should not freeze the receiver itself

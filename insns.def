@@ -391,6 +391,23 @@ tostring
 
 /**
   @c put
+  @e Freeze (dynamically) created strings.
+  @j （埋め込み）文字列を freeze する。もし、debug_info が与えられていれば、それを設定する。
+ */
+DEFINE_INSN
+freezestring
+(VALUE debug_info)
+(VALUE str)
+(VALUE str)
+{
+    if (!NIL_P(debug_info)) {
+	rb_ivar_set(str, id_debug_created_info, debug_info);
+    }
+    rb_str_freeze(str);
+}
+
+/**
+  @c put
   @e to Regexp
   @j 文字列 str を正規表現にコンパイルしてスタックにプッシュする。
      コンパイル時，opt を正規表現のオプションとする。

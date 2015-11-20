@@ -5233,15 +5233,11 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		ADD_INSN1(ret, line, putstring, node->nd_lit);
 	    }
 	    else {
-		if (!iseq->compile_data->option->frozen_string_literal_debug) {
-		    ADD_INSN1(ret, line, putobject, node->nd_lit); /* already frozen */
-		}
-		else {
-		    VALUE str = rb_str_dup(node->nd_lit);
-		    rb_ivar_set(str, id_debug_created_path, iseq->body->location.path);
-		    rb_ivar_set(str, id_debug_created_line, INT2FIX(line));
-		    ADD_INSN1(ret, line, putobject, rb_obj_freeze(str));
-		}
+		VALUE str = rb_str_dup(node->nd_lit);
+		VALUE debug_info = rb_ary_new_from_args(2, iseq->body->location.path, INT2FIX(line));
+		rb_ivar_set(str, id_debug_created_info, rb_obj_freeze(debug_info));
+		ADD_INSN1(ret, line, putobject, rb_obj_freeze(str));
+		iseq_add_mark_object_compile_time(iseq, str);
 	    }
 	}
 	break;
@@ -5254,7 +5250,12 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	}
 	else {
 	    if (iseq->compile_data->option->frozen_string_literal) {
-		ADD_SEND (ret, line, idFreeze, INT2FIX(0));
+		VALUE debug_info = Qnil;
+		if (iseq->compile_data->option->frozen_string_literal_debug || RTEST(ruby_debug)) {
+		    debug_info = rb_ary_new_from_args(2, iseq->body->location.path, INT2FIX(line));
+		    iseq_add_mark_object_compile_time(iseq, rb_obj_freeze(debug_info));
+		}
+		ADD_INSN1(ret, line, freezestring, debug_info);
 	    }
 	}
 	break;
