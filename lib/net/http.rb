@@ -918,12 +918,12 @@ module Net   #:nodoc:
             @socket.write(buf)
             HTTPResponse.read_new(@socket).value
           end
+          # Server Name Indication (SNI) RFC 3546
+          s.hostname = @address if s.respond_to? :hostname=
           if @ssl_session and
              Process.clock_gettime(Process::CLOCK_REALTIME) < @ssl_session.time.to_f + @ssl_session.timeout
             s.session = @ssl_session if @ssl_session
           end
-          # Server Name Indication (SNI) RFC 3546
-          s.hostname = @address if s.respond_to? :hostname=
           if timeout = @open_timeout
             while true
               raise Net::OpenTimeout if timeout <= 0

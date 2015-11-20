@@ -1,3 +1,8 @@
+Fri Nov 20 14:39:56 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/net/http.rb: set hostname before call ossl_ssl_set_session.
+	  [Bug #11401][ruby-core:70152][fix GH-964] Patch by @mkarnebeek
+
 Fri Nov 20 12:53:19 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* array.c: clarify docs for take_while/drop_while samples.
