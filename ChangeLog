@@ -1,3 +1,8 @@
+Fri Nov 20 23:15:18 2015  Naotoshi Seo  <sonots@gmail.com>
+
+	* lib/logger.rb: expose logger mutex
+	  [fix GH-541] Patch by @arthurnn
+
 Fri Nov 20 15:05:28 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* Added missing reference of GitHub
