@@ -325,7 +325,7 @@ module Test
       def deal(io, type, result, rep, shutting_down = false)
         worker = @workers_hash[io]
         cmd = worker.read
-        cmd.sub!(/\A\.+/, '')
+        cmd.sub!(/\A\.+/, '') if cmd # read may return nil
         case cmd
         when ''
           # just only dots, ignore
