@@ -2241,12 +2241,13 @@ rb_error_frozen(const char *what)
 void
 rb_error_frozen_object(VALUE frozen_obj)
 {
-    VALUE path, line;
-    const ID created_path = id_debug_created_path;
-    const ID created_line = id_debug_created_line;
+    VALUE debug_info;
+    const ID created_info = id_debug_created_info;
 
-    if (!NIL_P(path = rb_attr_get(frozen_obj, created_path)) &&
-	!NIL_P(line = rb_attr_get(frozen_obj, created_line))) {
+    if (!NIL_P(debug_info = rb_attr_get(frozen_obj, created_info))) {
+	VALUE path = rb_ary_entry(debug_info, 0);
+	VALUE line = rb_ary_entry(debug_info, 1);
+
 	rb_raise(rb_eRuntimeError, "can't modify frozen %"PRIsVALUE", created at %"PRIsVALUE":%"PRIsVALUE,
 		 CLASS_OF(frozen_obj), path, line);
     }

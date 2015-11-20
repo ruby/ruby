@@ -177,7 +177,6 @@ class TestISeq < Test::Unit::TestCase
     assert_predicate(s2, :frozen?)
     assert_predicate(s3, :frozen?)
     assert_predicate(s4, :frozen?)
-    assert_same(s1, s2)
   end
 
   def test_safe_call_chain
