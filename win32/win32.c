@@ -3269,15 +3269,22 @@ finish_overlapped_socket(BOOL input, SOCKET s, WSAOVERLAPPED *wol, int result, D
 		result = WSAGetOverlappedResult(s, wol, &size, TRUE, &flg)
 		);
 	    if (result) {
+		result = 0;
 		*len = size;
 		break;
 	    }
+	    result = SOCKET_ERROR;
 	    /* thru */
 	  default:
 	    if ((err = WSAGetLastError()) == WSAECONNABORTED && !input)
 		errno = EPIPE;
+	    else if (err == WSAEMSGSIZE && input) {
+		result = 0;
+		*len = size;
+		break;
+	    }
 	    else
-		errno = map_errno(WSAGetLastError());
+		errno = map_errno(err);
 	    /* thru */
 	  case WAIT_OBJECT_0 + 1:
 	    /* interrupted */

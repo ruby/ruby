@@ -385,4 +385,15 @@ class TestGc < Test::Unit::TestCase
       C.new
     end;
   end
+
+  def test_gc_disabled_start
+    begin
+      disabled = GC.disable
+      c = GC.count
+      GC.start
+      assert_equal 1, GC.count - c
+    ensure
+      GC.enable unless disabled
+    end
+  end
 end

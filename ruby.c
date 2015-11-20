@@ -114,6 +114,22 @@ static void init_ids(struct cmdline_options *);
 
 #define src_encoding_index GET_VM()->src_encoding_index
 
+enum {
+    COMPILATION_FEATURES = (
+	0
+	| FEATURE_BIT(frozen_string_literal)
+	| FEATURE_BIT(frozen_string_literal_debug)
+	),
+    DEFAULT_FEATURES = (
+	~0U
+#if DISABLE_RUBYGEMS
+	& ~FEATURE_BIT(gems)
+#endif
+	& ~FEATURE_BIT(frozen_string_literal)
+	& ~FEATURE_BIT(frozen_string_literal_debug)
+	)
+};
+
 static struct cmdline_options *
 cmdline_options_init(struct cmdline_options *opt)
 {
@@ -122,12 +138,7 @@ cmdline_options_init(struct cmdline_options *opt)
     opt->src.enc.index = src_encoding_index;
     opt->ext.enc.index = -1;
     opt->intern.enc.index = -1;
-    opt->features = ~0U;
-#if DISABLE_RUBYGEMS
-    opt->features &= ~FEATURE_BIT(gems);
-#endif
-    opt->features &= ~FEATURE_BIT(frozen_string_literal);
-    opt->features &= ~FEATURE_BIT(frozen_string_literal_debug);
+    opt->features = DEFAULT_FEATURES;
     return opt;
 }
 
@@ -734,35 +745,36 @@ name_match_p(const char *name, const char *str, size_t len)
     }
 
 static void
-enable_option(const char *str, int len, void *arg)
+feature_option(const char *str, int len, void *arg, const unsigned int enable)
 {
-#define SET_WHEN_ENABLE(bit) SET_WHEN(#bit, FEATURE_BIT(bit), str, len)
-    SET_WHEN_ENABLE(gems);
-    SET_WHEN_ENABLE(did_you_mean);
-    SET_WHEN_ENABLE(rubyopt);
-    SET_WHEN_ENABLE(frozen_string_literal);
-    SET_WHEN_ENABLE(frozen_string_literal_debug);
+    unsigned int *argp = arg;
+    unsigned int mask = ~0U;
+#define SET_FEATURE(bit) \
+    if (NAME_MATCH_P(#bit, str, len)) {mask = FEATURE_BIT(bit); goto found;}
+    SET_FEATURE(gems);
+    SET_FEATURE(did_you_mean);
+    SET_FEATURE(rubyopt);
+    SET_FEATURE(frozen_string_literal);
+    SET_FEATURE(frozen_string_literal_debug);
     if (NAME_MATCH_P("all", str, len)) {
-	*(unsigned int *)arg = ~0U;
+      found:
+	*argp = (*argp & ~mask) | (mask & enable);
 	return;
     }
-    rb_warn("unknown argument for --enable: `%.*s'", len, str);
+    rb_warn("unknown argument for --%s: `%.*s'",
+	    enable ? "enable" : "disable", len, str);
+}
+
+static void
+enable_option(const char *str, int len, void *arg)
+{
+    feature_option(str, len, arg, ~0U);
 }
 
 static void
 disable_option(const char *str, int len, void *arg)
 {
-#define UNSET_WHEN_DISABLE(bit) UNSET_WHEN(#bit, FEATURE_BIT(bit), str, len)
-    UNSET_WHEN_DISABLE(gems);
-    UNSET_WHEN_DISABLE(did_you_mean);
-    UNSET_WHEN_DISABLE(rubyopt);
-    UNSET_WHEN_DISABLE(frozen_string_literal);
-    UNSET_WHEN_DISABLE(frozen_string_literal_debug);
-    if (NAME_MATCH_P("all", str, len)) {
-	*(unsigned int *)arg = 0U;
-	return;
-    }
-    rb_warn("unknown argument for --disable: `%.*s'", len, str);
+    feature_option(str, len, arg, 0U);
 }
 
 static void
@@ -1473,15 +1485,15 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 	rb_define_module("DidYouMean");
     }
     ruby_init_prelude();
-    if (opt->features & FEATURE_BIT(frozen_string_literal)) {
+    if ((opt->features ^ DEFAULT_FEATURES) & COMPILATION_FEATURES) {
 	VALUE option = rb_hash_new();
-	rb_hash_aset(option, ID2SYM(rb_intern_const("frozen_string_literal")), Qtrue);
+#define SET_COMPILE_OPTION(h, o, name) \
+	rb_hash_aset((h), ID2SYM(rb_intern_const(#name)),		\
+		     ((o)->features & FEATURE_BIT(name) ? Qtrue : Qfalse));
+	SET_COMPILE_OPTION(option, opt, frozen_string_literal);
+	SET_COMPILE_OPTION(option, opt, frozen_string_literal_debug);
 	rb_funcallv(rb_cISeq, rb_intern_const("compile_option="), 1, &option);
-    }
-    if (opt->features & FEATURE_BIT(frozen_string_literal_debug)) {
-	VALUE option = rb_hash_new();
-	rb_hash_aset(option, ID2SYM(rb_intern_const("frozen_string_literal_debug")), Qtrue);
-	rb_funcallv(rb_cISeq, rb_intern_const("compile_option="), 1, &option);
+#undef SET_COMPILE_OPTION
     }
 #if UTF8_PATH
     opt->script_name = str_conv_enc(opt->script_name, rb_utf8_encoding(), lenc);
@@ -2023,8 +2035,7 @@ ruby_prog_init(void)
     rb_define_module_function(rb_mProcess, "setproctitle", proc_setproctitle, 1);
 
     /*
-     * ARGV contains the command line arguments used to run ruby with the
-     * first value containing the name of the executable.
+     * ARGV contains the command line arguments used to run ruby.
      *
      * A library like OptionParser can be used to process command-line
      * arguments.

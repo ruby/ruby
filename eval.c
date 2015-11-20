@@ -1284,7 +1284,6 @@ rb_mod_refine(VALUE module, VALUE klass)
 static VALUE
 mod_using(VALUE self, VALUE module)
 {
-    const rb_cref_t *cref = rb_vm_cref();
     rb_control_frame_t *prev_cfp = previous_frame(GET_THREAD());
 
     if (prev_frame_func()) {
@@ -1294,7 +1293,7 @@ mod_using(VALUE self, VALUE module)
     if (prev_cfp && prev_cfp->self != self) {
 	rb_raise(rb_eRuntimeError, "Module#using is not called on self");
     }
-    rb_using_module(cref, module);
+    rb_using_module(rb_vm_cref_replace_with_duplicated_cref(), module);
     return self;
 }
 
@@ -1427,7 +1426,7 @@ top_using(VALUE self, VALUE module)
     if (CREF_NEXT(cref) || (prev_cfp && rb_vm_frame_method_entry(prev_cfp))) {
 	rb_raise(rb_eRuntimeError, "main.using is permitted only at toplevel");
     }
-    rb_using_module(cref, module);
+    rb_using_module(rb_vm_cref_replace_with_duplicated_cref(), module);
     return self;
 }
 

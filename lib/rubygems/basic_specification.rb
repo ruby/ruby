@@ -171,8 +171,8 @@ class Gem::BasicSpecification
       begin
         fullpath = nil
         suffixes = Gem.suffixes
-        full_require_paths.find do |dir|
-          suffixes.find do |suf|
+        suffixes.find do |suf|
+          full_require_paths.find do |dir|
             File.file?(fullpath = "#{dir}/#{path}#{suf}")
           end
         end ? fullpath : nil

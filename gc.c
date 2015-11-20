@@ -5654,10 +5654,10 @@ rgengc_mark_and_rememberset_clear(rb_objspace_t *objspace, rb_heap_t *heap)
 
 /* RGENGC: APIs */
 
-NOINLINE(static void gc_writebarrier_generational(rb_objspace_t *objspace, VALUE a, VALUE b));
+NOINLINE(static void gc_writebarrier_generational(VALUE a, VALUE b, rb_objspace_t *objspace));
 
 static void
-gc_writebarrier_generational(rb_objspace_t *objspace, VALUE a, VALUE b)
+gc_writebarrier_generational(VALUE a, VALUE b, rb_objspace_t *objspace)
 {
     if (RGENGC_CHECK_MODE) {
 	if (!RVALUE_OLD_P(a)) rb_bug("gc_writebarrier_generational: %s is not an old object.", obj_info(a));
@@ -5700,10 +5700,10 @@ gc_mark_from(rb_objspace_t *objspace, VALUE obj, VALUE parent)
     gc_grey(objspace, obj);
 }
 
-NOINLINE(static void gc_writebarrier_incremental(rb_objspace_t *objspace, VALUE a, VALUE b));
+NOINLINE(static void gc_writebarrier_incremental(VALUE a, VALUE b, rb_objspace_t *objspace));
 
 static void
-gc_writebarrier_incremental(rb_objspace_t *objspace, VALUE a, VALUE b)
+gc_writebarrier_incremental(VALUE a, VALUE b, rb_objspace_t *objspace)
 {
     gc_report(2, objspace, "gc_writebarrier_incremental: [LG] %s -> %s\n", obj_info(a), obj_info(b));
 
@@ -5731,7 +5731,7 @@ gc_writebarrier_incremental(rb_objspace_t *objspace, VALUE a, VALUE b)
     }
 }
 #else
-#define gc_writebarrier_incremental(objspace, a, b)
+#define gc_writebarrier_incremental(a, b, objspace)
 #endif
 
 void
@@ -5742,16 +5742,16 @@ rb_gc_writebarrier(VALUE a, VALUE b)
     if (RGENGC_CHECK_MODE && SPECIAL_CONST_P(a)) rb_bug("rb_gc_writebarrier: a is special const");
     if (RGENGC_CHECK_MODE && SPECIAL_CONST_P(b)) rb_bug("rb_gc_writebarrier: b is special const");
 
-    if (LIKELY(!is_incremental_marking(objspace))) {
+    if (!is_incremental_marking(objspace)) {
 	if (!RVALUE_OLD_P(a) || RVALUE_OLD_P(b)) {
 	    return;
 	}
 	else {
-	    gc_writebarrier_generational(objspace, a, b);
+	    gc_writebarrier_generational(a, b, objspace);
 	}
     }
     else { /* slow path */
-	gc_writebarrier_incremental(objspace, a, b);
+	gc_writebarrier_incremental(a, b, objspace);
     }
 }
 
@@ -6158,8 +6158,8 @@ gc_start(rb_objspace_t *objspace, const int full_mark, const int immediate_mark,
     int do_full_mark = full_mark;
     objspace->flags.immediate_sweep = immediate_sweep;
 
-    if (!heap_allocated_pages) return FALSE;      /* heap is not ready */
-    if (!ready_to_gc(objspace)) return TRUE; /* GC is not allowed */
+    if (!heap_allocated_pages) return FALSE; /* heap is not ready */
+    if (reason != GPR_FLAG_METHOD && !ready_to_gc(objspace)) return TRUE; /* GC is not allowed */
 
     if (RGENGC_CHECK_MODE) {
 	assert(objspace->flags.stat == gc_stat_none);
@@ -8966,7 +8966,7 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
     }
     else {
 	const int age = RVALUE_FLAGS_AGE(RBASIC(obj)->flags);
-	const int type = TYPE(obj);
+	const int type = BUILTIN_TYPE(obj);
 
 #define TF(c) ((c) != 0 ? "true" : "false")
 #define C(c, s) ((c) != 0 ? (s) : " ")

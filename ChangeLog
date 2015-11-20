@@ -1,3 +1,149 @@
+Fri Nov 20 09:05:21 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (rb_vm_cref_replace_with_duplicated_cref): added.
+
+	  CREFs should not be shared by methods between `using'.
+	  [Bug #11247]
+
+	* vm_insnhelper.c (vm_cref_replace_with_duplicated_cref): ditto.
+
+	* vm.c (vm_cref_dup): should copy refinements correctly.
+
+	* eval.c: use rb_vm_cref_replace_with_duplicated_cref().
+
+	* eval_intern.h: add a decl. of
+	  rb_vm_cref_replace_with_duplicated_cref().
+
+	* vm_eval.c (eval_string_with_cref): do not need to pass
+	  scope's CREF because VM can find out CREF from stack frames.
+
+	* test/ruby/test_refinement.rb: add a test.
+
+Fri Nov 20 06:52:53 2015  Eric Wong  <e@80x24.org>
+
+	* .gitattributes: new file for git users
+	  [ruby-core:71578] [Feature #11713]
+
+Thu Nov 19 22:35:31 2015  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/ancdata.c: Check buffer full and ignore MSG_TRUNC flag.
+	  buffer fullness is more robust to detect the message is too big for
+	  the buffer.
+	  AIX 7.1 recvmsg doesn't set MSG_TRUNC for rflags when MSG_PEEK is
+	  given.
+
+Thu Nov 19 21:55:11 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_start): force to invoke GC by GC.start
+	  even if it is GC.disable'd.
+
+	* test/ruby/test_gc.rb: add a test.
+
+Thu Nov 19 20:08:59 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: trivial performance improvements.
+
+	    name    modified
+	    vm1_gc_short_lived*                1.015
+	    vm1_gc_short_with_complex_long*    1.014
+	    vm1_gc_short_with_long*            1.000
+	    vm1_gc_short_with_symbol*          1.016
+	    vm1_gc_wb_ary*                     1.002
+	    vm1_gc_wb_ary_promoted*            0.996
+	    vm1_gc_wb_obj*                     1.045
+	    vm1_gc_wb_obj_promoted*            1.014
+	    vm3_gc                             1.021
+
+	* gc.c (gc_writebarrier_generational): reorder parameters to optimize
+	  register passing function call.
+
+	* gc.c (gc_writebarrier_incremental): ditto.
+
+	* gc.c (rb_gc_writebarrier): remove LIKELY().
+	  LIKELY() seems to move related functions not better places.
+
+Thu Nov 19 19:45:05 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (ruby_prog_init): [DOC] ARGV does not contain the name of
+	  the executable.  [ruby-core:71561] [Bug #11711]
+
+Thu Nov 19 15:53:21 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* signal.c: should also clear ruby_disable_gc.
+	  [Bug #11692]
+
+Thu Nov 19 15:31:45 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (iseq_compile_each): T_IMEMO/iseq objects should be
+	  wrap with ISeq wrappers. [Bug #11676]
+
+Thu Nov 19 15:16:12 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/rubygems: Update to RubyGems 2.5.0+ HEAD(c6b4946).
+	  this version includes #1114, #1314, #1322, #1375, #1383, #1387
+	* test/rubygems: ditto.
+
+Thu Nov 19 14:14:37 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (finish_overlapped_socket): return value of this
+	  function should be only 0 or SOCKET_ERROR.
+
+Thu Nov 19 14:12:12 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_tailcall_optimize): apply tail call optimization
+	  before conversion to specialized instructions.  when looking
+	  back from `leave` instruction, `send` instructions have been
+	  translated already.
+
+Thu Nov 19 13:57:58 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (finish_overlapped_socket): ignore EMSGSIZE when input,
+	  because POSIX platforms just do so.  fixes test errors revealed by
+	  r52647.
+
+Thu Nov 19 02:52:30 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/socket/ancdata.c (bsock_recvmsg_internal): stretch the buffer size
+	  only when vmaxdatlen is nil.
+
+Thu Nov 19 02:20:11 2015  Tanaka Akira  <akr@fsij.org>
+
+	* test/socket/test_socket.rb (test_udp_recvmsg_truncation): rflags is
+	  nil on Solaris 10 which have no HAVE_STRUCT_MSGHDR_MSG_CONTROL.
+	  Reported by Naohisa Goto. [ruby-core:71557] [Bug #11709]
+
+Thu Nov 19 01:48:05 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* configure.in: add -static-libgcc for mingw automatically if available.
+
+Thu Nov 19 00:53:26 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/extmk.rb (--extflags): new option to pass EXTLDFLAGS to children,
+	  especially exts.mk.
+
+	* common.mk (EXTMK_ARGS): use above option.
+
+Wed Nov 18 22:50:43 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_method.c (rb_class_clear_method_cache): should clear all
+	  RCLASS_CALLABLE_M_TBLs of all sub-classes (T_ICLASS).
+
+	  RCLASS_CALLABLE_M_TBL() caches complemented method entries.
+	  It should be cleared when the modules are cleared.
+	  On previous version clears only for direct children.
+	  It is enough for normal modules because corresponding T_ICLASSes
+	  are direct children.
+
+	  However, refinements create complex data structure. So that
+	  we need to clear all children (and descendants).
+	  [ruby-core:71423] [Bug #11672]
+
+	* vm_method.c (rb_clear_method_cache_by_class): rb_mKernel
+	  doesn't call rb_class_clear_method_cache, so that
+	  clear child T_ICLASSes.
+
+	* test/ruby/test_refinement.rb: enable disabled test.
+
 Wed Nov 18 21:09:08 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_method.c (prepare_callable_method_entry): use

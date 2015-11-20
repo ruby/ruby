@@ -1271,7 +1271,6 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_
     rb_block_t block, *base_block;
     volatile int parse_in_eval;
     volatile int mild_compile_error;
-    rb_cref_t *orig_cref;
     volatile VALUE file;
     volatile int line;
 
@@ -1337,11 +1336,11 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_
 
 	if (!cref && base_block->iseq) {
 	    if (NIL_P(scope)) {
-		orig_cref = rb_vm_get_cref(base_block->ep);
+		rb_cref_t *orig_cref = rb_vm_get_cref(base_block->ep);
 		cref = vm_cref_dup(orig_cref);
 	    }
 	    else {
-		cref = rb_vm_get_cref(base_block->ep);
+		cref = NULL; /* use stacked CREF */
 	    }
 	}
 	vm_set_eval_stack(th, iseq, cref, base_block);

@@ -415,7 +415,8 @@ class BasicSocket < IO
   #
   # _maxmesglen_ and _maxcontrollen_ can be nil.
   # In that case, the buffer will be grown until the message is not truncated.
-  # Internally, MSG_PEEK is used and MSG_TRUNC/MSG_CTRUNC are checked.
+  # Internally, MSG_PEEK is used.
+  # Buffer full and MSG_CTRUNC are checked for truncation.
   #
   # recvmsg can be used to implement recv_io as follows:
   #
