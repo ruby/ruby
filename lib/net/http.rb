@@ -1439,10 +1439,10 @@ module Net   #:nodoc:
 
           res.uri = req.uri
 
-          res.reading_body(@socket, req.response_body_permitted?) {
-            yield res if block_given?
-          }
           res
+        }
+        res.reading_body(@socket, req.response_body_permitted?) {
+          yield res if block_given?
         }
       rescue Net::OpenTimeout
         raise
