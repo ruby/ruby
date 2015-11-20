@@ -626,14 +626,11 @@ private
 
     attr_reader :dev
     attr_reader :filename
-
-    class LogDeviceMutex
-      include MonitorMixin
-    end
+    include MonitorMixin
 
     def initialize(log = nil, opt = {})
       @dev = @filename = @shift_age = @shift_size = nil
-      @mutex = LogDeviceMutex.new
+      mon_initialize
       set_dev(log)
       if @filename
         @shift_age = opt[:shift_age] || 7
@@ -644,7 +641,7 @@ private
 
     def write(message)
       begin
-        @mutex.synchronize do
+        synchronize do
           if @shift_age and @dev.respond_to?(:stat)
             begin
               check_shift_log
@@ -665,7 +662,7 @@ private
 
     def close
       begin
-        @mutex.synchronize do
+        synchronize do
           @dev.close rescue nil
         end
       rescue Exception
@@ -677,7 +674,7 @@ private
       # reopen the same filename if no argument, do nothing for IO
       log ||= @filename if @filename
       if log
-        @mutex.synchronize do
+        synchronize do
           if @filename and @dev
             @dev.close rescue nil # close only file opened by Logger
             @filename = nil
