@@ -1,3 +1,9 @@
+Fri Nov 20 14:57:01 2015  Trevor Rowe  <trevorrowe@gmail.com>
+
+	* lib/net/http.rb: Fixed regression for Net::HTTP::PUT with "Expect-100"
+	  header.
+	* test/net/http/test_http.rb: added test.
+
 Fri Nov 20 14:39:56 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/net/http.rb: set hostname before call ossl_ssl_set_session.
