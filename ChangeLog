@@ -1,3 +1,8 @@
+Fri Nov 20 12:53:19 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* array.c: clarify docs for take_while/drop_while samples.
+	  [ci skip][fix GH-1028] Patch by @leriksen
+
 Fri Nov 20 12:48:04 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* ext/socket/socket.c: remove mention of :UNIX in getaddrinfo().
