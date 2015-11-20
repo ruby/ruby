@@ -1123,7 +1123,7 @@ sock_s_getservbyport(int argc, VALUE *argv)
  *
  * Obtains address information for _nodename_:_servname_.
  *
- * _family_ should be an address family such as: :INET, :INET6, :UNIX, etc.
+ * _family_ should be an address family such as: :INET, :INET6, etc.
  *
  * _socktype_ should be a socket type such as: :STREAM, :DGRAM, :RAW, etc.
  *
