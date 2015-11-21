@@ -289,6 +289,7 @@ class TestQueue < Test::Unit::TestCase
       assert_raise_with_message(ClosedQueueError, /closed/){q << :nothing}
       assert_equal q.pop, :something
       assert_nil q.pop
+      assert_nil q.pop
       # non-blocking
       assert_raise_with_message(ThreadError, /queue empty/){q.pop(non_block=true)}
     end
@@ -484,36 +485,11 @@ class TestQueue < Test::Unit::TestCase
     assert_nil t.value
   end
 
-  def test_close_token_exception
-    [->{Queue.new}, ->{SizedQueue.new 3}].each do |qcreate|
-      q = qcreate[]
-      q.close true
-      assert_raise(ClosedQueueError){q.pop}
-    end
-  end
-
-  def test_close_token_loop
-    [->{Queue.new}, ->{SizedQueue.new 3}].each do |qcreate|
-      q = qcreate[]
-      popped_items = []
-      consumer_thread = Thread.new{loop{popped_items << q.pop}; :done}
-      7.times{|i| q << i}
-      q.close true
-      sleep 0.1 unless q.empty?
-      assert_equal :done, consumer_thread.value
-      assert_equal 7.times.to_a, popped_items
-    end
-  end
-
   def test_close_twice
     [->{Queue.new}, ->{SizedQueue.new 3}].each do |qcreate|
       q = qcreate[]
       q.close
       assert_nothing_raised(ClosedQueueError){q.close}
-
-      q = qcreate[]
-      q.close(true)
-      assert_nothing_raised(ClosedQueueError){q.close(false)}
     end
   end
 
@@ -533,8 +509,8 @@ class TestQueue < Test::Unit::TestCase
     consumers = rand(7..12).times.map do
       Thread.new do
         count = 0
-        loop do
-          i, st = q.pop
+        while e = q.pop
+          i, st = e
           count += 1 if i.is_a?(Fixnum) && st.is_a?(String)
         end
         count
@@ -554,7 +530,7 @@ class TestQueue < Test::Unit::TestCase
     end
 
     producers.each &:join
-    q.close true
+    q.close
 
     # results not randomly distributed. Not sure why.
     # consumers.map{|thr| thr.value}.each do |x|
