@@ -325,6 +325,10 @@ class TestPathname < Test::Unit::TestCase
   defassert(:relative_path_from, "a", "a", "b/..")
   defassert(:relative_path_from, "b/c", "b/c", "b/..")
 
+  # coverage tests
+  defassert(:relative_path_from, "a", "a", Pathname.new("b/.."))
+  defassert(:relative_path_from, "b/c", "b/c", Pathname.new("b/.."))
+
   defassert_raise(:relative_path_from, ArgumentError, "/", ".")
   defassert_raise(:relative_path_from, ArgumentError, ".", "/")
   defassert_raise(:relative_path_from, ArgumentError, "a", "..")
