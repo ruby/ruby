@@ -1,4 +1,7 @@
-Sat Nov 21 18:41:53 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Nov 21 18:57:28 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (need_argument): move frozen-string-literal-debug option
+	  from --enable to --debug.  [Feature #11725]
 
 	* ruby.c (proc_options): fix pointer overrun. do not advance argv
 	  until it is valid.
