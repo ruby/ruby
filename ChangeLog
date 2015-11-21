@@ -1,3 +1,14 @@
+Sat Nov 21 13:31:52 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/digest/*/*.[ch]: include ruby.h before digest.h to avoid
+	  includeing ext/digest/extconf.h. [Bug #3231]
+	  https://msdn.microsoft.com/library/36k2cdd4.aspx
+
+	* ext/digest/*/extconf.rb: remove ext/digest from include search path
+	  to avoid confusion of cl.exe.
+
+	* ext/digest/*/*.[ch]: explicitly specify def.h's path.
+
 Sat Nov 21 13:05:16 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/openssl/ossl.h: LibreSSL doesn't have and need e_os2.h.

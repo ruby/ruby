@@ -1,7 +1,8 @@
 /* $RoughId: md5init.c,v 1.2 2001/07/13 19:49:10 knu Exp $ */
 /* $Id$ */
 
-#include "digest.h"
+#include <ruby/ruby.h>
+#include "../digest.h"
 #if defined(MD5_USE_OPENSSL)
 #include "md5ossl.h"
 #elif defined(MD5_USE_COMMONDIGEST)

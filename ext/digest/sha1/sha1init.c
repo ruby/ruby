@@ -1,7 +1,8 @@
 /* $RoughId: sha1init.c,v 1.2 2001/07/13 19:49:10 knu Exp $ */
 /* $Id$ */
 
-#include "digest.h"
+#include <ruby/ruby.h>
+#include "../digest.h"
 #if defined(SHA1_USE_OPENSSL)
 #include "sha1ossl.h"
 #elif defined(SHA1_USE_COMMONDIGEST)
