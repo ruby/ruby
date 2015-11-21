@@ -14,7 +14,7 @@ Sat Nov 21 13:59:09 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 Sat Nov 21 13:31:52 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/digest/*/*.[ch]: include ruby.h before digest.h to avoid
-	  includeing ext/digest/extconf.h. [Bug #3231]
+	  including ext/digest/extconf.h. [Bug #3231]
 	  https://msdn.microsoft.com/library/36k2cdd4.aspx
 
 	* ext/digest/*/extconf.rb: remove ext/digest from include search path
@@ -42,7 +42,7 @@ Sat Nov 21 08:44:21 2015  Koichi Sasada  <ko1@atdot.net>
 	  [Feature #11725]
 
 	* insns.def (freezestring): add new instruction to support adding
-	  debug information for dynamically constracted strings.
+	  debug information for dynamically constructed strings.
 
 	* compile.c (iseq_compile_each): support adding debug information
 	  for NODE_DSTR with freezestring instruction.
@@ -251,7 +251,7 @@ Wed Nov 18 21:09:08 2015  Koichi Sasada  <ko1@atdot.net>
 
 Wed Nov 18 17:08:18 2015  Koichi Sasada  <ko1@atdot.net>
 
-	* method.h: introduce the folliwing field and macros.
+	* method.h: introduce the following field and macros.
 
 	  * rb_method_definition_t::complemented_count to count shared method
 	    entries because of complemented method entries and separate from
