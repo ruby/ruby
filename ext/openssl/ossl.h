@@ -44,7 +44,7 @@ extern "C" {
 #  define assert(condition)
 #endif
 
-#if defined(_WIN32)
+#if defined(_WIN32) && !defined(LIBRESSL_VERSION_NUMBER)
 #  include <openssl/e_os2.h>
 #  define OSSL_NO_CONF_API 1
 #  if !defined(OPENSSL_SYS_WIN32)

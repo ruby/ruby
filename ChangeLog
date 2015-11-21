@@ -1,3 +1,7 @@
+Sat Nov 21 13:05:16 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/openssl/ossl.h: LibreSSL doesn't have and need e_os2.h.
+
 Sat Nov 21 09:18:10 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* thread_sync.c: reduce the specification of Queue#close.
