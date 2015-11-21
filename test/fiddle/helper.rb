@@ -26,7 +26,7 @@ when /linux/
   libm_so = File.join(libdir, "libm.so.6")
 when /mingw/, /mswin/
   require "rbconfig"
-  crtname = RbConfig::CONFIG["RUBY_SO_NAME"][/^msvc\w+/] || 'ucrtbase'
+  crtname = RbConfig::CONFIG["RUBY_SO_NAME"][/msvc\w+/] || 'ucrtbase'
   libc_so = libm_so = "#{crtname}.dll"
 when /darwin/
   libc_so = "/usr/lib/libc.dylib"
