@@ -1,3 +1,8 @@
+Sun Nov 22 01:23:43 2015  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* configure.in: Add -D_XOPEN_SOURCE=500 (or 600 or 700) on Solaris
+	  if available, mainly for enabling some features in sockets.
+
 Sun Nov 22 00:17:22 2015  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* test/socket/test_socket.rb (test/socket/test_socket.rb): skip
