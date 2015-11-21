@@ -1,3 +1,8 @@
+Sat Nov 21 13:59:09 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/digest/sha1/extconf.rb: OpenSSL's struct name for SHA1 is
+	  SHA_CTX. http://openssl.org/docs/man0.9.8/crypto/SHA1.html
+
 Sat Nov 21 13:31:52 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/digest/*/*.[ch]: include ruby.h before digest.h to avoid

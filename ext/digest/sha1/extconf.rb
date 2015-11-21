@@ -9,7 +9,7 @@ $defs << "-DHAVE_CONFIG_H"
 
 $objs = [ "sha1init.#{$OBJEXT}" ]
 
-digest_conf("sha1", "sha")
+digest_conf("sha1", "sha", "SHA")
 
 have_header("sys/cdefs.h")
 
