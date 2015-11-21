@@ -6,7 +6,6 @@ require "mkmf"
 require File.expand_path("../../digest_conf", __FILE__)
 
 $defs << "-DHAVE_CONFIG_H"
-$INCFLAGS << " -I$(srcdir)/.."
 
 $objs = [ "sha1init.#{$OBJEXT}" ]
 
