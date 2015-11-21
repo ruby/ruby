@@ -453,7 +453,7 @@ class TestSocket < Test::Unit::TestCase
 
   def test_timestamp
     return if /linux|freebsd|netbsd|openbsd|solaris|darwin/ !~ RUBY_PLATFORM
-    return if !defined?(Socket::AncillaryData)
+    return if !defined?(Socket::AncillaryData) || !defined?(Socket::SO_TIMESTAMP)
     t1 = Time.now.strftime("%Y-%m-%d")
     stamp = nil
     Addrinfo.udp("127.0.0.1", 0).bind {|s1|

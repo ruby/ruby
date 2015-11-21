@@ -1,3 +1,9 @@
+Sun Nov 22 00:17:22 2015  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* test/socket/test_socket.rb (test/socket/test_socket.rb): skip
+	  the test when Socket::SO_TIMESTAMP is not defined. Fix error
+	  on Solaris 10. [Bug #11728] [ruby-dev:49377]
+
 Sat Nov 21 18:57:28 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (need_argument): move frozen-string-literal-debug option
