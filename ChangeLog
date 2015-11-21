@@ -1,3 +1,12 @@
+Sat Nov 21 09:18:10 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* thread_sync.c: reduce the specification of Queue#close.
+	  * Queue#close accepts no arguments.
+	  * deq'ing on closed queue returns nil, always.
+	  [Feature #10600]
+
+	* test/thread/test_queue.rb: catch up this fix.
+
 Sat Nov 21 08:44:21 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (iseq_compile_each): add debug information to NODE_STR

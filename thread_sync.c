@@ -523,7 +523,6 @@ enum {
 };
 
 #define QUEUE_CLOSED          FL_USER5
-#define QUEUE_CLOSE_EXCEPTION FL_USER6
 
 #define GET_QUEUE_QUE(q)        get_array((q), QUEUE_QUE)
 #define GET_QUEUE_WAITERS(q)    get_array((q), QUEUE_WAITERS)
@@ -607,25 +606,14 @@ static VALUE
 queue_closed_result(VALUE self)
 {
     assert(queue_length(self) == 0);
-
-    if (FL_TEST(self, QUEUE_CLOSE_EXCEPTION)) {
-	raise_closed_queue_error(self);
-    }
     return Qnil;
 }
 
 static VALUE
-queue_do_close(VALUE self, int argc, VALUE *argv, int is_szq)
+queue_do_close(VALUE self, int is_szq)
 {
-    VALUE exception = Qfalse;
-
     if (!queue_closed_p(self)) {
-	rb_scan_args(argc, argv, "01", &exception);
 	FL_SET(self, QUEUE_CLOSED);
-
-	if (RTEST(exception)) {
-	    FL_SET(self, QUEUE_CLOSE_EXCEPTION);
-	}
 
 	if (queue_num_waiting(self) > 0) {
 	    VALUE waiters = GET_QUEUE_WAITERS(self);
@@ -697,7 +685,7 @@ queue_do_push(VALUE self, VALUE obj)
 /*
  * Document-method: Queue#close
  * call-seq:
- *   close(exception=false)
+ *   close
  *
  * Closes the queue. A closed queue cannot be re-opened.
  *
@@ -707,14 +695,10 @@ queue_do_push(VALUE self, VALUE obj)
  *
  * - +close+ will be ignored.
  *
- * - calling enq/push/<< will raise ClosedQueueError('queue closed')
+ * - calling enq/push/<< will return nil.
  *
  * - when +empty?+ is false, calling deq/pop/shift will return an object
  *   from the queue as usual.
- *
- * - when +empty?+ is true, deq(non_block=false) will not suspend and
- *   will either return nil. If +exception+ parameter is true, raise ClosedQueueError error.
- *   deq(non_block=true) will ignore the parameter and raise a ThreadError('queue empty').
  *
  * ClosedQueueError is inherited from StopIteration, so that you can break loop block.
  *
@@ -726,21 +710,13 @@ queue_do_push(VALUE self, VALUE obj)
  *          # ...
  *        end
  *      }
- *      q.close # equals to q.close(false)
- *
- *    	q = Queue.new
- *      Thread.new{
- *        loop{
- *          e = q.deq; ...  # break with ClosedQueueError
- *        }
- *      }
- *      q.close(true)
+ *      q.close
  */
 
 static VALUE
-rb_queue_close(int argc, VALUE *argv, VALUE self)
+rb_queue_close(VALUE self)
 {
-    return queue_do_close(self, argc, argv, FALSE);
+    return queue_do_close(self, FALSE);
 }
 
 /*
@@ -951,9 +927,9 @@ rb_szqueue_initialize(VALUE self, VALUE vmax)
  * raising ClosedQueueError('queue closed').
  */
 static VALUE
-rb_szqueue_close(int argc, VALUE *argv, VALUE self)
+rb_szqueue_close(VALUE self)
 {
-    return queue_do_close(self, argc, argv, TRUE);
+    return queue_do_close(self, TRUE);
 }
 
 /*
@@ -1273,7 +1249,7 @@ Init_thread_sync(void)
     rb_define_method(rb_cQueue, "initialize", rb_queue_initialize, 0);
     rb_undef_method(rb_cQueue, "initialize_copy");
     rb_define_method(rb_cQueue, "marshal_dump", undumpable, 0);
-    rb_define_method(rb_cQueue, "close", rb_queue_close, -1);
+    rb_define_method(rb_cQueue, "close", rb_queue_close, 0);
     rb_define_method(rb_cQueue, "closed?", rb_queue_closed_p, 0);
     rb_define_method(rb_cQueue, "push", rb_queue_push, 1);
     rb_define_method(rb_cQueue, "pop", rb_queue_pop, -1);
@@ -1294,7 +1270,7 @@ Init_thread_sync(void)
 	"que", "waiters", "queue_waiters", "size", NULL);
 
     rb_define_method(rb_cSizedQueue, "initialize", rb_szqueue_initialize, 1);
-    rb_define_method(rb_cSizedQueue, "close", rb_szqueue_close, -1);
+    rb_define_method(rb_cSizedQueue, "close", rb_szqueue_close, 0);
     rb_define_method(rb_cSizedQueue, "max", rb_szqueue_max_get, 0);
     rb_define_method(rb_cSizedQueue, "max=", rb_szqueue_max_set, 1);
     rb_define_method(rb_cSizedQueue, "push", rb_szqueue_push, -1);
