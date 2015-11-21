@@ -755,7 +755,6 @@ feature_option(const char *str, int len, void *arg, const unsigned int enable)
     SET_FEATURE(did_you_mean);
     SET_FEATURE(rubyopt);
     SET_FEATURE(frozen_string_literal);
-    SET_FEATURE(frozen_string_literal_debug);
     if (NAME_MATCH_P("all", str, len)) {
       found:
 	*argp = (*argp & ~mask) | (mask & enable);
@@ -775,6 +774,14 @@ static void
 disable_option(const char *str, int len, void *arg)
 {
     feature_option(str, len, arg, 0U);
+}
+
+static void
+debug_option(const char *str, int len, void *arg)
+{
+#define SET_WHEN_DEBUG(t, bit) SET_WHEN(#bit, t##_BIT(bit), str, len)
+    SET_WHEN_DEBUG(FEATURE, frozen_string_literal_debug);
+    rb_warn("unknown argument for --debug: `%.*s'", len, str);
 }
 
 static void
@@ -1087,22 +1094,25 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
 #	define check_envopt(name, allow_envopt) \
 	    (((allow_envopt) || !envopt) ? (void)0 : \
 	     rb_raise(rb_eRuntimeError, "invalid switch in RUBYOPT: --" name))
-#	define need_argument(name, s, needs_arg) \
-	    ((*(s) ? !*++(s) : (!argc || !((s) = argv[1]) || (--argc, ++argv, 0))) && (needs_arg) ? \
+#	define need_argument(name, s, needs_arg, next_arg)			\
+	    ((*(s) ? !*++(s) : (next_arg) && (!argc || !((s) = argv[1]) || (--argc, ++argv, 0))) && (needs_arg) ? \
 	     rb_raise(rb_eRuntimeError, "missing argument for --" name) \
 	     : (void)0)
 #	define is_option_with_arg(name, allow_hyphen, allow_envopt)	\
-	    is_option_with_optarg(name, allow_hyphen, allow_envopt, Qtrue)
-#	define is_option_with_optarg(name, allow_hyphen, allow_envopt, needs_arg) \
+	    is_option_with_optarg(name, allow_hyphen, allow_envopt, Qtrue, Qtrue)
+#	define is_option_with_optarg(name, allow_hyphen, allow_envopt, needs_arg, next_arg) \
 	    (strncmp((name), s, n = sizeof(name) - 1) == 0 && is_option_end(s[n], (allow_hyphen)) ? \
 	     (check_envopt(name, (allow_envopt)), s += n, \
-		need_argument(name, s, needs_arg), 1) : 0)
+	      need_argument(name, s, needs_arg, next_arg), 1) : 0)
 
 	    if (strcmp("copyright", s) == 0) {
 		if (envopt) goto noenvopt_long;
 		opt->dump |= DUMP_BIT(copyright);
 	    }
-	    else if (strcmp("debug", s) == 0) {
+	    else if (is_option_with_optarg("debug", Qtrue, Qtrue, Qfalse, Qfalse)) {
+		if (s && *s) {
+		    ruby_each_words(s, debug_option, &opt->features);
+		}
 		ruby_debug = Qtrue;
                 ruby_verbose = Qtrue;
             }

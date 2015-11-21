@@ -705,7 +705,7 @@ class TestMarshal < Test::Unit::TestCase
     expected = out
 
     opt << "--enable=frozen-string-literal"
-    opt << "--enable=frozen-string-literal-debug"
+    opt << "--debug=frozen-string-literal"
     out, err, status = EnvUtil.invoke_ruby(*args)
     assert_empty(err)
     assert_predicate(status, :success?)
