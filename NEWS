@@ -95,6 +95,10 @@ with all sufficient information, see the ChangeLog file.
     Backtrace doesn't show each method (show block lines directly).
     TracePoint also ignores these calls. [Feature #11569]
 
+* Queue (Thread::Queue)
+
+  * Queue#close is added to notice a termination. [Feature #10600]
+
 * Regexp/String: Updated Unicode version from 7.0.0 to 8.0.0
 
 * Struct
