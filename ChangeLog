@@ -1,3 +1,10 @@
+Sun Nov 22 17:59:50 2015  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* configure.in: On Solaris, add -D_XOPEN_SOURCE=n only when both
+	  AC_TRY_CPP and AC_TRY_COMPILE pass, because some options
+	  (e.g. -std=iso9899:1999) are not set when running C preprocessor
+	  or building ext.
+
 Sun Nov 22 16:53:34 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (iseq_peephole_optimize): remove unreachable code

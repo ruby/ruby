@@ -1105,36 +1105,29 @@ main()
 		if test $given_xopen_source = no; then
 		  AC_MSG_CHECKING(appropriate _XOPEN_SOURCE value to define)
 		  define_xopen_source=""
-		  if test x"$define_xopen_source" = x; then
-			AC_TRY_COMPILE([
-			#define _XOPEN_SOURCE 700
+		  for tmp_xpg in 7 6 5; do
+		    if test x"$define_xopen_source" != x; then
+		        break
+		    fi
+		    # Both AC_TRY_CPP and AC_TRY_COMPILE should pass
+		    # because some options may not be set to CPPFLAGS.
+		    AC_TRY_CPP([
+			#define _XOPEN_SOURCE ${tmp_xpg}00
 			#include <unistd.h>
-			#ifndef _XPG7
-			#error _XPG7 should be defined by _XOPEN_SOURCE=700
+			#ifndef _XPG${tmp_xpg}
+			#error _XPG${tmp_xpg} should be defined by _XOPEN_SOURCE=${tmp_xpg}00
+			#endif
+			], [
+			AC_TRY_COMPILE([
+			#define _XOPEN_SOURCE ${tmp_xpg}00
+			#include <unistd.h>
+			#ifndef _XPG${tmp_xpg}
+			#error _XPG${tmp_xpg} should be defined by _XOPEN_SOURCE=${tmp_xpg}00
 			#endif
 			], [],
-			[define_xopen_source=700], [])
-		  fi
-		  if test x"$define_xopen_source" = x; then
-			AC_TRY_COMPILE([
-			#define _XOPEN_SOURCE 600
-			#include <unistd.h>
-			#ifndef _XPG6
-			#error _XPG6 should be defined by _XOPEN_SOURCE=600
-			#endif
-			], [],
-			[define_xopen_source=600], [])
-		  fi
-		  if test x"$define_xopen_source" = x; then
-			AC_TRY_COMPILE([
-			#define _XOPEN_SOURCE 500
-			#include <unistd.h>
-			#ifndef _XPG5
-			#error _XPG5 should be defined by _XOPEN_SOURCE=500
-			#endif
-			], [],
-			[define_xopen_source=500], [])
-		  fi
+			[define_xopen_source=${tmp_xpg}00], [])
+			], [])
+		  done
 		  if test x"$define_xopen_source" = x; then
 		    define_xopen_source=no
 		  fi
