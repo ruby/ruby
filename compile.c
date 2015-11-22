@@ -3713,7 +3713,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		}
 	    }
 	    else {
-		rb_compile_bug(ERROR_ARGS_AT(vals) "NODE_CASE: must be NODE_ARRAY, but 0");
+		rb_compile_bug(ERROR_ARGS "NODE_CASE: must be NODE_ARRAY, but 0");
 	    }
 
 	    node = node->nd_next;
