@@ -23,29 +23,36 @@ module CMath
 
   include Math
 
-  alias exp! exp
-  alias log! log
-  alias log2! log2
-  alias log10! log10
-  alias sqrt! sqrt
-  alias cbrt! cbrt
+  # Backup of Math is needed because mathn.rb replaces Math with CMath.
+  RealMath = Math # :nodoc:
+  private_constant :RealMath
 
-  alias sin! sin
-  alias cos! cos
-  alias tan! tan
-
-  alias sinh! sinh
-  alias cosh! cosh
-  alias tanh! tanh
-
-  alias asin! asin
-  alias acos! acos
-  alias atan! atan
-  alias atan2! atan2
-
-  alias asinh! asinh
-  alias acosh! acosh
-  alias atanh! atanh
+  %w[
+    exp
+    log
+    log2
+    log10
+    sqrt
+    cbrt
+    sin
+    cos
+    tan
+    sinh
+    cosh
+    tanh
+    asin
+    acos
+    atan
+    atan2
+    asinh
+    acosh
+    atanh
+  ].each do |meth|
+    define_method(meth + '!') do |*args, &block|
+      warn("CMath##{meth}! is deprecated; use CMath##{meth} or Math##{meth}") if $VERBOSE
+      RealMath.send(meth, *args, &block)
+    end
+  end
 
   ##
   # Math::E raised to the +z+ power
@@ -54,11 +61,11 @@ module CMath
   def exp(z)
     begin
       if z.real?
-        exp!(z)
+        RealMath.exp(z)
       else
-        ere = exp!(z.real)
-        Complex(ere * cos!(z.imag),
-                ere * sin!(z.imag))
+        ere = RealMath.exp(z.real)
+        Complex(ere * RealMath.cos(z.imag),
+                ere * RealMath.sin(z.imag))
       end
     rescue NoMethodError
       handle_no_method_error
@@ -74,9 +81,9 @@ module CMath
   def log(z, b=::Math::E)
     begin
       if z.real? && z >= 0 && b >= 0
-        log!(z, b)
+        RealMath.log(z, b)
       else
-        Complex(log!(z.abs), z.arg) / log(b)
+        Complex(RealMath.log(z.abs), z.arg) / log(b)
       end
     rescue NoMethodError
       handle_no_method_error
@@ -90,9 +97,9 @@ module CMath
   def log2(z)
     begin
       if z.real? and z >= 0
-        log2!(z)
+        RealMath.log2(z)
       else
-        log(z) / log!(2)
+        log(z) / RealMath.log(2)
       end
     rescue NoMethodError
       handle_no_method_error
@@ -106,9 +113,9 @@ module CMath
   def log10(z)
     begin
       if z.real? and z >= 0
-        log10!(z)
+        RealMath.log10(z)
       else
-        log(z) / log!(10)
+        log(z) / RealMath.log(10)
       end
     rescue NoMethodError
       handle_no_method_error
@@ -123,9 +130,9 @@ module CMath
     begin
       if z.real?
         if z < 0
-          Complex(0, sqrt!(-z))
+          Complex(0, RealMath.sqrt(-z))
         else
-          sqrt!(z)
+          RealMath.sqrt(z)
         end
       else
         if z.imag < 0 ||
@@ -134,7 +141,7 @@ module CMath
         else
           r = z.abs
           x = z.real
-          Complex(sqrt!((r + x) / 2.0), sqrt!((r - x) / 2.0))
+          Complex(RealMath.sqrt((r + x) / 2.0), RealMath.sqrt((r - x) / 2.0))
         end
       end
     rescue NoMethodError
@@ -157,10 +164,10 @@ module CMath
   def sin(z)
     begin
       if z.real?
-        sin!(z)
+        RealMath.sin(z)
       else
-        Complex(sin!(z.real) * cosh!(z.imag),
-                cos!(z.real) * sinh!(z.imag))
+        Complex(RealMath.sin(z.real) * RealMath.cosh(z.imag),
+                RealMath.cos(z.real) * RealMath.sinh(z.imag))
       end
     rescue NoMethodError
       handle_no_method_error
@@ -174,10 +181,10 @@ module CMath
   def cos(z)
     begin
       if z.real?
-        cos!(z)
+        RealMath.cos(z)
       else
-        Complex(cos!(z.real) * cosh!(z.imag),
-                -sin!(z.real) * sinh!(z.imag))
+        Complex(RealMath.cos(z.real) * RealMath.cosh(z.imag),
+                -RealMath.sin(z.real) * RealMath.sinh(z.imag))
       end
     rescue NoMethodError
       handle_no_method_error
@@ -191,7 +198,7 @@ module CMath
   def tan(z)
     begin
       if z.real?
-        tan!(z)
+        RealMath.tan(z)
       else
         sin(z) / cos(z)
       end
@@ -207,10 +214,10 @@ module CMath
   def sinh(z)
     begin
       if z.real?
-        sinh!(z)
+        RealMath.sinh(z)
       else
-        Complex(sinh!(z.real) * cos!(z.imag),
-                cosh!(z.real) * sin!(z.imag))
+        Complex(RealMath.sinh(z.real) * RealMath.cos(z.imag),
+                RealMath.cosh(z.real) * RealMath.sin(z.imag))
       end
     rescue NoMethodError
       handle_no_method_error
@@ -224,10 +231,10 @@ module CMath
   def cosh(z)
     begin
       if z.real?
-        cosh!(z)
+        RealMath.cosh(z)
       else
-        Complex(cosh!(z.real) * cos!(z.imag),
-                sinh!(z.real) * sin!(z.imag))
+        Complex(RealMath.cosh(z.real) * RealMath.cos(z.imag),
+                RealMath.sinh(z.real) * RealMath.sin(z.imag))
       end
     rescue NoMethodError
       handle_no_method_error
@@ -241,7 +248,7 @@ module CMath
   def tanh(z)
     begin
       if z.real?
-        tanh!(z)
+        RealMath.tanh(z)
       else
         sinh(z) / cosh(z)
       end
@@ -257,7 +264,7 @@ module CMath
   def asin(z)
     begin
       if z.real? and z >= -1 and z <= 1
-        asin!(z)
+        RealMath.asin(z)
       else
         (-1.0).i * log(1.0.i * z + sqrt(1.0 - z * z))
       end
@@ -273,7 +280,7 @@ module CMath
   def acos(z)
     begin
       if z.real? and z >= -1 and z <= 1
-        acos!(z)
+        RealMath.acos(z)
       else
         (-1.0).i * log(z + 1.0.i * sqrt(1.0 - z * z))
       end
@@ -289,7 +296,7 @@ module CMath
   def atan(z)
     begin
       if z.real?
-        atan!(z)
+        RealMath.atan(z)
       else
         1.0.i * log((1.0.i + z) / (1.0.i - z)) / 2.0
       end
@@ -306,7 +313,7 @@ module CMath
   def atan2(y,x)
     begin
       if y.real? and x.real?
-        atan2!(y,x)
+        RealMath.atan2(y,x)
       else
         (-1.0).i * log((x + 1.0.i * y) / sqrt(x * x + y * y))
       end
@@ -322,7 +329,7 @@ module CMath
   def asinh(z)
     begin
       if z.real?
-        asinh!(z)
+        RealMath.asinh(z)
       else
         log(z + sqrt(1.0 + z * z))
       end
@@ -338,7 +345,7 @@ module CMath
   def acosh(z)
     begin
       if z.real? and z >= 1
-        acosh!(z)
+        RealMath.acosh(z)
       else
         log(z + sqrt(z * z - 1.0))
       end
@@ -354,7 +361,7 @@ module CMath
   def atanh(z)
     begin
       if z.real? and z >= -1 and z <= 1
-        atanh!(z)
+        RealMath.atanh(z)
       else
         log((1.0 + z) / (1.0 - z)) / 2.0
       end
