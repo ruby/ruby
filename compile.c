@@ -22,6 +22,9 @@
 # include <dlfcn.h>
 #endif
 
+#undef RUBY_UNTYPED_DATA_WARNING
+#define RUBY_UNTYPED_DATA_WARNING 0
+
 #define FIXNUM_INC(n, i) ((n)+(INT2FIX(i)&~FIXNUM_FLAG))
 #define FIXNUM_OR(n, i) ((n)|INT2FIX(i))
 
@@ -469,6 +472,7 @@ static void
 validate_labels(rb_iseq_t *iseq, st_table *labels_table)
 {
     st_foreach(labels_table, validate_label, (st_data_t)iseq);
+    st_free_table(labels_table);
     if (!NIL_P(iseq->compile_data->err_info)) {
 	rb_exc_raise(iseq->compile_data->err_info);
     }
@@ -569,7 +573,9 @@ rb_iseq_compile_node(rb_iseq_t *iseq, NODE *node)
 
 #if SUPPORT_JOKE
     if (iseq->compile_data->labels_table) {
-	validate_labels(iseq, iseq->compile_data->labels_table);
+	st_table *labels_table = iseq->compile_data->labels_table;
+	iseq->compile_data->labels_table = 0;
+	validate_labels(iseq, labels_table);
     }
 #endif
     return iseq_setup(iseq, ret);
@@ -6205,11 +6211,12 @@ iseq_build_callinfo_from_hash(rb_iseq_t *iseq, VALUE op)
 
 static int
 iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
-		VALUE body, struct st_table *labels_table)
+			 VALUE body, VALUE labels_wrapper)
 {
     /* TODO: body should be frozen */
     const VALUE *ptr = RARRAY_CONST_PTR(body);
     long i, len = RARRAY_LEN(body);
+    struct st_table *labels_table = DATA_PTR(labels_wrapper);
     int j;
     int line_no = 0;
     int ret = COMPILE_OK;
@@ -6347,8 +6354,8 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 	    rb_raise(rb_eTypeError, "unexpected object for instruction");
 	}
     }
+    DATA_PTR(labels_wrapper) = 0;
     validate_labels(iseq, labels_table);
-    st_free_table(labels_table);
     if (!ret) return ret;
     return iseq_setup(iseq, anchor);
 }
@@ -6446,6 +6453,7 @@ rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc, VALUE locals, VALUE params,
     int i, len;
     ID *tbl;
     struct st_table *labels_table = st_init_numtable();
+    VALUE labels_wrapper = Data_Wrap_Struct(0, 0, st_free_table, labels_table);
     VALUE arg_opt_labels = rb_hash_aref(params, SYM(opt));
     VALUE keywords = rb_hash_aref(params, SYM(keyword));
     VALUE sym_arg_rest = ID2SYM(rb_intern("#arg_rest"));
@@ -6536,7 +6544,7 @@ rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc, VALUE locals, VALUE params,
     iseq_build_from_ary_exception(iseq, labels_table, exception);
 
     /* body */
-    iseq_build_from_ary_body(iseq, anchor, body, labels_table);
+    iseq_build_from_ary_body(iseq, anchor, body, labels_wrapper);
 }
 
 /* for parser */
