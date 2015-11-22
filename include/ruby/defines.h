@@ -168,7 +168,7 @@ void xfree(void*);
 #include "ruby/win32.h"
 #endif
 
-#if defined(__BEOS__) && !defined(__HAIKU__) && !defined(BONE)
+#if defined(__BEOS__) && !defined(BONE)
 #include <net/socket.h> /* intern.h needs fd_set definition */
 #endif
 

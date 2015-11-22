@@ -35,7 +35,7 @@
 # include <sys/socket.h>
 #endif
 
-#if defined(__BOW__) || defined(__CYGWIN__) || defined(_WIN32) || defined(__BEOS__) || defined(__HAIKU__)
+#if defined(__BOW__) || defined(__CYGWIN__) || defined(_WIN32) || defined(__BEOS__)
 # define NO_SAFE_RENAME
 #endif
 
@@ -100,7 +100,7 @@
 # include <sys/wait.h>		/* for WNOHANG on BSD */
 #endif
 
-#if defined(__BEOS__) || defined(__HAIKU__)
+#if defined(__BEOS__)
 # ifndef NOFILE
 #  define NOFILE (OPEN_MAX)
 # endif
