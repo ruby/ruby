@@ -300,7 +300,8 @@ do {                                               \
   th->errinfo = tmp;                               \
 } while (0)
 
-#define ERROR_ARGS ruby_sourcefile, nd_line(node),
+#define ERROR_ARGS_AT(n) ruby_sourcefile, nd_line(n),
+#define ERROR_ARGS ERROR_ARGS_AT(node)
 
 
 #define COMPILE_OK 1
@@ -554,7 +555,7 @@ rb_iseq_compile_node(rb_iseq_t *iseq, NODE *node)
 	    COMPILE(ret, "defined guard", node);
 	    break;
 	  default:
-	    rb_bug("unknown scope");
+	    rb_compile_bug(ERROR_ARGS "unknown scope");
 	}
     }
 
@@ -1266,8 +1267,9 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 	ID block_id = 0;
 
 	if (nd_type(node_args) != NODE_ARGS) {
-	    rb_bug("iseq_set_arguments: NODE_ARGS is expected, but %s",
-		   ruby_node_name(nd_type(node_args)));
+	    rb_compile_bug(ERROR_ARGS_AT(node_args)
+			   "iseq_set_arguments: NODE_ARGS is expected, but %s",
+			   ruby_node_name(nd_type(node_args)));
 	}
 
 
@@ -1720,7 +1722,8 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 			generated_iseq[code_index++] = BIN(nop);
 		    }
 		    else {
-			rb_bug("iseq_set_sequence: adjust bug");
+			rb_compile_bug(ruby_sourcefile, iobj->line_no,
+				       "iseq_set_sequence: adjust bug %d < %d", orig_sp, sp);
 		    }
 		}
 		break;
@@ -2678,7 +2681,7 @@ compile_array_(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE* node_root,
 
 	    for (i=0; i<max && node; i++, len++, node = node->nd_next) {
 		if (CPDEBUG > 0 && nd_type(node) != NODE_ARRAY) {
-		    rb_bug("compile_array: This node is not NODE_ARRAY, but %s", ruby_node_name(nd_type(node)));
+		    rb_compile_bug(ERROR_ARGS "compile_array: This node is not NODE_ARRAY, but %s", ruby_node_name(nd_type(node)));
 		}
 
 		if (type != COMPILE_ARRAY_TYPE_ARRAY && !node->nd_head) {
@@ -2844,7 +2847,7 @@ when_vals(rb_iseq_t *iseq, LINK_ANCHOR *cond_seq, NODE *vals, LABEL *l1, int onl
 	}
 	else {
 	    if (rb_hash_lookup(literals, lit) != Qnil) {
-		rb_compile_warning(RSTRING_PTR(iseq->body->location.path), nd_line(val), "duplicated when clause is ignored");
+		rb_compile_warning(ruby_sourcefile, nd_line(val), "duplicated when clause is ignored");
 	    }
 	    else {
 		rb_hash_aset(literals, lit, (VALUE)(l1) | 1);
@@ -3479,7 +3482,7 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *args, NODE *argn, unsigned int *flag, s
 		break;
 	    }
 	  default: {
-	    rb_bug("setup_arg: unknown node: %s\n", ruby_node_name(nd_type(argn)));
+	    rb_compile_bug(ERROR_ARGS_AT(argn) "setup_arg: unknown node: %s\n", ruby_node_name(nd_type(argn)));
 	  }
 	}
     }
@@ -3658,12 +3661,12 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		    ADD_INSNL(cond_seq, nd_line(vals), branchif, l1);
 		    break;
 		  default:
-		    rb_bug("NODE_CASE: unknown node (%s)",
-			   ruby_node_name(nd_type(vals)));
+		    rb_compile_bug(ERROR_ARGS_AT(vals) "NODE_CASE: unknown node (%s)",
+				   ruby_node_name(nd_type(vals)));
 		}
 	    }
 	    else {
-		rb_bug("NODE_CASE: must be NODE_ARRAY, but 0");
+		rb_compile_bug(ERROR_ARGS_AT(vals) "NODE_CASE: must be NODE_ARRAY, but 0");
 	    }
 
 	    node = node->nd_next;
@@ -3721,7 +3724,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 
 	    vals = node->nd_head;
 	    if (!vals) {
-		rb_bug("NODE_WHEN: must be NODE_ARRAY, but 0");
+		rb_compile_bug(ERROR_ARGS "NODE_WHEN: must be NODE_ARRAY, but 0");
 	    }
 	    switch (nd_type(vals)) {
 	      case NODE_ARRAY:
@@ -3741,8 +3744,8 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		ADD_INSNL(ret, nd_line(vals), branchif, l1);
 		break;
 	      default:
-		rb_bug("NODE_WHEN: unknown node (%s)",
-		       ruby_node_name(nd_type(vals)));
+		rb_compile_bug(ERROR_ARGS_AT(vals) "NODE_WHEN: unknown node (%s)",
+			       ruby_node_name(nd_type(vals)));
 	    }
 	    node = node->nd_next;
 	}
@@ -3813,7 +3816,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 
 	if (node->nd_state == Qundef) {
 	    /* ADD_INSN(ret, line, putundef); */
-	    rb_bug("unsupported: putundef");
+	    rb_compile_bug(ERROR_ARGS "unsupported: putundef");
 	}
 	else {
 	    ADD_INSN(ret, line, putnil);
@@ -4171,8 +4174,8 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		    ADD_INSNL(ret, line, branchif, label_hit);
 		    break;
 		  default:
-		    rb_bug("NODE_RESBODY: unknown node (%s)",
-			   ruby_node_name(nd_type(narg)));
+		    rb_compile_bug(ERROR_ARGS_AT(narg) "NODE_RESBODY: unknown node (%s)",
+				   ruby_node_name(nd_type(narg)));
 		}
 	    }
 	    else {
@@ -4288,7 +4291,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	idx = get_dyna_var_idx(iseq, node->nd_vid, &lv, &ls);
 
 	if (idx < 0) {
-	    rb_bug("NODE_DASGN(_CURR): unknown id (%"PRIsVALUE")", rb_id2str(node->nd_vid));
+	    rb_compile_bug(ERROR_ARGS "NODE_DASGN(_CURR): unknown id (%"PRIsVALUE")", rb_id2str(node->nd_vid));
 	}
 
 	ADD_INSN2(ret, line, setlocal, INT2FIX(ls - idx), INT2FIX(lv));
@@ -5013,7 +5016,8 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    break;
 
 	  default:
-	    rb_bug("can't make hash with this node: %s", ruby_node_name(type));
+	    rb_compile_bug(ERROR_ARGS_AT(node->nd_head) "can't make hash with this node: %s",
+			   ruby_node_name(type));
 	}
 
 	if (poped) {
@@ -5103,7 +5107,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	if (!poped) {
 	    idx = get_dyna_var_idx(iseq, node->nd_vid, &lv, &ls);
 	    if (idx < 0) {
-		rb_bug("unknown dvar (%"PRIsVALUE")", rb_id2str(node->nd_vid));
+		rb_compile_bug(ERROR_ARGS "unknown dvar (%"PRIsVALUE")", rb_id2str(node->nd_vid));
 	    }
 	    ADD_INSN2(ret, line, getlocal, INT2FIX(ls - idx), INT2FIX(lv));
 	}
@@ -5692,13 +5696,13 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 
 	    if (default_value == (NODE *)-1) {
 		/* required argument. do nothing */
-		rb_bug("unreachable");
+		rb_compile_bug(ERROR_ARGS "unreachable");
 	    }
 	    else if (nd_type(default_value) == NODE_LIT ||
 		     nd_type(default_value) == NODE_NIL ||
 		     nd_type(default_value) == NODE_TRUE ||
 		     nd_type(default_value) == NODE_FALSE) {
-		rb_bug("unreachable");
+		rb_compile_bug(ERROR_ARGS "unreachable");
 	    }
 	    else {
 		/* if keywordcheck(_kw_bits, nth_keyword)
@@ -5836,7 +5840,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	break;
       }
       default:
-	rb_bug("iseq_compile_each: unknown node: %s", ruby_node_name(type));
+	rb_compile_bug(ERROR_ARGS "iseq_compile_each: unknown node: %s", ruby_node_name(type));
 	return COMPILE_NG;
     }
 
