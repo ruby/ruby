@@ -69,7 +69,7 @@ ruby_atomic_compare_and_swap(rb_atomic_t *ptr, rb_atomic_t cmp,
 }
 #endif
 
-#if defined(__BEOS__) || defined(__HAIKU__)
+#if defined(__BEOS__)
 #undef SIGBUS
 #endif
 
@@ -759,7 +759,9 @@ static const char *received_signal;
 
 #if defined(USE_SIGALTSTACK) || defined(_WIN32)
 NORETURN(void ruby_thread_stack_overflow(rb_thread_t *th));
-# if !(defined(HAVE_UCONTEXT_H) && (defined __i386__ || defined __x86_64__ || defined __amd64__))
+# if defined __HAIKU__
+#   define USE_UCONTEXT_REG 1
+# elif !(defined(HAVE_UCONTEXT_H) && (defined __i386__ || defined __x86_64__ || defined __amd64__))
 # elif defined __linux__
 #   define USE_UCONTEXT_REG 1
 # elif defined __APPLE__
@@ -789,6 +791,12 @@ check_stack_overflow(const uintptr_t addr, const ucontext_t *ctx)
     const __register_t sp = mctx->mc_rsp;
 #   else
     const __register_t sp = mctx->mc_esp;
+#   endif
+# elif defined __HAIKU__
+#   if defined(__amd64__)
+    const unsigned long sp = mctx->rsp;
+#   else
+    const unsigned long sp = mctx->esp;
 #   endif
 # endif
     enum {pagesize = 4096};

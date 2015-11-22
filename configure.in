@@ -2897,10 +2897,24 @@ if test x"$enable_pthread" = xyes; then
 	    AC_DEFINE_UNQUOTED(SET_THREAD_NAME(name), pthread_set_name_np(pthread_self(), name))
     fi
 fi
-if test x"$ac_cv_header_ucontext_h" = xyes; then
+
+if test x"$ac_cv_header_ucontext_h" = xno; then
+    AC_CACHE_CHECK([if signal.h defines ucontext_t], [rb_cv_ucontext_in_signal_h],
+	[AC_TRY_COMPILE([@%:@include <signal.h>],
+	[size_t size = sizeof(ucontext_t);],
+	[rb_cv_ucontext_in_signal_h=yes], [rb_cv_ucontext_in_signal_h=no])])
+    if test x"$rb_cv_ucontext_in_signal_h" = xyes; then
+	    AC_DEFINE_UNQUOTED(UCONTEXT_IN_SIGNAL_H, 1)
+    fi
+fi
+if test x"$ac_cv_header_ucontext_h" = xyes -o x"$rb_cv_ucontext_in_signal_h" = xyes; then
     AC_CACHE_CHECK([if mcontext_t is a pointer], [rb_cv_mcontext_t_ptr],
-	[AC_TRY_COMPILE([@%:@include <ucontext.h>
-	mcontext_t test(mcontext_t mc) {return mc+1;}
+	[AC_TRY_COMPILE([
+	    @%:@include <signal.h>
+	    @%:@ifdef HAVE_UCONTEXT_H
+	    @%:@include <ucontext.h>
+	    @%:@endif
+        mcontext_t test(mcontext_t mc) {return mc+1;}
 	],
 	[test(0);],
 	[rb_cv_mcontext_t_ptr=yes], [rb_cv_mcontext_t_ptr=no])])
