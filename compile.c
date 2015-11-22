@@ -2053,8 +2053,18 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 		 * =>
 		 *   jump L1
 		 *
+		 *   putstring ".."
+		 *   dup
+		 *   if L1
+		 * =>
+		 *   putstring ".."
+		 *   jump L1
+		 *
 		 */
 		int cond;
+		if (prev_dup && pobj->link.prev->type == ISEQ_ELEMENT_INSN) {
+		    pobj = (INSN *)pobj->link.prev;
+		}
 		if (pobj->insn_id == BIN(putobject)) {
 		    cond = (iobj->insn_id == BIN(branchif) ?
 			    OPERAND_AT(pobj, 0) != Qfalse :
@@ -2069,7 +2079,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 		    cond = iobj->insn_id != BIN(branchif);
 		}
 		else break;
-		REMOVE_ELEM(&pobj->link);
+		REMOVE_ELEM(iobj->link.prev);
 		if (cond) {
 		    iobj->insn_id = BIN(jump);
 		    goto again;
