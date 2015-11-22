@@ -9747,15 +9747,6 @@ new_if_gen(struct parser_params *parser, NODE *cc, NODE *left, NODE *right)
 {
     if (!cc) return right;
     cc = cond0(parser, cc);
-    switch (nd_type(cc)) {
-      case NODE_NIL:
-      case NODE_FALSE:
-	return right;
-      case NODE_TRUE:
-      case NODE_LIT:
-      case NODE_STR:
-	return left;
-    }
     return NEW_IF(cc, left, right);
 }
 
@@ -9763,31 +9754,13 @@ static NODE*
 logop_gen(struct parser_params *parser, enum node_type type, NODE *left, NODE *right)
 {
     value_expr(left);
-    if (!left) {
-	if (!in_defined && type == NODE_AND) return 0;
-	/* make NODE_OR not to be "void value expression" */
-    }
-    else if ((enum node_type)nd_type(left) == type) {
+    if (left && (enum node_type)nd_type(left) == type) {
 	NODE *node = left, *second;
 	while ((second = node->nd_2nd) != 0 && (enum node_type)nd_type(second) == type) {
 	    node = second;
 	}
 	node->nd_2nd = NEW_NODE(type, second, right, 0);
 	return left;
-    }
-    else if (!in_defined) {
-	switch (nd_type(left)) {
-	  case NODE_NIL:
-	  case NODE_FALSE:
-	    if (type == NODE_AND) return left;
-	    break;
-	  case NODE_TRUE:
-	  case NODE_LIT:
-	  case NODE_STR:
-	    if (type != NODE_AND) return left;
-	    nd_set_type(left, NODE_TRUE);
-	    break;
-	}
     }
     return NEW_NODE(type, left, right, 0);
 }
