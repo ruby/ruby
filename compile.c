@@ -1053,18 +1053,18 @@ iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
     }
 
     debugs("[compile step 4.1 (iseq_set_sequence)]\n");
-    iseq_set_sequence(iseq, anchor);
+    if (!iseq_set_sequence(iseq, anchor)) return COMPILE_NG;
     if (compile_debug > 5)
 	dump_disasm_list(FIRST_ELEMENT(anchor));
 
     debugs("[compile step 4.2 (iseq_set_exception_table)]\n");
-    iseq_set_exception_table(iseq);
+    if (!iseq_set_exception_table(iseq)) return COMPILE_NG;
 
     debugs("[compile step 4.3 (set_optargs_table)] \n");
-    iseq_set_optargs_table(iseq);
+    if (!iseq_set_optargs_table(iseq)) return COMPILE_NG;
 
     debugs("[compile step 5 (iseq_translate_threaded_code)] \n");
-    rb_iseq_translate_threaded_code(iseq);
+    if (!rb_iseq_translate_threaded_code(iseq)) return COMPILE_NG;
 
     if (compile_debug > 1) {
 	VALUE str = rb_iseq_disasm(iseq);
@@ -1072,7 +1072,7 @@ iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
     }
     debugs("[compile step: finish]\n");
 
-    return 0;
+    return COMPILE_OK;
 }
 
 static int
@@ -1562,7 +1562,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 				     iobj->operand_size, len - 1);
 		    xfree(generated_iseq);
 		    xfree(line_info_table);
-		    return 0;
+		    return COMPILE_NG;
 		}
 
 		for (j = 0; types[j]; j++) {
@@ -1669,7 +1669,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 					 "unknown operand type: %c", type);
 			xfree(generated_iseq);
 			xfree(line_info_table);
-			return 0;
+			return COMPILE_NG;
 		    }
 		}
 		if (last_line != iobj->line_no) {
@@ -6335,8 +6335,7 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
     }
     validate_labels(iseq, labels_table);
     st_free_table(labels_table);
-    iseq_setup(iseq, anchor);
-    return COMPILE_OK;
+    return iseq_setup(iseq, anchor);
 }
 
 #define CHECK_ARRAY(v)   rb_convert_type((v), T_ARRAY, "Array", "to_ary")
