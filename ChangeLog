@@ -1,3 +1,8 @@
+Sun Nov 22 19:36:51 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ext/openssl/ossl.c: fix brew command for installation of openssl.
+	  [ci skip][fix GH-1007] Patch by @arthurnn
+
 Sun Nov 22 17:59:50 2015  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* configure.in: On Solaris, add -D_XOPEN_SOURCE=n only when both
