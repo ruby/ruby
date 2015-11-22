@@ -6018,6 +6018,7 @@ dump_disasm_list(struct iseq_link_element *link)
 	link = link->next;
     }
     printf("---------------------\n");
+    fflush(stdout);
 }
 
 const char *
