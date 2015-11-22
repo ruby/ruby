@@ -1,3 +1,11 @@
+Sun Nov 22 16:53:34 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_peephole_optimize): remove unreachable code
+	  chunk after jump/leave.
+
+	* parse.y: move dead code elimination of logical operation to
+	  compile.c.  not to warn logical operation of literal constants.
+
 Sun Nov 22 16:37:10 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (iseq_peephole_optimize): eliminate always/never

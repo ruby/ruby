@@ -1906,6 +1906,30 @@ replace_destination(INSN *dobj, INSN *nobj)
 }
 
 static int
+remove_unreachable_chunk(LINK_ELEMENT *i)
+{
+    int removed = 0;
+    while (i) {
+	if (i->type == ISEQ_ELEMENT_INSN) {
+	    switch (INSN_OF(i)) {
+	      case BIN(jump):
+	      case BIN(branchif):
+	      case BIN(branchunless):
+	      case BIN(branchnil):
+		unref_destination((INSN *)i);
+	      default:
+		break;
+	    }
+	}
+	else break;
+	REMOVE_ELEM(i);
+	removed = 1;
+	i = i->next;
+    }
+    return removed;
+}
+
+static int
 iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcallopt)
 {
     INSN *iobj = (INSN *)list;
@@ -1935,11 +1959,11 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	    unref_destination(iobj);
 	    REMOVE_ELEM(&iobj->link);
 	}
-	else if (iobj != diobj && diobj->insn_id == BIN(jump)) {
-	    if (OPERAND_AT(iobj, 0) != OPERAND_AT(diobj, 0)) {
-		replace_destination(iobj, diobj);
-		goto again;
-	    }
+	else if (iobj != diobj && diobj->insn_id == BIN(jump) &&
+		 OPERAND_AT(iobj, 0) != OPERAND_AT(diobj, 0)) {
+	    replace_destination(iobj, diobj);
+	    remove_unreachable_chunk(iobj->link.next);
+	    goto again;
 	}
 	else if (diobj->insn_id == BIN(leave)) {
 	    /*
@@ -1988,6 +2012,13 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 		REMOVE_ELEM(&iobj->link);
 	    }
 	}
+	else if (remove_unreachable_chunk(iobj->link.next)) {
+	    goto again;
+	}
+    }
+
+    if (iobj->insn_id == BIN(leave)) {
+	remove_unreachable_chunk(iobj->link.next);
     }
 
     if (iobj->insn_id == BIN(branchif) ||
@@ -3788,6 +3819,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	LABEL *redo_label = iseq->compile_data->redo_label = NEW_LABEL(line);	/* redo  */
 	LABEL *break_label = iseq->compile_data->end_label = NEW_LABEL(line);	/* break */
 	LABEL *end_label = NEW_LABEL(line);
+	LABEL *adjust_label = NEW_LABEL(line);
 
 	LABEL *next_catch_label = NEW_LABEL(line);
 	LABEL *tmp_label = NULL;
@@ -3802,6 +3834,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    tmp_label = NEW_LABEL(line);
 	    ADD_INSNL(ret, line, jump, tmp_label);
 	}
+	ADD_LABEL(ret, adjust_label);
 	ADD_INSN(ret, line, putnil);
 	ADD_LABEL(ret, next_catch_label);
 	ADD_INSN(ret, line, pop);
@@ -3829,6 +3862,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	}
 
 	ADD_LABEL(ret, end_label);
+	ADD_ADJUST_RESTORE(ret, adjust_label);
 
 	if (node->nd_state == Qundef) {
 	    /* ADD_INSN(ret, line, putundef); */
