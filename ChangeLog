@@ -1,3 +1,8 @@
+Sun Nov 22 22:23:37 2015  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* gc.c (rb_raw_obj_info): fix compile errors when USE_RGENGC
+	  is 0.
+
 Sun Nov 22 21:58:09 2015  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* lib/cmath.rb: methods which has suffix '!' are now deprecated.
