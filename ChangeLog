@@ -1,3 +1,7 @@
+Mon Nov 23 08:55:00 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ChangeLog: fix wrong reference for r52714
+
 Sun Nov 22 22:23:37 2015  Rei Odaira  <Rei.Odaira@gmail.com>
 
 	* gc.c (rb_raw_obj_info): fix compile errors when USE_RGENGC
@@ -12,7 +16,7 @@ Sun Nov 22 21:58:09 2015  Naohisa Goto  <ngotogenome@gmail.com>
 Sun Nov 22 19:36:51 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* ext/openssl/ossl.c: fix brew command for installation of openssl.
-	  [ci skip][fix GH-1007] Patch by @arthurnn
+	  [ci skip][fix GH-1107] Patch by @arthurnn
 
 Sun Nov 22 17:59:50 2015  Naohisa Goto  <ngotogenome@gmail.com>
 
