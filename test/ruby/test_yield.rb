@@ -390,4 +390,28 @@ class TestRubyYieldGen < Test::Unit::TestCase
     end
     assert_equal [m, nil], y.s(m){|a,b|[a,b]}
   end
+
+  def test_block_cached_argc
+    # [Bug #11451]
+    assert_separately([], <<-"end;")
+      class Yielder
+        def each
+          yield :x, :y, :z
+        end
+      end
+      class Getter1
+        include Enumerable
+        def each(&block)
+          Yielder.new.each(&block)
+        end
+      end
+      class Getter2
+        include Enumerable
+        def each
+          Yielder.new.each { |a, b, c, d| yield(a) }
+        end
+      end
+      Getter1.new.map{Getter2.new.each{|x|}}
+    end;
+  end
 end

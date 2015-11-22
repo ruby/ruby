@@ -1,3 +1,11 @@
+Mon Nov 23 00:19:51 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c (vm_invoke_block): we should not expect ci->argc is
+	  stable after invoking a block. [Bug #11451]
+
+	* test/ruby/test_yield.rb: add a test. This test script is given by
+	  Alex Dowad.
+
 Thu Nov 19 01:06:07 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* load.c (rb_load_internal0): stop separating exits at loading
