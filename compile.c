@@ -290,7 +290,7 @@ r_value(VALUE value)
 
 /* error */
 #define COMPILE_ERROR(strs)                        \
-{                                                  \
+do {                                               \
   rb_thread_t *th = GET_THREAD();                  \
   VALUE tmp = th->errinfo;                         \
   if (compile_debug) rb_compile_bug strs;          \
@@ -298,9 +298,7 @@ r_value(VALUE value)
   rb_compile_error strs;                           \
   RB_OBJ_WRITE(iseq, &iseq->compile_data->err_info, th->errinfo); \
   th->errinfo = tmp;                               \
-  ret = 0;                                         \
-  break;                                           \
-}
+} while (0)
 
 #define ERROR_ARGS ruby_sourcefile, nd_line(node),
 
@@ -458,11 +456,9 @@ validate_label(st_data_t name, st_data_t label, st_data_t arg)
     LABEL *lobj = (LABEL *)label;
     if (!lobj->link.next) {
 	do {
-	    int ret;
 	    COMPILE_ERROR((ruby_sourcefile, lobj->position,
 			   "%"PRIsVALUE": undefined label",
 			   rb_id2str((ID)name)));
-	    if (ret) break;
 	} while (0);
     }
     return ST_CONTINUE;
@@ -542,9 +538,9 @@ rb_iseq_compile_node(rb_iseq_t *iseq, NODE *node)
 	  case ISEQ_TYPE_EVAL:
 	  case ISEQ_TYPE_MAIN:
 	  case ISEQ_TYPE_TOP:
-	    rb_compile_error(ERROR_ARGS "compile/should not be reached: %s:%d",
-			     __FILE__, __LINE__);
-	    break;
+	    COMPILE_ERROR((ERROR_ARGS "compile/should not be reached: %s:%d",
+			   __FILE__, __LINE__));
+	    return COMPILE_NG;
 	  case ISEQ_TYPE_RESCUE:
 	    iseq_set_exception_local_table(iseq);
 	    COMPILE(ret, "rescue", node);
@@ -1510,9 +1506,8 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 	  default:
 	    dump_disasm_list(FIRST_ELEMENT(anchor));
 	    dump_disasm_list(list);
-	    rb_compile_error(RSTRING_PTR(iseq->body->location.path), line,
-			     "error: set_sequence");
-	    break;
+	    COMPILE_ERROR((ruby_sourcefile, line, "error: set_sequence"));
+	    return COMPILE_NG;
 	}
 	list = list->next;
     }
@@ -1557,11 +1552,11 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 		if (iobj->operand_size != len - 1) {
 		    /* printf("operand size miss! (%d, %d)\n", iobj->operand_size, len); */
 		    dump_disasm_list(list);
-		    rb_compile_error(RSTRING_PTR(iseq->body->location.path), iobj->line_no,
-				     "operand size miss! (%d for %d)",
-				     iobj->operand_size, len - 1);
 		    xfree(generated_iseq);
 		    xfree(line_info_table);
+		    COMPILE_ERROR((ruby_sourcefile, iobj->line_no,
+				   "operand size miss! (%d for %d)",
+				   iobj->operand_size, len - 1));
 		    return COMPILE_NG;
 		}
 
@@ -1574,8 +1569,9 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 			    /* label(destination position) */
 			    lobj = (LABEL *)operands[j];
 			    if (!lobj->set) {
-				rb_compile_error(RSTRING_PTR(iseq->body->location.path), iobj->line_no,
-						 "unknown label");
+				COMPILE_ERROR((ruby_sourcefile, iobj->line_no,
+					       "unknown label"));
+				return COMPILE_NG;
 			    }
 			    if (lobj->sp == -1) {
 				lobj->sp = sp;
@@ -1665,10 +1661,10 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 			generated_iseq[code_index + 1 + j] = operands[j];
 			break;
 		      default:
-			rb_compile_error(RSTRING_PTR(iseq->body->location.path), iobj->line_no,
-					 "unknown operand type: %c", type);
 			xfree(generated_iseq);
 			xfree(line_info_table);
+			COMPILE_ERROR((ruby_sourcefile, iobj->line_no,
+				       "unknown operand type: %c", type));
 			return COMPILE_NG;
 		    }
 		}
@@ -2361,9 +2357,9 @@ insn_set_sc_state(rb_iseq_t *iseq, INSN *iobj, int state)
 		dump_disasm_list((LINK_ELEMENT *)iobj);
 		dump_disasm_list((LINK_ELEMENT *)lobj);
 		printf("\n-- %d, %d\n", lobj->sc_state, nstate);
-		rb_compile_error(RSTRING_PTR(iseq->body->location.path), iobj->line_no,
-				 "insn_set_sc_state error\n");
-		return 0;
+		COMPILE_ERROR((ruby_sourcefile, iobj->line_no,
+			       "insn_set_sc_state error\n"));
+		return COMPILE_NG;
 	    }
 	}
 	else {
@@ -2463,8 +2459,9 @@ iseq_set_sequence_stackcaching(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 			  case SCS_XX:
 			    goto normal_insn;
 			  default:
-			    rb_compile_error(RSTRING_PTR(iseq->body->location.path), iobj->line_no,
-					     "unreachable");
+			    COMPILE_ERROR((ruby_sourcefile, iobj->line_no,
+					   "unreachable"));
+			    return COMPILE_NG;
 			}
 			/* remove useless pop */
 			REMOVE_ELEM(list);
@@ -3627,6 +3624,8 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 
 	if (type != NODE_WHEN) {
 	    COMPILE_ERROR((ERROR_ARGS "NODE_CASE: unexpected node. must be NODE_WHEN, but %s", ruby_node_name(type)));
+	    debug_node_end();
+	    return COMPILE_NG;
 	}
 
 	endlabel = NEW_LABEL(line);
@@ -3926,6 +3925,8 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	else if (iseq->body->type == ISEQ_TYPE_EVAL) {
 	  break_in_eval:
 	    COMPILE_ERROR((ERROR_ARGS "Can't escape from eval with break"));
+	    debug_node_end();
+	    return COMPILE_NG;
 	}
 	else {
 	    const rb_iseq_t *ip = iseq->body->parent_iseq;
@@ -3952,6 +3953,8 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		ip = ip->body->parent_iseq;
 	    }
 	    COMPILE_ERROR((ERROR_ARGS "Invalid break"));
+	    debug_node_end();
+	    return COMPILE_NG;
 	}
 	break;
       }
@@ -4590,10 +4593,9 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    COMPILE(ret, "NODE_OP_CDECL/colon2#nd_head", node->nd_head->nd_head);
 	    break;
 	  default:
-	    do {
-		COMPILE_ERROR((ERROR_ARGS "%s: invalid node in NODE_OP_CDECL",
-			       ruby_node_name(nd_type(node->nd_head))));
-	    } while (0);
+	    COMPILE_ERROR((ERROR_ARGS "%s: invalid node in NODE_OP_CDECL",
+			   ruby_node_name(nd_type(node->nd_head))));
+	    debug_node_end();
 	    return COMPILE_NG;
 	}
 	mid = node->nd_head->nd_mid;
@@ -5066,6 +5068,8 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	INIT_ANCHOR(args);
 	if (iseq->body->type == ISEQ_TYPE_TOP) {
 	    COMPILE_ERROR((ERROR_ARGS "Invalid yield"));
+	    debug_node_end();
+	    return COMPILE_NG;
 	}
 
 	if (node->nd_head) {
@@ -6204,6 +6208,7 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
     long i, len = RARRAY_LEN(body);
     int j;
     int line_no = 0;
+    int ret = COMPILE_OK;
 
     /*
      * index -> LABEL *label
@@ -6233,13 +6238,17 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 	    insn = (argc < 0) ? Qnil : RARRAY_AREF(obj, 0);
 	    if (st_lookup(insn_table, (st_data_t)insn, &insn_id) == 0) {
 		/* TODO: exception */
-		rb_compile_error(RSTRING_PTR(iseq->body->location.path), line_no,
-				 "unknown instruction: %+"PRIsVALUE, insn);
+		COMPILE_ERROR((ruby_sourcefile, line_no,
+			       "unknown instruction: %+"PRIsVALUE, insn));
+		ret = COMPILE_NG;
+		break;
 	    }
 
 	    if (argc != insn_len((VALUE)insn_id)-1) {
-		rb_compile_error(RSTRING_PTR(iseq->body->location.path), line_no,
-				 "operand size mismatch");
+		COMPILE_ERROR((ruby_sourcefile, line_no,
+			       "operand size mismatch"));
+		ret = COMPILE_NG;
+		break;
 	    }
 
 	    if (argc > 0) {
@@ -6336,6 +6345,7 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
     }
     validate_labels(iseq, labels_table);
     st_free_table(labels_table);
+    if (!ret) return ret;
     return iseq_setup(iseq, anchor);
 }
 
