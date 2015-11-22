@@ -1,3 +1,9 @@
+Sun Nov 22 21:58:09 2015  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* lib/cmath.rb: methods which has suffix '!' are now deprecated.
+	  Re-apply r52469 made by Kazuki Tanaka, with fixing bug about
+	  mathn.rb compatibility. [ruby-core:68528] [Feature #10974]
+
 Sun Nov 22 19:36:51 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* ext/openssl/ossl.c: fix brew command for installation of openssl.
