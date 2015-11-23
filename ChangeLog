@@ -1,3 +1,10 @@
+Mon Nov 23 19:53:12 2015  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* configure.in: On Solaris, with gcc, "-std=iso9899:1999"
+	  in $ansi_options is often also needed in CPPFLAGS,
+	  because some feature definitions vary depending on such
+	  standards options.
+
 Mon Nov 23 12:54:39 2015  Hamish Morrison  <hamishm53@gmail.com>
 
 	* configure.in: remove obsolete workarounds for Haiku.
