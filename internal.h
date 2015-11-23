@@ -1320,6 +1320,9 @@ VALUE rb_gcd_gmp(VALUE x, VALUE y);
 VALUE rb_setup_fake_str(struct RString *fake_str, const char *name, long len, rb_encoding *enc);
 #endif
 
+/* thread.c (export) */
+int ruby_thread_has_gvl_p(void); /* for ext/fiddle/closure.c */
+
 /* util.c (export) */
 extern const signed char ruby_digit36_to_number_table[];
 extern const char ruby_hexdigits[];
