@@ -358,8 +358,7 @@ rsock_socket(int domain, int type, int proto)
 
     fd = rsock_socket0(domain, type, proto);
     if (fd < 0) {
-       if (errno == EMFILE || errno == ENFILE) {
-           rb_gc();
+       if (rb_gc_for_fd(errno)) {
            fd = rsock_socket0(domain, type, proto);
        }
     }

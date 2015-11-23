@@ -241,8 +241,7 @@ rsock_socketpair(int domain, int type, int protocol, int sv[2])
     int ret;
 
     ret = rsock_socketpair0(domain, type, protocol, sv);
-    if (ret < 0 && (errno == EMFILE || errno == ENFILE)) {
-        rb_gc();
+    if (ret < 0 && rb_gc_for_fd(errno)) {
         ret = rsock_socketpair0(domain, type, protocol, sv);
     }
 
