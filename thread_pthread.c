@@ -33,6 +33,9 @@
 #if defined(HAVE_SYS_TIME_H)
 #include <sys/time.h>
 #endif
+#if defined(__HAIKU__)
+#include <kernel/OS.h>
+#endif
 
 static void native_mutex_lock(rb_nativethread_lock_t *lock);
 static void native_mutex_unlock(rb_nativethread_lock_t *lock);
@@ -497,6 +500,8 @@ size_t pthread_get_stacksize_np(pthread_t);
 #define STACKADDR_AVAILABLE 1
 #elif defined HAVE_PTHREAD_GETTHRDS_NP
 #define STACKADDR_AVAILABLE 1
+#elif defined __HAIKU__
+#define STACKADDR_AVAILABLE 1
 #elif defined __ia64 && defined _HPUX_SOURCE
 #include <sys/dyntune.h>
 
@@ -614,6 +619,13 @@ get_stack(void **addr, size_t *size)
 				   &reg, &regsiz));
     *addr = thinfo.__pi_stackaddr;
     *size = thinfo.__pi_stacksize;
+    STACK_DIR_UPPER((void)0, (void)(*addr = (char *)*addr + *size));
+#elif defined __HAIKU__
+    thread_info info;
+    STACK_GROW_DIR_DETECTION;
+    CHECK_ERR(get_thread_info(find_thread(NULL), &info));
+    *addr = info.stack_base;
+    *size = (uintptr_t)info.stack_end - (uintptr_t)info.stack_base;
     STACK_DIR_UPPER((void)0, (void)(*addr = (char *)*addr + *size));
 #else
 #error STACKADDR_AVAILABLE is defined but not implemented.

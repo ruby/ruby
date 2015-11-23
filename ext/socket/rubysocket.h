@@ -27,7 +27,7 @@
 #    undef HAVE_TYPE_STRUCT_SOCKADDR_DL
 #  endif
 #else
-#  if defined(__BEOS__) && !defined(__HAIKU__) && !defined(BONE)
+#  if defined(__BEOS__) && !defined(BONE)
 #    include <net/socket.h>
 #  else
 #    include <sys/socket.h>
