@@ -244,7 +244,6 @@ bsock_setsockopt(int argc, VALUE *argv, VALUE sock)
     return INT2FIX(0);
 }
 
-#if !defined(__BEOS__)
 /*
  * Document-method: getsockopt
  * call-seq:
@@ -324,9 +323,6 @@ bsock_getsockopt(VALUE sock, VALUE lev, VALUE optname)
 
     return rsock_sockopt_new(family, level, option, rb_str_new(buf, len));
 }
-#else
-#define bsock_getsockopt rb_f_notimplement
-#endif
 
 /*
  * call-seq:

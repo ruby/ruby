@@ -69,10 +69,6 @@ ruby_atomic_compare_and_swap(rb_atomic_t *ptr, rb_atomic_t cmp,
 }
 #endif
 
-#if defined(__BEOS__)
-#undef SIGBUS
-#endif
-
 #ifndef NSIG
 # define NSIG (_SIGMAX + 1)      /* For QNX */
 #endif

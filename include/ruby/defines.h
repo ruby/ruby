@@ -168,10 +168,6 @@ void xfree(void*);
 #include "ruby/win32.h"
 #endif
 
-#if defined(__BEOS__) && !defined(BONE)
-#include <net/socket.h> /* intern.h needs fd_set definition */
-#endif
-
 #ifdef RUBY_EXPORT
 #undef RUBY_EXTERN
 
