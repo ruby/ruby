@@ -884,7 +884,7 @@ rb_io_read_check(rb_io_t *fptr)
     return;
 }
 
-static int
+int
 rb_gc_for_fd(int err)
 {
     if (err == EMFILE || err == ENFILE || err == ENOMEM) {

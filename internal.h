@@ -851,6 +851,7 @@ void rb_stdio_set_default_encoding(void);
 void rb_write_error_str(VALUE mesg);
 VALUE rb_io_flush_raw(VALUE, int);
 size_t rb_io_memsize(const rb_io_t *);
+int rb_gc_for_fd(int err);
 
 /* load.c */
 VALUE rb_get_load_path(void);
