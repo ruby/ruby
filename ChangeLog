@@ -1,3 +1,12 @@
+Tue Nov 24 06:46:27 2015  Eric Wong  <e@80x24.org>
+
+	* io.c (rb_gc_for_fd): new helper function
+	  (ruby_dup): use rb_gc_for_fd
+	  (rb_sysopen): ditto
+	  (rb_fdopen): ditto
+	  (rb_pipe): ditto
+	  [ruby-core:71623] [Feature #11727]
+
 Tue Nov 24 05:13:35 2015  Eric Wong  <e@80x24.org>
 
 	* ext/fiddle/function.c (struct nogvl_ffi_call_args):
