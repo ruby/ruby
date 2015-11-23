@@ -1,3 +1,7 @@
+Tue Nov 24 07:56:54 2015  Eric Wong  <e@80x24.org>
+
+	* ext/socket/init.c (rsock_accept): handle ENOMEM
+
 Tue Nov 24 07:50:15 2015  Eric Wong  <e@80x24.org>
 
 	* dir.c (dir_initialize): use rb_gc_for_fd for ENOMEM
