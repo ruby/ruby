@@ -1,3 +1,7 @@
+Mon Nov 23 11:44:11 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* gems/bundled_gems: bump version to minitest-5.8.3
+
 Mon Nov 23 08:55:00 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* ChangeLog: fix wrong reference for r52714
