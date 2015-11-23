@@ -1,3 +1,8 @@
+Tue Nov 24 08:30:06 2015  JuanitoFatas  <katehuang0320@gmail.com>
+
+	* NEWS: Fix the issue number of `Struct#dig`, which should be
+	  [Feature #11688].  [Fix GH-1110]
+
 Tue Nov 24 07:56:54 2015  Eric Wong  <e@80x24.org>
 
 	* ext/socket/init.c (rsock_accept): handle ENOMEM
