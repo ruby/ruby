@@ -1,4 +1,5 @@
 #include <fiddle.h>
+#include <ruby/thread.h>
 
 #ifdef PRIsVALUE
 # define RB_OBJ_CLASSNAME(obj) rb_obj_class(obj)
@@ -128,13 +129,28 @@ initialize(int argc, VALUE argv[], VALUE self)
     return self;
 }
 
+struct nogvl_ffi_call_args {
+    ffi_cif *cif;
+    void (*fn)(void);
+    void **values;
+    fiddle_generic retval;
+};
+
+static void *
+nogvl_ffi_call(void *ptr)
+{
+    struct nogvl_ffi_call_args *args = ptr;
+
+    ffi_call(args->cif, args->fn, &args->retval, args->values);
+
+    return NULL;
+}
+
 static VALUE
 function_call(int argc, VALUE argv[], VALUE self)
 {
-    ffi_cif * cif;
-    fiddle_generic retval;
+    struct nogvl_ffi_call_args args = { 0 };
     fiddle_generic *generic_args;
-    void **values;
     VALUE cfunc, types, cPointer;
     int i;
     VALUE alloc_buffer = 0;
@@ -148,7 +164,7 @@ function_call(int argc, VALUE argv[], VALUE self)
 	rb_error_arity(argc, i, i);
     }
 
-    TypedData_Get_Struct(self, ffi_cif, &function_data_type, cif);
+    TypedData_Get_Struct(self, ffi_cif, &function_data_type, args.cif);
 
     if (rb_safe_level() >= 1) {
 	for (i = 0; i < argc; i++) {
@@ -161,7 +177,8 @@ function_call(int argc, VALUE argv[], VALUE self)
 
     generic_args = ALLOCV(alloc_buffer,
 	(size_t)(argc + 1) * sizeof(void *) + (size_t)argc * sizeof(fiddle_generic));
-    values = (void **)((char *)generic_args + (size_t)argc * sizeof(fiddle_generic));
+    args.values = (void **)((char *)generic_args +
+			    (size_t)argc * sizeof(fiddle_generic));
 
     for (i = 0; i < argc; i++) {
 	VALUE type = RARRAY_AREF(types, i);
@@ -177,11 +194,12 @@ function_call(int argc, VALUE argv[], VALUE self)
 	}
 
 	VALUE2GENERIC(NUM2INT(type), src, &generic_args[i]);
-	values[i] = (void *)&generic_args[i];
+	args.values[i] = (void *)&generic_args[i];
     }
-    values[argc] = NULL;
+    args.values[argc] = NULL;
+    args.fn = NUM2PTR(rb_Integer(cfunc));
 
-    ffi_call(cif, NUM2PTR(rb_Integer(cfunc)), &retval, values);
+    (void)rb_thread_call_without_gvl(nogvl_ffi_call, &args, 0, 0);
 
     rb_funcall(mFiddle, rb_intern("last_error="), 1, INT2NUM(errno));
 #if defined(_WIN32)
@@ -190,7 +208,7 @@ function_call(int argc, VALUE argv[], VALUE self)
 
     ALLOCV_END(alloc_buffer);
 
-    return GENERIC2VALUE(rb_iv_get(self, "@return_type"), retval);
+    return GENERIC2VALUE(rb_iv_get(self, "@return_type"), args.retval);
 }
 
 void

@@ -1,3 +1,20 @@
+Tue Nov 24 05:13:35 2015  Eric Wong  <e@80x24.org>
+
+	* ext/fiddle/function.c (struct nogvl_ffi_call_args):
+	  new struct for GVL release
+	  (nogvl_ffi_call): new function
+	  (function_call): adjust for GVL release
+	  [ruby-core:71642] [Feature #11607]
+	* ext/fiddle/closure.c (struct callback_args):
+	  new struct for GVL acquire
+	  (with_gvl_callback): adjusted original callback function
+	  (callback): wrapper for conditional GVL acquire
+	* ext/fiddle/depend: add dependencies
+	* ext/fiddle/extconf.rb: include top_srcdir for internal.h
+	* internal.h (ruby_thread_has_gvl_p): expose for fiddle
+	* vm_core.h (ruby_thread_has_gvl_p): moved to internal.h
+	* test/fiddle/test_function.rb (test_nogvl_poll): new test
+
 Mon Nov 23 19:53:12 2015  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* configure.in: On Solaris, with gcc, "-std=iso9899:1999"
