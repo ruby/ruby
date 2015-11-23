@@ -885,14 +885,23 @@ rb_io_read_check(rb_io_t *fptr)
 }
 
 static int
+rb_gc_for_fd(int err)
+{
+    if (err == EMFILE || err == ENFILE || err == ENOMEM) {
+	rb_gc();
+	return 1;
+    }
+    return 0;
+}
+
+static int
 ruby_dup(int orig)
 {
     int fd;
 
     fd = rb_cloexec_dup(orig);
     if (fd < 0) {
-	if (errno == EMFILE || errno == ENFILE || errno == ENOMEM) {
-	    rb_gc();
+	if (rb_gc_for_fd(errno)) {
 	    fd = rb_cloexec_dup(orig);
 	}
 	if (fd < 0) {
@@ -5418,8 +5427,7 @@ rb_sysopen(VALUE fname, int oflags, mode_t perm)
 
     fd = rb_sysopen_internal(&data);
     if (fd < 0) {
-	if (errno == EMFILE || errno == ENFILE) {
-	    rb_gc();
+	if (rb_gc_for_fd(errno)) {
 	    fd = rb_sysopen_internal(&data);
 	}
 	if (fd < 0) {
@@ -5439,15 +5447,15 @@ rb_fdopen(int fd, const char *modestr)
 #endif
     file = fdopen(fd, modestr);
     if (!file) {
-	if (
 #if defined(__sun)
-	    errno == 0 ||
-#endif
-	    errno == EMFILE || errno == ENFILE) {
+	if (errno == 0) {
 	    rb_gc();
-#if defined(__sun)
 	    errno = 0;
+	    file = fdopen(fd, modestr);
+	}
+	else
 #endif
+	if (rb_gc_for_fd(errno)) {
 	    file = fdopen(fd, modestr);
 	}
 	if (!file) {
@@ -5713,8 +5721,7 @@ rb_pipe(int *pipes)
     int ret;
     ret = rb_cloexec_pipe(pipes);
     if (ret == -1) {
-        if (errno == EMFILE || errno == ENFILE) {
-            rb_gc();
+        if (rb_gc_for_fd(errno)) {
             ret = rb_cloexec_pipe(pipes);
         }
     }
