@@ -1098,6 +1098,13 @@ main()
 		    [given_xopen_source=yes], [given_xopen_source=no])
 		AC_MSG_RESULT($given_xopen_source)
 		if test $given_xopen_source = no; then
+		  # On Solaris, with gcc, -std=iso9899:1999 in $ansi_options
+		  # is often also needed in CPPFLAGS, because some feature
+		  # definitions vary depending on such standards options.
+		  AS_CASE(["${ansi_options}"],
+		  [*-std=iso9899:1999*], [
+		    RUBY_APPEND_OPTIONS(CPPFLAGS, ${ansi_options})
+		  ])
 		  AC_MSG_CHECKING(appropriate _XOPEN_SOURCE value to define)
 		  define_xopen_source=""
 		  for tmp_xpg in 7 6 5; do
