@@ -871,7 +871,7 @@ if test "$GCC" = yes; then
 
     # -fstack-protector
     AS_CASE(["$target_os"],
-    [mingw*|nacl|haiku], [
+    [mingw*|nacl], [
 	stack_protector=no
     ])
     if test -z "${stack_protector+set}"; then
@@ -895,11 +895,6 @@ if test "$GCC" = yes; then
     ],
     [cygwin*|darwin*|netbsd*|nacl], [
       # need lgamma_r(), finite()
-    ],
-    [haiku], [
-      # Haiku R1/alpha3 uses gcc-4.4.4 which can not handle anonymous union
-      # with ANSI standard flags. Anonumous union is required to compile
-      # socket extension where <net/if.h> uses anonymous union.
     ],
     [
       # ANSI (no XCFLAGS because this is C only)
@@ -1137,14 +1132,15 @@ main()
 		  fi
 		fi
 		],
-[beos*|haiku*], [
+[beos*], [
 		ac_cv_func_link=no
 		ac_cv_func_sched_yield=no
 		ac_cv_func_pthread_attr_setinheritsched=no
-		AS_CASE(["$target_os"],
-		[beos*], [ ac_cv_header_net_socket_h=yes],
-		[haiku*], [ ac_cv_func_shutdown=no])
-		LIBS="$LIBS" # m lib is include in root under BeOS/Haiku
+		ac_cv_header_net_socket_h=yes
+		LIBS="$LIBS" # m lib is include in root under BeOS
+		],
+[haiku*], [
+		LIBS="$LIBS"
 		],
 [cygwin*], [	ac_cv_header_langinfo_h=yes
 		AC_CHECK_FUNCS(cygwin_conv_path)
@@ -2901,10 +2897,24 @@ if test x"$enable_pthread" = xyes; then
 	    AC_DEFINE_UNQUOTED(SET_THREAD_NAME(name), pthread_set_name_np(pthread_self(), name))
     fi
 fi
-if test x"$ac_cv_header_ucontext_h" = xyes; then
+
+if test x"$ac_cv_header_ucontext_h" = xno; then
+    AC_CACHE_CHECK([if signal.h defines ucontext_t], [rb_cv_ucontext_in_signal_h],
+	[AC_TRY_COMPILE([@%:@include <signal.h>],
+	[size_t size = sizeof(ucontext_t);],
+	[rb_cv_ucontext_in_signal_h=yes], [rb_cv_ucontext_in_signal_h=no])])
+    if test x"$rb_cv_ucontext_in_signal_h" = xyes; then
+	    AC_DEFINE_UNQUOTED(UCONTEXT_IN_SIGNAL_H, 1)
+    fi
+fi
+if test x"$ac_cv_header_ucontext_h" = xyes -o x"$rb_cv_ucontext_in_signal_h" = xyes; then
     AC_CACHE_CHECK([if mcontext_t is a pointer], [rb_cv_mcontext_t_ptr],
-	[AC_TRY_COMPILE([@%:@include <ucontext.h>
-	mcontext_t test(mcontext_t mc) {return mc+1;}
+	[AC_TRY_COMPILE([
+	    @%:@include <signal.h>
+	    @%:@ifdef HAVE_UCONTEXT_H
+	    @%:@include <ucontext.h>
+	    @%:@endif
+        mcontext_t test(mcontext_t mc) {return mc+1;}
 	],
 	[test(0);],
 	[rb_cv_mcontext_t_ptr=yes], [rb_cv_mcontext_t_ptr=no])])
@@ -3055,7 +3065,7 @@ if test "$with_dln_a_out" != yes; then
       # mkmf.rb's have_header() to fail if the desired resource happens to be
       # installed in the /usr/local tree.
       RUBY_APPEND_OPTION(CCDLFLAGS, -fno-common)],
-    [bsdi*|beos*|haiku*|cygwin*|mingw*|aix*|interix*], [ ],
+    [bsdi*|beos*|cygwin*|mingw*|aix*|interix*], [ ],
     [
       RUBY_APPEND_OPTION(CCDLFLAGS, -fPIC)])
   else
@@ -3616,7 +3626,7 @@ AS_CASE("$enable_shared", [yes], [
     [sunos4*], [
 	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_SO_NAME).so'
 	],
-    [linux* | gnu* | k*bsd*-gnu | atheos* | kopensolaris*-gnu], [
+    [linux* | gnu* | k*bsd*-gnu | atheos* | kopensolaris*-gnu | haiku*], [
 	LIBRUBY_DLDFLAGS='-Wl,-soname,lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR)'" $LDFLAGS_OPTDIR"
 	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_SO_NAME).so'
 	if test "$load_relative" = yes; then
@@ -3708,10 +3718,6 @@ AS_CASE("$enable_shared", [yes], [
           AS_HELP_STRING([--disable-pie], [disable PIE feature]),
           [pie=$enableval], [pie=])
   AS_CASE(["$target_os"],
-  [haiku], [
-    # gcc supports PIE, but doesn't work correctly in Haiku
-    pie=no
-  ],
   [nacl], [
     # -pie implies -shared for NaCl.
     pie=no

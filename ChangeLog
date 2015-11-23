@@ -1,3 +1,14 @@
+Mon Nov 23 12:54:39 2015  Hamish Morrison  <hamishm53@gmail.com>
+
+	* configure.in: remove obsolete workarounds for Haiku.
+
+	* dln.c, file.c, io.c: remove obsolete Haiku workarounds.
+
+	* thread_pthread.c: add stack bounds detection for Haiku.
+
+	* signal.c: get stack pointer from signal context on Haiku.
+	  [ruby-core:67923] [Bug #10811] [Fix GH-1109]
+
 Mon Nov 23 11:44:11 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* gems/bundled_gems: bump version to minitest-5.8.3
