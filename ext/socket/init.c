@@ -605,6 +605,7 @@ rsock_s_accept(VALUE klass, int fd, struct sockaddr *sockaddr, socklen_t *len)
 	switch (errno) {
 	  case EMFILE:
 	  case ENFILE:
+	  case ENOMEM:
 	    if (retry) break;
 	    rb_gc();
 	    retry = 1;
