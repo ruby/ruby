@@ -1,3 +1,8 @@
+Tue Nov 24 09:17:02 2015  Alexander von Gluck IV  <kallisti5@unixzen.com>
+
+	* beos: Drop support for BeOS now that Haiku is stable.
+	  [Fix GH-1112]
+
 Tue Nov 24 09:16:35 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* internal.h (rb_gc_for_fd): move to export, as referred by
