@@ -519,8 +519,7 @@ dir_initialize(int argc, VALUE *argv, VALUE dir)
     path = RSTRING_PTR(dirname);
     dp->dir = opendir(path);
     if (dp->dir == NULL) {
-	if (errno == EMFILE || errno == ENFILE) {
-	    rb_gc();
+	if (rb_gc_for_fd(errno)) {
 	    dp->dir = opendir(path);
 	}
 #ifdef HAVE_GETATTRLIST

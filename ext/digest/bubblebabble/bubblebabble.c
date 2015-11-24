@@ -11,8 +11,8 @@
 
 ************************************************/
 
-#include "ruby.h"
-#include "digest.h"
+#include <ruby/ruby.h>
+#include "../digest.h"
 
 static ID id_digest;
 

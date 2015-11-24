@@ -9,7 +9,9 @@ CONFIGURE_LIBFFI = \
 $(OBJS): $(HDRS) $(ruby_headers) \
   $(hdrdir)/ruby/io.h \
   $(hdrdir)/ruby/encoding.h \
-  $(hdrdir)/ruby/oniguruma.h
+  $(hdrdir)/ruby/oniguruma.h \
+  $(hdrdir)/ruby/thread.h \
+  $(top_srcdir)/internal.h
 
 $(STATIC_LIB) $(RUBYARCHDIR)/$(DLLIB) $(DLLIB): $(LIBFFI_A)
 

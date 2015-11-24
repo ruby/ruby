@@ -1291,6 +1291,7 @@ VALUE rb_ident_hash_new(void);
 
 /* io.c (export) */
 void rb_maygvl_fd_fix_cloexec(int fd);
+int rb_gc_for_fd(int err);
 
 /* numeric.c (export) */
 VALUE rb_int_positive_pow(long x, unsigned long y);
@@ -1319,6 +1320,9 @@ VALUE rb_gcd_gmp(VALUE x, VALUE y);
 /* internal use */
 VALUE rb_setup_fake_str(struct RString *fake_str, const char *name, long len, rb_encoding *enc);
 #endif
+
+/* thread.c (export) */
+int ruby_thread_has_gvl_p(void); /* for ext/fiddle/closure.c */
 
 /* util.c (export) */
 extern const signed char ruby_digit36_to_number_table[];

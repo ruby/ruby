@@ -1,3 +1,241 @@
+Tue Nov 24 10:00:10 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/rubygems/installer.rb: Fix two double-word typos.
+	  [ci skip][fix GH-1108] Patch by @jwworth
+
+Tue Nov 24 09:17:02 2015  Alexander von Gluck IV  <kallisti5@unixzen.com>
+
+	* beos: Drop support for BeOS now that Haiku is stable.
+	  [Fix GH-1112]
+
+Tue Nov 24 09:16:35 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* internal.h (rb_gc_for_fd): move to export, as referred by
+	  ext/socket.
+
+Tue Nov 24 09:04:29 2015  David Rodriguez  <deivid.rodriguez@gmail.com>
+
+	* file.c: [DOC] add a missing period to File docs, to terminate
+	  the sentence and separate from the next sentence.  [Fix GH-1111]
+
+Tue Nov 24 08:30:06 2015  JuanitoFatas  <katehuang0320@gmail.com>
+
+	* NEWS: Fix the issue number of `Struct#dig`, which should be
+	  [Feature #11688].  [Fix GH-1110]
+
+Tue Nov 24 07:56:54 2015  Eric Wong  <e@80x24.org>
+
+	* ext/socket/init.c (rsock_accept): handle ENOMEM
+
+Tue Nov 24 07:50:15 2015  Eric Wong  <e@80x24.org>
+
+	* dir.c (dir_initialize): use rb_gc_for_fd for ENOMEM
+	* ext/socket/init.c (rsock_socket): ditto
+	* ext/socket/socket.c (rsock_socketpair): ditto
+	* internal.h (rb_gc_for_fd): prototype
+	* io.c (rb_gc_for_fd): remove static
+	  [ruby-core:71623] [Feature #11727]
+
+Tue Nov 24 06:46:27 2015  Eric Wong  <e@80x24.org>
+
+	* io.c (rb_gc_for_fd): new helper function
+	  (ruby_dup): use rb_gc_for_fd
+	  (rb_sysopen): ditto
+	  (rb_fdopen): ditto
+	  (rb_pipe): ditto
+	  [ruby-core:71623] [Feature #11727]
+
+Tue Nov 24 05:13:35 2015  Eric Wong  <e@80x24.org>
+
+	* ext/fiddle/function.c (struct nogvl_ffi_call_args):
+	  new struct for GVL release
+	  (nogvl_ffi_call): new function
+	  (function_call): adjust for GVL release
+	  [ruby-core:71642] [Feature #11607]
+	* ext/fiddle/closure.c (struct callback_args):
+	  new struct for GVL acquire
+	  (with_gvl_callback): adjusted original callback function
+	  (callback): wrapper for conditional GVL acquire
+	* ext/fiddle/depend: add dependencies
+	* ext/fiddle/extconf.rb: include top_srcdir for internal.h
+	* internal.h (ruby_thread_has_gvl_p): expose for fiddle
+	* vm_core.h (ruby_thread_has_gvl_p): moved to internal.h
+	* test/fiddle/test_function.rb (test_nogvl_poll): new test
+
+Mon Nov 23 19:53:12 2015  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* configure.in: On Solaris, with gcc, "-std=iso9899:1999"
+	  in $ansi_options is often also needed in CPPFLAGS,
+	  because some feature definitions vary depending on such
+	  standards options.
+
+Mon Nov 23 12:54:39 2015  Hamish Morrison  <hamishm53@gmail.com>
+
+	* configure.in: remove obsolete workarounds for Haiku.
+
+	* dln.c, file.c, io.c: remove obsolete Haiku workarounds.
+
+	* thread_pthread.c: add stack bounds detection for Haiku.
+
+	* signal.c: get stack pointer from signal context on Haiku.
+	  [ruby-core:67923] [Bug #10811] [Fix GH-1109]
+
+Mon Nov 23 11:44:11 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* gems/bundled_gems: bump version to minitest-5.8.3
+
+Mon Nov 23 08:55:00 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ChangeLog: fix wrong reference for r52714
+
+Sun Nov 22 22:23:37 2015  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* gc.c (rb_raw_obj_info): fix compile errors when USE_RGENGC
+	  is 0.
+
+Sun Nov 22 21:58:09 2015  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* lib/cmath.rb: methods which has suffix '!' are now deprecated.
+	  Re-apply r52469 made by Kazuki Tanaka, with fixing bug about
+	  mathn.rb compatibility. [ruby-core:68528] [Feature #10974]
+
+Sun Nov 22 19:36:51 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ext/openssl/ossl.c: fix brew command for installation of openssl.
+	  [ci skip][fix GH-1107] Patch by @arthurnn
+
+Sun Nov 22 17:59:50 2015  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* configure.in: On Solaris, add -D_XOPEN_SOURCE=n only when both
+	  AC_TRY_CPP and AC_TRY_COMPILE pass, because some options
+	  (e.g. -std=iso9899:1999) are not set when running C preprocessor
+	  or building ext.
+
+Sun Nov 22 16:53:34 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_peephole_optimize): remove unreachable code
+	  chunk after jump/leave.
+
+	* parse.y: move dead code elimination of logical operation to
+	  compile.c.  not to warn logical operation of literal constants.
+
+Sun Nov 22 16:37:10 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_peephole_optimize): eliminate always/never
+	  branches after a literal object and when the value is used after
+	  the branch.
+
+Sun Nov 22 01:23:43 2015  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* configure.in: Add -D_XOPEN_SOURCE=500 (or 600 or 700) on Solaris
+	  if available, mainly for enabling some features in sockets.
+
+Sun Nov 22 00:17:22 2015  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* test/socket/test_socket.rb (test/socket/test_socket.rb): skip
+	  the test when Socket::SO_TIMESTAMP is not defined. Fix error
+	  on Solaris 10. [Bug #11728] [ruby-dev:49377]
+
+Sat Nov 21 18:57:28 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (need_argument): move frozen-string-literal-debug option
+	  from --enable to --debug.  [Feature #11725]
+
+	* ruby.c (proc_options): fix pointer overrun. do not advance argv
+	  until it is valid.
+
+Sat Nov 21 13:59:09 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/digest/sha1/extconf.rb: OpenSSL's struct name for SHA1 is
+	  SHA_CTX. http://openssl.org/docs/man0.9.8/crypto/SHA1.html
+
+Sat Nov 21 13:31:52 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/digest/*/*.[ch]: include ruby.h before digest.h to avoid
+	  including ext/digest/extconf.h. [Bug #3231]
+	  https://msdn.microsoft.com/library/36k2cdd4.aspx
+
+	* ext/digest/*/extconf.rb: remove ext/digest from include search path
+	  to avoid confusion of cl.exe.
+
+	* ext/digest/*/*.[ch]: explicitly specify def.h's path.
+
+Sat Nov 21 13:05:16 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/openssl/ossl.h: LibreSSL doesn't have and need e_os2.h.
+
+Sat Nov 21 09:18:10 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* thread_sync.c: reduce the specification of Queue#close.
+	  * Queue#close accepts no arguments.
+	  * deq'ing on closed queue returns nil, always.
+	  [Feature #10600]
+
+	* test/thread/test_queue.rb: catch up this fix.
+
+Sat Nov 21 08:44:21 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (iseq_compile_each): add debug information to NODE_STR
+	  strings as default.
+	  [Feature #11725]
+
+	* insns.def (freezestring): add new instruction to support adding
+	  debug information for dynamically constructed strings.
+
+	* compile.c (iseq_compile_each): support adding debug information
+	  for NODE_DSTR with freezestring instruction.
+
+	* error.c (rb_error_frozen): change the debug information ID name
+	  id_debug_created_info and this field should have a 2 element array
+	  containing path and line information.
+
+	* defs/id.def: ditto.
+
+	* test/ruby/test_rubyoptions.rb: catch up this fix.
+
+	* test/ruby/test_iseq.rb: now frozen strings are not same.
+
+Sat Nov 21 04:34:16 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* symbol.c (rb_str_intern): should not freeze the receiver itself
+	  unexpectedly.  [ruby-core:71611] [Bug #11721]
+
+Fri Nov 20 23:15:18 2015  Naotoshi Seo  <sonots@gmail.com>
+
+	* lib/logger.rb: expose logger mutex
+	  [fix GH-541] Patch by @arthurnn
+
+Fri Nov 20 15:05:28 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* Added missing reference of GitHub
+
+Fri Nov 20 14:57:01 2015  Trevor Rowe  <trevorrowe@gmail.com>
+
+	* lib/net/http.rb: Fixed regression for Net::HTTP::PUT with "Expect-100"
+	  header. [fix GH-949]
+	* test/net/http/test_http.rb: added test.
+
+Fri Nov 20 14:39:56 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/net/http.rb: set hostname before call ossl_ssl_set_session.
+	  [Bug #11401][ruby-core:70152][fix GH-964] Patch by @mkarnebeek
+
+Fri Nov 20 12:53:19 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* array.c: clarify docs for take_while/drop_while samples.
+	  [ci skip][fix GH-1028] Patch by @leriksen
+
+Fri Nov 20 12:48:04 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ext/socket/socket.c: remove mention of :UNIX in getaddrinfo().
+	  It's typically not a support option.
+	  [ci skip][fix GH-990] Patch by @eam
+
+Fri Nov 20 12:44:06 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/rss/syndication.rb: Add nodoc marker for #validate_sy_updatePeriod.
+	  [ci skip][fix GH-1105] Patch by @davydovanton
+
 Fri Nov 20 09:05:21 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (rb_vm_cref_replace_with_duplicated_cref): added.
@@ -151,7 +389,7 @@ Wed Nov 18 21:09:08 2015  Koichi Sasada  <ko1@atdot.net>
 
 Wed Nov 18 17:08:18 2015  Koichi Sasada  <ko1@atdot.net>
 
-	* method.h: introduce the folliwing field and macros.
+	* method.h: introduce the following field and macros.
 
 	  * rb_method_definition_t::complemented_count to count shared method
 	    entries because of complemented method entries and separate from

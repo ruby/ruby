@@ -633,6 +633,18 @@ eom
     assert_valid_syntax("a\n&.foo")
   end
 
+  def test_no_warning_logop_literal
+    assert_warning("") do
+      eval("true||raise;nil")
+    end
+    assert_warning("") do
+      eval("false&&raise;nil")
+    end
+    assert_warning("") do
+      eval("''||raise;nil")
+    end
+  end
+
   private
 
   def not_label(x) @result = x; @not_label ||= nil end

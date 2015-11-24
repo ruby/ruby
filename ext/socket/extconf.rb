@@ -435,9 +435,6 @@ when /mswin(32|64)|mingw/
   have_library("ws2_32", "WSACleanup", headers)
 when /cygwin/
   test_func = "socket(0,0,0)"
-when /beos/
-  test_func = "socket(0,0,0)"
-  have_library("net", "socket(0,0,0)", headers)
 when /haiku/
   test_func = "socket(0,0,0)"
   have_library("network", "socket(0,0,0)", headers)
@@ -507,7 +504,7 @@ EOF
   end
 
   ipv6 = false
-  default_ipv6 = /beos|haiku/ !~ RUBY_PLATFORM
+  default_ipv6 = /haiku/ !~ RUBY_PLATFORM
   if enable_config("ipv6", default_ipv6)
     if checking_for("ipv6") {try_link(AF_INET6_SOCKET_CREATION_TEST)}
       $defs << "-DENABLE_IPV6" << "-DINET6"

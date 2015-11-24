@@ -871,7 +871,7 @@ if test "$GCC" = yes; then
 
     # -fstack-protector
     AS_CASE(["$target_os"],
-    [mingw*|nacl|haiku], [
+    [mingw*|nacl], [
 	stack_protector=no
     ])
     if test -z "${stack_protector+set}"; then
@@ -895,11 +895,6 @@ if test "$GCC" = yes; then
     ],
     [cygwin*|darwin*|netbsd*|nacl], [
       # need lgamma_r(), finite()
-    ],
-    [haiku], [
-      # Haiku R1/alpha3 uses gcc-4.4.4 which can not handle anonymous union
-      # with ANSI standard flags. Anonumous union is required to compile
-      # socket extension where <net/if.h> uses anonymous union.
     ],
     [
       # ANSI (no XCFLAGS because this is C only)
@@ -1094,15 +1089,58 @@ main()
 		ac_cv_c_inline=no],
 [solaris*], [	LIBS="-lm $LIBS"
 		ac_cv_func_vfork=no
+		AC_MSG_CHECKING(whether _XOPEN_SOURCE is already given)
+		AC_TRY_COMPILE([#include <unistd.h>
+		    #ifndef _XOPEN_SOURCE
+		    #error _XOPEN_SOURCE is not defined
+		    #endif
+		    ], [],
+		    [given_xopen_source=yes], [given_xopen_source=no])
+		AC_MSG_RESULT($given_xopen_source)
+		if test $given_xopen_source = no; then
+		  # On Solaris, with gcc, -std=iso9899:1999 in $ansi_options
+		  # is often also needed in CPPFLAGS, because some feature
+		  # definitions vary depending on such standards options.
+		  AS_CASE(["${ansi_options}"],
+		  [*-std=iso9899:1999*], [
+		    RUBY_APPEND_OPTIONS(CPPFLAGS, ${ansi_options})
+		  ])
+		  AC_MSG_CHECKING(appropriate _XOPEN_SOURCE value to define)
+		  define_xopen_source=""
+		  for tmp_xpg in 7 6 5; do
+		    if test x"$define_xopen_source" != x; then
+		        break
+		    fi
+		    # Both AC_TRY_CPP and AC_TRY_COMPILE should pass
+		    # because some options may not be set to CPPFLAGS.
+		    AC_TRY_CPP([
+			#define _XOPEN_SOURCE ${tmp_xpg}00
+			#include <unistd.h>
+			#ifndef _XPG${tmp_xpg}
+			#error _XPG${tmp_xpg} should be defined by _XOPEN_SOURCE=${tmp_xpg}00
+			#endif
+			], [
+			AC_TRY_COMPILE([
+			#define _XOPEN_SOURCE ${tmp_xpg}00
+			#include <unistd.h>
+			#ifndef _XPG${tmp_xpg}
+			#error _XPG${tmp_xpg} should be defined by _XOPEN_SOURCE=${tmp_xpg}00
+			#endif
+			], [],
+			[define_xopen_source=${tmp_xpg}00], [])
+			], [])
+		  done
+		  if test x"$define_xopen_source" = x; then
+		    define_xopen_source=no
+		  fi
+		  AC_MSG_RESULT($define_xopen_source)
+		  if test x"$define_xopen_source" != xno; then
+		    RUBY_APPEND_OPTIONS(CPPFLAGS, -D_XOPEN_SOURCE=$define_xopen_source)
+		  fi
+		fi
 		],
-[beos*|haiku*], [
-		ac_cv_func_link=no
-		ac_cv_func_sched_yield=no
-		ac_cv_func_pthread_attr_setinheritsched=no
-		AS_CASE(["$target_os"],
-		[beos*], [ ac_cv_header_net_socket_h=yes],
-		[haiku*], [ ac_cv_func_shutdown=no])
-		LIBS="$LIBS" # m lib is include in root under BeOS/Haiku
+[haiku*], [
+		LIBS="$LIBS" # m lib is include in root
 		],
 [cygwin*], [	ac_cv_header_langinfo_h=yes
 		AC_CHECK_FUNCS(cygwin_conv_path)
@@ -2859,10 +2897,24 @@ if test x"$enable_pthread" = xyes; then
 	    AC_DEFINE_UNQUOTED(SET_THREAD_NAME(name), pthread_set_name_np(pthread_self(), name))
     fi
 fi
-if test x"$ac_cv_header_ucontext_h" = xyes; then
+
+if test x"$ac_cv_header_ucontext_h" = xno; then
+    AC_CACHE_CHECK([if signal.h defines ucontext_t], [rb_cv_ucontext_in_signal_h],
+	[AC_TRY_COMPILE([@%:@include <signal.h>],
+	[size_t size = sizeof(ucontext_t);],
+	[rb_cv_ucontext_in_signal_h=yes], [rb_cv_ucontext_in_signal_h=no])])
+    if test x"$rb_cv_ucontext_in_signal_h" = xyes; then
+	    AC_DEFINE_UNQUOTED(UCONTEXT_IN_SIGNAL_H, 1)
+    fi
+fi
+if test x"$ac_cv_header_ucontext_h" = xyes -o x"$rb_cv_ucontext_in_signal_h" = xyes; then
     AC_CACHE_CHECK([if mcontext_t is a pointer], [rb_cv_mcontext_t_ptr],
-	[AC_TRY_COMPILE([@%:@include <ucontext.h>
-	mcontext_t test(mcontext_t mc) {return mc+1;}
+	[AC_TRY_COMPILE([
+	    @%:@include <signal.h>
+	    @%:@ifdef HAVE_UCONTEXT_H
+	    @%:@include <ucontext.h>
+	    @%:@endif
+        mcontext_t test(mcontext_t mc) {return mc+1;}
 	],
 	[test(0);],
 	[rb_cv_mcontext_t_ptr=yes], [rb_cv_mcontext_t_ptr=no])])
@@ -3013,7 +3065,7 @@ if test "$with_dln_a_out" != yes; then
       # mkmf.rb's have_header() to fail if the desired resource happens to be
       # installed in the /usr/local tree.
       RUBY_APPEND_OPTION(CCDLFLAGS, -fno-common)],
-    [bsdi*|beos*|haiku*|cygwin*|mingw*|aix*|interix*], [ ],
+    [bsdi*|cygwin*|mingw*|aix*|interix*], [ ],
     [
       RUBY_APPEND_OPTION(CCDLFLAGS, -fPIC)])
   else
@@ -3110,20 +3162,6 @@ if test "$with_dln_a_out" != yes; then
                         TRY_LINK="$TRY_LINK"' $(CFLAGS) $(src) $(LIBPATH) $(LOCAL_LIBS) $(LIBS)'
 			: ${LIBPATHENV=LIBPATH}
 			RPATHFLAG=" ${linker_flag}-blibpath:%1\$-s:${prefix}/lib:${LIBPATH:-/usr/lib:/lib}"
-			rb_cv_dlopen=yes],
-	[beos*], [	AS_CASE(["$target_cpu"],
-			  [powerpc*], [
-			    : ${LDSHARED='$(LD) -xms'}
-			    EXTDLDFLAGS='-export $(TARGET_ENTRY)'
-			    DLDFLAGS="$DLDFLAGS -lbe -lroot glue-noinit.a init_term_dyn.o start_dyn.o"
-			    LDFLAGS="$LDFLAGS -L/boot/home/config/lib -lbe -lroot"
-			    ],
-			  [i586*], [
-			    : ${LDSHARED='$(LD) -shared'}
-			    DLDFLAGS="$DLDFLAGS -L/boot/develop/lib/x86 -L/boot/home/config/lib \$(topdir)/_APP_ -lroot"
-			    LDFLAGS="$LDFLAGS -L/boot/develop/lib/x86 -L/boot/home/config/lib -lroot"
-			    ])
-			: ${LIBPATHENV=LIBRARY_PATH}
 			rb_cv_dlopen=yes],
 	[nto-qnx*], [	DLDFLAGS="$DLDFLAGS -L/lib -L/usr/lib -L/usr/local/lib"
 			: ${LDSHARED='$(LD) -Bshareable -x'}
@@ -3506,7 +3544,7 @@ LIBRUBYARG='$(LIBRUBYARG_STATIC)'
 SOLIBS=
 
 AS_CASE(["$target_os"],
-  [cygwin*|mingw*|beos*|haiku*|darwin*], [
+  [cygwin*|mingw*|haiku*|darwin*], [
     : ${DLDLIBS=""}
     ],
   [
@@ -3574,7 +3612,7 @@ AS_CASE("$enable_shared", [yes], [
     [sunos4*], [
 	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_SO_NAME).so'
 	],
-    [linux* | gnu* | k*bsd*-gnu | atheos* | kopensolaris*-gnu], [
+    [linux* | gnu* | k*bsd*-gnu | atheos* | kopensolaris*-gnu | haiku*], [
 	LIBRUBY_DLDFLAGS='-Wl,-soname,lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR)'" $LDFLAGS_OPTDIR"
 	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_SO_NAME).so'
 	if test "$load_relative" = yes; then
@@ -3626,12 +3664,6 @@ AS_CASE("$enable_shared", [yes], [
 	LIBRUBYARG_SHARED='-L${libdir} -l${RUBY_SO_NAME}'
 	SOLIBS='-lm -lc'
 	],
-    [beos*], [
-	AS_CASE(["$target_cpu"],
-	[powerpc*], [
-	    LIBRUBY_DLDFLAGS="-f ruby.exp -lnet -lbe -lroot glue-noinit.a init_term_dyn.o start_dyn.o $LDFLAGS_OPTDIR"
-	    ])
-	],
     [darwin*], [
 	RUBY_SO_NAME="$RUBY_SO_NAME"'.$(MAJOR).$(MINOR).$(TEENY)'
 	LIBRUBY_LDSHARED='$(CC) -dynamiclib'
@@ -3666,10 +3698,6 @@ AS_CASE("$enable_shared", [yes], [
           AS_HELP_STRING([--disable-pie], [disable PIE feature]),
           [pie=$enableval], [pie=])
   AS_CASE(["$target_os"],
-  [haiku], [
-    # gcc supports PIE, but doesn't work correctly in Haiku
-    pie=no
-  ],
   [nacl], [
     # -pie implies -shared for NaCl.
     pie=no
@@ -3861,10 +3889,6 @@ AS_CASE(["$target_os"],
 	  rm -f /tmp/main.o
 	  CFLAGS="$CFLAGS -std"
 	fi
-	],
-    [beos*], [
-	AS_CASE(["$target_cpu"],[powerpc*], [CFLAGS="$CFLAGS -relax_pointers"])
-	CPPFLAGS="$CPPFLAGS -I/boot/home/config/include"
 	],
     [cygwin*|mingw*], [
 	RUBY_SO_NAME="${RUBY_SO_NAME}"'$(MAJOR)$(MINOR)$(TEENY)'
@@ -4375,7 +4399,7 @@ AC_CONFIG_FILES(Makefile, [
 [EXEEXT='$EXEEXT' gnumake='$gnumake'])
 
 AC_ARG_WITH([ruby-pc],
-	    AC_HELP_STRING([--with-ruby-pc=FILNAME], [pc file basename]),
+	    AC_HELP_STRING([--with-ruby-pc=FILENAME], [pc file basename]),
 	    [ruby_pc="$withval"],
 	    [ruby_pc="${RUBY_BASE_NAME}-${MAJOR}.${MINOR}.pc"])
 AC_SUBST(ruby_pc)

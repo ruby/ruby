@@ -8965,11 +8965,12 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 	snprintf(buff, buff_size, "%s", obj_type_name(obj));
     }
     else {
-	const int age = RVALUE_FLAGS_AGE(RBASIC(obj)->flags);
-	const int type = BUILTIN_TYPE(obj);
-
 #define TF(c) ((c) != 0 ? "true" : "false")
 #define C(c, s) ((c) != 0 ? (s) : " ")
+	const int type = BUILTIN_TYPE(obj);
+#if USE_RGENGC
+	const int age = RVALUE_FLAGS_AGE(RBASIC(obj)->flags);
+
 	snprintf(buff, buff_size, "%p [%d%s%s%s%s] %s",
 		 (void *)obj, age,
 		 C(RVALUE_UNCOLLECTIBLE_BITMAP(obj),  "L"),
@@ -8977,6 +8978,12 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 		 C(RVALUE_MARKING_BITMAP(obj),        "R"),
 		 C(RVALUE_WB_UNPROTECTED_BITMAP(obj), "U"),
 		 obj_type_name(obj));
+#else
+	snprintf(buff, buff_size, "%p [%s] %s",
+		 (void *)obj,
+		 C(RVALUE_MARK_BITMAP(obj),           "M"),
+		 obj_type_name(obj));
+#endif
 
 	if (internal_object_p(obj)) {
 	    /* ignore */

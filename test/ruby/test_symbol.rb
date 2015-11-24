@@ -336,4 +336,12 @@ class TestSymbol < Test::Unit::TestCase
       }
     end;
   end
+
+  def test_not_freeze
+    bug11721 = '[ruby-core:71611] [Bug #11721]'
+    str = "\u{1f363}".taint
+    assert_not_predicate(str, :frozen?)
+    assert_equal str, str.to_sym.to_s
+    assert_not_predicate(str, :frozen?, bug11721)
+  end
 end

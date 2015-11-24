@@ -616,9 +616,6 @@ void Init_ext(void)\n{\n#$extinit}
     open(extinit.c, "w") {|fe| fe.print src}
   end
 
-  if RUBY_PLATFORM =~ /beos/
-    $extflags.delete("-L/usr/local/lib")
-  end
   $extpath.delete("$(topdir)")
   $extflags = libpathflag($extpath) << " " << $extflags.strip
   conf = [

@@ -10,6 +10,10 @@
 # ruby1.9 tool/enc-unicode.rb data_dir > enc/unicode/name2ctype.kwd
 # You can get source file for gperf.  After this, simply make ruby.
 
+if ARGV[0] == "--header"
+  header = true
+  ARGV.shift
+end
 unless ARGV.size == 1
   $stderr.puts "Usage: #{$0} data_directory"
   exit(1)
@@ -274,6 +278,68 @@ end
 
 
 # Write Data
+class Unifdef
+  attr_accessor :output, :top, :stack, :stdout, :kwdonly
+  def initialize(out)
+    @top = @output = []
+    @stack = []
+    $stdout, @stdout = self, out
+  end
+  def restore
+    $stdout = @stdout
+  end
+  def ifdef(sym)
+    if @kwdonly
+      @stdout.puts "#ifdef #{sym}"
+      return
+    end
+    @stack << @top
+    @top << tmp = [sym]
+    @top = tmp
+  end
+  def endif(sym)
+    if @kwdonly
+      @stdout.puts "#endif /* #{sym} */"
+      return
+    end
+    unless sym == @top[0]
+      restore
+      raise ArgumentError, "#{sym} unmatch to #{@top[0]}"
+    end
+    @top = @stack.pop
+  end
+  def show(dest, *syms)
+    _show(dest, @output, syms)
+  end
+  def _show(dest, ary, syms)
+    if Symbol === (sym = ary[0])
+      unless syms.include?(sym)
+        return
+      end
+    end
+    ary.each do |e|
+      case e
+      when Array
+        _show(dest, e, syms)
+      when String
+        dest.print e
+      end
+    end
+  end
+  def write(str)
+    if @kwdonly
+      @stdout.write(str)
+    else
+      @top << str
+    end
+    self
+  end
+  alias << write
+end
+
+output = Unifdef.new($stdout)
+output.kwdonly = !header
+
 puts '%{'
 puts '#define long size_t'
 props, data = parse_unicode_data(get_file('UnicodeData.txt'))
@@ -284,7 +350,7 @@ define_posix_props(data)
 POSIX_NAMES.each do |name|
   make_const(name, data[name], "[[:#{name}:]]")
 end
-print "\n#ifdef USE_UNICODE_PROPERTIES"
+output.ifdef :USE_UNICODE_PROPERTIES
 props.each do |name|
   category = categories[name] ||
     case name.size
@@ -294,25 +360,25 @@ props.each do |name|
     end
   make_const(name, data[name], category)
 end
-print "\n#ifdef USE_UNICODE_AGE_PROPERTIES"
+output.ifdef :USE_UNICODE_AGE_PROPERTIES
 ages = parse_age(data)
-puts "#endif /* USE_UNICODE_AGE_PROPERTIES */"
+output.endif :USE_UNICODE_AGE_PROPERTIES
 blocks = parse_block(data)
-puts '#endif /* USE_UNICODE_PROPERTIES */'
+output.endif :USE_UNICODE_PROPERTIES
 puts(<<'__HEREDOC')
 
 static const OnigCodePoint* const CodeRanges[] = {
 __HEREDOC
 POSIX_NAMES.each{|name|puts"  CR_#{name},"}
-puts "#ifdef USE_UNICODE_PROPERTIES"
+output.ifdef :USE_UNICODE_PROPERTIES
 props.each{|name| puts"  CR_#{name},"}
-puts "#ifdef USE_UNICODE_AGE_PROPERTIES"
+output.ifdef :USE_UNICODE_AGE_PROPERTIES
 ages.each{|name|  puts"  CR_#{constantize_agename(name)},"}
-puts "#endif /* USE_UNICODE_AGE_PROPERTIES */"
+output.endif :USE_UNICODE_AGE_PROPERTIES
 blocks.each{|name|puts"  CR_#{name},"}
+output.endif :USE_UNICODE_PROPERTIES
 
 puts(<<'__HEREDOC')
-#endif /* USE_UNICODE_PROPERTIES */
 };
 struct uniname2ctype_struct {
   int name, ctype;
@@ -323,6 +389,7 @@ static const struct uniname2ctype_struct *uniname2ctype_p(const char *, unsigned
 struct uniname2ctype_struct;
 %%
 __HEREDOC
+
 i = -1
 name_to_index = {}
 POSIX_NAMES.each do |name|
@@ -332,7 +399,7 @@ POSIX_NAMES.each do |name|
   name_to_index[name] = i
   puts"%-40s %3d" % [name + ',', i]
 end
-puts "#ifdef USE_UNICODE_PROPERTIES"
+output.ifdef :USE_UNICODE_PROPERTIES
 props.each do |name|
   i += 1
   name = normalize_propname(name)
@@ -344,22 +411,22 @@ aliases.each_pair do |k, v|
   next unless v = name_to_index[v]
   puts "%-40s %3d" % [k + ',', v]
 end
-puts "#ifdef USE_UNICODE_AGE_PROPERTIES"
+output.ifdef :USE_UNICODE_AGE_PROPERTIES
 ages.each do |name|
   i += 1
   name = "age=#{name}"
   name_to_index[name] = i
   puts "%-40s %3d" % [name + ',', i]
 end
-puts "#endif /* USE_UNICODE_AGE_PROPERTIES */"
+output.endif :USE_UNICODE_AGE_PROPERTIES
 blocks.each do |name|
   i += 1
   name = normalize_propname(name)
   name_to_index[name] = i
   puts "%-40s %3d" % [name + ',', i]
 end
+output.endif :USE_UNICODE_PROPERTIES
 puts(<<'__HEREDOC')
-#endif /* USE_UNICODE_PROPERTIES */
 %%
 static int
 uniname2ctype(const UChar *name, unsigned int len)
@@ -369,3 +436,22 @@ uniname2ctype(const UChar *name, unsigned int len)
   return -1;
 }
 __HEREDOC
+
+output.restore
+
+if header
+  require 'tempfile'
+
+  NAME2CTYPE = %w[gperf -7 -c -j1 -i1 -t -C -P -T -H uniname2ctype_hash -Q uniname2ctype_pool -N uniname2ctype_p]
+
+  fds = []
+  syms = %i[USE_UNICODE_PROPERTIES USE_UNICODE_AGE_PROPERTIES]
+  begin
+    fds << (tmp = Tempfile.new(%w"name2ctype .h"))
+    IO.popen([*NAME2CTYPE, out: tmp], "w") {|f| output.show(f, *syms)}
+  end while syms.pop
+  fds.each(&:close)
+  IO.popen(%W[diff -DUSE_UNICODE_AGE_PROPERTIES #{fds[1].path} #{fds[0].path}], "r") {|age|
+    system(* %W[diff -DUSE_UNICODE_PROPERTIES #{fds[2].path} -], in: age)
+  }
+end

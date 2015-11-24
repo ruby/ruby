@@ -241,8 +241,7 @@ rsock_socketpair(int domain, int type, int protocol, int sv[2])
     int ret;
 
     ret = rsock_socketpair0(domain, type, protocol, sv);
-    if (ret < 0 && (errno == EMFILE || errno == ENFILE)) {
-        rb_gc();
+    if (ret < 0 && rb_gc_for_fd(errno)) {
         ret = rsock_socketpair0(domain, type, protocol, sv);
     }
 
@@ -1123,7 +1122,7 @@ sock_s_getservbyport(int argc, VALUE *argv)
  *
  * Obtains address information for _nodename_:_servname_.
  *
- * _family_ should be an address family such as: :INET, :INET6, :UNIX, etc.
+ * _family_ should be an address family such as: :INET, :INET6, etc.
  *
  * _socktype_ should be a socket type such as: :STREAM, :DGRAM, :RAW, etc.
  *
