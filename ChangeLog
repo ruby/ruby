@@ -1,3 +1,8 @@
+Tue Nov 24 09:16:35 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* internal.h (rb_gc_for_fd): move to export, as referred by
+	  ext/socket.
+
 Tue Nov 24 09:04:29 2015  David Rodriguez  <deivid.rodriguez@gmail.com>
 
 	* file.c: [DOC] add a missing period to File docs, to terminate
