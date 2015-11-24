@@ -8803,6 +8803,62 @@ str_scrub_bang(int argc, VALUE *argv, VALUE str)
     return str;
 }
 
+/*
+ *  call-seq:
+ *    str.squish! -> str
+ *
+ *  Performs a destructive squish. See String#squish.
+ *
+ *     str = " foo   bar    \n   \t   boo"
+ *     str.squish!                         # => "foo bar boo"
+ *     str                                 # => "foo bar boo"
+ */
+static VALUE
+rb_str_squish_bang(VALUE str)
+{
+    static const char before_regex_source[] = "\\A[[:space:]]+";
+    static const char after_regex_source[] = "[[:space:]]+\\z";
+    static const char between_regex_source[] = "[[:space:]]+";
+    VALUE before_argv[] = {
+        rb_reg_new(before_regex_source, sizeof before_regex_source - 1, 0),
+        rb_str_new_cstr("")
+    };
+    VALUE after_argv[] = {
+        rb_reg_new(after_regex_source, sizeof after_regex_source - 1, 0),
+        rb_str_new_cstr("")
+    };
+    VALUE between_argv[] = {
+        rb_reg_new(between_regex_source, sizeof between_regex_source - 1, 0),
+        rb_str_new_cstr(" ")
+    };
+
+    rb_str_gsub_bang(2, before_argv, str);
+    rb_str_gsub_bang(2, after_argv, str);
+    rb_str_gsub_bang(2, between_argv, str);
+    return str;
+}
+
+/*
+ *  call-seq:
+ *    str.squish -> str
+ *
+ *  Returns the string, first removing all whitespace on both ends of the
+ *  string, and then changing remaining consecutive whitespace groups into one
+ *  space each.
+ *
+ *  Note that it handles both ASCII and Unicode whitespace.
+ *
+ *     %{ Multi-line
+ *        string }.squish                   # => "Multi-line string"
+ *     " foo   bar    \n   \t   boo".squish # => "foo bar boo"
+ */
+static VALUE
+rb_str_squish(VALUE str)
+{
+    str = rb_str_dup(str);
+    return rb_str_squish_bang(str);
+}
+
 /**********************************************************************
  * Document-class: Symbol
  *
@@ -9328,6 +9384,7 @@ Init_String(void)
     rb_define_method(rb_cString, "strip", rb_str_strip, 0);
     rb_define_method(rb_cString, "lstrip", rb_str_lstrip, 0);
     rb_define_method(rb_cString, "rstrip", rb_str_rstrip, 0);
+    rb_define_method(rb_cString, "squish", rb_str_squish, 0);
 
     rb_define_method(rb_cString, "sub!", rb_str_sub_bang, -1);
     rb_define_method(rb_cString, "gsub!", rb_str_gsub_bang, -1);
@@ -9336,6 +9393,7 @@ Init_String(void)
     rb_define_method(rb_cString, "strip!", rb_str_strip_bang, 0);
     rb_define_method(rb_cString, "lstrip!", rb_str_lstrip_bang, 0);
     rb_define_method(rb_cString, "rstrip!", rb_str_rstrip_bang, 0);
+    rb_define_method(rb_cString, "squish!", rb_str_squish_bang, 0);
 
     rb_define_method(rb_cString, "tr", rb_str_tr, 2);
     rb_define_method(rb_cString, "tr_s", rb_str_tr_s, 2);
