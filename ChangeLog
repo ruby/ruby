@@ -1,3 +1,10 @@
+Wed Nov 25 01:05:29 2015  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* ext/digest/sha1/sha1ossl.c: fix defs.h path to catch up changes in
+	  r52739.[Bug #3231]
+
+	* ext/digest/rmd160/rmd160ossl.c: ditto.
+
 Wed Nov 25 00:54:15 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (kwd_append): fix segv after invalid keyword argument,
