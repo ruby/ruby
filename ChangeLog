@@ -1,3 +1,14 @@
+Wed Nov 25 00:14:28 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/digest/*/*.[ch]: include ruby.h before digest.h to avoid
+	  includeing ext/digest/extconf.h. [Bug #3231]
+	  https://msdn.microsoft.com/library/36k2cdd4.aspx
+
+	* ext/digest/*/extconf.rb: remove ext/digest from include search path
+	  to avoid confusion of cl.exe.
+
+	* ext/digest/*/*.[ch]: explicitly specify def.h's path.
+
 Wed Nov 25 00:03:42 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* Added missing reference of GitHub

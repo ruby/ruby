@@ -1,4 +1,4 @@
-#include "defs.h"
+#include "../defs.h"
 #include "sha2ossl.h"
 
 #define SHA_Finish(bit) \
