@@ -391,7 +391,7 @@ class Gem::Installer
   end
 
   ##
-  # The location of of the spec file that is installed.
+  # The location of the spec file that is installed.
   #
 
   def spec_file
@@ -399,7 +399,7 @@ class Gem::Installer
   end
 
   ##
-  # The location of of the default spec file for default gems.
+  # The location of the default spec file for default gems.
   #
 
   def default_spec_file
