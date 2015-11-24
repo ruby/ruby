@@ -1,3 +1,8 @@
+Tue Nov 24 10:00:10 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/rubygems/installer.rb: Fix two double-word typos.
+	  [ci skip][fix GH-1108] Patch by @jwworth
+
 Tue Nov 24 09:17:02 2015  Alexander von Gluck IV  <kallisti5@unixzen.com>
 
 	* beos: Drop support for BeOS now that Haiku is stable.
