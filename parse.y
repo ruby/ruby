@@ -5270,6 +5270,7 @@ ripper_dispatch_scan_event(struct parser_params *parser, int t)
     if (!ripper_has_scan_event(parser)) return;
     yylval_rval = ripper_scan_event_val(parser, t);
 }
+#define dispatch_scan_event(t) ripper_dispatch_scan_event(parser, t)
 
 static void
 ripper_dispatch_ignored_scan_event(struct parser_params *parser, int t)
@@ -5277,7 +5278,6 @@ ripper_dispatch_ignored_scan_event(struct parser_params *parser, int t)
     if (!ripper_has_scan_event(parser)) return;
     (void)ripper_scan_event_val(parser, t);
 }
-#define dispatch_scan_event(t) ripper_dispatch_ignored_scan_event(parser, t)
 
 static void
 ripper_dispatch_delayed_token(struct parser_params *parser, int t)
