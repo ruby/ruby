@@ -212,7 +212,6 @@ vtable_included(const struct vtable * tbl, ID id)
 }
 
 
-#ifndef RIPPER
 typedef struct token_info {
     const char *token;
     int linenum;
@@ -220,7 +219,6 @@ typedef struct token_info {
     int nonspc;
     struct token_info *next;
 } token_info;
-#endif
 
 /*
     Structure of Lexer Buffer:
@@ -265,6 +263,8 @@ struct parser_params {
     char *ruby_sourcefile; /* current source file */
     VALUE ruby_sourcefile_string;
     rb_encoding *enc;
+    token_info *token_info;
+    VALUE compile_option;
 
     ID cur_arg;
 
@@ -280,28 +280,22 @@ struct parser_params {
     unsigned int in_kwarg: 1;
     unsigned int in_single: 1;
     unsigned int in_def: 1;
-
-#ifndef RIPPER
-    /* Ruby core only */
+    unsigned int token_seen: 1;
     unsigned int token_info_enabled: 1;
 # if WARN_PAST_SCOPE
     unsigned int past_scope_enabled: 1;
 # endif
-    unsigned int has_err: 1;
-    unsigned int token_seen: 1;
+    unsigned int error_p: 1;
+
+#ifndef RIPPER
+    /* Ruby core only */
 
     NODE *eval_tree_begin;
     NODE *eval_tree;
     VALUE debug_lines;
     VALUE coverage;
-
-    token_info *token_info;
-
-    VALUE compile_option;
 #else
     /* Ripper only */
-    unsigned int toplevel_p: 1;
-    unsigned int error_p: 1;
 
     const char *tokp;
     VALUE delayed;
@@ -732,7 +726,7 @@ static void ripper_compile_error(struct parser_params*, const char *fmt, ...);
 # define WARNING_ARGS_L(l,fmt,n) WARN_ARGS_L(l,fmt,n)
 # define WARNING_CALL rb_compile_warning
 # define rb_compile_error rb_compile_error_with_enc
-# define compile_error (parser->has_err = 1),rb_compile_error_with_enc
+# define compile_error (parser->error_p = 1),rb_compile_error_with_enc
 # define PARSER_ARG ruby_sourcefile, ruby_sourceline, (void *)current_enc,
 #endif
 
@@ -745,15 +739,10 @@ static void ripper_compile_error(struct parser_params*, const char *fmt, ...);
 #endif
 #endif
 
-#ifndef RIPPER
 static void token_info_push(struct parser_params*, const char *token, size_t len);
 static void token_info_pop(struct parser_params*, const char *token, size_t len);
-#define token_info_push(token) (RTEST(ruby_verbose) ? token_info_push(parser, (token), rb_strlen_lit(token)) : (void)0)
-#define token_info_pop(token) (RTEST(ruby_verbose) ? token_info_pop(parser, (token), rb_strlen_lit(token)) : (void)0)
-#else
-#define token_info_push(token) /* nothing */
-#define token_info_pop(token) /* nothing */
-#endif
+#define token_info_push(token) token_info_push(parser, (token), rb_strlen_lit(token))
+#define token_info_pop(token) token_info_pop(parser, (token), rb_strlen_lit(token))
 %}
 
 %pure-parser
@@ -5318,7 +5307,6 @@ ripper_dispatch_delayed_token(struct parser_params *parser, int t)
 
 #define parser_isascii() ISASCII(*(lex_p-1))
 
-#ifndef RIPPER
 static int
 token_info_get_column(struct parser_params *parser, const char *pend)
 {
@@ -5378,14 +5366,13 @@ token_info_pop(struct parser_params *parser, const char *token, size_t len)
 	linenum != ptinfo->linenum && !ptinfo->nonspc &&
 	!token_info_has_nonspaces(parser, t) &&
 	token_info_get_column(parser, t) != ptinfo->column) {
-	rb_compile_warn(ruby_sourcefile, linenum,
-			"mismatched indentations at '%s' with '%s' at %d",
-			token, ptinfo->token, ptinfo->linenum);
+	rb_warn3L(linenum,
+		  "mismatched indentations at '%s' with '%s' at %d",
+		  WARN_S(token), WARN_S(ptinfo->token), WARN_I(ptinfo->linenum));
     }
 
     xfree(ptinfo);
 }
-#endif	/* RIPPER */
 
 static int
 parser_yyerror(struct parser_params *parser, const char *msg)
@@ -5511,10 +5498,6 @@ yycompile0(VALUE arg)
     parser->last_cr_line = ruby_sourceline - 1;
 
     parser_prepare(parser);
-    deferred_nodes = 0;
-#ifndef RIPPER
-    parser->token_info_enabled = !compile_for_eval && RTEST(ruby_verbose);
-#endif
 #ifndef RIPPER
 #define RUBY_DTRACE_PARSE_HOOK(name) \
     if (RUBY_DTRACE_PARSE_##name##_ENABLED()) { \
@@ -5533,7 +5516,7 @@ yycompile0(VALUE arg)
     lex_strterm = 0;
     lex_p = lex_pbeg = lex_pend = 0;
     lex_lastline = lex_nextline = 0;
-    if (parser->has_err) {
+    if (parser->error_p) {
 	return 0;
     }
     tree = ruby_eval_tree;
@@ -6348,7 +6331,7 @@ ripper_flush_string_content(struct parser_params *parser, rb_encoding *enc)
 	parser->tokp = lex_p;
 	RNODE(content)->nd_rval = yylval.val;
     }
-    ripper_dispatch_scan_event(parser, tSTRING_CONTENT);
+    dispatch_scan_event(tSTRING_CONTENT);
     if (yylval.val != content)
 	RNODE(content)->nd_rval = yylval.val;
     yylval.val = content;
@@ -6438,9 +6421,7 @@ parser_parse_string(struct parser_params *parser, NODE *quote)
 	}
 	if (!(func & STR_FUNC_REGEXP)) return tSTRING_END;
         set_yylval_num(regx_options());
-#ifdef RIPPER
-	ripper_dispatch_scan_event(parser, tREGEXP_END);
-#endif
+	dispatch_scan_event(tREGEXP_END);
 	return tREGEXP_END;
     }
     if (space) {
@@ -6526,9 +6507,7 @@ parser_heredoc_identifier(struct parser_params *parser)
     }
 
     tokfix();
-#ifdef RIPPER
-    ripper_dispatch_scan_event(parser, tHEREDOC_BEG);
-#endif
+    dispatch_scan_event(tHEREDOC_BEG);
     len = lex_p - lex_pbeg;
     lex_goto_eol(parser);
     lex_strterm = rb_node_newnode(NODE_HEREDOC,
@@ -6673,7 +6652,7 @@ parser_here_document(struct parser_params *parser, NODE *here)
 	compile_error(PARSER_ARG "can't find string \"%s\" anywhere before EOF", eos);
 #ifdef RIPPER
 	if (NIL_P(parser->delayed)) {
-	    ripper_dispatch_scan_event(parser, tSTRING_CONTENT);
+	    dispatch_scan_event(tSTRING_CONTENT);
 	}
 	else {
 	    if (str) {
@@ -6897,7 +6876,6 @@ magic_comment_encoding(struct parser_params *parser, const char *name, const cha
     parser_set_encode(parser, val);
 }
 
-#ifndef RIPPER
 static int
 parser_get_bool(struct parser_params *parser, const char *name, const char *val)
 {
@@ -6951,7 +6929,6 @@ parser_set_past_scope(struct parser_params *parser, const char *name, const char
     if (b >= 0) parser->past_scope_enabled = b;
 }
 # endif
-#endif
 
 struct magic_comment {
     const char *name;
@@ -6962,13 +6939,11 @@ struct magic_comment {
 static const struct magic_comment magic_comments[] = {
     {"coding", magic_comment_encoding, parser_encode_length},
     {"encoding", magic_comment_encoding, parser_encode_length},
-#ifndef RIPPER
     {"frozen_string_literal", parser_set_compile_option_flag},
     {"warn_indent", parser_set_token_info},
 # if WARN_PAST_SCOPE
     {"warn_past_scope", parser_set_past_scope},
 # endif
-#endif
 };
 
 static const char *
@@ -7174,6 +7149,8 @@ parser_prepare(struct parser_params *parser)
     }
     pushback(c);
     parser->enc = rb_enc_get(lex_lastline);
+    deferred_nodes = 0;
+    parser->token_info_enabled = !compile_for_eval && RTEST(ruby_verbose);
 }
 
 #define IS_ARG() IS_lex_state(EXPR_ARG_ANY)
@@ -7929,11 +7906,8 @@ parser_yylex(struct parser_params *parser)
     int cmd_state;
     int label;
     enum lex_state_e last_state;
-#ifdef RIPPER
     int fallthru = FALSE;
-#else
     int token_seen = parser->token_seen;
-#endif
 
     if (lex_strterm) {
 	int token;
@@ -7963,9 +7937,7 @@ parser_yylex(struct parser_params *parser)
     }
     cmd_state = command_start;
     command_start = FALSE;
-#ifndef RIPPER
     parser->token_seen = TRUE;
-#endif
   retry:
     last_state = lex_state;
     switch (c = nextc()) {
@@ -7991,14 +7963,12 @@ parser_yylex(struct parser_params *parser)
 	}
       outofloop:
 	pushback(c);
-	ripper_dispatch_scan_event(parser, tSP);
+	dispatch_scan_event(tSP);
 #endif
 	goto retry;
 
       case '#':		/* it's a comment */
-#ifndef RIPPER
 	parser->token_seen = token_seen;
-#endif
 	/* no magic_comment in shebang line */
 	if (!parser_magic_comment(parser, lex_p, lex_pend - lex_p)) {
 	    if (comment_at_top(parser)) {
@@ -8006,24 +7976,18 @@ parser_yylex(struct parser_params *parser)
 	    }
 	}
 	lex_p = lex_pend;
-#ifdef RIPPER
-        ripper_dispatch_scan_event(parser, tCOMMENT);
+        dispatch_scan_event(tCOMMENT);
         fallthru = TRUE;
-#endif
 	/* fall through */
       case '\n':
-#ifndef RIPPER
 	parser->token_seen = token_seen;
-#endif
 	c = (IS_lex_state(EXPR_BEG|EXPR_CLASS|EXPR_FNAME|EXPR_DOT) &&
 	     !IS_lex_state(EXPR_LABELED));
 	if (c || IS_lex_state_all(EXPR_ARG|EXPR_LABELED)) {
-#ifdef RIPPER
             if (!fallthru) {
-                ripper_dispatch_scan_event(parser, tIGNORED_NL);
+                dispatch_scan_event(tIGNORED_NL);
             }
             fallthru = FALSE;
-#endif
 	    if (!c && parser->in_kwarg) {
 		goto normal_newline;
 	    }
@@ -8577,7 +8541,7 @@ parser_yylex(struct parser_params *parser)
 	    return -1;
 #else
             lex_goto_eol(parser);
-            ripper_dispatch_scan_event(parser, k__END__);
+            dispatch_scan_event(k__END__);
             return 0;
 #endif
 	}
@@ -10602,7 +10566,6 @@ parser_initialize(struct parser_params *parser)
     parser->delayed = Qnil;
     parser->result = Qnil;
     parser->parsing_thread = Qnil;
-    parser->toplevel_p = TRUE;
 #endif
     parser->enc = rb_utf8_encoding();
 }
@@ -10653,7 +10616,6 @@ parser_free(void *ptr)
 	prev = local->prev;
 	xfree(local);
     }
-#ifndef RIPPER
     {
 	token_info *ptinfo;
 	while ((ptinfo = parser->token_info) != 0) {
@@ -10661,7 +10623,6 @@ parser_free(void *ptr)
 	    xfree(ptinfo);
 	}
     }
-#endif
     xfree(ptr);
 }
 
