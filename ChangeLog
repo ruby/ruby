@@ -1,3 +1,9 @@
+Wed Nov 25 00:32:44 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_build_from_ary_body): register cdhash to the
+	  iseq constant body instead of compile time mark array, not to
+	  get GCed.  [ruby-core:70708] [Feature #8543]
+
 Wed Nov 25 00:14:28 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/digest/*/*.[ch]: include ruby.h before digest.h to avoid

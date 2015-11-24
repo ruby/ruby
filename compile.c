@@ -5973,7 +5973,7 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 			    }
 			    RB_GC_GUARD(op);
 			    argv[j] = map;
-			    iseq_add_mark_object_compile_time(iseq, map);
+			    rb_iseq_add_mark_object(iseq, map);
 			}
 			break;
 		      case TS_FUNCPTR:
