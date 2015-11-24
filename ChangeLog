@@ -25,7 +25,7 @@ Tue Nov 24 08:30:06 2015  JuanitoFatas  <katehuang0320@gmail.com>
 
 Tue Nov 24 07:56:54 2015  Eric Wong  <e@80x24.org>
 
-	* ext/socket/init.c (rsock_accept): handle ENOMEM
+	* ext/socket/init.c (rsock_s_accept): handle ENOMEM
 
 Tue Nov 24 07:50:15 2015  Eric Wong  <e@80x24.org>
 
