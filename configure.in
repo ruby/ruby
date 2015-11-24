@@ -1322,6 +1322,24 @@ dnl check for large file stuff
 mv confdefs.h confdefs1.h
 : > confdefs.h
 AC_SYS_LARGEFILE
+# On 32-bit Solaris, it is safe to define _LARGEFILE_SOURCE
+# which is not added by AC_SYS_LARGEFILE.
+if test x"$enable_largefile" != xno; then
+  AS_CASE(["$target_os"], [solaris*], [
+    AC_MSG_CHECKING([wheather _LARGEFILE_SOURCE should be defined])
+    AS_CASE(["${ac_cv_sys_file_offset_bits}:${ac_cv_sys_large_files}"],
+      ["64:"|"64:no"|"64:unknown"], [
+	# insert _LARGEFILE_SOURCE before _FILE_OFFSET_BITS line
+	# that is the same order as "getconf LFS_CFLAGS" output
+	mv confdefs.h largefile0.h
+	: > confdefs.h
+	AC_DEFINE(_LARGEFILE_SOURCE)
+	cat largefile0.h >> confdefs.h
+	rm largefile0.h
+	AC_MSG_RESULT([yes])
+      ], [AC_MSG_RESULT([no])])
+  ])
+fi
 mv confdefs.h largefile.h
 mv confdefs1.h confdefs.h
 cat largefile.h >> confdefs.h

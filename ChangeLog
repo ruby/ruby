@@ -1,3 +1,8 @@
+Tue Nov 24 23:56:25 2015  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* configure.in: On Solaris, it is safe to define _LARGEFILE_SOURCE
+	  when _FILE_OFFSET_BITS=64 is defined (= when 32-bit compile).
+
 Tue Nov 24 10:00:10 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/rubygems/installer.rb: Fix two double-word typos.
