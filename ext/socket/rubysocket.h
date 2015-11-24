@@ -27,11 +27,7 @@
 #    undef HAVE_TYPE_STRUCT_SOCKADDR_DL
 #  endif
 #else
-#  if defined(__BEOS__) && !defined(BONE)
-#    include <net/socket.h>
-#  else
-#    include <sys/socket.h>
-#  endif
+#  include <sys/socket.h>
 #  include <netinet/in.h>
 #  ifdef HAVE_NETINET_IN_SYSTM_H
 #    include <netinet/in_systm.h>
@@ -220,11 +216,6 @@ typedef union {
 #  ifndef CMSG_LEN
 #    define CMSG_LEN(len) (_CMSG_ALIGN(sizeof(struct cmsghdr)) + (len))
 #  endif
-#endif
-
-#ifdef __BEOS__
-#  undef close
-#  define close closesocket
 #endif
 
 #define INET_CLIENT 0

@@ -1139,15 +1139,8 @@ main()
 		  fi
 		fi
 		],
-[beos*], [
-		ac_cv_func_link=no
-		ac_cv_func_sched_yield=no
-		ac_cv_func_pthread_attr_setinheritsched=no
-		ac_cv_header_net_socket_h=yes
-		LIBS="$LIBS" # m lib is include in root under BeOS
-		],
 [haiku*], [
-		LIBS="$LIBS"
+		LIBS="$LIBS" # m lib is include in root
 		],
 [cygwin*], [	ac_cv_header_langinfo_h=yes
 		AC_CHECK_FUNCS(cygwin_conv_path)
@@ -3072,7 +3065,7 @@ if test "$with_dln_a_out" != yes; then
       # mkmf.rb's have_header() to fail if the desired resource happens to be
       # installed in the /usr/local tree.
       RUBY_APPEND_OPTION(CCDLFLAGS, -fno-common)],
-    [bsdi*|beos*|cygwin*|mingw*|aix*|interix*], [ ],
+    [bsdi*|cygwin*|mingw*|aix*|interix*], [ ],
     [
       RUBY_APPEND_OPTION(CCDLFLAGS, -fPIC)])
   else
@@ -3169,20 +3162,6 @@ if test "$with_dln_a_out" != yes; then
                         TRY_LINK="$TRY_LINK"' $(CFLAGS) $(src) $(LIBPATH) $(LOCAL_LIBS) $(LIBS)'
 			: ${LIBPATHENV=LIBPATH}
 			RPATHFLAG=" ${linker_flag}-blibpath:%1\$-s:${prefix}/lib:${LIBPATH:-/usr/lib:/lib}"
-			rb_cv_dlopen=yes],
-	[beos*], [	AS_CASE(["$target_cpu"],
-			  [powerpc*], [
-			    : ${LDSHARED='$(LD) -xms'}
-			    EXTDLDFLAGS='-export $(TARGET_ENTRY)'
-			    DLDFLAGS="$DLDFLAGS -lbe -lroot glue-noinit.a init_term_dyn.o start_dyn.o"
-			    LDFLAGS="$LDFLAGS -L/boot/home/config/lib -lbe -lroot"
-			    ],
-			  [i586*], [
-			    : ${LDSHARED='$(LD) -shared'}
-			    DLDFLAGS="$DLDFLAGS -L/boot/develop/lib/x86 -L/boot/home/config/lib \$(topdir)/_APP_ -lroot"
-			    LDFLAGS="$LDFLAGS -L/boot/develop/lib/x86 -L/boot/home/config/lib -lroot"
-			    ])
-			: ${LIBPATHENV=LIBRARY_PATH}
 			rb_cv_dlopen=yes],
 	[nto-qnx*], [	DLDFLAGS="$DLDFLAGS -L/lib -L/usr/lib -L/usr/local/lib"
 			: ${LDSHARED='$(LD) -Bshareable -x'}
@@ -3565,7 +3544,7 @@ LIBRUBYARG='$(LIBRUBYARG_STATIC)'
 SOLIBS=
 
 AS_CASE(["$target_os"],
-  [cygwin*|mingw*|beos*|haiku*|darwin*], [
+  [cygwin*|mingw*|haiku*|darwin*], [
     : ${DLDLIBS=""}
     ],
   [
@@ -3684,12 +3663,6 @@ AS_CASE("$enable_shared", [yes], [
 	LIBRUBY_DLDFLAGS="${linker_flag}-bnoentry $XLDFLAGS $LDFLAGS_OPTDIR"
 	LIBRUBYARG_SHARED='-L${libdir} -l${RUBY_SO_NAME}'
 	SOLIBS='-lm -lc'
-	],
-    [beos*], [
-	AS_CASE(["$target_cpu"],
-	[powerpc*], [
-	    LIBRUBY_DLDFLAGS="-f ruby.exp -lnet -lbe -lroot glue-noinit.a init_term_dyn.o start_dyn.o $LDFLAGS_OPTDIR"
-	    ])
 	],
     [darwin*], [
 	RUBY_SO_NAME="$RUBY_SO_NAME"'.$(MAJOR).$(MINOR).$(TEENY)'
@@ -3916,10 +3889,6 @@ AS_CASE(["$target_os"],
 	  rm -f /tmp/main.o
 	  CFLAGS="$CFLAGS -std"
 	fi
-	],
-    [beos*], [
-	AS_CASE(["$target_cpu"],[powerpc*], [CFLAGS="$CFLAGS -relax_pointers"])
-	CPPFLAGS="$CPPFLAGS -I/boot/home/config/include"
 	],
     [cygwin*|mingw*], [
 	RUBY_SO_NAME="${RUBY_SO_NAME}"'$(MAJOR)$(MINOR)$(TEENY)'

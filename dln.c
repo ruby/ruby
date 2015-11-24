@@ -85,10 +85,6 @@ char *getenv();
 # endif
 #endif
 
-#if defined(__BEOS__)
-# include <image.h>
-#endif
-
 #ifndef dln_loaderror
 static void
 dln_loaderror(const char *format, ...)
@@ -1441,54 +1437,6 @@ dln_load(const char *file)
 	return (void*)init_fct;
     }
 #endif
-
-#if defined(__BEOS__)
-# define DLN_DEFINED
-    {
-      status_t err_stat;  /* BeOS error status code */
-      image_id img_id;    /* extension module unique id */
-      void (*init_fct)(); /* initialize function for extension module */
-
-      /* load extension module */
-      img_id = load_add_on(file);
-      if (img_id <= 0) {
-	dln_loaderror("Failed to load add_on %.200s error_code=%x",
-	  file, img_id);
-      }
-
-      /* find symbol for module initialize function. */
-      /* The Be Book KernelKit Images section described to use
-	 B_SYMBOL_TYPE_TEXT for symbol of function, not
-	 B_SYMBOL_TYPE_CODE. Why ? */
-      /* strcat(init_fct_symname, "__Fv"); */  /* parameter nothing. */
-      /* "__Fv" dont need! The Be Book Bug ? */
-      err_stat = get_image_symbol(img_id, buf,
-				  B_SYMBOL_TYPE_TEXT, (void **)&init_fct);
-
-      if (err_stat != B_NO_ERROR) {
-	char real_name[MAXPATHLEN];
-
-	strlcpy(real_name, buf, MAXPATHLEN);
-	strlcat(real_name, "__Fv", MAXPATHLEN);
-        err_stat = get_image_symbol(img_id, real_name,
-				    B_SYMBOL_TYPE_TEXT, (void **)&init_fct);
-      }
-
-      if ((B_BAD_IMAGE_ID == err_stat) || (B_BAD_INDEX == err_stat)) {
-	unload_add_on(img_id);
-	dln_loaderror("Failed to lookup Init function %.200s", file);
-      }
-      else if (B_NO_ERROR != err_stat) {
-	char errmsg[] = "Internal of BeOS version. %.200s (symbol_name = %s)";
-	unload_add_on(img_id);
-	dln_loaderror(errmsg, strerror(err_stat), buf);
-      }
-
-      /* call module initialize function. */
-      (*init_fct)();
-      return (void*)img_id;
-    }
-#endif /* __BEOS__ */
 
 #ifndef DLN_DEFINED
     dln_notimplement();

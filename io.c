@@ -35,7 +35,7 @@
 # include <sys/socket.h>
 #endif
 
-#if defined(__BOW__) || defined(__CYGWIN__) || defined(_WIN32) || defined(__BEOS__)
+#if defined(__BOW__) || defined(__CYGWIN__) || defined(_WIN32)
 # define NO_SAFE_RENAME
 #endif
 
@@ -98,12 +98,6 @@
 
 #ifdef HAVE_SYS_WAIT_H
 # include <sys/wait.h>		/* for WNOHANG on BSD */
-#endif
-
-#if defined(__BEOS__)
-# ifndef NOFILE
-#  define NOFILE (OPEN_MAX)
-# endif
 #endif
 
 #include "ruby/util.h"
@@ -2188,7 +2182,7 @@ remain_size(rb_io_t *fptr)
     off_t pos;
 
     if (fstat(fptr->fd, &st) == 0  && S_ISREG(st.st_mode)
-#if defined(__BEOS__) || defined(__HAIKU__)
+#if defined(__HAIKU__)
 	&& (st.st_dev > 3)
 #endif
 	)

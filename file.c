@@ -120,33 +120,6 @@ int flock(int, int);
 #define STAT(p, s)	stat((p), (s))
 #endif
 
-#if defined(__BEOS__) /* should not change ID if -1 */
-static int
-be_chown(const char *path, uid_t owner, gid_t group)
-{
-    if (owner == (uid_t)-1 || group == (gid_t)-1) {
-	struct stat st;
-	if (STAT(path, &st) < 0) return -1;
-	if (owner == (uid_t)-1) owner = st.st_uid;
-	if (group == (gid_t)-1) group = st.st_gid;
-    }
-    return chown(path, owner, group);
-}
-#define chown be_chown
-static int
-be_fchown(int fd, uid_t owner, gid_t group)
-{
-    if (owner == (uid_t)-1 || group == (gid_t)-1) {
-	struct stat st;
-	if (fstat(fd, &st) < 0) return -1;
-	if (owner == (uid_t)-1) owner = st.st_uid;
-	if (group == (gid_t)-1) group = st.st_gid;
-    }
-    return fchown(fd, owner, group);
-}
-#define fchown be_fchown
-#endif /* __BEOS__ */
-
 VALUE rb_cFile;
 VALUE rb_mFileTest;
 VALUE rb_cStat;

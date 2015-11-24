@@ -41,11 +41,7 @@
 #include <stdio.h>
 #include <sys/types.h>
 #ifndef _WIN32
-#if defined(__BEOS__) && !defined(BONE)
-# include <net/socket.h>
-#else
-# include <sys/socket.h>
-#endif
+#include <sys/socket.h>
 #include <netinet/in.h>
 #if defined(HAVE_ARPA_INET_H)
 #include <arpa/inet.h>
