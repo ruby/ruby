@@ -1,3 +1,9 @@
+Wed Nov 25 00:54:15 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (kwd_append): fix segv after invalid keyword argument,
+	  preceding keyword list is NULL when syntax error is there.
+	  [ruby-core:71356] [Bug #11663]
+
 Wed Nov 25 00:47:07 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/ipaddr.rb, test/test_ipaddr.rb: Reject invalid address contained
