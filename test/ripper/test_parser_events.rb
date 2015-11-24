@@ -1315,6 +1315,12 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_match(/x/, fmt % args)
   end
 
+  def test_warning_ignored_magic_comment
+    fmt, *args = warning("1; #-*- frozen-string-literal: true -*-")
+    assert_match(/ignored after any tokens/, fmt)
+    assert_equal("frozen_string_literal", args[0])
+  end
+
   def test_warn_cr_in_middle
     fmt = nil
     assert_warn("") {fmt, *args = warn("\r;")}
