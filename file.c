@@ -5873,7 +5873,7 @@ static const char null_device[] =
 
 /*
  *  A <code>File</code> is an abstraction of any file object accessible
- *  by the program and is closely associated with class <code>IO</code>
+ *  by the program and is closely associated with class <code>IO</code>.
  *  <code>File</code> includes the methods of module
  *  <code>FileTest</code> as class methods, allowing you to write (for
  *  example) <code>File.exist?("foo")</code>.
