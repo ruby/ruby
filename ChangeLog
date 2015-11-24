@@ -1,3 +1,8 @@
+Tue Nov 24 09:04:29 2015  David Rodriguez  <deivid.rodriguez@gmail.com>
+
+	* file.c: [DOC] add a missing period to File docs, to terminate
+	  the sentence and separate from the next sentence.  [Fix GH-1111]
+
 Tue Nov 24 08:30:06 2015  JuanitoFatas  <katehuang0320@gmail.com>
 
 	* NEWS: Fix the issue number of `Struct#dig`, which should be
