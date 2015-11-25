@@ -4340,7 +4340,10 @@ guard=INCLUDE_RUBY_CONFIG_H
   grep -v "^#define PACKAGE_" confdefs.h
   echo "#endif /* $guard */"
 } | tr -d '\015' |
-${srcdir}/tool/ifchange "${config_h}" -
+(
+  if test "x$CONFIGURE_TTY" = xyes; then color=--color; else color=; fi
+  exec ${srcdir}/tool/ifchange $color "${config_h}" -
+)
 tr -d '\015' < largefile.h > confdefs.h
 rm largefile.h
 
