@@ -349,7 +349,7 @@ static rb_compile_option_t COMPILE_OPTION_DEFAULT = {
     OPT_STACK_CACHING, /* int stack_caching; */
     OPT_TRACE_INSTRUCTION, /* int trace_instruction */
     OPT_FROZEN_STRING_LITERAL,
-    OPT_FROZEN_STRING_LITERAL_DEBUG
+    OPT_DEBUG_FROZEN_STRING_LITERAL,
 };
 
 static const rb_compile_option_t COMPILE_OPTION_FALSE = {0};
@@ -375,7 +375,7 @@ set_compile_option_from_hash(rb_compile_option_t *option, VALUE opt)
     SET_COMPILE_OPTION(option, opt, stack_caching);
     SET_COMPILE_OPTION(option, opt, trace_instruction);
     SET_COMPILE_OPTION(option, opt, frozen_string_literal);
-    SET_COMPILE_OPTION(option, opt, frozen_string_literal_debug);
+    SET_COMPILE_OPTION(option, opt, debug_frozen_string_literal);
     SET_COMPILE_OPTION_NUM(option, opt, debug_level);
 #undef SET_COMPILE_OPTION
 #undef SET_COMPILE_OPTION_NUM
@@ -429,7 +429,7 @@ make_compile_option_value(rb_compile_option_t *option)
 	SET_COMPILE_OPTION(option, opt, stack_caching);
 	SET_COMPILE_OPTION(option, opt, trace_instruction);
 	SET_COMPILE_OPTION(option, opt, frozen_string_literal);
-	SET_COMPILE_OPTION(option, opt, frozen_string_literal_debug);
+	SET_COMPILE_OPTION(option, opt, debug_frozen_string_literal);
 	SET_COMPILE_OPTION_NUM(option, opt, debug_level);
     }
 #undef SET_COMPILE_OPTION

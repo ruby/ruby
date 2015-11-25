@@ -5309,7 +5309,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	else {
 	    if (iseq->compile_data->option->frozen_string_literal) {
 		VALUE debug_info = Qnil;
-		if (iseq->compile_data->option->frozen_string_literal_debug || RTEST(ruby_debug)) {
+		if (iseq->compile_data->option->debug_frozen_string_literal || RTEST(ruby_debug)) {
 		    debug_info = rb_ary_new_from_args(2, iseq->body->location.path, INT2FIX(line));
 		    iseq_add_mark_object_compile_time(iseq, rb_obj_freeze(debug_info));
 		}

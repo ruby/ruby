@@ -69,9 +69,11 @@ enum feature_flag_bits {
     feature_did_you_mean,
     feature_rubyopt,
     feature_frozen_string_literal,
-    feature_frozen_string_literal_debug,
+    feature_debug_frozen_string_literal,
     feature_flag_count
 };
+
+#define DEBUG_BIT(bit) (1U << feature_debug_##bit)
 
 #define DUMP_BIT(bit) (1U << dump_##bit)
 enum dump_flag_bits {
@@ -118,7 +120,7 @@ enum {
     COMPILATION_FEATURES = (
 	0
 	| FEATURE_BIT(frozen_string_literal)
-	| FEATURE_BIT(frozen_string_literal_debug)
+	| FEATURE_BIT(debug_frozen_string_literal)
 	),
     DEFAULT_FEATURES = (
 	~0U
@@ -126,7 +128,7 @@ enum {
 	& ~FEATURE_BIT(gems)
 #endif
 	& ~FEATURE_BIT(frozen_string_literal)
-	& ~FEATURE_BIT(frozen_string_literal_debug)
+	& ~FEATURE_BIT(debug_frozen_string_literal)
 	)
 };
 
@@ -780,7 +782,7 @@ static void
 debug_option(const char *str, int len, void *arg)
 {
 #define SET_WHEN_DEBUG(t, bit) SET_WHEN(#bit, t##_BIT(bit), str, len)
-    SET_WHEN_DEBUG(FEATURE, frozen_string_literal_debug);
+    SET_WHEN_DEBUG(DEBUG, frozen_string_literal);
     rb_warn("unknown argument for --debug: `%.*s'", len, str);
 }
 
@@ -1113,8 +1115,10 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
 		if (s && *s) {
 		    ruby_each_words(s, debug_option, &opt->features);
 		}
-		ruby_debug = Qtrue;
-                ruby_verbose = Qtrue;
+		else {
+		    ruby_debug = Qtrue;
+		    ruby_verbose = Qtrue;
+		}
             }
 	    else if (is_option_with_arg("enable", Qtrue, Qtrue)) {
 		ruby_each_words(s, enable_option, &opt->features);
@@ -1501,7 +1505,7 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 	rb_hash_aset((h), ID2SYM(rb_intern_const(#name)),		\
 		     ((o)->features & FEATURE_BIT(name) ? Qtrue : Qfalse));
 	SET_COMPILE_OPTION(option, opt, frozen_string_literal);
-	SET_COMPILE_OPTION(option, opt, frozen_string_literal_debug);
+	SET_COMPILE_OPTION(option, opt, debug_frozen_string_literal);
 	rb_funcallv(rb_cISeq, rb_intern_const("compile_option="), 1, &option);
 #undef SET_COMPILE_OPTION
     }

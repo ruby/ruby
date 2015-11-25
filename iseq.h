@@ -67,7 +67,7 @@ struct rb_compile_option_struct {
     int stack_caching;
     int trace_instruction;
     int frozen_string_literal;
-    int frozen_string_literal_debug;
+    int debug_frozen_string_literal;
     int debug_level;
 };
 
