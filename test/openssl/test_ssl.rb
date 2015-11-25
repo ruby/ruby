@@ -178,6 +178,20 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     }
   end
 
+  def test_copy_stream
+    start_server(OpenSSL::SSL::VERIFY_NONE, true) do |server, port|
+      server_connect(port) do |ssl|
+        IO.pipe do |r, w|
+          str = "hello world\n"
+          w.write(str)
+          IO.copy_stream(r, ssl, str.bytesize)
+          IO.copy_stream(ssl, w, str.bytesize)
+          assert_equal str, r.read(str.bytesize)
+        end
+      end
+    end
+  end
+
   def test_client_auth_failure
     vflag = OpenSSL::SSL::VERIFY_PEER|OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT
     start_server(vflag, true, :ignore_listener_error => true){|server, port|
