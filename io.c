@@ -11247,7 +11247,9 @@ argf_getpartial(int argc, VALUE *argv, VALUE argf, VALUE opts, int nonblock)
     }
 
     if (!next_argv()) {
-        rb_str_resize(str, 0);
+	if (!NIL_P(str)) {
+	    rb_str_resize(str, 0);
+	}
         rb_eof_error();
     }
     if (ARGF_GENERIC_INPUT_P()) {
