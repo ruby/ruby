@@ -1,3 +1,8 @@
+Wed Nov 25 21:23:39 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (copy_stream_body): try to_io conversion before read,
+	  readpartial, and write methods.  [ruby-dev:49008] [Bug #11199]
+
 Wed Nov 25 10:55:21 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* io.c (argf_getpartial): should not resize str if the second
