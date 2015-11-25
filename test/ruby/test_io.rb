@@ -3,6 +3,7 @@ require 'test/unit'
 require 'tmpdir'
 require "fcntl"
 require 'io/nonblock'
+require 'pathname'
 require 'socket'
 require 'stringio'
 require 'timeout'
@@ -886,6 +887,17 @@ class TestIO < Test::Unit::TestCase
     assert_equal(4, pos, bug11015)
   ensure
     dst.close!
+  end
+
+  def test_copy_stream_pathname_to_pathname
+    bug11199 = '[ruby-dev:49008] [Bug #11199]'
+    mkcdtmpdir {
+      File.open("src", "w") {|f| f << "ok" }
+      src = Pathname.new("src")
+      dst = Pathname.new("dst")
+      IO.copy_stream(src, dst)
+      assert_equal("ok", IO.read("dst"), bug11199)
+    }
   end
 
   def test_copy_stream_write_in_binmode
