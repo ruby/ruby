@@ -1,3 +1,7 @@
+Thu Nov 26 07:22:55 2015  Eric Wong  <e@80x24.org>
+
+	* test/openssl/test_ssl.rb (test_copy_stream): new test
+
 Wed Nov 25 21:23:39 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (copy_stream_body): try to_io conversion before read,
