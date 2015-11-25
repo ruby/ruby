@@ -1,3 +1,9 @@
+Wed Nov 25 10:55:21 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* io.c (argf_getpartial): should not resize str if the second
+	  argument is not given.
+	  [ruby-core:71668] [Bug #11738]
+
 Tue Nov 24 23:56:25 2015  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* configure.in: On Solaris, it is safe to define _LARGEFILE_SOURCE
