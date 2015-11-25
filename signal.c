@@ -1511,3 +1511,17 @@ Init_signal(void)
 
     rb_enable_interrupt();
 }
+
+void
+ruby_uninstall_coredump_handler(void)
+{
+#ifdef SIGBUS
+    signal(SIGBUS, SIG_DFL);
+#endif
+#ifdef SIGILL
+    signal(SIGILL, SIG_DFL);
+#endif
+#ifdef SIGSEGV
+    signal(SIGSEGV, SIG_DFL);
+#endif
+}
