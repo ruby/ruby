@@ -2148,6 +2148,8 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 
     if (do_tailcallopt &&
 	(iobj->insn_id == BIN(send) ||
+	 iobj->insn_id == BIN(opt_aref_with) ||
+	 iobj->insn_id == BIN(opt_aset_with) ||
 	 iobj->insn_id == BIN(invokesuper))) {
 	/*
 	 *  send ...
@@ -4770,8 +4772,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    COMPILE(ret, "recv", node->nd_recv);
 	    ADD_INSN3(ret, line, opt_aref_with,
 		      new_callinfo(iseq, idAREF, 1, 0, NULL, FALSE),
-		      Qnil, /* CALL_CACHE */
-		      str);
+		      NULL/* CALL_CACHE */, str);
 	    if (poped) {
 		ADD_INSN(ret, line, pop);
 	    }
@@ -5808,7 +5809,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    }
 	    ADD_INSN3(ret, line, opt_aset_with,
 		      new_callinfo(iseq, idASET, 2, 0, NULL, FALSE),
-		      Qnil/* CALL_CACHE */, str);
+		      NULL/* CALL_CACHE */, str);
 	    ADD_INSN(ret, line, pop);
 	    break;
 	}
