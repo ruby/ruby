@@ -1,3 +1,11 @@
+Thu Nov 26 21:36:40 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_peephole_optimize): enable tail call
+	  optimization for specialized indexers.
+
+	* compile.c (iseq_compile_each): blockiseq should be NULL, but not
+	  Qnil.
+
 Thu Nov 26 17:22:53 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* regcomp.c, regenc.c, regexec.c, regint.h, enc/unicode.c:
