@@ -40,7 +40,11 @@ class Downloader
 
   class GNU < self
     def self.download(name, *rest)
-      super("#{https}://gcc.gnu.org/git/?p=gcc.git;a=blob_plain;f=#{name};hb=master", name, *rest)
+      if https == 'https'
+        super("https://raw.githubusercontent.com/gcc-mirror/gcc/master/#{name}", name, *rest)
+      else
+        super("http://repo.or.cz/official-gcc.git/blob_plain/HEAD:/#{name}", name, *rest)
+      end
     end
   end
 
