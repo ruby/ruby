@@ -1,3 +1,8 @@
+Thu Nov 26 09:50:02 2015  yui-knk  <spiketeika@gmail.com>
+
+	* test/coverage/test_coverage.rb: Added test-case for Coverage.restart.
+	  [Misc #11732][ruby-dev:49379]
+
 Thu Nov 26 09:46:36 2015  yui-knk  <spiketeika@gmail.com>
 
 	* test/coverage/test_coverage.rb: Added test-case for Coverage.peek_result
