@@ -6,6 +6,11 @@ class TestCoverage < Test::Unit::TestCase
   def test_result_without_start
     assert_raise(RuntimeError) {Coverage.result}
   end
+
+  def test_peek_result_without_start
+    assert_raise(RuntimeError) {Coverage.peek_result}
+  end
+
   def test_result_with_nothing
     Coverage.start
     result = Coverage.result
