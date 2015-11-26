@@ -3081,7 +3081,7 @@ End
 
       # try to raise RLIM_NOFILE to >FD_SETSIZE
       begin
-        Process.setrlimit(Process::RLIMIT_NOFILE, fd_setsize+10)
+        Process.setrlimit(Process::RLIMIT_NOFILE, fd_setsize+20)
       rescue Errno::EPERM
         exit 0
       end
