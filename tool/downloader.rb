@@ -1,7 +1,10 @@
 require 'open-uri'
 begin
   require 'net/https'
-  $rubygems_schema = 'https'
+rescue LoadError
+  https = 'http'
+else
+  https = 'https'
 
   # open-uri of ruby 2.2.0 accept an array of PEMs as ssl_ca_cert, but old
   # versions are not.  so, patching OpenSSL::X509::Store#add_file instead.
@@ -25,14 +28,19 @@ begin
       files.is_a?(Array) ? false : orig_directory?(files)
     end
   end
-rescue LoadError
-  $rubygems_schema = 'http'
 end
 
 class Downloader
+  def self.https
+    if @@https != 'https'
+      warn "*** using http instead of https ***"
+    end
+    @@https
+  end
+
   class GNU < self
     def self.download(name, *rest)
-      super("http://gcc.gnu.org/git/?p=gcc.git;a=blob_plain;f=#{name};hb=master", name, *rest)
+      super("#{https}://gcc.gnu.org/git/?p=gcc.git;a=blob_plain;f=#{name};hb=master", name, *rest)
     end
   end
 
@@ -41,11 +49,8 @@ class Downloader
       require 'rubygems'
       require 'rubygems/package'
       options[:ssl_ca_cert] = Dir.glob(File.expand_path("../lib/rubygems/ssl_certs/*.pem", File.dirname(__FILE__)))
-      if $rubygems_schema != 'https'
-        warn "*** using http instead of https ***"
-      end
       file = under(dir, name)
-      super("#{$rubygems_schema}://rubygems.org/downloads/#{name}", file, nil, ims, options) or
+      super("#{https}://rubygems.org/downloads/#{name}", file, nil, ims, options) or
         return false
       policy = Gem::Security::LowSecurity
       (policy = policy.dup).ui = Gem::SilentUI.new if policy.respond_to?(:'ui=')
@@ -167,6 +172,8 @@ class Downloader
     dir ? File.join(dir, File.basename(name)) : name
   end
 end
+
+Downloader.class_variable_set(:@@https, https.freeze)
 
 if $0 == __FILE__
   ims = true
