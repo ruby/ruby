@@ -1,3 +1,28 @@
+Thu Nov 26 09:50:02 2015  yui-knk  <spiketeika@gmail.com>
+
+	* test/coverage/test_coverage.rb: Added test-case for Coverage.restart.
+	  [Misc #11732][ruby-dev:49379]
+
+Thu Nov 26 09:46:36 2015  yui-knk  <spiketeika@gmail.com>
+
+	* test/coverage/test_coverage.rb: Added test-case for Coverage.peek_result
+	  without Coverage.start. [Misc #11726][ruby-core:71622]
+
+Thu Nov 26 07:22:55 2015  Eric Wong  <e@80x24.org>
+
+	* test/openssl/test_ssl.rb (test_copy_stream): new test
+
+Wed Nov 25 21:23:39 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (copy_stream_body): try to_io conversion before read,
+	  readpartial, and write methods.  [ruby-dev:49008] [Bug #11199]
+
+Wed Nov 25 10:55:21 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* io.c (argf_getpartial): should not resize str if the second
+	  argument is not given.
+	  [ruby-core:71668] [Bug #11738]
+
 Tue Nov 24 23:56:25 2015  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* configure.in: On Solaris, it is safe to define _LARGEFILE_SOURCE

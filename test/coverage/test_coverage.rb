@@ -6,6 +6,11 @@ class TestCoverage < Test::Unit::TestCase
   def test_result_without_start
     assert_raise(RuntimeError) {Coverage.result}
   end
+
+  def test_peek_result_without_start
+    assert_raise(RuntimeError) {Coverage.peek_result}
+  end
+
   def test_result_with_nothing
     Coverage.start
     result = Coverage.result
@@ -55,12 +60,30 @@ class TestCoverage < Test::Unit::TestCase
           EOS
         end
 
+        File.open("test2.rb", "w") do |f|
+          f.puts <<-EOS
+            def coverage_test_method2
+              :ok
+              :ok
+            end
+          EOS
+        end
+
         Coverage.start
         require tmp + '/test.rb'
         assert_equal 3, Coverage.result[tmp + '/test.rb'].size
+
+        # Restart coverage but '/test.rb' is required before restart,
+        # so coverage is not recorded.
         Coverage.start
         coverage_test_method
         assert_equal 0, Coverage.result[tmp + '/test.rb'].size
+
+        # Restart coverage and '/test2.rb' is required after restart,
+        # so coverage is recorded.
+        Coverage.start
+        require tmp + '/test2.rb'
+        assert_equal 4, Coverage.result[tmp + '/test2.rb'].size
       }
     }
   ensure

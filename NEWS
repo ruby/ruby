@@ -17,6 +17,11 @@ with all sufficient information, see the ChangeLog file.
   * new pragma, frozen-string-literal has been experimentally introduced.
   * besides, --enable/--disable=frozen-string-literal options also have
     been introduced.
+  * command line option --debug or --debug=frozen-string-literal enable
+    additional debugging mode which shows created location with at frozen
+    object error (RuntimeError) even if string is dynamically created string
+    literal (for static string literals shows locations as default).
+    [Feature #11725]
 
 * safe navigation operator:
 
