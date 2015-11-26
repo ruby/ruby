@@ -1,3 +1,9 @@
+Thu Nov 26 17:22:53 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* regcomp.c, regenc.c, regexec.c, regint.h, enc/unicode.c:
+	  Merge Onigmo 58fa099ed1a34367de67fb3d06dd48d076839692
+	  + https://github.com/k-takata/Onigmo/pull/52
+
 Thu Nov 26 09:50:02 2015  yui-knk  <spiketeika@gmail.com>
 
 	* test/coverage/test_coverage.rb: Added test-case for Coverage.restart.
