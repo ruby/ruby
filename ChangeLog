@@ -1,3 +1,8 @@
+Thu Nov 26 09:46:36 2015  yui-knk  <spiketeika@gmail.com>
+
+	* test/coverage/test_coverage.rb: Added test-case for Coverage.peek_result
+	  without Coverage.start. [Misc #11726][ruby-core:71622]
+
 Thu Nov 26 07:22:55 2015  Eric Wong  <e@80x24.org>
 
 	* test/openssl/test_ssl.rb (test_copy_stream): new test
