@@ -896,6 +896,23 @@ class TestNetHTTPKeepAlive < Test::Unit::TestCase
     }
   end
 
+  def test_server_closed_connection_auto_reconnect
+    start {|http|
+      res = http.get('/')
+      http.keep_alive_timeout = 5
+      assert_kind_of Net::HTTPResponse, res
+      assert_kind_of String, res.body
+      sleep 1.5
+      assert_nothing_raised {
+        # Net::HTTP should detect the closed connection before attempting the
+        # request, since post requests cannot be retried.
+        res = http.post('/', 'query=foo', 'content-type' => 'application/x-www-form-urlencoded')
+      }
+      assert_kind_of Net::HTTPResponse, res
+      assert_kind_of String, res.body
+    }
+  end
+
   def test_keep_alive_get_auto_retry
     start {|http|
       res = http.get('/')

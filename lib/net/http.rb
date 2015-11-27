@@ -1473,10 +1473,16 @@ module Net   #:nodoc:
     def begin_transport(req)
       if @socket.closed?
         connect
-      elsif @last_communicated && @last_communicated + @keep_alive_timeout < Process.clock_gettime(Process::CLOCK_MONOTONIC)
-        D 'Conn close because of keep_alive_timeout'
-        @socket.close
-        connect
+      elsif @last_communicated
+        if @last_communicated + @keep_alive_timeout < Process.clock_gettime(Process::CLOCK_MONOTONIC)
+          D 'Conn close because of keep_alive_timeout'
+          @socket.close
+          connect
+        elsif @socket.io.wait_readable(0) && @socket.eof?
+          D "Conn close because of EOF"
+          @socket.close
+          connect
+        end
       end
 
       if not req.response_body_permitted? and @close_on_empty_response
