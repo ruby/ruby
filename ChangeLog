@@ -1,3 +1,11 @@
+Sat Nov 28 06:12:32 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/openssl/ossl_ssl.c (ssl_npn_select_cb): explicitly raise error
+	  in ext/openssl instead of OpenSSL itself because LibreSSL
+	  silently truncate the selected protocol name by casting the length
+	  from int to unsigned char. [Bug #11369]
+	  Patch by Jeremy Evans <merch-redmine@jeremyevans.net>
+
 Sat Nov 28 05:50:58 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_eval.c (send_internal): set method_missing_reason before
