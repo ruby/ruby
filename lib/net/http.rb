@@ -1478,7 +1478,7 @@ module Net   #:nodoc:
           D 'Conn close because of keep_alive_timeout'
           @socket.close
           connect
-        elsif @socket.io.wait_readable(0) && @socket.eof?
+        elsif @socket.io.to_io.wait_readable(0) && @socket.eof?
           D "Conn close because of EOF"
           @socket.close
           connect
