@@ -1323,7 +1323,7 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
 
   def test_warn_cr_in_middle
     fmt = nil
-    assert_warn("") {fmt, *args = warn("\r;")}
+    assert_warn("") {fmt, = warn("\r;")}
     assert_match(/encountered/, fmt)
   end
 end if ripper_test
