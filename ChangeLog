@@ -1,3 +1,14 @@
+Fri Nov 27 19:19:44 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/net/http.rb (connect): detect closed connection and reconnect
+	  If the server closes a keep-alive http connection, the client socket
+	  reaches EOF. To avoid an EOFError, detect the closed connection and
+	  reconnect.
+	  Added test to ensure HTTP#post succeeds even if the
+	  keep-alive-connection has been closed by the server.
+	  by Kristian Hanekamp <kris.hanekamp@gmail.com>
+	  https://github.com/ruby/ruby/pull/1089 fix GH-1089
+
 Thu Nov 26 21:36:40 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (iseq_peephole_optimize): enable tail call
