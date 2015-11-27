@@ -698,4 +698,11 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
       raise E
     end;
   end
+
+  def test_method_missing_reason_clear
+    bug10969 = '[ruby-core:68515] [Bug #10969]'
+    a = Class.new {def method_missing(*) super end}.new
+    assert_raise(NameError) {a.instance_eval("foo")}
+    assert_raise(NoMethodError, bug10969) {a.public_send("bar", true)}
+  end
 end

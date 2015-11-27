@@ -926,6 +926,7 @@ send_internal(int argc, const VALUE *argv, VALUE recv, call_type scope)
 	    }
 	}
 	id = idMethodMissing;
+	th->method_missing_reason = 0;
     }
     else {
 	argv++; argc--;
