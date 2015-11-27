@@ -6235,8 +6235,10 @@ parser_tokadd_string(struct parser_params *parser,
 	    if (heredoc_line_indent == -1) {
 		if (c == '\n') heredoc_line_indent = 0;
 	    } else {
-		if (c == ' ' || c == '\t') {
+		if (c == ' ') {
 		    heredoc_line_indent++;
+		} else if (c == '\t') {
+		    heredoc_line_indent += 8;
 		} else if (c != '\n') {
 		    if (heredoc_indent > heredoc_line_indent) {
 			heredoc_indent = heredoc_line_indent;
@@ -6598,10 +6600,25 @@ parser_heredoc_dedent_string(struct parser_params *parser, VALUE input,
 
     p = str;
     while (p < end) {
-	for (; p < end && *count_indent > 0; (*count_indent)--) {
-	    if (*p != ' ' && *p != '\t') break;
-	    p++;
+	while (p < end && *count_indent > 0) {
+	    if (*p == ' ') {
+		p++;
+		(*count_indent)--;
+	    } else if (*p == '\t' && *count_indent >= 8) {
+		p++;
+		*count_indent -= 8;
+	    } else if (*p == '\t' && heredoc_indent % 8) {
+		/* Inconsistent indentation requires us to back up to the
+		   previous tab stop */
+		heredoc_indent = heredoc_indent - (heredoc_indent % 8);
+		*count_indent = *copy_indent = heredoc_indent;
+		return parser_heredoc_dedent_string(parser, input,
+						    count_indent, copy_indent);
+	    } else {
+		break;
+	    }
 	}
+
 	for (; p < end && *p != '\n'; p++) out_len++;
 	if (p < end && *p == '\n') {
 	    *count_indent = heredoc_indent;
@@ -6615,10 +6632,18 @@ parser_heredoc_dedent_string(struct parser_params *parser, VALUE input,
 
     p = str;
     while (p < end) {
-	for (; p < end && *copy_indent > 0; (*copy_indent)--) {
-	    if (*p != ' ' && *p != '\t') break;
-	    p++;
+	while (p < end && *copy_indent > 0) {
+	    if (*p == ' ') {
+		p++;
+		(*copy_indent)--;
+	    } else if (*p == '\t' && *copy_indent >= 8) {
+		p++;
+		*copy_indent -= 8;
+	    } else {
+		break;
+	    }
 	}
+
 	while (p < end && *p != '\n') *out_p++ = *p++;
 	if (p < end && *p == '\n') {
 	    *copy_indent = heredoc_indent;

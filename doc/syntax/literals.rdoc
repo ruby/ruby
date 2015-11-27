@@ -210,6 +210,11 @@ the content.  Note that empty lines and lines consisting solely of literal tabs
 and spaces will be ignored for the purposes of determining indentation, but
 escaped tabs and spaces are considered non-indentation characters.
 
+If both tabs and spaces are used as indentation in the same heredoc,
+tabs are considered as equal to 8 spaces.  If the indentation of the
+least-indented line falls in the middle of a leading tab, only
+indentation to the left of that tab will be removed.
+
 A heredoc allows interpolation and escaped characters.  You may disable
 interpolation and escaping by surrounding the opening identifier with single
 quotes:

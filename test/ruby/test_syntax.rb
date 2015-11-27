@@ -556,6 +556,26 @@ zy
     eos
   end
 
+  def test_dedented_heredoc_mixing_tab_with_space
+    assert_equal(<<-eos, <<~eos)
+16 spaces
+2 tabs
+    eos
+                16 spaces
+		2 tabs
+    eos
+  end
+
+  def test_dedented_heredoc_with_inconsistent_indentation_preserves_tab
+    assert_equal(<<-eos, <<~eos)
+	2 tabs
+  10 spaces
+    eos
+		2 tabs
+          10 spaces
+    eos
+  end
+
   def test_lineno_after_heredoc
     bug7559 = '[ruby-dev:46737]'
     expected, _, actual = __LINE__, <<eom, __LINE__
