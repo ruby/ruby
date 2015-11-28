@@ -60,12 +60,12 @@ class Ripper
 
     private
 
+    def _push_token(tok)
+      @buf.push [[lineno(), column()], __callee__, tok]
+    end
+
     SCANNER_EVENTS.each do |event|
-      module_eval(<<-End, __FILE__+'/module_eval', __LINE__ + 1)
-        def on_#{event}(tok)
-          @buf.push [[lineno(), column()], :on_#{event}, tok]
-        end
-      End
+      alias_method "on_#{event}", :_push_token
     end
   end
 
