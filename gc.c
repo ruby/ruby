@@ -32,10 +32,6 @@
 
 #undef rb_data_object_alloc
 
-#ifndef __has_feature
-# define __has_feature(x) 0
-#endif
-
 #ifndef HAVE_MALLOC_USABLE_SIZE
 # ifdef _WIN32
 #   define HAVE_MALLOC_USABLE_SIZE

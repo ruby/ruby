@@ -1,3 +1,14 @@
+Sun Nov 29 02:55:56 2015  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* gc.c (__has_feature): move into internal.h.
+
+	* internal.h (__has_feature): ditto.
+
+	* internal.h (__has_extension): new macro.
+
+	* internal.h (STATIC_ASSERT): use _Static_assert with
+	  clang. [ruby-core:69931] [Bug #11343]
+
 Sat Nov 28 06:28:55 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (literal_concat_gen, evstr2dstr_gen): keep literal
