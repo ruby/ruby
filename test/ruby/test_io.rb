@@ -1065,7 +1065,9 @@ class TestIO < Test::Unit::TestCase
   def ruby(*args)
     args = ['-e', '$>.write($<.read)'] if args.empty?
     ruby = EnvUtil.rubybin
-    f = IO.popen([ruby] + args, 'r+')
+    opts = {}
+    opts[:rlimit_nproc] = 1024 if defined?(Process::RLIMIT_NPROC)
+    f = IO.popen([ruby] + args, 'r+', opts)
     pid = f.pid
     yield(f)
   ensure
@@ -1120,6 +1122,10 @@ class TestIO < Test::Unit::TestCase
 
   def test_dup_many
     ruby('-e', <<-'End') {|f|
+      if defined?(Process::RLIMIT_NOFILE)
+        lim = Process.getrlimit(Process::RLIMIT_NOFILE)[0]
+        Process.setrlimit(Process::RLIMIT_NOFILE, [lim, 1024].min)
+      end
       ok = 0
       a = []
       begin
