@@ -6745,6 +6745,10 @@ parser_here_document(struct parser_params *parser, NODE *here)
 	str = STR_NEW3(tok(), toklen(), enc, func);
     }
     dispatch_heredoc_end();
+#ifdef RIPPER
+    str = ripper_new_yylval(ripper_token2eventid(tSTRING_CONTENT),
+			    yylval.val, str);
+#endif
     heredoc_restore(lex_strterm);
     lex_strterm = NEW_STRTERM(-1, 0, 0);
     set_yylval_str(str);
