@@ -51,7 +51,7 @@ on your ticket.
 
 === Reporting to downstream distributions
 
-You can reports downstream issues for the following distributions via their bugtracker:
+You can report downstream issues for the following distributions via their bug tracker:
 
 * {debian}[http://bugs.debian.org/cgi-bin/pkgreport.cgi?src=ruby-defaults]
 * {freebsd}[http://www.freebsd.org/cgi/query-pr-summary.cgi?text=ruby]
@@ -61,7 +61,7 @@ You can reports downstream issues for the following distributions via their bugt
 
 === Platform Maintainers
 
-For platform specific bugs in Ruby, you can assign your ticket the current
+For platform specific bugs in Ruby, you can assign your ticket to the current
 maintainer for a specific platform.
 
 The current active platform maintainers are as follows:
@@ -113,12 +113,12 @@ You can also report issues with the ruby-lang.org website on the issue tracker:
 
 As a next step beyond reporting issues you can help the core team resolve
 existing issues. If you check the Everyone's Issues list in GitHub Issues,
-you'll find lots of issues already requiring attention. What can you do for
+you will find a lot of issues already requiring attention. What can you do for
 these? Quite a bit, actually:
 
 When a bug report goes for a while without any feedback, it goes to the bug
 graveyard which is unfortunate. If you check the {issues
-list}[https://bugs.ruby-lang.org/projects/ruby-trunk/issues] you'll find lots
+list}[https://bugs.ruby-lang.org/projects/ruby-trunk/issues] you will find lots
 of delinquent bugs that require attention.
 
 You can help by verifying the existing tickets, try to reproduce the reported
@@ -154,7 +154,7 @@ patch.
 
 == How To Request Features
 
-If there's a new feature that you want to see added to Ruby, you'll need to
+If there's a new feature that you want to see added to Ruby, you will need to
 write a convincing proposal and patch to implement the feature.
 
 For new features in CRuby, use the {'Feature'
@@ -174,7 +174,7 @@ requests can seem like an alluring way to contribute to Ruby, often these
 discussions can lead nowhere and exhaust time and energy that could be better
 spent fixing bugs. Choose your battles.
 
-A good template for feature proposal should look something like this:
+A good template for a feature proposal should look something like this:
 
 [Abstract]
   Summary of your feature
@@ -199,7 +199,8 @@ A good template for feature proposal should look something like this:
 
 === Slideshow
 
-On Ruby Developer Meeting Japan, committers discuss about Feature Proposals together at Tokyo. We'll judge proposals accept, reject, or feedback. If you have a stalled proposal, making a slide to submit is good way to get feedback.
+At the Ruby Developer Meeting in Japan, committers discuss Feature Proposals together in Tokyo. We will judge proposals and then accept, reject, or give feedback for them.
+If you have a stalled proposal, making a slide to submit is good way to get feedback.
 
 Slides should be:
 
@@ -217,8 +218,8 @@ Please note:
 
 == Backport Requests
 
-When a new version of Ruby is released it starts at patch level 0 (p0), and
-bugs will be fixed first on the trunk branch. If its determined that a bug
+When a new version of Ruby is released, it starts at patch level 0 (p0), and
+bugs will be fixed first on the trunk branch. If it's determined that a bug
 exists in a previous version of Ruby that is still in the bug fix stage of
 maintenance, then a patch will be backported. After the maintenance stage of a
 particular Ruby version ends, it goes into "security fix only" mode which
@@ -328,7 +329,7 @@ This is also how you can run a specific test from our build dir:
 
     make test-all TESTS=drb/test_drb.rb
 
-For older versions of Ruby you'll need to run the build setup again after
+For older versions of Ruby you will need to run the build setup again after
 checking out the associated branch in git, for example if you wanted to
 checkout 1.9.3:
 
@@ -465,4 +466,3 @@ You may use the {'git format-patch'}[http://git-scm.com/docs/git-format-patch]
 command to generate patch files to upload to redmine.  You may also use
 the {'git request-pull'}[http://git-scm.com/docs/git-request-pull] command for
 formatting pull request messages to redmine.
-
