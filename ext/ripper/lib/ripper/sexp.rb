@@ -59,41 +59,6 @@ class Ripper
     sexp unless builder.error?
   end
 
-  class SexpBuilderPP < ::Ripper   #:nodoc:
-    private
-
-    PARSER_EVENT_TABLE.each do |event, arity|
-      if /_new\z/ =~ event.to_s and arity == 0
-        module_eval(<<-End, __FILE__, __LINE__ + 1)
-          def on_#{event}
-            []
-          end
-        End
-      elsif /_add\z/ =~ event.to_s
-        module_eval(<<-End, __FILE__, __LINE__ + 1)
-          def on_#{event}(list, item)
-            list.push item
-            list
-          end
-        End
-      else
-        module_eval(<<-End, __FILE__, __LINE__ + 1)
-          def on_#{event}(*args)
-            [:#{event}, *args]
-          end
-        End
-      end
-    end
-
-    SCANNER_EVENTS.each do |event|
-      module_eval(<<-End, __FILE__, __LINE__ + 1)
-        def on_#{event}(tok)
-          [:@#{event}, tok, [lineno(), column()]]
-        end
-      End
-    end
-  end
-
   class SexpBuilder < ::Ripper   #:nodoc:
     private
 
@@ -112,6 +77,27 @@ class Ripper
           [:@#{event}, tok, [lineno(), column()]]
         end
       End
+    end
+  end
+
+  class SexpBuilderPP < SexpBuilder #:nodoc:
+    private
+
+    def _dispatch_event_new
+      []
+    end
+
+    def _dispatch_event_push(list, item)
+      list.push item
+      list
+    end
+
+    PARSER_EVENT_TABLE.each do |event, arity|
+      if /_new\z/ =~ event and arity == 0
+        alias_method "on_#{event}", :_dispatch_event_new
+      elsif /_add\z/ =~ event
+        alias_method "on_#{event}", :_dispatch_event_push
+      end
     end
   end
 
