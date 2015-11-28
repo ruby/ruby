@@ -1,4 +1,4 @@
-def digest_conf(name, hdr = name, funcs = nil)
+def digest_conf(name, hdr = name, funcs = nil, types = nil)
   unless with_config("bundled-#{name}")
     cc = with_config("common-digest")
     if cc == true or /\b#{name}\b/ =~ cc
@@ -15,9 +15,10 @@ def digest_conf(name, hdr = name, funcs = nil)
     if have_library("crypto")
       funcs ||= name.upcase
       funcs = Array(funcs)
+      types ||= funcs
       hdr = "openssl/#{hdr}.h"
       if funcs.all? {|func| OpenSSL.check_func("#{func}_Transform", hdr)} &&
-         funcs.all? {|func| have_type("#{func}_CTX", hdr)}
+         types.all? {|type| have_type("#{type}_CTX", hdr)}
         $defs << "-D#{name.upcase}_USE_OPENSSL"
         return :ossl
       end

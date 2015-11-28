@@ -5223,7 +5223,9 @@ ripper_yylval_id(ID x)
 #ifndef RIPPER
 #define ripper_flush(p) (void)(p)
 #define dispatch_scan_event(t) ((void)0)
+#define dispatch_ignored_scan_event(t) ((void)0)
 #define dispatch_delayed_token(t) ((void)0)
+#define has_delayed_token() (0)
 #else
 #define ripper_flush(p) ((p)->tokp = (p)->lex.pcur)
 
@@ -5267,6 +5269,7 @@ ripper_dispatch_ignored_scan_event(struct parser_params *parser, int t)
     if (!ripper_has_scan_event(parser)) return;
     (void)ripper_scan_event_val(parser, t);
 }
+#define dispatch_ignored_scan_event(t) ripper_dispatch_ignored_scan_event(parser, t)
 
 static void
 ripper_dispatch_delayed_token(struct parser_params *parser, int t)
@@ -5282,6 +5285,7 @@ ripper_dispatch_delayed_token(struct parser_params *parser, int t)
     parser->tokp = saved_tokp;
 }
 #define dispatch_delayed_token(t) ripper_dispatch_delayed_token(parser, t)
+#define has_delayed_token() (!NIL_P(parser->delayed))
 #endif /* RIPPER */
 
 #include "ruby/regex.h"
@@ -5747,7 +5751,7 @@ parser_nextc(struct parser_params *parser)
 	{
 #ifdef RIPPER
 	    if (parser->tokp < lex_pend) {
-		if (NIL_P(parser->delayed)) {
+		if (!has_delayed_token()) {
 		    parser->delayed = rb_str_buf_new(1024);
 		    rb_enc_associate(parser->delayed, current_enc);
 		    rb_str_buf_cat(parser->delayed,
@@ -6322,12 +6326,12 @@ ripper_flush_string_content(struct parser_params *parser, rb_encoding *enc)
     VALUE content = yylval.val;
     if (!ripper_is_node_yylval(content))
 	content = ripper_new_yylval(0, 0, content);
-    if (!NIL_P(parser->delayed)) {
+    if (has_delayed_token()) {
 	ptrdiff_t len = lex_p - parser->tokp;
 	if (len > 0) {
 	    rb_enc_str_buf_cat(parser->delayed, parser->tokp, len, enc);
 	}
-	ripper_dispatch_delayed_token(parser, tSTRING_CONTENT);
+	dispatch_delayed_token(tSTRING_CONTENT);
 	parser->tokp = lex_p;
 	RNODE(content)->nd_rval = yylval.val;
     }
@@ -6623,10 +6627,10 @@ parser_set_integer_literal(struct parser_params *parser, VALUE v, int suffix)
 static void
 ripper_dispatch_heredoc_end(struct parser_params *parser)
 {
-    if (!NIL_P(parser->delayed))
-	ripper_dispatch_delayed_token(parser, tSTRING_CONTENT);
+    if (has_delayed_token())
+	dispatch_delayed_token(tSTRING_CONTENT);
     lex_goto_eol(parser);
-    ripper_dispatch_ignored_scan_event(parser, tHEREDOC_END);
+    dispatch_ignored_scan_event(tHEREDOC_END);
 }
 
 #define dispatch_heredoc_end() ripper_dispatch_heredoc_end(parser)
@@ -6651,7 +6655,7 @@ parser_here_document(struct parser_params *parser, NODE *here)
       error:
 	compile_error(PARSER_ARG "can't find string \"%s\" anywhere before EOF", eos);
 #ifdef RIPPER
-	if (NIL_P(parser->delayed)) {
+	if (!has_delayed_token()) {
 	    dispatch_scan_event(tSTRING_CONTENT);
 	}
 	else {
@@ -6670,7 +6674,7 @@ parser_here_document(struct parser_params *parser, NODE *here)
 		}
 		rb_enc_str_buf_cat(parser->delayed, parser->tokp, len, enc);
 	    }
-	    ripper_dispatch_delayed_token(parser, tSTRING_CONTENT);
+	    dispatch_delayed_token(tSTRING_CONTENT);
 	}
 	lex_goto_eol(parser);
 #endif
@@ -8569,14 +8573,10 @@ yylex(YYSTYPE *lval, struct parser_params *parser)
     parser->lval = lval;
     lval->val = Qundef;
     t = parser_yylex(parser);
-#ifdef RIPPER
-    if (!NIL_P(parser->delayed)) {
-	ripper_dispatch_delayed_token(parser, t);
-	return t;
-    }
-    if (t != 0)
-	ripper_dispatch_scan_event(parser, t);
-#endif
+    if (has_delayed_token())
+	dispatch_delayed_token(t);
+    else if (t != 0)
+	dispatch_scan_event(t);
 
     return t;
 }
