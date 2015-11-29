@@ -1,3 +1,8 @@
+Mon Nov 30 08:44:29 2015  Eric Wong  <e@80x24.org>
+
+	* variable.c: remove spurious #define for globals
+	  [ruby-core:71735] [Feature #11749]
+
 Sun Nov 29 09:13:03 2015  Conor Landry  <clandry94@gmail.com>
 
 	* NEWS: [DOC] Various grammar corrections and clarifications to
