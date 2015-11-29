@@ -1,3 +1,9 @@
+Sun Nov 29 16:33:30 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* transcode.c (rb_econv_open0): rb_econv_t::source_encoding_name
+	  and rb_econv_t::destination_encoding_name should refer static
+	  strings always or NULL.  [ruby-core:70247] [Bug #11416]
+
 Sun Nov 29 16:11:32 2015  Eric Wong  <e@80x24.org>
 
 	* iseq.c (iseq_data_to_ary): dump kw_arg as symbol
