@@ -1,3 +1,8 @@
+Sun Nov 29 09:13:03 2015  Conor Landry  <clandry94@gmail.com>
+
+	* NEWS: [DOC] Various grammar corrections and clarifications to
+	  increase readability.  [Fix GH-1115]
+
 Sat Nov 28 19:33:55 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_here_document): store dispatched result of
