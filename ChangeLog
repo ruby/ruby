@@ -1,3 +1,8 @@
+Sun Nov 29 17:13:16 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_each_codepoint): read more data when read partially.
+	  [ruby-core:70379] [Bug #11444]
+
 Sun Nov 29 16:46:25 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/net/http.rb: set hostname before call ossl_ssl_set_session.
