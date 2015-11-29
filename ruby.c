@@ -1678,7 +1678,7 @@ load_file_internal(VALUE argp_v)
 		if (RSTRING_LEN(line) > 2
 		    && RSTRING_PTR(line)[0] == '#'
 		    && RSTRING_PTR(line)[1] == '!') {
-		    if ((p = strstr(RSTRING_PTR(line), "ruby")) != 0) {
+		    if ((p = strstr(RSTRING_PTR(line), ruby_engine)) != 0) {
 			goto start_read;
 		    }
 		}
@@ -1694,7 +1694,7 @@ load_file_internal(VALUE argp_v)
 		if (NIL_P(line))
 		    return 0;
 
-		if ((p = strstr(RSTRING_PTR(line), "ruby")) == 0) {
+		if ((p = strstr(RSTRING_PTR(line), ruby_engine)) == 0) {
 		    /* not ruby script, assume -x flag */
 		    goto search_shebang;
 		}
@@ -2083,7 +2083,7 @@ ruby_process_options(int argc, char **argv)
 {
     struct cmdline_options opt;
     VALUE iseq;
-    const char *script_name = (argc > 0 && argv[0]) ? argv[0] : "ruby";
+    const char *script_name = (argc > 0 && argv[0]) ? argv[0] : ruby_engine;
 
     ruby_script(script_name);  /* for the time being */
     rb_argv0 = rb_str_new4(rb_progname);

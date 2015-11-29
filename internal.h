@@ -1187,7 +1187,7 @@ VALUE rb_attr_delete(VALUE, ID);
 VALUE rb_ivar_lookup(VALUE obj, ID id, VALUE undef);
 
 /* version.c */
-extern VALUE ruby_engine_name;
+extern const char ruby_engine[];
 
 /* vm_insnhelper.h */
 rb_serial_t rb_next_class_serial(void);
