@@ -1,3 +1,10 @@
+Sun Nov 29 17:48:39 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (local_var_list_add): skip internal local variable
+	  name by its type but not if it has a name.  internal local
+	  variable names are just unique per frame, not globally.
+	  [ruby-core:71437] [Bug #11674]
+
 Sun Nov 29 17:13:16 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_each_codepoint): read more data when read partially.
