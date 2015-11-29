@@ -1,3 +1,9 @@
+Sun Nov 29 16:11:32 2015  Eric Wong  <e@80x24.org>
+
+	* iseq.c (iseq_data_to_ary): dump kw_arg as symbol
+	* test/-ext-/iseq_load/test_iseq_load.rb: test kw_arg roundtrip
+	  [ruby-core:69891] [Bug #11338]
+
 Sun Nov 29 02:55:56 2015  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* gc.c (__has_feature): move into internal.h.

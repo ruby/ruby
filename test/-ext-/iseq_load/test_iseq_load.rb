@@ -74,6 +74,15 @@ class TestIseqLoad < Test::Unit::TestCase
     end;
   end
 
+  def test_kwarg
+    assert_iseq_roundtrip <<-'end;'
+      def foo(kwarg: :foo)
+        kwarg
+      end
+      foo(kwarg: :bar)
+    end;
+  end
+
   # FIXME: still failing
   def test_require_integration
     skip "iseq loader require integration tests still failing"

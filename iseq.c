@@ -1834,7 +1834,7 @@ iseq_data_to_ary(rb_iseq_t *iseq)
 
 			orig_argc -= ci->kw_arg->keyword_len;
 			for (i = 0; i < ci->kw_arg->keyword_len; i++) {
-			    rb_ary_push(kw, ID2SYM(ci->kw_arg->keywords[i]));
+			    rb_ary_push(kw, ci->kw_arg->keywords[i]);
 			}
 			rb_hash_aset(e, ID2SYM(rb_intern("kw_arg")), kw);
 		    }
