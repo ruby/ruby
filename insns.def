@@ -738,15 +738,12 @@ defined
 	const rb_method_entry_t *me = rb_method_entry(klass, SYM2ID(obj), 0);
 
 	if (me) {
-	    if (!(me->flag & NOEX_PRIVATE)) {
-		if (!((me->flag & NOEX_PROTECTED) &&
-		      !rb_obj_is_kind_of(GET_SELF(),
-					 rb_class_real(klass)))) {
-		    expr_type = DEFINED_METHOD;
-		}
+	    if (!(me->flag & NOEX_PRIVATE) &&
+		!((me->flag & NOEX_PROTECTED) && !rb_obj_is_kind_of(GET_SELF(), rb_class_real(klass)))) {
+		expr_type = DEFINED_METHOD;
 	    }
 	}
-	{
+	else {
 	    VALUE args[2];
 	    VALUE r;
 

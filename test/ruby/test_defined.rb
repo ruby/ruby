@@ -209,4 +209,29 @@ class TestDefined < Test::Unit::TestCase
   def test_super_toplevel
     assert_separately([], "assert_nil(defined?(super))")
   end
+
+  class ExampleRespondToMissing
+    attr_reader :called
+
+    def initialize
+      @called = false
+    end
+
+    def respond_to_missing? *args
+      @called = true
+      false
+    end
+
+    def existing_method
+    end
+  end
+
+  def test_method_by_respond_to_missing
+    bug_11211 = '[Bug #11211]'
+    obj = ExampleRespondToMissing.new
+    assert_equal("method", defined?(obj.existing_method), bug_11211)
+    assert_equal(false, obj.called, bug_11211)
+    assert_equal(nil, defined?(obj.non_existing_method), bug_11211)
+    assert_equal(true, obj.called, bug_11211)
+  end
 end
