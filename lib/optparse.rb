@@ -1523,6 +1523,21 @@ XXX
   def parse_in_order(argv = default_argv, setter = nil, &nonopt)  # :nodoc:
     opt, arg, val, rest = nil
     nonopt ||= proc {|a| throw :terminate, a}
+    reader = setter.receiver.method(:[]) if setter.respond_to?(:receiver)
+    setkeys = []
+    # for same name options that allowed to reieve value
+    plural = lambda do |key, val|
+      if setkeys.index(key)
+        vals = reader.call(key)
+        vals = [vals] unless vals.is_a?(Array)
+        vals << val
+        setter.call(key, vals)
+        return true
+      end
+      setkeys << key
+      return false
+    end
+
     argv.unshift(arg) if arg = catch(:terminate) {
       while arg = argv.shift
         case arg
@@ -1537,7 +1552,9 @@ XXX
           begin
             opt, cb, val = sw.parse(rest, argv) {|*exc| raise(*exc)}
             val = cb.call(val) if cb
-            setter.call(sw.switch_name, val) if setter
+            if setter && !plural.call(sw.switch_name, val)
+              setter.call(sw.switch_name, val)
+            end
           rescue ParseError
             raise $!.set_option(arg, rest)
           end
@@ -1568,7 +1585,9 @@ XXX
             raise InvalidOption, arg if has_arg and !eq and arg == "-#{opt}"
             argv.unshift(opt) if opt and (!rest or (opt = opt.sub(/\A-*/, '-')) != '-')
             val = cb.call(val) if cb
-            setter.call(sw.switch_name, val) if setter
+            if setter && !plural.call(sw.switch_name, val)
+              setter.call(sw.switch_name, val)
+            end
           rescue ParseError
             raise $!.set_option(arg, arg.length > 2)
           end
