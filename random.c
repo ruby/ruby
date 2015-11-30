@@ -1453,9 +1453,11 @@ static union {
 } sipseed;
 
 static VALUE
-init_randomseed(struct MT *mt, uint32_t initial[DEFAULT_SEED_CNT])
+init_randomseed(struct MT *mt)
 {
+    uint32_t initial[DEFAULT_SEED_CNT];
     VALUE seed;
+
     fill_random_seed(initial);
     init_by_array(mt, initial, DEFAULT_SEED_CNT);
     seed = make_seed_value(initial);
@@ -1467,9 +1469,8 @@ void
 Init_RandomSeed(void)
 {
     rb_random_t *r = &default_rand;
-    uint32_t initial[DEFAULT_SEED_CNT];
     struct MT *mt = &r->mt;
-    VALUE seed = init_randomseed(mt, initial);
+    VALUE seed = init_randomseed(mt);
     int i;
 
     hashseed = genrand_int32(mt);

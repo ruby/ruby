@@ -1,3 +1,8 @@
+Thu Oct 22 00:19:07 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* random.c (init_randomseed): remove "initial" argument. It never
+	  be used from outside of this function.
+
 Thu Oct 22 00:12:33 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* lib/securerandom.rb (SecureRandom::gen_random): use /dev/urandom
