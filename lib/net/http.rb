@@ -914,12 +914,12 @@ module Net   #:nodoc:
             @socket.write(buf)
             HTTPResponse.read_new(@socket).value
           end
+          # Server Name Indication (SNI) RFC 3546
+          s.hostname = @address if s.respond_to? :hostname=
           if @ssl_session and
              Time.now < @ssl_session.time + @ssl_session.timeout
             s.session = @ssl_session if @ssl_session
           end
-          # Server Name Indication (SNI) RFC 3546
-          s.hostname = @address if s.respond_to? :hostname=
           Timeout.timeout(@open_timeout, Net::OpenTimeout) { s.connect }
           if @ssl_context.verify_mode != OpenSSL::SSL::VERIFY_NONE
             s.post_connection_check(@address)
