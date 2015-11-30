@@ -1,3 +1,10 @@
+Thu Oct 22 06:33:38 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* random.c (InitVM_Random): move Random::DEFAULT initialization
+	  bits to Init_Random_default.
+	* random.c (Init_Random_default): renamed from Init_Rndom2.
+	* random.c (Init_RandomSeedCore): renamed from Init_Random.
+
 Thu Oct 22 06:20:48 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* random.c (Init_RandomSeed): move all Random::DEFAULT
