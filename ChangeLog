@@ -1,3 +1,7 @@
+Mon Nov 30 21:27:09 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/digest/rmd160/rmd160.c: fixed commit mistake at r52797.
+
 Mon Nov 30 21:18:24 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* io.c (argf_getpartial): should not resize str if the second
