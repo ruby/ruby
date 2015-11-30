@@ -1,3 +1,8 @@
+Tue Dec  1 07:50:33 2015  Eric Wong  <e@80x24.org>
+
+	* missing/explicit_bzero.c: new file. define explicit_bzero.
+	  Fixup r52806
+
 Thu Oct 22 12:54:43 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* thread_pthread.c (register_ubf_list): renamed from
@@ -88,7 +93,6 @@ Wed Oct 21 08:23:36 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 Sun Oct 18 17:26:53 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
-	* missing/explicit_bzero.c: new file. define explicit_bzero.
 	* common.mk: add a rule for explicit.o.
 	* configure.in: detect explicit_bzero and memset_s.
 	* include/ruby/missing.h: add explicit_bzero.
