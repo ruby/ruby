@@ -1,3 +1,27 @@
+Thu Oct 22 12:54:43 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread_pthread.c (register_ubf_list): renamed from
+	  add_signal_thread_list.
+	* thread_pthread.c (unregister_ubf_list): renamed
+	  from remove_signal_thread_list.
+	* thread_pthread.c (ubf_wakeup_all_threads): renamed from
+	  ping_signal_thread_list.
+	* thread_pthread.c (ubf_wakeup_thread): renamed from
+	  ubf_select_each.
+	* thread_pthread.c (ubf_threads_empty): renamed from
+	  check_signal_thread_list().
+	* thread_pthread.c (ubf_list_lock): renamed from
+	  signal_thread_list_lock.
+
+	* thread_pthread.c (register_ubf_list): large simplification
+	  by using ccan/list.h.
+	  bonus: removed malloc() and exit(EXIT_FAILURE).
+	* thread_pthread.c (unregister_ubf_list): ditto.
+	* thread_pthread.c (ubf_threads_empty): ditto.
+	* thread_pthread.c (ubf_wakeup_all_threads): ditto.
+
+	* thread_pthread.c (print_signal_list): removed.
+
 Thu Oct 22 08:03:49 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* test/ruby/test_rand.rb (TestRand#test_default_seed): add
