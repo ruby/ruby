@@ -1,3 +1,12 @@
+Sun Oct 18 17:26:53 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* missing/explicit_bzero.c: new file. define explicit_bzero.
+	* common.mk: add a rule for explicit.o.
+	* configure.in: detect explicit_bzero and memset_s.
+	* include/ruby/missing.h: add explicit_bzero.
+	* random.c (init_randomseed): use explicit_bzero() instead of
+	  memset(). memset could be eliminated by compiler optimization.
+
 Mon Nov 30 18:46:44 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/readline/extconf.rb: call dir_config("libedit")
