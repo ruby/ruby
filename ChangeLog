@@ -1,3 +1,7 @@
+Tue Dec  1 02:52:17 2015  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* test/ruby/test_gc.rb: merge partially r52391 to get rid of CI error.
+
 Tue Dec  1 02:27:41 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_each_codepoint): raise an exception at incomplete
