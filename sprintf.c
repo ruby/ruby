@@ -611,9 +611,9 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		if (!NIL_P(sym)) nextvalue = rb_hash_lookup2(hash, sym, Qundef);
 		if (nextvalue == Qundef) {
 		    if (NIL_P(sym)) {
-			sym = rb_cstr_intern(start + 1,
-					     len - 2 /* without parenthesis */,
-					     enc);
+			sym = rb_sym_intern(start + 1,
+					    len - 2 /* without parenthesis */,
+					    enc);
 		    }
 		    nextvalue = rb_hash_default_value(hash, sym);
 		    if (NIL_P(nextvalue)) {
