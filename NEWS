@@ -111,6 +111,8 @@ with all sufficient information, see the ChangeLog file.
       of the file is updated immediately.  On some platforms (especially
       Windows), it is delayed until the filesystem load is decreased.
       Use IO#fsync if you want to guarantee updating metadata.
+  * IO#each_codepoint raises an exception at incomplete character
+    before EOF when conversion takes place.  [Bug #11444]
 
 * Math
   * incompatible changes:

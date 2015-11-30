@@ -1,3 +1,8 @@
+Tue Dec  1 02:27:41 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_each_codepoint): raise an exception at incomplete
+	  character before EOF when conversion takes place.  [Bug #11444]
+
 Sun Nov 29 18:02:44 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* io.c (argf_getpartial): should not resize str if the second
