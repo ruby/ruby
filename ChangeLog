@@ -1,3 +1,8 @@
+Thu Oct 22 00:12:33 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* lib/securerandom.rb (SecureRandom::gen_random): use /dev/urandom
+	  for initialize OpenSSL's rand.
+
 Wed Oct 21 12:10:04 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* ext/openssl/ossl_rand.c (ossl_rand_bytes): RAND_bytes could
