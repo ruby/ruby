@@ -5223,7 +5223,6 @@ ripper_yylval_id(ID x)
 #ifndef RIPPER
 #define ripper_flush(p) (void)(p)
 #define dispatch_scan_event(t) ((void)0)
-#define dispatch_ignored_scan_event(t) ((void)0)
 #define dispatch_delayed_token(t) ((void)0)
 #define has_delayed_token() (0)
 #else
@@ -5262,14 +5261,6 @@ ripper_dispatch_scan_event(struct parser_params *parser, int t)
     yylval_rval = ripper_scan_event_val(parser, t);
 }
 #define dispatch_scan_event(t) ripper_dispatch_scan_event(parser, t)
-
-static void
-ripper_dispatch_ignored_scan_event(struct parser_params *parser, int t)
-{
-    if (!ripper_has_scan_event(parser)) return;
-    (void)ripper_scan_event_val(parser, t);
-}
-#define dispatch_ignored_scan_event(t) ripper_dispatch_ignored_scan_event(parser, t)
 
 static void
 ripper_dispatch_delayed_token(struct parser_params *parser, int t)
@@ -6627,10 +6618,13 @@ parser_set_integer_literal(struct parser_params *parser, VALUE v, int suffix)
 static void
 ripper_dispatch_heredoc_end(struct parser_params *parser)
 {
+    VALUE str;
     if (has_delayed_token())
 	dispatch_delayed_token(tSTRING_CONTENT);
+    str = STR_NEW(parser->tokp, lex_pend - parser->tokp);
+    ripper_dispatch1(parser, ripper_token2eventid(tHEREDOC_END), str);
     lex_goto_eol(parser);
-    dispatch_ignored_scan_event(tHEREDOC_END);
+    ripper_flush(parser);
 }
 
 #define dispatch_heredoc_end() ripper_dispatch_heredoc_end(parser)
