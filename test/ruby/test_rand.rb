@@ -524,4 +524,13 @@ END
     [1, 2].sample(1, random: gen)
     assert_equal(2, gen.limit, bug7935)
   end
+
+  def test_default_seed
+    assert_separately([], <<-End)
+      seed = Random::DEFAULT::seed
+      rand1 = Random::DEFAULT::rand
+      rand2 = Random.new(seed).rand
+      assert_equal(rand1, rand2)
+    End
+  end
 end

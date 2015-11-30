@@ -1452,24 +1452,9 @@ static union {
     uint32_t u32[(16 * sizeof(uint8_t) - 1) / sizeof(uint32_t)];
 } sipseed;
 
-static VALUE
-init_randomseed(struct MT *mt)
-{
-    uint32_t initial[DEFAULT_SEED_CNT];
-    VALUE seed;
-
-    fill_random_seed(initial);
-    init_by_array(mt, initial, DEFAULT_SEED_CNT);
-    seed = make_seed_value(initial);
-    explicit_bzero(initial, DEFAULT_SEED_LEN);
-    return seed;
-}
-
 static void
-init_hashseed(void)
+init_hashseed(struct MT *mt)
 {
-    struct MT *mt = default_mt();
-
     hashseed = genrand_int32(mt);
 #if SIZEOF_ST_INDEX_T*CHAR_BIT > 4*8
     hashseed <<= 32;
@@ -1486,9 +1471,8 @@ init_hashseed(void)
 }
 
 static void
-init_siphash(void)
+init_siphash(struct MT *mt)
 {
-    struct MT *mt = default_mt();
     int i;
 
     for (i = 0; i < numberof(sipseed.u32); ++i)
@@ -1512,28 +1496,48 @@ rb_memhash(const void *ptr, long len)
 #endif
 }
 
+/* Initialize Ruby internal seeds */
 void
 Init_RandomSeed(void)
 {
-    rb_random_t *r = &default_rand;
-    struct MT *mt = &r->mt;
-    VALUE seed = init_randomseed(mt);
+    /*
+      Don't reuse this MT for Random::DEFAULT. Random::DEFAULT::seed shouldn't
+      provide a hint that an attacker guess siphash's seed.
+    */
+    struct MT mt;
+    uint32_t initial_seed[DEFAULT_SEED_CNT];
 
-    init_hashseed();
-    init_siphash();
+    fill_random_seed(initial_seed);
+    init_by_array(&mt, initial_seed, DEFAULT_SEED_CNT);
 
-    rb_global_variable(&r->seed);
-    r->seed = seed;
+    init_hashseed(&mt);
+    init_siphash(&mt);
+
+    explicit_bzero(initial_seed, DEFAULT_SEED_LEN);
 }
 
+static VALUE
+init_randomseed(struct MT *mt)
+{
+    uint32_t initial[DEFAULT_SEED_CNT];
+    VALUE seed;
+
+    fill_random_seed(initial);
+    init_by_array(mt, initial, DEFAULT_SEED_CNT);
+    seed = make_seed_value(initial);
+    explicit_bzero(initial, DEFAULT_SEED_LEN);
+    return seed;
+}
+
+/* construct Random::DEFAULT bits */
 static void
 Init_RandomSeed2(void)
 {
-    VALUE seed = default_rand.seed;
+    rb_random_t *r = &default_rand;
+    struct MT *mt = &r->mt;
 
-    if (RB_TYPE_P(seed, T_BIGNUM)) {
-	rb_obj_reveal(seed, rb_cBignum);
-    }
+    r->seed = init_randomseed(mt);
+    rb_global_variable(&r->seed);
 }
 
 void

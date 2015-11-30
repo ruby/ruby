@@ -1,3 +1,17 @@
+Thu Oct 22 06:20:48 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* random.c (Init_RandomSeed): move all Random::DEFAULT
+	  construction bits to Init_RandomSeed2. Random::DEFAULT
+	  and Ruby internal hashes are no longer shared their seed.
+	* random.c (Init_RandomSeed2): ditto. And, kill evil
+	  rb_obj_reveal() stuff.
+
+	* random.c (init_hashseed): add MT argument.
+	* random.c: (init_siphash): ditto.
+
+	* test/ruby/test_rand.rb (TestRand#test_default_seed): new
+	  test for Random::DEFAULT::seed.
+
 Thu Oct 22 05:23:48 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* random.c (init_hashseed, init_siphash): extract initialize
