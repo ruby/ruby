@@ -1,7 +1,7 @@
 Mon Nov 30 18:46:44 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/readline/extconf.rb: call dir_config("libedit")
-	  if --enable-libedit is spcified. [Bug #11751]
+	  if --enable-libedit is specified. [Bug #11751]
 	  patched by John Hein
 
 Mon Nov 30 08:44:29 2015  Eric Wong  <e@80x24.org>
