@@ -1496,9 +1496,10 @@ rb_memhash(const void *ptr, long len)
 #endif
 }
 
-/* Initialize Ruby internal seeds */
+/* Initialize Ruby internal seeds. This function is called at very early stage
+ * of Ruby startup. Thus, you can't use Ruby's object. */
 void
-Init_RandomSeed(void)
+Init_RandomSeedCore(void)
 {
     /*
       Don't reuse this MT for Random::DEFAULT. Random::DEFAULT::seed shouldn't
@@ -1530,14 +1531,20 @@ init_randomseed(struct MT *mt)
 }
 
 /* construct Random::DEFAULT bits */
-static void
-Init_RandomSeed2(void)
+static VALUE
+Init_Random_default(void)
 {
     rb_random_t *r = &default_rand;
     struct MT *mt = &r->mt;
+    VALUE v;
 
     r->seed = init_randomseed(mt);
     rb_global_variable(&r->seed);
+
+    v = TypedData_Wrap_Struct(rb_cRandom, &random_data_type, r);
+    rb_gc_register_mark_object(v);
+
+    return v;
 }
 
 void
@@ -1575,7 +1582,6 @@ rb_reset_random_seed(void)
 void
 InitVM_Random(void)
 {
-    Init_RandomSeed2();
     rb_define_global_function("srand", rb_f_srand, -1);
     rb_define_global_function("rand", rb_f_rand, -1);
 
@@ -1593,9 +1599,8 @@ InitVM_Random(void)
     rb_define_method(rb_cRandom, "==", random_equal, 1);
 
     {
-	VALUE rand_default = TypedData_Wrap_Struct(rb_cRandom, &random_data_type, &default_rand);
-	rb_gc_register_mark_object(rand_default);
 	/* Direct access to Ruby's Pseudorandom number generator (PRNG). */
+	VALUE rand_default = Init_Random_default();
 	rb_define_const(rb_cRandom, "DEFAULT", rand_default);
     }
 
