@@ -1,3 +1,10 @@
+Wed Oct 21 09:04:09 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* include/ruby/util.h: remove a warning suppression C4723
+	  (potential divide by zero) for VisualC++. It's meaningless.
+	  Before r26197, there is ruby_div0() in this place and it
+	  actually made divide by zero. But now it's just garbage.
+
 Wed Oct 21 08:23:36 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* random.c: random_raw_seed don't use GRND_NONBLOCK. GRND_NONBLOCK
