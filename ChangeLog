@@ -1,3 +1,7 @@
+Thu Oct 22 01:01:34 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* configure.in: sort AC_CHECK_HEADERS() by alphabetical order.
+
 Thu Oct 22 00:19:07 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* random.c (init_randomseed): remove "initial" argument. It never

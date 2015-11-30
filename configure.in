@@ -1232,47 +1232,46 @@ AC_HEADER_DIRENT
 dnl AC_HEADER_STDC has been checked in AC_USE_SYSTEM_EXTENSIONS
 AC_HEADER_STDBOOL
 AC_HEADER_SYS_WAIT
-AC_CHECK_HEADERS( \
-  limits.h \
-  sys/file.h \
-  sys/ioctl.h \
-  sys/syscall.h \
-  fcntl.h \
-  sys/fcntl.h \
-  sys/param.h \
-  sys/select.h \
-  sys/time.h \
-  sys/times.h \
-  syscall.h \
-  pwd.h \
-  grp.h \
-  a.out.h \
-  utime.h \
-  direct.h \
-  sys/resource.h \
-  sys/mkdev.h \
-  sys/utime.h \
-  float.h \
-  ieeefp.h \
-  ucontext.h \
-  intrinsics.h \
-  langinfo.h \
-  locale.h \
-  sys/sendfile.h \
-  time.h \
-  net/socket.h \
-  sys/socket.h \
-  process.h \
-  sys/prctl.h \
-  sys/uio.h \
-  atomic.h \
-  malloc.h \
-  malloc_np.h \
-  malloc/malloc.h \
-  setjmpex.h \
-  sys/attr.h \
-  sys/id.h
-)
+
+AC_CHECK_HEADERS(a.out.h)
+AC_CHECK_HEADERS(atomic.h)
+AC_CHECK_HEADERS(direct.h)
+AC_CHECK_HEADERS(grp.h)
+AC_CHECK_HEADERS(fcntl.h)
+AC_CHECK_HEADERS(float.h)
+AC_CHECK_HEADERS(ieeefp.h)
+AC_CHECK_HEADERS(intrinsics.h)
+AC_CHECK_HEADERS(langinfo.h)
+AC_CHECK_HEADERS(limits.h)
+AC_CHECK_HEADERS(locale.h)
+AC_CHECK_HEADERS(malloc.h)
+AC_CHECK_HEADERS(malloc/malloc.h)
+AC_CHECK_HEADERS(malloc_np.h)
+AC_CHECK_HEADERS(net/socket.h)
+AC_CHECK_HEADERS(process.h)
+AC_CHECK_HEADERS(pwd.h)
+AC_CHECK_HEADERS(setjmpex.h)
+AC_CHECK_HEADERS(sys/attr.h)
+AC_CHECK_HEADERS(sys/fcntl.h)
+AC_CHECK_HEADERS(sys/file.h)
+AC_CHECK_HEADERS(sys/id.h)
+AC_CHECK_HEADERS(sys/ioctl.h)
+AC_CHECK_HEADERS(sys/mkdev.h)
+AC_CHECK_HEADERS(sys/param.h)
+AC_CHECK_HEADERS(sys/prctl.h)
+AC_CHECK_HEADERS(sys/resource.h)
+AC_CHECK_HEADERS(sys/select.h)
+AC_CHECK_HEADERS(sys/sendfile.h)
+AC_CHECK_HEADERS(sys/socket.h)
+AC_CHECK_HEADERS(sys/syscall.h)
+AC_CHECK_HEADERS(sys/time.h)
+AC_CHECK_HEADERS(sys/times.h)
+AC_CHECK_HEADERS(sys/uio.h)
+AC_CHECK_HEADERS(sys/utime.h)
+AC_CHECK_HEADERS(syscall.h)
+AC_CHECK_HEADERS(time.h)
+AC_CHECK_HEADERS(ucontext.h)
+AC_CHECK_HEADERS(utime.h)
 
 AC_ARG_WITH([gmp],
   [AS_HELP_STRING([--without-gmp],
