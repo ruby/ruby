@@ -1465,13 +1465,10 @@ init_randomseed(struct MT *mt)
     return seed;
 }
 
-void
-Init_RandomSeed(void)
+static void
+init_hashseed(void)
 {
-    rb_random_t *r = &default_rand;
-    struct MT *mt = &r->mt;
-    VALUE seed = init_randomseed(mt);
-    int i;
+    struct MT *mt = default_mt();
 
     hashseed = genrand_int32(mt);
 #if SIZEOF_ST_INDEX_T*CHAR_BIT > 4*8
@@ -1486,12 +1483,16 @@ Init_RandomSeed(void)
     hashseed <<= 32;
     hashseed |= genrand_int32(mt);
 #endif
+}
+
+static void
+init_siphash(void)
+{
+    struct MT *mt = default_mt();
+    int i;
 
     for (i = 0; i < numberof(sipseed.u32); ++i)
 	sipseed.u32[i] = genrand_int32(mt);
-
-    rb_global_variable(&r->seed);
-    r->seed = seed;
 }
 
 st_index_t
@@ -1509,6 +1510,20 @@ rb_memhash(const void *ptr, long len)
 #else
     return (st_index_t)(h.u32[0] ^ h.u32[1]);
 #endif
+}
+
+void
+Init_RandomSeed(void)
+{
+    rb_random_t *r = &default_rand;
+    struct MT *mt = &r->mt;
+    VALUE seed = init_randomseed(mt);
+
+    init_hashseed();
+    init_siphash();
+
+    rb_global_variable(&r->seed);
+    r->seed = seed;
 }
 
 static void
