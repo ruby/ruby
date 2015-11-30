@@ -495,7 +495,7 @@ release_crypt(void *p)
 }
 
 static int
-fill_random_bytes_syscall(void *seed, size_t size)
+fill_random_bytes_syscall(void *seed, size_t size, int unused)
 {
     static HCRYPTPROV perm_prov;
     HCRYPTPROV prov = perm_prov, old_prov;
@@ -528,13 +528,16 @@ fill_random_bytes_syscall(void *seed, size_t size)
 # endif
 
 static int
-fill_random_bytes_syscall(void *seed, size_t size)
+fill_random_bytes_syscall(void *seed, size_t size, int need_secure)
 {
     static rb_atomic_t try_syscall = 1;
     if (try_syscall) {
 	long ret;
+	int flags = 0;
+	if (!need_secure)
+	    flags = GRND_NONBLOCK;
 	errno = 0;
-	ret = syscall(SYS_getrandom, seed, size, GRND_NONBLOCK);
+	ret = syscall(SYS_getrandom, seed, size, flags);
 	if (errno == ENOSYS) {
 	    ATOMIC_SET(try_syscall, 0);
 	    return -1;
@@ -544,13 +547,13 @@ fill_random_bytes_syscall(void *seed, size_t size)
     return -1;
 }
 #else
-# define fill_random_bytes_syscall(seed, size) -1
+# define fill_random_bytes_syscall(seed, size, need_secure) -1
 #endif
 
 static int
-fill_random_bytes(void *seed, size_t size)
+fill_random_bytes(void *seed, size_t size, int need_secure)
 {
-    int ret = fill_random_bytes_syscall(seed, size);
+    int ret = fill_random_bytes_syscall(seed, size, need_secure);
     if (ret == 0) return ret;
     return fill_random_bytes_urandom(seed, size);
 }
@@ -563,7 +566,7 @@ fill_random_seed(uint32_t seed[DEFAULT_SEED_CNT])
 
     memset(seed, 0, DEFAULT_SEED_LEN);
 
-    fill_random_bytes(seed, sizeof(*seed));
+    fill_random_bytes(seed, sizeof(*seed), TRUE);
 
     gettimeofday(&tv, 0);
     seed[0] ^= tv.tv_usec;
@@ -631,7 +634,7 @@ random_raw_seed(VALUE self, VALUE size)
     long n = NUM2ULONG(size);
     VALUE buf = rb_str_new(0, n);
     if (n == 0) return buf;
-    if (fill_random_bytes(RSTRING_PTR(buf), n)) return Qnil;
+    if (fill_random_bytes(RSTRING_PTR(buf), n, FALSE)) return Qnil;
     return buf;
 }
 
@@ -1449,26 +1452,9 @@ static union {
     uint32_t u32[(16 * sizeof(uint8_t) - 1) / sizeof(uint32_t)];
 } sipseed;
 
-static VALUE
-init_randomseed(struct MT *mt, uint32_t initial[DEFAULT_SEED_CNT])
+static void
+init_hashseed(struct MT *mt)
 {
-    VALUE seed;
-    fill_random_seed(initial);
-    init_by_array(mt, initial, DEFAULT_SEED_CNT);
-    seed = make_seed_value(initial);
-    memset(initial, 0, DEFAULT_SEED_LEN);
-    return seed;
-}
-
-void
-Init_RandomSeed(void)
-{
-    rb_random_t *r = &default_rand;
-    uint32_t initial[DEFAULT_SEED_CNT];
-    struct MT *mt = &r->mt;
-    VALUE seed = init_randomseed(mt, initial);
-    int i;
-
     hashseed = genrand_int32(mt);
 #if SIZEOF_ST_INDEX_T*CHAR_BIT > 4*8
     hashseed <<= 32;
@@ -1482,12 +1468,15 @@ Init_RandomSeed(void)
     hashseed <<= 32;
     hashseed |= genrand_int32(mt);
 #endif
+}
+
+static void
+init_siphash(struct MT *mt)
+{
+    int i;
 
     for (i = 0; i < numberof(sipseed.u32); ++i)
 	sipseed.u32[i] = genrand_int32(mt);
-
-    rb_global_variable(&r->seed);
-    r->seed = seed;
 }
 
 st_index_t
@@ -1507,14 +1496,55 @@ rb_memhash(const void *ptr, long len)
 #endif
 }
 
-static void
-Init_RandomSeed2(void)
+/* Initialize Ruby internal seeds. This function is called at very early stage
+ * of Ruby startup. Thus, you can't use Ruby's object. */
+void
+Init_RandomSeedCore(void)
 {
-    VALUE seed = default_rand.seed;
+    /*
+      Don't reuse this MT for Random::DEFAULT. Random::DEFAULT::seed shouldn't
+      provide a hint that an attacker guess siphash's seed.
+    */
+    struct MT mt;
+    uint32_t initial_seed[DEFAULT_SEED_CNT];
 
-    if (RB_TYPE_P(seed, T_BIGNUM)) {
-	rb_obj_reveal(seed, rb_cBignum);
-    }
+    fill_random_seed(initial_seed);
+    init_by_array(&mt, initial_seed, DEFAULT_SEED_CNT);
+
+    init_hashseed(&mt);
+    init_siphash(&mt);
+
+    explicit_bzero(initial_seed, DEFAULT_SEED_LEN);
+}
+
+static VALUE
+init_randomseed(struct MT *mt)
+{
+    uint32_t initial[DEFAULT_SEED_CNT];
+    VALUE seed;
+
+    fill_random_seed(initial);
+    init_by_array(mt, initial, DEFAULT_SEED_CNT);
+    seed = make_seed_value(initial);
+    explicit_bzero(initial, DEFAULT_SEED_LEN);
+    return seed;
+}
+
+/* construct Random::DEFAULT bits */
+static VALUE
+Init_Random_default(void)
+{
+    rb_random_t *r = &default_rand;
+    struct MT *mt = &r->mt;
+    VALUE v;
+
+    r->seed = init_randomseed(mt);
+    rb_global_variable(&r->seed);
+
+    v = TypedData_Wrap_Struct(rb_cRandom, &random_data_type, r);
+    rb_gc_register_mark_object(v);
+
+    return v;
 }
 
 void
@@ -1552,7 +1582,6 @@ rb_reset_random_seed(void)
 void
 InitVM_Random(void)
 {
-    Init_RandomSeed2();
     rb_define_global_function("srand", rb_f_srand, -1);
     rb_define_global_function("rand", rb_f_rand, -1);
 
@@ -1570,9 +1599,8 @@ InitVM_Random(void)
     rb_define_method(rb_cRandom, "==", random_equal, 1);
 
     {
-	VALUE rand_default = TypedData_Wrap_Struct(rb_cRandom, &random_data_type, &default_rand);
-	rb_gc_register_mark_object(rand_default);
 	/* Direct access to Ruby's Pseudorandom number generator (PRNG). */
+	VALUE rand_default = Init_Random_default();
 	rb_define_const(rb_cRandom, "DEFAULT", rand_default);
     }
 

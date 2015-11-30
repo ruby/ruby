@@ -420,12 +420,8 @@ native_cond_timeout(rb_nativethread_cond_t *cond, struct timespec timeout_rel)
 #endif
 
 #if defined(SIGVTALRM) && !defined(__CYGWIN__)
-#define USE_SIGNAL_THREAD_LIST 1
-#endif
-#ifdef USE_SIGNAL_THREAD_LIST
-static void add_signal_thread_list(rb_thread_t *th);
-static void remove_signal_thread_list(rb_thread_t *th);
-static rb_nativethread_lock_t signal_thread_list_lock;
+#define USE_UBF_LIST 1
+static rb_nativethread_lock_t ubf_list_lock;
 #endif
 
 static pthread_key_t ruby_native_thread_key;
@@ -459,8 +455,8 @@ Init_native_thread(void)
     th->thread_id = pthread_self();
     fill_thread_id_str(th);
     native_thread_init(th);
-#ifdef USE_SIGNAL_THREAD_LIST
-    native_mutex_initialize(&signal_thread_list_lock);
+#ifdef USE_UBF_LIST
+    native_mutex_initialize(&ubf_list_lock);
 #endif
 #ifndef __native_client__
     posix_signal(SIGVTALRM, null_func);
@@ -470,7 +466,12 @@ Init_native_thread(void)
 static void
 native_thread_init(rb_thread_t *th)
 {
-    native_cond_initialize(&th->native_thread_data.sleep_cond, RB_CONDATTR_CLOCK_MONOTONIC);
+    native_thread_data_t *nd = &th->native_thread_data;
+
+#ifdef USE_UBF_LIST
+    list_node_init(&nd->ubf_list);
+#endif
+    native_cond_initialize(&nd->sleep_cond, RB_CONDATTR_CLOCK_MONOTONIC);
     ruby_thread_set_native(th);
 }
 
@@ -1135,144 +1136,93 @@ native_sleep(rb_thread_t *th, struct timeval *timeout_tv)
     thread_debug("native_sleep done\n");
 }
 
-#ifdef USE_SIGNAL_THREAD_LIST
-struct signal_thread_list {
-    rb_thread_t *th;
-    struct signal_thread_list *prev;
-    struct signal_thread_list *next;
-};
+#ifdef USE_UBF_LIST
+static LIST_HEAD(ubf_list_head);
 
-static struct signal_thread_list signal_thread_list_anchor = {
-    0, 0, 0,
-};
-
-#define FGLOCK(lock, body) do { \
-    native_mutex_lock(lock); \
-    { \
-	body; \
-    } \
-    native_mutex_unlock(lock); \
-} while (0)
-
-#if 0 /* for debug */
+/* The thread 'th' is registered to be trying unblock. */
 static void
-print_signal_list(char *str)
+register_ubf_list(rb_thread_t *th)
 {
-    struct signal_thread_list *list =
-      signal_thread_list_anchor.next;
-    thread_debug("list (%s)> ", str);
-    while (list) {
-	thread_debug("%p (%p), ", list->th, list->th->thread_id);
-	list = list->next;
-    }
-    thread_debug("\n");
-}
-#endif
+    struct list_node *node = &th->native_thread_data.ubf_list;
 
-static void
-add_signal_thread_list(rb_thread_t *th)
-{
-    if (!th->native_thread_data.signal_thread_list) {
-	FGLOCK(&signal_thread_list_lock, {
-	    struct signal_thread_list *list =
-	      malloc(sizeof(struct signal_thread_list));
-
-	    if (list == 0) {
-		fprintf(stderr, "[FATAL] failed to allocate memory\n");
-		exit(EXIT_FAILURE);
-	    }
-
-	    list->th = th;
-
-	    list->prev = &signal_thread_list_anchor;
-	    list->next = signal_thread_list_anchor.next;
-	    if (list->next) {
-		list->next->prev = list;
-	    }
-	    signal_thread_list_anchor.next = list;
-	    th->native_thread_data.signal_thread_list = list;
-	});
+    if (list_empty((struct list_head*)node)) {
+	native_mutex_lock(&ubf_list_lock);
+	list_add(&ubf_list_head, node);
+	native_mutex_unlock(&ubf_list_lock);
     }
 }
 
+/* The thread 'th' is unblocked. It no longer need to be registered. */
 static void
-remove_signal_thread_list(rb_thread_t *th)
+unregister_ubf_list(rb_thread_t *th)
 {
-    if (th->native_thread_data.signal_thread_list) {
-	FGLOCK(&signal_thread_list_lock, {
-	    struct signal_thread_list *list =
-	      (struct signal_thread_list *)
-		th->native_thread_data.signal_thread_list;
+    struct list_node *node = &th->native_thread_data.ubf_list;
 
-	    list->prev->next = list->next;
-	    if (list->next) {
-		list->next->prev = list->prev;
-	    }
-	    th->native_thread_data.signal_thread_list = 0;
-	    list->th = 0;
-	    free(list); /* ok */
-	});
+    if (!list_empty((struct list_head*)node)) {
+	native_mutex_lock(&ubf_list_lock);
+	list_del_init(node);
+	native_mutex_unlock(&ubf_list_lock);
     }
 }
 
+/*
+ * send a signal to intent that a target thread return from blocking syscall.
+ * Maybe any signal is ok, but we chose SIGVTALRM.
+ */
 static void
-ubf_select_each(rb_thread_t *th)
+ubf_wakeup_thread(rb_thread_t *th)
 {
-    thread_debug("ubf_select_each (%"PRI_THREAD_ID")\n", thread_id_str(th));
-    if (th) {
+    thread_debug("thread_wait_queue_wakeup (%"PRI_THREAD_ID")\n", thread_id_str(th));
+    if (th)
 	pthread_kill(th->thread_id, SIGVTALRM);
-    }
 }
 
 static void
 ubf_select(void *ptr)
 {
     rb_thread_t *th = (rb_thread_t *)ptr;
-    add_signal_thread_list(th);
+    register_ubf_list(th);
 
     /*
-     * ubf_select_each() doesn't guarantee to wake up the target thread.
-     * Therefore, we need to activate timer thread when called from
-     * Thread#kill etc.
+     * ubf_wakeup_thread() doesn't guarantee to wake up a target thread.
+     * Therefore, we repeatedly call ubf_wakeup_thread() until a target thread
+     * exit from ubf function.
      * In the other hands, we shouldn't call rb_thread_wakeup_timer_thread()
      * if running on timer thread because it may make endless wakeups.
      */
     if (!pthread_equal(pthread_self(), timer_thread.id))
 	rb_thread_wakeup_timer_thread();
-    ubf_select_each(th);
-}
-
-static void
-ping_signal_thread_list(void)
-{
-    if (signal_thread_list_anchor.next) {
-	FGLOCK(&signal_thread_list_lock, {
-	    struct signal_thread_list *list;
-
-	    list = signal_thread_list_anchor.next;
-	    while (list) {
-		ubf_select_each(list->th);
-		list = list->next;
-	    }
-	});
-    }
+    ubf_wakeup_thread(th);
 }
 
 static int
-check_signal_thread_list(void)
+ubf_threads_empty(void)
 {
-    if (signal_thread_list_anchor.next)
-	return 1;
-    else
-	return 0;
+    return list_empty(&ubf_list_head);
 }
-#else /* USE_SIGNAL_THREAD_LIST */
-#define add_signal_thread_list(th) (void)(th)
-#define remove_signal_thread_list(th) (void)(th)
+
+static void
+ubf_wakeup_all_threads(void)
+{
+    rb_thread_t *th;
+
+    if (!ubf_threads_empty()) {
+	native_mutex_lock(&ubf_list_lock);
+	list_for_each(&ubf_list_head, th,
+		      native_thread_data.ubf_list) {
+	    ubf_wakeup_thread(th);
+	}
+	native_mutex_unlock(&ubf_list_lock);
+    }
+}
+
+#else /* USE_UBF_LIST */
+#define register_ubf_list(th) (void)(th)
+#define unregister_ubf_list(th) (void)(th)
 #define ubf_select 0
-static void ping_signal_thread_list(void) { return; }
-static int check_signal_thread_list(void) { return 0; }
-#endif /* USE_SIGNAL_THREAD_LIST */
+static void ubf_wakeup_all_threads(void) { return; }
+static int ubf_threads_empty(void) { return 1; }
+#endif /* USE_UBF_LIST */
 
 #define TT_DEBUG 0
 #define WRITE_CONST(fd, str) (void)(write((fd),(str),sizeof(str)-1)<0)
@@ -1479,7 +1429,7 @@ timer_thread_sleep(rb_global_vm_lock_t* gvl)
     pollfds[1].fd = timer_thread_pipe.low[0];
     pollfds[1].events = POLLIN;
 
-    need_polling = check_signal_thread_list();
+    need_polling = !ubf_threads_empty();
 
     if (gvl->waiting > 0 || need_polling) {
 	/* polling (TIME_QUANTUM_USEC usec) */
@@ -1587,7 +1537,7 @@ thread_timer(void *p)
     while (system_working > 0) {
 
 	/* timer function */
-	ping_signal_thread_list();
+	ubf_wakeup_all_threads();
 	timer_thread_function(0);
 
 	if (TT_DEBUG) WRITE_CONST(2, "tick\n");

@@ -242,6 +242,10 @@ RUBY_EXTERN int ruby_close(int);
 RUBY_EXTERN void setproctitle(const char *fmt, ...);
 #endif
 
+#ifndef HAVE_EXPLICIT_BZERO
+RUBY_EXTERN void explicit_bzero(void *b, size_t len);
+#endif
+
 RUBY_SYMBOL_EXPORT_END
 
 #if defined(__cplusplus)

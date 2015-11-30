@@ -19,7 +19,7 @@
 #undef Sleep
 
 #define native_thread_yield() Sleep(0)
-#define remove_signal_thread_list(th)
+#define unregister_ubf_list(th)
 
 static volatile DWORD ruby_native_thread_key = TLS_OUT_OF_INDEXES;
 

@@ -1,3 +1,104 @@
+Tue Dec  1 07:50:33 2015  Eric Wong  <e@80x24.org>
+
+	* missing/explicit_bzero.c: new file. define explicit_bzero.
+	  Fixup r52806
+
+Thu Oct 22 12:54:43 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* thread_pthread.c (register_ubf_list): renamed from
+	  add_signal_thread_list.
+	* thread_pthread.c (unregister_ubf_list): renamed
+	  from remove_signal_thread_list.
+	* thread_pthread.c (ubf_wakeup_all_threads): renamed from
+	  ping_signal_thread_list.
+	* thread_pthread.c (ubf_wakeup_thread): renamed from
+	  ubf_select_each.
+	* thread_pthread.c (ubf_threads_empty): renamed from
+	  check_signal_thread_list().
+	* thread_pthread.c (ubf_list_lock): renamed from
+	  signal_thread_list_lock.
+
+	* thread_pthread.c (register_ubf_list): large simplification
+	  by using ccan/list.h.
+	  bonus: removed malloc() and exit(EXIT_FAILURE).
+	* thread_pthread.c (unregister_ubf_list): ditto.
+	* thread_pthread.c (ubf_threads_empty): ditto.
+	* thread_pthread.c (ubf_wakeup_all_threads): ditto.
+
+	* thread_pthread.c (print_signal_list): removed.
+
+Thu Oct 22 08:03:49 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/ruby/test_rand.rb (TestRand#test_default_seed): add
+	  srand case.
+
+Thu Oct 22 06:33:38 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* random.c (InitVM_Random): move Random::DEFAULT initialization
+	  bits to Init_Random_default.
+	* random.c (Init_Random_default): renamed from Init_Rndom2.
+	* random.c (Init_RandomSeedCore): renamed from Init_Random.
+
+Thu Oct 22 06:20:48 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* random.c (Init_RandomSeed): move all Random::DEFAULT
+	  construction bits to Init_RandomSeed2. Random::DEFAULT
+	  and Ruby internal hashes are no longer shared their seed.
+	* random.c (Init_RandomSeed2): ditto. And, kill evil
+	  rb_obj_reveal() stuff.
+
+	* random.c (init_hashseed): add MT argument.
+	* random.c: (init_siphash): ditto.
+
+	* test/ruby/test_rand.rb (TestRand#test_default_seed): new
+	  test for Random::DEFAULT::seed.
+
+Thu Oct 22 05:23:48 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* random.c (init_hashseed, init_siphash): extract initialize
+	  functions.
+
+Thu Oct 22 01:01:34 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* configure.in: sort AC_CHECK_HEADERS() by alphabetical order.
+
+Thu Oct 22 00:19:07 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* random.c (init_randomseed): remove "initial" argument. It never
+	  be used from outside of this function.
+
+Thu Oct 22 00:12:33 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* lib/securerandom.rb (SecureRandom::gen_random): use /dev/urandom
+	  for initialize OpenSSL's rand.
+
+Wed Oct 21 12:10:04 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* ext/openssl/ossl_rand.c (ossl_rand_bytes): RAND_bytes could
+	  be return -1 as an error. Therefore, added error handling.
+	* ext/openssl/ossl_pkey_dsa.c (dsa_generate): ditto.
+
+Wed Oct 21 09:04:09 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* include/ruby/util.h: remove a warning suppression C4723
+	  (potential divide by zero) for VisualC++. It's meaningless.
+	  Before r26197, there is ruby_div0() in this place and it
+	  actually made divide by zero. But now it's just garbage.
+
+Wed Oct 21 08:23:36 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* random.c: random_raw_seed don't use GRND_NONBLOCK. GRND_NONBLOCK
+	  mean the result might not have an enough cryptic strength and
+	  easy predictable. That's no good for SecureRandom.
+
+Sun Oct 18 17:26:53 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* common.mk: add a rule for explicit.o.
+	* configure.in: detect explicit_bzero and memset_s.
+	* include/ruby/missing.h: add explicit_bzero.
+	* random.c (init_randomseed): use explicit_bzero() instead of
+	  memset(). memset could be eliminated by compiler optimization.
+
 Mon Nov 30 18:46:44 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/readline/extconf.rb: call dir_config("libedit")

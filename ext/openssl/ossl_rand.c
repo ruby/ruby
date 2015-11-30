@@ -110,10 +110,16 @@ ossl_rand_bytes(VALUE self, VALUE len)
 {
     VALUE str;
     int n = NUM2INT(len);
+    int ret;
 
     str = rb_str_new(0, n);
-    if (!RAND_bytes((unsigned char *)RSTRING_PTR(str), n)) {
-	ossl_raise(eRandomError, NULL);
+    ret = RAND_bytes((unsigned char *)RSTRING_PTR(str), n);
+    if (ret == 0){
+	char buf[256];
+	ERR_error_string_n(ERR_get_error(), buf, 256);
+	ossl_raise(eRandomError, "RAND_bytes error: %s", buf);
+    } else if (ret == -1) {
+	ossl_raise(eRandomError, "RAND_bytes is not supported");
     }
 
     return str;

@@ -80,14 +80,6 @@ double ruby_strtod(const char *, char **);
 #undef strtod
 #define strtod(s,e) ruby_strtod((s),(e))
 
-#if defined _MSC_VER && _MSC_VER >= 1300
-#pragma warning(push)
-#pragma warning(disable:4723)
-#endif
-#if defined _MSC_VER && _MSC_VER >= 1300
-#pragma warning(pop)
-#endif
-
 void ruby_each_words(const char *, void (*)(const char*, int, void*), void *);
 
 RUBY_SYMBOL_EXPORT_END
