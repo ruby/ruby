@@ -1,3 +1,9 @@
+Wed Oct 21 08:23:36 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* random.c: random_raw_seed don't use GRND_NONBLOCK. GRND_NONBLOCK
+	  mean the result might not have an enough cryptic strength and
+	  easy predictable. That's no good for SecureRandom.
+
 Sun Oct 18 17:26:53 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* missing/explicit_bzero.c: new file. define explicit_bzero.

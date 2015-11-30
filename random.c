@@ -495,7 +495,7 @@ release_crypt(void *p)
 }
 
 static int
-fill_random_bytes_syscall(void *seed, size_t size)
+fill_random_bytes_syscall(void *seed, size_t size, int unused)
 {
     static HCRYPTPROV perm_prov;
     HCRYPTPROV prov = perm_prov, old_prov;
@@ -528,13 +528,16 @@ fill_random_bytes_syscall(void *seed, size_t size)
 # endif
 
 static int
-fill_random_bytes_syscall(void *seed, size_t size)
+fill_random_bytes_syscall(void *seed, size_t size, int need_secure)
 {
     static rb_atomic_t try_syscall = 1;
     if (try_syscall) {
 	long ret;
+	int flags = 0;
+	if (!need_secure)
+	    flags = GRND_NONBLOCK;
 	errno = 0;
-	ret = syscall(SYS_getrandom, seed, size, GRND_NONBLOCK);
+	ret = syscall(SYS_getrandom, seed, size, flags);
 	if (errno == ENOSYS) {
 	    ATOMIC_SET(try_syscall, 0);
 	    return -1;
@@ -544,13 +547,13 @@ fill_random_bytes_syscall(void *seed, size_t size)
     return -1;
 }
 #else
-# define fill_random_bytes_syscall(seed, size) -1
+# define fill_random_bytes_syscall(seed, size, need_secure) -1
 #endif
 
 static int
-fill_random_bytes(void *seed, size_t size)
+fill_random_bytes(void *seed, size_t size, int need_secure)
 {
-    int ret = fill_random_bytes_syscall(seed, size);
+    int ret = fill_random_bytes_syscall(seed, size, need_secure);
     if (ret == 0) return ret;
     return fill_random_bytes_urandom(seed, size);
 }
@@ -563,7 +566,7 @@ fill_random_seed(uint32_t seed[DEFAULT_SEED_CNT])
 
     memset(seed, 0, DEFAULT_SEED_LEN);
 
-    fill_random_bytes(seed, sizeof(*seed));
+    fill_random_bytes(seed, sizeof(*seed), TRUE);
 
     gettimeofday(&tv, 0);
     seed[0] ^= tv.tv_usec;
@@ -631,7 +634,7 @@ random_raw_seed(VALUE self, VALUE size)
     long n = NUM2ULONG(size);
     VALUE buf = rb_str_new(0, n);
     if (n == 0) return buf;
-    if (fill_random_bytes(RSTRING_PTR(buf), n)) return Qnil;
+    if (fill_random_bytes(RSTRING_PTR(buf), n, FALSE)) return Qnil;
     return buf;
 }
 
