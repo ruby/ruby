@@ -1,3 +1,8 @@
+Thu Oct 22 08:03:49 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* test/ruby/test_rand.rb (TestRand#test_default_seed): add
+	  srand case.
+
 Thu Oct 22 06:33:38 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* random.c (InitVM_Random): move Random::DEFAULT initialization
