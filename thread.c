@@ -1261,7 +1261,7 @@ blocking_region_end(rb_thread_t *th, struct rb_blocking_region_buffer *region)
     gvl_acquire(th->vm, th);
     rb_thread_set_current(th);
     thread_debug("leave blocking region (%p)\n", (void *)th);
-    remove_signal_thread_list(th);
+    unregister_ubf_list(th);
     th->blocking_region_buffer = 0;
     reset_unblock_function(th, &region->oldubf);
     if (th->status == THREAD_STOPPED) {
