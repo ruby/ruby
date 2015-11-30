@@ -504,6 +504,17 @@ class TestArgf < Test::Unit::TestCase
     end
   end
 
+  def test_readpartial_eof_twice
+    ruby('-W1', '-e', <<-SRC, @t1.path) do |f|
+      $stderr = $stdout
+      print ARGF.readpartial(256)
+      ARGF.readpartial(256) rescue p($!.class)
+      ARGF.readpartial(256) rescue p($!.class)
+    SRC
+      assert_equal("1\n2\nEOFError\nEOFError\n", f.read)
+    end
+  end
+
   def test_getc
     ruby('-e', <<-SRC, @t1.path, @t2.path, @t3.path) do |f|
       s = ""
