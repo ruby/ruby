@@ -995,6 +995,7 @@ rb_econv_open0(const char *sname, const char *dname, int ecflags)
     if (*sname == '\0' && *dname == '\0') {
         num_trans = 0;
         entries = NULL;
+	sname = dname = "";
     }
     else {
         struct trans_open_t toarg;
@@ -3248,10 +3249,10 @@ rb_econv_init_by_convpath(VALUE self, VALUE convpath,
     }
 
     if (first) {
-      *senc_p = NULL;
-      *denc_p = NULL;
-      *sname_p = "";
-      *dname_p = "";
+	*senc_p = NULL;
+	*denc_p = NULL;
+	*sname_p = "";
+	*dname_p = "";
     }
 
     ec->source_encoding_name = *sname_p;
@@ -3392,7 +3393,10 @@ econv_init(int argc, VALUE *argv, VALUE self)
     }
 
     if (!ec) {
-        rb_exc_raise(rb_econv_open_exc(sname, dname, ecflags));
+	VALUE exc = rb_econv_open_exc(sname, dname, ecflags);
+	RB_GC_GUARD(snamev);
+	RB_GC_GUARD(dnamev);
+	rb_exc_raise(exc);
     }
 
     if (!DECORATOR_P(sname, dname)) {
@@ -3400,6 +3404,8 @@ econv_init(int argc, VALUE *argv, VALUE self)
             senc = make_dummy_encoding(sname);
         if (!denc)
             denc = make_dummy_encoding(dname);
+	RB_GC_GUARD(snamev);
+	RB_GC_GUARD(dnamev);
     }
 
     ec->source_encoding = senc;

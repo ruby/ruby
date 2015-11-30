@@ -1,3 +1,9 @@
+Mon Nov 30 21:09:48 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* transcode.c (rb_econv_open0): rb_econv_t::source_encoding_name
+	  and rb_econv_t::destination_encoding_name should refer static
+	  strings always or NULL.  [ruby-core:70247] [Bug #11416]
+
 Mon Nov 30 21:02:21 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/digest/*/*.[ch]: include ruby.h before digest.h to avoid
