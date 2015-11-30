@@ -1,3 +1,8 @@
+Thu Oct 22 05:23:48 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* random.c (init_hashseed, init_siphash): extract initialize
+	  functions.
+
 Thu Oct 22 01:01:34 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* configure.in: sort AC_CHECK_HEADERS() by alphabetical order.
