@@ -1904,7 +1904,7 @@ rb_throw_obj(VALUE tag, VALUE value)
 void
 rb_throw(const char *tag, VALUE val)
 {
-    rb_throw_obj(ID2SYM(rb_intern(tag)), val);
+    rb_throw_obj(rb_sym_intern_ascii_cstr(tag), val);
 }
 
 static VALUE
@@ -1981,7 +1981,7 @@ rb_f_catch(int argc, VALUE *argv)
 VALUE
 rb_catch(const char *tag, VALUE (*func)(), VALUE data)
 {
-    VALUE vtag = tag ? ID2SYM(rb_intern(tag)) : rb_obj_alloc(rb_cObject);
+    VALUE vtag = tag ? rb_sym_intern_ascii_cstr(tag) : rb_obj_alloc(rb_cObject);
     return rb_catch_obj(vtag, func, data);
 }
 
