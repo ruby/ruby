@@ -37,6 +37,7 @@ have_library("ncurses", "tgetnum") ||
 case enable_libedit
 when true
   # --enable-libedit
+  dir_config("libedit")
   unless (readline.have_header("editline/readline.h") ||
           readline.have_header("readline/readline.h")) &&
           have_library("edit", "readline")
