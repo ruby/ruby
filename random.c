@@ -1456,7 +1456,7 @@ init_randomseed(struct MT *mt, uint32_t initial[DEFAULT_SEED_CNT])
     fill_random_seed(initial);
     init_by_array(mt, initial, DEFAULT_SEED_CNT);
     seed = make_seed_value(initial);
-    memset(initial, 0, DEFAULT_SEED_LEN);
+    explicit_bzero(initial, DEFAULT_SEED_LEN);
     return seed;
 }
 

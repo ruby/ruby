@@ -705,6 +705,7 @@ alloca.$(OBJEXT): {$(VPATH)}alloca.c {$(VPATH)}config.h
 crypt.$(OBJEXT): {$(VPATH)}crypt.c
 dup2.$(OBJEXT): {$(VPATH)}dup2.c
 erf.$(OBJEXT): {$(VPATH)}erf.c
+explicit_bzero.$(OBJEXT): {$(VPATH)}explicit_bzero.c
 finite.$(OBJEXT): {$(VPATH)}finite.c
 flock.$(OBJEXT): {$(VPATH)}flock.c
 memcmp.$(OBJEXT): {$(VPATH)}memcmp.c
