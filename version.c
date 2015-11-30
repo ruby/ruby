@@ -33,7 +33,6 @@ const int ruby_patchlevel = RUBY_PATCHLEVEL;
 const char ruby_description[] = RUBY_DESCRIPTION;
 const char ruby_copyright[] = RUBY_COPYRIGHT;
 const char ruby_engine[] = "ruby";
-VALUE ruby_engine_name = Qnil;
 
 /*! Defines platform-depended Ruby-level constants */
 void
@@ -42,6 +41,7 @@ Init_version(void)
     enum {ruby_patchlevel = RUBY_PATCHLEVEL};
     enum {ruby_revision = RUBY_REVISION};
     VALUE version;
+    VALUE ruby_engine_name;
     /*
      * The running version of ruby
      */
@@ -75,6 +75,7 @@ Init_version(void)
      * The engine or interpreter this ruby uses.
      */
     rb_define_global_const("RUBY_ENGINE", ruby_engine_name = MKSTR(engine));
+    ruby_set_script_name(ruby_engine_name);
     /*
      * The version of the engine or interpreter this ruby uses.
      */

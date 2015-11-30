@@ -333,7 +333,7 @@ location_to_str(rb_backtrace_location_t *loc)
 	}
 	else {
 	    rb_thread_t *th = GET_THREAD();
-	    file = th->vm->progname ? th->vm->progname : ruby_engine_name;
+	    file = th->vm->progname;
 	    lineno = INT2FIX(0);
 	}
 	name = rb_id2str(loc->body.cfunc.mid);
@@ -683,7 +683,7 @@ oldbt_init(void *ptr, size_t dmy)
     struct oldbt_arg *arg = (struct oldbt_arg *)ptr;
     rb_thread_t *th = GET_THREAD();
 
-    arg->filename = th->vm->progname ? th->vm->progname : ruby_engine_name;;
+    arg->filename = th->vm->progname;
     arg->lineno = 0;
 }
 

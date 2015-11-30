@@ -1,3 +1,24 @@
+Mon Nov 30 18:46:44 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/readline/extconf.rb: call dir_config("libedit")
+	  if --enable-libedit is specified. [Bug #11751]
+	  patched by John Hein
+
+Mon Nov 30 08:44:29 2015  Eric Wong  <e@80x24.org>
+
+	* variable.c: remove spurious #define for globals
+	  [ruby-core:71735] [Feature #11749]
+
+Sun Nov 29 09:13:03 2015  Conor Landry  <clandry94@gmail.com>
+
+	* NEWS: [DOC] Various grammar corrections and clarifications to
+	  increase readability.  [Fix GH-1115]
+
+Sat Nov 28 19:33:55 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_here_document): store dispatched result of
+	  on_tstring_content at the last fragment of a here document.
+
 Fri Nov 27 19:19:44 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/net/http.rb (connect): detect closed connection and reconnect

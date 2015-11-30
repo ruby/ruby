@@ -1014,12 +1014,41 @@ rb_check_symbol_cstr(const char *ptr, long len, rb_encoding *enc)
     return Qnil;
 }
 
+#undef rb_sym_intern_cstr
+#undef rb_sym_intern_ascii_cstr
+#ifdef __clang__
+NOINLINE(VALUE rb_sym_intern(const char *ptr, long len, rb_encoding *enc));
+#else
+FUNC_MINIMIZED(VALUE rb_sym_intern(const char *ptr, long len, rb_encoding *enc));
+FUNC_MINIMIZED(VALUE rb_sym_intern_cstr(const char *ptr, rb_encoding *enc));
+FUNC_MINIMIZED(VALUE rb_sym_intern_ascii(const char *ptr, long len));
+FUNC_MINIMIZED(VALUE rb_sym_intern_ascii_cstr(const char *ptr));
+#endif
+
 VALUE
-rb_cstr_intern(const char *ptr, long len, rb_encoding *enc)
+rb_sym_intern(const char *ptr, long len, rb_encoding *enc)
 {
     struct RString fake_str;
     const VALUE name = rb_setup_fake_str(&fake_str, ptr, len, enc);
     return rb_str_intern(name);
+}
+
+VALUE
+rb_sym_intern_cstr(const char *ptr, rb_encoding *enc)
+{
+    return rb_sym_intern(ptr, strlen(ptr), enc);
+}
+
+VALUE
+rb_sym_intern_ascii(const char *ptr, long len)
+{
+    return rb_sym_intern(ptr, len, rb_usascii_encoding());
+}
+
+VALUE
+rb_sym_intern_ascii_cstr(const char *ptr)
+{
+    return rb_sym_intern_ascii(ptr, strlen(ptr));
 }
 
 static ID

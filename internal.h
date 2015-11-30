@@ -1136,7 +1136,26 @@ VALUE rb_sym_to_proc(VALUE sym);
 
 /* symbol.c */
 #ifdef RUBY_ENCODING_H
-VALUE rb_cstr_intern(const char *ptr, long len, rb_encoding *enc);
+VALUE rb_sym_intern(const char *ptr, long len, rb_encoding *enc);
+VALUE rb_sym_intern_cstr(const char *ptr, rb_encoding *enc);
+#ifdef __GNUC__
+#define rb_sym_intern_cstr(ptr, enc) __extension__ ( \
+{						\
+    (__builtin_constant_p(ptr)) ?		\
+	rb_sym_intern((ptr), (long)strlen(ptr), (enc)) : \
+	rb_sym_intern_cstr((ptr), (enc)); \
+})
+#endif
+#endif
+VALUE rb_sym_intern_ascii(const char *ptr, long len);
+VALUE rb_sym_intern_ascii_cstr(const char *ptr);
+#ifdef __GNUC__
+#define rb_sym_intern_ascii_cstr(ptr) __extension__ ( \
+{						\
+    (__builtin_constant_p(ptr)) ?		\
+	rb_sym_intern_ascii((ptr), (long)strlen(ptr)) : \
+	rb_sym_intern_ascii_cstr(ptr); \
+})
 #endif
 
 /* struct.c */
@@ -1187,7 +1206,7 @@ VALUE rb_attr_delete(VALUE, ID);
 VALUE rb_ivar_lookup(VALUE obj, ID id, VALUE undef);
 
 /* version.c */
-extern VALUE ruby_engine_name;
+extern const char ruby_engine[];
 
 /* vm_insnhelper.h */
 rb_serial_t rb_next_class_serial(void);

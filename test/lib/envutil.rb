@@ -375,7 +375,7 @@ module Test
         assert(status.success?, "#{message} (#{status.inspect})")
       end
 
-      ABORT_SIGNALS = Signal.list.values_at(*%w"ILL ABRT BUS SEGV")
+      ABORT_SIGNALS = Signal.list.values_at(*%w"ILL ABRT BUS SEGV TERM")
 
       def assert_separately(args, file = nil, line = nil, src, ignore_stderr: nil, **opt)
         unless file and line
