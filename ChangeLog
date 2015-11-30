@@ -1,3 +1,9 @@
+Wed Oct 21 12:10:04 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* ext/openssl/ossl_rand.c (ossl_rand_bytes): RAND_bytes could
+	  be return -1 as an error. Therefore, added error handling.
+	* ext/openssl/ossl_pkey_dsa.c (dsa_generate): ditto.
+
 Wed Oct 21 09:04:09 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* include/ruby/util.h: remove a warning suppression C4723
