@@ -531,6 +531,10 @@ END
       rand1 = Random::DEFAULT::rand
       rand2 = Random.new(seed).rand
       assert_equal(rand1, rand2)
+
+      srand seed
+      rand3 = rand
+      assert_equal(rand1, rand3)
     End
   end
 end
