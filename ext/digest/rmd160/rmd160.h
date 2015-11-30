@@ -26,7 +26,7 @@
 #ifndef _RMD160_H_
 #define _RMD160_H_
 
-#include "defs.h"
+#include "../defs.h"
 
 typedef struct {
 	uint32_t	state[5];	/* state (ABCDE) */

@@ -5,7 +5,6 @@
 require "mkmf"
 
 $defs << "-DHAVE_CONFIG_H"
-$INCFLAGS << " -I$(srcdir)/.."
 
 $objs = [ "md5init.#{$OBJEXT}" ]
 
