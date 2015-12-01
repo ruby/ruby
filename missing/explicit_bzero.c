@@ -12,13 +12,15 @@
  * http://www.open-std.org/jtc1/sc22/wg14/www/docs/n1381.pdf
  */
 
-#ifdef __GNUC__
-#pragma GCC optimize ("O0")
+#ifndef FUNC_UNOPTIMIZED
+# define FUNC_UNOPTIMIZED(x) x
 #endif
 
 #ifndef HAVE_EXPLICIT_BZERO
 /* Similar to bzero(), but have a guarantee not to be eliminated from compiler
    optimization. */
+FUNC_UNOPTIMIZED(void explicit_bzero(void *b, size_t len));
+
 void
 explicit_bzero(void *b, size_t len)
 {
