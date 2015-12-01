@@ -1524,17 +1524,17 @@ XXX
     opt, arg, val, rest = nil
     nonopt ||= proc {|a| throw :terminate, a}
     reader ||= setter.receiver.method(:[]) if setter.respond_to?(:receiver)
-    setkeys = []
+    setops = []
     # for same name options that allowed to reieve value
-    plural = lambda do |key, val|
-      if setkeys.index(key) && reader.is_a?(Method)
-        vals = reader.call(key)
-        vals = [vals] unless vals.is_a?(Array)
-        vals << val
-        setter.call(key, vals)
+    plural = lambda do |opname, opval|
+      if setops.index(opname) && reader.is_a?(Method)
+        opvals = reader.call(opname)
+        opvals = [opvals] unless opvals.is_a?(Array)
+        opvals << opval
+        setter.call(opname, opvals)
         return true
       end
-      setkeys << key
+      setops << opname
       return false
     end
 
@@ -1552,9 +1552,7 @@ XXX
           begin
             opt, cb, val = sw.parse(rest, argv) {|*exc| raise(*exc)}
             val = cb.call(val) if cb
-            if setter && !plural.call(sw.switch_name, val)
-              setter.call(sw.switch_name, val)
-            end
+            setter.call(sw.switch_name, val) if setter && !plural.call(sw.switch_name, val)
           rescue ParseError
             raise $!.set_option(arg, rest)
           end
@@ -1585,9 +1583,7 @@ XXX
             raise InvalidOption, arg if has_arg and !eq and arg == "-#{opt}"
             argv.unshift(opt) if opt and (!rest or (opt = opt.sub(/\A-*/, '-')) != '-')
             val = cb.call(val) if cb
-            if setter && !plural.call(sw.switch_name, val)
-              setter.call(sw.switch_name, val)
-            end
+            setter.call(sw.switch_name, val) if setter && !plural.call(sw.switch_name, val)
           rescue ParseError
             raise $!.set_option(arg, arg.length > 2)
           end
