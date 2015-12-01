@@ -58,8 +58,8 @@ Thu Oct 22 06:33:38 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* random.c (InitVM_Random): move Random::DEFAULT initialization
 	  bits to Init_Random_default.
-	* random.c (Init_Random_default): renamed from Init_Rndom2.
-	* random.c (Init_RandomSeedCore): renamed from Init_Random.
+	* random.c (Init_Random_default): renamed from Init_RandomSeed2.
+	* random.c (Init_RandomSeedCore): renamed from Init_RandomSeed.
 
 Thu Oct 22 06:20:48 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
@@ -115,7 +115,7 @@ Wed Oct 21 08:23:36 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 Sun Oct 18 17:26:53 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
-	* common.mk: add a rule for explicit.o.
+	* common.mk: add a rule for explicit_bzero.o.
 	* configure.in: detect explicit_bzero and memset_s.
 	* include/ruby/missing.h: add explicit_bzero.
 	* random.c (init_randomseed): use explicit_bzero() instead of
