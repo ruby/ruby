@@ -1057,4 +1057,22 @@ q.pop
     t.kill
     t.join
   end
+
+  def test_thread_invalid_name
+    bug11756 = '[ruby-core:71774] [Bug #11756]'
+    t = Thread.start {}
+    assert_raise(ArgumentError, bug11756) {t.name = "foo\0bar"}
+  ensure
+    t.kill
+    t.join
+  end
+
+  def test_thread_invalid_object
+    bug11756 = '[ruby-core:71774] [Bug #11756]'
+    t = Thread.start {}
+    assert_raise(TypeError, bug11756) {t.name = nil}
+  ensure
+    t.kill
+    t.join
+  end
 end
