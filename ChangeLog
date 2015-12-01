@@ -1,3 +1,8 @@
+Wed Dec  2 06:47:25 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* missing/explicit_bzero.c: add ruby_explicit_bzero_hook_unused
+	  for preventing optimization. Inspired from OpenBSD.
+
 Tue Dec  1 23:36:39 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (rb_thread_setname): allow to reset thread name.
