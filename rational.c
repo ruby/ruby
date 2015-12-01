@@ -799,7 +799,7 @@ nurat_sub(VALUE self, VALUE other)
 	}
     }
     else if (RB_TYPE_P(other, T_FLOAT)) {
-	return f_sub(f_to_f(self), other);
+	return DBL2NUM(RFLOAT_VALUE(nurat_to_f(self)) - RFLOAT_VALUE(other));
     }
     else if (RB_TYPE_P(other, T_RATIONAL)) {
 	{
