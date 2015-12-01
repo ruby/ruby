@@ -1,3 +1,14 @@
+Wed Dec  2 07:43:51 2015  Eric Wong  <e@80x24.org>
+
+	* ext/openssl/ossl_ssl.c (mSSLExtConfig): make static
+	  (eSSLError): ditto
+	  (ID_callback_state): ditto
+	  (ossl_ssl_ex_vcb_idx): ditto
+	  (ossl_ssl_ex_store_p): ditto
+	  (ossl_ssl_ex_ptr_idx): ditto
+	* ext/openssl/ossl_ssl.h: remove extern declarations for
+	  mSSLExtConfig and eSSLError
+
 Wed Dec  2 07:41:08 2015  Eric Wong  <e@80x24.org>
 
 	* missing/explicit_bzero.c (explicit_bzero): fixup r52839
