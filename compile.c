@@ -306,6 +306,29 @@ do {                                               \
 #define ERROR_ARGS_AT(n) ruby_sourcefile, nd_line(n),
 #define ERROR_ARGS ERROR_ARGS_AT(node)
 
+#define EXPECT_NODE(prefix, node, ndtype) \
+do { \
+    NODE *error_node = (node); \
+    enum node_type error_type = nd_type(error_node); \
+    if (error_type != (ndtype)) { \
+	rb_compile_bug(ERROR_ARGS_AT(error_node) \
+		       prefix ": " #ndtype " is expected, but %s", \
+		       ruby_node_name(error_type)); \
+    } \
+} while (0)
+
+#define EXPECT_NODE_NONULL(prefix, parent, ndtype) \
+do { \
+    rb_compile_bug(ERROR_ARGS_AT(parent) \
+		   prefix ": must be " #ndtype ", but 0"); \
+} while (0)
+
+#define UNKNOWN_NODE(prefix, node) \
+do { \
+    NODE *error_node = (node); \
+    rb_compile_bug(ERROR_ARGS_AT(error_node) prefix ": unknown node (%s)", \
+		   ruby_node_name(nd_type(error_node))); \
+} while (0)
 
 #define COMPILE_OK 1
 #define COMPILE_NG 0
@@ -1272,12 +1295,7 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 	int last_comma = 0;
 	ID block_id = 0;
 
-	if (nd_type(node_args) != NODE_ARGS) {
-	    rb_compile_bug(ERROR_ARGS_AT(node_args)
-			   "iseq_set_arguments: NODE_ARGS is expected, but %s",
-			   ruby_node_name(nd_type(node_args)));
-	}
-
+	EXPECT_NODE("iseq_set_arguments", node_args, NODE_ARGS);
 
 	iseq->body->param.lead_num = (int)args->pre_args_num;
 	if (iseq->body->param.lead_num > 0) iseq->body->param.flags.has_lead = TRUE;
@@ -2729,8 +2747,8 @@ compile_array_(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE* node_root,
 	    INIT_ANCHOR(anchor);
 
 	    for (i=0; i<max && node; i++, len++, node = node->nd_next) {
-		if (CPDEBUG > 0 && nd_type(node) != NODE_ARRAY) {
-		    rb_compile_bug(ERROR_ARGS "compile_array: This node is not NODE_ARRAY, but %s", ruby_node_name(nd_type(node)));
+		if (CPDEBUG > 0) {
+		    EXPECT_NODE("compile_array", node, NODE_ARRAY);
 		}
 
 		if (type != COMPILE_ARRAY_TYPE_ARRAY && !node->nd_head) {
@@ -3531,7 +3549,7 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *args, NODE *argn, unsigned int *flag, s
 		break;
 	    }
 	  default: {
-	    rb_compile_bug(ERROR_ARGS_AT(argn) "setup_arg: unknown node: %s\n", ruby_node_name(nd_type(argn)));
+	    UNKNOWN_NODE("setup_arg", argn);
 	  }
 	}
     }
@@ -3710,12 +3728,11 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		    ADD_INSNL(cond_seq, nd_line(vals), branchif, l1);
 		    break;
 		  default:
-		    rb_compile_bug(ERROR_ARGS_AT(vals) "NODE_CASE: unknown node (%s)",
-				   ruby_node_name(nd_type(vals)));
+		    UNKNOWN_NODE("NODE_CASE", vals);
 		}
 	    }
 	    else {
-		rb_compile_bug(ERROR_ARGS "NODE_CASE: must be NODE_ARRAY, but 0");
+		EXPECT_NODE_NONULL("NODE_CASE", node, NODE_ARRAY);
 	    }
 
 	    node = node->nd_next;
@@ -3793,8 +3810,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		ADD_INSNL(ret, nd_line(vals), branchif, l1);
 		break;
 	      default:
-		rb_compile_bug(ERROR_ARGS_AT(vals) "NODE_WHEN: unknown node (%s)",
-			       ruby_node_name(nd_type(vals)));
+		UNKNOWN_NODE("NODE_WHEN", vals);
 	    }
 	    node = node->nd_next;
 	}
@@ -4226,8 +4242,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		    ADD_INSNL(ret, line, branchif, label_hit);
 		    break;
 		  default:
-		    rb_compile_bug(ERROR_ARGS_AT(narg) "NODE_RESBODY: unknown node (%s)",
-				   ruby_node_name(nd_type(narg)));
+		    UNKNOWN_NODE("NODE_RESBODY", narg);
 		}
 	    }
 	    else {
@@ -5891,7 +5906,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	break;
       }
       default:
-	rb_compile_bug(ERROR_ARGS "iseq_compile_each: unknown node: %s", ruby_node_name(type));
+	UNKNOWN_NODE("iseq_compile_each", node);
 	return COMPILE_NG;
     }
 

@@ -1,3 +1,25 @@
+Tue Dec  1 23:36:39 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (rb_thread_setname): allow to reset thread name.
+
+Tue Dec  1 23:14:04 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (rb_thread_setname): check the argument if valid
+	  string.  [ruby-core:71774] [Bug #11756]
+
+Tue Dec  1 17:13:41 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_string_value_cstr): should not raise on frozen
+	  string.
+
+Tue Dec  1 09:35:29 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* missing/explicit_bzero.c: add a few comment.
+
+Tue Dec  1 09:31:19 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* missing/explicit_bzero.c: add disabling optimization on gcc.
+
 Tue Dec  1 07:50:33 2015  Eric Wong  <e@80x24.org>
 
 	* missing/explicit_bzero.c: new file. define explicit_bzero.
@@ -36,8 +58,8 @@ Thu Oct 22 06:33:38 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* random.c (InitVM_Random): move Random::DEFAULT initialization
 	  bits to Init_Random_default.
-	* random.c (Init_Random_default): renamed from Init_Rndom2.
-	* random.c (Init_RandomSeedCore): renamed from Init_Random.
+	* random.c (Init_Random_default): renamed from Init_RandomSeed2.
+	* random.c (Init_RandomSeedCore): renamed from Init_RandomSeed.
 
 Thu Oct 22 06:20:48 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
@@ -93,7 +115,7 @@ Wed Oct 21 08:23:36 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 Sun Oct 18 17:26:53 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
-	* common.mk: add a rule for explicit.o.
+	* common.mk: add a rule for explicit_bzero.o.
 	* configure.in: detect explicit_bzero and memset_s.
 	* include/ruby/missing.h: add explicit_bzero.
 	* random.c (init_randomseed): use explicit_bzero() instead of
