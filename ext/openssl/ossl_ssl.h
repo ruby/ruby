@@ -29,9 +29,7 @@
 extern const rb_data_type_t ossl_ssl_type;
 extern const rb_data_type_t ossl_ssl_session_type;
 extern VALUE mSSL;
-extern VALUE eSSLError;
 extern VALUE cSSLSocket;
-extern VALUE cSSLContext;
 extern VALUE cSSLSession;
 
 void Init_ossl_ssl(void);
