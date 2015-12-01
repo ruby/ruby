@@ -704,7 +704,7 @@ f_addsub(VALUE self, VALUE anum, VALUE aden, VALUE bnum, VALUE bden, int k)
 	if (k == '+')
 	    c = rb_int_plus(a, b);
 	else
-	    c = f_sub(a, b);
+	    c = rb_int_minus(a, b);
 
 	b = rb_int_idiv(aden, g);
 	g = f_gcd(c, g);
@@ -721,7 +721,7 @@ f_addsub(VALUE self, VALUE anum, VALUE aden, VALUE bnum, VALUE bden, int k)
 	if (k == '+')
 	    c = rb_int_plus(a, b);
 	else
-	    c = f_sub(a, b);
+	    c = rb_int_minus(a, b);
 
 	b = rb_int_idiv(aden, g);
 	g = f_gcd(c, g);
