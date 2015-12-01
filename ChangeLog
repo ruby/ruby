@@ -1,3 +1,9 @@
+Wed Dec  2 03:17:01 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/readline/extconf.rb: call dir_config("libedit")
+	  if --enable-libedit is spcified. [Bug #11751]
+	  patched by John Hein
+
 Wed Dec  2 02:59:42 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_here_document): store dispatched result of
