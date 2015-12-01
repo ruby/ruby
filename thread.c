@@ -2776,6 +2776,7 @@ rb_thread_setname(VALUE thread, VALUE name)
 {
     rb_thread_t *th;
     GetThreadPtr(thread, th);
+    StringValueCStr(name);
     th->name = rb_str_new_frozen(name);
 #if defined(HAVE_PTHREAD_SETNAME_NP)
 # if defined(__linux__)

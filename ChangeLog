@@ -1,3 +1,8 @@
+Tue Dec  1 23:14:04 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (rb_thread_setname): check the argument if valid
+	  string.  [ruby-core:71774] [Bug #11756]
+
 Tue Dec  1 17:13:41 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_string_value_cstr): should not raise on frozen
