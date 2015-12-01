@@ -33,6 +33,11 @@ class TestRipper::Sexp < Test::Unit::TestCase
     assert_equal '(?<n>a(b|\g<n>))', search_sexp(:@tstring_content, search_sexp(:regexp_literal, sexp))[1]
   end
 
+  def test_heredoc_content
+    sexp = Ripper.sexp("<<E\nfoo\nE")
+    assert_equal "foo\n", search_sexp(:@tstring_content, sexp)[1]
+  end
+
   def search_sexp(sym, sexp)
     return sexp if !sexp or sexp[0] == sym
     sexp.find do |e|
