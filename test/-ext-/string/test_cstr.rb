@@ -17,6 +17,24 @@ class Test_StringCStr < Test::Unit::TestCase
     assert_equal(0, s.cstr_term, Bug4319)
   end
 
+  def test_frozen
+    s0 = Bug::String.new("abcdefgh"*8)
+
+    [4, 4*3-1, 8*3-1, 64].each do |n|
+      s = s0[0, n]
+      s.cstr_unterm('x')
+      s.freeze
+      assert_equal(0, s.cstr_term)
+      WCHARS.each do |enc|
+        s = s0.encode(enc)
+        s.set_len(n - n % s[0].bytesize)
+        s.cstr_unterm('x')
+        s.freeze
+        assert_equal(0, s.cstr_term)
+      end
+    end
+  end
+
   WCHARS = [Encoding::UTF_16BE, Encoding::UTF_16LE, Encoding::UTF_32BE, Encoding::UTF_32LE]
 
   def test_wchar_embed
