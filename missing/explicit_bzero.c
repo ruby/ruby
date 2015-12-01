@@ -7,6 +7,15 @@
  Linux has none. *Sigh*
 */
 
+/*
+ * Following URL explain why memset_s is added to the standard.
+ * http://www.open-std.org/jtc1/sc22/wg14/www/docs/n1381.pdf
+ */
+
+#ifdef __GNUC__
+#pragma GCC optimize ("O0")
+#endif
+
 #ifndef HAVE_EXPLICIT_BZERO
 /* Similar to bzero(), but have a guarantee not to be eliminated from compiler
    optimization. */
