@@ -19,7 +19,11 @@
 #ifndef HAVE_EXPLICIT_BZERO
 /* Similar to bzero(), but have a guarantee not to be eliminated from compiler
    optimization. */
+
+#ifndef HAVE_MEMSET_S
 FUNC_UNOPTIMIZED(void explicit_bzero(void *b, size_t len));
+#endif
+#undef explicit_bzero
 
 void
 explicit_bzero(void *b, size_t len)
