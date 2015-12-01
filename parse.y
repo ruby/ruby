@@ -38,6 +38,8 @@
 # define WARN_PAST_SCOPE 0
 #endif
 
+#define TAB_WIDTH 8
+
 #define YYMALLOC(size)		rb_parser_malloc(parser, (size))
 #define YYREALLOC(ptr, size)	rb_parser_realloc(parser, (ptr), (size))
 #define YYCALLOC(nelem, size)	rb_parser_calloc(parser, (nelem), (size))
@@ -5309,7 +5311,7 @@ token_info_get_column(struct parser_params *parser, const char *pend)
     const char *p;
     for (p = lex_pbeg; p < pend; p++) {
 	if (*p == '\t') {
-	    column = (((column - 1) / 8) + 1) * 8;
+	    column = (((column - 1) / TAB_WIDTH) + 1) * TAB_WIDTH;
 	}
 	column++;
     }
