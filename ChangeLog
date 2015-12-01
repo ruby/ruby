@@ -1,3 +1,8 @@
+Wed Dec  2 07:41:08 2015  Eric Wong  <e@80x24.org>
+
+	* missing/explicit_bzero.c (explicit_bzero): fixup r52839
+	  for compilers with "weak" attribute
+
 Wed Dec  2 06:47:25 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* missing/explicit_bzero.c: add ruby_explicit_bzero_hook_unused

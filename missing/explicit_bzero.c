@@ -49,7 +49,7 @@ ruby_explicit_bzero_hook_unused(void *buf, size_t len)
 void
 explicit_bzero(void *b, size_t len)
 {
-    memset(b, len);
+    memset(b, 0, len);
     ruby_explicit_bzero_hook_unused(b, len);
 }
 
