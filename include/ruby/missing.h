@@ -252,6 +252,8 @@ explicit_bzero_by_memset_s(void *b, size_t len)
     memset_s(b, len, 0, len);
 }
 #   define explicit_bzero(b, len) explicit_bzero_by_memset_s(b, len)
+# elif defined _WIN32
+#   define explicit_bzero(b, len) SecureZeroMemory(b, len)
 # endif
 #endif
 
