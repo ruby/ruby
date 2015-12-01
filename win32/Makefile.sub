@@ -244,6 +244,7 @@ MISSING = crypt.obj ffs.obj langinfo.obj lgamma_r.obj strlcat.obj strlcpy.obj wi
 !if $(RT_VER) < 120
 MISSING = $(MISSING) acosh.obj cbrt.obj erf.obj tgamma.obj
 !endif
+MISSING = $(MISSING) explicit_bzero.obj
 !endif
 DLNOBJ = dln.obj
 

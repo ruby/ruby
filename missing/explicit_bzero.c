@@ -1,6 +1,10 @@
 #include "ruby/missing.h"
 #include <string.h>
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 /*
  *BSD have explicit_bzero().
  Windows, OS-X have memset_s().
@@ -30,6 +34,8 @@ explicit_bzero(void *b, size_t len)
 {
 #ifdef HAVE_MEMSET_S
     memset_s(b, len, 0, len);
+#elif defined SecureZeroMemory
+    SecureZeroMemory(b, len);
 #else
     {
 	/*

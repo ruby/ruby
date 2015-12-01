@@ -89,6 +89,7 @@ The original copyright notice follows.
 #  define _WIN32_WINNT 0x400
 #  undef __WINCRYPT_H__
 # endif
+#include <windows.h>
 #include <wincrypt.h>
 #endif
 #include "ruby_atomic.h"
