@@ -1523,11 +1523,11 @@ XXX
   def parse_in_order(argv = default_argv, setter = nil, &nonopt)  # :nodoc:
     opt, arg, val, rest = nil
     nonopt ||= proc {|a| throw :terminate, a}
-    reader = setter.receiver.method(:[]) if setter.respond_to?(:receiver)
+    reader ||= setter.receiver.method(:[]) if setter.respond_to?(:receiver)
     setkeys = []
     # for same name options that allowed to reieve value
     plural = lambda do |key, val|
-      if setkeys.index(key)
+      if setkeys.index(key) && reader.is_a?(Method)
         vals = reader.call(key)
         vals = [vals] unless vals.is_a?(Array)
         vals << val
