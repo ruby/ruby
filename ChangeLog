@@ -1,3 +1,13 @@
+Tue Dec  1 16:57:57 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_each_codepoint): raise an exception at incomplete
+	  character before EOF when conversion takes place.  [Bug #11444]
+
+Tue Dec  1 16:57:57 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_each_codepoint): read more data when read partially.
+	  [ruby-core:70379] [Bug #11444]
+
 Tue Dec  1 13:06:29 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/digest/sha1/sha1ossl.c: fixed build error introduced at r52797.

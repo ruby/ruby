@@ -1,6 +1,7 @@
 # coding: US-ASCII
 require 'test/unit'
 require 'tmpdir'
+require 'tempfile'
 require 'timeout'
 require_relative 'envutil'
 
@@ -2535,4 +2536,42 @@ EOT
       end
     }
   end if /mswin|mingw/ =~ RUBY_PLATFORM
+
+  def test_each_codepoint_need_more
+    bug11444 = '[ruby-core:70379] [Bug #11444]'
+    tests = [
+      ["incomplete multibyte", "\u{1f376}".b[0,3], [], ["invalid byte sequence in UTF-8"]],
+      ["multibyte at boundary", "x"*8190+"\u{1f376}", ["1f376"], []],
+    ]
+    failure = []
+    ["bin", "text"].product(tests) do |mode, (test, data, out, err)|
+      code = <<-"end;"
+        c = nil
+        begin
+          open(ARGV[0], "r#{mode[0]}:utf-8") do |f|
+            f.each_codepoint{|i| c = i}
+          end
+        rescue ArgumentError => e
+          STDERR.puts e.message
+        else
+          printf "%x", c
+        end
+      end;
+      Tempfile.create("codepoint") do |f|
+        args = ['-e', code, f.path]
+        f.print data
+        f.close
+        begin
+          assert_in_out_err(args, "", out, err,
+                            "#{bug11444}: #{test} in #{mode} mode",
+                            timeout: 1)
+        rescue Exception => e
+          failure << e
+        end
+      end
+    end
+    unless failure.empty?
+      flunk failure.join("\n---\n")
+    end
+  end
 end

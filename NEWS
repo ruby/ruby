@@ -148,6 +148,8 @@ with all sufficient information, see the ChangeLog file.
 * IO
   * incompatible changes:
     * open ignore internal encoding if external encoding is ASCII-8BIT.
+  * IO#each_codepoint raises an exception at incomplete character
+    before EOF when conversion takes place.  [Bug #11444]
 
 * Kernel#eval, Kernel#instance_eval, and Module#module_eval.
   * Copies the scope information of the original environment, which means
