@@ -244,6 +244,9 @@ void rb_ia64_flushrs(void);
 #ifndef FUNC_MINIMIZED
 #define FUNC_MINIMIZED(x) x
 #endif
+#ifndef FUNC_UNOPTIMIZED
+#define FUNC_UNOPTIMIZED(x) x
+#endif
 #ifndef RUBY_ALIAS_FUNCTION_TYPE
 #define RUBY_ALIAS_FUNCTION_TYPE(type, prot, name, args) \
     FUNC_MINIMIZED(type prot) {return (type)name args;}

@@ -1757,6 +1757,7 @@ if_i386=${universal_binary+[defined __i386__]}
 RUBY_FUNC_ATTRIBUTE(stdcall,  [], [], ${if_i386})
 RUBY_FUNC_ATTRIBUTE(cdecl,    [], [], ${if_i386})
 RUBY_FUNC_ATTRIBUTE(fastcall, [], [], ${if_i386})
+RUBY_FUNC_ATTRIBUTE(optimize("O0"), FUNC_UNOPTIMIZED, rb_cv_func_unoptimized)
 RUBY_FUNC_ATTRIBUTE(optimize("-Os","-fomit-frame-pointer"), FUNC_MINIMIZED, rb_cv_func_minimized)
 
 if test "$GCC" = yes; then
