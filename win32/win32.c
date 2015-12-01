@@ -4115,7 +4115,7 @@ setfl(SOCKET sock, int arg)
 
 /* License: Ruby's */
 static int
-dupfd(HANDLE hDup, char flags, int minfd)
+dupfd(HANDLE hDup, int flags, int minfd)
 {
     int save_errno;
     int ret;
