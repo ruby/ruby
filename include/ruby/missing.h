@@ -244,6 +244,15 @@ RUBY_EXTERN void setproctitle(const char *fmt, ...);
 
 #ifndef HAVE_EXPLICIT_BZERO
 RUBY_EXTERN void explicit_bzero(void *b, size_t len);
+# ifdef HAVE_MEMSET_S
+# include <string.h>
+static inline void
+explicit_bzero_by_memset_s(void *b, size_t len)
+{
+    memset_s(b, len, 0, len);
+}
+#   define explicit_bzero(b, len) explicit_bzero_by_memset_s(b, len)
+# endif
 #endif
 
 RUBY_SYMBOL_EXPORT_END
