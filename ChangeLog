@@ -1,3 +1,11 @@
+Tue Dec  1 09:35:29 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* missing/explicit_bzero.c: add a few comment.
+
+Tue Dec  1 09:31:19 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* missing/explicit_bzero.c: add disabling optimization on gcc.
+
 Tue Dec  1 07:50:33 2015  Eric Wong  <e@80x24.org>
 
 	* missing/explicit_bzero.c: new file. define explicit_bzero.
