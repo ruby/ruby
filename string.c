@@ -161,7 +161,15 @@ static VALUE str_replace_shared_without_enc(VALUE str2, VALUE str);
 static VALUE str_new_shared(VALUE klass, VALUE str);
 static VALUE str_new_frozen(VALUE klass, VALUE orig);
 static VALUE str_new_static(VALUE klass, const char *ptr, long len, int encindex);
-static void str_make_independent_expand(VALUE str, long expand);
+static void str_make_independent_expand(VALUE str, long len, long expand, int termlen);
+
+static inline void
+str_make_independent(VALUE str)
+{
+    long len = RSTRING_LEN(str);
+    int termlen = TERM_LEN(str);
+    str_make_independent_expand((str), len, 0L, termlen);
+}
 
 static rb_encoding *
 get_actual_encoding(const int encidx, VALUE str)
@@ -258,7 +266,7 @@ fstr_update_callback(st_data_t *key, st_data_t *value, st_data_t arg, int existi
 	    str = str_new_frozen(rb_cString, str);
 	    if (STR_SHARED_P(str)) { /* str should not be shared */
 		/* shared substring  */
-		str_make_independent_expand(str, 0L);
+		str_make_independent(str);
 		assert(OBJ_FROZEN(str));
 	    }
 	    if (!BARE_STRING_P(str)) {
@@ -1700,33 +1708,43 @@ rb_str_format_m(VALUE str, VALUE arg)
 }
 
 static inline void
-str_modifiable(VALUE str)
+rb_check_lockedtmp(VALUE str)
 {
     if (FL_TEST(str, STR_TMPLOCK)) {
 	rb_raise(rb_eRuntimeError, "can't modify string; temporarily locked");
     }
+}
+
+static inline void
+str_modifiable(VALUE str)
+{
+    rb_check_lockedtmp(str);
     rb_check_frozen(str);
+}
+
+static inline int
+str_dependent_p(VALUE str)
+{
+    if (STR_EMBED_P(str) || !FL_TEST(str, STR_SHARED|STR_NOFREE)) {
+	return 0;
+    }
+    else {
+	return 1;
+    }
 }
 
 static inline int
 str_independent(VALUE str)
 {
     str_modifiable(str);
-    if (STR_EMBED_P(str) || !FL_TEST(str, STR_SHARED|STR_NOFREE)) {
-	return 1;
-    }
-    else {
-	return 0;
-    }
+    return !str_dependent_p(str);
 }
 
 static void
-str_make_independent_expand(VALUE str, long expand)
+str_make_independent_expand(VALUE str, long len, long expand, const int termlen)
 {
     char *ptr;
     const char *oldptr;
-    long len = RSTRING_LEN(str);
-    const int termlen = TERM_LEN(str);
     long capa = len + expand;
 
     if (len > capa) len = capa;
@@ -1753,8 +1771,6 @@ str_make_independent_expand(VALUE str, long expand)
     RSTRING(str)->as.heap.aux.capa = capa;
 }
 
-#define str_make_independent(str) str_make_independent_expand((str), 0L)
-
 void
 rb_str_modify(VALUE str)
 {
@@ -1766,22 +1782,24 @@ rb_str_modify(VALUE str)
 void
 rb_str_modify_expand(VALUE str, long expand)
 {
+    int termlen;
     if (expand < 0) {
 	rb_raise(rb_eArgError, "negative expanding string size");
     }
+    termlen = TERM_LEN(str);
     if (!str_independent(str)) {
-	str_make_independent_expand(str, expand);
+	long len = RSTRING_LEN(str);
+	str_make_independent_expand(str, len, expand, termlen);
     }
     else if (expand > 0) {
 	long len = RSTRING_LEN(str);
 	long capa = len + expand;
-	int termlen = TERM_LEN(str);
 	if (!STR_EMBED_P(str)) {
 	    REALLOC_N(RSTRING(str)->as.heap.ptr, char, capa + termlen);
 	    RSTRING(str)->as.heap.aux.capa = capa;
 	}
 	else if (capa + termlen > RSTRING_EMBED_LEN_MAX + 1) {
-	    str_make_independent_expand(str, expand);
+	    str_make_independent_expand(str, len, expand, termlen);
 	}
     }
     ENC_CODERANGE_CLEAR(str);
@@ -1857,19 +1875,21 @@ str_null_char(const char *s, long len, const int minlen, rb_encoding *enc)
 }
 
 static char *
-str_fill_term(VALUE str, char *s, long len, int oldtermlen, int termlen)
+str_fill_term(VALUE str, char *s, long len, int termlen)
 {
     long capa = rb_str_capacity(str) + 1;
 
     if (capa < len + termlen) {
-	rb_str_modify_expand(str, termlen);
+	rb_check_lockedtmp(str);
+	str_make_independent_expand(str, len, 0L, termlen);
     }
-    else if (!str_independent(str)) {
-	if (zero_filled(s + len, termlen)) return s;
-	str_make_independent(str);
+    else if (str_dependent_p(str)) {
+	if (!zero_filled(s + len, termlen))
+	    str_make_independent_expand(str, len, 0L, termlen);
     }
-    s = RSTRING_PTR(str);
-    TERM_FILL(s + len, termlen);
+    else {
+	TERM_FILL(s + len, termlen);
+    }
     return s;
 }
 
@@ -1886,15 +1906,13 @@ rb_string_value_cstr(volatile VALUE *ptr)
 	if (str_null_char(s, len, minlen, enc)) {
 	    rb_raise(rb_eArgError, "string contains null char");
 	}
-	return str_fill_term(str, s, len, minlen, minlen);
+	return str_fill_term(str, s, len, minlen);
     }
     if (!s || memchr(s, 0, len)) {
 	rb_raise(rb_eArgError, "string contains null byte");
     }
     if (s[len]) {
-	rb_str_modify(str);
-	s = RSTRING_PTR(str);
-	s[RSTRING_LEN(str)] = 0;
+	s = str_fill_term(str, s, len, minlen);
     }
     return s;
 }
@@ -1904,8 +1922,7 @@ rb_str_fill_terminator(VALUE str, const int newminlen)
 {
     char *s = RSTRING_PTR(str);
     long len = RSTRING_LEN(str);
-    rb_encoding *enc = rb_enc_get(str);
-    str_fill_term(str, s, len, rb_enc_mbminlen(enc), newminlen);
+    str_fill_term(str, s, len, newminlen);
 }
 
 VALUE
@@ -2279,7 +2296,7 @@ rb_str_resize(VALUE str, long len)
 		TERM_FILL(RSTRING(str)->as.ary + len, termlen);
 		return str;
 	    }
-	    str_make_independent_expand(str, len - slen);
+	    str_make_independent_expand(str, slen, len - slen, termlen);
 	}
 	else if (len + termlen <= RSTRING_EMBED_LEN_MAX + 1) {
 	    char *ptr = STR_HEAP_PTR(str);
@@ -2293,7 +2310,7 @@ rb_str_resize(VALUE str, long len)
 	}
 	else if (!independent) {
 	    if (len == slen) return str;
-	    str_make_independent_expand(str, len - slen);
+	    str_make_independent_expand(str, slen, len - slen, termlen);
 	}
 	else if ((capa = RSTRING(str)->as.heap.aux.capa) < len ||
 		 (capa - len) > (len < 1024 ? len : 1024)) {
