@@ -2774,18 +2774,23 @@ rb_thread_getname(VALUE thread)
 static VALUE
 rb_thread_setname(VALUE thread, VALUE name)
 {
+    const char *s = "";
     rb_thread_t *th;
     GetThreadPtr(thread, th);
-    StringValueCStr(name);
-    th->name = rb_str_new_frozen(name);
+    if (!NIL_P(name)) {
+	StringValueCStr(name);
+	name = rb_str_new_frozen(name);
+	s = RSTRING_PTR(name);
+    }
+    th->name = name;
 #if defined(HAVE_PTHREAD_SETNAME_NP)
 # if defined(__linux__)
-    pthread_setname_np(th->thread_id, RSTRING_PTR(name));
+    pthread_setname_np(th->thread_id, s);
 # elif defined(__NetBSD__)
-    pthread_setname_np(th->thread_id, RSTRING_PTR(name), "%s");
+    pthread_setname_np(th->thread_id, s, "%s");
 # endif
 #elif defined(HAVE_PTHREAD_SET_NAME_NP) /* FreeBSD */
-    pthread_set_name_np(th->thread_id, RSTRING_PTR(name));
+    pthread_set_name_np(th->thread_id, s);
 #endif
     return name;
 }

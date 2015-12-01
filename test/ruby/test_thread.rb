@@ -1050,9 +1050,14 @@ q.pop
   end
 
   def test_thread_name
-    t = Thread.start { sleep }
+    t = Thread.start {}
+    assert_nil t.name
+    s = t.inspect
     t.name = 'foo'
     assert_equal 'foo', t.name
+    t.name = nil
+    assert_nil t.name
+    assert_equal s, t.inspect
   ensure
     t.kill
     t.join
@@ -1070,7 +1075,7 @@ q.pop
   def test_thread_invalid_object
     bug11756 = '[ruby-core:71774] [Bug #11756]'
     t = Thread.start {}
-    assert_raise(TypeError, bug11756) {t.name = nil}
+    assert_raise(TypeError, bug11756) {t.name = []}
   ensure
     t.kill
     t.join
