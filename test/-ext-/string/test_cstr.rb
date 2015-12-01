@@ -7,11 +7,13 @@ class Test_StringCStr < Test::Unit::TestCase
   def test_embed
     s = Bug::String.new("abcdef")
     s.set_len(3)
+    s.cstr_unterm('x')
     assert_equal(0, s.cstr_term, Bug4319)
   end
 
   def test_long
     s = Bug::String.new("abcdef")*100000
+    s.cstr_unterm('x')
     assert_equal(0, s.cstr_term, Bug4319)
   end
 
@@ -20,9 +22,11 @@ class Test_StringCStr < Test::Unit::TestCase
   def test_wchar_embed
     WCHARS.each do |enc|
       s = Bug::String.new("\u{4022}a".encode(enc))
+      s.cstr_unterm('x')
       assert_nothing_raised(ArgumentError) {s.cstr_term}
       s.set_len(s.bytesize / 2)
       assert_equal(1, s.size)
+      s.cstr_unterm('x')
       assert_equal(0, s.cstr_term)
     end
   end
@@ -33,9 +37,11 @@ class Test_StringCStr < Test::Unit::TestCase
     len = str.size * n
     WCHARS.each do |enc|
       s = Bug::String.new(str.encode(enc))*n
+      s.cstr_unterm('x')
       assert_nothing_raised(ArgumentError, enc.name) {s.cstr_term}
       s.set_len(s.bytesize / 2)
       assert_equal(len / 2, s.size, enc.name)
+      s.cstr_unterm('x')
       assert_equal(0, s.cstr_term, enc.name)
     end
   end
