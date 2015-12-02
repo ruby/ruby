@@ -244,7 +244,7 @@ class TestObject < Test::Unit::TestCase
       assert_equal(:foo, o.remove_instance_variable(:@foo),
                    "#{desc} iv removal returns original value")
       assert_not_send([o, :instance_variable_defined?, :@foo],
-                      "#{desc} iv removed succesfully")
+                      "#{desc} iv removed successfully")
       e = assert_raise(NameError, "#{desc} iv removal raises after removal") do
         o.remove_instance_variable(:@foo)
       end
