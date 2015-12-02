@@ -1,5 +1,5 @@
-# frozen_string_literal: true
 # encoding: US-ASCII
+# frozen_string_literal: true
 # = csv.rb -- CSV Reading and Writing
 #
 #  Created by James Edward Gray II on 2005-10-31.
