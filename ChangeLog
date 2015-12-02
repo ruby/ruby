@@ -1,3 +1,8 @@
+Wed Dec  2 10:36:25 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c: Fix double word typo.
+	  [ci skip][fix GH-1120] Patch by @jwworth
+
 Wed Dec  2 07:43:51 2015  Eric Wong  <e@80x24.org>
 
 	* ext/openssl/ossl_ssl.c (mSSLExtConfig): make static
