@@ -161,7 +161,7 @@ static VALUE str_replace_shared_without_enc(VALUE str2, VALUE str);
 static VALUE str_new_shared(VALUE klass, VALUE str);
 static VALUE str_new_frozen(VALUE klass, VALUE orig);
 static VALUE str_new_static(VALUE klass, const char *ptr, long len, int encindex);
-static void str_make_independent_expand(VALUE str, long len, long expand, int termlen);
+static void str_make_independent_expand(VALUE str, long len, long expand, const int termlen);
 
 static inline void
 str_make_independent(VALUE str)
