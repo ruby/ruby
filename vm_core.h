@@ -392,7 +392,7 @@ struct rb_iseq_variable_body {
 
     /* original iseq, before encoding
      * used for debug/dump (TODO: union with compile_data) */
-    VALUE *iseq;
+    VALUE *iseq_;
 };
 
 /* T_IMEMO/iseq */

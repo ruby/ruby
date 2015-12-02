@@ -1,3 +1,14 @@
+Wed Dec  2 17:19:02 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.h: introduce ISEQ_ORIGINAL_ISEQ() and
+	  ISEQ_ORIGINAL_ISEQ_ALLOC() macro.
+
+	* compile.c: use them to access original iseq buffer.
+
+	* iseq.c: ditto.
+
+	* vm_core.h: rename iseq field to support this fix.
+
 Wed Dec  2 17:10:32 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* iseq.h: introduce ISEQ_FLIP_CNT_INCREMENT() macro.

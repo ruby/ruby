@@ -641,26 +641,26 @@ rb_vm_insn_addr2insn(const void *addr) /* cold path */
 VALUE *
 rb_iseq_original_iseq(const rb_iseq_t *iseq) /* cold path */
 {
-    if (iseq->variable_body->iseq) return iseq->variable_body->iseq;
+    VALUE *original_code;
 
-    iseq->variable_body->iseq = ALLOC_N(VALUE, iseq->body->iseq_size);
-
-    MEMCPY(iseq->variable_body->iseq, iseq->body->iseq_encoded, VALUE, iseq->body->iseq_size);
+    if (ISEQ_ORIGINAL_ISEQ(iseq)) return ISEQ_ORIGINAL_ISEQ(iseq);
+    original_code = ISEQ_ORIGINAL_ISEQ_ALLOC(iseq, iseq->body->iseq_size);
+    MEMCPY(ISEQ_ORIGINAL_ISEQ(iseq), iseq->body->iseq_encoded, VALUE, iseq->body->iseq_size);
 
 #if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
     {
 	unsigned int i;
 
 	for (i = 0; i < iseq->body->iseq_size; /* */ ) {
-	    const void *addr = (const void *)iseq->variable_body->iseq[i];
+	    const void *addr = (const void *)original_code[i];
 	    const int insn = rb_vm_insn_addr2insn(addr);
 
-	    iseq->variable_body->iseq[i] = insn;
+	    original_code[i] = insn;
 	    i += insn_len(insn);
 	}
     }
 #endif
-    return iseq->variable_body->iseq;
+    return original_code;
 }
 
 /*********************************************/
