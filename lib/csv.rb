@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 # encoding: US-ASCII
 # = csv.rb -- CSV Reading and Writing
 #
@@ -207,7 +208,7 @@ require "stringio"
 #
 class CSV
   # The version of the installed library.
-  VERSION = "2.4.8".freeze
+  VERSION = "2.4.8"
 
   #
   # A CSV::Row is part Array and part Hash.  It retains an order for the fields
@@ -1153,7 +1154,7 @@ class CSV
       args.unshift(io)
     else
       encoding = args[-1][:encoding] if args.last.is_a?(Hash)
-      str      = ""
+      str      = String.new
       str.force_encoding(encoding) if encoding
       args.unshift(str)
     end
@@ -1178,7 +1179,7 @@ class CSV
   def self.generate_line(row, options = Hash.new)
     options  = {row_sep: $INPUT_RECORD_SEPARATOR}.merge(options)
     encoding = options.delete(:encoding)
-    str      = ""
+    str      = String.new
     if encoding
       str.force_encoding(encoding)
     elsif field = row.find { |f| not f.nil? }
@@ -1527,7 +1528,7 @@ class CSV
     # prepare for building safe regular expressions in the target encoding,
     # if we can transcode the needed characters
     #
-    @re_esc   =   "\\".encode(@encoding) rescue ""
+    @re_esc   =   "\\".encode(@encoding).freeze rescue ""
     @re_chars =   /#{%"[-\\]\\[\\.^$?*+{}()|# \r\n\t\f\v]".encode(@encoding)}/
 
     init_separators(options)

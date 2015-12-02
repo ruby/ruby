@@ -1,3 +1,8 @@
+Wed Dec  2 11:23:06 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/csv.rb: enable frozen_string_literal.
+	  [fix GH-1116] Patch by @marshall-lee
+
 Wed Dec  2 10:36:25 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c: Fix double word typo.
