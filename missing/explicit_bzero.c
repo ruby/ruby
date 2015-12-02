@@ -23,6 +23,7 @@
 # define FUNC_UNOPTIMIZED(x) x
 #endif
 
+#undef explicit_bzero
 #ifndef HAVE_EXPLICIT_BZERO
  #ifdef HAVE_MEMSET_S
 void
