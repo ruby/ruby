@@ -1420,15 +1420,14 @@ static VALUE
 r_fixup_compat(VALUE v, struct load_arg *arg)
 {
     st_data_t data;
-    if (arg->compat_tbl && st_lookup(arg->compat_tbl, v, &data)) {
+    st_data_t key = (st_data_t)v;
+    if (arg->compat_tbl && st_delete(arg->compat_tbl, &key, &data)) {
         VALUE real_obj = (VALUE)data;
         rb_alloc_func_t allocator = rb_get_alloc_func(CLASS_OF(real_obj));
-        st_data_t key = v;
         if (st_lookup(compat_allocator_tbl, (st_data_t)allocator, &data)) {
             marshal_compat_t *compat = (marshal_compat_t*)data;
             compat->loader(real_obj, v);
         }
-        st_delete(arg->compat_tbl, &key, 0);
         v = real_obj;
     }
     return v;
