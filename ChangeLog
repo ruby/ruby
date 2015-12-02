@@ -1,3 +1,11 @@
+Wed Dec  2 17:10:32 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.h: introduce ISEQ_FLIP_CNT_INCREMENT() macro.
+
+	* compile.c (iseq_compile_each): use it.
+
+	* vm_core.h: rename flip_cnt field to support this fix.
+
 Wed Dec  2 17:05:15 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* iseq.h: introduce ISEQ_COVERAGE() and ISEQ_COVERAGE_SET() macro.

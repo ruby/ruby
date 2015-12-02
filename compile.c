@@ -5635,7 +5635,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	rb_num_t cnt;
 	VALUE key;
 
-	cnt = local_iseq->variable_body->flip_cnt++ + VM_SVAR_FLIPFLOP_START;
+	cnt = ISEQ_FLIP_CNT_INCREMENT(local_iseq) + VM_SVAR_FLIPFLOP_START;
 	key = INT2FIX(cnt);
 
 	ADD_INSN2(ret, line, getspecial, key, INT2FIX(0));

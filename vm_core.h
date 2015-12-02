@@ -388,7 +388,7 @@ struct rb_iseq_constant_body {
 struct rb_iseq_variable_body {
     const VALUE coverage_;     /* coverage array */
 
-    rb_num_t flip_cnt;
+    rb_num_t flip_cnt_;
 
     /* original iseq, before encoding
      * used for debug/dump (TODO: union with compile_data) */
