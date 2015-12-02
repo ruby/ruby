@@ -1268,7 +1268,7 @@ enc_compatible_p(VALUE klass, VALUE str1, VALUE str2)
 static VALUE
 enc_dump(int argc, VALUE *argv, VALUE self)
 {
-    rb_scan_args(argc, argv, "01", 0);
+    rb_check_arity(argc, 0, 1);
     return enc_name(self);
 }
 
