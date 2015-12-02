@@ -1,3 +1,17 @@
+Wed Dec  2 16:27:19 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (enc_m_loader): defer finding encoding object not to
+	  be infected by marshal source.  [ruby-core:71793] [Bug #11760]
+
+	* marshal.c (r_object0): enable compatible loader on USERDEF
+	  class.  the loader function is called with the class itself,
+	  instead of an allocated object, and the loaded data.
+
+	* marshal.c (compat_allocator_table): intialize
+	  compat_allocator_tbl on demand.
+
+	* object.c (rb_undefined_alloc): extract from rb_obj_alloc.
+
 Wed Dec  2 15:12:43 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* configure.in: Fixed double negative comments.

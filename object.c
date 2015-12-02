@@ -1770,6 +1770,13 @@ rb_class_initialize(int argc, VALUE *argv, VALUE klass)
     return klass;
 }
 
+void
+rb_undefined_alloc(VALUE klass)
+{
+    rb_raise(rb_eTypeError, "allocator undefined for %"PRIsVALUE,
+	     klass);
+}
+
 /*
  *  call-seq:
  *     class.allocate()   ->   obj
@@ -1806,8 +1813,7 @@ rb_obj_alloc(VALUE klass)
     }
     allocator = rb_get_alloc_func(klass);
     if (!allocator) {
-	rb_raise(rb_eTypeError, "allocator undefined for %"PRIsVALUE,
-		 klass);
+	rb_undefined_alloc(klass);
     }
 
     RUBY_DTRACE_CREATE_HOOK(OBJECT, rb_class2name(klass));

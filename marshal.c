@@ -128,6 +128,8 @@ mark_marshal_compat_t(void *tbl)
     st_foreach(tbl, mark_marshal_compat_i, 0);
 }
 
+static st_table *compat_allocator_table(void);
+
 void
 rb_marshal_define_compat(VALUE newclass, VALUE oldclass, VALUE (*dumper)(VALUE), VALUE (*loader)(VALUE, VALUE))
 {
@@ -146,7 +148,7 @@ rb_marshal_define_compat(VALUE newclass, VALUE oldclass, VALUE (*dumper)(VALUE),
     compat->dumper = dumper;
     compat->loader = loader;
 
-    st_insert(compat_allocator_tbl, (st_data_t)allocator, (st_data_t)compat);
+    st_insert(compat_allocator_table(), (st_data_t)allocator, (st_data_t)compat);
 }
 
 #define MARSHAL_INFECTION FL_TAINT
@@ -1831,6 +1833,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    VALUE name = r_unique(arg);
 	    VALUE klass = path2class(name);
 	    VALUE data;
+	    st_data_t d;
 
 	    if (!rb_obj_respond_to(klass, s_load, TRUE)) {
 		rb_raise(rb_eTypeError, "class %"PRIsVALUE" needs to have method `_load'",
@@ -1843,7 +1846,11 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    }
 	    v = load_funcall(arg, klass, s_load, 1, &data);
 	    v = r_entry(v, arg);
-            v = r_leave(v, arg);
+	    if (st_lookup(compat_allocator_tbl, (st_data_t)rb_get_alloc_func(klass), &d)) {
+		marshal_compat_t *compat = (marshal_compat_t*)d;
+		v = compat->loader(klass, v);
+	    }
+	    v = r_post_proc(v, arg);
 	}
         break;
 
@@ -2217,13 +2224,19 @@ Init_marshal(void)
     rb_define_const(rb_mMarshal, "MAJOR_VERSION", INT2FIX(MARSHAL_MAJOR));
     /* minor version */
     rb_define_const(rb_mMarshal, "MINOR_VERSION", INT2FIX(MARSHAL_MINOR));
+}
 
+static st_table *
+compat_allocator_table(void)
+{
+    if (compat_allocator_tbl) return compat_allocator_tbl;
     compat_allocator_tbl = st_init_numtable();
 #undef RUBY_UNTYPED_DATA_WARNING
 #define RUBY_UNTYPED_DATA_WARNING 0
     compat_allocator_tbl_wrapper =
 	Data_Wrap_Struct(rb_cData, mark_marshal_compat_t, 0, compat_allocator_tbl);
     rb_gc_register_mark_object(compat_allocator_tbl_wrapper);
+    return compat_allocator_tbl;
 }
 
 VALUE
