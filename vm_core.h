@@ -399,7 +399,7 @@ struct rb_iseq_variable_body {
 /* typedef rb_iseq_t is in method.h */
 struct rb_iseq_struct {
     VALUE flags;
-    struct iseq_compile_data *compile_data; /* used at compile time */
+    struct iseq_compile_data *compile_data_; /* used at compile time */
     struct rb_iseq_constant_body *body;
     struct rb_iseq_variable_body *variable_body;
     VALUE dummy2;

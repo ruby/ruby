@@ -1,3 +1,11 @@
+Wed Dec  2 16:32:08 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.h: introduce ISEQ_COMPILE_DATA() macro.
+
+	* compile.c, iseq.c: use ISEQ_COMPILE_DATA().
+
+	* vm_core.h: rename compile_data field to support this fix.
+
 Wed Dec  2 16:27:19 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (enc_m_loader): defer finding encoding object not to
