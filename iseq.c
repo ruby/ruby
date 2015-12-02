@@ -92,7 +92,7 @@ rb_iseq_free(const rb_iseq_t *iseq)
 	    ruby_xfree((void *)iseq->body->param.keyword);
 	}
 	compile_data_free(ISEQ_COMPILE_DATA(iseq));
-	ruby_xfree(iseq->variable_body->iseq);
+	ruby_xfree(iseq->variable_body->iseq_);
 	ruby_xfree(iseq->variable_body);
 	ruby_xfree(iseq->body);
     }
@@ -157,7 +157,7 @@ iseq_memsize(const rb_iseq_t *iseq)
 
     if (variable_body) {
 	size += sizeof(struct rb_iseq_variable_body);
-	if (variable_body->iseq && body) {
+	if (variable_body->iseq_ && body) {
 	    size += body->iseq_size * sizeof(VALUE);
 	}
     }
