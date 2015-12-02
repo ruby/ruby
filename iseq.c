@@ -117,7 +117,7 @@ rb_iseq_mark(const rb_iseq_t *iseq)
     }
 
     if (iseq->variable_body) {
-	RUBY_MARK_UNLESS_NULL(iseq->variable_body->coverage);
+	RUBY_MARK_UNLESS_NULL(ISEQ_COVERAGE(iseq));
     }
 
     if (ISEQ_COMPILE_DATA(iseq) != 0) {
@@ -311,13 +311,13 @@ prepare_iseq_build(rb_iseq_t *iseq,
     ISEQ_COMPILE_DATA(iseq)->option = option;
     ISEQ_COMPILE_DATA(iseq)->last_coverable_line = -1;
 
-    RB_OBJ_WRITE(iseq, &iseq->variable_body->coverage, Qfalse);
+    ISEQ_COVERAGE_SET(iseq, Qfalse);
 
     if (!GET_THREAD()->parse_in_eval) {
 	VALUE coverages = rb_get_coverages();
 	if (RTEST(coverages)) {
-	    RB_OBJ_WRITE(iseq, &iseq->variable_body->coverage, rb_hash_lookup(coverages, path));
-	    if (NIL_P(iseq->variable_body->coverage)) RB_OBJ_WRITE(iseq, &iseq->variable_body->coverage, Qfalse);
+	    ISEQ_COVERAGE_SET(iseq, rb_hash_lookup(coverages, path));
+	    if (NIL_P(ISEQ_COVERAGE(iseq))) ISEQ_COVERAGE_SET(iseq, Qfalse);
 	}
     }
 
@@ -697,6 +697,12 @@ rb_iseq_method_name(const rb_iseq_t *iseq)
     else {
 	return Qnil;
     }
+}
+
+VALUE
+rb_iseq_coverage(const rb_iseq_t *iseq)
+{
+    return ISEQ_COVERAGE(iseq);
 }
 
 /* define wrapper class methods (RubyVM::InstructionSequence) */
