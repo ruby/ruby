@@ -633,9 +633,9 @@ class TestProcess < Test::Unit::TestCase
         trap(:USR1) { print "trap\n" }
         system("cat", :in => "fifo")
       EOS
-        sleep 0.5
+        sleep 1
         Process.kill(:USR1, io.pid)
-        sleep 0.1
+        sleep 1
         File.write("fifo", "ok\n")
         assert_equal("trap\nok\n", io.read)
       }
