@@ -1,3 +1,9 @@
+Wed Dec  2 15:14:29 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/readline/extconf.rb: call dir_config("libedit")
+	  if --enable-libedit is spcified. [Bug #11751]
+	  patched by John Hein
+
 Tue Dec  1 16:57:57 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_each_codepoint): raise an exception at incomplete
