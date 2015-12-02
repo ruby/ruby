@@ -64,9 +64,9 @@ void
 explicit_bzero(void *b, size_t len)
 {
     /*
-     * volatile is not enough if compiler have a LTO (link time
+     * volatile is not enough if the compiler has an LTO (link time
      * optimization). At least, the standard provides no guarantee.
-     * However, gcc and major other compiler never optimize a volatile
+     * However, gcc and major other compilers never optimize a volatile
      * variable away. So, using volatile is practically ok.
      */
     volatile char* p = (volatile char*)b;
