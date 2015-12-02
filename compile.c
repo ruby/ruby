@@ -1486,8 +1486,6 @@ cdhash_set_label_i(VALUE key, VALUE val, void *ptr)
 static int
 iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 {
-    LABEL *lobj;
-    INSN *iobj;
     struct iseq_line_info_entry *line_info_table;
     unsigned int last_line = 0;
     LINK_ELEMENT *list;
@@ -1502,7 +1500,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 	switch (list->type) {
 	  case ISEQ_ELEMENT_INSN:
 	    {
-		iobj = (INSN *)list;
+		INSN *iobj = (INSN *)list;
 		line = iobj->line_no;
 		code_index += insn_data_length(iobj);
 		insn_num++;
@@ -1510,7 +1508,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 	    }
 	  case ISEQ_ELEMENT_LABEL:
 	    {
-		lobj = (LABEL *)list;
+		LABEL *lobj = (LABEL *)list;
 		lobj->position = code_index;
 		lobj->set = TRUE;
 		break;
@@ -1558,8 +1556,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 		int j, len, insn;
 		const char *types;
 		VALUE *operands;
-
-		iobj = (INSN *)list;
+		INSN *iobj = (INSN *)list;
 
 		/* update sp */
 		sp = calc_sp_depth(sp, iobj);
@@ -1593,7 +1590,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 		      case TS_OFFSET:
 			{
 			    /* label(destination position) */
-			    lobj = (LABEL *)operands[j];
+			    LABEL *lobj = (LABEL *)operands[j];
 			    if (!lobj->set) {
 				COMPILE_ERROR((ruby_sourcefile, iobj->line_no,
 					       "unknown label"));
@@ -1704,7 +1701,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 	    }
 	  case ISEQ_ELEMENT_LABEL:
 	    {
-		lobj = (LABEL *)list;
+		LABEL *lobj = (LABEL *)list;
 		if (lobj->sp == -1) {
 		    lobj->sp = sp;
 		}
@@ -1746,7 +1743,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 			generated_iseq[code_index++] = BIN(nop);
 		    }
 		    else {
-			rb_compile_bug(ruby_sourcefile, iobj->line_no,
+			rb_compile_bug(ruby_sourcefile, adjust->line_no,
 				       "iseq_set_sequence: adjust bug %d < %d", orig_sp, sp);
 		    }
 		}
