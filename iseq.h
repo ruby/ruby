@@ -23,6 +23,8 @@ rb_call_info_kw_arg_bytes(int keyword_len)
     return sizeof(struct rb_call_info_kw_arg) + sizeof(VALUE) * (keyword_len - 1);
 }
 
+#define ISEQ_COMPILE_DATA(iseq) (iseq)->compile_data_
+
 RUBY_SYMBOL_EXPORT_BEGIN
 
 /* compile.c */

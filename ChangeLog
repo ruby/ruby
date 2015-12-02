@@ -1,3 +1,66 @@
+Wed Dec  2 16:32:08 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.h: introduce ISEQ_COMPILE_DATA() macro.
+
+	* compile.c, iseq.c: use ISEQ_COMPILE_DATA().
+
+	* vm_core.h: rename compile_data field to support this fix.
+
+Wed Dec  2 16:27:19 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (enc_m_loader): defer finding encoding object not to
+	  be infected by marshal source.  [ruby-core:71793] [Bug #11760]
+
+	* marshal.c (r_object0): enable compatible loader on USERDEF
+	  class.  the loader function is called with the class itself,
+	  instead of an allocated object, and the loaded data.
+
+	* marshal.c (compat_allocator_table): intialize
+	  compat_allocator_tbl on demand.
+
+	* object.c (rb_undefined_alloc): extract from rb_obj_alloc.
+
+Wed Dec  2 15:12:43 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* configure.in: Fixed double negative comments.
+	  [Bug #11698][ruby-core:71506]
+
+Wed Dec  2 14:55:01 2015  yui-knk  <spiketeika@gmail.com>
+
+	* test/ruby/test_string.rb: removed non executing tests.
+	  [Misc #11757][ruby-dev:49397]
+
+Wed Dec  2 11:23:06 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/csv.rb: enable frozen_string_literal.
+	  [fix GH-1116] Patch by @marshall-lee
+
+Wed Dec  2 10:36:25 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c: Fix double word typo.
+	  [ci skip][fix GH-1120] Patch by @jwworth
+
+Wed Dec  2 07:43:51 2015  Eric Wong  <e@80x24.org>
+
+	* ext/openssl/ossl_ssl.c (mSSLExtConfig): make static
+	  (eSSLError): ditto
+	  (ID_callback_state): ditto
+	  (ossl_ssl_ex_vcb_idx): ditto
+	  (ossl_ssl_ex_store_p): ditto
+	  (ossl_ssl_ex_ptr_idx): ditto
+	* ext/openssl/ossl_ssl.h: remove extern declarations for
+	  mSSLExtConfig and eSSLError
+
+Wed Dec  2 07:41:08 2015  Eric Wong  <e@80x24.org>
+
+	* missing/explicit_bzero.c (explicit_bzero): fixup r52839
+	  for compilers with "weak" attribute
+
+Wed Dec  2 06:47:25 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* missing/explicit_bzero.c: add ruby_explicit_bzero_hook_unused
+	  for preventing optimization. Inspired from OpenBSD.
+
 Tue Dec  1 23:36:39 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (rb_thread_setname): allow to reset thread name.

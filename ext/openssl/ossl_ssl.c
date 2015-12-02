@@ -28,8 +28,8 @@
 } while (0)
 
 VALUE mSSL;
-VALUE mSSLExtConfig;
-VALUE eSSLError;
+static VALUE mSSLExtConfig;
+static VALUE eSSLError;
 VALUE cSSLContext;
 VALUE cSSLSocket;
 
@@ -75,7 +75,7 @@ static VALUE eSSLErrorWaitWritable;
 #define ossl_ssl_set_tmp_dh(o,v)     rb_iv_set((o),"@tmp_dh",(v))
 #define ossl_ssl_set_tmp_ecdh(o,v)   rb_iv_set((o),"@tmp_ecdh",(v))
 
-ID ID_callback_state;
+static ID ID_callback_state;
 
 static VALUE sym_exception, sym_wait_readable, sym_wait_writable;
 
@@ -120,9 +120,9 @@ static const struct {
 #undef OSSL_SSL_METHOD_ENTRY
 };
 
-int ossl_ssl_ex_vcb_idx;
-int ossl_ssl_ex_store_p;
-int ossl_ssl_ex_ptr_idx;
+static int ossl_ssl_ex_vcb_idx;
+static int ossl_ssl_ex_store_p;
+static int ossl_ssl_ex_ptr_idx;
 
 static void
 ossl_sslctx_free(void *ptr)

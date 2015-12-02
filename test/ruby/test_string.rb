@@ -1,9 +1,5 @@
 require 'test/unit'
 
-# use of $= is deprecated after 1.7.1
-def pre_1_7_1
-end
-
 class TestString < Test::Unit::TestCase
   ENUMERATOR_WANTARRAY = RUBY_VERSION >= "3.0.0"
 
@@ -126,20 +122,6 @@ class TestString < Test::Unit::TestCase
     s[S("Foo")] = S("Bar")
     assert_equal(S("BarBar"), s)
 
-    pre_1_7_1 do
-      s = S("FooBar")
-      s[S("Foo")] = S("xyz")
-      assert_equal(S("xyzBar"), s)
-
-      $= = true
-      s = S("FooBar")
-      s[S("FOO")] = S("Bar")
-      assert_equal(S("BarBar"), s)
-      s[S("FOO")] = S("xyz")
-      assert_equal(S("BarBar"), s)
-      $= = false
-    end
-
     s = S("a string")
     s[0..s.size] = S("another string")
     assert_equal(S("another string"), s)
@@ -159,12 +141,6 @@ class TestString < Test::Unit::TestCase
     assert_equal(-1, S("abcde") <=> S("abcdef"))
 
     assert_equal(-1, S("ABCDEF") <=> S("abcdef"))
-
-    pre_1_7_1 do
-      $= = true
-      assert_equal(0, S("ABCDEF") <=> S("abcdef"))
-      $= = false
-    end
 
     assert_nil("foo" <=> Object.new)
 
@@ -188,13 +164,6 @@ class TestString < Test::Unit::TestCase
   def test_EQUAL # '=='
     assert_not_equal(:foo, S("foo"))
     assert_equal(S("abcdef"), S("abcdef"))
-
-    pre_1_7_1 do
-      $= = true
-      assert_equal(S("CAT"), S('cat'))
-      assert_equal(S("CaT"), S('cAt'))
-      $= = false
-    end
 
     assert_not_equal(S("CAT"), S('cat'))
     assert_not_equal(S("CaT"), S('cAt'))
@@ -234,12 +203,6 @@ class TestString < Test::Unit::TestCase
   def test_MATCH # '=~'
     assert_equal(10,  S("FeeFieFoo-Fum") =~ /Fum$/)
     assert_equal(nil, S("FeeFieFoo-Fum") =~ /FUM$/)
-
-    pre_1_7_1 do
-      $= = true
-      assert_equal(10,  S("FeeFieFoo-Fum") =~ /FUM$/)
-      $= = false
-    end
 
     o = Object.new
     def o.=~(x); x + "bar"; end
@@ -291,13 +254,6 @@ class TestString < Test::Unit::TestCase
   def test_VERY_EQUAL # '==='
     # assert_equal(true, S("foo") === :foo)
     casetest(S("abcdef"), S("abcdef"))
-
-    pre_1_7_1 do
-      $= = true
-      casetest(S("CAT"), S('cat'))
-      casetest(S("CaT"), S('cAt'))
-      $= = false
-    end
 
     casetest(S("CAT"), S('cat'), true) # Reverse the test - we don't want to
     casetest(S("CaT"), S('cAt'), true) # find these in the case.
@@ -1308,14 +1264,6 @@ class TestString < Test::Unit::TestCase
     a=S("FooBar")
     assert_equal(S("Bar"), a.slice!(S("Bar")))
     assert_equal(S("Foo"), a)
-
-    pre_1_7_1 do
-      a=S("FooBar")
-      assert_nil(a.slice!(S("xyzzy")))
-      assert_equal(S("FooBar"), a)
-      assert_nil(a.slice!(S("plugh")))
-      assert_equal(S("FooBar"), a)
-    end
 
     assert_raise(ArgumentError) { "foo".slice! }
   end

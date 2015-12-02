@@ -18,6 +18,8 @@ extern "C" {
 #endif
 #endif
 
+#define __STDC_WANT_LIB_EXT1__ 1
+
 #include "ruby/config.h"
 #include <stddef.h>
 #include <math.h> /* for INFINITY and NAN */

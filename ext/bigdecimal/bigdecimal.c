@@ -5027,7 +5027,7 @@ Exit:
  *      \n ... new line
  *      \b ... backspace
  *           ... tab
- *     Note: % must must not appear more than once
+ *     Note: % must not appear more than once
  *    a  ... VP variable to be printed
  */
 #ifdef BIGDECIMAL_ENABLE_VPRINT

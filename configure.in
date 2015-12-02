@@ -1752,6 +1752,10 @@ RUBY_FUNC_ATTRIBUTE(deprecated, DEPRECATED)
 RUBY_FUNC_ATTRIBUTE(deprecated("by "@%:@n), DEPRECATED_BY(n,x), rb_cv_func_deprecated_by)
 RUBY_TYPE_ATTRIBUTE(deprecated mesg, DEPRECATED_TYPE(mesg,x), rb_cv_type_deprecated)
 RUBY_FUNC_ATTRIBUTE(noinline, NOINLINE)
+RUBY_FUNC_ATTRIBUTE(weak, WEAK, rb_cv_func_weak)
+if test "$rb_cv_func_weak" != x; then
+   AC_DEFINE(HAVE_FUNC_WEAK)
+fi
 
 if_i386=${universal_binary+[defined __i386__]}
 RUBY_FUNC_ATTRIBUTE(stdcall,  [], [], ${if_i386})
@@ -3833,7 +3837,7 @@ dnl build rdoc index if requested
 RDOCTARGET=""
 CAPITARGET=""
 AC_ARG_ENABLE(install-doc,
-       AS_HELP_STRING([--disable-install-doc], [do not install neither rdoc indexes nor C API documents during install]),
+       AS_HELP_STRING([--disable-install-doc], [do not install either rdoc indexes or C API documents during install]),
        [install_doc=$enableval], [install_doc=yes])
 AC_ARG_ENABLE(install-rdoc,
       AS_HELP_STRING([--disable-install-rdoc], [do not install rdoc indexes during install]),
