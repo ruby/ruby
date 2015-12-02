@@ -2774,13 +2774,17 @@ rb_thread_getname(VALUE thread)
 static VALUE
 rb_thread_setname(VALUE thread, VALUE name)
 {
+#if defined(HAVE_PTHREAD_SETNAME_NP) || defined(HAVE_PTHREAD_SET_NAME_NP)
     const char *s = "";
+#endif
     rb_thread_t *th;
     GetThreadPtr(thread, th);
     if (!NIL_P(name)) {
 	StringValueCStr(name);
 	name = rb_str_new_frozen(name);
+#if defined(HAVE_PTHREAD_SETNAME_NP) || defined(HAVE_PTHREAD_SET_NAME_NP)
 	s = RSTRING_PTR(name);
+#endif
     }
     th->name = name;
 #if defined(HAVE_PTHREAD_SETNAME_NP)
@@ -2788,6 +2792,8 @@ rb_thread_setname(VALUE thread, VALUE name)
     pthread_setname_np(th->thread_id, s);
 # elif defined(__NetBSD__)
     pthread_setname_np(th->thread_id, s, "%s");
+# elif defined(__APPLE__)
+    pthread_setname_np(s);
 # endif
 #elif defined(HAVE_PTHREAD_SET_NAME_NP) /* FreeBSD */
     pthread_set_name_np(th->thread_id, s);
