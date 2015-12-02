@@ -645,7 +645,7 @@ rb_iseq_original_iseq(const rb_iseq_t *iseq) /* cold path */
 
     if (ISEQ_ORIGINAL_ISEQ(iseq)) return ISEQ_ORIGINAL_ISEQ(iseq);
     original_code = ISEQ_ORIGINAL_ISEQ_ALLOC(iseq, iseq->body->iseq_size);
-    MEMCPY(ISEQ_ORIGINAL_ISEQ(iseq), iseq->body->iseq_encoded, VALUE, iseq->body->iseq_size);
+    MEMCPY(original_code, iseq->body->iseq_encoded, VALUE, iseq->body->iseq_size);
 
 #if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
     {

@@ -1,3 +1,15 @@
+Wed Dec 02 22:57:46 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h, iseq.h: remove rb_iseq_t::variable_body.
+	  Fields in rb_iseq_t::variable_body are contained by
+	  rb_iseq_t::body::mark_ary (hidden Array object).
+
+	  Index 0 to 2 of mark_ary are reserved by these objects.
+
+	* iseq.c: catch up this fix.
+
+	* compile.c (rb_iseq_original_iseq): trivial rewrite.
+
 Wed Dec  2 17:19:02 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* iseq.h: introduce ISEQ_ORIGINAL_ISEQ() and

@@ -385,24 +385,14 @@ struct rb_iseq_constant_body {
     unsigned int line_info_size;
 };
 
-struct rb_iseq_variable_body {
-    const VALUE coverage_;     /* coverage array */
-
-    rb_num_t flip_cnt_;
-
-    /* original iseq, before encoding
-     * used for debug/dump (TODO: union with compile_data) */
-    VALUE *iseq_;
-};
-
 /* T_IMEMO/iseq */
 /* typedef rb_iseq_t is in method.h */
 struct rb_iseq_struct {
     VALUE flags;
     struct iseq_compile_data *compile_data_; /* used at compile time */
     struct rb_iseq_constant_body *body;
-    struct rb_iseq_variable_body *variable_body;
-    VALUE dummy2;
+    VALUE reserved1;
+    VALUE reserved2;
 };
 
 enum ruby_special_exceptions {
