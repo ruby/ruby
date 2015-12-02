@@ -1,3 +1,17 @@
+Wed Dec  2 17:05:15 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.h: introduce ISEQ_COVERAGE() and ISEQ_COVERAGE_SET() macro.
+
+	* compile.c: use them.
+
+	* iseq.c: ditto.
+
+	* iseq.c (rb_iseq_coverage): added.
+
+	* thread.c (update_coverage): use rb_iseq_coverage().
+
+	* vm_core.h: rename coverage field name to support this fix.
+
 Wed Dec  2 17:00:54 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (enc_name, rb_enc_name_list_i, rb_enc_aliases_enc_i):

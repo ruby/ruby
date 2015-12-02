@@ -23,7 +23,9 @@ rb_call_info_kw_arg_bytes(int keyword_len)
     return sizeof(struct rb_call_info_kw_arg) + sizeof(VALUE) * (keyword_len - 1);
 }
 
-#define ISEQ_COMPILE_DATA(iseq) (iseq)->compile_data_
+#define ISEQ_COMPILE_DATA(iseq)      (iseq)->compile_data_
+#define ISEQ_COVERAGE(iseq)          (iseq)->variable_body->coverage_
+#define ISEQ_COVERAGE_SET(iseq, cov) RB_OBJ_WRITE((iseq), &(iseq)->variable_body->coverage_, cov)
 
 RUBY_SYMBOL_EXPORT_BEGIN
 

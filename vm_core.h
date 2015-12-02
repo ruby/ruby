@@ -386,7 +386,7 @@ struct rb_iseq_constant_body {
 };
 
 struct rb_iseq_variable_body {
-    const VALUE coverage;     /* coverage array */
+    const VALUE coverage_;     /* coverage array */
 
     rb_num_t flip_cnt;
 
@@ -816,6 +816,8 @@ rb_iseq_t *rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE absolute_pat
 VALUE rb_iseq_disasm(const rb_iseq_t *iseq);
 int rb_iseq_disasm_insn(VALUE str, const VALUE *iseqval, size_t pos, const rb_iseq_t *iseq, VALUE child);
 const char *ruby_node_name(int node);
+
+VALUE rb_iseq_coverage(const rb_iseq_t *iseq);
 
 RUBY_EXTERN VALUE rb_cISeq;
 RUBY_EXTERN VALUE rb_cRubyVM;

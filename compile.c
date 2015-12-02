@@ -231,9 +231,9 @@ r_value(VALUE value)
 
 #define ADD_TRACE(seq, line, event) \
   do { \
-      if ((event) == RUBY_EVENT_LINE && iseq->variable_body->coverage && \
+      if ((event) == RUBY_EVENT_LINE && ISEQ_COVERAGE(iseq) && \
 	  (line) != ISEQ_COMPILE_DATA(iseq)->last_coverable_line) { \
-	  RARRAY_ASET(iseq->variable_body->coverage, (line) - 1, INT2FIX(0)); \
+	  RARRAY_ASET(ISEQ_COVERAGE(iseq), (line) - 1, INT2FIX(0)); \
 	  ISEQ_COMPILE_DATA(iseq)->last_coverable_line = (line); \
 	  ADD_INSN1((seq), (line), trace, INT2FIX(RUBY_EVENT_COVERAGE)); \
       } \
