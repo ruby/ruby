@@ -91,7 +91,7 @@ rb_iseq_free(const rb_iseq_t *iseq)
 	    ruby_xfree((void *)iseq->body->param.keyword->default_values);
 	    ruby_xfree((void *)iseq->body->param.keyword);
 	}
-	compile_data_free(iseq->compile_data);
+	compile_data_free(ISEQ_COMPILE_DATA(iseq));
 	ruby_xfree(iseq->variable_body->iseq);
 	ruby_xfree(iseq->variable_body);
 	ruby_xfree(iseq->body);
@@ -120,8 +120,8 @@ rb_iseq_mark(const rb_iseq_t *iseq)
 	RUBY_MARK_UNLESS_NULL(iseq->variable_body->coverage);
     }
 
-    if (iseq->compile_data != 0) {
-	const struct iseq_compile_data *const compile_data = iseq->compile_data;
+    if (ISEQ_COMPILE_DATA(iseq) != 0) {
+	const struct iseq_compile_data *const compile_data = ISEQ_COMPILE_DATA(iseq);
 
 	RUBY_MARK_UNLESS_NULL(compile_data->mark_ary);
 	RUBY_MARK_UNLESS_NULL(compile_data->err_info);
@@ -199,7 +199,7 @@ iseq_memsize(const rb_iseq_t *iseq)
 	}
     }
 
-    compile_data = iseq->compile_data;
+    compile_data = ISEQ_COMPILE_DATA(iseq);
     if (compile_data) {
 	struct iseq_compile_data_storage *cur;
 
@@ -294,22 +294,22 @@ prepare_iseq_build(rb_iseq_t *iseq,
     }
     RB_OBJ_WRITE(iseq, &iseq->body->mark_ary, 0);
 
-    iseq->compile_data = ZALLOC(struct iseq_compile_data);
-    RB_OBJ_WRITE(iseq, &iseq->compile_data->err_info, Qnil);
-    RB_OBJ_WRITE(iseq, &iseq->compile_data->mark_ary, rb_ary_tmp_new(3));
+    ISEQ_COMPILE_DATA(iseq) = ZALLOC(struct iseq_compile_data);
+    RB_OBJ_WRITE(iseq, &ISEQ_COMPILE_DATA(iseq)->err_info, Qnil);
+    RB_OBJ_WRITE(iseq, &ISEQ_COMPILE_DATA(iseq)->mark_ary, rb_ary_tmp_new(3));
 
-    iseq->compile_data->storage_head = iseq->compile_data->storage_current =
+    ISEQ_COMPILE_DATA(iseq)->storage_head = ISEQ_COMPILE_DATA(iseq)->storage_current =
       (struct iseq_compile_data_storage *)
 	ALLOC_N(char, INITIAL_ISEQ_COMPILE_DATA_STORAGE_BUFF_SIZE +
 		SIZEOF_ISEQ_COMPILE_DATA_STORAGE);
 
-    RB_OBJ_WRITE(iseq, &iseq->compile_data->catch_table_ary, rb_ary_tmp_new(3));
-    iseq->compile_data->storage_head->pos = 0;
-    iseq->compile_data->storage_head->next = 0;
-    iseq->compile_data->storage_head->size =
+    RB_OBJ_WRITE(iseq, &ISEQ_COMPILE_DATA(iseq)->catch_table_ary, rb_ary_tmp_new(3));
+    ISEQ_COMPILE_DATA(iseq)->storage_head->pos = 0;
+    ISEQ_COMPILE_DATA(iseq)->storage_head->next = 0;
+    ISEQ_COMPILE_DATA(iseq)->storage_head->size =
       INITIAL_ISEQ_COMPILE_DATA_STORAGE_BUFF_SIZE;
-    iseq->compile_data->option = option;
-    iseq->compile_data->last_coverable_line = -1;
+    ISEQ_COMPILE_DATA(iseq)->option = option;
+    ISEQ_COMPILE_DATA(iseq)->last_coverable_line = -1;
 
     RB_OBJ_WRITE(iseq, &iseq->variable_body->coverage, Qfalse);
 
@@ -327,9 +327,9 @@ prepare_iseq_build(rb_iseq_t *iseq,
 static VALUE
 cleanup_iseq_build(rb_iseq_t *iseq)
 {
-    struct iseq_compile_data *data = iseq->compile_data;
+    struct iseq_compile_data *data = ISEQ_COMPILE_DATA(iseq);
     VALUE err = data->err_info;
-    iseq->compile_data = 0;
+    ISEQ_COMPILE_DATA(iseq) = 0;
     compile_data_free(data);
 
     if (RTEST(err)) {
