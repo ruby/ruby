@@ -1,3 +1,8 @@
+Wed Dec  2 15:12:43 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* configure.in: Fixed double negative comments.
+	  [Bug #11698][ruby-core:71506]
+
 Wed Dec  2 14:55:01 2015  yui-knk  <spiketeika@gmail.com>
 
 	* test/ruby/test_string.rb: removed non executing tests.
