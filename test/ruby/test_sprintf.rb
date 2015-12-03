@@ -166,6 +166,9 @@ class TestSprintf < Test::Unit::TestCase
         end
       end
     end
+
+    bug11766 = '[ruby-core:71806] [Bug #11766]'
+    assert_equal("x"*10+"     1.0", sprintf("x"*10+"%8.1f", 1r))
   end
 
   def test_hash
