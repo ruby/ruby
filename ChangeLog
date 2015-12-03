@@ -1,3 +1,8 @@
+Fri Dec  4 02:42:37 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* range.c (range_to_s): should be infected by the receiver.
+	  str2 infects by appending.  [ruby-core:71811] [Bug #11767]
+
 Wed Dec  2 03:17:01 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/readline/extconf.rb: call dir_config("libedit")
