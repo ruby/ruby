@@ -1,3 +1,8 @@
+Thu Dec  3 14:22:16 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* range.c (range_to_s): should be infected by the receiver.
+	  str2 infects by appending.  [ruby-core:71811] [Bug #11767]
+
 Thu Dec  3 11:57:12 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: separate SET_CURRENT_THREAD_NAME, which can set
