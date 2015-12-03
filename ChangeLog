@@ -1,3 +1,10 @@
+Thu Dec  3 15:37:56 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* test/ruby/test_mixed_unicode_escapes.rb: fixed typo.
+	  [fix GH-1122] Patch by @davydovanton
+	* test/ruby/test_object.rb: ditto.
+	* test/socket/test_tcp.rb: ditto.
+
 Thu Dec  3 15:33:08 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sprintf.c (rb_str_format): fix wrong shifting position in
