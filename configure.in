@@ -2890,6 +2890,7 @@ if test x"$enable_pthread" = xyes; then
     else
       AC_CHECK_FUNCS(pthread_attr_init)
     fi
+    set_current_thread_name=
     if test "$ac_cv_func_pthread_setname_np" = yes; then
 	AC_CACHE_CHECK([arguments of pthread_setname_np], [rb_cv_func_pthread_setname_np_arguments],
 	    [rb_cv_func_pthread_setname_np_arguments=
@@ -2915,11 +2916,19 @@ if test x"$enable_pthread" = xyes; then
 	    ]
 	)
 	if test -n "${rb_cv_func_pthread_setname_np_arguments}"; then
-	    AC_DEFINE_UNQUOTED(SET_THREAD_NAME(name), pthread_setname_np${rb_cv_func_pthread_setname_np_arguments})
+	    set_current_thread_name="pthread_setname_np${rb_cv_func_pthread_setname_np_arguments}"
 	fi
     elif test "$ac_cv_func_pthread_set_name_np" = yes; then
-	    AC_DEFINE_UNQUOTED(SET_THREAD_NAME(name), pthread_set_name_np(pthread_self(), name))
+	set_current_thread_name="pthread_set_name_np(pthread_self(), name)"
     fi
+    AS_IF([test -n "$set_current_thread_name"], [
+	AC_DEFINE_UNQUOTED(SET_CURRENT_THREAD_NAME(name), $set_current_thread_name)
+	AS_CASE([$set_current_thread_name],
+	    [*'pthread_self()'*], [
+		set_another_thread_name=`echo "$set_current_thread_name" | sed 's/pthread_self()/thid/'`
+		AC_DEFINE_UNQUOTED(SET_ANOTHER_THREAD_NAME(thid,name), $set_another_thread_name)
+	    ])
+    ])
 fi
 
 if test x"$ac_cv_header_ucontext_h" = xno; then
