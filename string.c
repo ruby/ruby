@@ -1247,7 +1247,9 @@ rb_obj_as_string(VALUE obj)
     str = rb_funcall(obj, idTo_s, 0);
     if (!RB_TYPE_P(str, T_STRING))
 	return rb_any_to_s(obj);
-    OBJ_INFECT(str, obj);
+    if (!FL_SET(str, RSTRING_FSTR) && FL_ABLE(obj))
+	/* fstring must not be tainted, at least */
+	OBJ_INFECT_RAW(str, obj);
     return str;
 }
 

@@ -755,6 +755,15 @@ class TestObject < Test::Unit::TestCase
       end
     EOS
     assert_match(/\bToS\u{3042}:/, x)
+
+    name = "X".freeze
+    x = Object.new.taint
+    class<<x;self;end.class_eval {define_method(:to_s) {name}}
+    assert_same(name, x.to_s)
+    assert_not_predicate(name, :tainted?)
+    assert_raise(RuntimeError) {name.taint}
+    assert_equal("X", [x].join(""))
+    assert_not_predicate(name, :tainted?)
   end
 
   def test_inspect
