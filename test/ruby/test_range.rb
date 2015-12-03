@@ -283,11 +283,21 @@ class TestRange < Test::Unit::TestCase
   def test_to_s
     assert_equal("0..1", (0..1).to_s)
     assert_equal("0...1", (0...1).to_s)
+
+    bug11767 = '[ruby-core:71811] [Bug #11767]'
+    assert_predicate(("0".taint.."1").to_s, :tainted?, bug11767)
+    assert_predicate(("0".."1".taint).to_s, :tainted?, bug11767)
+    assert_predicate(("0".."1").taint.to_s, :tainted?, bug11767)
   end
 
   def test_inspect
     assert_equal("0..1", (0..1).inspect)
     assert_equal("0...1", (0...1).inspect)
+
+    bug11767 = '[ruby-core:71811] [Bug #11767]'
+    assert_predicate(("0".taint.."1").inspect, :tainted?, bug11767)
+    assert_predicate(("0".."1".taint).inspect, :tainted?, bug11767)
+    assert_predicate(("0".."1").taint.inspect, :tainted?, bug11767)
   end
 
   def test_eqq
