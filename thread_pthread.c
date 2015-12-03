@@ -1481,15 +1481,14 @@ timer_thread_sleep(rb_global_vm_lock_t* unused)
 }
 #endif /* USE_SLEEPY_TIMER_THREAD */
 
-#if defined(__linux__) && defined(PR_SET_NAME)
-# undef SET_THREAD_NAME
-# define SET_THREAD_NAME(name) prctl(PR_SET_NAME, name)
+#if !defined(SET_CURRENT_THREAD_NAME) && defined(__linux__) && defined(PR_SET_NAME)
+# define SET_CURRENT_THREAD_NAME(name) prctl(PR_SET_NAME, name)
 #endif
 
 static void
 native_set_thread_name(rb_thread_t *th)
 {
-#ifdef SET_THREAD_NAME
+#ifdef SET_CURRENT_THREAD_NAME
     if (!th->first_func && th->first_proc) {
 	VALUE loc = rb_proc_location(th->first_proc);
 	if (!NIL_P(loc)) {
@@ -1512,7 +1511,7 @@ native_set_thread_name(rb_thread_t *th)
 		buf[sizeof(buf)-2] = '*';
 		buf[sizeof(buf)-1] = '\0';
 	    }
-	    SET_THREAD_NAME(buf);
+	    SET_CURRENT_THREAD_NAME(buf);
 	}
     }
 #endif
@@ -1525,8 +1524,8 @@ thread_timer(void *p)
 
     if (TT_DEBUG) WRITE_CONST(2, "start timer thread\n");
 
-#ifdef SET_THREAD_NAME
-    SET_THREAD_NAME("ruby-timer-thr");
+#ifdef SET_CURRENT_THREAD_NAME
+    SET_CURRENT_THREAD_NAME("ruby-timer-thr");
 #endif
 
 #if !USE_SLEEPY_TIMER_THREAD

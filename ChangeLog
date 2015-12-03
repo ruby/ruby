@@ -1,3 +1,15 @@
+Thu Dec  3 11:57:12 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: separate SET_CURRENT_THREAD_NAME, which can set
+	  the name of current thread only, and SET_ANOTHER_THREAD_NAME,
+	  which can set the name of other threads.
+
+	* thread.c (rb_thread_setname): use SET_ANOTHER_THREAD_NAME.  OS X
+	  is not possible to set another thread name.
+
+	* thread_pthread.c (native_set_thread_name, thread_timer): use
+	  SET_CURRENT_THREAD_NAME.
+
 Wed Dec 02 22:57:46 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h, iseq.h: remove rb_iseq_t::variable_body.
