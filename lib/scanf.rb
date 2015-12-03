@@ -610,7 +610,7 @@ class IO
   #
   # See Scanf for details on creating a format string.
   #
-  # You will need to require 'scanf' to use use IO#scanf.
+  # You will need to require 'scanf' to use IO#scanf.
   def scanf(str,&b) #:yield: current_match
     return block_scanf(str,&b) if b
     return [] unless str.size > 0
