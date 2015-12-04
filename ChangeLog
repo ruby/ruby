@@ -1,3 +1,8 @@
+Sat Dec  5 06:03:54 2015  Eric Wong  <e@80x24.org>
+
+	* vm.c (ruby_vm_verbose_ptr): make static
+	  (ruby_vm_debug_ptr): ditto
+
 Sat Dec  5 00:56:29 2015  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* include/ruby/ruby.h (RB_OBJ_TAINT): follow-up of r52881.
