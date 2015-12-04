@@ -1,3 +1,9 @@
+Fri Dec  4 16:48:19 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_obj_as_string): fstring should not be infected.
+	  re-apply r52872 and fix a typo.
+	  TODO: other frozen strings also may not be.
+
 Fri Dec  4 15:21:45 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/rubygems: Update to RubyGems 2.5.0+ HEAD(fdab4c4).
