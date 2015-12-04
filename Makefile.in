@@ -258,7 +258,7 @@ ruby-runner.c: template/ruby-runner.c.in
 ruby-runner$(EXEEXT): ruby-runner.c
 	$(Q) $(PURIFY) $(CC) $(CFLAGS) $(CPPFLAGS) -DRUBY_INSTALL_NAME=$(RUBY_INSTALL_NAME) $(LDFLAGS) $(LIBS) $(OUTFLAG)$@ ruby-runner.c
 
-$(RBCONFIG): $($(CROSS_COMPILING:no=)PREP)
+$(RBCONFIG): $(PREP)
 
 rbconfig.rb: $(RBCONFIG)
 
