@@ -1,3 +1,8 @@
+Fri Dec  4 11:22:40 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (rb_thread_setname): name must be ascii-compatible, as
+	  pthread APIs do not accept legacy wide char strings.
+
 Thu Dec  3 16:02:17 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_obj_as_string): fstring should not be infected.
