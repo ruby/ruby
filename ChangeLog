@@ -1,7 +1,13 @@
+Fri Dec  4 19:52:52 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/iso_8859_13.c: Added three missing lower/upper-case
+	  character pairs (from Kimihito Matsui)
+
 Fri Dec  4 18:57:57 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/iso_8859_4.c: Added missing lower/upper-case character
 	  pair (U+014A and U+014B, LATIN CAPITAL/SMALL LETTER ENG)
+	  (from Kimihito Matsui)
 
 Fri Dec  4 16:48:19 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

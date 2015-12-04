@@ -158,6 +158,10 @@ is_code_ctype(OnigCodePoint code, unsigned int ctype, OnigEncoding enc ARG_UNUSE
 }
 
 static const OnigPairCaseFoldCodes CaseFoldMap[] = {
+ { 0xa8, 0xb8 },
+ { 0xaa, 0xba },
+ { 0xaf, 0xbf },
+ 
  { 0xc0, 0xe0 },
  { 0xc1, 0xe1 },
  { 0xc2, 0xe2 },
