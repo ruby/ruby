@@ -1,3 +1,9 @@
+Fri Dec  4 15:21:45 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/rubygems: Update to RubyGems 2.5.0+ HEAD(fdab4c4).
+	  this version includes #1396, #1397, #1398, #1399
+	* test/rubygems: ditto.
+
 Fri Dec  4 11:22:40 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (rb_thread_setname): name must be ascii-compatible, as

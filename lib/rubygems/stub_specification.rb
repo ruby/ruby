@@ -88,6 +88,8 @@ class Gem::StubSpecification < Gem::BasicSpecification
     end
   end
 
+  def this; self; end
+
   def default_gem?
     @default_gem
   end
