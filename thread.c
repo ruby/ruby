@@ -2780,7 +2780,13 @@ rb_thread_setname(VALUE thread, VALUE name)
     rb_thread_t *th;
     GetThreadPtr(thread, th);
     if (!NIL_P(name)) {
+	rb_encoding *enc;
 	StringValueCStr(name);
+	enc = rb_enc_get(name);
+	if (!rb_enc_asciicompat(enc)) {
+	    rb_raise(rb_eArgError, "ASCII incompatible encoding (%s)",
+		     rb_enc_name(enc));
+	}
 	name = rb_str_new_frozen(name);
 #ifdef SET_ANOTHER_THREAD_NAME
 	s = RSTRING_PTR(name);
