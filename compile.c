@@ -292,16 +292,42 @@ r_value(VALUE value)
   (((INSN*)(insn))->insn_id)
 
 /* error */
-#define COMPILE_ERROR(strs)                        \
-do {                                               \
-  rb_thread_t *th = GET_THREAD();                  \
-  VALUE tmp = th->errinfo;                         \
-  if (compile_debug) rb_compile_bug strs;          \
-  th->errinfo = ISEQ_COMPILE_DATA(iseq)->err_info;      \
-  rb_compile_error strs;                           \
-  RB_OBJ_WRITE(iseq, &ISEQ_COMPILE_DATA(iseq)->err_info, th->errinfo); \
-  th->errinfo = tmp;                               \
-} while (0)
+typedef void (*compile_error_func)(const char *, int, const char *, ...);
+
+static void
+append_compile_error(const char *file, int line, const char *fmt, ...)
+{
+    VALUE err_info = rb_errinfo();
+    VALUE str = rb_attr_get(err_info, idMesg);
+    va_list args;
+
+    if (RSTRING_LEN(str)) rb_str_cat2(str, "\n");
+    if (file) {
+	rb_str_cat2(str, file);
+	if (line) rb_str_catf(str, ":%d", line);
+	rb_str_cat2(str, ": ");
+    }
+    va_start(args, fmt);
+    rb_str_vcatf(str, fmt, args);
+    va_end(args);
+}
+
+NOINLINE(static compile_error_func prepare_compile_error(rb_iseq_t *iseq));
+
+static compile_error_func
+prepare_compile_error(rb_iseq_t *iseq)
+{
+    VALUE err_info = ISEQ_COMPILE_DATA(iseq)->err_info;
+    if (compile_debug) return rb_compile_bug;
+    if (NIL_P(err_info)) {
+	err_info = rb_exc_new_cstr(rb_eSyntaxError, "");
+	RB_OBJ_WRITE(iseq, &ISEQ_COMPILE_DATA(iseq)->err_info, err_info);
+    }
+    rb_set_errinfo(err_info);
+    return append_compile_error;
+}
+
+#define COMPILE_ERROR(strs) prepare_compile_error(iseq)strs
 
 #define ERROR_ARGS_AT(n) ruby_sourcefile, nd_line(n),
 #define ERROR_ARGS ERROR_ARGS_AT(node)
