@@ -1,3 +1,8 @@
+Fri Dec  4 18:57:57 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/iso_8859_4.c: Added missing lower/upper-case character
+	  pair (U+014A and U+014B, LATIN CAPITAL/SMALL LETTER ENG)
+
 Fri Dec  4 16:48:19 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_obj_as_string): fstring should not be infected.
