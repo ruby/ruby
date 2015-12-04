@@ -516,7 +516,7 @@ class TestGemResolver < Gem::TestCase
 
     dependency = e.conflict.dependency
 
-    assert_equal 'a', dependency.name
+    assert_includes %w(a b), dependency.name
     assert_equal req('>= 0'), dependency.requirement
 
     activated = e.conflict.activated
