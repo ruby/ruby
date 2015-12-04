@@ -1293,12 +1293,12 @@ struct RStruct {
 #define RB_FL_ANY(x,f) RB_FL_TEST((x),(f))
 #define RB_FL_ALL_RAW(x,f) (RB_FL_TEST_RAW((x),(f)) == (f))
 #define RB_FL_ALL(x,f) (RB_FL_TEST((x),(f)) == (f))
-#define RB_FL_SET_RAW(x,f) (RBASIC(x)->flags |= (f))
-#define RB_FL_SET(x,f) (RB_FL_ABLE(x) ? RB_FL_SET_RAW(x, f) : 0)
-#define RB_FL_UNSET_RAW(x,f) (RBASIC(x)->flags &= ~(f))
-#define RB_FL_UNSET(x,f) (RB_FL_ABLE(x) ? RB_FL_UNSET_RAW(x, f) : 0)
-#define RB_FL_REVERSE_RAW(x,f) (RBASIC(x)->flags ^= (f))
-#define RB_FL_REVERSE(x,f) (RB_FL_ABLE(x) ? RB_FL_REVERSE_RAW(x, f) : 0)
+#define RB_FL_SET_RAW(x,f) (void)(RBASIC(x)->flags |= (f))
+#define RB_FL_SET(x,f) (RB_FL_ABLE(x) ? RB_FL_SET_RAW(x, f) : (void)0)
+#define RB_FL_UNSET_RAW(x,f) (void)(RBASIC(x)->flags &= ~(f))
+#define RB_FL_UNSET(x,f) (RB_FL_ABLE(x) ? RB_FL_UNSET_RAW(x, f) : (void)0)
+#define RB_FL_REVERSE_RAW(x,f) (void)(RBASIC(x)->flags ^= (f))
+#define RB_FL_REVERSE(x,f) (RB_FL_ABLE(x) ? RB_FL_REVERSE_RAW(x, f) : (void)0)
 
 #define RB_OBJ_TAINTABLE(x) (RB_FL_ABLE(x) && RB_BUILTIN_TYPE(x) != RUBY_T_BIGNUM && RB_BUILTIN_TYPE(x) != RUBY_T_FLOAT)
 #define RB_OBJ_TAINTED_RAW(x) RB_FL_TEST_RAW(x, RUBY_FL_TAINT)
@@ -1310,11 +1310,11 @@ struct RStruct {
 #define RB_OBJ_INFECT_RAW(x,s) RB_FL_SET_RAW(x, RB_OBJ_TAINTED_RAW(s))
 #define RB_OBJ_INFECT(x,s) ( \
     (RB_OBJ_TAINTABLE(x) && RB_FL_ABLE(s)) ? \
-    RB_OBJ_INFECT_RAW(x, s) : 0)
+    RB_OBJ_INFECT_RAW(x, s) : (void)0)
 
 #define RB_OBJ_FROZEN_RAW(x) (RBASIC(x)->flags&RUBY_FL_FREEZE)
 #define RB_OBJ_FROZEN(x) (!RB_FL_ABLE(x) || RB_OBJ_FROZEN_RAW(x))
-#define RB_OBJ_FREEZE_RAW(x) (RBASIC(x)->flags |= RUBY_FL_FREEZE)
+#define RB_OBJ_FREEZE_RAW(x) (void)(RBASIC(x)->flags |= RUBY_FL_FREEZE)
 #define RB_OBJ_FREEZE(x) rb_obj_freeze_inline((VALUE)x)
 
 #define FL_ABLE(x) RB_FL_ABLE(x)
