@@ -923,7 +923,7 @@ nurat_div(VALUE self, VALUE other)
 	}
     }
     else if (RB_TYPE_P(other, T_FLOAT))
-	return rb_funcall(f_to_f(self), '/', 1, other);
+	return DBL2NUM(RFLOAT_VALUE(nurat_to_f(self)) / RFLOAT_VALUE(other));
     else if (RB_TYPE_P(other, T_RATIONAL)) {
 	if (f_zero_p(other))
 	    rb_raise_zerodiv();
