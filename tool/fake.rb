@@ -46,7 +46,7 @@ prehook = proc do |extmk|
   end
   join = proc {|*args| File.join(*args).sub!(/\A(?:\.\/)*/, '')}
   $topdir ||= builddir
-  $top_srcdir ||= join[$topdir, srcdir]
+  $top_srcdir ||= File.realpath(srcdir, $topdir)
   $extout = '$(topdir)/.ext'
   $extout_prefix = '$(extout)$(target_prefix)/'
   config = RbConfig::CONFIG
