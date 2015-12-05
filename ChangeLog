@@ -1,3 +1,8 @@
+Sat Dec  5 09:23:34 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* random.c (fill_random_seed): fix the size to be filled, not the
+	  size of element, but the whole size of array.
+
 Sat Dec  5 06:03:54 2015  Eric Wong  <e@80x24.org>
 
 	* vm.c (ruby_vm_verbose_ptr): make static
