@@ -413,6 +413,16 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	F_ID(nd_mid, "method id");
 	break;
 
+      case NODE_QCALL:
+	ANN("safe method invocation");
+	ANN("format: [nd_recv]&.[nd_mid]([nd_args])");
+	ANN("example: obj&.foo(1)");
+	F_ID(nd_mid, "method id");
+	F_NODE(nd_recv, "receiver");
+	LAST_NODE;
+	F_NODE(nd_args, "arguments");
+	break;
+
       case NODE_SUPER:
 	ANN("super invocation");
 	ANN("format: super [nd_args]");
