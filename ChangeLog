@@ -1,3 +1,10 @@
+Sat Dec  5 17:48:25 2015  Lars Kanis  <lars@greiz-reinsdorf.de>
+
+	* tool/fake.rb: Fix cross build when srcdir is an absolute path.
+
+	* Makefile.in: PREP dependency is needed when cross build too, not
+	  "-r$(arch)-fake" to be  used before created.  [Fix GH-1125]
+
 Sat Dec  5 17:26:24 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (env_str_new, env_path_str_new): make default string
