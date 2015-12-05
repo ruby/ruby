@@ -2875,7 +2875,7 @@ extern char **environ;
 static VALUE
 env_str_transcode(VALUE str, rb_encoding *enc)
 {
-    return rb_str_conv_enc_opts(str, rb_utf8_encoding(), enc,
+    return rb_str_conv_enc_opts(str, NULL, enc,
 				ECONV_INVALID_REPLACE | ECONV_UNDEF_REPLACE, Qnil);
 }
 #endif
@@ -2884,7 +2884,7 @@ static VALUE
 env_str_new(const char *ptr, long len)
 {
 #ifdef _WIN32
-    VALUE str = env_str_transcode(rb_str_new(ptr, len), rb_locale_encoding());
+    VALUE str = env_str_transcode(rb_utf8_str_new(ptr, len), rb_locale_encoding());
 #else
     VALUE str = rb_locale_str_new(ptr, len);
 #endif
@@ -2897,7 +2897,7 @@ static VALUE
 env_path_str_new(const char *ptr)
 {
 #ifdef _WIN32
-    VALUE str = env_str_transcode(rb_str_new_cstr(ptr), rb_filesystem_encoding());
+    VALUE str = env_str_transcode(rb_utf8_str_new_cstr(ptr), rb_filesystem_encoding());
 #else
     VALUE str = rb_filesystem_str_new_cstr(ptr);
 #endif
@@ -2914,14 +2914,28 @@ env_str_new2(const char *ptr)
 }
 
 static void *
-get_env_cstr(VALUE str, const char *name)
+get_env_cstr(
+#ifdef _WIN32
+    volatile VALUE *pstr,
+#else
+    VALUE str,
+#endif
+    const char *name)
 {
+#ifdef _WIN32
+    VALUE str = *pstr;
+#endif
     char *var;
     rb_encoding *enc = rb_enc_get(str);
     if (!rb_enc_asciicompat(enc)) {
 	rb_raise(rb_eArgError, "bad environment variable %s: ASCII incompatible encoding: %s",
 		 name, rb_enc_name(enc));
     }
+#ifdef _WIN32
+    if (!rb_enc_str_asciionly_p(str)) {
+	*pstr = str = rb_str_conv_enc(str, NULL, rb_utf8_encoding());
+    }
+#endif
     var = RSTRING_PTR(str);
     if (memchr(var, '\0', RSTRING_LEN(str))) {
 	rb_raise(rb_eArgError, "bad environment variable %s: contains null byte", name);
@@ -2929,8 +2943,13 @@ get_env_cstr(VALUE str, const char *name)
     return var;
 }
 
+#ifdef _WIN32
+#define get_env_ptr(var, val) \
+    (var = get_env_cstr(&(val), #var))
+#else
 #define get_env_ptr(var, val) \
     (var = get_env_cstr(val, #var))
+#endif
 
 static inline const char *
 env_name(volatile VALUE *s)
@@ -3024,7 +3043,7 @@ rb_f_getenv(VALUE obj, VALUE name)
 static VALUE
 env_fetch(int argc, VALUE *argv)
 {
-    VALUE key;
+    VALUE key, name;
     long block_given;
     const char *nam, *env;
 
@@ -3034,7 +3053,8 @@ env_fetch(int argc, VALUE *argv)
     if (block_given && argc == 2) {
 	rb_warn("block supersedes default value argument");
     }
-    nam = env_name(key);
+    name = key;
+    nam = env_name(name);
     env = getenv(nam);
     if (!env) {
 	if (block_given) return rb_yield(key);
@@ -3102,10 +3122,10 @@ envix(const char *nam)
 
 #if defined(_WIN32)
 static size_t
-getenvsize(const char* p)
+getenvsize(const WCHAR* p)
 {
-    const char* porg = p;
-    while (*p++) p += strlen(p) + 1;
+    const WCHAR* porg = p;
+    while (*p++) p += lstrlenW(p) + 1;
     return p - porg + 1;
 }
 static size_t
@@ -3140,27 +3160,52 @@ void
 ruby_setenv(const char *name, const char *value)
 {
 #if defined(_WIN32)
+# if defined(MINGW_HAS_SECURE_API) || RUBY_MSVCRT_VERSION >= 80
+#   define HAVE__WPUTENV_S 1
+# endif
     VALUE buf;
+    WCHAR *wname;
+    WCHAR *wvalue = 0;
     int failed = 0;
+    int len;
     check_envname(name);
+    len = MultiByteToWideChar(CP_UTF8, 0, name, -1, NULL, 0);
     if (value) {
-	char* p = GetEnvironmentStringsA();
+	WCHAR* p = GetEnvironmentStringsW();
 	size_t n;
+	int len2;
 	if (!p) goto fail; /* never happen */
-	n = strlen(name) + 2 + strlen(value) + getenvsize(p);
-	FreeEnvironmentStringsA(p);
+	n = lstrlen(name) + 2 + strlen(value) + getenvsize(p);
+	FreeEnvironmentStringsW(p);
 	if (n >= getenvblocksize()) {
 	    goto fail;  /* 2 for '=' & '\0' */
 	}
-	buf = rb_sprintf("%s=%s", name, value);
+	len2 = MultiByteToWideChar(CP_UTF8, 0, value, -1, NULL, 0);
+	wname = ALLOCV_N(WCHAR, buf, len + len2);
+	wvalue = wname + len;
+	MultiByteToWideChar(CP_UTF8, 0, name, -1, wname, len);
+	MultiByteToWideChar(CP_UTF8, 0, value, -1, wvalue, len2);
+#ifndef HAVE__WPUTENV_S
+	wname[len-1] = L'=';
+#endif
     }
     else {
-	buf = rb_sprintf("%s=", name);
+	wname = ALLOCV_N(WCHAR, buf, len + 1);
+	MultiByteToWideChar(CP_UTF8, 0, name, -1, wname, len);
+	wvalue = wname + len;
+	*wvalue = L'\0';
+#ifndef HAVE__WPUTENV_S
+	wname[len-1] = L'=';
+#endif
     }
-    failed = putenv(RSTRING_PTR(buf));
+#ifndef HAVE__WPUTENV_S
+    failed = _wputenv(wname);
+#else
+    failed = _wputenv_s(wname, wvalue);
+#endif
+    ALLOCV_END(buf);
     /* even if putenv() failed, clean up and try to delete the
      * variable from the system area. */
-    rb_str_resize(buf, 0);
     if (!value || !*value) {
 	/* putenv() doesn't handle empty value */
 	if (!SetEnvironmentVariable(name, value) &&
@@ -3797,8 +3842,9 @@ static VALUE
 env_assoc(VALUE env, VALUE key)
 {
     const char *s, *e;
+    VALUE name = key;
 
-    s = env_name(key);
+    s = env_name(name);
     e = getenv(s);
     if (e) return rb_assoc_new(key, rb_tainted_str_new2(e));
     return Qnil;

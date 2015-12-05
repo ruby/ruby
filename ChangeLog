@@ -1,3 +1,13 @@
+Sat Dec  5 17:26:24 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (env_str_new, env_path_str_new): make default string
+	  UTF-8 for the case conversion is not possible.  [Bug #8822]
+
+	* hash.c (get_env_cstr): convert non-ASCII string to UTF-8 string.
+
+	* hash.c (ruby_setenv): use wide char version to put environment
+	  variable to deal with non-ASCII value.
+
 Sat Dec  5 09:56:50 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby_atomic.h (ATOMIC_CAS): old value to be swapped should be
