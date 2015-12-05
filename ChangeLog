@@ -1,3 +1,13 @@
+Sun Dec  6 08:39:05 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ext/json/json.gemspec: bump version to json 1.8.3. CRuby already contained
+	  upstream changes.
+
+	  https://github.com/ruby/ruby/commit/4d059bf9f5f10f3d3088de49fc87e5555db7770d
+	  https://github.com/flori/json/commit/d4c99de78905d96c3f301f48b2c789943bb3f098
+
+	* ext/json/lib/json/version.rb: ditto.
+
 Sat Dec  5 17:48:25 2015  Lars Kanis  <lars@greiz-reinsdorf.de>
 
 	* tool/fake.rb: Fix cross build when srcdir is an absolute path.
