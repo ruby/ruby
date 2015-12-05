@@ -1,4 +1,8 @@
-Sat Dec  5 09:25:41 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Dec  5 09:56:50 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby_atomic.h (ATOMIC_CAS): old value to be swapped should be
+	  same as the destination.  immediate value may need type
+	  promotion.
 
 	* ruby_atomic.h (ATOMIC_SIZE_CAS): fix the argument order of
 	  InterlockedCompareExchange64.  new value and then old value is

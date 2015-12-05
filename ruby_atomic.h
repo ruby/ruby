@@ -10,7 +10,7 @@ typedef unsigned int rb_atomic_t;
 # define ATOMIC_OR(var, val) __atomic_fetch_or(&(var), (val), __ATOMIC_SEQ_CST)
 # define ATOMIC_EXCHANGE(var, val) __atomic_exchange_n(&(var), (val), __ATOMIC_SEQ_CST)
 # define ATOMIC_CAS(var, oldval, newval) \
-({ __typeof__(oldval) oldvaldup = (oldval); /* oldval should not be modified */ \
+({ __typeof__(var) oldvaldup = (oldval); /* oldval should not be modified */ \
    __atomic_compare_exchange_n(&(var), &oldvaldup, (newval), 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST); \
    oldvaldup; })
 
