@@ -1,3 +1,9 @@
+Sat Dec  5 09:25:41 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby_atomic.h (ATOMIC_SIZE_CAS): fix the argument order of
+	  InterlockedCompareExchange64.  new value and then old value is
+	  the last.
+
 Sat Dec  5 09:23:34 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* random.c (fill_random_seed): fix the size to be filled, not the
