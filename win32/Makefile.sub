@@ -1061,9 +1061,7 @@ clean-enc distclean-enc realclean-enc:
 	@-$(MAKE) -f $(ENC_MK) $(MFLAGS) V=$(V) $(@:-enc=)
 !endif
 
-!if "$(CROSS_COMPILING)" == "no"
 $(RBCONFIG): $(PREP)
-!endif
 
 $(RCFILES): $(RBCONFIG) $(srcdir)/revision.h $(srcdir)/win32/resource.rb
 		@$(MINIRUBY) $(srcdir)/win32/resource.rb \
