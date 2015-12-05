@@ -490,7 +490,11 @@ EOT
             if 1 < ary.length
               ary[0...-1] = ary[0...-1].map {|str| str.sub(/(?<!\.)\z/, '.') }
             end
-            ary.join("\n")
+            begin
+              ary.join("\n")
+            rescue Encoding::CompatibilityError
+              ary.map(&:b).join("\n")
+            end
           end
         else
           super
