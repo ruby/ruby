@@ -109,7 +109,12 @@ class TestFileUtils < Test::Unit::TestCase
         false
       end
     ensure
-      Dir.rmdir tmproot
+      begin
+        Dir.rmdir tmproot
+      rescue
+        STDERR.puts $!.inspect
+        STDERR.puts Dir.entries(tmproot).inspect
+      end
     end
   end
   include m
