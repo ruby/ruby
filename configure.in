@@ -1753,7 +1753,7 @@ RUBY_FUNC_ATTRIBUTE(deprecated("by "@%:@n), DEPRECATED_BY(n,x), rb_cv_func_depre
 RUBY_TYPE_ATTRIBUTE(deprecated mesg, DEPRECATED_TYPE(mesg,x), rb_cv_type_deprecated)
 RUBY_FUNC_ATTRIBUTE(noinline, NOINLINE)
 RUBY_FUNC_ATTRIBUTE(weak, WEAK, rb_cv_func_weak)
-if test "$rb_cv_func_weak" != x; then
+if test x"$rb_cv_func_weak" != x; then
    AC_DEFINE(HAVE_FUNC_WEAK)
 fi
 
