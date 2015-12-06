@@ -193,7 +193,7 @@ Wed Dec  2 16:27:19 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  class.  the loader function is called with the class itself,
 	  instead of an allocated object, and the loaded data.
 
-	* marshal.c (compat_allocator_table): intialize
+	* marshal.c (compat_allocator_table): initialize
 	  compat_allocator_tbl on demand.
 
 	* object.c (rb_undefined_alloc): extract from rb_obj_alloc.
