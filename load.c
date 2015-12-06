@@ -1099,7 +1099,7 @@ rb_mod_autoload(VALUE mod, VALUE sym, VALUE file)
     ID id = rb_to_id(sym);
 
     FilePathValue(file);
-    rb_autoload(mod, id, RSTRING_PTR(file));
+    rb_autoload_str(mod, id, file);
     return Qnil;
 }
 

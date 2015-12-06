@@ -1916,8 +1916,17 @@ static const rb_data_type_t autoload_data_i_type = {
 void
 rb_autoload(VALUE mod, ID id, const char *file)
 {
+    if (!file || !*file) {
+	rb_raise(rb_eArgError, "empty file name");
+    }
+    rb_autoload_str(mod, id, rb_fstring_cstr(file));
+}
+
+void
+rb_autoload_str(VALUE mod, ID id, VALUE file)
+{
     st_data_t av;
-    VALUE ad, fn;
+    VALUE ad;
     struct st_table *tbl;
     struct autoload_data_i *ele;
     rb_const_entry_t *ce;
@@ -1926,7 +1935,9 @@ rb_autoload(VALUE mod, ID id, const char *file)
 	rb_raise(rb_eNameError, "autoload must be constant name: %"PRIsVALUE"",
 		 QUOTE_ID(id));
     }
-    if (!file || !*file) {
+
+    Check_Type(file, T_STRING);
+    if (!RSTRING_LEN(file)) {
 	rb_raise(rb_eArgError, "empty file name");
     }
 
@@ -1947,12 +1958,13 @@ rb_autoload(VALUE mod, ID id, const char *file)
 	RB_OBJ_WRITTEN(mod, Qnil, av);
 	DATA_PTR(av) = tbl = st_init_numtable();
     }
-    fn = rb_str_new2(file);
-    FL_UNSET(fn, FL_TAINT);
-    OBJ_FREEZE(fn);
 
     ad = TypedData_Make_Struct(0, struct autoload_data_i, &autoload_data_i_type, ele);
-    ele->feature = fn;
+    if (OBJ_TAINTED(file)) {
+	file = rb_str_dup(file);
+	FL_UNSET(file, FL_TAINT);
+    }
+    ele->feature = rb_fstring(file);
     ele->safe_level = rb_safe_level();
     ele->value = Qundef;
     ele->state = 0;

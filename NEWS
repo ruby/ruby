@@ -241,6 +241,8 @@ with all sufficient information, see the ChangeLog file.
 * rb_time_timespec_new() is added to create a time object with epoch,
   nanosecond, and UTC/localtime/time offset arguments.  [Feature #11558]
 
+* rb_autoload() deprecated, use rb_funcall() instead.  [Feature #11664]
+
 === Build system updates
 
 === Implementation changes

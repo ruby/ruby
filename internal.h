@@ -1205,6 +1205,7 @@ size_t rb_generic_ivar_memsize(VALUE);
 VALUE rb_search_class_path(VALUE);
 VALUE rb_attr_delete(VALUE, ID);
 VALUE rb_ivar_lookup(VALUE obj, ID id, VALUE undef);
+void rb_autoload_str(VALUE mod, ID id, VALUE file);
 
 /* version.c */
 extern const char ruby_engine[];
