@@ -1,3 +1,8 @@
+Sun Dec  6 15:25:06 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/io/console/console.c (console_getpass): add IO#getpass
+	  method.
+
 Sun Dec  6 08:39:05 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* ext/json/json.gemspec: bump version to json 1.8.3. CRuby already contained
