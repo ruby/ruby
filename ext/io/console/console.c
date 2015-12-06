@@ -857,14 +857,6 @@ getpass_call(VALUE io)
     return ttymode(io, rb_io_gets, set_noecho, NULL);
 }
 
-static VALUE
-write_io(VALUE io)
-{
-    VALUE wio = rb_io_get_write_io(io);
-    if (wio == io && io == rb_stdin) wio = rb_stdout;
-    return wio;
-}
-
 static void
 prompt(int argc, VALUE *argv, VALUE io)
 {
@@ -900,7 +892,8 @@ console_getpass(int argc, VALUE *argv, VALUE io)
     VALUE str, wio;
 
     rb_check_arity(argc, 0, 1);
-    wio = write_io(io);
+    wio = rb_io_get_write_io(io);
+    if (wio == io && io == rb_stdin) wio = rb_stderr;
     prompt(argc, argv, wio);
     str = rb_ensure(getpass_call, io, puts_call, wio);
     return str_chomp(str);
