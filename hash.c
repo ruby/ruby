@@ -3043,7 +3043,7 @@ rb_f_getenv(VALUE obj, VALUE name)
 static VALUE
 env_fetch(int argc, VALUE *argv)
 {
-    VALUE key, name;
+    VALUE key;
     long block_given;
     const char *nam, *env;
 
@@ -3053,8 +3053,7 @@ env_fetch(int argc, VALUE *argv)
     if (block_given && argc == 2) {
 	rb_warn("block supersedes default value argument");
     }
-    name = key;
-    nam = env_name(name);
+    nam = env_name(key);
     env = getenv(nam);
     if (!env) {
 	if (block_given) return rb_yield(key);
@@ -3842,9 +3841,8 @@ static VALUE
 env_assoc(VALUE env, VALUE key)
 {
     const char *s, *e;
-    VALUE name = key;
 
-    s = env_name(name);
+    s = env_name(key);
     e = getenv(s);
     if (e) return rb_assoc_new(key, rb_tainted_str_new2(e));
     return Qnil;
