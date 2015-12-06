@@ -1,3 +1,12 @@
+Sun Dec  6 19:52:31 2015  Eric Wong  <e@80x24.org>
+
+	* include/ruby/intern.h (rb_autoload): deprecate
+	* internal.h (rb_autoload_str): declare
+	* load.c (rb_mod_autoload): use rb_autoload_str
+	* variable.c (rb_autoload): become compatibility wrapper
+	  (rb_autoload_str): hoisted out from old rb_autoload
+	  [ruby-core:71369] [Feature #11664]
+
 Sun Dec  6 19:02:55 2015  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* configure.in: add missing x.
