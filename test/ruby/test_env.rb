@@ -485,7 +485,7 @@ class TestEnv < Test::Unit::TestCase
 
     if Encoding.find("locale") == Encoding::UTF_8
       def test_utf8
-        text = "testing åáâäãāあ"
+        text = "testing \u{e5 e1 e2 e4 e3 101 3042}"
         test = ENV["test"]
         ENV["test"] = text
         assert_equal text, ENV["test"]
