@@ -189,9 +189,10 @@ class TestIO_Console < Test::Unit::TestCase
       }
       assert_equal("asdf", m.getpass("> "))
       assert_equal("\n", s.readpartial(2))
+      th.join
     }
   ensure
-    th.join
+    th.join rescue nil
   end
 
   def test_iflush
