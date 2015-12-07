@@ -1,3 +1,8 @@
+Mon Dec  7 23:06:16 2015  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* prelude.rb (IO#read_nonblock): [DOC] add missing options to
+	  call-seq.  [ruby-core:71627] [Bug #11730]
+
 Mon Dec  7 15:50:50 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* .gitignore: added cygwin*.def for Cygwin
