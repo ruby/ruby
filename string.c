@@ -2227,6 +2227,46 @@ rb_str_freeze(VALUE str)
     return rb_obj_freeze(str);
 }
 
+
+/*
+ * call-seq:
+ *   +str  -> str (mutable)
+ *
+ * If the string is frozen, then return duplicated mutable string.
+ *
+ * If the string is not frozen, then return the string itself.
+ */
+static VALUE
+str_uplus(VALUE str)
+{
+    if (OBJ_FROZEN(str)) {
+	return rb_str_dup(str);
+    }
+    else {
+	return str;
+    }
+}
+
+/*
+ * call-seq:
+ *   -str  -> str (frozen)
+ *
+ * If the string is frozen, then return the string itself.
+ *
+ * If the string is not frozen, then duplicate the string
+ * freeze it and return it.
+ */
+static VALUE
+str_uminus(VALUE str)
+{
+    if (OBJ_FROZEN(str)) {
+	return str;
+    }
+    else {
+	return rb_str_freeze(rb_str_dup(str));
+    }
+}
+
 RUBY_ALIAS_FUNCTION(rb_str_dup_frozen(VALUE str), rb_str_new_frozen, (str))
 #define rb_str_dup_frozen rb_str_new_frozen
 
@@ -9295,6 +9335,8 @@ Init_String(void)
     rb_define_method(rb_cString, "scrub", str_scrub, -1);
     rb_define_method(rb_cString, "scrub!", str_scrub_bang, -1);
     rb_define_method(rb_cString, "freeze", rb_str_freeze, 0);
+    rb_define_method(rb_cString, "+@", str_uplus, 0);
+    rb_define_method(rb_cString, "-@", str_uminus, 0);
 
     rb_define_method(rb_cString, "to_i", rb_str_to_i, -1);
     rb_define_method(rb_cString, "to_f", rb_str_to_f, 0);

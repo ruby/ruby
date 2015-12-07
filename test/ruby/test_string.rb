@@ -2252,6 +2252,24 @@ class TestString < Test::Unit::TestCase
     end;
   end if [0].pack("l!").bytesize < [nil].pack("p").bytesize
   # enable only when string size range is smaller than memory space
+
+  def test_uplus_minus
+    str = "foo"
+    assert_equal(false, str.frozen?)
+    assert_equal(false, (+str).frozen?)
+    assert_equal(true,  (-str).frozen?)
+
+    assert_equal(str.object_id, (+str).object_id)
+    assert_not_equal(str.object_id, (-str).object_id)
+
+    str = "bar".freeze
+    assert_equal(true,  str.frozen?)
+    assert_equal(false, (+str).frozen?)
+    assert_equal(true,  (-str).frozen?)
+
+    assert_not_equal(str.object_id, (+str).object_id)
+    assert_equal(str.object_id, (-str).object_id)
+  end
 end
 
 class TestString2 < TestString
