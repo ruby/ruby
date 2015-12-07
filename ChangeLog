@@ -5,7 +5,7 @@ Mon Dec  7 23:06:16 2015  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 Mon Dec  7 15:50:50 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
-	* .gitignore: added cygwin*.def for Cygwin
+	* .gitignore: added cygruby*.def for Cygwin
 
 Sun Dec  6 19:52:31 2015  Eric Wong  <e@80x24.org>
 
