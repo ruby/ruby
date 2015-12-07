@@ -28,6 +28,7 @@
 .svn
 Makefile
 Makefile.old
+cygruby*.def
 extconf.h
 y.output
 y.tab.c
