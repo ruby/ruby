@@ -37,6 +37,26 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
     end
   end
 
+  def test_fd_passing_class_mode
+    UNIXSocket.pair do |s1, s2|
+      s1.send_io(s1.fileno)
+      r = s2.recv_io(nil)
+      assert_kind_of Integer, r, 'recv_io with klass=nil returns integer FD'
+      assert_not_equal s1.fileno, r
+      r = IO.for_fd(r)
+      assert_equal s1.stat.ino, r.stat.ino
+      r.close
+
+      s1.send_io(s1)
+      # klass = UNIXSocket FIXME: [ruby-core:71860] [Bug #11778]
+      klass = IO
+      r = s2.recv_io(klass, 'r+')
+      assert_instance_of klass, r, 'recv_io with proper klass'
+      assert_not_equal s1.fileno, r.fileno
+      r.close
+    end
+  end
+
   def test_fd_passing_n
     io_ary = []
     return if !defined?(Socket::SCM_RIGHTS)

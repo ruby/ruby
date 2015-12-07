@@ -1,3 +1,9 @@
+Tue Dec  8 03:30:34 2015  Eric Wong  <e@80x24.org>
+
+	* ext/socket/unixsocket.c (unix_send_io): document args
+	  (unix_recv_io): ditto
+	* test/socket/test_unix.rb (test_fd_passing_class_mode): added
+
 Tue Dec 08 02:21:35 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* iseq.c (iseq_translate): at the end of constructing an iseq,
