@@ -1,3 +1,9 @@
+Tue Dec  8 08:56:16 2015  Eric Wong  <e@80x24.org>
+
+	* insns.def (opt_case_dispatch): check Float#=== redefinition
+	* test/ruby/test_optimization.rb (test_opt_case_dispatch): new
+	  [ruby-core:71920] [Bug #11784]
+
 Tue Dec  8 03:56:05 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* test/lib/iseq_loader_checker.rb: add iseq dumper/loader checker.
