@@ -8,7 +8,17 @@ class TestPsych < Psych::TestCase
     Psych.domain_types.clear
   end
 
-  def test_line_width
+  def test_line_width_invalid
+    assert_raises(ArgumentError) { Psych.dump('x', { :line_width => -2 }) }
+  end
+
+  def test_line_width_no_limit
+    data = { 'a' => 'a b' * 50}
+    expected = "---\na: #{'a b' * 50}\n"
+    assert_equal(expected, Psych.dump(data, { :line_width => -1 }))
+  end
+
+  def test_line_width_limit
     yml = Psych.dump('123456 7', { :line_width => 5 })
     assert_match(/^\s*7/, yml)
   end

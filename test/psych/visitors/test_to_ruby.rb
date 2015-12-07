@@ -166,16 +166,14 @@ description:
         assert_equal Complex(1,2), mapping.to_ruby
       end
 
-      if RUBY_VERSION >= '1.9'
-        def test_complex_string
-          node = Nodes::Scalar.new '3+4i', nil, "!ruby/object:Complex"
-          assert_equal Complex(3, 4), node.to_ruby
-        end
+      def test_complex_string
+        node = Nodes::Scalar.new '3+4i', nil, "!ruby/object:Complex"
+        assert_equal Complex(3, 4), node.to_ruby
+      end
 
-        def test_rational_string
-          node = Nodes::Scalar.new '1/2', nil, "!ruby/object:Rational"
-          assert_equal Rational(1, 2), node.to_ruby
-        end
+      def test_rational_string
+        node = Nodes::Scalar.new '1/2', nil, "!ruby/object:Rational"
+        assert_equal Rational(1, 2), node.to_ruby
       end
 
       def test_range_string
