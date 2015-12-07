@@ -1,3 +1,9 @@
+Tue Dec  8 03:44:51 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.c (iseq_load): disable peephole optimization option
+	  because apply it multiple times change the sequence.
+	  (iseq != peephole_optimize(load(iseq.to_a)))
+
 Tue Dec  8 03:43:21 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (rb_iseq_build_from_ary): do not allocate table

@@ -565,6 +565,7 @@ iseq_load(VALUE data, const rb_iseq_t *parent, VALUE opt)
     }
 
     make_compile_option(&option, opt);
+    option.peephole_optimization = FALSE; /* because peephole optimization can modify original iseq */
     prepare_iseq_build(iseq, name, path, absolute_path, first_lineno,
 		       parent, (enum iseq_type)iseq_type, &option);
 
