@@ -2252,6 +2252,24 @@ class TestString < Test::Unit::TestCase
     end;
   end if [0].pack("l!").bytesize < [nil].pack("p").bytesize
   # enable only when string size range is smaller than memory space
+
+  def test_string_squish
+    original = %{\u205f\u3000 A string surrounded by various unicode spaces,
+      with tabs(\t\t), newlines(\n\n), unicode nextlines(\u0085\u0085) and many spaces(  ). \u00a0\u2007}
+
+    expected = "A string surrounded by various unicode spaces, " +
+      "with tabs( ), newlines( ), unicode nextlines( ) and many spaces( )."
+
+    # Make sure squish returns what we expect:
+    assert_equal expected, original.squish
+    # But doesn't modify the original string:
+    assert_not_equal expected, original
+
+    # Make sure squish! returns what we expect:
+    assert_equal expected, original.squish!
+    # And changes the original string:
+    assert_equal expected, original
+  end
 end
 
 class TestString2 < TestString
