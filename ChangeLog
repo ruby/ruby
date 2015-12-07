@@ -1,3 +1,21 @@
+Tue Dec 08 02:21:35 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.c (iseq_translate): at the end of constructing an iseq,
+	  call RubyVM::InstructionSequence.translate(iseq) if this method
+	  is defined. If the return value is also an object of
+	  RubyVM::InstructionSequence, then use it instead of created one.
+
+	  For example, this method is useful to test iseq dumper/loader
+	  such as RubyVM::InstructionSequence#to_a and rb_iseq_load().
+
+	  Because this method is for such internal experimental usage,
+	  the interface is not matured. For example, this interface has
+	  no extensibility. Two or more translaters can not run
+	  simultaneously.
+
+	  So that we don't guarantee future compatibility of this method.
+	  Basically, do not use this method.
+
 Tue Dec  8 01:57:13 2015  Aaron Patterson <tenderlove@ruby-lang.org>
 
 	* ext/psych/*: update psych to 2.0.16
