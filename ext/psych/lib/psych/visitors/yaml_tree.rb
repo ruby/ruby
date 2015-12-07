@@ -70,6 +70,14 @@ module Psych
         @ss         = ss
         @options    = options
         @line_width = options[:line_width]
+        if @line_width && @line_width < 0
+          if @line_width == -1
+            # Treat -1 as unlimited line-width, same as libyaml does.
+            @line_width = nil
+          else
+            fail(ArgumentError, "Invalid line_width #{@line_width}, must be non-negative or -1 for unlimited.")
+          end
+        end
         @coders     = []
 
         @dispatch_cache = Hash.new do |h,klass|
@@ -510,27 +518,11 @@ module Psych
       def dump_list o
       end
 
-      # '%:z' was no defined until 1.9.3
-      if RUBY_VERSION < '1.9.3'
-        def format_time time
-          formatted = time.strftime("%Y-%m-%d %H:%M:%S.%9N")
-
-          if time.utc?
-            formatted += " Z"
-          else
-            zone = time.strftime('%z')
-            formatted += " #{zone[0,3]}:#{zone[3,5]}"
-          end
-
-          formatted
-        end
-      else
-        def format_time time
-          if time.utc?
-            time.strftime("%Y-%m-%d %H:%M:%S.%9N Z")
-          else
-            time.strftime("%Y-%m-%d %H:%M:%S.%9N %:z")
-          end
+      def format_time time
+        if time.utc?
+          time.strftime("%Y-%m-%d %H:%M:%S.%9N Z")
+        else
+          time.strftime("%Y-%m-%d %H:%M:%S.%9N %:z")
         end
       end
 

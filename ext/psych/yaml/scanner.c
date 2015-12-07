@@ -2053,7 +2053,7 @@ yaml_parser_scan_directive(yaml_parser_t *parser, yaml_token_t *token)
     else
     {
         yaml_parser_set_scanner_error(parser, "while scanning a directive",
-                start_mark, "found uknown directive name");
+                start_mark, "found unknown directive name");
         goto error;
     }
 
