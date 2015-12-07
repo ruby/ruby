@@ -6545,7 +6545,7 @@ rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc, VALUE locals, VALUE params,
 
     len = RARRAY_LENINT(locals);
     iseq->body->local_table_size = len;
-    iseq->body->local_table = tbl = (ID *)ALLOC_N(ID, iseq->body->local_table_size);
+    iseq->body->local_table = tbl = len > 0 ? (ID *)ALLOC_N(ID, iseq->body->local_table_size) : NULL;
     iseq->body->local_size = iseq->body->local_table_size + 1;
 
     for (i = 0; i < len; i++) {
