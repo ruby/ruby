@@ -89,9 +89,9 @@ class Gem::Requirement
   # specification, like <tt>">= 1.2"</tt>, or a simple version number,
   # like <tt>"1.2"</tt>.
   #
-  #     parse("> 1.0")                 # => [">", "1.0"]
-  #     parse("1.0")                   # => ["=", "1.0"]
-  #     parse(Gem::Version.new("1.0")) # => ["=,  "1.0"]
+  #     parse("> 1.0")                 # => [">", Gem::Version.new("1.0")]
+  #     parse("1.0")                   # => ["=", Gem::Version.new("1.0")]
+  #     parse(Gem::Version.new("1.0")) # => ["=,  Gem::Version.new("1.0")]
 
   def self.parse obj
     return ["=", obj] if Gem::Version === obj

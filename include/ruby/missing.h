@@ -18,7 +18,9 @@ extern "C" {
 #endif
 #endif
 
+#ifndef __STDC_WANT_LIB_EXT1__
 #define __STDC_WANT_LIB_EXT1__ 1
+#endif
 
 #include "ruby/config.h"
 #include <stddef.h>

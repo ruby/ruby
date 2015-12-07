@@ -244,7 +244,7 @@ class TestObject < Test::Unit::TestCase
       assert_equal(:foo, o.remove_instance_variable(:@foo),
                    "#{desc} iv removal returns original value")
       assert_not_send([o, :instance_variable_defined?, :@foo],
-                      "#{desc} iv removed succesfully")
+                      "#{desc} iv removed successfully")
       e = assert_raise(NameError, "#{desc} iv removal raises after removal") do
         o.remove_instance_variable(:@foo)
       end
@@ -755,6 +755,16 @@ class TestObject < Test::Unit::TestCase
       end
     EOS
     assert_match(/\bToS\u{3042}:/, x)
+
+    name = "X".freeze
+    x = Object.new.taint
+    class<<x;self;end.class_eval {define_method(:to_s) {name}}
+    assert_same(name, x.to_s)
+    assert_not_predicate(name, :tainted?)
+    assert_raise(RuntimeError) {name.taint}
+    assert_equal("X", [x].join(""))
+    assert_not_predicate(name, :tainted?)
+    assert_not_predicate(eval('"X".freeze'), :tainted?)
   end
 
   def test_inspect

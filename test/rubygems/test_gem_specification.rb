@@ -2678,6 +2678,21 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
     end
   end
 
+  def test_validate_prerelease_dependencies_with_prerelease_version
+    util_setup_validate
+
+    Dir.chdir @tempdir do
+      @a1.version = '1.0.0.beta.1'
+      @a1.add_runtime_dependency 'b', '~> 1.2.0.beta.1'
+
+      use_ui @ui do
+        @a1.validate
+      end
+
+      assert_equal '', @ui.error, 'warning'
+    end
+  end
+
   def test_validate_description
     util_setup_validate
 

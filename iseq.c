@@ -92,8 +92,6 @@ rb_iseq_free(const rb_iseq_t *iseq)
 	    ruby_xfree((void *)iseq->body->param.keyword);
 	}
 	compile_data_free(ISEQ_COMPILE_DATA(iseq));
-	ruby_xfree(iseq->variable_body->iseq);
-	ruby_xfree(iseq->variable_body);
 	ruby_xfree(iseq->body);
     }
     RUBY_FREE_LEAVE("iseq");
@@ -114,10 +112,6 @@ rb_iseq_mark(const rb_iseq_t *iseq)
 	rb_gc_mark(body->location.base_label);
 	rb_gc_mark(body->location.path);
 	RUBY_MARK_UNLESS_NULL(body->location.absolute_path);
-    }
-
-    if (iseq->variable_body) {
-	RUBY_MARK_UNLESS_NULL(iseq->variable_body->coverage);
     }
 
     if (ISEQ_COMPILE_DATA(iseq) != 0) {
@@ -148,19 +142,10 @@ static size_t
 iseq_memsize(const rb_iseq_t *iseq)
 {
     size_t size = 0; /* struct already counted as RVALUE size */
-    const struct rb_iseq_variable_body *variable_body;
-    const struct rb_iseq_constant_body *body;
+    const struct rb_iseq_constant_body *body = iseq->body;
     const struct iseq_compile_data *compile_data;
 
-    variable_body = iseq->variable_body;
-    body = iseq->body;
-
-    if (variable_body) {
-	size += sizeof(struct rb_iseq_variable_body);
-	if (variable_body->iseq && body) {
-	    size += body->iseq_size * sizeof(VALUE);
-	}
-    }
+    /* TODO: should we count original_iseq? */
 
     if (body) {
 	struct rb_call_info_with_kwarg *ci_kw_entries = (struct rb_call_info_with_kwarg *)&body->ci_entries[body->ci_size];
@@ -220,7 +205,6 @@ iseq_alloc(void)
 {
     rb_iseq_t *iseq = (rb_iseq_t *)rb_imemo_new(imemo_iseq, 0, 0, 0, 0);
     iseq->body = ZALLOC(struct rb_iseq_constant_body);
-    iseq->variable_body = ZALLOC(struct rb_iseq_variable_body);
     return iseq;
 }
 
@@ -269,11 +253,18 @@ set_relation(rb_iseq_t *iseq, const rb_iseq_t *piseq)
 void
 rb_iseq_add_mark_object(const rb_iseq_t *iseq, VALUE obj)
 {
-    if (!RTEST(iseq->body->mark_ary)) {
-	RB_OBJ_WRITE(iseq, &iseq->body->mark_ary, rb_ary_tmp_new(3));
-	RBASIC_CLEAR_CLASS(iseq->body->mark_ary);
-    }
-    rb_ary_push(iseq->body->mark_ary, obj);
+    /* TODO: check dedup */
+    rb_ary_push(ISEQ_MARK_ARY(iseq), obj);
+}
+
+static VALUE
+iseq_mark_ary_create(int flip_cnt)
+{
+    VALUE ary = rb_ary_tmp_new(3);
+    rb_ary_push(ary, Qnil);              /* ISEQ_MARK_ARY_COVERAGE */
+    rb_ary_push(ary, INT2FIX(flip_cnt)); /* ISEQ_MARK_ARY_FLIP_CNT */
+    rb_ary_push(ary, Qnil);              /* ISEQ_MARK_ARY_ORIGINAL_ISEQ */
+    return ary;
 }
 
 static VALUE
@@ -292,7 +283,7 @@ prepare_iseq_build(rb_iseq_t *iseq,
     if (iseq != iseq->body->local_iseq) {
 	RB_OBJ_WRITE(iseq, &iseq->body->location.base_label, iseq->body->local_iseq->body->location.label);
     }
-    RB_OBJ_WRITE(iseq, &iseq->body->mark_ary, 0);
+    RB_OBJ_WRITE(iseq, &iseq->body->mark_ary, iseq_mark_ary_create(0));
 
     ISEQ_COMPILE_DATA(iseq) = ZALLOC(struct iseq_compile_data);
     RB_OBJ_WRITE(iseq, &ISEQ_COMPILE_DATA(iseq)->err_info, Qnil);
@@ -311,13 +302,13 @@ prepare_iseq_build(rb_iseq_t *iseq,
     ISEQ_COMPILE_DATA(iseq)->option = option;
     ISEQ_COMPILE_DATA(iseq)->last_coverable_line = -1;
 
-    RB_OBJ_WRITE(iseq, &iseq->variable_body->coverage, Qfalse);
+    ISEQ_COVERAGE_SET(iseq, Qfalse);
 
     if (!GET_THREAD()->parse_in_eval) {
 	VALUE coverages = rb_get_coverages();
 	if (RTEST(coverages)) {
-	    RB_OBJ_WRITE(iseq, &iseq->variable_body->coverage, rb_hash_lookup(coverages, path));
-	    if (NIL_P(iseq->variable_body->coverage)) RB_OBJ_WRITE(iseq, &iseq->variable_body->coverage, Qfalse);
+	    ISEQ_COVERAGE_SET(iseq, rb_hash_lookup(coverages, path));
+	    if (NIL_P(ISEQ_COVERAGE(iseq))) ISEQ_COVERAGE_SET(iseq, Qfalse);
 	}
     }
 
@@ -697,6 +688,12 @@ rb_iseq_method_name(const rb_iseq_t *iseq)
     else {
 	return Qnil;
     }
+}
+
+VALUE
+rb_iseq_coverage(const rb_iseq_t *iseq)
+{
+    return ISEQ_COVERAGE(iseq);
 }
 
 /* define wrapper class methods (RubyVM::InstructionSequence) */

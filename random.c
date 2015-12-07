@@ -567,7 +567,7 @@ fill_random_seed(uint32_t seed[DEFAULT_SEED_CNT])
 
     memset(seed, 0, DEFAULT_SEED_LEN);
 
-    fill_random_bytes(seed, sizeof(*seed), TRUE);
+    fill_random_bytes(seed, DEFAULT_SEED_LEN, TRUE);
 
     gettimeofday(&tv, 0);
     seed[0] ^= tv.tv_usec;

@@ -482,5 +482,16 @@ class TestEnv < Test::Unit::TestCase
         500.times(&doit)
       end;
     end
+
+    if Encoding.find("locale") == Encoding::UTF_8
+      def test_utf8
+        text = "testing \u{e5 e1 e2 e4 e3 101 3042}"
+        test = ENV["test"]
+        ENV["test"] = text
+        assert_equal text, ENV["test"]
+      ensure
+        ENV["test"] = test
+      end
+    end
   end
 end

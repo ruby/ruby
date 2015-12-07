@@ -1107,16 +1107,19 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		    done += prec;
 		}
 		if ((flags & FWIDTH) && width > done) {
+		    int fill = ' ';
+		    long shifting = 0;
 		    if (!(flags&FMINUS)) {
-			long i, shifting = (flags&FZERO) ? done - prefix : done;
-			for (i = 1; i <= shifting; i++)
-			    buf[width - i] = buf[done - i];
+			shifting = done;
+			if (flags&FZERO) {
+			    shifting -= prefix;
+			    fill = '0';
+			}
 			blen -= shifting;
-			FILL((flags&FZERO) ? '0' : ' ', width - done);
-			blen += shifting;
-		    } else {
-			FILL(' ', width - done);
+			memmove(&buf[blen + width - done], &buf[blen], shifting);
 		    }
+		    FILL(fill, width - done);
+		    blen += shifting;
 		}
 		RB_GC_GUARD(val);
 		break;

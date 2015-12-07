@@ -23,7 +23,43 @@ rb_call_info_kw_arg_bytes(int keyword_len)
     return sizeof(struct rb_call_info_kw_arg) + sizeof(VALUE) * (keyword_len - 1);
 }
 
-#define ISEQ_COMPILE_DATA(iseq) (iseq)->compile_data_
+enum iseq_mark_ary_index {
+    ISEQ_MARK_ARY_COVERAGE      = 0,
+    ISEQ_MARK_ARY_FLIP_CNT      = 1,
+    ISEQ_MARK_ARY_ORIGINAL_ISEQ = 2,
+};
+
+#define ISEQ_MARK_ARY(iseq)           (iseq)->body->mark_ary
+
+#define ISEQ_COVERAGE(iseq)           RARRAY_AREF(ISEQ_MARK_ARY(iseq), ISEQ_MARK_ARY_COVERAGE)
+#define ISEQ_COVERAGE_SET(iseq, cov)  RARRAY_ASET(ISEQ_MARK_ARY(iseq), ISEQ_MARK_ARY_COVERAGE, cov)
+
+static inline int
+ISEQ_FLIP_CNT_INCREMENT(const rb_iseq_t *iseq)
+{
+    VALUE cntv = RARRAY_AREF(ISEQ_MARK_ARY(iseq), ISEQ_MARK_ARY_FLIP_CNT);
+    int cnt = FIX2INT(cntv);
+    RARRAY_ASET(ISEQ_MARK_ARY(iseq), ISEQ_MARK_ARY_FLIP_CNT, INT2FIX(cnt+1));
+    return cnt;
+}
+
+static inline VALUE *
+ISEQ_ORIGINAL_ISEQ(const rb_iseq_t *iseq)
+{
+    VALUE str = RARRAY_AREF(ISEQ_MARK_ARY(iseq), ISEQ_MARK_ARY_ORIGINAL_ISEQ);
+    if (RTEST(str)) return (VALUE *)RSTRING_PTR(str);
+    return NULL;
+}
+
+static inline VALUE *
+ISEQ_ORIGINAL_ISEQ_ALLOC(const rb_iseq_t *iseq, long size)
+{
+    VALUE str = rb_str_tmp_new(size * sizeof(VALUE));
+    RARRAY_ASET(ISEQ_MARK_ARY(iseq), ISEQ_MARK_ARY_ORIGINAL_ISEQ, str);
+    return (VALUE *)RSTRING_PTR(str);
+}
+
+#define ISEQ_COMPILE_DATA(iseq)       (iseq)->compile_data_
 
 RUBY_SYMBOL_EXPORT_BEGIN
 

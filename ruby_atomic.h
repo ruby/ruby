@@ -10,7 +10,7 @@ typedef unsigned int rb_atomic_t;
 # define ATOMIC_OR(var, val) __atomic_fetch_or(&(var), (val), __ATOMIC_SEQ_CST)
 # define ATOMIC_EXCHANGE(var, val) __atomic_exchange_n(&(var), (val), __ATOMIC_SEQ_CST)
 # define ATOMIC_CAS(var, oldval, newval) \
-({ __typeof__(oldval) oldvaldup = (oldval); /* oldval should not be modified */ \
+({ __typeof__(var) oldvaldup = (oldval); /* oldval should not be modified */ \
    __atomic_compare_exchange_n(&(var), &oldvaldup, (newval), 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST); \
    oldvaldup; })
 
@@ -81,7 +81,7 @@ rb_w32_atomic_cas(volatile rb_atomic_t *var, rb_atomic_t oldval, rb_atomic_t new
 #  define ATOMIC_SIZE_INC(var) InterlockedIncrement64(&(var))
 #  define ATOMIC_SIZE_DEC(var) InterlockedDecrement64(&(var))
 #  define ATOMIC_SIZE_EXCHANGE(var, val) InterlockedExchange64(&(var), (val))
-#  define ATOMIC_SIZE_CAS(var, oldval, val) InterlockedCompareExchange64(&(var), (oldval), (val))
+#  define ATOMIC_SIZE_CAS(var, oldval, newval) InterlockedCompareExchange64(&(var), (newval), (oldval))
 # else
 #  define ATOMIC_SIZE_ADD(var, val) InterlockedExchangeAdd((LONG *)&(var), (val))
 #  define ATOMIC_SIZE_SUB(var, val) InterlockedExchangeAdd((LONG *)&(var), -(LONG)(val))

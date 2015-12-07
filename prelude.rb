@@ -18,8 +18,8 @@ end
 class IO
 
   # call-seq:
-  #    ios.read_nonblock(maxlen)              -> string
-  #    ios.read_nonblock(maxlen, outbuf)      -> outbuf
+  #    ios.read_nonblock(maxlen [, options])              -> string
+  #    ios.read_nonblock(maxlen, outbuf [, options])      -> outbuf
   #
   # Reads at most <i>maxlen</i> bytes from <em>ios</em> using
   # the read(2) system call after O_NONBLOCK is set for
@@ -66,6 +66,10 @@ class IO
   #
   # Note that this method is identical to readpartial
   # except the non-blocking flag is set.
+  #
+  # By specifying `exception: false`, the options hash allows you to indicate
+  # that read_nonblock should not raise an IO::WaitReadable exception, but
+  # return the symbol :wait_readable instead.
   def read_nonblock(len, buf = nil, exception: true)
     __read_nonblock(len, buf, exception)
   end

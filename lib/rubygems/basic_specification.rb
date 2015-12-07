@@ -65,22 +65,17 @@ class Gem::BasicSpecification
   # Return true if this spec can require +file+.
 
   def contains_requirable_file? file
-    @contains_requirable_file ||= {}
-    @contains_requirable_file[file] ||=
-    begin
-      if @ignored then
-        return false
-      elsif missing_extensions? then
-        @ignored = true
+    if @ignored then
+      return false
+    elsif missing_extensions? then
+      @ignored = true
 
-        warn "Ignoring #{full_name} because its extensions are not built.  " +
-             "Try: gem pristine #{name} --version #{version}"
-        return false
-      end
+      warn "Ignoring #{full_name} because its extensions are not built.  " +
+        "Try: gem pristine #{name} --version #{version}"
+      return false
+    end
 
-      have_file? file, Gem.suffixes
-    end ? :yes : :no
-    @contains_requirable_file[file] == :yes
+    have_file? file, Gem.suffixes
   end
 
   def default_gem?

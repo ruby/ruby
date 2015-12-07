@@ -1067,6 +1067,7 @@ q.pop
     bug11756 = '[ruby-core:71774] [Bug #11756]'
     t = Thread.start {}
     assert_raise(ArgumentError, bug11756) {t.name = "foo\0bar"}
+    assert_raise(ArgumentError, bug11756) {t.name = "foo".encode(Encoding::UTF_32BE)}
   ensure
     t.kill
     t.join

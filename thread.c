@@ -2774,23 +2774,27 @@ rb_thread_getname(VALUE thread)
 static VALUE
 rb_thread_setname(VALUE thread, VALUE name)
 {
+#ifdef SET_ANOTHER_THREAD_NAME
     const char *s = "";
+#endif
     rb_thread_t *th;
     GetThreadPtr(thread, th);
     if (!NIL_P(name)) {
+	rb_encoding *enc;
 	StringValueCStr(name);
+	enc = rb_enc_get(name);
+	if (!rb_enc_asciicompat(enc)) {
+	    rb_raise(rb_eArgError, "ASCII incompatible encoding (%s)",
+		     rb_enc_name(enc));
+	}
 	name = rb_str_new_frozen(name);
+#ifdef SET_ANOTHER_THREAD_NAME
 	s = RSTRING_PTR(name);
+#endif
     }
     th->name = name;
-#if defined(HAVE_PTHREAD_SETNAME_NP)
-# if defined(__linux__)
-    pthread_setname_np(th->thread_id, s);
-# elif defined(__NetBSD__)
-    pthread_setname_np(th->thread_id, s, "%s");
-# endif
-#elif defined(HAVE_PTHREAD_SET_NAME_NP) /* FreeBSD */
-    pthread_set_name_np(th->thread_id, s);
+#if defined(SET_ANOTHER_THREAD_NAME)
+    SET_ANOTHER_THREAD_NAME(th->thread_id, s);
 #endif
     return name;
 }
@@ -4756,7 +4760,7 @@ rb_check_deadlock(rb_vm_t *vm)
 static void
 update_coverage(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klass)
 {
-    VALUE coverage = GET_THREAD()->cfp->iseq->variable_body->coverage;
+    VALUE coverage = rb_iseq_coverage(GET_THREAD()->cfp->iseq);
     if (coverage && RBASIC(coverage)->klass == 0) {
 	long line = rb_sourceline() - 1;
 	long count;
