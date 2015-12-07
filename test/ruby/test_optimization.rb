@@ -308,4 +308,45 @@ class TestRubyOptimization < Test::Unit::TestCase
       assert_equal(false, "block".freeze)
     end;
   end
+
+  def test_opt_case_dispatch
+    code = <<-EOF
+      case foo
+      when "foo" then :foo
+      when :sym then :sym
+      when 6 then :fix
+      when 0.1 then :float
+      when 0xffffffffffffffff then :big
+      else
+        :nomatch
+      end
+    EOF
+    check = {
+      'foo' => :foo,
+      :sym => :sym,
+      6 => :fix,
+      0.1 => :float,
+      0xffffffffffffffff => :big,
+    }
+    iseq = RubyVM::InstructionSequence.compile(code)
+    assert_match %r{\bopt_case_dispatch\b}, iseq.disasm
+    check.each do |foo, expect|
+      assert_equal expect, eval("foo = #{foo.inspect}\n#{code}")
+    end
+    assert_equal :nomatch, eval("foo = :blah\n#{code}")
+    check.each do |foo, _|
+      klass = foo.class.to_s
+      assert_separately([], <<-"end;") # do
+        class #{klass}
+          undef ===
+          def ===(*args)
+            false
+          end
+        end
+        foo = #{foo.inspect}
+        ret = #{code}
+        assert_equal :nomatch, ret, foo.inspect
+      end;
+    end
+  end
 end
