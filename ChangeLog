@@ -1,3 +1,8 @@
+Tue Dec  8 03:45:47 2015  Eric Wong  <e@80x24.org>
+
+	* doc/extension.rdoc: warn about kwargs performance in C
+	  [Feature #11339] [ci skip]
+
 Tue Dec  8 03:44:51 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* iseq.c (iseq_load): disable peephole optimization option
