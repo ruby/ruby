@@ -1,3 +1,7 @@
+Mon Dec  7 23:39:49 2015  Ben Miller  <bjmllr@gmail.com>
+
+	* parse.y: add heredoc <<~ syntax.  [Feature #9098]
+
 Mon Dec  7 23:06:16 2015  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* prelude.rb (IO#read_nonblock): [DOC] add missing options to

@@ -62,7 +62,35 @@ class Ripper
   class SexpBuilder < ::Ripper   #:nodoc:
     private
 
-    PARSER_EVENTS.each do |event|
+    def dedent_element(e, width)
+      if (n = dedent_string(e[1], width)) > 0
+        e[2][1] += n
+      end
+      e
+    end
+
+    def on_heredoc_dedent(val, width)
+      sub = proc do |cont|
+        cont.map! do |e|
+          if Array === e
+            case e[0]
+            when :@tstring_content
+              e = dedent_element(e, width)
+            when /_add\z/
+              e[1] = sub[e[1]]
+            end
+          elsif String === e
+            dedent_string(e, width)
+          end
+          e
+        end
+      end
+      sub[val]
+      val
+    end
+
+    events = private_instance_methods(false).grep(/\Aon_/) {$'.to_sym}
+    (PARSER_EVENTS - events).each do |event|
       module_eval(<<-End, __FILE__, __LINE__ + 1)
         def on_#{event}(*args)
           args.unshift :#{event}
@@ -82,6 +110,19 @@ class Ripper
 
   class SexpBuilderPP < SexpBuilder #:nodoc:
     private
+
+    def on_heredoc_dedent(val, width)
+      val.map! do |e|
+        next e if Symbol === e and /_content\z/ =~ e
+        if Array === e and e[0] == :@tstring_content
+          e = dedent_element(e, width)
+        elsif String === e
+          dedent_string(e, width)
+        end
+        e
+      end
+      val
+    end
 
     def _dispatch_event_new
       []
