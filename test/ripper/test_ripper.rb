@@ -60,4 +60,37 @@ class TestRipper::Ripper < Test::Unit::TestCase
     assert_predicate @ripper, :yydebug
   end
 
+  def test_squiggly_heredoc
+    assert_equal(Ripper.sexp(<<-eos), Ripper.sexp(<<-eos))
+    <<-eot
+asdf
+    eot
+    eos
+    <<~eot
+      asdf
+    eot
+    eos
+  end
+
+  def test_squiggly_heredoc_with_interpolated_expression
+    sexp1 = Ripper.sexp(<<-eos)
+<<-eot
+a\#{1}z
+eot
+    eos
+
+    sexp2 = Ripper.sexp(<<-eos)
+<<~eot
+  a\#{1}z
+eot
+    eos
+
+    pos = lambda do |s|
+      s.fetch(1).fetch(0).fetch(1).fetch(2).fetch(1).fetch(0).fetch(2)
+    end
+    assert_not_equal pos[sexp1], pos[sexp2]
+    pos[sexp1].clear
+    pos[sexp2].clear
+    assert_equal sexp1, sexp2
+  end
 end if ripper_test

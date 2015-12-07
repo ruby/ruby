@@ -257,6 +257,8 @@ struct parser_params {
     int toksiz;
     int tokline;
     int heredoc_end;
+    int heredoc_indent;
+    int heredoc_line_indent;
     char *tokenbuf;
     NODE *deferred_nodes;
     struct local_vars *lvtbl;
@@ -347,6 +349,8 @@ static int parser_yyerror(struct parser_params*, const char*);
 #define lex_p			(parser->lex.pcur)
 #define lex_pend		(parser->lex.pend)
 #define heredoc_end		(parser->heredoc_end)
+#define heredoc_indent		(parser->heredoc_indent)
+#define heredoc_line_indent	(parser->heredoc_line_indent)
 #define command_start		(parser->command_start)
 #define deferred_nodes		(parser->deferred_nodes)
 #define lex_gets_ptr		(parser->lex.gets_ptr)
@@ -486,6 +490,10 @@ static int reg_fragment_check_gen(struct parser_params*, VALUE, int);
 #define reg_fragment_check(str,options) reg_fragment_check_gen(parser, (str), (options))
 static NODE *reg_named_capture_assign_gen(struct parser_params* parser, VALUE regexp, NODE *match);
 #define reg_named_capture_assign(regexp,match) reg_named_capture_assign_gen(parser,(regexp),(match))
+
+static NODE *parser_heredoc_dedent(struct parser_params*,NODE*);
+# define heredoc_dedent(str) parser_heredoc_dedent(parser, (str))
+
 
 #define get_id(id) (id)
 #define get_value(val) (val)
@@ -669,6 +677,9 @@ new_args_tail_gen(struct parser_params *parser, VALUE k, VALUE kr, VALUE b)
 #define new_args_tail(k,kr,b) new_args_tail_gen(parser, (k),(kr),(b))
 
 #define new_defined(expr) dispatch1(defined, (expr))
+
+static VALUE parser_heredoc_dedent_ripper(struct parser_params*,VALUE);
+# define heredoc_dedent_ripper(str) parser_heredoc_dedent_ripper(parser, (str))
 
 #define FIXME 0
 
@@ -3887,6 +3898,7 @@ strings		: string
 			else {
 			    node = evstr2dstr(node);
 			}
+			heredoc_indent = 0;
 			$$ = node;
 		    /*%
 			$$ = $1;
@@ -3909,9 +3921,10 @@ string		: tCHAR
 string1		: tSTRING_BEG string_contents tSTRING_END
 		    {
 		    /*%%%*/
-			$$ = $2;
+			$$ = heredoc_dedent($2);
 		    /*%
-			$$ = dispatch1(string_literal, $2);
+			$$ = dispatch1(string_literal, 
+                                       heredoc_dedent_ripper($2));
 		    %*/
 		    }
 		;
@@ -3936,9 +3949,10 @@ xstring		: tXSTRING_BEG xstring_contents tSTRING_END
 				break;
 			    }
 			}
-			$$ = node;
+			$$ = heredoc_dedent(node);
 		    /*%
-			$$ = dispatch1(xstring_literal, $2);
+			$$ = dispatch1(xstring_literal, 
+				       heredoc_dedent_ripper($2));
 		    %*/
 		    }
 		;
@@ -4319,6 +4333,10 @@ string_content	: tSTRING_CONTENT
 			$<num>$ = brace_nest;
 			brace_nest = 0;
 		    }
+		    {
+			$<num>$ = heredoc_indent;
+			heredoc_indent = 0;
+		    }
 		  compstmt tSTRING_DEND
 		    {
 			cond_stack = $<val>1;
@@ -4326,11 +4344,12 @@ string_content	: tSTRING_CONTENT
 			lex_strterm = $<node>3;
 			lex_state = $<num>4;
 			brace_nest = $<num>5;
+			heredoc_indent = $<num>6;
 		    /*%%%*/
-			if ($6) $6->flags &= ~NODE_FL_NEWLINE;
-			$$ = new_evstr($6);
+			if ($7) $7->flags &= ~NODE_FL_NEWLINE;
+			$$ = new_evstr($7);
 		    /*%
-			$$ = dispatch1(string_embexpr, $6);
+			$$ = dispatch1(string_embexpr, $7);
 		    %*/
 		    }
 		;
@@ -5686,6 +5705,7 @@ rb_parser_compile_file_path(VALUE vparser, VALUE fname, VALUE file, int start)
 #define STR_FUNC_SYMBOL 0x10
 #define STR_FUNC_INDENT 0x20
 #define STR_FUNC_LABEL  0x40
+#define STR_FUNC_DEDENT 0x80
 
 enum string_type {
     str_label  = STR_FUNC_LABEL,
@@ -6204,6 +6224,23 @@ parser_tokadd_string(struct parser_params *parser,
     } while (0)
 
     while ((c = nextc()) != -1) {
+	if (heredoc_indent > 0) {
+	    if (heredoc_line_indent == -1) {
+		if (c == '\n') heredoc_line_indent = 0;
+	    } else {
+		if (c == ' ') {
+		    heredoc_line_indent++;
+		} else if (c == '\t') {
+		    heredoc_line_indent += 8;
+		} else if (c != '\n') {
+		    if (heredoc_indent > heredoc_line_indent) {
+			heredoc_indent = heredoc_line_indent;
+		    }
+		    heredoc_line_indent = -1;
+		}
+	    }
+	}
+
 	if (paren && c == paren) {
 	    ++*nest;
 	}
@@ -6464,6 +6501,11 @@ parser_heredoc_identifier(struct parser_params *parser)
     if (c == '-') {
 	c = nextc();
 	func = STR_FUNC_INDENT;
+    } else if (c == '~') {
+	c = nextc();
+	func = STR_FUNC_INDENT;
+	heredoc_indent = INT_MAX;
+	heredoc_line_indent = 0;
     }
     switch (c) {
       case '\'':
@@ -6488,7 +6530,9 @@ parser_heredoc_identifier(struct parser_params *parser)
       default:
 	if (!parser_is_identchar()) {
 	    pushback(c);
-	    if (func & STR_FUNC_INDENT) {
+	    if (heredoc_indent > 0) {
+		pushback('~');
+	    } else if (func & STR_FUNC_INDENT) {
 		pushback('-');
 	    }
 	    return 0;
@@ -6533,6 +6577,139 @@ parser_heredoc_restore(struct parser_params *parser, NODE *here)
     rb_gc_force_recycle((VALUE)here);
     ripper_flush(parser);
 }
+
+static VALUE
+parser_heredoc_dedent_string(struct parser_params *parser, VALUE input,
+			     long *count_indent, long *copy_indent)
+{
+    long len, out_len;
+    char *str, *p, *out_p, *end;
+    VALUE output;
+    
+    len = RSTRING_LEN(input);
+    out_len = 0;
+    str = RSTRING_PTR(input);
+    end = &str[len];
+
+    p = str;
+    while (p < end) {
+	while (p < end && *count_indent > 0) {
+	    if (*p == ' ') {
+		p++;
+		(*count_indent)--;
+	    } else if (*p == '\t' && *count_indent >= 8) {
+		p++;
+		*count_indent -= 8;
+	    } else if (*p == '\t' && heredoc_indent % 8) {
+		/* Inconsistent indentation requires us to back up to the
+		   previous tab stop */
+		heredoc_indent = heredoc_indent - (heredoc_indent % 8);
+		*count_indent = *copy_indent = heredoc_indent;
+		return parser_heredoc_dedent_string(parser, input,
+						    count_indent, copy_indent);
+	    } else {
+		break;
+	    }
+	}
+
+	for (; p < end && *p != '\n'; p++) out_len++;
+	if (p < end && *p == '\n') {
+	    *count_indent = heredoc_indent;
+	    out_len++;
+	    p++;
+	}
+    }
+
+    output = rb_str_new(0, out_len);
+    out_p = RSTRING_PTR(output);
+
+    p = str;
+    while (p < end) {
+	while (p < end && *copy_indent > 0) {
+	    if (*p == ' ') {
+		p++;
+		(*copy_indent)--;
+	    } else if (*p == '\t' && *copy_indent >= 8) {
+		p++;
+		*copy_indent -= 8;
+	    } else {
+		break;
+	    }
+	}
+
+	while (p < end && *p != '\n') *out_p++ = *p++;
+	if (p < end && *p == '\n') {
+	    *copy_indent = heredoc_indent;
+	    *out_p++ = *p++;
+	}
+    }
+
+    return output;
+}
+
+#ifndef RIPPER
+static NODE *
+parser_heredoc_dedent(struct parser_params *parser, NODE *root)
+{
+    long count_indent, copy_indent;
+    VALUE output;
+    NODE *node, *str_node;
+
+    if (heredoc_indent <= 0) return root;
+
+    node = str_node = root;
+    count_indent = copy_indent = heredoc_indent;
+
+    while (str_node) {
+	output = parser_heredoc_dedent_string(parser, str_node->nd_lit,
+	    &count_indent, &copy_indent);
+
+	dispose_string(str_node->nd_lit);
+	str_node->nd_lit = output;
+
+	str_node = 0;
+	while (node = node->nd_next) {
+	    if (nd_type(node) != NODE_ARRAY) break;
+	    if (nd_type(node->nd_head) == NODE_STR ||
+		nd_type(node->nd_head) == NODE_DSTR) {
+		str_node = node->nd_head;
+		break;
+	    }
+	}
+    }
+
+    return root;
+}
+#else /* RIPPER */
+static VALUE
+parser_heredoc_dedent_ripper(struct parser_params *parser, VALUE array)
+{
+    long count_indent, copy_indent, array_len, i;
+    VALUE e, sym, ret;
+
+    if (heredoc_indent <= 0) return array;
+
+    count_indent = copy_indent = heredoc_indent;
+
+    array_len = RARRAY_LEN(array);
+    for (i = 0; i < array_len; i++) {
+	e = rb_ary_entry(array, i);
+	if (TYPE(e) == T_ARRAY && TYPE(sym = rb_ary_entry(e, 0)) == T_SYMBOL) {
+	    if (rb_to_id(sym) != rb_intern("string_content") &&
+	    	rb_to_id(sym) != rb_intern("@tstring_content")) continue;
+	    ret = parser_heredoc_dedent_string(parser, rb_ary_entry(e, 1),
+					       &count_indent, &copy_indent);
+	    rb_ary_store(e, 1, ret);
+	} else if (TYPE(e) == T_STRING) {
+	    ret = parser_heredoc_dedent_string(parser, e,
+					       &count_indent, &copy_indent);
+	    rb_ary_store(array, i, ret);
+	}
+    }
+
+    return array;
+}
+#endif
 
 static int
 parser_whole_match_p(struct parser_params *parser,
