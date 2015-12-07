@@ -475,6 +475,94 @@ e"
     assert_equal(expected, actual, "#{Bug7559}: ")
   end
 
+  def test_dedented_heredoc_without_indentation
+    assert_equal(" y\nz\n", <<~eos)
+ y
+z
+    eos
+  end
+
+  def test_dedented_heredoc_with_indentation
+    assert_equal(" a\nb\n", <<~eos)
+     a
+    b
+    eos
+  end
+
+  def test_dedented_heredoc_with_blank_less_indented_line
+    # the blank line has two leading spaces
+    result = eval("<<~eos\n" \
+                  "    a\n" \
+                  "  \n" \
+                  "    b\n" \
+                  "    eos\n")
+    assert_equal("a\n\nb\n", result)
+  end
+
+  def test_dedented_heredoc_with_blank_less_indented_line_escaped
+    result = eval("<<~eos\n" \
+                  "    a\n" \
+                  "\\ \\ \n" \
+                  "    b\n" \
+                  "    eos\n")
+    assert_equal("    a\n  \n    b\n", result)
+  end
+
+  def test_dedented_heredoc_with_blank_more_indented_line
+    # the blank line has six leading spaces
+    result = eval("<<~eos\n" \
+                  "    a\n" \
+                  "      \n" \
+                  "    b\n" \
+                  "    eos\n")
+    assert_equal("a\n  \nb\n", result)
+  end
+
+  def test_dedented_heredoc_with_blank_more_indented_line_escaped
+    result = eval("<<~eos\n" \
+                  "    a\n" \
+                  "\\ \\ \\ \\ \\ \\ \n" \
+                  "    b\n" \
+                  "    eos\n")
+    assert_equal("    a\n      \n    b\n", result)
+  end
+
+  def test_dedented_heredoc_with_empty_line
+result = eval("<<~eos\n" \
+              "      This would contain specially formatted text.\n" \
+              "\n" \
+              "      That might span many lines\n" \
+              "    eos\n")
+    assert_equal(<<-eos, result)
+This would contain specially formatted text.
+
+That might span many lines
+    eos
+  end
+
+  def test_dedented_heredoc_with_interpolated_expression
+    result = eval(" <<~eos\n" \
+                  "  #{1}a\n" \
+                  " zy\n" \
+                  "      eos\n")
+      assert_equal(<<-eos, result)
+ #{1}a
+zy
+      eos
+  end
+
+  def test_dedented_heredoc_with_interpolated_string
+    w = ""
+    result = eval("<<~eos\n" \
+                  " \#{w} a\n" \
+                  "  zy\n" \
+                  "    eos\n")
+    assert_equal(<<-eos, result)
+#{w} a
+ zy
+    eos
+  end
+
   def test_lineno_after_heredoc
     bug7559 = '[ruby-dev:46737]'
     expected, _, actual = __LINE__, <<eom, __LINE__
