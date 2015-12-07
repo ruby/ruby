@@ -187,7 +187,7 @@ class TestIO_Console < Test::Unit::TestCase
         sleep 0.1
         s.print "asdf\n"
       }
-      assert_equal("asdf", m.getpass("> "))
+      assert_equal("asdf", m.getpass)
       assert_equal("\n", s.readpartial(2))
       th.join
     }
