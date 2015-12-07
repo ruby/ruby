@@ -1,3 +1,17 @@
+Tue Dec  8 03:56:05 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* test/lib/iseq_loader_checker.rb: add iseq dumper/loader checker.
+	  If you enable this checker (remove `#' in test/runner.rb),
+	  you can see comparison results between an original iseq disassembed
+	  result and dumped and loaded iseq disassembed result.
+
+	  There are several bugs around there, because of inexact stack depth
+	  calculation. Now, I leave these bugs because they are not critical
+	  and difficult to solve completely.
+
+	* test/runner.rb: require test/lib/iseq_loader_checker.rb but
+	  disabled at default (commented out).
+
 Tue Dec  8 03:45:47 2015  Eric Wong  <e@80x24.org>
 
 	* doc/extension.rdoc: warn about kwargs performance in C
