@@ -1,3 +1,8 @@
+Tue Dec  8 03:43:21 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (rb_iseq_build_from_ary): do not allocate table
+	  if table_size is 0.
+
 Tue Dec  8 03:30:34 2015  Eric Wong  <e@80x24.org>
 
 	* ext/socket/unixsocket.c (unix_send_io): document args
