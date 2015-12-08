@@ -410,18 +410,18 @@ struct rb_iseq_struct {
 
 #if USE_LAZY_LOAD
 const rb_iseq_t *rb_iseq_complete(const rb_iseq_t *iseq);
+#endif
 
 static inline const rb_iseq_t *
 rb_iseq_check(const rb_iseq_t *iseq)
 {
+#if USE_LAZY_LOAD
     if (iseq->body == NULL) {
 	rb_iseq_complete((rb_iseq_t *)iseq);
     }
+#endif
     return iseq;
 }
-#else
-#define rb_iseq_check(iseq) iseq
-#endif
 
 enum ruby_special_exceptions {
     ruby_error_reenter,
