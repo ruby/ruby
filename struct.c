@@ -1130,8 +1130,9 @@ rb_struct_size(VALUE s)
  * call-seq:
  *   struct.dig(key, ...)              -> object
  *
- * Extracts the nested struct value specified by the sequence of <i>key</i>
- * objects.
+ * Extracts the nested value specified by the sequence of <i>idx</i>
+ * objects by calling +dig+ at each step, returning +nil+ if any
+ * intermediate step is +nil+.
  *
  *   klass = Struct.new(:a)
  *   o = klass.new(klass.new({b: [1, 2, 3]}))

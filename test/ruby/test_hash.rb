@@ -1306,6 +1306,12 @@ class TestHash < Test::Unit::TestCase
     h = @cls[a: @cls[b: [1, 2, 3]], c: 4]
     assert_equal(1, h.dig(:a, :b, 0))
     assert_nil(h.dig(:c, 1))
+    o = Object.new
+    def o.dig(*args)
+      {dug: args}
+    end
+    h[:d] = o
+    assert_equal({dug: [:foo, :bar]}, h.dig(:d, :foo, :bar))
   end
 
   def test_cmp
