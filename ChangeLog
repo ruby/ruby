@@ -1,3 +1,13 @@
+Wed Dec  9 06:26:23 2015  Colin Kelley <colindkelley@gmail.com>
+
+	* lib/uri/generic.rb: enable frozen_string_literal
+	  (split_userinfo): remove explicit .freeze for string literals
+	  (check_path): ditto
+	  (query): ditto
+	  (fragment): ditto
+	  (to_s): ditto
+	  [ruby-core:71910] [Bug #11759]
+
 Wed Dec  9 06:25:47 2015  Eric Wong  <e@80x24.org>
 
 	* test/uri/test_generic.rb (to_s): new test
