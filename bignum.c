@@ -4838,7 +4838,7 @@ rb_big2str_generic(VALUE x, int base)
 }
 
 #ifdef USE_GMP
-VALUE
+static VALUE
 big2str_gmp(VALUE x, int base)
 {
     const size_t nails = (sizeof(BDIGIT)-SIZEOF_BDIGIT)*CHAR_BIT;

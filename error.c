@@ -917,7 +917,7 @@ rb_exc_set_backtrace(VALUE exc, VALUE bt)
  * information.
  */
 
-VALUE
+static VALUE
 exc_cause(VALUE exc)
 {
     return rb_attr_get(exc, id_cause);
