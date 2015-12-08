@@ -181,18 +181,18 @@ class TestIO_Console < Test::Unit::TestCase
   end
 
   def test_getpass
-    th = nil
     helper {|m, s|
-      th = Thread.start {
-        sleep 0.1
-        s.print "asdf\n"
-      }
-      assert_equal("asdf", m.getpass)
-      assert_equal("\n", s.readpartial(2))
-      th.join
+      begin
+        th = Thread.start {
+          sleep 0.1
+          m.print "asdf\n"
+        }
+        assert_equal("asdf", s.getpass("> "))
+        assert_equal("> \r\n", m.readpartial(10))
+      ensure
+        th.join rescue nil
+      end
     }
-  ensure
-    th.join rescue nil
   end
 
   def test_iflush
