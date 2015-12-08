@@ -1,3 +1,8 @@
+Tue Dec  8 09:03:19 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/date/date_core.c (d_lite_lshift): should check the argument
+	  before negation.
+
 Tue Dec  8 08:56:16 2015  Eric Wong  <e@80x24.org>
 
 	* insns.def (opt_case_dispatch): check Float#=== redefinition
