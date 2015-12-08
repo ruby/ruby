@@ -1,3 +1,7 @@
+Tue Dec  8 17:36:36 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* string.c: removed unused variable
+
 Tue Dec  8 16:23:40 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enumerator.c (lazy_grep_v): add Enumerator::Lazy#grep_v as well
