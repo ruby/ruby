@@ -1,3 +1,8 @@
+Tue Dec  8 14:20:38 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (w_objivar): skip internal instance variables in
+	  T_OBJECT too.
+
 Tue Dec  8 12:58:04 2015  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* test/io/console/test_io_console.rb (test_getpass): s.getpass
