@@ -1,3 +1,8 @@
+Wed Dec  9 01:46:35 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* string.c (rb_str_init): now accepts new option parameter `encoding'.
+	  [Feature #11785]
+
 Wed Dec  9 00:52:37 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_stat_wr, rb_stat_ww): call get_stat only once and

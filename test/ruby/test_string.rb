@@ -11,12 +11,39 @@ class TestString < Test::Unit::TestCase
     super
   end
 
-  def S(str)
-    @cls.new(str)
+  def S(*args)
+    @cls.new(*args)
   end
 
   def test_s_new
-    assert_equal("RUBY", S("RUBY"))
+    assert_equal("", S())
+    assert_equal(Encoding::ASCII_8BIT, S().encoding)
+
+    assert_equal("", S(""))
+    assert_equal(__ENCODING__, S("").encoding)
+
+    src = "RUBY"
+    assert_equal(src, S(src))
+    assert_equal(__ENCODING__, S(src).encoding)
+
+    src.force_encoding("euc-jp")
+    assert_equal(src, S(src))
+    assert_equal(Encoding::EUC_JP, S(src).encoding)
+
+
+    assert_equal("", S(encoding: "euc-jp"))
+    assert_equal(Encoding::EUC_JP, S(encoding: "euc-jp").encoding)
+
+    assert_equal("", S("", encoding: "euc-jp"))
+    assert_equal(Encoding::EUC_JP, S("", encoding: "euc-jp").encoding)
+
+    src = "RUBY"
+    assert_equal(src, S(src, encoding: "euc-jp"))
+    assert_equal(Encoding::EUC_JP, S(src, encoding: "euc-jp").encoding)
+
+    src.force_encoding("euc-jp")
+    assert_equal(src, S(src, encoding: "utf-8"))
+    assert_equal(Encoding::UTF_8, S(src, encoding: "utf-8").encoding)
   end
 
   def test_AREF # '[]'
