@@ -3221,7 +3221,20 @@ rb_gzfile_set_lineno(VALUE obj, VALUE lineno)
  * Document-method: Zlib::GzipWriter#mtime=
  *
  * Specify the modification time (+mtime+) in the gzip header.
- * Using a Fixnum or Integer
+ * Using a Fixnum or Integer.
+ *
+ * Setting the mtime in the gzip header does not effect the
+ * mtime of the file generated. Different utilities that
+ * expand the gzipped files may use the mtime
+ * header. For example the gunzip utility can use the `-N`
+ * flag which will set the resultant file's mtime to the
+ * value in the header. By default many tools will set
+ * the mtime of the expanded file to the mtime of the
+ * gzipped file, not the mtime in the header.
+ *
+ * If you do not set an mtime, the default value will be the time
+ * when compression started. Setting a value of 0 indicates
+ * no time stamp is available.
  */
 static VALUE
 rb_gzfile_set_mtime(VALUE obj, VALUE mtime)
