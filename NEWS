@@ -126,7 +126,7 @@ with all sufficient information, see the ChangeLog file.
 
 * String
 
-  * String#+@ and String#- are added to get mutable/frozen strings.
+  * String#+@ and String#-@ are added to get mutable/frozen strings.
     [Feature #11782]
 
 * Struct
