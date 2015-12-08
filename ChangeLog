@@ -1,3 +1,17 @@
+Tue Dec  8 11:45:42 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (enc_m_loader): defer finding encoding object not to
+	  be infected by marshal source.  [ruby-core:71793] [Bug #11760]
+
+	* marshal.c (r_object0): enable compatible loader on USERDEF
+	  class.  the loader function is called with the class itself,
+	  instead of an allocated object, and the loaded data.
+
+	* marshal.c (compat_allocator_table): initialize
+	  compat_allocator_tbl on demand.
+
+	* object.c (rb_undefined_alloc): extract from rb_obj_alloc.
+
 Fri Dec  4 10:55:08 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* range.c (range_to_s): should be infected by the receiver.

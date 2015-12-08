@@ -34,6 +34,9 @@ class TestEncoding < Test::Unit::TestCase
       assert_raise(TypeError) { e.dup }
       assert_raise(TypeError) { e.clone }
       assert_equal(e.object_id, Marshal.load(Marshal.dump(e)).object_id)
+      assert_not_predicate(e, :tainted?)
+      Marshal.load(Marshal.dump(e).taint)
+      assert_not_predicate(e, :tainted?, '[ruby-core:71793] [Bug #11760]')
     end
   end
 
