@@ -180,6 +180,16 @@ class TestIO_Console < Test::Unit::TestCase
     }
   end
 
+  def test_getpass
+    skip unless IO.method_defined?("getpass")
+    run_pty("p IO.console.getpass('> ')") do |r, w|
+      assert_equal("> ", r.readpartial(10))
+      w.print "asdf\n"
+      assert_equal("\r\n", r.gets)
+      assert_equal("\"asdf\"", r.gets.chomp)
+    end
+  end
+
   def test_iflush
     helper {|m, s|
       m.print "a"
@@ -270,17 +280,18 @@ class TestIO_Console < Test::Unit::TestCase
   rescue RuntimeError
     skip $!
   else
-    result = []
-    n.times {result << r.gets.chomp}
-    Process.wait(pid)
     if block_given?
-      yield result
+      yield r, w, pid
     else
+      result = []
+      n.times {result << r.gets.chomp}
+      Process.wait(pid)
       result
     end
   ensure
     r.close if r
     w.close if w
+    Process.wait(pid) if pid
   end
 end if defined?(PTY) and defined?(IO::console)
 

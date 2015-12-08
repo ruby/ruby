@@ -18,6 +18,7 @@ if ok
   # rb_check_hash_type: 1.9.3
   # rb_io_get_write_io: 1.9.1
   # rb_cloexec_open: 2.0.0
+  $defs << "-D""ENABLE_IO_GETPASS=1"
   create_makefile("io/console") {|conf|
     conf << "\n""VK_HEADER = #{vk_header}\n"
   }
