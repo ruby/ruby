@@ -8062,7 +8062,7 @@ iseq_ibf_dump(const rb_iseq_t *iseq, VALUE opt)
 
     if (RTEST(opt)) {
 	VALUE opt_str = rb_check_string_type(opt);
-	header.extra_size = (unsigned int)RSTRING_LEN(opt_str) + 1;
+	header.extra_size = RSTRING_LENINT(opt_str) + 1;
 	ibf_dump_write(&dump, RSTRING_PTR(opt_str), header.extra_size);
     }
     else {
