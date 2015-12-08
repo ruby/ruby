@@ -1,3 +1,9 @@
+Wed Dec  9 00:52:37 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_stat_wr, rb_stat_ww): call get_stat only once and
+	  reduce checking struct.  patch by Yuki Kurihara in
+	  [ruby-core:71949].  [Misc #11789]
+
 Wed Dec  9 00:24:33 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (iseq_ibf_dump): dump extra data just string length.
