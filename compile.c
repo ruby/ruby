@@ -8195,7 +8195,7 @@ ibf_load_iseq(const struct ibf_load *load, const rb_iseq_t *index_iseq)
 static void
 ibf_load_setup(struct ibf_load *load, VALUE loader_obj, VALUE str)
 {
-    if (RSTRING_LENINT(str) < sizeof(struct ibf_header)) {
+    if (RSTRING_LENINT(str) < (int)sizeof(struct ibf_header)) {
 	rb_raise(rb_eRuntimeError, "broken binary format");
     }
     RB_OBJ_WRITE(loader_obj, &load->str, str);
