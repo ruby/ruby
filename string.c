@@ -1324,17 +1324,34 @@ rb_str_resurrect(VALUE str)
 /*
  *  call-seq:
  *     String.new(str="")   -> new_str
+ *     String.new(str="", encoding: enc) -> new_str
  *
  *  Returns a new string object containing a copy of <i>str</i>.
+ *  The optional <i>enc</i> argument specifies the encoding of the new string.
+ *  If not specified, the encoding of <i>str</i> (or ASCII-8BIT, if <i>str</i>
+ *  is not specified) is used.
  */
 
 static VALUE
 rb_str_init(int argc, VALUE *argv, VALUE str)
 {
-    VALUE orig;
+    static ID keyword_ids[1];
+    VALUE orig, opt, enc;
+    int n;
 
-    if (argc > 0 && rb_scan_args(argc, argv, "01", &orig) == 1)
+    if (!keyword_ids[0])
+	keyword_ids[0] = rb_intern("encoding");
+
+    n = rb_scan_args(argc, argv, "01:", &orig, &opt);
+    if (argc > 0 && n == 1)
 	rb_str_replace(str, orig);
+    if (!NIL_P(opt)) {
+	rb_get_kwargs(opt, keyword_ids, 0, 1, &enc);
+	if (enc != Qundef && !NIL_P(enc)) {
+	    rb_enc_associate(str, rb_to_encoding(enc));
+	    ENC_CODERANGE_CLEAR(str);
+	}
+    }
     return str;
 }
 
@@ -2225,6 +2242,46 @@ rb_str_freeze(VALUE str)
     if (OBJ_FROZEN(str)) return str;
     rb_str_resize(str, RSTRING_LEN(str));
     return rb_obj_freeze(str);
+}
+
+
+/*
+ * call-seq:
+ *   +str  -> str (mutable)
+ *
+ * If the string is frozen, then return duplicated mutable string.
+ *
+ * If the string is not frozen, then return the string itself.
+ */
+static VALUE
+str_uplus(VALUE str)
+{
+    if (OBJ_FROZEN(str)) {
+	return rb_str_dup(str);
+    }
+    else {
+	return str;
+    }
+}
+
+/*
+ * call-seq:
+ *   -str  -> str (frozen)
+ *
+ * If the string is frozen, then return the string itself.
+ *
+ * If the string is not frozen, then duplicate the string
+ * freeze it and return it.
+ */
+static VALUE
+str_uminus(VALUE str)
+{
+    if (OBJ_FROZEN(str)) {
+	return str;
+    }
+    else {
+	return rb_str_freeze(rb_str_dup(str));
+    }
 }
 
 RUBY_ALIAS_FUNCTION(rb_str_dup_frozen(VALUE str), rb_str_new_frozen, (str))
@@ -4505,8 +4562,7 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 {
     VALUE pat, val = Qnil, repl, match, match0 = Qnil, dest, hash = Qnil;
     struct re_registers *regs;
-    long beg, n;
-    long beg0, end0;
+    long beg, beg0, end0;
     long offset, blen, slen, len, last;
     enum {STR, ITER, MAP} mode = STR;
     char *sp, *cp;
@@ -4542,7 +4598,6 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
     }
 
     offset = 0;
-    n = 0;
     blen = RSTRING_LEN(str) + 30; /* len + margin */
     dest = rb_str_buf_new(blen);
     sp = RSTRING_PTR(str);
@@ -4553,8 +4608,6 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
     ENC_CODERANGE_SET(dest, rb_enc_asciicompat(str_enc) ? ENC_CODERANGE_7BIT : ENC_CODERANGE_VALID);
 
     do {
-	n++;
-
 	match = rb_backref_get();
 	regs = RMATCH_REGS(match);
 	if (RB_TYPE_P(pat, T_STRING)) {
@@ -9295,6 +9348,8 @@ Init_String(void)
     rb_define_method(rb_cString, "scrub", str_scrub, -1);
     rb_define_method(rb_cString, "scrub!", str_scrub_bang, -1);
     rb_define_method(rb_cString, "freeze", rb_str_freeze, 0);
+    rb_define_method(rb_cString, "+@", str_uplus, 0);
+    rb_define_method(rb_cString, "-@", str_uminus, 0);
 
     rb_define_method(rb_cString, "to_i", rb_str_to_i, -1);
     rb_define_method(rb_cString, "to_f", rb_str_to_f, 0);

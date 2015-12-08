@@ -201,6 +201,8 @@ sendmsg_blocking(void *data)
  *   p stdout.fileno #=> 6
  *
  *   stdout.puts "hello" # outputs "hello\n" to standard output.
+ *
+ * _io_ may be any kind of IO object or integer file descriptor.
  */
 static VALUE
 unix_send_io(VALUE sock, VALUE val)
@@ -297,6 +299,11 @@ recvmsg_blocking(void *data)
  *     }
  *   }
  *
+ * _klass_ will determine the class of _io_ returned (using the
+ * IO.for_fd singleton method or similar).
+ * If _klass_ is +nil+, an integer file descriptor is returned.
+ *
+ * _mode_ is the same as the argument passed to IO.for_fd
  */
 static VALUE
 unix_recv_io(int argc, VALUE *argv, VALUE sock)

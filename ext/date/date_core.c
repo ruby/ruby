@@ -1978,6 +1978,13 @@ k_rational_p(VALUE x)
     return f_kind_of_p(x, rb_cRational);
 }
 
+static inline void
+expect_numeric(VALUE x)
+{
+    if (!k_numeric_p(x))
+	rb_raise(rb_eTypeError, "expected numeric");
+}
+
 #ifndef NDEBUG
 static void
 civil_to_jd(VALUE y, int m, int d, double sg,
@@ -2351,8 +2358,7 @@ offset_to_sec(VALUE vof, int *rof)
 	    return 1;
 	}
       default:
-	if (!k_numeric_p(vof))
-	    rb_raise(rb_eTypeError, "expected numeric");
+	expect_numeric(vof);
 	vof = f_to_r(vof);
 #ifdef CANONICALIZATION_FOR_MATHN
 	if (!k_rational_p(vof))
@@ -5717,8 +5723,7 @@ d_lite_plus(VALUE self, VALUE other)
 	}
 	break;
       default:
-	if (!k_numeric_p(other))
-	    rb_raise(rb_eTypeError, "expected numeric");
+	expect_numeric(other);
 	other = f_to_r(other);
 #ifdef CANONICALIZATION_FOR_MATHN
 	if (!k_rational_p(other))
@@ -5902,8 +5907,7 @@ d_lite_minus(VALUE self, VALUE other)
       case T_FLOAT:
 	return d_lite_plus(self, DBL2NUM(-RFLOAT_VALUE(other)));
       default:
-	if (!k_numeric_p(other))
-	    rb_raise(rb_eTypeError, "expected numeric");
+	expect_numeric(other);
 	/* fall through */
       case T_BIGNUM:
       case T_RATIONAL:
@@ -6022,6 +6026,7 @@ d_lite_rshift(VALUE self, VALUE other)
 static VALUE
 d_lite_lshift(VALUE self, VALUE other)
 {
+    expect_numeric(other);
     return d_lite_rshift(self, f_negate(other));
 }
 

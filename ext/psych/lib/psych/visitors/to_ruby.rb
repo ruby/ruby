@@ -330,12 +330,13 @@ module Psych
         list
       end
 
+      SHOVEL = '<<'
       def revive_hash hash, o
         o.children.each_slice(2) { |k,v|
           key = accept(k)
           val = accept(v)
 
-          if key == '<<' && k.tag != "tag:yaml.org,2002:str"
+          if key == SHOVEL && k.tag != "tag:yaml.org,2002:str"
             case v
             when Nodes::Alias, Nodes::Mapping
               begin

@@ -725,6 +725,7 @@ void rb_encdb_declare(const char *name);
 void rb_enc_set_base(const char *name, const char *orig);
 int rb_enc_set_dummy(int index);
 void rb_encdb_set_unicode(int index);
+int rb_data_is_encoding(VALUE obj);
 
 /* enum.c */
 VALUE rb_f_send(int argc, VALUE *argv, VALUE recv);

@@ -60,7 +60,7 @@ end
 def interactive str, editfile = nil
   loop do
     yield
-    STDERR.puts "#{str} ([y]es|[a]bort|[r]etry#{'|[e]dit' if editfile})"
+    STDERR.puts "\e[1;33m#{str} ([y]es|[a]bort|[r]etry#{'|[e]dit' if editfile})\e[0m"
     case STDIN.gets
     when /\Aa/i then exit
     when /\Ar/i then redo

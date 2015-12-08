@@ -197,6 +197,34 @@ class TestLazyEnumerator < Test::Unit::TestCase
                  e.lazy.grep(proc {|x| x == [2, "2"]}, &:join).force)
   end
 
+  def test_grep_v
+    a = Step.new('a'..'f')
+    assert_equal('b', a.grep_v(/a/).first)
+    assert_equal('f', a.current)
+    assert_equal('a', a.lazy.grep_v(/c/).first)
+    assert_equal('a', a.current)
+    assert_equal(%w[b c d f], a.grep_v(proc {|x| /[aeiou]/ =~ x}))
+    assert_equal(%w[b c d f], a.lazy.grep_v(proc {|x| /[aeiou]/ =~ x}).to_a)
+  end
+
+  def test_grep_v_with_block
+    a = Step.new('a'..'f')
+    assert_equal('B', a.grep_v(/a/) {|i| i.upcase}.first)
+    assert_equal('B', a.lazy.grep_v(/a/) {|i| i.upcase}.first)
+  end
+
+  def test_grep_v_multiple_values
+    e = Enumerator.new { |yielder|
+      3.times { |i|
+        yielder.yield(i, i.to_s)
+      }
+    }
+    assert_equal([[0, "0"], [1, "1"]], e.grep_v(proc {|x| x == [2, "2"]}))
+    assert_equal([[0, "0"], [1, "1"]], e.lazy.grep_v(proc {|x| x == [2, "2"]}).force)
+    assert_equal(["00", "11"],
+                 e.lazy.grep_v(proc {|x| x == [2, "2"]}, &:join).force)
+  end
+
   def test_zip
     a = Step.new(1..3)
     assert_equal([1, "a"], a.zip("a".."c").first)

@@ -257,10 +257,10 @@ struct rb_call_cache {
 #endif
 
 typedef struct rb_iseq_location_struct {
-    const VALUE path;
-    const VALUE absolute_path;
-    const VALUE base_label;
-    const VALUE label;
+    VALUE path;
+    VALUE absolute_path;
+    VALUE base_label;
+    VALUE label;
     VALUE first_lineno; /* TODO: may be unsigned short */
 } rb_iseq_location_t;
 
@@ -376,7 +376,7 @@ struct rb_iseq_constant_body {
 				      */
     struct rb_call_cache *cc_entries; /* size is ci_size = ci_kw_size */
 
-    const VALUE mark_ary;     /* Array: includes operands which should be GC marked */
+    VALUE mark_ary;     /* Array: includes operands which should be GC marked */
 
     unsigned int local_table_size;
     unsigned int is_size;
@@ -389,11 +389,39 @@ struct rb_iseq_constant_body {
 /* typedef rb_iseq_t is in method.h */
 struct rb_iseq_struct {
     VALUE flags;
-    struct iseq_compile_data *compile_data_; /* used at compile time */
-    struct rb_iseq_constant_body *body;
     VALUE reserved1;
-    VALUE reserved2;
+    struct rb_iseq_constant_body *body;
+
+    union { /* 4, 5 words */
+	struct iseq_compile_data *compile_data; /* used at compile time */
+
+	struct {
+	    VALUE obj;
+	    int index;
+	} loader;
+    } aux;
 };
+
+#define USE_LAZY_LOAD 0
+
+#ifndef USE_LAZY_LOAD
+#define USE_LAZY_LOAD
+#endif
+
+#if USE_LAZY_LOAD
+const rb_iseq_t *rb_iseq_complete(const rb_iseq_t *iseq);
+#endif
+
+static inline const rb_iseq_t *
+rb_iseq_check(const rb_iseq_t *iseq)
+{
+#if USE_LAZY_LOAD
+    if (iseq->body == NULL) {
+	rb_iseq_complete((rb_iseq_t *)iseq);
+    }
+#endif
+    return iseq;
+}
 
 enum ruby_special_exceptions {
     ruby_error_reenter,
@@ -545,6 +573,9 @@ typedef struct rb_vm_struct {
 #define SYMBOL_REDEFINED_OP_FLAG (1 << 6)
 #define TIME_REDEFINED_OP_FLAG   (1 << 7)
 #define REGEXP_REDEFINED_OP_FLAG (1 << 8)
+#define NIL_REDEFINED_OP_FLAG    (1 << 9)
+#define TRUE_REDEFINED_OP_FLAG   (1 << 10)
+#define FALSE_REDEFINED_OP_FLAG  (1 << 11)
 
 #define BASIC_OP_UNREDEFINED_P(op, klass) (LIKELY((GET_VM()->redefined_flag[(op)]&(klass)) == 0))
 
@@ -959,7 +990,7 @@ rb_block_t *rb_vm_control_frame_block_ptr(const rb_control_frame_t *cfp);
   (!RUBY_VM_VALID_CONTROL_FRAME_P((cfp), RUBY_VM_END_CONTROL_FRAME(th)))
 
 #define RUBY_VM_IFUNC_P(ptr)        (RB_TYPE_P((VALUE)(ptr), T_IMEMO) && imemo_type((VALUE)ptr) == imemo_ifunc)
-#define RUBY_VM_NORMAL_ISEQ_P(ptr)  (RB_TYPE_P((VALUE)(ptr), T_IMEMO) && imemo_type((VALUE)ptr) == imemo_iseq)
+#define RUBY_VM_NORMAL_ISEQ_P(ptr)  (RB_TYPE_P((VALUE)(ptr), T_IMEMO) && imemo_type((VALUE)ptr) == imemo_iseq && rb_iseq_check((rb_iseq_t *)ptr))
 
 #define RUBY_VM_GET_BLOCK_PTR_IN_CFP(cfp) ((rb_block_t *)(&(cfp)->self))
 #define RUBY_VM_GET_CFP_FROM_BLOCK_PTR(b) \

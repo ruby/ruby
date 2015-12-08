@@ -196,6 +196,20 @@ Note that the while the closing identifier may be indented, the content is
 always treated as if it is flush left.  If you indent the content those spaces
 will appear in the output.
 
+To have indented content as well as an indented closing identifier, you can use
+a "squiggly" heredoc, which uses a "~" instead of a "-" after <tt><<</tt>:
+
+    expected_result = <<~SQUIGGLY_HEREDOC
+      This would contain specially formatted text.
+
+      That might span many lines
+    SQUIGGLY_HEREDOC
+
+The indentation of the least-indented line will be removed from each line of
+the content.  Note that empty lines and lines consisting solely of literal tabs
+and spaces will be ignored for the purposes of determining indentation, but
+escaped tabs and spaces are considered non-indentation characters.
+
 A heredoc allows interpolation and escaped characters.  You may disable
 interpolation and escaping by surrounding the opening identifier with single
 quotes:

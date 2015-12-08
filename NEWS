@@ -14,9 +14,11 @@ with all sufficient information, see the ChangeLog file.
 === Language changes
 
 * frozen-string-literal pragma:
+
   * new pragma, frozen-string-literal has been experimentally introduced.
+    [Feature #8976]
   * besides, --enable/--disable=frozen-string-literal options also have
-    been introduced.
+    been introduced. [Feature #8976]
   * command line option --debug or --debug=frozen-string-literal enable
     additional debugging mode which shows created location with at frozen
     object error (RuntimeError) even if string is dynamically created string
@@ -36,6 +38,13 @@ with all sufficient information, see the ChangeLog file.
           obj&.foo(bar())        # bar() is conditionally evaluated
     * attribute assignment is valid
           obj&.attr += 1
+    [Feature #11537]
+
+* indented here document:
+
+  * new string literal, here document starts with `<<~`.
+    refer doc/syntax/literals.rdoc for more details.
+    [Feature #9098]
 
 === Core classes updates (outstanding ones only)
 
@@ -54,6 +63,10 @@ with all sufficient information, see the ChangeLog file.
   * Enumerable#grep_v is added as inverse version of Enumerable#grep.
     [Feature #11049]
   * Enumerable#chunk_while [Feature #10769]
+
+* Enumerator::Lazy
+
+  * Enumerator::Lazy#grep_v [Feature #11773]
 
 * File
 
@@ -105,6 +118,21 @@ with all sufficient information, see the ChangeLog file.
   * Queue#close is added to notice a termination. [Feature #10600]
 
 * Regexp/String: Updated Unicode version from 7.0.0 to 8.0.0
+
+* RubyVM::InstructionSequence
+  * add the following methods as a primitive tool of iseq loader.
+    See sample/iseq_loader.rb for usage.
+    [Feature #11788]
+    * RubyVM::InstructionSequence#to_binary_format(extra_data = nil)
+    * RubyVM::InstructionSequence.from_binary_format(binary)
+    * RubyVM::InstructionSequence.from_binary_format_extra_data(binary)
+
+* String
+
+  * String#+@ and String#-@ are added to get mutable/frozen strings.
+    [Feature #11782]
+
+  * String.new now accepts new option parameter `encoding'.
 
 * Struct
   * Struct#dig [Feature #11688]
@@ -192,19 +220,19 @@ with all sufficient information, see the ChangeLog file.
 === Stdlib compatibility issues (excluding feature bug fixes)
 
 * lib/webrick/utils.rb
- * removed unused argument. https://github.com/ruby/ruby/pull/356
+  * removed unused argument. https://github.com/ruby/ruby/pull/356
 
 * lib/drb/drb.rb
- * removed unused argument. https://github.com/ruby/ruby/pull/515
+  * removed unused argument. https://github.com/ruby/ruby/pull/515
 
 * lib/base64.rb
- * Base64.urlsafe_encode64: added a "padding" option to suppress
-   the padding character ("=").
- * Base64.urlsafe_decode64: now it accepts not only correctly-padded
-   input but also unpadded input.
+  * Base64.urlsafe_encode64: added a "padding" option to suppress
+    the padding character ("=").
+  * Base64.urlsafe_decode64: now it accepts not only correctly-padded
+    input but also unpadded input.
 
 * lib/matrix.rb
- * Add Vector#round. https://github.com/ruby/ruby/pull/802
+  * Add Vector#round. https://github.com/ruby/ruby/pull/802
 
 * ext/coverage/coverage.c
   * Coverage.peek_result: new method to allow coverage to be captured without

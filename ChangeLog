@@ -1,3 +1,246 @@
+Wed Dec  9 02:18:52 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (ibf_dump_memsize): should check NULL.
+
+Wed Dec  9 01:46:35 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* string.c (rb_str_init): now accepts new option parameter `encoding'.
+	  [Feature #11785]
+
+Wed Dec  9 00:52:37 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_stat_wr, rb_stat_ww): call get_stat only once and
+	  reduce checking struct.  patch by Yuki Kurihara in
+	  [ruby-core:71949].  [Misc #11789]
+
+Wed Dec  9 00:24:33 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (iseq_ibf_dump): dump extra data just string length.
+
+	* sample/iseq_loader.rb: add using
+	  RubyVM::InstructionSequence.from_binary_format_extra_data method
+	  (commented out).
+
+Mon Dec  9 00:21:19 2015  Yuki Nishijima  <mail@yukinishijima.net>
+
+	* gems/bundled_gems: Upgrade the did_you_mean gem to 1.0.0.rc1
+
+Wed Dec  9 00:17:49 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (ibf_load_setup): cast to int.
+
+Wed Dec  9 00:13:09 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (ibf_setup_load): rename to ibf_load_setup().
+
+	* compile.c (iseq_load_setup): check binary format.
+
+Tue Dec  8 23:30:07 2015  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* test/io/console/test_io_console.rb (run_pty): Avoid waiting twice
+	  for a process. Fix Errno::ECHILD in TestIO_Console#test_close and
+	  TestIO_Console#test_sync.
+
+Tue Dec  8 23:05:47 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (iseq_ibf_dump): fix for clang type checker.
+
+Tue Dec  8 23:04:02 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.c (iseq_s_load): fix mysterious bug.
+
+Tue Dec  8 22:31:58 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* introduce new ISeq binary format serializer/de-serializer
+	  and a pre-compilation/runtime loader sample.
+	  [Feature #11788]
+
+	* iseq.c: add new methods:
+	  * RubyVM::InstructionSequence#to_binary_format(extra_data = nil)
+	  * RubyVM::InstructionSequence.from_binary_format(binary)
+	  * RubyVM::InstructionSequence.from_binary_format_extra_data(binary)
+
+	* compile.c: implement body of this new feature.
+
+	* load.c (rb_load_internal0), iseq.c (rb_iseq_load_iseq):
+	  call RubyVM::InstructionSequence.load_iseq(fname) with
+	  loading script name if this method is defined.
+
+	  We can return any ISeq object as a result value.
+	  Otherwise loading will be continue as usual.
+
+	  This interface is not matured and is not extensible.
+	  So that we don't guarantee the future compatibility of this method.
+	  Basically, you shouldn't use this method.
+
+	* iseq.h: move ISEQ_MAJOR/MINOR_VERSION (and some definitions)
+	  from iseq.c.
+
+	* encoding.c (rb_data_is_encoding), internal.h: added.
+
+	* vm_core.h: add several supports for lazy load.
+	  * add USE_LAZY_LOAD macro to specify enable or disable of
+	    this feature.
+	  * add several fields to rb_iseq_t.
+	  * introduce new macro rb_iseq_check().
+
+	* insns.def: some check for lazy loading feature.
+
+	* vm_insnhelper.c: ditto.
+
+	* proc.c: ditto.
+
+	* vm.c: ditto.
+
+	* test/lib/iseq_loader_checker.rb: enabled iff suitable
+	  environment variables are provided.
+
+	* test/runner.rb: enable lib/iseq_loader_checker.rb.
+
+	* sample/iseq_loader.rb: add sample compiler and loader.
+
+	    $ ruby sample/iseq_loader.rb [dir]
+
+	  will compile all ruby scripts in [dir].
+	  With default setting, this compile creates *.rb.yarb files
+	  in same directory of target .rb scripts.
+
+	    $ ruby -r sample/iseq_loader.rb [app]
+
+	  will run with enable to load compiled binary data.
+
+Tue Dec  8 21:21:16 2015  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* NEWS: mention about Enumerator::Lazy#grep_v.
+	  [ruby-core:71845] [Feature #11773]
+
+Tue Dec  8 17:36:36 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* string.c: removed unused variable
+
+Tue Dec  8 16:23:40 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enumerator.c (lazy_grep_v): add Enumerator::Lazy#grep_v as well
+	  as Enumerable, to enumerate lazily.
+	  [ruby-core:71845] [Feature #11773]
+
+Tue Dec  8 14:27:07 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (name_err_local_variables): new method
+	  NameError#local_variables for internal use only.
+	  [Feature #11777]
+
+Tue Dec  8 14:20:38 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (w_objivar): skip internal instance variables in
+	  T_OBJECT too.
+
+Tue Dec  8 12:58:04 2015  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* test/io/console/test_io_console.rb (test_getpass): s.getpass
+	  should be tested. Narrow ensure block. This reverts r52911.
+	  [Bug #11780] [ruby-dev:49412]
+
+Tue Dec  8 10:40:21 2015  Eric Wong  <e@80x24.org>
+
+	* benchmark/bm_vm2_case_lit.rb: new benchmark
+	* compile.c (case_when_optimizable_literal): add nil/true/false
+	* insns.def (opt_case_dispatch): ditto
+	* vm.c (vm_redefinition_check_flag): ditto
+	* vm.c (vm_init_redefined_flag): ditto
+	* vm_core.h: ditto
+	* object.c (InitVM_Object): define === explicitly for nil/true/false
+	* test/ruby/test_case.rb (test_deoptimize_nil): new test
+	* test/ruby/test_optimization.rb (test_opt_case_dispatch): update
+	  (test_eqq): new test
+	  [ruby-core:71923] [Feature #11769]
+	  Original patch by Aaron Patterson <tenderlove@ruby-lang.org>
+
+Tue Dec  8 10:19:02 2015  Jake Worth  <jakeworth82@gmail.com>
+
+	* lib/optparse.rb: fix double word typo in the document.
+	  [Misc #10608] [Fix GH-1126]
+
+Tue Dec  8 09:03:19 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/date/date_core.c (d_lite_lshift): should check the argument
+	  before negation.
+
+Tue Dec  8 08:56:16 2015  Eric Wong  <e@80x24.org>
+
+	* insns.def (opt_case_dispatch): check Float#=== redefinition
+	* test/ruby/test_optimization.rb (test_opt_case_dispatch): new
+	  [ruby-core:71920] [Bug #11784]
+
+Tue Dec  8 03:56:05 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* test/lib/iseq_loader_checker.rb: add iseq dumper/loader checker.
+	  If you enable this checker (remove `#' in test/runner.rb),
+	  you can see comparison results between an original iseq disassembed
+	  result and dumped and loaded iseq disassembed result.
+
+	  There are several bugs around there, because of inexact stack depth
+	  calculation. Now, I leave these bugs because they are not critical
+	  and difficult to solve completely.
+
+	* test/runner.rb: require test/lib/iseq_loader_checker.rb but
+	  disabled at default (commented out).
+
+Tue Dec  8 03:45:47 2015  Eric Wong  <e@80x24.org>
+
+	* doc/extension.rdoc: warn about kwargs performance in C
+	  [Feature #11339] [ci skip]
+
+Tue Dec  8 03:44:51 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.c (iseq_load): disable peephole optimization option
+	  because apply it multiple times change the sequence.
+	  (iseq != peephole_optimize(load(iseq.to_a)))
+
+Tue Dec  8 03:43:21 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (rb_iseq_build_from_ary): do not allocate table
+	  if table_size is 0.
+
+Tue Dec  8 03:30:34 2015  Eric Wong  <e@80x24.org>
+
+	* ext/socket/unixsocket.c (unix_send_io): document args
+	  (unix_recv_io): ditto
+	* test/socket/test_unix.rb (test_fd_passing_class_mode): added
+
+Tue Dec 08 02:21:35 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.c (iseq_translate): at the end of constructing an iseq,
+	  call RubyVM::InstructionSequence.translate(iseq) if this method
+	  is defined. If the return value is also an object of
+	  RubyVM::InstructionSequence, then use it instead of created one.
+
+	  For example, this method is useful to test iseq dumper/loader
+	  such as RubyVM::InstructionSequence#to_a and rb_iseq_load().
+
+	  Because this method is for such internal experimental usage,
+	  the interface is not matured. For example, this interface has
+	  no extensibility. Two or more translators can not run
+	  simultaneously.
+
+	  So that we don't guarantee future compatibility of this method.
+	  Basically, do not use this method.
+
+Tue Dec  8 01:57:13 2015  Aaron Patterson <tenderlove@ruby-lang.org>
+
+	* ext/psych/*: update psych to 2.0.16
+	* test/psych/*: ditto
+
+Mon Dec  7 23:45:20 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* string.c: introduce String#+@ and String#-@ to control
+	  String mutability.
+	  [Feature #11782]
+
+Mon Dec  7 23:39:49 2015  Ben Miller  <bjmllr@gmail.com>
+
+	* parse.y: add heredoc <<~ syntax.  [Feature #9098]
+
 Mon Dec  7 23:06:16 2015  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* prelude.rb (IO#read_nonblock): [DOC] add missing options to
@@ -5,7 +248,7 @@ Mon Dec  7 23:06:16 2015  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 Mon Dec  7 15:50:50 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
-	* .gitignore: added cygwin*.def for Cygwin
+	* .gitignore: added cygruby*.def for Cygwin
 
 Sun Dec  6 19:52:31 2015  Eric Wong  <e@80x24.org>
 
@@ -15,10 +258,6 @@ Sun Dec  6 19:52:31 2015  Eric Wong  <e@80x24.org>
 	* variable.c (rb_autoload): become compatibility wrapper
 	  (rb_autoload_str): hoisted out from old rb_autoload
 	  [ruby-core:71369] [Feature #11664]
-
-Sun Dec  6 19:02:55 2015  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
-
-	* configure.in: add missing x.
 
 Sun Dec  6 18:25:22 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
@@ -5927,7 +6166,7 @@ Mon Jun 22 18:08:48 2015  Naohisa Goto  <ngotogenome@gmail.com>
 
 Sun Jun 21 23:52:46 2015  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
-	* NEWS: mention Array#bsearch_index and Hash#fetch_values.
+	* NEWS: mention about Array#bsearch_index and Hash#fetch_values.
 
 Sun Jun 21 23:46:27 2015  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 

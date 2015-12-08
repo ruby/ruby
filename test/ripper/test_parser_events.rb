@@ -431,6 +431,19 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_equal("heredoc1\nheredoc2\n", heredoc, bug1921)
   end
 
+  def test_heredoc_dedent
+    thru_heredoc_dedent = false
+    str = width = nil
+    tree = parse("<""<~EOS\n heredoc\nEOS\n", :on_heredoc_dedent) {|e, s, w|
+      thru_heredoc_dedent = true
+      str = s
+      width = w
+    }
+    assert_equal true, thru_heredoc_dedent
+    assert_match(/string_content\(\), heredoc\n/, tree)
+    assert_equal(1, width)
+  end
+
   def test_massign
     thru_massign = false
     parse("a, b = 1, 2", :on_massign) {thru_massign = true}

@@ -1953,12 +1953,14 @@ rb_data_typed_object_zalloc(VALUE klass, size_t size, const rb_data_type_t *type
 size_t
 rb_objspace_data_type_memsize(VALUE obj)
 {
-    if (RTYPEDDATA_P(obj) && RTYPEDDATA_TYPE(obj)->function.dsize) {
-	return RTYPEDDATA_TYPE(obj)->function.dsize(RTYPEDDATA_DATA(obj));
+    if (RTYPEDDATA_P(obj)) {
+	const rb_data_type_t *type = RTYPEDDATA_TYPE(obj);
+	const void *ptr = RTYPEDDATA_DATA(obj);
+	if (ptr && type->function.dsize) {
+	    return type->function.dsize(ptr);
+	}
     }
-    else {
-	return 0;
-    }
+    return 0;
 }
 
 const char *
@@ -6875,7 +6877,7 @@ default_proc_for_compat_func(VALUE hash, VALUE dmy, int argc, VALUE *argv)
     return Qnil;
 }
 
-size_t
+static size_t
 gc_stat_internal(VALUE hash_or_sym)
 {
     rb_objspace_t *objspace = &rb_objspace;

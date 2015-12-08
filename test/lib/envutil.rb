@@ -328,6 +328,7 @@ module Test
             full_message << message << "\n"
           end
           full_message << "pid #{pid}"
+          full_message << " exit #{status.exitstatus}" if status.exited?
           full_message << " killed by #{sigdesc}" if sigdesc
           if out and !out.empty?
             full_message << "\n#{out.b.gsub(/^/, '| ')}"
@@ -370,9 +371,10 @@ module Test
 
       def assert_ruby_status(args, test_stdin="", message=nil, **opt)
         out, _, status = EnvUtil.invoke_ruby(args, test_stdin, true, :merge_to_stdout, **opt)
-        assert(!status.signaled?, FailDesc[status, message, out])
+        desc = FailDesc[status, message, out]
+        assert(!status.signaled?, desc)
         message ||= "ruby exit status is not success:"
-        assert(status.success?, "#{message} (#{status.inspect})")
+        assert(status.success?, desc)
       end
 
       ABORT_SIGNALS = Signal.list.values_at(*%w"ILL ABRT BUS SEGV TERM")

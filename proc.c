@@ -984,12 +984,15 @@ rb_proc_get_iseq(VALUE self, int *is_proc)
 	    iseq = rb_method_iseq((VALUE)ifunc->data);
 	    if (is_proc) *is_proc = 0;
 	}
+	return iseq;
     }
     else if (SYMBOL_P(iseq)) {
 	self = rb_sym_to_proc((VALUE)iseq);
 	goto again;
     }
-    return iseq;
+    else {
+	return rb_iseq_check(iseq);
+    }
 }
 
 static VALUE
@@ -998,6 +1001,7 @@ iseq_location(const rb_iseq_t *iseq)
     VALUE loc[2];
 
     if (!iseq) return Qnil;
+    rb_iseq_check(iseq);
     loc[0] = iseq->body->location.path;
     if (iseq->body->line_info_table) {
 	loc[1] = rb_iseq_first_lineno(iseq);
@@ -1142,7 +1146,7 @@ proc_to_s(VALUE self)
     iseq = proc->block.iseq;
     is_lambda = proc->is_lambda ? " (lambda)" : "";
 
-    if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
+    if (RUBY_VM_NORMAL_ISEQ_P(iseq) && rb_iseq_check(iseq)) {
 	int first_lineno = 0;
 
 	if (iseq->body->line_info_table) {
@@ -2152,7 +2156,7 @@ rb_method_entry_min_max_arity(const rb_method_entry_t *me, int *max)
       case VM_METHOD_TYPE_BMETHOD:
 	return rb_proc_min_max_arity(def->body.proc, max);
       case VM_METHOD_TYPE_ISEQ: {
-	const rb_iseq_t *iseq = def->body.iseq.iseqptr;
+	const rb_iseq_t *iseq = rb_iseq_check(def->body.iseq.iseqptr);
 	return rb_iseq_min_max_arity(iseq, max);
       }
       case VM_METHOD_TYPE_UNDEF:
@@ -2289,7 +2293,7 @@ method_def_iseq(const rb_method_definition_t *def)
 {
     switch (def->type) {
       case VM_METHOD_TYPE_ISEQ:
-	return def->body.iseq.iseqptr;
+	return rb_iseq_check(def->body.iseq.iseqptr);
       case VM_METHOD_TYPE_BMETHOD:
 	return get_proc_iseq(def->body.proc, 0);
       case VM_METHOD_TYPE_ALIAS:
@@ -2654,6 +2658,7 @@ proc_binding(VALUE self)
     bind->env = envval;
 
     if (iseq) {
+	rb_iseq_check(iseq);
 	bind->path = iseq->body->location.path;
 	bind->first_lineno = FIX2INT(rb_iseq_first_lineno(iseq));
     }

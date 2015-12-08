@@ -755,6 +755,17 @@ rb_vm_env_local_variables(const rb_env_t *env)
     return local_var_list_finish(&vars);
 }
 
+VALUE
+rb_iseq_local_variables(const rb_iseq_t *iseq)
+{
+    struct local_var_list vars;
+    local_var_list_init(&vars);
+    while (collect_local_variables_in_iseq(iseq, &vars)) {
+	iseq = iseq->body->parent_iseq;
+    }
+    return local_var_list_finish(&vars);
+}
+
 /* Proc */
 
 static inline VALUE
@@ -934,7 +945,7 @@ invoke_block_from_c_0(rb_thread_t *th, const rb_block_t *block,
 	return Qnil;
     }
     else if (LIKELY(RUBY_VM_NORMAL_ISEQ_P(block->iseq))) {
-	const rb_iseq_t *iseq = block->iseq;
+	const rb_iseq_t *iseq = rb_iseq_check(block->iseq);
 	int i, opt_pc;
 	int type = block_proc_is_lambda(block->proc) ? VM_FRAME_MAGIC_LAMBDA : VM_FRAME_MAGIC_BLOCK;
 	VALUE *sp = th->cfp->sp;
@@ -1373,6 +1384,9 @@ vm_redefinition_check_flag(VALUE klass)
     if (klass == rb_cSymbol) return SYMBOL_REDEFINED_OP_FLAG;
     if (klass == rb_cTime)   return TIME_REDEFINED_OP_FLAG;
     if (klass == rb_cRegexp) return REGEXP_REDEFINED_OP_FLAG;
+    if (klass == rb_cNilClass) return NIL_REDEFINED_OP_FLAG;
+    if (klass == rb_cTrueClass) return TRUE_REDEFINED_OP_FLAG;
+    if (klass == rb_cFalseClass) return FALSE_REDEFINED_OP_FLAG;
     return 0;
 }
 
@@ -1437,7 +1451,8 @@ vm_init_redefined_flag(void)
     OP(DIV, DIV), (C(Fixnum), C(Float));
     OP(MOD, MOD), (C(Fixnum), C(Float));
     OP(Eq, EQ), (C(Fixnum), C(Float), C(String));
-    OP(Eqq, EQQ), (C(Fixnum), C(Bignum), C(Float), C(Symbol), C(String));
+    OP(Eqq, EQQ), (C(Fixnum), C(Bignum), C(Float), C(Symbol), C(String),
+		   C(NilClass), C(TrueClass), C(FalseClass));
     OP(LT, LT), (C(Fixnum), C(Float));
     OP(LE, LE), (C(Fixnum), C(Float));
     OP(GT, GT), (C(Fixnum), C(Float));
@@ -1801,6 +1816,7 @@ vm_exec(rb_thread_t *th)
 
 	if (catch_iseq != NULL) { /* found catch table */
 	    /* enter catch scope */
+	    rb_iseq_check(catch_iseq);
 	    cfp->sp = vm_base_ptr(cfp) + cont_sp;
 	    cfp->pc = cfp->iseq->body->iseq_encoded + cont_pc;
 

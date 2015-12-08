@@ -11,12 +11,39 @@ class TestString < Test::Unit::TestCase
     super
   end
 
-  def S(str)
-    @cls.new(str)
+  def S(*args)
+    @cls.new(*args)
   end
 
   def test_s_new
-    assert_equal("RUBY", S("RUBY"))
+    assert_equal("", S())
+    assert_equal(Encoding::ASCII_8BIT, S().encoding)
+
+    assert_equal("", S(""))
+    assert_equal(__ENCODING__, S("").encoding)
+
+    src = "RUBY"
+    assert_equal(src, S(src))
+    assert_equal(__ENCODING__, S(src).encoding)
+
+    src.force_encoding("euc-jp")
+    assert_equal(src, S(src))
+    assert_equal(Encoding::EUC_JP, S(src).encoding)
+
+
+    assert_equal("", S(encoding: "euc-jp"))
+    assert_equal(Encoding::EUC_JP, S(encoding: "euc-jp").encoding)
+
+    assert_equal("", S("", encoding: "euc-jp"))
+    assert_equal(Encoding::EUC_JP, S("", encoding: "euc-jp").encoding)
+
+    src = "RUBY"
+    assert_equal(src, S(src, encoding: "euc-jp"))
+    assert_equal(Encoding::EUC_JP, S(src, encoding: "euc-jp").encoding)
+
+    src.force_encoding("euc-jp")
+    assert_equal(src, S(src, encoding: "utf-8"))
+    assert_equal(Encoding::UTF_8, S(src, encoding: "utf-8").encoding)
   end
 
   def test_AREF # '[]'
@@ -2252,6 +2279,24 @@ class TestString < Test::Unit::TestCase
     end;
   end if [0].pack("l!").bytesize < [nil].pack("p").bytesize
   # enable only when string size range is smaller than memory space
+
+  def test_uplus_minus
+    str = "foo"
+    assert_equal(false, str.frozen?)
+    assert_equal(false, (+str).frozen?)
+    assert_equal(true,  (-str).frozen?)
+
+    assert_equal(str.object_id, (+str).object_id)
+    assert_not_equal(str.object_id, (-str).object_id)
+
+    str = "bar".freeze
+    assert_equal(true,  str.frozen?)
+    assert_equal(false, (+str).frozen?)
+    assert_equal(true,  (-str).frozen?)
+
+    assert_not_equal(str.object_id, (+str).object_id)
+    assert_equal(str.object_id, (-str).object_id)
+  end
 end
 
 class TestString2 < TestString

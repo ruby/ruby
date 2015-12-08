@@ -928,13 +928,15 @@ defineclass
 	rb_bug("unknown defineclass type: %d", (int)type);
     }
 
+    rb_iseq_check(class_iseq);
+
     /* enter scope */
     vm_push_frame(th, class_iseq, VM_FRAME_MAGIC_CLASS, klass,
 		  VM_ENVVAL_BLOCK_PTR(GET_BLOCK_PTR()),
 		  (VALUE)vm_cref_push(th, klass, NULL, FALSE),
 		  class_iseq->body->iseq_encoded, GET_SP(),
-		  class_iseq->body->local_size, class_iseq->body->stack_max);
-
+		  class_iseq->body->local_size,
+		  class_iseq->body->stack_max);
     RESTORE_REGS();
     NEXT_INSN();
 }
@@ -1264,6 +1266,9 @@ opt_case_dispatch
 	    key = FIXABLE(ival) ? LONG2FIX((long)ival) : rb_dbl2big(ival);
 	}
       }
+      case T_TRUE:
+      case T_FALSE:
+      case T_NIL:
       case T_SYMBOL: /* fall through */
       case T_FIXNUM:
       case T_BIGNUM:
@@ -1271,7 +1276,11 @@ opt_case_dispatch
 	if (BASIC_OP_UNREDEFINED_P(BOP_EQQ,
 				   SYMBOL_REDEFINED_OP_FLAG |
 				   FIXNUM_REDEFINED_OP_FLAG |
+				   FLOAT_REDEFINED_OP_FLAG |
 				   BIGNUM_REDEFINED_OP_FLAG |
+				   NIL_REDEFINED_OP_FLAG    |
+				   TRUE_REDEFINED_OP_FLAG   |
+				   FALSE_REDEFINED_OP_FLAG  |
 				   STRING_REDEFINED_OP_FLAG)) {
 	    st_data_t val;
 	    if (st_lookup(RHASH_TBL_RAW(hash), key, &val)) {

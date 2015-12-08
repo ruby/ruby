@@ -73,7 +73,10 @@ getattr(int fd, conmode *t)
 #define SET_LAST_ERROR (0)
 #endif
 
-static ID id_getc, id_gets, id_console, id_close, id_min, id_time;
+static ID id_getc, id_console, id_close, id_min, id_time;
+#if ENABLE_IO_GETPASS
+static ID id_gets;
+#endif
 
 #ifndef HAVE_RB_F_SEND
 static ID id___send__;
@@ -845,6 +848,7 @@ io_getch(int argc, VALUE *argv, VALUE io)
     return rb_funcall2(io, id_getc, argc, argv);
 }
 
+#if ENABLE_IO_GETPASS
 static VALUE
 puts_call(VALUE io)
 {
@@ -916,6 +920,7 @@ io_getpass(int argc, VALUE *argv, VALUE io)
     puts_call(io);
     return str;
 }
+#endif
 
 /*
  * IO console methods
@@ -925,7 +930,9 @@ Init_console(void)
 {
 #undef rb_intern
     id_getc = rb_intern("getc");
+#if ENABLE_IO_GETPASS
     id_gets = rb_intern("gets");
+#endif
     id_console = rb_intern("console");
     id_close = rb_intern("close");
     id_min = rb_intern("min");
@@ -957,11 +964,15 @@ InitVM_console(void)
     rb_define_method(rb_cIO, "cursor", console_cursor_pos, 0);
     rb_define_method(rb_cIO, "cursor=", console_cursor_set, 1);
     rb_define_method(rb_cIO, "pressed?", console_key_pressed_p, 1);
+#if ENABLE_IO_GETPASS
     rb_define_method(rb_cIO, "getpass", console_getpass, -1);
+#endif
     rb_define_singleton_method(rb_cIO, "console", console_dev, -1);
     {
 	VALUE mReadable = rb_define_module_under(rb_cIO, "generic_readable");
 	rb_define_method(mReadable, "getch", io_getch, -1);
+#if ENABLE_IO_GETPASS
 	rb_define_method(mReadable, "getpass", io_getpass, -1);
+#endif
     }
 }

@@ -2695,13 +2695,17 @@ rb_hash_any_p(VALUE hash)
  * call-seq:
  *   hsh.dig(key, ...)                 -> object
  *
- * Extracts the nested hash value specified by the sequence of <i>key</i>
- * objects.
+ * Extracts the nested value specified by the sequence of <i>idx</i>
+ * objects by calling +dig+ at each step, returning +nil+ if any
+ * intermediate step is +nil+.
  *
  *   h = { foo: {bar: {baz: 1}}}
  *
  *   h.dig(:foo, :bar, :baz)           #=> 1
- *   h.dig(:foo, :zot)                 #=> nil
+ *   h.dig(:foo, :zot, :xyz)           #=> nil
+ *
+ *   g = { foo: [10, 11, 12] }
+ *   g.dig(:foo, 1)                    #=> 11
  */
 
 VALUE
