@@ -7979,6 +7979,9 @@ ibf_load_object(const struct ibf_load *load, VALUE object_index)
     if (object_index == 0) {
 	return Qnil;
     }
+    else if (object_index >= load->header->object_list_size) {
+	rb_raise(rb_eIndexError, "object index out of range: %"PRIdVALUE, object_index);
+    }
     else {
 	VALUE obj = rb_ary_entry(load->obj_list, (long)object_index);
 	if (obj == Qnil) { /* TODO: avoid multiple Qnil load */
