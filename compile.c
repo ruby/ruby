@@ -6407,7 +6407,6 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 
 			    rb_hash_tbl_raw(map)->type = &cdhash_type;
 			    op = rb_convert_type(op, T_ARRAY, "Array", "to_ary");
-			    op = rb_ary_dup(op);
 			    for (i=0; i<RARRAY_LEN(op); i+=2) {
 				VALUE key = RARRAY_AREF(op, i);
 				VALUE sym = RARRAY_AREF(op, i+1);
