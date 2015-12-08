@@ -51,4 +51,10 @@ class TestAbbrev < Test::Unit::TestCase
         "de"      => "de",
       }, words.abbrev('d'))
   end
+
+  def test_abbrev_empty
+    words = ["d", "", " "]
+
+    assert_equal({"d" => "d"}, words.abbrev)
+  end
 end
