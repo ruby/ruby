@@ -1,3 +1,9 @@
+Wed Dec  9 01:49:13 2015  Eric Wong  <e@80x24.org>
+
+	* insns.def (opt_case_dispatch): check Float#=== redefinition
+	* test/ruby/test_optimization.rb (test_opt_case_dispatch): new
+	  [ruby-core:71920] [Bug #11784]
+
 Wed Dec  9 01:46:23 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby_atomic.h (ATOMIC_SIZE_CAS): fix the argument order of
