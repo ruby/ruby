@@ -8026,19 +8026,66 @@ ibf_dump_object_list(struct ibf_dump *dump, struct ibf_header *header)
     header->object_list_size = size;
 }
 
+static void
+ibf_dump_mark(void *ptr)
+{
+    struct ibf_dump *dump = (struct ibf_dump *)ptr;
+    rb_gc_mark(dump->str);
+    rb_gc_mark(dump->iseq_list);
+    rb_gc_mark(dump->obj_list);
+}
+
+static void
+ibf_dump_free(void *ptr)
+{
+    struct ibf_dump *dump = (struct ibf_dump *)ptr;
+    if (dump->iseq_table) {
+	st_free_table(dump->iseq_table);
+	dump->iseq_table = 0;
+    }
+    if (dump->id_table) {
+	st_free_table(dump->id_table);
+	dump->id_table = 0;
+    }
+    ruby_xfree(dump);
+}
+
+static size_t
+ibf_dump_memsize(const void *ptr)
+{
+    struct ibf_dump *dump = (struct ibf_dump *)ptr;
+    size_t size = sizeof(*dump);
+    if (dump->iseq_table) size += st_memsize(dump->iseq_table);
+    if (dump->id_table) size += st_memsize(dump->id_table);
+    return size;
+}
+
+static const rb_data_type_t ibf_dump_type = {
+    "ibf_dump",
+    {ibf_dump_mark, ibf_dump_free, ibf_dump_memsize,},
+    0, 0, RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY
+};
+
+static void
+ibf_dump_setup(struct ibf_dump *dump, VALUE dumper_obj)
+{
+    RB_OBJ_WRITE(dumper_obj, &dump->str, rb_str_new(0, 0));
+    RB_OBJ_WRITE(dumper_obj, &dump->iseq_list, rb_ary_tmp_new(0));
+    RB_OBJ_WRITE(dumper_obj, &dump->obj_list, rb_ary_tmp_new(1));
+    rb_ary_push(dump->obj_list, Qnil); /* 0th is nil */
+    dump->iseq_table = st_init_numtable(); /* need free */
+    dump->id_table = st_init_numtable();   /* need free */
+
+    ibf_table_index(dump->id_table, 0); /* id_index:0 is 0 */
+}
+
 VALUE
 iseq_ibf_dump(const rb_iseq_t *iseq, VALUE opt)
 {
-    struct ibf_dump dump;
-    struct ibf_header header;
-
-    dump.str = rb_str_new(0, 0);
-    dump.iseq_list = rb_ary_tmp_new(0);
-    dump.obj_list = rb_ary_tmp_new(1); rb_ary_push(dump.obj_list, Qnil); /* 0th is nil */
-    dump.iseq_table = st_init_numtable(); /* need free */
-    dump.id_table = st_init_numtable();   /* need free */
-
-    ibf_table_index(dump.id_table, 0); /* id_index:0 is 0 */
+    struct ibf_dump *dump;
+    struct ibf_header header = {{0}};
+    VALUE dump_obj;
+    VALUE str;
 
     if (iseq->body->parent_iseq != NULL ||
 	iseq->body->local_iseq != iseq) {
@@ -8048,9 +8095,12 @@ iseq_ibf_dump(const rb_iseq_t *iseq, VALUE opt)
 	rb_raise(rb_eRuntimeError, "should not compile with coverage");
     }
 
-    ibf_dump_write(&dump, &header, sizeof(header));
-    ibf_dump_write(&dump, RUBY_PLATFORM, strlen(RUBY_PLATFORM) + 1);
-    ibf_dump_iseq(&dump, iseq);
+    dump_obj = TypedData_Make_Struct(0, struct ibf_dump, &ibf_dump_type, dump);
+    ibf_dump_setup(dump, dump_obj);
+
+    ibf_dump_write(dump, &header, sizeof(header));
+    ibf_dump_write(dump, RUBY_PLATFORM, strlen(RUBY_PLATFORM) + 1);
+    ibf_dump_iseq(dump, iseq);
 
     header.magic[0] = 'Y'; /* YARB */
     header.magic[1] = 'A';
@@ -8058,27 +8108,28 @@ iseq_ibf_dump(const rb_iseq_t *iseq, VALUE opt)
     header.magic[3] = 'B';
     header.major_version = ISEQ_MAJOR_VERSION;
     header.minor_version = ISEQ_MINOR_VERSION;
-    ibf_dump_iseq_list(&dump, &header);
-    ibf_dump_id_list(&dump, &header);
-    ibf_dump_object_list(&dump, &header);
-    header.size = ibf_dump_pos(&dump);
+    ibf_dump_iseq_list(dump, &header);
+    ibf_dump_id_list(dump, &header);
+    ibf_dump_object_list(dump, &header);
+    header.size = ibf_dump_pos(dump);
 
     if (RTEST(opt)) {
 	VALUE opt_str = opt;
 	const char *ptr = StringValuePtr(opt_str);
 	header.extra_size = RSTRING_LENINT(opt_str) + 1;
-	ibf_dump_write(&dump, ptr, header.extra_size);
+	ibf_dump_write(dump, ptr, header.extra_size);
     }
     else {
 	header.extra_size = 0;
     }
 
-    ibf_dump_overwrite(&dump, &header, sizeof(header), 0);
+    ibf_dump_overwrite(dump, &header, sizeof(header), 0);
 
-    /* release. TODO: no need to care exceptions? */
-    st_free_table(dump.iseq_table);
-    st_free_table(dump.id_table);
-    return dump.str;
+    str = dump->str;
+    ibf_dump_free(dump);
+    DATA_PTR(dump_obj) = NULL;
+    RB_GC_GUARD(dump_obj);
+    return str;
 }
 
 static const ibf_offset_t *
