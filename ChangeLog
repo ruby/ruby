@@ -1,3 +1,7 @@
+Mon Dec  9 00:21:19 2015  Yuki Nishijima  <mail@yukinishijima.net>
+
+	* gems/bundled_gems: Upgrade the did_you_mean gem to 1.0.0.rc1
+
 Wed Dec  9 00:17:49 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (ibf_load_setup): cast to int.
