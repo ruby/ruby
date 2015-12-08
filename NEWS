@@ -218,19 +218,19 @@ with all sufficient information, see the ChangeLog file.
 === Stdlib compatibility issues (excluding feature bug fixes)
 
 * lib/webrick/utils.rb
- * removed unused argument. https://github.com/ruby/ruby/pull/356
+  * removed unused argument. https://github.com/ruby/ruby/pull/356
 
 * lib/drb/drb.rb
- * removed unused argument. https://github.com/ruby/ruby/pull/515
+  * removed unused argument. https://github.com/ruby/ruby/pull/515
 
 * lib/base64.rb
- * Base64.urlsafe_encode64: added a "padding" option to suppress
-   the padding character ("=").
- * Base64.urlsafe_decode64: now it accepts not only correctly-padded
-   input but also unpadded input.
+  * Base64.urlsafe_encode64: added a "padding" option to suppress
+    the padding character ("=").
+  * Base64.urlsafe_decode64: now it accepts not only correctly-padded
+    input but also unpadded input.
 
 * lib/matrix.rb
- * Add Vector#round. https://github.com/ruby/ruby/pull/802
+  * Add Vector#round. https://github.com/ruby/ruby/pull/802
 
 * ext/coverage/coverage.c
   * Coverage.peek_result: new method to allow coverage to be captured without
