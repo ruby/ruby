@@ -1,3 +1,8 @@
+Wed Dec  9 06:25:47 2015  Eric Wong  <e@80x24.org>
+
+	* test/uri/test_generic.rb (to_s): new test
+	  [ruby-core:71820]
+
 Wed Dec  9 02:18:52 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (ibf_dump_memsize): should check NULL.

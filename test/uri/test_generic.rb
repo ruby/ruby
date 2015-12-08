@@ -14,6 +14,13 @@ class URI::TestGeneric < Test::Unit::TestCase
     uri.class.component.collect {|c| uri.send(c)}
   end
 
+  def test_to_s
+    exp = 'http://example.com/'.freeze
+    str = URI(exp).to_s
+    assert_equal exp, str
+    refute_predicate str, :frozen?, '[ruby-core:71785] [Bug #11759]'
+  end
+
   def test_parse
     # 0
     assert_kind_of(URI::HTTP, @base_url)
