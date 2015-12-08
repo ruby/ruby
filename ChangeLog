@@ -34,7 +34,7 @@ Tue Dec  8 22:31:58 2015  Koichi Sasada  <ko1@atdot.net>
 
 	  This interface is not matured and is not extensible.
 	  So that we don't guarantee the future compatibility of this method.
-	  Basically, you should'nt use this method.
+	  Basically, you shouldn't use this method.
 
 	* iseq.h: move ISEQ_MAJOR/MINOR_VERSION (and some definitions)
 	  from iseq.c.
@@ -183,7 +183,7 @@ Tue Dec 08 02:21:35 2015  Koichi Sasada  <ko1@atdot.net>
 
 	  Because this method is for such internal experimental usage,
 	  the interface is not matured. For example, this interface has
-	  no extensibility. Two or more translaters can not run
+	  no extensibility. Two or more translators can not run
 	  simultaneously.
 
 	  So that we don't guarantee future compatibility of this method.
