@@ -2411,7 +2411,7 @@ Init_ISeq(void)
     rb_define_method(rb_cISeq, "to_binary_format", iseqw_to_binary_format, -1);
     rb_define_singleton_method(rb_cISeq, "from_binary_format", iseqw_s_from_binary_format, 1);
     rb_define_singleton_method(rb_cISeq, "from_binary_format_extra_data", iseqw_s_from_binary_format_extra_data, 1);
-    
+
 
     /* location APIs */
     rb_define_method(rb_cISeq, "path", iseqw_path, 0);

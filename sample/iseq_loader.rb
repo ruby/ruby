@@ -88,7 +88,7 @@ class RubyVM::InstructionSequence
       $ISEQ_LOADER_COMPILED += 1
       STDERR.puts "[RUBY_COMPILED_FILE] compile #{fname}" if COMPILE_DEBUG
       iseq = RubyVM::InstructionSequence.compile_file(fname)
-      
+
       binary = iseq.to_binary_format(extra_data(fname))
       write_compiled_iseq(fname, iseq_key, binary)
       iseq
