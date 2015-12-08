@@ -1038,7 +1038,7 @@ gen_ivtbl_bytes(size_t n)
     return sizeof(struct gen_ivtbl) + n * sizeof(VALUE) - sizeof(VALUE);
 }
 
-struct gen_ivtbl *
+static struct gen_ivtbl *
 gen_ivtbl_resize(struct gen_ivtbl *old, long n)
 {
     long len = old ? old->numiv : 0;
@@ -1052,7 +1052,8 @@ gen_ivtbl_resize(struct gen_ivtbl *old, long n)
     return ivtbl;
 }
 
-struct gen_ivtbl *
+#if 0
+static struct gen_ivtbl *
 gen_ivtbl_dup(const struct gen_ivtbl *orig)
 {
     size_t s = gen_ivtbl_bytes(orig->numiv);
@@ -1062,6 +1063,7 @@ gen_ivtbl_dup(const struct gen_ivtbl *orig)
 
     return ivtbl;
 }
+#endif
 
 static long
 iv_index_tbl_newsize(struct ivar_update *ivup)

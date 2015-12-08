@@ -1021,7 +1021,7 @@ iseqw_absolute_path(VALUE self)
  *	> iseq = RubyVM::InstructionSequence.compile_file('/tmp/method.rb')
  *	> iseq.label #=> <main>
  */
-VALUE
+static VALUE
 iseqw_label(VALUE self)
 {
     return rb_iseq_label(iseqw_check(self));
@@ -1063,7 +1063,7 @@ iseqw_base_label(VALUE self)
  *	iseq.first_lineno
  *	#=> 1
  */
-VALUE
+static VALUE
 iseqw_first_lineno(VALUE self)
 {
     return rb_iseq_first_lineno(iseqw_check(self));

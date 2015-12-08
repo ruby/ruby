@@ -6875,7 +6875,7 @@ default_proc_for_compat_func(VALUE hash, VALUE dmy, int argc, VALUE *argv)
     return Qnil;
 }
 
-size_t
+static size_t
 gc_stat_internal(VALUE hash_or_sym)
 {
     rb_objspace_t *objspace = &rb_objspace;
