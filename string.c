@@ -1340,7 +1340,7 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
     int n;
 
     if (!keyword_ids[0])
-	keyword_ids[0] = rb_intern("encoding");
+	keyword_ids[0] = rb_id_encoding();
 
     n = rb_scan_args(argc, argv, "01:", &orig, &opt);
     if (argc > 0 && n == 1)
