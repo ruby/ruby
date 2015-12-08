@@ -6860,7 +6860,8 @@ ibf_dump_overwrite(struct ibf_dump *dump, void *buff, unsigned int size, long of
 {
     VALUE str = dump->str;
     char *ptr = RSTRING_PTR(str);
-    if (size + offset > RSTRING_LEN(str)) rb_bug("ibf_dump_overwrite: overflow");
+    if ((unsigned long)(size + offset) > (unsigned long)RSTRING_LEN(str))
+	rb_bug("ibf_dump_overwrite: overflow");
     memcpy(ptr + offset, buff, size);
 }
 
