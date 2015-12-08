@@ -313,8 +313,11 @@ class TestRubyOptimization < Test::Unit::TestCase
     code = <<-EOF
       case foo
       when "foo" then :foo
+      when true then true
+      when false then false
       when :sym then :sym
       when 6 then :fix
+      when nil then nil
       when 0.1 then :float
       when 0xffffffffffffffff then :big
       else
@@ -323,8 +326,11 @@ class TestRubyOptimization < Test::Unit::TestCase
     EOF
     check = {
       'foo' => :foo,
+      true => true,
+      false => false,
       :sym => :sym,
       6 => :fix,
+      nil => nil,
       0.1 => :float,
       0xffffffffffffffff => :big,
     }
@@ -347,6 +353,13 @@ class TestRubyOptimization < Test::Unit::TestCase
         ret = #{code}
         assert_equal :nomatch, ret, foo.inspect
       end;
+    end
+  end
+
+  def test_eqq
+    [ nil, true, false, 0.1, :sym, 'str', 0xffffffffffffffff ].each do |v|
+      k = v.class.to_s
+      assert_redefine_method(k, '===', "assert_equal(#{v.inspect} === 0, 0)")
     end
   end
 end

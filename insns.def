@@ -1264,6 +1264,9 @@ opt_case_dispatch
 	    key = FIXABLE(ival) ? LONG2FIX((long)ival) : rb_dbl2big(ival);
 	}
       }
+      case T_TRUE:
+      case T_FALSE:
+      case T_NIL:
       case T_SYMBOL: /* fall through */
       case T_FIXNUM:
       case T_BIGNUM:
@@ -1273,6 +1276,9 @@ opt_case_dispatch
 				   FIXNUM_REDEFINED_OP_FLAG |
 				   FLOAT_REDEFINED_OP_FLAG |
 				   BIGNUM_REDEFINED_OP_FLAG |
+				   NIL_REDEFINED_OP_FLAG    |
+				   TRUE_REDEFINED_OP_FLAG   |
+				   FALSE_REDEFINED_OP_FLAG  |
 				   STRING_REDEFINED_OP_FLAG)) {
 	    st_data_t val;
 	    if (st_lookup(RHASH_TBL_RAW(hash), key, &val)) {

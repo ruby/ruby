@@ -2919,6 +2919,12 @@ case_when_optimizable_literal(NODE * node)
 	}
 	break;
       }
+      case NODE_NIL:
+	return Qnil;
+      case NODE_TRUE:
+	return Qtrue;
+      case NODE_FALSE:
+	return Qfalse;
       case NODE_STR:
 	return node->nd_lit = rb_fstring(node->nd_lit);
     }

@@ -545,6 +545,9 @@ typedef struct rb_vm_struct {
 #define SYMBOL_REDEFINED_OP_FLAG (1 << 6)
 #define TIME_REDEFINED_OP_FLAG   (1 << 7)
 #define REGEXP_REDEFINED_OP_FLAG (1 << 8)
+#define NIL_REDEFINED_OP_FLAG    (1 << 9)
+#define TRUE_REDEFINED_OP_FLAG   (1 << 10)
+#define FALSE_REDEFINED_OP_FLAG  (1 << 11)
 
 #define BASIC_OP_UNREDEFINED_P(op, klass) (LIKELY((GET_VM()->redefined_flag[(op)]&(klass)) == 0))
 

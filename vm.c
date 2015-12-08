@@ -1373,6 +1373,9 @@ vm_redefinition_check_flag(VALUE klass)
     if (klass == rb_cSymbol) return SYMBOL_REDEFINED_OP_FLAG;
     if (klass == rb_cTime)   return TIME_REDEFINED_OP_FLAG;
     if (klass == rb_cRegexp) return REGEXP_REDEFINED_OP_FLAG;
+    if (klass == rb_cNilClass) return NIL_REDEFINED_OP_FLAG;
+    if (klass == rb_cTrueClass) return TRUE_REDEFINED_OP_FLAG;
+    if (klass == rb_cFalseClass) return FALSE_REDEFINED_OP_FLAG;
     return 0;
 }
 
@@ -1437,7 +1440,8 @@ vm_init_redefined_flag(void)
     OP(DIV, DIV), (C(Fixnum), C(Float));
     OP(MOD, MOD), (C(Fixnum), C(Float));
     OP(Eq, EQ), (C(Fixnum), C(Float), C(String));
-    OP(Eqq, EQQ), (C(Fixnum), C(Bignum), C(Float), C(Symbol), C(String));
+    OP(Eqq, EQQ), (C(Fixnum), C(Bignum), C(Float), C(Symbol), C(String),
+		   C(NilClass), C(TrueClass), C(FalseClass));
     OP(LT, LT), (C(Fixnum), C(Float));
     OP(LE, LE), (C(Fixnum), C(Float));
     OP(GT, GT), (C(Fixnum), C(Float));
