@@ -70,7 +70,10 @@ class RubyVM::InstructionSequence
         $ISEQ_LOADER_LOADED += 1
         STDERR.puts "[ISEQ_LOADER] #{Process.pid} load #{fname} from #{iseq_key}" if COMPILE_DEBUG
         binary = read_compiled_iseq(fname, iseq_key)
-        RubyVM::InstructionSequence.from_binary_format(binary)
+        iseq = RubyVM::InstructionSequence.from_binary_format(binary)
+        # p [extra_data(iseq.path), RubyVM::InstructionSequence.from_binary_format_extra_data(binary)]
+        # raise unless extra_data(iseq.path) == RubyVM::InstructionSequence.from_binary_format_extra_data(binary)
+        iseq
       elsif COMPILE_IF_NOT_COMPILED
         compile_and_save_iseq(fname, iseq_key)
       else

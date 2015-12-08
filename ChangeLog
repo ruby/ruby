@@ -1,3 +1,11 @@
+Wed Dec  9 00:24:33 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (iseq_ibf_dump): dump extra data just string length.
+
+	* sample/iseq_loader.rb: add using
+	  RubyVM::InstructionSequence.from_binary_format_extra_data method
+	  (commented out).
+
 Mon Dec  9 00:21:19 2015  Yuki Nishijima  <mail@yukinishijima.net>
 
 	* gems/bundled_gems: Upgrade the did_you_mean gem to 1.0.0.rc1
