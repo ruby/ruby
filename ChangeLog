@@ -1,3 +1,18 @@
+Tue Dec  8 10:40:21 2015  Eric Wong  <e@80x24.org>
+
+	* benchmark/bm_vm2_case_lit.rb: new benchmark
+	* compile.c (case_when_optimizable_literal): add nil/true/false
+	* insns.def (opt_case_dispatch): ditto
+	* vm.c (vm_redefinition_check_flag): ditto
+	* vm.c (vm_init_redefined_flag): ditto
+	* vm_core.h: ditto
+	* object.c (InitVM_Object): define === explicitly for nil/true/false
+	* test/ruby/test_case.rb (test_deoptimize_nil): new test
+	* test/ruby/test_optimization.rb (test_opt_case_dispatch): update
+	  (test_eqq): new test
+	  [ruby-core:71923] [Feature #11769]
+	  Original patch by Aaron Patterson <tenderlove@ruby-lang.org>
+
 Tue Dec  8 10:19:02 2015  Jake Worth  <jakeworth82@gmail.com>
 
 	* lib/optparse.rb: fix double word typo in the document.
