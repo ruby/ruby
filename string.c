@@ -4545,8 +4545,7 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 {
     VALUE pat, val = Qnil, repl, match, match0 = Qnil, dest, hash = Qnil;
     struct re_registers *regs;
-    long beg, n;
-    long beg0, end0;
+    long beg, beg0, end0;
     long offset, blen, slen, len, last;
     enum {STR, ITER, MAP} mode = STR;
     char *sp, *cp;
@@ -4582,7 +4581,6 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
     }
 
     offset = 0;
-    n = 0;
     blen = RSTRING_LEN(str) + 30; /* len + margin */
     dest = rb_str_buf_new(blen);
     sp = RSTRING_PTR(str);
@@ -4593,8 +4591,6 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
     ENC_CODERANGE_SET(dest, rb_enc_asciicompat(str_enc) ? ENC_CODERANGE_7BIT : ENC_CODERANGE_VALID);
 
     do {
-	n++;
-
 	match = rb_backref_get();
 	regs = RMATCH_REGS(match);
 	if (RB_TYPE_P(pat, T_STRING)) {
