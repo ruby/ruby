@@ -637,16 +637,9 @@ w_ivar(st_index_t num, VALUE ivobj, VALUE encname, struct dump_call_arg *arg)
 static void
 w_objivar(VALUE obj, struct dump_call_arg *arg)
 {
-    VALUE *ptr;
-    long i, len, num;
+    st_data_t num = 0;
 
-    len = ROBJECT_NUMIV(obj);
-    ptr = ROBJECT_IVPTR(obj);
-    num = 0;
-    for (i = 0; i < len; i++)
-        if (ptr[i] != Qundef)
-            num += 1;
-
+    rb_ivar_foreach(obj, obj_count_ivars, (st_data_t)&num);
     w_long(num, arg->arg);
     if (num != 0) {
         rb_ivar_foreach(obj, w_obj_each, (st_data_t)arg);
