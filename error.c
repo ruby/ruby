@@ -35,6 +35,9 @@
 #define WEXITSTATUS(status) (status)
 #endif
 
+VALUE rb_iseqw_local_variables(VALUE iseqval);
+VALUE rb_iseqw_new(const rb_iseq_t *);
+
 VALUE rb_eEAGAIN;
 VALUE rb_eEWOULDBLOCK;
 VALUE rb_eEINPROGRESS;
@@ -660,7 +663,7 @@ static VALUE rb_eNOERROR;
 
 static ID id_new, id_cause, id_message, id_backtrace;
 static ID id_name, id_args, id_Errno, id_errno, id_i_path;
-static ID id_receiver;
+static ID id_receiver, id_iseq, id_local_variables;
 extern ID ruby_static_id_status;
 #define id_bt idBt
 #define id_bt_locations idBt_locations
@@ -1102,10 +1105,18 @@ static VALUE
 name_err_initialize(int argc, VALUE *argv, VALUE self)
 {
     VALUE name;
+    VALUE iseqw = Qnil;
 
     name = (argc > 1) ? argv[--argc] : Qnil;
     rb_call_super(argc, argv);
     rb_ivar_set(self, id_name, name);
+    {
+	rb_thread_t *th = GET_THREAD();
+	rb_control_frame_t *cfp =
+	    rb_vm_get_ruby_level_next_cfp(th, RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp));
+	if (cfp) iseqw = rb_iseqw_new(cfp->iseq);
+    }
+    rb_ivar_set(self, id_iseq, iseqw);
     return self;
 }
 
@@ -1120,6 +1131,30 @@ static VALUE
 name_err_name(VALUE self)
 {
     return rb_attr_get(self, id_name);
+}
+
+/*
+ *  call-seq:
+ *    name_error.local_variables  ->  array
+ *
+ *  Return a list of the local variable names defined where this
+ *  NameError exception was raised.
+ *
+ *  Internal use only.
+ */
+
+static VALUE
+name_err_local_variables(VALUE self)
+{
+    VALUE vars = rb_attr_get(self, id_local_variables);
+
+    if (NIL_P(vars)) {
+	VALUE iseqw = rb_attr_get(self, id_iseq);
+	if (!NIL_P(iseqw)) vars = rb_iseqw_local_variables(iseqw);
+	if (NIL_P(vars)) vars = rb_ary_new();
+	rb_ivar_set(self, id_local_variables, vars);
+    }
+    return vars;
 }
 
 /*
@@ -1942,6 +1977,7 @@ Init_Exception(void)
     rb_define_method(rb_eNameError, "initialize", name_err_initialize, -1);
     rb_define_method(rb_eNameError, "name", name_err_name, 0);
     rb_define_method(rb_eNameError, "receiver", name_err_receiver, 0);
+    rb_define_method(rb_eNameError, "local_variables", name_err_local_variables, 0);
     rb_cNameErrorMesg = rb_define_class_under(rb_eNameError, "message", rb_cData);
     rb_define_method(rb_cNameErrorMesg, "==", name_err_mesg_equal, 1);
     rb_define_method(rb_cNameErrorMesg, "to_str", name_err_mesg_to_str, 0);
@@ -1974,9 +2010,11 @@ Init_Exception(void)
     id_name = rb_intern_const("name");
     id_args = rb_intern_const("args");
     id_receiver = rb_intern_const("receiver");
+    id_local_variables = rb_intern_const("local_variables");
     id_Errno = rb_intern_const("Errno");
     id_errno = rb_intern_const("errno");
     id_i_path = rb_intern_const("@path");
+    id_iseq = rb_make_internal_id();
 }
 
 void

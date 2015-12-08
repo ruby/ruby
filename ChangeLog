@@ -1,3 +1,9 @@
+Tue Dec  8 14:27:07 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (name_err_local_variables): new method
+	  NameError#local_variables for internal use only.
+	  [Feature #11777]
+
 Tue Dec  8 14:20:38 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (w_objivar): skip internal instance variables in

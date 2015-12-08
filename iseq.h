@@ -214,6 +214,9 @@ enum defined_type {
 VALUE rb_iseq_defined_string(enum defined_type type);
 void rb_iseq_make_compile_option(struct rb_compile_option_struct *option, VALUE opt);
 
+/* vm.c */
+VALUE rb_iseq_local_variables(const rb_iseq_t *iseq);
+
 RUBY_SYMBOL_EXPORT_END
 
 #endif /* RUBY_ISEQ_H */
