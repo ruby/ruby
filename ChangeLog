@@ -1,3 +1,7 @@
+Wed Dec  9 02:18:52 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (ibf_dump_memsize): should check NULL.
+
 Wed Dec  9 01:46:35 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* string.c (rb_str_init): now accepts new option parameter `encoding'.

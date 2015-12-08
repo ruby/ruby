@@ -8054,11 +8054,16 @@ ibf_dump_free(void *ptr)
 static size_t
 ibf_dump_memsize(const void *ptr)
 {
-    struct ibf_dump *dump = (struct ibf_dump *)ptr;
-    size_t size = sizeof(*dump);
-    if (dump->iseq_table) size += st_memsize(dump->iseq_table);
-    if (dump->id_table) size += st_memsize(dump->id_table);
-    return size;
+    if (ptr) {
+	struct ibf_dump *dump = (struct ibf_dump *)ptr;
+	size_t size = sizeof(*dump);
+	if (dump->iseq_table) size += st_memsize(dump->iseq_table);
+	if (dump->id_table) size += st_memsize(dump->id_table);
+	return size;
+    }
+    else {
+	return 0;
+    }
 }
 
 static const rb_data_type_t ibf_dump_type = {
