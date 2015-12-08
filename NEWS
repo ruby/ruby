@@ -61,6 +61,10 @@ with all sufficient information, see the ChangeLog file.
     [Feature #11049]
   * Enumerable#chunk_while [Feature #10769]
 
+* Enumerator::Lazy
+
+  * Enumerator::Lazy#grep_v [Feature #11773]
+
 * File
 
   * File.mkfifo [Feature #11536]
