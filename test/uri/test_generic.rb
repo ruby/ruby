@@ -18,7 +18,7 @@ class URI::TestGeneric < Test::Unit::TestCase
     exp = 'http://example.com/'.freeze
     str = URI(exp).to_s
     assert_equal exp, str
-    refute_predicate str, :frozen?, '[ruby-core:71785] [Bug #11759]'
+    assert_not_predicate str, :frozen?, '[ruby-core:71785] [Bug #11759]'
   end
 
   def test_parse
