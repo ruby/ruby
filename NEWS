@@ -14,6 +14,7 @@ with all sufficient information, see the ChangeLog file.
 === Language changes
 
 * frozen-string-literal pragma:
+
   * new pragma, frozen-string-literal has been experimentally introduced.
   * besides, --enable/--disable=frozen-string-literal options also have
     been introduced.
@@ -36,6 +37,11 @@ with all sufficient information, see the ChangeLog file.
           obj&.foo(bar())        # bar() is conditionally evaluated
     * attribute assignment is valid
           obj&.attr += 1
+
+* indented here document:
+
+  * new string literal, here document starts with `<<~`.
+    refer doc/syntax/literals.rdoc for more details.
 
 === Core classes updates (outstanding ones only)
 
