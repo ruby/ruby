@@ -285,7 +285,6 @@ class TestIO_Console < Test::Unit::TestCase
     else
       result = []
       n.times {result << r.gets.chomp}
-      Process.wait(pid)
       result
     end
   ensure
