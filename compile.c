@@ -8064,9 +8064,10 @@ iseq_ibf_dump(const rb_iseq_t *iseq, VALUE opt)
     header.size = ibf_dump_pos(&dump);
 
     if (RTEST(opt)) {
-	VALUE opt_str = rb_check_string_type(opt);
+	VALUE opt_str = opt;
+	const char *ptr = StringValuePtr(opt_str);
 	header.extra_size = RSTRING_LENINT(opt_str) + 1;
-	ibf_dump_write(&dump, RSTRING_PTR(opt_str), header.extra_size);
+	ibf_dump_write(&dump, ptr, header.extra_size);
     }
     else {
 	header.extra_size = 0;
