@@ -1,3 +1,9 @@
+Tue Dec  8 16:23:40 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enumerator.c (lazy_grep_v): add Enumerator::Lazy#grep_v as well
+	  as Enumerable, to enumerate lazily.
+	  [ruby-core:71845] [Feature #11773]
+
 Tue Dec  8 14:27:07 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (name_err_local_variables): new method
