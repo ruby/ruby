@@ -1,3 +1,7 @@
+Wed Dec  9 00:17:49 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (ibf_load_setup): cast to int.
+
 Wed Dec  9 00:13:09 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (ibf_setup_load): rename to ibf_load_setup().
