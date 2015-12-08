@@ -5535,13 +5535,16 @@ rb_ary_any_p(VALUE ary)
  * call-seq:
  *   ary.dig(idx, ...)                 -> object
  *
- * Extracts the nested array value specified by the sequence of <i>idx</i>
- * objects.
+ * Extracts the nested value specified by the sequence of <i>idx</i>
+ * objects by calling +dig+ at each step, returning +nil+ if any
+ * intermediate step is +nil+.
  *
  *   a = [[1, [2, 3]]]
  *
  *   a.dig(0, 1, 1)                    #=> 3
- *   a.dig(0, 0, 0)                    #=> nil
+ *   a.dig(1, 2, 3)                    #=> nil
+ *   a.dig(0, 0, 0)                    #=> NoMethodError, undefined method `dig' for 1:Fixnum
+ *   [42, {foo: :bar}].dig(1, :foo)    #=> :bar
  */
 
 VALUE
