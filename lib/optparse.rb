@@ -172,7 +172,7 @@
 # ==== Using Built-in Conversions
 #
 # As an example, the built-in +Time+ conversion is used. The other built-in
-# conversions behave in in the same way.
+# conversions behave in the same way.
 # OptionParser will attempt to parse the argument
 # as a +Time+. If it succeeeds, that time will be passed to the
 # handler block. Otherwise, an exception will be raised.
