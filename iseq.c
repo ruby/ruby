@@ -25,9 +25,6 @@
 #include "insns.inc"
 #include "insns_info.inc"
 
-#define ISEQ_MAJOR_VERSION 2
-#define ISEQ_MINOR_VERSION 3
-
 VALUE rb_cISeq;
 static VALUE iseqw_new(const rb_iseq_t *iseq);
 static const rb_iseq_t *iseqw_check(VALUE iseqw);
@@ -71,30 +68,32 @@ rb_iseq_free(const rb_iseq_t *iseq)
     RUBY_FREE_ENTER("iseq");
 
     if (iseq) {
-	ruby_xfree((void *)iseq->body->iseq_encoded);
-	ruby_xfree((void *)iseq->body->line_info_table);
-	ruby_xfree((void *)iseq->body->local_table);
-	ruby_xfree((void *)iseq->body->is_entries);
+	if (iseq->body) {
+	    ruby_xfree((void *)iseq->body->iseq_encoded);
+	    ruby_xfree((void *)iseq->body->line_info_table);
+	    ruby_xfree((void *)iseq->body->local_table);
+	    ruby_xfree((void *)iseq->body->is_entries);
 
-	if (iseq->body->ci_entries) {
-	    unsigned int i;
-	    struct rb_call_info_with_kwarg *ci_kw_entries = (struct rb_call_info_with_kwarg *)&iseq->body->ci_entries[iseq->body->ci_size];
-	    for (i=0; i<iseq->body->ci_kw_size; i++) {
-		const struct rb_call_info_kw_arg *kw_arg = ci_kw_entries[i].kw_arg;
-		ruby_xfree((void *)kw_arg);
+	    if (iseq->body->ci_entries) {
+		unsigned int i;
+		struct rb_call_info_with_kwarg *ci_kw_entries = (struct rb_call_info_with_kwarg *)&iseq->body->ci_entries[iseq->body->ci_size];
+		for (i=0; i<iseq->body->ci_kw_size; i++) {
+		    const struct rb_call_info_kw_arg *kw_arg = ci_kw_entries[i].kw_arg;
+		    ruby_xfree((void *)kw_arg);
+		}
+		ruby_xfree(iseq->body->ci_entries);
+		ruby_xfree(iseq->body->cc_entries);
 	    }
-	    ruby_xfree(iseq->body->ci_entries);
-	    ruby_xfree(iseq->body->cc_entries);
-	}
-	ruby_xfree((void *)iseq->body->catch_table);
-	ruby_xfree((void *)iseq->body->param.opt_table);
+	    ruby_xfree((void *)iseq->body->catch_table);
+	    ruby_xfree((void *)iseq->body->param.opt_table);
 
-	if (iseq->body->param.keyword != NULL) {
-	    ruby_xfree((void *)iseq->body->param.keyword->default_values);
-	    ruby_xfree((void *)iseq->body->param.keyword);
+	    if (iseq->body->param.keyword != NULL) {
+		ruby_xfree((void *)iseq->body->param.keyword->default_values);
+		ruby_xfree((void *)iseq->body->param.keyword);
+	    }
+	    compile_data_free(ISEQ_COMPILE_DATA(iseq));
+	    ruby_xfree(iseq->body);
 	}
-	compile_data_free(ISEQ_COMPILE_DATA(iseq));
-	ruby_xfree(iseq->body);
     }
     RUBY_FREE_LEAVE("iseq");
 }
@@ -116,9 +115,11 @@ rb_iseq_mark(const rb_iseq_t *iseq)
 	RUBY_MARK_UNLESS_NULL(body->location.absolute_path);
     }
 
-    if (ISEQ_COMPILE_DATA(iseq) != 0) {
+    if (FL_TEST(iseq, ISEQ_NOT_LOADED_YET)) {
+	rb_gc_mark(iseq->aux.loader.obj);
+    }
+    else if (ISEQ_COMPILE_DATA(iseq) != 0) {
 	const struct iseq_compile_data *const compile_data = ISEQ_COMPILE_DATA(iseq);
-
 	RUBY_MARK_UNLESS_NULL(compile_data->mark_ary);
 	RUBY_MARK_UNLESS_NULL(compile_data->err_info);
 	RUBY_MARK_UNLESS_NULL(compile_data->catch_table_ary);
@@ -205,7 +206,7 @@ iseq_memsize(const rb_iseq_t *iseq)
 static rb_iseq_t *
 iseq_alloc(void)
 {
-    rb_iseq_t *iseq = (rb_iseq_t *)rb_imemo_new(imemo_iseq, 0, 0, 0, 0);
+    rb_iseq_t *iseq = iseq_imemo_alloc();
     iseq->body = ZALLOC(struct rb_iseq_constant_body);
     return iseq;
 }
@@ -257,16 +258,6 @@ rb_iseq_add_mark_object(const rb_iseq_t *iseq, VALUE obj)
 {
     /* TODO: check dedup */
     rb_ary_push(ISEQ_MARK_ARY(iseq), obj);
-}
-
-static VALUE
-iseq_mark_ary_create(int flip_cnt)
-{
-    VALUE ary = rb_ary_tmp_new(3);
-    rb_ary_push(ary, Qnil);              /* ISEQ_MARK_ARY_COVERAGE */
-    rb_ary_push(ary, INT2FIX(flip_cnt)); /* ISEQ_MARK_ARY_FLIP_CNT */
-    rb_ary_push(ary, Qnil);              /* ISEQ_MARK_ARY_ORIGINAL_ISEQ */
-    return ary;
 }
 
 static VALUE
@@ -485,6 +476,19 @@ rb_iseq_new_with_opt(NODE *node, VALUE name, VALUE path, VALUE absolute_path,
     return iseq_translate(iseq);
 }
 
+const rb_iseq_t *
+rb_iseq_load_iseq(VALUE fname)
+{
+    if (rb_respond_to(rb_cISeq, rb_intern("load_iseq"))) {
+	VALUE iseqv = rb_funcall(rb_cISeq, rb_intern("load_iseq"), 1, fname);
+	if (CLASS_OF(iseqv) == rb_cISeq) {
+	    return  iseqw_check(iseqv);
+	}
+    }
+
+    return NULL;
+}
+
 #define CHECK_ARRAY(v)   rb_convert_type((v), T_ARRAY, "Array", "to_ary")
 #define CHECK_HASH(v)    rb_convert_type((v), T_HASH, "Hash", "to_hash")
 #define CHECK_STRING(v)  rb_convert_type((v), T_STRING, "String", "to_str")
@@ -583,8 +587,7 @@ static VALUE
 iseq_s_load(int argc, VALUE *argv, VALUE self)
 {
     VALUE data, opt=Qnil;
-    rb_scan_args(argc, argv, "11", &data, &opt);
-
+    rb_scan_args(argc, argv, "01", &opt);
     return iseq_load(data, NULL, opt);
 }
 
@@ -892,7 +895,11 @@ iseqw_s_compile_option_get(VALUE self)
 static const rb_iseq_t *
 iseqw_check(VALUE iseqw)
 {
-    const rb_iseq_t *iseq = DATA_PTR(iseqw);
+    rb_iseq_t *iseq = DATA_PTR(iseqw);
+
+    if (!iseq->body) {
+	ibf_load_iseq_complete(iseq);
+    }
 
     if (!iseq->body->location.label) {
 	rb_raise(rb_eTypeError, "uninitialized InstructionSequence");
@@ -1235,7 +1242,7 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
 {
     const char *types = insn_op_types(insn);
     char type = types[op_no];
-    VALUE ret;
+    VALUE ret = Qundef;
 
     switch (type) {
       case TS_OFFSET:		/* LONG */
@@ -1281,8 +1288,8 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
 
       case TS_ISEQ:		/* iseq */
 	{
-	    rb_iseq_t *iseq = (rb_iseq_t *)op;
-	    if (iseq) {
+	    if (op) {
+		const rb_iseq_t *iseq = rb_iseq_check((rb_iseq_t *)op);
 		ret = iseq->body->location.label;
 		if (child) {
 		    rb_ary_push(child, (VALUE)iseq);
@@ -1492,7 +1499,7 @@ rb_iseq_disasm(const rb_iseq_t *iseq)
 			catch_type((int)entry->type), (int)entry->start,
 			(int)entry->end, (int)entry->sp, (int)entry->cont);
 	    if (entry->iseq) {
-		rb_str_concat(str, rb_iseq_disasm(entry->iseq));
+		rb_str_concat(str, rb_iseq_disasm(rb_iseq_check(entry->iseq)));
 	    }
 	}
     }
@@ -1561,7 +1568,7 @@ rb_iseq_disasm(const rb_iseq_t *iseq)
 
     for (l = 0; l < RARRAY_LEN(child); l++) {
 	VALUE isv = rb_ary_entry(child, l);
-	rb_str_concat(str, rb_iseq_disasm((rb_iseq_t *)isv));
+	rb_str_concat(str, rb_iseq_disasm(rb_iseq_check((rb_iseq_t *)isv)));
     }
 
     return str;
@@ -1907,7 +1914,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 		{
 		    const rb_iseq_t *iseq = (rb_iseq_t *)*seq;
 		    if (iseq) {
-			VALUE val = iseq_data_to_ary(iseq);
+			VALUE val = iseq_data_to_ary(rb_iseq_check(iseq));
 			rb_ary_push(ary, val);
 		    }
 		    else {
@@ -2002,7 +2009,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 	const struct iseq_catch_table_entry *entry = &iseq->body->catch_table->entries[i];
 	rb_ary_push(ary, exception_type2symbol(entry->type));
 	if (entry->iseq) {
-	    rb_ary_push(ary, iseq_data_to_ary(entry->iseq));
+	    rb_ary_push(ary, iseq_data_to_ary(rb_iseq_check(entry->iseq)));
 	}
 	else {
 	    rb_ary_push(ary, Qnil);
@@ -2326,6 +2333,51 @@ rb_iseqw_local_variables(VALUE iseqval)
 }
 
 /*
+ *  call-seq:
+ *     iseq.to_binary_format(extra_data = nil) -> binary str
+ *
+ *  Returns serialized iseq binary format data as a String object.
+ *  A correspnding iseq object is created by
+ *  RubyVM::InstructionSequence.from_binary_format() method.
+ *
+ *  String extra_data will be saved with binary data.
+ *  You can access this data with
+ *  RubyVM::InstructionSequence.from_binary_format_extra_data(binary).
+ */
+static VALUE
+iseqw_to_binary_format(int argc, VALUE *argv, VALUE self)
+{
+    VALUE opt;
+    rb_scan_args(argc, argv, "01", &opt);
+    return iseq_ibf_dump(iseqw_check(self), opt);
+}
+
+/*
+ *  call-seq:
+ *     RubyVM::InstructionSequence.from_binary_format(binary) -> iseq
+ *
+ *  Load an iseq object from binary format String object
+ *  created by RubyVM::InstructionSequence.to_binary_format.
+ */
+static VALUE
+iseqw_s_from_binary_format(VALUE self, VALUE str)
+{
+    return iseqw_new(iseq_ibf_load(str));
+}
+
+/*
+ *  call-seq:
+ *     RubyVM::InstructionSequence.from_binary_format_extra_data(binary) -> str
+ *
+ *  Load extra data embed into binary format String object.
+ */
+static VALUE
+iseqw_s_from_binary_format_extra_data(VALUE self, VALUE str)
+{
+    return  iseq_ibf_load_extra_data(str);
+}
+
+/*
  *  Document-class: RubyVM::InstructionSequence
  *
  *  The InstructionSequence class represents a compiled sequence of
@@ -2355,6 +2407,11 @@ Init_ISeq(void)
     rb_define_method(rb_cISeq, "disassemble", iseqw_disasm, 0);
     rb_define_method(rb_cISeq, "to_a", iseqw_to_a, 0);
     rb_define_method(rb_cISeq, "eval", iseqw_eval, 0);
+
+    rb_define_method(rb_cISeq, "to_binary_format", iseqw_to_binary_format, -1);
+    rb_define_singleton_method(rb_cISeq, "from_binary_format", iseqw_s_from_binary_format, 1);
+    rb_define_singleton_method(rb_cISeq, "from_binary_format_extra_data", iseqw_s_from_binary_format_extra_data, 1);
+    
 
     /* location APIs */
     rb_define_method(rb_cISeq, "path", iseqw_path, 0);

@@ -575,6 +575,7 @@ rb_provide(const char *feature)
 }
 
 NORETURN(static void load_failed(VALUE));
+const rb_iseq_t *rb_iseq_load_iseq(VALUE fname);
 
 static int
 rb_load_internal0(rb_thread_t *th, VALUE fname, int wrap)
@@ -604,12 +605,17 @@ rb_load_internal0(rb_thread_t *th, VALUE fname, int wrap)
     state = EXEC_TAG();
     if (state == 0) {
 	NODE *node;
-	rb_iseq_t *iseq;
+	const rb_iseq_t *iseq;
 
-	th->mild_compile_error++;
-	node = (NODE *)rb_load_file_str(fname);
-	iseq = rb_iseq_new_top(node, rb_str_new2("<top (required)>"), fname, rb_realpath_internal(Qnil, fname, 1), NULL);
-	th->mild_compile_error--;
+	if ((iseq = rb_iseq_load_iseq(fname)) != NULL) {
+	    /* OK */
+	}
+	else {
+	    th->mild_compile_error++;
+	    node = (NODE *)rb_load_file_str(fname);
+	    iseq = rb_iseq_new_top(node, rb_str_new2("<top (required)>"), fname, rb_realpath_internal(Qnil, fname, 1), NULL);
+	    th->mild_compile_error--;
+	}
 	rb_iseq_eval(iseq);
     }
     TH_POP_TAG();

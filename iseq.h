@@ -12,6 +12,9 @@
 #ifndef RUBY_ISEQ_H
 #define RUBY_ISEQ_H 1
 
+#define ISEQ_MAJOR_VERSION 2
+#define ISEQ_MINOR_VERSION 3
+
 #ifndef rb_iseq_t
 typedef struct rb_iseq_struct rb_iseq_t;
 #define rb_iseq_t rb_iseq_t
@@ -29,16 +32,27 @@ enum iseq_mark_ary_index {
     ISEQ_MARK_ARY_ORIGINAL_ISEQ = 2,
 };
 
+static inline VALUE
+iseq_mark_ary_create(int flip_cnt)
+{
+    VALUE ary = rb_ary_tmp_new(3);
+    rb_ary_push(ary, Qnil);              /* ISEQ_MARK_ARY_COVERAGE */
+    rb_ary_push(ary, INT2FIX(flip_cnt)); /* ISEQ_MARK_ARY_FLIP_CNT */
+    rb_ary_push(ary, Qnil);              /* ISEQ_MARK_ARY_ORIGINAL_ISEQ */
+    return ary;
+}
+
 #define ISEQ_MARK_ARY(iseq)           (iseq)->body->mark_ary
 
 #define ISEQ_COVERAGE(iseq)           RARRAY_AREF(ISEQ_MARK_ARY(iseq), ISEQ_MARK_ARY_COVERAGE)
 #define ISEQ_COVERAGE_SET(iseq, cov)  RARRAY_ASET(ISEQ_MARK_ARY(iseq), ISEQ_MARK_ARY_COVERAGE, cov)
 
+#define ISEQ_FLIP_CNT(iseq) FIX2INT(RARRAY_AREF(ISEQ_MARK_ARY(iseq), ISEQ_MARK_ARY_FLIP_CNT))
+
 static inline int
 ISEQ_FLIP_CNT_INCREMENT(const rb_iseq_t *iseq)
 {
-    VALUE cntv = RARRAY_AREF(ISEQ_MARK_ARY(iseq), ISEQ_MARK_ARY_FLIP_CNT);
-    int cnt = FIX2INT(cntv);
+    int cnt = ISEQ_FLIP_CNT(iseq);
     RARRAY_ASET(ISEQ_MARK_ARY(iseq), ISEQ_MARK_ARY_FLIP_CNT, INT2FIX(cnt+1));
     return cnt;
 }
@@ -59,7 +73,20 @@ ISEQ_ORIGINAL_ISEQ_ALLOC(const rb_iseq_t *iseq, long size)
     return (VALUE *)RSTRING_PTR(str);
 }
 
-#define ISEQ_COMPILE_DATA(iseq)       (iseq)->compile_data_
+#define ISEQ_COMPILE_DATA(iseq)       (iseq)->aux.compile_data
+
+static inline rb_iseq_t *
+iseq_imemo_alloc(void)
+{
+    return (rb_iseq_t *)rb_imemo_new(imemo_iseq, 0, 0, 0, 0);
+}
+
+#define ISEQ_NOT_LOADED_YET   IMEMO_FL_USER1
+
+VALUE iseq_ibf_dump(const rb_iseq_t *iseq, VALUE opt);
+void ibf_load_iseq_complete(rb_iseq_t *iseq);
+const rb_iseq_t *iseq_ibf_load(VALUE str);
+VALUE iseq_ibf_load_extra_data(VALUE str);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 

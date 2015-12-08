@@ -1,3 +1,63 @@
+Tue Dec  8 22:31:58 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* introduce new ISeq binary format serializer/de-serializer
+	  and a pre-compilation/runtime loader sample.
+	  [Feature #11788]
+
+	* iseq.c: add new methods:
+	  * RubyVM::InstructionSequence#to_binary_format(extra_data = nil)
+	  * RubyVM::InstructionSequence.from_binary_format(binary)
+	  * RubyVM::InstructionSequence.from_binary_format_extra_data(binary)
+
+	* compile.c: implement body of this new feature.
+
+	* load.c (rb_load_internal0), iseq.c (rb_iseq_load_iseq):
+	  call RubyVM::InstructionSequence.load_iseq(fname) with
+	  loading script name if this method is defined.
+
+	  We can return any ISeq object as a result value.
+	  Otherwise loading will be continue as usual.
+
+	  This interface is not matured and is not extensible.
+	  So that we don't guarantee the future compatibility of this method.
+	  Basically, you should'nt use this method.
+
+	* iseq.h: move ISEQ_MAJOR/MINOR_VERSION (and some definitions)
+	  from iseq.c.
+
+	* encoding.c (rb_data_is_encoding), internal.h: added.
+
+	* vm_core.h: add several supports for lazy load.
+	  * add USE_LAZY_LOAD macro to specify enable or disable of
+	    this feature.
+	  * add several fields to rb_iseq_t.
+	  * introduce new macro rb_iseq_check().
+
+	* insns.def: some check for lazy loading feature.
+
+	* vm_insnhelper.c: ditto.
+
+	* proc.c: ditto.
+
+	* vm.c: ditto.
+
+	* test/lib/iseq_loader_checker.rb: enabled iff suitable
+	  environment variables are provided.
+
+	* test/runner.rb: enable lib/iseq_loader_checker.rb.
+
+	* sample/iseq_loader.rb: add sample compiler and loader.
+
+	    $ ruby sample/iseq_loader.rb [dir]
+
+	  will compile all ruby scripts in [dir].
+	  With default setting, this compile creates *.rb.yarb files
+	  in same directory of target .rb scripts.
+
+	    $ ruby -r sample/iseq_loader.rb [app]
+
+	  will run with enable to load compiled binary data.
+
 Tue Dec  8 21:21:16 2015  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* NEWS: mention about Enumerator::Lazy#grep_v.

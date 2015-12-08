@@ -86,6 +86,12 @@ static const rb_data_type_t encoding_data_type = {
 #define is_data_encoding(obj) (RTYPEDDATA_P(obj) && RTYPEDDATA_TYPE(obj) == &encoding_data_type)
 #define is_obj_encoding(obj) (RB_TYPE_P((obj), T_DATA) && is_data_encoding(obj))
 
+int
+rb_data_is_encoding(VALUE obj)
+{
+    return is_data_encoding(obj);
+}
+
 static VALUE
 enc_new(rb_encoding *encoding)
 {

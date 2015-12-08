@@ -928,13 +928,15 @@ defineclass
 	rb_bug("unknown defineclass type: %d", (int)type);
     }
 
+    rb_iseq_check(class_iseq);
+
     /* enter scope */
     vm_push_frame(th, class_iseq, VM_FRAME_MAGIC_CLASS, klass,
 		  VM_ENVVAL_BLOCK_PTR(GET_BLOCK_PTR()),
 		  (VALUE)vm_cref_push(th, klass, NULL, FALSE),
 		  class_iseq->body->iseq_encoded, GET_SP(),
-		  class_iseq->body->local_size, class_iseq->body->stack_max);
-
+		  class_iseq->body->local_size,
+		  class_iseq->body->stack_max);
     RESTORE_REGS();
     NEXT_INSN();
 }

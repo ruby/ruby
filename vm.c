@@ -945,7 +945,7 @@ invoke_block_from_c_0(rb_thread_t *th, const rb_block_t *block,
 	return Qnil;
     }
     else if (LIKELY(RUBY_VM_NORMAL_ISEQ_P(block->iseq))) {
-	const rb_iseq_t *iseq = block->iseq;
+	const rb_iseq_t *iseq = rb_iseq_check(block->iseq);
 	int i, opt_pc;
 	int type = block_proc_is_lambda(block->proc) ? VM_FRAME_MAGIC_LAMBDA : VM_FRAME_MAGIC_BLOCK;
 	VALUE *sp = th->cfp->sp;
@@ -1816,6 +1816,7 @@ vm_exec(rb_thread_t *th)
 
 	if (catch_iseq != NULL) { /* found catch table */
 	    /* enter catch scope */
+	    rb_iseq_check(catch_iseq);
 	    cfp->sp = vm_base_ptr(cfp) + cont_sp;
 	    cfp->pc = cfp->iseq->body->iseq_encoded + cont_pc;
 
