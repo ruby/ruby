@@ -1953,12 +1953,14 @@ rb_data_typed_object_zalloc(VALUE klass, size_t size, const rb_data_type_t *type
 size_t
 rb_objspace_data_type_memsize(VALUE obj)
 {
-    if (RTYPEDDATA_P(obj) && RTYPEDDATA_TYPE(obj)->function.dsize) {
-	return RTYPEDDATA_TYPE(obj)->function.dsize(RTYPEDDATA_DATA(obj));
+    if (RTYPEDDATA_P(obj)) {
+	const rb_data_type_t *type = RTYPEDDATA_TYPE(obj);
+	const void *ptr = RTYPEDDATA_DATA(obj);
+	if (ptr && type->function.dsize) {
+	    return type->function.dsize(ptr);
+	}
     }
-    else {
-	return 0;
-    }
+    return 0;
 }
 
 const char *
