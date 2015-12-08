@@ -1,3 +1,9 @@
+Tue Dec  8 12:58:04 2015  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* test/io/console/test_io_console.rb (test_getpass): s.getpass
+	  should be tested. Narrow ensure block. This reverts r52911.
+	  [Bug #11780] [ruby-dev:49412]
+
 Tue Dec  8 10:40:21 2015  Eric Wong  <e@80x24.org>
 
 	* benchmark/bm_vm2_case_lit.rb: new benchmark
