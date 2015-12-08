@@ -1423,7 +1423,7 @@ lazy_set_method(VALUE lazy, VALUE args, rb_enumerator_size_func *size_fn)
  *   e.lazy -> lazy_enumerator
  *
  * Returns a lazy enumerator, whose methods map/collect,
- * flat_map/collect_concat, select/find_all, reject, grep, zip, take,
+ * flat_map/collect_concat, select/find_all, reject, grep, grep_v, zip, take,
  * take_while, drop, and drop_while enumerate values only on an
  * as-needed basis.  However, if a block is given to zip, values
  * are enumerated immediately.
@@ -1686,6 +1686,40 @@ lazy_grep(VALUE obj, VALUE pattern)
     return lazy_set_method(rb_block_call(rb_cLazy, id_new, 1, &obj,
 					 rb_block_given_p() ?
 					 lazy_grep_iter : lazy_grep_func,
+					 pattern),
+			   rb_ary_new3(1, pattern), 0);
+}
+
+static VALUE
+lazy_grep_v_func(RB_BLOCK_CALL_FUNC_ARGLIST(val, m))
+{
+    VALUE i = rb_enum_values_pack(argc - 1, argv + 1);
+    VALUE result = rb_funcall(m, id_eqq, 1, i);
+
+    if (!RTEST(result)) {
+	rb_funcall(argv[0], id_yield, 1, i);
+    }
+    return Qnil;
+}
+
+static VALUE
+lazy_grep_v_iter(RB_BLOCK_CALL_FUNC_ARGLIST(val, m))
+{
+    VALUE i = rb_enum_values_pack(argc - 1, argv + 1);
+    VALUE result = rb_funcall(m, id_eqq, 1, i);
+
+    if (!RTEST(result)) {
+	rb_funcall(argv[0], id_yield, 1, rb_yield(i));
+    }
+    return Qnil;
+}
+
+static VALUE
+lazy_grep_v(VALUE obj, VALUE pattern)
+{
+    return lazy_set_method(rb_block_call(rb_cLazy, id_new, 1, &obj,
+					 rb_block_given_p() ?
+					 lazy_grep_v_iter : lazy_grep_v_func,
 					 pattern),
 			   rb_ary_new3(1, pattern), 0);
 }
@@ -2029,6 +2063,7 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cLazy, "find_all", lazy_select, 0);
     rb_define_method(rb_cLazy, "reject", lazy_reject, 0);
     rb_define_method(rb_cLazy, "grep", lazy_grep, 1);
+    rb_define_method(rb_cLazy, "grep_v", lazy_grep_v, 1);
     rb_define_method(rb_cLazy, "zip", lazy_zip, -1);
     rb_define_method(rb_cLazy, "take", lazy_take, 1);
     rb_define_method(rb_cLazy, "take_while", lazy_take_while, 0);
