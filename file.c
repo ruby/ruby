@@ -5184,8 +5184,9 @@ static VALUE
 rb_stat_wr(VALUE obj)
 {
 #ifdef S_IROTH
-    if ((get_stat(obj)->st_mode & (S_IROTH)) == S_IROTH) {
-	return UINT2NUM(get_stat(obj)->st_mode & (S_IRUGO|S_IWUGO|S_IXUGO));
+    struct stat *st = get_stat(obj);
+    if ((st->st_mode & (S_IROTH)) == S_IROTH) {
+	return UINT2NUM(st->st_mode & (S_IRUGO|S_IWUGO|S_IXUGO));
     }
     else {
 	return Qnil;
@@ -5276,8 +5277,9 @@ static VALUE
 rb_stat_ww(VALUE obj)
 {
 #ifdef S_IROTH
-    if ((get_stat(obj)->st_mode & (S_IWOTH)) == S_IWOTH) {
-	return UINT2NUM(get_stat(obj)->st_mode & (S_IRUGO|S_IWUGO|S_IXUGO));
+    struct stat *st = get_stat(obj);
+    if ((st->st_mode & (S_IWOTH)) == S_IWOTH) {
+	return UINT2NUM(st->st_mode & (S_IRUGO|S_IWUGO|S_IXUGO));
     }
     else {
 	return Qnil;
