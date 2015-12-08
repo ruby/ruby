@@ -2319,6 +2319,12 @@ rb_iseqw_line_trace_specify(VALUE iseqval, VALUE pos, VALUE set)
     return data.prev == 1 ? Qtrue : Qfalse;
 }
 
+VALUE
+rb_iseqw_local_variables(VALUE iseqval)
+{
+    return rb_iseq_local_variables(iseqw_check(iseqval));
+}
+
 /*
  *  Document-class: RubyVM::InstructionSequence
  *

@@ -755,6 +755,17 @@ rb_vm_env_local_variables(const rb_env_t *env)
     return local_var_list_finish(&vars);
 }
 
+VALUE
+rb_iseq_local_variables(const rb_iseq_t *iseq)
+{
+    struct local_var_list vars;
+    local_var_list_init(&vars);
+    while (collect_local_variables_in_iseq(iseq, &vars)) {
+	iseq = iseq->body->parent_iseq;
+    }
+    return local_var_list_finish(&vars);
+}
+
 /* Proc */
 
 static inline VALUE
