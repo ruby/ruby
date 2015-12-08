@@ -1,3 +1,8 @@
+Tue Dec  8 21:21:16 2015  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* NEWS: mention about Enumerator::Lazy#grep_v.
+	  [ruby-core:71845] [Feature #11773]
+
 Tue Dec  8 17:36:36 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* string.c: removed unused variable
@@ -6050,7 +6055,7 @@ Mon Jun 22 18:08:48 2015  Naohisa Goto  <ngotogenome@gmail.com>
 
 Sun Jun 21 23:52:46 2015  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
-	* NEWS: mention Array#bsearch_index and Hash#fetch_values.
+	* NEWS: mention about Array#bsearch_index and Hash#fetch_values.
 
 Sun Jun 21 23:46:27 2015  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
