@@ -8284,7 +8284,7 @@ iseq_ibf_load_extra_data(VALUE str)
     VALUE extra_str;
 
     ibf_load_setup(load, loader_obj, str);
-    extra_str = rb_str_new2(load->buff + load->header->extra_size);
+    extra_str = rb_str_new(load->buff + load->header->size, load->header->extra_size);
     RB_GC_GUARD(loader_obj);
     return extra_str;
 }
