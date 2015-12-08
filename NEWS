@@ -132,6 +132,8 @@ with all sufficient information, see the ChangeLog file.
   * String#+@ and String#-@ are added to get mutable/frozen strings.
     [Feature #11782]
 
+  * String.new now accepts new option parameter `encoding'.
+
 * Struct
   * Struct#dig [Feature #11688]
 

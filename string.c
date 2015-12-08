@@ -1324,17 +1324,34 @@ rb_str_resurrect(VALUE str)
 /*
  *  call-seq:
  *     String.new(str="")   -> new_str
+ *     String.new(str="", encoding: enc) -> new_str
  *
  *  Returns a new string object containing a copy of <i>str</i>.
+ *  The optional <i>enc</i> argument specifies the encoding of the new string.
+ *  If not specified, the encoding of <i>str</i> (or ASCII-8BIT, if <i>str</i>
+ *  is not specified) is used.
  */
 
 static VALUE
 rb_str_init(int argc, VALUE *argv, VALUE str)
 {
-    VALUE orig;
+    static ID keyword_ids[1];
+    VALUE orig, opt, enc;
+    int n;
 
-    if (argc > 0 && rb_scan_args(argc, argv, "01", &orig) == 1)
+    if (!keyword_ids[0])
+	keyword_ids[0] = rb_intern("encoding");
+
+    n = rb_scan_args(argc, argv, "01:", &orig, &opt);
+    if (argc > 0 && n == 1)
 	rb_str_replace(str, orig);
+    if (!NIL_P(opt)) {
+	rb_get_kwargs(opt, keyword_ids, 0, 1, &enc);
+	if (enc != Qundef && !NIL_P(enc)) {
+	    rb_enc_associate(str, rb_to_encoding(enc));
+	    ENC_CODERANGE_CLEAR(str);
+	}
+    }
     return str;
 }
 
