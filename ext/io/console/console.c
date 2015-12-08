@@ -73,7 +73,7 @@ getattr(int fd, conmode *t)
 #define SET_LAST_ERROR (0)
 #endif
 
-static ID id_getc, id_gets, id_console, id_close, id_min, id_time;
+static ID id_getc, id_console, id_close, id_min, id_time;
 
 #ifndef HAVE_RB_F_SEND
 static ID id___send__;
@@ -845,78 +845,6 @@ io_getch(int argc, VALUE *argv, VALUE io)
     return rb_funcall2(io, id_getc, argc, argv);
 }
 
-static VALUE
-puts_call(VALUE io)
-{
-    return rb_io_write(io, rb_default_rs);
-}
-
-static VALUE
-getpass_call(VALUE io)
-{
-    return ttymode(io, rb_io_gets, set_noecho, NULL);
-}
-
-static void
-prompt(int argc, VALUE *argv, VALUE io)
-{
-    if (argc > 0 && !NIL_P(argv[0])) {
-	VALUE str = argv[0];
-	StringValueCStr(str);
-	rb_check_safe_obj(str);
-	rb_io_write(io, str);
-    }
-}
-
-static VALUE
-str_chomp(VALUE str)
-{
-    if (!NIL_P(str)) {
-	str = rb_funcallv(str, rb_intern("chomp!"), 0, 0);
-    }
-    return str;
-}
-
-/*
- * call-seq:
- *   io.getpass(prompt=nil)       -> string
- *
- * Reads and returns a line without echo back.
- * Prints +prompt+ unless it is +nil+.
- *
- * You must require 'io/console' to use this method.
- */
-static VALUE
-console_getpass(int argc, VALUE *argv, VALUE io)
-{
-    VALUE str, wio;
-
-    rb_check_arity(argc, 0, 1);
-    wio = rb_io_get_write_io(io);
-    if (wio == io && io == rb_stdin) wio = rb_stderr;
-    prompt(argc, argv, wio);
-    str = rb_ensure(getpass_call, io, puts_call, wio);
-    return str_chomp(str);
-}
-
-/*
- * call-seq:
- *   io.getpass(prompt=nil)       -> string
- *
- * See IO#getpass.
- */
-static VALUE
-io_getpass(int argc, VALUE *argv, VALUE io)
-{
-    VALUE str;
-
-    rb_check_arity(argc, 0, 1);
-    prompt(argc, argv, io);
-    str = str_chomp(rb_funcallv(io, id_gets, 0, 0));
-    puts_call(io);
-    return str;
-}
-
 /*
  * IO console methods
  */
@@ -925,7 +853,6 @@ Init_console(void)
 {
 #undef rb_intern
     id_getc = rb_intern("getc");
-    id_gets = rb_intern("gets");
     id_console = rb_intern("console");
     id_close = rb_intern("close");
     id_min = rb_intern("min");
@@ -957,11 +884,9 @@ InitVM_console(void)
     rb_define_method(rb_cIO, "cursor", console_cursor_pos, 0);
     rb_define_method(rb_cIO, "cursor=", console_cursor_set, 1);
     rb_define_method(rb_cIO, "pressed?", console_key_pressed_p, 1);
-    rb_define_method(rb_cIO, "getpass", console_getpass, -1);
     rb_define_singleton_method(rb_cIO, "console", console_dev, -1);
     {
 	VALUE mReadable = rb_define_module_under(rb_cIO, "generic_readable");
 	rb_define_method(mReadable, "getch", io_getch, -1);
-	rb_define_method(mReadable, "getpass", io_getpass, -1);
     }
 }
