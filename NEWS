@@ -16,8 +16,9 @@ with all sufficient information, see the ChangeLog file.
 * frozen-string-literal pragma:
 
   * new pragma, frozen-string-literal has been experimentally introduced.
+    [Feature #8976]
   * besides, --enable/--disable=frozen-string-literal options also have
-    been introduced.
+    been introduced. [Feature #8976]
   * command line option --debug or --debug=frozen-string-literal enable
     additional debugging mode which shows created location with at frozen
     object error (RuntimeError) even if string is dynamically created string
@@ -37,11 +38,13 @@ with all sufficient information, see the ChangeLog file.
           obj&.foo(bar())        # bar() is conditionally evaluated
     * attribute assignment is valid
           obj&.attr += 1
+    [Feature #11537]
 
 * indented here document:
 
   * new string literal, here document starts with `<<~`.
     refer doc/syntax/literals.rdoc for more details.
+    [Feature #9098]
 
 === Core classes updates (outstanding ones only)
 
