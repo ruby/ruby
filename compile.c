@@ -8116,7 +8116,7 @@ iseq_ibf_dump(const rb_iseq_t *iseq, VALUE opt)
     if (RTEST(opt)) {
 	VALUE opt_str = opt;
 	const char *ptr = StringValuePtr(opt_str);
-	header.extra_size = RSTRING_LENINT(opt_str) + 1;
+	header.extra_size = RSTRING_LENINT(opt_str);
 	ibf_dump_write(dump, ptr, header.extra_size);
     }
     else {
