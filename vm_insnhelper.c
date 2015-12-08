@@ -1400,7 +1400,7 @@ def_iseq_ptr(rb_method_definition_t *def)
 #if VM_CHECK_MODE > 0
     if (def->type != VM_METHOD_TYPE_ISEQ) rb_bug("def_iseq_ptr: not iseq (%d)", def->type);
 #endif
-    return def->body.iseq.iseqptr;
+    return rb_iseq_check(def->body.iseq.iseqptr);
 }
 
 static VALUE
@@ -2428,15 +2428,14 @@ static VALUE
 vm_invoke_block(rb_thread_t *th, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling, const struct rb_call_info *ci)
 {
     const rb_block_t *block = VM_CF_BLOCK_PTR(reg_cfp);
-    const rb_iseq_t *iseq;
     VALUE type = GET_ISEQ()->body->local_iseq->body->type;
 
     if ((type != ISEQ_TYPE_METHOD && type != ISEQ_TYPE_CLASS) || block == 0) {
 	rb_vm_localjump_error("no block given (yield)", Qnil, 0);
     }
-    iseq = block->iseq;
 
-    if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
+    if (RUBY_VM_NORMAL_ISEQ_P(block->iseq)) {
+	const rb_iseq_t *iseq = block->iseq;
 	const int arg_size = iseq->body->param.size;
 	int is_lambda = block_proc_is_lambda(block->proc);
 	VALUE * const rsp = GET_SP() - calling->argc;

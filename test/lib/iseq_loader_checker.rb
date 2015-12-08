@@ -1,5 +1,8 @@
 
-require '-test-/iseq_load/iseq_load'
+begin
+  require '-test-/iseq_load/iseq_load'
+rescue LoadError
+end
 require 'tempfile'
 
 class RubyVM::InstructionSequence
@@ -21,9 +24,6 @@ class RubyVM::InstructionSequence
     d2 = i2.disasm_if_possible
 
     if d1 != d2
-      p i1
-      return
-
       STDERR.puts "expected:"
       STDERR.puts d1
       STDERR.puts "actual:"
@@ -37,19 +37,38 @@ class RubyVM::InstructionSequence
     i2
   end
 
+  CHECK_TO_A      = ENV['RUBY_ISEQ_DUMP_DEBUG'] == 'to_a'
+  CHECK_TO_BINARY = ENV['RUBY_ISEQ_DUMP_DEBUG'] == 'to_binary'
+
   def self.translate i1
     # check to_a/load_iseq
-    i2 = compare_dump_and_load(i1,
-                               proc{|iseq|
-                                 ary = iseq.to_a
-                                 ary[9] == :top ? ary : nil
-                               },
-                               proc{|ary|
-                                 RubyVM::InstructionSequence.iseq_load(ary)
-                               })
+    i2_ary = compare_dump_and_load(i1,
+                                   proc{|iseq|
+                                     ary = iseq.to_a
+                                     ary[9] == :top ? ary : nil
+                                   },
+                                   proc{|ary|
+                                     RubyVM::InstructionSequence.iseq_load(ary)
+                                   }) if CHECK_TO_A && defined?(RubyVM::InstructionSequence.iseq_load)
+
+    # check to_binary_format
+    i2_bin = compare_dump_and_load(i1,
+                                   proc{|iseq|
+                                     begin
+                                       iseq.to_binary_format
+                                     rescue RuntimeError => e # not a toplevel
+                                       # STDERR.puts [:failed, e, iseq].inspect
+                                       nil
+                                     end
+                                   },
+                                   proc{|bin|
+                                     iseq = RubyVM::InstructionSequence.from_binary_format(bin)
+                                     # STDERR.puts iseq.inspect
+                                     iseq
+                                   }) if CHECK_TO_BINARY
     # return value
-    i1
-  end
+    i2_bin if CHECK_TO_BINARY
+  end if CHECK_TO_A || CHECK_TO_BINARY
 end
 
 #require_relative 'x'; exit(1)
