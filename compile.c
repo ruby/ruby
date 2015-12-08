@@ -8193,8 +8193,11 @@ ibf_load_iseq(const struct ibf_load *load, const rb_iseq_t *index_iseq)
 }
 
 static void
-ibf_setup_load(struct ibf_load *load, VALUE loader_obj, VALUE str)
+ibf_load_setup(struct ibf_load *load, VALUE loader_obj, VALUE str)
 {
+    if (RSTRING_LENINT(str) < sizeof(struct ibf_header)) {
+	rb_raise(rb_eRuntimeError, "broken binary format");
+    }
     RB_OBJ_WRITE(loader_obj, &load->str, str);
     load->loader_obj = loader_obj;
     load->buff = StringValuePtr(str);
@@ -8203,6 +8206,21 @@ ibf_setup_load(struct ibf_load *load, VALUE loader_obj, VALUE str)
     RB_OBJ_WRITE(loader_obj, &load->obj_list, rb_ary_tmp_new(0));
     load->id_list = ZALLOC_N(ID, load->header->id_list_size);
     load->iseq = NULL;
+
+    if (RSTRING_LENINT(str) < (int)load->header->size) {
+	rb_raise(rb_eRuntimeError, "broken binary format");
+    }
+    if (strncmp(load->header->magic, "YARB", 4) != 0) {
+	rb_raise(rb_eRuntimeError, "unkown binary format");
+    }
+    if (load->header->major_version != ISEQ_MAJOR_VERSION ||
+	load->header->minor_version != ISEQ_MINOR_VERSION) {
+	rb_raise(rb_eRuntimeError, "unmatched version file (%u.%u for %u.%u)",
+		 load->header->major_version, load->header->minor_version, ISEQ_MAJOR_VERSION, ISEQ_MINOR_VERSION);
+    }
+    if (strcmp(load->buff + sizeof(struct ibf_header), RUBY_PLATFORM) != 0) {
+	rb_raise(rb_eRuntimeError, "unmatched platform");
+    }
 }
 
 static void
@@ -8251,7 +8269,7 @@ iseq_ibf_load(VALUE str)
     const rb_iseq_t *iseq;
     VALUE loader_obj = TypedData_Make_Struct(0, struct ibf_load, &ibf_load_type, load);
 
-    ibf_setup_load(load, loader_obj, str);
+    ibf_load_setup(load, loader_obj, str);
     iseq = ibf_load_iseq(load, 0);
 
     RB_GC_GUARD(loader_obj);
@@ -8265,7 +8283,7 @@ iseq_ibf_load_extra_data(VALUE str)
     VALUE loader_obj = TypedData_Make_Struct(0, struct ibf_load, &ibf_load_type, load);
     VALUE extra_str;
 
-    ibf_setup_load(load, loader_obj, str);
+    ibf_load_setup(load, loader_obj, str);
     extra_str = rb_str_new2(load->buff + load->header->extra_size);
     RB_GC_GUARD(loader_obj);
     return extra_str;
