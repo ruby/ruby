@@ -1,3 +1,9 @@
+Wed Dec  9 01:46:23 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby_atomic.h (ATOMIC_SIZE_CAS): fix the argument order of
+	  InterlockedCompareExchange64.  new value and then old value is
+	  the last.
+
 Wed Dec  9 01:28:54 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (enc_m_loader): defer finding encoding object not to
