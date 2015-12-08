@@ -1,3 +1,7 @@
+Tue Dec  8 23:04:02 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.c (iseq_s_load): fix mysterious bug.
+
 Tue Dec  8 22:31:58 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* introduce new ISeq binary format serializer/de-serializer

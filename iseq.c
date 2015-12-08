@@ -587,7 +587,7 @@ static VALUE
 iseq_s_load(int argc, VALUE *argv, VALUE self)
 {
     VALUE data, opt=Qnil;
-    rb_scan_args(argc, argv, "01", &opt);
+    rb_scan_args(argc, argv, "11", &data, &opt);
     return iseq_load(data, NULL, opt);
 }
 
