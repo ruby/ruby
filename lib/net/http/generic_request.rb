@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 # HTTPGenericRequest is the parent of the HTTPRequest class.
 # Do not use this directly; use a subclass of HTTPRequest.
 #
@@ -15,7 +16,7 @@ class Net::HTTPGenericRequest
     if URI === uri_or_path then
       @uri = uri_or_path.dup
       host = @uri.hostname.dup
-      host << ":".freeze << @uri.port.to_s if @uri.port != @uri.default_port
+      host << ":" << @uri.port.to_s if @uri.port != @uri.default_port
       @path = uri_or_path.request_uri
       raise ArgumentError, "no HTTP request path given" unless @path
     else
@@ -132,15 +133,15 @@ class Net::HTTPGenericRequest
     return unless @uri
 
     if ssl
-      scheme = 'https'.freeze
+      scheme = 'https'
       klass = URI::HTTPS
     else
-      scheme = 'http'.freeze
+      scheme = 'http'
       klass = URI::HTTP
     end
 
     if host = self['host']
-      host.sub!(/:.*/s, ''.freeze)
+      host.sub!(/:.*/s, '')
     elsif host = @uri.host
     else
      host = addr
@@ -239,7 +240,7 @@ class Net::HTTPGenericRequest
     boundary ||= SecureRandom.urlsafe_base64(40)
     chunked_p = chunked?
 
-    buf = ''
+    buf = String.new
     params.each do |key, value, h={}|
       key = quote_string(key, charset)
       filename =
@@ -320,7 +321,7 @@ class Net::HTTPGenericRequest
   end
 
   def write_header(sock, ver, path)
-    buf = "#{@method} #{path} HTTP/#{ver}\r\n"
+    buf = String.new("#{@method} #{path} HTTP/#{ver}\r\n")
     each_capitalized do |k,v|
       buf << "#{k}: #{v}\r\n"
     end
@@ -329,4 +330,3 @@ class Net::HTTPGenericRequest
   end
 
 end
-
