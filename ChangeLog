@@ -1,3 +1,18 @@
+Thu Dec 10 00:06:56 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.c: rename methods
+	  RubyVM::InstructionSequence#to_binary_format -> #to_binary
+	  RubyVM::InstructionSequence.from_binary_format -> .load_from_binary
+	  RubyVM::InstructionSequence.from_binary_format_extra_data ->
+	                             .load_from_binary_extra_data
+
+	* iseq.c: fix document of iseq.to_binary.
+	  [Fix GH-1134]
+
+	* sample/iseq_loader.rb: catch up this change.
+
+	* test/lib/iseq_loader_checker.rb: ditto.
+
 Wed Dec  9 17:02:03 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* regparse.h (SET_NTYPE): get rid of breaking strict aliasing.

@@ -2334,23 +2334,23 @@ rb_iseqw_local_variables(VALUE iseqval)
 
 /*
  *  call-seq:
- *     iseq.to_binary_format(extra_data = nil) -> binary str
+ *     iseq.to_binary(extra_data = nil) -> binary str
  *
  *  Returns serialized iseq binary format data as a String object.
  *  A correspnding iseq object is created by
- *  RubyVM::InstructionSequence.from_binary_format() method.
+ *  RubyVM::InstructionSequence.load_from_binary() method.
  *
  *  String extra_data will be saved with binary data.
  *  You can access this data with
- *  RubyVM::InstructionSequence.from_binary_format_extra_data(binary).
+ *  RubyVM::InstructionSequence.load_from_binary_extra_data(binary).
  *
  *  Note that the translated binary data is not portable.
  *  You can not move this binary data to another machine.
- *  You can not use the binary data whcih is created by another
+ *  You can not use the binary data which is created by another
  *  version/another architecture of Ruby.
  */
 static VALUE
-iseqw_to_binary_format(int argc, VALUE *argv, VALUE self)
+iseqw_to_binary(int argc, VALUE *argv, VALUE self)
 {
     VALUE opt;
     rb_scan_args(argc, argv, "01", &opt);
@@ -2359,10 +2359,10 @@ iseqw_to_binary_format(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
- *     RubyVM::InstructionSequence.from_binary_format(binary) -> iseq
+ *     RubyVM::InstructionSequence.load_from_binary(binary) -> iseq
  *
  *  Load an iseq object from binary format String object
- *  created by RubyVM::InstructionSequence.to_binary_format.
+ *  created by RubyVM::InstructionSequence.to_binary.
  *
  *  This loader does not have a verifier, so that loading broken/modified
  *  binary causes critical problem.
@@ -2371,19 +2371,19 @@ iseqw_to_binary_format(int argc, VALUE *argv, VALUE self)
  *  You should use binary data translated by yourself.
  */
 static VALUE
-iseqw_s_from_binary_format(VALUE self, VALUE str)
+iseqw_s_load_from_binary(VALUE self, VALUE str)
 {
     return iseqw_new(iseq_ibf_load(str));
 }
 
 /*
  *  call-seq:
- *     RubyVM::InstructionSequence.from_binary_format_extra_data(binary) -> str
+ *     RubyVM::InstructionSequence.load_from_binary_extra_data(binary) -> str
  *
  *  Load extra data embed into binary format String object.
  */
 static VALUE
-iseqw_s_from_binary_format_extra_data(VALUE self, VALUE str)
+iseqw_s_load_from_binary_extra_data(VALUE self, VALUE str)
 {
     return  iseq_ibf_load_extra_data(str);
 }
@@ -2419,9 +2419,9 @@ Init_ISeq(void)
     rb_define_method(rb_cISeq, "to_a", iseqw_to_a, 0);
     rb_define_method(rb_cISeq, "eval", iseqw_eval, 0);
 
-    rb_define_method(rb_cISeq, "to_binary_format", iseqw_to_binary_format, -1);
-    rb_define_singleton_method(rb_cISeq, "from_binary_format", iseqw_s_from_binary_format, 1);
-    rb_define_singleton_method(rb_cISeq, "from_binary_format_extra_data", iseqw_s_from_binary_format_extra_data, 1);
+    rb_define_method(rb_cISeq, "to_binary", iseqw_to_binary, -1);
+    rb_define_singleton_method(rb_cISeq, "load_from_binary", iseqw_s_load_from_binary, 1);
+    rb_define_singleton_method(rb_cISeq, "load_from_binary_extra_data", iseqw_s_load_from_binary_extra_data, 1);
 
 
     /* location APIs */

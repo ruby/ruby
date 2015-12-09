@@ -51,18 +51,18 @@ class RubyVM::InstructionSequence
                                      RubyVM::InstructionSequence.iseq_load(ary)
                                    }) if CHECK_TO_A && defined?(RubyVM::InstructionSequence.iseq_load)
 
-    # check to_binary_format
+    # check to_binary
     i2_bin = compare_dump_and_load(i1,
                                    proc{|iseq|
                                      begin
-                                       iseq.to_binary_format
+                                       iseq.to_binary
                                      rescue RuntimeError => e # not a toplevel
                                        # STDERR.puts [:failed, e, iseq].inspect
                                        nil
                                      end
                                    },
                                    proc{|bin|
-                                     iseq = RubyVM::InstructionSequence.from_binary_format(bin)
+                                     iseq = RubyVM::InstructionSequence.load_from_binary(bin)
                                      # STDERR.puts iseq.inspect
                                      iseq
                                    }) if CHECK_TO_BINARY
