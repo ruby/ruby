@@ -125,9 +125,9 @@ with all sufficient information, see the ChangeLog file.
     Note that loader does not have verifier so it is easy to cause
     critical problem by loading modified/broken binary data.
     See [Feature #11788] for more details. (experimental feature)
-    * RubyVM::InstructionSequence#to_binary_format(extra_data = nil)
-    * RubyVM::InstructionSequence.from_binary_format(binary)
-    * RubyVM::InstructionSequence.from_binary_format_extra_data(binary)
+    * RubyVM::InstructionSequence#to_binary(extra_data = nil)
+    * RubyVM::InstructionSequence.load_from_binary(binary)
+    * RubyVM::InstructionSequence.load_from_binary_extra_data(binary)
 
 * String
 
