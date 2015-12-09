@@ -135,6 +135,7 @@ with all sufficient information, see the ChangeLog file.
     [Feature #11782]
 
   * String.new now accepts new option parameter `encoding'.
+    [Feature #11785]
 
 * Struct
   * Struct#dig [Feature #11688]
@@ -159,7 +160,7 @@ with all sufficient information, see the ChangeLog file.
 
 * File::Stat
   * On Windows File::Stat#ino always returned 0, but now returns
-    BY_HANDLE_FILE_INFORMATION.nFileIndexHigh/Low.
+    BY_HANDLE_FILE_INFORMATION.nFileIndexHigh/Low.  [Feature #11216]
 
 * IO
   * IO#close doesn't raise when the IO object is closed.  [Feature #10718]
@@ -229,29 +230,30 @@ with all sufficient information, see the ChangeLog file.
 
 * lib/base64.rb
   * Base64.urlsafe_encode64: added a "padding" option to suppress
-    the padding character ("=").
+    the padding character ("=").  [Feature #10740]
   * Base64.urlsafe_decode64: now it accepts not only correctly-padded
-    input but also unpadded input.
+    input but also unpadded input.  [Feature #10740]
 
 * lib/matrix.rb
   * Add Vector#round. https://github.com/ruby/ruby/pull/802
 
 * ext/coverage/coverage.c
   * Coverage.peek_result: new method to allow coverage to be captured without
-    stopping the coverage tool.
+    stopping the coverage tool.  [Feature #10816]
 
 * Net::HTTP
   * default value of Net::HTTP#open_timeout is now 60 (was nil).
 
 * Net::Telnet
   * Net::Telnet is extracted to net-telnet gem. It's unmaintain code.
+    [Feature #11083]
 
 * Net::FTP
   * Connections are in passive mode per default now.  The default mode can
     be changed by Net::FTP.default_passive=.  [Feature #11612]
 
 * Rake
-  * Rake is removed from stdlib.
+  * Rake is removed from stdlib.  [Feature #11025]
 
 === Built-in global variables compatibility issues
 
