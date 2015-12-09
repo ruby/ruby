@@ -1,3 +1,8 @@
+Wed Dec  9 09:25:29 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* test/net/smtp/test_response.rb: use Test::Unit. We should use Test::Unit
+	  without rubygems and rdoc.
+
 Wed Dec  9 06:26:23 2015  Colin Kelley <colindkelley@gmail.com>
 
 	* lib/uri/generic.rb: enable frozen_string_literal
