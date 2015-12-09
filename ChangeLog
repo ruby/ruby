@@ -1,3 +1,7 @@
+Wed Dec  9 09:46:19 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* .gitignore: ignored ISeq binary format.
+
 Wed Dec  9 09:34:41 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* *.c (*_memsize): do not check ptr.
