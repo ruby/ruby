@@ -491,7 +491,7 @@ dir_initialize(int argc, VALUE *argv, VALUE dir)
     const char *path;
 
     if (!keyword_ids[0]) {
-	keyword_ids[0] = rb_intern("encoding");
+	keyword_ids[0] = rb_id_encoding();
     }
 
     fsenc = rb_filesystem_encoding();

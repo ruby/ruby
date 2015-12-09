@@ -12494,7 +12494,7 @@ Init_IO(void)
     sym_flags = ID2SYM(rb_intern("flags"));
     sym_extenc = ID2SYM(rb_intern("external_encoding"));
     sym_intenc = ID2SYM(rb_intern("internal_encoding"));
-    sym_encoding = ID2SYM(rb_intern("encoding"));
+    sym_encoding = ID2SYM(rb_id_encoding());
     sym_open_args = ID2SYM(rb_intern("open_args"));
     sym_textmode = ID2SYM(rb_intern("textmode"));
     sym_binmode = ID2SYM(rb_intern("binmode"));
