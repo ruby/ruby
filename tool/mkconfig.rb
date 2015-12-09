@@ -172,6 +172,7 @@ prefix = vars.expand(vars["prefix"] ||= "")
 rubyarchdir = vars.expand(vars["rubyarchdir"] ||= "")
 relative_archdir = rubyarchdir.rindex(prefix, 0) ? rubyarchdir[prefix.size..-1] : rubyarchdir
 puts %[\
+# frozen-string-literal: false
 # This file was created by #{mkconfig} when ruby was built.  It contains
 # build information for ruby which is used e.g. by mkmf to build
 # compatible native extensions.  Any changes made to this file will be
