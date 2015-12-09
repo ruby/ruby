@@ -96,6 +96,17 @@ class TestNetHTTP < Test::Unit::TestCase
     end
   end
 
+  def test_proxy_from_env_ENV
+    clean_http_proxy_env do
+      ENV['http_proxy'] = 'http://proxy.example:8000'
+
+      assert_equal false, Net::HTTP.proxy_class?
+      http = Net::HTTP.new 'example'
+
+      assert_equal true, http.proxy_from_env?
+    end
+  end
+
   def test_proxy_address_ENV
     clean_http_proxy_env do
       ENV['http_proxy'] = 'http://proxy.example:8000'
