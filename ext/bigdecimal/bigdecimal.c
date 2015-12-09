@@ -172,7 +172,7 @@ static size_t
 BigDecimal_memsize(const void *ptr)
 {
     const Real *pv = ptr;
-    return pv ? (sizeof(*pv) + pv->MaxPrec * sizeof(BDIGIT)) : 0;
+    return (sizeof(*pv) + pv->MaxPrec * sizeof(BDIGIT));
 }
 
 static const rb_data_type_t BigDecimal_data_type = {

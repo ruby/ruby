@@ -725,7 +725,7 @@ addrinfo_mark(void *ptr)
 static size_t
 addrinfo_memsize(const void *ptr)
 {
-    return ptr ? sizeof(rb_addrinfo_t) : 0;
+    return sizeof(rb_addrinfo_t);
 }
 
 static const rb_data_type_t addrinfo_type = {

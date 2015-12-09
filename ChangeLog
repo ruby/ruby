@@ -1,3 +1,7 @@
+Wed Dec  9 09:58:09 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/**/*.c (*_memsize): same as r52986 for extensions.
+
 Wed Dec  9 09:46:19 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* .gitignore: ignored ISeq binary format.
