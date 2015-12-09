@@ -7548,7 +7548,7 @@ static void
 ibf_dump_object_unsupported(struct ibf_dump *dump, VALUE obj)
 {
     rb_obj_info_dump(obj);
-    rb_bug("ibf_dump_object_unsupported: unsupporetd");
+    rb_bug("ibf_dump_object_unsupported: unsupported");
 }
 
 static VALUE
