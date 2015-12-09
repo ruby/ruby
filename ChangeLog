@@ -1,3 +1,11 @@
+Wed Dec  9 16:10:37 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (rb_vm_cref_in_context): Module#define_method in non-class
+	  expression should be public.
+	  [Bug #11754]
+
+	* test/ruby/test_method.rb: add a test.
+
 Wed Dec  9 15:48:12 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* regcomp.c (onig_chain_link_add): use atomic operation instead of

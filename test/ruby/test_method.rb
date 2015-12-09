@@ -924,6 +924,8 @@ class TestMethod < Test::Unit::TestCase
     def m1
       def m2
       end
+
+      self.class.send(:define_method, :m3){} # [Bug #11754]
     end
     private
   end
@@ -933,7 +935,7 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([].sort, MethodInMethodClass.private_instance_methods(false).sort)
 
     MethodInMethodClass.new.m1
-    assert_equal([:m1, :m2].sort, MethodInMethodClass.public_instance_methods(false).sort)
+    assert_equal([:m1, :m2, :m3].sort, MethodInMethodClass.public_instance_methods(false).sort)
     assert_equal([].sort, MethodInMethodClass.private_instance_methods(false).sort)
   end
 end

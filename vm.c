@@ -1226,6 +1226,7 @@ rb_vm_cref_in_context(VALUE self, VALUE cbase)
     const rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
     const rb_cref_t *cref;
     if (cfp->self != self) return NULL;
+    if (!vm_env_cref_by_cref(cfp->ep)) return NULL;
     cref = rb_vm_get_cref(cfp->ep);
     if (CREF_CLASS(cref) != cbase) return NULL;
     return cref;
