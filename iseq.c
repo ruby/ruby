@@ -2346,7 +2346,7 @@ rb_iseqw_local_variables(VALUE iseqval)
  *
  *  Note that the translated binary data is not portable.
  *  You can not move this binary data to another machine.
- *  You can not use the binary data whcih is created by another
+ *  You can not use the binary data which is created by another
  *  version/another architecture of Ruby.
  */
 static VALUE
