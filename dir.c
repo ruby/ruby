@@ -438,7 +438,7 @@ dir_free(void *ptr)
 static size_t
 dir_memsize(const void *ptr)
 {
-    return ptr ? sizeof(struct dir_data) : 0;
+    return sizeof(struct dir_data);
 }
 
 static const rb_data_type_t dir_data_type = {

@@ -1,3 +1,9 @@
+Wed Dec  9 09:34:41 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* *.c (*_memsize): do not check ptr.
+	  NULL checking is finished Before call of memsize functions.
+	  See r52979.
+
 Wed Dec  9 09:25:29 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* test/net/smtp/test_response.rb: use Test::Unit. We should use Test::Unit

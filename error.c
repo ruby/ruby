@@ -1196,7 +1196,7 @@ name_err_mesg_mark(void *p)
 static size_t
 name_err_mesg_memsize(const void *p)
 {
-    return p ? (NAME_ERR_MESG_COUNT * sizeof(VALUE)) : 0;
+    return NAME_ERR_MESG_COUNT * sizeof(VALUE);
 }
 
 static const rb_data_type_t name_err_mesg_data_type = {

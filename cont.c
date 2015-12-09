@@ -280,26 +280,25 @@ cont_memsize(const void *ptr)
 {
     const rb_context_t *cont = ptr;
     size_t size = 0;
-    if (cont) {
-	size = sizeof(*cont);
-	if (cont->vm_stack) {
-#ifdef CAPTURE_JUST_VALID_VM_STACK
-	    size_t n = (cont->vm_stack_slen + cont->vm_stack_clen);
-#else
-	    size_t n = cont->saved_thread.stack_size;
-#endif
-	    size += n * sizeof(*cont->vm_stack);
-	}
 
-	if (cont->machine.stack) {
-	    size += cont->machine.stack_size * sizeof(*cont->machine.stack);
-	}
-#ifdef __ia64
-	if (cont->machine.register_stack) {
-	    size += cont->machine.register_stack_size * sizeof(*cont->machine.register_stack);
-	}
+    size = sizeof(*cont);
+    if (cont->vm_stack) {
+#ifdef CAPTURE_JUST_VALID_VM_STACK
+	size_t n = (cont->vm_stack_slen + cont->vm_stack_clen);
+#else
+	size_t n = cont->saved_thread.stack_size;
 #endif
+	size += n * sizeof(*cont->vm_stack);
     }
+
+    if (cont->machine.stack) {
+	size += cont->machine.stack_size * sizeof(*cont->machine.stack);
+    }
+#ifdef __ia64
+    if (cont->machine.register_stack) {
+	size += cont->machine.register_stack_size * sizeof(*cont->machine.register_stack);
+    }
+#endif
     return size;
 }
 
@@ -343,14 +342,13 @@ fiber_memsize(const void *ptr)
 {
     const rb_fiber_t *fib = ptr;
     size_t size = 0;
-    if (ptr) {
-	size = sizeof(*fib);
-	if (fib->cont.type != ROOT_FIBER_CONTEXT &&
-	    fib->cont.saved_thread.local_storage != NULL) {
-	    size += st_memsize(fib->cont.saved_thread.local_storage);
-	}
-	size += cont_memsize(&fib->cont);
+
+    size = sizeof(*fib);
+    if (fib->cont.type != ROOT_FIBER_CONTEXT &&
+	fib->cont.saved_thread.local_storage != NULL) {
+	size += st_memsize(fib->cont.saved_thread.local_storage);
     }
+    size += cont_memsize(&fib->cont);
     return size;
 }
 

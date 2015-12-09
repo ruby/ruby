@@ -8054,16 +8054,11 @@ ibf_dump_free(void *ptr)
 static size_t
 ibf_dump_memsize(const void *ptr)
 {
-    if (ptr) {
-	struct ibf_dump *dump = (struct ibf_dump *)ptr;
-	size_t size = sizeof(*dump);
-	if (dump->iseq_table) size += st_memsize(dump->iseq_table);
-	if (dump->id_table) size += st_memsize(dump->id_table);
-	return size;
-    }
-    else {
-	return 0;
-    }
+    struct ibf_dump *dump = (struct ibf_dump *)ptr;
+    size_t size = sizeof(*dump);
+    if (dump->iseq_table) size += st_memsize(dump->iseq_table);
+    if (dump->id_table) size += st_memsize(dump->id_table);
+    return size;
 }
 
 static const rb_data_type_t ibf_dump_type = {
@@ -8253,13 +8248,8 @@ ibf_loader_free(void *ptr)
 static size_t
 ibf_loader_memsize(const void *ptr)
 {
-    if (ptr) {
-	struct ibf_load *load = (struct ibf_load *)ptr;
-	return sizeof(struct ibf_load) + load->header->id_list_size * sizeof(ID);
-    }
-    else {
-	return 0;
-    }
+    struct ibf_load *load = (struct ibf_load *)ptr;
+    return sizeof(struct ibf_load) + load->header->id_list_size * sizeof(ID);
 }
 
 static const rb_data_type_t ibf_load_type = {
