@@ -66,7 +66,6 @@ strio_free(void *p)
 static size_t
 strio_memsize(const void *p)
 {
-    const struct StringIO *ptr = p;
     return sizeof(struct StringIO);
 }
 
