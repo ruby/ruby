@@ -343,7 +343,7 @@ random_free(void *ptr)
 static size_t
 random_memsize(const void *ptr)
 {
-    return ptr ? sizeof(rb_random_t) : 0;
+    return sizeof(rb_random_t);
 }
 
 static const rb_data_type_t random_data_type = {

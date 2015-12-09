@@ -2047,20 +2047,15 @@ ruby_vm_destruct(rb_vm_t *vm)
 static size_t
 vm_memsize(const void *ptr)
 {
-    if (ptr) {
-	const rb_vm_t *vmobj = ptr;
-	size_t size = sizeof(rb_vm_t);
+    const rb_vm_t *vmobj = ptr;
+    size_t size = sizeof(rb_vm_t);
 
-	size += vmobj->living_thread_num * sizeof(rb_thread_t);
+    size += vmobj->living_thread_num * sizeof(rb_thread_t);
 
-	if (vmobj->defined_strings) {
-	    size += DEFINED_EXPR * sizeof(VALUE);
-	}
-	return size;
+    if (vmobj->defined_strings) {
+	size += DEFINED_EXPR * sizeof(VALUE);
     }
-    else {
-	return 0;
-    }
+    return size;
 }
 
 static const rb_data_type_t vm_data_type = {
@@ -2298,21 +2293,16 @@ thread_free(void *ptr)
 static size_t
 thread_memsize(const void *ptr)
 {
-    if (ptr) {
-	const rb_thread_t *th = ptr;
-	size_t size = sizeof(rb_thread_t);
+    const rb_thread_t *th = ptr;
+    size_t size = sizeof(rb_thread_t);
 
-	if (!th->root_fiber) {
-	    size += th->stack_size * sizeof(VALUE);
-	}
-	if (th->local_storage) {
-	    size += st_memsize(th->local_storage);
-	}
-	return size;
+    if (!th->root_fiber) {
+	size += th->stack_size * sizeof(VALUE);
     }
-    else {
-	return 0;
+    if (th->local_storage) {
+	size += st_memsize(th->local_storage);
     }
+    return size;
 }
 
 #define thread_data_type ruby_threadptr_data_type

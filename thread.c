@@ -3983,7 +3983,7 @@ struct thgroup {
 static size_t
 thgroup_memsize(const void *ptr)
 {
-    return ptr ? sizeof(struct thgroup) : 0;
+    return sizeof(struct thgroup);
 }
 
 static const rb_data_type_t thgroup_data_type = {

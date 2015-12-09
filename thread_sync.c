@@ -68,7 +68,7 @@ mutex_free(void *ptr)
 static size_t
 mutex_memsize(const void *ptr)
 {
-    return ptr ? sizeof(rb_mutex_t) : 0;
+    return sizeof(rb_mutex_t);
 }
 
 static const rb_data_type_t mutex_data_type = {
