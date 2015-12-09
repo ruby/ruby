@@ -7764,7 +7764,6 @@ argf_memsize(const void *ptr)
 {
     const struct argf *p = ptr;
     size_t size = sizeof(*p);
-    if (!ptr) return 0;
     if (p->inplace) size += strlen(p->inplace) + 1;
     return size;
 }

@@ -269,7 +269,7 @@ binding_mark(void *ptr)
 static size_t
 binding_memsize(const void *ptr)
 {
-    return ptr ? sizeof(rb_binding_t) : 0;
+    return sizeof(rb_binding_t);
 }
 
 const rb_data_type_t ruby_binding_data_type = {
@@ -1203,7 +1203,7 @@ bm_free(void *ptr)
 static size_t
 bm_memsize(const void *ptr)
 {
-    return ptr ? sizeof(struct METHOD) : 0;
+    return sizeof(struct METHOD);
 }
 
 static const rb_data_type_t method_data_type = {

@@ -10807,7 +10807,6 @@ parser_memsize(const void *ptr)
     struct local_vars *local;
     size_t size = sizeof(*parser);
 
-    if (!ptr) return 0;
     size += toksiz;
     for (local = lvtbl; local; local = local->prev) {
 	size += sizeof(*local);

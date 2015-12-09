@@ -378,7 +378,7 @@ rb_file_path(VALUE obj)
 static size_t
 stat_memsize(const void *p)
 {
-    return p ? sizeof(struct stat) : 0;
+    return sizeof(struct stat);
 }
 
 static const rb_data_type_t stat_data_type = {

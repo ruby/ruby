@@ -3872,7 +3872,7 @@ static size_t
 com_hash_size(const void *ptr)
 {
     const st_table *tbl = ptr;
-    return tbl ? st_memsize(tbl) : 0;
+    return st_memsize(tbl);
 }
 
 void

@@ -7948,7 +7948,6 @@ wmap_memsize(const void *ptr)
 {
     size_t size;
     const struct weakmap *w = ptr;
-    if (!w) return 0;
     size = sizeof(*w);
     size += st_memsize(w->obj2wmap);
     size += st_memsize(w->wmap2obj);

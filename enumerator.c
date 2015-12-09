@@ -156,7 +156,7 @@ enumerator_mark(void *p)
 static size_t
 enumerator_memsize(const void *p)
 {
-    return p ? sizeof(struct enumerator) : 0;
+    return sizeof(struct enumerator);
 }
 
 static const rb_data_type_t enumerator_data_type = {
@@ -1067,7 +1067,7 @@ yielder_mark(void *p)
 static size_t
 yielder_memsize(const void *p)
 {
-    return p ? sizeof(struct yielder) : 0;
+    return sizeof(struct yielder);
 }
 
 static const rb_data_type_t yielder_data_type = {
@@ -1174,7 +1174,7 @@ generator_mark(void *p)
 static size_t
 generator_memsize(const void *p)
 {
-    return p ? sizeof(struct generator) : 0;
+    return sizeof(struct generator);
 }
 
 static const rb_data_type_t generator_data_type = {

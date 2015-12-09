@@ -72,7 +72,7 @@ static size_t
 fiddle_ptr_memsize(const void *ptr)
 {
     const struct ptr_data *data = ptr;
-    return data ? sizeof(*data) + data->size : 0;
+    return sizeof(*data) + data->size;
 }
 
 static const rb_data_type_t fiddle_ptr_data_type = {

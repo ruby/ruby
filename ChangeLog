@@ -1,3 +1,37 @@
+Wed Dec  9 09:58:09 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/**/*.c (*_memsize): same as r52986 for extensions.
+
+Wed Dec  9 09:46:19 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* .gitignore: ignored ISeq binary format.
+
+Wed Dec  9 09:34:41 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* *.c (*_memsize): do not check ptr.
+	  NULL checking is finished Before call of memsize functions.
+	  See r52979.
+
+Wed Dec  9 09:25:29 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* test/net/smtp/test_response.rb: use Test::Unit. We should use Test::Unit
+	  without rubygems and rdoc.
+
+Wed Dec  9 06:26:23 2015  Colin Kelley <colindkelley@gmail.com>
+
+	* lib/uri/generic.rb: enable frozen_string_literal
+	  (split_userinfo): remove explicit .freeze for string literals
+	  (check_path): ditto
+	  (query): ditto
+	  (fragment): ditto
+	  (to_s): ditto
+	  [ruby-core:71910] [Bug #11759]
+
+Wed Dec  9 06:25:47 2015  Eric Wong  <e@80x24.org>
+
+	* test/uri/test_generic.rb (to_s): new test
+	  [ruby-core:71820]
+
 Wed Dec  9 02:18:52 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (ibf_dump_memsize): should check NULL.
