@@ -6559,6 +6559,7 @@ Sat Jun 13 20:28:14 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* win32/win32.c (stati64_set_inode): get nFileIndexHigh/Low, and set it
 	  to the interval of struct st as inode.
+	  [Feature #11216]
 
 	* win32/win32.c (stati64_set_inode_handle): call stati64_set_inode.
 
