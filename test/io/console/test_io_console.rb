@@ -181,6 +181,7 @@ class TestIO_Console < Test::Unit::TestCase
   end
 
   def test_getpass
+    skip unless /\bIO\#getpass\b/ =~ ENV["RUBY_TESTS"]
     skip unless IO.method_defined?("getpass")
     run_pty("p IO.console.getpass('> ')") do |r, w|
       assert_equal("> ", r.readpartial(10))
