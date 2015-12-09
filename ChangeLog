@@ -1,3 +1,7 @@
+Thu Dec 10 00:19:18 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* common.mk (update-gems): use BASERUBY instead of RUNRUBY.
+
 Wed Dec  9 01:49:13 2015  Eric Wong  <e@80x24.org>
 
 	* insns.def (opt_case_dispatch): check Float#=== redefinition
