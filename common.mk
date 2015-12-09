@@ -1345,6 +1345,7 @@ enc/unicode.$(OBJEXT): {$(VPATH)}missing.h
 enc/unicode.$(OBJEXT): {$(VPATH)}oniguruma.h
 enc/unicode.$(OBJEXT): {$(VPATH)}regenc.h
 enc/unicode.$(OBJEXT): {$(VPATH)}regint.h
+enc/unicode.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 enc/unicode.$(OBJEXT): {$(VPATH)}st.h
 enc/unicode.$(OBJEXT): {$(VPATH)}subst.h
 enc/us_ascii.$(OBJEXT): {$(VPATH)}config.h
@@ -1987,6 +1988,7 @@ re.$(OBJEXT): {$(VPATH)}re.h
 re.$(OBJEXT): {$(VPATH)}regenc.h
 re.$(OBJEXT): {$(VPATH)}regex.h
 re.$(OBJEXT): {$(VPATH)}regint.h
+re.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 re.$(OBJEXT): {$(VPATH)}st.h
 re.$(OBJEXT): {$(VPATH)}subst.h
 re.$(OBJEXT): {$(VPATH)}util.h
@@ -1999,6 +2001,7 @@ regcomp.$(OBJEXT): {$(VPATH)}oniguruma.h
 regcomp.$(OBJEXT): {$(VPATH)}regcomp.c
 regcomp.$(OBJEXT): {$(VPATH)}regenc.h
 regcomp.$(OBJEXT): {$(VPATH)}regint.h
+regcomp.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 regcomp.$(OBJEXT): {$(VPATH)}regparse.h
 regcomp.$(OBJEXT): {$(VPATH)}st.h
 regcomp.$(OBJEXT): {$(VPATH)}subst.h
@@ -2011,6 +2014,7 @@ regenc.$(OBJEXT): {$(VPATH)}oniguruma.h
 regenc.$(OBJEXT): {$(VPATH)}regenc.c
 regenc.$(OBJEXT): {$(VPATH)}regenc.h
 regenc.$(OBJEXT): {$(VPATH)}regint.h
+regenc.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 regenc.$(OBJEXT): {$(VPATH)}st.h
 regenc.$(OBJEXT): {$(VPATH)}subst.h
 regerror.$(OBJEXT): $(hdrdir)/ruby/ruby.h
@@ -2022,6 +2026,7 @@ regerror.$(OBJEXT): {$(VPATH)}oniguruma.h
 regerror.$(OBJEXT): {$(VPATH)}regenc.h
 regerror.$(OBJEXT): {$(VPATH)}regerror.c
 regerror.$(OBJEXT): {$(VPATH)}regint.h
+regerror.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 regerror.$(OBJEXT): {$(VPATH)}st.h
 regerror.$(OBJEXT): {$(VPATH)}subst.h
 regexec.$(OBJEXT): $(hdrdir)/ruby/ruby.h
@@ -2033,6 +2038,7 @@ regexec.$(OBJEXT): {$(VPATH)}oniguruma.h
 regexec.$(OBJEXT): {$(VPATH)}regenc.h
 regexec.$(OBJEXT): {$(VPATH)}regexec.c
 regexec.$(OBJEXT): {$(VPATH)}regint.h
+regexec.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 regexec.$(OBJEXT): {$(VPATH)}st.h
 regexec.$(OBJEXT): {$(VPATH)}subst.h
 regparse.$(OBJEXT): $(hdrdir)/ruby/ruby.h
@@ -2045,6 +2051,7 @@ regparse.$(OBJEXT): {$(VPATH)}regenc.h
 regparse.$(OBJEXT): {$(VPATH)}regint.h
 regparse.$(OBJEXT): {$(VPATH)}regparse.c
 regparse.$(OBJEXT): {$(VPATH)}regparse.h
+regparse.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 regparse.$(OBJEXT): {$(VPATH)}st.h
 regparse.$(OBJEXT): {$(VPATH)}subst.h
 regsyntax.$(OBJEXT): $(hdrdir)/ruby/ruby.h
@@ -2056,6 +2063,7 @@ regsyntax.$(OBJEXT): {$(VPATH)}oniguruma.h
 regsyntax.$(OBJEXT): {$(VPATH)}regenc.h
 regsyntax.$(OBJEXT): {$(VPATH)}regint.h
 regsyntax.$(OBJEXT): {$(VPATH)}regsyntax.c
+regsyntax.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 regsyntax.$(OBJEXT): {$(VPATH)}st.h
 regsyntax.$(OBJEXT): {$(VPATH)}subst.h
 ruby.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
