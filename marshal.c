@@ -207,7 +207,7 @@ free_dump_arg(void *ptr)
 static size_t
 memsize_dump_arg(const void *ptr)
 {
-    return ptr ? sizeof(struct dump_arg) : 0;
+    return sizeof(struct dump_arg);
 }
 
 static const rb_data_type_t dump_arg_data = {
@@ -1091,7 +1091,7 @@ free_load_arg(void *ptr)
 static size_t
 memsize_load_arg(const void *ptr)
 {
-    return ptr ? sizeof(struct load_arg) : 0;
+    return sizeof(struct load_arg);
 }
 
 static const rb_data_type_t load_arg_data = {
