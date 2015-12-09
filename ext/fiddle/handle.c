@@ -46,7 +46,7 @@ fiddle_handle_free(void *ptr)
 static size_t
 fiddle_handle_memsize(const void *ptr)
 {
-    return ptr ? sizeof(struct dl_handle) : 0;
+    return sizeof(struct dl_handle);
 }
 
 static const rb_data_type_t fiddle_handle_data_type = {

@@ -41,14 +41,13 @@ closure_memsize(const void * ptr)
     fiddle_closure * cls = (fiddle_closure *)ptr;
     size_t size = 0;
 
-    if (ptr) {
-	size += sizeof(*cls);
+    size += sizeof(*cls);
 #if !defined(FFI_NO_RAW_API) || !FFI_NO_RAW_API
-	size += ffi_raw_size(&cls->cif);
+    size += ffi_raw_size(&cls->cif);
 #endif
-	size += sizeof(*cls->argv);
-	size += sizeof(ffi_closure);
-    }
+    size += sizeof(*cls->argv);
+    size += sizeof(ffi_closure);
+
     return size;
 }
 

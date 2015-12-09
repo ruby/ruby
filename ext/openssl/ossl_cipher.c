@@ -91,7 +91,7 @@ static size_t
 ossl_cipher_memsize(const void *ptr)
 {
     const EVP_CIPHER_CTX *ctx = ptr;
-    return ctx ? sizeof(*ctx) : 0;
+    return sizeof(*ctx);
 }
 
 static VALUE

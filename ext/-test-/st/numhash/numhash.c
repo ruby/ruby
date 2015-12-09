@@ -10,7 +10,7 @@ numhash_free(void *ptr)
 static size_t
 numhash_memsize(const void *ptr)
 {
-    return ptr ? st_memsize(ptr) : 0;
+    return st_memsize(ptr);
 }
 
 static const rb_data_type_t numhash_type = {

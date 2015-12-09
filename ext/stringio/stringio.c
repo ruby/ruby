@@ -67,7 +67,6 @@ static size_t
 strio_memsize(const void *p)
 {
     const struct StringIO *ptr = p;
-    if (!ptr) return 0;
     return sizeof(struct StringIO);
 }
 
