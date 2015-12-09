@@ -2343,6 +2343,11 @@ rb_iseqw_local_variables(VALUE iseqval)
  *  String extra_data will be saved with binary data.
  *  You can access this data with
  *  RubyVM::InstructionSequence.from_binary_format_extra_data(binary).
+ *
+ *  Note that the translated binary data is not portable.
+ *  You can not move this binary data to another machine.
+ *  You can not use the binary data whcih is created by another
+ *  version/another architecture of Ruby.
  */
 static VALUE
 iseqw_to_binary_format(int argc, VALUE *argv, VALUE self)
@@ -2358,6 +2363,12 @@ iseqw_to_binary_format(int argc, VALUE *argv, VALUE self)
  *
  *  Load an iseq object from binary format String object
  *  created by RubyVM::InstructionSequence.to_binary_format.
+ *
+ *  This loader does not have a verifier, so that loading broken/modified
+ *  binary causes critical problem.
+ *
+ *  You should not load binary data provided by others.
+ *  You should use binary data translated by yourself.
  */
 static VALUE
 iseqw_s_from_binary_format(VALUE self, VALUE str)
