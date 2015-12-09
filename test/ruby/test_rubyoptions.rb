@@ -808,18 +808,25 @@ class TestRubyOptions < Test::Unit::TestCase
   def test_frozen_string_literal_debug
     with_debug_pat = /created at/
     wo_debug_pat = /can\'t modify frozen String \(RuntimeError\)\n\z/
-
-    assert_in_out_err(["--disable=gems", "--enable-frozen-string-literal",  "--debug-frozen-string-literal"        ], '"foo" << "bar"', [], with_debug_pat)
-    assert_in_out_err(["--disable=gems", "--enable-frozen-string-literal",  "--debug=frozen-string-literal"        ], '"foo" << "bar"', [], with_debug_pat)
-    assert_in_out_err(["--disable=gems", "--enable-frozen-string-literal",                                         ], '"foo" << "bar"', [], wo_debug_pat)
-    assert_in_out_err(["--disable=gems", "--enable-frozen-string-literal",  "--debug-frozen-string-literal"        ], '"foo#{123}bar" << "bar"', [], with_debug_pat)
-    assert_in_out_err(["--disable=gems", "--enable-frozen-string-literal",  "--debug=frozen-string-literal"        ], '"foo#{123}bar" << "bar"', [], with_debug_pat)
-    assert_in_out_err(["--disable=gems", "--enable-frozen-string-literal",                                         ], '"foo#{123}bar" << "bar"', [], wo_debug_pat)
-    assert_in_out_err(["--disable=gems", "--disable-frozen-string-literal", "--debug-frozen-string-literal"        ], '"foo" << "bar"', [], [])
-    assert_in_out_err(["--disable=gems", "--disable-frozen-string-literal", "--debug=frozen-string-literal"        ], '"foo" << "bar"', [], [])
-    assert_in_out_err(["--disable=gems", "--disable-frozen-string-literal",                                        ], '"foo" << "bar"', [], [])
-    assert_in_out_err(["--disable=gems",                                    "--debug-frozen-string-literal"        ], '"foo" << "bar"', [], [])
-    assert_in_out_err(["--disable=gems",                                    "--debug=frozen-string-literal"        ], '"foo" << "bar"', [], [])
-    assert_in_out_err(["--disable=gems",                                                                           ], '"foo" << "bar"', [], [])
+    frozen = [
+      ["--enable-frozen-string-literal", true],
+      ["--disable-frozen-string-literal", false],
+      [nil, false],
+    ]
+    debug = [
+      ["--debug-frozen-string-literal", true],
+      ["--debug=frozen-string-literal", true],
+      ["--debug", true],
+      [nil, false],
+    ]
+    opts = ["--disable=gems"]
+    frozen.product(debug) do |(opt1, freeze), (opt2, debug)|
+      opt = opts + [opt1, opt2].compact
+      err = !freeze ? [] : debug ? with_debug_pat : wo_debug_pat
+      assert_in_out_err(opt, '"foo" << "bar"', [], err)
+      if freeze
+        assert_in_out_err(opt, '"foo#{123}bar" << "bar"', [], err)
+      end
+    end
   end
 end
