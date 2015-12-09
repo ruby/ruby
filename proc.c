@@ -1194,12 +1194,6 @@ bm_mark(void *ptr)
     rb_gc_mark((VALUE)data->me);
 }
 
-static void
-bm_free(void *ptr)
-{
-    xfree(ptr);
-}
-
 static size_t
 bm_memsize(const void *ptr)
 {
@@ -1210,7 +1204,7 @@ static const rb_data_type_t method_data_type = {
     "method",
     {
 	bm_mark,
-	bm_free,
+	RUBY_TYPED_DEFAULT_FREE,
 	bm_memsize,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
