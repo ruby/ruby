@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 #
 # httpresponse.rb -- HTTPResponse Class
 #
@@ -100,7 +101,7 @@ module WEBrick
       @status = HTTPStatus::RC_OK
       @reason_phrase = nil
       @http_version = HTTPVersion::convert(@config[:HTTPVersion])
-      @body = ''
+      @body = String.new
       @keep_alive = true
       @cookies = []
       @request_method = nil
@@ -242,7 +243,7 @@ module WEBrick
       # Determine the message length (RFC2616 -- 4.4 Message Length)
       if @status == 304 || @status == 204 || HTTPStatus::info?(@status)
         @header.delete('content-length')
-        @body = ""
+        @body = String.new
       elsif chunked?
         @header["transfer-encoding"] = "chunked"
         @header.delete('content-length')
@@ -283,7 +284,7 @@ module WEBrick
 
     def send_header(socket) # :nodoc:
       if @http_version.major > 0
-        data = status_line()
+        data = status_line.dup
         @header.each{|key, value|
           tmp = key.gsub(/\bwww|^te$|\b\w/){ $&.upcase }
           data << "#{tmp}: #{value}" << CRLF
@@ -351,7 +352,7 @@ module WEBrick
         host, port = @config[:ServerName], @config[:Port]
       end
 
-      @body = ''
+      @body = String.new
       @body << <<-_end_of_html_
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0//EN">
 <HTML>
@@ -390,8 +391,8 @@ module WEBrick
           # do nothing
         elsif chunked?
           begin
-            buf  = ''
-            data = ''
+            buf  = String.new
+            data = String.new
             while true
               @body.readpartial( @buffer_size, buf ) # there is no need to clear buf?
               data << format("%x", buf.bytesize) << CRLF
@@ -420,7 +421,7 @@ module WEBrick
         body ? @body.bytesize : 0
         while buf = @body[@sent_size, @buffer_size]
           break if buf.empty?
-          data = ""
+          data = String.new
           data << format("%x", buf.bytesize) << CRLF
           data << buf << CRLF
           _write_data(socket, data)
