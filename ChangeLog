@@ -1,3 +1,8 @@
+Thu Dec 10 06:33:39 2015  Eric Wong  <e@80x24.org>
+
+	* marshal.c (memsize_dump_arg): remove NULL check
+	  (memsize_load_arg): ditto
+
 Thu Dec 10 05:53:18 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/mkconfig.rb: rbconfig must not be fronzen-string-literal to
