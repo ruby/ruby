@@ -1,3 +1,8 @@
+Wed Dec  9 14:45:27 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_mark_stacked_objects): fix typo.
+	  reported by XIE Zhibang. [Bug #11763]
+
 Wed Dec  9 14:37:51 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* doc/syntax/refinements.rdoc: remove outdated description.
