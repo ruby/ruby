@@ -122,7 +122,7 @@ with all sufficient information, see the ChangeLog file.
 * RubyVM::InstructionSequence
   * add the following methods as a primitive tool of iseq loader.
     See sample/iseq_loader.rb for usage.
-    [Feature #11788]
+    [Feature #11788] (experimental feature)
     * RubyVM::InstructionSequence#to_binary_format(extra_data = nil)
     * RubyVM::InstructionSequence.from_binary_format(binary)
     * RubyVM::InstructionSequence.from_binary_format_extra_data(binary)
