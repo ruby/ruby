@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 ##
 # == Manipulates strings like the UNIX Bourne shell
 #
@@ -69,14 +70,14 @@ module Shellwords
   #   argv #=> ["here", "are", "two words"]
   def shellsplit(line)
     words = []
-    field = ''
+    field = String.new
     line.scan(/\G\s*(?>([^\s\\\'\"]+)|'([^\']*)'|"((?:[^\"\\]|\\.)*)"|(\\.?)|(\S))(\s|\z)?/m) do
       |word, sq, dq, esc, garbage, sep|
       raise ArgumentError, "Unmatched double quote: #{line.inspect}" if garbage
       field << (word || sq || (dq || esc).gsub(/\\(.)/, '\\1'))
       if sep
         words << field
-        field = ''
+        field = String.new
       end
     end
     words
