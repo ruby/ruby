@@ -1,3 +1,8 @@
+Thu Dec 10 05:03:51 2015  Eric Wong  <e@80x24.org>
+
+	* ext/socket/ifaddr.c (ifaddr_mark): remove empty function
+	  (ifaddr_type): pass zero to rb_data_type_t.function.dmark
+
 Thu Dec 10 04:49:16 2015  Eric Wong  <e@80x24.org>
 
 	* proc.c (bm_free): remove, use default free

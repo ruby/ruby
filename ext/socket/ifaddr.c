@@ -41,11 +41,6 @@ get_root(const rb_ifaddr_t *ifaddr)
 }
 
 static void
-ifaddr_mark(void *ptr)
-{
-}
-
-static void
 ifaddr_free(void *ptr)
 {
     rb_ifaddr_t *ifaddr = ptr;
@@ -69,7 +64,7 @@ ifaddr_memsize(const void *ptr)
 
 static const rb_data_type_t ifaddr_type = {
     "socket/ifaddr",
-    {ifaddr_mark, ifaddr_free, ifaddr_memsize,},
+    {0, ifaddr_free, ifaddr_memsize,},
 };
 
 static inline rb_ifaddr_t *
