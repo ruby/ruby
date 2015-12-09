@@ -255,12 +255,6 @@ method lookup.
 
 This behavior may be changed in the future.
 
-== Refinements and module inclusion
-
-Refinements are inherited by module inclusion.  That is, using activates all
-refinements in the ancestors of the specified module.  Refinements in a
-descendant have priority over refinements in an ancestor.
-
 == Further Reading
 
 See http://bugs.ruby-lang.org/projects/ruby-trunk/wiki/RefinementsSpec for the
