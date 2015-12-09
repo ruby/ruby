@@ -42,7 +42,6 @@ typedef unsigned int rb_atomic_t; /* Anything OK */
 #pragma intrinsic(_InterlockedOr)
 #endif
 typedef LONG rb_atomic_t;
-#define SIZEOF_ATOMIC_T SIZEOF_LONG
 
 # define ATOMIC_SET(var, val) InterlockedExchange(&(var), (val))
 # define ATOMIC_INC(var) InterlockedIncrement(&(var))
@@ -142,10 +141,6 @@ ruby_atomic_size_exchange(size_t *ptr, size_t val)
     *ptr = val;
     return old;
 }
-#endif
-
-#ifndef SIZEOF_ATOMIC_T
-#define SIZEOF_ATOMIC_T SIZEOF_INT
 #endif
 
 #ifndef ATOMIC_SIZE_INC

@@ -1031,43 +1031,7 @@ typedef struct _FreeNode {
 } FreeNode;
 
 static FreeNode* FreeNodeList = (FreeNode* )NULL;
-
-#define PopFreeNode(n, popped) \
-  do { \
-    FreeNode* n = FreeNodeList; \
-    while (IS_NOT_NULL(n)) { \
-      FreeNode* next = n->next; \
-      FreeNode *head = ATOMIC_PTR_CAS(FreeNodeList, n, next); \
-      if (head == n) { \
-	popped; \
-	n = next; \
-      } \
-      else { \
-	n = head; /* modified, retry */ \
-      } \
-    } \
-  } while (0)
-
 #endif
-
-static void
-node_recycle(Node* node)
-{
-#ifdef USE_PARSE_TREE_NODE_RECYCLE
-  FreeNode* n = (FreeNode* )node;
-  FreeNode* list = FreeNodeList;
-  FreeNode* l;
-
-  /* THREAD_ATOMIC_START; */
-  do {
-    n->next = l = list;
-    list = ATOMIC_PTR_CAS(FreeNodeList, list, n);
-  } while (list != l);
-  /* THREAD_ATOMIC_END; */
-#else
-  xfree(node);
-#endif
-}
 
 extern void
 onig_node_free(Node* node)
@@ -1089,7 +1053,18 @@ onig_node_free(Node* node)
     {
       Node* next_node = NCDR(node);
 
-      node_recycle(node);
+#ifdef USE_PARSE_TREE_NODE_RECYCLE
+      {
+	FreeNode* n = (FreeNode* )node;
+
+        THREAD_ATOMIC_START;
+	n->next = FreeNodeList;
+	FreeNodeList = n;
+        THREAD_ATOMIC_END;
+      }
+#else
+      xfree(node);
+#endif
       node = next_node;
       goto start;
     }
@@ -1126,15 +1101,32 @@ onig_node_free(Node* node)
     break;
   }
 
-  node_recycle(node);
+#ifdef USE_PARSE_TREE_NODE_RECYCLE
+  {
+    FreeNode* n = (FreeNode* )node;
+
+    THREAD_ATOMIC_START;
+    n->next = FreeNodeList;
+    FreeNodeList = n;
+    THREAD_ATOMIC_END;
+  }
+#else
+  xfree(node);
+#endif
 }
 
 #ifdef USE_PARSE_TREE_NODE_RECYCLE
 extern int
 onig_free_node_list(void)
 {
+  FreeNode* n;
+
   /* THREAD_ATOMIC_START; */
-  PopFreeNode(n, xfree(n));
+  while (IS_NOT_NULL(FreeNodeList)) {
+    n = FreeNodeList;
+    FreeNodeList = FreeNodeList->next;
+    xfree(n);
+  }
   /* THREAD_ATOMIC_END; */
   return 0;
 }
@@ -1146,9 +1138,14 @@ node_new(void)
   Node* node;
 
 #ifdef USE_PARSE_TREE_NODE_RECYCLE
-  /* THREAD_ATOMIC_START; */
-  PopFreeNode(n, return (Node* )n);
-  /* THREAD_ATOMIC_END; */
+  THREAD_ATOMIC_START;
+  if (IS_NOT_NULL(FreeNodeList)) {
+    node = (Node* )FreeNodeList;
+    FreeNodeList = FreeNodeList->next;
+    THREAD_ATOMIC_END;
+    return node;
+  }
+  THREAD_ATOMIC_END;
 #endif
 
   node = (Node* )xmalloc(sizeof(Node));
@@ -1158,14 +1155,17 @@ node_new(void)
 
 #if defined(USE_MULTI_THREAD_SYSTEM) && \
     defined(USE_SHARED_CCLASS_TABLE) && \
-    defined(USE_PARSE_TREE_NODE_RECYCLE) && \
-    0
+    defined(USE_PARSE_TREE_NODE_RECYCLE)
 static Node*
 node_new_locked(void)
 {
   Node* node;
 
-  PopFreeNode(n, return (Node* )n);
+  if (IS_NOT_NULL(FreeNodeList)) {
+    node = (Node* )FreeNodeList;
+    FreeNodeList = FreeNodeList->next;
+    return node;
+  }
 
   node = (Node* )xmalloc(sizeof(Node));
   /* xmemset(node, 0, sizeof(Node)); */
@@ -1195,8 +1195,7 @@ node_new_cclass(void)
 
 #if defined(USE_MULTI_THREAD_SYSTEM) && \
     defined(USE_SHARED_CCLASS_TABLE) && \
-    defined(USE_PARSE_TREE_NODE_RECYCLE) && \
-    0
+    defined(USE_PARSE_TREE_NODE_RECYCLE)
 static Node*
 node_new_cclass_locked(void)
 {

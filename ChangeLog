@@ -6,15 +6,6 @@ Wed Dec  9 16:10:37 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_method.rb: add a test.
 
-Wed Dec  9 15:48:12 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* regcomp.c (onig_chain_link_add): use atomic operation instead of
-	  mutex.
-
-	* regint.h (ONIG_STATE_{INC,DEC}_THREAD): ditto.
-
-	* regparse.c (PopFreeNode, node_recycle): ditto.
-
 Wed Dec  9 14:45:27 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_mark_stacked_objects): fix typo.
