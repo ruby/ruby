@@ -1,3 +1,8 @@
+Wed Dec  9 17:02:03 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* regparse.h (SET_NTYPE): get rid of breaking strict aliasing.
+	  patch by Zarko Todorovski in [ruby-core:71953].  [Bug #11790]
+
 Wed Dec  9 16:10:37 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (rb_vm_cref_in_context): Module#define_method in non-class
