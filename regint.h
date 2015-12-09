@@ -95,6 +95,7 @@
 
 #ifndef RUBY_DEFINES_H
 #include "ruby/ruby.h"
+#include "ruby_atomic.h"
 #undef xmalloc
 #undef xrealloc
 #undef xcalloc
@@ -238,6 +239,10 @@ extern pthread_mutex_t gOnigMutex;
 #define ONIG_STATE_INC(reg) (reg)->state++
 #define ONIG_STATE_DEC(reg) (reg)->state--
 
+#if SIZEOF_ATOMIC_T == SIZEOF_INT
+#define ONIG_STATE_INC_THREAD(reg) (ATOMIC_INC((reg)->state))
+#define ONIG_STATE_DEC_THREAD(reg) (ATOMIC_DEC((reg)->state))
+#else
 #define ONIG_STATE_INC_THREAD(reg) do {\
   THREAD_ATOMIC_START;\
   (reg)->state++;\
@@ -248,6 +253,7 @@ extern pthread_mutex_t gOnigMutex;
   (reg)->state--;\
   THREAD_ATOMIC_END;\
 } while(0)
+#endif
 #else
 #define ONIG_STATE_INC(reg)         /* Nothing */
 #define ONIG_STATE_DEC(reg)         /* Nothing */

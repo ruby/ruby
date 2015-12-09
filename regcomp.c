@@ -5663,10 +5663,11 @@ onig_transfer(regex_t* to, regex_t* from)
 extern void
 onig_chain_link_add(regex_t* to, regex_t* add)
 {
-  THREAD_ATOMIC_START;
-  REGEX_CHAIN_HEAD(to);
-  to->chain = add;
-  THREAD_ATOMIC_END;
+  /* THREAD_ATOMIC_START; */
+  do {
+    REGEX_CHAIN_HEAD(to);
+  } while (IS_NOT_NULL(ATOMIC_PTR_CAS(to->chain, (regex_t* )NULL, add)));
+  /* THREAD_ATOMIC_END; */
 }
 
 extern void
