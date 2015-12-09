@@ -28,7 +28,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   def test_setting_twice
     ctx = OpenSSL::SSL::SSLContext.new
     ctx.options = 4
-    assert_equal 4, ctx.options
+    assert_equal 4, (ctx.options & OpenSSL::SSL::OP_ALL)
     ctx.options = OpenSSL::SSL::OP_ALL
     assert_equal OpenSSL::SSL::OP_ALL, ctx.options
   end
@@ -36,7 +36,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   def test_options_setting_nil_means_all
     ctx = OpenSSL::SSL::SSLContext.new
     ctx.options = nil
-    assert_equal OpenSSL::SSL::OP_ALL, ctx.options
+    assert_equal(OpenSSL::SSL::OP_ALL, (OpenSSL::SSL::OP_ALL & ctx.options))
   end
 
   def test_setting_options_raises_after_setup
