@@ -1,3 +1,12 @@
+Fri Dec 11 03:44:43 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* object.c (rb_inspect): dump inspected result with rb_str_escape()
+	  instead of raising Encoding::CompatibilityError. [Feature #11801]
+
+	* string.c (rb_str_escape): added to dump given string like
+	  rb_str_inspect without quotes and always dump in US-ASCII
+	  like rb_str_dump.
+
 Thu Dec 10 14:59:59 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_gc.rb (test_expand_heap): relax condition (1->2).
