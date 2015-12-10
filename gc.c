@@ -211,7 +211,7 @@ static ruby_gc_params_t gc_params = {
  * 1: enable assertions (to debug RGenGC)
  * 2: enable internal consistency check at each GC (for debugging)
  * 3: enable internal consistency check at each GC steps (for debugging)
- * 4: enable livness check
+ * 4: enable liveness check
  * 5: show all references
  */
 #ifndef RGENGC_CHECK_MODE
@@ -5668,7 +5668,7 @@ gc_writebarrier_generational(VALUE a, VALUE b, rb_objspace_t *objspace)
     }
 
 #if 1
-    /* mark `a' and remember (default behaviour) */
+    /* mark `a' and remember (default behavior) */
     if (!rgengc_remembered(objspace, a)) {
 	rgengc_remember(objspace, a);
 	gc_report(1, objspace, "gc_writebarrier_generational: %s (remembered) -> %s\n", obj_info(a), obj_info(b));

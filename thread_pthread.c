@@ -520,7 +520,7 @@ size_t pthread_get_stacksize_np(pthread_t);
 
 /*
  * As the PTHREAD_STACK_MIN is undefined and
- * noone touches the default stacksize,
+ * no one touches the default stacksize,
  * it is just fine to use the default.
  */
 #define pthread_attr_get_np(thid, attr) 0

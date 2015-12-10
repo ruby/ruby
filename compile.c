@@ -699,7 +699,7 @@ rb_iseq_original_iseq(const rb_iseq_t *iseq) /* cold path */
 /*
  * On 32-bit SPARC, GCC by default generates SPARC V7 code that may require
  * 8-byte word alignment. On the other hand, Oracle Solaris Studio seems to
- * generate SPARCV8PLUS code with unaligned memory accesss instructions.
+ * generate SPARCV8PLUS code with unaligned memory access instructions.
  * That is why the STRICT_ALIGNMENT is defined only with GCC.
  */
 #if defined(__sparc) && SIZEOF_VOIDP == 4 && defined(__GNUC__)

@@ -3121,7 +3121,7 @@ rb_io_getline_1(VALUE rs, long limit, VALUE io)
 	    newline = (unsigned char)rsptr[rslen - 1];
 	}
 
-	/* MS - Optimisation */
+	/* MS - Optimization */
 	while ((c = appendline(fptr, newline, &str, &limit)) != EOF) {
             const char *s, *p, *pp, *e;
 
@@ -3214,7 +3214,7 @@ rb_io_gets(VALUE io)
  *  If IO contains multibyte characters byte then <code>gets(1)</code>
  *  returns character entirely:
  *
- *     # russian characters take 2 bytes
+ *     # Russian characters take 2 bytes
  *     File.write("testfile", "\u{442 435 441 442}")
  *     File.open("testfile") {|f|f.gets(1)} #=> "\u0442"
  *     File.open("testfile") {|f|f.gets(2)} #=> "\u0442"
@@ -11843,7 +11843,7 @@ opt_i_get(ID id, VALUE *var)
  *  call-seq:
  *     ARGF.inplace_mode = ext  -> ARGF
  *
- *  Sets the filename extension for inplace editing mode to the given String.
+ *  Sets the filename extension for in place editing mode to the given String.
  *  Each file being edited has this value appended to its filename. The
  *  modified file is saved under this new name.
  *
