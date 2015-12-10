@@ -1,3 +1,8 @@
+Thu Dec 10 14:15:59 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* cont.c: fix a double word typo.
+	  [Bug #11313][ruby-core:69749]
+
 Thu Dec 10 14:13:34 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* ext/tk/lib/multi-tk.rb: fix typos.

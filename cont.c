@@ -1112,7 +1112,7 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
  *  comes with a small 4KB stack. This enables the fiber to be paused from deeply
  *  nested function calls within the fiber block.
  *
- *  When a fiber is created it will not run automatically. Rather it must be
+ *  When a fiber is created it will not run automatically. Rather it must
  *  be explicitly asked to run using the <code>Fiber#resume</code> method.
  *  The code running inside the fiber can give up control by calling
  *  <code>Fiber.yield</code> in which case it yields control back to caller
