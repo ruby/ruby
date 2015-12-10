@@ -152,6 +152,10 @@ with all sufficient information, see the ChangeLog file.
   * Array#flatten and Array#flatten! no longer try to call #to_ary
     method on elements beyond the given level.  [Bug #10748]
 
+  * Array#inspect doesn't raise error even if its content returns
+    a string which is not compatible with Encoding.default_external
+    as inspected result. [Feature #11801]
+
 * Enumerable
   * Enumerable#chunk and Enumerable#slice_before no longer takes the
     initial_state argument.  [Feature #10958]
@@ -160,6 +164,11 @@ with all sufficient information, see the ChangeLog file.
 * File::Stat
   * On Windows File::Stat#ino always returned 0, but now returns
     BY_HANDLE_FILE_INFORMATION.nFileIndexHigh/Low.  [Feature #11216]
+
+* Hash
+  * Hash#inspect doesn't raise error even if its content returns
+    a string which is not compatible with Encoding.default_external
+    as inspected result. [Feature #11801]
 
 * IO
   * IO#close doesn't raise when the IO object is closed.  [Feature #10718]
