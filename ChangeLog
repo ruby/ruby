@@ -1,3 +1,8 @@
+Thu Dec 10 14:13:34 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ext/tk/lib/multi-tk.rb: fix typos.
+	  [Bug #11764][ruby-core:71800]
+
 Thu Dec 10 11:33:34 2015  Eric Wong  <e@80x24.org>
 
 	* compile.c (iseq_compile_each): reduce needless rb_str_dup
