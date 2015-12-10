@@ -5339,16 +5339,16 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		ADD_INSN1(ret, line, putstring, node->nd_lit);
 	    }
 	    else {
-		VALUE str = rb_str_dup(node->nd_lit);
 		if (ISEQ_COMPILE_DATA(iseq)->option->debug_frozen_string_literal || RTEST(ruby_debug)) {
 		    VALUE debug_info = rb_ary_new_from_args(2, iseq->body->location.path, INT2FIX(line));
+		    VALUE str = rb_str_dup(node->nd_lit);
 		    rb_ivar_set(str, id_debug_created_info, rb_obj_freeze(debug_info));
 		    ADD_INSN1(ret, line, putobject, rb_obj_freeze(str));
+		    iseq_add_mark_object_compile_time(iseq, str);
 		}
 		else {
-		    ADD_INSN1(ret, line, putobject, rb_fstring(str));
+		    ADD_INSN1(ret, line, putobject, node->nd_lit);
 		}
-		iseq_add_mark_object_compile_time(iseq, str);
 	    }
 	}
 	break;

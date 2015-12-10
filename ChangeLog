@@ -1,3 +1,8 @@
+Thu Dec 10 11:33:34 2015  Eric Wong  <e@80x24.org>
+
+	* compile.c (iseq_compile_each): reduce needless rb_str_dup
+	  [ruby-core:72018] <5668DB6E.8000101@ruby-lang.org>
+
 Thu Dec 10 09:32:51 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb, lib/shellwords.rb: disable frozen-string-literal.
