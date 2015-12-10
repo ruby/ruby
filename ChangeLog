@@ -1,3 +1,8 @@
+Thu Dec 10 09:32:51 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb, lib/shellwords.rb: disable frozen-string-literal.
+	  [ruby-core:72011] [Bug #11800]
+
 Thu Dec 10 06:33:39 2015  Eric Wong  <e@80x24.org>
 
 	* marshal.c (memsize_dump_arg): remove NULL check
