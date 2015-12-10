@@ -29,7 +29,7 @@ Thu Dec 10 06:33:39 2015  Eric Wong  <e@80x24.org>
 
 Thu Dec 10 05:53:18 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* tool/mkconfig.rb: rbconfig must not be fronzen-string-literal to
+	* tool/mkconfig.rb: rbconfig must not be frozen-string-literal to
 	  expand CONFIG hash.  [ruby-core:72006] [Bug #11798]
 
 Thu Dec 10 05:03:51 2015  Eric Wong  <e@80x24.org>
