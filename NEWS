@@ -19,10 +19,9 @@ with all sufficient information, see the ChangeLog file.
     [Feature #8976]
   * besides, --enable/--disable=frozen-string-literal options also have
     been introduced. [Feature #8976]
-  * command line option --debug or --debug=frozen-string-literal enable
+  * command line options --debug or --debug=frozen-string-literal enable
     additional debugging mode which shows created location with at frozen
-    object error (RuntimeError) even if string is dynamically created string
-    literal (for static string literals shows locations as default).
+    object error (RuntimeError).
     [Feature #11725]
 
 * safe navigation operator:
@@ -125,9 +124,9 @@ with all sufficient information, see the ChangeLog file.
     Note that loader does not have verifier so it is easy to cause
     critical problem by loading modified/broken binary data.
     See [Feature #11788] for more details. (experimental feature)
-    * RubyVM::InstructionSequence#to_binary_format(extra_data = nil)
-    * RubyVM::InstructionSequence.from_binary_format(binary)
-    * RubyVM::InstructionSequence.from_binary_format_extra_data(binary)
+    * RubyVM::InstructionSequence#to_binary(extra_data = nil)
+    * RubyVM::InstructionSequence.load_from_binary(binary)
+    * RubyVM::InstructionSequence.load_from_binary_extra_data(binary)
 
 * String
 
@@ -153,6 +152,10 @@ with all sufficient information, see the ChangeLog file.
   * Array#flatten and Array#flatten! no longer try to call #to_ary
     method on elements beyond the given level.  [Bug #10748]
 
+  * Array#inspect doesn't raise error even if its content returns
+    a string which is not compatible with Encoding.default_external
+    as inspected result. [Feature #11801]
+
 * Enumerable
   * Enumerable#chunk and Enumerable#slice_before no longer takes the
     initial_state argument.  [Feature #10958]
@@ -161,6 +164,11 @@ with all sufficient information, see the ChangeLog file.
 * File::Stat
   * On Windows File::Stat#ino always returned 0, but now returns
     BY_HANDLE_FILE_INFORMATION.nFileIndexHigh/Low.  [Feature #11216]
+
+* Hash
+  * Hash#inspect doesn't raise error even if its content returns
+    a string which is not compatible with Encoding.default_external
+    as inspected result. [Feature #11801]
 
 * IO
   * IO#close doesn't raise when the IO object is closed.  [Feature #10718]

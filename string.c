@@ -5265,6 +5265,70 @@ rb_str_buf_cat_escaped_char(VALUE result, unsigned int c, int unicode_p)
     return l;
 }
 
+VALUE
+rb_str_escape(VALUE str)
+{
+    int encidx = ENCODING_GET(str);
+    rb_encoding *enc = rb_enc_from_index(encidx);
+    const char *p = RSTRING_PTR(str);
+    const char *pend = RSTRING_END(str);
+    const char *prev = p;
+    char buf[CHAR_ESC_LEN + 1];
+    VALUE result = rb_str_buf_new(0);
+    int unicode_p = rb_enc_unicode_p(enc);
+    int asciicompat = rb_enc_asciicompat(enc);
+
+    while (p < pend) {
+	unsigned int c, cc;
+	int n = rb_enc_precise_mbclen(p, pend, enc);
+        if (!MBCLEN_CHARFOUND_P(n)) {
+	    if (p > prev) str_buf_cat(result, prev, p - prev);
+            n = rb_enc_mbminlen(enc);
+            if (pend < p + n)
+                n = (int)(pend - p);
+            while (n--) {
+                snprintf(buf, CHAR_ESC_LEN, "\\x%02X", *p & 0377);
+                str_buf_cat(result, buf, strlen(buf));
+                prev = ++p;
+            }
+	    continue;
+	}
+        n = MBCLEN_CHARFOUND_LEN(n);
+	c = rb_enc_mbc_to_codepoint(p, pend, enc);
+	p += n;
+	switch (c) {
+	  case '\n': cc = 'n'; break;
+	  case '\r': cc = 'r'; break;
+	  case '\t': cc = 't'; break;
+	  case '\f': cc = 'f'; break;
+	  case '\013': cc = 'v'; break;
+	  case '\010': cc = 'b'; break;
+	  case '\007': cc = 'a'; break;
+	  case 033: cc = 'e'; break;
+	  default: cc = 0; break;
+	}
+	if (cc) {
+	    if (p - n > prev) str_buf_cat(result, prev, p - n - prev);
+	    buf[0] = '\\';
+	    buf[1] = (char)cc;
+	    str_buf_cat(result, buf, 2);
+	    prev = p;
+	}
+	else if (asciicompat && rb_enc_isascii(c, enc) && ISPRINT(c)) {
+	}
+	else {
+	    if (p - n > prev) str_buf_cat(result, prev, p - n - prev);
+	    rb_str_buf_cat_escaped_char(result, c, unicode_p);
+	    prev = p;
+	}
+    }
+    if (p > prev) str_buf_cat(result, prev, p - prev);
+    ENCODING_CODERANGE_SET(result, rb_usascii_encindex(), ENC_CODERANGE_7BIT);
+
+    OBJ_INFECT_RAW(result, str);
+    return result;
+}
+
 /*
  * call-seq:
  *   str.inspect   -> string

@@ -465,6 +465,7 @@ rb_any_to_s(VALUE obj)
     return str;
 }
 
+VALUE rb_str_escape(VALUE str);
 /*
  * If the default external encoding is ASCII compatible, the encoding of
  * the inspected result must be compatible with it.
@@ -478,11 +479,11 @@ rb_inspect(VALUE obj)
     rb_encoding *ext = rb_default_external_encoding();
     if (!rb_enc_asciicompat(ext)) {
 	if (!rb_enc_str_asciionly_p(str))
-	    rb_raise(rb_eEncCompatError, "inspected result must be ASCII only if default external encoding is ASCII incompatible");
+	    return rb_str_escape(str);
 	return str;
     }
     if (rb_enc_get(str) != ext && !rb_enc_str_asciionly_p(str))
-	rb_raise(rb_eEncCompatError, "inspected result must be ASCII only or use the default external encoding");
+	return rb_str_escape(str);
     return str;
 }
 

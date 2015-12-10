@@ -1,3 +1,82 @@
+Fri Dec 11 03:44:43 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* object.c (rb_inspect): dump inspected result with rb_str_escape()
+	  instead of raising Encoding::CompatibilityError. [Feature #11801]
+
+	* string.c (rb_str_escape): added to dump given string like
+	  rb_str_inspect without quotes and always dump in US-ASCII
+	  like rb_str_dump.
+
+Thu Dec 10 14:59:59 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/test_gc.rb (test_expand_heap): relax condition (1->2).
+
+Thu Dec 10 14:15:59 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* cont.c: fix a double word typo.
+	  [Bug #11313][ruby-core:69749]
+
+Thu Dec 10 14:13:34 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ext/tk/lib/multi-tk.rb: fix typos.
+	  [Bug #11764][ruby-core:71800]
+
+Thu Dec 10 11:33:34 2015  Eric Wong  <e@80x24.org>
+
+	* compile.c (iseq_compile_each): reduce needless rb_str_dup
+	  [ruby-core:72018] <5668DB6E.8000101@ruby-lang.org>
+
+Thu Dec 10 09:32:51 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb, lib/shellwords.rb: disable frozen-string-literal.
+	  [ruby-core:72011] [Bug #11800]
+
+Thu Dec 10 06:33:39 2015  Eric Wong  <e@80x24.org>
+
+	* marshal.c (memsize_dump_arg): remove NULL check
+	  (memsize_load_arg): ditto
+
+Thu Dec 10 05:53:18 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/mkconfig.rb: rbconfig must not be frozen-string-literal to
+	  expand CONFIG hash.  [ruby-core:72006] [Bug #11798]
+
+Thu Dec 10 05:03:51 2015  Eric Wong  <e@80x24.org>
+
+	* ext/socket/ifaddr.c (ifaddr_mark): remove empty function
+	  (ifaddr_type): pass zero to rb_data_type_t.function.dmark
+
+Thu Dec 10 04:49:16 2015  Eric Wong  <e@80x24.org>
+
+	* proc.c (bm_free): remove, use default free
+	  (method_data_type): use RUBY_TYPED_DEFAULT_FREE
+
+Thu Dec 10 02:01:41 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (iseq_compile_each): do not add debug information
+	  without --debug or --debug=frozen-string-literal option
+	  because String#dup slows down with debug information.
+	  [Feature #11725]
+
+	* NEWS: apply about it.
+
+	* test/ruby/test_rubyoptions.rb: catch up this fix with refactoring.
+
+Thu Dec 10 00:06:56 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.c: rename methods
+	  RubyVM::InstructionSequence#to_binary_format -> #to_binary
+	  RubyVM::InstructionSequence.from_binary_format -> .load_from_binary
+	  RubyVM::InstructionSequence.from_binary_format_extra_data ->
+	                             .load_from_binary_extra_data
+
+	* iseq.c: fix document of iseq.to_binary.
+	  [Fix GH-1134]
+
+	* sample/iseq_loader.rb: catch up this change.
+
+	* test/lib/iseq_loader_checker.rb: ditto.
+
 Wed Dec  9 17:02:03 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* regparse.h (SET_NTYPE): get rid of breaking strict aliasing.
