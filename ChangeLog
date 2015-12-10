@@ -1,3 +1,7 @@
+Thu Dec 10 14:59:59 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/test_gc.rb (test_expand_heap): relax condition (1->2).
+
 Thu Dec 10 14:15:59 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* cont.c: fix a double word typo.
