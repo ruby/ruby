@@ -2565,6 +2565,8 @@ End
             ret = assert_nothing_raised(lambda { os_and_fs(tf.path) }) {
               begin
                 t.advise(adv, offset, len)
+              rescue Errno::ENOSYS
+                skip
               rescue Errno::EINVAL => e
                 if /linux/ =~ RUBY_PLATFORM && (Etc.uname[:release].split('.').map(&:to_i) <=> [3,6]) < 0
                   next # [ruby-core:65355] tmpfs is not supported
@@ -3005,8 +3007,8 @@ End
     # we don't know if other platforms have a real posix_fadvise()
     with_pipe do |r,w|
       # Linux 2.6.15 and earlier returned EINVAL instead of ESPIPE
-      assert_raise(Errno::ESPIPE, Errno::EINVAL) { r.advise(:willneed) }
-      assert_raise(Errno::ESPIPE, Errno::EINVAL) { w.advise(:willneed) }
+      assert_raise(Errno::ESPIPE, Errno::EINVAL, Errno::ENOSYS) { r.advise(:willneed) }
+      assert_raise(Errno::ESPIPE, Errno::EINVAL, Errno::ENOSYS) { w.advise(:willneed) }
     end
   end if /linux/ =~ RUBY_PLATFORM
 
