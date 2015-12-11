@@ -1,3 +1,8 @@
+Fri Dec 11 23:33:40 2015  Yusuke Endoh  <mame@ruby-lang.org>
+
+	* sample/trick2015/: added the award-winning entries of TRICK 2015.
+	  See https://github.com/tric/trick2015 for the contest outline.
+
 Fri Dec 11 17:59:05 2015  Eric Wong  <e@80x24.org>
 
 	* insns.def (opt_case_dispatch): avoid converting Infinity
