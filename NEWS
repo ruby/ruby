@@ -230,11 +230,12 @@ with all sufficient information, see the ChangeLog file.
 
 === Stdlib compatibility issues (excluding feature bug fixes)
 
-* lib/webrick/utils.rb
-  * removed unused argument. https://github.com/ruby/ruby/pull/356
+* ext/coverage/coverage.c
+  * Coverage.peek_result: new method to allow coverage to be captured without
+    stopping the coverage tool.  [Feature #10816]
 
-* lib/drb/drb.rb
-  * removed unused argument. https://github.com/ruby/ruby/pull/515
+* Fiddle
+  * Fiddle::Function#call releases the GVL.  [Feature #11607]
 
 * lib/base64.rb
   * Base64.urlsafe_encode64: added a "padding" option to suppress
@@ -242,12 +243,18 @@ with all sufficient information, see the ChangeLog file.
   * Base64.urlsafe_decode64: now it accepts not only correctly-padded
     input but also unpadded input.  [Feature #10740]
 
+* lib/drb/drb.rb
+  * removed unused argument. https://github.com/ruby/ruby/pull/515
+
 * lib/matrix.rb
   * Add Vector#round. https://github.com/ruby/ruby/pull/802
 
-* ext/coverage/coverage.c
-  * Coverage.peek_result: new method to allow coverage to be captured without
-    stopping the coverage tool.  [Feature #10816]
+* lib/webrick/utils.rb
+  * removed unused argument. https://github.com/ruby/ruby/pull/356
+
+* Net::FTP
+  * Connections are in passive mode per default now.  The default mode can
+    be changed by Net::FTP.default_passive=.  [Feature #11612]
 
 * Net::HTTP
   * default value of Net::HTTP#open_timeout is now 60 (was nil).
@@ -256,9 +263,8 @@ with all sufficient information, see the ChangeLog file.
   * Net::Telnet is extracted to net-telnet gem. It's unmaintain code.
     [Feature #11083]
 
-* Net::FTP
-  * Connections are in passive mode per default now.  The default mode can
-    be changed by Net::FTP.default_passive=.  [Feature #11612]
+* Rake
+  * Rake is removed from stdlib.  [Feature #11025]
 
 * RubyGems
   * Updated to RubyGems 2.5.1.  For full release notes see:
@@ -266,12 +272,6 @@ with all sufficient information, see the ChangeLog file.
     http://docs.seattlerb.org/rubygems/History_txt.html#label-2.5.0+-2F+2015-11-03
     and
     http://docs.seattlerb.org/rubygems/History_txt.html#label-2.5.1+-2F+2015-12-10
-
-* Rake
-  * Rake is removed from stdlib.  [Feature #11025]
-
-* Fiddle
-  * Fiddle::Function#call releases the GVL.  [Feature #11607]
 
 === Built-in global variables compatibility issues
 
