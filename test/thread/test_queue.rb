@@ -427,7 +427,7 @@ class TestQueue < Test::Unit::TestCase
 
       # wait for all threads to be finished, because of exceptions
       # NOTE: thr.status will be nil (raised) or false (terminated)
-      sleep 0.01 until prod_threads && prod_threads.all?{|thr| !thr.status}
+      sleep 0.01 until prod_threads&.all?{|thr| !thr.status}
 
       # check that all threads failed to call push
       prod_threads.each do |thr|

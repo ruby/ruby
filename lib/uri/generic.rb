@@ -1326,7 +1326,7 @@ module URI
     # Destructive version of #normalize
     #
     def normalize!
-      if path && path.empty?
+      if path&.empty?
         set_path('/')
       end
       if scheme && scheme != scheme.downcase
