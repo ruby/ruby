@@ -30,7 +30,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     ctx.options = 4
     assert_equal 4, (ctx.options & OpenSSL::SSL::OP_ALL)
     ctx.options = OpenSSL::SSL::OP_ALL
-    assert_equal OpenSSL::SSL::OP_ALL, ctx.options
+    assert_equal OpenSSL::SSL::OP_ALL, (ctx.options & OpenSSL::SSL::OP_ALL)
   end
 
   def test_options_setting_nil_means_all
