@@ -1,3 +1,9 @@
+Fri Dec 11 17:59:05 2015  Eric Wong  <e@80x24.org>
+
+	* insns.def (opt_case_dispatch): avoid converting Infinity
+	* test/ruby/test_optimization.rb (test_opt_case_dispatch_inf): new
+	  [ruby-dev:49423] [Bug #11804]'
+
 Fri Dec 11 16:48:57 2015  Eric Wong  <e@80x24.org>
 
 	* hash.c (rb_num_hash_start): avoid pathological behavior
