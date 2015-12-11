@@ -52,8 +52,8 @@ class TestBundledCA < Gem::TestCase
     assert_https('d2chzxaqi4y7f8.cloudfront.net')
   end
 
-  def test_accessing_s3
-    assert_https('s3.amazonaws.com')
+  def test_accessing_fastly
+    assert_https('rubygems.global.ssl.fastly.net')
   end
 
 end if ENV['TRAVIS']
