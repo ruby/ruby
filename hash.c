@@ -191,11 +191,11 @@ rb_num_hash_start(st_index_t n)
      * - (n >> (RUBY_SPECIAL_SHIFT+3)) was added to make symbols hash well,
      *   n.b.: +3 to remove most ID scope, +1 worked well initially, too
      *   n.b.: +1 (instead of 3) worked well initially, too
-     * - (n << 3) was finally added to avoid losing bits for fixnums
+     * - (n << 16) was finally added to avoid losing bits for fixnums
      * - avoid expensive modulo instructions, it is currently only
      *   shifts and bitmask operations.
      */
-    return (n >> (RUBY_SPECIAL_SHIFT + 3) | (n << 3)) ^ (n >> 3);
+    return (n >> (RUBY_SPECIAL_SHIFT + 3) ^ (n << 16)) ^ (n >> 3);
 }
 
 long

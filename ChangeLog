@@ -1,3 +1,8 @@
+Fri Dec 11 16:48:57 2015  Eric Wong  <e@80x24.org>
+
+	* hash.c (rb_num_hash_start): avoid pathological behavior
+	  [ruby-core:72028] [Feature #11405]
+
 Fri Dec 11 11:58:46 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* NEWS: Mentioned rubygems-2.5.1
