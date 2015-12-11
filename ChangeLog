@@ -1,3 +1,8 @@
+Sat Dec 12 07:05:29 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/windows_1252.c: separate from ISO-8859-1 to fix 0x80..0x9e
+	  range.  [ruby-core:64049] [Bug #10097]
+
 Fri Dec 11 23:33:40 2015  Yusuke Endoh  <mame@ruby-lang.org>
 
 	* sample/trick2015/: added the award-winning entries of TRICK 2015.
