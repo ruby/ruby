@@ -270,6 +270,9 @@ with all sufficient information, see the ChangeLog file.
 * Rake
   * Rake is removed from stdlib.  [Feature #11025]
 
+* Fiddle
+  * Fiddle::Function#call releases the GVL.  [Feature #11607]
+
 === Built-in global variables compatibility issues
 
 * $SAFE
