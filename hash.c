@@ -734,7 +734,7 @@ rb_hash_rehash_i(VALUE key, VALUE value, VALUE arg)
  *     h[a]       #=> 100
  */
 
-static VALUE
+VALUE
 rb_hash_rehash(VALUE hash)
 {
     VALUE tmp;
