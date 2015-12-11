@@ -1640,6 +1640,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
                             data.len = len;
 			    rb_hash_foreach(map, cdhash_set_label_i, (VALUE)&data);
 
+			    rb_hash_rehash(map);
 			    freeze_hide_obj(map);
 			    generated_iseq[code_index + 1 + j] = map;
 			    break;
@@ -7736,6 +7737,7 @@ ibf_load_object_hash(const struct ibf_load *load, const struct ibf_object_header
 	VALUE val = ibf_load_object(load, hash->keyval[i*2+1]);
 	rb_hash_aset(obj, key, val);
     }
+    rb_hash_rehash(obj);
 
     if (header->internal) rb_obj_hide(obj);
     if (header->frozen)   rb_obj_freeze(obj);
