@@ -1,3 +1,34 @@
+Fri Dec 11 23:33:40 2015  Yusuke Endoh  <mame@ruby-lang.org>
+
+	* sample/trick2015/: added the award-winning entries of TRICK 2015.
+	  See https://github.com/tric/trick2015 for the contest outline.
+
+Fri Dec 11 17:59:05 2015  Eric Wong  <e@80x24.org>
+
+	* insns.def (opt_case_dispatch): avoid converting Infinity
+	* test/ruby/test_optimization.rb (test_opt_case_dispatch_inf): new
+	  [ruby-dev:49423] [Bug #11804]'
+
+Fri Dec 11 16:48:57 2015  Eric Wong  <e@80x24.org>
+
+	* hash.c (rb_num_hash_start): avoid pathological behavior
+	  [ruby-core:72028] [Feature #11405]
+
+Fri Dec 11 11:58:46 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* NEWS: Mentioned rubygems-2.5.1
+
+Fri Dec 11 11:52:39 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/rubygems: Update to RubyGems 2.5.1
+	* test/rubygems: ditto.
+
+Fri Dec 11 11:38:14 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_compile_each, ibf_load_object_hash): rehash
+	  case-dispatch hash to reduce collisions.
+	  http://d.hatena.ne.jp/ku-ma-me/20151210
+
 Fri Dec 11 03:44:43 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* object.c (rb_inspect): dump inspected result with rb_str_escape()
