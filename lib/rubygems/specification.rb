@@ -1046,7 +1046,7 @@ class Gem::Specification < Gem::BasicSpecification
     stub = stubs.find { |s|
       s.contains_requirable_file? path unless s.activated?
     }
-    stub && stub.to_spec
+    stub&.to_spec
   end
 
   def self.find_active_stub_by_path path

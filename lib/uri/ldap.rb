@@ -133,10 +133,10 @@ module URI
       if @query
         attrs, scope, filter, extensions = @query.split('?')
 
-        @attributes = attrs if attrs && attrs.size > 0
-        @scope      = scope if scope && scope.size > 0
-        @filter     = filter if filter && filter.size > 0
-        @extensions = extensions if extensions && extensions.size > 0
+        @attributes = attrs      if attrs&.size > 0
+        @scope      = scope      if scope&.size > 0
+        @filter     = filter     if filter&.size > 0
+        @extensions = extensions if extensions&.size > 0
       end
     end
     private :parse_query

@@ -24,7 +24,7 @@ module Tk::Tile::TreeviewConfig
 
   def __itemconfiginfo_core(tagOrId, slot = nil)
     if TkComm::GET_CONFIGINFO_AS_ARRAY
-      if (slot && slot.to_s =~ /^(|latin|ascii|kanji)(#{__item_font_optkeys(tagid(tagOrId)).join('|')})$/)
+      if (slot&.to_s =~ /^(|latin|ascii|kanji)(#{__item_font_optkeys(tagid(tagOrId)).join('|')})$/)
         fontkey  = $2
         return [slot.to_s, tagfontobj(tagid(tagOrId), fontkey)]
       else
@@ -195,7 +195,7 @@ module Tk::Tile::TreeviewConfig
       end
 
     else # ! TkComm::GET_CONFIGINFO_AS_ARRAY
-      if (slot && slot.to_s =~ /^(|latin|ascii|kanji)(#{__item_font_optkeys(tagid(tagOrId)).join('|')})$/)
+      if (slot&.to_s =~ /^(|latin|ascii|kanji)(#{__item_font_optkeys(tagid(tagOrId)).join('|')})$/)
         fontkey  = $2
         return {slot.to_s => tagfontobj(tagid(tagOrId), fontkey)}
       else

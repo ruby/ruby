@@ -68,7 +68,7 @@ if Tk.windowingsystem != 'aqua'
   to2.    bind('B1-Motion', '%X %Y'){|x, y| tbar_base.tearoff(to_base, x, y)}
   def tbar_base.tearoff(w, x, y)
     on_win = TkWinfo.containing(x, y)
-    return unless (on_win && on_win.path =~ /^#{@path}(\.|$)/)
+    return unless (on_win&.path =~ /^#{@path}(\.|$)/)
     self.grid_remove
     w.grid_remove
     self.wm_manage

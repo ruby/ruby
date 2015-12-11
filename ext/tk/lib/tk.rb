@@ -4460,7 +4460,7 @@ module TkConfigMethod
           __font_optkeys.each{|optkey|
             optkey = optkey.to_s
             fontconf = ret.assoc(optkey)
-            if fontconf && fontconf.size > 2
+            if fontconf&.size > 2
               ret.delete_if{|inf| inf[0] =~ /^(|latin|ascii|kanji)#{optkey}$/}
               fnt = fontconf[__configinfo_struct[:default_value]]
               if TkFont.is_system_font?(fnt)

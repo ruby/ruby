@@ -326,7 +326,7 @@ class Gem::Dependency
   def to_spec
     matches = self.to_specs
 
-    active = matches.find { |spec| spec && spec.activated? }
+    active = matches.find { |spec| spec&.activated? }
 
     return active if active
 

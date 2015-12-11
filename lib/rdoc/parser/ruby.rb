@@ -1509,7 +1509,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
         end
       when TkRPAREN then
         nest -= 1
-      when method && method.block_params.nil? && TkCOMMENT then
+      when method&.block_params.nil? && TkCOMMENT then
         unget_tk tk
         read_documentation_modifiers method, modifiers
         @read.pop

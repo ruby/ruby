@@ -133,7 +133,7 @@ module Gem::Resolver::Molinillo
     # @return [Vertex,nil] the root vertex with the given name
     def root_vertex_named(name)
       vertex = vertex_named(name)
-      vertex if vertex && vertex.root?
+      vertex if vertex&.root?
     end
 
     # Adds a new {Edge} to the dependency graph

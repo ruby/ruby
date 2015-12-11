@@ -1102,7 +1102,7 @@ class Socket < BasicSocket
         st = File.lstat(path)
       rescue Errno::ENOENT
       end
-      if st && st.socket? && st.owned?
+      if st&.socket? && st.owned?
         File.unlink path
       end
     end

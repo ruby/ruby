@@ -83,8 +83,7 @@ class Gem::StubSpecification < Gem::BasicSpecification
   def activated?
     @activated ||=
     begin
-      loaded = Gem.loaded_specs[name]
-      loaded && loaded.version == version
+      Gem.loaded_specs[name]&.version == version
     end
   end
 

@@ -404,7 +404,7 @@ module TkItemConfigMethod
 
   def __itemconfiginfo_core(tagOrId, slot = nil)
     if TkComm::GET_CONFIGINFO_AS_ARRAY
-      if (slot && slot.to_s =~ /^(|latin|ascii|kanji)(#{__item_font_optkeys(tagid(tagOrId)).join('|')})$/)
+      if (slot&.to_s =~ /^(|latin|ascii|kanji)(#{__item_font_optkeys(tagid(tagOrId)).join('|')})$/)
         fontkey  = $2
         # conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{fontkey}"))))
         conf = tk_split_simplelist(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{fontkey}")), false, true)
@@ -756,7 +756,7 @@ module TkItemConfigMethod
           __item_font_optkeys(tagid(tagOrId)).each{|optkey|
             optkey = optkey.to_s
             fontconf = ret.assoc(optkey)
-            if fontconf && fontconf.size > 2
+            if fontconf&.size > 2
               ret.delete_if{|inf| inf[0] =~ /^(|latin|ascii|kanji)#{optkey}$/}
               fnt = fontconf[__item_configinfo_struct(tagid(tagOrId))[:default_value]]
               if TkFont.is_system_font?(fnt)
@@ -776,7 +776,7 @@ module TkItemConfigMethod
       end
 
     else # ! TkComm::GET_CONFIGINFO_AS_ARRAY
-      if (slot && slot.to_s =~ /^(|latin|ascii|kanji)(#{__item_font_optkeys(tagid(tagOrId)).join('|')})$/)
+      if (slot&.to_s =~ /^(|latin|ascii|kanji)(#{__item_font_optkeys(tagid(tagOrId)).join('|')})$/)
         fontkey  = $2
         # conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{fontkey}"))))
         conf = tk_split_simplelist(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{fontkey}")), false, true)
