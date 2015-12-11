@@ -1,3 +1,7 @@
+Fri Dec 11 11:58:46 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* NEWS: Mentioned rubygems-2.5.1
+
 Fri Dec 11 11:52:39 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/rubygems: Update to RubyGems 2.5.1

@@ -260,6 +260,13 @@ with all sufficient information, see the ChangeLog file.
   * Connections are in passive mode per default now.  The default mode can
     be changed by Net::FTP.default_passive=.  [Feature #11612]
 
+* RubyGems
+  * Updated to RubyGems 2.5.1.  For full release notes see:
+
+    http://docs.seattlerb.org/rubygems/History_txt.html#label-2.5.0+-2F+2015-11-03
+    and
+    http://docs.seattlerb.org/rubygems/History_txt.html#label-2.5.1+-2F+2015-12-10
+
 * Rake
   * Rake is removed from stdlib.  [Feature #11025]
 
