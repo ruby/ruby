@@ -1,3 +1,10 @@
+Sat Dec 12 07:44:38 2015  Eric Wong  <e@80x24.org>
+
+	* io.c (do_io_advise): do not raise on ENOSYS
+	* test/ruby/test_io.rb (test_advise): do not skip on Errno::ENOSYS
+	  (test_advise_pipe): ditto
+	  [ruby-core:72066] [Feature #11806]
+
 Sat Dec 12 07:05:29 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enc/windows_1252.c: separate from ISO-8859-1 to fix 0x80..0x9e
