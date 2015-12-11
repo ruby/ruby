@@ -272,7 +272,9 @@ Init_fiddle_function(void)
     /*
      * Document-method: call
      *
-     * Calls the constructed Function, with +args+
+     * Calls the constructed Function, with +args+.
+     * Caller must ensure the underlying function is called in a
+     * thread-safe manner if running in a multi-threaded process.
      *
      * For an example see Fiddle::Function
      *
