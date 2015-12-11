@@ -1713,7 +1713,7 @@ module DRb
   # error is raised.
   def current_server
     drb = Thread.current['DRb']
-    server = (drb && drb['server']) ? drb['server'] : @primary_server
+    server = drb&['server'] || @primary_server
     raise DRbServerNotFound unless server
     return server
   end
@@ -1734,7 +1734,7 @@ module DRb
   # This is the URI of the current server.  See #current_server.
   def uri
     drb = Thread.current['DRb']
-    client = (drb && drb['client'])
+    client = drb&['client']
     if client
       uri = client.uri
       return uri if uri

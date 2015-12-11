@@ -221,7 +221,7 @@ module Gem::Resolver::Molinillo
           seen ||= s.requirement == requirement || s.requirements.include?(requirement)
           seen && s.requirement != requirement && !s.requirements.include?(requirement)
         end
-        state && state.requirement
+        state&.requirement
       end
 
       # @return [Object] the requirement that led to a version of a possibility
@@ -241,7 +241,7 @@ module Gem::Resolver::Molinillo
       # @return [Boolean] whether or not the given state has any possibilities
       #   left.
       def state_any?(state)
-        state && state.possibilities.any?
+        state&.possibilities.any?
       end
 
       # @return [Conflict] a {Conflict} that reflects the failure to activate
@@ -372,7 +372,7 @@ module Gem::Resolver::Molinillo
       #   is found on {#base}
       def locked_requirement_named(requirement_name)
         vertex = base.vertex_named(requirement_name)
-        vertex && vertex.payload
+        vertex&.payload
       end
 
       # Add the current {#possibility} to the dependency graph of the current

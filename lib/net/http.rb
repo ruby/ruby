@@ -1,4 +1,4 @@
-#
+f#
 # = net/http.rb
 #
 # Copyright (c) 1999-2007 Yukihiro Matsumoto
@@ -566,7 +566,7 @@ module Net   #:nodoc:
     def HTTP.start(address, *arg, &block) # :yield: +http+
       arg.pop if opt = Hash.try_convert(arg[-1])
       port, p_addr, p_port, p_user, p_pass = *arg
-      port = https_default_port if !port && opt && opt[:use_ssl]
+      port = https_default_port if !port && opt&[:use_ssl]
       http = new(address, port, p_addr, p_port, p_user, p_pass)
 
       if opt
@@ -1055,7 +1055,7 @@ module Net   #:nodoc:
     # The address of the proxy server, if one is configured.
     def proxy_address
       if @proxy_from_env then
-        proxy_uri && proxy_uri.hostname
+        proxy_uri&.hostname
       else
         @proxy_address
       end
@@ -1064,7 +1064,7 @@ module Net   #:nodoc:
     # The port of the proxy server, if one is configured.
     def proxy_port
       if @proxy_from_env then
-        proxy_uri && proxy_uri.port
+        proxy_uri&.port
       else
         @proxy_port
       end

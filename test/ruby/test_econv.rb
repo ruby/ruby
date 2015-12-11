@@ -22,8 +22,8 @@ class TestEncodingConverter < Test::Unit::TestCase
 
   def assert_errinfo(e_res, e_enc1, e_enc2, e_error_bytes, e_readagain_bytes, ec)
     assert_equal([e_res, e_enc1, e_enc2,
-                  e_error_bytes && e_error_bytes.dup.force_encoding("ASCII-8BIT"),
-                  e_readagain_bytes && e_readagain_bytes.dup.force_encoding("ASCII-8BIT")],
+                  e_error_bytes&.dup.force_encoding("ASCII-8BIT"),
+                  e_readagain_bytes&.dup.force_encoding("ASCII-8BIT")],
                  ec.primitive_errinfo)
   end
 

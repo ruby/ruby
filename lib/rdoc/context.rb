@@ -795,7 +795,7 @@ class RDoc::Context < RDoc::CodeObject
   # Find a module at a higher scope
 
   def find_enclosing_module_named(name)
-    parent && parent.find_module_named(name)
+    parent&.find_module_named(name)
   end
 
   ##

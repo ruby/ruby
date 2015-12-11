@@ -181,7 +181,7 @@ class PendulumAnimationDemo
       last = -1 if last >= 0
       next if first > last
       lst = @points[first..last]
-      @graph[i].coords(lst) if lst && lst.length >= 4
+      @graph[i].coords(lst) if lst&.length >= 4
     }
   end
 

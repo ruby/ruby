@@ -631,7 +631,7 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
         "dependencies"        => deps,
         "doc_path"            => doc_root(spec.full_name),
         "executables"         => executables,
-        "only_one_executable" => (executables && executables.size == 1),
+        "only_one_executable" => executables&.size == 1,
         "full_name"           => spec.full_name,
         "has_deps"            => !deps.empty?,
         "homepage"            => spec.homepage,
