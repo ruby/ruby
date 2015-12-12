@@ -1,3 +1,8 @@
+Sat Dec 12 17:59:07 2015  Yuichiro Kaneko  <yui-knk@ruby-lang.org>
+
+	* test/ruby/test_regexp.rb: Add test cases for `$KCODE` and `$=` warning
+	  [Misc #11770][ruby-dev:49398]
+
 Sat Dec 12 17:11:57 2015  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* doc/NEWS-0.2.2: add description about incompatible change in Hash
