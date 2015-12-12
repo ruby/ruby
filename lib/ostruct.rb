@@ -227,7 +227,7 @@ class OpenStruct
     begin
       name = name.to_sym
     rescue NoMethodError
-      return
+      raise TypeError, "#{name} is not a symbol nor a string"
     end
     @table.dig(name, *names)
   end
