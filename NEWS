@@ -192,6 +192,9 @@ with all sufficient information, see the ChangeLog file.
     :warn, :error, :fatal (case insensitive) [Feature #11695]
   * Logger#reopen is added to reopen a log device. [Feature #11696]
 
+* nkf
+  * Merge nkf 2.1.4.
+
 * Socket
   * Socket#connect_nonblock, Socket#accept_nonblock,
     TCPServer#accept_nonblock, UNIXServer#accept_nonblock,

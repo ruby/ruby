@@ -1,3 +1,40 @@
+Sun Dec 13 00:05:42 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_call_method_missing): method_missing should
+	  not be refined.
+	  [ruby-core:72080] [Bug #11809]
+
+Sat Dec 12 23:00:17 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/nkf/nkf-utf8/nkf.c: Merge nkf 2.1.4.
+
+Sat Dec 12 18:52:26 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* object.c (rb_obj_dig): raise TypeError if an element does not
+	  have #dig method.  [ruby-core:71798] [Bug #11762]
+
+Sat Dec 12 17:59:07 2015  Yuichiro Kaneko  <yui-knk@ruby-lang.org>
+
+	* test/ruby/test_regexp.rb: Add test cases for `$KCODE` and `$=` warning
+	  [Misc #11770][ruby-dev:49398]
+
+Sat Dec 12 17:11:57 2015  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* doc/NEWS-0.2.2: add description about incompatible change in Hash
+	  duplicated key overriding policy. [Bug #10315] [Bug #11501]
+
+Sat Dec 12 07:44:38 2015  Eric Wong  <e@80x24.org>
+
+	* io.c (do_io_advise): do not raise on ENOSYS
+	* test/ruby/test_io.rb (test_advise): do not skip on Errno::ENOSYS
+	  (test_advise_pipe): ditto
+	  [ruby-core:72066] [Feature #11806]
+
+Sat Dec 12 07:05:29 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/windows_1252.c: separate from ISO-8859-1 to fix 0x80..0x9e
+	  range.  [ruby-core:64049] [Bug #10097]
+
 Fri Dec 11 23:33:40 2015  Yusuke Endoh  <mame@ruby-lang.org>
 
 	* sample/trick2015/: added the award-winning entries of TRICK 2015.

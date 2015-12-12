@@ -1953,7 +1953,9 @@ vm_call_method_missing(rb_thread_t *th, rb_control_frame_t *reg_cfp, struct rb_c
     ci = &ci_entry;
 
     cc_entry = *orig_cc;
-    cc_entry.me = rb_callable_method_entry(CLASS_OF(calling->recv), idMethodMissing);
+    cc_entry.me =
+       	rb_callable_method_entry_without_refinements(CLASS_OF(calling->recv),
+						     idMethodMissing);
     cc = &cc_entry;
 
     calling->argc = argc;

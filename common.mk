@@ -1084,8 +1084,9 @@ help: PHONY
 	"  gdb:             runs test.rb by miniruby under gdb" \
 	"  gdb-ruby:        runs test.rb by ruby under gdb" \
 	"  check:           equals make test test-all" \
+	"  exam:            equals make check test-rubyspec" \
 	"  test:            ruby core tests" \
-	"  test-all:        all ruby tests [TESTS=<test files>]" \
+	"  test-all:        all ruby tests [TESTOPTS=-j4 TESTS=\"<test files>\"]" \
 	"  test-rubyspec:   run RubySpec test suite" \
 	"  update-rubyspec: update local copy of RubySpec" \
 	"  benchmark:       benchmark this ruby and COMPARE_RUBY." \

@@ -2018,6 +2018,13 @@ rb_vm_add_root_module(ID id, VALUE module)
     return TRUE;
 }
 
+static int
+free_loading_table_entry(st_data_t key, st_data_t value, st_data_t arg)
+{
+    xfree((char *)key);
+    return ST_DELETE;
+}
+
 int
 ruby_vm_destruct(rb_vm_t *vm)
 {
@@ -2033,6 +2040,15 @@ ruby_vm_destruct(rb_vm_t *vm)
 	}
 	rb_vm_living_threads_init(vm);
 	ruby_vm_run_at_exit_hooks(vm);
+	if (vm->loading_table) {
+	    st_foreach(vm->loading_table, free_loading_table_entry, 0);
+	    st_free_table(vm->loading_table);
+	    vm->loading_table = 0;
+	}
+	if (vm->frozen_strings) {
+	    st_free_table(vm->frozen_strings);
+	    vm->frozen_strings = 0;
+	}
 	rb_vm_gvl_destroy(vm);
 	if (objspace) {
 	    rb_objspace_free(objspace);
