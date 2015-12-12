@@ -537,6 +537,16 @@ class TestRegexp < Test::Unit::TestCase
     assert_nothing_raised { $= = nil }
   end
 
+  def test_KCODE_warning
+    assert_warning(/variable \$KCODE is no longer effective; ignored/) { $KCODE = nil }
+    assert_warning(/variable \$KCODE is no longer effective/) { $KCODE = nil }
+  end
+
+  def test_ignorecase_warning
+    assert_warning(/variable \$= is no longer effective; ignored/) { $= = nil }
+    assert_warning(/variable \$= is no longer effective/) { $= }
+  end
+
   def test_match_setter
     /foo/ =~ "foo"
     m = $~
