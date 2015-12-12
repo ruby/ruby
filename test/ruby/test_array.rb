@@ -2654,7 +2654,8 @@ class TestArray < Test::Unit::TestCase
   def test_dig
     h = @cls[@cls[{a: 1}], 0]
     assert_equal(1, h.dig(0, 0, :a))
-    assert_nil(h.dig(1, 0))
+    assert_nil(h.dig(2, 0))
+    assert_raise(TypeError) {h.dig(1, 0)}
   end
 
   private
