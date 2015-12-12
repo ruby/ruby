@@ -1,3 +1,8 @@
+Sat Dec 12 18:52:26 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* object.c (rb_obj_dig): raise TypeError if an element does not
+	  have #dig method.  [ruby-core:71798] [Bug #11762]
+
 Sat Dec 12 17:59:07 2015  Yuichiro Kaneko  <yui-knk@ruby-lang.org>
 
 	* test/ruby/test_regexp.rb: Add test cases for `$KCODE` and `$=` warning

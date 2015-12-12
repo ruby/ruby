@@ -1305,7 +1305,8 @@ class TestHash < Test::Unit::TestCase
   def test_dig
     h = @cls[a: @cls[b: [1, 2, 3]], c: 4]
     assert_equal(1, h.dig(:a, :b, 0))
-    assert_nil(h.dig(:c, 1))
+    assert_nil(h.dig(:b, 1))
+    assert_raise(TypeError) {h.dig(:c, 1)}
     o = Object.new
     def o.dig(*args)
       {dug: args}

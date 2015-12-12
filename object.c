@@ -3169,12 +3169,22 @@ dig_basic_p(VALUE obj, struct dig_method *cache)
     return cache->basic;
 }
 
+static void
+no_dig_method(int found, VALUE recv, ID mid, int argc, const VALUE *argv, VALUE data)
+{
+    if (!found) {
+	rb_raise(rb_eTypeError, "%"PRIsVALUE" does not have #dig method",
+		 CLASS_OF(data));
+    }
+}
+
 VALUE
 rb_obj_dig(int argc, VALUE *argv, VALUE obj, VALUE notfound)
 {
     struct dig_method hash = {Qnil}, ary = {Qnil}, strt = {Qnil};
 
     for (; argc > 0; ++argv, --argc) {
+	if (NIL_P(obj)) return notfound;
 	if (!SPECIAL_CONST_P(obj)) {
 	    switch (BUILTIN_TYPE(obj)) {
 	      case T_HASH:
@@ -3197,7 +3207,8 @@ rb_obj_dig(int argc, VALUE *argv, VALUE obj, VALUE notfound)
 		break;
 	    }
 	}
-	return rb_check_funcall_default(obj, id_dig, argc, argv, notfound);
+	return rb_check_funcall_with_hook(obj, id_dig, argc, argv,
+					  no_dig_method, obj);
     }
     return obj;
 }
