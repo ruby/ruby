@@ -483,9 +483,10 @@ rb_check_funcall_with_hook(VALUE recv, ID mid, int argc, const VALUE *argv,
 
     me = rb_search_method_entry(recv, mid);
     if (!check_funcall_callable(th, me)) {
-	(*hook)(FALSE, recv, mid, argc, argv, arg);
-	return check_funcall_missing(th, klass, recv, mid, argc, argv,
-				     respond, Qundef);
+	VALUE ret = check_funcall_missing(th, klass, recv, mid, argc, argv,
+					  respond, Qundef);
+	(*hook)(ret != Qundef, recv, mid, argc, argv, arg);
+	return ret;
     }
     stack_check();
     (*hook)(TRUE, recv, mid, argc, argv, arg);
