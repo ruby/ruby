@@ -20,11 +20,11 @@
  *
  * 3. This notice may not be removed or altered from any source distribution.
  */
-#define NKF_VERSION "2.1.3"
-#define NKF_RELEASE_DATE "2013-11-22"
+#define NKF_VERSION "2.1.4"
+#define NKF_RELEASE_DATE "2015-12-12"
 #define COPY_RIGHT \
     "Copyright (C) 1987, FUJITSU LTD. (I.Ichikawa).\n" \
-    "Copyright (C) 1996-2013, The nkf Project."
+    "Copyright (C) 1996-2015, The nkf Project."
 
 #include "config.h"
 #include "nkf.h"
@@ -3575,6 +3575,7 @@ static void
 check_bom(FILE *f)
 {
     int c2;
+    input_bom_f = FALSE;
     switch(c2 = (*i_getc)(f)){
     case 0x00:
 	if((c2 = (*i_getc)(f)) == 0x00){
