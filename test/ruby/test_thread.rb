@@ -1050,7 +1050,7 @@ q.pop
   end
 
   def test_thread_name
-    t = Thread.start {}
+    t = Thread.start {sleep}
     assert_nil t.name
     s = t.inspect
     t.name = 'foo'
