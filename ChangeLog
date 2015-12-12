@@ -1,3 +1,8 @@
+Sat Dec 12 17:11:57 2015  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* doc/NEWS-0.2.2: add description about incompatible change in Hash
+	  duplicated key overriding policy. [Bug #10315] [Bug #11501]
+
 Sat Dec 12 07:44:38 2015  Eric Wong  <e@80x24.org>
 
 	* io.c (do_io_advise): do not raise on ENOSYS
