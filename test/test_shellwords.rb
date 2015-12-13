@@ -48,8 +48,17 @@ class TestShellwords < Test::Unit::TestCase
   end
 
   def test_stringification
-    assert_equal "3", shellescape(3)
-    assert_equal "ps -p #{$$}", ['ps', '-p', $$].shelljoin
+    three = shellescape(3)
+    assert_equal '3', three
+    assert_not_predicate three, :frozen?
+
+    empty = shellescape('')
+    assert_equal "''", empty
+    assert_not_predicate empty, :frozen?
+
+    joined = ['ps', '-p', $$].shelljoin
+    assert_equal "ps -p #{$$}", joined
+    assert_not_predicate joined, :frozen?
   end
 
   def test_multibyte_characters
