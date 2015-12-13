@@ -1,3 +1,8 @@
+Sun Dec 13 19:24:20 2015  Yuki Yugui Sonoda  <yugui@yugui.jp>
+
+	* parse.y (lex_state_name): Make it return the correct names.
+	  Add new names to follow r51617; Indices ffs(2) returns are 1-origin.
+
 Sun Dec 13 18:40:45 2015  Yuki Yugui Sonoda  <yugui@yugui.jp>
 
 	* parse.y: debug output of lex_state transition if PARSER_DEBUG
