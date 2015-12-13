@@ -1,3 +1,9 @@
+Sun Dec 13 18:23:37 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/tk/tkutil/tkutil.c (cbsubst_table_setup): check types of
+	  argument elements.  reported by Marcin 'Icewall' Noga of Cisco
+	  Talos.
+
 Sun Dec 13 18:19:20 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/win32ole/win32ole.c (ole_vstr2wc): check argument type, vstr

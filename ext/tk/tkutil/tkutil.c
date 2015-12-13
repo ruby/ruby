@@ -1564,7 +1564,7 @@ cbsubst_table_setup(argc, argv, self)
   volatile VALUE key_inf;
   volatile VALUE longkey_inf;
   volatile VALUE proc_inf;
-  VALUE inf;
+  VALUE inf, subst, name, type, ivar, proc;
   const VALUE *infp;
   ID id;
   struct cbsubst_info *subst_inf;
@@ -1598,14 +1598,18 @@ cbsubst_table_setup(argc, argv, self)
   for(idx = 0; idx < len; idx++) {
     inf = RARRAY_AREF(key_inf, idx);
     if (!RB_TYPE_P(inf, T_ARRAY)) continue;
+    if (RARRAY_LEN(inf) < 3) continue;
     infp = RARRAY_CONST_PTR(inf);
+    subst = infp[0];
+    type = infp[1];
+    ivar = infp[2];
 
-    chr = NUM2CHR(infp[0]);
-    subst_inf->type[chr] = NUM2CHR(infp[1]);
+    chr = NUM2CHR(subst);
+    subst_inf->type[chr] = NUM2CHR(type);
 
     subst_inf->full_subst_length += 3;
 
-    id = SYM2ID(infp[2]);
+    id = SYM2ID(ivar);
     subst_inf->ivar[chr] = rb_intern_str(rb_sprintf("@%"PRIsVALUE, rb_id2str(id)));
 
     rb_attr(self, id, 1, 0, Qtrue);
@@ -1622,17 +1626,22 @@ cbsubst_table_setup(argc, argv, self)
   for(idx = 0; idx < len; idx++) {
     inf = RARRAY_AREF(longkey_inf, idx);
     if (!RB_TYPE_P(inf, T_ARRAY)) continue;
+    if (RARRAY_LEN(inf) < 3) continue;
     infp = RARRAY_CONST_PTR(inf);
+    name = infp[0];
+    type = infp[1];
+    ivar = infp[2];
 
+    Check_Type(name, T_STRING);
     chr = (unsigned char)(0x80 + idx);
-    subst_inf->keylen[chr] = RSTRING_LEN(infp[0]);
-    subst_inf->key[chr] = strndup(RSTRING_PTR(infp[0]),
-				  RSTRING_LEN(infp[0]));
-    subst_inf->type[chr] = NUM2CHR(infp[1]);
+    subst_inf->keylen[chr] = RSTRING_LEN(name);
+    subst_inf->key[chr] = strndup(RSTRING_PTR(name),
+				  RSTRING_LEN(name));
+    subst_inf->type[chr] = NUM2CHR(type);
 
     subst_inf->full_subst_length += (subst_inf->keylen[chr] + 2);
 
-    id = SYM2ID(infp[2]);
+    id = SYM2ID(ivar);
     subst_inf->ivar[chr] = rb_intern_str(rb_sprintf("@%"PRIsVALUE, rb_id2str(id)));
 
     rb_attr(self, id, 1, 0, Qtrue);
