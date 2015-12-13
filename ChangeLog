@@ -1,3 +1,8 @@
+Sun Dec 13 18:27:53 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/psych/psych_emitter.c (start_document): ensure string before
+	  encoding conversion.
+
 Sun Dec 13 18:26:31 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/tk/tkutil/tkutil.c (tk_hash_kv): check types of array

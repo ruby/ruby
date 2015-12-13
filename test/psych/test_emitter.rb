@@ -53,6 +53,7 @@ module Psych
         [[], 'foo', false],
         [[], ['foo'], false],
         [[], [nil,nil], false],
+        [[1,1], [[nil, "tag:TALOS"]], 0],
       ].each do |args|
         assert_raises(TypeError) do
           @emitter.start_document(*args)

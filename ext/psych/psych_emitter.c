@@ -189,13 +189,15 @@ static VALUE start_document(VALUE self, VALUE version, VALUE tags, VALUE imp)
 	    }
 	    name  = RARRAY_AREF(tuple, 0);
 	    value = RARRAY_AREF(tuple, 1);
+	    StringValue(name);
+	    StringValue(value);
 #ifdef HAVE_RUBY_ENCODING_H
 	    name = rb_str_export_to_enc(name, encoding);
 	    value = rb_str_export_to_enc(value, encoding);
 #endif
 
-	    tail->handle = (yaml_char_t *)StringValuePtr(name);
-	    tail->prefix = (yaml_char_t *)StringValuePtr(value);
+	    tail->handle = (yaml_char_t *)RSTRING_PTR(name);
+	    tail->prefix = (yaml_char_t *)RSTRING_PTR(value);
 
 	    tail++;
 	}
