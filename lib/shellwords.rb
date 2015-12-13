@@ -64,6 +64,13 @@ module Shellwords
   #   argv = Shellwords.split('here are "two words"')
   #   argv #=> ["here", "are", "two words"]
   #
+  # Note, however, that this is not a command line parser.  Shell
+  # metacharacters except for the single and double quotes and
+  # backslash are not treated as such.
+  #
+  #   argv = Shellwords.split('ruby my_prog.rb | less')
+  #   argv #=> ["ruby", "my_prog.rb", "|", "less"]
+  #
   # String#shellsplit is a shortcut for this function.
   #
   #   argv = 'here are "two words"'.shellsplit
