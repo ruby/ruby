@@ -11047,6 +11047,7 @@ rb_parser_printf(struct parser_params *parser, const char *fmt, ...)
     va_end(ap);
     if (RSTRING_END(mesg)[-1] == '\n') {
 	rb_io_write(rb_stdout, mesg);
+	parser->debug_buffer = Qnil;
     }
 }
 #endif
