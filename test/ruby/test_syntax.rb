@@ -335,6 +335,12 @@ WARN
     assert_valid_syntax("{foo: /=/}", bug11456)
   end
 
+  def test_percent_string_after_label
+    bug11812 = ['ruby-core:72084']
+    assert_valid_syntax('{label:%w(*)}', bug11812)
+    assert_valid_syntax('{label: %w(*)}', bug11812)
+  end
+
   def test_duplicated_arg
     assert_syntax_error("def foo(a, a) end", /duplicated argument name/)
     assert_nothing_raised { def foo(_, _) end }
