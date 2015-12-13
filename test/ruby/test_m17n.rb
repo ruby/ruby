@@ -1476,6 +1476,29 @@ class TestM17N < Test::Unit::TestCase
     assert_equal(false, s.valid_encoding?, bug6190)
   end
 
+  def test_valid_encoding_with_encoding
+    s = "\xa1"
+    assert_equal(false, s.valid_encoding?("euc-jp"))
+    assert_equal(true, (s+s).valid_encoding?("euc-jp"))
+    assert_equal(true, (s*2).valid_encoding?("euc-jp"))
+    assert_equal(true, ("%s%s" % [s, s]).valid_encoding?("euc-jp"))
+    assert_equal(true, (s.dup << s).valid_encoding?("euc-jp"))
+    assert_equal(true, "".center(2, s).valid_encoding?("euc-jp"))
+
+    s = "\xa1\xa1\x8f"
+    assert_equal(false, s.valid_encoding?("euc-jp"))
+    assert_equal(true, s.reverse.valid_encoding?("euc-jp"))
+
+    s = "\xa1\xa1"
+    assert_equal(true, s.valid_encoding?("euc-jp"))
+    s << "\x8f"
+    assert_equal(false, s.valid_encoding?("euc-jp"))
+    s = "aa"
+    assert_equal(true, s.valid_encoding?("utf-16be"))
+    s << "\xff"
+    assert_equal(false, s.valid_encoding?("utf-16be"))
+  end
+
   def test_getbyte
     assert_equal(0x82, u("\xE3\x81\x82\xE3\x81\x84").getbyte(2))
     assert_equal(0x82, u("\xE3\x81\x82\xE3\x81\x84").getbyte(-4))
