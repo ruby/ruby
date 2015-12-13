@@ -125,7 +125,7 @@ module Shellwords
     str = str.to_s
 
     # An empty argument will be skipped, so return empty quotes.
-    return "''" if str.empty?
+    return "''".dup if str.empty?
 
     str = str.dup
 
