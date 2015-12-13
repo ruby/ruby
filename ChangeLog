@@ -1,3 +1,9 @@
+Sun Dec 13 11:47:35 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* object.c (rb_inspect): check the default internal encoding as
+	  String#inspect do.
+	  [ruby-dev:49415] [Bug #11787]
+
 Sun Dec 13 11:38:12 2015  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/shellwords.rb: Turn on frozen-string-literal after fixing
