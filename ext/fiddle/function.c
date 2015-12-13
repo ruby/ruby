@@ -15,12 +15,16 @@ VALUE cFiddleFunction;
 #define MAX_ARGS (SIZE_MAX / (sizeof(void *) + sizeof(fiddle_generic)) - 1)
 
 #define Check_Max_Args(name, len) \
+    Check_Max_Args_(name, len, "")
+#define Check_Max_Args_Long(name, len) \
+    Check_Max_Args_(name, len, "l")
+#define Check_Max_Args_(name, len, fmt) \
     if ((size_t)(len) < MAX_ARGS) { \
 	/* OK */ \
     } \
     else { \
 	rb_raise(rb_eTypeError, \
-		 name" is so large that it can cause integer overflow (%d)", \
+		 name" is so large that it can cause integer overflow (%"fmt"d)", \
 		 (len)); \
     }
 
@@ -87,16 +91,34 @@ static VALUE
 initialize(int argc, VALUE argv[], VALUE self)
 {
     ffi_cif * cif;
-    ffi_type **arg_types;
+    ffi_type **arg_types, *rtype;
     ffi_status result;
     VALUE ptr, args, ret_type, abi, kwds;
-    long i;
+    long i, len;
+    int nabi;
+    void *cfunc;
 
     rb_scan_args(argc, argv, "31:", &ptr, &args, &ret_type, &abi, &kwds);
-    if(NIL_P(abi)) abi = INT2NUM(FFI_DEFAULT_ABI);
+    ptr = rb_Integer(ptr);
+    cfunc = NUM2PTR(ptr);
+    PTR2NUM(cfunc);
+    nabi = NIL_P(abi) ? FFI_DEFAULT_ABI : NUM2INT(abi);
+    abi = INT2FIX(nabi);
+    i = NUM2INT(ret_type);
+    rtype = INT2FFI_TYPE(i);
+    ret_type = INT2FIX(i);
 
     Check_Type(args, T_ARRAY);
-    Check_Max_Args("args", RARRAY_LENINT(args));
+    len = RARRAY_LENINT(args);
+    Check_Max_Args_Long("args", len);
+    ary = rb_ary_subseq(ary, 0, len);
+    for (i = 0; i < RARRAY_LEN(args); i++) {
+	VALUE a = RARRAY_PTR(args)[i];
+	int type = NUM2INT(a);
+	(void)INT2FFI_TYPE(type); /* raise */
+	if (INT2FIX(type) != a) rb_ary_store(ary, i, INT2FIX(type));
+    }
+    OBJ_FREEZE(ary);
 
     rb_iv_set(self, "@ptr", ptr);
     rb_iv_set(self, "@args", args);
@@ -107,20 +129,15 @@ initialize(int argc, VALUE argv[], VALUE self)
 
     TypedData_Get_Struct(self, ffi_cif, &function_data_type, cif);
 
-    arg_types = xcalloc(RARRAY_LEN(args) + 1, sizeof(ffi_type *));
+    arg_types = xcalloc(len + 1, sizeof(ffi_type *));
 
     for (i = 0; i < RARRAY_LEN(args); i++) {
 	int type = NUM2INT(RARRAY_AREF(args, i));
 	arg_types[i] = INT2FFI_TYPE(type);
     }
-    arg_types[RARRAY_LEN(args)] = NULL;
+    arg_types[len] = NULL;
 
-    result = ffi_prep_cif (
-	    cif,
-	    NUM2INT(abi),
-	    RARRAY_LENINT(args),
-	    INT2FFI_TYPE(NUM2INT(ret_type)),
-	    arg_types);
+    result = ffi_prep_cif(cif, nabi, len, rtype, arg_types);
 
     if (result)
 	rb_raise(rb_eRuntimeError, "error creating CIF %d", result);
@@ -182,8 +199,9 @@ function_call(int argc, VALUE argv[], VALUE self)
     for (i = 0; i < argc; i++) {
 	VALUE type = RARRAY_AREF(types, i);
 	VALUE src = argv[i];
+	int argtype = FIX2INT(type);
 
-	if(NUM2INT(type) == TYPE_VOIDP) {
+	if (argtype == TYPE_VOIDP) {
 	    if(NIL_P(src)) {
 		src = INT2FIX(0);
 	    } else if(cPointer != CLASS_OF(src)) {
@@ -192,11 +210,11 @@ function_call(int argc, VALUE argv[], VALUE self)
 	    src = rb_Integer(src);
 	}
 
-	VALUE2GENERIC(NUM2INT(type), src, &generic_args[i]);
+	VALUE2GENERIC(argtype, src, &generic_args[i]);
 	args.values[i] = (void *)&generic_args[i];
     }
     args.values[argc] = NULL;
-    args.fn = NUM2PTR(rb_Integer(cfunc));
+    args.fn = NUM2PTR(cfunc);
 
     (void)rb_thread_call_without_gvl(nogvl_ffi_call, &args, 0, 0);
 
