@@ -1,4 +1,7 @@
-Sun Dec 13 18:25:16 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Dec 13 18:26:31 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/tk/tkutil/tkutil.c (tk_hash_kv): check types of array
+	  argument.  reported by Marcin 'Icewall' Noga of Cisco Talos.
 
 	* ext/tk/tkutil/tkutil.c (cbsubst_table_setup): check length of
 	  argument arrays for each access, as callback methods can modify
