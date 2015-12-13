@@ -48,6 +48,7 @@
 # define YYFPRINTF(f, fmt, ...) rb_parser_printf(parser, fmt, ##__VA_ARGS__)
 #else
 # define YYFPRINTF		rb_parser_printf
+# undef stderr
 # define stderr 		parser
 #endif
 #undef malloc
