@@ -44,6 +44,12 @@
 #define YYREALLOC(ptr, size)	rb_parser_realloc(parser, (ptr), (size))
 #define YYCALLOC(nelem, size)	rb_parser_calloc(parser, (nelem), (size))
 #define YYFREE(ptr)		rb_parser_free(parser, (ptr))
+#ifdef HAVE_VA_ARGS_MACRO
+# define YYFPRINTF(f, fmt, ...) rb_parser_printf(parser, fmt, ##__VA_ARGS__)
+#else
+# define YYFPRINTF		rb_parser_printf
+# define stderr 		parser
+#endif
 #undef malloc
 #undef realloc
 #undef calloc
@@ -95,11 +101,9 @@ enum lex_state_e {
 
 # define SET_LEX_STATE(ls) \
     (lex_state = trace_lex_state(lex_state, (ls), __LINE__))
-#if PARSER_DEBUG
 static enum lex_state_e trace_lex_state(enum lex_state_e from, enum lex_state_e to, int line);
-#else
-# define trace_lex_state(from, to, line) (to)
-#endif
+# define trace_lex_state(from, to, line) \
+    (yydebug ? trace_lex_state(from, to, line) : (to))
 
 typedef VALUE stack_type;
 
@@ -273,6 +277,8 @@ struct parser_params {
     rb_encoding *enc;
     token_info *token_info;
     VALUE compile_option;
+
+    VALUE debug_buffer;
 
     ID cur_arg;
 
@@ -9179,54 +9185,47 @@ id_is_var_gen(struct parser_params *parser, ID id)
 }
 #endif /* !RIPPER */
 
-#if PARSER_DEBUG
 static const char lex_state_names[][13] = {
     "EXPR_BEG",    "EXPR_END",    "EXPR_ENDARG", "EXPR_ENDFN",  "EXPR_ARG",
     "EXPR_CMDARG", "EXPR_MID",    "EXPR_FNAME",  "EXPR_DOT",    "EXPR_CLASS",
     "EXPR_LABEL",  "EXPR_LABELED",
 };
 
-static const char *
-build_lex_state_name(enum lex_state_e state, char *buf, size_t size)
+static VALUE
+append_lex_state_name(enum lex_state_e state, VALUE buf)
 {
     int i, sep = 0;
-    char *p = buf;
     unsigned int mask = 1;
-    size_t n;
     static const char none[] = "EXPR_NONE";
 
     for (i = 0; i < EXPR_MAX_STATE; ++i, mask <<= 1) {
 	if ((unsigned)state & mask) {
 	    if (sep) {
-		if (size < 2) break;
-		--size;
-		*p++ = '|';
+		rb_str_cat(buf, "|", 1);
 	    }
 	    sep = 1;
-	    n = strlcpy(p, lex_state_names[i], size);
-	    if (n >= size) break;
-	    size -= n;
-	    p += n;
+	    rb_str_cat_cstr(buf, lex_state_names[i]);
 	}
     }
-    if (p == buf && size >= sizeof(none)) {
-	n = strlcpy(buf, none, size);
-	p += n;
+    if (!sep) {
+	rb_str_cat(buf, none, sizeof(none)-1);
     }
-    *p = '\0';
     return buf;
 }
 
+#undef trace_lex_state
 static enum lex_state_e
 trace_lex_state(enum lex_state_e from, enum lex_state_e to, int line)
 {
-    char buf1[sizeof(lex_state_names)], buf2[sizeof(lex_state_names)];
-    build_lex_state_name(from, buf1, sizeof(buf1));
-    build_lex_state_name(to, buf2, sizeof(buf2));
-    printf("lex_state: %s -> %s at L%d\n", buf1, buf2, line);
+    VALUE mesg;
+    mesg = rb_str_new_cstr("lex_state: ");
+    append_lex_state_name(from, mesg);
+    rb_str_cat_cstr(mesg, " -> ");
+    append_lex_state_name(to, mesg);
+    rb_str_catf(mesg, " at line %d\n", line);
+    rb_io_write(rb_stdout, mesg);
     return to;
 }
-#endif
 
 #ifdef RIPPER
 static VALUE
@@ -10776,6 +10775,7 @@ parser_initialize(struct parser_params *parser)
     parser->result = Qnil;
     parser->parsing_thread = Qnil;
 #endif
+    parser->debug_buffer = Qnil;
     parser->enc = rb_utf8_encoding();
 }
 
@@ -11034,6 +11034,21 @@ rb_parser_free(struct parser_params *parser, void *ptr)
     xfree(ptr);
 }
 #endif
+
+void
+rb_parser_printf(struct parser_params *parser, const char *fmt, ...)
+{
+    va_list ap;
+    VALUE mesg = parser->debug_buffer;
+
+    if (NIL_P(mesg)) parser->debug_buffer = mesg = rb_str_new(0, 0);
+    va_start(ap, fmt);
+    rb_str_vcatf(mesg, fmt, ap);
+    va_end(ap);
+    if (RSTRING_END(mesg)[-1] == '\n') {
+	rb_io_write(rb_stdout, mesg);
+    }
+}
 #endif
 
 #ifdef RIPPER

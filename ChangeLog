@@ -1,3 +1,23 @@
+Sun Dec 13 23:46:10 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (trace_lex_state): trace lex_state changes if yydebug is
+	  set, and send the messages to rb_stdout.
+
+	* parse.y (rb_parser_printf): store YYPRINTF messages per lines
+	  so that lex_state traces do not mix.
+
+	* tool/ytab.sed: add parser argument to yy_stack_print too.
+
+Sun Dec 13 23:45:19 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (trace_lex_state): trace lex_state changes if yydebug is
+	  set, and send the messages to rb_stdout.
+
+	* parse.y (rb_parser_printf): store YYPRINTF messages per lines
+	  so that lex_state traces do not mix.
+
+	* tool/ytab.sed: add parser argument to yy_stack_print too.
+
 Sun Dec 13 20:41:16 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (build_lex_state_name, trace_lex_state): lex_state is
