@@ -1,3 +1,7 @@
+Sun Dec 13 18:40:45 2015  Yuki Yugui Sonoda  <yugui@yugui.jp>
+
+	* parse.y: debug output of lex_state transition if PARSER_DEBUG
+
 Sun Dec 13 18:49:25 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (parse_mode_enc): preserve encoding of mode string in
