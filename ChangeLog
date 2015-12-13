@@ -1,3 +1,8 @@
+Sun Dec 13 12:17:43 2015  Eric Wong  <e@80x24.org>
+
+	* lib/shellwords.rb (shellescape): duplicate frozen literal
+	* test/test_shellwords.rb (test_stringification): new test
+
 Sun Dec 13 11:47:35 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* object.c (rb_inspect): check the default internal encoding as
