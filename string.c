@@ -8541,19 +8541,42 @@ rb_str_b(VALUE str)
 
 /*
  *  call-seq:
- *     str.valid_encoding?  -> true or false
+ *     str.valid_encoding?(enc=encoding)  -> true or false
  *
  *  Returns true for a string which encoded correctly.
  *
  *    "\xc2\xa1".force_encoding("UTF-8").valid_encoding?  #=> true
  *    "\xc2".force_encoding("UTF-8").valid_encoding?      #=> false
  *    "\x80".force_encoding("UTF-8").valid_encoding?      #=> false
+ *
+ *    "\xc2\xa1".valid_encoding?("UTF-8")                 #=> true
+ *    "\xc2".valid_encoding?("UTF-8")                     #=> false
+ *    "\x80".valid_encoding?("UTF-8")                     #=> false
  */
 
 static VALUE
-rb_str_valid_encoding_p(VALUE str)
+rb_str_valid_encoding_p(int argc, VALUE *argv, VALUE str)
 {
-    int cr = rb_enc_str_coderange(str);
+    int encidx, cr;
+    rb_encoding *enc, *enc_given;
+
+    rb_check_arity(argc, 0, 1);
+    encidx = ENCODING_GET(str);
+    enc = rb_enc_from_index(encidx);
+    if (!argc || NIL_P(argv[0]) || (enc_given = rb_to_encoding(argv[0])) == enc) {
+	cr = rb_enc_str_coderange(str);
+    }
+    else {
+	enc = enc_given;
+	if (rb_enc_mbminlen(enc) > 1 && rb_enc_dummy_p(enc)) {
+	    cr = ENC_CODERANGE_BROKEN;
+	}
+	else {
+	    encidx = rb_enc_to_index(enc);
+	    cr = coderange_scan(RSTRING_PTR(str), RSTRING_LEN(str),
+				get_actual_encoding(encidx, str));
+	}
+    }
 
     return cr == ENC_CODERANGE_BROKEN ? Qfalse : Qtrue;
 }
@@ -9502,7 +9525,7 @@ Init_String(void)
     rb_define_method(rb_cString, "encoding", rb_obj_encoding, 0); /* in encoding.c */
     rb_define_method(rb_cString, "force_encoding", rb_str_force_encoding, 1);
     rb_define_method(rb_cString, "b", rb_str_b, 0);
-    rb_define_method(rb_cString, "valid_encoding?", rb_str_valid_encoding_p, 0);
+    rb_define_method(rb_cString, "valid_encoding?", rb_str_valid_encoding_p, -1);
     rb_define_method(rb_cString, "ascii_only?", rb_str_is_ascii_only_p, 0);
 
     rb_fs = Qnil;

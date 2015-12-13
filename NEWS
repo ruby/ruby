@@ -136,6 +136,9 @@ with all sufficient information, see the ChangeLog file.
   * String.new now accepts new option parameter `encoding'.
     [Feature #11785]
 
+  * String#valid_encoding? now have optional encoding argument to
+    validate.
+
 * Struct
   * Struct#dig [Feature #11688]
 
