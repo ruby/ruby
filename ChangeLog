@@ -1,3 +1,9 @@
+Sun Dec 13 18:19:20 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/win32ole/win32ole.c (ole_vstr2wc): check argument type, vstr
+	  must be a String here.  reported by Marcin 'Icewall' Noga of
+	  Cisco Talos.
+
 Sun Dec 13 16:41:01 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (BOOTSTRAPRUBY): make BASERUBY full path before

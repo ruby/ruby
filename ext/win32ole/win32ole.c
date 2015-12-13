@@ -860,6 +860,11 @@ ole_vstr2wc(VALUE vstr)
     LPWSTR pw;
     st_data_t data;
     struct st_table *tbl = DATA_PTR(enc2cp_hash);
+
+    /* do not type-conversion here to prevent from other arguments
+     * changing (if exist) */
+    Check_Type(vstr, T_STRING);
+
     enc = rb_enc_get(vstr);
 
     if (st_lookup(tbl, (VALUE)enc | FIXNUM_FLAG, &data)) {
