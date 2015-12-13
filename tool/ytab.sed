@@ -47,16 +47,9 @@ a\
   }
   x
 }
-/^yy_symbol_value_print/{
-  a\
-#define yy_symbol_value_print(output, type, value, parser) yy_symbol_value_print(0, type, value, parser)
-}
-/^yy_symbol_print/{
-  a\
-#define yy_symbol_print(output, type, value, parser) yy_symbol_print(0, type, value, parser)
-  a\
-#define yyoutput parser
-}
+s/\( YYFPRINTF *(\)yyoutput,/\1parser,/
+s/\( YYFPRINTF *(\)stderr,/\1parser,/
+s/\( YYDPRINTF *((\)stderr,/\1parser,/
 s/^\([ 	]*\)\(yyerror[ 	]*([ 	]*parser,\)/\1parser_\2/
 s!^ *extern char \*getenv();!/* & */!
 s/^\(#.*\)".*\.tab\.c"/\1"parse.c"/
