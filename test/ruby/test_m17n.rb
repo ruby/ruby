@@ -1648,4 +1648,17 @@ class TestM17N < Test::Unit::TestCase
     assert_match(escape_plain, 0x5b.chr(::Encoding::UTF_8), bug10670)
     assert_match(escape_plain, 0x5b.chr, bug10670)
   end
+
+  def test_inspect_with_default_internal
+    bug11787 = '[ruby-dev:49415] [Bug #11787]'
+
+    orig_int = Encoding.default_internal
+    Encoding.default_internal = ::Encoding::EUC_JP
+    s = begin
+          [e("\xB4\xC1\xBB\xFA")].inspect
+        ensure
+          Encoding.default_internal = orig_int
+        end
+    assert_equal(e("[\"\xB4\xC1\xBB\xFA\"]"), s, bug11787)
+  end
 end

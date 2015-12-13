@@ -467,22 +467,23 @@ rb_any_to_s(VALUE obj)
 
 VALUE rb_str_escape(VALUE str);
 /*
- * If the default external encoding is ASCII compatible, the encoding of
- * the inspected result must be compatible with it.
- * If the default external encoding is ASCII incompatible,
+ * If the default internal or external encoding is ASCII compatible,
+ * the encoding of the inspected result must be compatible with it.
+ * If the default internal or external encoding is ASCII incompatible,
  * the result must be ASCII only.
  */
 VALUE
 rb_inspect(VALUE obj)
 {
     VALUE str = rb_obj_as_string(rb_funcallv(obj, id_inspect, 0, 0));
-    rb_encoding *ext = rb_default_external_encoding();
-    if (!rb_enc_asciicompat(ext)) {
+    rb_encoding *enc = rb_default_internal_encoding();
+    if (enc == NULL) enc = rb_default_external_encoding();
+    if (!rb_enc_asciicompat(enc)) {
 	if (!rb_enc_str_asciionly_p(str))
 	    return rb_str_escape(str);
 	return str;
     }
-    if (rb_enc_get(str) != ext && !rb_enc_str_asciionly_p(str))
+    if (rb_enc_get(str) != enc && !rb_enc_str_asciionly_p(str))
 	return rb_str_escape(str);
     return str;
 }
