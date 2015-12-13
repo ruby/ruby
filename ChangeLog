@@ -1,3 +1,7 @@
+Sun Dec 13 20:26:30 2015  Yuki Yugui Sonoda  <yugui@yugui.jp>
+
+	* test/ruby/test_syntax.rb: fix typo in test
+
 Sun Dec 13 20:12:14 2015  Yuki Yugui Sonoda  <yugui@yugui.jp>
 
 	* parse.y (parse_percent): Allow %-literals in labeled arg as

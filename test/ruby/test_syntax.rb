@@ -336,7 +336,7 @@ WARN
   end
 
   def test_percent_string_after_label
-    bug11812 = ['ruby-core:72084']
+    bug11812 = '[ruby-core:72084]'
     assert_valid_syntax('{label:%w(*)}', bug11812)
     assert_valid_syntax('{label: %w(*)}', bug11812)
   end
