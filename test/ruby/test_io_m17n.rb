@@ -2082,6 +2082,19 @@ EOT
     }
   end
 
+  def test_bom_too_long_utfname
+    assert_separately([], <<-'end;') # do
+      assert_warn(/Unsupported encoding/) {
+        open(IO::NULL, "r:bom|utf-" + "x" * 10000) {}
+      }
+    end;
+    assert_separately([], <<-'end;') # do
+      assert_warn(/Unsupported encoding/) {
+        open(IO::NULL, encoding: "bom|utf-" + "x" * 10000) {}
+      }
+    end;
+  end
+
   def test_cbuf
     with_tmpdir {
       fn = "tst"
