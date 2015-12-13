@@ -804,6 +804,7 @@ tk_hash_kv(argc, argv, self)
     switch(argc) {
     case 3:
         ary = argv[2];
+	Check_Type(ary, T_ARRAY);
     case 2:
         enc_flag = argv[1];
     case 1:
