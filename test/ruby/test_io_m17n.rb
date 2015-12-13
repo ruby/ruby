@@ -2107,6 +2107,14 @@ EOT
       open(IO::NULL, "w:bom|us-ascii") {|f| enc = f.external_encoding}
     }
     assert_equal(Encoding::US_ASCII, enc)
+
+    tlhInganHol = "\u{f8e4 f8d9 f8d7 f8dc f8d0 f8db} \u{f8d6 f8dd f8d9}"
+    EnvUtil.with_default_external(Encoding::UTF_8) {
+      assert_warn(/#{tlhInganHol}/) {
+        open(IO::NULL, "w:bom|#{tlhInganHol}") {|f| enc = f.external_encoding}
+      }
+    }
+    assert_nil(enc)
   end
 
   def test_cbuf

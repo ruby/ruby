@@ -5054,13 +5054,14 @@ rb_io_ext_int_to_encs(rb_encoding *ext, rb_encoding *intern, rb_encoding **enc, 
 }
 
 static void
-unsupported_encoding(const char *name)
+unsupported_encoding(const char *name, rb_encoding *enc)
 {
-    rb_warn("Unsupported encoding %s ignored", name);
+    rb_enc_warn(enc, "Unsupported encoding %s ignored", name);
 }
 
 static void
-parse_mode_enc(const char *estr, rb_encoding **enc_p, rb_encoding **enc2_p, int *fmode_p)
+parse_mode_enc(const char *estr, rb_encoding *estr_enc,
+	       rb_encoding **enc_p, rb_encoding **enc2_p, int *fmode_p)
 {
     const char *p;
     char encname[ENCODING_MAXNAMELEN+1];
@@ -5080,7 +5081,7 @@ parse_mode_enc(const char *estr, rb_encoding **enc_p, rb_encoding **enc2_p, int 
 	    fmode |= FMODE_SETENC_BY_BOM;
 	}
 	else {
-	    rb_warn("BOM with non-UTF encoding %s is nonsense", estr);
+	    rb_enc_warn(estr_enc, "BOM with non-UTF encoding %s is nonsense", estr);
 	    fmode &= ~FMODE_SETENC_BY_BOM;
 	}
     }
@@ -5101,7 +5102,7 @@ parse_mode_enc(const char *estr, rb_encoding **enc_p, rb_encoding **enc2_p, int 
 	ext_enc = rb_enc_from_index(idx);
     else {
 	if (idx != -2)
-	    unsupported_encoding(estr);
+	    unsupported_encoding(estr, estr_enc);
 	ext_enc = NULL;
     }
 
@@ -5114,7 +5115,7 @@ parse_mode_enc(const char *estr, rb_encoding **enc_p, rb_encoding **enc2_p, int 
 	else {
 	    idx2 = rb_enc_find_index(p);
 	    if (idx2 < 0)
-		unsupported_encoding(p);
+		unsupported_encoding(p, estr_enc);
 	    else if (!(fmode & FMODE_SETENC_BY_BOM) && (idx2 == idx)) {
 		int_enc = (rb_encoding *)Qnil;
 	    }
@@ -5181,7 +5182,8 @@ rb_io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **enc2
     if (!NIL_P(encoding)) {
 	extracted = 1;
 	if (!NIL_P(tmp = rb_check_string_type(encoding))) {
-	    parse_mode_enc(StringValueCStr(tmp), enc_p, enc2_p, fmode_p);
+	    parse_mode_enc(StringValueCStr(tmp), rb_enc_get(tmp),
+			   enc_p, enc2_p, fmode_p);
 	}
 	else {
 	    rb_io_ext_int_to_encs(rb_to_encoding(encoding), NULL, enc_p, enc2_p, 0);
@@ -5286,7 +5288,7 @@ rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
         p = strchr(p, ':');
         if (p) {
             has_enc = 1;
-            parse_mode_enc(p+1, &enc, &enc2, &fmode);
+            parse_mode_enc(p+1, rb_enc_get(vmode), &enc, &enc2, &fmode);
         }
 	else {
 	    rb_encoding *e;
@@ -5592,7 +5594,8 @@ rb_file_open_internal(VALUE io, VALUE filename, const char *modestr)
     convconfig_t convconfig;
 
     if (p) {
-        parse_mode_enc(p+1, &convconfig.enc, &convconfig.enc2, &fmode);
+        parse_mode_enc(p+1, rb_usascii_encoding(),
+		       &convconfig.enc, &convconfig.enc2, &fmode);
     }
     else {
 	rb_encoding *e;
@@ -9429,7 +9432,7 @@ static rb_encoding *
 find_encoding(VALUE v)
 {
     rb_encoding *enc = rb_find_encoding(v);
-    if (!enc) unsupported_encoding(StringValueCStr(v));
+    if (!enc) rb_warn("Unsupported encoding %"PRIsVALUE" ignored", v);
     return enc;
 }
 
@@ -9475,8 +9478,8 @@ io_encoding_set(rb_io_t *fptr, VALUE v1, VALUE v2, VALUE opt)
 	}
 	else {
 	    tmp = rb_check_string_type(v1);
-	    if (!NIL_P(tmp) && rb_enc_asciicompat(rb_enc_get(tmp))) {
-                parse_mode_enc(RSTRING_PTR(tmp), &enc, &enc2, NULL);
+	    if (!NIL_P(tmp) && rb_enc_asciicompat(enc = rb_enc_get(tmp))) {
+                parse_mode_enc(RSTRING_PTR(tmp), enc, &enc, &enc2, NULL);
 		SET_UNIVERSAL_NEWLINE_DECORATOR_IF_ENC2(enc2, ecflags);
                 ecflags = rb_econv_prepare_options(opt, &ecopts, ecflags);
 	    }
