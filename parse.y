@@ -9186,9 +9186,11 @@ id_is_var_gen(struct parser_params *parser, ID id)
 static const char *
 lex_state_name(enum lex_state_e state)
 {
-    static const char names[][12] = {
+    static const char names[][13] = {
+        "EXPR_NONE",
 	"EXPR_BEG",    "EXPR_END",    "EXPR_ENDARG", "EXPR_ENDFN",  "EXPR_ARG",
 	"EXPR_CMDARG", "EXPR_MID",    "EXPR_FNAME",  "EXPR_DOT",    "EXPR_CLASS",
+	"EXPR_LABEL",  "EXPR_LABELED",
     };
 
     if ((unsigned)state & ~(~0u << EXPR_MAX_STATE))
