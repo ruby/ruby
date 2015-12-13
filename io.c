@@ -4852,11 +4852,14 @@ rb_io_fmode_modestr(int fmode)
     }
 }
 
+static const char bom_prefix[] = "bom|";
+static const char utf_prefix[] = "utf-";
+enum {bom_prefix_len = (int)sizeof(bom_prefix) - 1};
+enum {utf_prefix_len = (int)sizeof(utf_prefix) - 1};
+
 static int
 io_encname_bom_p(const char *name, long len)
 {
-    static const char bom_prefix[] = "bom|utf-";
-    enum {bom_prefix_len = (int)sizeof(bom_prefix) - 1};
     return len > bom_prefix_len && STRNCASECMP(name, bom_prefix, bom_prefix_len) == 0;
 }
 
@@ -5064,37 +5067,31 @@ parse_mode_enc(const char *estr, rb_encoding **enc_p, rb_encoding **enc2_p, int 
     int idx, idx2;
     int fmode = fmode_p ? *fmode_p : 0;
     rb_encoding *ext_enc, *int_enc;
+    long len;
 
     /* parse estr as "enc" or "enc2:enc" or "enc:-" */
 
     p = strrchr(estr, ':');
-    if (p) {
-	long len = (p++) - estr;
-	if (len == 0 || len > ENCODING_MAXNAMELEN)
-	    idx = -1;
+    len = p ? (p++ - estr) : (long)strlen(estr);
+    if ((fmode & FMODE_SETENC_BY_BOM) || io_encname_bom_p(estr, len)) {
+	estr += bom_prefix_len;
+	len -= bom_prefix_len;
+	if (!STRNCASECMP(estr, utf_prefix, utf_prefix_len)) {
+	    fmode |= FMODE_SETENC_BY_BOM;
+	}
 	else {
-	    if (io_encname_bom_p(estr, len)) {
-		fmode |= FMODE_SETENC_BY_BOM;
-		estr += 4;
-                len -= 4;
-            }
+	    rb_warn("BOM with non-UTF encoding %s is nonsense", estr);
+	    fmode &= ~FMODE_SETENC_BY_BOM;
+	}
+    }
+    if (len == 0 || len > ENCODING_MAXNAMELEN) {
+	idx = -1;
+    }
+    else {
+	if (p) {
 	    memcpy(encname, estr, len);
 	    encname[len] = '\0';
 	    estr = encname;
-	    idx = rb_enc_find_index(encname);
-	}
-    }
-    else {
-	long len = strlen(estr);
-	if (io_encname_bom_p(estr, len)) {
-	    fmode |= FMODE_SETENC_BY_BOM;
-	    estr += 4;
-            len -= 4;
-	    if (len > 0 && len <= ENCODING_MAXNAMELEN) {
-		memcpy(encname, estr, len);
-		encname[len] = '\0';
-		estr = encname;
-	    }
 	}
 	idx = rb_enc_find_index(estr);
     }
