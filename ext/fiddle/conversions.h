@@ -33,11 +33,11 @@ VALUE generic_to_value(VALUE rettype, fiddle_generic retval);
 #define GENERIC2VALUE(_type, _retval) generic_to_value((_type), (_retval))
 
 #if SIZEOF_VOIDP == SIZEOF_LONG
-# define PTR2NUM(x)   (ULONG2NUM((unsigned long)(x)))
+# define PTR2NUM(x)   (LONG2NUM((long)(x)))
 # define NUM2PTR(x)   ((void*)(NUM2ULONG(x)))
 #else
 /* # error --->> Ruby/DL2 requires sizeof(void*) == sizeof(long) to be compiled. <<--- */
-# define PTR2NUM(x)   (ULL2NUM((unsigned long long)(x)))
+# define PTR2NUM(x)   (LL2NUM((LONG_LONG)(x)))
 # define NUM2PTR(x)   ((void*)(NUM2ULL(x)))
 #endif
 

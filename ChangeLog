@@ -1,3 +1,8 @@
+Sun Dec 13 18:35:11 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/fiddle/conversions.h (PTR2NUM): use signed integer to make
+	  Fixnum for negative values.
+
 Sun Dec 13 18:33:41 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* pack.c (pack_pack): always check index range against the
