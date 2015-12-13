@@ -44,13 +44,7 @@
 #define YYREALLOC(ptr, size)	rb_parser_realloc(parser, (ptr), (size))
 #define YYCALLOC(nelem, size)	rb_parser_calloc(parser, (nelem), (size))
 #define YYFREE(ptr)		rb_parser_free(parser, (ptr))
-#ifdef HAVE_VA_ARGS_MACRO
-# define YYFPRINTF(f, fmt, ...) rb_parser_printf(parser, fmt, ##__VA_ARGS__)
-#else
-# define YYFPRINTF		rb_parser_printf
-# undef stderr
-# define stderr 		parser
-#endif
+#define YYFPRINTF		rb_parser_printf
 #undef malloc
 #undef realloc
 #undef calloc
