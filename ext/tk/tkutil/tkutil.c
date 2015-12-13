@@ -1568,7 +1568,7 @@ cbsubst_table_setup(argc, argv, self)
   const VALUE *infp;
   ID id;
   struct cbsubst_info *subst_inf;
-  long idx, len;
+  long idx;
   unsigned char chr;
 
   /* accept (key_inf, proc_inf) or (key_inf, longkey_inf, procinf) */
@@ -1594,8 +1594,7 @@ cbsubst_table_setup(argc, argv, self)
    *         type  ==> char code or string
    *         ivar  ==> symbol
    */
-  len = RARRAY_LEN(key_inf);
-  for(idx = 0; idx < len; idx++) {
+  for(idx = 0; idx < RARRAY_LEN(key_inf); idx++) {
     inf = RARRAY_AREF(key_inf, idx);
     if (!RB_TYPE_P(inf, T_ARRAY)) continue;
     if (RARRAY_LEN(inf) < 3) continue;
@@ -1622,8 +1621,7 @@ cbsubst_table_setup(argc, argv, self)
    *         type ==> char code or string
    *         ivar ==> symbol
    */
-  len = RARRAY_LEN(longkey_inf);
-  for(idx = 0; idx < len; idx++) {
+  for(idx = 0; idx < RARRAY_LEN(longkey_inf); idx++) {
     inf = RARRAY_AREF(longkey_inf, idx);
     if (!RB_TYPE_P(inf, T_ARRAY)) continue;
     if (RARRAY_LEN(inf) < 3) continue;
@@ -1652,9 +1650,7 @@ cbsubst_table_setup(argc, argv, self)
    *         type  ==> char code or string
    *         proc  ==> proc/method/obj (must respond to 'call')
    */
-  len = RARRAY_LEN(proc_inf);
-  for(idx = 0; idx < len; idx++) {
-    VALUE type, proc;
+  for(idx = 0; idx < RARRAY_LEN(proc_inf); idx++) {
     inf = RARRAY_AREF(proc_inf, idx);
     if (!RB_TYPE_P(inf, T_ARRAY)) continue;
     if (RARRAY_LEN(inf) < 2) continue;
