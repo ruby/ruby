@@ -94,7 +94,7 @@ initialize(int argc, VALUE argv[], VALUE self)
     ffi_type **arg_types, *rtype;
     ffi_status result;
     VALUE ptr, args, ret_type, abi, kwds, ary;
-    long i, len;
+    int i, len;
     int nabi;
     void *cfunc;
 
@@ -110,8 +110,8 @@ initialize(int argc, VALUE argv[], VALUE self)
 
     Check_Type(args, T_ARRAY);
     len = RARRAY_LENINT(args);
-    Check_Max_Args_Long("args", len);
-    ary = rb_ary_subseq(ary, 0, len);
+    Check_Max_Args("args", len);
+    ary = rb_ary_subseq(args, 0, len);
     for (i = 0; i < RARRAY_LEN(args); i++) {
 	VALUE a = RARRAY_PTR(args)[i];
 	int type = NUM2INT(a);
