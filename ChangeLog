@@ -1,4 +1,9 @@
-Sun Dec 13 18:45:12 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Dec 13 18:46:31 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (io_encname_bom_p): check BOM prefix only, not including
+	  UTF prefix.
+
+	* io.c (parse_mode_enc): warn BOM with non-UTF encoding.
 
 	* io.c (parse_mode_enc): fix buffer overflow.
 

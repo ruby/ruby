@@ -2095,6 +2095,20 @@ EOT
     end;
   end
 
+  def test_bom_non_utf
+    enc = nil
+
+    assert_warn(/BOM/) {
+      open(__FILE__, "r:bom|us-ascii") {|f| enc = f.external_encoding}
+    }
+    assert_equal(Encoding::US_ASCII, enc)
+
+    assert_warn(/BOM/) {
+      open(IO::NULL, "w:bom|us-ascii") {|f| enc = f.external_encoding}
+    }
+    assert_equal(Encoding::US_ASCII, enc)
+  end
+
   def test_cbuf
     with_tmpdir {
       fn = "tst"
