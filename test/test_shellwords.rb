@@ -50,15 +50,58 @@ class TestShellwords < Test::Unit::TestCase
   def test_stringification
     three = shellescape(3)
     assert_equal '3', three
-    assert_not_predicate three, :frozen?
-
-    empty = shellescape('')
-    assert_equal "''", empty
-    assert_not_predicate empty, :frozen?
 
     joined = ['ps', '-p', $$].shelljoin
     assert_equal "ps -p #{$$}", joined
-    assert_not_predicate joined, :frozen?
+  end
+
+  def test_whitespace
+    empty = ''
+    space = " "
+    newline = "\n"
+    tab = "\t"
+
+    tokens = [
+      empty,
+      space,
+      space * 2,
+      newline,
+      newline * 2,
+      tab,
+      tab * 2,
+      empty,
+      space + newline + tab,
+      empty
+    ]
+
+    tokens.each { |token|
+      assert_equal [token], shellescape(token).shellsplit
+    }
+
+
+    assert_equal tokens, shelljoin(tokens).shellsplit
+  end
+
+  def test_frozenness
+    [
+      shellescape(String.new),
+      shellescape(String.new('foo')),
+      shellescape(''.freeze),
+      shellescape("\n".freeze),
+      shellescape('foo'.freeze),
+      shelljoin(['ps'.freeze, 'ax'.freeze]),
+    ].each { |object|
+      assert_not_predicate object, :frozen?
+    }
+
+    [
+      shellsplit('ps'),
+      shellsplit('ps ax'),
+    ].each { |array|
+      array.each { |arg|
+        assert_not_predicate arg, :frozen?, array.inspect
+      }
+    }
   end
 
   def test_multibyte_characters

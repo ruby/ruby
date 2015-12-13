@@ -1,3 +1,8 @@
+Sun Dec 13 14:17:19 2015  Akinori MUSHA  <knu@iDaemons.org>
+
+	* test/test_shellwords.rb (TestShellwords): Add many more tests
+	  for handling whitespace characters and frozenness.
+
 Sun Dec 13 14:16:09 2015  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/shellwords.rb (Shellwords#shellsplit): Document that this
