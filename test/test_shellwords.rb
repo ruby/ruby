@@ -6,15 +6,15 @@ class TestShellwords < Test::Unit::TestCase
 
   include Shellwords
 
-  def setup
-    @not_string = Class.new
-    @cmd = "ruby my_prog.rb | less"
-  end
+  def test_shellwords
+    cmd1 = "ruby -i'.bak' -pe \"sub /foo/, '\\\\&bar'\" foobar\\ me.txt\n"
+    assert_equal(['ruby', '-i.bak', '-pe', "sub /foo/, '\\&bar'", "foobar me.txt"],
+                 shellwords(cmd1))
 
-
-  def test_string
-    assert_instance_of(Array, shellwords(@cmd))
-    assert_equal(4, shellwords(@cmd).length)
+    # shellwords does not interpret meta-characters
+    cmd2 = "ruby my_prog.rb | less"
+    assert_equal(['ruby', 'my_prog.rb', '|', 'less'],
+                 shellwords(cmd2))
   end
 
   def test_unmatched_double_quote
