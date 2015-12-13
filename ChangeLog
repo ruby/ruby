@@ -1,3 +1,7 @@
+Sun Dec 13 18:45:12 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (parse_mode_enc): fix buffer overflow.
+
 Sun Dec 13 18:35:57 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/fiddle/function.c (initialize): check all arguments first.

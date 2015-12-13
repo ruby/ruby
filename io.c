@@ -5090,9 +5090,11 @@ parse_mode_enc(const char *estr, rb_encoding **enc_p, rb_encoding **enc2_p, int 
 	    fmode |= FMODE_SETENC_BY_BOM;
 	    estr += 4;
             len -= 4;
-	    memcpy(encname, estr, len);
-	    encname[len] = '\0';
-	    estr = encname;
+	    if (len > 0 && len <= ENCODING_MAXNAMELEN) {
+		memcpy(encname, estr, len);
+		encname[len] = '\0';
+		estr = encname;
+	    }
 	}
 	idx = rb_enc_find_index(estr);
     }
