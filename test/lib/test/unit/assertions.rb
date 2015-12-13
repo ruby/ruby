@@ -446,6 +446,340 @@ EOT
         assert(failed.empty?, message(m) {failed.pretty_inspect})
       end
 
+      def assert_valid_syntax(code, fname = caller_locations(1, 1)[0], mesg = fname.to_s, verbose: nil)
+        code = code.dup.force_encoding("ascii-8bit")
+        code.sub!(/\A(?:\xef\xbb\xbf)?(\s*\#.*$)*(\n)?/n) {
+          "#$&#{"\n" if $1 && !$2}BEGIN{throw tag, :ok}\n"
+        }
+        code.force_encoding(Encoding::UTF_8)
+        verbose, $VERBOSE = $VERBOSE, verbose
+        yield if defined?(yield)
+        case
+        when Array === fname
+          fname, line = *fname
+        when defined?(fname.path) && defined?(fname.lineno)
+          fname, line = fname.path, fname.lineno
+        else
+          line = 0
+        end
+        assert_nothing_raised(SyntaxError, mesg) do
+          assert_equal(:ok, catch {|tag| eval(code, binding, fname, line)}, mesg)
+        end
+      ensure
+        $VERBOSE = verbose
+      end
+
+      def assert_syntax_error(code, error, fname = caller_locations(1, 1)[0], mesg = fname.to_s)
+        code = code.dup.force_encoding("ascii-8bit")
+        code.sub!(/\A(?:\xef\xbb\xbf)?(\s*\#.*$)*(\n)?/n) {
+          "#$&#{"\n" if $1 && !$2}BEGIN{throw tag, :ng}\n"
+        }
+        code.force_encoding("us-ascii")
+        verbose, $VERBOSE = $VERBOSE, nil
+        yield if defined?(yield)
+        case
+        when Array === fname
+          fname, line = *fname
+        when defined?(fname.path) && defined?(fname.lineno)
+          fname, line = fname.path, fname.lineno
+        else
+          line = 0
+        end
+        e = assert_raise(SyntaxError, mesg) do
+          catch {|tag| eval(code, binding, fname, line)}
+        end
+        assert_match(error, e.message, mesg)
+      ensure
+        $VERBOSE = verbose
+      end
+
+      def assert_normal_exit(testsrc, message = '', child_env: nil, **opt)
+        assert_valid_syntax(testsrc, caller_locations(1, 1)[0])
+        if child_env
+          child_env = [child_env]
+        else
+          child_env = []
+        end
+        out, _, status = EnvUtil.invoke_ruby(child_env + %W'-W0', testsrc, true, :merge_to_stdout, **opt)
+        assert !status.signaled?, FailDesc[status, message, out]
+      end
+
+      FailDesc = proc do |status, message = "", out = ""|
+        pid = status.pid
+        now = Time.now
+        faildesc = proc do
+          if signo = status.termsig
+            signame = Signal.signame(signo)
+            sigdesc = "signal #{signo}"
+          end
+          log = EnvUtil.diagnostic_reports(signame, EnvUtil.rubybin, pid, now)
+          if signame
+            sigdesc = "SIG#{signame} (#{sigdesc})"
+          end
+          if status.coredump?
+            sigdesc << " (core dumped)"
+          end
+          full_message = ''
+          if message and !message.empty?
+            full_message << message << "\n"
+          end
+          full_message << "pid #{pid}"
+          full_message << " exit #{status.exitstatus}" if status.exited?
+          full_message << " killed by #{sigdesc}" if sigdesc
+          if out and !out.empty?
+            full_message << "\n#{out.b.gsub(/^/, '| ')}"
+            full_message << "\n" if /\n\z/ !~ full_message
+          end
+          if log
+            full_message << "\n#{log.b.gsub(/^/, '| ')}"
+          end
+          full_message
+        end
+        faildesc
+      end
+
+      def assert_in_out_err(args, test_stdin = "", test_stdout = [], test_stderr = [], message = nil, **opt)
+        stdout, stderr, status = EnvUtil.invoke_ruby(args, test_stdin, true, true, **opt)
+        if signo = status.termsig
+          EnvUtil.diagnostic_reports(Signal.signame(signo), EnvUtil.rubybin, status.pid, Time.now)
+        end
+        if block_given?
+          raise "test_stdout ignored, use block only or without block" if test_stdout != []
+          raise "test_stderr ignored, use block only or without block" if test_stderr != []
+          yield(stdout.lines.map {|l| l.chomp }, stderr.lines.map {|l| l.chomp }, status)
+        else
+          all_assertions(message) do |a|
+            [["stdout", test_stdout, stdout], ["stderr", test_stderr, stderr]].each do |key, exp, act|
+              a.for(key) do
+                if exp.is_a?(Regexp)
+                  assert_match(exp, act)
+                elsif exp.all? {|e| String === e}
+                  assert_equal(exp, act.lines.map {|l| l.chomp })
+                else
+                  assert_pattern_list(exp, act)
+                end
+              end
+            end
+          end
+          status
+        end
+      end
+
+      def assert_ruby_status(args, test_stdin="", message=nil, **opt)
+        out, _, status = EnvUtil.invoke_ruby(args, test_stdin, true, :merge_to_stdout, **opt)
+        desc = FailDesc[status, message, out]
+        assert(!status.signaled?, desc)
+        message ||= "ruby exit status is not success:"
+        assert(status.success?, desc)
+      end
+
+      ABORT_SIGNALS = Signal.list.values_at(*%w"ILL ABRT BUS SEGV TERM")
+
+      def assert_separately(args, file = nil, line = nil, src, ignore_stderr: nil, **opt)
+        unless file and line
+          loc, = caller_locations(1,1)
+          file ||= loc.path
+          line ||= loc.lineno
+        end
+        line -= 5 # lines until src
+        src = <<eom
+# -*- coding: #{src.encoding}; -*-
+  require #{__dir__.dump};include Test::Unit::Assertions
+  END {
+    puts [Marshal.dump($!)].pack('m'), "assertions=\#{self._assertions}"
+  }
+#{src}
+  class Test::Unit::Runner
+    @@stop_auto_run = true
+  end
+eom
+        args = args.dup
+        args.insert((Hash === args.first ? 1 : 0), "-w", "--disable=gems", *$:.map {|l| "-I#{l}"})
+        stdout, stderr, status = EnvUtil.invoke_ruby(args, src, true, true, timeout_error: nil, **opt)
+        abort = status.coredump? || (status.signaled? && ABORT_SIGNALS.include?(status.termsig))
+        assert(!abort, FailDesc[status, nil, stderr])
+        self._assertions += stdout[/^assertions=(\d+)/, 1].to_i
+        begin
+          res = Marshal.load(stdout.unpack("m")[0])
+        rescue => marshal_error
+          ignore_stderr = nil
+        end
+        if res
+          if bt = res.backtrace
+            bt.each do |l|
+              l.sub!(/\A-:(\d+)/){"#{file}:#{line + $1.to_i}"}
+            end
+            bt.concat(caller)
+          else
+            res.set_backtrace(caller)
+          end
+          raise res
+        end
+
+        # really is it succeed?
+        unless ignore_stderr
+          # the body of assert_separately must not output anything to detect error
+          assert(stderr.empty?, FailDesc[status, "assert_separately failed with error message", stderr])
+        end
+        assert(status.success?, FailDesc[status, "assert_separately failed", stderr])
+        raise marshal_error if marshal_error
+      end
+
+      def assert_warning(pat, msg = nil)
+        stderr = EnvUtil.verbose_warning { yield }
+        msg = message(msg) {diff pat, stderr}
+        assert(pat === stderr, msg)
+      end
+
+      def assert_warn(*args)
+        assert_warning(*args) {$VERBOSE = false; yield}
+      end
+
+      def assert_no_memory_leak(args, prepare, code, message=nil, limit: 2.0, rss: false, **opt)
+        require_relative 'memory_status'
+        token = "\e[7;1m#{$$.to_s}:#{Time.now.strftime('%s.%L')}:#{rand(0x10000).to_s(16)}:\e[m"
+        token_dump = token.dump
+        token_re = Regexp.quote(token)
+        envs = args.shift if Array === args and Hash === args.first
+        args = [
+          "--disable=gems",
+          "-r", File.expand_path("../memory_status", __FILE__),
+          *args,
+          "-v", "-",
+        ]
+        if defined? Memory::NO_MEMORY_LEAK_ENVS then
+          envs ||= {}
+          newenvs = envs.merge(Memory::NO_MEMORY_LEAK_ENVS) { |_, _, _| break }
+          envs = newenvs if newenvs
+        end
+        args.unshift(envs) if envs
+        cmd = [
+          'END {STDERR.puts '"#{token_dump}"'"FINAL=#{Memory::Status.new}"}',
+          prepare,
+          'STDERR.puts('"#{token_dump}"'"START=#{$initial_status = Memory::Status.new}")',
+          '$initial_size = $initial_status.size',
+          code,
+          'GC.start',
+        ].join("\n")
+        _, err, status = EnvUtil.invoke_ruby(args, cmd, true, true, **opt)
+        before = err.sub!(/^#{token_re}START=(\{.*\})\n/, '') && Memory::Status.parse($1)
+        after = err.sub!(/^#{token_re}FINAL=(\{.*\})\n/, '') && Memory::Status.parse($1)
+        assert(status.success?, FailDesc[status, message, err])
+        ([:size, (rss && :rss)] & after.members).each do |n|
+          b = before[n]
+          a = after[n]
+          next unless a > 0 and b > 0
+          assert_operator(a.fdiv(b), :<, limit, message(message) {"#{n}: #{b} => #{a}"})
+        end
+      rescue LoadError
+        skip
+      end
+
+      def assert_is_minus_zero(f)
+        assert(1.0/f == -Float::INFINITY, "#{f} is not -0.0")
+      end
+
+      def assert_file
+        AssertFile
+      end
+
+      # pattern_list is an array which contains regexp and :*.
+      # :* means any sequence.
+      #
+      # pattern_list is anchored.
+      # Use [:*, regexp, :*] for non-anchored match.
+      def assert_pattern_list(pattern_list, actual, message=nil)
+        rest = actual
+        anchored = true
+        pattern_list.each_with_index {|pattern, i|
+          if pattern == :*
+            anchored = false
+          else
+            if anchored
+              match = /\A#{pattern}/.match(rest)
+            else
+              match = pattern.match(rest)
+            end
+            unless match
+              msg = message(msg) {
+                expect_msg = "Expected #{mu_pp pattern}\n"
+                if /\n[^\n]/ =~ rest
+                  actual_mesg = "to match\n"
+                  rest.scan(/.*\n+/) {
+                    actual_mesg << '  ' << $&.inspect << "+\n"
+                  }
+                  actual_mesg.sub!(/\+\n\z/, '')
+                else
+                  actual_mesg = "to match #{mu_pp rest}"
+                end
+                actual_mesg << "\nafter #{i} patterns with #{actual.length - rest.length} characters"
+                expect_msg + actual_mesg
+              }
+              assert false, msg
+            end
+            rest = match.post_match
+            anchored = true
+          end
+        }
+        if anchored
+          assert_equal("", rest)
+        end
+      end
+
+      # threads should respond to shift method.
+      # Array can be used.
+      def assert_join_threads(threads, message = nil)
+        errs = []
+        values = []
+        while th = threads.shift
+          begin
+            values << th.value
+          rescue Exception
+            errs << [th, $!]
+          end
+        end
+        if !errs.empty?
+          msg = "exceptions on #{errs.length} threads:\n" +
+            errs.map {|t, err|
+            "#{t.inspect}:\n" +
+            err.backtrace.map.with_index {|line, i|
+              if i == 0
+                "#{line}: #{err.message} (#{err.class})"
+              else
+                "\tfrom #{line}"
+              end
+            }.join("\n")
+          }.join("\n---\n")
+          if message
+            msg = "#{message}\n#{msg}"
+          end
+          raise MiniTest::Assertion, msg
+        end
+        values
+      end
+
+      class << (AssertFile = Struct.new(:failure_message).new)
+        include Assertions
+        def assert_file_predicate(predicate, *args)
+          if /\Anot_/ =~ predicate
+            predicate = $'
+            neg = " not"
+          end
+          result = File.__send__(predicate, *args)
+          result = !result if neg
+          mesg = "Expected file " << args.shift.inspect
+          mesg << "#{neg} to be #{predicate}"
+          mesg << mu_pp(args).sub(/\A\[(.*)\]\z/m, '(\1)') unless args.empty?
+          mesg << " #{failure_message}" if failure_message
+          assert(result, mesg)
+        end
+        alias method_missing assert_file_predicate
+
+        def for(message)
+          clone.tap {|a| a.failure_message = message}
+        end
+      end
+
       class AllFailures
         attr_reader :failures
 

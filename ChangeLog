@@ -1,3 +1,8 @@
+Sun Dec 13 19:54:26 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* test/lib/envutil.rb: move enutil's assertions under Test::Unit::Assertion.
+	* test/lib/test/unit/assertions.rb: ditto.
+
 Sun Dec 13 19:24:20 2015  Yuki Yugui Sonoda  <yugui@yugui.jp>
 
 	* parse.y (lex_state_name): Make it return the correct names.
