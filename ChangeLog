@@ -1,3 +1,10 @@
+Sun Dec 13 10:26:47 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/openssl/ossl_ssl.c (ssl_npn_select_cb_common): fix parsing
+	  protocol list.
+	  The protocol list from OpenSSL is not null-terminated.
+	  patched by Kazuki Yamaguchi [Bug #11810] [ruby-core:72082]
+
 Sun Dec 13 06:40:30 2015  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/ostruct.rb: Have OpenStruct#dig raise if argument is not a
