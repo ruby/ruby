@@ -167,16 +167,18 @@ static VALUE start_document(VALUE self, VALUE version, VALUE tags, VALUE imp)
 
     if(RTEST(tags)) {
 	long i = 0;
+	long len;
 #ifdef HAVE_RUBY_ENCODING_H
 	rb_encoding * encoding = rb_utf8_encoding();
 #endif
 
 	Check_Type(tags, T_ARRAY);
 
-	head  = xcalloc((size_t)RARRAY_LEN(tags), sizeof(yaml_tag_directive_t));
+	len = RARRAY_LEN(tags);
+	head  = xcalloc((size_t)len, sizeof(yaml_tag_directive_t));
 	tail  = head;
 
-	for(i = 0; i < RARRAY_LEN(tags); i++) {
+	for(i = 0; i < len && i < RARRAY_LEN(tags); i++) {
 	    VALUE tuple = RARRAY_AREF(tags, i);
 	    VALUE name;
 	    VALUE value;
