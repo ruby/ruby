@@ -1,3 +1,9 @@
+Sun Dec 13 18:33:41 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* pack.c (pack_pack): always check index range against the
+	  receiver array length, which can be shortened by elements
+	  conversion.  reported by Marcin 'Icewall' Noga of Cisco Talos.
+
 Sun Dec 13 18:28:52 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/psych/psych_emitter.c (start_document): should not exceed
