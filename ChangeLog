@@ -1,6 +1,10 @@
+Sun Dec 13 20:02:15 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ChangeLog: fix a typo
+
 Sun Dec 13 19:54:26 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
-	* test/lib/envutil.rb: move enutil's assertions under Test::Unit::Assertion.
+	* test/lib/envutil.rb: move envutil's assertions under Test::Unit::Assertion.
 	* test/lib/test/unit/assertions.rb: ditto.
 
 Sun Dec 13 19:24:20 2015  Yuki Yugui Sonoda  <yugui@yugui.jp>
