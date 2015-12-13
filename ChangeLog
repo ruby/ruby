@@ -1,4 +1,7 @@
-Sun Dec 13 18:35:11 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Dec 13 18:35:57 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/fiddle/function.c (initialize): check all arguments first.
+	  reported by Marcin 'Icewall' Noga of Cisco Talos.
 
 	* ext/fiddle/conversions.h (PTR2NUM): use signed integer to make
 	  Fixnum for negative values.
