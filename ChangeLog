@@ -1,3 +1,7 @@
+Sun Dec 13 10:44:44 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* KNOWNBUGS.rb: Fixed typo, made more explicit [ci skip]
+
 Sun Dec 13 10:26:47 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/openssl/ossl_ssl.c (ssl_npn_select_cb_common): fix parsing
