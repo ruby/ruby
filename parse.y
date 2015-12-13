@@ -93,15 +93,12 @@ enum lex_state_e {
 #define IS_lex_state(ls)	IS_lex_state_for(lex_state, (ls))
 #define IS_lex_state_all(ls)	IS_lex_state_all_for(lex_state, (ls))
 
+# define SET_LEX_STATE(ls) \
+    (lex_state = trace_lex_state(lex_state, (ls), __LINE__))
 #if PARSER_DEBUG
-# define SET_LEX_STATE(ls) do { \
-       printf("lex_state: %s -> %s at L%d\n", \
-              lex_state_name(lex_state), lex_state_name((ls)), __LINE__); \
-       lex_state = (ls); \
-   } while (0)
-static const char *lex_state_name(enum lex_state_e state);
+static enum lex_state_e trace_lex_state(enum lex_state_e from, enum lex_state_e to, int line);
 #else
-# define SET_LEX_STATE(ls) do { lex_state = (ls); } while (0)
+# define trace_lex_state(from, to, line) (to)
 #endif
 
 typedef VALUE stack_type;
@@ -9183,19 +9180,51 @@ id_is_var_gen(struct parser_params *parser, ID id)
 #endif /* !RIPPER */
 
 #if PARSER_DEBUG
-static const char *
-lex_state_name(enum lex_state_e state)
-{
-    static const char names[][13] = {
-        "EXPR_NONE",
-	"EXPR_BEG",    "EXPR_END",    "EXPR_ENDARG", "EXPR_ENDFN",  "EXPR_ARG",
-	"EXPR_CMDARG", "EXPR_MID",    "EXPR_FNAME",  "EXPR_DOT",    "EXPR_CLASS",
-	"EXPR_LABEL",  "EXPR_LABELED",
-    };
+static const char lex_state_names[][13] = {
+    "EXPR_BEG",    "EXPR_END",    "EXPR_ENDARG", "EXPR_ENDFN",  "EXPR_ARG",
+    "EXPR_CMDARG", "EXPR_MID",    "EXPR_FNAME",  "EXPR_DOT",    "EXPR_CLASS",
+    "EXPR_LABEL",  "EXPR_LABELED",
+};
 
-    if ((unsigned)state & ~(~0u << EXPR_MAX_STATE))
-	return names[ffs(state)];
-    return NULL;
+static const char *
+build_lex_state_name(enum lex_state_e state, char *buf, size_t size)
+{
+    int i, sep = 0;
+    char *p = buf;
+    unsigned int mask = 1;
+    size_t n;
+    static const char none[] = "EXPR_NONE";
+
+    for (i = 0; i < EXPR_MAX_STATE; ++i, mask <<= 1) {
+	if ((unsigned)state & mask) {
+	    if (sep) {
+		if (size < 2) break;
+		--size;
+		*p++ = '|';
+	    }
+	    sep = 1;
+	    n = strlcpy(p, lex_state_names[i], size);
+	    if (n >= size) break;
+	    size -= n;
+	    p += n;
+	}
+    }
+    if (p == buf && size >= sizeof(none)) {
+	n = strlcpy(buf, none, size);
+	p += n;
+    }
+    *p = '\0';
+    return buf;
+}
+
+static enum lex_state_e
+trace_lex_state(enum lex_state_e from, enum lex_state_e to, int line)
+{
+    char buf1[sizeof(lex_state_names)], buf2[sizeof(lex_state_names)];
+    build_lex_state_name(from, buf1, sizeof(buf1));
+    build_lex_state_name(to, buf2, sizeof(buf2));
+    printf("lex_state: %s -> %s at L%d\n", buf1, buf2, line);
+    return to;
 }
 #endif
 
@@ -10725,9 +10754,6 @@ rb_init_parse(void)
     /* just to suppress unused-function warnings */
     (void)nodetype;
     (void)nodeline;
-#if PARSER_DEBUG
-    (void)lex_state_name(-1);
-#endif
 }
 #endif /* !RIPPER */
 

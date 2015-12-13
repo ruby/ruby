@@ -1,3 +1,8 @@
+Sun Dec 13 20:41:16 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (build_lex_state_name, trace_lex_state): lex_state is
+	  now bit flags and can be set 2 bits or more.
+
 Sun Dec 13 20:26:30 2015  Yuki Yugui Sonoda  <yugui@yugui.jp>
 
 	* test/ruby/test_syntax.rb: fix typo in test
