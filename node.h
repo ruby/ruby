@@ -506,6 +506,7 @@ void *rb_parser_malloc(struct parser_params *, size_t);
 void *rb_parser_realloc(struct parser_params *, void *, size_t);
 void *rb_parser_calloc(struct parser_params *, size_t, size_t);
 void rb_parser_free(struct parser_params *, void *);
+void rb_parser_printf(struct parser_params *parser, const char *fmt, ...);
 
 RUBY_SYMBOL_EXPORT_END
 

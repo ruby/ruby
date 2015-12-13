@@ -14,7 +14,7 @@ a\
 /^yydestruct.*yymsg/,/#endif/{
   /^yydestruct/{
     /parser/!{
-      h
+      H
       s/^/ruby_parser_&/
       s/)$/, parser)/
       /\*/s/parser)$/struct parser_params *&/
@@ -22,7 +22,7 @@ a\
   }
   /^#endif/{
     x
-    /^./{
+    /yydestruct/{
       i\
     struct parser_params *parser;
       a\
@@ -30,6 +30,22 @@ a\
     }
     x
   }
+}
+/^yy_stack_print/{
+  /parser/!{
+    H
+    s/)$/, parser)/
+    /\*/s/parser)$/struct parser_params *&/
+  }
+}
+/yy_stack_print.*;/{
+  x
+  /yy_stack_print/{
+    x
+    s/\(yy_stack_print *\)(\(.*\));/\1(\2, parser);/
+    x
+  }
+  x
 }
 s/^\([ 	]*\)\(yyerror[ 	]*([ 	]*parser,\)/\1parser_\2/
 s!^ *extern char \*getenv();!/* & */!

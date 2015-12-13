@@ -191,13 +191,13 @@ class TestRubyOptions < Test::Unit::TestCase
 
   def test_yydebug
     assert_in_out_err(["-ye", ""]) do |r, e|
-      assert_equal([], r)
-      assert_not_equal([], e)
+      assert_not_equal([], r)
+      assert_equal([], e)
     end
 
     assert_in_out_err(%w(--yydebug -e) + [""]) do |r, e|
-      assert_equal([], r)
-      assert_not_equal([], e)
+      assert_not_equal([], r)
+      assert_equal([], e)
     end
   end
 
