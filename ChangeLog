@@ -1,4 +1,8 @@
-Sun Dec 13 16:29:22 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Dec 13 16:41:01 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (BOOTSTRAPRUBY): make BASERUBY full path before
+	  building ruby to get rid of unexpectedly invoking built ruby.
+	  [ruby-core:72065] [Bug #11807]
 
 	* configure.in (BOOTSTRAPRUBY): use MINIRUBY but not BASERUBY
 	  unless cross compiling.  [ruby-core:72065] [Bug #11807]

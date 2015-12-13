@@ -43,7 +43,7 @@ AC_ARG_WITH(baseruby,
 		AS_CASE(["$withval"],[*ruby*],[BASERUBY=$withval],[AC_MSG_ERROR(need ruby)])
 	],
 	[
-		BASERUBY="ruby"
+		AC_PATH_PROG([BASERUBY], [ruby], [false])
 	])
 if test "`RUBYOPT=- $BASERUBY -e 'print 42' 2>/dev/null`" = 42; then
     if test "`RUBYOPT=- $BASERUBY --disable=gems -e 'print 42' 2>/dev/null`" = 42; then
