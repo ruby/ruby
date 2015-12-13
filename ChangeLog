@@ -1,3 +1,8 @@
+Sun Dec 13 11:38:12 2015  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/shellwords.rb: Turn on frozen-string-literal after fixing
+	  shellsplit.
+
 Sun Dec 13 10:44:44 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* KNOWNBUGS.rb: Fixed typo, made more explicit [ci skip]
