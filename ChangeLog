@@ -1,3 +1,12 @@
+Mon Dec 14 22:11:11 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/ebcdic.h: new dummy encoding EBCDIC-US
+	* enc/trans/ebcdic.trans: transcodings between EBCDIC-US
+	  and iso-8859-1 [with code from Andrea Ribuoli]
+	* test/ruby/test_transcode.rb: tests for above
+	* tool/transcode_tablegen.rb: additional argument for
+	  method transcode_tblgen
+
 Mon Dec 14 17:04:14 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* ext/socket/lib/socket.rb: use safe navigation operator.
