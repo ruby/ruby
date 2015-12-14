@@ -471,8 +471,7 @@ module Scanf
     end
 
     def width
-      w = @spec_string[/%\*?(\d+)/, 1]
-      w && w.to_i
+      @spec_string[/%\*?(\d+)/, 1]&.to_i
     end
 
     def mid_match?

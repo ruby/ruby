@@ -37,7 +37,7 @@ module DRb
       synchronize do
         while true
           server = @servers[name]
-          return server if server && server.alive?
+          return server if server&.alive?
           invoke_service(name)
           @cond.wait
         end
