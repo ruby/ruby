@@ -565,7 +565,7 @@ vm_get_const_key_cref(const VALUE *ep)
 	cref = CREF_NEXT(cref);
     }
 
-    /* does not incldue singleton class */
+    /* does not include singleton class */
     return NULL;
 }
 

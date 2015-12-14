@@ -3121,7 +3121,7 @@ rb_io_getline_1(VALUE rs, long limit, VALUE io)
 	    newline = (unsigned char)rsptr[rslen - 1];
 	}
 
-	/* MS - Optimisation */
+	/* MS - Optimization */
 	while ((c = appendline(fptr, newline, &str, &limit)) != EOF) {
             const char *s, *p, *pp, *e;
 
