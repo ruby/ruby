@@ -2336,7 +2336,7 @@ rb_iseqw_local_variables(VALUE iseqval)
  *     iseq.to_binary(extra_data = nil) -> binary str
  *
  *  Returns serialized iseq binary format data as a String object.
- *  A correspnding iseq object is created by
+ *  A corresponding iseq object is created by
  *  RubyVM::InstructionSequence.load_from_binary() method.
  *
  *  String extra_data will be saved with binary data.
