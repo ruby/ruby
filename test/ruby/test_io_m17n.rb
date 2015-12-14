@@ -1711,8 +1711,7 @@ EOT
         args.each {|arg| f.print arg }
       }
       content = File.read("t", :mode=>"rb:ascii-8bit")
-      assert_equal(expected.dup.force_encoding("ascii-8bit"),
-                   content.force_encoding("ascii-8bit"))
+      assert_equal(expected.b, content.b)
     }
   end
 
@@ -1892,7 +1891,7 @@ EOT
     with_tmpdir {
       src = "\u3042\r\n"
       generate_file("t.txt", src)
-      srcbin = src.dup.force_encoding("ascii-8bit")
+      srcbin = src.b
       open("t.txt", "rt:utf-8:euc-jp") {|f|
         f.binmode
         result = f.read

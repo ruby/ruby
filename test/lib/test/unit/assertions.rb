@@ -447,7 +447,7 @@ EOT
       end
 
       def assert_valid_syntax(code, fname = caller_locations(1, 1)[0], mesg = fname.to_s, verbose: nil)
-        code = code.dup.force_encoding("ascii-8bit")
+        code = code.b
         code.sub!(/\A(?:\xef\xbb\xbf)?(\s*\#.*$)*(\n)?/n) {
           "#$&#{"\n" if $1 && !$2}BEGIN{throw tag, :ok}\n"
         }
@@ -470,11 +470,11 @@ EOT
       end
 
       def assert_syntax_error(code, error, fname = caller_locations(1, 1)[0], mesg = fname.to_s)
-        code = code.dup.force_encoding("ascii-8bit")
+        code = code.b
         code.sub!(/\A(?:\xef\xbb\xbf)?(\s*\#.*$)*(\n)?/n) {
           "#$&#{"\n" if $1 && !$2}BEGIN{throw tag, :ng}\n"
         }
-        code.force_encoding("us-ascii")
+        code.force_encoding(Encoding::US_ASCII)
         verbose, $VERBOSE = $VERBOSE, nil
         yield if defined?(yield)
         case

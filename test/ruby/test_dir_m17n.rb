@@ -208,7 +208,7 @@ class TestDir_M17N < Test::Unit::TestCase
           when /darwin/
             filename = filename.encode("utf-8", "euc-jp").b
           when /mswin|mingw/
-            if ents.include?(win_expected_filename.dup.force_encoding("ASCII-8BIT"))
+            if ents.include?(win_expected_filename.b)
               ents = Dir.entries(".", {:encoding => Encoding.find("filesystem")})
               filename = win_expected_filename
             end
