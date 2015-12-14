@@ -47,6 +47,9 @@ a\
   }
   x
 }
+/^yy_reduce_print/,/^}/{
+  s/fprintf *(stderr,/YYFPRINTF (parser,/g
+}
 s/\( YYFPRINTF *(\)yyoutput,/\1parser,/
 s/\( YYFPRINTF *(\)stderr,/\1parser,/
 s/\( YYDPRINTF *((\)stderr,/\1parser,/
