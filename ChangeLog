@@ -1,3 +1,13 @@
+Mon Dec 14 17:04:14 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ext/socket/lib/socket.rb: use safe navigation operator.
+	  [fix GH-1142] Patch by @mlarraz
+	* lib/drb/extservm.rb: ditto.
+	* lib/net/http.rb: ditto.
+	* lib/net/http/response.rb: ditto.
+	* lib/scanf.rb: ditto.
+	* lib/uri/generic.rb: ditto.
+
 Mon Dec 14 17:03:05 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* bootstraptest/runner.rb: use safe navigation operator.
