@@ -53,6 +53,7 @@ module Psych
         [[], 'foo', false],
         [[], ['foo'], false],
         [[], [nil,nil], false],
+        [[1,1], [[nil, "tag:TALOS"]], 0],
       ].each do |args|
         assert_raises(TypeError) do
           @emitter.start_document(*args)
@@ -88,6 +89,21 @@ module Psych
       assert_raises(TypeError) do
         @emitter.start_sequence(nil, nil, true, :foo)
       end
+    end
+
+    def test_resizing_tags
+      tags = []
+      version = [1,1]
+      obj = Object.new
+      obj.instance_variable_set(:@tags, tags)
+      def obj.to_str
+        (1..10).map{|x| @tags.push(["AAAA","BBBB"])}
+        return "x"
+      end
+
+      tags.push([obj, "tag:TALOS"])
+      @emitter.start_document(version, tags, 0)
+      assert(true)
     end
   end
 end

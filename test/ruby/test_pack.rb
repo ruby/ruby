@@ -794,4 +794,23 @@ EXPECTED
       }
     }
   end
+
+  def test_pack_resize
+    assert_separately([], <<-'end;')
+      ary = []
+      obj = Class.new {
+        define_method(:to_str) {
+          ary.clear()
+          ary = nil
+          GC.start
+          "TALOS"
+        }
+      }.new
+
+      ary.push(obj)
+      ary.push(".")
+
+      assert_raise_with_message(ArgumentError, /too few/) {ary.pack("AA")}
+    end;
+  end
 end

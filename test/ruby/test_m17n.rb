@@ -8,7 +8,7 @@ class TestM17N < Test::Unit::TestCase
 
   module AESU
     def ua(str) str.dup.force_encoding("US-ASCII") end
-    def a(str) str.dup.force_encoding("ASCII-8BIT") end
+    def a(str) str.b end
     def e(str) str.dup.force_encoding("EUC-JP") end
     def s(str) str.dup.force_encoding("Windows-31J") end
     def u(str) str.dup.force_encoding("UTF-8") end
@@ -1130,7 +1130,7 @@ class TestM17N < Test::Unit::TestCase
 
   def test_dup_scan
     s1 = e("\xa4\xa2")*100
-    s2 = s1.dup.force_encoding("ascii-8bit")
+    s2 = s1.b
     s2.scan(/\A./n) {|f|
       assert_equal(Encoding::ASCII_8BIT, f.encoding)
     }
@@ -1138,7 +1138,7 @@ class TestM17N < Test::Unit::TestCase
 
   def test_dup_aref
     s1 = e("\xa4\xa2")*100
-    s2 = s1.dup.force_encoding("ascii-8bit")
+    s2 = s1.b
     assert_equal(Encoding::ASCII_8BIT, s2[10..-1].encoding)
   end
 
@@ -1647,5 +1647,18 @@ class TestM17N < Test::Unit::TestCase
 
     assert_match(escape_plain, 0x5b.chr(::Encoding::UTF_8), bug10670)
     assert_match(escape_plain, 0x5b.chr, bug10670)
+  end
+
+  def test_inspect_with_default_internal
+    bug11787 = '[ruby-dev:49415] [Bug #11787]'
+
+    orig_int = Encoding.default_internal
+    Encoding.default_internal = ::Encoding::EUC_JP
+    s = begin
+          [e("\xB4\xC1\xBB\xFA")].inspect
+        ensure
+          Encoding.default_internal = orig_int
+        end
+    assert_equal(e("[\"\xB4\xC1\xBB\xFA\"]"), s, bug11787)
   end
 end

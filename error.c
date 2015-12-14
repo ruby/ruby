@@ -231,7 +231,6 @@ rb_warn(const char *fmt, ...)
     rb_write_error_str(mesg);
 }
 
-#if 0
 void
 rb_enc_warn(rb_encoding *enc, const char *fmt, ...)
 {
@@ -245,7 +244,6 @@ rb_enc_warn(rb_encoding *enc, const char *fmt, ...)
     va_end(args);
     rb_write_error_str(mesg);
 }
-#endif
 
 /* rb_warning() reports only in verbose mode */
 void

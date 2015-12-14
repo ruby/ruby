@@ -1448,7 +1448,7 @@ Init_vm_trace(void)
      * +:b_return+:: event hook at block ending
      * +:thread_begin+:: event hook at thread beginning
      * +:thread_end+:: event hook at thread ending
-     * +:fiber_siwtch+:: event hook at fiber switch
+     * +:fiber_switch+:: event hook at fiber switch
      *
      */
     rb_cTracePoint = rb_define_class("TracePoint", rb_cObject);

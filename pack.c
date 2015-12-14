@@ -361,7 +361,7 @@ pack_pack(VALUE ary, VALUE fmt)
     const char *p, *pend;
     VALUE res, from, associates = 0;
     char type;
-    long items, len, idx, plen;
+    long len, idx, plen;
     const char *ptr;
     int enc_info = 1;		/* 0 - BINARY, 1 - US-ASCII, 2 - UTF-8 */
 #ifdef NATINT_PACK
@@ -374,12 +374,12 @@ pack_pack(VALUE ary, VALUE fmt)
     pend = p + RSTRING_LEN(fmt);
     res = rb_str_buf_new(0);
 
-    items = RARRAY_LEN(ary);
     idx = 0;
 
 #define TOO_FEW (rb_raise(rb_eArgError, toofew), 0)
-#define THISFROM (items > 0 ? RARRAY_AREF(ary, idx) : TOO_FEW)
-#define NEXTFROM (items-- > 0 ? RARRAY_AREF(ary, idx++) : TOO_FEW)
+#define MORE_ITEM (idx < RARRAY_LEN(ary))
+#define THISFROM (MORE_ITEM ? RARRAY_AREF(ary, idx) : TOO_FEW)
+#define NEXTFROM (MORE_ITEM ? RARRAY_AREF(ary, idx++) : TOO_FEW)
 
     while (p < pend) {
 	int explicit_endian = 0;
@@ -431,7 +431,7 @@ pack_pack(VALUE ary, VALUE fmt)
 	if (*p == '*') {	/* set data length */
 	    len = strchr("@Xxu", type) ? 0
                 : strchr("PMm", type) ? 1
-                : items;
+                : RARRAY_LEN(ary) - idx;
 	    p++;
 	}
 	else if (ISDIGIT(*p)) {

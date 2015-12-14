@@ -97,7 +97,7 @@ enum_grep(VALUE obj, VALUE pat)
  *     enum.grep_v(pattern)                  -> array
  *     enum.grep_v(pattern) { |obj| block }  -> array
  *
- *  Inversed version of Enumerable#grep.
+ *  Inverted version of Enumerable#grep.
  *  Returns an array of every element in <i>enum</i> for which
  *  not <code>Pattern === element</code>.
  *

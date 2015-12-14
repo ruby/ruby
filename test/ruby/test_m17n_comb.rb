@@ -1575,8 +1575,8 @@ class TestM17NComb < Test::Unit::TestCase
         assert_raise(Encoding::CompatibilityError, desc) { s1.start_with?(s2) }
         next
       end
-      s1 = s1.dup.force_encoding("ASCII-8BIT")
-      s2 = s2.dup.force_encoding("ASCII-8BIT")
+      s1 = s1.b
+      s2 = s2.b
       if s1.length < s2.length
         assert_equal(false, enccall(s1, :start_with?, s2), desc)
         next

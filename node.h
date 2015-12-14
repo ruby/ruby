@@ -261,7 +261,7 @@ typedef struct RNode {
 
 #define RNODE(obj)  (R_CAST(RNode)(obj))
 
-/* FL     : 0..4: T_TYPES, 5: KEEP_WB, 6: PROMOTED, 7: FINALIZE, 8: TAINT, 9: UNTRUSTERD, 10: EXIVAR, 11: FREEZE */
+/* FL     : 0..4: T_TYPES, 5: KEEP_WB, 6: PROMOTED, 7: FINALIZE, 8: TAINT, 9: UNTRUSTED, 10: EXIVAR, 11: FREEZE */
 /* NODE_FL: 0..4: T_TYPES, 5: KEEP_WB, 6: PROMOTED, 7: NODE_FL_NEWLINE|NODE_FL_CREF_PUSHED_BY_EVAL,
  *          8..14: nd_type,
  *          15..: nd_line
@@ -506,6 +506,7 @@ void *rb_parser_malloc(struct parser_params *, size_t);
 void *rb_parser_realloc(struct parser_params *, void *, size_t);
 void *rb_parser_calloc(struct parser_params *, size_t, size_t);
 void rb_parser_free(struct parser_params *, void *);
+void rb_parser_printf(struct parser_params *parser, const char *fmt, ...);
 
 RUBY_SYMBOL_EXPORT_END
 

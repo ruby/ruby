@@ -167,16 +167,18 @@ static VALUE start_document(VALUE self, VALUE version, VALUE tags, VALUE imp)
 
     if(RTEST(tags)) {
 	long i = 0;
+	long len;
 #ifdef HAVE_RUBY_ENCODING_H
 	rb_encoding * encoding = rb_utf8_encoding();
 #endif
 
 	Check_Type(tags, T_ARRAY);
 
-	head  = xcalloc((size_t)RARRAY_LEN(tags), sizeof(yaml_tag_directive_t));
+	len = RARRAY_LEN(tags);
+	head  = xcalloc((size_t)len, sizeof(yaml_tag_directive_t));
 	tail  = head;
 
-	for(i = 0; i < RARRAY_LEN(tags); i++) {
+	for(i = 0; i < len && i < RARRAY_LEN(tags); i++) {
 	    VALUE tuple = RARRAY_AREF(tags, i);
 	    VALUE name;
 	    VALUE value;
@@ -189,13 +191,15 @@ static VALUE start_document(VALUE self, VALUE version, VALUE tags, VALUE imp)
 	    }
 	    name  = RARRAY_AREF(tuple, 0);
 	    value = RARRAY_AREF(tuple, 1);
+	    StringValue(name);
+	    StringValue(value);
 #ifdef HAVE_RUBY_ENCODING_H
 	    name = rb_str_export_to_enc(name, encoding);
 	    value = rb_str_export_to_enc(value, encoding);
 #endif
 
-	    tail->handle = (yaml_char_t *)StringValuePtr(name);
-	    tail->prefix = (yaml_char_t *)StringValuePtr(value);
+	    tail->handle = (yaml_char_t *)RSTRING_PTR(name);
+	    tail->prefix = (yaml_char_t *)RSTRING_PTR(value);
 
 	    tail++;
 	}

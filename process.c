@@ -7111,7 +7111,7 @@ get_mach_timebase_info(void)
  *    #=> 896053.968060096
  *
  *  +clock_id+ specifies a kind of clock.
- *  It is specifed as a constant which begins with <code>Process::CLOCK_</code>
+ *  It is specified as a constant which begins with <code>Process::CLOCK_</code>
  *  such as Process::CLOCK_REALTIME and Process::CLOCK_MONOTONIC.
  *
  *  The supported constants depends on OS and version.

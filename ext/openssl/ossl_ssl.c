@@ -585,19 +585,16 @@ ssl_npn_select_cb_common(VALUE cb, const unsigned char **out, unsigned char *out
 {
     VALUE selected;
     long len;
-    unsigned char l;
     VALUE protocols = rb_ary_new();
+    unsigned char l;
+    const unsigned char *in_end = in + inlen;
 
-    /* The format is len_1|proto_1|...|len_n|proto_n\0 */
-    while ((l = *in++) != '\0') {
-	VALUE protocol;
-	if (l > inlen) {
-	    ossl_raise(eSSLError, "Invalid protocol name list");
-	}
-	protocol = rb_str_new((const char *)in, l);
-	rb_ary_push(protocols, protocol);
+    /* assume OpenSSL verifies this format */
+    /* The format is len_1|proto_1|...|len_n|proto_n */
+    while (in < in_end) {
+	l = *in++;
+	rb_ary_push(protocols, rb_str_new((const char *)in, l));
 	in += l;
-	inlen -= l;
     }
 
     selected = rb_funcall(cb, rb_intern("call"), 1, protocols);

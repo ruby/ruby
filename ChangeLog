@@ -1,3 +1,225 @@
+Mon Dec 14 22:11:11 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/ebcdic.h: new dummy encoding EBCDIC-US
+	* enc/trans/ebcdic.trans: transcodings between EBCDIC-US
+	  and iso-8859-1 [with code from Andrea Ribuoli]
+	* test/ruby/test_transcode.rb: tests for above
+	* tool/transcode_tablegen.rb: additional argument for
+	  method transcode_tblgen
+
+Mon Dec 14 17:04:14 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ext/socket/lib/socket.rb: use safe navigation operator.
+	  [fix GH-1142] Patch by @mlarraz
+	* lib/drb/extservm.rb: ditto.
+	* lib/net/http.rb: ditto.
+	* lib/net/http/response.rb: ditto.
+	* lib/scanf.rb: ditto.
+	* lib/uri/generic.rb: ditto.
+
+Mon Dec 14 17:03:05 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* bootstraptest/runner.rb: use safe navigation operator.
+	  [fix GH-1142] Patch by @mlarraz
+	* test/openssl/test_pair.rb: ditto.
+	* test/ruby/test_econv.rb: ditto.
+	* test/ruby/test_settracefunc.rb: ditto.
+	* test/thread/test_queue.rb: ditto.
+
+Mon Dec 14 14:33:35 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/xmlrpc.rb: added documentation for parser details.
+	  [ci skip][fix GH-1124] Patch by @jrafanie
+
+Mon Dec 14 11:46:52 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* enum.c: fix a typo in documentation.
+	  [ci skip][fix GH-1140] Patch by @jutaz
+	* io.c: ditto.
+	* iseq.c: ditto.
+	* numeric.c: ditto.
+	* process.c: ditto.
+	* string.c: ditto.
+	* vm_trace.c: ditto.
+
+Mon Dec 14 11:41:59 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/cgi.rb: fix a typo in documentation.
+	  [ci skip][fix GH-1140] Patch by @jutaz
+
+Mon Dec 14 11:31:00 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* compile.c: fix typos.
+	  [ci skip][fix GH-1140] Patch by @jutaz
+	* dir.c: ditto.
+	* gc.c: ditto.
+	* io.c: ditto.
+	* node.h: ditto.
+	* thread_pthread.c: ditto.
+	* vm_insnhelper.c: ditto.
+	* vsnprintf.c: ditto.
+
+Mon Dec 14 11:27:01 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* enc/iso_2022_jp.h: fix typos.
+	  [ci skip][fix GH-1140] Patch by @jutaz
+	* enc/utf_16_32.h: ditto.
+	* enc/utf_7.h: ditto.
+
+Mon Dec 14 11:25:57 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* benchmark/bm_app_aobench.rb: fix typos.
+	  [ci skip][fix GH-1140] Patch by @jutaz
+	* benchmark/bm_vm_thread_pipe.rb: ditto.
+
+Sun Dec 13 23:46:10 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (trace_lex_state): trace lex_state changes if yydebug is
+	  set, and send the messages to rb_stdout.
+
+	* parse.y (rb_parser_printf): store YYPRINTF messages per lines
+	  so that lex_state traces do not mix.
+
+	* tool/ytab.sed: add parser argument to yy_stack_print too.
+
+Sun Dec 13 20:41:16 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (build_lex_state_name, trace_lex_state): lex_state is
+	  now bit flags and can be set 2 bits or more.
+
+Sun Dec 13 20:26:30 2015  Yuki Yugui Sonoda  <yugui@yugui.jp>
+
+	* test/ruby/test_syntax.rb: fix typo in test
+
+Sun Dec 13 20:12:14 2015  Yuki Yugui Sonoda  <yugui@yugui.jp>
+
+	* parse.y (parse_percent): Allow %-literals in labeled arg as
+	  r51624 did for parentheses.
+	  Fixes [ruby-core:72084] [Bug #11812].
+
+Sun Dec 13 20:02:15 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ChangeLog: fix a typo
+
+Sun Dec 13 19:54:26 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* test/lib/envutil.rb: move envutil's assertions under Test::Unit::Assertion.
+	* test/lib/test/unit/assertions.rb: ditto.
+
+Sun Dec 13 19:24:20 2015  Yuki Yugui Sonoda  <yugui@yugui.jp>
+
+	* parse.y (lex_state_name): Make it return the correct names.
+	  Add new names to follow r51617; Indices ffs(2) returns are 1-origin.
+
+Sun Dec 13 18:40:45 2015  Yuki Yugui Sonoda  <yugui@yugui.jp>
+
+	* parse.y: debug output of lex_state transition if PARSER_DEBUG
+
+Sun Dec 13 18:49:25 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (parse_mode_enc): preserve encoding of mode string in
+	  warnings.
+
+	* io.c (io_encname_bom_p): check BOM prefix only, not including
+	  UTF prefix.
+
+	* io.c (parse_mode_enc): warn BOM with non-UTF encoding.
+
+	* io.c (parse_mode_enc): fix buffer overflow.
+
+Sun Dec 13 18:35:57 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/fiddle/function.c (initialize): check all arguments first.
+	  reported by Marcin 'Icewall' Noga of Cisco Talos.
+
+	* ext/fiddle/conversions.h (PTR2NUM): use signed integer to make
+	  Fixnum for negative values.
+
+Sun Dec 13 18:33:41 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* pack.c (pack_pack): always check index range against the
+	  receiver array length, which can be shortened by elements
+	  conversion.  reported by Marcin 'Icewall' Noga of Cisco Talos.
+
+Sun Dec 13 18:28:52 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/psych/psych_emitter.c (start_document): should not exceed
+	  tags array range.
+
+	* ext/psych/psych_emitter.c (start_document): ensure string before
+	  encoding conversion.
+
+Sun Dec 13 18:26:31 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/tk/tkutil/tkutil.c (tk_hash_kv): check types of array
+	  argument.  reported by Marcin 'Icewall' Noga of Cisco Talos.
+
+	* ext/tk/tkutil/tkutil.c (cbsubst_table_setup): check length of
+	  argument arrays for each access, as callback methods can modify
+	  them.  reported by Marcin 'Icewall' Noga of Cisco Talos.
+
+	* ext/tk/tkutil/tkutil.c (cbsubst_table_setup): check types of
+	  argument elements.  reported by Marcin 'Icewall' Noga of Cisco
+	  Talos.
+
+Sun Dec 13 18:19:20 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/win32ole/win32ole.c (ole_vstr2wc): check argument type, vstr
+	  must be a String here.  reported by Marcin 'Icewall' Noga of
+	  Cisco Talos.
+
+Sun Dec 13 16:41:01 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (BOOTSTRAPRUBY): make BASERUBY full path before
+	  building ruby to get rid of unexpectedly invoking built ruby.
+	  [ruby-core:72065] [Bug #11807]
+
+	* configure.in (BOOTSTRAPRUBY): use MINIRUBY but not BASERUBY
+	  unless cross compiling.  [ruby-core:72065] [Bug #11807]
+
+Sun Dec 13 14:17:19 2015  Akinori MUSHA  <knu@iDaemons.org>
+
+	* test/test_shellwords.rb (TestShellwords): Add many more tests
+	  for handling whitespace characters and frozenness.
+
+Sun Dec 13 14:16:09 2015  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/shellwords.rb (Shellwords#shellsplit): Document that this
+	  method does not treat shell metacharacters as such.
+
+Sun Dec 13 12:17:43 2015  Eric Wong  <e@80x24.org>
+
+	* lib/shellwords.rb (shellescape): duplicate frozen literal
+	* test/test_shellwords.rb (test_stringification): new test
+
+Sun Dec 13 11:47:35 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* object.c (rb_inspect): check the default internal encoding as
+	  String#inspect do.
+	  [ruby-dev:49415] [Bug #11787]
+
+Sun Dec 13 11:38:12 2015  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/shellwords.rb: Turn on frozen-string-literal after fixing
+	  shellsplit.
+
+Sun Dec 13 10:44:44 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* KNOWNBUGS.rb: Fixed typo, made more explicit [ci skip]
+
+Sun Dec 13 10:26:47 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/openssl/ossl_ssl.c (ssl_npn_select_cb_common): fix parsing
+	  protocol list.
+	  The protocol list from OpenSSL is not null-terminated.
+	  patched by Kazuki Yamaguchi [Bug #11810] [ruby-core:72082]
+
+Sun Dec 13 06:40:30 2015  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/ostruct.rb: Have OpenStruct#dig raise if argument is not a
+	  symbol
+	  nor a string. See [#11762]
+
 Sun Dec 13 00:05:42 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_call_method_missing): method_missing should
