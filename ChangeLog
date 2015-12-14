@@ -1,3 +1,9 @@
+Mon Dec 14 11:25:57 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* benchmark/bm_app_aobench.rb: fix typos.
+	  [ci skip][fix GH-1140] Patch by @jutaz
+	* benchmark/bm_vm_thread_pipe.rb: ditto.
+
 Sun Dec 13 23:46:10 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (trace_lex_state): trace lex_state changes if yydebug is

@@ -1,4 +1,4 @@
-# Mesure small and plenty pipe read/write.
+# Measure small and plenty pipe read/write.
 # A performance may depend on GVL implementation.
 
 lmax = 100_000
