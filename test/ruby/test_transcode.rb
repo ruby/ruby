@@ -2018,7 +2018,7 @@ class TestTranscode < Test::Unit::TestCase
   def test_Big5_UAO
     check_both_ways("\u4e17", "\x81\x40", 'Big5-UAO') # 丗
   end
-  
+
   def test_EBCDIC
     check_both_ways("abcdeABCDE", "\x81\x82\x83\x84\x85\xC1\xC2\xC3\xC4\xC5", 'EBCDIC-US')
     check_both_ways("aijrszAIJRSZ09", "\x81\x89\x91\x99\xA2\xA9\xC1\xC9\xD1\xD9\xE2\xE9\xF0\xF9", 'EBCDIC-US')
