@@ -95,10 +95,9 @@ enum lex_state_e {
 #define IS_lex_state_all(ls)	IS_lex_state_all_for(lex_state, (ls))
 
 # define SET_LEX_STATE(ls) \
-    (lex_state = trace_lex_state(lex_state, (ls), __LINE__))
+    (lex_state = (yydebug ? trace_lex_state(lex_state, (ls), __LINE__) : \
+		  (enum lex_state_e)(ls)))
 static enum lex_state_e trace_lex_state(enum lex_state_e from, enum lex_state_e to, int line);
-# define trace_lex_state(from, to, line) \
-    (yydebug ? trace_lex_state(from, to, line) : (to))
 
 typedef VALUE stack_type;
 
@@ -9208,7 +9207,6 @@ append_lex_state_name(enum lex_state_e state, VALUE buf)
     return buf;
 }
 
-#undef trace_lex_state
 static enum lex_state_e
 trace_lex_state(enum lex_state_e from, enum lex_state_e to, int line)
 {
