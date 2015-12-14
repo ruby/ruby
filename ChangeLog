@@ -1,3 +1,14 @@
+Mon Dec 14 11:46:52 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* enum.c: fix a typo in documentation.
+	  [ci skip][fix GH-1140] Patch by @jutaz
+	* io.c: ditto.
+	* iseq.c: ditto.
+	* numeric.c: ditto.
+	* process.c: ditto.
+	* string.c: ditto.
+	* vm_trace.c: ditto.
+
 Mon Dec 14 11:41:59 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/cgi.rb: fix a typo in documentation.

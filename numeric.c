@@ -1619,7 +1619,7 @@ flo_next_float(VALUE vx)
  *  call-seq:
  *     float.prev_float  ->  float
  *
- *  Returns the previous representable floatint-point number.
+ *  Returns the previous representable floating-point number.
  *
  *  (-Float::MAX).prev_float and (-Float::INFINITY).prev_float is -Float::INFINITY.
  *
