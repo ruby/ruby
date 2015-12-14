@@ -842,7 +842,8 @@ def transcode_tbl_only(from, to, map, valid_encoding=UnspecifiedValidEncoding)
   return map, tree_name, real_tree_name, max_input
 end
 
-def transcode_tblgen(from, to, map, valid_encoding=UnspecifiedValidEncoding)
+def transcode_tblgen(from, to, map, valid_encoding=UnspecifiedValidEncoding,
+                     ascii_compatibility='asciicompat_converter')
   map, tree_name, real_tree_name, max_input = transcode_tbl_only(from, to, map, valid_encoding)
   transcoder_name = "rb_#{tree_name}"
   TRANSCODERS << transcoder_name
@@ -856,7 +857,7 @@ static const rb_transcoder
     #{input_unit_length}, /* input_unit_length */
     #{max_input}, /* max_input */
     #{max_output}, /* max_output */
-    asciicompat_converter, /* asciicompat_type */
+    #{ascii_compatibility}, /* asciicompat_type */
     0, NULL, NULL, /* state_size, state_init, state_fini */
     NULL, NULL, NULL, NULL,
     NULL, NULL, NULL
