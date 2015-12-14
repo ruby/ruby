@@ -45,8 +45,7 @@ class MultiPart
     buf << "Content-Disposition: form-data: name=\"#{name}\"#{s}\r\n"
     buf << "Content-Type: #{content_type}\r\n" if content_type
     buf << "\r\n"
-    value = value.dup.force_encoding(::Encoding::ASCII_8BIT) if defined?(::Encoding)
-    buf << value
+    buf << value.b
     buf << "\r\n"
     return self
   end

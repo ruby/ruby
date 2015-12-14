@@ -3,12 +3,8 @@ require 'test/unit'
 class TestEncodingConverter < Test::Unit::TestCase
   def check_ec(edst, esrc, eres, dst, src, ec, off, len, opts=nil)
     res = ec.primitive_convert(src, dst, off, len, opts)
-    assert_equal([edst.dup.force_encoding("ASCII-8BIT"),
-                  esrc.dup.force_encoding("ASCII-8BIT"),
-                  eres],
-                 [dst.dup.force_encoding("ASCII-8BIT"),
-                  src.dup.force_encoding("ASCII-8BIT"),
-                  res])
+    assert_equal([edst.b, esrc.b, eres],
+                 [dst.b,  src.b,  res])
   end
 
   def assert_econv(converted, eres, obuf_bytesize, ec, consumed, rest, opts=nil)
@@ -22,8 +18,8 @@ class TestEncodingConverter < Test::Unit::TestCase
 
   def assert_errinfo(e_res, e_enc1, e_enc2, e_error_bytes, e_readagain_bytes, ec)
     assert_equal([e_res, e_enc1, e_enc2,
-                  e_error_bytes && e_error_bytes.dup.force_encoding("ASCII-8BIT"),
-                  e_readagain_bytes && e_readagain_bytes.dup.force_encoding("ASCII-8BIT")],
+                  e_error_bytes && e_error_bytes.b,
+                  e_readagain_bytes && e_readagain_bytes.b],
                  ec.primitive_errinfo)
   end
 

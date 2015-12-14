@@ -8,7 +8,7 @@ class TestM17N < Test::Unit::TestCase
 
   module AESU
     def ua(str) str.dup.force_encoding("US-ASCII") end
-    def a(str) str.dup.force_encoding("ASCII-8BIT") end
+    def a(str) str.b end
     def e(str) str.dup.force_encoding("EUC-JP") end
     def s(str) str.dup.force_encoding("Windows-31J") end
     def u(str) str.dup.force_encoding("UTF-8") end
@@ -1130,7 +1130,7 @@ class TestM17N < Test::Unit::TestCase
 
   def test_dup_scan
     s1 = e("\xa4\xa2")*100
-    s2 = s1.dup.force_encoding("ascii-8bit")
+    s2 = s1.b
     s2.scan(/\A./n) {|f|
       assert_equal(Encoding::ASCII_8BIT, f.encoding)
     }
@@ -1138,7 +1138,7 @@ class TestM17N < Test::Unit::TestCase
 
   def test_dup_aref
     s1 = e("\xa4\xa2")*100
-    s2 = s1.dup.force_encoding("ascii-8bit")
+    s2 = s1.b
     assert_equal(Encoding::ASCII_8BIT, s2[10..-1].encoding)
   end
 

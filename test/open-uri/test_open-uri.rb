@@ -601,7 +601,7 @@ class TestOpenURI < Test::Unit::TestCase
   def test_content_encoding
     with_http {|srv, dr, url|
       content = "abc" * 10000
-      Zlib::GzipWriter.wrap(StringIO.new(content_gz="".dup.force_encoding("ascii-8bit"))) {|z| z.write content }
+      Zlib::GzipWriter.wrap(StringIO.new(content_gz="".b)) {|z| z.write content }
       srv.mount_proc("/data/") {|req, res| res.body = content_gz; res['content-encoding'] = 'gzip' }
       srv.mount_proc("/data2/") {|req, res| res.body = content_gz; res['content-encoding'] = 'gzip'; res.chunked = true }
       srv.mount_proc("/noce/") {|req, res| res.body = content_gz }
