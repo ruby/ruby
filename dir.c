@@ -259,7 +259,7 @@ bracket(
     return ok == not ? NULL : (char *)p + 1;
 }
 
-/* If FNM_PATHNAME is set, only path element will be matched. (upto '/' or '\0')
+/* If FNM_PATHNAME is set, only path element will be matched. (up to '/' or '\0')
    Otherwise, entire string will be matched.
    End marker itself won't be compared.
    And if function succeeds, *pcur reaches end marker.

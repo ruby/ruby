@@ -642,7 +642,7 @@ BSD_vfprintf(FILE *fp, const char *fmt0, va_list ap)
 	    flags&SHORTINT ? (u_long)(u_short)va_arg(ap, int) : \
 	    (u_long)va_arg(ap, u_int))
 
-	/* optimise fprintf(stderr) (and other unbuffered Unix files) */
+	/* optimize fprintf(stderr) (and other unbuffered Unix files) */
 	if ((fp->_flags & (__SNBF|__SWR|__SRW)) == (__SNBF|__SWR) &&
 	    fp->_file >= 0)
 		return (BSD__sbprintf(fp, fmt0, ap));

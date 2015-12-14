@@ -1,3 +1,15 @@
+Mon Dec 14 11:31:00 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* compile.c: fix typos.
+	  [ci skip][fix GH-1140] Patch by @jutaz
+	* dir.c: ditto.
+	* gc.c: ditto.
+	* io.c: ditto.
+	* node.h: ditto.
+	* thread_pthread.c: ditto.
+	* vm_insnhelper.c: ditto.
+	* vsnprintf.c: ditto.
+
 Mon Dec 14 11:27:01 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* enc/iso_2022_jp.h: fix typos.
