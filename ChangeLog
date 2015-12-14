@@ -1,3 +1,12 @@
+Mon Dec 14 17:03:05 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* bootstraptest/runner.rb: use safe navigation operator.
+	  [fix GH-1142] Patch by @mlarraz
+	* test/openssl/test_pair.rb: ditto.
+	* test/ruby/test_econv.rb: ditto.
+	* test/ruby/test_settracefunc.rb: ditto.
+	* test/thread/test_queue.rb: ditto.
+
 Mon Dec 14 14:33:35 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/xmlrpc.rb: added documentation for parser details.
