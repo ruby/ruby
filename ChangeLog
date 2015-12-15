@@ -10,7 +10,7 @@ Tue Dec 15 11:55:08 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 Tue Dec 15 09:14:14 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
-	* tool/transcode_tablegen.rb: detailled documentation
+	* tool/transcode_tablegen.rb: detailed documentation
 	  for transcode_tblgen function [ci skip]
 
 Mon Dec 14 22:11:11 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
