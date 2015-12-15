@@ -870,7 +870,7 @@ end
 # :invalid (input code is an invalid byte sequence in the source encoding),
 # :func_ii, :func_si, :func_io, :func_so (conversion by function with specific call
 # convention).
-# 
+#
 # The forth argument specifies the overall structure of the encoding. For examples,
 # see ValidEncoding below. This is used to cross-check the data in the third argument
 # and to automatically add :undef and :invalid mappings where necessary.
