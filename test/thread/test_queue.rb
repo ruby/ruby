@@ -307,10 +307,7 @@ class TestQueue < Test::Unit::TestCase
     # wait until queue empty
     (Thread.pass; sleep 0.01) until q.size == 0
 
-    # now there should be some waiting consumers
-    assert_equal num_threads - num_items, threads.count{|thr| thr.status}
-
-    # tell them all to go away
+    # close the queue so remaining threads will wake up
     q.close
 
     # wait for them to go away
