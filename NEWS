@@ -79,6 +79,10 @@ with all sufficient information, see the ChangeLog file.
   * Hash#<=, Hash#<, Hash#>=, Hash#> [Feature #10984]
   * Hash#to_proc [Feature #11653]
 
+* Encoding
+
+  * new Encoding::IBM037 (alias ebcdic-cp-us; dummy)
+
 * IO
 
   * new mode flag File::SHARE_DELETE is available.
