@@ -266,8 +266,8 @@ def to_nomap (map)
   end
 end
 
-transcode_tblgen "EBCDIC-US", "ISO-8859-1", to_nomap(us_ebcdic_map), '{00-ff}', 'asciicompat_decoder'
-transcode_tblgen "ISO-8859-1", "EBCDIC-US", to_nomap(us_ebcdic_map.map {|a,b| [b,a] }), '{00-ff}', 'asciicompat_encoder'
+transcode_tblgen "IBM037", "ISO-8859-1", to_nomap(us_ebcdic_map), '{00-ff}', 'asciicompat_decoder'
+transcode_tblgen "ISO-8859-1", "IBM037", to_nomap(us_ebcdic_map.map {|a,b| [b,a] }), '{00-ff}', 'asciicompat_encoder'
 %>
 
 <%= transcode_generated_code %>
