@@ -1,3 +1,8 @@
+Tue Dec 15 11:56:24 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/uri/common.rb: make code block for rdoc.
+	  [ci skip][fix GH-1152] Patch by @Tonkpils
+
 Tue Dec 15 11:55:08 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* ext/zlib/zlib.c: fix a typo.

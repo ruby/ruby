@@ -438,12 +438,12 @@ module URI
   # This refers http://url.spec.whatwg.org/#concept-urlencoded-parser ,
   # so this supports only &-separator, don't support ;-separator.
   #
-  # ary = URI.decode_www_form("a=1&a=2&b=3")
-  # p ary                  #=> [['a', '1'], ['a', '2'], ['b', '3']]
-  # p ary.assoc('a').last  #=> '1'
-  # p ary.assoc('b').last  #=> '3'
-  # p ary.rassoc('a').last #=> '2'
-  # p Hash[ary]            # => {"a"=>"2", "b"=>"3"}
+  #    ary = URI.decode_www_form("a=1&a=2&b=3")
+  #    p ary                  #=> [['a', '1'], ['a', '2'], ['b', '3']]
+  #    p ary.assoc('a').last  #=> '1'
+  #    p ary.assoc('b').last  #=> '3'
+  #    p ary.rassoc('a').last #=> '2'
+  #    p Hash[ary]            # => {"a"=>"2", "b"=>"3"}
   #
   # See URI.decode_www_form_component, URI.encode_www_form
   def self.decode_www_form(str, enc=Encoding::UTF_8, separator: '&', use__charset_: false, isindex: false)
