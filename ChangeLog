@@ -1,3 +1,11 @@
+Tue Dec 15 23:13:10 2015  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* gc.c: Delete excess semicolon after RUBY_ALIAS_FUNCTION().
+	  Suppress "syntax error:  empty declaration" warnings by
+	  Oracle Solaris Studio 12.x on Solaris. [Bug #11821]
+
+	* hash.c: ditto, after NOINSERT_UPDATE_CALLBACK().
+
 Tue Dec 15 18:04:04 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* NEWS: added news about EBCDIC encoding
