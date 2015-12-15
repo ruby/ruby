@@ -1,3 +1,9 @@
+Wed Dec 16 00:53:45 2015  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* lib/webrick/utils.rb (WEBrick::Utils::TimeoutHandler): Acquire
+	  TimeoutMutex only when accessing @timeout_info for avoiding
+	  potential deadlock. [Bug #11742] [ruby-dev:49387]
+
 Wed Dec 16 00:39:27 2015  Jake Worth  <jakeworth82@gmail.com>
 
 	* doc/extension.rdoc: [DOC] fix double-word typo.  [Fix GH-1153]
