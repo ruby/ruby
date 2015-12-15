@@ -57,6 +57,10 @@ with all sufficient information, see the ChangeLog file.
   * Array#bsearch_index [Feature #10730]
   * Array#dig [Feature #11643]
 
+* Comparable
+
+  * Comparable#== no longer rescues exceptions [Feature #7688]
+
 * Enumerable
 
   * Enumerable#grep_v is added as inverse version of Enumerable#grep.
