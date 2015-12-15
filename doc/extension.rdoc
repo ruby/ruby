@@ -1767,7 +1767,7 @@ barriers. Please carefully consider the risks.
 
 Before inserting write barriers, you need to know about RGenGC algorithm
 (gc.c will help you). Macros and functions to insert write barriers are
-available in in include/ruby/ruby.h. An example is available in iseq.c.
+available in include/ruby/ruby.h. An example is available in iseq.c.
 
 For a complete guide for RGenGC and write barriers, please refer to
 <https://bugs.ruby-lang.org/projects/ruby-trunk/wiki/RGenGC>.
