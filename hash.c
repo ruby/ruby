@@ -1491,8 +1491,8 @@ hash_aset_str(st_data_t *key, st_data_t *val, struct update_arg *arg, int existi
     return hash_aset(key, val, arg, existing);
 }
 
-NOINSERT_UPDATE_CALLBACK(hash_aset);
-NOINSERT_UPDATE_CALLBACK(hash_aset_str);
+NOINSERT_UPDATE_CALLBACK(hash_aset)
+NOINSERT_UPDATE_CALLBACK(hash_aset_str)
 
 /*
  *  call-seq:
@@ -2247,7 +2247,7 @@ rb_hash_update_callback(st_data_t *key, st_data_t *value, struct update_arg *arg
     return ST_CONTINUE;
 }
 
-NOINSERT_UPDATE_CALLBACK(rb_hash_update_callback);
+NOINSERT_UPDATE_CALLBACK(rb_hash_update_callback)
 
 static int
 rb_hash_update_i(VALUE key, VALUE value, VALUE hash)
@@ -2274,7 +2274,7 @@ rb_hash_update_block_callback(st_data_t *key, st_data_t *value, struct update_ar
     return ST_CONTINUE;
 }
 
-NOINSERT_UPDATE_CALLBACK(rb_hash_update_block_callback);
+NOINSERT_UPDATE_CALLBACK(rb_hash_update_block_callback)
 
 static int
 rb_hash_update_block_i(VALUE key, VALUE value, VALUE hash)
@@ -2345,7 +2345,7 @@ rb_hash_update_func_callback(st_data_t *key, st_data_t *value, struct update_arg
     return ST_CONTINUE;
 }
 
-NOINSERT_UPDATE_CALLBACK(rb_hash_update_func_callback);
+NOINSERT_UPDATE_CALLBACK(rb_hash_update_func_callback)
 
 static int
 rb_hash_update_func_i(VALUE key, VALUE value, VALUE arg0)
