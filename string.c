@@ -8033,6 +8033,9 @@ rb_str_hex(VALUE str)
  *     "-377".oct      #=> -255
  *     "bad".oct       #=> 0
  *     "0377bad".oct   #=> 255
+ *
+ *  If +str+ starts with <code>0</code>, radix indicators are hornored.
+ *  See Kernel#Integer.
  */
 
 static VALUE
