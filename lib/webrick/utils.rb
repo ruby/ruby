@@ -154,20 +154,25 @@ module WEBrick
       def initialize
         @timeout_info = Hash.new
         @watcher = Thread.start{
+          to_interrupt = []
           while true
             now = Time.now
             wakeup = nil
-            @timeout_info.each {|thread, ary|
-              next unless ary
-              ary.dup.each{|info|
-                time, exception = *info
-                if time < now
-                  interrupt(thread, info.object_id, exception)
-                elsif !wakeup || time < wakeup
-                  wakeup = time
-                end
+            to_interrupt.clear
+            TimeoutMutex.synchronize{
+              @timeout_info.each {|thread, ary|
+                next unless ary
+                ary.each{|info|
+                  time, exception = *info
+                  if time < now
+                    to_interrupt.push [thread, info.object_id, exception]
+                  elsif !wakeup || time < wakeup
+                    wakeup = time
+                  end
+                }
               }
             }
+            to_interrupt.each {|arg| interrupt(*arg)}
             if !wakeup
               sleep
             elsif (wakeup -= now) > 0
