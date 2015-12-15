@@ -9,6 +9,18 @@ Tue Dec 15 17:57:57 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
 	  to the correct one in the IANA registry (IBM037)
 	  and added an alias (ebcdic-cp-us)
 
+Tue Dec 15 16:19:26 2015  Takashi Kokubun  <takashikkbn@gmail.com>
+
+	* lib/erb.rb: Render erb with array buffer for function call optimization.
+	  [fix GH-1143]
+	* lib/rdoc/erb_partial.rb: ditto.
+	* template/verconf.h.tmpl: ditto.
+
+Tue Dec 15 13:50:05 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_oct): [DOC] mention radix indicators.
+	  [ruby-core:71310] [Bug #11648]
+
 Tue Dec 15 12:20:30 2015  Takashi Kokubun  <takashikkbn@gmail.com>
 
 	* lib/erb.rb: Simplify regexp to optimize erb scanner.
