@@ -1,3 +1,7 @@
+Tue Dec 15 18:04:04 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* NEWS: added news about EBCDIC encoding
+
 Tue Dec 15 17:57:57 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/ebcdic.h, enc/trans/ebcdic.trans,
