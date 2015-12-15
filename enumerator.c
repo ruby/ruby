@@ -1331,14 +1331,14 @@ lazy_init_iterator(RB_BLOCK_CALL_FUNC_ARGLIST(val, m))
     else {
 	VALUE args;
 	int len = rb_long2int((long)argc + 1);
+	VALUE *nargv = ALLOCV_N(VALUE, args, len);
 
-	args = rb_ary_tmp_new(len);
-	rb_ary_push(args, m);
+	nargv[0] = m;
 	if (argc > 0) {
-	    rb_ary_cat(args, argv, argc);
+	    MEMCPY(nargv + 1, argv, VALUE, argc);
 	}
-	result = rb_yield_values2(len, RARRAY_CONST_PTR(args));
-	RB_GC_GUARD(args);
+	result = rb_yield_values2(len, nargv);
+	ALLOCV_END(args);
     }
     if (result == Qundef) rb_iter_break();
     return Qnil;
