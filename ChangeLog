@@ -1,3 +1,7 @@
+Wed Dec 16 00:39:27 2015  Jake Worth  <jakeworth82@gmail.com>
+
+	* doc/extension.rdoc: [DOC] fix double-word typo.  [Fix GH-1153]
+
 Wed Dec 16 00:25:41 2015  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* lib/webrick/utils.rb (WEBrick::Utils::TimeoutHandler#initialize):
