@@ -5558,6 +5558,34 @@ rb_ary_dig(int argc, VALUE *argv, VALUE self)
 }
 
 /*
+ *  call-seq:
+ *     ary.average -> double
+ *
+ *  Returns the average of numbers in the array.
+ *
+ *     [ 2, 4, 6, 8, 10 ].average   #=> 6
+ *     [].average                   #=> nil
+ */
+
+static VALUE
+rb_ary_average(VALUE ary)
+{
+    long i;
+    double average, sum = 0;
+    const long array_length = RARRAY_LEN(ary);
+
+    if (array_length == 0) return Qnil;
+
+    for (i = 0; i < array_length; i++) {
+        sum += (double) (rb_ary_elt(ary, i));
+    }
+
+    average = sum / array_length;
+
+    return average;
+}
+
+/*
  *  Arrays are ordered, integer-indexed collections of any object.
  *
  *  Array indexing starts at 0, as in C or Java.  A negative index is assumed
@@ -5909,6 +5937,8 @@ Init_Array(void)
     rb_define_method(rb_cArray, "bsearch_index", rb_ary_bsearch_index, 0);
     rb_define_method(rb_cArray, "any?", rb_ary_any_p, 0);
     rb_define_method(rb_cArray, "dig", rb_ary_dig, -1);
+
+    rb_define_method(rb_cArray, "average", rb_ary_average, 0);
 
     id_cmp = rb_intern("<=>");
     id_random = rb_intern("random");

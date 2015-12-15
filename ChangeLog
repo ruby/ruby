@@ -1,3 +1,7 @@
+Tue Dec 15 20:00:00 2015: Saed Mansour <secret_email@saed.com>
+
+	* array.c (rb_ary_average): new method Array#average.
+
 Tue Dec 15 18:04:04 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* NEWS: added news about EBCDIC encoding

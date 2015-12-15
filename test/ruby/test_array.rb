@@ -2658,6 +2658,15 @@ class TestArray < Test::Unit::TestCase
     assert_raise(TypeError) {h.dig(1, 0)}
   end
 
+   def test_average
+    assert_equal([2, 4, 6, 8, 10].average, 6.0)
+    assert_equal([2.1].average, 2.1) 
+    assert_equal([1].average, 1)
+    assert_equal([0].average, 0)
+    assert_equal([].average, nil)
+    assert_nil([].average)
+   end
+
   private
   def need_continuation
     unless respond_to?(:callcc, true)
