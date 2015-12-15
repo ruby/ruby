@@ -1,3 +1,8 @@
+Tue Dec 15 09:14:14 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* tool/transcode_tablegen.rb: detailled documentation
+	  for transcode_tblgen function [ci skip]
+
 Mon Dec 14 22:11:11 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/ebcdic.h: new dummy encoding EBCDIC-US
