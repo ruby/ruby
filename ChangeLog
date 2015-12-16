@@ -1,3 +1,8 @@
+Wed Dec 16 10:49:51 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (block_command, block_call): fix `&.` calls after
+	  block_call.  [Feature #11537]
+
 Wed Dec 16 00:53:45 2015  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* lib/webrick/utils.rb (WEBrick::Utils::TimeoutHandler): Acquire
