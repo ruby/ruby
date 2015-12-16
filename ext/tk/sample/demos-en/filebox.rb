@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # filebox.rb
 #
 # This demonstration script prompts the user to select a file.#

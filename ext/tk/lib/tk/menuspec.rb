@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # tk/menuspec.rb
 #                              Hidethoshi NAGAI (nagai@ai.kyutech.ac.jp)

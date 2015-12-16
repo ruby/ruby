@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: false
 # This script is a re-implementation of tktimer.rb with TkTimer(TkAfter) class.
 
 require "tk"

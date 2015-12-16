@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #  tkextlib/iwidgets/scrolledframe.rb
 #                               by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)

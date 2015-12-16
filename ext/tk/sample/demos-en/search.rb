@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # search.rb
 #
 # This demonstration script creates a collection of widgets that

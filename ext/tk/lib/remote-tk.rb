@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #               remote-tk.rb - supports to control remote Tk interpreters
 #                       by Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>

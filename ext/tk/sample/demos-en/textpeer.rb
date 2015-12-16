@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # text widget peering demo (called by 'widget')
 #

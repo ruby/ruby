@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 case RUBY_ENGINE
 when 'jruby'
   require 'psych_jars'

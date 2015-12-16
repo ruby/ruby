@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # image2.rb
 #
 # This demonstration script creates a simple collection of widgets

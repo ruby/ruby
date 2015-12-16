@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #  tkextlib/tcllib/cursor.rb
 #                               by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)

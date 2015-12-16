@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #               tk.rb - Tk interface module using tcltklib
 #                       by Yukihiro Matsumoto <matz@netlab.jp>

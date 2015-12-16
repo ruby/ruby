@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # tk/menu.rb : treat menu and menubutton
 #

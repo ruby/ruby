@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #               tk/text.rb - Tk text classes
 #                       by Yukihiro Matsumoto <matz@caelum.co.jp>

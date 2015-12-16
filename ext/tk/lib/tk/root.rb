@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # tk/root.rb : treat root widget
 #

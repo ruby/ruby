@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # form widget demo (called by 'widget')
 #

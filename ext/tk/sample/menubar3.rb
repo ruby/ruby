@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # menubar sample 3 : vertical layout menubar; use frame and menubuttons
 #

@@ -1,4 +1,5 @@
 #!/usr/bin/ruby
+# frozen_string_literal: false
 
 require 'tk'
 require 'tkextlib/tcllib/datefield'

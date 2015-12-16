@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # toolbar.rb --
 #
 # This demonstration script creates a toolbar that can be torn off.

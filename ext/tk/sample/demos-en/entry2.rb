@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # entry2.rb
 #
 # This demonstration script is the same as the entry1.tcl script

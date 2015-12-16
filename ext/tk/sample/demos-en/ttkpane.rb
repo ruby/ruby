@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # ttkpane.rb --
 #
 # This demonstration script creates a Ttk pane with some content.

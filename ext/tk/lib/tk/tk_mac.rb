@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # tk/tk_mac.rb : Access Mac-Specific functionality on OS X from Tk
 #                (supported by Tk8.6 or later)

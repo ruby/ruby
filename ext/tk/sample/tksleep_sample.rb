@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'tk'
 
 v = TkVariable.new(0)

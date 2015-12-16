@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #  tk/font.rb - the class to treat fonts on Ruby/Tk
 #

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'stringio'
 require 'psych/class_loader'
 require 'psych/scalar_scanner'

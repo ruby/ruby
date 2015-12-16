@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # animated label widget demo (called by 'widget')
 #

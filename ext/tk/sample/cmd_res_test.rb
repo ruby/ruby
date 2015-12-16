@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'tk'
 TkOptionDB.readfile(File.expand_path('cmd_resource',
                                      File.dirname(__FILE__)))

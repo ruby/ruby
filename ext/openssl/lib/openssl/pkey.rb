@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 module OpenSSL
   module PKey
     if defined?(OpenSSL::PKey::DH)

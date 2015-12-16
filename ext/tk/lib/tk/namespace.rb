@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #   tk/namespace.rb : methods to manipulate Tcl/Tk namespace
 #                           by Hidetoshi Nagai <nagai@ai.kyutech.ac.jp>

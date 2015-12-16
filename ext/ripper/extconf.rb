@@ -1,4 +1,5 @@
 #!ruby -s
+# frozen_string_literal: false
 
 require 'mkmf'
 require 'rbconfig'

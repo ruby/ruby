@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #  tkextlib/blt/cutbuffer.rb
 #                               by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)

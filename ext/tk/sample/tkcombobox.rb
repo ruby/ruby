@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #  tkcombobox.rb : auto scrollbox & combobox
 #

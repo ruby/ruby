@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # tkmultilistframe.rb : multiple listbox widget on scrollable frame
 #                       by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)

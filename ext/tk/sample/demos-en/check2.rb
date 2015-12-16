@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # checkbutton widget demo2 (called by 'widget')
 #

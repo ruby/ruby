@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # tk/textimage.rb - treat Tk text image object
 #

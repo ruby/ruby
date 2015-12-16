@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # Ruby/Tk Goldverg demo (called by 'widget')
 #
