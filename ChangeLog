@@ -1,3 +1,7 @@
+Wed Dec 16 16:17:34 2015  Eric Wong  <e@80x24.org>
+
+	* test/ruby/test_io.rb: fix spelling errors
+
 Wed Dec 16 16:04:49 2015  Eric Wong  <e@80x24.org>
 
 	* NEWS: note IO#fadvise change [ruby-core:72168]
