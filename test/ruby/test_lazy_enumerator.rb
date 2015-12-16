@@ -532,4 +532,11 @@ EOS
     assert_warning("") {le.drop(1).force}
     assert_warning("") {le.drop_while{false}.force}
   end
+
+  def test_symbol_chain
+    assert_equal(["1", "3"], [1, 2, 3].lazy.reject(&:even?).map(&:to_s).force)
+    assert_raise(NoMethodError) do
+      [1, 2, 3].lazy.map(&:undefined).map(&:to_s).force
+    end
+  end
 end

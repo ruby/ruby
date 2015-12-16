@@ -567,6 +567,10 @@ vm_make_proc_from_block(rb_thread_t *th, rb_block_t *block, VALUE *procptr)
 	*procptr = block->proc = rb_vm_make_proc(th, block, rb_cProc);
 	return TRUE;
     }
+    else if (SYMBOL_P(block->proc)) {
+	*procptr = rb_sym_to_proc(block->proc);
+	return TRUE;
+    }
     else {
 	*procptr = block->proc;
 	return FALSE;
