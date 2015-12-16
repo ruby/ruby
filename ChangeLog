@@ -5,7 +5,7 @@ Wed Dec 16 21:10:03 2015  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* test/fiddle/test_handle.rb (class TestHandle): add test for above.
 
-Wed Dec 16 21:10:36 2015  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+Wed Dec 16 21:10:03 2015  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* ext/dl/handle.c (rb_dlhandle_initialize): prohibits DL::dlopen
 	  with a tainted name of library.
