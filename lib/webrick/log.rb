@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 #--
 # log.rb -- Log Class
 #
@@ -85,15 +86,15 @@ module WEBrick
     end
 
     # Shortcut for logging a FATAL message
-    def fatal(msg) log(FATAL, "FATAL " << format(msg)); end
+    def fatal(msg) log(FATAL, "FATAL #{format(msg)}"); end
     # Shortcut for logging an ERROR message
-    def error(msg) log(ERROR, "ERROR " << format(msg)); end
+    def error(msg) log(ERROR, "ERROR #{format(msg)}"); end
     # Shortcut for logging a WARN message
-    def warn(msg)  log(WARN,  "WARN  " << format(msg)); end
+    def warn(msg)  log(WARN,  "WARN  #{format(msg)}"); end
     # Shortcut for logging an INFO message
-    def info(msg)  log(INFO,  "INFO  " << format(msg)); end
+    def info(msg)  log(INFO,  "INFO  #{format(msg)}"); end
     # Shortcut for logging a DEBUG message
-    def debug(msg) log(DEBUG, "DEBUG " << format(msg)); end
+    def debug(msg) log(DEBUG, "DEBUG #{format(msg)}"); end
 
     # Will the logger output FATAL messages?
     def fatal?; @level >= FATAL; end
@@ -117,8 +118,7 @@ module WEBrick
     # * Otherwise it will return +arg+.inspect.
     def format(arg)
       if arg.is_a?(Exception)
-        "#{arg.class}: #{arg.message}\n\t" <<
-        arg.backtrace.join("\n\t") << "\n"
+        "#{arg.class}: #{arg.message}\n\t#{arg.backtrace.join("\n\t")}\n"
       elsif arg.respond_to?(:to_str)
         arg.to_str
       else
@@ -147,9 +147,7 @@ module WEBrick
     ##
     # Same as BasicLog#log
     def log(level, data)
-      tmp = Time.now.strftime(@time_format)
-      tmp << " " << data
-      super(level, tmp)
+      super(level, "#{Time.now.strftime(@time_format)} #{data}")
     end
   end
 end
