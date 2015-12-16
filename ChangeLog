@@ -1,3 +1,11 @@
+Wed Dec 16 20:32:43 2015  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* ext/fiddle/handle.c: check tainted string arguments.
+	  Patch provided by tenderlove and nobu.
+
+	* test/fiddle/test_handle.rb (class TestHandle): add test for above.
+
+
 Wed Dec 16 19:30:56 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* vm.c (vm_make_proc_from_block): should convert a Symbol to a Proc.
