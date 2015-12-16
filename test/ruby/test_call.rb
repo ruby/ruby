@@ -65,4 +65,21 @@ class TestCall < Test::Unit::TestCase
     o.x&.at(proc.call)
     assert_equal(1, count)
   end
+
+  def test_safe_call_block_command
+    assert_nil(("a".sub! "b" do end&.foo 1))
+  end
+
+  def test_safe_call_block_call
+    assert_nil(("a".sub! "b" do end&.foo))
+  end
+
+  def test_safe_call_block_call_brace
+    assert_nil(("a".sub! "b" do end&.foo {}))
+    assert_nil(("a".sub! "b" do end&.foo do end))
+  end
+
+  def test_safe_call_block_call_command
+    assert_nil(("a".sub! "b" do end&.foo 1 do end))
+  end
 end
