@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # tk/place.rb : control place geometry manager
 #

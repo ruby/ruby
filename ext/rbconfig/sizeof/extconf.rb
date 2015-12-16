@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 $srcs = %w[sizes.c]
 $distcleanfiles.concat($srcs)
 

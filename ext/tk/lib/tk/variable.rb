@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # tk/variable.rb : treat Tk variable object
 #

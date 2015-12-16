@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 ##############################################################
 # extconf.rb for tcltklib
 # release date: 2010-07-30

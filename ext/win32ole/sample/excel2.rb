@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'win32ole'
 
 #   -4100 is the value for the Excel constant xl3DColumn.

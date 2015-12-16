@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #   tk/console.rb : control the console on system without a real console
 #

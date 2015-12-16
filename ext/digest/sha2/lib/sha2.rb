@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #--
 # sha2.rb - defines Digest::SHA2 class which wraps up the SHA256,
 #           SHA384, and SHA512 classes.

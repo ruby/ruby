@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: false
 #
 # This script implements the "ss" application.  "ss" implements
 # a presentation slide-show based on HTML slides.

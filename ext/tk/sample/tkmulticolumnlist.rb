@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # tkmulticolumnlist.rb : multiple column list widget on scrollable frame
 #                        by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)

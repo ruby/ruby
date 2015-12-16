@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # tkmultilistbox.rb : multiple listbox widget
 #                       by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)

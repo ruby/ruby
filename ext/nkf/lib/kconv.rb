@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # kconv.rb - Kanji Converter.
 #

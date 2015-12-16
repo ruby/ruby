@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #               multi-tk.rb - supports multi Tk interpreters
 #                       by Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>

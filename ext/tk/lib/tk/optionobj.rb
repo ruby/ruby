@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # tk/optionobj.rb : control options for a group of widgets
 #

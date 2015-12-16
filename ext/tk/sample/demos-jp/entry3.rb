@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# frozen_string_literal: false
 # entry3.rb --
 #
 # This demonstration script creates several entry widgets whose

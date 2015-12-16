@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'psych/scalar_scanner'
 require 'psych/class_loader'
 require 'psych/exception'

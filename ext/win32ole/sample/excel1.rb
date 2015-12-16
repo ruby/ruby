@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'win32ole'
 
 application = WIN32OLE.new('Excel.Application')

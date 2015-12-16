@@ -1,4 +1,5 @@
 # coding: binary
+# frozen_string_literal: false
 #--
 #= Info
 #  'OpenSSL for Ruby 2' project

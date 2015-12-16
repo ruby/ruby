@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #--
 #
 # = Ruby-space definitions that completes C-space funcs for BN

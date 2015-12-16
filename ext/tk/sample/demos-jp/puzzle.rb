@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# frozen_string_literal: false
 #
 # widet demo 'puzzle' (called by 'widget')
 #

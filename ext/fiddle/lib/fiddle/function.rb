@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 module Fiddle
   class Function
     # The ABI of the Function.

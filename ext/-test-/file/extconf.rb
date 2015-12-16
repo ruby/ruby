@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 $INCFLAGS << " -I$(topdir) -I$(top_srcdir)"
 
 headers = %w[sys/param.h sys/mount.h sys/vfs.h].select {|h| have_header(h)}

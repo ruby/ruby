@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: false
 #########################################################
 #
 #  set $KCODE to 'utf' for a utf8 charecter

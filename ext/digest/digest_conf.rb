@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 def digest_conf(name, hdr = name, funcs = nil, types = nil)
   unless with_config("bundled-#{name}")
     cc = with_config("common-digest")

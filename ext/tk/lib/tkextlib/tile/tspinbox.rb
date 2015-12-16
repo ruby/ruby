@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #  ttk::spinbox widget  (Tcl/Tk 8.6b1 or later)
 #                               by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)

@@ -1,4 +1,5 @@
 #! /usr/local/bin/ruby -vd
+# frozen_string_literal: false
 
 # tcltklib ライブラリのテスト
 

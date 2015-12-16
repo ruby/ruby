@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #  manager demo  ---  called from demo.rb
 #

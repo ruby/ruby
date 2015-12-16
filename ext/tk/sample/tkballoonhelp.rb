@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # tkballoonhelp.rb : simple balloon help widget
 #                       by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)

@@ -1,4 +1,5 @@
 # -*- coding: us-ascii -*-
+# frozen_string_literal: false
 =begin
 = Info
   'OpenSSL for Ruby 2' project

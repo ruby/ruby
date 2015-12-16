@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # tk/fontchooser.rb -- "tk fontchooser" support (Tcl/Tk8.6 or later)
 #

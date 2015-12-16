@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 if $mingw or $mswin
   dlntestlib = "dlntest.#{$LIBEXT}"
   $LOCAL_LIBS << " #{dlntestlib}"

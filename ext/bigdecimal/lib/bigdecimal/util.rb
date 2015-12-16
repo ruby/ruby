@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # BigDecimal extends the native Integer class to provide the #to_d method.
 #
 # When you require the BigDecimal library in your application, this methodwill

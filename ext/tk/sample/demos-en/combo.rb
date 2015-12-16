@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # combo.rb --
 #
 # This demonstration script creates several combobox widgets.

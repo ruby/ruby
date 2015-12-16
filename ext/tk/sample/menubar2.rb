@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # menubar sample 2 : use 'menu' option of root/toplevel widget
 #

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'tk'
 
 class Button_with_Frame < TkButton

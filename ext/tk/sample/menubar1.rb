@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # menubar sample 1 : use frame and menubuttons
 #

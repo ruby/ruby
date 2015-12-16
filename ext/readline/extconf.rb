@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require "mkmf"
 
 readline = Struct.new(:headers, :extra_check).new(["stdio.h"])

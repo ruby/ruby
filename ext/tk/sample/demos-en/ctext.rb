@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # ctext.rb
 #
 # This demonstration script creates a canvas widget with a text

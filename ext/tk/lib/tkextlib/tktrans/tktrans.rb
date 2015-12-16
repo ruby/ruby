@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #  TkTrans support (win32 only)
 #                               by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)

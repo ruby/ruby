@@ -1,5 +1,6 @@
 #! /usr/local/bin/ruby
 # -*- mode: ruby; coding: us-ascii -*-
+# frozen_string_literal: false
 
 # :stopdoc:
 $extension = nil

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # ruler.rb
 #
 # This demonstration script creates a canvas widget that displays a ruler

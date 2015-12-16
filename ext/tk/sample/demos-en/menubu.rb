@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # menubutton.rb
 #
 # This demonstration script creates a window with a bunch of menus

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # tk/itemconfig.rb : control item/tag configuration of widget
 #

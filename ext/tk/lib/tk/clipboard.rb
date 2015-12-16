@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # tk/clipboard.rb : methods to treat clipboard
 #
