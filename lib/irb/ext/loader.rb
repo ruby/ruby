@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #   loader.rb -
 #   	$Release Version: 0.9.6$

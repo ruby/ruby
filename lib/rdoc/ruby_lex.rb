@@ -1,4 +1,5 @@
 # coding: US-ASCII
+# frozen_string_literal: false
 
 #--
 #   irb/ruby-lex.rb - ruby lexcal analyzer

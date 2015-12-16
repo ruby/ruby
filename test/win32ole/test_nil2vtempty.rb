@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # This is test script to check that WIN32OLE should convert nil to VT_EMPTY in second try.
 # [ruby-talk:137054]
 begin

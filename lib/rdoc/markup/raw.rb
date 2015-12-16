@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 ##
 # A section of text that is added to the output document as-is
 

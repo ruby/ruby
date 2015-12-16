@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 =begin
 
 = net/https -- SSL/TLS enhancement for Net::HTTP.

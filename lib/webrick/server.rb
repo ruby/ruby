@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # server.rb -- GenericServer Class
 #

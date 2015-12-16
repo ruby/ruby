@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # = net/smtp.rb
 #
 # Copyright (c) 1999-2007 Yukihiro Matsumoto.

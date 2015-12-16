@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 begin
   require 'io/console/size'
 rescue LoadError

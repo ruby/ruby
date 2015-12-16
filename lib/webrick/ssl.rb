@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # ssl.rb -- SSL/TLS enhancement for GenericServer
 #

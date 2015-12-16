@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 module REXML
   class ParseException < RuntimeError
     attr_accessor :source, :parser, :continued_exception

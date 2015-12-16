@@ -1,4 +1,5 @@
 # encoding: UTF-8
+# frozen_string_literal: false
 require_relative 'helper'
 
 module Psych

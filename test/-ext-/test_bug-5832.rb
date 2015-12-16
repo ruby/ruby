@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require '-test-/bug-5832/bug'
 
 class Test_BUG_5832 < Test::Unit::TestCase

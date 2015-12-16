@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'win32ole'
 db = WIN32OLE.new('ADODB.Connection')
 db.connectionString = "Driver={Microsoft Text Driver (*.txt; *.csv)};DefaultDir=.;"

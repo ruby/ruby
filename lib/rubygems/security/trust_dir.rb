@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 ##
 # The TrustDir manages the trusted certificates for gem signature
 # verification.

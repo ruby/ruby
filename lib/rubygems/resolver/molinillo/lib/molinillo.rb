@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'rubygems/resolver/molinillo/lib/molinillo/gem_metadata'
 require 'rubygems/resolver/molinillo/lib/molinillo/errors'
 require 'rubygems/resolver/molinillo/lib/molinillo/resolver'

@@ -1,4 +1,5 @@
 # -*- coding: us-ascii -*-
+# frozen_string_literal: false
 require "open3"
 require "timeout"
 require_relative "find_executable"

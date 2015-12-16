@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #   forwardable.rb -
 #       $Release Version: 1.1$

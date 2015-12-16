@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # httpauth/htgroup.rb -- Apache compatible htgroup file
 #

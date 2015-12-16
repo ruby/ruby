@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'English'
 require 'rubygems/command'
 require 'rubygems/version_option'

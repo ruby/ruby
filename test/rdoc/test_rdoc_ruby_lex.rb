@@ -1,4 +1,5 @@
 # coding: UTF-8
+# frozen_string_literal: false
 
 require 'rdoc/test_case'
 

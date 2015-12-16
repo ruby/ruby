@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 ##
 # This represents a vendored source that is similar to an installed gem.
 

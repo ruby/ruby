@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 ##
 # Extracts just the RDoc::Markup::Heading elements from a
 # RDoc::Markup::Document to help build a table of contents

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require "rss/maker/atom"
 require "rss/maker/feed"
 

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # HTTPGenericRequest is the parent of the HTTPRequest class.
 # Do not use this directly; use a subclass of HTTPRequest.
 #

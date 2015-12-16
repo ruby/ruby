@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 ##
 # A Resolver::Specification contains a subset of the information
 # contained in a Gem::Specification.  Only the information necessary for

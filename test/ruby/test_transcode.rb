@@ -1,4 +1,5 @@
 # encoding: ASCII-8BIT   # make sure this runs in binary mode
+# frozen_string_literal: false
 # some of the comments are in UTF-8
 
 require 'test/unit'

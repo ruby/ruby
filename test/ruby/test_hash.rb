@@ -1,4 +1,5 @@
 # -*- coding: us-ascii -*-
+# frozen_string_literal: false
 require 'test/unit'
 EnvUtil.suppress_warning {require 'continuation'}
 

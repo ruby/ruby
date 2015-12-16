@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'runit/testcase'
 require 'runit/cui/testrunner'
 require 'timerholder'

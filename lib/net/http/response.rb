@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # HTTP response class.
 #
 # This class wraps together the response header and the response body (the

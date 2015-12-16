@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # Net::HTTP exception class.
 # You cannot use Net::HTTPExceptions directly; instead, you must use
 # its subclasses.

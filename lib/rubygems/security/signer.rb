@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 ##
 # Basic OpenSSL-based package signing class.
 

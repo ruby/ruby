@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # HTTP/1.1 methods --- RFC2616
 #

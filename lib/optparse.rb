@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # optparse.rb - command-line option analysis with the OptionParser class.
 #

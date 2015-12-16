@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #   irb/multi-irb.rb - multiple irb module
 #   	$Release Version: 0.9.6$

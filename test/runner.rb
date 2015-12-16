@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'rbconfig'
 
 src_testdir = File.dirname(File.realpath(__FILE__))

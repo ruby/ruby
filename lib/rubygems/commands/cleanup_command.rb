@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'rubygems/command'
 require 'rubygems/dependency_list'
 require 'rubygems/uninstaller'

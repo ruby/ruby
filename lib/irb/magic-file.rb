@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 module IRB
   class << (MagicFile = Object.new)
     # see parser_magic_comment in parse.y

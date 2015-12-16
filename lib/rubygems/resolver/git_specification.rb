@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 ##
 # A GitSpecification represents a gem that is sourced from a git repository
 # and is being loaded through a gem dependencies file through the +git:+

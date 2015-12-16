@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 module REXMLTestUtils
   def fixture_path(*components)

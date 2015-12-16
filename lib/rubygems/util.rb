@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 ##
 # This module contains various utility methods as module methods.
 

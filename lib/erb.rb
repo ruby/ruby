@@ -1,4 +1,5 @@
 # -*- coding: us-ascii -*-
+# frozen_string_literal: false
 # = ERB -- Ruby Templating
 #
 # Author:: Masatoshi SEKI

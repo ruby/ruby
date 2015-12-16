@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 ##
 # The global rubygems pool represented via the traditional
 # source index.

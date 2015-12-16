@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #   irb/help.rb - print usage module
 #   	$Release Version: 0.9.6$

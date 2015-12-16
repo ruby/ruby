@@ -1,4 +1,5 @@
 # -*- coding: us-ascii; mode: ruby; ruby-indent-level: 4; tab-width: 4 -*-
+# frozen_string_literal: false
 #												vim:sw=4:ts=4
 # $Id$
 #

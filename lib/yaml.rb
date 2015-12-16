@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 ##
 # The YAML module is an alias of Psych, the YAML engine for Ruby.
 

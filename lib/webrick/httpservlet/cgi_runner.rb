@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # cgi_runner.rb -- CGI launcher.
 #

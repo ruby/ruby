@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #vim:ts=2 sw=2 noexpandtab:
 require 'rexml/child'
 require 'rexml/source'

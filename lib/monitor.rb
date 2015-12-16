@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # = monitor.rb
 #
 # Copyright (C) 2001  Shugo Maeda <shugo@ruby-lang.org>

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 ##
 # This Markup outputter is used for testing purposes.
 
