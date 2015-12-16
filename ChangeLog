@@ -1,3 +1,9 @@
+Wed Dec 16 16:07:29 2015  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* configure.in: pthread_getattr_np is broken on AIX.
+	  More specifically, the stack address and size returned are
+	  not correct.
+
 Wed Dec 16 16:04:27 2015  Eric Wong  <e@80x24.org>
 
 	* insns.def (opt_case_dispatch): check Float#=== redefinition
