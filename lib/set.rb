@@ -348,6 +348,12 @@ class Set
   end
   alias map! collect!
 
+  # Returns new set with replaced elements
+  def collect(&block)
+    dup.collect!(&block)
+  end
+  alias map collect
+
   # Equivalent to Set#delete_if, but returns nil if no changes were
   # made.
   def reject!(&block)
