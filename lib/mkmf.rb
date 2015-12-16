@@ -1,5 +1,4 @@
 # -*- coding: us-ascii -*-
-# frozen_string_literal: false
 # frozen-string-literal: false
 # module to create Makefile for extension modules
 # invoke like: ruby -r mkmf extconf.rb
