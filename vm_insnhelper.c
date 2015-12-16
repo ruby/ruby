@@ -2096,7 +2096,7 @@ vm_call_method_each_type(rb_thread_t *th, rb_control_frame_t *cfp, struct rb_cal
 	CALLER_SETUP_ARG(cfp, calling, ci);
 	rb_check_arity(calling->argc, 1, 1);
 	cc->aux.index = 0;
-	CI_SET_FASTPATH(cc, vm_call_attrset, !(ci->flag & VM_CALL_ARGS_SPLAT));
+	CI_SET_FASTPATH(cc, vm_call_attrset, !((ci->flag & VM_CALL_ARGS_SPLAT) || (ci->flag & VM_CALL_KWARG)));
 	return vm_call_attrset(th, cfp, calling, ci, cc);
 
       case VM_METHOD_TYPE_IVAR:
