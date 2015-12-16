@@ -17,7 +17,7 @@ Wed Dec 16 16:17:34 2015  Eric Wong  <e@80x24.org>
 
 Wed Dec 16 16:04:49 2015  Eric Wong  <e@80x24.org>
 
-	* NEWS: note IO#fadvise change [ruby-core:72168]
+	* NEWS: note IO#advise change [ruby-core:72168]
 
 Wed Dec 16 15:35:13 2015  Koichi Sasada  <ko1@atdot.net>
 
