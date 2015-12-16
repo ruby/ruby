@@ -1,4 +1,5 @@
 # -*- coding: us-ascii -*-
+# frozen_string_literal: true
 # = ERB -- Ruby Templating
 #
 # Author:: Masatoshi SEKI
@@ -548,7 +549,7 @@ class ERB
       def initialize(compiler, enc=nil)
         @compiler = compiler
         @line = []
-        @script = enc ? "#coding:#{enc}\n" : ""
+        @script = enc ? String.new("#coding:#{enc}\n") : String.new
         @compiler.pre_cmd.each do |x|
           push(x)
         end
@@ -601,7 +602,7 @@ class ERB
       enc = detect_magic_comment(s) || enc
       out = Buffer.new(self, enc)
 
-      content = ''
+      content = String.new
       scanner = make_scanner(s)
       scanner.scan do |token|
         next if token.nil?
@@ -610,7 +611,7 @@ class ERB
           case token
           when PercentLine
             add_put_cmd(out, content) if content.size > 0
-            content = ''
+            content = String.new
             out.push(token.to_s)
             out.cr
           when :cr
@@ -618,11 +619,11 @@ class ERB
           when '<%', '<%=', '<%#'
             scanner.stag = token
             add_put_cmd(out, content) if content.size > 0
-            content = ''
+            content = String.new
           when "\n"
             content << "\n"
             add_put_cmd(out, content)
-            content = ''
+            content = String.new
           when '<%%'
             content << '<%'
           else
@@ -646,7 +647,7 @@ class ERB
               # out.push("# #{content_dump(content)}")
             end
             scanner.stag = nil
-            content = ''
+            content = String.new
           when '%%>'
             content << '%>'
           else
