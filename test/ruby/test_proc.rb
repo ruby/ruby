@@ -1321,4 +1321,24 @@ class TestProc < Test::Unit::TestCase
     def obj.b; binding; end
     assert_same(obj, obj.b.receiver, feature8779)
   end
+
+  def test_proc_mark
+    assert_normal_exit(<<-'EOS')
+      def f
+        Enumerator.new{
+          100000.times {|i|
+            yield
+            s = "#{i}"
+          }
+        }
+      end
+
+      def g
+        x = proc{}
+        f(&x)
+      end
+      e = g
+      e.each {}
+    EOS
+  end
 end
