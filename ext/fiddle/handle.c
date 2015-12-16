@@ -1,6 +1,8 @@
 #include <ruby.h>
 #include <fiddle.h>
 
+#define SafeStringValueCStr(v) (rb_check_safe_obj(rb_string_value(&v)), StringValueCStr(v))
+
 VALUE rb_cHandle;
 
 struct dl_handle {
@@ -143,11 +145,11 @@ rb_fiddle_handle_initialize(int argc, VALUE argv[], VALUE self)
 	cflag = RTLD_LAZY | RTLD_GLOBAL;
 	break;
       case 1:
-	clib = NIL_P(lib) ? NULL : StringValuePtr(lib);
+	clib = NIL_P(lib) ? NULL : SafeStringValueCStr(lib);
 	cflag = RTLD_LAZY | RTLD_GLOBAL;
 	break;
       case 2:
-	clib = NIL_P(lib) ? NULL : StringValuePtr(lib);
+	clib = NIL_P(lib) ? NULL : SafeStringValueCStr(lib);
 	cflag = NUM2INT(flag);
 	break;
       default:
@@ -264,7 +266,7 @@ rb_fiddle_handle_to_i(VALUE self)
     return PTR2NUM(fiddle_handle);
 }
 
-static VALUE fiddle_handle_sym(void *handle, const char *symbol);
+static VALUE fiddle_handle_sym(void *handle, VALUE symbol);
 
 /*
  * Document-method: sym
@@ -283,7 +285,7 @@ rb_fiddle_handle_sym(VALUE self, VALUE sym)
 	rb_raise(rb_eFiddleError, "closed handle");
     }
 
-    return fiddle_handle_sym(fiddle_handle->ptr, StringValueCStr(sym));
+    return fiddle_handle_sym(fiddle_handle->ptr, sym);
 }
 
 #ifndef RTLD_NEXT
@@ -306,11 +308,11 @@ rb_fiddle_handle_sym(VALUE self, VALUE sym)
 static VALUE
 rb_fiddle_handle_s_sym(VALUE self, VALUE sym)
 {
-    return fiddle_handle_sym(RTLD_NEXT, StringValueCStr(sym));
+    return fiddle_handle_sym(RTLD_NEXT, sym);
 }
 
 static VALUE
-fiddle_handle_sym(void *handle, const char *name)
+fiddle_handle_sym(void *handle, VALUE symbol)
 {
 #if defined(HAVE_DLERROR)
     const char *err;
@@ -319,6 +321,7 @@ fiddle_handle_sym(void *handle, const char *name)
 # define CHECK_DLERROR
 #endif
     void (*func)();
+    const char *name = SafeStringValueCStr(symbol);
 
     rb_secure(2);
 #ifdef HAVE_DLERROR
@@ -368,7 +371,7 @@ fiddle_handle_sym(void *handle, const char *name)
     }
 #endif
     if( !func ){
-	rb_raise(rb_eFiddleError, "unknown symbol \"%s\"", name);
+	rb_raise(rb_eFiddleError, "unknown symbol \"%"PRIsVALUE"\"", symbol);
     }
 
     return PTR2NUM(func);
