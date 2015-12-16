@@ -2531,7 +2531,7 @@ End
 
     fs = nil
     if uname[:sysname] == 'Linux'
-      # [ruby-dev:45703] Old Linux's fadvice() doesn't work on tmpfs.
+      # [ruby-dev:45703] Old Linux's fadvise() doesn't work on tmpfs.
       mount = `mount`
       mountpoints = []
       mount.scan(/ on (\S+) type (\S+) /) {
@@ -3007,10 +3007,10 @@ End
     with_pipe do |r,w|
       # Linux 2.6.15 and earlier returned EINVAL instead of ESPIPE
       assert_raise(Errno::ESPIPE, Errno::EINVAL) {
-        r.advise(:willneed) or skip "fadvice(2) is not implemented"
+        r.advise(:willneed) or skip "fadvise(2) is not implemented"
       }
       assert_raise(Errno::ESPIPE, Errno::EINVAL) {
-        w.advise(:willneed) or skip "fadvice(2) is not implemented"
+        w.advise(:willneed) or skip "fadvise(2) is not implemented"
       }
     end
   end if /linux/ =~ RUBY_PLATFORM
