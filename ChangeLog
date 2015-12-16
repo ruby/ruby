@@ -1,3 +1,7 @@
+Wed Dec 16 12:24:59 2015  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* test_struct.rb: Test that initialize is overridable [#11708]
+
 Wed Dec 16 10:49:51 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (block_command, block_call): fix `&.` calls after

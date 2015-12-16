@@ -94,6 +94,12 @@ module TestStruct
   def test_initialize
     klass = @Struct.new(:a)
     assert_raise(ArgumentError) { klass.new(1, 2) }
+    klass = @Struct.new(:total) do
+      def initialize(a, b)
+        super(a+b)
+      end
+    end
+    assert_equal 3, klass.new(1,2).total
   end
 
   def test_each
