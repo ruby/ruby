@@ -1,4 +1,3 @@
-# frozen_string_literal: false
 # frozen-string-literal: true
 ##
 # == Manipulates strings like the UNIX Bourne shell
