@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 #--
 # = uri/common.rb
 #
@@ -303,7 +304,7 @@ module URI
       end
       str.gsub(unsafe) do
         us = $&
-        tmp = ''
+        tmp = String.new
         us.each_byte do |uc|
           tmp << sprintf('%%%02X', uc)
         end
