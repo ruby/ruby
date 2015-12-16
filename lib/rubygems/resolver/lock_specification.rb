@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 ##
 # The LockSpecification comes from a lockfile (Gem::RequestSet::Lockfile).
 #

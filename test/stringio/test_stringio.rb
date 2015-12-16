@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'stringio'
 require_relative '../ruby/ut_eof'

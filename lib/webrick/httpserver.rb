@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # httpserver.rb -- HTTPServer Class
 #

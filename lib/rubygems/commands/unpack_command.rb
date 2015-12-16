@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'rubygems/command'
 require 'rubygems/installer'
 require 'rubygems/version_option'

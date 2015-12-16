@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #   thwait.rb - thread synchronization class
 #       $Release Version: 0.9 $

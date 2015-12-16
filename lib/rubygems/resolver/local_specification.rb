@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 ##
 # A LocalSpecification comes from a .gem file on the local filesystem.
 

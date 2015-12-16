@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 ##
 # Represents an installed gem.  This is used for dependency resolution.
 

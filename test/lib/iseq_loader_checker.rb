@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 
 begin
   require '-test-/iseq_load/iseq_load'

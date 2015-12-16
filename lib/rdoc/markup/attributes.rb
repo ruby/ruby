@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 ##
 # We manage a set of attributes.  Each attribute has a symbol name and a bit
 # value.

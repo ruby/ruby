@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 # -*- coding:utf-8 -*-
+# frozen_string_literal: false
 
 require 'test/unit'
 require File.join(File.dirname(__FILE__), 'setup_variant')

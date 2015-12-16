@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'xmlrpc/datetime'
 require "xmlrpc/parser"

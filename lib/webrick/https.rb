@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # https.rb -- SSL/TLS enhancement for HTTPServer
 #

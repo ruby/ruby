@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 ##
 # A set which represents the installed gems. Respects
 # all the normal settings that control where to look

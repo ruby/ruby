@@ -1,4 +1,5 @@
 # coding: ascii-8bit
+# frozen_string_literal: false
 require 'test/unit'
 require "-test-/string"
 require "rbconfig/sizeof"

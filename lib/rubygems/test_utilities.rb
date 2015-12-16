@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'tempfile'
 require 'rubygems'
 require 'rubygems/remote_fetcher'

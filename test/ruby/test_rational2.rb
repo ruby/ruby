@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class Rational_Test2 < Test::Unit::TestCase

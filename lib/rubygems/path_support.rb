@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 ##
 #
 # Gem::PathSupport facilitates the GEM_HOME and GEM_PATH environment settings

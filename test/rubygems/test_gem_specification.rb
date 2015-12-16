@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'benchmark'
 require 'rubygems/test_case'
 require 'pathname'

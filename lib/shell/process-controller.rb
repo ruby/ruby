@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #   shell/process-controller.rb -
 #       $Release Version: 0.7 $

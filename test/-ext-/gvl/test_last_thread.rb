@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 class TestLastThread < Test::Unit::TestCase
 
   # [Bug #11237]

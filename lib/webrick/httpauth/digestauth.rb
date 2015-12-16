@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # httpauth/digestauth.rb -- HTTP digest access authentication
 #

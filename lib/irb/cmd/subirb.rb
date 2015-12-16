@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #   multi.rb -
 #   	$Release Version: 0.9.6$
 #   	$Revision$

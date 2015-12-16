@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 ##
 # An i18n supported text.
 #

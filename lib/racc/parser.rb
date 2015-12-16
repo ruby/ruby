@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #--
 # $originalId: parser.rb,v 1.8 2006/07/06 11:42:07 aamine Exp $
 #

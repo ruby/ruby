@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 begin
   require '-test-/popen_deadlock/infinite_loop_dlsym'
 rescue LoadError

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 ##
 # A section of verbatim text
 

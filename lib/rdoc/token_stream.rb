@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 ##
 # A TokenStream is a list of tokens, gathered during the parse of some entity
 # (say a method). Entities populate these streams by being registered with the

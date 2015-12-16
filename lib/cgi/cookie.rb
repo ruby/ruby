@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'cgi/util'
 class CGI
   # Class representing an HTTP cookie.

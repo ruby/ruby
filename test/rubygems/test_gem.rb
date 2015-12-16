@@ -1,4 +1,5 @@
 # coding: US-ASCII
+# frozen_string_literal: false
 require 'rubygems/test_case'
 require 'rubygems'
 require 'rubygems/command'

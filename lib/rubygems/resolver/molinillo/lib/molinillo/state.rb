@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 module Gem::Resolver::Molinillo
   # A state that a {Resolution} can be in
   # @attr [String] name

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require "rss/2.0"
 
 require "rss/maker/0.9"

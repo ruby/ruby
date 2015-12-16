@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #--
 # version.rb -- version and release date
 #

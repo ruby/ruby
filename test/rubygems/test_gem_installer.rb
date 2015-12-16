@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'rubygems/installer_test_case'
 
 class TestGemInstaller < Gem::InstallerTestCase

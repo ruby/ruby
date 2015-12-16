@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require_relative 'utils'
 
 class  OpenSSL::TestASN1 < Test::Unit::TestCase

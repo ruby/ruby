@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # :stopdoc:
 
 # Hack to handle syck's DefaultKey bug

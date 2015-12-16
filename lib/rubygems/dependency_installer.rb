@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'rubygems'
 require 'rubygems/dependency_list'
 require 'rubygems/package'

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 ##
 # HTML entity name map for RDoc::Markdown
 

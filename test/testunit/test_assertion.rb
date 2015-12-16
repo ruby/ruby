@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 class TestAssertion < Test::Unit::TestCase
   def test_wrong_assertion

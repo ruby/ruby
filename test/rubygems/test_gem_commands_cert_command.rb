@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'rubygems/test_case'
 require 'rubygems/commands/cert_command'
 require 'rubygems/fix_openssl_warnings' if RUBY_VERSION < "1.9"

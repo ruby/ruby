@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # find.rb: the Find module for processing all files under a given directory.
 #

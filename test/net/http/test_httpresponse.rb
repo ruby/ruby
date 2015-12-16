@@ -1,4 +1,5 @@
 # coding: US-ASCII
+# frozen_string_literal: false
 require 'net/http'
 require 'test/unit'
 require 'stringio'

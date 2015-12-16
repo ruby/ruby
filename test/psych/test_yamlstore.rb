@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require_relative 'helper'
 require 'yaml/store'
 require 'tmpdir'

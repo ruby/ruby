@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'rubygems/dependency'
 require 'rubygems/exceptions'
 require 'rubygems/util'

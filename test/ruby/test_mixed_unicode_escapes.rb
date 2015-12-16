@@ -1,4 +1,5 @@
 # -*- coding: cp932 -*-
+# frozen_string_literal: false
 # This test is in a different file than TestUnicodeEscapes
 # So that we can have a different coding comment above
 

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'rubygems/resolver/molinillo/lib/molinillo/dependency_graph'
 
 module Gem::Resolver::Molinillo

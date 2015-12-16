@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # = delegate -- Support for the Delegation Pattern
 #
 # Documentation by James Edward Gray II and Gavin Sinclair

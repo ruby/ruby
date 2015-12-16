@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 ##
 # Handle common directives that can occur in a block of text:
 #

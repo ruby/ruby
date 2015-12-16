@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # cgi/session/pstore.rb - persistent storage of marshalled session data
 #

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # httpauth/basicauth.rb -- HTTP basic access authentication
 #

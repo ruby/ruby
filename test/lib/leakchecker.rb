@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 class LeakChecker
   def initialize
     @fd_info = find_fds

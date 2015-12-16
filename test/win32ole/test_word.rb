@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # This is test for [ruby-Bugs#3237]
 #

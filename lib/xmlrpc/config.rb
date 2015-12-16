@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # $Id$
 # Configuration file for XML-RPC for Ruby

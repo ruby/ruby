@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 module ZombieHunter
   def after_teardown
     super

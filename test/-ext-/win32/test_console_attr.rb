@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 if /mswin|mingw/ =~ RUBY_PLATFORM and STDOUT.tty?
   require '-test-/win32/console'
   require 'io/console'

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 module REXML
   # A template for stream parser listeners.
   # Note that the declarations (attlistdecl, elementdecl, etc) are trivially

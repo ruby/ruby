@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # :markup: tomdoc
 
 # A parser for TomDoc based on TomDoc 1.0.0-rc1 (02adef9b5a)

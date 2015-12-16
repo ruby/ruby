@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 module Gem
   class List
     include Enumerable

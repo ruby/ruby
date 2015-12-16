@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # The HTTPHeader module defines methods for reading and writing
 # HTTP headers.
 #

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #--
 #   irb/ruby-token.rb - ruby tokens
 #   	$Release Version: 0.9.5$

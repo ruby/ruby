@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 # mathn redefines too much. It must be isolated to child processes.

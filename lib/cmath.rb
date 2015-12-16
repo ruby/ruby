@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 ##
 # = Trigonometric and transcendental functions for complex numbers.
 #

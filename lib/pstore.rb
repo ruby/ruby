@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # = PStore -- Transactional File Storage for Ruby Objects
 #
 # pstore.rb -

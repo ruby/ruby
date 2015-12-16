@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # = uri/mailto.rb
 #
 # Author:: Akira Yamada <akira@ruby-lang.org>
