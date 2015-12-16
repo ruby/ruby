@@ -1,3 +1,9 @@
+Wed Dec 16 16:10:52 2015  Eric Wong  <e@80x24.org>
+
+	* insns.def (opt_case_dispatch): avoid converting Infinity
+	* test/ruby/test_optimization.rb (test_opt_case_dispatch_inf): new
+	  [ruby-dev:49423] [Bug #11804]'
+
 Wed Dec 16 16:07:29 2015  Rei Odaira  <Rei.Odaira@gmail.com>
 
 	* configure.in: pthread_getattr_np is broken on AIX.
