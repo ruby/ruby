@@ -608,7 +608,7 @@ vm_make_env_each(rb_thread_t *const th, rb_control_frame_t *const cfp)
     else {
 	rb_block_t *block = VM_EP_BLOCK_PTR(ep);
 
-	if (block && (vm_make_proc_from_block(th, block, &blockprocval)) != Qfalse) {
+	if (block && vm_make_proc_from_block(th, block, &blockprocval)) {
 	    rb_proc_t *p;
 	    GetProcPtr(blockprocval, p);
 	    *ep = VM_ENVVAL_BLOCK_PTR(&p->block);
