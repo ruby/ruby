@@ -1,3 +1,7 @@
+Wed Dec 16 16:13:04 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (parse_mode_enc): fix buffer overflow.
+
 Wed Dec 16 16:10:52 2015  Eric Wong  <e@80x24.org>
 
 	* insns.def (opt_case_dispatch): avoid converting Infinity
