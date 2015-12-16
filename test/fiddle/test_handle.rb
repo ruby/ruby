@@ -10,6 +10,23 @@ module Fiddle
 
     include Test::Unit::Assertions
 
+    def test_safe_handle_open
+      t = Thread.new do
+        $SAFE = 1
+        Fiddle::Handle.new(LIBC_SO.taint)
+      end
+      assert_raise(SecurityError) { t.value }
+    end
+
+    def test_safe_function_lookup
+      t = Thread.new do
+        h = Fiddle::Handle.new(LIBC_SO)
+        $SAFE = 1
+        h["qsort".taint]
+      end
+      assert_raise(SecurityError) { t.value }
+    end
+
     def test_to_i
       handle = Fiddle::Handle.new(LIBC_SO)
       assert_kind_of Integer, handle.to_i

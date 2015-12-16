@@ -1,3 +1,18 @@
+Wed Dec 16 21:16:55 2015  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* ext/fiddle/handle.c: check tainted string arguments.
+	  Patch provided by tenderlove and nobu.
+
+	* test/fiddle/test_handle.rb (class TestHandle): add test for above.
+
+Wed Dec 16 21:16:55 2015  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* ext/dl/handle.c (rb_dlhandle_initialize): prohibits DL::dlopen
+	  with a tainted name of library.
+	  Patch by sheepman <sheepman AT sheepman.sakura.ne.jp>.
+
+	* ext/dl/handle.c (rb_dlhandle_sym): ditto
+
 Tue Aug 18 22:00:12 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/rubygems.rb: bump version to 2.0.14.1. this version fixed
