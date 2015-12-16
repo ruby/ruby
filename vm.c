@@ -559,16 +559,17 @@ check_env_value(VALUE envval)
     return Qnil;		/* unreachable */
 }
 
-/* return Qfalse if proc was already created */
-static VALUE
-vm_make_proc_from_block(rb_thread_t *th, rb_block_t *block)
+/* return FALSE if proc was already created */
+static int
+vm_make_proc_from_block(rb_thread_t *th, rb_block_t *block, VALUE *procptr)
 {
     if (!block->proc) {
-	block->proc = rb_vm_make_proc(th, block, rb_cProc);
-	return block->proc;
+	*procptr = block->proc = rb_vm_make_proc(th, block, rb_cProc);
+	return TRUE;
     }
     else {
-	return Qfalse;
+	*procptr = block->proc;
+	return FALSE;
     }
 }
 
@@ -603,7 +604,7 @@ vm_make_env_each(rb_thread_t *const th, rb_control_frame_t *const cfp)
     else {
 	rb_block_t *block = VM_EP_BLOCK_PTR(ep);
 
-	if (block && (blockprocval = vm_make_proc_from_block(th, block)) != Qfalse) {
+	if (block && (vm_make_proc_from_block(th, block, &blockprocval)) != Qfalse) {
 	    rb_proc_t *p;
 	    GetProcPtr(blockprocval, p);
 	    *ep = VM_ENVVAL_BLOCK_PTR(&p->block);

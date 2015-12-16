@@ -1,3 +1,17 @@
+Wed Dec 16 15:35:13 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c: fix mark miss for proc given as passed block.
+	  [Bug #11750]
+
+	* vm.c (vm_make_proc_from_block): should return a Proc object
+	  if block is given. Previous implementation returns
+	  a Proc object only when corresponding Proc object is not
+	  available.
+
+	* vm.c (vm_make_env_each): ditto.
+
+	* test/ruby/test_proc.rb: add a test for this bug.
+
 Wed Dec 16 12:24:59 2015  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* test_struct.rb: Test that initialize is overridable [#11708]
