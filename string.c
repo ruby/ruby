@@ -8667,6 +8667,10 @@ rb_str_scrub(VALUE str, VALUE repl)
     int cr = ENC_CODERANGE(str);
     rb_encoding *enc;
     int encidx;
+    VALUE buf = Qnil;
+    const char *rep;
+    long replen;
+    int tainted = 0;
 
     if (ENC_CODERANGE_CLEAN_P(cr))
 	return Qnil;
@@ -8674,6 +8678,7 @@ rb_str_scrub(VALUE str, VALUE repl)
     enc = STR_ENC_GET(str);
     if (!NIL_P(repl)) {
 	repl = str_compat_and_valid(repl, enc);
+	tainted = OBJ_TAINTED_RAW(repl);
     }
 
     if (rb_enc_dummy_p(enc)) {
@@ -8690,10 +8695,7 @@ rb_str_scrub(VALUE str, VALUE repl)
 	const char *p = RSTRING_PTR(str);
 	const char *e = RSTRING_END(str);
 	const char *p1 = p;
-	const char *rep;
-	long replen;
 	int rep7bit_p;
-	VALUE buf = Qnil;
 	if (rb_block_given_p()) {
 	    rep = NULL;
 	    replen = 0;
@@ -8759,6 +8761,7 @@ rb_str_scrub(VALUE str, VALUE repl)
 		else {
 		    repl = rb_yield(rb_enc_str_new(p, clen, enc));
 		    repl = str_compat_and_valid(repl, enc);
+		    tainted |= OBJ_TAINTED_RAW(repl);
 		    rb_str_buf_cat(buf, RSTRING_PTR(repl), RSTRING_LEN(repl));
 		    if (ENC_CODERANGE(repl) == ENC_CODERANGE_VALID)
 			cr = ENC_CODERANGE_VALID;
@@ -8793,22 +8796,18 @@ rb_str_scrub(VALUE str, VALUE repl)
 	    else {
 		repl = rb_yield(rb_enc_str_new(p, e-p, enc));
 		repl = str_compat_and_valid(repl, enc);
+		tainted |= OBJ_TAINTED_RAW(repl);
 		rb_str_buf_cat(buf, RSTRING_PTR(repl), RSTRING_LEN(repl));
 		if (ENC_CODERANGE(repl) == ENC_CODERANGE_VALID)
 		    cr = ENC_CODERANGE_VALID;
 	    }
 	}
-	ENCODING_CODERANGE_SET(buf, rb_enc_to_index(enc), cr);
-	return buf;
     }
     else {
 	/* ASCII incompatible */
 	const char *p = RSTRING_PTR(str);
 	const char *e = RSTRING_END(str);
 	const char *p1 = p;
-	VALUE buf = Qnil;
-	const char *rep;
-	long replen;
 	long mbminlen = rb_enc_mbminlen(enc);
 	if (!NIL_P(repl)) {
 	    rep = RSTRING_PTR(repl);
@@ -8863,6 +8862,7 @@ rb_str_scrub(VALUE str, VALUE repl)
 		else {
 		    repl = rb_yield(rb_enc_str_new(p, e-p, enc));
 		    repl = str_compat_and_valid(repl, enc);
+		    tainted |= OBJ_TAINTED_RAW(repl);
 		    rb_str_buf_cat(buf, RSTRING_PTR(repl), RSTRING_LEN(repl));
 		}
 		p += clen;
@@ -8889,12 +8889,15 @@ rb_str_scrub(VALUE str, VALUE repl)
 	    else {
 		repl = rb_yield(rb_enc_str_new(p, e-p, enc));
 		repl = str_compat_and_valid(repl, enc);
+		tainted |= OBJ_TAINTED_RAW(repl);
 		rb_str_buf_cat(buf, RSTRING_PTR(repl), RSTRING_LEN(repl));
 	    }
 	}
-	ENCODING_CODERANGE_SET(buf, rb_enc_to_index(enc), ENC_CODERANGE_VALID);
-	return buf;
+	cr = ENC_CODERANGE_VALID;
     }
+    FL_SET_RAW(buf, tainted|OBJ_TAINTED_RAW(str));
+    ENCODING_CODERANGE_SET(buf, rb_enc_to_index(enc), cr);
+    return buf;
 }
 
 /*
