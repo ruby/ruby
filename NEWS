@@ -61,6 +61,10 @@ with all sufficient information, see the ChangeLog file.
 
   * Comparable#== no longer rescues exceptions [Feature #7688]
 
+* Encoding
+
+  * new Encoding::IBM037 (alias ebcdic-cp-us; dummy)
+
 * Enumerable
 
   * Enumerable#grep_v is added as inverse version of Enumerable#grep.
@@ -82,10 +86,6 @@ with all sufficient information, see the ChangeLog file.
   * Hash#dig [Feature #11643]
   * Hash#<=, Hash#<, Hash#>=, Hash#> [Feature #10984]
   * Hash#to_proc [Feature #11653]
-
-* Encoding
-
-  * new Encoding::IBM037 (alias ebcdic-cp-us; dummy)
 
 * IO
 
@@ -203,19 +203,16 @@ with all sufficient information, see the ChangeLog file.
     :warn, :error, :fatal (case insensitive) [Feature #11695]
   * Logger#reopen is added to reopen a log device. [Feature #11696]
 
+* io/wait
+  * IO#wait_readable no longer checks FIONREAD, it may be used for
+    non-bytestream IO such as listen sockets.
+
+* Net::FTP
+  * Net::FTP#mlst is added.
+  * Net::FTP#mlsd is added.
+
 * nkf
   * Merge nkf 2.1.4.
-
-* Socket
-  * Socket#connect_nonblock, Socket#accept_nonblock,
-    TCPServer#accept_nonblock, UNIXServer#accept_nonblock,
-    BasicSocket#recv_nonblock, BasicSocket#recvmsg_nonblock,
-    BasicSocket#sendmsg_nonblock all support `exception: false` to return
-    :wait_readable or :wait_writable symbols instead of raising
-    IO::WaitReadable or IO::WaitWritable exceptions
-  * BasicSocket#recv and BasicSocket#recv_nonblock allow an output
-    String buffer argument like IO#read and IO#read_nonblock to reduce
-    GC overhead
 
 * ObjectSpace (objspace)
   * ObjectSpace.count_symbols is added.
@@ -231,16 +228,19 @@ with all sufficient information, see the ChangeLog file.
   * Pathname#descend and Pathname#ascend supported blockless form.
     [Feature #11052]
 
-* io/wait
-  * IO#wait_readable no longer checks FIONREAD, it may be used for
-    non-bytestream IO such as listen sockets.
+* Socket
+  * Socket#connect_nonblock, Socket#accept_nonblock,
+    TCPServer#accept_nonblock, UNIXServer#accept_nonblock,
+    BasicSocket#recv_nonblock, BasicSocket#recvmsg_nonblock,
+    BasicSocket#sendmsg_nonblock all support `exception: false` to return
+    :wait_readable or :wait_writable symbols instead of raising
+    IO::WaitReadable or IO::WaitWritable exceptions
+  * BasicSocket#recv and BasicSocket#recv_nonblock allow an output
+    String buffer argument like IO#read and IO#read_nonblock to reduce
+    GC overhead
 
 * timeout
   * Object#timeout is now warned as deprecated when called.
-
-* Net::FTP
-  * Net::FTP#mlst is added.
-  * Net::FTP#mlsd is added.
 
 === Stdlib compatibility issues (excluding feature bug fixes)
 
