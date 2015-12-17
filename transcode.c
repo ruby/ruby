@@ -1854,6 +1854,7 @@ rb_econv_substr_append(rb_econv_t *ec, VALUE src, long off, long len, VALUE dst,
     src = rb_str_new_frozen(src);
     dst = rb_econv_append(ec, RSTRING_PTR(src) + off, len, dst, flags);
     RB_GC_GUARD(src);
+    OBJ_INFECT_RAW(dst, src);
     return dst;
 }
 
@@ -3768,8 +3769,10 @@ econv_primitive_convert(int argc, VALUE *argv, VALUE self)
 
     res = rb_econv_convert(ec, &ip, is, &op, os, flags);
     rb_str_set_len(output, op-(unsigned char *)RSTRING_PTR(output));
-    if (!NIL_P(input))
+    if (!NIL_P(input)) {
+        OBJ_INFECT_RAW(output, input);
         rb_str_drop_bytes(input, ip - (unsigned char *)RSTRING_PTR(input));
+    }
 
     if (NIL_P(output_bytesize_v) && res == econv_destination_buffer_full) {
         if (LONG_MAX / 2 < output_bytesize)
