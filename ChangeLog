@@ -1,3 +1,8 @@
+Thu Dec 17 09:46:08 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* re.c (reg_names_iter): should consider encoding of regexp.
+	  [ruby-core:72185] [Bug #11825]
+
 Thu Dec 17 03:52:10 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (vm_make_env_each): should not compare with Qfalse and FALSE.
