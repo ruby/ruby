@@ -1,3 +1,8 @@
+Thu Dec 17 22:13:10 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* vm_args.c (vm_caller_setup_arg_block): remove code for ifunc
+	  because it was made unnecessary by r52138.
+
 Thu Dec 17 16:13:10 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* proc.c (rb_block_arity): should not call GetProcPtr() for symbols.
