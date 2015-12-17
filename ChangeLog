@@ -1,3 +1,8 @@
+Thu Dec 17 16:13:10 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* proc.c (rb_block_arity): should not call GetProcPtr() for symbols.
+	  [ruby-core:72205] [Bug #11830]
+
 Thu Dec 17 14:16:29 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_scrub): the result should be infected by the

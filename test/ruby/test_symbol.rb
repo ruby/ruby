@@ -157,6 +157,13 @@ class TestSymbol < Test::Unit::TestCase
     assert_equal(1, first, bug11594)
   end
 
+  def test_to_proc_for_hash_each
+    bug11830 = '[ruby-core:72205] [Bug #11830]'
+    assert_normal_exit(<<-'end;', bug11830) # do
+      {}.each(&:destroy)
+    end;
+  end
+
   def test_call
     o = Object.new
     def o.foo(x, y); x + y; end

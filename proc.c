@@ -956,10 +956,15 @@ rb_block_arity(void)
     min = rb_block_min_max_arity(block, &max);
     proc_value = block->proc;
     if (proc_value) {
-	rb_proc_t *proc;
-	GetProcPtr(proc_value, proc);
-	if (proc)
-	    return (proc->is_lambda ? min == max : max != UNLIMITED_ARGUMENTS) ? min : -min-1;
+	if (SYMBOL_P(proc_value)) {
+	    return -1;
+	}
+	else {
+	    rb_proc_t *proc;
+	    GetProcPtr(proc_value, proc);
+	    if (proc)
+		return (proc->is_lambda ? min == max : max != UNLIMITED_ARGUMENTS) ? min : -min-1;
+	}
     }
     return max != UNLIMITED_ARGUMENTS ? min : -min-1;
 }
