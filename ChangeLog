@@ -1,3 +1,8 @@
+Thu Dec 17 14:16:29 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_scrub): the result should be infected by the
+	  original string.
+
 Thu Dec 17 13:35:27 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* transcode.c (rb_econv_substr_append, econv_primitive_convert):
