@@ -1,3 +1,9 @@
+Fri Dec 18 07:39:01 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* vm.c (rb_vm_check_redefinition_opt_method): should check the real
+	  class instead of the origin iclass.
+	  [ruby-core:72188] [Bug #11826]
+
 Thu Dec 17 22:13:10 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* vm_args.c (vm_caller_setup_arg_block): remove code for ifunc

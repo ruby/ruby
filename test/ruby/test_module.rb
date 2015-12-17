@@ -1695,6 +1695,22 @@ class TestModule < Test::Unit::TestCase
     assert_equal(0, 1 / 2)
   end
 
+  def test_redefine_optmethod_after_prepend
+    bug11826 = '[ruby-core:72188] [Bug #11826]'
+    assert_separately [], %{
+      module M
+      end
+      class Fixnum
+        prepend M
+        def /(other)
+          quo(other)
+        end
+      end
+      assert_equal(1 / 2r, 1 / 2, "#{bug11826}")
+    }, ignore_stderr: true
+    assert_equal(0, 1 / 2)
+  end
+
   def test_prepend_visibility
     bug8005 = '[ruby-core:53106] [Bug #8005]'
     c = Class.new do
