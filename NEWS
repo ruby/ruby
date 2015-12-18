@@ -239,6 +239,11 @@ with all sufficient information, see the ChangeLog file.
     String buffer argument like IO#read and IO#read_nonblock to reduce
     GC overhead
 
+* StringIO
+  * In read-only mode, StringIO#set_encoding no longer sets the encoding
+    of its buffer string.  Setting the encoding of the string directly
+    may cause unpredictable behavior.  [Bug #11827]
+
 * timeout
   * Object#timeout is now warned as deprecated when called.
 

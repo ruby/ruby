@@ -148,6 +148,13 @@ class TestStringIO < Test::Unit::TestCase
       f.write(s)
     }
     assert_equal(Encoding::ASCII_8BIT, f.string.encoding, bug10285)
+
+    bug11827 = '[ruby-core:72189] [Bug #11827]'
+    f = StringIO.new("foo\x83".freeze)
+    assert_nothing_raised(RuntimeError, bug11827) {
+      f.set_encoding(Encoding::ASCII_8BIT)
+    }
+    assert_equal("foo\x83".b, f.gets)
   end
 
   def test_mode_error
