@@ -1,3 +1,11 @@
+Fri Dec 18 11:24:48 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* vm_method.c (rb_method_entry_make, check_override_opt_method):
+	  should check whether a newly created method override a optimize
+	  method in case the method is defined in a prepended module of a
+	  built-in class.
+	  [ruby-core:72226] [Bug #11836]
+
 Fri Dec 11 06:39:30 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* vm.c (vm_exec): call RUBY_DTRACE_CMETHOD_RETURN_HOOK instead of
