@@ -91,8 +91,8 @@ module WEBrick
       # stored as-is in +@options+.  +@logger+ is also provided.
 
       def initialize(server, *options)
-        @server = @config = server
-        @logger = @server[:Logger]
+        @server  = @config = server
+        @logger  = @server[:Logger]
         @options = options
       end
 
@@ -129,9 +129,8 @@ module WEBrick
       # Returns the allowed HTTP request methods
 
       def do_OPTIONS(req, res)
-        m = self.methods.grep(/\Ado_([A-Z]+)\z/) {$1}
-        m.sort!
-        res["allow"] = m.join(",")
+        m = self.methods.grep(/\Ado_([A-Z]+)\z/){ $1 }
+        res["allow"] = m.sort.join(",")
       end
 
       private

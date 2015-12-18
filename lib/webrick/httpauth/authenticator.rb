@@ -17,48 +17,30 @@ module WEBrick
 
     module Authenticator
 
-      RequestField      = "Authorization" # :nodoc:
-      ResponseField     = "WWW-Authenticate" # :nodoc:
-      ResponseInfoField = "Authentication-Info" # :nodoc:
+      RequestField      = "Authorization"          # :nodoc:
+      ResponseField     = "WWW-Authenticate"       # :nodoc:
+      ResponseInfoField = "Authentication-Info"    # :nodoc:
       AuthException     = HTTPStatus::Unauthorized # :nodoc:
+      AuthScheme        = nil # auth method, must be overridden by the including class
 
       ##
-      # Method of authentication, must be overridden by the including class
+      # The realm, user database and logger for this authenticator
 
-      AuthScheme        = nil
-
-      ##
-      # The realm this authenticator covers
-
-      attr_reader :realm
-
-      ##
-      # The user database for this authenticator
-
-      attr_reader :userdb
-
-      ##
-      # The logger for this authenticator
-
-      attr_reader :logger
+      attr_reader :realm, :userdb, :logger
 
       private
-
-      # :stopdoc:
 
       ##
       # Initializes the authenticator from +config+
 
       def check_init(config)
-        [:UserDB, :Realm].each{|sym|
-          unless config[sym]
-            raise ArgumentError, "Argument #{sym.inspect} missing."
-          end
-        }
-        @realm     = config[:Realm]
-        @userdb    = config[:UserDB]
-        @logger    = config[:Logger] || Log::new($stderr)
-        @reload_db = config[:AutoReloadUserDB]
+        [:UserDB, :Realm].each do|sym|
+          raise ArgumentError, "Argument #{sym.inspect} missing." unless config[sym]
+        end
+        @realm           = config[:Realm]
+        @userdb          = config[:UserDB]
+        @logger          = config[:Logger] || Log::new($stderr)
+        @reload_db       = config[:AutoReloadUserDB]
         @request_field   = self::class::RequestField
         @response_field  = self::class::ResponseField
         @resp_info_field = self::class::ResponseInfoField
@@ -89,18 +71,13 @@ module WEBrick
       end
 
       def error(fmt, *args)
-        if @logger.error?
-          log(:error, fmt, *args)
-        end
+        log(:error, fmt, *args) if @logger.error?
       end
 
       def info(fmt, *args)
-        if @logger.info?
-          log(:info, fmt, *args)
-        end
+        log(:info, fmt, *args) if @logger.info?
       end
 
-      # :startdoc:
     end
 
     ##
@@ -108,9 +85,9 @@ module WEBrick
     # authentication schemes for proxies.
 
     module ProxyAuthenticator
-      RequestField  = "Proxy-Authorization" # :nodoc:
-      ResponseField = "Proxy-Authenticate" # :nodoc:
-      InfoField     = "Proxy-Authentication-Info" # :nodoc:
+      RequestField  = "Proxy-Authorization"                   # :nodoc:
+      ResponseField = "Proxy-Authenticate"                    # :nodoc:
+      InfoField     = "Proxy-Authentication-Info"             # :nodoc:
       AuthException = HTTPStatus::ProxyAuthenticationRequired # :nodoc:
     end
   end

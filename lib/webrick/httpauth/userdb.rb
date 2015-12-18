@@ -48,6 +48,7 @@ module WEBrick
       def get_passwd(realm, user, reload_db=false)
         make_passwd(realm, user, self[user])
       end
+
     end
   end
 end

@@ -68,9 +68,7 @@ module WEBrick
       # the authentication was not correct.
 
       def authenticate(req, res)
-        unless basic_credentials = check_scheme(req)
-          challenge(req, res)
-        end
+        challenge(req, res) unless basic_credentials = check_scheme(req)
         userid, password = basic_credentials.unpack("m*")[0].split(":", 2)
         password ||= ""
         if userid.empty?

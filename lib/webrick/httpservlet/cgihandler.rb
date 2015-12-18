@@ -36,13 +36,13 @@ module WEBrick
         super(server, name)
         @script_filename = name
         @tempdir = server[:TempDir]
-        @cgicmd = "#{CGIRunner} #{server[:CGIInterpreter]}"
+        @cgicmd  = "#{CGIRunner} #{server[:CGIInterpreter]}"
       end
 
       # :stopdoc:
 
       def do_GET(req, res)
-        cgi_in = IO::popen(@cgicmd, "wb")
+        cgi_in  = IO::popen(@cgicmd, "wb")
         cgi_out = Tempfile.new("webrick.cgiout.", @tempdir, mode: IO::BINARY)
         cgi_out.set_encoding("ASCII-8BIT")
         cgi_err = Tempfile.new("webrick.cgierr.", @tempdir, mode: IO::BINARY)
@@ -64,28 +64,23 @@ module WEBrick
           cgi_in.write("%8d" % dump.bytesize)
           cgi_in.write(dump)
 
-          if req.body and req.body.bytesize > 0
-            cgi_in.write(req.body)
+          if req_body = req.body
+            cgi_in.write(req_body) if req_body.bytesize > 0
           end
         ensure
           cgi_in.close
           status = $?.exitstatus
           sleep 0.1 if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
-          data = cgi_out.read
+          data = cgi_out.read || ''
           cgi_out.close(true)
           if errmsg = cgi_err.read
-            if errmsg.bytesize > 0
-              @logger.error("CGIHandler: #{@script_filename}:\n" + errmsg)
-            end
+            @logger.error("CGIHandler: #{@script_filename}:\n#{errmsg}") if errmsg.bytesize > 0
           end
           cgi_err.close(true)
         end
 
-        if status != 0
-          @logger.error("CGIHandler: #{@script_filename} exit with #{status}")
-        end
+        @logger.error("CGIHandler: #{@script_filename} exit with #{status}") if status != 0
 
-        data = "" unless data
         raw_header, body = data.split(/^[\xd\xa]+/, 2)
         raise HTTPStatus::InternalServerError,
           "Premature end of script headers: #{@script_filename}" if body.nil?
@@ -101,12 +96,10 @@ module WEBrick
             res.status = 302 unless (300...400) === res.status
           end
           if header.has_key?('set-cookie')
-            header['set-cookie'].each{|k|
-              res.cookies << Cookie.parse_set_cookie(k)
-            }
+            header['set-cookie'].each{ |k| res.cookies << Cookie.parse_set_cookie(k) }
             header.delete('set-cookie')
           end
-          header.each{|key, val| res[key] = val.join(", ") }
+          header.each{ |k,v| res[k] = v.join(", ") }
         rescue => ex
           raise HTTPStatus::InternalServerError, ex.message
         end

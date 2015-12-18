@@ -26,9 +26,7 @@ module WEBrick
   FakeProxyURI = Object.new # :nodoc:
   class << FakeProxyURI # :nodoc:
     def method_missing(meth, *args)
-      if %w(scheme host port path query userinfo).member?(meth.to_s)
-        return nil
-      end
+      return nil if %w(scheme host port path query userinfo).member?(meth.to_s)
       super
     end
   end
@@ -107,7 +105,7 @@ module WEBrick
 
     def proxy_uri(req, res)
       # should return upstream proxy server's URI
-      return @config[:ProxyURI]
+      @config[:ProxyURI]
     end
 
     def proxy_service(req, res)
@@ -242,7 +240,7 @@ module WEBrick
 
     def choose_header(src, dst)
       connections = split_field(src['connection'])
-      src.each{|key, value|
+      src.each do |key, value|
         key = key.downcase
         if HopByHop.member?(key)          || # RFC2616: 13.5.1
            connections.member?(key)       || # RFC2616: 14.10
@@ -251,7 +249,7 @@ module WEBrick
           next
         end
         dst[key] = value
-      }
+      end
     end
 
     # Net::HTTP is stupid about the multiple header fields.
@@ -259,7 +257,7 @@ module WEBrick
     def set_cookie(src, dst)
       if str = src['set-cookie']
         cookies = []
-        str.split(/,\s*/).each{|token|
+        str.split(/,\s*/).each do |token|
           if /^[^=]+;/o =~ token
             cookies[-1] << ", " << token
           elsif /=/o =~ token
@@ -267,14 +265,14 @@ module WEBrick
           else
             cookies[-1] << ", " << token
           end
-        }
+        end
         dst.cookies.replace(cookies)
       end
     end
 
     def set_via(h)
       if @config[:ProxyVia]
-        if  h['via']
+        if h['via']
           h['via'] << ", " << @via
         else
           h['via'] = @via
@@ -287,25 +285,25 @@ module WEBrick
       header = Hash.new
       choose_header(req, header)
       set_via(header)
-      return header
+      header
     end
 
     def setup_upstream_proxy_authentication(req, res, header)
       if upstream = proxy_uri(req, res)
         if upstream.userinfo
           header['proxy-authorization'] =
-            "Basic " + [upstream.userinfo].pack("m").delete("\n")
+            "Basic #{[upstream.userinfo].pack("m").delete("\n")}"
         end
         return upstream
       end
-      return FakeProxyURI
+      FakeProxyURI
     end
 
     def perform_proxy_request(req, res)
-      uri = req.request_uri
+      uri  = req.request_uri
       path = uri.path.dup
-      path << "?" << uri.query if uri.query
-      header = setup_proxy_header(req, res)
+      path += "?#{uri.query}" if uri.query
+      header   = setup_proxy_header(req, res)
       upstream = setup_upstream_proxy_authentication(req, res, header)
       response = nil
 
