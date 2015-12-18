@@ -1,3 +1,8 @@
+Fri Dec 18 09:44:47 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ext/pty/pty.c: fix double words typo.
+	  [ci skip][fix GH-1157] Patch by @jwworth
+
 Fri Dec 18 09:42:45 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* ext/nkf/nkf-utf8/utf8tbl.c: fix a typo.
