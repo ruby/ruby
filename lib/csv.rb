@@ -949,30 +949,32 @@ class CSV
   # To add a combo field, the value should be an Array of names.  Combo fields
   # can be nested with other combo fields.
   #
-  Converters  = { integer:   lambda { |f|
-                    Integer(f.encode(ConverterEncoding)) rescue f
-                  },
-                  float:     lambda { |f|
-                    Float(f.encode(ConverterEncoding)) rescue f
-                  },
-                  numeric:   [:integer, :float],
-                  date:      lambda { |f|
-                    begin
-                      e = f.encode(ConverterEncoding)
-                      e =~ DateMatcher ? Date.parse(e) : f
-                    rescue  # encoding conversion or date parse errors
-                      f
-                    end
-                  },
-                  date_time: lambda { |f|
-                    begin
-                      e = f.encode(ConverterEncoding)
-                      e =~ DateTimeMatcher ? DateTime.parse(e) : f
-                    rescue  # encoding conversion or date parse errors
-                      f
-                    end
-                  },
-                  all:       [:date_time, :numeric] }
+  Converters  = {
+    integer:   lambda { |f|
+      Integer(f.encode(ConverterEncoding)) rescue f
+    },
+    float:     lambda { |f|
+      Float(f.encode(ConverterEncoding)) rescue f
+    },
+    numeric:   [:integer, :float],
+    date:      lambda { |f|
+      begin
+        e = f.encode(ConverterEncoding)
+        e =~ DateMatcher ? Date.parse(e) : f
+      rescue  # encoding conversion or date parse errors
+        f
+      end
+    },
+    date_time: lambda { |f|
+      begin
+        e = f.encode(ConverterEncoding)
+        e =~ DateTimeMatcher ? DateTime.parse(e) : f
+      rescue  # encoding conversion or date parse errors
+        f
+      end
+    },
+    all:       [:date_time, :numeric],
+  }
 
   #
   # This Hash holds the built-in header converters of CSV that can be accessed
@@ -1018,18 +1020,20 @@ class CSV
   # <b><tt>:force_quotes</tt></b>::       +false+
   # <b><tt>:skip_lines</tt></b>::         +nil+
   #
-  DEFAULT_OPTIONS = { col_sep:            ",",
-                      row_sep:            :auto,
-                      quote_char:         '"',
-                      field_size_limit:   nil,
-                      converters:         nil,
-                      unconverted_fields: nil,
-                      headers:            false,
-                      return_headers:     false,
-                      header_converters:  nil,
-                      skip_blanks:        false,
-                      force_quotes:       false,
-                      skip_lines:         nil }.freeze
+  DEFAULT_OPTIONS = {
+    col_sep:            ",",
+    row_sep:            :auto,
+    quote_char:         '"',
+    field_size_limit:   nil,
+    converters:         nil,
+    unconverted_fields: nil,
+    headers:            false,
+    return_headers:     false,
+    header_converters:  nil,
+    skip_blanks:        false,
+    force_quotes:       false,
+    skip_lines:         nil,
+  }.freeze
 
   #
   # This method will return a CSV instance, just like CSV::new(), but the
