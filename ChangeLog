@@ -1,3 +1,8 @@
+Fri Dec 11 06:39:30 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* vm.c (vm_exec): call RUBY_DTRACE_CMETHOD_RETURN_HOOK instead of
+	  RUBY_DTRACE_METHOD_RETURN_HOOK.
+
 Fri Dec 18 10:24:44 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/irb/ruby-lex.rb: fixed parse error for striped heredocument syntax.
