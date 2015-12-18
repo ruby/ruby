@@ -25,6 +25,7 @@
 #define GLOBAL_METHOD_CACHE(c,m) (rb_bug("global method cache disabled improperly"), NULL)
 #endif
 
+static int vm_redefinition_check_flag(VALUE klass);
 static void rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VALUE klass);
 
 #define object_id           idObject_id
@@ -468,6 +469,22 @@ rb_add_refined_method_entry(VALUE refined_class, ID mid)
     }
 }
 
+static void
+check_override_opt_method(VALUE klass, VALUE arg)
+{
+    ID mid = (ID)arg;
+    const rb_method_entry_t *me, *newme;
+
+    if (vm_redefinition_check_flag(klass)) {
+	me = lookup_method_table(RCLASS_ORIGIN(klass), mid);
+	if (me) {
+	    newme = rb_method_entry(klass, mid);
+	    if (newme != me) rb_vm_check_redefinition_opt_method(me, me->owner);
+	}
+    }
+    rb_class_foreach_subclass(klass, check_override_opt_method, (VALUE)mid);
+}
+
 /*
  * klass->method_table[mid] = method_entry(defined_class, visi, def)
  *
@@ -578,6 +595,11 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
     RB_OBJ_WRITTEN(klass, Qundef, (VALUE)me);
 
     VM_ASSERT(me->def != NULL);
+
+    /* check optimized method override by a prepended module */
+    if (RB_TYPE_P(klass, T_MODULE)) {
+	check_override_opt_method(klass, (VALUE)mid);
+    }
 
     return me;
 }
