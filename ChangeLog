@@ -1,3 +1,8 @@
+Fri Dec 18 12:09:21 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_ungetbyte): pad with \000 when
+	  the current position is after the end.
+
 Fri Dec 18 11:24:48 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* vm_method.c (rb_method_entry_make, check_override_opt_method):
