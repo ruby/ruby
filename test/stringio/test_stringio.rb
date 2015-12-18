@@ -362,6 +362,11 @@ class TestStringIO < Test::Unit::TestCase
     t.ungetbyte("\xe7")
     t.ungetbyte("\xe7\xb4\x85")
     assert_equal("\u7d05\u7389bar\n", t.gets)
+    assert_equal("q\u7d05\u7389bar\n", s)
+    t.pos = 1
+    t.ungetbyte("\u{30eb 30d3 30fc}")
+    assert_equal(0, t.pos)
+    assert_equal("\u{30eb 30d3 30fc}\u7d05\u7389bar\n", s)
   end
 
   def test_ungetc
@@ -579,6 +584,31 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal("\0""a", s.string)
     s.pos = 0
     s.ungetc("b")
+    assert_equal("b""\0""a", s.string)
+  end
+
+  def test_ungetbyte_pos
+    b = '\\b00010001 \\B00010001 \\b1 \\B1 \\b000100011'
+    s = StringIO.new( b )
+    expected_pos = 0
+    while n = s.getbyte
+      assert_equal( expected_pos + 1, s.pos )
+
+      s.ungetbyte( n )
+      assert_equal( expected_pos, s.pos )
+      assert_equal( n, s.getbyte )
+
+      expected_pos += 1
+    end
+  end
+
+  def test_ungetbyte_padding
+    s = StringIO.new()
+    s.pos = 2
+    s.ungetbyte("a".ord)
+    assert_equal("\0""a", s.string)
+    s.pos = 0
+    s.ungetbyte("b".ord)
     assert_equal("b""\0""a", s.string)
   end
 

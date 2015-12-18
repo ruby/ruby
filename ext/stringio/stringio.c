@@ -780,8 +780,9 @@ strio_ungetbyte(VALUE self, VALUE c)
 {
     struct StringIO *ptr = readable(self);
     char buf[1], *cp = buf;
-    long pos = ptr->pos, cl = 1;
+    long pos = ptr->pos, cl = 1, len, rest;
     VALUE str = ptr->string;
+    char *s;
 
     if (NIL_P(c)) return Qnil;
     if (FIXNUM_P(c)) {
@@ -794,19 +795,26 @@ strio_ungetbyte(VALUE self, VALUE c)
 	if (cl == 0) return Qnil;
     }
     check_modifiable(ptr);
-    rb_str_modify(str);
+    len = RSTRING_LEN(str);
+    rest = pos - len;
     if (cl > pos) {
-	char *s;
-	long rest = RSTRING_LEN(str) - pos;
-	rb_str_resize(str, rest + cl);
+	long ex = (rest < 0 ? cl-pos : cl+rest);
+	rb_str_modify_expand(str, ex);
+	rb_str_set_len(str, len + ex);
 	s = RSTRING_PTR(str);
-	memmove(s + cl, s + pos, rest);
+	if (rest < 0) memmove(s + cl, s + pos, -rest);
 	pos = 0;
     }
     else {
+	if (rest > 0) {
+	    rb_str_modify_expand(str, rest);
+	    rb_str_set_len(str, len + rest);
+	}
+	s = RSTRING_PTR(str);
+	if (rest > cl) memset(s + len, 0, rest - cl);
 	pos -= cl;
     }
-    memcpy(RSTRING_PTR(str) + pos, cp, cl);
+    memcpy(s + pos, cp, cl);
     ptr->pos = pos;
     RB_GC_GUARD(c);
     return Qnil;
