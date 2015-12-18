@@ -1670,7 +1670,7 @@ vm_exec(rb_thread_t *th)
 		EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, th->cfp->self,
 				rb_vm_frame_method_entry(th->cfp)->called_id,
 				rb_vm_frame_method_entry(th->cfp)->owner, Qnil);
-		RUBY_DTRACE_METHOD_RETURN_HOOK(th,
+		RUBY_DTRACE_CMETHOD_RETURN_HOOK(th,
 					       rb_vm_frame_method_entry(th->cfp)->owner,
 					       rb_vm_frame_method_entry(th->cfp)->called_id);
 	    }
