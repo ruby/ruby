@@ -572,6 +572,16 @@ class TestStringIO < Test::Unit::TestCase
     end
   end
 
+  def test_ungetc_padding
+    s = StringIO.new()
+    s.pos = 2
+    s.ungetc("a")
+    assert_equal("\0""a", s.string)
+    s.pos = 0
+    s.ungetc("b")
+    assert_equal("b""\0""a", s.string)
+  end
+
   def test_frozen
     s = StringIO.new
     s.freeze
