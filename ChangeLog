@@ -1,3 +1,8 @@
+Fri Dec 18 12:39:42 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* doc/syntax/*.rdoc: separated modifier at sentence.
+	  [ci skip][fix GH-1121] Patch by @clandry94
+
 Fri Dec 18 12:09:21 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/stringio/stringio.c (strio_ungetbyte): pad with \000 when

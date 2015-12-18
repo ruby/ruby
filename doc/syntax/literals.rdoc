@@ -133,7 +133,7 @@ You may also create strings using <tt>%</tt>:
   %(1 + 1 is #{1 + 1}) #=> "1 + 1 is 2"
 
 There are two different types of <tt>%</tt> strings <tt>%q(...)</tt> behaves
-like a single-quote string (no interpolation or character escaping) while
+like a single-quote string (no interpolation or character escaping), while
 <tt>%Q</tt> behaves as a double-quote string.  See Percent Strings below for
 more discussion of the syntax of percent strings.
 
@@ -259,7 +259,7 @@ Like strings, a single-quote may be used to disable interpolation:
 
   :'my_symbol#{1 + 1}' #=> :"my_symbol\#{1 + 1}"
 
-When creating a Hash there is a special syntax for referencing a Symbol as
+When creating a Hash, there is a special syntax for referencing a Symbol as
 well.
 
 == Arrays
@@ -344,7 +344,7 @@ This proc will add one to its argument.
 
 == Percent Strings
 
-Besides <tt>%(...)</tt> which creates a String, The <tt>%</tt> may create
+Besides <tt>%(...)</tt> which creates a String, the <tt>%</tt> may create
 other types of object.  As with strings, an uppercase letter allows
 interpolation and escaped characters while a lowercase letter disables them.
 
