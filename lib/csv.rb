@@ -1364,7 +1364,7 @@ class CSV
   # a String for +data+, you can later retrieve it (after writing to it, for
   # example) with CSV.string().
   #
-  # Note that a wrapped String will be positioned at at the beginning (for
+  # Note that a wrapped String will be positioned at the beginning (for
   # reading).  If you want it at the end (for writing), use CSV::generate().
   # If you want any other positioning, pass a preset StringIO object instead.
   #
