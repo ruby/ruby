@@ -579,7 +579,7 @@ pty_detach_process(struct pty_info *info)
  *
  * In the block form these same values will be yielded to the block:
  *
- * +r+:: A readable IO that that contains the command's
+ * +r+:: A readable IO that contains the command's
  *       standard output and standard error
  * +w+:: A writable IO that is the command's standard input
  * +pid+:: The process identifier for the command.
