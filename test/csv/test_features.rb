@@ -142,6 +142,29 @@ class TestCSV::Features < TestCSV
     assert_equal(3, count)
   end
 
+  def test_liberal_parsing
+    input = '"Johnson, Dwayne",Dwayne "The Rock" Johnson'
+    assert_raise(CSV::MalformedCSVError) do
+        CSV.parse_line(input)
+    end
+    assert_equal(["Johnson, Dwayne", 'Dwayne "The Rock" Johnson'],
+                 CSV.parse_line(input, liberal_parsing: true))
+
+    input = '"quoted" field'
+    assert_raise(CSV::MalformedCSVError) do
+        CSV.parse_line(input)
+    end
+    assert_equal(['"quoted" field'],
+                 CSV.parse_line(input, liberal_parsing: true))
+
+    assert_raise(CSV::MalformedCSVError) do
+      CSV.parse_line('is,this "three," or four,fields', liberal_parsing: true)
+    end
+
+    assert_equal(["is", 'this "three', ' or four"', "fields"],
+      CSV.parse_line('is,this "three, or four",fields', liberal_parsing: true))
+  end
+
   def test_csv_behavior_readers
     %w[ unconverted_fields return_headers write_headers
         skip_blanks        force_quotes ].each do |behavior|
