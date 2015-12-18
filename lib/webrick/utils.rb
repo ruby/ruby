@@ -152,6 +152,7 @@ module WEBrick
         TimeoutMutex.synchronize{
           @timeout_info = Hash.new
         }
+        @queue = Queue.new
         @watcher = Thread.start{
           to_interrupt = []
           while true
@@ -173,10 +174,14 @@ module WEBrick
             }
             to_interrupt.each {|arg| interrupt(*arg)}
             if !wakeup
-              sleep
+              @queue.pop
             elsif (wakeup -= now) > 0
-              sleep(wakeup)
+              begin
+                Timeout.timeout(wakeup) { @queue.pop }
+              rescue Timeout::Error
+              end
             end
+            @queue.clear
           end
         }
       end
@@ -200,10 +205,7 @@ module WEBrick
           @timeout_info[thread] ||= Array.new
           @timeout_info[thread] << (info = [time, exception])
         }
-        begin
-          @watcher.wakeup
-        rescue ThreadError
-        end
+        @queue.push nil
         return info.object_id
       end
 

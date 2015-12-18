@@ -1,3 +1,9 @@
+Fri Dec 18 21:26:54 2015  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* lib/webrick/utils.rb (WEBrick::Utils::TimeoutHandler): To prevent
+	  potential deadlocks, Queue is used to tell update of @timeout_info
+	  instead of sleep and wakeup. [Bug #11742] [ruby-dev:49387]
+
 Fri Dec 18 17:24:09 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (ibf_load_object_string): use fstring if frozen string.
