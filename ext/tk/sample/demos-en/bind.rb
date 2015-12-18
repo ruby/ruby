@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # bind.rb
 #
 # This demonstration script creates a text widget with bindings set

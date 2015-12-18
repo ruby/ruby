@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # fallback to console window size
 def IO.default_console_size
   [

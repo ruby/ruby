@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require "rexml/validation/validation"
 require "rexml/parsers/baseparser"
 

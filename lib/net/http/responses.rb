@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # :stopdoc:
 class Net::HTTPUnknownResponse < Net::HTTPResponse
   HAS_BODY = true

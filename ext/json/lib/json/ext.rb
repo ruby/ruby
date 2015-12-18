@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 if ENV['SIMPLECOV_COVERAGE'].to_i == 1
   require 'simplecov'
   SimpleCov.start do

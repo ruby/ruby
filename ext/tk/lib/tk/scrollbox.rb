@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #               tk/scrollbox.rb - Tk Listbox with Scrollbar
 #                                 as an example of Composite Widget

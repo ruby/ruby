@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require "delegate"
 
 # Weak Reference class that allows a referenced object to be

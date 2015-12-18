@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 class Gem::Request::HTTPSPool < Gem::Request::HTTPPool # :nodoc:
   private
 

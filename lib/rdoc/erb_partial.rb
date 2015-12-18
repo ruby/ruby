@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 ##
 # Allows an ERB template to be rendered in the context (binding) of an
 # existing ERB template evaluation.
@@ -11,7 +12,7 @@ class RDoc::ERBPartial < ERB
   def set_eoutvar compiler, eoutvar = '_erbout'
     super
 
-    compiler.pre_cmd = ["#{eoutvar} ||= ''"]
+    compiler.pre_cmd = ["#{eoutvar} ||= []"]
   end
 
 end

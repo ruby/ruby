@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'mkmf'
 
 AF_INET6_SOCKET_CREATION_TEST = <<EOF

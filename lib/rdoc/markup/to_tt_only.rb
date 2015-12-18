@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 ##
 # Extracts sections of text enclosed in plus, tt or code.  Used to discover
 # undocumented parameters.

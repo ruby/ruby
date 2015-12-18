@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #  BLT support
 #                               by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)

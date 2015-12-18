@@ -785,11 +785,6 @@ vm_caller_setup_arg_block(const rb_thread_t *th, rb_control_frame_t *reg_cfp,
 	    calling->blockptr->iseq = (rb_iseq_t *)proc;
 	    calling->blockptr->proc = proc;
 	}
-	else if (RUBY_VM_IFUNC_P(proc)) {
-	    calling->blockptr = RUBY_VM_GET_BLOCK_PTR_IN_CFP(reg_cfp);
-	    calling->blockptr->iseq = (rb_iseq_t *)proc;
-	    calling->blockptr->proc = proc;
-	}
 	else {
 	    if (!rb_obj_is_proc(proc)) {
 		VALUE b;

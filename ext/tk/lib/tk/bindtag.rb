@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # tk/bind.rb : control event binding
 #

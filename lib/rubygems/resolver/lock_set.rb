@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 ##
 # A set of gems from a gem dependencies lockfile.
 

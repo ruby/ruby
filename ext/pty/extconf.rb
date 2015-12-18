@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'mkmf'
 
 $INCFLAGS << " -I$(topdir) -I$(top_srcdir)"

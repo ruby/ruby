@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'rubygems'
 require 'rubygems/test_case'
 require 'rdoc/rubygems_hook'

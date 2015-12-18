@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #  basic demo  ---  called from demo.rb
 #

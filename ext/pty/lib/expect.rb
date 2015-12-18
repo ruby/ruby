@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 $expect_verbose = false
 
 # Expect library adds the IO instance method #expect, which does similar act to

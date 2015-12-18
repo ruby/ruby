@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #               tk/canvas.rb - Tk canvas classes
 #                       by Yukihiro Matsumoto <matz@caelum.co.jp>

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #  tkalignbox.rb : align widgets with same width/height
 #

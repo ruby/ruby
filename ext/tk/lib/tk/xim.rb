@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # tk/xim.rb : control imput_method
 #

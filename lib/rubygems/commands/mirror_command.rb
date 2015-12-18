@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'rubygems/command'
 
 unless defined? Gem::Commands::MirrorCommand

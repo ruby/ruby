@@ -1,4 +1,5 @@
 # -*- coding: us-ascii -*-
+# frozen_string_literal: false
 # = ERB -- Ruby Templating
 #
 # Author:: Masatoshi SEKI
@@ -506,8 +507,8 @@ class ERB
       require 'strscan'
       class SimpleScanner2 < Scanner # :nodoc:
         def scan
-          stag_reg = /(.*?)(<%%|<%=|<%#|<%|\z)/m
-          etag_reg = /(.*?)(%%>|%>|\z)/m
+          stag_reg = /(.*?)(<%[%=#]?|\z)/m
+          etag_reg = /(.*?)(%%?>|\z)/m
           scanner = StringScanner.new(@src)
           while ! scanner.eos?
             scanner.scan(@stag ? etag_reg : stag_reg)
@@ -589,7 +590,7 @@ class ERB
     end
 
     def add_insert_cmd(out, content)
-      out.push("#{@insert_cmd}((#{content}).to_s)")
+      out.push("#{@insert_cmd}((#{content}))")
     end
 
     # Compiles an ERB template into Ruby code.  Returns an array of the code
@@ -834,10 +835,10 @@ class ERB
   # requires the setup of an ERB _compiler_ object.
   #
   def set_eoutvar(compiler, eoutvar = '_erbout')
-    compiler.put_cmd = "#{eoutvar}.concat"
-    compiler.insert_cmd = "#{eoutvar}.concat"
-    compiler.pre_cmd = ["#{eoutvar} = ''"]
-    compiler.post_cmd = ["#{eoutvar}.force_encoding(__ENCODING__)"]
+    compiler.put_cmd = "#{eoutvar}.push"
+    compiler.insert_cmd = "#{eoutvar}.push"
+    compiler.pre_cmd = ["#{eoutvar} = []"]
+    compiler.post_cmd = ["#{eoutvar}.join.force_encoding(__ENCODING__)"]
   end
 
   # Generate results and print them. (see ERB#result)

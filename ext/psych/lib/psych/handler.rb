@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 module Psych
   ###
   # Psych::Handler is an abstract base class that defines the events used

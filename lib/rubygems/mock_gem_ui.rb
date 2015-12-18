@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'stringio'
 require 'rubygems/user_interaction'
 

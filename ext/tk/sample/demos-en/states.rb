@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # states.rb
 #
 # This demonstration script creates a listbox widget that displays

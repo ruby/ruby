@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 ##
 # Collection of methods for writing parsers against RDoc::RubyLex and
 # RDoc::RubyToken

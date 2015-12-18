@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 ##
 # This file contains stuff stolen outright from:
 #

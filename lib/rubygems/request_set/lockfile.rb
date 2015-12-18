@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 ##
 # Parses a gem.deps.rb.lock file and constructs a LockSet containing the
 # dependencies found inside.  If the lock file is missing no LockSet is

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #  ttk::dialog  (tile-0.7+)
 #                               by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)

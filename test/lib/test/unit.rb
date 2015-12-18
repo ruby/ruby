@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 begin
   gem 'minitest', '< 5.0.0' if defined? Gem
 rescue Gem::LoadError

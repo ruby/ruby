@@ -1,3 +1,197 @@
+Fri Dec 18 12:09:21 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_ungetbyte): pad with \000 when
+	  the current position is after the end.
+
+Fri Dec 18 11:24:48 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* vm_method.c (rb_method_entry_make, check_override_opt_method):
+	  should check whether a newly created method override a optimize
+	  method in case the method is defined in a prepended module of a
+	  built-in class.
+	  [ruby-core:72226] [Bug #11836]
+
+Fri Dec 11 06:39:30 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* vm.c (vm_exec): call RUBY_DTRACE_CMETHOD_RETURN_HOOK instead of
+	  RUBY_DTRACE_METHOD_RETURN_HOOK.
+
+Fri Dec 18 10:24:44 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/irb/ruby-lex.rb: fixed parse error for striped heredocument syntax.
+	  [fix GH-1127] Patch by @koic
+
+Fri Dec 18 09:44:47 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ext/pty/pty.c: fix double words typo.
+	  [ci skip][fix GH-1157] Patch by @jwworth
+
+Fri Dec 18 09:42:45 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ext/nkf/nkf-utf8/utf8tbl.c: fix a typo.
+	  [ci skip][fix GH-1159] Patch by @akshay-vishnoi
+	* ext/nkf/nkf-utf8/utf8tbl.h: ditto.
+
+Fri Dec 18 07:39:01 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* vm.c (rb_vm_check_redefinition_opt_method): should check the real
+	  class instead of the origin iclass.
+	  [ruby-core:72188] [Bug #11826]
+
+Thu Dec 17 22:13:10 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* vm_args.c (vm_caller_setup_arg_block): remove code for ifunc
+	  because it was made unnecessary by r52138.
+
+Thu Dec 17 16:13:10 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* proc.c (rb_block_arity): should not call GetProcPtr() for symbols.
+	  [ruby-core:72205] [Bug #11830]
+
+Thu Dec 17 14:16:29 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_scrub): the result should be infected by the
+	  original string.
+
+Thu Dec 17 13:35:27 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* transcode.c (rb_econv_substr_append, econv_primitive_convert):
+	  the result should be infected by the original string.
+
+Thu Dec 17 09:46:08 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* re.c (reg_names_iter): should consider encoding of regexp.
+	  [ruby-core:72185] [Bug #11825]
+
+Thu Dec 17 03:52:10 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (vm_make_env_each): should not compare with Qfalse and FALSE.
+	  Pointed at http://d.hatena.ne.jp/nagachika/20151216/ruby_trunk_changes_53128_53163
+
+Thu Dec 17 03:15:25 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c (vm_call_method_each_type): should not set fastpath
+	  with keyword arguments for VM_METHOD_TYPE_ATTRSET type methods.
+
+	  Normally, we can not use keyword arguments for this kind of methods,
+	  (obj.foo = 1), but we can set alias names for them.
+	  [Bug #11657]
+
+	* test/ruby/test_keyword.rb: add a test for this fix.
+
+Wed Dec 16 20:32:43 2015  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* ext/fiddle/handle.c: check tainted string arguments.
+	  Patch provided by tenderlove and nobu.
+
+	* test/fiddle/test_handle.rb (class TestHandle): add test for above.
+
+
+Wed Dec 16 19:30:56 2015  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* vm.c (vm_make_proc_from_block): should convert a Symbol to a Proc.
+	  [ruby-core:72083] [Bug #11811]
+
+Wed Dec 16 16:17:34 2015  Eric Wong  <e@80x24.org>
+
+	* test/ruby/test_io.rb: fix spelling errors
+
+Wed Dec 16 16:04:49 2015  Eric Wong  <e@80x24.org>
+
+	* NEWS: note IO#advise change [ruby-core:72168]
+
+Wed Dec 16 15:35:13 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c: fix mark miss for proc given as passed block.
+	  [Bug #11750]
+
+	* vm.c (vm_make_proc_from_block): should return a Proc object
+	  if block is given. Previous implementation returns
+	  a Proc object only when corresponding Proc object is not
+	  available.
+
+	* vm.c (vm_make_env_each): ditto.
+
+	* test/ruby/test_proc.rb: add a test for this bug.
+
+Wed Dec 16 12:24:59 2015  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* test_struct.rb: Test that initialize is overridable [#11708]
+
+Wed Dec 16 10:49:51 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (block_command, block_call): fix `&.` calls after
+	  block_call.  [Feature #11537]
+
+Wed Dec 16 00:53:45 2015  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* lib/webrick/utils.rb (WEBrick::Utils::TimeoutHandler): Acquire
+	  TimeoutMutex only when accessing @timeout_info for avoiding
+	  potential deadlock. [Bug #11742] [ruby-dev:49387]
+
+Wed Dec 16 00:39:27 2015  Jake Worth  <jakeworth82@gmail.com>
+
+	* doc/extension.rdoc: [DOC] fix double-word typo.  [Fix GH-1153]
+
+Wed Dec 16 00:25:41 2015  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* lib/webrick/utils.rb (WEBrick::Utils::TimeoutHandler#initialize):
+	  TimeoutMutex should be acquired when accessing @timeout_info.
+	  To avoid deadlock, interrupt() calls are delayed.
+	  Due to the mutex, it is safe to treat ary without ary.dup.
+	  [Bug #11742] [ruby-dev:49387]
+
+Tue Dec 15 23:13:10 2015  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* gc.c: Delete excess semicolon after RUBY_ALIAS_FUNCTION().
+	  Suppress "syntax error:  empty declaration" warnings by
+	  Oracle Solaris Studio 12.x on Solaris. [Bug #11821]
+
+	* hash.c: ditto, after NOINSERT_UPDATE_CALLBACK().
+
+Tue Dec 15 18:04:04 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* NEWS: added news about EBCDIC encoding
+
+Tue Dec 15 17:57:57 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/ebcdic.h, enc/trans/ebcdic.trans,
+	  test/ruby/test_transcode.rb: Fixed encoding name
+	  to the correct one in the IANA registry (IBM037)
+	  and added an alias (ebcdic-cp-us)
+
+Tue Dec 15 16:19:26 2015  Takashi Kokubun  <takashikkbn@gmail.com>
+
+	* lib/erb.rb: Render erb with array buffer for function call optimization.
+	  [fix GH-1143]
+	* lib/rdoc/erb_partial.rb: ditto.
+	* template/verconf.h.tmpl: ditto.
+
+Tue Dec 15 13:50:05 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_oct): [DOC] mention radix indicators.
+	  [ruby-core:71310] [Bug #11648]
+
+Tue Dec 15 12:20:30 2015  Takashi Kokubun  <takashikkbn@gmail.com>
+
+	* lib/erb.rb: Simplify regexp to optimize erb scanner.
+	  [fix GH-1144]
+
+Tue Dec 15 11:56:24 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/uri/common.rb: make code block for rdoc.
+	  [ci skip][fix GH-1152] Patch by @Tonkpils
+
+Tue Dec 15 11:55:08 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ext/zlib/zlib.c: fix a typo.
+	  [ci skip][fix GH-1149] Patch by @crismali
+
+Tue Dec 15 09:14:14 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* tool/transcode_tablegen.rb: detailed documentation
+	  for transcode_tblgen function [ci skip]
+
 Mon Dec 14 22:11:11 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/ebcdic.h: new dummy encoding EBCDIC-US

@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: false
 
 if ARGV[0] != '-d'
   unless $DEBUG

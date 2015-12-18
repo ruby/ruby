@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: false
 #
 # This script implements the "hv" application.  Type "hv FILE" to
 # view FILE as HTML.

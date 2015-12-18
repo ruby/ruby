@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: false
 #
 #   countdown timer
 #     usage: cd_timer min [, min ... ]

@@ -64,9 +64,6 @@ cmp_eq_recursive(VALUE arg1, VALUE arg2, int recursive)
  *  Compares two objects based on the receiver's <code><=></code>
  *  method, returning true if it returns 0. Also returns true if
  *  _obj_ and _other_ are the same object.
- *
- *  Even if _obj_ <=> _other_ raised an exception, the exception
- *  is ignored and returns false.
  */
 
 static VALUE

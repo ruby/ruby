@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 ##
 # The local source finds gems in the current directory for fulfilling
 # dependencies.

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # cgi.rb - cgi support library
 #

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #  Tile theme engin (tile widget set) support
 #                               by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'rubygems/test_case'
 
 class TestGemResolverRequirementList < Gem::TestCase

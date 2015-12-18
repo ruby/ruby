@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 $LOAD_PATH.unshift "#{File.dirname(__FILE__)}/../.."
 require 'test/unit'
 
@@ -138,7 +139,7 @@ module Test
         rescue Errno::EPIPE
         rescue Exception => e
           begin
-            trace = e.backtrace
+            trace = e.backtrace || ['unknown method']
             err = ["#{trace.shift}: #{e.message} (#{e.class})"] + trace.map{|t| t.prepend("\t") }
 
             _report "bye", Marshal.dump(err.join("\n"))

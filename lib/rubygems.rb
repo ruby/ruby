@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # -*- ruby -*-
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.

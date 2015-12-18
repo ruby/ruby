@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # floor.rb
 #
 # This demonstration script creates a canvas widet that displays the

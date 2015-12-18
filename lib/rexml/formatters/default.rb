@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 module REXML
   module Formatters
     class Default

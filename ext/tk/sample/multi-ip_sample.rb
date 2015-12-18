@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: false
 # This script is a sample of MultiTkIp class
 
 require "multi-tk"

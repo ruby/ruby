@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestSymbol < Test::Unit::TestCase
@@ -154,6 +155,13 @@ class TestSymbol < Test::Unit::TestCase
     # symbol which does not have a Proc
     ->(&blk) {}.call(&:test_to_proc_call_with_symbol_proc)
     assert_equal(1, first, bug11594)
+  end
+
+  def test_to_proc_for_hash_each
+    bug11830 = '[ruby-core:72205] [Bug #11830]'
+    assert_normal_exit(<<-'end;', bug11830) # do
+      {}.each(&:destroy)
+    end;
   end
 
   def test_call

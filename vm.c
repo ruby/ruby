@@ -559,16 +559,21 @@ check_env_value(VALUE envval)
     return Qnil;		/* unreachable */
 }
 
-/* return Qfalse if proc was already created */
-static VALUE
-vm_make_proc_from_block(rb_thread_t *th, rb_block_t *block)
+/* return FALSE if proc was already created */
+static int
+vm_make_proc_from_block(rb_thread_t *th, rb_block_t *block, VALUE *procptr)
 {
     if (!block->proc) {
-	block->proc = rb_vm_make_proc(th, block, rb_cProc);
-	return block->proc;
+	*procptr = block->proc = rb_vm_make_proc(th, block, rb_cProc);
+	return TRUE;
+    }
+    else if (SYMBOL_P(block->proc)) {
+	*procptr = rb_sym_to_proc(block->proc);
+	return TRUE;
     }
     else {
-	return Qfalse;
+	*procptr = block->proc;
+	return FALSE;
     }
 }
 
@@ -603,7 +608,7 @@ vm_make_env_each(rb_thread_t *const th, rb_control_frame_t *const cfp)
     else {
 	rb_block_t *block = VM_EP_BLOCK_PTR(ep);
 
-	if (block && (blockprocval = vm_make_proc_from_block(th, block)) != Qfalse) {
+	if (block && vm_make_proc_from_block(th, block, &blockprocval)) {
 	    rb_proc_t *p;
 	    GetProcPtr(blockprocval, p);
 	    *ep = VM_ENVVAL_BLOCK_PTR(&p->block);
@@ -1395,6 +1400,9 @@ static void
 rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VALUE klass)
 {
     st_data_t bop;
+    if (RB_TYPE_P(klass, T_ICLASS) && FL_TEST(klass, RICLASS_IS_ORIGIN)) {
+       klass = RBASIC_CLASS(klass);
+    }
     if (me->def->type == VM_METHOD_TYPE_CFUNC) {
 	if (st_lookup(vm_opt_method_table, (st_data_t)me, &bop)) {
 	    int flag = vm_redefinition_check_flag(klass);
@@ -1662,7 +1670,7 @@ vm_exec(rb_thread_t *th)
 		EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, th->cfp->self,
 				rb_vm_frame_method_entry(th->cfp)->called_id,
 				rb_vm_frame_method_entry(th->cfp)->owner, Qnil);
-		RUBY_DTRACE_METHOD_RETURN_HOOK(th,
+		RUBY_DTRACE_CMETHOD_RETURN_HOOK(th,
 					       rb_vm_frame_method_entry(th->cfp)->owner,
 					       rb_vm_frame_method_entry(th->cfp)->called_id);
 	    }

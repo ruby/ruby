@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 ## image1.rb
 #
 # This demonstration script displays two image widgets.

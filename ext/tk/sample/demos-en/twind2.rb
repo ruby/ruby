@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # text (embedded windows) widget demo 2 (called by 'widget')
 #

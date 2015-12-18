@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # utils.rb -- Miscellaneous utilities
 #
@@ -135,39 +136,42 @@ module WEBrick
       # +time+:: Timeout in seconds
       # +exception+:: Exception to raise when timeout elapsed
       def TimeoutHandler.register(seconds, exception)
-        TimeoutMutex.synchronize{
-          instance.register(Thread.current, Time.now + seconds, exception)
-        }
+        instance.register(Thread.current, Time.now + seconds, exception)
       end
 
       ##
       # Cancels the timeout handler +id+
       def TimeoutHandler.cancel(id)
-        TimeoutMutex.synchronize{
-          instance.cancel(Thread.current, id)
-        }
+        instance.cancel(Thread.current, id)
       end
 
       ##
       # Creates a new TimeoutHandler.  You should use ::register and ::cancel
       # instead of creating the timeout handler directly.
       def initialize
-        @timeout_info = Hash.new
+        TimeoutMutex.synchronize{
+          @timeout_info = Hash.new
+        }
         @watcher = Thread.start{
+          to_interrupt = []
           while true
             now = Time.now
             wakeup = nil
-            @timeout_info.each {|thread, ary|
-              next unless ary
-              ary.dup.each{|info|
-                time, exception = *info
-                if time < now
-                  interrupt(thread, info.object_id, exception)
-                elsif !wakeup || time < wakeup
-                  wakeup = time
-                end
+            to_interrupt.clear
+            TimeoutMutex.synchronize{
+              @timeout_info.each {|thread, ary|
+                next unless ary
+                ary.each{|info|
+                  time, exception = *info
+                  if time < now
+                    to_interrupt.push [thread, info.object_id, exception]
+                  elsif !wakeup || time < wakeup
+                    wakeup = time
+                  end
+                }
               }
             }
+            to_interrupt.each {|arg| interrupt(*arg)}
             if !wakeup
               sleep
             elsif (wakeup -= now) > 0
@@ -180,11 +184,9 @@ module WEBrick
       ##
       # Interrupts the timeout handler +id+ and raises +exception+
       def interrupt(thread, id, exception)
-        TimeoutMutex.synchronize{
-          if cancel(thread, id) && thread.alive?
-            thread.raise(exception, "execution timeout")
-          end
-        }
+        if cancel(thread, id) && thread.alive?
+          thread.raise(exception, "execution timeout")
+        end
       end
 
       ##
@@ -193,8 +195,11 @@ module WEBrick
       # +time+:: Timeout in seconds
       # +exception+:: Exception to raise when timeout elapsed
       def register(thread, time, exception)
-        @timeout_info[thread] ||= Array.new
-        @timeout_info[thread] << (info = [time, exception])
+        info = nil
+        TimeoutMutex.synchronize{
+          @timeout_info[thread] ||= Array.new
+          @timeout_info[thread] << (info = [time, exception])
+        }
         begin
           @watcher.wakeup
         rescue ThreadError
@@ -205,14 +210,16 @@ module WEBrick
       ##
       # Cancels the timeout handler +id+
       def cancel(thread, id)
-        if ary = @timeout_info[thread]
-          ary.delete_if{|info| info.object_id == id }
-          if ary.empty?
-            @timeout_info.delete(thread)
+        TimeoutMutex.synchronize{
+          if ary = @timeout_info[thread]
+            ary.delete_if{|info| info.object_id == id }
+            if ary.empty?
+              @timeout_info.delete(thread)
+            end
+            return true
           end
-          return true
-        end
-        return false
+          return false
+        }
       end
     end
 

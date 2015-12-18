@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# frozen_string_literal: false
 #
 # Ruby/Tk Goldverg demo (called by 'widget')
 #

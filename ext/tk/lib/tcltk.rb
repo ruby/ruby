@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # tof
 
 #### tcltk library, more direct manipulation of tcl/tk

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #--
 # benchmark.rb - a performance benchmarking library
 #

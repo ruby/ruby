@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'win32/importer'
 
 module Win32

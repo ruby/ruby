@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 ##
 # A Paragraph of text
 

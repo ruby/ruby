@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #  tnotebook widget
 #                               by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# frozen_string_literal: false
 #
 # widget demo prompts the user to select a file (called by 'widget')
 #

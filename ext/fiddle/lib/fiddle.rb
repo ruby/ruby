@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'fiddle.so'
 require 'fiddle/function'
 require 'fiddle/closure'

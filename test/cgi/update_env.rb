@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 module UpdateEnv
   def update_env(environ)
     environ.each do |key, val|

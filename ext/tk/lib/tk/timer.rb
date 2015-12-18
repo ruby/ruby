@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #   tk/timer.rb : methods for Tcl/Tk after command
 #

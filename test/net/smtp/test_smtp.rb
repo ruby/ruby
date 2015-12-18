@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'net/smtp'
 require 'stringio'
 require 'test/unit'

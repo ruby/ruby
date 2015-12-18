@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #  tlabelframe widget
 #                               by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)

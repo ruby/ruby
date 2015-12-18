@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # filehandler.rb -- FileHandler Module
 #

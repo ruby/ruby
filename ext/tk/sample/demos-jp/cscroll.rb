@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# frozen_string_literal: false
 #
 # simple scrollable canvas widget demo (called by 'widget')
 #

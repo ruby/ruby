@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # Please only run this test on machines reasonable for testing.
 # If in doubt, ask your admin.
 

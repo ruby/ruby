@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'digest'
 require_relative '../lib/with_different_ofs.rb'

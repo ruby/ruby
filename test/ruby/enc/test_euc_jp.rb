@@ -1,4 +1,5 @@
 # vim: set fileencoding=euc-jp
+# frozen_string_literal: false
 
 require "test/unit"
 

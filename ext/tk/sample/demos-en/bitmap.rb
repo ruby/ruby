@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # bitmap.rb
 #
 # This demonstration script creates a toplevel window that displays

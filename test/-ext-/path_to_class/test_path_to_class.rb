@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class Test_PathToClass < Test::Unit::TestCase

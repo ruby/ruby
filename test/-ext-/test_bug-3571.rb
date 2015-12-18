@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class Test_BUG_3571 < Test::Unit::TestCase

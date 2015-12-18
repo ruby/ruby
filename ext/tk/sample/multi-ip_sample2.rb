@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'multi-tk.rb'
 
 th = Thread.new{Tk.mainloop}

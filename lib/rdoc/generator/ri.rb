@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 ##
 # Generates ri data files
 

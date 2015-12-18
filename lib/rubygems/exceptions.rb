@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # TODO: the documentation in here is terrible.
 #
 # Each exception needs a brief description and the scenarios where it is

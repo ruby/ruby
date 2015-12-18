@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 $stipples = {} unless $stipples
 
 $stipples['bdiagonal1'] = Tk::BLT::Bitmap.new(<<EOD)

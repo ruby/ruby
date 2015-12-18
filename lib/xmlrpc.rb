@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # == Author and Copyright
 #
 # Copyright (C) 2001-2004 by Michael Neumann (mailto:mneumann@ntecs.de)

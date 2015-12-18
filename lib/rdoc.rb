@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 $DEBUG_RDOC = nil
 
 # :main: README.rdoc

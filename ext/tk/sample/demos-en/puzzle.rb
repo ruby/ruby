@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # puzzle.rb
 #
 # This demonstration script creates a 15-puzzle game using a collection

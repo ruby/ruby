@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'psych/nodes/node'
 require 'psych/nodes/stream'
 require 'psych/nodes/document'

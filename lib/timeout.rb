@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # Timeout long-running blocks
 #
 # == Synopsis

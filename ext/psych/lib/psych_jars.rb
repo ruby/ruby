@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'psych/versions'
 require 'psych.jar'
 

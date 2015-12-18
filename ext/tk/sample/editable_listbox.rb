@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # Tk::RbWidget::Editable_Listbox class
 #

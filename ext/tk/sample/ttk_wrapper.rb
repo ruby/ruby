@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: false
 #
 #  ttk_wrapper.rb  --  use Ttk widgets as default on old Ruby/Tk scripts
 #

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 =begin
  external service manager
         Copyright (c) 2000 Masatoshi SEKI
