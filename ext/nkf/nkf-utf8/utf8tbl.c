@@ -1,5 +1,5 @@
 /*
- * utf8tbl.c - Convertion Table for nkf
+ * utf8tbl.c - Conversion Table for nkf
  *
  */
 
