@@ -7650,7 +7650,7 @@ ibf_load_object_string(const struct ibf_load *load, const struct ibf_object_head
     rb_enc_associate_index(str, encindex);
 
     if (header->internal) rb_obj_hide(str);
-    if (header->frozen)   rb_obj_freeze(str);
+    if (header->frozen)   str = rb_fstring(str);
 
     return str;
 }
