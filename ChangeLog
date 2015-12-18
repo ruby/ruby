@@ -32,7 +32,7 @@ Fri Dec 18 12:09:21 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Fri Dec 18 11:24:48 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* vm_method.c (rb_method_entry_make, check_override_opt_method):
-	  should check whether a newly created method override a optimize
+	  should check whether a newly created method overrides an optimize
 	  method in case the method is defined in a prepended module of a
 	  built-in class.
 	  [ruby-core:72226] [Bug #11836]
