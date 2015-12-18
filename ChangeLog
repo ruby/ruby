@@ -1,3 +1,8 @@
+Fri Dec 18 10:24:44 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/irb/ruby-lex.rb: fixed parse error for striped heredocument syntax.
+	  [fix GH-1127] Patch by @koic
+
 Fri Dec 18 09:44:47 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* ext/pty/pty.c: fix double words typo.
