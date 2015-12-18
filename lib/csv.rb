@@ -1855,7 +1855,7 @@ class CSV
             csv.last << @col_sep
           end
         elsif part[0] == @quote_char
-          # If we are staring a new quoted column
+          # If we are starting a new quoted column
           if part[-1] != @quote_char || part.count(@quote_char) % 2 != 0
             # start an extended column
             csv             << part[1..-1]
