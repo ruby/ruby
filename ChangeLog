@@ -3,8 +3,8 @@ Fri Dec 18 16:54:38 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* ext/stringio/stringio.c (strio_set_encoding): add StringIO's own
 	  encoding and separate it from the buffer string to override the
 	  encoding of string when reading.  [ruby-core:72189] [Bug #11827]
-	  note that setting the encoding of its buffer string may cause
-	  unpredictable behavior.
+	  note that setting the encoding of its buffer string directly
+	  without StringIO#set_encoding may cause unpredictable behavior.
 
 Fri Dec 18 16:50:35 2015  Koichi Sasada  <ko1@atdot.net>
 
