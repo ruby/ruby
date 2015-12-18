@@ -94,7 +94,7 @@ nesting:
   end
 
 However, if you use <code>::</code> to define <code>A::B</code> without
-nesting it inside +A+ a NameError exception will be raised because the nesting
+nesting it inside +A+, a NameError exception will be raised because the nesting
 does not include +A+:
 
   module A
@@ -129,7 +129,7 @@ method on a module is often called a "class method" instead of a "module
 method".  See also Module#module_function which can convert an instance method
 into a class method.)
 
-When a class method references a constant it uses the same rules as referencing
+When a class method references a constant, it uses the same rules as referencing
 it outside the method as the scope is the same.
 
 Instance methods defined in a module are only callable when included.  These
@@ -342,4 +342,3 @@ is equivalent to this code block:
   end
 
 Both objects will have a +my_method+ that returns +2+.
-
