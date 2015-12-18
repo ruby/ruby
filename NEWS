@@ -242,7 +242,8 @@ with all sufficient information, see the ChangeLog file.
 * StringIO
   * In read-only mode, StringIO#set_encoding no longer sets the encoding
     of its buffer string.  Setting the encoding of the string directly
-    may cause unpredictable behavior.  [Bug #11827]
+    without StringIO#set_encoding may cause unpredictable behavior now.
+    [Bug #11827]
 
 * timeout
   * Object#timeout is now warned as deprecated when called.
