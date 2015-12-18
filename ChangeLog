@@ -1,3 +1,9 @@
+Fri Dec 18 09:42:45 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ext/nkf/nkf-utf8/utf8tbl.c: fix a typo.
+	  [ci skip][fix GH-1159] Patch by @akshay-vishnoi
+	* ext/nkf/nkf-utf8/utf8tbl.h: ditto.
+
 Fri Dec 18 07:39:01 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* vm.c (rb_vm_check_redefinition_opt_method): should check the real

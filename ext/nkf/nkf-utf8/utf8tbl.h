@@ -1,5 +1,5 @@
 /*
- * utf8tbl.h - Header file for Convertion Table
+ * utf8tbl.h - Header file for Conversion Table
  *
  */
 
