@@ -36,6 +36,7 @@ module TestNetHTTPUtils
     if @server
       @server.shutdown
       @server_thread.join
+      WEBrick::Utils::TimeoutHandler.terminate
     end
     @log_tester.call(@log) if @log_tester
     # resume global state

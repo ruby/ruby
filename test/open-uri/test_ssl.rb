@@ -52,6 +52,8 @@ class TestOpenURISSL
       }
       assert_join_threads(threads)
     }
+  ensure
+    WEBrick::Utils::TimeoutHandler.terminate
   end
 
   def setup

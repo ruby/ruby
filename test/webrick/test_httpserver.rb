@@ -12,6 +12,11 @@ class TestWEBrickHTTPServer < Test::Unit::TestCase
   end
   NoLog = WEBrick::Log.new(empty_log, WEBrick::BasicLog::WARN)
 
+  def teardown
+    WEBrick::Utils::TimeoutHandler.terminate
+    super
+  end
+
   def test_mount
     httpd = WEBrick::HTTPServer.new(
       :Logger => NoLog,

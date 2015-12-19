@@ -43,6 +43,8 @@ class TestOpenURI < Test::Unit::TestCase
       }
       assert_join_threads([client_thread, server_thread2])
     }
+  ensure
+    WEBrick::Utils::TimeoutHandler.terminate
   end
 
   def with_env(h)

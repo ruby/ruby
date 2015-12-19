@@ -124,8 +124,6 @@ module WEBrick
     class TimeoutHandler
       include Singleton
 
-      class Thread < ::Thread; end
-
       ##
       # Mutex used to synchronize access across threads
       TimeoutMutex = Mutex.new # :nodoc:
@@ -145,6 +143,10 @@ module WEBrick
         instance.cancel(Thread.current, id)
       end
 
+      def self.terminate
+        instance.terminate
+      end
+
       ##
       # Creates a new TimeoutHandler.  You should use ::register and ::cancel
       # instead of creating the timeout handler directly.
@@ -153,7 +155,12 @@ module WEBrick
           @timeout_info = Hash.new
         }
         @queue = Queue.new
-        @watcher = Thread.start{
+        @watcher = nil
+      end
+
+      # :nodoc:
+      private \
+        def watch
           to_interrupt = []
           while true
             now = Time.now
@@ -184,8 +191,17 @@ module WEBrick
             end
             @queue.clear
           end
-        }
-      end
+        end
+
+      # :nodoc:
+      private \
+        def watcher
+          (w = @watcher)&.alive? and return w # usual case
+          TimeoutMutex.synchronize{
+            (w = @watcher)&.alive? and next w # pathological check
+            @watcher = Thread.start(&method(:watch))
+          }
+        end
 
       ##
       # Interrupts the timeout handler +id+ and raises +exception+
@@ -203,10 +219,10 @@ module WEBrick
       def register(thread, time, exception)
         info = nil
         TimeoutMutex.synchronize{
-          @timeout_info[thread] ||= Array.new
-          @timeout_info[thread] << (info = [time, exception])
+          (@timeout_info[thread] ||= []) << (info = [time, exception])
         }
         @queue.push nil
+        watcher
         return info.object_id
       end
 
@@ -222,6 +238,14 @@ module WEBrick
             return true
           end
           return false
+        }
+      end
+
+      ##
+      def terminate
+        TimeoutMutex.synchronize{
+          @timeout_info.clear
+          @watcher&.kill&.join
         }
       end
     end

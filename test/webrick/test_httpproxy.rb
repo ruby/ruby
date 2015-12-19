@@ -13,6 +13,11 @@ end
 require File.expand_path("utils.rb", File.dirname(__FILE__))
 
 class TestWEBrickHTTPProxy < Test::Unit::TestCase
+  def teardown
+    WEBrick::Utils::TimeoutHandler.terminate
+    super
+  end
+
   def test_fake_proxy
     assert_nil(WEBrick::FakeProxyURI.scheme)
     assert_nil(WEBrick::FakeProxyURI.host)
