@@ -1,3 +1,8 @@
+Sat Dec 19 20:06:10 2015  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* enc/windows_1250.c: Should not use C++ style comments (C99 feature).
+	  [Bug #11843]
+
 Sat Dec 19 17:17:04 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/webrick/utils.rb (WEBrick::Utils::TimeoutHandler#initialize):
