@@ -1,3 +1,8 @@
+Sat Dec 19 10:33:33 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/iso_8859_2.c, enc/windows_1250.c: separate Windows-1250
+	  from ISO-8859-2 to fix 0x80..0x9e range (from Kimihito Matsui)
+
 Fri Dec 18 21:26:54 2015  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* lib/webrick/utils.rb (WEBrick::Utils::TimeoutHandler): To prevent
