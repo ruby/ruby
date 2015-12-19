@@ -975,7 +975,6 @@ rb_proc_get_iseq(VALUE self, int *is_proc)
     const rb_proc_t *proc;
     const rb_iseq_t *iseq;
 
-  again:
     GetProcPtr(self, proc);
     iseq = proc->block.iseq;
     if (is_proc) *is_proc = !proc->is_lambda;
@@ -990,8 +989,7 @@ rb_proc_get_iseq(VALUE self, int *is_proc)
 	return iseq;
     }
     else if (SYMBOL_P(iseq)) {
-	self = rb_sym_to_proc((VALUE)iseq);
-	goto again;
+	return NULL;
     }
     else {
 	return rb_iseq_check(iseq);
