@@ -1,3 +1,8 @@
+Sat Dec 19 14:28:01 2015  Jake Worth  <jakeworth82@gmail.com>
+
+	* ext/zlib/zlib.c (Init_zlib): [DOC] Fix double-word typo and
+	  grammatical error.  [Fix GH-1162]
+
 Sat Dec 19 14:23:59 2015  Jake Worth  <jakeworth82@gmail.com>
 
 	* lib/csv.rb (CSV#initialize): [DOC] Fix double-word typo.
