@@ -4360,7 +4360,7 @@ Init_zlib(void)
      * pre-compressed data to a deflate stream.
      */
     rb_define_const(mZlib, "NO_COMPRESSION", INT2FIX(Z_NO_COMPRESSION));
-    /* Fastest compression level, but with with lowest space savings. */
+    /* Fastest compression level, but with the lowest space savings. */
     rb_define_const(mZlib, "BEST_SPEED", INT2FIX(Z_BEST_SPEED));
     /* Slowest compression level, but with the best space savings. */
     rb_define_const(mZlib, "BEST_COMPRESSION", INT2FIX(Z_BEST_COMPRESSION));
