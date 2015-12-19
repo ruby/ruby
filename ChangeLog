@@ -1,3 +1,8 @@
+Sat Dec 19 14:23:59 2015  Jake Worth  <jakeworth82@gmail.com>
+
+	* lib/csv.rb (CSV#initialize): [DOC] Fix double-word typo.
+	  [Fix GH-1161]
+
 Sat Dec 19 10:33:33 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/iso_8859_2.c, enc/windows_1250.c: separate Windows-1250
