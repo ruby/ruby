@@ -177,8 +177,9 @@ module WEBrick
               @queue.pop
             elsif (wakeup -= now) > 0
               begin
-                Timeout.timeout(wakeup) { @queue.pop }
-              rescue Timeout::Error
+                (th = Thread.start {@queue.pop}).join(wakeup)
+              ensure
+                th&.kill&.join
               end
             end
             @queue.clear
