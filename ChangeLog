@@ -1,3 +1,14 @@
+Sat Dec 19 17:17:04 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/webrick/utils.rb (WEBrick::Utils::TimeoutHandler#initialize):
+	  use WEBrick::Utils::TimeoutHandler::Thread, which is ignored by
+	  LeakChecker#find_threads, instead of ::Thread to get rid of
+	  thread leak checker.  since this TimeoutHandler is resident
+	  during tests because of Singleton, it waits for the next timeout
+	  if it has any schedules.  in the case of nested timeouts, inner
+	  timeout does not cancel outer timeouts and then those schedules
+	  still remain.
+
 Sat Dec 19 14:28:01 2015  Jake Worth  <jakeworth82@gmail.com>
 
 	* ext/zlib/zlib.c (Init_zlib): [DOC] Fix double-word typo and
