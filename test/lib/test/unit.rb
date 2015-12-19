@@ -565,7 +565,7 @@ module Test
         when :always
           color = true
         when :auto, nil
-          color = @options[:job_status] == :replace && /dumb/ !~ ENV["TERM"]
+          color = (@tty || @options[:job_status] == :replace) && /dumb/ !~ ENV["TERM"]
         else
           color = false
         end
