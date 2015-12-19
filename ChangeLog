@@ -1,3 +1,13 @@
+Sun Dec 20 00:29:00 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (rb_proc_get_iseq): proc made from symbol does not have
+	  iseq.  fix infinite loop.  [ruby-core:72381] [Bug #11845]
+
+Sun Dec 20 00:28:51 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (rb_proc_get_iseq): proc made from symbol does not have
+	  iseq.  fix infinite loop.  [ruby-core:72381] [Bug #11845]
+
 Sat Dec 19 20:06:10 2015  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* enc/windows_1250.c: Should not use C++ style comments (C99 feature).
