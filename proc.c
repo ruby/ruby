@@ -969,8 +969,6 @@ rb_block_arity(void)
     return max != UNLIMITED_ARGUMENTS ? min : -min-1;
 }
 
-#define get_proc_iseq rb_proc_get_iseq
-
 const rb_iseq_t *
 rb_proc_get_iseq(VALUE self, int *is_proc)
 {
@@ -1028,7 +1026,7 @@ iseq_location(const rb_iseq_t *iseq)
 VALUE
 rb_proc_location(VALUE self)
 {
-    return iseq_location(get_proc_iseq(self, 0));
+    return iseq_location(rb_get_proc_iseq(self, 0));
 }
 
 static VALUE
@@ -1064,7 +1062,7 @@ static VALUE
 rb_proc_parameters(VALUE self)
 {
     int is_proc;
-    const rb_iseq_t *iseq = get_proc_iseq(self, &is_proc);
+    const rb_iseq_t *iseq = rb_get_proc_iseq(self, &is_proc);
     if (!iseq) {
 	return unnamed_parameters(rb_proc_arity(self));
     }
@@ -2294,7 +2292,7 @@ method_def_iseq(const rb_method_definition_t *def)
       case VM_METHOD_TYPE_ISEQ:
 	return rb_iseq_check(def->body.iseq.iseqptr);
       case VM_METHOD_TYPE_BMETHOD:
-	return get_proc_iseq(def->body.proc, 0);
+	return rb_get_proc_iseq(def->body.proc, 0);
       case VM_METHOD_TYPE_ALIAS:
 	return method_def_iseq(def->body.alias.original_me->def);
       case VM_METHOD_TYPE_CFUNC:
