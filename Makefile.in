@@ -468,22 +468,26 @@ after-update:: update-config_files common-srcs
 update-mspec:
 	@$(CHDIR) $(srcdir); \
 	if [ -d spec/mspec ]; then \
-	  cd spec/mspec; \
 	  echo updating mspec ...; \
+	  $(Q:@=:) set -x; \
+	  cd spec/mspec && \
 	  exec git pull; \
 	else \
 	  echo retrieving mspec ...; \
+	  $(Q:@=:) set -x; \
 	  exec git clone $(MSPEC_GIT_URL) spec/mspec; \
 	fi
 
 update-rubyspec: update-mspec
 	@$(CHDIR) $(srcdir); \
 	if [ -d spec/rubyspec ]; then \
-	  cd spec/rubyspec; \
 	  echo updating rubyspec ...; \
+	  $(Q:@=:) set -x; \
+	  cd spec/rubyspec && \
 	  exec git pull; \
 	else \
 	  echo retrieving rubyspec ...; \
+	  $(Q:@=:) set -x; \
 	  exec git clone $(RUBYSPEC_GIT_URL) spec/rubyspec; \
 	fi
 
@@ -493,22 +497,25 @@ test-rubyspec-precheck:
 update-doclie:
 	@$(CHDIR) $(srcdir); \
 	if [ -d coverage/doclie ]; then \
-	  cd coverage/doclie; \
 	  echo updating doclie ...; \
-	  exec git fetch; \
-		exec git checkout $(DOCLIE_GIT_REF); \
+	  $(Q:@=:) set -x; \
+	  cd coverage/doclie && \
+	  exec git fetch && \
+	  exec git checkout $(DOCLIE_GIT_REF); \
 	else \
 	  echo retrieving doclie ...; \
+	  $(Q:@=:) set -x; \
 	  exec git clone --branch $(DOCLIE_GIT_REF) $(DOCLIE_GIT_URL) coverage/doclie; \
 	fi
 
 update-simplecov-html:
 	@$(CHDIR) $(srcdir); \
 	if [ -d coverage/simplecov-html ]; then \
-	  cd coverage/simplecov-html; \
 	  echo updating simplecov-html ...; \
-	  exec git fetch; \
-		exec git checkout $(SIMPLECOV_HTML_GIT_REF); \
+	  $(Q:@=:) set -x; \
+	  cd coverage/simplecov-html && \
+	  exec git fetch && \
+	  exec git checkout $(SIMPLECOV_HTML_GIT_REF); \
 	else \
 	  echo retrieving simplecov-html ...; \
 	  exec git clone --branch $(SIMPLECOV_HTML_GIT_REF) $(SIMPLECOV_HTML_GIT_URL) coverage/simplecov-html; \
@@ -517,12 +524,14 @@ update-simplecov-html:
 update-simplecov:
 	@$(CHDIR) $(srcdir); \
 	if [ -d coverage/simplecov ]; then \
-	  cd coverage/simplecov; \
 	  echo updating simplecov ...; \
-	  exec git fetch; \
-		exec git checkout $(SIMPLECOV_GIT_REF); \
+	  $(Q:@=:) set -x; \
+	  cd coverage/simplecov && \
+	  exec git fetch && \
+	  exec git checkout $(SIMPLECOV_GIT_REF); \
 	else \
 	  echo retrieving simplecov ...; \
+	  $(Q:@=:) set -x; \
 	  exec git clone --branch $(SIMPLECOV_GIT_REF) $(SIMPLECOV_GIT_URL) coverage/simplecov; \
 	fi
 
