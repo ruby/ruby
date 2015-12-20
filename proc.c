@@ -645,10 +645,9 @@ proc_new(VALUE klass, int8_t is_lambda)
 
     if (procval) {
 	if (SYMBOL_P(procval)) {
-	    if (klass != rb_cProc) return sym_proc_new(klass, procval);
-	    return rb_sym_to_proc(procval);
+	    return (klass != rb_cProc) ? sym_proc_new(klass, procval) : rb_sym_to_proc(procval);
 	}
-	if (RBASIC(procval)->klass == klass) {
+	else if (RBASIC_CLASS(procval) == klass) {
 	    return procval;
 	}
 	else {
