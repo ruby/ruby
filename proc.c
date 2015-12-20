@@ -1774,8 +1774,13 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
 	rb_thread_t *th = GET_THREAD();
 	rb_block_t *block = rb_vm_control_frame_block_ptr(th->cfp);
 	if (!block) rb_raise(rb_eArgError, proc_without_block);
+
 	body = block->proc;
-	if (!body) {
+
+	if (SYMBOL_P(body)) {
+	    body = rb_sym_to_proc(body);
+	}
+	else if (!body) {
 	    body = rb_vm_make_proc_lambda(th, block, rb_cProc, TRUE);
 	}
 #endif

@@ -939,4 +939,18 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([:m1, :m2, :m3].sort, MethodInMethodClass.public_instance_methods(false).sort)
     assert_equal([].sort, MethodInMethodClass.private_instance_methods(false).sort)
   end
+
+  def test_define_method_with_symbol
+    assert_normal_exit %q{
+      define_method(:foo, &:to_s)
+      define_method(:bar, :to_s.to_proc)
+    }, '[Bug #11850]'
+    c = Class.new{
+      define_method(:foo, &:to_s)
+      define_method(:bar, :to_s.to_proc)
+    }
+    obj = c.new
+    assert_equal('1', obj.foo(1))
+    assert_equal('1', obj.bar(1))
+  end
 end
