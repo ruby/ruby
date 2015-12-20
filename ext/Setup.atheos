@@ -2,6 +2,7 @@ option nodynamic
 
 #Win32API
 bigdecimal
+cgi/escape
 dbm
 digest
 digest/md5

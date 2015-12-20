@@ -1,3 +1,8 @@
+Sun Dec 20 20:54:51 2015  Takashi Kokubun  <takashikkbn@gmail.com>
+
+	* cgi/escape/escape.c: Optimize CGI.escapeHTML for
+	  ASCII-compatible encodings.  [Fix GH-1164]
+
 Sun Dec 20 15:36:46 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/erb.rb: revert r53123. It breaks compatibility like thor and
