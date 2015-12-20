@@ -3,7 +3,7 @@
 
 static VALUE rb_cCGI, rb_mUtil, rb_mEscape;
 
-static VALUE
+static void
 html_escaped_cat(VALUE str, char c)
 {
     switch (c) {
