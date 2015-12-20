@@ -111,7 +111,7 @@ Fri Dec 18 11:24:48 2015  Shugo Maeda  <shugo@ruby-lang.org>
 	  built-in class.
 	  [ruby-core:72226] [Bug #11836]
 
-Fri Dec 11 06:39:30 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+Fri Dec 18 11:09:38 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* vm.c (vm_exec): call RUBY_DTRACE_CMETHOD_RETURN_HOOK instead of
 	  RUBY_DTRACE_METHOD_RETURN_HOOK.
