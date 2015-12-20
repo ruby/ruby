@@ -1,6 +1,7 @@
 Sun Dec 20 15:36:46 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
-	* lib/erb.rb: revert r53123. It break compatibility like thor and rspec-rails.
+	* lib/erb.rb: revert r53123. It breaks compatibility like thor and
+	  rspec-rails.
 	  We should try with Ruby 2.4 or 3.0.
 	  [Bug #11842][ruby-core:72374]
 	* lib/rdoc/erb_partial.rb: ditto.
