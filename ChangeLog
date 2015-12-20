@@ -1,3 +1,8 @@
+Mon Dec 21 05:04:18 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ext/tk/lib/multi-tk.rb: fix typos.
+	  [Bug #11764][ruby-core:71800]
+
 Wed Dec 16 21:10:19 2015  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* ext/fiddle/handle.c: check tainted string arguments.

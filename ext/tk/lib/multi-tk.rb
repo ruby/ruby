@@ -1490,17 +1490,17 @@ class MultiTkIp
         begin
           @interp._eval("::safe::disallowTk #{slave}")
         rescue
-          warn("Waring: fail to call '::safe::disallowTk'") if $DEBUG
+          warn("Warning: fail to call '::safe::disallowTk'") if $DEBUG
         end
       else # toplevel path
         begin
           @interp._eval("::safe::tkDelete {} #{top} #{slave}")
         rescue
-          warn("Waring: fail to call '::safe::tkDelete'") if $DEBUG
+          warn("Warning: fail to call '::safe::tkDelete'") if $DEBUG
           begin
             @interp._eval("destroy #{top}")
           rescue
-            warn("Waring: fail to destroy toplevel") if $DEBUG
+            warn("Warning: fail to destroy toplevel") if $DEBUG
           end
         end
       end
