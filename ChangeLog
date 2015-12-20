@@ -1,3 +1,11 @@
+Sun Dec 20 15:36:46 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/erb.rb: revert r53123. It break compatibility like thor and rspec-rails.
+	  We should try with Ruby 2.4 or 3.0.
+	  [Bug #11842][ruby-core:72374]
+	* lib/rdoc/erb_partial.rb: ditto.
+	* template/verconf.h.tmpl: ditto.
+
 Sun Dec 20 11:43:31 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_yylex): allow here documents in labeled
