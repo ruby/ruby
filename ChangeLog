@@ -1,3 +1,7 @@
+Sun Dec 20 10:54:15 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* proc.c (proc_new): fix notation.
+
 Sun Dec 20 00:29:00 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (rb_proc_get_iseq): proc made from symbol does not have
