@@ -8330,7 +8330,7 @@ parser_yylex(struct parser_params *parser)
 	if (c == '<' &&
 	    !IS_lex_state(EXPR_DOT | EXPR_CLASS) &&
 	    !IS_END() &&
-	    (!IS_ARG() || space_seen)) {
+	    (!IS_ARG() || IS_lex_state(EXPR_LABELED) || space_seen)) {
 	    int token = heredoc_identifier();
 	    if (token) return token;
 	}

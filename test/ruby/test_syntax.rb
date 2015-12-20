@@ -342,6 +342,12 @@ WARN
     assert_valid_syntax('{label: %w(*)}', bug11812)
   end
 
+  def test_heredoc_after_label
+    bug11849 = '[ruby-core:72396] [Bug #11849]'
+    assert_valid_syntax("{label:<<DOC\n""DOC\n""}", bug11849)
+    assert_valid_syntax("{label: <<DOC\n""DOC\n""}", bug11849)
+  end
+
   def test_duplicated_arg
     assert_syntax_error("def foo(a, a) end", /duplicated argument name/)
     assert_nothing_raised { def foo(_, _) end }
