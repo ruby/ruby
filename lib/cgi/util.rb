@@ -38,6 +38,11 @@ module CGI::Util
     string.gsub(/['&\"<>]/, TABLE_FOR_ESCAPE_HTML__)
   end
 
+  begin
+    require 'cgi/escape'
+  rescue LoadError
+  end
+
   # Unescape a string that has been HTML-escaped
   #   CGI::unescapeHTML("Usage: foo &quot;bar&quot; &lt;baz&gt;")
   #      # => "Usage: foo \"bar\" <baz>"
