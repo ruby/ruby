@@ -52,7 +52,7 @@
 % R["exec_prefix"] = '"RUBY_EXEC_PREFIX"'
 % R["prefix"] = '"RUBY_EXEC_PREFIX"'
 % exec_prefix_pat = /\A"#{Regexp.quote(rbconfig::CONFIG['exec_prefix'])}(?=\/|\z)/
-% _erbout = [_erbout.join.gsub!(/^(#define\s+(\S+)\s+)(.*)/) {
+% _erbout.gsub!(/^(#define\s+(\S+)\s+)(.*)/) {
 %   pre, name, repl = $1, $2, $3
 %   pat = %["#{name}"]
 %   c = C.merge(R.reject {|key, value| key == name or value.include?(pat)})
@@ -60,4 +60,4 @@
 %   repl.gsub!(/^""(?!$)|(.)""$/, '\1')
 %   repl.sub!(exec_prefix_pat, 'RUBY_EXEC_PREFIX"')
 %   pre + repl
-% }]
+% }
