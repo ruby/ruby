@@ -1782,8 +1782,14 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
     }
     else {
 	body = argv[1];
-	is_method = rb_obj_is_method(body) != Qfalse;
-	if (!is_method && !rb_obj_is_proc(body)) {
+
+	if (rb_obj_is_method(body)) {
+	    is_method = TRUE;
+	}
+	else if (rb_obj_is_proc(body)) {
+	    is_method = FALSE;
+	}
+	else {
 	    rb_raise(rb_eTypeError,
 		     "wrong argument type %s (expected Proc/Method)",
 		     rb_obj_classname(body));
