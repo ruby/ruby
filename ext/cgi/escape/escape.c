@@ -28,7 +28,7 @@ html_escaped_cat(VALUE str, char c)
 static VALUE
 optimized_escape_html(VALUE str)
 {
-    long i, len, modified = 0, beg = 0, offset = 0;
+    long i, len, modified = 0, beg = 0;
     VALUE dest;
     const char *cstr;
 
