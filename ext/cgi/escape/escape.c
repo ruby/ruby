@@ -57,6 +57,7 @@ optimized_escape_html(VALUE str)
 
     if (modified) {
 	rb_str_cat(dest, cstr + beg, len - beg);
+	rb_enc_associate(dest, rb_enc_get(str));
 	return dest;
     } else {
 	return str;
