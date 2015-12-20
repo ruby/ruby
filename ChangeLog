@@ -1,3 +1,8 @@
+Sun Dec 20 11:43:31 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_yylex): allow here documents in labeled
+	  argument.  [ruby-core:72396] [Bug #11849]
+
 Sun Dec 20 11:14:11 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* proc.c (rb_mod_define_method): should check Symbol or not.
