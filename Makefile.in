@@ -500,7 +500,7 @@ update-doclie:
 	  echo updating doclie ...; \
 	  $(Q:@=:) set -x; \
 	  cd coverage/doclie && \
-	  exec git fetch && \
+	  git fetch && \
 	  exec git checkout $(DOCLIE_GIT_REF); \
 	else \
 	  echo retrieving doclie ...; \
@@ -514,7 +514,7 @@ update-simplecov-html:
 	  echo updating simplecov-html ...; \
 	  $(Q:@=:) set -x; \
 	  cd coverage/simplecov-html && \
-	  exec git fetch && \
+	  git fetch && \
 	  exec git checkout $(SIMPLECOV_HTML_GIT_REF); \
 	else \
 	  echo retrieving simplecov-html ...; \
@@ -527,7 +527,7 @@ update-simplecov:
 	  echo updating simplecov ...; \
 	  $(Q:@=:) set -x; \
 	  cd coverage/simplecov && \
-	  exec git fetch && \
+	  git fetch && \
 	  exec git checkout $(SIMPLECOV_GIT_REF); \
 	else \
 	  echo retrieving simplecov ...; \
