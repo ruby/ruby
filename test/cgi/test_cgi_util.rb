@@ -59,15 +59,15 @@ class CGIUtilTest < Test::Unit::TestCase
   end
 
   def test_cgi_escapeHTML
-    assert_equal(CGI::escapeHTML("'&\"><"),"&#39;&amp;&quot;&gt;&lt;")
+    assert_equal("&#39;&amp;&quot;&gt;&lt;", CGI::escapeHTML("'&\"><"))
   end
 
   def test_cgi_unescapeHTML
-    assert_equal(CGI::unescapeHTML("&#39;&amp;&quot;&gt;&lt;"),"'&\"><")
+    assert_equal("'&\"><", CGI::unescapeHTML("&#39;&amp;&quot;&gt;&lt;"))
   end
 
   def test_cgi_unescapeHTML_uppercasecharacter
-    assert_equal(CGI::unescapeHTML("&#x3042;&#x3044;&#X3046;"),"\xE3\x81\x82\xE3\x81\x84\xE3\x81\x86")
+    assert_equal("\xE3\x81\x82\xE3\x81\x84\xE3\x81\x86", CGI::unescapeHTML("&#x3042;&#x3044;&#X3046;"))
   end
 
   def test_cgi_include_escape
@@ -75,11 +75,11 @@ class CGIUtilTest < Test::Unit::TestCase
   end
 
   def test_cgi_include_escapeHTML
-    assert_equal(escapeHTML("'&\"><"),"&#39;&amp;&quot;&gt;&lt;")
+    assert_equal("&#39;&amp;&quot;&gt;&lt;", escapeHTML("'&\"><"))
   end
 
   def test_cgi_include_h
-    assert_equal(h("'&\"><"),"&#39;&amp;&quot;&gt;&lt;")
+    assert_equal("&#39;&amp;&quot;&gt;&lt;", h("'&\"><"))
   end
 
   def test_cgi_include_unescape
@@ -89,7 +89,7 @@ class CGIUtilTest < Test::Unit::TestCase
   end
 
   def test_cgi_include_unescapeHTML
-    assert_equal(unescapeHTML("&#39;&amp;&quot;&gt;&lt;"),"'&\"><")
+    assert_equal("'&\"><", unescapeHTML("&#39;&amp;&quot;&gt;&lt;"))
   end
 
   def test_cgi_escapeElement
