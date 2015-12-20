@@ -62,6 +62,12 @@ class CGIUtilTest < Test::Unit::TestCase
     assert_equal("&#39;&amp;&quot;&gt;&lt;", CGI::escapeHTML("'&\"><"))
   end
 
+  def test_cgi_escape_html_preserve_encoding
+    assert_equal(Encoding::US_ASCII, CGI::escapeHTML("'&\"><".force_encoding("US-ASCII")).encoding)
+    assert_equal(Encoding::ASCII_8BIT, CGI::escapeHTML("'&\"><".force_encoding("ASCII-8BIT")).encoding)
+    assert_equal(Encoding::UTF_8, CGI::escapeHTML("'&\"><".force_encoding("UTF-8")).encoding)
+  end
+
   def test_cgi_unescapeHTML
     assert_equal("'&\"><", CGI::unescapeHTML("&#39;&amp;&quot;&gt;&lt;"))
   end
