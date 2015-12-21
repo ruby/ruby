@@ -2400,13 +2400,6 @@ internal_object_p(VALUE obj)
 	  case T_NODE:
 	  case T_ZOMBIE:
 	    break;
-	  case T_CLASS:
-	    {
-		if (FL_TEST(obj, FL_SINGLETON)) {
-		    int rb_singleton_class_has_metaclass_p(VALUE sklass);
-		    return rb_singleton_class_has_metaclass_p(obj) == 0;
-		}
-	    }
 	  default:
 	    if (!p->as.basic.klass) break;
 	    return 0;
