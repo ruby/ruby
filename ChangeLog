@@ -1,3 +1,8 @@
+Mon Dec 21 10:18:46 2015  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* vm_backtrace.c (rb_profile_frames): ignore ifunc frames as it
+	  did before.  [ruby-core:72409] [Bug #11851]
+
 Mon Dec 21 09:33:17 2015  Karol Bucek  <kares@users.noreply.github.com>
 
 	* ext/openssl/lib/openssl/ssl.rb (OpenSSL::SSL::SSLSocket): fix
