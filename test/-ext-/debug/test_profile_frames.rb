@@ -102,4 +102,21 @@ class TestProfileFrames < Test::Unit::TestCase
       end
     }
   end
+
+  def test_ifunc_frame
+    bug11851 = '[ruby-core:72409] [Bug #11851]'
+    assert_ruby_status([], <<~'end;', bug11851) # do
+      require '-test-/debug'
+      class A
+        include Bug::Debug
+        def x
+          profile_frames(0, 10)
+        end
+      end
+      def a
+        [A.new].each(&:x)
+      end
+      a
+    end;
+  end
 end
