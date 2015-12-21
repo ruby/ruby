@@ -1,3 +1,8 @@
+Mon Dec 21 09:33:17 2015  Karol Bucek  <kares@users.noreply.github.com>
+
+	* ext/openssl/lib/openssl/ssl.rb (OpenSSL::SSL::SSLSocket): fix
+	  NotImplementedError typo.  [Fix GH-1165]
+
 Sun Dec 20 20:54:51 2015  Takashi Kokubun  <takashikkbn@gmail.com>
 
 	* cgi/escape/escape.c: Optimize CGI.escapeHTML for
