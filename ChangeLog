@@ -1,3 +1,9 @@
+Tue Dec 22 03:57:20 2015  Eric Wong  <e@80x24.org>
+
+	* ext/socket/init.c (rsock_init_sock): check FD after validating
+	* test/socket/test_basicsocket.rb (test_for_fd): new
+	  [ruby-core:72418] [Bug #11854]
+
 Mon Dec 21 21:29:45 2015  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* variable.c (struct ivar_update): rename "extended" to "iv_extended"
