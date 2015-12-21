@@ -1248,25 +1248,25 @@ rb_profile_frames(int start, int limit, VALUE *buff, int *lines)
     int i;
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp = th->cfp, *end_cfp = RUBY_VM_END_CONTROL_FRAME(th);
+    const rb_callable_method_entry_t *cme;
 
     for (i=0; i<limit && cfp != end_cfp;) {
-	const rb_callable_method_entry_t *cme = rb_vm_frame_method_entry(cfp);
-
-	if ((cme && cme->def->type == VM_METHOD_TYPE_ISEQ) || (cfp->iseq && cfp->pc)) {
+	if (cfp->iseq && cfp->pc) {
 	    if (start > 0) {
 		start--;
 		continue;
 	    }
 
 	    /* record frame info */
-	    if (cme) {
+	    cme = rb_vm_frame_method_entry(cfp);
+	    if (cme && cme->def->type == VM_METHOD_TYPE_ISEQ) {
 		buff[i] = (VALUE)cme;
 	    }
 	    else {
 		buff[i] = (VALUE)cfp->iseq;
 	    }
 
-	    if (cfp->iseq && lines) lines[i] = calc_lineno(cfp->iseq, cfp->pc);
+	    if (lines) lines[i] = calc_lineno(cfp->iseq, cfp->pc);
 
 	    i++;
 	}

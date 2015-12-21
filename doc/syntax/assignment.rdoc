@@ -1,6 +1,6 @@
 = Assignment
 
-In Ruby assignment uses the <code>=</code> (equals sign) character.  This
+In Ruby, assignment uses the <code>=</code> (equals sign) character.  This
 example assigns the number five to the local variable +v+:
 
   v = 5
@@ -137,7 +137,7 @@ Here is an example of instance variable usage:
   p object2.value # prints "other value"
 
 An uninitialized instance variable has a value of +nil+.  If you run Ruby with
-warnings enabled you will get a warning when accessing an uninitialized
+warnings enabled, you will get a warning when accessing an uninitialized
 instance variable.
 
 The +value+ method has access to the value set by the +initialize+ method, but
@@ -279,7 +279,7 @@ to an instance variable most people use Module#attr_accessor:
   end
 
 When using method assignment you must always have a receiver.  If you do not
-have a receiver Ruby assumes you are assigning to a local variable:
+have a receiver, Ruby assumes you are assigning to a local variable:
 
   class C
     attr_accessor :value
@@ -409,7 +409,7 @@ You can use multiple assignment to swap two values in-place:
   # prints {:new_value=>1, :old_value=>2}
 
 If you have more values on the right hand side of the assignment than variables
-on the left hand side the extra values are ignored:
+on the left hand side, the extra values are ignored:
 
   a, b = 1, 2, 3
 
@@ -452,4 +452,3 @@ Since each decomposition is considered its own multiple assignment you can use
 
   p a: a, b: b, c: c, d: d
   # prints {:a=>1, :b=>2, :c=>[3, 4], :d=>[5, 6]}
-

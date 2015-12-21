@@ -645,10 +645,9 @@ proc_new(VALUE klass, int8_t is_lambda)
 
     if (procval) {
 	if (SYMBOL_P(procval)) {
-	    if (klass != rb_cProc) return sym_proc_new(klass, procval);
-	    return rb_sym_to_proc(procval);
+	    return (klass != rb_cProc) ? sym_proc_new(klass, procval) : rb_sym_to_proc(procval);
 	}
-	if (RBASIC(procval)->klass == klass) {
+	else if (RBASIC_CLASS(procval) == klass) {
 	    return procval;
 	}
 	else {
@@ -969,15 +968,12 @@ rb_block_arity(void)
     return max != UNLIMITED_ARGUMENTS ? min : -min-1;
 }
 
-#define get_proc_iseq rb_proc_get_iseq
-
 const rb_iseq_t *
 rb_proc_get_iseq(VALUE self, int *is_proc)
 {
     const rb_proc_t *proc;
     const rb_iseq_t *iseq;
 
-  again:
     GetProcPtr(self, proc);
     iseq = proc->block.iseq;
     if (is_proc) *is_proc = !proc->is_lambda;
@@ -992,8 +988,7 @@ rb_proc_get_iseq(VALUE self, int *is_proc)
 	return iseq;
     }
     else if (SYMBOL_P(iseq)) {
-	self = rb_sym_to_proc((VALUE)iseq);
-	goto again;
+	return NULL;
     }
     else {
 	return rb_iseq_check(iseq);
@@ -1028,7 +1023,7 @@ iseq_location(const rb_iseq_t *iseq)
 VALUE
 rb_proc_location(VALUE self)
 {
-    return iseq_location(get_proc_iseq(self, 0));
+    return iseq_location(rb_proc_get_iseq(self, 0));
 }
 
 static VALUE
@@ -1064,7 +1059,7 @@ static VALUE
 rb_proc_parameters(VALUE self)
 {
     int is_proc;
-    const rb_iseq_t *iseq = get_proc_iseq(self, &is_proc);
+    const rb_iseq_t *iseq = rb_proc_get_iseq(self, &is_proc);
     if (!iseq) {
 	return unnamed_parameters(rb_proc_arity(self));
     }
@@ -1779,16 +1774,27 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
 	rb_thread_t *th = GET_THREAD();
 	rb_block_t *block = rb_vm_control_frame_block_ptr(th->cfp);
 	if (!block) rb_raise(rb_eArgError, proc_without_block);
+
 	body = block->proc;
-	if (!body) {
+
+	if (SYMBOL_P(body)) {
+	    body = rb_sym_to_proc(body);
+	}
+	else if (!body) {
 	    body = rb_vm_make_proc_lambda(th, block, rb_cProc, TRUE);
 	}
 #endif
     }
     else {
 	body = argv[1];
-	is_method = rb_obj_is_method(body) != Qfalse;
-	if (!is_method && !rb_obj_is_proc(body)) {
+
+	if (rb_obj_is_method(body)) {
+	    is_method = TRUE;
+	}
+	else if (rb_obj_is_proc(body)) {
+	    is_method = FALSE;
+	}
+	else {
 	    rb_raise(rb_eTypeError,
 		     "wrong argument type %s (expected Proc/Method)",
 		     rb_obj_classname(body));
@@ -2294,7 +2300,7 @@ method_def_iseq(const rb_method_definition_t *def)
       case VM_METHOD_TYPE_ISEQ:
 	return rb_iseq_check(def->body.iseq.iseqptr);
       case VM_METHOD_TYPE_BMETHOD:
-	return get_proc_iseq(def->body.proc, 0);
+	return rb_proc_get_iseq(def->body.proc, 0);
       case VM_METHOD_TYPE_ALIAS:
 	return method_def_iseq(def->body.alias.original_me->def);
       case VM_METHOD_TYPE_CFUNC:

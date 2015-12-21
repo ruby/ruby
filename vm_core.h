@@ -402,10 +402,8 @@ struct rb_iseq_struct {
     } aux;
 };
 
-#define USE_LAZY_LOAD 0
-
 #ifndef USE_LAZY_LOAD
-#define USE_LAZY_LOAD
+#define USE_LAZY_LOAD 0
 #endif
 
 #if USE_LAZY_LOAD

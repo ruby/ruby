@@ -61,10 +61,10 @@ rsock_init_sock(VALUE sock, int fd)
 {
     rb_io_t *fp;
 
-    rb_update_max_fd(fd);
     if (!is_socket(fd))
         rb_raise(rb_eArgError, "not a socket file descriptor");
 
+    rb_update_max_fd(fd);
     MakeOpenFile(sock, fp);
     fp->fd = fd;
     fp->mode = FMODE_READWRITE|FMODE_DUPLEX;

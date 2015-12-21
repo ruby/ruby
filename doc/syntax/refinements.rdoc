@@ -260,4 +260,3 @@ This behavior may be changed in the future.
 See http://bugs.ruby-lang.org/projects/ruby-trunk/wiki/RefinementsSpec for the
 current specification for implementing refinements.  The specification also
 contains more details.
-

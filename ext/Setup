@@ -1,6 +1,7 @@
 #option nodynamic
 
 #bigdecimal
+#cgi/escape
 #continuation
 #coverage
 #date

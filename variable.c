@@ -40,7 +40,7 @@ struct ivar_update {
 	struct gen_ivtbl *ivtbl;
     } u;
     st_data_t index;
-    int extended;
+    int iv_extended;
 };
 
 void
@@ -1070,7 +1070,7 @@ iv_index_tbl_newsize(struct ivar_update *ivup)
 {
     long newsize = (ivup->index+1) + (ivup->index+1)/4; /* (index+1)*1.25 */
 
-    if (!ivup->extended &&
+    if (!ivup->iv_extended &&
         ivup->u.iv_index_tbl->num_entries < (st_index_t)newsize) {
         newsize = ivup->u.iv_index_tbl->num_entries;
     }
@@ -1326,7 +1326,7 @@ iv_index_tbl_extend(struct ivar_update *ivup, ID id)
     }
     ivup->index = (st_data_t)ivup->u.iv_index_tbl->num_entries;
     st_add_direct(ivup->u.iv_index_tbl, (st_data_t)id, ivup->index);
-    ivup->extended = 1;
+    ivup->iv_extended = 1;
 }
 
 static void
@@ -1334,7 +1334,7 @@ generic_ivar_set(VALUE obj, ID id, VALUE val)
 {
     struct ivar_update ivup;
 
-    ivup.extended = 0;
+    ivup.iv_extended = 0;
     ivup.u.iv_index_tbl = iv_index_tbl_make(obj);
     iv_index_tbl_extend(&ivup, id);
     st_update(generic_iv_tbl, (st_data_t)obj, generic_ivar_update,
@@ -1355,7 +1355,7 @@ rb_ivar_set(VALUE obj, ID id, VALUE val)
 
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
-        ivup.extended = 0;
+        ivup.iv_extended = 0;
         ivup.u.iv_index_tbl = iv_index_tbl_make(obj);
         iv_index_tbl_extend(&ivup, id);
         len = ROBJECT_NUMIV(obj);
@@ -1516,7 +1516,7 @@ gen_ivar_copy(ID id, VALUE val, st_data_t arg)
     struct givar_copy *c = (struct givar_copy *)arg;
     struct ivar_update ivup;
 
-    ivup.extended = 0;
+    ivup.iv_extended = 0;
     ivup.u.iv_index_tbl = c->iv_index_tbl;
     iv_index_tbl_extend(&ivup, id);
     if ((long)ivup.index >= c->ivtbl->numiv) {

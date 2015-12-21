@@ -7650,7 +7650,7 @@ ibf_load_object_string(const struct ibf_load *load, const struct ibf_object_head
     rb_enc_associate_index(str, encindex);
 
     if (header->internal) rb_obj_hide(str);
-    if (header->frozen)   rb_obj_freeze(str);
+    if (header->frozen)   str = rb_fstring(str);
 
     return str;
 }
@@ -8203,6 +8203,8 @@ ibf_load_iseq(const struct ibf_load *load, const rb_iseq_t *index_iseq)
 static void
 ibf_load_setup(struct ibf_load *load, VALUE loader_obj, VALUE str)
 {
+    rb_check_safe_obj(str);
+
     if (RSTRING_LENINT(str) < (int)sizeof(struct ibf_header)) {
 	rb_raise(rb_eRuntimeError, "broken binary format");
     }

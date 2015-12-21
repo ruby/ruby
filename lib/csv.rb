@@ -949,30 +949,32 @@ class CSV
   # To add a combo field, the value should be an Array of names.  Combo fields
   # can be nested with other combo fields.
   #
-  Converters  = { integer:   lambda { |f|
-                    Integer(f.encode(ConverterEncoding)) rescue f
-                  },
-                  float:     lambda { |f|
-                    Float(f.encode(ConverterEncoding)) rescue f
-                  },
-                  numeric:   [:integer, :float],
-                  date:      lambda { |f|
-                    begin
-                      e = f.encode(ConverterEncoding)
-                      e =~ DateMatcher ? Date.parse(e) : f
-                    rescue  # encoding conversion or date parse errors
-                      f
-                    end
-                  },
-                  date_time: lambda { |f|
-                    begin
-                      e = f.encode(ConverterEncoding)
-                      e =~ DateTimeMatcher ? DateTime.parse(e) : f
-                    rescue  # encoding conversion or date parse errors
-                      f
-                    end
-                  },
-                  all:       [:date_time, :numeric] }
+  Converters  = {
+    integer:   lambda { |f|
+      Integer(f.encode(ConverterEncoding)) rescue f
+    },
+    float:     lambda { |f|
+      Float(f.encode(ConverterEncoding)) rescue f
+    },
+    numeric:   [:integer, :float],
+    date:      lambda { |f|
+      begin
+        e = f.encode(ConverterEncoding)
+        e =~ DateMatcher ? Date.parse(e) : f
+      rescue  # encoding conversion or date parse errors
+        f
+      end
+    },
+    date_time: lambda { |f|
+      begin
+        e = f.encode(ConverterEncoding)
+        e =~ DateTimeMatcher ? DateTime.parse(e) : f
+      rescue  # encoding conversion or date parse errors
+        f
+      end
+    },
+    all:       [:date_time, :numeric],
+  }
 
   #
   # This Hash holds the built-in header converters of CSV that can be accessed
@@ -1018,18 +1020,20 @@ class CSV
   # <b><tt>:force_quotes</tt></b>::       +false+
   # <b><tt>:skip_lines</tt></b>::         +nil+
   #
-  DEFAULT_OPTIONS = { col_sep:            ",",
-                      row_sep:            :auto,
-                      quote_char:         '"',
-                      field_size_limit:   nil,
-                      converters:         nil,
-                      unconverted_fields: nil,
-                      headers:            false,
-                      return_headers:     false,
-                      header_converters:  nil,
-                      skip_blanks:        false,
-                      force_quotes:       false,
-                      skip_lines:         nil }.freeze
+  DEFAULT_OPTIONS = {
+    col_sep:            ",",
+    row_sep:            :auto,
+    quote_char:         '"',
+    field_size_limit:   nil,
+    converters:         nil,
+    unconverted_fields: nil,
+    headers:            false,
+    return_headers:     false,
+    header_converters:  nil,
+    skip_blanks:        false,
+    force_quotes:       false,
+    skip_lines:         nil,
+  }.freeze
 
   #
   # This method will return a CSV instance, just like CSV::new(), but the
@@ -1360,7 +1364,7 @@ class CSV
   # a String for +data+, you can later retrieve it (after writing to it, for
   # example) with CSV.string().
   #
-  # Note that a wrapped String will be positioned at at the beginning (for
+  # Note that a wrapped String will be positioned at the beginning (for
   # reading).  If you want it at the end (for writing), use CSV::generate().
   # If you want any other positioning, pass a preset StringIO object instead.
   #
@@ -1855,7 +1859,7 @@ class CSV
             csv.last << @col_sep
           end
         elsif part[0] == @quote_char
-          # If we are staring a new quoted column
+          # If we are starting a new quoted column
           if part[-1] != @quote_char || part.count(@quote_char) % 2 != 0
             # start an extended column
             csv             << part[1..-1]

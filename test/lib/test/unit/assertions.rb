@@ -785,19 +785,23 @@ eom
         attr_reader :failures
 
         def initialize
+          @count = 0
           @failures = {}
         end
 
         def for(key)
+          @count += 1
           yield
         rescue Exception => e
-          @failures[key] = e
+          @failures[key] = [@count, e]
         end
 
         def message
           i = 0
-          @failures.map {|k, v|
-            "\n#{i+=1}. Assertion for #{k.inspect}\n#{v.message.gsub(/^/, '   | ')}"
+          total = @count.to_s
+          fmt = "%#{total.size}d"
+          @failures.map {|k, (n, v)|
+            "\n#{i+=1}. [#{fmt%n}/#{total}] Assertion for #{k.inspect}\n#{v.message.gsub(/^/, '   | ')}"
           }.join("\n")
         end
 

@@ -73,11 +73,13 @@ module Timeout
   def timeout(sec, klass = nil)   #:yield: +sec+
     return yield(sec) if sec == nil or sec.zero?
     message = "execution expired".freeze
+    from = "from #{caller_locations(1, 1)[0]}" if $DEBUG
     e = Error
     bl = proc do |exception|
       begin
         x = Thread.current
         y = Thread.start {
+          Thread.current.name = from
           begin
             sleep sec
           rescue => e

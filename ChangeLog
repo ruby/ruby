@@ -1,3 +1,141 @@
+Tue Dec 22 03:57:20 2015  Eric Wong  <e@80x24.org>
+
+	* ext/socket/init.c (rsock_init_sock): check FD after validating
+	* test/socket/test_basicsocket.rb (test_for_fd): new
+	  [ruby-core:72418] [Bug #11854]
+
+Mon Dec 21 21:29:45 2015  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* variable.c (struct ivar_update): rename "extended" to "iv_extended"
+	  to avoid name conflict with /usr/include/floatingpoint.h on
+	  Solaris. [Bug #11853] [ruby-dev:49448]
+
+Mon Dec 21 12:15:32 2015  Kimura Wataru  <kimuraw@i.nifty.jp>
+
+	* test/ruby/test_io.rb: handled rlimit value same as r52277
+	  [Bug #11852][ruby-dev:49446]
+
+Mon Dec 21 10:21:22 2015  Ilya Vassilevsky <vassilevsky@gmail.com>
+
+	* lib/net/http.rb (open_timeout): update default value in RDoc
+	  [ruby-core:72413]
+
+Mon Dec 21 10:18:46 2015  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* vm_backtrace.c (rb_profile_frames): ignore ifunc frames as it
+	  did before.  [ruby-core:72409] [Bug #11851]
+
+Mon Dec 21 09:33:17 2015  Karol Bucek  <kares@users.noreply.github.com>
+
+	* ext/openssl/lib/openssl/ssl.rb (OpenSSL::SSL::SSLSocket): fix
+	  NotImplementedError typo.  [Fix GH-1165]
+
+Sun Dec 20 20:54:51 2015  Takashi Kokubun  <takashikkbn@gmail.com>
+
+	* cgi/escape/escape.c: Optimize CGI.escapeHTML for
+	  ASCII-compatible encodings.  [Fix GH-1164]
+
+Sun Dec 20 15:36:46 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/erb.rb: revert r53123. It breaks compatibility like thor and
+	  rspec-rails.
+	  We should try with Ruby 2.4 or 3.0.
+	  [Bug #11842][ruby-core:72374]
+	* lib/rdoc/erb_partial.rb: ditto.
+	* template/verconf.h.tmpl: ditto.
+
+Sun Dec 20 11:43:31 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_yylex): allow here documents in labeled
+	  argument.  [ruby-core:72396] [Bug #11849]
+
+Sun Dec 20 11:14:11 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* proc.c (rb_mod_define_method): should check Symbol or not.
+	  [Bug #11850]
+
+	* test/ruby/test_method.rb: add a test.
+
+Sun Dec 20 11:01:57 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* proc.c (rb_mod_define_method): fix notation.
+
+Sun Dec 20 10:54:15 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* proc.c (proc_new): fix notation.
+
+Sun Dec 20 00:29:00 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (rb_proc_get_iseq): proc made from symbol does not have
+	  iseq.  fix infinite loop.  [ruby-core:72381] [Bug #11845]
+
+Sat Dec 19 20:06:10 2015  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* enc/windows_1250.c: Should not use C++ style comments (C99 feature).
+	  [Bug #11843]
+
+Sat Dec 19 17:17:04 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/webrick/utils.rb (WEBrick::Utils::TimeoutHandler#initialize):
+	  use WEBrick::Utils::TimeoutHandler::Thread, which is ignored by
+	  LeakChecker#find_threads, instead of ::Thread to get rid of
+	  thread leak checker.  since this TimeoutHandler is resident
+	  during tests because of Singleton, it waits for the next timeout
+	  if it has any schedules.  in the case of nested timeouts, inner
+	  timeout does not cancel outer timeouts and then those schedules
+	  still remain.
+
+Sat Dec 19 14:28:01 2015  Jake Worth  <jakeworth82@gmail.com>
+
+	* ext/zlib/zlib.c (Init_zlib): [DOC] Fix double-word typo and
+	  grammatical error.  [Fix GH-1162]
+
+Sat Dec 19 14:23:59 2015  Jake Worth  <jakeworth82@gmail.com>
+
+	* lib/csv.rb (CSV#initialize): [DOC] Fix double-word typo.
+	  [Fix GH-1161]
+
+Sat Dec 19 10:33:33 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/iso_8859_2.c, enc/windows_1250.c: separate Windows-1250
+	  from ISO-8859-2 to fix 0x80..0x9e range (from Kimihito Matsui)
+
+Fri Dec 18 21:26:54 2015  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* lib/webrick/utils.rb (WEBrick::Utils::TimeoutHandler): To prevent
+	  potential deadlocks, Queue is used to tell update of @timeout_info
+	  instead of sleep and wakeup. [Bug #11742] [ruby-dev:49387]
+
+Fri Dec 18 17:24:09 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (ibf_load_object_string): use fstring if frozen string.
+
+Fri Dec 18 16:54:38 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_set_encoding): add StringIO's own
+	  encoding and separate it from the buffer string to override the
+	  encoding of string when reading.  [ruby-core:72189] [Bug #11827]
+	  note that setting the encoding of its buffer string directly
+	  without StringIO#set_encoding may cause unpredictable behavior.
+
+Fri Dec 18 16:50:35 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (ibf_load_setup): check tainted string argument.
+
+Fri Dec 18 16:12:13 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h: define USE_LAZY_LOAD if it is not defined.
+
+Fri Dec 18 15:40:06 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_unget_bytes): extract from
+	  strio_ungetbyte to share with strio_ungetc.
+
+Fri Dec 18 12:39:42 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* doc/syntax/*.rdoc: separated modifier at sentence.
+	  [ci skip][fix GH-1121] Patch by @clandry94
+
 Fri Dec 18 12:09:21 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/stringio/stringio.c (strio_ungetbyte): pad with \000 when
@@ -6,12 +144,12 @@ Fri Dec 18 12:09:21 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Fri Dec 18 11:24:48 2015  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* vm_method.c (rb_method_entry_make, check_override_opt_method):
-	  should check whether a newly created method override a optimize
+	  should check whether a newly created method overrides an optimize
 	  method in case the method is defined in a prepended module of a
 	  built-in class.
 	  [ruby-core:72226] [Bug #11836]
 
-Fri Dec 11 06:39:30 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+Fri Dec 18 11:09:38 2015  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* vm.c (vm_exec): call RUBY_DTRACE_CMETHOD_RETURN_HOOK instead of
 	  RUBY_DTRACE_METHOD_RETURN_HOOK.
