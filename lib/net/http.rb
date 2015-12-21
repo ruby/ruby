@@ -702,7 +702,7 @@ module Net   #:nodoc:
     # Number of seconds to wait for the connection to open. Any number
     # may be used, including Floats for fractional seconds. If the HTTP
     # object cannot open a connection in this many seconds, it raises a
-    # Net::OpenTimeout exception. The default value is +nil+.
+    # Net::OpenTimeout exception. The default value is 60 seconds.
     attr_accessor :open_timeout
 
     # Number of seconds to wait for one block to be read (via one read(2)

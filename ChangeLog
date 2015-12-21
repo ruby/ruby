@@ -1,3 +1,8 @@
+Mon Dec 21 10:21:22 2015  Ilya Vassilevsky <vassilevsky@gmail.com>
+
+	* lib/net/http.rb (open_timeout): update default value in RDoc
+	  [ruby-core:72413]
+
 Mon Dec 21 10:18:46 2015  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* vm_backtrace.c (rb_profile_frames): ignore ifunc frames as it
