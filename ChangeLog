@@ -1,3 +1,9 @@
+Mon Dec 21 21:29:45 2015  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* variable.c (struct ivar_update): rename "extended" to "iv_extended"
+	  to avoid name conflict with /usr/include/floatingpoint.h on
+	  Solaris. [Bug #11853] [ruby-dev:49448]
+
 Mon Dec 21 12:15:32 2015  Kimura Wataru  <kimuraw@i.nifty.jp>
 
 	* test/ruby/test_io.rb: handled rlimit value same as r52277
