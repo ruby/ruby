@@ -1,3 +1,13 @@
+Mon Dec 21 18:33:00 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (internal_object_p): should not expose singleton classes
+	  without a metaclass.
+	  [Bug #11740]
+
+	* class.c (rb_singleton_class_has_metaclass_p): added.
+
+	* test/ruby/test_class.rb: add a test.
+
 Mon Dec 21 12:15:32 2015  Kimura Wataru  <kimuraw@i.nifty.jp>
 
 	* test/ruby/test_io.rb: handled rlimit value same as r52277
