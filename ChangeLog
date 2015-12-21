@@ -1,3 +1,9 @@
+Tue Dec 22 05:39:58 2015  Takashi Kokubun  <takashikkbn@gmail.com>
+
+	* ext/cgi/escape/escape.c (preserve_original_state): Preserve
+	  original state for tainted and frozen.  [Fix GH-1166]
+	  [ruby-dev:49451] [Bug #11855]
+
 Tue Dec 22 03:57:20 2015  Eric Wong  <e@80x24.org>
 
 	* ext/socket/init.c (rsock_init_sock): check FD after validating
