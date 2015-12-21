@@ -25,6 +25,20 @@ html_escaped_cat(VALUE str, char c)
     }
 }
 
+static void
+preserve_original_state(VALUE orig, VALUE dest)
+{
+    rb_enc_associate(dest, rb_enc_get(orig));
+
+    if (rb_obj_frozen_p(orig)) {
+	rb_str_freeze(dest);
+    }
+
+    if (OBJ_TAINTED(orig)) {
+	rb_obj_taint(dest);
+    }
+}
+
 static VALUE
 optimized_escape_html(VALUE str)
 {
@@ -57,7 +71,7 @@ optimized_escape_html(VALUE str)
 
     if (modified) {
 	rb_str_cat(dest, cstr + beg, len - beg);
-	rb_enc_associate(dest, rb_enc_get(str));
+	preserve_original_state(str, dest);
 	return dest;
     }
     else {
