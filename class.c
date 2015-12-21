@@ -442,12 +442,6 @@ rb_singleton_class_attached(VALUE klass, VALUE obj)
  */
 #define META_CLASS_OF_CLASS_CLASS_P(k)  (METACLASS_OF(k) == (k))
 
-int
-rb_singleton_class_has_metaclass_p(VALUE sklass)
-{
-    return rb_attr_get(METACLASS_OF(sklass), id_attached) == sklass;
-}
-
 /*!
  * whether k has a metaclass
  * @retval 1 if \a k has a metaclass
@@ -455,13 +449,7 @@ rb_singleton_class_has_metaclass_p(VALUE sklass)
  */
 #define HAVE_METACLASS_P(k) \
     (FL_TEST(METACLASS_OF(k), FL_SINGLETON) && \
-     rb_singleton_class_has_metaclass_p(k))
-
-int
-rb_class_has_metaclass_p(VALUE klass)
-{
-    return HAVE_METACLASS_P(klass);
-}
+     rb_ivar_get(METACLASS_OF(k), id_attached) == (k))
 
 /*!
  * ensures \a klass belongs to its own eigenclass.

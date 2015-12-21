@@ -556,24 +556,4 @@ class TestClass < Test::Unit::TestCase
       }
     end;
   end
-
-  def test_should_not_expose_singleton_class_without_metaclass
-    assert_normal_exit %q{
-      klass = Class.new(Array)
-      # The metaclass of +klass+ should handle #bla since it should inherit methods from meta:meta:Array
-      def (Array.singleton_class).bla; :bla; end
-      hidden = ObjectSpace.each_object(Class).find { |c| klass.is_a? c and c.inspect.include? klass.inspect }
-      raise unless hidden.nil?
-    }, '[Bug #11740]'
-
-    assert_normal_exit %q{
-      klass = Class.new(Array)
-      klass.singleton_class
-      # The metaclass of +klass+ should handle #bla since it should inherit methods from meta:meta:Array
-      def (Array.singleton_class).bla; :bla; end
-      hidden = ObjectSpace.each_object(Class).find { |c| klass.is_a? c and c.inspect.include? klass.inspect }
-      raise if hidden.nil?
-    }, '[Bug #11740]'
-
-  end
 end
