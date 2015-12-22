@@ -7,7 +7,8 @@ releases except for bug fixes.
 
 Note that each entry is kept so brief that no reason behind or
 reference information is supplied with.  For a full list of changes
-with all sufficient information, see the ChangeLog file.
+with all sufficient information, see the ChangeLog file or Redmine
+(e.g. <tt>https://bugs.ruby-lang.org/issues/$FEATURE_OR_BUG_NUMBER</tt>)
 
 == Changes since the 2.2.0 release
 
