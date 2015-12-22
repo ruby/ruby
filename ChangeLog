@@ -1,3 +1,8 @@
+Wed Dec 23 07:15:17 2015  Eric Wong  <e@80x24.org>
+
+	* ext/socket/init.c (rsock_init_sock): reject reserved FDs
+	  [ruby-core:72445] [Bug #11862]
+
 Wed Dec 23 02:59:26 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (__STDC_WANT_LIB_EXT1__): necessary to use memset_s

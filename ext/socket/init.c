@@ -61,7 +61,7 @@ rsock_init_sock(VALUE sock, int fd)
 {
     rb_io_t *fp;
 
-    if (!is_socket(fd)) {
+    if (!is_socket(fd) || rb_reserved_fd_p(fd)) {
 	errno = EBADF;
 	rb_sys_fail("not a socket file descriptor");
     }
