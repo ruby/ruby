@@ -15,7 +15,6 @@ Wed Dec 16 21:10:19 2015  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* test/fiddle/test_handle.rb (class TestHandle): add test for above.
 
-
 Wed Dec 16 02:38:19 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (parse_mode_enc): fix buffer overflow.
