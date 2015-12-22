@@ -286,6 +286,11 @@ with all sufficient information, see the ChangeLog file.
 * Rake
   * Rake is removed from stdlib.  [Feature #11025]
 
+* RDoc
+  * Updated to RDoc 4.2.1.  For full release notes see:
+
+    https://github.com/rdoc/rdoc/blob/master/History.rdoc#421--2015-12-22
+
 * RubyGems
   * Updated to RubyGems 2.5.1.  For full release notes see:
 

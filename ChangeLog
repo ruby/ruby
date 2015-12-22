@@ -1,3 +1,7 @@
+Tue Dec 22 22:09:01 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* NEWS: Added news entry of RDoc 4.2.1
+
 Tue Dec 22 21:20:00 2015  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.gemspec: bump version to 1.2.8.
