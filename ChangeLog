@@ -1,3 +1,8 @@
+Tue Dec 22 20:25:33 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ext/psych/lib/psych.rb: bump version to 2.0.17
+	* ext/psych/psych.gemspec: ditto.
+
 Tue Dec 22 20:14:47 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c: move vm_callee_setup_block_arg() (and related
