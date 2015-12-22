@@ -30,7 +30,7 @@ preserve_original_state(VALUE orig, VALUE dest)
 {
     rb_enc_associate(dest, rb_enc_get(orig));
 
-    FL_SET_RAW(dest, FL_TEST_RAW(orig, FL_FREEZE|FL_TAINT));
+    RB_OBJ_INFECT_RAW(dest, orig);
 }
 
 static VALUE
@@ -69,7 +69,7 @@ optimized_escape_html(VALUE str)
 	return dest;
     }
     else {
-	return str;
+	return rb_str_dup(str);
     }
 }
 
