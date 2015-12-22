@@ -134,7 +134,8 @@ class TestSocket_BasicSocket < Test::Unit::TestCase
   end
 
   def test_for_fd
-    assert_raise(Errno::EBADF, '[ruby-core:72418] [Bug #11854]') do
+    assert_raise(ArgumentError, # [ruby-cvs:60402]
+                 Errno::EBADF, '[ruby-core:72418] [Bug #11854]') do
       BasicSocket.for_fd(-1)
     end
     inet_stream do |sock|
