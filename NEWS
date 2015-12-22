@@ -258,7 +258,8 @@ with all sufficient information, see the ChangeLog file.
   * Fiddle::Function#call releases the GVL.  [Feature #11607]
 
 * io-console
-  * Update to io-console 0.4.4
+  * Update to io-console 0.4.4, and change the license to BSD 2-clause
+    "Simplified" License.
 
 * lib/base64.rb
   * Base64.urlsafe_encode64: added a "padding" option to suppress
