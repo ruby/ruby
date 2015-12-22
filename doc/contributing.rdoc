@@ -439,7 +439,7 @@ your working branch:
 Now that you've got some code you want to contribute, let's get set up to
 generate a patch. Start by forking the github mirror, check the {github docs on
 forking}[https://help.github.com/articles/fork-a-repo] if you get stuck here.
-here.  You will only need a github account if you intend to host your repository
+You will only need a github account if you intend to host your repository
 on github.
 
 Next copy the writable url for your fork and add it as a git remote, replace
