@@ -1,3 +1,10 @@
+Tue Dec 22 20:14:47 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c: move vm_callee_setup_block_arg() (and related
+	  functions) to the latter location.
+	  This moving recovers performance a little.
+	  [Bug #11829]
+
 Tue Dec 22 15:21:11 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (str_compat_and_valid): as scrub does nothing for dummy
