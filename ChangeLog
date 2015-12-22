@@ -1,3 +1,7 @@
+Wed Dec 23 03:05:12 2015  Eric Wong  <e@80x24.org>
+
+	* test/socket/test_basicsocket.rb: attempt fix for [ruby-cvs:60402]
+
 Wed Dec 23 02:59:26 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (__STDC_WANT_LIB_EXT1__): necessary to use memset_s
