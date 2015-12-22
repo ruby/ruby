@@ -33,7 +33,11 @@
 /* #define USE_MATCH_RANGE_MUST_BE_INSIDE_OF_SPECIFIED_RANGE */
 
 #ifndef USE_DIRECT_THREADED_VM
-#define USE_DIRECT_THREADED_VM 1
+# ifdef __GNUC__
+#   define USE_DIRECT_THREADED_VM 1
+# else
+#   define USE_DIRECT_THREADED_VM 0
+# endif
 #endif
 
 #ifdef USE_CRNL_AS_LINE_TERMINATOR
@@ -1360,6 +1364,192 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
   int num_comb_exp_check = reg->num_comb_exp_check;
 #endif
 
+#if USE_DIRECT_THREADED_VM
+#define VM_LOOP JUMP;
+#define VM_LOOP_END
+#define CASE(x) L_##x: sbegin = s; OPCODE_EXEC_HOOK;
+#define DEFAULT L_DEFAULT:
+#define NEXT sprev = sbegin; JUMP
+#define JUMP goto *oplabels[*p++]
+
+  static void  *oplabels[] = {
+    &&L_OP_FINISH,               /* matching process terminator (no more alternative) */
+    &&L_OP_END,                  /* pattern code terminator (success end) */
+
+    &&L_OP_EXACT1,               /* single byte, N = 1 */
+    &&L_OP_EXACT2,               /* single byte, N = 2 */
+    &&L_OP_EXACT3,               /* single byte, N = 3 */
+    &&L_OP_EXACT4,               /* single byte, N = 4 */
+    &&L_OP_EXACT5,               /* single byte, N = 5 */
+    &&L_OP_EXACTN,               /* single byte */
+    &&L_OP_EXACTMB2N1,           /* mb-length = 2 N = 1 */
+    &&L_OP_EXACTMB2N2,           /* mb-length = 2 N = 2 */
+    &&L_OP_EXACTMB2N3,           /* mb-length = 2 N = 3 */
+    &&L_OP_EXACTMB2N,            /* mb-length = 2 */
+    &&L_OP_EXACTMB3N,            /* mb-length = 3 */
+    &&L_OP_EXACTMBN,             /* other length */
+
+    &&L_OP_EXACT1_IC,            /* single byte, N = 1, ignore case */
+    &&L_OP_EXACTN_IC,            /* single byte,        ignore case */
+
+    &&L_OP_CCLASS,
+    &&L_OP_CCLASS_MB,
+    &&L_OP_CCLASS_MIX,
+    &&L_OP_CCLASS_NOT,
+    &&L_OP_CCLASS_MB_NOT,
+    &&L_OP_CCLASS_MIX_NOT,
+    &&L_OP_CCLASS_NODE,          /* pointer to CClassNode node */
+
+    &&L_OP_ANYCHAR,                 /* "."  */
+    &&L_OP_ANYCHAR_ML,              /* "."  multi-line */
+    &&L_OP_ANYCHAR_STAR,            /* ".*" */
+    &&L_OP_ANYCHAR_ML_STAR,         /* ".*" multi-line */
+    &&L_OP_ANYCHAR_STAR_PEEK_NEXT,
+    &&L_OP_ANYCHAR_ML_STAR_PEEK_NEXT,
+
+    &&L_OP_WORD,
+    &&L_OP_NOT_WORD,
+    &&L_OP_WORD_BOUND,
+    &&L_OP_NOT_WORD_BOUND,
+#ifdef USE_WORD_BEGIN_END
+    &&L_OP_WORD_BEGIN,
+    &&L_OP_WORD_END,
+#else
+    &&L_DEFAULT,
+    &&L_DEFAULT,
+#endif
+    &&L_OP_ASCII_WORD,
+    &&L_OP_NOT_ASCII_WORD,
+    &&L_OP_ASCII_WORD_BOUND,
+    &&L_OP_NOT_ASCII_WORD_BOUND,
+#ifdef USE_WORD_BEGIN_END
+    &&L_OP_ASCII_WORD_BEGIN,
+    &&L_OP_ASCII_WORD_END,
+#else
+    &&L_DEFAULT,
+    &&L_DEFAULT,
+#endif
+
+    &&L_OP_BEGIN_BUF,
+    &&L_OP_END_BUF,
+    &&L_OP_BEGIN_LINE,
+    &&L_OP_END_LINE,
+    &&L_OP_SEMI_END_BUF,
+    &&L_OP_BEGIN_POSITION,
+    &&L_OP_BEGIN_POS_OR_LINE,    /* used for implicit anchor optimization */
+
+    &&L_OP_BACKREF1,
+    &&L_OP_BACKREF2,
+    &&L_OP_BACKREFN,
+    &&L_OP_BACKREFN_IC,
+    &&L_OP_BACKREF_MULTI,
+    &&L_OP_BACKREF_MULTI_IC,
+#ifdef USE_BACKREF_WITH_LEVEL
+    &&L_OP_BACKREF_WITH_LEVEL,   /* \k<xxx+n>, \k<xxx-n> */
+#else
+    &&L_DEFAULT,
+#endif
+    &&L_OP_MEMORY_START,
+    &&L_OP_MEMORY_START_PUSH,    /* push back-tracker to stack */
+    &&L_OP_MEMORY_END_PUSH,      /* push back-tracker to stack */
+#ifdef USE_SUBEXP_CALL
+    &&L_OP_MEMORY_END_PUSH_REC,  /* push back-tracker to stack */
+#else
+    &&L_DEFAULT,
+#endif
+    &&L_OP_MEMORY_END,
+#ifdef USE_SUBEXP_CALL
+    &&L_OP_MEMORY_END_REC,       /* push marker to stack */
+#else
+    &&L_DEFAULT,
+#endif
+
+    &&L_OP_KEEP,
+
+    &&L_OP_FAIL,                 /* pop stack and move */
+    &&L_OP_JUMP,
+    &&L_OP_PUSH,
+    &&L_OP_POP,
+    &&L_OP_PUSH_OR_JUMP_EXACT1,  /* if match exact then push, else jump. */
+    &&L_OP_PUSH_IF_PEEK_NEXT,    /* if match exact then push, else none. */
+    &&L_OP_REPEAT,               /* {n,m} */
+    &&L_OP_REPEAT_NG,            /* {n,m}? (non greedy) */
+    &&L_OP_REPEAT_INC,
+    &&L_OP_REPEAT_INC_NG,        /* non greedy */
+    &&L_OP_REPEAT_INC_SG,        /* search and get in stack */
+    &&L_OP_REPEAT_INC_NG_SG,     /* search and get in stack (non greedy) */
+    &&L_OP_NULL_CHECK_START,     /* null loop checker start */
+    &&L_OP_NULL_CHECK_END,       /* null loop checker end   */
+#ifdef USE_MONOMANIAC_CHECK_CAPTURES_IN_ENDLESS_REPEAT
+    &&L_OP_NULL_CHECK_END_MEMST, /* null loop checker end (with capture status) */
+#else
+    &&L_DEFAULT,
+#endif
+#ifdef USE_SUBEXP_CALL
+    &&L_OP_NULL_CHECK_END_MEMST_PUSH, /* with capture status and push check-end */
+#else
+    &&L_DEFAULT,
+#endif
+
+    &&L_OP_PUSH_POS,             /* (?=...)  start */
+    &&L_OP_POP_POS,              /* (?=...)  end   */
+    &&L_OP_PUSH_POS_NOT,         /* (?!...)  start */
+    &&L_OP_FAIL_POS,             /* (?!...)  end   */
+    &&L_OP_PUSH_STOP_BT,         /* (?>...)  start */
+    &&L_OP_POP_STOP_BT,          /* (?>...)  end   */
+    &&L_OP_LOOK_BEHIND,          /* (?<=...) start (no needs end opcode) */
+    &&L_OP_PUSH_LOOK_BEHIND_NOT, /* (?<!...) start */
+    &&L_OP_FAIL_LOOK_BEHIND_NOT, /* (?<!...) end   */
+
+#ifdef USE_SUBEXP_CALL
+    &&L_OP_CALL,                 /* \g<name> */
+    &&L_OP_RETURN,
+#else
+    &&L_DEFAULT,
+    &&L_DEFAULT,
+#endif
+    &&L_OP_CONDITION,
+
+#ifdef USE_COMBINATION_EXPLOSION_CHECK
+    &&L_OP_STATE_CHECK_PUSH,         /* combination explosion check and push */
+    &&L_OP_STATE_CHECK_PUSH_OR_JUMP, /* check ok -> push, else jump  */
+    &&L_OP_STATE_CHECK,              /* check only */
+#else
+    &&L_DEFAULT,
+    &&L_DEFAULT,
+    &&L_DEFAULT,
+#endif
+#ifdef USE_COMBINATION_EXPLOSION_CHECK
+    &&L_OP_STATE_CHECK_ANYCHAR_STAR,
+    &&L_OP_STATE_CHECK_ANYCHAR_ML_STAR,
+#else
+    &&L_DEFAULT,
+    &&L_DEFAULT,
+#endif
+    /* no need: IS_DYNAMIC_OPTION() == 0 */
+#if 0   /* no need: IS_DYNAMIC_OPTION() == 0 */
+    &&L_OP_SET_OPTION_PUSH,    /* set option and push recover option */
+    &&L_OP_SET_OPTION          /* set option */
+#else
+    &&L_DEFAULT,
+    &&L_DEFAULT
+#endif
+  };
+#else
+
+#define VM_LOOP                                 \
+  while (1) {                                   \
+  OPCODE_EXEC_HOOK;                             \
+  sbegin = s;                                   \
+  switch (*p++) {
+#define VM_LOOP_END } sprev = sbegin; }
+#define CASE(x) case x:
+#define DEFAULT default:
+#define NEXT break
+#define JUMP continue; break
+#endif
+
+
 #ifdef USE_SUBEXP_CALL
   /* Stack #0 is used to store the pattern itself and used for (?R), \g<0>, etc. */
   n = reg->num_repeat + (reg->num_mem + 1) * 2;
@@ -1432,192 +1622,6 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
     }
 #else
 #define OPCODE_EXEC_HOOK ((void) 0)
-#endif
-
-
-#if USE_DIRECT_THREADED_VM
-#define VM_LOOP JUMP;
-#define VM_LOOP_END
-#define CASE(x) L_##x: sbegin = s; OPCODE_EXEC_HOOK;
-#define DEFAULT L_DEFAULT:
-#define NEXT sprev = sbegin; JUMP
-#define JUMP goto *oplabels[*p++]
-
-static void  *oplabels[] = {
-  &&L_OP_FINISH ,        /* matching process terminator (no more alternative) */
-  &&L_OP_END,        /* pattern code terminator (success end) */
-
-  &&L_OP_EXACT1,        /* single byte, N = 1 */
-  &&L_OP_EXACT2,            /* single byte, N = 2 */
-  &&L_OP_EXACT3,            /* single byte, N = 3 */
-  &&L_OP_EXACT4,            /* single byte, N = 4 */
-  &&L_OP_EXACT5,            /* single byte, N = 5 */
-  &&L_OP_EXACTN,            /* single byte */
-  &&L_OP_EXACTMB2N1,        /* mb-length = 2 N = 1 */
-  &&L_OP_EXACTMB2N2,        /* mb-length = 2 N = 2 */
-  &&L_OP_EXACTMB2N3,        /* mb-length = 2 N = 3 */
-  &&L_OP_EXACTMB2N,         /* mb-length = 2 */
-  &&L_OP_EXACTMB3N,         /* mb-length = 3 */
-  &&L_OP_EXACTMBN,          /* other length */
-
-  &&L_OP_EXACT1_IC,         /* single byte, N = 1, ignore case */
-  &&L_OP_EXACTN_IC,         /* single byte,        ignore case */
-
-  &&L_OP_CCLASS,
-  &&L_OP_CCLASS_MB,
-  &&L_OP_CCLASS_MIX,
-  &&L_OP_CCLASS_NOT,
-  &&L_OP_CCLASS_MB_NOT,
-  &&L_OP_CCLASS_MIX_NOT,
-  &&L_OP_CCLASS_NODE,       /* pointer to CClassNode node */
-
-  &&L_OP_ANYCHAR,                 /* "."  */
-  &&L_OP_ANYCHAR_ML,              /* "."  multi-line */
-  &&L_OP_ANYCHAR_STAR,            /* ".*" */
-  &&L_OP_ANYCHAR_ML_STAR,         /* ".*" multi-line */
-  &&L_OP_ANYCHAR_STAR_PEEK_NEXT,
-  &&L_OP_ANYCHAR_ML_STAR_PEEK_NEXT,
-
-  &&L_OP_WORD,
-  &&L_OP_NOT_WORD,
-  &&L_OP_WORD_BOUND,
-  &&L_OP_NOT_WORD_BOUND,
-#ifdef USE_WORD_BEGIN_END
-  &&L_OP_WORD_BEGIN,
-  &&L_OP_WORD_END,
-#else
-  &&L_DEFAULT,
-  &&L_DEFAULT,
-#endif
-  &&L_OP_ASCII_WORD,
-  &&L_OP_NOT_ASCII_WORD,
-  &&L_OP_ASCII_WORD_BOUND,
-  &&L_OP_NOT_ASCII_WORD_BOUND,
-#ifdef USE_WORD_BEGIN_END
-  &&L_OP_ASCII_WORD_BEGIN,
-  &&L_OP_ASCII_WORD_END,
-#else
-  &&L_DEFAULT,
-  &&L_DEFAULT,
-#endif
-
-  &&L_OP_BEGIN_BUF,
-  &&L_OP_END_BUF,
-  &&L_OP_BEGIN_LINE,
-  &&L_OP_END_LINE,
-  &&L_OP_SEMI_END_BUF,
-  &&L_OP_BEGIN_POSITION,
-  &&L_OP_BEGIN_POS_OR_LINE,   /* used for implicit anchor optimization */
-
-  &&L_OP_BACKREF1,
-  &&L_OP_BACKREF2,
-  &&L_OP_BACKREFN,
-  &&L_OP_BACKREFN_IC,
-  &&L_OP_BACKREF_MULTI,
-  &&L_OP_BACKREF_MULTI_IC,
-#ifdef USE_BACKREF_WITH_LEVEL
-  &&L_OP_BACKREF_WITH_LEVEL,    /* \k<xxx+n>, \k<xxx-n> */
-#else
-  &&L_DEFAULT,
-#endif
-  &&L_OP_MEMORY_START,
-  &&L_OP_MEMORY_START_PUSH,   /* push back-tracker to stack */
-  &&L_OP_MEMORY_END_PUSH,     /* push back-tracker to stack */
-#ifdef USE_SUBEXP_CALL
-  &&L_OP_MEMORY_END_PUSH_REC, /* push back-tracker to stack */
-#else
-  &&L_DEFAULT,
-#endif
-  &&L_OP_MEMORY_END,
-#ifdef USE_SUBEXP_CALL
-  &&L_OP_MEMORY_END_REC,      /* push marker to stack */
-#else
-  &&L_DEFAULT,
-#endif
-
-  &&L_OP_KEEP,
-
-  &&L_OP_FAIL,               /* pop stack and move */
-  &&L_OP_JUMP,
-  &&L_OP_PUSH,
-  &&L_OP_POP,
-  &&L_OP_PUSH_OR_JUMP_EXACT1,  /* if match exact then push, else jump. */
-  &&L_OP_PUSH_IF_PEEK_NEXT,    /* if match exact then push, else none. */
-  &&L_OP_REPEAT,               /* {n,m} */
-  &&L_OP_REPEAT_NG,            /* {n,m}? (non greedy) */
-  &&L_OP_REPEAT_INC,
-  &&L_OP_REPEAT_INC_NG,        /* non greedy */
-  &&L_OP_REPEAT_INC_SG,        /* search and get in stack */
-  &&L_OP_REPEAT_INC_NG_SG,     /* search and get in stack (non greedy) */
-  &&L_OP_NULL_CHECK_START,     /* null loop checker start */
-  &&L_OP_NULL_CHECK_END,       /* null loop checker end   */
-#ifdef USE_MONOMANIAC_CHECK_CAPTURES_IN_ENDLESS_REPEAT
-  &&L_OP_NULL_CHECK_END_MEMST, /* null loop checker end (with capture status) */
-#else
-  &&L_DEFAULT,
-#endif
-#ifdef USE_SUBEXP_CALL
-  &&L_OP_NULL_CHECK_END_MEMST_PUSH, /* with capture status and push check-end */
-#else
-  &&L_DEFAULT,
-#endif
-
-  &&L_OP_PUSH_POS,             /* (?=...)  start */
-  &&L_OP_POP_POS,              /* (?=...)  end   */
-  &&L_OP_PUSH_POS_NOT,         /* (?!...)  start */
-  &&L_OP_FAIL_POS,             /* (?!...)  end   */
-  &&L_OP_PUSH_STOP_BT,         /* (?>...)  start */
-  &&L_OP_POP_STOP_BT,          /* (?>...)  end   */
-  &&L_OP_LOOK_BEHIND,          /* (?<=...) start (no needs end opcode) */
-  &&L_OP_PUSH_LOOK_BEHIND_NOT, /* (?<!...) start */
-  &&L_OP_FAIL_LOOK_BEHIND_NOT, /* (?<!...) end   */
-
-#ifdef USE_SUBEXP_CALL
-  &&L_OP_CALL,                 /* \g<name> */
-  &&L_OP_RETURN,
-#else
-  &&L_DEFAULT,
-  &&L_DEFAULT,
-#endif
-  &&L_OP_CONDITION,
-
-#ifdef USE_COMBINATION_EXPLOSION_CHECK
-  &&L_OP_STATE_CHECK_PUSH,         /* combination explosion check and push */
-  &&L_OP_STATE_CHECK_PUSH_OR_JUMP, /* check ok -> push, else jump  */
-  &&L_OP_STATE_CHECK,              /* check only */
-#else
-  &&L_DEFAULT,
-  &&L_DEFAULT,
-  &&L_DEFAULT,
-#endif
-#ifdef USE_COMBINATION_EXPLOSION_CHECK
-  &&L_OP_STATE_CHECK_ANYCHAR_STAR,
-  &&L_OP_STATE_CHECK_ANYCHAR_ML_STAR,
-#else
-  &&L_DEFAULT,
-  &&L_DEFAULT,
-#endif
-  /* no need: IS_DYNAMIC_OPTION() == 0 */
-#if 0   /* no need: IS_DYNAMIC_OPTION() == 0 */
-  &&L_OP_SET_OPTION_PUSH,    /* set option and push recover option */
-  &&L_OP_SET_OPTION          /* set option */
-#else
-  &&L_DEFAULT,
-  &&L_DEFAULT
-#endif
-    };
-#else
-
-#define VM_LOOP                                 \
-  while (1) {                                   \
-  OPCODE_EXEC_HOOK;                             \
-  sbegin = s;                                   \
-  switch (*p++) {
-#define VM_LOOP_END } sprev = sbegin; }
-#define CASE(x) case x:
-#define DEFAULT default:
-#define NEXT break
-#define JUMP continue; break
 #endif
 
 
