@@ -1,3 +1,9 @@
+Tue Dec 22 14:31:28 2015  Toru Iwase  <tietew@tietew.net>
+
+	* ext/cgi/escape/escape.c (optimized_escape_html): CGI.escapeHTML
+	  should return unfrozen new string.
+	  [ruby-core:72426] [Bug #11858]
+
 Tue Dec 22 05:39:58 2015  Takashi Kokubun  <takashikkbn@gmail.com>
 
 	* ext/cgi/escape/escape.c (preserve_original_state): Preserve

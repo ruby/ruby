@@ -62,20 +62,36 @@ class CGIUtilTest < Test::Unit::TestCase
     assert_equal("&#39;&amp;&quot;&gt;&lt;", CGI::escapeHTML("'&\"><"))
   end
 
+  def test_cgi_escape_html_duplicated
+    orig = "Ruby".force_encoding("US-ASCII")
+    str = CGI::escapeHTML(orig)
+    assert_equal(orig, str)
+    assert_not_same(orig, str)
+  end
+
+  def assert_cgi_escape_html_preserve_encoding(str, encoding)
+    assert_equal(encoding, CGI::escapeHTML(str.dup.force_encoding(encoding)).encoding)
+  end
+
   def test_cgi_escape_html_preserve_encoding
-    assert_equal(Encoding::US_ASCII, CGI::escapeHTML("'&\"><".force_encoding("US-ASCII")).encoding)
-    assert_equal(Encoding::ASCII_8BIT, CGI::escapeHTML("'&\"><".force_encoding("ASCII-8BIT")).encoding)
-    assert_equal(Encoding::UTF_8, CGI::escapeHTML("'&\"><".force_encoding("UTF-8")).encoding)
+    Encoding.list do |enc|
+      assert_cgi_escape_html_preserve_encoding("'&\"><", enc)
+      assert_cgi_escape_html_preserve_encoding("Ruby", enc)
+    end
   end
 
   def test_cgi_escape_html_preserve_tainted
-    assert_equal(false, CGI::escapeHTML("'&\"><").tainted?)
-    assert_equal(true, CGI::escapeHTML("'&\"><".taint).tainted?)
+    assert_not_predicate CGI::escapeHTML("'&\"><"),       :tainted?
+    assert_predicate     CGI::escapeHTML("'&\"><".taint), :tainted?
+    assert_not_predicate CGI::escapeHTML("Ruby"),         :tainted?
+    assert_predicate     CGI::escapeHTML("Ruby".taint),   :tainted?
   end
 
-  def test_cgi_escape_html_preserve_frozen
-    assert_equal(false, CGI::escapeHTML("'&\"><".dup).frozen?)
-    assert_equal(true, CGI::escapeHTML("'&\"><".freeze).frozen?)
+  def test_cgi_escape_html_dont_freeze
+    assert_not_predicate CGI::escapeHTML("'&\"><".dup),    :frozen?
+    assert_not_predicate CGI::escapeHTML("'&\"><".freeze), :frozen?
+    assert_not_predicate CGI::escapeHTML("Ruby".dup),      :frozen?
+    assert_not_predicate CGI::escapeHTML("Ruby".freeze),   :frozen?
   end
 
   def test_cgi_unescapeHTML
