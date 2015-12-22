@@ -39,6 +39,16 @@ with all sufficient information, see the ChangeLog file.
           obj&.attr += 1
     [Feature #11537]
 
+* the did_you_mean gem:
+
+  * When a NameError or NoMethodError occurs because of a typo in the name,
+    the did_you_mean gem automatically suggests other names similar to the
+    method name.
+
+      "Yuki".starts_with?("Y")
+      # => NoMethodError: undefined method `starts_with?' for "Yuki":String
+      #    Did you mean?  start_with?
+
 * indented here document:
 
   * new string literal, here document starts with `<<~`.
