@@ -1,3 +1,8 @@
+Wed Dec 23 06:05:50 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_yylex): allow here documents in labeled
+	  argument.  [ruby-core:72396] [Bug #11849]
+
 Wed Dec 23 05:52:06 2015  Yuki Yugui Sonoda  <yugui@yugui.jp>
 
 	* test/ruby/test_syntax.rb: fix typo in test
