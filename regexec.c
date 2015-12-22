@@ -32,6 +32,10 @@
 
 /* #define USE_MATCH_RANGE_MUST_BE_INSIDE_OF_SPECIFIED_RANGE */
 
+#ifndef USE_DIRECT_THREADED_VM
+#define USE_DIRECT_THREADED_VM 1
+#endif
+
 #ifdef USE_CRNL_AS_LINE_TERMINATOR
 #define ONIGENC_IS_MBC_CRNL(enc,p,end) \
   (ONIGENC_MBC_TO_CODE(enc,p,end) == 13 && \
