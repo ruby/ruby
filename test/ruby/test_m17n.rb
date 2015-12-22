@@ -1642,6 +1642,12 @@ class TestM17N < Test::Unit::TestCase
                  scrub)
   end
 
+  def test_scrub_dummy_encoding
+    s = "\u{3042}".encode("iso-2022-jp")
+    assert_equal(s, s.scrub)
+    assert_equal(s, s.force_encoding("iso-2022-jp").scrub("?"))
+  end
+
   def test_scrub_bang
     str = "\u3042\u3044"
     assert_same(str, str.scrub!)
