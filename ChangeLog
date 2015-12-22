@@ -1,3 +1,9 @@
+Wed Dec 23 02:34:36 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* regexec.c (match_at): move direct threaded VM code to get rid of
+	  mixed declarations and code, and enable it only for gcc since it
+	  depends on a gcc extension.
+
 Wed Dec 23 02:23:19 2015  Yuki Nishijima  <mail@yukinishijima.net>
 
 	* gems/bundled_gems: Upgrade the did_you_mean gem to 1.0.0
