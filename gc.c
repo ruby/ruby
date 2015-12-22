@@ -2400,6 +2400,12 @@ internal_object_p(VALUE obj)
 	  case T_NODE:
 	  case T_ZOMBIE:
 	    break;
+	  case T_CLASS:
+	    if (!p->as.basic.klass) break;
+	    if (FL_TEST(obj, FL_SINGLETON)) {
+		return rb_singleton_class_internal_p(obj);
+	    }
+	    return 0;
 	  default:
 	    if (!p->as.basic.klass) break;
 	    return 0;

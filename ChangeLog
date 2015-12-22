@@ -1,3 +1,11 @@
+Tue Dec 22 22:15:53 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (internal_object_p): should not expose singleton classes
+	  without a metaclass.  based on patches by ko1 and shugo.
+	  [Bug #11740]
+
+	* class.c (rb_singleton_class_object_p): added.
+
 Tue Dec 22 22:15:08 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/io/console/io-console.gemspec: bump up to 0.4.4.
