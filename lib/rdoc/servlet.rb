@@ -440,4 +440,3 @@ version.  If you're viewing Ruby's documentation, include the version of ruby.
   end
 
 end
-

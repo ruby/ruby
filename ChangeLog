@@ -1,3 +1,13 @@
+Tue Dec 22 21:08:05 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/rdoc.rb: bump version to 4.2.1. It contains following fixes.
+	  https://github.com/rdoc/rdoc/pull/340
+	  https://github.com/rdoc/rdoc/pull/341
+	  https://github.com/rdoc/rdoc/pull/367
+	  https://github.com/rdoc/rdoc/pull/368
+	* lib/rdoc/*: ditto.
+	* test/rdoc/*: ditto.
+
 Tue Dec 22 20:25:33 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* ext/psych/lib/psych.rb: bump version to 2.0.17
