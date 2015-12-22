@@ -1,3 +1,8 @@
+Wed Dec 23 02:59:26 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (__STDC_WANT_LIB_EXT1__): necessary to use memset_s
+	  in strict C99 mode.
+
 Wed Dec 23 02:34:36 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* regexec.c (match_at): move direct threaded VM code to get rid of
