@@ -1,3 +1,7 @@
+Tue Dec 22 21:20:00 2015  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.gemspec: bump version to 1.2.8.
+
 Tue Dec 22 21:08:05 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/rdoc.rb: bump version to 4.2.1. It contains following fixes.
