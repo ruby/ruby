@@ -1,3 +1,9 @@
+Wed Dec 23 02:23:19 2015  Yuki Nishijima  <mail@yukinishijima.net>
+
+	* gems/bundled_gems: Upgrade the did_you_mean gem to 1.0.0
+
+	* NEWS: Add news about the did_you_mean gem
+
 Wed Dec 23 02:18:57 2015  Jake Worth  <jakeworth82@gmail.com>
 
 	* doc/contributing.rdoc: [DOC] remove an extra word "here".
