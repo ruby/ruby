@@ -1,3 +1,8 @@
+Wed Dec 23 02:18:57 2015  Jake Worth  <jakeworth82@gmail.com>
+
+	* doc/contributing.rdoc: [DOC] remove an extra word "here".
+	  [Fix GH-1169]
+
 Wed Dec 23 01:58:20 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* regexec.c (USE_DIRECT_THREADED_VM): enable direct threaded VM by
