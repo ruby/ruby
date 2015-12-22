@@ -257,6 +257,9 @@ with all sufficient information, see the ChangeLog file.
 * Fiddle
   * Fiddle::Function#call releases the GVL.  [Feature #11607]
 
+* io-console
+  * Update to io-console 0.4.4
+
 * lib/base64.rb
   * Base64.urlsafe_encode64: added a "padding" option to suppress
     the padding character ("=").  [Feature #10740]
