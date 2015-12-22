@@ -11,6 +11,8 @@ require 'strscan'
 
 begin
   gem 'json'
+rescue NameError => e # --disable-gems
+  raise unless e.name == :gem
 rescue Gem::LoadError
 end
 
