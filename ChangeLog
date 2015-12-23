@@ -1,3 +1,10 @@
+Wed Dec 23 11:58:52 2015  Yuichiro Kaneko  <yui-knk@ruby-lang.org>
+
+	* string.c: Fix document. Default value of the first
+	  argument of `String#split` is not `$;` but `nil`.
+	  When `nil` is passed as first argument, `$;` is used.
+	  [ci skip] [Bug #11729] [ruby-dev:49378]
+
 Wed Dec 23 07:15:17 2015  Eric Wong  <e@80x24.org>
 
 	* ext/socket/init.c (rsock_init_sock): reject reserved FDs

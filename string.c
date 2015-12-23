@@ -6701,7 +6701,7 @@ static const char isspacetable[256] = {
 
 /*
  *  call-seq:
- *     str.split(pattern=$;, [limit])   -> anArray
+ *     str.split(pattern=nil, [limit])   -> anArray
  *
  *  Divides <i>str</i> into substrings based on a delimiter, returning an array
  *  of these substrings.
@@ -6716,8 +6716,8 @@ static const char isspacetable[256] = {
  *  <i>str</i> is split into individual characters. If <i>pattern</i> contains
  *  groups, the respective matches will be returned in the array as well.
  *
- *  If <i>pattern</i> is omitted, the value of <code>$;</code> is used.  If
- *  <code>$;</code> is <code>nil</code> (which is the default), <i>str</i> is
+ *  If <i>pattern</i> is <code>nil</code>, the value of <code>$;</code> is used.
+ *  If <code>$;</code> is <code>nil</code> (which is the default), <i>str</i> is
  *  split on whitespace as if ` ' were specified.
  *
  *  If the <i>limit</i> parameter is omitted, trailing null fields are
