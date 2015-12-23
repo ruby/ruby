@@ -329,7 +329,7 @@ require "irb/locale"
 #   irb.3(<Foo:0x4010af3c>):003:0> bar #=> bar => nil
 #   # kill jobs 1, 2, and 3
 #   irb.3(<Foo:0x4010af3c>):004:0> kill 1, 2, 3
-#   # list open sesssions, should only include main session
+#   # list open sessions, should only include main session
 #   irb(main):009:0> jobs
 #     #0->irb on main (#<Thread:0x400fb7e4> : running)
 #   # quit irb
@@ -344,7 +344,7 @@ module IRB
 
   # Displays current configuration.
   #
-  # Modifing the configuration is achieved by sending a message to IRB.conf.
+  # Modifying the configuration is achieved by sending a message to IRB.conf.
   #
   # See IRB@Configuration for more information.
   def IRB.conf

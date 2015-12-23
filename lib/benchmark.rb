@@ -26,7 +26,7 @@
 #
 #       puts Benchmark.measure { "a"*1_000_000_000 }
 #
-#   On my machine (OSX 10.8.3 on i5 1.7 Ghz) this generates:
+#   On my machine (OSX 10.8.3 on i5 1.7 GHz) this generates:
 #
 #       0.350000   0.400000   0.750000 (  0.835234)
 #
