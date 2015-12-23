@@ -1,3 +1,13 @@
+Thu Dec 24 00:26:05 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/io/console/extconf.rb: fix gem build failure on Windows.
+	  only win32_vk.inc is included in the gem and no dependencies for
+	  the header, so that gperf will not be mandatory.
+	  [ruby-core:72453] [Bug #11866]
+
+	* ext/io/console/io-console.gemspec: include depend file and
+	  win32_vk header.
+
 Wed Dec 23 23:58:44 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_readwrite_syserr_fail): works with the given errno than

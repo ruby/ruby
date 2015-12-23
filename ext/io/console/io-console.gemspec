@@ -1,5 +1,5 @@
 # -*- ruby -*-
-_VERSION = "0.4.4"
+_VERSION = "0.4.5"
 date = %w$Date::                           $[1]
 
 Gem::Specification.new do |s|
@@ -13,7 +13,7 @@ Gem::Specification.new do |s|
   s.homepage = "http://www.ruby-lang.org"
   s.authors = ["Nobu Nakada"]
   s.require_path = %[lib]
-  s.files = %w[console.c extconf.rb lib/console/size.rb]
+  s.files = %w[console.c depend extconf.rb lib/console/size.rb win32_vk.inc]
   s.extensions = %w[extconf.rb]
   s.license = "BSD-2-Clause"
   s.cert_chain  = %w[certs/nobu.pem]
