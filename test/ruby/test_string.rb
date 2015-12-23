@@ -956,6 +956,14 @@ class TestString < Test::Unit::TestCase
     assert_nil($~)
   end
 
+  def test_insert
+    assert_equal("Xabcd", S("abcd").insert(0, 'X'))
+    assert_equal("abcXd", S("abcd").insert(3, 'X'))
+    assert_equal("abcdX", S("abcd").insert(4, 'X'))
+    assert_equal("abXcd", S("abcd").insert(-3, 'X'))
+    assert_equal("abcdX", S("abcd").insert(-1, 'X'))
+  end
+
   def test_intern
     assert_equal(:koala, S("koala").intern)
     assert_not_equal(:koala, S("Koala").intern)
