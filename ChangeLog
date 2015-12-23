@@ -1,3 +1,8 @@
+Wed Dec 23 23:58:44 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_readwrite_syserr_fail): works with the given errno than
+	  thread local errno.
+
 Wed Dec 23 17:57:45 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c, io.c, util.c: prefer rb_syserr_fail with saved errno

@@ -2474,9 +2474,6 @@ rb_io_set_nonblock(rb_io_t *fptr)
 #endif
 }
 
-void
-rb_readwrite_sys_fail(int writable, const char *mesg);
-
 struct read_internal_arg {
     int fd;
     char *str_ptr;
@@ -2546,7 +2543,8 @@ io_getpartial(int argc, VALUE *argv, VALUE io, VALUE opts, int nonblock)
                 if (no_exception_p(opts))
                     return sym_wait_readable;
                 else
-		    rb_readwrite_sys_fail(RB_IO_WAIT_READABLE, "read would block");
+		    rb_readwrite_syserr_fail(RB_IO_WAIT_READABLE,
+					     e, "read would block");
             }
             rb_syserr_fail_path(e, fptr->pathv);
         }
@@ -2671,7 +2669,8 @@ io_read_nonblock(VALUE io, VALUE length, VALUE str, VALUE ex)
 	    int e = errno;
 	    if ((e == EWOULDBLOCK || e == EAGAIN)) {
                 if (ex == Qfalse) return sym_wait_readable;
-                rb_readwrite_sys_fail(RB_IO_WAIT_READABLE, "read would block");
+		rb_readwrite_syserr_fail(RB_IO_WAIT_READABLE,
+					 e, "read would block");
             }
             rb_syserr_fail_path(e, fptr->pathv);
         }
@@ -2713,7 +2712,7 @@ io_write_nonblock(VALUE io, VALUE str, VALUE ex)
 		return sym_wait_writable;
 	    }
 	    else {
-		rb_readwrite_sys_fail(RB_IO_WAIT_WRITABLE, "write would block");
+		rb_readwrite_syserr_fail(RB_IO_WAIT_WRITABLE, e, "write would block");
 	    }
 	}
 	rb_syserr_fail_path(e, fptr->pathv);
@@ -11964,10 +11963,15 @@ argf_write(VALUE argf, VALUE str)
 }
 
 void
-rb_readwrite_sys_fail(int writable, const char *mesg)
+rb_readwrite_sys_fail(enum rb_io_wait_readwrite writable, const char *mesg)
+{
+    rb_readwrite_syserr_fail(writable, errno, mesg);
+}
+
+void
+rb_readwrite_syserr_fail(enum rb_io_wait_readwrite writable, int n, const char *mesg)
 {
     VALUE arg;
-    int n = errno;
     arg = mesg ? rb_str_new2(mesg) : Qnil;
     if (writable == RB_IO_WAIT_WRITABLE) {
 	switch (n) {

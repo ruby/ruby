@@ -457,7 +457,7 @@ sock_connect_nonblock(VALUE sock, VALUE addr, VALUE ex)
             if (ex == Qfalse) {
                 return sym_wait_writable;
             }
-            rb_readwrite_sys_fail(RB_IO_WAIT_WRITABLE, "connect(2) would block");
+            rb_readwrite_syserr_fail(RB_IO_WAIT_WRITABLE, e, "connect(2) would block");
 	}
 	if (e == EISCONN) {
             if (ex == Qfalse) {
