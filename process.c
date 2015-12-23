@@ -1061,9 +1061,10 @@ proc_waitall(void)
     for (pid = -1;;) {
 	pid = rb_waitpid(-1, &status, 0);
 	if (pid == -1) {
-	    if (errno == ECHILD)
+	    int e = errno;
+	    if (e == ECHILD)
 		break;
-	    rb_sys_fail(0);
+	    rb_syserr_fail(e, 0);
 	}
 	rb_ary_push(result, rb_assoc_new(PIDT2NUM(pid), rb_last_status_get()));
     }
@@ -3436,8 +3437,7 @@ disable_child_handler_before_fork(struct child_handler_disabler_state *old)
 
     ret = pthread_sigmask(SIG_SETMASK, &all, &old->sigmask); /* not async-signal-safe */
     if (ret != 0) {
-        errno = ret;
-        rb_sys_fail("pthread_sigmask");
+	rb_syserr_fail(ret, "pthread_sigmask");
     }
 #else
 # pragma GCC warning "pthread_sigmask on fork is not available. potentially dangerous"
@@ -3446,8 +3446,7 @@ disable_child_handler_before_fork(struct child_handler_disabler_state *old)
 #ifdef PTHREAD_CANCEL_DISABLE
     ret = pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &old->cancelstate);
     if (ret != 0) {
-        errno = ret;
-        rb_sys_fail("pthread_setcancelstate");
+	rb_syserr_fail(ret, "pthread_setcancelstate");
     }
 #endif
 }
@@ -3460,16 +3459,14 @@ disable_child_handler_fork_parent(struct child_handler_disabler_state *old)
 #ifdef PTHREAD_CANCEL_DISABLE
     ret = pthread_setcancelstate(old->cancelstate, NULL);
     if (ret != 0) {
-        errno = ret;
-        rb_sys_fail("pthread_setcancelstate");
+	rb_syserr_fail(ret, "pthread_setcancelstate");
     }
 #endif
 
 #ifdef HAVE_PTHREAD_SIGMASK
     ret = pthread_sigmask(SIG_SETMASK, &old->sigmask, NULL); /* not async-signal-safe */
     if (ret != 0) {
-        errno = ret;
-        rb_sys_fail("pthread_sigmask");
+	rb_syserr_fail(ret, "pthread_sigmask");
     }
 #else
 # pragma GCC warning "pthread_sigmask on fork is not available. potentially dangerous"
@@ -5023,9 +5020,10 @@ obj2uid(VALUE id
 	errno = ERANGE;
 	/* gepwnam_r() on MacOS X doesn't set errno if buffer size is insufficient */
 	while (getpwnam_r(usrname, &pwbuf, getpw_buf, getpw_buf_len, &pwptr)) {
-	    if (errno != ERANGE || getpw_buf_len >= GETPW_R_SIZE_LIMIT) {
+	    int e = errno;
+	    if (e != ERANGE || getpw_buf_len >= GETPW_R_SIZE_LIMIT) {
 		rb_free_tmp_buffer(getpw_tmp);
-		rb_sys_fail("getpwnam_r");
+		rb_syserr_fail(e, "getpwnam_r");
 	    }
 	    rb_str_modify_expand(*getpw_tmp, getpw_buf_len);
 	    getpw_buf = RSTRING_PTR(*getpw_tmp);
@@ -5101,9 +5099,10 @@ obj2gid(VALUE id
 	errno = ERANGE;
 	/* gegrnam_r() on MacOS X doesn't set errno if buffer size is insufficient */
 	while (getgrnam_r(grpname, &grbuf, getgr_buf, getgr_buf_len, &grptr)) {
-	    if (errno != ERANGE || getgr_buf_len >= GETGR_R_SIZE_LIMIT) {
+	    int e = errno;
+	    if (e != ERANGE || getgr_buf_len >= GETGR_R_SIZE_LIMIT) {
 		rb_free_tmp_buffer(getgr_tmp);
-		rb_sys_fail("getgrnam_r");
+		rb_syserr_fail(e, "getgrnam_r");
 	    }
 	    rb_str_modify_expand(*getgr_tmp, getgr_buf_len);
 	    getgr_buf = RSTRING_PTR(*getgr_tmp);
@@ -5494,8 +5493,7 @@ p_uid_change_privilege(VALUE obj, VALUE id)
 	    if (setruid(uid) < 0) rb_sys_fail(0);
 	}
 	else {
-	    errno = EPERM;
-	    rb_sys_fail(0);
+	    rb_syserr_fail(EPERM, 0);
 	}
 #elif defined HAVE_44BSD_SETUID
 	if (getuid() == uid) {
@@ -5504,24 +5502,21 @@ p_uid_change_privilege(VALUE obj, VALUE id)
 	    SAVED_USER_ID = uid;
 	}
 	else {
-	    errno = EPERM;
-	    rb_sys_fail(0);
+	    rb_syserr_fail(EPERM, 0);
 	}
 #elif defined HAVE_SETEUID
 	if (getuid() == uid && SAVED_USER_ID == uid) {
 	    if (seteuid(uid) < 0) rb_sys_fail(0);
 	}
 	else {
-	    errno = EPERM;
-	    rb_sys_fail(0);
+	    rb_syserr_fail(EPERM, 0);
 	}
 #elif defined HAVE_SETUID
 	if (getuid() == uid && SAVED_USER_ID == uid) {
 	    if (setuid(uid) < 0) rb_sys_fail(0);
 	}
 	else {
-	    errno = EPERM;
-	    rb_sys_fail(0);
+	    rb_syserr_fail(EPERM, 0);
 	}
 #else
 	rb_notimplement();
@@ -6200,8 +6195,7 @@ p_gid_change_privilege(VALUE obj, VALUE id)
 	    if (setrgid(gid) < 0) rb_sys_fail(0);
 	}
 	else {
-	    errno = EPERM;
-	    rb_sys_fail(0);
+	    rb_syserr_fail(EPERM, 0);
 	}
 #elif defined HAVE_44BSD_SETGID
 	if (getgid() == gid) {
@@ -6210,24 +6204,21 @@ p_gid_change_privilege(VALUE obj, VALUE id)
 	    SAVED_GROUP_ID = gid;
 	}
 	else {
-	    errno = EPERM;
-	    rb_sys_fail(0);
+	    rb_syserr_fail(EPERM, 0);
 	}
 #elif defined HAVE_SETEGID
 	if (getgid() == gid && SAVED_GROUP_ID == gid) {
 	    if (setegid(gid) < 0) rb_sys_fail(0);
 	}
 	else {
-	    errno = EPERM;
-	    rb_sys_fail(0);
+	    rb_syserr_fail(EPERM, 0);
 	}
 #elif defined HAVE_SETGID
 	if (getgid() == gid && SAVED_GROUP_ID == gid) {
 	    if (setgid(gid) < 0) rb_sys_fail(0);
 	}
 	else {
-	    errno = EPERM;
-	    rb_sys_fail(0);
+	    rb_syserr_fail(EPERM, 0);
 	}
 #else
 	(void)gid;
@@ -6690,8 +6681,7 @@ p_uid_switch(VALUE obj)
 	}
     }
     else {
-	errno = EPERM;
-	rb_sys_fail(0);
+	rb_syserr_fail(EPERM, 0);
     }
 
     UNREACHABLE;
@@ -6715,8 +6705,7 @@ p_uid_switch(VALUE obj)
     euid = geteuid();
 
     if (uid == euid) {
-	errno = EPERM;
-	rb_sys_fail(0);
+	rb_syserr_fail(EPERM, 0);
     }
     p_uid_exchange(obj);
     if (rb_block_given_p()) {
@@ -6805,8 +6794,7 @@ p_gid_switch(VALUE obj)
 	}
     }
     else {
-	errno = EPERM;
-	rb_sys_fail(0);
+	rb_syserr_fail(EPERM, 0);
     }
 
     UNREACHABLE;
@@ -6830,8 +6818,7 @@ p_gid_switch(VALUE obj)
     egid = getegid();
 
     if (gid == egid) {
-	errno = EPERM;
-	rb_sys_fail(0);
+	rb_syserr_fail(EPERM, 0);
     }
     p_gid_exchange(obj);
     if (rb_block_given_p()) {
@@ -7375,8 +7362,7 @@ rb_clock_gettime(int argc, VALUE *argv)
 #endif
     }
     /* EINVAL emulates clock_gettime behavior when clock_id is invalid. */
-    errno = EINVAL;
-    rb_sys_fail(0);
+    rb_syserr_fail(EINVAL, 0);
 
   success:
     return make_clock_result(&tt, numerators, num_numerators, denominators, num_denominators, unit);
@@ -7514,8 +7500,7 @@ rb_clock_getres(int argc, VALUE *argv)
 #endif
     }
     /* EINVAL emulates clock_getres behavior when clock_id is invalid. */
-    errno = EINVAL;
-    rb_sys_fail(0);
+    rb_syserr_fail(EINVAL, 0);
 
   success:
     if (unit == ID2SYM(id_hertz)) {

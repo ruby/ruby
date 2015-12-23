@@ -65,14 +65,16 @@ rsock_init_unixsock(VALUE sock, VALUE path, int server)
     }
 
     if (status < 0) {
+	int e = errno;
 	close(fd);
-        rsock_sys_fail_path("connect(2)", path);
+	rsock_syserr_fail_path(e, "connect(2)", path);
     }
 
     if (server) {
 	if (listen(fd, SOMAXCONN) < 0) {
+	    int e = errno;
 	    close(fd);
-            rsock_sys_fail_path("listen(2)", path);
+	    rsock_syserr_fail_path(e, "listen(2)", path);
 	}
     }
 

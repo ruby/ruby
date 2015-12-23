@@ -62,8 +62,7 @@ rsock_init_sock(VALUE sock, int fd)
     rb_io_t *fp;
 
     if (!is_socket(fd) || rb_reserved_fd_p(fd)) {
-	errno = EBADF;
-	rb_sys_fail("not a socket file descriptor");
+	rb_syserr_fail(EBADF, "not a socket file descriptor");
     }
 
     rb_update_max_fd(fd);
@@ -246,7 +245,8 @@ rsock_s_recvfrom_nonblock(VALUE sock, VALUE len, VALUE flg, VALUE str,
         alen = len0;
 
     if (slen < 0) {
-	switch (errno) {
+	int e = errno;
+	switch (e) {
 	  case EAGAIN:
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
 	  case EWOULDBLOCK:
@@ -255,7 +255,7 @@ rsock_s_recvfrom_nonblock(VALUE sock, VALUE len, VALUE flg, VALUE str,
 		return sym_wait_readable;
             rb_readwrite_sys_fail(RB_IO_WAIT_READABLE, "recvfrom(2) would block");
 	}
-	rb_sys_fail("recvfrom(2)");
+	rb_syserr_fail(e, "recvfrom(2)");
     }
     if (slen != RSTRING_LEN(str)) {
 	rb_str_set_len(str, slen);
@@ -558,7 +558,8 @@ rsock_s_accept_nonblock(VALUE klass, VALUE ex, rb_io_t *fptr,
     rb_io_set_nonblock(fptr);
     fd2 = cloexec_accept(fptr->fd, (struct sockaddr*)sockaddr, len, 1);
     if (fd2 < 0) {
-	switch (errno) {
+	int e = errno;
+	switch (e) {
 	  case EAGAIN:
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
 	  case EWOULDBLOCK:
@@ -571,7 +572,7 @@ rsock_s_accept_nonblock(VALUE klass, VALUE ex, rb_io_t *fptr,
 		return sym_wait_readable;
             rb_readwrite_sys_fail(RB_IO_WAIT_READABLE, "accept(2) would block");
 	}
-        rb_sys_fail("accept(2)");
+        rb_syserr_fail(e, "accept(2)");
     }
     rb_update_max_fd(fd2);
     return rsock_init_sock(rb_obj_alloc(klass), fd2);
@@ -604,7 +605,8 @@ rsock_s_accept(VALUE klass, int fd, struct sockaddr *sockaddr, socklen_t *len)
     rsock_maybe_wait_fd(fd);
     fd2 = (int)BLOCKING_REGION_FD(accept_blocking, &arg);
     if (fd2 < 0) {
-	switch (errno) {
+	int e = errno;
+	switch (e) {
 	  case EMFILE:
 	  case ENFILE:
 	  case ENOMEM:
@@ -617,7 +619,7 @@ rsock_s_accept(VALUE klass, int fd, struct sockaddr *sockaddr, socklen_t *len)
 	    retry = 0;
 	    goto retry;
 	}
-	rb_sys_fail("accept(2)");
+	rb_syserr_fail(e, "accept(2)");
     }
     rb_update_max_fd(fd2);
     if (!klass) return INT2NUM(fd2);

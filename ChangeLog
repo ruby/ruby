@@ -1,3 +1,9 @@
+Wed Dec 23 17:57:45 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c, io.c, util.c: prefer rb_syserr_fail with saved errno
+	  over setting errno then call rb_sys_fail, not to be clobbered
+	  potentially and to reduce thread local errno accesses.
+
 Wed Dec 23 11:58:52 2015  Yuichiro Kaneko  <yui-knk@ruby-lang.org>
 
 	* string.c: Fix document. Default value of the first
