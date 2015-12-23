@@ -1285,8 +1285,8 @@ bsock_sendmsg_internal(VALUE sock, VALUE data, VALUE vflags,
 	    if (ex == Qfalse) {
 		return sym_wait_writable;
 	    }
-	    rb_readwrite_sys_fail(RB_IO_WAIT_WRITABLE,
-				  "sendmsg(2) would block");
+	    rb_readwrite_syserr_fail(RB_IO_WAIT_WRITABLE, e,
+				     "sendmsg(2) would block");
 	}
 	rb_syserr_fail(e, "sendmsg(2)");
     }
@@ -1559,7 +1559,7 @@ bsock_recvmsg_internal(VALUE sock,
             if (ex == Qfalse) {
                 return sym_wait_readable;
             }
-            rb_readwrite_sys_fail(RB_IO_WAIT_READABLE, "recvmsg(2) would block");
+	    rb_readwrite_syserr_fail(RB_IO_WAIT_READABLE, e, "recvmsg(2) would block");
         }
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
 	if (!gc_done && (e == EMFILE || e == EMSGSIZE)) {

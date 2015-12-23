@@ -253,7 +253,7 @@ rsock_s_recvfrom_nonblock(VALUE sock, VALUE len, VALUE flg, VALUE str,
 #endif
             if (ex == Qfalse)
 		return sym_wait_readable;
-            rb_readwrite_sys_fail(RB_IO_WAIT_READABLE, "recvfrom(2) would block");
+            rb_readwrite_syserr_fail(RB_IO_WAIT_READABLE, e, "recvfrom(2) would block");
 	}
 	rb_syserr_fail(e, "recvfrom(2)");
     }
@@ -570,7 +570,7 @@ rsock_s_accept_nonblock(VALUE klass, VALUE ex, rb_io_t *fptr,
 #endif
             if (ex == Qfalse)
 		return sym_wait_readable;
-            rb_readwrite_sys_fail(RB_IO_WAIT_READABLE, "accept(2) would block");
+            rb_readwrite_syserr_fail(RB_IO_WAIT_READABLE, e, "accept(2) would block");
 	}
         rb_syserr_fail(e, "accept(2)");
     }
