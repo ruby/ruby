@@ -71,7 +71,7 @@
 #
 # * General
 #   * possible to choose between XMLParser module (Expat wrapper) and REXML/NQXML (pure Ruby) parsers
-#   * Marshalling Ruby objects to Hashs and reconstruct them later from a Hash
+#   * Marshalling Ruby objects to Hashes and reconstruct them later from a Hash
 #   * SandStorm component architecture XMLRPC::Client interface
 #
 # == Howto

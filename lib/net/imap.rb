@@ -779,7 +779,7 @@ module Net
     #
     # The +set+ parameter is a number or a range between two numbers,
     # or an array of those.  The number is a message sequence number,
-    # where -1 repesents a '*' for use in range notation like 100..-1
+    # where -1 represents a '*' for use in range notation like 100..-1
     # being interpreted as '100:*'.  Beware that the +exclude_end?+
     # property of a Range object is ignored, and the contents of a
     # range are independent of the order of the range endpoints as per
