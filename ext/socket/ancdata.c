@@ -1275,18 +1275,20 @@ bsock_sendmsg_internal(VALUE sock, VALUE data, VALUE vflags,
     ss = rb_sendmsg(fptr->fd, &mh, flags);
 
     if (ss == -1) {
+	int e;
         if (!nonblock && rb_io_wait_writable(fptr->fd)) {
             rb_io_check_closed(fptr);
             goto retry;
         }
-        if (nonblock && (errno == EWOULDBLOCK || errno == EAGAIN)) {
+	e = errno;
+	if (nonblock && (e == EWOULDBLOCK || e == EAGAIN)) {
 	    if (ex == Qfalse) {
 		return sym_wait_writable;
 	    }
 	    rb_readwrite_sys_fail(RB_IO_WAIT_WRITABLE,
 				  "sendmsg(2) would block");
 	}
-	rb_sys_fail("sendmsg(2)");
+	rb_syserr_fail(e, "sendmsg(2)");
     }
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
     RB_GC_GUARD(controls_str);
@@ -1547,18 +1549,20 @@ bsock_recvmsg_internal(VALUE sock,
     ss = rb_recvmsg(fptr->fd, &mh, flags);
 
     if (ss == -1) {
+	int e;
         if (!nonblock && rb_io_wait_readable(fptr->fd)) {
             rb_io_check_closed(fptr);
             goto retry;
         }
-        if (nonblock && (errno == EWOULDBLOCK || errno == EAGAIN)) {
+	e = errno;
+	if (nonblock && (e == EWOULDBLOCK || e == EAGAIN)) {
             if (ex == Qfalse) {
                 return sym_wait_readable;
             }
             rb_readwrite_sys_fail(RB_IO_WAIT_READABLE, "recvmsg(2) would block");
         }
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
-        if (!gc_done && (errno == EMFILE || errno == EMSGSIZE)) {
+	if (!gc_done && (e == EMFILE || e == EMSGSIZE)) {
           /*
            * When SCM_RIGHTS hit the file descriptors limit:
            * - Linux 2.6.18 causes success with MSG_CTRUNC
@@ -1571,11 +1575,11 @@ bsock_recvmsg_internal(VALUE sock,
 	    goto retry;
         }
 #else
-	if (NIL_P(vmaxdatlen) && grow_buffer && errno == EMSGSIZE)
+	if (NIL_P(vmaxdatlen) && grow_buffer && e == EMSGSIZE)
 	    ss = (ssize_t)iov.iov_len;
 	else
 #endif
-	rb_sys_fail("recvmsg(2)");
+	rb_syserr_fail(e, "recvmsg(2)");
     }
 
     if (grow_buffer) {

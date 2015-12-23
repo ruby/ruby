@@ -551,8 +551,9 @@ io_unread(rb_io_t *fptr)
 	}
 	read_size = _read(fptr->fd, buf, fptr->rbuf.len + newlines);
 	if (read_size < 0) {
+	    int e = errno;
 	    free(buf);
-	    rb_sys_fail_path(fptr->pathv);
+	    rb_syserr_fail_path(e, fptr->pathv);
 	}
 	if (read_size == fptr->rbuf.len) {
 	    lseek(fptr->fd, r, SEEK_SET);
@@ -1768,11 +1769,12 @@ io_fillbuf(rb_io_t *fptr)
             if (rb_io_wait_readable(fptr->fd))
                 goto retry;
 	    {
+		int e = errno;
 		VALUE path = rb_sprintf("fd:%d ", fptr->fd);
 		if (!NIL_P(fptr->pathv)) {
 		    rb_str_append(path, fptr->pathv);
 		}
-		rb_sys_fail_path(path);
+		rb_syserr_fail_path(e, path);
 	    }
         }
         fptr->rbuf.off = 0;
@@ -2537,15 +2539,16 @@ io_getpartial(int argc, VALUE *argv, VALUE io, VALUE opts, int nonblock)
 	rb_str_locktmp_ensure(str, read_internal_call, (VALUE)&arg);
 	n = arg.len;
         if (n < 0) {
+	    int e = errno;
             if (!nonblock && rb_io_wait_readable(fptr->fd))
                 goto again;
-            if (nonblock && (errno == EWOULDBLOCK || errno == EAGAIN)) {
+	    if (nonblock && (e == EWOULDBLOCK || e == EAGAIN)) {
                 if (no_exception_p(opts))
                     return sym_wait_readable;
                 else
 		    rb_readwrite_sys_fail(RB_IO_WAIT_READABLE, "read would block");
             }
-            rb_sys_fail_path(fptr->pathv);
+            rb_syserr_fail_path(e, fptr->pathv);
         }
     }
     io_set_read_length(str, n);
@@ -2665,11 +2668,12 @@ io_read_nonblock(VALUE io, VALUE length, VALUE str, VALUE ex)
 	rb_str_locktmp_ensure(str, read_internal_call, (VALUE)&arg);
 	n = arg.len;
         if (n < 0) {
-            if ((errno == EWOULDBLOCK || errno == EAGAIN)) {
+	    int e = errno;
+	    if ((e == EWOULDBLOCK || e == EAGAIN)) {
                 if (ex == Qfalse) return sym_wait_readable;
                 rb_readwrite_sys_fail(RB_IO_WAIT_READABLE, "read would block");
             }
-            rb_sys_fail_path(fptr->pathv);
+            rb_syserr_fail_path(e, fptr->pathv);
         }
     }
     io_set_read_length(str, n);
@@ -2703,7 +2707,8 @@ io_write_nonblock(VALUE io, VALUE str, VALUE ex)
     n = write(fptr->fd, RSTRING_PTR(str), RSTRING_LEN(str));
 
     if (n == -1) {
-        if (errno == EWOULDBLOCK || errno == EAGAIN) {
+	int e = errno;
+	if (e == EWOULDBLOCK || e == EAGAIN) {
 	    if (ex == Qfalse) {
 		return sym_wait_writable;
 	    }
@@ -2711,7 +2716,7 @@ io_write_nonblock(VALUE io, VALUE str, VALUE ex)
 		rb_readwrite_sys_fail(RB_IO_WAIT_WRITABLE, "write would block");
 	    }
 	}
-        rb_sys_fail_path(fptr->pathv);
+	rb_syserr_fail_path(e, fptr->pathv);
     }
 
     return LONG2FIX(n);
@@ -4244,8 +4249,7 @@ fptr_finalize(rb_io_t *fptr, int noraise)
         switch (TYPE(err)) {
           case T_FIXNUM:
           case T_BIGNUM:
-            errno = NUM2INT(err);
-            rb_sys_fail_path(fptr->pathv);
+	    rb_syserr_fail_path(NUM2INT(err), fptr->pathv);
 
           default:
             rb_exc_raise(err);
@@ -5454,12 +5458,13 @@ rb_fdopen(int fd, const char *modestr)
 	    file = fdopen(fd, modestr);
 	}
 	if (!file) {
+	    int e = errno;
 #ifdef _WIN32
-	    if (errno == 0) errno = EINVAL;
+	    if (e == 0) e = EINVAL;
 #elif defined(__sun)
-	    if (errno == 0) errno = EMFILE;
+	    if (e == 0) e = EMFILE;
 #endif
-	    rb_sys_fail(0);
+	    rb_syserr_fail(e, 0);
 	}
     }
 
@@ -5888,8 +5893,8 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode, convconfig_t *convc
 #if defined(HAVE_WORKING_FORK) || defined(HAVE_SPAWNV)
     int state;
     struct popen_arg arg;
-    int e = 0;
 #endif
+    int e = 0;
 #if defined(HAVE_SPAWNV)
 # if defined(HAVE_SPAWNVE)
 #   define DO_SPAWN(cmd, args, envp) ((args) ? \
@@ -5940,11 +5945,10 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode, convconfig_t *convc
         if (rb_pipe(arg.write_pair) < 0)
             rb_sys_fail_str(prog);
         if (rb_pipe(arg.pair) < 0) {
-            int e = errno;
+            e = errno;
             close(arg.write_pair[0]);
             close(arg.write_pair[1]);
-            errno = e;
-            rb_sys_fail_str(prog);
+            rb_syserr_fail_str(e, prog);
         }
         if (eargp) {
             rb_execarg_addopt(execarg_obj, INT2FIX(0), INT2FIX(arg.write_pair[0]));
@@ -6027,12 +6031,11 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode, convconfig_t *convc
             close(arg.write_pair[0]);
             close(arg.write_pair[1]);
         }
-	errno = e;
 # if defined(HAVE_WORKING_FORK)
         if (errmsg[0])
-            rb_sys_fail(errmsg);
+	    rb_syserr_fail(e, errmsg);
 # endif
-	rb_sys_fail_str(prog);
+	rb_syserr_fail_str(e, prog);
     }
     if ((fmode & FMODE_READABLE) && (fmode & FMODE_WRITABLE)) {
         close(arg.pair[1]);
@@ -6058,11 +6061,12 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode, convconfig_t *convc
 	rb_execarg_run_options(eargp, sargp, NULL, 0);
     }
     fp = popen(cmd, modestr);
+    e = errno;
     if (eargp) {
         rb_execarg_parent_end(execarg_obj);
 	rb_execarg_run_options(sargp, NULL, NULL, 0);
     }
-    if (!fp) rb_sys_fail_path(prog);
+    if (!fp) rb_syserr_fail_path(e, prog);
     fd = fileno(fp);
 #endif
 
@@ -10688,8 +10692,7 @@ copy_stream_finalize(VALUE arg)
     }
     rb_fd_term(&stp->fds);
     if (stp->syserr) {
-        errno = stp->error_no;
-        rb_sys_fail(stp->syserr);
+        rb_syserr_fail(stp->error_no, stp->syserr);
     }
     if (stp->notimp) {
 	rb_raise(rb_eNotImpError, "%s() not implemented", stp->notimp);

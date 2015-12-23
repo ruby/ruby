@@ -33,7 +33,7 @@ static void strio_init(int, VALUE *, struct StringIO *, VALUE);
 static VALUE strio_unget_bytes(struct StringIO *, const char *, long);
 
 #define IS_STRIO(obj) (rb_typeddata_is_kind_of((obj), &strio_data_type))
-#define error_inval(msg) (errno = EINVAL, rb_sys_fail(msg))
+#define error_inval(msg) (rb_syserr_fail(EINVAL, msg))
 #define get_enc(ptr) ((ptr)->enc ? (ptr)->enc : rb_enc_get((ptr)->string))
 
 static struct StringIO *
@@ -195,8 +195,7 @@ strio_init(int argc, VALUE *argv, struct StringIO *ptr, VALUE self)
 	}
 	StringValue(string);
 	if ((ptr->flags & FMODE_WRITABLE) && OBJ_FROZEN(string)) {
-	    errno = EACCES;
-	    rb_sys_fail(0);
+	    rb_syserr_fail(EACCES, 0);
 	}
 	if (trunc) {
 	    rb_str_resize(string, 0);

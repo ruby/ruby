@@ -452,18 +452,19 @@ sock_connect_nonblock(VALUE sock, VALUE addr, VALUE ex)
     rb_io_set_nonblock(fptr);
     n = connect(fptr->fd, (struct sockaddr*)RSTRING_PTR(addr), RSTRING_SOCKLEN(addr));
     if (n < 0) {
-        if (errno == EINPROGRESS) {
+	int e = errno;
+	if (e == EINPROGRESS) {
             if (ex == Qfalse) {
                 return sym_wait_writable;
             }
             rb_readwrite_sys_fail(RB_IO_WAIT_WRITABLE, "connect(2) would block");
 	}
-	if (errno == EISCONN) {
+	if (e == EISCONN) {
             if (ex == Qfalse) {
                 return INT2FIX(0);
             }
 	}
-	rsock_sys_fail_raddrinfo_or_sockaddr("connect(2)", addr, rai);
+	rsock_syserr_fail_raddrinfo_or_sockaddr(e, "connect(2)", addr, rai);
     }
 
     return INT2FIX(n);
