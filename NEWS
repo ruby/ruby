@@ -269,7 +269,7 @@ with all sufficient information, see the ChangeLog file or Redmine
   * Fiddle::Function#call releases the GVL.  [Feature #11607]
 
 * io-console
-  * Update to io-console 0.4.4, and change the license to BSD 2-clause
+  * Update to io-console 0.4.5, and change the license to BSD 2-clause
     "Simplified" License.
 
 * lib/base64.rb
