@@ -1,3 +1,11 @@
+Thu Dec 24 14:44:08 2015  sorah (Shota Fukumori)  <her@sorah.jp>
+
+	* tool/vcs.rb (IO.popen): Enable on Ruby 1.9 where chdir option is not
+	  supported on IO.popen
+
+	* tool/vcs.rb (IO.popen): Fix NoMethodError. I guess r49705 was not
+	  tested... :/
+
 Thu Dec 24 14:57:03 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* NEWS: rename
