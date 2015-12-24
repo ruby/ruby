@@ -3825,6 +3825,10 @@ Wed Oct  7 17:30:50 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_times): optimize for the argument 0 and 1.
 
+Wed Oct  7 04:49:24 2015  Nick Cox  <nick@nickcox.me>
+
+	* vm_method.c: fix grammar in respond_to? warning.
+
 Wed Oct  7 01:20:46 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.h, gc.c: introduce new debug function rb_obj_info_dump(VALUE obj)

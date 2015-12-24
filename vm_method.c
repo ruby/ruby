@@ -1939,8 +1939,8 @@ vm_respond_to(rb_thread_t *th, VALUE klass, VALUE obj, ID id, int priv)
 	    }
 	    else if (!NIL_P(ruby_verbose)) {
 		VALUE location = rb_method_entry_location(me);
-		rb_warn("%"PRIsVALUE"%c""respond_to?(:%"PRIsVALUE") is"
-			" old fashion which takes only one parameter",
+		rb_warn("%"PRIsVALUE"%c""respond_to?(:%"PRIsVALUE") uses"
+			" the deprecated method signature, which takes one parameter",
 			(FL_TEST(klass, FL_SINGLETON) ? obj : klass),
 			(FL_TEST(klass, FL_SINGLETON) ? '.' : '#'),
 			QUOTE_ID(id));
