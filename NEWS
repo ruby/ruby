@@ -380,7 +380,7 @@ with all sufficient information, see the ChangeLog file or Redmine
   constant-time.  Previously, Struct elements beyond the first 10
   10 elements used a linear scan. [Feature #10585]
 
-* The Set class got several speedps.
+* The Set class got several speed up.
   [Misc #10754], [r52591]
 
 * Socket and I/O related improvements
