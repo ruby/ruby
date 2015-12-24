@@ -247,7 +247,7 @@ with all sufficient information, see the ChangeLog file or Redmine
     BasicSocket#sendmsg_nonblock all support `exception: false` to return
     :wait_readable or :wait_writable symbols instead of raising
     IO::WaitReadable or IO::WaitWritable exceptions
-    [Feature #11229]
+    [Feature #10532] [Feature #11229]
   * BasicSocket#recv and BasicSocket#recv_nonblock allow an output
     String buffer argument like IO#read and IO#read_nonblock to reduce
     GC overhead [Feature #11242]
