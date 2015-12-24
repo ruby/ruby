@@ -1,3 +1,10 @@
+Thu Dec 24 17:25:42 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (append_compile_error), parse.y (compile_error):
+	  preserve encoding of source file name in exceptions.
+
+	* error.c (rb_compile_error_str, rb_compile_bug_str): add.
+
 Thu Dec 24 16:17:47 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* common.mk (fake.rb): $(arch)-fake.rb must depend miniruby because
