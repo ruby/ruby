@@ -72,7 +72,7 @@ australianCities = [
 ]
 
 
-secondValue.value = 'unchangable'
+secondValue.value = 'unchangeable'
 ozCity.value = 'Sydney'
 
 Tk.pack(Ttk::Labelframe.new(frame, :text=>'Fully Editable'){|f|

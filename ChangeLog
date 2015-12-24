@@ -1,3 +1,8 @@
+Fri Dec 25 08:23:22 2015  Tadashi Saito  <tadashi_saito@dwango.co.jp>
+
+	* compile.c, cont.c, doc, man: fix common misspelling.
+	  [ruby-core:72466] [Bug #11870]
+
 
 For the changes before 2.3.0, see doc/ChangeLog-2.3.0
 For the changes before 2.2.0, see doc/ChangeLog-2.2.0

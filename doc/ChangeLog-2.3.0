@@ -2757,7 +2757,7 @@ Wed Nov  4 15:40:45 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 Wed Nov  4 15:39:32 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
-	* hash.c: use correct grammer. Patch by @tveastman
+	* hash.c: use correct grammar. Patch by @tveastman
 	  [fix GH-1079][ci skip]
 
 Wed Nov  4 11:38:23 2015  Jake Worth  <jakeworth82@gmail.com>
@@ -9607,8 +9607,8 @@ Tue Mar 25 06:55:43 2015  Kazuki Tanaka  <gogotanaka@ruby-lang.org>
 
 Tue Mar 24 22:23:33 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
-	* doc/extention.rdoc: move from toplevel document and added extname.
-	* doc/extention.ja.rdoc: ditto.
+	* doc/extension.rdoc: move from toplevel document and added extname.
+	* doc/extension.ja.rdoc: ditto.
 
 Tue Mar 24 22:06:58 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
@@ -11413,7 +11413,7 @@ Tue Jan 20 02:54:11 2015  Zachary Scott  <e@zzak.io>
 
 Mon Jan 19 22:08:26 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* class.c (include_modules_at): allow prepend each modules upto
+	* class.c (include_modules_at): allow prepend each modules up to
 	  once for each classes.  [EXPERIMENTAL]
 
 Sun Jan 18 18:32:20 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>

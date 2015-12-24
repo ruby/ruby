@@ -284,7 +284,7 @@ $helpTopics["context"] = <<EOF
 Unfortunately, this application doesn't support context-sensitive\
 help in the usual way, because when this demo was written Ruby/Tk\
 didn't have a grab mechanism and this is needed for context-sensitive\
-help. Instead, you can achive much the same effect by simply moving\
+help. Instead, you can achieve much the same effect by simply moving\
 the mouse over the window you're curious about and pressing the\
 Help or F1 keys. You can do this anytime.
 EOF

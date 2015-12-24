@@ -360,7 +360,7 @@ class TestWEBrickHTTPServer < Test::Unit::TestCase
           http.request(req){|res| assert_equal("foo", res.body) }
         end
       rescue Timeout::Error
-        flunk('corrupted reponse')
+        flunk('corrupted response')
       end
     }
   end
