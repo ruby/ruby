@@ -399,3 +399,6 @@ with all sufficient information, see the ChangeLog file or Redmine
   * (Linux-only) waiting on a single FD anywhere in the stdlib no longer
     uses select(2), making it immune to slowdowns with high-numbered FDs.
     [Feature #11081] [Feature #11377]
+
+* CGI.escapeHTML is optimized with C extention.
+  https://github.com/ruby/ruby/pull/1164

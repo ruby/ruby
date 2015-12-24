@@ -1,3 +1,7 @@
+Thu Dec 24 23:01:57 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* NEWS: added entry for CGI.escapeHTML optimization.
+
 Thu Dec 24 18:43:19 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (rb_compile_error_with_enc, rb_compile_error),
