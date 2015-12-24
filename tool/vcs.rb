@@ -21,10 +21,12 @@ if RUBY_VERSION < "2.0"
 
     if defined?(fork)
       def self.popen(command, *rest, &block)
-        if Hash === (opts = rest[-1])
+        opts = rest.last
+        if opts.kind_of?(Hash)
           dir = opts.delete(:chdir)
           rest.pop if opts.empty?
         end
+
         if block
           @orig_popen.call("-", *rest) do |f|
             if f
@@ -46,10 +48,12 @@ if RUBY_VERSION < "2.0"
     else
       require 'shellwords'
       def self.popen(command, *rest, &block)
-        if Hash === (opts = rest[-1])
+        opts = rest.last
+        if opts.kind_of?(Hash)
           dir = opts.delete(:chdir)
           rest.pop if opts.empty?
         end
+
         command = command.shelljoin if Array === command
         Dir.chdir(dir || ".") do
           @orig_popen.call(command, *rest, &block)
