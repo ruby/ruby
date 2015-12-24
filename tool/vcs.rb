@@ -15,7 +15,7 @@ def IO.pread(*args)
   popen(*args) {|f|f.read}
 end
 
-if RUBY_VERSION < "1.9"
+if RUBY_VERSION < "2.0"
   class IO
     @orig_popen = method(:popen)
 
@@ -23,7 +23,7 @@ if RUBY_VERSION < "1.9"
       def self.popen(command, *rest, &block)
         if Hash === (opts = rest[-1])
           dir = opts.delete(:chdir)
-          rest pop if opts.empty?
+          rest.pop if opts.empty?
         end
         if block
           @orig_popen.call("-", *rest) do |f|
@@ -48,7 +48,7 @@ if RUBY_VERSION < "1.9"
       def self.popen(command, *rest, &block)
         if Hash === (opts = rest[-1])
           dir = opts.delete(:chdir)
-          rest pop if opts.empty?
+          rest.pop if opts.empty?
         end
         command = command.shelljoin if Array === command
         Dir.chdir(dir || ".") do
