@@ -8,7 +8,7 @@ Thu Dec 24 18:43:19 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  (rb_compile_bug): deprecate internal functions.
 
 	* parse.y (parser_yyerror): construct exception message with
-	  source code and carret.
+	  source code and caret.
 
 Thu Dec 24 17:25:42 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
