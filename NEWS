@@ -338,8 +338,6 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * rb_autoload() deprecated, use rb_funcall() instead.  [Feature #11664]
 
-=== Build system updates
-
 === Supported platform changes
 
 * OS/2 is no longer supported
