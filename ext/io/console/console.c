@@ -280,8 +280,7 @@ ttymode(VALUE io, VALUE (*func)(VALUE), void (*setter)(conmode *, void *), void 
     }
     if (status) {
 	if (status == -1) {
-	    errno = error;
-	    rb_sys_fail(0);
+	    rb_syserr_fail(error, 0);
 	}
 	rb_jump_tag(status);
     }

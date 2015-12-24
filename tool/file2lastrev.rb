@@ -45,11 +45,11 @@ parser.parse! rescue abort "#{File.basename(Program)}: #{$!}\n#{parser}"
 @output =
   case @output
   when :changed, nil
-    proc {|last, changed|
+    Proc.new {|last, changed|
       changed
     }
   when :revision_h
-    proc {|last, changed, modified, branch, title|
+    Proc.new {|last, changed, modified, branch, title|
       [
         "#define RUBY_REVISION #{changed || 0}",
         if branch
@@ -64,11 +64,11 @@ parser.parse! rescue abort "#{File.basename(Program)}: #{$!}\n#{parser}"
       ].compact
     }
   when :doxygen
-    proc {|last, changed|
+    Proc.new {|last, changed|
       "r#{changed}/r#{last}"
     }
   when :modified
-    proc {|last, changed, modified|
+    Proc.new {|last, changed, modified|
       modified.strftime(format)
     }
   else

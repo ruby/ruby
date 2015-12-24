@@ -1,3 +1,181 @@
+Thu Dec 24 23:01:57 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* NEWS: added entry for CGI.escapeHTML optimization.
+
+Thu Dec 24 18:43:19 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (rb_compile_error_with_enc, rb_compile_error),
+	  (rb_compile_bug): deprecate internal functions.
+
+	* parse.y (parser_yyerror): construct exception message with
+	  source code and caret.
+
+Thu Dec 24 17:25:42 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (append_compile_error), parse.y (compile_error):
+	  preserve encoding of source file name in exceptions.
+
+	* error.c (rb_compile_error_str, rb_compile_bug_str): add.
+
+Thu Dec 24 16:17:47 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* common.mk (fake.rb): $(arch)-fake.rb must depend miniruby because
+	  it may depend miniruby.
+
+Thu Dec 24 16:13:05 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* common.mk (ripper.c): r50045 wrongly replace $(PWD) with ../..
+	  It is the top of build directory, not topsrcdir.
+
+Thu Dec 24 15:02:42 2015  sorah (Shota Fukumori)  <her@sorah.jp>
+
+	* tool/vcs.rb (IO.popen): Refactor. Avoid assigning in condition.
+
+Thu Dec 24 15:01:38 2015  sorah (Shota Fukumori)  <her@sorah.jp>
+
+	* tool/file2lastrev.rb: Fix ArgumentError to work on Ruby 1.8.7.
+
+Thu Dec 24 14:44:08 2015  sorah (Shota Fukumori)  <her@sorah.jp>
+
+	* tool/vcs.rb (IO.popen): Enable on Ruby 1.9 where chdir option is not
+	  supported on IO.popen
+
+	* tool/vcs.rb (IO.popen): Fix NoMethodError. I guess r49705 was not
+	  tested... :/
+
+Thu Dec 24 14:57:03 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* NEWS: rename
+	  "Implementation changes" section to
+	  "Supported platform changes" section.
+
+	* NEWS: add "Implementation improvements" and add several entries.
+
+	* NEWS: add NEWS entries by Eric Wong. [ruby-core:72450]
+
+Thu Dec 24 00:26:05 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/io/console/extconf.rb: fix gem build failure on Windows.
+	  only win32_vk.inc is included in the gem and no dependencies for
+	  the header, so that gperf will not be mandatory.
+	  [ruby-core:72453] [Bug #11866]
+
+	* ext/io/console/io-console.gemspec: include depend file and
+	  win32_vk header.
+
+Wed Dec 23 23:58:44 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_readwrite_syserr_fail): works with the given errno than
+	  thread local errno.
+
+Wed Dec 23 17:57:45 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c, io.c, util.c: prefer rb_syserr_fail with saved errno
+	  over setting errno then call rb_sys_fail, not to be clobbered
+	  potentially and to reduce thread local errno accesses.
+
+Wed Dec 23 11:58:52 2015  Yuichiro Kaneko  <yui-knk@ruby-lang.org>
+
+	* string.c: Fix document. Default value of the first
+	  argument of `String#split` is not `$;` but `nil`.
+	  When `nil` is passed as first argument, `$;` is used.
+	  [ci skip] [Bug #11729] [ruby-dev:49378]
+
+Wed Dec 23 07:15:17 2015  Eric Wong  <e@80x24.org>
+
+	* ext/socket/init.c (rsock_init_sock): reject reserved FDs
+	  [ruby-core:72445] [Bug #11862]
+
+Wed Dec 23 02:59:26 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (__STDC_WANT_LIB_EXT1__): necessary to use memset_s
+	  in strict C99 mode.
+
+Wed Dec 23 02:34:36 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* regexec.c (match_at): move direct threaded VM code to get rid of
+	  mixed declarations and code, and enable it only for gcc since it
+	  depends on a gcc extension.
+
+Wed Dec 23 02:23:19 2015  Yuki Nishijima  <mail@yukinishijima.net>
+
+	* gems/bundled_gems: Upgrade the did_you_mean gem to 1.0.0
+
+	* NEWS: Add news about the did_you_mean gem
+
+Wed Dec 23 02:18:57 2015  Jake Worth  <jakeworth82@gmail.com>
+
+	* doc/contributing.rdoc: [DOC] remove an extra word "here".
+	  [Fix GH-1169]
+
+Wed Dec 23 01:58:20 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* regexec.c (USE_DIRECT_THREADED_VM): enable direct threaded VM by
+	  the default.
+
+Tue Dec 22 22:15:53 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (internal_object_p): should not expose singleton classes
+	  without a metaclass.  based on patches by ko1 and shugo.
+	  [Bug #11740]
+
+	* class.c (rb_singleton_class_object_p): added.
+
+Tue Dec 22 22:15:08 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/io/console/io-console.gemspec: bump up to 0.4.4.
+
+Tue Dec 22 22:11:06 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* NEWS: Added news entry of Psych 2.0.17
+
+Tue Dec 22 22:09:01 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* NEWS: Added news entry of RDoc 4.2.1
+
+Tue Dec 22 21:20:00 2015  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.gemspec: bump version to 1.2.8.
+
+Tue Dec 22 21:08:05 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/rdoc.rb: bump version to 4.2.1. It contains following fixes.
+	  https://github.com/rdoc/rdoc/pull/340
+	  https://github.com/rdoc/rdoc/pull/341
+	  https://github.com/rdoc/rdoc/pull/367
+	  https://github.com/rdoc/rdoc/pull/368
+	* lib/rdoc/*: ditto.
+	* test/rdoc/*: ditto.
+
+Tue Dec 22 20:25:33 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ext/psych/lib/psych.rb: bump version to 2.0.17
+	* ext/psych/psych.gemspec: ditto.
+
+Tue Dec 22 20:14:47 2015  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c: move vm_callee_setup_block_arg() (and related
+	  functions) to the latter location.
+	  This moving recovers performance a little.
+	  [Bug #11829]
+
+Tue Dec 22 15:21:11 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (str_compat_and_valid): as scrub does nothing for dummy
+	  encoding string now, incompatible encoding is not a matter.
+
+Tue Dec 22 14:31:28 2015  Toru Iwase  <tietew@tietew.net>
+
+	* ext/cgi/escape/escape.c (optimized_escape_html): CGI.escapeHTML
+	  should return unfrozen new string.
+	  [ruby-core:72426] [Bug #11858]
+
+Tue Dec 22 05:39:58 2015  Takashi Kokubun  <takashikkbn@gmail.com>
+
+	* ext/cgi/escape/escape.c (preserve_original_state): Preserve
+	  original state for tainted and frozen.  [Fix GH-1166]
+	  [ruby-dev:49451] [Bug #11855]
+
 Tue Dec 22 03:57:20 2015  Eric Wong  <e@80x24.org>
 
 	* ext/socket/init.c (rsock_init_sock): check FD after validating

@@ -25,6 +25,14 @@ html_escaped_cat(VALUE str, char c)
     }
 }
 
+static inline void
+preserve_original_state(VALUE orig, VALUE dest)
+{
+    rb_enc_associate(dest, rb_enc_get(orig));
+
+    RB_OBJ_INFECT_RAW(dest, orig);
+}
+
 static VALUE
 optimized_escape_html(VALUE str)
 {
@@ -57,11 +65,11 @@ optimized_escape_html(VALUE str)
 
     if (modified) {
 	rb_str_cat(dest, cstr + beg, len - beg);
-	rb_enc_associate(dest, rb_enc_get(str));
+	preserve_original_state(str, dest);
 	return dest;
     }
     else {
-	return str;
+	return rb_str_dup(str);
     }
 }
 

@@ -7,7 +7,8 @@ releases except for bug fixes.
 
 Note that each entry is kept so brief that no reason behind or
 reference information is supplied with.  For a full list of changes
-with all sufficient information, see the ChangeLog file.
+with all sufficient information, see the ChangeLog file or Redmine
+(e.g. <tt>https://bugs.ruby-lang.org/issues/$FEATURE_OR_BUG_NUMBER</tt>)
 
 == Changes since the 2.2.0 release
 
@@ -38,6 +39,16 @@ with all sufficient information, see the ChangeLog file.
     * attribute assignment is valid
           obj&.attr += 1
     [Feature #11537]
+
+* the did_you_mean gem:
+
+  * When a NameError or NoMethodError occurs because of a typo in the name,
+    the did_you_mean gem automatically suggests other names similar to the
+    method name.
+
+      "Yuki".starts_with?("Y")
+      # => NoMethodError: undefined method `starts_with?' for "Yuki":String
+      #    Did you mean?  start_with?
 
 * indented here document:
 
@@ -223,6 +234,7 @@ with all sufficient information, see the ChangeLog file.
 * OpenSSL
   * OpenSSL::SSL::SSLSocket#accept_nonblock and
     OpenSSL::SSL::SSLSocket#connect_nonblock supports `exception: false`.
+    [Feature #10532]
 
 * Pathname
   * Pathname#descend and Pathname#ascend supported blockless form.
@@ -235,9 +247,10 @@ with all sufficient information, see the ChangeLog file.
     BasicSocket#sendmsg_nonblock all support `exception: false` to return
     :wait_readable or :wait_writable symbols instead of raising
     IO::WaitReadable or IO::WaitWritable exceptions
+    [Feature #10532] [Feature #11229]
   * BasicSocket#recv and BasicSocket#recv_nonblock allow an output
     String buffer argument like IO#read and IO#read_nonblock to reduce
-    GC overhead
+    GC overhead [Feature #11242]
 
 * StringIO
   * In read-only mode, StringIO#set_encoding no longer sets the encoding
@@ -256,6 +269,10 @@ with all sufficient information, see the ChangeLog file.
 
 * Fiddle
   * Fiddle::Function#call releases the GVL.  [Feature #11607]
+
+* io-console
+  * Update to io-console 0.4.5, and change the license to BSD 2-clause
+    "Simplified" License.
 
 * lib/base64.rb
   * Base64.urlsafe_encode64: added a "padding" option to suppress
@@ -283,8 +300,16 @@ with all sufficient information, see the ChangeLog file.
   * Net::Telnet is extracted to net-telnet gem. It's unmaintain code.
     [Feature #11083]
 
+* Psych
+  * Updated to Psych 2.0.17
+
 * Rake
   * Rake is removed from stdlib.  [Feature #11025]
+
+* RDoc
+  * Updated to RDoc 4.2.1.  For full release notes see:
+
+    https://github.com/rdoc/rdoc/blob/master/History.rdoc#421--2015-12-22
 
 * RubyGems
   * Updated to RubyGems 2.5.1.  For full release notes see:
@@ -313,9 +338,11 @@ with all sufficient information, see the ChangeLog file.
 
 * rb_autoload() deprecated, use rb_funcall() instead.  [Feature #11664]
 
-=== Build system updates
+* rb_compile_error_with_enc(), rb_compile_error(), and rb_compile_bug()
+  deprecated.  these functions are exposed but only for internal use.
+  external libraries should not use them.
 
-=== Implementation changes
+=== Supported platform changes
 
 * OS/2 is no longer supported
 
@@ -324,3 +351,54 @@ with all sufficient information, see the ChangeLog file.
 * Borland-C is no longer supported
 
 * Haiku now stable and best effort
+
+=== Implementation improvements
+
+* Optimize Proc#call to eliminate method frame construction.
+  [Feature #11569]
+
+* Reconsidering method entry data structure.
+  [Bug #11278]
+
+* Introducing new table data structure for ID keys tables used by
+  method table and so on. New table structure is simple and fast
+  than st_table. [Feature #11420]
+
+* Machine code level tuning for object allocation and method calling
+  code. r52099, r52254
+
+* RubyVM::InstructionSequence is extended for future improvement.
+  [Feature #11788]
+
+* Case dispatch is now optimized for all special constant literals
+  including nil, true, and false.  Previously, only literal strings,
+  symbols, integers and floats compiled to optimized case dispatch.
+  [Feature #11769]
+
+* Instance variables on non-pure Ruby classes (T_DATA, T_FILE,
+  etc..) is less expensive to store than before. [Feature #11170]
+
+* All accesses to members of big Struct objects are performed in
+  constant-time.  Previously, Struct elements beyond the first 10
+  10 elements used a linear scan. [Feature #10585]
+
+* The Set class got several speed up.
+  [Misc #10754], [r52591]
+
+* Socket and I/O-related improvements
+
+  * Calling overhead of most of new keyword-using I/O methods in
+    [Feature #11229] is reduced by avoiding the inefficient C API
+    to parse keywords.  [Feature #11339]
+
+  * The standard library is updated to use the improved
+    exception-free non-blocking I/O from [Feature #11229].
+    This has the additional benefit of quieter $DEBUG output in
+    addition to reducing expensive exceptions. [Feature #11044]
+
+  * (Linux-only) waiting on a single FD anywhere in the stdlib no longer
+    uses select(2), making it immune to slowdowns with high-numbered FDs.
+    [Feature #11081] [Feature #11377]
+
+* CGI.escapeHTML is optimized with C extention.
+  https://github.com/ruby/ruby/pull/1164

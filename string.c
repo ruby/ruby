@@ -6701,7 +6701,7 @@ static const char isspacetable[256] = {
 
 /*
  *  call-seq:
- *     str.split(pattern=$;, [limit])   -> anArray
+ *     str.split(pattern=nil, [limit])   -> anArray
  *
  *  Divides <i>str</i> into substrings based on a delimiter, returning an array
  *  of these substrings.
@@ -6716,8 +6716,8 @@ static const char isspacetable[256] = {
  *  <i>str</i> is split into individual characters. If <i>pattern</i> contains
  *  groups, the respective matches will be returned in the array as well.
  *
- *  If <i>pattern</i> is omitted, the value of <code>$;</code> is used.  If
- *  <code>$;</code> is <code>nil</code> (which is the default), <i>str</i> is
+ *  If <i>pattern</i> is <code>nil</code>, the value of <code>$;</code> is used.
+ *  If <code>$;</code> is <code>nil</code> (which is the default), <i>str</i> is
  *  split on whitespace as if ` ' were specified.
  *
  *  If the <i>limit</i> parameter is omitted, trailing null fields are
@@ -8639,18 +8639,11 @@ str_compat_and_valid(VALUE str, rb_encoding *enc)
     if (cr == ENC_CODERANGE_BROKEN) {
 	rb_raise(rb_eArgError, "replacement must be valid byte sequence '%+"PRIsVALUE"'", str);
     }
-    else if (cr == ENC_CODERANGE_7BIT) {
+    else {
 	rb_encoding *e = STR_ENC_GET(str);
-	if (!rb_enc_asciicompat(enc)) {
+	if (cr == ENC_CODERANGE_7BIT ? rb_enc_mbminlen(enc) != 1 : enc != e) {
 	    rb_raise(rb_eEncCompatError, "incompatible character encodings: %s and %s",
-		    rb_enc_name(enc), rb_enc_name(e));
-	}
-    }
-    else { /* ENC_CODERANGE_VALID */
-	rb_encoding *e = STR_ENC_GET(str);
-	if (enc != e) {
-	    rb_raise(rb_eEncCompatError, "incompatible character encodings: %s and %s",
-		    rb_enc_name(enc), rb_enc_name(e));
+		     rb_enc_name(enc), rb_enc_name(e));
 	}
     }
     return str;

@@ -6,7 +6,8 @@ hdr = nil
 case
 when macro_defined?("_WIN32", "")
   # rb_w32_map_errno: 1.8.7
-  vk_header = ($nmake == ?m ? "{$(srcdir)}" : "") << "win32_vk.chksum"
+  vk_header = File.exist?("#$srcdir/win32_vk.list") ? "chksum" : "inc"
+  vk_header = "#{'{$(srcdir)}' if $nmake == ?m}win32_vk.#{vk_header}"
 when hdr = %w"termios.h termio.h".find {|h| have_header(h)}
   have_func("cfmakeraw", hdr)
 when have_header(hdr = "sgtty.h")

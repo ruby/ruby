@@ -29,8 +29,9 @@ ossl_obj2bio(VALUE obj)
 	}
         rb_update_max_fd(fd);
 	if (!(fp = fdopen(fd, "r"))){
+	    int e = errno;
 	    close(fd);
-	    rb_sys_fail(0);
+	    rb_syserr_fail(e, 0);
 	}
 	if (!(bio = BIO_new_fp(fp, BIO_CLOSE))){
 	    fclose(fp);

@@ -1773,6 +1773,11 @@ VALUE *rb_ruby_debug_ptr(void);
 #define ruby_verbose (*rb_ruby_verbose_ptr())
 #define ruby_debug   (*rb_ruby_debug_ptr())
 
+/* for rb_readwrite_sys_fail first argument */
+enum rb_io_wait_readwrite {RB_IO_WAIT_READABLE, RB_IO_WAIT_WRITABLE};
+#define RB_IO_WAIT_READABLE RB_IO_WAIT_READABLE
+#define RB_IO_WAIT_WRITABLE RB_IO_WAIT_WRITABLE
+
 PRINTF_ARGS(NORETURN(void rb_raise(VALUE, const char*, ...)), 2, 3);
 PRINTF_ARGS(NORETURN(void rb_fatal(const char*, ...)), 1, 2);
 PRINTF_ARGS(NORETURN(void rb_bug(const char*, ...)), 1, 2);
@@ -1781,7 +1786,7 @@ NORETURN(void rb_sys_fail(const char*));
 NORETURN(void rb_sys_fail_str(VALUE));
 NORETURN(void rb_mod_sys_fail(VALUE, const char*));
 NORETURN(void rb_mod_sys_fail_str(VALUE, VALUE));
-NORETURN(void rb_readwrite_sys_fail(int, const char*));
+NORETURN(void rb_readwrite_sys_fail(enum rb_io_wait_readwrite, const char*));
 NORETURN(void rb_iter_break(void));
 NORETURN(void rb_iter_break_value(VALUE));
 NORETURN(void rb_exit(int));
@@ -1792,6 +1797,7 @@ NORETURN(void rb_syserr_fail(int, const char*));
 NORETURN(void rb_syserr_fail_str(int, VALUE));
 NORETURN(void rb_mod_syserr_fail(VALUE, int, const char*));
 NORETURN(void rb_mod_syserr_fail_str(VALUE, int, VALUE));
+NORETURN(void rb_readwrite_syserr_fail(enum rb_io_wait_readwrite, int, const char*));
 
 /* reports if `-W' specified */
 PRINTF_ARGS(void rb_warning(const char*, ...), 1, 2);
@@ -1800,10 +1806,6 @@ PRINTF_ARGS(void rb_sys_warning(const char*, ...), 1, 2);
 /* reports always */
 PRINTF_ARGS(void rb_warn(const char*, ...), 1, 2);
 PRINTF_ARGS(void rb_compile_warn(const char *, int, const char*, ...), 3, 4);
-
-/* for rb_readwrite_sys_fail first argument */
-#define RB_IO_WAIT_READABLE 0
-#define RB_IO_WAIT_WRITABLE 1
 
 #define RUBY_BLOCK_CALL_FUNC_TAKES_BLOCKARG 1
 #define RB_BLOCK_CALL_FUNC_ARGLIST(yielded_arg, callback_arg) \

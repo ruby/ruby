@@ -533,4 +533,3 @@ class TestRDocServlet < RDoc::TestCase
   end
 
 end
-

@@ -1954,8 +1954,9 @@ rb_file_s_size(VALUE klass, VALUE fname)
     struct stat st;
 
     if (rb_stat(fname, &st) < 0) {
+	int e = errno;
 	FilePathValue(fname);
-	rb_sys_fail_path(fname);
+	rb_syserr_fail_path(e, fname);
     }
     return OFFT2NUM(st.st_size);
 }
@@ -2048,8 +2049,9 @@ rb_file_s_atime(VALUE klass, VALUE fname)
     struct stat st;
 
     if (rb_stat(fname, &st) < 0) {
+	int e = errno;
 	FilePathValue(fname);
-	rb_sys_fail_path(fname);
+	rb_syserr_fail_path(e, fname);
     }
     return stat_atime(&st);
 }
@@ -2096,8 +2098,9 @@ rb_file_s_mtime(VALUE klass, VALUE fname)
     struct stat st;
 
     if (rb_stat(fname, &st) < 0) {
+	int e = errno;
 	FilePathValue(fname);
-	rb_sys_fail_path(fname);
+	rb_syserr_fail_path(e, fname);
     }
     return stat_mtime(&st);
 }
@@ -2147,8 +2150,9 @@ rb_file_s_ctime(VALUE klass, VALUE fname)
     struct stat st;
 
     if (rb_stat(fname, &st) < 0) {
+	int e = errno;
 	FilePathValue(fname);
-	rb_sys_fail_path(fname);
+	rb_syserr_fail_path(e, fname);
     }
     return stat_ctime(&st);
 }
@@ -2200,8 +2204,9 @@ rb_file_s_birthtime(VALUE klass, VALUE fname)
     struct stat st;
 
     if (rb_stat(fname, &st) < 0) {
+	int e = errno;
 	FilePathValue(fname);
-	rb_sys_fail_path(fname);
+	rb_syserr_fail_path(e, fname);
     }
     return stat_birthtime(&st);
 }
@@ -2529,7 +2534,8 @@ NORETURN(static void utime_failed(VALUE, const struct timespec *, VALUE, VALUE))
 static void
 utime_failed(VALUE path, const struct timespec *tsp, VALUE atime, VALUE mtime)
 {
-    if (tsp && errno == EINVAL) {
+    int e = errno;
+    if (tsp && e == EINVAL) {
 	VALUE e[2], a = Qnil, m = Qnil;
 	int d = 0;
 	if (!NIL_P(atime)) {
@@ -2553,9 +2559,8 @@ utime_failed(VALUE path, const struct timespec *tsp, VALUE atime, VALUE mtime)
 	    e[1] = INT2FIX(EINVAL);
 	    rb_exc_raise(rb_class_new_instance(2, e, rb_eSystemCallError));
 	}
-	errno = EINVAL;
     }
-    rb_sys_fail_path(path);
+    rb_syserr_fail_path(e, path);
 }
 #else
 #define utime_failed(path, tsp, atime, mtime) rb_sys_fail_path(path)
@@ -2674,7 +2679,7 @@ syserr_fail2_in(const char *func, int e, VALUE s1, VALUE s2)
 #endif
 
     if (e == EEXIST) {
-	rb_sys_fail_path(rb_str_ellipsize(s2, max_pathlen));
+	rb_syserr_fail_path(e, rb_str_ellipsize(s2, max_pathlen));
     }
     str = rb_str_new_cstr("(");
     rb_str_append(str, rb_str_ellipsize(s1, max_pathlen));
@@ -2787,8 +2792,9 @@ rb_readlink(VALUE path, rb_encoding *enc)
 	rb_str_set_len(v, size);
     }
     if (rv < 0) {
+	int e = errno;
 	rb_str_resize(v, 0);
-	rb_sys_fail_path(path);
+	rb_syserr_fail_path(e, path);
     }
     rb_str_resize(v, rv);
 
@@ -3738,8 +3744,7 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved, VALUE l
             checkval = rb_hash_aref(loopcheck, testpath);
             if (!NIL_P(checkval)) {
                 if (checkval == ID2SYM(resolving)) {
-                    errno = ELOOP;
-                    rb_sys_fail_path(testpath);
+                    rb_syserr_fail_path(ELOOP, testpath);
                 }
                 else {
                     *resolvedp = rb_str_dup(checkval);
@@ -3755,14 +3760,15 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved, VALUE l
                 ret = lstat(RSTRING_PTR(testpath2), &sbuf);
 #endif
                 if (ret == -1) {
-                    if (errno == ENOENT) {
+		    int e = errno;
+		    if (e == ENOENT) {
                         if (strict || !last || *unresolved_firstsep)
-                            rb_sys_fail_path(testpath);
+			    rb_syserr_fail_path(e, testpath);
                         *resolvedp = testpath;
                         break;
                     }
                     else {
-                        rb_sys_fail_path(testpath);
+			rb_syserr_fail_path(e, testpath);
                     }
                 }
 #ifdef HAVE_READLINK
@@ -4439,8 +4445,9 @@ rb_file_s_truncate(VALUE klass, VALUE path, VALUE len)
 	}
         rb_update_max_fd(tmpfd);
 	if (chsize(tmpfd, pos) < 0) {
+	    int e = errno;
 	    close(tmpfd);
-	    rb_sys_fail_path(path);
+	    rb_syserr_fail_path(e, path);
 	}
 	close(tmpfd);
     }
@@ -4592,7 +4599,8 @@ rb_file_flock(VALUE obj, VALUE operation)
 	rb_io_flush_raw(obj, 0);
     }
     while ((int)rb_thread_io_blocking_region(rb_thread_flock, op, fptr->fd) < 0) {
-	switch (errno) {
+	int e = errno;
+	switch (e) {
 	  case EAGAIN:
 	  case EACCES:
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
@@ -4613,7 +4621,7 @@ rb_file_flock(VALUE obj, VALUE operation)
 	    break;
 
 	  default:
-	    rb_sys_fail_path(fptr->pathv);
+	    rb_syserr_fail_path(e, fptr->pathv);
 	}
     }
     return INT2FIX(0);
@@ -4787,8 +4795,9 @@ rb_f_test(int argc, VALUE *argv)
 
 	CHECK(1);
 	if (rb_stat(fname, &st) == -1) {
+	    int e = errno;
 	    FilePathValue(fname);
-	    rb_sys_fail_path(fname);
+	    rb_syserr_fail_path(e, fname);
 	}
 
 	switch (cmd) {

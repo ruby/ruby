@@ -1312,88 +1312,6 @@ static rb_method_definition_t *method_definition_create(rb_method_type_t type, I
 static void method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *def, void *opts);
 static int rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_definition_t *d2);
 
-static inline VALUE
-vm_callee_setup_block_arg_arg0_check(VALUE *argv)
-{
-    VALUE ary, arg0 = argv[0];
-    ary = rb_check_array_type(arg0);
-    argv[0] = arg0;
-    return ary;
-}
-
-static inline int
-vm_callee_setup_block_arg_arg0_splat(rb_control_frame_t *cfp, const rb_iseq_t *iseq, VALUE *argv, VALUE ary)
-{
-    int i;
-    long len = RARRAY_LEN(ary);
-
-    CHECK_VM_STACK_OVERFLOW(cfp, iseq->body->param.lead_num);
-
-    for (i=0; i<len && i<iseq->body->param.lead_num; i++) {
-	argv[i] = RARRAY_AREF(ary, i);
-    }
-
-    return i;
-}
-
-static inline int
-simple_iseq_p(const rb_iseq_t *iseq)
-{
-    return iseq->body->param.flags.has_opt == FALSE &&
-           iseq->body->param.flags.has_rest == FALSE &&
-	   iseq->body->param.flags.has_post == FALSE &&
-	   iseq->body->param.flags.has_kw == FALSE &&
-	   iseq->body->param.flags.has_kwrest == FALSE &&
-	   iseq->body->param.flags.has_block == FALSE;
-}
-
-static inline int
-vm_callee_setup_block_arg(rb_thread_t *th, struct rb_calling_info *calling, const struct rb_call_info *ci, const rb_iseq_t *iseq, VALUE *argv, const enum arg_setup_type arg_setup_type)
-{
-    if (LIKELY(simple_iseq_p(iseq))) {
-	rb_control_frame_t *cfp = th->cfp;
-	VALUE arg0;
-
-	CALLER_SETUP_ARG(cfp, calling, ci); /* splat arg */
-
-	if (arg_setup_type == arg_setup_block &&
-	    calling->argc == 1 &&
-	    iseq->body->param.flags.has_lead &&
-	    !iseq->body->param.flags.ambiguous_param0 &&
-	    !NIL_P(arg0 = vm_callee_setup_block_arg_arg0_check(argv))) {
-	    calling->argc = vm_callee_setup_block_arg_arg0_splat(cfp, iseq, argv, arg0);
-	}
-
-	if (calling->argc != iseq->body->param.lead_num) {
-	    if (arg_setup_type == arg_setup_block) {
-		if (calling->argc < iseq->body->param.lead_num) {
-		    int i;
-		    CHECK_VM_STACK_OVERFLOW(cfp, iseq->body->param.lead_num);
-		    for (i=calling->argc; i<iseq->body->param.lead_num; i++) argv[i] = Qnil;
-		    calling->argc = iseq->body->param.lead_num; /* fill rest parameters */
-		}
-		else if (calling->argc > iseq->body->param.lead_num) {
-		    calling->argc = iseq->body->param.lead_num; /* simply truncate arguments */
-		}
-	    }
-	    else if (arg_setup_type == arg_setup_lambda &&
-		     calling->argc == 1 &&
-		     !NIL_P(arg0 = vm_callee_setup_block_arg_arg0_check(argv)) &&
-		     RARRAY_LEN(arg0) == iseq->body->param.lead_num) {
-		calling->argc = vm_callee_setup_block_arg_arg0_splat(cfp, iseq, argv, arg0);
-	    }
-	    else {
-		argument_arity_error(th, iseq, calling->argc, iseq->body->param.lead_num, iseq->body->param.lead_num);
-	    }
-	}
-
-	return 0;
-    }
-    else {
-	return setup_parameters_complex(th, iseq, calling, ci, argv, arg_setup_type);
-    }
-}
-
 static const rb_iseq_t *
 def_iseq_ptr(rb_method_definition_t *def)
 {
@@ -1416,6 +1334,17 @@ vm_call_iseq_setup_normal_0start(rb_thread_t *th, rb_control_frame_t *cfp, struc
     int param = iseq->body->param.size;
     int local = iseq->body->local_size;
     return vm_call_iseq_setup_normal(th, cfp, calling, ci, cc, 0, param, local);
+}
+
+static inline int
+simple_iseq_p(const rb_iseq_t *iseq)
+{
+    return iseq->body->param.flags.has_opt == FALSE &&
+           iseq->body->param.flags.has_rest == FALSE &&
+	   iseq->body->param.flags.has_post == FALSE &&
+	   iseq->body->param.flags.has_kw == FALSE &&
+	   iseq->body->param.flags.has_kwrest == FALSE &&
+	   iseq->body->param.flags.has_block == FALSE;
 }
 
 static inline int
@@ -2406,6 +2335,77 @@ vm_yield_with_cfunc(rb_thread_t *th, const rb_block_t *block, VALUE self,
 
     th->cfp++;
     return val;
+}
+
+static inline int
+vm_callee_setup_block_arg_arg0_splat(rb_control_frame_t *cfp, const rb_iseq_t *iseq, VALUE *argv, VALUE ary)
+{
+    int i;
+    long len = RARRAY_LEN(ary);
+
+    CHECK_VM_STACK_OVERFLOW(cfp, iseq->body->param.lead_num);
+
+    for (i=0; i<len && i<iseq->body->param.lead_num; i++) {
+	argv[i] = RARRAY_AREF(ary, i);
+    }
+
+    return i;
+}
+
+static inline VALUE
+vm_callee_setup_block_arg_arg0_check(VALUE *argv)
+{
+    VALUE ary, arg0 = argv[0];
+    ary = rb_check_array_type(arg0);
+    argv[0] = arg0;
+    return ary;
+}
+
+static int
+vm_callee_setup_block_arg(rb_thread_t *th, struct rb_calling_info *calling, const struct rb_call_info *ci, const rb_iseq_t *iseq, VALUE *argv, const enum arg_setup_type arg_setup_type)
+{
+    if (simple_iseq_p(iseq)) {
+	rb_control_frame_t *cfp = th->cfp;
+	VALUE arg0;
+
+	CALLER_SETUP_ARG(cfp, calling, ci); /* splat arg */
+
+	if (arg_setup_type == arg_setup_block &&
+	    calling->argc == 1 &&
+	    iseq->body->param.flags.has_lead &&
+	    !iseq->body->param.flags.ambiguous_param0 &&
+	    !NIL_P(arg0 = vm_callee_setup_block_arg_arg0_check(argv))) {
+	    calling->argc = vm_callee_setup_block_arg_arg0_splat(cfp, iseq, argv, arg0);
+	}
+
+	if (calling->argc != iseq->body->param.lead_num) {
+	    if (arg_setup_type == arg_setup_block) {
+		if (calling->argc < iseq->body->param.lead_num) {
+		    int i;
+		    CHECK_VM_STACK_OVERFLOW(cfp, iseq->body->param.lead_num);
+		    for (i=calling->argc; i<iseq->body->param.lead_num; i++) argv[i] = Qnil;
+		    calling->argc = iseq->body->param.lead_num; /* fill rest parameters */
+		}
+		else if (calling->argc > iseq->body->param.lead_num) {
+		    calling->argc = iseq->body->param.lead_num; /* simply truncate arguments */
+		}
+	    }
+	    else if (arg_setup_type == arg_setup_lambda &&
+		     calling->argc == 1 &&
+		     !NIL_P(arg0 = vm_callee_setup_block_arg_arg0_check(argv)) &&
+		     RARRAY_LEN(arg0) == iseq->body->param.lead_num) {
+		calling->argc = vm_callee_setup_block_arg_arg0_splat(cfp, iseq, argv, arg0);
+	    }
+	    else {
+		argument_arity_error(th, iseq, calling->argc, iseq->body->param.lead_num, iseq->body->param.lead_num);
+	    }
+	}
+
+	return 0;
+    }
+    else {
+	return setup_parameters_complex(th, iseq, calling, ci, argv, arg_setup_type);
+    }
 }
 
 static int
