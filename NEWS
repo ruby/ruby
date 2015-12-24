@@ -234,6 +234,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 * OpenSSL
   * OpenSSL::SSL::SSLSocket#accept_nonblock and
     OpenSSL::SSL::SSLSocket#connect_nonblock supports `exception: false`.
+    [Feature #10532]
 
 * Pathname
   * Pathname#descend and Pathname#ascend supported blockless form.
@@ -246,6 +247,7 @@ with all sufficient information, see the ChangeLog file or Redmine
     BasicSocket#sendmsg_nonblock all support `exception: false` to return
     :wait_readable or :wait_writable symbols instead of raising
     IO::WaitReadable or IO::WaitWritable exceptions
+    [Feature #11229] [Feature #11229]
   * BasicSocket#recv and BasicSocket#recv_nonblock allow an output
     String buffer argument like IO#read and IO#read_nonblock to reduce
     GC overhead
@@ -338,7 +340,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 === Build system updates
 
-=== Implementation changes
+=== Supported platform changes
 
 * OS/2 is no longer supported
 
@@ -347,3 +349,59 @@ with all sufficient information, see the ChangeLog file or Redmine
 * Borland-C is no longer supported
 
 * Haiku now stable and best effort
+
+=== Implementation improvements
+
+* Optimize Proc#call to eliminate method frame construction.
+  [Feature #11569]
+
+* Reconsidering method entry data structure.
+  [Bug #11278]
+
+* Introducing new table data structure for ID keys tables used by
+  method table and so on. New table structure is simple and fast
+  than st_table. [Feature #11420]
+
+* Machine code level tuning for object allocation and method calling
+  code. r52099, r52254
+
+* RubyVM::InstructionSequence is extended for future improvement.
+  [Feature #11788]
+
+* Case dispatch is now optimized for all special constant literals
+  including nil, true, and false.  Previously, only literal strings,
+  symbols, integers and floats compiled to optimized case dispatch.
+  [Feature #11769]
+
+* Instance variables on non-pure Ruby classes (T_DATA, T_FILE,
+  etc..) is less expensive to store than before. [Feature #11170]
+
+* All accesses to members of big Struct objects are performed in
+  constant-time.  Previously, Struct elements beyond the first 10
+  10 elements used a linear scan. [Feature #10585]
+
+* The Set class got several speedps.
+  [Misc #10754], [r52591]
+
+* Socket and I/O related improvements
+
+  * All non-blocking I/O (including socket) methods allow
+    `exception: false' to suppress expensive and noisy exceptions
+    in common usage. Feature #10532 [Feature #11229]
+
+  * Calling overhead of most of these keyword-using I/O methods is
+    reduced by avoiding the inefficient C API to parse keywords.
+    [Feature #11339]
+
+  * The standard library is updated to use the improved
+    exception-free non-blocking I/O.  This has the additional
+    benefit of quieter $DEBUG output in addition to reducing expensive
+    exceptions. [Feature #11044]
+
+  * The Socket#recv* methods allow an optional destination
+    buffer to reduce GC pressure, based on the existing behavior
+    of IO#read* methods. [Feature #11242]
+
+  * (Linux-only) waiting on a single FD anywhere in the stdlib no longer
+    uses select(2), making it immune to slowdowns with high-numbered FDs.
+    [Feature #11081] [Feature #11377]
