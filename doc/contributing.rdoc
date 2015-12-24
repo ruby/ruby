@@ -239,28 +239,10 @@ Each major version of Ruby has a release manager that should be assigned to
 handle backport requests. You can find the list of release managers on the
 {wiki}[https://bugs.ruby-lang.org/projects/ruby/wiki/ReleaseEngineering].
 
-=== Branch Maintainers
+=== Branches
 
-A branch maintainer maintains a branch and releases a new release of Ruby. The
-branch depends on the associated version of Ruby, such as ruby_1_8_7 for
-version 1.8.7. The current branch maintainers are as follows:
-
-[trunk]
-  unnecessary
-[ruby_2_2]
-  Chikanaga Tomoyuki (nagachika)
-[ruby_2_1]
-  NAKAMURA Usaku (usa)
-[ruby_2_0_0]
-  NAKAMURA Usaku (usa)
-[ruby_1_9_3, ruby_1_9_2, ruby_1_9_1]
-  _unmaintained_
-[ruby_1_8]
-  _unmaintained_
-[ruby_1_8_7]
-  _unmaintained_
-[ruby_1_8_6 ...]
-  _unmaintained_
+Status and maintainers of branches are listed on the
+{wiki}[https://bugs.ruby-lang.org/projects/ruby/wiki/ReleaseEngineering].
 
 == Running tests
 
