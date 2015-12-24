@@ -564,7 +564,7 @@ no-fake -fake: PHONY
 
 # really doesn't depend on .o, just ensure newer than headers which
 # version.o depends on.
-$(arch)-fake.rb: $(srcdir)/template/fake.rb.in $(srcdir)/tool/generic_erb.rb version.$(OBJEXT)
+$(arch)-fake.rb: $(srcdir)/template/fake.rb.in $(srcdir)/tool/generic_erb.rb version.$(OBJEXT) miniruby$(EXEEXT)
 	$(ECHO) generating $@
 	$(Q) $(CPP) $(warnflags) $(XCFLAGS) $(CPPFLAGS) "$(srcdir)/version.c" | \
 	$(BOOTSTRAPRUBY) "$(srcdir)/tool/generic_erb.rb" -o $@ "$(srcdir)/template/fake.rb.in" \
