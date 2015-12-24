@@ -250,7 +250,7 @@ with all sufficient information, see the ChangeLog file or Redmine
     [Feature #11229]
   * BasicSocket#recv and BasicSocket#recv_nonblock allow an output
     String buffer argument like IO#read and IO#read_nonblock to reduce
-    GC overhead
+    GC overhead [Feature #11242]
 
 * StringIO
   * In read-only mode, StringIO#set_encoding no longer sets the encoding
@@ -381,24 +381,16 @@ with all sufficient information, see the ChangeLog file or Redmine
 * The Set class got several speed up.
   [Misc #10754], [r52591]
 
-* Socket and I/O related improvements
+* Socket and I/O-related improvements
 
-  * All non-blocking I/O (including socket) methods allow
-    `exception: false' to suppress expensive and noisy exceptions
-    in common usage. Feature #10532 [Feature #11229]
-
-  * Calling overhead of most of these keyword-using I/O methods is
-    reduced by avoiding the inefficient C API to parse keywords.
-    [Feature #11339]
+  * Calling overhead of most of new keyword-using I/O methods in
+    [Feature #11229] is reduced by avoiding the inefficient C API
+    to parse keywords.  [Feature #11339]
 
   * The standard library is updated to use the improved
-    exception-free non-blocking I/O.  This has the additional
-    benefit of quieter $DEBUG output in addition to reducing expensive
-    exceptions. [Feature #11044]
-
-  * The Socket#recv* methods allow an optional destination
-    buffer to reduce GC pressure, based on the existing behavior
-    of IO#read* methods. [Feature #11242]
+    exception-free non-blocking I/O from [Feature #11229].
+    This has the additional benefit of quieter $DEBUG output in
+    addition to reducing expensive exceptions. [Feature #11044]
 
   * (Linux-only) waiting on a single FD anywhere in the stdlib no longer
     uses select(2), making it immune to slowdowns with high-numbered FDs.
