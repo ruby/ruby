@@ -5410,7 +5410,7 @@ parser_yyerror(struct parser_params *parser, const char *msg)
     const int max_line_margin = 30;
     const char *p, *pe;
     const char *pre = "", *post = "";
-    const char *code = "", *carret = "", *newline = "";
+    const char *code = "", *caret = "", *newline = "";
     char *buf;
     long len;
     int i;
@@ -5446,7 +5446,7 @@ parser_yyerror(struct parser_params *parser, const char *msg)
 	i = (int)(lex_p - p);
 	buf = ALLOCA_N(char, i+2);
 	code = p;
-	carret = p2 = buf;
+	caret = p2 = buf;
 	while (i-- > 0) {
 	    *p2++ = *p++ == '\t' ? '\t' : ' ';
 	}
@@ -5460,7 +5460,7 @@ parser_yyerror(struct parser_params *parser, const char *msg)
     compile_error(PARSER_ARG "%s%s""%s%.*s%s%s""%s%s",
 		  msg, newline,
 		  pre, (int)len, code, post, newline,
-		  pre, carret);
+		  pre, caret);
 #else
     dispatch1(parse_error, STR_NEW2(msg));
     ripper_error();
