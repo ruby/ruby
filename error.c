@@ -127,6 +127,7 @@ compile_err_append(VALUE mesg)
     th->base_block = prev_base_block;
 }
 
+#if 0
 void
 rb_compile_error_with_enc(const char *file, int line, void *enc, const char *fmt, ...)
 {
@@ -150,6 +151,7 @@ rb_compile_error(const char *file, int line, const char *fmt, ...)
     va_end(args);
     compile_err_append(str);
 }
+#endif
 
 void
 rb_compile_error_str(VALUE file, int line, void *enc, const char *fmt, ...)
@@ -483,6 +485,7 @@ rb_async_bug_errno(const char *mesg, int errno_arg)
     abort();
 }
 
+#if 0
 void
 rb_compile_bug(const char *file, int line, const char *fmt, ...)
 {
@@ -490,6 +493,7 @@ rb_compile_bug(const char *file, int line, const char *fmt, ...)
 
     abort();
 }
+#endif
 
 void
 rb_compile_bug_str(VALUE file, int line, const char *fmt, ...)

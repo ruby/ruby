@@ -338,6 +338,10 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * rb_autoload() deprecated, use rb_funcall() instead.  [Feature #11664]
 
+* rb_compile_error_with_enc(), rb_compile_error(), and rb_compile_bug()
+  deprecated.  these functions are exposed but only for internal use.
+  external libraries should not use them.
+
 === Supported platform changes
 
 * OS/2 is no longer supported
