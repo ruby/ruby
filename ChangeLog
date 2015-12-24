@@ -1,3 +1,7 @@
+Thu Dec 24 15:01:38 2015  sorah (Shota Fukumori)  <her@sorah.jp>
+
+	* tool/file2lastrev.rb: Fix ArgumentError to work on Ruby 1.8.7.
+
 Thu Dec 24 14:44:08 2015  sorah (Shota Fukumori)  <her@sorah.jp>
 
 	* tool/vcs.rb (IO.popen): Enable on Ruby 1.9 where chdir option is not
