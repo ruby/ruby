@@ -1,3 +1,7 @@
+Thu Dec 24 15:02:42 2015  sorah (Shota Fukumori)  <her@sorah.jp>
+
+	* tool/vcs.rb (IO.popen): Refactor. Avoid assigning in condition.
+
 Thu Dec 24 15:01:38 2015  sorah (Shota Fukumori)  <her@sorah.jp>
 
 	* tool/file2lastrev.rb: Fix ArgumentError to work on Ruby 1.8.7.
