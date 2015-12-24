@@ -603,46 +603,47 @@ rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE absolute_path, VALUE li
     rb_thread_t *th = GET_THREAD();
     rb_block_t *prev_base_block = th->base_block;
     rb_iseq_t *iseq = NULL;
+    const rb_iseq_t *parent = NULL;
+    rb_compile_option_t option;
+    VALUE label;
+    enum iseq_type type;
+    NODE *(*parse)(VALUE vparser, VALUE fname, VALUE file, int start);
+    int ln = NUM2INT(line);
+
+    StringValueCStr(file);
+    if (RB_TYPE_P(src, T_FILE)) {
+	parse = rb_parser_compile_file_path;
+    }
+    else {
+	StringValue(src);
+	parse = rb_parser_compile_string_path;
+    }
+
+    make_compile_option(&option, opt);
+
+    if (base_block && (parent = base_block->iseq) != NULL) {
+	label = parent->body->location.label;
+	type = ISEQ_TYPE_EVAL;
+    }
+    else {
+	label = rb_fstring_cstr("<compiled>");
+	type = ISEQ_TYPE_TOP;
+    }
 
     th->base_block = base_block;
-
     TH_PUSH_TAG(th);
     if ((state = EXEC_TAG()) == 0) {
-	VALUE parser;
-	int ln = NUM2INT(line);
-	NODE *node;
-	rb_compile_option_t option;
-
-	StringValueCStr(file);
-	make_compile_option(&option, opt);
-
-	parser = rb_parser_new();
-
-	if (RB_TYPE_P((src), T_FILE))
-	    node = rb_parser_compile_file_path(parser, file, src, ln);
-	else {
-	    StringValue(src);
-	    node = rb_parser_compile_string_path(parser, file, src, ln);
-
-	    if (!node) {
-		rb_exc_raise(th->errinfo);	/* TODO: check err */
-	    }
-	}
-
-	if (base_block && base_block->iseq) {
-	    iseq = rb_iseq_new_with_opt(node, base_block->iseq->body->location.label,
-					file, absolute_path, line, base_block->iseq,
-					ISEQ_TYPE_EVAL, &option);
-	}
-	else {
-	    iseq = rb_iseq_new_with_opt(node, rb_str_new2("<compiled>"), file, absolute_path, line,
-					NULL, ISEQ_TYPE_TOP, &option);
+	NODE *node = (*parse)(rb_parser_new(), file, src, ln);
+	if (node) { /* TODO: check err */
+	    iseq = rb_iseq_new_with_opt(node, label, file, absolute_path, line,
+					parent, type, &option);
 	}
     }
     TH_POP_TAG();
 
     th->base_block = prev_base_block;
 
+    if (!iseq) rb_exc_raise(th->errinfo);
     if (state) {
 	JUMP_TAG(state);
     }
