@@ -152,6 +152,20 @@ rb_compile_error(const char *file, int line, const char *fmt, ...)
 }
 
 void
+rb_compile_error_str(VALUE file, int line, void *enc, const char *fmt, ...)
+{
+    va_list args;
+    VALUE str;
+
+    va_start(args, fmt);
+    str = compile_snprintf(enc, NULL,
+			   NIL_P(file) ? NULL : RSTRING_PTR(file), line,
+			   fmt, args);
+    va_end(args);
+    compile_err_append(str);
+}
+
+void
 rb_compile_error_append(const char *fmt, ...)
 {
     va_list args;
@@ -473,6 +487,14 @@ void
 rb_compile_bug(const char *file, int line, const char *fmt, ...)
 {
     report_bug(file, line, fmt, NULL);
+
+    abort();
+}
+
+void
+rb_compile_bug_str(VALUE file, int line, const char *fmt, ...)
+{
+    report_bug(RSTRING_PTR(file), line, fmt, NULL);
 
     abort();
 }
