@@ -1,3 +1,10 @@
+Fri Dec 25 22:43:26 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: extract RUBY_RELEASE_DAY at generating Makefile.
+
+	* version.h (RUBY_RELEASE_DATE): construct from RUBY_RELEASE_YEAR,
+	  RUBY_RELEASE_MONTH, and RUBY_RELEASE_DAY.
+
 Fri Dec 25 21:33:06 2015  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* version.h (RUBY_VERSION): 2.4.0 development has started.
