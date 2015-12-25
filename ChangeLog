@@ -1,3 +1,11 @@
+Sat Dec 26 01:24:40 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in, version.h (RUBY_PROGRAM_VERSION): extract version
+	  numbers from API version in include/ruby/version.h except for
+	  TEENY, to save matz job next year.
+
+	* win32/setup.mak (-version-): use program version.
+
 Fri Dec 25 22:43:26 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: extract RUBY_RELEASE_DAY at generating Makefile.
