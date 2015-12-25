@@ -129,15 +129,17 @@ MSC_VER = _MSC_VER
 
 verconf.mk: nul
 	@$(CPP) -I$(srcdir) -I$(srcdir)/include <<"Creating $(@)" | findstr "=" >$(@)
-#define STRINGIZE(expr) STRINGIZE0(expr)
-#ifndef STRINGIZE0
-#define STRINGIZE0(expr) #expr
-#endif
 #define RUBY_REVISION 0
 #include "version.h"
-release_date = RUBY_RELEASE_DATE
-#undef RUBY_RELEASE_DATE
-RUBY_RELEASE_DATE = $$(release_date)
+release_year = RUBY_RELEASE_YEAR
+release_month = RUBY_RELEASE_MONTH
+release_day = RUBY_RELEASE_DAY
+#undef RUBY_RELEASE_YEAR
+#undef RUBY_RELEASE_MONTH
+#undef RUBY_RELEASE_DAY
+RUBY_RELEASE_YEAR = $$(release_year)
+RUBY_RELEASE_MONTH = $$(release_month)
+RUBY_RELEASE_DAY = $$(release_day)
 <<
 
 -program-name-:
