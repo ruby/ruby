@@ -3541,7 +3541,7 @@ Sun May 15 23:45:11 2011  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 Sun May 15 22:26:39 2011  CHIKANAGA Tomoyuki  <nagachika00@gmail.com>
 
 	* signal.c (rb_f_kill): accept '-SIGXXX' style signal with Symbol or
-	  implicit convertion with #to_str. [ruby-dev:43169] fixes #4362
+	  implicit conversion with #to_str. [ruby-dev:43169] fixes #4362
 	* test/ruby/test_signal.rb (test_signal_process_group): add a test
 	  for send signal to process group.
 
@@ -8041,7 +8041,7 @@ Sat Dec 25 17:33:55 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  anonymous classes.
 
 	* lib/csv.rb (CSV#init_separators): use IO#gets with length
-	  parameter to get rid of wrong convertion.
+	  parameter to get rid of wrong conversion.
 
 	* lib/csv.rb (CSV::foreach, CSV#initialize): directly use encoding
 
@@ -8382,7 +8382,7 @@ Tue Dec 14 14:24:15 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 	  to 'test_io' because the old one is meaningless and inconvenient.
 
 	* test/ruby/test_io.rb (test_binmode_after_closed): the temporary file
-	  maked by make_temfile is already closed.
+	  made by make_temfile is already closed.
 
 Tue Dec 14 13:52:19 2010  NAKAMURA Usaku  <usa@ruby-lang.org>
 
@@ -22363,7 +22363,7 @@ Tue Sep 29 22:19:36 2009  Tanaka Akira  <akr@fsij.org>
 
 Tue Sep 29 21:16:35 2009  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* io.c (rb_scan_open_args): add UTF8-MAC to no-convertion encoding.
+	* io.c (rb_scan_open_args): add UTF8-MAC to no-conversion encoding.
 
 Tue Sep 29 21:21:15 2009  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -33712,7 +33712,7 @@ Thu Dec 25 14:51:43 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 Thu Dec 25 14:32:23 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c (vm_method_search): fix control flow bug.
-	  (commited at r20981)
+	  (committed at r20981)
 
 Thu Dec 25 13:28:20 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
@@ -71774,7 +71774,7 @@ Wed Mar  1 17:13:37 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Thu Mar  2 17:54:45 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
-	* gc.c: commited magic for reducing RVALUE size on windows. (24->20byte)
+	* gc.c: committed magic for reducing RVALUE size on windows. (24->20byte)
 	  [ruby-core:7474]
 
 Thu Mar  2 14:12:26 2006  Tanaka Akira  <akr@m17n.org>
@@ -73761,7 +73761,7 @@ Fri Oct 21 15:42:28 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/socket/extconf.rb: BeOS is only one platform should call
 	  closesocket, so check __BEOS__ macro directly. (I was worried
-	  accidently HAVE_CLOSESOCKET is defined on windows again because
+	  accidentally HAVE_CLOSESOCKET is defined on windows again because
 	  it has it)
 
 	* ext/socket/{getaddrinfo.c,socket.c}: ditto.
@@ -73770,7 +73770,7 @@ Fri Oct 21 15:42:28 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 Fri Oct 21 15:23:23 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
-	* bignum.c (bignew_1): convertion from `int' to `char' discards
+	* bignum.c (bignew_1): conversion from `int' to `char' discards
 	  upper bits, (ie. (char)0xff00 -> 0) so it's better to test if
 	  nonzero and set 0 or 1 instead of simply casting ... as a flag usage.
 	  (but I believe this won't cause actual bug in current implementation)
@@ -74937,7 +74937,7 @@ Mon Sep 12 20:32:00 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 Mon Sep 12 19:58:53 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
-	* dln.c: avoid warning of const to non-const convertion.
+	* dln.c: avoid warning of const to non-const conversion.
 	  [ruby-dev:27041]
 
 	* eval.c, io.c, ruby.c: ditto.
@@ -83155,7 +83155,7 @@ Thu Aug 19 16:29:45 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: Fail to treat a hash value of 'font' option.
 
-	* ext/tk/lib/tk.rb: bindinfo cannot return '%' substiturion infomation.
+	* ext/tk/lib/tk.rb: bindinfo cannot return '%' substiturion information.
 
 	* ext/tk/lib/menu.rb: typo bug.
 
@@ -83584,7 +83584,7 @@ Wed Jul 14 18:05:21 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 Wed Jul 14 12:20:05 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* util.c (ruby_strtod): should not convert string in the form of
-	  "-I.FE-X" which both "I" and "F" are ommitted. [ruby-dev:23883]
+	  "-I.FE-X" which both "I" and "F" are omitted. [ruby-dev:23883]
 
 	* test/ruby/test_float.rb (test_strtod): add test for bug fix.
 
@@ -84298,7 +84298,7 @@ Sat May 22 11:54:10 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Sat May 22 05:37:11 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/remote-tk.rb: (NEW library) controll Tk interpreters
+	* ext/tk/lib/remote-tk.rb: (NEW library) control Tk interpreters
 	  on the other processes by Tcl/Tk's 'send' command
 
 Fri May 21 09:22:05 2004  Dave Thomas  <dave@pragprog.com>
@@ -85607,10 +85607,10 @@ Wed Mar 17 00:22:03 2004  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
 Tue Mar 16 11:14:17 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* dir.c (fnmatch_helper): File.fnmatch('\.', '.') should return true.
-	  (Rev1.112 lost compatiblity)
+	  (Rev1.112 lost compatibility)
 
 	* dir.c (fnmatch_helper): File.fnmatch('\/', '/', File::FNM_PATHNAME)
-	  should return true. (Rev1.112 lost compatiblity)
+	  should return true. (Rev1.112 lost compatibility)
 
 	* dir.c (fnmatch): File.fnmatch('**/.boo', '.foo/.boo',
 	  File::FNM_PATHNAME) should return false because of leading period.
@@ -86434,7 +86434,7 @@ Mon Feb 16 22:22:00 2004  Gavin Sinclair  <gsinclair@soyabean.com.au>
 
 Mon Feb 16 20:28:52 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
-	* bcc32/Makefile.sub: show more warnings. (refering to mingw)
+	* bcc32/Makefile.sub: show more warnings. (referring to mingw)
 
 	* bcc32/setup.mak: ditto.
 
@@ -86492,7 +86492,7 @@ Mon Feb 16 12:29:10 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Mon Feb 16 10:29:52 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* dir.c (CompareImpl): File.fnmatch and Dir.glob get better performance
-	  in Win32. This is achived by calling downcase() for single-byte
+	  in Win32. This is achieved by calling downcase() for single-byte
 	  characters. (CharLower() is slower than downcase())
 
 Mon Feb 16 02:14:29 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
@@ -86561,7 +86561,7 @@ Sat Feb 14 11:14:12 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 Fri Feb 13 21:51:00 2004  Gavin Sinclair  <gsinclair@soyabean.com.au>
 
-	* lib/fileutils.rb: slighly improved documentation (sync with 1.8)
+	* lib/fileutils.rb: slightly improved documentation (sync with 1.8)
 
 Fri Feb 13 19:57:01 2004  Kouhei Sutou  <kou@cozmixng.org>
 
@@ -89179,7 +89179,7 @@ Thu Nov 27 22:05:48 2003  Akinori MUSHA  <knu@iDaemons.org>
 Thu Nov 27 17:36:42 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tkafter.rb: bug fix on TkTimer#cancel_on_exception=(mode).
-	  TkTimer#wait recieves the exception of the callback.
+	  TkTimer#wait receives the exception of the callback.
 	  The exception is kept on @return_value.
 
 Thu Nov 27 16:58:48 2003  WATANABE Hirofumi  <eban@ruby-lang.org>

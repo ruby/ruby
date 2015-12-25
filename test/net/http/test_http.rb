@@ -151,12 +151,12 @@ class TestNetHTTP < Test::Unit::TestCase
 
   def test_proxy_port
     clean_http_proxy_env do
-      http = Net::HTTP.new 'exmaple', nil, 'proxy.example'
+      http = Net::HTTP.new 'example', nil, 'proxy.example'
       assert_equal 'proxy.example', http.proxy_address
       assert_equal 80, http.proxy_port
-      http = Net::HTTP.new 'exmaple', nil, 'proxy.example', 8000
+      http = Net::HTTP.new 'example', nil, 'proxy.example', 8000
       assert_equal 8000, http.proxy_port
-      http = Net::HTTP.new 'exmaple', nil
+      http = Net::HTTP.new 'example', nil
       assert_equal nil, http.proxy_port
     end
   end

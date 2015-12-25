@@ -1454,7 +1454,7 @@ Fri Jun 27 03:24:54 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 Thu Jun 26 21:34:49 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* class.c (class_instance_method_list): get rid of warning about
-	  arguement type mismatch, and inline method_list().
+	  argument type mismatch, and inline method_list().
 	  [ruby-core:01198]
 
 Wed Jun 25 14:40:33 2003  Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>
@@ -3361,7 +3361,7 @@ Fri Apr 11 02:41:35 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 Thu Apr 10 21:12:19 2003  Minero Aoki  <aamine@loveruby.net>
 
-	* lib/net/pop.rb: Exception line was accidentaly removed.
+	* lib/net/pop.rb: Exception line was accidentally removed.
 	  [ruby-dev:19989]
 
 Thu Apr 10 18:42:13 2003  Tadayoshi Funaba  <tadf@dotrb.org>
@@ -5986,7 +5986,7 @@ Thu Nov  7 09:51:37 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 Wed Nov  6 16:57:06 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* class.c (rb_define_method): do not set NOEX_CFUNC if klass is
-	  really a module, whose methods must be safe for reciever's type.
+	  really a module, whose methods must be safe for receiver's type.
 
 	* eval.c (rb_eval): nosuper should not be inherited unless the
 	  overwritten method is an undef placeholder.

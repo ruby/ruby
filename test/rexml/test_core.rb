@@ -619,7 +619,7 @@ module REXMLTests
       File.open(fixture_path("documentation.xml")) do |f|
         Document.parse_stream( f, c )
       end
-      assert(c.ts, "Stream parsing apparantly didn't parse the whole file")
+      assert(c.ts, "Stream parsing apparently didn't parse the whole file")
       assert(c.te, "Stream parsing dropped end tag for documentation")
 
       Document.parse_stream("<a.b> <c/> </a.b>", c)

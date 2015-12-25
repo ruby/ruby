@@ -240,9 +240,12 @@ class TestSocket < Test::Unit::TestCase
           unix_server = Socket.unix_server_socket("#{tmpdir}/sock")
           tcp_servers.each {|s|
             addr = s.connect_address
-            assert_nothing_raised("connect to #{addr.inspect}") {
+            begin
               clients << addr.connect
-            }
+            rescue
+              # allow failure if the address is IPv6
+              raise unless addr.ipv6?
+            end
           }
           addr = unix_server.connect_address
           assert_nothing_raised("connect to #{addr.inspect}") {

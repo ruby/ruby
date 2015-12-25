@@ -4409,7 +4409,12 @@ AC_CONFIG_FILES(Makefile, [
 		["git svn"], [VCSUP='$(VCS) rebase $(GITSVNREBASEOPTIONS)'],
 		[git],       [VCSUP='$(VCS) pull $(GITPULLOPTIONS)'],
 		[VCSUP='$(VCS)'])
-	sed -n 's/^@%:@define \(RUBY_RELEASE_DATE\) "\(.*\)"/\1 = \2/p' "$srcdir/version.h"
+	sed -n \
+	    -e '[/^@%:@define \(RUBY_RELEASE_[A-Z]*\) \([0-9][0-9]*\)/]{' \
+	    -e   's//\1 = \2/' \
+	    -e   '[s/ \([0-9]\)$/ 0\1/]' \
+	    -e   p \
+	    -e '}' "$srcdir/version.h"
 	sed '/^MISSING/s/\$U\././g;/^VCS *=/s#@VCS@#'"$VCS"'#;/^VCSUP *=/s#@VCSUP@#'"$VCSUP"'#' Makefile
 	echo; test x"$EXEEXT" = x || echo 'miniruby: miniruby$(EXEEXT)'
 	if test "$gnumake" != yes; then

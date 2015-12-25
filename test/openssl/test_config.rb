@@ -168,7 +168,7 @@ __EOC__
   end
 
   def test_value
-    # supress deprecation warnings
+    # suppress deprecation warnings
     OpenSSL::TestUtils.silent do
       assert_equal('CA_default', @it.value('ca', 'default_ca'))
       assert_equal(nil, @it.value('ca', 'no such key'))
