@@ -1,3 +1,7 @@
+Fri Dec 25 21:33:06 2015  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* version.h (RUBY_VERSION): 2.4.0 development has started.
+
 Fri Dec 25 14:12:12 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* doc/ChangeLog-2.3.0, ext/tk/lib/tkextlib/SUPPORT_STATUS,
