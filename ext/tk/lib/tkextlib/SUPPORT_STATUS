@@ -3,11 +3,11 @@
 
   *** RELEASE_DATE of the libraries => see 'tkextlib/version.rb' ***
 
-The following list shows *CURRENT* status when this file was modified
-at last. If you want to add other Tcl/Tk extensions to the planned list
-(or change its status position), please request them at the ruby-talk,
+The following list shows *CURRENT* status when this file was last modified.
+If you want to add other Tcl/Tk extensions to the planned list (or change
+their status position), please send a request to the ruby-talk,
 ruby-list, or ruby-dev ML. Although we cannot promise to support your
-requests, we'll try to do.
+requests, we'll try to do it.
 
 If you want to check that wrapper libraries are ready to use on your
 environment, please execute 'pkg_checker.rb' with no arguments. The

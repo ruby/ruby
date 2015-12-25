@@ -13,7 +13,7 @@
 
 /*
  * This file contains only
- * - never-changeable informations, and
+ * - never-changeable information, and
  * - interfaces accessible from extension libraries.
  *
  * Never try to check RUBY_VERSION_CODE etc in extension libraries,
