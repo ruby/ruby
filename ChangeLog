@@ -1,6 +1,6 @@
 Fri Dec 25 14:12:12 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
-	* doc/CangeLog-2.3.0, ext/tk/lib/txextlib/SUPPORT_STATUS,
+	* doc/ChangeLog-2.3.0, ext/tk/lib/tkextlib/SUPPORT_STATUS,
 	  include/ruby/version.h: minor grammar fixes [ci skip]
 
 Fri Dec 25 08:23:22 2015  Tadashi Saito  <tadashi_saito@dwango.co.jp>
