@@ -1,3 +1,8 @@
+Sat Dec 26 11:26:38 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* miniinit.c (Init_enc): add some common aliases of built-in
+	  encodings.  [ruby-core:72481] [Bug #11872]
+
 Sat Dec 26 01:24:40 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in, version.h (RUBY_PROGRAM_VERSION): extract version
