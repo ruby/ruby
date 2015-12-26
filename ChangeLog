@@ -1,3 +1,23 @@
+Sat Dec 26 18:29:01 2015  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/xmlrpc/client.rb: Support SSL options in async methods of
+	  XMLRPC::Client.
+	  [Bug #11489]
+	  Reported by Aleksandar Kostadinov. Thanks!!!
+
+Sat Dec 26 11:26:38 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* miniinit.c (Init_enc): add some common aliases of built-in
+	  encodings.  [ruby-core:72481] [Bug #11872]
+
+Sat Dec 26 01:24:40 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in, version.h (RUBY_PROGRAM_VERSION): extract version
+	  numbers from API version in include/ruby/version.h except for
+	  TEENY, to save matz job next year.
+
+	* win32/setup.mak (-version-): use program version.
+
 Fri Dec 25 22:43:26 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: extract RUBY_RELEASE_DAY at generating Makefile.

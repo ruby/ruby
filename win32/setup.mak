@@ -120,19 +120,25 @@ int main(void) {return (EnumProcesses(NULL,0,NULL) ? 0 : 1);}
 	@$(CPP) -I$(srcdir) -I$(srcdir)/include <<"Creating $(MAKEFILE)" | findstr "=" >>$(MAKEFILE)
 #define RUBY_REVISION 0
 #include "version.h"
-MAJOR = RUBY_API_VERSION_MAJOR
-MINOR = RUBY_API_VERSION_MINOR
-TEENY = RUBY_API_VERSION_TEENY
-RUBY_PROGRAM_VERSION = RUBY_VERSION
+MAJOR = RUBY_PROGRAM_VERSION_MAJOR
+MINOR = RUBY_PROGRAM_VERSION_MINOR
+TEENY = RUBY_PROGRAM_VERSION_TEENY
 MSC_VER = _MSC_VER
 <<
 
 verconf.mk: nul
-	@echo RUBY_RELEASE_DATE \>$(@)
-	@$(CPP) -I$(srcdir) -I$(srcdir)/include <<"Creating $(@)" | findstr "=" >>$(@)
+	@$(CPP) -I$(srcdir) -I$(srcdir)/include <<"Creating $(@)" | findstr "=" >$(@)
 #define RUBY_REVISION 0
 #include "version.h"
- = RUBY_RELEASE_DATE
+release_year = RUBY_RELEASE_YEAR
+release_month = RUBY_RELEASE_MONTH
+release_day = RUBY_RELEASE_DAY
+#undef RUBY_RELEASE_YEAR
+#undef RUBY_RELEASE_MONTH
+#undef RUBY_RELEASE_DAY
+RUBY_RELEASE_YEAR = $$(release_year)
+RUBY_RELEASE_MONTH = $$(release_month)
+RUBY_RELEASE_DAY = $$(release_day)
 <<
 
 -program-name-:

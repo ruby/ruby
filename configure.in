@@ -225,6 +225,7 @@ GNU_LD=$rb_cv_prog_gnu_ld
 AC_SUBST(GNU_LD)])
 
 eval `sed -n 's/^#define RUBY_API_VERSION_\([A-Z][A-Z_0-9]*\) \([0-9][0-9]*\)/\1=\2/p' $srcdir/include/ruby/version.h`
+eval `sed -n 's/^#define RUBY_PROGRAM_VERSION_\([A-Z][A-Z_0-9]*\) \([0-9][0-9]*\)/\1=\2/p' $srcdir/version.h`
 for v in MAJOR MINOR TEENY; do
     if eval "test \"\$$v\" = ''"; then
 	AC_MSG_ERROR(could not determine $v number from version.h)
@@ -233,7 +234,7 @@ done
 AC_SUBST(MAJOR)
 AC_SUBST(MINOR)
 AC_SUBST(TEENY)
-RUBY_PROGRAM_VERSION=`sed -n 's/^#define RUBY_VERSION "\(.*\)"/\1/p' $srcdir/version.h`
+RUBY_PROGRAM_VERSION=$MAJOR.$MINOR.$TEENY
 AC_SUBST(RUBY_PROGRAM_VERSION)
 RUBY_PATCHLEVEL=`sed -n 's/^#define RUBY_PATCHLEVEL //p' $srcdir/version.h`
 AC_DEFINE(CANONICALIZATION_FOR_MATHN)
@@ -4409,7 +4410,12 @@ AC_CONFIG_FILES(Makefile, [
 		["git svn"], [VCSUP='$(VCS) rebase $(GITSVNREBASEOPTIONS)'],
 		[git],       [VCSUP='$(VCS) pull $(GITPULLOPTIONS)'],
 		[VCSUP='$(VCS)'])
+	# MAJOR and MINOR are public and come from include/ruby/version.h by reconfig
+	echo MAJOR = $MAJOR
+	echo MINOR = $MINOR
+	# TEENY is private and come from version.h
 	sed -n \
+	    -e '[s/^@%:@define RUBY_PROGRAM_VERSION_\([A-Z]*\) \([0-9][0-9]*\)/\1 = \2/p]' \
 	    -e '[/^@%:@define \(RUBY_RELEASE_[A-Z]*\) \([0-9][0-9]*\)/]{' \
 	    -e   's//\1 = \2/' \
 	    -e   '[s/ \([0-9]\)$/ 0\1/]' \
@@ -4437,7 +4443,7 @@ AC_CONFIG_FILES(Makefile, [
 	echo 'ruby: $(PROGRAM);' >> $tmpmk
 	test "$tmpmk" = "$tmpgmk" || rm -f "$tmpgmk"
     fi && mv -f $tmpmk Makefile],
-[EXEEXT='$EXEEXT' gnumake='$gnumake'])
+[EXEEXT='$EXEEXT' MAJOR='$MAJOR' MINOR='$MINOR' gnumake='$gnumake'])
 
 AC_ARG_WITH([ruby-pc],
 	    AC_HELP_STRING([--with-ruby-pc=FILENAME], [pc file basename]),
