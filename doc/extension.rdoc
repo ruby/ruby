@@ -115,11 +115,11 @@ is a String.  Notice that the macros take only the lvalue as their
 argument, to change the value of var in place.
 
 You can also use the macro named StringValueCStr(). This is just
-like StringValuePtr(), but always add nul character at the end of
-the result. If the result contains nul character, this macro causes
+like StringValuePtr(), but always add NUL character at the end of
+the result. If the result contains NUL character, this macro causes
 the ArgumentError exception.
-StringValuePtr() doesn't guarantee the existence of a nul at the end
-of the result, and the result may contain nul.
+StringValuePtr() doesn't guarantee the existence of a NUL at the end
+of the result, and the result may contain NUL.
 
 Other data types have corresponding C structures, e.g. struct RArray
 for T_ARRAY etc. The VALUE of the type which has the corresponding
