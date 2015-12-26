@@ -1,3 +1,10 @@
+Sat Dec 26 18:29:01 2015  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/xmlrpc/client.rb: Support SSL options in async methods of
+	  XMLRPC::Client.
+	  [Bug #11489]
+	  Reported by Aleksandar Kostadinov. Thanks!!!
+
 Sat Dec 26 18:21:17 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* tool/post-commit.sh: copied from svn server.
