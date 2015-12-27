@@ -2137,8 +2137,14 @@ class TestString < Test::Unit::TestCase
   end
 
   def test_rstrip
+    assert_equal("  hello", "  hello  ".rstrip)
     assert_equal("\u3042", "\u3042   ".rstrip)
     assert_raise(Encoding::CompatibilityError) { "\u3042".encode("ISO-2022-JP").rstrip }
+  end
+
+  def test_lstrip
+    assert_equal("hello  ", "  hello  ".lstrip)
+    assert_equal("\u3042", "   \u3042".lstrip)
   end
 
 =begin

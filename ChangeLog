@@ -1,7 +1,14 @@
+Sun Dec 27 11:50:53 2015  Kuniaki IGARASHI  <igaiga@gmail.com>
+
+	* test/ruby/test_string.rb (test_rstrip, test_lstrip): Add tests
+	  for String#lstrip and rstrip.  The test cases are used from
+	  string.c ruby-doc comments.  [Fix GH-1174]
+
 Sun Dec 27 11:47:46 2015  Kuniaki IGARASHI  <igaiga@gmail.com>
 
-	* test/ruby/test_string.rb (test_insert): The test cases are
-	  written in string.c comments as a reference.  [Fix GH-1173]
+	* test/ruby/test_string.rb (test_insert): Add test for
+	  String#test_insert.  The test cases are written in string.c
+	  comments as a reference.  [Fix GH-1173]
 
 Sun Dec 27 11:03:33 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
