@@ -1,7 +1,7 @@
 Sun Dec 27 09:47:20 2015  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_vstr2wc, ole_variant2val): fix blank
-	  string conversion. 
+	  string conversion.
 	  [Bug #11880]
 	  Thanks Akio Tajima for the patch!
 
