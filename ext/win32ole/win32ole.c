@@ -1574,16 +1574,14 @@ ole_variant2val(VARIANT *pvar)
 
     case VT_BSTR:
     {
-        if(V_ISBYREF(pvar)) {
-            obj = (SysStringLen(*V_BSTRREF(pvar)) == 0)
-                ? rb_str_new2("")
-                : ole_wc2vstr(*V_BSTRREF(pvar), FALSE);
-        }
-        else {
-            obj = (SysStringLen(V_BSTR(pvar)) == 0)
-                ? rb_str_new2("")
-                : ole_wc2vstr(V_BSTR(pvar), FALSE);
-        }
+        BSTR bstr;
+        if(V_ISBYREF(pvar)) 
+            bstr = *V_BSTRREF(pvar);
+        else
+            bstr = V_BSTR(pvar);
+        obj = (SysStringLen(bstr) == 0)
+            ? rb_str_new2("")
+            : ole_wc2vstr(bstr, FALSE);
         break;
     }
 

@@ -1,3 +1,7 @@
+Sun Dec 27 23:32:26 2015  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (ole_variant2val): refactoring.
+
 Sun Dec 27 21:14:42 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* process.c (rb_execarg_parent_start1): need to convert the encoding to
