@@ -1,3 +1,8 @@
+Sun Dec 27 10:03:14 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/depend (enc, trans): fix version dependency, shared object
+	  files depend on the RUBY_SO_NAME value for runtime link.
+
 Sun Dec 27 09:47:20 2015  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_vstr2wc, ole_variant2val): fix blank

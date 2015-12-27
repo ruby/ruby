@@ -74,6 +74,8 @@ $(LIBTRANS): $(TRANSOBJS)
 	$(Q) $(AR) $(ARFLAGS)$@ $(TRANSOBJS)
 	@-$(RANLIB) $@ 2> /dev/null || true
 
+enc trans $(ENCSOS) $(TRANSSOS): enc.mk
+
 srcs: $(TRANSCSRCS)
 
 <%=transvpath_prefix%>.trans<%=transvpath_prefix%>.c:
