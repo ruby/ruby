@@ -1,3 +1,9 @@
+Sun Dec 27 15:14:20 2015  Eric Wong  <e@80x24.org>
+
+	* io.c (io_getpartial): remove unused kwarg from template
+	* test/ruby/test_io.rb (test_readpartial_bad_args): new
+	  [Bug #11885]
+
 Sun Dec 27 11:50:53 2015  Kuniaki IGARASHI  <igaiga@gmail.com>
 
 	* test/ruby/test_string.rb (test_rstrip, test_lstrip): Add tests
