@@ -39,9 +39,13 @@
 VALUE rb_iseqw_local_variables(VALUE iseqval);
 VALUE rb_iseqw_new(const rb_iseq_t *);
 
+static VALUE syntax_error_new_failues(VALUE *excp, VALUE path);
+static VALUE syntax_failure_new(long lineno, long column, VALUE mesg);
+
 VALUE rb_eEAGAIN;
 VALUE rb_eEWOULDBLOCK;
 VALUE rb_eEINPROGRESS;
+static VALUE rb_cSyntaxFailure;
 
 extern const char ruby_description[];
 
@@ -97,25 +101,17 @@ VALUE
 rb_syntax_error_append(VALUE exc, VALUE file, int line, int column,
 		       rb_encoding *enc, const char *fmt, va_list args)
 {
-    const char *fn = NIL_P(file) ? NULL : RSTRING_PTR(file);
     if (!exc) {
+	const char *fn = NIL_P(file) ? NULL : RSTRING_PTR(file);
 	VALUE mesg = rb_enc_str_new(0, 0, enc);
 	err_vcatf(mesg, NULL, fn, line, fmt, args);
 	rb_str_cat2(mesg, "\n");
 	rb_write_error_str(mesg);
     }
     else {
-	VALUE mesg;
-	const char *pre = NULL;
-	if (NIL_P(exc)) {
-	    mesg = rb_enc_str_new(0, 0, enc);
-	    exc = rb_class_new_instance(1, &mesg, rb_eSyntaxError);
-	}
-	else {
-	    mesg = rb_attr_get(exc, idMesg);
-	    pre = "\n";
-	}
-	err_vcatf(mesg, pre, fn, line, fmt, args);
+	VALUE fails = syntax_error_new_failues(&exc, file);
+	VALUE mesg = rb_enc_vsprintf(enc, fmt, args);
+	rb_ary_push(fails, syntax_failure_new(line, column, mesg));
     }
 
     return exc;
@@ -659,7 +655,7 @@ static VALUE rb_eNOERROR;
 static ID id_new, id_cause, id_message, id_backtrace;
 static ID id_name, id_args, id_Errno, id_errno, id_i_path;
 static ID id_receiver, id_iseq, id_local_variables;
-static ID id_private_call_p;
+static ID id_private_call_p, id_failures;
 extern ID ruby_static_id_status;
 #define id_bt idBt
 #define id_bt_locations idBt_locations
@@ -1371,6 +1367,84 @@ rb_invalid_str(const char *str, const char *type)
     rb_raise(rb_eArgError, "invalid value for %s: %+"PRIsVALUE, type, s);
 }
 
+static VALUE
+syntax_failure_append_to(VALUE err, VALUE str, int loc)
+{
+    const VALUE *ptr = RSTRUCT_CONST_PTR(err);
+    VALUE line = ptr[0];
+    VALUE colm = ptr[1];
+    VALUE mesg = ptr[2];
+    int space = !loc;
+    if (!NIL_P(line) && (line != LONG2FIX(0) || loc)) {
+	space = TRUE;
+	rb_str_catf(str, "%ld:", NUM2LONG(line));
+    }
+    if (!NIL_P(colm) && loc) {
+	space = TRUE;
+	rb_str_catf(str, "%ld:", NUM2LONG(colm));
+    }
+    if (!NIL_P(mesg)) {
+	if (space) rb_str_cat_cstr(str, " ");
+	rb_str_append(str, mesg);
+    }
+    return str;
+}
+
+static VALUE
+syntax_failure_to_s(VALUE err)
+{
+    VALUE str = rb_str_new_cstr("#<syntax_error:");
+    syntax_failure_append_to(err, str, TRUE);
+    return rb_str_cat_cstr(str, ">");
+}
+
+/* Initialize SyntaxFailure on demand, Struct is not defined yet when
+ * Init_Exception is called */
+static VALUE
+syntax_failure_class(void)
+{
+    VALUE f = rb_cSyntaxFailure;
+    if (!f) {
+	f = rb_struct_define_under(rb_eSyntaxError, "",
+				   "lineno", "column", "mesg",
+				   NULL);
+	rb_define_method(f, "to_s", syntax_failure_to_s, 0);
+	rb_define_method(f, "inspect", syntax_failure_to_s, 0);
+	rb_cSyntaxFailure = f;
+    }
+    return f;
+}
+
+static VALUE
+syntax_failure_new(long lineno, long column, VALUE mesg)
+{
+    VALUE c = syntax_failure_class();
+    VALUE line = lineno != 0 || column >= 0 ? LONG2FIX(lineno) : Qnil;
+    VALUE colm = column >= 0 ? LONG2FIX(column) : Qnil;
+    VALUE err = rb_struct_new(c, line, colm, mesg);
+    OBJ_FREEZE_RAW(mesg);
+    OBJ_FREEZE_RAW(err);
+    return err;
+}
+
+static VALUE
+syntax_error_new_failues(VALUE *excp, VALUE path)
+{
+    VALUE fails;
+    VALUE exc = *excp;
+    if (NIL_P(exc)) {
+	exc = rb_class_new_instance(0, 0, rb_eSyntaxError);
+	*excp = exc;
+	fails = rb_ary_tmp_new(0);
+	rb_ivar_set(exc, id_i_path, path);
+	rb_ivar_set(exc, id_failures, fails);
+    }
+    else {
+	fails = rb_attr_get(exc, id_failures);
+    }
+    return fails;
+}
+
 /*
  * call-seq:
  *   SyntaxError.new([msg])  -> syntax_error
@@ -1388,6 +1462,63 @@ syntax_error_initialize(int argc, VALUE *argv, VALUE self)
 	argv = &mesg;
     }
     return rb_call_super(argc, argv);
+}
+
+/*
+ * call-seq:
+ *   syntax_error.failures  -> array or nil
+ *
+ * Returns a list of syntax error info if available, or nil.
+ */
+
+static VALUE
+syntax_error_failures(VALUE self)
+{
+    VALUE fails = rb_attr_get(self, id_failures);
+    if (RB_TYPE_P(fails, T_ARRAY)) {
+	if (!RBASIC_CLASS(fails)) {
+	    RBASIC_SET_CLASS(fails, rb_cArray);
+	    OBJ_FREEZE_RAW(fails);
+	}
+	return fails;
+    }
+    return Qnil;
+}
+
+/*
+ * call-seq:
+ *   syntax_error.to_s  -> string
+ *
+ * Returns a message string.
+ */
+
+static VALUE
+syntax_error_to_s(VALUE self)
+{
+    VALUE fails = syntax_error_failures(self);
+    long i, len;
+    if (!NIL_P(fails) && (len = RARRAY_LEN(fails)) > 0) {
+	VALUE file = rb_attr_get(self, id_i_path);
+	VALUE mesg = rb_str_new(0, 0);
+	for (i = 0; i < len; ++i) {
+	    VALUE e = RARRAY_AREF(fails, i);
+	    if (i > 0) rb_str_cat2(mesg, "\n");
+	    if (!NIL_P(file)) {
+		rb_str_append(mesg, file);
+		rb_str_cat2(mesg, ":");
+	    }
+	    if (rb_obj_is_kind_of(e, rb_cSyntaxFailure)) {
+		syntax_failure_append_to(e, mesg, FALSE);
+	    }
+	    else {
+		rb_str_append(mesg, rb_obj_as_string(e));
+	    }
+	}
+	return mesg;
+    }
+    else {
+	return rb_call_super(0, 0);
+    }
 }
 
 /*
@@ -1958,6 +2089,7 @@ syserr_eqq(VALUE self, VALUE exc)
 void
 Init_Exception(void)
 {
+    ID id_path = rb_intern_const("path");
     rb_eException   = rb_define_class("Exception", rb_cObject);
     rb_define_singleton_method(rb_eException, "exception", rb_class_new_instance, -1);
     rb_define_method(rb_eException, "exception", exc_exception, -1);
@@ -1990,10 +2122,13 @@ Init_Exception(void)
     rb_eScriptError = rb_define_class("ScriptError", rb_eException);
     rb_eSyntaxError = rb_define_class("SyntaxError", rb_eScriptError);
     rb_define_method(rb_eSyntaxError, "initialize", syntax_error_initialize, -1);
+    rb_attr(rb_eSyntaxError, id_path, 1, 0, Qfalse);
+    rb_define_method(rb_eSyntaxError, "to_s", syntax_error_to_s, 0);
+    rb_define_method(rb_eSyntaxError, "failures", syntax_error_failures, 0);
 
     rb_eLoadError   = rb_define_class("LoadError", rb_eScriptError);
     /* the path failed to load */
-    rb_attr(rb_eLoadError, rb_intern_const("path"), 1, 0, Qfalse);
+    rb_attr(rb_eLoadError, id_path, 1, 0, Qfalse);
 
     rb_eNotImpError = rb_define_class("NotImplementedError", rb_eScriptError);
 
@@ -2040,6 +2175,7 @@ Init_Exception(void)
     id_Errno = rb_intern_const("Errno");
     id_errno = rb_intern_const("errno");
     id_i_path = rb_intern_const("@path");
+    id_failures = rb_intern_const("failures");
     id_iseq = rb_make_internal_id();
 }
 
