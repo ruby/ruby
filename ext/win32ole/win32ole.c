@@ -1575,7 +1575,7 @@ ole_variant2val(VARIANT *pvar)
     case VT_BSTR:
     {
         BSTR bstr;
-        if(V_ISBYREF(pvar)) 
+        if(V_ISBYREF(pvar))
             bstr = *V_BSTRREF(pvar);
         else
             bstr = V_BSTR(pvar);
