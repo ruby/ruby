@@ -864,6 +864,9 @@ ole_vstr2wc(VALUE vstr)
     /* do not type-conversion here to prevent from other arguments
      * changing (if exist) */
     Check_Type(vstr, T_STRING);
+    if (RSTRING_LEN(vstr) == 0) {
+        return NULL;
+    }
 
     enc = rb_enc_get(vstr);
 
@@ -1571,10 +1574,16 @@ ole_variant2val(VARIANT *pvar)
 
     case VT_BSTR:
     {
-        if(V_ISBYREF(pvar))
-            obj = ole_wc2vstr(*V_BSTRREF(pvar), FALSE);
-        else
-            obj = ole_wc2vstr(V_BSTR(pvar), FALSE);
+        if(V_ISBYREF(pvar)) {
+            obj = (SysStringLen(*V_BSTRREF(pvar)) == 0)
+                ? rb_str_new2("")
+                : ole_wc2vstr(*V_BSTRREF(pvar), FALSE);
+        }
+        else {
+            obj = (SysStringLen(V_BSTR(pvar)) == 0)
+                ? rb_str_new2("")
+                : ole_wc2vstr(V_BSTR(pvar), FALSE);
+        }
         break;
     }
 
