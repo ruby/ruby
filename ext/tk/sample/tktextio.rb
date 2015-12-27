@@ -421,7 +421,7 @@ class TkTextIO < TkText
     nil
   end
   def close_write
-    @open[:w] = false if @opne[:w]
+    @open[:w] = false if @open[:w]
     nil
   end
 
