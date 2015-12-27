@@ -913,7 +913,7 @@ end
   def install_win(ppath,name=nil)
     if name
       if name == ''
-        raise ArgumentError, "invalid wiget-name '#{name}'"
+        raise ArgumentError, "invalid widget-name '#{name}'"
       end
       if name[0] == ?.
         @path = '' + name

@@ -42,7 +42,7 @@ module DemoBasic
 
   def self._entry(parent)
     ent = Tk::BWidget::Entry.new(parent, :text=>'Press enter',
-                                 :helptext=>'Entry widtet',
+                                 :helptext=>'Entry widget',
                                  :command=>proc{
                                    @@var['entcmd'] = 'command called'
                                    Tk.after(500, proc{@@var['entcmd'] = ''})

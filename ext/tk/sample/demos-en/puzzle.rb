@@ -4,7 +4,7 @@
 # This demonstration script creates a 15-puzzle game using a collection
 # of buttons.
 #
-# widet demo 'puzzle' (called by 'widget')
+# widget demo 'puzzle' (called by 'widget')
 #
 
 # toplevel widget

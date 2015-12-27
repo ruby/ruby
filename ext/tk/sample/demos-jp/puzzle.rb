@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # frozen_string_literal: false
 #
-# widet demo 'puzzle' (called by 'widget')
+# widget demo 'puzzle' (called by 'widget')
 #
 
 # toplevel widget が存在すれば削除する
