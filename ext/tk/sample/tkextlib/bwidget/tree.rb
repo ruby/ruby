@@ -162,7 +162,7 @@ module DemoTree
         Tk::BWidget::Tree::Node.new(tree, node,
                                     :index=>'end', :text=>basename,
                                     :image=>Tk::BWidget::Bitmap.new('folder'),
-                                    :drawcross=>:allways, :data=>f)
+                                    :drawcross=>:always, :data=>f)
         @@count += 1
       else
         lfiles << basename
@@ -172,7 +172,7 @@ module DemoTree
   end
 
   def self.moddir(idx, tree, node)
-    if (idx != 0 && tree.itemcget(node, :drawcross).to_s == 'allways')
+    if (idx != 0 && tree.itemcget(node, :drawcross).to_s == 'always')
       getdir(tree, node, tree.itemcget(node, :data))
       if tree.nodes(node).empty?
         tree.itemconfigure(node, :image=>Tk::BWidget::Bitmap.new('folder'))
@@ -225,7 +225,7 @@ module DemoTree
     list.delete(*(list.items(0, 'end')))
 
     dir = tree.itemcget(node, :data)
-    if tree.itemcget(node, :drawcross).to_s == 'allways'
+    if tree.itemcget(node, :drawcross).to_s == 'always'
       getdir(tree, node, dir)
       dir = tree.itemcget(node, :data)
     end
