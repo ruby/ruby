@@ -40,7 +40,7 @@ class BLT_Calendar_sample
     ['June', 30],
     ['July', 31],
     ['August', 31],
-    ['Septembar', 30],
+    ['September', 30],
     ['October', 31],
     ['November', 30],
     ['December', 31]

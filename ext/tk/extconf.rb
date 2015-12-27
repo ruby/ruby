@@ -1619,7 +1619,7 @@ def search_X_libraries
       puts("Can't find X11 libraries. ")
       if use_tkConfig &&
           TkConfig_Info['TK_XLIBSW'] && !TkConfig_Info['TK_XLIBSW'].strip.empty?
-        puts("But, try to use TK_XLIBSW information (believe tkCOnfig.sh).")
+        puts("But, try to use TK_XLIBSW information (believe tkConfig.sh).")
         ($libs ||= "") << " " << TkConfig_Info['TK_XLIBSW'] << " "
       else
         puts("So, can't make tcltklib.so which is required by Ruby/Tk.")

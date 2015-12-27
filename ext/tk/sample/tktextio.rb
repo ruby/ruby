@@ -512,7 +512,7 @@ class TkTextIO < TkText
   end
 
   def ioctrl(*args)
-    fail NotImplementedError, 'iocntl is not implemented on TkTextIO'
+    fail NotImplementedError, 'ioctrl is not implemented on TkTextIO'
   end
 
   def isatty

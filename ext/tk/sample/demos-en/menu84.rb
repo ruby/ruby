@@ -189,7 +189,7 @@ TkMenu.new($menu84_frame, 'tearoff'=>false) {|m|
                                   'message'=>'The menu entry you invoked'+
                                              'displays both a bitmap and '+
                                              'a text string.  Other than '+
-                                             'this, it isjust like any '+
+                                             'this, it is just like any '+
                                              'other menu entry.',
                                   'buttons'=>['OK'], 'bitmap'=>'')
                    })

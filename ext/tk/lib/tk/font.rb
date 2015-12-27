@@ -162,7 +162,7 @@ class TkFont
     end
 
     def dup
-      fail RuntimeError, "cannot dupulicate a descendant font"
+      fail RuntimeError, "cannot duplicate a descendant font"
     end
     def clone
       fail RuntimeError, "cannot clone a descendant font"
