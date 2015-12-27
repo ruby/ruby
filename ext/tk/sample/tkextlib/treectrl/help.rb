@@ -382,7 +382,7 @@ def helpMotion2(w, x, y)
   if id[0] == 'header'
   elsif !id.empty?
     item = id[1]
-    if id.kength == 6
+    if id.length == 6
       if @Priv[:help, :prev] != TkComm._get_eval_string(item)
         if @Priv[:help, :prev] != ''
           style = w.item_style_set(@Priv[:help, :prev], 0)
