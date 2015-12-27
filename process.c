@@ -1713,6 +1713,7 @@ rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val)
                 rb_raise(rb_eArgError, "chdir option specified twice");
             }
             FilePathValue(val);
+	    val = rb_str_encode_ospath(val);
             eargp->chdir_given = 1;
             eargp->chdir_dir = hide_obj(EXPORT_DUP(val));
         }
