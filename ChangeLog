@@ -1,3 +1,9 @@
+Sun Dec 27 18:08:15 2015  Kuniaki IGARASHI  <igaiga@gmail.com>
+
+	* string.c (rb_str_lstrip_bang, rb_str_rstrip_bang): [DOC] Fix
+	  ruby-doc comments for String#rstrip! and lstrip!.  It looks like
+	  dropped bang.  [Fix GH-1175]
+
 Sun Dec 27 15:14:20 2015  Eric Wong  <e@80x24.org>
 
 	* io.c (io_getpartial): remove unused kwarg from template
