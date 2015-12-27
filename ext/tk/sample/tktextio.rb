@@ -836,7 +836,7 @@ class TkTextIO < TkText
     self
   end
 
-  def trancate(len)
+  def truncate(len)
     delete("1.0 + #{len} char", :end)
     0
   end
