@@ -2967,6 +2967,11 @@ save_env(struct rb_execarg *sargp)
 }
 #endif
 
+#ifdef _WIN32
+#undef chdir
+#define chdir(p) rb_w32_uchdir(p)
+#endif
+
 /* This function should be async-signal-safe when sargp is NULL.  Hopefully it is. */
 int
 rb_execarg_run_options(const struct rb_execarg *eargp, struct rb_execarg *sargp, char *errmsg, size_t errmsg_buflen)

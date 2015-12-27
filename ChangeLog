@@ -1,3 +1,8 @@
+Sun Dec 27 20:54:22 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* process.c: use rb_w32_uchdir() instead of plain chdir() on Windows.
+	  reported by naruse via twitter.
+
 Sun Dec 27 20:00:31 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* enc/x_emoji.h: fix dead-link.
