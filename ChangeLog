@@ -1,3 +1,7 @@
+Sun Dec 27 11:03:33 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (show_bitstack): trace stack_type value if yydebug.
+
 Sun Dec 27 10:03:14 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enc/depend (enc, trans): fix version dependency, shared object
