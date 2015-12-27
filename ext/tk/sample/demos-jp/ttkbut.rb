@@ -95,17 +95,17 @@ Tk.pack(e, sep1, c1, c2, sep2, c3, c4, :fill=>:x, :pady=>2)
 ## Set up the radiobutton group
 radios = Ttk::Labelframe.new(base_frame, :text=>'ラジオボタン')
 
-happyness = TkVariable.new
+happiness = TkVariable.new
 
-r1 = Ttk::Radiobutton.new(radios, :variable=>happyness,
+r1 = Ttk::Radiobutton.new(radios, :variable=>happiness,
                           :text=>'Great', :value=>'great')
-r2 = Ttk::Radiobutton.new(radios, :variable=>happyness,
+r2 = Ttk::Radiobutton.new(radios, :variable=>happiness,
                           :text=>'Good', :value=>'good')
-r3 = Ttk::Radiobutton.new(radios, :variable=>happyness,
+r3 = Ttk::Radiobutton.new(radios, :variable=>happiness,
                           :text=>'Ok', :value=>'ok')
-r4 = Ttk::Radiobutton.new(radios, :variable=>happyness,
+r4 = Ttk::Radiobutton.new(radios, :variable=>happiness,
                           :text=>'Poor', :value=>'poor')
-r5 = Ttk::Radiobutton.new(radios, :variable=>happyness,
+r5 = Ttk::Radiobutton.new(radios, :variable=>happiness,
                           :text=>'Awful', :value=>'awful')
 
 Tk.pack(r1, r2, r3, r4, r5, :fill=>:x, :padx=>3, :pady=>2)
@@ -121,7 +121,7 @@ Ttk::Frame.new(base_frame) {|frame|
                            showVars(base_frame, ['有効化', enabled],
                                     ['チーズ', cheese], ['トマト', tomato],
                                     ['バジル', basil], ['オレガノ', oregano],
-                                    ['幸福度', happyness])
+                                    ['幸福度', happiness])
                          }),
          Ttk::Button.new(frame, :text=>'コード参照',
                          :image=>$image['view'], :compound=>:left,
