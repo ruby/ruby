@@ -1,3 +1,8 @@
+Sun Dec 27 09:34:53 2015  craft4coder  <yooobuntu@163.com>
+
+	* doc/extension.rdoc: [DOC] `nul` should be uppercase.
+	  change 'nul' => 'NUL'.  [Fix GH-1172]
+
 Sat Dec 26 18:29:01 2015  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/xmlrpc/client.rb: Support SSL options in async methods of
