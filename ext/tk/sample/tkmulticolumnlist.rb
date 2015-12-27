@@ -54,7 +54,7 @@ class TkMultiColumnList < TkText
     @mode = :title
     @command = nil
 
-    # virtical scrollbar
+    # vertical scrollbar
     @v_scroll = TkYScrollbar.new(@frame, 'highlightthickness'=>@h_l_thick,
                                  'borderwidth'=>@scrbar_border,
                                  'width'=>@scrbar_width)
@@ -197,10 +197,10 @@ class TkMultiColumnList < TkText
     @f_lbox.height lbox_height
     @f_hscr.height hscr_height
 
-    # set control procedure for virtical scroll
+    # set control procedure for vertical scroll
     @v_scroll.assign(*@lbox_list)
 
-    # set control procedure for horizoncal scroll
+    # set control procedure for horizontal scroll
     @h_scroll.assign(@c_title, @c_lbox, @c_hscr)
 
     # binding for listboxes

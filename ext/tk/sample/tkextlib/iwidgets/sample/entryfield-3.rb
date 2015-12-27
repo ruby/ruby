@@ -2,7 +2,7 @@
 # frozen_string_literal: false
 #########################################################
 #
-#  set Tk.encoding = 'utf-8' for a utf8 charecter
+#  set Tk.encoding = 'utf-8' for a utf8 character
 #
 #########################################################
 require 'tk'

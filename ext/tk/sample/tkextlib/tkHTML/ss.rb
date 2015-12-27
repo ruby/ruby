@@ -114,7 +114,7 @@ EOD
 
     @html.clipwin.focus
 
-    # If an arguent was specified, read it into the HTML widget.
+    # If an argument was specified, read it into the HTML widget.
     #
     Tk.update
     if file && file != ""

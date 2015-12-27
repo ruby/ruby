@@ -25,7 +25,7 @@ class Tk::BWidget::NoteBook
   class Event_for_Tabs < TkEvent::Event
     def self._get_extra_args_tbl
       [
-        TkComm.method(:string)   # page idenfier
+        TkComm.method(:string)   # page identifier
       ]
     end
   end

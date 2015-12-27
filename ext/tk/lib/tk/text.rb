@@ -1463,7 +1463,7 @@ class Tk::Text<TkTextWin
           val, i = _retrieve_braced_text(str, i)
           result.push val
         else
-          # text which may contain backslahes
+          # text which may contain backslashes
           val, i = _retrieve_backslashed_text(str, i)
           result.push val
         end

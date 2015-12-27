@@ -8,7 +8,7 @@
 #        So, for example, TkTextIO#getc returns a character, TkTextIO#pos
 #        means the character position, TkTextIO#read(size) counts by
 #        characters, and so on.
-#        Of course, it is available to make TkTextIO class to suuport
+#        Of course, it is available to make TkTextIO class to support
 #        'byte' access. However, it may break multi-byte characters.
 #        and then, displayed string on the text widget may be garbled.
 #        I think that it is not good on the supposed situation of using

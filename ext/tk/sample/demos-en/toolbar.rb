@@ -43,7 +43,7 @@ EOL
 end
 
 ## Set up the toolbar hull
-tbar_base = Tk::Frame.new(base_frame, # Must be a starndard Tk frame!
+tbar_base = Tk::Frame.new(base_frame, # Must be a standard Tk frame!
                           :widgetname=>'toolbar') # for window title
 sep = Ttk::Separator.new(base_frame)
 to_base = Ttk::Frame.new(tbar_base, :cursor=>'fleur')

@@ -3814,7 +3814,7 @@ ip_RubyExitCommand(clientData, interp, argc, argv)
         return TCL_RETURN;
 
     default:
-        /* arguemnt error */
+        /* argument error */
         Tcl_AppendResult(interp,
                          "wrong number of arguments: should be \"",
                          cmd, " ?returnCode?\"", (char *)NULL);

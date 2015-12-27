@@ -32,7 +32,7 @@ class Tk::Root<TkWindow
       }
     }
 
-    if keys  # wm commands ( for backward comaptibility )
+    if keys  # wm commands ( for backward compatibility )
       keys.each{|k,v|
         if v.kind_of? Array
           root.__send__(k,*v)

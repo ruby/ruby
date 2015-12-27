@@ -1,6 +1,6 @@
 # frozen_string_literal: false
 #
-# tk/txtwin_abst.rb : TkTextWin abstruct class
+# tk/txtwin_abst.rb : TkTextWin abstract class
 #
 require 'tk'
 

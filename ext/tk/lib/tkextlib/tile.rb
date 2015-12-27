@@ -1,6 +1,6 @@
 # frozen_string_literal: false
 #
-#  Tile theme engin (tile widget set) support
+#  Tile theme engine (tile widget set) support
 #                               by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)
 #
 
@@ -133,14 +133,14 @@ module Tk
 
     def self.__define_LoadImages_proc_for_compatibility__!
       # Ttk 8.5 (Tile 0.8) lost 'LoadImages' utility procedure.
-      # So, some old scripts doen't work, because those scripts use the
+      # So, some old scripts don't work, because those scripts use the
       # procedure to define local styles.
       # Of course, rewriting such Tcl/Tk scripts isn't difficult for
       # Tcl/Tk users. However, it may be troublesome for Ruby/Tk users
       # who use such Tcl/Tk scripts as it is.
       # This method may help Ruby/Tk users who don't want to modify old
       # Tcl/Tk scripts for the latest version of Ttk (Tile) extension.
-      # This method defines a comaptible 'LoadImages' procedure on the
+      # This method defines a compatible 'LoadImages' procedure on the
       # Tcl/Tk interpreter working under Ruby/Tk.
       # Please give attention to use this method. It may conflict with
       # some definitions on Tcl/Tk scripts.

@@ -31,7 +31,7 @@ m128_000.xbm
 
 oscilloscope.tcl
 	the heart of a Realtime Oscilloscope,where the PC´s joystick
-	port gives 4 digtal inputs and 4 analog 8 bit values with an
+	port gives 4 digital inputs and 4 analog 8 bit values with an
 	resolution of ~1 millisecond (!!!)  running Realtime Linux.
 	<p> creates DEMO.ps
 

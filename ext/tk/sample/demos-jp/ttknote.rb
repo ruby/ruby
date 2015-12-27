@@ -45,7 +45,7 @@ notebook = Ttk::Notebook.new(base_frame).pack(:fill=>:both, :expand=>true,
                                               :padx=>2, :pady=>3)
 notebook.enable_traversal
 
-## Popuplate the first pane
+## Populate the first pane
 f_msg = Ttk::Frame.new(notebook)
 msg_m = Ttk::Label.new(f_msg, :font=>$font, :wraplength=>'5i',
                        :justify=>:left, :anchor=>'n', :text=><<EOL)
@@ -85,7 +85,7 @@ f_msg.grid_columnconfigure([0, 1], :weight=>1, :uniform=>1)
 f_disabled = Ttk::Frame.new(notebook)
 notebook.add(f_disabled, :text=>'無効化されたタブ', :state=>:disabled)
 
-## Popuplate the third pane
+## Populate the third pane
 f_editor = Ttk::Frame.new(notebook)
 notebook.add(f_editor, :text=>'テキストエディタ(Text Editor)', :underline=>9)
 editor_t = Tk::Text.new(f_editor, :width=>40, :height=>10, :wrap=>:char)

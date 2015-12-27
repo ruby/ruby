@@ -499,7 +499,7 @@ class << Tk
               replace_topobj(sym, obj)
 
             else # current_obj != topalias_defined?(sym)
-              # Maybe current_obj is defined by user. --> OWNER[sym] = faise
+              # Maybe current_obj is defined by user. --> OWNER[sym] = false
               # Keep Object::sym.
               @TOPLEVEL_ALIAS_OWNER[sym] = false
               @TOPLEVEL_ALIAS_TABLE[target][sym] = obj
@@ -542,7 +542,7 @@ class << Tk
 
         else # NOT topalias_defined?(sym)
           # Nobody controls ALIAS[sym].
-          # At leaset, current widget set doesn't control ALIAS[sym].
+          # At least, current widget set doesn't control ALIAS[sym].
           # Keep Object::sym (even if it is not defined)
           # Keep OWNER[sym].
           @TOPLEVEL_ALIAS_TABLE[target][sym] = obj
@@ -610,20 +610,20 @@ class << Tk
       if cur_obj = topobj_defined?(sym)
         if ! cur_obj.kind_of?(String) && (cur_alias = topalias_defined?(sym))
           if cur_alias.kind_of?(String)
-            # Mayby, user replaced Object::sym.
+            # Maybe, user replaced Object::sym.
             # Make Object::sym out of control.
             @TOPLEVEL_ALIAS_OWNER[sym] = false
           elsif cur_obj == cur_alias
-            # Possibley, defined normally. Backup it
+            # Possibly, defined normally. Backup it
             @TOPLEVEL_ALIAS_TABLE[current][sym] = cur_alias
           else
-            # Mayby, user replaced Object::sym.
+            # Maybe, user replaced Object::sym.
             # Make Object::sym out of control.
             @TOPLEVEL_ALIAS_OWNER[sym] = false
           end
         end
       else
-        # Mayby, user replaced Object::sym.
+        # Maybe, user replaced Object::sym.
         # Make Object::sym out of control.
         @TOPLEVEL_ALIAS_OWNER[sym] = false
       end
@@ -631,7 +631,7 @@ class << Tk
     when nil
       # Object::sym is out of control.
       if (cur_alias = topalias_defined?(sym)) && ! cur_alias.kind_of?(String)
-        # Possibley, defined normally. Backup it.
+        # Possibly, defined normally. Backup it.
         @TOPLEVEL_ALIAS_TABLE[current][sym] = cur_alias
       end
     else

@@ -311,7 +311,7 @@ module Tk
       # --------------------------------------------------------------
       # In the future release, I want to support to embed the 'win'
       # into the container which has window-id 'use-id'.
-      # It may give users frexibility on controlling their GUI.
+      # It may give users flexibility on controlling their GUI.
       # However, it may be difficult for current Tcl/Tk (Tcl/Tk8.5.1),
       # because it seems to require to modify Tcl/Tk's source code.
       # --------------------------------------------------------------

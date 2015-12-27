@@ -76,7 +76,7 @@ module Tk::ScrollbarComposite
     @component.xscrollbar(@h_scroll)
     @component.yscrollbar(@v_scroll)
 
-    # allignment
+    # alignment
     TkGrid.rowconfigure(@frame, 0, 'weight'=>1, 'minsize'=>0)
     TkGrid.columnconfigure(@frame, 0, 'weight'=>1, 'minsize'=>0)
     @component.grid('row'=>0, 'column'=>0, 'sticky'=>'news')
@@ -156,7 +156,7 @@ class TkTextFrame < TkText
        :textrelief
     )
 
-    # return the created componet
+    # return the created component
     @text
   end
   private :create_component

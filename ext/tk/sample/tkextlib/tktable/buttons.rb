@@ -62,7 +62,7 @@ table.bind('1', proc{|w, x, y|
              end}, '%W %x %y')
 
 
-# inititialize the array, titles, and celltags
+# initialize the array, titles, and celltags
 0.step(rows){|i|
   tab[i,-1] = i
   0.step(cols){|j|

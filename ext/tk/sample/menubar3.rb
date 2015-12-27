@@ -8,7 +8,7 @@ require 'tk'
 radio_var = TkVariable.new('y')
 
 menu_spec = [
-  [['&File', true], # when underline option is ture, '&' index is the position
+  [['&File', true], # when underline option is true, '&' index is the position
     {:label=>'Open', :command=>proc{puts('Open clicked')}, :underline=>0},
     '---',
     ['Check_A', TkVariable.new(true), 6],

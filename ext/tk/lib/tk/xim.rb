@@ -1,6 +1,6 @@
 # frozen_string_literal: false
 #
-# tk/xim.rb : control imput_method
+# tk/xim.rb : control input_method
 #
 require 'tk'
 

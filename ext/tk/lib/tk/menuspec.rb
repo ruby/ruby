@@ -1,7 +1,7 @@
 # frozen_string_literal: false
 #
 # tk/menuspec.rb
-#                              Hidethoshi NAGAI (nagai@ai.kyutech.ac.jp)
+#                              Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)
 #
 # based on tkmenubar.rb :
 #   Copyright (C) 1998 maeda shugo. All rights reserved.
@@ -30,7 +30,7 @@
 #   [ entry_info, entry_info, ... ]
 #
 #
-# underline, accelerator, and configs are optional pearameters.
+# underline, accelerator, and configs are optional parameters.
 # Hashes are OK instead of Arrays. Then the entry type ('command',
 # 'checkbutton', 'radiobutton' or 'cascade') is given by 'type' key
 # (e.g. :type=>'cascade'). When type is 'cascade', an array of menu_info

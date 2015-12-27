@@ -2,7 +2,7 @@
 #
 # Tk::RbWidget::Editable_Listbox class
 #
-#   When "DoubleClick-1" on a listbox item, the entry box is opend on the
+#   When "DoubleClick-1" on a listbox item, the entry box is opened on the
 #   item. And when hit "Return" key on the entry box after modifying the
 #   text, the entry box is closed and the item is changed. Or when hit
 #   "Escape" key, the entry box is closed without modification.

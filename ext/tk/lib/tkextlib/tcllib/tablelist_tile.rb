@@ -1,6 +1,6 @@
 # frozen_string_literal: false
 #
-#  tkextlib/tcllib/tablelist_tlie.rb
+#  tkextlib/tcllib/tablelist_tile.rb
 #                               by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)
 #
 #   * Part of tcllib extension
