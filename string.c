@@ -7684,7 +7684,7 @@ lstrip_offset(VALUE str, const char *s, const char *e, rb_encoding *enc)
  *
  *  Refer to <code>strip</code> for the definition of whitespace.
  *
- *     "  hello  ".lstrip   #=> "hello  "
+ *     "  hello  ".lstrip!  #=> "hello  "
  *     "hello".lstrip!      #=> nil
  */
 
@@ -7773,7 +7773,7 @@ rstrip_offset(VALUE str, const char *s, const char *e, rb_encoding *enc)
  *
  *  Refer to <code>strip</code> for the definition of whitespace.
  *
- *     "  hello  ".rstrip   #=> "  hello"
+ *     "  hello  ".rstrip!  #=> "  hello"
  *     "hello".rstrip!      #=> nil
  */
 
