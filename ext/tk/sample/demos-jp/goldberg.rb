@@ -359,7 +359,7 @@ class TkGoldberg_Demo
   end
 
   def go(who = nil)
-    now = Tk::Clock.clicks(:miliseconds)
+    now = Tk::Clock.clicks(:milliseconds)
     if who  # Start here for debugging
       @S['active'] = [who]
       @S['mode'].value = :MGO
@@ -369,7 +369,7 @@ class TkGoldberg_Demo
     n = next_step if @S['mode'].to_sym != :MPAUSE
     @S['mode'].value = :MPAUSE if @S['mode'].to_sym == :MSSTEP  # Single step
     @S['mode'].value = :MSSTEP if @S['mode'].to_sym == :MBSTEP && n  # big step
-    elapsed = Tk::Clock.clicks(:miliseconds) - now
+    elapsed = Tk::Clock.clicks(:milliseconds) - now
     delay = @speed[@S['speed'].to_i] - elapsed
     delay = 1 if delay <= 0
     return delay
@@ -1777,10 +1777,10 @@ class TkGoldberg_Demo
     step = get_step(25, step)
 
     if step == 0
-      @XY['25'] = Tk::Clock.clicks(:miliseconds)
+      @XY['25'] = Tk::Clock.clicks(:milliseconds)
       return 1
     end
-    elapsed = Tk::Clock.clicks(:miliseconds) - @XY['25']
+    elapsed = Tk::Clock.clicks(:milliseconds) - @XY['25']
     return 1 if elapsed < 5000
     return 2
   end
