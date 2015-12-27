@@ -1,3 +1,8 @@
+Sun Dec 27 11:47:46 2015  Kuniaki IGARASHI  <igaiga@gmail.com>
+
+	* test/ruby/test_string.rb (test_insert): The test cases are
+	  written in string.c comments as a reference.  [Fix GH-1173]
+
 Sun Dec 27 11:03:33 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (show_bitstack): trace stack_type value if yydebug.
