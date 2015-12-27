@@ -74,7 +74,7 @@ $(LIBTRANS): $(TRANSOBJS)
 	$(Q) $(AR) $(ARFLAGS)$@ $(TRANSOBJS)
 	@-$(RANLIB) $@ 2> /dev/null || true
 
-enc trans $(ENCSOS) $(TRANSSOS): enc.mk
+enc trans $(ENCSOS) $(TRANSSOS): config.status
 
 srcs: $(TRANSCSRCS)
 
