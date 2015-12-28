@@ -10,7 +10,7 @@ This is a known bug of Ruby-1.8.4 release.
 When you meet the trouble on your GUI, you'll be able to avoid the trouble
 by Tcl/Tk's traditional dialogs.
 If you want to do that, please call some of the following bits of script
-after "reqruie 'tk'".
+after "require 'tk'".
 
 =================================================================
 # use a traditional dialog for Tk.chooseColor()
