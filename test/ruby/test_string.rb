@@ -2147,6 +2147,20 @@ class TestString < Test::Unit::TestCase
     assert_equal("\u3042", "   \u3042".lstrip)
   end
 
+  def test_lstrip_bang
+    s1 = S("  hello  ")
+    assert_equal("hello  ", s1.lstrip!)
+    assert_equal("hello  ", s1)
+
+    s2 = S("\u3042  ")
+    assert_equal(nil, s2.lstrip!)
+    assert_equal("\u3042  ", s2)
+
+    s3 = S("  \u3042")
+    assert_equal("\u3042", s3.lstrip!)
+    assert_equal("\u3042", s3)
+  end
+
 =begin
   def test_symbol_table_overflow
     assert_in_out_err([], <<-INPUT, [], /symbol table overflow \(symbol [a-z]{8}\) \(RuntimeError\)/)
