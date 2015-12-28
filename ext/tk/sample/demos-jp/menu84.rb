@@ -96,7 +96,7 @@ TkMenu.new($menu84_frame, 'tearoff'=>false) {|m|
   add('command', 'label'=>'Long entry that does nothing')
   ['A','B','C','D','E','F','G'].each{|c|
     add('command', 'label'=>"Print letter \"#{c}\"",
-        'underline'=>14, 'accelerator'=>"Meta+#{c}",
+        'underline'=>14,
         'command'=>proc{print c,"\n"}, 'accelerator'=>"#{modifier}+#{c}")
     $menu84_demo.bind("#{modifier}-#{c.downcase}", proc{print c,"\n"})
   }
