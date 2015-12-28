@@ -220,7 +220,7 @@ available display styles are:
   insert('end', "which results in relatively large gaps between ", style_tag_spacing)
   insert('end', "the paragraphs.  Spacing2 is set to 2 points, ", style_tag_spacing)
   insert('end', "which results in just a bit of extra space ", style_tag_spacing)
-  insert('end', "within a pararaph.  Spacing3 isn't used ", style_tag_spacing)
+  insert('end', "within a paragraph.  Spacing3 isn't used ", style_tag_spacing)
   insert('end', "in this example.\n", style_tag_spacing)
   insert('end', "To see where the space is, select ranges of ", style_tag_spacing)
   insert('end', "text within these paragraphs.  The selection ", style_tag_spacing)

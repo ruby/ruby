@@ -80,7 +80,7 @@
 #                        'font'=>'Helvetia 12 bold')
 # menubar.pack('side'=>'top', 'fill'=>'x')
 
-# See tk/menuspce.rb about the format of the menu_spec
+# See tk/menuspec.rb about the format of the menu_spec
 
 # To use add_menu, configuration must be done by calling configure after
 # adding all menus by add_menu, not by the constructor arguments.

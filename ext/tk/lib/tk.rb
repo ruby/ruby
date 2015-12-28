@@ -913,7 +913,7 @@ end
   def install_win(ppath,name=nil)
     if name
       if name == ''
-        raise ArgumentError, "invalid wiget-name '#{name}'"
+        raise ArgumentError, "invalid widget-name '#{name}'"
       end
       if name[0] == ?.
         @path = '' + name
@@ -2645,7 +2645,7 @@ if (/^(8\.[1-9]|9\.|[1-9][0-9])/ =~ Tk::TCL_VERSION && !Tk::JAPANIZED_TK)
         def ENCODING_TABLE.get_name(enc)
           orig_enc = enc
 
-          # unles enc, use system default
+          # unless enc, use system default
           #  1st: Ruby/Tk default encoding
           #  2nd: Tcl/Tk default encoding
           #  3rd: Ruby's default_external
@@ -2887,7 +2887,7 @@ if (/^(8\.[1-9]|9\.|[1-9][0-9])/ =~ Tk::TCL_VERSION && !Tk::JAPANIZED_TK)
     # from tkencoding.rb by ttate@jaist.ac.jp
     #attr_accessor :encoding
     def encoding=(name)
-      self.force_default_encoding = true  # for comaptibility
+      self.force_default_encoding = true  # for compatibility
       self.default_encoding = name
     end
 
@@ -5165,7 +5165,7 @@ class TkWindow<TkObject
               # try to configure
               configure(keys)
             rescue
-              # fail => includes options adaptable when creattion only?
+              # fail => includes options adaptable when creation only?
               begin
                 tk_call_without_enc('destroy', @path)
               rescue

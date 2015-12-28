@@ -53,7 +53,7 @@ class TkMultiListFrame < TkListbox
     # init status
     @mode = :title
 
-    # virtical scrollbar
+    # vertical scrollbar
 =begin
     @v_scroll = TkScrollbar.new(@frame, 'highlightthickness'=>@h_l_thick,
                                 'borderwidth'=>@scrbar_border,
@@ -185,7 +185,7 @@ class TkMultiListFrame < TkListbox
     @f_lbox.height lbox_height
     @f_hscr.height hscr_height
 
-    # set control procedure for virtical scroll
+    # set control procedure for vertical scroll
 =begin
     @lbox_list.each{|lbox|
       lbox.yscrollcommand proc{|first, last|
@@ -196,7 +196,7 @@ class TkMultiListFrame < TkListbox
 =end
     @v_scroll.assign(*@lbox_list)
 
-    # set control procedure for horizoncal scroll
+    # set control procedure for horizontal scroll
 =begin
     @c_title.xscrollcommand proc{|first, last|
       @h_scroll.set first, last

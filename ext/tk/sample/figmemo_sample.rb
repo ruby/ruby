@@ -403,7 +403,7 @@ end
 def quit(canvas)
   ret = Tk.messageBox(:icon=>'warning', :type=>'okcancel',
                       :default=>'cancel',
-                      :message=>'Realy quit? ')
+                      :message=>'Really quit? ')
   exit if ret == 'ok'
 end
 

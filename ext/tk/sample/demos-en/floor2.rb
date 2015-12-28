@@ -1,7 +1,7 @@
 # frozen_string_literal: false
 %# floor2.rb
 #
-# This demonstration script creates a canvas widet that displays the
+# This demonstration script creates a canvas widget that displays the
 # floorplan for DEC's Western Research Laboratory.
 #
 # floorDisplay widget demo (called by 'widget')

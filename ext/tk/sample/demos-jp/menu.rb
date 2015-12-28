@@ -91,7 +91,7 @@ TkMenubutton.new($menu_frame, 'text'=>'Basic', 'underline'=>0) {|m|
     ['A','B','C','D','E','F','G'].each{|c|
       # add('command', 'label'=>"文字 \"#{c}\" を印字", 'underline'=>4,
       add('command', 'label'=>"Print letter \"#{c}\" (文字 \"#{c}\" を印字)",
-          'underline'=>14, 'accelerator'=>"Meta+#{c}",
+          'underline'=>14,
           'command'=>proc{print c,"\n"}, 'accelerator'=>"#{modifier}+#{c}")
       $menu_demo.bind("#{modifier}-#{c.downcase}", proc{print c,"\n"})
     }

@@ -20,13 +20,13 @@ btns = []
 ip.eval_proc{
   btns <<
     TkButton.new(:command=>proc{
-                   puts 'This procesure is on the controller-ip (Ruby-side)'
+                   puts 'This procedure is on the controller-ip (Ruby-side)'
                  },
                  :text=>'print on controller-ip (Ruby-side)').pack(:fill=>:x)
 
   btns <<
     TkButton.new(:command=>
-                   'puts {This procesure is on the remote-ip (Tk-side)}',
+                   'puts {This procedure is on the remote-ip (Tk-side)}',
                  :text=>'print on remote-ip (Tk-side)').pack(:fill=>:x)
 
   btns <<
