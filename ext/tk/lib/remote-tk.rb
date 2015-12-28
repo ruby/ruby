@@ -7,6 +7,8 @@ if defined? MultiTkIp
   fail RuntimeError, "'remote-tk' library must be required before requiring 'multi-tk'"
 end
 
+require 'tkutil'
+
 class MultiTkIp; end
 class RemoteTkIp < MultiTkIp; end
 
