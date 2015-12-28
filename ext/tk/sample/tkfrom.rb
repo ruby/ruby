@@ -1,10 +1,7 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: false
 
-require "parsedate"
 require "base64"
-
-include ParseDate
 
 class Mail
   def Mail.new(f)
@@ -107,7 +104,10 @@ for file in ARGV
       from = mail.header['From']
       subj = mail.header['Subject']
       y = m = d = 0
-      y, m, d = parsedate(date) if date
+      if date
+        date = Date.parse(date) if date
+        y, m, d = date.year, date.mon, date.mday
+      end
       from = "sombody@somewhere" unless from
       subj = "(nil)" unless subj
       from = decode_b(from)
