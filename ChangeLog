@@ -1,3 +1,8 @@
+Mon Dec 28 14:55:57 2015  Kuniaki IGARASHI  <igaiga@gmail.com>
+
+	* test/ruby/test_string.rb (TestString#test_rstrip_bang): Add test
+	  for String#rstrip!.  [Fix GH-1176]
+
 Mon Dec 28 09:18:53 2015  Kuniaki IGARASHI  <igaiga@gmail.com>
 
 	* test/ruby/test_string.rb (TestString#test_lstrip_bang): Add test
