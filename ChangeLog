@@ -1,3 +1,9 @@
+Tue Dec 29 05:30:30 2015  Eric Wong  <e@80x24.org>
+
+	* lib/resolv.rb (Resolv::IPv6.create): avoid modifying frozen
+	* test/resolv/test_dns.rb (test_ipv6_create): test for above
+	  [Bug #11910] [ruby-core:72559]
+
 Mon Dec 28 14:55:57 2015  Kuniaki IGARASHI  <igaiga@gmail.com>
 
 	* test/ruby/test_string.rb (TestString#test_rstrip_bang): Add test

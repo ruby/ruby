@@ -199,6 +199,12 @@ class TestResolvDNS < Test::Unit::TestCase
     assert_equal(expected, labels)
   end
 
+  def test_ipv6_create
+    ref = '[Bug #11910] [ruby-core:72559]'
+    assert_instance_of Resolv::IPv6, Resolv::IPv6.create('::1')
+    assert_instance_of Resolv::IPv6, Resolv::IPv6.create('::1:127.0.0.1')
+  end
+
   def test_too_big_label_address
     n = 2000
     m = Resolv::DNS::Message::MessageEncoder.new {|msg|
