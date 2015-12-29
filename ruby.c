@@ -832,6 +832,7 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
 {
     long n, argc0 = argc;
     const char *s;
+    int warning = opt->warning;
 
     if (argc == 0)
 	return 0;
@@ -881,7 +882,7 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
 	    opt->verbose = 1;
 	  case 'w':
 	    if (!opt->warning) {
-		opt->warning = 1;
+		warning = 1;
 		ruby_verbose = Qtrue;
 	    }
 	    s++;
@@ -911,7 +912,7 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
 			break;
 		    }
 		}
-		opt->warning = 1;
+		warning = 1;
 	    }
 	    goto reswitch;
 
@@ -1234,6 +1235,7 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
     }
 
   switch_end:
+    if (warning) opt->warning = warning;
     return argc0 - argc;
 }
 

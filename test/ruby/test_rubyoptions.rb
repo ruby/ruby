@@ -64,6 +64,7 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err(%w(-W1 -e) + ['p $-W'], "", %w(1), [])
     assert_in_out_err(%w(-Wx -e) + ['p $-W'], "", %w(1), [])
     assert_in_out_err(%w(-W -e) + ['p $-W'], "", %w(2), [])
+    assert_in_out_err(%w(-w -W0 -e) + ['p $-W'], "", %w(0), [])
   ensure
     ENV['RUBYOPT'] = save_rubyopt
   end
