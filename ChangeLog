@@ -1,3 +1,8 @@
+Tue Dec 29 17:54:16 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (ignored_block): warn if a block is given to `using`,
+	  which is probably for `Module.new`.
+
 Tue Dec 29 12:48:34 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/ostruct.rb (OpenStruct): make respond_to? working on
