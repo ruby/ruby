@@ -1,3 +1,15 @@
+Tue Dec 29 12:48:34 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/ostruct.rb (OpenStruct): make respond_to? working on
+	  just-allocated objects for workaround of Psych.
+	  [ruby-core:72501] [Bug #11884]
+
+Tue Dec 29 12:46:13 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/ostruct.rb (OpenStruct): make respond_to? working on
+	  just-allocated objects for workaround of Psych.
+	  [ruby-core:72501] [Bug #11884]
+
 Tue Dec 29 10:35:00 2015  Kenta Murata  <mrkn@mrkn.jp>
 
 	* test/mkmf/test_have_func.rb (test_have_func):
