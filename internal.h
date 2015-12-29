@@ -463,7 +463,7 @@ typedef unsigned long rb_serial_t;
 struct rb_classext_struct {
     struct st_table *iv_index_tbl;
     struct st_table *iv_tbl;
-    struct st_table *const_tbl;
+    struct rb_id_table *const_tbl;
     struct rb_id_table *callable_m_tbl;
     rb_subclass_entry_t *subclasses;
     rb_subclass_entry_t **parent_subclasses;

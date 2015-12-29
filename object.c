@@ -2180,6 +2180,14 @@ rb_mod_const_set(VALUE mod, VALUE name, VALUE value)
     ID id = id_for_setter(mod, name, const, wrong_constant_name);
     if (!id) id = rb_intern_str(name);
     rb_const_set(mod, id, value);
+
+    /*
+     * Resolve and cache class name immediately to resolve ambiguity
+     * and avoid order-dependency on const_tbl
+     */
+    if (RB_TYPE_P(value, T_MODULE) || RB_TYPE_P(value, T_CLASS)) {
+	rb_class_name(value);
+    }
     return value;
 }
 
