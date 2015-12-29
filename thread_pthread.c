@@ -1599,6 +1599,7 @@ rb_thread_create_timer_thread(void)
 	}
 #ifdef HAVE_PTHREAD_ATTR_INIT
 	err = pthread_create(&timer_thread.id, &attr, thread_timer, &GET_VM()->gvl);
+	pthread_attr_destroy(&attr);
 #else
 	err = pthread_create(&timer_thread.id, NULL, thread_timer, &GET_VM()->gvl);
 #endif
@@ -1617,9 +1618,6 @@ rb_thread_create_timer_thread(void)
 	/* validate pipe on this process */
 	timer_thread_pipe.owner_process = getpid();
 	timer_thread.created = 1;
-#ifdef HAVE_PTHREAD_ATTR_INIT
-	pthread_attr_destroy(&attr);
-#endif
     }
 }
 

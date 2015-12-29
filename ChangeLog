@@ -1,3 +1,8 @@
+Wed Dec 30 04:10:13 2015  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* thread_pthread.c (rb_thread_create_timer_thread): destroy attr even
+	  if pthread_create() failed.
+
 Wed Dec 30 02:55:09 2015  Eric Wong  <e@80x24.org>
 
 	* thread_pthread.c (setup_communication_pipe): delay setting owner
