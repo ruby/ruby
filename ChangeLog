@@ -1,3 +1,9 @@
+Wed Dec 30 02:55:09 2015  Eric Wong  <e@80x24.org>
+
+	* thread_pthread.c (setup_communication_pipe): delay setting owner
+	  (rb_thread_create_timer_thread): until thread creation succeeds
+	  [ruby-core:72590] [Bug #11922]
+
 Tue Dec 29 19:12:46 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (proc_options): -W command line option should be able to
