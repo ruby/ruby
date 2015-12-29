@@ -110,6 +110,7 @@ struct cmdline_options {
 	} enc;
     } src, ext, intern;
     VALUE req_list;
+    unsigned int warning: 1;
 };
 
 static void init_ids(struct cmdline_options *);
@@ -879,15 +880,19 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
 	    opt->dump |= DUMP_BIT(version_v);
 	    opt->verbose = 1;
 	  case 'w':
-	    ruby_verbose = Qtrue;
+	    if (!opt->warning) {
+		opt->warning = 1;
+		ruby_verbose = Qtrue;
+	    }
 	    s++;
 	    goto reswitch;
 
 	  case 'W':
-	    {
+	    if (!opt->warning) {
 		size_t numlen;
 		int v = 2;	/* -W as -W2 */
 
+		opt->warning = 1;
 		if (*++s) {
 		    v = scan_oct(s, 1, &numlen);
 		    if (numlen == 0)
@@ -1705,6 +1710,7 @@ load_file_internal(VALUE argp_v)
 		if (RSTRING_PTR(line)[RSTRING_LEN(line) - 2] == '\r')
 		    RSTRING_PTR(line)[RSTRING_LEN(line) - 2] = '\0';
 		if ((p = strstr(p, " -")) != 0) {
+		    opt->warning = 0;
 		    moreswitches(p + 1, opt, 0);
 		}
 

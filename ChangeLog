@@ -1,3 +1,8 @@
+Tue Dec 29 19:12:46 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (proc_options): -W command line option should be able to
+	  override -w in RUBYOPT environment variable.
+
 Tue Dec 29 17:54:16 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (ignored_block): warn if a block is given to `using`,

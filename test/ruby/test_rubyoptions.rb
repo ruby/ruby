@@ -258,6 +258,10 @@ class TestRubyOptions < Test::Unit::TestCase
       assert_equal([], e)
     end
 
+    ENV['RUBYOPT'] = '-w'
+    assert_in_out_err(%w(), "p $VERBOSE", ["true"])
+    assert_in_out_err(%w(-W1), "p $VERBOSE", ["false"])
+    assert_in_out_err(%w(-W0), "p $VERBOSE", ["nil"])
   ensure
     if rubyopt_orig
       ENV['RUBYOPT'] = rubyopt_orig
