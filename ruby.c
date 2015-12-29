@@ -888,28 +888,30 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
 	    goto reswitch;
 
 	  case 'W':
-	    if (!opt->warning) {
+	    {
 		size_t numlen;
 		int v = 2;	/* -W as -W2 */
 
-		opt->warning = 1;
 		if (*++s) {
 		    v = scan_oct(s, 1, &numlen);
 		    if (numlen == 0)
 			v = 1;
 		    s += numlen;
 		}
-		switch (v) {
-		  case 0:
-		    ruby_verbose = Qnil;
-		    break;
-		  case 1:
-		    ruby_verbose = Qfalse;
-		    break;
-		  default:
-		    ruby_verbose = Qtrue;
-		    break;
+		if (!opt->warning) {
+		    switch (v) {
+		      case 0:
+			ruby_verbose = Qnil;
+			break;
+		      case 1:
+			ruby_verbose = Qfalse;
+			break;
+		      default:
+			ruby_verbose = Qtrue;
+			break;
+		    }
 		}
+		opt->warning = 1;
 	    }
 	    goto reswitch;
 
