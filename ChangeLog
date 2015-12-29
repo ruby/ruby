@@ -1,3 +1,11 @@
+Tue Dec 29 10:35:00 2015  Kenta Murata  <mrkn@mrkn.jp>
+
+	* test/mkmf/test_have_func.rb (test_have_func):
+	  Add assertion to examine the existence of HAVE_RUBY_INIT.
+
+	* test/mkmf/test_have_func.rb (test_not_have_func):
+	  Add assertion to examine the absence of HAVE_RUBY_INIT.
+
 Tue Dec 29 06:50:42 2015  Eric Wong  <e@80x24.org>
 
 	* thread_sync.c: static classes
