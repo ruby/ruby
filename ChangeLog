@@ -1,3 +1,34 @@
+Wed Dec 30 05:19:24 2015  Eric Wong  <e@80x24.org>
+
+	* class.c (struct clone_const_arg): adjust for id_table
+	  (clone_const): ditto
+	  (clone_const_i): ditto
+	  (rb_mod_init_copy): ditto
+	  (rb_singleton_class_clone_and_attach): ditto
+	  (rb_include_class_new): ditto
+	  (include_modules_at): ditto
+	* constant.h (rb_free_const_table): ditto
+	* gc.c (free_const_entry_i): ditto
+	  (rb_free_const_table): ditto
+	  (obj_memsize_of): ditto
+	  (mark_const_entry_i): ditto
+	  (mark_const_tbl): ditto
+	* internal.h (struct rb_classext_struct): ditto
+	* object.c (rb_mod_const_set): resolve class name on assignment
+	* variable.c (const_update): replace with const_tbl_update
+	  (const_tbl_update): new function
+	  (fc_i): adjust for id_table
+	  (find_class_path): ditto
+	  (autoload_const_set): st_update => const_tbl_update
+	  (rb_const_remove): adjust for id_table
+	  (sv_i): ditto
+	  (rb_local_constants_i): ditto
+	  (rb_local_constants): ditto
+	  (rb_mod_const_at): ditto
+	  (rb_mod_const_set): ditto
+	  (rb_const_lookup): ditto
+	  [ruby-core:72112] [Feature #11614]
+
 Wed Dec 30 04:10:13 2015  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* thread_pthread.c (rb_thread_create_timer_thread): destroy attr even
