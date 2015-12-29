@@ -1214,10 +1214,10 @@ enum {
 struct RStruct {
     struct RBasic basic;
     union {
-	struct {
+	  struct {
 	    long len;
 	    const VALUE *ptr;
-	} heap;
+	  } heap;
 	const VALUE ary[RSTRUCT_EMBED_LEN_MAX];
     } as;
 };
@@ -1350,12 +1350,12 @@ void rb_freeze_singleton_class(VALUE klass);
 static inline void
 rb_obj_freeze_inline(VALUE x)
 {
-    if (RB_FL_ABLE(x)) {
-	RB_OBJ_FREEZE_RAW(x);
-	if (RBASIC_CLASS(x) && !(RBASIC(x)->flags & RUBY_FL_SINGLETON)) {
+  if (RB_FL_ABLE(x)) {
+	  RB_OBJ_FREEZE_RAW(x);
+	  if (RBASIC_CLASS(x) && !(RBASIC(x)->flags & RUBY_FL_SINGLETON)) {
 	    rb_freeze_singleton_class(x);
-	}
-    }
+	  }
+  }
 }
 
 #if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 4))
