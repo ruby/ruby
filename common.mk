@@ -1096,7 +1096,7 @@ help: PHONY
 	"  gcbench-rdoc:    gc benchmark with GCBENCH_ITEM=rdoc" \
 	"  install:         install all ruby distributions" \
 	"  install-nodoc:   install without rdoc" \
-	"  install-cross:   install cross compiling staff" \
+	"  install-cross:   install cross compiling stuff" \
 	"  clean:           clean for tarball" \
 	"  distclean:       clean for repository" \
 	"  change:          make change log template" \

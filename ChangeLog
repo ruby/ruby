@@ -1,3 +1,7 @@
+Thu Dec 31 02:20:00 2015  Benoit Daloze  <eregontp@gmail.com>
+
+	* common.mk (help): Fix typo.
+
 Wed Dec 30 20:53:09 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/net/http/responses.rb: Added new response class for 451 status code.
