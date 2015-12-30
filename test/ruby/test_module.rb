@@ -1566,6 +1566,12 @@ class TestModule < Test::Unit::TestCase
     end
   end
 
+  def test_prepend_CMP
+    bug11878 = '[ruby-core:72493] [Bug #11878]'
+    assert_equal(-1, C1 <=> M2)
+    assert_equal(+1, M2 <=> C1, bug11878)
+  end
+
   def test_prepend_inheritance
     bug6654 = '[ruby-core:45914]'
     a = labeled_module("a")

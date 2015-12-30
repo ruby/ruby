@@ -1549,18 +1549,15 @@ rb_mod_eqq(VALUE mod, VALUE arg)
 VALUE
 rb_class_inherited_p(VALUE mod, VALUE arg)
 {
-    VALUE start = mod;
-
     if (mod == arg) return Qtrue;
     if (!CLASS_OR_MODULE_P(arg) && !RB_TYPE_P(arg, T_ICLASS)) {
 	rb_raise(rb_eTypeError, "compared with non class/module");
     }
-    arg = RCLASS_ORIGIN(arg);
-    if (class_search_ancestor(mod, arg)) {
+    if (class_search_ancestor(mod, RCLASS_ORIGIN(arg))) {
 	return Qtrue;
     }
     /* not mod < arg; check if mod > arg */
-    if (class_search_ancestor(arg, start)) {
+    if (class_search_ancestor(arg, mod)) {
 	return Qfalse;
     }
     return Qnil;

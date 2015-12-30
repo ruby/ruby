@@ -1,3 +1,9 @@
+Wed Dec 30 09:58:56 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* object.c (rb_class_inherited_p): search the corresponding
+	  ancestor to prepended module from prepending class itself.
+	  [ruby-core:72493] [Bug #11878]
+
 Wed Dec 30 09:20:00 2015  Yuki Kurihara  <co000ri@gmail.com>
 
 	* test/stringio/test_io.rb (test_flag): add assertion for error when
