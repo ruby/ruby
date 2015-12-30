@@ -187,6 +187,7 @@ class TestForwardable < Test::Unit::TestCase
     extend Forwardable
 
     def_delegator :bar, :baz
+    def_delegator :caller, :itself, :c
 
     class Exception
     end
@@ -197,6 +198,7 @@ class TestForwardable < Test::Unit::TestCase
       Foo.new.baz
     }
     assert_not_match(/\/forwardable\.rb/, e.backtrace[0])
+    assert_equal(caller(0, 1)[0], Foo.new.c[0])
   end
 
   class Foo2 < BasicObject

@@ -1,3 +1,11 @@
+Wed Dec 30 11:28:57 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/forwardable.rb (def_instance_delegator): adjust backtrace of
+	  method body by tail call optimization.  adjusting the delegated
+	  target is still done by deleting backtrace.
+
+	* lib/forwardable.rb (def_single_delegator): ditto.
+
 Wed Dec 30 11:18:42 2015  Elliot Winkler  <elliot.winkler@gmail.com>
 
 	* lib/forwardable.rb (def_instance_delegator) fix delegating to

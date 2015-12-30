@@ -182,23 +182,28 @@ module Forwardable
       accessor = "#{accessor}()"
     end
 
-    line_no = __LINE__; str = %{
+    line_no = __LINE__; str = %{proc do
       def #{ali}(*args, &block)
         begin
-          #{accessor}.__send__(:#{method}, *args, &block)
-        rescue ::Exception
-          $@.delete_if{|s| ::Forwardable::FILE_REGEXP =~ s} unless ::Forwardable::debug
-          ::Kernel::raise
-        end
+          #{accessor}
+        ensure
+          $@.delete_if {|s| ::Forwardable::FILE_REGEXP =~ s} if $@ and !::Forwardable::debug
+        end.__send__(:#{method}, *args, &block)
       end
-    }
+    end}
+
+    gen = RubyVM::InstructionSequence
+          .compile(str, __FILE__, __FILE__, line_no,
+                   trace_instruction: false,
+                   tailcall_optimization: true)
+          .eval
+
     # If it's not a class or module, it's an instance
     begin
-      module_eval(str, __FILE__, line_no)
+      module_eval(&gen)
     rescue
-      instance_eval(str, __FILE__, line_no)
+      instance_eval(&gen)
     end
-
   end
 
   alias delegate instance_delegate
@@ -278,18 +283,23 @@ module SingleForwardable
       accessor = "#{accessor}()"
     end
 
-    line_no = __LINE__; str = %{
+    line_no = __LINE__; str = %{proc do
       def #{ali}(*args, &block)
         begin
-          #{accessor}.__send__(:#{method}, *args, &block)
-        rescue ::Exception
-          $@.delete_if{|s| ::Forwardable::FILE_REGEXP =~ s} unless ::Forwardable::debug
-          ::Kernel::raise
-        end
+          #{accessor}
+        ensure
+          $@.delete_if {|s| ::Forwardable::FILE_REGEXP =~ s} if $@ and !::Forwardable::debug
+        end.__send__(:#{method}, *args, &block)
       end
-    }
+    end}
 
-    instance_eval(str, __FILE__, line_no)
+    gen = RubyVM::InstructionSequence
+          .compile(str, __FILE__, __FILE__, line_no,
+                   trace_instruction: false,
+                   tailcall_optimization: true)
+          .eval
+
+    instance_eval(&gen)
   end
 
   alias delegate single_delegate
