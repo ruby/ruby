@@ -3814,7 +3814,7 @@ ip_RubyExitCommand(clientData, interp, argc, argv)
         return TCL_RETURN;
 
     default:
-        /* arguemnt error */
+        /* argument error */
         Tcl_AppendResult(interp,
                          "wrong number of arguments: should be \"",
                          cmd, " ?returnCode?\"", (char *)NULL);
@@ -8626,7 +8626,7 @@ ip_invoke_core(interp, argc, argv)
 #else
             char **unknown_argv;
 #endif
-            DUMP1("find 'unknown' command -> set arguemnts");
+            DUMP1("find 'unknown' command -> set arguments");
             unknown_flag = 1;
 
 #if TCL_MAJOR_VERSION >= 8

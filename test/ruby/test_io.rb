@@ -1906,6 +1906,10 @@ class TestIO < Test::Unit::TestCase
       assert_raise(ArgumentError) do
         open(t.path, "rr") { }
       end
+
+      assert_raise(ArgumentError) do
+        open(t.path, "rbt") { }
+      end
     }
   end
 
@@ -3184,6 +3188,17 @@ End
       assert_nothing_raised(RuntimeError, bug8669) { str.clear }
       assert_raise(RuntimeError) { t.join }
     }
+  end
+
+  def test_readpartial_bad_args
+    IO.pipe do |r, w|
+      w.write '.'
+      buf = String.new
+      assert_raise(ArgumentError) { r.readpartial(1, buf, exception: false) }
+      assert_raise(TypeError) { r.readpartial(1, exception: false) }
+      assert_equal [[r],[],[]], IO.select([r], nil, nil, 1)
+      assert_equal '.', r.readpartial(1)
+    end
   end
 
   def test_sysread_unlocktmp_ensure

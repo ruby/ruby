@@ -2003,19 +2003,19 @@ is_pointer_to_heap(rb_objspace_t *objspace, void *ptr)
     return FALSE;
 }
 
-static int
-free_const_entry_i(st_data_t key, st_data_t value, st_data_t data)
+static enum rb_id_table_iterator_result
+free_const_entry_i(VALUE value, void *data)
 {
     rb_const_entry_t *ce = (rb_const_entry_t *)value;
     xfree(ce);
-    return ST_CONTINUE;
+    return ID_TABLE_CONTINUE;
 }
 
 void
-rb_free_const_table(st_table *tbl)
+rb_free_const_table(struct rb_id_table *tbl)
 {
-    st_foreach(tbl, free_const_entry_i, 0);
-    st_free_table(tbl);
+    rb_id_table_foreach_values(tbl, free_const_entry_i, 0);
+    rb_id_table_free(tbl);
 }
 
 static inline void
@@ -3089,7 +3089,7 @@ obj_memsize_of(VALUE obj, int use_all_types)
 		size += st_memsize(RCLASS(obj)->ptr->iv_tbl);
 	    }
 	    if (RCLASS(obj)->ptr->const_tbl) {
-		size += st_memsize(RCLASS(obj)->ptr->const_tbl);
+		size += rb_id_table_memsize(RCLASS(obj)->ptr->const_tbl);
 	    }
 	    size += sizeof(rb_classext_t);
 	}
@@ -4056,22 +4056,22 @@ mark_m_tbl(rb_objspace_t *objspace, struct rb_id_table *tbl)
     }
 }
 
-static int
-mark_const_entry_i(st_data_t key, st_data_t value, st_data_t data)
+static enum rb_id_table_iterator_result
+mark_const_entry_i(VALUE value, void *data)
 {
     const rb_const_entry_t *ce = (const rb_const_entry_t *)value;
-    rb_objspace_t *objspace = (rb_objspace_t *)data;
+    rb_objspace_t *objspace = data;
 
     gc_mark(objspace, ce->value);
     gc_mark(objspace, ce->file);
-    return ST_CONTINUE;
+    return ID_TABLE_CONTINUE;
 }
 
 static void
-mark_const_tbl(rb_objspace_t *objspace, st_table *tbl)
+mark_const_tbl(rb_objspace_t *objspace, struct rb_id_table *tbl)
 {
     if (!tbl) return;
-    st_foreach(tbl, mark_const_entry_i, (st_data_t)objspace);
+    rb_id_table_foreach_values(tbl, mark_const_entry_i, objspace);
 }
 
 #if STACK_GROW_DIRECTION < 0

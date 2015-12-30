@@ -162,7 +162,7 @@ class TkFont
     end
 
     def dup
-      fail RuntimeError, "cannot dupulicate a descendant font"
+      fail RuntimeError, "cannot duplicate a descendant font"
     end
     def clone
       fail RuntimeError, "cannot clone a descendant font"
@@ -1787,7 +1787,7 @@ module TkFont::CoreMethods
       tk_call('font', 'configure', font,
               "-#{slot}", value, '-pointadjust', padjust)
     elsif JAPANIZED_TK && (slot == 'family' || slot == :family)
-      # coumpund font?
+      # compound font?
       begin
         compound = tk_split_simplelist(tk_call('font', 'configure',
                                                font, '-compound'))

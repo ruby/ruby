@@ -7,8 +7,8 @@
 #    When it is configured, scrollregion of the container is changed.
 #
 #    Scrollbars can be toggled by Tk::RbWidget::ScrollFrame#vscroll & hscroll.
-#    If horizontal or virtical scrollbar is turned off, the horizontal
-#    or virtical size of embedded widgets is propagated.
+#    If horizontal or vertical scrollbar is turned off, the horizontal
+#    or vertical size of embedded widgets is propagated.
 #
 #                         Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)
 #
@@ -34,7 +34,7 @@ class Tk::RbWidget::ScrollFrame < TkFrame
                            :borderwidth=>0, :selectborderwidth=>0,
                            :highlightthickness=>0)
 
-    # allignment
+    # alignment
     TkGrid.rowconfigure(@frame, 0, 'weight'=>1, 'minsize'=>0)
     TkGrid.columnconfigure(@frame, 0, 'weight'=>1, 'minsize'=>0)
     @canvas.grid('row'=>0, 'column'=>0, 'sticky'=>'news')

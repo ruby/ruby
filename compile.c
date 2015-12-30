@@ -989,6 +989,7 @@ new_adjust_body(rb_iseq_t *iseq, LABEL *label, int line)
     adjust->link.next = 0;
     adjust->label = label;
     adjust->line_no = line;
+    if (label) LABEL_REF(label);
     return adjust;
 }
 

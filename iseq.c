@@ -386,7 +386,7 @@ make_compile_option(rb_compile_option_t *option, VALUE opt)
 	for (i = 0; i < (int)(sizeof(rb_compile_option_t) / sizeof(int)); ++i)
 	    ((int *)option)[i] = 1;
     }
-    else if (CLASS_OF(opt) == rb_cHash) {
+    else if (RB_TYPE_P(opt, T_HASH)) {
 	*option = COMPILE_OPTION_DEFAULT;
 	set_compile_option_from_hash(option, opt);
     }
@@ -603,31 +603,25 @@ rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE absolute_path, VALUE li
     rb_thread_t *th = GET_THREAD();
     rb_block_t *prev_base_block = th->base_block;
     rb_iseq_t *iseq = NULL;
-    const rb_iseq_t *parent = NULL;
+    const rb_iseq_t *const parent = base_block ? base_block->iseq : NULL;
     rb_compile_option_t option;
     VALUE label;
-    enum iseq_type type;
-    NODE *(*parse)(VALUE vparser, VALUE fname, VALUE file, int start);
+    const enum iseq_type type = parent ? ISEQ_TYPE_EVAL : ISEQ_TYPE_TOP;
     int ln = NUM2INT(line);
+    NODE *(*parse)(VALUE vparser, VALUE fname, VALUE file, int start) =
+	(RB_TYPE_P(src, T_FILE) ?
+	 rb_parser_compile_file_path :
+	 (StringValue(src), rb_parser_compile_string_path));
 
     StringValueCStr(file);
-    if (RB_TYPE_P(src, T_FILE)) {
-	parse = rb_parser_compile_file_path;
-    }
-    else {
-	StringValue(src);
-	parse = rb_parser_compile_string_path;
-    }
 
     make_compile_option(&option, opt);
 
-    if (base_block && (parent = base_block->iseq) != NULL) {
+    if (parent) {
 	label = parent->body->location.label;
-	type = ISEQ_TYPE_EVAL;
     }
     else {
 	label = rb_fstring_cstr("<compiled>");
-	type = ISEQ_TYPE_TOP;
     }
 
     th->base_block = base_block;

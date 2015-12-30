@@ -20,7 +20,7 @@ class Tk::Iwidgets::Shell
   WidgetClassNames[WidgetClassName] ||= self
 
   def activate
-    tk_call(@path, 'activate')  # may return val of deactibate method
+    tk_call(@path, 'activate')  # may return val of deactivate method
   end
 
   def center(win=None)

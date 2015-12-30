@@ -534,7 +534,7 @@ class TestModule < Test::Unit::TestCase
     m.module_eval("module O end")
     assert_equal([:N, :O], m.constants)
     m.module_eval("class C; end")
-    assert_equal([:N, :O, :C], m.constants)
+    assert_equal([:C, :N, :O], m.constants.sort)
     assert_nil(m::N.name)
     assert_match(/\A#<Module:.*>::O\z/, m::O.name)
     assert_match(/\A#<Module:.*>::C\z/, m::C.name)
@@ -1564,6 +1564,12 @@ class TestModule < Test::Unit::TestCase
     assert_nothing_raised('#8846') do
       Class.new.prepend(Module.new)
     end
+  end
+
+  def test_prepend_CMP
+    bug11878 = '[ruby-core:72493] [Bug #11878]'
+    assert_equal(-1, C1 <=> M2)
+    assert_equal(+1, M2 <=> C1, bug11878)
   end
 
   def test_prepend_inheritance

@@ -110,6 +110,7 @@ struct cmdline_options {
 	} enc;
     } src, ext, intern;
     VALUE req_list;
+    unsigned int warning: 1;
 };
 
 static void init_ids(struct cmdline_options *);
@@ -831,6 +832,7 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
 {
     long n, argc0 = argc;
     const char *s;
+    int warning = opt->warning;
 
     if (argc == 0)
 	return 0;
@@ -879,7 +881,10 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
 	    opt->dump |= DUMP_BIT(version_v);
 	    opt->verbose = 1;
 	  case 'w':
-	    ruby_verbose = Qtrue;
+	    if (!opt->warning) {
+		warning = 1;
+		ruby_verbose = Qtrue;
+	    }
 	    s++;
 	    goto reswitch;
 
@@ -894,17 +899,20 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
 			v = 1;
 		    s += numlen;
 		}
-		switch (v) {
-		  case 0:
-		    ruby_verbose = Qnil;
-		    break;
-		  case 1:
-		    ruby_verbose = Qfalse;
-		    break;
-		  default:
-		    ruby_verbose = Qtrue;
-		    break;
+		if (!opt->warning) {
+		    switch (v) {
+		      case 0:
+			ruby_verbose = Qnil;
+			break;
+		      case 1:
+			ruby_verbose = Qfalse;
+			break;
+		      default:
+			ruby_verbose = Qtrue;
+			break;
+		    }
 		}
+		warning = 1;
 	    }
 	    goto reswitch;
 
@@ -1227,6 +1235,7 @@ proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
     }
 
   switch_end:
+    if (warning) opt->warning = warning;
     return argc0 - argc;
 }
 
@@ -1705,6 +1714,7 @@ load_file_internal(VALUE argp_v)
 		if (RSTRING_PTR(line)[RSTRING_LEN(line) - 2] == '\r')
 		    RSTRING_PTR(line)[RSTRING_LEN(line) - 2] = '\0';
 		if ((p = strstr(p, " -")) != 0) {
+		    opt->warning = 0;
 		    moreswitches(p + 1, opt, 0);
 		}
 

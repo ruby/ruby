@@ -85,7 +85,7 @@ $ctag_text.withtag(TkcText.new($ctext_canvas, 250, 200, ctag_text_param))
 $ctag_text.bind('1', proc{|x,y| textB1Press $ctext_canvas,x,y}, "%x %y")
 $ctag_text.bind('B1-Motion', proc{|x,y| textB1Move $ctext_canvas,x,y}, "%x %y")
 $ctag_text.bind('Shift-1',
-        proc{|x,y| $ctext_canvas.seleect_adjust 'current', "@#{x},#{y}"},
+        proc{|x,y| $ctext_canvas.select_adjust 'current', "@#{x},#{y}"},
         "%x %y")
 $ctag_text.bind('Shift-B1-Motion',
                 proc{|x,y| textB1Move $ctext_canvas,x,y}, "%x %y")

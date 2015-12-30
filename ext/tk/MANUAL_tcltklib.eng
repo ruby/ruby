@@ -232,7 +232,7 @@ module TclTklib
 
     _merge_tklist(str, str, ... )
        : Get a Tcl's list string from arguments with a Tcl/Tk's
-       : library function. Each arguemnt is converted to a valid
+       : library function. Each argument is converted to a valid
        : Tcl list element.
 
     _conv_listelement(str)
@@ -415,7 +415,7 @@ class TclTkIp
 
     _merge_tklist(str, str, ... )
        : Get a Tcl's list string from arguments with a Tcl/Tk's
-       : library function. Each arguemnt is converted to a valid
+       : library function. Each argument is converted to a valid
        : Tcl list element.
 
     _conv_listelement(str)

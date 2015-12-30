@@ -4,7 +4,7 @@
 #                       by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)
 #
 # Add a balloon help to a widget.
-# This widget has only poor featureas. If you need more useful features,
+# This widget has only poor features. If you need more useful features,
 # please try to use the Tix extension of Tcl/Tk under Ruby/Tk.
 #
 # The interval time to display a balloon help is defined 'interval' option
@@ -157,7 +157,7 @@ if __FILE__ == $0
   sb = TkScrollbox.new.pack(:fill=>:x)
   sb.insert(:end, *%w(aaa bbb ccc ddd eee fff ggg hhh iii jjj kkk lll mmm))
 =begin
-  # CASE1 : command takes no arguemnt
+  # CASE1 : command takes no argument
   bh = Tk::RbWidget::BalloonHelp.new(sb, :interval=>500,
                            :relief=>:ridge, :background=>'white',
                            :command=>proc{
@@ -166,7 +166,7 @@ if __FILE__ == $0
                            })
 =end
 =begin
-  # CASE2 : command takes 2 arguemnts
+  # CASE2 : command takes 2 arguments
   bh = Tk::RbWidget::BalloonHelp.new(sb, :interval=>500,
                            :relief=>:ridge, :background=>'white',
                            :command=>proc{|x, y|
@@ -174,7 +174,7 @@ if __FILE__ == $0
                            })
 =end
 =begin
-  # CASE3 : command takes 3 arguemnts
+  # CASE3 : command takes 3 arguments
   Tk::RbWidget::BalloonHelp.new(sb, :interval=>500,
                       :relief=>:ridge, :background=>'white',
                       :command=>proc{|x, y, bhelp|
@@ -182,7 +182,7 @@ if __FILE__ == $0
                       })
 =end
 =begin
-  # CASE4a : command is a Proc object and takes 4 arguemnts
+  # CASE4a : command is a Proc object and takes 4 arguments
   cmd = proc{|x, y, bhelp, parent|
     bhelp.text "current index == #{parent.nearest(y)}"
   }
@@ -199,7 +199,7 @@ if __FILE__ == $0
                       :command=>cmd)
 =end
 #=begin
-  # CASE4b : command is a Method object and takes 4 arguemnts
+  # CASE4b : command is a Method object and takes 4 arguments
   def set_msg(x, y, bhelp, parent)
     bhelp.text "current index == #{parent.nearest(y)}"
   end

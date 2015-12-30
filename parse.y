@@ -107,20 +107,25 @@ static enum lex_state_e trace_lex_state(enum lex_state_e from, enum lex_state_e 
 
 typedef VALUE stack_type;
 
-# define BITSTACK_PUSH(stack, n)	((stack) = ((stack)<<1)|((n)&1))
-# define BITSTACK_POP(stack)	((stack) = (stack) >> 1)
-# define BITSTACK_LEXPOP(stack)	((stack) = ((stack) >> 1) | ((stack) & 1))
-# define BITSTACK_SET_P(stack)	((stack)&1)
+static void show_bitstack(stack_type, const char *, int);
+# define SHOW_BITSTACK(stack, name) (yydebug ? show_bitstack(stack, name, __LINE__) : (void)0)
+# define BITSTACK_PUSH(stack, n) (((stack) = ((stack)<<1)|((n)&1)), SHOW_BITSTACK(stack, #stack))
+# define BITSTACK_POP(stack)	 (((stack) = (stack) >> 1), SHOW_BITSTACK(stack, #stack))
+# define BITSTACK_LEXPOP(stack)	 (((stack) = ((stack) >> 1) | ((stack) & 1)), SHOW_BITSTACK(stack, #stack))
+# define BITSTACK_SET_P(stack)	 (SHOW_BITSTACK(stack, #stack), (stack)&1)
+# define BITSTACK_SET(stack, n)	 ((stack)=(n), SHOW_BITSTACK(stack, #stack))
 
 #define COND_PUSH(n)	BITSTACK_PUSH(cond_stack, (n))
 #define COND_POP()	BITSTACK_POP(cond_stack)
 #define COND_LEXPOP()	BITSTACK_LEXPOP(cond_stack)
 #define COND_P()	BITSTACK_SET_P(cond_stack)
+#define COND_SET(n)	BITSTACK_SET(cond_stack, (n))
 
 #define CMDARG_PUSH(n)	BITSTACK_PUSH(cmdarg_stack, (n))
 #define CMDARG_POP()	BITSTACK_POP(cmdarg_stack)
 #define CMDARG_LEXPOP()	BITSTACK_LEXPOP(cmdarg_stack)
 #define CMDARG_P()	BITSTACK_SET_P(cmdarg_stack)
+#define CMDARG_SET(n)	BITSTACK_SET(cmdarg_stack, (n))
 
 struct vtable {
     ID *tbl;
@@ -2529,14 +2534,14 @@ call_args	: command
 		    %*/
 		;
 
-command_args	:  {
+command_args	:   {
 			$<val>$ = cmdarg_stack;
 			CMDARG_PUSH(1);
 		    }
 		  call_args
 		    {
 			/* CMDARG_POP() */
-			cmdarg_stack = $<val>1;
+			CMDARG_SET($<val>1);
 			$$ = $2;
 		    }
 		;
@@ -2671,7 +2676,7 @@ primary		: literal
 		| k_begin
 		    {
 			$<val>1 = cmdarg_stack;
-			cmdarg_stack = 0;
+			CMDARG_SET(0);
 		    /*%%%*/
 			$<num>$ = ruby_sourceline;
 		    /*%
@@ -2680,7 +2685,7 @@ primary		: literal
 		  bodystmt
 		  k_end
 		    {
-			cmdarg_stack = $<val>1;
+			CMDARG_SET($<val>1);
 		    /*%%%*/
 			if ($3 == NULL) {
 			    $$ = NEW_NIL();
@@ -2707,11 +2712,11 @@ primary		: literal
 		| tLPAREN_ARG
 		    {
 			$<val>1 = cmdarg_stack;
-			cmdarg_stack = 0;
+			CMDARG_SET(0);
 		    }
 		  expr {SET_LEX_STATE(EXPR_ENDARG);} rparen
 		    {
-			cmdarg_stack = $<val>1;
+			CMDARG_SET($<val>1);
 		    /*%%%*/
 			$$ = $3;
 		    /*%
@@ -3545,12 +3550,12 @@ lambda		:   {
 		    }
 		    {
 			$<val>$ = cmdarg_stack;
-			cmdarg_stack = 0;
+			CMDARG_SET(0);
 		    }
 		  lambda_body
 		    {
 			lpar_beg = $<num>2;
-			cmdarg_stack = $<val>5;
+			CMDARG_SET($<val>5);
 			CMDARG_LEXPOP();
 		    /*%%%*/
 			$$ = NEW_LAMBDA($3, $6);
@@ -4330,8 +4335,8 @@ string_content	: tSTRING_CONTENT
 		    {
 			$<val>1 = cond_stack;
 			$<val>$ = cmdarg_stack;
-			cond_stack = 0;
-			cmdarg_stack = 0;
+			COND_SET(0);
+			CMDARG_SET(0);
 		    }
 		    {
 			$<node>$ = lex_strterm;
@@ -4351,8 +4356,8 @@ string_content	: tSTRING_CONTENT
 		    }
 		  compstmt tSTRING_DEND
 		    {
-			cond_stack = $<val>1;
-			cmdarg_stack = $<val>2;
+			COND_SET($<val>1);
+			CMDARG_SET($<val>2);
 			lex_strterm = $<node>3;
 			SET_LEX_STATE($<num>4);
 			brace_nest = $<num>5;
@@ -9228,6 +9233,22 @@ trace_lex_state(enum lex_state_e from, enum lex_state_e to, int line)
     return to;
 }
 
+static void
+show_bitstack(stack_type stack, const char *name, int line)
+{
+    VALUE mesg = rb_sprintf("%s: ", name);
+    if (stack == 0) {
+	rb_str_cat_cstr(mesg, "0");
+    }
+    else {
+	stack_type mask = (stack_type)1U << (CHAR_BIT * sizeof(stack_type) - 1);
+	for (; mask && !(stack & mask); mask >>= 1) continue;
+	for (; mask; mask >>= 1) rb_str_cat(mesg, stack & mask ? "1" : "0", 1);
+    }
+    rb_str_catf(mesg, " at line %d\n", line);
+    rb_io_write(rb_stdout, mesg);
+}
+
 #ifdef RIPPER
 static VALUE
 assignable_gen(struct parser_params *parser, VALUE lhs)
@@ -10307,7 +10328,7 @@ local_push_gen(struct parser_params *parser, int inherit_dvars)
     local->past = 0;
 # endif
     local->cmdargs = cmdarg_stack;
-    cmdarg_stack = 0;
+    CMDARG_SET(0);
     lvtbl = local;
 }
 
@@ -10328,7 +10349,7 @@ local_pop_gen(struct parser_params *parser)
 # endif
     vtable_free(lvtbl->args);
     vtable_free(lvtbl->vars);
-    cmdarg_stack = lvtbl->cmdargs;
+    CMDARG_SET(lvtbl->cmdargs);
     xfree(lvtbl);
     lvtbl = local;
 }

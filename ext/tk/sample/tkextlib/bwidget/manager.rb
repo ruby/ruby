@@ -88,7 +88,7 @@ module DemoManager
     [pane1, pane2].each{|pane|
       sw = Tk::BWidget::ScrolledWindow.new(pane)
       lb = TkListbox.new(sw, :height=>8, :width=>20, :highlightthickness=>0)
-      (1..8).each{|i| lb.insert('end', "Valur #{i}") }
+      (1..8).each{|i| lb.insert('end', "Value #{i}") }
       sw.set_widget(lb)
       sw.pack(:fill=>:both, :expand=>true)
     }

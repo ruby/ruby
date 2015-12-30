@@ -169,6 +169,9 @@ end
 class Net::HTTPRequestHeaderFieldsTooLarge < Net::HTTPClientError   # 431 - RFC 6585
   HAS_BODY = true
 end
+class Net::HTTPUnavailableForLegalReasons < Net::HTTPClientError    # 451
+  HAS_BODY = true
+end
 # 444 No Response - Nginx
 # 449 Retry With - Microsoft
 # 450 Blocked by Windows Parental Controls - Microsoft

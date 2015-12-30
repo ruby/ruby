@@ -1273,6 +1273,16 @@ rb_mod_refine(VALUE module, VALUE klass)
     return refinement;
 }
 
+static void
+ignored_block(VALUE module, const char *klass)
+{
+    const char *anon = "";
+    if (!RTEST(rb_search_class_path(module))) {
+	anon = ", maybe for Module.new";
+    }
+    rb_warn("%s""using doesn't call the given block""%s.", klass, anon);
+}
+
 /*
  *  call-seq:
  *     using(module)    -> self
@@ -1292,6 +1302,9 @@ mod_using(VALUE self, VALUE module)
     }
     if (prev_cfp && prev_cfp->self != self) {
 	rb_raise(rb_eRuntimeError, "Module#using is not called on self");
+    }
+    if (rb_block_given_p()) {
+	ignored_block(module, "Module#");
     }
     rb_using_module(rb_vm_cref_replace_with_duplicated_cref(), module);
     return self;
@@ -1425,6 +1438,9 @@ top_using(VALUE self, VALUE module)
 
     if (CREF_NEXT(cref) || (prev_cfp && rb_vm_frame_method_entry(prev_cfp))) {
 	rb_raise(rb_eRuntimeError, "main.using is permitted only at toplevel");
+    }
+    if (rb_block_given_p()) {
+	ignored_block(module, "main.");
     }
     rb_using_module(rb_vm_cref_replace_with_duplicated_cref(), module);
     return self;

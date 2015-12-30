@@ -525,7 +525,7 @@ Tk.__set_loaded_toplevel_aliases__('tk/menu.rb', :Tk, Tk::SysMenu_System,
 
 
 class Tk::SysMenu_Apple<Tk::Menu
-  # for Machintosh
+  # for Macintosh
   include Tk::SystemMenu
   SYSMENU_NAME = 'apple'
 end

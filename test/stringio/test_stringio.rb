@@ -13,6 +13,27 @@ class TestStringIO < Test::Unit::TestCase
 
   include TestEOF::Seek
 
+  def test_initialize
+    assert_kind_of StringIO, StringIO.new
+    assert_kind_of StringIO, StringIO.new('str')
+    assert_kind_of StringIO, StringIO.new('str', 'r+')
+    assert_raise(ArgumentError) { StringIO.new('', 'x') }
+    assert_raise(ArgumentError) { StringIO.new('', 'rx') }
+    assert_raise(ArgumentError) { StringIO.new('', 'rbt') }
+    assert_raise(TypeError) { StringIO.new(nil) }
+    assert_raise(TypeError) { StringIO.new('str', nil) }
+
+    o = Object.new
+    def o.to_str
+      nil
+    end
+    assert_raise(TypeError) { StringIO.new(o) }
+    def o.to_str
+      'str'
+    end
+    assert_kind_of StringIO, StringIO.new(o)
+  end
+
   def test_truncate
     io = StringIO.new("")
     io.puts "abc"

@@ -59,7 +59,7 @@ module TkOptionDB
         when /\\$/    # continue
           cline.chop!
           next
-        when /^\s*(!|#)/     # coment
+        when /^\s*(!|#)/     # comment
           cline = ''
           next
         when /^([^:]+):(.*)$/
@@ -103,7 +103,7 @@ module TkOptionDB
         when /\\$/    # continue
           cline.chop!
           next
-        when /^\s*!/     # coment
+        when /^\s*!/     # comment
           cline = ''
           next
         when /^([^:]+):\s(.*)$/
@@ -341,7 +341,7 @@ module TkOptionDB
   # define new proc class :
   # If you want to modify the new class or create a new subclass,
   # you must do such operation in the block parameter.
-  # Because the created class is flozen after evaluating the block.
+  # Because the created class is frozen after evaluating the block.
   def new_proc_class(klass, func, safe = 4, add = false, parent = nil, &b)
     new_klass = __create_new_class(klass, func, safe, add, parent)
     new_klass.class_eval(&b) if block_given?

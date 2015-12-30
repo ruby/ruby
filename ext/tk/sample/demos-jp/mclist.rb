@@ -59,7 +59,7 @@ Ttk::Frame.new(base_frame) {|frame|
 container = Ttk::Frame.new(base_frame)
 tree = Ttk::Treeview.new(base_frame, :columns=>%w(country capital currency),
                           :show=>:headings)
-if Tk.windowingsystem != 'aquq'
+if Tk.windowingsystem != 'aqua'
   vsb = tree.yscrollbar(Ttk::Scrollbar.new(base_frame))
   hsb = tree.xscrollbar(Ttk::Scrollbar.new(base_frame))
 else

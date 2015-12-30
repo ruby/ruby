@@ -370,6 +370,7 @@ module Net   #:nodoc:
   #   HTTPPreconditionRequired::            428
   #   HTTPTooManyRequests::                 429
   #   HTTPRequestHeaderFieldsTooLarge::     431
+  #   HTTPUnavailableForLegalReasons::      451
   # HTTPServerError::                    5xx
   #   HTTPInternalServerError::             500
   #   HTTPNotImplemented::                  501

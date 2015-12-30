@@ -1,3 +1,225 @@
+Thu Dec 31 02:45:12 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* test/ruby/test_module.rb (test_classpath): r53376 may change
+	  the order of m.constants.
+	  `make TESTS='-v ruby/test_class.rb ruby/test_module.rb' test-all`
+	  may fail after that.
+	  http://rubyci.s3.amazonaws.com/tk2-243-31075/ruby-trunk/log/20151230T164202Z.log.html.gz
+
+Thu Dec 31 02:20:00 2015  Benoit Daloze  <eregontp@gmail.com>
+
+	* common.mk (help): Fix typo.
+
+Wed Dec 30 20:53:09 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/net/http/responses.rb: Added new response class for 451 status code.
+	* lib/net/http.rb: documentation for HTTPUnavailableForLegalReasons
+
+Wed Dec 30 20:45:45 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/webrick/httpstatus.rb: Added HTTP 451 Status Code.
+	  [fix GH-1167] Patch by @MuhammetDilmac
+	  https://tools.ietf.org/html/draft-tbray-http-legally-restricted-status-00
+
+Wed Dec 30 20:25:52 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* doc/syntax/calling_methods.rdoc: fix old operator for safe navigation
+	  operator. [ci skip][fix GH-1182] Patch by @dougo
+
+Wed Dec 30 16:43:23 2015  Kuniaki IGARASHI  <igaiga@gmail.com>
+
+	* test/ruby/test_string.rb (test_ord): Add test for String#ord.
+	  [Fix GH-1181]
+
+Wed Dec 30 11:28:57 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/forwardable.rb (def_instance_delegator): adjust backtrace of
+	  method body by tail call optimization.  adjusting the delegated
+	  target is still done by deleting backtrace.
+
+	* lib/forwardable.rb (def_single_delegator): ditto.
+
+Wed Dec 30 11:18:42 2015  Elliot Winkler  <elliot.winkler@gmail.com>
+
+	* lib/forwardable.rb (def_instance_delegator) fix delegating to
+	  'args' and 'block', clashing with local variables in generated
+	  methods.  [ruby-core:72579] [Bug #11916]
+
+	* lib/forwardable.rb (def_single_delegator): ditto.
+
+Wed Dec 30 09:58:56 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* object.c (rb_class_inherited_p): search the corresponding
+	  ancestor to prepended module from prepending class itself.
+	  [ruby-core:72493] [Bug #11878]
+
+Wed Dec 30 09:20:00 2015  Yuki Kurihara  <co000ri@gmail.com>
+
+	* test/stringio/test_io.rb (test_flag): add assertion for error when
+	  text and binary mode are mixed.
+	  [ruby-dev:49465] [Feature #11921]
+
+Wed Dec 30 08:43:59 2015  Yuki Kurihara  <co000ri@gmail.com>
+
+	* test/stringio/test_stringio.rb (test_initialize): add test for
+	  StringIO#initialize.  [ruby-core:72585] [Feature #11920]
+
+Wed Dec 30 05:19:24 2015  Eric Wong  <e@80x24.org>
+
+	* class.c (struct clone_const_arg): adjust for id_table
+	  (clone_const): ditto
+	  (clone_const_i): ditto
+	  (rb_mod_init_copy): ditto
+	  (rb_singleton_class_clone_and_attach): ditto
+	  (rb_include_class_new): ditto
+	  (include_modules_at): ditto
+	* constant.h (rb_free_const_table): ditto
+	* gc.c (free_const_entry_i): ditto
+	  (rb_free_const_table): ditto
+	  (obj_memsize_of): ditto
+	  (mark_const_entry_i): ditto
+	  (mark_const_tbl): ditto
+	* internal.h (struct rb_classext_struct): ditto
+	* object.c (rb_mod_const_set): resolve class name on assignment
+	* variable.c (const_update): replace with const_tbl_update
+	  (const_tbl_update): new function
+	  (fc_i): adjust for id_table
+	  (find_class_path): ditto
+	  (autoload_const_set): st_update => const_tbl_update
+	  (rb_const_remove): adjust for id_table
+	  (sv_i): ditto
+	  (rb_local_constants_i): ditto
+	  (rb_local_constants): ditto
+	  (rb_mod_const_at): ditto
+	  (rb_mod_const_set): ditto
+	  (rb_const_lookup): ditto
+	  [ruby-core:72112] [Feature #11614]
+
+Wed Dec 30 04:10:13 2015  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* thread_pthread.c (rb_thread_create_timer_thread): destroy attr even
+	  if pthread_create() failed.
+
+Wed Dec 30 02:55:09 2015  Eric Wong  <e@80x24.org>
+
+	* thread_pthread.c (setup_communication_pipe): delay setting owner
+	  (rb_thread_create_timer_thread): until thread creation succeeds
+	  [ruby-core:72590] [Bug #11922]
+
+Tue Dec 29 19:12:46 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (proc_options): -W command line option should be able to
+	  override -w in RUBYOPT environment variable.
+
+Tue Dec 29 17:54:16 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (ignored_block): warn if a block is given to `using`,
+	  which is probably for `Module.new`.
+
+Tue Dec 29 12:48:34 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/ostruct.rb (OpenStruct): make respond_to? working on
+	  just-allocated objects for workaround of Psych.
+	  [ruby-core:72501] [Bug #11884]
+
+Tue Dec 29 10:35:00 2015  Kenta Murata  <mrkn@mrkn.jp>
+
+	* test/mkmf/test_have_func.rb (test_have_func):
+	  Add assertion to examine the existence of HAVE_RUBY_INIT.
+
+	* test/mkmf/test_have_func.rb (test_not_have_func):
+	  Add assertion to examine the absence of HAVE_RUBY_INIT.
+
+Tue Dec 29 06:50:42 2015  Eric Wong  <e@80x24.org>
+
+	* thread_sync.c: static classes
+
+Tue Dec 29 05:30:30 2015  Eric Wong  <e@80x24.org>
+
+	* lib/resolv.rb (Resolv::IPv6.create): avoid modifying frozen
+	* test/resolv/test_dns.rb (test_ipv6_create): test for above
+	  [Bug #11910] [ruby-core:72559]
+
+Mon Dec 28 14:55:57 2015  Kuniaki IGARASHI  <igaiga@gmail.com>
+
+	* test/ruby/test_string.rb (TestString#test_rstrip_bang): Add test
+	  for String#rstrip!.  [Fix GH-1176]
+
+Mon Dec 28 09:18:53 2015  Kuniaki IGARASHI  <igaiga@gmail.com>
+
+	* test/ruby/test_string.rb (TestString#test_lstrip_bang): Add test
+	  for String#lstrip!.  [Fix GH-1176]
+
+Sun Dec 27 23:32:26 2015  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (ole_variant2val): refactoring.
+
+Sun Dec 27 21:14:42 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* process.c (rb_execarg_parent_start1): need to convert the encoding to
+	  ospath's one.
+
+Sun Dec 27 20:54:22 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* process.c: use rb_w32_uchdir() instead of plain chdir() on Windows.
+	  reported by naruse via twitter.
+
+	* process.c (rb_execarg_addopt): need to convert the encoding to
+	  ospath's one.
+
+Sun Dec 27 20:00:31 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* enc/x_emoji.h: fix dead-link.
+
+Sun Dec 27 19:55:55 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* doc/NEWS-2.3.0: fix a typo.
+
+Sun Dec 27 18:08:15 2015  Kuniaki IGARASHI  <igaiga@gmail.com>
+
+	* string.c (rb_str_lstrip_bang, rb_str_rstrip_bang): [DOC] Fix
+	  ruby-doc comments for String#rstrip! and lstrip!.  It looks like
+	  dropped bang.  [Fix GH-1175]
+
+Sun Dec 27 15:14:20 2015  Eric Wong  <e@80x24.org>
+
+	* io.c (io_getpartial): remove unused kwarg from template
+	* test/ruby/test_io.rb (test_readpartial_bad_args): new
+	  [Bug #11885]
+
+Sun Dec 27 11:50:53 2015  Kuniaki IGARASHI  <igaiga@gmail.com>
+
+	* test/ruby/test_string.rb (test_rstrip, test_lstrip): Add tests
+	  for String#lstrip and rstrip.  The test cases are used from
+	  string.c ruby-doc comments.  [Fix GH-1174]
+
+Sun Dec 27 11:47:46 2015  Kuniaki IGARASHI  <igaiga@gmail.com>
+
+	* test/ruby/test_string.rb (test_insert): Add test for
+	  String#insert.  The test cases are written in string.c
+	  comments as a reference.  [Fix GH-1173]
+
+Sun Dec 27 11:03:33 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (show_bitstack): trace stack_type value if yydebug.
+
+Sun Dec 27 10:03:14 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/depend (enc, trans): fix version dependency, shared object
+	  files depend on the RUBY_SO_NAME value for runtime link.
+
+Sun Dec 27 09:47:20 2015  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (ole_vstr2wc, ole_variant2val): fix blank
+	  string conversion.
+	  [Bug #11880]
+	  Thanks Akio Tajima for the patch!
+
+Sun Dec 27 09:34:53 2015  craft4coder  <yooobuntu@163.com>
+
+	* doc/extension.rdoc: [DOC] `nul` should be uppercase.
+	  change 'nul' => 'NUL'.  [Fix GH-1172]
+
 Sat Dec 26 18:29:01 2015  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/xmlrpc/client.rb: Support SSL options in async methods of

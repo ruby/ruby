@@ -62,7 +62,7 @@ steps << proc{
 }
 
 steps << proc{
-  puts 'Paint the backgound.'
+  puts 'Paint the background.'
   st[:fill] = 'yellow'
 }
 

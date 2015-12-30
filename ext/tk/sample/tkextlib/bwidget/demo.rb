@@ -87,7 +87,7 @@ class BWidget_Demo
                                 :progressvar=>DemoVar.prgindic
                         )
 
-    # toobar 1 creation
+    # toolbar 1 creation
     DemoVar.prgindic.numeric += 1
 
     DemoVar.mainframe.add_toolbar{|tb1|

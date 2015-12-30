@@ -1,7 +1,7 @@
 /* included by thread.c */
 
-VALUE rb_cMutex, rb_cQueue, rb_cSizedQueue, rb_cConditionVariable;
-VALUE rb_eClosedQueueError;
+static VALUE rb_cMutex, rb_cQueue, rb_cSizedQueue, rb_cConditionVariable;
+static VALUE rb_eClosedQueueError;
 
 /* Mutex */
 

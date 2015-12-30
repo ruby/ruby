@@ -19,10 +19,7 @@ else
   $spool = ARGV[0]
 end
 
-require "parsedate"
 require "base64"
-
-include ParseDate
 
 class Mail
   def Mail.new(f)
@@ -128,7 +125,10 @@ def pop_up
     date, from, subj =  mail.header['Date'], mail.header['From'], mail.header['Subject']
     next if !date
     y = m = d = 0
-    y, m, d = parsedate(date) if date
+    if date
+      date = Date.parse(date)
+      y, m, d = date.year, date.month, date.mday
+    end
     from = "sombody@somewhere" if ! from
     subj = "(nil)" if ! subj
     from = decode_b(from)

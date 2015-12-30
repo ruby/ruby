@@ -121,7 +121,7 @@ Tk::Tile.set_theme(OPTS[:theme]) if OPTS[:theme]
 
 
 ##########################################################################
-#  replace $0 and $RPAGRAM_NAME
+#  replace $0 and $PROGRAM_NAME
 ##########################################################################
 #  When the expand_path of the target script is long, ruby sometimes
 #  fails to set the path to $0 (the path string is trimmed).

@@ -182,7 +182,7 @@ class TkTimer
 
     @cancel_on_exception = DEFAULT_IGNORE_EXCEPTIONS
     # Unless @cancel_on_exception, Ruby/Tk shows an error dialog box when
-    # an excepsion is raised on TkTimer callback procedure.
+    # an exception is raised on TkTimer callback procedure.
     # If @cancel_on_exception is an array of exception classes and the raised
     # exception is included in the array, Ruby/Tk cancels executing TkTimer
     # callback procedures silently (TkTimer#cancel is called and no dialog is
