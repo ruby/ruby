@@ -1,3 +1,11 @@
+Thu Dec 31 02:45:12 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* test/ruby/test_module.rb (test_classpath): r53376 may change
+	  the order of m.constants.
+	  `make TESTS='-v ruby/test_class.rb ruby/test_module.rb' test-all`
+	  may fail after that.
+	  http://rubyci.s3.amazonaws.com/tk2-243-31075/ruby-trunk/log/20151230T164202Z.log.html.gz
+
 Thu Dec 31 02:20:00 2015  Benoit Daloze  <eregontp@gmail.com>
 
 	* common.mk (help): Fix typo.

@@ -534,7 +534,7 @@ class TestModule < Test::Unit::TestCase
     m.module_eval("module O end")
     assert_equal([:N, :O], m.constants)
     m.module_eval("class C; end")
-    assert_equal([:N, :O, :C], m.constants)
+    assert_equal([:C, :N, :O], m.constants.sort)
     assert_nil(m::N.name)
     assert_match(/\A#<Module:.*>::O\z/, m::O.name)
     assert_match(/\A#<Module:.*>::C\z/, m::C.name)
