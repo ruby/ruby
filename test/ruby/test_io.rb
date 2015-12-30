@@ -1906,6 +1906,10 @@ class TestIO < Test::Unit::TestCase
       assert_raise(ArgumentError) do
         open(t.path, "rr") { }
       end
+
+      assert_raise(ArgumentError) do
+        open(t.path, "rbt") { }
+      end
     }
   end
 

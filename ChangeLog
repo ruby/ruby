@@ -1,3 +1,9 @@
+Wed Dec 30 09:20:00 2015  Yuki Kurihara  <co000ri@gmail.com>
+
+	* test/stringio/test_io.rb (test_flag): add assertion for error when
+	  text and binary mode are mixed.
+	  [ruby-dev:49465] [Feature #11921]
+
 Wed Dec 30 08:43:59 2015  Yuki Kurihara  <co000ri@gmail.com>
 
 	* test/stringio/test_stringio.rb (test_initialize): add test for
