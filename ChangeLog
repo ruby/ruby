@@ -1,3 +1,9 @@
+Wed Dec 30 20:45:45 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/webrick/httpstatus.rb: Added HTTP 451 Status Code.
+	  [fix GH-1167] Patch by @MuhammetDilmac
+	  https://tools.ietf.org/html/draft-tbray-http-legally-restricted-status-00
+
 Wed Dec 30 20:25:52 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* doc/syntax/calling_methods.rdoc: fix old operator for safe navigation
