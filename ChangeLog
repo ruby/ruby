@@ -1,3 +1,8 @@
+Wed Dec 30 20:25:52 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* doc/syntax/calling_methods.rdoc: fix old operator for safe navigation
+	  operator. [ci skip][fix GH-1182] Patch by @dougo
+
 Wed Dec 30 16:43:23 2015  Kuniaki IGARASHI  <igaiga@gmail.com>
 
 	* test/ruby/test_string.rb (test_ord): Add test for String#ord.
