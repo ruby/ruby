@@ -2342,6 +2342,13 @@ class TestString < Test::Unit::TestCase
     assert_not_equal(str.object_id, (+str).object_id)
     assert_equal(str.object_id, (-str).object_id)
   end
+
+  def test_ord
+    assert_equal(97, "a".ord)
+    assert_equal(97, "abc".ord)
+    assert_equal(0x3042, "\u3042\u3043".ord)
+    assert_raise(ArgumentError) { "".ord }
+  end
 end
 
 class TestString2 < TestString
