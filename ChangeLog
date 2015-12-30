@@ -1,3 +1,8 @@
+Wed Dec 30 16:43:23 2015  Kuniaki IGARASHI  <igaiga@gmail.com>
+
+	* test/ruby/test_string.rb (test_ord): Add test for String#ord.
+	  [Fix GH-1181]
+
 Wed Dec 30 11:28:57 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/forwardable.rb (def_instance_delegator): adjust backtrace of
