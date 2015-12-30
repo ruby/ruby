@@ -1,3 +1,11 @@
+Wed Dec 30 11:18:42 2015  Elliot Winkler  <elliot.winkler@gmail.com>
+
+	* lib/forwardable.rb (def_instance_delegator) fix delegating to
+	  'args' and 'block', clashing with local variables in generated
+	  methods.  [ruby-core:72579] [Bug #11916]
+
+	* lib/forwardable.rb (def_single_delegator): ditto.
+
 Wed Dec 30 09:58:56 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* object.c (rb_class_inherited_p): search the corresponding
