@@ -151,7 +151,7 @@ class OpenStruct
   # Used internally to check if the OpenStruct is able to be
   # modified before granting access to the internal Hash table to be modified.
   #
-  def modifiable
+  def __modifiable
     begin
       @modifiable = true
     rescue
@@ -159,7 +159,7 @@ class OpenStruct
     end
     @table
   end
-  protected :modifiable
+  protected :__modifiable
 
   #
   # Used internally to defined properties on the
@@ -170,7 +170,7 @@ class OpenStruct
     name = name.to_sym
     unless respond_to?(name)
       define_singleton_method(name) { @table[name] }
-      define_singleton_method("#{name}=") { |x| modifiable[name] = x }
+      define_singleton_method("#{name}=") { |x| __modifiable[name] = x }
     end
     name
   end
@@ -187,7 +187,7 @@ class OpenStruct
       if len != 1
         raise ArgumentError, "wrong number of arguments (#{len} for 1)", caller(1)
       end
-      modifiable[new_ostruct_member(mname)] = args[0]
+      __modifiable[new_ostruct_member(mname)] = args[0]
     elsif len == 0
       if @table.key?(mid)
         new_ostruct_member(mid)
@@ -217,7 +217,7 @@ class OpenStruct
   #   person.age # => 42
   #
   def []=(name, value)
-    modifiable[new_ostruct_member(name)] = value
+    __modifiable[new_ostruct_member(name)] = value
   end
 
   #
