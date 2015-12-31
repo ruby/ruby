@@ -1,3 +1,9 @@
+Fri Jan  1 05:06:20 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_here_document): update indent for each line in
+	  indented here document with single-quotes.
+	  [ruby-core:72479] [Bug #11871]
+
 Fri Jan  1 03:26:44 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/ostruct.rb (freeze): define deferred accessors before
