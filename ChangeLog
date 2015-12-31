@@ -1,3 +1,9 @@
+Fri Jan  1 08:53:02 2016  Yuki Kurihara  <co000ri@gmail.com>
+
+	* test/ruby/test_lazy_enumerator.rb (test_take_bad_arg): Add test
+	  code in case of Enumerator::Lazy#take called with negative number.
+	  [ruby-dev:49467] [Bug #11933]
+
 Fri Jan  1 05:06:20 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_here_document): update indent for each line in
