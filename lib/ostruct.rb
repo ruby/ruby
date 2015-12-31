@@ -176,6 +176,11 @@ class OpenStruct
   end
   protected :new_ostruct_member
 
+  def freeze
+    @table.each_key {|key| new_ostruct_member(key)}
+    super
+  end
+
   def respond_to_missing?(mid, include_private = false)
     mname = mid.to_s.chomp("=").to_sym
     @table.key?(mname) || super
