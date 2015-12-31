@@ -114,7 +114,7 @@ Emacs to Ruby."
        (setq end (set-marker (make-marker) end))
        (goto-char beg)
        (while (and (< (point) end)
-		   (re-search-forward "\\Ca+" end t))
+		   (re-search-forward "[^\C-@-~]+" end t))
 	 (let ((u (mapconcat (lambda (c) (format "%x" c)) (match-string-no-properties 0) " ")))
 	   (delete-region (match-beginning 0) (match-end 0))
 	   (insert "\\u{" u "}"))
