@@ -1,3 +1,7 @@
+Fri Jan  1 19:38:23 2016  okkez  <okkez000@gmail.com>
+
+	* doc/NEWS-2.3.0: fix double words typo.
+
 Fri Jan  1 15:28:56 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (remove_unreachable_chunk): decrease count of
