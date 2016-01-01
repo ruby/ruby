@@ -195,7 +195,7 @@ class OpenStruct
       modifiable[new_ostruct_member(mname)] = args[0]
     elsif len == 0
       if @table.key?(mid)
-        new_ostruct_member(mid)
+        new_ostruct_member(mid) unless frozen?
         @table[mid]
       end
     else

@@ -1,3 +1,8 @@
+Sat Jan  2 02:27:22 2016  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/ostruct.rb: Fix case of frozen object with initializer.
+	  Bug revealed by RubySpec [ruby-core:72639]
+
 Fri Jan  1 22:01:52 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* NEWS: mention about CSV's liberal_parsing option.
