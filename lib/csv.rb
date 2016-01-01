@@ -1019,6 +1019,7 @@ class CSV
   # <b><tt>:skip_blanks</tt></b>::        +false+
   # <b><tt>:force_quotes</tt></b>::       +false+
   # <b><tt>:skip_lines</tt></b>::         +nil+
+  # <b><tt>:liberal_parsing</tt></b>::    +false+
   #
   DEFAULT_OPTIONS = {
     col_sep:            ",",
@@ -1033,6 +1034,7 @@ class CSV
     skip_blanks:        false,
     force_quotes:       false,
     skip_lines:         nil,
+    liberal_parsing:    false,
   }.freeze
 
   #
@@ -1499,6 +1501,10 @@ class CSV
   #                                       a comment. If the passed object does
   #                                       not respond to <tt>match</tt>,
   #                                       <tt>ArgumentError</tt> is thrown.
+  # <b><tt>:liberal_parsing</tt></b>::    When set to a +true+ value, CSV will
+  #                                       attempt to parse input not conformant
+  #                                       with RFC 4180, such as double quotes
+  #                                       in unquoted fields.
   #
   # See CSV::DEFAULT_OPTIONS for the default settings.
   #
@@ -1622,6 +1628,8 @@ class CSV
   def skip_blanks?()        @skip_blanks        end
   # Returns +true+ if all output fields are quoted. See CSV::new for details.
   def force_quotes?()       @force_quotes       end
+  # Returns +true+ if illegal input is handled. See CSV::new for details.
+  def liberal_parsing?()    @liberal_parsing    end
 
   #
   # The Encoding CSV is parsing or writing in.  This will be the Encoding you
@@ -1860,12 +1868,12 @@ class CSV
           end
         elsif part[0] == @quote_char
           # If we are starting a new quoted column
-          if part[-1] != @quote_char || part.count(@quote_char) % 2 != 0
+          if part.count(@quote_char) % 2 != 0
             # start an extended column
             csv             << part[1..-1]
             csv.last        << @col_sep
             in_extended_col =  true
-          else
+          elsif part[-1] == @quote_char
             # regular quoted column
             csv << part[1..-2]
             if csv.last =~ @parsers[:stray_quote]
@@ -1873,6 +1881,11 @@ class CSV
                     "Missing or stray quote in line #{lineno + 1}"
             end
             csv.last.gsub!(@quote_char * 2, @quote_char)
+          elsif @liberal_parsing
+            csv << part
+          else
+            raise MalformedCSVError,
+                  "Missing or stray quote in line #{lineno + 1}"
           end
         elsif part =~ @parsers[:quote_or_nl]
           # Unquoted field with bad characters.
@@ -1880,7 +1893,11 @@ class CSV
             raise MalformedCSVError, "Unquoted fields do not allow " +
                                      "\\r or \\n (line #{lineno + 1})."
           else
-            raise MalformedCSVError, "Illegal quoting in line #{lineno + 1}."
+            if @liberal_parsing
+              csv << part
+            else
+              raise MalformedCSVError, "Illegal quoting in line #{lineno + 1}."
+            end
           end
         else
           # Regular ole unquoted field.
@@ -1945,7 +1962,7 @@ class CSV
     str << " encoding:" << @encoding.name
     # show other attributes
     %w[ lineno     col_sep     row_sep
-        quote_char skip_blanks ].each do |attr_name|
+        quote_char skip_blanks liberal_parsing ].each do |attr_name|
       if a = instance_variable_get("@#{attr_name}")
         str << " " << attr_name << ":" << a.inspect
       end
@@ -2079,6 +2096,7 @@ class CSV
     # store the parser behaviors
     @skip_blanks      = options.delete(:skip_blanks)
     @field_size_limit = options.delete(:field_size_limit)
+    @liberal_parsing  = options.delete(:liberal_parsing)
 
     # prebuild Regexps for faster parsing
     esc_row_sep = escape_re(@row_sep)

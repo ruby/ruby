@@ -1,3 +1,9 @@
+Fri Jan  1 11:42:57 2016  James Edward Gray II  <james@graysoftinc.com>
+
+	* lib/csv.rb (CSV): Add a liberal_parsing option.
+	  Patch by Braden Anderson. [#11839]
+	* test/csv/test_features.rb:  test liberal_parsing
+
 Fri Jan  1 10:27:28 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/mkconfig.rb (RbConfig): prefix SDKROOT to oldincludedir
