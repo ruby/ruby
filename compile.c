@@ -1968,6 +1968,9 @@ remove_unreachable_chunk(LINK_ELEMENT *i)
 		break;
 	    }
 	}
+	else if (i->type == ISEQ_ELEMENT_LABEL) {
+	    if (((LABEL *)i)->refcnt > 0) break;
+	}
 	else break;
 	REMOVE_ELEM(i);
 	removed = 1;

@@ -1,3 +1,8 @@
+Fri Jan  1 12:05:53 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (remove_unreachable_chunk): remove unreferred label
+	  to optimize away unreachable chunk.
+
 Fri Jan  1 11:42:57 2016  James Edward Gray II  <james@graysoftinc.com>
 
 	* lib/csv.rb (CSV): Add a liberal_parsing option.
