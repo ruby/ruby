@@ -1,3 +1,9 @@
+Fri Jan  1 10:27:28 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/mkconfig.rb (RbConfig): prefix SDKROOT to oldincludedir
+	  not includedir, the latter is outside the ruby installation.
+	  [ruby-core:72496] [Bug #11881]
+
 Fri Jan  1 08:53:02 2016  Yuki Kurihara  <co000ri@gmail.com>
 
 	* test/ruby/test_lazy_enumerator.rb (test_take_bad_arg): Add test
