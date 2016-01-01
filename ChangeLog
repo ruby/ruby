@@ -1,3 +1,8 @@
+Fri Jan  1 15:28:56 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (remove_unreachable_chunk): decrease count of
+	  call_info in removed instructions.  fix up r53402.
+
 Fri Jan  1 12:05:53 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (remove_unreachable_chunk): remove unreferred label

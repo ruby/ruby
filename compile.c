@@ -1933,9 +1933,9 @@ get_prev_insn(INSN *iobj)
 }
 
 static void
-unref_destination(INSN *iobj)
+unref_destination(INSN *iobj, int pos)
 {
-    LABEL *lobj = (LABEL *)OPERAND_AT(iobj, 0);
+    LABEL *lobj = (LABEL *)OPERAND_AT(iobj, pos);
     --lobj->refcnt;
     if (!lobj->refcnt) REMOVE_ELEM(&lobj->link);
 }
@@ -1953,19 +1953,26 @@ replace_destination(INSN *dobj, INSN *nobj)
 }
 
 static int
-remove_unreachable_chunk(LINK_ELEMENT *i)
+remove_unreachable_chunk(rb_iseq_t *iseq, LINK_ELEMENT *i)
 {
     int removed = 0;
     while (i) {
 	if (i->type == ISEQ_ELEMENT_INSN) {
-	    switch (INSN_OF(i)) {
-	      case BIN(jump):
-	      case BIN(branchif):
-	      case BIN(branchunless):
-	      case BIN(branchnil):
-		unref_destination((INSN *)i);
-	      default:
-		break;
+	    struct rb_iseq_constant_body *body = iseq->body;
+	    VALUE insn = INSN_OF(i);
+	    int pos, len = insn_len(insn);
+	    for (pos = 0; pos < len; ++pos) {
+		switch (insn_op_types(insn)[pos]) {
+		  case TS_OFFSET:
+		    unref_destination((INSN *)i, pos);
+		    break;
+		  case TS_CALLINFO:
+		    if (((struct rb_call_info *)OPERAND_AT(i, pos))->flag & VM_CALL_KWARG)
+			--(body->ci_kw_size);
+		    else
+			--(body->ci_size);
+		    break;
+		}
 	    }
 	}
 	else if (i->type == ISEQ_ELEMENT_LABEL) {
@@ -2006,13 +2013,13 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	     * =>
 	     *   LABEL:
 	     */
-	    unref_destination(iobj);
+	    unref_destination(iobj, 0);
 	    REMOVE_ELEM(&iobj->link);
 	}
 	else if (iobj != diobj && diobj->insn_id == BIN(jump) &&
 		 OPERAND_AT(iobj, 0) != OPERAND_AT(diobj, 0)) {
 	    replace_destination(iobj, diobj);
-	    remove_unreachable_chunk(iobj->link.next);
+	    remove_unreachable_chunk(iseq, iobj->link.next);
 	    goto again;
 	}
 	else if (diobj->insn_id == BIN(leave)) {
@@ -2032,7 +2039,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	    INSN *popiobj = new_insn_core(iseq, iobj->line_no,
 					  BIN(pop), 0, 0);
 	    /* replace */
-	    unref_destination(iobj);
+	    unref_destination(iobj, 0);
 	    REPLACE_ELEM((LINK_ELEMENT *)iobj, (LINK_ELEMENT *)eiobj);
 	    INSERT_ELEM_NEXT((LINK_ELEMENT *)eiobj, (LINK_ELEMENT *)popiobj);
 	    iobj = eiobj;
@@ -2062,13 +2069,13 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 		REMOVE_ELEM(&iobj->link);
 	    }
 	}
-	else if (remove_unreachable_chunk(iobj->link.next)) {
+	else if (remove_unreachable_chunk(iseq, iobj->link.next)) {
 	    goto again;
 	}
     }
 
     if (iobj->insn_id == BIN(leave)) {
-	remove_unreachable_chunk(iobj->link.next);
+	remove_unreachable_chunk(iseq, iobj->link.next);
     }
 
     if (iobj->insn_id == BIN(branchif) ||
@@ -2166,7 +2173,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 		    goto again;
 		}
 		else {
-		    unref_destination(iobj);
+		    unref_destination(iobj, 0);
 		    REMOVE_ELEM(&iobj->link);
 		}
 		break;
