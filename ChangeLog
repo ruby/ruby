@@ -1,8 +1,3 @@
-Sat Jan  2 11:11:01 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* parse.y (set_yylval_num): should be used as nd_state, set to u3.
-	  [ruby-core:72638] [Bug #11932]
-
 Sat Jan  2 02:27:22 2016  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/ostruct.rb: Fix case of frozen object with initializer.

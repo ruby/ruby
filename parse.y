@@ -5251,7 +5251,7 @@ ripper_yylval_id(ID x)
     return ripper_new_yylval(x, ID2SYM(x), 0);
 }
 # define set_yylval_str(x) (yylval.val = (x))
-# define set_yylval_num(x) (yylval.val = ripper_new_yylval(0, 0, (x)))
+# define set_yylval_num(x) (yylval.val = ripper_new_yylval((x), 0, 0))
 # define set_yylval_id(x)  (void)(x)
 # define set_yylval_name(x) (void)(yylval.val = ripper_yylval_id(x))
 # define set_yylval_literal(x) (void)(x)
