@@ -371,8 +371,11 @@ class ERB
       def initialize(src, trim_mode, percent)
         @src = src
         @stag = nil
+        @stags = %w(<%% <%= <%# <%).freeze
+        @etags = %w(%%> %>).freeze
       end
       attr_accessor :stag
+      attr_reader :stags, :etags
 
       def scan; end
     end
@@ -383,12 +386,16 @@ class ERB
         @trim_mode = trim_mode
         @percent = percent
         if @trim_mode == '>'
+          @scan_reg  = /(.*?)(%>\n|#{(stags + etags).join('|')}|\n|\z)/m
           @scan_line = self.method(:trim_line1)
         elsif @trim_mode == '<>'
+          @scan_reg  = /(.*?)(%>\n|#{(stags + etags).join('|')}|\n|\z)/m
           @scan_line = self.method(:trim_line2)
         elsif @trim_mode == '-'
+          @scan_reg  = /(.*?)(^[ \t]*<%\-|<%\-|-%>\n|-%>|#{(stags + etags).join('|')}|\z)/m
           @scan_line = self.method(:explicit_trim_line)
         else
+          @scan_reg  = /(.*?)(#{(stags + etags).join('|')}|\n|\z)/m
           @scan_line = self.method(:scan_line)
         end
       end
@@ -420,7 +427,7 @@ class ERB
       end
 
       def scan_line(line)
-        line.scan(/(.*?)(<%%|%%>|<%=|<%#|<%|%>|\n|\z)/m) do |tokens|
+        line.scan(@scan_reg) do |tokens|
           tokens.each do |token|
             next if token.empty?
             yield(token)
@@ -429,7 +436,7 @@ class ERB
       end
 
       def trim_line1(line)
-        line.scan(/(.*?)(<%%|%%>|<%=|<%#|<%|%>\n|%>|\n|\z)/m) do |tokens|
+        line.scan(@scan_reg) do |tokens|
           tokens.each do |token|
             next if token.empty?
             if token == "%>\n"
@@ -444,7 +451,7 @@ class ERB
 
       def trim_line2(line)
         head = nil
-        line.scan(/(.*?)(<%%|%%>|<%=|<%#|<%|%>\n|%>|\n|\z)/m) do |tokens|
+        line.scan(@scan_reg) do |tokens|
           tokens.each do |token|
             next if token.empty?
             head = token unless head
@@ -465,7 +472,7 @@ class ERB
       end
 
       def explicit_trim_line(line)
-        line.scan(/(.*?)(^[ \t]*<%\-|<%\-|<%%|%%>|<%=|<%#|<%|-%>\n|-%>|%>|\z)/m) do |tokens|
+        line.scan(@scan_reg) do |tokens|
           tokens.each do |token|
             next if token.empty?
             if @stag.nil? && /[ \t]*<%-/ =~ token
@@ -492,7 +499,7 @@ class ERB
 
     class SimpleScanner < Scanner # :nodoc:
       def scan
-        @src.scan(/(.*?)(<%%|%%>|<%=|<%#|<%|%>|\n|\z)/m) do |tokens|
+        @src.scan(/(.*?)(#{(stags + etags).join('|')}|\n|\z)/m) do |tokens|
           tokens.each do |token|
             next if token.empty?
             yield(token)
@@ -507,8 +514,8 @@ class ERB
       require 'strscan'
       class SimpleScanner2 < Scanner # :nodoc:
         def scan
-          stag_reg = /(.*?)(<%[%=#]?|\z)/m
-          etag_reg = /(.*?)(%%?>|\z)/m
+          stag_reg = /(.*?)(#{stags.join('|')}|\z)/m
+          etag_reg = /(.*?)(#{etags.join('|')}|\z)/m
           scanner = StringScanner.new(@src)
           while ! scanner.eos?
             scanner.scan(@stag ? etag_reg : stag_reg)
@@ -521,8 +528,8 @@ class ERB
 
       class ExplicitScanner < Scanner # :nodoc:
         def scan
-          stag_reg = /(.*?)(^[ \t]*<%-|<%%|<%=|<%#|<%-|<%|\z)/m
-          etag_reg = /(.*?)(%%>|-%>|%>|\z)/m
+          stag_reg = /(.*?)(^[ \t]*<%-|<%-|#{stags.join('|')}|\z)/m
+          etag_reg = /(.*?)(-%>|#{etags.join('|')}|\z)/m
           scanner = StringScanner.new(@src)
           while ! scanner.eos?
             scanner.scan(@stag ? etag_reg : stag_reg)
@@ -602,62 +609,74 @@ class ERB
       enc = detect_magic_comment(s) || enc
       out = Buffer.new(self, enc)
 
-      content = ''
+      self.content = ''
       scanner = make_scanner(s)
       scanner.scan do |token|
         next if token.nil?
         next if token == ''
         if scanner.stag.nil?
-          case token
-          when PercentLine
-            add_put_cmd(out, content) if content.size > 0
-            content = ''
-            out.push(token.to_s)
-            out.cr
-          when :cr
-            out.cr
-          when '<%', '<%=', '<%#'
-            scanner.stag = token
-            add_put_cmd(out, content) if content.size > 0
-            content = ''
-          when "\n"
-            content << "\n"
-            add_put_cmd(out, content)
-            content = ''
-          when '<%%'
-            content << '<%'
-          else
-            content << token
-          end
+          compile_stag(token, out, scanner)
         else
-          case token
-          when '%>'
-            case scanner.stag
-            when '<%'
-              if content[-1] == ?\n
-                content.chop!
-                out.push(content)
-                out.cr
-              else
-                out.push(content)
-              end
-            when '<%='
-              add_insert_cmd(out, content)
-            when '<%#'
-              # out.push("# #{content_dump(content)}")
-            end
-            scanner.stag = nil
-            content = ''
-          when '%%>'
-            content << '%>'
-          else
-            content << token
-          end
+          compile_etag(token, out, scanner)
         end
       end
       add_put_cmd(out, content) if content.size > 0
       out.close
       return out.script, enc
+    end
+
+    def compile_stag(stag, out, scanner)
+      case stag
+      when PercentLine
+        add_put_cmd(out, content) if content.size > 0
+        self.content = ''
+        out.push(stag.to_s)
+        out.cr
+      when :cr
+        out.cr
+      when '<%', '<%=', '<%#'
+        scanner.stag = stag
+        add_put_cmd(out, content) if content.size > 0
+        self.content = ''
+      when "\n"
+        content << "\n"
+        add_put_cmd(out, content)
+        self.content = ''
+      when '<%%'
+        content << '<%'
+      else
+        content << stag
+      end
+    end
+
+    def compile_etag(etag, out, scanner)
+      case etag
+      when '%>'
+        compile_content(scanner.stag, out)
+        scanner.stag = nil
+        self.content = ''
+      when '%%>'
+        content << '%>'
+      else
+        content << etag
+      end
+    end
+
+    def compile_content(stag, out)
+      case stag
+      when '<%'
+        if content[-1] == ?\n
+          content.chop!
+          out.push(content)
+          out.cr
+        else
+          out.push(content)
+        end
+      when '<%='
+        add_insert_cmd(out, content)
+      when '<%#'
+        # out.push("# #{content_dump(content)}")
+      end
     end
 
     def prepare_trim_mode(mode) # :nodoc:
@@ -712,6 +731,10 @@ class ERB
     attr_accessor :post_cmd
 
     private
+
+    # A buffered text in #compile
+    attr_accessor :content
+
     def detect_magic_comment(s)
       if /\A<%#(.*)%>/ =~ s or (@percent and /\A%#(.*)/ =~ s)
         comment = $1

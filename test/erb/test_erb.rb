@@ -481,6 +481,59 @@ EOS
   def test_percent_after_etag
     assert_equal("1%", @erb.new("<%= 1 %>%", nil, "%").result)
   end
+
+  def test_token_extension
+    extended_erb = Class.new(ERB)
+    extended_erb.module_eval do
+      def make_compiler(trim_mode)
+        compiler = Class.new(ERB::Compiler)
+        compiler.module_eval do
+          def compile_stag(stag, out, scanner)
+            case stag
+            when '<%=='
+              scanner.stag = stag
+              add_put_cmd(out, content) if content.size > 0
+              self.content = ''
+            else
+              super
+            end
+          end
+
+          def compile_content(stag, out)
+            case stag
+            when '<%=='
+              out.push("#{@insert_cmd}(::ERB::Util.html_escape(#{content}))")
+            else
+              super
+            end
+          end
+
+          def make_scanner(src)
+            scanner = Class.new(ERB::Compiler::SimpleScanner)
+            scanner.module_eval do
+              def stags
+                ['<%=='] + super
+              end
+            end
+            scanner.new(src, @trim_mode, @percent)
+          end
+        end
+        compiler.new(trim_mode)
+      end
+    end
+
+    src = <<~EOS
+      <% tag = '<>' %>
+      <%= tag %>
+      <%== tag %>
+    EOS
+    ans = <<~EOS
+
+      <>
+      &lt;&gt;
+    EOS
+    assert_equal(ans, extended_erb.new(src).result)
+  end
 end
 
 class TestERBCoreWOStrScan < TestERBCore

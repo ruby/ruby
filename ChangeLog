@@ -1,3 +1,10 @@
+Sat Jan  2 16:16:14 2016  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/erb.rb: Allow ERB subclass to add token easily.
+	  [Feature #11936]
+
+	* test/erb/test_erb.rb: ditto.
+
 Sat Jan  2 14:44:31 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (regexp): set_yylval_num sets u1, should use nd_tag
