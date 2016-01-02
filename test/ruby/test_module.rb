@@ -532,7 +532,7 @@ class TestModule < Test::Unit::TestCase
     assert_nil(n.name)
     assert_equal([:N], m.constants)
     m.module_eval("module O end")
-    assert_equal([:N, :O], m.constants)
+    assert_equal([:N, :O], m.constants.sort)
     m.module_eval("class C; end")
     assert_equal([:C, :N, :O], m.constants.sort)
     assert_nil(m::N.name)

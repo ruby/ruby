@@ -1,3 +1,62 @@
+Sat Jan  2 02:27:22 2016  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/ostruct.rb: Fix case of frozen object with initializer.
+	  Bug revealed by RubySpec [ruby-core:72639]
+
+Fri Jan  1 22:01:52 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* NEWS: mention about CSV's liberal_parsing option.
+
+Fri Jan  1 19:38:23 2016  okkez  <okkez000@gmail.com>
+
+	* doc/NEWS-2.3.0: fix double words typo.
+	  [ci skip][fix GH-1183]
+
+Fri Jan  1 15:28:56 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (remove_unreachable_chunk): decrease count of
+	  call_info in removed instructions.  fix up r53402.
+
+Fri Jan  1 12:05:53 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (remove_unreachable_chunk): remove unreferred label
+	  to optimize away unreachable chunk.
+
+Fri Jan  1 11:42:57 2016  James Edward Gray II  <james@graysoftinc.com>
+
+	* lib/csv.rb (CSV): Add a liberal_parsing option.
+	  Patch by Braden Anderson. [#11839]
+	* test/csv/test_features.rb:  test liberal_parsing
+
+Fri Jan  1 10:27:28 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/mkconfig.rb (RbConfig): prefix SDKROOT to oldincludedir
+	  not includedir, the latter is outside the ruby installation.
+	  [ruby-core:72496] [Bug #11881]
+
+Fri Jan  1 08:53:02 2016  Yuki Kurihara  <co000ri@gmail.com>
+
+	* test/ruby/test_lazy_enumerator.rb (test_take_bad_arg): Add test
+	  code in case of Enumerator::Lazy#take called with negative number.
+	  [ruby-dev:49467] [Bug #11933]
+
+Fri Jan  1 05:06:20 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_here_document): update indent for each line in
+	  indented here document with single-quotes.
+	  [ruby-core:72479] [Bug #11871]
+
+Fri Jan  1 03:26:44 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/ostruct.rb (freeze): define deferred accessors before
+	  freezing to get rid of an error when just reading frozen
+	  OpenStruct.
+
+Thu Dec 31 14:36:45 2015  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/ostruct.rb: Fix new_ostruct_member to correctly avoid
+	  redefinition [#11901]
+
 Thu Dec 31 02:45:12 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* test/ruby/test_module.rb (test_classpath): r53376 may change

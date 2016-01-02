@@ -380,7 +380,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * All accesses to members of big Struct objects are performed in
   constant-time.  Previously, Struct elements beyond the first 10
-  10 elements used a linear scan. [Feature #10585]
+  elements used a linear scan. [Feature #10585]
 
 * The Set class got several speed up.
   [Misc #10754], [r52591]

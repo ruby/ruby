@@ -275,6 +275,11 @@ class TestLazyEnumerator < Test::Unit::TestCase
     assert_equal(nil, a.current)
   end
 
+  def test_take_bad_arg
+    a = Step.new(1..10)
+    assert_raise(ArgumentError) { a.lazy.take(-1) }
+  end
+
   def test_take_recycle
     bug6428 = '[ruby-dev:45634]'
     a = Step.new(1..10)
