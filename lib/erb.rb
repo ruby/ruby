@@ -507,14 +507,14 @@ class ERB
       require 'strscan'
       class SimpleScanner2 < Scanner # :nodoc:
         def scan
-          stag_reg = /(.*?)(<%[%=#]?|\z)/m
-          etag_reg = /(.*?)(%%?>|\z)/m
           scanner = StringScanner.new(@src)
-          while ! scanner.eos?
-            scanner.scan(@stag ? etag_reg : stag_reg)
+          while scanner.scan(/(.*?)(<%[%=#]?)(.*?)((?<!%)%>|\z)/m)
             yield(scanner[1])
             yield(scanner[2])
+            yield(scanner[3].gsub('%%>', '%>'))
+            yield(scanner[4])
           end
+          yield(scanner.rest)
         end
       end
       Scanner.regist_scanner(SimpleScanner2, nil, false)
