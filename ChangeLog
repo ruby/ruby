@@ -1,3 +1,8 @@
+Sat Jan  2 21:07:55 2016  Eric Wong  <e@80x24.org>
+
+	* thread_sync.c (queue_do_pop): avoid cast with Qfalse
+	  (rb_szqueue_push): ditto, use queue_sleep wrapper
+
 Sat Jan  2 16:16:14 2016  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/erb.rb: Allow ERB subclass to add token easily.

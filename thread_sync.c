@@ -786,7 +786,7 @@ queue_do_pop(VALUE self, int should_block)
 	    assert(queue_closed_p(self) == 0);
 
 	    rb_ary_push(args.waiting, args.th);
-	    rb_ensure(queue_sleep, (VALUE)0, queue_delete_from_waiting, (VALUE)&args);
+	    rb_ensure(queue_sleep, Qfalse, queue_delete_from_waiting, (VALUE)&args);
 	}
     }
 
@@ -1012,7 +1012,7 @@ rb_szqueue_push(int argc, VALUE *argv, VALUE self)
 	}
 	else {
 	    rb_ary_push(args.waiting, args.th);
-	    rb_ensure((VALUE (*)())rb_thread_sleep_deadly, (VALUE)0, queue_delete_from_waiting, (VALUE)&args);
+	    rb_ensure(queue_sleep, Qfalse, queue_delete_from_waiting, (VALUE)&args);
 	}
     }
 
