@@ -1266,10 +1266,10 @@ opt_case_dispatch
 	    key = FIXABLE(ival) ? LONG2FIX((long)ival) : rb_dbl2big(ival);
 	}
       }
-      case T_TRUE:
+      case T_TRUE: /* fall through */
       case T_FALSE:
       case T_NIL:
-      case T_SYMBOL: /* fall through */
+      case T_SYMBOL:
       case T_FIXNUM:
       case T_BIGNUM:
       case T_STRING:

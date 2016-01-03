@@ -1,3 +1,9 @@
+Mon Jan  4 08:10:44 2016  Yuichiro Kaneko  <yui-knk@ruby-lang.org>
+
+	* insns.def (opt_case_dispatch): Move a comment to the
+	  appropriate position.
+	  [ci skip]
+
 Sun Jan  3 23:55:13 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rubygems/security.rb (DIGEST_ALGORITHM, KEY_ALGORITHM):
