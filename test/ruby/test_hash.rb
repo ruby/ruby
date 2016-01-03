@@ -346,6 +346,15 @@ class TestHash < Test::Unit::TestCase
     assert_equal({1=>2,3=>4,5=>6}, h.keep_if{true})
   end
 
+  def test_compact
+    h = @cls[a: 1, b: nil, c: false, d: true, e: nil]
+    assert_equal({a: 1, c: false, d: true}, h.compact)
+    assert_equal({a: 1, b: nil, c: false, d: true, e: nil}, h)
+    assert_equal({a: 1, c: false, d: true}, h.compact!)
+    assert_equal({a: 1, c: false, d: true}, h)
+    assert_equal(nil, h.compact!)
+  end
+
   def test_dup
     for taint in [ false, true ]
       for frozen in [ false, true ]
