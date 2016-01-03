@@ -1,3 +1,8 @@
+Sun Jan  3 19:22:01 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* aclocal.m4: add fallback file for non-aclocal environments.
+	  [ruby-core:72683] [Bug #11942]
+
 Sun Jan  3 13:56:49 2016  Yuichiro Kaneko  <yui-knk@ruby-lang.org>
 
 	* eval_error.c (rb_print_undef): Use `rb_method_visibility_t`
