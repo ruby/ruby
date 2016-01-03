@@ -1,3 +1,9 @@
+Sun Jan  3 23:55:13 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rubygems/security.rb (DIGEST_ALGORITHM, KEY_ALGORITHM):
+	  should check same name as the used constants.
+	  [ruby-core:72674] [Bug #11940]
+
 Sun Jan  3 19:22:01 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* aclocal.m4: add fallback file for non-aclocal environments.
