@@ -520,7 +520,7 @@ realclean-local:: distclean-local
 	$(Q)$(RM) id.c id.h probes.dmyh
 	$(Q)$(CHDIR) $(srcdir) && $(exec) $(RM) parse.c parse.h lex.c enc/trans/newline.c $(PRELUDES) revision.h
 	$(Q)$(CHDIR) $(srcdir) && $(exec) $(RM) id.c id.h probes.dmyh
-	$(Q)$(CHDIR) $(srcdir) && $(exec) $(RM) configure tool/config.guess tool/config.sub gems/*.gem
+	$(Q)$(CHDIR) $(srcdir) && $(exec) $(RM) configure aclocal.m4 tool/config.guess tool/config.sub gems/*.gem
 realclean-ext:: PHONY
 realclean-golf: distclean-golf
 	$(Q)$(RM) $(GOLFPRELUDES)

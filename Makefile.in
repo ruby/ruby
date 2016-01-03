@@ -22,6 +22,7 @@ LD = @LD@
 YACC = bison
 PURIFY =
 AUTOCONF = autoconf
+ACLOCAL = aclocal
 CONFIGURE = @CONFIGURE@
 @SET_MAKE@
 MKFILES = @MAKEFILES@
@@ -304,6 +305,9 @@ reconfig config.status:	$(srcdir)/$(CONFIGURE) $(srcdir)/enc/Makefile.in \
 
 $(srcdir)/$(CONFIGURE): $(srcdir)/configure.in $(srcdir)/aclocal.m4
 	$(CHDIR) $(srcdir) && exec $(AUTOCONF) -o $(@F)
+
+$(srcdir)/aclocal.m4: $(srcdir)/acinclude.m4
+	$(CHDIR) $(srcdir) && exec $(ACLOCAL)
 
 incs: id.h
 all-incs: probes.h
