@@ -168,7 +168,7 @@ class Shell
     end
 
     # os resource mutex
-    mutex_methods = ["unlock", "lock", "locked?", "synchronize", "try_lock", "exclusive_unlock"]
+    mutex_methods = ["unlock", "lock", "locked?", "synchronize", "try_lock"]
     for m in mutex_methods
       def_delegator("@debug_output_mutex", m, "debug_output_"+m.to_s)
     end
