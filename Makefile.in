@@ -306,7 +306,7 @@ reconfig config.status:	$(srcdir)/$(CONFIGURE) $(srcdir)/enc/Makefile.in \
 $(srcdir)/$(CONFIGURE): $(srcdir)/configure.in $(srcdir)/aclocal.m4
 	$(CHDIR) $(srcdir) && exec $(AUTOCONF) -o $(@F)
 
-$(srcdir)/aclocal.m4: $(srcdir)/configure.in
+$(srcdir)/aclocal.m4:
 	$(CHDIR) $(srcdir) && \
 	type $(ACLOCAL) >/dev/null 2>&1 && exec $(ACLOCAL); \
 	touch $(@F)
