@@ -1036,7 +1036,7 @@ rb_export_method(VALUE klass, ID name, rb_method_visibility_t visi)
 
     if (UNDEFINED_METHOD_ENTRY_P(me) ||
 	UNDEFINED_REFINED_METHOD_P(me->def)) {
-	rb_print_undef(klass, name, 0);
+	rb_print_undef(klass, name, METHOD_VISI_UNDEF);
     }
 
     if (METHOD_ENTRY_VISI(me) != visi) {
@@ -1538,7 +1538,7 @@ rb_alias(VALUE klass, ID alias_name, ID original_name)
 	if ((!RB_TYPE_P(klass, T_MODULE)) ||
 	    (orig_me = search_method(rb_cObject, original_name, &defined_class),
 	     UNDEFINED_METHOD_ENTRY_P(orig_me))) {
-	    rb_print_undef(klass, original_name, 0);
+	    rb_print_undef(klass, original_name, METHOD_VISI_UNDEF);
 	}
     }
 
@@ -1842,7 +1842,7 @@ rb_mod_modfunc(int argc, VALUE *argv, VALUE module)
 		me = search_method(rb_cObject, id, 0);
 	    }
 	    if (UNDEFINED_METHOD_ENTRY_P(me)) {
-		rb_print_undef(module, id, 0);
+		rb_print_undef(module, id, METHOD_VISI_UNDEF);
 	    }
 	    if (me->def->type != VM_METHOD_TYPE_ZSUPER) {
 		break; /* normal case: need not to follow 'super' link */

@@ -296,7 +296,7 @@ Now let's build CRuby:
     mkdir build && cd build # its good practice to build outside of source dir
     mkdir ~/.rubies # we will install to .rubies/ruby-trunk in our home dir
     ../configure --prefix="${HOME}/.rubies/ruby-trunk"
-    make && make install
+    make up && make install
 
 After adding Ruby to your PATH, you should be ready to run the test suite:
 
@@ -311,11 +311,23 @@ This is also how you can run a specific test from our build dir:
 
     make test-all TESTS=drb/test_drb.rb
 
+You can run +test+ and +test-all+ at once by +check+ .
+
+    make check
+
 For older versions of Ruby you will need to run the build setup again after
 checking out the associated branch in git, for example if you wanted to
 checkout 1.9.3:
 
     git clone git://github.com/ruby/ruby.git --branch ruby_1_9_3
+
+Once you checked out the source code, you can update the local copy by:
+
+    make up
+
+Or, update, build, install and check, by just:
+
+    make love
 
 == Contributing Documentation
 

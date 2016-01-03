@@ -264,7 +264,7 @@ NORETURN(void rb_method_name_error(VALUE, VALUE));
 
 NORETURN(void rb_fiber_start(void));
 
-NORETURN(void rb_print_undef(VALUE, ID, int));
+NORETURN(void rb_print_undef(VALUE, ID, rb_method_visibility_t));
 NORETURN(void rb_print_undef_str(VALUE, VALUE));
 NORETURN(void rb_print_inaccessible(VALUE, ID, rb_method_visibility_t));
 NORETURN(void rb_vm_localjump_error(const char *,VALUE, int));

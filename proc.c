@@ -1272,7 +1272,7 @@ mnew_internal(const rb_method_entry_t *me, VALUE klass,
 	    return mnew_missing(klass, obj, id, rid, mclass);
 	}
 	if (!error) return Qnil;
-	rb_print_undef(klass, id, 0);
+	rb_print_undef(klass, id, METHOD_VISI_UNDEF);
     }
     if (visi == METHOD_VISI_UNDEF) {
 	visi = METHOD_ENTRY_VISI(me);
