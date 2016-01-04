@@ -4042,7 +4042,7 @@ regexp		: tREGEXP_BEG regexp_contents tREGEXP_END
 			}
 			if (ripper_is_node_yylval(opt)) {
 			    $3 = RNODE(opt)->nd_rval;
-			    options = (int)RNODE(opt)->nd_tag;
+			    options = (int)RNODE(opt)->nd_state;
 			}
 			if (src && NIL_P(rb_parser_reg_compile(parser, src, options, &err))) {
 			    compile_error(PARSER_ARG "%"PRIsVALUE, err);
