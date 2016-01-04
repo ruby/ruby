@@ -1,3 +1,9 @@
+Tue Jan  5 05:06:51 2016  Eric Wong  <e@80x24.org>
+
+	* ext/stringio/stringio.c (strio_binmode): implement to set encoding
+	* test/stringio/test_stringio.rb (test_binmode): new test
+	  [ruby-core:72699] [Bug #11945]
+
 Mon Jan  4 15:44:37 2016  Sho Hashimoto  <sho-h@ruby-lang.org>
 
 	* variable.c (rb_mod_deprecate_constant): [DOC] added
