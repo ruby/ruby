@@ -1,3 +1,8 @@
+Mon Jan  4 10:14:24 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* test/coverage/test_coverage.rb: ignored test when enabled to coverage.
+	  It lead to crash with `make test-all`.
+
 Mon Jan  4 08:10:44 2016  Yuichiro Kaneko  <yui-knk@ruby-lang.org>
 
 	* insns.def (opt_case_dispatch): Move a comment to the
