@@ -894,7 +894,7 @@ $(srcdir)/ext/rbconfig/sizeof/sizes.c: $(srcdir)/ext/rbconfig/sizeof/depend \
 
 $(srcdir)/ext/socket/constdefs.c: $(srcdir)/ext/socket/depend
 	$(Q) $(CHDIR) $(@D) && \
-	sed -n '/^constdefs/,/^$$/p' depend | \
+	sed -n "/^constdefs/,/^$$/p" depend | \
 	$(exec) $(MAKE) -f - $(MFLAGS) constdefs.h constdefs.c \
 		Q=$(Q) ECHO=$(ECHO) top_srcdir=../../.. srcdir=. VPATH=../../.. RUBY="$(BASERUBY)"
 
