@@ -58,7 +58,7 @@ Sat Jan  2 02:27:22 2016  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 Fri Jan  1 22:01:52 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
-	* NEWS: mention about CSV's liberal_parsing option.
+	* NEWS: mention CSV's liberal_parsing option.
 
 Fri Jan  1 19:38:23 2016  okkez  <okkez000@gmail.com>
 
