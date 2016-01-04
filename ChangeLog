@@ -1,3 +1,8 @@
+Mon Jan  4 15:44:37 2016  Sho Hashimoto  <sho-h@ruby-lang.org>
+
+	* variable.c (rb_mod_deprecate_constant): [DOC] added
+	  documentation for Module#deprecate_constant. [ci skip]
+
 Mon Jan  4 15:36:38 2016  Sho Hashimoto  <sho-h@ruby-lang.org>
 
 	* thread_sync.c: [DOC] remove SizedQueue#close argument.

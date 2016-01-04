@@ -2719,6 +2719,13 @@ rb_mod_public_constant(int argc, const VALUE *argv, VALUE obj)
     return obj;
 }
 
+/*
+ *  call-seq:
+ *     mod.deprecate_constant(symbol, ...)    => mod
+ *
+ *  Makes a list of existing constants deprecated.
+ */
+
 VALUE
 rb_mod_deprecate_constant(int argc, const VALUE *argv, VALUE obj)
 {
