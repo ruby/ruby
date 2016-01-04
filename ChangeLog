@@ -1,3 +1,8 @@
+Mon Jan  4 15:36:38 2016  Sho Hashimoto  <sho-h@ruby-lang.org>
+
+	* thread_sync.c: [DOC] remove SizedQueue#close argument.
+	  [ci skip]
+
 Mon Jan  4 12:07:00 2016  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* version.h (RUBY_BUILD_VERSION_STR_3): Workaround for old version of
