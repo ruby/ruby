@@ -1,3 +1,8 @@
+Mon Jan  4 12:07:00 2016  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* version.h (RUBY_BUILD_VERSION_STR_3): Workaround for old version of
+	  Fujitsu C Compiler (fcc) on Solaris. [Bug #11944] [ruby-dev:49468]
+
 Mon Jan  4 10:14:24 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* test/coverage/test_coverage.rb: ignored test when enabled to coverage.
