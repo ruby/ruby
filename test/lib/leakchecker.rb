@@ -139,7 +139,7 @@ class LeakChecker
 
   def find_threads
     Thread.list.find_all {|t|
-      t != Thread.current && /\AWEBrick::/ !~ t.class.name && t.alive?
+      t != Thread.current && t.alive?
     }
   end
 

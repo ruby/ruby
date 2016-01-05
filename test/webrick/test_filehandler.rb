@@ -5,6 +5,11 @@ require "webrick"
 require "stringio"
 
 class WEBrick::TestFileHandler < Test::Unit::TestCase
+  def teardown
+    WEBrick::Utils::TimeoutHandler.terminate
+    super
+  end
+
   def default_file_handler(filename)
     klass = WEBrick::HTTPServlet::DefaultFileHandler
     klass.new(WEBrick::Config::HTTP, filename)
