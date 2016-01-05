@@ -1,3 +1,8 @@
+Tue Jan  5 21:32:26 2016  Kuniaki IGARASHI  <igaiga@gmail.com>
+
+	* test/ruby/test_numeric.rb (test_nonzero_p): added test for String#nonzero?
+	  [fix GH-1187]
+
 Tue Jan  5 11:47:23 2016  Damir Gaynetdinov  <damir.gaynetdinov@gmail.com>
 
 	* doc/marshal.rdoc: Clarify object references example, that the
