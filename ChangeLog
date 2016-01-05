@@ -1,3 +1,8 @@
+Tue Jan  5 11:47:23 2016  Damir Gaynetdinov  <damir.gaynetdinov@gmail.com>
+
+	* doc/marshal.rdoc: Clarify object references example, that the
+	  reference is same object.  [Fix GH-1156]
+
 Tue Jan  5 05:06:51 2016  Eric Wong  <e@80x24.org>
 
 	* ext/stringio/stringio.c (strio_binmode): implement to set encoding
