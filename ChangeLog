@@ -1,3 +1,8 @@
+Tue Jan  5 21:43:50 2016  Kuniaki IGARASHI  <igaiga@gmail.com>
+
+	* test/ruby/test_string.rb(test_chr): added test for String#chr
+	  [fix GH-1179]
+
 Tue Jan  5 21:32:26 2016  Kuniaki IGARASHI  <igaiga@gmail.com>
 
 	* test/ruby/test_numeric.rb (test_nonzero_p): added test for String#nonzero?
