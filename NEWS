@@ -21,6 +21,9 @@ with all sufficient information, see the ChangeLog file or Redmine
 * CSV
   * Add a liberal_parsing option. [Feature #11839]
 
+* optparse
+  * Add an into option. [Feature #11191]
+
 === Stdlib compatibility issues (excluding feature bug fixes)
 
 === Built-in global variables compatibility issues
