@@ -1559,6 +1559,14 @@ rb_threadptr_pending_interrupt_enque(rb_thread_t *th, VALUE v)
     th->pending_interrupt_queue_checked = 0;
 }
 
+static void
+threadptr_check_pending_interrupt_queue(rb_thread_t *th)
+{
+    if (!th->pending_interrupt_queue) {
+	rb_raise(rb_eThreadError, "uninitialized thread");
+    }
+}
+
 enum handle_interrupt_timing {
     INTERRUPT_NONE,
     INTERRUPT_IMMEDIATE,
@@ -1866,6 +1874,9 @@ rb_thread_pending_interrupt_p(int argc, VALUE *argv, VALUE target_thread)
 
     GetThreadPtr(target_thread, target_th);
 
+    if (!target_th->pending_interrupt_queue) {
+	return Qfalse;
+    }
     if (rb_threadptr_pending_interrupt_empty_p(target_th)) {
 	return Qfalse;
     }
@@ -2179,6 +2190,7 @@ thread_raise_m(int argc, VALUE *argv, VALUE self)
     rb_thread_t *target_th;
     rb_thread_t *th = GET_THREAD();
     GetThreadPtr(self, target_th);
+    threadptr_check_pending_interrupt_queue(target_th);
     rb_threadptr_raise(target_th, argc, argv);
 
     /* To perform Thread.current.raise as Kernel.raise */
@@ -2223,6 +2235,7 @@ rb_thread_kill(VALUE thread)
 	rb_threadptr_to_kill(th);
     }
     else {
+	threadptr_check_pending_interrupt_queue(th);
 	rb_threadptr_pending_interrupt_enque(th, eKillSignal);
 	rb_threadptr_interrupt(th);
     }

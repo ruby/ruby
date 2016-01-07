@@ -1,3 +1,11 @@
+Thu Jan  7 14:49:12 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (rb_thread_pending_interrupt_p): no pending interrupt
+	  before initialization.
+
+	* thread.c (thread_raise_m, rb_thread_kill): uninitialized thread
+	  cannot interrupt.  [ruby-core:72732] [Bug #11959]
+
 Thu Jan  7 11:34:14 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/backward.h (ruby_show_copyright_to_die): for source
