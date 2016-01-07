@@ -2,6 +2,7 @@ GEN  = $(srcdir)/tools/generate.rb
 SRC1 = $(top_srcdir)/parse.y
 SRC2 = $(srcdir)/eventids2.c
 BISON = bison
+EVENTIDS2_CHECK = .eventids2.check
 
 .SUFFIXES: .y
 
@@ -24,9 +25,9 @@ ripper.y: $(srcdir)/tools/preproc.rb $(top_srcdir)/parse.y
 	$(Q) $(RUBY) $(srcdir)/tools/preproc.rb ripper.tmp.y --output=$@
 	$(Q) $(RM) ripper.tmp.y
 
-check: .eventids2.check
+check: $(EVENTIDS2_CHECK)
 
-.eventids2.check: $(GEN) $(SRC1) $(SRC2)
+$(EVENTIDS2_CHECK): $(GEN) $(SRC1) $(SRC2)
 	$(ECHO) checking $(SRC1) and $(SRC2)
 	$(Q) $(RUBY) $(GEN) --mode=check --ids1src=$(SRC1) --ids2src=$(SRC2)
 	@exit > $@
