@@ -1,3 +1,7 @@
+Fri Jan  8 00:03:22 2016  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* enum.c (enum_min, enum_max): do the same optimization as r53454.
+
 Thu Jan  7 22:32:21 2016  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ruby.h: undef HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P
