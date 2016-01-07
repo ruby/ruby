@@ -30,6 +30,10 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 === C API updates
 
+* ruby_show_version() will no longer exits the process, if
+  RUBY_SHOW_COPYRIGHT_TO_DIE is set to 0.  This will be the default in
+  the future.
+
 === Supported platform changes
 
 === Implementation improvements

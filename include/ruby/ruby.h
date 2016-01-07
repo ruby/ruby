@@ -2206,6 +2206,10 @@ void ruby_sig_finalize(void);
 
 /*! @} */
 
+#if !defined RUBY_EXPORT && !defined RUBY_NO_OLD_COMPATIBILITY
+# include "ruby/backward.h"
+#endif
+
 RUBY_SYMBOL_EXPORT_END
 
 #if defined(__cplusplus)

@@ -1414,6 +1414,7 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
     }
     if (opt->dump & DUMP_BIT(copyright)) {
 	ruby_show_copyright();
+	return Qtrue;
     }
 
     if (!opt->e_script) {
