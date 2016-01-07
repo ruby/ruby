@@ -2375,7 +2375,7 @@ static: #{$extmk && !$static ? "all" : "$(STATIC_LIB)#{!$extmk ? " install-rb" :
         if $nmake
           mfile.print "!if \"$(Q)\" == \"@\"\n\t@#{q} || \\\n!endif\n\t"
         else
-          mfile.print "\t$(Q:@=@#{q} || )"
+          mfile.print "\t$(Q1:0=@#{q} || )"
         end
         mfile.print "$(ECHO:@=) installing#{sfx.sub(/^-/, " ")} #{target} libraries\n"
       end
