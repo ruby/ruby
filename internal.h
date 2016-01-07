@@ -633,6 +633,22 @@ struct MEMO {
 #define NEW_MEMO_FOR(type, value) \
   ((value) = rb_ary_tmp_new_fill(type_roomof(type, VALUE)), MEMO_FOR(type, value))
 
+#define STRING_P(s) (RB_TYPE_P((s), T_STRING) && CLASS_OF(s) == rb_cString)
+
+enum {
+    cmp_opt_Fixnum,
+    cmp_opt_String,
+    cmp_optimizable_count
+};
+
+#define CMP_OPTIMIZABLE_BIT(type) (1U << TOKEN_PASTE(cmp_opt_,type))
+#define CMP_OPTIMIZABLE(data, type) \
+    (((data)->opt_inited & CMP_OPTIMIZABLE_BIT(type)) ? \
+     ((data)->opt_methods & CMP_OPTIMIZABLE_BIT(type)) : \
+     (((data)->opt_inited |= CMP_OPTIMIZABLE_BIT(type)), \
+      rb_method_basic_definition_p(TOKEN_PASTE(rb_c,type), id_cmp) && \
+      ((data)->opt_methods |= CMP_OPTIMIZABLE_BIT(type))))
+
 /* ment is in method.h */
 
 /* global variable */

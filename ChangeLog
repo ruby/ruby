@@ -1,3 +1,8 @@
+Thu Jan  7 22:02:21 2016  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* enum.c (enum_minmax): optimize object comparison in
+	  Enumerable#minmax.
+
 Thu Jan  7 14:49:12 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (rb_thread_pending_interrupt_p): no pending interrupt
