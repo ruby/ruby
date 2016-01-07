@@ -2377,7 +2377,7 @@ static: #{$extmk && !$static ? "all" : "$(STATIC_LIB)#{!$extmk ? " install-rb" :
         else
           mfile.print "\t$(Q1:0=@#{q} || )"
         end
-        mfile.print "$(ECHO:@=) installing#{sfx.sub(/^-/, " ")} #{target} libraries\n"
+        mfile.print "$(ECHO1:0=echo) installing#{sfx.sub(/^-/, " ")} #{target} libraries\n"
       end
       if $extout
         dirs.uniq!
