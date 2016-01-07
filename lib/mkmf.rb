@@ -1895,8 +1895,8 @@ SHELL = /bin/sh
 V = 0
 Q1 = $(V:1=)
 Q = $(Q1:0=@)
-ECHO1 = $(V:1=@#{CONFIG['NULLCMD']})
-ECHO = $(ECHO1:0=@echo)
+ECHO1 = $(V:1=@ #{CONFIG['NULLCMD']})
+ECHO = $(ECHO1:0=@ echo)
 NULLCMD = #{CONFIG['NULLCMD']}
 
 #### Start of system configuration section. ####
@@ -2040,6 +2040,7 @@ CLEANFILES = #{$cleanfiles.join(' ')}
 DISTCLEANFILES = #{$distcleanfiles.join(' ')}
 
 all install static install-so install-rb: Makefile
+	@$(NULLCMD)
 .PHONY: all install static install-so install-rb
 .PHONY: clean clean-so clean-static clean-rb
 
@@ -2339,10 +2340,12 @@ static: #{$extmk && !$static ? "all" : "$(STATIC_LIB)#{!$extmk ? " install-rb" :
     else
       mfile.puts "Makefile"
     end
-    mfile.print("install-rb: pre-install-rb install-rb-default\n")
-    mfile.print("install-rb-default: pre-install-rb-default\n")
+    mfile.print("install-rb: pre-install-rb do-install-rb install-rb-default\n")
+    mfile.print("install-rb-default: pre-install-rb-default do-install-rb-default\n")
     mfile.print("pre-install-rb: Makefile\n")
     mfile.print("pre-install-rb-default: Makefile\n")
+    mfile.print("do-install-rb:\n")
+    mfile.print("do-install-rb-default:\n")
     for sfx, i in [["-default", [["lib/**/*.rb", "$(RUBYLIBDIR)", "lib"]]], ["", $INSTALLFILES]]
       files = install_files(mfile, i, nil, srcprefix) or next
       for dir, *files in files
@@ -2352,7 +2355,7 @@ static: #{$extmk && !$static ? "all" : "$(STATIC_LIB)#{!$extmk ? " install-rb" :
         end
         for f in files
           dest = "#{dir}/#{File.basename(f)}"
-          mfile.print("install-rb#{sfx}: #{dest}\n")
+          mfile.print("do-install-rb#{sfx}: #{dest}\n")
           mfile.print("#{dest}: #{f} #{timestamp_file(dir, target_prefix)}\n")
           mfile.print("\t$(Q) $(#{$extout ? 'COPY' : 'INSTALL_DATA'}) #{f} $(@D)\n")
           if defined?($installed_list) and !$extout
@@ -2368,7 +2371,13 @@ static: #{$extmk && !$static ? "all" : "$(STATIC_LIB)#{!$extmk ? " install-rb" :
       if files.empty?
         mfile.print("\t@$(NULLCMD)\n")
       else
-        mfile.print("\t$(ECHO) installing#{sfx.sub(/^-/, " ")} #{target} libraries\n")
+        q = "$(MAKE) -q do-install-rb#{sfx}"
+        if $nmake
+          mfile.print "!if \"$(Q)\" == \"@\"\n\t@#{q} || \\\n!endif\n\t"
+        else
+          mfile.print "\t$(Q:@=@#{q} || )"
+        end
+        mfile.print "$(ECHO:@=) installing#{sfx.sub(/^-/, " ")} #{target} libraries\n"
       end
       if $extout
         dirs.uniq!
