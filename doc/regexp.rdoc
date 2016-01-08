@@ -470,7 +470,19 @@ characters, <i>anchoring</i> the match to a specific position.
 * <tt>\Z</tt> - Matches end of string. If string ends with a newline,
   it matches just before newline
 * <tt>\z</tt> - Matches end of string
-* <tt>\G</tt> - Matches point where last match finished
+* <tt>\G</tt> - Matches first matching position:
+
+  In methods like <tt>String#gsub</tt> and <tt>String#scan</tt>, it changes on each iteration.
+  It initially matches the beginning of subject, and in each following iteration it matches where the last match finished.
+
+      "    a b c".gsub(/ /, '_')    #=> "____a_b_c"
+      "    a b c".gsub(/\G /, '_')  #=> "____a b c"
+
+  In methods like <tt>Regexp#match</tt> and <tt>String#match</tt> that take an (optional) offset, it matches where the search begins.
+
+      "hello, world".match(/,/, 3)    #=> #<MatchData ",">
+      "hello, world".match(/\G,/, 3)  #=> nil
+
 * <tt>\b</tt> - Matches word boundaries when outside brackets;
   backspace (0x08) when inside brackets
 * <tt>\B</tt> - Matches non-word boundaries

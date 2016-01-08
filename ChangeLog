@@ -1,3 +1,7 @@
+Fri Jan  8 22:30:06 2016  Akinori MUSHA  <knu@iDaemons.org>
+
+	* doc/regexp.rdoc: [DOC] Elaborate on the \G anchor. [ci skip]
+
 Fri Jan  8 19:49:27 2016  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: remove heap_page::body. Instead of this field,
