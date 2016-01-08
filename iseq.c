@@ -606,10 +606,10 @@ rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE absolute_path, VALUE li
     const rb_iseq_t *const parent = base_block ? base_block->iseq : NULL;
     rb_compile_option_t option;
     const enum iseq_type type = parent ? ISEQ_TYPE_EVAL : ISEQ_TYPE_TOP;
-#if defined(__GNUC__) && __GNUC__ == 4 && __GNUC_MINOR__ == 8
+#if !defined(__GNUC__) || (__GNUC__ == 4 && __GNUC_MINOR__ == 8)
 # define INITIALIZED volatile /* suppress warnings by gcc 4.8 */
 #else
-# define INITIALIZED volatile
+# define INITIALIZED /* volatile */
 #endif
     /* safe results first */
     const INITIALIZED int ln = (make_compile_option(&option, opt), NUM2INT(line));
