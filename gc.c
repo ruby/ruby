@@ -2032,210 +2032,223 @@ make_io_zombie(rb_objspace_t *objspace, VALUE obj)
     make_zombie(objspace, obj, (void (*)(void*))rb_io_fptr_finalize, fptr);
 }
 
-static int
-obj_free(rb_objspace_t *objspace, VALUE obj)
+struct obj_free_info_t {
+    int empty_slots;
+    int final_slots;
+    int freed_slots;
+    int obj_freed;
+};
+
+static void obj_free_fatal(VALUE obj, rb_objspace_t *objspace, struct obj_free_info_t *info)
 {
-    gc_event_hook(objspace, RUBY_INTERNAL_EVENT_FREEOBJ, obj);
+    rb_bug("gc_sweep(): unknown data type 0x%x(%p) 0x%"PRIxVALUE,
+	   BUILTIN_TYPE(obj), (void*)obj, RBASIC(obj)->flags);
+    info->obj_freed = 0;
+}
 
-    switch (BUILTIN_TYPE(obj)) {
-      case T_NIL:
-      case T_FIXNUM:
-      case T_TRUE:
-      case T_FALSE:
-	rb_bug("obj_free() called for broken object");
-	break;
-    }
+static void obj_free_simple(VALUE obj, rb_objspace_t *objspace, struct obj_free_info_t *info)
+{
+}
 
-    if (FL_TEST(obj, FL_EXIVAR)) {
-	rb_free_generic_ivar((VALUE)obj);
-	FL_UNSET(obj, FL_EXIVAR);
-    }
-
-#if USE_RGENGC
-    if (RVALUE_WB_UNPROTECTED(obj)) CLEAR_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(obj), obj);
-
-#if RGENGC_CHECK_MODE
-#define CHECK(x) if (x(obj) != FALSE) rb_bug("obj_free: " #x "(%s) != FALSE", obj_info(obj))
-	CHECK(RVALUE_WB_UNPROTECTED);
-	CHECK(RVALUE_MARKED);
-	CHECK(RVALUE_MARKING);
-	CHECK(RVALUE_UNCOLLECTIBLE);
-#undef CHECK
-#endif
-#endif
-
-    switch (BUILTIN_TYPE(obj)) {
-      case T_OBJECT:
-	if (!(RANY(obj)->as.basic.flags & ROBJECT_EMBED) &&
-            RANY(obj)->as.object.as.heap.ivptr) {
-	    xfree(RANY(obj)->as.object.as.heap.ivptr);
-	}
-	break;
-      case T_MODULE:
-      case T_CLASS:
-	rb_id_table_free(RCLASS_M_TBL(obj));
-	if (RCLASS_IV_TBL(obj)) {
-	    st_free_table(RCLASS_IV_TBL(obj));
-	}
-	if (RCLASS_CONST_TBL(obj)) {
-	    rb_free_const_table(RCLASS_CONST_TBL(obj));
-	}
-	if (RCLASS_IV_INDEX_TBL(obj)) {
-	    st_free_table(RCLASS_IV_INDEX_TBL(obj));
-	}
-	if (RCLASS_EXT(obj)->subclasses) {
-	    if (BUILTIN_TYPE(obj) == T_MODULE) {
-		rb_class_detach_module_subclasses(obj);
-	    }
-	    else {
-		rb_class_detach_subclasses(obj);
-	    }
-	    RCLASS_EXT(obj)->subclasses = NULL;
-	}
-	rb_class_remove_from_module_subclasses(obj);
-	rb_class_remove_from_super_subclasses(obj);
-	if (RANY(obj)->as.klass.ptr)
-	    xfree(RANY(obj)->as.klass.ptr);
-	RANY(obj)->as.klass.ptr = NULL;
-	break;
-      case T_STRING:
-	rb_str_free(obj);
-	break;
-      case T_ARRAY:
-	rb_ary_free(obj);
-	break;
-      case T_HASH:
-	if (RANY(obj)->as.hash.ntbl) {
-	    st_free_table(RANY(obj)->as.hash.ntbl);
-	}
-	break;
-      case T_REGEXP:
-	if (RANY(obj)->as.regexp.ptr) {
-	    onig_free(RANY(obj)->as.regexp.ptr);
-	}
-	break;
-      case T_DATA:
-	if (DATA_PTR(obj)) {
-	    int free_immediately = FALSE;
-	    void (*dfree)(void *);
-	    void *data = DATA_PTR(obj);
-
-	    if (RTYPEDDATA_P(obj)) {
-		free_immediately = (RANY(obj)->as.typeddata.type->flags & RUBY_TYPED_FREE_IMMEDIATELY) != 0;
-		dfree = RANY(obj)->as.typeddata.type->function.dfree;
-		if (0 && free_immediately == 0) {
-		    /* to expose non-free-immediate T_DATA */
-		    fprintf(stderr, "not immediate -> %s\n", RANY(obj)->as.typeddata.type->wrap_struct_name);
-		}
-	    }
-	    else {
-		dfree = RANY(obj)->as.data.dfree;
-	    }
-
-	    if (dfree) {
-		if (dfree == RUBY_DEFAULT_FREE) {
-		    xfree(data);
-		}
-		else if (free_immediately) {
-		    (*dfree)(data);
-		}
-		else {
-		    make_zombie(objspace, obj, dfree, data);
-		    return 1;
-		}
-	    }
-	}
-	break;
-      case T_MATCH:
-	if (RANY(obj)->as.match.rmatch) {
-            struct rmatch *rm = RANY(obj)->as.match.rmatch;
-	    onig_region_free(&rm->regs, 0);
-            if (rm->char_offset)
-		xfree(rm->char_offset);
-	    xfree(rm);
-	}
-	break;
-      case T_FILE:
-	if (RANY(obj)->as.file.fptr) {
-	    make_io_zombie(objspace, obj);
-	    return 1;
-	}
-	break;
-      case T_RATIONAL:
-      case T_COMPLEX:
-	break;
-      case T_ICLASS:
-	/* Basically , T_ICLASS shares table with the module */
-	if (FL_TEST(obj, RICLASS_IS_ORIGIN)) {
-	    rb_id_table_free(RCLASS_M_TBL(obj));
-	}
-	if (RCLASS_CALLABLE_M_TBL(obj) != NULL) {
-	    rb_id_table_free(RCLASS_CALLABLE_M_TBL(obj));
-	}
-	if (RCLASS_EXT(obj)->subclasses) {
-	    rb_class_detach_subclasses(obj);
-	    RCLASS_EXT(obj)->subclasses = NULL;
-	}
-	rb_class_remove_from_module_subclasses(obj);
-	rb_class_remove_from_super_subclasses(obj);
-	xfree(RANY(obj)->as.klass.ptr);
-	RANY(obj)->as.klass.ptr = NULL;
-	break;
-
-      case T_FLOAT:
-	break;
-
-      case T_BIGNUM:
-	if (!(RBASIC(obj)->flags & BIGNUM_EMBED_FLAG) && BIGNUM_DIGITS(obj)) {
-	    xfree(BIGNUM_DIGITS(obj));
-	}
-	break;
-
-      case T_NODE:
-	rb_gc_free_node(obj);
-	break;			/* no need to free iv_tbl */
-
-      case T_STRUCT:
-	if ((RBASIC(obj)->flags & RSTRUCT_EMBED_LEN_MASK) == 0 &&
-	    RANY(obj)->as.rstruct.as.heap.ptr) {
-	    xfree((void *)RANY(obj)->as.rstruct.as.heap.ptr);
-	}
-	break;
-
-      case T_SYMBOL:
-	{
-            rb_gc_free_dsymbol(obj);
-	}
-	break;
-
-      case T_IMEMO:
-	{
-	    switch (imemo_type(obj)) {
-	      case imemo_ment:
-		rb_free_method_entry(&RANY(obj)->as.imemo.ment);
-		break;
-	      case imemo_iseq:
-		rb_iseq_free(&RANY(obj)->as.imemo.iseq);
-		break;
-	      default:
-		break;
-	    }
-	}
-	return 0;
-
-      default:
-	rb_bug("gc_sweep(): unknown data type 0x%x(%p) 0x%"PRIxVALUE,
-	       BUILTIN_TYPE(obj), (void*)obj, RBASIC(obj)->flags);
-    }
-
-    if (FL_TEST(obj, FL_FINALIZE)) {
-	make_zombie(objspace, obj, 0, 0);
-	return 1;
-    }
-    else {
-	return 0;
+static void obj_free_object(VALUE obj, rb_objspace_t *objspace, struct obj_free_info_t *info)
+{
+    if (!(RANY(obj)->as.basic.flags & ROBJECT_EMBED) &&
+	RANY(obj)->as.object.as.heap.ivptr) {
+	xfree(RANY(obj)->as.object.as.heap.ivptr);
     }
 }
+
+static void obj_free_class_or_module(VALUE obj, rb_objspace_t *objspace, struct obj_free_info_t *info)
+{
+    rb_id_table_free(RCLASS_M_TBL(obj));
+    if (RCLASS_IV_TBL(obj)) {
+	st_free_table(RCLASS_IV_TBL(obj));
+    }
+    if (RCLASS_CONST_TBL(obj)) {
+	rb_free_const_table(RCLASS_CONST_TBL(obj));
+    }
+    if (RCLASS_IV_INDEX_TBL(obj)) {
+	st_free_table(RCLASS_IV_INDEX_TBL(obj));
+    }
+    if (RCLASS_EXT(obj)->subclasses) {
+	if (BUILTIN_TYPE(obj) == T_MODULE) {
+	    rb_class_detach_module_subclasses(obj);
+	}
+	else {
+	    rb_class_detach_subclasses(obj);
+	}
+	RCLASS_EXT(obj)->subclasses = NULL;
+    }
+    rb_class_remove_from_module_subclasses(obj);
+    rb_class_remove_from_super_subclasses(obj);
+    if (RANY(obj)->as.klass.ptr)
+	xfree(RANY(obj)->as.klass.ptr);
+    RANY(obj)->as.klass.ptr = NULL;
+}
+
+static void obj_free_hash(VALUE obj, rb_objspace_t *objspace, struct obj_free_info_t *info)
+{
+    if (RANY(obj)->as.hash.ntbl) {
+	st_free_table(RANY(obj)->as.hash.ntbl);
+    }
+}
+
+static void obj_free_regexp(VALUE obj, rb_objspace_t *objspace, struct obj_free_info_t *info)
+{
+    if (RANY(obj)->as.regexp.ptr) {
+	onig_free(RANY(obj)->as.regexp.ptr);
+    }
+}
+
+static void obj_free_data(VALUE obj, rb_objspace_t *objspace, struct obj_free_info_t *info)
+{
+    if (DATA_PTR(obj)) {
+	int free_immediately = FALSE;
+	void (*dfree)(void *);
+	void *data = DATA_PTR(obj);
+
+	if (RTYPEDDATA_P(obj)) {
+	    free_immediately = (RANY(obj)->as.typeddata.type->flags & RUBY_TYPED_FREE_IMMEDIATELY) != 0;
+	    dfree = RANY(obj)->as.typeddata.type->function.dfree;
+	    if (0 && free_immediately == 0) {
+		/* to expose non-free-immediate T_DATA */
+		fprintf(stderr, "not immediate -> %s\n", RANY(obj)->as.typeddata.type->wrap_struct_name);
+	    }
+	}
+	else {
+	    dfree = RANY(obj)->as.data.dfree;
+	}
+
+	if (dfree) {
+	    if (dfree == RUBY_DEFAULT_FREE) {
+		xfree(data);
+	    }
+	    else if (free_immediately) {
+		(*dfree)(data);
+	    }
+	    else {
+		make_zombie(objspace, obj, dfree, data);
+		++info->final_slots;
+		info->obj_freed = 0;
+	    }
+	}
+    }
+}
+
+static void obj_free_match(VALUE obj, rb_objspace_t *objspace, struct obj_free_info_t *info)
+{
+    if (RANY(obj)->as.match.rmatch) {
+	struct rmatch *rm = RANY(obj)->as.match.rmatch;
+	onig_region_free(&rm->regs, 0);
+	if (rm->char_offset)
+	    xfree(rm->char_offset);
+	xfree(rm);
+    }
+}
+
+static void obj_free_file(VALUE obj, rb_objspace_t *objspace, struct obj_free_info_t *info)
+{
+    if (RANY(obj)->as.file.fptr) {
+	++info->final_slots;
+	make_io_zombie(objspace, obj);
+	info->obj_freed = 0;
+    }
+}
+
+static void obj_free_iclass(VALUE obj, rb_objspace_t *objspace, struct obj_free_info_t *info)
+{
+    /* Basically , T_ICLASS shares table with the module */
+    if (FL_TEST(obj, RICLASS_IS_ORIGIN)) {
+	rb_id_table_free(RCLASS_M_TBL(obj));
+    }
+    if (RCLASS_CALLABLE_M_TBL(obj) != NULL) {
+	rb_id_table_free(RCLASS_CALLABLE_M_TBL(obj));
+    }
+    if (RCLASS_EXT(obj)->subclasses) {
+	rb_class_detach_subclasses(obj);
+	RCLASS_EXT(obj)->subclasses = NULL;
+    }
+    rb_class_remove_from_module_subclasses(obj);
+    rb_class_remove_from_super_subclasses(obj);
+    xfree(RANY(obj)->as.klass.ptr);
+    RANY(obj)->as.klass.ptr = NULL;
+}
+
+static void obj_free_bignum(VALUE obj, rb_objspace_t *objspace, struct obj_free_info_t *info)
+{
+    if (!(RBASIC(obj)->flags & BIGNUM_EMBED_FLAG) && BIGNUM_DIGITS(obj)) {
+	xfree(BIGNUM_DIGITS(obj));
+    }
+}
+
+static void obj_free_struct(VALUE obj, rb_objspace_t *objspace, struct obj_free_info_t *info)
+{
+    if ((RBASIC(obj)->flags & RSTRUCT_EMBED_LEN_MASK) == 0 &&
+	RANY(obj)->as.rstruct.as.heap.ptr) {
+	xfree((void *)RANY(obj)->as.rstruct.as.heap.ptr);
+    }
+}
+
+static void obj_free_imemo(VALUE obj, rb_objspace_t *objspace, struct obj_free_info_t *info)
+{
+    switch (imemo_type(obj)) {
+      case imemo_ment:
+	rb_free_method_entry(&RANY(obj)->as.imemo.ment);
+	break;
+      case imemo_iseq:
+	rb_iseq_free(&RANY(obj)->as.imemo.iseq);
+	break;
+      default:
+	break;
+    }
+}
+
+static void obj_free_zombie(VALUE obj, rb_objspace_t *objspace, struct obj_free_info_t *info)
+{
+    /* already counted */
+    info->obj_freed = 0;
+}
+
+static void obj_free_none(VALUE obj, rb_objspace_t *objspace, struct obj_free_info_t *info)
+{
+    ++info->empty_slots; /* already freed */
+    info->obj_freed = 0;
+}
+
+static void (* const obj_free_handlers[])(VALUE, rb_objspace_t *, struct obj_free_info_t *) = {
+    obj_free_none, //    RUBY_T_NONE   = 0x00,
+    obj_free_object, //    RUBY_T_OBJECT = 0x01,
+    obj_free_class_or_module, //    RUBY_T_CLASS  = 0x02,
+    obj_free_class_or_module, //    RUBY_T_MODULE = 0x03,
+    obj_free_simple, //    RUBY_T_FLOAT  = 0x04,
+    (void *)rb_str_free, //    RUBY_T_STRING = 0x05,
+    obj_free_regexp, //    RUBY_T_REGEXP = 0x06,
+    (void *)rb_ary_free, //    RUBY_T_ARRAY  = 0x07,
+    obj_free_hash, //    RUBY_T_HASH   = 0x08,
+    obj_free_struct, //    RUBY_T_STRUCT = 0x09,
+    obj_free_bignum, //    RUBY_T_BIGNUM = 0x0a,
+    obj_free_file, //    RUBY_T_FILE   = 0x0b,
+    obj_free_data, //    RUBY_T_DATA   = 0x0c,
+    obj_free_match, //    RUBY_T_MATCH  = 0x0d,
+    obj_free_simple, //    RUBY_T_COMPLEX  = 0x0e,
+    obj_free_simple, //    RUBY_T_RATIONAL = 0x0f,
+    obj_free_fatal, //
+    obj_free_fatal, //    RUBY_T_NIL    = 0x11,
+    obj_free_fatal, //    RUBY_T_TRUE   = 0x12,
+    obj_free_fatal, //    RUBY_T_FALSE  = 0x13,
+    (void *)rb_gc_free_dsymbol, //    RUBY_T_SYMBOL = 0x14,
+    obj_free_fatal, //    RUBY_T_FIXNUM = 0x15,
+    obj_free_fatal, //    RUBY_T_UNDEF  = 0x16,
+    obj_free_fatal, // 0x17
+    obj_free_fatal, // 0x18
+    obj_free_fatal, // 0x19
+    obj_free_imemo, //    RUBY_T_IMEMO  = 0x1a,
+    (void *)rb_gc_free_node, //    RUBY_T_NODE   = 0x1b,
+    obj_free_iclass, //    RUBY_T_ICLASS = 0x1c,
+    obj_free_zombie, //    RUBY_T_ZOMBIE = 0x1d,
+    obj_free_fatal, // 0x1e
+    obj_free_fatal //0x1f
+};
 
 void
 Init_heap(void)
@@ -3340,9 +3353,14 @@ static inline void
 gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page)
 {
     int i;
-    int empty_slots = 0, freed_slots = 0, final_slots = 0;
+    int call_freeobj_event = 0;
+    struct obj_free_info_t free_info;
     RVALUE *p, *pend,*offset;
-    bits_t *bits, bitset;
+    bits_t *bits, bitset, bitmask;
+
+    free_info.empty_slots = 0;
+    free_info.final_slots = 0;
+    free_info.freed_slots = 0;
 
     gc_report(2, objspace, "page_sweep: start.\n");
 
@@ -3356,45 +3374,68 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
     bits[BITMAP_INDEX(p)] |= BITMAP_BIT(p)-1;
     bits[BITMAP_INDEX(pend)] |= ~(BITMAP_BIT(pend) - 1);
 
+    if (UNLIKELY(objspace->hook_events & RUBY_INTERNAL_EVENT_FREEOBJ))
+	call_freeobj_event = 1;
+
     for (i=0; i < HEAP_BITMAP_LIMIT; i++) {
 	bitset = ~bits[i];
 	if (bitset) {
+	    bitmask = 1;
 	    p = offset  + i * BITS_BITLENGTH;
-	    do {
-		if (bitset & 1) {
-		    switch (BUILTIN_TYPE(p)) {
-		      default: { /* majority case */
-			  gc_report(2, objspace, "page_sweep: free %s\n", obj_info((VALUE)p));
-#if USE_RGENGC && RGENGC_CHECK_MODE
-			  if (!is_full_marking(objspace)) {
-			      if (RVALUE_OLD_P((VALUE)p)) rb_bug("page_sweep: %s - old while minor GC.", obj_info((VALUE)p));
-			      if (rgengc_remembered(objspace, (VALUE)p)) rb_bug("page_sweep: %s - remembered.", obj_info((VALUE)p));
-			  }
-#endif
-			  if (obj_free(objspace, (VALUE)p)) {
-			      final_slots++;
-			  }
-			  else {
-			      (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, sizeof(RVALUE));
-			      heap_page_add_freeobj(objspace, sweep_page, (VALUE)p);
-			      gc_report(3, objspace, "page_sweep: %s is added to freelist\n", obj_info((VALUE)p));
-			      freed_slots++;
-			  }
-			  break;
-		      }
-
-			/* minor cases */
-		      case T_ZOMBIE:
-			/* already counted */
-			break;
-		      case T_NONE:
-			empty_slots++; /* already freed */
-			break;
+	    while (1) {
+		if (bitset & bitmask) {
+		    if (UNLIKELY(call_freeobj_event)) {
+			switch (BUILTIN_TYPE(p)) {
+			case T_ZOMBIE:
+			case T_NONE:
+			    break;
+			default:
+			    gc_event_hook_body(GET_THREAD(), objspace, RUBY_INTERNAL_EVENT_FREEOBJ, (VALUE)p);
+			    break;
+			}
 		    }
+		    if (UNLIKELY(FL_TEST_RAW((VALUE)p, FL_EXIVAR)) && LIKELY(FL_TEST((VALUE)p, FL_EXIVAR))) {
+			rb_free_generic_ivar((VALUE)p);
+			FL_UNSET_RAW((VALUE)p, FL_EXIVAR);
+		    }
+		    sweep_page->wb_unprotected_bits[i] &= ~bitmask;
+#if RGENGC_CHECK_MODE
+		    switch (BUILTIN_TYPE(p)) {
+		    case RUBY_T_OBJECT: case RUBY_T_CLASS: case RUBY_T_MODULE: case RUBY_T_FLOAT: case RUBY_T_STRING:
+		    case RUBY_T_REGEXP: case RUBY_T_ARRAY: case RUBY_T_HASH: case RUBY_T_STRUCT: case RUBY_T_BIGNUM:
+		    case RUBY_T_FILE: case RUBY_T_DATA: case RUBY_T_MATCH: case RUBY_T_COMPLEX: case RUBY_T_RATIONAL:
+		    case RUBY_T_SYMBOL: case RUBY_T_IMEMO: case RUBY_T_NODE: case RUBY_T_ICLASS:
+#define CHECK(x) if (x(obj) != FALSE) rb_bug("obj_free: " #x "(%s) != FALSE", obj_info(obj))
+			CHECK(RVALUE_WB_UNPROTECTED);
+			CHECK(RVALUE_MARKED);
+			CHECK(RVALUE_MARKING);
+			CHECK(RVALUE_UNCOLLECTIBLE);
+#undef CHECK
+			break;
+#endif
+		    free_info.obj_freed = 1;
+		    obj_free_handlers[BUILTIN_TYPE(p)]((VALUE)p, objspace, &free_info);
+		    if (LIKELY(free_info.obj_freed)) {
+			if (UNLIKELY(FL_TEST((VALUE)p, FL_FINALIZE))) {
+			    make_zombie(objspace, (VALUE)p, 0, 0);
+			    ++free_info.final_slots;
+			} else {
+			    ++free_info.freed_slots;
+			    (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, sizeof(RVALUE));
+			    heap_page_add_freeobj(objspace, sweep_page, (VALUE)p);
+			    gc_report(3, objspace, "page_sweep: %s is added to freelist\n", obj_info((VALUE)p));
+			}
+		    }
+		    p++;
+		    bitset -= bitmask;
+		    bitmask <<= 1;
+		    if (!bitset)
+			break;
+		} else {
+		    p++;
+		    bitmask <<= 1;
 		}
-		p++;
-		bitset >>= 1;
-	    } while (bitset);
+	    }
 	}
     }
 
@@ -3403,19 +3444,19 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
 #if GC_PROFILE_MORE_DETAIL
     if (gc_prof_enabled(objspace)) {
 	gc_profile_record *record = gc_prof_record(objspace);
-	record->removing_objects += final_slots + freed_slots;
-	record->empty_objects += empty_slots;
+	record->removing_objects += free_info.final_slots + free_info.freed_slots;
+	record->empty_objects += free_info.empty_slots;
     }
 #endif
     if (0) fprintf(stderr, "gc_page_sweep(%d): total_slots: %d, freed_slots: %d, empty_slots: %d, final_slots: %d\n",
 		   (int)rb_gc_count(),
 		   (int)sweep_page->total_slots,
-		   freed_slots, empty_slots, final_slots);
+		   free_info.freed_slots, free_info.empty_slots, free_info.final_slots);
 
-    heap_pages_swept_slots += sweep_page->free_slots = freed_slots + empty_slots;
-    objspace->profile.total_freed_objects += freed_slots;
-    heap_pages_final_slots += final_slots;
-    sweep_page->final_slots += final_slots;
+    heap_pages_swept_slots += sweep_page->free_slots = free_info.freed_slots + free_info.empty_slots;
+    objspace->profile.total_freed_objects += free_info.freed_slots;
+    heap_pages_final_slots += free_info.final_slots;
+    sweep_page->final_slots += free_info.final_slots;
 
     if (heap_pages_deferred_final && !finalizing) {
         rb_thread_t *th = GET_THREAD();
