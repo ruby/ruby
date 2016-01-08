@@ -606,21 +606,25 @@ rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE absolute_path, VALUE li
     const rb_iseq_t *const parent = base_block ? base_block->iseq : NULL;
     rb_compile_option_t option;
     const enum iseq_type type = parent ? ISEQ_TYPE_EVAL : ISEQ_TYPE_TOP;
-
-    StringValueCStr(file);
-
-    make_compile_option(&option, opt);
+#if defined(__GNUC__) && __GNUC__ == 4 && __GNUC_MINOR__ == 8
+# define INITIALIZED volatile /* suppress warnings by gcc 4.8 */
+#else
+# define INITIALIZED volatile
+#endif
+    /* safe results first */
+    const INITIALIZED int ln = (make_compile_option(&option, opt), NUM2INT(line));
+    NODE *(*const INITIALIZED parse)(VALUE vparser, VALUE fname, VALUE file, int start) =
+	(StringValueCStr(file), RB_TYPE_P(src, T_FILE)) ?
+	rb_parser_compile_file_path :
+	(StringValue(src), rb_parser_compile_string_path);
+    /* should never fail usually */
+    const INITIALIZED VALUE label = parent ?
+	parent->body->location.label :
+	rb_fstring_cstr("<compiled>");
 
     th->base_block = base_block;
     TH_PUSH_TAG(th);
     if ((state = EXEC_TAG()) == 0) {
-	VALUE label = parent ? parent->body->location.label :
-	    rb_fstring_cstr("<compiled>");
-	int ln = NUM2INT(line);
-	NODE *(*parse)(VALUE vparser, VALUE fname, VALUE file, int start) =
-	    (RB_TYPE_P(src, T_FILE) ?
-	     rb_parser_compile_file_path :
-	     (StringValue(src), rb_parser_compile_string_path));
 	NODE *node = (*parse)(rb_parser_new(), file, src, ln);
 	if (node) { /* TODO: check err */
 	    iseq = rb_iseq_new_with_opt(node, label, file, absolute_path, line,
@@ -631,10 +635,10 @@ rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE absolute_path, VALUE li
 
     th->base_block = prev_base_block;
 
-    if (!iseq) rb_exc_raise(th->errinfo);
     if (state) {
 	JUMP_TAG(state);
     }
+    if (!iseq) rb_exc_raise(th->errinfo);
 
     return iseq;
 }
