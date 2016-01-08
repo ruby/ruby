@@ -642,7 +642,6 @@ enum {
 };
 
 struct heap_page {
-    struct heap_page_body *body;
     struct heap_page *prev;
     short total_slots;
     short free_slots;
@@ -1399,7 +1398,7 @@ heap_page_free(rb_objspace_t *objspace, struct heap_page *page)
 {
     heap_allocated_pages--;
     objspace->profile.total_freed_pages++;
-    aligned_free(page->body);
+    aligned_free(GET_PAGE_BODY(page->start));
     free(page);
 }
 
@@ -1456,7 +1455,14 @@ heap_page_allocate(rb_objspace_t *objspace)
 	rb_memerror();
     }
 
-    page->body = page_body;
+    /* adjust obj_limit (object number available in this page) */
+    start = (RVALUE*)((VALUE)page_body + sizeof(struct heap_page_header));
+    if ((VALUE)start % sizeof(RVALUE) != 0) {
+	int delta = (int)(sizeof(RVALUE) - ((VALUE)start % sizeof(RVALUE)));
+	start = (RVALUE*)((VALUE)start + delta);
+	limit = (HEAP_SIZE - (int)((VALUE)start - (VALUE)page_body))/(int)sizeof(RVALUE);
+    }
+    end = start + limit;
 
     /* setup heap_pages_sorted */
     lo = 0;
@@ -1466,10 +1472,10 @@ heap_page_allocate(rb_objspace_t *objspace)
 
 	mid = (lo + hi) / 2;
 	mid_page = heap_pages_sorted[mid];
-	if (mid_page->body < page_body) {
+	if (mid_page->start < start) {
 	    lo = mid + 1;
 	}
-	else if (mid_page->body > page_body) {
+	else if (mid_page->start > start) {
 	    hi = mid;
 	}
 	else {
@@ -1486,15 +1492,6 @@ heap_page_allocate(rb_objspace_t *objspace)
     objspace->profile.total_allocated_pages++;
 
     if (RGENGC_CHECK_MODE) assert(heap_allocated_pages <= heap_pages_sorted_length);
-
-    /* adjust obj_limit (object number available in this page) */
-    start = (RVALUE*)((VALUE)page_body + sizeof(struct heap_page_header));
-    if ((VALUE)start % sizeof(RVALUE) != 0) {
-	int delta = (int)(sizeof(RVALUE) - ((VALUE)start % sizeof(RVALUE)));
-	start = (RVALUE*)((VALUE)start + delta);
-	limit = (HEAP_SIZE - (int)((VALUE)start - (VALUE)page_body))/(int)sizeof(RVALUE);
-    }
-    end = start + limit;
 
     if (heap_pages_lomem == 0 || heap_pages_lomem > start) heap_pages_lomem = start;
     if (heap_pages_himem < end) heap_pages_himem = end;
@@ -2279,20 +2276,18 @@ static VALUE
 objspace_each_objects(VALUE arg)
 {
     size_t i;
-    struct heap_page_body *last_body = 0;
     struct heap_page *page;
-    RVALUE *pstart, *pend;
+    RVALUE *pstart = NULL, *pend;
     rb_objspace_t *objspace = &rb_objspace;
     struct each_obj_args *args = (struct each_obj_args *)arg;
 
     i = 0;
     while (i < heap_allocated_pages) {
-	while (0 < i && last_body < heap_pages_sorted[i-1]->body)              i--;
-	while (i < heap_allocated_pages && heap_pages_sorted[i]->body <= last_body) i++;
+	while (0 < i && pstart < heap_pages_sorted[i-1]->start)              i--;
+	while (i < heap_allocated_pages && heap_pages_sorted[i]->start <= pstart) i++;
 	if (heap_allocated_pages <= i) break;
 
 	page = heap_pages_sorted[i];
-	last_body = page->body;
 
 	pstart = page->start;
 	pend = pstart + page->total_slots;
