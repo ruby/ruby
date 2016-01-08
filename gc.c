@@ -428,16 +428,6 @@ enum {
     BITS_BITLENGTH = ( BITS_SIZE * CHAR_BIT )
 };
 
-struct heap_page_header {
-    struct heap_page *page;
-};
-
-struct heap_page_body {
-    struct heap_page_header header;
-    /* char gap[];      */
-    /* RVALUE values[]; */
-};
-
 struct gc_list {
     VALUE *varptr;
     struct gc_list *next;
@@ -627,7 +617,7 @@ typedef struct rb_objspace {
 
 #ifndef HEAP_ALIGN_LOG
 /* default tiny heap size: 16KB */
-#define HEAP_ALIGN_LOG 14
+#define HEAP_ALIGN_LOG 17
 #endif
 #define CEILDIV(i, mod) (((i) + (mod) - 1)/(mod))
 enum {
@@ -635,14 +625,12 @@ enum {
     HEAP_ALIGN_MASK = (~(~0UL << HEAP_ALIGN_LOG)),
     REQUIRED_SIZE_BY_MALLOC = (sizeof(size_t) * 5),
     HEAP_SIZE = (HEAP_ALIGN - REQUIRED_SIZE_BY_MALLOC),
-    HEAP_OBJ_LIMIT = (unsigned int)((HEAP_SIZE - sizeof(struct heap_page_header))/sizeof(struct RVALUE)),
     HEAP_BITMAP_LIMIT = CEILDIV(CEILDIV(HEAP_SIZE, sizeof(struct RVALUE)), BITS_BITLENGTH),
     HEAP_BITMAP_SIZE = ( BITS_SIZE * HEAP_BITMAP_LIMIT),
     HEAP_BITMAP_PLANES = USE_RGENGC ? 3 : 1 /* RGENGC: mark bits, rememberset bits and oldgen bits */
 };
 
 struct heap_page {
-    struct heap_page_body *body;
     struct heap_page *prev;
     rb_heap_t *heap;
     int total_slots;
@@ -668,11 +656,16 @@ struct heap_page {
     bits_t uncollectible_bits[HEAP_BITMAP_LIMIT];
     bits_t marking_bits[HEAP_BITMAP_LIMIT];
 #endif
+
+    /* char gap[];      */
+    /* RVALUE values[]; */
 };
 
-#define GET_PAGE_BODY(x)   ((struct heap_page_body *)((bits_t)(x) & ~(HEAP_ALIGN_MASK)))
-#define GET_PAGE_HEADER(x) (&GET_PAGE_BODY(x)->header)
-#define GET_HEAP_PAGE(x)   (GET_PAGE_HEADER(x)->page)
+enum {
+    HEAP_OBJ_LIMIT = (unsigned int)((HEAP_SIZE - sizeof(struct heap_page))/sizeof(struct RVALUE))
+};
+
+#define GET_HEAP_PAGE(x)   ((struct heap_page *)((bits_t)(x) & ~(HEAP_ALIGN_MASK)))
 
 #define NUM_IN_PAGE(p)   (((bits_t)(p) & HEAP_ALIGN_MASK)/sizeof(RVALUE))
 #define BITMAP_INDEX(p)  (NUM_IN_PAGE(p) / BITS_BITLENGTH )
@@ -1400,8 +1393,7 @@ heap_page_free(rb_objspace_t *objspace, struct heap_page *page)
 {
     heap_allocated_pages--;
     objspace->profile.total_freed_pages++;
-    aligned_free(page->body);
-    free(page);
+    aligned_free(page);
 }
 
 static void
@@ -1440,24 +1432,15 @@ heap_page_allocate(rb_objspace_t *objspace)
 {
     RVALUE *start, *end, *p;
     struct heap_page *page;
-    struct heap_page_body *page_body = 0;
     size_t hi, lo, mid;
-    int limit = HEAP_OBJ_LIMIT;
-
-    /* assign heap_page body (contains heap_page_header and RVALUEs) */
-    page_body = (struct heap_page_body *)aligned_malloc(HEAP_ALIGN, HEAP_SIZE);
-    if (page_body == 0) {
-	rb_memerror();
-    }
+    int limit;
 
     /* assign heap_page entry */
-    page = (struct heap_page *)calloc(1, sizeof(struct heap_page));
+    page = (struct heap_page *)aligned_malloc(HEAP_ALIGN, HEAP_SIZE);
     if (page == 0) {
-	aligned_free(page_body);
 	rb_memerror();
     }
-
-    page->body = page_body;
+    memset(page, 0, sizeof(*page));
 
     /* setup heap_pages_sorted */
     lo = 0;
@@ -1467,18 +1450,18 @@ heap_page_allocate(rb_objspace_t *objspace)
 
 	mid = (lo + hi) / 2;
 	mid_page = heap_pages_sorted[mid];
-	if (mid_page->body < page_body) {
+	if (mid_page < page) {
 	    lo = mid + 1;
 	}
-	else if (mid_page->body > page_body) {
+	else if (mid_page > page) {
 	    hi = mid;
 	}
 	else {
-	    rb_bug("same heap page is allocated: %p at %"PRIuVALUE, (void *)page_body, (VALUE)mid);
+	    rb_bug("same heap page is allocated: %p at %"PRIuVALUE, (void *)page, (VALUE)mid);
 	}
     }
     if (hi < heap_allocated_pages) {
-	MEMMOVE(&heap_pages_sorted[hi+1], &heap_pages_sorted[hi], struct heap_page_header*, heap_allocated_pages - hi);
+	MEMMOVE(&heap_pages_sorted[hi+1], &heap_pages_sorted[hi], struct heap_page*, heap_allocated_pages - hi);
     }
 
     heap_pages_sorted[hi] = page;
@@ -1489,12 +1472,12 @@ heap_page_allocate(rb_objspace_t *objspace)
     if (RGENGC_CHECK_MODE) assert(heap_allocated_pages <= heap_pages_sorted_length);
 
     /* adjust obj_limit (object number available in this page) */
-    start = (RVALUE*)((VALUE)page_body + sizeof(struct heap_page_header));
+    start = (RVALUE*)((VALUE)page + sizeof(*page));
     if ((VALUE)start % sizeof(RVALUE) != 0) {
 	int delta = (int)(sizeof(RVALUE) - ((VALUE)start % sizeof(RVALUE)));
 	start = (RVALUE*)((VALUE)start + delta);
-	limit = (HEAP_SIZE - (int)((VALUE)start - (VALUE)page_body))/(int)sizeof(RVALUE);
     }
+    limit = (HEAP_SIZE - (int)((VALUE)start - (VALUE)page))/(int)sizeof(RVALUE);
     end = start + limit;
 
     if (heap_pages_lomem == 0 || heap_pages_lomem > start) heap_pages_lomem = start;
@@ -1502,7 +1485,6 @@ heap_page_allocate(rb_objspace_t *objspace)
 
     page->start = start;
     page->total_slots = limit;
-    page_body->header.page = page;
 
     for (p = start; p != end; p++) {
 	gc_report(3, objspace, "assign_heap_page: %p is added to freelist\n", p);
@@ -2280,20 +2262,19 @@ static VALUE
 objspace_each_objects(VALUE arg)
 {
     size_t i;
-    struct heap_page_body *last_body = 0;
-    struct heap_page *page;
+    struct heap_page *page, *last_page = 0;
     RVALUE *pstart, *pend;
     rb_objspace_t *objspace = &rb_objspace;
     struct each_obj_args *args = (struct each_obj_args *)arg;
 
     i = 0;
     while (i < heap_allocated_pages) {
-	while (0 < i && last_body < heap_pages_sorted[i-1]->body)              i--;
-	while (i < heap_allocated_pages && heap_pages_sorted[i]->body <= last_body) i++;
+	while (0 < i && last_page < heap_pages_sorted[i-1])              i--;
+	while (i < heap_allocated_pages && heap_pages_sorted[i] <= last_page) i++;
 	if (heap_allocated_pages <= i) break;
 
 	page = heap_pages_sorted[i];
-	last_body = page->body;
+	last_page = page;
 
 	pstart = page->start;
 	pend = pstart + page->total_slots;
