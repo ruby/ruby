@@ -1,3 +1,7 @@
+Fri Jan  8 12:30:54 2016  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* tool/make-snapshot: fix for the changes of version.h in r53314.
+
 Fri Jan  8 09:33:59 2016  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* iseq.c (rb_iseq_compile_with_option): move variable initialization

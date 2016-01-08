@@ -46,6 +46,7 @@ PACKAGES = {
 ENV["LC_ALL"] = ENV["LANG"] = "C"
 SVNURL = URI.parse("http://svn.ruby-lang.org/repos/ruby/")
 RUBY_VERSION_PATTERN = /^\#define\s+RUBY_VERSION\s+"([\d.]+)"/
+RUBY_API_VERSION_PATTERN = /^\#define\s+RUBY_API_VERSION_MAJOR\s+([\d]+)\n+\#define\s+RUBY_API_VERSION_MINOR\s+([\d]+)\n+\#define\s+RUBY_API_VERSION_TEENY\s+([\d]+)/
 
 ENV["VPATH"] ||= "include/ruby"
 YACC = ENV["YACC"] ||= "bison"
@@ -209,6 +210,13 @@ def package(vcs, rev, destdir, tmp = nil)
   end
   open("#{v}/revision.h", "wb") {|f| f.puts "#define RUBY_REVISION #{revision}"}
   version ||= (versionhdr = IO.read("#{v}/version.h"))[RUBY_VERSION_PATTERN, 1]
+  unless version
+	s = IO.read("#{v}/include/ruby/version.h")
+	api_version_components = s.scan(RUBY_API_VERSION_PATTERN)[0]
+	if api_version_components
+	  version = api_version_components.join(".")
+	end
+  end
   version or return
   if patchlevel
     unless tag.empty?
@@ -318,6 +326,14 @@ clean-cache $(CLEAN_CACHE): after-update
 after-update:: extract-gems
 extract-gems:
       APPEND
+	  if /^MAJOR\s*=/ !~ mk
+		major, minor, teeny = version.split(".")
+		mk.prepend(<<-PREPEND)
+MAJOR = #{major}
+MINOR = #{minor}
+TEENY = #{teeny}
+		PREPEND
+	  end
       open(clean.add("Makefile"), "w") do |f|
         f.puts mk
       end
