@@ -1,3 +1,8 @@
+Fri Jan  8 09:33:59 2016  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* iseq.c (rb_iseq_compile_with_option): move variable initialization
+	  code to avoid maybe-uninitialized warnings by gcc 4.8.
+
 Fri Jan  8 00:03:22 2016  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* enum.c (enum_min, enum_max): do the same optimization as r53454.
