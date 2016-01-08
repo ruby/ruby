@@ -638,7 +638,7 @@ enum {
     PAGE_OBJ_LIMIT = (unsigned int)((PAGE_SIZE - sizeof(struct heap_page_header))/sizeof(struct RVALUE)),
     PAGE_BITMAP_LIMIT = CEILDIV(CEILDIV(PAGE_SIZE, sizeof(struct RVALUE)), BITS_BITLENGTH),
     PAGE_BITMAP_SIZE = (BITS_SIZE * PAGE_BITMAP_LIMIT),
-    PAGE_BITMAP_PLANES = USE_RGENGC ? 3 : 1 /* RGENGC: mark bits, rememberset bits and oldgen bits */
+    PAGE_BITMAP_PLANES = USE_RGENGC ? 4 : 1 /* RGENGC: mark, unprotected, uncollectible, marking */
 };
 
 struct heap_page {

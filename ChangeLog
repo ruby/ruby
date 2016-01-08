@@ -1,3 +1,7 @@
+Sat Jan  9 05:45:40 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: PAGE_BITMAP_PLANES (the number of bitmap) is 4, not 3.
+
 Sat Jan  9 05:42:57 2016  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: rename constant names HEAP_* to PAGE_*.
