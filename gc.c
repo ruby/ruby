@@ -644,14 +644,14 @@ enum {
 struct heap_page {
     struct heap_page_body *body;
     struct heap_page *prev;
-    rb_heap_t *heap;
-    int total_slots;
-    int free_slots;
-    int final_slots;
+    short total_slots;
+    short free_slots;
+    short final_slots;
     struct {
 	unsigned int before_sweep : 1;
 	unsigned int has_remembered_objects : 1;
 	unsigned int has_uncollectible_shady_objects : 1;
+	unsigned int in_tomb : 1;
     } flags;
 
     struct heap_page *free_next;
@@ -1390,7 +1390,6 @@ heap_unlink_page(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *pag
     if (heap->pages == page) heap->pages = page->next;
     page->prev = NULL;
     page->next = NULL;
-    page->heap = NULL;
     heap->page_length--;
     heap->total_slots -= page->total_slots;
 }
@@ -1413,7 +1412,7 @@ heap_pages_free_unused_pages(rb_objspace_t *objspace)
 	for (i = j = 1; j < heap_allocated_pages; i++) {
 	    struct heap_page *page = heap_pages_sorted[i];
 
-	    if (page->heap == heap_tomb && page->free_slots == page->total_slots) {
+	    if (page->flags.in_tomb && page->free_slots == page->total_slots) {
 		if (heap_pages_swept_slots - page->total_slots > heap_pages_max_free_slots) {
 		    if (0) fprintf(stderr, "heap_pages_free_unused_pages: %d free page %p, heap_pages_swept_slots: %d, heap_pages_max_free_slots: %d\n",
 				   (int)i, page, (int)heap_pages_swept_slots, (int)heap_pages_max_free_slots);
@@ -1542,7 +1541,7 @@ heap_page_create(rb_objspace_t *objspace)
 static void
 heap_add_page(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *page)
 {
-    page->heap = heap;
+    page->flags.in_tomb = (heap == heap_tomb);
     page->next = heap->pages;
     if (heap->pages) heap->pages->prev = page;
     heap->pages = page;

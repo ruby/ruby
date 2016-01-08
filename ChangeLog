@@ -1,3 +1,12 @@
+Fri Jan  8 17:07:14 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: remove heap_page::heap. This field is only used to recognize
+	  whether a page is in a tomb or not. Instead of this field, 
+	  heap_page::flags::in_tomb (1 bit field) is added.
+
+	  Also type of heap_page::(total|free|final)_slots are changed from
+	  int to short. 2B is enough for them.
+
 Fri Jan  8 12:30:54 2016  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* tool/make-snapshot: fix for the changes of version.h in r53314.
