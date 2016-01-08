@@ -1,3 +1,10 @@
+Sat Jan  9 07:13:33 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: rename PAGE_* to HEAP_PAGE_* because PAGE_SIZE is used
+	  in Mac OS X.
+
+	* test/ruby/test_gc.rb: catch up this fix.
+
 Sat Jan  9 05:45:40 2016  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: PAGE_BITMAP_PLANES (the number of bitmap) is 4, not 3.
