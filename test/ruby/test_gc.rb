@@ -126,7 +126,7 @@ class TestGc < Test::Unit::TestCase
   def test_latest_gc_info
     assert_separately %w[--disable-gem], __FILE__, __LINE__, <<-'eom'
     GC.start
-    count = GC.stat(:heap_free_slots) + GC.stat(:heap_allocatable_pages) * GC::INTERNAL_CONSTANTS[:HEAP_OBJ_LIMIT]
+    count = GC.stat(:heap_free_slots) + GC.stat(:heap_allocatable_pages) * GC::INTERNAL_CONSTANTS[:PAGE_OBJ_LIMIT]
     count.times{ "a" + "b" }
     assert_equal :newobj, GC.latest_gc_info[:gc_by]
     eom
@@ -301,7 +301,7 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_gc_internals
-    assert_not_nil GC::INTERNAL_CONSTANTS[:HEAP_OBJ_LIMIT]
+    assert_not_nil GC::INTERNAL_CONSTANTS[:PAGE_OBJ_LIMIT]
     assert_not_nil GC::INTERNAL_CONSTANTS[:RVALUE_SIZE]
   end
 

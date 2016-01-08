@@ -1,3 +1,11 @@
+Sat Jan  9 05:42:57 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: rename constant names HEAP_* to PAGE_*.
+
+	  Keys of GC::INTERNAL_CONSTANTS are also renamed.
+
+	* test/ruby/test_gc.rb: catch up this fix.
+
 Fri Jan  8 22:30:06 2016  Akinori MUSHA  <knu@iDaemons.org>
 
 	* doc/regexp.rdoc: [DOC] Elaborate on the \G anchor. [ci skip]
