@@ -54,11 +54,11 @@ $(RUBY_EXP) $(LIBRUBY_SO): $(DLL_BASE_NAME).res.@OBJEXT@
 	$(ECHO) compiling $@
 	$(Q) $(WINDRES) --include-dir . --include-dir $(<D) --include-dir $(srcdir)/win32 $< $@
 
-$(RCFILES): $(RBCONFIG) $(srcdir)/revision.h $(srcdir)/win32/resource.rb
+%.rc: $(RBCONFIG) $(srcdir)/revision.h $(srcdir)/win32/resource.rb
 	$(ECHO) generating $@
 	$(Q) $(MINIRUBY) $(srcdir)/win32/resource.rb \
 	  -ruby_name=$(RUBY_INSTALL_NAME) -rubyw_name=$(RUBYW_INSTALL_NAME) \
-	  -so_name=$(DLL_BASE_NAME) \
+	  -so_name=$(DLL_BASE_NAME) -output=$(*F) \
 	  . $(icondirs) $(srcdir)/win32
 
 $(PROGRAM): $(RUBY_INSTALL_NAME).res.@OBJEXT@
