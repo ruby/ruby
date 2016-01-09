@@ -1,4 +1,7 @@
-sizes.c: $(top_srcdir)/tool/generic_erb.rb $(top_srcdir)/template/sizes.c.tmpl $(top_srcdir)/configure.in $(top_srcdir)/ext/rbconfig/sizeof/extconf.rb
+{$(VPATH)}sizes.c: $(top_srcdir)/tool/generic_erb.rb \
+		   $(top_srcdir)/template/sizes.c.tmpl \
+		   $(top_srcdir)/configure.in \
+		   $(top_srcdir)/ext/rbconfig/sizeof/extconf.rb
 	$(Q) $(RUBY) $(top_srcdir)/tool/generic_erb.rb --output=$@ \
 		$(top_srcdir)/template/sizes.c.tmpl \
                 $(top_srcdir)/configure.in \
