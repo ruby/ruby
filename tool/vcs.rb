@@ -89,6 +89,8 @@ class VCS
     String === path or path.respond_to?(:to_path)
   end
 
+  attr_reader :srcdir
+
   def initialize(path)
     @srcdir = path
     super()
