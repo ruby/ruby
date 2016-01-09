@@ -42,10 +42,6 @@ Fri Jan  8 17:07:14 2016  Koichi Sasada  <ko1@atdot.net>
 	  Also type of heap_page::(total|free|final)_slots are changed from
 	  int to short. 2B is enough for them.
 
-Fri Jan  8 12:30:54 2016  Shugo Maeda  <shugo@ruby-lang.org>
-
-	* tool/make-snapshot: fix for the changes of version.h in r53314.
-
 Fri Jan  8 09:33:59 2016  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* iseq.c (rb_iseq_compile_with_option): move variable initialization
@@ -123,11 +119,6 @@ Mon Jan  4 15:36:38 2016  Sho Hashimoto  <sho-h@ruby-lang.org>
 
 	* thread_sync.c: [DOC] remove SizedQueue#close argument.
 	  [ci skip]
-
-Mon Jan  4 12:07:00 2016  Naohisa Goto  <ngotogenome@gmail.com>
-
-	* version.h (RUBY_BUILD_VERSION_STR_3): Workaround for old version of
-	  Fujitsu C Compiler (fcc) on Solaris. [Bug #11944] [ruby-dev:49468]
 
 Mon Jan  4 10:14:24 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
@@ -474,14 +465,6 @@ Sat Dec 26 11:26:38 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* miniinit.c (Init_enc): add some common aliases of built-in
 	  encodings.  [ruby-core:72481] [Bug #11872]
-
-Sat Dec 26 01:24:40 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* configure.in, version.h (RUBY_PROGRAM_VERSION): extract version
-	  numbers from API version in include/ruby/version.h except for
-	  TEENY, to save matz job next year.
-
-	* win32/setup.mak (-version-): use program version.
 
 Fri Dec 25 22:43:26 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
