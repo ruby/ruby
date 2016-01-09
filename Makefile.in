@@ -400,8 +400,8 @@ enc/jis/props.h: enc/jis/props.kwd
 	$(Q) $(RM) $@.tmp
 
 .dmyh.h:
-	@$(ECHO) copying dummy $(DEST_FILE)
-	$(Q) $(CP) $(OS_SRC_FILE) $(OS_DEST_FILE)
+	@$(ECHO) making dummy $(DEST_FILE)
+	$(Q)echo '#include "$(*F).dmyh"' > $@
 
 probes.stamp: $(DTRACE_REBUILD_OBJS)
 	$(Q) if test -f $@ -o -f probes.$(OBJEXT); then \

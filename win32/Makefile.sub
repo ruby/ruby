@@ -1148,12 +1148,9 @@ ext/extinit.obj: ext/extinit.c $(SETUP)
 	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c ext/extinit.c
 
 probes.h: {$(VPATH)}probes.dmyh
-	@$(ECHO) copying dummy $(DEST_FILE)
-	@if exist probes.dmyh (\
-	  $(Q) $(CP) probes.dmyh $(OS_DEST_FILE)\
-	) else (\
-	  $(Q) $(CP) $(srcdir:/=\)\probes.dmyh $(OS_DEST_FILE)\
-	)
+	@$(ECHO) making dummy <<$(DEST_FILE)
+#include "$(*F).dmyh"
+<<KEEP
 
 INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
 	  vmtc.inc vm.inc
