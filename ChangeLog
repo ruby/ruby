@@ -1,3 +1,9 @@
+Sat Jan  9 10:44:33 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in, win32/setup.mak: extract RUBY_PROGRAM_VERSION from
+	  RUBY_VERSION in version.h instead of RUBY_API_VERSION numbers in
+	  include/ruby/version.h, and cut it into version numbers.
+
 Sat Jan  9 07:13:33 2016  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: rename PAGE_* to HEAP_PAGE_* because PAGE_SIZE is used

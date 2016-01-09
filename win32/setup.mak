@@ -118,12 +118,6 @@ int main(void) {return (EnumProcesses(NULL,0,NULL) ? 0 : 1);}
 -version-: nul verconf.mk
 	@$(APPEND)
 	@$(CPP) -I$(srcdir) -I$(srcdir)/include <<"Creating $(MAKEFILE)" | findstr "=" >>$(MAKEFILE)
-#define RUBY_REVISION 0
-#include "version.h"
-MAJOR = RUBY_API_VERSION_MAJOR
-MINOR = RUBY_API_VERSION_MINOR
-TEENY = RUBY_API_VERSION_TEENY
-RUBY_PROGRAM_VERSION = RUBY_VERSION
 MSC_VER = _MSC_VER
 <<
 
@@ -135,8 +129,19 @@ verconf.mk: nul
 #define STRINGIZE(x) STRINGIZE0(x)
 #include "version.h"
 for %%I in (RUBY_RELEASE_DATE) do set ruby_release_date=%%~I
+for %%I in (RUBY_VERSION) do set ruby_version=%%~I
+for /f "delims=. tokens=1-3" %%I in (RUBY_VERSION) do (
+    set major=%%I
+    set minor=%%J
+    set teeny=%%K
+)
 #undef RUBY_RELEASE_DATE
+#undef RUBY_PROGRAM_VERSION
 echo RUBY_RELEASE_DATE = %ruby_release_date:""=%
+echo RUBY_PROGRAM_VERSION = %ruby_version:""=%
+echo MAJOR = %major%
+echo MINOR = %minor%
+echo TEENY = %teeny%
 del %0 & exit
 <<
 
