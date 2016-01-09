@@ -128,18 +128,16 @@ MSC_VER = _MSC_VER
 <<
 
 verconf.mk: nul
-	@$(CPP) -I$(srcdir) -I$(srcdir)/include <<"Creating $(@)" | findstr "=" >$(@)
+	@$(CPP) -I$(srcdir) -I$(srcdir)/include <<"Creating $(@)" > $(*F).bat && cmd /c $(*F).bat > $(@)
+@echo off
 #define RUBY_REVISION 0
+#define STRINGIZE0(expr) #expr
+#define STRINGIZE(x) STRINGIZE0(x)
 #include "version.h"
-release_year = RUBY_RELEASE_YEAR
-release_month = RUBY_RELEASE_MONTH
-release_day = RUBY_RELEASE_DAY
-#undef RUBY_RELEASE_YEAR
-#undef RUBY_RELEASE_MONTH
-#undef RUBY_RELEASE_DAY
-RUBY_RELEASE_YEAR = $$(release_year)
-RUBY_RELEASE_MONTH = $$(release_month)
-RUBY_RELEASE_DAY = $$(release_day)
+for %%I in (RUBY_RELEASE_DATE) do set ruby_release_date=%%~I
+#undef RUBY_RELEASE_DATE
+echo RUBY_RELEASE_DATE = %ruby_release_date:""=%
+del %0 & exit
 <<
 
 -program-name-:
