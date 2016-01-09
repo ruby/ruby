@@ -3602,7 +3602,7 @@ AC_ARG_WITH(soname,
 
 LIBRUBY_LDSHARED=$LDSHARED
 LIBRUBY_DLDFLAGS=$DLDFLAGS
-LIBRUBY_SO='lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR).$(TEENY)'
+LIBRUBY_SO='lib$(RUBY_SO_NAME).so.$(RUBY_PROGRAM_VERSION)'
 LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).so'
 ENABLE_SHARED=no
 
@@ -3679,7 +3679,7 @@ AS_CASE("$enable_shared", [yes], [
     [solaris*], [
 	SOLIBS='$(LIBS)'
 	LIBRUBY_SO='lib$(RUBY_SO_NAME).so.$(MAJOR)'
-	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR).$(TEENY) lib$(RUBY_SO_NAME).so'
+	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).so.$(RUBY_PROGRAM_VERSION) lib$(RUBY_SO_NAME).so'
 	if test "$GCC" = yes; then
 	    LIBRUBY_DLDFLAGS="$DLDFLAGS "'-Wl,-h,$(@F)'
 	else
@@ -3689,7 +3689,7 @@ AS_CASE("$enable_shared", [yes], [
 	],
     [hpux*], [
 	XLDFLAGS="$XLDFLAGS "'-Wl,+s,+b,$(libdir)'
-	LIBRUBY_SO='lib$(RUBY_SO_NAME).sl.$(MAJOR).$(MINOR).$(TEENY)'
+	LIBRUBY_SO='lib$(RUBY_SO_NAME).sl.$(RUBY_PROGRAM_VERSION)'
 	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).sl.$(MAJOR).$(MINOR) lib$(RUBY_SO_NAME).sl'
 	],
     [aix*], [
@@ -3698,7 +3698,7 @@ AS_CASE("$enable_shared", [yes], [
 	SOLIBS='-lm -lc'
 	],
     [darwin*], [
-	RUBY_SO_NAME="$RUBY_SO_NAME"'.$(MAJOR).$(MINOR).$(TEENY)'
+	RUBY_SO_NAME="$RUBY_SO_NAME"'.$(RUBY_PROGRAM_VERSION)'
 	LIBRUBY_LDSHARED='$(CC) -dynamiclib'
 	if test "$load_relative" = yes; then
 	    libprefix="@executable_path/../${libdir_basename}"
