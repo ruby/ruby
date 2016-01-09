@@ -3705,7 +3705,7 @@ AS_CASE("$enable_shared", [yes], [
 	    LIBRUBY_RELATIVE=yes
 	fi
 	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-install_name '${libprefix}'/$(LIBRUBY_SO)'
-	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-current_version $(MAJOR).$(MINOR).$(TEENY)'
+	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-current_version $(MAJOR).$(MINOR)'
 	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-compatibility_version $(RUBY_PROGRAM_VERSION)'
 	if test "$visibility_option" = ld; then
 	    LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-Wl,-unexported_symbol,_Init_*'
@@ -3924,7 +3924,7 @@ AS_CASE(["$target_os"],
 	fi
 	],
     [cygwin*|mingw*], [
-	RUBY_SO_NAME="${RUBY_SO_NAME}"'$(MAJOR)$(MINOR)$(TEENY)'
+	RUBY_SO_NAME="${RUBY_SO_NAME}"'$(MAJOR)$(MINOR)0'
 	LIBRUBY_DLDFLAGS="${DLDFLAGS}"' -Wl,--out-implib=$(LIBRUBY)'
 	AS_CASE(["$target_os"],
 	[cygwin*], [

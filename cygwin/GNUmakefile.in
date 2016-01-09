@@ -100,7 +100,7 @@ clean-local::
 	@$(RM) $(RUBYDEF)
 
 ifeq (@target_os@,cygwin)
-cygwin-$(RUBY_INSTALL_NAME)$(MAJOR)$(MINOR)$(TEENY).dll: $(LIBRUBY_A) $(RUBYDEF)
+cygwin-$(RUBY_INSTALL_NAME)$(MAJOR)$(MINOR)0.dll: $(LIBRUBY_A) $(RUBYDEF)
 	$(ECHO) generating $@
 	$(Q) @DLLWRAP@ -s --def=$(RUBYDEF) -o $@
 endif
