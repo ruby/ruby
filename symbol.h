@@ -36,7 +36,7 @@ struct RSymbol {
 #define is_local_id(id) (id_type(id)==ID_LOCAL)
 #define is_global_id(id) (id_type(id)==ID_GLOBAL)
 #define is_instance_id(id) (id_type(id)==ID_INSTANCE)
-#define is_attrset_id(id) (id_type(id)==ID_ATTRSET)
+#define is_attrset_id(id) ((id)==idASET||id_type(id)==ID_ATTRSET)
 #define is_const_id(id) (id_type(id)==ID_CONST)
 #define is_class_id(id) (id_type(id)==ID_CLASS)
 #define is_junk_id(id) (id_type(id)==ID_JUNK)

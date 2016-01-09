@@ -1,3 +1,8 @@
+Sat Jan  9 18:25:57 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* symbol.h (is_attrset_id): ASET is an attrset ID.  fix
+	  unexpected safe call instead of an ordinary ASET.
+
 Sat Jan  9 10:44:33 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in, win32/setup.mak: extract RUBY_PROGRAM_VERSION from
