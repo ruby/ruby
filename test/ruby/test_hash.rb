@@ -148,6 +148,14 @@ class TestHash < Test::Unit::TestCase
 
   end
 
+  def test_try_convert
+    assert_equal({1=>2}, Hash.try_convert({1=>2}))
+    assert_equal(nil, Hash.try_convert("1=>2"))
+    o = Object.new
+    def o.to_hash; {3=>4} end
+    assert_equal({3=>4}, Hash.try_convert(o))
+  end
+
   def test_AREF # '[]'
     t = Time.now
     h = @cls[

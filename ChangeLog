@@ -1,3 +1,8 @@
+Sat Jan  9 23:19:14 2016  Kuniaki IGARASHI  <igaiga@gmail.com>
+
+	* test/ruby/test_hash.rb (test_try_convert): Add test for
+	  Hash.try_convert.  [Fix GH-1190]
+
 Sat Jan  9 23:15:25 2016  Jon Moss  <maclover7@users.noreply.github.com>
 
 	* ext/openssl/ossl.c: Add missing variables to documentation
