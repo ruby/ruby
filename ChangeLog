@@ -1,3 +1,8 @@
+Sat Jan  9 23:15:25 2016  Jon Moss  <maclover7@users.noreply.github.com>
+
+	* ext/openssl/ossl.c: Add missing variables to documentation
+	  examples.  [Fix GH-1189]
+
 Sat Jan  9 18:25:57 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* symbol.h (is_attrset_id): ASET is an attrset ID.  fix
