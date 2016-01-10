@@ -136,7 +136,7 @@ module Random::Formatter
   #
   # See RFC 3548 for the definition of base64.
   def base64(n=nil)
-    [random_bytes(n)].pack("m*").delete("\n")
+    [random_bytes(n)].pack("m0")
   end
 
   # SecureRandom.urlsafe_base64 generates a random URL-safe base64 string.
@@ -166,8 +166,7 @@ module Random::Formatter
   #
   # See RFC 3548 for the definition of URL-safe base64.
   def urlsafe_base64(n=nil, padding=false)
-    s = [random_bytes(n)].pack("m*")
-    s.delete!("\n")
+    s = [random_bytes(n)].pack("m0")
     s.tr!("+/", "-_")
     s.delete!("=") unless padding
     s

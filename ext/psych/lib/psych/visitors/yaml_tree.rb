@@ -314,7 +314,7 @@ module Psych
         tag   = nil
 
         if binary?(o)
-          o     = [o].pack('m').chomp
+          o     = [o].pack('m0')
           tag   = '!binary' # FIXME: change to below when syck is removed
           #tag   = 'tag:yaml.org,2002:binary'
           style = Nodes::Scalar::LITERAL

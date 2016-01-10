@@ -312,7 +312,7 @@ module WEBrick
       def generate_next_nonce(req)
         now = "%012d" % req.request_time.to_i
         pk  = hexdigest(now, @instance_key)[0,32]
-        nonce = [now + ":" + pk].pack("m*").chop # it has 60 length of chars.
+        nonce = [now + ":" + pk].pack("m0") # it has 60 length of chars.
         nonce
       end
 

@@ -427,7 +427,7 @@ module Net::HTTPHeader
   end
 
   def basic_encode(account, password)
-    'Basic ' + ["#{account}:#{password}"].pack('m').delete("\r\n")
+    'Basic ' + ["#{account}:#{password}"].pack('m0')
   end
   private :basic_encode
 

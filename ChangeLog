@@ -1,3 +1,22 @@
+Sun Jan 10 09:14:42 2016  Eric Wong  <e@80x24.org>
+
+    * ext/psych/lib/psych/visitors/yaml_tree.rb (visit_String):
+      eliminate chomp
+    * lib/net/http.rb (connect): eliminate delete
+    * lib/net/http/header.rb (basic_encode): ditto
+    * lib/net/imap.rb (authenticate): eliminate gsub
+      (self.encode_utf7): shorten delete arg
+    * lib/net/smtp.rb (base64_encode): eliminate gsub
+    * lib/open-uri.rb (OpenURI.open_http): eliminate delete
+    * lib/rss/rss.rb: ditto
+    * lib/securerandom.rb (base64): ditto
+      (urlsafe_base64): eliminate delete!
+    * lib/webrick/httpauth/digestauth.rb (split_param_value):
+      eliminate chop
+    * lib/webrick/httpproxy.rb (do_CONNECT): eliminate delete
+      (setup_upstream_proxy_authentication): ditto
+      [ruby-core:72666] [Feature #11938]
+
 Sat Jan  9 23:19:14 2016  Kuniaki IGARASHI  <igaiga@gmail.com>
 
 	* test/ruby/test_hash.rb (test_try_convert): Add test for
