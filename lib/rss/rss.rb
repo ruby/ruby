@@ -1241,7 +1241,7 @@ EOC
         __send__(self.class.xml_getter).to_s
       else
         _content = content
-        _content = [_content].pack("m").delete("\n") if need_base64_encode?
+        _content = [_content].pack("m0") if need_base64_encode?
         h(_content)
       end
     end

@@ -329,18 +329,18 @@ puts Tempfile.new('foo').path
     path = nil
     Tempfile.create("tempfile-create") {|f|
       path = f.path
-      assert(File.exist?(path))
+      assert_file.exist?(path)
     }
-    assert(!File.exist?(path))
+    assert_file.not_exist?(path)
   end
 
   def test_create_without_block
     path = nil
     f = Tempfile.create("tempfile-create")
     path = f.path
-    assert(File.exist?(path))
+    assert_file.exist?(path)
     f.close
-    assert(File.exist?(path))
+    assert_file.exist?(path)
   ensure
     f.close if f && !f.closed?
     File.unlink path if path

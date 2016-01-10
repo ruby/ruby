@@ -159,7 +159,6 @@ static VALUE rb_eEINPROGRESSWaitWritable;
 static VALUE rb_eEINPROGRESSWaitReadable;
 
 VALUE rb_stdin, rb_stdout, rb_stderr;
-VALUE rb_deferr;		/* rescue VIM plugin */
 static VALUE orig_stdout, orig_stderr;
 
 VALUE rb_output_fs;
@@ -12388,7 +12387,7 @@ Init_IO(void)
     rb_stderr = prep_stdio(stderr, FMODE_WRITABLE|FMODE_SYNC, rb_cIO, "<STDERR>");
     rb_define_hooked_variable("$>", &rb_stdout, 0, stdout_setter);
     orig_stdout = rb_stdout;
-    rb_deferr = orig_stderr = rb_stderr;
+    orig_stderr = rb_stderr;
 
     /* Holds the original stdin */
     rb_define_global_const("STDIN", rb_stdin);

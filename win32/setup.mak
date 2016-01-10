@@ -118,27 +118,31 @@ int main(void) {return (EnumProcesses(NULL,0,NULL) ? 0 : 1);}
 -version-: nul verconf.mk
 	@$(APPEND)
 	@$(CPP) -I$(srcdir) -I$(srcdir)/include <<"Creating $(MAKEFILE)" | findstr "=" >>$(MAKEFILE)
-#define RUBY_REVISION 0
-#include "version.h"
-MAJOR = RUBY_PROGRAM_VERSION_MAJOR
-MINOR = RUBY_PROGRAM_VERSION_MINOR
-TEENY = RUBY_PROGRAM_VERSION_TEENY
 MSC_VER = _MSC_VER
 <<
 
 verconf.mk: nul
-	@$(CPP) -I$(srcdir) -I$(srcdir)/include <<"Creating $(@)" | findstr "=" >$(@)
+	@$(CPP) -I$(srcdir) -I$(srcdir)/include <<"Creating $(@)" > $(*F).bat && cmd /c $(*F).bat > $(@)
+@echo off
 #define RUBY_REVISION 0
+#define STRINGIZE0(expr) #expr
+#define STRINGIZE(x) STRINGIZE0(x)
 #include "version.h"
-release_year = RUBY_RELEASE_YEAR
-release_month = RUBY_RELEASE_MONTH
-release_day = RUBY_RELEASE_DAY
-#undef RUBY_RELEASE_YEAR
-#undef RUBY_RELEASE_MONTH
-#undef RUBY_RELEASE_DAY
-RUBY_RELEASE_YEAR = $$(release_year)
-RUBY_RELEASE_MONTH = $$(release_month)
-RUBY_RELEASE_DAY = $$(release_day)
+for %%I in (RUBY_RELEASE_DATE) do set ruby_release_date=%%~I
+for %%I in (RUBY_VERSION) do set ruby_version=%%~I
+for /f "delims=. tokens=1-3" %%I in (RUBY_VERSION) do (
+    set major=%%I
+    set minor=%%J
+    set teeny=%%K
+)
+#undef RUBY_RELEASE_DATE
+#undef RUBY_PROGRAM_VERSION
+echo RUBY_RELEASE_DATE = %ruby_release_date:""=%
+echo RUBY_PROGRAM_VERSION = %ruby_version:""=%
+echo MAJOR = %major%
+echo MINOR = %minor%
+echo TEENY = %teeny%
+del %0 & exit
 <<
 
 -program-name-:

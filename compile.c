@@ -192,9 +192,18 @@ r_value(VALUE value)
 #define ADD_INSN(seq, line, insn) \
   ADD_ELEM((seq), (LINK_ELEMENT *) new_insn_body(iseq, (line), BIN(insn), 0))
 
+/* insert an instruction before prev */
+#define INSERT_BEFORE_INSN(prev, line, insn) \
+  INSERT_ELEM_PREV(&(prev)->link, (LINK_ELEMENT *) new_insn_body(iseq, (line), BIN(insn), 0))
+
 /* add an instruction with some operands (1, 2, 3, 5) */
 #define ADD_INSN1(seq, line, insn, op1) \
   ADD_ELEM((seq), (LINK_ELEMENT *) \
+           new_insn_body(iseq, (line), BIN(insn), 1, (VALUE)(op1)))
+
+/* insert an instruction with some operands (1, 2, 3, 5) before prev */
+#define INSERT_BEFORE_INSN1(prev, line, insn, op1) \
+  INSERT_ELEM_PREV(&(prev)->link, (LINK_ELEMENT *) \
            new_insn_body(iseq, (line), BIN(insn), 1, (VALUE)(op1)))
 
 #define LABEL_REF(label) ((label)->refcnt++)
@@ -2990,9 +2999,10 @@ compile_massign_lhs(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE *node)
 {
     switch (nd_type(node)) {
       case NODE_ATTRASGN: {
-	INSN *iobj, *topdup;
+	INSN *iobj;
 	struct rb_call_info *ci;
 	VALUE dupidx;
+	int line = nd_line(node);
 
 	COMPILE_POPED(ret, "masgn lhs (NODE_ATTRASGN)", node);
 
@@ -3001,9 +3011,13 @@ compile_massign_lhs(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE *node)
 	ci->orig_argc += 1;
 	dupidx = INT2FIX(ci->orig_argc);
 
-	topdup = new_insn_body(iseq, nd_line(node), BIN(topn), 1, dupidx);
-	INSERT_ELEM_PREV(&iobj->link, &topdup->link);
-	ADD_INSN(ret, nd_line(node), pop);	/* result */
+	INSERT_BEFORE_INSN1(iobj, line, topn, dupidx);
+	if (ci->flag & VM_CALL_ARGS_SPLAT) {
+	    --ci->orig_argc;
+	    INSERT_BEFORE_INSN1(iobj, line, newarray, INT2FIX(1));
+	    INSERT_BEFORE_INSN(iobj, line, concatarray);
+	}
+	ADD_INSN(ret, line, pop);	/* result */
 	break;
       }
       case NODE_MASGN: {

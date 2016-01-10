@@ -7,6 +7,11 @@ require "test/unit"
 class TestWEBrickCGI < Test::Unit::TestCase
   CRLF = "\r\n"
 
+  def teardown
+    WEBrick::Utils::TimeoutHandler.terminate
+    super
+  end
+
   def start_cgi_server(log_tester=TestWEBrick::DefaultLogTester, &block)
     config = {
       :CGIInterpreter => TestWEBrick::RubyBin,

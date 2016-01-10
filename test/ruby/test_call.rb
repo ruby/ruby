@@ -83,4 +83,11 @@ class TestCall < Test::Unit::TestCase
   def test_safe_call_block_call_command
     assert_nil(("a".sub! "b" do end&.foo 1 do end))
   end
+
+  def test_invalid_safe_call
+    h = nil
+    assert_raise(NoMethodError) {
+      h[:foo] = nil
+    }
+  end
 end

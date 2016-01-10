@@ -134,8 +134,8 @@ object is encountered again.  (The first object has an index of 1).
 "@" represents an object link.  Following the type byte is a long giving the
 index of the object.
 
-For example, the following stream contains an Array of the object
-<code>"hello"</code> twice:
+For example, the following stream contains an Array of the same
+<code>"hello"</code> object twice:
 
   "\004\b[\a\"\nhello@\006"
 

@@ -3,6 +3,11 @@ require 'timeout'
 
 module TestXMLRPC
 module WEBrick_Testing
+  def teardown
+    WEBrick::Utils::TimeoutHandler.terminate
+    super
+  end
+
   def start_server(logger, config={})
     raise "already started" if defined?(@__server) && @__server
     @__started = false

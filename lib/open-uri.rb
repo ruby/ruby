@@ -285,7 +285,8 @@ module OpenURI
       target_port = proxy_uri.port
       request_uri = target.to_s
       if proxy_user && proxy_pass
-        header["Proxy-Authorization"] = 'Basic ' + ["#{proxy_user}:#{proxy_pass}"].pack('m').delete("\r\n")
+        header["Proxy-Authorization"] =
+                        'Basic ' + ["#{proxy_user}:#{proxy_pass}"].pack('m0')
       end
     end
 

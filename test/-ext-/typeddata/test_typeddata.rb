@@ -1,6 +1,6 @@
 # frozen_string_literal: false
 require 'test/unit'
-require "-test-/typeddata/typeddata"
+require "-test-/typeddata"
 
 class Test_TypedData < Test::Unit::TestCase
   def test_wrong_argtype

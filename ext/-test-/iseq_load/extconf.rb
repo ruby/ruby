@@ -1,2 +1,2 @@
 # frozen_string_literal: false
-create_makefile("-test-/iseq_load/iseq_load")
+create_makefile("-test-/iseq_load")

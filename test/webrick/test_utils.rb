@@ -3,6 +3,11 @@ require "test/unit"
 require "webrick/utils"
 
 class TestWEBrickUtils < Test::Unit::TestCase
+  def teardown
+    WEBrick::Utils::TimeoutHandler.terminate
+    super
+  end
+
   def assert_expired(m)
     Thread.handle_interrupt(Timeout::Error => :never, EX => :never) do
       assert_empty(m::TimeoutHandler.instance.instance_variable_get(:@timeout_info))

@@ -912,8 +912,7 @@ module Net   #:nodoc:
             buf = "CONNECT #{@address}:#{@port} HTTP/#{HTTPVersion}\r\n"
             buf << "Host: #{@address}:#{@port}\r\n"
             if proxy_user
-              credential = ["#{proxy_user}:#{proxy_pass}"].pack('m')
-              credential.delete!("\r\n")
+              credential = ["#{proxy_user}:#{proxy_pass}"].pack('m0')
               buf << "Proxy-Authorization: Basic #{credential}\r\n"
             end
             buf << "\r\n"

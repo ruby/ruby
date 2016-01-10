@@ -626,6 +626,7 @@ static void Init_ossl_locks(void)
  * loading the key:
  *
  *   key4_pem = File.read 'private.secure.pem'
+ *   pass_phrase = 'my secure pass phrase goes here'
  *   key4 = OpenSSL::PKey::RSA.new key4_pem, pass_phrase
  *
  * == RSA Encryption
@@ -790,6 +791,7 @@ static void Init_ossl_locks(void)
  * This example creates a self-signed certificate using an RSA key and a SHA1
  * signature.
  *
+ *   key = OpenSSL::PKey::RSA.new 2048
  *   name = OpenSSL::X509::Name.parse 'CN=nobody/DC=example'
  *
  *   cert = OpenSSL::X509::Certificate.new
@@ -859,6 +861,7 @@ static void Init_ossl_locks(void)
  * not readable by other users.
  *
  *   ca_key = OpenSSL::PKey::RSA.new 2048
+ *   pass_phrase = 'my secure pass phrase goes here'
  *
  *   cipher = OpenSSL::Cipher::Cipher.new 'AES-128-CBC'
  *

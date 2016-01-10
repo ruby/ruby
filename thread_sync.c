@@ -917,7 +917,7 @@ rb_szqueue_initialize(VALUE self, VALUE vmax)
 /*
  * Document-method: SizedQueue#close
  * call-seq:
- *   close(exception=false)
+ *   close
  *
  * Similar to Queue#close.
  *

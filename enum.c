@@ -1412,21 +1412,32 @@ enum_none(VALUE obj)
     return memo->v1;
 }
 
+#define OPTIMIZED_CMP(a, b, data) \
+    ((FIXNUM_P(a) && FIXNUM_P(b) && CMP_OPTIMIZABLE(data, Fixnum)) ? \
+     (((long)a > (long)b) ? 1 : ((long)a < (long)b) ? -1 : 0) : \
+     (STRING_P(a) && STRING_P(b) && CMP_OPTIMIZABLE(data, String)) ? \
+     rb_str_cmp(a, b) : \
+     rb_cmpint(rb_funcallv(a, id_cmp, 1, &b), a, b))
+
+struct min_t {
+    VALUE min;
+    int opt_methods;
+    int opt_inited;
+};
+
 static VALUE
 min_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 {
-    VALUE cmp;
-    struct MEMO *memo = MEMO_CAST(args);
+    struct min_t *memo = MEMO_FOR(struct min_t, args);
 
     ENUM_WANT_SVALUE();
 
-    if (memo->v1 == Qundef) {
-	MEMO_V1_SET(memo, i);
+    if (memo->min == Qundef) {
+	memo->min = i;
     }
     else {
-	cmp = rb_funcall(i, id_cmp, 1, memo->v1);
-	if (rb_cmpint(cmp, i, memo->v1) < 0) {
-	    MEMO_V1_SET(memo, i);
+	if (OPTIMIZED_CMP(i, memo->min, memo) < 0) {
+	    memo->min = i;
 	}
     }
     return Qnil;
@@ -1436,17 +1447,17 @@ static VALUE
 min_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 {
     VALUE cmp;
-    struct MEMO *memo = MEMO_CAST(args);
+    struct min_t *memo = MEMO_FOR(struct min_t, args);
 
     ENUM_WANT_SVALUE();
 
-    if (memo->v1 == Qundef) {
-	MEMO_V1_SET(memo, i);
+    if (memo->min == Qundef) {
+	memo->min = i;
     }
     else {
-	cmp = rb_yield_values(2, i, memo->v1);
-	if (rb_cmpint(cmp, i, memo->v1) < 0) {
-	    MEMO_V1_SET(memo, i);
+	cmp = rb_yield_values(2, i, memo->min);
+	if (rb_cmpint(cmp, i, memo->min) < 0) {
+	    memo->min = i;
 	}
     }
     return Qnil;
@@ -1479,7 +1490,8 @@ min_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 static VALUE
 enum_min(int argc, VALUE *argv, VALUE obj)
 {
-    struct MEMO *memo = MEMO_NEW(Qundef, 0, 0);
+    VALUE memo;
+    struct min_t *m = NEW_MEMO_FOR(struct min_t, memo);
     VALUE result;
     VALUE num;
 
@@ -1488,32 +1500,39 @@ enum_min(int argc, VALUE *argv, VALUE obj)
     if (!NIL_P(num))
        return nmin_run(obj, num, 0, 0);
 
+    m->min = Qundef;
+    m->opt_methods = 0;
+    m->opt_inited = 0;
     if (rb_block_given_p()) {
-	rb_block_call(obj, id_each, 0, 0, min_ii, (VALUE)memo);
+	rb_block_call(obj, id_each, 0, 0, min_ii, memo);
     }
     else {
-	rb_block_call(obj, id_each, 0, 0, min_i, (VALUE)memo);
+	rb_block_call(obj, id_each, 0, 0, min_i, memo);
     }
-    result = memo->v1;
+    result = m->min;
     if (result == Qundef) return Qnil;
     return result;
 }
 
+struct max_t {
+    VALUE max;
+    int opt_methods;
+    int opt_inited;
+};
+
 static VALUE
 max_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 {
-    struct MEMO *memo = MEMO_CAST(args);
-    VALUE cmp;
+    struct max_t *memo = MEMO_FOR(struct max_t, args);
 
     ENUM_WANT_SVALUE();
 
-    if (memo->v1 == Qundef) {
-	MEMO_V1_SET(memo, i);
+    if (memo->max == Qundef) {
+	memo->max = i;
     }
     else {
-	cmp = rb_funcall(i, id_cmp, 1, memo->v1);
-	if (rb_cmpint(cmp, i, memo->v1) > 0) {
-	    MEMO_V1_SET(memo, i);
+	if (OPTIMIZED_CMP(i, memo->max, memo) > 0) {
+	    memo->max = i;
 	}
     }
     return Qnil;
@@ -1522,18 +1541,18 @@ max_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 static VALUE
 max_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 {
-    struct MEMO *memo = MEMO_CAST(args);
+    struct max_t *memo = MEMO_FOR(struct max_t, args);
     VALUE cmp;
 
     ENUM_WANT_SVALUE();
 
-    if (memo->v1 == Qundef) {
-	MEMO_V1_SET(memo, i);
+    if (memo->max == Qundef) {
+	memo->max = i;
     }
     else {
-	cmp = rb_yield_values(2, i, memo->v1);
-	if (rb_cmpint(cmp, i, memo->v1) > 0) {
-	    MEMO_V1_SET(memo, i);
+	cmp = rb_yield_values(2, i, memo->max);
+	if (rb_cmpint(cmp, i, memo->max) > 0) {
+	    memo->max = i;
 	}
     }
     return Qnil;
@@ -1565,7 +1584,8 @@ max_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 static VALUE
 enum_max(int argc, VALUE *argv, VALUE obj)
 {
-    struct MEMO *memo = MEMO_NEW(Qundef, 0, 0);
+    VALUE memo;
+    struct max_t *m = NEW_MEMO_FOR(struct max_t, memo);
     VALUE result;
     VALUE num;
 
@@ -1574,13 +1594,16 @@ enum_max(int argc, VALUE *argv, VALUE obj)
     if (!NIL_P(num))
        return nmin_run(obj, num, 0, 1);
 
+    m->max = Qundef;
+    m->opt_methods = 0;
+    m->opt_inited = 0;
     if (rb_block_given_p()) {
 	rb_block_call(obj, id_each, 0, 0, max_ii, (VALUE)memo);
     }
     else {
 	rb_block_call(obj, id_each, 0, 0, max_i, (VALUE)memo);
     }
-    result = memo->v1;
+    result = m->max;
     if (result == Qundef) return Qnil;
     return result;
 }
@@ -1589,9 +1612,9 @@ struct minmax_t {
     VALUE min;
     VALUE max;
     VALUE last;
+    int opt_methods;
+    int opt_inited;
 };
-
-STATIC_ASSERT(minmax_t, sizeof(struct minmax_t) <= sizeof(struct MEMO) - offsetof(struct MEMO, v1));
 
 static void
 minmax_i_update(VALUE i, VALUE j, struct minmax_t *memo)
@@ -1603,11 +1626,11 @@ minmax_i_update(VALUE i, VALUE j, struct minmax_t *memo)
 	memo->max = j;
     }
     else {
-	n = rb_cmpint(rb_funcall(i, id_cmp, 1, memo->min), i, memo->min);
+	n = OPTIMIZED_CMP(i, memo->min, memo);
 	if (n < 0) {
 	    memo->min = i;
 	}
-	n = rb_cmpint(rb_funcall(j, id_cmp, 1, memo->max), j, memo->max);
+	n = OPTIMIZED_CMP(j, memo->max, memo);
 	if (n > 0) {
 	    memo->max = j;
 	}
@@ -1617,7 +1640,7 @@ minmax_i_update(VALUE i, VALUE j, struct minmax_t *memo)
 static VALUE
 minmax_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, _memo))
 {
-    struct minmax_t *memo = (struct minmax_t *)&MEMO_CAST(_memo)->v1;
+    struct minmax_t *memo = MEMO_FOR(struct minmax_t, _memo);
     int n;
     VALUE j;
 
@@ -1630,7 +1653,7 @@ minmax_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, _memo))
     j = memo->last;
     memo->last = Qundef;
 
-    n = rb_cmpint(rb_funcall(j, id_cmp, 1, i), j, i);
+    n = OPTIMIZED_CMP(j, i, memo);
     if (n == 0)
         i = j;
     else if (n < 0) {
@@ -1669,7 +1692,7 @@ minmax_ii_update(VALUE i, VALUE j, struct minmax_t *memo)
 static VALUE
 minmax_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, _memo))
 {
-    struct minmax_t *memo = (struct minmax_t *)&MEMO_CAST(_memo)->v1;
+    struct minmax_t *memo = MEMO_FOR(struct minmax_t, _memo);
     int n;
     VALUE j;
 
@@ -1715,18 +1738,20 @@ minmax_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, _memo))
 static VALUE
 enum_minmax(VALUE obj)
 {
-    struct MEMO *memo = MEMO_NEW(Qundef, Qundef, Qundef);
-    struct minmax_t *m = (struct minmax_t *)&memo->v1;
+    VALUE memo;
+    struct minmax_t *m = NEW_MEMO_FOR(struct minmax_t, memo);
 
     m->min = Qundef;
     m->last = Qundef;
+    m->opt_methods = 0;
+    m->opt_inited = 0;
     if (rb_block_given_p()) {
-	rb_block_call(obj, id_each, 0, 0, minmax_ii, (VALUE)memo);
+	rb_block_call(obj, id_each, 0, 0, minmax_ii, memo);
 	if (m->last != Qundef)
 	    minmax_ii_update(m->last, m->last, m);
     }
     else {
-	rb_block_call(obj, id_each, 0, 0, minmax_i, (VALUE)memo);
+	rb_block_call(obj, id_each, 0, 0, minmax_i, memo);
 	if (m->last != Qundef)
 	    minmax_i_update(m->last, m->last, m);
     }

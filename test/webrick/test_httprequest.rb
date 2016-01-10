@@ -4,6 +4,11 @@ require "stringio"
 require "test/unit"
 
 class TestWEBrickHTTPRequest < Test::Unit::TestCase
+  def teardown
+    WEBrick::Utils::TimeoutHandler.terminate
+    super
+  end
+
   def test_simple_request
     msg = <<-_end_of_message_
 GET /

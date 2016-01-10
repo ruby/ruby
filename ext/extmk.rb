@@ -89,7 +89,7 @@ def extract_makefile(makefile, keep = true)
     return keep
   end
   installrb = {}
-  m.scan(/^install-rb-default:.*[ \t](\S+)(?:[ \t].*)?\n\1:[ \t]*(\S+)/) {installrb[$2] = $1}
+  m.scan(/^(?:do-)?install-rb-default:.*[ \t](\S+)(?:[ \t].*)?\n\1:[ \t]*(\S+)/) {installrb[$2] = $1}
   oldrb = installrb.keys.sort
   newrb = install_rb(nil, "").collect {|d, *f| f}.flatten.sort
   if target_prefix = m[/^target_prefix[ \t]*=[ \t]*\/(.*)/, 1]

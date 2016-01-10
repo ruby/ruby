@@ -90,6 +90,7 @@ BUILTIN_TRANSOBJS = @BUILTIN_TRANSOBJS@
 POSTLINK = @POSTLINK@
 
 RUBY_BASE_NAME=@RUBY_BASE_NAME@
+RUBY_PROGRAM_VERSION=@RUBY_PROGRAM_VERSION@
 RUBY_INSTALL_NAME=@RUBY_INSTALL_NAME@
 RUBY_SO_NAME=@RUBY_SO_NAME@
 EXEEXT = @EXEEXT@
@@ -117,6 +118,11 @@ XRUBY_RUBYHDRDIR = @XRUBY_RUBYHDRDIR@
 BOOTSTRAPRUBY = @BOOTSTRAPRUBY@
 
 #### End of system configuration section. ####
+
+MAJOR=	@MAJOR@
+MINOR=	@MINOR@
+TEENY=	@TEENY@
+RUBY_PROGRAM_VERSION = @RUBY_PROGRAM_VERSION@
 
 LIBRUBY_A     = @LIBRUBY_A@
 LIBRUBY_SO    = @LIBRUBY_SO@
@@ -394,8 +400,8 @@ enc/jis/props.h: enc/jis/props.kwd
 	$(Q) $(RM) $@.tmp
 
 .dmyh.h:
-	@$(ECHO) copying dummy $(DEST_FILE)
-	$(Q) $(CP) $(OS_SRC_FILE) $(OS_DEST_FILE)
+	@$(ECHO) making dummy $(DEST_FILE)
+	$(Q)echo '#include "$(*F).dmyh"' > $@
 
 probes.stamp: $(DTRACE_REBUILD_OBJS)
 	$(Q) if test -f $@ -o -f probes.$(OBJEXT); then \

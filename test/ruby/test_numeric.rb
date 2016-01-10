@@ -147,6 +147,18 @@ class TestNumeric < Test::Unit::TestCase
     assert_predicate(a, :zero?)
   end
 
+  def test_nonzero_p
+    a = Class.new(Numeric) do
+      def zero?; true; end
+    end.new
+    assert_nil(a.nonzero?)
+
+    a = Class.new(Numeric) do
+      def zero?; false; end
+    end.new
+    assert_equal(a, a.nonzero?)
+  end
+
   def test_positive_p
     a = Class.new(Numeric) do
       def >(x); true; end

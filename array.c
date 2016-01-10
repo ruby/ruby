@@ -2368,22 +2368,6 @@ struct ary_sort_data {
     int opt_inited;
 };
 
-enum {
-    sort_opt_Fixnum,
-    sort_opt_String,
-    sort_optimizable_count
-};
-
-#define STRING_P(s) (RB_TYPE_P((s), T_STRING) && CLASS_OF(s) == rb_cString)
-
-#define SORT_OPTIMIZABLE_BIT(type) (1U << TOKEN_PASTE(sort_opt_,type))
-#define SORT_OPTIMIZABLE(data, type) \
-    (((data)->opt_inited & SORT_OPTIMIZABLE_BIT(type)) ? \
-     ((data)->opt_methods & SORT_OPTIMIZABLE_BIT(type)) : \
-     (((data)->opt_inited |= SORT_OPTIMIZABLE_BIT(type)), \
-      rb_method_basic_definition_p(TOKEN_PASTE(rb_c,type), id_cmp) && \
-      ((data)->opt_methods |= SORT_OPTIMIZABLE_BIT(type))))
-
 static VALUE
 sort_reentered(VALUE ary)
 {
@@ -2415,12 +2399,12 @@ sort_2(const void *ap, const void *bp, void *dummy)
     VALUE a = *(const VALUE *)ap, b = *(const VALUE *)bp;
     int n;
 
-    if (FIXNUM_P(a) && FIXNUM_P(b) && SORT_OPTIMIZABLE(data, Fixnum)) {
+    if (FIXNUM_P(a) && FIXNUM_P(b) && CMP_OPTIMIZABLE(data, Fixnum)) {
 	if ((long)a > (long)b) return 1;
 	if ((long)a < (long)b) return -1;
 	return 0;
     }
-    if (STRING_P(a) && STRING_P(b) && SORT_OPTIMIZABLE(data, String)) {
+    if (STRING_P(a) && STRING_P(b) && CMP_OPTIMIZABLE(data, String)) {
 	return rb_str_cmp(a, b);
     }
 

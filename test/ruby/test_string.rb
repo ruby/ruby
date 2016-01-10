@@ -2349,6 +2349,13 @@ class TestString < Test::Unit::TestCase
     assert_equal(0x3042, "\u3042\u3043".ord)
     assert_raise(ArgumentError) { "".ord }
   end
+
+  def test_chr
+    assert_equal("a", "abcde".chr)
+    assert_equal("a", "a".chr)
+    assert_equal("\u3042", "\u3042\u3043".chr)
+    assert_equal('', ''.chr)
+  end
 end
 
 class TestString2 < TestString

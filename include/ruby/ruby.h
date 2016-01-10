@@ -26,6 +26,13 @@ extern "C" {
 #include RUBY_EXTCONF_H
 #endif
 
+#if defined(__cplusplus)
+/* __builtin_choose_expr and __builtin_types_compatible aren't available
+ * on C++.  See https://gcc.gnu.org/onlinedocs/gcc/Other-Builtins.html */
+# undef HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P
+# undef HAVE_BUILTIN___BUILTIN_TYPES_COMPATIBLE_P
+#endif
+
 #include "defines.h"
 
 #define NORETURN_STYLE_NEW 1
@@ -2205,6 +2212,10 @@ void ruby_incpush(const char*);
 void ruby_sig_finalize(void);
 
 /*! @} */
+
+#if !defined RUBY_EXPORT && !defined RUBY_NO_OLD_COMPATIBILITY
+# include "ruby/backward.h"
+#endif
 
 RUBY_SYMBOL_EXPORT_END
 

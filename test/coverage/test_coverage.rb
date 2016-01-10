@@ -111,4 +111,4 @@ class TestCoverage < Test::Unit::TestCase
   ensure
     $".replace loaded_features
   end
-end
+end unless ENV['COVERAGE']

@@ -24,6 +24,10 @@ LARGEFILE_SUPPORT = 1
 win_srcdir = $(srcdir)/win32
 !endif
 
+!if exist(verconf.mk)
+! include verconf.mk
+!endif
+
 #### Start of system configuration section. ####
 
 !if defined(pathlist)
@@ -135,11 +139,11 @@ PLATFORM_DIR = win32
 arch = $(ARCH)-$(PLATFORM)
 sitearch = $(ARCH)-$(RT)
 !if !defined(ruby_version)
-ruby_version = $(MAJOR).$(MINOR).$(TEENY)
+ruby_version = $(MAJOR).$(MINOR).0
 !endif
 
 !ifndef RUBY_SO_NAME
-RUBY_SO_NAME = $(RT)-$(RUBY_BASE_NAME)$(MAJOR)$(MINOR)$(TEENY)
+RUBY_SO_NAME = $(RT)-$(RUBY_BASE_NAME)$(ruby_version:.=)
 !if "$(ARCH)" != "i386"
 RUBY_SO_NAME = $(ARCH)-$(RUBY_SO_NAME)
 !endif
@@ -424,9 +428,6 @@ PRELUDE_C = prelude.c
 RBCONFIG      = ./.rbconfig.time
 
 !include $(srcdir)/common.mk
-!if exist(verconf.mk)
-! include verconf.mk
-!endif
 
 !ifdef SCRIPTPROGRAMS
 !else if [echo>scriptbin.mk SCRIPTPROGRAMS = \]
@@ -926,7 +927,7 @@ s,@sitearchincludedir@,$${includedir}/$${sitearch},;t t
 s,@arch@,$(ARCH)-$(PLATFORM),;t t
 s,@sitearch@,$(ARCH)-$(RT),;t t
 s,@ruby_version@,$(ruby_version),;t t
-s,@RUBY_PROGRAM_VERSION@,$(ruby_version),;t t
+s,@RUBY_PROGRAM_VERSION@,$(RUBY_PROGRAM_VERSION),;t t
 s,@rubylibprefix@,$${prefix}/lib/$${RUBY_BASE_NAME},;t t
 s,@rubyarchdir@,$${rubylibdir}/$${arch},;t t
 s,@rubylibdir@,$${rubylibprefix}/$${ruby_version},;t t
@@ -1147,12 +1148,9 @@ ext/extinit.obj: ext/extinit.c $(SETUP)
 	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c ext/extinit.c
 
 probes.h: {$(VPATH)}probes.dmyh
-	@$(ECHO) copying dummy $(DEST_FILE)
-	@if exist probes.dmyh (\
-	  $(Q) $(CP) probes.dmyh $(OS_DEST_FILE)\
-	) else (\
-	  $(Q) $(CP) $(srcdir:/=\)\probes.dmyh $(OS_DEST_FILE)\
-	)
+	@$(ECHO) making dummy <<$(DEST_FILE)
+#include "$(*F).dmyh"
+<<KEEP
 
 INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
 	  vmtc.inc vm.inc

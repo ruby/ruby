@@ -1,3 +1,193 @@
+Sun Jan 10 20:57:25 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (compile_massign_lhs): when index ends with splat,
+	  append rhs value to it like POSTARG, since VM_CALL_ARGS_SPLAT
+	  splats the last argument only.  [ruby-core:72777] [Bug #11970]
+
+Sun Jan 10 15:45:10 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/missing.h (explicit_bzero_by_memset_s): remove
+	  inline implementation by memset_s, which needs a macro before
+	  including headers and can cause problems in extension libraries
+	  by the order of the macro and headers.
+
+Sun Jan 10 13:41:36 2016  Eric Wong  <e@80x24.org>
+
+	* io.c (rb_deferr): remove long obsolete global
+
+Sun Jan 10 09:14:42 2016  Eric Wong  <e@80x24.org>
+
+	* ext/psych/lib/psych/visitors/yaml_tree.rb (visit_String):
+	  eliminate chomp
+	* lib/net/http.rb (connect): eliminate delete
+	* lib/net/http/header.rb (basic_encode): ditto
+	* lib/net/imap.rb (authenticate): eliminate gsub
+	  (self.encode_utf7): shorten delete arg
+	* lib/net/smtp.rb (base64_encode): eliminate gsub
+	* lib/open-uri.rb (OpenURI.open_http): eliminate delete
+	* lib/rss/rss.rb: ditto
+	* lib/securerandom.rb (base64): ditto
+	  (urlsafe_base64): eliminate delete!
+	* lib/webrick/httpauth/digestauth.rb (split_param_value):
+	  eliminate chop
+	* lib/webrick/httpproxy.rb (do_CONNECT): eliminate delete
+	  (setup_upstream_proxy_authentication): ditto
+	  [ruby-core:72666] [Feature #11938]
+
+Sat Jan  9 23:19:14 2016  Kuniaki IGARASHI  <igaiga@gmail.com>
+
+	* test/ruby/test_hash.rb (test_try_convert): Add test for
+	  Hash.try_convert.  [Fix GH-1190]
+
+Sat Jan  9 23:15:25 2016  Jon Moss  <maclover7@users.noreply.github.com>
+
+	* ext/openssl/ossl.c: Add missing variables to documentation
+	  examples.  [Fix GH-1189]
+
+Sat Jan  9 18:25:57 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* symbol.h (is_attrset_id): ASET is an attrset ID.  fix
+	  unexpected safe call instead of an ordinary ASET.
+
+Sat Jan  9 10:44:33 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in, win32/setup.mak: extract RUBY_PROGRAM_VERSION from
+	  RUBY_VERSION in version.h instead of RUBY_API_VERSION numbers in
+	  include/ruby/version.h, and cut it into version numbers.
+
+Sat Jan  9 07:13:33 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: rename PAGE_* to HEAP_PAGE_* because PAGE_SIZE is used
+	  in Mac OS X.
+
+	* test/ruby/test_gc.rb: catch up this fix.
+
+Sat Jan  9 05:45:40 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: PAGE_BITMAP_PLANES (the number of bitmap) is 4, not 3.
+
+Sat Jan  9 05:42:57 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: rename constant names HEAP_* to PAGE_*.
+
+	  Keys of GC::INTERNAL_CONSTANTS are also renamed.
+
+	* test/ruby/test_gc.rb: catch up this fix.
+
+Fri Jan  8 22:30:06 2016  Akinori MUSHA  <knu@iDaemons.org>
+
+	* doc/regexp.rdoc: [DOC] Elaborate on the \G anchor. [ci skip]
+
+Fri Jan  8 19:49:27 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: remove heap_page::body. Instead of this field,
+	  heap_page::start field works well.
+
+Fri Jan  8 19:31:52 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: rename rb_heap_t::page_length to rb_heap_t::total_pages.
+
+	  `page_length' is not clear (we may understand with length of
+	  a page).
+
+Fri Jan  8 17:07:14 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: remove heap_page::heap. This field is only used to recognize
+	  whether a page is in a tomb or not. Instead of this field,
+	  heap_page::flags::in_tomb (1 bit field) is added.
+
+	  Also type of heap_page::(total|free|final)_slots are changed from
+	  int to short. 2B is enough for them.
+
+Fri Jan  8 09:33:59 2016  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* iseq.c (rb_iseq_compile_with_option): move variable initialization
+	  code to avoid maybe-uninitialized warnings by gcc 4.8.
+
+Fri Jan  8 00:03:22 2016  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* enum.c (enum_min, enum_max): do the same optimization as r53454.
+
+Thu Jan  7 22:32:21 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ruby.h: undef HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P
+	  and HAVE_BUILTIN___BUILTIN_TYPES_COMPATIBLE_P on C++.
+	  [ruby-core:72736] [Bug #11962]
+
+Thu Jan  7 22:02:21 2016  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* enum.c (enum_minmax): optimize object comparison in
+	  Enumerable#minmax.
+
+Thu Jan  7 14:49:12 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (rb_thread_pending_interrupt_p): no pending interrupt
+	  before initialization.
+
+	* thread.c (thread_raise_m, rb_thread_kill): uninitialized thread
+	  cannot interrupt.  [ruby-core:72732] [Bug #11959]
+
+Thu Jan  7 11:34:14 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/backward.h (ruby_show_copyright_to_die): for source
+	  code backward compatibility.
+
+	* ruby.c (process_options): return Qtrue to exit the process
+	  successfully.
+
+	* version.c (ruby_show_copyright): no longer exit.
+
+Wed Jan  6 17:22:53 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (OptionParser#order!): add `into` optional
+	  keyword argument to store the results.  [Feature #11191]
+
+Tue Jan  5 21:44:37 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ChangeLog: fix wrong class name.
+
+Tue Jan  5 21:43:50 2016  Kuniaki IGARASHI  <igaiga@gmail.com>
+
+	* test/ruby/test_string.rb(test_chr): added test for String#chr
+	  [fix GH-1179]
+
+Tue Jan  5 21:32:26 2016  Kuniaki IGARASHI  <igaiga@gmail.com>
+
+	* test/ruby/test_numeric.rb (test_nonzero_p): added test for Numeric#nonzero?
+	  [fix GH-1187]
+
+Tue Jan  5 11:47:23 2016  Damir Gaynetdinov  <damir.gaynetdinov@gmail.com>
+
+	* doc/marshal.rdoc: Clarify object references example, that the
+	  reference is same object.  [Fix GH-1156]
+
+Tue Jan  5 05:06:51 2016  Eric Wong  <e@80x24.org>
+
+	* ext/stringio/stringio.c (strio_binmode): implement to set encoding
+	* test/stringio/test_stringio.rb (test_binmode): new test
+	  [ruby-core:72699] [Bug #11945]
+
+Mon Jan  4 15:44:37 2016  Sho Hashimoto  <sho-h@ruby-lang.org>
+
+	* variable.c (rb_mod_deprecate_constant): [DOC] added
+	  documentation for Module#deprecate_constant. [ci skip]
+
+Mon Jan  4 15:36:38 2016  Sho Hashimoto  <sho-h@ruby-lang.org>
+
+	* thread_sync.c: [DOC] remove SizedQueue#close argument.
+	  [ci skip]
+
+Mon Jan  4 10:14:24 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* test/coverage/test_coverage.rb: ignored test when enabled to coverage.
+	  It lead to crash with `make test-all`.
+
+Mon Jan  4 08:10:44 2016  Yuichiro Kaneko  <yui-knk@ruby-lang.org>
+
+	* insns.def (opt_case_dispatch): Move a comment to the
+	  appropriate position.
+	  [ci skip]
+
 Sun Jan  3 23:55:13 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rubygems/security.rb (DIGEST_ALGORITHM, KEY_ALGORITHM):
@@ -40,11 +230,6 @@ Sat Jan  2 14:44:31 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* parse.y (regexp): set_yylval_num sets u1, should use nd_tag
 	  instead of nd_state.  [ruby-core:72638] [Bug #11932]
 
-Sat Jan  2 11:11:01 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* parse.y (set_yylval_num): should be used as nd_state, set to u3.
-	  [ruby-core:72638] [Bug #11932]
-
 Sat Jan  2 02:27:22 2016  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* lib/ostruct.rb: Fix case of frozen object with initializer.
@@ -52,7 +237,7 @@ Sat Jan  2 02:27:22 2016  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 Fri Jan  1 22:01:52 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
-	* NEWS: mention about CSV's liberal_parsing option.
+	* NEWS: mention CSV's liberal_parsing option.
 
 Fri Jan  1 19:38:23 2016  okkez  <okkez000@gmail.com>
 
@@ -337,14 +522,6 @@ Sat Dec 26 11:26:38 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* miniinit.c (Init_enc): add some common aliases of built-in
 	  encodings.  [ruby-core:72481] [Bug #11872]
-
-Sat Dec 26 01:24:40 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* configure.in, version.h (RUBY_PROGRAM_VERSION): extract version
-	  numbers from API version in include/ruby/version.h except for
-	  TEENY, to save matz job next year.
-
-	* win32/setup.mak (-version-): use program version.
 
 Fri Dec 25 22:43:26 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

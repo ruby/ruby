@@ -52,6 +52,7 @@ end
   [$rubyw_name,  CONFIG["EXEEXT"], 'VFT_APP', 'GUI', rubyw_icon || ruby_icon],
   [$so_name,     '.dll',           'VFT_DLL', 'DLL', dll_icons.join],
 ].each do |base, ext, type, desc, icon|
+  next if $output and $output != base
   open(base + '.rc', "w") { |f|
     f.binmode if /mingw/ =~ RUBY_PLATFORM
 

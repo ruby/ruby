@@ -1508,17 +1508,18 @@ XXX
   #
   # Returns the rest of +argv+ left unparsed.
   #
-  def order(*argv, &block)
+  def order(*argv, into: nil, &nonopt)
     argv = argv[0].dup if argv.size == 1 and Array === argv[0]
-    order!(argv, &block)
+    order!(argv, into: into, &nonopt)
   end
 
   #
   # Same as #order, but removes switches destructively.
   # Non-option arguments remain in +argv+.
   #
-  def order!(argv = default_argv, &nonopt)
-    parse_in_order(argv, &nonopt)
+  def order!(argv = default_argv, into: nil, &nonopt)
+    setter = ->(name, val) {into[name.to_sym] = val} if into
+    parse_in_order(argv, setter, &nonopt)
   end
 
   def parse_in_order(argv = default_argv, setter = nil, &nonopt)  # :nodoc:
@@ -1599,18 +1600,18 @@ XXX
   # Parses command line arguments +argv+ in permutation mode and returns
   # list of non-option arguments.
   #
-  def permute(*argv)
+  def permute(*argv, into: nil)
     argv = argv[0].dup if argv.size == 1 and Array === argv[0]
-    permute!(argv)
+    permute!(argv, into: into)
   end
 
   #
   # Same as #permute, but removes switches destructively.
   # Non-option arguments remain in +argv+.
   #
-  def permute!(argv = default_argv)
+  def permute!(argv = default_argv, into: nil)
     nonopts = []
-    order!(argv, &nonopts.method(:<<))
+    order!(argv, into: into, &nonopts.method(:<<))
     argv[0, 0] = nonopts
     argv
   end
@@ -1619,20 +1620,20 @@ XXX
   # Parses command line arguments +argv+ in order when environment variable
   # POSIXLY_CORRECT is set, and in permutation mode otherwise.
   #
-  def parse(*argv)
+  def parse(*argv, into: nil)
     argv = argv[0].dup if argv.size == 1 and Array === argv[0]
-    parse!(argv)
+    parse!(argv, into: into)
   end
 
   #
   # Same as #parse, but removes switches destructively.
   # Non-option arguments remain in +argv+.
   #
-  def parse!(argv = default_argv)
+  def parse!(argv = default_argv, into: nil)
     if ENV.include?('POSIXLY_CORRECT')
-      order!(argv)
+      order!(argv, into: into)
     else
-      permute!(argv)
+      permute!(argv, into: into)
     end
   end
 
