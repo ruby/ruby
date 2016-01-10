@@ -329,7 +329,7 @@ putspecialobject
 /**
   @c put
   @e put iseq value.
-  @j put iseq value.
+  @j iseq をスタックにプッシュする。
  */
 DEFINE_INSN
 putiseq
@@ -377,7 +377,7 @@ concatstrings
 
 /**
   @c put
-  @e to_str
+  @e push the result of to_str.
   @j to_str の結果をスタックにプッシュする。
  */
 DEFINE_INSN
@@ -391,7 +391,7 @@ tostring
 
 /**
   @c put
-  @e Freeze (dynamically) created strings.
+  @e Freeze (dynamically) created strings. if debug_info is given, set it.
   @j （埋め込み）文字列を freeze する。もし、debug_info が与えられていれば、それを設定する。
  */
 DEFINE_INSN
@@ -408,7 +408,8 @@ freezestring
 
 /**
   @c put
-  @e to Regexp
+  @e compile str to Regexp and push it.
+     opt is the option for the Regexp.
   @j 文字列 str を正規表現にコンパイルしてスタックにプッシュする。
      コンパイル時，opt を正規表現のオプションとする。
  */
@@ -431,7 +432,7 @@ toregexp
 
 /**
   @c put
-  @e put new array.
+  @e put new array initialized with num values on the stack.
   @j 新しい配列をスタック上の num 個の値で初期化して生成しプッシュする。
  */
 DEFINE_INSN
@@ -460,7 +461,14 @@ duparray
 
 /**
   @c put
-  @e expand array to num objects.
+  @e if TOS is an array expand, expand it to num objects.
+     if the number of the array is less than num, push nils to fill.
+     if it is greater than num, exceeding elements are dropped.
+     unless TOS is an array, push num - 1 nils.
+     if flags is non-zero, push the array of the rest elements.
+     flag: 0x01 - rest args array
+     flag: 0x02 - for postarg
+     flag: 0x04 - reverse?
   @j スタックトップのオブジェクトが配列であれば、それを展開する。
      配列オブジェクトの要素数が num以下ならば、代わりに nil を積む。num以上なら、
      num以上の要素は切り捨てる。
@@ -510,8 +518,8 @@ concatarray
 
 /**
   @c put
-  @e splat array
-  @j 配列 ary に対して to_a を呼び出す。
+  @e call to_a on array ary to splat
+  @j splat のために配列 ary に対して to_a を呼び出す。
  */
 DEFINE_INSN
 splatarray
@@ -531,7 +539,7 @@ splatarray
 
 /**
   @c put
-  @e put new Hash.
+  @e put new Hash from n elements. n must be an even number.
   @j 新しいハッシュをスタックトップの n 個を初期値として生成する。
      n はキーと値のペアなので 2 の倍数でなければならない。
  */
