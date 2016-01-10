@@ -18,10 +18,6 @@ extern "C" {
 #endif
 #endif
 
-#ifndef __STDC_WANT_LIB_EXT1__
-#define __STDC_WANT_LIB_EXT1__ 1
-#endif
-
 #include "ruby/config.h"
 #include <stddef.h>
 #include <math.h> /* for INFINITY and NAN */
@@ -248,15 +244,7 @@ RUBY_EXTERN void setproctitle(const char *fmt, ...);
 
 #ifndef HAVE_EXPLICIT_BZERO
 RUBY_EXTERN void explicit_bzero(void *b, size_t len);
-# ifdef HAVE_MEMSET_S
-# include <string.h>
-static inline void
-explicit_bzero_by_memset_s(void *b, size_t len)
-{
-    memset_s(b, len, 0, len);
-}
-#   define explicit_bzero(b, len) explicit_bzero_by_memset_s(b, len)
-# elif defined SecureZeroMemory
+# if defined SecureZeroMemory
 #   define explicit_bzero(b, len) SecureZeroMemory(b, len)
 # endif
 #endif

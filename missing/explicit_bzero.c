@@ -1,5 +1,12 @@
+#ifndef __STDC_WANT_LIB_EXT1__
+#define __STDC_WANT_LIB_EXT1__ 1
+#endif
+
 #include "ruby/missing.h"
 #include <string.h>
+#ifdef HAVE_MEMSET_S
+# include <string.h>
+#endif
 
 #ifdef _WIN32
 #include <windows.h>
