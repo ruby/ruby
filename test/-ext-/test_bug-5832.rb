@@ -1,5 +1,5 @@
 # frozen_string_literal: false
-require '-test-/bug-5832/bug'
+require '-test-/bug_5832'
 
 class Test_BUG_5832 < Test::Unit::TestCase
   def test_block_passing

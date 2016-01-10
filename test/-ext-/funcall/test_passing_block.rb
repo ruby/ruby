@@ -7,7 +7,7 @@ class TestFuncall < Test::Unit::TestCase
       yield(*args) if block
     end
   end
-  require '-test-/funcall/funcall'
+  require '-test-/funcall'
 
   def test_with_funcall2
     ok = nil
