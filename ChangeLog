@@ -1,3 +1,10 @@
+Sun Jan 10 15:45:10 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/missing.h (explicit_bzero_by_memset_s): remove
+	  inline implementation by memset_s, which needs a macro before
+	  including headers and can cause problems in extension libraries
+	  by the order of the macro and headers.
+
 Sun Jan 10 13:41:36 2016  Eric Wong  <e@80x24.org>
 
 	* io.c (rb_deferr): remove long obsolete global
