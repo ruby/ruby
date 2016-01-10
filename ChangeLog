@@ -1,3 +1,9 @@
+Sun Jan 10 20:57:25 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (compile_massign_lhs): when index ends with splat,
+	  append rhs value to it like POSTARG, since VM_CALL_ARGS_SPLAT
+	  splats the last argument only.  [ruby-core:72777] [Bug #11970]
+
 Sun Jan 10 15:45:10 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/missing.h (explicit_bzero_by_memset_s): remove
