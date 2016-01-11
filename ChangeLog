@@ -1,3 +1,8 @@
+Mon Jan 11 21:28:28 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* include/ruby/oniguruma.h: Added flags needed for upcase/downcase
+	  Unicode addition (with Kimihito Matsui)
+
 Mon Jan 11 09:50:24 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: check if the API version number is consistent with
