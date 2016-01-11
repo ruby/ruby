@@ -119,16 +119,8 @@ typedef struct rb_io_t {
 
 #define GetOpenFile(obj,fp) rb_io_check_closed((fp) = RFILE(rb_io_taint_check(obj))->fptr)
 
-#define RB_IO_BUFFER_INIT(buf) do {\
-    [<"internal macro RB_IO_BUFFER_INIT() is used">];\
-} while (0)
-
 #define MakeOpenFile(obj, fp) do {\
     (fp) = rb_io_make_open_file(obj);\
-} while (0)
-
-#define RB_IO_FPTR_NEW(fp) do {\
-    [<"internal macro RB_IO_FPTR_NEW() is used">];\
 } while (0)
 
 rb_io_t *rb_io_make_open_file(VALUE obj);
