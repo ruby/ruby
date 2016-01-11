@@ -1,3 +1,8 @@
+Mon Jan 11 09:50:24 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: check if the API version number is consistent with
+	  the program version number.
+
 Sun Jan 10 20:57:25 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (compile_massign_lhs): when index ends with splat,
