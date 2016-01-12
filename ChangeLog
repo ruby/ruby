@@ -11,7 +11,7 @@ Tue Jan 12 19:52:19 2016  sorah (Shota Fukumori)  <her@sorah.jp>
 
 	      def_delegator Foo, :some_method
 
-	  This change is to revert unwanted incompatibility. But this behavior
+	  This change is to revert unexpected incompatibility. But this behavior
 	  may change in the future.
 
 Mon Jan 12 18:41:41 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
