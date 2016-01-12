@@ -2569,6 +2569,13 @@ rb_const_set(VALUE klass, ID id, VALUE val)
 	args.value = val;
 	const_tbl_update(&args);
     }
+    /*
+     * Resolve and cache class name immediately to resolve ambiguity
+     * and avoid order-dependency on const_tbl
+     */
+    if (rb_cObject && (RB_TYPE_P(val, T_MODULE) || RB_TYPE_P(val, T_CLASS))) {
+	rb_class_name(val);
+    }
 }
 
 static void

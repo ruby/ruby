@@ -1,3 +1,10 @@
+Wed Jan 13 03:42:58 2016  Eric Wong  <e@80x24.org>
+
+	* class.c (Init_class_hierarchy): resolve name for rb_cObject ASAP
+	* object.c (rb_mod_const_set): move name resolution to rb_const_set
+	* variable.c (rb_const_set): do class resolution here
+	  [ruby-core:72807] [Bug #11977]
+
 Wed Jan 13 00:37:12 2016  Satoshi Ohmori  <sachin21dev@gmail.com>
 
 	* man/ruby.1: fix double word typo.  [Fix GH-1194]
