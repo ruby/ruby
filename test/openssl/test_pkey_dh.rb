@@ -7,16 +7,6 @@ class OpenSSL::TestPKeyDH < Test::Unit::TestCase
 
   NEW_KEYLEN = 256
 
-  def test_DEFAULT_512
-    params = <<-eop
------BEGIN DH PARAMETERS-----
-MEYCQQD0zXHljRg/mJ9PYLACLv58Cd8VxBxxY7oEuCeURMiTqEhMym16rhhKgZG2
-zk2O9uUIBIxSj+NKMURHGaFKyIvLAgEC
------END DH PARAMETERS-----
-    eop
-    assert_equal params, OpenSSL::PKey::DH::DEFAULT_512.to_s
-  end
-
   def test_DEFAULT_1024
     params = <<-eop
 -----BEGIN DH PARAMETERS-----
@@ -65,14 +55,14 @@ T4h7KZ/2zmjvV+eF8kBUHBJAojUlzxKj4QeO2x20FP9X5xmNUXeDAgEC
   end
 
   def test_generate_key
-    dh = OpenSSL::TestUtils::TEST_KEY_DH512_PUB.public_key # creates a copy
+    dh = OpenSSL::TestUtils::TEST_KEY_DH1024.public_key # creates a copy
     assert_no_key(dh)
     dh.generate_key!
     assert_key(dh)
   end
 
   def test_key_exchange
-    dh = OpenSSL::TestUtils::TEST_KEY_DH512_PUB
+    dh = OpenSSL::TestUtils::TEST_KEY_DH1024
     dh2 = dh.public_key
     dh.generate_key!
     dh2.generate_key!

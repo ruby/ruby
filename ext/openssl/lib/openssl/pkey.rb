@@ -4,13 +4,6 @@ module OpenSSL
     if defined?(OpenSSL::PKey::DH)
 
     class DH
-      DEFAULT_512 = new <<-_end_of_pem_
------BEGIN DH PARAMETERS-----
-MEYCQQD0zXHljRg/mJ9PYLACLv58Cd8VxBxxY7oEuCeURMiTqEhMym16rhhKgZG2
-zk2O9uUIBIxSj+NKMURHGaFKyIvLAgEC
------END DH PARAMETERS-----
-      _end_of_pem_
-
       DEFAULT_1024 = new <<-_end_of_pem_
 -----BEGIN DH PARAMETERS-----
 MIGHAoGBAJ0lOVy0VIr/JebWn0zDwY2h+rqITFOpdNr6ugsgvkDXuucdcChhYExJ
@@ -23,7 +16,6 @@ T4h7KZ/2zmjvV+eF8kBUHBJAojUlzxKj4QeO2x20FP9X5xmNUXeDAgEC
     DEFAULT_TMP_DH_CALLBACK = lambda { |ctx, is_export, keylen|
       warn "using default DH parameters." if $VERBOSE
       case keylen
-      when 512  then OpenSSL::PKey::DH::DEFAULT_512
       when 1024 then OpenSSL::PKey::DH::DEFAULT_1024
       else
         nil
