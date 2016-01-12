@@ -1149,7 +1149,7 @@ class TestProc < Test::Unit::TestCase
     assert_equal([[:req, :a], [:opt, :b], [:req, :c], [:keyrest, :o]], method(:pmk6).to_proc.parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyrest, :o]], method(:pmk7).to_proc.parameters)
 
-    assert_equal([], "".method(:upcase).to_proc.parameters)
+    assert_equal([], "".method(:empty?).to_proc.parameters)
     assert_equal([[:rest]], "".method(:gsub).to_proc.parameters)
     assert_equal([[:rest]], proc {}.curry.parameters)
   end
