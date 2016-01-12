@@ -5593,26 +5593,26 @@ rb_str_check_dummy_enc(rb_encoding *enc)
 }
 
 static OnigCaseFoldType
-check_case_options(int argc, VALUE *argv, OnigCaseFoldType flag)
+check_case_options(int argc, VALUE *argv, OnigCaseFoldType flags)
 {
     if (argc==0)
-        return flag;
+        return flags;
     if (argc>2)
         rb_raise(rb_eArgError, "too many options");
     if (argv[0]==sym_turkic) {
-	flag &= ONIGENC_CASE_FOLD_TURKISH_AZERI;
+	flags &= ONIGENC_CASE_FOLD_TURKISH_AZERI;
 	if (argc==2) {
 	    if (argv[1]==sym_lithuanian)
-		flag &= ONIGENC_CASE_FOLD_LITHUANIAN;
+		flags &= ONIGENC_CASE_FOLD_LITHUANIAN;
 	    else
 		rb_raise(rb_eArgError, "invalid second option");
 	}
     }
     else if (argv[0]==sym_lithuanian) {
-	flag &= ONIGENC_CASE_FOLD_LITHUANIAN;
+	flags &= ONIGENC_CASE_FOLD_LITHUANIAN;
 	if (argc==2) {
 	    if (argv[1]==sym_turkic)
-	        flag &= ONIGENC_CASE_FOLD_TURKISH_AZERI;
+	        flags &= ONIGENC_CASE_FOLD_TURKISH_AZERI;
 	    else
 	        rb_raise(rb_eArgError, "invalid second option");
 	}
@@ -5620,16 +5620,16 @@ check_case_options(int argc, VALUE *argv, OnigCaseFoldType flag)
     else if (argc>1)
 	rb_raise(rb_eArgError, "too many options");
     else if (argv[0]==sym_ascii)
-	flag &= ONIGENC_CASE_ASCII_ONLY;
+	flags &= ONIGENC_CASE_ASCII_ONLY;
     else if (argv[0]==sym_fold) {
-	if ((flag & (ONIGENC_CASE_UPCASE|ONIGENC_CASE_DOWNCASE)) == ONIGENC_CASE_DOWNCASE)
-	    flag &= ONIGENC_CASE_FOLD;
+	if ((flags & (ONIGENC_CASE_UPCASE|ONIGENC_CASE_DOWNCASE)) == ONIGENC_CASE_DOWNCASE)
+	    flags &= ONIGENC_CASE_FOLD;
 	else
 	    rb_raise(rb_eArgError, "option :fold only allowed for downcasing");
     }
     else
 	rb_raise(rb_eArgError, "invalid option");
-    return flag;
+    return flags;
 }
 
 /*
@@ -5648,9 +5648,9 @@ rb_str_upcase_bang(int argc, VALUE *argv, VALUE str)
     char *s, *send;
     int modify = 0;
     int n;
-    OnigCaseFoldType flag = ONIGENC_CASE_UPCASE;
+    OnigCaseFoldType flags = ONIGENC_CASE_UPCASE;
 
-    flag = check_case_options(argc, argv, flag);
+    flags = check_case_options(argc, argv, flags);
     str_modify_keep_cr(str);
     enc = STR_ENC_GET(str);
     rb_str_check_dummy_enc(enc);
@@ -5732,9 +5732,9 @@ rb_str_downcase_bang(int argc, VALUE *argv, VALUE str)
     rb_encoding *enc;
     char *s, *send;
     int modify = 0;
-    OnigCaseFoldType flag = ONIGENC_CASE_DOWNCASE;
+    OnigCaseFoldType flags = ONIGENC_CASE_DOWNCASE;
 
-    flag = check_case_options(argc, argv, flag);
+    flags = check_case_options(argc, argv, flags);
     str_modify_keep_cr(str);
     enc = STR_ENC_GET(str);
     rb_str_check_dummy_enc(enc);
@@ -5824,10 +5824,10 @@ rb_str_capitalize_bang(int argc, VALUE *argv, VALUE str)
     int modify = 0;
     unsigned int c;
     int n;
-    OnigCaseFoldType flag = ONIGENC_CASE_UPCASE |
+    OnigCaseFoldType flags = ONIGENC_CASE_UPCASE |
                     ONIGENC_CASE_TITLECASE | ONIGENC_CASE_ONCEONLY;
 
-    flag = check_case_options(argc, argv, flag);
+    flags = check_case_options(argc, argv, flags);
     str_modify_keep_cr(str);
     enc = STR_ENC_GET(str);
     rb_str_check_dummy_enc(enc);
@@ -5892,9 +5892,9 @@ rb_str_swapcase_bang(int argc, VALUE *argv, VALUE str)
     char *s, *send;
     int modify = 0;
     int n;
-    OnigCaseFoldType flag = ONIGENC_CASE_UPCASE | ONIGENC_CASE_DOWNCASE;
+    OnigCaseFoldType flags = ONIGENC_CASE_UPCASE | ONIGENC_CASE_DOWNCASE;
 
-    flag = check_case_options(argc, argv, flag);
+    flags = check_case_options(argc, argv, flags);
     str_modify_keep_cr(str);
     enc = STR_ENC_GET(str);
     rb_str_check_dummy_enc(enc);

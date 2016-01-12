@@ -1,3 +1,7 @@
+Mon Jan 12 18:41:41 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* string.c: made a variable name more grammatically correct
+
 Mon Jan 12 18:34:34 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* string.c: minor grammar fix [ci skip]
