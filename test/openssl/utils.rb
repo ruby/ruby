@@ -97,13 +97,6 @@ CeBUl+MahZtn9fO1JKdF4qJmS39dXnpENg==
 
 end
 
-  TEST_KEY_DH512_PUB = OpenSSL::PKey::DH.new <<-_end_of_pem_
------BEGIN DH PARAMETERS-----
-MEYCQQDmWXGPqk76sKw/edIOdhAQD4XzjJ+AR/PTk2qzaGs+u4oND2yU5D2NN4wr
-aPgwHyJBiK1/ebK3tYcrSKrOoRyrAgEC
------END DH PARAMETERS-----
-  _end_of_pem_
-
   TEST_KEY_DH1024 = OpenSSL::PKey::DH.new <<-_end_of_pem_
 -----BEGIN DH PARAMETERS-----
 MIGHAoGBAKnKQ8MNK6nYZzLrrcuTsLxuiJGXoOO5gT+tljOTbHBuiktdMTITzIY0
