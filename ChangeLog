@@ -1,3 +1,8 @@
+Mon Jan 12 16:03:03 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* string.c: Added option parsing/checking for upcase/downcase/
+	  capitalize/swapcase (with Kimihito Matsui)
+
 Mon Jan 11 21:28:28 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* include/ruby/oniguruma.h: Added flags needed for upcase/downcase
