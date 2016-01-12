@@ -4,7 +4,7 @@ require 'rubygems/resolver/molinillo/lib/molinillo/dependency_graph'
 module Gem::Resolver::Molinillo
   # This class encapsulates a dependency resolver.
   # The resolver is responsible for determining which set of dependencies to
-  # activate, with feedback from the the {#specification_provider}
+  # activate, with feedback from the {#specification_provider}
   #
   #
   class Resolver
