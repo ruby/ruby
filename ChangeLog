@@ -1,3 +1,7 @@
+Wed Jan 13 00:37:12 2016  Satoshi Ohmori  <sachin21dev@gmail.com>
+
+	* man/ruby.1: fix double word typo.  [Fix GH-1194]
+
 Wed Jan 13 00:16:47 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* iseq.c (iseqw_mark): as wrapped iseq is isolated from the call
