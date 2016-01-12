@@ -1,3 +1,9 @@
+Mon Jan 12 16:09:09 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* test/ruby/enc/test_casing_options.rb: Tests for option
+	  parsing/checking for upcase/downcase/capitalize/swapcase
+	  (see r53503; with Kimihito Matsui)
+
 Mon Jan 12 16:03:03 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* string.c: Added option parsing/checking for upcase/downcase/
