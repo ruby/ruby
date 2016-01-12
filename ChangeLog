@@ -1,3 +1,7 @@
+Tue Jan 12 21:01:09 2016  Benoit Daloze  <eregontp@gmail.com>
+
+	* common.mk: update URL and name for the Ruby spec suite.
+
 Tue Jan 12 19:52:19 2016  sorah (Shota Fukumori)  <her@sorah.jp>
 
 	* lib/forwardable.rb: Convert given accessors to String.
