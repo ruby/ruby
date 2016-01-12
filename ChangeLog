@@ -1,3 +1,19 @@
+Tue Jan 12 19:52:19 2016  sorah (Shota Fukumori)  <her@sorah.jp>
+
+	* lib/forwardable.rb: Convert given accessors to String.
+
+	  r53381 changed to accept only Symbol or String for accessors, but
+	  there are several rubygems that pass classes (e.g. Array,
+	  Hash, ...) as accessors. Prior r53381, it was accepted because Class#to_s
+	  returns its class name. After r53381 given accessors are checked
+	  with define_method, but it accepts only Symbol or String, otherwise
+	  raises TypeError.
+
+	      def_delegator Foo, :some_method
+
+	  This change is to revert unwanted incompatibility. But this behavior
+	  may change in the future.
+
 Mon Jan 12 18:41:41 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* string.c: made a variable name more grammatically correct
