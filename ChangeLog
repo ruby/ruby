@@ -1,3 +1,9 @@
+Wed Jan 13 00:16:47 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* iseq.c (iseqw_mark): as wrapped iseq is isolated from the call
+	  stack, it needs to take care of its parent and ancestors, so
+	  that they do not become orphans.  [ruby-core:72620] [Bug #11928]
+
 Tue Jan 12 21:01:09 2016  Benoit Daloze  <eregontp@gmail.com>
 
 	* common.mk: update URL and name for the Ruby spec suite.

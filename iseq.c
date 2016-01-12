@@ -711,7 +711,11 @@ rb_iseq_coverage(const rb_iseq_t *iseq)
 static void
 iseqw_mark(void *ptr)
 {
+    const rb_iseq_t *iseq = ptr;
     rb_gc_mark((VALUE)ptr);
+    while ((iseq = iseq->body->parent_iseq) != NULL) {
+	rb_gc_mark((VALUE)iseq);
+    }
 }
 
 static size_t
