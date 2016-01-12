@@ -23,11 +23,11 @@ language: c
 # The value set here is visible via $CC environment variable.
 compiler:
   - gcc
-  - clang
+#  - clang
 
 os:
   - linux
-  - osx
+#  - osx
 
 # Dependencies.  Some  header files are missing  in a Travis' worker  VM, so we
 # have  to install  them.  The  "1.9.1" here  is OK.   It is  the  most adopted
@@ -63,8 +63,7 @@ before_script:
   - "cp -pr config.status .ext/include config_2nd"
   - "diff -ru config_1st config_2nd"
   - "make after-update BASERUBY=ruby"
-  - "make -s $JOBS encs"
-  - "make -s $JOBS exts"
+  - "make -s $JOBS"
   - "make update-rubyspec"
   - "if [[ $TRAVIS_OS_NAME = 'osx' ]]; then echo 'exclude :test_deadlock_by_signal_at_forking, \"under investigation\"' >> test/excludes/TestProcess.rb; fi"
 script:
@@ -90,7 +89,7 @@ notifications:
       - "irc.freenode.org#ruby-core"
       - "irc.freenode.org#ruby-ja"
     on_success: change # [always|never|change] # default: always
-    on_failure: change # [always|never|change] # default: always
+    on_failure: always # [always|never|change] # default: always
     template:
       - "%{message} by @%{author}: See %{build_url}"
 
