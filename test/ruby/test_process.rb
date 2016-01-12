@@ -425,6 +425,16 @@ class TestProcess < Test::Unit::TestCase
     }
   end
 
+  def test_execopts_open_chdir_m17n_path
+    with_tmpchdir {|d|
+      Dir.mkdir "テスト"
+      system(*PWD, :chdir => "テスト", :out => "open_chdir_テスト")
+      assert_file.exist?("open_chdir_テスト")
+      assert_file.not_exist?("テスト/open_chdir_テスト")
+      assert_equal("#{d}/テスト", File.read("open_chdir_テスト").chomp.encode(__ENCODING__))
+    }
+  end
+
   def test_execopts_open_failure
     with_tmpchdir {|d|
       assert_raise_with_message(Errno::ENOENT, %r"d/notexist") {

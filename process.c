@@ -1713,6 +1713,7 @@ rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val)
                 rb_raise(rb_eArgError, "chdir option specified twice");
             }
             FilePathValue(val);
+	    val = rb_str_encode_ospath(val);
             eargp->chdir_given = 1;
             eargp->chdir_dir = hide_obj(EXPORT_DUP(val));
         }
@@ -2313,6 +2314,7 @@ rb_execarg_parent_start1(VALUE execarg_obj)
             if (NIL_P(fd2v)) {
                 struct open_struct open_data;
                 FilePathValue(vpath);
+		vpath = rb_str_encode_ospath(vpath);
               again:
                 open_data.fname = vpath;
                 open_data.oflags = flags;
@@ -2965,6 +2967,11 @@ save_env(struct rb_execarg *sargp)
         sargp->unsetenv_others_do = 1;
     }
 }
+#endif
+
+#ifdef _WIN32
+#undef chdir
+#define chdir(p) rb_w32_uchdir(p)
 #endif
 
 /* This function should be async-signal-safe when sargp is NULL.  Hopefully it is. */
