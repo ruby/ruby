@@ -1,3 +1,7 @@
+Mon Jan 12 18:34:34 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* string.c: minor grammar fix [ci skip]
+
 Mon Jan 12 16:09:09 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* test/ruby/enc/test_casing_options.rb: Tests for option

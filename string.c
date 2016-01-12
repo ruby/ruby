@@ -8600,7 +8600,7 @@ rb_str_b(VALUE str)
  *  call-seq:
  *     str.valid_encoding?  -> true or false
  *
- *  Returns true for a string which encoded correctly.
+ *  Returns true for a string which is encoded correctly.
  *
  *    "\xc2\xa1".force_encoding("UTF-8").valid_encoding?  #=> true
  *    "\xc2".force_encoding("UTF-8").valid_encoding?      #=> false
