@@ -5594,7 +5594,7 @@ rb_str_check_dummy_enc(rb_encoding *enc)
 
 static OnigCaseFoldType
 check_case_options(int argc, VALUE *argv, OnigCaseFoldType flag)
-{    
+{
     if (argc==0)
         return flag;
     if (argc>2)
