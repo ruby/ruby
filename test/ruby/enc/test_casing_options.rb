@@ -9,7 +9,7 @@ class TestCasingOptions < Test::Unit::TestCase
     assert_raise(ArgumentError) { arg.capitalize *options }
     assert_raise(ArgumentError) { arg.swapcase *options }
   end
- 
+
   def assert_raise_bang_operations (arg, *options)
     assert_raise(ArgumentError) { arg.upcase! *options }
     assert_raise(ArgumentError) { arg.downcase! *options }
