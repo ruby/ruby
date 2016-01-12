@@ -224,8 +224,8 @@ fi
 GNU_LD=$rb_cv_prog_gnu_ld
 AC_SUBST(GNU_LD)])
 
-eval `sed -n 's/^#define RUBY_API_VERSION_\([A-Z][A-Z_0-9]*\) \([0-9][0-9]*\)/API_\1=\2/p' $srcdir/include/ruby/version.h`
-RUBY_PROGRAM_VERSION=`sed -n 's/^#define RUBY_VERSION "\(.*\)"/\1/p' $srcdir/version.h`
+eval `sed -n ['s/^@%:@define RUBY_API_VERSION_\([A-Z][A-Z_0-9]*\) \([0-9][0-9]*\)/API_\1=\2/p'] $srcdir/include/ruby/version.h`
+RUBY_PROGRAM_VERSION=`sed -n 's/^@%:@define RUBY_VERSION "\(.*\)"/\1/p' $srcdir/version.h`
 MAJOR=`echo $RUBY_PROGRAM_VERSION | cut -d. -f1`
 MINOR=`echo $RUBY_PROGRAM_VERSION | cut -d. -f2`
 TEENY=`echo $RUBY_PROGRAM_VERSION | cut -d. -f3`
