@@ -34,12 +34,7 @@ os:
 # far since the 1.9.1 release.
 before_install:
   - "CONFIG_FLAG="
-#  - "if [[ $TRAVIS_OS_NAME = 'linux' ]]; then sudo apt-get -qq update; fi"
-  # Travis ships an outdated, broken version of libssl by default
-#  - "if [[ $TRAVIS_OS_NAME = 'linux' ]]; then sudo apt-get -qq --only-upgrade install '^libssl.*'; fi"
-#  - "if [[ $TRAVIS_OS_NAME = 'linux' ]]; then sudo apt-get -qq install $CC; fi" # upgrade if any
-  - "if [[ $TRAVIS_OS_NAME = 'linux' ]]; then JOBS='-j 4'; fi"
-#install: "if [[ $TRAVIS_OS_NAME = 'linux' ]]; then sudo apt-get -qq build-dep ruby1.9.1 2>/dev/null; fi"
+  - "JOBS='-j 4'"
 
 # Script is where the test runs.  Note  we just do "make test", not other tests
 # like  test-all, test-rubyspec.   This is  because  they take  too much  time,

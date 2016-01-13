@@ -1,3 +1,7 @@
+Wed Jan 13 17:21:45 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* .travis.yml: removed commented-out code.
+
 Wed Jan 13 17:14:54 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* .travis.yml: removed osx code. follow up with r53517
