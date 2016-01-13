@@ -66,12 +66,12 @@ before_script:
   - "diff -ru config_1st config_2nd"
   - "make after-update BASERUBY=ruby"
   - "make -s $JOBS"
-  - "make update-rubyspec MSPECOPT=-fm"
+  - "make update-rubyspec"
   - "if [[ $TRAVIS_OS_NAME = 'osx' ]]; then echo 'exclude :test_deadlock_by_signal_at_forking, \"under investigation\"' >> test/excludes/TestProcess.rb; fi"
 script:
-  - "make test --color=never"
+  - "make test TESTOPTS=--color=never"
   - "make test-all TESTOPTS='-q -j3 --color=never --job-status=normal'"
-  - "make test-rubyspec"
+  - "make test-rubyspec MSPECOPT=-fm"
 after_failure:
   - "if [[ $TRAVIS_OS_NAME = 'osx' ]]; then find ~/Library/Logs/DiagnosticReports -type f -name ruby_\\*.crash -ls -execdir cat {} \\; -delete; fi"
 
