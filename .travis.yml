@@ -55,6 +55,7 @@ before_script:
   - "uname -a"
   - "uname -r"
   - "rm -fr .ext autom4te.cache"
+  - "echo $TERM"
   - "make -f common.mk BASERUBY=ruby MAKEDIRS='mkdir -p' srcdir=. update-config_files"
   - "autoconf"
   - "mkdir config_1st config_2nd"
@@ -65,11 +66,11 @@ before_script:
   - "diff -ru config_1st config_2nd"
   - "make after-update BASERUBY=ruby"
   - "make -s $JOBS"
-  - "make update-rubyspec"
+  - "make update-rubyspec MSPECOPT=-fm"
   - "if [[ $TRAVIS_OS_NAME = 'osx' ]]; then echo 'exclude :test_deadlock_by_signal_at_forking, \"under investigation\"' >> test/excludes/TestProcess.rb; fi"
 script:
-  - "make test"
-  - "make test-all TESTOPTS='-q -j3 --job-status=normal'"
+  - "make test --color=never"
+  - "make test-all TESTOPTS='-q -j3 --color=never --job-status=normal'"
   - "make test-rubyspec"
 after_failure:
   - "if [[ $TRAVIS_OS_NAME = 'osx' ]]; then find ~/Library/Logs/DiagnosticReports -type f -name ruby_\\*.crash -ls -execdir cat {} \\; -delete; fi"
