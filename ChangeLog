@@ -1,3 +1,7 @@
+Wed Jan 13 17:14:54 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* .travis.yml: removed osx code. follow up with r53517
+
 Wed Jan 13 16:56:19 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* iseq.c (rb_iseq_mark): mark parent iseq to prevent dynamically

@@ -24,11 +24,9 @@ sudo: false
 # The value set here is visible via $CC environment variable.
 compiler:
   - gcc
-#  - clang
 
 os:
   - linux
-#  - osx
 
 # Dependencies.  Some  header files are missing  in a Travis' worker  VM, so we
 # have  to install  them.  The  "1.9.1" here  is OK.   It is  the  most adopted
@@ -41,17 +39,12 @@ before_install:
 #  - "if [[ $TRAVIS_OS_NAME = 'linux' ]]; then sudo apt-get -qq --only-upgrade install '^libssl.*'; fi"
 #  - "if [[ $TRAVIS_OS_NAME = 'linux' ]]; then sudo apt-get -qq install $CC; fi" # upgrade if any
   - "if [[ $TRAVIS_OS_NAME = 'linux' ]]; then JOBS='-j 4'; fi"
-  - "if [[ $TRAVIS_OS_NAME = 'osx' ]]; then brew install autoconf gdbm openssl; fi"
-  - "if [[ $TRAVIS_OS_NAME = 'osx' ]]; then CONFIG_FLAG=\"$CONFIG_FLAG --with-gdbm-dir=`brew --prefix gdbm`\"; fi"
-  - "if [[ $TRAVIS_OS_NAME = 'osx' ]]; then CONFIG_FLAG=\"$CONFIG_FLAG --with-openssl-dir=`brew --prefix openssl`\"; fi"
-  - "if [[ $TRAVIS_OS_NAME = 'osx' && $CC = 'gcc' ]]; then CC='gcc-4.9'; fi"
 #install: "if [[ $TRAVIS_OS_NAME = 'linux' ]]; then sudo apt-get -qq build-dep ruby1.9.1 2>/dev/null; fi"
 
 # Script is where the test runs.  Note  we just do "make test", not other tests
 # like  test-all, test-rubyspec.   This is  because  they take  too much  time,
 # enough for Travis to shut down the VM as being stalled.
 before_script:
-  - "if [[ $TRAVIS_OS_NAME = 'osx' ]]; then rm -f ~/Library/Logs/DiagnosticReports/ruby_*.crash; fi"
   - "uname -a"
   - "uname -r"
   - "rm -fr .ext autom4te.cache"
@@ -67,13 +60,10 @@ before_script:
   - "make after-update BASERUBY=ruby"
   - "make -s $JOBS"
   - "make update-rubyspec"
-  - "if [[ $TRAVIS_OS_NAME = 'osx' ]]; then echo 'exclude :test_deadlock_by_signal_at_forking, \"under investigation\"' >> test/excludes/TestProcess.rb; fi"
 script:
   - "make test TESTOPTS=--color=never"
   - "make test-all TESTOPTS='-q -j3 --color=never --job-status=normal'"
   - "make test-rubyspec MSPECOPT=-fm"
-after_failure:
-  - "if [[ $TRAVIS_OS_NAME = 'osx' ]]; then find ~/Library/Logs/DiagnosticReports -type f -name ruby_\\*.crash -ls -execdir cat {} \\; -delete; fi"
 
 # Branch matrix.  Not all branches are Travis-ready so we limit branches here.
 branches:
