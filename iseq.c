@@ -113,6 +113,7 @@ rb_iseq_mark(const rb_iseq_t *iseq)
 	rb_gc_mark(body->location.base_label);
 	rb_gc_mark(body->location.path);
 	RUBY_MARK_UNLESS_NULL(body->location.absolute_path);
+	RUBY_MARK_UNLESS_NULL((VALUE)body->parent_iseq);
     }
 
     if (FL_TEST(iseq, ISEQ_NOT_LOADED_YET)) {
@@ -711,11 +712,7 @@ rb_iseq_coverage(const rb_iseq_t *iseq)
 static void
 iseqw_mark(void *ptr)
 {
-    const rb_iseq_t *iseq = ptr;
     rb_gc_mark((VALUE)ptr);
-    while ((iseq = iseq->body->parent_iseq) != NULL) {
-	rb_gc_mark((VALUE)iseq);
-    }
 }
 
 static size_t
