@@ -67,6 +67,7 @@ before_script:
   - "make -s $JOBS"
   - "make update-rubyspec"
   - "if [[ $TRAVIS_OS_NAME = 'osx' ]]; then echo 'exclude :test_deadlock_by_signal_at_forking, \"under investigation\"' >> test/excludes/TestProcess.rb; fi"
+  - "if [[ $TRAVIS_OS_NAME = 'linux' ]]; then echo 'exclude :test_accept_loop_with_unix, \"not working on travis-ci\"' >> test/excludes/TestSocket.rb; fi"
 script:
   - "make test"
   - "make test-all TESTOPTS='-q -j3'"
