@@ -69,7 +69,7 @@ before_script:
   - "if [[ $TRAVIS_OS_NAME = 'osx' ]]; then echo 'exclude :test_deadlock_by_signal_at_forking, \"under investigation\"' >> test/excludes/TestProcess.rb; fi"
 script:
   - "make test"
-  - "make test-all TESTOPTS='-q -j3'"
+  - "make test-all TESTOPTS='-q -j3 --job-status=normal'"
   - "make test-rubyspec"
 after_failure:
   - "if [[ $TRAVIS_OS_NAME = 'osx' ]]; then find ~/Library/Logs/DiagnosticReports -type f -name ruby_\\*.crash -ls -execdir cat {} \\; -delete; fi"
