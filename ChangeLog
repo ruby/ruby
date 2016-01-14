@@ -1,3 +1,7 @@
+Thu Jan 14 16:12:09 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* sprintf.c (rb_str_format): format exact number more exactly.
+
 Thu Jan 14 15:08:43 2016  Tony Arcieri  <bascule@gmail.com>
 
 	* Remove 512-bit DH group. It's affected by LogJam Attack.
