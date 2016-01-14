@@ -1,3 +1,8 @@
+Thu Jan 14 17:36:16 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* variable.c (rb_f_global_variables): add matched back references
+	  only, as well as defiend? operator.
+
 Thu Jan 14 16:12:09 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sprintf.c (rb_str_format): format exact number more exactly.

@@ -105,9 +105,13 @@ class TestVariable < Test::Unit::TestCase
     assert_empty(gv.grep(/\A(?!\$)/))
     assert_nil($~)
     assert_not_include(gv, :$1)
-    /.*/ =~ "global"
+    /(\w)(\d)?(.)(.)(.)(.)(.)(.)(.)(.)(\d)?(.)/ =~ "globalglobalglobal"
     assert_not_nil($~)
-    assert_include(global_variables-gv, :$1)
+    gv = global_variables - gv
+    assert_include(gv, :$1)
+    assert_not_include(gv, :$2)
+    assert_not_include(gv, :$11)
+    assert_include(gv, :$12)
   end
 
   def test_global_variable_0
