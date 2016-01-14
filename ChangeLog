@@ -1,3 +1,9 @@
+Thu Jan 14 20:01:00 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/uri/generic.rb (URI::Generic#to_s): change encoding to
+	  UTF-8 as Ruby 2.2/ by Koichi ITO <koic.ito@gmail.com>
+	  https://github.com/ruby/ruby/pull/1188 fix GH-1188
+
 Thu Jan 14 17:36:16 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* variable.c (rb_f_global_variables): add matched back references
