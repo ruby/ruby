@@ -880,14 +880,16 @@ VALUE
 rb_f_global_variables(void)
 {
     VALUE ary = rb_ary_new();
-    char buf[2];
-    int i;
 
     rb_id_table_foreach(rb_global_tbl, gvar_i, (void *)ary);
-    buf[0] = '$';
-    for (i = 1; i <= 9; ++i) {
-	buf[1] = (char)(i + '0');
-	rb_ary_push(ary, ID2SYM(rb_intern2(buf, 2)));
+    if (!NIL_P(rb_backref_get())) {
+	char buf[2];
+	int i;
+	buf[0] = '$';
+	for (i = 1; i <= 9; ++i) {
+	    buf[1] = (char)(i + '0');
+	    rb_ary_push(ary, ID2SYM(rb_intern2(buf, 2)));
+	}
     }
     return ary;
 }

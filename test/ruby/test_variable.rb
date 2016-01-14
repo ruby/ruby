@@ -100,6 +100,16 @@ class TestVariable < Test::Unit::TestCase
     assert_equal([:x, :bug9486], x)
   end
 
+  def test_global_variables
+    gv = global_variables
+    assert_empty(gv.grep(/\A(?!\$)/))
+    assert_nil($~)
+    assert_not_include(gv, :$1)
+    /.*/ =~ "global"
+    assert_not_nil($~)
+    assert_include(global_variables-gv, :$1)
+  end
+
   def test_global_variable_0
     assert_in_out_err(["-e", "$0='t'*1000;print $0"], "", /\At+\z/, [])
   end
