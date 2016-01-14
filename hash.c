@@ -1573,12 +1573,8 @@ rb_hash_initialize_copy(VALUE hash, VALUE hash2)
 	st_clear(ntbl);
     }
 
-    if (FL_TEST(hash2, HASH_PROC_DEFAULT)) {
-        FL_SET(hash, HASH_PROC_DEFAULT);
-    }
-    else {
-	FL_UNSET(hash, HASH_PROC_DEFAULT);
-    }
+    FL_UNSET_RAW(hash, HASH_PROC_DEFAULT);
+    FL_SET_RAW(hash, FL_TEST_RAW(hash2, HASH_PROC_DEFAULT));
     RHASH_SET_IFNONE(hash, RHASH_IFNONE(hash2));
 
     return hash;
