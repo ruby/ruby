@@ -1,3 +1,9 @@
+Thu Jan 14 15:08:43 2016  Tony Arcieri  <bascule@gmail.com>
+
+	* Remove 512-bit DH group. It's affected by LogJam Attack.
+	  https://weakdh.org/
+	  [fix GH-1196][Bug #11968][ruby-core:72766]
+
 Thu Jan 14 11:44:29 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* variable.c (rb_f_global_variables): add $1..$9 only if $~ is
