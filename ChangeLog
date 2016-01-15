@@ -1,3 +1,10 @@
+Fri Jan 15 09:25:07 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* common.mk: test-sample was changed to test-basic.
+	  [Feature #11982][ruby-core:72823]
+	* basictest/runner.rb: ditto. rename from tool/rubytest.rb.
+	* basictest/test.rb: ditto. rename from sample/test.rb.
+
 Thu Jan 14 20:01:00 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/uri/generic.rb (URI::Generic#to_s): change encoding to

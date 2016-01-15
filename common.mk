@@ -581,10 +581,10 @@ no-btest-ruby: PHONY
 yes-btest-ruby: prog PHONY
 	$(Q)$(exec) $(RUNRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(PROGRAM) -I$(srcdir)/lib $(RUN_OPTS)" -q $(OPTS) $(TESTOPTS)
 
-test-sample: $(TEST_RUNNABLE)-test-sample
-no-test-sample: PHONY
-yes-test-sample: prog PHONY
-	$(Q)$(exec) $(RUNRUBY) "$(srcdir)/tool/rubytest.rb" --run-opt=$(RUN_OPTS) $(OPTS) $(TESTOPTS)
+test-basic: $(TEST_RUNNABLE)-test-basic
+no-test-basic: PHONY
+yes-test-basic: prog PHONY
+	$(Q)$(exec) $(RUNRUBY) "$(srcdir)/basictest/runner.rb" --run-opt=$(RUN_OPTS) $(OPTS) $(TESTOPTS)
 
 test-knownbugs: test-knownbug
 test-knownbug: $(TEST_RUNNABLE)-test-knownbug
@@ -597,7 +597,7 @@ yes-test-testframework: prog PHONY
 	$(Q)$(exec) $(RUNRUBY) "$(srcdir)/test/runner.rb" --ruby="$(RUNRUBY)" $(TESTOPTS) testunit minitest
 no-test-testframework: PHONY
 
-test: test-sample btest-ruby test-knownbug
+test: btest-ruby test-knownbug test-basic
 
 # $ make test-all TESTOPTS="--help" displays more detail
 # for example, make test-all TESTOPTS="-j2 -v -n test-name -- test-file-name"
@@ -663,7 +663,7 @@ $(ENC_MK): $(srcdir)/enc/make_encmake.rb $(srcdir)/enc/Makefile.in $(srcdir)/enc
 .PHONY: clean clean-ext clean-local clean-enc clean-golf clean-rdoc clean-html clean-extout
 .PHONY: distclean distclean-ext distclean-local distclean-enc distclean-golf distclean-extout
 .PHONY: realclean realclean-ext realclean-local realclean-enc realclean-golf realclean-extout
-.PHONY: check test test-all btest btest-ruby test-sample test-knownbug
+.PHONY: check test test-all btest btest-ruby test-basic test-knownbug
 .PHONY: run runruby parse benchmark benchmark-each tbench gdb gdb-ruby
 .PHONY: update-mspec update-rubyspec test-rubyspec
 
