@@ -1,3 +1,8 @@
+Sat 16 Jan 02:17:29 2016  Dwain Faithfull <dwfaithfull@gmail.com>
+
+	* array.c (recursive_eql): Use pointer arithmetic to iterate array
+	elements, and check for VALUE equality early as optimisations.
+
 Fri Jan 15 20:20:20 2016  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* regint.h (PLATFORM_UNALIGNED_WORD_ACCESS): The value of
