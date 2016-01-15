@@ -246,6 +246,30 @@ class TestSymbol < Test::Unit::TestCase
     assert_equal(:fOo, :FoO.swapcase)
   end
 
+  def test_MATCH # '=~'
+    assert_equal(10,  :"FeeFieFoo-Fum" =~ /Fum$/)
+    assert_equal(nil, "FeeFieFoo-Fum" =~ /FUM$/)
+
+    o = Object.new
+    def o.=~(x); x + "bar"; end
+    assert_equal("foobar", :"foo" =~ o)
+
+    assert_raise(TypeError) { :"foo" =~ "foo" }
+  end
+
+  def test_match_method
+    assert_equal("bar", :"foobarbaz".match(/bar/).to_s)
+
+    o = Regexp.new('foo')
+    def o.match(x, y, z); x + y + z; end
+    assert_equal("foobarbaz", :"foo".match(o, "bar", "baz"))
+    x = nil
+    :"foo".match(o, "bar", "baz") {|y| x = y }
+    assert_equal("foobarbaz", x)
+
+    assert_raise(ArgumentError) { :"foo".match }
+  end
+
   def test_symbol_poped
     assert_nothing_raised { eval('a = 1; :"#{ a }"; 1') }
   end
