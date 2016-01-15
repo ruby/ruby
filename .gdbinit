@@ -964,3 +964,11 @@ define rbi
   end
   end
 end
+
+define dump_node
+  set $str = rb_parser_dump_tree($arg0, 0)
+  set $flags = ((struct RBasic*)($str))->flags
+  printf "%s", (char *)(($flags & RUBY_FL_USER1) ? \
+                        ((struct RString*)$str)->as.heap.ptr : \
+                        ((struct RString*)$str)->as.ary)
+end
