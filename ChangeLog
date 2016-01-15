@@ -1,3 +1,9 @@
+Fri Jan 15 16:12:10 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (string1): reset heredoc indent fore each string leteral
+	  so that concatenated string would not be dedented.
+	  [ruby-core:72857] [Bug #11990]
+
 Fri Jan 15 09:25:07 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* common.mk: test-sample was changed to test-basic.

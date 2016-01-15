@@ -3912,7 +3912,6 @@ strings		: string
 			else {
 			    node = evstr2dstr(node);
 			}
-			heredoc_indent = 0;
 			$$ = node;
 		    /*%
 			$$ = $1;
@@ -3935,6 +3934,7 @@ string		: tCHAR
 string1		: tSTRING_BEG string_contents tSTRING_END
 		    {
 			heredoc_dedent($2);
+			heredoc_indent = 0;
 		    /*%%%*/
 			$$ = $2;
 		    /*%
