@@ -734,6 +734,14 @@ class TestArray < Test::Unit::TestCase
     assert_not_send([@cls[1.0, 1.0, 2.0, 2.0], :eql?, @cls[1, 1, 2, 2]])
   end
 
+  def test_eql_overridden
+    o = Object.new
+    def o.eql?(o)
+      false
+    end
+    assert_not_send([@cls[o], :eql?, @cls[o]])
+  end
+
   def test_fill
     assert_equal(@cls[],   @cls[].fill(99))
     assert_equal(@cls[],   @cls[].fill(99, 0))

@@ -1,3 +1,9 @@
+Tue 19 Jan 04:20:47 2016  Dwain Faithfull <dwfaithfull@gmail.com>
+
+	* array.c (recursive_eql): compare identity if immediate value
+	* test/ruby/test_array.rb: add test for comparing array of object
+	  with overridden eql? method
+
 Mon Jan 18 14:37:07 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_here_document): an escaped newline is not an
