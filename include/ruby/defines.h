@@ -260,6 +260,10 @@ void rb_ia64_flushrs(void);
     RUBY_ALIAS_FUNCTION_TYPE(VALUE, prot, name, args)
 #endif
 
+#if !defined(UNALIGNED_WORD_ACCESS) && defined(__GNUC__) && __GNUC__ >= 6
+# define UNALIGNED_WORD_ACCESS 0
+#endif
+
 #ifndef UNALIGNED_WORD_ACCESS
 # if defined(__i386) || defined(__i386__) || defined(_M_IX86) || \
      defined(__x86_64) || defined(__x86_64__) || defined(_M_AMD64) || \
