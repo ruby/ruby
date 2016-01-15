@@ -1,3 +1,11 @@
+Fri Jan 15 20:20:20 2016  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* regint.h (PLATFORM_UNALIGNED_WORD_ACCESS): The value of
+	  UNALIGNED_WORD_ACCESS should be used to determine whether
+	  unaligned word access is allowed or not. After this commit,
+	  ./configure CPPFLAGS="-DUNALIGNED_WORD_ACCESS=0" disables
+	  unaligned word access even on platforms that support the feature.
+
 Fri Jan 15 16:12:10 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (string1): reset heredoc indent fore each string leteral
