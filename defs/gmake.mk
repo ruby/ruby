@@ -41,12 +41,13 @@ $(foreach arch,$(filter -arch=%,$(subst -arch ,-arch=,$(ARCH_FLAG))),\
 endif
 
 ifneq ($(filter $(CHECK_TARGETS) test,$(MAKECMDGOALS)),)
+yes-test-basic: $(TEST_DEPENDS) yes-test-knownbug
 yes-test-knownbug: $(TEST_DEPENDS) yes-btest-ruby
-yes-btest-ruby: $(TEST_DEPENDS) yes-test-sample
-yes-test-sample: $(TEST_DEPENDS)
+yes-btest-ruby: $(TEST_DEPENDS)
 endif
-ifneq ($(filter $(CHECK_TARGETS),$(MAKECMDGOALS)) $(filter test-all,$(TEST_TARGETS)),)
-yes-test-testframework yes-test-almost yes-test-ruby: $(filter-out %test-all %test-ruby check%,$(TEST_TARGETS))
+ifneq ($(filter $(CHECK_TARGETS),$(MAKECMDGOALS)) $(filter yes-test-all,$(TEST_TARGETS)),)
+yes-test-testframework yes-test-almost yes-test-ruby: $(filter-out %test-all %test-ruby check%,$(TEST_TARGETS)) \
+	yes-test-basic
 endif
 ifneq ($(filter $(CHECK_TARGETS),$(MAKECMDGOALS))$(if $(filter test-all,$(MAKECMDGOALS)),$(filter test-knownbug,$(MAKECMDGOALS))),)
 yes-test-testframework yes-test-almost yes-test-ruby: yes-test-knownbug
