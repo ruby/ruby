@@ -105,7 +105,7 @@ def test_check(what)
   unless $ntest.zero?
     PROGRESS.finish
   end
-  STDERR.print "sample/test.rb:#{what} "
+  STDERR.print "basictest/test.rb:#{what} "
   PROGRESS.init
   $what = what
   $testnum = 0
