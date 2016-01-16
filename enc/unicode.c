@@ -630,5 +630,5 @@ onigenc_unicode_case_map(OnigCaseFoldType* flags,
 	}
 	to += ONIGENC_CODE_TO_MBC(enc, code, to);
     }
-    return to-to_start;
+    return (int)(to-to_start);
 }

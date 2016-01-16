@@ -5672,7 +5672,7 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
 
     while (source_current < source_end) {
 	/* increase multiplier using buffer count to converge quickly */
-	int capa = (source_end-source_current)*++buffer_count + CASE_MAPPING_ADDITIONAL_LENGTH;
+	int capa = (int)(source_end-source_current)*++buffer_count + CASE_MAPPING_ADDITIONAL_LENGTH;
 	current_buffer->next = (mapping_buffer*)ALLOC_N(char, sizeof(mapping_buffer)+capa);
 	current_buffer = current_buffer->next;
 	current_buffer->next = NULL;

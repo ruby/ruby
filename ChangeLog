@@ -1,3 +1,8 @@
+Sat Jan 16 10:51:19 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* enc/unicode.c: fix implicit conversion error with clang. fixup r53548.
+	* string.c: ditto.
+
 Sat Jan 16 10:31:00 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* common.mk: test-sample was changed to test-basic.
