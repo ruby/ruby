@@ -2,6 +2,14 @@
 require 'test/unit'
 
 class TestSyntax < Test::Unit::TestCase
+  using Module.new {
+    refine(Object) do
+      def `(s) #`
+        s
+      end
+    end
+  }
+
   def assert_syntax_files(test)
     srcdir = File.expand_path("../../..", __FILE__)
     srcdir = File.join(srcdir, test)
@@ -493,7 +501,7 @@ e"
   end
 
   def assert_dedented_heredoc(expect, result, mesg = "")
-    %w[eos "eos" 'eos'].each do |eos|
+    %w[eos "eos" 'eos' `eos`].each do |eos|
       assert_equal(eval("<<-#{eos}\n#{expect}eos\n"),
                    eval("<<~#{eos}\n#{result}eos\n"),
                    message(mesg) {"with #{eos}"})
@@ -586,6 +594,10 @@ e"
       assert_equal("x\n  y",
                    eval("<<~#{eos} '  y'\n  x\neos\n"),
                    "#{bug11990} with #{eos}")
+    end
+    %w[eos "eos" 'eos' `eos`].each do |eos|
+      _, expect = eval("[<<~#{eos}, '  x']\n""  y\n""eos\n")
+      assert_equal('  x', expect, bug11990)
     end
   end
 

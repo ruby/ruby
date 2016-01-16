@@ -1,3 +1,9 @@
+Sat Jan 16 21:16:21 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (xstring): reset heredoc indent after dedenting,
+	  so that following string literal would not be dedented.
+	  [ruby-core:72857] [Bug #11990]
+
 Sat Jan 16 17:24:24 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/unicode.c: Artificial mapping to test buffer expansion code.

@@ -3950,6 +3950,7 @@ xstring		: tXSTRING_BEG xstring_contents tSTRING_END
 		    /*%
 		    %*/
 			heredoc_dedent($2);
+			heredoc_indent = 0;
 		    /*%%%*/
 			if (!node) {
 			    node = NEW_XSTR(STR_NEW0());
