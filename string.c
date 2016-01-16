@@ -5658,7 +5658,7 @@ static VALUE
 rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
 {
     VALUE target;
-    
+
     OnigUChar *source_current, *source_end;
     int target_length = 0;
     mapping_buffer pre_buffer, /* only next pointer used */
