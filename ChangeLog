@@ -1,3 +1,10 @@
+Sat Jan 16 17:24:24 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode.c: Artificial mapping to test buffer expansion code.
+	* string.c: Fixed buffer expansion logic.
+	* test/ruby/enc/test_case_mapping.rb: Tests for above.
+	  (with Kimihito Matsui)
+
 Sat Jan 16 16:47:14 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* ext/openssl/lib/openssl/pkey.rb: Added 2048 bit DH parameter.
@@ -24,6 +31,7 @@ Sat Jan 16 10:23:23 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 	  option to avoid accidental problems in daily use.
 	* test/ruby/enc/test_case_mapping.rb: Test for above.
 	* string.c: function 'check_case_options': fixed logical errors
+	  (with Kimihito Matsui)
 
 Fri Jan 15 20:20:20 2016  Naohisa Goto  <ngotogenome@gmail.com>
 

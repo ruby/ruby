@@ -5673,6 +5673,7 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
     while (source_current < source_end) {
 	/* increase multiplier using buffer count to converge quickly */
 	int capa = (int)(source_end-source_current)*++buffer_count + CASE_MAPPING_ADDITIONAL_LENGTH;
+/* fprintf(stderr, "Buffer allocation, capa is %d\n", capa); *//* for tuning */
 	current_buffer->next = (mapping_buffer*)ALLOC_N(char, sizeof(mapping_buffer)+capa);
 	current_buffer = current_buffer->next;
 	current_buffer->next = NULL;
@@ -5684,13 +5685,22 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
 				current_buffer->space+current_buffer->capa,
 				enc);
     }
+/* fprintf(stderr, "Buffer count is %d\n", buffer_count); *//* for tuning */
 
     if (buffer_count==1)
 	target = rb_str_new_with_class(source, (const char*)current_buffer->space, target_length);
     else {
 	char *target_current = RSTRING_PTR(target = rb_str_new_with_class(source, 0, target_length));
-	for (current_buffer=pre_buffer.next; current_buffer; current_buffer=current_buffer->next)
+	mapping_buffer *previous_buffer;
+
+	current_buffer=pre_buffer.next;
+	while (current_buffer) {
 	    memcpy(target_current, current_buffer->space, current_buffer->used);
+	    target_current += current_buffer->used;
+	    previous_buffer = current_buffer;
+	    current_buffer=current_buffer->next;
+	    xfree(previous_buffer);
+	}
     }
 
     /* TODO: check about string terminator character */

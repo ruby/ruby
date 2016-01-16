@@ -610,13 +610,14 @@ onigenc_unicode_get_case_fold_codes_by_str(OnigEncoding enc,
    be duplicated here (and in string.c), but we'll wait for this because we
    want this to become a primitive anyway. */
 extern int
-onigenc_unicode_case_map(OnigCaseFoldType* flags,
+onigenc_unicode_case_map(OnigCaseFoldType* flagP,
     const OnigUChar** pp, const OnigUChar* end,
     OnigUChar* to, OnigUChar* to_end,
     const struct OnigEncodingTypeST* enc)
 {
     OnigCodePoint code;
     OnigUChar *to_start = to;
+    OnigCaseFoldType flags = *flagP;
     to_end -= CASE_MAPPING_SLACK;
 
     /* hopelessly preliminary implementation, just dealing with ASCII,
@@ -624,11 +625,25 @@ onigenc_unicode_case_map(OnigCaseFoldType* flags,
     while (*pp<end && to<=to_end) {
 	code = ONIGENC_MBC_TO_CODE(enc, *pp, end);
 	*pp += enclen(enc, *pp, end);
-	if (code>='A' && code<='Z') {
+	/* using :turcic to test buffer expansion */
+	if (flags&ONIGENC_CASE_FOLD_TURKISH_AZERI && code==0x0049) { /* I */
+	    to += ONIGENC_CODE_TO_MBC(enc, 'T', to);
+	    to += ONIGENC_CODE_TO_MBC(enc, 'U', to);
+	    to += ONIGENC_CODE_TO_MBC(enc, 'R', to);
+	    to += ONIGENC_CODE_TO_MBC(enc, 'K', to);
+	    to += ONIGENC_CODE_TO_MBC(enc, 'I', to);
+	    to += ONIGENC_CODE_TO_MBC(enc, 'S', to);
+	    to += ONIGENC_CODE_TO_MBC(enc, 'H', to);
+	    to += ONIGENC_CODE_TO_MBC(enc, '*', to);
+	    code = 0x0131;
+	    flags |= ONIGENC_CASE_MODIFIED;
+	}
+	else if (code>='A' && code<='Z') {
 	    code += 'a'-'A';
-	    *flags |= ONIGENC_CASE_MODIFIED;
+	    flags |= ONIGENC_CASE_MODIFIED;
 	}
 	to += ONIGENC_CODE_TO_MBC(enc, code, to);
     }
+    *flagP = flags;
     return (int)(to-to_start);
 }
