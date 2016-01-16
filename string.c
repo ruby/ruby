@@ -5600,19 +5600,19 @@ check_case_options(int argc, VALUE *argv, OnigCaseFoldType flags)
     if (argc>2)
         rb_raise(rb_eArgError, "too many options");
     if (argv[0]==sym_turkic) {
-	flags &= ONIGENC_CASE_FOLD_TURKISH_AZERI;
+	flags |= ONIGENC_CASE_FOLD_TURKISH_AZERI;
 	if (argc==2) {
 	    if (argv[1]==sym_lithuanian)
-		flags &= ONIGENC_CASE_FOLD_LITHUANIAN;
+		flags |= ONIGENC_CASE_FOLD_LITHUANIAN;
 	    else
 		rb_raise(rb_eArgError, "invalid second option");
 	}
     }
     else if (argv[0]==sym_lithuanian) {
-	flags &= ONIGENC_CASE_FOLD_LITHUANIAN;
+	flags |= ONIGENC_CASE_FOLD_LITHUANIAN;
 	if (argc==2) {
 	    if (argv[1]==sym_turkic)
-	        flags &= ONIGENC_CASE_FOLD_TURKISH_AZERI;
+	        flags |= ONIGENC_CASE_FOLD_TURKISH_AZERI;
 	    else
 	        rb_raise(rb_eArgError, "invalid second option");
 	}
@@ -5620,16 +5620,85 @@ check_case_options(int argc, VALUE *argv, OnigCaseFoldType flags)
     else if (argc>1)
 	rb_raise(rb_eArgError, "too many options");
     else if (argv[0]==sym_ascii)
-	flags &= ONIGENC_CASE_ASCII_ONLY;
+	flags |= ONIGENC_CASE_ASCII_ONLY;
     else if (argv[0]==sym_fold) {
 	if ((flags & (ONIGENC_CASE_UPCASE|ONIGENC_CASE_DOWNCASE)) == ONIGENC_CASE_DOWNCASE)
-	    flags &= ONIGENC_CASE_FOLD;
+	    flags |= ONIGENC_CASE_FOLD;
 	else
 	    rb_raise(rb_eArgError, "option :fold only allowed for downcasing");
     }
     else
 	rb_raise(rb_eArgError, "invalid option");
     return flags;
+}
+
+/* The following declaration should be moved to an include file rather than
+   be duplicated here (and in enc/unicode.c), but we'll wait for this because
+   we want this to become a primitive anyway. */
+extern int
+onigenc_unicode_case_map(OnigCaseFoldType* flag,
+	 const OnigUChar** pp,
+	 const OnigUChar* end,
+	 OnigUChar* to,
+	 OnigUChar* to_end,
+	 const struct OnigEncodingTypeST* enc);
+
+/* 16 should be long enough to absorb any kind of single character length increase */
+#define CASE_MAPPING_ADDITIONAL_LENGTH 20
+
+struct mapping_buffer;
+typedef struct mapping_buffer {
+    size_t capa;
+    size_t used;
+    struct mapping_buffer *next;
+    OnigUChar space[0];
+} mapping_buffer;
+
+static VALUE
+rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
+{
+    VALUE target;
+    
+    OnigUChar *source_current, *source_end;
+    int target_length = 0;
+    mapping_buffer pre_buffer, /* only next pointer used */
+		  *current_buffer = &pre_buffer;
+    int buffer_count = 0;
+
+    if (RSTRING_LEN(source) == 0) return rb_str_dup(source);
+
+    source_current = (OnigUChar*)RSTRING_PTR(source);
+    source_end = (OnigUChar*)RSTRING_END(source);
+
+    while (source_current < source_end) {
+	/* increase multiplier using buffer count to converge quickly */
+	int capa = (source_end-source_current)*++buffer_count + CASE_MAPPING_ADDITIONAL_LENGTH;
+	current_buffer->next = (mapping_buffer*)ALLOC_N(char, sizeof(mapping_buffer)+capa);
+	current_buffer = current_buffer->next;
+	current_buffer->next = NULL;
+	current_buffer->capa = capa;
+	target_length  += current_buffer->used
+			= onigenc_unicode_case_map(flags,
+				(const OnigUChar**)&source_current, source_end,
+				current_buffer->space,
+				current_buffer->space+current_buffer->capa,
+				enc);
+    }
+
+    if (buffer_count==1)
+	target = rb_str_new_with_class(source, (const char*)current_buffer->space, target_length);
+    else {
+	char *target_current = RSTRING_PTR(target = rb_str_new_with_class(source, 0, target_length));
+	for (current_buffer=pre_buffer.next; current_buffer; current_buffer=current_buffer->next)
+	    memcpy(target_current, current_buffer->space, current_buffer->used);
+    }
+
+    /* TODO: check about string terminator character */
+    OBJ_INFECT_RAW(target, source);
+    str_enc_copy(target, source);
+    /*ENC_CODERANGE_SET(mapped, cr);*/
+
+    return target;
 }
 
 /*
@@ -5716,7 +5785,6 @@ rb_str_upcase(int argc, VALUE *argv, VALUE str)
     return str;
 }
 
-
 /*
  *  call-seq:
  *     str.downcase!   -> str or nil
@@ -5739,7 +5807,11 @@ rb_str_downcase_bang(int argc, VALUE *argv, VALUE str)
     enc = STR_ENC_GET(str);
     rb_str_check_dummy_enc(enc);
     s = RSTRING_PTR(str); send = RSTRING_END(str);
-    if (single_byte_optimizable(str)) {
+    if (/*enc==rb_utf8_encoding() &&*/ flags&ONIGENC_CASE_FOLD_LITHUANIAN) { /* lithuanian temporarily used as a guard for debugging */
+	str_shared_replace(str, rb_str_casemap(str, &flags, enc));
+	modify = ONIGENC_CASE_MODIFIED & flags;
+    }
+    else if (single_byte_optimizable(str)) {
 	while (s < send) {
 	    unsigned int c = *(unsigned char*)s;
 

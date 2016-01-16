@@ -1,3 +1,11 @@
+Sat Jan 16 10:23:23 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* string.c, enc/unicode.c: New code path as a preparation for Unicode-wide
+	  case mapping. The code path is currently guarded by the :lithuanian
+	  option to avoid accidental problems in daily use.
+	* test/ruby/enc/test_case_mapping.rb: Test for above.
+	* string.c: function 'check_case_options': fixed logical errors
+
 Fri Jan 15 20:20:20 2016  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* regint.h (PLATFORM_UNALIGNED_WORD_ACCESS): The value of
@@ -8,7 +16,7 @@ Fri Jan 15 20:20:20 2016  Naohisa Goto  <ngotogenome@gmail.com>
 
 Fri Jan 15 16:12:10 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* parse.y (string1): reset heredoc indent fore each string leteral
+	* parse.y (string1): reset heredoc indent for each string literal
 	  so that concatenated string would not be dedented.
 	  [ruby-core:72857] [Bug #11990]
 

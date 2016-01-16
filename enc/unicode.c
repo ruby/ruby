@@ -603,3 +603,32 @@ onigenc_unicode_get_case_fold_codes_by_str(OnigEncoding enc,
 
   return n;
 }
+
+/* length in bytes for three characters in UTF-32; e.g. needed for ffi (U+FB03) */
+#define CASE_MAPPING_SLACK 12
+/* The following declaration should be moved to an include file rather than
+   be duplicated here (and in string.c), but we'll wait for this because we
+   want this to become a primitive anyway. */
+extern int
+onigenc_unicode_case_map(OnigCaseFoldType* flags,
+    const OnigUChar** pp, const OnigUChar* end,
+    OnigUChar* to, OnigUChar* to_end,
+    const struct OnigEncodingTypeST* enc)
+{
+    OnigCodePoint code;
+    OnigUChar *to_start = to;
+    to_end -= CASE_MAPPING_SLACK;
+
+    /* hopelessly preliminary implementation, just dealing with ASCII,
+     * and just for downcase */
+    while (*pp<end && to<=to_end) {
+	code = ONIGENC_MBC_TO_CODE(enc, *pp, end);
+	*pp += enclen(enc, *pp, end);
+	if (code>='A' && code<='Z') {
+	    code += 'a'-'A';
+	    *flags |= ONIGENC_CASE_MODIFIED;
+	}
+	to += ONIGENC_CODE_TO_MBC(enc, code, to);
+    }
+    return to-to_start;
+}
