@@ -1,3 +1,8 @@
+Sat Jan 16 16:47:14 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ext/openssl/lib/openssl/pkey.rb: Added 2048 bit DH parameter.
+	* test/openssl/test_pkey_dh.rb: ditto.
+
 Sat Jan 16 10:51:19 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* enc/unicode.c: fix implicit conversion error with clang. fixup r53548.

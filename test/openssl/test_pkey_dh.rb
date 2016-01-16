@@ -18,6 +18,20 @@ T4h7KZ/2zmjvV+eF8kBUHBJAojUlzxKj4QeO2x20FP9X5xmNUXeDAgEC
     assert_equal params, OpenSSL::PKey::DH::DEFAULT_1024.to_s
   end
 
+  def test_DEFAULT_2048
+    params = <<-eop
+-----BEGIN DH PARAMETERS-----
+MIIBCAKCAQEA7E6kBrYiyvmKAMzQ7i8WvwVk9Y/+f8S7sCTN712KkK3cqd1jhJDY
+JbrYeNV3kUIKhPxWHhObHKpD1R84UpL+s2b55+iMd6GmL7OYmNIT/FccKhTcveab
+VBmZT86BZKYyf45hUF9FOuUM9xPzuK3Vd8oJQvfYMCd7LPC0taAEljQLR4Edf8E6
+YoaOffgTf5qxiwkjnlVZQc3whgnEt9FpVMvQ9eknyeGB5KHfayAc3+hUAvI3/Cr3
+1bNveX5wInh5GDx1FGhKBZ+s1H+aedudCm7sCgRwv8lKWYGiHzObSma8A86KG+MD
+7Lo5JquQ3DlBodj3IDyPrxIv96lvRPFtAwIBAg==
+-----END DH PARAMETERS-----
+    eop
+    assert_equal params, OpenSSL::PKey::DH::DEFAULT_2048.to_s
+  end
+
   def test_new
     dh = OpenSSL::PKey::DH.new(NEW_KEYLEN)
     assert_key(dh)
