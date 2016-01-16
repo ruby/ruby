@@ -28,7 +28,7 @@ Sat Jan 16 10:31:00 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 	* basictest/runner.rb: ditto. rename from tool/rubytest.rb.
 	* basictest/test.rb: ditto. rename from sample/test.rb.
 	* defs/gmake.mk: picked from r53540
-	* sample/test.rb: backword compatibility for chkbuild.
+	* sample/test.rb: backward compatibility for chkbuild.
 
 Sat Jan 16 10:23:23 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
@@ -62,7 +62,7 @@ Thu Jan 14 20:01:00 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 Thu Jan 14 17:36:16 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* variable.c (rb_f_global_variables): add matched back references
-	  only, as well as defiend? operator.
+	  only, as well as defined? operator.
 
 Thu Jan 14 16:12:09 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
