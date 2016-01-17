@@ -1,3 +1,9 @@
+Sun Jan 17 14:42:25 2016  Kuniaki IGARASHI  <igaiga@gmail.com>
+
+	* test/ruby/test_env.rb: [Fix GH-1201]
+	  * Extract test code for ENV#delete_if from ENV#reject_bang
+	  * Add a test case for ENV#reject_bang,delete_if
+
 Sun Jan 17 14:40:22 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/socket/option.c (check_size): extract a macro to check
