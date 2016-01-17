@@ -1,3 +1,19 @@
+Sun Jan 17 21:15:30 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in: improve ICC (Intel C Compiler) support.
+
+	* configure.in (CXX): The name of icc's c++ compiler is `icpc`.
+
+	* configure.in (warnings): Add `-diag-disable=2259` to suppress
+	  noisy warnings: "non-pointer conversion from "..." to "..." may
+	  lose significant bits".
+
+	* configure.in (optflags): Add `-fp-model precise` like -fno-fast-math.
+
+	* lib/mkmf.rb: icc supports -Werror=division-by-zero
+	  and -Werror=deprecated-declarations, but doesn't support
+	  -Wdivision-by-zero and -Wdeprecated-declarations.
+
 Sun Jan 17 20:40:10 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* string.c: Any kind of option is now taking the new code path for

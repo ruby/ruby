@@ -265,6 +265,7 @@ AS_CASE(["$build_os"],
       [xgcc-4.2|x/usr/bin/gcc-4.2], [: ${CXX=g++-4.2}],
       [xgcc|x/usr/bin/gcc],         [: ${CXX=g++}],
       [xcc|x/usr/bin/cc],           [: ${CXX=c++}],
+      [xicc],                       [: ${CXX=icpc}],
       [xclang|x/usr/bin/clang],     [: ${CXX=clang++}])
   ])
 test -z "$CC" || ac_cv_prog_CC="$CC"
@@ -812,6 +813,7 @@ if test "$GCC:${warnflags+set}:no" = yes::no; then
 	extra_warning="$extra_warning -Wno-maybe-uninitialized"
     fi
     for wflag in -Wno-unused-parameter -Wno-parentheses -Wno-long-long \
+                 -diag-disable=2259 \
 		 -Wno-missing-field-initializers \
 		 -Wunused-variable \
 		 -Werror=pointer-arith \
@@ -952,7 +954,7 @@ if test "$GCC" = yes; then
     ])
 
     # disable fast-math
-    for oflag in -fno-fast-math; do
+    for oflag in -fno-fast-math -fp-model\ precise; do
 	RUBY_TRY_CFLAGS($oflag, [RUBY_APPEND_OPTION(optflags, $oflag)])
     done
 fi
