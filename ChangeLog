@@ -1,3 +1,9 @@
+Sun Jan 17 14:43:01 2016  Kuniaki IGARASHI  <igaiga@gmail.com>
+
+	* test/ruby/test_env.rb: [Fix GH-1201]
+	  * Extract test code for ENV#keep_if from ENV#select_bang
+	  * Add a test case for ENV#select_bang,keep_if
+
 Sun Jan 17 14:42:25 2016  Kuniaki IGARASHI  <igaiga@gmail.com>
 
 	* test/ruby/test_env.rb: [Fix GH-1201]
