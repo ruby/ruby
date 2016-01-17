@@ -576,4 +576,24 @@ class TestKeywordArguments < Test::Unit::TestCase
     h = method_for_test_to_hash_call_during_setup_complex_parameters k1: "foo", k2: "bar", sym => "baz"
     assert_equal ["foo", "bar", {sym => "baz"}], h, '[Bug #11027]'
   end
+
+  class AttrSetTest
+    attr_accessor :foo
+    alias set_foo :foo=
+  end
+
+  def test_attr_set_method_cache
+    obj = AttrSetTest.new
+    h = {a: 1, b: 2}
+    2.times{
+      obj.foo = 1
+      assert_equal(1, obj.foo)
+      obj.set_foo 2
+      assert_equal(2, obj.foo)
+      obj.set_foo(x: 1, y: 2)
+      assert_equal({x: 1, y: 2}, obj.foo)
+      obj.set_foo(x: 1, y: 2, **h)
+      assert_equal({x: 1, y: 2, **h}, obj.foo)
+    }
+  end
 end

@@ -1691,7 +1691,7 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp, rb_call_info_t *ci)
 		CALLER_SETUP_ARG(cfp, ci);
 		rb_check_arity(ci->argc, 1, 1);
 		ci->aux.index = 0;
-		CI_SET_FASTPATH(ci, vm_call_attrset, enable_fastpath && !(ci->flag & VM_CALL_ARGS_SPLAT));
+		CI_SET_FASTPATH(ci, vm_call_attrset, enable_fastpath && !(ci->flag & VM_CALL_ARGS_SPLAT) && ci->kw_arg == NULL);
 		return vm_call_attrset(th, cfp, ci);
 	      }
 	      case VM_METHOD_TYPE_IVAR:{
