@@ -50,8 +50,9 @@ class TestCaseMappingPreliminary < Test::Unit::TestCase
   end
 
   def test_turcic
-    check_downcase_properties   'yukihiro matsumoto (matz)', 'Yukihiro MATSUMOTO (MATZ)', :turkic, :lithuanian
-    check_upcase_properties     'YUKİHİRO MATSUMOTO (MATZ)', 'Yukihiro Matsumoto (matz)', :turkic, :lithuanian
+    check_downcase_properties   'yukihiro matsumoto (matz)', 'Yukihiro MATSUMOTO (MATZ)', :turkic
+    check_upcase_properties     'YUKİHİRO MATSUMOTO (MATZ)', 'Yukihiro Matsumoto (matz)', :turkic
+    check_downcase_properties   "yuki\u0307hi\u0307ro matsumoto (matz)", 'YUKİHİRO MATSUMOTO (MATZ)', :lithuanian
   end
 
   def no_longer_a_test_buffer_allocations

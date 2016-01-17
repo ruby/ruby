@@ -1,3 +1,11 @@
+Sun Jan 17 20:40:10 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* string.c: Any kind of option is now taking the new code path for
+	  upcase/downcase/capitalize/swapcase. :lithuanian can be used for
+	  testing if no specific option is desired.
+	* test/ruby/enc/test_case_mapping.rb: Adjusted to above.
+	  (with Kimihito Matsui)
+
 Sun Jan 17 20:10:10 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/unicode.c: Fixed a logical error and some comments.

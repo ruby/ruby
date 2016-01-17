@@ -5734,7 +5734,7 @@ rb_str_upcase_bang(int argc, VALUE *argv, VALUE str)
     enc = STR_ENC_GET(str);
     rb_str_check_dummy_enc(enc);
     s = RSTRING_PTR(str); send = RSTRING_END(str);
-    if (enc==rb_utf8_encoding() && flags&ONIGENC_CASE_FOLD_LITHUANIAN) { /* lithuanian temporarily used as a guard for debugging */
+    if (enc==rb_utf8_encoding() && argc>0) { /* :lithuanian can temporarily be used for new functionality without options */
 	str_shared_replace(str, rb_str_casemap(str, &flags, enc));
 	modify = ONIGENC_CASE_MODIFIED & flags;
     }
@@ -5821,7 +5821,7 @@ rb_str_downcase_bang(int argc, VALUE *argv, VALUE str)
     enc = STR_ENC_GET(str);
     rb_str_check_dummy_enc(enc);
     s = RSTRING_PTR(str); send = RSTRING_END(str);
-    if (enc==rb_utf8_encoding() && flags&ONIGENC_CASE_FOLD_LITHUANIAN) { /* lithuanian temporarily used as a guard for debugging */
+    if (enc==rb_utf8_encoding() && argc>0) { /* :lithuanian can temporarily be used for new functionality without options */
 	str_shared_replace(str, rb_str_casemap(str, &flags, enc));
 	modify = ONIGENC_CASE_MODIFIED & flags;
     }
@@ -5917,7 +5917,7 @@ rb_str_capitalize_bang(int argc, VALUE *argv, VALUE str)
     enc = STR_ENC_GET(str);
     rb_str_check_dummy_enc(enc);
     if (RSTRING_LEN(str) == 0 || !RSTRING_PTR(str)) return Qnil;
-    if (enc==rb_utf8_encoding() && flags&ONIGENC_CASE_FOLD_LITHUANIAN) { /* lithuanian temporarily used as a guard for debugging */
+    if (enc==rb_utf8_encoding() && argc>0) { /* :lithuanian can temporarily be used for new functionality without options */
 	str_shared_replace(str, rb_str_casemap(str, &flags, enc));
 	modify = ONIGENC_CASE_MODIFIED & flags;
     }
@@ -5989,7 +5989,7 @@ rb_str_swapcase_bang(int argc, VALUE *argv, VALUE str)
     enc = STR_ENC_GET(str);
     rb_str_check_dummy_enc(enc);
     s = RSTRING_PTR(str); send = RSTRING_END(str);
-    if (enc==rb_utf8_encoding() && flags&ONIGENC_CASE_FOLD_LITHUANIAN) { /* lithuanian temporarily used as a guard for debugging */
+    if (enc==rb_utf8_encoding() && argc>0) { /* :lithuanian can temporarily be used for new functionality without options */
 	str_shared_replace(str, rb_str_casemap(str, &flags, enc));
 	modify = ONIGENC_CASE_MODIFIED & flags;
     }
