@@ -606,9 +606,7 @@ onigenc_unicode_get_case_fold_codes_by_str(OnigEncoding enc,
 
 /* length in bytes for three characters in UTF-32; e.g. needed for ffi (U+FB03) */
 #define CASE_MAPPING_SLACK 12
-/* The following declaration should be moved to an include file rather than
-   be duplicated here (and in string.c), but we'll wait for this because we
-   want this to become a primitive anyway. */
+#define MODIFIED (flags |= ONIGENC_CASE_MODIFIED)
 extern int
 onigenc_unicode_case_map(OnigCaseFoldType* flagP,
     const OnigUChar** pp, const OnigUChar* end,
@@ -620,29 +618,52 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
     OnigCaseFoldType flags = *flagP;
     to_end -= CASE_MAPPING_SLACK;
 
-    /* hopelessly preliminary implementation, just dealing with ASCII,
-     * and just for downcase */
+    /* hopelessly preliminary implementation, just dealing with ASCII and Turkic */
     while (*pp<end && to<=to_end) {
 	code = ONIGENC_MBC_TO_CODE(enc, *pp, end);
 	*pp += enclen(enc, *pp, end);
-	/* using :turcic to test buffer expansion */
-	if (flags&ONIGENC_CASE_FOLD_TURKISH_AZERI && code==0x0049) { /* I */
-	    to += ONIGENC_CODE_TO_MBC(enc, 'T', to);
-	    to += ONIGENC_CODE_TO_MBC(enc, 'U', to);
-	    to += ONIGENC_CODE_TO_MBC(enc, 'R', to);
-	    to += ONIGENC_CODE_TO_MBC(enc, 'K', to);
-	    to += ONIGENC_CODE_TO_MBC(enc, 'I', to);
-	    to += ONIGENC_CODE_TO_MBC(enc, 'S', to);
-	    to += ONIGENC_CODE_TO_MBC(enc, 'H', to);
-	    to += ONIGENC_CODE_TO_MBC(enc, '*', to);
-	    code = 0x0131;
-	    flags |= ONIGENC_CASE_MODIFIED;
+	if (code<='z') { /* ASCII comes first */
+	    if (code>='a' && code<='z') {
+	        if (flags&ONIGENC_CASE_UPCASE) {
+		    if (flags&ONIGENC_CASE_FOLD_TURKISH_AZERI && code==0x0069) /* i → İ */
+			code = 0x0130;
+		    else
+			code += 'A'-'a';
+		    MODIFIED;
+		}
+	    }
+	    else if (code>='A' && code<='Z') {
+		if (flags&ONIGENC_CASE_DOWNCASE) {
+		    if (flags&ONIGENC_CASE_FOLD_TURKISH_AZERI && code==0x0049) /* I → ı */
+			code = 0x0131;
+		    else
+			code += 'a'-'A';
+		    MODIFIED;
+		}
+	    }
 	}
-	else if (code>='A' && code<='Z') {
-	    code += 'a'-'A';
-	    flags |= ONIGENC_CASE_MODIFIED;
+	else if (code>=0x00C0) { /* deal with non-ASCII; nothing relevant below U+00C0 */
+	    if (code==0x0130) { /* İ → i */
+		if (flags&ONIGENC_CASE_UPCASE) {
+		    if (flags&ONIGENC_CASE_FOLD_TURKISH_AZERI)
+			code = 0x0069;
+		    else { /* make dot above explicit */
+			to += ONIGENC_CODE_TO_MBC(enc, 0x0069, to);
+			code = 0x0307; /* dot above */
+		    }
+		    MODIFIED;
+		}
+	    }
+	    /* the following case can be removed once we rely on data,
+	     * because the mapping is always the same */
+	    else if (code==0x0131 && flags&ONIGENC_CASE_UPCASE) { /* ı → I */
+		code = 0x0049; MODIFIED;
+	    }
 	}
 	to += ONIGENC_CODE_TO_MBC(enc, code, to);
+	/* switch from titlecase to lowercase for capitalize */
+	if (flags & ONIGENC_CASE_TITLECASE)
+	    flags ^= (ONIGENC_CASE_UPCASE|ONIGENC_CASE_TITLECASE|ONIGENC_CASE_DOWNCASE);
     }
     *flagP = flags;
     return (int)(to-to_start);

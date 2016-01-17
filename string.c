@@ -5734,7 +5734,11 @@ rb_str_upcase_bang(int argc, VALUE *argv, VALUE str)
     enc = STR_ENC_GET(str);
     rb_str_check_dummy_enc(enc);
     s = RSTRING_PTR(str); send = RSTRING_END(str);
-    if (single_byte_optimizable(str)) {
+    if (enc==rb_utf8_encoding() && flags&ONIGENC_CASE_FOLD_LITHUANIAN) { /* lithuanian temporarily used as a guard for debugging */
+	str_shared_replace(str, rb_str_casemap(str, &flags, enc));
+	modify = ONIGENC_CASE_MODIFIED & flags;
+    }
+    else if (single_byte_optimizable(str)) {
 	while (s < send) {
 	    unsigned int c = *(unsigned char*)s;
 
@@ -5817,7 +5821,7 @@ rb_str_downcase_bang(int argc, VALUE *argv, VALUE str)
     enc = STR_ENC_GET(str);
     rb_str_check_dummy_enc(enc);
     s = RSTRING_PTR(str); send = RSTRING_END(str);
-    if (/*enc==rb_utf8_encoding() &&*/ flags&ONIGENC_CASE_FOLD_LITHUANIAN) { /* lithuanian temporarily used as a guard for debugging */
+    if (enc==rb_utf8_encoding() && flags&ONIGENC_CASE_FOLD_LITHUANIAN) { /* lithuanian temporarily used as a guard for debugging */
 	str_shared_replace(str, rb_str_casemap(str, &flags, enc));
 	modify = ONIGENC_CASE_MODIFIED & flags;
     }
@@ -5906,29 +5910,33 @@ rb_str_capitalize_bang(int argc, VALUE *argv, VALUE str)
     int modify = 0;
     unsigned int c;
     int n;
-    OnigCaseFoldType flags = ONIGENC_CASE_UPCASE |
-                    ONIGENC_CASE_TITLECASE | ONIGENC_CASE_ONCEONLY;
+    OnigCaseFoldType flags = ONIGENC_CASE_UPCASE | ONIGENC_CASE_TITLECASE;
 
     flags = check_case_options(argc, argv, flags);
     str_modify_keep_cr(str);
     enc = STR_ENC_GET(str);
     rb_str_check_dummy_enc(enc);
     if (RSTRING_LEN(str) == 0 || !RSTRING_PTR(str)) return Qnil;
-    s = RSTRING_PTR(str); send = RSTRING_END(str);
-
-    c = rb_enc_codepoint_len(s, send, &n, enc);
-    if (rb_enc_islower(c, enc)) {
-	rb_enc_mbcput(rb_enc_toupper(c, enc), s, enc);
-	modify = 1;
+    if (enc==rb_utf8_encoding() && flags&ONIGENC_CASE_FOLD_LITHUANIAN) { /* lithuanian temporarily used as a guard for debugging */
+	str_shared_replace(str, rb_str_casemap(str, &flags, enc));
+	modify = ONIGENC_CASE_MODIFIED & flags;
     }
-    s += n;
-    while (s < send) {
+    else {
+	s = RSTRING_PTR(str); send = RSTRING_END(str);
 	c = rb_enc_codepoint_len(s, send, &n, enc);
-	if (rb_enc_isupper(c, enc)) {
-	    rb_enc_mbcput(rb_enc_tolower(c, enc), s, enc);
+	if (rb_enc_islower(c, enc)) {
+	    rb_enc_mbcput(rb_enc_toupper(c, enc), s, enc);
 	    modify = 1;
 	}
 	s += n;
+	while (s < send) {
+	    c = rb_enc_codepoint_len(s, send, &n, enc);
+	    if (rb_enc_isupper(c, enc)) {
+		rb_enc_mbcput(rb_enc_tolower(c, enc), s, enc);
+		modify = 1;
+	    }
+	    s += n;
+	}
     }
 
     if (modify) return str;
@@ -5981,7 +5989,11 @@ rb_str_swapcase_bang(int argc, VALUE *argv, VALUE str)
     enc = STR_ENC_GET(str);
     rb_str_check_dummy_enc(enc);
     s = RSTRING_PTR(str); send = RSTRING_END(str);
-    while (s < send) {
+    if (enc==rb_utf8_encoding() && flags&ONIGENC_CASE_FOLD_LITHUANIAN) { /* lithuanian temporarily used as a guard for debugging */
+	str_shared_replace(str, rb_str_casemap(str, &flags, enc));
+	modify = ONIGENC_CASE_MODIFIED & flags;
+    }
+    else while (s < send) {
 	unsigned int c = rb_enc_codepoint_len(s, send, &n, enc);
 
 	if (rb_enc_isupper(c, enc)) {

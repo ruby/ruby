@@ -1,3 +1,12 @@
+Sun Jan 17 17:41:41 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode.c: Removed artificial expansion for Turkic,
+	  added hand-coded support for Turkic, fixed logic for swapcase.
+	* string.c: Made use of new case mapping code possible from upcase,
+	  capitalize, and swapcase (with :lithuanian as a guard).
+	* test/ruby/enc/test_case_mapping.rb: Adjusted for above.
+	  (with Kimihito Matsui)
+
 Sun Jan 17 15:30:57 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/socket/option.c (sockopt_bool): relax boolean size to be one
