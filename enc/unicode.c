@@ -625,7 +625,7 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
 	if (code<='z') { /* ASCII comes first */
 	    if (code>='a' && code<='z') {
 	        if (flags&ONIGENC_CASE_UPCASE) {
-		    if (flags&ONIGENC_CASE_FOLD_TURKISH_AZERI && code==0x0069) /* i → İ */
+		    if (flags&ONIGENC_CASE_FOLD_TURKISH_AZERI && code==0x0069) /* i -> I WITH DOT ABOVE */
 			code = 0x0130;
 		    else
 			code += 'A'-'a';
@@ -634,7 +634,7 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
 	    }
 	    else if (code>='A' && code<='Z') {
 		if (flags&ONIGENC_CASE_DOWNCASE) {
-		    if (flags&ONIGENC_CASE_FOLD_TURKISH_AZERI && code==0x0049) /* I → ı */
+		    if (flags&ONIGENC_CASE_FOLD_TURKISH_AZERI && code==0x0049) /* I -> DOTLESS i */
 			code = 0x0131;
 		    else
 			code += 'a'-'A';
@@ -643,7 +643,7 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
 	    }
 	}
 	else if (code>=0x00C0) { /* deal with non-ASCII; nothing relevant below U+00C0 */
-	    if (code==0x0130) { /* İ → i */
+	    if (code==0x0130) { /* I WITH DOT ABOVE -> i */
 		if (flags&ONIGENC_CASE_UPCASE) {
 		    if (flags&ONIGENC_CASE_FOLD_TURKISH_AZERI)
 			code = 0x0069;
@@ -656,7 +656,7 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
 	    }
 	    /* the following case can be removed once we rely on data,
 	     * because the mapping is always the same */
-	    else if (code==0x0131 && flags&ONIGENC_CASE_UPCASE) { /* ı → I */
+	    else if (code==0x0131 && flags&ONIGENC_CASE_UPCASE) { /* DOTLESS i -> I */
 		code = 0x0049; MODIFIED;
 	    }
 	}
