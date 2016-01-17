@@ -501,10 +501,13 @@ e"
   end
 
   def assert_dedented_heredoc(expect, result, mesg = "")
-    %w[eos "eos" 'eos' `eos`].each do |eos|
-      assert_equal(eval("<<-#{eos}\n#{expect}eos\n"),
-                   eval("<<~#{eos}\n#{result}eos\n"),
-                   message(mesg) {"with #{eos}"})
+    all_assertions(mesg) do |a|
+      %w[eos "eos" 'eos' `eos`].each do |eos|
+        a.for(eos) do
+          assert_equal(eval("<<-#{eos}\n#{expect}eos\n"),
+                       eval("<<~#{eos}\n#{result}eos\n"))
+        end
+      end
     end
   end
 
