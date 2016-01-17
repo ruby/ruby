@@ -302,10 +302,15 @@ static VALUE
 sockopt_bool(VALUE self)
 {
     int i;
+    long len;
     VALUE data = sockopt_data(self);
     StringValue(data);
-    check_size(RSTRING_LEN(data), sizeof(int));
-    memcpy((char*)&i, RSTRING_PTR(data), sizeof(int));
+    len = RSTRING_LEN(data);
+    if (len == 1) {
+	return *RSTRING_PTR(data) == 0 ? Qfalse : Qtrue;
+    }
+    check_size(len, sizeof(int));
+    memcpy((char*)&i, RSTRING_PTR(data), len);
     return i == 0 ? Qfalse : Qtrue;
 }
 

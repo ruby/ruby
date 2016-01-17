@@ -25,6 +25,12 @@ class TestSocketOption < Test::Unit::TestCase
     assert_equal(true, opt.bool)
     opt = Socket::Option.int(:INET, :SOCKET, :KEEPALIVE, 2)
     assert_equal(true, opt.bool)
+    Socket.open(:INET, :STREAM) {|s|
+      s.setsockopt(Socket::Option.bool(:INET, :SOCKET, :KEEPALIVE, true))
+      assert_equal(true, s.getsockopt(Socket::SOL_SOCKET, Socket::SO_KEEPALIVE).bool)
+      s.setsockopt(Socket::Option.bool(:INET, :SOCKET, :KEEPALIVE, false))
+      assert_equal(false, s.getsockopt(Socket::SOL_SOCKET, Socket::SO_KEEPALIVE).bool)
+    }
   end
 
   def test_ipv4_multicast_loop
