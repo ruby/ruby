@@ -27,6 +27,12 @@ VALUE rb_cSockOpt;
 # define USE_INSPECT_BYTE 1
 #endif
 
+#define check_size(len, size) \
+    ((len) == (size) ? \
+     (void)0 : \
+     rb_raise(rb_eTypeError, "size differ.  expected as "#size"=%d but %ld", \
+	      (int)size, (long)(len)))
+
 static VALUE
 sockopt_pack_byte(VALUE value)
 {
@@ -211,12 +217,9 @@ sockopt_s_byte(VALUE klass, VALUE vfamily, VALUE vlevel, VALUE voptname, VALUE v
 static VALUE
 sockopt_byte(VALUE self)
 {
-    unsigned char i;
     VALUE data = sockopt_data(self);
     StringValue(data);
-    if (RSTRING_LEN(data) != sizeof(i))
-        rb_raise(rb_eTypeError, "size differ.  expected as sizeof(int)=%d but %ld",
-                 (int)sizeof(i), (long)RSTRING_LEN(data));
+    check_size(RSTRING_LEN(data), sizeof(char));
     return CHR2FIX(*RSTRING_PTR(data));
 }
 
@@ -257,9 +260,7 @@ sockopt_int(VALUE self)
     int i;
     VALUE data = sockopt_data(self);
     StringValue(data);
-    if (RSTRING_LEN(data) != sizeof(int))
-        rb_raise(rb_eTypeError, "size differ.  expected as sizeof(int)=%d but %ld",
-                 (int)sizeof(int), (long)RSTRING_LEN(data));
+    check_size(RSTRING_LEN(data), sizeof(int));
     memcpy((char*)&i, RSTRING_PTR(data), sizeof(int));
     return INT2NUM(i);
 }
@@ -303,9 +304,7 @@ sockopt_bool(VALUE self)
     int i;
     VALUE data = sockopt_data(self);
     StringValue(data);
-    if (RSTRING_LEN(data) != sizeof(int))
-        rb_raise(rb_eTypeError, "size differ.  expected as sizeof(int)=%d but %ld",
-                 (int)sizeof(int), (long)RSTRING_LEN(data));
+    check_size(RSTRING_LEN(data), sizeof(int));
     memcpy((char*)&i, RSTRING_PTR(data), sizeof(int));
     return i == 0 ? Qfalse : Qtrue;
 }
@@ -358,9 +357,7 @@ sockopt_linger(VALUE self)
 
     if (level != SOL_SOCKET || optname != SO_LINGER)
         rb_raise(rb_eTypeError, "linger socket option expected");
-    if (RSTRING_LEN(data) != sizeof(l))
-        rb_raise(rb_eTypeError, "size differ.  expected as sizeof(struct linger)=%d but %ld",
-                 (int)sizeof(struct linger), (long)RSTRING_LEN(data));
+    check_size(RSTRING_LEN(data), sizeof(struct linger));
     memcpy((char*)&l, RSTRING_PTR(data), sizeof(struct linger));
     switch (l.l_onoff) {
       case 0: vonoff = Qfalse; break;
