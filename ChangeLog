@@ -1,3 +1,9 @@
+Sun Jan 17 20:10:10 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode.c: Fixed a logical error and some comments.
+	* test/ruby/enc/test_case_mapping.rb: Made tests more general.
+	  (with Kimihito Matsui)
+
 Sun Jan 17 17:41:41 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/unicode.c: Removed artificial expansion for Turkic,

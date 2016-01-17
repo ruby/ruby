@@ -643,10 +643,10 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
 	    }
 	}
 	else if (code>=0x00C0) { /* deal with non-ASCII; nothing relevant below U+00C0 */
-	    if (code==0x0130) { /* I WITH DOT ABOVE -> i */
-		if (flags&ONIGENC_CASE_UPCASE) {
+	    if (code==0x0130) {
+		if (flags&ONIGENC_CASE_DOWNCASE) {
 		    if (flags&ONIGENC_CASE_FOLD_TURKISH_AZERI)
-			code = 0x0069;
+			code = 0x0069; /* I WITH DOT ABOVE -> i */
 		    else { /* make dot above explicit */
 			to += ONIGENC_CODE_TO_MBC(enc, 0x0069, to);
 			code = 0x0307; /* dot above */
@@ -656,7 +656,7 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
 	    }
 	    /* the following case can be removed once we rely on data,
 	     * because the mapping is always the same */
-	    else if (code==0x0131 && flags&ONIGENC_CASE_UPCASE) { /* DOTLESS i -> I */
+	    else if (code==0x0131 && (flags&ONIGENC_CASE_UPCASE)) { /* DOTLESS i -> I */
 		code = 0x0049; MODIFIED;
 	    }
 	}
