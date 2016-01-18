@@ -1,3 +1,9 @@
+Mon Jan 18 14:37:07 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_here_document): an escaped newline is not an
+	  actual newline, and the rest part should not be dedented.
+	  [ruby-core:72855] [Bug #11989]
+
 Mon Jan 18 12:04:34 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* test/ruby/test_string.rb: Added extra testcase for test_rstrip_bang
