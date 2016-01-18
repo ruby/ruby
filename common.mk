@@ -1017,10 +1017,9 @@ download-unicode-data: ./.unicode-$(UNICODE_VERSION).time
 	$(Q) $(MAKEDIRS) "$(srcdir)/enc/unicode/data/$(UNICODE_VERSION)"
 	$(Q) $(BASERUBY) -C "$(srcdir)" tool/downloader.rb \
 	    -d enc/unicode/data/$(UNICODE_VERSION) \
+	    -p $(UNICODE_VERSION)/ucd \
 	    -e $(ALWAYS_UPDATE_UNICODE:yes=-a) unicode \
-	    $(UNICODE_VERSION)/ucd/UnicodeData.txt \
-	    $(UNICODE_VERSION)/ucd/CompositionExclusions.txt \
-	    $(UNICODE_VERSION)/ucd/NormalizationTest.txt
+	    $(UNICODE_FILES)
 	@exit > $@
 
 $(srcdir)/$(HAVE_BASERUBY:yes=lib/unicode_normalize/tables.rb): \
