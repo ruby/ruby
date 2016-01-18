@@ -6864,7 +6864,7 @@ static const char isspacetable[256] = {
  *
  *  If <i>pattern</i> is <code>nil</code>, the value of <code>$;</code> is used.
  *  If <code>$;</code> is <code>nil</code> (which is the default), <i>str</i> is
- *  split on whitespace as if ` ' were specified.
+ *  split on whitespace as if ' ' were specified.
  *
  *  If the <i>limit</i> parameter is omitted, trailing null fields are
  *  suppressed. If <i>limit</i> is a positive number, at most that number of
