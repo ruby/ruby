@@ -1,3 +1,7 @@
+Mon Jan 18 11:47:27 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* string.c: fix a typo. [fix GH-1202][ci skip] Patch by @sunboshan
+
 Sun Jan 17 21:15:30 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in: improve ICC (Intel C Compiler) support.
