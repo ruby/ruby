@@ -1,3 +1,8 @@
+Mon Jan 18 12:04:34 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* test/ruby/test_string.rb: Added extra testcase for test_rstrip_bang
+	  and test_lstrip_bang. [fix GH-1178] Patch by @Matrixbirds
+
 Mon Jan 18 11:47:27 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* string.c: fix a typo. [fix GH-1202][ci skip] Patch by @sunboshan
