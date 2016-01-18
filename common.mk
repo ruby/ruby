@@ -995,7 +995,7 @@ extract-gems: PHONY
 	    -e 'Gem.unpack("#{gem}-#{ver}.gem")' \
 	    bundled_gems
 
-UPDATE_LIBRARIES = no
+UPDATE_LIBRARIES = yes
 
 ### set the following environment variable or uncomment the line if
 ### the Unicode data files are updated every minute.
