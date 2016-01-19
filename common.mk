@@ -1174,6 +1174,7 @@ class.$(OBJEXT): {$(VPATH)}method.h
 class.$(OBJEXT): {$(VPATH)}missing.h
 class.$(OBJEXT): {$(VPATH)}node.h
 class.$(OBJEXT): {$(VPATH)}oniguruma.h
+class.$(OBJEXT): {$(VPATH)}ruby_assert.h
 class.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 class.$(OBJEXT): {$(VPATH)}st.h
 class.$(OBJEXT): {$(VPATH)}subst.h
@@ -1215,6 +1216,7 @@ compile.$(OBJEXT): {$(VPATH)}node.h
 compile.$(OBJEXT): {$(VPATH)}oniguruma.h
 compile.$(OBJEXT): {$(VPATH)}optinsn.inc
 compile.$(OBJEXT): {$(VPATH)}re.h
+compile.$(OBJEXT): {$(VPATH)}ruby_assert.h
 compile.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 compile.$(OBJEXT): {$(VPATH)}st.h
 compile.$(OBJEXT): {$(VPATH)}subst.h
@@ -1257,6 +1259,7 @@ cont.$(OBJEXT): {$(VPATH)}method.h
 cont.$(OBJEXT): {$(VPATH)}missing.h
 cont.$(OBJEXT): {$(VPATH)}node.h
 cont.$(OBJEXT): {$(VPATH)}oniguruma.h
+cont.$(OBJEXT): {$(VPATH)}ruby_assert.h
 cont.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 cont.$(OBJEXT): {$(VPATH)}st.h
 cont.$(OBJEXT): {$(VPATH)}subst.h
@@ -1284,6 +1287,7 @@ debug.$(OBJEXT): {$(VPATH)}method.h
 debug.$(OBJEXT): {$(VPATH)}missing.h
 debug.$(OBJEXT): {$(VPATH)}node.h
 debug.$(OBJEXT): {$(VPATH)}oniguruma.h
+debug.$(OBJEXT): {$(VPATH)}ruby_assert.h
 debug.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 debug.$(OBJEXT): {$(VPATH)}st.h
 debug.$(OBJEXT): {$(VPATH)}subst.h
@@ -1477,6 +1481,7 @@ eval.$(OBJEXT): {$(VPATH)}node.h
 eval.$(OBJEXT): {$(VPATH)}oniguruma.h
 eval.$(OBJEXT): {$(VPATH)}probes.h
 eval.$(OBJEXT): {$(VPATH)}probes_helper.h
+eval.$(OBJEXT): {$(VPATH)}ruby_assert.h
 eval.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 eval.$(OBJEXT): {$(VPATH)}st.h
 eval.$(OBJEXT): {$(VPATH)}subst.h
@@ -1653,6 +1658,7 @@ iseq.$(OBJEXT): {$(VPATH)}missing.h
 iseq.$(OBJEXT): {$(VPATH)}node.h
 iseq.$(OBJEXT): {$(VPATH)}node_name.inc
 iseq.$(OBJEXT): {$(VPATH)}oniguruma.h
+iseq.$(OBJEXT): {$(VPATH)}ruby_assert.h
 iseq.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 iseq.$(OBJEXT): {$(VPATH)}st.h
 iseq.$(OBJEXT): {$(VPATH)}subst.h
@@ -1683,6 +1689,7 @@ load.$(OBJEXT): {$(VPATH)}missing.h
 load.$(OBJEXT): {$(VPATH)}node.h
 load.$(OBJEXT): {$(VPATH)}oniguruma.h
 load.$(OBJEXT): {$(VPATH)}probes.h
+load.$(OBJEXT): {$(VPATH)}ruby_assert.h
 load.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 load.$(OBJEXT): {$(VPATH)}st.h
 load.$(OBJEXT): {$(VPATH)}subst.h
@@ -1700,6 +1707,7 @@ loadpath.$(OBJEXT): {$(VPATH)}defines.h
 loadpath.$(OBJEXT): {$(VPATH)}intern.h
 loadpath.$(OBJEXT): {$(VPATH)}loadpath.c
 loadpath.$(OBJEXT): {$(VPATH)}missing.h
+loadpath.$(OBJEXT): {$(VPATH)}ruby_assert.h
 loadpath.$(OBJEXT): {$(VPATH)}st.h
 loadpath.$(OBJEXT): {$(VPATH)}subst.h
 loadpath.$(OBJEXT): {$(VPATH)}verconf.h
@@ -1786,6 +1794,7 @@ node.$(OBJEXT): {$(VPATH)}missing.h
 node.$(OBJEXT): {$(VPATH)}node.c
 node.$(OBJEXT): {$(VPATH)}node.h
 node.$(OBJEXT): {$(VPATH)}oniguruma.h
+node.$(OBJEXT): {$(VPATH)}ruby_assert.h
 node.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 node.$(OBJEXT): {$(VPATH)}st.h
 node.$(OBJEXT): {$(VPATH)}subst.h
@@ -1883,6 +1892,7 @@ prelude.$(OBJEXT): {$(VPATH)}missing.h
 prelude.$(OBJEXT): {$(VPATH)}node.h
 prelude.$(OBJEXT): {$(VPATH)}oniguruma.h
 prelude.$(OBJEXT): {$(VPATH)}prelude.c
+prelude.$(OBJEXT): {$(VPATH)}ruby_assert.h
 prelude.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 prelude.$(OBJEXT): {$(VPATH)}st.h
 prelude.$(OBJEXT): {$(VPATH)}subst.h
@@ -1912,6 +1922,7 @@ proc.$(OBJEXT): {$(VPATH)}missing.h
 proc.$(OBJEXT): {$(VPATH)}node.h
 proc.$(OBJEXT): {$(VPATH)}oniguruma.h
 proc.$(OBJEXT): {$(VPATH)}proc.c
+proc.$(OBJEXT): {$(VPATH)}ruby_assert.h
 proc.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 proc.$(OBJEXT): {$(VPATH)}st.h
 proc.$(OBJEXT): {$(VPATH)}subst.h
@@ -1939,6 +1950,7 @@ process.$(OBJEXT): {$(VPATH)}missing.h
 process.$(OBJEXT): {$(VPATH)}node.h
 process.$(OBJEXT): {$(VPATH)}oniguruma.h
 process.$(OBJEXT): {$(VPATH)}process.c
+process.$(OBJEXT): {$(VPATH)}ruby_assert.h
 process.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 process.$(OBJEXT): {$(VPATH)}st.h
 process.$(OBJEXT): {$(VPATH)}subst.h
@@ -2100,6 +2112,7 @@ ruby.$(OBJEXT): {$(VPATH)}missing.h
 ruby.$(OBJEXT): {$(VPATH)}node.h
 ruby.$(OBJEXT): {$(VPATH)}oniguruma.h
 ruby.$(OBJEXT): {$(VPATH)}ruby.c
+ruby.$(OBJEXT): {$(VPATH)}ruby_assert.h
 ruby.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 ruby.$(OBJEXT): {$(VPATH)}st.h
 ruby.$(OBJEXT): {$(VPATH)}subst.h
@@ -2127,6 +2140,7 @@ safe.$(OBJEXT): {$(VPATH)}method.h
 safe.$(OBJEXT): {$(VPATH)}missing.h
 safe.$(OBJEXT): {$(VPATH)}node.h
 safe.$(OBJEXT): {$(VPATH)}oniguruma.h
+safe.$(OBJEXT): {$(VPATH)}ruby_assert.h
 safe.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 safe.$(OBJEXT): {$(VPATH)}safe.c
 safe.$(OBJEXT): {$(VPATH)}st.h
@@ -2164,6 +2178,7 @@ signal.$(OBJEXT): {$(VPATH)}method.h
 signal.$(OBJEXT): {$(VPATH)}missing.h
 signal.$(OBJEXT): {$(VPATH)}node.h
 signal.$(OBJEXT): {$(VPATH)}oniguruma.h
+signal.$(OBJEXT): {$(VPATH)}ruby_assert.h
 signal.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 signal.$(OBJEXT): {$(VPATH)}signal.c
 signal.$(OBJEXT): {$(VPATH)}st.h
@@ -2262,6 +2277,7 @@ struct.$(OBJEXT): {$(VPATH)}method.h
 struct.$(OBJEXT): {$(VPATH)}missing.h
 struct.$(OBJEXT): {$(VPATH)}node.h
 struct.$(OBJEXT): {$(VPATH)}oniguruma.h
+struct.$(OBJEXT): {$(VPATH)}ruby_assert.h
 struct.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 struct.$(OBJEXT): {$(VPATH)}st.h
 struct.$(OBJEXT): {$(VPATH)}struct.c
@@ -2312,6 +2328,7 @@ thread.$(OBJEXT): {$(VPATH)}method.h
 thread.$(OBJEXT): {$(VPATH)}missing.h
 thread.$(OBJEXT): {$(VPATH)}node.h
 thread.$(OBJEXT): {$(VPATH)}oniguruma.h
+thread.$(OBJEXT): {$(VPATH)}ruby_assert.h
 thread.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 thread.$(OBJEXT): {$(VPATH)}st.h
 thread.$(OBJEXT): {$(VPATH)}subst.h
@@ -2420,6 +2437,7 @@ vm.$(OBJEXT): {$(VPATH)}node.h
 vm.$(OBJEXT): {$(VPATH)}oniguruma.h
 vm.$(OBJEXT): {$(VPATH)}probes.h
 vm.$(OBJEXT): {$(VPATH)}probes_helper.h
+vm.$(OBJEXT): {$(VPATH)}ruby_assert.h
 vm.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 vm.$(OBJEXT): {$(VPATH)}st.h
 vm.$(OBJEXT): {$(VPATH)}subst.h
@@ -2460,6 +2478,7 @@ vm_backtrace.$(OBJEXT): {$(VPATH)}method.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}missing.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}node.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}oniguruma.h
+vm_backtrace.$(OBJEXT): {$(VPATH)}ruby_assert.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}st.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}subst.h
@@ -2491,6 +2510,7 @@ vm_dump.$(OBJEXT): {$(VPATH)}method.h
 vm_dump.$(OBJEXT): {$(VPATH)}missing.h
 vm_dump.$(OBJEXT): {$(VPATH)}node.h
 vm_dump.$(OBJEXT): {$(VPATH)}oniguruma.h
+vm_dump.$(OBJEXT): {$(VPATH)}ruby_assert.h
 vm_dump.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 vm_dump.$(OBJEXT): {$(VPATH)}st.h
 vm_dump.$(OBJEXT): {$(VPATH)}subst.h
@@ -2519,6 +2539,7 @@ vm_trace.$(OBJEXT): {$(VPATH)}method.h
 vm_trace.$(OBJEXT): {$(VPATH)}missing.h
 vm_trace.$(OBJEXT): {$(VPATH)}node.h
 vm_trace.$(OBJEXT): {$(VPATH)}oniguruma.h
+vm_trace.$(OBJEXT): {$(VPATH)}ruby_assert.h
 vm_trace.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 vm_trace.$(OBJEXT): {$(VPATH)}st.h
 vm_trace.$(OBJEXT): {$(VPATH)}subst.h
