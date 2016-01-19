@@ -257,6 +257,7 @@ def package(vcs, rev, destdir, tmp = nil)
       puts " done"
     end
     clean.add("autom4te.cache")
+    clean.add("enc/unicode/data")
     print "creating prerequisites..."
     if File.file?("common.mk") && /^prereq/ =~ commonmk = IO.read("common.mk")
       puts
