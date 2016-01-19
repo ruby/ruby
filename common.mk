@@ -1006,7 +1006,8 @@ extract-gems: PHONY
 
 UNICODE_FILES = $(srcdir)/enc/unicode/data/$(UNICODE_VERSION)/UnicodeData.txt \
 		$(srcdir)/enc/unicode/data/$(UNICODE_VERSION)/CompositionExclusions.txt \
-		$(srcdir)/enc/unicode/data/$(UNICODE_VERSION)/NormalizationTest.txt
+		$(srcdir)/enc/unicode/data/$(UNICODE_VERSION)/NormalizationTest.txt \
+		$(srcdir)/enc/unicode/data/$(UNICODE_VERSION)/CaseFolding.txt
 
 UNICODE_FILES_DEPS = $(srcdir)/.unicode-$(UNICODE_VERSION).time
 
