@@ -815,6 +815,9 @@ if test "$GCC:${warnflags+set}:no" = yes::no; then
     for wflag in -Wno-unused-parameter -Wno-parentheses -Wno-long-long \
                  -diag-disable=2259 \
 		 -Wno-missing-field-initializers \
+		 -Wno-tautological-compare \
+		 -Wno-parentheses-equality \
+		 -Wno-constant-logical-operand \
 		 -Wunused-variable \
 		 -Werror=pointer-arith \
 		 -Werror=write-strings \
