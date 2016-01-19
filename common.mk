@@ -1025,7 +1025,7 @@ $(srcdir)/$(HAVE_BASERUBY:yes=lib/unicode_normalize/tables.rb): \
 	$(srcdir)/.unicode-tables.time
 
 $(srcdir)/.unicode-tables.time: $(srcdir)/tool/generic_erb.rb \
-		$(UNICODE_FILES) $(UNICODE_FILES_DEPS) \
+		$(UNICODE_FILES_DEPS) \
 		$(srcdir)/template/unicode_norm_gen.tmpl
 	$(Q) $(BASERUBY) $(srcdir)/tool/generic_erb.rb \
 		-c -t$@ -o $(srcdir)/lib/unicode_normalize/tables.rb \
