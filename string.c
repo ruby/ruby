@@ -16,7 +16,7 @@
 #include "encindex.h"
 #include "probes.h"
 #include "gc.h"
-#include <assert.h>
+#include "ruby_assert.h"
 #include "id.h"
 
 #define BEG(no) (regs->beg[(no)])

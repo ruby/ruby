@@ -15,7 +15,7 @@
 #include <ctype.h>
 #include "ruby/util.h"
 
-#include <assert.h>
+#include "ruby_assert.h"
 #ifndef ENC_DEBUG
 #define ENC_DEBUG 0
 #endif

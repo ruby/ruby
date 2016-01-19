@@ -1133,6 +1133,7 @@ array.$(OBJEXT): {$(VPATH)}io.h
 array.$(OBJEXT): {$(VPATH)}missing.h
 array.$(OBJEXT): {$(VPATH)}oniguruma.h
 array.$(OBJEXT): {$(VPATH)}probes.h
+array.$(OBJEXT): {$(VPATH)}ruby_assert.h
 array.$(OBJEXT): {$(VPATH)}st.h
 array.$(OBJEXT): {$(VPATH)}subst.h
 array.$(OBJEXT): {$(VPATH)}util.h
@@ -1148,6 +1149,7 @@ bignum.$(OBJEXT): {$(VPATH)}internal.h
 bignum.$(OBJEXT): {$(VPATH)}io.h
 bignum.$(OBJEXT): {$(VPATH)}missing.h
 bignum.$(OBJEXT): {$(VPATH)}oniguruma.h
+bignum.$(OBJEXT): {$(VPATH)}ruby_assert.h
 bignum.$(OBJEXT): {$(VPATH)}st.h
 bignum.$(OBJEXT): {$(VPATH)}subst.h
 bignum.$(OBJEXT): {$(VPATH)}thread.h
@@ -1232,6 +1234,7 @@ complex.$(OBJEXT): {$(VPATH)}internal.h
 complex.$(OBJEXT): {$(VPATH)}io.h
 complex.$(OBJEXT): {$(VPATH)}missing.h
 complex.$(OBJEXT): {$(VPATH)}oniguruma.h
+complex.$(OBJEXT): {$(VPATH)}ruby_assert.h
 complex.$(OBJEXT): {$(VPATH)}st.h
 complex.$(OBJEXT): {$(VPATH)}subst.h
 cont.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
@@ -1389,6 +1392,7 @@ encoding.$(OBJEXT): {$(VPATH)}io.h
 encoding.$(OBJEXT): {$(VPATH)}missing.h
 encoding.$(OBJEXT): {$(VPATH)}oniguruma.h
 encoding.$(OBJEXT): {$(VPATH)}regenc.h
+encoding.$(OBJEXT): {$(VPATH)}ruby_assert.h
 encoding.$(OBJEXT): {$(VPATH)}st.h
 encoding.$(OBJEXT): {$(VPATH)}subst.h
 encoding.$(OBJEXT): {$(VPATH)}util.h
@@ -1439,6 +1443,7 @@ error.$(OBJEXT): {$(VPATH)}method.h
 error.$(OBJEXT): {$(VPATH)}missing.h
 error.$(OBJEXT): {$(VPATH)}node.h
 error.$(OBJEXT): {$(VPATH)}oniguruma.h
+error.$(OBJEXT): {$(VPATH)}ruby_assert.h
 error.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 error.$(OBJEXT): {$(VPATH)}st.h
 error.$(OBJEXT): {$(VPATH)}subst.h
@@ -1525,6 +1530,7 @@ gc.$(OBJEXT): {$(VPATH)}re.h
 gc.$(OBJEXT): {$(VPATH)}regenc.h
 gc.$(OBJEXT): {$(VPATH)}regex.h
 gc.$(OBJEXT): {$(VPATH)}regint.h
+gc.$(OBJEXT): {$(VPATH)}ruby_assert.h
 gc.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 gc.$(OBJEXT): {$(VPATH)}st.h
 gc.$(OBJEXT): {$(VPATH)}subst.h
@@ -1984,6 +1990,7 @@ rational.$(OBJEXT): {$(VPATH)}io.h
 rational.$(OBJEXT): {$(VPATH)}missing.h
 rational.$(OBJEXT): {$(VPATH)}oniguruma.h
 rational.$(OBJEXT): {$(VPATH)}rational.c
+rational.$(OBJEXT): {$(VPATH)}ruby_assert.h
 rational.$(OBJEXT): {$(VPATH)}st.h
 rational.$(OBJEXT): {$(VPATH)}subst.h
 re.$(OBJEXT): $(hdrdir)/ruby/ruby.h
@@ -2227,6 +2234,7 @@ string.$(OBJEXT): {$(VPATH)}oniguruma.h
 string.$(OBJEXT): {$(VPATH)}probes.h
 string.$(OBJEXT): {$(VPATH)}re.h
 string.$(OBJEXT): {$(VPATH)}regex.h
+string.$(OBJEXT): {$(VPATH)}ruby_assert.h
 string.$(OBJEXT): {$(VPATH)}st.h
 string.$(OBJEXT): {$(VPATH)}string.c
 string.$(OBJEXT): {$(VPATH)}subst.h
@@ -2271,17 +2279,18 @@ symbol.$(OBJEXT): {$(VPATH)}encoding.h
 symbol.$(OBJEXT): {$(VPATH)}gc.h
 symbol.$(OBJEXT): {$(VPATH)}id.c
 symbol.$(OBJEXT): {$(VPATH)}id.h
+symbol.$(OBJEXT): {$(VPATH)}id_table.c
+symbol.$(OBJEXT): {$(VPATH)}id_table.h
 symbol.$(OBJEXT): {$(VPATH)}intern.h
 symbol.$(OBJEXT): {$(VPATH)}internal.h
 symbol.$(OBJEXT): {$(VPATH)}io.h
 symbol.$(OBJEXT): {$(VPATH)}missing.h
 symbol.$(OBJEXT): {$(VPATH)}oniguruma.h
 symbol.$(OBJEXT): {$(VPATH)}probes.h
+symbol.$(OBJEXT): {$(VPATH)}ruby_assert.h
 symbol.$(OBJEXT): {$(VPATH)}st.h
 symbol.$(OBJEXT): {$(VPATH)}subst.h
 symbol.$(OBJEXT): {$(VPATH)}symbol.c
-symbol.$(OBJEXT): {$(VPATH)}id_table.c
-symbol.$(OBJEXT): {$(VPATH)}id_table.h
 symbol.$(OBJEXT): {$(VPATH)}symbol.h
 symbol.$(OBJEXT): {$(VPATH)}vm_opts.h
 thread.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
@@ -2419,8 +2428,8 @@ vm.$(OBJEXT): {$(VPATH)}thread_native.h
 vm.$(OBJEXT): {$(VPATH)}vm.c
 vm.$(OBJEXT): {$(VPATH)}vm.h
 vm.$(OBJEXT): {$(VPATH)}vm.inc
-vm.$(OBJEXT): {$(VPATH)}vm_call_iseq_optimized.inc
 vm.$(OBJEXT): {$(VPATH)}vm_args.c
+vm.$(OBJEXT): {$(VPATH)}vm_call_iseq_optimized.inc
 vm.$(OBJEXT): {$(VPATH)}vm_core.h
 vm.$(OBJEXT): {$(VPATH)}vm_debug.h
 vm.$(OBJEXT): {$(VPATH)}vm_eval.c
@@ -2461,8 +2470,8 @@ vm_backtrace.$(OBJEXT): {$(VPATH)}vm_core.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}vm_debug.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}vm_opts.h
 vm_call.$(OBJEXT): $(top_srcdir)/include/ruby.h
-vm_call.$(OBJEXT): {$(VPATH)}vm_core.h
 vm_call.$(OBJEXT): {$(VPATH)}vm_call_iseq_optimized.inc
+vm_call.$(OBJEXT): {$(VPATH)}vm_core.h
 vm_dump.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 vm_dump.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 vm_dump.$(OBJEXT): $(CCAN_DIR)/list/list.h

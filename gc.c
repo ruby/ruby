@@ -32,7 +32,7 @@
 #include <stdarg.h>
 #include <setjmp.h>
 #include <sys/types.h>
-#include <assert.h>
+#include "ruby_assert.h"
 
 #undef rb_data_object_wrap
 
