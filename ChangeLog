@@ -1,3 +1,8 @@
+Tue Jan 19 10:09:58 2016  Sho Hashimoto  <sho-h@ruby-lang.org>
+
+	* lib/shell.rb (Shell.debug_output_exclusive_unlock): remove
+	  because Mutex#exclusive_unlock was already deleted. [fix GH-1185]
+
 Tue Jan 19 09:38:27 2016  Nick Cox  <nick@nickcox.me>
 
 	* vm_method.c: fix grammar in respond_to? warning.
