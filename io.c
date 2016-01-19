@@ -197,16 +197,17 @@ rb_update_max_fd(int fd)
 {
     struct stat buf;
     rb_atomic_t afd = (rb_atomic_t)fd;
+    rb_atomic_t max_fd = max_file_descriptor;
 
-    if (afd <= max_file_descriptor)
+    if (afd <= max_fd)
         return;
 
     if (fstat(fd, &buf) != 0 && errno == EBADF) {
         rb_bug("rb_update_max_fd: invalid fd (%d) given.", fd);
     }
 
-    while (max_file_descriptor < afd) {
-	ATOMIC_CAS(max_file_descriptor, max_file_descriptor, afd);
+    while (max_fd < afd) {
+	max_fd = ATOMIC_CAS(max_file_descriptor, max_fd, afd);
     }
 }
 
