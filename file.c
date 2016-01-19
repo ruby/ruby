@@ -5489,7 +5489,7 @@ rb_stat_sticky(VALUE obj)
 
 /*
  *  call-seq:
- *     File.mkfifo(file_name, mode)  => 0
+ *     File.mkfifo(file_name, mode=0666)  => 0
  *
  *  Creates a FIFO special file with name _file_name_.  _mode_
  *  specifies the FIFO's permissions. It is modified by the process's
