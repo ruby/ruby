@@ -818,6 +818,7 @@ if test "$GCC:${warnflags+set}:no" = yes::no; then
 		 -Wno-tautological-compare \
 		 -Wno-parentheses-equality \
 		 -Wno-constant-logical-operand \
+		 -Wno-self-assign \
 		 -Wunused-variable \
 		 -Werror=pointer-arith \
 		 -Werror=write-strings \
