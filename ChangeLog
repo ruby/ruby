@@ -1,3 +1,8 @@
+Tue Jan 19 09:38:27 2016  Nick Cox  <nick@nickcox.me>
+
+	* vm_method.c: fix grammar in respond_to? warning.
+	  [fix GH-1047]
+
 Mon Jan 18 14:37:07 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_here_document): an escaped newline is not an
