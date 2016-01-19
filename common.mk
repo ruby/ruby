@@ -963,13 +963,17 @@ gdb-ruby: $(PROGRAM) run.gdb PHONY
 dist:
 	$(BASERUBY) $(srcdir)/tool/make-snapshot -srcdir=$(srcdir) tmp $(RELNAME)
 
+up:: update-remote
+
 up::
 	-$(Q)$(MAKE) $(MFLAGS) Q=$(Q) REVISION_FORCE=PHONY "$(REVISION_H)"
 
 up::
 	-$(Q)$(MAKE) $(MFLAGS) Q=$(Q) after-update
 
-after-update:: update-unicode update-gems extract-extlibs
+after-update:: extract-extlibs
+
+update-remote:: update-src update-rubyspec update-config_files update-unicode update-gems
 
 update-config_files: PHONY
 	$(Q) $(BASERUBY) -C "$(srcdir)/tool" \
@@ -995,8 +999,6 @@ extract-gems: PHONY
 	    -e 'Gem.unpack("#{gem}-#{ver}.gem")' \
 	    bundled_gems
 
-UPDATE_LIBRARIES = yes
-
 ### set the following environment variable or uncomment the line if
 ### the Unicode data files are updated every minute.
 # ALWAYS_UPDATE_UNICODE = yes
@@ -1005,14 +1007,11 @@ UNICODE_FILES = $(srcdir)/enc/unicode/data/$(UNICODE_VERSION)/UnicodeData.txt \
 		$(srcdir)/enc/unicode/data/$(UNICODE_VERSION)/CompositionExclusions.txt \
 		$(srcdir)/enc/unicode/data/$(UNICODE_VERSION)/NormalizationTest.txt
 
-update-unicode: $(UNICODE_FILES) PHONY
+UNICODE_FILES_DEPS = $(srcdir)/.unicode-$(UNICODE_VERSION).time
 
-UNICODE_FILES_DEPS0 = $(UPDATE_LIBRARIES:yes=download-unicode-data)
-UNICODE_FILES_DEPS = $(UNICODE_FILES_DEPS0:no=)
-$(UNICODE_FILES): $(UNICODE_FILES_DEPS)
+update-unicode: $(srcdir)/.unicode-$(UNICODE_VERSION).time PHONY
 
-download-unicode-data: ./.unicode-$(UNICODE_VERSION).time
-./.unicode-$(UNICODE_VERSION).time: PHONY
+$(UNICODE_FILES_DEPS):
 	$(ECHO) Downloading Unicode $(UNICODE_VERSION) data files...
 	$(Q) $(MAKEDIRS) "$(srcdir)/enc/unicode/data/$(UNICODE_VERSION)"
 	$(Q) $(BASERUBY) -C "$(srcdir)" tool/downloader.rb \
@@ -1023,9 +1022,9 @@ download-unicode-data: ./.unicode-$(UNICODE_VERSION).time
 	@exit > $@
 
 $(srcdir)/$(HAVE_BASERUBY:yes=lib/unicode_normalize/tables.rb): \
-	$(UNICODE_FILES_DEPS:download-unicode-data=./.unicode-tables.time)
+	$(srcdir)/.unicode-tables.time
 
-./.unicode-tables.time: $(srcdir)/tool/generic_erb.rb \
+$(srcdir)/.unicode-tables.time: $(srcdir)/tool/generic_erb.rb \
 		$(UNICODE_FILES) $(UNICODE_FILES_DEPS) \
 		$(srcdir)/template/unicode_norm_gen.tmpl
 	$(Q) $(BASERUBY) $(srcdir)/tool/generic_erb.rb \

@@ -467,10 +467,10 @@ ext/extinit.$(OBJEXT): ext/extinit.c $(SETUP)
 
 enc/encinit.$(OBJEXT): enc/encinit.c $(SETUP)
 
-up::
+update-src::
 	@$(CHDIR) "$(srcdir)" && LC_TIME=C exec $(VCSUP)
 
-after-update:: update-config_files common-srcs
+after-update:: common-srcs
 
 update-mspec:
 	@$(CHDIR) $(srcdir); \

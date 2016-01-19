@@ -454,7 +454,7 @@ scriptbin: $(SCRIPTPROGRAMS)
 
 $(SCRIPTPROGRAMS): $(STUBPROGRAM)
 
-up::
+update-src::
 	@cd "$(srcdir:/=\)" && set LC_TIME=C && $(VCSUP)
 
 update-mspec:
