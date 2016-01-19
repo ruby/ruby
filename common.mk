@@ -973,7 +973,8 @@ up::
 
 after-update:: extract-extlibs
 
-update-remote:: update-src update-rubyspec update-config_files update-unicode update-gems
+update-remote:: update-src update-rubyspec update-download
+update-download:: update-config_files update-unicode update-gems download-extlibs
 
 update-config_files: PHONY
 	$(Q) $(BASERUBY) -C "$(srcdir)/tool" \

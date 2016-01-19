@@ -187,7 +187,7 @@ def package(vcs, rev, destdir, tmp = nil)
       return
     end
     if $srcdir
-      Dir.glob($srcdir + "/{tool/config.{guess,sub},gems/*.gem,.downloaded-cache/*}") do |file|
+      Dir.glob($srcdir + "/{tool/config.{guess,sub},gems/*.gem,.downloaded-cache/*,enc/unicode/data/**/*.txt}") do |file|
         puts "copying #{file}"
         dest = exported + file[$srcdir.size..-1]
         FileUtils.mkpath(File.dirname(dest))
@@ -315,10 +315,13 @@ def package(vcs, rev, destdir, tmp = nil)
 
 prereq: clean-cache $(CLEAN_CACHE)
 clean-cache $(CLEAN_CACHE): after-update
+update-download:: update-gems
 after-update:: extract-gems
-extract-gems:
+extract-gems: update-gems
+update-gems:
       APPEND
       open(clean.add("Makefile"), "w") do |f|
+        f.puts "prereq: update-download"
         f.puts mk
       end
       system("make", "prereq", *args.map {|arg| arg.join("=")})
