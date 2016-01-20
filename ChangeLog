@@ -1,3 +1,7 @@
+Wed Jan 20 17:13:39 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+
+
 Tue Jan 19 17:03:40 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* common.mk: Added Unicode data file CaseFolding.txt to be additionally
