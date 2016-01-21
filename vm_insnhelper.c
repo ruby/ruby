@@ -1825,7 +1825,8 @@ vm_call_opt_send(rb_thread_t *th, rb_control_frame_t *reg_cfp, struct rb_calling
 
     if (!(ci->mid = rb_check_id(&sym))) {
 	if (rb_method_basic_definition_p(CLASS_OF(calling->recv), idMethodMissing)) {
-	    VALUE exc = make_no_method_exception(rb_eNoMethodError, NULL, calling->recv, rb_long2int(calling->argc), &TOPN(i));
+	    VALUE exc = make_no_method_exception(rb_eNoMethodError, 0, calling->recv,
+						 rb_long2int(calling->argc), &TOPN(i));
 	    rb_exc_raise(exc);
 	}
 	TOPN(i) = rb_str_intern(sym);

@@ -171,6 +171,9 @@ str_make_independent(VALUE str)
     str_make_independent_expand((str), len, 0L, termlen);
 }
 
+/* symbols for [up|down|swap]case/capitalize options */
+static VALUE sym_ascii, sym_turkic, sym_lithuanian, sym_fold;
+
 static rb_encoding *
 get_actual_encoding(const int encidx, VALUE str)
 {
@@ -5589,6 +5592,125 @@ rb_str_check_dummy_enc(rb_encoding *enc)
     }
 }
 
+static OnigCaseFoldType
+check_case_options(int argc, VALUE *argv, OnigCaseFoldType flags)
+{
+    if (argc==0)
+        return flags;
+    if (argc>2)
+        rb_raise(rb_eArgError, "too many options");
+    if (argv[0]==sym_turkic) {
+	flags |= ONIGENC_CASE_FOLD_TURKISH_AZERI;
+	if (argc==2) {
+	    if (argv[1]==sym_lithuanian)
+		flags |= ONIGENC_CASE_FOLD_LITHUANIAN;
+	    else
+		rb_raise(rb_eArgError, "invalid second option");
+	}
+    }
+    else if (argv[0]==sym_lithuanian) {
+	flags |= ONIGENC_CASE_FOLD_LITHUANIAN;
+	if (argc==2) {
+	    if (argv[1]==sym_turkic)
+	        flags |= ONIGENC_CASE_FOLD_TURKISH_AZERI;
+	    else
+	        rb_raise(rb_eArgError, "invalid second option");
+	}
+    }
+    else if (argc>1)
+	rb_raise(rb_eArgError, "too many options");
+    else if (argv[0]==sym_ascii)
+	flags |= ONIGENC_CASE_ASCII_ONLY;
+    else if (argv[0]==sym_fold) {
+	if ((flags & (ONIGENC_CASE_UPCASE|ONIGENC_CASE_DOWNCASE)) == ONIGENC_CASE_DOWNCASE)
+	    flags |= ONIGENC_CASE_FOLD;
+	else
+	    rb_raise(rb_eArgError, "option :fold only allowed for downcasing");
+    }
+    else
+	rb_raise(rb_eArgError, "invalid option");
+    return flags;
+}
+
+/* The following declaration should be moved to an include file rather than
+   be duplicated here (and in enc/unicode.c), but we'll wait for this because
+   we want this to become a primitive anyway. */
+extern int
+onigenc_unicode_case_map(OnigCaseFoldType* flag,
+	 const OnigUChar** pp,
+	 const OnigUChar* end,
+	 OnigUChar* to,
+	 OnigUChar* to_end,
+	 const struct OnigEncodingTypeST* enc);
+
+/* 16 should be long enough to absorb any kind of single character length increase */
+#define CASE_MAPPING_ADDITIONAL_LENGTH 20
+
+struct mapping_buffer;
+typedef struct mapping_buffer {
+    size_t capa;
+    size_t used;
+    struct mapping_buffer *next;
+    OnigUChar space[0];
+} mapping_buffer;
+
+static VALUE
+rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
+{
+    VALUE target;
+
+    OnigUChar *source_current, *source_end;
+    int target_length = 0;
+    mapping_buffer pre_buffer, /* only next pointer used */
+		  *current_buffer = &pre_buffer;
+    int buffer_count = 0;
+
+    if (RSTRING_LEN(source) == 0) return rb_str_dup(source);
+
+    source_current = (OnigUChar*)RSTRING_PTR(source);
+    source_end = (OnigUChar*)RSTRING_END(source);
+
+    while (source_current < source_end) {
+	/* increase multiplier using buffer count to converge quickly */
+	int capa = (int)(source_end-source_current)*++buffer_count + CASE_MAPPING_ADDITIONAL_LENGTH;
+/* fprintf(stderr, "Buffer allocation, capa is %d\n", capa); *//* for tuning */
+	current_buffer->next = (mapping_buffer*)ALLOC_N(char, sizeof(mapping_buffer)+capa);
+	current_buffer = current_buffer->next;
+	current_buffer->next = NULL;
+	current_buffer->capa = capa;
+	target_length  += current_buffer->used
+			= onigenc_unicode_case_map(flags,
+				(const OnigUChar**)&source_current, source_end,
+				current_buffer->space,
+				current_buffer->space+current_buffer->capa,
+				enc);
+    }
+/* fprintf(stderr, "Buffer count is %d\n", buffer_count); *//* for tuning */
+
+    if (buffer_count==1)
+	target = rb_str_new_with_class(source, (const char*)current_buffer->space, target_length);
+    else {
+	char *target_current = RSTRING_PTR(target = rb_str_new_with_class(source, 0, target_length));
+	mapping_buffer *previous_buffer;
+
+	current_buffer=pre_buffer.next;
+	while (current_buffer) {
+	    memcpy(target_current, current_buffer->space, current_buffer->used);
+	    target_current += current_buffer->used;
+	    previous_buffer = current_buffer;
+	    current_buffer=current_buffer->next;
+	    xfree(previous_buffer);
+	}
+    }
+
+    /* TODO: check about string terminator character */
+    OBJ_INFECT_RAW(target, source);
+    str_enc_copy(target, source);
+    /*ENC_CODERANGE_SET(mapped, cr);*/
+
+    return target;
+}
+
 /*
  *  call-seq:
  *     str.upcase!   -> str or nil
@@ -5599,18 +5721,24 @@ rb_str_check_dummy_enc(rb_encoding *enc)
  */
 
 static VALUE
-rb_str_upcase_bang(VALUE str)
+rb_str_upcase_bang(int argc, VALUE *argv, VALUE str)
 {
     rb_encoding *enc;
     char *s, *send;
     int modify = 0;
     int n;
+    OnigCaseFoldType flags = ONIGENC_CASE_UPCASE;
 
+    flags = check_case_options(argc, argv, flags);
     str_modify_keep_cr(str);
     enc = STR_ENC_GET(str);
     rb_str_check_dummy_enc(enc);
     s = RSTRING_PTR(str); send = RSTRING_END(str);
-    if (single_byte_optimizable(str)) {
+    if (enc==rb_utf8_encoding() && argc>0) { /* :lithuanian can temporarily be used for new functionality without options */
+	str_shared_replace(str, rb_str_casemap(str, &flags, enc));
+	modify = ONIGENC_CASE_MODIFIED & flags;
+    }
+    else if (single_byte_optimizable(str)) {
 	while (s < send) {
 	    unsigned int c = *(unsigned char*)s;
 
@@ -5664,13 +5792,12 @@ rb_str_upcase_bang(VALUE str)
  */
 
 static VALUE
-rb_str_upcase(VALUE str)
+rb_str_upcase(int argc, VALUE *argv, VALUE str)
 {
     str = rb_str_dup(str);
-    rb_str_upcase_bang(str);
+    rb_str_upcase_bang(argc, argv, str);
     return str;
 }
-
 
 /*
  *  call-seq:
@@ -5682,17 +5809,23 @@ rb_str_upcase(VALUE str)
  */
 
 static VALUE
-rb_str_downcase_bang(VALUE str)
+rb_str_downcase_bang(int argc, VALUE *argv, VALUE str)
 {
     rb_encoding *enc;
     char *s, *send;
     int modify = 0;
+    OnigCaseFoldType flags = ONIGENC_CASE_DOWNCASE;
 
+    flags = check_case_options(argc, argv, flags);
     str_modify_keep_cr(str);
     enc = STR_ENC_GET(str);
     rb_str_check_dummy_enc(enc);
     s = RSTRING_PTR(str); send = RSTRING_END(str);
-    if (single_byte_optimizable(str)) {
+    if (enc==rb_utf8_encoding() && argc>0) { /* :lithuanian can temporarily be used for new functionality without options */
+	str_shared_replace(str, rb_str_casemap(str, &flags, enc));
+	modify = ONIGENC_CASE_MODIFIED & flags;
+    }
+    else if (single_byte_optimizable(str)) {
 	while (s < send) {
 	    unsigned int c = *(unsigned char*)s;
 
@@ -5747,10 +5880,10 @@ rb_str_downcase_bang(VALUE str)
  */
 
 static VALUE
-rb_str_downcase(VALUE str)
+rb_str_downcase(int argc, VALUE *argv, VALUE str)
 {
     str = rb_str_dup(str);
-    rb_str_downcase_bang(str);
+    rb_str_downcase_bang(argc, argv, str);
     return str;
 }
 
@@ -5770,33 +5903,40 @@ rb_str_downcase(VALUE str)
  */
 
 static VALUE
-rb_str_capitalize_bang(VALUE str)
+rb_str_capitalize_bang(int argc, VALUE *argv, VALUE str)
 {
     rb_encoding *enc;
     char *s, *send;
     int modify = 0;
     unsigned int c;
     int n;
+    OnigCaseFoldType flags = ONIGENC_CASE_UPCASE | ONIGENC_CASE_TITLECASE;
 
+    flags = check_case_options(argc, argv, flags);
     str_modify_keep_cr(str);
     enc = STR_ENC_GET(str);
     rb_str_check_dummy_enc(enc);
     if (RSTRING_LEN(str) == 0 || !RSTRING_PTR(str)) return Qnil;
-    s = RSTRING_PTR(str); send = RSTRING_END(str);
-
-    c = rb_enc_codepoint_len(s, send, &n, enc);
-    if (rb_enc_islower(c, enc)) {
-	rb_enc_mbcput(rb_enc_toupper(c, enc), s, enc);
-	modify = 1;
+    if (enc==rb_utf8_encoding() && argc>0) { /* :lithuanian can temporarily be used for new functionality without options */
+	str_shared_replace(str, rb_str_casemap(str, &flags, enc));
+	modify = ONIGENC_CASE_MODIFIED & flags;
     }
-    s += n;
-    while (s < send) {
+    else {
+	s = RSTRING_PTR(str); send = RSTRING_END(str);
 	c = rb_enc_codepoint_len(s, send, &n, enc);
-	if (rb_enc_isupper(c, enc)) {
-	    rb_enc_mbcput(rb_enc_tolower(c, enc), s, enc);
+	if (rb_enc_islower(c, enc)) {
+	    rb_enc_mbcput(rb_enc_toupper(c, enc), s, enc);
 	    modify = 1;
 	}
 	s += n;
+	while (s < send) {
+	    c = rb_enc_codepoint_len(s, send, &n, enc);
+	    if (rb_enc_isupper(c, enc)) {
+		rb_enc_mbcput(rb_enc_tolower(c, enc), s, enc);
+		modify = 1;
+	    }
+	    s += n;
+	}
     }
 
     if (modify) return str;
@@ -5818,10 +5958,10 @@ rb_str_capitalize_bang(VALUE str)
  */
 
 static VALUE
-rb_str_capitalize(VALUE str)
+rb_str_capitalize(int argc, VALUE *argv, VALUE str)
 {
     str = rb_str_dup(str);
-    rb_str_capitalize_bang(str);
+    rb_str_capitalize_bang(argc, argv, str);
     return str;
 }
 
@@ -5836,18 +5976,24 @@ rb_str_capitalize(VALUE str)
  */
 
 static VALUE
-rb_str_swapcase_bang(VALUE str)
+rb_str_swapcase_bang(int argc, VALUE *argv, VALUE str)
 {
     rb_encoding *enc;
     char *s, *send;
     int modify = 0;
     int n;
+    OnigCaseFoldType flags = ONIGENC_CASE_UPCASE | ONIGENC_CASE_DOWNCASE;
 
+    flags = check_case_options(argc, argv, flags);
     str_modify_keep_cr(str);
     enc = STR_ENC_GET(str);
     rb_str_check_dummy_enc(enc);
     s = RSTRING_PTR(str); send = RSTRING_END(str);
-    while (s < send) {
+    if (enc==rb_utf8_encoding() && argc>0) { /* :lithuanian can temporarily be used for new functionality without options */
+	str_shared_replace(str, rb_str_casemap(str, &flags, enc));
+	modify = ONIGENC_CASE_MODIFIED & flags;
+    }
+    else while (s < send) {
 	unsigned int c = rb_enc_codepoint_len(s, send, &n, enc);
 
 	if (rb_enc_isupper(c, enc)) {
@@ -5881,10 +6027,10 @@ rb_str_swapcase_bang(VALUE str)
  */
 
 static VALUE
-rb_str_swapcase(VALUE str)
+rb_str_swapcase(int argc, VALUE *argv, VALUE str)
 {
     str = rb_str_dup(str);
-    rb_str_swapcase_bang(str);
+    rb_str_swapcase_bang(argc, argv, str);
     return str;
 }
 
@@ -6718,7 +6864,7 @@ static const char isspacetable[256] = {
  *
  *  If <i>pattern</i> is <code>nil</code>, the value of <code>$;</code> is used.
  *  If <code>$;</code> is <code>nil</code> (which is the default), <i>str</i> is
- *  split on whitespace as if ` ' were specified.
+ *  split on whitespace as if ' ' were specified.
  *
  *  If the <i>limit</i> parameter is omitted, trailing null fields are
  *  suppressed. If <i>limit</i> is a positive number, at most that number of
@@ -8548,7 +8694,7 @@ rb_str_b(VALUE str)
  *  call-seq:
  *     str.valid_encoding?  -> true or false
  *
- *  Returns true for a string which encoded correctly.
+ *  Returns true for a string which is encoded correctly.
  *
  *    "\xc2\xa1".force_encoding("UTF-8").valid_encoding?  #=> true
  *    "\xc2".force_encoding("UTF-8").valid_encoding?      #=> false
@@ -9257,54 +9403,54 @@ sym_empty(VALUE sym)
 
 /*
  * call-seq:
- *   sym.upcase    -> symbol
+ *   sym.upcase [options]   -> symbol
  *
  * Same as <code>sym.to_s.upcase.intern</code>.
  */
 
 static VALUE
-sym_upcase(VALUE sym)
+sym_upcase(int argc, VALUE *argv, VALUE sym)
 {
-    return rb_str_intern(rb_str_upcase(rb_sym2str(sym)));
+    return rb_str_intern(rb_str_upcase(argc, argv, rb_sym2str(sym)));
 }
 
 /*
  * call-seq:
- *   sym.downcase  -> symbol
+ *   sym.downcase [options]   -> symbol
  *
  * Same as <code>sym.to_s.downcase.intern</code>.
  */
 
 static VALUE
-sym_downcase(VALUE sym)
+sym_downcase(int argc, VALUE *argv, VALUE sym)
 {
-    return rb_str_intern(rb_str_downcase(rb_sym2str(sym)));
+    return rb_str_intern(rb_str_downcase(argc, argv, rb_sym2str(sym)));
 }
 
 /*
  * call-seq:
- *   sym.capitalize  -> symbol
+ *   sym.capitalize [options]   -> symbol
  *
  * Same as <code>sym.to_s.capitalize.intern</code>.
  */
 
 static VALUE
-sym_capitalize(VALUE sym)
+sym_capitalize(int argc, VALUE *argv, VALUE sym)
 {
-    return rb_str_intern(rb_str_capitalize(rb_sym2str(sym)));
+    return rb_str_intern(rb_str_capitalize(argc, argv, rb_sym2str(sym)));
 }
 
 /*
  * call-seq:
- *   sym.swapcase  -> symbol
+ *   sym.swapcase [options]   -> symbol
  *
  * Same as <code>sym.to_s.swapcase.intern</code>.
  */
 
 static VALUE
-sym_swapcase(VALUE sym)
+sym_swapcase(int argc, VALUE *argv, VALUE sym)
 {
-    return rb_str_intern(rb_str_swapcase(rb_sym2str(sym)));
+    return rb_str_intern(rb_str_swapcase(argc, argv, rb_sym2str(sym)));
 }
 
 /*
@@ -9423,15 +9569,20 @@ Init_String(void)
     rb_define_method(rb_cString, "inspect", rb_str_inspect, 0);
     rb_define_method(rb_cString, "dump", rb_str_dump, 0);
 
-    rb_define_method(rb_cString, "upcase", rb_str_upcase, 0);
-    rb_define_method(rb_cString, "downcase", rb_str_downcase, 0);
-    rb_define_method(rb_cString, "capitalize", rb_str_capitalize, 0);
-    rb_define_method(rb_cString, "swapcase", rb_str_swapcase, 0);
+    sym_ascii      = ID2SYM(rb_intern("ascii"));
+    sym_turkic     = ID2SYM(rb_intern("turkic"));
+    sym_lithuanian = ID2SYM(rb_intern("lithuanian"));
+    sym_fold       = ID2SYM(rb_intern("fold"));
 
-    rb_define_method(rb_cString, "upcase!", rb_str_upcase_bang, 0);
-    rb_define_method(rb_cString, "downcase!", rb_str_downcase_bang, 0);
-    rb_define_method(rb_cString, "capitalize!", rb_str_capitalize_bang, 0);
-    rb_define_method(rb_cString, "swapcase!", rb_str_swapcase_bang, 0);
+    rb_define_method(rb_cString, "upcase", rb_str_upcase, -1);
+    rb_define_method(rb_cString, "downcase", rb_str_downcase, -1);
+    rb_define_method(rb_cString, "capitalize", rb_str_capitalize, -1);
+    rb_define_method(rb_cString, "swapcase", rb_str_swapcase, -1);
+
+    rb_define_method(rb_cString, "upcase!", rb_str_upcase_bang, -1);
+    rb_define_method(rb_cString, "downcase!", rb_str_downcase_bang, -1);
+    rb_define_method(rb_cString, "capitalize!", rb_str_capitalize_bang, -1);
+    rb_define_method(rb_cString, "swapcase!", rb_str_swapcase_bang, -1);
 
     rb_define_method(rb_cString, "hex", rb_str_hex, 0);
     rb_define_method(rb_cString, "oct", rb_str_oct, 0);
@@ -9538,10 +9689,10 @@ Init_String(void)
     rb_define_method(rb_cSymbol, "empty?", sym_empty, 0);
     rb_define_method(rb_cSymbol, "match", sym_match, 1);
 
-    rb_define_method(rb_cSymbol, "upcase", sym_upcase, 0);
-    rb_define_method(rb_cSymbol, "downcase", sym_downcase, 0);
-    rb_define_method(rb_cSymbol, "capitalize", sym_capitalize, 0);
-    rb_define_method(rb_cSymbol, "swapcase", sym_swapcase, 0);
+    rb_define_method(rb_cSymbol, "upcase", sym_upcase, -1);
+    rb_define_method(rb_cSymbol, "downcase", sym_downcase, -1);
+    rb_define_method(rb_cSymbol, "capitalize", sym_capitalize, -1);
+    rb_define_method(rb_cSymbol, "swapcase", sym_swapcase, -1);
 
     rb_define_method(rb_cSymbol, "encoding", sym_encoding, 0);
 

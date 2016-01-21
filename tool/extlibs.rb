@@ -3,9 +3,6 @@ require 'fileutils'
 require 'digest'
 require_relative 'downloader'
 
-cache_dir = ".downloaded-cache"
-FileUtils.mkdir_p(cache_dir)
-
 def do_download(url, base, cache_dir)
   Downloader.download(url, base, cache_dir, nil)
 end
@@ -74,22 +71,35 @@ def do_patch(dest, patch, args)
   $?.success? or raise "failed to patch #{patch}"
 end
 
-case ARGV[0]
-when '--download'
-  mode = :download
+cache_dir = ENV['CACHE_DIR'] || ".downloaded-cache"
+mode = :all
+until ARGV.empty?
+  case ARGV[0]
+  when '--download'
+    mode = :download
+  when '--extract'
+    mode = :extract
+  when '--patch'
+    mode = :patch
+  when '--all'
+    mode = :all
+  when '--cache'
+    ARGV.shift
+    cache_dir = ARGV[0]
+  when /\A--cache=/
+    cache_dir = $'
+  when '--'
+    ARGV.shift
+    break
+  when /\A-/
+    abort "unknown option: #{ARGV[0]}"
+  else
+    break
+  end
   ARGV.shift
-when '--extract'
-  mode = :extract
-  ARGV.shift
-when '--patch'
-  mode = :patch
-  ARGV.shift
-when '--all'
-  mode = :all
-  ARGV.shift
-else
-  mode = :all
 end
+
+FileUtils.mkdir_p(cache_dir)
 
 success = true
 ARGV.each do |dir|

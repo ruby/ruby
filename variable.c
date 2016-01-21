@@ -880,14 +880,26 @@ VALUE
 rb_f_global_variables(void)
 {
     VALUE ary = rb_ary_new();
-    char buf[2];
-    int i;
+    VALUE sym, backref = rb_backref_get();
 
     rb_id_table_foreach(rb_global_tbl, gvar_i, (void *)ary);
-    buf[0] = '$';
-    for (i = 1; i <= 9; ++i) {
-	buf[1] = (char)(i + '0');
-	rb_ary_push(ary, ID2SYM(rb_intern2(buf, 2)));
+    if (!NIL_P(backref)) {
+	char buf[2];
+	int i, nmatch = rb_match_count(backref);
+	buf[0] = '$';
+	for (i = 1; i <= nmatch; ++i) {
+	    if (!rb_match_nth_defined(i, backref)) continue;
+	    if (i < 10) {
+		/* probably reused, make static ID */
+		buf[1] = (char)(i + '0');
+		sym = ID2SYM(rb_intern2(buf, 2));
+	    }
+	    else {
+		/* dynamic symbol */
+		sym = rb_str_intern(rb_sprintf("$%d", i));
+	    }
+	    rb_ary_push(ary, sym);
+	}
     }
     return ary;
 }
@@ -2568,6 +2580,13 @@ rb_const_set(VALUE klass, ID id, VALUE val)
 	args.id = id;
 	args.value = val;
 	const_tbl_update(&args);
+    }
+    /*
+     * Resolve and cache class name immediately to resolve ambiguity
+     * and avoid order-dependency on const_tbl
+     */
+    if (rb_cObject && (RB_TYPE_P(val, T_MODULE) || RB_TYPE_P(val, T_CLASS))) {
+	rb_class_name(val);
     }
 }
 

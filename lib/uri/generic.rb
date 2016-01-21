@@ -1341,7 +1341,7 @@ module URI
     # Constructs String from URI
     #
     def to_s
-      str = String.new
+      str = ''.dup
       if @scheme
         str << @scheme
         str << ':'

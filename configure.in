@@ -224,7 +224,8 @@ fi
 GNU_LD=$rb_cv_prog_gnu_ld
 AC_SUBST(GNU_LD)])
 
-RUBY_PROGRAM_VERSION=`sed -n 's/^#define RUBY_VERSION "\(.*\)"/\1/p' $srcdir/version.h`
+eval `sed -n ['s/^@%:@define RUBY_API_VERSION_\([A-Z][A-Z_0-9]*\) \([0-9][0-9]*\)/API_\1=\2/p'] $srcdir/include/ruby/version.h`
+RUBY_PROGRAM_VERSION=`sed -n 's/^@%:@define RUBY_VERSION "\(.*\)"/\1/p' $srcdir/version.h`
 MAJOR=`echo $RUBY_PROGRAM_VERSION | cut -d. -f1`
 MINOR=`echo $RUBY_PROGRAM_VERSION | cut -d. -f2`
 TEENY=`echo $RUBY_PROGRAM_VERSION | cut -d. -f3`
@@ -233,6 +234,9 @@ for v in MAJOR MINOR TEENY; do
 	AC_MSG_ERROR(could not determine $v number from version.h)
     fi
 done
+AS_IF([test "$MAJOR.$MINOR" != "$API_MAJOR.$API_MINOR"], [
+    AC_MSG_ERROR([API version $API_MAJOR.$API_MINOR differs from program version $MAJOR.$MINOR])
+])
 AC_SUBST(MAJOR)
 AC_SUBST(MINOR)
 AC_SUBST(TEENY)
@@ -261,6 +265,7 @@ AS_CASE(["$build_os"],
       [xgcc-4.2|x/usr/bin/gcc-4.2], [: ${CXX=g++-4.2}],
       [xgcc|x/usr/bin/gcc],         [: ${CXX=g++}],
       [xcc|x/usr/bin/cc],           [: ${CXX=c++}],
+      [xicc],                       [: ${CXX=icpc}],
       [xclang|x/usr/bin/clang],     [: ${CXX=clang++}])
   ])
 test -z "$CC" || ac_cv_prog_CC="$CC"
@@ -808,7 +813,12 @@ if test "$GCC:${warnflags+set}:no" = yes::no; then
 	extra_warning="$extra_warning -Wno-maybe-uninitialized"
     fi
     for wflag in -Wno-unused-parameter -Wno-parentheses -Wno-long-long \
+                 -diag-disable=2259 \
 		 -Wno-missing-field-initializers \
+		 -Wno-tautological-compare \
+		 -Wno-parentheses-equality \
+		 -Wno-constant-logical-operand \
+		 -Wno-self-assign \
 		 -Wunused-variable \
 		 -Werror=pointer-arith \
 		 -Werror=write-strings \
@@ -948,7 +958,7 @@ if test "$GCC" = yes; then
     ])
 
     # disable fast-math
-    for oflag in -fno-fast-math; do
+    for oflag in -fno-fast-math -fp-model\ precise; do
 	RUBY_TRY_CFLAGS($oflag, [RUBY_APPEND_OPTION(optflags, $oflag)])
     done
 fi

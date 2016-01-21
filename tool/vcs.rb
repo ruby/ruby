@@ -67,13 +67,15 @@ class VCS
   class NotFoundError < RuntimeError; end
 
   @@dirs = []
-  def self.register(dir)
-    @@dirs << [dir, self]
+  def self.register(dir, &pred)
+    @@dirs << [dir, self, pred]
   end
 
   def self.detect(path)
-    @@dirs.each do |dir, klass|
-      return klass.new(path) if File.directory?(File.join(path, dir))
+    @@dirs.each do |dir, klass, pred|
+      if pred ? pred[path, dir] : File.directory?(File.join(path, dir))
+        return klass.new(path)
+      end
       prev = path
       loop {
         curr = File.realpath(File.join(prev, '..'))
@@ -282,7 +284,7 @@ class VCS
   end
 
   class GIT < self
-    register(".git")
+    register(".git") {|path, dir| File.exist?(File.join(path, dir))}
 
     def self.get_revisions(path, srcdir = nil)
       gitcmd = %W[git]

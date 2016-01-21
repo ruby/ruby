@@ -186,6 +186,11 @@ if $0 == __FILE__
     when '-d'
       destdir = ARGV[1]
       ARGV.shift
+    when '-p'
+      # strip directory names from the name to download, and add the
+      # prefix instead.
+      prefix = ARGV[1]
+      ARGV.shift
     when '-e'
       ims = nil
     when '-a'
@@ -205,6 +210,7 @@ if $0 == __FILE__
     dl = Downloader.const_get(dl)
     ARGV.shift
     ARGV.each do |name|
+      name = "#{prefix}/#{File.basename(name)}" if prefix
       dl.download(name, destdir, ims)
     end
   else

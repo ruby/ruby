@@ -149,6 +149,11 @@ class TestSprintf < Test::Unit::TestCase
     assert_equal(" Inf", sprintf("% e", inf), '[ruby-dev:34002]')
   end
 
+  def test_bignum
+    assert_match(/\A10{120}\.0+\z/, sprintf("%f", 100**60))
+    assert_match(/\A10{180}\.0+\z/, sprintf("%f", 1000**60))
+  end
+
   def test_rational
     assert_match(/\A0\.10+\z/, sprintf("%.60f", 0.1r))
     assert_match(/\A0\.010+\z/, sprintf("%.60f", 0.01r))
@@ -156,10 +161,10 @@ class TestSprintf < Test::Unit::TestCase
     assert_match(/\A0\.3+\z/, sprintf("%.60f", 1/3r))
     assert_match(/\A1\.20+\z/, sprintf("%.60f", 1.2r))
 
-    0.upto(9) do |len|
-      -1.upto(9) do |prec|
+    ["", *"0".."9"].each do |len|
+      ["", *".0"..".9"].each do |prec|
         ['', '+', '-', ' ', '0', '+0', '-0', ' 0', '+ ', '- ', '+ 0', '- 0'].each do |flags|
-          fmt = "%#{flags}#{len > 0 ? len : ''}#{prec >= 0 ? ".#{prec}" : ''}f"
+          fmt = "%#{flags}#{len}#{prec}f"
           [0, 0.1, 0.01, 0.001, 1.001, 100.0, 100.001, 10000000000.0, 0.00000000001, 1/3r, 2/3r, 1.2r, 10r].each do |num|
             assert_equal(sprintf(fmt, num.to_f), sprintf(fmt, num.to_r), "sprintf(#{fmt.inspect}, #{num.inspect}.to_r)")
             assert_equal(sprintf(fmt, -num.to_f), sprintf(fmt, -num.to_r), "sprintf(#{fmt.inspect}, #{(-num).inspect}.to_r)") if num > 0

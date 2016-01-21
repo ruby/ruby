@@ -188,6 +188,10 @@ class TestEnv < Test::Unit::TestCase
     ENV.each_pair {|k, v| h2[k] = v }
     assert_equal(h1, h2)
 
+    assert_nil(ENV.reject! {|k, v| IGNORE_CASE ? k.upcase == "TEST" : k == "test" })
+  end
+
+  def test_delete_if
     h1 = {}
     ENV.each_pair {|k, v| h1[k] = v }
     ENV["test"] = "foo"
@@ -195,6 +199,8 @@ class TestEnv < Test::Unit::TestCase
     h2 = {}
     ENV.each_pair {|k, v| h2[k] = v }
     assert_equal(h1, h2)
+
+    assert_equal(ENV, ENV.delete_if {|k, v| IGNORE_CASE ? k.upcase == "TEST" : k == "test" })
   end
 
   def test_select_bang
@@ -206,6 +212,10 @@ class TestEnv < Test::Unit::TestCase
     ENV.each_pair {|k, v| h2[k] = v }
     assert_equal(h1, h2)
 
+    assert_nil(ENV.select! {|k, v| IGNORE_CASE ? k.upcase != "TEST" : k != "test" })
+  end
+
+  def test_keep_if
     h1 = {}
     ENV.each_pair {|k, v| h1[k] = v }
     ENV["test"] = "foo"
@@ -213,6 +223,8 @@ class TestEnv < Test::Unit::TestCase
     h2 = {}
     ENV.each_pair {|k, v| h2[k] = v }
     assert_equal(h1, h2)
+
+    assert_equal(ENV, ENV.keep_if {|k, v| IGNORE_CASE ? k.upcase != "TEST" : k != "test" })
   end
 
   def test_values_at

@@ -2155,6 +2155,10 @@ class TestString < Test::Unit::TestCase
     assert_equal(nil, s3.rstrip!)
     assert_equal("  \u3042", s3)
 
+    s4 = S("\u3042")
+    assert_equal(nil, s4.rstrip!)
+    assert_equal("\u3042", s4)
+
     assert_raise(Encoding::CompatibilityError) { "\u3042".encode("ISO-2022-JP").rstrip! }
   end
 
@@ -2175,6 +2179,10 @@ class TestString < Test::Unit::TestCase
     s3 = S("  \u3042")
     assert_equal("\u3042", s3.lstrip!)
     assert_equal("\u3042", s3)
+
+    s4 = S("\u3042")
+    assert_equal(nil, s4.lstrip!)
+    assert_equal("\u3042", s4)
   end
 
 =begin

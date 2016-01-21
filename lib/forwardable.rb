@@ -178,6 +178,7 @@ module Forwardable
   #   q.push 23  #=> NoMethodError
   #
   def def_instance_delegator(accessor, method, ali = method)
+    accessor = accessor.to_s
     if method_defined?(accessor) || private_method_defined?(accessor)
       accessor = "#{accessor}()"
     end
@@ -279,6 +280,7 @@ module SingleForwardable
   # the method of the same name in _accessor_).  If _new_name_ is
   # provided, it is used as the name for the delegate method.
   def def_single_delegator(accessor, method, ali = method)
+    accessor = accessor.to_s
     if method_defined?(accessor) || private_method_defined?(accessor)
       accessor = "#{accessor}()"
     end

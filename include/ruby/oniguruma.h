@@ -122,7 +122,15 @@ ONIG_EXTERN OnigCaseFoldType OnigDefaultCaseFoldFlag;
 
 /* #define ONIGENC_CASE_FOLD_HIRAGANA_KATAKANA  (1<<1) */
 /* #define ONIGENC_CASE_FOLD_KATAKANA_WIDTH     (1<<2) */
+#define ONIGENC_CASE_TITLECASE                  (1<<10)
+#define ONIGENC_CASE_UPCASE                     (1<<11)
+#define ONIGENC_CASE_DOWNCASE                   (1<<12)
+#define ONIGENC_CASE_FOLD                       (1<<13)
+#define ONIGENC_CASE_ONCEONLY                   (1<<14)
+#define ONIGENC_CASE_MODIFIED                   (1<<15)
+#define ONIGENC_CASE_ASCII_ONLY                 (1<<19)
 #define ONIGENC_CASE_FOLD_TURKISH_AZERI         (1<<20)
+#define ONIGENC_CASE_FOLD_LITHUANIAN            (1<<21)
 #define INTERNAL_ONIGENC_CASE_FOLD_MULTI_CHAR   (1<<30)
 
 #define ONIGENC_CASE_FOLD_MIN      INTERNAL_ONIGENC_CASE_FOLD_MULTI_CHAR

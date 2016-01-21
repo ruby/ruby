@@ -24,7 +24,7 @@ GEM_VENDOR =
 
 SPEC_GIT_BASE = git://github.com/ruby
 MSPEC_GIT_URL = $(SPEC_GIT_BASE)/mspec.git
-RUBYSPEC_GIT_URL = $(SPEC_GIT_BASE)/rubyspec.git
+RUBYSPEC_GIT_URL = $(SPEC_GIT_BASE)/spec.git
 
 SIMPLECOV_GIT_URL = git://github.com/colszowka/simplecov.git
 SIMPLECOV_GIT_REF = v0.10.0
@@ -167,7 +167,7 @@ SHOWFLAGS = showflags
 
 all: $(SHOWFLAGS) main docs
 
-main: $(SHOWFLAGS) $(ENCSTATIC:static=lib)encs exts
+main: $(SHOWFLAGS) exts $(ENCSTATIC:static=lib)encs
 	@$(NULLCMD)
 
 .PHONY: showflags
@@ -581,10 +581,10 @@ no-btest-ruby: PHONY
 yes-btest-ruby: prog PHONY
 	$(Q)$(exec) $(RUNRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(PROGRAM) -I$(srcdir)/lib $(RUN_OPTS)" -q $(OPTS) $(TESTOPTS)
 
-test-sample: $(TEST_RUNNABLE)-test-sample
-no-test-sample: PHONY
-yes-test-sample: prog PHONY
-	$(Q)$(exec) $(RUNRUBY) "$(srcdir)/tool/rubytest.rb" --run-opt=$(RUN_OPTS) $(OPTS) $(TESTOPTS)
+test-basic: $(TEST_RUNNABLE)-test-basic
+no-test-basic: PHONY
+yes-test-basic: prog PHONY
+	$(Q)$(exec) $(RUNRUBY) "$(srcdir)/basictest/runner.rb" --run-opt=$(RUN_OPTS) $(OPTS) $(TESTOPTS)
 
 test-knownbugs: test-knownbug
 test-knownbug: $(TEST_RUNNABLE)-test-knownbug
@@ -597,7 +597,8 @@ yes-test-testframework: prog PHONY
 	$(Q)$(exec) $(RUNRUBY) "$(srcdir)/test/runner.rb" --ruby="$(RUNRUBY)" $(TESTOPTS) testunit minitest
 no-test-testframework: PHONY
 
-test: test-sample btest-ruby test-knownbug
+test-sample: test-basic # backword compatibility for mswin-build
+test: btest-ruby test-knownbug test-basic
 
 # $ make test-all TESTOPTS="--help" displays more detail
 # for example, make test-all TESTOPTS="-j2 -v -n test-name -- test-file-name"
@@ -663,7 +664,7 @@ $(ENC_MK): $(srcdir)/enc/make_encmake.rb $(srcdir)/enc/Makefile.in $(srcdir)/enc
 .PHONY: clean clean-ext clean-local clean-enc clean-golf clean-rdoc clean-html clean-extout
 .PHONY: distclean distclean-ext distclean-local distclean-enc distclean-golf distclean-extout
 .PHONY: realclean realclean-ext realclean-local realclean-enc realclean-golf realclean-extout
-.PHONY: check test test-all btest btest-ruby test-sample test-knownbug
+.PHONY: check test test-all btest btest-ruby test-basic test-knownbug
 .PHONY: run runruby parse benchmark benchmark-each tbench gdb gdb-ruby
 .PHONY: update-mspec update-rubyspec test-rubyspec
 
@@ -962,18 +963,18 @@ gdb-ruby: $(PROGRAM) run.gdb PHONY
 dist:
 	$(BASERUBY) $(srcdir)/tool/make-snapshot -srcdir=$(srcdir) tmp $(RELNAME)
 
+up:: update-remote
+
 up::
 	-$(Q)$(MAKE) $(MFLAGS) Q=$(Q) REVISION_FORCE=PHONY "$(REVISION_H)"
 
 up::
 	-$(Q)$(MAKE) $(MFLAGS) Q=$(Q) after-update
 
-after-update:: update-unicode update-gems extract-extlibs
+after-update:: extract-extlibs
 
-update-config_files: PHONY
-	$(Q) $(BASERUBY) -C "$(srcdir)/tool" \
-	    ../tool/downloader.rb -e gnu \
-	    config.guess config.sub
+update-remote:: update-src update-rubyspec update-download
+update-download:: update-unicode update-gems download-extlibs
 
 update-gems: PHONY
 	$(ECHO) Downloading bundled gem files...
@@ -994,39 +995,34 @@ extract-gems: PHONY
 	    -e 'Gem.unpack("#{gem}-#{ver}.gem")' \
 	    bundled_gems
 
-UPDATE_LIBRARIES = no
-
 ### set the following environment variable or uncomment the line if
 ### the Unicode data files are updated every minute.
 # ALWAYS_UPDATE_UNICODE = yes
 
 UNICODE_FILES = $(srcdir)/enc/unicode/data/$(UNICODE_VERSION)/UnicodeData.txt \
 		$(srcdir)/enc/unicode/data/$(UNICODE_VERSION)/CompositionExclusions.txt \
-		$(srcdir)/enc/unicode/data/$(UNICODE_VERSION)/NormalizationTest.txt
+		$(srcdir)/enc/unicode/data/$(UNICODE_VERSION)/NormalizationTest.txt \
+		$(srcdir)/enc/unicode/data/$(UNICODE_VERSION)/CaseFolding.txt
 
-update-unicode: $(UNICODE_FILES) PHONY
+UNICODE_FILES_DEPS = $(srcdir)/.unicode-$(UNICODE_VERSION).time
 
-UNICODE_FILES_DEPS0 = $(UPDATE_LIBRARIES:yes=download-unicode-data)
-UNICODE_FILES_DEPS = $(UNICODE_FILES_DEPS0:no=)
-$(UNICODE_FILES): $(UNICODE_FILES_DEPS)
+update-unicode: $(srcdir)/.unicode-$(UNICODE_VERSION).time PHONY
 
-download-unicode-data: ./.unicode-$(UNICODE_VERSION).time
-./.unicode-$(UNICODE_VERSION).time: PHONY
+$(UNICODE_FILES_DEPS):
 	$(ECHO) Downloading Unicode $(UNICODE_VERSION) data files...
 	$(Q) $(MAKEDIRS) "$(srcdir)/enc/unicode/data/$(UNICODE_VERSION)"
 	$(Q) $(BASERUBY) -C "$(srcdir)" tool/downloader.rb \
 	    -d enc/unicode/data/$(UNICODE_VERSION) \
+	    -p $(UNICODE_VERSION)/ucd \
 	    -e $(ALWAYS_UPDATE_UNICODE:yes=-a) unicode \
-	    $(UNICODE_VERSION)/ucd/UnicodeData.txt \
-	    $(UNICODE_VERSION)/ucd/CompositionExclusions.txt \
-	    $(UNICODE_VERSION)/ucd/NormalizationTest.txt
+	    $(UNICODE_FILES)
 	@exit > $@
 
 $(srcdir)/$(HAVE_BASERUBY:yes=lib/unicode_normalize/tables.rb): \
-	$(UNICODE_FILES_DEPS:download-unicode-data=./.unicode-tables.time)
+	$(srcdir)/.unicode-tables.time
 
-./.unicode-tables.time: $(srcdir)/tool/generic_erb.rb \
-		$(UNICODE_FILES) $(UNICODE_FILES_DEPS) \
+$(srcdir)/.unicode-tables.time: $(srcdir)/tool/generic_erb.rb \
+		$(UNICODE_FILES_DEPS) \
 		$(srcdir)/template/unicode_norm_gen.tmpl
 	$(Q) $(BASERUBY) $(srcdir)/tool/generic_erb.rb \
 		-c -t$@ -o $(srcdir)/lib/unicode_normalize/tables.rb \
@@ -1096,9 +1092,9 @@ help: PHONY
 	"  exam:            equals make check test-rubyspec" \
 	"  test:            ruby core tests" \
 	"  test-all:        all ruby tests [TESTOPTS=-j4 TESTS=\"<test files>\"]" \
-	"  test-rubyspec:   run RubySpec test suite" \
+	"  test-rubyspec:   run the Ruby spec suite" \
 	"  up:              update local copy and autogenerated files" \
-	"  update-rubyspec: update local copy of RubySpec" \
+	"  update-rubyspec: update local copy of the Ruby spec suite" \
 	"  benchmark:       benchmark this ruby and COMPARE_RUBY." \
 	"  gcbench:         gc benchmark [GCBENCH_ITEM=<item_name>]" \
 	"  gcbench-rdoc:    gc benchmark with GCBENCH_ITEM=rdoc" \

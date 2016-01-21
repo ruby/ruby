@@ -814,7 +814,7 @@ eom
         all = AllFailures.new
         yield all
       ensure
-        assert(all.pass?, message(msg) {all.message})
+        assert(all.pass?, message(msg) {all.message.chomp(".")})
       end
 
       def build_message(head, template=nil, *arguments) #:nodoc:

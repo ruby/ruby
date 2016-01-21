@@ -109,11 +109,11 @@ typedef VALUE stack_type;
 
 static void show_bitstack(stack_type, const char *, int);
 # define SHOW_BITSTACK(stack, name) (yydebug ? show_bitstack(stack, name, __LINE__) : (void)0)
-# define BITSTACK_PUSH(stack, n) (((stack) = ((stack)<<1)|((n)&1)), SHOW_BITSTACK(stack, #stack))
-# define BITSTACK_POP(stack)	 (((stack) = (stack) >> 1), SHOW_BITSTACK(stack, #stack))
-# define BITSTACK_LEXPOP(stack)	 (((stack) = ((stack) >> 1) | ((stack) & 1)), SHOW_BITSTACK(stack, #stack))
+# define BITSTACK_PUSH(stack, n) (((stack) = ((stack)<<1)|((n)&1)), SHOW_BITSTACK(stack, #stack"(push)"))
+# define BITSTACK_POP(stack)	 (((stack) = (stack) >> 1), SHOW_BITSTACK(stack, #stack"(pop)"))
+# define BITSTACK_LEXPOP(stack)	 (((stack) = ((stack) >> 1) | ((stack) & 1)), SHOW_BITSTACK(stack, #stack"(lexpop)"))
 # define BITSTACK_SET_P(stack)	 (SHOW_BITSTACK(stack, #stack), (stack)&1)
-# define BITSTACK_SET(stack, n)	 ((stack)=(n), SHOW_BITSTACK(stack, #stack))
+# define BITSTACK_SET(stack, n)	 ((stack)=(n), SHOW_BITSTACK(stack, #stack"(set)"))
 
 #define COND_PUSH(n)	BITSTACK_PUSH(cond_stack, (n))
 #define COND_POP()	BITSTACK_POP(cond_stack)
@@ -3912,7 +3912,6 @@ strings		: string
 			else {
 			    node = evstr2dstr(node);
 			}
-			heredoc_indent = 0;
 			$$ = node;
 		    /*%
 			$$ = $1;
@@ -3935,6 +3934,7 @@ string		: tCHAR
 string1		: tSTRING_BEG string_contents tSTRING_END
 		    {
 			heredoc_dedent($2);
+			heredoc_indent = 0;
 		    /*%%%*/
 			$$ = $2;
 		    /*%
@@ -3950,6 +3950,7 @@ xstring		: tXSTRING_BEG xstring_contents tSTRING_END
 		    /*%
 		    %*/
 			heredoc_dedent($2);
+			heredoc_indent = 0;
 		    /*%%%*/
 			if (!node) {
 			    node = NEW_XSTR(STR_NEW0());
@@ -6610,10 +6611,13 @@ parser_heredoc_restore(struct parser_params *parser, NODE *here)
 }
 
 static int
-dedent_pos(const char *str, long len, int width)
+dedent_string(VALUE string, int width)
 {
+    char *str;
+    long len;
     int i, col = 0;
 
+    RSTRING_GETMEM(string, str, len);
     for (i = 0; i < len && col < width; i++) {
 	if (str[i] == ' ') {
 	    col++;
@@ -6627,65 +6631,38 @@ dedent_pos(const char *str, long len, int width)
 	    break;
 	}
     }
+    MEMMOVE(str, str + i, char, len - i);
+    rb_str_set_len(string, len - i);
     return i;
 }
 
 #ifndef RIPPER
-static VALUE
-parser_heredoc_dedent_string(VALUE input, int width, int first)
-{
-    long len;
-    int col;
-    char *str, *p, *out_p, *end, *t;
-
-    RSTRING_GETMEM(input, str, len);
-    end = &str[len];
-
-    p = str;
-    if (!first) {
-	p = memchr(p, '\n', end - p);
-	if (!p) return input;
-	p++;
-    }
-    out_p = p;
-    while (p < end) {
-	col = dedent_pos(p, end - p, width);
-	p += col;
-	if (!(t = memchr(p, '\n', end - p)))
-	    t = end;
-	else
-	    ++t;
-	if (p > out_p) memmove(out_p, p, t - p);
-	out_p += t - p;
-	p = t;
-    }
-    rb_str_set_len(input, out_p - str);
-
-    return input;
-}
-
 static void
 parser_heredoc_dedent(struct parser_params *parser, NODE *root)
 {
     NODE *node, *str_node;
-    int first = TRUE;
+    int bol = TRUE;
     int indent = heredoc_indent;
 
     if (indent <= 0) return;
 
     node = str_node = root;
 
+    if (!root) return;
+    if (nd_type(root) == NODE_ARRAY) str_node = root->nd_head;
+
     while (str_node) {
 	VALUE lit = str_node->nd_lit;
-	if (NIL_P(parser_heredoc_dedent_string(lit, indent, first)))
-	    compile_error(PARSER_ARG "dedent failure: %d: %"PRIsVALUE, indent, lit);
-	first = FALSE;
+	if (bol) dedent_string(lit, indent);
+	bol = TRUE;
 
 	str_node = 0;
 	while ((node = node->nd_next) != 0 && nd_type(node) == NODE_ARRAY) {
 	    if ((str_node = node->nd_head) != 0) {
 		enum node_type type = nd_type(str_node);
 		if (type == NODE_STR || type == NODE_DSTR) break;
+		bol = FALSE;
+		str_node = 0;
 	    }
 	}
     }
@@ -6702,17 +6679,12 @@ parser_heredoc_dedent(struct parser_params *parser, VALUE array)
 static VALUE
 parser_dedent_string(VALUE self, VALUE input, VALUE width)
 {
-    char *str;
-    long len;
     int wid, col;
 
     StringValue(input);
     wid = NUM2UINT(width);
     rb_str_modify(input);
-    RSTRING_GETMEM(input, str, len);
-    col = dedent_pos(str, len, wid);
-    MEMMOVE(str, str + col, char, len - col);
-    rb_str_set_len(input, len - col);
+    col = dedent_string(input, wid);
     return INT2NUM(col);
 }
 #endif
@@ -6868,15 +6840,7 @@ parser_here_document(struct parser_params *parser, NODE *here)
     }
 
     if (!(func & STR_FUNC_EXPAND)) {
-	int end = 0;
 	do {
-#ifdef RIPPER
-	    if (end && heredoc_indent > 0) {
-		set_yylval_str(str);
-		flush_string_content(enc);
-		return tSTRING_CONTENT;
-	    }
-#endif
 	    p = RSTRING_PTR(lex_lastline);
 	    pend = lex_pend;
 	    if (pend > p) {
@@ -6904,6 +6868,11 @@ parser_here_document(struct parser_params *parser, NODE *here)
 		str = STR_NEW(p, pend - p);
 	    if (pend < lex_pend) rb_str_cat(str, "\n", 1);
 	    lex_goto_eol(parser);
+	    if (heredoc_indent > 0) {
+		set_yylval_str(str);
+		flush_string_content(enc);
+		return tSTRING_CONTENT;
+	    }
 	    if (nextc() == -1) {
 		if (str) {
 		    dispose_string(str);
@@ -6911,7 +6880,7 @@ parser_here_document(struct parser_params *parser, NODE *here)
 		}
 		goto error;
 	    }
-	} while (!(end = whole_match_p(eos, len, indent)));
+	} while (!whole_match_p(eos, len, indent));
     }
     else {
 	/*	int mb = ENC_CODERANGE_7BIT, *mbp = &mb;*/
@@ -6929,20 +6898,16 @@ parser_here_document(struct parser_params *parser, NODE *here)
 		goto restore;
 	    }
 	    if (c != '\n') {
-#ifdef RIPPER
 	      flush:
-#endif
 		set_yylval_str(STR_NEW3(tok(), toklen(), enc, func));
 		flush_string_content(enc);
 		return tSTRING_CONTENT;
 	    }
 	    tokadd(nextc());
-#ifdef RIPPER
-	    if (c == '\n' && heredoc_indent > 0) {
+	    if (heredoc_indent > 0) {
 		lex_goto_eol(parser);
 		goto flush;
 	    }
-#endif
 	    /*	    if (mbp && mb == ENC_CODERANGE_UNKNOWN) mbp = 0;*/
 	    if ((c = nextc()) == -1) goto error;
 	} while (!whole_match_p(eos, len, indent));
@@ -8973,6 +8938,16 @@ literal_concat_gen(struct parser_params *parser, NODE *head, NODE *tail)
 	NODE *node = NEW_DSTR(STR_NEW0());
 	head = list_append(node, head);
 	htype = NODE_DSTR;
+    }
+    if (heredoc_indent > 0) {
+	switch (htype) {
+	  case NODE_STR:
+	    nd_set_type(head, NODE_DSTR);
+	  case NODE_DSTR:
+	    return list_append(head, tail);
+	  default:
+	    break;
+	}
     }
     switch (nd_type(tail)) {
       case NODE_STR:

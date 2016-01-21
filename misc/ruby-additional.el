@@ -106,7 +106,7 @@ Emacs to Ruby."
                      (t (when ruby-insert-encoding-magic-comment
                           (insert "# -*- coding: " coding-system " -*-\n"))))))))
 
-     (define-key ruby-mode-map "\C-cU" 'ruby-encode-unicode)
+     (define-key ruby-mode-map "\C-cU" 'ruby-encode-decode-unicode)
 
      (defun ruby-encode-unicode (beg end)
        "Convert non-ascii string in the given region to \\u{} form."
@@ -131,6 +131,32 @@ Emacs to Ruby."
 	   (setq str (mapconcat f str sep))
 	   (delete-region (match-beginning 0) (match-end 0))
 	   (insert b str e))))
+
+     (defun ruby-decode-unicode (beg end)
+       "Convert escaped Unicode in the given region to raw string."
+       (interactive "r")
+       (setq end (set-marker (make-marker) end))
+       (goto-char beg)
+       (while (and (< (point) end)
+		   (re-search-forward "\\\\u\\([0-9a-fA-F]\\{4\\}\\)\\|\\\\u{\\([0-9a-fA-F \t]+\\)}" end t))
+	 (let ((b (match-beginning 0)) (e (match-end 0))
+	       (s (match-string-no-properties 1)))
+	   (if s
+	       (setq s (cons s nil))
+	     (goto-char (match-beginning 2))
+	     (while (looking-at "[ \t]*\\([0-9a-fA-F]+\\)")
+	       (setq s (cons (match-string-no-properties 1) s))
+	       (goto-char (match-end 0))))
+	   (setq s (mapconcat (lambda (c) (format "%c" (string-to-int c 16)))
+			      (nreverse s) ""))
+	   (delete-region b e)
+	   (insert s))
+	 ))
+
+     (defun ruby-encode-decode-unicode (dec beg end)
+       "Convert Unicode <-> \\u{} in the given region."
+       (interactive "P\nr")
+       (if dec (ruby-decode-unicode beg end) (ruby-encode-unicode beg end)))
      ))
 
 ;; monkey-patching ruby-mode.el in Emacs 24, as r49872.

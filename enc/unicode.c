@@ -603,3 +603,68 @@ onigenc_unicode_get_case_fold_codes_by_str(OnigEncoding enc,
 
   return n;
 }
+
+/* length in bytes for three characters in UTF-32; e.g. needed for ffi (U+FB03) */
+#define CASE_MAPPING_SLACK 12
+#define MODIFIED (flags |= ONIGENC_CASE_MODIFIED)
+extern int
+onigenc_unicode_case_map(OnigCaseFoldType* flagP,
+    const OnigUChar** pp, const OnigUChar* end,
+    OnigUChar* to, OnigUChar* to_end,
+    const struct OnigEncodingTypeST* enc)
+{
+    OnigCodePoint code;
+    OnigUChar *to_start = to;
+    OnigCaseFoldType flags = *flagP;
+    to_end -= CASE_MAPPING_SLACK;
+
+    /* hopelessly preliminary implementation, just dealing with ASCII and Turkic */
+    while (*pp<end && to<=to_end) {
+	code = ONIGENC_MBC_TO_CODE(enc, *pp, end);
+	*pp += enclen(enc, *pp, end);
+	if (code<='z') { /* ASCII comes first */
+	    if (code>='a' && code<='z') {
+	        if (flags&ONIGENC_CASE_UPCASE) {
+		    if (flags&ONIGENC_CASE_FOLD_TURKISH_AZERI && code==0x0069) /* i -> I WITH DOT ABOVE */
+			code = 0x0130;
+		    else
+			code += 'A'-'a';
+		    MODIFIED;
+		}
+	    }
+	    else if (code>='A' && code<='Z') {
+		if (flags&ONIGENC_CASE_DOWNCASE) {
+		    if (flags&ONIGENC_CASE_FOLD_TURKISH_AZERI && code==0x0049) /* I -> DOTLESS i */
+			code = 0x0131;
+		    else
+			code += 'a'-'A';
+		    MODIFIED;
+		}
+	    }
+	}
+	else if (code>=0x00C0) { /* deal with non-ASCII; nothing relevant below U+00C0 */
+	    if (code==0x0130) {
+		if (flags&ONIGENC_CASE_DOWNCASE) {
+		    if (flags&ONIGENC_CASE_FOLD_TURKISH_AZERI)
+			code = 0x0069; /* I WITH DOT ABOVE -> i */
+		    else { /* make dot above explicit */
+			to += ONIGENC_CODE_TO_MBC(enc, 0x0069, to);
+			code = 0x0307; /* dot above */
+		    }
+		    MODIFIED;
+		}
+	    }
+	    /* the following case can be removed once we rely on data,
+	     * because the mapping is always the same */
+	    else if (code==0x0131 && (flags&ONIGENC_CASE_UPCASE)) { /* DOTLESS i -> I */
+		code = 0x0049; MODIFIED;
+	    }
+	}
+	to += ONIGENC_CODE_TO_MBC(enc, code, to);
+	/* switch from titlecase to lowercase for capitalize */
+	if (flags & ONIGENC_CASE_TITLECASE)
+	    flags ^= (ONIGENC_CASE_UPCASE|ONIGENC_CASE_TITLECASE|ONIGENC_CASE_DOWNCASE);
+    }
+    *flagP = flags;
+    return (int)(to-to_start);
+}

@@ -1265,6 +1265,33 @@ rb_match_busy(VALUE match)
     FL_SET(match, MATCH_BUSY);
 }
 
+int
+rb_match_count(VALUE match)
+{
+    struct re_registers *regs;
+    if (NIL_P(match)) return -1;
+    regs = RMATCH_REGS(match);
+    if (!regs) return -1;
+    return regs->num_regs;
+}
+
+int
+rb_match_nth_defined(int nth, VALUE match)
+{
+    struct re_registers *regs;
+    if (NIL_P(match)) return FALSE;
+    regs = RMATCH_REGS(match);
+    if (!regs) return FALSE;
+    if (nth >= regs->num_regs) {
+	return FALSE;
+    }
+    if (nth < 0) {
+	nth += regs->num_regs;
+	if (nth <= 0) return FALSE;
+    }
+    return (BEG(nth) != -1);
+}
+
 static void
 match_set_string(VALUE m, VALUE string, long pos, long len)
 {

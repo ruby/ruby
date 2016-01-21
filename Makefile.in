@@ -467,10 +467,17 @@ ext/extinit.$(OBJEXT): ext/extinit.c $(SETUP)
 
 enc/encinit.$(OBJEXT): enc/encinit.c $(SETUP)
 
-up::
+update-src::
 	@$(CHDIR) "$(srcdir)" && LC_TIME=C exec $(VCSUP)
 
-after-update:: update-config_files common-srcs
+update-download:: update-config_files
+
+update-config_files: PHONY
+	$(Q) $(BASERUBY) -C "$(srcdir)/tool" \
+	    ../tool/downloader.rb -e gnu \
+	    config.guess config.sub
+
+after-update:: common-srcs
 
 update-mspec:
 	@$(CHDIR) $(srcdir); \

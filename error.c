@@ -868,7 +868,7 @@ exc_backtrace(VALUE exc)
  *
  *  Returns any backtrace associated with the exception. This method is
  *  similar to Exception#backtrace, but the backtrace is an array of
- *   Thread::Backtrace::Location.
+ *  Thread::Backtrace::Location.
  *
  *  Now, this method is not affected by Exception#set_backtrace().
  */
