@@ -1,3 +1,7 @@
+Thu Jan 21 16:37:50 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* Makefile.in (update-rubyspec): fix r53208 like r53451.
+
 Wed Jan 20 20:58:25 2016  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* common.mk, Makefile.in: update-config_files is only for Unix
