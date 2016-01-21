@@ -1,3 +1,9 @@
+Thu Jan 21 17:34:01 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* marshal.c (r_object0): honor Marshal.load post proc
+	  value for TYPE_LINK.  by Hiroshi Nakamura <nahi@ruby-lang.org>
+	  https://github.com/ruby/ruby/pull/1204 fix GH-1204
+
 Thu Jan 21 16:37:50 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* Makefile.in (update-rubyspec): fix r53208 like r53451.
