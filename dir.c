@@ -21,7 +21,7 @@
 #include <unistd.h>
 #endif
 
-#undef HAVE_D_NAMLEN
+#undef HAVE_DIRENT_NAMLEN
 #if defined HAVE_DIRENT_H && !defined _WIN32
 # include <dirent.h>
 # define NAMLEN(dirent) strlen((dirent)->d_name)
@@ -31,7 +31,7 @@
 #else
 # define dirent direct
 # define NAMLEN(dirent) (dirent)->d_namlen
-# define HAVE_D_NAMLEN 1
+# define HAVE_DIRENT_NAMLEN 1
 # if HAVE_SYS_NDIR_H
 #  include <sys/ndir.h>
 # endif
@@ -701,6 +701,27 @@ fundamental_encoding_p(rb_encoding *enc)
 #else
 # define READDIR(dir, enc) readdir((dir))
 #endif
+static int
+to_be_skipped(const struct dirent *dp)
+{
+    const char *name = dp->d_name;
+    if (name[0] != '.') return FALSE;
+#ifdef HAVE_DIRENT_NAMLEN
+    switch (NAMLEN(dp)) {
+      case 2:
+	if (name[1] != '.') return FALSE;
+      case 1:
+	return TRUE;
+      default:
+	break;
+    }
+#else
+    if (!name[1]) return TRUE;
+    if (name[1] != '.') return FALSE;
+    if (!name[2]) return TRUE;
+#endif
+    return FALSE;
+}
 
 /*
  *  call-seq:
@@ -2650,22 +2671,11 @@ rb_dir_s_empty_p(VALUE obj, VALUE dirname)
 	}
     }
     errno = 0;
-    while (result && (dp = READDIR(dir, NULL)) != NULL) {
-	if (dp->d_name[0] != '.') {
+    while ((dp = READDIR(dir, NULL)) != NULL) {
+	if (!to_be_skipped(dp)) {
 	    result = Qfalse;
 	    break;
 	}
-#ifdef HAVE_D_NAMLEN
-	switch (NAMLEN(dp)) {
-	  case 1: continue;
-	  case 2:
-	    if (dp->d_name[1] == '.') continue;
-	}
-#else
-	if (!dp->d_name[1]) continue;
-	if (dp->d_name[1] == '.' && !dp->d_name[2]) continue;
-#endif
-	result = Qfalse;
     }
     closedir(dir);
     return result;
