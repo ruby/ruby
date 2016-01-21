@@ -2103,8 +2103,21 @@ EOT
     }
     assert_equal(Encoding::US_ASCII, enc)
 
+    enc = nil
+    assert_warn(/BOM/) {
+      open(__FILE__, "r", encoding: "bom|us-ascii") {|f| enc = f.external_encoding}
+    }
+    assert_equal(Encoding::US_ASCII, enc)
+
+    enc = nil
     assert_warn(/BOM/) {
       open(IO::NULL, "w:bom|us-ascii") {|f| enc = f.external_encoding}
+    }
+    assert_equal(Encoding::US_ASCII, enc)
+
+    enc = nil
+    assert_warn(/BOM/) {
+      open(IO::NULL, "w", encoding: "bom|us-ascii") {|f| enc = f.external_encoding}
     }
     assert_equal(Encoding::US_ASCII, enc)
 
