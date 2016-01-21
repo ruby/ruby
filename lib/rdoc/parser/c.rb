@@ -841,7 +841,7 @@ class RDoc::Parser::C < RDoc::Parser
     comment = find_attr_comment var_name, attr_name
     comment.normalize
 
-    name = attr_name.gsub(/rb_intern\("([^"]+)"\)/, '\1')
+    name = attr_name.gsub(/rb_intern(?:_const)?\("([^"]+)"\)/, '\1')
 
     attr = RDoc::Attr.new '', name, rw, comment
 
