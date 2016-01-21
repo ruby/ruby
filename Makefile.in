@@ -469,12 +469,12 @@ update-mspec:
 	@$(CHDIR) $(srcdir); \
 	if [ -d spec/mspec ]; then \
 	  echo updating mspec ...; \
-	  $(Q:@=:) set -x; \
+	  $(Q1:0=:) set -x; \
 	  cd spec/mspec && \
 	  exec git pull; \
 	else \
 	  echo retrieving mspec ...; \
-	  $(Q:@=:) set -x; \
+	  $(Q1:0=:) set -x; \
 	  exec git clone $(MSPEC_GIT_URL) spec/mspec; \
 	fi
 
@@ -482,12 +482,12 @@ update-rubyspec: update-mspec
 	@$(CHDIR) $(srcdir); \
 	if [ -d spec/rubyspec ]; then \
 	  echo updating rubyspec ...; \
-	  $(Q:@=:) set -x; \
+	  $(Q1:0=:) set -x; \
 	  cd spec/rubyspec && \
 	  exec git pull; \
 	else \
 	  echo retrieving rubyspec ...; \
-	  $(Q:@=:) set -x; \
+	  $(Q1:0=:) set -x; \
 	  exec git clone $(RUBYSPEC_GIT_URL) spec/rubyspec; \
 	fi
 
@@ -498,13 +498,13 @@ update-doclie:
 	@$(CHDIR) $(srcdir); \
 	if [ -d coverage/doclie ]; then \
 	  echo updating doclie ...; \
-	  $(Q:@=:) set -x; \
+	  $(Q1:0=:) set -x; \
 	  cd coverage/doclie && \
 	  git fetch && \
 	  exec git checkout $(DOCLIE_GIT_REF); \
 	else \
 	  echo retrieving doclie ...; \
-	  $(Q:@=:) set -x; \
+	  $(Q1:0=:) set -x; \
 	  exec git clone --branch $(DOCLIE_GIT_REF) $(DOCLIE_GIT_URL) coverage/doclie; \
 	fi
 
@@ -512,7 +512,7 @@ update-simplecov-html:
 	@$(CHDIR) $(srcdir); \
 	if [ -d coverage/simplecov-html ]; then \
 	  echo updating simplecov-html ...; \
-	  $(Q:@=:) set -x; \
+	  $(Q1:0=:) set -x; \
 	  cd coverage/simplecov-html && \
 	  git fetch && \
 	  exec git checkout $(SIMPLECOV_HTML_GIT_REF); \
@@ -525,13 +525,13 @@ update-simplecov:
 	@$(CHDIR) $(srcdir); \
 	if [ -d coverage/simplecov ]; then \
 	  echo updating simplecov ...; \
-	  $(Q:@=:) set -x; \
+	  $(Q1:0=:) set -x; \
 	  cd coverage/simplecov && \
 	  git fetch && \
 	  exec git checkout $(SIMPLECOV_GIT_REF); \
 	else \
 	  echo retrieving simplecov ...; \
-	  $(Q:@=:) set -x; \
+	  $(Q1:0=:) set -x; \
 	  exec git clone --branch $(SIMPLECOV_GIT_REF) $(SIMPLECOV_GIT_URL) coverage/simplecov; \
 	fi
 
