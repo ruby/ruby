@@ -472,11 +472,6 @@ update-src::
 
 update-download:: update-config_files
 
-update-config_files: PHONY
-	$(Q) $(BASERUBY) -C "$(srcdir)/tool" \
-	    ../tool/downloader.rb -e gnu \
-	    config.guess config.sub
-
 after-update:: common-srcs
 
 update-mspec:
