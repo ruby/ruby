@@ -2617,6 +2617,7 @@ get_name_end_code_point(OnigCodePoint start)
 }
 
 #ifdef USE_NAMED_GROUP
+#define ONIGENC_IS_CODE_NAME(enc, c) TRUE
 #ifdef USE_BACKREF_WITH_LEVEL
 /*
    \k<name+n>, \k<name-n>
@@ -2662,7 +2663,7 @@ fetch_name_with_level(OnigCodePoint start_code, UChar** src, UChar* end,
       sign = -1;
       pnum_head = p;
     }
-    else if (!ONIGENC_IS_CODE_WORD(enc, c)) {
+    else if (!ONIGENC_IS_CODE_NAME(enc, c)) {
       r = ONIGERR_INVALID_CHAR_IN_GROUP_NAME;
     }
   }
@@ -2684,7 +2685,7 @@ fetch_name_with_level(OnigCodePoint start_code, UChar** src, UChar* end,
         is_num = 0;
       }
     }
-    else if (!ONIGENC_IS_CODE_WORD(enc, c)) {
+    else if (!ONIGENC_IS_CODE_NAME(enc, c)) {
       r = ONIGERR_INVALID_CHAR_IN_GROUP_NAME;
     }
   }
@@ -2785,7 +2786,7 @@ fetch_name(OnigCodePoint start_code, UChar** src, UChar* end,
 	is_num = 0;
       }
     }
-    else if (!ONIGENC_IS_CODE_WORD(enc, c)) {
+    else if (!ONIGENC_IS_CODE_NAME(enc, c)) {
       r = ONIGERR_INVALID_CHAR_IN_GROUP_NAME;
     }
   }
@@ -2795,8 +2796,11 @@ fetch_name(OnigCodePoint start_code, UChar** src, UChar* end,
       name_end = p;
       PFETCH_S(c);
       if (c == end_code || c == ')') {
-	if (is_num == 2) r = ONIGERR_INVALID_GROUP_NAME;
-	break;
+        if (is_num == 2) {
+          r = ONIGERR_INVALID_GROUP_NAME;
+          goto teardown;
+        }
+        break;
       }
 
       if (is_num != 0) {
@@ -2808,12 +2812,13 @@ fetch_name(OnigCodePoint start_code, UChar** src, UChar* end,
             r = ONIGERR_INVALID_CHAR_IN_GROUP_NAME;
           else
             r = ONIGERR_INVALID_GROUP_NAME;
-          is_num = 0;
+          goto teardown;
         }
       }
       else {
-        if (!ONIGENC_IS_CODE_WORD(enc, c)) {
+        if (!ONIGENC_IS_CODE_NAME(enc, c)) {
           r = ONIGERR_INVALID_CHAR_IN_GROUP_NAME;
+          goto teardown;
         }
       }
     }
@@ -2821,6 +2826,7 @@ fetch_name(OnigCodePoint start_code, UChar** src, UChar* end,
     if (c != end_code) {
       r = ONIGERR_INVALID_GROUP_NAME;
       name_end = end;
+      goto err;
     }
 
     if (is_num != 0) {
@@ -2839,6 +2845,7 @@ fetch_name(OnigCodePoint start_code, UChar** src, UChar* end,
     return 0;
   }
   else {
+  teardown:
     while (!PEND) {
       name_end = p;
       PFETCH_S(c);

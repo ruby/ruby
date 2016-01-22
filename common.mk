@@ -976,6 +976,11 @@ after-update:: extract-extlibs
 update-remote:: update-src update-rubyspec update-download
 update-download:: update-unicode update-gems download-extlibs
 
+update-config_files: PHONY
+	$(Q) $(BASERUBY) -C "$(srcdir)/tool" \
+	    ../tool/downloader.rb -e gnu \
+	    config.guess config.sub
+
 update-gems: PHONY
 	$(ECHO) Downloading bundled gem files...
 	$(Q) $(BASERUBY) -C "$(srcdir)/gems" \

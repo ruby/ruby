@@ -1569,7 +1569,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    rb_raise(rb_eArgError, "dump format error (unlinked)");
 	}
 	v = (VALUE)link;
-	r_post_proc(v, arg);
+	v = r_post_proc(v, arg);
 	break;
 
       case TYPE_IVAR:

@@ -142,6 +142,8 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal("a[b]c", "abc".sub(/(?<x>[bc])/, "[\\k<x>]"))
 
     assert_equal("o", "foo"[/(?<bar>o)/, "bar"])
+    assert_equal("o", "foo"[/(?<@bar>o)/, "@bar"])
+    assert_equal("o", "foo"[/(?<@bar>.)\g<@bar>\k<@bar>/, "@bar"])
 
     s = "foo"
     s[/(?<bar>o)/, "bar"] = "baz"
@@ -175,6 +177,7 @@ class TestRegexp < Test::Unit::TestCase
 
   def test_assign_named_capture
     assert_equal("a", eval('/(?<foo>.)/ =~ "a"; foo'))
+    assert_equal(nil, eval('/(?<@foo>.)/ =~ "a"; defined?(@foo)'))
     assert_equal("a", eval('foo = 1; /(?<foo>.)/ =~ "a"; foo'))
     assert_equal("a", eval('1.times {|foo| /(?<foo>.)/ =~ "a"; break foo }'))
     assert_nothing_raised { eval('/(?<Foo>.)/ =~ "a"') }
@@ -939,6 +942,10 @@ class TestRegexp < Test::Unit::TestCase
     h = {a => 42}
     assert_equal(42, h[b], '[ruby-core:24748]')
     assert_match(/#<TestRegexp::MatchData_\u{3042}:/, MatchData_A.allocate.inspect)
+
+    h = /^(?<@time>\d+): (?<body>.*)/.match("123456: hoge fuga")
+    assert_equal("123456", h["@time"])
+    assert_equal("hoge fuga", h["body"])
   end
 
   def test_regexp_poped
