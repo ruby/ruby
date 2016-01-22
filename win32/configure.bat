@@ -38,6 +38,7 @@ if "%1" == "--extout" goto :extout
 if "%1" == "--path" goto :path
 if "%1" == "--with-baseruby" goto :baseruby
 if "%1" == "--with-ntver" goto :ntver
+if "%1" == "--with-libdir" goto :libdir
 if "%1" == "--without-ext" goto :witharg
 if "%1" == "--without-extensions" goto :witharg
 if "%opt:~0,10%" == "--without-" goto :withoutarg
@@ -156,6 +157,12 @@ goto :loop
 goto :loop
 :baseruby
   echo>> ~tmp~.mak 	"BASERUBY=%~2" \
+  echo>>confargs.tmp  %1=%2 \
+  shift
+  shift
+goto :loop
+:libdir
+  echo>> ~tmp~.mak 	"libdir_basename=%~2" \
   echo>>confargs.tmp  %1=%2 \
   shift
   shift
