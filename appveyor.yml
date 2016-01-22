@@ -1,7 +1,4 @@
 ---
-branches:
-  only:
-    - msvc
 shallow_clone: true
 platform: x64
 install:
