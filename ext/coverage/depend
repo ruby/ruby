@@ -31,6 +31,7 @@ coverage.o: $(top_srcdir)/include/ruby.h
 coverage.o: $(top_srcdir)/internal.h
 coverage.o: $(top_srcdir)/method.h
 coverage.o: $(top_srcdir)/node.h
+coverage.o: $(top_srcdir)/ruby_assert.h
 coverage.o: $(top_srcdir)/ruby_atomic.h
 coverage.o: $(top_srcdir)/thread_pthread.h
 coverage.o: $(top_srcdir)/vm_core.h

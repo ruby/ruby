@@ -1,4 +1,6 @@
-Fri Jan 22 17:33:05 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Jan 22 17:36:46 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_core.h (VM_ASSERT): use RUBY_ASSERT instead of rb_bug.
 
 	* error.c (rb_assert_failure): assertion with stack dump.
 
