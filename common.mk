@@ -854,6 +854,8 @@ $(PRELUDE_C): $(COMPILE_PRELUDE) \
 		$(srcdir)/template/prelude.c.tmpl golf_prelude.rb
 
 {$(VPATH)}probes.dmyh: {$(srcdir)}probes.d $(srcdir)/tool/gen_dummy_probes.rb
+
+probes.dmyh:
 	$(BASERUBY) $(srcdir)/tool/gen_dummy_probes.rb $(srcdir)/probes.d > $@
 
 probes.h: {$(VPATH)}probes.$(DTRACE_EXT)
