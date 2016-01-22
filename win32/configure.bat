@@ -198,7 +198,7 @@ goto :exit
 :end
 echo>> ~tmp~.mak 	WIN32DIR=$(@D:\=/)
 echo.>>confargs.tmp
-echo>confargs.c #define $ $$ 
+echo>confargs.c #define $ $$
 echo>>confargs.c !ifndef CONFIGURE_ARGS
 type>>confargs.c confargs.tmp
 echo>>confargs.c configure_args = CONFIGURE_ARGS
