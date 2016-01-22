@@ -22,7 +22,7 @@
 #ifdef HAVE_IEEEFP_H
 #include <ieeefp.h>
 #endif
-#include <assert.h>
+#include "ruby_assert.h"
 
 #if defined(HAVE_LIBGMP) && defined(HAVE_GMP_H)
 #define USE_GMP

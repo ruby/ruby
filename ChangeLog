@@ -1,3 +1,9 @@
+Fri Jan 22 17:33:05 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (rb_assert_failure): assertion with stack dump.
+
+	* ruby_assert.h (RUBY_ASSERT): new header for the assertion.
+
 Fri Jan 22 00:25:57 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* regparse.c (fetch_name_with_level): allow non word characters

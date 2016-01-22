@@ -14,7 +14,7 @@
 #include "internal.h"
 
 #define NDEBUG
-#include <assert.h>
+#include "ruby_assert.h"
 
 #define ZERO INT2FIX(0)
 #define ONE INT2FIX(1)

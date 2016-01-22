@@ -20,7 +20,7 @@
 #ifndef ARRAY_DEBUG
 # define NDEBUG
 #endif
-#include <assert.h>
+#include "ruby_assert.h"
 
 VALUE rb_cArray;
 
