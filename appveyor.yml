@@ -4,7 +4,7 @@ platform: x64
 install:
   - SET
   - '"C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat" amd64'
-  - SET PATH=C:\Ruby22-x64\bin;C:\Ruby21-x64\Devkit\mingw\bin;%PATH%;C:\msys64\usr\bin
+  - SET PATH=\usr\local\bin;C:\Ruby22-x64\bin;C:\Ruby21-x64\Devkit\mingw\bin;%PATH%;C:\msys64\usr\bin
   - ruby --version
   - 'cl'
   - SET
@@ -12,10 +12,6 @@ install:
   - 7z x libressl-2.2.5-windows.zip
   - copy libressl-2.2.5-windows\x64\libcrypto-35.lib libressl-2.2.5-windows\x64\crypto.lib
   - copy libressl-2.2.5-windows\x64\libssl-35.lib    libressl-2.2.5-windows\x64\ssl.lib
-  - copy libressl-2.2.5-windows\x64\libcrypto-35.dll .
-  - copy libressl-2.2.5-windows\x64\libssl-35.dll    .
-  - mkdir \usr
-  - mkdir \usr\local
   - mkdir \usr\local\bin
   - copy libressl-2.2.5-windows\x64\libcrypto-35.dll \usr\local\bin
   - copy libressl-2.2.5-windows\x64\libssl-35.dll    \usr\local\bin
@@ -28,11 +24,8 @@ install:
 build_script:
   - cd %APPVEYOR_BUILD_FOLDER%
   - win32\configure.bat --without-tk --with-openssl-include=/projects/%APPVEYOR_PROJECT_SLUG%/libressl-2.2.5-windows/include --with-openssl-lib=/projects/%APPVEYOR_PROJECT_SLUG%/libressl-2.2.5-windows/x64 --with-zlib-include=/projects/%APPVEYOR_PROJECT_SLUG%/zlib-1.2.8 --with-zlib-lib=/projects/%APPVEYOR_PROJECT_SLUG%/zlib-1.2.8
-  - appveyor AddMessage "nmake up" -Category Information
   - nmake -l up
-  - appveyor AddMessage "nmake" -Category Information
   - nmake -l
-  - appveyor AddMessage "nmake install-nodoc" -Category Information
   - nmake install-nodoc
 test_script:
   - nmake -l "OPTS=-v -q" btest
