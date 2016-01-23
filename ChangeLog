@@ -1,5 +1,10 @@
 Sat Jan 23 16:29:42 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
+	* common.mk: Simplifying Unicode data file download logic to make
+	  it more reliable
+
+Sat Jan 23 16:29:42 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
 	* tool/downloader.rb: Fixed a logical error, improved documentation
 
 Sat Jan 23 11:42:43 2016  Peter Suschlik  <ps@neopoly.de>
