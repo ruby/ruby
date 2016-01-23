@@ -23,7 +23,7 @@ install:
   - copy zlib1.dll \usr\local\bin
 build_script:
   - cd %APPVEYOR_BUILD_FOLDER%
-  - win32\configure.bat --without-tk --with-openssl-include=/projects/%APPVEYOR_PROJECT_SLUG%/libressl-2.2.5-windows/include --with-openssl-lib=/projects/%APPVEYOR_PROJECT_SLUG%/libressl-2.2.5-windows/x64 --with-zlib-include=/projects/%APPVEYOR_PROJECT_SLUG%/zlib-1.2.8 --with-zlib-lib=/projects/%APPVEYOR_PROJECT_SLUG%/zlib-1.2.8
+  - win32\configure.bat --without-ext=+,dbm,gdbm,readline,tk* --with-openssl-include=/projects/%APPVEYOR_PROJECT_SLUG%/libressl-2.2.5-windows/include --with-openssl-lib=/projects/%APPVEYOR_PROJECT_SLUG%/libressl-2.2.5-windows/x64 --with-zlib-include=/projects/%APPVEYOR_PROJECT_SLUG%/zlib-1.2.8 --with-zlib-lib=/projects/%APPVEYOR_PROJECT_SLUG%/zlib-1.2.8
   - nmake -l up
   - nmake -l
   - nmake install-nodoc
