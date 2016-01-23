@@ -1,7 +1,12 @@
-Sat Jan 23 16:29:42 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+Sat Jan 23 18:37:37 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* ChangeLog: Fixing wrong time on previous commit, and adding
+	  previous commit message to svn [ci skip]
+
+Sat Jan 23 18:30:30 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* common.mk: Simplifying Unicode data file download logic to make
-	  it more reliable
+	  it more reliable [Bug #12007]
 
 Sat Jan 23 16:29:42 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
