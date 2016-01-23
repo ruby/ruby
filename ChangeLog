@@ -1,3 +1,8 @@
+Sat Jan 23 20:54:26 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* common.mk: revert r53633. It broke rubyci and travis.
+	  https://travis-ci.org/ruby/ruby/builds/104259623
+
 Sat Jan 23 20:10:29 2016  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* range.c (range_eqq): revert r51585 because rb_call_super() is

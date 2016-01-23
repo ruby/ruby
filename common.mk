@@ -1005,7 +1005,7 @@ extract-gems: PHONY
 	    bundled_gems
 
 ### set the following environment variable or uncomment the line if
-### the Unicode data files should be updated completely on every update ('make up',...).
+### the Unicode data files are updated every minute.
 # ALWAYS_UPDATE_UNICODE = yes
 
 UNICODE_FILES = $(srcdir)/enc/unicode/data/$(UNICODE_VERSION)/UnicodeData.txt \
@@ -1013,9 +1013,11 @@ UNICODE_FILES = $(srcdir)/enc/unicode/data/$(UNICODE_VERSION)/UnicodeData.txt \
 		$(srcdir)/enc/unicode/data/$(UNICODE_VERSION)/NormalizationTest.txt \
 		$(srcdir)/enc/unicode/data/$(UNICODE_VERSION)/CaseFolding.txt
 
-update-unicode: $(UNICODE_FILES)
+UNICODE_FILES_DEPS = $(srcdir)/.unicode-$(UNICODE_VERSION).time
 
-$(UNICODE_FILES):
+update-unicode: $(srcdir)/.unicode-$(UNICODE_VERSION).time PHONY
+
+$(UNICODE_FILES_DEPS):
 	$(ECHO) Downloading Unicode $(UNICODE_VERSION) data files...
 	$(Q) $(MAKEDIRS) "$(srcdir)/enc/unicode/data/$(UNICODE_VERSION)"
 	$(Q) $(BASERUBY) -C "$(srcdir)" tool/downloader.rb \
@@ -1023,6 +1025,7 @@ $(UNICODE_FILES):
 	    -p $(UNICODE_VERSION)/ucd \
 	    -e $(ALWAYS_UPDATE_UNICODE:yes=-a) unicode \
 	    $(UNICODE_FILES)
+	@exit > $@
 
 $(srcdir)/$(HAVE_BASERUBY:yes=lib/unicode_normalize/tables.rb): \
 	$(srcdir)/.unicode-tables.time
