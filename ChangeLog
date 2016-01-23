@@ -1,3 +1,8 @@
+Sat Jan 23 11:29:16 2016  Pascal Betz  <pascal.betz@simplificator.com>
+
+	* lib/csv.rb: Update documentation of CSV header converter for
+	  r45498, [GH-575].  [Fix GH-1215]
+
 Fri Jan 22 17:36:46 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_core.h (VM_ASSERT): use RUBY_ASSERT instead of rb_bug.

@@ -982,9 +982,10 @@ class CSV
   # through the +options+ Hash passed to CSV::new().
   #
   # <b><tt>:downcase</tt></b>::  Calls downcase() on the header String.
-  # <b><tt>:symbol</tt></b>::    The header String is downcased, spaces are
-  #                              replaced with underscores, non-word characters
-  #                              are dropped, and finally to_sym() is called.
+  # <b><tt>:symbol</tt></b>::    Leading/trailing spaces are dropped, string is
+  #                              downcased, remaining spaces are replaced with
+  #                              underscores, non-word characters are dropped,
+  #                              and finally to_sym() is called.
   #
   # All built-in header converters transcode header data to UTF-8 before
   # attempting a conversion.  If your data cannot be transcoded to UTF-8 the
