@@ -1,7 +1,7 @@
 Sat Jan 23 11:42:43 2016  Peter Suschlik  <ps@neopoly.de>
 
 	* README.md: Use SVG Travis badge over PNG for better quality and
-	  devise support.  [Fix GH-1214] [Fix GH-1216]
+	  device support.  [Fix GH-1214] [Fix GH-1216]
 
 Sat Jan 23 11:29:16 2016  Pascal Betz  <pascal.betz@simplificator.com>
 
