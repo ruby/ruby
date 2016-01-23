@@ -995,6 +995,9 @@ class TestString < Test::Unit::TestCase
     assert_equal(S("AAAAA000"), S("ZZZZ999").next)
 
     assert_equal(S("*+"), S("**").next)
+
+    assert_equal(S("!"), S(" ").next)
+    assert_equal(S(""), S("").next)
   end
 
   def test_next!
@@ -1031,6 +1034,10 @@ class TestString < Test::Unit::TestCase
     a = S("**")
     assert_equal(S("*+"), a.next!)
     assert_equal(S("*+"), a)
+
+    a = S(" ")
+    assert_equal(S("!"), a.next!)
+    assert_equal(S("!"), a)
   end
 
   def test_oct
@@ -1541,6 +1548,9 @@ class TestString < Test::Unit::TestCase
     assert_equal("2000aaa", "1999zzz".succ)
     assert_equal("AAAA0000", "ZZZ9999".succ)
     assert_equal("**+", "***".succ)
+
+    assert_equal("!", " ".succ)
+    assert_equal("", "".succ)
   end
 
   def test_succ!
@@ -1581,6 +1591,14 @@ class TestString < Test::Unit::TestCase
     a = S("No.9")
     assert_equal(S("No.10"), a.succ!)
     assert_equal(S("No.10"), a)
+
+    a = S(" ")
+    assert_equal(S("!"), a.succ!)
+    assert_equal(S("!"), a)
+
+    a = S("")
+    assert_equal(S(""), a.succ!)
+    assert_equal(S(""), a)
 
     assert_equal("aaaaaaaaaaaa", "zzzzzzzzzzz".succ!)
     assert_equal("aaaaaaaaaaaaaaaaaaaaaaaa", "zzzzzzzzzzzzzzzzzzzzzzz".succ!)
