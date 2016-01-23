@@ -1,3 +1,11 @@
+Sat Jan 23 20:10:29 2016  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* range.c (range_eqq): revert r11113 because rb_call_super() is
+	  called in range_include() and thus r11113 doesn't work when the
+	  receiver Range object consists of non linear objects such as Date
+	  objects.
+	  [ruby-core:72908] [Bug #12003]
+
 Sat Jan 23 18:37:37 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* ChangeLog: Fixing wrong time on previous commit, and adding
