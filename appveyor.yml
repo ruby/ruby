@@ -8,22 +8,27 @@ install:
   - ruby --version
   - 'cl'
   - SET
+  - mkdir \usr\local\bin
+  - mkdir \usr\local\include
+  - mkdir \usr\local\lib
   - ps: Start-FileDownload 'http://ftp.openbsd.org/pub/OpenBSD/LibreSSL/libressl-2.2.5-windows.zip'
   - 7z x libressl-2.2.5-windows.zip
-  - copy libressl-2.2.5-windows\x64\libcrypto-35.lib libressl-2.2.5-windows\x64\crypto.lib
-  - copy libressl-2.2.5-windows\x64\libssl-35.lib    libressl-2.2.5-windows\x64\ssl.lib
-  - mkdir \usr\local\bin
+  - copy libressl-2.2.5-windows\x64\libcrypto-35.lib \usr\local\lib\crypto.lib
+  - copy libressl-2.2.5-windows\x64\libssl-35.lib    \usr\local\lib\ssl.lib
   - copy libressl-2.2.5-windows\x64\libcrypto-35.dll \usr\local\bin
   - copy libressl-2.2.5-windows\x64\libssl-35.dll    \usr\local\bin
+  - xcopy /e libressl-2.2.5-windows\include          \usr\local\include
   - ps: Start-FileDownload 'http://zlib.net/zlib128.zip'
   - 7z x zlib128.zip
   - cd zlib-1.2.8
   - nmake -f win32/Makefile.msc
-  - copy zlib1.dll ..
   - copy zlib1.dll \usr\local\bin
+  - copy zlib.lib  \usr\local\lib
+  - copy zconf.h   \usr\local\include
+  - copy zlib.h    \usr\local\include
 build_script:
   - cd %APPVEYOR_BUILD_FOLDER%
-  - win32\configure.bat --without-ext=+,dbm,gdbm,readline,tk* --with-openssl-include=/projects/%APPVEYOR_PROJECT_SLUG%/libressl-2.2.5-windows/include --with-openssl-lib=/projects/%APPVEYOR_PROJECT_SLUG%/libressl-2.2.5-windows/x64 --with-zlib-include=/projects/%APPVEYOR_PROJECT_SLUG%/zlib-1.2.8 --with-zlib-lib=/projects/%APPVEYOR_PROJECT_SLUG%/zlib-1.2.8
+  - win32\configure.bat --without-ext=+,dbm,gdbm,readline,tk* --with-opt-dir=/usr/local
   - nmake -l up
   - nmake -l
   - nmake install-nodoc
