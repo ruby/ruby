@@ -2081,7 +2081,6 @@ class TestArray < Test::Unit::TestCase
   def test_select!
     a = @cls[ 1, 2, 3, 4, 5 ]
     assert_equal(nil, a.select! { true })
-    assert_equal(a, a.keep_if { true })
     assert_equal(@cls[1, 2, 3, 4, 5], a)
 
     a = @cls[ 1, 2, 3, 4, 5 ]
@@ -2101,6 +2100,21 @@ class TestArray < Test::Unit::TestCase
     }
     assert_equal(9, r)
     assert_equal(@cls[7, 8, 9, 10], a, bug10722)
+  end
+
+  # also select!
+  def test_keep_if
+    a = @cls[ 1, 2, 3, 4, 5 ]
+    assert_equal(a, a.keep_if { true })
+    assert_equal(@cls[1, 2, 3, 4, 5], a)
+
+    a = @cls[ 1, 2, 3, 4, 5 ]
+    assert_equal(a, a.keep_if { false })
+    assert_equal(@cls[], a)
+
+    a = @cls[ 1, 2, 3, 4, 5 ]
+    assert_equal(a, a.keep_if { |i| i > 3 })
+    assert_equal(@cls[4, 5], a)
   end
 
   def test_delete2

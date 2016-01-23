@@ -1,3 +1,8 @@
+Sat Jan 23 22:30:59 2016  K0mA  <mctj1218@gmail.com>
+
+	* test/ruby/test_array.rb (test_keep_if): Add test for
+	  Array#keep_if separate from Array#select!  [Fix GH-1218]
+
 Sat Jan 23 20:54:26 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* common.mk: revert r53633. It broke rubyci and travis.
