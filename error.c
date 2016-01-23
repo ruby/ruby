@@ -11,6 +11,7 @@
 
 #include "internal.h"
 #include "ruby/st.h"
+#include "ruby_assert.h"
 #include "vm_core.h"
 
 #include <stdio.h>
@@ -497,6 +498,18 @@ rb_compile_bug_str(VALUE file, int line, const char *fmt, ...)
     report_bug(RSTRING_PTR(file), line, fmt, NULL);
 
     abort();
+}
+
+void
+rb_assert_failure(const char *file, int line, const char *name, const char *expr)
+{
+    FILE *out = stderr;
+    fprintf(out, "Assertion Failed: %s:%d:", file, line);
+    if (name) fprintf(out, "%s:", name);
+    fprintf(out, "%s\n%s\n\n", expr, ruby_description);
+    rb_vm_bugreport(NULL);
+    bug_report_end(out);
+    die();
 }
 
 static const char builtin_types[][10] = {

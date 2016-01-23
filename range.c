@@ -23,7 +23,6 @@ static ID id_beg, id_end, id_excl, id_integer_p, id_div;
 #define id_succ idSucc
 
 static VALUE r_cover_p(VALUE, VALUE, VALUE, VALUE);
-static VALUE range_include(VALUE range, VALUE val);
 
 #define RANGE_BEG(r) (RSTRUCT(r)->as.ary[0])
 #define RANGE_END(r) (RSTRUCT(r)->as.ary[1])
@@ -1135,12 +1134,7 @@ range_inspect(VALUE range)
 static VALUE
 range_eqq(VALUE range, VALUE val)
 {
-    ID pred;
-    CONST_ID(pred, "include?");
-    if (rb_method_basic_definition_p(RBASIC_CLASS(range), pred)) {
-	return range_include(range, val);
-    }
-    return rb_funcall(range, pred, 1, val);
+    return rb_funcall(range, rb_intern("include?"), 1, val);
 }
 
 

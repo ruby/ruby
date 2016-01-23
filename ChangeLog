@@ -1,3 +1,53 @@
+Sat Jan 23 22:30:59 2016  K0mA  <mctj1218@gmail.com>
+
+	* test/ruby/test_array.rb (test_keep_if): Add test for
+	  Array#keep_if separate from Array#select!  [Fix GH-1218]
+
+Sat Jan 23 20:54:26 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* common.mk: revert r53633. It broke rubyci and travis.
+	  https://travis-ci.org/ruby/ruby/builds/104259623
+
+Sat Jan 23 20:10:29 2016  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* range.c (range_eqq): revert r51585 because rb_call_super() is
+	  called in range_include() and thus r51585 doesn't work when the
+	  receiver Range object consists of non linear objects such as Date
+	  objects.
+	  [ruby-core:72908] [Bug #12003]
+
+Sat Jan 23 18:37:37 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* ChangeLog: Fixing wrong time on previous commit, and adding
+	  previous commit message to svn [ci skip]
+
+Sat Jan 23 18:30:30 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* common.mk: Simplifying Unicode data file download logic to make
+	  it more reliable [Bug #12007]
+
+Sat Jan 23 16:29:42 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* tool/downloader.rb: Fixed a logical error, improved documentation
+
+Sat Jan 23 11:42:43 2016  Peter Suschlik  <ps@neopoly.de>
+
+	* README.md: Use SVG Travis badge over PNG for better quality and
+	  device support.  [Fix GH-1214] [Fix GH-1216]
+
+Sat Jan 23 11:29:16 2016  Pascal Betz  <pascal.betz@simplificator.com>
+
+	* lib/csv.rb: Update documentation of CSV header converter for
+	  r45498, [GH-575].  [Fix GH-1215]
+
+Fri Jan 22 17:36:46 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_core.h (VM_ASSERT): use RUBY_ASSERT instead of rb_bug.
+
+	* error.c (rb_assert_failure): assertion with stack dump.
+
+	* ruby_assert.h (RUBY_ASSERT): new header for the assertion.
+
 Fri Jan 22 00:25:57 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* regparse.c (fetch_name_with_level): allow non word characters

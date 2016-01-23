@@ -314,6 +314,30 @@ class TestRange < Test::Unit::TestCase
     }
   end
 
+  def test_eqq_non_linear
+    bug12003 = '[ruby-core:72908] [Bug #12003]'
+    c = Class.new {
+      attr_reader :value
+
+      def initialize(value)
+        @value = value
+      end
+
+      def succ
+        self.class.new(@value.succ)
+      end
+
+      def ==(other)
+        @value == other.value
+      end
+
+      def <=>(other)
+        @value <=> other.value
+      end
+    }
+    assert_operator(c.new(0)..c.new(10), :===, c.new(5), bug12003)
+  end
+
   def test_include
     assert_include("a".."z", "c")
     assert_not_include("a".."z", "5")

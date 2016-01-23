@@ -44,8 +44,7 @@
 
 #if VM_CHECK_MODE > 0
 #define VM_ASSERT(expr) ( \
-	LIKELY(expr) ? (void)0 : \
-	rb_bug("%s:%d assertion violation - %s", __FILE__, __LINE__, #expr))
+	RUBY_ASSERT_WHEN(VM_CHECK_MODE > 0, expr))
 #else
 #define VM_ASSERT(expr) ((void)0)
 #endif
@@ -62,6 +61,7 @@
 #include "method.h"
 #include "ruby_atomic.h"
 #include "ccan/list/list.h"
+#include "ruby_assert.h"
 
 #include "ruby/thread_native.h"
 #if   defined(_WIN32)

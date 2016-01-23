@@ -20,8 +20,8 @@ else
       end
     end
   end
-  # since open-uri internally checks ssl_ca_cert by File.directory?, to allow
-  # accept an array.
+  # since open-uri internally checks ssl_ca_cert using File.directory?,
+  # allow to accept an array.
   class <<File
     alias orig_directory? directory?
     def File.directory? files
@@ -49,12 +49,12 @@ class Downloader
   end
 
   class RubyGems < self
-    def self.download(name, dir = nil, ims = true, options = {})
+    def self.download(name, dir = nil, since = true, options = {})
       require 'rubygems'
       require 'rubygems/package'
       options[:ssl_ca_cert] = Dir.glob(File.expand_path("../lib/rubygems/ssl_certs/*.pem", File.dirname(__FILE__)))
       file = under(dir, name)
-      super("#{https}://rubygems.org/downloads/#{name}", file, nil, ims, options) or
+      super("#{https}://rubygems.org/downloads/#{name}", file, nil, since, options) or
         return false
       policy = Gem::Security::LowSecurity
       (policy = policy.dup).ui = Gem::SilentUI.new if policy.respond_to?(:'ui=')
@@ -104,20 +104,33 @@ class Downloader
     options
   end
 
-  # Downloader.download(url, name, [dir, [ims]])
+  # Downloader.download(url, name, [dir, [since]])
   #
   # Update a file from url if newer version is available.
   # Creates the file if the file doesn't yet exist; however, the
   # directory where the file is being created has to exist already.
-  # If +ims+ is false, always download url regardless of its last
-  # modified time.
+  # The +since+ parameter can take the following values, with associated meanings:
+  #  true ::
+  #    Take the last-modified time of the current file on disk, and only download
+  #    if the server has a file that was modified later. Download unconditionally
+  #    if we don't have the file yet. Default.
+  #  +some time value+ ::
+  #    Use this time value instead of the time of modification of the file on disk.
+  #  nil ::
+  #    Only download the file if it doesn't exist yet.
+  #  false ::
+  #    always download url regardless of whether we already have a file,
+  #    and regardless of modification times. (This is essentially just a waste of
+  #    network resources, except in the case that the file we have is somehow damaged.
+  #    Please note that using this recurringly might create or be seen as a
+  #    denial of service attack.)
   #
   # Example usage:
   #   download 'http://www.unicode.org/Public/UCD/latest/ucd/UnicodeData.txt',
   #            'UnicodeData.txt', 'enc/unicode/data'
-  def self.download(url, name, dir = nil, ims = true, options = {})
+  def self.download(url, name, dir = nil, since = true, options = {})
     file = under(dir, name)
-    if ims.nil? and File.exist?(file)
+    if since.nil? and File.exist?(file)
       if $VERBOSE
         $stdout.puts "#{name} already exists"
         $stdout.flush
@@ -130,24 +143,24 @@ class Downloader
       $stdout.flush
     end
     begin
-      data = url.read(options.merge(http_options(file, ims.nil? ? true : ims)))
+      data = url.read(options.merge(http_options(file, since.nil? ? true : since)))
     rescue OpenURI::HTTPError => http_error
       if http_error.message =~ /^304 / # 304 Not Modified
         if $VERBOSE
-          $stdout.puts "not modified"
+          $stdout.puts "#{name} not modified"
           $stdout.flush
         end
         return true
       end
       raise
     rescue Timeout::Error
-      if ims.nil? and File.exist?(file)
+      if since.nil? and File.exist?(file)
         puts "Request for #{url} timed out, using old version."
         return true
       end
       raise
     rescue SocketError
-      if ims.nil? and File.exist?(file)
+      if since.nil? and File.exist?(file)
         puts "No network connection, unable to download #{url}, using old version."
         return true
       end
@@ -180,7 +193,7 @@ end
 Downloader.class_variable_set(:@@https, https.freeze)
 
 if $0 == __FILE__
-  ims = true
+  since = true
   until ARGV.empty?
     case ARGV[0]
     when '-d'
@@ -192,9 +205,9 @@ if $0 == __FILE__
       prefix = ARGV[1]
       ARGV.shift
     when '-e'
-      ims = nil
+      since = nil
     when '-a'
-      ims = true
+      since = false
     when /\A-/
       abort "#{$0}: unknown option #{ARGV[0]}"
     else
@@ -211,10 +224,10 @@ if $0 == __FILE__
     ARGV.shift
     ARGV.each do |name|
       name = "#{prefix}/#{File.basename(name)}" if prefix
-      dl.download(name, destdir, ims)
+      dl.download(name, destdir, since)
     end
   else
     abort "usage: #{$0} url name" unless ARGV.size == 2
-    Downloader.download(ARGV[0], ARGV[1], destdir, ims)
+    Downloader.download(ARGV[0], ARGV[1], destdir, since)
   end
 end
