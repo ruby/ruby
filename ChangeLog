@@ -1,3 +1,7 @@
+Sun Jan 24 19:34:23 2016  Eric Wong  <e@80x24.org>
+
+	* vm_insnhelper.c (vm_check_if_namespace): tiny size reduction
+
 Sun Jan 24 18:12:36 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* common.mk: Simplifying Unicode data file download logic to make
