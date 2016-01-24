@@ -80,6 +80,37 @@ class TestIOWait < Test::Unit::TestCase
     th.join
   end
 
+  def test_wait_readable
+    assert_nil @r.wait_readable(0)
+    @w.syswrite "."
+    sleep 0.1
+    assert_equal @r, @r.wait_readable(0)
+  end
+
+  def test_wait_readable_buffered
+    @w.syswrite ".\n!"
+    assert_equal ".\n", @r.gets
+    assert_equal true, @r.wait_readable(0)
+  end
+
+  def test_wait_readable_forever
+    th = Thread.new { sleep 0.01; @w.syswrite "." }
+    assert_equal @r, @r.wait_readable
+  ensure
+    th.join
+  end
+
+  def test_wait_readable_eof
+    th = Thread.new { sleep 0.01; @w.close }
+    ret = nil
+    assert_nothing_raised(Timeout::Error) do
+      Timeout.timeout(0.1) { ret = @r.wait_readable }
+    end
+    assert_equal @r, ret
+  ensure
+    th.join
+  end
+
   def test_wait_writable
     assert_equal @w, @w.wait_writable
   end
