@@ -1,3 +1,9 @@
+Sun Jan 24 16:54:11 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/io/wait/wait.c (io_wait_readwrite): [EXPERIMENTAL] allow to
+	  wait for multiple modes, readable and writable, at once.  the
+	  arguments may change in the future.  [Feature #12013]
+
 Sat Jan 23 22:30:59 2016  K0mA  <mctj1218@gmail.com>
 
 	* test/ruby/test_array.rb (test_keep_if): Add test for

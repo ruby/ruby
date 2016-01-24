@@ -134,6 +134,18 @@ class TestIOWait < Test::Unit::TestCase
     assert_raise(IOError) { @w.wait_writable }
   end
 
+  def test_wait_readwrite
+    assert_equal @r.wait(0, :write), @r.wait(0, :read_write)
+  end
+
+  def test_wait_readwrite_timeout
+    assert_equal @w, @w.wait(0.01, :read_write)
+    written = fill_pipe
+    assert_nil @w.wait(0.01, :read_write)
+    @r.read(written)
+    assert_equal @w, @w.wait(0.01, :read_write)
+  end
+
 private
 
   def fill_pipe
