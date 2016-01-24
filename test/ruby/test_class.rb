@@ -541,7 +541,9 @@ class TestClass < Test::Unit::TestCase
     m = Module.new
     o = m.module_eval "class A\u{3042}; self; end.new"
     assert_raise_with_message(TypeError, /A\u{3042}/) {
-      o::Foo
+      EnvUtil.with_default_internal(Encoding::UTF_8) {
+        o::Foo
+      }
     }
   end
 
