@@ -537,6 +537,14 @@ class TestClass < Test::Unit::TestCase
     }
   end
 
+  def test_namescope_error_message
+    m = Module.new
+    o = m.module_eval "class A\u{3042}; self; end.new"
+    assert_raise_with_message(TypeError, /A\u{3042}/) {
+      o::Foo
+    }
+  end
+
   def test_redefinition_mismatch
     m = Module.new
     m.module_eval "A = 1"
