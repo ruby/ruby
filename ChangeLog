@@ -1,3 +1,9 @@
+Mon Jan 25 17:26:54 2016  Eric Wong  <e@80x24.org>
+
+	* ruby_assert.h (RUBY_ASSERT_WHEN): fix reference to macro name
+	* vm_core.h: include ruby_assert.h before using
+	  [ruby-core:73371]
+
 Mon Jan 25 15:55:30 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* symbol.c (sym_check_asciionly): more informative error message
