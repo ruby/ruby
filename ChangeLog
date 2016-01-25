@@ -1,3 +1,8 @@
+Tue Jan 26 07:57:28 2016  Joseph Tibbertsma  <josephtibbertsma@gmail.com>
+
+	* gc.c (RVALUE_PAGE_WB_UNPROTECTED): fix a typo of argument name.
+	  [Fix GH-1221]
+
 Mon Jan 25 17:26:54 2016  Eric Wong  <e@80x24.org>
 
 	* ruby_assert.h (RUBY_ASSERT_WHEN): fix reference to macro name
