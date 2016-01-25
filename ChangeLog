@@ -1,3 +1,9 @@
+Mon Jan 25 15:55:30 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* symbol.c (sym_check_asciionly): more informative error message
+	  with the encoding name and the inspected content.
+	  [ruby-core:73398] [Feature #12016]
+
 Mon Jan 25 09:38:26 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* test/ruby/test_string.rb: added testcase for next!, succ and succ!
