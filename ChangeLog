@@ -1,3 +1,8 @@
+Mon Jan 25 09:38:26 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* test/ruby/test_string.rb: added testcase for next!, succ and succ!
+	  [fix GH-1213] Patch by @K0mAtoru
+
 Mon Jan 25 09:32:25 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/webrick/httpservlet/filehandler.rb: fix documentation for namespace.
