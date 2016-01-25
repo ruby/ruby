@@ -1,3 +1,8 @@
+Mon Jan 25 09:32:25 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/webrick/httpservlet/filehandler.rb: fix documentation for namespace.
+	  [fix GH-1219][ci skip] Patch by @leafac
+
 Sun Jan 24 19:34:23 2016  Eric Wong  <e@80x24.org>
 
 	* vm_insnhelper.c (vm_check_if_namespace): tiny size reduction
