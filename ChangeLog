@@ -1,3 +1,14 @@
+Tue Jan 26 15:21:37 2016  Eric Wong  <e@80x24.org>
+
+	* compile.c (caller_location): use rb_fstring_cstr for "<compiled>"
+	  (it is converted to fstring anyways inside rb_iseq_new_with_opt)
+	* iseq.c (iseqw_s_compile): ditto
+	* iseq.c (rb_iseq_new_main): use rb_fstring_cstr for "<main>"
+	* vm.c (Init_VM): ditto, share with with above
+	* iseq.c (iseqw_s_compile_file): rb_fstring before rb_io_t->pathv
+	  share "<main>" with above
+	* vm.c (rb_binding_add_dynavars): fstring "<temp>" immediately
+
 Tue Jan 26 15:14:01 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* compile.c (iseq_peephole_optimize): don't apply tailcall

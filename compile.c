@@ -6748,7 +6748,7 @@ caller_location(VALUE *path, VALUE *absolute_path)
 	return line;
     }
     else {
-	*path = rb_str_new2("<compiled>");
+	*path = rb_fstring_cstr("<compiled>");
 	*absolute_path = *path;
 	return 1;
     }
