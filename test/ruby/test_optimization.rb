@@ -275,6 +275,22 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_equal(123, delay { 123 }.call, bug6901)
   end
 
+  def just_yield
+    yield
+  end
+
+  def test_tailcall_inhibited_by_block
+    assert_separately([], <<~'end;')
+      def just_yield
+        yield
+      end
+      iseq = RubyVM::InstructionSequence
+      result = iseq.compile("just_yield {:ok}", __FILE__, __FILE__, __LINE__,
+                            tailcall_optimization: true).eval
+      assert_equal(:ok, result)
+    end;
+  end
+
   class Bug10557
     def [](_)
       block_given?

@@ -2248,8 +2248,12 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 
 	if (piobj) {
 	    struct rb_call_info *ci = (struct rb_call_info *)piobj->operands[0];
-	    rb_iseq_t *blockiseq = (rb_iseq_t *)piobj->operands[1];
-	    if (blockiseq == 0) {
+	    if (piobj->insn_id == BIN(send) || piobj->insn_id == BIN(invokesuper)) {
+		if (piobj->operands[2] == 0) { /* no blockiseq */
+		    ci->flag |= VM_CALL_TAILCALL;
+		}
+	    }
+	    else {
 		ci->flag |= VM_CALL_TAILCALL;
 	    }
 	}
