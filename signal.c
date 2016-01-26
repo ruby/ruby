@@ -485,6 +485,12 @@ rb_f_kill(int argc, const VALUE *argv)
 #ifdef SIGKILL
 		  case SIGKILL:
 #endif
+#ifdef SIGILL
+		  case SIGILL:
+#endif
+#ifdef SIGFPE
+		  case SIGFPE:
+#endif
 #ifdef SIGSTOP
 		  case SIGSTOP:
 #endif
