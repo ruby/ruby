@@ -30,7 +30,7 @@ Tue Jan 26 14:26:46 2016  Eric Wong  <e@80x24.org>
 Tue Jan 26 13:08:34 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* signal.c (rb_f_kill): should immediately deliver reserved
-	  signals SIGILL and SIGFPE, ont only SIGSEGV and SIGBUS.
+	  signals SIGILL and SIGFPE, not only SIGSEGV and SIGBUS.
 
 Tue Jan 26 07:57:28 2016  Joseph Tibbertsma  <josephtibbertsma@gmail.com>
 
