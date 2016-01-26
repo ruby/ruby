@@ -1,3 +1,8 @@
+Tue Jan 26 13:08:34 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* signal.c (rb_f_kill): should immediately deliver reserved
+	  signals SIGILL and SIGFPE, ont only SIGSEGV and SIGBUS.
+
 Tue Jan 26 07:57:28 2016  Joseph Tibbertsma  <josephtibbertsma@gmail.com>
 
 	* gc.c (RVALUE_PAGE_WB_UNPROTECTED): fix a typo of argument name.
