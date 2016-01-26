@@ -1,3 +1,8 @@
+Tue Jan 26 19:36:15 2016  Aggelos Avgerinos  <evaggelos.avgerinos@gmail.com>
+
+	* array.c (permute0, rpermute0): [DOC] Substitute indexes ->
+	  indices in documentation for consistency.  [Fix GH-1222]
+
 Tue Jan 26 15:21:37 2016  Eric Wong  <e@80x24.org>
 
 	* compile.c (caller_location): use rb_fstring_cstr for "<compiled>"

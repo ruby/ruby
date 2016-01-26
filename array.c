@@ -4828,8 +4828,8 @@ yield_indexed_values(const VALUE values, const long r, const long *const p)
 /*
  * Compute permutations of +r+ elements of the set <code>[0..n-1]</code>.
  *
- * When we have a complete permutation of array indexes, copy the values
- * at those indexes into a new array and yield that array.
+ * When we have a complete permutation of array indices, copy the values
+ * at those indices into a new array and yield that array.
  *
  * n: the size of the set
  * r: the number of elements in each permutation
@@ -5068,8 +5068,8 @@ rb_ary_combination(VALUE ary, VALUE num)
  * Compute repeated permutations of +r+ elements of the set
  * <code>[0..n-1]</code>.
  *
- * When we have a complete repeated permutation of array indexes, copy the
- * values at those indexes into a new array and yield that array.
+ * When we have a complete repeated permutation of array indices, copy the
+ * values at those indices into a new array and yield that array.
  *
  * n: the size of the set
  * r: the number of elements in each permutation
