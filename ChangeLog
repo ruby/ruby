@@ -1,3 +1,8 @@
+Tue Jan 26 14:26:46 2016  Eric Wong  <e@80x24.org>
+
+	* signal.c (sig_list): use fstring for hash key
+	* test/ruby/test_signal.rb (test_signal_list_dedupe_keys): added
+
 Tue Jan 26 13:08:34 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* signal.c (rb_f_kill): should immediately deliver reserved

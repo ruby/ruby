@@ -1347,7 +1347,7 @@ sig_list(void)
     const struct signals *sigs;
 
     for (sigs = siglist; sigs->signm; sigs++) {
-	rb_hash_aset(h, rb_str_new2(sigs->signm), INT2FIX(sigs->signo));
+	rb_hash_aset(h, rb_fstring_cstr(sigs->signm), INT2FIX(sigs->signo));
     }
     return h;
 }
