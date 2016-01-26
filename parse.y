@@ -868,7 +868,7 @@ static void ripper_compile_error(struct parser_params*, const char *fmt, ...);
 # define WARN_I(i) i
 # define PRIsWARN PRIsVALUE
 # define WARN_ARGS(fmt,n) WARN_ARGS_L(ruby_sourceline,fmt,n)
-# define WARN_ARGS_L(l,fmt,n) ruby_sourcefile, (l), (fmt)
+# define WARN_ARGS_L(l,fmt,n) disp_ruby_sourcefile, (FIX_LINE(l)), (fmt)
 # define WARN_CALL rb_compile_warn
 # define WARNING_ARGS(fmt,n) WARN_ARGS(fmt,n)
 # define WARNING_ARGS_L(l,fmt,n) WARN_ARGS_L(l,fmt,n)
@@ -6874,7 +6874,7 @@ parser_get_bool(struct parser_params *parser, const char *name, const char *val)
 	}
 	break;
     }
-    rb_compile_warning(ruby_sourcefile, ruby_sourceline, "invalid value for %s: %s", name, val);
+    rb_compile_warning(disp_ruby_sourcefile, disp_ruby_sourceline, "invalid value for %s: %s", name, val);
     return -1;
 }
 
@@ -8615,14 +8615,14 @@ fixpos(NODE *node, NODE *orig)
 static void
 parser_warning(struct parser_params *parser, NODE *node, const char *mesg)
 {
-    rb_compile_warning(ruby_sourcefile, nd_line(node), "%s", mesg);
+    rb_compile_warning(disp_ruby_sourcefile, FIX_LINE(nd_line(node)), "%s", mesg);
 }
 #define parser_warning(node, mesg) parser_warning(parser, (node), (mesg))
 
 static void
 parser_warn(struct parser_params *parser, NODE *node, const char *mesg)
 {
-    rb_compile_warn(ruby_sourcefile, nd_line(node), "%s", mesg);
+    rb_compile_warn(disp_ruby_sourcefile, FIX_LINE(nd_line(node)), "%s", mesg);
 }
 #define parser_warn(node, mesg) parser_warn(parser, (node), (mesg))
 
@@ -10072,7 +10072,7 @@ remove_duplicate_keys(struct parser_params *parser, NODE *hash)
 	st_data_t data;
 	if (nd_type(head) == NODE_LIT &&
 	    st_lookup(literal_keys, (key = head->nd_lit), &data)) {
-	    rb_compile_warn(ruby_sourcefile, nd_line((NODE *)data),
+	    rb_compile_warn(disp_ruby_sourcefile, FIX_LINE(nd_line((NODE *)data)),
 			    "key %+"PRIsVALUE" is duplicated and overwritten on line %d",
 			    head->nd_lit, nd_line(head));
 	    head = ((NODE *)data)->nd_next;

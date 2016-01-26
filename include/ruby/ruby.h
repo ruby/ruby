@@ -563,7 +563,7 @@ volatile VALUE *rb_gc_guarded_ptr_val(volatile VALUE *ptr, VALUE val);
 #endif
 
 #ifndef FILE_CNT_BITS
-  #define FILE_CNT_BITS 4
+  #define FILE_CNT_BITS 8
 #endif
 
 void rb_check_type(VALUE,int);

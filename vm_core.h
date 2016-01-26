@@ -267,7 +267,7 @@ typedef struct rb_iseq_location_struct {
     VALUE base_label;
     VALUE label;
     VALUE first_lineno; /* TODO: may be unsigned short */
-    const VALUE path_array;
+    VALUE path_array;
 } rb_iseq_location_t;
 
 struct rb_iseq_constant_body {
