@@ -1,3 +1,9 @@
+Wed Jan 27 16:25:54 2016  Koichi ITO  <koic.ito@gmail.com>
+
+	* array.c (rb_ary_dig): [DOC] fix the exception class to be raised
+	  when intermediate object does not have dig method.  TypeError
+	  will be raised now.  [Fix GH-1224]
+
 Tue Jan 26 19:36:15 2016  Aggelos Avgerinos  <evaggelos.avgerinos@gmail.com>
 
 	* array.c (permute0, rpermute0): [DOC] Substitute indexes ->
