@@ -268,7 +268,11 @@ class TestFile < Test::Unit::TestCase
       realdir = File.realpath(tmpdir)
       open(File.join(tmpdir, tst), "w") {}
       a = File.join(tmpdir, "x")
-      File.symlink(tst, a)
+      begin
+        File.symlink(tst, a)
+      rescue Errno::EACCES
+        skip "need privilege"
+      end
       assert_equal(File.join(realdir, tst), File.realpath(a))
       File.unlink(a)
 
