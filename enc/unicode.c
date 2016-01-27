@@ -72,7 +72,7 @@ static const unsigned short EncUNICODE_ISO_8859_1_CtypeTable[256] = {
 };
 
 /* use bottom bytes for actual code point count; 3 bits is more than enough */
-#define OnigCodePointCount(n) ((n)&0x111)
+#define OnigCodePointCount(n) ((n)&0x7)
 
 typedef struct {
   int n;

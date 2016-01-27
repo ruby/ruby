@@ -1,3 +1,7 @@
+Wed Jan 27 18:53:40 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode.c: Fixed bit mask in macro OnigCodePointCount
+
 Wed Jan 27 17:54:42 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/unicode.c: Protect code point count by macro, in order to
