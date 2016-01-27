@@ -442,7 +442,8 @@ rb_iseq_new_main(NODE *node, VALUE path, VALUE absolute_path)
 {
     rb_thread_t *th = GET_THREAD();
     const rb_iseq_t *parent = th->base_block->iseq;
-    return rb_iseq_new_with_opt(node, rb_str_new2("<main>"), path, absolute_path, INT2FIX(0),
+    return rb_iseq_new_with_opt(node, rb_fstring_cstr("<main>"),
+				path, absolute_path, INT2FIX(0),
 				parent, ISEQ_TYPE_MAIN, &COMPILE_OPTION_DEFAULT);
 }
 
@@ -774,7 +775,7 @@ iseqw_s_compile(int argc, VALUE *argv, VALUE self)
     rb_secure(1);
 
     rb_scan_args(argc, argv, "14", &src, &file, &path, &line, &opt);
-    if (NIL_P(file)) file = rb_str_new2("<compiled>");
+    if (NIL_P(file)) file = rb_fstring_cstr("<compiled>");
     if (NIL_P(line)) line = INT2FIX(1);
 
     return iseqw_new(rb_iseq_compile_with_option(src, file, path, line, 0, opt));
@@ -813,6 +814,7 @@ iseqw_s_compile_file(int argc, VALUE *argv, VALUE self)
     rb_secure(1);
     rb_scan_args(argc, argv, "11", &file, &opt);
     FilePathValue(file);
+    file = rb_fstring(file); /* rb_io_t->pathv gets frozen anyways */
     fname = StringValueCStr(file);
 
     f = rb_file_open_str(file, "r");
@@ -824,9 +826,10 @@ iseqw_s_compile_file(int argc, VALUE *argv, VALUE self)
 
     make_compile_option(&option, opt);
 
-    return iseqw_new(rb_iseq_new_with_opt(node, rb_str_new2("<main>"), file,
-					  rb_realpath_internal(Qnil, file, 1), line, NULL,
-					  ISEQ_TYPE_TOP, &option));
+    return iseqw_new(rb_iseq_new_with_opt(node, rb_fstring_cstr("<main>"),
+					  file,
+					  rb_realpath_internal(Qnil, file, 1),
+					  line, NULL, ISEQ_TYPE_TOP, &option));
 }
 
 /*

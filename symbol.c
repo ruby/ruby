@@ -430,7 +430,8 @@ sym_check_asciionly(VALUE str)
     if (!rb_enc_asciicompat(rb_enc_get(str))) return FALSE;
     switch (rb_enc_str_coderange(str)) {
       case ENC_CODERANGE_BROKEN:
-	rb_raise(rb_eEncodingError, "invalid encoding symbol");
+	rb_raise(rb_eEncodingError, "invalid symbol in encoding %s :%+"PRIsVALUE,
+		 rb_enc_name(rb_enc_get(str)), str);
       case ENC_CODERANGE_7BIT:
 	return TRUE;
     }

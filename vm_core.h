@@ -42,6 +42,8 @@
 #define VMDEBUG 3
 #endif
 
+#include "ruby_assert.h"
+
 #if VM_CHECK_MODE > 0
 #define VM_ASSERT(expr) ( \
 	RUBY_ASSERT_WHEN(VM_CHECK_MODE > 0, expr))
@@ -61,7 +63,6 @@
 #include "method.h"
 #include "ruby_atomic.h"
 #include "ccan/list/list.h"
-#include "ruby_assert.h"
 
 #include "ruby/thread_native.h"
 #if   defined(_WIN32)

@@ -1,3 +1,79 @@
+Tue Jan 26 19:36:15 2016  Aggelos Avgerinos  <evaggelos.avgerinos@gmail.com>
+
+	* array.c (permute0, rpermute0): [DOC] Substitute indexes ->
+	  indices in documentation for consistency.  [Fix GH-1222]
+
+Tue Jan 26 15:21:37 2016  Eric Wong  <e@80x24.org>
+
+	* compile.c (caller_location): use rb_fstring_cstr for "<compiled>"
+	  (it is converted to fstring anyways inside rb_iseq_new_with_opt)
+	* iseq.c (iseqw_s_compile): ditto
+	* iseq.c (rb_iseq_new_main): use rb_fstring_cstr for "<main>"
+	* vm.c (Init_VM): ditto, share with with above
+	* iseq.c (iseqw_s_compile_file): rb_fstring before rb_io_t->pathv
+	  share "<main>" with above
+	* vm.c (rb_binding_add_dynavars): fstring "<temp>" immediately
+
+Tue Jan 26 15:14:01 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* compile.c (iseq_peephole_optimize): don't apply tailcall
+	  optimization to send/invokesuper instructions with blockiseq.
+	  This is a follow-up to the changes in r51903; blockiseq is now
+	  the third operand of send/invokesuper instructions.
+	  [ruby-core:73413] [Bug #12018]
+
+Tue Jan 26 14:26:46 2016  Eric Wong  <e@80x24.org>
+
+	* signal.c (sig_list): use fstring for hash key
+	* test/ruby/test_signal.rb (test_signal_list_dedupe_keys): added
+
+Tue Jan 26 13:08:34 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* signal.c (rb_f_kill): should immediately deliver reserved
+	  signals SIGILL and SIGFPE, not only SIGSEGV and SIGBUS.
+
+Tue Jan 26 07:57:28 2016  Joseph Tibbertsma  <josephtibbertsma@gmail.com>
+
+	* gc.c (RVALUE_PAGE_WB_UNPROTECTED): fix a typo of argument name.
+	  [Fix GH-1221]
+
+Mon Jan 25 17:26:54 2016  Eric Wong  <e@80x24.org>
+
+	* ruby_assert.h (RUBY_ASSERT_WHEN): fix reference to macro name
+	* vm_core.h: include ruby_assert.h before using
+	  [ruby-core:73371]
+
+Mon Jan 25 15:55:30 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* symbol.c (sym_check_asciionly): more informative error message
+	  with the encoding name and the inspected content.
+	  [ruby-core:73398] [Feature #12016]
+
+Mon Jan 25 09:38:26 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* test/ruby/test_string.rb: added testcase for next!, succ and succ!
+	  [fix GH-1213] Patch by @K0mAtoru
+
+Mon Jan 25 09:32:25 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/webrick/httpservlet/filehandler.rb: fix documentation for namespace.
+	  [fix GH-1219][ci skip] Patch by @leafac
+
+Sun Jan 24 19:34:23 2016  Eric Wong  <e@80x24.org>
+
+	* vm_insnhelper.c (vm_check_if_namespace): tiny size reduction
+
+Sun Jan 24 18:12:36 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* common.mk: Simplifying Unicode data file download logic to make
+	  it more reliable (including additional fix not in r53633) [Bug #12007]
+
+Sun Jan 24 16:54:11 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/io/wait/wait.c (io_wait_readwrite): [EXPERIMENTAL] allow to
+	  wait for multiple modes, readable and writable, at once.  the
+	  arguments may change in the future.  [Feature #12013]
+
 Sat Jan 23 22:30:59 2016  K0mA  <mctj1218@gmail.com>
 
 	* test/ruby/test_array.rb (test_keep_if): Add test for

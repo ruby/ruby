@@ -117,8 +117,6 @@ io_ready_p(VALUE io)
 
 /*
  * call-seq:
- *   io.wait          -> IO, true or nil
- *   io.wait(timeout) -> IO, true or nil
  *   io.wait_readable          -> IO, true or nil
  *   io.wait_readable(timeout) -> IO, true or nil
  *
@@ -168,6 +166,79 @@ io_wait_writable(int argc, VALUE *argv, VALUE io)
     return Qnil;
 }
 
+static int
+wait_mode_sym(VALUE mode)
+{
+    if (mode == ID2SYM(rb_intern("r"))) {
+	return RB_WAITFD_IN;
+    }
+    if (mode == ID2SYM(rb_intern("read"))) {
+	return RB_WAITFD_IN;
+    }
+    if (mode == ID2SYM(rb_intern("readable"))) {
+	return RB_WAITFD_IN;
+    }
+    if (mode == ID2SYM(rb_intern("w"))) {
+	return RB_WAITFD_OUT;
+    }
+    if (mode == ID2SYM(rb_intern("write"))) {
+	return RB_WAITFD_OUT;
+    }
+    if (mode == ID2SYM(rb_intern("writable"))) {
+	return RB_WAITFD_OUT;
+    }
+    if (mode == ID2SYM(rb_intern("rw"))) {
+	return RB_WAITFD_IN|RB_WAITFD_OUT;
+    }
+    if (mode == ID2SYM(rb_intern("read_write"))) {
+	return RB_WAITFD_IN|RB_WAITFD_OUT;
+    }
+    if (mode == ID2SYM(rb_intern("readable_writable"))) {
+	return RB_WAITFD_IN|RB_WAITFD_OUT;
+    }
+    rb_raise(rb_eArgError, "unsupported mode: %"PRIsVALUE, mode);
+    return 0;
+}
+
+/*
+ * call-seq:
+ *   io.wait(timeout = nil, mode = :read) -> IO, true or nil
+ *
+ * Waits until IO is readable or writable without blocking and returns
+ * +self+, or +nil+ when times out.
+ * Returns +true+ immediately when buffered data is available.
+ * Optional parameter +mode+ is one of +:read+, +:write+, or
+ * +:read_write+.
+ */
+
+static VALUE
+io_wait_readwrite(int argc, VALUE *argv, VALUE io)
+{
+    rb_io_t *fptr;
+    struct timeval timerec;
+    struct timeval *tv = NULL;
+    int event = 0;
+    int i;
+
+    GetOpenFile(io, fptr);
+    for (i = 0; i < argc; ++i) {
+	if (SYMBOL_P(argv[i])) {
+	    event |= wait_mode_sym(argv[i]);
+	}
+	else {
+	    *(tv = &timerec) = rb_time_interval(argv[i]);
+	}
+    }
+    /* rb_time_interval() and might_mode() might convert the argument */
+    rb_io_check_closed(fptr);
+    if (!event) event = RB_WAITFD_IN;
+    if ((event & RB_WAITFD_IN) && rb_io_read_pending(fptr))
+	return Qtrue;
+    if (wait_for_single_fd(fptr, event, tv))
+	return io;
+    return Qnil;
+}
+
 /*
  * IO wait methods
  */
@@ -177,7 +248,7 @@ Init_wait(void)
 {
     rb_define_method(rb_cIO, "nread", io_nread, 0);
     rb_define_method(rb_cIO, "ready?", io_ready_p, 0);
-    rb_define_method(rb_cIO, "wait", io_wait_readable, -1);
+    rb_define_method(rb_cIO, "wait", io_wait_readwrite, -1);
     rb_define_method(rb_cIO, "wait_readable", io_wait_readable, -1);
     rb_define_method(rb_cIO, "wait_writable", io_wait_writable, -1);
 }

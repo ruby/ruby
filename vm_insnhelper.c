@@ -643,11 +643,8 @@ vm_get_const_base(const VALUE *ep)
 static inline void
 vm_check_if_namespace(VALUE klass)
 {
-    VALUE str;
     if (!RB_TYPE_P(klass, T_CLASS) && !RB_TYPE_P(klass, T_MODULE)) {
-	str = rb_inspect(klass);
-	rb_raise(rb_eTypeError, "%s is not a class/module",
-		 StringValuePtr(str));
+	rb_raise(rb_eTypeError, "%+"PRIsVALUE" is not a class/module", klass);
     }
 }
 

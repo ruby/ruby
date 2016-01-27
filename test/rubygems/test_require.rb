@@ -59,7 +59,7 @@ class TestGemRequire < Gem::TestCase
 
     install_specs c1, c2, b1, a1
 
-    dir = Dir.mktmpdir
+    dir = Dir.mktmpdir("test_require", @tempdir)
     dash_i_arg = File.join dir, 'lib'
 
     c_rb = File.join dash_i_arg, 'b', 'c.rb'

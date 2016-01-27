@@ -301,4 +301,10 @@ EOS
       assert_ruby_status(['-e', 'Process.kill(:CONT, $$)'])
     end
   end if Process.respond_to?(:kill)
+
+  def test_signal_list_dedupe_keys
+    a = Signal.list.keys.map(&:object_id).sort
+    b = Signal.list.keys.map(&:object_id).sort
+    assert_equal a, b
+  end
 end
