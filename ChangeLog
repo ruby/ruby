@@ -1,3 +1,9 @@
+Wed Jan 27 17:54:42 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode.c: Protect code point count by macro, in order to
+	  be able to use the remaining bits for flags.
+	  (with Kimihito Matsui)
+
 Wed Jan 27 16:34:35 2016  boshan  <boshan@subsplash.com>
 
 	* lib/tempfile.rb (Tempfile#initialize): [DOC] the first parameter
