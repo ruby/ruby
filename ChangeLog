@@ -1,6 +1,6 @@
 Wed Jan 27 21:03:45 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
-	* test/-ext-/string/test_capacity.rb: Added missing library. 
+	* test/-ext-/string/test_capacity.rb: Added missing library.
 
 Wed Jan 27 18:53:40 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
