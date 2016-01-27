@@ -80,7 +80,7 @@ require 'tmpdir'
 # mutex.
 class Tempfile < DelegateClass(File)
   # call-seq:
-  #    new(basename, [tmpdir = Dir.tmpdir], [options])
+  #    new(basename = "", [tmpdir = Dir.tmpdir], [options])
   #
   # Creates a temporary file with permissions 0600 (= only readable and
   # writable by the owner) and opens it with mode "w+".

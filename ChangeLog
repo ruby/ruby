@@ -1,3 +1,9 @@
+Wed Jan 27 16:34:35 2016  boshan  <boshan@subsplash.com>
+
+	* lib/tempfile.rb (Tempfile#initialize): [DOC] the first parameter
+	  `basename` is optional and defaulted to an empty string since
+	  [GH-523].  [Fix GH-1225]
+
 Wed Jan 27 16:25:54 2016  Koichi ITO  <koic.ito@gmail.com>
 
 	* array.c (rb_ary_dig): [DOC] fix the exception class to be raised
