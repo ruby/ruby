@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 require 'test/unit'
 require '-test-/string'
+require 'rbconfig/sizeof'
 
 class Test_StringCapacity < Test::Unit::TestCase
   def test_capacity_embeded
