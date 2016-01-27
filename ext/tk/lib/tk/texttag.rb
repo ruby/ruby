@@ -6,7 +6,7 @@ require 'tk'
 require 'tk/text'
 require 'tk/tagfont'
 
-class TkTextTag<TkObject
+class TkTextTag < TkObject
   include TkTreatTagFont
   include Tk::Text::IndexModMethods
 
@@ -252,7 +252,7 @@ class TkTextTag<TkObject
 end
 TktTag = TkTextTag
 
-class TkTextNamedTag<TkTextTag
+class TkTextNamedTag < TkTextTag
   def self.new(parent, name, *args)
     tagobj = nil
     TTagID_TBL.mutex.synchronize{
@@ -314,7 +314,7 @@ class TkTextNamedTag<TkTextTag
 end
 TktNamedTag = TkTextNamedTag
 
-class TkTextTagSel<TkTextNamedTag
+class TkTextTagSel < TkTextNamedTag
   def self.new(parent, *args)
     super(parent, 'sel', *args)
   end

@@ -4916,7 +4916,7 @@ module TkConfigMethod
   end
 end
 
-class TkObject<TkKernel
+class TkObject < TkKernel
   extend  TkCore
   include Tk
   include TkConfigMethod
@@ -5037,7 +5037,7 @@ class TkObject<TkKernel
 end
 
 
-class TkWindow<TkObject
+class TkWindow < TkObject
   include TkWinfo
   extend TkBindCore
   include Tk::Wm_for_General

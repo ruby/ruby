@@ -87,7 +87,7 @@ class TkBindTag
 end
 
 
-class TkBindTagAll<TkBindTag
+class TkBindTagAll < TkBindTag
   def TkBindTagAll.new(*args, &b)
     $stderr.puts "Warning: TkBindTagALL is obsolete. Use TkBindTag::ALL\n"
 
@@ -97,7 +97,7 @@ class TkBindTagAll<TkBindTag
 end
 
 
-class TkDatabaseClass<TkBindTag
+class TkDatabaseClass < TkBindTag
 =begin
   def self.new(name, *args, &b)
     BTagID_TBL.mutex.synchronize{

@@ -5,7 +5,7 @@
 require 'tk'
 require 'tk/text'
 
-class TkTextWindow<TkObject
+class TkTextWindow < TkObject
   include Tk::Text::IndexModMethods
 
   def initialize(parent, index, keys = {})

@@ -5,7 +5,7 @@
 
 require 'tk'
 
-class TkImage<TkObject
+class TkImage < TkObject
   include Tk
 
   TkCommandNames = ['image'.freeze].freeze
@@ -116,7 +116,7 @@ class TkImage<TkObject
   end
 end
 
-class TkBitmapImage<TkImage
+class TkBitmapImage < TkImage
   def __strval_optkeys
     super() + ['maskdata', 'maskfile']
   end
@@ -134,7 +134,7 @@ end
 #
 # This class documentation is a copy from the original Tcl/Tk at
 # http://www.tcl.tk/man/tcl8.5/TkCmd/photo.htm with some rewritten parts.
-class TkPhotoImage<TkImage
+class TkPhotoImage < TkImage
   NullArgOptionKeys = [ "shrink", "grayscale" ]
 
   def _photo_hash_kv(keys)

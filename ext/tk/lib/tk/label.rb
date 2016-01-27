@@ -4,7 +4,7 @@
 #
 require 'tk'
 
-class Tk::Label<TkWindow
+class Tk::Label < TkWindow
   TkCommandNames = ['label'.freeze].freeze
   WidgetClassName = 'Label'.freeze
   WidgetClassNames[WidgetClassName] ||= self

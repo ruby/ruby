@@ -5,7 +5,7 @@
 require 'tk'
 require 'tk/text'
 
-class TkTextImage<TkObject
+class TkTextImage < TkObject
   include Tk::Text::IndexModMethods
 
   def initialize(parent, index, keys)

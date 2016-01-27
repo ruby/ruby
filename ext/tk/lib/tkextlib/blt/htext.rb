@@ -9,7 +9,7 @@ require 'tk/itemconfig.rb'
 require 'tkextlib/blt.rb'
 
 module Tk::BLT
-  class Htext<TkWindow
+  class Htext < TkWindow
     Htext_Var = TkVarAccess.new_hash('htext')
     Htext_Widget = TkVarAccess.new('htext(widget)', :window)
     Htext_File = TkVarAccess.new('htext(file)')

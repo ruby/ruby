@@ -45,7 +45,7 @@ module TkMenuEntryConfig
   private :itemconfigure, :itemconfiginfo, :current_itemconfiginfo
 end
 
-class Tk::Menu<TkWindow
+class Tk::Menu < TkWindow
   include Wm
   include TkMenuEntryConfig
   extend TkMenuSpec
@@ -415,7 +415,7 @@ class << Tk::Menu::TkInternalFunction
   end
 end
 
-class Tk::MenuClone<Tk::Menu
+class Tk::MenuClone < Tk::Menu
 =begin
   def initialize(parent, type=None)
     widgetname = nil
@@ -502,7 +502,7 @@ end
 TkSystemMenu = Tk::SystemMenu
 
 
-class Tk::SysMenu_Help<Tk::Menu
+class Tk::SysMenu_Help < Tk::Menu
   # for all platform
   include Tk::SystemMenu
   SYSMENU_NAME = 'help'
@@ -513,7 +513,7 @@ Tk.__set_loaded_toplevel_aliases__('tk/menu.rb', :Tk, Tk::SysMenu_Help,
                                    :TkSysMenu_Help)
 
 
-class Tk::SysMenu_System<Tk::Menu
+class Tk::SysMenu_System < Tk::Menu
   # for Windows
   include Tk::SystemMenu
   SYSMENU_NAME = 'system'
@@ -524,7 +524,7 @@ Tk.__set_loaded_toplevel_aliases__('tk/menu.rb', :Tk, Tk::SysMenu_System,
                                    :TkSysMenu_System)
 
 
-class Tk::SysMenu_Apple<Tk::Menu
+class Tk::SysMenu_Apple < Tk::Menu
   # for Macintosh
   include Tk::SystemMenu
   SYSMENU_NAME = 'apple'
@@ -535,7 +535,7 @@ Tk.__set_loaded_toplevel_aliases__('tk/menu.rb', :Tk, Tk::SysMenu_Apple,
                                    :TkSysMenu_Apple)
 
 
-class Tk::Menubutton<Tk::Label
+class Tk::Menubutton < Tk::Label
   TkCommandNames = ['menubutton'.freeze].freeze
   WidgetClassName = 'Menubutton'.freeze
   WidgetClassNames[WidgetClassName] ||= self
@@ -580,10 +580,10 @@ Tk.__set_loaded_toplevel_aliases__('tk/menu.rb', :Tk, Tk::Menubutton,
                                    :TkMenubutton, :TkMenuButton)
 
 
-class Tk::OptionMenubutton<Tk::Menubutton
+class Tk::OptionMenubutton < Tk::Menubutton
   TkCommandNames = ['tk_optionMenu'.freeze].freeze
 
-  class OptionMenu<TkMenu
+  class OptionMenu < TkMenu
     def initialize(path)  #==> return value of tk_optionMenu
       @path = path
       #TkComm::Tk_WINDOWS[@path] = self

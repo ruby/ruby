@@ -7,7 +7,7 @@
 require 'tk'
 require 'tk/listbox'
 
-class TkScrollbox<Tk::Listbox
+class TkScrollbox < Tk::Listbox
   include TkComposite
   def initialize_composite(keys=nil)
     #list = Tk::Listbox.new(@frame)

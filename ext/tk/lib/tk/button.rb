@@ -5,7 +5,7 @@
 require 'tk'
 require 'tk/label'
 
-class Tk::Button<Tk::Label
+class Tk::Button < Tk::Label
   TkCommandNames = ['button'.freeze].freeze
   WidgetClassName = 'Button'.freeze
   WidgetClassNames[WidgetClassName] ||= self

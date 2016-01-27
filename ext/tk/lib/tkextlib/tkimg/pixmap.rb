@@ -33,7 +33,7 @@ module Tk
   end
 end
 
-class TkPixmapImage<TkImage
+class TkPixmapImage < TkImage
   def self.version
     Tk::Img::PIXMAP.version
   end

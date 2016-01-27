@@ -272,7 +272,7 @@ end
 
 # menu
 
-class TkColorMenuFrame<TkFrame
+class TkColorMenuFrame < TkFrame
   def initialize(parent)
     super(parent,
 	  "relief"=>"raised",
@@ -332,7 +332,7 @@ end
 
 
 # bottom frame
-class TkColorBotFrame<TkFrame
+class TkColorBotFrame < TkFrame
   def initialize(parent)
     super(parent,
 	  "relief"=> "raised",
@@ -358,7 +358,7 @@ end
 
 
 # left side frame of middle level
-class TkColorMiddleLeftFrame<TkFrame
+class TkColorMiddleLeftFrame < TkFrame
   def initialize(parent)
     super(parent)
 
@@ -402,7 +402,7 @@ end
 
 
 # middle frame of middle level
-class TkColorMiddleMiddleFrame<TkFrame
+class TkColorMiddleMiddleFrame < TkFrame
   attr_reader :scale1, :scale2, :scale3
 
   def initialize(parent)
@@ -452,7 +452,7 @@ class TkColorMiddleMiddleFrame<TkFrame
 end
 
 
-class TkColorMiddleRightFrame<TkFrame
+class TkColorMiddleRightFrame < TkFrame
   attr_reader :swatch
 
   def initialize(parent)
@@ -478,7 +478,7 @@ end
 
 
 # middle level frame
-class TkColorMiddleFrame<TkFrame
+class TkColorMiddleFrame < TkFrame
   attr_reader :left, :middle, :right
 
   def initialize(parent)
@@ -500,7 +500,7 @@ class TkColorMiddleFrame<TkFrame
 end
 
 
-class TkColor<TkRoot
+class TkColor < TkRoot
   attr_reader :menu, :bottom, :middle
 
   def initialize(*args)

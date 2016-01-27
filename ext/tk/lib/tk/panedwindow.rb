@@ -4,7 +4,7 @@
 #
 require 'tk'
 
-class Tk::PanedWindow<TkWindow
+class Tk::PanedWindow < TkWindow
   TkCommandNames = ['panedwindow'.freeze].freeze
   WidgetClassName = 'Panedwindow'.freeze
   WidgetClassNames[WidgetClassName] ||= self

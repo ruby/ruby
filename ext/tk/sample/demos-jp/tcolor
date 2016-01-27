@@ -279,7 +279,7 @@ end
 
 # tcolor用のメニュー
 
-class TkColorMenuFrame<TkFrame
+class TkColorMenuFrame < TkFrame
   def initialize(parent)
     super(parent,
 	  "relief"=>"raised",
@@ -339,7 +339,7 @@ end
 
 
 # 下部のフレームのためのクラス
-class TkColorBotFrame<TkFrame
+class TkColorBotFrame < TkFrame
   def initialize(parent)
     super(parent,
 	  "relief"=> "raised",
@@ -365,7 +365,7 @@ end
 
 
 # 中段左のフレーム
-class TkColorMiddleLeftFrame<TkFrame
+class TkColorMiddleLeftFrame < TkFrame
   def initialize(parent)
     super(parent)
 
@@ -409,7 +409,7 @@ end
 
 
 # 中段中央のフレーム
-class TkColorMiddleMiddleFrame<TkFrame
+class TkColorMiddleMiddleFrame < TkFrame
   # @scale1,@scale2,@scale3を外部から参照のみ許可する。(変更不可)
   attr_reader :scale1, :scale2, :scale3
 
@@ -460,7 +460,7 @@ class TkColorMiddleMiddleFrame<TkFrame
 end
 
 
-class TkColorMiddleRightFrame<TkFrame
+class TkColorMiddleRightFrame < TkFrame
   attr_reader :swatch
 
   def initialize(parent)
@@ -486,7 +486,7 @@ end
 
 
 # 中段のフレーム
-class TkColorMiddleFrame<TkFrame
+class TkColorMiddleFrame < TkFrame
   attr_reader :left, :middle, :right
 
   def initialize(parent)
@@ -508,7 +508,7 @@ class TkColorMiddleFrame<TkFrame
 end
 
 
-class TkColor<TkRoot
+class TkColor < TkRoot
   attr_reader :menu, :bottom, :middle
 
   def initialize(*args)

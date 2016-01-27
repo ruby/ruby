@@ -224,7 +224,7 @@ module TkcTagAccess
   end
 end
 
-class TkcTag<TkObject
+class TkcTag < TkObject
   include TkcTagAccess
 
   CTagID_TBL = TkCore::INTERP.create_table
@@ -334,7 +334,7 @@ class TkcTag<TkObject
   alias withtag set_to_withtag
 end
 
-class TkcTagString<TkcTag
+class TkcTagString < TkcTag
   def self.new(parent, name, mode=nil, *args)
     obj = nil
     CTagID_TBL.mutex.synchronize{
@@ -374,7 +374,7 @@ class TkcTagString<TkcTag
 end
 TkcNamedTag = TkcTagString
 
-class TkcTagAll<TkcTagString
+class TkcTagAll < TkcTagString
   def self.new(parent)
     super(parent, 'all')
   end
@@ -394,7 +394,7 @@ class TkcTagAll<TkcTagString
 =end
 end
 
-class TkcTagCurrent<TkcTagString
+class TkcTagCurrent < TkcTagString
   def self.new(parent)
     super(parent, 'current')
   end
@@ -414,7 +414,7 @@ class TkcTagCurrent<TkcTagString
 =end
 end
 
-class TkcGroup<TkcTag
+class TkcGroup < TkcTag
   (Tk_cGroup_ID = ['tkcg'.freeze, TkUtil.untrust('00000')]).instance_eval{
     @mutex = Mutex.new
     def mutex; @mutex; end

@@ -5,7 +5,7 @@
 require 'tk'
 require 'tk/label'
 
-class Tk::Message<Tk::Label
+class Tk::Message < Tk::Label
   TkCommandNames = ['message'.freeze].freeze
   WidgetClassName = 'Message'.freeze
   WidgetClassNames[WidgetClassName] ||= self

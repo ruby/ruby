@@ -4,7 +4,7 @@
 #
 require 'tk'
 
-class Tk::Scrollbar<TkWindow
+class Tk::Scrollbar < TkWindow
   TkCommandNames = ['scrollbar'.freeze].freeze
   WidgetClassName = 'Scrollbar'.freeze
   WidgetClassNames[WidgetClassName] ||= self
@@ -154,7 +154,7 @@ Tk.__set_loaded_toplevel_aliases__('tk/scrollbar.rb', :Tk, Tk::Scrollbar,
                                    :TkScrollbar)
 
 
-class Tk::XScrollbar<Tk::Scrollbar
+class Tk::XScrollbar < Tk::Scrollbar
   def create_self(keys)
     keys = {} unless keys
     keys['orient'] = 'horizontal'
@@ -169,7 +169,7 @@ Tk.__set_loaded_toplevel_aliases__('tk/scrollbar.rb', :Tk, Tk::XScrollbar,
                                    :TkXScrollbar)
 
 
-class Tk::YScrollbar<Tk::Scrollbar
+class Tk::YScrollbar < Tk::Scrollbar
   def create_self(keys)
     keys = {} unless keys
     keys['orient'] = 'vertical'

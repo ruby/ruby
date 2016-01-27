@@ -16,7 +16,7 @@ require "irb/ext/loader"
 # :stopdoc:
 module IRB
   module ExtendCommand
-    class Load<Nop
+    class Load < Nop
       include IrbLoader
 
       def execute(file_name, priv = nil)
@@ -24,7 +24,7 @@ module IRB
       end
     end
 
-    class Require<Nop
+    class Require < Nop
       include IrbLoader
 
       def execute(file_name)
@@ -55,7 +55,7 @@ module IRB
       end
     end
 
-    class Source<Nop
+    class Source < Nop
       include IrbLoader
       def execute(file_name)
         source_file(file_name)
