@@ -43,7 +43,7 @@ class RubyVM::InstructionSequence
 
   def self.translate i1
     # check to_a/load_iseq
-    i2_ary = compare_dump_and_load(i1,
+    compare_dump_and_load(i1,
                                    proc{|iseq|
                                      ary = iseq.to_a
                                      ary[9] == :top ? ary : nil
@@ -57,7 +57,7 @@ class RubyVM::InstructionSequence
                                    proc{|iseq|
                                      begin
                                        iseq.to_binary
-                                     rescue RuntimeError => e # not a toplevel
+                                     rescue RuntimeError # not a toplevel
                                        # STDERR.puts [:failed, e, iseq].inspect
                                        nil
                                      end
