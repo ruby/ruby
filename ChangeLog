@@ -1,4 +1,7 @@
-Fri Jan 29 14:13:28 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Jan 29 14:15:26 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/erb.rb (ERB::Compiler#detect_magic_comment): allow
+	  fronzen-string-literal in comment as well as encoding.
 
 	* lib/erb.rb (ERB#def_method): insert def line just before the
 	  first non-comment and non-empty line, not to leave duplicated

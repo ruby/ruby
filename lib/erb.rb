@@ -553,10 +553,12 @@ class ERB
     end
 
     class Buffer # :nodoc:
-      def initialize(compiler, enc=nil)
+      def initialize(compiler, enc=nil, frozen=nil)
         @compiler = compiler
         @line = []
-        @script = enc ? "#coding:#{enc}\n" : ""
+        @script = ''
+        @script << "#coding:#{enc}\n" if enc
+        @script << "#frozen-string-literal:#{frozen}\n" unless frozen.nil?
         @compiler.pre_cmd.each do |x|
           push(x)
         end
@@ -606,8 +608,8 @@ class ERB
       enc = s.encoding
       raise ArgumentError, "#{enc} is not ASCII compatible" if enc.dummy?
       s = s.b # see String#b
-      enc = detect_magic_comment(s) || enc
-      out = Buffer.new(self, enc)
+      magic_comment = detect_magic_comment(s, enc)
+      out = Buffer.new(self, *magic_comment)
 
       self.content = ''
       scanner = make_scanner(s)
@@ -622,7 +624,7 @@ class ERB
       end
       add_put_cmd(out, content) if content.size > 0
       out.close
-      return out.script, enc
+      return out.script, *magic_comment
     end
 
     def compile_stag(stag, out, scanner)
@@ -735,15 +737,20 @@ class ERB
     # A buffered text in #compile
     attr_accessor :content
 
-    def detect_magic_comment(s)
-      if /\A<%#(.*)%>/ =~ s or (@percent and /\A%#(.*)/ =~ s)
-        comment = $1
+    def detect_magic_comment(s, enc = nil)
+      re = @percent ? /\G(?:<%#(.*)%>|%#(.*)\n)/ : /\G<%#(.*)%>/
+      frozen = nil
+      s.scan(re) do
+        comment = $+
         comment = $1 if comment[/-\*-\s*(.*?)\s*-*-$/]
-        if %r"coding\s*[=:]\s*([[:alnum:]\-_]+)" =~ comment
-          enc = $1.sub(/-(?:mac|dos|unix)/i, '')
-          Encoding.find(enc)
+        case comment
+        when %r"coding\s*[=:]\s*([[:alnum:]\-_]+)"
+          enc = Encoding.find($1.sub(/-(?:mac|dos|unix)/i, ''))
+        when %r"frozen[-_]string[-_]literal\s*:\s*([[:alnum:]]+)"
+          frozen = $1
         end
       end
+      return enc, frozen
     end
   end
 end
@@ -821,7 +828,7 @@ class ERB
     @safe_level = safe_level
     compiler = make_compiler(trim_mode)
     set_eoutvar(compiler, eoutvar)
-    @src, @encoding = *compiler.compile(str)
+    @src, @encoding, @frozen_string = *compiler.compile(str)
     @filename = nil
     @lineno = 0
   end
