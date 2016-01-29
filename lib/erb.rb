@@ -905,10 +905,9 @@ class ERB
   #   erb.def_method(MyClass, 'render(arg1, arg2)', filename)
   #   print MyClass.new.render('foo', 123)
   def def_method(mod, methodname, fname='(ERB)')
-    src = self.src
-    magic_comment = "#coding:#{@encoding}\n"
+    src = self.src.sub(/^(?!#|$)/) {"def #{methodname}\n"} << "\nend\n"
     mod.module_eval do
-      eval(magic_comment + "def #{methodname}\n" + src + "\nend\n", binding, fname, -2)
+      eval(src, binding, fname, -1)
     end
   end
 
