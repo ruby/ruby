@@ -1,3 +1,8 @@
+Fri Jan 29 16:17:07 2016  Lucas Buchala  <lucasbuchala@gmail.com>
+
+	* enum.c (enum_take_while, enum_drop_while): rename block
+	  parameter to obj, since they are generic objects.  [Fix GH-1226]
+
 Fri Jan 29 14:15:26 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/erb.rb (ERB::Compiler#detect_magic_comment): allow

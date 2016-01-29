@@ -2575,7 +2575,7 @@ take_while_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 
 /*
  *  call-seq:
- *     enum.take_while { |arr| block } -> array
+ *     enum.take_while { |obj| block } -> array
  *     enum.take_while                 -> an_enumerator
  *
  *  Passes elements to the block until the block returns +nil+ or +false+,
@@ -2659,7 +2659,7 @@ drop_while_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 
 /*
  *  call-seq:
- *     enum.drop_while { |arr| block }  -> array
+ *     enum.drop_while { |obj| block }  -> array
  *     enum.drop_while                  -> an_enumerator
  *
  *  Drops elements up to, but not including, the first element for
