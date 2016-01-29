@@ -1,3 +1,9 @@
+Fri Jan 29 14:13:28 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/erb.rb (ERB#def_method): insert def line just before the
+	  first non-comment and non-empty line, not to leave duplicated
+	  and stale magic comments.
+
 Fri Jan 29 11:13:33 2016  Jeremy Evans  <code@jeremyevans.net>
 
 	* lib/erb.rb (ERB#set_eoutvar): explicitly make mutable string as
