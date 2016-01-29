@@ -530,6 +530,11 @@ EOS
       '# -*- \1; frozen-string-literal: true -*-'
     }
     assert_equal("a", e.result, bug12031)
+
+    %w(false true).each do |flag|
+      erb = @erb.new("<%#frozen-string-literal: #{flag}%><%=''.frozen?%>")
+      assert_equal(flag, erb.result)
+    end
   end
 end
 
