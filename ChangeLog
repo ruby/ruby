@@ -1,3 +1,9 @@
+Fri Jan 29 11:13:33 2016  Jeremy Evans  <code@jeremyevans.net>
+
+	* lib/erb.rb (ERB#set_eoutvar): explicitly make mutable string as
+	  a buffer to make ERB work with --enable-frozen-string-literal.
+	  [ruby-core:73561] [Bug #12031]
+
 Fri Jan 29 10:44:56 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/net/http/header.rb: Warn nil variable on HTTP Header.

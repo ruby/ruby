@@ -534,6 +534,15 @@ EOS
     EOS
     assert_equal(ans, extended_erb.new(src).result)
   end
+
+  def test_frozen_string_literal
+    bug12031 = '[ruby-core:73561] [Bug #12031]'
+    e = @erb.new("<%#encoding: us-ascii%>a")
+    e.src.sub!(/\A#(?:-\*-)?(.*)(?:-\*-)?/) {
+      '# -*- \1; frozen-string-literal: true -*-'
+    }
+    assert_equal("a", e.result, bug12031)
+  end
 end
 
 class TestERBCoreWOStrScan < TestERBCore
