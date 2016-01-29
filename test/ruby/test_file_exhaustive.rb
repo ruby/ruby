@@ -557,6 +557,15 @@ class TestFileExhaustive < Test::Unit::TestCase
     end;
   end
 
+  if NTFS
+    def test_readlink_junction
+      base = File.basename(nofile)
+      err = IO.popen(%W"cmd.exe /c mklink /j #{base} .", chdir: @dir, err: %i[child out], &:read)
+      skip err unless $?.success?
+      assert_equal(@dir, File.readlink(nofile))
+    end
+  end
+
   def test_unlink
     assert_equal(1, File.unlink(regular_file))
     make_file("foo", regular_file)
