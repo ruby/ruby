@@ -523,9 +523,9 @@ EOS
     end
 
     src = <<~EOS
-      <% tag = '<>' %>
-      <%= tag %>
-      <%== tag %>
+      <% tag = '<>' \%>
+      <\%= tag \%>
+      <\%== tag \%>
     EOS
     ans = <<~EOS
 
