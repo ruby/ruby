@@ -1,3 +1,9 @@
+Fri Jan 29 10:44:56 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/net/http/header.rb: Warn nil variable on HTTP Header.
+	  It caused to NoMethodError. [fix GH-952][fix GH-641] Patch by @teosz
+	* test/net/http/test_httpheader.rb: Added test for nil HTTP Header.
+
 Thu Jan 28 17:31:43 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/socket/socket.c (sock_gethostname): support unlimited size
