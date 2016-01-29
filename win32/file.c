@@ -697,6 +697,7 @@ rb_readlink(VALUE path, rb_encoding *resultenc)
     enc = resultenc;
     cp = path_cp = code_page(enc);
     if (cp == INVALID_CODE_PAGE) cp = CP_UTF8;
+    len = lstrlenW(wbuf);
     str = append_wstr(rb_enc_str_new(0, 0, enc), wbuf, len, cp, path_cp, enc);
     ALLOCV_END(wtmp);
     return str;

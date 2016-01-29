@@ -4888,6 +4888,7 @@ w32_readlink(UINT cp, const char *path, char *buf, size_t bufsize)
 	errno = map_errno(e);
 	return -1;
     }
+    len = lstrlenW(wname) + 1;
     ret = WideCharToMultiByte(cp, 0, wname, len, buf, bufsize, NULL, NULL);
     ALLOCV_END(wtmp);
     if (e) {
