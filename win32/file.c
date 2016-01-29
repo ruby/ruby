@@ -689,7 +689,10 @@ rb_readlink(VALUE path, rb_encoding *resultenc)
     ALLOCV_END(wpathbuf);
     if (e) {
 	ALLOCV_END(wtmp);
-	rb_syserr_fail_path(rb_w32_map_errno(e), path);
+	if (e != -1)
+	    rb_syserr_fail_path(rb_w32_map_errno(e), path);
+	else /* not symlink; maybe volume mount point */
+	    rb_syserr_fail_path(EINVAL, path);
     }
     enc = resultenc;
     cp = path_cp = code_page(enc);
