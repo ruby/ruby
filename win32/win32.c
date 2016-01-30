@@ -4804,8 +4804,20 @@ reparse_symlink(const WCHAR *path, rb_w32_reparse_buffer_t *rp, size_t size)
 int
 rb_w32_reparse_symlink_p(const WCHAR *path)
 {
-    rb_w32_reparse_buffer_t rp;
-    switch (reparse_symlink(path, &rp, sizeof(rp))) {
+    VALUE wtmp = 0;
+    rb_w32_reparse_buffer_t rbuf, *rp = &rbuf;
+    WCHAR *wbuf;
+    DWORD len;
+    int e;
+
+    e = rb_w32_read_reparse_point(path, rp, sizeof(rbuf), &wbuf, &len);
+    if (e == ERROR_MORE_DATA) {
+	size_t size = rb_w32_reparse_buffer_size(len + 1);
+	rp = ALLOCV(wtmp, size);
+	e = rb_w32_read_reparse_point(path, rp, size, &wbuf, &len);
+	ALLOCV_END(wtmp);
+    }
+    switch (e) {
       case 0:
       case ERROR_MORE_DATA:
 	return TRUE;
@@ -4830,6 +4842,7 @@ rb_w32_read_reparse_point(const WCHAR *path, rb_w32_reparse_buffer_t *rp,
 	    *len = ret / sizeof(WCHAR);
 	}
 	else { /* IO_REPARSE_TAG_MOUNT_POINT */
+	    static const WCHAR *volume = L"Volume{";
 	    /* +4/-4 means to drop "\??\" */
 	    name = ((char *)rp->MountPointReparseBuffer.PathBuffer +
 		    rp->MountPointReparseBuffer.SubstituteNameOffset +
@@ -4837,6 +4850,9 @@ rb_w32_read_reparse_point(const WCHAR *path, rb_w32_reparse_buffer_t *rp,
 	    ret = rp->MountPointReparseBuffer.SubstituteNameLength;
 	    *len = ret / sizeof(WCHAR);
 	    ret -= 4 * sizeof(WCHAR);
+	    if (ret > sizeof(volume) - 1 * sizeof(WCHAR) &&
+		memcmp(name, volume, sizeof(volume) - 1 * sizeof(WCHAR)) == 0)
+		return -1;
 	}
 	*result = name;
 	if (e) {
@@ -4872,6 +4888,7 @@ w32_readlink(UINT cp, const char *path, char *buf, size_t bufsize)
 	errno = map_errno(e);
 	return -1;
     }
+    len = lstrlenW(wname) + 1;
     ret = WideCharToMultiByte(cp, 0, wname, len, buf, bufsize, NULL, NULL);
     ALLOCV_END(wtmp);
     if (e) {
@@ -5295,7 +5312,10 @@ fileattr_to_unixmode(DWORD attr, const WCHAR *path)
     }
 
     if (attr & FILE_ATTRIBUTE_REPARSE_POINT) {
-	mode |= S_IFLNK | S_IEXEC;
+	if (rb_w32_reparse_symlink_p(path))
+	    mode |= S_IFLNK | S_IEXEC;
+	else
+	    mode |= S_IFDIR | S_IEXEC;
     }
     else if (attr & FILE_ATTRIBUTE_DIRECTORY) {
 	mode |= S_IFDIR | S_IEXEC;

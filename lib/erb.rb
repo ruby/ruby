@@ -280,7 +280,7 @@ class ERB
   # ERB#src:
   #
   #   compiler = ERB::Compiler.new('<>')
-  #   compiler.pre_cmd    = ["_erbout=''"]
+  #   compiler.pre_cmd    = ["_erbout=String.new"]
   #   compiler.put_cmd    = "_erbout.concat"
   #   compiler.insert_cmd = "_erbout.concat"
   #   compiler.post_cmd   = ["_erbout"]
@@ -291,7 +291,7 @@ class ERB
   # <i>Generates</i>:
   #
   #   #coding:UTF-8
-  #   _erbout=''; _erbout.concat "Got "; _erbout.concat(( obj ).to_s); _erbout.concat "!\n"; _erbout
+  #   _erbout=String.new; _erbout.concat "Got "; _erbout.concat(( obj ).to_s); _erbout.concat "!\n"; _erbout
   #
   # By default the output is sent to the print method.  For example:
   #
@@ -553,10 +553,12 @@ class ERB
     end
 
     class Buffer # :nodoc:
-      def initialize(compiler, enc=nil)
+      def initialize(compiler, enc=nil, frozen=nil)
         @compiler = compiler
         @line = []
-        @script = enc ? "#coding:#{enc}\n" : ""
+        @script = ''
+        @script << "#coding:#{enc}\n" if enc
+        @script << "#frozen-string-literal:#{frozen}\n" unless frozen.nil?
         @compiler.pre_cmd.each do |x|
           push(x)
         end
@@ -606,8 +608,8 @@ class ERB
       enc = s.encoding
       raise ArgumentError, "#{enc} is not ASCII compatible" if enc.dummy?
       s = s.b # see String#b
-      enc = detect_magic_comment(s) || enc
-      out = Buffer.new(self, enc)
+      magic_comment = detect_magic_comment(s, enc)
+      out = Buffer.new(self, *magic_comment)
 
       self.content = ''
       scanner = make_scanner(s)
@@ -622,7 +624,7 @@ class ERB
       end
       add_put_cmd(out, content) if content.size > 0
       out.close
-      return out.script, enc
+      return out.script, *magic_comment
     end
 
     def compile_stag(stag, out, scanner)
@@ -735,15 +737,20 @@ class ERB
     # A buffered text in #compile
     attr_accessor :content
 
-    def detect_magic_comment(s)
-      if /\A<%#(.*)%>/ =~ s or (@percent and /\A%#(.*)/ =~ s)
-        comment = $1
+    def detect_magic_comment(s, enc = nil)
+      re = @percent ? /\G(?:<%#(.*)%>|%#(.*)\n)/ : /\G<%#(.*)%>/
+      frozen = nil
+      s.scan(re) do
+        comment = $+
         comment = $1 if comment[/-\*-\s*(.*?)\s*-*-$/]
-        if %r"coding\s*[=:]\s*([[:alnum:]\-_]+)" =~ comment
-          enc = $1.sub(/-(?:mac|dos|unix)/i, '')
-          Encoding.find(enc)
+        case comment
+        when %r"coding\s*[=:]\s*([[:alnum:]\-_]+)"
+          enc = Encoding.find($1.sub(/-(?:mac|dos|unix)/i, ''))
+        when %r"frozen[-_]string[-_]literal\s*:\s*([[:alnum:]]+)"
+          frozen = $1
         end
       end
+      return enc, frozen
     end
   end
 end
@@ -821,7 +828,7 @@ class ERB
     @safe_level = safe_level
     compiler = make_compiler(trim_mode)
     set_eoutvar(compiler, eoutvar)
-    @src, @encoding = *compiler.compile(str)
+    @src, @encoding, @frozen_string = *compiler.compile(str)
     @filename = nil
     @lineno = 0
   end
@@ -860,7 +867,7 @@ class ERB
   def set_eoutvar(compiler, eoutvar = '_erbout')
     compiler.put_cmd = "#{eoutvar}.concat"
     compiler.insert_cmd = "#{eoutvar}.concat"
-    compiler.pre_cmd = ["#{eoutvar} = ''"]
+    compiler.pre_cmd = ["#{eoutvar} = String.new"]
     compiler.post_cmd = ["#{eoutvar}.force_encoding(__ENCODING__)"]
   end
 
@@ -905,10 +912,9 @@ class ERB
   #   erb.def_method(MyClass, 'render(arg1, arg2)', filename)
   #   print MyClass.new.render('foo', 123)
   def def_method(mod, methodname, fname='(ERB)')
-    src = self.src
-    magic_comment = "#coding:#{@encoding}\n"
+    src = self.src.sub(/^(?!#|$)/) {"def #{methodname}\n"} << "\nend\n"
     mod.module_eval do
-      eval(magic_comment + "def #{methodname}\n" + src + "\nend\n", binding, fname, -2)
+      eval(src, binding, fname, -1)
     end
   end
 

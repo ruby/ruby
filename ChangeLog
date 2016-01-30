@@ -1,3 +1,86 @@
+Sat Jan 30 15:18:07 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (rb_check_funcall_with_hook): also should call the
+	  given hook before returning Qundef when overridden respond_to?
+	  method returned false.  [ruby-core:73556] [Bug #12030]
+
+Fri Jan 29 17:40:07 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/file.c (rb_readlink): drop garbage after the substitute
+	  name, as rb_w32_read_reparse_point returns the expected buffer
+	  size but "\??\" prefix is dropped from the result.
+
+	* win32/win32.c (w32_readlink): ditto, including NUL-terminator.
+
+Fri Jan 29 17:07:27 2016  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (fileattr_to_unixmode, rb_w32_reparse_symlink_p): volume
+	  mount point should be treated as directory, not symlink.
+	  [ruby-core:72483] [Bug #11874]
+
+	* win32/win32.c (rb_w32_read_reparse_point): check the reparse point is
+	  a volume mount point or not.
+
+	* win32/file.c (rb_readlink): follow above change (but this pass won't
+	  be used).
+
+Fri Jan 29 16:17:07 2016  Lucas Buchala  <lucasbuchala@gmail.com>
+
+	* enum.c (enum_take_while, enum_drop_while): rename block
+	  parameter to obj, since they are generic objects.  [Fix GH-1226]
+
+Fri Jan 29 14:15:26 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/erb.rb (ERB::Compiler#detect_magic_comment): allow
+	  frozen-string-literal in comment as well as encoding.
+
+	* lib/erb.rb (ERB#def_method): insert def line just before the
+	  first non-comment and non-empty line, not to leave duplicated
+	  and stale magic comments.
+
+Fri Jan 29 11:13:33 2016  Jeremy Evans  <code@jeremyevans.net>
+
+	* lib/erb.rb (ERB#set_eoutvar): explicitly make mutable string as
+	  a buffer to make ERB work with --enable-frozen-string-literal.
+	  [ruby-core:73561] [Bug #12031]
+
+Fri Jan 29 10:44:56 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/net/http/header.rb: Warn nil variable on HTTP Header.
+	  It caused to NoMethodError. [fix GH-952][fix GH-641] Patch by @teosz
+	* test/net/http/test_httpheader.rb: Added test for nil HTTP Header.
+
+Thu Jan 28 17:31:43 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/socket/socket.c (sock_gethostname): support unlimited size
+	  hostname.
+
+Wed Jan 27 21:03:45 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* test/-ext-/string/test_capacity.rb: Added missing library.
+
+Wed Jan 27 18:53:40 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode.c: Fixed bit mask in macro OnigCodePointCount
+
+Wed Jan 27 17:54:42 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode.c: Protect code point count by macro, in order to
+	  be able to use the remaining bits for flags.
+	  (with Kimihito Matsui)
+
+Wed Jan 27 16:34:35 2016  boshan  <boshan@subsplash.com>
+
+	* lib/tempfile.rb (Tempfile#initialize): [DOC] the first parameter
+	  `basename` is optional and defaulted to an empty string since
+	  [GH-523].  [Fix GH-1225]
+
+Wed Jan 27 16:25:54 2016  Koichi ITO  <koic.ito@gmail.com>
+
+	* array.c (rb_ary_dig): [DOC] fix the exception class to be raised
+	  when intermediate object does not have dig method.  TypeError
+	  will be raised now.  [Fix GH-1224]
+
 Tue Jan 26 19:36:15 2016  Aggelos Avgerinos  <evaggelos.avgerinos@gmail.com>
 
 	* array.c (permute0, rpermute0): [DOC] Substitute indexes ->

@@ -82,6 +82,12 @@ class HTTPHeaderTest < Test::Unit::TestCase
     assert_equal ['test string'], @c.get_fields('my-header')
   end
 
+  class D; include Net::HTTPHeader; end
+
+  def test_nil_variable_header
+    assert_nothing_raised { D.new.initialize_http_header({Authorization: nil}) }
+  end
+
   def test_delete
     @c['My-Header'] = 'test'
     assert_equal 'test', @c['My-Header']

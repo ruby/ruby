@@ -5527,7 +5527,7 @@ rb_ary_any_p(VALUE ary)
  *
  *   a.dig(0, 1, 1)                    #=> 3
  *   a.dig(1, 2, 3)                    #=> nil
- *   a.dig(0, 0, 0)                    #=> NoMethodError, undefined method `dig' for 1:Fixnum
+ *   a.dig(0, 0, 0)                    #=> TypeError: Fixnum does not have #dig method
  *   [42, {foo: :bar}].dig(1, :foo)    #=> :bar
  */
 

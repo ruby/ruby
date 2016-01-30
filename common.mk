@@ -1002,6 +1002,15 @@ extract-gems: PHONY
 	    -e 'Gem.unpack("#{gem}-#{ver}.gem")' \
 	    bundled_gems
 
+update-bundled_gems: PHONY
+	$(Q) $(RUNRUBY) -rrubygems \
+	    -pla \
+	    -e '$$_=Gem::SpecFetcher.fetcher.detect(:latest) {|s|' \
+	    -e   'break "#{s.name} #{s.version}" if s.platform=="ruby"&&s.name==$$F[0]' \
+	    -e '}' \
+	     "$(srcdir)/gems/bundled_gems" | \
+	"$(srcdir)/tool/ifchange" "$(srcdir)/gems/bundled_gems" -
+
 ### set the following environment variable or uncomment the line if
 ### the Unicode data files should be updated completely on every update ('make up',...).
 # ALWAYS_UPDATE_UNICODE = yes
