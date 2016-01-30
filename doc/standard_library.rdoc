@@ -27,7 +27,7 @@ Forwardable:: Provides delegation of specified methods to a designated object
 GetoptLong:: Parse command line options similar to the GNU C getopt_long()
 IPAddr:: Provides methods to manipulate IPv4 and IPv6 IP addresses
 IRB:: Interactive Ruby command-line tool for REPL (Read Eval Print Loop)
-Logger:: Provides a simple logging utility for outputing messages
+Logger:: Provides a simple logging utility for outputting messages
 mathn.rb:: Deprecated library that extends math operations
 MakeMakefile:: Module used to generate a Makefile for C extensions
 Matrix:: Represents a mathematical matrix.
@@ -39,7 +39,7 @@ Net::IMAP:: Ruby client api for Internet Message Access Protocol
 Net::POP3:: Ruby client library for POP3
 Net::SMTP:: Simple Mail Transfer Protocol client library for Ruby
 Net::Telnet:: Telnet client library for Ruby
-Observable:: Provides a mechanism for publich/subscribe pattern in Ruby
+Observable:: Provides a mechanism for publish/subscribe pattern in Ruby
 OpenURI:: An easy-to-use wrapper for Net::HTTP, Net::HTTPS and Net::FTP
 Open3:: Provides access to stdin, stdout and stderr when running other programs
 OptionParser:: Ruby-oriented class for command-line option analysis
