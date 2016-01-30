@@ -1,3 +1,9 @@
+Sat Jan 30 15:18:07 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (rb_check_funcall_with_hook): also should call the
+	  given hook before returning Qundef when overridden respond_to?
+	  method returned false.  [ruby-core:73556] [Bug #12030]
+
 Fri Jan 29 17:40:07 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/file.c (rb_readlink): drop garbage after the substitute
