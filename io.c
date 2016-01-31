@@ -6578,23 +6578,31 @@ rb_f_open(int argc, VALUE *argv)
     return rb_io_s_open(argc, argv, rb_cFile);
 }
 
+static VALUE rb_io_open_generic(VALUE, int, int, const convconfig_t *, mode_t);
+
 static VALUE
 rb_io_open(VALUE filename, VALUE vmode, VALUE vperm, VALUE opt)
 {
-    VALUE cmd;
     int oflags, fmode;
     convconfig_t convconfig;
     mode_t perm;
 
     rb_io_extract_modeenc(&vmode, &vperm, opt, &oflags, &fmode, &convconfig);
     perm = NIL_P(vperm) ? 0666 :  NUM2MODET(vperm);
+    return rb_io_open_generic(filename, oflags, fmode, &convconfig, perm);
+}
 
+static VALUE
+rb_io_open_generic(VALUE filename, int oflags, int fmode,
+		   const convconfig_t *convconfig, mode_t perm)
+{
+    VALUE cmd;
     if (!NIL_P(cmd = check_pipe_command(filename))) {
-	return pipe_open_s(cmd, rb_io_oflags_modestr(oflags), fmode, &convconfig);
+	return pipe_open_s(cmd, rb_io_oflags_modestr(oflags), fmode, convconfig);
     }
     else {
         return rb_file_open_generic(io_alloc(rb_cFile), filename,
-                oflags, fmode, &convconfig, perm);
+				    oflags, fmode, convconfig, perm);
     }
 }
 
@@ -9899,10 +9907,19 @@ rb_io_s_binread(int argc, VALUE *argv, VALUE io)
 {
     VALUE offset;
     struct foreach_arg arg;
+    enum {
+	fmode = FMODE_READABLE|FMODE_BINMODE,
+	oflags = O_RDONLY
+#ifdef O_BINARY
+		|O_BINARY
+#endif
+    };
+    convconfig_t convconfig = {NULL, NULL, 0, Qnil};
 
     rb_scan_args(argc, argv, "12", NULL, NULL, &offset);
     FilePathValue(argv[0]);
-    arg.io = rb_io_open(argv[0], rb_str_new_cstr("rb:ASCII-8BIT"), Qnil, Qnil);
+    convconfig.enc = rb_ascii8bit_encoding();
+    arg.io = rb_io_open_generic(argv[0], oflags, fmode, &convconfig, 0);
     if (NIL_P(arg.io)) return Qnil;
     arg.argv = argv+1;
     arg.argc = (argc > 1) ? 1 : 0;
