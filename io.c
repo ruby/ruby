@@ -5565,7 +5565,8 @@ io_set_encoding_by_bom(VALUE io)
 }
 
 static VALUE
-rb_file_open_generic(VALUE io, VALUE filename, int oflags, int fmode, convconfig_t *convconfig, mode_t perm)
+rb_file_open_generic(VALUE io, VALUE filename, int oflags, int fmode,
+		     const convconfig_t *convconfig, mode_t perm)
 {
     rb_io_t *fptr;
     convconfig_t cc;
@@ -5876,7 +5877,8 @@ rb_execarg_fixup_v(VALUE execarg_obj)
 }
 
 static VALUE
-pipe_open(VALUE execarg_obj, const char *modestr, int fmode, convconfig_t *convconfig)
+pipe_open(VALUE execarg_obj, const char *modestr, int fmode,
+	  const convconfig_t *convconfig)
 {
     struct rb_execarg *eargp = NIL_P(execarg_obj) ? NULL : rb_execarg_get(execarg_obj);
     VALUE prog = eargp ? (eargp->use_shell ? eargp->invoke.sh.shell_script : eargp->invoke.cmd.command_name) : Qfalse ;
@@ -6126,7 +6128,8 @@ is_popen_fork(VALUE prog)
 }
 
 static VALUE
-pipe_open_s(VALUE prog, const char *modestr, int fmode, convconfig_t *convconfig)
+pipe_open_s(VALUE prog, const char *modestr, int fmode,
+	    const convconfig_t *convconfig)
 {
     int argc = 1;
     VALUE *argv = &prog;
