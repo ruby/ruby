@@ -1,3 +1,8 @@
+Sun Jan 31 12:19:15 2016  Kuniaki IGARASHI  <igaiga@gmail.com>
+
+	* test/ruby/test_file_exhaustive.rb (test_lstat): Add lacking test
+	  for File#lstat.  [Fix GH-1231]
+
 Sun Jan 31 12:15:33 2016  Prayag Verma  <prayag.verma@gmail.com>
 
 	* doc/standard_library.rdoc: fix typo  [Fix GH-1230]

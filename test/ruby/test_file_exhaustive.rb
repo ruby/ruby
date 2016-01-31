@@ -255,6 +255,16 @@ class TestFileExhaustive < Test::Unit::TestCase
     end
   end if NTFS
 
+  def test_lstat
+    return unless symlinkfile
+    assert_equal(false, File.stat(symlinkfile).symlink?)
+    assert_equal(true, File.lstat(symlinkfile).symlink?)
+    f = File.new(symlinkfile)
+    assert_equal(false, f.stat.symlink?)
+    assert_equal(true, f.lstat.symlink?)
+    f.close
+  end
+
   def test_directory_p
     assert_file.directory?(@dir)
     assert_file.not_directory?(@dir+"/...")
