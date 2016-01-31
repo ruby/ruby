@@ -13,11 +13,29 @@ class DRbLarge
   end
 
   def sum(ary)
-    sum = 0
-    ary.each do |e|
-      sum += e.to_i
+    ary.inject(:+)
+  end
+
+  def multiply(ary)
+    ary.inject(:*)
+  end
+
+  def avg(ary)
+    return if ary.empty?
+    if ary.any? {|n| n.is_a? String}
+      raise TypeError
+    else
+      sum(ary).to_f / ary.count
     end
-    sum
+  end
+
+  def median(ary)
+    return if ary.empty?
+    if ary.any? {|n| n.is_a? String}
+      raise TypeError
+    else
+      avg ary.sort[((ary.length - 1) / 2)..(ary.length / 2)]
+    end
   end
 
   def arg_test(*arg)

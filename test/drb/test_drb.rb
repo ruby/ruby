@@ -306,11 +306,18 @@ class TestDRbLarge < Test::Unit::TestCase
     ary = [2] * 10240
     assert_equal(10240, @there.size(ary))
     assert_equal(20480, @there.sum(ary))
+    assert_equal(2 ** 10240, @there.multiply(ary))
+    assert_equal(2, @there.avg(ary))
+    assert_equal(2, @there.median(ary))
   end
 
   def test_02_large_ary
     ary = ["Hello, World"] * 10240
     assert_equal(10240, @there.size(ary))
+    assert_equal(ary[0..ary.length].inject(:+), @there.sum(ary))
+    assert_raise (TypeError) {@there.multiply(ary)}
+    assert_raise (TypeError) {@there.avg(ary)}
+    assert_raise (TypeError) {@there.median(ary)}
   end
 
   def test_03_large_ary
@@ -333,6 +340,41 @@ class TestDRbLarge < Test::Unit::TestCase
       exception = $!
     end
     assert_kind_of(StandardError, exception)
+  end
+
+  def test_06_array_operations
+    ary = [1,50,3,844,7,45,23]
+    assert_equal(7, @there.size(ary))
+    assert_equal(973, @there.sum(ary))
+    assert_equal(917217000, @there.multiply(ary))
+    assert_equal(139.0, @there.avg(ary))
+    assert_equal(23.0, @there.median(ary))
+
+    ary2 = [1,2,3,4]
+    assert_equal(4, @there.size(ary2))
+    assert_equal(10, @there.sum(ary2))
+    assert_equal(24, @there.multiply(ary2))
+    assert_equal(2.5, @there.avg(ary2))
+    assert_equal(2.5, @there.median(ary2))
+
+  end
+
+  def test_07_one_element_array
+    ary = [50]
+    assert_equal(1, @there.size(ary))
+    assert_equal(50, @there.sum(ary))
+    assert_equal(50, @there.multiply(ary))
+    assert_equal(50.0, @there.avg(ary))
+    assert_equal(50.0, @there.median(ary))
+  end
+
+  def test_08_empty_array
+    ary = []
+    assert_equal(0, @there.size(ary))
+    assert_equal(nil, @there.sum(ary))
+    assert_equal(nil, @there.multiply(ary))
+    assert_equal(nil, @there.avg(ary))
+    assert_equal(nil, @there.median(ary))
   end
 end
 

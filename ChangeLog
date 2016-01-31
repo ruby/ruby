@@ -1,3 +1,8 @@
+Sun Jan 31 12:33:13 2016  Dan Kreiger  <dan@dankreiger.com>
+
+	* test/drb/ut_large.rb (multiply, avg, median): add additional
+	  math operations to DRbLarge.  [Fix GH-1086]
+
 Sun Jan 31 12:19:15 2016  Kuniaki IGARASHI  <igaiga@gmail.com>
 
 	* test/ruby/test_file_exhaustive.rb (test_lstat): Add lacking test
