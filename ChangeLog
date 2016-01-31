@@ -1,3 +1,10 @@
+Sun Jan 31 12:15:33 2016  Prayag Verma  <prayag.verma@gmail.com>
+
+	* doc/standard_library.rdoc: fix typo  [Fix GH-1230]
+	  Spelling mistakes -
+	  outputing > outputting
+	  publich > publish
+
 Sat Jan 30 15:18:07 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_eval.c (rb_check_funcall_with_hook): also should call the
