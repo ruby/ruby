@@ -574,6 +574,15 @@ class TestFileExhaustive < Test::Unit::TestCase
       skip err unless $?.success?
       assert_equal(@dir, File.readlink(nofile))
     end
+
+    def test_realpath_mount_point
+      vol = IO.popen(["mountvol", DRIVE, "/l"], &:read).strip
+      Dir.mkdir(mnt = File.join(@dir, mntpnt = "mntpnt"))
+      system("mountvol", mntpnt, vol, chdir: @dir)
+      assert_equal(mnt, File.realpath(mnt))
+    ensure
+      system("mountvol", mntpnt, "/d", chdir: @dir)
+    end
   end
 
   def test_unlink
