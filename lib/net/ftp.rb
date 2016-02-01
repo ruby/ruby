@@ -1270,6 +1270,10 @@ module Net
       def read_timeout=(sec)
       end
 
+      def closed?
+        true
+      end
+
       def close
       end
 
