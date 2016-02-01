@@ -1931,7 +1931,6 @@ opendir_internal(WCHAR *wpath, const char *filename)
     if (wstati64(wpath, &sbuf) < 0) {
 	return NULL;
     }
-    pathlen = lstrlenW(wpath);
     if (!(sbuf.st_mode & S_IFDIR) &&
 	(!ISALPHA(filename[0]) || filename[1] != ':' || filename[2] != '\0' ||
 	 ((1 << ((filename[0] & 0x5f) - 'A')) & GetLogicalDrives()) == 0)) {
@@ -1950,6 +1949,7 @@ opendir_internal(WCHAR *wpath, const char *filename)
     if (p == NULL)
 	return NULL;
 
+    pathlen = lstrlenW(wpath);
     idx = 0;
 
     //
