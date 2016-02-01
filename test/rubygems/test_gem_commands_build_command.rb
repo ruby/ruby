@@ -62,7 +62,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     assert_equal '', @ui.output
     assert_equal "ERROR:  Gemspec file not found: some_gem\n", @ui.error
   end
-  
+
   def test_can_find_gemspecs_without_dot_gemspec
     gemspec_file = File.join(@tempdir, @gem.spec_name)
 
