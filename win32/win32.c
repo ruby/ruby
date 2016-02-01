@@ -5337,6 +5337,7 @@ fileattr_to_unixmode(DWORD attr, const WCHAR *path)
 		}
 		break;
 	    }
+	    if (!iswalnum(*end)) break;
 	}
     }
 
