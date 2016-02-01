@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'rubygems/installer_test_case'
 
 class TestGemInstaller < Gem::InstallerTestCase
@@ -48,7 +48,6 @@ if ARGV.first
   end
 end
 
-gem 'a', version
 load Gem.bin_path('a', 'executable', version)
     EOF
 
@@ -803,14 +802,14 @@ gem 'other', version
     begin
       Gem::Specification.reset
 
-      e = assert_raises Gem::LoadError do
+      e = assert_raises Gem::GemNotFoundException do
         instance_eval File.read(exe)
       end
     ensure
       ARGV.shift if ARGV.first == "_3.0_"
     end
 
-    assert_match(/\(= 3\.0\)/, e.message)
+    assert_includes(e.message, "can't find gem a (= 3.0)")
   end
 
   def test_install_creates_binstub_that_dont_trust_encoding
@@ -831,7 +830,7 @@ gem 'other', version
 
     exe = File.join @gemhome, 'bin', 'executable'
 
-    extra_arg = "\xE4pfel".force_encoding("UTF-8")
+    extra_arg = "\xE4pfel".dup.force_encoding("UTF-8")
     ARGV.unshift extra_arg
 
     begin
@@ -999,6 +998,19 @@ gem 'other', version
     end
 
     assert_match %r|I am a shiny gem!|, @ui.output
+  end
+
+  def test_install_with_skipped_message
+    @spec.post_install_message = 'I am a shiny gem!'
+
+    use_ui @ui do
+      path = Gem::Package.build @spec
+
+      @installer = Gem::Installer.at path, :post_install_message => false
+      @installer.install
+    end
+
+    refute_match %r|I am a shiny gem!|, @ui.output
   end
 
   def test_install_extension_dir

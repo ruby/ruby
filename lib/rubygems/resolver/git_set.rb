@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 ##
 # A GitSet represents gems that are sourced from git repositories.
 #

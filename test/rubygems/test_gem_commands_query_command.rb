@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'rubygems/test_case'
 require 'rubygems/commands/query_command'
 
@@ -617,6 +617,29 @@ pl (1)
     Installed at: -
 
     this is a summary
+    EOF
+
+    assert_equal expected, @ui.output
+  end
+
+  def test_execute_exact
+    spec_fetcher do |fetcher|
+      fetcher.spec 'coolgem-omg', 3
+      fetcher.spec 'coolgem', '4.2.1'
+      fetcher.spec 'wow_coolgem', 1
+    end
+
+    @cmd.handle_options %w[--remote --exact coolgem]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    expected = <<-EOF
+
+*** REMOTE GEMS ***
+
+coolgem (4.2.1)
     EOF
 
     assert_equal expected, @ui.output

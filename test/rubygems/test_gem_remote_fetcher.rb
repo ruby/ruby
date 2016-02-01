@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'rubygems/test_case'
 
 require 'webrick'
@@ -924,7 +924,6 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
         @ssl_server_thread.kill.join
         @ssl_server_thread = nil
       end
-      WEBrick::Utils::TimeoutHandler.terminate
     end
 
     def normal_server_port

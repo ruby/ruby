@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 ##
 # RubyGems adds the #gem method to allow activation of specific gem versions
 # and overrides the #require method on Kernel to make gems appear as if they

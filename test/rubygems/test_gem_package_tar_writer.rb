@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'rubygems/package/tar_test_case'
 require 'rubygems/package/tar_writer'
 require 'minitest/mock'

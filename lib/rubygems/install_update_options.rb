@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -173,6 +173,11 @@ module Gem::InstallUpdateOptions
                 "Don't upgrade any dependencies that already",
                 "meet version requirements") do |value, options|
       options[:minimal_deps] = true
+    end
+
+    add_option(:"Install/Update", "--[no-]post-install-message",
+                "Print post install message") do |value, options|
+      options[:post_install_message] = value
     end
   end
 

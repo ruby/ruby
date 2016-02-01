@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 # Copyright (c) 2003, 2004 Jim Weirich, 2009 Eric Hodel
 #
 # Permission is hereby granted, free of charge, to any person obtaining

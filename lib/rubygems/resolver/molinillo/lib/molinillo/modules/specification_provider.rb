@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 module Gem::Resolver::Molinillo
   # Provides information about specifcations and dependencies to the resolver,
   # allowing the {Resolver} class to remain generic while still providing power

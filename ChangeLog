@@ -1,3 +1,11 @@
+Mon Feb  1 21:41:58 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/rubygems.rb, lib/rubygems/*, test/rubygems/*: Update rubygems-2.5.2.
+	  It supports to enable frozen string literal and add `--norc` option for
+	  disable to `.gemrc` configuration.
+	  See 2.5.2 release notes for other fixes and enhancements.
+	  https://github.com/rubygems/rubygems/blob/a8aa3bac723f045c52471c7b9328310a048561e0/History.txt#L3
+
 Sun Jan 31 12:33:13 2016  Dan Kreiger  <dan@dankreiger.com>
 
 	* test/drb/ut_large.rb (multiply, avg, median): add additional

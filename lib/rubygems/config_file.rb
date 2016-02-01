@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -201,11 +201,12 @@ class Gem::ConfigFile
       result.merge load_file file
     end
 
-
     @hash = operating_system_config.merge platform_config
-    @hash = @hash.merge system_config
-    @hash = @hash.merge user_config
-    @hash = @hash.merge environment_config
+    unless arg_list.index '--norc'
+      @hash = @hash.merge system_config
+      @hash = @hash.merge user_config
+      @hash = @hash.merge environment_config
+    end
 
     # HACK these override command-line args, which is bad
     @backtrace                  = @hash[:backtrace]                  if @hash.key? :backtrace

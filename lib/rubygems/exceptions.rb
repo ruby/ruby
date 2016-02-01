@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 # TODO: the documentation in here is terrible.
 #
 # Each exception needs a brief description and the scenarios where it is
@@ -138,7 +138,7 @@ class Gem::ImpossibleDependenciesError < Gem::Exception
     requester  = requester ? requester.spec.full_name : 'The user'
     dependency = @request.dependency
 
-    message = "#{requester} requires #{dependency} but it conflicted:\n"
+    message = "#{requester} requires #{dependency} but it conflicted:\n".dup
 
     @conflicts.each do |_, conflict|
       message << conflict.explanation
@@ -268,4 +268,3 @@ end
 # Backwards compatible typo'd exception class for early RubyGems 2.0.x
 
 Gem::UnsatisfiableDepedencyError = Gem::UnsatisfiableDependencyError # :nodoc:
-

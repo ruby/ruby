@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -24,7 +24,7 @@ module Gem::LocalRemoteOptions
         raise OptionParser::InvalidArgument, value
       end
 
-      unless ['http', 'https', 'file'].include?(uri.scheme)
+      unless ['http', 'https', 'file', 's3'].include?(uri.scheme)
          raise OptionParser::InvalidArgument, value
       end
 
