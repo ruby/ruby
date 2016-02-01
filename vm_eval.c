@@ -688,6 +688,7 @@ make_no_method_exception(VALUE exc, VALUE format, VALUE obj, int argc, const VAL
     enum {
 	arg_mesg,
 	arg_name,
+	arg_recv,
 	arg_args,
 	args_size
     };
@@ -698,6 +699,7 @@ make_no_method_exception(VALUE exc, VALUE format, VALUE obj, int argc, const VAL
     }
     args[n++] = rb_name_err_mesg_new(format, obj, argv[0]);
     args[n++] = argv[0];
+    args[n++] = obj;
     if (exc == rb_eNoMethodError) {
 	args[n++] = rb_ary_new4(argc - 1, argv + 1);
     }

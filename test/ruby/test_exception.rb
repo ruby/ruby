@@ -705,6 +705,15 @@ end.join
     assert_equal(:foo, e.name)
     assert_same(obj, e.receiver)
     assert_equal(%i[a b c d e f g], e.local_variables.sort)
+
+    obj = Object.new
+    e = NameError.new("error", :foo, obj)
+    assert_equal(:foo, e.name)
+    assert_same(obj, e.receiver)
+    e = NoMethodError.new("error", :foo, obj, [])
+    assert_equal(:foo, e.name)
+    assert_same(obj, e.receiver)
+    assert_equal([], e.args)
   end
 
   def test_name_error_info_parent_iseq_mark

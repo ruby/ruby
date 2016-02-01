@@ -1127,7 +1127,7 @@ rb_name_error_str(VALUE str, const char *fmt, ...)
 
 /*
  * call-seq:
- *   NameError.new([msg, *, name])  -> name_error
+ *   NameError.new([msg, *, name [, receiver]])  -> name_error
  *
  * Construct a new NameError exception. If given the <i>name</i>
  * parameter may subsequently be examined using the <code>NameError.name</code>
@@ -1138,8 +1138,10 @@ static VALUE
 name_err_initialize(int argc, VALUE *argv, VALUE self)
 {
     VALUE name;
+    VALUE recv;
     VALUE iseqw = Qnil;
 
+    recv = (argc > 2) ? argv[--argc] : Qundef;
     name = (argc > 1) ? argv[--argc] : Qnil;
     rb_call_super(argc, argv);
     rb_ivar_set(self, id_name, name);
@@ -1150,6 +1152,7 @@ name_err_initialize(int argc, VALUE *argv, VALUE self)
 	if (cfp) iseqw = rb_iseqw_new(cfp->iseq);
     }
     rb_ivar_set(self, id_iseq, iseqw);
+    if (recv != Qundef) rb_ivar_set(self, id_receiver, recv);
     return self;
 }
 
@@ -1192,7 +1195,7 @@ name_err_local_variables(VALUE self)
 
 /*
  * call-seq:
- *   NoMethodError.new([msg, *, name [, args]])  -> no_method_error
+ *   NoMethodError.new([msg, *, name [[, receiver], args]])  -> no_method_error
  *
  * Construct a NoMethodError exception for a method of the given name
  * called with the given arguments. The name may be accessed using
