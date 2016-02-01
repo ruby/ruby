@@ -1912,7 +1912,7 @@ open_dir_handle(const WCHAR *filename, WIN32_FIND_DATAW *fd)
 
 /* License: Artistic or GPL */
 static DIR *
-opendir_internal(WCHAR *wpath, const char *filename)
+w32_wopendir(const WCHAR *wpath)
 {
     struct stati64 sbuf;
     WIN32_FIND_DATAW fd;
@@ -1932,8 +1932,8 @@ opendir_internal(WCHAR *wpath, const char *filename)
 	return NULL;
     }
     if (!(sbuf.st_mode & S_IFDIR) &&
-	(!ISALPHA(filename[0]) || filename[1] != ':' || filename[2] != '\0' ||
-	 ((1 << ((filename[0] & 0x5f) - 'A')) & GetLogicalDrives()) == 0)) {
+	(!ISALPHA(wpath[0]) || wpath[1] != L':' || wpath[2] != L'\0' ||
+	 ((1 << ((wpath[0] & 0x5f) - 'A')) & GetLogicalDrives()) == 0)) {
 	errno = ENOTDIR;
 	return NULL;
     }
@@ -2055,7 +2055,7 @@ rb_w32_opendir(const char *filename)
     WCHAR *wpath = filecp_to_wstr(filename, NULL);
     if (!wpath)
 	return NULL;
-    ret = opendir_internal(wpath, filename);
+    ret = w32_wopendir(wpath);
     free(wpath);
     return ret;
 }
@@ -2068,7 +2068,7 @@ rb_w32_uopendir(const char *filename)
     WCHAR *wpath = utf8_to_wstr(filename, NULL);
     if (!wpath)
 	return NULL;
-    ret = opendir_internal(wpath, filename);
+    ret = w32_wopendir(wpath);
     free(wpath);
     return ret;
 }
