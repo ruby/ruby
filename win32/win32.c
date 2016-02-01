@@ -4843,13 +4843,13 @@ rb_w32_read_reparse_point(const WCHAR *path, rb_w32_reparse_buffer_t *rp,
 	}
 	else { /* IO_REPARSE_TAG_MOUNT_POINT */
 	    static const WCHAR *volume = L"Volume{";
-	    /* +4/-4 means to drop "\??\" */
+	    enum {volume_prefix_len = rb_strlen_lit("\\??\\")};
 	    name = ((char *)rp->MountPointReparseBuffer.PathBuffer +
 		    rp->MountPointReparseBuffer.SubstituteNameOffset +
-		    4 * sizeof(WCHAR));
+		    volume_prefix_len * sizeof(WCHAR));
 	    ret = rp->MountPointReparseBuffer.SubstituteNameLength;
 	    *len = ret / sizeof(WCHAR);
-	    ret -= 4 * sizeof(WCHAR);
+	    ret -= volume_prefix_len * sizeof(WCHAR);
 	    if (ret > sizeof(volume) - 1 * sizeof(WCHAR) &&
 		memcmp(name, volume, sizeof(volume) - 1 * sizeof(WCHAR)) == 0)
 		return -1;
