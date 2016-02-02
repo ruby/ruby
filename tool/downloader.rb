@@ -31,6 +31,10 @@ else
 end
 
 class Downloader
+  def self.https=(https)
+    @@https = https
+  end
+
   def self.https
     if @@https != 'https'
       warn "*** using http instead of https ***"
@@ -190,7 +194,7 @@ class Downloader
   end
 end
 
-Downloader.class_variable_set(:@@https, https.freeze)
+Downloader.https = https.freeze
 
 if $0 == __FILE__
   since = true
