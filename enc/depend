@@ -28,8 +28,10 @@ else
   ''
 end %> <%=CONFIG['LIBS']%> $(EXTLIBS)
 
-ENCOBJS = <%=ENCS.map {|e|"enc/#{e}.$(OBJEXT)"}.join(" \\\n\t  ")%><%="\n" if ENCS.size>1%>
-ENCSOS = <%=ENCS.map {|e|"$(ENCSODIR)/#{e}.$(DLEXT)"}.join(" \\\n\t ")%><%="\n" if ENCS.size>1%>
+ENCOBJS =<%ENCS.map {|e|%> enc/<%=e%>.$(OBJEXT) \
+         <%}%> #
+ENCSOS =<%ENCS.map {|e|%> $(ENCSODIR)/<%=e%>.$(DLEXT) \
+        <%}%> #
 ENCCLEANLIBS = <%=cleanlibs.map {|clean|
   clean.gsub(/\$\*(\.\w+)?/) {"$(ENCOBJS#{$1 ? ":.#{CONFIG["OBJEXT"]}=#{$1}" : ""})"}
 }.join(" ")%>
@@ -40,9 +42,12 @@ LIBENC=enc/libenc.$(LIBEXT)
 
 TRANSVPATH = $(srcdir)/enc/trans
 
-TRANSCSRCS = <%=ATRANS.map {|e| transvpath % "#{e}.c"}.join(" \\\n\t     ")%><%="\n" if TRANS.size>1%>
-TRANSOBJS = <%=TRANS.map {|e|"enc/#{e}.$(OBJEXT)"}.join(" \\\n\t    ")%><%="\n" if TRANS.size>1%>
-TRANSSOS = <%=TRANS.map {|e|"$(ENCSODIR)/#{e}.$(DLEXT)"}.join(" \\\n\t   ")%><%="\n" if TRANS.size>1%>
+TRANSCSRCS =<%ATRANS.map {|e|%> <%=transvpath % "#{e}.c"%> \
+            <%}%> #
+TRANSOBJS =<%TRANS.map {|e|%> enc/<%=e%>.$(OBJEXT) \
+           <%}%> #
+TRANSSOS =<%TRANS.map {|e|%> $(ENCSODIR)/<%=e%>.$(DLEXT) \
+          <%}%> #
 TRANSCLEANLIBS = <%=cleanlibs.map {|clean|
   clean.gsub(/\$\*(\.\w+)?/) {"$(TRANSOBJS#{$1 ? ":.#{CONFIG["OBJEXT"]}=#{$1}" : ""})"}
 }.join(" ")%>
@@ -77,6 +82,17 @@ $(LIBTRANS): $(TRANSOBJS)
 enc trans $(ENCSOS) $(TRANSSOS): config.status
 
 srcs: $(TRANSCSRCS)
+
+$(ENC_TRANS_D):
+	$(Q) $(MAKEDIRS) enc/trans
+	@exit > $@
+
+$(ENC_TRANS_SO_D):
+	$(Q) $(MAKEDIRS) $(TRANSSODIR)
+	@exit > $@
+
+$(ENCOBJS) $(TRANSOBJS): $(ENC_TRANS_D)
+$(ENCSOS) $(TRANSSOS): $(ENC_TRANS_SO_D)
 
 <%=transvpath_prefix%>.trans<%=transvpath_prefix%>.c:
 	$(ECHO) generating table from $@
@@ -118,13 +134,11 @@ enc/<%=e%>.$(OBJEXT): <%=deps.map {|n| rule_subst % n}.join(' ')%>
 %     cmd.sub!(/\$\(DEFFILE\)/) {df}
 %     cmd.gsub!(/-(?:implib|pdb):/) {|s|"#{s}enc/#{e.sub(/[^\/]+\z/, '')}"}
 %   end
-	$(Q)$(MAKEDIRS) "$(@D)"
 	$(Q)<%=cmd%>
 
 % end
 % dependencies.each do |e|
 <%="enc/#{e}.$(OBJEXT)"%>: <%="$(encsrcdir)/#{e}.c"%>
-	-$(Q)$(MAKEDIRS) "$(@D)"
 	$(ECHO) compiling <%= "$(encsrcdir)/#{e}.c"%>
 	$(Q)<%=COMPILE_C.gsub(/\$(\()?<(\:[^)]+)?(\))?/){"$(encsrcdir)/#{e}.c"}%>
 
@@ -134,7 +148,7 @@ enc/encdb.$(OBJEXT): encdb.h
 enc/trans/transdb.$(OBJEXT): transdb.h
 
 clean:
-% %w[$(ENCSOS) $(LIBENC) $(ENCOBJS) $(ENCCLEANOBJS) $(ENCCLEANLIBS) $(TRANSSOS) $(LIBTRANS) $(TRANSOBJS) $(TRANSCLEANOBJS) $(TRANSCLEANLIBS) enc/trans/.time].each do |clean|
+% %w[$(ENCSOS) $(LIBENC) $(ENCOBJS) $(ENCCLEANOBJS) $(ENCCLEANLIBS) $(TRANSSOS) $(LIBTRANS) $(TRANSOBJS) $(TRANSCLEANOBJS) $(TRANSCLEANLIBS) $(ENC_TRANS_D) $(ENC_TRANS_SO_D)].each do |clean|
 	$(Q)$(RM) <%=pathrep[clean]%>
 % end
 % @ignore_error = $nmake ? '' : ' 2> /dev/null || true'
