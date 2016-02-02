@@ -1,3 +1,9 @@
+Tue Feb  2 09:08:27 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/rubygems/specification.rb: `coding` is affect only first line except
+	  shebang.
+	* lib/rubygems/package.rb, lib/rubygems/package/*: ditto.
+
 Mon Feb  1 21:41:58 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/rubygems.rb, lib/rubygems/*, test/rubygems/*: Update rubygems-2.5.2.
