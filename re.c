@@ -1374,8 +1374,9 @@ static rb_encoding*
 rb_reg_prepare_enc(VALUE re, VALUE str, int warn)
 {
     rb_encoding *enc = 0;
+    int cr = rb_enc_str_coderange(str);
 
-    if (rb_enc_str_coderange(str) == ENC_CODERANGE_BROKEN) {
+    if (cr == ENC_CODERANGE_BROKEN) {
         rb_raise(rb_eArgError,
             "invalid byte sequence in %s",
             rb_enc_name(rb_enc_get(str)));
@@ -1391,14 +1392,19 @@ rb_reg_prepare_enc(VALUE re, VALUE str, int warn)
     else if (rb_reg_fixed_encoding_p(re)) {
         if (RREGEXP_PTR(re)->enc != enc &&
 	    (!rb_enc_asciicompat(RREGEXP_PTR(re)->enc) ||
-	     rb_enc_str_coderange(str) != ENC_CODERANGE_7BIT)) {
+	     cr != ENC_CODERANGE_7BIT)) {
 	    reg_enc_error(re, str);
 	}
 	enc = RREGEXP_PTR(re)->enc;
     }
+    else if (cr == ENC_CODERANGE_7BIT &&
+	    (RREGEXP_PTR(re)->enc == rb_usascii_encoding()
+	     )) {
+	enc = RREGEXP_PTR(re)->enc;
+    }
     if (warn && (RBASIC(re)->flags & REG_ENCODING_NONE) &&
 	enc != rb_ascii8bit_encoding() &&
-	rb_enc_str_coderange(str) != ENC_CODERANGE_7BIT) {
+	cr != ENC_CODERANGE_7BIT) {
 	rb_warn("regexp match /.../n against to %s string",
 		rb_enc_name(enc));
     }

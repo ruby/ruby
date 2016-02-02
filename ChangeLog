@@ -1,3 +1,9 @@
+Wed Feb  3 02:33:39 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* re.c (rb_reg_prepare_enc): use already compiled US-ASCII regexp
+	  if given string is ASCII only.
+	  121.2s to 113.9s on my x86_64-freebsd10.2 Intel Core i5 661
+
 Tue Feb  2 13:02:03 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* re.c: Introduce RREGEXP_PTR.
