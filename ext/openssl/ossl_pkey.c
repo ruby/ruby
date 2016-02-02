@@ -374,7 +374,7 @@ Init_ossl_pkey(void)
      * algorithm consists of two parts: a public key that may be distributed
      * to others and a private key that needs to remain secret.
      *
-     * Messages encrypted with a public key can only be encrypted by
+     * Messages encrypted with a public key can only be decrypted by
      * recipients that are in possession of the associated private key.
      * Since public key algorithms are considerably slower than symmetric
      * key algorithms (cf. OpenSSL::Cipher) they are often used to establish
