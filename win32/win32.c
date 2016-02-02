@@ -1869,12 +1869,9 @@ static HANDLE
 open_dir_handle(const WCHAR *filename, WIN32_FIND_DATAW *fd)
 {
     HANDLE fh;
-    static const WCHAR wildcard[] = L"\\*";
-    WCHAR fullname[MAX_PATH];
-    WCHAR *scanname;
+    WCHAR fullname[_MAX_PATH + rb_strlen_lit("\\*")];
     WCHAR *p;
     int len = 0;
-    VALUE v;
 
     //
     // Create the search pattern
@@ -1882,28 +1879,26 @@ open_dir_handle(const WCHAR *filename, WIN32_FIND_DATAW *fd)
 
     fh = open_special(filename, 0, 0);
     if (fh != INVALID_HANDLE_VALUE) {
-	len = get_final_path(fh, fullname, numberof(fullname), 0);
+	len = get_final_path(fh, fullname, _MAX_PATH, 0);
 	CloseHandle(fh);
     }
-    if (len) {
-	filename = fullname;
-    }
-    else {
+    if (!len) {
 	len = lstrlenW(filename);
+	if (len >= _MAX_PATH) {
+	    errno = ENAMETOOLONG;
+	    return INVALID_HANDLE_VALUE;
+	}
+	MEMCPY(fullname, filename, WCHAR, len);
     }
-    scanname = ALLOCV_N(WCHAR, v, len + numberof(wildcard));
-    lstrcpyW(scanname, filename);
-    p = CharPrevW(scanname, scanname + len);
-    if (*p == L'/' || *p == L'\\' || *p == L':')
-	lstrcatW(scanname, wildcard + 1);
-    else
-	lstrcatW(scanname, wildcard);
+    p = &fullname[len-1];
+    if (!(isdirsep(*p) || *p == L':')) *++p = L'\\';
+    *++p = L'*';
+    *++p = L'\0';
 
     //
     // do the FindFirstFile call
     //
-    fh = FindFirstFileW(scanname, fd);
-    ALLOCV_END(v);
+    fh = FindFirstFileW(fullname, fd);
     if (fh == INVALID_HANDLE_VALUE) {
 	errno = map_errno(GetLastError());
     }
