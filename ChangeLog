@@ -1,3 +1,19 @@
+Tue Feb  2 13:02:03 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* re.c: Introduce RREGEXP_PTR.
+	  patch by dbussink.
+	  partially merge https://github.com/ruby/ruby/pull/497
+
+	* include/ruby/ruby.h: ditto.
+
+	* gc.c: ditto.
+
+	* ext/strscan/strscan.c: ditto.
+
+	* parse.y: ditto.
+
+	* string.c: ditto.
+
 Tue Feb  2 09:08:27 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/rubygems/specification.rb: `coding` is effective only first

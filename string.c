@@ -3239,7 +3239,7 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
 	pos = str_offset(RSTRING_PTR(str), RSTRING_END(str), pos,
 			 enc, single_byte_optimizable(str));
 
-	if (!RREGEXP(sub)->ptr || RREGEXP_SRC_LEN(sub)) {
+	if (!RREGEXP_PTR(sub) || RREGEXP_SRC_LEN(sub)) {
 	    pos = rb_reg_search(sub, str, pos, 1);
 	    pos = rb_str_sublen(str, pos);
 	}

@@ -3107,8 +3107,8 @@ obj_memsize_of(VALUE obj, int use_all_types)
 	}
 	break;
       case T_REGEXP:
-	if (RREGEXP(obj)->ptr) {
-	    size += onig_memsize(RREGEXP(obj)->ptr);
+	if (RREGEXP_PTR(obj)) {
+	    size += onig_memsize(RREGEXP_PTR(obj));
 	}
 	break;
       case T_DATA:

@@ -10625,7 +10625,7 @@ reg_named_capture_assign_gen(struct parser_params* parser, VALUE regexp, NODE *m
     arg.succ_block = 0;
     arg.fail_block = 0;
     arg.num = 0;
-    onig_foreach_name(RREGEXP(regexp)->ptr, reg_named_capture_assign_iter, &arg);
+    onig_foreach_name(RREGEXP_PTR(regexp), reg_named_capture_assign_iter, &arg);
 
     if (arg.num == 0)
         return match;
