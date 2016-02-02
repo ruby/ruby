@@ -58,7 +58,7 @@ class RubyVM::InstructionSequence
                                      begin
                                        iseq.to_binary
                                      rescue RuntimeError # not a toplevel
-                                       # STDERR.puts [:failed, e, iseq].inspect
+                                       # STDERR.puts [:failed, $!, iseq].inspect
                                        nil
                                      end
                                    },
