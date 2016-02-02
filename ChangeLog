@@ -1,3 +1,8 @@
+Wed Feb  3 08:25:38 2016  boshan  <boshan@subsplash.com>
+
+	* ext/openssl/ossl_pkey.c (Init_ossl_pkey): [DOC] Fix typo
+	  "encrypted" to "decrypted".  [Fix GH-1235]
+
 Wed Feb  3 08:21:32 2016  Seiei Miyagi  <hanachin@gmail.com>
 
 	* ext/ripper/lib/ripper/lexer.rb (on_heredoc_dedent): Fix
