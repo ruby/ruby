@@ -1,3 +1,9 @@
+Wed Feb  3 08:21:32 2016  Seiei Miyagi  <hanachin@gmail.com>
+
+	* ext/ripper/lib/ripper/lexer.rb (on_heredoc_dedent): Fix
+	  Ripper.lex error in dedenting squiggly heredoc.  heredoc tree is
+	  also an array of Elem in the outer tree.  [Fix GH-1234]
+
 Wed Feb  3 02:33:39 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* re.c (rb_reg_prepare_enc): use already compiled US-ASCII regexp
