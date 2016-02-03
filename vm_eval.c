@@ -685,7 +685,13 @@ static VALUE
 make_no_method_exception(VALUE exc, VALUE format, VALUE obj, int argc, const VALUE *argv)
 {
     int n = 0;
-    VALUE args[3];
+    enum {
+	arg_mesg,
+	arg_name,
+	arg_args,
+	args_size
+    };
+    VALUE args[args_size];
 
     if (!format) {
 	format = rb_fstring_cstr("undefined method `%s' for %s%s%s");
