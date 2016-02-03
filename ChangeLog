@@ -1,3 +1,8 @@
+Wed Feb  3 12:13:20 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (str_new_frozen): if the given string is embeddedable
+	  but not embedded, embed a new copied string. [Bug #11946]
+
 Wed Feb  3 08:25:38 2016  boshan  <boshan@subsplash.com>
 
 	* ext/openssl/ossl_pkey.c (Init_ossl_pkey): [DOC] Fix typo

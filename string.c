@@ -1090,6 +1090,13 @@ str_new_frozen(VALUE klass, VALUE orig)
 		return shared;
 	    }
 	}
+	else if (RSTRING_LEN(orig)+TERM_LEN(orig) <= RSTRING_EMBED_LEN_MAX+1) {
+	    str = str_alloc(klass);
+	    STR_SET_EMBED(str);
+	    memcpy(RSTRING_PTR(str), RSTRING_PTR(orig), RSTRING_LEN(orig));
+	    STR_SET_EMBED_LEN(str, RSTRING_LEN(orig));
+	    TERM_FILL(RSTRING_END(str), TERM_LEN(orig));
+	}
 	else {
 	    str = str_alloc(klass);
 	    STR_SET_NOEMBED(str);
