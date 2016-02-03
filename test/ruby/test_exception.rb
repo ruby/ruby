@@ -689,6 +689,12 @@ end.join
     assert_equal(:foo, e.name)
     assert_equal([1, 2], e.args)
     assert_same(obj, e.receiver)
+    e = assert_raise(NoMethodError) {
+      obj.instance_eval {foo(1, 2)}
+    }
+    assert_equal(:foo, e.name)
+    assert_equal([1, 2], e.args)
+    assert_same(obj, e.receiver)
     def obj.test(a, b=nil, *c, &d)
       e = a
       1.times {|f| g = foo}
