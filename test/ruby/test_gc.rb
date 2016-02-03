@@ -342,13 +342,6 @@ class TestGc < Test::Unit::TestCase
           sleep 0.1
           Process.kill("INT", pid) rescue break
         }
-        if RUBY_PLATFORM.include?('solaris')
-          $stderr.puts `/usr/bin/psig #{$$}`
-          $stderr.puts `/usr/bin/psig #{Process.ppid}`
-        elsif File.exist?('/proc/self/status')
-          $stderr.puts IO.read('/proc/self/status')
-          $stderr.puts IO.read("/proc/#{Process.ppid}/status")
-        end
       end
       f = proc {1000.times {}}
       loop do
