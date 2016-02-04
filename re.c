@@ -500,7 +500,7 @@ rb_reg_source(VALUE re)
     VALUE str;
 
     rb_reg_check(re);
-    str = rb_enc_str_new(RREGEXP_SRC_PTR(re),RREGEXP_SRC_LEN(re), rb_enc_get(re));
+    str = rb_str_dup(RREGEXP_SRC(re));
     if (OBJ_TAINTED(re)) OBJ_TAINT(str);
     return str;
 }
