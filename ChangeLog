@@ -1,3 +1,8 @@
+Thu Feb  4 11:53:56 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* common.mk: Introduce two variables (UNICODE_DATA_DIR and
+	  UNICODE_SRC_DATA_DIR) to eliminate repetitions.
+
 Wed Feb  3 12:13:20 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (str_new_frozen): if the given string is embeddedable

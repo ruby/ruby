@@ -1014,19 +1014,21 @@ update-bundled_gems: PHONY
 ### set the following environment variable or uncomment the line if
 ### the Unicode data files should be updated completely on every update ('make up',...).
 # ALWAYS_UPDATE_UNICODE = yes
+UNICODE_DATA_DIR = enc/unicode/data/$(UNICODE_VERSION)
+UNICODE_SRC_DATA_DIR = $(srcdir)/$(UNICODE_DATA_DIR)
 
-UNICODE_FILES = $(srcdir)/enc/unicode/data/$(UNICODE_VERSION)/UnicodeData.txt \
-		$(srcdir)/enc/unicode/data/$(UNICODE_VERSION)/CompositionExclusions.txt \
-		$(srcdir)/enc/unicode/data/$(UNICODE_VERSION)/NormalizationTest.txt \
-		$(srcdir)/enc/unicode/data/$(UNICODE_VERSION)/CaseFolding.txt
+UNICODE_FILES = $(UNICODE_SRC_DATA_DIR)/UnicodeData.txt \
+		$(UNICODE_SRC_DATA_DIR)/CompositionExclusions.txt \
+		$(UNICODE_SRC_DATA_DIR)/NormalizationTest.txt \
+		$(UNICODE_SRC_DATA_DIR)/CaseFolding.txt
 
 update-unicode: $(UNICODE_FILES)
 
 $(UNICODE_FILES):
 	$(ECHO) Downloading Unicode $(UNICODE_VERSION) data files...
-	$(Q) $(MAKEDIRS) "$(srcdir)/enc/unicode/data/$(UNICODE_VERSION)"
+	$(Q) $(MAKEDIRS) "$(UNICODE_SRC_DATA_DIR)"
 	$(Q) $(BASERUBY) -C "$(srcdir)" tool/downloader.rb \
-	    -d enc/unicode/data/$(UNICODE_VERSION) \
+	    -d $(UNICODE_DATA_DIR) \
 	    -p $(UNICODE_VERSION)/ucd \
 	    -e $(ALWAYS_UPDATE_UNICODE:yes=-a) unicode \
 	    $(UNICODE_FILES)
@@ -1041,7 +1043,7 @@ $(srcdir)/.unicode-tables.time: $(srcdir)/tool/generic_erb.rb \
 		-c -t$@ -o $(srcdir)/lib/unicode_normalize/tables.rb \
 		-I $(srcdir) \
 		$(srcdir)/template/unicode_norm_gen.tmpl \
-		enc/unicode/data/$(UNICODE_VERSION) lib/unicode_normalize
+		$(UNICODE_DATA_DIR) lib/unicode_normalize
 
 download-extlibs:
 	$(Q) $(BASERUBY) -C $(srcdir) -w tool/extlibs.rb --download ext
