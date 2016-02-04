@@ -49,6 +49,7 @@
 #undef rb_str_cat2
 #undef rb_str_cat_cstr
 #undef rb_fstring_cstr
+#undef rb_fstring_enc_cstr
 
 static VALUE rb_str_clear(VALUE str);
 
@@ -360,9 +361,22 @@ rb_fstring_new(const char *ptr, long len)
 }
 
 VALUE
+rb_fstring_enc_new(const char *ptr, long len, rb_encoding *enc)
+{
+    struct RString fake_str;
+    return register_fstring(rb_setup_fake_str(&fake_str, ptr, len, enc));
+}
+
+VALUE
 rb_fstring_cstr(const char *ptr)
 {
     return rb_fstring_new(ptr, strlen(ptr));
+}
+
+VALUE
+rb_fstring_enc_cstr(const char *ptr, rb_encoding *enc)
+{
+    return rb_fstring_enc_new(ptr, strlen(ptr), enc);
 }
 
 static int

@@ -1,3 +1,10 @@
+Thu Feb  4 15:35:29 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_fstring_enc_new, rb_fstring_enc_cstr): functions to
+	  make fstring with encoding.
+
+	* re.c (rb_reg_initialize): make fstring without copying.
+
 Thu Feb  4 14:42:29 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* common.mk: Added Unicode data file SpecialCasing.txt to be additionally

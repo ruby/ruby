@@ -1135,6 +1135,20 @@ VALUE rb_fstring_cstr(const char *str);
 	rb_fstring_cstr(str); \
 })
 #endif
+#ifdef RUBY_ENCODING_H
+VALUE rb_fstring_enc_new(const char *ptr, long len, rb_encoding *enc);
+#define rb_fstring_enc_lit(str, enc) rb_fstring_enc_new((str), rb_strlen_lit(str), (enc))
+#define rb_fstring_enc_literal(str, enc) rb_fstring_enc_lit(str, enc)
+VALUE rb_fstring_enc_cstr(const char *ptr, rb_encoding *enc);
+#if defined(__GNUC__) && !defined(__PCC__)
+#define rb_fstring_enc_cstr(str, enc) __extension__ ( \
+{						\
+    (__builtin_constant_p(str)) ?		\
+	rb_fstring_enc_new((str), (long)strlen(str), (enc)) : \
+	rb_fstring_enc_cstr(str, enc); \
+})
+#endif
+#endif
 int rb_str_buf_cat_escaped_char(VALUE result, unsigned int c, int unicode_p);
 int rb_str_symname_p(VALUE);
 VALUE rb_str_quote_unprintable(VALUE);
