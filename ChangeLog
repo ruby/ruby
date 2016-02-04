@@ -1,3 +1,11 @@
+Thu Feb  4 17:38:01 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* re.c (reg_set_source): make source string frozen without
+	  copying.
+
+	* re.c (rb_reg_initialize_m): refactor initialization with
+	  encoding.
+
 Thu Feb  4 15:35:29 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_fstring_enc_new, rb_fstring_enc_cstr): functions to

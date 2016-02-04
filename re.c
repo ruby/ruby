@@ -2580,9 +2580,18 @@ rb_reg_initialize(VALUE obj, const char *s, long len, rb_encoding *enc,
 			  options & ARG_REG_OPTION_MASK, err,
 			  sourcefile, sourceline);
     if (!re->ptr) return -1;
-    RB_OBJ_WRITE(obj, &re->src, rb_fstring(rb_enc_str_new(s, len, enc)));
     RB_GC_GUARD(unescaped);
     return 0;
+}
+
+static void
+reg_set_source(VALUE reg, VALUE str, rb_encoding *enc)
+{
+    rb_encoding *regenc = rb_enc_get(reg);
+    if (regenc != enc) {
+	str = rb_enc_associate(rb_str_dup(str), enc = regenc);
+    }
+    RB_OBJ_WRITE(reg, &RREGEXP(reg)->src, rb_fstring(str));
 }
 
 static int
@@ -2590,7 +2599,7 @@ rb_reg_initialize_str(VALUE obj, VALUE str, int options, onig_errmsg_buffer err,
 	const char *sourcefile, int sourceline)
 {
     int ret;
-    rb_encoding *enc = rb_enc_get(str);
+    rb_encoding *str_enc = rb_enc_get(str), *enc = str_enc;
     if (options & ARG_ENCODING_NONE) {
         rb_encoding *ascii8bit = rb_ascii8bit_encoding();
         if (enc != ascii8bit) {
@@ -2604,7 +2613,7 @@ rb_reg_initialize_str(VALUE obj, VALUE str, int options, onig_errmsg_buffer err,
     ret = rb_reg_initialize(obj, RSTRING_PTR(str), RSTRING_LEN(str), enc,
 			    options, err, sourcefile, sourceline);
     OBJ_INFECT(obj, str);
-    RB_GC_GUARD(str);
+    if (ret == 0) reg_set_source(obj, str, str_enc);
     return ret;
 }
 
@@ -2644,6 +2653,20 @@ rb_reg_init_str(VALUE re, VALUE s, int options)
     return re;
 }
 
+static VALUE
+rb_reg_init_str_enc(VALUE re, VALUE s, rb_encoding *enc, int options)
+{
+    onig_errmsg_buffer err = "";
+
+    if (rb_reg_initialize(re, RSTRING_PTR(s), RSTRING_LEN(s),
+			  enc, options, err, NULL, 0) != 0) {
+	rb_reg_raise_str(s, options, err);
+    }
+    reg_set_source(re, s, enc);
+
+    return re;
+}
+
 VALUE
 rb_reg_new_ary(VALUE ary, int opt)
 {
@@ -2659,6 +2682,7 @@ rb_enc_reg_new(const char *s, long len, rb_encoding *enc, int options)
     if (rb_reg_initialize(re, s, len, enc, options, err, NULL, 0) != 0) {
 	rb_enc_reg_raise(s, len, enc, options, err);
     }
+    RB_OBJ_WRITE(re, &RREGEXP(re)->src, rb_fstring(rb_enc_str_new(s, len, enc)));
 
     return re;
 }
@@ -3060,12 +3084,9 @@ rb_reg_match_m(int argc, VALUE *argv, VALUE re)
 static VALUE
 rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
 {
-    onig_errmsg_buffer err = "";
     int flags = 0;
     VALUE str;
-    rb_encoding *enc;
-    const char *ptr;
-    long len;
+    rb_encoding *enc = 0;
 
     rb_check_arity(argc, 1, 3);
     if (RB_TYPE_P(argv[0], T_REGEXP)) {
@@ -3076,20 +3097,13 @@ rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
 	}
 	rb_reg_check(re);
 	flags = rb_reg_options(re);
-	ptr = RREGEXP_SRC_PTR(re);
-	len = RREGEXP_SRC_LEN(re);
-	enc = rb_enc_get(re);
-	if (rb_reg_initialize(self, ptr, len, enc, flags, err, NULL, 0)) {
-	    str = rb_enc_str_new(ptr, len, enc);
-	    rb_reg_raise_str(str, flags, err);
-	}
+	str = RREGEXP_SRC(re);
     }
     else {
 	if (argc >= 2) {
 	    if (FIXNUM_P(argv[1])) flags = FIX2INT(argv[1]);
 	    else if (RTEST(argv[1])) flags = ONIG_OPTION_IGNORECASE;
 	}
-	enc = 0;
 	if (argc == 3 && !NIL_P(argv[2])) {
 	    char *kcode = StringValuePtr(argv[2]);
 	    if (kcode[0] == 'n' || kcode[0] == 'N') {
@@ -3100,14 +3114,12 @@ rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
 		rb_warn("encoding option is ignored - %s", kcode);
 	    }
 	}
-	str = argv[0];
-	ptr = StringValuePtr(str);
-	if (enc
-	    ? rb_reg_initialize(self, ptr, RSTRING_LEN(str), enc, flags, err, NULL, 0)
-	    : rb_reg_initialize_str(self, str, flags, err, NULL, 0)) {
-	    rb_reg_raise_str(str, flags, err);
-	}
+	str = StringValue(argv[0]);
     }
+    if (enc && rb_enc_get(str) != enc)
+	rb_reg_init_str_enc(self, str, enc, flags);
+    else
+	rb_reg_init_str(self, str, flags);
     return self;
 }
 
@@ -3420,19 +3432,9 @@ rb_reg_s_union_m(VALUE self, VALUE args)
 static VALUE
 rb_reg_init_copy(VALUE copy, VALUE re)
 {
-    onig_errmsg_buffer err = "";
-    const char *s;
-    long len;
-
     if (!OBJ_INIT_COPY(copy, re)) return copy;
     rb_reg_check(re);
-    s = RREGEXP_SRC_PTR(re);
-    len = RREGEXP_SRC_LEN(re);
-    if (rb_reg_initialize(copy, s, len, rb_enc_get(re), rb_reg_options(re),
-		err, NULL, 0) != 0) {
-	rb_reg_raise(s, len, err, re);
-    }
-    return copy;
+    return rb_reg_init_str(copy, RREGEXP_SRC(re), rb_reg_options(re));
 }
 
 VALUE
