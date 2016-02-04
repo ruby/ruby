@@ -40,8 +40,8 @@ preserve_original_state(VALUE orig, VALUE dest)
 static VALUE
 optimized_escape_html(VALUE str)
 {
-    long i, len, modified = 0, beg = 0;
-    VALUE dest;
+    long i, len, beg = 0;
+    VALUE dest = 0;
     const char *cstr;
 
     len  = RSTRING_LEN(str);
@@ -54,8 +54,7 @@ optimized_escape_html(VALUE str)
 	  case '"':
 	  case '<':
 	  case '>':
-	    if (!modified) {
-		modified = 1;
+	    if (!dest) {
 		dest = rb_str_buf_new(len);
 	    }
 
@@ -67,7 +66,7 @@ optimized_escape_html(VALUE str)
 	}
     }
 
-    if (modified) {
+    if (dest) {
 	rb_str_cat(dest, cstr + beg, len - beg);
 	preserve_original_state(str, dest);
 	return dest;
@@ -99,8 +98,8 @@ url_unreserved_char(unsigned char c)
 static VALUE
 optimized_escape(VALUE str)
 {
-    long i, len, modified = 0, beg = 0;
-    VALUE dest;
+    long i, len, beg = 0;
+    VALUE dest = 0;
     const char *cstr;
     char buf[4] = {'%'};
 
@@ -109,8 +108,7 @@ optimized_escape(VALUE str)
 
     for (i = 0; i < len; i++) {
 	if (!url_unreserved_char(cstr[i])) {
-	    if (!modified) {
-		modified = 1;
+	    if (!dest) {
 		dest = rb_str_buf_new(len);
 	    }
 
@@ -129,7 +127,7 @@ optimized_escape(VALUE str)
 	}
     }
 
-    if (modified) {
+    if (dest) {
 	rb_str_cat(dest, cstr + beg, len - beg);
 	preserve_original_state(str, dest);
 	return dest;
