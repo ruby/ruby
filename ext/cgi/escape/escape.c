@@ -106,8 +106,9 @@ optimized_escape(VALUE str)
     len  = RSTRING_LEN(str);
     cstr = RSTRING_PTR(str);
 
-    for (i = 0; i < len; i++) {
-	if (!url_unreserved_char(cstr[i])) {
+    for (i = 0; i < len; ++i) {
+	const unsigned char c = (unsigned char)cstr[i];
+	if (!url_unreserved_char(c)) {
 	    if (!dest) {
 		dest = rb_str_buf_new(len);
 	    }
@@ -115,12 +116,11 @@ optimized_escape(VALUE str)
 	    rb_str_cat(dest, cstr + beg, i - beg);
 	    beg = i + 1;
 
-	    if (cstr[i] == ' ') {
+	    if (c == ' ') {
 		rb_str_cat_cstr(dest, "+");
 	    }
 	    else {
-		unsigned char c = (unsigned char)cstr[i];
-		buf[1] = upper_hexdigits[c >> 4];
+		buf[1] = upper_hexdigits[(c >> 4) & 0xf];
 		buf[2] = upper_hexdigits[c & 0xf];
 		rb_str_cat(dest, buf, 3);
 	    }
