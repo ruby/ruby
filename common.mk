@@ -1021,7 +1021,8 @@ UNICODE_FILES = $(UNICODE_SRC_DATA_DIR)/UnicodeData.txt \
 		$(UNICODE_SRC_DATA_DIR)/CompositionExclusions.txt \
 		$(UNICODE_SRC_DATA_DIR)/NormalizationTest.txt \
 		$(UNICODE_SRC_DATA_DIR)/CaseFolding.txt \
-		$(UNICODE_SRC_DATA_DIR)/SpecialCasing.txt
+		$(UNICODE_SRC_DATA_DIR)/SpecialCasing.txt \
+		$(empty)
 
 update-unicode: $(UNICODE_FILES)
 
