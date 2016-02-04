@@ -1,3 +1,8 @@
+Thu Feb  4 14:42:29 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* common.mk: Added Unicode data file SpecialCasing.txt to be additionally
+	  downloaded (with Kimihito Matsui)
+
 Thu Feb  4 12:39:08 2016  joker1007  <kakyoin.hierophant@gmail.com>
 
 	* cgi/escape/escape.c: Optimize CGI.escape performance by C ext
