@@ -645,7 +645,7 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
 		}
 	    }
 	}
-	else if (code>=0x00C0) { /* deal with non-ASCII; nothing relevant below U+00C0 */
+	else if (!(flags&ONIGENC_CASE_ASCII_ONLY) && code>=0x00C0) { /* deal with non-ASCII; nothing relevant below U+00C0 */
 	    if (code==0x0130) {
 		if (flags&ONIGENC_CASE_DOWNCASE) {
 		    if (flags&ONIGENC_CASE_FOLD_TURKISH_AZERI)

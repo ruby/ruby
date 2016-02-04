@@ -1,3 +1,8 @@
+Thu Feb  4 21:05:17 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode.c: Activated :ascii flag for ASCII-only case conversion
+	  (with Kimihito Matsui)
+
 Thu Feb  4 17:38:01 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* re.c (reg_set_source): make source string frozen without
