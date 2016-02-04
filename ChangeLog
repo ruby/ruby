@@ -1,3 +1,8 @@
+Thu Feb  4 12:39:08 2016  joker1007  <kakyoin.hierophant@gmail.com>
+
+	* cgi/escape/escape.c: Optimize CGI.escape performance by C ext
+	  for ASCII-compatible encodings.  [Fix GH-1238]
+
 Thu Feb  4 11:53:56 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* common.mk: Introduce two variables (UNICODE_DATA_DIR and
