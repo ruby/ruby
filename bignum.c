@@ -4367,6 +4367,46 @@ rb_ll2inum(LONG_LONG n)
 
 #endif  /* HAVE_LONG_LONG */
 
+#ifdef HAVE_INT128_T
+static VALUE
+rb_uint128t2big(uint128_t n)
+{
+    long i;
+    VALUE big = bignew(bdigit_roomof(SIZEOF_INT128_T), 1);
+    BDIGIT *digits = BDIGITS(big);
+
+    for (i = 0; i < bdigit_roomof(SIZEOF_INT128_T); i++) {
+	digits[i] = BIGLO(RSHIFT(n ,BITSPERDIG*i));
+    }
+
+    i = bdigit_roomof(SIZEOF_INT128_T);
+    while (i-- && !digits[i]) ;
+    BIGNUM_SET_LEN(big, i+1);
+    return big;
+}
+
+VALUE
+rb_int128t2big(int128_t n)
+{
+    int neg = 0;
+    uint128_t u;
+    VALUE big;
+
+    if (n < 0) {
+        u = 1 + (uint128_t)(-(n + 1)); /* u = -n avoiding overflow */
+	neg = 1;
+    }
+    else {
+        u = n;
+    }
+    big = rb_uint128t2big(u);
+    if (neg) {
+	BIGNUM_SET_SIGN(big, 0);
+    }
+    return big;
+}
+#endif
+
 VALUE
 rb_cstr2inum(const char *str, int base)
 {

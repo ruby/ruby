@@ -1,3 +1,14 @@
+Fri Feb  5 12:22:20 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* insns.def (opt_mult): Use int128_t for overflow detection.
+
+	* bignum.c (rb_uint128t2big): added for opt_mult.
+
+	* bignum.c (rb_uint128t2big): added for rb_uint128t2big..
+
+	* configure.in: define int128_t, uint128_t and related MACROs.
+	  Initially introduced by r41379 but reverted by r50749.
+
 Thu Feb  4 21:05:17 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/unicode.c: Activated :ascii flag for ASCII-only case conversion
