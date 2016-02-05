@@ -1,3 +1,8 @@
+Fri Feb  5 20:08:59 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* test/ruby/enc/test_case_mapping.rb: added tests for :ascii option.
+	  (with Kimihito Matsui)
+
 Fri Feb  5 12:22:20 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* insns.def (opt_mult): Use int128_t for overflow detection.

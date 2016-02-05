@@ -49,6 +49,16 @@ class TestCaseMappingPreliminary < Test::Unit::TestCase
     check_swapcase_properties   'yUKIHIRO matsumoto (MAtz)', 'Yukihiro MATSUMOTO (maTZ)', :lithuanian
   end
 
+  def test_ascii_option
+    check_downcase_properties   'yukihiro matsumoto (matz)', 'Yukihiro MATSUMOTO (MATZ)', :ascii
+    check_upcase_properties     'YUKIHIRO MATSUMOTO (MATZ)', 'yukihiro matsumoto (matz)', :ascii
+    check_capitalize_properties 'Yukihiro matsumoto (matz)', 'yukihiro MATSUMOTO (MATZ)', :ascii
+    check_swapcase_properties   'yUKIHIRO matsumoto (MAtz)', 'Yukihiro MATSUMOTO (maTZ)', :ascii
+    check_downcase_properties   'yukİhİro matsumoto (matz)', 'YUKİHİRO MATSUMOTO (MATZ)', :ascii
+    check_downcase_properties   'rÉsumÉ dÜrst ĬÑŦĖŘŊÃŢĲŇŐŃÆŁĨŻÀŤĬŌŅ', 'RÉSUMÉ DÜRST ĬÑŦĖŘŊÃŢĲŇŐŃÆŁĨŻÀŤĬŌŅ', :ascii
+    check_swapcase_properties   'rÉsumÉ dÜrst ĬÑŦĖŘŊÃŢĲŇŐŃÆŁĨŻÀŤĬŌŅ', 'RÉSUMÉ DÜRST ĬÑŦĖŘŊÃŢĲŇŐŃÆŁĨŻÀŤĬŌŅ', :ascii
+  end
+
   def test_turcic
     check_downcase_properties   'yukihiro matsumoto (matz)', 'Yukihiro MATSUMOTO (MATZ)', :turkic
     check_upcase_properties     'YUKİHİRO MATSUMOTO (MATZ)', 'Yukihiro Matsumoto (matz)', :turkic
