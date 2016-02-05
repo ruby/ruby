@@ -998,7 +998,7 @@ module MiniTest
           else
             @errors += 1
             bt = MiniTest::filter_backtrace(e.backtrace).join "\n    "
-            "Error:\n#{klass}##{meth}:\n#{e.class}: #{e.message}\n    #{bt}\n"
+            "Error:\n#{klass}##{meth}:\n#{e.class}: #{e.message.b}\n    #{bt}\n"
           end
       @report << e
       e[0, 1]
