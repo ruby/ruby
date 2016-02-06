@@ -1,3 +1,13 @@
+Sat Feb  6 14:51:23 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* test/ruby/enc/test_regex_casefold.rb: Tests for three case folding
+	  primitives (mbc_case_fold, get_case_fold_codes_by_str,
+	  apply_all_case_fold) in the various encodings. Currently only known
+	  good encodings are tested to avoid test failures. For bug hunting,
+	  start by adding more encodings with
+	      generate_test_casefold encoding
+	  (with Kimihito Matsui)
+
 Sat Feb  6 14:37:16 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/unicode.c, test/ruby/enc/test_case_mapping.rb: Implemented :fold
