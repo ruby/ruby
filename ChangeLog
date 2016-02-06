@@ -1,3 +1,15 @@
+Sat Feb  6 15:18:28 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* test/ruby/enc/test_regex_casefold.rb: Added data-based testing for
+	  String#downcase :fold.
+
+	* enc/unicode.c: Fixed a range error (lowest non-ASCII character affected
+	  by case operations is U+00B5, MICRO SIGN)
+
+	* test/ruby/enc/test_case_mapping.rb: Explicit test for case folding of
+	  MICRO SIGN to Greek mu.
+	(with Kimihito Matsui)
+
 Sat Feb  6 14:51:23 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* test/ruby/enc/test_regex_casefold.rb: Tests for three case folding

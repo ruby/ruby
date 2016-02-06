@@ -63,6 +63,7 @@ class TestCaseMappingPreliminary < Test::Unit::TestCase
     check_downcase_properties   'ss', 'ß', :fold
     check_downcase_properties   'fifl', 'ﬁﬂ', :fold
     check_downcase_properties   'σ', 'ς', :fold
+    check_downcase_properties   'μ', 'µ', :fold # MICRO SIGN -> Greek mu
   end
 
   def test_turcic

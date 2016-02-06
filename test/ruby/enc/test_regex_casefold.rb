@@ -8,6 +8,15 @@ class TestCaseFold < Test::Unit::TestCase
   UNICODE_VERSION = UnicodeNormalize::UNICODE_VERSION
   CaseTest = Struct.new :source, :target, :kind, :line
 
+  def check_downcase_properties(expected, start, *flags)
+    assert_equal expected, start.downcase(*flags)
+    temp = start
+    assert_equal expected, temp.downcase!(*flags)
+    assert_equal expected, expected.downcase(*flags)
+    temp = expected
+    assert_nil   temp.downcase!(*flags)
+  end
+
   def read_tests
     IO.readlines(File.expand_path("../../../enc/unicode/data/#{UNICODE_VERSION}/CaseFolding.txt", __dir__))
     .collect.with_index { |linedata, linenumber| [linenumber.to_i+1, linedata.chomp] }
@@ -75,7 +84,12 @@ class TestCaseFold < Test::Unit::TestCase
         end
       end
     end
+  end
 
+  def test_downcase_fold
+    @@tests.each do |test|
+      check_downcase_properties test.target, test.source, :fold
+    end
   end
 
   # start with good encodings only

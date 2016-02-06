@@ -645,7 +645,7 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
 		}
 	    }
 	}
-	else if (!(flags&ONIGENC_CASE_ASCII_ONLY) && code>=0x00C0) { /* deal with non-ASCII; nothing relevant below U+00C0 */
+	else if (!(flags&ONIGENC_CASE_ASCII_ONLY) && code>=0x00B5) { /* deal with non-ASCII; micron sign (U+00B5) is lowest affected */
 	    const CodePointList3 *folded;
 
 	    if (code==0x0130) {
