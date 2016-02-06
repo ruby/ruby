@@ -35,6 +35,18 @@ module CGI::Util
   #   CGI::escapeHTML('Usage: foo "bar" <baz>')
   #      # => "Usage: foo &quot;bar&quot; &lt;baz&gt;"
   def escapeHTML(string)
+    enc = string.encoding
+    unless enc.ascii_compatible?
+      if enc.dummy?
+        origenc = enc
+        enc = Encoding::Converter.asciicompat_encoding(enc)
+        string = enc ? string.encode(enc) : string.b
+      end
+      table = Hash[TABLE_FOR_ESCAPE_HTML__.map {|pair|pair.map {|s|s.encode(enc)}}]
+      string = string.gsub(/#{"['&\"<>]".encode(enc)}/, table)
+      string.encode!(origenc) if origenc
+      return string
+    end
     string.gsub(/['&\"<>]/, TABLE_FOR_ESCAPE_HTML__)
   end
 
@@ -47,10 +59,14 @@ module CGI::Util
   #   CGI::unescapeHTML("Usage: foo &quot;bar&quot; &lt;baz&gt;")
   #      # => "Usage: foo \"bar\" <baz>"
   def unescapeHTML(string)
-    return string unless string.include? '&'
     enc = string.encoding
-    if enc != Encoding::UTF_8 && [Encoding::UTF_16BE, Encoding::UTF_16LE, Encoding::UTF_32BE, Encoding::UTF_32LE].include?(enc)
-      return string.gsub(Regexp.new('&(apos|amp|quot|gt|lt|#[0-9]+|#x[0-9A-Fa-f]+);'.encode(enc))) do
+    unless enc.ascii_compatible?
+      if enc.dummy?
+        origenc = enc
+        enc = Encoding::Converter.asciicompat_encoding(enc)
+        string = enc ? string.encode(enc) : string.b
+      end
+      string = string.gsub(Regexp.new('&(apos|amp|quot|gt|lt|#[0-9]+|#x[0-9A-Fa-f]+);'.encode(enc))) do
         case $1.encode(Encoding::US_ASCII)
         when 'apos'                then "'".encode(enc)
         when 'amp'                 then '&'.encode(enc)
@@ -61,8 +77,15 @@ module CGI::Util
         when /\A#x([0-9a-f]+)\z/i  then $1.hex.chr(enc)
         end
       end
+      string.encode!(origenc) if origenc
+      return string
     end
-    asciicompat = Encoding.compatible?(string, "a")
+    return string unless string.include? '&'
+    charlimit = case enc
+                when Encoding::UTF_8; 0x10ffff
+                when Encoding::ISO_8859_1; 256
+                else 128
+                end
     string.gsub(/&(apos|amp|quot|gt|lt|\#[0-9]+|\#[xX][0-9A-Fa-f]+);/) do
       match = $1.dup
       case match
@@ -73,18 +96,14 @@ module CGI::Util
       when 'lt'                  then '<'
       when /\A#0*(\d+)\z/
         n = $1.to_i
-        if enc == Encoding::UTF_8 or
-          enc == Encoding::ISO_8859_1 && n < 256 or
-          asciicompat && n < 128
+        if n < charlimit
           n.chr(enc)
         else
           "&##{$1};"
         end
       when /\A#x([0-9a-f]+)\z/i
         n = $1.hex
-        if enc == Encoding::UTF_8 or
-          enc == Encoding::ISO_8859_1 && n < 256 or
-          asciicompat && n < 128
+        if n < charlimit
           n.chr(enc)
         else
           "&#x#{$1};"

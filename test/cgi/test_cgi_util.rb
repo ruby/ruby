@@ -98,6 +98,22 @@ class CGIUtilTest < Test::Unit::TestCase
     assert_equal("'&\"><", CGI::unescapeHTML("&#39;&amp;&quot;&gt;&lt;"))
   end
 
+  Encoding.list.each do |enc|
+    begin
+      escaped = "&#39;&amp;&quot;&gt;&lt;".encode(enc)
+      unescaped = "'&\"><".encode(enc)
+    rescue Encoding::ConverterNotFoundError
+      next
+    else
+      define_method("test_cgi_escapeHTML:#{enc.name}") do
+        assert_equal(escaped, CGI::escapeHTML(unescaped))
+      end
+      define_method("test_cgi_unescapeHTML:#{enc.name}") do
+        assert_equal(unescaped, CGI::unescapeHTML(escaped))
+      end
+    end
+  end
+
   def test_cgi_unescapeHTML_uppercasecharacter
     assert_equal("\xE3\x81\x82\xE3\x81\x84\xE3\x81\x86", CGI::unescapeHTML("&#x3042;&#x3044;&#X3046;"))
   end

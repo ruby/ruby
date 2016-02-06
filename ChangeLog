@@ -1,3 +1,8 @@
+Sat Feb  6 22:30:57 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/cgi/util.rb (escapeHTML, unescapeHTML): consider
+	  ASCII-incompatible encodings.  [Fix GH-1239]
+
 Sat Feb  6 20:44:24 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: check __int64_t and __int128_t for RUBY_DEFINT on
