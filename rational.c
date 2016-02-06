@@ -1076,11 +1076,11 @@ nurat_cmp(VALUE self, VALUE other)
 	    get_dat1(self);
 
 	    if (FIXNUM_P(dat->den) && FIX2LONG(dat->den) == 1)
-		return f_cmp(dat->num, other); /* c14n */
-	    return f_cmp(self, f_rational_new_bang1(CLASS_OF(self), other));
+		return rb_int_cmp(dat->num, other); /* c14n */
+	    other = f_rational_new_bang1(CLASS_OF(self), other);
 	}
     }
-    else if (RB_TYPE_P(other, T_FLOAT)) {
+    if (RB_TYPE_P(other, T_FLOAT)) {
 	return rb_dbl_cmp(RFLOAT_VALUE(nurat_to_f(self)), RFLOAT_VALUE(other));
     }
     else if (RB_TYPE_P(other, T_RATIONAL)) {
