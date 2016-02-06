@@ -1,6 +1,7 @@
 #include "ruby.h"
 #include "ruby/encoding.h"
 
+RUBY_EXTERN unsigned long ruby_scan_digits(const char *str, ssize_t len, int base, size_t *retlen, int *overflow);
 RUBY_EXTERN const char ruby_hexdigits[];
 #define lower_hexdigits (ruby_hexdigits+0)
 #define upper_hexdigits (ruby_hexdigits+16)
@@ -64,6 +65,113 @@ optimized_escape_html(VALUE str)
 	    html_escaped_cat(dest, cstr[i]);
 	    break;
 	}
+    }
+
+    if (dest) {
+	rb_str_cat(dest, cstr + beg, len - beg);
+	preserve_original_state(str, dest);
+	return dest;
+    }
+    else {
+	return rb_str_dup(str);
+    }
+}
+
+static VALUE
+optimized_unescape_html(VALUE str)
+{
+    enum {UNICODE_MAX = 0x10ffff};
+    rb_encoding *enc = rb_enc_get(str);
+    unsigned long charlimit = (strcasecmp(rb_enc_name(enc), "UTF-8") == 0 ? UNICODE_MAX :
+			       strcasecmp(rb_enc_name(enc), "ISO-8859-1") == 0 ? 256 :
+			       128);
+    long i, len, beg = 0;
+    size_t clen, plen;
+    int overflow;
+    const char *cstr;
+    char buf[6];
+    VALUE dest = 0;
+
+    len  = RSTRING_LEN(str);
+    cstr = RSTRING_PTR(str);
+
+    for (i = 0; i < len; i++) {
+	unsigned long cc;
+	char c = cstr[i];
+	if (c != '&') continue;
+	plen = i - beg;
+	if (++i >= len) break;
+	c = (unsigned char)cstr[i];
+	switch (c) {
+	  case 'a':
+	    ++i;
+	    if (len - i >= 4 && memcmp(&cstr[i], "pos;", 4) == 0) {
+		c = '\'';
+		i += 3;
+	    }
+	    else if (len - i >= 3 && memcmp(&cstr[i], "mp;", 3) == 0) {
+		c = '&';
+		i += 2;
+	    }
+	    else continue;
+	    break;
+	  case 'q':
+	    ++i;
+	    if (len - i >= 4 && memcmp(&cstr[i], "uot;", 4) == 0) {
+		c = '"';
+		i += 3;
+	    }
+	    else continue;
+	    break;
+	  case 'g':
+	    ++i;
+	    if (len - i >= 2 && memcmp(&cstr[i], "t;", 2) == 0) {
+		c = '>';
+		i += 1;
+	    }
+	    else continue;
+	    break;
+	  case 'l':
+	    ++i;
+	    if (len - i >= 2 && memcmp(&cstr[i], "t;", 2) == 0) {
+		c = '<';
+		i += 1;
+	    }
+	    else continue;
+	    break;
+	  case '#':
+	    if (len - ++i >= 2 && ISDIGIT(cstr[i])) {
+		cc = ruby_scan_digits(&cstr[i], len-i, 10, &clen, &overflow);
+	    }
+	    else if ((cstr[i] == 'x' || cstr[i] == 'X') && len - ++i >= 2 && ISXDIGIT(cstr[i])) {
+		cc = ruby_scan_digits(&cstr[i], len-i, 16, &clen, &overflow);
+	    }
+	    else continue;
+	    i += clen;
+	    if (overflow || cc >= charlimit || cstr[i] != ';') continue;
+	    if (!dest) {
+		dest = rb_str_buf_new(len);
+	    }
+	    rb_str_cat(dest, cstr + beg, plen);
+	    if (charlimit > 256) {
+		rb_str_cat(dest, buf, rb_enc_mbcput((OnigCodePoint)cc, buf, enc));
+	    }
+	    else {
+		c = (unsigned char)cc;
+		rb_str_cat(dest, &c, 1);
+	    }
+	    beg = i + 1;
+	    continue;
+	  default:
+	    --i;
+	    continue;
+	}
+	if (!dest) {
+	    dest = rb_str_buf_new(len);
+	}
+	rb_str_cat(dest, cstr + beg, plen);
+	rb_str_cat(dest, &c, 1);
+	beg = i + 1;
     }
 
     if (dest) {
@@ -159,6 +267,26 @@ cgiesc_escape_html(VALUE self, VALUE str)
 
 /*
  *  call-seq:
+ *     CGI.unescapeHTML(string) -> string
+ *
+ *  Returns HTML-unescaped string.
+ *
+ */
+static VALUE
+cgiesc_unescape_html(VALUE self, VALUE str)
+{
+    StringValue(str);
+
+    if (rb_enc_str_asciicompat_p(str)) {
+	return optimized_unescape_html(str);
+    }
+    else {
+	return rb_call_super(1, &str);
+    }
+}
+
+/*
+ *  call-seq:
  *     CGI.escape(string) -> string
  *
  *  Returns URL-escaped string.
@@ -184,6 +312,7 @@ Init_escape(void)
     rb_mEscape = rb_define_module_under(rb_cCGI, "Escape");
     rb_mUtil   = rb_define_module_under(rb_cCGI, "Util");
     rb_define_method(rb_mEscape, "escapeHTML", cgiesc_escape_html, 1);
+    rb_define_method(rb_mEscape, "unescapeHTML", cgiesc_unescape_html, 1);
     rb_define_method(rb_mEscape, "escape", cgiesc_escape, 1);
     rb_prepend_module(rb_mUtil, rb_mEscape);
     rb_extend_object(rb_cCGI, rb_mEscape);
