@@ -1081,7 +1081,7 @@ nurat_cmp(VALUE self, VALUE other)
 	}
     }
     else if (RB_TYPE_P(other, T_FLOAT)) {
-	return f_cmp(f_to_f(self), other);
+	return rb_dbl_cmp(RFLOAT_VALUE(nurat_to_f(self)), RFLOAT_VALUE(other));
     }
     else if (RB_TYPE_P(other, T_RATIONAL)) {
 	{
