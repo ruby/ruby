@@ -59,6 +59,12 @@ class TestCaseMappingPreliminary < Test::Unit::TestCase
     check_swapcase_properties   'rÉsumÉ dÜrst ĬÑŦĖŘŊÃŢĲŇŐŃÆŁĨŻÀŤĬŌŅ', 'RÉSUMÉ DÜRST ĬÑŦĖŘŊÃŢĲŇŐŃÆŁĨŻÀŤĬŌŅ', :ascii
   end
 
+  def test_fold_option
+    check_downcase_properties   'ss', 'ß', :fold
+    check_downcase_properties   'fifl', 'ﬁﬂ', :fold
+    check_downcase_properties   'σ', 'ς', :fold
+  end
+
   def test_turcic
     check_downcase_properties   'yukihiro matsumoto (matz)', 'Yukihiro MATSUMOTO (MATZ)', :turkic
     check_upcase_properties     'YUKİHİRO MATSUMOTO (MATZ)', 'Yukihiro Matsumoto (matz)', :turkic

@@ -628,39 +628,60 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
 	if (code<='z') { /* ASCII comes first */
 	    if (code>='a' && code<='z') {
 	        if (flags&ONIGENC_CASE_UPCASE) {
+		    MODIFIED;
 		    if (flags&ONIGENC_CASE_FOLD_TURKISH_AZERI && code==0x0069) /* i -> I WITH DOT ABOVE */
 			code = 0x0130;
 		    else
 			code += 'A'-'a';
-		    MODIFIED;
 		}
 	    }
 	    else if (code>='A' && code<='Z') {
 		if (flags&ONIGENC_CASE_DOWNCASE) {
+		    MODIFIED;
 		    if (flags&ONIGENC_CASE_FOLD_TURKISH_AZERI && code==0x0049) /* I -> DOTLESS i */
 			code = 0x0131;
 		    else
 			code += 'a'-'A';
-		    MODIFIED;
 		}
 	    }
 	}
 	else if (!(flags&ONIGENC_CASE_ASCII_ONLY) && code>=0x00C0) { /* deal with non-ASCII; nothing relevant below U+00C0 */
+	    const CodePointList3 *folded;
+
 	    if (code==0x0130) {
 		if (flags&ONIGENC_CASE_DOWNCASE) {
+		    MODIFIED;
 		    if (flags&ONIGENC_CASE_FOLD_TURKISH_AZERI)
 			code = 0x0069; /* I WITH DOT ABOVE -> i */
 		    else { /* make dot above explicit */
 			to += ONIGENC_CODE_TO_MBC(enc, 0x0069, to);
 			code = 0x0307; /* dot above */
 		    }
-		    MODIFIED;
 		}
 	    }
-	    /* the following case can be removed once we rely on data,
+	    /* the following special case for  DOTLESS i -> I
+	     * can be removed once we rely on data,
 	     * because the mapping is always the same */
-	    else if (code==0x0131 && (flags&ONIGENC_CASE_UPCASE)) { /* DOTLESS i -> I */
+	    else if (code==0x0131 && (flags&ONIGENC_CASE_UPCASE)) {
 		code = 0x0049; MODIFIED;
+	    }
+	    else if ((folded = onigenc_unicode_fold_lookup(code)) != 0) {
+		if (flags&ONIGENC_CASE_FOLD) {
+		    const OnigCodePoint *next = folded->code;
+		    int count = OnigCodePointCount(folded->n);
+		    MODIFIED;
+		    if (count==1)
+		        code = *next;
+		    else if (count==2) {
+			to += ONIGENC_CODE_TO_MBC(enc, *next++, to);
+			code = *next;
+		    }
+		    else { /* count == 3 */
+			to += ONIGENC_CODE_TO_MBC(enc, *next++, to);
+			to += ONIGENC_CODE_TO_MBC(enc, *next++, to);
+			code = *next;
+		    }
+		}
 	    }
 	}
 	to += ONIGENC_CODE_TO_MBC(enc, code, to);

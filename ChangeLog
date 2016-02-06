@@ -1,3 +1,10 @@
+Sat Feb  6 14:37:16 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode.c, test/ruby/enc/test_case_mapping.rb: Implemented :fold
+	  option for String#downcase by using case folding data from
+	  regular expression engine, and added a few simple tests.
+	  (with Kimihito Matsui)
+
 Fri Feb  5 20:08:59 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* test/ruby/enc/test_case_mapping.rb: added tests for :ascii option.
