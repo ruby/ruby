@@ -577,7 +577,7 @@ class OptionParser
         l = left[-1].length + s.length
         l += arg.length if left.size == 1 && arg
         l < max or sopts.empty? or left << ''
-        left[-1] << if left[-1].empty? then ' ' * 4 else ', ' end << s
+        left[-1] << (left[-1].empty? ? ' ' * 4 : ', ') << s
       end
 
       if arg
@@ -1903,7 +1903,7 @@ XXX
   #
   # List of strings separated by ",".
   #
-  accept(Array) do |s,|
+  accept(Array) do |s, |
     if s
       s = s.split(',').collect {|ss| ss unless ss.empty?}
     end
