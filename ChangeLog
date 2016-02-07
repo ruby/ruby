@@ -1,3 +1,14 @@
+Sun Feb  7 22:10:08 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* common.mk: Added two more precondition files for enc/unicode/casefold.h
+
+	* enc/unicode.c: Added shortening macros for enc/unicode/casefold.h
+
+	* enc/unicode/case-folding.rb: Fixed file encoding for CaseFolding.txt
+	  to ASCII-8BIT (should fix some ci errors). Clarified usage. Created
+	  class MapItem. Partially implemented class CaseMapping.
+	(with Kimihito Matsui)
+
 Sun Feb  7 14:12:32 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/unicode/case-folding.rb: Fixing parameter passing.

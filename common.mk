@@ -1048,6 +1048,8 @@ $(srcdir)/.unicode-tables.time: $(srcdir)/tool/generic_erb.rb \
 		$(UNICODE_DATA_DIR) lib/unicode_normalize
 
 $(srcdir)/enc/unicode/casefold.h: $(srcdir)/enc/unicode/case-folding.rb \
+		$(UNICODE_SRC_DATA_DIR)/UnicodeData.txt \
+		$(UNICODE_SRC_DATA_DIR)/SpecialCasing.txt \
 		$(UNICODE_SRC_DATA_DIR)/CaseFolding.txt
 	$(Q) $(BASERUBY) $(srcdir)/enc/unicode/case-folding.rb \
 		--output-file=$(srcdir)/enc/unicode/casefold.h \

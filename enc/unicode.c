@@ -140,7 +140,17 @@ code3_equal(const OnigCodePoint *x, const OnigCodePoint *y)
   return 1;
 }
 
+#define UP    ONIGENC_CASE_UPCASE
+#define DOWN  ONIGENC_CASE_DOWNCASE
+#define TITLE ONIGENC_CASE_TITLECASE
+#define FOLD  ONIGENC_CASE_FOLD
+
 #include "enc/unicode/casefold.h"
+
+#undef UP
+#undef DOWN
+#undef TITLE
+#undef FOLD
 
 #include "enc/unicode/name2ctype.h"
 

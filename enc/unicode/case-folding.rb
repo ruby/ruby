@@ -1,10 +1,12 @@
 #!/usr/bin/ruby
 
-# Usage:
+# Usage (for case folding only):
 #   $ wget http://www.unicode.org/Public/UNIDATA/CaseFolding.txt
 #   $ ruby case-folding.rb CaseFolding.txt -o casefold.h
-#  or:
+#  or (for case folding and case mapping):
 #   $ wget http://www.unicode.org/Public/UNIDATA/CaseFolding.txt
+#   $ wget http://www.unicode.org/Public/UNIDATA/UnicodeData.txt
+#   $ wget http://www.unicode.org/Public/UNIDATA/SpecialCasing.txt
 #   $ ruby case-folding.rb -m . -o casefold.h
 
 class CaseFolding
@@ -175,12 +177,37 @@ class CaseFolding
   end
 end
 
+class MapItem
+  def initialize(code, upper, lower, title)
+    @code = code
+    @upper = upper unless upper == ''
+    @lower = lower unless lower == ''
+    @title = title unless title == ''
+  end
+  
+  def flags
+    "" # preliminary implementation
+  end
+end
+
 class CaseMapping
   def initialize (mapping_directory)
+    @mappings = {}
+    IO.readlines(File.expand_path('UnicodeData.txt', mapping_directory), encoding: Encoding::ASCII_8BIT).each do |line|
+      next if line =~ /</
+      code, _1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11, upper, lower, title = line.chomp.split ';'
+      unless upper and lower and title and (upper+lower+title)==''
+        @mappings[code] = MapItem.new(code, upper, lower, title)
+      end
+      
+    end
+    
+    # IO.readlines(File.expand_path('SpecialCasing.txt', mapping_directory))
   end
 
   def flags(from)
-    "" # preliminary implementation
+    to = @mappings[from]
+    to ? to.flags : ""
   end
 
   def self.load(*args)
@@ -216,7 +243,7 @@ if $0 == __FILE__
       warn "Either specify directory or individual file, but not both."
       exit
     end
-    filename = File.expand_path("CaseFolding.txt", mapping_directory)
+    filename = File.expand_path('CaseFolding.txt', mapping_directory)
     mapping_data = CaseMapping.load(mapping_directory)
   end
   filename ||= ARGV[0] || 'CaseFolding.txt'
