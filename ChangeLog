@@ -1,3 +1,8 @@
+Sun Feb  7 14:12:32 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode/case-folding.rb: Fixing parameter passing.
+	(with Kimihito Matsui)
+
 Sun Feb  7 11:44:03 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/unicode/case-folding.rb: New classes CaseMapping/CaseMappingDummy

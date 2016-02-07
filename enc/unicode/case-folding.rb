@@ -15,21 +15,21 @@ class CaseFolding
       v.map {|i| "0x%04x" % i}.join(", ")
     end
 
-    def print_table_1(dest, data)
+    def print_table_1(dest, mapping_data, data)
       for k, v in data = data.sort
         sk = (Array === k and k.length > 1) ? "{#{hex_seq(k)}}" : ("0x%04x" % k)
-        dest.print("  {#{sk}, {#{v.length}, {#{hex_seq(v)}}}},\n")
+        dest.print("  {#{sk}, {#{v.length}#{mapping_data.flags(k)}, {#{hex_seq(v)}}}},\n")
       end
       data
     end
 
-    def print_table(dest, type, data)
+    def print_table(dest, type, mapping_data, data)
       dest.print("static const #{type}_Type #{type}_Table[] = {\n")
       i = 0
       ret = data.inject([]) do |a, (n, d)|
         dest.print("#define #{n} (*(#{type}_Type (*)[#{d.size}])(#{type}_Table+#{i}))\n")
         i += d.size
-        a.concat(print_table_1(dest, d))
+        a.concat(print_table_1(dest, mapping_data, d))
       end
       dest.print("};\n\n")
       ret
@@ -85,7 +85,7 @@ class CaseFolding
     "#{code} <= MAX_CODE_VALUE && #{code} >= MIN_CODE_VALUE"
   end
 
-  def lookup_hash(key, type, data, mapping_data)
+  def lookup_hash(key, type, data)
     hash = "onigenc_unicode_#{key}_hash"
     lookup = "onigenc_unicode_#{key}_lookup"
     arity = Array(data[0][0]).size
@@ -149,25 +149,25 @@ class CaseFolding
 
     # CaseFold + CaseFold_Locale
     name = "CaseFold_11"
-    data = print_table(dest, name, "CaseFold"=>fold, "CaseFold_Locale"=>fold_locale)
-    dest.print lookup_hash(name, "CodePointList3", data, mapping_data)
+    data = print_table(dest, name, mapping_data, "CaseFold"=>fold, "CaseFold_Locale"=>fold_locale)
+    dest.print lookup_hash(name, "CodePointList3", data)
 
     # print unfolding data
 
     # CaseUnfold_11 + CaseUnfold_11_Locale
     name = "CaseUnfold_11"
-    data = print_table(dest, name, name=>unfold[0], "#{name}_Locale"=>unfold_locale[0])
-    dest.print lookup_hash(name, "CodePointList3", data, mapping_data)
+    data = print_table(dest, name, mapping_data, name=>unfold[0], "#{name}_Locale"=>unfold_locale[0])
+    dest.print lookup_hash(name, "CodePointList3", data)
 
     # CaseUnfold_12 + CaseUnfold_12_Locale
     name = "CaseUnfold_12"
-    data = print_table(dest, name, name=>unfold[1], "#{name}_Locale"=>unfold_locale[1])
-    dest.print lookup_hash(name, "CodePointList2", data, mapping_data)
+    data = print_table(dest, name, mapping_data, name=>unfold[1], "#{name}_Locale"=>unfold_locale[1])
+    dest.print lookup_hash(name, "CodePointList2", data)
 
     # CaseUnfold_13
     name = "CaseUnfold_13"
-    data = print_table(dest, name, name=>unfold[2])
-    dest.print lookup_hash(name, "CodePointList2", data, mapping_data)
+    data = print_table(dest, name, mapping_data, name=>unfold[2])
+    dest.print lookup_hash(name, "CodePointList2", data)
   end
 
   def self.load(*args)
@@ -179,7 +179,7 @@ class CaseMapping
   def initialize (mapping_directory)
   end
 
-  def mapping_flags(from)
+  def flags(from)
     "" # preliminary implementation
   end
 
@@ -189,7 +189,7 @@ class CaseMapping
 end
 
 class CaseMappingDummy
-  def mapping_flags(from)
+  def flags(from)
     ""
   end
 end
