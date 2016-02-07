@@ -64,11 +64,15 @@ char *getenv();
 #endif
 
 #define FEATURE_BIT(bit) (1U << feature_##bit)
+#define EACH_FEATURES(X) \
+    X(gems) \
+    X(did_you_mean) \
+    X(rubyopt) \
+    X(frozen_string_literal) \
+    /* END OF FEATURES */
+#define DEFINE_FEATURE(bit) feature_##bit,
 enum feature_flag_bits {
-    feature_gems,
-    feature_did_you_mean,
-    feature_rubyopt,
-    feature_frozen_string_literal,
+    EACH_FEATURES(DEFINE_FEATURE)
     feature_debug_frozen_string_literal,
     feature_flag_count
 };
@@ -754,10 +758,7 @@ feature_option(const char *str, int len, void *arg, const unsigned int enable)
     unsigned int mask = ~0U;
 #define SET_FEATURE(bit) \
     if (NAME_MATCH_P(#bit, str, len)) {mask = FEATURE_BIT(bit); goto found;}
-    SET_FEATURE(gems);
-    SET_FEATURE(did_you_mean);
-    SET_FEATURE(rubyopt);
-    SET_FEATURE(frozen_string_literal);
+    EACH_FEATURES(SET_FEATURE);
     if (NAME_MATCH_P("all", str, len)) {
       found:
 	*argp = (*argp & ~mask) | (mask & enable);
