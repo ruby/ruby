@@ -1119,9 +1119,7 @@ nurat_eqeq_p(VALUE self, VALUE other)
 		return Qfalse;
 	    if (FIX2LONG(dat->den) != 1)
 		return Qfalse;
-	    if (f_eqeq_p(dat->num, other))
-		return Qtrue;
-	    return Qfalse;
+	    return rb_int_equal(dat->num, other);
 	}
     }
     else if (RB_TYPE_P(other, T_FLOAT)) {
