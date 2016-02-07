@@ -1,3 +1,12 @@
+Sun Feb  7 10:43:27 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	(this commit message applies to the previous commit)
+	* common.mk: explicit recipe for enc/unicode/casefold.h
+
+	* enc/unicode/case-folding.rb: Adding -m option to prepare for using
+	  multiple data files.
+	(with Kimihito Matsui)
+
 Sat Feb  6 22:30:57 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/cgi/util.rb (escapeHTML, unescapeHTML): consider
