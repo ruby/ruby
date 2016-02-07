@@ -1,8 +1,7 @@
-Sun Feb  7 11:16:00 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+Sun Feb  7 11:44:03 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
-	* common.mk: using new option in recipe for enc/unicode/casefold.h
-
-	* enc/unicode/case-folding.rb: Correctly specify argument to new option.
+	* enc/unicode/case-folding.rb: New classes CaseMapping/CaseMappingDummy
+	  to pass as parameters; not yet implemented or used.
 	(with Kimihito Matsui)
 
 Sun Feb  7 10:43:27 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
