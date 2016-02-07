@@ -186,7 +186,7 @@ if $0 == __FILE__
     opt.on("--output-file=FILE", "-o", "output to the FILE instead of STDOUT") {|output|
       dest = (output unless output == '-')
     }
-    opt.on('--mapping-data-directory', '-m', 'data directory of mapping files') { |directory|
+    opt.on('--mapping-data-directory=DIRECTORY', '-m', 'data DIRECTORY of mapping files') { |directory|
       mapping_directory = directory
     }
     opt.parse!

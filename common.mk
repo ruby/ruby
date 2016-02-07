@@ -1051,7 +1051,7 @@ $(srcdir)/enc/unicode/casefold.h: $(srcdir)/enc/unicode/case-folding.rb \
 		$(UNICODE_SRC_DATA_DIR)/CaseFolding.txt
 	$(Q) $(BASERUBY) $(srcdir)/enc/unicode/case-folding.rb \
 		--output-file=$(srcdir)/enc/unicode/casefold.h \
-		$(UNICODE_SRC_DATA_DIR)/CaseFolding.txt
+		--mapping-data-directory=$(UNICODE_SRC_DATA_DIR)
 
 download-extlibs:
 	$(Q) $(BASERUBY) -C $(srcdir) -w tool/extlibs.rb --download ext
