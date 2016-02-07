@@ -184,7 +184,7 @@ class MapItem
     @lower = lower unless lower == ''
     @title = title unless title == ''
   end
-  
+
   def flags
     "" # preliminary implementation
   end
@@ -199,9 +199,9 @@ class CaseMapping
       unless upper and lower and title and (upper+lower+title)==''
         @mappings[code] = MapItem.new(code, upper, lower, title)
       end
-      
+
     end
-    
+
     # IO.readlines(File.expand_path('SpecialCasing.txt', mapping_directory))
   end
 
