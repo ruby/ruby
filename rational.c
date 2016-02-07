@@ -1212,7 +1212,7 @@ static VALUE
 nurat_ceil(VALUE self)
 {
     get_dat1(self);
-    return f_negate(f_idiv(f_negate(dat->num), dat->den));
+    return rb_int_uminus(rb_int_idiv(rb_int_uminus(dat->num), dat->den));
 }
 
 /*
