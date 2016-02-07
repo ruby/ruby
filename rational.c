@@ -32,7 +32,7 @@
 
 VALUE rb_cRational;
 
-static ID id_abs, id_cmp, id_convert, id_eqeq_p, id_expt, id_fdiv,
+static ID id_abs, id_cmp, id_eqeq_p, id_expt, id_fdiv,
     id_idiv, id_integer_p, id_negate, id_to_f,
     id_to_i, id_truncate, id_i_num, id_i_den;
 
@@ -564,6 +564,7 @@ f_rational_new_no_reduce2(VALUE klass, VALUE x, VALUE y)
     return nurat_s_canonicalize_internal_no_reduce(klass, x, y);
 }
 
+static VALUE nurat_s_convert(int argc, VALUE *argv, VALUE klass);
 /*
  * call-seq:
  *    Rational(x[, y])  ->  numeric
@@ -594,7 +595,7 @@ f_rational_new_no_reduce2(VALUE klass, VALUE x, VALUE y)
 static VALUE
 nurat_f_rational(int argc, VALUE *argv, VALUE klass)
 {
-    return rb_funcallv(rb_cRational, id_convert, argc, argv);
+    return nurat_s_convert(argc, argv, rb_cRational);
 }
 
 /*
@@ -1787,8 +1788,6 @@ rb_rational_new(VALUE x, VALUE y)
     return nurat_s_canonicalize_internal(rb_cRational, x, y);
 }
 
-static VALUE nurat_s_convert(int argc, VALUE *argv, VALUE klass);
-
 VALUE
 rb_Rational(VALUE x, VALUE y)
 {
@@ -2532,7 +2531,6 @@ Init_Rational(void)
 
     id_abs = rb_intern("abs");
     id_cmp = rb_intern("<=>");
-    id_convert = rb_intern("convert");
     id_eqeq_p = rb_intern("==");
     id_expt = rb_intern("**");
     id_fdiv = rb_intern("fdiv");
