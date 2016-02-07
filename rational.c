@@ -1095,10 +1095,10 @@ nurat_cmp(VALUE self, VALUE other)
 		num2 = f_imul(FIX2LONG(bdat->num), FIX2LONG(adat->den));
 	    }
 	    else {
-		num1 = f_mul(adat->num, bdat->den);
-		num2 = f_mul(bdat->num, adat->den);
+		num1 = rb_int_mul(adat->num, bdat->den);
+		num2 = rb_int_mul(bdat->num, adat->den);
 	    }
-	    return f_cmp(f_sub(num1, num2), ZERO);
+	    return rb_int_cmp(rb_int_minus(num1, num2), ZERO);
 	}
     }
     else {
