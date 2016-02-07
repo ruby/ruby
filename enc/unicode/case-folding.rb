@@ -200,7 +200,7 @@ if $0 == __FILE__
     filename = File.expand_path("CaseFolding.txt", mapping_directory)
   end
   filename ||= ARGV[0] || 'CaseFolding.txt'
-  
+
   data = CaseFolding.load(filename)
   if dest
     open(dest, "wb") do |f|
