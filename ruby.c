@@ -765,6 +765,7 @@ feature_option(const char *str, int len, void *arg, const unsigned int enable)
     }
     rb_warn("unknown argument for --%s: `%.*s'",
 	    enable ? "enable" : "disable", len, str);
+    rb_warn("features are [gems, did-you-mean, rubyopt, frozen-string-literal].");
 }
 
 static void
