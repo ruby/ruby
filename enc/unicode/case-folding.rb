@@ -3,6 +3,9 @@
 # Usage:
 #   $ wget http://www.unicode.org/Public/UNIDATA/CaseFolding.txt
 #   $ ruby case-folding.rb CaseFolding.txt -o casefold.h
+#  or:
+#   $ wget http://www.unicode.org/Public/UNIDATA/CaseFolding.txt
+#   $ ruby case-folding.rb -m . -o casefold.h
 
 class CaseFolding
   module Util
@@ -175,16 +178,29 @@ end
 if $0 == __FILE__
   require 'optparse'
   dest = nil
+  mapping_directory = nil
+  mapping_data = nil
   fold_1 = false
   ARGV.options do |opt|
     opt.banner << " [INPUT]"
     opt.on("--output-file=FILE", "-o", "output to the FILE instead of STDOUT") {|output|
       dest = (output unless output == '-')
     }
+    opt.on('--mapping-data-directory', '-m', 'data directory of mapping files') { |directory|
+      mapping_directory = directory
+    }
     opt.parse!
     abort(opt.to_s) if ARGV.size > 1
   end
-  filename = ARGV[0] || 'CaseFolding.txt'
+  if mapping_directory
+    if ARGV[0]
+      warn "Either specify directory or individual file, but not both."
+      exit
+    end
+    filename = File.expand_path("CaseFolding.txt", mapping_directory)
+  end
+  filename ||= ARGV[0] || 'CaseFolding.txt'
+  
   data = CaseFolding.load(filename)
   if dest
     open(dest, "wb") do |f|
