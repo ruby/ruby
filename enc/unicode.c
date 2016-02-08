@@ -651,7 +651,7 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
 		}
 	    }
 	    else if (code>='A' && code<='Z') {
-		if (flags&ONIGENC_CASE_DOWNCASE) {
+		if (flags&(ONIGENC_CASE_DOWNCASE|ONIGENC_CASE_FOLD)) {
 		    MODIFIED;
 		    if (flags&ONIGENC_CASE_FOLD_TURKISH_AZERI && code=='I')
 			code = DOTLESS_i;

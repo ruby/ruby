@@ -5647,7 +5647,7 @@ check_case_options(int argc, VALUE *argv, OnigCaseFoldType flags)
 	flags |= ONIGENC_CASE_ASCII_ONLY;
     else if (argv[0]==sym_fold) {
 	if ((flags & (ONIGENC_CASE_UPCASE|ONIGENC_CASE_DOWNCASE)) == ONIGENC_CASE_DOWNCASE)
-	    flags |= ONIGENC_CASE_FOLD;
+	    flags ^= ONIGENC_CASE_FOLD|ONIGENC_CASE_DOWNCASE;
 	else
 	    rb_raise(rb_eArgError, "option :fold only allowed for downcasing");
     }
