@@ -215,8 +215,8 @@ class CaseMapping
     to   = Array(to).map {|i| "%04X" % i}.join(" ")
     item = @mappings[from]
     if item
-      flags += '|U'  if to==item.upper    
-      flags += '|D'  if to==item.lower    
+      flags += '|U'  if to==item.upper
+      flags += '|D'  if to==item.lower
     end
     flags
   end
