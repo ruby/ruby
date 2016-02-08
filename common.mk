@@ -1047,7 +1047,10 @@ $(srcdir)/.unicode-tables.time: $(srcdir)/tool/generic_erb.rb \
 		$(srcdir)/template/unicode_norm_gen.tmpl \
 		$(UNICODE_DATA_DIR) lib/unicode_normalize
 
-$(srcdir)/enc/unicode/casefold.h: $(srcdir)/enc/unicode/case-folding.rb \
+# the next non-comment line was:
+# $(srcdir)/enc/unicode/casefold.h: $(srcdir)/enc/unicode/case-folding.rb \
+# but was changed to make sure CI works on systems that don't have gperf
+unicode-up: $(srcdir)/enc/unicode/case-folding.rb \
 		$(UNICODE_SRC_DATA_DIR)/UnicodeData.txt \
 		$(UNICODE_SRC_DATA_DIR)/SpecialCasing.txt \
 		$(UNICODE_SRC_DATA_DIR)/CaseFolding.txt

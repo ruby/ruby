@@ -1,3 +1,9 @@
+Mon Feb  8 09:43:57 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* common.mk: Removed enc/unicode/casefold.h from automatic build because
+	  some CI systems don't have gperf. Creation of enc/unicode/casefold.h
+	  is now possible with make unicode-up. This is intended as a temporary measure.
+
 Sun Feb  7 22:10:08 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* common.mk: Added two more precondition files for enc/unicode/casefold.h
