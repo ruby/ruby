@@ -5483,6 +5483,7 @@ rb_str_dump(VALUE str)
     char *q, *qend;
     VALUE result;
     int u8 = (encidx == rb_utf8_encindex());
+    static const char nonascii_suffix[] = ".force_encoding(\"%s\")";
 
     len = 2;			/* "" */
     p = RSTRING_PTR(str); pend = p + RSTRING_LEN(str);
@@ -5521,7 +5522,7 @@ rb_str_dump(VALUE str)
 	}
     }
     if (!rb_enc_asciicompat(enc)) {
-	len += 19;		/* ".force_encoding('')" */
+	len += strlen(nonascii_suffix) - rb_strlen_lit("%s");
 	len += strlen(enc->name);
     }
 
@@ -5595,7 +5596,7 @@ rb_str_dump(VALUE str)
     *q++ = '"';
     *q = '\0';
     if (!rb_enc_asciicompat(enc)) {
-	snprintf(q, qend-q, ".force_encoding(\"%s\")", enc->name);
+	snprintf(q, qend-q, nonascii_suffix, enc->name);
 	encidx = rb_ascii8bit_encindex();
     }
     OBJ_INFECT_RAW(result, str);
