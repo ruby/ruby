@@ -73,6 +73,7 @@ static const unsigned short EncUNICODE_ISO_8859_1_CtypeTable[256] = {
 
 /* use bottom bytes for actual code point count; 3 bits is more than enough */
 #define OnigCodePointCount(n) ((n)&0x7)
+#define OnigCaseFoldFlags(n) ((n)&~0x7)
 
 typedef struct {
   int n;
@@ -140,17 +141,17 @@ code3_equal(const OnigCodePoint *x, const OnigCodePoint *y)
   return 1;
 }
 
-#define UP    ONIGENC_CASE_UPCASE
-#define DOWN  ONIGENC_CASE_DOWNCASE
-#define TITLE ONIGENC_CASE_TITLECASE
-#define FOLD  ONIGENC_CASE_FOLD
+#define U ONIGENC_CASE_UPCASE
+#define D ONIGENC_CASE_DOWNCASE
+#define T ONIGENC_CASE_TITLECASE
+#define F ONIGENC_CASE_FOLD
 
 #include "enc/unicode/casefold.h"
 
-#undef UP
-#undef DOWN
-#undef TITLE
-#undef FOLD
+#undef U
+#undef D
+#undef T
+#undef F
 
 #include "enc/unicode/name2ctype.h"
 
@@ -676,9 +677,9 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
 		code = 0x0049; MODIFIED;
 	    }
 	    else if ((folded = onigenc_unicode_fold_lookup(code)) != 0) {
-		if (flags&ONIGENC_CASE_FOLD) {
-		    const OnigCodePoint *next = folded->code;
+		if (flags&OnigCaseFoldFlags(folded->n)) {
 		    int count = OnigCodePointCount(folded->n);
+		    const OnigCodePoint *next = folded->code;
 		    MODIFIED;
 		    if (count==1)
 		        code = *next;

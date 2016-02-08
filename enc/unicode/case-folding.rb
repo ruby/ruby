@@ -17,10 +17,10 @@ class CaseFolding
       v.map {|i| "0x%04x" % i}.join(", ")
     end
 
-    def print_table_1(dest, mapping_data, data)
+    def print_table_1(dest, type, mapping_data, data)
       for k, v in data = data.sort
         sk = (Array === k and k.length > 1) ? "{#{hex_seq(k)}}" : ("0x%04x" % k)
-        dest.print("  {#{sk}, {#{v.length}#{mapping_data.flags(k)}, {#{hex_seq(v)}}}},\n")
+        dest.print("  {#{sk}, {#{v.length}#{mapping_data.flags(k, type)}, {#{hex_seq(v)}}}},\n")
       end
       data
     end
@@ -31,7 +31,7 @@ class CaseFolding
       ret = data.inject([]) do |a, (n, d)|
         dest.print("#define #{n} (*(#{type}_Type (*)[#{d.size}])(#{type}_Table+#{i}))\n")
         i += d.size
-        a.concat(print_table_1(dest, mapping_data, d))
+        a.concat(print_table_1(dest, type, mapping_data, d))
       end
       dest.print("};\n\n")
       ret
@@ -205,9 +205,14 @@ class CaseMapping
     # IO.readlines(File.expand_path('SpecialCasing.txt', mapping_directory))
   end
 
-  def flags(from)
-    to = @mappings[from]
-    to ? to.flags : ""
+  def flags(from, type)
+    # types: CaseFold_11, CaseUnfold_11, CaseUnfold_12, CaseUnfold_13
+    flags = ""
+    flags += '|F' if type=='CaseFold_11'
+
+    #to = @mappings[from]
+    #to ? to.flags : ""
+    flags
   end
 
   def self.load(*args)
@@ -216,7 +221,7 @@ class CaseMapping
 end
 
 class CaseMappingDummy
-  def flags(from)
+  def flags(from, type)
     ""
   end
 end
