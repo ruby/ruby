@@ -952,12 +952,13 @@ rb_external_str_new_with_enc(const char *ptr, long len, rb_encoding *eenc)
 VALUE
 rb_external_str_with_enc(VALUE str, rb_encoding *eenc)
 {
-    if (eenc == rb_usascii_encoding() &&
+    int eidx = rb_enc_to_index(eenc);
+    if (eidx == rb_usascii_encindex() &&
 	rb_enc_str_coderange(str) != ENC_CODERANGE_7BIT) {
-	rb_enc_associate(str, rb_ascii8bit_encoding());
+	rb_enc_associate_index(str, rb_ascii8bit_encindex());
 	return str;
     }
-    rb_enc_associate(str, eenc);
+    rb_enc_associate_index(str, eidx);
     return rb_str_conv_enc(str, eenc, rb_default_internal_encoding());
 }
 
@@ -2680,7 +2681,7 @@ rb_str_concat(VALUE str1, VALUE str2)
 	}
 	rb_str_cat(str1, buf, 1);
 	if (code > 127) {
-	    rb_enc_associate(str1, rb_ascii8bit_encoding());
+	    rb_enc_associate_index(str1, rb_ascii8bit_encindex());
 	    ENC_CODERANGE_SET(str1, ENC_CODERANGE_VALID);
 	}
     }
@@ -5475,12 +5476,13 @@ rb_str_inspect(VALUE str)
 VALUE
 rb_str_dump(VALUE str)
 {
-    rb_encoding *enc = rb_enc_get(str);
+    int encidx = rb_enc_get_index(str);
+    rb_encoding *enc = rb_enc_from_index(encidx);
     long len;
     const char *p, *pend;
     char *q, *qend;
     VALUE result;
-    int u8 = (enc == rb_utf8_encoding());
+    int u8 = (encidx == rb_utf8_encindex());
 
     len = 2;			/* "" */
     p = RSTRING_PTR(str); pend = p + RSTRING_LEN(str);
@@ -5594,11 +5596,11 @@ rb_str_dump(VALUE str)
     *q = '\0';
     if (!rb_enc_asciicompat(enc)) {
 	snprintf(q, qend-q, ".force_encoding(\"%s\")", enc->name);
-	enc = rb_ascii8bit_encoding();
+	encidx = rb_ascii8bit_encindex();
     }
     OBJ_INFECT_RAW(result, str);
     /* result from dump is ASCII */
-    rb_enc_associate(result, enc);
+    rb_enc_associate_index(result, encidx);
     ENC_CODERANGE_SET(result, ENC_CODERANGE_7BIT);
     return result;
 }
