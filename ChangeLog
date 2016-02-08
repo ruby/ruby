@@ -1,3 +1,8 @@
+Mon Feb  8 10:30:10 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (feature_option): raise a runtime error if ambiguous
+	  feature name is given, in the future.  [Bug #12050]
+
 Mon Feb  8 09:43:57 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* common.mk: Removed enc/unicode/casefold.h from automatic build because

@@ -70,6 +70,7 @@ char *getenv();
     X(rubyopt) \
     X(frozen_string_literal) \
     /* END OF FEATURES */
+#define AMBIGUOUS_FEATURE_NAMES 0 /* no ambiguous feature names now */
 #define DEFINE_FEATURE(bit) feature_##bit,
 enum feature_flag_bits {
     EACH_FEATURES(DEFINE_FEATURE)
@@ -756,14 +757,35 @@ feature_option(const char *str, int len, void *arg, const unsigned int enable)
 {
     unsigned int *argp = arg;
     unsigned int mask = ~0U;
+#if AMBIGUOUS_FEATURE_NAMES
+    unsigned int set = 0U;
+    int matched = 0;
+#define SET_FEATURE(bit) \
+    if (NAME_MATCH_P(#bit, str, len)) {set |= mask = FEATURE_BIT(bit); ++matched;}
+#else
 #define SET_FEATURE(bit) \
     if (NAME_MATCH_P(#bit, str, len)) {mask = FEATURE_BIT(bit); goto found;}
+#endif
     EACH_FEATURES(SET_FEATURE);
     if (NAME_MATCH_P("all", str, len)) {
       found:
 	*argp = (*argp & ~mask) | (mask & enable);
 	return;
     }
+#if AMBIGUOUS_FEATURE_NAMES
+    if (matched == 1) goto found;
+    if (matched > 1) {
+	VALUE mesg = rb_sprintf("ambiguous feature: `%.*s' (", len, str);
+#define ADD_FEATURE(bit) \
+	if (FEATURE_BIT(bit) & set) { \
+	    rb_str_cat_cstr(mesg, #bit); \
+	    if (--matched) rb_str_cat_cstr(mesg, ", "); \
+	}
+	EACH_FEATURES(ADD_FEATURE);
+	rb_str_cat_cstr(mesg, ")");
+	rb_exc_raise(rb_exc_new_str(rb_eRuntimeError, mesg));
+    }
+#endif
     rb_warn("unknown argument for --%s: `%.*s'",
 	    enable ? "enable" : "disable", len, str);
     rb_warn("features are [gems, did-you-mean, rubyopt, frozen-string-literal].");
