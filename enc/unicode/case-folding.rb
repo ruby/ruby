@@ -20,7 +20,7 @@ class CaseFolding
     def print_table_1(dest, type, mapping_data, data)
       for k, v in data = data.sort
         sk = (Array === k and k.length > 1) ? "{#{hex_seq(k)}}" : ("0x%04x" % k)
-        dest.print("  {#{sk}, {#{v.length}#{mapping_data.flags(k, type)}, {#{hex_seq(v)}}}},\n")
+        dest.print("  {#{sk}, {#{v.length}#{mapping_data.flags(k, type, v)}, {#{hex_seq(v)}}}},\n")
       end
       data
     end
@@ -178,6 +178,8 @@ class CaseFolding
 end
 
 class MapItem
+  attr_reader :upper, :lower
+
   def initialize(code, upper, lower, title)
     @code = code
     @upper = upper unless upper == ''
@@ -205,13 +207,17 @@ class CaseMapping
     # IO.readlines(File.expand_path('SpecialCasing.txt', mapping_directory))
   end
 
-  def flags(from, type)
+  def flags(from, type, to)
     # types: CaseFold_11, CaseUnfold_11, CaseUnfold_12, CaseUnfold_13
     flags = ""
     flags += '|F' if type=='CaseFold_11'
-
-    #to = @mappings[from]
-    #to ? to.flags : ""
+    from = Array(from).map {|i| "%04X" % i}.join(" ")
+    to   = Array(to).map {|i| "%04X" % i}.join(" ")
+    item = @mappings[from]
+    if item
+      flags += '|U'  if to==item.upper    
+      flags += '|D'  if to==item.lower    
+    end
     flags
   end
 
@@ -221,7 +227,7 @@ class CaseMapping
 end
 
 class CaseMappingDummy
-  def flags(from, type)
+  def flags(from, type, to)
     ""
   end
 end
