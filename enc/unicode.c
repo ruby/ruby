@@ -235,6 +235,12 @@ onigenc_unicode_property_name_to_ctype(OnigEncoding enc, const UChar* name, cons
 #define onigenc_unicode_unfold2_lookup onigenc_unicode_CaseUnfold_12_lookup
 #define onigenc_unicode_unfold3_lookup onigenc_unicode_CaseUnfold_13_lookup
 
+enum {
+  I_WITH_DOT_ABOVE = 0x0130,
+  DOTLESS_i = 0x0131,
+  DOT_ABOVE = 0x0307
+};
+
 extern int
 onigenc_unicode_mbc_case_fold(OnigEncoding enc,
     OnigCaseFoldType flag ARG_UNUSED, const UChar** pp, const UChar* end,
@@ -251,11 +257,11 @@ onigenc_unicode_mbc_case_fold(OnigEncoding enc,
 
 #ifdef USE_UNICODE_CASE_FOLD_TURKISH_AZERI
   if ((flag & ONIGENC_CASE_FOLD_TURKISH_AZERI) != 0) {
-    if (code == 0x0049) {
-      return ONIGENC_CODE_TO_MBC(enc, 0x0131, fold);
+    if (code == 'I') {
+      return ONIGENC_CODE_TO_MBC(enc, DOTLESS_i, fold);
     }
-    else if (code == 0x0130) {
-      return ONIGENC_CODE_TO_MBC(enc, 0x0069, fold);
+    else if (code == I_WITH_DOT_ABOVE) {
+      return ONIGENC_CODE_TO_MBC(enc, 'i', fold);
     }
   }
 #endif
@@ -319,18 +325,18 @@ onigenc_unicode_apply_all_case_fold(OnigCaseFoldType flag,
 
 #ifdef USE_UNICODE_CASE_FOLD_TURKISH_AZERI
   if ((flag & ONIGENC_CASE_FOLD_TURKISH_AZERI) != 0) {
-    code = 0x0131;
-    r = (*f)(0x0049, &code, 1, arg);
+    code = DOTLESS_i;
+    r = (*f)('I', &code, 1, arg);
     if (r != 0) return r;
-    code = 0x0049;
-    r = (*f)(0x0131, &code, 1, arg);
+    code = 'I';
+    r = (*f)(DOTLESS_i, &code, 1, arg);
     if (r != 0) return r;
 
-    code = 0x0130;
-    r = (*f)(0x0069, &code, 1, arg);
+    code = I_WITH_DOT_ABOVE;
+    r = (*f)('i', &code, 1, arg);
     if (r != 0) return r;
-    code = 0x0069;
-    r = (*f)(0x0130, &code, 1, arg);
+    code = 'i';
+    r = (*f)(I_WITH_DOT_ABOVE, &code, 1, arg);
     if (r != 0) return r;
   }
   else {
@@ -438,28 +444,26 @@ onigenc_unicode_get_case_fold_codes_by_str(OnigEncoding enc,
 
 #ifdef USE_UNICODE_CASE_FOLD_TURKISH_AZERI
   if ((flag & ONIGENC_CASE_FOLD_TURKISH_AZERI) != 0) {
-    if (code == 0x0049) {
+    switch (code) {
+    case 'I':
       items[0].byte_len = len;
       items[0].code_len = 1;
-      items[0].code[0]  = 0x0131;
+      items[0].code[0]  = DOTLESS_i;
       return 1;
-    }
-    else if (code == 0x0130) {
+    case I_WITH_DOT_ABOVE:
       items[0].byte_len = len;
       items[0].code_len = 1;
-      items[0].code[0]  = 0x0069;
+      items[0].code[0]  = 'i';
       return 1;
-    }
-    else if (code == 0x0131) {
+    case DOTLESS_i:
       items[0].byte_len = len;
       items[0].code_len = 1;
-      items[0].code[0]  = 0x0049;
+      items[0].code[0]  = 'I';
       return 1;
-    }
-    else if (code == 0x0069) {
+    case 'i':
       items[0].byte_len = len;
       items[0].code_len = 1;
-      items[0].code[0]  = 0x0130;
+      items[0].code[0]  = I_WITH_DOT_ABOVE;
       return 1;
     }
   }
@@ -640,8 +644,8 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
 	    if (code>='a' && code<='z') {
 	        if (flags&ONIGENC_CASE_UPCASE) {
 		    MODIFIED;
-		    if (flags&ONIGENC_CASE_FOLD_TURKISH_AZERI && code==0x0069) /* i -> I WITH DOT ABOVE */
-			code = 0x0130;
+		    if (flags&ONIGENC_CASE_FOLD_TURKISH_AZERI && code=='i')
+			code = I_WITH_DOT_ABOVE;
 		    else
 			code += 'A'-'a';
 		}
@@ -649,8 +653,8 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
 	    else if (code>='A' && code<='Z') {
 		if (flags&ONIGENC_CASE_DOWNCASE) {
 		    MODIFIED;
-		    if (flags&ONIGENC_CASE_FOLD_TURKISH_AZERI && code==0x0049) /* I -> DOTLESS i */
-			code = 0x0131;
+		    if (flags&ONIGENC_CASE_FOLD_TURKISH_AZERI && code=='I')
+			code = DOTLESS_i;
 		    else
 			code += 'a'-'A';
 		}
@@ -659,22 +663,22 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
 	else if (!(flags&ONIGENC_CASE_ASCII_ONLY) && code>=0x00B5) { /* deal with non-ASCII; micron sign (U+00B5) is lowest affected */
 	    const CodePointList3 *folded;
 
-	    if (code==0x0130) {
+	    if (code==I_WITH_DOT_ABOVE) {
 		if (flags&ONIGENC_CASE_DOWNCASE) {
 		    MODIFIED;
 		    if (flags&ONIGENC_CASE_FOLD_TURKISH_AZERI)
-			code = 0x0069; /* I WITH DOT ABOVE -> i */
+			code = 'i';
 		    else { /* make dot above explicit */
-			to += ONIGENC_CODE_TO_MBC(enc, 0x0069, to);
-			code = 0x0307; /* dot above */
+			to += ONIGENC_CODE_TO_MBC(enc, 'i', to);
+			code = DOT_ABOVE;
 		    }
 		}
 	    }
 	    /* the following special case for  DOTLESS i -> I
 	     * can be removed once we rely on data,
 	     * because the mapping is always the same */
-	    else if (code==0x0131 && (flags&ONIGENC_CASE_UPCASE)) {
-		code = 0x0049; MODIFIED;
+	    else if (code==DOTLESS_i && (flags&ONIGENC_CASE_UPCASE)) {
+		code = 'I'; MODIFIED;
 	    }
 	    else if ((folded = onigenc_unicode_fold_lookup(code)) != 0) {
 		if (flags&OnigCaseFoldFlags(folded->n)) {
