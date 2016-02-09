@@ -1248,17 +1248,17 @@ nurat_round_half_up(VALUE self)
 
     num = dat->num;
     den = dat->den;
-    neg = f_negative_p(num);
+    neg = INT_NEGATIVE_P(num);
 
     if (neg)
-	num = f_negate(num);
+	num = rb_int_uminus(num);
 
-    num = f_add(f_mul(num, TWO), den);
-    den = f_mul(den, TWO);
-    num = f_idiv(num, den);
+    num = rb_int_plus(rb_int_mul(num, TWO), den);
+    den = rb_int_mul(den, TWO);
+    num = rb_int_idiv(num, den);
 
     if (neg)
-	num = f_negate(num);
+	num = rb_int_uminus(num);
 
     return num;
 }
