@@ -416,7 +416,7 @@ class Logger
   # * Append open does not need to lock file.
   # * If the OS supports multi I/O, records possibly may be mixed.
   #
-  def add(severity, message = nil, progname = nil, &block)
+  def add(severity, message = nil, progname = nil)
     severity ||= UNKNOWN
     if @logdev.nil? or severity < @level
       return true

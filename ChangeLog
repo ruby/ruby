@@ -1,3 +1,8 @@
+Tue Feb  9 16:36:23 2016  Naotoshi Seo  <sonots@gmail.com>
+
+	* lib/logger.rb: Remove block from Logger.add as it's not needed
+	  patch provided by Daniel Lobato Garcí [fix GH-1240] [Bug #12054]
+
 Tue Feb  9 14:32:23 2016  Zachary Scott  <zzak@ruby-lang.org>
 
 	* ext/zlib/zlib.c: Document mtime header behavior with patch by @schneems
