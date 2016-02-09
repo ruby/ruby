@@ -46,7 +46,7 @@ end
 
 alias ln_dir_safe ln_safe
 
-if /mingw|mswin/ =~ (CROSS_COMPILING || RUBY_PLATFORM)
+if !File.respond_to?(:symlink) && /mingw|mswin/ =~ (CROSS_COMPILING || RUBY_PLATFORM)
   extend Mswin
 end
 
