@@ -762,9 +762,12 @@ name_match_p(const char *name, const char *str, size_t len)
 	return;				\
     }
 
+#define LITERAL_NAME_ELEMENT(name) #name", "
+
 static void
 feature_option(const char *str, int len, void *arg, const unsigned int enable)
 {
+    static const char list[] = EACH_FEATURES(LITERAL_NAME_ELEMENT);
     unsigned int *argp = arg;
     unsigned int mask = ~0U;
 #if AMBIGUOUS_FEATURE_NAMES
@@ -799,7 +802,7 @@ feature_option(const char *str, int len, void *arg, const unsigned int enable)
 #endif
     rb_warn("unknown argument for --%s: `%.*s'",
 	    enable ? "enable" : "disable", len, str);
-    rb_warn("features are [gems, did-you-mean, rubyopt, frozen-string-literal].");
+    rb_warn("features are [%.*s].", (int)strlen(list) - 2, list);
 }
 
 static void
@@ -817,18 +820,21 @@ disable_option(const char *str, int len, void *arg)
 static void
 debug_option(const char *str, int len, void *arg)
 {
+    static const char list[] = EACH_DEBUG_FEATURES(LITERAL_NAME_ELEMENT);
 #define SET_WHEN_DEBUG(bit) SET_WHEN(#bit, DEBUG_BIT(bit), str, len)
     EACH_DEBUG_FEATURES(SET_WHEN_DEBUG);
     rb_warn("unknown argument for --debug: `%.*s'", len, str);
+    rb_warn("debug features are [%.*s].", (int)strlen(list) - 2, list);
 }
 
 static void
 dump_option(const char *str, int len, void *arg)
 {
+    static const char list[] = EACH_DEBUG_FEATURES(LITERAL_NAME_ELEMENT);
 #define SET_WHEN_DUMP(bit) SET_WHEN(#bit, DUMP_BIT(bit), str, len)
     EACH_DUMPS(SET_WHEN_DUMP);
     rb_warn("don't know how to dump `%.*s',", len, str);
-    rb_warn("but only [version, copyright, usage, yydebug, syntax, parsetree, parsetree_with_comment, insns].");
+    rb_warn("but only [%.*s].", (int)strlen(list) - 2, list);
 }
 
 static void
