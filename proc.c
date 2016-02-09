@@ -2390,6 +2390,18 @@ rb_method_location(VALUE method)
  *    meth.parameters  -> array
  *
  * Returns the parameter information of this method.
+ *
+ *    def foo(bar); end
+ *    method(:foo).parameters #=> [[:req, :bar]]
+ *
+ *    def foo(bar, baz, bat, &blk); end
+ *    method(:foo).parameters #=> [[:req, :bar], [:req, :baz], [:req, :bat], [:block, :blk]]
+ *
+ *    def foo(bar, *args); end
+ *    method(:foo).parameters #=> [[:req, :bar], [:rest, :args]]
+ *
+ *    def foo(bar, baz, *args, &blk); end
+ *    method(:foo).parameters #=> [[:req, :bar], [:req, :baz], [:rest, :args], [:block, :blk]]
  */
 
 static VALUE
