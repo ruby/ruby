@@ -144,7 +144,6 @@ enum {
 	& ~FEATURE_BIT(gems)
 #endif
 	& ~FEATURE_BIT(frozen_string_literal)
-	& ~FEATURE_BIT(debug_frozen_string_literal)
 	)
 };
 
