@@ -776,14 +776,15 @@ feature_option(const char *str, int len, void *arg, const unsigned int enable)
     if (matched == 1) goto found;
     if (matched > 1) {
 	VALUE mesg = rb_sprintf("ambiguous feature: `%.*s' (", len, str);
-#define ADD_FEATURE(bit) \
+#define ADD_FEATURE_NAME(bit) \
 	if (FEATURE_BIT(bit) & set) { \
 	    rb_str_cat_cstr(mesg, #bit); \
 	    if (--matched) rb_str_cat_cstr(mesg, ", "); \
 	}
-	EACH_FEATURES(ADD_FEATURE);
+	EACH_FEATURES(ADD_FEATURE_NAME);
 	rb_str_cat_cstr(mesg, ")");
 	rb_exc_raise(rb_exc_new_str(rb_eRuntimeError, mesg));
+#undef ADD_FEATURE_NAME
     }
 #endif
     rb_warn("unknown argument for --%s: `%.*s'",
