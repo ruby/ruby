@@ -29,9 +29,18 @@ module Mswin
   end
 end
 
+def clean_link(src, dest)
+  begin
+    link = File.readlink(dest)
+  rescue
+  else
+    return if link == src
+    File.unlink(dest)
+  end
+  yield src, dest
+end
+
 def ln_safe(src, dest)
-  link = File.readlink(dest) rescue nil
-  return if link == src
   ln_sf(src, dest)
 end
 
@@ -68,14 +77,14 @@ def ln_relative(src, dest)
   return if File.identical?(src, dest)
   parent = File.dirname(dest)
   File.directory?(parent) or mkdir_p(parent)
-  ln_safe(relative_path_from(src, parent), dest)
+  clean_link(relative_path_from(src, parent), dest) {|s, d| ln_safe(s, d)}
 end
 
 def ln_dir_relative(src, dest)
   return if File.identical?(src, dest)
   parent = File.dirname(dest)
   File.directory?(parent) or mkdir_p(parent)
-  ln_dir_safe(relative_path_from(src, parent), dest)
+  clean_link(relative_path_from(src, parent), dest) {|s, d| ln_dir_safe(s, d)}
 end
 
 config = RbConfig::MAKEFILE_CONFIG.merge("prefix" => ".", "exec_prefix" => ".")
