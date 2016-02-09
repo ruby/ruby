@@ -70,11 +70,15 @@ char *getenv();
     X(rubyopt) \
     X(frozen_string_literal) \
     /* END OF FEATURES */
+#define EACH_DEBUG_FEATURES(X) \
+    X(frozen_string_literal) \
+    /* END OF DEBUG FEATURES */
 #define AMBIGUOUS_FEATURE_NAMES 0 /* no ambiguous feature names now */
 #define DEFINE_FEATURE(bit) feature_##bit,
+#define DEFINE_DEBUG_FEATURE(bit) feature_debug_##bit,
 enum feature_flag_bits {
     EACH_FEATURES(DEFINE_FEATURE)
-    feature_debug_frozen_string_literal,
+    EACH_DEBUG_FEATURES(DEFINE_DEBUG_FEATURE)
     feature_flag_count
 };
 
@@ -807,8 +811,8 @@ disable_option(const char *str, int len, void *arg)
 static void
 debug_option(const char *str, int len, void *arg)
 {
-#define SET_WHEN_DEBUG(t, bit) SET_WHEN(#bit, t##_BIT(bit), str, len)
-    SET_WHEN_DEBUG(DEBUG, frozen_string_literal);
+#define SET_WHEN_DEBUG(bit) SET_WHEN(#bit, DEBUG_BIT(bit), str, len)
+    EACH_DEBUG_FEATURES(SET_WHEN_DEBUG);
     rb_warn("unknown argument for --debug: `%.*s'", len, str);
 }
 
