@@ -924,8 +924,8 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
         @ssl_server_thread.kill.join
         @ssl_server_thread = nil
       end
-      timeout = WEBrick::Utils::TimeoutHandler
-      timeout.terminate if defined?(timeout.terminate)
+      utils = WEBrick::Utils    # TimeoutHandler is since 1.9
+      utils::TimeoutHandler.terminate if defined?(utils::TimeoutHandler.terminate)
     end
 
     def normal_server_port
