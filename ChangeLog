@@ -1,3 +1,8 @@
+Tue Feb  9 13:52:49 2016  Zachary Scott  <zzak@ruby-lang.org>
+
+	* re.c: Remove deprecated kcode argument from Regexp.new and compile
+	  patch provided by Dylan Pulliam [Bug #11495]
+
 Mon Feb  8 21:26:19 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/unicode/case-folding.rb, enc/unicode/casefold.h: Flags for
