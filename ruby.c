@@ -87,17 +87,21 @@ enum feature_flag_bits {
 #define DEBUG_BIT(bit) (1U << feature_debug_##bit)
 
 #define DUMP_BIT(bit) (1U << dump_##bit)
+#define DEFINE_DUMP(bit) dump_##bit,
+#define EACH_DUMPS(X) \
+    X(version) \
+    X(copyright) \
+    X(usage) \
+    X(help) \
+    X(yydebug) \
+    X(syntax) \
+    X(parsetree) \
+    X(parsetree_with_comment) \
+    X(insns) \
+    /* END OF DUMPS */
 enum dump_flag_bits {
-    dump_version,
     dump_version_v,
-    dump_copyright,
-    dump_usage,
-    dump_help,
-    dump_yydebug,
-    dump_syntax,
-    dump_parsetree,
-    dump_parsetree_with_comment,
-    dump_insns,
+    EACH_DUMPS(DEFINE_DUMP)
     dump_flag_count
 };
 
@@ -822,15 +826,7 @@ static void
 dump_option(const char *str, int len, void *arg)
 {
 #define SET_WHEN_DUMP(bit) SET_WHEN(#bit, DUMP_BIT(bit), str, len)
-    SET_WHEN_DUMP(version);
-    SET_WHEN_DUMP(copyright);
-    SET_WHEN_DUMP(usage);
-    SET_WHEN_DUMP(help);
-    SET_WHEN_DUMP(yydebug);
-    SET_WHEN_DUMP(syntax);
-    SET_WHEN_DUMP(parsetree);
-    SET_WHEN_DUMP(parsetree_with_comment);
-    SET_WHEN_DUMP(insns);
+    EACH_DUMPS(SET_WHEN_DUMP);
     rb_warn("don't know how to dump `%.*s',", len, str);
     rb_warn("but only [version, copyright, usage, yydebug, syntax, parsetree, parsetree_with_comment, insns].");
 }
