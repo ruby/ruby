@@ -78,6 +78,8 @@ char *getenv();
 #define DEFINE_DEBUG_FEATURE(bit) feature_debug_##bit,
 enum feature_flag_bits {
     EACH_FEATURES(DEFINE_FEATURE)
+    feature_debug_flag_first,
+    feature_debug_flag_begin = feature_debug_flag_first - 1,
     EACH_DEBUG_FEATURES(DEFINE_DEBUG_FEATURE)
     feature_flag_count
 };
@@ -133,7 +135,7 @@ enum {
 	| FEATURE_BIT(debug_frozen_string_literal)
 	),
     DEFAULT_FEATURES = (
-	~0U
+	(FEATURE_BIT(debug_flag_first)-1)
 #if DISABLE_RUBYGEMS
 	& ~FEATURE_BIT(gems)
 #endif
