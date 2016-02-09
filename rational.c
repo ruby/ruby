@@ -152,7 +152,7 @@ fun2(expt)
 fun2(fdiv)
 fun2(idiv)
 
-#define f_expt10(x) f_expt(INT2FIX(10), x)
+#define f_expt10(x) rb_int_pow(INT2FIX(10), x)
 
 inline static VALUE
 f_negative_p(VALUE x)
@@ -1304,10 +1304,10 @@ f_round_common(int argc, VALUE *argv, VALUE self, VALUE (*func)(VALUE))
 	rb_raise(rb_eTypeError, "not an integer");
 
     b = f_expt10(n);
-    s = f_mul(self, b);
+    s = nurat_mul(self, b);
 
     if (k_float_p(s)) {
-	if (f_lt_p(n, ZERO))
+	if (INT_NEGATIVE_P(n))
 	    return ZERO;
 	return self;
     }
@@ -1318,10 +1318,10 @@ f_round_common(int argc, VALUE *argv, VALUE self, VALUE (*func)(VALUE))
 
     s = (*func)(s);
 
-    s = f_div(f_rational_new_bang1(CLASS_OF(self), s), b);
+    s = nurat_div(f_rational_new_bang1(CLASS_OF(self), s), b);
 
-    if (f_lt_p(n, ONE))
-	s = f_to_i(s);
+    if (RB_TYPE_P(s, T_RATIONAL) && FIX2INT(rb_int_cmp(n, ONE)) < 0)
+	s = nurat_truncate(s);
 
     return s;
 }
