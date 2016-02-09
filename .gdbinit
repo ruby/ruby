@@ -468,7 +468,7 @@ document rp_class
 end
 
 define rp_imemo
-  set $flags = (((struct RBasic *)($arg0))->flags >> RUBY_FL_USHIFT) & imemo_mask
+  set $flags = (enum imemo_type)((((struct RBasic *)($arg0))->flags >> RUBY_FL_USHIFT) & imemo_mask)
   if $flags == imemo_cref
     printf "(rb_cref_t *) %p\n", (void*)$arg0
     print *(rb_cref_t *)$arg0
@@ -489,8 +489,18 @@ define rp_imemo
     printf "(struct MEMO *) %p\n", (void*)$arg0
     print *(struct MEMO *)$arg0
   else
+  if $flags == imemo_ment
+    printf "(rb_method_entry_t *) %p\n", (void*)$arg0
+    print *(rb_method_entry_t *)$arg0
+  else
+  if $flags == imemo_iseq
+    printf "(rb_iseq_t *) %p\n", (void*)$arg0
+    print *(rb_iseq_t *)$arg0
+  else
     printf "(struct RIMemo *) %p\n", (void*)$arg0
     print *(struct RIMemo *)$arg0
+  end
+  end
   end
   end
   end
