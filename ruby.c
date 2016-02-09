@@ -830,7 +830,7 @@ debug_option(const char *str, int len, void *arg)
 static void
 dump_option(const char *str, int len, void *arg)
 {
-    static const char list[] = EACH_DEBUG_FEATURES(LITERAL_NAME_ELEMENT);
+    static const char list[] = EACH_DUMPS(LITERAL_NAME_ELEMENT);
 #define SET_WHEN_DUMP(bit) SET_WHEN(#bit, DUMP_BIT(bit), str, len)
     EACH_DUMPS(SET_WHEN_DUMP);
     rb_warn("don't know how to dump `%.*s',", len, str);
