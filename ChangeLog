@@ -1,3 +1,8 @@
+Tue Feb  9 14:32:23 2016  Zachary Scott  <zzak@ruby-lang.org>
+
+	* ext/zlib/zlib.c: Document mtime header behavior with patch by @schneems
+	  Fixes [GH-1129]: https://github.com/ruby/ruby/pull/1129
+
 Tue Feb  9 13:52:49 2016  Zachary Scott  <zzak@ruby-lang.org>
 
 	* re.c: Remove deprecated kcode argument from Regexp.new and compile
