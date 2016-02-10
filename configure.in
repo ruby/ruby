@@ -1394,6 +1394,12 @@ AC_CACHE_CHECK([char bit], [rb_cv_char_bit],
 
 dnl RUBY_CHECK_SIZEOF [typename], [maybe same size types], [macros], [include]
 AC_DEFUN([RUBY_CHECK_SIZEOF],
+[dnl
+AS_VAR_PUSHDEF([rbcv_var], [rbcv_sizeof_var])dnl
+AS_VAR_PUSHDEF([cond], [rbcv_sizeof_cond])dnl
+AS_VAR_PUSHDEF([t], [rbcv_sizeof_type])dnl
+AS_VAR_PUSHDEF([s], [rbcv_sizeof_size])dnl
+]
 [m4_bmatch([$1], [\.], [], [if test "$universal_binary" = yes; then])
 AC_CACHE_CHECK([size of $1], [AS_TR_SH([ac_cv_sizeof_$1])], [
     unset AS_TR_SH(ac_cv_sizeof_$1)
@@ -1427,8 +1433,8 @@ static ac__type_sizeof_ *rbcv_ptr;
 	    AC_COMPILE_IFELSE([AC_LANG_BOOL_COMPILE_TRY([$hdr], [!AS_TR_CPP(HAVE_$1)])], [continue])
 	    AC_COMPILE_IFELSE([AC_LANG_BOOL_COMPILE_TRY([$hdr]
 				[$rbcv_var],
-				[AS_TR_CPP(HAVE_$1) == (AS_TR_CPP(SIZEOF_$1) == ([$[s / rb_cv_char_bit]]))])],
-		[AS_TR_SH(ac_cv_sizeof_$1)="${AS_TR_SH(ac_cv_sizeof_$1)+${AS_TR_SH(ac_cv_sizeof_$1)-} }${t}${s}"])
+				[AS_TR_CPP(HAVE_$1) == (AS_TR_CPP(SIZEOF_$1) == ($s / $rb_cv_char_bit))])],
+		[AS_TR_SH(ac_cv_sizeof_$1)="${AS_TR_SH(ac_cv_sizeof_$1)+${AS_TR_SH(ac_cv_sizeof_$1)-} }${t}${s}"; continue])
 	done
     done
     }])
@@ -1456,13 +1462,14 @@ ${cond+@%:@endif}
 	AS_CASE(["$t"],
 	[[[0-9]*|SIZEOF_*]], [
 	    ${cond+echo "@%:@else"}
-	    echo "[@%:@define ]AS_TR_CPP(SIZEOF_$1) [$t]"
+	    echo "[@%:@define ]AS_TR_CPP(SIZEOF_$1) $t"
 	    break
 	    ],
 	[
 	    s=`expr $t : ['.*[^0-9]\([0-9][0-9]*\)$']`
+	    s=`expr $s / $rb_cv_char_bit`
 	    echo "@%:@${cond+el}if defined(__${t}__) || defined(__${t}) || defined(_${t}) || defined($t)"
-	    echo "@%:@define AS_TR_CPP(SIZEOF_$1) [$[s / rb_cv_char_bit]]"
+	    echo "@%:@define AS_TR_CPP(SIZEOF_$1) $s"
 	    cond=1
 	    ])
     done
@@ -1471,6 +1478,10 @@ ${cond+@%:@endif}
 m4_bmatch([$1], [\.], [], [else
 AC_CHECK_SIZEOF([$1], 0, [$4])
 fi])
+AS_VAR_POPDEF([rbcv_var])dnl
+AS_VAR_POPDEF([cond])dnl
+AS_VAR_POPDEF([t])dnl
+AS_VAR_POPDEF([s])dnl
 ])
 
 RUBY_CHECK_SIZEOF(int, [], [ILP])
