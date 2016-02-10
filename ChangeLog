@@ -1,3 +1,7 @@
+Thu Feb 11 06:26:18 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in (RUBY_DEFINT): use Parameter Expansion.
+
 Thu Feb 11 05:33:24 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in (int128_t): don't check HAVE_XXX (for example

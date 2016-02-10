@@ -2012,11 +2012,8 @@ if test "$rb_cv_large_fd_select" = yes; then
     AC_DEFINE(HAVE_RB_FD_INIT, 1)
 fi
 
-dnl RUBY_DEFINT TYPENAME, SIZE, [SIGNED-OR-UNSIGNED], [INCLUDES = DEFAULT-INCLUDES]
+dnl RUBY_DEFINT TYPENAME, SIZE, [UNSIGNED], [INCLUDES = DEFAULT-INCLUDES]
 AC_DEFUN([RUBY_DEFINT], [dnl
-AS_VAR_PUSHDEF([cond], [rb_defint_cond])dnl
-AS_VAR_PUSHDEF([t], [rb_defint_type])dnl
-AS_VAR_PUSHDEF([s], [rb_defint_size])dnl
 AC_CACHE_CHECK([for $1], [rb_cv_type_$1],
 [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([AC_INCLUDES_DEFAULT([$4])
 typedef $1 t; int s = sizeof(t) == 42;])],
@@ -2031,25 +2028,15 @@ typedef $1 t; int s = sizeof(t) == 42;])],
     ["$ac_cv_sizeof___int128"], [ rb_cv_type_$1="m4_if([$3], [], [], [$3 ])__int128"],
     [ rb_cv_type_$1=no])])])
 if test "${rb_cv_type_$1}" != no; then
-    AS_CASE([" ${rb_cv_type_$1}"],
-    [yes], [t=],
-    [*" "*], [
-	t=`expr " ${rb_cv_type_$1}" : ".* \(.*\)"`;
-	t=AS_TR_SH($t)
-    ])
-    cond=
     AC_DEFINE([HAVE_]AS_TR_CPP($1), 1)
     if test "${rb_cv_type_$1}" = yes; then
 	m4_bmatch([$2], [^[1-9][0-9]*$], [AC_CHECK_SIZEOF([$1], 0, [AC_INCLUDES_DEFAULT([$4])])],
 			[RUBY_CHECK_SIZEOF([$1], [$2], [], [AC_INCLUDES_DEFAULT([$4])])])
     else
 	AC_DEFINE_UNQUOTED($1, [$rb_cv_type_$1])
-	AC_DEFINE_UNQUOTED([SIZEOF_]AS_TR_CPP($1), [SIZEOF_]AS_TR_CPP([$t]))
+	AC_DEFINE_UNQUOTED([SIZEOF_]AS_TR_CPP($1), [SIZEOF_]AS_TR_CPP([${rb_cv_type_$1##unsigned }]))
     fi
 fi
-AS_VAR_POPDEF([cond])dnl
-AS_VAR_POPDEF([t])dnl
-AS_VAR_POPDEF([s])dnl
 ])
 
 RUBY_DEFINT(int8_t, 1)
