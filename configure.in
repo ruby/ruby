@@ -567,6 +567,12 @@ AC_CHECK_TOOL(AR, ar)
 if test -z "$AR"; then
   AC_CHECK_PROGS(AR, aal, ar)
 fi
+AC_CACHE_CHECK([for $AR D option], [rb_cv_ar_D_option], [
+    AS_IF([$AR rcD conftest.a > /dev/null 2>&1 && rm conftest.a],
+	[rb_cv_ar_D_option=yes], [rb_cv_ar_D_option=no])
+])
+AS_IF([test "$rb_cv_ar_D_option" = yes], [ARFLAGS=rcD], [ARFLAGS=rcu])
+AC_SUBST(ARFLAGS)
 
 AC_CHECK_TOOL(AS, as)
 ASFLAGS=$ASFLAGS

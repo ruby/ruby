@@ -1,3 +1,8 @@
+Wed Feb 10 12:03:41 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (ARFLAGS): check if deterministic mode flag is
+	  effective, which is on by default on Ubuntu.
+
 Tue Feb  9 16:36:23 2016  Naotoshi Seo  <sonots@gmail.com>
 
 	* lib/logger.rb: Remove block from Logger.add as it's not needed
