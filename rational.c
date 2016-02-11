@@ -1113,7 +1113,7 @@ nurat_eqeq_p(VALUE self, VALUE other)
 	{
 	    get_dat1(self);
 
-	    if (f_zero_p(dat->num) && f_zero_p(other))
+	    if (INT_ZERO_P(dat->num) && INT_ZERO_P(other))
 		return Qtrue;
 
 	    if (!FIXNUM_P(dat->den))
@@ -1131,7 +1131,7 @@ nurat_eqeq_p(VALUE self, VALUE other)
 	{
 	    get_dat2(self, other);
 
-	    if (f_zero_p(adat->num) && f_zero_p(bdat->num))
+	    if (INT_ZERO_P(adat->num) && INT_ZERO_P(bdat->num))
 		return Qtrue;
 
 	    return f_boolcast(rb_int_equal(adat->num, bdat->num) &&
