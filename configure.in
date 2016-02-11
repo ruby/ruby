@@ -2034,7 +2034,7 @@ if test "${rb_cv_type_$1}" != no; then
 			[RUBY_CHECK_SIZEOF([$1], [$2], [], [AC_INCLUDES_DEFAULT([$4])])])
     else
 	AC_DEFINE_UNQUOTED($1, [$rb_cv_type_$1])
-	AC_DEFINE_UNQUOTED([SIZEOF_]AS_TR_CPP($1), [SIZEOF_]AS_TR_CPP([${rb_cv_type_$1##unsigned }]))
+	AC_DEFINE_UNQUOTED([SIZEOF_]AS_TR_CPP($1), [SIZEOF_]AS_TR_CPP([${rb_cv_type_$1@%:@@%:@unsigned }]))
     fi
 fi
 ])
