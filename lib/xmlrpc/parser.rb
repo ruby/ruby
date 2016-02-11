@@ -10,42 +10,6 @@ require "xmlrpc/base64"
 require "xmlrpc/datetime"
 
 
-module NQXML
-  class Node
-
-    def removeChild(node)
-      @children.delete(node)
-    end
-    def childNodes
-      @children
-    end
-    def hasChildNodes
-      not @children.empty?
-    end
-    def [] (index)
-      @children[index]
-    end
-
-    def nodeType
-      if @entity.instance_of? NQXML::Text then :TEXT
-      elsif @entity.instance_of? NQXML::Comment then :COMMENT
-      #elsif @entity.instance_of? NQXML::Element then :ELEMENT
-      elsif @entity.instance_of? NQXML::Tag then :ELEMENT
-      else :ELSE
-      end
-    end
-
-    def nodeValue
-      #TODO: error when wrong Entity-type
-      @entity.text
-    end
-    def nodeName
-      #TODO: error when wrong Entity-type
-      @entity.name
-    end
-  end # class Node
-end # module NQXML
-
 module XMLRPC # :nodoc:
 
   # Raised when the remote procedure returns a fault-structure, which has two
@@ -612,35 +576,6 @@ module XMLRPC # :nodoc:
       end
     end # class XMLStreamParser
 
-    class NQXMLStreamParser < AbstractStreamParser
-      def initialize
-        require "nqxml/streamingparser"
-        @parser_class = XMLRPCParser
-      end
-
-      class XMLRPCParser
-        include StreamParserMixin
-
-        def parse(str)
-          parser = NQXML::StreamingParser.new(str)
-          parser.each do |ele|
-            case ele
-            when NQXML::Text
-              @data = ele.text
-              #character(ele.text)
-            when NQXML::Tag
-              if ele.isTagEnd
-                endElement(ele.name)
-              else
-                startElement(ele.name, ele.attrs)
-              end
-            end
-          end # do
-        end # method parse
-      end # class XMLRPCParser
-
-    end # class NQXMLStreamParser
-
     class XMLTreeParser < AbstractTreeParser
 
       def initialize
@@ -692,34 +627,6 @@ module XMLRPC # :nodoc:
       end
 
     end # class XMLParser
-
-    class NQXMLTreeParser < AbstractTreeParser
-
-      def initialize
-        require "nqxml/treeparser"
-      end
-
-      private
-
-      def _nodeType(node)
-        node.nodeType
-      end
-
-      def methodResponse_document(node)
-        methodResponse(node)
-      end
-
-      def methodCall_document(node)
-        methodCall(node)
-      end
-
-      def createCleanedTree(str)
-        doc = ::NQXML::TreeParser.new(str).document.rootNode
-        removeWhitespacesAndComments(doc)
-        doc
-      end
-
-    end # class NQXMLTreeParser
 
     class REXMLStreamParser < AbstractStreamParser
       def initialize
@@ -847,10 +754,8 @@ module XMLRPC # :nodoc:
     end
 
     XMLParser   = XMLTreeParser
-    NQXMLParser = NQXMLTreeParser
 
     Classes = [XMLStreamParser, XMLTreeParser,
-               NQXMLStreamParser, NQXMLTreeParser,
                REXMLStreamParser, XMLScanStreamParser,
                LibXMLStreamParser]
 
