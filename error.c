@@ -1140,9 +1140,20 @@ name_err_initialize(int argc, VALUE *argv, VALUE self)
     VALUE name;
     VALUE recv;
     VALUE iseqw = Qnil;
+    VALUE args = 0;
 
     recv = (argc > 2) ? argv[--argc] : Qundef;
     name = (argc > 1) ? argv[--argc] : Qnil;
+    if (recv != Qundef && argc > 0) {
+	VALUE mesg = argv[0];
+	VALUE *newargv = &mesg;
+	if (argc > 1) {
+	    newargv = ALLOCV_N(VALUE, args, argc);
+	    MEMCPY(newargv + 1, argv + 1, VALUE, argc - 1);
+	}
+	argv = newargv;
+	newargv[0] = rb_name_err_mesg_new(mesg, recv, name);
+    }
     rb_call_super(argc, argv);
     rb_ivar_set(self, id_name, name);
     {
@@ -1152,7 +1163,6 @@ name_err_initialize(int argc, VALUE *argv, VALUE self)
 	if (cfp) iseqw = rb_iseqw_new(cfp->iseq);
     }
     rb_ivar_set(self, id_iseq, iseqw);
-    if (recv != Qundef) rb_ivar_set(self, id_receiver, recv);
     return self;
 }
 
