@@ -3060,7 +3060,7 @@ rb_reg_match_m(int argc, VALUE *argv, VALUE re)
  *  call-seq:
  *     Regexp.new(string, [options])       -> regexp
  *     Regexp.new(regexp)                  -> regexp
- *     Regexp.compile(string, [options)    -> regexp
+ *     Regexp.compile(string, [options])   -> regexp
  *     Regexp.compile(regexp)              -> regexp
  *
  *  Constructs a new regular expression from +pattern+, which can be either a

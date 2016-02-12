@@ -1,3 +1,8 @@
+Fri Feb 12 11:17:38 2016  Bogdan  <bogdanvlviv@gmail.com>
+
+	* re.c (rb_reg_initialize_m): [DOC] fix missing right bracket.
+	  [Fix GH-1243]
+
 Thu Feb 11 14:57:58 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_CHECK_SIZEOF, RUBY_DEFINT): fix for types
