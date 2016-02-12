@@ -1,3 +1,8 @@
+Fri Feb 12 11:49:49 2016  Anthony Dmitriyev  <antstorm@gmail.com>
+
+	* net/ftp.rb: add NullSocket#closed? to fix closing not opened
+	  connection.  [Fix GH-1232]
+
 Fri Feb 12 11:17:38 2016  Bogdan  <bogdanvlviv@gmail.com>
 
 	* re.c (rb_reg_initialize_m): [DOC] fix missing right bracket.
