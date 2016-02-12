@@ -1127,7 +1127,7 @@ rb_name_error_str(VALUE str, const char *fmt, ...)
 
 /*
  * call-seq:
- *   NameError.new(msg [, name])  -> name_error
+ *   NameError.new([msg, *, name])  -> name_error
  *
  * Construct a new NameError exception. If given the <i>name</i>
  * parameter may subsequently be examined using the <code>NameError.name</code>
@@ -1192,7 +1192,7 @@ name_err_local_variables(VALUE self)
 
 /*
  * call-seq:
- *   NoMethodError.new(msg, name [, args])  -> no_method_error
+ *   NoMethodError.new([msg, *, name [, args]])  -> no_method_error
  *
  * Construct a NoMethodError exception for a method of the given name
  * called with the given arguments. The name may be accessed using

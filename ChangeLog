@@ -1,3 +1,9 @@
+Fri Feb 12 12:20:56 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (name_err_initialize, nometh_err_initialize): [DOC] fix
+	  argument positions.  optional parameters except for the message
+	  are placed at the last.
+
 Fri Feb 12 11:49:49 2016  Anthony Dmitriyev  <antstorm@gmail.com>
 
 	* net/ftp.rb: add NullSocket#closed? to fix closing not opened
