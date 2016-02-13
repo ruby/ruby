@@ -795,12 +795,18 @@ class URI::TestGeneric < Test::Unit::TestCase
 
   # 192.0.2.0/24 is TEST-NET.  [RFC3330]
 
-  def test_find_proxy
+  def test_find_proxy_bad_uri
     assert_raise(URI::BadURIError){ URI("foo").find_proxy }
+  end
+
+  def test_find_proxy_no_env
     with_env({}) {
       assert_nil(URI("http://192.0.2.1/").find_proxy)
       assert_nil(URI("ftp://192.0.2.1/").find_proxy)
     }
+  end
+
+  def test_find_proxy
     with_env('http_proxy'=>'http://127.0.0.1:8080') {
       assert_equal(URI('http://127.0.0.1:8080'), URI("http://192.0.2.1/").find_proxy)
       assert_nil(URI("ftp://192.0.2.1/").find_proxy)
@@ -809,16 +815,29 @@ class URI::TestGeneric < Test::Unit::TestCase
       assert_nil(URI("http://192.0.2.1/").find_proxy)
       assert_equal(URI('http://127.0.0.1:8080'), URI("ftp://192.0.2.1/").find_proxy)
     }
+  end
+
+  def test_find_proxy_get
     with_env('REQUEST_METHOD'=>'GET') {
       assert_nil(URI("http://192.0.2.1/").find_proxy)
     }
     with_env('CGI_HTTP_PROXY'=>'http://127.0.0.1:8080', 'REQUEST_METHOD'=>'GET') {
       assert_equal(URI('http://127.0.0.1:8080'), URI("http://192.0.2.1/").find_proxy)
     }
+  end
+
+  def test_find_proxy_no_proxy
     with_env('http_proxy'=>'http://127.0.0.1:8080', 'no_proxy'=>'192.0.2.2') {
       assert_equal(URI('http://127.0.0.1:8080'), URI("http://192.0.2.1/").find_proxy)
       assert_nil(URI("http://192.0.2.2/").find_proxy)
     }
+    with_env('http_proxy'=>'http://127.0.0.1:8080', 'no_proxy'=>'example.org') {
+      assert_nil(URI("http://example.org/").find_proxy)
+      assert_nil(URI("http://www.example.org/").find_proxy)
+    }
+  end
+
+  def test_find_proxy_bad_value
     with_env('http_proxy'=>'') {
       assert_nil(URI("http://192.0.2.1/").find_proxy)
       assert_nil(URI("ftp://192.0.2.1/").find_proxy)
@@ -826,10 +845,6 @@ class URI::TestGeneric < Test::Unit::TestCase
     with_env('ftp_proxy'=>'') {
       assert_nil(URI("http://192.0.2.1/").find_proxy)
       assert_nil(URI("ftp://192.0.2.1/").find_proxy)
-    }
-    with_env('http_proxy'=>'http://127.0.0.1:8080', 'no_proxy'=>'example.net') {
-      assert_nil(URI("http://example.net/").find_proxy)
-      assert_nil(URI("http://www.example.net/").find_proxy)
     }
   end
 
