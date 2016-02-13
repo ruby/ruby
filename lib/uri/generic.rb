@@ -1547,9 +1547,18 @@ module URI
       name = 'no_proxy'
       if no_proxy = ENV[name] || ENV[name.upcase]
         no_proxy.scan(/(?!\.)([^:,\s]+)(?::(\d+))?/) {|host, port|
-          if /(\A|\.)#{Regexp.quote host}\z/i =~ self.host &&
-            (!port || self.port == port.to_i)
-            return nil
+          if (!port || self.port == port.to_i)
+            if /(\A|\.)#{Regexp.quote host}\z/i =~ self.host
+              return nil
+            else
+              require 'ipaddr'
+              return nil if
+                begin
+                  IPAddr.new(host)
+                rescue IPAddr::InvalidAddressError
+                  next
+                end.include?(self.host)
+            end
           end
         }
       end

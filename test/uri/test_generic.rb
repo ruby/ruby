@@ -841,6 +841,14 @@ class URI::TestGeneric < Test::Unit::TestCase
     }
   end
 
+  def test_find_proxy_no_proxy_cidr
+    with_env('http_proxy'=>'http://127.0.0.1:8080', 'no_proxy'=>'192.0.2.0/24') {
+      assert_equal(URI('http://127.0.0.1:8080'), URI("http://192.0.1.1/").find_proxy)
+      assert_nil(URI("http://192.0.2.1/").find_proxy)
+      assert_nil(URI("http://192.0.2.2/").find_proxy)
+    }
+  end
+
   def test_find_proxy_bad_value
     with_env('http_proxy'=>'') {
       assert_nil(URI("http://192.0.2.1/").find_proxy)

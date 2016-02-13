@@ -1,3 +1,8 @@
+Sat Feb 13 17:30:49 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/uri/generic.rb (URI::Generic#find_proxy): support CIDR in
+	  no_proxy.  [ruby-core:73769] [Feature#12062]
+
 Sat Feb 13 17:11:58 2016  Fabian Wiesel  <fabian.wiesel@sap.com>
 
 	* lib/uri/generic.rb (find_proxy): exclude white-spaces and allow
