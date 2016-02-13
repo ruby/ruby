@@ -1,3 +1,7 @@
+Sat Feb 13 21:44:58 2016  Tanaka Akira  <akr@fsij.org>
+
+	* hash.c (rb_hash_invert): [DOC] more examples.
+
 Sat Feb 13 17:30:49 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/uri/generic.rb (URI::Generic#find_proxy): support CIDR in

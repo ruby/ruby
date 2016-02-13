@@ -2217,6 +2217,22 @@ rb_hash_invert_i(VALUE key, VALUE value, VALUE hash)
  *     h = { "n" => 100, "m" => 100, "y" => 300, "d" => 200, "a" => 0 }
  *     h.invert   #=> {0=>"a", 100=>"m", 200=>"d", 300=>"y"}
  *
+ *  If there is no key with the same value, Hash#invert is involutive.
+ *
+ *    h = { a: 1, b: 3, c: 4 }
+ *    h.invert.invert == h #=> true
+ *
+ *  The condition, no key with the same value, can be tested by comparing
+ *  the size of inverted hash.
+ *
+ *    # no key with the same value
+ *    h = { a: 1, b: 3, c: 4 }
+ *    h.size == h.invert.size #=> true
+ *
+ *    # two (or more) keys has the same value
+ *    h = { a: 1, b: 3, c: 1 }
+ *    h.size == h.invert.size #=> false
+ *
  */
 
 static VALUE
