@@ -835,6 +835,10 @@ class URI::TestGeneric < Test::Unit::TestCase
       assert_nil(URI("http://example.org/").find_proxy)
       assert_nil(URI("http://www.example.org/").find_proxy)
     }
+    with_env('http_proxy'=>'http://127.0.0.1:8080', 'no_proxy'=>'.example.org') {
+      assert_nil(URI("http://example.org/").find_proxy)
+      assert_nil(URI("http://www.example.org/").find_proxy)
+    }
   end
 
   def test_find_proxy_bad_value

@@ -1,3 +1,9 @@
+Sat Feb 13 17:11:58 2016  Fabian Wiesel  <fabian.wiesel@sap.com>
+
+	* lib/uri/generic.rb (find_proxy): exclude white-spaces and allow
+	  for a leading dot in the domain name in no_proxy.
+	  [ruby-core:54542] [Feature #8317]
+
 Fri Feb 12 12:20:56 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (name_err_initialize, nometh_err_initialize): [DOC] fix
