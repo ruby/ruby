@@ -98,6 +98,10 @@ class CGIUtilTest < Test::Unit::TestCase
     assert_equal("'&\"><", CGI::unescapeHTML("&#39;&amp;&quot;&gt;&lt;"))
   end
 
+  def test_cgi_unescapeHTML_invalid
+    assert_equal('&<&amp>&quot&abcdefghijklmn', CGI::unescapeHTML('&&lt;&amp&gt;&quot&abcdefghijklmn'))
+  end
+
   Encoding.list.each do |enc|
     begin
       escaped = "&#39;&amp;&quot;&gt;&lt;".encode(enc)
