@@ -402,8 +402,6 @@ nurat_s_alloc(VALUE klass)
     return nurat_s_new_internal(klass, ZERO, ONE);
 }
 
-#define rb_raise_zerodiv() rb_raise(rb_eZeroDivError, "divided by 0")
-
 #if 0
 static VALUE
 nurat_s_new_bang(int argc, VALUE *argv, VALUE klass)
@@ -428,7 +426,7 @@ nurat_s_new_bang(int argc, VALUE *argv, VALUE klass)
 	    den = f_negate(den);
 	    break;
 	  case 0:
-	    rb_raise_zerodiv();
+	    rb_num_zerodiv();
 	    break;
 	}
 	break;
@@ -487,7 +485,7 @@ nurat_s_canonicalize_internal(VALUE klass, VALUE num, VALUE den)
 	den = f_negate(den);
 	break;
       case 0:
-	rb_raise_zerodiv();
+	rb_num_zerodiv();
 	break;
     }
 
@@ -511,7 +509,7 @@ nurat_s_canonicalize_internal_no_reduce(VALUE klass, VALUE num, VALUE den)
 	den = f_negate(den);
 	break;
       case 0:
-	rb_raise_zerodiv();
+	rb_num_zerodiv();
 	break;
     }
 
@@ -893,7 +891,7 @@ nurat_div(VALUE self, VALUE other)
 {
     if (RB_TYPE_P(other, T_FIXNUM) || RB_TYPE_P(other, T_BIGNUM)) {
 	if (f_zero_p(other))
-	    rb_raise_zerodiv();
+	    rb_num_zerodiv();
 	{
 	    get_dat1(self);
 
@@ -906,7 +904,7 @@ nurat_div(VALUE self, VALUE other)
 	return DBL2NUM(RFLOAT_VALUE(nurat_to_f(self)) / RFLOAT_VALUE(other));
     else if (RB_TYPE_P(other, T_RATIONAL)) {
 	if (f_zero_p(other))
-	    rb_raise_zerodiv();
+	    rb_num_zerodiv();
 	{
 	    get_dat2(self, other);
 
@@ -997,7 +995,7 @@ nurat_expt(VALUE self, VALUE other)
 	    }
 	    else if (f_zero_p(dat->num)) {
 		if (FIX2INT(rb_int_cmp(ZERO, other)) == 1) {
-		    rb_raise_zerodiv();
+		    rb_num_zerodiv();
 		}
 		else {
 		    return f_rational_new_bang1(CLASS_OF(self), ZERO);
@@ -1706,7 +1704,7 @@ nurat_marshal_load(VALUE self, VALUE a)
     if (RARRAY_LEN(a) != 2)
 	rb_raise(rb_eArgError, "marshaled rational must have an array whose length is 2 but %ld", RARRAY_LEN(a));
     if (f_zero_p(RARRAY_AREF(a, 1)))
-	rb_raise_zerodiv();
+	rb_num_zerodiv();
 
     rb_ivar_set(self, id_i_num, RARRAY_AREF(a, 0));
     rb_ivar_set(self, id_i_den, RARRAY_AREF(a, 1));
