@@ -1,3 +1,8 @@
+Sun Feb 14 16:18:57 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (setup_exception): set the cause only if it is explicitly
+	  given or not set yet.  [Bug #12068]
+
 Sat Feb 13 21:44:58 2016  Tanaka Akira  <akr@fsij.org>
 
 	* hash.c (rb_hash_invert): [DOC] more examples.
