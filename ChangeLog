@@ -1,3 +1,22 @@
+Mon Feb 15 02:05:13 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_scrub): the result should be infected by the
+	  original string.
+
+Mon Feb 15 02:05:13 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* transcode.c (rb_econv_substr_append, econv_primitive_convert):
+	  the result should be infected by the original string.
+
+Mon Feb 15 02:05:13 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h: add raw FL macros, which assume always the
+	  argument object is not a special constant.
+
+	* internal.h (STR_EMBED_P, STR_SHARED_P): valid only for T_STRING.
+
+	* string.c: deal with taint flags directly across String instances.
+
 Mon Feb 15 01:20:08 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (regexp): set_yylval_num sets u1, should use nd_tag
