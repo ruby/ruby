@@ -1,3 +1,9 @@
+Sun Feb 14 17:31:50 2016  Lars Kanis  <lars@greiz-reinsdorf.de>
+
+	* lib/mkmf.rb (with_{cpp,c,ld}flags): copy caller strings not to
+	  be modified, in append_{cpp,c,ld}flags respectively.
+	  [Fix GH-1246]
+
 Sun Feb 14 16:18:57 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (setup_exception): set the cause only if it is explicitly

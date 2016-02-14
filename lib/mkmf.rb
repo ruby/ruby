@@ -603,7 +603,7 @@ MSG
 
   def with_cppflags(flags)
     cppflags = $CPPFLAGS
-    $CPPFLAGS = flags
+    $CPPFLAGS = flags.dup
     ret = yield
   ensure
     $CPPFLAGS = cppflags unless ret
@@ -625,7 +625,7 @@ MSG
 
   def with_cflags(flags)
     cflags = $CFLAGS
-    $CFLAGS = flags
+    $CFLAGS = flags.dup
     ret = yield
   ensure
     $CFLAGS = cflags unless ret
@@ -647,7 +647,7 @@ MSG
 
   def with_ldflags(flags)
     ldflags = $LDFLAGS
-    $LDFLAGS = flags
+    $LDFLAGS = flags.dup
     ret = yield
   ensure
     $LDFLAGS = ldflags unless ret
