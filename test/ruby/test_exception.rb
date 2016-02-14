@@ -660,9 +660,6 @@ end.join
     assert_equal('c', e.cause.message, 'cause should be the exception at raised')
   end
 
-  def test_cause_at_raised
-  end
-
   def test_raise_with_cause
     msg = "[Feature #8257]"
     cause = ArgumentError.new("foobar")
