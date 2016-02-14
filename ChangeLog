@@ -1,3 +1,8 @@
+Mon Feb 15 01:20:08 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (regexp): set_yylval_num sets u1, should use nd_tag
+	  instead of nd_state.  [ruby-core:72638] [Bug #11932]
+
 Tue Jan 26 21:52:16 2016  Joseph Tibbertsma  <josephtibbertsma@gmail.com>
 
 	* gc.c (RVALUE_PAGE_WB_UNPROTECTED): fix a typo of argument name.
