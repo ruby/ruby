@@ -2139,9 +2139,10 @@ static VALUE
 float_rationalize(int argc, VALUE *argv, VALUE self)
 {
     VALUE e;
+    double d = RFLOAT_VALUE(self);
 
-    if (f_negative_p(self))
-        return f_negate(float_rationalize(argc, argv, f_abs(self)));
+    if (d < 0.0)
+        return nurat_negate(float_rationalize(argc, argv, DBL2NUM(-d)));
 
     rb_scan_args(argc, argv, "01", &e);
 
