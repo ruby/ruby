@@ -5526,7 +5526,7 @@ rb_big_uminus(VALUE x)
 {
     VALUE z = rb_big_clone(x);
 
-    BIGNUM_SET_SIGN(z, !BIGNUM_SIGN(x));
+    BIGNUM_NEGATE(z);
 
     return bignorm(z);
 }
@@ -5624,7 +5624,7 @@ bigsub_int(VALUE x, long y0)
     assert(xn == zn);
     num = (BDIGIT_DBL_SIGNED)xds[0] - y;
     if (xn == 1 && num < 0) {
-	BIGNUM_SET_SIGN(z, !BIGNUM_SIGN(x));
+	BIGNUM_NEGATE(z);
 	zds[0] = (BDIGIT)-num;
 	RB_GC_GUARD(x);
 	return bignorm(z);
@@ -5687,7 +5687,7 @@ bigsub_int(VALUE x, long y0)
     assert(num == 0 || num == -1);
     if (num < 0) {
         get2comp(z);
-	BIGNUM_SET_SIGN(z, !BIGNUM_SIGN(x));
+	BIGNUM_NEGATE(z);
     }
     RB_GC_GUARD(x);
     return bignorm(z);

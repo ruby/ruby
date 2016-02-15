@@ -364,6 +364,7 @@ struct RBignum {
           : (RBASIC(b)->flags &= ~BIGNUM_SIGN_BIT))
 #define BIGNUM_POSITIVE_P(b) BIGNUM_SIGN(b)
 #define BIGNUM_NEGATIVE_P(b) (!BIGNUM_SIGN(b))
+#define BIGNUM_NEGATE(b) (RBASIC(b)->flags ^= BIGNUM_SIGN_BIT)
 
 #define BIGNUM_EMBED_FLAG FL_USER2
 #define BIGNUM_EMBED_LEN_MASK (FL_USER5|FL_USER4|FL_USER3)
