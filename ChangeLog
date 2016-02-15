@@ -1,3 +1,10 @@
+Tue Feb 16 02:49:41 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/rbinstall.rb (without_destdir): compare with the destdir
+	  after stripping a drive letter, on dosish platforms.
+	  pointed out by @DavidEGrayson.
+	  https://github.com/ruby/ruby/commit/d0cf23b#commitcomment-16100407
+
 Mon Feb 15 15:44:09 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parse_ident): allow keyword arguments just after a
