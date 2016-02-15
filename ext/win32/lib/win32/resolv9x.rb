@@ -57,7 +57,7 @@ module Win32
           rescue Registry::Error
           end
 
-          reg.each_key do |key,|
+          reg.each_key do |key, |
             catch(:not_used) do
               reg.open(key) do |regdi|
                 dom, ns = get_dhcpinfo_key(version, regdi, iflist)
