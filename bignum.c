@@ -2978,7 +2978,7 @@ static VALUE
 bignew_1(VALUE klass, size_t len, int sign)
 {
     NEWOBJ_OF(big, struct RBignum, klass, T_BIGNUM | (RGENGC_WB_PROTECTED_BIGNUM ? FL_WB_PROTECTED : 0));
-    BIGNUM_SET_SIGN(big, sign?1:0);
+    BIGNUM_SET_SIGN(big, sign);
     if (len <= BIGNUM_EMBED_LEN_MAX) {
 	RBASIC(big)->flags |= BIGNUM_EMBED_FLAG;
 	BIGNUM_SET_LEN(big, len);
@@ -3174,7 +3174,7 @@ rb_int2big(SIGNED_VALUE n)
     }
     big = rb_uint2big(u);
     if (neg) {
-	BIGNUM_SET_SIGN(big, 0);
+	BIGNUM_SET_NEGATIVE_SIGN(big);
     }
     return big;
 }
@@ -4346,7 +4346,7 @@ rb_ll2big(LONG_LONG n)
     }
     big = rb_ull2big(u);
     if (neg) {
-	BIGNUM_SET_SIGN(big, 0);
+	BIGNUM_SET_NEGATIVE_SIGN(big);
     }
     return big;
 }
@@ -4401,7 +4401,7 @@ rb_int128t2big(int128_t n)
     }
     big = rb_uint128t2big(u);
     if (neg) {
-	BIGNUM_SET_SIGN(big, 0);
+	BIGNUM_SET_NEGATIVE_SIGN(big);
     }
     return big;
 }
@@ -5199,7 +5199,7 @@ big2dbl(VALUE x)
 	    }
 	}
     }
-    if (!BIGNUM_SIGN(x)) d = -d;
+    if (BIGNUM_NEGATIVE_P(x)) d = -d;
     return d;
 }
 
@@ -6316,7 +6316,7 @@ rb_big_pow(VALUE x, VALUE y)
     if (y == INT2FIX(0)) return INT2FIX(1);
     if (RB_FLOAT_TYPE_P(y)) {
 	d = RFLOAT_VALUE(y);
-	if ((!BIGNUM_SIGN(x) && !BIGZEROP(x)) && d != round(d))
+	if ((BIGNUM_NEGATIVE_P(x) && !BIGZEROP(x)) && d != round(d))
 	    return rb_funcall(rb_complex_raw1(x), rb_intern("**"), 1, y);
     }
     else if (RB_BIGNUM_TYPE_P(y)) {
@@ -6800,7 +6800,7 @@ rb_big_aref(VALUE x, VALUE y)
     BDIGIT bit;
 
     if (RB_BIGNUM_TYPE_P(y)) {
-	if (!BIGNUM_SIGN(y))
+	if (BIGNUM_NEGATIVE_P(y))
 	    return INT2FIX(0);
 	bigtrunc(y);
 	if (BIGSIZE(y) > sizeof(size_t)) {
@@ -6893,9 +6893,9 @@ rb_big_coerce(VALUE x, VALUE y)
 static VALUE
 rb_big_abs(VALUE x)
 {
-    if (!BIGNUM_SIGN(x)) {
+    if (BIGNUM_NEGATIVE_P(x)) {
 	x = rb_big_clone(x);
-	BIGNUM_SET_SIGN(x, 1);
+	BIGNUM_SET_POSITIVE_SIGN(x);
     }
     return x;
 }
