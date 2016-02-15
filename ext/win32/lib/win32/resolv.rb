@@ -44,7 +44,10 @@ nt = Module.new do
   getv.call(info)
   break info.unpack('V5')[4] == 2  # VER_PLATFORM_WIN32_NT
 end
-if nt
+if not nt
+  require_relative 'resolv9x'
+  # return # does not work yet
+else
 #====================================================================
 # Windows NT
 #====================================================================
@@ -124,7 +127,5 @@ if nt
       end
     end
   end
-else
-  require_relative 'resolv9x'
 end
 end
