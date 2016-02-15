@@ -8,6 +8,7 @@
 #   $ wget http://www.unicode.org/Public/UNIDATA/UnicodeData.txt
 #   $ wget http://www.unicode.org/Public/UNIDATA/SpecialCasing.txt
 #   $ ruby case-folding.rb -m . -o casefold.h
+# using -d or --debug will include UTF-8 characters in comments for debugging
 
 class CaseFolding
   module Util
@@ -20,7 +21,10 @@ class CaseFolding
     def print_table_1(dest, type, mapping_data, data)
       for k, v in data = data.sort
         sk = (Array === k and k.length > 1) ? "{#{hex_seq(k)}}" : ("0x%04x" % k)
-        dest.print("  {#{sk}, {#{v.length}#{mapping_data.flags(k, type, v)}, {#{hex_seq(v)}}}},\n")
+        ck = cv = ''
+        ck = ' /* ' + Array(k).pack("U*") + ' */' if @debug
+        cv = ' /* ' + Array(v).map{|c|[c].pack("U*")}.join(", ") + ' */' if @debug
+        dest.print("  {#{sk}#{ck}, {#{v.length}#{mapping_data.flags(k, type, v)}, {#{hex_seq(v)}#{cv}}}},\n")
       end
       data
     end
@@ -47,6 +51,7 @@ class CaseFolding
 
     @fold = fold = {}
     @unfold = unfold = [{}, {}, {}]
+    @debug = false
     turkic = []
 
     IO.foreach(filename) do |line|
@@ -172,6 +177,10 @@ class CaseFolding
     dest.print lookup_hash(name, "CodePointList2", data)
   end
 
+  def debug!
+    @debug = true
+  end
+
   def self.load(*args)
     new.load(*args)
   end
@@ -237,6 +246,7 @@ if $0 == __FILE__
   dest = nil
   mapping_directory = nil
   mapping_data = nil
+  debug = false
   fold_1 = false
   ARGV.options do |opt|
     opt.banner << " [INPUT]"
@@ -245,6 +255,9 @@ if $0 == __FILE__
     }
     opt.on('--mapping-data-directory=DIRECTORY', '-m', 'data DIRECTORY of mapping files') { |directory|
       mapping_directory = directory
+    }
+    opt.on('--debug', '-d') {
+      debug = true
     }
     opt.parse!
     abort(opt.to_s) if ARGV.size > 1
@@ -261,6 +274,7 @@ if $0 == __FILE__
   mapping_data ||= CaseMappingDummy.new
 
   data = CaseFolding.load(filename)
+  data.debug! if debug
   if dest
     open(dest, "wb") do |f|
       data.display(f, mapping_data)
