@@ -1,3 +1,9 @@
+Mon Feb 15 15:44:09 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parse_ident): allow keyword arguments just after a
+	  method where the same name local variable is defined.
+	  [ruby-core:73816] [Bug#12073]
+
 Mon Feb 15 14:43:28 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/unicode/case-folding.rb: Added debugging option
