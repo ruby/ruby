@@ -35,14 +35,16 @@ module Win32
     end
   end
 
-kernel32 = Module.new do
+nt = Module.new do
+  break true if [nil].pack("p").size > 4
   extend Importer
   dlload "kernel32"
+  getv = extern "int GetVersionExA(void *)", :stdcall
+  info = [ 148, 0, 0, 0, 0 ].pack('V5') + "\0" * 128
+  getv.call(info)
+  break info.unpack('V5')[4] == 2  # VER_PLATFORM_WIN32_NT
 end
-getv = kernel32.extern "int GetVersionExA(void *)", :stdcall
-info = [ 148, 0, 0, 0, 0 ].pack('V5') + "\0" * 128
-getv.call(info)
-if info.unpack('V5')[4] == 2  # VER_PLATFORM_WIN32_NT
+if nt
 #====================================================================
 # Windows NT
 #====================================================================
