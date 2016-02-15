@@ -37,10 +37,14 @@ class TestFixnum < Test::Unit::TestCase
 
   def test_plus
     assert_equal(0x40000000, 0x3fffffff+1)
+    assert_equal(0x7ffffffe, 0x3fffffff+0x3fffffff)
     assert_equal(0x4000000000000000, 0x3fffffffffffffff+1)
+    assert_equal(0x7ffffffffffffffe, 0x3fffffffffffffff+0x3fffffffffffffff)
     assert_equal(-0x40000001, (-0x40000000)+(-1))
     assert_equal(-0x4000000000000001, (-0x4000000000000000)+(-1))
+    assert_equal(-0x7ffffffe, (-0x3fffffff)+(-0x3fffffff))
     assert_equal(-0x80000000, (-0x40000000)+(-0x40000000))
+    assert_equal(-0x8000000000000000, (-0x4000000000000000)+(-0x4000000000000000))
   end
 
   def test_sub
@@ -49,6 +53,8 @@ class TestFixnum < Test::Unit::TestCase
     assert_equal(-0x40000001, (-0x40000000)-1)
     assert_equal(-0x4000000000000001, (-0x4000000000000000)-1)
     assert_equal(-0x80000000, (-0x40000000)-0x40000000)
+    assert_equal(0x7fffffffffffffff, 0x3fffffffffffffff-(-0x4000000000000000))
+    assert_equal(-0x8000000000000000, -0x4000000000000000-0x4000000000000000)
   end
 
   def test_mult

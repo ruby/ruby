@@ -1332,12 +1332,7 @@ opt_plus
 	a = FIX2LONG(recv);
 	b = FIX2LONG(obj);
 	c = a + b;
-	if (FIXABLE(c)) {
-	    val = LONG2FIX(c);
-	}
-	else {
-	    val = rb_big_plus(rb_int2big(a), rb_int2big(b));
-	}
+	val = LONG2NUM(c);
 #endif
     }
     else if (FLONUM_2_P(recv, obj) &&
@@ -1387,13 +1382,7 @@ opt_minus
 	a = FIX2LONG(recv);
 	b = FIX2LONG(obj);
 	c = a - b;
-
-	if (FIXABLE(c)) {
-	    val = LONG2FIX(c);
-	}
-	else {
-	    val = rb_big_minus(rb_int2big(a), rb_int2big(b));
-	}
+	val = LONG2NUM(c);
     }
     else if (FLONUM_2_P(recv, obj) &&
 	     BASIC_OP_UNREDEFINED_P(BOP_MINUS, FLOAT_REDEFINED_OP_FLAG)) {

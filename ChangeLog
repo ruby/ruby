@@ -1,3 +1,10 @@
+Tue Feb 16 04:42:13 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* insns.def (opt_plus): simply use LONG2NUM() instead of wrongly
+	      complex overflow case.
+
+	* insns.def (opt_sub): ditto.
+
 Tue Feb 16 02:49:41 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/rbinstall.rb (without_destdir): compare with the destdir
