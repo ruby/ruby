@@ -282,7 +282,6 @@ end
 
 def without_destdir(dir)
   return dir if !$destdir or $destdir.empty?
-  dir = dir.sub(/\A\w:/, '') if File::PATH_SEPARATOR == ';'
   dir.start_with?($destdir) ? dir[$destdir.size..-1] : dir
 end
 

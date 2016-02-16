@@ -1,3 +1,10 @@
+Tue Feb 16 09:51:20 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/rbinstall.rb (without_destdir): just strip a drive letter
+	  which is prepended by with_destdir.
+	  pointed out by @DavidEGrayson.
+	  https://github.com/ruby/ruby/commit/0e5f9ae#commitcomment-16101763
+
 Tue Feb 16 04:42:13 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* insns.def (opt_plus): simply use LONG2NUM() instead of wrongly
