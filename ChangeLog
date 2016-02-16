@@ -1,3 +1,8 @@
+Tue Feb 16 18:24:38 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (compare_with_zero): fix variable name, rb_cmperr
+	  requires VALUEs but not an ID.
+
 Tue Feb 16 17:34:18 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (rb_dir_s_empty_p): add Dir.empty? method, which tells the

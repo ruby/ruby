@@ -348,4 +348,14 @@ class TestNumeric < Test::Unit::TestCase
     assert_not_operator(1, :eql?, 1.0)
     assert_not_operator(1, :eql?, 2)
   end
+
+  def test_coerced_remainder
+    assert_separately([], <<-'end;')
+      x = Class.new do
+        def coerce(a) [self, a]; end
+        def %(a) self; end
+      end.new
+      assert_raise(ArgumentError) {1.remainder(x)}
+    end;
+  end
 end

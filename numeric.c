@@ -168,7 +168,7 @@ compare_with_zero(VALUE num, ID mid)
     VALUE zero = INT2FIX(0);
     VALUE r = rb_check_funcall(num, mid, 1, &zero);
     if (r == Qundef) {
-	rb_cmperr(mid, zero);
+	rb_cmperr(num, zero);
     }
     return r;
 }
