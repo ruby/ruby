@@ -16,6 +16,10 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 === Core classes updates (outstanding ones only)
 
+* Dir
+
+  * Dir#empty?.  [Feature #10121]
+
 === Stdlib updates (outstanding ones only)
 
 * CSV

@@ -21,6 +21,7 @@
 #include <unistd.h>
 #endif
 
+#undef HAVE_DIRENT_NAMLEN
 #if defined HAVE_DIRENT_H && !defined _WIN32
 # include <dirent.h>
 # define NAMLEN(dirent) strlen((dirent)->d_name)
@@ -30,6 +31,7 @@
 #else
 # define dirent direct
 # define NAMLEN(dirent) (dirent)->d_namlen
+# define HAVE_DIRENT_NAMLEN 1
 # if HAVE_SYS_NDIR_H
 #  include <sys/ndir.h>
 # endif
@@ -699,6 +701,27 @@ fundamental_encoding_p(rb_encoding *enc)
 #else
 # define READDIR(dir, enc) readdir((dir))
 #endif
+static int
+to_be_skipped(const struct dirent *dp)
+{
+    const char *name = dp->d_name;
+    if (name[0] != '.') return FALSE;
+#ifdef HAVE_DIRENT_NAMLEN
+    switch (NAMLEN(dp)) {
+      case 2:
+	if (name[1] != '.') return FALSE;
+      case 1:
+	return TRUE;
+      default:
+	break;
+    }
+#else
+    if (!name[1]) return TRUE;
+    if (name[1] != '.') return FALSE;
+    if (!name[2]) return TRUE;
+#endif
+    return FALSE;
+}
 
 /*
  *  call-seq:
@@ -2611,6 +2634,73 @@ rb_dir_exists_p(VALUE obj, VALUE fname)
 }
 
 /*
+ * call-seq:
+ *   Dir.empty?(path_name)  ->  true or false
+ *
+ * Returns <code>true</code> if the named file is an empty directory,
+ * <code>false</code> if it is not a directory or non-empty.
+ */
+static VALUE
+rb_dir_s_empty_p(VALUE obj, VALUE dirname)
+{
+    DIR *dir;
+    struct dirent *dp;
+    VALUE result = Qtrue, orig;
+    const char *path;
+    enum {false_on_notdir = 1};
+
+    GlobPathValue(dirname, FALSE);
+    orig = rb_str_dup_frozen(dirname);
+    dirname = rb_str_encode_ospath(dirname);
+    dirname = rb_str_dup_frozen(dirname);
+    path = RSTRING_PTR(dirname);
+
+#if defined HAVE_GETATTRLIST && defined ATTR_DIR_ENTRYCOUNT
+    {
+	u_int32_t attrbuf[SIZEUP32(fsobj_tag_t)];
+	struct attrlist al = {ATTR_BIT_MAP_COUNT, 0, ATTR_CMN_OBJTAG,};
+	if (getattrlist(path, &al, attrbuf, sizeof(attrbuf), 0) != 0)
+	    rb_sys_fail_path(orig);
+	if (*(const fsobj_tag_t *)(attrbuf+1) == VT_HFS) {
+	    al.commonattr = 0;
+	    al.dirattr = ATTR_DIR_ENTRYCOUNT;
+	    if (getattrlist(path, &al, attrbuf, sizeof(attrbuf), 0) == 0) {
+		if (attrbuf[0] >= 2 * sizeof(u_int32_t))
+		    return attrbuf[1] ? Qfalse : Qtrue;
+		if (false_on_notdir) return Qfalse;
+	    }
+	    rb_sys_fail_path(orig);
+	}
+    }
+#endif
+
+    dir = opendir(path);
+    if (!dir) {
+	int e = errno;
+	switch (e) {
+	  case EMFILE: case ENFILE:
+	    rb_gc();
+	    dir = opendir(path);
+	    if (dir) break;
+	    e = errno;
+	    /* fall through */
+	  default:
+	    if (false_on_notdir && e == ENOTDIR) return Qfalse;
+	    rb_syserr_fail_path(e, orig);
+	}
+    }
+    errno = 0;
+    while ((dp = READDIR(dir, NULL)) != NULL) {
+	if (!to_be_skipped(dp)) {
+	    result = Qfalse;
+	    break;
+	}
+    }
+    closedir(dir);
+    return result;
+}
+
+/*
  *  Objects of class <code>Dir</code> are directory streams representing
  *  directories in the underlying file system. They provide a variety of
  *  ways to list directories and their contents. See also
@@ -2661,6 +2751,7 @@ Init_Dir(void)
     rb_define_singleton_method(rb_cDir,"[]", dir_s_aref, -1);
     rb_define_singleton_method(rb_cDir,"exist?", rb_file_directory_p, 1);
     rb_define_singleton_method(rb_cDir,"exists?", rb_dir_exists_p, 1);
+    rb_define_singleton_method(rb_cDir,"empty?", rb_dir_s_empty_p, 1);
 
     rb_define_singleton_method(rb_cFile,"fnmatch", file_s_fnmatch, -1);
     rb_define_singleton_method(rb_cFile,"fnmatch?", file_s_fnmatch, -1);

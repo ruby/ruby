@@ -1,3 +1,8 @@
+Tue Feb 16 17:34:18 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (rb_dir_s_empty_p): add Dir.empty? method, which tells the
+	  argument is the name of an empty directory.  [Feature #10121]
+
 Tue Feb 16 09:51:20 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/rbinstall.rb (without_destdir): just strip a drive letter
