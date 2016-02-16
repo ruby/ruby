@@ -1,3 +1,9 @@
+Tue Feb 16 19:10:08 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode/case-folding.rb, casefold.h: Used only first element
+	  (rather than all) of target in CaseUnfold_11 array.
+	  (with Kimihito Matsui)
+
 Tue Feb 16 18:24:38 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (compare_with_zero): fix variable name, rb_cmperr

@@ -222,6 +222,7 @@ class CaseMapping
     flags += '|F' if type=='CaseFold_11'
     from = Array(from).map {|i| "%04X" % i}.join(" ")
     to   = Array(to).map {|i| "%04X" % i}.join(" ")
+    to = to.split(/ /).first  if type=='CaseUnfold_11'
     item = @mappings[from]
     if item
       flags += '|U'  if to==item.upper
