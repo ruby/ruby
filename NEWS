@@ -44,6 +44,11 @@ with all sufficient information, see the ChangeLog file or Redmine
   * -"literal" (String#-@) optimized to return the same object
     (same as "literal".freeze in Ruby 2.1+) [Feature #13295]
 
+* KeyError
+
+  * KeyError#receiver [Feature #12063]
+  * KeyError#key      [Feature #12063]
+
 === Stdlib updates (outstanding ones only)
 
 === Compatibility issues (excluding feature bug fixes)
