@@ -24,7 +24,7 @@ Tue Feb 16 09:51:20 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Tue Feb 16 04:42:13 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* insns.def (opt_plus): simply use LONG2NUM() instead of wrongly
-	      complex overflow case.
+	  complex overflow case.
 
 	* insns.def (opt_sub): ditto.
 
@@ -146,7 +146,7 @@ Mon Feb  8 13:00:17 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 	  Changed parameter passing.
 
 	* enc/unicode/casefold.h: New flags added.
-	(with Kimihito Matsui)
+	  (with Kimihito Matsui)
 
 Mon Feb  8 10:30:10 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -168,25 +168,25 @@ Sun Feb  7 22:10:08 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 	* enc/unicode/case-folding.rb: Fixed file encoding for CaseFolding.txt
 	  to ASCII-8BIT (should fix some ci errors). Clarified usage. Created
 	  class MapItem. Partially implemented class CaseMapping.
-	(with Kimihito Matsui)
+	  (with Kimihito Matsui)
 
 Sun Feb  7 14:12:32 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/unicode/case-folding.rb: Fixing parameter passing.
-	(with Kimihito Matsui)
+	  (with Kimihito Matsui)
 
 Sun Feb  7 11:44:03 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/unicode/case-folding.rb: New classes CaseMapping/CaseMappingDummy
 	  to pass as parameters; not yet implemented or used.
-	(with Kimihito Matsui)
+	  (with Kimihito Matsui)
 
 Sun Feb  7 11:16:00 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* common.mk: using new option in recipe for enc/unicode/casefold.h
 
 	* enc/unicode/case-folding.rb: Correctly specify argument to new option.
-	(with Kimihito Matsui)
+	  (with Kimihito Matsui)
 
 Sun Feb  7 10:43:27 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
@@ -195,7 +195,7 @@ Sun Feb  7 10:43:27 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/unicode/case-folding.rb: Adding -m option to prepare for using
 	  multiple data files.
-	(with Kimihito Matsui)
+	  (with Kimihito Matsui)
 
 Sat Feb  6 22:30:57 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -212,7 +212,7 @@ Sat Feb  6 15:18:28 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* test/ruby/enc/test_case_mapping.rb: Explicit test for case folding of
 	  MICRO SIGN to Greek mu.
-	(with Kimihito Matsui)
+	  (with Kimihito Matsui)
 
 Sat Feb  6 14:51:23 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
@@ -221,7 +221,7 @@ Sat Feb  6 14:51:23 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 	  apply_all_case_fold) in the various encodings. Currently only known
 	  good encodings are tested to avoid test failures. For bug hunting,
 	  start by adding more encodings with
-	      generate_test_casefold encoding
+	  generate_test_casefold encoding
 	  (with Kimihito Matsui)
 
 Sat Feb  6 14:37:16 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
