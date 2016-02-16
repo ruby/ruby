@@ -18,7 +18,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * Dir
 
-  * Dir#empty?.  [Feature #10121]
+  * Dir.empty?.  [Feature #10121]
 
 === Stdlib updates (outstanding ones only)
 
