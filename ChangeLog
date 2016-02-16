@@ -113,7 +113,7 @@ Wed Feb 10 12:03:41 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Tue Feb  9 16:36:23 2016  Naotoshi Seo  <sonots@gmail.com>
 
 	* lib/logger.rb: Remove block from Logger.add as it's not needed
-	  patch provided by Daniel Lobato Garcí [fix GH-1240] [Bug #12054]
+	  patch provided by Daniel Lobato Garcia [fix GH-1240] [Bug #12054]
 
 Tue Feb  9 14:32:23 2016  Zachary Scott  <zzak@ruby-lang.org>
 
