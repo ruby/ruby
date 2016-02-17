@@ -260,7 +260,7 @@ coerce_failed(VALUE x, VALUE y)
 }
 
 static VALUE
-coerce_rescue(VALUE arg)
+coerce_rescue(VALUE arg, VALUE errinfo)
 {
     VALUE *x = (VALUE *)arg;
     coerce_failed(x[0], x[1]);
@@ -268,7 +268,7 @@ coerce_rescue(VALUE arg)
 }
 
 static VALUE
-coerce_rescue_quiet(VALUE arg)
+coerce_rescue_quiet(VALUE arg, VALUE errinfo)
 {
     return Qundef;
 }
