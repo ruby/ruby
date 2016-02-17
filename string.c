@@ -1383,6 +1383,7 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
 	vcapa = kwargs[1];
 	if (vcapa != Qundef && !NIL_P(vcapa)) {
 	    long capa = NUM2LONG(vcapa);
+	    str_discard(str);
 	    if (capa < STR_BUF_MIN_SIZE) {
 		capa = STR_BUF_MIN_SIZE;
 	    }
@@ -1405,6 +1406,7 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
 	}
 	else if (n == 1) {
 	    StringValue(orig);
+	    str_discard(str);
 	    str_replace(str, orig);
 	}
 	if (enc != Qundef && !NIL_P(enc)) {
@@ -1414,9 +1416,7 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
     }
     else if (n == 1) {
 	StringValue(orig);
-	if (OBJ_FROZEN(str)) {
-	    rb_error_frozen_object(str);
-	}
+	str_discard(str);
 	str_replace(str, orig);
     }
     return str;

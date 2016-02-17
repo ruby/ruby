@@ -59,6 +59,17 @@ class TestString < Test::Unit::TestCase
     assert_equal(Encoding::EUC_JP, S("", capacity: 1000, encoding: "euc-jp").encoding)
   end
 
+  def test_initialize
+    str = S("").freeze
+    assert_equal("", str.__send__(:initialize))
+    assert_raise(RuntimeError){ str.__send__(:initialize, 'abc') }
+    assert_raise(RuntimeError){ str.__send__(:initialize, capacity: 1000) }
+    assert_raise(RuntimeError){ str.__send__(:initialize, 'abc', capacity: 1000) }
+    assert_raise(RuntimeError){ str.__send__(:initialize, encoding: 'euc-jp') }
+    assert_raise(RuntimeError){ str.__send__(:initialize, 'abc', encoding: 'euc-jp') }
+    assert_raise(RuntimeError){ str.__send__(:initialize, 'abc', capacity: 1000, encoding: 'euc-jp') }
+  end
+
   def test_AREF # '[]'
     assert_equal("A",  S("AooBar")[0])
     assert_equal("B",  S("FooBaB")[-1])
