@@ -62,6 +62,9 @@ firstline, predefined = __LINE__+1, %[\
   core#hash_merge_kwd
 
   -                                                     debug#created_info
+
+  $_                                                    LASTLINE
+  $~                                                    BACKREF
 ]
 
 # VM ID         OP      Parser Token
@@ -145,7 +148,7 @@ predefined.split(/^/).each_with_index do |line, num|
   case name
   when /\A[A-Z]\w*\z/; const_ids
   when /\A(?!\d)\w+\z/; local_ids
-  when /\A\$(?:\d+|(?!\d)\w+)\z/; global_ids
+  when /\A\$(?:\d+|(?!\d)\w+|\W)\z/; global_ids
   when /\A@@(?!\d)\w+\z/; class_ids
   when /\A@(?!\d)\w+\z/; instance_ids
   when /\A((?!\d)\w+)=\z/; attrset_ids

@@ -1,3 +1,10 @@
+Wed Feb 17 21:41:29 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* defs/id.def (predefined): add idLASTLINE and idBACKREF for $~
+	  and $_ respectively.
+
+	* parse.y: use idLASTLINE and idBACKREF instead of rb_intern.
+
 Wed Feb 17 20:23:38 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_init): fix segfault and memory leak, consider

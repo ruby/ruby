@@ -9887,7 +9887,7 @@ cond0(struct parser_params *parser, NODE *node)
       case NODE_DREGX:
       case NODE_DREGX_ONCE:
 	warning_unless_e_option(parser, node, "regex literal in condition");
-	return NEW_MATCH2(node, NEW_GVAR(rb_intern("$_")));
+	return NEW_MATCH2(node, NEW_GVAR(idLASTLINE));
 
       case NODE_AND:
       case NODE_OR:
@@ -10610,7 +10610,7 @@ reg_named_capture_assign_iter(const OnigUChar *name, const OnigUChar *name_end,
     arg->succ_block = block_append(arg->succ_block,
         newline_node(node_assign(assignable(var,0),
             NEW_CALL(
-              gettable(rb_intern("$~")),
+              gettable(idBACKREF),
               idAREF,
               NEW_LIST(NEW_LIT(ID2SYM(var))))
             )));
@@ -10637,12 +10637,12 @@ reg_named_capture_assign_gen(struct parser_params* parser, VALUE regexp, NODE *m
     return
         block_append(
             newline_node(match),
-            NEW_IF(gettable(rb_intern("$~")),
+            NEW_IF(gettable(idBACKREF),
                 block_append(
                     newline_node(arg.succ_block),
                     newline_node(
                         NEW_CALL(
-                          gettable(rb_intern("$~")),
+                          gettable(idBACKREF),
                           rb_intern("begin"),
                           NEW_LIST(NEW_LIT(INT2FIX(0)))))),
                 block_append(
@@ -10712,7 +10712,7 @@ rb_parser_append_print(VALUE vparser, NODE *node)
 
     node = block_append(node,
 			NEW_FCALL(rb_intern("print"),
-				  NEW_ARRAY(NEW_GVAR(rb_intern("$_")))));
+				  NEW_ARRAY(NEW_GVAR(idLASTLINE))));
     if (prelude) {
 	prelude->nd_body = node;
 	scope->nd_body = prelude;
@@ -10743,12 +10743,12 @@ rb_parser_while_loop(VALUE vparser, NODE *node, int chop, int split)
     }
     if (split) {
 	node = block_append(NEW_GASGN(rb_intern("$F"),
-				      NEW_CALL(NEW_GVAR(rb_intern("$_")),
+				      NEW_CALL(NEW_GVAR(idLASTLINE),
 					       rb_intern("split"), 0)),
 			    node);
     }
     if (chop) {
-	node = block_append(NEW_CALL(NEW_GVAR(rb_intern("$_")),
+	node = block_append(NEW_CALL(NEW_GVAR(idLASTLINE),
 				     rb_intern("chop!"), 0), node);
     }
 
