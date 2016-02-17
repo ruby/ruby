@@ -637,14 +637,14 @@ eom
       end
 
       def assert_no_memory_leak(args, prepare, code, message=nil, limit: 2.0, rss: false, **opt)
-        require_relative 'memory_status'
+        require_relative '../../memory_status'
         token = "\e[7;1m#{$$.to_s}:#{Time.now.strftime('%s.%L')}:#{rand(0x10000).to_s(16)}:\e[m"
         token_dump = token.dump
         token_re = Regexp.quote(token)
         envs = args.shift if Array === args and Hash === args.first
         args = [
           "--disable=gems",
-          "-r", File.expand_path("../memory_status", __FILE__),
+          "-r", File.expand_path("../../../memory_status", __FILE__),
           *args,
           "-v", "-",
         ]
