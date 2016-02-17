@@ -1044,7 +1044,9 @@ enum_sort_by(VALUE obj)
     return ary;
 }
 
-#define ENUMFUNC(name) rb_block_given_p() ? name##_iter_i : name##_i
+#define ENUMFUNC(name, argc) argc ? name##_eqq : rb_block_given_p() ? name##_iter_i : name##_i
+
+#define MEMO_ENUM_NEW(v1) (rb_check_arity(argc, 0, 1), MEMO_NEW((v1), (argc ? *argv : 0), 0))
 
 #define DEFINE_ENUMFUNCS(name) \
 static VALUE enum_##name##_func(VALUE result, struct MEMO *memo); \
@@ -1062,6 +1064,12 @@ name##_iter_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memo)) \
 } \
 \
 static VALUE \
+name##_eqq(RB_BLOCK_CALL_FUNC_ARGLIST(i, memo)) \
+{ \
+    return enum_##name##_func(rb_funcall(MEMO_CAST(memo)->v2, id_eqq, 1, i), MEMO_CAST(memo)); \
+} \
+\
+static VALUE \
 enum_##name##_func(VALUE result, struct MEMO *memo)
 
 DEFINE_ENUMFUNCS(all)
@@ -1076,6 +1084,7 @@ DEFINE_ENUMFUNCS(all)
 /*
  *  call-seq:
  *     enum.all? [{ |obj| block } ]   -> true or false
+ *     enum.all?(pattern)             -> true or false
  *
  *  Passes each element of the collection to the given block. The method
  *  returns <code>true</code> if the block never returns
@@ -1084,17 +1093,22 @@ DEFINE_ENUMFUNCS(all)
  *  cause #all? to return +true+ when none of the collection members are
  *  +false+ or +nil+.
  *
+ *  If instead a pattern is supplied, the method returns whether
+ *  <code>pattern === element</code> for every element of <i>enum</i>.
+ *
  *     %w[ant bear cat].all? { |word| word.length >= 3 } #=> true
  *     %w[ant bear cat].all? { |word| word.length >= 4 } #=> false
  *     [nil, true, 99].all?                              #=> false
+ *     %w[ant bear cat].all?(/t/)                        #=> false
+ *     [1, 2i, 3.14].all?(Numeric)                       #=> true
  *
  */
 
 static VALUE
-enum_all(VALUE obj)
+enum_all(int argc, VALUE *argv, VALUE obj)
 {
-    struct MEMO *memo = MEMO_NEW(Qtrue, 0, 0);
-    rb_block_call(obj, id_each, 0, 0, ENUMFUNC(all), (VALUE)memo);
+    struct MEMO *memo = MEMO_ENUM_NEW(Qtrue);
+    rb_block_call(obj, id_each, 0, 0, ENUMFUNC(all, argc), (VALUE)memo);
     return memo->v1;
 }
 
@@ -1110,6 +1124,7 @@ DEFINE_ENUMFUNCS(any)
 /*
  *  call-seq:
  *     enum.any? [{ |obj| block }]   -> true or false
+ *     enum.any?(pattern)            -> true or false
  *
  *  Passes each element of the collection to the given block. The method
  *  returns <code>true</code> if the block ever returns a value other
@@ -1118,17 +1133,22 @@ DEFINE_ENUMFUNCS(any)
  *  will cause #any? to return +true+ if at least one of the collection
  *  members is not +false+ or +nil+.
  *
+ *  If instead a pattern is supplied, the method returns whether
+ *  <code>pattern === element</code> for any element of <i>enum</i>.
+ *
  *     %w[ant bear cat].any? { |word| word.length >= 3 } #=> true
  *     %w[ant bear cat].any? { |word| word.length >= 4 } #=> true
+ *     %w[ant bear cat].any?(/d/)                        #=> false
  *     [nil, true, 99].any?                              #=> true
+ *     [nil, true, 99].any?(Float)                       #=> false
  *
  */
 
 static VALUE
-enum_any(VALUE obj)
+enum_any(int argc, VALUE *argv, VALUE obj)
 {
-    struct MEMO *memo = MEMO_NEW(Qfalse, 0, 0);
-    rb_block_call(obj, id_each, 0, 0, ENUMFUNC(any), (VALUE)memo);
+    struct MEMO *memo = MEMO_ENUM_NEW(Qfalse);
+    rb_block_call(obj, id_each, 0, 0, ENUMFUNC(any, argc), (VALUE)memo);
     return memo->v1;
 }
 
@@ -1353,6 +1373,7 @@ nmin_run(VALUE obj, VALUE num, int by, int rev)
 /*
  *  call-seq:
  *     enum.one? [{ |obj| block }]   -> true or false
+ *     enum.one?(pattern)            -> true or false
  *
  *  Passes each element of the collection to the given block. The method
  *  returns <code>true</code> if the block returns <code>true</code>
@@ -1360,20 +1381,25 @@ nmin_run(VALUE obj, VALUE num, int by, int rev)
  *  <code>true</code> only if exactly one of the collection members is
  *  true.
  *
+ *  If instead a pattern is supplied, the method returns whether
+ *  <code>pattern === element</code> for exactly one element of <i>enum</i>.
+ *
  *     %w{ant bear cat}.one? { |word| word.length == 4 }  #=> true
  *     %w{ant bear cat}.one? { |word| word.length > 4 }   #=> false
  *     %w{ant bear cat}.one? { |word| word.length < 4 }   #=> false
+ *     %w{ant bear cat}.one?(/t/)                         #=> false
  *     [ nil, true, 99 ].one?                             #=> false
  *     [ nil, true, false ].one?                          #=> true
+ *     [ nil, true, 99 ].one?(Fixnum)                     #=> true
  *
  */
 static VALUE
-enum_one(VALUE obj)
+enum_one(int argc, VALUE *argv, VALUE obj)
 {
-    struct MEMO *memo = MEMO_NEW(Qundef, 0, 0);
+    struct MEMO *memo = MEMO_ENUM_NEW(Qundef);
     VALUE result;
 
-    rb_block_call(obj, id_each, 0, 0, ENUMFUNC(one), (VALUE)memo);
+    rb_block_call(obj, id_each, 0, 0, ENUMFUNC(one, argc), (VALUE)memo);
     result = memo->v1;
     if (result == Qundef) return Qfalse;
     return result;
@@ -1391,24 +1417,30 @@ DEFINE_ENUMFUNCS(none)
 /*
  *  call-seq:
  *     enum.none? [{ |obj| block }]   -> true or false
+ *     enum.none?(pattern)            -> true or false
  *
  *  Passes each element of the collection to the given block. The method
  *  returns <code>true</code> if the block never returns <code>true</code>
  *  for all elements. If the block is not given, <code>none?</code> will return
  *  <code>true</code> only if none of the collection members is true.
  *
+ *  If instead a pattern is supplied, the method returns whether
+ *  <code>pattern === element</code> for none of the elements of <i>enum</i>.
+ *
  *     %w{ant bear cat}.none? { |word| word.length == 5 } #=> true
  *     %w{ant bear cat}.none? { |word| word.length >= 4 } #=> false
+ *     %w{ant bear cat}.none?(/d/)                        #=> true
  *     [].none?                                           #=> true
  *     [nil].none?                                        #=> true
  *     [nil, false].none?                                 #=> true
  *     [nil, false, true].none?                           #=> false
+ *     [nil, false].none?(NilClass)                       #=> false
  */
 static VALUE
-enum_none(VALUE obj)
+enum_none(int argc, VALUE *argv, VALUE obj)
 {
-    struct MEMO *memo = MEMO_NEW(Qtrue, 0, 0);
-    rb_block_call(obj, id_each, 0, 0, ENUMFUNC(none), (VALUE)memo);
+    struct MEMO *memo = MEMO_ENUM_NEW(Qtrue);
+    rb_block_call(obj, id_each, 0, 0, ENUMFUNC(none, argc), (VALUE)memo);
     return memo->v1;
 }
 
@@ -3536,10 +3568,10 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable, "partition", enum_partition, 0);
     rb_define_method(rb_mEnumerable, "group_by", enum_group_by, 0);
     rb_define_method(rb_mEnumerable, "first", enum_first, -1);
-    rb_define_method(rb_mEnumerable, "all?", enum_all, 0);
-    rb_define_method(rb_mEnumerable, "any?", enum_any, 0);
-    rb_define_method(rb_mEnumerable, "one?", enum_one, 0);
-    rb_define_method(rb_mEnumerable, "none?", enum_none, 0);
+    rb_define_method(rb_mEnumerable, "all?", enum_all, -1);
+    rb_define_method(rb_mEnumerable, "any?", enum_any, -1);
+    rb_define_method(rb_mEnumerable, "one?", enum_one, -1);
+    rb_define_method(rb_mEnumerable, "none?", enum_none, -1);
     rb_define_method(rb_mEnumerable, "min", enum_min, -1);
     rb_define_method(rb_mEnumerable, "max", enum_max, -1);
     rb_define_method(rb_mEnumerable, "minmax", enum_minmax, 0);
