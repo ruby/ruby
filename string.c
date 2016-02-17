@@ -1374,60 +1374,60 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
     int n;
 
     if (!keyword_ids[0]) {
-	keyword_ids[0] = rb_id_encoding();
-	CONST_ID(keyword_ids[1], "capacity");
+        keyword_ids[0] = rb_id_encoding();
+        CONST_ID(keyword_ids[1], "capacity");
     }
 
     n = rb_scan_args(argc, argv, "01:", &orig, &opt);
     if (!NIL_P(opt)) {
-	rb_get_kwargs(opt, keyword_ids, 0, 2, kwargs);
-	venc = kwargs[0];
-	vcapa = kwargs[1];
-	if (venc != Qundef && !NIL_P(venc)) {
-	    enc = rb_to_encoding(venc);
-	}
-	if (vcapa != Qundef && !NIL_P(vcapa)) {
-	    long capa = NUM2LONG(vcapa);
-	    long len = 0;
-	    int termlen = enc ? rb_enc_mbminlen(enc) : 1;
+        rb_get_kwargs(opt, keyword_ids, 0, 2, kwargs);
+        venc = kwargs[0];
+        vcapa = kwargs[1];
+        if (venc != Qundef && !NIL_P(venc)) {
+            enc = rb_to_encoding(venc);
+        }
+        if (vcapa != Qundef && !NIL_P(vcapa)) {
+            long capa = NUM2LONG(vcapa);
+            long len = 0;
+            int termlen = enc ? rb_enc_mbminlen(enc) : 1;
 
-	    if (capa < STR_BUF_MIN_SIZE) {
-		capa = STR_BUF_MIN_SIZE;
-	    }
-	    if (n == 1) {
-		StringValue(orig);
-		len = RSTRING_LEN(orig);
-		if (capa < len) {
-		    capa = len;
-		}
-		if (orig == str) n = 0;
-	    }
-	    str_modifiable(str);
-	    if (STR_EMBED_P(str)) { /* make noembed always */
-		RSTRING(str)->as.heap.ptr = ALLOC_N(char, capa+termlen);
-	    }
-	    else if (STR_HEAP_SIZE(str) != capa+termlen) {
-		REALLOC_N(RSTRING(str)->as.heap.ptr, char, capa+termlen);
-	    }
-	    RSTRING(str)->as.heap.len = len;
-	    TERM_FILL(&RSTRING(str)->as.heap.ptr[len], termlen);
-	    if (n == 1) {
-		memcpy(RSTRING(str)->as.heap.ptr, RSTRING_PTR(orig), len);
-		rb_enc_cr_str_exact_copy(str, orig);
-	    }
-	    FL_SET(str, STR_NOEMBED);
-	    RSTRING(str)->as.heap.aux.capa = capa;
-	}
-	else if (n == 1) {
-	    rb_str_replace(str, orig);
-	}
-	if (enc) {
-	    rb_enc_associate(str, enc);
-	    ENC_CODERANGE_CLEAR(str);
-	}
+            if (capa < STR_BUF_MIN_SIZE) {
+                capa = STR_BUF_MIN_SIZE;
+            }
+            if (n == 1) {
+                StringValue(orig);
+                len = RSTRING_LEN(orig);
+                if (capa < len) {
+                    capa = len;
+                }
+                if (orig == str) n = 0;
+            }
+            str_modifiable(str);
+            if (STR_EMBED_P(str)) { /* make noembed always */
+                RSTRING(str)->as.heap.ptr = ALLOC_N(char, capa+termlen);
+            }
+            else if (STR_HEAP_SIZE(str) != capa+termlen) {
+                REALLOC_N(RSTRING(str)->as.heap.ptr, char, capa+termlen);
+            }
+            RSTRING(str)->as.heap.len = len;
+            TERM_FILL(&RSTRING(str)->as.heap.ptr[len], termlen);
+            if (n == 1) {
+                memcpy(RSTRING(str)->as.heap.ptr, RSTRING_PTR(orig), len);
+                rb_enc_cr_str_exact_copy(str, orig);
+            }
+            FL_SET(str, STR_NOEMBED);
+            RSTRING(str)->as.heap.aux.capa = capa;
+        }
+        else if (n == 1) {
+            rb_str_replace(str, orig);
+        }
+        if (enc) {
+            rb_enc_associate(str, enc);
+            ENC_CODERANGE_CLEAR(str);
+        }
     }
     else if (n == 1) {
-	rb_str_replace(str, orig);
+        rb_str_replace(str, orig);
     }
     return str;
 }
