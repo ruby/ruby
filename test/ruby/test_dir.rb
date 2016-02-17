@@ -335,8 +335,15 @@ class TestDir < Test::Unit::TestCase
   def test_empty?
     assert_not_send([Dir, :empty?, @root])
     assert_send([Dir, :empty?, File.join(@root, "a")])
-    open(File.join(@root, "a", "..."), "w") {}
+    tmp = File.join(@root, "a", "A")
+    open(tmp, "w") {}
     assert_not_send([Dir, :empty?, File.join(@root, "a")])
+    File.delete(tmp)
+    assert_send([Dir, :empty?, File.join(@root, "a")])
+    unless /mswin|mingw|cygwin/ =~ RUBY_PLATFORM
+      open(File.join(@root, "a", "..."), "w") {}
+      assert_not_send([Dir, :empty?, File.join(@root, "a")])
+    end
     assert_raise(Errno::ENOENT) {Dir.empty?(@nodir)}
     assert_not_send([Dir, :empty?, File.join(@root, "b")])
   end
