@@ -20,6 +20,10 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * Dir.empty?.  [Feature #10121]
 
+* String
+
+  * String.new(capacity: size) [Feature #12024]
+
 === Stdlib updates (outstanding ones only)
 
 * CSV

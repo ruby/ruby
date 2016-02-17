@@ -1350,32 +1350,71 @@ rb_str_resurrect(VALUE str)
  *  call-seq:
  *     String.new(str="")   -> new_str
  *     String.new(str="", encoding: enc) -> new_str
+ *     String.new(str="", capacity: size) -> new_str
  *
  *  Returns a new string object containing a copy of <i>str</i>.
+ *
  *  The optional <i>enc</i> argument specifies the encoding of the new string.
  *  If not specified, the encoding of <i>str</i> (or ASCII-8BIT, if <i>str</i>
  *  is not specified) is used.
+ *
+ *  The optional <i>size</i> argument specifies the size of internal buffer.
+ *  This may improve performance, when the string will be concatenated many
+ *  times (and call many realloc).
  */
 
 static VALUE
 rb_str_init(int argc, VALUE *argv, VALUE str)
 {
-    static ID keyword_ids[1];
-    VALUE orig, opt, enc;
+    static ID keyword_ids[2];
+    VALUE orig, opt, enc, vcapa;
+    VALUE kwargs[2];
     int n;
 
-    if (!keyword_ids[0])
+    if (!keyword_ids[0]) {
 	keyword_ids[0] = rb_id_encoding();
+	CONST_ID(keyword_ids[1], "capacity");
+    }
 
     n = rb_scan_args(argc, argv, "01:", &orig, &opt);
-    if (argc > 0 && n == 1)
-	rb_str_replace(str, orig);
     if (!NIL_P(opt)) {
-	rb_get_kwargs(opt, keyword_ids, 0, 1, &enc);
+	rb_get_kwargs(opt, keyword_ids, 0, 2, kwargs);
+	enc = kwargs[0];
+	vcapa = kwargs[1];
+	if (vcapa != Qundef && !NIL_P(vcapa)) {
+	    long capa = NUM2LONG(vcapa);
+	    if (capa < STR_BUF_MIN_SIZE) {
+		capa = STR_BUF_MIN_SIZE;
+	    }
+	    if (n == 1) {
+		long len = RSTRING_LEN(orig);
+		if (capa < len) {
+		    capa = len;
+		}
+		RSTRING(str)->as.heap.ptr = ALLOC_N(char, capa+1);
+		memcpy(RSTRING(str)->as.heap.ptr, RSTRING_PTR(orig), RSTRING_LEN(orig));
+		RSTRING(str)->as.heap.len = len;
+		rb_enc_cr_str_exact_copy(str, orig);
+	    }
+	    else {
+		RSTRING(str)->as.heap.ptr = ALLOC_N(char, capa+1);
+		RSTRING(str)->as.heap.ptr[0] = '\0';
+	    }
+	    FL_SET(str, STR_NOEMBED);
+	    RSTRING(str)->as.heap.aux.capa = capa;
+	}
+	else if (n == 1) {
+	    StringValue(orig);
+	    str_replace(str, orig);
+	}
 	if (enc != Qundef && !NIL_P(enc)) {
 	    rb_enc_associate(str, rb_to_encoding(enc));
 	    ENC_CODERANGE_CLEAR(str);
 	}
+    }
+    else if (n == 1) {
+	StringValue(orig);
+	str_replace(str, orig);
     }
     return str;
 }

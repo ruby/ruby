@@ -45,6 +45,18 @@ class TestString < Test::Unit::TestCase
     src.force_encoding("euc-jp")
     assert_equal(src, S(src, encoding: "utf-8"))
     assert_equal(Encoding::UTF_8, S(src, encoding: "utf-8").encoding)
+
+    assert_equal("", S(capacity: 1000))
+    assert_equal(Encoding::ASCII_8BIT, S(capacity: 1000).encoding)
+
+    assert_equal("", S(capacity: 1000, encoding: "euc-jp"))
+    assert_equal(Encoding::EUC_JP, S(capacity: 1000, encoding: "euc-jp").encoding)
+
+    assert_equal("", S("", capacity: 1000))
+    assert_equal(__ENCODING__, S("", capacity: 1000).encoding)
+
+    assert_equal("", S("", capacity: 1000, encoding: "euc-jp"))
+    assert_equal(Encoding::EUC_JP, S("", capacity: 1000, encoding: "euc-jp").encoding)
   end
 
   def test_AREF # '[]'

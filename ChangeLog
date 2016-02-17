@@ -1,3 +1,8 @@
+Wed Feb 17 12:14:59 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (rb_str_init): introduce String.new(capacity: size)
+	  [Feature #12024]
+
 Tue Feb 16 19:10:08 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/unicode/case-folding.rb, casefold.h: Used only first element
