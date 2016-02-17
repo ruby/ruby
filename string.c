@@ -1363,7 +1363,6 @@ rb_str_resurrect(VALUE str)
  *  times (and call many realloc).
  */
 
-static inline void str_modifiable(VALUE str);
 static VALUE
 rb_str_init(int argc, VALUE *argv, VALUE str)
 {
