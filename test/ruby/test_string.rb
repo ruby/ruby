@@ -70,6 +70,24 @@ class TestString < Test::Unit::TestCase
     assert_raise(RuntimeError){ str.__send__(:initialize, 'abc', capacity: 1000, encoding: 'euc-jp') }
   end
 
+  def test_initialize_nonstring
+    assert_raise(TypeError) {
+      S(1)
+    }
+    assert_raise(TypeError) {
+      S(1, capacity: 1000)
+    }
+  end
+
+  def test_initialize_memory_leak
+    assert_no_memory_leak([], <<-PREP, <<-CODE, rss: true)
+code = proc {('x'*100000).__send__(:initialize, '')}
+1_000.times(&code)
+PREP
+100_000.times(&code)
+CODE
+  end
+
   def test_AREF # '[]'
     assert_equal("A",  S("AooBar")[0])
     assert_equal("B",  S("FooBaB")[-1])

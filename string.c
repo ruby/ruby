@@ -163,6 +163,7 @@ static VALUE str_new_shared(VALUE klass, VALUE str);
 static VALUE str_new_frozen(VALUE klass, VALUE orig);
 static VALUE str_new_static(VALUE klass, const char *ptr, long len, int encindex);
 static void str_make_independent_expand(VALUE str, long len, long expand, const int termlen);
+static inline void str_modifiable(VALUE str);
 
 static inline void
 str_make_independent(VALUE str)
@@ -1367,8 +1368,9 @@ static VALUE
 rb_str_init(int argc, VALUE *argv, VALUE str)
 {
     static ID keyword_ids[2];
-    VALUE orig, opt, enc, vcapa;
+    VALUE orig, opt, venc, vcapa;
     VALUE kwargs[2];
+    rb_encoding *enc = 0;
     int n;
 
     if (!keyword_ids[0]) {
@@ -1379,45 +1381,53 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
     n = rb_scan_args(argc, argv, "01:", &orig, &opt);
     if (!NIL_P(opt)) {
 	rb_get_kwargs(opt, keyword_ids, 0, 2, kwargs);
-	enc = kwargs[0];
+	venc = kwargs[0];
 	vcapa = kwargs[1];
+	if (venc != Qundef && !NIL_P(venc)) {
+	    enc = rb_to_encoding(venc);
+	}
 	if (vcapa != Qundef && !NIL_P(vcapa)) {
 	    long capa = NUM2LONG(vcapa);
-	    str_discard(str);
+	    long len = 0;
+	    int termlen = enc ? rb_enc_mbminlen(enc) : 1;
+
 	    if (capa < STR_BUF_MIN_SIZE) {
 		capa = STR_BUF_MIN_SIZE;
 	    }
 	    if (n == 1) {
-		long len = RSTRING_LEN(orig);
+		StringValue(orig);
+		len = RSTRING_LEN(orig);
 		if (capa < len) {
 		    capa = len;
 		}
-		RSTRING(str)->as.heap.ptr = ALLOC_N(char, capa+1);
-		memcpy(RSTRING(str)->as.heap.ptr, RSTRING_PTR(orig), RSTRING_LEN(orig));
-		RSTRING(str)->as.heap.len = len;
-		rb_enc_cr_str_exact_copy(str, orig);
+		if (orig == str) n = 0;
 	    }
-	    else {
-		RSTRING(str)->as.heap.ptr = ALLOC_N(char, capa+1);
-		RSTRING(str)->as.heap.ptr[0] = '\0';
+	    str_modifiable(str);
+	    if (STR_EMBED_P(str)) { /* make noembed always */
+		RSTRING(str)->as.heap.ptr = ALLOC_N(char, capa+termlen);
+	    }
+	    else if (STR_HEAP_SIZE(str) != capa+termlen) {
+		REALLOC_N(RSTRING(str)->as.heap.ptr, char, capa+termlen);
+	    }
+	    RSTRING(str)->as.heap.len = len;
+	    TERM_FILL(&RSTRING(str)->as.heap.ptr[len], termlen);
+	    if (n == 1) {
+		memcpy(RSTRING(str)->as.heap.ptr, RSTRING_PTR(orig), len);
+		rb_enc_cr_str_exact_copy(str, orig);
 	    }
 	    FL_SET(str, STR_NOEMBED);
 	    RSTRING(str)->as.heap.aux.capa = capa;
 	}
 	else if (n == 1) {
-	    StringValue(orig);
-	    str_discard(str);
-	    str_replace(str, orig);
+	    rb_str_replace(str, orig);
 	}
-	if (enc != Qundef && !NIL_P(enc)) {
-	    rb_enc_associate(str, rb_to_encoding(enc));
+	if (enc) {
+	    rb_enc_associate(str, enc);
 	    ENC_CODERANGE_CLEAR(str);
 	}
     }
     else if (n == 1) {
-	StringValue(orig);
-	str_discard(str);
-	str_replace(str, orig);
+	rb_str_replace(str, orig);
     }
     return str;
 }
