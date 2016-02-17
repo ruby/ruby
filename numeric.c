@@ -239,8 +239,9 @@ num_coerce(VALUE x, VALUE y)
 }
 
 static VALUE
-coerce_body(VALUE *x)
+coerce_body(VALUE arg)
 {
+    VALUE *x = (VALUE *)arg;
     return rb_funcall(x[1], id_coerce, 1, x[0]);
 }
 
@@ -259,14 +260,15 @@ coerce_failed(VALUE x, VALUE y)
 }
 
 static VALUE
-coerce_rescue(VALUE *x)
+coerce_rescue(VALUE arg)
 {
+    VALUE *x = (VALUE *)arg;
     coerce_failed(x[0], x[1]);
     return Qnil;		/* dummy */
 }
 
 static VALUE
-coerce_rescue_quiet(VALUE *x)
+coerce_rescue_quiet(VALUE arg)
 {
     return Qundef;
 }
@@ -281,7 +283,7 @@ do_coerce(VALUE *x, VALUE *y, int err)
 
     if (!rb_respond_to(*y, id_coerce)) {
 	if (err) {
-	    coerce_rescue(a);
+	    coerce_failed(*x, *y);
 	}
 	return FALSE;
     }
