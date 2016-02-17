@@ -342,6 +342,10 @@ class TestDir < Test::Unit::TestCase
       assert_not_send([Dir, :empty?, a])
       File.delete(tmp)
       assert_send([Dir, :empty?, a])
+      Dir.mkdir(tmp)
+      assert_not_send([Dir, :empty?, a])
+      Dir.rmdir(tmp)
+      assert_send([Dir, :empty?, a])
     end
     assert_raise(Errno::ENOENT) {Dir.empty?(@nodir)}
     assert_not_send([Dir, :empty?, File.join(@root, "b")])
