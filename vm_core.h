@@ -1025,6 +1025,8 @@ VALUE rb_vm_make_proc(rb_thread_t *th, const rb_block_t *block, VALUE klass);
 VALUE rb_vm_make_binding(rb_thread_t *th, const rb_control_frame_t *src_cfp);
 VALUE rb_vm_env_local_variables(const rb_env_t *env);
 VALUE rb_vm_env_prev_envval(const rb_env_t *env);
+VALUE rb_vm_env_svar_get(const rb_env_t *env, VALUE key);
+void rb_vm_env_svar_set(const rb_env_t *env, VALUE key, VALUE val);
 VALUE rb_vm_proc_envval(const rb_proc_t *proc);
 VALUE *rb_binding_add_dynavars(rb_binding_t *bind, int dyncount, const ID *dynvars);
 void rb_vm_inc_const_missing_count(void);

@@ -1134,6 +1134,18 @@ rb_lastline_set(VALUE val)
     vm_svar_set(VM_SVAR_LASTLINE, val);
 }
 
+VALUE
+rb_vm_env_svar_get(const rb_env_t *env, VALUE key)
+{
+    return lep_svar_get(NULL, VM_EP_LEP(env->block.ep), key);
+}
+
+void
+rb_vm_env_svar_set(const rb_env_t *env, VALUE key, VALUE val)
+{
+    lep_svar_set(NULL, VM_EP_LEP(env->block.ep), key, val);
+}
+
 /* misc */
 
 VALUE
