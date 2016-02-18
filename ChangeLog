@@ -1,3 +1,12 @@
+Thu Feb 18 14:15:38 2016  Shota Fukumori  <her@sorah.jp>
+
+	* re.c: Add MatchData#named_captures
+	  [Feature #11999] [ruby-core:72897]
+	
+	* test/ruby/test_regexp.rb(test_match_data_named_captures): Test for above.
+
+	* NEWS: News about MatchData#named_captures.
+
 Wed Feb 17 21:41:29 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* defs/id.def (predefined): add idLASTLINE and idBACKREF for $_

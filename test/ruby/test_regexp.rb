@@ -175,6 +175,20 @@ class TestRegexp < Test::Unit::TestCase
     assert_raise(IndexError, bug9903) {m[key.dup.force_encoding(Encoding::Shift_JIS)]}
   end
 
+  def test_match_data_named_captures
+    assert_equal({'a' => '1', 'b' => '2', 'c' => nil}, /^(?<a>.)(?<b>.)(?<c>.)?/.match('12').named_captures)
+    assert_equal({'a' => '1', 'b' => '2', 'c' => '3'}, /^(?<a>.)(?<b>.)(?<c>.)?/.match('123').named_captures)
+    assert_equal({'a' => '1', 'b' => '2', 'c' => ''}, /^(?<a>.)(?<b>.)(?<c>.?)/.match('12').named_captures)
+
+    assert_equal({'a' => 'x'}, /(?<a>x)|(?<a>y)/.match('x').named_captures)
+    assert_equal({'a' => 'y'}, /(?<a>x)|(?<a>y)/.match('y').named_captures)
+
+    assert_equal({'a' => '1', 'b' => '2'}, /^(.)(?<a>.)(?<b>.)/.match('012').named_captures)
+    assert_equal({'a' => '2'}, /^(?<a>.)(?<a>.)/.match('12').named_captures)
+
+    assert_equal({}, /^(.)/.match('123').named_captures)
+  end
+
   def test_assign_named_capture
     assert_equal("a", eval('/(?<foo>.)/ =~ "a"; foo'))
     assert_equal(nil, eval('/(?<@foo>.)/ =~ "a"; defined?(@foo)'))

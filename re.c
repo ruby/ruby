@@ -1937,6 +1937,72 @@ match_to_s(VALUE match)
     return str;
 }
 
+static int
+match_named_captures_iter(const OnigUChar *name, const OnigUChar *name_end,
+	int back_num, int *back_refs, OnigRegex regex, void *arg) {
+    struct MEMO *memo = MEMO_CAST(arg);
+    VALUE hash = memo->v1;
+    VALUE match = memo->v2;
+
+    VALUE key = rb_enc_str_new((const char *)name, name_end-name, regex->enc);
+    VALUE value;
+
+    int i;
+    int found = 0;
+
+    for (i = 0; i < back_num; i++) {
+	value = rb_reg_nth_match(back_refs[i], match);
+	if (RTEST(value)) {
+	    rb_hash_aset(hash, key, value);
+	    found = 1;
+	}
+    }
+
+    if (found == 0) {
+	rb_hash_aset(hash, key, Qnil);
+    }
+
+    return 0;
+}
+
+/*
+ *  call-seq:
+ *     mtch.named_captures -> hash
+ *
+ *  Returns a Hash using named capture.
+ *
+ *  A key of the hash is a name of the named captures.
+ *  A value of the hash is a string of last successful capture of corresponding
+ *  group.
+ *
+ *     m = /(?<a>.)(?<b>.)/.match("01")
+ *     m.named_captures #=> {"a" => "0", "b" => "1"}
+ *
+ *     m = /(?<a>.)(?<b>.)?/.match("0")
+ *     m.named_captures #=> {"a" => "0", "b" => nil}
+ *
+ *     m = /(?<a>.)(?<a>.)/.match("01")
+ *     m.named_captures #=> {"a" => "1"}
+ *
+ *     m = /(?<a>x)|(?<a>y)/.match("x")
+ *     m.named_captures #=> {"a" => "x"}
+ */
+
+static VALUE
+match_named_captures(VALUE match)
+{
+    VALUE hash;
+    struct MEMO *memo;
+
+    match_check(match);
+
+    hash = rb_hash_new();
+    memo = MEMO_NEW(hash, match, 0);
+
+    onig_foreach_name(RREGEXP(RMATCH(match)->regexp)->ptr, match_named_captures_iter, (void*)memo);
+
+    return hash;
+}
 
 /*
  *  call-seq:
@@ -3751,6 +3817,7 @@ Init_Regexp(void)
     rb_define_method(rb_cMatch, "to_a", match_to_a, 0);
     rb_define_method(rb_cMatch, "[]", match_aref, -1);
     rb_define_method(rb_cMatch, "captures", match_captures, 0);
+    rb_define_method(rb_cMatch, "named_captures", match_named_captures, 0);
     rb_define_method(rb_cMatch, "values_at", match_values_at, -1);
     rb_define_method(rb_cMatch, "pre_match", rb_reg_match_pre, 0);
     rb_define_method(rb_cMatch, "post_match", rb_reg_match_post, 0);
