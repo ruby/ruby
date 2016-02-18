@@ -35,19 +35,20 @@ class Downloader
     @@https = https
   end
 
+  def self.https?
+    @@https == 'https'
+  end
+
   def self.https
-    if @@https != 'https'
-      warn "*** using http instead of https ***"
-    end
     @@https
   end
 
   class GNU < self
     def self.download(name, *rest)
-      if https == 'https'
+      if https?
         super("https://raw.githubusercontent.com/gcc-mirror/gcc/master/#{name}", name, *rest)
       else
-        super("http://repo.or.cz/official-gcc.git/blob_plain/HEAD:/#{name}", name, *rest)
+        super("https://repo.or.cz/official-gcc.git/blob_plain/HEAD:/#{name}", name, *rest)
       end
     end
   end
@@ -58,7 +59,7 @@ class Downloader
       require 'rubygems/package'
       options[:ssl_ca_cert] = Dir.glob(File.expand_path("../lib/rubygems/ssl_certs/*.pem", File.dirname(__FILE__)))
       file = under(dir, name)
-      super("#{https}://rubygems.org/downloads/#{name}", file, nil, since, options) or
+      super("https://rubygems.org/downloads/#{name}", file, nil, since, options) or
         return false
       policy = Gem::Security::LowSecurity
       (policy = policy.dup).ui = Gem::SilentUI.new if policy.respond_to?(:'ui=')
@@ -140,6 +141,10 @@ class Downloader
         $stdout.flush
       end
       return true
+    end
+    if !https? and url.start_with?("https:")
+      warn "*** using http instead of https ***"
+      url = url.sub(/\Ahttps/, 'http')
     end
     url = URI(url)
     if $VERBOSE
