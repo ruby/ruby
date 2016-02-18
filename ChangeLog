@@ -1,3 +1,7 @@
+Thu Feb 18 21:32:15 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* man/irb.1: fix output in EXAMPLES.
+
 Thu Feb 18 21:05:47 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (sym_match_m): delegate to String#match but not
