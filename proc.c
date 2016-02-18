@@ -408,6 +408,11 @@ check_local_id(VALUE bindval, volatile VALUE *pname)
     VALUE name = *pname;
 
     if (lid) {
+	switch (lid) {
+	  case idLASTLINE:
+	  case idBACKREF:
+	    return lid;
+	}
 	if (!rb_is_local_id(lid)) {
 	    rb_name_err_raise("wrong local variable name `%1$s' for %2$s",
 			      bindval, ID2SYM(lid));
@@ -481,6 +486,13 @@ bind_local_variable_get(VALUE bindval, VALUE sym)
 
     GetBindingPtr(bindval, bind);
 
+    if (lid == idLASTLINE || lid == idBACKREF) {
+	const rb_env_t *env;
+	VALUE key = lid == idLASTLINE ? VM_SVAR_LASTLINE : VM_SVAR_BACKREF;
+	GetEnvPtr(bind->env, env);
+	return rb_vm_env_svar_get(env, key);
+    }
+
     if ((ptr = get_local_variable_ptr(bind->env, lid)) == NULL) {
 	sym = ID2SYM(lid);
       undefined:
@@ -525,6 +537,15 @@ bind_local_variable_set(VALUE bindval, VALUE sym, VALUE val)
     if (!lid) lid = rb_intern_str(sym);
 
     GetBindingPtr(bindval, bind);
+
+    if (lid == idLASTLINE || lid == idBACKREF) {
+	const rb_env_t *env;
+	VALUE key = lid == idLASTLINE ? VM_SVAR_LASTLINE : VM_SVAR_BACKREF;
+	GetEnvPtr(bind->env, env);
+	rb_vm_env_svar_set(env, key, val);
+	return val;
+    }
+
     if ((ptr = get_local_variable_ptr(bind->env, lid)) == NULL) {
 	/* not found. create new env */
 	ptr = rb_binding_add_dynavars(bind, 1, &lid);
@@ -559,6 +580,12 @@ bind_local_variable_defined_p(VALUE bindval, VALUE sym)
     const rb_binding_t *bind;
 
     if (!lid) return Qfalse;
+
+    switch (lid) {
+      case idLASTLINE:
+      case idBACKREF:
+	return Qtrue;
+    }
 
     GetBindingPtr(bindval, bind);
     return get_local_variable_ptr(bind->env, lid) ? Qtrue : Qfalse;

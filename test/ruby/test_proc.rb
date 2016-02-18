@@ -213,6 +213,10 @@ class TestProc < Test::Unit::TestCase
     assert_equal 42, b.local_variable_set(:value, 42)
     assert_send [b, :local_variable_defined?, :value]
     assert_equal 42, b.local_variable_get(:value)
+    assert_equal("lastline", b.local_variable_set(:$_, "lastline"))
+    assert_equal("backref", b.local_variable_set(:$~, "backref"))
+    assert_equal("lastline", b.local_variable_get(:$_))
+    assert_equal("backref", b.local_variable_get(:$~))
   end
 
   def test_block_given_method
@@ -1300,16 +1304,24 @@ class TestProc < Test::Unit::TestCase
     b = get_binding
     b.local_variable_set(:a, 10)
     b.local_variable_set(:b, 20)
+    b.local_variable_set(:$_, "lastline")
+    b.local_variable_set(:$~, "backref")
     assert_equal(10, b.local_variable_get(:a))
     assert_equal(20, b.local_variable_get(:b))
+    assert_equal("lastline", b.local_variable_get(:$_))
+    assert_equal("backref", b.local_variable_get(:$~))
     assert_equal(10, b.eval("a"))
     assert_equal(20, b.eval("b"))
+    assert_equal("lastline", b.eval("$_"))
+    assert_equal("backref", b.eval("$~"))
   end
 
   def test_local_variable_defined?
     b = get_binding
     assert_equal(true, b.local_variable_defined?(:a))
     assert_equal(false, b.local_variable_defined?(:b))
+    assert_equal(true, b.local_variable_defined?(:$_))
+    assert_equal(true, b.local_variable_defined?(:$~))
   end
 
   def test_binding_receiver

@@ -918,6 +918,10 @@ class TestMethod < Test::Unit::TestCase
     assert_equal(456, b.local_variable_set(:bar, 456))
     assert_equal(123, b.local_variable_get(:foo))
     assert_equal(456, b.local_variable_get(:bar))
+    assert_equal("lastline", b.local_variable_set(:$_, "lastline"))
+    assert_equal("backref", b.local_variable_set(:$~, "backref"))
+    assert_equal("lastline", b.local_variable_get(:$_))
+    assert_equal("backref", b.local_variable_get(:$~))
     assert_equal([:bar, :foo], b.local_variables.sort)
   end
 
