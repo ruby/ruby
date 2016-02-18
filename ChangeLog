@@ -1,3 +1,8 @@
+Thu Feb 18 21:05:47 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (sym_match_m): delegate to String#match but not
+	  String#=~.  [ruby-core:72864] [Bug #11991]
+
 Thu Feb 18 14:15:38 2016  Shota Fukumori  <her@sorah.jp>
 
 	* re.c: Add MatchData#named_captures

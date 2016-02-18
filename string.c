@@ -9423,7 +9423,6 @@ sym_casecmp(VALUE sym, VALUE other)
 /*
  * call-seq:
  *   sym =~ obj   -> fixnum or nil
- *   sym.match(obj)   -> fixnum or nil
  *
  * Returns <code>sym.to_s =~ obj</code>.
  */
@@ -9432,6 +9431,19 @@ static VALUE
 sym_match(VALUE sym, VALUE other)
 {
     return rb_str_match(rb_sym2str(sym), other);
+}
+
+/*
+ * call-seq:
+ *   sym.match(obj)   -> MatchData or nil
+ *
+ * Returns <code>sym.to_s.match(obj)</code>.
+ */
+
+static VALUE
+sym_match_m(int argc, VALUE *argv, VALUE sym)
+{
+    return rb_str_match_m(argc, argv, rb_sym2str(sym));
 }
 
 /*
@@ -9763,7 +9775,7 @@ Init_String(void)
     rb_define_method(rb_cSymbol, "length", sym_length, 0);
     rb_define_method(rb_cSymbol, "size", sym_length, 0);
     rb_define_method(rb_cSymbol, "empty?", sym_empty, 0);
-    rb_define_method(rb_cSymbol, "match", sym_match, 1);
+    rb_define_method(rb_cSymbol, "match", sym_match_m, -1);
 
     rb_define_method(rb_cSymbol, "upcase", sym_upcase, -1);
     rb_define_method(rb_cSymbol, "downcase", sym_downcase, -1);
