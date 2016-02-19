@@ -1,3 +1,8 @@
+Sat Feb 20 01:53:33 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* object.c (rb_mod_const_get): make error message at uninterned
+	  string consistent with symbols.  [ruby-dev:49498] [Bug #12089]
+
 Fri Feb 19 23:37:52 2016  Masahiro Tomita  <tommy@tmtm.org>
 
 	* lib/find.rb (Find#find): raise with the given path name if it

@@ -54,6 +54,14 @@ module Test_Symbol
       assert_not_interned_error(cl, :const_get, name.to_sym)
     end
 
+    def test_module_const_get_toplevel
+      bug12089 = '[ruby-dev:49498] [Bug #12089]'
+      name = noninterned_name("A")
+      e = assert_not_interned_error(Object, :const_get, name)
+      assert_equal(name, e.name)
+      assert_not_match(/Object::/, e.message, bug12089)
+    end
+
     def test_module_const_defined?
       cl = Class.new
       name = noninterned_name("A")
