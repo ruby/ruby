@@ -258,9 +258,9 @@ class TestEval < Test::Unit::TestCase
   #
 
   def make_test_binding
-    local1 = "local1"
+    local1 = local1 = "local1"
     lambda {
-      local2 = "local2"
+      local2 = local2 = "local2"
       return binding
     }.call
   end
@@ -287,7 +287,7 @@ class TestEval < Test::Unit::TestCase
 
     assert_equal('assert(true)', eval("$foo"))
     assert_equal(true, eval("true"))
-    i = 5
+    i = i = 5
     assert(eval("i == 5"))
     assert_equal(5, eval("i"))
     assert(eval("defined? i"))
@@ -308,6 +308,7 @@ class TestEval < Test::Unit::TestCase
       module EvTest
 	EVTEST1 = 25
 	evtest2 = 125
+	evtest2 = evtest2
 	binding
       end
     )
@@ -354,7 +355,7 @@ class TestEval < Test::Unit::TestCase
       p = binding
       eval "foo11 = 1", p
       foo22 = 5
-      proc{foo11=22}.call
+      proc{foo11=22;foo11}.call
       proc{foo22=55}.call
       # assert_equal(eval("foo11"), eval("foo11", p))
       # assert_equal(1, eval("foo11"))

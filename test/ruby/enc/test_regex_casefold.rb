@@ -22,8 +22,8 @@ class TestCaseFold < Test::Unit::TestCase
     .collect.with_index { |linedata, linenumber| [linenumber.to_i+1, linedata.chomp] }
     .reject { |number, data| data =~ /^(#|$)/ }
     .collect do |linenumber, linedata|
-      data, name = linedata.split /#\s*/
-      code, kind, result, _ = data.split /;\s*/
+      data, _ = linedata.split(/#\s*/)
+      code, kind, result, _ = data.split(/;\s*/)
       CaseTest.new code.to_i(16).chr('UTF-8'),
                    result.split(/ /).collect { |hex| hex.to_i(16) }.pack('U*'),
                    kind, linenumber
@@ -81,6 +81,8 @@ class TestCaseFold < Test::Unit::TestCase
                 "12345#{to_codepoints(target)}67890 and /#{reg}/i do not match " +
                 "(CaseFolding.txt line #{test[:line]})"
         rescue Encoding::UndefinedConversionError
+          source = source
+          regexp = regexp
         end
       end
     end

@@ -2185,7 +2185,7 @@ End
         assert_file.exist?(fname)
         stdin = $stdin.dup
         begin
-          assert_nothing_raised(Errno::ENOENT, enc) {
+          assert_nothing_raised(Errno::ENOENT, "#{bug11320}: #{enc}") {
             $stdin.reopen(fname, 'r')
           }
         ensure
@@ -2461,7 +2461,7 @@ End
   def test_flush_in_finalizer1
     require 'tempfile'
     bug3910 = '[ruby-dev:42341]'
-    t = Tempfile.open("bug3910") {|t|
+    tmp = Tempfile.open("bug3910") {|t|
       path = t.path
       t.close
       fds = []
@@ -2481,7 +2481,7 @@ End
         f.close
       end
     }
-    t.close!
+    tmp.close!
   end
 
   def test_flush_in_finalizer2
@@ -2959,7 +2959,6 @@ End
 
   def test_frozen_autoclose
     with_pipe do |r,w|
-      fd = r.fileno
       assert_equal(true, r.freeze.autoclose?)
     end
   end

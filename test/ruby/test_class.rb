@@ -371,6 +371,9 @@ class TestClass < Test::Unit::TestCase
       end;
     }
     assert_raise_with_message(TypeError, /#{n}/) {
+      Class.new(c)
+    }
+    assert_raise_with_message(TypeError, /#{n}/) {
       m.module_eval "class #{n} < Class.new; end"
     }
   end

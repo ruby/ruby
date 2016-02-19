@@ -89,9 +89,9 @@ class TestISeq < Test::Unit::TestCase
   LINE_BEFORE_METHOD = __LINE__
   def method_test_line_trace
 
-    a = 1
+    _a = 1
 
-    b = 2
+    _b = 2
 
   end
 

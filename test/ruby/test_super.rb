@@ -485,8 +485,8 @@ class TestSuper < Test::Unit::TestCase
     bug9740 = '[ruby-core:62017] [Bug #9740]'
 
     b.module_eval do
-      define_method(:foo) do |result|
-        um.bind(self).call(result)
+      define_method(:foo) do |res|
+        um.bind(self).call(res)
       end
     end
 

@@ -1359,7 +1359,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
     assert_consistent_call_return '[Bug #9959]' do
       begin
         method_test_argument_error_on_bmethod(wrong_key: 2)
-      rescue => e
+      rescue
         # ignore
       end
     end
@@ -1369,7 +1369,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
     assert_consistent_call_return '[Bug #9961]' do
       begin
         -Numeric.new
-      rescue => e
+      rescue
         # ignore
       end
     end
@@ -1413,7 +1413,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
       return if Thread.current != target_th
       evs << tp.event
     }.enable{
-      a = Bug10724.new
+      Bug10724.new
     }
 
     assert_equal([:call, :return], evs)

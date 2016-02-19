@@ -61,9 +61,9 @@ class TestLambdaParameters < Test::Unit::TestCase
     assert_equal(nil, ->(&b){ b }.call)
     foo { puts "bogus block " }
     assert_equal(1, ->(&b){ b.call }.call { 1 })
-    b = nil
-    assert_equal(1, ->(&b){ b.call }.call { 1 })
-    assert_nil(b)
+    _b = nil
+    assert_equal(1, ->(&_b){ _b.call }.call { 1 })
+    assert_nil(_b)
   end
 
   def test_call_block_from_lambda

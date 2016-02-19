@@ -9,6 +9,7 @@ class TestFlip < Test::Unit::TestCase
     assert_nothing_raised(NotImplementedError, bug6899) do
       2000.times {eval %[(foo..bar) ? 1 : 2]}
     end
+    foo = bar
   end
 
   def test_shared_eval

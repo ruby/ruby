@@ -53,7 +53,7 @@ class TestEnv < Test::Unit::TestCase
     end
 
     assert_raise(TypeError) {
-      tmp = ENV[1]
+      ENV[1]
     }
     assert_raise(TypeError) {
       ENV[1] = 'foo'
@@ -318,7 +318,7 @@ class TestEnv < Test::Unit::TestCase
       assert_equal("test", k)
       assert_equal("foo", v)
     end
-    assert_invalid_env {|v| ENV.assoc(v)}
+    assert_invalid_env {|var| ENV.assoc(var)}
   end
 
   def test_has_value2

@@ -818,14 +818,14 @@ class TestRubyOptions < Test::Unit::TestCase
       ["--disable-frozen-string-literal", false],
       [nil, false],
     ]
-    debug = [
+    debugs = [
       ["--debug-frozen-string-literal", true],
       ["--debug=frozen-string-literal", true],
       ["--debug", true],
       [nil, false],
     ]
     opts = ["--disable=gems"]
-    frozen.product(debug) do |(opt1, freeze), (opt2, debug)|
+    frozen.product(debugs) do |(opt1, freeze), (opt2, debug)|
       opt = opts + [opt1, opt2].compact
       err = !freeze ? [] : debug ? with_debug_pat : wo_debug_pat
       assert_in_out_err(opt, '"foo" << "bar"', [], err)

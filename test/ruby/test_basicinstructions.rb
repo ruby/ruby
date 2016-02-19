@@ -211,9 +211,9 @@ class TestBasicInstructions < Test::Unit::TestCase
     assert_raise(NameError) { a }
     assert_raise(NameError) { b }
     assert_raise(NameError) { c }
-    a = "NOT OK"
-    b = "NOT OK"
-    c = "NOT OK"
+    a = a = "NOT OK"
+    b = b = "NOT OK"
+    c = c = "NOT OK"
   end
 
   class Const
@@ -611,8 +611,8 @@ class TestBasicInstructions < Test::Unit::TestCase
     x = OP.new
     assert_equal 42, x.foo = 42, bug7773
     assert_equal 42, x.foo, bug7773
-    assert_equal -6, x.send(:foo=, -6), bug7773
-    assert_equal -6, x.foo, bug7773
+    assert_equal (-6), x.send(:foo=, -6), bug7773
+    assert_equal (-6), x.foo, bug7773
     assert_equal :Bug1996, x.send(:x=, :case_when_setter_returns_other_value), bug7773
     assert_equal :case_when_setter_returns_other_value, x.x, bug7773
   end

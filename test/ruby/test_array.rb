@@ -2409,7 +2409,7 @@ class TestArray < Test::Unit::TestCase
 
   def test_combination_clear
     bug9939 = '[ruby-core:63149] [Bug #9939]'
-    assert_separately([], <<-'end;')
+    assert_ruby_status([], <<-'end;', bug9939)
       100_000.times {Array.new(1000)}
       a = [*0..100]
       a.combination(3) {|*,x| a.clear}

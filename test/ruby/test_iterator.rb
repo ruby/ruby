@@ -109,7 +109,7 @@ class TestIterator < Test::Unit::TestCase
 
   def test_append_method_to_built_in_class
     x = [[1,2],[3,4],[5,6]]
-    assert_equal(x.iter_test1{|x|x}, x.iter_test2{|x|x})
+    assert_equal(x.iter_test1{|e|e}, x.iter_test2{|e|e})
   end
 
   class IterTest

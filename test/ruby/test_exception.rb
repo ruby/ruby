@@ -20,8 +20,8 @@ class TestException < Test::Unit::TestCase
       if bad
         bad = false
         retry
-        assert(false)
       end
+      assert(!bad)
     end
     assert(true)
   end
@@ -626,6 +626,7 @@ end.join
   end
 
   def test_cause_raised_in_rescue
+    a = nil
     e = assert_raise_with_message(RuntimeError, 'b') {
       begin
         raise 'a'
@@ -633,6 +634,7 @@ end.join
         begin
           raise 'b'
         rescue => b
+          assert_same(a, b.cause)
           begin
             raise 'c'
           rescue
@@ -641,15 +643,17 @@ end.join
         end
       end
     }
-    assert_equal('a', e.cause.message, 'cause should not be overwritten by reraise')
+    assert_same(a, e.cause, 'cause should not be overwritten by reraise')
   end
 
   def test_cause_at_raised
+    a = nil
     e = assert_raise_with_message(RuntimeError, 'b') {
       begin
         raise 'a'
       rescue => a
         b = RuntimeError.new('b')
+        assert_nil(b.cause)
         begin
           raise 'c'
         rescue
@@ -658,6 +662,7 @@ end.join
       end
     }
     assert_equal('c', e.cause.message, 'cause should be the exception at raised')
+    assert_same(a, e.cause.cause)
   end
 
   def test_raise_with_cause
@@ -682,6 +687,7 @@ end.join
         begin
           raise 'b'
         rescue => b
+          assert_same(a, b.cause)
           begin
             raise 'c'
           rescue
@@ -691,6 +697,7 @@ end.join
       end
     }
     assert_equal('d', e.cause.message, 'cause option should be honored always')
+    assert_nil(e.cause.cause)
   end
 
   def test_unknown_option
@@ -751,7 +758,8 @@ end.join
     assert_same(obj, e.receiver)
     def obj.test(a, b=nil, *c, &d)
       e = a
-      1.times {|f| g = foo}
+      1.times {|f| g = foo; g}
+      e
     end
     e = assert_raise(NameError) {
       obj.test(3)
@@ -776,7 +784,7 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
       assert_equal 0, errs.size
       err = outs.first.force_encoding('utf-8')
       assert err.valid_encoding?, 'must be valid encoding'
-      assert_match /\u3042/, err
+      assert_match %r/\u3042/, err
     end
   end
 

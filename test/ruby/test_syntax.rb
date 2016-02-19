@@ -205,7 +205,7 @@ class TestSyntax < Test::Unit::TestCase
   def test_keyword_invalid_name
     bug11663 = '[ruby-core:71356] [Bug #11663]'
 
-    o = Object.new
+    o = o = Object.new
     assert_syntax_error('def o.foo(arg1?:) end', /arg1\?/, bug11663)
     assert_syntax_error('def o.foo(arg1?:, arg2:) end', /arg1\?/, bug11663)
     assert_syntax_error('proc {|arg1?:|}', /arg1\?/, bug11663)
@@ -362,7 +362,7 @@ WARN
 
   def test_cmdarg_kwarg_lvar_clashing_method
     bug12073 = '[ruby-core:73816] [Bug#12073]'
-    a = 1
+    a = a = 1
     assert_valid_syntax("a b: 1")
     assert_valid_syntax("a = 1; a b: 1", bug12073)
   end
@@ -442,7 +442,7 @@ WARN
       }
     }
     assert_warning(/#{w}/){#/3: #{w}.+4: #{w}.+5: #{w}.+5: #{w}/m){
-      a = 1
+      a = a = 1
       eval %q{
         case 1
         when 1, 1
@@ -590,7 +590,7 @@ e"
   end
 
   def test_dedented_heredoc_with_interpolated_string
-    w = ""
+    w = w = ""
     result = " \#{mesg} a\n" \
              "  zy\n"
     expect = '#{mesg} a'"\n" \

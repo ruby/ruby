@@ -1330,7 +1330,7 @@ class TestHash < Test::Unit::TestCase
     def o.respond_to?(*args)
       super
     end
-    assert_raise(TypeError) {{foo: o}.dig(:foo, :foo)}
+    assert_raise(TypeError, bug12030) {{foo: o}.dig(:foo, :foo)}
   end
 
   def test_cmp

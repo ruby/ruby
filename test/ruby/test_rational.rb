@@ -913,7 +913,7 @@ class Rational_Test < Test::Unit::TestCase
     one = Rational( 1, 1)
     assert_eql  one,   one  ** -big     , bug5715
     assert_eql  one, (-one) ** -big     , bug5715
-    assert_eql -one, (-one) ** -(big+1) , bug5715
+    assert_eql (-one), (-one) ** -(big+1) , bug5715
     assert_equal Complex, ((-one) ** Rational(1,3)).class
   end
 

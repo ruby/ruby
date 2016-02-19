@@ -206,7 +206,7 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal([], @empty.first(10))
 
     bug5801 = '[ruby-dev:45041]'
-    assert_in_out_err([], <<-'end;', [], /unexpected break/)
+    assert_in_out_err([], <<-'end;', [], /unexpected break/, bug5801)
       empty = Object.new
       class << empty
         attr_reader :block
@@ -703,7 +703,7 @@ class TestEnumerable < Test::Unit::TestCase
 
     bug9605 = '[ruby-core:61340]'
     lambda2 = ->(x, i) { x == 'c' }
-    assert_equal(['c',2], @obj.each_with_index.detect(&lambda2))
+    assert_equal(['c',2], @obj.each_with_index.detect(&lambda2), bug9605)
   end
 
   def test_select
@@ -723,7 +723,7 @@ class TestEnumerable < Test::Unit::TestCase
 
     bug9605 = '[ruby-core:61340]'
     lambda2 = ->(x, i) { x == 'c' }
-    assert_equal([['c',2]], @obj.each_with_index.select(&lambda2))
+    assert_equal([['c',2]], @obj.each_with_index.select(&lambda2), bug9605)
   end
 
   def test_map

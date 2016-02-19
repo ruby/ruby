@@ -681,14 +681,14 @@ x = __ENCODING__
   def test_invalid_char
     bug10117 = '[ruby-core:64243] [Bug #10117]'
     invalid_char = /Invalid char `\\x01'/
-    x = 1
+    x = x = 1
     assert_in_out_err(%W"-e \x01x", "", [], invalid_char, bug10117)
     assert_syntax_error("\x01x", invalid_char, bug10117)
     assert_equal(nil, eval("\x04x"))
   end
 
   def test_literal_concat
-    x = "baz"
+    x = x = "baz"
     assert_equal("foobarbaz", eval('"foo" "bar#{x}"'))
   end
 
@@ -759,7 +759,7 @@ x = __ENCODING__
     $VERBOSE = true
     stderr = $stderr
     $stderr = StringIO.new("")
-    x = 1
+    x = x = 1
     assert_nil eval("x; nil")
     assert_nil eval("1+1; nil")
     assert_nil eval("TestParse; nil")
@@ -825,7 +825,7 @@ x = __ENCODING__
     end
 
     assert_nothing_raised do
-      x = "bar"
+      x = x = "bar"
       eval <<-END, nil, __FILE__, __LINE__+1
         :"foo#{"x"}baz" ? 1 : 2
       END

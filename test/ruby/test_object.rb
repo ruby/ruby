@@ -844,7 +844,7 @@ class TestObject < Test::Unit::TestCase
         end
       end
 
-      assert_raise_with_message(#{exc}, "bug5473") {1.foo}
+      assert_raise_with_message(#{exc}, "bug5473", #{bug5473.dump}) {1.foo}
       SRC
     end
   end

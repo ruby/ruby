@@ -305,7 +305,7 @@ class TestFixnum < Test::Unit::TestCase
     big = 1 << 66
     assert_eql  1, 1 ** -big        , bug5715
     assert_eql  1, (-1) ** -big     , bug5715
-    assert_eql -1, (-1) ** -(big+1) , bug5715
+    assert_eql (-1), (-1) ** -(big+1), bug5715
   end
 
   def test_power_of_0
