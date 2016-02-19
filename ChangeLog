@@ -1,3 +1,8 @@
+Fri Feb 19 23:37:52 2016  Masahiro Tomita  <tommy@tmtm.org>
+
+	* lib/find.rb (Find#find): raise with the given path name if it
+	  does not exist.  [ruby-dev:49497] [Bug #12087]
+
 Fri Feb 19 12:44:57 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/unicode.c: Activated use of case mapping data in CaseUnfold_11 array.

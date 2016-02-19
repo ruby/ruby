@@ -12,6 +12,17 @@ class TestFind < Test::Unit::TestCase
     }
   end
 
+  def test_nonexistence
+    bug12087 = '[ruby-dev:49497] [Bug #12087]'
+    Dir.mktmpdir {|d|
+      path = "#{d}/a"
+      re = /#{Regexp.quote(path)}\z/
+      assert_raise_with_message(Errno::ENOENT, re, bug12087) {
+        Find.find(path) {}
+      }
+    }
+  end
+
   def test_rec
     Dir.mktmpdir {|d|
       File.open("#{d}/a", "w"){}
