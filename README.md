@@ -60,7 +60,7 @@ http://www.ruby-lang.org/
 
 ## Mailing list
 
-There is a mailing list to talk about Ruby. To subscribe this list, please
+There is a mailing list to talk about Ruby. To subscribe to this list, please
 send the following phrase:
 
     subscribe
@@ -72,7 +72,7 @@ in the mail body (not subject) to the address
 
 This is what you need to do to compile and install Ruby:
 
-1.  If you want to use Microsoft Visual C++ to compile ruby, read
+1.  If you want to use Microsoft Visual C++ to compile Ruby, read
     win32/README.win32 instead of this document.
 
 2.  If `./configure` does not exist or is older than configure.in, run
@@ -103,7 +103,7 @@ This is what you need to do to compile and install Ruby:
 
 8.  Run '`make install`'
 
-    This command will create following directories and install files onto
+    This command will create the following directories and install files into
     them.
 
     *   `${DESTDIR}${prefix}/bin`
@@ -130,10 +130,10 @@ This is what you need to do to compile and install Ruby:
     **NOTE**: teeny of the API version may be different from one of Ruby's
     program version
 
-    You may have to be a super user to install ruby.
+    You may have to be a super user to install Ruby.
 
 
-If you fail to compile ruby, please send the detailed error report with the
+If you fail to compile Ruby, please send the detailed error report with the
 error log and machine/OS type, to help others.
 
 Some extension libraries may not get compiled because of lack of necessary
