@@ -904,7 +904,8 @@ class Rational_Test < Test::Unit::TestCase
 
   def test_fixed_bug
     n = Float::MAX.to_i * 2
-    assert_equal(1.0, Rational(n + 2, n + 1).to_f, '[ruby-dev:33852]')
+    x = EnvUtil.suppress_warning {Rational(n + 2, n + 1).to_f}
+    assert_equal(1.0, x, '[ruby-dev:33852]')
   end
 
   def test_power_of_1_and_minus_1

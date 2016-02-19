@@ -503,8 +503,10 @@ class TestRefinement < Test::Unit::TestCase
     end
 
     class C
-      def foo
-        "redefined"
+      EnvUtil.suppress_warning do
+        def foo
+          "redefined"
+        end
       end
     end
   end

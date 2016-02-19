@@ -1673,13 +1673,9 @@ class TestM17N < Test::Unit::TestCase
   def test_inspect_with_default_internal
     bug11787 = '[ruby-dev:49415] [Bug #11787]'
 
-    orig_int = Encoding.default_internal
-    Encoding.default_internal = ::Encoding::EUC_JP
-    s = begin
-          [e("\xB4\xC1\xBB\xFA")].inspect
-        ensure
-          Encoding.default_internal = orig_int
-        end
+    s = EnvUtil.with_default_internal(::Encoding::EUC_JP) do
+      [e("\xB4\xC1\xBB\xFA")].inspect
+    end
     assert_equal(e("[\"\xB4\xC1\xBB\xFA\"]"), s, bug11787)
   end
 end

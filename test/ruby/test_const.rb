@@ -37,7 +37,7 @@ class TestConst < Test::Unit::TestCase
     self.class.class_eval {
       include Const2
     }
-    STDERR.print "intentionally redefines TEST3, TEST4\n" if $VERBOSE
+    # STDERR.print "intentionally redefines TEST3, TEST4\n" if $VERBOSE
     assert defined?(TEST1)
     assert_equal 1, TEST1
     assert defined?(TEST2)

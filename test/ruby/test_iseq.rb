@@ -9,7 +9,9 @@ class TestISeq < Test::Unit::TestCase
   end
 
   def compile(src, line = nil, opt = nil)
-    RubyVM::InstructionSequence.new(src, __FILE__, __FILE__, line, opt)
+    EnvUtil.suppress_warning do
+      RubyVM::InstructionSequence.new(src, __FILE__, __FILE__, line, opt)
+    end
   end
 
   def lines src

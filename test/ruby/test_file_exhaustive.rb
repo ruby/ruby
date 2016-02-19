@@ -107,7 +107,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def symlinkfile
-    return @symlinkfile if @symlinkfile
+    return @symlinkfile if defined? @symlinkfile
     @symlinkfile = make_tmp_filename("symlinkfile")
     begin
       File.symlink(regular_file, @symlinkfile)

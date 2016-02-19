@@ -189,7 +189,9 @@ p Foo::Bar
   end
 
   def ruby_impl_require
-    Kernel.module_eval do; alias :old_require :require; end
+    Kernel.module_eval do
+      alias old_require require
+    end
     called_with = []
     Kernel.send :define_method, :require do |path|
       called_with << path
@@ -197,7 +199,11 @@ p Foo::Bar
     end
     yield called_with
   ensure
-    Kernel.module_eval do; alias :require :old_require; undef :old_require; end
+    Kernel.module_eval do
+      undef require
+      alias require old_require
+      undef old_require
+    end
   end
 
   def test_require_implemented_in_ruby_is_called

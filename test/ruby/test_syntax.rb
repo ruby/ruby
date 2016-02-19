@@ -369,22 +369,22 @@ WARN
 
   def test_duplicated_arg
     assert_syntax_error("def foo(a, a) end", /duplicated argument name/)
-    assert_nothing_raised { def foo(_, _) end }
+    assert_valid_syntax("def foo(_, _) end")
   end
 
   def test_duplicated_rest
     assert_syntax_error("def foo(a, *a) end", /duplicated argument name/)
-    assert_nothing_raised { def foo(_, *_) end }
+    assert_valid_syntax("def foo(_, *_) end")
   end
 
   def test_duplicated_opt
     assert_syntax_error("def foo(a, a=1) end", /duplicated argument name/)
-    assert_nothing_raised { def foo(_, _=1) end }
+    assert_valid_syntax("def foo(_, _=1) end")
   end
 
   def test_duplicated_opt_rest
     assert_syntax_error("def foo(a=1, *a) end", /duplicated argument name/)
-    assert_nothing_raised { def foo(_=1, *_) end }
+    assert_valid_syntax("def foo(_=1, *_) end")
   end
 
   def test_duplicated_rest_opt
@@ -397,12 +397,12 @@ WARN
 
   def test_duplicated_opt_post
     assert_syntax_error("def foo(a=1, a) end", /duplicated argument name/)
-    assert_nothing_raised { def foo(_=1, _) end }
+    assert_valid_syntax("def foo(_=1, _) end")
   end
 
   def test_duplicated_kw
     assert_syntax_error("def foo(a, a: 1) end", /duplicated argument name/)
-    assert_nothing_raised { def foo(_, _: 1) end }
+    assert_valid_syntax("def foo(_, _: 1) end")
   end
 
   def test_duplicated_rest_kw
@@ -412,22 +412,22 @@ WARN
 
   def test_duplicated_opt_kw
     assert_syntax_error("def foo(a=1, a: 1) end", /duplicated argument name/)
-    assert_nothing_raised { def foo(_=1, _: 1) end }
+    assert_valid_syntax("def foo(_=1, _: 1) end")
   end
 
   def test_duplicated_kw_kwrest
     assert_syntax_error("def foo(a: 1, **a) end", /duplicated argument name/)
-    assert_nothing_raised { def foo(_: 1, **_) end }
+    assert_valid_syntax("def foo(_: 1, **_) end")
   end
 
   def test_duplicated_rest_kwrest
     assert_syntax_error("def foo(*a, **a) end", /duplicated argument name/)
-    assert_nothing_raised { def foo(*_, **_) end }
+    assert_valid_syntax("def foo(*_, **_) end")
   end
 
   def test_duplicated_opt_kwrest
     assert_syntax_error("def foo(a=1, **a) end", /duplicated argument name/)
-    assert_nothing_raised { def foo(_=1, **_) end }
+    assert_valid_syntax("def foo(_=1, **_) end")
   end
 
   def test_duplicated_when
