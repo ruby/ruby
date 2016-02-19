@@ -2077,7 +2077,7 @@ rb_flt_rationalize_with_prec(VALUE flt, VALUE prec)
     b = f_add(flt, e);
 
     if (f_eqeq_p(a, b))
-        return f_to_r(flt);
+        return float_to_r(flt);
 
     nurat_rationalize_internal(a, b, &p, &q);
     return rb_rational_new2(p, q);
