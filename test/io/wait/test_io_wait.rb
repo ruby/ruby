@@ -37,16 +37,16 @@ class TestIOWait < Test::Unit::TestCase
   end
 
   def test_ready?
-    refute @r.ready?, "shouldn't ready, but ready"
+    assert_not_predicate @r, :ready?, "shouldn't ready, but ready"
     @w.syswrite "."
     sleep 0.1
-    assert @r.ready?, "should ready, but not"
+    assert_predicate @r, :ready?, "should ready, but not"
   end
 
   def test_buffered_ready?
     @w.syswrite ".\n!"
     assert_equal ".\n", @r.gets
-    assert @r.ready?
+    assert_predicate @r, :ready?
   end
 
   def test_wait

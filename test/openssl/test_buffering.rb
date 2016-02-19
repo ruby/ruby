@@ -43,19 +43,19 @@ class OpenSSL::TestBuffering < Test::Unit::TestCase
   def test_flush
     @io.write 'a'
 
-    refute @io.sync
+    assert_not_predicate @io, :sync
     assert_empty @io.string
 
     assert_equal @io, @io.flush
 
-    refute @io.sync
+    assert_not_predicate @io, :sync
     assert_equal 'a', @io.string
   end
 
   def test_flush_error
     @io.write 'a'
 
-    refute @io.sync
+    assert_not_predicate @io, :sync
     assert_empty @io.string
 
     def @io.syswrite *a
@@ -66,7 +66,7 @@ class OpenSSL::TestBuffering < Test::Unit::TestCase
       @io.flush
     end
 
-    refute @io.sync, 'sync must not change'
+    assert_not_predicate @io, :sync, 'sync must not change'
   end
 
   def test_getc

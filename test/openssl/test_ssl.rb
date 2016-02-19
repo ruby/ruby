@@ -752,7 +752,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
 
     ctx3 = OpenSSL::SSL::SSLContext.new
     ctx3.ciphers = "DH"
-    refute_predicate ctx3, :frozen?
+    assert_not_predicate ctx3, :frozen?
 
     ctx2 = OpenSSL::SSL::SSLContext.new
     ctx2.ciphers = "DH"

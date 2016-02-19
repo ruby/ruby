@@ -323,7 +323,7 @@ EOS
     response.uri = uri
 
     assert_equal uri, response.uri
-    refute_same  uri, response.uri
+    assert_not_same  uri, response.uri
   end
 
   def test_ensure_zero_space_does_not_regress

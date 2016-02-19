@@ -9,8 +9,8 @@ class HTTPRequestTest < Test::Unit::TestCase
     req = Net::HTTP::Get.new '/'
 
     assert_equal 'GET', req.method
-    refute req.request_body_permitted?
-    assert req.response_body_permitted?
+    assert_not_predicate req, :request_body_permitted?
+    assert_predicate req, :response_body_permitted?
 
     expected = {
       'accept'     => %w[*/*],
@@ -27,8 +27,8 @@ class HTTPRequestTest < Test::Unit::TestCase
     req = Net::HTTP::Get.new '/', 'Range' => 'bytes=0-9'
 
     assert_equal 'GET', req.method
-    refute req.request_body_permitted?
-    assert req.response_body_permitted?
+    assert_not_predicate req, :request_body_permitted?
+    assert_predicate req, :response_body_permitted?
 
     expected = {
       'accept'     => %w[*/*],
@@ -43,8 +43,8 @@ class HTTPRequestTest < Test::Unit::TestCase
     req = Net::HTTP::Head.new '/'
 
     assert_equal 'HEAD', req.method
-    refute req.request_body_permitted?
-    refute req.response_body_permitted?
+    assert_not_predicate req, :request_body_permitted?
+    assert_not_predicate req, :response_body_permitted?
 
     expected = {
       'accept'     => %w[*/*],
@@ -61,8 +61,8 @@ class HTTPRequestTest < Test::Unit::TestCase
 
     req2 = Net::HTTP::Get.new '/', 'accept-encoding' => 'identity'
 
-    refute req2.decode_content,
-           'Bug #7381 - do not decode content if the user overrides'
+    assert_not_predicate req2, :decode_content,
+                         'Bug #7381 - do not decode content if the user overrides'
   end if Net::HTTP::HAVE_ZLIB
 
   def test_header_set
@@ -72,8 +72,8 @@ class HTTPRequestTest < Test::Unit::TestCase
 
     req['accept-encoding'] = 'identity'
 
-    refute req.decode_content,
-           'Bug #7831 - do not decode content if the user overrides'
+    assert_not_predicate req, :decode_content,
+                         'Bug #7831 - do not decode content if the user overrides'
   end if Net::HTTP::HAVE_ZLIB
 
 end

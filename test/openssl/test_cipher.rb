@@ -143,9 +143,9 @@ class OpenSSL::TestCipher < Test::Unit::TestCase
 
     def test_authenticated
       cipher = OpenSSL::Cipher.new('aes-128-gcm')
-      assert(cipher.authenticated?)
+      assert_predicate(cipher, :authenticated?)
       cipher = OpenSSL::Cipher.new('aes-128-cbc')
-      refute(cipher.authenticated?)
+      assert_not_predicate(cipher, :authenticated?)
     end
 
     def test_aes_gcm

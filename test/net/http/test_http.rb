@@ -14,7 +14,7 @@ class TestNetHTTP < Test::Unit::TestCase
 
     proxy_class = Net::HTTP.Proxy 'proxy.example', 8000, 'user', 'pass'
 
-    refute_equal Net::HTTP, proxy_class
+    assert_not_equal Net::HTTP, proxy_class
 
     assert_operator proxy_class, :<, Net::HTTP
 
@@ -25,7 +25,7 @@ class TestNetHTTP < Test::Unit::TestCase
 
     http = proxy_class.new 'hostname.example'
 
-    refute http.proxy_from_env?
+    assert_not_predicate http, :proxy_from_env?
 
 
     proxy_class = Net::HTTP.Proxy 'proxy.example'
@@ -43,7 +43,7 @@ class TestNetHTTP < Test::Unit::TestCase
 
       proxy_class = Net::HTTP.Proxy :ENV
 
-      refute_equal Net::HTTP, proxy_class
+      assert_not_equal Net::HTTP, proxy_class
 
       assert_operator proxy_class, :<, Net::HTTP
 
@@ -51,7 +51,7 @@ class TestNetHTTP < Test::Unit::TestCase
       assert_nil proxy_class.proxy_user
       assert_nil proxy_class.proxy_pass
 
-      refute_equal 8000, proxy_class.proxy_port
+      assert_not_equal 8000, proxy_class.proxy_port
 
       http = proxy_class.new 'hostname.example'
 
@@ -488,7 +488,7 @@ module TestNetHTTP_version_1_2_methods
       assert_equal $test_net_http_data.size, res.body.size
       assert_equal $test_net_http_data, res.body
 
-      refute res.decode_content, 'Bug #7831' if Net::HTTP::HAVE_ZLIB
+      assert_not_predicate res, :decode_content, 'Bug #7831' if Net::HTTP::HAVE_ZLIB
     }
   end
 
@@ -562,12 +562,12 @@ module TestNetHTTP_version_1_2_methods
 
     assert_kind_of URI::Generic, req.uri
 
-    refute_equal uri, req.uri
+    assert_not_equal uri, req.uri
 
     assert_equal uri, res.uri
 
-    refute_same uri,     req.uri
-    refute_same req.uri, res.uri
+    assert_not_same uri,     req.uri
+    assert_not_same req.uri, res.uri
   end
 
   def _test_request__uri(http)
@@ -578,12 +578,12 @@ module TestNetHTTP_version_1_2_methods
 
     assert_kind_of URI::Generic, req.uri
 
-    refute_equal uri, req.uri
+    assert_not_equal uri, req.uri
 
     assert_equal req.uri, res.uri
 
-    refute_same uri,     req.uri
-    refute_same req.uri, res.uri
+    assert_not_same uri,     req.uri
+    assert_not_same req.uri, res.uri
   end
 
   def _test_request__uri_host(http)

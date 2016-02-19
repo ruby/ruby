@@ -144,7 +144,7 @@ class TestVariable < Test::Unit::TestCase
       end
 
       assert_nil v.instance_variable_get(:@foo)
-      refute v.instance_variable_defined?(:@foo)
+      assert_not_send([v, :instance_variable_defined?, :@foo])
 
       assert_raise_with_message(RuntimeError, msg) do
         v.remove_instance_variable(:@foo)
