@@ -1,3 +1,8 @@
+Fri Feb 19 12:44:57 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode.c: Activated use of case mapping data in CaseUnfold_11 array.
+	  (with Kimihito Matsui)
+
 Fri Feb 19 11:08:32 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb: add cygwin case, nothing excluded.

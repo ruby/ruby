@@ -698,6 +698,15 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
 		    }
 		}
 	    }
+	    else if ((folded = onigenc_unicode_unfold1_lookup(code)) != 0) {
+		if (flags&OnigCaseFoldFlags(folded->n)) {
+		    int count = OnigCodePointCount(folded->n);
+		    const OnigCodePoint *next = folded->code;
+		    MODIFIED;
+		    if (count==1)
+		        code = *next;
+		}
+	    }
 	}
 	to += ONIGENC_CODE_TO_MBC(enc, code, to);
 	/* switch from titlecase to lowercase for capitalize */
