@@ -1,3 +1,8 @@
+Fri Feb 19 11:08:32 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb: add cygwin case, nothing excluded.
+	  [ruby-core:73806] [Bug#12071]
+
 Thu Feb 18 21:32:15 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* man/irb.1: fix output in EXAMPLES.
