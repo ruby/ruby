@@ -2089,8 +2089,8 @@ rb_flt_rationalize(VALUE flt)
     VALUE a, b, f, n, p, q;
 
     float_decode_internal(flt, &f, &n);
-    if (f_zero_p(f) || f_positive_p(n))
-        return rb_rational_new1(f_lshift(f, n));
+    if (INT_ZERO_P(f) || FIX2INT(n) >= 0)
+        return rb_rational_new1(rb_int_lshift(f, n));
 
 #if FLT_RADIX == 2
     {
