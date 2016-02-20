@@ -2250,9 +2250,19 @@ read_num(const char **s, int numsign, int strict,
 	    return 0;
 	{
 	    VALUE l = f_expt10(INT2NUM(count));
-	    *num = f_mul(*num, l);
-	    *num = f_add(*num, fp);
-	    *num = f_div(*num, l);
+#ifdef CANON
+	    if (canonicalization) {
+		*num = rb_int_mul(*num, l);
+		*num = rb_int_plus(*num, fp);
+		*num = rb_rational_new2(*num, l);
+	    }
+	    else
+#endif
+	    {
+		*num = nurat_mul(*num, l);
+		*num = rb_rational_plus(*num, fp);
+		*num = nurat_div(*num, l);
+	    }
 	}
     }
 
@@ -2264,14 +2274,14 @@ read_num(const char **s, int numsign, int strict,
 	if (!read_digits(s, strict, &exp, NULL))
 	    return 0;
 	if (expsign == '-')
-	    exp = f_negate(exp);
+	    exp = rb_int_uminus(exp);
     }
 
     if (numsign == '-')
-	*num = f_negate(*num);
+	*num = nurat_negate(*num);
     if (!NIL_P(exp)) {
 	VALUE l = f_expt10(exp);
-	*num = f_mul(*num, l);
+	*num = nurat_mul(*num, l);
     }
     return 1;
 }
@@ -2298,7 +2308,7 @@ read_rat_nos(const char **s, int sign, int strict,
 	if (!read_den(s, strict, &den))
 	    return 0;
 	if (!(FIXNUM_P(den) && FIX2LONG(den) == 1))
-	    *num = f_div(*num, den);
+	    *num = nurat_div(*num, den);
     }
     return 1;
 }
@@ -2454,14 +2464,14 @@ nurat_s_convert(int argc, VALUE *argv, VALUE klass)
     rb_match_busy(backref);
 
     if (RB_TYPE_P(a1, T_FLOAT)) {
-	a1 = f_to_r(a1);
+	a1 = float_to_r(a1);
     }
     else if (RB_TYPE_P(a1, T_STRING)) {
 	a1 = string_to_r_strict(a1);
     }
 
     if (RB_TYPE_P(a2, T_FLOAT)) {
-	a2 = f_to_r(a2);
+	a2 = float_to_r(a2);
     }
     else if (RB_TYPE_P(a2, T_STRING)) {
 	a2 = string_to_r_strict(a2);
