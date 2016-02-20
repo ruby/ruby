@@ -989,10 +989,10 @@ variable.c :: variables and constants
 
 == Ruby Syntax Parser
 
-parse.y  :: grammar definition
-parse.c  :: automatically generated from parse.y
-keywords :: reserved keywords
-lex.c    :: automatically generated from keywords
+parse.y       :: grammar definition
+parse.c       :: automatically generated from parse.y
+defs/keywords :: reserved keywords
+lex.c         :: automatically generated from keywords
 
 == Ruby Evaluator (a.k.a. YARV)
 
@@ -1013,12 +1013,12 @@ lex.c    :: automatically generated from keywords
   vm_insnhelper.c
   vm_method.c
 
-  opt_insns_unif.def  : instruction unification
-  opt_operand.def     : definitions for optimization
+  defs/opt_insns_unif.def  : instruction unification
+  defs/opt_operand.def     : definitions for optimization
 
-    -> insn*.inc      : automatically generated
-    -> opt*.inc       : automatically generated
-    -> vm.inc         : automatically generated
+    -> insn*.inc           : automatically generated
+    -> opt*.inc            : automatically generated
+    -> vm.inc              : automatically generated
 
 == Regular Expression Engine (Oniguruma)
 

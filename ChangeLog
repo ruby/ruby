@@ -1,3 +1,7 @@
+Sat Feb 20 15:38:16 2016  Eric Wong  <e@80x24.org>
+
+	* doc/extension.rdoc: update paths for defs/ directory
+
 Sat Feb 20 14:44:15 2016  Lucas Buchala  <lucasbuchala@gmail.com>
 
 	* vm_eval.c (rb_mod_module_eval): [DOC] Fix documentation
