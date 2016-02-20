@@ -1616,8 +1616,8 @@ nurat_rationalize(int argc, VALUE *argv, VALUE self)
     if (argc == 0)
 	return self;
 
-    if (f_negative_p(self))
-	return f_negate(nurat_rationalize(argc, argv, f_abs(self)));
+    if (nurat_negative_p(self))
+	return nurat_negate(nurat_rationalize(argc, argv, nurat_negate(self)));
 
     rb_scan_args(argc, argv, "01", &e);
     e = f_abs(e);
