@@ -1661,7 +1661,14 @@ module DRb
                 puts x
               end
             end
-            client.send_reply(succ, result) rescue nil
+            begin
+              client.send_reply(succ, result)
+            rescue Exception => e
+              puts e
+              nil
+            end
+          rescue Exception => e
+            puts e
           ensure
             client.close unless succ
             if Thread.current['DRb']['stop_service']
