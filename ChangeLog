@@ -1,3 +1,9 @@
+Sat Feb 20 13:04:22 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (push_pattern, push_glob): deal with read paths as UTF-8
+	  to stat later, on Windows as well as OS X.
+	  [ruby-core:73868] [Bug #12081]
+
 Sat Feb 20 01:53:33 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* object.c (rb_mod_const_get): make error message at uninterned
