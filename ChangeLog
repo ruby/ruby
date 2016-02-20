@@ -1,3 +1,8 @@
+Sat Feb 20 14:40:44 2016  Adam O'Connor  <northband@gmail.com>
+
+	* README.md: a few grammatical changes to the main Ruby README.md.
+	  [Fix GH-1259]
+
 Sat Feb 20 13:04:22 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (push_pattern, push_glob): deal with read paths as UTF-8

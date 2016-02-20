@@ -60,7 +60,7 @@ http://www.ruby-lang.org/
 
 ## Mailing list
 
-There is a mailing list to talk about Ruby. To subscribe this list, please
+There is a mailing list to talk about Ruby. To subscribe to this list, please
 send the following phrase:
 
     subscribe
@@ -103,7 +103,7 @@ This is what you need to do to compile and install Ruby:
 
 8.  Run '`make install`'
 
-    This command will create following directories and install files onto
+    This command will create the following directories and install files into
     them.
 
     *   `${DESTDIR}${prefix}/bin`
