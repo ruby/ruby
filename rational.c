@@ -153,8 +153,6 @@ f_negative_p(VALUE x)
     return rb_funcall(x, '<', 1, ZERO);
 }
 
-#define f_positive_p(x) (!f_negative_p(x))
-
 inline static VALUE
 f_zero_p(VALUE x)
 {
