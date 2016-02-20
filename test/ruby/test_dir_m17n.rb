@@ -375,7 +375,14 @@ class TestDir_M17N < Test::Unit::TestCase
       list << dir
       bug12081 = '[ruby-core:73868] [Bug #12081]'
       a = "*".force_encoding("us-ascii")
-      assert_equal(list, Dir[a].map {|n| n.encode(Encoding::UTF_8)}.sort, bug12081)
+      result = Dir[a].map {|n|
+        if n.encoding == Encoding::ASCII_8BIT
+          n.force_encoding(Encoding::UTF_8)
+        else
+          n.encode(Encoding::UTF_8)
+        end
+      }
+      assert_equal(list, result.sort!, bug12081)
     end
   end
 
