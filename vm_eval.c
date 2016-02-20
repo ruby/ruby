@@ -1743,7 +1743,9 @@ rb_obj_instance_exec(int argc, const VALUE *argv, VALUE self)
 /*
  *  call-seq:
  *     mod.class_eval(string [, filename [, lineno]])  -> obj
- *     mod.module_eval {|| block }                     -> obj
+ *     mod.class_eval {|mod| block }                   -> obj
+ *     mod.module_eval(string [, filename [, lineno]]) -> obj
+ *     mod.module_eval {|mod| block }                  -> obj
  *
  *  Evaluates the string or block in the context of _mod_, except that when
  *  a block is given, constant/class variable lookup is not affected. This

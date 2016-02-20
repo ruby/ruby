@@ -1,3 +1,8 @@
+Sat Feb 20 14:44:15 2016  Lucas Buchala  <lucasbuchala@gmail.com>
+
+	* vm_eval.c (rb_mod_module_eval): [DOC] Fix documentation
+	  signature for Module#module_eval.  [Fix GH-1258]
+
 Sat Feb 20 14:40:44 2016  Adam O'Connor  <northband@gmail.com>
 
 	* README.md: a few grammatical changes to the main Ruby README.md.
