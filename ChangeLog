@@ -1,3 +1,8 @@
+Sun Feb 21 13:56:57 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* cgi/escape/escape.c: Optimize CGI.unescapeHTML performance by C
+	  ext for ASCII-compatible encodings.  [Fix GH-1242]
+
 Sat Feb 20 15:38:16 2016  Eric Wong  <e@80x24.org>
 
 	* doc/extension.rdoc: update paths for defs/ directory
