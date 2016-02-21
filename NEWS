@@ -24,6 +24,10 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * String.new(capacity: size) [Feature #12024]
 
+* Symbol
+
+  * Symbol#match now returns MatchData.  [Bug #11991]
+
 * MatchData
 
   * MatchData#named_captures [Feature #11999]
