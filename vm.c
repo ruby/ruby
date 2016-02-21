@@ -90,7 +90,7 @@ vm_cref_new0(VALUE klass, rb_method_visibility_t visi, int module_func, rb_cref_
 {
     VALUE refinements = Qnil;
     int omod_shared = FALSE;
-     rb_cref_t *cref;
+    rb_cref_t *cref;
 
     /* scope */
     union {
