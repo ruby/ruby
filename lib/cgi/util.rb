@@ -16,6 +16,10 @@ module CGI::Util
   #   string = CGI::unescape("%27Stop%21%27+said+Fred")
   #      # => "'Stop!' said Fred"
   def unescape(string,encoding=@@accept_charset)
+    _unescape(string,encoding)
+  end
+
+  private def _unescape(string, encoding)
     str=string.tr('+', ' ').b.gsub(/((?:%[0-9a-fA-F]{2})+)/) do |m|
       [m.delete('%')].pack('H*')
     end.force_encoding(encoding)

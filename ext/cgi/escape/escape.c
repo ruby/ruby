@@ -3,8 +3,10 @@
 
 RUBY_EXTERN unsigned long ruby_scan_digits(const char *str, ssize_t len, int base, size_t *retlen, int *overflow);
 RUBY_EXTERN const char ruby_hexdigits[];
+RUBY_EXTERN const signed char ruby_digit36_to_number_table[];
 #define lower_hexdigits (ruby_hexdigits+0)
 #define upper_hexdigits (ruby_hexdigits+16)
+#define char_to_number(c) ruby_digit36_to_number_table[(unsigned char)(c)]
 
 static VALUE rb_cCGI, rb_mUtil, rb_mEscape;
 
@@ -245,6 +247,68 @@ optimized_escape(VALUE str)
     }
 }
 
+static VALUE
+optimized_unescape(VALUE str, VALUE encoding)
+{
+    long i, len, beg = 0;
+    VALUE dest = 0;
+    const char *cstr;
+    int cr, origenc, encidx = rb_to_encoding_index(encoding);
+
+    len  = RSTRING_LEN(str);
+    cstr = RSTRING_PTR(str);
+
+    for (i = 0; i < len; ++i) {
+	char buf[1];
+	const char c = cstr[i];
+	int clen = 0;
+	if (c == '%') {
+	    if (i + 3 > len) break;
+	    if (!ISXDIGIT(cstr[i+1])) continue;
+	    if (!ISXDIGIT(cstr[i+2])) continue;
+	    buf[0] = ((char_to_number(cstr[i+1]) << 4)
+		      | char_to_number(cstr[i+2]));
+	    clen = 2;
+	}
+	else if (c == '+') {
+	    buf[0] = ' ';
+	}
+	else {
+	    continue;
+	}
+
+	if (!dest) {
+	    dest = rb_str_buf_new(len);
+	}
+
+	rb_str_cat(dest, cstr + beg, i - beg);
+	i += clen;
+	beg = i + 1;
+
+	rb_str_cat(dest, buf, 1);
+    }
+
+    if (dest) {
+	rb_str_cat(dest, cstr + beg, len - beg);
+	preserve_original_state(str, dest);
+	cr = ENC_CODERANGE_UNKNOWN;
+    }
+    else {
+	dest = rb_str_dup(str);
+	cr = ENC_CODERANGE(str);
+    }
+    origenc = rb_enc_get_index(str);
+    if (origenc != encidx) {
+	rb_enc_associate_index(dest, encidx);
+	if (!ENC_CODERANGE_CLEAN_P(rb_enc_str_coderange(dest))) {
+	    rb_enc_associate_index(dest, origenc);
+	    if (cr != ENC_CODERANGE_UNKNOWN)
+		ENC_CODERANGE_SET(dest, cr);
+	}
+    }
+    return dest;
+}
+
 /*
  *  call-seq:
  *     CGI.escapeHTML(string) -> string
@@ -305,6 +369,20 @@ cgiesc_escape(VALUE self, VALUE str)
     }
 }
 
+/* :nodoc: */
+static VALUE
+cgiesc_unescape(VALUE self, VALUE str, VALUE enc)
+{
+    StringValue(str);
+
+    if (rb_enc_str_asciicompat_p(str)) {
+	return optimized_unescape(str, enc);
+    }
+    else {
+	return rb_call_super(1, &str);
+    }
+}
+
 void
 Init_escape(void)
 {
@@ -314,6 +392,7 @@ Init_escape(void)
     rb_define_method(rb_mEscape, "escapeHTML", cgiesc_escape_html, 1);
     rb_define_method(rb_mEscape, "unescapeHTML", cgiesc_unescape_html, 1);
     rb_define_method(rb_mEscape, "escape", cgiesc_escape, 1);
+    rb_define_private_method(rb_mEscape, "_unescape", cgiesc_unescape, 2);
     rb_prepend_module(rb_mUtil, rb_mEscape);
     rb_extend_object(rb_cCGI, rb_mEscape);
 }

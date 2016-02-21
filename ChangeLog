@@ -1,3 +1,8 @@
+Sun Feb 21 13:57:18 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* cgi/escape/escape.c: Optimize CGI.unescape performance by C ext
+	  for ASCII-compatible encodings.  [Fix GH-1250]
+
 Sun Feb 21 13:56:57 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* cgi/escape/escape.c: Optimize CGI.unescapeHTML performance by C
