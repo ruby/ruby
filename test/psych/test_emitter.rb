@@ -93,6 +93,8 @@ module Psych
     end
 
     def test_resizing_tags
+      @emitter.start_stream Psych::Nodes::Stream::UTF8
+
       tags = []
       version = [1,1]
       obj = Object.new
