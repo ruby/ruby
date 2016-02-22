@@ -187,7 +187,7 @@ class CaseFolding
 end
 
 class MapItem
-  attr_reader :upper, :lower
+  attr_reader :upper, :lower, :title
 
   def initialize(code, upper, lower, title)
     @code = code
@@ -226,6 +226,7 @@ class CaseMapping
     if item
       flags += '|U'  if to==item.upper
       flags += '|D'  if to==item.lower
+      flags += '|T'  unless item.upper==item.title
     end
     flags
   end
