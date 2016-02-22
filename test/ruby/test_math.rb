@@ -304,8 +304,8 @@ class TestMath < Test::Unit::TestCase
       end
     end
 
-    check(Math.cos((1 << 62 << 1)._to_f),  Math.cos(1 << 62))
-    check(Math.log((1 << 62 << 1)._to_f),  Math.log(1 << 62))
+    check(Math.cos((1 << 64 << 1)._to_f),  Math.cos(1 << 64))
+    check(Math.log((1 << 64 << 1)._to_f),  Math.log(1 << 64))
   ensure
     Bignum.class_eval { undef to_f; alias to_f _to_f; undef _to_f }
   end
