@@ -205,12 +205,11 @@ class CaseMapping
   def initialize (mapping_directory)
     @mappings = {}
     IO.readlines(File.expand_path('UnicodeData.txt', mapping_directory), encoding: Encoding::ASCII_8BIT).each do |line|
-      next if line =~ /</
+      next if line =~ /^</
       code, _1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11, upper, lower, title = line.chomp.split ';'
       unless upper and lower and title and (upper+lower+title)==''
         @mappings[code] = MapItem.new(code, upper, lower, title)
       end
-
     end
 
     # IO.readlines(File.expand_path('SpecialCasing.txt', mapping_directory))

@@ -1,3 +1,9 @@
+Mon Feb 22 18:17:03 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode/case-folding.rb, casefold.h: Fixed bug that avoided inclusion
+	  of compatibility characters in uppper-/lower-case mappings.
+	  (with Kimihito Matsui)
+
 Sun Feb 21 13:57:18 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* cgi/escape/escape.c: Optimize CGI.unescape performance by C ext
