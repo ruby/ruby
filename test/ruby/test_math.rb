@@ -288,7 +288,7 @@ class TestMath < Test::Unit::TestCase
     check(Math.cos((0 + 1)._to_f), Math.cos(0))
     check(Math.exp((0 + 1)._to_f), Math.exp(0))
     check(Math.log((0 + 1)._to_f), Math.log(0))
-
+  ensure
     Fixnum.class_eval { undef to_f; alias to_f _to_f; undef _to_f }
   end
 
@@ -306,7 +306,7 @@ class TestMath < Test::Unit::TestCase
 
     check(Math.cos((1 << 62 << 1)._to_f),  Math.cos(1 << 62))
     check(Math.log((1 << 62 << 1)._to_f),  Math.log(1 << 62))
-
+  ensure
     Bignum.class_eval { undef to_f; alias to_f _to_f; undef _to_f }
   end
 
@@ -325,7 +325,7 @@ class TestMath < Test::Unit::TestCase
     check(Math.cos((0r + 1)._to_f), Math.cos(0r))
     check(Math.exp((0r + 1)._to_f), Math.exp(0r))
     check(Math.log((0r + 1)._to_f), Math.log(0r))
-
+  ensure
     Rational.class_eval { undef to_f; alias to_f _to_f; undef _to_f }
   end
 end
