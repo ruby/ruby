@@ -250,12 +250,11 @@ struct rb_call_cache {
 };
 
 #if 1
-#define GetCoreDataFromValue(obj, type, ptr) do { \
-    (ptr) = (type*)DATA_PTR(obj); \
-} while (0)
+#define CoreDataFromValue(obj, type) (type*)DATA_PTR(obj)
 #else
-#define GetCoreDataFromValue(obj, type, ptr) Data_Get_Struct((obj), type, (ptr))
+#define CoreDataFromValue(obj, type) (type*)rb_data_object_get(obj)
 #endif
+#define GetCoreDataFromValue(obj, type, ptr) ((ptr) = CoreDataFromValue((obj), type))
 
 typedef struct rb_iseq_location_struct {
     VALUE path;
