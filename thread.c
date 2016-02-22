@@ -4774,7 +4774,7 @@ static void
 update_coverage(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klass)
 {
     VALUE coverage = rb_iseq_coverage(GET_THREAD()->cfp->iseq);
-    if (coverage && RBASIC(coverage)->klass == 0) {
+    if (RB_TYPE_P(coverage, T_ARRAY) && !RBASIC_CLASS(coverage)) {
 	long line = rb_sourceline() - 1;
 	long count;
 	if (RARRAY_AREF(coverage, line) == Qnil) {

@@ -5516,6 +5516,7 @@ yycompile0(VALUE arg)
     int n;
     NODE *tree;
     struct parser_params *parser = (struct parser_params *)arg;
+    VALUE cov;
 
     if (!compile_for_eval && rb_safe_level() == 0) {
 	ruby_debug_lines = debug_lines(ruby_sourcefile_string);
@@ -5544,6 +5545,7 @@ yycompile0(VALUE arg)
 #ifndef RIPPER
     RUBY_DTRACE_PARSE_HOOK(END);
 #endif
+    cov = ruby_coverage;
     ruby_debug_lines = 0;
     ruby_coverage = 0;
     compile_for_eval = 0;
@@ -5559,7 +5561,12 @@ yycompile0(VALUE arg)
 	tree = NEW_NIL();
     }
     else {
-	tree->nd_body = NEW_PRELUDE(ruby_eval_tree_begin, tree->nd_body, parser->compile_option);
+	VALUE opt = parser->compile_option;
+	if (cov) {
+	    if (!opt) opt = rb_obj_hide(rb_ident_hash_new());
+	    rb_hash_aset(opt, rb_intern("coverage"), cov);
+	}
+	tree->nd_body = NEW_PRELUDE(ruby_eval_tree_begin, tree->nd_body, opt);
     }
     return (VALUE)tree;
 }
