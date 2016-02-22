@@ -1629,14 +1629,10 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
     }
 
     if (opt->do_print) {
-	PREPARE_PARSE_MAIN({
-	    tree = rb_parser_append_print(parser, tree);
-	});
+	tree = rb_parser_append_print(parser, tree);
     }
     if (opt->do_loop) {
-	PREPARE_PARSE_MAIN({
-	    tree = rb_parser_while_loop(parser, tree, opt->do_line, opt->do_split);
-	});
+	tree = rb_parser_while_loop(parser, tree, opt->do_line, opt->do_split);
 	rb_define_global_function("sub", rb_f_sub, -1);
 	rb_define_global_function("gsub", rb_f_gsub, -1);
 	rb_define_global_function("chop", rb_f_chop, 0);
