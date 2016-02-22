@@ -7,7 +7,7 @@ Mon Feb 22 18:33:55 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 Mon Feb 22 18:17:03 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/unicode/case-folding.rb, casefold.h: Fixed bug that avoided inclusion
-	  of compatibility characters in uppper-/lower-case mappings.
+	  of compatibility characters in upper-/lower-case mappings.
 	  (with Kimihito Matsui)
 
 Sun Feb 21 13:57:18 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
