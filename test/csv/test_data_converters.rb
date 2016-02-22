@@ -161,6 +161,14 @@ class TestCSV::DataConverters < TestCSV
     assert_equal(["Numbers", ":integer", "1", ":float", 3], @parser.shift)
   end
 
+  def test_convert_with_custom_proc_one_arg
+    # define custom converter as a proc accepting one argument
+    assert_nothing_raised(Exception) { @parser.convert(&:upcase) }
+
+    # and use
+    assert_equal(["NUMBERS", ":INTEGER", "1", ":FLOAT", "3.015"], @parser.shift)
+  end
+
   def test_convert_with_custom_code_using_field_info_header
     @parser = CSV.new(@data, headers: %w{one two three four five})
 
