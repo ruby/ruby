@@ -2139,6 +2139,25 @@ rb_iseq_eval(const rb_iseq_t *iseq)
 }
 
 VALUE
+rb_iseq_eval_in_scope(const rb_iseq_t *iseq, VALUE scope)
+{
+    rb_thread_t *th = GET_THREAD();
+    rb_binding_t *bind = rb_check_typeddata(scope, &ruby_binding_data_type);
+    struct rb_block *base_block = &bind->block;
+
+    if (iseq->body->local_table_size > 0) {
+	vm_bind_update_env(bind, vm_make_env_object(th, th->cfp));
+    }
+#if 0
+    iseq_set_parent_block(iseq, base_block);
+    iseq_set_local_table(iseq, rb_vm_cref()->nd_tbl);
+#endif
+    vm_set_eval_stack(th, iseq, 0, base_block);
+
+    return vm_exec(th);
+}
+
+VALUE
 rb_iseq_eval_main(const rb_iseq_t *iseq)
 {
     rb_execution_context_t *ec = GET_EC();
