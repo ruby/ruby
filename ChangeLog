@@ -1,3 +1,8 @@
+Wed Feb 24 08:18:18 2016  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* enc/windows_1250.c: Should not use C++ style comments (C99 feature).
+	  [Bug #11843]
+
 Tue Feb 23 03:43:23 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/iso_8859_2.c, enc/windows_1250.c: separate Windows-1250
