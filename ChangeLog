@@ -1,3 +1,10 @@
+Tue Feb 23 21:52:24 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode/case-folding.rb, casefold.h: Outputting actual titlecase
+	  data (new table, with indices from other tables).
+	* enc/unicode.c: Ignoring titlecase data indices for the moment.
+	  (with Kimihito Matsui)
+
 Tue Feb 23 15:21:14 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/unicode/case-folding.rb, casefold.h: Reading casing data from

@@ -175,6 +175,9 @@ class CaseFolding
     name = "CaseUnfold_13"
     data = print_table(dest, name, mapping_data, name=>unfold[2])
     dest.print lookup_hash(name, "CodePointList2", data)
+
+    # TitleCase
+    dest.print mapping_data.titlecase_output
   end
 
   def debug!
@@ -195,15 +198,12 @@ class MapItem
     @lower = lower unless lower == ''
     @title = title unless title == ''
   end
-
-  def flags
-    "" # preliminary implementation
-  end
 end
 
 class CaseMapping
   def initialize (mapping_directory)
     @mappings = {}
+    @titlecase = []
     IO.readlines(File.expand_path('UnicodeData.txt', mapping_directory), encoding: Encoding::ASCII_8BIT).each do |line|
       next if line =~ /^</
       code, _1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11, upper, lower, title = line.chomp.split ';'
@@ -237,9 +237,20 @@ class CaseMapping
     if item
       flags += '|U'  if to==item.upper
       flags += '|D'  if to==item.lower
-      flags += '|T'  unless item.upper==item.title
+      unless item.upper == item.title
+        flags += "|T(#{@titlecase.length})"
+        @titlecase << item
+      end
     end
     flags
+  end
+
+  def titlecase_output
+    "CodePointList3 TitleCase[] = {\n" +
+    @titlecase.map do |item|
+      chars = item.title.split(/ /)
+      "    {#{chars.length}, {" + chars.map {|c| "0x"+c }.join(', ') + "}},\n"
+    end.join + "};\n"
   end
 
   def self.load(*args)
@@ -251,6 +262,8 @@ class CaseMappingDummy
   def flags(from, type, to)
     ""
   end
+
+  def titlecase_output()  ''  end
 end
 
 if $0 == __FILE__

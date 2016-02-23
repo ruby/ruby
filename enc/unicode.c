@@ -143,15 +143,15 @@ code3_equal(const OnigCodePoint *x, const OnigCodePoint *y)
 
 #define U ONIGENC_CASE_UPCASE
 #define D ONIGENC_CASE_DOWNCASE
-#define T ONIGENC_CASE_TITLECASE
 #define F ONIGENC_CASE_FOLD
+#define T(n) ONIGENC_CASE_TITLECASE
 
 #include "enc/unicode/casefold.h"
 
 #undef U
 #undef D
-#undef T
 #undef F
+#undef T
 
 #include "enc/unicode/name2ctype.h"
 
