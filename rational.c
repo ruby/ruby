@@ -77,6 +77,8 @@ f_div(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y) && FIX2LONG(y) == 1)
 	return x;
+    if (FIXNUM_P(x) || RB_TYPE_P(x, T_BIGNUM))
+	return rb_int_div(x, y);
     return rb_funcall(x, '/', 1, y);
 }
 
@@ -110,7 +112,10 @@ f_mul(VALUE x, VALUE y)
 	}
 	else if (ix == 1)
 	    return y;
+	return rb_int_mul(x, y);
     }
+    else if (RB_TYPE_P(x, T_BIGNUM))
+	return rb_int_mul(x, y);
     return rb_funcall(x, '*', 1, y);
 }
 
@@ -122,7 +127,14 @@ f_sub(VALUE x, VALUE y)
     return rb_funcall(x, '-', 1, y);
 }
 
-fun1(abs)
+inline static VALUE
+f_abs(VALUE x)
+{
+    if (FIXNUM_P(x) || RB_TYPE_P(x, T_BIGNUM))
+	return rb_int_abs(x);
+    return rb_funcall(x, id_abs, 0);
+}
+
 fun1(integer_p)
 fun1(negate)
 
@@ -368,7 +380,7 @@ f_gcd(VALUE x, VALUE y)
 inline static VALUE
 f_lcm(VALUE x, VALUE y)
 {
-    if (f_zero_p(x) || f_zero_p(y))
+    if (INT_ZERO_P(x) || INT_ZERO_P(y))
 	return ZERO;
     return f_abs(f_mul(f_div(x, f_gcd(x, y)), y));
 }
