@@ -142,7 +142,7 @@ to remove old configuration after installing them in such case.
 
 ## Copying
 
-See the file `COPYING`.
+See the file [COPYING](COPYING.md).
 
 ## Feedback
 
@@ -156,7 +156,7 @@ Bug reports should be filed at http://bugs.ruby-lang.org. Read [HowToReport] for
 
 ##Contributing
 
-See the file `CONTRIBUTING.md`
+See the file [CONTRIBUTING.md](CONTRIBUTING.md)
 
 
 ## The Author
