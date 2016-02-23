@@ -27,15 +27,16 @@ rb_call_info_kw_arg_bytes(int keyword_len)
 }
 
 enum iseq_mark_ary_index {
-    ISEQ_MARK_ARY_COVERAGE      = 0,
-    ISEQ_MARK_ARY_FLIP_CNT      = 1,
-    ISEQ_MARK_ARY_ORIGINAL_ISEQ = 2,
+    ISEQ_MARK_ARY_COVERAGE,
+    ISEQ_MARK_ARY_FLIP_CNT,
+    ISEQ_MARK_ARY_ORIGINAL_ISEQ,
+    ISEQ_MARK_ARY_INITIAL_SIZE
 };
 
 static inline VALUE
 iseq_mark_ary_create(int flip_cnt)
 {
-    VALUE ary = rb_ary_tmp_new(3);
+    VALUE ary = rb_ary_tmp_new(ISEQ_MARK_ARY_INITIAL_SIZE);
     rb_ary_push(ary, Qnil);              /* ISEQ_MARK_ARY_COVERAGE */
     rb_ary_push(ary, INT2FIX(flip_cnt)); /* ISEQ_MARK_ARY_FLIP_CNT */
     rb_ary_push(ary, Qnil);              /* ISEQ_MARK_ARY_ORIGINAL_ISEQ */
