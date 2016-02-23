@@ -1796,7 +1796,7 @@ rb_econv_asciicompat_encoding(const char *ascii_incompat_name)
      *
      * For ISO-2022-JP, there is ISO-2022-JP -> stateless-ISO-2022-JP and no others.
      */
-    if (table2->num_entries != 1)
+    if (table2->num_elements != 1)
         return NULL;
 
     data.ascii_incompat_name = ascii_incompat_name;

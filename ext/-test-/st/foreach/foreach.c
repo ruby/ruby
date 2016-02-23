@@ -13,14 +13,9 @@ force_unpack_check(struct checker *c, st_data_t key, st_data_t val)
 {
     if (c->nr == 0) {
 	st_data_t i;
-
-	if (!c->tbl->entries_packed) rb_bug("should be packed\n");
-
 	/* force unpacking during iteration: */
 	for (i = 1; i < expect_size; i++)
 	    st_add_direct(c->tbl, i, i);
-
-	if (c->tbl->entries_packed) rb_bug("should be unpacked\n");
     }
 
     if (key != c->nr) {
@@ -83,9 +78,6 @@ unp_fec(VALUE self, VALUE test)
     c.test = test;
 
     st_add_direct(tbl, 0, 0);
-
-    if (!tbl->entries_packed) rb_bug("should still be packed\n");
-
     st_foreach_check(tbl, unp_fec_i, (st_data_t)&c, -1);
 
     if (c.test == ID2SYM(rb_intern("delete2"))) {
@@ -97,9 +89,6 @@ unp_fec(VALUE self, VALUE test)
 	rb_bug("mismatched iteration: %"PRIuVALUE" (expected %"PRIuVALUE")\n",
 		(VALUE)c.nr, (VALUE)expect_size);
     }
-
-    if (tbl->entries_packed) rb_bug("should be unpacked\n");
-
     st_free_table(tbl);
 
     return Qnil;
@@ -144,9 +133,6 @@ unp_fe(VALUE self, VALUE test)
     c.test = test;
 
     st_add_direct(tbl, 0, 0);
-
-    if (!tbl->entries_packed) rb_bug("should still be packed\n");
-
     st_foreach(tbl, unp_fe_i, (st_data_t)&c);
 
     if (c.test == ID2SYM(rb_intern("unpack_delete"))) {
@@ -158,9 +144,6 @@ unp_fe(VALUE self, VALUE test)
 	rb_bug("mismatched iteration: %"PRIuVALUE" (expected %"PRIuVALUE"o)\n",
 		(VALUE)c.nr, (VALUE)expect_size);
     }
-
-    if (tbl->entries_packed) rb_bug("should be unpacked\n");
-
     st_free_table(tbl);
 
     return Qnil;

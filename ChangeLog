@@ -1,3 +1,84 @@
+Wed Feb 24 02:24:29 2016  Vladimir Makarov  <vmakarov@redhat.com>
+
+	* include/ruby/st.h (MAX_ST_INDEX_VAL, st_table_element): New.
+	(st_entry_t): New.
+	(struct st_table): Remove num_bins, entries_packed, num_entries,
+	and as.  Add num_elements, deleted_entries, allocated_entries,
+	allocated_elements, rebuilds_num, hash_mask, entries,
+	elements_start, elements_bound, and elements.
+	(st_reverse_foreach): Remove.
+	* st.c: Don't include ccan/list/list.h.  Include <assert.h> and
+	<stdlib.h>.
+	(ATTRIBUTE_UNUSED): New.
+	(st_table_entry, st_packed_entry): Remove.
+	(st_table_element): New.
+	(STATIC_ASSERT, ST_DEFAULT_MAX_DENSITY): Remove.
+	(ST_DEFAULT_INIT_TABLE_SIZE, ST_DEFAULT_PACKED_TABLE_SIZE): Ditto.
+	(PACKED_UNIT, MAX_PACKED_HASH): Ditto.
+	(rehash): Remove.
+	(EQUAL): Rewrite.
+	(do_hash): Make it inline function.
+	(hash_pos): Remove.
+	(PTR_EQUAL): New.
+	(st_alloc_entry, st_free_entry, st_alloc_table, st_dealloc_table):
+	Remove.
+	(st_alloc_bins, st_free_bins, st_realloc_bins): Remove.
+	(MAX_POWER2): New.
+	(bins, real_entries, PACKED_BINS, PACKED_ENT, PKEY, PVAL): Remove.
+	(PHASH, PKEY_SET, PVAL_SET, PHASH_SET): Ditto.
+	(remove_packed_entry, remove_safe_packed_entry): Ditto.
+	(next_pow2, new_size): Ditto.
+	(get_power2): New.
+	(EMPTY_ENTRY, DELETED_ENTRY, MARK_ENTRY_EMPTY): New.
+	(MARK_ENTRY_DELETED): New.
+	(EMPTY_ENTRY_P, DELETED_ENTRY_P, EMPTY_OR_DELETED_ENTRY_P): New.
+	(EMPTY_ENTRY_PTR_P, DELETED_ENTRY_PTR_P): New.
+	(EMPTY_OR_DELETED_ENTRY_PTR_P, MARK_ELEMENT_DELETED): New.
+	(DELETED_ELEMENT_P, initialize_entries, make_tab_empty): New.
+	(st_head, FIND_ENTRY): Remove.
+	(st_init_table_with_size, st_clear, st_free_table, st_memsize):
+	Rewrite.
+	(rebuild_entries): New.
+	(find_entry, find_packed_index_from, find_packed_index): Remove.
+	(rebuild_table, hash_entry): New.
+	(collision_check): Define it as 1 and move it before definition of
+	COLLISION.
+	(secondary_hash, find_table_entry, find_table_entry_ptr): New.
+	(find_table_entry_ptr_and_reserve): New.
+	(new_entry, add_direct, unpack_entries, add_packed_direct):
+	Remove.
+	(st_lookup, st_insert, st_insert2, st_get_key, st_add_direct):
+	Rewrite.
+	(st_copy, st_delete, st_delete_safe, st_shift, st_cleanup_safe): Rewrite.
+	(st_update): Rewrite.
+	(st_general_delete): New.
+	(remove_entry, get_keys, get_values): Remove.
+	(st_general_foreach, st_general_keys, st_general_values): New.
+	(st_foreach_check, st_foreach, st_keys_check): Rewrite.
+	(st_values, st_values_check): Rewrite.
+	(st_reverse_foreach_check, st_reverse_foreach): Remove.
+	* compile.c (ibf_table_index, ibf_dump_id_list): Use
+	num_elements instead of num_entries.
+	* encoding.c (rb_enc_name_list): Ditto.
+	* gc.c (rb_objspace_call_finalizer, mark_tbl): Ditto.
+	(allrefs_dump, wmap_size): Ditto.
+	* hash.c (rb_hash_rehash, rb_hash_reject_bang): Ditto.
+	(rb_hash_select_bang, rb_hash_clear): Ditto.
+	(rb_hash_initialize_copy): Ditto.
+	* internal.h (RHASH_SIZE): Ditto.
+	* marshal.c (w_symbol, hash_each, w_object, r_entry): Ditto.
+	(r_prepare, r_symreal): Ditto.
+	* regparse.c (onig_number_of_names): Ditto.
+	* symbol.c (symbols_i): Ditto.
+	* transcode.c (rb_econv_asciicompat_encoding): Ditto.
+	* variable.c (iv_index_tbl_newsize): Ditto.
+	(iv_index_tbl_extend, rb_ivar_count, autoload_delete): Ditto.
+	(rb_const_list, cvar_list): Ditto.
+	* ext/-test-/st/numhash/numhash.c (numhash_size): Ditto.
+	* ext/-test-/st/foreach/foreach.c (force_unpack_check): Remove
+	check on packed and unpacked entries.
+	(unp_fec, unp_fe): Ditto.
+
 Tue Feb 23 21:52:24 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/unicode/case-folding.rb, casefold.h: Outputting actual titlecase

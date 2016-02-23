@@ -455,7 +455,7 @@ w_symbol(VALUE sym, struct dump_arg *arg)
 	}
 	w_byte(TYPE_SYMBOL, arg);
 	w_bytes(RSTRING_PTR(sym), RSTRING_LEN(sym), arg);
-	st_add_direct(arg->symbols, orig_sym, arg->symbols->num_entries);
+	st_add_direct(arg->symbols, orig_sym, arg->symbols->num_elements);
 	if (!NIL_P(encname)) {
 	    struct dump_call_arg c_arg;
 	    c_arg.limit = 1;
@@ -485,7 +485,7 @@ hash_each(VALUE key, VALUE value, struct dump_call_arg *arg)
 
 #define SINGLETON_DUMP_UNABLE_P(klass) \
     (rb_id_table_size(RCLASS_M_TBL(klass)) > 0 || \
-     (RCLASS_IV_TBL(klass) && RCLASS_IV_TBL(klass)->num_entries > 1))
+     (RCLASS_IV_TBL(klass) && RCLASS_IV_TBL(klass)->num_elements > 1))
 
 static void
 w_extended(VALUE klass, struct dump_arg *arg, int check)
@@ -696,7 +696,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	w_symbol(obj, arg);
     }
     else if (FLONUM_P(obj)) {
-	st_add_direct(arg->data, obj, arg->data->num_entries);
+	st_add_direct(arg->data, obj, arg->data->num_elements);
 	w_byte(TYPE_FLOAT, arg);
 	w_float(RFLOAT_VALUE(obj), arg);
     }
@@ -711,7 +711,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	arg->infection |= (int)FL_TEST(obj, MARSHAL_INFECTION);
 
 	if (rb_obj_respond_to(obj, s_mdump, TRUE)) {
-	    st_add_direct(arg->data, obj, arg->data->num_entries);
+	    st_add_direct(arg->data, obj, arg->data->num_elements);
 
 	    v = dump_funcall(arg, obj, s_mdump, 0, 0);
 	    w_class(TYPE_USRMARSHAL, obj, arg, FALSE);
@@ -741,11 +741,11 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	    if (hasiv) {
 		w_ivar(hasiv, ivobj, encname, &c_arg);
 	    }
-            st_add_direct(arg->data, obj, arg->data->num_entries);
+            st_add_direct(arg->data, obj, arg->data->num_elements);
 	    return;
 	}
 
-        st_add_direct(arg->data, obj, arg->data->num_entries);
+        st_add_direct(arg->data, obj, arg->data->num_elements);
 
 	hasiv = has_ivars(obj, (encname = encoding_name(obj, arg)), &ivobj);
         {
@@ -1100,7 +1100,7 @@ static const rb_data_type_t load_arg_data = {
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
-#define r_entry(v, arg) r_entry0((v), (arg)->data->num_entries, (arg))
+#define r_entry(v, arg) r_entry0((v), (arg)->data->num_elements, (arg))
 static VALUE r_entry0(VALUE v, st_index_t num, struct load_arg *arg);
 static VALUE r_object(struct load_arg *arg);
 static VALUE r_symbol(struct load_arg *arg);
@@ -1116,7 +1116,7 @@ too_short(void)
 static st_index_t
 r_prepare(struct load_arg *arg)
 {
-    st_index_t idx = arg->data->num_entries;
+    st_index_t idx = arg->data->num_elements;
 
     st_insert(arg->data, (st_data_t)idx, (st_data_t)Qundef);
     return idx;
@@ -1342,7 +1342,7 @@ r_symreal(struct load_arg *arg, int ivar)
     VALUE s = r_bytes(arg);
     VALUE sym;
     int idx = -1;
-    st_index_t n = arg->symbols->num_entries;
+    st_index_t n = arg->symbols->num_elements;
 
     if (rb_enc_str_asciionly_p(s)) rb_enc_associate_index(s, ENCINDEX_US_ASCII);
     st_insert(arg->symbols, (st_data_t)n, (st_data_t)s);

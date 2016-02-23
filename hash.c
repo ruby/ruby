@@ -747,7 +747,7 @@ rb_hash_rehash(VALUE hash)
     if (!RHASH(hash)->ntbl)
         return hash;
     tmp = hash_alloc(0);
-    tbl = st_init_table_with_size(RHASH(hash)->ntbl->type, RHASH(hash)->ntbl->num_entries);
+    tbl = st_init_table_with_size(RHASH(hash)->ntbl->type, RHASH(hash)->ntbl->num_elements);
     RHASH(tmp)->ntbl = tbl;
 
     rb_hash_foreach(hash, rb_hash_rehash_i, (VALUE)tbl);
@@ -1246,7 +1246,7 @@ rb_hash_reject_bang(VALUE hash)
     n = RHASH_SIZE(hash);
     if (!n) return Qnil;
     rb_hash_foreach(hash, delete_if_i, hash);
-    if (n == RHASH(hash)->ntbl->num_entries) return Qnil;
+    if (n == RHASH(hash)->ntbl->num_elements) return Qnil;
     return hash;
 }
 
@@ -1406,9 +1406,9 @@ rb_hash_select_bang(VALUE hash)
     rb_hash_modify_check(hash);
     if (!RHASH(hash)->ntbl)
         return Qnil;
-    n = RHASH(hash)->ntbl->num_entries;
+    n = RHASH(hash)->ntbl->num_elements;
     rb_hash_foreach(hash, keep_if_i, hash);
-    if (n == RHASH(hash)->ntbl->num_entries) return Qnil;
+    if (n == RHASH(hash)->ntbl->num_elements) return Qnil;
     return hash;
 }
 
@@ -1457,7 +1457,7 @@ rb_hash_clear(VALUE hash)
     rb_hash_modify_check(hash);
     if (!RHASH(hash)->ntbl)
         return hash;
-    if (RHASH(hash)->ntbl->num_entries > 0) {
+    if (RHASH(hash)->ntbl->num_elements > 0) {
 	if (RHASH_ITER_LEV(hash) > 0)
 	    rb_hash_foreach(hash, clear_i, 0);
 	else
@@ -1566,7 +1566,7 @@ rb_hash_initialize_copy(VALUE hash, VALUE hash2)
     if (RHASH(hash2)->ntbl) {
 	if (ntbl) st_free_table(ntbl);
         RHASH(hash)->ntbl = st_copy(RHASH(hash2)->ntbl);
-	if (RHASH(hash)->ntbl->num_entries)
+	if (RHASH(hash)->ntbl->num_elements)
 	    rb_hash_rehash(hash);
     }
     else if (ntbl) {

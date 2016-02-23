@@ -594,7 +594,7 @@ onig_number_of_names(regex_t* reg)
   NameTable* t = (NameTable* )reg->name_table;
 
   if (IS_NOT_NULL(t))
-    return (int )t->num_entries;
+    return (int )t->num_elements;
   else
     return 0;
 }

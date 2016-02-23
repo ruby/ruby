@@ -1,6 +1,8 @@
-/* This is a public domain general purpose hash table package written by Peter Moore @ UCB. */
+/* This is a public domain general purpose hash table package
+   originally written by Peter Moore @ UCB.
 
-/* @(#) st.h 5.1 89/12/14 */
+   The hash table data strutures were redesigned and the package was
+   rewritten by Vladimir Makarov <vmakarov@redhat.com>.  */
 
 #ifndef RUBY_ST_H
 #define RUBY_ST_H 1
@@ -46,6 +48,10 @@ typedef unsigned LONG_LONG st_data_t;
 typedef struct st_table st_table;
 
 typedef st_data_t st_index_t;
+
+/* Maximal value of unsigned integer type st_index_t.  */
+#define MAX_ST_INDEX_VAL (~(st_index_t) 0)
+  
 typedef int st_compare_func(st_data_t, st_data_t);
 typedef st_index_t st_hash_func(st_data_t);
 
@@ -66,33 +72,35 @@ struct st_hash_type {
 # define ST_DATA_COMPATIBLE_P(type) 0
 #endif
 
+typedef struct st_table_element st_table_element;
+
+struct st_table_element; /* defined in st.c */
+
+#if SIZEOF_INT == SIZEOF_VOIDP
+typedef unsigned int st_entry_t;
+#else
+typedef unsigned long int st_entry_t;
+#endif
+
 struct st_table {
     const struct st_hash_type *type;
-    st_index_t num_bins;
-    unsigned int entries_packed : 1;
-#ifdef __GNUC__
-    /*
-     * C spec says,
-     *   A bit-field shall have a type that is a qualified or unqualified
-     *   version of _Bool, signed int, unsigned int, or some other
-     *   implementation-defined type. It is implementation-defined whether
-     *   atomic types are permitted.
-     * In short, long and long long bit-field are implementation-defined
-     * feature. Therefore we want to suppress a warning explicitly.
-     */
-    __extension__
-#endif
-    st_index_t num_entries : ST_INDEX_BITS - 1;
-    union {
-	struct {
-	    struct st_table_entry **bins;
-	    void *private_list_head[2];
-	} big;
-	struct {
-	    struct st_packed_entry *entries;
-	    st_index_t real_entries;
-	} packed;
-    } as;
+    /* Number of elements currently in the table.  */
+    st_index_t num_elements;
+    /* Number of entries with deleted values.  */
+    st_index_t deleted_entries;
+    /* Number of allocated entries and elements.  */
+    st_index_t allocated_entries, allocated_elements;
+    /* How many times the table was rebuilt.  */
+    unsigned rebuilds_num;
+    /* The following mask is used to map hash values to entry index --
+       see details in st.c.  */
+    st_index_t hash_mask;
+    /* array of size ALLOCATED_ENTRIES: */
+    st_entry_t *entries;
+    /* Start and bound index of elements in array elements.  */
+    st_index_t elements_start, elements_bound;
+    /* array of size ALLOCATED_ELEMENTS:  */
+    st_table_element *elements;
 };
 
 #define st_is_member(table,key) st_lookup((table),(key),(st_data_t *)0)
@@ -121,13 +129,13 @@ typedef int st_update_callback_func(st_data_t *key, st_data_t *value, st_data_t 
 int st_update(st_table *table, st_data_t key, st_update_callback_func *func, st_data_t arg);
 int st_foreach(st_table *, int (*)(ANYARGS), st_data_t);
 int st_foreach_check(st_table *, int (*)(ANYARGS), st_data_t, st_data_t);
-int st_reverse_foreach(st_table *, int (*)(ANYARGS), st_data_t);
 st_index_t st_keys(st_table *table, st_data_t *keys, st_index_t size);
 st_index_t st_keys_check(st_table *table, st_data_t *keys, st_index_t size, st_data_t never);
 st_index_t st_values(st_table *table, st_data_t *values, st_index_t size);
 st_index_t st_values_check(st_table *table, st_data_t *values, st_index_t size, st_data_t never);
 void st_add_direct(st_table *, st_data_t, st_data_t);
 void st_free_table(st_table *);
+size_t st_memsize(const st_table *);
 void st_cleanup_safe(st_table *, st_data_t);
 void st_clear(st_table *);
 st_table *st_copy(st_table *);
@@ -137,7 +145,6 @@ int st_locale_insensitive_strcasecmp(const char *s1, const char *s2);
 int st_locale_insensitive_strncasecmp(const char *s1, const char *s2, size_t n);
 #define st_strcasecmp st_locale_insensitive_strcasecmp
 #define st_strncasecmp st_locale_insensitive_strncasecmp
-size_t st_memsize(const st_table *);
 st_index_t st_hash(const void *ptr, size_t len, st_index_t h);
 st_index_t st_hash_uint32(st_index_t h, uint32_t i);
 st_index_t st_hash_uint(st_index_t h, st_index_t i);

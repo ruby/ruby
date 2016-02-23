@@ -1,6 +1,90 @@
-/* This is a public domain general purpose hash table package written by Peter Moore @ UCB. */
+/* This is a public domain general purpose hash table package
+   originally written by Peter Moore @ UCB.
 
-/* static	char	sccsid[] = "@(#) st.c 5.1 89/12/14 Crucible"; */
+   The hash table data strutures were redesigned and the package was
+   rewritten by Vladimir Makarov <vmakarov@redhat.com>.  */
+
+/* The original package implemented classic bucket-based hash tables.
+   To decrease pointer chasing and as a consequence to improve a data
+   locality the current implementation is based on hash tables with
+   open addressing.  The current elements are more compact in
+   comparison with the original ones and this also improves the data
+   locality.
+
+   The hash table has two arrays called *entries* and *elements*.
+
+   entries:
+    -------
+   |       |                  elements array:
+   |-------|            --------------------------------
+   | index |           |      | element:|        |      |
+   |-------|           |      |         |        |      |
+   | ...   |           | ...  | hash    |  ...   | ...  |
+   |-------|           |      | key     |        |      |
+   | empty |           |      | record  |        |      |
+   |-------|            --------------------------------
+   | ...   |                   ^                  ^
+   |-------|                   |_ elements start  |_ elements bound
+   |deleted|
+    -------
+
+   o The element array contains table elements in the same order as
+     they were inserted.
+
+     When the first element is deleted, a variable containing index of
+     the current first element (*elements start*) is incremented.  In
+     all other cases of the deletion, we just mark the element as
+     deleted by using a reserved hash value.
+
+     Such organization of the element storage makes operations of the
+     table shift and the elements traversal very fast.
+
+   o The entries provide access to the elements by their keys.  The
+     key hash is mapped to an entry containing *index* of the
+     corresponding element in the element array.
+
+     The entry array size is always size of two, it makes mapping very
+     fast by using the corresponding lower bits of the hash.
+     Generally it is not a good idea to ignore some part of the hash.
+     But alternative approach is worse.  For example, we could use a
+     modulo operation for mapping and a prime number for the size of
+     the entry array.  Unfortunately, the modulo operation for big
+     64-bit numbers are extremely slow (it takes more than 100 cycles
+     on modern Intel CPUs).
+
+     Still other bits of the hash value are used when the mapping
+     results in a collision.  In this case we use a secondary hash
+     value which is a result of a function of the collision entry
+     index and the original hash value.  The function choice
+     guarantees that we can traverse all entries and finally find the
+     corresponding entry as after several iterations the function
+     becomes a full cycle linear congruential generator because it
+     satisfies requirements of the Hull-Dobell theorem.
+
+     When an element is removed from the table besides marking the
+     hash in the corresponding element described above, we also mark
+     the entry by a special value in order to find elements which had
+     a collision with the removed elements.
+
+     There are two reserved values for the entries.  One denotes an
+     empty entry, another one denotes an entry for a deleted element.
+
+   o The length of the entry array is always two times more than the
+     element array length.  This keeps the table load factor healthy.
+     The trigger of rebuilding the table is always a case when we can
+     not insert an element at the end of the element array.
+
+     Table rebuilding is done by creation of a new element array and
+     entries of an appropriate size.  We could try to reuse the arrays
+     in some cases by moving non-deleted elements to the array start.
+     But it has a little sense as the most expensive part of
+     rebuilding is element moves and such approach just complicates
+     the implementation.
+
+   This implementation speeds up the Ruby hash table benchmarks in
+   average by more 50% on Intel Haswell CPU.
+
+*/
 
 #ifdef NOT_RUBY
 #include "regint.h"
@@ -14,45 +98,21 @@
 #include <stdlib.h>
 #endif
 #include <string.h>
-#include "ccan/list/list.h"
+#include <assert.h>
 
-typedef struct st_table_entry st_table_entry;
+#ifdef __GNUC__
+# define ATTRIBUTE_UNUSED __attribute__((unused))
+#else
+# define ATTRIBUTE_UNUSED
+#endif
 
-struct st_table_entry {
+#define st_assert(cond) ((void)(0 && (cond)))
+
+struct st_table_element {
     st_index_t hash;
     st_data_t key;
     st_data_t record;
-    st_table_entry *next;
-    struct list_node olist;
 };
-
-typedef struct st_packed_entry {
-    st_index_t hash;
-    st_data_t key, val;
-} st_packed_entry;
-
-#ifndef STATIC_ASSERT
-#define STATIC_ASSERT(name, expr) typedef int static_assert_##name##_check[(expr) ? 1 : -1]
-#endif
-
-#define ST_DEFAULT_MAX_DENSITY 5
-#define ST_DEFAULT_INIT_TABLE_SIZE 16
-#define ST_DEFAULT_PACKED_TABLE_SIZE 18
-#define PACKED_UNIT (int)(sizeof(st_packed_entry) / sizeof(st_table_entry*))
-#define MAX_PACKED_HASH (int)(ST_DEFAULT_PACKED_TABLE_SIZE * sizeof(st_table_entry*) / sizeof(st_packed_entry))
-
-STATIC_ASSERT(st_packed_entry, sizeof(st_packed_entry) == sizeof(st_table_entry*[PACKED_UNIT]));
-STATIC_ASSERT(st_packed_bins, sizeof(st_packed_entry[MAX_PACKED_HASH]) <= sizeof(st_table_entry*[ST_DEFAULT_PACKED_TABLE_SIZE]));
-
-    /*
-     * DEFAULT_MAX_DENSITY is the default for the largest we allow the
-     * average number of items per bin before increasing the number of
-     * bins
-     *
-     * DEFAULT_INIT_TABLE_SIZE is the default for the number of bins
-     * allocated initially
-     *
-     */
 
 #define type_numhash st_hashtype_num
 const struct st_hash_type st_hashtype_num = {
@@ -73,8 +133,6 @@ static const struct st_hash_type type_strcasehash = {
     strcasehash,
 };
 
-static void rehash(st_table *);
-
 #ifdef RUBY
 #undef malloc
 #undef realloc
@@ -86,90 +144,109 @@ static void rehash(st_table *);
 #define free(x) xfree(x)
 #endif
 
-#define EQUAL(table,x,ent) ((x)==(ent)->key || (*(table)->type->compare)((x),(ent)->key) == 0)
+#include <stdlib.h>
 
-#define do_hash(key,table) (st_index_t)(*(table)->type->hash)((key))
-#define hash_pos(h,n) ((h) & (n - 1))
+#define EQUAL(table,x,y) ((x) == (y) || (*(table)->type->compare)((x),(y)) == 0)
+#define PTR_EQUAL(table, ptr, hash_val, key) \
+    ((ptr)->hash == (hash_val) && EQUAL((table), (key), (ptr)->key))
 
-/* preparation for possible allocation improvements */
-#define st_alloc_entry() (st_table_entry *)malloc(sizeof(st_table_entry))
-#define st_free_entry(entry) free(entry)
-#define st_alloc_table() (st_table *)malloc(sizeof(st_table))
-#define st_dealloc_table(table) free(table)
-#define st_alloc_bins(size) (st_table_entry **)calloc(size, sizeof(st_table_entry *))
-#define st_free_bins(bins, size) free(bins)
-static inline st_table_entry**
-st_realloc_bins(st_table_entry **bins, st_index_t newsize, st_index_t oldsize)
-{
-    bins = (st_table_entry **)realloc(bins, newsize * sizeof(st_table_entry *));
-    MEMZERO(bins, st_table_entry*, newsize);
-    return bins;
-}
-
-/* Shortcut */
-#define bins as.big.bins
-#define real_entries as.packed.real_entries
-
-/* preparation for possible packing improvements */
-#define PACKED_BINS(table) ((table)->as.packed.entries)
-#define PACKED_ENT(table, i) PACKED_BINS(table)[i]
-#define PKEY(table, i) PACKED_ENT((table), (i)).key
-#define PVAL(table, i) PACKED_ENT((table), (i)).val
-#define PHASH(table, i) PACKED_ENT((table), (i)).hash
-#define PKEY_SET(table, i, v) (PKEY((table), (i)) = (v))
-#define PVAL_SET(table, i, v) (PVAL((table), (i)) = (v))
-#define PHASH_SET(table, i, v) (PHASH((table), (i)) = (v))
-
-/* this function depends much on packed layout, so that it placed here */
-static inline void
-remove_packed_entry(st_table *table, st_index_t i)
-{
-    table->real_entries--;
-    table->num_entries--;
-    if (i < table->real_entries) {
-	MEMMOVE(&PACKED_ENT(table, i), &PACKED_ENT(table, i+1),
-		st_packed_entry, table->real_entries - i);
-    }
-}
-
-static inline void
-remove_safe_packed_entry(st_table *table, st_index_t i, st_data_t never)
-{
-    table->num_entries--;
-    PKEY_SET(table, i, never);
-    PVAL_SET(table, i, never);
-    PHASH_SET(table, i, 0);
-}
-
-static st_index_t
-next_pow2(st_index_t x)
-{
-    x |= x >> 1;
-    x |= x >> 2;
-    x |= x >> 4;
-    x |= x >> 8;
-    x |= x >> 16;
+/* Max power of two can be used for length of elements array.  In
+   reality such length can not be used as length of entries array is
+   two times more and an element and an entry size are at lest 12 and
+   4 bytes.  We need this value for eraly check that the table will be
+   too big.  */
 #if SIZEOF_ST_INDEX_T == 8
-    x |= x >> 32;
+#define MAX_POWER2 62
+#else
+#define MAX_POWER2 30
 #endif
-    return x + 1;
+
+/* Return hash value of KEY for TABLE.  */
+inline st_index_t
+do_hash(st_data_t key, st_table *table) {
+    st_index_t hash = (st_index_t)(table->type->hash)(key);
+
+    /* MAX_ST_INDEX_VAL is a reserved value used for deleted element.
+       Map it into another value.  Such mapping should be extremely
+       rare.  */
+    return hash == MAX_ST_INDEX_VAL ? 0 : hash;
 }
 
-static st_index_t
-new_size(st_index_t size)
-{
-    st_index_t n;
+/* Return smallest n >= 3 such 2^n > SIZE.  */
+static int
+get_power2(st_index_t size) {
+    unsigned int n;
 
-    if (size && (size & ~(size - 1)) == size) /* already a power-of-two? */
-	return size;
-
-    n = next_pow2(size);
-    if (n > size)
-	return n;
+    for (n = 0; size != 0; n++)
+        size >>= 1;
+    if (n <= MAX_POWER2)
+        return n < 3 ? 3 : n;
 #ifndef NOT_RUBY
+    /* Ran out of the table elements */
     rb_raise(rb_eRuntimeError, "st_table too big");
 #endif
-    return -1;			/* should raise exception */
+    /* should raise exception */
+    return -1;
+}
+
+/* These macros define reserved values for empty table entry and table
+   entry which contains a deleted element.  We will never use such
+   values for an index in entries (see comments for MAX_POWER2).  */
+#define EMPTY_ENTRY    (~(st_entry_t) 0)
+#define DELETED_ENTRY  (EMPTY_ENTRY - 1)
+
+/* Mark entry E_PTR as empty, in other words not corresponding to any
+   element.  */
+#define MARK_ENTRY_EMPTY(e_ptr) (*(e_ptr) = EMPTY_ENTRY)
+
+/* Mark entry E_PTR as corresponding to a deleted table element.
+   Update number of elements in the table and number of entries
+   corresponding to deleted elements. */
+#define MARK_ENTRY_DELETED(tab, e_ptr)                          \
+    do {                                                        \
+        st_assert(! EMPTY_OR_DELETED_ENTRY_PTR_P(e_ptr));       \
+        *(e_ptr) = DELETED_ENTRY;                               \
+        (tab)->num_elements--;                                  \
+        (tab)->deleted_entries++;                               \
+    } while (0)
+
+/* Macros to check empty entries and entries corresponding deleted
+   elements.  */
+#define EMPTY_ENTRY_P(e) ((e) == EMPTY_ENTRY)
+#define DELETED_ENTRY_P(e) ((e) == DELETED_ENTRY)
+#define EMPTY_OR_DELETED_ENTRY_P(e) ((e) >= DELETED_ENTRY)
+
+#define EMPTY_ENTRY_PTR_P(e_ptr) EMPTY_ENTRY_P(*(e_ptr))
+#define DELETED_ENTRY_PTR_P(e_ptr) DELETED_ENTRY_P(*(e_ptr))
+#define EMPTY_OR_DELETED_ENTRY_PTR_P(e_ptr) EMPTY_OR_DELETED_ENTRY_P(*(e_ptr))
+
+/* Macros for marking and checking deleted elements.  */
+#define MARK_ELEMENT_DELETED(el_ptr) ((el_ptr)->hash = MAX_ST_INDEX_VAL)
+#define DELETED_ELEMENT_P(el_ptr) ((el_ptr)->hash == MAX_ST_INDEX_VAL)
+
+/* Mark all entries of table TAB as empty.  */
+static void
+initialize_entries(st_table *tab)
+{
+    st_index_t i;
+    st_entry_t *entries;
+    st_index_t n = tab->allocated_entries;
+    
+    entries = tab->entries;
+    /* Mark all entries empty: */
+    for (i = 0; i < n; i++)
+        MARK_ENTRY_EMPTY(&entries[i]);
+}
+
+/* Make table TAB empty.  */
+static void
+make_tab_empty(st_table *tab)
+{
+    tab->num_elements = 0;
+    tab->deleted_entries = 0;
+    tab->rebuilds_num = 0;
+    tab->elements_start = tab->elements_bound = 0;
+    initialize_entries(tab);
 }
 
 #ifdef HASH_LOG
@@ -179,163 +256,166 @@ new_size(st_index_t size)
 static struct {
     int all, total, num, str, strcase;
 }  collision;
+
+/* Flag switching off output of package statistics at the end of
+   program.  */
 static int init_st = 0;
 
+/* Output overall number of table searches and collisions into a
+   temporary file.  */
 static void
 stat_col(void)
 {
     char fname[10+sizeof(long)*3];
     FILE *f = fopen((snprintf(fname, sizeof(fname), "/tmp/col%ld", (long)getpid()), fname), "w");
     fprintf(f, "collision: %d / %d (%6.2f)\n", collision.all, collision.total,
-	    ((double)collision.all / (collision.total)) * 100);
+            ((double)collision.all / (collision.total)) * 100);
     fprintf(f, "num: %d, str: %d, strcase: %d\n", collision.num, collision.str, collision.strcase);
     fclose(f);
 }
 #endif
 
-static struct list_head *
-st_head(const st_table *tbl)
-{
-    uintptr_t addr = (uintptr_t)&tbl->as.big.private_list_head;
-    return (struct list_head *)addr;
-}
-
-st_table*
+/* Create and return table with TYPE which can hold at least SIZE
+   elements.  The real number of elements which the table can hold is
+   the nearest power of two for SIZE.  */
+st_table *
 st_init_table_with_size(const struct st_hash_type *type, st_index_t size)
 {
-    st_table *tbl;
-
+    st_table *tab;
+    int n;
+    
 #ifdef HASH_LOG
-# if HASH_LOG+0 < 0
+#if HASH_LOG+0 < 0
     {
-	const char *e = getenv("ST_HASH_LOG");
-	if (!e || !*e) init_st = 1;
-    }
-# endif
-    if (init_st == 0) {
-	init_st = 1;
-	atexit(stat_col);
+        const char *e = getenv("ST_HASH_LOG");
+        if (!e || !*e) init_st = 1;
     }
 #endif
-
-
-    tbl = st_alloc_table();
-    tbl->type = type;
-    tbl->num_entries = 0;
-    tbl->entries_packed = size <= MAX_PACKED_HASH;
-    if (tbl->entries_packed) {
-	size = ST_DEFAULT_PACKED_TABLE_SIZE;
-	tbl->real_entries = 0;
+    if (init_st == 0) {
+        init_st = 1;
+        atexit(stat_col);
     }
-    else {
-	size = new_size(size);	/* round up to power-of-two */
-	list_head_init(st_head(tbl));
-    }
-    tbl->num_bins = size;
-    tbl->bins = st_alloc_bins(size);
-
-    return tbl;
+#endif
+    
+    n = get_power2(size);
+    tab = (st_table *) malloc(sizeof (st_table));
+    tab->type = type;
+    tab->hash_mask = (~(st_index_t) 0) >> (sizeof (st_index_t) * CHAR_BIT - n - 1);
+    tab->allocated_elements = 1 << n;
+    tab->allocated_entries = 2 * tab->allocated_elements;
+    tab->entries = (st_entry_t *) malloc(tab->allocated_entries * sizeof (st_entry_t));
+    tab->elements = (st_table_element *) malloc(tab->allocated_elements
+                                                * sizeof(st_table_element));
+    make_tab_empty(tab);
+    return tab;
 }
 
-st_table*
+/* Create and return table with TYPE which can hold a minimal number
+   of elements (see comments for get_power2).  */
+st_table *
 st_init_table(const struct st_hash_type *type)
 {
     return st_init_table_with_size(type, 0);
 }
 
-st_table*
+/* Create and return table which can hold a minimal number of
+   numbers.  */
+st_table *
 st_init_numtable(void)
 {
     return st_init_table(&type_numhash);
 }
 
-st_table*
+/* Create and return table which can hold SIZE numbers.  */
+st_table *
 st_init_numtable_with_size(st_index_t size)
 {
     return st_init_table_with_size(&type_numhash, size);
 }
 
-st_table*
+/* Create and return table which can hold a minimal number of
+   strings.  */
+st_table *
 st_init_strtable(void)
 {
     return st_init_table(&type_strhash);
 }
 
-st_table*
+/* Create and return table which can hold SIZE strings.  */
+st_table *
 st_init_strtable_with_size(st_index_t size)
 {
     return st_init_table_with_size(&type_strhash, size);
 }
 
-st_table*
+/* Create and return table which can hold a minimal number of strings
+   whose character case is ignored.  */
+st_table *
 st_init_strcasetable(void)
 {
     return st_init_table(&type_strcasehash);
 }
 
-st_table*
+/* Create and return table which can hold SIZE strings whose character
+   case is ignored.  */
+st_table *
 st_init_strcasetable_with_size(st_index_t size)
 {
     return st_init_table_with_size(&type_strcasehash, size);
 }
 
+/* Make TABLE empty.  */
 void
 st_clear(st_table *table)
 {
-    register st_table_entry *ptr = 0, *next;
-
-    if (table->entries_packed) {
-        table->num_entries = 0;
-        table->real_entries = 0;
-        return;
-    }
-
-    list_for_each_safe(st_head(table), ptr, next, olist) {
-	/* list_del is not needed */
-	st_free_entry(ptr);
-    }
-    table->num_entries = 0;
-    MEMZERO(table->bins, st_table_entry*, table->num_bins);
-    list_head_init(st_head(table));
+    make_tab_empty(table);
 }
 
+/* Free TABLE space.  */
 void
 st_free_table(st_table *table)
 {
-    st_clear(table);
-    st_free_bins(table->bins, table->num_bins);
-    st_dealloc_table(table);
+    free(table->entries);
+    free(table->elements);
+    free(table);
 }
 
+/* Return byte size of memory allocted for TABLE.  */
 size_t
 st_memsize(const st_table *table)
 {
-    if (table->entries_packed) {
-	return table->num_bins * sizeof (void *) + sizeof(st_table);
-    }
-    else {
-	return table->num_entries * sizeof(struct st_table_entry) + table->num_bins * sizeof (void *) + sizeof(st_table);
-    }
+    return(sizeof(st_table)
+           + table->allocated_entries * sizeof(st_entry_t)
+           + table->allocated_elements * sizeof(st_table_element));
 }
 
-#define PTR_NOT_EQUAL(table, ptr, hash_val, key) \
-((ptr) != 0 && ((ptr)->hash != (hash_val) || !EQUAL((table), (key), (ptr))))
+static st_entry_t
+find_table_entry(st_table *tab, st_index_t hash_value, st_data_t key);
+
+static st_entry_t *
+find_table_entry_ptr(st_table *tab, st_index_t hash_value, st_data_t key);
+
+static st_entry_t *
+find_table_entry_ptr_and_reserve(st_table *tab, st_index_t hash_value, st_data_t key);
 
 #ifdef HASH_LOG
 static void
 count_collision(const struct st_hash_type *type)
 {
-    collision.all++;
-    if (type == &type_numhash) {
-	collision.num++;
-    }
+  collision.all++;
+  if (type == &type_numhash) {
+    collision.num++;
+  }
     else if (type == &type_strhash) {
-	collision.strcase++;
+      collision.strcase++;
     }
     else if (type == &type_strcasehash) {
-	collision.str++;
-    }
+    collision.str++;
+  }
 }
+
+#define collision_check 1
+
 #define COLLISION (collision_check ? count_collision(table->type) : (void)0)
 #define FOUND_ENTRY (collision_check ? collision.total++ : (void)0)
 #else
@@ -343,945 +423,621 @@ count_collision(const struct st_hash_type *type)
 #define FOUND_ENTRY
 #endif
 
-#define FIND_ENTRY(table, ptr, hash_val, bin_pos) \
-    ((ptr) = find_entry((table), key, (hash_val), ((bin_pos) = hash_pos(hash_val, (table)->num_bins))))
-
-static st_table_entry *
-find_entry(const st_table *table, st_data_t key, st_index_t hash_val,
-           st_index_t bin_pos)
+/*  Use elements array of table TAB to initialize the entries
+    array.  */
+static void
+rebuild_entries(st_table *tab)
 {
-    register st_table_entry *ptr = table->bins[bin_pos];
+    st_index_t i, check, bound;
+    st_table_element *elements, *curr_element_ptr;
+    st_entry_t *entry_ptr;
+    
+    initialize_entries(tab);
+    bound = tab->elements_bound;
+    elements = tab->elements;
+    tab->deleted_entries = 0;
+    check = tab->rebuilds_num;
+    for (i = tab->elements_start; i < bound; i++) {
+        curr_element_ptr = &elements[i];
+        if (DELETED_ELEMENT_P(curr_element_ptr))
+            continue;
+        entry_ptr = find_table_entry_ptr_and_reserve(tab, curr_element_ptr->hash,
+                                                     curr_element_ptr->key);
+        st_assert(tab->rebuilds_num == check && EMPTY_ENTRY_PTR_P(entry_ptr));
+        *entry_ptr = (curr_element_ptr - elements);
+    }
+}
+
+/* Rebuild table TAB.  Rebuilding removes all deleted entries and
+   elements and can change size of the table elements and entries
+   arrays.  Rebuilding is implemented by creation a new table for
+   simplicity.  */
+static void
+rebuild_table(st_table *tab)
+{
+    st_index_t i, bound;
+    st_table *new_tab;
+    st_table_element *elements, *new_elements;
+    st_table_element *curr_element_ptr;
+    st_entry_t *new_entry_ptr;
+    
+    st_assert(tab != NULL);
+    new_tab = st_init_table_with_size(tab->type,
+                                      /* Make more room. ??? */
+                                      tab->allocated_elements + 1);
+    st_assert(tab->elements_bound <= new_tab->allocated_elements);
+    bound = tab->elements_bound;
+    elements = tab->elements;
+    new_elements = new_tab->elements;
+    for (i = tab->elements_start; i < bound; i++) {
+        curr_element_ptr = &elements[i];
+        if (DELETED_ELEMENT_P(curr_element_ptr)) {
+            MARK_ELEMENT_DELETED(&new_elements[i]);
+            continue;
+        }
+        new_elements[i] = *curr_element_ptr;
+        new_entry_ptr = find_table_entry_ptr_and_reserve(new_tab, curr_element_ptr->hash,
+                                                         curr_element_ptr->key);
+        st_assert(new_tab->rebuilds_num == 0  && EMPTY_ENTRY_PTR_P(new_entry_ptr));
+        *new_entry_ptr = i;
+    }
+    tab->deleted_entries = 0;
+    tab->hash_mask = new_tab->hash_mask;
+    tab->allocated_entries = new_tab->allocated_entries;
+    tab->allocated_elements = new_tab->allocated_elements;
+    tab->rebuilds_num++;
+    free(tab->entries);
+    tab->entries = new_tab->entries;
+    free(tab->elements);
+    tab->elements = new_tab->elements;
+    free(new_tab);
+}
+
+/* Return index of table TAB entry corresponding to HASH_VALUE.  */
+static inline st_index_t
+hash_entry(st_index_t hash_value, st_table *tab)
+{
+    return hash_value & tab->hash_mask;
+}
+
+/* Return the next secondary hash index for table TAB using previous
+   index IND and PERTERB.  Finally modulo of the function becomes a
+   full *cycle linear congruential generator*, in other words it
+   guarantees traversing all table entries in extreme case.
+
+   According the Hull-Dobell theorem a generator
+   "Xnext = (a*Xprev + c) mod m" is a full cycle generator iff
+     o m and c are relatively prime
+     o a-1 is divisible by all prime factors of m
+     o a-1 is divisible by 4 if m is divisible by 4.
+
+   For our case a is 5, c is 1, and m is a power of two.  */
+static inline st_index_t
+secondary_hash(st_index_t ind, st_table *tab, st_index_t *perterb)
+{
+    ind = (ind << 2) + ind + *perterb + 1;
+    *perterb >>= 5;
+    return hash_entry(ind, tab);
+}
+
+/* Return TABLE entry for HASH_VALUE and KEY.  We always find such
+   entry as entries array length is bigger elements array.  The result
+   entry is always empty if the table has no element with KEY.  */
+static st_entry_t
+find_table_entry(st_table *table, st_index_t hash_value, st_data_t key)
+{
+    st_index_t ind, peterb;
+    st_entry_t entry;
+    st_table_element *elements = table->elements;
+    
+    st_assert(table != NULL);
+    ind = hash_entry(hash_value, table);
+    peterb = hash_value;
     FOUND_ENTRY;
-    if (PTR_NOT_EQUAL(table, ptr, hash_val, key)) {
-	COLLISION;
-	while (PTR_NOT_EQUAL(table, ptr->next, hash_val, key)) {
-	    ptr = ptr->next;
-	}
-	ptr = ptr->next;
+    for (;;) {
+        entry = table->entries[ind];
+        if (! EMPTY_OR_DELETED_ENTRY_P(entry)
+            && PTR_EQUAL(table, &elements[entry], hash_value, key))
+            break;
+        else if (EMPTY_ENTRY_P(entry))
+            break;
+        ind = secondary_hash(ind, table, &peterb);
+        COLLISION;
     }
-    return ptr;
-}
-
-static inline st_index_t
-find_packed_index_from(const st_table *table, st_index_t hash_val,
-		       st_data_t key, st_index_t i)
-{
-    while (i < table->real_entries &&
-	   (PHASH(table, i) != hash_val || !EQUAL(table, key, &PACKED_ENT(table, i)))) {
-	i++;
-    }
-    return i;
-}
-
-static inline st_index_t
-find_packed_index(const st_table *table, st_index_t hash_val, st_data_t key)
-{
-    return find_packed_index_from(table, hash_val, key, 0);
-}
-
-#define collision_check 0
-
-int
-st_lookup(st_table *table, register st_data_t key, st_data_t *value)
-{
-    st_index_t hash_val;
-    register st_table_entry *ptr;
-
-    hash_val = do_hash(key, table);
-
-    if (table->entries_packed) {
-	st_index_t i = find_packed_index(table, hash_val, key);
-	if (i < table->real_entries) {
-	    if (value != 0) *value = PVAL(table, i);
-	    return 1;
-	}
-        return 0;
-    }
-
-    ptr = find_entry(table, key, hash_val, hash_pos(hash_val, table->num_bins));
-
-    if (ptr == 0) {
-	return 0;
-    }
-    else {
-	if (value != 0) *value = ptr->record;
-	return 1;
-    }
-}
-
-int
-st_get_key(st_table *table, register st_data_t key, st_data_t *result)
-{
-    st_index_t hash_val;
-    register st_table_entry *ptr;
-
-    hash_val = do_hash(key, table);
-
-    if (table->entries_packed) {
-	st_index_t i = find_packed_index(table, hash_val, key);
-	if (i < table->real_entries) {
-	    if (result != 0) *result = PKEY(table, i);
-	    return 1;
-	}
-        return 0;
-    }
-
-    ptr = find_entry(table, key, hash_val, hash_pos(hash_val, table->num_bins));
-
-    if (ptr == 0) {
-	return 0;
-    }
-    else {
-	if (result != 0)  *result = ptr->key;
-	return 1;
-    }
-}
-
-#undef collision_check
-#define collision_check 1
-
-static inline st_table_entry *
-new_entry(st_table * table, st_data_t key, st_data_t value,
-	st_index_t hash_val, register st_index_t bin_pos)
-{
-    register st_table_entry *entry = st_alloc_entry();
-
-    entry->next = table->bins[bin_pos];
-    table->bins[bin_pos] = entry;
-    entry->hash = hash_val;
-    entry->key = key;
-    entry->record = value;
-
     return entry;
 }
 
-static inline void
-add_direct(st_table *table, st_data_t key, st_data_t value,
-	   st_index_t hash_val, register st_index_t bin_pos)
+/* Return pointer to TABLE entry for HASH_VALUE and KEY.  We
+   always find such entry as entries array length is bigger elements
+   array.  The result entry is always empty if the table has no
+   element with KEY.  */
+static st_entry_t *
+find_table_entry_ptr(st_table *table, st_index_t hash_value, st_data_t key)
 {
-    register st_table_entry *entry;
-    if (table->num_entries > ST_DEFAULT_MAX_DENSITY * table->num_bins) {
-	rehash(table);
-        bin_pos = hash_pos(hash_val, table->num_bins);
+    st_index_t ind, peterb;
+    st_entry_t *entry_ptr;
+    st_table_element *elements = table->elements;
+    
+    st_assert(table != NULL);
+    ind = hash_entry(hash_value, table);
+    peterb = hash_value;
+    FOUND_ENTRY;
+    for (;;) {
+        entry_ptr = table->entries + ind;
+        if (! EMPTY_OR_DELETED_ENTRY_PTR_P(entry_ptr)
+            && PTR_EQUAL(table, &elements[*entry_ptr], hash_value, key))
+            break;
+        else if (EMPTY_ENTRY_PTR_P(entry_ptr))
+            break;
+        ind = secondary_hash(ind, table, &peterb);
+        COLLISION;
     }
-
-    entry = new_entry(table, key, value, hash_val, bin_pos);
-    list_add_tail(st_head(table), &entry->olist);
-    table->num_entries++;
+    return entry_ptr;
 }
 
-static void
-unpack_entries(register st_table *table)
+/* Return pointer to TABLE entry for HASH_VALUE and KEY.  Reserve it
+   for inclusion of the corresponding element into the table if it is
+   not there yet.  We always find such entry as entries array length
+   is bigger elements array.  Although we can reuse a deleted entry,
+   the result entry is always empty if the table has no element with
+   KEY.  */
+static st_entry_t *
+find_table_entry_ptr_and_reserve(st_table *table, st_index_t hash_value, st_data_t key)
 {
-    st_index_t i;
-    st_packed_entry packed_bins[MAX_PACKED_HASH];
-    register st_table_entry *entry;
-    st_table tmp_table = *table;
-
-    MEMCPY(packed_bins, PACKED_BINS(table), st_packed_entry, MAX_PACKED_HASH);
-    table->as.packed.entries = packed_bins;
-    tmp_table.entries_packed = 0;
-#if ST_DEFAULT_INIT_TABLE_SIZE == ST_DEFAULT_PACKED_TABLE_SIZE
-    MEMZERO(tmp_table.bins, st_table_entry*, tmp_table.num_bins);
-#else
-    tmp_table.bins = st_realloc_bins(tmp_table.bins, ST_DEFAULT_INIT_TABLE_SIZE, tmp_table.num_bins);
-    tmp_table.num_bins = ST_DEFAULT_INIT_TABLE_SIZE;
-#endif
-
-    /*
-     * order is important here, we need to keep the original table
-     * walkable during GC (GC may be triggered by new_entry call)
-     */
-    i = 0;
-    list_head_init(st_head(&tmp_table));
-    do {
-	st_data_t key = packed_bins[i].key;
-	st_data_t val = packed_bins[i].val;
-	st_index_t hash = packed_bins[i].hash;
-	entry = new_entry(&tmp_table, key, val, hash,
-			  hash_pos(hash, ST_DEFAULT_INIT_TABLE_SIZE));
-	list_add_tail(st_head(&tmp_table), &entry->olist);
-    } while (++i < MAX_PACKED_HASH);
-    *table = tmp_table;
-    list_head_init(st_head(table));
-    list_append_list(st_head(table), st_head(&tmp_table));
+    st_index_t ind, peterb;
+    st_entry_t *entry_ptr;
+    st_entry_t *first_deleted_entry_ptr;
+    st_table_element *elements;
+    
+    st_assert(table != NULL);
+    if (table->elements_bound >= table->allocated_elements)
+        rebuild_table(table);
+    else if (2 * table->deleted_entries >= table->allocated_entries)
+        rebuild_entries(table);
+    ind = hash_entry(hash_value, table);
+    peterb = hash_value;
+    FOUND_ENTRY;
+    first_deleted_entry_ptr = NULL;
+    elements = table->elements;
+    for (;;) {
+        entry_ptr = table->entries + ind;
+        if (EMPTY_ENTRY_PTR_P(entry_ptr)) {
+            table->num_elements++;
+            if (first_deleted_entry_ptr != NULL) {
+                /* We can reuse entry of a deleted element.  */
+                entry_ptr = first_deleted_entry_ptr;
+                MARK_ENTRY_EMPTY(entry_ptr);
+                st_assert(table->deleted_entries > 0);
+                table->deleted_entries--;
+            }
+            break;
+        } else if (! DELETED_ENTRY_PTR_P(entry_ptr)) {
+            if (PTR_EQUAL(table, &elements[*entry_ptr], hash_value, key))
+                break;
+        } else if (first_deleted_entry_ptr == NULL)
+            first_deleted_entry_ptr = entry_ptr;
+        ind = secondary_hash(ind, table, &peterb);
+        COLLISION;
+    }
+    return entry_ptr;
 }
 
-static void
-add_packed_direct(st_table *table, st_data_t key, st_data_t value, st_index_t hash_val)
-{
-    if (table->real_entries < MAX_PACKED_HASH) {
-	st_index_t i = table->real_entries++;
-	PKEY_SET(table, i, key);
-	PVAL_SET(table, i, value);
-	PHASH_SET(table, i, hash_val);
-	table->num_entries++;
-    }
-    else {
-	unpack_entries(table);
-	add_direct(table, key, value, hash_val, hash_pos(hash_val, table->num_bins));
-    }
-}
-
-
+/* Find an element with KEY in TABLE.  Return non-zero if we found it.
+   Set up *RECORD to the found element record.  */
 int
-st_insert(register st_table *table, register st_data_t key, st_data_t value)
+st_lookup(st_table *table, st_data_t key, st_data_t *value)
 {
-    st_index_t hash_val;
-    register st_index_t bin_pos;
-    register st_table_entry *ptr;
-
-    hash_val = do_hash(key, table);
-
-    if (table->entries_packed) {
-	st_index_t i = find_packed_index(table, hash_val, key);
-	if (i < table->real_entries) {
-	    PVAL_SET(table, i, value);
-	    return 1;
-        }
-	add_packed_direct(table, key, value, hash_val);
-	return 0;
-    }
-
-    FIND_ENTRY(table, ptr, hash_val, bin_pos);
-
-    if (ptr == 0) {
-	add_direct(table, key, value, hash_val, bin_pos);
-	return 0;
-    }
-    else {
-	ptr->record = value;
-	return 1;
-    }
-}
-
-int
-st_insert2(register st_table *table, register st_data_t key, st_data_t value,
-	   st_data_t (*func)(st_data_t))
-{
-    st_index_t hash_val;
-    register st_index_t bin_pos;
-    register st_table_entry *ptr;
-
-    hash_val = do_hash(key, table);
-
-    if (table->entries_packed) {
-	st_index_t i = find_packed_index(table, hash_val, key);
-	if (i < table->real_entries) {
-	    PVAL_SET(table, i, value);
-	    return 1;
-	}
-	key = (*func)(key);
-	add_packed_direct(table, key, value, hash_val);
-	return 0;
-    }
-
-    FIND_ENTRY(table, ptr, hash_val, bin_pos);
-
-    if (ptr == 0) {
-	key = (*func)(key);
-	add_direct(table, key, value, hash_val, bin_pos);
-	return 0;
-    }
-    else {
-	ptr->record = value;
-	return 1;
-    }
-}
-
-void
-st_add_direct(st_table *table, st_data_t key, st_data_t value)
-{
-    st_index_t hash_val;
-
-    hash_val = do_hash(key, table);
-    if (table->entries_packed) {
-	add_packed_direct(table, key, value, hash_val);
-	return;
-    }
-
-    add_direct(table, key, value, hash_val, hash_pos(hash_val, table->num_bins));
-}
-
-static void
-rehash(register st_table *table)
-{
-    register st_table_entry *ptr = 0, **new_bins;
-    st_index_t new_num_bins, hash_val;
-
-    new_num_bins = new_size(table->num_bins+1);
-    new_bins = st_realloc_bins(table->bins, new_num_bins, table->num_bins);
-    table->num_bins = new_num_bins;
-    table->bins = new_bins;
-
-    list_for_each(st_head(table), ptr, olist) {
-	hash_val = hash_pos(ptr->hash, new_num_bins);
-	ptr->next = new_bins[hash_val];
-	new_bins[hash_val] = ptr;
-    }
-}
-
-st_table*
-st_copy(st_table *old_table)
-{
-    st_table *new_table;
-    st_table_entry *ptr = 0, *entry;
-    st_index_t num_bins = old_table->num_bins;
-
-    new_table = st_alloc_table();
-    if (new_table == 0) {
-	return 0;
-    }
-
-    *new_table = *old_table;
-    new_table->bins = st_alloc_bins(num_bins);
-
-    if (new_table->bins == 0) {
-	st_dealloc_table(new_table);
-	return 0;
-    }
-
-    if (old_table->entries_packed) {
-        MEMCPY(new_table->bins, old_table->bins, st_table_entry*, old_table->num_bins);
-        return new_table;
-    }
-
-    list_head_init(st_head(new_table));
-
-    list_for_each(st_head(old_table), ptr, olist) {
-	entry = new_entry(new_table, ptr->key, ptr->record, ptr->hash,
-			    hash_pos(ptr->hash, num_bins));
-	list_add_tail(st_head(new_table), &entry->olist);
-    }
-
-    return new_table;
-}
-
-static inline void
-remove_entry(st_table *table, st_table_entry *ptr)
-{
-    list_del(&ptr->olist);
-    table->num_entries--;
-}
-
-int
-st_delete(register st_table *table, register st_data_t *key, st_data_t *value)
-{
-    st_index_t hash_val;
-    st_table_entry **prev;
-    register st_table_entry *ptr;
-
-    hash_val = do_hash(*key, table);
-
-    if (table->entries_packed) {
-	st_index_t i = find_packed_index(table, hash_val, *key);
-	if (i < table->real_entries) {
-	    if (value != 0) *value = PVAL(table, i);
-	    *key = PKEY(table, i);
-	    remove_packed_entry(table, i);
-	    return 1;
-        }
-        if (value != 0) *value = 0;
+    st_entry_t entry;
+    st_index_t hash = do_hash(key, table);
+    
+    entry = find_table_entry(table, hash, key);
+    if (EMPTY_ENTRY_P(entry))
         return 0;
-    }
-
-    prev = &table->bins[hash_pos(hash_val, table->num_bins)];
-    for (;(ptr = *prev) != 0; prev = &ptr->next) {
-	if (EQUAL(table, *key, ptr)) {
-	    *prev = ptr->next;
-	    remove_entry(table, ptr);
-	    if (value != 0) *value = ptr->record;
-	    *key = ptr->key;
-	    st_free_entry(ptr);
-	    return 1;
-	}
-    }
-
-    if (value != 0) *value = 0;
-    return 0;
-}
-
-int
-st_delete_safe(register st_table *table, register st_data_t *key, st_data_t *value, st_data_t never)
-{
-    st_index_t hash_val;
-    register st_table_entry *ptr;
-
-    hash_val = do_hash(*key, table);
-
-    if (table->entries_packed) {
-	st_index_t i = find_packed_index(table, hash_val, *key);
-	if (i < table->real_entries) {
-	    if (value != 0) *value = PVAL(table, i);
-	    *key = PKEY(table, i);
-	    remove_safe_packed_entry(table, i, never);
-	    return 1;
-	}
-	if (value != 0) *value = 0;
-	return 0;
-    }
-
-    ptr = table->bins[hash_pos(hash_val, table->num_bins)];
-
-    for (; ptr != 0; ptr = ptr->next) {
-	if ((ptr->key != never) && EQUAL(table, *key, ptr)) {
-	    remove_entry(table, ptr);
-	    *key = ptr->key;
-	    if (value != 0) *value = ptr->record;
-	    ptr->key = ptr->record = never;
-	    return 1;
-	}
-    }
-
-    if (value != 0) *value = 0;
-    return 0;
-}
-
-int
-st_shift(register st_table *table, register st_data_t *key, st_data_t *value)
-{
-    st_table_entry *old;
-    st_table_entry **prev;
-    register st_table_entry *ptr;
-
-    if (table->num_entries == 0) {
-        if (value != 0) *value = 0;
-        return 0;
-    }
-
-    if (table->entries_packed) {
-        if (value != 0) *value = PVAL(table, 0);
-        *key = PKEY(table, 0);
-        remove_packed_entry(table, 0);
-        return 1;
-    }
-
-    old = list_pop(st_head(table), st_table_entry, olist);
-    table->num_entries--;
-    prev = &table->bins[hash_pos(old->hash, table->num_bins)];
-    while ((ptr = *prev) != old) prev = &ptr->next;
-    *prev = ptr->next;
-    if (value != 0) *value = ptr->record;
-    *key = ptr->key;
-    st_free_entry(ptr);
+    if (value != 0)
+        *value = table->elements[entry].record;
     return 1;
 }
 
-void
-st_cleanup_safe(st_table *table, st_data_t never)
+/* Find an element with KEY in TABLE.  Return non-zero if we found it.
+   Set up *RESULT to the found table element key.  */
+int
+st_get_key(st_table *table, st_data_t key, st_data_t *result)
 {
-    st_table_entry *ptr, **last, *tmp;
-    st_index_t i;
-
-    if (table->entries_packed) {
-	st_index_t i = 0, j = 0;
-	while (PKEY(table, i) != never) {
-	    if (i++ == table->real_entries) return;
-	}
-	for (j = i; ++i < table->real_entries;) {
-	    if (PKEY(table, i) == never) continue;
-	    PACKED_ENT(table, j) = PACKED_ENT(table, i);
-	    j++;
-	}
-	table->real_entries = j;
-	/* table->num_entries really should be equal j at this moment, but let set it anyway */
-	table->num_entries = j;
-	return;
-    }
-
-    for (i = 0; i < table->num_bins; i++) {
-	ptr = *(last = &table->bins[i]);
-	while (ptr != 0) {
-	    if (ptr->key == never) {
-		tmp = ptr;
-		*last = ptr = ptr->next;
-		st_free_entry(tmp);
-	    }
-	    else {
-		ptr = *(last = &ptr->next);
-	    }
-	}
-    }
+    st_entry_t entry;
+    
+    entry = find_table_entry(table, do_hash(key, table), key);
+    
+    if (EMPTY_ENTRY_P(entry))
+        return 0;
+    if (result != 0)
+        *result = table->elements[entry].key;
+    return 1;
 }
 
+/* Insert (KEY, VALUE) into TABLE and return zero.  If there is
+   already element with KEY in the table, return nonzero and and
+   update the value of the found element.  */
+int
+st_insert(st_table *table, st_data_t key, st_data_t value)
+{
+    st_table_element *element;
+    st_entry_t *entry_ptr;
+    st_index_t ind, hash_value;
+    
+    hash_value = do_hash(key, table);
+    entry_ptr = find_table_entry_ptr_and_reserve(table, hash_value, key);
+    if (EMPTY_ENTRY_PTR_P(entry_ptr)) {
+        st_assert(table->elements_bound < table->allocated_elements);
+        ind = table->elements_bound++;
+        element = &table->elements[ind];
+        element->hash = hash_value;
+        element->key = key;
+        element->record = value;
+        *entry_ptr = ind;
+        return 0;
+    }
+    table->elements[*entry_ptr].record = value;
+    return 1;
+}
+
+/* Insert (KEY, VALUE) into TABLE.  The table should not have element
+   with KEY before the insertion.  */
+void
+st_add_direct(st_table *table, st_data_t key, st_data_t value)
+{
+    int res = st_insert(table, key, value);
+
+    st_assert(!res);
+}
+
+/* Insert (FUNC(KEY), VALUE) into TABLE and return zero.  If there is
+   already element with KEY in the table, return nonzero and and
+   update the value of the found element.  */
+int
+st_insert2(st_table *table, st_data_t key, st_data_t value,
+           st_data_t (*func)(st_data_t))
+{
+    st_table_element *element;
+    st_entry_t *entry_ptr;
+    st_index_t ind, hash_value, check;
+    
+    hash_value = do_hash(key, table);
+    entry_ptr = find_table_entry_ptr_and_reserve(table, hash_value, key);
+    if (EMPTY_ENTRY_PTR_P(entry_ptr)) {
+        st_assert(table->elements_bound < table->allocated_elements);
+        check = table->rebuilds_num;
+        key = (*func)(key);
+        st_assert(check == table->rebuilds_num
+                  && do_hash(key, table) == hash_value);
+        ind = table->elements_bound++;
+        element = &table->elements[ind];
+        element->hash = hash_value;
+        element->key = key;
+        element->record = value;
+        *entry_ptr = ind;
+        return 0;
+    }
+    table->elements[*entry_ptr].record = value;
+    return 1;
+}
+
+/* Return a copy of table OLD_TAB.  The result table size can shrink
+   and it still contains deleted elements.  */
+st_table *
+st_copy(st_table *old_tab)
+{
+    st_table *new_tab;
+    st_entry_t *old_entries, *new_entries;
+    st_index_t i, n, start;
+    
+    new_tab = (st_table *) malloc(sizeof(st_table));
+    
+    *new_tab = *old_tab;
+    new_tab->elements_bound -= new_tab->elements_start;
+    new_tab->elements_start = 0;
+    n = old_tab->allocated_entries;
+    new_tab->entries = (st_entry_t *) malloc(n * sizeof(st_entry_t));
+    new_tab->elements = (st_table_element *) malloc(old_tab->allocated_elements
+                                                    * sizeof(st_table_element));
+    start = old_tab->elements_start;
+    MEMCPY(new_tab->elements, old_tab->elements + start,
+           st_table_element, old_tab->elements_bound - start);
+    old_entries = old_tab->entries;
+    new_entries = new_tab->entries;
+    for (i = 0; i < n; i++) {
+        new_entries[i] = old_entries[i];
+        if (! EMPTY_OR_DELETED_ENTRY_PTR_P(&new_entries[i]))
+            new_entries[i] -= start;
+    }
+    return new_tab;
+}
+
+/* Delete element with KEY from table TAB, set up *VALUE (unless VALUE
+   is zero) from deleted table element, and return non-zero.  If there
+   is no element with KEY in the table, clear *VALUE (unless VALUE is
+   zero), and return zero.  */
+static int
+st_general_delete(st_table *tab, st_data_t *key, st_data_t *value)
+{
+    st_index_t n;
+    st_table_element *element, *elements;
+    st_entry_t *entry_ptr;
+    
+    st_assert(tab != NULL);
+    entry_ptr = find_table_entry_ptr(tab, do_hash(*key, tab), *key);
+    if (EMPTY_ENTRY_PTR_P(entry_ptr)) {
+        if (value != 0) *value = 0;
+        return 0;
+    }
+    elements = tab->elements;
+    element = &elements[*entry_ptr];
+    MARK_ENTRY_DELETED(tab, entry_ptr);
+    *key = element->key;
+    if (value != 0) *value = element->record;
+    MARK_ELEMENT_DELETED(element);
+    n = element - elements;
+    if (n == tab->elements_start)
+        tab->elements_start++;
+    else if (n + 1 == tab->elements_bound)
+        tab->elements_bound--;
+    return 1;
+}
+
+int
+st_delete(st_table *tab, st_data_t *key, st_data_t *value)
+{
+    return st_general_delete(tab, key, value);
+}
+
+/* The function and other functions with suffix '_safe' or '_check'
+   are originated from previous implementation of the hash tables.  It
+   was necessary for correct deleting elements during traversing
+   tables.  The current implementation permits deletion during
+   traversing without a specific way to do this.  */
+int
+st_delete_safe(st_table *tab, st_data_t *key, st_data_t *value,
+               st_data_t never ATTRIBUTE_UNUSED)
+{
+    return st_general_delete(tab, key, value);
+}
+
+/* If TABLE is empty, clear *VALUE (unless VALUE is zero), and return
+   zero.  Otherwise, remove the first element in the table.  Return
+   its key through KEY and its record through VALUE (unless VALUE is
+   zero).  */
+int
+st_shift(st_table *table, st_data_t *key, st_data_t *value)
+{
+    st_index_t i, bound;
+    st_entry_t *entry;
+    st_table_element *elements, *curr_element_ptr;
+    
+    if (table->num_elements == 0) {
+        if (value != 0) *value = 0;
+        return 0;
+    }
+    
+    elements = table->elements;
+    bound = table->elements_bound;
+    for (i = table->elements_start; i < bound; i++) {
+        curr_element_ptr = &elements[i];
+        if (DELETED_ELEMENT_P(curr_element_ptr))
+            continue;
+        if (value != 0) *value = curr_element_ptr->record;
+        *key = curr_element_ptr->key;
+        entry = find_table_entry_ptr(table, curr_element_ptr->hash,
+                                     curr_element_ptr->key);
+        st_assert(! EMPTY_ENTRY_PTR_P(entry)
+                  && &elements[*entry] == curr_element_ptr);
+        MARK_ELEMENT_DELETED(curr_element_ptr);
+        MARK_ENTRY_DELETED(table, entry);
+        table->elements_start = i + 1;
+        return 1;
+    }
+    st_assert(0);
+    return 0;
+}
+
+/* See comments for function st_delete_safe.  */
+void
+st_cleanup_safe(st_table *table ATTRIBUTE_UNUSED,
+                st_data_t never ATTRIBUTE_UNUSED)
+{
+}
+
+/* Find element with KEY in TABLE, call FUNC with key, value of the
+   found element, and non-zero as the 3rd argument.  If the element is
+   not found, call FUNC with KEY, and 2 zero arguments.  If the call
+   returns ST_CONTINUE, the table will have an element with key and
+   value returned by FUNC through the 1st and 2nd parameters.  If the
+   call of FUNC returns ST_DELETE, the table will not have element
+   with KEY.  The function returns flag of that the element with KEY
+   was in the table before the call.  */
 int
 st_update(st_table *table, st_data_t key, st_update_callback_func *func, st_data_t arg)
 {
-    st_index_t hash_val, bin_pos;
-    register st_table_entry *ptr, **last, *tmp;
+    st_table_element *element, *elements;
+    st_entry_t *entry_ptr;
     st_data_t value = 0, old_key;
+    st_index_t n, check;
     int retval, existing = 0;
-
-    hash_val = do_hash(key, table);
-
-    if (table->entries_packed) {
-	st_index_t i = find_packed_index(table, hash_val, key);
-	if (i < table->real_entries) {
-	    key = PKEY(table, i);
-	    value = PVAL(table, i);
-	    existing = 1;
-	}
-	{
-	    old_key = key;
-	    retval = (*func)(&key, &value, arg, existing);
-	    if (!table->entries_packed) {
-		FIND_ENTRY(table, ptr, hash_val, bin_pos);
-		goto unpacked;
-	    }
-	    switch (retval) {
-	      case ST_CONTINUE:
-		if (!existing) {
-		    add_packed_direct(table, key, value, hash_val);
-		    break;
-		}
-		if (old_key != key) {
-		    PKEY(table, i) = key;
-		}
-		PVAL_SET(table, i, value);
-		break;
-	      case ST_DELETE:
-		if (!existing) break;
-		remove_packed_entry(table, i);
-	    }
-	}
-	return existing;
+    
+    entry_ptr = find_table_entry_ptr(table, do_hash(key, table), key);
+    elements = table->elements;
+    element = &elements[*entry_ptr];
+    if (! EMPTY_ENTRY_PTR_P(entry_ptr)) {
+        key = element->key;
+        value = element->record;
+        existing = 1;
     }
-
-    FIND_ENTRY(table, ptr, hash_val, bin_pos);
-
-    if (ptr != 0) {
-	key = ptr->key;
-	value = ptr->record;
-	existing = 1;
+    old_key = key;
+    check = table->rebuilds_num;
+    retval = (*func)(&key, &value, arg, existing);
+    st_assert(check == table->rebuilds_num);
+    switch (retval) {
+    case ST_CONTINUE:
+        if (! existing) {
+            st_insert(table, key, value);
+            break;
+        }
+        if (old_key != key) {
+            element->key = key;
+        }
+        element->record = value;
+        break;
+    case ST_DELETE:
+        if (existing) {
+            MARK_ELEMENT_DELETED(element);
+            MARK_ENTRY_DELETED(table, entry_ptr);
+            n = element - table->elements;
+            if (n == table->elements_start)
+                table->elements_start++;
+            else if (n + 1 == table->elements_bound)
+                table->elements_bound--;
+        }
+        break;
     }
-    {
-	old_key = key;
-	retval = (*func)(&key, &value, arg, existing);
-      unpacked:
-	switch (retval) {
-	  case ST_CONTINUE:
-	    if (!existing) {
-		add_direct(table, key, value, hash_val, hash_pos(hash_val, table->num_bins));
-		break;
-	    }
-	    if (old_key != key) {
-		ptr->key = key;
-	    }
-	    ptr->record = value;
-	    break;
-	  case ST_DELETE:
-	    if (!existing) break;
-	    last = &table->bins[bin_pos];
-	    for (; (tmp = *last) != 0; last = &tmp->next) {
-		if (ptr == tmp) {
-		    *last = ptr->next;
-		    remove_entry(table, ptr);
-		    st_free_entry(ptr);
-		    break;
-		}
-	    }
-	    break;
-	}
-	return existing;
-    }
+    return existing;
+}
+
+/* Traverse all elements in table TAB calling FUNC with current
+   element key and value and zero.  If the call returns ST_STOP, stop
+   traversing.  If the call returns ST_DELETE, delete the current
+   element from the table.  In case of ST_CHECK or ST_CONTINUE,
+   continue traversing.  The function always returns zero.  */
+static int
+st_general_foreach(st_table *tab, int (*func)(ANYARGS), st_data_t arg)
+{
+  st_entry_t *entry_ptr;
+  st_table_element *elements, *curr_element_ptr;
+  enum st_retval retval;
+  st_index_t i, n, hash, rebuilds_num;
+  st_data_t key;
+  
+  elements = tab->elements;
+  for (i = tab->elements_start; i < tab->elements_bound; i++) {
+      /* Bound can be changed inside the loop */
+      curr_element_ptr = &elements[i];
+      if (DELETED_ELEMENT_P(curr_element_ptr))
+          continue;
+      key = curr_element_ptr->key;
+      rebuilds_num = tab->rebuilds_num;
+      hash = curr_element_ptr->hash;
+      retval = (*func)(key, curr_element_ptr->record, arg, 0);
+      if (rebuilds_num != tab->rebuilds_num) {
+          elements = tab->elements;
+          curr_element_ptr = &elements[i];
+      }
+      switch (retval) {
+      case ST_CHECK:
+          break;
+      case ST_CONTINUE:
+          break;
+      case ST_STOP:
+          return 0;
+      case ST_DELETE:
+          entry_ptr = find_table_entry_ptr(tab, hash, curr_element_ptr->key);
+          if (! EMPTY_ENTRY_PTR_P(entry_ptr)) {
+              st_assert(&elements[*entry_ptr] == curr_element_ptr);
+              MARK_ELEMENT_DELETED(curr_element_ptr);
+              MARK_ENTRY_DELETED(tab, entry_ptr);
+              n = curr_element_ptr - elements;
+              if (n == tab->elements_start)
+                  tab->elements_start++;
+              else if (n + 1 == tab->elements_bound)
+                  tab->elements_bound--;
+          }
+          break;
+      }
+  }
+  return 0;
 }
 
 int
-st_foreach_check(st_table *table, int (*func)(ANYARGS), st_data_t arg, st_data_t never)
+st_foreach(st_table *tab, int (*func)(ANYARGS), st_data_t arg)
 {
-    st_table_entry *ptr = 0, **last, *tmp, *next;
-    struct list_head *head;
-    enum st_retval retval;
-    st_index_t i;
-
-    if (table->entries_packed) {
-	for (i = 0; i < table->real_entries; i++) {
-	    st_data_t key, val;
-	    st_index_t hash;
-	    key = PKEY(table, i);
-	    val = PVAL(table, i);
-	    hash = PHASH(table, i);
-	    if (key == never) continue;
-	    retval = (*func)(key, val, arg, 0);
-	    if (!table->entries_packed) {
-		FIND_ENTRY(table, ptr, hash, i);
-		if (retval == ST_CHECK) {
-		    if (!ptr) goto deleted;
-		}
-		if (table->num_entries == 0) return 0;
-		head = st_head(table);
-		next = list_entry(ptr->olist.next, st_table_entry, olist);
-		goto unpacked;
-	    }
-	    switch (retval) {
-	      case ST_CHECK:	/* check if hash is modified during iteration */
-		if (PHASH(table, i) == 0 && PKEY(table, i) == never) {
-		    break;
-		}
-		i = find_packed_index_from(table, hash, key, i);
-		if (i >= table->real_entries) {
-		    i = find_packed_index(table, hash, key);
-		    if (i >= table->real_entries) goto deleted;
-		}
-		/* fall through */
-	      case ST_CONTINUE:
-		break;
-	      case ST_STOP:
-		return 0;
-	      case ST_DELETE:
-		remove_safe_packed_entry(table, i, never);
-		break;
-	    }
-	}
-	return 0;
-    }
-
-    head = st_head(table);
-    list_for_each_safe(head, ptr, next, olist) {
-	if (ptr->key != never) {
-	    i = hash_pos(ptr->hash, table->num_bins);
-	    retval = (*func)(ptr->key, ptr->record, arg, 0);
-	  unpacked:
-	    switch (retval) {
-	      case ST_CHECK:	/* check if hash is modified during iteration */
-		for (tmp = table->bins[i]; tmp != ptr; tmp = tmp->next) {
-		    if (!tmp) {
-		      deleted:
-			/* call func with error notice */
-			retval = (*func)(0, 0, arg, 1);
-			return 1;
-		    }
-		}
-		/* fall through */
-	      case ST_CONTINUE:
-		break;
-	      case ST_STOP:
-		return 0;
-	      case ST_DELETE:
-		last = &table->bins[hash_pos(ptr->hash, table->num_bins)];
-		for (; (tmp = *last) != 0; last = &tmp->next) {
-		    if (ptr == tmp) {
-			remove_entry(table, ptr);
-			ptr->key = ptr->record = never;
-			ptr->hash = 0;
-			break;
-		    }
-		}
-		if (table->num_entries == 0) return 0;
-	    }
-	}
-    }
-    return 0;
+    return st_general_foreach(tab, func, arg);
 }
 
+/* See comments for function st_delete_safe.  */
 int
-st_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
+st_foreach_check(st_table *tab, int (*func)(ANYARGS), st_data_t arg,
+                 st_data_t never ATTRIBUTE_UNUSED)
 {
-    st_table_entry *ptr = 0, **last, *tmp, *next;
-    enum st_retval retval;
-    struct list_head *head;
-    st_index_t i;
-
-    if (table->entries_packed) {
-	for (i = 0; i < table->real_entries; i++) {
-	    st_data_t key, val;
-	    st_index_t hash;
-	    key = PKEY(table, i);
-	    val = PVAL(table, i);
-	    hash = PHASH(table, i);
-	    retval = (*func)(key, val, arg, 0);
-	    if (!table->entries_packed) {
-		FIND_ENTRY(table, ptr, hash, i);
-		if (!ptr) return 0;
-		head = st_head(table);
-		next = list_entry(ptr->olist.next, st_table_entry, olist);
-		goto unpacked;
-	    }
-	    switch (retval) {
-	      case ST_CONTINUE:
-		break;
-	      case ST_CHECK:
-	      case ST_STOP:
-		return 0;
-	      case ST_DELETE:
-		remove_packed_entry(table, i);
-		i--;
-		break;
-	    }
-	}
-	return 0;
-    }
-
-    head = st_head(table);
-    list_for_each_safe(head, ptr, next, olist) {
-	i = hash_pos(ptr->hash, table->num_bins);
-	retval = (*func)(ptr->key, ptr->record, arg, 0);
-      unpacked:
-	switch (retval) {
-	  case ST_CONTINUE:
-	    break;
-	  case ST_CHECK:
-	  case ST_STOP:
-	    return 0;
-	  case ST_DELETE:
-	    last = &table->bins[hash_pos(ptr->hash, table->num_bins)];
-	    for (; (tmp = *last) != 0; last = &tmp->next) {
-		if (ptr == tmp) {
-		    *last = ptr->next;
-		    remove_entry(table, ptr);
-		    st_free_entry(ptr);
-		    break;
-		}
-	    }
-	    if (table->num_entries == 0) return 0;
-	}
-    }
-    return 0;
+    return st_general_foreach(tab, func, arg);
 }
 
+/* Set up array KEYS by at most SIZE keys of head table elements.
+   Return the number of keys set up in array KEYS.  */
 static st_index_t
-get_keys(const st_table *table, st_data_t *keys, st_index_t size,
-         int check, st_data_t never)
+st_general_keys(st_table *table, st_data_t *keys, st_index_t size)
 {
+    st_index_t i, bound;
     st_data_t key;
     st_data_t *keys_start = keys;
-
-    if (table->entries_packed) {
-	st_index_t i;
-
-	if (size > table->real_entries) size = table->real_entries;
-	for (i = 0; i < size; i++) {
-	    key = PKEY(table, i);
-	    if (check && key == never) continue;
-	    *keys++ = key;
-	}
+    st_data_t *keys_end = keys + size;
+    st_table_element *curr_element_ptr, *elements = table->elements;
+    
+    bound = table->elements_bound;
+    for (i = table->elements_start; i < bound && keys < keys_end; i++) {
+        curr_element_ptr = &elements[i];
+        if (DELETED_ELEMENT_P(curr_element_ptr))
+            continue;
+        key = curr_element_ptr->key;
+        *keys++ = key;
     }
-    else {
-	st_table_entry *ptr = 0;
-	st_data_t *keys_end = keys + size;
-
-	list_for_each(st_head(table), ptr, olist) {
-	    if (keys >= keys_end) break;
-	    key = ptr->key;
-	    if (check && key == never) continue;
-	    *keys++ = key;
-	}
-    }
-
+    
     return keys - keys_start;
 }
 
 st_index_t
 st_keys(st_table *table, st_data_t *keys, st_index_t size)
 {
-    return get_keys(table, keys, size, 0, 0);
+    return st_general_keys(table, keys, size);
 }
 
+/* See comments for function st_delete_safe.  */
 st_index_t
-st_keys_check(st_table *table, st_data_t *keys, st_index_t size, st_data_t never)
+st_keys_check(st_table *table, st_data_t *keys, st_index_t size,
+              st_data_t never ATTRIBUTE_UNUSED)
 {
-    return get_keys(table, keys, size, 1, never);
+    return st_general_keys(table, keys, size);
 }
 
+/* Set up array VALUES by at most SIZE values of head table elements.
+   Return the number of values set up in array VALUES.  */
 static st_index_t
-get_values(const st_table *table, st_data_t *values, st_index_t size,
-           int check, st_data_t never)
+st_general_values(st_table *table, st_data_t *values, st_index_t size)
 {
-    st_data_t key;
+    st_index_t i, bound;
     st_data_t *values_start = values;
-
-    if (table->entries_packed) {
-	st_index_t i;
-
-	if (size > table->real_entries) size = table->real_entries;
-	for (i = 0; i < size; i++) {
-	    key = PKEY(table, i);
-	    if (check && key == never) continue;
-	    *values++ = PVAL(table, i);
-	}
+    st_data_t *values_end = values + size;
+    st_table_element *curr_element_ptr, *elements = table->elements;
+    
+    bound = table->elements_bound;
+    for (i = table->elements_start; i < bound && values < values_end; i++) {
+        curr_element_ptr = &elements[i];
+        if (DELETED_ELEMENT_P(curr_element_ptr))
+            continue;
+        *values++ = curr_element_ptr->record;
     }
-    else {
-	st_table_entry *ptr = 0;
-	st_data_t *values_end = values + size;
-
-	list_for_each(st_head(table), ptr, olist) {
-	    if (values >= values_end) break;
-	    key = ptr->key;
-	    if (check && key == never) continue;
-	    *values++ = ptr->record;
-	}
-    }
-
+    
     return values - values_start;
 }
 
 st_index_t
 st_values(st_table *table, st_data_t *values, st_index_t size)
 {
-    return get_values(table, values, size, 0, 0);
+    return st_general_values(table, values, size);
 }
 
+/* See comments for function st_delete_safe.  */
 st_index_t
-st_values_check(st_table *table, st_data_t *values, st_index_t size, st_data_t never)
+st_values_check(st_table *table, st_data_t *values, st_index_t size,
+                st_data_t never ATTRIBUTE_UNUSED)
 {
-    return get_values(table, values, size, 1, never);
+    return st_general_values(table, values, size);
 }
-
-#if 0  /* unused right now */
-int
-st_reverse_foreach_check(st_table *table, int (*func)(ANYARGS), st_data_t arg, st_data_t never)
-{
-    st_table_entry *ptr, **last, *tmp, *next;
-    struct list_head *head;
-    enum st_retval retval;
-    st_index_t i;
-
-    if (table->entries_packed) {
-	for (i = table->real_entries; 0 < i;) {
-	    st_data_t key, val;
-	    st_index_t hash;
-	    --i;
-	    key = PKEY(table, i);
-	    val = PVAL(table, i);
-	    hash = PHASH(table, i);
-	    if (key == never) continue;
-	    retval = (*func)(key, val, arg, 0);
-	    if (!table->entries_packed) {
-		FIND_ENTRY(table, ptr, hash, i);
-		if (retval == ST_CHECK) {
-		    if (!ptr) goto deleted;
-		}
-		if (table->num_entries == 0) return 0;
-		head = st_head(table);
-		next = list_entry(ptr->olist.next, st_table_entry, olist);
-		goto unpacked;
-	    }
-	    switch (retval) {
-	      case ST_CHECK:	/* check if hash is modified during iteration */
-		if (PHASH(table, i) == 0 && PKEY(table, i) == never) {
-		    break;
-		}
-		i = find_packed_index_from(table, hash, key, i);
-		if (i >= table->real_entries) {
-		    i = find_packed_index(table, hash, key);
-		    if (i >= table->real_entries) goto deleted;
-		}
-		/* fall through */
-	      case ST_CONTINUE:
-		break;
-	      case ST_STOP:
-		return 0;
-	      case ST_DELETE:
-		remove_safe_packed_entry(table, i, never);
-		break;
-	    }
-	}
-	return 0;
-    }
-
-    head = st_head(table);
-    list_for_each_rev_safe(head, ptr, next, olist) {
-	if (ptr->key != never) {
-	    i = hash_pos(ptr->hash, table->num_bins);
-	    retval = (*func)(ptr->key, ptr->record, arg, 0);
-	  unpacked:
-	    switch (retval) {
-	      case ST_CHECK:	/* check if hash is modified during iteration */
-		for (tmp = table->bins[i]; tmp != ptr; tmp = tmp->next) {
-		    if (!tmp) {
-		      deleted:
-			/* call func with error notice */
-			retval = (*func)(0, 0, arg, 1);
-			return 1;
-		    }
-		}
-		/* fall through */
-	      case ST_CONTINUE:
-		break;
-	      case ST_STOP:
-		return 0;
-	      case ST_DELETE:
-		last = &table->bins[hash_pos(ptr->hash, table->num_bins)];
-		for (; (tmp = *last) != 0; last = &tmp->next) {
-		    if (ptr == tmp) {
-			remove_entry(table, ptr);
-			ptr->key = ptr->record = never;
-			ptr->hash = 0;
-			break;
-		    }
-		}
-		if (table->num_entries == 0) return 0;
-	    }
-	}
-    }
-    return 0;
-}
-
-int
-st_reverse_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
-{
-    st_table_entry *ptr, **last, *tmp, *next;
-    enum st_retval retval;
-    struct list_head *head;
-    st_index_t i;
-
-    if (table->entries_packed) {
-	for (i = table->real_entries; 0 < i;) {
-	    st_data_t key, val;
-	    st_index_t hash;
-	    --i;
-	    key = PKEY(table, i);
-	    val = PVAL(table, i);
-	    hash = PHASH(table, i);
-	    retval = (*func)(key, val, arg, 0);
-	    if (!table->entries_packed) {
-		FIND_ENTRY(table, ptr, hash, i);
-		if (!ptr) return 0;
-		head = st_head(table);
-		next = list_entry(ptr->olist.next, st_table_entry, olist);
-		goto unpacked;
-	    }
-	    switch (retval) {
-	      case ST_CONTINUE:
-		break;
-	      case ST_CHECK:
-	      case ST_STOP:
-		return 0;
-	      case ST_DELETE:
-		remove_packed_entry(table, i);
-		break;
-	    }
-	}
-	return 0;
-    }
-
-    head = st_head(table);
-    list_for_each_rev_safe(head, ptr, next, olist) {
-	i = hash_pos(ptr->hash, table->num_bins);
-	retval = (*func)(ptr->key, ptr->record, arg, 0);
-      unpacked:
-	switch (retval) {
-	  case ST_CONTINUE:
-	    break;
-	  case ST_CHECK:
-	  case ST_STOP:
-	    return 0;
-	  case ST_DELETE:
-	    last = &table->bins[hash_pos(ptr->hash, table->num_bins)];
-	    for (; (tmp = *last) != 0; last = &tmp->next) {
-		if (ptr == tmp) {
-		    *last = ptr->next;
-		    remove_entry(table, ptr);
-		    st_free_entry(ptr);
-		    break;
-		}
-	    }
-	    if (table->num_entries == 0) return 0;
-	}
-    }
-    return 0;
-}
-#endif
 
 /*
  * hash_32 - 32 bit Fowler/Noll/Vo FNV-1a hash code
@@ -1333,10 +1089,10 @@ st_reverse_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
  * PERFORMANCE OF THIS SOFTWARE.
  *
  * By:
- *	chongo <Landon Curt Noll> /\oo/\
+ *      chongo <Landon Curt Noll> /\oo/\
  *      http://www.isthe.com/chongo/
  *
- * Share and Enjoy!	:-)
+ * Share and Enjoy!     :-)
  */
 
 /*
@@ -1369,11 +1125,11 @@ strhash(st_data_t arg)
      * FNV-1a hash each octet in the buffer
      */
     while (*string) {
-	/* xor the bottom with the current octet */
-	hval ^= (unsigned int)*string++;
+        /* xor the bottom with the current octet */
+        hval ^= (unsigned int)*string++;
 
-	/* multiply by the 32 bit FNV magic prime mod 2^32 */
-	hval *= FNV_32_PRIME;
+        /* multiply by the 32 bit FNV magic prime mod 2^32 */
+        hval *= FNV_32_PRIME;
     }
     return hval;
 }
@@ -1476,104 +1232,104 @@ st_hash(const void *ptr, size_t len, st_index_t h)
 #endif
     if (len >= sizeof(st_index_t)) {
 #if !UNALIGNED_WORD_ACCESS
-	int align = (int)((st_data_t)data % sizeof(st_index_t));
-	if (align) {
-	    st_index_t d = 0;
-	    int sl, sr, pack;
+        int align = (int)((st_data_t)data % sizeof(st_index_t));
+        if (align) {
+            st_index_t d = 0;
+            int sl, sr, pack;
 
-	    switch (align) {
+            switch (align) {
 #ifdef WORDS_BIGENDIAN
 # define UNALIGNED_ADD(n) case SIZEOF_ST_INDEX_T - (n) - 1: \
-		t |= data_at(n) << CHAR_BIT*(SIZEOF_ST_INDEX_T - (n) - 2)
+                t |= data_at(n) << CHAR_BIT*(SIZEOF_ST_INDEX_T - (n) - 2)
 #else
-# define UNALIGNED_ADD(n) case SIZEOF_ST_INDEX_T - (n) - 1:	\
-		t |= data_at(n) << CHAR_BIT*(n)
+# define UNALIGNED_ADD(n) case SIZEOF_ST_INDEX_T - (n) - 1:     \
+                t |= data_at(n) << CHAR_BIT*(n)
 #endif
-		UNALIGNED_ADD_ALL;
+                UNALIGNED_ADD_ALL;
 #undef UNALIGNED_ADD
-	    }
+            }
 
 #ifdef WORDS_BIGENDIAN
-	    t >>= (CHAR_BIT * align) - CHAR_BIT;
+            t >>= (CHAR_BIT * align) - CHAR_BIT;
 #else
-	    t <<= (CHAR_BIT * align);
+            t <<= (CHAR_BIT * align);
 #endif
 
-	    data += sizeof(st_index_t)-align;
-	    len -= sizeof(st_index_t)-align;
+            data += sizeof(st_index_t)-align;
+            len -= sizeof(st_index_t)-align;
 
-	    sl = CHAR_BIT * (SIZEOF_ST_INDEX_T-align);
-	    sr = CHAR_BIT * align;
+            sl = CHAR_BIT * (SIZEOF_ST_INDEX_T-align);
+            sr = CHAR_BIT * align;
 
-	    while (len >= sizeof(st_index_t)) {
-		d = *(st_index_t *)data;
+            while (len >= sizeof(st_index_t)) {
+                d = *(st_index_t *)data;
 #ifdef WORDS_BIGENDIAN
-		t = (t << sr) | (d >> sl);
+                t = (t << sr) | (d >> sl);
 #else
-		t = (t >> sr) | (d << sl);
+                t = (t >> sr) | (d << sl);
 #endif
-		h = murmur_step(h, t);
-		t = d;
-		data += sizeof(st_index_t);
-		len -= sizeof(st_index_t);
-	    }
+                h = murmur_step(h, t);
+                t = d;
+                data += sizeof(st_index_t);
+                len -= sizeof(st_index_t);
+            }
 
-	    pack = len < (size_t)align ? (int)len : align;
-	    d = 0;
-	    switch (pack) {
+            pack = len < (size_t)align ? (int)len : align;
+            d = 0;
+            switch (pack) {
 #ifdef WORDS_BIGENDIAN
 # define UNALIGNED_ADD(n) case (n) + 1: \
-		d |= data_at(n) << CHAR_BIT*(SIZEOF_ST_INDEX_T - (n) - 1)
+                d |= data_at(n) << CHAR_BIT*(SIZEOF_ST_INDEX_T - (n) - 1)
 #else
 # define UNALIGNED_ADD(n) case (n) + 1: \
-		d |= data_at(n) << CHAR_BIT*(n)
+                d |= data_at(n) << CHAR_BIT*(n)
 #endif
-		UNALIGNED_ADD_ALL;
+                UNALIGNED_ADD_ALL;
 #undef UNALIGNED_ADD
-	    }
+            }
 #ifdef WORDS_BIGENDIAN
-	    t = (t << sr) | (d >> sl);
+            t = (t << sr) | (d >> sl);
 #else
-	    t = (t >> sr) | (d << sl);
+            t = (t >> sr) | (d << sl);
 #endif
 
 #if MURMUR == 2
-	    if (len < (size_t)align) goto skip_tail;
+            if (len < (size_t)align) goto skip_tail;
 #endif
-	    h = murmur_step(h, t);
-	    data += pack;
-	    len -= pack;
-	}
-	else
+            h = murmur_step(h, t);
+            data += pack;
+            len -= pack;
+        }
+        else
 #endif
-	{
-	    do {
-		h = murmur_step(h, *(st_index_t *)data);
-		data += sizeof(st_index_t);
-		len -= sizeof(st_index_t);
-	    } while (len >= sizeof(st_index_t));
-	}
+        {
+            do {
+                h = murmur_step(h, *(st_index_t *)data);
+                data += sizeof(st_index_t);
+                len -= sizeof(st_index_t);
+            } while (len >= sizeof(st_index_t));
+        }
     }
 
     t = 0;
     switch (len) {
 #ifdef WORDS_BIGENDIAN
 # define UNALIGNED_ADD(n) case (n) + 1: \
-	t |= data_at(n) << CHAR_BIT*(SIZEOF_ST_INDEX_T - (n) - 1)
+        t |= data_at(n) << CHAR_BIT*(SIZEOF_ST_INDEX_T - (n) - 1)
 #else
 # define UNALIGNED_ADD(n) case (n) + 1: \
-	t |= data_at(n) << CHAR_BIT*(n)
+        t |= data_at(n) << CHAR_BIT*(n)
 #endif
-	UNALIGNED_ADD_ALL;
+        UNALIGNED_ADD_ALL;
 #undef UNALIGNED_ADD
 #if MURMUR == 1
-	h = murmur_step(h, t);
+        h = murmur_step(h, t);
 #elif MURMUR == 2
 # if !UNALIGNED_WORD_ACCESS
       skip_tail:
 # endif
-	h ^= t;
-	h *= MurmurMagic;
+        h ^= t;
+        h *= MurmurMagic;
 #endif
     }
 
@@ -1699,12 +1455,12 @@ strcasehash(st_data_t arg)
      * FNV-1a hash each octet in the buffer
      */
     while (*string) {
-	unsigned int c = (unsigned char)*string++;
-	if ((unsigned int)(c - 'A') <= ('Z' - 'A')) c += 'a' - 'A';
-	hval ^= c;
+        unsigned int c = (unsigned char)*string++;
+        if ((unsigned int)(c - 'A') <= ('Z' - 'A')) c += 'a' - 'A';
+        hval ^= c;
 
-	/* multiply by the 32 bit FNV magic prime mod 2^32 */
-	hval *= FNV_32_PRIME;
+        /* multiply by the 32 bit FNV magic prime mod 2^32 */
+        hval *= FNV_32_PRIME;
     }
     return hval;
 }
