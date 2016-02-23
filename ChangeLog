@@ -1,3 +1,9 @@
+Tue Feb 23 15:21:14 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode/case-folding.rb, casefold.h: Reading casing data from
+	  SpecialCasing.txt.
+	  (with Kimihito Matsui)
+
 Mon Feb 22 18:33:55 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/unicode/case-folding.rb, casefold.h: Adding flag for title-case,

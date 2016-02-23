@@ -187,7 +187,7 @@ class CaseFolding
 end
 
 class MapItem
-  attr_reader :upper, :lower, :title
+  attr_accessor :upper, :lower, :title
 
   def initialize(code, upper, lower, title)
     @code = code
@@ -212,7 +212,18 @@ class CaseMapping
       end
     end
 
-    # IO.readlines(File.expand_path('SpecialCasing.txt', mapping_directory))
+    IO.readlines(File.expand_path('SpecialCasing.txt', mapping_directory), encoding: Encoding::ASCII_8BIT).each do |line|
+      line.chomp!
+      line, comment = line.split(/ *#/)
+      next if not line or line == ''
+      code, lower, title, upper, conditions = line.split(/ *; */)
+      unless conditions
+        item = @mappings[code]
+        item.lower = lower
+        item.title = title
+        item.upper = upper
+      end
+    end
   end
 
   def flags(from, type, to)
