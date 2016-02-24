@@ -1675,7 +1675,6 @@ struct load_file_arg {
     int xflag;
     struct cmdline_options *opt;
     VALUE f;
-    VALUE lineno;
 };
 
 static VALUE
@@ -1878,7 +1877,6 @@ restore_load_file(VALUE arg)
 {
     struct load_file_arg *argp = (struct load_file_arg *)arg;
     VALUE f = argp->f;
-    VALUE lineno = argp->lineno;
 
     if (argp->script) {
 	/*
@@ -1898,7 +1896,7 @@ restore_load_file(VALUE arg)
     else if (f != rb_stdin) {
 	rb_io_close(f);
     }
-    return rb_gv_set("$.", lineno);
+    return Qnil;
 }
 
 static NODE *
@@ -1910,7 +1908,6 @@ load_file(VALUE parser, VALUE fname, int script, struct cmdline_options *opt)
     arg.script = script;
     arg.opt = opt;
     arg.xflag = 0;
-    arg.lineno = rb_gv_get("$.");
     arg.f = open_load_file(rb_str_encode_ospath(fname), &arg.xflag);
     return (NODE *)rb_ensure(load_file_internal, (VALUE)&arg,
 			     restore_load_file, (VALUE)&arg);

@@ -2975,7 +2975,7 @@ swallow(rb_io_t *fptr, int term)
 }
 
 static VALUE
-rb_io_getline_fast(rb_io_t *fptr, rb_encoding *enc, VALUE io)
+rb_io_getline_fast(rb_io_t *fptr, rb_encoding *enc)
 {
     VALUE str = Qnil;
     int len = 0;
@@ -3014,13 +3014,6 @@ rb_io_getline_fast(rb_io_t *fptr, rb_encoding *enc, VALUE io)
     str = io_enc_str(str, fptr);
     ENC_CODERANGE_SET(str, cr);
     fptr->lineno++;
-    if (io == ARGF.current_file) {
-	ARGF.lineno++;
-	ARGF.last_lineno = ARGF.lineno;
-    }
-    else {
-	ARGF.last_lineno = fptr->lineno;
-    }
 
     return str;
 }
@@ -3072,14 +3065,12 @@ prepare_getline_args(int argc, VALUE *argv, VALUE *rsp, long *limit, VALUE io)
 }
 
 static VALUE
-rb_io_getline_1(VALUE rs, long limit, VALUE io)
+rb_io_getline_0(VALUE rs, long limit, rb_io_t *fptr)
 {
     VALUE str = Qnil;
-    rb_io_t *fptr;
     int nolimit = 0;
     rb_encoding *enc;
 
-    GetOpenFile(io, fptr);
     rb_io_check_char_readable(fptr);
     if (NIL_P(rs) && limit < 0) {
 	str = read_all(fptr, 0, Qnil);
@@ -3091,7 +3082,7 @@ rb_io_getline_1(VALUE rs, long limit, VALUE io)
     else if (rs == rb_default_rs && limit < 0 && !NEED_READCONV(fptr) &&
              rb_enc_asciicompat(enc = io_read_encoding(fptr))) {
 	NEED_NEWLINE_DECORATOR_ON_READ_CHECK(fptr);
-	return rb_io_getline_fast(fptr, enc, io);
+	return rb_io_getline_fast(fptr, enc);
     }
     else {
 	int c, newline = -1;
@@ -3165,12 +3156,28 @@ rb_io_getline_1(VALUE rs, long limit, VALUE io)
 
     if (!NIL_P(str) && !nolimit) {
 	fptr->lineno++;
+    }
+
+    return str;
+}
+
+static VALUE
+rb_io_getline_1(VALUE rs, long limit, VALUE io)
+{
+    rb_io_t *fptr;
+    int old_lineno, new_lineno;
+    VALUE str;
+
+    GetOpenFile(io, fptr);
+    old_lineno = fptr->lineno;
+    str = rb_io_getline_0(rs, limit, fptr);
+    if (!NIL_P(str) && (new_lineno = fptr->lineno) != old_lineno) {
 	if (io == ARGF.current_file) {
-	    ARGF.lineno++;
+	    ARGF.lineno += new_lineno - old_lineno;
 	    ARGF.last_lineno = ARGF.lineno;
 	}
 	else {
-	    ARGF.last_lineno = fptr->lineno;
+	    ARGF.last_lineno = new_lineno;
 	}
     }
 
@@ -3191,6 +3198,14 @@ VALUE
 rb_io_gets(VALUE io)
 {
     return rb_io_getline_1(rb_default_rs, -1, io);
+}
+
+VALUE
+rb_io_gets_internal(VALUE io)
+{
+    rb_io_t *fptr;
+    GetOpenFile(io, fptr);
+    return rb_io_getline_0(rb_default_rs, -1, fptr);
 }
 
 /*

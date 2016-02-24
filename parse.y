@@ -5680,10 +5680,12 @@ rb_parser_compile_cstr(VALUE vparser, const char *f, const char *s, int len, int
     return parser_compile_string(vparser, rb_filesystem_str_new_cstr(f), str, line);
 }
 
+VALUE rb_io_gets_internal(VALUE io);
+
 static VALUE
 lex_io_gets(struct parser_params *parser, VALUE io)
 {
-    return rb_io_gets(io);
+    return rb_io_gets_internal(io);
 }
 
 NODE*
