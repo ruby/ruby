@@ -1,6 +1,15 @@
+Wed Feb 24 22:31:13 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* include/ruby/oniguruma.h: Rearranging flag assignments and making
+	  space for titlecase indices; adding additional macros to add or
+	  extract titlecase index; adding comments for better documentation.
+	* enc/unicode.c: Moving some macros to include/ruby/oniguruma.h;
+	  activating use of titlecase indices.
+	  (with Kimihito Matsui)
+
 Wed Feb 24 21:03:04 2016  Tanaka Akira  <akr@fsij.org>
 
-	* random.c (limited_rand): Add a specialized path for the limit fits
+	* random.c (limited_rand): Add a specialized path for when the limit fits
 	  in 32 bit.
 
 Tue Feb 23 21:52:24 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>

@@ -71,10 +71,6 @@ static const unsigned short EncUNICODE_ISO_8859_1_CtypeTable[256] = {
   0x30e2, 0x30e2, 0x30e2, 0x30e2, 0x30e2, 0x30e2, 0x30e2, 0x30e2
 };
 
-/* use bottom bytes for actual code point count; 3 bits is more than enough */
-#define OnigCodePointCount(n) ((n)&0x7)
-#define OnigCaseFoldFlags(n) ((n)&~0x7)
-
 typedef struct {
   int n;
   OnigCodePoint code[3];
@@ -144,7 +140,7 @@ code3_equal(const OnigCodePoint *x, const OnigCodePoint *y)
 #define U ONIGENC_CASE_UPCASE
 #define D ONIGENC_CASE_DOWNCASE
 #define F ONIGENC_CASE_FOLD
-#define T(n) ONIGENC_CASE_TITLECASE
+#define T(n) (ONIGENC_CASE_TITLECASE|OnigTitlecaseEncode(n))
 
 #include "enc/unicode/casefold.h"
 
