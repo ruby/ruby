@@ -122,7 +122,7 @@ typedef ptrdiff_t      OnigPosition;
  * Subfields (starting with 0 at LSB):
  *   0-2: Code point count in casefold.h
  *   3-9: Index into TitleCase array in casefold.h
- *   10-15, 18-20: Case mapping flags 
+ *   10-15, 18-20: Case mapping flags
  */
 typedef unsigned int OnigCaseFoldType; /* case fold flag */
 
