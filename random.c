@@ -826,21 +826,31 @@ static unsigned long
 limited_rand(struct MT *mt, unsigned long limit)
 {
     /* mt must be initialized */
-    int i;
     unsigned long val, mask;
 
     if (!limit) return 0;
     mask = make_mask(limit);
-  retry:
-    val = 0;
-    for (i = SIZEOF_LONG/SIZEOF_INT32-1; 0 <= i; i--) {
-        if ((mask >> (i * 32)) & 0xffffffff) {
-            val |= (unsigned long)genrand_int32(mt) << (i * 32);
-            val &= mask;
-            if (limit < val)
-                goto retry;
+
+#if 4 < SIZEOF_LONG
+    if (0xffffffff < limit) {
+        int i;
+      retry:
+        val = 0;
+        for (i = SIZEOF_LONG/SIZEOF_INT32-1; 0 <= i; i--) {
+            if ((mask >> (i * 32)) & 0xffffffff) {
+                val |= (unsigned long)genrand_int32(mt) << (i * 32);
+                val &= mask;
+                if (limit < val)
+                    goto retry;
+            }
         }
+        return val;
     }
+#endif
+
+    do {
+        val = genrand_int32(mt) & mask;
+    } while (limit < val);
     return val;
 }
 

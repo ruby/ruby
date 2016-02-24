@@ -1,3 +1,8 @@
+Wed Feb 24 21:03:04 2016  Tanaka Akira  <akr@fsij.org>
+
+	* random.c (limited_rand): Add a specialized path for the limit fits
+	  in 32 bit.
+
 Tue Feb 23 21:52:24 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/unicode/case-folding.rb, casefold.h: Outputting actual titlecase
