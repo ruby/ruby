@@ -1859,7 +1859,9 @@ rb_mod_modfunc(int argc, VALUE *argv, VALUE module)
 int
 rb_method_basic_definition_p(VALUE klass, ID id)
 {
-    const rb_method_entry_t *me = rb_method_entry(klass, id);
+    const rb_method_entry_t *me;
+    if (!klass) return TRUE; /* hidden object cannot be overridden */
+    me = rb_method_entry(klass, id);
     return (me && METHOD_ENTRY_BASIC(me)) ? TRUE : FALSE;
 }
 
