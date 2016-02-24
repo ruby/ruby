@@ -733,8 +733,11 @@ flo_to_s(VALUE flt)
     char *p, *e;
     int sign, decpt, digs;
 
-    if (isinf(value))
-	return rb_usascii_str_new2(value < 0 ? "-Infinity" : "Infinity");
+    if (isinf(value)) {
+	static const char minf[] = "-Infinity";
+	const int pos = (value > 0); /* skip "-" */
+	return rb_usascii_str_new(minf+pos, strlen(minf)-pos);
+    }
     else if (isnan(value))
 	return rb_usascii_str_new2("NaN");
 
@@ -2863,7 +2866,7 @@ fix_uminus(VALUE num)
 VALUE
 rb_fix2str(VALUE x, int base)
 {
-    char buf[SIZEOF_VALUE*CHAR_BIT + 2], *b = buf + sizeof buf;
+    char buf[SIZEOF_VALUE*CHAR_BIT + 1], *const e = buf + sizeof buf, *b = e;
     long val = FIX2LONG(x);
     int neg = 0;
 
@@ -2877,7 +2880,6 @@ rb_fix2str(VALUE x, int base)
 	val = -val;
 	neg = 1;
     }
-    *--b = '\0';
     do {
 	*--b = ruby_digitmap[(int)(val % base)];
     } while (val /= base);
@@ -2885,7 +2887,7 @@ rb_fix2str(VALUE x, int base)
 	*--b = '-';
     }
 
-    return rb_usascii_str_new2(b);
+    return rb_usascii_str_new(b, e - b);
 }
 
 /*
