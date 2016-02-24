@@ -7093,7 +7093,7 @@ parser_set_compile_option_flag(struct parser_params *parser, const char *name, c
     if (b < 0) return;
 
     if (!parser->compile_option)
-	parser->compile_option = rb_ident_hash_new();
+	parser->compile_option = rb_obj_hide(rb_ident_hash_new());
     rb_hash_aset(parser->compile_option, ID2SYM(rb_intern(name)),
 		 (b ? Qtrue : Qfalse));
 }
