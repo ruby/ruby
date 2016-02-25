@@ -139,7 +139,7 @@ error_print(void)
 	    warn_print("\n");
 	}
 	else {
-	    char *tail = 0;
+	    const char *tail = 0;
 	    long len = elen;
 
 	    if (RSTRING_PTR(epath)[0] == '#')
