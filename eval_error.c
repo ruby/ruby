@@ -28,14 +28,15 @@ error_pos(void)
     if (sourcefile) {
 	ID caller_name;
 	if (sourceline == 0) {
-	    warn_printf("%"PRIsVALUE, sourcefile);
+	    warn_printf("%"PRIsVALUE": ", sourcefile);
 	}
 	else if ((caller_name = rb_frame_callee()) != 0) {
-	    warn_printf("%"PRIsVALUE":%d:in `%"PRIsVALUE"'", sourcefile, sourceline,
+	    warn_printf("%"PRIsVALUE":%d:in `%"PRIsVALUE"': ",
+			sourcefile, sourceline,
 			rb_id2str(caller_name));
 	}
 	else {
-	    warn_printf("%"PRIsVALUE":%d", sourcefile, sourceline);
+	    warn_printf("%"PRIsVALUE":%d: ", sourcefile, sourceline);
 	}
     }
 }
@@ -108,11 +109,11 @@ error_print(void)
 	int line;
 	const char *file = rb_source_loc(&line);
 	if (!file)
-	    warn_printf("%d", line);
+	    warn_printf("%d: ", line);
 	else if (!line)
-	    warn_printf("%s", file);
+	    warn_printf("%s: ", file);
 	else
-	    warn_printf("%s:%d", file, line);
+	    warn_printf("%s:%d: ", file, line);
     }
     else if (RARRAY_LEN(errat) == 0) {
 	error_pos();
@@ -124,6 +125,7 @@ error_print(void)
 	    error_pos();
 	else {
 	    warn_print_str(mesg);
+	    warn_print(": ");
 	}
     }
 
@@ -140,14 +142,13 @@ error_print(void)
 	elen = 0;
     }
     if (eclass == rb_eRuntimeError && elen == 0) {
-	warn_print(": unhandled exception\n");
+	warn_print("unhandled exception\n");
     }
     else {
 	VALUE epath;
 
 	epath = rb_class_name(eclass);
 	if (elen == 0) {
-	    warn_print(": ");
 	    warn_print_str(epath);
 	    warn_print("\n");
 	}
@@ -161,7 +162,6 @@ error_print(void)
 		len = tail - einfo;
 		tail++;		/* skip newline */
 	    }
-	    warn_print(": ");
 	    warn_print_str(tail ? rb_str_subseq(e, 0, len) : e);
 	    if (epath) {
 		warn_print(" (");
@@ -282,28 +282,28 @@ error_handle(int ex)
 
       case TAG_RETURN:
 	error_pos();
-	warn_print(": unexpected return\n");
+	warn_print("unexpected return\n");
 	break;
       case TAG_NEXT:
 	error_pos();
-	warn_print(": unexpected next\n");
+	warn_print("unexpected next\n");
 	break;
       case TAG_BREAK:
 	error_pos();
-	warn_print(": unexpected break\n");
+	warn_print("unexpected break\n");
 	break;
       case TAG_REDO:
 	error_pos();
-	warn_print(": unexpected redo\n");
+	warn_print("unexpected redo\n");
 	break;
       case TAG_RETRY:
 	error_pos();
-	warn_print(": retry outside of rescue clause\n");
+	warn_print("retry outside of rescue clause\n");
 	break;
       case TAG_THROW:
 	/* TODO: fix me */
 	error_pos();
-	warn_printf(": unexpected throw\n");
+	warn_print("unexpected throw\n");
 	break;
       case TAG_RAISE: {
 	VALUE errinfo = GET_THREAD()->errinfo;
