@@ -268,11 +268,16 @@ static VALUE
 sockopt_bool(VALUE self)
 {
     int i;
+    long len;
     VALUE data = sockopt_data(self);
     StringValue(data);
-    if (RSTRING_LEN(data) != sizeof(int))
+    len = RSTRING_LEN(data);
+    if (len == 1) {
+	return *RSTRING_PTR(data) == 0 ? Qfalse : Qtrue;
+    }
+    if (len != sizeof(int))
         rb_raise(rb_eTypeError, "size differ.  expected as sizeof(int)=%d but %ld",
-                 (int)sizeof(int), (long)RSTRING_LEN(data));
+                 (int)sizeof(int), (long)len);
     memcpy((char*)&i, RSTRING_PTR(data), sizeof(int));
     return i == 0 ? Qfalse : Qtrue;
 }
