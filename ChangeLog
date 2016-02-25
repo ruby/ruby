@@ -1,3 +1,8 @@
+Thu Feb 25 19:49:31 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/socket/socket.c (sock_gethostname): support unlimited size
+	  hostname.
+
 Thu Feb 25 19:28:19 2016  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/xmlrpc/client.rb: Support SSL options in async methods of
