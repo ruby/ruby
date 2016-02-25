@@ -1,3 +1,9 @@
+Thu Feb 25 18:12:00 2016  Eric Wong  <e@80x24.org>
+
+	* io.c (io_getpartial): remove unused kwarg from template
+	* test/ruby/test_io.rb (test_readpartial_bad_args): new
+	  [Bug #11885]
+
 Thu Feb 25 17:51:35 2016  Tadashi Saito  <tadashi_saito@dwango.co.jp>
 
 	* compile.c, cont.c, doc, man: fix common misspelling.
