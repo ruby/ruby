@@ -1,3 +1,8 @@
+Thu Feb 25 17:32:23 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ext/tk/lib/multi-tk.rb: fix typos.
+	  [Bug #11764][ruby-core:71800]
+
 Thu Feb 25 16:46:37 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* re.c (reg_names_iter): should consider encoding of regexp.
