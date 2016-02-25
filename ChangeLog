@@ -1,3 +1,11 @@
+Fri Feb 26 08:11:58 2016  Aaron Patterson <tenderlove@ruby-lang.org>
+
+	* gem_prelude.rb: Reduce system calls by activating the `did_you_mean`
+	  gem before requiring the gem.  Activating the gem puts the gem on
+	  the load path, where simply requiring the file will search every gem
+	  that's installed until it can find a gem that contains the
+	  `did_you_mean` file.
+
 Thu Feb 25 19:04:13 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/unicode/case-folding.rb: Adding possibility for debugging output
