@@ -48,15 +48,18 @@ rsock_init_sock(VALUE sock, int fd)
 
     if (fstat(fd, &sbuf) < 0)
         rb_sys_fail("fstat(2)");
-    rb_update_max_fd(fd);
-    if (!S_ISSOCK(sbuf.st_mode))
-        rb_raise(rb_eArgError, "not a socket file descriptor");
+    if (!S_ISSOCK(sbuf.st_mode)) {
+	errno = EBADF;
+        rb_sys_fail("not a socket file descriptor");
+    }
 #else
-    rb_update_max_fd(fd);
-    if (!rb_w32_is_socket(fd))
-        rb_raise(rb_eArgError, "not a socket file descriptor");
+    if (!rb_w32_is_socket(fd)) {
+	errno = EBADF;
+        rb_sys_fail("not a socket file descriptor");
+    }
 #endif
 
+    rb_update_max_fd(fd);
     MakeOpenFile(sock, fp);
     fp->fd = fd;
     fp->mode = FMODE_READWRITE|FMODE_DUPLEX;

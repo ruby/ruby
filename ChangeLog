@@ -1,3 +1,9 @@
+Thu Feb 25 17:38:59 2016  Eric Wong  <e@80x24.org>
+
+	* ext/socket/init.c (rsock_init_sock): check FD after validating
+	* test/socket/test_basicsocket.rb (test_for_fd): new
+	  [ruby-core:72418] [Bug #11854]
+
 Thu Feb 25 17:33:38 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* cont.c: fix a double word typo.
