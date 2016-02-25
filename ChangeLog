@@ -1,3 +1,8 @@
+Thu Feb 25 19:58:48 2016  Zachary Scott  <zzak@ruby-lang.org>
+
+	* re.c: Remove deprecated kcode argument from Regexp.new and compile
+	  patch provided by Dylan Pulliam [Bug #11495]
+
 Thu Feb 25 19:49:31 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/socket/socket.c (sock_gethostname): support unlimited size
