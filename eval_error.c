@@ -87,6 +87,7 @@ error_print(void)
     volatile VALUE eclass = Qundef, e = Qundef;
     const char *volatile einfo;
     volatile long elen;
+    VALUE mesg;
 
     if (NIL_P(errinfo))
 	return;
@@ -105,28 +106,13 @@ error_print(void)
     else {
 	goto no_message;
     }
-    if (NIL_P(errat)) {
-	int line;
-	const char *file = rb_source_loc(&line);
-	if (!file)
-	    warn_printf("%d: ", line);
-	else if (!line)
-	    warn_printf("%s: ", file);
-	else
-	    warn_printf("%s:%d: ", file, line);
-    }
-    else if (RARRAY_LEN(errat) == 0) {
+    if (NIL_P(errat) || RARRAY_LEN(errat) == 0 ||
+	NIL_P(mesg = RARRAY_AREF(errat, 0))) {
 	error_pos();
     }
     else {
-	VALUE mesg = RARRAY_AREF(errat, 0);
-
-	if (NIL_P(mesg))
-	    error_pos();
-	else {
-	    warn_print_str(mesg);
-	    warn_print(": ");
-	}
+	warn_print_str(mesg);
+	warn_print(": ");
     }
 
     eclass = CLASS_OF(errinfo);
