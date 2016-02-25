@@ -432,6 +432,24 @@ module XMLRPC # :nodoc:
       Net::HTTP.new host, port, proxy_host, proxy_port
     end
 
+    def dup_net_http
+      http = net_http(@http.address,
+                      @http.port,
+                      @http.proxy_address,
+                      @http.proxy_port)
+      http.proxy_user = @http.proxy_user
+      http.proxy_pass = @http.proxy_pass
+      if @http.use_ssl?
+        http.use_ssl = true
+        Net::HTTP::SSL_ATTRIBUTES.each do |attribute|
+          http.__send__("#{attribute}=", @http.__send__(attribute))
+        end
+      end
+      http.read_timeout = @http.read_timeout
+      http.open_timeout = @http.open_timeout
+      http
+    end
+
     def set_auth
       if @user.nil?
         @auth = nil
@@ -463,10 +481,7 @@ module XMLRPC # :nodoc:
 
       if async
         # use a new HTTP object for each call
-        http = net_http(@host, @port, @proxy_host, @proxy_port)
-        http.use_ssl = @use_ssl if @use_ssl
-        http.read_timeout = @timeout
-        http.open_timeout = @timeout
+        http = dup_net_http
 
         # post request
         http.start {
@@ -611,4 +626,3 @@ module XMLRPC # :nodoc:
   end # class Client
 
 end # module XMLRPC
-

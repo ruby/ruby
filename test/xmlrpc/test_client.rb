@@ -9,10 +9,15 @@ end
 module XMLRPC
   class ClientTest < MiniTest::Unit::TestCase
     module Fake
-      class HTTP
-        attr_accessor :read_timeout, :open_timeout, :use_ssl
+      class HTTP < Net::HTTP
+        class << self
+          def new(*args, &block)
+            Class.method(:new).unbind.bind(self).call(*args, &block)
+          end
+        end
 
         def initialize responses = {}
+          super("127.0.0.1")
           @started = false
           @responses = responses
         end
