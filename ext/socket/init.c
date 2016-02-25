@@ -48,12 +48,12 @@ rsock_init_sock(VALUE sock, int fd)
 
     if (fstat(fd, &sbuf) < 0)
         rb_sys_fail("fstat(2)");
-    if (!S_ISSOCK(sbuf.st_mode)) {
+    if (!S_ISSOCK(sbuf.st_mode) || rb_reserved_fd_p(fd)) {
 	errno = EBADF;
         rb_sys_fail("not a socket file descriptor");
     }
 #else
-    if (!rb_w32_is_socket(fd)) {
+    if (!rb_w32_is_socket(fd) || rb_reserved_fd_p(fd)) {
 	errno = EBADF;
         rb_sys_fail("not a socket file descriptor");
     }
