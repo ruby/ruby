@@ -606,4 +606,10 @@ class TestMarshal < Test::Unit::TestCase
       Marshal.dump(TestForRespondToFalse.new)
     end
   end
+
+  def test_marshal_honor_post_proc_value_for_link
+    str = 'x' # for link
+    obj = [str, str]
+    assert_equal(['X', 'X'], Marshal.load(Marshal.dump(obj), ->(v) { v == str ? v.upcase : v }))
+  end
 end

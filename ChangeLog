@@ -1,3 +1,9 @@
+Thu Feb 25 19:25:25 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* marshal.c (r_object0): honor Marshal.load post proc
+	  value for TYPE_LINK.  by Hiroshi Nakamura <nahi@ruby-lang.org>
+	  https://github.com/ruby/ruby/pull/1204 fix GH-1204
+
 Thu Feb 25 18:59:27 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/socket/option.c (sockopt_bool): relax boolean size to be one
