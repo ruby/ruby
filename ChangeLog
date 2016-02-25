@@ -1,3 +1,9 @@
+Thu Feb 25 19:04:13 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode/case-folding.rb: Adding possibility for debugging output
+	  for TitleCase table in casefold.h.
+	  (with Kimihito Matsui)
+
 Wed Feb 24 22:31:13 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* include/ruby/oniguruma.h: Rearranging flag assignments and making

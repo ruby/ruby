@@ -245,11 +245,16 @@ class CaseMapping
     flags
   end
 
+  def debug!
+    @debug = true
+  end
+
   def titlecase_output
     "CodePointList3 TitleCase[] = {\n" +
     @titlecase.map do |item|
       chars = item.title.split(/ /)
-      "    {#{chars.length}, {" + chars.map {|c| "0x"+c }.join(', ') + "}},\n"
+      ct = ' /* ' + Array(chars).map{|c|[c.to_i(16)].pack("U*")}.join(", ") + ' */' if @debug
+      "    {#{chars.length}, {#{chars.map {|c| "0x"+c }.join(', ')}#{ct}}},\n"
     end.join + "};\n"
   end
 
@@ -264,6 +269,7 @@ class CaseMappingDummy
   end
 
   def titlecase_output()  ''  end
+  def debug!()  end
 end
 
 if $0 == __FILE__
@@ -299,7 +305,10 @@ if $0 == __FILE__
   mapping_data ||= CaseMappingDummy.new
 
   data = CaseFolding.load(filename)
-  data.debug! if debug
+  if debug
+    data.debug!
+    mapping_data.debug!
+  end
   if dest
     open(dest, "wb") do |f|
       data.display(f, mapping_data)
