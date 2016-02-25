@@ -1,3 +1,9 @@
+Thu Feb 25 18:21:55 2016  Eric Wong  <e@80x24.org>
+
+	* ext/stringio/stringio.c (strio_binmode): implement to set encoding
+	* test/stringio/test_stringio.rb (test_binmode): new test
+	  [ruby-core:72699] [Bug #11945]
+
 Thu Feb 25 18:12:00 2016  Eric Wong  <e@80x24.org>
 
 	* io.c (io_getpartial): remove unused kwarg from template
