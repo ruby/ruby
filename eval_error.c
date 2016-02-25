@@ -3,24 +3,23 @@
  * included by eval.c
  */
 
-static void
-warn_printf(const char *fmt, ...)
-{
-    VALUE str;
-    va_list args;
-
-    va_init_list(args, fmt);
-    str = rb_vsprintf(fmt, args);
-    va_end(args);
-    rb_write_error_str(str);
-}
-
 #define warn_print(x) rb_write_error(x)
 #define warn_print2(x,l) rb_write_error2((x),(l))
 #define warn_print_str(x) rb_write_error_str(x)
 
+static VALUE error_pos_str(void);
+
 static void
 error_pos(void)
+{
+    VALUE str = error_pos_str();
+    if (!NIL_P(str)) {
+	warn_print_str(str);
+    }
+}
+
+static VALUE
+error_pos_str(void)
 {
     int sourceline;
     VALUE sourcefile = rb_source_location(&sourceline);
@@ -28,17 +27,18 @@ error_pos(void)
     if (sourcefile) {
 	ID caller_name;
 	if (sourceline == 0) {
-	    warn_printf("%"PRIsVALUE": ", sourcefile);
+	    return rb_sprintf("%"PRIsVALUE": ", sourcefile);
 	}
 	else if ((caller_name = rb_frame_callee()) != 0) {
-	    warn_printf("%"PRIsVALUE":%d:in `%"PRIsVALUE"': ",
-			sourcefile, sourceline,
-			rb_id2str(caller_name));
+	    return rb_sprintf("%"PRIsVALUE":%d:in `%"PRIsVALUE"': ",
+			      sourcefile, sourceline,
+			      rb_id2str(caller_name));
 	}
 	else {
-	    warn_printf("%"PRIsVALUE":%d: ", sourcefile, sourceline);
+	    return rb_sprintf("%"PRIsVALUE":%d: ", sourcefile, sourceline);
 	}
     }
+    return Qnil;
 }
 
 static VALUE
@@ -173,11 +173,11 @@ error_print(void)
 	for (i = 1; i < len; i++) {
 	    VALUE line = RARRAY_AREF(errat, i);
 	    if (RB_TYPE_P(line, T_STRING)) {
-		warn_printf("\tfrom %"PRIsVALUE"\n", line);
+		warn_print_str(rb_sprintf("\tfrom %"PRIsVALUE"\n", line));
 	    }
 	    if (skip && i == TRACE_HEAD && len > TRACE_MAX) {
-		warn_printf("\t ... %ld levels...\n",
-			    len - TRACE_HEAD - TRACE_TAIL);
+		warn_print_str(rb_sprintf("\t ... %ld levels...\n",
+					  len - TRACE_HEAD - TRACE_TAIL));
 		i = len - TRACE_TAIL;
 	    }
 	}
