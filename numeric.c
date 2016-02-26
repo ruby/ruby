@@ -2081,6 +2081,34 @@ ruby_num_interval_step_size(VALUE from, VALUE to, VALUE step, int excl)
     }
 }
 
+static VALUE
+num_step_compare_with_zero(VALUE num)
+{
+    VALUE zero = INT2FIX(0);
+    return rb_check_funcall(num, '>', 1, &zero);
+}
+
+static int
+num_step_negative_p(VALUE num)
+{
+    const ID mid = '<';
+    VALUE r;
+
+    if (FIXNUM_P(num)) {
+	if (method_basic_p(rb_cFixnum))
+	    return (SIGNED_VALUE)num < 0;
+    }
+    else if (RB_TYPE_P(num, T_BIGNUM)) {
+	if (method_basic_p(rb_cBignum))
+	    return BIGNUM_NEGATIVE_P(num);
+    }
+    r = rb_rescue(num_step_compare_with_zero, num, coerce_rescue_quiet, Qnil);
+    if (r == Qundef) {
+	coerce_failed(num, INT2FIX(0));
+    }
+    return !RTEST(r);
+}
+
 static int
 num_step_scan_args(int argc, const VALUE *argv, VALUE *to, VALUE *step)
 {
@@ -2115,7 +2143,7 @@ num_step_scan_args(int argc, const VALUE *argv, VALUE *to, VALUE *step)
     if (NIL_P(*step)) {
 	*step = INT2FIX(1);
     }
-    desc = !positive_int_p(*step);
+    desc = num_step_negative_p(*step);
     if (NIL_P(*to)) {
 	*to = desc ? DBL2NUM(-INFINITY) : DBL2NUM(INFINITY);
     }

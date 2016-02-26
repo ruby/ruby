@@ -262,8 +262,8 @@ class TestNumeric < Test::Unit::TestCase
     assert_raise(ArgumentError) { 1.step(10, 1, 0).size }
     assert_raise(ArgumentError) { 1.step(10, 0) { } }
     assert_raise(ArgumentError) { 1.step(10, 0).size }
-    assert_raise(ArgumentError) { 1.step(10, "1") { } }
-    assert_raise(ArgumentError) { 1.step(10, "1").size }
+    assert_raise(TypeError) { 1.step(10, "1") { } }
+    assert_raise(TypeError) { 1.step(10, "1").size }
     assert_raise(TypeError) { 1.step(10, nil) { } }
     assert_raise(TypeError) { 1.step(10, nil).size }
     assert_nothing_raised { 1.step(by: 0, to: nil) }

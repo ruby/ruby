@@ -1,3 +1,9 @@
+Fri Feb 26 14:40:48 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (num_step_scan_args): comparison String with Numeric
+	  should raise TypeError. it is an invalid type, but not a
+	  mismatch the number of arguments.  [ruby-core:62430] [Bug #9810]
+
 Fri Feb 26 14:39:39 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* doc/extension.rdoc, doc/extension.ja.rdoc: add editor local
