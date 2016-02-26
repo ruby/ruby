@@ -194,10 +194,18 @@ class IPAddr
     return self.clone.set(addr_mask(~@addr))
   end
 
-  # Returns true if two ipaddrs are equal.
+  # Returns true if two ipaddrs are equal. Does not include the
+  # mask_addr in the check.
   def ==(other)
     other = coerce_other(other)
     return @family == other.family && @addr == other.to_i
+  end
+
+  # Returns true if two ipaddrs are equal, including their
+  # mask_addrs
+  def equal_with_mask(other)
+    other = coerce_other(other)
+    return self == other && self.mask_addr == other.mask_addr
   end
 
   # Returns a new ipaddr built by masking IP address with the given

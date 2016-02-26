@@ -284,6 +284,16 @@ class TC_Operator < Test::Unit::TestCase
     assert_equal(false, @a != IPAddr.new("3ffe:505:2::"))
   end
 
+  def test_equal_with_mask
+    assert_equal(true, @a.equal_with_mask(IPAddr.new("3FFE:505:2::/48")))
+    assert_equal(true, @a.equal_with_mask(IPAddr.new("3ffe:0505:0002::/48")))
+    assert_equal(true, @a.equal_with_mask(IPAddr.new("3ffe:0505:0002:0:0:0:0:0/48")))
+    assert_equal(false, @a.equal_with_mask(IPAddr.new("3ffe:505:3::/48")))
+    assert_equal(false, @a.equal_with_mask(IPAddr.new("3ffe:505:3::/48")))
+    assert_equal(true, @a.equal_with_mask(IPAddr.new("3ffe:505:2::/48")))
+    assert_equal(false, @a.equal_with_mask(@a.mask(128)))
+  end
+
   def test_mask
     a = @a.mask(32)
     assert_equal("3ffe:505::", a.to_s)
