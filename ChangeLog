@@ -1,3 +1,8 @@
+Fri Feb 26 11:02:04 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* README.md: update markdown syntax for anchor tag.
+	  [fix GH-1265] Patch by @lukBarros
+
 Fri Feb 26 10:52:29 2016  Alex Boyd  <alex@opengroove.org>
 
 	* lib/irb.rb: avoid to needless truncation when using back_trace_limit option.
