@@ -300,6 +300,8 @@ class Gem::Command
 
     options[:build_args] = build_args
 
+    self.ui = Gem::SilentUI.new if options[:silent]
+
     if options[:help] then
       show_help
     elsif @when_invoked then
@@ -520,8 +522,13 @@ class Gem::Command
     end
   end
 
-  add_common_option('-q', '--quiet', 'Silence commands') do |value, options|
+  add_common_option('-q', '--quiet', 'Silence command progress meter') do |value, options|
     Gem.configuration.verbose = false
+  end
+
+  add_common_option("--silent",
+                    "Silence rubygems output") do |value, options|
+    options[:silent] = true
   end
 
   # Backtrace and config-file are added so they show up in the help

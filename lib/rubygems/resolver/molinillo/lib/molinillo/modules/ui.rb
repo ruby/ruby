@@ -58,7 +58,8 @@ module Gem::Resolver::Molinillo
     #
     # @return [Boolean]
     def debug?
-      @debug_mode ||= ENV['MOLINILLO_DEBUG']
+      return @debug_mode if defined?(@debug_mode)
+      @debug_mode = ENV['MOLINILLO_DEBUG']
     end
   end
 end

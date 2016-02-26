@@ -146,6 +146,14 @@ class TestGemVersion < Gem::TestCase
     assert_less_than "1.0.0-1", "1"
   end
 
+  # modifying the segments of a version should not affect the segments of the cached version object
+  def test_segments
+    v('9.8.7').segments[2] += 1
+
+    refute_version_equal "9.8.8", "9.8.7"
+    assert_equal         [9,8,7], v("9.8.7").segments
+  end
+
   # Asserts that +version+ is a prerelease.
 
   def assert_prerelease version

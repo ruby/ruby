@@ -115,7 +115,7 @@ module Gem::GemcutterUtilities
 
     with_response response do |resp|
       say "Signed in."
-      Gem.configuration.rubygems_api_key = resp.body
+      set_api_key host, resp.body
     end
   end
 
@@ -153,6 +153,14 @@ module Gem::GemcutterUtilities
 
       say message
       terminate_interaction 1 # TODO: question this
+    end
+  end
+
+  def set_api_key host, key
+    if host == Gem::DEFAULT_HOST
+      Gem.configuration.rubygems_api_key = key
+    else
+      Gem.configuration.set_api_key host, key
     end
   end
 

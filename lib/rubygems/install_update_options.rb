@@ -179,6 +179,7 @@ module Gem::InstallUpdateOptions
                 "Print post install message") do |value, options|
       options[:post_install_message] = value
     end
+
   end
 
   ##

@@ -473,6 +473,45 @@ class TestGem < Gem::TestCase
     assert_equal cwd, $LOAD_PATH.shift
   end
 
+  def test_self_find_files_with_gemfile
+    # write_file(File.join Dir.pwd, 'Gemfile') fails on travis 1.8.7 with $SAFE=1
+    skip if RUBY_VERSION <= "1.8.7"
+
+    cwd = File.expand_path("test/rubygems", @@project_dir)
+    $LOAD_PATH.unshift cwd
+
+    discover_path = File.join 'lib', 'sff', 'discover.rb'
+
+    foo1, _ = %w(1 2).map { |version|
+      spec = quick_gem 'sff', version do |s|
+        s.files << discover_path
+      end
+
+      write_file(File.join 'gems', spec.full_name, discover_path) do |fp|
+        fp.puts "# #{spec.full_name}"
+      end
+
+      spec
+    }
+    Gem.refresh
+
+    write_file(File.join Dir.pwd, 'Gemfile') do |fp|
+      fp.puts "source 'https://rubygems.org'"
+      fp.puts "gem '#{foo1.name}', '#{foo1.version}'"
+    end
+    Gem.use_gemdeps(File.join Dir.pwd, 'Gemfile')
+
+    expected = [
+      File.expand_path('test/rubygems/sff/discover.rb', @@project_dir),
+      File.join(foo1.full_gem_path, discover_path)
+    ]
+
+    assert_equal expected, Gem.find_files('sff/discover')
+    assert_equal expected, Gem.find_files('sff/**.rb'), '[ruby-core:31730]'
+  ensure
+    assert_equal cwd, $LOAD_PATH.shift unless RUBY_VERSION <= "1.8.7"
+  end
+
   def test_self_find_latest_files
     cwd = File.expand_path("test/rubygems", @@project_dir)
     $LOAD_PATH.unshift cwd
@@ -927,6 +966,26 @@ class TestGem < Gem::TestCase
     end
 
     assert_match %r%Could not find 'b' %, e.message
+  end
+
+  def test_self_try_activate_missing_prerelease
+    b = util_spec 'b', '1.0rc1'
+    a = util_spec 'a', '1.0rc1', 'b' => '1.0rc1'
+
+    install_specs b, a
+    uninstall_gem b
+
+    a_file = File.join a.gem_dir, 'lib', 'a_file.rb'
+
+    write_file a_file do |io|
+      io.puts '# a_file.rb'
+    end
+
+    e = assert_raises Gem::LoadError do
+      Gem.try_activate 'a_file'
+    end
+
+    assert_match %r%Could not find 'b' \(= 1.0rc1\)%, e.message
   end
 
   def test_self_try_activate_missing_extensions

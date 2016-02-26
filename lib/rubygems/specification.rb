@@ -1684,6 +1684,8 @@ class Gem::Specification < Gem::BasicSpecification
         (conflicts[spec] ||= []) << dep
       end
     }
+    env_req = Gem.env_requirement(name)
+    (conflicts[self] ||= []) << env_req unless env_req.satisfied_by? version
     conflicts
   end
 
@@ -1701,6 +1703,7 @@ class Gem::Specification < Gem::BasicSpecification
   # Return true if there are possible conflicts against the currently loaded specs.
 
   def has_conflicts?
+    return true unless Gem.env_requirement(name).satisfied_by?(version)
     self.dependencies.any? { |dep|
       if dep.runtime? then
         spec = Gem.loaded_specs[dep.name]

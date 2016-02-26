@@ -85,6 +85,7 @@ command to remove old versions.
   end
 
   def execute
+
     if options[:system] then
       update_rubygems
       return
