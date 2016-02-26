@@ -592,75 +592,6 @@ module XMLRPC # :nodoc:
 
     end
 
-    class XMLScanStreamParser < AbstractStreamParser
-      def initialize
-        require "xmlscan/parser"
-        @parser_class = XMLScanParser
-      end
-
-      class XMLScanParser
-        include StreamParserMixin
-
-        Entities = {
-          "lt"   => "<",
-          "gt"   => ">",
-          "amp"  => "&",
-          "quot" => '"',
-          "apos" => "'"
-        }
-
-        def parse(str)
-          parser  = XMLScan::XMLParser.new(self)
-          parser.parse(str)
-        end
-
-        alias :on_stag :startElement
-        alias :on_etag :endElement
-
-        def on_stag_end(name); end
-
-        def on_stag_end_empty(name)
-          startElement(name)
-          endElement(name)
-        end
-
-        def on_chardata(str)
-          character(str)
-        end
-
-        def on_cdata(str)
-          character(str)
-        end
-
-        def on_entityref(ent)
-          str = Entities[ent]
-          if str
-            character(str)
-          else
-            raise "unknown entity"
-          end
-        end
-
-        def on_charref(code)
-          character(code.chr)
-        end
-
-        def on_charref_hex(code)
-          character(code.chr)
-        end
-
-        def method_missing(*a)
-        end
-
-        # TODO: call/implement?
-        # valid_name?
-        # valid_chardata?
-        # valid_char?
-        # parse_error
-
-      end
-    end
-
     class LibXMLStreamParser < AbstractStreamParser
       def initialize
         require 'libxml'
@@ -692,8 +623,7 @@ module XMLRPC # :nodoc:
       end
     end
 
-    Classes = [REXMLStreamParser, XMLScanStreamParser,
-               LibXMLStreamParser]
+    Classes = [REXMLStreamParser, LibXMLStreamParser]
 
     # yields an instance of each installed parser
     def self.each_installed_parser

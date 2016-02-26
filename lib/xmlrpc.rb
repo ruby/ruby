@@ -56,9 +56,6 @@
 #   * REXML (XMLParser::REXMLStreamParser)
 #     * Not compiled (pure ruby)
 #     * See ruby standard library
-#   * xml-scan (XMLParser::XMLScanStreamParser)
-#     * Not compiled (pure ruby)
-#     * See https://rubygems.org/gems/xmlscan
 #   * libxml (LibXMLStreamParser)
 #     * Compiled
 #     * See https://rubygems.org/gems/libxml-ruby/
