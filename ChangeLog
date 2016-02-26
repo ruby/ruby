@@ -1,3 +1,10 @@
+Fri Feb 26 11:21:41 2016  herwinw  <herwin@quarantainenet.nl>
+
+	* lib/xmlrpc.rb: Removed references to NQXML. It's obsoleted parser.
+	  [fix GH-1245][ruby-core:59593][Feature #9371]
+	* lib/xmlrpc/config.rb: ditto.
+	* lib/xmlrpc/parser.rb: ditto.
+
 Fri Feb 26 11:10:19 2016  Rick Salevsky  <rsalevsky@suse.com>
 
 	* lib/tmpdir.rb: Unify to coding-style for method definition.
