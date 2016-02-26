@@ -191,6 +191,27 @@ rb_obj_not(VALUE obj)
 
 /*
  *  call-seq:
+ *     obj.not([symbol, args...])   -> true or false
+ *
+ *  Invokes the method identified by _symbol_, passing it any
+ *  arguments specified and the given block, and returns boolean
+ *  negate of the result.
+ *
+ *     [].not(:empty?)    # => false
+ *     [nil].not(:empty?) # => true
+ */
+
+static VALUE
+rb_obj_not_m(int argc, VALUE *argv, VALUE obj)
+{
+    if (argc || rb_block_given_p()) {
+	obj = rb_f_send(argc, argv, obj);
+    }
+    return rb_obj_not(obj);
+}
+
+/*
+ *  call-seq:
  *     obj != other        -> true or false
  *
  *  Returns true if two objects are not-equal, otherwise false.
@@ -3416,6 +3437,7 @@ InitVM_Object(void)
 
     rb_define_method(rb_mKernel, "nil?", rb_false, 0);
     rb_define_method(rb_mKernel, "===", rb_equal, 1);
+    rb_define_method(rb_mKernel, "not", rb_obj_not_m, -1);
     rb_define_method(rb_mKernel, "=~", rb_obj_match, 1);
     rb_define_method(rb_mKernel, "!~", rb_obj_not_match, 1);
     rb_define_method(rb_mKernel, "eql?", rb_obj_equal, 1);

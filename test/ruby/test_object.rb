@@ -88,6 +88,13 @@ class TestObject < Test::Unit::TestCase
     assert_equal(true, nil.send(:!))
   end
 
+  def test_not_method
+    assert_equal(true, Object.new.not(:!))
+    assert_equal(false, nil.not(:!))
+    assert_equal(true, [nil].not(:empty?))
+    assert_equal(false, [].not(:empty?))
+  end
+
   def test_true_and
     assert_equal(true, true & true)
     assert_equal(true, true & 1)
