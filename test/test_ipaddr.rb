@@ -2,6 +2,64 @@
 require 'test/unit'
 require 'ipaddr'
 
+class TC_Netmask < Test::Unit::TestCase
+  def test_s_new
+    assert_raise(IPAddr::AddressFamilyError){ IPAddr::Netmask.new(IPAddr::IN4MASK, Socket::AF_UNSPEC) }
+
+    IPAddr::Netmask.new(IPAddr::IN4MASK, Socket::AF_INET)
+    assert_raise(IPAddr::InvalidPrefixError){ IPAddr::Netmask.new(-1, Socket::AF_INET) }
+    assert_raise(IPAddr::InvalidPrefixError){ IPAddr::Netmask.new(IPAddr::IN4MASK+1, Socket::AF_INET) }
+    IPAddr::Netmask.new(0, Socket::AF_INET)
+
+    IPAddr::Netmask.new(IPAddr::IN6MASK, Socket::AF_INET6)
+    assert_raise(IPAddr::InvalidPrefixError){ IPAddr::Netmask.new(-1, Socket::AF_INET6) }
+    assert_raise(IPAddr::InvalidPrefixError){ IPAddr::Netmask.new(IPAddr::IN6MASK+1, Socket::AF_INET6) }
+  end
+
+  def test_s_compare
+    ipv4_a = IPAddr::Netmask.new(IPAddr::IN4MASK, Socket::AF_INET)
+    ipv4_a2 = IPAddr::Netmask.new(IPAddr::IN4MASK, Socket::AF_INET)
+    ipv4_b = IPAddr::Netmask.new(0, Socket::AF_INET)
+    assert(ipv4_b < ipv4_a)
+    assert(ipv4_a > ipv4_b)
+    assert(ipv4_a == ipv4_a2)
+    assert(ipv4_a <= ipv4_a2)
+    assert(ipv4_a2 >= ipv4_a)
+    assert(ipv4_a != Object.new)
+
+    ipv6_a = IPAddr::Netmask.new(IPAddr::IN6MASK, Socket::AF_INET6)
+    ipv6_a2 = IPAddr::Netmask.new(IPAddr::IN6MASK, Socket::AF_INET6)
+    ipv6_b = IPAddr::Netmask.new(0, Socket::AF_INET6)
+    assert(ipv6_b < ipv6_a)
+    assert(ipv6_a > ipv6_b)
+    assert(ipv6_a == ipv6_a2)
+    assert(ipv6_a <= ipv6_a2)
+    assert(ipv6_a2 >= ipv6_a)
+    assert(ipv6_a != Object.new)
+    assert(ipv6_a != ipv4_a)
+  end
+
+  def test_s_cidr
+    assert_equal(32, IPAddr::Netmask.new(IPAddr::IN4MASK, Socket::AF_INET).cidr)
+    assert_equal(24, IPAddr::Netmask.new(0xffffff00, Socket::AF_INET).cidr)
+    assert_equal(0, IPAddr::Netmask.new(0, Socket::AF_INET).cidr)
+
+    assert_equal(128, IPAddr::Netmask.new(IPAddr::IN6MASK, Socket::AF_INET6).cidr)
+    assert_equal(48, IPAddr::Netmask.new(((1<<48)-1) << 80, Socket::AF_INET6).cidr)
+    assert_equal(0, IPAddr::Netmask.new(0, Socket::AF_INET6).cidr)
+  end
+
+  def test_s_to_s
+    assert_equal("255.255.255.255", IPAddr::Netmask.new(IPAddr::IN4MASK, Socket::AF_INET).to_s)
+    assert_equal("255.255.255.128", IPAddr::Netmask.new(0xffffff80, Socket::AF_INET).to_s)
+    assert_equal("0.0.0.0", IPAddr::Netmask.new(0, Socket::AF_INET).to_s)
+
+    assert_equal("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff", IPAddr::Netmask.new(IPAddr::IN6MASK, Socket::AF_INET6).to_s)
+    assert_equal("ffff:ffff:ffff:0000:0000:0000:0000:0000", IPAddr::Netmask.new(((1<<48)-1) << 80, Socket::AF_INET6).to_s)
+    assert_equal("0000:0000:0000:0000:0000:0000:0000:0000", IPAddr::Netmask.new(0, Socket::AF_INET6).to_s)
+  end
+end
+
 class TC_IPAddr < Test::Unit::TestCase
   def test_s_new
     [

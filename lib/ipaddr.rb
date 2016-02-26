@@ -98,6 +98,61 @@ class IPAddr
   # Raised when the address is an invalid length.
   class InvalidPrefixError < InvalidAddressError; end
 
+  # The netmask part of the IP address
+  class Netmask
+    attr_reader :family, :netmask
+    # Create a new IPAddr::Netmask object. Normally you wouldn't call this
+    # yourself, but rather let IPAddr#mask_addr create this for you
+    def initialize(netmask, family)
+      case family
+      when Socket::AF_INET
+        if netmask < 0 or netmask > IN4MASK
+          raise InvalidPrefixError, "Invalid prefix length"
+        end
+      when Socket::AF_INET6
+        if netmask < 0 or netmask > IN6MASK
+          raise InvalidPrefixError, "Invalid prefix length"
+        end
+      else
+        raise AddressFamilyError, "unsupported address family: #{family}"
+      end
+      @netmask = netmask
+      @family = family
+    end
+
+    def ==(other)
+      return false if other.class != self.class
+      other.family == @family and other.netmask == @netmask
+    end
+
+    # Compares the ipaddr with another.
+    def <=>(other)
+      return nil if other.class != self.class
+
+      return nil if other.family != @family
+
+      return @netmask <=> other.netmask
+    end
+    include Comparable
+
+    # Return the range as cidr notation ("192.168.1.2/24" => 24)
+    def cidr
+      @netmask.to_s(2).count("1")
+    end
+
+    # Return the range as a string ("192.268.1.2/255.255.255.0" => "255.255.255.0")
+    def to_s
+      case @family
+      when Socket::AF_INET
+        return (0..3).map { |i|
+          (@netmask >> (24 - 8 * i)) & 0xff
+        }.join('.')
+      when Socket::AF_INET6
+        return (("%.32x" % @netmask).gsub!(/.{4}(?!$)/, '\&:'))
+      end
+    end
+  end
+
   # Returns the address family of this IP address.
   attr_reader :family
 
