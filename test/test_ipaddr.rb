@@ -78,7 +78,7 @@ class TC_IPAddr < Test::Unit::TestCase
     a = IPAddr.new
     assert_equal("::", a.to_s)
     assert_equal("0000:0000:0000:0000:0000:0000:0000:0000", a.to_string)
-    assert_equal("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff", a.mask_addr)
+    assert_equal(IPAddr::Netmask.new(IPAddr::IN6MASK, a.family), a.mask_addr)
     assert_equal(Socket::AF_INET6, a.family)
 
     a = IPAddr.new("0123:4567:89ab:cdef:0ABC:DEF0:1234:5678")
@@ -93,7 +93,7 @@ class TC_IPAddr < Test::Unit::TestCase
     assert_equal(false, a.ipv4?)
     assert_equal(true, a.ipv6?)
     assert_equal("#<IPAddr: IPv6:3ffe:0505:0002:0000:0000:0000:0000:0000/ffff:ffff:ffff:0000:0000:0000:0000:0000>", a.inspect)
-    assert_equal("ffff:ffff:ffff:0000:0000:0000:0000:0000", a.mask_addr)
+    assert_equal(IPAddr::Netmask.new(((1<<48)-1) << 80, a.family), a.mask_addr)
 
     a = IPAddr.new("3ffe:505:2::/ffff:ffff:ffff::")
     assert_equal("3ffe:505:2::", a.to_s)
@@ -103,7 +103,7 @@ class TC_IPAddr < Test::Unit::TestCase
     a = IPAddr.new("0.0.0.0")
     assert_equal("0.0.0.0", a.to_s)
     assert_equal("0.0.0.0", a.to_string)
-    assert_equal("255.255.255.255", a.mask_addr)
+    assert_equal(IPAddr::Netmask.new(IPAddr::IN4MASK, a.family), a.mask_addr)
     assert_equal(Socket::AF_INET, a.family)
 
     a = IPAddr.new("192.168.1.2")
@@ -116,7 +116,7 @@ class TC_IPAddr < Test::Unit::TestCase
     a = IPAddr.new("192.168.1.2/24")
     assert_equal("192.168.1.0", a.to_s)
     assert_equal("192.168.1.0", a.to_string)
-    assert_equal("255.255.255.0", a.mask_addr)
+    assert_equal(IPAddr::Netmask.new(0xffffff00, a.family), a.mask_addr)
     assert_equal(Socket::AF_INET, a.family)
     assert_equal("#<IPAddr: IPv4:192.168.1.0/255.255.255.0>", a.inspect)
 

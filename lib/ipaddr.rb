@@ -407,9 +407,9 @@ class IPAddr
     return ([@addr, @mask_addr].hash << 1) | (ipv4? ? 0 : 1)
   end
 
-  # Returns the network mask of the ipaddr
+  # Returns the network mask of the IPAddr as an IPAddr::Netmask object
   def mask_addr
-    return _to_string(@mask_addr)
+    return Netmask.new(@mask_addr, @family)
   end
 
   # Creates a Range object for the network address.
@@ -440,7 +440,7 @@ class IPAddr
       raise AddressFamilyError, "unsupported address family"
     end
     return sprintf("#<%s: %s:%s/%s>", self.class.name,
-                   af, _to_string(@addr), _to_string(@mask_addr))
+                   af, _to_string(@addr), self.mask_addr.to_s)
   end
 
   protected
