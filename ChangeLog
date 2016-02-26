@@ -1,3 +1,9 @@
+Fri Feb 26 14:39:39 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* doc/extension.rdoc, doc/extension.ja.rdoc: add editor local
+	  variables, with commenting out by :enddoc: directives which are
+	  just ignored unless code object mode.  [Bug #12111]
+
 Fri Feb 26 12:25:56 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* doc/extension.ja.rdoc: removed rendering error caused by editor specific
