@@ -1,3 +1,9 @@
+Fri Feb 26 12:25:56 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* doc/extension.ja.rdoc: removed rendering error caused by editor specific
+	  configuration on http://docs.ruby-lang.org/en/trunk/extension_rdoc.html .
+	  [Bug #12111][ruby-core:73990]
+
 Fri Feb 26 11:21:41 2016  herwinw  <herwin@quarantainenet.nl>
 
 	* lib/xmlrpc.rb: Removed references to NQXML. It's obsoleted parser.

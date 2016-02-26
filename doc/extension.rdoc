@@ -1821,9 +1821,3 @@ keyword in C.  RB_GC_GUARD has the following advantages:
    compilers and architectures. RB_GC_GUARD is customizable for broken
    systems/compilers without those without negatively affecting other
    systems.
-
-/*
- * Local variables:
- * fill-column: 70
- * end:
- */

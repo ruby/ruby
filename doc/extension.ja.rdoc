@@ -1788,9 +1788,3 @@ rb_ary_store() などの，適切な API 関数を利用するようにして下
 
 そのほか，対応についての詳細は README.EXT の「Appendix D. Generational
 GC」を参照して下さい．
-
-/*
- * Local variables:
- * fill-column: 60
- * end:
- */
