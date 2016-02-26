@@ -567,67 +567,6 @@ module XMLRPC # :nodoc:
 
     end # module StreamParserMixin
 
-    class XMLStreamParser < AbstractStreamParser
-      def initialize
-        require "xmlparser"
-        @parser_class = Class.new(::XMLParser) {
-          include StreamParserMixin
-        }
-      end
-    end # class XMLStreamParser
-
-    class XMLTreeParser < AbstractTreeParser
-
-      def initialize
-        require "xmltreebuilder"
-
-        # The new XMLParser library (0.6.2+) uses a slightly different DOM implementation.
-        # The following code removes the differences between both versions.
-        if defined? XML::DOM::Builder
-          return if defined? XML::DOM::Node::DOCUMENT # code below has been already executed
-          klass = XML::DOM::Node
-          klass.const_set(:DOCUMENT, klass::DOCUMENT_NODE)
-          klass.const_set(:TEXT, klass::TEXT_NODE)
-          klass.const_set(:COMMENT, klass::COMMENT_NODE)
-          klass.const_set(:ELEMENT, klass::ELEMENT_NODE)
-        end
-      end
-
-      private
-
-      def _nodeType(node)
-        tp = node.nodeType
-        if tp == XML::SimpleTree::Node::TEXT then :TEXT
-        elsif tp == XML::SimpleTree::Node::COMMENT then :COMMENT
-        elsif tp == XML::SimpleTree::Node::ELEMENT then :ELEMENT
-        else :ELSE
-        end
-      end
-
-
-      def methodResponse_document(node)
-        assert( node.nodeType == XML::SimpleTree::Node::DOCUMENT )
-        hasOnlyOneChild(node, "methodResponse")
-
-        methodResponse(node.firstChild)
-      end
-
-      def methodCall_document(node)
-        assert( node.nodeType == XML::SimpleTree::Node::DOCUMENT )
-        hasOnlyOneChild(node, "methodCall")
-
-        methodCall(node.firstChild)
-      end
-
-      def createCleanedTree(str)
-        doc = XML::SimpleTreeBuilder.new.parse(str)
-        doc.documentElement.normalize
-        removeWhitespacesAndComments(doc)
-        doc
-      end
-
-    end # class XMLParser
-
     class REXMLStreamParser < AbstractStreamParser
       def initialize
         require "rexml/document"
@@ -753,10 +692,7 @@ module XMLRPC # :nodoc:
       end
     end
 
-    XMLParser   = XMLTreeParser
-
-    Classes = [XMLStreamParser, XMLTreeParser,
-               REXMLStreamParser, XMLScanStreamParser,
+    Classes = [REXMLStreamParser, XMLScanStreamParser,
                LibXMLStreamParser]
 
     # yields an instance of each installed parser
