@@ -352,6 +352,11 @@ class IPAddr
     return ([@addr, @mask_addr].hash << 1) | (ipv4? ? 0 : 1)
   end
 
+  # Returns the network mask of the ipaddr
+  def mask_addr
+    return _to_string(@mask_addr)
+  end
+
   # Creates a Range object for the network address.
   def to_range
     begin_addr = (@addr & @mask_addr)
