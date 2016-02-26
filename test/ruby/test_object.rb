@@ -93,6 +93,7 @@ class TestObject < Test::Unit::TestCase
     assert_equal(false, nil.not(:!))
     assert_equal(true, [nil].not(:empty?))
     assert_equal(false, [].not(:empty?))
+    assert_equal(false, 1.not(&:odd?))
   end
 
   def test_true_and

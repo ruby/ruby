@@ -199,13 +199,24 @@ rb_obj_not(VALUE obj)
  *
  *     [].not(:empty?)    # => false
  *     [nil].not(:empty?) # => true
+ *
+ *  If no arguments but a block is given, yields +self+ and returns
+ *  boolean negate of the result.
+ *
+ *     1.not {|x| x.odd?} # => false
+ *
+ *  If no arguments neither block is given, just returns boolean
+ *  negate of +self+, same as built-in operator +!+ and +not+.
  */
 
 static VALUE
 rb_obj_not_m(int argc, VALUE *argv, VALUE obj)
 {
-    if (argc || rb_block_given_p()) {
+    if (argc) {
 	obj = rb_f_send(argc, argv, obj);
+    }
+    else if (rb_block_given_p()) {
+	obj = rb_yield(obj);
     }
     return rb_obj_not(obj);
 }
