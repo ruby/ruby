@@ -142,7 +142,7 @@ to remove old configuration after installing them in such case.
 
 ## Copying
 
-See the file [COPYING](COPYING.md).
+See the file [COPYING](COPYING).
 
 ## Feedback
 
