@@ -1,3 +1,8 @@
+Fri Feb 26 10:52:29 2016  Alex Boyd  <alex@opengroove.org>
+
+	* lib/irb.rb: avoid to needless truncation when using back_trace_limit option.
+	  [fix GH-1205][ruby-core:72773][Bug #11969]
+
 Fri Feb 26 08:11:58 2016  Aaron Patterson <tenderlove@ruby-lang.org>
 
 	* gem_prelude.rb: Reduce system calls by activating the `did_you_mean`
