@@ -142,14 +142,7 @@ class IPAddr
 
     # Return the range as a string ("192.268.1.2/255.255.255.0" => "255.255.255.0")
     def to_s
-      case @family
-      when Socket::AF_INET
-        return (0..3).map { |i|
-          (@netmask >> (24 - 8 * i)) & 0xff
-        }.join('.')
-      when Socket::AF_INET6
-        return (("%.32x" % @netmask).gsub!(/.{4}(?!$)/, '\&:'))
-      end
+      return IPAddr.stringify_addr(@netmask, @family)
     end
   end
 
@@ -284,7 +277,7 @@ class IPAddr
   # Returns a string containing the IP address representation in
   # canonical form.
   def to_string
-    return _to_string(@addr)
+    return self.class.stringify_addr(@addr, @family)
   end
 
   # Returns a network byte ordered string form of the IP address.
@@ -440,7 +433,7 @@ class IPAddr
       raise AddressFamilyError, "unsupported address family"
     end
     return sprintf("#<%s: %s:%s/%s>", self.class.name,
-                   af, _to_string(@addr), self.mask_addr.to_s)
+                   af, self.class.stringify_addr(@addr, @family), self.mask_addr.to_s)
   end
 
   protected
@@ -654,8 +647,9 @@ class IPAddr
     end
   end
 
-  def _to_string(addr)
-    case @family
+  # Convert an internal address to a string representation
+  def self.stringify_addr(addr, family)
+    case family
     when Socket::AF_INET
       return (0..3).map { |i|
         (addr >> (24 - 8 * i)) & 0xff
