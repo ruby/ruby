@@ -426,7 +426,7 @@ module Test
             suites.map! {|r| eval("::"+r[:testcase])}
             del_status_line or puts
             unless suites.empty?
-              puts "Retrying..."
+              puts "\n""Retrying..."
               _run_suites(suites, type)
             end
           end
@@ -478,6 +478,10 @@ module Test
     end
 
     module Skipping # :nodoc: all
+      def failed(s)
+        super if !s or @options[:hide_skip]
+      end
+
       private
       def setup_options(opts, options)
         super
@@ -501,6 +505,7 @@ module Test
         report.reject!{|r| r.start_with? "Skipped:" } if @options[:hide_skip]
         report.sort_by!{|r| r.start_with?("Skipped:") ? 0 : \
                            (r.start_with?("Failure:") ? 1 : 2) }
+        failed(nil)
         result
       end
     end
@@ -585,7 +590,7 @@ module Test
         if color or @options[:job_status] == :replace
           @verbose = !options[:parallel]
         end
-        @output = Output.new(self)
+        @output = Output.new(self) unless @options[:testing]
         if /\A\/(.*)\/\z/ =~ (filter = options[:filter])
           filter = Regexp.new($1)
         end
