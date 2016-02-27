@@ -522,30 +522,27 @@ module Test
 
       def del_status_line(flush = true)
         @status_line_size ||= 0
-        unless @options[:job_status] == :replace
-          $stdout.puts
-          return
+        if @options[:job_status] == :replace
+          $stdout.print "\r"+" "*@status_line_size+"\r"
+        else
+          $stdout.puts if @status_line_size > 0
         end
-        print "\r"+" "*@status_line_size+"\r"
         $stdout.flush if flush
         @status_line_size = 0
       end
 
       def add_status(line, flush: true)
-        unless @options[:job_status] == :replace
-          print(line)
-          return
-        end
         @status_line_size ||= 0
-        line = line[0...(terminal_width-@status_line_size)]
+        if @options[:job_status] == :replace
+          line = line[0...(terminal_width-@status_line_size)]
+        end
         print line
         $stdout.flush if flush
         @status_line_size += line.size
       end
 
       def jobs_status
-        return unless @options[:job_status]
-        puts "" unless @options[:verbose] or @options[:job_status] == :replace
+        return if !@options[:job_status] or @options[:verbose]
         status_line = @workers.map(&:to_s).join(" ")
         update_status(status_line) or (puts; nil)
       end
@@ -587,8 +584,8 @@ module Test
         end
         if color or @options[:job_status] == :replace
           @verbose = !options[:parallel]
-          @output = Output.new(self)
         end
+        @output = Output.new(self)
         if /\A\/(.*)\/\z/ =~ (filter = options[:filter])
           filter = Regexp.new($1)
         end
@@ -604,12 +601,13 @@ module Test
 
       def new_test(s)
         @test_count += 1
+        return if !@options[:job_status] or @options[:verbose]
         update_status(s)
       end
 
       def update_status(s)
         count = @test_count.to_s(10).rjust(@total_tests.size)
-        del_status_line(false) if @options[:job_status] == :replace
+        del_status_line(false)
         print(@passed_color)
         add_status("[#{count}/#{@total_tests}]", flush: false)
         print(@reset_color)
