@@ -660,9 +660,9 @@ module Test
 
         options[:job_status] = nil
 
-        opts.on '--jobs-status [TYPE]', [:normal, :replace],
+        opts.on '--jobs-status [TYPE]', [:normal, :replace, :none],
                 "Show status of jobs every file; Disabled when --jobs isn't specified." do |type|
-          options[:job_status] = type || :normal
+          options[:job_status] = (type || :normal if type != :none)
         end
 
         opts.on '--color[=WHEN]',
