@@ -1,3 +1,9 @@
+Sat Feb 27 17:05:29 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode/case-folding.rb, casefold.h: Reducing size of TitleCase
+	  table by eliminating duplicates.
+	  (with Kimihito Matsui)
+
 Fri Feb 26 14:40:48 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (num_step_scan_args): comparison String with Numeric

@@ -238,8 +238,11 @@ class CaseMapping
       flags += '|U'  if to==item.upper
       flags += '|D'  if to==item.lower
       unless item.upper == item.title
-        flags += "|T(#{@titlecase.length})"
-        @titlecase << item
+        unless title_index = @titlecase.find_index { |i| i.title==item.title }
+          title_index = @titlecase.length
+          @titlecase << item
+        end
+        flags += "|T(#{title_index})"
       end
     end
     flags
