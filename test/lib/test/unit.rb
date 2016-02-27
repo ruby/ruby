@@ -332,7 +332,6 @@ module Test
           # just only dots, ignore
         when /^okay$/
           worker.status = :running
-          jobs_status
         when /^ready(!)?$/
           bang = $1
           worker.status = :ready
@@ -345,7 +344,7 @@ module Test
           worker.run(task, type)
           @test_count += 1
 
-          jobs_status
+          jobs_status(worker)
         when /^done (.+?)$/
           begin
             r = Marshal.load($1.unpack("m")[0])
@@ -360,7 +359,7 @@ module Test
         when /^p (.+?)$/
           del_jobs_status
           print $1.unpack("m")[0]
-          jobs_status if @options[:job_status] == :replace
+          jobs_status(worker) if @options[:job_status] == :replace
         when /^after (.+?)$/
           @warnings << Marshal.load($1.unpack("m")[0])
         when /^bye (.+?)$/
@@ -473,6 +472,7 @@ module Test
             end
           }
         end
+        del_status_line
         result
       end
     end
@@ -546,9 +546,13 @@ module Test
         @status_line_size += line.size
       end
 
-      def jobs_status
+      def jobs_status(worker)
         return if !@options[:job_status] or @options[:verbose]
-        status_line = @workers.map(&:to_s).join(" ")
+        if @options[:job_status] == :replace
+          status_line = @workers.map(&:to_s).join(" ")
+        else
+          status_line = worker.to_s
+        end
         update_status(status_line) or (puts; nil)
       end
 
@@ -606,7 +610,6 @@ module Test
 
       def new_test(s)
         @test_count += 1
-        return if !@options[:job_status] or @options[:verbose]
         update_status(s)
       end
 
