@@ -688,7 +688,7 @@ module Test
           when /\A(.*\#.*) = \z/
             runner.new_test($1)
           when /\A(.* s) = \z/
-            runner.add_status(" = "+$1.chomp)
+            runner.add_status(" = #$1")
           when /\A\.+\z/
             runner.succeed
           when /\A[EFS]\z/
