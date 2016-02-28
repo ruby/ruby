@@ -4098,13 +4098,12 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
  *  call-seq:
  *     ary & other_ary      -> new_ary
  *
- *  Set Intersection --- Returns a new array containing elements common to the
- *  two arrays, excluding any duplicates. The order is preserved from the
- *  original array.
+ *  Set Intersection --- Returns a new array containing unique elements common to the
+ *  two arrays. The order is preserved from the original array.
  *
  *  It compares elements using their #hash and #eql? methods for efficiency.
  *
- *     [ 1, 1, 3, 5 ] & [ 1, 2, 3 ]                 #=> [ 1, 3 ]
+ *     [ 1, 1, 3, 5 ] & [ 3, 2, 1 ]                 #=> [ 1, 3 ]
  *     [ 'a', 'b', 'b', 'z' ] & [ 'a', 'b', 'c' ]   #=> [ 'a', 'b' ]
  *
  *  See also Array#uniq.
@@ -4150,11 +4149,12 @@ ary_hash_orset(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
  *     ary | other_ary     -> new_ary
  *
  *  Set Union --- Returns a new array by joining +ary+ with +other_ary+,
- *  excluding any duplicates and preserving the order from the original array.
+ *  excluding any duplicates and preserving the order from the given arrays.
  *
  *  It compares elements using their #hash and #eql? methods for efficiency.
  *
  *     [ "a", "b", "c" ] | [ "c", "d", "a" ]    #=> [ "a", "b", "c", "d" ]
+ *     [ "c", "d", "a" ] | [ "a", "b", "c" ]    #=> [ "c", "d", "a", "b" ]
  *
  *  See also Array#uniq.
  */

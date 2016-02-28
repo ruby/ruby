@@ -1,3 +1,11 @@
+Sun Feb 28 10:19:47 2016  Ryan T. Hosford  <tad.hosford@gmail.com>
+
+	* array.c (rb_ary_and): clarify that set intersection returns the
+	  unique elements common to both arrays.
+
+	* array.c (rb_ary_or): clarify that union preserves the order from
+	  the given arrays.
+
 Sat Feb 27 17:05:29 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/unicode/case-folding.rb, casefold.h: Reducing size of TitleCase
