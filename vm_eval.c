@@ -682,13 +682,15 @@ rb_method_missing(int argc, const VALUE *argv, VALUE obj)
 }
 
 static VALUE
-make_no_method_exception(VALUE exc, VALUE format, VALUE obj, int argc, const VALUE *argv)
+make_no_method_exception(VALUE exc, VALUE format, VALUE obj,
+			 int argc, const VALUE *argv, int priv)
 {
     int n = 0;
     enum {
 	arg_mesg,
 	arg_name,
 	arg_args,
+	arg_priv,
 	args_size
     };
     VALUE args[args_size];
@@ -700,6 +702,7 @@ make_no_method_exception(VALUE exc, VALUE format, VALUE obj, int argc, const VAL
     args[n++] = argv[0];
     if (exc == rb_eNoMethodError) {
 	args[n++] = rb_ary_new4(argc - 1, argv + 1);
+	args[n++] = priv ? Qtrue : Qfalse;
     }
     return rb_class_new_instance(n, args, exc);
 }
@@ -737,7 +740,8 @@ raise_method_missing(rb_thread_t *th, int argc, const VALUE *argv, VALUE obj,
     }
 
     {
-	exc = make_no_method_exception(exc, format, obj, argc, argv);
+	exc = make_no_method_exception(exc, format, obj, argc, argv,
+				       last_call_status & (MISSING_FCALL|MISSING_VCALL));
 	if (!(last_call_status & MISSING_MISSING)) {
 	    rb_vm_pop_cfunc_frame();
 	}
@@ -929,7 +933,8 @@ send_internal(int argc, const VALUE *argv, VALUE recv, call_type scope)
     if (!id) {
 	if (rb_method_basic_definition_p(CLASS_OF(recv), idMethodMissing)) {
 	    VALUE exc = make_no_method_exception(rb_eNoMethodError, 0,
-						 recv, argc, argv);
+						 recv, argc, argv,
+						 scope != CALL_PUBLIC);
 	    rb_exc_raise(exc);
 	}
 	if (!SYMBOL_P(*argv)) {

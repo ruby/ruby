@@ -200,10 +200,11 @@ enum method_missing_reason {
     MISSING_NOENTRY   = 0x00,
     MISSING_PRIVATE   = 0x01,
     MISSING_PROTECTED = 0x02,
-    MISSING_VCALL     = 0x04,
-    MISSING_SUPER     = 0x08,
-    MISSING_MISSING   = 0x10,
-    MISSING_NONE      = 0x20
+    MISSING_FCALL     = 0x04,
+    MISSING_VCALL     = 0x08,
+    MISSING_SUPER     = 0x10,
+    MISSING_MISSING   = 0x20,
+    MISSING_NONE      = 0x40
 };
 
 struct rb_call_info {

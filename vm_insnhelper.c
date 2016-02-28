@@ -1782,6 +1782,7 @@ ci_missing_reason(const struct rb_call_info *ci)
 {
     enum method_missing_reason stat = MISSING_NOENTRY;
     if (ci->flag & VM_CALL_VCALL) stat |= MISSING_VCALL;
+    if (ci->flag & VM_CALL_FCALL) stat |= MISSING_FCALL;
     if (ci->flag & VM_CALL_SUPER) stat |= MISSING_SUPER;
     return stat;
 }
@@ -1823,7 +1824,8 @@ vm_call_opt_send(rb_thread_t *th, rb_control_frame_t *reg_cfp, struct rb_calling
     if (!(ci->mid = rb_check_id(&sym))) {
 	if (rb_method_basic_definition_p(CLASS_OF(calling->recv), idMethodMissing)) {
 	    VALUE exc = make_no_method_exception(rb_eNoMethodError, 0, calling->recv,
-						 rb_long2int(calling->argc), &TOPN(i));
+						 rb_long2int(calling->argc), &TOPN(i),
+						 ci->flag & (VM_CALL_FCALL|VM_CALL_VCALL));
 	    rb_exc_raise(exc);
 	}
 	TOPN(i) = rb_str_intern(sym);

@@ -762,6 +762,7 @@ end.join
     assert_equal(:foo, e.name)
     assert_equal([1, 2], e.args)
     assert_same(obj, e.receiver)
+    assert_not_predicate(e, :private_call?)
 
     e = assert_raise(NoMethodError) {
       obj.instance_eval {foo(1, 2)}
@@ -769,6 +770,7 @@ end.join
     assert_equal(:foo, e.name)
     assert_equal([1, 2], e.args)
     assert_same(obj, e.receiver)
+    assert_predicate(e, :private_call?)
   end
 
   def test_name_error_info_local_variables
@@ -785,6 +787,29 @@ end.join
     assert_equal(:foo, e.name)
     assert_same(obj, e.receiver)
     assert_equal(%i[a b c d e f g], e.local_variables.sort)
+  end
+
+  def test_name_error_info_method_missing
+    obj = PrettyObject.new
+    def obj.method_missing(*)
+      super
+    end
+
+    e = assert_raise(NoMethodError) {
+      obj.foo(1, 2)
+    }
+    assert_equal(:foo, e.name)
+    assert_equal([1, 2], e.args)
+    assert_same(obj, e.receiver)
+    assert_not_predicate(e, :private_call?)
+
+    e = assert_raise(NoMethodError) {
+      obj.instance_eval {foo(1, 2)}
+    }
+    assert_equal(:foo, e.name)
+    assert_equal([1, 2], e.args)
+    assert_same(obj, e.receiver)
+    assert_predicate(e, :private_call?)
   end
 
   def test_name_error_info_parent_iseq_mark

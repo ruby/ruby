@@ -697,6 +697,7 @@ static VALUE rb_eNOERROR;
 static ID id_new, id_cause, id_message, id_backtrace;
 static ID id_name, id_args, id_Errno, id_errno, id_i_path;
 static ID id_receiver, id_iseq, id_local_variables;
+static ID id_private_call_p;
 extern ID ruby_static_id_status;
 #define id_bt idBt
 #define id_bt_locations idBt_locations
@@ -1203,9 +1204,11 @@ name_err_local_variables(VALUE self)
 static VALUE
 nometh_err_initialize(int argc, VALUE *argv, VALUE self)
 {
+    VALUE priv = (argc > 3) && (--argc, RTEST(argv[argc])) ? Qtrue : Qfalse;
     VALUE args = (argc > 2) ? argv[--argc] : Qnil;
     name_err_initialize(argc, argv, self);
     rb_ivar_set(self, id_args, args);
+    rb_ivar_set(self, id_private_call_p, RTEST(priv) ? Qtrue : Qfalse);
     return self;
 }
 
@@ -1390,6 +1393,12 @@ static VALUE
 nometh_err_args(VALUE self)
 {
     return rb_attr_get(self, id_args);
+}
+
+static VALUE
+nometh_err_private_call_p(VALUE self)
+{
+    return rb_attr_get(self, id_private_call_p);
 }
 
 void
@@ -2019,6 +2028,7 @@ Init_Exception(void)
     rb_eNoMethodError = rb_define_class("NoMethodError", rb_eNameError);
     rb_define_method(rb_eNoMethodError, "initialize", nometh_err_initialize, -1);
     rb_define_method(rb_eNoMethodError, "args", nometh_err_args, 0);
+    rb_define_method(rb_eNoMethodError, "private_call?", nometh_err_private_call_p, 0);
 
     rb_eRuntimeError = rb_define_class("RuntimeError", rb_eStandardError);
     rb_eSecurityError = rb_define_class("SecurityError", rb_eException);
@@ -2043,6 +2053,7 @@ Init_Exception(void)
     id_name = rb_intern_const("name");
     id_args = rb_intern_const("args");
     id_receiver = rb_intern_const("receiver");
+    id_private_call_p = rb_intern_const("private_call?");
     id_local_variables = rb_intern_const("local_variables");
     id_Errno = rb_intern_const("Errno");
     id_errno = rb_intern_const("errno");

@@ -1,3 +1,16 @@
+Sun Feb 28 13:40:46 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (nometh_err_initialize): add private_call? parameter.
+
+	* error.c (nometh_err_private_call_p): add private_call? method,
+	  to tell if the exception raised in private form FCALL or VCALL.
+	  [Feature #12043]
+
+	* vm_eval.c (make_no_method_exception): append private_call?
+	  argument.
+
+	* vm_insnhelper.c (ci_missing_reason): copy FCALL flag.
+
 Sun Feb 28 10:19:47 2016  Ryan T. Hosford  <tad.hosford@gmail.com>
 
 	* array.c (rb_ary_and): clarify that set intersection returns the
