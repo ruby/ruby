@@ -4531,3 +4531,41 @@ AC_CONFIG_FILES($ruby_pc:template/ruby.pc.in,
 AC_OUTPUT
 }
 }
+
+echo "---"
+echo "Configuration summary for $RUBY_BASE_NAME version $RUBY_PROGRAM_VERSION"
+echo ""
+echo "   * Installation prefix: $prefix"
+echo "   * exec prefix:         $exec_prefix"
+echo "   * arch:                $arch"
+echo "   * site arch:           $sitearch"
+echo "   * RUBY_BASE_NAME:      $RUBY_BASE_NAME"
+echo "   * ruby lib prefix:     $rubylibprefix"
+echo "   * site libraries path: $rubysitearchprefix"
+echo "   * vendor path:         $vendordir"
+echo "   * target OS:           $target_os"
+echo "   * compiler:            $CC"
+echo "   * with pthread:        $enable_pthread"
+echo "   * enable shared libs:  $ENABLE_SHARED"
+echo "   * dynamic library ext: $DLEXT"
+if test "$(eval echo $cflags)" != ""; then
+echo "   * CFLAGS:              $(eval echo $cflags)"
+fi
+if test "$(eval echo $cppflags)" != ""; then
+echo "   * CPPFLAGS:            $cppflags"
+fi
+echo "   * LDFLAGS:             $LDFLAGS"
+echo "   * strip command:       $STRIP"
+echo "   * install doc:         $install_doc"
+echo "   * man page type:       $MANTYPE"
+if test "$kcode" != ""; then
+echo "   * kcode:               $kcode"
+fi
+if test "$search_path" != ""; then
+echo "   * search path:         $search_path"
+fi
+if test -n "$EXTSTATIC"; then
+echo "   * static-linked-ext:   yes"
+fi
+echo ""
+echo "---"
