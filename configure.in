@@ -4142,8 +4142,8 @@ if test "${ARCH_FLAG}"; then
 fi
 warnflags="$rb_cv_warnflags"
 AC_SUBST(cppflags)dnl
-AC_SUBST(cflags, ["$orig_cflags "'${optflags} ${debugflags} ${warnflags}'])dnl
-AC_SUBST(cxxflags, ["$orig_cxxflags "'${optflags} ${debugflags} ${warnflags}'])dnl
+AC_SUBST(cflags, ["${orig_cflags:+$orig_cflags }"'${optflags} ${debugflags} ${warnflags}'])dnl
+AC_SUBST(cxxflags, ["${orig_cxxflags:+$orig_cxxflags }"'${optflags} ${debugflags} ${warnflags}'])dnl
 AC_SUBST(optflags)dnl
 AC_SUBST(debugflags)dnl
 AC_SUBST(warnflags)dnl
