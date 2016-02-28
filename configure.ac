@@ -1094,6 +1094,7 @@ fi
 
 dnl default value for $KANJI
 DEFAULT_KCODE="KCODE_NONE"
+kcode=
 
 AC_ARG_WITH(default-kcode, 
 	[  --with-default-kcode=CODE specify default value for \$KCODE (utf8|euc|sjis|none)], 
@@ -1103,7 +1104,9 @@ AC_ARG_WITH(default-kcode,
 	sjis) DEFAULT_KCODE="KCODE_SJIS";;
 	none) DEFAULT_KCODE="KCODE_NONE";;
         *)    AC_MSG_WARN($withval is not valid kcode; ignored);;
-	esac])
+	esac
+  kcode=$withval
+])
 AC_DEFINE_UNQUOTED(DEFAULT_KCODE, $DEFAULT_KCODE)
 
 dnl wheather use dln_a_out or not
@@ -1872,8 +1875,8 @@ fi
 tr -d '\015' < largefile.h > confdefs.h
 rm largefile.h
 
-AC_CONFIG_FILES($FIRSTMAKEFILE)
-AC_CONFIG_FILES(Makefile, [{
+AC_CONFIG_FILES([$FIRSTMAKEFILE test/ruby/test_system.rb])
+AC_CONFIG_FILES(Makefile,[{
 	sed '/^MISSING/s/\$U\././g' Makefile
 	echo; test x"$EXEEXT" = x || echo 'miniruby: miniruby$(EXEEXT)'
 	test "$RUBY_INSTALL_NAME$EXEEXT" = ruby || echo 'ruby: $(PROGRAM);'
@@ -1881,3 +1884,67 @@ AC_CONFIG_FILES(Makefile, [{
       } >> confmk$$.tmp && mv -f confmk$$.tmp Makefile],
 [RUBY_INSTALL_NAME=$RUBY_INSTALL_NAME EXEEXT=$EXEEXT])
 AC_OUTPUT
+
+dnl Optional Features:
+dnl   --disable-option-checking  ignore unrecognized --enable/--with options
+dnl   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
+dnl   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
+dnl   --enable-frame-address  use GCC __builtin_frame_address().
+dnl   --disable-largefile     omit support for large files
+dnl   --enable-pthread        use pthread library.
+dnl   --disable-fastthread    do not use the fastthread mutex
+dnl   --enable-setreuid       use setreuid()/setregid() according to need even if obsolete.
+dnl   --disable-rpath         embed run path into extension libraries.
+dnl   --enable-shared         build a shared library for Ruby.
+dnl   --enable-install-doc    build and install rdoc indexes during install
+
+dnl Optional Packages:
+dnl   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
+dnl   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
+dnl   --without-gcc           never use gcc
+dnl   --with-winsock2         link winsock2 (MinGW only)
+dnl   --with-libc_r           link libc_r if possible (FreeBSD only)
+dnl   --with-setjmp-type      select setjmp type
+dnl   --with-default-kcode=CODE specify default value for \$KCODE (utf8|euc|sjis|none)
+dnl   --with-dln-a-out        use dln_a_out if possible
+dnl   --with-static-linked-ext link external modules statically
+dnl   --with-sitedir=DIR      site libraries in DIR [LIBDIR/ruby/site_ruby]
+dnl   --with-vendordir=DIR    vendor libraries in DIR [LIBDIR/ruby/vendor_ruby]
+dnl   --with-search-path=DIR specify the additional search path
+dnl   --with-mantype=TYPE specify man page type; TYPE is one of man and doc
+
+
+echo "---"
+echo "Configuration summary for Ruby version $MAJOR.$MINOR.$TEENY"
+echo ""
+echo "   * Installation prefix: $prefix"
+echo "   * exec prefix:         $exec_prefix"
+echo "   * site libraries path: $SITE_DIR"
+echo "   * vendor path:         $VENDOR_DIR"
+echo "   * target OS:           $target_os"
+echo "   * compiler:            $CC"
+echo "   * frame address:       $frame_address"
+echo "   * with pthread:        $enable_pthread"
+echo "   * enable shared libs:  $ENABLE_SHARED"
+echo "   * dynamic library ext: $DLEXT"
+if test "$(eval echo $cflags)" != ""; then
+echo "   * CFLAGS:              $(eval echo $cflags)"
+fi
+if test "$(eval echo $cppflags)" != ""; then
+echo "   * CPPFLAGS:            $cppflags"
+fi
+echo "   * LDFLAGS:             $LDFLAGS"
+echo "   * strip command:       $STRIP"
+echo "   * install doc:         $install_doc"
+echo "   * man page type:       $MANTYPE"
+if test "$kcode" != ""; then
+echo "   * kcode:               $kcode"
+fi
+if test "$search_path" != ""; then
+echo "   * search path:         $search_path"
+fi
+if test -n "$EXTSTATIC"; then
+echo "   * static-linked-ext:   yes"
+fi
+echo ""
+echo "---"

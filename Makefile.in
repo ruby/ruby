@@ -161,7 +161,7 @@ $(MKFILES): config.status $(srcdir)/common.mk
 config.status:	$(srcdir)/configure
 		MINIRUBY="$(MINIRUBY)" $(SHELL) ./config.status --recheck
 
-$(srcdir)/configure: $(srcdir)/configure.in
+$(srcdir)/configure: $(srcdir)/configure.ac
 		cd $(srcdir) && $(AUTOCONF)
 
 lex.c: keywords

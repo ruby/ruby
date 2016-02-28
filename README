@@ -65,7 +65,7 @@ in the mail body (not subject) to the address <ruby-talk-ctl@ruby-lang.org>.
 
 This is what you need to do to compile and install Ruby:
 
-  1. If ./configure does not exist or is older than configure.in,
+  1. If ./configure does not exist or is older than configure.ac,
      run autoconf to (re)generate configure.
 
   2. Run ./configure, which will generate config.h and Makefile.
