@@ -10,7 +10,7 @@ require 'rbconfig'
 require 'thread'
 
 module Gem
-  VERSION = '2.6.0'
+  VERSION = '2.6.1'
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -345,10 +345,32 @@ module Gem
   # Initialize the filesystem paths to use from +env+.
   # +env+ is a hash-like object (typically ENV) that
   # is queried for 'GEM_HOME', 'GEM_PATH', and 'GEM_SPEC_CACHE'
+  # Keys for the +env+ hash should be Strings, and values of the hash should
+  # be Strings or +nil+.
 
   def self.paths=(env)
     clear_paths
-    @paths = Gem::PathSupport.new ENV.to_hash.merge(env)
+    target = {}
+    env.each_pair do |k,v|
+      case k
+      when 'GEM_HOME', 'GEM_PATH', 'GEM_SPEC_CACHE'
+        case v
+        when nil, String
+          target[k] = v
+        when Array
+          unless Gem::Deprecate.skip
+            warn <<-eowarn
+Array values in the parameter are deprecated. Please use a String or nil.
+An Array was passed in from #{caller[3]}
+            eowarn
+          end
+          target[k] = v.join File::PATH_SEPARATOR
+        end
+      else
+        target[k] = v
+      end
+    end
+    @paths = Gem::PathSupport.new ENV.to_hash.merge(target)
     Gem::Specification.dirs = @paths.path
   end
 
@@ -956,7 +978,7 @@ module Gem
   def self.use_paths(home, *paths)
     paths.flatten!
     paths.compact!
-    hash = { "GEM_HOME" => home, "GEM_PATH" => paths.join(File::PATH_SEPARATOR) }
+    hash = { "GEM_HOME" => home, "GEM_PATH" => paths.empty? ? home : paths.join(File::PATH_SEPARATOR) }
     hash.delete_if { |_, v| v.nil? }
     self.paths = hash
   end

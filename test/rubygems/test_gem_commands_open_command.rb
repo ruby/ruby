@@ -42,7 +42,7 @@ class TestGemCommandsOpenCommand < Gem::TestCase
     @cmd.options[:version] = "4.0"
     @cmd.options[:args] = %w[foo]
 
-    spec = gem "foo", "5.0"
+    gem "foo", "5.0"
 
     assert_raises Gem::MockGemUi::TermError do
       use_ui @ui do
