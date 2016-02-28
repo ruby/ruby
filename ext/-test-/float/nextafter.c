@@ -13,7 +13,7 @@ system_nextafter_m(VALUE klass, VALUE vx, VALUE vy)
 }
 
 #define nextafter missing_nextafter
-#include "../../../missing/nextafter.c"
+#include "../../../missing.d/nextafter.c"
 #undef nextafter
 
 static VALUE

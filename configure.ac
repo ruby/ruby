@@ -1,5 +1,19 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_INIT()
+m4_define([ruby_base_name],
+  [m4_esyscmd([echo -n ruby | sed "$program_transform_name"])])
+
+m4_define([m4_ruby_major_version],[2])
+m4_define([m4_ruby_minor_version],[4])
+m4_define([m4_ruby_teeny_version],[0])
+m4_define([m4_ruby_version],
+  [m4_ruby_major_version.m4_ruby_minor_version.m4_ruby_teeny_version])
+
+m4_errprintn('--')
+m4_errprintn(ruby_base_name)
+m4_errprintn(m4_ruby_version)
+m4_errprintn('--')
+
+AC_INIT([ruby_base_name],[m4_ruby_version])
 {
 AC_CONFIG_AUX_DIR(tool)
 
@@ -224,24 +238,30 @@ fi
 GNU_LD=$rb_cv_prog_gnu_ld
 AC_SUBST(GNU_LD)])
 
-eval `sed -n ['s/^@%:@define RUBY_API_VERSION_\([A-Z][A-Z_0-9]*\) \([0-9][0-9]*\)/API_\1=\2/p'] $srcdir/include/ruby/version.h`
-RUBY_PROGRAM_VERSION=`sed -n 's/^@%:@define RUBY_VERSION "\(.*\)"/\1/p' $srcdir/version.h`
-MAJOR=`echo $RUBY_PROGRAM_VERSION | cut -d. -f1`
-MINOR=`echo $RUBY_PROGRAM_VERSION | cut -d. -f2`
-TEENY=`echo $RUBY_PROGRAM_VERSION | cut -d. -f3`
-for v in MAJOR MINOR TEENY; do
-    if eval "test \"\$$v\" = ''"; then
-	AC_MSG_ERROR(could not determine $v number from version.h)
-    fi
-done
-AS_IF([test "$MAJOR.$MINOR" != "$API_MAJOR.$API_MINOR"], [
-    AC_MSG_ERROR([API version $API_MAJOR.$API_MINOR differs from program version $MAJOR.$MINOR])
+RUBY_BASE_NAME=ruby_base_name
+RUBY_PROGRAM_VERSION=m4_ruby_version
+RUBY_PATCHLEVEL=-1
+MAJOR=m4_ruby_major_version
+MINOR=m4_ruby_minor_version
+TEENY=m4_ruby_teeny_version
+RUBY_API_VERSION_MAJOR=m4_ruby_major_version
+RUBY_API_VERSION_MINOR=m4_ruby_minor_version
+RUBY_API_VERSION_TEENY=m4_ruby_teeny_version
+RUBY_API_VERSION_CODE=($RUBY_API_VERSION_MAJOR*10000+$RUBY_API_VERSION_MINOR*100+$RUBY_API_VERSION_TEENY)
+
+AS_IF([test "$MAJOR.$MINOR" != "$RUBY_API_VERSION_MAJOR.$RUBY_API_VERSION_MINOR"], [
+    AC_MSG_ERROR([API version $RUBY_API_VERSION_MAJOR.$RUBY_API_VERSION_MINOR differs from program version $MAJOR.$MINOR])
 ])
+AC_SUBST(RUBY_PROGRAM_VERSION)
+AC_SUBST(RUBY_PATCHLEVEL)
 AC_SUBST(MAJOR)
 AC_SUBST(MINOR)
 AC_SUBST(TEENY)
-AC_SUBST(RUBY_PROGRAM_VERSION)
-RUBY_PATCHLEVEL=`sed -n 's/^#define RUBY_PATCHLEVEL //p' $srcdir/version.h`
+AC_SUBST(RUBY_API_VERSION_MAJOR)
+AC_SUBST(RUBY_API_VERSION_MINOR)
+AC_SUBST(RUBY_API_VERSION_TEENY)
+AC_SUBST(RUBY_API_VERSION_CODE)
+
 AC_DEFINE(CANONICALIZATION_FOR_MATHN)
 dnl checks for alternative programs
 AC_CANONICAL_BUILD
@@ -277,7 +297,6 @@ fi
 if test "$prefix" -ef .; then
   AC_MSG_ERROR(--prefix cannot be the current working directory.)
 fi
-RUBY_BASE_NAME=`echo ruby | sed "$program_transform_name"`
 RUBYW_BASE_NAME=`echo rubyw | sed "$program_transform_name"`
 AC_SUBST(RUBY_BASE_NAME)
 AC_SUBST(RUBYW_BASE_NAME)
@@ -2211,7 +2230,7 @@ AC_REPLACE_FUNCS(strlcpy)
 AC_REPLACE_FUNCS(strstr)
 AC_REPLACE_FUNCS(tgamma)
 
-# for missing/setproctitle.c
+# for missing.d/setproctitle.c
 AS_CASE(["$target_os"],
 [aix* | k*bsd*-gnu | kopensolaris*-gnu | linux* | darwin*], [AC_DEFINE(SPT_TYPE,SPT_REUSEARGV)],
 [hpux*], [AC_DEFINE(SPT_TYPE,SPT_PSTAT) ],
@@ -4231,25 +4250,14 @@ AC_ARG_WITH(ruby-version,
 unset RUBY_LIB_VERSION
 unset RUBY_LIB_VERSION_STYLE
 AS_CASE(["$ruby_version"],
-  [full],  [RUBY_LIB_VERSION_STYLE='3	/* full */'],
-  [minor], [RUBY_LIB_VERSION_STYLE='2	/* minor */'])
-if test ${RUBY_LIB_VERSION_STYLE+set}; then
-    {
-    echo "#define RUBY_LIB_VERSION_STYLE $RUBY_LIB_VERSION_STYLE"
-    echo '#define STRINGIZE(x) x'
-    test -f revision.h -o -f "${srcdir}/revision.h" || echo '#define RUBY_REVISION 0'
-    echo '#include "verconf.h"'
-    echo '#include "version.h"'
-    echo 'ruby_version=RUBY_LIB_VERSION'
-    } > conftest.c
-    test -f verconf.h || > verconf.h
-    ruby_version="`$CPP -I. -I"${srcdir}" -I"${srcdir}/include" conftest.c | sed '/^ruby_version=/!d;s/ //g'`"
-    eval $ruby_version
-elif test -z "${ruby_version}"; then
+  [full],  [RUBY_LIB_VERSION='${RUBY_API_VERSION_MAJOR}.${RUBY_API_VERSION_MINOR}.${RUBY_API_VERSION_TEENY}'],
+  [minor],  [RUBY_LIB_VERSION='${RUBY_API_VERSION_MAJOR}.${RUBY_API_VERSION_MINOR}'],
+[
+if test -z "${ruby_version}"; then
     AC_MSG_ERROR([No ruby version, No place for bundled libraries])
 else
     RUBY_LIB_VERSION="${ruby_version}"
-fi
+fi])
 AC_SUBST(RUBY_LIB_VERSION_STYLE)
 AC_SUBST(RUBY_LIB_VERSION)
 
@@ -4452,6 +4460,10 @@ AS_CASE([" $CPP "], [*" $CC "*], [CPP=`echo " $CPP " | sed "s| $CC |"' $(CC) |;s
 if test x"$firstmf" != x; then
     AC_CONFIG_FILES($firstmf:$firsttmpl, [], [firstmf="$firstmf" firsttmpl="$firsttmpl"])
 fi
+
+AC_CONFIG_FILES(version.h)
+AC_CONFIG_FILES(include/ruby/version.h)
+
 AC_CONFIG_FILES(Makefile, [
     tmpmk=confmk$$.tmp
     {
@@ -4531,3 +4543,43 @@ AC_CONFIG_FILES($ruby_pc:template/ruby.pc.in,
 AC_OUTPUT
 }
 }
+
+
+echo "---"
+echo "Configuration summary for $RUBY_BASE_NAME version $RUBY_PROGRAM_VERSION"
+echo ""
+echo "   * Installation prefix: $prefix"
+echo "   * exec prefix:         $exec_prefix"
+echo "   * arch:                $arch"
+echo "   * site arch:           $sitearch"
+echo "   * RUBY_BASE_NAME:      $RUBY_BASE_NAME"
+echo "   * ruby lib prefix:     $rubylibprefix"
+echo "   * site libraries path: $rubysitearchprefix"
+echo "   * vendor path:         $vendordir"
+echo "   * target OS:           $target_os"
+echo "   * compiler:            $CC"
+echo "   * with pthread:        $enable_pthread"
+echo "   * enable shared libs:  $ENABLE_SHARED"
+echo "   * dynamic library ext: $DLEXT"
+if test "$(eval echo $cflags)" != ""; then
+echo "   * CFLAGS:              $(eval echo $cflags)"
+fi
+if test "$(eval echo $cppflags)" != ""; then
+echo "   * CPPFLAGS:            $cppflags"
+fi
+echo "   * LDFLAGS:             $LDFLAGS"
+echo "   * LIBS:                $LIBS"
+echo "   * strip command:       $STRIP"
+echo "   * install doc:         $install_doc"
+echo "   * man page type:       $MANTYPE"
+if test "$kcode" != ""; then
+echo "   * kcode:               $kcode"
+fi
+if test "$search_path" != ""; then
+echo "   * search path:         $search_path"
+fi
+if test -n "$EXTSTATIC"; then
+echo "   * static-linked-ext:   yes"
+fi
+echo ""
+echo "---"

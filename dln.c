@@ -52,7 +52,7 @@ void *xrealloc();
 
 #include <stdio.h>
 #if defined(_WIN32)
-#include "missing/file.h"
+#include "missing.d/file.h"
 #endif
 #include <sys/types.h>
 #include <sys/stat.h>

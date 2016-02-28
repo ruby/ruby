@@ -5804,7 +5804,7 @@ popen_redirect(struct popen_arg *p)
  *
  * Note that memchr() and memcmp is *not* async-signal-safe in POSIX.
  * However they are easy to re-implement in async-signal-safe manner.
- * (Also note that there is missing/memcmp.c.)
+ * (Also note that there is missing.d/memcmp.c.)
  */
 static int
 linux_get_maxfd(void)

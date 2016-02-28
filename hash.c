@@ -23,7 +23,7 @@
 # ifdef HAVE_CRT_EXTERNS_H
 #  include <crt_externs.h>
 # else
-#  include "missing/crt_externs.h"
+#  include "missing.d/crt_externs.h"
 # endif
 #endif
 
