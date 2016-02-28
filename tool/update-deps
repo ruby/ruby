@@ -189,7 +189,7 @@ def in_makefile(target, source)
     when %r{\A\.ext/include/[^/]+/ruby/} then source2 = "{$(VPATH)}#{$'}"
     when %r{\Ainclude/ruby/} then source2 = "{$(VPATH)}#{$'}"
     when %r{\Aenc/} then source2 = "{$(VPATH)}#{$'}"
-    when %r{\Amissing/} then source2 = "{$(VPATH)}#{$'}"
+    when %r{\Amissing.d/} then source2 = "{$(VPATH)}#{$'}"
     when %r{\Accan/} then source2 = "$(CCAN_DIR)/#{$'}"
     when %r{\Adefs/} then source2 = "{$(VPATH)}#{source}"
     else source2 = "$(top_srcdir)/#{source}"

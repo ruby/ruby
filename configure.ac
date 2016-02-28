@@ -2230,7 +2230,7 @@ AC_REPLACE_FUNCS(strlcpy)
 AC_REPLACE_FUNCS(strstr)
 AC_REPLACE_FUNCS(tgamma)
 
-# for missing/setproctitle.c
+# for missing.d/setproctitle.c
 AS_CASE(["$target_os"],
 [aix* | k*bsd*-gnu | kopensolaris*-gnu | linux* | darwin*], [AC_DEFINE(SPT_TYPE,SPT_REUSEARGV)],
 [hpux*], [AC_DEFINE(SPT_TYPE,SPT_PSTAT) ],
