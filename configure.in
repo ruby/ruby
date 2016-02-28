@@ -4532,40 +4532,47 @@ AC_OUTPUT
 }
 }
 
+AS_IF([${FOLD+:} false], [], [
+AS_IF([test "`echo abcdefg hijklmno | fold -s -w10 | sed 1d`" = hijklmno], [FOLD="fold"], [FOLD=])
+])
+AS_REQUIRE_SHELL_FN([config_summary],
+    [AS_FUNCTION_DESCRIBE([config_summary], [NAME, VAL], [configuration summary])],
+    [AS_IF([test -z "$2"], [], [
+	AS_ECHO_N(["   * $1:                     "]) | head -c26
+	AS_IF([test "$FOLD"], [
+	    echo "$2" | fold -s -w50 |
+	    sed '1!s/^/                          /;$!s/$/\\/'
+	], [echo "$2"])
+    ])]
+)
+
 echo "---"
 echo "Configuration summary for $RUBY_BASE_NAME version $RUBY_PROGRAM_VERSION"
 echo ""
-echo "   * Installation prefix: $prefix"
-echo "   * exec prefix:         $exec_prefix"
-echo "   * arch:                $arch"
-echo "   * site arch:           $sitearch"
-echo "   * RUBY_BASE_NAME:      $RUBY_BASE_NAME"
-echo "   * ruby lib prefix:     $rubylibprefix"
-echo "   * site libraries path: $rubysitearchprefix"
-echo "   * vendor path:         $vendordir"
-echo "   * target OS:           $target_os"
-echo "   * compiler:            $CC"
-echo "   * with pthread:        $enable_pthread"
-echo "   * enable shared libs:  $ENABLE_SHARED"
-echo "   * dynamic library ext: $DLEXT"
-if test "$(eval echo $cflags)" != ""; then
-echo "   * CFLAGS:              $(eval echo $cflags)"
-fi
-if test "$(eval echo $cppflags)" != ""; then
-echo "   * CPPFLAGS:            $cppflags"
-fi
-echo "   * LDFLAGS:             $LDFLAGS"
-echo "   * strip command:       $STRIP"
-echo "   * install doc:         $install_doc"
-echo "   * man page type:       $MANTYPE"
-if test "$kcode" != ""; then
-echo "   * kcode:               $kcode"
-fi
-if test "$search_path" != ""; then
-echo "   * search path:         $search_path"
-fi
-if test -n "$EXTSTATIC"; then
-echo "   * static-linked-ext:   yes"
-fi
+config_summary "Installation prefix" "$prefix"
+config_summary "exec prefix"         "$exec_prefix"
+config_summary "arch"                "$arch"
+config_summary "site arch"           "$sitearch"
+config_summary "RUBY_BASE_NAME"      "$RUBY_BASE_NAME"
+config_summary "enable shared"       "$enable_shared"
+config_summary "ruby lib prefix"     "$rubylibprefix"
+config_summary "site libraries path" "$rubysitearchprefix"
+config_summary "vendor path"         "$vendordir"
+config_summary "target OS"           "$target_os"
+config_summary "compiler"            "$CC"
+config_summary "with pthread"        "$enable_pthread"
+config_summary "enable shared libs"  "$ENABLE_SHARED"
+config_summary "dynamic library ext" "$DLEXT"
+config_summary "CFLAGS"              "$cflags"
+config_summary "CPPFLAGS"            "$cppflags"
+config_summary "LDFLAGS"             "$LDFLAGS"
+config_summary "optflags"            "$optflags"
+config_summary "debugflags"          "$debugflags"
+config_summary "warnflags"           "$warnflags"
+config_summary "strip command"       "$STRIP"
+config_summary "install doc"         "$install_doc"
+config_summary "man page type"       "$MANTYPE"
+config_summary "search path"         "$search_path"
+config_summary "static-linked-ext"   ${EXTSTATIC:+"yes"}
 echo ""
 echo "---"
