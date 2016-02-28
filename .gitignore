@@ -110,8 +110,6 @@ y.tab.c
 /tmp
 /transdb.h
 /uncommon.mk
-/version.h
-/include/ruby/version.h
 /verconf.h
 /verconf.mk
 /web

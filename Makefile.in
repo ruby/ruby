@@ -53,7 +53,7 @@ DOCTARGETS = @RDOCTARGET@ @CAPITARGET@
 
 EXTOUT = @EXTOUT@
 arch_hdrdir = $(EXTOUT)/include/$(arch)
-VPATH = $(arch_hdrdir)/ruby:$(hdrdir)/ruby:$(srcdir):$(srcdir)/missing
+VPATH = $(arch_hdrdir)/ruby:$(hdrdir)/ruby:$(srcdir):$(srcdir)/missing.d
 
 empty =
 CC_VERSION = @CC_VERSION@
