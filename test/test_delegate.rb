@@ -137,6 +137,8 @@ class TestDelegateClass < Test::Unit::TestCase
     assert_equal(:m, foo.send(:delegate_test_private))
     assert_raise(NoMethodError, '[ruby-dev:40314]#4') {d.delegate_test_private}
     assert_equal(:m, d.delegate_test)
+    assert_raise(NoMethodError) {foo.sprintf("")}
+    assert_raise(NoMethodError) {d.sprintf("")}
   end
 
   def test_global_function
