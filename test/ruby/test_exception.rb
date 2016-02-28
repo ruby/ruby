@@ -725,42 +725,60 @@ end.join
     assert_in_out_err([], "raise Class.new(RuntimeError), 'foo'", [], /foo\n/)
   end
 
-  def test_name_error_info
-    obj = BasicObject.new
-    class << obj
+  PrettyObject =
+    Class.new(BasicObject) do
       alias object_id __id__
       def pretty_inspect; "`obj'"; end
+      alias inspect pretty_inspect
     end
+
+  def test_name_error_info_const
+    obj = PrettyObject.new
+
     e = assert_raise(NameError) {
       obj.instance_eval("Object")
     }
     assert_equal(:Object, e.name)
+
     e = assert_raise(NameError) {
       BasicObject::X
     }
     assert_same(BasicObject, e.receiver)
+    assert_equal(:X, e.name)
+  end
+
+  def test_name_error_info_method
+    obj = PrettyObject.new
+
     e = assert_raise(NameError) {
       obj.instance_eval {foo}
     }
     assert_equal(:foo, e.name)
     assert_same(obj, e.receiver)
+
     e = assert_raise(NoMethodError) {
       obj.foo(1, 2)
     }
     assert_equal(:foo, e.name)
     assert_equal([1, 2], e.args)
     assert_same(obj, e.receiver)
+
     e = assert_raise(NoMethodError) {
       obj.instance_eval {foo(1, 2)}
     }
     assert_equal(:foo, e.name)
     assert_equal([1, 2], e.args)
     assert_same(obj, e.receiver)
+  end
+
+  def test_name_error_info_local_variables
+    obj = PrettyObject.new
     def obj.test(a, b=nil, *c, &d)
       e = a
       1.times {|f| g = foo; g}
       e
     end
+
     e = assert_raise(NameError) {
       obj.test(3)
     }
