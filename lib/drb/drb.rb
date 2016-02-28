@@ -1635,7 +1635,7 @@ module DRb
     def error_print(exception)
       exception.backtrace.inject(true) do |first, x|
         if first
-          $stderr.puts "#{x}: #{exception} (#{exception.class})" 
+          $stderr.puts "#{x}: #{exception} (#{exception.class})"
         else
           $stderr.puts "\tfrom #{x}"
         end
