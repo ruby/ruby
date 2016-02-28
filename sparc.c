@@ -26,7 +26,7 @@ rb_sparc_flush_register_windows(void)
     __volatile__
 #endif
 
-/* This condition should be in sync with one in configure.in */
+/* This condition should be in sync with one in configure.ac */
 #if defined(__sparcv9) || defined(__sparc_v9__) || defined(__arch64__)
 # ifdef __GNUC__
     ("flushw" : : : "%o7")

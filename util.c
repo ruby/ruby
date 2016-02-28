@@ -18,7 +18,7 @@
 #include <float.h>
 
 #ifdef _WIN32
-#include "missing/file.h"
+#include "missing.d/file.h"
 #endif
 
 #include "ruby/util.h"

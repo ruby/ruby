@@ -248,7 +248,7 @@ Keiju Ishitsuka (keiju)
 == J
 
 Curtis Jackson
-* missing/dup2.c
+* missing.d//dup2.c
 
 Alan Johnson
 * a patch for net/ftp
@@ -341,11 +341,11 @@ Konrad Meyer
 * documentation
 
 Mib Software
-* missing/vsnprintf.c
+* missing.d/vsnprintf.c
 
 Todd C. Miller
-* missing/strlcat.c
-* missing/strlcpy.c
+* missing.d/strlcat.c
+* missing.d/strlcpy.c
 
 MIYASAKA, Masaru
 * a patch for cgi.rb
@@ -456,10 +456,10 @@ okkez
 * fixed ipaddr.rb, ext/etc
 
 Haruhiko Okumura
-* some of missing/* is based on his book:
-  * missing/erf.c
-  * missing/lgamma_r.c
-  * missing/tgamma.c
+* some of missing.d/* is based on his book:
+  * missing.d/erf.c
+  * missing.d/lgamma_r.c
+  * missing.d/tgamma.c
 
 OMAE, jun
 * a patch for debug.rb
@@ -483,8 +483,8 @@ Gaston Ramos
 * documentation
 
 The Regents of the University of California
-* missing/crypt.c
-* missing/vsnprintf.c
+* missing.d/crypt.c
+* missing.d/vsnprintf.c
 
 Sam Roberts
 * patch for socket
@@ -592,7 +592,7 @@ Darren Smith
 * a patch for golf_prelude.rb
 
 Richard M. Stallman
-* missing/alloca.c
+* missing.d/alloca.c
 
 Robin Stocker
 * documentation
@@ -666,7 +666,7 @@ Jakub Travnik
 * a patch for eval.c
 
 Tom Truscott
-* missing/crypt.c
+* missing.d/crypt.c
 
 == U
 

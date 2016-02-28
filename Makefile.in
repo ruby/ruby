@@ -53,7 +53,7 @@ DOCTARGETS = @RDOCTARGET@ @CAPITARGET@
 
 EXTOUT = @EXTOUT@
 arch_hdrdir = $(EXTOUT)/include/$(arch)
-VPATH = $(arch_hdrdir)/ruby:$(hdrdir)/ruby:$(srcdir):$(srcdir)/missing
+VPATH = $(arch_hdrdir)/ruby:$(hdrdir)/ruby:$(srcdir):$(srcdir)/missing.d
 
 empty =
 CC_VERSION = @CC_VERSION@
@@ -309,7 +309,7 @@ reconfig config.status:	$(srcdir)/$(CONFIGURE) $(srcdir)/enc/Makefile.in \
 	@PWD= MINIRUBY="$(MINIRUBY)"; export MINIRUBY; \
 	set $(SHELL) $($@-args); $(reconfig-exec-$(V))
 
-$(srcdir)/$(CONFIGURE): $(srcdir)/configure.in $(srcdir)/aclocal.m4
+$(srcdir)/$(CONFIGURE): $(srcdir)/configure.ac $(srcdir)/aclocal.m4
 	$(CHDIR) $(srcdir) && exec $(AUTOCONF) -o $(@F)
 
 $(srcdir)/aclocal.m4:

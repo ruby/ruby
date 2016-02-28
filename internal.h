@@ -433,7 +433,7 @@ struct RHash {
 #define RHASH_SIZE(h) (RHASH(h)->ntbl ? (st_index_t)RHASH(h)->ntbl->num_entries : 0)
 #endif
 
-/* missing/setproctitle.c */
+/* missing.d/setproctitle.c */
 #ifndef HAVE_SETPROCTITLE
 extern void ruby_init_setproctitle(int argc, char *argv[]);
 #endif
