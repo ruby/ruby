@@ -1700,9 +1700,7 @@ module FileUtils
     end
     extend self
     class << self
-      ::FileUtils::METHODS.each do |m|
-        public m
-      end
+      public(*::FileUtils::METHODS)
     end
   end
 
@@ -1726,9 +1724,7 @@ module FileUtils
     end
     extend self
     class << self
-      ::FileUtils::METHODS.each do |m|
-        public m
-      end
+      public(*::FileUtils::METHODS)
     end
   end
 
@@ -1753,9 +1749,7 @@ module FileUtils
     end
     extend self
     class << self
-      ::FileUtils::METHODS.each do |m|
-        public m
-      end
+      public(*::FileUtils::METHODS)
     end
   end
 
