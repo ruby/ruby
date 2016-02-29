@@ -1690,14 +1690,15 @@ module FileUtils
     include FileUtils
     @fileutils_output  = $stderr
     @fileutils_label   = ''
-    ::FileUtils.collect_method(:verbose).each do |name|
+    names = ::FileUtils.collect_method(:verbose)
+    names.each do |name|
       module_eval(<<-EOS, __FILE__, __LINE__ + 1)
         def #{name}(*args)
           super(*fu_update_option(args, :verbose => true))
         end
-        private :#{name}
       EOS
     end
+    private(*names)
     extend self
     class << self
       public(*::FileUtils::METHODS)
@@ -1714,14 +1715,15 @@ module FileUtils
     include LowMethods
     @fileutils_output  = $stderr
     @fileutils_label   = ''
-    ::FileUtils.collect_method(:noop).each do |name|
+    names = ::FileUtils.collect_method(:noop)
+    names.each do |name|
       module_eval(<<-EOS, __FILE__, __LINE__ + 1)
         def #{name}(*args)
           super(*fu_update_option(args, :noop => true))
         end
-        private :#{name}
       EOS
     end
+    private(*names)
     extend self
     class << self
       public(*::FileUtils::METHODS)
@@ -1739,14 +1741,15 @@ module FileUtils
     include LowMethods
     @fileutils_output  = $stderr
     @fileutils_label   = ''
-    ::FileUtils.collect_method(:noop).each do |name|
+    names = ::FileUtils.collect_method(:noop)
+    names.each do |name|
       module_eval(<<-EOS, __FILE__, __LINE__ + 1)
         def #{name}(*args)
           super(*fu_update_option(args, :noop => true, :verbose => true))
         end
-        private :#{name}
       EOS
     end
+    private(*names)
     extend self
     class << self
       public(*::FileUtils::METHODS)
