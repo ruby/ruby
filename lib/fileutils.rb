@@ -1674,8 +1674,9 @@ module FileUtils
 
   LOW_METHODS = singleton_methods(false) - collect_method(:noop).map(&:intern)
   module LowMethods
-    module_eval("private\n" + ::FileUtils::LOW_METHODS.map {|name| "def #{name}(*)end"}.join("\n"),
-                __FILE__, __LINE__)
+    private
+    def _do_nothing(*)end
+    ::FileUtils::LOW_METHODS.map {|name| alias_method name, :_do_nothing}
   end
 
   METHODS = singleton_methods() - [:private_module_function,
