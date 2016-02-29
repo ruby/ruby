@@ -4,7 +4,7 @@
 
 #define RUBY_RELEASE_YEAR 2016
 #define RUBY_RELEASE_MONTH 2
-#define RUBY_RELEASE_DAY 28
+#define RUBY_RELEASE_DAY 29
 
 #include "ruby/version.h"
 
