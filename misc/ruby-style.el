@@ -7,6 +7,8 @@
 ;;;  $Author$
 ;;;  created at: Thu Apr 26 13:54:01 JST 2007
 ;;;
+;;; Put this file under a directory contained in ``load-path'', and
+;;; then load it.
 ;;; To switch to the "ruby" style automatically if it looks like a
 ;;; source file of ruby, add ruby-style-c-mode to c-mode-hook:
 ;;;
