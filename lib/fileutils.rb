@@ -1629,7 +1629,7 @@ module FileUtils
   #
   #   p FileUtils.commands  #=> ["chmod", "cp", "cp_r", "install", ...]
   #
-  def FileUtils.commands
+  def self.commands
     OPT_TABLE.keys
   end
 
@@ -1638,7 +1638,7 @@ module FileUtils
   #
   #   p FileUtils.options  #=> ["noop", "force", "verbose", "preserve", "mode"]
   #
-  def FileUtils.options
+  def self.options
     OPT_TABLE.values.flatten.uniq.map {|sym| sym.to_s }
   end
 
@@ -1649,7 +1649,7 @@ module FileUtils
   #   p FileUtils.have_option?(:rm, :force)    #=> true
   #   p FileUtils.have_option?(:rm, :preserve) #=> false
   #
-  def FileUtils.have_option?(mid, opt)
+  def self.have_option?(mid, opt)
     li = OPT_TABLE[mid.to_s] or raise ArgumentError, "no such method: #{mid}"
     li.include?(opt)
   end
@@ -1659,7 +1659,7 @@ module FileUtils
   #
   #   p FileUtils.options_of(:rm)  #=> ["noop", "verbose", "force"]
   #
-  def FileUtils.options_of(mid)
+  def self.options_of(mid)
     OPT_TABLE[mid.to_s].map {|sym| sym.to_s }
   end
 
@@ -1668,7 +1668,7 @@ module FileUtils
   #
   #   p FileUtils.collect_method(:preserve) #=> ["cp", "cp_r", "copy", "install"]
   #
-  def FileUtils.collect_method(opt)
+  def self.collect_method(opt)
     OPT_TABLE.keys.select {|m| OPT_TABLE[m].include?(opt) }
   end
 
