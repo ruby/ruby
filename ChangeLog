@@ -1,3 +1,9 @@
+Mon Feb 29 16:31:01 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk, tool/mkconfig.rb: set cross_compiling option from
+	  Makefile, but not from rbconfig.rb, which is just going to be
+	  created by this command.
+
 Sun Feb 28 23:13:49 2016  C.J. Collier  <cjcollier@linuxfoundation.org>
 
 	* configure.in: Add summary to end of configure output.

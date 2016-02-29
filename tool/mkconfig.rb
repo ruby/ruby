@@ -8,11 +8,12 @@
 # avoid warnings with -d.
 $install_name ||= nil
 $so_name ||= nil
+$cross_compiling ||= nil
 arch = $arch or raise "missing -arch"
 version = $version or raise "missing -version"
 
 srcdir = File.expand_path('../..', __FILE__)
-$:.replace [srcdir+"/lib"] unless defined?(CROSS_COMPILING)
+$:.replace [srcdir+"/lib"] unless $cross_compiling == "yes"
 $:.unshift(".")
 
 require "fileutils"
