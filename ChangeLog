@@ -1,3 +1,8 @@
+Tue Mar  1 11:25:48 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/fileutils.rb: use keyword arguments instead of option
+	  hashes.
+
 Mon Feb 29 16:50:20 2016  hanachin  <hanachin@gmail.com>
 
 	* array.c (rb_ary_push_m): [DOC] Remove trailing comma from

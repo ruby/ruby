@@ -92,11 +92,6 @@ module FileUtils
     private_class_method name
   end
 
-  # This hash table holds command options.
-  OPT_TABLE = {}   #:nodoc: internal use only
-
-  #
-  # Options: (none)
   #
   # Returns the name of the current directory.
   #
@@ -109,8 +104,6 @@ module FileUtils
   module_function :getwd
 
   #
-  # Options: verbose
-  #
   # Changes the current directory to the directory +dir+.
   #
   # If this method is called with block, resumes to the old
@@ -122,22 +115,16 @@ module FileUtils
   #     [...]               # do something
   #   end                   # return to original directory
   #
-  def cd(dir, options = {}, &block) # :yield: dir
-    fu_check_options options, OPT_TABLE['cd']
-    fu_output_message "cd #{dir}" if options[:verbose]
+  def cd(dir, verbose: nil, &block) # :yield: dir
+    fu_output_message "cd #{dir}" if verbose
     Dir.chdir(dir, &block)
-    fu_output_message 'cd -' if options[:verbose] and block
+    fu_output_message 'cd -' if verbose and block
   end
   module_function :cd
 
   alias chdir cd
   module_function :chdir
 
-  OPT_TABLE['cd']    =
-  OPT_TABLE['chdir'] = [:verbose]
-
-  #
-  # Options: (none)
   #
   # Returns true if +new+ is newer than all +old_list+.
   # Non-existent files are older than any file.
@@ -163,8 +150,6 @@ module FileUtils
   private_module_function :remove_trailing_slash
 
   #
-  # Options: mode noop verbose
-  #
   # Creates one or more directories.
   #
   #   FileUtils.mkdir 'test'
@@ -172,22 +157,17 @@ module FileUtils
   #   FileUtils.mkdir 'notexist', :noop => true  # Does not really create.
   #   FileUtils.mkdir 'tmp', :mode => 0700
   #
-  def mkdir(list, options = {})
-    fu_check_options options, OPT_TABLE['mkdir']
+  def mkdir(list, mode: nil, noop: nil, verbose: nil)
     list = fu_list(list)
-    fu_output_message "mkdir #{options[:mode] ? ('-m %03o ' % options[:mode]) : ''}#{list.join ' '}" if options[:verbose]
-    return if options[:noop]
+    fu_output_message "mkdir #{mode ? ('-m %03o ' % mode) : ''}#{list.join ' '}" if verbose
+    return if noop
 
     list.each do |dir|
-      fu_mkdir dir, options[:mode]
+      fu_mkdir dir, mode
     end
   end
   module_function :mkdir
 
-  OPT_TABLE['mkdir'] = [:mode, :noop, :verbose]
-
-  #
-  # Options: mode noop verbose
   #
   # Creates a directory and all its parent directories.
   # For example,
@@ -202,16 +182,15 @@ module FileUtils
   #
   # You can pass several directories at a time in a list.
   #
-  def mkdir_p(list, options = {})
-    fu_check_options options, OPT_TABLE['mkdir_p']
+  def mkdir_p(list, mode: nil, noop: nil, verbose: nil)
     list = fu_list(list)
-    fu_output_message "mkdir -p #{options[:mode] ? ('-m %03o ' % options[:mode]) : ''}#{list.join ' '}" if options[:verbose]
-    return *list if options[:noop]
+    fu_output_message "mkdir -p #{mode ? ('-m %03o ' % mode) : ''}#{list.join ' '}" if verbose
+    return *list if noop
 
     list.map {|path| remove_trailing_slash(path)}.each do |path|
       # optimize for the most common case
       begin
-        fu_mkdir path, options[:mode]
+        fu_mkdir path, mode
         next
       rescue SystemCallError
         next if File.directory?(path)
@@ -224,7 +203,7 @@ module FileUtils
       end
       stack.reverse_each do |dir|
         begin
-          fu_mkdir dir, options[:mode]
+          fu_mkdir dir, mode
         rescue SystemCallError
           raise unless File.directory?(dir)
         end
@@ -240,10 +219,6 @@ module FileUtils
   module_function :mkpath
   module_function :makedirs
 
-  OPT_TABLE['mkdir_p']  =
-  OPT_TABLE['mkpath']   =
-  OPT_TABLE['makedirs'] = [:mode, :noop, :verbose]
-
   def fu_mkdir(path, mode)   #:nodoc:
     path = remove_trailing_slash(path)
     if mode
@@ -256,8 +231,6 @@ module FileUtils
   private_module_function :fu_mkdir
 
   #
-  # Options: parents, noop, verbose
-  #
   # Removes one or more directories.
   #
   #   FileUtils.rmdir 'somedir'
@@ -265,12 +238,10 @@ module FileUtils
   #   # Does not really remove directory; outputs message.
   #   FileUtils.rmdir 'somedir', :verbose => true, :noop => true
   #
-  def rmdir(list, options = {})
-    fu_check_options options, OPT_TABLE['rmdir']
+  def rmdir(list, parents: nil, noop: nil, verbose: nil)
     list = fu_list(list)
-    parents = options[:parents]
-    fu_output_message "rmdir #{parents ? '-p ' : ''}#{list.join ' '}" if options[:verbose]
-    return if options[:noop]
+    fu_output_message "rmdir #{parents ? '-p ' : ''}#{list.join ' '}" if verbose
+    return if noop
     list.each do |dir|
       begin
         Dir.rmdir(dir = remove_trailing_slash(dir))
@@ -286,12 +257,8 @@ module FileUtils
   end
   module_function :rmdir
 
-  OPT_TABLE['rmdir'] = [:parents, :noop, :verbose]
-
   #
-  # Options: force noop verbose
-  #
-  # <b><tt>ln(old, new, options = {})</tt></b>
+  # <b><tt>ln(old, new, **options)</tt></b>
   #
   # Creates a hard link +new+ which points to +old+.
   # If +new+ already exists and it is a directory, creates a link +new/old+.
@@ -301,7 +268,7 @@ module FileUtils
   #   FileUtils.ln 'gcc', 'cc', :verbose => true
   #   FileUtils.ln '/usr/bin/emacs21', '/usr/bin/emacs'
   #
-  # <b><tt>ln(list, destdir, options = {})</tt></b>
+  # <b><tt>ln(list, destdir, **options)</tt></b>
   #
   # Creates several hard links in a directory, with each one pointing to the
   # item in +list+.  If +destdir+ is not a directory, raises Errno::ENOTDIR.
@@ -310,12 +277,11 @@ module FileUtils
   #   cd '/sbin'
   #   FileUtils.ln %w(cp mv mkdir), '/bin'   # Now /sbin/cp and /bin/cp are linked.
   #
-  def ln(src, dest, options = {})
-    fu_check_options options, OPT_TABLE['ln']
-    fu_output_message "ln#{options[:force] ? ' -f' : ''} #{[src,dest].flatten.join ' '}" if options[:verbose]
-    return if options[:noop]
+  def ln(src, dest, force: nil, noop: nil, verbose: nil)
+    fu_output_message "ln#{force ? ' -f' : ''} #{[src,dest].flatten.join ' '}" if verbose
+    return if noop
     fu_each_src_dest0(src, dest) do |s,d|
-      remove_file d, true if options[:force]
+      remove_file d, true if force
       File.link s, d
     end
   end
@@ -324,13 +290,8 @@ module FileUtils
   alias link ln
   module_function :link
 
-  OPT_TABLE['ln']   =
-  OPT_TABLE['link'] = [:force, :noop, :verbose]
-
   #
-  # Options: force noop verbose
-  #
-  # <b><tt>ln_s(old, new, options = {})</tt></b>
+  # <b><tt>ln_s(old, new, **options)</tt></b>
   #
   # Creates a symbolic link +new+ which points to +old+.  If +new+ already
   # exists and it is a directory, creates a symbolic link +new/old+.  If +new+
@@ -340,7 +301,7 @@ module FileUtils
   #   FileUtils.ln_s '/usr/bin/ruby', '/usr/local/bin/ruby'
   #   FileUtils.ln_s 'verylongsourcefilename.c', 'c', :force => true
   #
-  # <b><tt>ln_s(list, destdir, options = {})</tt></b>
+  # <b><tt>ln_s(list, destdir, **options)</tt></b>
   #
   # Creates several symbolic links in a directory, with each one pointing to the
   # item in +list+.  If +destdir+ is not a directory, raises Errno::ENOTDIR.
@@ -349,12 +310,11 @@ module FileUtils
   #
   #   FileUtils.ln_s Dir.glob('bin/*.rb'), '/home/aamine/bin'
   #
-  def ln_s(src, dest, options = {})
-    fu_check_options options, OPT_TABLE['ln_s']
-    fu_output_message "ln -s#{options[:force] ? 'f' : ''} #{[src,dest].flatten.join ' '}" if options[:verbose]
-    return if options[:noop]
+  def ln_s(src, dest, force: nil, noop: nil, verbose: nil)
+    fu_output_message "ln -s#{force ? 'f' : ''} #{[src,dest].flatten.join ' '}" if verbose
+    return if noop
     fu_each_src_dest0(src, dest) do |s,d|
-      remove_file d, true if options[:force]
+      remove_file d, true if force
       File.symlink s, d
     end
   end
@@ -363,27 +323,15 @@ module FileUtils
   alias symlink ln_s
   module_function :symlink
 
-  OPT_TABLE['ln_s']    =
-  OPT_TABLE['symlink'] = [:force, :noop, :verbose]
-
-  #
-  # Options: noop verbose
   #
   # Same as
   #   #ln_s(src, dest, :force => true)
   #
-  def ln_sf(src, dest, options = {})
-    fu_check_options options, OPT_TABLE['ln_sf']
-    options = options.dup
-    options[:force] = true
-    ln_s src, dest, options
+  def ln_sf(src, dest, noop: nil, verbose: nil)
+    ln_s src, dest, force: true, noop: noop, verbose: verbose
   end
   module_function :ln_sf
 
-  OPT_TABLE['ln_sf'] = [:noop, :verbose]
-
-  #
-  # Options: preserve noop verbose
   #
   # Copies a file content +src+ to +dest+.  If +dest+ is a directory,
   # copies +src+ to +dest/src+.
@@ -395,12 +343,11 @@ module FileUtils
   #   FileUtils.cp %w(cgi.rb complex.rb date.rb), '/usr/lib/ruby/1.6', :verbose => true
   #   FileUtils.cp 'symlink', 'dest'   # copy content, "dest" is not a symlink
   #
-  def cp(src, dest, options = {})
-    fu_check_options options, OPT_TABLE['cp']
-    fu_output_message "cp#{options[:preserve] ? ' -p' : ''} #{[src,dest].flatten.join ' '}" if options[:verbose]
-    return if options[:noop]
+  def cp(src, dest, preserve: nil, noop: nil, verbose: nil)
+    fu_output_message "cp#{preserve ? ' -p' : ''} #{[src,dest].flatten.join ' '}" if verbose
+    return if noop
     fu_each_src_dest(src, dest) do |s, d|
-      copy_file s, d, options[:preserve]
+      copy_file s, d, preserve
     end
   end
   module_function :cp
@@ -408,11 +355,6 @@ module FileUtils
   alias copy cp
   module_function :copy
 
-  OPT_TABLE['cp']   =
-  OPT_TABLE['copy'] = [:preserve, :noop, :verbose]
-
-  #
-  # Options: preserve noop verbose dereference_root remove_destination
   #
   # Copies +src+ to +dest+. If +src+ is a directory, this method copies
   # all its contents recursively. If +dest+ is a directory, copies
@@ -434,20 +376,15 @@ module FileUtils
   #   FileUtils.cp_r 'src/.', 'dest'     # cp_r('src', 'dest') makes dest/src,
   #                                      # but this doesn't.
   #
-  def cp_r(src, dest, options = {})
-    fu_check_options options, OPT_TABLE['cp_r']
-    fu_output_message "cp -r#{options[:preserve] ? 'p' : ''}#{options[:remove_destination] ? ' --remove-destination' : ''} #{[src,dest].flatten.join ' '}" if options[:verbose]
-    return if options[:noop]
-    options = options.dup
-    options[:dereference_root] = true unless options.key?(:dereference_root)
+  def cp_r(src, dest, preserve: nil, noop: nil, verbose: nil,
+           dereference_root: true, remove_destination: nil)
+    fu_output_message "cp -r#{preserve ? 'p' : ''}#{remove_destination ? ' --remove-destination' : ''} #{[src,dest].flatten.join ' '}" if verbose
+    return if noop
     fu_each_src_dest(src, dest) do |s, d|
-      copy_entry s, d, options[:preserve], options[:dereference_root], options[:remove_destination]
+      copy_entry s, d, preserve, dereference_root, remove_destination
     end
   end
   module_function :cp_r
-
-  OPT_TABLE['cp_r'] = [:preserve, :noop, :verbose,
-                       :dereference_root, :remove_destination]
 
   #
   # Copies a file system entry +src+ to +dest+.
@@ -499,8 +436,6 @@ module FileUtils
   module_function :copy_stream
 
   #
-  # Options: force noop verbose
-  #
   # Moves file(s) +src+ to +dest+.  If +file+ and +dest+ exist on the different
   # disk partition, the file is copied then the original file is removed.
   #
@@ -510,10 +445,9 @@ module FileUtils
   #   FileUtils.mv %w(junk.txt dust.txt), '/home/aamine/.trash/'
   #   FileUtils.mv Dir.glob('test*.rb'), 'test', :noop => true, :verbose => true
   #
-  def mv(src, dest, options = {})
-    fu_check_options options, OPT_TABLE['mv']
-    fu_output_message "mv#{options[:force] ? ' -f' : ''} #{[src,dest].flatten.join ' '}" if options[:verbose]
-    return if options[:noop]
+  def mv(src, dest, force: nil, noop: nil, verbose: nil, secure: nil)
+    fu_output_message "mv#{force ? ' -f' : ''} #{[src,dest].flatten.join ' '}" if verbose
+    return if noop
     fu_each_src_dest(src, dest) do |s, d|
       destent = Entry_.new(d, nil, true)
       begin
@@ -528,14 +462,14 @@ module FileUtils
           File.rename s, d
         rescue Errno::EXDEV
           copy_entry s, d, true
-          if options[:secure]
-            remove_entry_secure s, options[:force]
+          if secure
+            remove_entry_secure s, force
           else
-            remove_entry s, options[:force]
+            remove_entry s, force
           end
         end
       rescue SystemCallError
-        raise unless options[:force]
+        raise unless force
       end
     end
   end
@@ -544,16 +478,11 @@ module FileUtils
   alias move mv
   module_function :move
 
-  OPT_TABLE['mv']   =
-  OPT_TABLE['move'] = [:force, :noop, :verbose, :secure]
-
   def rename_cannot_overwrite_file?   #:nodoc:
     /emx/ =~ RUBY_PLATFORM
   end
   private_module_function :rename_cannot_overwrite_file?
 
-  #
-  # Options: force noop verbose
   #
   # Remove file(s) specified in +list+.  This method cannot remove directories.
   # All StandardErrors are ignored when the :force option is set.
@@ -562,14 +491,13 @@ module FileUtils
   #   FileUtils.rm Dir.glob('*.so')
   #   FileUtils.rm 'NotExistFile', :force => true   # never raises exception
   #
-  def rm(list, options = {})
-    fu_check_options options, OPT_TABLE['rm']
+  def rm(list, force: nil, noop: nil, verbose: nil)
     list = fu_list(list)
-    fu_output_message "rm#{options[:force] ? ' -f' : ''} #{list.join ' '}" if options[:verbose]
-    return if options[:noop]
+    fu_output_message "rm#{force ? ' -f' : ''} #{list.join ' '}" if verbose
+    return if noop
 
     list.each do |path|
-      remove_file path, options[:force]
+      remove_file path, force
     end
   end
   module_function :rm
@@ -577,32 +505,19 @@ module FileUtils
   alias remove rm
   module_function :remove
 
-  OPT_TABLE['rm']     =
-  OPT_TABLE['remove'] = [:force, :noop, :verbose]
-
-  #
-  # Options: noop verbose
   #
   # Equivalent to
   #
   #   #rm(list, :force => true)
   #
-  def rm_f(list, options = {})
-    fu_check_options options, OPT_TABLE['rm_f']
-    options = options.dup
-    options[:force] = true
-    rm list, options
+  def rm_f(list, noop: nil, verbose: nil)
+    rm list, force: true, noop: noop, verbose: verbose
   end
   module_function :rm_f
 
   alias safe_unlink rm_f
   module_function :safe_unlink
 
-  OPT_TABLE['rm_f']        =
-  OPT_TABLE['safe_unlink'] = [:noop, :verbose]
-
-  #
-  # Options: force noop verbose secure
   #
   # remove files +list+[0] +list+[1]... If +list+[n] is a directory,
   # removes its all contents recursively. This method ignores
@@ -622,26 +537,20 @@ module FileUtils
   # NOTE: This method calls #remove_entry_secure if :secure option is set.
   # See also #remove_entry_secure.
   #
-  def rm_r(list, options = {})
-    fu_check_options options, OPT_TABLE['rm_r']
-    # options[:secure] = true unless options.key?(:secure)
+  def rm_r(list, force: nil, noop: nil, verbose: nil, secure: nil)
     list = fu_list(list)
-    fu_output_message "rm -r#{options[:force] ? 'f' : ''} #{list.join ' '}" if options[:verbose]
-    return if options[:noop]
+    fu_output_message "rm -r#{force ? 'f' : ''} #{list.join ' '}" if verbose
+    return if noop
     list.each do |path|
-      if options[:secure]
-        remove_entry_secure path, options[:force]
+      if secure
+        remove_entry_secure path, force
       else
-        remove_entry path, options[:force]
+        remove_entry path, force
       end
     end
   end
   module_function :rm_r
 
-  OPT_TABLE['rm_r'] = [:force, :noop, :verbose, :secure]
-
-  #
-  # Options: noop verbose secure
   #
   # Equivalent to
   #
@@ -650,19 +559,13 @@ module FileUtils
   # WARNING: This method causes local vulnerability.
   # Read the documentation of #rm_r first.
   #
-  def rm_rf(list, options = {})
-    fu_check_options options, OPT_TABLE['rm_rf']
-    options = options.dup
-    options[:force] = true
-    rm_r list, options
+  def rm_rf(list, noop: nil, verbose: nil, secure: nil)
+    rm_r list, force: true, noop: noop, verbose: verbose, secure: secure
   end
   module_function :rm_rf
 
   alias rmtree rm_rf
   module_function :rmtree
-
-  OPT_TABLE['rm_rf']  =
-  OPT_TABLE['rmtree'] = [:noop, :verbose, :secure]
 
   #
   # This method removes a file system entry +path+.  +path+ shall be a
@@ -844,8 +747,6 @@ module FileUtils
   module_function :compare_stream
 
   #
-  # Options: mode preserve noop verbose
-  #
   # If +src+ is not same as +dest+, copies it and changes the permission
   # mode to +mode+.  If +dest+ is a directory, destination is +dest+/+src+.
   # This method removes destination before copy.
@@ -853,23 +754,20 @@ module FileUtils
   #   FileUtils.install 'ruby', '/usr/local/bin/ruby', :mode => 0755, :verbose => true
   #   FileUtils.install 'lib.rb', '/usr/local/lib/ruby/site_ruby', :verbose => true
   #
-  def install(src, dest, options = {})
-    fu_check_options options, OPT_TABLE['install']
-    fu_output_message "install -c#{options[:preserve] && ' -p'}#{options[:mode] ? (' -m 0%o' % options[:mode]) : ''} #{[src,dest].flatten.join ' '}" if options[:verbose]
-    return if options[:noop]
+  def install(src, dest, mode: nil, preserve: nil, noop: nil, verbose: nil)
+    fu_output_message "install -c#{preserve && ' -p'}#{mode ? (' -m 0%o' % mode) : ''} #{[src,dest].flatten.join ' '}" if verbose
+    return if noop
     fu_each_src_dest(src, dest) do |s, d|
       st = File.stat(s)
       unless File.exist?(d) and compare_file(s, d)
         remove_file d, true
         copy_file s, d
-        File.utime st.atime, st.mtime, d if options[:preserve]
-        File.chmod options[:mode], d if options[:mode]
+        File.utime st.atime, st.mtime, d if preserve
+        File.chmod mode, d if mode
       end
     end
   end
   module_function :install
-
-  OPT_TABLE['install'] = [:mode, :preserve, :noop, :verbose]
 
   def user_mask(target)  #:nodoc:
     target.each_char.inject(0) do |mask, chr|
@@ -959,8 +857,6 @@ module FileUtils
   private_module_function :mode_to_s
 
   #
-  # Options: noop verbose
-  #
   # Changes permission bits on the named files (in +list+) to the bit pattern
   # represented by +mode+.
   #
@@ -991,21 +887,16 @@ module FileUtils
   # "-" :: Is removed from a given class given mode.
   # "=" :: Is the exact nature of the class will be given a specified mode.
 
-  def chmod(mode, list, options = {})
-    fu_check_options options, OPT_TABLE['chmod']
+  def chmod(mode, list, noop: nil, verbose: nil)
     list = fu_list(list)
-    fu_output_message sprintf('chmod %s %s', mode_to_s(mode), list.join(' ')) if options[:verbose]
-    return if options[:noop]
+    fu_output_message sprintf('chmod %s %s', mode_to_s(mode), list.join(' ')) if verbose
+    return if noop
     list.each do |path|
       Entry_.new(path).chmod(fu_mode(mode, path))
     end
   end
   module_function :chmod
 
-  OPT_TABLE['chmod'] = [:noop, :verbose]
-
-  #
-  # Options: noop verbose force
   #
   # Changes permission bits on the named files (in +list+)
   # to the bit pattern represented by +mode+.
@@ -1013,29 +904,24 @@ module FileUtils
   #   FileUtils.chmod_R 0700, "/tmp/app.#{$$}"
   #   FileUtils.chmod_R "u=wrx", "/tmp/app.#{$$}"
   #
-  def chmod_R(mode, list, options = {})
-    fu_check_options options, OPT_TABLE['chmod_R']
+  def chmod_R(mode, list, noop: nil, verbose: nil, force: nil)
     list = fu_list(list)
     fu_output_message sprintf('chmod -R%s %s %s',
-                              (options[:force] ? 'f' : ''),
-                              mode_to_s(mode), list.join(' ')) if options[:verbose]
-    return if options[:noop]
+                              (force ? 'f' : ''),
+                              mode_to_s(mode), list.join(' ')) if verbose
+    return if noop
     list.each do |root|
       Entry_.new(root).traverse do |ent|
         begin
           ent.chmod(fu_mode(mode, ent.path))
         rescue
-          raise unless options[:force]
+          raise unless force
         end
       end
     end
   end
   module_function :chmod_R
 
-  OPT_TABLE['chmod_R'] = [:noop, :verbose, :force]
-
-  #
-  # Options: noop verbose
   #
   # Changes owner and group on the named files (in +list+)
   # to the user +user+ and the group +group+.  +user+ and +group+
@@ -1046,13 +932,12 @@ module FileUtils
   #   FileUtils.chown 'root', 'staff', '/usr/local/bin/ruby'
   #   FileUtils.chown nil, 'bin', Dir.glob('/usr/bin/*'), :verbose => true
   #
-  def chown(user, group, list, options = {})
-    fu_check_options options, OPT_TABLE['chown']
+  def chown(user, group, list, noop: nil, verbose: nil)
     list = fu_list(list)
     fu_output_message sprintf('chown %s %s',
                               (group ? "#{user}:#{group}" : user || ':'),
-                              list.join(' ')) if options[:verbose]
-    return if options[:noop]
+                              list.join(' ')) if verbose
+    return if noop
     uid = fu_get_uid(user)
     gid = fu_get_gid(group)
     list.each do |path|
@@ -1061,10 +946,6 @@ module FileUtils
   end
   module_function :chown
 
-  OPT_TABLE['chown'] = [:noop, :verbose]
-
-  #
-  # Options: noop verbose force
   #
   # Changes owner and group on the named files (in +list+)
   # to the user +user+ and the group +group+ recursively.
@@ -1075,14 +956,13 @@ module FileUtils
   #   FileUtils.chown_R 'www', 'www', '/var/www/htdocs'
   #   FileUtils.chown_R 'cvs', 'cvs', '/var/cvs', :verbose => true
   #
-  def chown_R(user, group, list, options = {})
-    fu_check_options options, OPT_TABLE['chown_R']
+  def chown_R(user, group, list, noop: nil, verbose: nil, force: nil)
     list = fu_list(list)
     fu_output_message sprintf('chown -R%s %s %s',
-                              (options[:force] ? 'f' : ''),
+                              (force ? 'f' : ''),
                               (group ? "#{user}:#{group}" : user || ':'),
-                              list.join(' ')) if options[:verbose]
-    return if options[:noop]
+                              list.join(' ')) if verbose
+    return if noop
     uid = fu_get_uid(user)
     gid = fu_get_gid(group)
     list.each do |root|
@@ -1090,14 +970,12 @@ module FileUtils
         begin
           ent.chown uid, gid
         rescue
-          raise unless options[:force]
+          raise unless force
         end
       end
     end
   end
   module_function :chown_R
-
-  OPT_TABLE['chown_R'] = [:noop, :verbose, :force]
 
   begin
     require 'etc'
@@ -1131,23 +1009,19 @@ module FileUtils
   private_module_function :fu_get_gid
 
   #
-  # Options: noop verbose mtime nocreate
-  #
   # Updates modification time (mtime) and access time (atime) of file(s) in
   # +list+.  Files are created if they don't exist.
   #
   #   FileUtils.touch 'timestamp'
   #   FileUtils.touch Dir.glob('*.c');  system 'make'
   #
-  def touch(list, options = {})
-    fu_check_options options, OPT_TABLE['touch']
+  def touch(list, noop: nil, verbose: nil, mtime: nil, nocreate: nil)
     list = fu_list(list)
-    nocreate = options[:nocreate]
-    t = options[:mtime]
-    if options[:verbose]
+    t = mtime
+    if verbose
       fu_output_message "touch #{nocreate ? '-c ' : ''}#{t ? t.strftime('-t %Y%m%d%H%M.%S ') : ''}#{list.join ' '}"
     end
-    return if options[:noop]
+    return if noop
     list.each do |path|
       created = nocreate
       begin
@@ -1163,8 +1037,6 @@ module FileUtils
     end
   end
   module_function :touch
-
-  OPT_TABLE['touch'] = [:noop, :verbose, :mtime, :nocreate]
 
   private
 
@@ -1595,25 +1467,6 @@ module FileUtils
   end
   private_module_function :fu_same?
 
-  def fu_check_options(options, optdecl)   #:nodoc:
-    h = options.dup
-    optdecl.each do |opt|
-      h.delete opt
-    end
-    raise ArgumentError, "no such option: #{h.keys.join(' ')}" unless h.empty?
-  end
-  private_module_function :fu_check_options
-
-  def fu_update_option(args, new)   #:nodoc:
-    if tmp = Hash.try_convert(args.last)
-      args[-1] = tmp.dup.update(new)
-    else
-      args.push new
-    end
-    args
-  end
-  private_module_function :fu_update_option
-
   @fileutils_output = $stderr
   @fileutils_label  = ''
 
@@ -1623,6 +1476,13 @@ module FileUtils
     @fileutils_output.puts @fileutils_label + msg
   end
   private_module_function :fu_output_message
+
+  # This hash table holds command options.
+  OPT_TABLE = {}    #:nodoc: internal use only
+  (private_instance_methods & methods(false)).inject(OPT_TABLE) {|tbl, name|
+    (tbl[name.to_s] = instance_method(name).parameters).map! {|t, n| n if t == :key}.compact!
+    tbl
+  }
 
   #
   # Returns an Array of method names which have any options.
@@ -1694,8 +1554,8 @@ module FileUtils
     names = ::FileUtils.collect_method(:verbose)
     names.each do |name|
       module_eval(<<-EOS, __FILE__, __LINE__ + 1)
-        def #{name}(*args)
-          super(*fu_update_option(args, :verbose => true))
+        def #{name}(*args, **options)
+          super(*args, **options, verbose: true)
         end
       EOS
     end
@@ -1719,8 +1579,8 @@ module FileUtils
     names = ::FileUtils.collect_method(:noop)
     names.each do |name|
       module_eval(<<-EOS, __FILE__, __LINE__ + 1)
-        def #{name}(*args)
-          super(*fu_update_option(args, :noop => true))
+        def #{name}(*args, **options)
+          super(*args, **options, noop: true)
         end
       EOS
     end
@@ -1745,8 +1605,8 @@ module FileUtils
     names = ::FileUtils.collect_method(:noop)
     names.each do |name|
       module_eval(<<-EOS, __FILE__, __LINE__ + 1)
-        def #{name}(*args)
-          super(*fu_update_option(args, :noop => true, :verbose => true))
+        def #{name}(*args, **options)
+          super(*args, **options, noop: true, verbose: true)
         end
       EOS
     end
