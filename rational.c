@@ -33,9 +33,8 @@
 
 VALUE rb_cRational;
 
-static ID id_abs, id_eqeq_p,
-    id_idiv, id_integer_p, id_negate,
-    id_to_i, id_i_num, id_i_den;
+static ID id_abs, id_eqeq_p, id_idiv, id_integer_p, id_negate, id_to_i,
+    id_i_num, id_i_den;
 
 #define f_boolcast(x) ((x) ? Qtrue : Qfalse)
 #define f_inspect rb_inspect
