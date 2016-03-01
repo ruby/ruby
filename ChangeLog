@@ -18,7 +18,7 @@ Mon Feb 29 16:31:01 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Sun Feb 28 23:13:49 2016  C.J. Collier  <cjcollier@linuxfoundation.org>
 
 	* configure.in: Add summary to end of configure output.
-	  [Fix GH-1277]
+	  [Fix GH-1275]
 
 Sun Feb 28 20:23:36 2016  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
