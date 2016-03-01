@@ -818,9 +818,9 @@ prepare_callable_method_entry(VALUE defined_class, ID id, const rb_method_entry_
     }
     else {
 	cme = (const rb_callable_method_entry_t *)me;
+	VM_ASSERT(callable_method_entry_p(cme));
     }
 
-    VM_ASSERT(callable_method_entry_p(cme));
     return cme;
 }
 
