@@ -1,4 +1,7 @@
-Wed Mar  2 16:18:30 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Mar  2 16:28:48 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (method_missing): call by found method entry and get
+	  rid of searching the same method entry twice.
 
 	* vm_eval.c (vm_call0_body): calling method_missing method is
 	  method_missing().

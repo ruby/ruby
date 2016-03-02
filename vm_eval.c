@@ -747,26 +747,31 @@ raise_method_missing(rb_thread_t *th, int argc, const VALUE *argv, VALUE obj,
 static inline VALUE
 method_missing(VALUE obj, ID id, int argc, const VALUE *argv, enum method_missing_reason call_status)
 {
-    VALUE *nargv, result, work;
+    VALUE *nargv, result, work, klass;
     rb_thread_t *th = GET_THREAD();
     const rb_block_t *blockptr = th->passed_block;
+    const rb_callable_method_entry_t *me;
 
     th->method_missing_reason = call_status;
     th->passed_block = 0;
 
     if (id == idMethodMissing) {
+      missing:
 	raise_method_missing(th, argc, argv, obj, call_status | MISSING_MISSING);
     }
 
     nargv = ALLOCV_N(VALUE, work, argc + 1);
     nargv[0] = ID2SYM(id);
     MEMCPY(nargv + 1, argv, VALUE, argc);
+    ++argc;
+    argv = nargv;
 
-    if (rb_method_basic_definition_p(CLASS_OF(obj) , idMethodMissing)) {
-	raise_method_missing(th, argc+1, nargv, obj, call_status | MISSING_MISSING);
-    }
+    klass = CLASS_OF(obj);
+    if (!klass) goto missing;
+    me = rb_callable_method_entry(klass, idMethodMissing);
+    if (!me || METHOD_ENTRY_BASIC(me)) goto missing;
     th->passed_block = blockptr;
-    result = rb_funcall2(obj, idMethodMissing, argc + 1, nargv);
+    result = vm_call0(th, obj, idMethodMissing, argc, argv, me);
     if (work) ALLOCV_END(work);
     return result;
 }
