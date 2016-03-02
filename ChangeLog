@@ -1,3 +1,11 @@
+Wed Mar  2 15:08:33 2016  herwinw  <herwin@quarantainenet.nl>
+
+	* lib/xmlrpc.rb: Removed broken parser named XMLTreeParser.
+	  Required gem of its parser didn't compile on newer Ruby versions.
+	  [fix GH-1271][ruby-core:59590][Bug #9370]
+	* lib/xmlrpc/config.rb: ditto.
+	* lib/xmlrpc/parser.rb: ditto.
+
 Tue Mar  1 11:25:48 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/fileutils.rb: use keyword arguments instead of option

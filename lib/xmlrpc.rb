@@ -53,17 +53,15 @@
 #   * HTTPS protocol (SSL)
 #
 # * Parsers
-#   * Expat (XMLParser::XMLStreamParser, XMLParser::XMLTreeParser)
-#     * Compiled
-#     * Fastest parser and also uses the least memory
-#     * See https://rubygems.org/gems/xmlparser
 #   * REXML (XMLParser::REXMLStreamParser)
 #     * Not compiled (pure ruby)
 #     * See ruby standard library
 #   * xml-scan (XMLParser::XMLScanStreamParser)
 #     * Not compiled (pure ruby)
 #     * See https://rubygems.org/gems/xmlscan
-#   * Fastest parser is Expat's XMLParser::XMLStreamParser!
+#   * libxml (LibXMLStreamParser)
+#     * Compiled
+#     * See https://rubygems.org/gems/libxml-ruby/
 #
 # * General
 #   * possible to choose between XMLParser module (Expat wrapper) and REXML (pure Ruby) parsers
@@ -288,14 +286,9 @@
 #
 #   # ...
 #   s = XMLRPC::CGIServer.new
-#   s.set_parser(XMLRPC::XMLParser::XMLStreamParser.new)
+#   s.set_parser(XMLRPC::XMLParser::XMLParser.new)
 #   # ...
 #
-#
-# Note XMLParser::XMLStreamParser (xmlparser gem) is faster and uses less memory than any
-# other parser and scales well for large documents. For example for a 0.5 MB XML
-# document with many tags, XMLParser::XMLStreamParser is ~18 times as fast as
-# XMLParser::XMLTreeParser.
 #
 # You can change the XML-writer by calling method ParserWriterChooseMixin#set_writer.
 module XMLRPC; end
