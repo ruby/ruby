@@ -222,14 +222,9 @@ vm_call0_body(rb_thread_t* th, struct rb_calling_info *calling, const struct rb_
 	goto again;
       case VM_METHOD_TYPE_MISSING:
 	{
-	    VALUE new_args = rb_ary_new4(calling->argc, argv);
-
-	    rb_ary_unshift(new_args, ID2SYM(ci->mid));
 	    th->passed_block = calling->blockptr;
-	    ret = rb_funcall2(calling->recv, idMethodMissing, calling->argc+1,
-	                      RARRAY_CONST_PTR(new_args));
-	    RB_GC_GUARD(new_args);
-	    return ret;
+	    return method_missing(calling->recv, ci->mid, calling->argc,
+				  argv, MISSING_NOENTRY);
 	}
       case VM_METHOD_TYPE_OPTIMIZED:
 	switch (cc->me->def->body.optimize_type) {

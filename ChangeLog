@@ -1,3 +1,8 @@
+Wed Mar  2 16:18:30 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (vm_call0_body): calling method_missing method is
+	  method_missing().
+
 Wed Mar  2 15:13:33 2016  herwinw  <herwin@quarantainenet.nl>
 
 	* lib/xmlrpc.rb: Removed broken parser named XMLScanStreamParser.
