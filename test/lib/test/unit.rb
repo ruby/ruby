@@ -536,13 +536,12 @@ module Test
         @status_line_size = 0
       end
 
-      def add_status(line, flush: true)
+      def add_status(line)
         @status_line_size ||= 0
         if @options[:job_status] == :replace
           line = line[0...(terminal_width-@status_line_size)]
         end
         print line
-        $stdout.flush if flush
         @status_line_size += line.size
       end
 
@@ -617,9 +616,11 @@ module Test
         count = @test_count.to_s(10).rjust(@total_tests.size)
         del_status_line(false)
         print(@passed_color)
-        add_status("[#{count}/#{@total_tests}]", flush: false)
+        add_status("[#{count}/#{@total_tests}]")
         print(@reset_color)
         add_status(" #{s}")
+        $stdout.print "\r" if @options[:job_status] == :replace
+        $stdout.flush
       end
 
       def _print(s); $stdout.print(s); end
