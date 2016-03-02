@@ -1,3 +1,11 @@
+Wed Mar  2 15:13:33 2016  herwinw  <herwin@quarantainenet.nl>
+
+	* lib/xmlrpc.rb: Removed broken parser named XMLScanStreamParser.
+	  It's not works with current Ruby version.
+	  [fix GH-1271][ruby-core:59588][Bug #9369]
+	* lib/xmlrpc/config.rb: ditto.
+	* lib/xmlrpc/parser.rb: ditto.
+
 Wed Mar  2 15:08:33 2016  herwinw  <herwin@quarantainenet.nl>
 
 	* lib/xmlrpc.rb: Removed broken parser named XMLTreeParser.

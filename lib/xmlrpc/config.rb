@@ -14,7 +14,6 @@ module XMLRPC # :nodoc:
     # === Available parsers
     #
     # * XMLParser::REXMLStreamParser
-    # * XMLParser::XMLScanStreamParser
     # * XMLParser::LibXMLStreamParser
     DEFAULT_PARSER = XMLParser::REXMLStreamParser
 
