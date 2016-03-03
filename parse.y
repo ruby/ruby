@@ -5763,65 +5763,77 @@ parser_str_new(const char *p, long n, rb_encoding *enc, int func, rb_encoding *e
 #define peekc() peekc_n(0)
 #define peekc_n(n) (lex_p+(n) < lex_pend ? (unsigned char)lex_p[n] : -1)
 
+static int
+parser_nextline(struct parser_params *parser)
+{
+    VALUE v = lex_nextline;
+    lex_nextline = 0;
+    if (!v) {
+	if (parser->eofp)
+	    return -1;
+
+	if (!lex_input || NIL_P(v = lex_getline(parser))) {
+	    parser->eofp = 1;
+	    lex_goto_eol(parser);
+	    return -1;
+	}
+	parser->cr_seen = FALSE;
+    }
+#ifdef RIPPER
+    if (parser->tokp < lex_pend) {
+	if (!has_delayed_token()) {
+	    parser->delayed = rb_str_buf_new(1024);
+	    rb_enc_associate(parser->delayed, current_enc);
+	    rb_str_buf_cat(parser->delayed,
+			   parser->tokp, lex_pend - parser->tokp);
+	    parser->delayed_line = ruby_sourceline;
+	    parser->delayed_col = (int)(parser->tokp - lex_pbeg);
+	}
+	else {
+	    rb_str_buf_cat(parser->delayed,
+			   parser->tokp, lex_pend - parser->tokp);
+	}
+    }
+#endif
+    if (heredoc_end > 0) {
+	ruby_sourceline = heredoc_end;
+	heredoc_end = 0;
+    }
+    ruby_sourceline++;
+    parser->line_count++;
+    lex_pbeg = lex_p = RSTRING_PTR(v);
+    lex_pend = lex_p + RSTRING_LEN(v);
+    ripper_flush(parser);
+    lex_lastline = v;
+    return 0;
+}
+
+static int
+parser_cr(struct parser_params *parser, int c)
+{
+    if (peek('\n')) {
+	lex_p++;
+	c = '\n';
+    }
+    else if (!parser->cr_seen) {
+	parser->cr_seen = TRUE;
+	/* carried over with lex_nextline for nextc() */
+	rb_warn0("encountered \\r in middle of line, treated as a mere space");
+    }
+    return c;
+}
+
 static inline int
 parser_nextc(struct parser_params *parser)
 {
     int c;
 
-    if (lex_p == lex_pend) {
-	VALUE v = lex_nextline;
-	lex_nextline = 0;
-	if (!v) {
-	    if (parser->eofp)
-		return -1;
-
-	    if (!lex_input || NIL_P(v = lex_getline(parser))) {
-		parser->eofp = 1;
-		lex_goto_eol(parser);
-		return -1;
-	    }
-	    parser->cr_seen = FALSE;
-	}
-	{
-#ifdef RIPPER
-	    if (parser->tokp < lex_pend) {
-		if (!has_delayed_token()) {
-		    parser->delayed = rb_str_buf_new(1024);
-		    rb_enc_associate(parser->delayed, current_enc);
-		    rb_str_buf_cat(parser->delayed,
-				   parser->tokp, lex_pend - parser->tokp);
-		    parser->delayed_line = ruby_sourceline;
-		    parser->delayed_col = (int)(parser->tokp - lex_pbeg);
-		}
-		else {
-		    rb_str_buf_cat(parser->delayed,
-				   parser->tokp, lex_pend - parser->tokp);
-		}
-	    }
-#endif
-	    if (heredoc_end > 0) {
-		ruby_sourceline = heredoc_end;
-		heredoc_end = 0;
-	    }
-	    ruby_sourceline++;
-	    parser->line_count++;
-	    lex_pbeg = lex_p = RSTRING_PTR(v);
-	    lex_pend = lex_p + RSTRING_LEN(v);
-	    ripper_flush(parser);
-	    lex_lastline = v;
-	}
+    if (UNLIKELY(lex_p == lex_pend)) {
+	if (parser_nextline(parser)) return -1;
     }
     c = (unsigned char)*lex_p++;
-    if (c == '\r') {
-	if (peek('\n')) {
-	    lex_p++;
-	    c = '\n';
-	}
-	else if (!parser->cr_seen) {
-	    parser->cr_seen = TRUE;
-	    /* carried over with lex_nextline for nextc() */
-	    rb_warn0("encountered \\r in middle of line, treated as a mere space");
-	}
+    if (UNLIKELY(c == '\r')) {
+	c = parser_cr(parser, c);
     }
 
     return c;
