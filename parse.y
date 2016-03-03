@@ -287,8 +287,6 @@ struct parser_params {
 
     ID cur_arg;
 
-    int last_cr_line;
-
     unsigned int command_start:1;
     unsigned int eofp: 1;
     unsigned int ruby__end__seen: 1;
@@ -305,6 +303,7 @@ struct parser_params {
     unsigned int past_scope_enabled: 1;
 # endif
     unsigned int error_p: 1;
+    unsigned int cr_seen: 1;
 
 #ifndef RIPPER
     /* Ruby core only */
@@ -5532,7 +5531,6 @@ yycompile0(VALUE arg)
 	    ruby_coverage = coverage(ruby_sourcefile_string, ruby_sourceline);
 	}
     }
-    parser->last_cr_line = ruby_sourceline - 1;
 
     parser_prepare(parser);
 #ifndef RIPPER
@@ -5782,6 +5780,7 @@ parser_nextc(struct parser_params *parser)
 		lex_goto_eol(parser);
 		return -1;
 	    }
+	    parser->cr_seen = FALSE;
 	}
 	{
 #ifdef RIPPER
@@ -5818,8 +5817,9 @@ parser_nextc(struct parser_params *parser)
 	    lex_p++;
 	    c = '\n';
 	}
-	else if (ruby_sourceline > parser->last_cr_line) {
-	    parser->last_cr_line = ruby_sourceline;
+	else if (!parser->cr_seen) {
+	    parser->cr_seen = TRUE;
+	    /* carried over with lex_nextline for nextc() */
 	    rb_warn0("encountered \\r in middle of line, treated as a mere space");
 	}
     }
