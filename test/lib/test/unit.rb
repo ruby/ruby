@@ -619,7 +619,7 @@ module Test
         add_status("[#{count}/#{@total_tests}]")
         print(@reset_color)
         add_status(" #{s}")
-        $stdout.print "\r" if @options[:job_status] == :replace
+        $stdout.print "\r" if @options[:job_status] == :replace and !@verbose
         $stdout.flush
       end
 
