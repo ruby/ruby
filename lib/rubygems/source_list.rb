@@ -59,7 +59,7 @@ class Gem::SourceList
             Gem::Source.new(URI.parse(obj))
           end
 
-    @sources << src
+    @sources << src unless @sources.include?(src)
     src
   end
 

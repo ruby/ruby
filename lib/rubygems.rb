@@ -10,7 +10,7 @@ require 'rbconfig'
 require 'thread'
 
 module Gem
-  VERSION = '2.5.2'
+  VERSION = '2.6.1'
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -174,6 +174,14 @@ module Gem
   @pre_reset_hooks      ||= []
   @post_reset_hooks     ||= []
 
+  def self.env_requirement(gem_name)
+    @env_requirements_by_name ||= {}
+    @env_requirements_by_name[gem_name] ||= begin
+      req = ENV["GEM_REQUIREMENT_#{gem_name.upcase}"] || '>= 0'.freeze
+      Gem::Requirement.create(req)
+    end
+  end
+
   ##
   # Try to activate a gem containing +path+. Returns true if
   # activation succeeded or wasn't needed because it was already
@@ -192,8 +200,13 @@ module Gem
 
     begin
       spec.activate
-    rescue Gem::LoadError # this could fail due to gem dep collisions, go lax
-      Gem::Specification.find_by_name(spec.name).activate
+    rescue Gem::LoadError => e # this could fail due to gem dep collisions, go lax
+      spec_by_name = Gem::Specification.find_by_name(spec.name)
+      if spec_by_name.nil?
+        raise e
+      else
+        spec_by_name.activate
+      end
     end
 
     return true
@@ -326,16 +339,38 @@ module Gem
   # lookup files.
 
   def self.paths
-    @paths ||= Gem::PathSupport.new
+    @paths ||= Gem::PathSupport.new(ENV)
   end
 
   # Initialize the filesystem paths to use from +env+.
   # +env+ is a hash-like object (typically ENV) that
   # is queried for 'GEM_HOME', 'GEM_PATH', and 'GEM_SPEC_CACHE'
+  # Keys for the +env+ hash should be Strings, and values of the hash should
+  # be Strings or +nil+.
 
   def self.paths=(env)
     clear_paths
-    @paths = Gem::PathSupport.new env
+    target = {}
+    env.each_pair do |k,v|
+      case k
+      when 'GEM_HOME', 'GEM_PATH', 'GEM_SPEC_CACHE'
+        case v
+        when nil, String
+          target[k] = v
+        when Array
+          unless Gem::Deprecate.skip
+            warn <<-eowarn
+Array values in the parameter are deprecated. Please use a String or nil.
+An Array was passed in from #{caller[3]}
+            eowarn
+          end
+          target[k] = v.join File::PATH_SEPARATOR
+        end
+      else
+        target[k] = v
+      end
+    end
+    @paths = Gem::PathSupport.new ENV.to_hash.merge(target)
     Gem::Specification.dirs = @paths.path
   end
 
@@ -430,7 +465,9 @@ module Gem
 
     files = find_files_from_load_path glob if check_load_path
 
-    files.concat Gem::Specification.stubs.map { |spec|
+    gem_specifications = @gemdeps ? Gem.loaded_specs.values : Gem::Specification.stubs
+
+    files.concat gem_specifications.map { |spec|
       spec.matches_for_glob("#{glob}#{Gem.suffix_pattern}")
     }.flatten
 
@@ -939,9 +976,11 @@ module Gem
   # by the unit tests to provide environment isolation.
 
   def self.use_paths(home, *paths)
-    paths = nil if paths == [nil]
-    paths = paths.first if Array === Array(paths).first
-    self.paths = { "GEM_HOME" => home, "GEM_PATH" => paths }
+    paths.flatten!
+    paths.compact!
+    hash = { "GEM_HOME" => home, "GEM_PATH" => paths.empty? ? home : paths.join(File::PATH_SEPARATOR) }
+    hash.delete_if { |_, v| v.nil? }
+    self.paths = hash
   end
 
   ##

@@ -306,9 +306,18 @@ if you believe they were disclosed to a third party.
   # Sets the RubyGems.org API key to +api_key+
 
   def rubygems_api_key= api_key
+    set_api_key :rubygems_api_key, api_key
+
+    @rubygems_api_key = api_key
+  end
+
+  ##
+  # Set a specific host's API key to +api_key+
+
+  def set_api_key host, api_key
     check_credentials_permissions
 
-    config = load_file(credentials_path).merge(:rubygems_api_key => api_key)
+    config = load_file(credentials_path).merge(host => api_key)
 
     dirname = File.dirname credentials_path
     Dir.mkdir(dirname) unless File.exist? dirname
@@ -320,7 +329,7 @@ if you believe they were disclosed to a third party.
       f.write config.to_yaml
     end
 
-    @rubygems_api_key = api_key
+    load_api_keys # reload
   end
 
   def load_file(filename)

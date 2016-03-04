@@ -118,7 +118,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
   end
 
   def test_sending_gem_to_metadata_host
-    @host = "http://rubygems.engineyard.com"
+    @host = "http://privategemserver.example"
 
     @spec, @path = util_gem "freebird", "1.0.1" do |spec|
       spec.metadata['default_gem_server'] = @host
@@ -152,7 +152,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
   end
 
   def test_sending_gem_to_allowed_push_host
-    @host = "http://privategemserver.com"
+    @host = "http://privategemserver.example"
 
     @spec, @path = util_gem "freebird", "1.0.1" do |spec|
       spec.metadata['allowed_push_host'] = @host
@@ -179,8 +179,8 @@ class TestGemCommandsPushCommand < Gem::TestCase
   end
 
   def test_sending_gem_to_allowed_push_host_with_basic_credentials
-    @sanitized_host = "http://privategemserver.com"
-    @host           = "http://user:password@privategemserver.com"
+    @sanitized_host = "http://privategemserver.example"
+    @host           = "http://user:password@privategemserver.example"
 
     @spec, @path = util_gem "freebird", "1.0.1" do |spec|
       spec.metadata['allowed_push_host'] = @sanitized_host
@@ -207,10 +207,10 @@ class TestGemCommandsPushCommand < Gem::TestCase
 
   def test_sending_gem_to_disallowed_default_host
     @spec, @path = util_gem "freebird", "1.0.1" do |spec|
-      spec.metadata['allowed_push_host'] = "https://privategemserver.com"
+      spec.metadata['allowed_push_host'] = "https://privategemserver.example"
     end
 
-    response = %{ERROR:  "#{@host}" is not allowed by the gemspec, which only allows "https://privategemserver.com"}
+    response = %{ERROR:  "#{@host}" is not allowed by the gemspec, which only allows "https://privategemserver.example"}
 
     assert_raises Gem::MockGemUi::TermError do
       send_battery
@@ -220,10 +220,11 @@ class TestGemCommandsPushCommand < Gem::TestCase
   end
 
   def test_sending_gem_to_disallowed_push_host
-    @host = "https://somebodyelse.com"
+    @host = "https://anotherprivategemserver.example"
+    push_host = "https://privategemserver.example"
 
     @spec, @path = util_gem "freebird", "1.0.1" do |spec|
-      spec.metadata['allowed_push_host'] = "https://privategemserver.com"
+      spec.metadata['allowed_push_host'] = push_host
     end
 
     @api_key = "PRIVKEY"
@@ -241,13 +242,52 @@ class TestGemCommandsPushCommand < Gem::TestCase
 
     FileUtils.rm Gem.configuration.credentials_path
 
-    response = 'ERROR:  "https://somebodyelse.com" is not allowed by the gemspec, which only allows "https://privategemserver.com"'
+    response = "ERROR:  \"#{@host}\" is not allowed by the gemspec, which only allows \"#{push_host}\""
 
     assert_raises Gem::MockGemUi::TermError do
       send_battery
     end
 
     assert_match response, @ui.error
+  end
+
+  def test_sending_gem_defaulting_to_allowed_push_host
+    host = "http://privategemserver.example"
+
+    @spec, @path = util_gem "freebird", "1.0.1" do |spec|
+      spec.metadata.delete('default_gem_server')
+      spec.metadata['allowed_push_host'] = host
+    end
+
+    api_key = "PRIVKEY"
+
+    keys = {
+      host => api_key
+    }
+
+    FileUtils.mkdir_p File.dirname Gem.configuration.credentials_path
+    open Gem.configuration.credentials_path, 'w' do |f|
+      f.write keys.to_yaml
+    end
+    Gem.configuration.load_api_keys
+
+    FileUtils.rm Gem.configuration.credentials_path
+
+    @response = "Successfully registered gem: freebird (1.0.1)"
+    @fetcher.data["#{host}/api/v1/gems"]  = [@response, 200, 'OK']
+
+    # do not set @host
+    use_ui(@ui) { @cmd.send_gem(@path) }
+
+    assert_match %r{Pushing gem to #{host}...}, @ui.output
+
+    assert_equal Net::HTTP::Post, @fetcher.last_request.class
+    assert_equal Gem.read_binary(@path), @fetcher.last_request.body
+    assert_equal File.size(@path), @fetcher.last_request["Content-Length"].to_i
+    assert_equal "application/octet-stream", @fetcher.last_request["Content-Type"]
+    assert_equal api_key, @fetcher.last_request["Authorization"]
+
+    assert_match @response, @ui.output
   end
 
   def test_raises_error_with_no_arguments

@@ -342,31 +342,54 @@ module Gem::Resolver::Molinillo
       # @return [Boolean] Whether the possibility was swapped into {#activated}
       def attempt_to_swap_possibility
         swapped = activated.dup
-        swapped.vertex_named(name).payload = possibility
-        return unless swapped.vertex_named(name).requirements.
+        vertex = swapped.vertex_named(name)
+        vertex.payload = possibility
+        return unless vertex.requirements.
             all? { |r| requirement_satisfied_by?(r, swapped, possibility) }
-        attempt_to_activate_new_spec
+        return unless new_spec_satisfied?
+        actual_vertex = activated.vertex_named(name)
+        actual_vertex.payload = possibility
+        fixup_swapped_children(actual_vertex)
+        activate_spec
+      end
+
+      # Ensures there are no orphaned successors to the given {vertex}.
+      # @param [DependencyGraph::Vertex] vertex the vertex to fix up.
+      # @return [void]
+      def fixup_swapped_children(vertex)
+        payload = vertex.payload
+        dep_names = dependencies_for(payload).map(&method(:name_for))
+        vertex.successors.each do |succ|
+          if !dep_names.include?(succ.name) && !succ.root? && succ.predecessors.to_a == [vertex]
+            debug(depth) { "Removing orphaned spec #{succ.name} after swapping #{name}" }
+            activated.detach_vertex_named(succ.name)
+            requirements.delete_if { |r| name_for(r) == succ.name }
+          end
+        end
       end
 
       # Attempts to activate the current {#possibility} (given that it hasn't
       # already been activated)
       # @return [void]
       def attempt_to_activate_new_spec
-        satisfied = begin
-          locked_requirement = locked_requirement_named(name)
-          requested_spec_satisfied = requirement_satisfied_by?(requirement, activated, possibility)
-          locked_spec_satisfied = !locked_requirement ||
-            requirement_satisfied_by?(locked_requirement, activated, possibility)
-          debug(depth) { 'Unsatisfied by requested spec' } unless requested_spec_satisfied
-          debug(depth) { 'Unsatisfied by locked spec' } unless locked_spec_satisfied
-          requested_spec_satisfied && locked_spec_satisfied
-        end
-        if satisfied
+        if new_spec_satisfied?
           activate_spec
         else
           create_conflict
           unwind_for_conflict
         end
+      end
+
+      # @return [Boolean] whether the current spec is satisfied as a new
+      # possibility.
+      def new_spec_satisfied?
+        locked_requirement = locked_requirement_named(name)
+        requested_spec_satisfied = requirement_satisfied_by?(requirement, activated, possibility)
+        locked_spec_satisfied = !locked_requirement ||
+          requirement_satisfied_by?(locked_requirement, activated, possibility)
+        debug(depth) { 'Unsatisfied by requested spec' } unless requested_spec_satisfied
+        debug(depth) { 'Unsatisfied by locked spec' } unless locked_spec_satisfied
+        requested_spec_satisfied && locked_spec_satisfied
       end
 
       # @param [String] requirement_name the spec name to search for
@@ -394,7 +417,7 @@ module Gem::Resolver::Molinillo
       # @return [void]
       def require_nested_dependencies_for(activated_spec)
         nested_dependencies = dependencies_for(activated_spec)
-        debug(depth) { "Requiring nested dependencies (#{nested_dependencies.map(&:to_s).join(', ')})" }
+        debug(depth) { "Requiring nested dependencies (#{nested_dependencies.join(', ')})" }
         nested_dependencies.each { |d| activated.add_child_vertex(name_for(d), nil, [name_for(activated_spec)], d) }
 
         push_state_for_requirements(requirements + nested_dependencies, nested_dependencies.size > 0)

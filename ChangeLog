@@ -1,3 +1,10 @@
+Fri Mar  4 09:28:18 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/rubygems.rb, lib/rubygems/*, test/rubygems/*: Update rubygems-2.6.1.
+	  Please see entries of 2.6.0 and 2.6.1 on
+	  https://github.com/rubygems/rubygems/blob/master/History.txt
+	  [fix GH-1270] Patch by @segiddins
+
 Thu Mar  3 14:09:00 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/ostruct.rb (modifiable?, new_ostruct_member!, table!):

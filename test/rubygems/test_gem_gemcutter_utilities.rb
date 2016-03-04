@@ -110,7 +110,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
     assert_match %r{Signed in.}, @sign_in_ui.output
 
     credentials = YAML.load_file Gem.configuration.credentials_path
-    assert_equal api_key, credentials[:rubygems_api_key]
+    assert_equal api_key, credentials['http://example.com']
   end
 
   def test_sign_in_with_host_nil
@@ -137,7 +137,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
     assert_match %r{Signed in.}, @sign_in_ui.output
 
     credentials = YAML.load_file Gem.configuration.credentials_path
-    assert_equal api_key, credentials[:rubygems_api_key]
+    assert_equal api_key, credentials['http://example.com']
   end
 
   def test_sign_in_skips_with_existing_credentials

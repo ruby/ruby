@@ -438,6 +438,26 @@ ERROR:  Possible alternatives: non_existent_with_hint
     assert_match "1 gem installed", @ui.output
   end
 
+  def test_execute_with_invalid_gem_file
+    FileUtils.touch("a.gem")
+
+    spec_fetcher do |fetcher|
+      fetcher.gem 'a', 2
+    end
+
+    @cmd.options[:args] = %w[a]
+
+    use_ui @ui do
+      assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+        @cmd.execute
+      end
+    end
+
+    assert_equal %w[a-2], @cmd.installed_specs.map { |spec| spec.full_name }
+
+    assert_match "1 gem installed", @ui.output
+  end
+
   def test_execute_remote_ignores_files
     specs = spec_fetcher do |fetcher|
       fetcher.gem 'a', 1
