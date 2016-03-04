@@ -473,10 +473,10 @@ typedef struct rb_heap_struct {
     size_t total_slots;      /* total slot count (about total_pages * HEAP_PAGE_OBJ_LIMIT) */
 } rb_heap_t;
 
-enum gc_stat {
-    gc_stat_none,
-    gc_stat_marking,
-    gc_stat_sweeping
+enum gc_mode {
+    gc_mode_none,
+    gc_mode_marking,
+    gc_mode_sweeping
 };
 
 typedef struct rb_objspace {
@@ -490,7 +490,7 @@ typedef struct rb_objspace {
     } malloc_params;
 
     struct {
-	enum gc_stat stat : 2;
+	enum gc_mode mode : 3;
 	unsigned int immediate_sweep : 1;
 	unsigned int dont_gc : 1;
 	unsigned int dont_incremental : 1;
@@ -731,8 +731,27 @@ VALUE *ruby_initial_gc_stress_ptr = &ruby_initial_gc_stress;
 #define stress_to_class         0
 #endif
 
-#define is_marking(objspace)             ((objspace)->flags.stat == gc_stat_marking)
-#define is_sweeping(objspace)            ((objspace)->flags.stat == gc_stat_sweeping)
+static inline enum gc_mode
+gc_mode_verify(enum gc_mode mode)
+{
+#if RGENGC_CHECK_MODE > 0
+    switch (mode) {
+      case gc_mode_none:
+      case gc_mode_marking:
+      case gc_mode_sweeping:
+	break;
+      default:
+	rb_bug("gc_mode_verify: unreachable (%d)", (int)mode);
+    }
+#endif
+    return mode;
+}
+
+#define gc_mode(objspace)                gc_mode_verify((objspace)->flags.mode)
+#define gc_mode_set(objspace, mode)      ((objspace)->flags.mode = gc_mode_verify(mode))
+
+#define is_marking(objspace)             (gc_mode(objspace) == gc_mode_marking)
+#define is_sweeping(objspace)            (gc_mode(objspace) == gc_mode_sweeping)
 #if USE_RGENGC
 #define is_full_marking(objspace)        ((objspace)->flags.during_minor_gc == FALSE)
 #else
@@ -3440,18 +3459,30 @@ gc_heap_prepare_minimum_pages(rb_objspace_t *objspace, rb_heap_t *heap)
     }
 }
 
+static const char *
+gc_mode_name(enum gc_mode mode)
+{
+    switch (mode) {
+      case gc_mode_none: return "none";
+      case gc_mode_marking: return "marking";
+      case gc_mode_sweeping: return "sweeping";
+      default: rb_bug("gc_mode_name: unknown mode: %d", (int)mode);
+    }
+}
+
 static void
-gc_stat_transition(rb_objspace_t *objspace, enum gc_stat stat)
+gc_mode_transition(rb_objspace_t *objspace, enum gc_mode mode)
 {
 #if RGENGC_CHECK_MODE
-    enum gc_stat prev_stat = objspace->flags.stat;
-    switch (prev_stat) {
-      case gc_stat_none: assert(stat == gc_stat_marking); break;
-      case gc_stat_marking: assert(stat == gc_stat_sweeping); break;
-      case gc_stat_sweeping: assert(stat == gc_stat_none); break;
+    enum gc_mode prev_mode = gc_mode(objspace);
+    switch (prev_mode) {
+      case gc_mode_none: assert(mode == gc_mode_marking); break;
+      case gc_mode_marking: assert(mode == gc_mode_sweeping); break;
+      case gc_mode_sweeping: assert(mode == gc_mode_none); break;
     }
 #endif
-    objspace->flags.stat = stat;
+    if (0) fprintf(stderr, "gc_mode_transition: %s->%s\n", gc_mode_name(gc_mode(objspace)), gc_mode_name(mode));
+    gc_mode_set(objspace, mode);
 }
 
 static void
@@ -3483,7 +3514,7 @@ gc_sweep_start(rb_objspace_t *objspace)
     rb_heap_t *heap;
     size_t total_limit_slot;
 
-    gc_stat_transition(objspace, gc_stat_sweeping);
+    gc_mode_transition(objspace, gc_mode_sweeping);
 
     /* sometimes heap_allocatable_pages is not 0 */
     heap_pages_swept_slots = heap_allocatable_pages * HEAP_PAGE_OBJ_LIMIT;
@@ -3522,7 +3553,7 @@ gc_sweep_finish(rb_objspace_t *objspace)
     }
 
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_END_SWEEP, 0);
-    gc_stat_transition(objspace, gc_stat_none);
+    gc_mode_transition(objspace, gc_mode_none);
 
 #if RGENGC_CHECK_MODE >= 2
     gc_verify_internal_consistency(Qnil);
@@ -5168,7 +5199,7 @@ gc_marks_start(rb_objspace_t *objspace, int full_mark)
 {
     /* start marking */
     gc_report(1, objspace, "gc_marks_start: (%s)\n", full_mark ? "full" : "minor");
-    gc_stat_transition(objspace, gc_stat_marking);
+    gc_mode_transition(objspace, gc_mode_marking);
 
 #if USE_RGENGC
     if (full_mark) {
@@ -6164,7 +6195,7 @@ gc_start(rb_objspace_t *objspace, const int full_mark, const int immediate_mark,
     if (reason != GPR_FLAG_METHOD && !ready_to_gc(objspace)) return TRUE; /* GC is not allowed */
 
     if (RGENGC_CHECK_MODE) {
-	assert(objspace->flags.stat == gc_stat_none);
+	assert(gc_mode(objspace) == gc_mode_none);
 	assert(!is_lazy_sweeping(heap_eden));
 	assert(!is_incremental_marking(objspace));
 #if RGENGC_CHECK_MODE >= 2
@@ -6614,8 +6645,8 @@ gc_info_decode(rb_objspace_t *objspace, const VALUE hash_or_key, const int orig_
     SET(immediate_sweep, (flags & GPR_FLAG_IMMEDIATE_SWEEP) ? Qtrue : Qfalse);
 
     if (orig_flags == 0) {
-	SET(state, objspace->flags.stat == gc_stat_none ? sym_none :
-	           objspace->flags.stat == gc_stat_marking ? sym_marking : sym_sweeping);
+	SET(state, gc_mode(objspace) == gc_mode_none ? sym_none :
+	           gc_mode(objspace) == gc_mode_marking ? sym_marking : sym_sweeping);
     }
 #undef SET
 

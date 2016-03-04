@@ -1,3 +1,21 @@
+Fri Mar  4 18:42:08 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: rename "enum gc_stat" to "enum gc_mode"
+	  because there is a same name (no related) function gc_stat().
+
+	  Also gc_stat_* are renamed to gc_mode_*,
+	  gc_stat_transition() to gc_mode_transition(),
+	  rb_objspace::flags::stat is renamed to rb_objspace::flags::mode.
+
+	  Change rb_objspace::flags::mode from 2 bits to 3 bits because VC++
+	  returns negative enum value with 2 bits.
+
+	* gc.c (gc_mode): add a macro to access rb_objspace::flags::mode
+	  with verification code (verification is enabled only on
+	  RGENGC_CHECK_MODE > 0).
+
+	* gc.c (gc_mode_set): same macro for setter.
+
 Fri Mar  4 09:28:18 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/rubygems.rb, lib/rubygems/*, test/rubygems/*: Update rubygems-2.6.1.
