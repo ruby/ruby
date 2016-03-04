@@ -1,3 +1,10 @@
+Sat Mar  5 07:14:10 2016  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* test/zlib/test_zlib.rb (test_adler32_combine, test_crc32_combine):
+	  Skip two tests on AIX because zconf.h in zlib does not correctly
+	  recognize _LARGE_FILES in AIX. The problem was already reported
+	  to zlib, and skip these tests until it is fixed.
+
 Sat Mar  5 03:07:40 2016  Rei Odaira  <Rei.Odaira@gmail.com>
 
 	* thread_pthread.c (getstack): __pi_stacksize returned by
