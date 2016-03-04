@@ -1,3 +1,9 @@
+Sat Mar  5 03:07:40 2016  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* thread_pthread.c (getstack): __pi_stacksize returned by
+	  pthread_getthrds_np() is wrong on AIX. Use
+	  __pi_stackend - __pi_stackaddr instead.
+
 Fri Mar  4 19:19:42 2016  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: use 2 bits with unsigned int for rb_objspace::flags::mode
