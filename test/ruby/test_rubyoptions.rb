@@ -312,10 +312,9 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err([], "#! /test_r_u_b_y_test_r_u_b_y_options_foobarbazqux -foo -bar\r\np 1\r\n",
                       [], /: no Ruby script found in input/)
 
-    assert_in_out_err([{'RUBYOPT' => nil}], "#!ruby -KU -Eutf-8\r\np \"\u3042\"\r\n") do |r, e|
-      assert_equal("\"\u3042\"", r.join.force_encoding(Encoding::UTF_8))
-      assert_equal([], e)
-    end
+    assert_in_out_err([{'RUBYOPT' => nil}], "#!ruby -KU -Eutf-8\r\np \"\u3042\"\r\n",
+                      ["\"\u3042\""], [],
+                      encoding: Encoding::UTF_8)
 
     bug4118 = '[ruby-dev:42680]'
     assert_in_out_err(%w[], "#!/bin/sh\n""#!shebang\n""#!ruby\n""puts __LINE__\n",
