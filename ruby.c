@@ -1737,10 +1737,10 @@ load_file_internal(VALUE argp_v)
 		}
 
 	      start_read:
-		p += 4;
 		RSTRING_PTR(line)[RSTRING_LEN(line) - 1] = '\0';
 		if (RSTRING_PTR(line)[RSTRING_LEN(line) - 2] == '\r')
 		    RSTRING_PTR(line)[RSTRING_LEN(line) - 2] = '\0';
+		/* ruby_engine should not contain a space */
 		if ((p = strstr(p, " -")) != 0) {
 		    opt->warning = 0;
 		    moreswitches(p + 1, opt, 0);
