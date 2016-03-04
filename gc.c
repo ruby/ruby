@@ -490,7 +490,7 @@ typedef struct rb_objspace {
     } malloc_params;
 
     struct {
-	enum gc_mode mode : 3;
+	unsigned int mode : 2;
 	unsigned int immediate_sweep : 1;
 	unsigned int dont_gc : 1;
 	unsigned int dont_incremental : 1;
@@ -747,8 +747,8 @@ gc_mode_verify(enum gc_mode mode)
     return mode;
 }
 
-#define gc_mode(objspace)                gc_mode_verify((objspace)->flags.mode)
-#define gc_mode_set(objspace, mode)      ((objspace)->flags.mode = gc_mode_verify(mode))
+#define gc_mode(objspace)                gc_mode_verify((enum gc_mode)(objspace)->flags.mode)
+#define gc_mode_set(objspace, mode)      ((objspace)->flags.mode = (unsigned int)gc_mode_verify(mode))
 
 #define is_marking(objspace)             (gc_mode(objspace) == gc_mode_marking)
 #define is_sweeping(objspace)            (gc_mode(objspace) == gc_mode_sweeping)

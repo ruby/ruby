@@ -1,3 +1,8 @@
+Fri Mar  4 19:19:42 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: use 2 bits with unsigned int for rb_objspace::flags::mode
+	  because it always returns 0 to 2 (non-negative value).
+
 Fri Mar  4 18:42:08 2016  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: rename "enum gc_stat" to "enum gc_mode"
