@@ -1697,7 +1697,8 @@ load_file_internal(VALUE argp_v)
     if (script) {
 	VALUE c = 1;		/* something not nil */
 	VALUE line;
-	char *p;
+	char *p, *str;
+	long len;
 	int no_src_enc = !opt->src.enc.name;
 	int no_ext_enc = !opt->ext.enc.name;
 	int no_int_enc = !opt->intern.enc.name;
@@ -1712,10 +1713,9 @@ load_file_internal(VALUE argp_v)
 	    opt->xflag = FALSE;
 	    while (!NIL_P(line = rb_io_gets(f))) {
 		line_start++;
-		if (RSTRING_LEN(line) > 2
-		    && RSTRING_PTR(line)[0] == '#'
-		    && RSTRING_PTR(line)[1] == '!') {
-		    if ((p = strstr(RSTRING_PTR(line), ruby_engine)) != 0) {
+		RSTRING_GETMEM(line, str, len);
+		if (len > 2 && str[0] == '#' && str[1] == '!') {
+		    if ((p = strstr(str+2, ruby_engine)) != 0) {
 			goto start_read;
 		    }
 		}
@@ -1731,15 +1731,16 @@ load_file_internal(VALUE argp_v)
 		if (NIL_P(line))
 		    return 0;
 
-		if ((p = strstr(RSTRING_PTR(line), ruby_engine)) == 0) {
+		RSTRING_GETMEM(line, str, len);
+		if ((p = strstr(str, ruby_engine)) == 0) {
 		    /* not ruby script, assume -x flag */
 		    goto search_shebang;
 		}
 
 	      start_read:
-		RSTRING_PTR(line)[RSTRING_LEN(line) - 1] = '\0';
-		if (RSTRING_PTR(line)[RSTRING_LEN(line) - 2] == '\r')
-		    RSTRING_PTR(line)[RSTRING_LEN(line) - 2] = '\0';
+		str += len - 1;
+		if (*str == '\n') *str-- = '\0';
+		if (*str == '\r') *str-- = '\0';
 		/* ruby_engine should not contain a space */
 		if ((p = strstr(p, " -")) != 0) {
 		    opt->warning = 0;
