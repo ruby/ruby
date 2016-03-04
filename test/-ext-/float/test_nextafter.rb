@@ -46,9 +46,16 @@ class TestFloatExt < Test::Unit::TestCase
           if v1 == 0
             s1 = 1.0/v1 < 0 ? "negative-zero" : "positive-zero"
             s2 = 1.0/v2 < 0 ? "negative-zero" : "positive-zero"
-            assert_equal(s1, s2,
-            "Bug::Float.missing_nextafter(#{'%a' % n1}, #{'%a' % n2}) = #{'%a' % v1} != " +
-            "#{'%a' % v2} = Bug::Float.system_nextafter(#{'%a' % n1}, #{'%a' % n2})")
+            begin
+              assert_equal(s1, s2,
+              "Bug::Float.missing_nextafter(#{'%a' % n1}, #{'%a' % n2}) = #{'%a' % v1} != " +
+              "#{'%a' % v2} = Bug::Float.system_nextafter(#{'%a' % n1}, #{'%a' % n2})")
+            rescue Minitest::Assertion
+              if /aix/ =~ RUBY_PLATFORM
+                skip "Known bug in nextafter(3) on AIX"
+              end
+              raise $!
+            end
           end
         end
       }

@@ -1,3 +1,10 @@
+Sat Mar  5 07:36:27 2016  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* test/-ext-/float/test_nextafter.rb: In AIX,
+	  nextafter(+0.0,-0.0)=+0.0, and nextafter(-0.0,+0.0)=-0.0,
+	  but they should return -0.0 and +0.0, respectively. This is
+	  a known bug in nextafter(3) on AIX, so skip related tests.
+
 Sat Mar  5 07:14:10 2016  Rei Odaira  <Rei.Odaira@gmail.com>
 
 	* test/zlib/test_zlib.rb (test_adler32_combine, test_crc32_combine):
