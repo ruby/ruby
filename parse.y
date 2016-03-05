@@ -10014,9 +10014,15 @@ negate_lit(VALUE lit)
 	lit = LONG2FIX(-FIX2LONG(lit));
 	break;
       case T_BIGNUM:
+	BIGNUM_NEGATE(lit);
+	lit = rb_big_norm(lit);
+	break;
       case T_RATIONAL:
+	RRATIONAL_SET_NUM(lit, negate_lit(RRATIONAL(lit)->num));
+	break;
       case T_COMPLEX:
-	lit = rb_funcallv(lit, tUMINUS, 0, 0);
+	RCOMPLEX_SET_REAL(lit, negate_lit(RCOMPLEX(lit)->real));
+	RCOMPLEX_SET_IMAG(lit, negate_lit(RCOMPLEX(lit)->imag));
 	break;
       case T_FLOAT:
 #if USE_FLONUM
