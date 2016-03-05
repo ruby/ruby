@@ -1,3 +1,15 @@
+Sat Mar  5 09:17:54 2016  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* test/rinda/test_rinda.rb (test_make_socket_ipv4_multicast):
+	  The fifth argument to getsockopt(2) should be modified to
+	  indicate the actual size of the value on return,
+	  but not in AIX. This is a know bug. Skip related tests.
+	* test/rinda/test_rinda.rb (test_ring_server_ipv4_multicast):
+	  ditto.
+	* test/rinda/test_rinda.rb (test_make_socket_unicast): ditto.
+	* test/socket/test_basicsocket.rb (test_getsockopt): ditto.
+	* test/socket/test_sockopt.rb (test_bool): ditto.
+
 Sat Mar  5 07:36:27 2016  Rei Odaira  <Rei.Odaira@gmail.com>
 
 	* test/-ext-/float/test_nextafter.rb: In AIX,
