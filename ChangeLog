@@ -1,3 +1,11 @@
+Sun Mar 05 09:01:31 2016  Vladimir Makarov  <vmakarov@redhat.com>
+
+	* include/ruby/st.h (struct st_table): Remove hash_mask.
+	* st.c (st_init_table_with_size): Remove hash_mask assignment.
+	(rebuild_table): Ditto.
+	(hash_entry): Calculate the hash mask using number of allocated
+	entries.
+
 Wed Feb 24 02:24:29 2016  Vladimir Makarov  <vmakarov@redhat.com>
 
 	* include/ruby/st.h (MAX_ST_INDEX_VAL, st_table_element): New.

@@ -92,9 +92,6 @@ struct st_table {
     st_index_t allocated_entries, allocated_elements;
     /* How many times the table was rebuilt.  */
     unsigned rebuilds_num;
-    /* The following mask is used to map hash values to entry index --
-       see details in st.c.  */
-    st_index_t hash_mask;
     /* array of size ALLOCATED_ENTRIES: */
     st_entry_t *entries;
     /* Start and bound index of elements in array elements.  */

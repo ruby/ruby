@@ -300,7 +300,6 @@ st_init_table_with_size(const struct st_hash_type *type, st_index_t size)
     n = get_power2(size);
     tab = (st_table *) malloc(sizeof (st_table));
     tab->type = type;
-    tab->hash_mask = (~(st_index_t) 0) >> (sizeof (st_index_t) * CHAR_BIT - n - 1);
     tab->allocated_elements = 1 << n;
     tab->allocated_entries = 2 * tab->allocated_elements;
     tab->entries = (st_entry_t *) malloc(tab->allocated_entries * sizeof (st_entry_t));
@@ -482,7 +481,6 @@ rebuild_table(st_table *tab)
         *new_entry_ptr = i;
     }
     tab->deleted_entries = 0;
-    tab->hash_mask = new_tab->hash_mask;
     tab->allocated_entries = new_tab->allocated_entries;
     tab->allocated_elements = new_tab->allocated_elements;
     tab->rebuilds_num++;
@@ -497,7 +495,7 @@ rebuild_table(st_table *tab)
 static inline st_index_t
 hash_entry(st_index_t hash_value, st_table *tab)
 {
-    return hash_value & tab->hash_mask;
+    return hash_value & (tab->allocated_entries - 1);
 }
 
 /* Return the next secondary hash index for table TAB using previous
