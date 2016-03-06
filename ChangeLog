@@ -1,3 +1,8 @@
+Sun Mar  6 22:43:41 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_obj_display): [DOC] fix output of Array, as Array#to_s
+	  is same as Array#inspect since 1.9.
+
 Sat Mar  5 09:50:58 2016  Rei Odaira  <Rei.Odaira@gmail.com>
 
 	* test/socket/test_addrinfo.rb (test_ipv6_address_predicates):

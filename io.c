@@ -7256,7 +7256,7 @@ rb_f_p(int argc, VALUE *argv, VALUE self)
  *
  *  <em>produces:</em>
  *
- *     1cat456
+ *     1cat[4, 5, 6]
  */
 
 static VALUE
