@@ -3,7 +3,16 @@
  * included by eval.c
  */
 
+#if defined(__GNUC__) && !defined(__PCC__)
+#define warn_print(x) __extension__ (	\
+{						\
+    (__builtin_constant_p(x)) ? 		\
+	rb_write_error2((x), (long)strlen(x)) : \
+	rb_write_error(x);			\
+})
+#else
 #define warn_print(x) rb_write_error(x)
+#endif
 #define warn_print2(x,l) rb_write_error2((x),(l))
 #define warn_print_str(x) rb_write_error_str(x)
 
