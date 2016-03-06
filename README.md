@@ -13,12 +13,12 @@ extensible.
 *   Simple Syntax
 *   **Normal** Object-oriented Features (e.g. class, method calls)
 *   **Advanced** Object-oriented Features (e.g. Mix-in, Singleton-method)
-*   Operator Overloading
+*   Operator **Overloading**
 *   Exception Handling
 *   Iterators and Closures
 *   Garbage Collection
 *   Dynamic Loading of Object Files (on some architectures)
-*   Highly Portable (works on many Unix-like/POSIX compatible platforms as
+*   Highly **Portable** (works on many Unix-like/POSIX compatible platforms as
     well as Windows, Mac OS X, BeOS, etc.) cf.
     http://bugs.ruby-lang.org/projects/ruby-trunk/wiki/SupportedPlatforms
 
