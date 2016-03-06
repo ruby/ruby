@@ -1,3 +1,10 @@
+Mon Mar  7 01:38:41 2016  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* test/ruby/test_process.rb (test_execopts_gid): Skip a test
+	  that is known to fail on AIX. AIX allows setgid to
+	  a supplementary group, but Ruby does not allow the "-e"
+	  option when setgid'ed, so the test does not work as intended.
+
 Sun Mar  6 22:43:41 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_obj_display): [DOC] fix output of Array, as Array#to_s
