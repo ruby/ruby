@@ -468,6 +468,7 @@ update-mspec:
 	@echo retrieving mspec ...
 	@cd $(srcdir:/=\) && git clone $(MSPEC_GIT_URL) spec/mspec
 !endif
+	@cd $(srcdir:/=\)\spec\mspec && git --no-pager log -1 --oneline
 
 update-rubyspec: update-mspec
 !if exist($(srcdir)/spec/rubyspec)
@@ -477,6 +478,7 @@ update-rubyspec: update-mspec
 	@echo retrieving rubyspec ...
 	@cd $(srcdir:/=\) && git clone $(RUBYSPEC_GIT_URL) spec/rubyspec
 !endif
+	@cd $(srcdir:/=\)\spec\rubyspec && git --no-pager log -1 --oneline
 
 test-rubyspec-precheck:
 !if !exist($(srcdir)/spec/rubyspec/.)

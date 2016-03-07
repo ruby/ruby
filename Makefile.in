@@ -486,6 +486,7 @@ update-mspec:
 	  $(Q1:0=:) set -x; \
 	  exec git clone $(MSPEC_GIT_URL) spec/mspec; \
 	fi
+	$(Q)cd $(srcdir)/spec/mspec && exec git --no-pager log -1 --oneline
 
 update-rubyspec: update-mspec
 	@$(CHDIR) $(srcdir); \
@@ -499,6 +500,7 @@ update-rubyspec: update-mspec
 	  $(Q1:0=:) set -x; \
 	  exec git clone $(RUBYSPEC_GIT_URL) spec/rubyspec; \
 	fi
+	$(Q)cd $(srcdir)/spec/rubyspec && exec git --no-pager log -1 --oneline
 
 test-rubyspec-precheck:
 	@if [ ! -d $(srcdir)/spec/rubyspec ]; then echo No rubyspec here.  make update-rubyspec first.; exit 1; fi
