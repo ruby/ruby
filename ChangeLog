@@ -1,3 +1,10 @@
+Tue Mar  8 00:11:47 2016  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* ext/tk/lib/tk/menubar.rb: fix a typo in font name. [ruby-core:72505]
+	  [Bug #11886] The patch provided by Akira Matsuda.
+
+	* ext/tk/sample/*.rb: ditto.
+
 Mon Mar  7 13:32:58 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* class.c (rb_define_class, rb_define_class_id_under): raise
