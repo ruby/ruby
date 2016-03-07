@@ -660,7 +660,7 @@ rb_define_class(const char *name, VALUE super)
 	return klass;
     }
     if (!super) {
-	rb_warn("no super class for `%s', Object assumed", name);
+	rb_raise(rb_eArgError, "no super class for `%s'", name);
     }
     klass = rb_define_class_id(id, super);
     rb_vm_add_root_module(id, klass);
@@ -732,8 +732,8 @@ rb_define_class_id_under(VALUE outer, ID id, VALUE super)
 	return klass;
     }
     if (!super) {
-	rb_warn("no super class for `%"PRIsVALUE"::%"PRIsVALUE"', Object assumed",
-		rb_class_path(outer), rb_id2str(id));
+	rb_raise(rb_eArgError, "no super class for `%"PRIsVALUE"::%"PRIsVALUE"'",
+		 rb_class_path(outer), rb_id2str(id));
     }
     klass = rb_define_class_id(id, super);
     rb_set_class_path_string(klass, outer, rb_id2str(id));

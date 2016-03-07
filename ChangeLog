@@ -1,3 +1,9 @@
+Mon Mar  7 13:32:58 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* class.c (rb_define_class, rb_define_class_id_under): raise
+	  ArgumentError if super is 0, deprecated behavior which has been
+	  warned long time.
+
 Mon Mar  7 13:28:30 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* internal.h: move function declarations for class internals from
