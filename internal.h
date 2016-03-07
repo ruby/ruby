@@ -694,6 +694,10 @@ VALUE rb_integer_float_cmp(VALUE x, VALUE y);
 VALUE rb_integer_float_eq(VALUE x, VALUE y);
 
 /* class.c */
+VALUE rb_class_boot(VALUE);
+VALUE rb_class_inherited(VALUE, VALUE);
+VALUE rb_make_metaclass(VALUE, VALUE);
+VALUE rb_include_class_new(VALUE, VALUE);
 void rb_class_foreach_subclass(VALUE klass, void (*f)(VALUE, VALUE), VALUE);
 void rb_class_detach_subclasses(VALUE);
 void rb_class_detach_module_subclasses(VALUE);

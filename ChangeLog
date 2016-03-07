@@ -1,3 +1,8 @@
+Mon Mar  7 13:28:30 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* internal.h: move function declarations for class internals from
+	  include/ruby/intern.h.
+
 Mon Mar  7 10:58:07 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/win32ole/win32ole_event.c (rescue_callback): use
