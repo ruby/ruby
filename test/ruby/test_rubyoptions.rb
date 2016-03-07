@@ -314,7 +314,7 @@ class TestRubyOptions < Test::Unit::TestCase
 
     assert_in_out_err([{'RUBYOPT' => nil}], "#!ruby -KU -Eutf-8\r\np \"\u3042\"\r\n",
                       ["\"\u3042\""], /shebang line ends with \\r/,
-                      encoding: Encoding::UTF_8)
+                      encoding: Encoding::UTF_8) if /mswin|mingw/ !~ RUBY_PLATFORM
 
     bug4118 = '[ruby-dev:42680]'
     assert_in_out_err(%w[], "#!/bin/sh\n""#!shebang\n""#!ruby\n""puts __LINE__\n",
