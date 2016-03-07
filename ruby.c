@@ -1676,6 +1676,8 @@ warn_cr_in_shebang(const char *str, long len)
 	rb_warn("shebang line ends with \\r may cause a problem");
     }
 }
+#else
+#define warn_cr_in_shebang(str, len) (void)0
 #endif
 
 struct load_file_arg {
@@ -1725,9 +1727,7 @@ load_file_internal(VALUE argp_v)
 		line_start++;
 		RSTRING_GETMEM(line, str, len);
 		if (len > 2 && str[0] == '#' && str[1] == '!') {
-#ifndef DOSISH
 		    if (line_start == 1) warn_cr_in_shebang(str, len);
-#endif
 		    if ((p = strstr(str+2, ruby_engine)) != 0) {
 			goto start_read;
 		    }
@@ -1745,9 +1745,7 @@ load_file_internal(VALUE argp_v)
 		    return 0;
 
 		RSTRING_GETMEM(line, str, len);
-#ifndef DOSISH
 		warn_cr_in_shebang(str, len);
-#endif
 		if ((p = strstr(str, ruby_engine)) == 0) {
 		    /* not ruby script, assume -x flag */
 		    goto search_shebang;
