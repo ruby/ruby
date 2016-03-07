@@ -6,6 +6,8 @@
  *   <code>WIN32OLE_EVENT</code> objects controls OLE event.
  */
 
+RUBY_EXTERN void rb_write_error_str(VALUE mesg);
+
 typedef struct {
     struct IEventSinkVtbl * lpVtbl;
 } IEventSink, *PEVENTSINK;
@@ -468,7 +470,7 @@ rescue_callback(VALUE arg)
     VALUE msg = rb_funcall(e, rb_intern("message"), 0);
     bt = rb_ary_entry(bt, 0);
     error = rb_sprintf("%"PRIsVALUE": %"PRIsVALUE" (%s)\n", bt, msg, rb_obj_classname(e));
-    rb_write_error(StringValuePtr(error));
+    rb_write_error_str(error);
     rb_backtrace();
     ruby_finalize();
     exit(-1);

@@ -872,7 +872,6 @@ const char *ruby_get_inplace_mode(void);
 void ruby_set_inplace_mode(const char *);
 ssize_t rb_io_bufread(VALUE io, void *buf, size_t size);
 void rb_stdio_set_default_encoding(void);
-void rb_write_error_str(VALUE mesg);
 VALUE rb_io_flush_raw(VALUE, int);
 size_t rb_io_memsize(const rb_io_t *);
 
@@ -1353,6 +1352,7 @@ VALUE rb_ident_hash_new(void);
 /* io.c (export) */
 void rb_maygvl_fd_fix_cloexec(int fd);
 int rb_gc_for_fd(int err);
+void rb_write_error_str(VALUE mesg);
 
 /* numeric.c (export) */
 VALUE rb_int_positive_pow(long x, unsigned long y);

@@ -1,3 +1,11 @@
+Mon Mar  7 10:58:07 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/win32ole/win32ole_event.c (rescue_callback): use
+	  rb_write_error_str instead of rb_write_error, to respect
+	  the encoding and prevent the message from GC.
+
+	* internal.h (rb_write_error_str): export.
+
 Mon Mar  7 01:38:41 2016  Rei Odaira  <Rei.Odaira@gmail.com>
 
 	* test/ruby/test_process.rb (test_execopts_gid): Skip a test
