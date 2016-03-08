@@ -420,6 +420,16 @@ class TestProcess < Test::Unit::TestCase
     }
   end
 
+  def test_execopts_open_chdir_m17n_path
+    with_tmpchdir {|d|
+      Dir.mkdir "テスト"
+      system(*PWD, :chdir => "テスト", :out => "open_chdir_テスト")
+      assert_file.exist?("open_chdir_テスト")
+      assert_file.not_exist?("テスト/open_chdir_テスト")
+      assert_equal("#{d}/テスト", File.read("open_chdir_テスト").chomp.encode(__ENCODING__))
+    }
+  end if windows? || Encoding.find('locale') == Encoding::UTF_8
+
   UMASK = [RUBY, '-e', 'printf "%04o\n", File.umask']
 
   def test_execopts_umask
