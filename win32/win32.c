@@ -7069,19 +7069,29 @@ rb_w32_write_console(uintptr_t strarg, int fd)
 	break;
     }
     reslen = 0;
-    while (len > 0) {
-	long curlen = constat_parse(handle, s, (next = ptr, &next), &len);
-	reslen += next - ptr;
-	if (curlen > 0) {
-	    DWORD written;
-	    if (!WriteConsoleW(handle, ptr, curlen, &written, NULL)) {
-		if (GetLastError() == ERROR_CALL_NOT_IMPLEMENTED)
-		    disable = TRUE;
-		reslen = (DWORD)-1L;
-		break;
-	    }
+    if (dwMode & 4) {	/* ENABLE_VIRTUAL_TERMINAL_PROCESSING */
+	DWORD written;
+	if (!WriteConsoleW(handle, ptr, len, &written, NULL)) {
+	    if (GetLastError() == ERROR_CALL_NOT_IMPLEMENTED)
+		disable = TRUE;
+	    reslen = (DWORD)-1L;
 	}
-	ptr = next;
+    }
+    else {
+	while (len > 0) {
+	    long curlen = constat_parse(handle, s, (next = ptr, &next), &len);
+	    reslen += next - ptr;
+	    if (curlen > 0) {
+		DWORD written;
+		if (!WriteConsoleW(handle, ptr, curlen, &written, NULL)) {
+		    if (GetLastError() == ERROR_CALL_NOT_IMPLEMENTED)
+			disable = TRUE;
+		    reslen = (DWORD)-1L;
+		    break;
+		}
+	    }
+	    ptr = next;
+	}
     }
     RB_GC_GUARD(str);
     if (wbuffer) free(wbuffer);
