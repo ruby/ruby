@@ -88,10 +88,10 @@ struct st_table {
     st_index_t num_elements;
     /* Number of entries with deleted values.  */
     st_index_t deleted_entries;
-    /* Number of allocated entries and elements.  */
-    st_index_t allocated_entries, allocated_elements;
+    /* Number of elements.  */
+    st_index_t allocated_elements;
     /* How many times the table was rebuilt.  */
-    unsigned rebuilds_num;
+    st_index_t rebuilds_num;
     /* array of size ALLOCATED_ENTRIES: */
     st_entry_t *entries;
     /* Start and bound index of elements in array elements.  */

@@ -1,3 +1,22 @@
+Tue Mar 08 11:10:21 2016  Vladimir Makarov  <vmakarov@redhat.com>
+
+	* include/ruby/st.h (struct st_table): Remove allocated_entries.
+	Make rebuilds_num of type st_index.
+	* st.c (MINIMAL_POWER2): New.
+	(get_power2): Use it.
+	(get_entries_num): New.
+	(initialize_entries): Use get_entries_num instead of
+	allocated_entries.
+	(st_init_table_with_size): Ditto.
+	(st_memsize, hash_entry, find_table_entry_ptr_and_reserve): Ditto.
+	(st_copy): Ditto.
+	(rebuild_entries): Reset num_elements.
+	(REBUILD_THRESHOLD): New.
+	(rebuild_table): Add table compaction.  Remove deleted elements
+	and move elements to the array start.
+	(st_general_foreach): Assume rebuilt elements starting with zero
+	index.
+
 Sun Mar 05 09:01:31 2016  Vladimir Makarov  <vmakarov@redhat.com>
 
 	* include/ruby/st.h (struct st_table): Remove hash_mask.
