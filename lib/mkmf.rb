@@ -409,16 +409,16 @@ MESSAGE
   # :startdoc:
 
   # call-seq:
-  #   xsystem(command, werror: false, **opts)   -> true or false
+  #   xsystem(command, werror: false)   -> true or false
   #
   # Executes _command_ with expanding variables, and returns the exit
   # status like as Kernel#system.  If _werror_ is true and the error
   # output is not empty, returns +false+.  The output will logged.
-  def xsystem command, opts = nil
+  def xsystem(command, werror: false)
     env, command = expand_command(command)
     Logging::open do
       puts [env_quote(env), command.quote].join(' ')
-      if opts and opts[:werror]
+      if werror
         result = nil
         Logging.postpone do |log|
           output = IO.popen(env, command, &:read)
@@ -501,7 +501,7 @@ EOM
     $have_devel
   end
 
-  def try_do(src, command, *opts, &b)
+  def try_do(src, command, **opts, &b)
     unless have_devel?
       raise <<MSG
 The compiler failed to generate an executable file.
@@ -510,7 +510,7 @@ MSG
     end
     begin
       src = create_tmpsrc(src, &b)
-      xsystem(command, *opts)
+      xsystem(command, **opts)
     ensure
       log_src(src)
     end
@@ -571,18 +571,17 @@ MSG
     }.join
   end
 
-  def with_werror(opt, opts = nil)
-    if opts
-      if opts[:werror] and config_string("WERRORFLAG") {|flag| opt = opt ? "#{opt} #{flag}" : flag}
-        (opts = opts.dup).delete(:werror)
-      end
-      yield(opt, opts)
-    else
-      yield(opt)
-    end
+  def werror_flag(opt = nil)
+    config_string("WERRORFLAG") {|flag| opt = opt && !opt.empty? ? "#{opt} #{flag}" : flag}
+    opt
   end
 
-  def try_link0(src, opt="", *opts, &b) # :nodoc:
+  def with_werror(opt, opts = nil)
+    opt = werror_flag(opt) if opts and (opts = opts.dup).delete(:werror)
+    yield(opt, opts)
+  end
+
+  def try_link0(src, opt = "", **opts, &b) # :nodoc:
     exe = CONFTEST+$EXEEXT
     cmd = link_command("", opt)
     if $universal
@@ -590,13 +589,13 @@ MSG
       Dir.mktmpdir("mkmf_", oldtmpdir = ENV["TMPDIR"]) do |tmpdir|
         begin
           ENV["TMPDIR"] = tmpdir
-          try_do(src, cmd, *opts, &b)
+          try_do(src, cmd, **opts, &b)
         ensure
           ENV["TMPDIR"] = oldtmpdir
         end
       end
     else
-      try_do(src, cmd, *opts, &b)
+      try_do(src, cmd, **opts, &b)
     end and File.executable?(exe) or return nil
     exe
   ensure
@@ -613,8 +612,8 @@ MSG
   #
   # [+src+] a String which contains a C source
   # [+opt+] a String which contains linker options
-  def try_link(src, opt="", *opts, &b)
-    exe = try_link0(src, opt, *opts, &b) or return false
+  def try_link(src, opt = "", **opts, &b)
+    exe = try_link0(src, opt, **opts, &b) or return false
     MakeMakefile.rm_f exe
     true
   end
@@ -628,8 +627,9 @@ MSG
   #
   # [+src+] a String which contains a C source
   # [+opt+] a String which contains compiler options
-  def try_compile(src, opt="", *opts, &b)
-    with_werror(opt, *opts) {|_opt, *| try_do(src, cc_command(_opt), *opts, &b)} and
+  def try_compile(src, opt = "", werror: nil, **opts, &b)
+    opt = werror_flag(opt) if werror
+    try_do(src, cc_command(opt), werror: werror, **opts, &b) and
       File.file?("#{CONFTEST}.#{$OBJEXT}")
   ensure
     MakeMakefile.rm_f "#{CONFTEST}*"
@@ -644,8 +644,8 @@ MSG
   #
   # [+src+] a String which contains a C source
   # [+opt+] a String which contains preprocessor options
-  def try_cpp(src, opt="", *opts, &b)
-    try_do(src, cpp_command(CPPOUTFILE, opt), *opts, &b) and
+  def try_cpp(src, opt = "", **opts, &b)
+    try_do(src, cpp_command(CPPOUTFILE, opt), **opts, &b) and
       File.file?("#{CONFTEST}.i")
   ensure
     MakeMakefile.rm_f "#{CONFTEST}*"
@@ -679,8 +679,8 @@ MSG
   end
 
   # :nodoc:
-  def try_cppflags(flags, opts = {})
-    try_header(MAIN_DOES_NOTHING, flags, {:werror => true}.update(opts))
+  def try_cppflags(flags, werror: true, **opts)
+    try_header(MAIN_DOES_NOTHING, flags, werror: werror, **opts)
   end
 
   # Check whether each given C preprocessor flag is acceptable and append it
@@ -688,10 +688,10 @@ MSG
   #
   # [+flags+] a C preprocessor flag as a +String+ or an +Array+ of them
   #
-  def append_cppflags(flags, *opts)
+  def append_cppflags(flags, **opts)
     Array(flags).each do |flag|
       if checking_for("whether #{flag} is accepted as CPPFLAGS") {
-           try_cppflags(flag, *opts)
+           try_cppflags(flag, **opts)
          }
         $CPPFLAGS << " " << flag
       end
@@ -710,8 +710,8 @@ MSG
   end
 
   # :nodoc:
-  def try_cflags(flags, opts = {})
-    try_compile(MAIN_DOES_NOTHING, flags, {:werror => true}.update(opts))
+  def try_cflags(flags, werror: true, **opts)
+    try_compile(MAIN_DOES_NOTHING, flags, werror: werror, **opts)
   end
 
   # Sets <tt>$LDFLAGS</tt> to _flags_ and yields.  If the block returns a
@@ -726,9 +726,8 @@ MSG
   end
 
   # :nodoc:
-  def try_ldflags(flags, opts = {})
-    opts = {:werror => true}.update(opts) if $mswin
-    try_link(MAIN_DOES_NOTHING, flags, opts)
+  def try_ldflags(flags, werror: $mswin, **opts)
+    try_link(MAIN_DOES_NOTHING, flags, werror: werror, **opts)
   end
 
   # :startdoc:
@@ -738,10 +737,10 @@ MSG
   #
   # [+flags+] a linker flag as a +String+ or an +Array+ of them
   #
-  def append_ldflags(flags, *opts)
+  def append_ldflags(flags, **opts)
     Array(flags).each do |flag|
       if checking_for("whether #{flag} is accepted as LDFLAGS") {
-           try_ldflags(flag, *opts)
+           try_ldflags(flag, **opts)
          }
         $LDFLAGS << " " << flag
       end
@@ -1082,10 +1081,10 @@ SRC
   #
   # [+flags+] a C compiler flag as a +String+ or an +Array+ of them
   #
-  def append_cflags(flags, *opts)
+  def append_cflags(flags, **opts)
     Array(flags).each do |flag|
       if checking_for("whether #{flag} is accepted as CFLAGS") {
-           try_cflags(flag, *opts)
+           try_cflags(flag, **opts)
          }
         $CFLAGS << " " << flag
       end
@@ -1537,7 +1536,7 @@ SRC
           u = "unsigned " if signed > 0
           prelude << "extern rbcv_typedef_ foo();"
           compat = UNIVERSAL_INTS.find {|t|
-            try_compile([prelude, "extern #{u}#{t} foo();"].join("\n"), opts, :werror=>true, &b)
+            try_compile([prelude, "extern #{u}#{t} foo();"].join("\n"), opts, werror: true, &b)
           }
         end
         if compat
