@@ -1,3 +1,8 @@
+Wed Mar  9 03:34:54 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* re.c (reg_names_iter): should consider encoding of regexp.
+	  [ruby-core:72185] [Bug #11825]
+
 Wed Feb 24 08:18:18 2016  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* enc/windows_1250.c: Should not use C++ style comments (C99 feature).
