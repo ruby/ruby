@@ -1,3 +1,9 @@
+Wed Mar  9 00:29:46 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_method.c (rb_alias): the original name should be properly
+	  available method_added method, set the name before calling the
+	  hook.
+
 Wed Mar  9 00:07:03 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/logger.rb (Logger::LogDevice#initialize): define using

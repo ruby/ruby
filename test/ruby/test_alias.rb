@@ -203,4 +203,32 @@ class TestAlias < Test::Unit::TestCase
     assert_equal(obj.method(:bar), obj.method(:foo))
     assert_equal(obj.method(:foo), obj.method(:bar))
   end
+
+  def test_alias_class_method_added
+    name = nil
+    k = Class.new {
+      def foo;end
+      def self.method_added(mid)
+        @name = instance_method(mid).original_name
+      end
+      alias bar foo
+      name = @name
+    }
+    assert_equal(:foo, k.instance_method(:bar).original_name)
+    assert_equal(:foo, name)
+  end
+
+  def test_alias_module_method_added
+    name = nil
+    k = Module.new {
+      def foo;end
+      def self.method_added(mid)
+        @name = instance_method(mid).original_name
+      end
+      alias bar foo
+      name = @name
+    }
+    assert_equal(:foo, k.instance_method(:bar).original_name)
+    assert_equal(:foo, name)
+  end
 end
