@@ -1,3 +1,24 @@
+Tue Mar  8 17:20:21 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* intern.h (rb_divmod): assume compilers `/` and `%` comply C99
+	  and reduce branching. If a compiler doesn't comply, add #ifdefs.
+
+	* intern.h (rb_div): added for Ruby's behavior.
+
+	* intern.h (rb_mod): added for Ruby's behavior.
+
+	* insns.def (opt_div): use rb_div.
+
+	* insns.def (opt_mod): use rb_mod.
+
+	* numeric.c (fixdivmod): removed.
+
+	* numeric.c (fix_divide): use rb_div.
+
+	* numeric.c (fix_mod): use rb_mod.
+
+	* numeric.c (fix_divmod): use rb_divmod.
+
 Tue Mar  8 17:53:09 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* insns.def (opt_mod): show its method name on ZeroDivisionError.

@@ -1473,34 +1473,9 @@ opt_div
 {
     if (FIXNUM_2_P(recv, obj) &&
 	BASIC_OP_UNREDEFINED_P(BOP_DIV, FIXNUM_REDEFINED_OP_FLAG)) {
-	long x, y, div;
-
-	x = FIX2LONG(recv);
-	y = FIX2LONG(obj);
-	{
-	    /* copied from numeric.c#fixdivmod */
-	    long mod;
-	    if (y == 0)
-		goto INSN_LABEL(normal_dispatch);
-	    if (y < 0) {
-		if (x < 0)
-		    div = -x / -y;
-		else
-		    div = -(x / -y);
-	    }
-	    else {
-		if (x < 0)
-		    div = -(-x / y);
-		else
-		    div = x / y;
-	    }
-	    mod = x - div * y;
-	    if ((mod < 0 && y > 0) || (mod > 0 && y < 0)) {
-		mod += y;
-		div -= 1;
-	    }
-	}
-	val = LONG2NUM(div);
+	long y = FIX2LONG(obj);
+	if (y == 0) goto INSN_LABEL(normal_dispatch);
+	val = LONG2NUM(rb_div(FIX2LONG(recv), y));
     }
     else if (FLONUM_2_P(recv, obj) &&
 	     BASIC_OP_UNREDEFINED_P(BOP_DIV, FLOAT_REDEFINED_OP_FLAG)) {
@@ -1536,38 +1511,9 @@ opt_mod
 {
     if (FIXNUM_2_P(recv, obj) &&
 	BASIC_OP_UNREDEFINED_P(BOP_MOD, FIXNUM_REDEFINED_OP_FLAG )) {
-	long x, y;
-
-	x = FIX2LONG(recv);
-	y = FIX2LONG(obj);
-	if (x > 0 && y > 0) {
-	    val = LONG2FIX(x % y);
-	}
-	else {
-	    /* copied from numeric.c#fixdivmod */
-	    long div, mod;
-
-	    if (y == 0)
-		goto INSN_LABEL(normal_dispatch);
-	    if (y < 0) {
-		if (x < 0)
-		    div = -x / -y;
-		else
-		    div = -(x / -y);
-	    }
-	    else {
-		if (x < 0)
-		    div = -(-x / y);
-		else
-		    div = x / y;
-	    }
-	    mod = x - div * y;
-	    if ((mod < 0 && y > 0) || (mod > 0 && y < 0)) {
-		mod += y;
-		div -= 1;
-	    }
-	    val = LONG2FIX(mod);
-	}
+	long y = FIX2LONG(obj);
+	if (y == 0) goto INSN_LABEL(normal_dispatch);
+	val = LONG2FIX(rb_mod(FIX2LONG(recv), y));
     }
     else if (FLONUM_2_P(recv, obj) &&
 	     BASIC_OP_UNREDEFINED_P(BOP_MOD, FLOAT_REDEFINED_OP_FLAG)) {

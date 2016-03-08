@@ -266,6 +266,47 @@ nlz_int128(uint128_t x)
 }
 #endif
 
+/*
+ * This behaves different from C99 for negative arguments.
+ * Note that div may overflow fixnum.
+ */
+static inline void
+rb_divmod(long x, long y, long *divp, long *modp) {
+    /* assume / and % comply C99.
+     * ldiv(3) won't be inlined by GCC and clang.
+     * I expect / and % are compiled as single idiv.
+     */
+    long div = x / y;
+    long mod = x % y;
+    if (y > 0 ? mod < 0 : mod > 0) {
+	mod += y;
+	div -= 1;
+    }
+    if (divp) *divp = div;
+    if (modp) *modp = mod;
+}
+
+/* div() for Ruby
+ * This behaves different from C99 for negative arguments.
+ * Note that div may overflow fixnum
+ */
+static inline long
+rb_div(long x, long y) {
+    long div;
+    rb_divmod(x, y, &div, NULL);
+    return div;
+}
+
+/* mod() for Ruby
+ * This behaves different from C99 for negative arguments.
+ */
+static inline long
+rb_mod(long x, long y) {
+    long mod;
+    rb_divmod(x, y, NULL, &mod);
+    return mod;
+}
+
 #if defined(HAVE_UINT128_T)
 #   define bit_length(x) \
     (sizeof(x) <= SIZEOF_INT ? SIZEOF_INT * CHAR_BIT - nlz_int((unsigned int)(x)) : \

@@ -3079,33 +3079,6 @@ fix_mul(VALUE x, VALUE y)
     }
 }
 
-static void
-fixdivmod(long x, long y, long *divp, long *modp)
-{
-    long div, mod;
-
-    if (y == 0) rb_num_zerodiv();
-    if (y < 0) {
-	if (x < 0)
-	    div = -x / -y;
-	else
-	    div = - (x / -y);
-    }
-    else {
-	if (x < 0)
-	    div = - (-x / y);
-	else
-	    div = x / y;
-    }
-    mod = x - div*y;
-    if ((mod < 0 && y > 0) || (mod > 0 && y < 0)) {
-	mod += y;
-	div -= 1;
-    }
-    if (divp) *divp = div;
-    if (modp) *modp = mod;
-}
-
 /*
  *  call-seq:
  *     fix.fdiv(numeric)  ->  float
@@ -3138,10 +3111,8 @@ static VALUE
 fix_divide(VALUE x, VALUE y, ID op)
 {
     if (FIXNUM_P(y)) {
-	long div;
-
-	fixdivmod(FIX2LONG(x), FIX2LONG(y), &div, 0);
-	return LONG2NUM(div);
+	if (FIX2LONG(y) == 0) rb_num_zerodiv();
+	return LONG2NUM(rb_div(FIX2LONG(x), FIX2LONG(y)));
     }
     else if (RB_TYPE_P(y, T_BIGNUM)) {
 	x = rb_int2big(FIX2LONG(x));
@@ -3212,10 +3183,8 @@ static VALUE
 fix_mod(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
-	long mod;
-
-	fixdivmod(FIX2LONG(x), FIX2LONG(y), 0, &mod);
-	return LONG2NUM(mod);
+	if (FIX2LONG(y) == 0) rb_num_zerodiv();
+	return LONG2FIX(rb_mod(FIX2LONG(x), FIX2LONG(y)));
     }
     else if (RB_TYPE_P(y, T_BIGNUM)) {
 	x = rb_int2big(FIX2LONG(x));
@@ -3240,10 +3209,9 @@ fix_divmod(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
 	long div, mod;
-
-	fixdivmod(FIX2LONG(x), FIX2LONG(y), &div, &mod);
-
-	return rb_assoc_new(LONG2NUM(div), LONG2NUM(mod));
+	if (FIX2LONG(y) == 0) rb_num_zerodiv();
+	rb_divmod(FIX2LONG(x), FIX2LONG(y), &div, &mod);
+	return rb_assoc_new(LONG2NUM(div), LONG2FIX(mod));
     }
     else if (RB_TYPE_P(y, T_BIGNUM)) {
 	x = rb_int2big(FIX2LONG(x));
