@@ -7071,11 +7071,8 @@ rb_w32_write_console(uintptr_t strarg, int fd)
     reslen = 0;
     if (dwMode & 4) {	/* ENABLE_VIRTUAL_TERMINAL_PROCESSING */
 	DWORD written;
-	if (!WriteConsoleW(handle, ptr, len, &written, NULL)) {
-	    if (GetLastError() == ERROR_CALL_NOT_IMPLEMENTED)
-		disable = TRUE;
+	if (!WriteConsoleW(handle, ptr, len, &written, NULL))
 	    reslen = (DWORD)-1L;
-	}
     }
     else {
 	while (len > 0) {
@@ -7084,8 +7081,6 @@ rb_w32_write_console(uintptr_t strarg, int fd)
 	    if (curlen > 0) {
 		DWORD written;
 		if (!WriteConsoleW(handle, ptr, curlen, &written, NULL)) {
-		    if (GetLastError() == ERROR_CALL_NOT_IMPLEMENTED)
-			disable = TRUE;
 		    reslen = (DWORD)-1L;
 		    break;
 		}
