@@ -1,3 +1,9 @@
+Wed Mar  9 03:41:27 2016  Eric Wong  <e@80x24.org>
+
+	* ext/socket/init.c (rsock_init_sock): check FD after validating
+	* test/socket/test_basicsocket.rb (test_for_fd): new
+	  [ruby-core:72418] [Bug #11854]
+
 Wed Mar  9 03:34:54 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* re.c (reg_names_iter): should consider encoding of regexp.
