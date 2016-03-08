@@ -1,3 +1,8 @@
+Wed Mar  9 03:51:48 2016  Eric Wong  <e@80x24.org>
+
+	* ext/socket/init.c (rsock_init_sock): reject reserved FDs
+	  [ruby-core:72445] [Bug #11862]
+
 Wed Mar  9 03:41:27 2016  Eric Wong  <e@80x24.org>
 
 	* ext/socket/init.c (rsock_init_sock): check FD after validating
