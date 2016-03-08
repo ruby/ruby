@@ -63,45 +63,57 @@ char *getenv();
 #define DEFAULT_RUBYGEMS_ENABLED "enabled"
 #endif
 
+#define COMMA ,
 #define FEATURE_BIT(bit) (1U << feature_##bit)
-#define EACH_FEATURES(X) \
+#define EACH_FEATURES(X, SEP) \
     X(gems) \
+    SEP \
     X(did_you_mean) \
+    SEP \
     X(rubyopt) \
+    SEP \
     X(frozen_string_literal) \
     /* END OF FEATURES */
-#define EACH_DEBUG_FEATURES(X) \
+#define EACH_DEBUG_FEATURES(X, SEP) \
     X(frozen_string_literal) \
     /* END OF DEBUG FEATURES */
 #define AMBIGUOUS_FEATURE_NAMES 0 /* no ambiguous feature names now */
-#define DEFINE_FEATURE(bit) feature_##bit,
-#define DEFINE_DEBUG_FEATURE(bit) feature_debug_##bit,
+#define DEFINE_FEATURE(bit) feature_##bit
+#define DEFINE_DEBUG_FEATURE(bit) feature_debug_##bit
 enum feature_flag_bits {
-    EACH_FEATURES(DEFINE_FEATURE)
+    EACH_FEATURES(DEFINE_FEATURE, COMMA),
     feature_debug_flag_first,
     feature_debug_flag_begin = feature_debug_flag_first - 1,
-    EACH_DEBUG_FEATURES(DEFINE_DEBUG_FEATURE)
+    EACH_DEBUG_FEATURES(DEFINE_DEBUG_FEATURE, COMMA),
     feature_flag_count
 };
 
 #define DEBUG_BIT(bit) (1U << feature_debug_##bit)
 
 #define DUMP_BIT(bit) (1U << dump_##bit)
-#define DEFINE_DUMP(bit) dump_##bit,
-#define EACH_DUMPS(X) \
+#define DEFINE_DUMP(bit) dump_##bit
+#define EACH_DUMPS(X, SEP) \
     X(version) \
+    SEP \
     X(copyright) \
+    SEP \
     X(usage) \
+    SEP \
     X(help) \
+    SEP \
     X(yydebug) \
+    SEP \
     X(syntax) \
+    SEP \
     X(parsetree) \
+    SEP \
     X(parsetree_with_comment) \
+    SEP \
     X(insns) \
     /* END OF DUMPS */
 enum dump_flag_bits {
     dump_version_v,
-    EACH_DUMPS(DEFINE_DUMP)
+    EACH_DUMPS(DEFINE_DUMP, COMMA),
     dump_flag_count
 };
 
@@ -761,12 +773,12 @@ name_match_p(const char *name, const char *str, size_t len)
 	return;				\
     }
 
-#define LITERAL_NAME_ELEMENT(name) #name", "
+#define LITERAL_NAME_ELEMENT(name) #name
 
 static void
 feature_option(const char *str, int len, void *arg, const unsigned int enable)
 {
-    static const char list[] = EACH_FEATURES(LITERAL_NAME_ELEMENT);
+    static const char list[] = EACH_FEATURES(LITERAL_NAME_ELEMENT, ", ");
     unsigned int *argp = arg;
     unsigned int mask = ~0U;
 #if AMBIGUOUS_FEATURE_NAMES
@@ -778,7 +790,7 @@ feature_option(const char *str, int len, void *arg, const unsigned int enable)
 #define SET_FEATURE(bit) \
     if (NAME_MATCH_P(#bit, str, len)) {mask = FEATURE_BIT(bit); goto found;}
 #endif
-    EACH_FEATURES(SET_FEATURE);
+    EACH_FEATURES(SET_FEATURE, ;);
     if (NAME_MATCH_P("all", str, len)) {
       found:
 	*argp = (*argp & ~mask) | (mask & enable);
@@ -793,7 +805,7 @@ feature_option(const char *str, int len, void *arg, const unsigned int enable)
 	    rb_str_cat_cstr(mesg, #bit); \
 	    if (--matched) rb_str_cat_cstr(mesg, ", "); \
 	}
-	EACH_FEATURES(ADD_FEATURE_NAME);
+	EACH_FEATURES(ADD_FEATURE_NAME, ;);
 	rb_str_cat_cstr(mesg, ")");
 	rb_exc_raise(rb_exc_new_str(rb_eRuntimeError, mesg));
 #undef ADD_FEATURE_NAME
@@ -801,7 +813,7 @@ feature_option(const char *str, int len, void *arg, const unsigned int enable)
 #endif
     rb_warn("unknown argument for --%s: `%.*s'",
 	    enable ? "enable" : "disable", len, str);
-    rb_warn("features are [%.*s].", (int)strlen(list) - 2, list);
+    rb_warn("features are [%.*s].", (int)strlen(list), list);
 }
 
 static void
@@ -819,21 +831,21 @@ disable_option(const char *str, int len, void *arg)
 static void
 debug_option(const char *str, int len, void *arg)
 {
-    static const char list[] = EACH_DEBUG_FEATURES(LITERAL_NAME_ELEMENT);
+    static const char list[] = EACH_DEBUG_FEATURES(LITERAL_NAME_ELEMENT, ", ");
 #define SET_WHEN_DEBUG(bit) SET_WHEN(#bit, DEBUG_BIT(bit), str, len)
-    EACH_DEBUG_FEATURES(SET_WHEN_DEBUG);
+    EACH_DEBUG_FEATURES(SET_WHEN_DEBUG, ;);
     rb_warn("unknown argument for --debug: `%.*s'", len, str);
-    rb_warn("debug features are [%.*s].", (int)strlen(list) - 2, list);
+    rb_warn("debug features are [%.*s].", (int)strlen(list), list);
 }
 
 static void
 dump_option(const char *str, int len, void *arg)
 {
-    static const char list[] = EACH_DUMPS(LITERAL_NAME_ELEMENT);
+    static const char list[] = EACH_DUMPS(LITERAL_NAME_ELEMENT, ", ");
 #define SET_WHEN_DUMP(bit) SET_WHEN(#bit, DUMP_BIT(bit), str, len)
-    EACH_DUMPS(SET_WHEN_DUMP);
+    EACH_DUMPS(SET_WHEN_DUMP, ;);
     rb_warn("don't know how to dump `%.*s',", len, str);
-    rb_warn("but only [%.*s].", (int)strlen(list) - 2, list);
+    rb_warn("but only [%.*s].", (int)strlen(list), list);
 }
 
 static void
