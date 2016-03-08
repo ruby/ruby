@@ -1,3 +1,9 @@
+Tue Mar  8 23:37:07 2016  Charles Oliver Nutter  <headius@headius.com>
+
+	* test/ruby/test_array.rb: split out the test for no stack error
+	  on large input for test_permutation, test_repeated_permutation,
+	  and test_repeated_combination, and make them all timeout:30.
+
 Tue Mar  8 17:20:21 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* intern.h (rb_divmod): assume compilers `/` and `%` comply C99
