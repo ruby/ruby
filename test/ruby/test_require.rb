@@ -686,7 +686,7 @@ class TestRequire < Test::Unit::TestCase
           Thread.new do
             ITERATIONS_PER_THREAD.times do
               require PATH
-              $".pop
+              $".delete_if {|p| Regexp.new(PATH) =~ p}
             end
           end
         }.each(&:join)

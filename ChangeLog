@@ -1,3 +1,8 @@
+Wed Mar  9 03:35:22 2016  Charles Oliver Nutter  <headius@headius.com>
+
+	* test/ruby/test_require.rb (test_require_with_loaded_features_pop):
+	  Only remove PATH so threads don't accidentally double-pop.
+
 Wed Mar  9 00:29:46 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_method.c (rb_alias): the original name should be properly
