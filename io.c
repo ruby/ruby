@@ -2483,7 +2483,7 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int nonblock, int no_exception)
     long n, len;
     struct read_internal_arg arg;
 
-    rb_scan_args(argc, argv, "11", &length, &str);
+    rb_scan_args(argc, argv, "11:", &length, &str, NULL);
 
     if ((len = NUM2LONG(length)) < 0) {
 	rb_raise(rb_eArgError, "negative length %ld given", len);
@@ -2675,10 +2675,8 @@ io_read_nonblock(int argc, VALUE *argv, VALUE io)
 
     rb_scan_args(argc, argv, "11:", NULL, NULL, &opts);
 
-    if (!NIL_P(opts) && Qfalse == get_kwargs_exception(opts)) {
+    if (!NIL_P(opts) && Qfalse == get_kwargs_exception(opts))
 	no_exception = 1;
-	argc--;
-    }
 
     ret = io_getpartial(argc, argv, io, 1, no_exception);
 
