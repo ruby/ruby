@@ -2675,8 +2675,10 @@ io_read_nonblock(int argc, VALUE *argv, VALUE io)
 
     rb_scan_args(argc, argv, "11:", NULL, NULL, &opts);
 
-    if (!NIL_P(opts) && Qfalse == get_kwargs_exception(opts))
+    if (!NIL_P(opts) && Qfalse == get_kwargs_exception(opts)) {
 	no_exception = 1;
+	argc--;
+    }
 
     ret = io_getpartial(argc, argv, io, 1, no_exception);
 

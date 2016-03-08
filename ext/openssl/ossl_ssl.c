@@ -1423,7 +1423,11 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
     rb_io_t *fptr;
     VALUE opts = Qnil;
 
-    rb_scan_args(argc, argv, "11:", &len, &str, &opts);
+    if (nonblock) {
+	rb_scan_args(argc, argv, "11:", &len, &str, &opts);
+    } else {
+	rb_scan_args(argc, argv, "11", &len, &str);
+    }
 
     if (!NIL_P(opts) && Qfalse == rb_hash_aref(opts, sym_exception))
 	no_exception = 1;
