@@ -586,4 +586,13 @@ class TestStringIO < Test::Unit::TestCase
     assert_raise(ArgumentError, "[ruby-dev:43392]") { StringIO.new.each_line(0){} }
     assert_raise(ArgumentError, "[ruby-dev:43392]") { StringIO.new.each_line("a",0){} }
   end
+
+  def test_binmode
+    s = StringIO.new
+    s.set_encoding('utf-8')
+    assert_same s, s.binmode
+
+    bug_11945 = '[ruby-core:72699] [Bug #11945]'
+    assert_equal Encoding::ASCII_8BIT, s.external_encoding, bug_11945
+  end
 end
