@@ -7031,7 +7031,6 @@ rb_w32_write(int fd, const void *buf, size_t size)
 long
 rb_w32_write_console(uintptr_t strarg, int fd)
 {
-    static int disable;
     HANDLE handle;
     DWORD dwMode, reslen;
     VALUE str = strarg;
@@ -7041,7 +7040,6 @@ rb_w32_write_console(uintptr_t strarg, int fd)
     struct constat *s;
     long len;
 
-    if (disable) return -1L;
     handle = (HANDLE)_osfhnd(fd);
     if (!GetConsoleMode(handle, &dwMode))
 	return -1L;
