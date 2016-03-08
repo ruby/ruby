@@ -1,3 +1,8 @@
+Wed Mar  9 00:07:03 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/logger.rb (Logger::LogDevice#initialize): define using
+	  keyword arguments.
+
 Tue Mar  8 23:37:07 2016  Charles Oliver Nutter  <headius@headius.com>
 
 	* test/ruby/test_array.rb: split out the test for no stack error

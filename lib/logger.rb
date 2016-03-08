@@ -629,13 +629,13 @@ private
     attr_reader :filename
     include MonitorMixin
 
-    def initialize(log = nil, opt = {})
+    def initialize(log = nil, shift_age: nil, shift_size: nil)
       @dev = @filename = @shift_age = @shift_size = nil
       mon_initialize
       set_dev(log)
       if @filename
-        @shift_age = opt[:shift_age] || 7
-        @shift_size = opt[:shift_size] || 1048576
+        @shift_age = shift_age || 7
+        @shift_size = shift_size || 1048576
         @next_rotate_time = next_rotate_time(Time.now, @shift_age) unless @shift_age.is_a?(Integer)
       end
     end
