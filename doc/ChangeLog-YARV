@@ -2428,7 +2428,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 2006-02-14(Tue) 05:53:56 +0900  Minero Aoki  <aamine@loveruby.net>
 
 	* eval.c (ruby_cleanup): th->errinfo contains a NODE while
-	  break'ing, check it before refering klass.
+	  break'ing, check it before referring klass.
 
 
 2006-02-14(Tue) 05:45:07 +0900  Koichi Sasada  <ko1@atdot.net>
@@ -2461,7 +2461,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 2006-02-14(Tue) 01:42:11 +0900  Koichi Sasada  <ko1@atdot.net>
 
-	* error.c : fix include file positon
+	* error.c : fix include file position
 
 	* test/ruby/test_signal.rb : skip test_exit_action on cygwin
 
@@ -6168,7 +6168,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* test.rb : restore $" after evaluation with ruby
 
-	* rb/insns2vm.rb : remove unnecesary each
+	* rb/insns2vm.rb : remove unnecessary each
 
 
 2004-12-17(Fri) 18:56:38 +0900  Koichi Sasada  <ko1@atdot.net>
@@ -6397,7 +6397,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c : fix stack dump routine
 
-	* vm.c : impliment thread_funcall (temporarily)
+	* vm.c : implement thread_funcall (temporarily)
 
 	* yarv.h : add IS_YARV_WORKING(), SET_YARV_START(), SET_YARV_STOP()
 
@@ -6590,7 +6590,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* yarvcore.h, yarvcore.c : add idThrow*
 
 	* insns.def, compile.c, vm.c : support retry, break,
-	next, redo, return(imcomplete)
+	next, redo, return(incomplete)
 
 
 2004-09-03(Fri) 13:40:08 +0900  Koichi Sasada  <ko1@atdot.net>

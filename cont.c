@@ -137,7 +137,7 @@ struct rb_fiber_struct {
      * then this fiber can't "resume" any more after that.
      * You shouldn't mix "transfer" and "resume".
      */
-    int transfered;
+    int transferred;
 
 #if FIBER_USE_NATIVE
 #ifdef _WIN32
@@ -1486,7 +1486,7 @@ rb_fiber_resume(VALUE fibval, int argc, const VALUE *argv)
     if (fib->prev != 0 || fib->cont.type == ROOT_FIBER_CONTEXT) {
 	rb_raise(rb_eFiberError, "double resume");
     }
-    if (fib->transfered != 0) {
+    if (fib->transferred != 0) {
 	rb_raise(rb_eFiberError, "cannot resume transferred Fiber");
     }
 
@@ -1598,7 +1598,7 @@ rb_fiber_m_transfer(int argc, VALUE *argv, VALUE fibval)
 {
     rb_fiber_t *fib;
     GetFiberPtr(fibval, fib);
-    fib->transfered = 1;
+    fib->transferred = 1;
     return fiber_switch(fib, argc, argv, 0);
 }
 

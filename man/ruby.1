@@ -484,14 +484,14 @@ as below.
 .Pp
 .Sh GC ENVIRONMENT
 The Ruby garbage collector (GC) tracks objects in fixed-sized slots,
-but each object may have auxillary memory allocations handled by the
+but each object may have auxiliary memory allocations handled by the
 malloc family of C standard library calls (
 .Xr malloc 3 ,
 .Xr calloc 3 ,
 and
 .Xr realloc 3 ) .
 In this documentatation, the "heap" refers to the Ruby object heap
-of fixed-sized slots, while "malloc" refers to auxillary
+of fixed-sized slots, while "malloc" refers to auxiliary
 allocations commonly referred to as the "process heap".
 Thus there are at least two possible ways to trigger GC:
 .Bl -hang -offset indent

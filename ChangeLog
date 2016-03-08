@@ -1,3 +1,8 @@
+Wed Mar  9 03:53:37 2016  Tadashi Saito  <tadashi_saito@dwango.co.jp>
+
+	* compile.c, cont.c, doc, man: fix common misspelling.
+	  [ruby-core:72466] [Bug #11870]
+
 Wed Mar  9 03:51:48 2016  Eric Wong  <e@80x24.org>
 
 	* ext/socket/init.c (rsock_init_sock): reject reserved FDs
