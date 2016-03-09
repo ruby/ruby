@@ -36,6 +36,8 @@
     FL_UNSET_RAW(hash, HASH_PROC_DEFAULT), \
     RHASH_SET_IFNONE(hash, ifnone))
 
+#define SET_PROC_DEFAULT(hash, proc) set_proc_default(hash, proc)
+
 static VALUE
 has_extra_methods(VALUE klass)
 {
@@ -528,14 +530,19 @@ tbl_update(VALUE hash, VALUE key, tbl_update_func func, st_data_t optional_arg)
     RHASH_UPDATE_ITER(hash, RHASH_ITER_LEV(hash), key, func, arg)
 
 static void
-default_proc_arity_check(VALUE proc)
+set_proc_default(VALUE hash, VALUE proc)
 {
-    int n = rb_proc_arity(proc);
+    if (rb_proc_lambda_p(proc)) {
+	int n = rb_proc_arity(proc);
 
-    if (rb_proc_lambda_p(proc) && n != 2 && (n >= 0 || n < -3)) {
-	if (n < 0) n = -n-1;
-	rb_raise(rb_eTypeError, "default_proc takes two arguments (2 for %d)", n);
+	if (n != 2 && (n >= 0 || n < -3)) {
+	    if (n < 0) n = -n-1;
+	    rb_raise(rb_eTypeError, "default_proc takes two arguments (2 for %d)", n);
+	}
     }
+
+    FL_SET_RAW(hash, HASH_PROC_DEFAULT);
+    RHASH_SET_IFNONE(hash, proc);
 }
 
 /*
@@ -582,9 +589,7 @@ rb_hash_initialize(int argc, VALUE *argv, VALUE hash)
     if (rb_block_given_p()) {
 	rb_check_arity(argc, 0, 0);
 	ifnone = rb_block_proc();
-	default_proc_arity_check(ifnone);
-	RHASH_SET_IFNONE(hash, ifnone);
-	FL_SET(hash, HASH_PROC_DEFAULT);
+	SET_PROC_DEFAULT(hash, ifnone);
     }
     else {
 	rb_check_arity(argc, 0, 1);
@@ -1006,9 +1011,7 @@ rb_hash_set_default_proc(VALUE hash, VALUE proc)
 		 rb_obj_classname(proc));
     }
     proc = b;
-    default_proc_arity_check(proc);
-    RHASH_SET_IFNONE(hash, proc);
-    FL_SET(hash, HASH_PROC_DEFAULT);
+    SET_PROC_DEFAULT(hash, proc);
     return proc;
 }
 
