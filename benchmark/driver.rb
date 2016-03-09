@@ -31,7 +31,6 @@ class BenchmarkDriver
   end
 
   def self.load(input, type, opt)
-    attrs = [:executables, :results]
     case type
     when 'yaml'
       require 'yaml'
