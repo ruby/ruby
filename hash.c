@@ -32,6 +32,10 @@
     FL_TEST((hash), FL_EXIVAR|FL_TAINT|HASH_PROC_DEFAULT) || \
     !NIL_P(RHASH_IFNONE(hash)))
 
+#define SET_DEFAULT(hash, ifnone) ( \
+    FL_UNSET_RAW(hash, HASH_PROC_DEFAULT), \
+    RHASH_SET_IFNONE(hash, ifnone))
+
 static VALUE
 has_extra_methods(VALUE klass)
 {
@@ -944,8 +948,7 @@ static VALUE
 rb_hash_set_default(VALUE hash, VALUE ifnone)
 {
     rb_hash_modify_check(hash);
-    RHASH_SET_IFNONE(hash, ifnone);
-    FL_UNSET(hash, HASH_PROC_DEFAULT);
+    SET_DEFAULT(hash, ifnone);
     return ifnone;
 }
 
@@ -993,8 +996,7 @@ rb_hash_set_default_proc(VALUE hash, VALUE proc)
 
     rb_hash_modify_check(hash);
     if (NIL_P(proc)) {
-	FL_UNSET(hash, HASH_PROC_DEFAULT);
-	RHASH_SET_IFNONE(hash, proc);
+	SET_DEFAULT(hash, proc);
 	return proc;
     }
     b = rb_check_convert_type(proc, T_DATA, "Proc", "to_proc");
