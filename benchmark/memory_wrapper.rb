@@ -7,9 +7,9 @@ open(write_file, 'wb'){|f|
   ms = Memory::Status.new
   case target.to_sym
   when :peak
-    key = ms.member?(:hwm) ? :hwm : :peak
+    key = ms.respond_to?(:hwm) ? :hwm : :peak
   when :size
-    key = ms.member?(:rss) ? :rss : :size
+    key = ms.respond_to?(:rss) ? :rss : :size
   end
 
   f.puts ms[key]

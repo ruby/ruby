@@ -219,9 +219,9 @@ class BenchmarkDriver
     if @execs.size > 1
       output
       output({
-        rss:  "Memory consuming ratio (RSS) with the result of `#{@execs[0][1]}' (greater is worse)",
-        peak:  "Memory consuming ratio (peak) with the result of `#{@execs[0][1]}' (greater is worse)",
-        size:  "Memory consuming ratio (size) with the result of `#{@execs[0][1]}' (greater is worse)",
+        real: "Speedup ratio: compare with the result of `#{@execs[0][1]}' (greater is better)"
+        peak: "Memory consuming ratio (peak) with the result of `#{@execs[0][1]}' (greater is better)",
+        size: "Memory consuming ratio (size) with the result of `#{@execs[0][1]}' (greater is better)",
       }[@measure_target])
       output if markdown
       output ["name".ljust(name_width), @execs[1..-1].map.with_index{|(_, v), i| sprintf(strformat, v, width[i])}].join("").rstrip

@@ -1,3 +1,10 @@
+Wed Mar  9 16:41:44 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/driver.rb: fix output messages.
+
+	* benchmark/memory_wrapper.rb: use respond_to? because
+	  member? does not work well.
+
 Wed Mar  9 16:20:25 2016  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/driver.rb: support memory usage benchmark.
