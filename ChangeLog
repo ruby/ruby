@@ -1,3 +1,65 @@
+Wed Mar 10 05:58:17 2016  Vladimir Makarov  <vmakarov@redhat.com>
+
+	* include/ruby/st.h (struct st_table): Add comments about the
+	circular array elements.
+	* st.c: Modify the top comment.
+	(MARK_ENTRY_DELETED): Add code to process a null pointer.
+	(make_tab_empty): Add code to process null entries.
+	(MAX_POWER2_FOR_TABLES_WITHOUT_ENTRIES): New.
+	(st_init_table_with_size): Used it to decide to allocate entries.
+	(st_free_table): Add code to process null entries.
+	(find_table_entry_ptr, find_table_entry_ptr_and_reserve): Change
+	the return type and a parameter.
+	(hash_entry): Move up.
+	(elements_mask): New.
+	(rebuild_entries): Check null entries.  Modify code to deal with
+	circular array elements.
+	(rebuild_table): Ditto.  Create a new table based on the elements
+	number.
+	(secondary_hash): Change peterb before.  Use 11 for shift.
+	(find_element): New.
+	(find_table_entry): Use it if there is no array entries.
+	(find_table_entry_ptr): Ditto.  Change the return type and add a
+	parameter.
+	(find_table_entry_ptr_and_reserve): Ditto.  Change rebuild table
+	condition.
+	(st_insert, st_insert2): Adjust call of
+	find_table_entry_ptr_and_reserve.  Check null entry_ptr.  Consider
+	elements circular when change the bound.
+	(st_copy): Check null entries.  Copy all arrays elements and
+	entries.
+	(update_range_for_deleted): New.
+	(st_general_delete, st_update): Use it.  Adjust call of
+	find_table_entry_ptr.
+	(st_shift): Make it work for circular elements array.
+	(st_general_foreach): Ditto.  Adjust call of find_table_entry_ptr.
+	Use update_range_for_deleted.  Use find_table_entry to find the
+	current element after rebuilding table.  Notify the function if
+	the current element was deleted.
+	(st_general_keys, st_general_values): Make it work for circular
+	elements array.
+	* benchmark/bm_hash_aref_dsym.rb: Increase the number of
+	iterations.
+	* benchmark/bm_hash_aref_fix.rb: Ditto.
+	* benchmark/bm_hash_aref_flo.rb: Ditto.
+	* benchmark/bm_hash_aref_miss.rb: Ditto.
+	* benchmark/bm_hash_aref_str.rb: Ditto.
+	* benchmark/bm_hash_aref_sym.rb: Ditto.
+	* benchmark/bm_hash_aref_sym_long.rb: Ditto.
+	* benchmark/bm_hash_flatten.rb: Ditto.
+	* benchmark/bm_hash_ident_flo.rb: Ditto.
+	* benchmark/bm_hash_ident_num.rb: Ditto.
+	* benchmark/bm_hash_ident_obj.rb: Ditto.
+	* benchmark/bm_hash_ident_str.rb: Ditto.
+	* benchmark/bm_hash_ident_sym.rb: Ditto.
+	* benchmark/bm_hash_keys.rb: Ditto.
+	* benchmark/bm_hash_shift.rb: Ditto.
+	* benchmark/bm_hash_shift_u16.rb: Ditto.
+	* benchmark/bm_hash_shift_u24.rb: Ditto.
+	* benchmark/bm_hash_shift_32.rb: Ditto.
+	* benchmark/bm_hash_to_proc.rb: Ditto.
+	* benchmark/bm_hash_values.rb: Ditto.
+
 Tue Mar 08 11:10:21 2016  Vladimir Makarov  <vmakarov@redhat.com>
 
 	* include/ruby/st.h (struct st_table): Remove allocated_entries.

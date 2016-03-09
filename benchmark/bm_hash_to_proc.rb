@@ -4,6 +4,6 @@ h = {}
   h[i] = nil
 end
 
-5000.times do |i|
+500000.times do |i|
   [i].map(&h)
 end
