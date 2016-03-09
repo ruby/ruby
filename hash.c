@@ -38,6 +38,16 @@
 
 #define SET_PROC_DEFAULT(hash, proc) set_proc_default(hash, proc)
 
+#define COPY_DEFAULT(hash, hash2) copy_default(RHASH(hash), RHASH(hash2))
+
+static inline void
+copy_default(struct RHash *hash, const struct RHash *hash2)
+{
+    hash->basic.flags &= ~HASH_PROC_DEFAULT;
+    hash->basic.flags |= hash2->basic.flags & HASH_PROC_DEFAULT;
+    RHASH_SET_IFNONE(hash, RHASH_IFNONE(hash2));
+}
+
 static VALUE
 has_extra_methods(VALUE klass)
 {
@@ -1583,9 +1593,7 @@ rb_hash_initialize_copy(VALUE hash, VALUE hash2)
 	st_clear(ntbl);
     }
 
-    FL_UNSET_RAW(hash, HASH_PROC_DEFAULT);
-    FL_SET_RAW(hash, FL_TEST_RAW(hash2, HASH_PROC_DEFAULT));
-    RHASH_SET_IFNONE(hash, RHASH_IFNONE(hash2));
+    COPY_DEFAULT(hash, hash2);
 
     return hash;
 }
@@ -1611,11 +1619,7 @@ rb_hash_replace(VALUE hash, VALUE hash2)
     if (hash == hash2) return hash;
     hash2 = to_hash(hash2);
 
-    RHASH_SET_IFNONE(hash, RHASH_IFNONE(hash2));
-    if (FL_TEST(hash2, HASH_PROC_DEFAULT))
-	FL_SET(hash, HASH_PROC_DEFAULT);
-    else
-	FL_UNSET(hash, HASH_PROC_DEFAULT);
+    COPY_DEFAULT(hash, hash2);
 
     table2 = RHASH(hash2)->ntbl;
 
