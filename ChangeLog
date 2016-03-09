@@ -1,3 +1,10 @@
+Wed Mar  9 09:19:55 2016  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* test/io/wait/test_io_wait.rb (test_wait_readwrite_timeout):
+	  select(2) in AIX returns "readable" for the write-side fd
+	  of a pipe, so it is not possible to use a pipe to test
+	  the read-write timeout of IO#wait on AIX.
+
 Wed Mar  9 03:35:22 2016  Charles Oliver Nutter  <headius@headius.com>
 
 	* test/ruby/test_require.rb (test_require_with_loaded_features_pop):

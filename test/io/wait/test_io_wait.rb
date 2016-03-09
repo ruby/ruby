@@ -141,7 +141,14 @@ class TestIOWait < Test::Unit::TestCase
   def test_wait_readwrite_timeout
     assert_equal @w, @w.wait(0.01, :read_write)
     written = fill_pipe
-    assert_nil @w.wait(0.01, :read_write)
+    if /aix/ =~ RUBY_PLATFORM
+      # IO#wait internally uses select(2) on AIX.
+      # AIX's select(2) returns "readable" for the write-side fd
+      # of a pipe, so @w.wait(0.01, :read_write) does not return nil.
+      assert_equal @w, @w.wait(0.01, :read_write)
+    else
+      assert_nil @w.wait(0.01, :read_write)
+    end
     @r.read(written)
     assert_equal @w, @w.wait(0.01, :read_write)
   end
