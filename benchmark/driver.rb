@@ -219,7 +219,7 @@ class BenchmarkDriver
     if @execs.size > 1
       output
       output({
-        real: "Speedup ratio: compare with the result of `#{@execs[0][1]}' (greater is better)"
+        real: "Speedup ratio: compare with the result of `#{@execs[0][1]}' (greater is better)",
         peak: "Memory consuming ratio (peak) with the result of `#{@execs[0][1]}' (greater is better)",
         size: "Memory consuming ratio (size) with the result of `#{@execs[0][1]}' (greater is better)",
       }[@measure_target])
