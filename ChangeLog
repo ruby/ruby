@@ -1,3 +1,11 @@
+Wed Mar  9 15:04:22 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/bm_vm3_gc_old_full.rb: add GC.start benchmark.
+
+	* benchmark/bm_vm3_gc_old_immediate.rb: ditto.
+
+	* benchmark/bm_vm3_gc_old_lazy.rb: ditto.
+
 Wed Mar  9 14:59:11 2016  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/driver.rb: exit benchmarking if a benchmark process
