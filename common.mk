@@ -1584,6 +1584,7 @@ golf_prelude.$(OBJEXT): {$(VPATH)}id.h
 golf_prelude.$(OBJEXT): {$(VPATH)}intern.h
 golf_prelude.$(OBJEXT): {$(VPATH)}internal.h
 golf_prelude.$(OBJEXT): {$(VPATH)}io.h
+golf_prelude.$(OBJEXT): {$(VPATH)}iseq.h
 golf_prelude.$(OBJEXT): {$(VPATH)}method.h
 golf_prelude.$(OBJEXT): {$(VPATH)}missing.h
 golf_prelude.$(OBJEXT): {$(VPATH)}node.h
@@ -1799,6 +1800,7 @@ miniinit.$(OBJEXT): {$(VPATH)}missing.h
 miniinit.$(OBJEXT): {$(VPATH)}oniguruma.h
 miniinit.$(OBJEXT): {$(VPATH)}st.h
 miniinit.$(OBJEXT): {$(VPATH)}subst.h
+miniprelude.$(OBJEXT): {$(VPATH)}iseq.h
 miniprelude.$(OBJEXT): {$(VPATH)}miniprelude.c
 node.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 node.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
@@ -1911,6 +1913,7 @@ prelude.$(OBJEXT): {$(VPATH)}id.h
 prelude.$(OBJEXT): {$(VPATH)}intern.h
 prelude.$(OBJEXT): {$(VPATH)}internal.h
 prelude.$(OBJEXT): {$(VPATH)}io.h
+prelude.$(OBJEXT): {$(VPATH)}iseq.h
 prelude.$(OBJEXT): {$(VPATH)}method.h
 prelude.$(OBJEXT): {$(VPATH)}missing.h
 prelude.$(OBJEXT): {$(VPATH)}node.h
