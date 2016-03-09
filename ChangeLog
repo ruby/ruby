@@ -1,3 +1,8 @@
+Wed Mar  9 14:59:11 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/driver.rb: exit benchmarking if a benchmark process
+	  receives signals.
+
 Wed Mar  9 13:22:49 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/lib/memory_status.rb: make Memory::Status independent of

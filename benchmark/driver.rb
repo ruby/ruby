@@ -319,6 +319,7 @@ class BenchmarkDriver
     }
 
     if $? != 0
+      raise $?.inspect if $? && $?.signaled?
       output "\`#{cmd}\' exited with abnormal status (#{$?})"
       0
     else
