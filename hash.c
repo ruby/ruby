@@ -487,8 +487,10 @@ struct update_arg {
     VALUE old_value;
 };
 
+typedef int (*tbl_update_func)(st_data_t *, st_data_t *, st_data_t, int);
+
 static int
-tbl_update(VALUE hash, VALUE key, int (*func)(st_data_t *key, st_data_t *val, st_data_t arg, int existing), st_data_t optional_arg)
+tbl_update(VALUE hash, VALUE key, tbl_update_func func, st_data_t optional_arg)
 {
     struct update_arg arg;
     int result;
