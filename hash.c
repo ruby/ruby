@@ -1881,14 +1881,8 @@ static VALUE
 rb_hash_to_h(VALUE hash)
 {
     if (rb_obj_class(hash) != rb_cHash) {
-	VALUE ret = rb_hash_new();
-	if (!RHASH_EMPTY_P(hash))
-	    RHASH(ret)->ntbl = st_copy(RHASH(hash)->ntbl);
-	if (FL_TEST(hash, HASH_PROC_DEFAULT)) {
-	    FL_SET(ret, HASH_PROC_DEFAULT);
-	}
-	RHASH_SET_IFNONE(ret, RHASH_IFNONE(hash));
-	return ret;
+	const VALUE flags = RBASIC(hash)->flags;
+	hash = hash_dup(hash, rb_cHash, flags & HASH_PROC_DEFAULT);
     }
     return hash;
 }
