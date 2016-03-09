@@ -1,10 +1,9 @@
 # frozen_string_literal: false
 module Memory
   keys = []
-  vals = []
 
   case
-  when File.exist?(procfile = "/proc/self/status") && (pat = /^Vm(\w+):\s+(\d+)/) =~ File.binread(procfile)
+  when File.exist?(procfile = "/proc/self/status") && (pat = /^Vm(\w+):\s+(\d+)/) =~ (data = File.binread(procfile))
     PROC_FILE = procfile
     VM_PAT = pat
     def self.read_status
@@ -13,7 +12,7 @@ module Memory
       end
     end
 
-    read_status {|k, v| keys << k; vals << v}
+    data.scan(pat) {|k, v| keys << k.downcase.intern}
 
   when /mswin|mingw/ =~ RUBY_PLATFORM
     require 'fiddle/import'
