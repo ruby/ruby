@@ -369,13 +369,20 @@ rb_hash_foreach(VALUE hash, int (*func)(ANYARGS), VALUE farg)
 }
 
 static VALUE
-hash_alloc(VALUE klass)
+hash_alloc_flags(VALUE klass, VALUE flags, VALUE ifnone)
 {
-    NEWOBJ_OF(hash, struct RHash, klass, T_HASH | (RGENGC_WB_PROTECTED_HASH ? FL_WB_PROTECTED : 0));
+    const VALUE wb = (RGENGC_WB_PROTECTED_HASH ? FL_WB_PROTECTED : 0);
+    NEWOBJ_OF(hash, struct RHash, klass, T_HASH | wb | flags);
 
-    RHASH_SET_IFNONE((VALUE)hash, Qnil);
+    RHASH_SET_IFNONE((VALUE)hash, ifnone);
 
     return (VALUE)hash;
+}
+
+static VALUE
+hash_alloc(VALUE klass)
+{
+    return hash_alloc_flags(klass, 0, Qnil);
 }
 
 static VALUE
@@ -392,28 +399,24 @@ rb_hash_new(void)
     return hash_alloc(rb_cHash);
 }
 
-static inline VALUE
-rb_hash_dup_empty(VALUE hash)
+static VALUE
+hash_dup(VALUE hash, VALUE klass, VALUE flags)
 {
-    NEWOBJ_OF(ret, struct RHash,
-                rb_obj_class(hash),
-                (RBASIC(hash)->flags)&(T_MASK|FL_EXIVAR|FL_TAINT));
-    if (FL_TEST((hash), FL_EXIVAR))
-        rb_copy_generic_ivar((VALUE)(ret),(VALUE)(hash));
-
-    if (FL_TEST(hash, HASH_PROC_DEFAULT)) {
-        FL_SET(ret, HASH_PROC_DEFAULT);
-    }
-    RHASH_SET_IFNONE(ret, RHASH_IFNONE(hash));
-    return (VALUE)ret;
+    VALUE ret = hash_alloc_flags(klass, flags,
+				 RHASH_IFNONE(hash));
+    if (!RHASH_EMPTY_P(hash))
+	RHASH(ret)->ntbl = st_copy(RHASH(hash)->ntbl);
+    return ret;
 }
 
 VALUE
 rb_hash_dup(VALUE hash)
 {
-    VALUE ret = rb_hash_dup_empty(hash);
-    if (!RHASH_EMPTY_P(hash))
-	RHASH(ret)->ntbl = st_copy(RHASH(hash)->ntbl);
+    const VALUE flags = RBASIC(hash)->flags;
+    VALUE ret = hash_dup(hash, rb_obj_class(hash),
+			 flags & (FL_EXIVAR|FL_TAINT|HASH_PROC_DEFAULT));
+    if (flags & FL_EXIVAR)
+        rb_copy_generic_ivar(ret, hash);
     return ret;
 }
 
