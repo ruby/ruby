@@ -742,6 +742,28 @@ class TestHash < Test::Unit::TestCase
     assert_instance_of(Hash, h)
   end
 
+  def test_to_h_instance_variable
+    @h.instance_variable_set(:@x, 42)
+    h = @h.to_h
+    if @cls == Hash
+      assert_equal(42, h.instance_variable_get(:@x))
+    else
+      assert_not_send([h, :instance_variable_defined?, :@x])
+    end
+  end
+
+  def test_to_h_default_value
+    @h.default = :foo
+    h = @h.to_h
+    assert_equal(:foo, h.default)
+  end
+
+  def test_to_h_default_proc
+    @h.default_proc = ->(_,k) {"nope#{k}"}
+    h = @h.to_h
+    assert_equal("nope42", h[42])
+  end
+
   def test_nil_to_h
     h = nil.to_h
     assert_equal({}, h)
