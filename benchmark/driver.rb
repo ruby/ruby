@@ -18,6 +18,7 @@ end
 
 require 'benchmark'
 require 'pp'
+require 'tempfile'
 
 class BenchmarkDriver
   def self.benchmark(opt)
@@ -98,6 +99,7 @@ class BenchmarkDriver
     @output = opt[:output] ? open(opt[:output], 'w') : nil
     @loop_wl1 = @loop_wl2 = nil
     @ruby_arg = opt[:ruby_arg] || nil
+    @measure_target = opt[:measure_target]
     @opt = opt
 
     # [[name, [[r-1-1, r-1-2, ...], [r-2-1, r-2-2, ...]]], ...]
@@ -109,6 +111,7 @@ class BenchmarkDriver
       @execs.each_with_index{|(path, label, version), i|
         message "target #{i}: " + (label == version ? "#{label}" : "#{label} (#{version})") + " at \"#{path}\""
       }
+      message "measure target: #{@measure_target}"
     end
   end
 
@@ -196,7 +199,11 @@ class BenchmarkDriver
       output "minimum results in each #{@repeat} measurements."
     end
 
-    output "Execution time (sec)"
+    output({
+      real: "Execution time (sec)",
+      peak: "Memory usage (peak) (B)",
+      size: "Memory usage (last size) (B)",
+    }[@measure_target])
     output if markdown
     output ["name".ljust(name_width), @execs.map.with_index{|(_, v), i| sprintf(strformat, v, width[i])}].join("").rstrip
     output ["-"*name_width, width.map{|n|":".rjust(n, "-")}].join("|") if markdown
@@ -211,7 +218,11 @@ class BenchmarkDriver
 
     if @execs.size > 1
       output
-      output "Speedup ratio: compare with the result of `#{@execs[0][1]}' (greater is better)"
+      output({
+        rss:  "Memory consuming ratio (RSS) with the result of `#{@execs[0][1]}' (greater is worse)",
+        peak:  "Memory consuming ratio (peak) with the result of `#{@execs[0][1]}' (greater is worse)",
+        size:  "Memory consuming ratio (size) with the result of `#{@execs[0][1]}' (greater is worse)",
+      }[@measure_target])
       output if markdown
       output ["name".ljust(name_width), @execs[1..-1].map.with_index{|(_, v), i| sprintf(strformat, v, width[i])}].join("").rstrip
       output ["-"*name_width, width[1..-1].map{|n|":".rjust(n, "-")}].join("|") if markdown
@@ -223,7 +234,7 @@ class BenchmarkDriver
             if r == 0
               rets << "Error"
             else
-              rets << sprintf(numformat, first_value/r, width[rets.size+1])
+              rets << sprintf(numformat, first_value/Float(r), width[rets.size+1])
             end
           else
             first_value = r
@@ -312,18 +323,30 @@ class BenchmarkDriver
   end
 
   def measure executable, file
-    cmd = "#{executable} #{@ruby_arg} #{file}"
-
-    m = Benchmark.measure{
+    case @measure_target
+    when :real
+      cmd = "#{executable} #{@ruby_arg} #{file}"
+      m = Benchmark.measure{
+        system(cmd, out: File::NULL)
+      }
+      result = m.real
+    when :peak, :size
+      tmp = Tempfile.new("benchmark-memory-wrapper-data")
+      wrapper = "#{File.join(__dir__, 'memory_wrapper.rb')} #{tmp.path} #{@measure_target}"
+      cmd = "#{executable} #{@ruby_arg} #{wrapper} #{file}"
       system(cmd, out: File::NULL)
-    }
+      result = tmp.read.to_i
+      tmp.close
+    else
+      raise "unknown measure target"
+    end
 
     if $? != 0
       raise $?.inspect if $? && $?.signaled?
       output "\`#{cmd}\' exited with abnormal status (#{$?})"
       0
     else
-      m.real
+      result
     end
   end
 end
@@ -333,6 +356,7 @@ if __FILE__ == $0
     :execs => [],
     :dir => File.dirname(__FILE__),
     :repeat => 1,
+    :measure_target => :real,
     :output => nil,
     :raw_output => nil,
     :format => :tsv,
@@ -367,6 +391,9 @@ if __FILE__ == $0
     }
     o.on('--ruby-arg [ARG]', "Optional argument for ruby"){|a|
       opt[:ruby_arg] = a
+    }
+    o.on('--measure-target [TARGET]', 'real (execution time), peak, size (memory)'){|mt|
+      opt[:measure_target] = mt.to_sym
     }
     o.on('--rawdata-output [FILE]', 'output rawdata'){|r|
       opt[:rawdata_output] = r

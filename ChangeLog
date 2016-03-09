@@ -1,3 +1,14 @@
+Wed Mar  9 16:20:25 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/driver.rb: support memory usage benchmark.
+	  use `--measure-target=[target]'.
+	  Now, we can use the following targets:
+	    * real (default): real time which returns process time in sec.
+	    * peak: peak memory usage (physical memory) in bytes.
+	    * size: last memory usage (physical memory) in bytes.
+
+	* benchmark/memory_wrapper.rb: ditto.
+
 Wed Mar  9 15:04:22 2016  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/bm_vm3_gc_old_full.rb: add GC.start benchmark.
