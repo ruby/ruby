@@ -638,6 +638,8 @@ eom
 
       def assert_no_memory_leak(args, prepare, code, message=nil, limit: 2.0, rss: false, **opt)
         require_relative '../../memory_status'
+        raise MiniTest::Skip, "unsupported platform" unless defined?(Memory::Status)
+
         token = "\e[7;1m#{$$.to_s}:#{Time.now.strftime('%s.%L')}:#{rand(0x10000).to_s(16)}:\e[m"
         token_dump = token.dump
         token_re = Regexp.quote(token)

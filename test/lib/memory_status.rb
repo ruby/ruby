@@ -58,13 +58,12 @@ module Memory
         yield :size, info.PagefileUsage
       end
     end
-  else
-    PAT = /^\s*(\d+)\s+(\d+)$/
-    require_relative 'find_executable'
-    if PSCMD = EnvUtil.find_executable("ps", "-ovsz=", "-orss=", "-p", $$.to_s) {|out| PAT =~ out}
-      PSCMD.pop
-    end
-    raise MiniTest::Skip, "ps command not found" unless PSCMD
+  when (require_relative 'find_executable'
+        pat = /^\s*(\d+)\s+(\d+)$/
+        pscmd = EnvUtil.find_executable("ps", "-ovsz=", "-orss=", "-p", $$.to_s) {|out| pat =~ out})
+    pscmd.pop
+    PAT = pat
+    PSCMD = pscmd
 
     keys << :size << :rss
     def self.read_status
@@ -73,19 +72,25 @@ module Memory
         yield :rss, $2.to_i*1024
       end
     end
+  else
+    def self.read_status
+      raise NotImplementedError, "unsupported platform"
+    end
   end
 
-  Status = Struct.new(*keys)
+  if !keys.empty?
+    Status = Struct.new(*keys)
+  end
+end
 
-  class Status
+if defined?(Memory::Status)
+  class Memory::Status
     def _update
       Memory.read_status do |key, val|
         self[key] = val
       end
     end
-  end
 
-  class Status
     Header = members.map {|k| k.to_s.upcase.rjust(6)}.join('')
     Format = "%6d"
 
@@ -131,7 +136,7 @@ module Memory
              ]
       _, err, status = EnvUtil.invoke_ruby(args, "exit(0)", true, true)
       if status.exitstatus == 0 && err.to_s.empty? then
-        NO_MEMORY_LEAK_ENVS = envs
+        Memory::NO_MEMORY_LEAK_ENVS = envs
       end
     end
   end #case RUBY_PLATFORM

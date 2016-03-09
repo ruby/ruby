@@ -1,3 +1,11 @@
+Wed Mar  9 13:22:49 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/lib/memory_status.rb: make Memory::Status independent of
+	  MiniTest::Skip.
+
+	* test/lib/test/unit/assertions.rb (assert_no_memory_leak): skip
+	  if Memory::Status is not available.
+
 Wed Mar  9 09:19:55 2016  Rei Odaira  <Rei.Odaira@gmail.com>
 
 	* test/io/wait/test_io_wait.rb (test_wait_readwrite_timeout):
