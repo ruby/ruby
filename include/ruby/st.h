@@ -94,14 +94,9 @@ struct st_table {
     st_index_t rebuilds_num;
     /* array of size ALLOCATED_ENTRIES: */
     st_entry_t *entries;
-    /* Start and bound index of elements in array elements.  For empty
-       array `elements_start = elements_bound == 0`.  Otherwise,
-       element_starts and elements_bound are in intervals
-       [0,allocated_elements) and (0,allocated_elements]
-       correspondingly.  */
+    /* Start and bound index of elements in array elements.  */
     st_index_t elements_start, elements_bound;
-    /* Array of size ALLOCATED_ELEMENTS.  It behaves as a circular
-       buffer.  */
+    /* array of size ALLOCATED_ELEMENTS:  */
     st_table_element *elements;
 };
 

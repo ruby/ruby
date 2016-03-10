@@ -4,6 +4,6 @@ h = {}
   h[i] = nil
 end
 
-10000.times do
+5000.times do
   h.values
 end

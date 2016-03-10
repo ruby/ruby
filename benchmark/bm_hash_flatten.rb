@@ -4,6 +4,6 @@ h = {}
   h[i] = nil
 end
 
-2000.times do
+1000.times do
   h.flatten
 end
