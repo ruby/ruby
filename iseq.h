@@ -124,16 +124,16 @@ const rb_iseq_t *rb_method_iseq(VALUE body);
 const rb_iseq_t *rb_proc_get_iseq(VALUE proc, int *is_proc);
 
 struct rb_compile_option_struct {
-    int inline_const_cache;
-    int peephole_optimization;
-    int tailcall_optimization;
-    int specialized_instruction;
-    int operands_unification;
-    int instructions_unification;
-    int stack_caching;
-    int trace_instruction;
-    int frozen_string_literal;
-    int debug_frozen_string_literal;
+    unsigned int inline_const_cache: 1;
+    unsigned int peephole_optimization: 1;
+    unsigned int tailcall_optimization: 1;
+    unsigned int specialized_instruction: 1;
+    unsigned int operands_unification: 1;
+    unsigned int instructions_unification: 1;
+    unsigned int stack_caching: 1;
+    unsigned int trace_instruction: 1;
+    unsigned int frozen_string_literal: 1;
+    unsigned int debug_frozen_string_literal: 1;
     int debug_level;
 };
 
