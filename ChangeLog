@@ -1,3 +1,27 @@
+Thu Mar 11 02:17:55 2016  Vladimir Makarov  <vmakarov@redhat.com>
+
+	* st.c (st_assert): Make debug version.
+	(ST_INIT_VAL, ST_INIT_VAL_BYTE): New.
+	(do_hash): Make static.
+	(MAX_POWER2_FOR_TABLES_WITHOUT_ENTRIES): Move up.
+	(hash_entry, elements_mask): Ditto.
+	(st_check): New.
+	(st_init_table_with_size): Initialize for debugging.  Add st_check
+	call.
+	(st_clear): Add st_check call.
+	(st_memsize): Process null entries.
+	(rebuild_entries): Rewrite loops on elements.  Add st_check call.
+	(rebuild_table): Ditto.
+	(find_element): Rewrite loop on elements.
+	(find_table_entry_ptr_and_reserve): Change check on fullness of
+	the array elements.
+	(st_insert, st_copy, st_general_delete, st_update): Add st_check
+	call.
+	(st_insert2): Ditto.  Fix an assertion.
+	(st_shift, st_general_foreach): Rewrite loops on elements.  Add
+	st_check call.
+	(st_general_keys, st_general_values): Rewrite loops on elements.
+
 Wed Mar 10 05:58:17 2016  Vladimir Makarov  <vmakarov@redhat.com>
 
 	* include/ruby/st.h (struct st_table): Add comments about the

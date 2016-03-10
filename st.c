@@ -108,7 +108,11 @@
 # define ATTRIBUTE_UNUSED
 #endif
 
+#ifdef ST_DEBUG
 #define st_assert(cond) ((void)(0 && (cond)))
+#else
+#define st_assert(cond) assert(cond)
+#endif
 
 struct st_table_element {
     st_index_t hash;
@@ -134,6 +138,12 @@ static const struct st_hash_type type_strcasehash = {
     st_locale_insensitive_strcasecmp,
     strcasehash,
 };
+
+/* Value used to catch uninitialized elements/entries during
+   debugging.  There is a possibility for a false alarm, but the
+   probability is extremely small.  */
+#define ST_INIT_VAL 0xafafafafafafafaf
+#define ST_INIT_VAL_BYTE 0xafa
 
 #ifdef RUBY
 #undef malloc
@@ -164,7 +174,7 @@ static const struct st_hash_type type_strcasehash = {
 #endif
 
 /* Return hash value of KEY for TABLE.  */
-inline st_index_t
+static inline st_index_t
 do_hash(st_data_t key, st_table *table) {
     st_index_t hash = (st_index_t)(table->type->hash)(key);
 
@@ -180,6 +190,10 @@ do_hash(st_data_t key, st_table *table) {
 #if MINIMAL_POWER2 < 2
 #error "MINIMAL_POWER2 should be >= 2"
 #endif
+
+/* If the power2 of the array `elements` is less than the following
+   value, don't allocate entries and use a linear search.  */
+#define MAX_POWER2_FOR_TABLES_WITHOUT_ENTRIES 3
 
 /* Return smallest n >= MINIMAL_POWER2 such 2^n > SIZE.  */
 static int
@@ -241,6 +255,20 @@ get_entries_num(const st_table *tab) {
     return tab->allocated_elements << 1;
 }
 
+/* Return index of table TAB entry corresponding to HASH_VALUE.  */
+static inline st_index_t
+hash_entry(st_index_t hash_value, st_table *tab)
+{
+  return hash_value & (get_entries_num(tab) - 1);
+}
+
+/* Return mask for an element index in table TAB.  */
+static inline st_index_t
+elements_mask(st_table *tab)
+{
+    return tab->allocated_elements - 1;
+}
+
 /* Mark all entries of table TAB as empty.  */
 static void
 initialize_entries(st_table *tab)
@@ -267,6 +295,61 @@ make_tab_empty(st_table *tab)
         initialize_entries(tab);
 }
 
+#ifdef ST_DEBUG
+/* Check the table T consistency.  It can be extremely slow.  So use
+   it only for debugging.  */
+static void
+st_check(st_table *t) {
+    st_index_t d, e, i, n, mask, p;
+
+    for (p = t->allocated_elements, i = 0; p > 1; i++, p>>=1)
+        ;
+    p = i;
+    assert (p >= MINIMAL_POWER2);
+    mask = elements_mask(t);
+    assert ((t->elements_start == 0 && t->elements_bound == 0 && t->num_elements == 0)
+	    || (t->num_elements != 0 && t->elements_start < t->allocated_elements
+		&& t->elements_bound >= 1 && t->elements_bound <= t->allocated_elements));
+    n = 0;
+    if (t->elements_bound != 0)
+        for (i = t->elements_start;;) {
+	    assert (t->elements[i].hash != ST_INIT_VAL && t->elements[i].key != ST_INIT_VAL
+		    && t->elements[i].record != ST_INIT_VAL);
+	    if (! DELETED_ELEMENT_P(&t->elements[i]))
+	      n++;
+	    if (++i == t->elements_bound)
+	        break;
+	    i &= mask;
+	}
+    assert (n == t->num_elements);
+    if (t->entries == NULL)
+        assert (p <= MAX_POWER2_FOR_TABLES_WITHOUT_ENTRIES);
+    else {
+        assert (p > MAX_POWER2_FOR_TABLES_WITHOUT_ENTRIES);
+	for (n = d = i = 0; i < get_entries_num(t); i++) {
+  	    assert (t->entries[i] != ST_INIT_VAL);
+	    if (DELETED_ENTRY_P(t->entries[i])) {
+	        d++;
+		continue;
+	    }
+	    else if (EMPTY_ENTRY_P(t->entries[i]))
+	        continue;
+	    n++;
+	    e = t->entries[i];
+	    assert (e < t->allocated_elements);
+	    assert (t->elements[e].hash != ST_INIT_VAL && t->elements[e].key != ST_INIT_VAL
+		    && t->elements[e].record != ST_INIT_VAL);
+	    assert (! DELETED_ELEMENT_P(&t->elements[e]));
+	    if (t->elements_bound > t->elements_start)
+	        assert (t->elements_start <= e && e < t->elements_bound);
+	    else
+	        assert (! (t->elements_bound <= e && e < t->elements_start));
+	}
+	assert (d == t->deleted_entries && n == t->num_elements);
+    }
+}
+#endif
+
 #ifdef HASH_LOG
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -292,10 +375,6 @@ stat_col(void)
     fclose(f);
 }
 #endif
-
-/* If the power2 of the array `elements` is less than the following
-   value, don't allocate entries and use a linear search.  */
-#define MAX_POWER2_FOR_TABLES_WITHOUT_ENTRIES 3
 
 /* Create and return table with TYPE which can hold at least SIZE
    elements.  The real number of elements which the table can hold is
@@ -329,7 +408,17 @@ st_init_table_with_size(const struct st_hash_type *type, st_index_t size)
         tab->entries = (st_entry_t *) malloc(get_entries_num(tab) * sizeof (st_entry_t));
     tab->elements = (st_table_element *) malloc(tab->allocated_elements
                                                 * sizeof(st_table_element));
+#ifdef ST_DEBUG
+    memset (tab->elements, ST_INIT_VAL_BYTE,
+	    tab->allocated_elements * sizeof(st_table_element));
+    if (tab->entries != NULL)
+        memset (tab->entries, ST_INIT_VAL_BYTE,
+		get_entries_num(tab) * sizeof(st_entry_t));
+#endif
     make_tab_empty(tab);
+#ifdef ST_DEBUG
+    st_check(tab);
+#endif
     return tab;
 }
 
@@ -392,6 +481,9 @@ void
 st_clear(st_table *table)
 {
     make_tab_empty(table);
+#ifdef ST_DEBUG
+    st_check(table);
+#endif
 }
 
 /* Free TABLE space.  */
@@ -409,7 +501,7 @@ size_t
 st_memsize(const st_table *table)
 {
     return(sizeof(st_table)
-           + get_entries_num(table) * sizeof(st_entry_t)
+           + (table->entries == NULL ? 0 : get_entries_num(table) * sizeof(st_entry_t))
            + table->allocated_elements * sizeof(st_table_element));
 }
 
@@ -449,20 +541,6 @@ count_collision(const struct st_hash_type *type)
 #define FOUND_ENTRY
 #endif
 
-/* Return index of table TAB entry corresponding to HASH_VALUE.  */
-static inline st_index_t
-hash_entry(st_index_t hash_value, st_table *tab)
-{
-  return hash_value & (get_entries_num(tab) - 1);
-}
-
-/* Return mask for an element index in table TAB.  */
-static inline st_index_t
-elements_mask(st_table *tab)
-{
-    return tab->allocated_elements - 1;
-}
-
 /*  Use elements array of table TAB to initialize the entries
     array.  */
 static void
@@ -472,24 +550,34 @@ rebuild_entries(st_table *tab)
     st_table_element *elements, *curr_element_ptr;
     st_entry_t entry, *entry_ptr;
     
+    tab->deleted_entries = 0;
     if (tab->entries == NULL)
       return;
     initialize_entries(tab);
     bound = tab->elements_bound;
     elements = tab->elements;
-    tab->deleted_entries = tab->num_elements = 0;
     check = tab->rebuilds_num;
     mask = elements_mask(tab);
-    for (i = tab->elements_start; i != bound; i++) {
-        i &= mask;
-        curr_element_ptr = &elements[i];
-        if (DELETED_ELEMENT_P(curr_element_ptr))
-            continue;
-        entry = find_table_entry_ptr_and_reserve(tab, curr_element_ptr->hash,
-						 curr_element_ptr->key, &entry_ptr);
-        st_assert(tab->rebuilds_num == check && EMPTY_ENTRY_P(entry));
-        *entry_ptr = (curr_element_ptr - elements);
+    if (bound == 0)
+      st_assert (tab->num_elements == 0);
+    else {
+        tab->num_elements = 0;
+        for (i = tab->elements_start;;) {
+	    curr_element_ptr = &elements[i];
+	    if (! DELETED_ELEMENT_P(curr_element_ptr)) {
+	        entry = find_table_entry_ptr_and_reserve(tab, curr_element_ptr->hash,
+							 curr_element_ptr->key, &entry_ptr);
+		st_assert(tab->rebuilds_num == check && EMPTY_ENTRY_P(entry));
+		*entry_ptr = (curr_element_ptr - elements);
+	    }
+	    if (++i == bound)
+	      break;
+	    i &= mask;
+	}
     }
+#ifdef ST_DEBUG
+    st_check(tab);
+#endif
 }
 
 /* If the number of elements is at least REBUILD_THRESHOLD times less
@@ -522,57 +610,65 @@ rebuild_table(st_table *tab)
 	    || tab->num_elements < (1 << MINIMAL_POWER2))) {
         st_index_t start;
 	int first_p;
+
 	/* Table compaction: */
 	if (tab->entries != NULL)
 	    initialize_entries(tab);
 	start = tab->elements_start;
         /* Prevent rebuilding during entry reservations.  */
         tab->deleted_entries = tab->elements_start = tab->elements_bound = 0;
-	if (tab->num_elements != 0) {
+	if (bound == 0)
+	  st_assert (tab->num_elements == 0);
+	else {
 	    tab->num_elements = 0;
 	    first_p = TRUE;
-	    for (ni = i = start; i != bound; i++) {
-	        i &= mask;
+	    for (ni = i = start;;) {
 		curr_element_ptr = &elements[i];
-		if (DELETED_ELEMENT_P(curr_element_ptr))
-		    continue;
-		if (ni != i)
-		    elements[ni] = *curr_element_ptr;
-		if (first_p) {
-		  tab->elements_start = ni;
-		  first_p = FALSE;
+		if (! DELETED_ELEMENT_P(curr_element_ptr)) {
+		    if (ni != i)
+		        elements[ni] = *curr_element_ptr;
+		    if (first_p) {
+		        tab->elements_start = ni;
+			first_p = FALSE;
+		    }
+		    if (tab->entries != NULL) {
+		        new_entry = find_table_entry_ptr_and_reserve(tab, curr_element_ptr->hash,
+								     curr_element_ptr->key,
+								     &new_entry_ptr);
+			st_assert(EMPTY_ENTRY_P(new_entry));
+			*new_entry_ptr = ni;
+		    }
+		    ni = (ni + 1) & mask;
 		}
-		if (tab->entries != NULL) {
-		    new_entry = find_table_entry_ptr_and_reserve(tab, curr_element_ptr->hash,
-								 curr_element_ptr->key,
-								 &new_entry_ptr);
-		    st_assert(EMPTY_ENTRY_P(new_entry));
-		    *new_entry_ptr = ni;
-		}
-		ni++;
-		ni &= mask;
+		if (++i == bound)
+		  break;
+		i &= mask;
 	    }
 	    tab->elements_bound = ni == 0 ? tab->allocated_elements : ni;
 	}
     } else {
+        st_assert (bound != 0 && tab->num_elements != 0);
         new_tab = st_init_table_with_size(tab->type,
 					  2 * tab->num_elements - 1);
 	st_assert(bound <= new_tab->allocated_elements);
 	new_elements = new_tab->elements;
-	for (ni = 0, i = tab->elements_start; i != bound; i++) {
-	    i &= mask;
-  	    curr_element_ptr = &elements[i];
-	    if (DELETED_ELEMENT_P(curr_element_ptr))
-	        continue;
-	    new_elements[ni] = *curr_element_ptr;
-	    if (new_tab->entries != NULL) {
-	      new_entry = find_table_entry_ptr_and_reserve(new_tab, curr_element_ptr->hash,
-							   curr_element_ptr->key,
-							   &new_entry_ptr);
-	      st_assert(new_tab->rebuilds_num == 0 && EMPTY_ENTRY_P(new_entry));
-	      *new_entry_ptr = ni;
+	ni = 0;
+	for (i = tab->elements_start;;) {
+	    curr_element_ptr = &elements[i];
+	    if (! DELETED_ELEMENT_P(curr_element_ptr)) {
+	        new_elements[ni] = *curr_element_ptr;
+		if (new_tab->entries != NULL) {
+		    new_entry = find_table_entry_ptr_and_reserve(new_tab, curr_element_ptr->hash,
+								 curr_element_ptr->key,
+								 &new_entry_ptr);
+		    st_assert(new_tab->rebuilds_num == 0 && EMPTY_ENTRY_P(new_entry));
+		    *new_entry_ptr = ni;
+		}
+		ni++;
 	    }
-	    ni++;
+	    if (++i == bound)
+	        break;
+	    i &= mask;
 	}
 	st_assert (tab->num_elements == ni && new_tab->num_elements == ni);
 	tab->allocated_elements = new_tab->allocated_elements;
@@ -587,6 +683,9 @@ rebuild_table(st_table *tab)
 	tab->elements_bound = tab->num_elements;
     }
     tab->rebuilds_num++;
+#ifdef ST_DEBUG
+    st_check(tab);
+#endif
 }
 
 /* Return the next secondary hash index for table TAB using previous
@@ -618,12 +717,18 @@ find_element(st_table *table, st_index_t hash_value, st_data_t key) {
     st_table_element *elements;
 
     bound = table->elements_bound;
+    if (bound == 0) {
+        st_assert (table->num_elements == 0);
+	return EMPTY_ENTRY;
+    }
     elements = table->elements;
     mask = elements_mask(table);
-    for (i = table->elements_start; i != bound; i++) {
-        i &= mask;
+    for (i = table->elements_start;;) {
 	if (PTR_EQUAL(table, &elements[i], hash_value, key))
 	    return i;
+	if (++i == bound)
+	    break;
+	i &= mask;
     }
     return EMPTY_ENTRY;
 }
@@ -710,13 +815,14 @@ static st_entry_t
 find_table_entry_ptr_and_reserve(st_table *table, st_index_t hash_value,
 				 st_data_t key, st_entry_t **res_entry_ptr)
 {
-    st_index_t ind, peterb;
+  st_index_t bound, ind, peterb;
     st_entry_t *entry_ptr, *first_deleted_entry_ptr;
     st_table_element *elements;
     
     st_assert(table != NULL);
-    if (table->elements_bound + 1 == table->elements_start
-	|| (table->elements_bound == table->allocated_elements
+    bound = table->elements_bound;
+    if ((bound != 0 && bound == table->elements_start)
+	|| (bound == table->allocated_elements
 	    && table->elements_start == 0))
         rebuild_table(table);
     else if (2 * table->deleted_entries >= get_entries_num(table))
@@ -781,7 +887,6 @@ st_get_key(st_table *table, st_data_t key, st_data_t *result)
     st_entry_t entry;
     
     entry = find_table_entry(table, do_hash(key, table), key);
-    
     if (EMPTY_ENTRY_P(entry))
         return 0;
     if (result != 0)
@@ -803,7 +908,7 @@ st_insert(st_table *table, st_data_t key, st_data_t value)
     entry = find_table_entry_ptr_and_reserve(table, hash_value,
 					     key, &entry_ptr);
     if (EMPTY_ENTRY_P(entry)) {
-        st_assert(table->elements_bound < table->allocated_elements);
+        st_assert(table->elements_bound <= table->allocated_elements);
         if (table->elements_bound == table->allocated_elements)
 	    table->elements_bound = 0;
 	ind = table->elements_bound++;
@@ -812,10 +917,16 @@ st_insert(st_table *table, st_data_t key, st_data_t value)
         element->key = key;
         element->record = value;
 	if (entry_ptr != NULL)
-	  *entry_ptr = ind;
+	    *entry_ptr = ind;
+#ifdef ST_DEBUG
+	st_check(table);
+#endif
         return 0;
     }
     table->elements[entry].record = value;
+#ifdef ST_DEBUG
+    st_check(table);
+#endif
     return 1;
 }
 
@@ -843,7 +954,7 @@ st_insert2(st_table *table, st_data_t key, st_data_t value,
     hash_value = do_hash(key, table);
     entry = find_table_entry_ptr_and_reserve(table, hash_value, key, &entry_ptr);
     if (EMPTY_ENTRY_P(entry)) {
-        st_assert(table->elements_bound < table->allocated_elements);
+        st_assert(table->elements_bound <= table->allocated_elements);
         check = table->rebuilds_num;
         key = (*func)(key);
         st_assert(check == table->rebuilds_num
@@ -857,9 +968,15 @@ st_insert2(st_table *table, st_data_t key, st_data_t value,
         element->record = value;
 	if (entry_ptr != NULL)
 	  *entry_ptr = ind;
+#ifdef ST_DEBUG
+	st_check(table);
+#endif
         return 0;
     }
     table->elements[entry].record = value;
+#ifdef ST_DEBUG
+    st_check(table);
+#endif
     return 1;
 }
 
@@ -883,6 +1000,9 @@ st_copy(st_table *old_tab)
     MEMCPY(new_tab->elements, old_tab->elements, st_table_element, old_tab->allocated_elements);
     if (old_tab->entries != NULL)
         MEMCPY(new_tab->entries, old_tab->entries, st_entry_t, n);
+#ifdef ST_DEBUG
+    st_check(new_tab);
+#endif
     return new_tab;
 }
 
@@ -928,6 +1048,9 @@ st_general_delete(st_table *tab, st_data_t *key, st_data_t *value)
     MARK_ELEMENT_DELETED(element);
     n = element - elements;
     update_range_for_deleted(tab, n);
+#ifdef ST_DEBUG
+    st_check(tab);
+#endif
     return 1;
 }
 
@@ -967,25 +1090,31 @@ st_shift(st_table *table, st_data_t *key, st_data_t *value)
     
     elements = table->elements;
     bound = table->elements_bound;
+    st_assert (bound != 0);
     mask = elements_mask(table);
-    for (i = table->elements_start; i != bound; i++) {
-        i &= mask;
+    for (i = table->elements_start;;) {
         curr_element_ptr = &elements[i];
-        if (DELETED_ELEMENT_P(curr_element_ptr))
-            continue;
-        if (value != 0) *value = curr_element_ptr->record;
-        *key = curr_element_ptr->key;
-        entry = find_table_entry_ptr(table, curr_element_ptr->hash,
-                                     curr_element_ptr->key, &entry_ptr);
-        st_assert(! EMPTY_ENTRY_P(entry)
-                  && &elements[entry] == curr_element_ptr);
-        MARK_ELEMENT_DELETED(curr_element_ptr);
-	MARK_ENTRY_DELETED(table, entry_ptr);
-	if (table->num_elements == 0)
-  	    table->elements_start = table->elements_bound = 0;
-	else
-	    table->elements_start = (i + 1) & mask;
-        return 1;
+	if (! DELETED_ELEMENT_P(curr_element_ptr)) {
+	    if (value != 0) *value = curr_element_ptr->record;
+	    *key = curr_element_ptr->key;
+	    entry = find_table_entry_ptr(table, curr_element_ptr->hash,
+					 curr_element_ptr->key, &entry_ptr);
+	    st_assert(! EMPTY_ENTRY_P(entry)
+		      && &elements[entry] == curr_element_ptr);
+	    MARK_ELEMENT_DELETED(curr_element_ptr);
+	    MARK_ENTRY_DELETED(table, entry_ptr);
+	    if (table->num_elements == 0)
+	        table->elements_start = table->elements_bound = 0;
+	    else
+	        table->elements_start = (i + 1) & mask;
+#ifdef ST_DEBUG
+	    st_check(table);
+#endif
+	    return 1;
+	}
+	if (++i == bound)
+	  break;
+	i &= mask;
     }
     st_assert(0);
     return 0;
@@ -1047,6 +1176,9 @@ st_update(st_table *table, st_data_t key, st_update_callback_func *func, st_data
         }
         break;
     }
+#ifdef ST_DEBUG
+    st_check(table);
+#endif
     return existing;
 }
 
@@ -1061,51 +1193,71 @@ st_general_foreach(st_table *tab, int (*func)(ANYARGS), st_data_t arg)
     st_entry_t entry, *entry_ptr;
     st_table_element *elements, *curr_element_ptr;
     enum st_retval retval;
-    st_index_t i, n, mask, hash, rebuilds_num;
+    st_index_t i, bound, n, mask, hash, rebuilds_num;
     st_data_t key;
     
+    if (tab->num_elements == 0)
+      return 0;
+    bound = tab->elements_bound;
+    st_assert (bound != 0);
     elements = tab->elements;
     mask = elements_mask(tab);
-    for (i = tab->elements_start; i != tab->elements_bound; i++) {
-        i &= mask;
-        /* Bound can be changed inside the loop */
+    for (i = tab->elements_start;;) {
         curr_element_ptr = &elements[i];
-	if (DELETED_ELEMENT_P(curr_element_ptr))
-            continue;
-	key = curr_element_ptr->key;
-	rebuilds_num = tab->rebuilds_num;
-	hash = curr_element_ptr->hash;
-	retval = (*func)(key, curr_element_ptr->record, arg, 0);
-	if (rebuilds_num != tab->rebuilds_num) {
-            elements = tab->elements;
-	    i = find_table_entry(tab, hash, key);
-	    if (EMPTY_ENTRY_P (i)) {
-	      /* call func with error notice */
-	      retval = (*func)(0, 0, arg, 1);
-	      return 1;
-	    }
-	    curr_element_ptr = &elements[i];
-	}
-	switch (retval) {
-	case ST_CHECK:
-            break;
-	case ST_CONTINUE:
-            break;
-	case ST_STOP:
-            return 0;
-	case ST_DELETE:
-	    entry = find_table_entry_ptr(tab, hash, curr_element_ptr->key, &entry_ptr);
-	    if (! EMPTY_ENTRY_P(entry)) {
-                st_assert(&elements[entry] == curr_element_ptr);
-		MARK_ELEMENT_DELETED(curr_element_ptr);
-		MARK_ENTRY_DELETED(tab, entry_ptr);
-		n = curr_element_ptr - elements;
-		if (update_range_for_deleted(tab, n))
+	if (! DELETED_ELEMENT_P(curr_element_ptr)) {
+	      key = curr_element_ptr->key;
+	      rebuilds_num = tab->rebuilds_num;
+	      hash = curr_element_ptr->hash;
+	      retval = (*func)(key, curr_element_ptr->record, arg, 0);
+	      if (rebuilds_num != tab->rebuilds_num) {
+		  bound = tab->elements_bound;
+		  elements = tab->elements;
+		  mask = elements_mask(tab);
+		  i = find_table_entry(tab, hash, key);
+		  if (EMPTY_ENTRY_P (i)) {
+		      /* call func with error notice */
+		      retval = (*func)(0, 0, arg, 1);
+#ifdef ST_DEBUG
+		      st_check(tab);
+#endif
+		      return 1;
+		  }
+		  curr_element_ptr = &elements[i];
+	      }
+	      switch (retval) {
+	      case ST_CHECK:
+		  break;
+	      case ST_CONTINUE:
+		  break;
+	      case ST_STOP:
+#ifdef ST_DEBUG
+		  st_check(tab);
+#endif
 		  return 0;
-	    }
+	      case ST_DELETE:
+		  entry = find_table_entry_ptr(tab, hash, curr_element_ptr->key, &entry_ptr);
+		  if (! EMPTY_ENTRY_P(entry)) {
+		      st_assert(&elements[entry] == curr_element_ptr);
+		      MARK_ELEMENT_DELETED(curr_element_ptr);
+		      MARK_ENTRY_DELETED(tab, entry_ptr);
+		      n = curr_element_ptr - elements;
+		      if (update_range_for_deleted(tab, n)) {
+#ifdef ST_DEBUG
+			  st_check(tab);
+#endif
+			  return 0;
+		      }
+		  }
+		  break;
+	      }
+	  }
+	if (++i == bound)
 	    break;
-	}
+	i &= mask;
     }
+#ifdef ST_DEBUG
+    st_check(tab);
+#endif
     return 0;
 }
 
@@ -1129,20 +1281,23 @@ static st_index_t
 st_general_keys(st_table *table, st_data_t *keys, st_index_t size)
 {
     st_index_t i, bound, mask;
-    st_data_t key;
-    st_data_t *keys_start = keys;
-    st_data_t *keys_end = keys + size;
+    st_data_t *keys_start, *keys_end;
     st_table_element *curr_element_ptr, *elements = table->elements;
     
+    if (table->num_elements == 0 || size == 0)
+        return 0;
     bound = table->elements_bound;
+    st_assert (bound != 0);
     mask = elements_mask(table);
-    for (i = table->elements_start; i != bound && keys < keys_end; i++) {
-        i &= mask;
+    keys_start = keys;
+    keys_end = keys + size;
+    for (i = table->elements_start;;) {
 	curr_element_ptr = &elements[i];
-        if (DELETED_ELEMENT_P(curr_element_ptr))
-            continue;
-        key = curr_element_ptr->key;
-        *keys++ = key;
+        if (! DELETED_ELEMENT_P(curr_element_ptr))
+	    *keys++ = curr_element_ptr->key;
+	if (++i == bound || keys == keys_end)
+	    break;
+	i &= mask;
     }
     
     return keys - keys_start;
@@ -1168,18 +1323,23 @@ static st_index_t
 st_general_values(st_table *table, st_data_t *values, st_index_t size)
 {
     st_index_t i, bound, mask;
-    st_data_t *values_start = values;
-    st_data_t *values_end = values + size;
+    st_data_t *values_start, *values_end;
     st_table_element *curr_element_ptr, *elements = table->elements;
     
+    if (table->num_elements == 0 || size == 0)
+        return 0;
     bound = table->elements_bound;
+    st_assert (bound != 0);
     mask = elements_mask(table);
-    for (i = table->elements_start; i != bound && values < values_end; i++) {
-        i &= mask;
+    values_start = values;
+    values_end = values + size;
+    for (i = table->elements_start;;) {
         curr_element_ptr = &elements[i];
-        if (DELETED_ELEMENT_P(curr_element_ptr))
-            continue;
-        *values++ = curr_element_ptr->record;
+        if (! DELETED_ELEMENT_P(curr_element_ptr))
+	    *values++ = curr_element_ptr->record;
+	if (++i == bound || values == values_end)
+	    break;
+	i &= mask;
     }
     
     return values - values_start;
