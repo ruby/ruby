@@ -267,6 +267,8 @@ prepare_iseq_build(rb_iseq_t *iseq,
 		   const rb_iseq_t *parent, enum iseq_type type,
 		   const rb_compile_option_t *option)
 {
+    VALUE coverage = Qfalse;
+
     iseq->body->type = type;
     set_relation(iseq, parent);
 
@@ -296,15 +298,14 @@ prepare_iseq_build(rb_iseq_t *iseq,
     ISEQ_COMPILE_DATA(iseq)->option = option;
     ISEQ_COMPILE_DATA(iseq)->last_coverable_line = -1;
 
-    ISEQ_COVERAGE_SET(iseq, Qfalse);
-
     if (!GET_THREAD()->parse_in_eval) {
 	VALUE coverages = rb_get_coverages();
 	if (RTEST(coverages)) {
-	    ISEQ_COVERAGE_SET(iseq, rb_hash_lookup(coverages, path));
-	    if (NIL_P(ISEQ_COVERAGE(iseq))) ISEQ_COVERAGE_SET(iseq, Qfalse);
+	    coverage = rb_hash_lookup(coverages, path);
+	    if (NIL_P(coverage)) coverage = Qfalse;
 	}
     }
+    ISEQ_COVERAGE_SET(iseq, coverage);
 
     return Qtrue;
 }
