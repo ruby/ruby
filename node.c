@@ -38,8 +38,8 @@
     } while (0)
 
 #define COMPOUND_FIELD1(name, ann, block) \
-    COMPOUND_FIELD(FIELD_NAME_LEN(#name, ann), \
-		   FIELD_NAME_DESC(#name, ann), \
+    COMPOUND_FIELD(FIELD_NAME_LEN(name, ann), \
+		   FIELD_NAME_DESC(name, ann), \
 		   block)
 
 #define FIELD_NAME_DESC(name, ann) name " (" ann ")"
@@ -62,9 +62,9 @@
 #define F_MSG(name, ann, desc)	    SIMPLE_FIELD1(#name, ann) A(desc)
 
 #define F_NODE(name, ann) \
-    COMPOUND_FIELD1(name, ann, dump_node(buf, indent, comment, node->name))
+    COMPOUND_FIELD1(#name, ann, dump_node(buf, indent, comment, node->name))
 #define F_OPTION(name, ann) \
-    COMPOUND_FIELD1(name, ann, dump_option(buf, indent, node->name))
+    COMPOUND_FIELD1(#name, ann, dump_option(buf, indent, node->name))
 
 #define ANN(ann) \
     if (comment) { \
