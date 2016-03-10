@@ -752,21 +752,19 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err(['-p', '-e', 'sub(/t.*/){"TEST"}'], %[test], %w[TEST], [], bug7157)
   end
 
-  def assert_norun_with_rflag(opt)
+  def assert_norun_with_rflag(*opt)
     bug10435 = "[ruby-dev:48712] [Bug #10435]: should not run with #{opt} option"
     stderr = []
     Tempfile.create(%w"bug10435- .rb") do |script|
       dir, base = File.split(script.path)
       script.puts "abort ':run'"
       script.close
-      opts = ['-C', dir, '-r', "./#{base}", opt]
-      assert_in_out_err([*opts, '-ep']) do |_, e|
-        stderr.concat(e)
-      end
+      opts = ['-C', dir, '-r', "./#{base}", *opt]
+      _, e = assert_in_out_err([*opts, '-ep'], "", //)
+      stderr.concat(e) if e
       stderr << "---"
-      assert_in_out_err([*opts, base]) do |_, e|
-        stderr.concat(e)
-      end
+      _, e = assert_in_out_err([*opts, base], "", //)
+      stderr.concat(e) if e
     end
     assert_not_include(stderr, ":run", bug10435)
   end
@@ -783,6 +781,7 @@ class TestRubyOptions < Test::Unit::TestCase
 
   def test_dump_parsetree_with_rflag
     assert_norun_with_rflag('--dump=parsetree')
+    assert_norun_with_rflag('--dump=parsetree', '-e', '#frozen-string-literal: true')
   end
 
   def test_dump_insns_with_rflag

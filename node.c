@@ -37,6 +37,11 @@
 	rb_str_resize(indent, RSTRING_LEN(indent) - 4); \
     } while (0)
 
+#define COMPOUND_FIELD1(name, ann, block) \
+    COMPOUND_FIELD(FIELD_NAME_LEN(#name, ann), \
+		   FIELD_NAME_DESC(#name, ann), \
+		   block)
+
 #define FIELD_NAME_DESC(name, ann) name " (" ann ")"
 #define FIELD_NAME_LEN(name, ann) (int)( \
 	comment ? \
@@ -57,9 +62,9 @@
 #define F_MSG(name, ann, desc)	    SIMPLE_FIELD1(#name, ann) A(desc)
 
 #define F_NODE(name, ann) \
-    COMPOUND_FIELD(FIELD_NAME_LEN(#name, ann), \
-		   FIELD_NAME_DESC(#name, ann), \
-		   dump_node(buf, indent, comment, node->name))
+    COMPOUND_FIELD1(name, ann, dump_node(buf, indent, comment, node->name))
+#define F_OPTION(name, ann) \
+    COMPOUND_FIELD1(name, ann, dump_option(buf, indent, node->name))
 
 #define ANN(ann) \
     if (comment) { \
@@ -89,6 +94,42 @@ add_id(VALUE buf, ID id)
 	    A("(internal variable)");
 	}
     }
+}
+
+struct add_option_arg {
+    VALUE buf, indent;
+    st_index_t count;
+};
+
+static int
+add_option_i(VALUE key, VALUE val, VALUE args)
+{
+    struct add_option_arg *argp = (void *)args;
+    VALUE buf = argp->buf;
+    VALUE indent = argp->indent;
+
+    A_INDENT;
+    A("+- ");
+    AR(rb_sym2str(key));
+    A(": ");
+    A_LIT(val);
+    A("\n");
+    return ST_CONTINUE;
+}
+
+static void
+dump_option(VALUE buf, VALUE indent, VALUE opt)
+{
+    struct add_option_arg arg;
+
+    if (!RB_TYPE_P(opt, T_HASH)) {
+	A_LIT(opt);
+	return;
+    }
+    arg.buf = buf;
+    arg.indent = indent;
+    arg.count = 0;
+    rb_hash_foreach(opt, add_option_i, (VALUE)&arg);
 }
 
 static void
@@ -828,7 +869,7 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	F_NODE(nd_body, "body");
 	LAST_NODE;
 #define nd_compile_option u3.value
-	F_LIT(nd_compile_option, "compile_option");
+	F_OPTION(nd_compile_option, "compile_option");
 	break;
 
       case NODE_LAMBDA:
