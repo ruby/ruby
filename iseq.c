@@ -296,15 +296,7 @@ prepare_iseq_build(rb_iseq_t *iseq,
     ISEQ_COMPILE_DATA(iseq)->option = option;
     ISEQ_COMPILE_DATA(iseq)->last_coverable_line = -1;
 
-    ISEQ_COVERAGE_SET(iseq, Qfalse);
-
-    if (!GET_THREAD()->parse_in_eval) {
-	VALUE coverages = rb_get_coverages();
-	if (RTEST(coverages)) {
-	    ISEQ_COVERAGE_SET(iseq, rb_hash_lookup(coverages, path));
-	    if (NIL_P(ISEQ_COVERAGE(iseq))) ISEQ_COVERAGE_SET(iseq, Qfalse);
-	}
-    }
+    ISEQ_COVERAGE_SET(iseq, option->coverage);
 
     return Qtrue;
 }

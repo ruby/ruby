@@ -135,6 +135,7 @@ struct rb_compile_option_struct {
     int frozen_string_literal;
     int debug_frozen_string_literal;
     int debug_level;
+    VALUE coverage;
 };
 
 struct iseq_line_info_entry {

@@ -5953,8 +5953,13 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	const rb_compile_option_t *orig_opt = ISEQ_COMPILE_DATA(iseq)->option;
 	if (node->nd_orig) {
 	    rb_compile_option_t new_opt = *orig_opt;
+	    VALUE coverage = rb_hash_lookup(node->nd_orig, rb_intern("coverage"));
 	    rb_iseq_make_compile_option(&new_opt, node->nd_orig);
 	    ISEQ_COMPILE_DATA(iseq)->option = &new_opt;
+	    if (RB_TYPE_P(coverage, T_ARRAY) && !RBASIC_CLASS(coverage)) {
+		new_opt.coverage = coverage;
+		ISEQ_COVERAGE_SET(iseq, coverage);
+	    }
 	}
 	COMPILE_POPED(ret, "prelude", node->nd_head);
 	COMPILE_(ret, "body", node->nd_body, poped);
