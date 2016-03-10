@@ -298,7 +298,7 @@ prepare_iseq_build(rb_iseq_t *iseq,
     ISEQ_COMPILE_DATA(iseq)->option = option;
     ISEQ_COMPILE_DATA(iseq)->last_coverable_line = -1;
 
-    if (!GET_THREAD()->parse_in_eval) {
+    if (option->coverage_enabled) {
 	VALUE coverages = rb_get_coverages();
 	if (RTEST(coverages)) {
 	    coverage = rb_hash_lookup(coverages, path);
@@ -336,6 +336,7 @@ static rb_compile_option_t COMPILE_OPTION_DEFAULT = {
     OPT_TRACE_INSTRUCTION, /* int trace_instruction */
     OPT_FROZEN_STRING_LITERAL,
     OPT_DEBUG_FROZEN_STRING_LITERAL,
+    TRUE,			/* coverage_enabled */
 };
 
 static const rb_compile_option_t COMPILE_OPTION_FALSE = {0};
@@ -362,6 +363,7 @@ set_compile_option_from_hash(rb_compile_option_t *option, VALUE opt)
     SET_COMPILE_OPTION(option, opt, trace_instruction);
     SET_COMPILE_OPTION(option, opt, frozen_string_literal);
     SET_COMPILE_OPTION(option, opt, debug_frozen_string_literal);
+    SET_COMPILE_OPTION(option, opt, coverage_enabled);
     SET_COMPILE_OPTION_NUM(option, opt, debug_level);
 #undef SET_COMPILE_OPTION
 #undef SET_COMPILE_OPTION_NUM
@@ -416,6 +418,7 @@ make_compile_option_value(rb_compile_option_t *option)
 	SET_COMPILE_OPTION(option, opt, trace_instruction);
 	SET_COMPILE_OPTION(option, opt, frozen_string_literal);
 	SET_COMPILE_OPTION(option, opt, debug_frozen_string_literal);
+	SET_COMPILE_OPTION(option, opt, coverage_enabled);
 	SET_COMPILE_OPTION_NUM(option, opt, debug_level);
     }
 #undef SET_COMPILE_OPTION

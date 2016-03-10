@@ -1,3 +1,13 @@
+Thu Mar 10 17:34:16 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* iseq.c (prepare_iseq_build): enable coverage by coverage_enabled
+	  option, not by parse_in_eval flag in the thread context.
+
+	* iseq.h (rb_compile_option_struct): add coverage_enabled flag.
+
+	* parse.y (yycompile0): set coverage_enabled flag if coverage
+	  array is made.
+
 Thu Mar 10 15:19:54 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* node.c (dump_option): nd_compile_option is a hidden hash object,

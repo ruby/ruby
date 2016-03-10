@@ -5516,6 +5516,7 @@ yycompile0(VALUE arg)
     int n;
     NODE *tree;
     struct parser_params *parser = (struct parser_params *)arg;
+    VALUE cov = Qfalse;
 
     if (!compile_for_eval && rb_safe_level() == 0) {
 	ruby_debug_lines = debug_lines(ruby_sourcefile_string);
@@ -5529,6 +5530,7 @@ yycompile0(VALUE arg)
 
 	if (!e_option_supplied(parser)) {
 	    ruby_coverage = coverage(ruby_sourcefile_string, ruby_sourceline);
+	    cov = Qtrue;
 	}
     }
 
@@ -5559,7 +5561,10 @@ yycompile0(VALUE arg)
 	tree = NEW_NIL();
     }
     else {
-	tree->nd_body = NEW_PRELUDE(ruby_eval_tree_begin, tree->nd_body, parser->compile_option);
+	VALUE opt = parser->compile_option;
+	if (!opt) opt = rb_obj_hide(rb_ident_hash_new());
+	rb_hash_aset(opt, rb_sym_intern_ascii_cstr("coverage_enabled"), cov);
+	tree->nd_body = NEW_PRELUDE(ruby_eval_tree_begin, tree->nd_body, opt);
     }
     return (VALUE)tree;
 }
