@@ -865,11 +865,14 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	ANN("pre-execution");
 	ANN("format: BEGIN { [nd_head] }; [nd_body]");
 	ANN("example: bar; BEGIN { foo }");
-	F_NODE(nd_head, "prelude");
-	F_NODE(nd_body, "body");
-	LAST_NODE;
 #define nd_compile_option u3.value
-	F_OPTION(nd_compile_option, "compile_option");
+	F_NODE(nd_head, "prelude");
+	if (!node->nd_compile_option) LAST_NODE;
+	F_NODE(nd_body, "body");
+	if (node->nd_compile_option) {
+	    LAST_NODE;
+	    F_OPTION(nd_compile_option, "compile_option");
+	}
 	break;
 
       case NODE_LAMBDA:
