@@ -154,7 +154,7 @@ PRE_LIBRUBY_UPDATE = $(MINIRUBY) -e 'ARGV[1] or File.unlink(ARGV[0]) rescue nil'
 			$(LIBRUBY_EXTS) $(LIBRUBY_SO_UPDATE)
 
 TESTSDIR      = $(srcdir)/test
-TEST_EXCLUDES = --excludes=$(TESTSDIR)/excludes -x /memory_leak/
+TEST_EXCLUDES = --excludes=$(TESTSDIR)/excludes --name=!/memory_leak/
 EXCLUDE_TESTFRAMEWORK = -x /testunit/ -x /minitest/
 TESTWORKDIR   = testwork
 TESTOPTS      = $(RUBY_TESTOPTS)
