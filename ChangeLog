@@ -1,3 +1,7 @@
+Thu Mar 11 10:08:12 2016  Vladimir Makarov  <vmakarov@redhat.com>
+
+	* st.c (st_assert): Exchange definitions for ST_DEBUG.
+
 Thu Mar 11 02:17:55 2016  Vladimir Makarov  <vmakarov@redhat.com>
 
 	* st.c (st_assert): Make debug version.

@@ -109,9 +109,9 @@
 #endif
 
 #ifdef ST_DEBUG
-#define st_assert(cond) ((void)(0 && (cond)))
-#else
 #define st_assert(cond) assert(cond)
+#else
+#define st_assert(cond) ((void)(0 && (cond)))
 #endif
 
 struct st_table_element {
