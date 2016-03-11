@@ -1,3 +1,11 @@
+Fri Mar 11 16:11:27 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode/case-folding.rb, casefold.h: Streamlining approach to
+	  case mapping data not available from case folding by unifying all
+	  three cases (special title, special upper, special lower).
+	* enc/unicode.c: Adjust macro names for above (macros are currently inactive).
+	  (with Kimihito Matsui)
+
 Thu Mar 10 17:34:16 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* iseq.c (prepare_iseq_build): enable coverage by coverage_enabled

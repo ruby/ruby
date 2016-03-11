@@ -177,7 +177,7 @@ class CaseFolding
     dest.print lookup_hash(name, "CodePointList2", data)
 
     # TitleCase
-    dest.print mapping_data.titlecase_output
+    dest.print mapping_data.specials_output
   end
 
   def debug!
@@ -203,7 +203,8 @@ end
 class CaseMapping
   def initialize (mapping_directory)
     @mappings = {}
-    @titlecase = []
+    @specials = []
+    @specials_length = 0
     IO.readlines(File.expand_path('UnicodeData.txt', mapping_directory), encoding: Encoding::ASCII_8BIT).each do |line|
       next if line =~ /^</
       code, _1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11, upper, lower, title = line.chomp.split ';'
@@ -237,12 +238,24 @@ class CaseMapping
     if item
       flags += '|U'  if to==item.upper
       flags += '|D'  if to==item.lower
+      specials_index = nil
+      specials = []
       unless item.upper == item.title
-        unless title_index = @titlecase.find_index { |i| i.title==item.title }
-          title_index = @titlecase.length
-          @titlecase << item
-        end
-        flags += "|T(#{title_index})"
+        specials << item.title
+        flags += "|ST"
+      end
+      unless item.lower.nil? or item.lower==from or item.lower==to
+        specials << item.lower
+        flags += "|SL"
+      end
+      unless item.upper.nil? or item.upper==from or item.upper==to
+        specials << item.upper
+        flags += "|SU"
+      end
+      if specials.first
+        flags += "|I(#{@specials_length})"
+        @specials_length += specials.map { |s| s.split(/ /).length }.reduce(:+)
+        @specials << specials
       end
     end
     flags
@@ -252,12 +265,14 @@ class CaseMapping
     @debug = true
   end
 
-  def titlecase_output
-    "CodePointList3 TitleCase[] = {\n" +
-    @titlecase.map do |item|
-      chars = item.title.split(/ /)
-      ct = ' /* ' + Array(chars).map{|c|[c.to_i(16)].pack("U*")}.join(", ") + ' */' if @debug
-      "    {#{chars.length}, {#{chars.map {|c| "0x"+c }.join(', ')}#{ct}}},\n"
+  def specials_output
+    "OnigCodePoint CaseMappingSpecials[] = {\n" +
+    @specials.map do |sps|
+      '   ' + sps.map do |sp|
+        chars = sp.split(/ /)
+        ct = ' /* ' + Array(chars).map{|c|[c.to_i(16)].pack("U*")}.join(", ") + ' */' if @debug
+        " L(#{chars.length})|#{chars.map {|c| "0x"+c }.join(', ')}#{ct},"
+      end.join + "\n"
     end.join + "};\n"
   end
 
