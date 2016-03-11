@@ -86,7 +86,7 @@ module Test
           self.verbose = options[:verbose]
         end
 
-        opts.on '-n', '--name PATTERN', "Filter test method names on pattern: /REGEXP/ or STRING" do |a|
+        opts.on '-n', '--name PATTERN', "Filter test method names on pattern: /REGEXP/, !/REGEXP/ or STRING" do |a|
           (options[:filter] ||= []) << a
         end
 

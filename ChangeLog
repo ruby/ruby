@@ -1,3 +1,7 @@
+Sat Mar 12 02:44:48 2016  Tanaka Akira  <akr@fsij.org>
+
+	* test/lib/test/unit.rb: describe !/REGEXP/ in the help message.
+
 Fri Mar 11 17:03:09 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/lib/test/unit.rb (Options#non_options): make regexp name
