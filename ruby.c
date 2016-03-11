@@ -1846,12 +1846,15 @@ open_load_file(VALUE fname_v, int *xflag)
 #else
 # define MODE_TO_LOAD (O_RDONLY)
 #endif
-	int mode = MODE_TO_LOAD;
+	const int mode =
+#ifdef O_BINARY
+	    O_BINARY |
+#endif
+	    MODE_TO_LOAD;
 #if defined DOSISH || defined __CYGWIN__
 	{
 	    const char *ext = strrchr(fname, '.');
 	    if (ext && STRCASECMP(ext, ".exe") == 0) {
-		mode |= O_BINARY;
 		*xflag = 1;
 	    }
 	}
