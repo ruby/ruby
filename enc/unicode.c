@@ -431,6 +431,8 @@ onigenc_unicode_apply_all_case_fold(OnigCaseFoldType flag,
   return 0;
 }
 
+#define CodePointListValidP(x) (OnigCodePointCount((x)->n) < numberof((x)->code))
+
 extern int
 onigenc_unicode_get_case_fold_codes_by_str(OnigEncoding enc,
     OnigCaseFoldType flag, const OnigUChar* p, const OnigUChar* end,
@@ -483,7 +485,8 @@ onigenc_unicode_get_case_fold_codes_by_str(OnigEncoding enc,
       n++;
 
       code = to->code[0];
-      if ((to = onigenc_unicode_unfold1_lookup(code)) != 0) {
+      if ((to = onigenc_unicode_unfold1_lookup(code)) != 0 &&
+	  CodePointListValidP(to)) {
 	for (i = 0; i < OnigCodePointCount(to->n); i++) {
 	  if (to->code[i] != orig_code) {
 	    items[n].byte_len = len;
@@ -521,7 +524,8 @@ onigenc_unicode_get_case_fold_codes_by_str(OnigEncoding enc,
 	  }
 	}
 
-	if ((z2 = onigenc_unicode_unfold2_lookup(to->code)) != 0) {
+	if ((z2 = onigenc_unicode_unfold2_lookup(to->code)) != 0 &&
+	    CodePointListValidP(z2)) {
 	  for (i = 0; i < OnigCodePointCount(z2->n); i++) {
 	    if (z2->code[i] == code) continue;
 
@@ -546,7 +550,8 @@ onigenc_unicode_get_case_fold_codes_by_str(OnigEncoding enc,
 	  }
 	}
 
-	if ((z2 = onigenc_unicode_unfold3_lookup(to->code)) != 0) {
+	if ((z2 = onigenc_unicode_unfold3_lookup(to->code)) != 0 &&
+	    CodePointListValidP(z2)) {
 	  for (i = 0; i < OnigCodePointCount(z2->n); i++) {
 	    if (z2->code[i] == code) continue;
 
@@ -563,7 +568,8 @@ onigenc_unicode_get_case_fold_codes_by_str(OnigEncoding enc,
     }
   }
   else {
-    if ((to = onigenc_unicode_unfold1_lookup(code)) != 0) {
+    if ((to = onigenc_unicode_unfold1_lookup(code)) != 0 &&
+	CodePointListValidP(to)) {
       for (i = 0; i < OnigCodePointCount(to->n); i++) {
 	items[n].byte_len = len;
 	items[n].code_len = 1;
@@ -590,7 +596,8 @@ onigenc_unicode_get_case_fold_codes_by_str(OnigEncoding enc,
 
       clen = enclen(enc, p, end);
       len += clen;
-      if ((z2 = onigenc_unicode_unfold2_lookup(codes)) != 0) {
+      if ((z2 = onigenc_unicode_unfold2_lookup(codes)) != 0 &&
+	  CodePointListValidP(z2)) {
 	for (i = 0; i < OnigCodePointCount(z2->n); i++) {
 	  items[n].byte_len = len;
 	  items[n].code_len = 1;
@@ -611,7 +618,8 @@ onigenc_unicode_get_case_fold_codes_by_str(OnigEncoding enc,
 
 	clen = enclen(enc, p, end);
 	len += clen;
-	if ((z2 = onigenc_unicode_unfold3_lookup(codes)) != 0) {
+	if ((z2 = onigenc_unicode_unfold3_lookup(codes)) != 0 &&
+	    CodePointListValidP(z2)) {
 	  for (i = 0; i < OnigCodePointCount(z2->n); i++) {
 	    items[n].byte_len = len;
 	    items[n].code_len = 1;
