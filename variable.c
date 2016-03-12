@@ -1082,8 +1082,8 @@ iv_index_tbl_newsize(struct ivar_update *ivup)
     long newsize = (ivup->index+1) + (ivup->index+1)/4; /* (index+1)*1.25 */
 
     if (!ivup->iv_extended &&
-        ivup->u.iv_index_tbl->num_elements < (st_index_t)newsize) {
-        newsize = ivup->u.iv_index_tbl->num_elements;
+        ivup->u.iv_index_tbl->num_entries < (st_index_t)newsize) {
+        newsize = ivup->u.iv_index_tbl->num_entries;
     }
     return newsize;
 }
@@ -1332,10 +1332,10 @@ iv_index_tbl_extend(struct ivar_update *ivup, ID id)
     if (st_lookup(ivup->u.iv_index_tbl, (st_data_t)id, &ivup->index)) {
 	return;
     }
-    if (ivup->u.iv_index_tbl->num_elements >= INT_MAX) {
+    if (ivup->u.iv_index_tbl->num_entries >= INT_MAX) {
 	rb_raise(rb_eArgError, "too many instance variables");
     }
-    ivup->index = (st_data_t)ivup->u.iv_index_tbl->num_elements;
+    ivup->index = (st_data_t)ivup->u.iv_index_tbl->num_entries;
     st_add_direct(ivup->u.iv_index_tbl, (st_data_t)id, ivup->index);
     ivup->iv_extended = 1;
 }
@@ -1616,7 +1616,7 @@ rb_ivar_count(VALUE obj)
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
 	if ((tbl = ROBJECT_IV_INDEX_TBL(obj)) != 0) {
-	    st_index_t i, count, num = tbl->num_elements;
+	    st_index_t i, count, num = tbl->num_entries;
 	    const VALUE *const ivptr = ROBJECT_IVPTR(obj);
 	    for (i = count = 0; i < num; ++i) {
 		if (ivptr[i] != Qundef) {
@@ -1629,7 +1629,7 @@ rb_ivar_count(VALUE obj)
       case T_CLASS:
       case T_MODULE:
 	if ((tbl = RCLASS_IV_TBL(obj)) != 0) {
-	    return tbl->num_elements;
+	    return tbl->num_entries;
 	}
 	break;
       default:
@@ -1994,7 +1994,7 @@ autoload_delete(VALUE mod, ID id)
 
 	st_delete(tbl, &n, &load);
 
-	if (tbl->num_elements == 0) {
+	if (tbl->num_entries == 0) {
 	    n = autoload;
 	    st_delete(RCLASS_IV_TBL(mod), &n, &val);
 	}
@@ -2441,7 +2441,7 @@ rb_const_list(void *data)
     VALUE ary;
 
     if (!tbl) return rb_ary_new2(0);
-    ary = rb_ary_new2(tbl->num_elements);
+    ary = rb_ary_new2(tbl->num_entries);
     st_foreach_safe(tbl, list_i, ary);
     st_free_table(tbl);
 
@@ -2943,7 +2943,7 @@ cvar_list(void *data)
     VALUE ary;
 
     if (!tbl) return rb_ary_new2(0);
-    ary = rb_ary_new2(tbl->num_elements);
+    ary = rb_ary_new2(tbl->num_entries);
     st_foreach_safe(tbl, cv_list_i, ary);
     st_free_table(tbl);
 

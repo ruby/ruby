@@ -2777,7 +2777,7 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
     objspace->flags.dont_incremental = 1;
 
     /* force to run finalizer */
-    while (finalizer_table->num_elements) {
+    while (finalizer_table->num_entries) {
 	struct force_finalize_list *list = 0;
 	st_foreach(finalizer_table, force_chain_object, (st_data_t)&list);
 	while (list) {
@@ -3946,7 +3946,7 @@ mark_entry(st_data_t key, st_data_t value, st_data_t data)
 static void
 mark_tbl(rb_objspace_t *objspace, st_table *tbl)
 {
-    if (!tbl || tbl->num_elements == 0) return;
+    if (!tbl || tbl->num_entries == 0) return;
     st_foreach(tbl, mark_entry, (st_data_t)objspace);
 }
 
@@ -4848,7 +4848,7 @@ allrefs_dump_i(st_data_t k, st_data_t v, st_data_t ptr)
 static void
 allrefs_dump(rb_objspace_t *objspace)
 {
-    fprintf(stderr, "[all refs] (size: %d)\n", (int)objspace->rgengc.allrefs_table->num_elements);
+    fprintf(stderr, "[all refs] (size: %d)\n", (int)objspace->rgengc.allrefs_table->num_entries);
     st_foreach(objspace->rgengc.allrefs_table, allrefs_dump_i, 0);
 }
 #endif
@@ -8267,7 +8267,7 @@ wmap_size(VALUE self)
     st_index_t n;
 
     TypedData_Get_Struct(self, struct weakmap, &weakmap_type, w);
-    n = w->wmap2obj->num_elements;
+    n = w->wmap2obj->num_entries;
 #if SIZEOF_ST_INDEX_T <= SIZEOF_LONG
     return ULONG2NUM(n);
 #else

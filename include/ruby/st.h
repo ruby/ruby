@@ -72,37 +72,37 @@ struct st_hash_type {
 # define ST_DATA_COMPATIBLE_P(type) 0
 #endif
 
-typedef struct st_table_element st_table_element;
+typedef struct st_table_entry st_table_entry;
 
-struct st_table_element; /* defined in st.c */
+struct st_table_entry; /* defined in st.c */
 
 #if SIZEOF_INT == SIZEOF_VOIDP
-typedef unsigned int st_entry_t;
+typedef unsigned int st_bin_t;
 #else
-typedef unsigned long int st_entry_t;
+typedef unsigned long int st_bin_t;
 #endif
 
 struct st_table {
     const struct st_hash_type *type;
-    /* Number of elements currently in the table.  */
-    st_index_t num_elements;
-    /* Number of entries with deleted values.  */
-    st_index_t deleted_entries;
-    /* Number of elements.  */
-    st_index_t allocated_elements;
+    /* Number of entries currently in the table.  */
+    st_index_t num_entries;
+    /* Number of bins with deleted values.  */
+    st_index_t deleted_bins;
+    /* Number of the currently allocated entries.  */
+    st_index_t allocated_entries;
     /* How many times the table was rebuilt.  */
     st_index_t rebuilds_num;
-    /* array of size ALLOCATED_ENTRIES: */
-    st_entry_t *entries;
-    /* Start and bound index of elements in array elements.  For empty
-       array `elements_start = elements_bound == 0`.  Otherwise,
-       element_starts and elements_bound are in intervals
-       [0,allocated_elements) and (0,allocated_elements]
+    /* Array of size 2 * ALLOCATED_ENTRIES: */
+    st_bin_t *bins;
+    /* Start and bound index of entries in array entries.  For empty
+       array `entries_start = entries_bound == 0`.  Otherwise,
+       entries_starts and entries_bound are in intervals
+       [0,allocated_entries) and (0,allocated_entries]
        correspondingly.  */
-    st_index_t elements_start, elements_bound;
-    /* Array of size ALLOCATED_ELEMENTS.  It behaves as a circular
+    st_index_t entries_start, entries_bound;
+    /* Array of size ALLOCATED_ENTRIES.  It behaves as a circular
        buffer.  */
-    st_table_element *elements;
+    st_table_entry *entries;
 };
 
 #define st_is_member(table,key) st_lookup((table),(key),(st_data_t *)0)

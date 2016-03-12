@@ -813,7 +813,7 @@ symbols_i(st_data_t key, st_data_t value, st_data_t arg)
 VALUE
 rb_sym_all_symbols(void)
 {
-    VALUE ary = rb_ary_new2(global_symbols.str_sym->num_elements);
+    VALUE ary = rb_ary_new2(global_symbols.str_sym->num_entries);
     st_foreach(global_symbols.str_sym, symbols_i, ary);
     return ary;
 }

@@ -182,6 +182,13 @@ rb_any_hash(VALUE a)
 static st_index_t
 rb_num_hash_start(st_index_t n)
 {
+    /* Prime number (79087987342985798987987) mod 32/64 used for hash
+       calculations.  */
+#if SIZEOF_INT == SIZEOF_VOIDP
+    const st_index_t jauquet_prime_mod = 2053222611; /* mod 32 */
+#else
+    const st_index_t jauquet_prime_mod = 6795498992951210195; /* mod 64 */
+#endif
     /*
      * This hash function is lightly-tuned for Ruby.  Further tuning
      * should be possible.  Notes:
@@ -189,13 +196,16 @@ rb_num_hash_start(st_index_t n)
      * - (n >> 3) alone is great for heap objects and OK for fixnum,
      *   however symbols perform poorly.
      * - (n >> (RUBY_SPECIAL_SHIFT+3)) was added to make symbols hash well,
-     *   n.b.: +3 to remove most ID scope, +1 worked well initially, too
-     *   n.b.: +1 (instead of 3) worked well initially, too
-     * - (n << 16) was finally added to avoid losing bits for fixnums
-     * - avoid expensive modulo instructions, it is currently only
-     *   shifts and bitmask operations.
+     * - avoid expensive modulo instructions.
      */
-    return (n >> (RUBY_SPECIAL_SHIFT + 3) ^ (n << 16)) ^ (n >> 3);
+    if (n & 3)
+         /* FIXNUM and FLONUM.  Previous varaint was analogous to the
+	    else case.  As the result, collisions achieved 100% for
+	    the numbers.  This variant works much better especially
+	    for FIXNUM.  */
+        return n * jauquet_prime_mod;
+    else
+        return (n >> (RUBY_SPECIAL_SHIFT + 3)) + (n >> 3);
 }
 
 long
@@ -747,7 +757,7 @@ rb_hash_rehash(VALUE hash)
     if (!RHASH(hash)->ntbl)
         return hash;
     tmp = hash_alloc(0);
-    tbl = st_init_table_with_size(RHASH(hash)->ntbl->type, RHASH(hash)->ntbl->num_elements);
+    tbl = st_init_table_with_size(RHASH(hash)->ntbl->type, RHASH(hash)->ntbl->num_entries);
     RHASH(tmp)->ntbl = tbl;
 
     rb_hash_foreach(hash, rb_hash_rehash_i, (VALUE)tbl);
@@ -1246,7 +1256,7 @@ rb_hash_reject_bang(VALUE hash)
     n = RHASH_SIZE(hash);
     if (!n) return Qnil;
     rb_hash_foreach(hash, delete_if_i, hash);
-    if (n == RHASH(hash)->ntbl->num_elements) return Qnil;
+    if (n == RHASH(hash)->ntbl->num_entries) return Qnil;
     return hash;
 }
 
@@ -1406,9 +1416,9 @@ rb_hash_select_bang(VALUE hash)
     rb_hash_modify_check(hash);
     if (!RHASH(hash)->ntbl)
         return Qnil;
-    n = RHASH(hash)->ntbl->num_elements;
+    n = RHASH(hash)->ntbl->num_entries;
     rb_hash_foreach(hash, keep_if_i, hash);
-    if (n == RHASH(hash)->ntbl->num_elements) return Qnil;
+    if (n == RHASH(hash)->ntbl->num_entries) return Qnil;
     return hash;
 }
 
@@ -1457,7 +1467,7 @@ rb_hash_clear(VALUE hash)
     rb_hash_modify_check(hash);
     if (!RHASH(hash)->ntbl)
         return hash;
-    if (RHASH(hash)->ntbl->num_elements > 0) {
+    if (RHASH(hash)->ntbl->num_entries > 0) {
 	if (RHASH_ITER_LEV(hash) > 0)
 	    rb_hash_foreach(hash, clear_i, 0);
 	else
@@ -1566,7 +1576,7 @@ rb_hash_initialize_copy(VALUE hash, VALUE hash2)
     if (RHASH(hash2)->ntbl) {
 	if (ntbl) st_free_table(ntbl);
         RHASH(hash)->ntbl = st_copy(RHASH(hash2)->ntbl);
-	if (RHASH(hash)->ntbl->num_elements)
+	if (RHASH(hash)->ntbl->num_entries)
 	    rb_hash_rehash(hash);
     }
     else if (ntbl) {

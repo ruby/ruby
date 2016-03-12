@@ -1661,7 +1661,7 @@ rb_enc_name_list_i(st_data_t name, st_data_t idx, st_data_t arg)
 static VALUE
 rb_enc_name_list(VALUE klass)
 {
-    VALUE ary = rb_ary_new2(enc_table.names->num_elements);
+    VALUE ary = rb_ary_new2(enc_table.names->num_entries);
     st_foreach(enc_table.names, rb_enc_name_list_i, (st_data_t)ary);
     return ary;
 }

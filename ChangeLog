@@ -1,8 +1,39 @@
-Thu Mar 11 10:08:12 2016  Vladimir Makarov  <vmakarov@redhat.com>
+Sat Mar 12 07:59:37 2016  Vladimir Makarov  <vmakarov@redhat.com>
+
+	* compile.c (ibf_table_index, ibf_dump_id_list_i): Use num_entries
+	instead of num_elements.
+	* internal.h (RHASH_SIZE): Ditto.
+	* encoding.c (rb_enc_name_list_i): Ditto.
+	* marshal.c (w_symbol, SINGLETON_DUMP_UNABLE_P, w_object): Ditto.
+	(r_entry, r_prepare, r_symreal): Ditto.
+	* regparse.c (onig_number_of_names): Ditto.
+	* symbol.c (symbols_i): Ditto.
+	* transcode.c (rb_econv_asciicompat_encoding): Ditto.
+	* variable.c (iv_index_tbl_newsize, iv_index_tbl_extend): Ditto.
+	(rb_ivar_count, autoload_delete, rb_const_list, cvar_list): Ditto.
+	* ext/-test-/st/numhash/numhash.c (numhash_size): Ditto.
+	* gc.c (rb_objspace_call_finalizer): Ditto.
+	(mark_entry, allrefs_dump_i, wmap_size): Ditto.
+	* hash.c (rb_hash_rehash, rb_hash_reject_bang): Ditto.
+	(rb_hash_select_bang, rb_hash_clear, rb_hash_initialize_copy): Ditto.
+	(rb_num_hash_start): Change hash calculation.
+	* ext/-test-/st/foreach/foreach.c (force_unpack_check, unp_fec):
+	Add tests on packed tables.
+	(unp_fe): Ditto.
+	* include/ruby/st.h (st_table_element): Rename to st_table_entry.
+	(st_entry_t): Rename to st_bin_t.
+	(struct st_table): Rename num_elements, deleted_entries,
+	allocated_elements, entries, elements_start, elements_bound,
+	elements correspondingly to num_entries, deleted_bins,
+	allocated_entries, bins, entries_start, entries_bound, entries.
+	* st.c: Change entry, element to bin, entry everywhere.  Fix typos
+	in the comments.
+
+Fri Mar 11 10:08:12 2016  Vladimir Makarov  <vmakarov@redhat.com>
 
 	* st.c (st_assert): Exchange definitions for ST_DEBUG.
 
-Thu Mar 11 02:17:55 2016  Vladimir Makarov  <vmakarov@redhat.com>
+Fir Mar 11 02:17:55 2016  Vladimir Makarov  <vmakarov@redhat.com>
 
 	* st.c (st_assert): Make debug version.
 	(ST_INIT_VAL, ST_INIT_VAL_BYTE): New.

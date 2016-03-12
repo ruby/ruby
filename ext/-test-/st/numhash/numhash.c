@@ -108,7 +108,7 @@ static VALUE
 numhash_size(VALUE self)
 {
     st_table *table = (st_table *)Check_TypedStruct(self, &numhash_type);
-    return ST2NUM(table->num_elements);
+    return ST2NUM(table->num_entries);
 }
 
 static VALUE

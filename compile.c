@@ -6934,7 +6934,7 @@ ibf_table_index(struct st_table *table, st_data_t key)
     int index = ibf_table_lookup(table, key);
 
     if (index < 0) { /* not found */
-	index = (int)table->num_elements;
+	index = (int)table->num_entries;
 	st_insert(table, key, (st_data_t)index);
     }
 
@@ -7499,7 +7499,7 @@ ibf_dump_id_list_i(st_data_t key, st_data_t val, st_data_t ptr)
 static void
 ibf_dump_id_list(struct ibf_dump *dump, struct ibf_header *header)
 {
-    const long size = dump->id_table->num_elements;
+    const long size = dump->id_table->num_entries;
     struct ibf_dump_id_list_i_arg arg;
     arg.list = ALLOCA_N(long, size);
     arg.dump = dump;
