@@ -431,7 +431,7 @@ onigenc_unicode_apply_all_case_fold(OnigCaseFoldType flag,
   return 0;
 }
 
-#define CodePointListValidP(x) (OnigCodePointCount((x)->n) < numberof((x)->code))
+#define CodePointListValidP(x) (OnigCodePointCount((x)->n) <= numberof((x)->code))
 
 extern int
 onigenc_unicode_get_case_fold_codes_by_str(OnigEncoding enc,
