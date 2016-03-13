@@ -1,3 +1,8 @@
+Sun Mar 13 09:15:45 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (rb_fix2str): fix edge case, accidentally generated
+	  wrong Fixnum from LONG_MIN.
+
 Sat Mar 12 09:50:27 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_eval.c (rb_f_catch): [DOC] fix malformed RDoc syntax, "+...+"

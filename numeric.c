@@ -2905,7 +2905,15 @@ rb_fix2str(VALUE x, int base)
 	return rb_usascii_str_new2("0");
     }
     if (val < 0) {
-	val = -val;
+	if (val == LONG_MIN) {
+	    int last = ((int)((val = LONG_MAX) % base) + 1);
+	    *--b = ruby_digitmap[last % base];
+	    val /= base;
+	    val += last == base; /* carry */
+	}
+	else {
+	    val = -val;
+	}
 	neg = 1;
     }
     do {
