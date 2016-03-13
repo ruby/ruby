@@ -1,3 +1,8 @@
+Sun Mar 13 09:43:23 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/win32.h (O_SHARE_DELETE): change to fit Fixnum
+	  limit.  [ruby-core:74285] [Bug #12171]
+
 Sun Mar 13 09:15:45 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (rb_fix2str): fix edge case, accidentally generated
