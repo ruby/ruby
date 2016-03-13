@@ -1402,7 +1402,7 @@ expr_value	: expr
 		    /*%%%*/
 			value_expr($1);
 			$$ = $1;
-		        if (!$$) $$ = NEW_NIL();
+			if (!$$) $$ = NEW_NIL();
 		    /*%
 			$$ = $1;
 		    %*/
@@ -1471,7 +1471,7 @@ command		: fcall command_args       %prec tLOWEST
 		    /*%%%*/
 			block_dup_check($2,$3);
 			$1->nd_args = $2;
-		        $3->nd_iter = $1;
+			$3->nd_iter = $1;
 			$$ = $3;
 			fixpos($$, $1);
 		    /*%
@@ -1492,7 +1492,7 @@ command		: fcall command_args       %prec tLOWEST
 		    {
 		    /*%%%*/
 			block_dup_check($4,$5);
-		        $5->nd_iter = NEW_QCALL($2, $1, $3, $4);
+			$5->nd_iter = NEW_QCALL($2, $1, $3, $4);
 			$$ = $5;
 			fixpos($$, $1);
 		    /*%
@@ -1513,7 +1513,7 @@ command		: fcall command_args       %prec tLOWEST
 		    {
 		    /*%%%*/
 			block_dup_check($4,$5);
-		        $5->nd_iter = NEW_CALL($1, $3, $4);
+			$5->nd_iter = NEW_CALL($1, $3, $4);
 			$$ = $5;
 			fixpos($$, $1);
 		    /*%
@@ -1726,7 +1726,7 @@ mlhs_node	: user_variable
 		    }
 		| keyword_variable
 		    {
-		        $$ = assignable($1, 0);
+			$$ = assignable($1, 0);
 		    }
 		| primary_value '[' opt_call_args rbracket
 		    {
@@ -1812,11 +1812,11 @@ lhs		: user_variable
 		    }
 		| keyword_variable
 		    {
-		        $$ = assignable($1, 0);
+			$$ = assignable($1, 0);
 		    /*%%%*/
-		        if (!$$) $$ = NEW_BEGIN(0);
+			if (!$$) $$ = NEW_BEGIN(0);
 		    /*%
-		        $$ = dispatch1(var_field, $$);
+			$$ = dispatch1(var_field, $$);
 		    %*/
 		    }
 		| primary_value '[' opt_call_args rbracket
@@ -2040,7 +2040,7 @@ arg		: lhs '=' arg
 		    {
 		    /*%%%*/
 			value_expr($3);
-		        $3 = NEW_RESCUE($3, NEW_RESBODY(0,$5,0), 0);
+			$3 = NEW_RESCUE($3, NEW_RESBODY(0,$5,0), 0);
 			$$ = node_assign($1, $3);
 		    /*%
 			$$ = dispatch2(assign, $1, dispatch2(rescue_mod, $3, $5));
@@ -2055,7 +2055,7 @@ arg		: lhs '=' arg
 		    {
 		    /*%%%*/
 			value_expr($3);
-		        $3 = NEW_RESCUE($3, NEW_RESBODY(0,$5,0), 0);
+			$3 = NEW_RESCUE($3, NEW_RESBODY(0,$5,0), 0);
 		    /*%
 			$3 = dispatch2(rescue_mod, $3, $5);
 		    %*/
@@ -2071,9 +2071,9 @@ arg		: lhs '=' arg
 			if (nd_type($3) == NODE_BLOCK_PASS) {
 			    args = NEW_ARGSCAT($3, $6);
 			}
-		        else {
+			else {
 			    args = arg_concat($3, $6);
-		        }
+			}
 			if ($5 == tOROP) {
 			    $5 = 0;
 			}
@@ -2420,7 +2420,7 @@ arg_value	: arg
 		    /*%%%*/
 			value_expr($1);
 			$$ = $1;
-		        if (!$$) $$ = NEW_NIL();
+			if (!$$) $$ = NEW_NIL();
 		    /*%
 			$$ = $1;
 		    %*/
@@ -3115,7 +3115,7 @@ primary_value	: primary
 		    /*%%%*/
 			value_expr($1);
 			$$ = $1;
-		        if (!$$) $$ = NEW_NIL();
+			if (!$$) $$ = NEW_NIL();
 		    /*%
 			$$ = $1;
 		    %*/
@@ -4107,7 +4107,7 @@ word		: string_content
 		    }
 		;
 
-symbols	        : tSYMBOLS_BEG ' ' tSTRING_END
+symbols 	: tSYMBOLS_BEG ' ' tSTRING_END
 		    {
 		    /*%%%*/
 			$$ = NEW_ZARRAY();
@@ -4298,7 +4298,7 @@ regexp_contents: /* none */
 			    $$ = list_append(head, tail);
 			}
 		    /*%
-		        VALUE s1 = 1, s2 = 0, n1 = $1, n2 = $2;
+			VALUE s1 = 1, s2 = 0, n1 = $1, n2 = $2;
 			if (ripper_is_node_yylval(n1)) {
 			    s1 = RNODE(n1)->nd_cval;
 			    n1 = RNODE(n1)->nd_rval;
@@ -4494,7 +4494,7 @@ var_lhs		: user_variable
 		    }
 		| keyword_variable
 		    {
-		        $$ = assignable($1, 0);
+			$$ = assignable($1, 0);
 		    /*%%%*/
 		    /*%
 			$$ = dispatch1(var_field, $$);
@@ -4992,7 +4992,7 @@ singleton	: var_ref
 		    /*%%%*/
 			value_expr($1);
 			$$ = $1;
-		        if (!$$) $$ = NEW_NIL();
+			if (!$$) $$ = NEW_NIL();
 		    /*%
 			$$ = $1;
 		    %*/
@@ -5143,7 +5143,7 @@ call_op 	: '.'
 		    /*%%%*/
 			$$ = '.';
 		    /*%
-		        $$ = ripper_id2sym('.');
+			$$ = ripper_id2sym('.');
 		    %*/
 		    }
 		| tANDDOT
@@ -5151,7 +5151,7 @@ call_op 	: '.'
 		    /*%%%*/
 			$$ = tANDDOT;
 		    /*%
-		        $$ = ripper_id2sym(idANDDOT);
+			$$ = ripper_id2sym(idANDDOT);
 		    %*/
 		    }
 		;
@@ -5162,7 +5162,7 @@ call_op2	: call_op
 		    /*%%%*/
 			$$ = tCOLON2;
 		    /*%
-		        $$ = ripper_id2sym(idCOLON2);
+			$$ = ripper_id2sym(idCOLON2);
 		    %*/
 		    }
 		;
