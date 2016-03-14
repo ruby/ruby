@@ -128,6 +128,8 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err(%w(--disable foobarbazqux -e) + [""], "", [],
                       /unknown argument for --disable: `foobarbazqux'/)
     assert_in_out_err(%w(--disable), "", [], /missing argument for --disable/)
+    assert_in_out_err(%w(--disable-gems -e) + ['p defined? Gem'], "", ["nil"], [])
+    assert_in_out_err(%w(--disable-did_you_mean -e) + ['p defined? DidYouMean'], "", ["nil"], [])
   end
 
   def test_kanji
