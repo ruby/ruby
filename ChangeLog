@@ -1,3 +1,8 @@
+Tue Mar 15 01:22:27 2016  Charles Oliver Nutter  <headius@headius.com>
+
+	* test/ruby/test_rubyoptions.rb: make version matching support
+	  JRuby's version output.
+
 Mon Mar 14 19:05:39 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* bignum.c (big2str_2bdigits): reduce div instruction.

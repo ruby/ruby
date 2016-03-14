@@ -84,9 +84,18 @@ class TestRubyOptions < Test::Unit::TestCase
                       "", %w(true), [])
   end
 
+  private def version_match
+    case RUBY_ENGINE
+    when 'jruby'
+      /^jruby #{RUBY_ENGINE_VERSION} \(#{RUBY_VERSION}\).*? \[#{RbConfig::CONFIG["host_os"]}-#{RbConfig::CONFIG["host_cpu"]}\]$/
+    else
+      /^ruby #{RUBY_VERSION}(?:[p ]|dev|rc).*? \[#{RUBY_PLATFORM}\]$/
+    end
+  end
+
   def test_verbose
     assert_in_out_err(["-vve", ""]) do |r, e|
-      assert_match(/^ruby #{RUBY_VERSION}(?:[p ]|dev|rc).*? \[#{RUBY_PLATFORM}\]$/, r[0])
+      assert_match(version_match, r[0])
       assert_equal(RUBY_DESCRIPTION, r[0])
       assert_equal([], e)
     end
@@ -140,7 +149,7 @@ class TestRubyOptions < Test::Unit::TestCase
 
   def test_version
     assert_in_out_err(%w(--version)) do |r, e|
-      assert_match(/^ruby #{RUBY_VERSION}(?:[p ]|dev|rc).*? \[#{RUBY_PLATFORM}\]$/, r[0])
+      assert_match(version_match, r[0])
       assert_equal(RUBY_DESCRIPTION, r[0])
       assert_equal([], e)
     end
