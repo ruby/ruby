@@ -718,4 +718,15 @@ class TestMarshal < Test::Unit::TestCase
     obj = [str, str]
     assert_equal(['X', 'X'], Marshal.load(Marshal.dump(obj), ->(v) { v == str ? v.upcase : v }))
   end
+
+  def test_marshal_load_extended_class_crash
+    crash = "\x04\be:\x0F\x00omparableo:\vObject\x00"
+
+    opt = %w[--disable=gems]
+    args = [opt, "Marshal.load(#{crash.dump})", true, true]
+    out, err, status = EnvUtil.invoke_ruby(*args)
+
+    assert_empty err
+    assert_predicate(status, :success?)
+  end
 end

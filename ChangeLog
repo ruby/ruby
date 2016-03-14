@@ -1,3 +1,7 @@
+Tue Mar 15 03:35:04 2016  Eric Hodel  <drbrain@segment7.net>
+
+	* marshal.c (r_object0): Fix Marshal crash for corrupt extended object.
+
 Tue Mar 15 01:22:27 2016  Charles Oliver Nutter  <headius@headius.com>
 
 	* test/ruby/test_rubyoptions.rb: make version matching support
