@@ -121,39 +121,37 @@ typedef ptrdiff_t      OnigPosition;
  *
  * Subfields (starting with 0 at LSB):
  *   0-2: Code point count in casefold.h
- *   3-9: Index into TitleCase array in casefold.h
- *   10-15, 18-20: Case mapping flags
+ *   3-12: Index into SpecialCaseMapping array in casefold.h
+ *   13-22: Case folding/mapping flags
  */
 typedef unsigned int OnigCaseFoldType; /* case fold flag */
 
 ONIG_EXTERN OnigCaseFoldType OnigDefaultCaseFoldFlag;
 
 /* bits for actual code point count; 3 bits is more than enough, currently only 2 used */
-#define OnigCodePointMask     (0x7)
+#define OnigCodePointMaskWidth    3
+#define OnigCodePointMask     ((1<<OnigCodePointMaskWidth)-1)
 #define OnigCodePointCount(n) ((n)&OnigCodePointMask)
 #define OnigCaseFoldFlags(n) ((n)&~OnigCodePointMask)
 /* #define ONIGENC_CASE_FOLD_HIRAGANA_KATAKANA  (1<<1) */ /* no longer usable with these values! */
 /* #define ONIGENC_CASE_FOLD_KATAKANA_WIDTH     (1<<2) */ /* no longer usable with these values! */
 
 /* bits for index into table with separate titlecase mappings */
-/* 7 bits provide 128 values; as of Unicode 8.0.0, 89 values are used */
-#define OnigTitlecaseShift (3)
-#define OnigTitlecaseWidth (7)
-#define OnigTitlecaseMask (((1<<OnigTitlecaseWidth)-1)<<OnigTitlecaseShift)
-#define OnigTitlecaseEncode(n) (((n)<<OnigTitlecaseShift)&OnigTitlecaseMask)
-#define OnigTitlecaseDecode(n) (((n)&OnigTitlecaseMask)>>OnigTitlecaseShift)
+/* 10 bits provide 1024 values */
+#define OnigSpecialIndexShift 3
+#define OnigSpecialIndexWidth 10
 
-#define OnigTitlecaseIndex
-
-#define ONIGENC_CASE_TITLECASE                  (1<<10) /* has/needs titlecase mapping */
-#define ONIGENC_CASE_UPCASE                     (1<<11) /* has/needs uppercase mapping */
-#define ONIGENC_CASE_DOWNCASE                   (1<<12) /* has/needs lowercase mapping */
-#define ONIGENC_CASE_FOLD                       (1<<13) /* has/needs case folding */
-#define ONIGENC_CASE_SPECIAL                    (1<<14) /* has/needs special mapping from separate table */
-#define ONIGENC_CASE_MODIFIED                   (1<<15) /* data has been modified */
-#define ONIGENC_CASE_ASCII_ONLY                 (1<<18) /* only modify ASCII range */
-#define ONIGENC_CASE_FOLD_LITHUANIAN            (1<<19) /* needs Lithuanian-specific mapping */
+#define ONIGENC_CASE_UPCASE                     (1<<13) /* has/needs uppercase mapping */
+#define ONIGENC_CASE_DOWNCASE                   (1<<14) /* has/needs lowercase mapping */
+#define ONIGENC_CASE_TITLECASE                  (1<<15) /* has/needs (special) titlecase mapping */
+#define ONIGENC_CASE_SPECIAL_OFFSET             3       /* offset in bytes from ONIGENC_CASE to ONIGENC_CASE_SPECIAL */
+#define ONIGENC_CASE_UP_SPECIAL                 (1<<16) /* has special upcase mapping */
+#define ONIGENC_CASE_DOWN_SPECIAL               (1<<17) /* has special downcase mapping */
+#define ONIGENC_CASE_MODIFIED                   (1<<18) /* data has been modified */
+#define ONIGENC_CASE_FOLD                       (1<<19) /* has/needs case folding */
 #define ONIGENC_CASE_FOLD_TURKISH_AZERI         (1<<20) /* needs mapping specific to Turkic languages; better not change original value! */
+#define ONIGENC_CASE_FOLD_LITHUANIAN            (1<<21) /* needs Lithuanian-specific mapping */
+#define ONIGENC_CASE_ASCII_ONLY                 (1<<22) /* only modify ASCII range */
 #define INTERNAL_ONIGENC_CASE_FOLD_MULTI_CHAR   (1<<30) /* better not change original value! */
 
 #define ONIGENC_CASE_FOLD_MIN      INTERNAL_ONIGENC_CASE_FOLD_MULTI_CHAR

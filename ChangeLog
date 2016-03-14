@@ -1,3 +1,9 @@
+Mon Mar 14 18:39:53 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* include/ruby/oniguruma.h, enc/unicode.c: Adjusting flag assignments
+	  and macros to work with unified CaseMappingSpecials array.
+	  (with Kimihito Matsui)
+
 Mon Mar 14 16:53:37 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (compile_named_capture_assign): optimize named capture

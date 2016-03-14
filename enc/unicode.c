@@ -137,6 +137,7 @@ code3_equal(const OnigCodePoint *x, const OnigCodePoint *y)
   return 1;
 }
 
+/* macros to shorten "enc/unicode/casefold.h", undefined immediately after including the file */
 #define U ONIGENC_CASE_UPCASE
 #define D ONIGENC_CASE_DOWNCASE
 #define F ONIGENC_CASE_FOLD
@@ -156,6 +157,12 @@ code3_equal(const OnigCodePoint *x, const OnigCodePoint *y)
 #undef SL
 #undef I
 #undef L
+
+/* macros related to ONIGENC_CASE flags */
+/* defined here because not used in other files */
+#define OnigSpecialIndexMask (((1<<OnigSpecialIndexWidth)-1)<<OnigSpecialIndexWidth)
+#define OnigSpecialIndexEncode(n) (((n)<<OnigSpecialIndexShift)&OnigSpecialIndexMask)
+#define OnigSpecialIndexDecode(n) (((n)&OnigSpecialIndexMask)>>OnigSpecialIndexShift)
 
 #include "enc/unicode/name2ctype.h"
 
