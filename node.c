@@ -583,8 +583,12 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
         ANN("format: [nd_recv] =~ [nd_value]");
 	ANN("example: /foo/ =~ 'foo'");
 	F_NODE(nd_recv, "regexp (receiver)");
-	LAST_NODE;
+	if (!node->nd_args) LAST_NODE;
 	F_NODE(nd_value, "string (argument)");
+	if (node->nd_args) {
+	    LAST_NODE;
+	    F_NODE(nd_args, "named captures");
+	}
 	break;
 
       case NODE_MATCH3:

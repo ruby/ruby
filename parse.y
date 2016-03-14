@@ -502,8 +502,8 @@ static void reg_fragment_setenc_gen(struct parser_params*, VALUE, int);
 #define reg_fragment_setenc(str,options) reg_fragment_setenc_gen(parser, (str), (options))
 static int reg_fragment_check_gen(struct parser_params*, VALUE, int);
 #define reg_fragment_check(str,options) reg_fragment_check_gen(parser, (str), (options))
-static NODE *reg_named_capture_assign_gen(struct parser_params* parser, VALUE regexp, NODE *match);
-#define reg_named_capture_assign(regexp,match) reg_named_capture_assign_gen(parser,(regexp),(match))
+static NODE *reg_named_capture_assign_gen(struct parser_params* parser, VALUE regexp);
+#define reg_named_capture_assign(regexp) reg_named_capture_assign_gen(parser,(regexp))
 
 static void parser_heredoc_dedent(struct parser_params*,NODE*);
 # define heredoc_dedent(str) parser_heredoc_dedent(parser, (str))
@@ -2327,9 +2327,12 @@ arg		: lhs '=' arg
 		    {
 		    /*%%%*/
 			$$ = match_op($1, $3);
-                        if (nd_type($1) == NODE_LIT && RB_TYPE_P($1->nd_lit, T_REGEXP)) {
-                            $$ = reg_named_capture_assign($1->nd_lit, $$);
-                        }
+			if (nd_type($1) == NODE_LIT) {
+			    VALUE lit = $1->nd_lit;
+			    if (RB_TYPE_P(lit, T_REGEXP)) {
+				$$->nd_args = reg_named_capture_assign(lit);
+			    }
+			}
 		    /*%
 			$$ = dispatch3(binary, $1, ID2SYM(idEqTilde), $3);
 		    %*/
@@ -10600,8 +10603,6 @@ typedef struct {
     struct parser_params* parser;
     rb_encoding *enc;
     NODE *succ_block;
-    NODE *fail_block;
-    int num;
 } reg_named_capture_assign_t;
 
 static int
@@ -10614,13 +10615,7 @@ reg_named_capture_assign_iter(const OnigUChar *name, const OnigUChar *name_end,
     long len = name_end - name;
     const char *s = (const char *)name;
     ID var;
-
-    arg->num++;
-
-    if (arg->succ_block == 0) {
-        arg->succ_block = NEW_BEGIN(0);
-        arg->fail_block = NEW_BEGIN(0);
-    }
+    NODE *node, *succ;
 
     if (!len || (*name != '_' && ISASCII(*name) && !rb_enc_islower(*name, enc)) ||
 	(len < MAX_WORD_LENGTH && rb_reserved_word(s, (int)len)) ||
@@ -10632,48 +10627,26 @@ reg_named_capture_assign_iter(const OnigUChar *name, const OnigUChar *name_end,
         rb_warning1("named capture conflicts a local variable - %"PRIsWARN,
                     rb_id2str(var));
     }
-    arg->succ_block = block_append(arg->succ_block,
-        newline_node(node_assign(assignable(var,0),
-            NEW_CALL(
-              gettable(idBACKREF),
-              idAREF,
-              NEW_LIST(NEW_LIT(ID2SYM(var))))
-            )));
-    arg->fail_block = block_append(arg->fail_block,
-        newline_node(node_assign(assignable(var,0), NEW_LIT(Qnil))));
+    node = newline_node(node_assign(assignable(var, 0), NEW_LIT(ID2SYM(var))));
+    succ = arg->succ_block;
+    if (!succ) succ = NEW_BEGIN(0);
+    succ = block_append(succ, node);
+    arg->succ_block = succ;
     return ST_CONTINUE;
 }
 
 static NODE *
-reg_named_capture_assign_gen(struct parser_params* parser, VALUE regexp, NODE *match)
+reg_named_capture_assign_gen(struct parser_params* parser, VALUE regexp)
 {
     reg_named_capture_assign_t arg;
 
     arg.parser = parser;
     arg.enc = rb_enc_get(regexp);
     arg.succ_block = 0;
-    arg.fail_block = 0;
-    arg.num = 0;
     onig_foreach_name(RREGEXP_PTR(regexp), reg_named_capture_assign_iter, &arg);
 
-    if (arg.num == 0)
-        return match;
-
-    return
-        block_append(
-            newline_node(match),
-            NEW_IF(gettable(idBACKREF),
-                block_append(
-                    newline_node(arg.succ_block),
-                    newline_node(
-                        NEW_CALL(
-                          gettable(idBACKREF),
-                          rb_intern("begin"),
-                          NEW_LIST(NEW_LIT(INT2FIX(0)))))),
-                block_append(
-                    newline_node(arg.fail_block),
-                    newline_node(
-                        NEW_LIT(Qnil)))));
+    if (!arg.succ_block) return 0;
+    return arg.succ_block->nd_next;
 }
 
 static VALUE

@@ -3648,6 +3648,65 @@ build_postexe_iseq(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE *body)
     return Qnil;
 }
 
+static void
+compile_named_capture_assign(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE *node)
+{
+    NODE *vars;
+    LINK_ELEMENT *last;
+    int line = nd_line(node);
+    LABEL *fail_label = NEW_LABEL(line), *end_label = NEW_LABEL(line);
+
+#if !(defined(NAMED_CAPTURE_BY_SVAR) && NAMED_CAPTURE_BY_SVAR-0)
+    ADD_INSN1(ret, line, getglobal, ((VALUE)rb_global_entry(idBACKREF) | 1));
+#else
+    ADD_INSN2(ret, line, getspecial, INT2FIX(1) /* '~' */, INT2FIX(0));
+#endif
+    ADD_INSN(ret, line, dup);
+    ADD_INSNL(ret, line, branchunless, fail_label);
+
+    for (vars = node; vars; vars = vars->nd_next) {
+	INSN *cap;
+	if (vars->nd_next) {
+	    ADD_INSN(ret, line, dup);
+	}
+	last = ret->last;
+	COMPILE_POPED(ret, "capture", vars->nd_head);
+	last = last->next; /* putobject :var */
+	cap = new_insn_send(iseq, line, idAREF, INT2FIX(1),
+			    NULL, INT2FIX(0), NULL);
+	INSERT_ELEM_PREV(last->next, (LINK_ELEMENT *)cap);
+#if !defined(NAMED_CAPTURE_SINGLE_OPT) || NAMED_CAPTURE_SINGLE_OPT-0
+	if (!vars->nd_next && vars == node) {
+	    /* only one name */
+	    DECL_ANCHOR(nom);
+
+	    INIT_ANCHOR(nom);
+	    ADD_INSNL(nom, line, jump, end_label);
+	    ADD_LABEL(nom, fail_label);
+# if 0				/* $~ must be MatchData or nil */
+	    ADD_INSN(nom, line, pop);
+	    ADD_INSN(nom, line, putnil);
+# endif
+	    ADD_LABEL(nom, end_label);
+	    (nom->last->next = cap->link.next)->prev = nom->last;
+	    (cap->link.next = nom->anchor.next)->prev = &cap->link;
+	    return;
+	}
+#endif
+    }
+    ADD_INSNL(ret, line, jump, end_label);
+    ADD_LABEL(ret, fail_label);
+    ADD_INSN(ret, line, pop);
+    for (vars = node; vars; vars = vars->nd_next) {
+	last = ret->last;
+	COMPILE_POPED(ret, "capture", vars->nd_head);
+	last = last->next; /* putobject :var */
+	((INSN*)last)->insn_id = BIN(putnil);
+	((INSN*)last)->operand_size = 0;
+    }
+    ADD_LABEL(ret, end_label);
+}
+
 /**
   compile each node
 
@@ -5349,6 +5408,10 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    ADD_SEQ(ret, recv);
 	    ADD_SEQ(ret, val);
 	    ADD_SEND(ret, line, idEqTilde, INT2FIX(1));
+	}
+
+	if (node->nd_args) {
+	    compile_named_capture_assign(iseq, ret, node->nd_args);
 	}
 
 	if (poped) {

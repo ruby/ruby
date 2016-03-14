@@ -1,3 +1,13 @@
+Mon Mar 14 16:53:37 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (compile_named_capture_assign): optimize named capture
+	  assignments, by replacing repeating global variable accesses
+	  with `dup`, and by returning the matched result instead of
+	  re-getting it from the MatchData.
+
+	* parse.y (reg_named_capture_assign_gen): build just assignment
+	  nodes for the optimization.
+
 Mon Mar 14 16:02:59 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (ruby_is_fd_loadable): now return -1 if loadable but
