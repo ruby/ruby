@@ -1871,27 +1871,20 @@ open_load_file(VALUE fname_v, int *xflag)
 	}
 #endif
 
-#ifdef S_ISFIFO
-	{
-	    struct stat st;
-	    if (fstat(fd, &st) != 0) {
+	e = ruby_is_fd_loadable(fd);
+	if (e <= 0) {
+	    if (!e) {
 		e = errno;
 		(void)close(fd);
 		rb_load_fail(fname_v, strerror(e));
 	    }
-	    if (S_ISFIFO(st.st_mode)) {
+	    else {
 		/*
 		  We need to wait if FIFO is empty. It's FIFO's semantics.
 		  rb_thread_wait_fd() release GVL. So, it's safe.
 		*/
 		rb_thread_wait_fd(fd);
 	    }
-	}
-#endif
-	if (!ruby_is_fd_loadable(fd)) {
-	    e = errno;
-	    (void)close(fd);
-	    rb_load_fail(fname_v, strerror(e));
 	}
 
 	f = rb_io_fdopen(fd, mode, fname);

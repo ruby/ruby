@@ -1,3 +1,11 @@
+Mon Mar 14 16:02:59 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (ruby_is_fd_loadable): now return -1 if loadable but
+	  may block.
+
+	* ruby.c (open_load_file): wait to read by the result of
+	  ruby_is_fd_loadable, without fstat.
+
 Mon Mar 14 13:38:38 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* numeric.c (fix2str): improve r54092 like rb_int2big().
