@@ -1,3 +1,8 @@
+Mon Mar 14 10:02:23 2016  Eric Wong  <e@80x24.org>
+
+	* ext/openssl/ossl_ssl.c (ossl_sslctx_setup): document as MT-unsafe
+	  [ruby-core:73803] [Bug #12069]
+
 Sun Mar 13 09:43:23 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/win32.h (O_SHARE_DELETE): change to fit Fixnum
