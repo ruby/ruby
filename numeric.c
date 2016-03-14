@@ -2896,6 +2896,7 @@ rb_fix2str(VALUE x, int base)
 {
     char buf[SIZEOF_VALUE*CHAR_BIT + 1], *const e = buf + sizeof buf, *b = e;
     long val = FIX2LONG(x);
+    unsigned long u;
     int neg = 0;
 
     if (base < 2 || 36 < base) {
@@ -2905,20 +2906,15 @@ rb_fix2str(VALUE x, int base)
 	return rb_usascii_str_new2("0");
     }
     if (val < 0) {
-	if (val == LONG_MIN) {
-	    int last = ((int)((val = LONG_MAX) % base) + 1);
-	    *--b = ruby_digitmap[last % base];
-	    val /= base;
-	    val += last == base; /* carry */
-	}
-	else {
-	    val = -val;
-	}
+	u = 1 + (unsigned long)(-(val + 1)); /* u = -val avoiding overflow */
 	neg = 1;
     }
+    else {
+	u = val;
+    }
     do {
-	*--b = ruby_digitmap[(int)(val % base)];
-    } while (val /= base);
+	*--b = ruby_digitmap[(int)(u % base)];
+    } while (u /= base);
     if (neg) {
 	*--b = '-';
     }

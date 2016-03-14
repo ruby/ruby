@@ -1,3 +1,7 @@
+Mon Mar 14 13:38:38 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* numeric.c (fix2str): improve r54092 like rb_int2big().
+
 Mon Mar 14 10:02:23 2016  Eric Wong  <e@80x24.org>
 
 	* ext/openssl/ossl_ssl.c (ossl_sslctx_setup): document as MT-unsafe
