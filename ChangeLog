@@ -1,3 +1,7 @@
+Mon Mar 14 19:05:39 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* bignum.c (big2str_2bdigits): reduce div instruction.
+
 Mon Mar 14 18:39:53 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* include/ruby/oniguruma.h, enc/unicode.c: Adjusting flag assignments

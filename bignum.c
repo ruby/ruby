@@ -4615,8 +4615,9 @@ big2str_2bdigits(struct big2str_struct *b2s, BDIGIT *xds, size_t xn, size_t tail
         p = buf;
         j = sizeof(buf);
         do {
-            p[--j] = ruby_digitmap[num % b2s->base];
+            BDIGIT_DBL idx = num % b2s->base;
             num /= b2s->base;
+            p[--j] = ruby_digitmap[idx];
         } while (num);
         len = sizeof(buf) - j;
         big2str_alloc(b2s, len + taillen);
@@ -4626,8 +4627,9 @@ big2str_2bdigits(struct big2str_struct *b2s, BDIGIT *xds, size_t xn, size_t tail
         p = b2s->ptr;
         j = b2s->hbase2_numdigits;
         do {
-            p[--j] = ruby_digitmap[num % b2s->base];
+            BDIGIT_DBL idx = num % b2s->base;
             num /= b2s->base;
+            p[--j] = ruby_digitmap[idx];
         } while (j);
         len = b2s->hbase2_numdigits;
     }
