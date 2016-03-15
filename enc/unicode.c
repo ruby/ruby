@@ -717,7 +717,7 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
 		    if (flags&OnigCaseFoldFlags(folded->n)&ONIGENC_CASE_SPECIALS) {
 			OnigCodePoint *SpecialsStart = CaseMappingSpecials + OnigSpecialIndexDecode(folded->n);
 			int count;
-			
+
 			if (OnigCaseFoldFlags(folded->n)&ONIGENC_CASE_TITLECASE) {
 			    if (flags&ONIGENC_CASE_TITLECASE)
 				goto SpecialsCopy;
