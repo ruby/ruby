@@ -1,3 +1,9 @@
+Tue Mar 15 13:49:23 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode.c: Additional macros and code to use mapping data in
+	  CaseMappingSpecials array.
+	  (with Kimihito Matsui)
+
 Tue Mar 15 13:41:22 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* internal.h (rb_gc_mark_global_tbl): should be private,

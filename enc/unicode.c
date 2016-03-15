@@ -137,15 +137,29 @@ code3_equal(const OnigCodePoint *x, const OnigCodePoint *y)
   return 1;
 }
 
+/* macros related to ONIGENC_CASE flags */
+/* defined here because not used in other files */
+#define ONIGENC_CASE_SPECIALS       (ONIGENC_CASE_TITLECASE|ONIGENC_CASE_UP_SPECIAL|ONIGENC_CASE_DOWN_SPECIAL)
+
+/* macros for length in CaseMappingSpecials array in enc/unicode/casefold.h */
+#define SpecialsLengthOffset 25  /* needs to be higher than the 22 bits used for Unicode codepoints */
+#define SpecialsLengthExtract(n)    ((n)>>SpecialsLengthOffset)
+#define SpecialsCodepointExtract(n) ((n)&((1<<SpecialsLengthOffset)-1))
+#define SpecialsLengthEncode(n)     ((n)<<SpecialsLengthOffset)
+
+#define OnigSpecialIndexMask (((1<<OnigSpecialIndexWidth)-1)<<OnigSpecialIndexWidth)
+#define OnigSpecialIndexEncode(n)   ((n)<<OnigSpecialIndexShift)
+#define OnigSpecialIndexDecode(n)   (((n)&OnigSpecialIndexMask)>>OnigSpecialIndexShift)
+
 /* macros to shorten "enc/unicode/casefold.h", undefined immediately after including the file */
 #define U ONIGENC_CASE_UPCASE
 #define D ONIGENC_CASE_DOWNCASE
 #define F ONIGENC_CASE_FOLD
-#define ST 0
-#define SU 0
-#define SL 0
+#define ST ONIGENC_CASE_TITLECASE
+#define SU ONIGENC_CASE_UP_SPECIAL
+#define SL ONIGENC_CASE_DOWN_SPECIAL
 #define I(n) 0
-#define L(n) 0
+#define L(n) SpecialsLengthEncode(n)
 
 #include "enc/unicode/casefold.h"
 
@@ -157,12 +171,6 @@ code3_equal(const OnigCodePoint *x, const OnigCodePoint *y)
 #undef SL
 #undef I
 #undef L
-
-/* macros related to ONIGENC_CASE flags */
-/* defined here because not used in other files */
-#define OnigSpecialIndexMask (((1<<OnigSpecialIndexWidth)-1)<<OnigSpecialIndexWidth)
-#define OnigSpecialIndexEncode(n) (((n)<<OnigSpecialIndexShift)&OnigSpecialIndexMask)
-#define OnigSpecialIndexDecode(n) (((n)&OnigSpecialIndexMask)>>OnigSpecialIndexShift)
 
 #include "enc/unicode/name2ctype.h"
 
@@ -654,6 +662,7 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
     OnigUChar *to_start = to;
     OnigCaseFoldType flags = *flagP;
     to_end -= CASE_MAPPING_SLACK;
+    flags |= (flags&(ONIGENC_CASE_UPCASE|ONIGENC_CASE_DOWNCASE))<<ONIGENC_CASE_SPECIAL_OFFSET;
 
     /* hopelessly preliminary implementation, just dealing with ASCII and Turkic */
     while (*pp<end && to<=to_end) {
@@ -701,19 +710,56 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
 	    }
 	    else if ((folded = onigenc_unicode_fold_lookup(code)) != 0) {
 		if (flags&OnigCaseFoldFlags(folded->n)) {
-		    int count = OnigCodePointCount(folded->n);
-		    const OnigCodePoint *next = folded->code;
+		    const OnigCodePoint *next;
+		    int count;
+
 		    MODIFIED;
-		    if (count==1)
-		        code = *next;
-		    else if (count==2) {
-			to += ONIGENC_CODE_TO_MBC(enc, *next++, to);
-			code = *next;
+		    if (flags&OnigCaseFoldFlags(folded->n)&ONIGENC_CASE_SPECIALS) {
+			OnigCodePoint *SpecialsStart = CaseMappingSpecials + OnigSpecialIndexDecode(folded->n);
+			int count;
+			
+			if (OnigCaseFoldFlags(folded->n)&ONIGENC_CASE_TITLECASE) {
+			    if (flags&ONIGENC_CASE_TITLECASE)
+				goto SpecialsCopy;
+			    else
+				SpecialsStart += SpecialsLengthExtract(*SpecialsStart);
+			}
+			if (OnigCaseFoldFlags(folded->n)&ONIGENC_CASE_DOWN_SPECIAL) {
+			    if (flags&ONIGENC_CASE_DOWN_SPECIAL)
+				goto SpecialsCopy;
+			    else
+				SpecialsStart += SpecialsLengthExtract(*SpecialsStart);
+			}
+			/* if we pass here, we know we use special upcasing, and are at the right position */
+		      SpecialsCopy:
+		        count = SpecialsLengthExtract(*SpecialsStart);
+			next = SpecialsStart;
+			if (count==1)
+			    code = SpecialsCodepointExtract(*next);
+			else if (count==2) {
+			    to += ONIGENC_CODE_TO_MBC(enc, SpecialsCodepointExtract(*next++), to);
+			    code = *next;
+			}
+			else { /* count == 3 */
+			    to += ONIGENC_CODE_TO_MBC(enc, SpecialsCodepointExtract(*next++), to);
+			    to += ONIGENC_CODE_TO_MBC(enc, *next++, to);
+			    code = *next;
+			}
 		    }
-		    else { /* count == 3 */
-			to += ONIGENC_CODE_TO_MBC(enc, *next++, to);
-			to += ONIGENC_CODE_TO_MBC(enc, *next++, to);
-			code = *next;
+		    else { /* no specials */
+			count = OnigCodePointCount(folded->n);
+			next = folded->code;
+			if (count==1)
+			    code = *next;
+			else if (count==2) {
+			    to += ONIGENC_CODE_TO_MBC(enc, *next++, to);
+			    code = *next;
+			}
+			else { /* count == 3 */
+			    to += ONIGENC_CODE_TO_MBC(enc, *next++, to);
+			    to += ONIGENC_CODE_TO_MBC(enc, *next++, to);
+			    code = *next;
+			}
 		    }
 		}
 	    }
