@@ -1,3 +1,8 @@
+Tue Mar 15 09:56:41 2016  Ian Lunderskov  <ian.lunderskov@gmail.com>
+
+	* time.c: Minor typo in Time#dst? documentation.
+	  [ci skip][fix GH-1290]
+
 Tue Mar 15 04:36:41 2016  Charles Oliver Nutter  <headius@headius.com>
 
 	* test/ruby/test_rubyoptions.rb (test_disable): add tests for
