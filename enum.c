@@ -719,6 +719,17 @@ enum_inject(int argc, VALUE *argv, VALUE obj)
             i = 0;
         }
         id = SYM2ID(op);
+        if (id == idPLUS && FIXNUM_P(v)) {
+            long n = FIX2LONG(v);
+            while (i < RARRAY_LEN(obj)) {
+                VALUE e = RARRAY_AREF(obj, i);
+                if (!FIXNUM_P(e)) break;
+                n += FIX2LONG(e); /* should not overflow long type */
+                i++;
+                if (!FIXABLE(n)) break;
+            }
+            v = LONG2NUM(n);
+        }
         for (; i<RARRAY_LEN(obj); i++) {
             v = rb_funcall(v, id, 1, RARRAY_AREF(obj, i));
         }
