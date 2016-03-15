@@ -723,10 +723,6 @@ class TestMarshal < Test::Unit::TestCase
     crash = "\x04\be:\x0F\x00omparableo:\vObject\x00"
 
     opt = %w[--disable=gems]
-    args = [opt, "Marshal.load(#{crash.dump})", true, true]
-    out, err, status = EnvUtil.invoke_ruby(*args)
-
-    assert_empty err
-    assert_predicate(status, :success?)
+    assert_ruby_status(opt, "Marshal.load(#{crash.dump})")
   end
 end
