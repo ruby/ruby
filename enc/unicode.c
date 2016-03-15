@@ -725,9 +725,7 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
 				SpecialsStart += SpecialsLengthExtract(*SpecialsStart);
 			}
 			if (OnigCaseFoldFlags(folded->n)&ONIGENC_CASE_DOWN_SPECIAL) {
-			    if (flags&ONIGENC_CASE_DOWN_SPECIAL)
-				goto SpecialsCopy;
-			    else
+			    if (!(flags&ONIGENC_CASE_DOWN_SPECIAL))
 				SpecialsStart += SpecialsLengthExtract(*SpecialsStart);
 			}
 			/* if we pass here, we know we use special upcasing, and are at the right position */
@@ -737,12 +735,15 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
 			if (count==1)
 			    code = SpecialsCodepointExtract(*next);
 			else if (count==2) {
-			    to += ONIGENC_CODE_TO_MBC(enc, SpecialsCodepointExtract(*next++), to);
+			    code = SpecialsCodepointExtract(*next++);
+			    to += ONIGENC_CODE_TO_MBC(enc, code, to);
 			    code = *next;
 			}
 			else { /* count == 3 */
-			    to += ONIGENC_CODE_TO_MBC(enc, SpecialsCodepointExtract(*next++), to);
-			    to += ONIGENC_CODE_TO_MBC(enc, *next++, to);
+			    code = SpecialsCodepointExtract(*next++);
+			    to += ONIGENC_CODE_TO_MBC(enc, code, to);
+			    code = *next++;
+			    to += ONIGENC_CODE_TO_MBC(enc, code, to);
 			    code = *next;
 			}
 		    }
@@ -752,12 +753,15 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
 			if (count==1)
 			    code = *next;
 			else if (count==2) {
-			    to += ONIGENC_CODE_TO_MBC(enc, *next++, to);
+			    code = *next++;
+			    to += ONIGENC_CODE_TO_MBC(enc, code, to);
 			    code = *next;
 			}
 			else { /* count == 3 */
-			    to += ONIGENC_CODE_TO_MBC(enc, *next++, to);
-			    to += ONIGENC_CODE_TO_MBC(enc, *next++, to);
+			    code = *next++;
+			    to += ONIGENC_CODE_TO_MBC(enc, code, to);
+			    code = *next++;
+			    to += ONIGENC_CODE_TO_MBC(enc, code, to);
 			    code = *next;
 			}
 		    }
