@@ -716,7 +716,6 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
 		    MODIFIED;
 		    if (flags&OnigCaseFoldFlags(folded->n)&ONIGENC_CASE_SPECIALS) {
 			OnigCodePoint *SpecialsStart = CaseMappingSpecials + OnigSpecialIndexDecode(folded->n);
-			int count;
 
 			if (OnigCaseFoldFlags(folded->n)&ONIGENC_CASE_TITLECASE) {
 			    if (flags&ONIGENC_CASE_TITLECASE)
@@ -732,38 +731,23 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
 		      SpecialsCopy:
 		        count = SpecialsLengthExtract(*SpecialsStart);
 			next = SpecialsStart;
-			if (count==1)
-			    code = SpecialsCodepointExtract(*next);
-			else if (count==2) {
-			    code = SpecialsCodepointExtract(*next++);
-			    to += ONIGENC_CODE_TO_MBC(enc, code, to);
-			    code = *next;
-			}
-			else { /* count == 3 */
-			    code = SpecialsCodepointExtract(*next++);
-			    to += ONIGENC_CODE_TO_MBC(enc, code, to);
-			    code = *next++;
-			    to += ONIGENC_CODE_TO_MBC(enc, code, to);
-			    code = *next;
-			}
+			code = SpecialsCodepointExtract(*next++);
 		    }
 		    else { /* no specials */
 			count = OnigCodePointCount(folded->n);
 			next = folded->code;
-			if (count==1)
-			    code = *next;
-			else if (count==2) {
-			    code = *next++;
-			    to += ONIGENC_CODE_TO_MBC(enc, code, to);
-			    code = *next;
-			}
-			else { /* count == 3 */
-			    code = *next++;
-			    to += ONIGENC_CODE_TO_MBC(enc, code, to);
-			    code = *next++;
-			    to += ONIGENC_CODE_TO_MBC(enc, code, to);
-			    code = *next;
-			}
+			code = *next++;
+		    }
+		    if (count==1)
+			;
+		    else if (count==2) {
+			to += ONIGENC_CODE_TO_MBC(enc, code, to);
+			code = *next;
+		    }
+		    else { /* count == 3 */
+			to += ONIGENC_CODE_TO_MBC(enc, code, to);
+			to += ONIGENC_CODE_TO_MBC(enc, *next++, to);
+			code = *next;
 		    }
 		}
 	    }

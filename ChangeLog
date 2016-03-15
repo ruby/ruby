@@ -1,3 +1,8 @@
+Tue Mar 15 16:29:51 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode.c: Eliminating common code.
+	  (with Kimihito Matsui)
+
 Tue Mar 15 16:17:09 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/unicode.c: Expansion of some code repetition in preparation for
