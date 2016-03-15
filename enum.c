@@ -719,7 +719,8 @@ enum_inject(int argc, VALUE *argv, VALUE obj)
             i = 0;
         }
         id = SYM2ID(op);
-        if (id == idPLUS && FIXNUM_P(v)) {
+        if (id == idPLUS && FIXNUM_P(v) &&
+            rb_method_basic_definition_p(rb_cFixnum, idPLUS)) {
             long n = FIX2LONG(v);
             while (i < RARRAY_LEN(obj)) {
                 VALUE e = RARRAY_AREF(obj, i);

@@ -1,3 +1,8 @@
+Tue Mar 15 21:38:28 2016  Tanaka Akira  <akr@fsij.org>
+
+	* enum.c (enum_inject): Consider redefinition of Fixnum#+.
+	  [ruby-dev:49510] [Bug#12178] Reported by usa.
+
 Tue Mar 15 20:32:57 2016  Tanaka Akira  <akr@fsij.org>
 
 	* enum.c (enum_inject): Implement the specialized code for :+ operator

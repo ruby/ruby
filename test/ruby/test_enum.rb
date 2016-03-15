@@ -184,6 +184,18 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal(nil, @empty.inject() {9})
   end
 
+  def test_inject_array_plus
+    assert_separately([], <<-"end;")
+      class Fixnum
+        undef :+
+        def +(x)
+          0
+        end
+      end
+      assert_equal(0, [1,2,3].inject(:+), "[ruby-dev:49510] [Bug#12178]")
+    end;
+  end
+
   def test_partition
     assert_equal([[1, 3, 1], [2, 2]], @obj.partition {|x| x % 2 == 1 })
     cond = ->(x, i) { x % 2 == 1 }
