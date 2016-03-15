@@ -203,29 +203,29 @@ rb_str_new(const char *ptr, long len) ::
 
   新しいRubyの文字列を生成する．
 
-rb_str_new2(const char *ptr)
-rb_str_new_cstr(const char *ptr)
+rb_str_new2(const char *ptr) ::
+rb_str_new_cstr(const char *ptr) ::
 
   Cの文字列からRubyの文字列を生成する．この関数の機能は
   rb_str_new(ptr, strlen(ptr))と同等である．
 
-rb_str_new_literal(const char *ptr)
+rb_str_new_literal(const char *ptr) ::
 
   Cのリテラル文字列からRubyの文字列を生成する．
 
-rb_tainted_str_new(const char *ptr, long len)
+rb_tainted_str_new(const char *ptr, long len) ::
 
   汚染マークが付加された新しいRubyの文字列を生成する．外部
   からのデータに基づく文字列には汚染マークが付加されるべき
   である．
 
-rb_tainted_str_new2(const char *ptr)
-rb_tainted_str_new_cstr(const char *ptr)
+rb_tainted_str_new2(const char *ptr) ::
+rb_tainted_str_new_cstr(const char *ptr) ::
 
   Cの文字列から汚染マークが付加されたRubyの文字列を生成する．
 
-rb_sprintf(const char *format, ...)
-rb_vsprintf(const char *format, va_list ap)
+rb_sprintf(const char *format, ...) ::
+rb_vsprintf(const char *format, va_list ap) ::
 
   Cの文字列formatと続く引数をprintf(3)のフォーマットにしたがって
   整形し，Rubyの文字列を生成する．
@@ -234,52 +234,52 @@ rb_vsprintf(const char *format, va_list ap)
   ときはObject#inspect)を使ったVALUEの出力に利用できる．これ
   は"%i"と衝突するため，整数には"%d"を使用すること．
 
-rb_str_cat(VALUE str, const char *ptr, long len)
+rb_str_cat(VALUE str, const char *ptr, long len) ::
 
   Rubyの文字列strにlenバイトの文字列ptrを追加する．
 
-rb_str_cat2(VALUE str, const char* ptr)
-rb_str_cat_cstr(VALUE str, const char* ptr)
+rb_str_cat2(VALUE str, const char* ptr) ::
+rb_str_cat_cstr(VALUE str, const char* ptr) ::
 
   Rubyの文字列strにCの文字列ptrを追加する．この関数の機能は
   rb_str_cat(str, ptr, strlen(ptr))と同等である．
 
-rb_str_catf(VALUE str, const char* format, ...)
-rb_str_vcatf(VALUE str, const char* format, va_list ap)
+rb_str_catf(VALUE str, const char* format, ...) ::
+rb_str_vcatf(VALUE str, const char* format, va_list ap) ::
 
   Cの文字列formatと続く引数をprintf(3)のフォーマットにしたがって
   整形し，Rubyの文字列strに追加する．この関数の機能は，それぞれ
   rb_str_cat2(str, rb_sprintf(format, ...)) や
   rb_str_cat2(str, rb_vsprintf(format, ap)) と同等である．
 
-rb_enc_str_new(const char *ptr, long len, rb_encoding *enc)
-rb_enc_str_new_cstr(const char *ptr, rb_encoding *enc)
+rb_enc_str_new(const char *ptr, long len, rb_encoding *enc) ::
+rb_enc_str_new_cstr(const char *ptr, rb_encoding *enc) ::
 
   指定されたエンコーディングでRubyの文字列を生成する.
 
-rb_enc_str_new_literal(const char *ptr)
+rb_enc_str_new_literal(const char *ptr) ::
 
   Cのリテラル文字列から指定されたエンコーディングでRubyの文字列を生成する．
 
-rb_usascii_str_new(const char *ptr, long len)
-rb_usascii_str_new_cstr(const char *ptr)
+rb_usascii_str_new(const char *ptr, long len) ::
+rb_usascii_str_new_cstr(const char *ptr) ::
 
   エンコーディングがUS-ASCIIのRubyの文字列を生成する.
 
-rb_usascii_str_new_literal(const char *ptr)
+rb_usascii_str_new_literal(const char *ptr) ::
 
   Cのリテラル文字列からエンコーディングがUS-ASCIIのRubyの文字列を生成する．
 
-rb_utf8_str_new(const char *ptr, long len)
-rb_utf8_str_new_cstr(const char *ptr)
+rb_utf8_str_new(const char *ptr, long len) ::
+rb_utf8_str_new_cstr(const char *ptr) ::
 
   エンコーディングがUTF-8のRubyの文字列を生成する.
 
-rb_usascii_str_new_literal(const char *ptr)
+rb_usascii_str_new_literal(const char *ptr) ::
 
   Cのリテラル文字列からエンコーディングがUTF-8のRubyの文字列を生成する．
 
-rb_str_resize(VALUE str, long len)
+rb_str_resize(VALUE str, long len) ::
 
   Rubyの文字列のサイズをlenバイトに変更する．strの長さは前
   以てセットされていなければならない．lenが元の長さよりも短
@@ -288,37 +288,36 @@ rb_str_resize(VALUE str, long len)
   れないでゴミになるだろう．この関数の呼び出しによって
   RSTRING_PTR(str)が変更されるかもしれないことに注意．
 
-rb_str_set_len(VALUE str, long len)
+rb_str_set_len(VALUE str, long len) ::
 
   Rubyの文字列のサイズをlenバイトにセットする．strが変更可
   能でなければ例外が発生する．RSTRING_LEN(str)とは無関係に，
   lenバイトまでの内容は保存される．lenはstrの容量を越えてい
   てはならない．
 
+=== 配列に対する関数
 
-== 配列に対する関数
-
-rb_ary_new()
+rb_ary_new() ::
 
   要素が0の配列を生成する．
 
-rb_ary_new2(long len)
-rb_ary_new_capa(long len)
+rb_ary_new2(long len) ::
+rb_ary_new_capa(long len) ::
 
   要素が0の配列を生成する．len要素分の領域をあらかじめ割り
   当てておく．
 
-rb_ary_new3(long n, ...)
-rb_ary_new_from_args(long n, ...)
+rb_ary_new3(long n, ...) ::
+rb_ary_new_from_args(long n, ...) ::
 
   引数で指定したn要素を含む配列を生成する．
 
-rb_ary_new4(long n, VALUE *elts)
-rb_ary_new_from_values(long n, VALUE *elts)
+rb_ary_new4(long n, VALUE *elts) ::
+rb_ary_new_from_values(long n, VALUE *elts) ::
 
   配列で与えたn要素の配列を生成する．
 
-rb_ary_to_ary(VALUE obj)
+rb_ary_to_ary(VALUE obj) ::
 
   オブジェクトを配列に変換する.
   Object#to_aryと同等である.
@@ -327,28 +326,30 @@ rb_ary_to_ary(VALUE obj)
 引数aryに配列を渡さなければならない. さもないと
 コアを吐く.
 
-rb_ary_aref(argc, VALUE *argv, VALUE ary)
+rb_ary_aref(argc, VALUE *argv, VALUE ary) ::
 
   Array#[]と同等.
 
-rb_ary_entry(VALUE ary, long offset)
+rb_ary_entry(VALUE ary, long offset) ::
 
-  ary[offset]
+  \ary[offset]
 
 rb_ary_store(VALUE ary, long offset, VALUE obj) ::
 
-  ary[offset] = obj
+  \ary[offset] = obj
 
-rb_ary_subseq(VALUE ary, long beg, long len)
+rb_ary_subseq(VALUE ary, long beg, long len) ::
 
   ary[beg, len]
 
-rb_ary_push(VALUE ary, VALUE val)
-rb_ary_pop(VALUE ary)
-rb_ary_shift(VALUE ary)
-rb_ary_unshift(VALUE ary, VALUE val)
+rb_ary_push(VALUE ary, VALUE val) ::
+rb_ary_pop(VALUE ary) ::
+rb_ary_shift(VALUE ary) ::
+rb_ary_unshift(VALUE ary, VALUE val) ::
 
-rb_ary_cat(VALUE ary, const VALUE *ptr, long len)
+  ary.push, ary.pop, ary.shift, ary.unshift
+
+rb_ary_cat(VALUE ary, const VALUE *ptr, long len) ::
 
   配列aryにptrからlen個のオブジェクトを追加する．
 
@@ -365,9 +366,9 @@ Rubyで提供されている関数を使えばRubyインタプリタに新しい
 を追加することができます．Rubyでは以下の機能を追加する関数が
 提供されています．
 
-* クラス，モジュール
-* メソッド，特異メソッドなど
-* 定数
+- クラス，モジュール
+- メソッド，特異メソッドなど
+- 定数
 
 では順に紹介します．
 
@@ -397,7 +398,6 @@ Rubyで提供されている関数を使えばRubyインタプリタに新しい
 
   void rb_define_singleton_method(VALUE object, const char *name,
                                   VALUE (*func)(), int argc)
-
 
 念のため説明すると「特異メソッド」とは，その特定のオブジェク
 トに対してだけ有効なメソッドです．RubyではよくSmalltalkにお
@@ -452,7 +452,6 @@ privateメソッドでもあるものです．例をあげるとMathモジュー
 めの関数は以下の通りです．
 
   void rb_define_global_function(const char *name, VALUE (*func)(), int argc)
-
 
 メソッドの別名を定義するための関数は以下の通りです．
 
@@ -612,14 +611,14 @@ C言語とRubyの間で情報を共有する方法について解説します．
 
 以下のRubyの定数はCのレベルから参照できます．
 
-  Qtrue
-  Qfalse
+Qtrue ::
+Qfalse ::
 
-真偽値．QfalseはC言語でも偽とみなされます(つまり0)．
+  真偽値．QfalseはC言語でも偽とみなされます(つまり0)．
 
-  Qnil
+Qnil ::
 
-C言語から見た「nil」．
+  C言語から見た「nil」．
 
 == CとRubyで共有される大域変数
 
@@ -649,13 +648,14 @@ CとRubyで大域変数を使って情報を共有できます．共有できる
 す．変数が参照された時には関数getterが，変数に値がセットされ
 た時には関数setterが呼ばれる．hookを指定しない場合はgetterや
 setterに0を指定します．
-# getterもsetterも0ならばrb_define_variable()と同じになる．
+--
+getterもsetterも0ならばrb_define_variable()と同じになる．
+++
 
 getterとsetterの仕様は次の通りです．
 
   VALUE (*getter)(ID id, VALUE *var);
   void (*setter)(VALUE val, ID id, VALUE *var);
-
 
 それから，対応するCの変数を持たないRubyの大域変数を定義する
 こともできます. その変数の値はフック関数のみによって取得・設定
@@ -679,11 +679,14 @@ Cの世界で定義されたデータ(構造体)をRubyのオブジェクトと�
 マクロ群を用いて構造体へのポインタとRubyのオブジェクトとを互
 いに変換できます．
 
-# 古い(非Typedな)Data_XXXマクロ群は非推奨になりました．
-# 将来のバージョンのRubyでは古いマクロは動作しなくなる可能性
-# があります．
+--
+古い(非Typedな)Data_XXXマクロ群は非推奨になりました．
+将来のバージョンのRubyでは古いマクロは動作しなくなる可能性
+があります．
+++
 
 === 構造体からオブジェクトへ
+
 構造体へのポインタsvalをRubyオブジェクトに変換するには次のマ
 クロを使います。
 
@@ -730,7 +733,9 @@ dmarkはガーベージコレクタがオブジェクトへの参照をマーク
 のすべての参照をマークしなければなりません．
 そのような参照を含まない時には0を指定します．
 
-# そのような参照は勧められません．
+--
+そのような参照は勧められません．
+++
 
 dfreeはこの構造体がもう不要になった時に呼ばれる関数です．こ
 の関数がガーベージコレクタから呼ばれます．これが-1の場合は，
@@ -933,7 +938,6 @@ fdbm_delete()はこのようになっています．
 い，第4変数以降に指定したVALUEへの参照に値を代入してくれま
 す．
 
-
 引数をRubyの配列として受け取るメソッドの例には
 Thread#initializeがあります．実装はこうです．
 
@@ -1063,12 +1067,13 @@ variable.c :: 変数と定数
 
 == Rubyの構文解析器
 
-  parse.y      : 字句解析器と構文定義
-    -> parse.c : 自動生成
-  keywords     : 予約語
-    -> lex.c   : 自動生成
+parse.y       :: 字句解析器と構文定義
+parse.c       :: 自動生成
+keywords      :: 予約語
+lex.c         :: 自動生成
 
 == Rubyの評価器 (通称YARV)
+
   compile.c
   eval.c
   eval_error.c
@@ -1153,6 +1158,7 @@ sprintf.c    :: String#sprintf
 string.c     :: String
 struct.c     :: Struct
 time.c       :: Time
+
 defs/known_errors.def :: 例外クラス Errno::*
 -> known_errors.inc   :: 自動生成
 
@@ -1301,7 +1307,7 @@ void rb_define_hooked_variable(const char *name, VALUE *var, VALUE (*getter)(), 
   setterが呼ばれる．getterやsetterに0を指定した時にはhookを
   指定しないのと同じ事になる．
 
-void rb_global_variable(VALUE *var)
+void rb_global_variable(VALUE *var) ::
 
   GCのため，Rubyプログラムからはアクセスされないが, Rubyオブ
   ジェクトを含む大域変数をマークする．
@@ -1384,7 +1390,7 @@ rb_scan_args(int argc, VALUE *argv, const char *fmt, ...) ::
   返り値は与えられた引数の数です．オプションハッシュおよびイ
   テレータブロックは数えません．
 
-int rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optional, VALUE *values)
+int rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optional, VALUE *values) ::
 
   キーワードで指定された値をtableにしたがって取り出します．
   tableの最初のrequired個のIDは必須キーワードを表し，続く
@@ -1396,7 +1402,7 @@ int rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optiona
   新しいHashとして省略可能引数の次に保存されますが，そうでなけ
   れば"unknown keyword"ArgumentErrorが発生します．
 
-VALUE rb_extract_keywords(VALUE *original_hash)
+VALUE rb_extract_keywords(VALUE *original_hash) ::
 
   original_hashで参照されるHashオブジェクトから，Symbolである
   キーとその値を新しいHashに取り出します．original_hashの指す
@@ -1422,7 +1428,7 @@ VALUE rb_funcallv_public(VALUE recv, ID mid, int argc, VALUE *argv) ::
   メソッド呼び出し．
   publicなメソッドしか呼べない．
 
-VALUE rb_eval_string(const char *str)
+VALUE rb_eval_string(const char *str) ::
 
   文字列をRubyスクリプトとしてコンパイル・実行する．
 
@@ -1467,7 +1473,7 @@ VALUE rb_block_call(VALUE obj, ID mid, int argc, VALUE * argv, VALUE (*func) (AN
   data2はArrayとしてパックされている．第三, 第四引数のargcと
   argvによってyieldされた値を取り出すことができる．
 
-[OBSOLETE] VALUE rb_iterate(VALUE (*func1)(), VALUE arg1, VALUE (*func2)(), VALUE arg2) ::
+\[OBSOLETE] VALUE rb_iterate(VALUE (*func1)(), VALUE arg1, VALUE (*func2)(), VALUE arg2) ::
 
   func2をブロックとして設定し, func1をイテレータとして呼ぶ．
   func1には arg1が引数として渡され, func2には第1引数にイテレー
@@ -1576,34 +1582,33 @@ void ruby_script(char *name) ::
 
 == インタプリタのイベントのフック
 
-  void rb_add_event_hook(rb_event_hook_func_t func, rb_event_flag_t events,
-                         VALUE data)
+void rb_add_event_hook(rb_event_hook_func_t func, rb_event_flag_t events, VALUE data) ::
 
-指定されたインタプリタのイベントに対するフック関数を追加します．
-eventsは以下の値のorでなければなりません:
+  指定されたインタプリタのイベントに対するフック関数を追加します．
+  eventsは以下の値のorでなければなりません:
 
-  RUBY_EVENT_LINE
-  RUBY_EVENT_CLASS
-  RUBY_EVENT_END
-  RUBY_EVENT_CALL
-  RUBY_EVENT_RETURN
-  RUBY_EVENT_C_CALL
-  RUBY_EVENT_C_RETURN
-  RUBY_EVENT_RAISE
-  RUBY_EVENT_ALL
+    RUBY_EVENT_LINE
+    RUBY_EVENT_CLASS
+    RUBY_EVENT_END
+    RUBY_EVENT_CALL
+    RUBY_EVENT_RETURN
+    RUBY_EVENT_C_CALL
+    RUBY_EVENT_C_RETURN
+    RUBY_EVENT_RAISE
+    RUBY_EVENT_ALL
 
-rb_event_hook_func_tの定義は以下の通りです:
+  rb_event_hook_func_tの定義は以下の通りです:
 
-  typedef void (*rb_event_hook_func_t)(rb_event_t event, VALUE data,
-                                       VALUE self, ID id, VALUE klass)
+    typedef void (*rb_event_hook_func_t)(rb_event_t event, VALUE data,
+                                         VALUE self, ID id, VALUE klass)
 
-rb_add_event_hook() の第3引数 data は，フック関数の第2引数と
-して渡されます．これは1.8では現在のNODEへのポインタでした．以
-下の RB_EVENT_HOOKS_HAVE_CALLBACK_DATA も参照してください．
+  rb_add_event_hook() の第3引数 data は，フック関数の第2引数と
+  して渡されます．これは1.8では現在のNODEへのポインタでした．以
+  下の RB_EVENT_HOOKS_HAVE_CALLBACK_DATA も参照してください．
 
-  int rb_remove_event_hook(rb_event_hook_func_t func)
+int rb_remove_event_hook(rb_event_hook_func_t func) ::
 
-指定されたフック関数を削除します．
+  指定されたフック関数を削除します．
 
 == 互換性のためのマクロ
 
@@ -1633,7 +1638,7 @@ HAVE_RB_IO_T ::
 
 USE_SYMBOL_AS_METHOD_NAME ::
 
-  メソッド名を返すメソッド，Module#methods, #singleton_methods
+  メソッド名を返すメソッド，Module#methods, \#singleton_methods
   などがSymbolを返すことを意味する．
 
 HAVE_RUBY_*_H ::
@@ -1745,7 +1750,7 @@ disable_config(config, *defaults) ::
   --disable-<config>が指定されていた場合はfalseを返す．
   どちらも指定されていない場合は，ブロックつきで呼び出されて
   いる場合は*defaultsをyieldした結果，ブロックなしなら
-  *defaultsを返す．
+  \*defaultsを返す．
 
 dir_config(target[, default_dir]) ::
 dir_config(target[, default_include, default_lib]) ::

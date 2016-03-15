@@ -1,3 +1,9 @@
+Tue Mar 15 12:51:06 2016  Marcus Stollsteimer  <sto.mar@web.de>
+
+	* doc/extension.ja.rdoc: Fix RDoc markup in doc/extension*.rdoc.
+	  [ci skip][Bug #12143][ruby-core:74143]
+	* doc/extension.rdoc: ditto.
+
 Tue Mar 15 09:56:41 2016  Ian Lunderskov  <ian.lunderskov@gmail.com>
 
 	* time.c: Minor typo in Time#dst? documentation.
