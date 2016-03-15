@@ -1,3 +1,48 @@
+Sat Mar 16 03:01:32 2016  Vladimir Makarov  <vmakarov@redhat.com>
+
+	* hash.c (obj_any_hash): Move up.
+	(jauquet_prime_mod): New.
+	(any_hash, rb_any_hash): Make a copy and rename to rb_any_hash and
+	rb_any_hash_strong.  Use non-crypto hash functions to the original
+	ones.
+	(rb_num_hash_start): Modify.
+	(objhash): Add rb_any_strong.
+	* include/ruby/st.h (st_hash_type): Add field strong_hash.
+	(struct st_table): Add new field curr_hash.
+	(st_hash_index, st_hash_double): New.
+	* st.c: (do_hash): Use curr_hash.
+	(make_tab_empty): Set up curr_hash.
+	(inside_table_rebuild_p): New.
+	(rebuild_table): Set up inside_table_rebuild_p.  Extend an assert.
+	(reset_entry_hashes): New.
+	(HIT_THRESHOULD_FOR_STRONG_HASH): New.
+	(find_table_bin, find_table_bin_ptr): Add optional code for double
+	probing.
+	(find_table_bin_ptr_and_reserve): Ditto.  Add code for switching
+	to stronger hashes.  Change arg hash_value type.  Adjust the
+	calls.
+	(Uint128Low64, Uint128High64, Hash128to64, UNALIGNED_LOAD64): New.
+	(UNALIGNED_LOAD32, uint32_in_expected_order): New
+	(uint64_in_expected_order, bswap_32, bswap_64, LIKELY, Fetch64):
+	New.
+	(Fetch32, k0, k1, k2, k3, Rotate, RotateByAtLeast1, ShiftMix):
+	New.
+	(HashLen16, HashLen0to16, HashLen17to32, pair64): New.
+	(WeakHashLen32WithSeeds0, WeakHashLen32WithSeeds, HashLen33to64):
+	New.
+	(CityHash64, CityHash64WithSeeds, CityHash64WithSeed): New.
+	(UNALIGNED_WORD_ACCESS,MurmurMagic_1, MurmurMagic_2, MurmurMagic):
+	Remove.
+	(murmur, murmur_finish, murmur_step): Remove.
+	(UNALIGNED_ADD_4, UNALIGNED_ADD_8, UNALIGNED_ADD_16): Remove.
+	(UNALIGNED_ADD_ALL, UNALIGNED_ADD, st_hash_uint32, ): Remove.
+	(strhash, st_hash, st_hash_uint, st_hash_end, st_hash_start):
+	Redefine.
+	(st_hash_index, st_hash_double): New.
+	* benchmark/bm_hash_small2.rb : New.
+	* benchmark/bm_hash_small4.rb: New.
+	* benchmark/bm_hash_small8.rb: New.
+
 Sat Mar 12 07:59:37 2016  Vladimir Makarov  <vmakarov@redhat.com>
 
 	* compile.c (ibf_table_index, ibf_dump_id_list_i): Use num_entries

@@ -129,8 +129,68 @@ rb_hash(VALUE obj)
 
 long rb_objid_hash(st_index_t index);
 
+static st_index_t rb_num_hash_start(st_index_t n);
+
+static st_index_t
+obj_any_hash(VALUE obj)
+{
+    obj = rb_hash(obj);
+    return FIX2LONG(obj);
+}
+
+/* Prime number (79087987342985798987987) mod 32/64 used for hash
+   calculations.  */
+#if SIZEOF_INT == SIZEOF_VOIDP
+static const st_index_t jauquet_prime_mod = 2053222611; /* mod 32 */
+#else
+static const st_index_t jauquet_prime_mod = 6795498992951210195ULL; /* mod 64 */
+#endif
+
 static st_index_t
 any_hash(VALUE a, st_index_t (*other_func)(VALUE))
+{
+    st_index_t hnum;
+
+    if (SPECIAL_CONST_P(a)) {
+	if (STATIC_SYM_P(a)) {
+	    hnum = a >> (RUBY_SPECIAL_SHIFT + ID_SCOPE_SHIFT);
+	    goto out;
+	}
+	else if (FLONUM_P(a)) {
+	    /* prevent pathological behavior: [Bug #10761] */
+	    goto flt;
+	}
+	hnum = rb_num_hash_start(a);
+    }
+    else if (BUILTIN_TYPE(a) == T_STRING) {
+      hnum = st_hash(RSTRING_PTR(a), RSTRING_LEN(a), jauquet_prime_mod);
+
+    }
+    else if (BUILTIN_TYPE(a) == T_SYMBOL) {
+	hnum = RSYMBOL(a)->hashval;
+    }
+    else if (BUILTIN_TYPE(a) == T_FLOAT) {
+        double d;
+    flt:
+	d = rb_float_value(a);
+	hnum = st_hash_double(d);
+    }
+    else {
+	hnum = other_func(a);
+    }
+  out:
+    hnum <<= 1;
+    return (st_index_t)RSHIFT(hnum, 1);
+}
+
+static st_index_t
+rb_any_hash(VALUE a)
+{
+    return any_hash(a, obj_any_hash);
+}
+
+static st_index_t
+any_hash_strong(VALUE a, st_index_t (*other_func)(VALUE))
 {
     VALUE hval;
     st_index_t hnum;
@@ -167,28 +227,14 @@ any_hash(VALUE a, st_index_t (*other_func)(VALUE))
 }
 
 static st_index_t
-obj_any_hash(VALUE obj)
+rb_any_hash_strong(VALUE a)
 {
-    obj = rb_hash(obj);
-    return FIX2LONG(obj);
-}
-
-static st_index_t
-rb_any_hash(VALUE a)
-{
-    return any_hash(a, obj_any_hash);
+    return any_hash_strong(a, obj_any_hash);
 }
 
 static st_index_t
 rb_num_hash_start(st_index_t n)
 {
-    /* Prime number (79087987342985798987987) mod 32/64 used for hash
-       calculations.  */
-#if SIZEOF_INT == SIZEOF_VOIDP
-    const st_index_t jauquet_prime_mod = 2053222611; /* mod 32 */
-#else
-    const st_index_t jauquet_prime_mod = 6795498992951210195; /* mod 64 */
-#endif
     /*
      * This hash function is lightly-tuned for Ruby.  Further tuning
      * should be possible.  Notes:
@@ -198,8 +244,12 @@ rb_num_hash_start(st_index_t n)
      * - (n >> (RUBY_SPECIAL_SHIFT+3)) was added to make symbols hash well,
      * - avoid expensive modulo instructions.
      */
+#if USE_FLONUM
     if (n & 3)
-         /* FIXNUM and FLONUM.  Previous varaint was analogous to the
+#else
+    if (n & 1)
+#endif
+         /* FIXNUM and FLONUM.  Previous variant was analogous to the
 	    else case.  As the result, collisions achieved 100% for
 	    the numbers.  This variant works much better especially
 	    for FIXNUM.  */
@@ -214,7 +264,7 @@ rb_objid_hash(st_index_t index)
     st_index_t hnum = rb_num_hash_start(index);
 
     hnum = rb_hash_start(hnum);
-    hnum = rb_hash_uint(hnum, (st_index_t)rb_any_hash);
+    hnum = rb_hash_uint(hnum, (st_index_t)rb_any_hash_strong);
     hnum = rb_hash_end(hnum);
     return hnum;
 }
@@ -228,7 +278,7 @@ objid_hash(VALUE obj)
 VALUE
 rb_obj_hash(VALUE obj)
 {
-    st_index_t hnum = any_hash(obj, objid_hash);
+    st_index_t hnum = any_hash_strong(obj, objid_hash);
     return LONG2FIX(hnum);
 }
 
@@ -241,6 +291,7 @@ rb_hash_iter_lev(VALUE h)
 static const struct st_hash_type objhash = {
     rb_any_cmp,
     rb_any_hash,
+    rb_any_hash_strong,
 };
 
 #define rb_ident_cmp st_numcmp

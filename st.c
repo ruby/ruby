@@ -177,7 +177,7 @@ static const struct st_hash_type type_strcasehash = {
 /* Return hash value of KEY for TABLE.  */
 static inline st_index_t
 do_hash(st_data_t key, st_table *table) {
-    st_index_t hash = (st_index_t)(table->type->hash)(key);
+    st_index_t hash = (st_index_t)(table->curr_hash)(key);
 
     /* MAX_ST_INDEX_VAL is a reserved value used for deleted entry.
        Map it into another value.  Such mapping should be extremely
@@ -284,10 +284,11 @@ initialize_bins(st_table *tab)
         MARK_BIN_EMPTY(&bins[i]);
 }
 
-/* Make table TAB empty.  */
+/* Make table TAB empty.  Use the major hash function.  */
 static void
 make_tab_empty(st_table *tab)
 {
+    tab->curr_hash = tab->type->hash;
     tab->num_entries = 0;
     tab->deleted_bins = 0;
     tab->rebuilds_num = 0;
@@ -514,7 +515,7 @@ find_table_bin_ptr(st_table *tab, st_index_t hash_value,
 		   st_data_t key, st_bin_t **res_bin_ptr);
 
 static st_bin_t
-find_table_bin_ptr_and_reserve(st_table *tab, st_index_t hash_value,
+find_table_bin_ptr_and_reserve(st_table *tab, st_index_t *hash_value,
 			       st_data_t key, st_bin_t **res_bin_ptr);
 
 #ifdef HASH_LOG
@@ -566,7 +567,7 @@ rebuild_bins(st_table *tab)
         for (i = tab->entries_start;;) {
 	    curr_entry_ptr = &entries[i];
 	    if (! DELETED_ENTRY_P(curr_entry_ptr)) {
-	        bin = find_table_bin_ptr_and_reserve(tab, curr_entry_ptr->hash,
+	        bin = find_table_bin_ptr_and_reserve(tab, &curr_entry_ptr->hash,
 						     curr_entry_ptr->key, &bin_ptr);
 		st_assert(tab->rebuilds_num == check && EMPTY_BIN_P(bin));
 		*bin_ptr = (curr_entry_ptr - entries);
@@ -589,6 +590,8 @@ rebuild_bins(st_table *tab)
 #error "REBUILD_THRESHOLD should be >=2"
 #endif
 
+static int inside_table_rebuild_p = FALSE;
+
 /* Rebuild table TAB.  Rebuilding removes all deleted bins and
    entries and can change size of the table entries and bins
    arrays.  Rebuilding is implemented by creation a new table for
@@ -606,6 +609,7 @@ rebuild_table(st_table *tab)
     bound = tab->entries_bound;
     entries = tab->entries;
     mask = entries_mask(tab);
+    inside_table_rebuild_p = TRUE;
     if (tab->num_entries < tab->allocated_entries
 	&& (REBUILD_THRESHOLD * tab->num_entries > tab->allocated_entries
 	    || tab->num_entries < (1 << MINIMAL_POWER2))) {
@@ -633,7 +637,7 @@ rebuild_table(st_table *tab)
 			first_p = FALSE;
 		    }
 		    if (tab->bins != NULL) {
-		        new_bin = find_table_bin_ptr_and_reserve(tab, curr_entry_ptr->hash,
+		        new_bin = find_table_bin_ptr_and_reserve(tab, &curr_entry_ptr->hash,
 								 curr_entry_ptr->key,
 								 &new_bin_ptr);
 			st_assert(EMPTY_BIN_P(new_bin));
@@ -651,7 +655,9 @@ rebuild_table(st_table *tab)
         st_assert (bound != 0 && tab->num_entries != 0);
         new_tab = st_init_table_with_size(tab->type,
 					  2 * tab->num_entries - 1);
-	st_assert(bound <= new_tab->allocated_entries);
+	st_assert(bound <= new_tab->allocated_entries
+		  && new_tab->curr_hash == new_tab->type->hash);
+	new_tab->curr_hash = tab->curr_hash;
 	new_entries = new_tab->entries;
 	ni = 0;
 	for (i = tab->entries_start;;) {
@@ -659,7 +665,7 @@ rebuild_table(st_table *tab)
 	    if (! DELETED_ENTRY_P(curr_entry_ptr)) {
 	        new_entries[ni] = *curr_entry_ptr;
 		if (new_tab->bins != NULL) {
-		    new_bin = find_table_bin_ptr_and_reserve(new_tab, curr_entry_ptr->hash,
+		    new_bin = find_table_bin_ptr_and_reserve(new_tab, &curr_entry_ptr->hash,
 							     curr_entry_ptr->key,
 							     &new_bin_ptr);
 		    st_assert(new_tab->rebuilds_num == 0 && EMPTY_BIN_P(new_bin));
@@ -684,9 +690,30 @@ rebuild_table(st_table *tab)
 	tab->entries_bound = tab->num_entries;
     }
     tab->rebuilds_num++;
+    inside_table_rebuild_p = FALSE;
 #ifdef ST_DEBUG
     st_check(tab);
 #endif
+}
+
+/* Recalculate hashes of entries in table TAB.  */
+static void
+reset_entry_hashes (st_table *tab)
+{
+    st_index_t i, bound, mask;
+    st_table_entry *entries, *curr_entry_ptr;
+    
+    bound = tab->entries_bound;
+    entries = tab->entries;
+    mask = entries_mask(tab);
+    for (i = tab->entries_start;;) {
+      curr_entry_ptr = &entries[i];
+      if (! DELETED_ENTRY_P(curr_entry_ptr))
+	  curr_entry_ptr->hash = do_hash(curr_entry_ptr->key, tab);
+      if (++i == bound)
+	  break;
+      i &= mask;
+    }
 }
 
 /* Return the next secondary hash index for table TAB using previous
@@ -734,6 +761,8 @@ find_entry(st_table *table, st_index_t hash_value, st_data_t key) {
     return EMPTY_BIN;
 }
 
+/*#define DOUBLE_PROBE*/
+
 /* Return TABLE bin vlaue for HASH_VALUE and KEY.  We always find such
    bin as bins array length is bigger entries array.  The result
    bin value is always empty if the table has no entry with KEY.  If the
@@ -743,7 +772,12 @@ find_entry(st_table *table, st_index_t hash_value, st_data_t key) {
 static st_bin_t
 find_table_bin(st_table *table, st_index_t hash_value, st_data_t key)
 {
-    st_index_t ind, peterb;
+    st_index_t ind;
+#ifdef DOUBLE_PROBE
+    st_index_t d;
+#else
+    st_index_t peterb;
+#endif
     st_bin_t bin;
     st_table_entry *entries = table->entries;
     
@@ -751,7 +785,11 @@ find_table_bin(st_table *table, st_index_t hash_value, st_data_t key)
     if (table->bins == NULL)
 	return find_entry(table, hash_value, key);
     ind = hash_bin(hash_value, table);
+#ifdef DOUBLE_PROBE
+    d = 1;
+#else
     peterb = hash_value;
+#endif
     FOUND_BIN;
     for (;;) {
         bin = table->bins[ind];
@@ -760,7 +798,12 @@ find_table_bin(st_table *table, st_index_t hash_value, st_data_t key)
             break;
         else if (EMPTY_BIN_P(bin))
             break;
+#ifdef DOUBLE_PROBE
+	ind = hash_bin(ind + d, table);
+	d++;
+#else
         ind = secondary_hash(ind, table, &peterb);
+#endif
         COLLISION;
     }
     return bin;
@@ -777,7 +820,12 @@ static st_bin_t
 find_table_bin_ptr(st_table *table, st_index_t hash_value, st_data_t key,
 		   st_bin_t **res_bin_ptr)
 {
-    st_index_t ind, peterb;
+    st_index_t ind;
+#ifdef DOUBLE_PROBE
+    st_index_t d;
+#else
+    st_index_t peterb;
+#endif
     st_bin_t *bin_ptr;
     st_table_entry *entries = table->entries;
     
@@ -787,7 +835,11 @@ find_table_bin_ptr(st_table *table, st_index_t hash_value, st_data_t key,
 	return find_entry(table, hash_value, key);
     }
     ind = hash_bin(hash_value, table);
+#ifdef DOUBLE_PROBE
+    d = 1;
+#else
     peterb = hash_value;
+#endif
     FOUND_BIN;
     for (;;) {
         bin_ptr = table->bins + ind;
@@ -796,12 +848,23 @@ find_table_bin_ptr(st_table *table, st_index_t hash_value, st_data_t key,
             break;
         else if (EMPTY_BIN_PTR_P(bin_ptr))
             break;
+#ifdef DOUBLE_PROBE
+	ind = hash_bin(ind + d, table);
+	d++;
+#else
         ind = secondary_hash(ind, table, &peterb);
+#endif
         COLLISION;
     }
     *res_bin_ptr = bin_ptr;
     return *bin_ptr;
 }
+
+/* If we have the following number of collisions with different keys
+   but with the same hash during finding a bin for new entry
+   inclusions, possibly a denial attack is going on.  Start to use a
+   stronger hash.  */
+#define HIT_THRESHOULD_FOR_STRONG_HASH 10
 
 /* Return pointer to TABLE bin for HASH_VALUE and KEY through
    RES_BIN_PTR and the pointed value as the function result.
@@ -813,12 +876,18 @@ find_table_bin_ptr(st_table *table, st_index_t hash_value, st_data_t key,
    return the entries array index of the searched entry or
    EMPTY_BIN if it is not found.  */
 static st_bin_t
-find_table_bin_ptr_and_reserve(st_table *table, st_index_t hash_value,
+find_table_bin_ptr_and_reserve(st_table *table, st_index_t *hash_value,
 			       st_data_t key, st_bin_t **res_bin_ptr)
 {
-  st_index_t bound, ind, peterb;
+    st_index_t bound, ind, curr_hash_value = *hash_value;
+#ifdef DOUBLE_PROBE
+    st_index_t d;
+#else
+    st_index_t peterb;
+#endif
     st_bin_t *bin_ptr, *first_deleted_bin_ptr;
     st_table_entry *entries;
+    int hit;
     
     st_assert(table != NULL);
     bound = table->entries_bound;
@@ -829,17 +898,23 @@ find_table_bin_ptr_and_reserve(st_table *table, st_index_t hash_value,
     else if (2 * table->deleted_bins >= get_bins_num(table))
         rebuild_bins(table);
     if (table->bins == NULL) {
-        st_index_t bin = find_entry(table, hash_value, key);
+        st_index_t bin = find_entry(table, curr_hash_value, key);
         *res_bin_ptr = NULL;
 	if (EMPTY_BIN_P(bin))
             table->num_entries++;
 	return bin;
     }
-    ind = hash_bin(hash_value, table);
-    peterb = hash_value;
+ repeat:
+    ind = hash_bin(curr_hash_value, table);
+#ifdef DOUBLE_PROBE
+    d = 1;
+#else
+    peterb = curr_hash_value;
+#endif
     FOUND_BIN;
     first_deleted_bin_ptr = NULL;
     entries = table->entries;
+    hit = 0;
     for (;;) {
         bin_ptr = table->bins + ind;
         if (EMPTY_BIN_PTR_P(bin_ptr)) {
@@ -853,11 +928,30 @@ find_table_bin_ptr_and_reserve(st_table *table, st_index_t hash_value,
             }
             break;
         } else if (! DELETED_BIN_PTR_P(bin_ptr)) {
-            if (PTR_EQUAL(table, &entries[*bin_ptr], hash_value, key))
+            if (PTR_EQUAL(table, &entries[*bin_ptr], curr_hash_value, key))
                 break;
+	    if (curr_hash_value == entries[*bin_ptr].hash) {
+	        hit++;
+		if (hit > HIT_THRESHOULD_FOR_STRONG_HASH
+		    && table->curr_hash != table->type->strong_hash
+		    && table->type->strong_hash != NULL
+		    && ! inside_table_rebuild_p) {
+		    table->curr_hash = table->type->strong_hash;
+		    *hash_value = curr_hash_value = do_hash(key, table);
+		    reset_entry_hashes(table);
+		    rebuild_table(table);
+		    bound = table->entries_bound;
+		    goto repeat;
+		}
+	    }
         } else if (first_deleted_bin_ptr == NULL)
             first_deleted_bin_ptr = bin_ptr;
+#ifdef DOUBLE_PROBE
+	ind = hash_bin(ind + d, table);
+	d++;
+#else
         ind = secondary_hash(ind, table, &peterb);
+#endif
         COLLISION;
     }
     *res_bin_ptr = bin_ptr;
@@ -906,7 +1000,7 @@ st_insert(st_table *table, st_data_t key, st_data_t value)
     st_index_t ind, hash_value;
     
     hash_value = do_hash(key, table);
-    bin = find_table_bin_ptr_and_reserve(table, hash_value,
+    bin = find_table_bin_ptr_and_reserve(table, &hash_value,
 					 key, &bin_ptr);
     if (EMPTY_BIN_P(bin)) {
         st_assert(table->entries_bound <= table->allocated_entries);
@@ -953,7 +1047,7 @@ st_insert2(st_table *table, st_data_t key, st_data_t value,
     st_index_t ind, hash_value, check;
     
     hash_value = do_hash(key, table);
-    bin = find_table_bin_ptr_and_reserve(table, hash_value, key, &bin_ptr);
+    bin = find_table_bin_ptr_and_reserve(table, &hash_value, key, &bin_ptr);
     if (EMPTY_BIN_P(bin)) {
         st_assert(table->entries_bound <= table->allocated_entries);
         check = table->rebuilds_num;
@@ -1359,61 +1453,333 @@ st_values_check(st_table *table, st_data_t *values, st_index_t size,
     return st_general_values(table, values, size);
 }
 
-/*
- * hash_32 - 32 bit Fowler/Noll/Vo FNV-1a hash code
- *
- * @(#) $Hash32: Revision: 1.1 $
- * @(#) $Hash32: Id: hash_32a.c,v 1.1 2003/10/03 20:38:53 chongo Exp $
- * @(#) $Hash32: Source: /usr/local/src/cmd/fnv/RCS/hash_32a.c,v $
- *
- ***
- *
- * Fowler/Noll/Vo hash
- *
- * The basis of this hash algorithm was taken from an idea sent
- * as reviewer comments to the IEEE POSIX P1003.2 committee by:
- *
- *      Phong Vo (http://www.research.att.com/info/kpv/)
- *      Glenn Fowler (http://www.research.att.com/~gsf/)
- *
- * In a subsequent ballot round:
- *
- *      Landon Curt Noll (http://www.isthe.com/chongo/)
- *
- * improved on their algorithm.  Some people tried this hash
- * and found that it worked rather well.  In an EMail message
- * to Landon, they named it the ``Fowler/Noll/Vo'' or FNV hash.
- *
- * FNV hashes are designed to be fast while maintaining a low
- * collision rate. The FNV speed allows one to quickly hash lots
- * of data while maintaining a reasonable collision rate.  See:
- *
- *      http://www.isthe.com/chongo/tech/comp/fnv/index.html
- *
- * for more details as well as other forms of the FNV hash.
- ***
- *
- * To use the recommended 32 bit FNV-1a hash, pass FNV1_32A_INIT as the
- * Fnv32_t hashval argument to fnv_32a_buf() or fnv_32a_str().
- *
- ***
- *
- * Please do not copyright this code.  This code is in the public domain.
- *
- * LANDON CURT NOLL DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
- * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO
- * EVENT SHALL LANDON CURT NOLL BE LIABLE FOR ANY SPECIAL, INDIRECT OR
- * CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF
- * USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
- * OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
- * PERFORMANCE OF THIS SOFTWARE.
- *
- * By:
- *      chongo <Landon Curt Noll> /\oo/\
- *      http://www.isthe.com/chongo/
- *
- * Share and Enjoy!     :-)
- */
+
+
+/* Copyright (c) 2011 Google, Inc.
+  
+   Permission is hereby granted, free of charge, to any person obtaining a copy
+   of this software and associated documentation files (the "Software"), to deal
+   in the Software without restriction, including without limitation the rights
+   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+   copies of the Software, and to permit persons to whom the Software is
+   furnished to do so, subject to the following conditions:
+  
+   The above copyright notice and this permission notice shall be included in
+   all copies or substantial portions of the Software.
+  
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+   THE SOFTWARE.
+  
+   CityHash, by Geoff Pike and Jyrki Alakuijala
+  
+   This file provides CityHash64() and related functions.
+  
+   It's probably possible to create even faster hash functions by
+   writing a program that systematically explores some of the space of
+   possible hash functions, by using SIMD instructions, or by
+   compromising on hash quality.  */
+
+static inline uint64_t Uint128Low64(uint64_t x, uint64_t y) { return x; }
+static inline uint64_t Uint128High64(uint64_t x, uint64_t y) { return y; }
+
+/* Hash 128 input bits down to 64 bits of output.  This is intended to
+   be a reasonably good hash function. */
+static inline uint64_t
+Hash128to64(uint64_t first, uint64_t second) {
+    /* Murmur-inspired hashing. */
+    const uint64_t kMul = 0x9ddfea08eb382d69ULL;
+    uint64_t b, a = (Uint128Low64(first, second) ^ Uint128High64(first, second)) * kMul;
+
+    a ^= (a >> 47);
+    b = (Uint128High64(first, second) ^ a) * kMul;
+    b ^= (b >> 47);
+    b *= kMul;
+    return b;
+}
+
+static uint64_t
+UNALIGNED_LOAD64(const char *p) {
+    uint64_t result;
+    
+    memcpy(&result, p, sizeof(result));
+    return result;
+}
+
+static uint32_t
+UNALIGNED_LOAD32(const char *p) {
+    uint32_t result;
+    
+    memcpy(&result, p, sizeof(result));
+    return result;
+}
+
+#ifndef __BIG_ENDIAN__
+
+#define uint32_in_expected_order(x) (x)
+#define uint64_in_expected_order(x) (x)
+
+#else
+
+#ifdef _MSC_VER
+#include <stdlib.h>
+#define bswap_32(x) _byteswap_ulong(x)
+#define bswap_64(x) _byteswap_uint64_t(x)
+
+#elif defined(__APPLE__)
+/* Mac OS X / Darwin features: */
+#include <libkern/OSByteOrder.h>
+#define bswap_32(x) OSSwapInt32(x)
+#define bswap_64(x) OSSwapInt64(x)
+
+#else
+#include <byteswap.h>
+#endif
+
+#define uint32_in_expected_order(x) (bswap_32(x))
+#define uint64_in_expected_order(x) (bswap_64(x))
+
+#endif  /* __BIG_ENDIAN__ */
+
+#if !defined(LIKELY)
+#if defined(__GNUC__) || defined(__INTEL_COMPILER)
+#define LIKELY(x) (__builtin_expect(!!(x), 1))
+#else
+#define LIKELY(x) (x)
+#endif
+#endif
+
+static uint64_t
+Fetch64(const char *p) {
+    return uint64_in_expected_order(UNALIGNED_LOAD64(p));
+}
+
+static uint32_t
+Fetch32(const char *p) {
+    return uint32_in_expected_order(UNALIGNED_LOAD32(p));
+}
+
+/* Some primes between 2^63 and 2^64 for various uses. */
+static const uint64_t k0 = 0xc3a5c85c97cb3127ULL;
+static const uint64_t k1 = 0xb492b66fbe98f273ULL;
+static const uint64_t k2 = 0x9ae16a3b2f90404fULL;
+static const uint64_t k3 = 0xc949d7c7509e6557ULL;
+
+/* Bitwise right rotate.  Normally this will compile to a single
+   instruction, especially if the shift is a manifest constant.  */
+static uint64_t
+Rotate(uint64_t val, int shift) {
+  /* Avoid shifting by 64: doing so yields an undefined result.  */
+  return shift == 0 ? val : ((val >> shift) | (val << (64 - shift)));
+}
+
+/* Equivalent to Rotate(), but requires the second arg to be non-zero.
+   On x86-64, and probably others, it's possible for this to compile
+   to a single instruction if both args are already in registers.  */
+static uint64_t
+RotateByAtLeast1(uint64_t val, int shift) {
+    return (val >> shift) | (val << (64 - shift));
+}
+
+static uint64_t
+ShiftMix(uint64_t val) {
+    return val ^ (val >> 47);
+}
+
+static uint64_t
+HashLen16(uint64_t u, uint64_t v) {
+    return Hash128to64(u, v);
+}
+
+static uint64_t
+HashLen0to16(const char *s, size_t len) {
+    if (len > 8) {
+        uint64_t a = Fetch64(s);
+	uint64_t b = Fetch64(s + len - 8);
+	return HashLen16(a, RotateByAtLeast1(b + len, len)) ^ b;
+    }
+    if (len >= 4) {
+        uint64_t a = Fetch32(s);
+	return HashLen16(len + (a << 3), Fetch32(s + len - 4));
+    }
+    if (len > 0) {
+        uint8_t a = s[0];
+	uint8_t b = s[len >> 1];
+	uint8_t c = s[len - 1];
+	uint32_t y = ((uint32_t)(a) + (uint32_t)(b) << 8);
+	uint32_t z = len + ((uint32_t)(c) << 2);
+	return ShiftMix(y * k2 ^ z * k3) * k2;
+    }
+    return k2;
+}
+
+/* This probably works well for 16-byte strings as well, but it may be
+   overkill in that case.  */
+static uint64_t
+HashLen17to32(const char *s, size_t len) {
+    uint64_t a = Fetch64(s) * k1;
+    uint64_t b = Fetch64(s + 8);
+    uint64_t c = Fetch64(s + len - 8) * k2;
+    uint64_t d = Fetch64(s + len - 16) * k0;
+    return HashLen16(Rotate(a - b, 43) + Rotate(c, 30) + d,
+		     a + Rotate(b ^ k3, 20) - c + len);
+}
+
+typedef struct pair64 {uint64_t first, second;} pair64;
+
+/* Return a 16-byte hash for 48 bytes.  Quick and dirty.
+   Callers do best to use "random-looking" values for a and b.  */
+static pair64
+WeakHashLen32WithSeeds0(uint64_t w, uint64_t x, uint64_t y, uint64_t z, uint64_t a, uint64_t b) {
+    pair64 res;
+    uint64_t c;
+    a += w;
+    b = Rotate(b + a + z, 21);
+    c = a;
+    a += x;
+    a += y;
+    b += Rotate(a, 44);
+    res.first = a + z; res.second = b + c;
+    return res;
+}
+
+/* Return a 16-byte hash for s[0] ... s[31], a, and b.  Quick and dirty.  */
+static pair64
+WeakHashLen32WithSeeds(const char* s, uint64_t a, uint64_t b) {
+    return WeakHashLen32WithSeeds0(Fetch64(s),
+				   Fetch64(s + 8),
+				   Fetch64(s + 16),
+				   Fetch64(s + 24),
+				   a,
+				   b);
+}
+
+/* Return an 8-byte hash for 33 to 64 bytes.  */
+static uint64_t
+HashLen33to64(const char *s, size_t len) {
+    uint64_t z = Fetch64(s + 24);
+    uint64_t a = Fetch64(s) + (len + Fetch64(s + len - 16)) * k0;
+    uint64_t b = Rotate(a + z, 52);
+    uint64_t c = Rotate(a, 37);
+    uint64_t vf, vs, wf, ws, r;
+    
+    a += Fetch64(s + 8);
+    c += Rotate(a, 7);
+    a += Fetch64(s + 16);
+    vf = a + z;
+    vs = b + Rotate(a, 31) + c;
+    a = Fetch64(s + 16) + Fetch64(s + len - 32);
+    z = Fetch64(s + len - 8);
+    b = Rotate(a + z, 52);
+    c = Rotate(a, 37);
+    a += Fetch64(s + len - 24);
+    c += Rotate(a, 7);
+    a += Fetch64(s + len - 16);
+    wf = a + z;
+    ws = b + Rotate(a, 31) + c;
+    r = ShiftMix((vf + ws) * k2 + (wf + vs) * k0);
+    return ShiftMix(r * k0 + vs) * k2;
+}
+
+static uint64_t
+CityHash64(const char *s, size_t len) {
+    uint64_t x, y, z, t;
+    pair64 v, w;
+    if (len <= 32) {
+        if (len <= 16) {
+	    return HashLen0to16(s, len);
+	} else {
+	    return HashLen17to32(s, len);
+	}
+    } else if (len <= 64) {
+        return HashLen33to64(s, len);
+    }
+    
+    /* For strings over 64 bytes we hash the end first, and then as we
+       loop we keep 56 bytes of state: v, w, x, y, and z.  */
+    x = Fetch64(s + len - 40);
+    y = Fetch64(s + len - 16) + Fetch64(s + len - 56);
+    z = HashLen16(Fetch64(s + len - 48) + len, Fetch64(s + len - 24));
+    v = WeakHashLen32WithSeeds(s + len - 64, len, z);
+    w = WeakHashLen32WithSeeds(s + len - 32, y + k1, x);
+    x = x * k1 + Fetch64(s);
+    
+    /* Decrease len to the nearest multiple of 64, and operate on
+       64-byte chunks.  */
+    len = (len - 1) & ~(size_t)(63);
+    do {
+        x = Rotate(x + y + v.first + Fetch64(s + 8), 37) * k1;
+	y = Rotate(y + v.second + Fetch64(s + 48), 42) * k1;
+	x ^= w.second;
+	y += v.first + Fetch64(s + 40);
+	z = Rotate(z + w.first, 33) * k1;
+	v = WeakHashLen32WithSeeds(s, v.second * k1, x + w.first);
+	w = WeakHashLen32WithSeeds(s + 32, z + w.second, y + Fetch64(s + 16));
+	t = x; x = z; z = t;
+	s += 64;
+	len -= 64;
+    } while (len != 0);
+    return HashLen16(HashLen16(v.first, w.first) + ShiftMix(y) * k1 + z,
+		     HashLen16(v.second, w.second) + x);
+}
+
+
+static uint64_t
+CityHash64WithSeeds(const char *s, size_t len, uint64_t seed0, uint64_t seed1) {
+    return HashLen16(CityHash64(s, len) - seed0, seed1);
+}
+
+static uint64_t
+CityHash64WithSeed(const char *s, size_t len, uint64_t seed) {
+    return CityHash64WithSeeds(s, len, k2, seed);
+}
+
+
+
+st_index_t
+st_hash(const void *ptr, size_t len, st_index_t h) {
+    return CityHash64WithSeed(ptr, len, h);
+}
+
+static st_index_t
+strhash(st_data_t arg) {
+    const char *string = (const char *)arg;
+    return CityHash64(string, strlen(string));
+}
+
+st_index_t
+st_hash_index(st_index_t k) {
+    return CityHash64((const char *) &k, sizeof (k));
+}
+
+
+st_index_t
+st_hash_double(double d) {
+    /* normalize -0.0 to 0.0 */
+    if (d == 0.0) d = 0.0;
+    return CityHash64((const char *) &d, sizeof (d));
+}
+
+st_index_t
+st_hash_uint(st_index_t h, st_index_t i) {
+    return CityHash64WithSeed((const char *) &i, sizeof (st_index_t), h);
+}
+
+st_index_t
+st_hash_end(st_index_t h) {
+    return h;
+}
+
+#undef st_hash_start
+
+st_index_t
+st_hash_start(st_index_t h) {
+    return h;
+}
 
 /*
  * 32 bit FNV-1 and FNV-1a non-zero initial basis
@@ -1433,288 +1799,6 @@ st_values_check(st_table *table, st_data_t *values, st_index_t size,
  * 32 bit magic FNV-1a prime
  */
 #define FNV_32_PRIME 0x01000193
-
-#ifdef ST_USE_FNV1
-static st_index_t
-strhash(st_data_t arg)
-{
-    register const char *string = (const char *)arg;
-    register st_index_t hval = FNV1_32A_INIT;
-
-    /*
-     * FNV-1a hash each octet in the buffer
-     */
-    while (*string) {
-        /* xor the bottom with the current octet */
-        hval ^= (unsigned int)*string++;
-
-        /* multiply by the 32 bit FNV magic prime mod 2^32 */
-        hval *= FNV_32_PRIME;
-    }
-    return hval;
-}
-#else
-
-#if !defined(UNALIGNED_WORD_ACCESS) && defined(__GNUC__) && __GNUC__ >= 6
-# define UNALIGNED_WORD_ACCESS 0
-#endif
-
-#ifndef UNALIGNED_WORD_ACCESS
-# if defined(__i386) || defined(__i386__) || defined(_M_IX86) || \
-     defined(__x86_64) || defined(__x86_64__) || defined(_M_AMD64) || \
-     defined(__powerpc64__) || \
-     defined(__mc68020__)
-#   define UNALIGNED_WORD_ACCESS 1
-# endif
-#endif
-#ifndef UNALIGNED_WORD_ACCESS
-# define UNALIGNED_WORD_ACCESS 0
-#endif
-
-/* MurmurHash described in http://murmurhash.googlepages.com/ */
-#ifndef MURMUR
-#define MURMUR 2
-#endif
-
-#define MurmurMagic_1 (st_index_t)0xc6a4a793
-#define MurmurMagic_2 (st_index_t)0x5bd1e995
-#if MURMUR == 1
-#define MurmurMagic MurmurMagic_1
-#elif MURMUR == 2
-#if SIZEOF_ST_INDEX_T > 4
-#define MurmurMagic ((MurmurMagic_1 << 32) | MurmurMagic_2)
-#else
-#define MurmurMagic MurmurMagic_2
-#endif
-#endif
-
-static inline st_index_t
-murmur(st_index_t h, st_index_t k, int r)
-{
-    const st_index_t m = MurmurMagic;
-#if MURMUR == 1
-    h += k;
-    h *= m;
-    h ^= h >> r;
-#elif MURMUR == 2
-    k *= m;
-    k ^= k >> r;
-    k *= m;
-
-    h *= m;
-    h ^= k;
-#endif
-    return h;
-}
-
-static inline st_index_t
-murmur_finish(st_index_t h)
-{
-#if MURMUR == 1
-    h = murmur(h, 0, 10);
-    h = murmur(h, 0, 17);
-#elif MURMUR == 2
-    h ^= h >> 13;
-    h *= MurmurMagic;
-    h ^= h >> 15;
-#endif
-    return h;
-}
-
-#define murmur_step(h, k) murmur((h), (k), 16)
-
-#if MURMUR == 1
-#define murmur1(h) murmur_step((h), 16)
-#else
-#define murmur1(h) murmur_step((h), 24)
-#endif
-
-st_index_t
-st_hash(const void *ptr, size_t len, st_index_t h)
-{
-    const char *data = ptr;
-    st_index_t t = 0;
-
-    h += 0xdeadbeef;
-
-#define data_at(n) (st_index_t)((unsigned char)data[(n)])
-#define UNALIGNED_ADD_4 UNALIGNED_ADD(2); UNALIGNED_ADD(1); UNALIGNED_ADD(0)
-#if SIZEOF_ST_INDEX_T > 4
-#define UNALIGNED_ADD_8 UNALIGNED_ADD(6); UNALIGNED_ADD(5); UNALIGNED_ADD(4); UNALIGNED_ADD(3); UNALIGNED_ADD_4
-#if SIZEOF_ST_INDEX_T > 8
-#define UNALIGNED_ADD_16 UNALIGNED_ADD(14); UNALIGNED_ADD(13); UNALIGNED_ADD(12); UNALIGNED_ADD(11); \
-    UNALIGNED_ADD(10); UNALIGNED_ADD(9); UNALIGNED_ADD(8); UNALIGNED_ADD(7); UNALIGNED_ADD_8
-#define UNALIGNED_ADD_ALL UNALIGNED_ADD_16
-#endif
-#define UNALIGNED_ADD_ALL UNALIGNED_ADD_8
-#else
-#define UNALIGNED_ADD_ALL UNALIGNED_ADD_4
-#endif
-    if (len >= sizeof(st_index_t)) {
-#if !UNALIGNED_WORD_ACCESS
-        int align = (int)((st_data_t)data % sizeof(st_index_t));
-        if (align) {
-            st_index_t d = 0;
-            int sl, sr, pack;
-
-            switch (align) {
-#ifdef WORDS_BIGENDIAN
-# define UNALIGNED_ADD(n) case SIZEOF_ST_INDEX_T - (n) - 1: \
-                t |= data_at(n) << CHAR_BIT*(SIZEOF_ST_INDEX_T - (n) - 2)
-#else
-# define UNALIGNED_ADD(n) case SIZEOF_ST_INDEX_T - (n) - 1:     \
-                t |= data_at(n) << CHAR_BIT*(n)
-#endif
-                UNALIGNED_ADD_ALL;
-#undef UNALIGNED_ADD
-            }
-
-#ifdef WORDS_BIGENDIAN
-            t >>= (CHAR_BIT * align) - CHAR_BIT;
-#else
-            t <<= (CHAR_BIT * align);
-#endif
-
-            data += sizeof(st_index_t)-align;
-            len -= sizeof(st_index_t)-align;
-
-            sl = CHAR_BIT * (SIZEOF_ST_INDEX_T-align);
-            sr = CHAR_BIT * align;
-
-            while (len >= sizeof(st_index_t)) {
-                d = *(st_index_t *)data;
-#ifdef WORDS_BIGENDIAN
-                t = (t << sr) | (d >> sl);
-#else
-                t = (t >> sr) | (d << sl);
-#endif
-                h = murmur_step(h, t);
-                t = d;
-                data += sizeof(st_index_t);
-                len -= sizeof(st_index_t);
-            }
-
-            pack = len < (size_t)align ? (int)len : align;
-            d = 0;
-            switch (pack) {
-#ifdef WORDS_BIGENDIAN
-# define UNALIGNED_ADD(n) case (n) + 1: \
-                d |= data_at(n) << CHAR_BIT*(SIZEOF_ST_INDEX_T - (n) - 1)
-#else
-# define UNALIGNED_ADD(n) case (n) + 1: \
-                d |= data_at(n) << CHAR_BIT*(n)
-#endif
-                UNALIGNED_ADD_ALL;
-#undef UNALIGNED_ADD
-            }
-#ifdef WORDS_BIGENDIAN
-            t = (t << sr) | (d >> sl);
-#else
-            t = (t >> sr) | (d << sl);
-#endif
-
-#if MURMUR == 2
-            if (len < (size_t)align) goto skip_tail;
-#endif
-            h = murmur_step(h, t);
-            data += pack;
-            len -= pack;
-        }
-        else
-#endif
-        {
-            do {
-                h = murmur_step(h, *(st_index_t *)data);
-                data += sizeof(st_index_t);
-                len -= sizeof(st_index_t);
-            } while (len >= sizeof(st_index_t));
-        }
-    }
-
-    t = 0;
-    switch (len) {
-#ifdef WORDS_BIGENDIAN
-# define UNALIGNED_ADD(n) case (n) + 1: \
-        t |= data_at(n) << CHAR_BIT*(SIZEOF_ST_INDEX_T - (n) - 1)
-#else
-# define UNALIGNED_ADD(n) case (n) + 1: \
-        t |= data_at(n) << CHAR_BIT*(n)
-#endif
-        UNALIGNED_ADD_ALL;
-#undef UNALIGNED_ADD
-#if MURMUR == 1
-        h = murmur_step(h, t);
-#elif MURMUR == 2
-# if !UNALIGNED_WORD_ACCESS
-      skip_tail:
-# endif
-        h ^= t;
-        h *= MurmurMagic;
-#endif
-    }
-
-    return murmur_finish(h);
-}
-
-st_index_t
-st_hash_uint32(st_index_t h, uint32_t i)
-{
-    return murmur_step(h + i, 16);
-}
-
-st_index_t
-st_hash_uint(st_index_t h, st_index_t i)
-{
-    st_index_t v = 0;
-    h += i;
-#ifdef WORDS_BIGENDIAN
-#if SIZEOF_ST_INDEX_T*CHAR_BIT > 12*8
-    v = murmur1(v + (h >> 12*8));
-#endif
-#if SIZEOF_ST_INDEX_T*CHAR_BIT > 8*8
-    v = murmur1(v + (h >> 8*8));
-#endif
-#if SIZEOF_ST_INDEX_T*CHAR_BIT > 4*8
-    v = murmur1(v + (h >> 4*8));
-#endif
-#endif
-    v = murmur1(v + h);
-#ifndef WORDS_BIGENDIAN
-#if SIZEOF_ST_INDEX_T*CHAR_BIT > 4*8
-    v = murmur1(v + (h >> 4*8));
-#endif
-#if SIZEOF_ST_INDEX_T*CHAR_BIT > 8*8
-    v = murmur1(v + (h >> 8*8));
-#endif
-#if SIZEOF_ST_INDEX_T*CHAR_BIT > 12*8
-    v = murmur1(v + (h >> 12*8));
-#endif
-#endif
-    return v;
-}
-
-st_index_t
-st_hash_end(st_index_t h)
-{
-    h = murmur_step(h, 10);
-    h = murmur_step(h, 17);
-    return h;
-}
-
-#undef st_hash_start
-st_index_t
-st_hash_start(st_index_t h)
-{
-    return h;
-}
-
-static st_index_t
-strhash(st_data_t arg)
-{
-    register const char *string = (const char *)arg;
-    return st_hash(string, strlen(string), FNV1_32A_INIT);
-}
-#endif
 
 int
 st_locale_insensitive_strcasecmp(const char *s1, const char *s2)

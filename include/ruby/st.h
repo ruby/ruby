@@ -61,6 +61,11 @@ typedef char st_check_for_sizeof_st_index_t[SIZEOF_VOIDP == (int)sizeof(st_index
 struct st_hash_type {
     int (*compare)(ANYARGS /*st_data_t, st_data_t*/); /* st_compare_func* */
     st_index_t (*hash)(ANYARGS /*st_data_t*/);        /* st_hash_func* */
+    /* The following is an optional func for stronger hash.  When we
+       have many different keys with the same hash we can switch to
+       use it to prevent a denial attack with usage of hash table
+       collisions. */
+    st_index_t (*strong_hash)(ANYARGS /*st_data_t*/);
 };
 
 #define ST_INDEX_BITS (sizeof(st_index_t) * CHAR_BIT)
@@ -84,6 +89,8 @@ typedef unsigned long int st_bin_t;
 
 struct st_table {
     const struct st_hash_type *type;
+    /* Currently used hash function.  */
+    st_index_t (*curr_hash)(ANYARGS /*st_data_t*/);
     /* Number of entries currently in the table.  */
     st_index_t num_entries;
     /* Number of bins with deleted values.  */
@@ -153,6 +160,9 @@ st_index_t st_hash_uint(st_index_t h, st_index_t i);
 st_index_t st_hash_end(st_index_t h);
 st_index_t st_hash_start(st_index_t h);
 #define st_hash_start(h) ((st_index_t)(h))
+
+st_index_t st_hash_index(st_index_t k);
+st_index_t st_hash_double(double d);
 
 RUBY_SYMBOL_EXPORT_END
 
