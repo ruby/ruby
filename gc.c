@@ -4109,6 +4109,9 @@ mark_const_tbl(rb_objspace_t *objspace, struct rb_id_table *tbl)
      ((start) = STACK_END, (end) = STACK_START) : ((start) = STACK_START, (end) = STACK_END+(appendix)))
 #endif
 
+static void mark_stack_locations(rb_objspace_t *objspace, rb_thread_t *th,
+				 const VALUE *stack_start, const VALUE *stack_end);
+
 static void
 mark_current_machine_context(rb_objspace_t *objspace, rb_thread_t *th)
 {
@@ -4130,17 +4133,7 @@ mark_current_machine_context(rb_objspace_t *objspace, rb_thread_t *th)
 
     mark_locations_array(objspace, save_regs_gc_mark.v, numberof(save_regs_gc_mark.v));
 
-    gc_mark_locations(objspace, stack_start, stack_end);
-#ifdef __ia64
-    gc_mark_locations(objspace,
-		      th->machine.register_stack_start,
-		      th->machine.register_stack_end);
-#endif
-#if defined(__mc68000__)
-    gc_mark_locations(objspace,
-		      (VALUE*)((char*)stack_start + 2),
-		      (VALUE*)((char*)stack_end - 2));
-#endif
+    mark_stack_locations(objspace, th, stack_start, stack_end);
 }
 
 void
@@ -4150,6 +4143,14 @@ rb_gc_mark_machine_stack(rb_thread_t *th)
     VALUE *stack_start, *stack_end;
 
     GET_STACK_BOUNDS(stack_start, stack_end, 0);
+    mark_stack_locations(objspace, th, stack_start, stack_end);
+}
+
+static void
+mark_stack_locations(rb_objspace_t *objspace, rb_thread_t *th,
+		     const VALUE *stack_start, const VALUE *stack_end)
+{
+
     gc_mark_locations(objspace, stack_start, stack_end);
 #ifdef __ia64
     gc_mark_locations(objspace,
