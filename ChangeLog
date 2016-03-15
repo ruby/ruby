@@ -1,6 +1,6 @@
 Tue Mar 15 20:32:57 2016  Tanaka Akira  <akr@fsij.org>
 
-	* enum.c (enum_inject): Implement the specialied code for :+ operator
+	* enum.c (enum_inject): Implement the specialized code for :+ operator
 	  for Fixnums.
 
 Tue Mar 15 20:21:01 2016  Tanaka Akira  <akr@fsij.org>
