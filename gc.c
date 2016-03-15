@@ -693,9 +693,11 @@ struct heap_page {
 
 /* Aliases */
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
-#define rb_objspace (*GET_VM()->objspace)
+#define rb_objspace (*rb_objspace_of(GET_VM()))
+#define rb_objspace_of(vm) ((vm)->objspace)
 #else
 static rb_objspace_t rb_objspace = {{GC_MALLOC_LIMIT_MIN}};
+#define rb_objspace_of(vm) (&rb_objspace)
 #endif
 
 #define ruby_initial_gc_stress	gc_params.gc_stress
@@ -2729,7 +2731,7 @@ finalize_deferred(rb_objspace_t *objspace)
 static void
 gc_finalize_deferred(void *dmy)
 {
-    rb_objspace_t *objspace = &rb_objspace;
+    rb_objspace_t *objspace = dmy;
     if (ATOMIC_EXCHANGE(finalizing, 1)) return;
     finalize_deferred(objspace);
     ATOMIC_SET(finalizing, 0);
@@ -2743,9 +2745,9 @@ rb_gc_finalize_deferred(void)
 }
 
 static void
-gc_finalize_deferred_register(void)
+gc_finalize_deferred_register(rb_objspace_t *objspace)
 {
-    if (rb_postponed_job_register_one(0, gc_finalize_deferred, 0) == 0) {
+    if (rb_postponed_job_register_one(0, gc_finalize_deferred, objspace) == 0) {
 	rb_bug("gc_finalize_deferred_register: can't register finalizer.");
     }
 }
@@ -3439,7 +3441,7 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
     if (heap_pages_deferred_final && !finalizing) {
         rb_thread_t *th = GET_THREAD();
         if (th) {
-	    gc_finalize_deferred_register();
+	    gc_finalize_deferred_register(rb_objspace_of(th->vm));
         }
     }
 
@@ -4144,7 +4146,7 @@ mark_current_machine_context(rb_objspace_t *objspace, rb_thread_t *th)
 void
 rb_gc_mark_machine_stack(rb_thread_t *th)
 {
-    rb_objspace_t *objspace = &rb_objspace;
+    rb_objspace_t *objspace = rb_objspace_of(th->vm);
     VALUE *stack_start, *stack_end;
 
     GET_STACK_BOUNDS(stack_start, stack_end, 0);
@@ -7457,7 +7459,7 @@ void
 rb_memerror(void)
 {
     rb_thread_t *th = GET_THREAD();
-    rb_objspace_t *objspace = &rb_objspace;
+    rb_objspace_t *objspace = rb_objspace_of(th->vm);
 
     if (during_gc) gc_exit(objspace, "rb_memerror");
 
