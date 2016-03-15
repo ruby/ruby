@@ -1,3 +1,8 @@
+Tue Mar 15 20:21:01 2016  Tanaka Akira  <akr@fsij.org>
+
+	* enum.c (enum_inject): Implement the specialized code for self is an
+	  array and a symbol operator is given.
+
 Tue Mar 15 16:29:51 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/unicode.c: Eliminating common code.

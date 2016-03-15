@@ -701,6 +701,30 @@ enum_inject(int argc, VALUE *argv, VALUE obj)
 	iter = inject_op_i;
 	break;
     }
+
+    if (iter == inject_op_i &&
+        SYMBOL_P(op) &&
+        RB_TYPE_P(obj, T_ARRAY) &&
+        rb_method_basic_definition_p(CLASS_OF(obj), id_each)) {
+        VALUE v;
+        long i;
+        if (RARRAY_LEN(obj) == 0)
+            return init == Qundef ? Qnil : init;
+        if (init == Qundef) {
+            v = RARRAY_AREF(obj, 0);
+            i = 1;
+        }
+        else {
+            v = init;
+            i = 0;
+        }
+        id = SYM2ID(op);
+        for (; i<RARRAY_LEN(obj); i++) {
+            v = rb_funcall(v, id, 1, RARRAY_AREF(obj, i));
+        }
+        return v;
+    }
+
     memo = MEMO_NEW(init, Qnil, op);
     rb_block_call(obj, id_each, 0, 0, iter, (VALUE)memo);
     if (memo->v1 == Qundef) return Qnil;
