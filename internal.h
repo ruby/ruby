@@ -1285,6 +1285,7 @@ char *ruby_hdtoa(double d, const char *xdigs, int ndigits, int *decpt, int *sign
 extern rb_encoding OnigEncodingUTF_8;
 
 /* variable.c */
+void rb_gc_mark_global_tbl(void);
 size_t rb_generic_ivar_memsize(VALUE);
 VALUE rb_search_class_path(VALUE);
 VALUE rb_attr_delete(VALUE, ID);
@@ -1436,7 +1437,6 @@ extern const char ruby_hexdigits[];
 extern unsigned long ruby_scan_digits(const char *str, ssize_t len, int base, size_t *retlen, int *overflow);
 
 /* variable.c (export) */
-void rb_gc_mark_global_tbl(void);
 void rb_mark_generic_ivar(VALUE);
 VALUE rb_const_missing(VALUE klass, VALUE name);
 int rb_class_ivar_set(VALUE klass, ID vid, VALUE value);

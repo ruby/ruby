@@ -1,3 +1,8 @@
+Tue Mar 15 13:41:22 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* internal.h (rb_gc_mark_global_tbl): should be private,
+	  but was accidentally exported.
+
 Tue Mar 15 12:51:06 2016  Marcus Stollsteimer  <sto.mar@web.de>
 
 	* doc/extension.ja.rdoc: Fix RDoc markup in doc/extension*.rdoc.
