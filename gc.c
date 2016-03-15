@@ -3964,8 +3964,6 @@ rb_gc_mark_values(long n, const VALUE *values)
     }
 }
 
-#define rb_gc_mark_locations(start, end) gc_mark_locations(objspace, (start), (end))
-
 static int
 mark_entry(st_data_t key, st_data_t value, st_data_t data)
 {
@@ -4130,13 +4128,16 @@ mark_current_machine_context(rb_objspace_t *objspace, rb_thread_t *th)
 
     mark_locations_array(objspace, save_regs_gc_mark.v, numberof(save_regs_gc_mark.v));
 
-    rb_gc_mark_locations(stack_start, stack_end);
+    gc_mark_locations(objspace, stack_start, stack_end);
 #ifdef __ia64
-    rb_gc_mark_locations(th->machine.register_stack_start, th->machine.register_stack_end);
+    gc_mark_locations(objspace,
+		      th->machine.register_stack_start,
+		      th->machine.register_stack_end);
 #endif
 #if defined(__mc68000__)
-    rb_gc_mark_locations((VALUE*)((char*)stack_start + 2),
-			 (VALUE*)((char*)stack_end - 2));
+    gc_mark_locations(objspace,
+		      (VALUE*)((char*)stack_start + 2),
+		      (VALUE*)((char*)stack_end - 2));
 #endif
 }
 
@@ -4147,13 +4148,16 @@ rb_gc_mark_machine_stack(rb_thread_t *th)
     VALUE *stack_start, *stack_end;
 
     GET_STACK_BOUNDS(stack_start, stack_end, 0);
-    rb_gc_mark_locations(stack_start, stack_end);
+    gc_mark_locations(objspace, stack_start, stack_end);
 #ifdef __ia64
-    rb_gc_mark_locations(th->machine.register_stack_start, th->machine.register_stack_end);
+    gc_mark_locations(objspace,
+		      th->machine.register_stack_start,
+		      th->machine.register_stack_end);
 #endif
 #if defined(__mc68000__)
-    rb_gc_mark_locations((VALUE*)((char*)stack_start + 2),
-			 (VALUE*)((char*)stack_end - 2));
+    gc_mark_locations(objspace,
+		      (VALUE*)((char*)stack_start + 2),
+		      (VALUE*)((char*)stack_end - 2));
 #endif
 }
 
