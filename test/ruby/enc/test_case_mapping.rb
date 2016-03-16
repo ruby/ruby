@@ -34,7 +34,7 @@ class TestCaseMappingPreliminary < Test::Unit::TestCase
   end
 
   def check_capitalize_suffixes(lower, upper)
-    while not upper.length > 1
+    while upper.length > 1
       lower = lower[1..-1]
       check_capitalize_properties upper[0]+lower, upper, :lithuanian
       upper = upper[1..-1]
