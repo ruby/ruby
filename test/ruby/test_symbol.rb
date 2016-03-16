@@ -176,6 +176,15 @@ class TestSymbol < Test::Unit::TestCase
     end;
   end
 
+  def test_to_proc_binding
+    assert_separately([], <<~"end;", timeout: 1) # do
+      bug12137 = '[ruby-core:74100] [Bug #12137]'
+      assert_raise(ArgumentError, bug12137) {
+        :succ.to_proc.binding
+      }
+    end;
+  end
+
   def test_call
     o = Object.new
     def o.foo(x, y); x + y; end

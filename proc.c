@@ -2658,6 +2658,7 @@ proc_binding(VALUE self)
     GetProcPtr(self, proc);
     envval = rb_vm_proc_envval(proc);
     iseq = proc->block.iseq;
+    if (SYMBOL_P(iseq)) goto error;
     if (RUBY_VM_IFUNC_P(iseq)) {
 	struct vm_ifunc *ifunc = (struct vm_ifunc *)iseq;
 	if (IS_METHOD_PROC_IFUNC(ifunc)) {
@@ -2666,6 +2667,7 @@ proc_binding(VALUE self)
 	    iseq = rb_method_iseq(method);
 	}
 	else {
+	  error:
 	    rb_raise(rb_eArgError, "Can't create Binding from C level Proc");
 	}
     }

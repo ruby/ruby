@@ -1,3 +1,8 @@
+Wed Mar 16 20:03:35 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (proc_binding): proc from symbol can not make a binding.
+	  [ruby-core:74100] [Bug #12137]
+
 Wed Mar 16 18:42:45 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* test/ruby/enc/test_case_mapping.rb: Fixed and activated a test for Cherokee.
