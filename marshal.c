@@ -1965,6 +1965,11 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	rb_raise(rb_eArgError, "dump format error(0x%x)", type);
 	break;
     }
+
+    if (v == Qundef) {
+	rb_raise(rb_eArgError, "dump format error (bad link)");
+    }
+
     return v;
 }
 

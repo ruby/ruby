@@ -1,3 +1,8 @@
+Thu Mar 17 07:17:36 2016  Eric Hodel  <drbrain@segment7.net>
+
+	* marshal.c (r_object0):  raise ArgumentError when linking to undefined
+	  object.
+
 Thu Mar 17 00:45:00 2016  Kenta Murata  <mrkn@mrkn.jp>
 
 	* test/ruby/test_bignum.rb: Make sure to use Bignum values in the tests.

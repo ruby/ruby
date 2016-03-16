@@ -725,4 +725,16 @@ class TestMarshal < Test::Unit::TestCase
     opt = %w[--disable=gems]
     assert_ruby_status(opt, "Marshal.load(#{crash.dump})")
   end
+
+  def test_marshal_load_r_prepare_reference_crash
+    crash = "\x04\bI/\x05\x00\x06:\x06E{\x06@\x05T"
+
+    opt = %w[--disable=gems]
+    assert_ruby_status(opt, <<-RUBY)
+begin
+  Marshal.load(#{crash.dump})
+rescue ArgumentError
+end
+    RUBY
+  end
 end
