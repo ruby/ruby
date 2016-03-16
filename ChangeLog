@@ -1,3 +1,9 @@
+Thu Mar 17 08:13:43 2016  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* test/-ext-/time/test_new.rb (test_timespec_new): Time#gmtoff values
+	  are the same only when both or neither of the Time objects are in
+	  summer time (daylight-saving time).
+
 Thu Mar 17 07:17:36 2016  Eric Hodel  <drbrain@segment7.net>
 
 	* marshal.c (r_object0):  raise ArgumentError when linking to undefined

@@ -23,7 +23,9 @@ class  Bug::Time::Test_New < Test::Unit::TestCase
     assert_equal(false, Bug::Time.timespec_new(1447087832, 476451125, 0).utc?)
     assert_equal(true,  Bug::Time.timespec_new(1447087832, 476451125, 0x7ffffffe).utc?)
     assert_equal(false, Bug::Time.timespec_new(1447087832, 476451125, 0x7fffffff).utc?)
-    assert_equal(Time.now.gmtoff, Bug::Time.timespec_new(1447087832, 476451125, 0x7fffffff).gmtoff)
+    if Time.now.isdst == Bug::Time.timespec_new(1447087832, 476451125, 0x7fffffff).isdst
+      assert_equal(Time.now.gmtoff, Bug::Time.timespec_new(1447087832, 476451125, 0x7fffffff).gmtoff)
+    end
     assert_time_equal(Time.at(1447087832, 476451.125).localtime(86399),
                  Bug::Time.timespec_new(1447087832, 476451125, 86399))
     assert_time_equal(Time.at(1447087832, 476451.125).localtime(-86399),
