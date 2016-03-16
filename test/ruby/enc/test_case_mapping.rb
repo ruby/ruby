@@ -8,29 +8,37 @@ class TestCaseMappingPreliminary < Test::Unit::TestCase
   # checks, including idempotence and non-modification; not always guaranteed
   def check_upcase_properties(expected, start, *flags)
     assert_equal expected, start.upcase(*flags)
-    temp = start
+    temp = start.dup
     assert_equal expected, temp.upcase!(*flags)
     assert_equal expected, expected.upcase(*flags)
-    temp = expected
+    temp = expected.dup
     assert_nil   temp.upcase!(*flags)
   end
 
   def check_downcase_properties(expected, start, *flags)
     assert_equal expected, start.downcase(*flags)
-    temp = start
+    temp = start.dup
     assert_equal expected, temp.downcase!(*flags)
     assert_equal expected, expected.downcase(*flags)
-    temp = expected
+    temp = expected.dup
     assert_nil   temp.downcase!(*flags)
   end
 
   def check_capitalize_properties(expected, start, *flags)
     assert_equal expected, start.capitalize(*flags)
-    temp = start
+    temp = start.dup
     assert_equal expected, temp.capitalize!(*flags)
     assert_equal expected, expected.capitalize(*flags)
-    temp = expected
+    temp = expected.dup
     assert_nil   temp.capitalize!(*flags)
+  end
+
+  def check_capitalize_suffixes(lower, upper)
+    while not upper.length > 1
+      lower = lower[1..-1]
+      check_capitalize_properties upper[0]+lower, upper, :lithuanian
+      upper = upper[1..-1]
+    end
   end
 
   # different properties; careful: roundtrip isn't always guaranteed
@@ -47,6 +55,13 @@ class TestCaseMappingPreliminary < Test::Unit::TestCase
     check_upcase_properties     'YUKIHIRO MATSUMOTO (MATZ)', 'yukihiro matsumoto (matz)', :lithuanian
     check_capitalize_properties 'Yukihiro matsumoto (matz)', 'yukihiro MATSUMOTO (MATZ)', :lithuanian
     check_swapcase_properties   'yUKIHIRO matsumoto (MAtz)', 'Yukihiro MATSUMOTO (maTZ)', :lithuanian
+  end
+
+  def test_general
+    check_downcase_properties   'résumé dürst ĭñŧėřŋãţĳňőńæłĩżàťïōņ', 'RÉSUMÉ DÜRST ĬÑŦĖŘŊÃŢĲŇŐŃÆŁĨŻÀŤÏŌŅ', :lithuanian
+    check_upcase_properties     'RÉSUMÉ DÜRST ĬÑŦĖŘŊÃŢĲŇŐŃÆŁĨŻÀŤÏŌŅ', 'résumé dürst ĭñŧėřŋãţĳňőńæłĩżàťïōņ', :lithuanian
+    check_capitalize_suffixes   'résumé dürst ĭñŧėřŋãţĳňőńæłĩżàťïōņ', 'RÉSUMÉ DÜRST ĬÑŦĖŘŊÃŢĲŇŐŃÆŁĨŻÀŤÏŌŅ'
+    check_swapcase_properties   'résumé DÜRST ĭñŧėřŊÃŢĲŇŐŃæłĩżàťïōņ', 'RÉSUMÉ dürst ĬÑŦĖŘŋãţĳňőńÆŁĨŻÀŤÏŌŅ', :lithuanian
   end
 
   def test_ascii_option

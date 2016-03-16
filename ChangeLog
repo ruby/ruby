@@ -1,3 +1,9 @@
+Wed Mar 16 15:44:05 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* test/ruby/enc/test_case_mapping.rb: Adding tests for actual Unicode
+	  case mapping. Fixing some aliasing issues.
+	  (with Kimihito Matsui)
+
 Tue Mar 15 21:38:28 2016  Tanaka Akira  <akr@fsij.org>
 
 	* enum.c (enum_inject): Consider redefinition of Fixnum#+.
