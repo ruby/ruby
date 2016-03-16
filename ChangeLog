@@ -1,3 +1,7 @@
+Thu Mar 17 00:45:00 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* test/ruby/test_bignum.rb: Make sure to use Bignum values in the tests.
+
 Wed Mar 16 23:10:25 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* defs/keywords (alias, undef): symbol literals are allowed.

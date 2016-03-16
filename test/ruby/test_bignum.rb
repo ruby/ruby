@@ -2,12 +2,41 @@
 require 'test/unit'
 
 class TestBignum < Test::Unit::TestCase
+  b = 2**64
+  b *= b until Bignum === b
+
+  f = b
+  while Bignum === f-1
+    f >>= 1
+  end
+  BIGNUM_MIN = f
+  FIXNUM_MAX = f-1
+
+  n = 0
+  until f == 0
+    f >>= 1
+    n += 1
+  end
+  BIGNUM_MIN_BITS = n
+
+  T_ZERO = b.coerce(0).first
+  T_ONE  = b.coerce(1).first
+  T_MONE = b.coerce(-1).first
+  T31  = b.coerce(2**31).first   # 2147483648
+  T31P = b.coerce(T31 - 1).first # 2147483647
+  T32  = b.coerce(2**32).first   # 4294967296
+  T32P = b.coerce(T32 - 1).first # 4294967295
+  T64  = b.coerce(2**64).first   # 18446744073709551616
+  T64P = b.coerce(T64 - 1).first # 18446744073709551615
+  T1024  = b.coerce(2**1024).first
+  T1024P = b.coerce(T1024 - 1).first
+
   def setup
     @verbose = $VERBOSE
     $VERBOSE = nil
     @fmax = Float::MAX.to_i
     @fmax2 = @fmax * 2
-    @big = (1 << 63) - 1
+    @big = (1 << BIGNUM_MIN_BITS) - 1
   end
 
   def teardown
@@ -24,6 +53,21 @@ class TestBignum < Test::Unit::TestCase
     return f
   end
 
+  def test_prepare
+    assert_instance_of(Bignum, @big)
+    assert_instance_of(Bignum, T_ZERO)
+    assert_instance_of(Bignum, T_ONE)
+    assert_instance_of(Bignum, T_MONE)
+    assert_instance_of(Bignum, T31)
+    assert_instance_of(Bignum, T31P)
+    assert_instance_of(Bignum, T32)
+    assert_instance_of(Bignum, T32P)
+    assert_instance_of(Bignum, T64)
+    assert_instance_of(Bignum, T64P)
+    assert_instance_of(Bignum, T1024)
+    assert_instance_of(Bignum, T1024P)
+  end
+
   def test_bignum
     $x = fact(40)
     assert_equal($x, $x)
@@ -36,8 +80,10 @@ class TestBignum < Test::Unit::TestCase
     assert_equal(335367096786357081410764800000, $x/fact(20))
     $x = -$x
     assert_equal(-815915283247897734345611269596115894272000000000, $x)
-    assert_equal(2-(2**32), -(2**32-2))
-    assert_equal(2**32 - 5, (2**32-3)-2)
+
+    b = 2*BIGNUM_MIN
+    assert_equal(2-b, -(b-2))
+    assert_equal(b - 5, (b-3)-2)
 
     for i in 1000..1014
       assert_equal(2 ** i, 1 << i)
@@ -109,41 +155,6 @@ class TestBignum < Test::Unit::TestCase
     assert_equal("-1777777777777777777777" ,-18446744073709551615.to_s(8))
     assert_match(/\A10{99}1\z/, (10**100+1).to_s)
     assert_match(/\A10{900}9{100}\z/, (10**1000+(10**100-1)).to_s)
-  end
-
-  b = 2**64
-  b *= b until Bignum === b
-
-  T_ZERO = b.coerce(0).first
-  T_ONE  = b.coerce(1).first
-  T_MONE = b.coerce(-1).first
-  T31  = b.coerce(2**31).first   # 2147483648
-  T31P = b.coerce(T31 - 1).first # 2147483647
-  T32  = b.coerce(2**32).first   # 4294967296
-  T32P = b.coerce(T32 - 1).first # 4294967295
-  T64  = b.coerce(2**64).first   # 18446744073709551616
-  T64P = b.coerce(T64 - 1).first # 18446744073709551615
-  T1024  = b.coerce(2**1024).first
-  T1024P = b.coerce(T1024 - 1).first
-
-  f = b
-  while Bignum === f-1
-    f = f >> 1
-  end
-  FIXNUM_MAX = f-1
-
-  def test_prepare
-    assert_instance_of(Bignum, T_ZERO)
-    assert_instance_of(Bignum, T_ONE)
-    assert_instance_of(Bignum, T_MONE)
-    assert_instance_of(Bignum, T31)
-    assert_instance_of(Bignum, T31P)
-    assert_instance_of(Bignum, T32)
-    assert_instance_of(Bignum, T32P)
-    assert_instance_of(Bignum, T64)
-    assert_instance_of(Bignum, T64P)
-    assert_instance_of(Bignum, T1024)
-    assert_instance_of(Bignum, T1024P)
   end
 
   def test_big_2comp
@@ -528,24 +539,26 @@ class TestBignum < Test::Unit::TestCase
   end
 
   def test_shift2
-    assert_equal(2**33, (2**32) <<  1)
-    assert_equal(2**31, (2**32) << -1)
-    assert_equal(2**33, (2**32) <<  1.0)
-    assert_equal(2**31, (2**32) << -1.0)
-    assert_equal(2**33, (2**32) << T_ONE)
-    assert_equal(2**31, (2**32) << T_MONE)
-    assert_equal(2**31, (2**32) >>  1)
-    assert_equal(2**33, (2**32) >> -1)
-    assert_equal(2**31, (2**32) >>  1.0)
-    assert_equal(2**33, (2**32) >> -1.0)
-    assert_equal(2**31, (2**32) >> T_ONE)
-    assert_equal(2**33, (2**32) >> T_MONE)
-    assert_equal( 0,  (2**32) >> (2**32))
-    assert_equal(-1, -(2**32) >> (2**32))
-    assert_equal( 0,  (2**32) >> 128)
-    assert_equal(-1, -(2**32) >> 128)
-    assert_equal( 0,  (2**31) >> 32)
-    assert_equal(-1, -(2**31) >> 32)
+    b = BIGNUM_MIN_BITS
+    n = BIGNUM_MIN << 1
+    assert_equal(2**(b+1), n <<  1)
+    assert_equal(2**(b-1), n << -1)
+    assert_equal(2**(b+1), n <<  1.0)
+    assert_equal(2**(b-1), n << -1.0)
+    assert_equal(2**(b+1), n << T_ONE)
+    assert_equal(2**(b-1), n << T_MONE)
+    assert_equal(2**(b-1), n >>  1)
+    assert_equal(2**(b+1), n >> -1)
+    assert_equal(2**(b-1), n >>  1.0)
+    assert_equal(2**(b+1), n >> -1.0)
+    assert_equal(2**(b-1), n >> T_ONE)
+    assert_equal(2**(b+1), n >> T_MONE)
+    assert_equal( 0,  n >> n)
+    assert_equal(-1, -n >> n)
+    assert_equal( 0,  n >> (b*4))
+    assert_equal(-1, -n >> (b*4))
+    assert_equal( 0,  (n/2) >> b)
+    assert_equal(-1, -(n/2) >> b)
   end
 
   def test_shift_bigshift
@@ -554,12 +567,12 @@ class TestBignum < Test::Unit::TestCase
   end
 
   def test_aref
-    assert_equal(0, (2**32)[0])
-    assert_equal(0, (2**32)[2**32])
-    assert_equal(0, (2**32)[-(2**32)])
-    assert_equal(0, (2**32)[T_ZERO])
-    assert_equal(0, (-(2**64))[0])
-    assert_equal(1, (-2**256)[256])
+    assert_equal(0, BIGNUM_MIN[0])
+    assert_equal(0, BIGNUM_MIN[BIGNUM_MIN])
+    assert_equal(0, BIGNUM_MIN[-BIGNUM_MIN])
+    assert_equal(0, BIGNUM_MIN[T_ZERO])
+    assert_equal(0, (-(BIGNUM_MIN*BIGNUM_MIN))[0])
+    assert_equal(1, (-2**(BIGNUM_MIN_BITS*4))[BIGNUM_MIN_BITS*4])
   end
 
   def test_hash
@@ -582,13 +595,13 @@ class TestBignum < Test::Unit::TestCase
   end
 
   def test_odd
-    assert_equal(true, (2**32+1).odd?)
-    assert_equal(false, (2**32).odd?)
+    assert_equal(true, (BIGNUM_MIN+1).odd?)
+    assert_equal(false, BIGNUM_MIN.odd?)
   end
 
   def test_even
-    assert_equal(false, (2**32+1).even?)
-    assert_equal(true, (2**32).even?)
+    assert_equal(false, (BIGNUM_MIN+1).even?)
+    assert_equal(true, BIGNUM_MIN.even?)
   end
 
   def test_interrupt_during_to_s
