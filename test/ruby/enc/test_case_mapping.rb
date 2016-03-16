@@ -69,7 +69,7 @@ class TestCaseMappingPreliminary < Test::Unit::TestCase
     check_upcase_properties     'ᎠᎡᎢᎣᎤᎥᎦᎧᎨᎩ', "\uab70\uab71\uab72\uab73\uab74\uab75\uab76\uab77\uab78\uab79", :lithuanian
     check_capitalize_suffixes   "\uab70\uab71\uab72\uab73\uab74\uab75\uab76\uab77\uab78\uab79", 'ᎠᎡᎢᎣᎤᎥᎦᎧᎨᎩ'
     assert_equal                'ᎠᎡᎢᎣᎤᎥᎦᎧᎨᎩ', 'ᎠᎡᎢᎣᎤᎥᎦᎧᎨᎩ', :fold
-    #assert_equal                'ᎠᎡᎢᎣᎤᎥᎦᎧᎨᎩ', "\uab70\uab71\uab72\uab73\uab74\uab75\uab76\uab77\uab78\uab79", :fold
+    assert_equal                'ᎠᎡᎢᎣᎤᎥᎦᎧᎨᎩ', "\uab70\uab71\uab72\uab73\uab74\uab75\uab76\uab77\uab78\uab79".downcase(:fold)
   end
 
   def test_ascii_option

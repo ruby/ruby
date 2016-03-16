@@ -1,3 +1,7 @@
+Wed Mar 16 18:42:45 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* test/ruby/enc/test_case_mapping.rb: Fixed and activated a test for Cherokee.
+
 Wed Mar 16 17:58:56 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* test/ruby/enc/test_case_mapping.rb: Fixed a logical error.
