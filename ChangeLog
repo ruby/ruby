@@ -1,3 +1,9 @@
+Wed Mar 16 17:57:34 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* test/ruby/enc/test_case_mapping.rb: Adding tests for Cherokee.
+	  One test not yet working.
+	  (with Kimihito Matsui)
+
 Wed Mar 16 15:44:05 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* test/ruby/enc/test_case_mapping.rb: Adding tests for actual Unicode

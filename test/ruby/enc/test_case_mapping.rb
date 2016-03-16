@@ -64,6 +64,14 @@ class TestCaseMappingPreliminary < Test::Unit::TestCase
     check_swapcase_properties   'résumé DÜRST ĭñŧėřŊÃŢĲŇŐŃæłĩżàťïōņ', 'RÉSUMÉ dürst ĬÑŦĖŘŋãţĳňőńÆŁĨŻÀŤÏŌŅ', :lithuanian
   end
 
+  def test_cherokee
+    check_downcase_properties   "\uab70\uab71\uab72\uab73\uab74\uab75\uab76\uab77\uab78\uab79", 'ᎠᎡᎢᎣᎤᎥᎦᎧᎨᎩ', :lithuanian
+    check_upcase_properties     'ᎠᎡᎢᎣᎤᎥᎦᎧᎨᎩ', "\uab70\uab71\uab72\uab73\uab74\uab75\uab76\uab77\uab78\uab79", :lithuanian
+    check_capitalize_suffixes   "\uab70\uab71\uab72\uab73\uab74\uab75\uab76\uab77\uab78\uab79", 'ᎠᎡᎢᎣᎤᎥᎦᎧᎨᎩ'
+    assert_equal                'ᎠᎡᎢᎣᎤᎥᎦᎧᎨᎩ', 'ᎠᎡᎢᎣᎤᎥᎦᎧᎨᎩ', :fold
+    #assert_equal                'ᎠᎡᎢᎣᎤᎥᎦᎧᎨᎩ', "\uab70\uab71\uab72\uab73\uab74\uab75\uab76\uab77\uab78\uab79", :fold
+  end
+
   def test_ascii_option
     check_downcase_properties   'yukihiro matsumoto (matz)', 'Yukihiro MATSUMOTO (MATZ)', :ascii
     check_upcase_properties     'YUKIHIRO MATSUMOTO (MATZ)', 'yukihiro matsumoto (matz)', :ascii
