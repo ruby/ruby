@@ -61,7 +61,7 @@ BEGIN_MAP
 #
 #	1. JIS X 0212 apparently unified the following two symbols
 #	   into a single character at 0x2922:
-#	
+#
 #	   LATIN CAPITAL LETTER D WITH STROKE
 #	   LATIN CAPITAL LETTER ETH
 #
