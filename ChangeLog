@@ -1,3 +1,10 @@
+Wed Mar 16 23:10:25 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* defs/keywords (alias, undef): symbol literals are allowed.
+
+	* parse.y (parse_percent): should parse symbol literals for alias
+	  and undef.  [ruby-dev:47681] [Bug #8851]
+
 Wed Mar 16 21:39:39 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enc/trans/JIS: update Unicode's notice. [Bug #11844]

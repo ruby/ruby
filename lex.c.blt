@@ -243,7 +243,7 @@ rb_reserved_word (str, len)
 #line 30 "defs/keywords"
       {(int)offsetof(struct stringpool_t, stringpool_str27), {keyword_for, keyword_for}, EXPR_VALUE},
 #line 46 "defs/keywords"
-      {(int)offsetof(struct stringpool_t, stringpool_str28), {keyword_undef, keyword_undef}, EXPR_FNAME},
+      {(int)offsetof(struct stringpool_t, stringpool_str28), {keyword_undef, keyword_undef}, EXPR_FNAME|EXPR_FITEM},
 #line 37 "defs/keywords"
       {(int)offsetof(struct stringpool_t, stringpool_str29), {keyword_or, keyword_or}, EXPR_VALUE},
 #line 32 "defs/keywords"
@@ -275,7 +275,7 @@ rb_reserved_word (str, len)
 #line 15 "defs/keywords"
       {(int)offsetof(struct stringpool_t, stringpool_str43), {keyword_END, keyword_END}, EXPR_END},
 #line 16 "defs/keywords"
-      {(int)offsetof(struct stringpool_t, stringpool_str44), {keyword_alias, keyword_alias}, EXPR_FNAME},
+      {(int)offsetof(struct stringpool_t, stringpool_str44), {keyword_alias, keyword_alias}, EXPR_FNAME|EXPR_FITEM},
 #line 14 "defs/keywords"
       {(int)offsetof(struct stringpool_t, stringpool_str45), {keyword_BEGIN, keyword_BEGIN}, EXPR_END},
 #line 23 "defs/keywords"

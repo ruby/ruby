@@ -790,6 +790,30 @@ eom
     end
   end
 
+  def test_alias_symbol
+    bug8851 = '[ruby-dev:47681] [Bug #8851]'
+    formats = ['%s', ":'%s'", ':"%s"', '%%s(%s)']
+    all_assertions(bug8851) do |all|
+      formats.product(formats) do |form1, form2|
+        all.for(code = "alias #{form1 % 'a'} #{form2 % 'p'}") do
+          assert_valid_syntax(code)
+        end
+      end
+    end
+  end
+
+  def test_undef_symbol
+    bug8851 = '[ruby-dev:47681] [Bug #8851]'
+    formats = ['%s', ":'%s'", ':"%s"', '%%s(%s)']
+    all_assertions(bug8851) do |all|
+      formats.product(formats) do |form1, form2|
+        all.for(code = "undef #{form1 % 'a'}, #{form2 % 'p'}") do
+          assert_valid_syntax(code)
+        end
+      end
+    end
+  end
+
   private
 
   def not_label(x) @result = x; @not_label ||= nil end
