@@ -1,7 +1,7 @@
 Fri Mar 18 00:15:05 2016  Yusuke Endoh  <mame@ruby-lang.org>
 
 	* numeric.c (num_step): use rb_equal for zero check. rb_num_coerce_cmp
-	  created an object which caused extra overhead. 
+	  created an object which caused extra overhead.
 
 Thu Mar 17 22:21:34 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
