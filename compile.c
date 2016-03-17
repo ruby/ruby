@@ -52,9 +52,9 @@ typedef struct iseq_label_data {
     int label_no;
     int position;
     int sc_state;
-    int set;
     int sp;
     int refcnt;
+    unsigned int set: 1;
 } LABEL;
 
 typedef struct iseq_insn_data {
