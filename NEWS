@@ -16,6 +16,12 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 === Core classes updates (outstanding ones only)
 
+* Array
+  * Array#max and Array#min.  [Feature #12172]
+    This may cause a tiny incompatibility: if you redefine
+    Enumerable#max and call max to an Array, your redefinition will be
+    now ignored.  You should also redefine Array#max.
+
 * Dir
 
   * Dir.empty?.  [Feature #10121]
@@ -53,3 +59,11 @@ with all sufficient information, see the ChangeLog file or Redmine
 === Supported platform changes
 
 === Implementation improvements
+
+* In some condition, `[x, y].max` and `[x, y].min` are optimized
+  so that a temporal array is not created.  The concrete condition is
+  an implementation detail: currently, the array literal must have no
+  splat, must have at least one expression but literal, the length must
+  be <= 0x100, and Array#max and min must not be redefined.  It will work
+  in most casual and real-life use case where it is written with intent
+  to `Math.max(x, y)`.
