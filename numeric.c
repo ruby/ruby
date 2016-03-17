@@ -4032,55 +4032,6 @@ int_round(int argc, VALUE* argv, VALUE num)
 }
 
 /*
- *  call-seq:
- *     fix.zero?  ->  true or false
- *
- *  Returns +true+ if +fix+ is zero.
- *
- */
-
-static VALUE
-fix_zero_p(VALUE num)
-{
-    if (FIX2LONG(num) == 0) {
-	return Qtrue;
-    }
-    return Qfalse;
-}
-
-/*
- *  call-seq:
- *     fix.odd?  ->  true or false
- *
- *  Returns +true+ if +fix+ is an odd number.
- */
-
-static VALUE
-fix_odd_p(VALUE num)
-{
-    if (num & 2) {
-	return Qtrue;
-    }
-    return Qfalse;
-}
-
-/*
- *  call-seq:
- *     fix.even?  ->  true or false
- *
- *  Returns +true+ if +fix+ is an even number.
- */
-
-static VALUE
-fix_even_p(VALUE num)
-{
-    if (num & 2) {
-	return Qfalse;
-    }
-    return Qtrue;
-}
-
-/*
  *  Document-class: ZeroDivisionError
  *
  *  Raised when attempting to divide an integer by 0.

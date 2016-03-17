@@ -1,3 +1,8 @@
+Fri Mar 18 02:17:00 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* numeric.c (fix_zero_p, fix_even_p, fix_odd_p): remove needless
+	  functions.
+
 Fri Mar 18 02:15:00 2016  Kenta Murata  <mrkn@mrkn.jp>
 
 	* numeric.c (int_even_p): treat Fixnum and Bignum values directly.
