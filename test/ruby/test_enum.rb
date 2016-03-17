@@ -197,11 +197,16 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal(105, [5, 7].inject(3, :*))
   end
 
+  def assert_float_equal(e, v, msg=nil)
+    assert_equal(Float, v.class, msg)
+    assert_equal(e, v, msg)
+  end
+
   def test_inject_array_plus
     assert_equal(3, [3].inject(:+))
     assert_equal(8, [3, 5].inject(:+))
     assert_equal(15, [3, 5, 7].inject(:+))
-    assert_equal(15.0, [3, 5, 7.0].inject(:+))
+    assert_float_equal(15.0, [3, 5, 7.0].inject(:+))
     assert_equal(2*FIXNUM_MAX, Array.new(2, FIXNUM_MAX).inject(:+))
     assert_equal(2*(FIXNUM_MAX+1), Array.new(2, FIXNUM_MAX+1).inject(:+))
     assert_equal(10*FIXNUM_MAX, Array.new(10, FIXNUM_MAX).inject(:+))
@@ -209,6 +214,9 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal(FIXNUM_MAX*10, ([FIXNUM_MAX+1, -1]*10).inject(:+))
     assert_equal(2*FIXNUM_MIN, Array.new(2, FIXNUM_MIN).inject(:+))
     assert_equal((FIXNUM_MAX+1).to_f, [FIXNUM_MAX, 1, 0.0].inject(:+))
+    assert_float_equal(10.0, [3.0, 5].inject(2.0, :+))
+    assert_float_equal((FIXNUM_MAX+1).to_f, [0.0, FIXNUM_MAX+1].inject(:+))
+    assert_equal(2.0+3.0i, [2.0, 3.0i].inject(:+))
   end
 
   def test_inject_array_plus_redefined

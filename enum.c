@@ -632,8 +632,9 @@ static VALUE
 ary_inject_op(VALUE ary, VALUE init, VALUE op)
 {
     ID id;
-    VALUE v;
-    long i;
+    VALUE v, e;
+    long i, n;
+    double f;
 
     if (RARRAY_LEN(ary) == 0)
         return init == Qundef ? Qnil : init;
@@ -641,6 +642,8 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
     if (init == Qundef) {
         v = RARRAY_AREF(ary, 0);
         i = 1;
+        if (RARRAY_LEN(ary) == 1)
+            return v;
     }
     else {
         v = init;
@@ -649,42 +652,53 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
 
     id = SYM2ID(op);
     if (id == idPLUS) {
-        if (FIXNUM_P(v) &&
-            rb_method_basic_definition_p(rb_cFixnum, idPLUS)) {
-            long n = FIX2LONG(v);
-            while (i < RARRAY_LEN(ary)) {
-                VALUE e = RARRAY_AREF(ary, i);
-                if (!FIXNUM_P(e)) break;
-                n += FIX2LONG(e); /* should not overflow long type */
-                i++;
-                if (!FIXABLE(n)) break;
-            }
-            v = LONG2NUM(n);
-        }
-        if (i < RARRAY_LEN(ary) && (FIXNUM_P(v) || RB_TYPE_P(v, T_BIGNUM)) &&
-            rb_method_basic_definition_p(rb_cFixnum, idPLUS) &&
-            rb_method_basic_definition_p(rb_cBignum, idPLUS)) {
-            long n = 0;
-            while (i < RARRAY_LEN(ary)) {
-                VALUE e = RARRAY_AREF(ary, i);
+        if ((FIXNUM_P(v) || RB_TYPE_P(v, T_BIGNUM)) &&
+             rb_method_basic_definition_p(rb_cFixnum, idPLUS) &&
+             rb_method_basic_definition_p(rb_cBignum, idPLUS)) {
+            n = 0;
+            while (1) {
+                e = RARRAY_AREF(ary, i);
                 if (FIXNUM_P(e)) {
                     n += FIX2LONG(e); /* should not overflow long type */
-                    i++;
                     if (!FIXABLE(n)) {
                         v = rb_big_plus(LONG2NUM(n), v);
                         n = 0;
                     }
                 }
-                else if (RB_TYPE_P(e, T_BIGNUM)) {
+                else if (RB_TYPE_P(e, T_BIGNUM))
                     v = rb_big_plus(e, v);
-                    i++;
-                }
-                else {
+                else
                     break;
-                }
+                i++;
+                if (RARRAY_LEN(ary) <= i)
+                    return n == 0 ? v : rb_fix_plus(LONG2FIX(n), v);
             }
             if (n != 0) {
                 v = rb_fix_plus(LONG2FIX(n), v);
+            }
+            if (RB_FLOAT_TYPE_P(e) &&
+                rb_method_basic_definition_p(rb_cFloat, idPLUS)) {
+                f = NUM2DBL(v);
+                goto sum_float;
+            }
+        }
+        else if (RB_FLOAT_TYPE_P(v) &&
+                 rb_method_basic_definition_p(rb_cFloat, idPLUS)) {
+            f = RFLOAT_VALUE(v);
+          sum_float:
+            while (1) {
+                e = RARRAY_AREF(ary, i);
+                if (RB_FLOAT_TYPE_P(e))
+                    f += RFLOAT_VALUE(e);
+                else if (FIXNUM_P(e))
+                    f += FIX2LONG(e);
+                else if (RB_TYPE_P(e, T_BIGNUM))
+                    f += rb_big2dbl(e);
+                else
+                    break;
+                i++;
+                if (RARRAY_LEN(ary) <= i)
+                    return DBL2NUM(f);
             }
         }
     }

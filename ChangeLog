@@ -1,3 +1,8 @@
+Fri Mar 18 00:25:56 2016  Tanaka Akira  <akr@fsij.org>
+
+	* enum.c (ary_inject_op): Implement the specialized code for sum of
+	  float numbers.
+
 Fri Mar 18 00:15:05 2016  Yusuke Endoh  <mame@ruby-lang.org>
 
 	* numeric.c (num_step): use rb_equal for zero check. rb_num_coerce_cmp
