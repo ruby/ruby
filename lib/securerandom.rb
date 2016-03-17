@@ -48,7 +48,7 @@ end
 #
 
 module SecureRandom
-  if defined? OpenSSL::Random
+  if defined?(OpenSSL::Random) && /mswin|mingw/ !~ RUBY_PLATFORM
     def self.gen_random(n)
       @pid = 0 unless defined?(@pid)
       pid = $$
