@@ -4180,10 +4180,10 @@ rb_ary_or(VALUE ary1, VALUE ary2)
 
 /*
  *  call-seq:
- *     ary.max                   -> obj
- *     ary.max { |a, b| block }  -> obj
- *     ary.max(n)                -> array
- *     ary.max(n) {|a,b| block } -> array
+ *     ary.max                     -> obj
+ *     ary.max { |a, b| block }    -> obj
+ *     ary.max(n)                  -> array
+ *     ary.max(n) { |a, b| block } -> array
  *
  *  Returns the object in _ary_ with the maximum value. The
  *  first form assumes all objects implement <code>Comparable</code>;

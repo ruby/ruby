@@ -1,3 +1,7 @@
+Thu Mar 17 21:52:09 2016  Yusuke Endoh  <mame@ruby-lang.org>
+
+	* array.c, enum.c: make rdoc format consistent.
+
 Thu Mar 17 21:47:57 2016  Yusuke Endoh  <mame@ruby-lang.org>
 
 	* NEWS: add Array#max, #min, and the optimization.  [Feature #12172]

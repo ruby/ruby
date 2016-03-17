@@ -1543,11 +1543,11 @@ min_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 /*
  *  call-seq:
  *     enum.min                     -> obj
- *     enum.min {| a,b | block }    -> obj
+ *     enum.min { |a, b| block }    -> obj
  *     enum.min(n)                  -> array
- *     enum.min(n) {| a,b | block } -> array
+ *     enum.min(n) { |a, b| block } -> array
  *
- *  Returns the object in <i>enum</i> with the minimum value. The
+ *  Returns the object in _enum_ with the minimum value. The
  *  first form assumes all objects implement <code>Comparable</code>;
  *  the second uses the block to return <em>a <=> b</em>.
  *
@@ -1635,10 +1635,10 @@ max_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 
 /*
  *  call-seq:
- *     enum.max                   -> obj
- *     enum.max { |a, b| block }  -> obj
- *     enum.max(n)                -> obj
- *     enum.max(n) {|a,b| block } -> obj
+ *     enum.max                     -> obj
+ *     enum.max { |a, b| block }    -> obj
+ *     enum.max(n)                  -> array
+ *     enum.max(n) { |a, b| block } -> array
  *
  *  Returns the object in _enum_ with the maximum value. The
  *  first form assumes all objects implement <code>Comparable</code>;
