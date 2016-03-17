@@ -2990,6 +2990,12 @@ fix_plus(VALUE x, VALUE y)
     }
 }
 
+VALUE
+rb_fix_plus(VALUE x, VALUE y)
+{
+    return fix_plus(x, y);
+}
+
 /*
  * call-seq:
  *   fix - numeric  ->  numeric_result

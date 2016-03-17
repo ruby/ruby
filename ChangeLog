@@ -1,3 +1,12 @@
+Thu Mar 17 18:39:04 2016  Tanaka Akira  <akr@fsij.org>
+
+	* enum.c (enum_inject): Implement the specialized code for sum of
+	  integers including Bignums.
+
+	* internal.h (rb_fix_plus): Declared to be usable from enum_inject.
+
+	* numeric.c (rb_fix_plus): Defined.
+
 Thu Mar 17 17:20:28 2016  Anton Davydov  <antondavydov.o@gmail.com>
 
 	* thread_sync.c: [DOC] Update documentation for Queue class

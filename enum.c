@@ -719,17 +719,45 @@ enum_inject(int argc, VALUE *argv, VALUE obj)
             i = 0;
         }
         id = SYM2ID(op);
-        if (id == idPLUS && FIXNUM_P(v) &&
-            rb_method_basic_definition_p(rb_cFixnum, idPLUS)) {
-            long n = FIX2LONG(v);
-            while (i < RARRAY_LEN(obj)) {
-                VALUE e = RARRAY_AREF(obj, i);
-                if (!FIXNUM_P(e)) break;
-                n += FIX2LONG(e); /* should not overflow long type */
-                i++;
-                if (!FIXABLE(n)) break;
+        if (id == idPLUS) {
+            if (FIXNUM_P(v) &&
+                rb_method_basic_definition_p(rb_cFixnum, idPLUS)) {
+                long n = FIX2LONG(v);
+                while (i < RARRAY_LEN(obj)) {
+                    VALUE e = RARRAY_AREF(obj, i);
+                    if (!FIXNUM_P(e)) break;
+                    n += FIX2LONG(e); /* should not overflow long type */
+                    i++;
+                    if (!FIXABLE(n)) break;
+                }
+                v = LONG2NUM(n);
             }
-            v = LONG2NUM(n);
+            if (i < RARRAY_LEN(obj) && (FIXNUM_P(v) || RB_TYPE_P(v, T_BIGNUM)) &&
+                rb_method_basic_definition_p(rb_cFixnum, idPLUS) &&
+                rb_method_basic_definition_p(rb_cBignum, idPLUS)) {
+                long n = 0;
+                while (i < RARRAY_LEN(obj)) {
+                    VALUE e = RARRAY_AREF(obj, i);
+                    if (FIXNUM_P(e)) {
+                        n += FIX2LONG(e); /* should not overflow long type */
+                        i++;
+                        if (!FIXABLE(n)) {
+                            v = rb_big_plus(LONG2NUM(n), v);
+                            n = 0;
+                        }
+                    }
+                    else if (RB_TYPE_P(e, T_BIGNUM)) {
+                        v = rb_big_plus(e, v);
+                        i++;
+                    }
+                    else {
+                        break;
+                    }
+                }
+                if (n != 0) {
+                    v = rb_fix_plus(LONG2FIX(n), v);
+                }
+            }
         }
         for (; i<RARRAY_LEN(obj); i++) {
             v = rb_funcall(v, id, 1, RARRAY_AREF(obj, i));

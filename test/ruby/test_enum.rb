@@ -2,6 +2,7 @@
 require 'test/unit'
 EnvUtil.suppress_warning {require 'continuation'}
 require 'stringio'
+require "rbconfig/sizeof"
 
 class TestEnumerable < Test::Unit::TestCase
   def setup
@@ -184,7 +185,33 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal(nil, @empty.inject() {9})
   end
 
+  FIXNUM_MIN = -(1 << (8 * RbConfig::SIZEOF['long'] - 2))
+  FIXNUM_MAX = (1 << (8 * RbConfig::SIZEOF['long'] - 2)) - 1
+
+  def test_inject_array_mul
+    assert_equal(nil, [].inject(:*))
+    assert_equal(5, [5].inject(:*))
+    assert_equal(35, [5, 7].inject(:*))
+    assert_equal(3, [].inject(3, :*))
+    assert_equal(15, [5].inject(3, :*))
+    assert_equal(105, [5, 7].inject(3, :*))
+  end
+
   def test_inject_array_plus
+    assert_equal(3, [3].inject(:+))
+    assert_equal(8, [3, 5].inject(:+))
+    assert_equal(15, [3, 5, 7].inject(:+))
+    assert_equal(15.0, [3, 5, 7.0].inject(:+))
+    assert_equal(2*FIXNUM_MAX, Array.new(2, FIXNUM_MAX).inject(:+))
+    assert_equal(2*(FIXNUM_MAX+1), Array.new(2, FIXNUM_MAX+1).inject(:+))
+    assert_equal(10*FIXNUM_MAX, Array.new(10, FIXNUM_MAX).inject(:+))
+    assert_equal(0, ([FIXNUM_MAX, 1, -FIXNUM_MAX, -1]*10).inject(:+))
+    assert_equal(FIXNUM_MAX*10, ([FIXNUM_MAX+1, -1]*10).inject(:+))
+    assert_equal(2*FIXNUM_MIN, Array.new(2, FIXNUM_MIN).inject(:+))
+    assert_equal((FIXNUM_MAX+1).to_f, [FIXNUM_MAX, 1, 0.0].inject(:+))
+  end
+
+  def test_inject_array_plus_redefined
     assert_separately([], <<-"end;")
       class Fixnum
         undef :+
@@ -193,6 +220,15 @@ class TestEnumerable < Test::Unit::TestCase
         end
       end
       assert_equal(0, [1,2,3].inject(:+), "[ruby-dev:49510] [Bug#12178]")
+    end;
+    assert_separately([], <<-"end;")
+      class Bignum
+        undef :+
+        def +(x)
+          0
+        end
+      end
+      assert_equal(0, [#{FIXNUM_MAX},1,1].inject(:+))
     end;
   end
 
