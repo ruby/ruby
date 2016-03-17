@@ -1,3 +1,9 @@
+Fri Mar 18 02:35:12 2016  Naotoshi Seo  <sonots@gmail.com>
+
+	* lib/time.rb (parse, strptime): Fix Time.parse/strptime does not
+	  have compatibility with DateTime.parse/strptime in terms of parsing
+	  timezone [Bug #12190] [Fix GH-1297]
+
 Fri Mar 18 02:17:00 2016  Kenta Murata  <mrkn@mrkn.jp>
 
 	* numeric.c (fix_zero_p, fix_even_p, fix_odd_p): remove needless

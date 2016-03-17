@@ -429,6 +429,23 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
     assert_equal(500000, Time.parse("2000-01-01T00:00:00.5+00:00").tv_usec)
   end
 
+  def test_parse_with_zone
+    t = Time.parse('2000-01-01T00:00:00 CET')
+    assert_equal(2000, t.year)
+    assert_equal(1, t.mon)
+    assert_equal(1, t.day)
+    assert_equal(0, t.hour)
+    assert_equal(0, t.min)
+    assert_equal(0, t.sec)
+    assert_equal(3600, t.utc_offset)
+    assert_equal(false, t.utc?)
+
+    Time.instance_eval("ZoneOffset").each do |zone, offset|
+      t = Time.parse("2000-01-01T00:00:00 #{zone}")
+      assert_equal(offset*3600, t.utc_offset)
+    end
+  end
+
   def test_strptime
     assert_equal(Time.utc(2005, 8, 28, 06, 54, 20), Time.strptime("28/Aug/2005:06:54:20 +0000", "%d/%b/%Y:%T %z"))
     assert_equal(Time.at(1).localtime, Time.strptime("1", "%s"))
@@ -479,6 +496,21 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
     assert_equal(0, t.sec)
     assert_equal(0, t.utc_offset)
     assert_equal(true, t.utc?)
+
+    t = Time.strptime('20010203 CET', '%Y%m%d %z')
+    assert_equal(2001, t.year)
+    assert_equal(2, t.mon)
+    assert_equal(3, t.day)
+    assert_equal(0, t.hour)
+    assert_equal(0, t.min)
+    assert_equal(0, t.sec)
+    assert_equal(3600, t.utc_offset)
+    assert_equal(false, t.utc?)
+
+    Time.instance_eval("ZoneOffset").each do |zone, offset|
+      t = Time.strptime("2000-01-01 #{zone}", '%Y-%m-%d %z')
+      assert_equal(offset*3600, t.utc_offset)
+    end
   end
 
   def test_nsec
