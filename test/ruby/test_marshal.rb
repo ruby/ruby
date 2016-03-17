@@ -730,11 +730,10 @@ class TestMarshal < Test::Unit::TestCase
     crash = "\x04\bI/\x05\x00\x06:\x06E{\x06@\x05T"
 
     opt = %w[--disable=gems]
-    assert_ruby_status(opt, <<-RUBY)
-begin
-  Marshal.load(#{crash.dump})
-rescue ArgumentError
-end
+    assert_separately(opt, <<-RUBY)
+      assert_raise_with_message(ArgumentError, /bad link/) do
+        Marshal.load(#{crash.dump})
+      end
     RUBY
   end
 end
