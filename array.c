@@ -4211,7 +4211,7 @@ rb_ary_max(int argc, VALUE *argv, VALUE ary)
     rb_scan_args(argc, argv, "01", &num);
 
     if (!NIL_P(num))
-       return rb_call_super(argc, argv); /* XXX: should redefine? */
+       return rb_nmin_run(ary, num, 0, 1, 1);
 
     if (rb_block_given_p()) {
 	for (i = 0; i < RARRAY_LEN(ary); i++) {
@@ -4266,7 +4266,7 @@ rb_ary_min(int argc, VALUE *argv, VALUE ary)
     rb_scan_args(argc, argv, "01", &num);
 
     if (!NIL_P(num))
-       return rb_call_super(argc, argv); /* XXX: should redefine? */
+       return rb_nmin_run(ary, num, 0, 0, 1);
 
     if (rb_block_given_p()) {
 	for (i = 0; i < RARRAY_LEN(ary); i++) {

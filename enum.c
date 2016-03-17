@@ -1374,8 +1374,8 @@ nmin_i(VALUE i, VALUE *_data, int argc, VALUE *argv)
     return Qnil;
 }
 
-static VALUE
-nmin_run(VALUE obj, VALUE num, int by, int rev)
+VALUE
+rb_nmin_run(VALUE obj, VALUE num, int by, int rev, int ary)
 {
     VALUE result;
     struct nmin_data data;
@@ -1398,7 +1398,17 @@ nmin_run(VALUE obj, VALUE num, int by, int rev)
     data.by = by;
     data.method = rev ? (by ? "max_by" : "max")
                       : (by ? "min_by" : "min");
-    rb_block_call(obj, id_each, 0, 0, nmin_i, (VALUE)&data);
+    if (ary) {
+	long i;
+	for (i = 0; i < RARRAY_LEN(obj); i++) {
+	   VALUE args[1];
+	   args[0] = RARRAY_AREF(obj, i);
+	   nmin_i(obj, (VALUE*)&data, 1, args);
+	}
+    }
+    else {
+	rb_block_call(obj, id_each, 0, 0, nmin_i, (VALUE)&data);
+    }
     nmin_filter(&data);
     result = data.buf;
     if (by) {
@@ -1564,7 +1574,7 @@ enum_min(int argc, VALUE *argv, VALUE obj)
     rb_scan_args(argc, argv, "01", &num);
 
     if (!NIL_P(num))
-       return nmin_run(obj, num, 0, 0);
+       return rb_nmin_run(obj, num, 0, 0, 0);
 
     m->min = Qundef;
     m->cmp_opt.opt_methods = 0;
@@ -1657,7 +1667,7 @@ enum_max(int argc, VALUE *argv, VALUE obj)
     rb_scan_args(argc, argv, "01", &num);
 
     if (!NIL_P(num))
-       return nmin_run(obj, num, 0, 1);
+       return rb_nmin_run(obj, num, 0, 1, 0);
 
     m->max = Qundef;
     m->cmp_opt.opt_methods = 0;
@@ -1878,7 +1888,7 @@ enum_min_by(int argc, VALUE *argv, VALUE obj)
     RETURN_SIZED_ENUMERATOR(obj, argc, argv, enum_size);
 
     if (!NIL_P(num))
-        return nmin_run(obj, num, 1, 0);
+        return rb_nmin_run(obj, num, 1, 0, 0);
 
     memo = MEMO_NEW(Qundef, Qnil, 0);
     rb_block_call(obj, id_each, 0, 0, min_by_i, (VALUE)memo);
@@ -1983,7 +1993,7 @@ enum_max_by(int argc, VALUE *argv, VALUE obj)
     RETURN_SIZED_ENUMERATOR(obj, argc, argv, enum_size);
 
     if (!NIL_P(num))
-        return nmin_run(obj, num, 1, 1);
+        return rb_nmin_run(obj, num, 1, 1, 0);
 
     memo = MEMO_NEW(Qundef, Qnil, 0);
     rb_block_call(obj, id_each, 0, 0, max_by_i, (VALUE)memo);

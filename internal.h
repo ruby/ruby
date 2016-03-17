@@ -806,6 +806,7 @@ int rb_data_is_encoding(VALUE obj);
 
 /* enum.c */
 VALUE rb_f_send(int argc, VALUE *argv, VALUE recv);
+VALUE rb_nmin_run(VALUE obj, VALUE num, int by, int rev, int ary);
 
 /* error.c */
 extern VALUE rb_eEAGAIN;

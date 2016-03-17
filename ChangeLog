@@ -1,3 +1,12 @@
+Thu Mar 17 21:35:52 2016  Yusuke Endoh  <mame@ruby-lang.org>
+
+	* array.c (rb_ary_max, rb_ary_min): implement Array#max and min with
+	  arguments.  replace super call with rb_nmin_run.
+
+	* enum.c (nmin_run): exported (as rb_nmin_run).
+
+	* internal.h: added a prototype for rb_nmin_run.
+
 Thu Mar 17 21:24:52 2016  Yusuke Endoh  <mame@ruby-lang.org>
 
 	* array.c (rb_ary_max, rb_ary_min): implement a block by itself instead
