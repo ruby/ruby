@@ -1,3 +1,11 @@
+Thu Mar 17 21:45:02 2016  Yusuke Endoh  <mame@ruby-lang.org>
+
+	* compile.c (NODE_CALL): add optimization shortcut for Array#max/min.
+	  Now `[x, y].max` is optimized so that a temporal array object is not
+	  created in some condition.
+
+	* insns.def (opt_newarray_max, opt_newarray_min): added.
+
 Thu Mar 17 21:35:52 2016  Yusuke Endoh  <mame@ruby-lang.org>
 
 	* array.c (rb_ary_max, rb_ary_min): implement Array#max and min with

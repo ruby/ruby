@@ -4916,6 +4916,26 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    }
 	    break;
 	}
+	/* optimization shortcut
+	*   [a, b, ...].max/min -> a, b, c, opt_newarray_max/min
+	*/
+	if (node->nd_recv && nd_type(node->nd_recv) == NODE_ARRAY &&
+	    (node->nd_mid == idMax || node->nd_mid == idMin) && node->nd_args == NULL &&
+	    ISEQ_COMPILE_DATA(iseq)->current_block == NULL &&
+	    ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction) {
+	    COMPILE(ret, "recv", node->nd_recv);
+	    if (((INSN*)ret->last)->insn_id == BIN(newarray)) {
+		((INSN*)ret->last)->insn_id =
+		    node->nd_mid == idMax ? BIN(opt_newarray_max) : BIN(opt_newarray_min);
+	    }
+	    else {
+		ADD_SEND(ret, line, node->nd_mid, INT2FIX(0));
+	    }
+	    if (poped) {
+		ADD_INSN(ret, line, pop);
+	    }
+	    break;
+	}
       case NODE_QCALL:
       case NODE_FCALL:
       case NODE_VCALL:{		/* VCALL: variable or call */

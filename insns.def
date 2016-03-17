@@ -986,6 +986,74 @@ opt_str_freeze
     }
 }
 
+DEFINE_INSN
+opt_newarray_max
+(rb_num_t num)
+(...)
+(VALUE val) // inc += 1 - num;
+{
+#define id_cmp  idCmp
+    if (BASIC_OP_UNREDEFINED_P(BOP_MAX, ARRAY_REDEFINED_OP_FLAG)) {
+	if (num == 0) {
+	    val = Qnil;
+	}
+	else {
+	    struct cmp_opt_data cmp_opt = { 0, 0 };
+	    VALUE result = Qundef;
+	    rb_num_t i = num - 1;
+	    result = TOPN(i);
+	    while (i-- > 0) {
+		const VALUE v = TOPN(i);
+		if (result == Qundef || OPTIMIZED_CMP(v, result, cmp_opt) > 0) {
+		    result = v;
+		}
+	    }
+	    val = result == Qundef ? Qnil : result;
+	}
+	POPN(num);
+    }
+    else {
+	VALUE ary = rb_ary_new4((long)num, STACK_ADDR_FROM_TOP(num));
+	val = rb_funcall(ary, idMax, 0);
+	POPN(num);
+    }
+#undef id_cmp
+}
+
+DEFINE_INSN
+opt_newarray_min
+(rb_num_t num)
+(...)
+(VALUE val) // inc += 1 - num;
+{
+#define id_cmp  idCmp
+    if (BASIC_OP_UNREDEFINED_P(BOP_MIN, ARRAY_REDEFINED_OP_FLAG)) {
+	if (num == 0) {
+	    val = Qnil;
+	}
+	else {
+	    struct cmp_opt_data cmp_opt = { 0, 0 };
+	    VALUE result = Qundef;
+	    rb_num_t i = num - 1;
+	    result = TOPN(i);
+	    while (i-- > 0) {
+		const VALUE v = TOPN(i);
+		if (result == Qundef || OPTIMIZED_CMP(v, result, cmp_opt) < 0) {
+		    result = v;
+		}
+	    }
+	    val = result == Qundef ? Qnil : result;
+	}
+	POPN(num);
+    }
+    else {
+	VALUE ary = rb_ary_new4((long)num, STACK_ADDR_FROM_TOP(num));
+	val = rb_funcall(ary, idMin, 0);
+	POPN(num);
+    }
+#undef id_cmp
+}
+
 /**
   @c optimize
   @e Invoke method without block

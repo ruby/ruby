@@ -1475,6 +1475,8 @@ vm_init_redefined_flag(void)
     OP(Succ, SUCC), (C(Fixnum), C(String), C(Time));
     OP(EqTilde, MATCH), (C(Regexp), C(String));
     OP(Freeze, FREEZE), (C(String));
+    OP(Max, MAX), (C(Array));
+    OP(Min, MIN), (C(Array));
 #undef C
 #undef OP
 }
