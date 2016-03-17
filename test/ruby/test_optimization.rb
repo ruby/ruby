@@ -230,47 +230,54 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_equal true, MyObj.new == nil
   end
 
+  def self.tailcall(klass, src, file = nil, path = nil, line = nil)
+    unless file
+      loc, = caller_locations(1, 1)
+      file = loc.path
+      line ||= loc.lineno
+    end
+    RubyVM::InstructionSequence.new("proc {|_|_.class_eval {#{src}}}",
+                                    file, (path || file), line,
+                                    tailcall_optimization: true,
+                                    trace_instruction: false)
+      .eval[klass]
+  end
+
+  def tailcall(*args)
+    self.class.tailcall(singleton_class, *args)
+  end
+
   def test_tailcall
     bug4082 = '[ruby-core:33289]'
 
-    option = {
-      tailcall_optimization: true,
-      trace_instruction: false,
-    }
-    RubyVM::InstructionSequence.new(<<-EOF, "Bug#4082", bug4082, nil, option).eval
-      class #{self.class}::Tailcall
-        def fact_helper(n, res)
-          if n == 1
-            res
-          else
-            fact_helper(n - 1, n * res)
-          end
-        end
-        def fact(n)
-          fact_helper(n, 1)
+    tailcall(<<-EOF)
+      def fact_helper(n, res)
+        if n == 1
+          res
+        else
+          fact_helper(n - 1, n * res)
         end
       end
+      def fact(n)
+        fact_helper(n, 1)
+      end
     EOF
-    assert_equal(9131, Tailcall.new.fact(3000).to_s.size, bug4082)
+    assert_equal(9131, fact(3000).to_s.size, bug4082)
   end
 
   def test_tailcall_with_block
     bug6901 = '[ruby-dev:46065]'
 
-    option = {
-      tailcall_optimization: true,
-      trace_instruction: false,
-    }
-    RubyVM::InstructionSequence.new(<<-EOF, "Bug#6901", bug6901, nil, option).eval
-  def identity(val)
-    val
-  end
+    tailcall(<<-EOF)
+      def identity(val)
+        val
+      end
 
-  def delay
-    -> {
-      identity(yield)
-    }
-  end
+      def delay
+        -> {
+          identity(yield)
+        }
+      end
     EOF
     assert_equal(123, delay { 123 }.call, bug6901)
   end
@@ -280,15 +287,12 @@ class TestRubyOptimization < Test::Unit::TestCase
   end
 
   def test_tailcall_inhibited_by_block
-    assert_separately([], <<~'end;')
-      def just_yield
-        yield
+    tailcall(<<-EOF)
+      def yield_result
+        just_yield {:ok}
       end
-      iseq = RubyVM::InstructionSequence
-      result = iseq.compile("just_yield {:ok}", __FILE__, __FILE__, __LINE__,
-                            tailcall_optimization: true).eval
-      assert_equal(:ok, result)
-    end;
+    EOF
+    assert_equal(:ok, yield_result)
   end
 
   class Bug10557
