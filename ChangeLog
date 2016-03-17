@@ -1,3 +1,8 @@
+Thu Mar 17 21:24:52 2016  Yusuke Endoh  <mame@ruby-lang.org>
+
+	* array.c (rb_ary_max, rb_ary_min): implement a block by itself instead
+	  of delegating Enumerable#max/min.
+
 Thu Mar 17 21:09:34 2016  Yusuke Endoh  <mame@ruby-lang.org>
 
 	* array.c (rb_ary_max, rb_ary_min): Array#max and Array#min added.

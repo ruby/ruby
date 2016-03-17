@@ -4210,14 +4210,24 @@ rb_ary_max(int argc, VALUE *argv, VALUE ary)
 
     rb_scan_args(argc, argv, "01", &num);
 
-    if (!NIL_P(num) || rb_block_given_p())
+    if (!NIL_P(num))
        return rb_call_super(argc, argv); /* XXX: should redefine? */
 
-    for (i = 0; i < RARRAY_LEN(ary); i++) {
-       v = RARRAY_AREF(ary, i);
-       if (result == Qundef || OPTIMIZED_CMP(v, result, cmp_opt) > 0) {
-           result = v;
-       }
+    if (rb_block_given_p()) {
+	for (i = 0; i < RARRAY_LEN(ary); i++) {
+	   v = RARRAY_AREF(ary, i);
+	   if (result == Qundef || rb_cmpint(rb_yield_values(2, v, result), v, result) > 0) {
+	       result = v;
+	   }
+	}
+    }
+    else {
+	for (i = 0; i < RARRAY_LEN(ary); i++) {
+	   v = RARRAY_AREF(ary, i);
+	   if (result == Qundef || OPTIMIZED_CMP(v, result, cmp_opt) > 0) {
+	       result = v;
+	   }
+	}
     }
     if (result == Qundef) return Qnil;
     return result;
@@ -4255,14 +4265,24 @@ rb_ary_min(int argc, VALUE *argv, VALUE ary)
 
     rb_scan_args(argc, argv, "01", &num);
 
-    if (!NIL_P(num) || rb_block_given_p())
+    if (!NIL_P(num))
        return rb_call_super(argc, argv); /* XXX: should redefine? */
 
-    for (i = 0; i < RARRAY_LEN(ary); i++) {
-       v = RARRAY_AREF(ary, i);
-       if (result == Qundef || OPTIMIZED_CMP(v, result, cmp_opt) < 0) {
-           result = v;
-       }
+    if (rb_block_given_p()) {
+	for (i = 0; i < RARRAY_LEN(ary); i++) {
+	   v = RARRAY_AREF(ary, i);
+	   if (result == Qundef || rb_cmpint(rb_yield_values(2, v, result), v, result) < 0) {
+	       result = v;
+	   }
+	}
+    }
+    else {
+	for (i = 0; i < RARRAY_LEN(ary); i++) {
+	   v = RARRAY_AREF(ary, i);
+	   if (result == Qundef || OPTIMIZED_CMP(v, result, cmp_opt) < 0) {
+	       result = v;
+	   }
+	}
     }
     if (result == Qundef) return Qnil;
     return result;
