@@ -1,3 +1,8 @@
+Thu Mar 17 17:20:28 2016  Anton Davydov  <antondavydov.o@gmail.com>
+
+	* thread_sync.c: [DOC] Update documentation for Queue class
+	  description.  [Fix GH-1292]
+
 Thu Mar 17 17:14:51 2016  Dinar Valeev  <dvaleev@suse.com>
 
 	* gc.c (tick): Use __builtin_ppc_get_timebase for POWER arch.
