@@ -2283,6 +2283,28 @@ insn_set_specialized_instruction(rb_iseq_t *iseq, INSN *iobj, int insn_id)
 static int
 iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
 {
+    if (iobj->insn_id == BIN(newarray)) {
+	/*
+	 *   [a, b, ...].max/min -> a, b, c, opt_newarray_max/min
+	 */
+	INSN *niobj = (INSN *)get_next_insn(iobj);
+	if (niobj && niobj->insn_id == BIN(send)) {
+	    struct rb_call_info *ci = (struct rb_call_info *)OPERAND_AT(niobj, 0);
+	    if ((ci->flag & VM_CALL_ARGS_SIMPLE) && ci->orig_argc == 0) {
+		switch (ci->mid) {
+		  case idMax:
+		    iobj->insn_id = BIN(opt_newarray_max);
+		    REMOVE_ELEM(&niobj->link);
+		    return COMPILE_OK;
+		  case idMin:
+		    iobj->insn_id = BIN(opt_newarray_min);
+		    REMOVE_ELEM(&niobj->link);
+		    return COMPILE_OK;
+		}
+	    }
+	}
+    }
+
     if (iobj->insn_id == BIN(send)) {
 	struct rb_call_info *ci = (struct rb_call_info *)OPERAND_AT(iobj, 0);
 	const rb_iseq_t *blockiseq = (rb_iseq_t *)OPERAND_AT(iobj, 2);
@@ -4911,26 +4933,6 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    ADD_INSN3(ret, line, opt_aref_with,
 		      new_callinfo(iseq, idAREF, 1, 0, NULL, FALSE),
 		      NULL/* CALL_CACHE */, str);
-	    if (poped) {
-		ADD_INSN(ret, line, pop);
-	    }
-	    break;
-	}
-	/* optimization shortcut
-	*   [a, b, ...].max/min -> a, b, c, opt_newarray_max/min
-	*/
-	if (node->nd_recv && nd_type(node->nd_recv) == NODE_ARRAY &&
-	    (node->nd_mid == idMax || node->nd_mid == idMin) && node->nd_args == NULL &&
-	    ISEQ_COMPILE_DATA(iseq)->current_block == NULL &&
-	    ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction) {
-	    COMPILE(ret, "recv", node->nd_recv);
-	    if (((INSN*)ret->last)->insn_id == BIN(newarray)) {
-		((INSN*)ret->last)->insn_id =
-		    node->nd_mid == idMax ? BIN(opt_newarray_max) : BIN(opt_newarray_min);
-	    }
-	    else {
-		ADD_SEND(ret, line, node->nd_mid, INT2FIX(0));
-	    }
 	    if (poped) {
 		ADD_INSN(ret, line, pop);
 	    }

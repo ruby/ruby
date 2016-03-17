@@ -1,3 +1,8 @@
+Thu Mar 17 22:08:33 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_specialized_instruction): move specialization
+	  for opt_newarray_max/min from translation phase.
+
 Thu Mar 17 21:52:09 2016  Yusuke Endoh  <mame@ruby-lang.org>
 
 	* array.c, enum.c: make rdoc format consistent.
