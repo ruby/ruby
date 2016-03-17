@@ -1,3 +1,8 @@
+Thu Mar 17 22:21:34 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (RB_GC_GUARD_PTR): remove intermediate
+	  macro, and expand for each RB_GC_GUARD.  [Fix GH-1293]
+
 Thu Mar 17 22:08:33 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (iseq_specialized_instruction): move specialization
