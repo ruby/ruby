@@ -1,3 +1,8 @@
+Thu Mar 17 17:14:51 2016  Dinar Valeev  <dvaleev@suse.com>
+
+	* gc.c (tick): Use __builtin_ppc_get_timebase for POWER arch.
+	  [Fix GH-1291]
+
 Thu Mar 17 11:51:48 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/securerandom.rb (gen_random): to avoid blocking on Windows.

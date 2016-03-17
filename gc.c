@@ -935,6 +935,18 @@ tick(void)
     return ((unsigned long long)lo)|( ((unsigned long long)hi)<<32);
 }
 
+#elif defined(__powerpc64__) && \
+	( __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 8)
+typedef unsigned long long tick_t;
+#define PRItick "llu"
+
+static __inline__ tick_t
+tick(void)
+{
+    unsigned long long val = __builtin_ppc_get_timebase();
+    return val;
+}
+
 #elif defined(_WIN32) && defined(_MSC_VER)
 #include <intrin.h>
 typedef unsigned __int64 tick_t;
