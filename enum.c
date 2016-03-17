@@ -628,6 +628,72 @@ inject_op_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, p))
     return Qnil;
 }
 
+static VALUE
+ary_inject_op(VALUE ary, VALUE init, VALUE op)
+{
+    ID id;
+    VALUE v;
+    long i;
+
+    if (RARRAY_LEN(ary) == 0)
+        return init == Qundef ? Qnil : init;
+
+    if (init == Qundef) {
+        v = RARRAY_AREF(ary, 0);
+        i = 1;
+    }
+    else {
+        v = init;
+        i = 0;
+    }
+
+    id = SYM2ID(op);
+    if (id == idPLUS) {
+        if (FIXNUM_P(v) &&
+            rb_method_basic_definition_p(rb_cFixnum, idPLUS)) {
+            long n = FIX2LONG(v);
+            while (i < RARRAY_LEN(ary)) {
+                VALUE e = RARRAY_AREF(ary, i);
+                if (!FIXNUM_P(e)) break;
+                n += FIX2LONG(e); /* should not overflow long type */
+                i++;
+                if (!FIXABLE(n)) break;
+            }
+            v = LONG2NUM(n);
+        }
+        if (i < RARRAY_LEN(ary) && (FIXNUM_P(v) || RB_TYPE_P(v, T_BIGNUM)) &&
+            rb_method_basic_definition_p(rb_cFixnum, idPLUS) &&
+            rb_method_basic_definition_p(rb_cBignum, idPLUS)) {
+            long n = 0;
+            while (i < RARRAY_LEN(ary)) {
+                VALUE e = RARRAY_AREF(ary, i);
+                if (FIXNUM_P(e)) {
+                    n += FIX2LONG(e); /* should not overflow long type */
+                    i++;
+                    if (!FIXABLE(n)) {
+                        v = rb_big_plus(LONG2NUM(n), v);
+                        n = 0;
+                    }
+                }
+                else if (RB_TYPE_P(e, T_BIGNUM)) {
+                    v = rb_big_plus(e, v);
+                    i++;
+                }
+                else {
+                    break;
+                }
+            }
+            if (n != 0) {
+                v = rb_fix_plus(LONG2FIX(n), v);
+            }
+        }
+    }
+    for (; i<RARRAY_LEN(ary); i++) {
+        v = rb_funcall(v, id, 1, RARRAY_AREF(ary, i));
+    }
+    return v;
+}
+
 /*
  *  call-seq:
  *     enum.inject(initial, sym) -> obj
@@ -706,63 +772,7 @@ enum_inject(int argc, VALUE *argv, VALUE obj)
         SYMBOL_P(op) &&
         RB_TYPE_P(obj, T_ARRAY) &&
         rb_method_basic_definition_p(CLASS_OF(obj), id_each)) {
-        VALUE v;
-        long i;
-        if (RARRAY_LEN(obj) == 0)
-            return init == Qundef ? Qnil : init;
-        if (init == Qundef) {
-            v = RARRAY_AREF(obj, 0);
-            i = 1;
-        }
-        else {
-            v = init;
-            i = 0;
-        }
-        id = SYM2ID(op);
-        if (id == idPLUS) {
-            if (FIXNUM_P(v) &&
-                rb_method_basic_definition_p(rb_cFixnum, idPLUS)) {
-                long n = FIX2LONG(v);
-                while (i < RARRAY_LEN(obj)) {
-                    VALUE e = RARRAY_AREF(obj, i);
-                    if (!FIXNUM_P(e)) break;
-                    n += FIX2LONG(e); /* should not overflow long type */
-                    i++;
-                    if (!FIXABLE(n)) break;
-                }
-                v = LONG2NUM(n);
-            }
-            if (i < RARRAY_LEN(obj) && (FIXNUM_P(v) || RB_TYPE_P(v, T_BIGNUM)) &&
-                rb_method_basic_definition_p(rb_cFixnum, idPLUS) &&
-                rb_method_basic_definition_p(rb_cBignum, idPLUS)) {
-                long n = 0;
-                while (i < RARRAY_LEN(obj)) {
-                    VALUE e = RARRAY_AREF(obj, i);
-                    if (FIXNUM_P(e)) {
-                        n += FIX2LONG(e); /* should not overflow long type */
-                        i++;
-                        if (!FIXABLE(n)) {
-                            v = rb_big_plus(LONG2NUM(n), v);
-                            n = 0;
-                        }
-                    }
-                    else if (RB_TYPE_P(e, T_BIGNUM)) {
-                        v = rb_big_plus(e, v);
-                        i++;
-                    }
-                    else {
-                        break;
-                    }
-                }
-                if (n != 0) {
-                    v = rb_fix_plus(LONG2FIX(n), v);
-                }
-            }
-        }
-        for (; i<RARRAY_LEN(obj); i++) {
-            v = rb_funcall(v, id, 1, RARRAY_AREF(obj, i));
-        }
-        return v;
+        return ary_inject_op(obj, init, op);
     }
 
     memo = MEMO_NEW(init, Qnil, op);

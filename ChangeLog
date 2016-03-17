@@ -1,3 +1,7 @@
+Thu Mar 17 20:55:21 2016  Tanaka Akira  <akr@fsij.org>
+
+	* enum.c (ary_inject_op): Extracted from enum_inject.
+
 Thu Mar 17 18:39:04 2016  Tanaka Akira  <akr@fsij.org>
 
 	* enum.c (enum_inject): Implement the specialized code for sum of
