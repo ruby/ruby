@@ -1,3 +1,9 @@
+Thu Mar 17 11:36:27 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/socket/option.c (inspect_tcpi_msec): more accurate condition
+	  for TCPI msec member inspection function.
+	  [ruby-core:74388] [Bug #12185]
+
 Thu Mar 17 08:13:43 2016  Rei Odaira  <Rei.Odaira@gmail.com>
 
 	* test/-ext-/time/test_new.rb (test_timespec_new): Time#gmtoff values
