@@ -1,4 +1,18 @@
-Thu Mar 17 21:02:42 2016  Yusuke Endoh  <mame@tsg.ne.jp>
+Thu Mar 17 21:09:34 2016  Yusuke Endoh  <mame@ruby-lang.org>
+
+	* array.c (rb_ary_max, rb_ary_min): Array#max and Array#min added.
+	  [Feature #12172]
+
+	* internal.h (OPTIMIZED_CMP): moved from enum.c so that array.c can
+	  use it.
+
+	* test/ruby/test_array.rb (test_max, test_min): tests for Array#max
+	  and Array#min.
+
+	* test/ruby/test_enum.rb (test_max, test_min): revised a bit to test
+	  Enumerable#max and #min explicitly.
+
+Thu Mar 17 21:02:42 2016  Yusuke Endoh  <mame@ruby-lang.org>
 
 	* internal.c: struct cmp_opt_data added for refactoring out a data
 	  structure for CMP_OPTIMIZABLE

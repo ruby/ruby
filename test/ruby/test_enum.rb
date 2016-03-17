@@ -331,15 +331,15 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal(3, @obj.min {|a,b| b <=> a })
     cond = ->((a, ia), (b, ib)) { (b <=> a).nonzero? or ia <=> ib }
     assert_equal([3, 2], @obj.each_with_index.min(&cond))
-    ary = %w(albatross dog horse)
-    assert_equal("albatross", ary.min)
-    assert_equal("dog", ary.min {|a,b| a.length <=> b.length })
-    assert_equal(1, [3,2,1].min)
-    assert_equal(%w[albatross dog], ary.min(2))
+    enum = %w(albatross dog horse).to_enum
+    assert_equal("albatross", enum.min)
+    assert_equal("dog", enum.min {|a,b| a.length <=> b.length })
+    assert_equal(1, [3,2,1].to_enum.min)
+    assert_equal(%w[albatross dog], enum.min(2))
     assert_equal(%w[dog horse],
-                 ary.min(2) {|a,b| a.length <=> b.length })
-    assert_equal([13, 14], [20, 32, 32, 21, 30, 25, 29, 13, 14].min(2))
-    assert_equal([2, 4, 6, 7], [2, 4, 8, 6, 7].min(4))
+                 enum.min(2) {|a,b| a.length <=> b.length })
+    assert_equal([13, 14], [20, 32, 32, 21, 30, 25, 29, 13, 14].to_enum.min(2))
+    assert_equal([2, 4, 6, 7], [2, 4, 8, 6, 7].to_enum.min(4))
   end
 
   def test_max
@@ -347,14 +347,14 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal(1, @obj.max {|a,b| b <=> a })
     cond = ->((a, ia), (b, ib)) { (b <=> a).nonzero? or ia <=> ib }
     assert_equal([1, 3], @obj.each_with_index.max(&cond))
-    ary = %w(albatross dog horse)
-    assert_equal("horse", ary.max)
-    assert_equal("albatross", ary.max {|a,b| a.length <=> b.length })
-    assert_equal(1, [3,2,1].max{|a,b| b <=> a })
-    assert_equal(%w[horse dog], ary.max(2))
+    enum = %w(albatross dog horse).to_enum
+    assert_equal("horse", enum.max)
+    assert_equal("albatross", enum.max {|a,b| a.length <=> b.length })
+    assert_equal(1, [3,2,1].to_enum.max{|a,b| b <=> a })
+    assert_equal(%w[horse dog], enum.max(2))
     assert_equal(%w[albatross horse],
-                 ary.max(2) {|a,b| a.length <=> b.length })
-    assert_equal([3, 2], [0, 0, 0, 0, 0, 0, 1, 3, 2].max(2))
+                 enum.max(2) {|a,b| a.length <=> b.length })
+    assert_equal([3, 2], [0, 0, 0, 0, 0, 0, 1, 3, 2].to_enum.max(2))
   end
 
   def test_minmax

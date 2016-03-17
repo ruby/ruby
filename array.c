@@ -4178,6 +4178,96 @@ rb_ary_or(VALUE ary1, VALUE ary2)
     return ary3;
 }
 
+/*
+ *  call-seq:
+ *     ary.max                   -> obj
+ *     ary.max { |a, b| block }  -> obj
+ *     ary.max(n)                -> array
+ *     ary.max(n) {|a,b| block } -> array
+ *
+ *  Returns the object in _ary_ with the maximum value. The
+ *  first form assumes all objects implement <code>Comparable</code>;
+ *  the second uses the block to return <em>a <=> b</em>.
+ *
+ *     a = %w(albatross dog horse)
+ *     a.max                                   #=> "horse"
+ *     a.max { |a, b| a.length <=> b.length }  #=> "albatross"
+ *
+ *  If the +n+ argument is given, maximum +n+ elements are returned
+ *  as an array.
+ *
+ *     a = %w[albatross dog horse]
+ *     a.max(2)                                  #=> ["horse", "dog"]
+ *     a.max(2) {|a, b| a.length <=> b.length }  #=> ["albatross", "horse"]
+ */
+static VALUE
+rb_ary_max(int argc, VALUE *argv, VALUE ary)
+{
+    struct cmp_opt_data cmp_opt = { 0, 0 };
+    VALUE result = Qundef, v;
+    VALUE num;
+    long i;
+
+    rb_scan_args(argc, argv, "01", &num);
+
+    if (!NIL_P(num) || rb_block_given_p())
+       return rb_call_super(argc, argv); /* XXX: should redefine? */
+
+    for (i = 0; i < RARRAY_LEN(ary); i++) {
+       v = RARRAY_AREF(ary, i);
+       if (result == Qundef || OPTIMIZED_CMP(v, result, cmp_opt) > 0) {
+           result = v;
+       }
+    }
+    if (result == Qundef) return Qnil;
+    return result;
+}
+
+/*
+ *  call-seq:
+ *     ary.min                     -> obj
+ *     ary.min {| a,b | block }    -> obj
+ *     ary.min(n)                  -> array
+ *     ary.min(n) {| a,b | block } -> array
+ *
+ *  Returns the object in _ary_ with the minimum value. The
+ *  first form assumes all objects implement <code>Comparable</code>;
+ *  the second uses the block to return <em>a <=> b</em>.
+ *
+ *     a = %w(albatross dog horse)
+ *     a.min                                   #=> "albatross"
+ *     a.min { |a, b| a.length <=> b.length }  #=> "dog"
+ *
+ *  If the +n+ argument is given, minimum +n+ elements are returned
+ *  as an array.
+ *
+ *     a = %w[albatross dog horse]
+ *     a.min(2)                                  #=> ["albatross", "dog"]
+ *     a.min(2) {|a, b| a.length <=> b.length }  #=> ["dog", "horse"]
+ */
+static VALUE
+rb_ary_min(int argc, VALUE *argv, VALUE ary)
+{
+    struct cmp_opt_data cmp_opt = { 0, 0 };
+    VALUE result = Qundef, v;
+    VALUE num;
+    long i;
+
+    rb_scan_args(argc, argv, "01", &num);
+
+    if (!NIL_P(num) || rb_block_given_p())
+       return rb_call_super(argc, argv); /* XXX: should redefine? */
+
+    for (i = 0; i < RARRAY_LEN(ary); i++) {
+       v = RARRAY_AREF(ary, i);
+       if (result == Qundef || OPTIMIZED_CMP(v, result, cmp_opt) < 0) {
+           result = v;
+       }
+    }
+    if (result == Qundef) return Qnil;
+    return result;
+}
+
 static int
 push_value(st_data_t key, st_data_t val, st_data_t ary)
 {
@@ -5866,6 +5956,9 @@ Init_Array(void)
     rb_define_method(rb_cArray, "-", rb_ary_diff, 1);
     rb_define_method(rb_cArray, "&", rb_ary_and, 1);
     rb_define_method(rb_cArray, "|", rb_ary_or, 1);
+
+    rb_define_method(rb_cArray, "max", rb_ary_max, -1);
+    rb_define_method(rb_cArray, "min", rb_ary_min, -1);
 
     rb_define_method(rb_cArray, "uniq", rb_ary_uniq, 0);
     rb_define_method(rb_cArray, "uniq!", rb_ary_uniq_bang, 0);

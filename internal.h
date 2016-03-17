@@ -698,6 +698,13 @@ struct cmp_opt_data {
       rb_method_basic_definition_p(TOKEN_PASTE(rb_c,type), id_cmp) && \
       ((data).opt_methods |= CMP_OPTIMIZABLE_BIT(type))))
 
+#define OPTIMIZED_CMP(a, b, data) \
+    ((FIXNUM_P(a) && FIXNUM_P(b) && CMP_OPTIMIZABLE(data, Fixnum)) ? \
+     (((long)a > (long)b) ? 1 : ((long)a < (long)b) ? -1 : 0) : \
+     (STRING_P(a) && STRING_P(b) && CMP_OPTIMIZABLE(data, String)) ? \
+     rb_str_cmp(a, b) : \
+     rb_cmpint(rb_funcallv(a, id_cmp, 1, &b), a, b))
+
 /* ment is in method.h */
 
 /* global variable */
