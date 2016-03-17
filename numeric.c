@@ -605,7 +605,15 @@ num_abs(VALUE num)
 static VALUE
 num_zero_p(VALUE num)
 {
-    if (rb_equal(num, INT2FIX(0))) {
+    if (FIXNUM_P(num)) {
+	if (FIX2LONG(num) == 0) {
+	    return Qtrue;
+	}
+    }
+    else if (RB_TYPE_P(num, T_BIGNUM)) {
+	return rb_bigzero_p(num);
+    }
+    else if (rb_equal(num, INT2FIX(0))) {
 	return Qtrue;
     }
     return Qfalse;
@@ -2670,7 +2678,15 @@ int_int_p(VALUE num)
 static VALUE
 int_odd_p(VALUE num)
 {
-    if (rb_funcall(num, '%', 1, INT2FIX(2)) != INT2FIX(0)) {
+    if (FIXNUM_P(num)) {
+	if (num & 2) {
+	    return Qtrue;
+	}
+    }
+    else if (RB_TYPE_P(num, T_BIGNUM)) {
+	return rb_big_odd_p(num);
+    }
+    else if (rb_funcall(num, '%', 1, INT2FIX(2)) != INT2FIX(0)) {
 	return Qtrue;
     }
     return Qfalse;
@@ -4268,9 +4284,6 @@ Init_Numeric(void)
     rb_define_method(rb_cFixnum, "to_f", fix_to_f, 0);
     rb_define_method(rb_cFixnum, "size", fix_size, 0);
     rb_define_method(rb_cFixnum, "bit_length", rb_fix_bit_length, 0);
-    rb_define_method(rb_cFixnum, "zero?", fix_zero_p, 0);
-    rb_define_method(rb_cFixnum, "odd?", fix_odd_p, 0);
-    rb_define_method(rb_cFixnum, "even?", fix_even_p, 0);
     rb_define_method(rb_cFixnum, "succ", fix_succ, 0);
 
     rb_cFloat  = rb_define_class("Float", rb_cNumeric);

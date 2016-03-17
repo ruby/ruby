@@ -7091,8 +7091,6 @@ Init_Bignum(void)
     rb_define_method(rb_cBignum, "magnitude", rb_big_abs, 0);
     rb_define_method(rb_cBignum, "size", rb_big_size, 0);
     rb_define_method(rb_cBignum, "bit_length", rb_big_bit_length, 0);
-    rb_define_method(rb_cBignum, "odd?", rb_big_odd_p, 0);
-    rb_define_method(rb_cBignum, "even?", rb_big_even_p, 0);
 
 #ifdef USE_GMP
     /* The version of loaded GMP. */

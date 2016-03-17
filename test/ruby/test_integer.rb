@@ -105,26 +105,6 @@ class TestInteger < Test::Unit::TestCase
     assert_predicate(1, :integer?)
   end
 
-  def test_odd_p_even_p
-    Fixnum.class_eval do
-      alias odd_bak odd?
-      alias even_bak even?
-      remove_method :odd?, :even?
-    end
-
-    assert_predicate(1, :odd?)
-    assert_not_predicate(2, :odd?)
-    assert_not_predicate(1, :even?)
-    assert_predicate(2, :even?)
-
-  ensure
-    Fixnum.class_eval do
-      alias odd? odd_bak
-      alias even? even_bak
-      remove_method :odd_bak, :even_bak
-    end
-  end
-
   def test_succ
     assert_equal(2, 1.send(:succ))
 
