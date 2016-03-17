@@ -7006,7 +7006,7 @@ rb_big_bit_length(VALUE big)
  *  Returns <code>true</code> if <i>big</i> is an odd number.
  */
 
-static VALUE
+VALUE
 rb_big_odd_p(VALUE num)
 {
     if (BIGNUM_LEN(num) != 0 && BDIGITS(num)[0] & 1) {
@@ -7022,7 +7022,7 @@ rb_big_odd_p(VALUE num)
  *  Returns <code>true</code> if <i>big</i> is an even number.
  */
 
-static VALUE
+VALUE
 rb_big_even_p(VALUE num)
 {
     if (BIGNUM_LEN(num) != 0 && BDIGITS(num)[0] & 1) {

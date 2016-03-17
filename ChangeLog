@@ -1,3 +1,11 @@
+Fri Mar 18 01:51:00 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* bignum.c (rb_big_even_p, rb_big_odd_p): make them public functions
+	  to be available in other source files.
+
+	* include/ruby/intern.h (rb_big_even_p, rb_big_odd_p): add prototype
+	  declarations.
+
 Fri Mar 18 00:25:56 2016  Tanaka Akira  <akr@fsij.org>
 
 	* enum.c (ary_inject_op): Implement the specialized code for sum of
