@@ -64,6 +64,12 @@ class TestCaseMappingPreliminary < Test::Unit::TestCase
     check_swapcase_properties   'résumé DÜRST ĭñŧėřŊÃŢĲŇŐŃæłĩżàťïōņ', 'RÉSUMÉ dürst ĬÑŦĖŘŋãţĳňőńÆŁĨŻÀŤÏŌŅ', :lithuanian
   end
 
+  def test_various
+    check_upcase_properties     'Μ', 'µ', :lithuanian # MICRO SIGN -> Greek Mu
+    check_capitalize_properties 'Ss', 'ß', :lithuanian
+    check_upcase_properties     'SS', 'ß', :lithuanian
+  end
+
   def test_cherokee
     check_downcase_properties   "\uab70\uab71\uab72\uab73\uab74\uab75\uab76\uab77\uab78\uab79", 'ᎠᎡᎢᎣᎤᎥᎦᎧᎨᎩ', :lithuanian
     check_upcase_properties     'ᎠᎡᎢᎣᎤᎥᎦᎧᎨᎩ', "\uab70\uab71\uab72\uab73\uab74\uab75\uab76\uab77\uab78\uab79", :lithuanian

@@ -147,7 +147,7 @@ code3_equal(const OnigCodePoint *x, const OnigCodePoint *y)
 #define SpecialsCodepointExtract(n) ((n)&((1<<SpecialsLengthOffset)-1))
 #define SpecialsLengthEncode(n)     ((n)<<SpecialsLengthOffset)
 
-#define OnigSpecialIndexMask (((1<<OnigSpecialIndexWidth)-1)<<OnigSpecialIndexWidth)
+#define OnigSpecialIndexMask        (((1<<OnigSpecialIndexWidth)-1)<<OnigSpecialIndexShift)
 #define OnigSpecialIndexEncode(n)   ((n)<<OnigSpecialIndexShift)
 #define OnigSpecialIndexDecode(n)   (((n)&OnigSpecialIndexMask)>>OnigSpecialIndexShift)
 
@@ -158,7 +158,7 @@ code3_equal(const OnigCodePoint *x, const OnigCodePoint *y)
 #define ST ONIGENC_CASE_TITLECASE
 #define SU ONIGENC_CASE_UP_SPECIAL
 #define SL ONIGENC_CASE_DOWN_SPECIAL
-#define I(n) 0
+#define I(n) OnigSpecialIndexEncode(n)
 #define L(n) SpecialsLengthEncode(n)
 
 #include "enc/unicode/casefold.h"

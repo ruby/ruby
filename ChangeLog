@@ -1,3 +1,9 @@
+Thu Mar 17 12:09:00 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode.c: Fixed two macro definitions.
+	* test/ruby/enc/test_case_mapping.rb: Test cases that detected
+	  the above bugs.
+
 Thu Mar 17 11:36:27 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/socket/option.c (inspect_tcpi_msec): more accurate condition
