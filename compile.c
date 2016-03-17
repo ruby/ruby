@@ -2283,12 +2283,13 @@ insn_set_specialized_instruction(rb_iseq_t *iseq, INSN *iobj, int insn_id)
 static int
 iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
 {
-    if (iobj->insn_id == BIN(newarray)) {
+    if (iobj->insn_id == BIN(newarray) && iobj->link.next &&
+	iobj->link.next->type == ISEQ_ELEMENT_INSN) {
 	/*
 	 *   [a, b, ...].max/min -> a, b, c, opt_newarray_max/min
 	 */
-	INSN *niobj = (INSN *)get_next_insn(iobj);
-	if (niobj && niobj->insn_id == BIN(send)) {
+	INSN *niobj = (INSN *)iobj->link.next;
+	if (niobj->insn_id == BIN(send)) {
 	    struct rb_call_info *ci = (struct rb_call_info *)OPERAND_AT(niobj, 0);
 	    if ((ci->flag & VM_CALL_ARGS_SIMPLE) && ci->orig_argc == 0) {
 		switch (ci->mid) {
