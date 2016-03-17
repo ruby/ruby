@@ -2702,7 +2702,15 @@ int_odd_p(VALUE num)
 static VALUE
 int_even_p(VALUE num)
 {
-    if (rb_funcall(num, '%', 1, INT2FIX(2)) == INT2FIX(0)) {
+    if (FIXNUM_P(num)) {
+	if ((num & 2) == 0) {
+	    return Qtrue;
+	}
+    }
+    else if (RB_TYPE_P(num, T_BIGNUM)) {
+	return rb_big_even_p(num);
+    }
+    else if (rb_funcall(num, '%', 1, INT2FIX(2)) == INT2FIX(0)) {
 	return Qtrue;
     }
     return Qfalse;

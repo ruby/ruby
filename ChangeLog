@@ -1,3 +1,7 @@
+Fri Mar 18 02:15:00 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* numeric.c (int_even_p): treat Fixnum and Bignum values directly.
+
 Fri Mar 18 02:07:00 2016  Kenta Murata  <mrkn@mrkn.jp>
 
 	* bignum.c (Bignum#even?, Bignum#odd?): remove definitions
@@ -7,7 +11,7 @@ Fri Mar 18 02:07:00 2016  Kenta Murata  <mrkn@mrkn.jp>
 	  definitions because they are unified with Numeric#zero?,
 	  Integer#even?, and Integer#odd?.
 
-	* numeric.c (num_zero_p, int_even_p, int_odd_p): treat Fixnum and
+	* numeric.c (num_zero_p, int_odd_p): treat Fixnum and
 	  Bignum values directly.
 
 	* test/ruby/test_integer.rb (test_odd_p_even_p): remove meaningless
