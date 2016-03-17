@@ -1495,8 +1495,7 @@ enum_none(VALUE obj)
 
 struct min_t {
     VALUE min;
-    int opt_methods;
-    int opt_inited;
+    struct cmp_opt_data cmp_opt;
 };
 
 static VALUE
@@ -1510,7 +1509,7 @@ min_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 	memo->min = i;
     }
     else {
-	if (OPTIMIZED_CMP(i, memo->min, memo) < 0) {
+	if (OPTIMIZED_CMP(i, memo->min, memo->cmp_opt) < 0) {
 	    memo->min = i;
 	}
     }
@@ -1575,8 +1574,8 @@ enum_min(int argc, VALUE *argv, VALUE obj)
        return nmin_run(obj, num, 0, 0);
 
     m->min = Qundef;
-    m->opt_methods = 0;
-    m->opt_inited = 0;
+    m->cmp_opt.opt_methods = 0;
+    m->cmp_opt.opt_inited = 0;
     if (rb_block_given_p()) {
 	rb_block_call(obj, id_each, 0, 0, min_ii, memo);
     }
@@ -1590,8 +1589,7 @@ enum_min(int argc, VALUE *argv, VALUE obj)
 
 struct max_t {
     VALUE max;
-    int opt_methods;
-    int opt_inited;
+    struct cmp_opt_data cmp_opt;
 };
 
 static VALUE
@@ -1605,7 +1603,7 @@ max_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 	memo->max = i;
     }
     else {
-	if (OPTIMIZED_CMP(i, memo->max, memo) > 0) {
+	if (OPTIMIZED_CMP(i, memo->max, memo->cmp_opt) > 0) {
 	    memo->max = i;
 	}
     }
@@ -1669,8 +1667,8 @@ enum_max(int argc, VALUE *argv, VALUE obj)
        return nmin_run(obj, num, 0, 1);
 
     m->max = Qundef;
-    m->opt_methods = 0;
-    m->opt_inited = 0;
+    m->cmp_opt.opt_methods = 0;
+    m->cmp_opt.opt_inited = 0;
     if (rb_block_given_p()) {
 	rb_block_call(obj, id_each, 0, 0, max_ii, (VALUE)memo);
     }
@@ -1686,8 +1684,7 @@ struct minmax_t {
     VALUE min;
     VALUE max;
     VALUE last;
-    int opt_methods;
-    int opt_inited;
+    struct cmp_opt_data cmp_opt;
 };
 
 static void
@@ -1700,11 +1697,11 @@ minmax_i_update(VALUE i, VALUE j, struct minmax_t *memo)
 	memo->max = j;
     }
     else {
-	n = OPTIMIZED_CMP(i, memo->min, memo);
+	n = OPTIMIZED_CMP(i, memo->min, memo->cmp_opt);
 	if (n < 0) {
 	    memo->min = i;
 	}
-	n = OPTIMIZED_CMP(j, memo->max, memo);
+	n = OPTIMIZED_CMP(j, memo->max, memo->cmp_opt);
 	if (n > 0) {
 	    memo->max = j;
 	}
@@ -1727,7 +1724,7 @@ minmax_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, _memo))
     j = memo->last;
     memo->last = Qundef;
 
-    n = OPTIMIZED_CMP(j, i, memo);
+    n = OPTIMIZED_CMP(j, i, memo->cmp_opt);
     if (n == 0)
         i = j;
     else if (n < 0) {
@@ -1817,8 +1814,8 @@ enum_minmax(VALUE obj)
 
     m->min = Qundef;
     m->last = Qundef;
-    m->opt_methods = 0;
-    m->opt_inited = 0;
+    m->cmp_opt.opt_methods = 0;
+    m->cmp_opt.opt_inited = 0;
     if (rb_block_given_p()) {
 	rb_block_call(obj, id_each, 0, 0, minmax_ii, memo);
 	if (m->last != Qundef)

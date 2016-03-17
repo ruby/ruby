@@ -2364,8 +2364,7 @@ rb_ary_rotate_m(int argc, VALUE *argv, VALUE ary)
 
 struct ary_sort_data {
     VALUE ary;
-    int opt_methods;
-    int opt_inited;
+    struct cmp_opt_data cmp_opt;
 };
 
 static VALUE
@@ -2399,12 +2398,12 @@ sort_2(const void *ap, const void *bp, void *dummy)
     VALUE a = *(const VALUE *)ap, b = *(const VALUE *)bp;
     int n;
 
-    if (FIXNUM_P(a) && FIXNUM_P(b) && CMP_OPTIMIZABLE(data, Fixnum)) {
+    if (FIXNUM_P(a) && FIXNUM_P(b) && CMP_OPTIMIZABLE(data->cmp_opt, Fixnum)) {
 	if ((long)a > (long)b) return 1;
 	if ((long)a < (long)b) return -1;
 	return 0;
     }
-    if (STRING_P(a) && STRING_P(b) && CMP_OPTIMIZABLE(data, String)) {
+    if (STRING_P(a) && STRING_P(b) && CMP_OPTIMIZABLE(data->cmp_opt, String)) {
 	return rb_str_cmp(a, b);
     }
 
@@ -2448,8 +2447,8 @@ rb_ary_sort_bang(VALUE ary)
 
 	RBASIC_CLEAR_CLASS(tmp);
 	data.ary = tmp;
-	data.opt_methods = 0;
-	data.opt_inited = 0;
+	data.cmp_opt.opt_methods = 0;
+	data.cmp_opt.opt_inited = 0;
 	RARRAY_PTR_USE(tmp, ptr, {
 	    ruby_qsort(ptr, len, sizeof(VALUE),
 		       rb_block_given_p()?sort_1:sort_2, &data);

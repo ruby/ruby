@@ -685,13 +685,18 @@ enum {
     cmp_optimizable_count
 };
 
+struct cmp_opt_data {
+    int opt_methods;
+    int opt_inited;
+};
+
 #define CMP_OPTIMIZABLE_BIT(type) (1U << TOKEN_PASTE(cmp_opt_,type))
 #define CMP_OPTIMIZABLE(data, type) \
-    (((data)->opt_inited & CMP_OPTIMIZABLE_BIT(type)) ? \
-     ((data)->opt_methods & CMP_OPTIMIZABLE_BIT(type)) : \
-     (((data)->opt_inited |= CMP_OPTIMIZABLE_BIT(type)), \
+    (((data).opt_inited & CMP_OPTIMIZABLE_BIT(type)) ? \
+     ((data).opt_methods & CMP_OPTIMIZABLE_BIT(type)) : \
+     (((data).opt_inited |= CMP_OPTIMIZABLE_BIT(type)), \
       rb_method_basic_definition_p(TOKEN_PASTE(rb_c,type), id_cmp) && \
-      ((data)->opt_methods |= CMP_OPTIMIZABLE_BIT(type))))
+      ((data).opt_methods |= CMP_OPTIMIZABLE_BIT(type))))
 
 /* ment is in method.h */
 

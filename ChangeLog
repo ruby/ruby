@@ -1,3 +1,12 @@
+Thu Mar 17 21:02:42 2016  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* internal.c: struct cmp_opt_data added for refactoring out a data
+	  structure for CMP_OPTIMIZABLE
+
+	* array.c (struct ary_sort_data): use struct cmp_opt_data.
+
+	* enum.c (struct min_t, max_t, min_max_t): use struct cmp_opt_data.
+
 Thu Mar 17 20:55:21 2016  Tanaka Akira  <akr@fsij.org>
 
 	* enum.c (ary_inject_op): Extracted from enum_inject.
