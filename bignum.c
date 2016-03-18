@@ -5466,17 +5466,6 @@ rb_big_eq(VALUE x, VALUE y)
     return Qtrue;
 }
 
-/*
- *  call-seq:
- *     big.eql?(obj)   -> true or false
- *
- *  Returns <code>true</code> only if <i>obj</i> is a
- *  <code>Bignum</code> with the same value as <i>big</i>. Contrast this
- *  with <code>Bignum#==</code>, which performs type conversions.
- *
- *     68719476736.eql?(68719476736.0)   #=> false
- */
-
 VALUE
 rb_big_eql(VALUE x, VALUE y)
 {
@@ -7044,7 +7033,6 @@ Init_Bignum(void)
     rb_define_method(rb_cBignum, "<", big_lt, 1);
     rb_define_method(rb_cBignum, "<=", big_le, 1);
     rb_define_method(rb_cBignum, "===", rb_big_eq, 1);
-    rb_define_method(rb_cBignum, "eql?", rb_big_eql, 1);
     rb_define_method(rb_cBignum, "to_f", rb_big_to_f, 0);
     rb_define_method(rb_cBignum, "abs", rb_big_abs, 0);
     rb_define_method(rb_cBignum, "magnitude", rb_big_abs, 0);

@@ -1,3 +1,10 @@
+Fri Mar 18 22:10:00 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* bignum.c (Bignum#eql?): remove its definition because it is unified
+	  with Numeric#eql?.
+
+	* numeric.c (num_eql): treat Bignum values directly.
+
 Fri Mar 18 21:57:00 2016  Kenta Murata  <mrkn@mrkn.jp>
 
 	* bignum.c (rb_big_to_s, Bignum#to_s): remove its definition because

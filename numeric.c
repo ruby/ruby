@@ -1112,17 +1112,23 @@ flo_pow(VALUE x, VALUE y)
  *     num.eql?(numeric)  ->  true or false
  *
  *  Returns +true+ if +num+ and +numeric+ are the same type and have equal
- *  values.
+ *  values.  Contrast this with <code>Numeric#==</code>, which performs
+ *  type conversions.
  *
  *     1 == 1.0          #=> true
  *     1.eql?(1.0)       #=> false
  *     (1.0).eql?(1.0)   #=> true
+ *     68719476736.eql?(68719476736.0)   #=> false
  */
 
 static VALUE
 num_eql(VALUE x, VALUE y)
 {
     if (TYPE(x) != TYPE(y)) return Qfalse;
+
+    if (RB_TYPE_P(x, T_BIGNUM)) {
+	return rb_big_eql(x, y);
+    }
 
     return rb_equal(x, y);
 }
