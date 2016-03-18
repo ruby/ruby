@@ -3765,18 +3765,23 @@ fix_aref(VALUE fix, VALUE idx)
 
 /*
  *  call-seq:
- *     fix.to_f  ->  float
+ *     int.to_f  ->  float
  *
- *  Converts +fix+ to a Float.
+ *  Converts +int+ to a Float.
  *
  */
 
 static VALUE
-fix_to_f(VALUE num)
+int_to_f(VALUE num)
 {
     double val;
 
-    val = (double)FIX2LONG(num);
+    if (FIXNUM_P(num)) {
+	val = (double)FIX2LONG(num);
+    }
+    else {
+	rb_raise(rb_eTypeError, "Unknown subclass for to_f: %s", rb_obj_classname(num));
+    }
 
     return DBL2NUM(val);
 }
@@ -4214,6 +4219,7 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, "ord", int_ord, 0);
     rb_define_method(rb_cInteger, "to_i", int_to_i, 0);
     rb_define_method(rb_cInteger, "to_int", int_to_i, 0);
+    rb_define_method(rb_cInteger, "to_f", int_to_f, 0);
     rb_define_method(rb_cInteger, "floor", int_to_i, 0);
     rb_define_method(rb_cInteger, "ceil", int_to_i, 0);
     rb_define_method(rb_cInteger, "truncate", int_to_i, 0);
@@ -4253,7 +4259,6 @@ Init_Numeric(void)
     rb_define_method(rb_cFixnum, "<<", rb_fix_lshift, 1);
     rb_define_method(rb_cFixnum, ">>", rb_fix_rshift, 1);
 
-    rb_define_method(rb_cFixnum, "to_f", fix_to_f, 0);
     rb_define_method(rb_cFixnum, "size", fix_size, 0);
     rb_define_method(rb_cFixnum, "bit_length", rb_fix_bit_length, 0);
     rb_define_method(rb_cFixnum, "succ", fix_succ, 0);

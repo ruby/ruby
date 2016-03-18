@@ -1,3 +1,21 @@
+Fri Mar 18 23:41:00 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* numeric.c (int_to_f, fix_to_f): rename fix_to_f to int_to_f, and add
+	  treatment for subclasses which don't have definitions of to_f method.
+
+	* numeric.c (Integer#to_f, Fixnum#to_f): move to_f method from Fixnum
+	  to Integer.
+
+	* ext/-test-/integer/my_integer.rb: define helper class for testing
+	  to_f method for a subclass of Integer.
+
+	* ext/-test-/integer/extconf.rb: ditto.
+
+	* ext/-test-/integer/init.c: ditto.
+
+	* test/-ext-/integer/test_my_integer.rb: examine to_f method for a
+	  subclass of Integer.
+
 Fri Mar 18 22:32:00 2016  Kenta Murata  <mrkn@mrkn.jp>
 
 	* include/ruby/intern.h (rb_big_hash): Move to internal.h.
