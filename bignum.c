@@ -4966,35 +4966,6 @@ rb_big2str(VALUE x, int base)
     return rb_big2str1(x, base);
 }
 
-/*
- *  call-seq:
- *     big.to_s(base=10)   ->  string
- *
- *  Returns a string containing the representation of <i>big</i> radix
- *  <i>base</i> (2 through 36).
- *
- *     12345654321.to_s         #=> "12345654321"
- *     12345654321.to_s(2)      #=> "1011011111110110111011110000110001"
- *     12345654321.to_s(8)      #=> "133766736061"
- *     12345654321.to_s(16)     #=> "2dfdbbc31"
- *     78546939656932.to_s(36)  #=> "rubyrules"
- */
-
-static VALUE
-rb_big_to_s(int argc, VALUE *argv, VALUE x)
-{
-    int base;
-
-    if (argc == 0) base = 10;
-    else {
-	VALUE b;
-
-	rb_scan_args(argc, argv, "01", &b);
-	base = NUM2INT(b);
-    }
-    return rb_big2str(x, base);
-}
-
 static unsigned long
 big2ulong(VALUE x, const char *type)
 {
@@ -7045,8 +7016,6 @@ Init_Bignum(void)
 {
     rb_cBignum = rb_define_class("Bignum", rb_cInteger);
 
-    rb_define_method(rb_cBignum, "to_s", rb_big_to_s, -1);
-    rb_define_alias(rb_cBignum, "inspect", "to_s");
     rb_define_method(rb_cBignum, "coerce", rb_big_coerce, 1);
     rb_define_method(rb_cBignum, "-@", rb_big_uminus, 0);
     rb_define_method(rb_cBignum, "+", rb_big_plus, 1);

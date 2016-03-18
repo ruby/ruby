@@ -2959,6 +2959,7 @@ rb_fix2str(VALUE x, int base)
  *     12345.to_s(10)   #=> "12345"
  *     12345.to_s(16)   #=> "3039"
  *     12345.to_s(36)   #=> "9ix"
+ *     78546939656932.to_s(36)  #=> "rubyrules"
  *
  */
 static VALUE
@@ -2974,7 +2975,14 @@ int_to_s(int argc, VALUE *argv, VALUE x)
 	base = NUM2INT(b);
     }
 
-    return rb_fix2str(x, base);
+    if (FIXNUM_P(x)) {
+	return rb_fix2str(x, base);
+    }
+    else if (RB_TYPE_P(x, T_BIGNUM)) {
+	return rb_big2str(x, base);
+    }
+
+    return rb_any_to_s(x);
 }
 
 /*
