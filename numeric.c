@@ -3767,7 +3767,8 @@ fix_aref(VALUE fix, VALUE idx)
  *  call-seq:
  *     int.to_f  ->  float
  *
- *  Converts +int+ to a Float.
+ *  Converts +int+ to a +Float+.  If +int+ doesn't fit in a +Float+,
+ *  the result is infinity.
  *
  */
 
@@ -3778,6 +3779,9 @@ int_to_f(VALUE num)
 
     if (FIXNUM_P(num)) {
 	val = (double)FIX2LONG(num);
+    }
+    else if (RB_TYPE_P(num, T_BIGNUM)) {
+	val = rb_big2dbl(num);
     }
     else {
 	rb_raise(rb_eTypeError, "Unknown subclass for to_f: %s", rb_obj_classname(num));

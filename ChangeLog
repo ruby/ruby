@@ -1,3 +1,10 @@
+Fri Mar 19 00:00:00 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* bignum.c (rb_big_to_f, Bignum#to_f): removed them because they are
+	  unified with int_to_f and Integer#to_f.
+
+	* numeric.c (int_to_f): treat Bignum values directly.
+
 Fri Mar 18 23:41:00 2016  Kenta Murata  <mrkn@mrkn.jp>
 
 	* numeric.c (int_to_f, fix_to_f): rename fix_to_f to int_to_f, and add

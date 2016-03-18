@@ -5191,21 +5191,6 @@ rb_big2dbl(VALUE x)
     return d;
 }
 
-/*
- *  call-seq:
- *     big.to_f -> float
- *
- *  Converts <i>big</i> to a <code>Float</code>. If <i>big</i> doesn't
- *  fit in a <code>Float</code>, the result is infinity.
- *
- */
-
-static VALUE
-rb_big_to_f(VALUE x)
-{
-    return DBL2NUM(rb_big2dbl(x));
-}
-
 VALUE
 rb_integer_float_cmp(VALUE x, VALUE y)
 {
@@ -7033,7 +7018,6 @@ Init_Bignum(void)
     rb_define_method(rb_cBignum, "<", big_lt, 1);
     rb_define_method(rb_cBignum, "<=", big_le, 1);
     rb_define_method(rb_cBignum, "===", rb_big_eq, 1);
-    rb_define_method(rb_cBignum, "to_f", rb_big_to_f, 0);
     rb_define_method(rb_cBignum, "abs", rb_big_abs, 0);
     rb_define_method(rb_cBignum, "magnitude", rb_big_abs, 0);
     rb_define_method(rb_cBignum, "size", rb_big_size, 0);
