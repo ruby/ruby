@@ -783,45 +783,29 @@ static struct vtm *localtimew(wideval_t timew, struct vtm *result);
 static int leap_year_p(long y);
 #define leap_year_v_p(y) leap_year_p(NUM2LONG(mod((y), INT2FIX(400))))
 
-#ifdef HAVE_GMTIME_R
-#define rb_gmtime_r(t, tm) gmtime_r((t), (tm))
-#define rb_localtime_r(t, tm) localtime_r((t), (tm))
-#else
-static inline struct tm *
-rb_gmtime_r(const time_t *tp, struct tm *result)
-{
-    struct tm *t = gmtime(tp);
-    if (t) *result = *t;
-    return t;
-}
-
-static inline struct tm *
-rb_localtime_r(const time_t *tp, struct tm *result)
-{
-    struct tm *t = localtime(tp);
-    if (t) *result = *t;
-    return t;
-}
-#endif
-
 static struct tm *
-rb_localtime_r2(const time_t *t, struct tm *result)
+rb_localtime_r(const time_t *t, struct tm *result)
 {
 #if defined __APPLE__ && defined __LP64__
     if (*t != (time_t)(int)*t) return NULL;
 #endif
-    result = rb_localtime_r(t, result);
+#ifdef HAVE_GMTIME_R
+    result = localtime_r(t, result);
+#else
+    {
+	struct tm *tmp = localtime(t);
+	if (tmp) *result = *tmp;
+    }
+#endif
 #if defined(HAVE_MKTIME) && defined(LOCALTIME_OVERFLOW_PROBLEM)
     if (result) {
         long gmtoff1 = 0;
         long gmtoff2 = 0;
         struct tm tmp = *result;
         time_t t2;
-#  if defined(HAVE_STRUCT_TM_TM_GMTOFF)
-        gmtoff1 = result->tm_gmtoff;
-#  endif
         t2 = mktime(&tmp);
 #  if defined(HAVE_STRUCT_TM_TM_GMTOFF)
+        gmtoff1 = result->tm_gmtoff;
         gmtoff2 = tmp.tm_gmtoff;
 #  endif
         if (*t + gmtoff1 != t2 + gmtoff2)
@@ -830,24 +814,26 @@ rb_localtime_r2(const time_t *t, struct tm *result)
 #endif
     return result;
 }
-#define LOCALTIME(tm, result) (tzset(),rb_localtime_r2((tm), &(result)))
+#define LOCALTIME(tm, result) (tzset(),rb_localtime_r((tm), &(result)))
 
-#if !defined(HAVE_STRUCT_TM_TM_GMTOFF)
+#ifndef HAVE_STRUCT_TM_TM_GMTOFF
 static struct tm *
-rb_gmtime_r2(const time_t *t, struct tm *result)
+rb_gmtime_r(const time_t *t, struct tm *result)
 {
-    result = rb_gmtime_r(t, result);
+#ifdef HAVE_GMTIME_R
+    result = gmtime_r(t, result);
+#else
+    struct tm *tmp = gmtime(t);
+    if (tmp) *result = *tmp;
+#endif
 #if defined(HAVE_TIMEGM) && defined(LOCALTIME_OVERFLOW_PROBLEM)
-    if (result) {
-	struct tm tmp = *result;
-	time_t t2 = timegm(&tmp);
-	if (*t != t2)
-	    result = NULL;
+    if (result && *t != timegm(result)) {
+	return NULL;
     }
 #endif
     return result;
 }
-#   define GMTIME(tm, result) rb_gmtime_r2((tm), &(result))
+#   define GMTIME(tm, result) rb_gmtime_r((tm), &(result))
 #endif
 
 static const int common_year_yday_offset[] = {

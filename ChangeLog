@@ -1,3 +1,9 @@
+Sat Mar 19 03:57:13 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* time.c (LOCALTIME): organize #ifdefs.
+
+	* time.c (GMTIME): define only ifndef HAVE_STRUCT_TM_TM_GMTOFF.
+
 Sat Mar 19 03:53:31 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in (rb_cv_member_struct_tm_tm_gmtoff): For Linux (glibc)
