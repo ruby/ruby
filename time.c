@@ -9,6 +9,7 @@
 
 **********************************************************************/
 
+#define _BSD_SOURCE
 #include "internal.h"
 #include <sys/types.h>
 #include <time.h>
