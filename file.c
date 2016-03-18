@@ -4683,9 +4683,11 @@ rb_file_s_basename(int argc, VALUE *argv, VALUE _)
     return basename;
 }
 
+static VALUE rb_file_dirname_n(VALUE fname, int n);
+
 /*
  *  call-seq:
- *     File.dirname(file_name)  ->  dir_name
+ *     File.dirname(file_name, level = 1)  ->  dir_name
  *
  *  Returns all components of the filename given in <i>file_name</i>
  *  except the last one (after first stripping trailing separators).
@@ -4694,21 +4696,40 @@ rb_file_s_basename(int argc, VALUE *argv, VALUE _)
  *  not <code>nil</code>.
  *
  *     File.dirname("/home/gumby/work/ruby.rb")   #=> "/home/gumby/work"
+ *
+ *  If +level+ is given, removes the last +level+ components, not only
+ *  one.
+ *
+ *     File.dirname("/home/gumby/work/ruby.rb", 2) #=> "/home/gumby"
+ *     File.dirname("/home/gumby/work/ruby.rb", 4) #=> "/"
  */
 
 static VALUE
-rb_file_s_dirname(VALUE klass, VALUE fname)
+rb_file_s_dirname(int argc, VALUE *argv, VALUE klass)
 {
-    return rb_file_dirname(fname);
+    int n = 1;
+    if ((argc = rb_check_arity(argc, 1, 2)) > 1) {
+	n = NUM2INT(argv[1]);
+    }
+    return rb_file_dirname_n(argv[0], n);
 }
 
 VALUE
 rb_file_dirname(VALUE fname)
 {
+    return rb_file_dirname_n(fname, 1);
+}
+
+static VALUE
+rb_file_dirname_n(VALUE fname, int n)
+{
     const char *name, *root, *p, *end;
     VALUE dirname;
     rb_encoding *enc;
+    VALUE sepsv = 0;
+    const char **seps;
 
+    if (n < 0) rb_raise(rb_eArgError, "negative level: %d", n);
     FilePathStringValue(fname);
     name = StringValueCStr(fname);
     end = name + RSTRING_LEN(fname);
@@ -4721,9 +4742,39 @@ rb_file_dirname(VALUE fname)
     if (root > name + 1)
 	name = root - 1;
 #endif
-    p = strrdirsep(root, end, enc);
-    if (!p) {
+    if (n > (end - root + 1) / 2) {
 	p = root;
+    }
+    else {
+	int i;
+	switch (n) {
+	  case 0:
+	    p = end;
+	    break;
+	  case 1:
+	    if (!(p = strrdirsep(root, end, enc))) p = root;
+	    break;
+	  default:
+	    seps = ALLOCV_N(const char *, sepsv, n);
+	    MEMZERO(seps, const char *, n);
+	    i = 0;
+	    for (p = root; p < end; ) {
+		if (isdirsep(*p)) {
+		    const char *tmp = p++;
+		    while (p < end && isdirsep(*p)) p++;
+		    if (p >= end) break;
+		    seps[i++] = tmp;
+		    if (i == n) i = 0;
+		}
+		else {
+		    Inc(p, end, enc);
+		}
+	    }
+	    p = seps[i];
+	    ALLOCV_END(sepsv);
+	    if (!p) p = root;
+	    break;
+	}
     }
     if (p == name)
 	return rb_usascii_str_new2(".");
@@ -6545,7 +6596,7 @@ Init_File(void)
     rb_define_singleton_method(rb_cFile, "realpath", rb_file_s_realpath, -1);
     rb_define_singleton_method(rb_cFile, "realdirpath", rb_file_s_realdirpath, -1);
     rb_define_singleton_method(rb_cFile, "basename", rb_file_s_basename, -1);
-    rb_define_singleton_method(rb_cFile, "dirname", rb_file_s_dirname, 1);
+    rb_define_singleton_method(rb_cFile, "dirname", rb_file_s_dirname, -1);
     rb_define_singleton_method(rb_cFile, "extname", rb_file_s_extname, 1);
     rb_define_singleton_method(rb_cFile, "path", rb_file_s_path, 1);
 
