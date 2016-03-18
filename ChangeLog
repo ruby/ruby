@@ -1,3 +1,9 @@
+Fri Mar 18 16:22:24 2016  Victor Nawothnig  <Victor.Nawothnig@gmail.com>
+
+	* parse.y (parse_numvar): NTH_REF must be less than a half of
+	  INT_MAX, as it is left-shifted to be ORed with back-ref flag.
+	  [ruby-core:74444] [Bug#12192] [Fix GH-1296]
+
 Fri Mar 18 12:25:30 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (tick): fix missing close parenthesis.  [Fix GH-1291]
