@@ -32,12 +32,10 @@ class TestDateConv < Test::Unit::TestCase
   end
 
   def test_to_time__from_datetime
-    d = DateTime.new(2004, 9, 19, 1, 2, 3, 9.to_r/24) + 456789.to_r/86400000000
+    d = DateTime.new(2004, 9, 19, 1, 2, 3, 8.to_r/24) + 456789.to_r/86400000000
     t = d.to_time
-    if t.utc_offset == 9*60*60
-      assert_equal([2004, 9, 19, 1, 2, 3, 456789],
-		   [t.year, t.mon, t.mday, t.hour, t.min, t.sec, t.usec])
-    end
+    assert_equal([2004, 9, 19, 1, 2, 3, 456789, 8*60*60],
+     [t.year, t.mon, t.mday, t.hour, t.min, t.sec, t.usec, t.utc_offset])
 
     d = DateTime.new(2004, 9, 19, 1, 2, 3, 0) + 456789.to_r/86400000000
     t = d.to_time.utc

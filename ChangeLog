@@ -1,3 +1,8 @@
+Fri Mar 18 10:24:12 2016  Naotoshi Seo  <sonots@gmail.com>
+
+	* ext/date/date_core.c (datetime_to_time): preserve timezone info
+	  [Bug #12189] [Fix GH-1295]
+
 Fri Mar 18 10:17:00 2016  Kenta Murata  <mrkn@mrkn.jp>
 
 	* bignum.c (rb_big_hash): make it public function to be available in
