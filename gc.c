@@ -3453,7 +3453,7 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
     if (heap_pages_deferred_final && !finalizing) {
         rb_thread_t *th = GET_THREAD();
         if (th) {
-	    gc_finalize_deferred_register(rb_objspace_of(th->vm));
+	    gc_finalize_deferred_register(objspace);
         }
     }
 
