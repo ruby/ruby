@@ -4295,7 +4295,7 @@ static VALUE
 rb_file_s_split(VALUE klass, VALUE path)
 {
     FilePathStringValue(path);		/* get rid of converting twice */
-    return rb_assoc_new(rb_file_s_dirname(Qnil, path), rb_file_s_basename(1,&path));
+    return rb_assoc_new(rb_file_dirname(path), rb_file_s_basename(1,&path));
 }
 
 static VALUE separator;
