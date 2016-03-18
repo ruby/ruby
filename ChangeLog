@@ -45,7 +45,7 @@ Fri Mar 18 21:57:00 2016  Kenta Murata  <mrkn@mrkn.jp>
 
 Fri Mar 18 21:30:00 2016  Kenta Murata  <mrkn@mrkn.jp>
 
-	* numeric.c (int_to_s): Move from flo_to_s.
+	* numeric.c (int_to_s): Move from fix_to_s.
 
 	* numeric.c (Integer#to_s): Move from Fixnum#to_s.
 
