@@ -1,3 +1,9 @@
+Sat Mar 19 03:00:50 2016  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* test/-ext-/time/test_new.rb (test_timespec_new): change a gmtoff
+	  test to a better one that does not depend on whether the current
+	  time is in summer time or not.
+
 Fri Mar 19 00:00:00 2016  Kenta Murata  <mrkn@mrkn.jp>
 
 	* bignum.c (rb_big_to_f, Bignum#to_f): removed them because they are
