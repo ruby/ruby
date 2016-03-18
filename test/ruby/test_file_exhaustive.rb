@@ -1015,7 +1015,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_dirname
-    assert(regular_file.start_with?(File.dirname(regular_file)))
+    assert_equal(@dir, File.dirname(regular_file))
     assert_equal(".", File.dirname(""))
     assert_incompatible_encoding {|d| File.dirname(d)}
     if File::ALT_SEPARATOR == '\\'
