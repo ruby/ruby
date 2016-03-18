@@ -1,3 +1,15 @@
+Fri Mar 18 10:17:00 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* bignum.c (rb_big_hash): make it public function to be available in
+	  other source files, and remove documentation comment for Bignum#hash.
+
+	* bignum.c (Bignum#hash): remove its definition because it is unified
+	  with Object#hash.
+
+	* include/ruby/intern.h (rb_big_hash): add a prototype declaration.
+
+	* hash.c (any_hash): treat Bignum values directly.
+
 Fri Mar 18 02:35:12 2016  Naotoshi Seo  <sonots@gmail.com>
 
 	* lib/time.rb (parse, strptime): Fix Time.parse/strptime does not

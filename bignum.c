@@ -6837,16 +6837,7 @@ rb_big_aref(VALUE x, VALUE y)
     return (xds[s1] & bit) ? INT2FIX(1) : INT2FIX(0);
 }
 
-/*
- * call-seq:
- *   big.hash   -> fixnum
- *
- * Compute a hash based on the value of _big_.
- *
- * See also Object#hash.
- */
-
-static VALUE
+VALUE
 rb_big_hash(VALUE x)
 {
     st_index_t hash;
@@ -7085,7 +7076,6 @@ Init_Bignum(void)
     rb_define_method(rb_cBignum, "<=", big_le, 1);
     rb_define_method(rb_cBignum, "===", rb_big_eq, 1);
     rb_define_method(rb_cBignum, "eql?", rb_big_eql, 1);
-    rb_define_method(rb_cBignum, "hash", rb_big_hash, 0);
     rb_define_method(rb_cBignum, "to_f", rb_big_to_f, 0);
     rb_define_method(rb_cBignum, "abs", rb_big_abs, 0);
     rb_define_method(rb_cBignum, "magnitude", rb_big_abs, 0);
