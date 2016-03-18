@@ -1,3 +1,7 @@
+Fri Mar 18 12:25:30 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (tick): fix missing close parenthesis.  [Fix GH-1291]
+
 Fri Mar 18 10:24:12 2016  Naotoshi Seo  <sonots@gmail.com>
 
 	* ext/date/date_core.c (datetime_to_time): preserve timezone info

@@ -936,7 +936,7 @@ tick(void)
 }
 
 #elif defined(__powerpc64__) && \
-	( __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 8)
+    (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 8))
 typedef unsigned long long tick_t;
 #define PRItick "llu"
 
