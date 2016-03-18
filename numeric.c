@@ -2948,9 +2948,9 @@ rb_fix2str(VALUE x, int base)
 
 /*
  *  call-seq:
- *     fix.to_s(base=10)  ->  string
+ *     int.to_s(base=10)  ->  string
  *
- *  Returns a string containing the representation of +fix+ radix +base+
+ *  Returns a string containing the representation of +int+ radix +base+
  *  (between 2 and 36).
  *
  *     12345.to_s       #=> "12345"
@@ -2962,7 +2962,7 @@ rb_fix2str(VALUE x, int base)
  *
  */
 static VALUE
-fix_to_s(int argc, VALUE *argv, VALUE x)
+int_to_s(int argc, VALUE *argv, VALUE x)
 {
     int base;
 
@@ -4185,6 +4185,8 @@ Init_Numeric(void)
     rb_undef_alloc_func(rb_cInteger);
     rb_undef_method(CLASS_OF(rb_cInteger), "new");
 
+    rb_define_method(rb_cInteger, "to_s", int_to_s, -1);
+    rb_define_alias(rb_cInteger, "inspect", "to_s");
     rb_define_method(rb_cInteger, "integer?", int_int_p, 0);
     rb_define_method(rb_cInteger, "odd?", int_odd_p, 0);
     rb_define_method(rb_cInteger, "even?", int_even_p, 0);
@@ -4204,9 +4206,6 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, "round", int_round, -1);
 
     rb_cFixnum = rb_define_class("Fixnum", rb_cInteger);
-
-    rb_define_method(rb_cFixnum, "to_s", fix_to_s, -1);
-    rb_define_alias(rb_cFixnum, "inspect", "to_s");
 
     rb_define_method(rb_cFixnum, "-@", fix_uminus, 0);
     rb_define_method(rb_cFixnum, "+", fix_plus, 1);

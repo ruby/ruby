@@ -1,3 +1,9 @@
+Fri Mar 18 21:30:00 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* numeric.c (int_to_s): Move from flo_to_s.
+
+	* numeric.c (Integer#to_s): Move from Fixnum#to_s.
+
 Fri Mar 18 16:22:24 2016  Victor Nawothnig  <Victor.Nawothnig@gmail.com>
 
 	* parse.y (parse_numvar): NTH_REF must be less than a half of
