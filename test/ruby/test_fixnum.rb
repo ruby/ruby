@@ -214,6 +214,7 @@ class TestFixnum < Test::Unit::TestCase
 
     assert_equal(0, 1 <=> 1)
     assert_equal(-1, 1 <=> 4294967296)
+    assert_equal(-1, 1 <=> 1 << 100)
     assert_equal(0, 1 <=> 1.0)
     assert_nil(1 <=> nil)
 
