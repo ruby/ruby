@@ -13,7 +13,7 @@ Sat Mar 19 21:56:23 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Sat Mar 19 21:53:35 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* numeric.c (fix_cmp): invert the result as the comarison is
+	* numeric.c (fix_cmp): invert the result as the comparison is
 	  inverted.
 
 Sat Mar 19 18:32:00 2016  Kenta Murata  <mrkn@mrkn.jp>
