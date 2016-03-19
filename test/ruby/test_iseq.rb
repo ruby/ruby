@@ -10,7 +10,7 @@ class TestISeq < Test::Unit::TestCase
 
   def compile(src, line = nil, opt = nil)
     EnvUtil.suppress_warning do
-      RubyVM::InstructionSequence.new(src, __FILE__, __FILE__, line, opt)
+      ISeq.new(src, __FILE__, __FILE__, line, opt)
     end
   end
 
@@ -52,9 +52,9 @@ class TestISeq < Test::Unit::TestCase
   end
 
   def test_unsupport_type
-    ary = RubyVM::InstructionSequence.compile("p").to_a
+    ary = compile("p").to_a
     ary[9] = :foobar
-    assert_raise_with_message(TypeError, /:foobar/) {RubyVM::InstructionSequence.load(ary)}
+    assert_raise_with_message(TypeError, /:foobar/) {ISeq.load(ary)}
   end if defined?(RubyVM::InstructionSequence.load)
 
   def test_loaded_cdhash_mark
@@ -98,7 +98,7 @@ class TestISeq < Test::Unit::TestCase
   end
 
   def test_line_trace
-    iseq = ISeq.compile \
+    iseq = compile \
   %q{ a = 1
       b = 2
       c = 3
@@ -163,9 +163,9 @@ class TestISeq < Test::Unit::TestCase
 
   def test_invalid_source
     bug11159 = '[ruby-core:69219] [Bug #11159]'
-    assert_raise(TypeError, bug11159) {ISeq.compile(nil)}
-    assert_raise(TypeError, bug11159) {ISeq.compile(:foo)}
-    assert_raise(TypeError, bug11159) {ISeq.compile(1)}
+    assert_raise(TypeError, bug11159) {compile(nil)}
+    assert_raise(TypeError, bug11159) {compile(:foo)}
+    assert_raise(TypeError, bug11159) {compile(1)}
   end
 
   def test_frozen_string_literal_compile_option
