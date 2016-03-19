@@ -583,7 +583,6 @@ rb_load_internal0(rb_thread_t *th, VALUE fname, int wrap)
     int state;
     volatile VALUE wrapper = th->top_wrapper;
     volatile VALUE self = th->top_self;
-    volatile int mild_compile_error;
 #if !defined __GNUC__
     rb_thread_t *volatile th0 = th;
 #endif
@@ -600,7 +599,6 @@ rb_load_internal0(rb_thread_t *th, VALUE fname, int wrap)
 	rb_extend_object(th->top_self, th->top_wrapper);
     }
 
-    mild_compile_error = th->mild_compile_error;
     TH_PUSH_TAG(th);
     state = EXEC_TAG();
     if (state == 0) {
@@ -611,10 +609,10 @@ rb_load_internal0(rb_thread_t *th, VALUE fname, int wrap)
 	    /* OK */
 	}
 	else {
-	    th->mild_compile_error++;
-	    node = (NODE *)rb_load_file_str(fname);
+	    VALUE parser = rb_parser_new();
+	    rb_parser_mild_error(parser);
+	    node = (NODE *)rb_parser_load_file(parser, fname);
 	    iseq = rb_iseq_new_top(node, rb_str_new2("<top (required)>"), fname, rb_realpath_internal(Qnil, fname, 1), NULL);
-	    th->mild_compile_error--;
 	}
 	rb_iseq_eval(iseq);
     }
@@ -624,7 +622,6 @@ rb_load_internal0(rb_thread_t *th, VALUE fname, int wrap)
     th = th0;
     fname = RB_GC_GUARD(fname);
 #endif
-    th->mild_compile_error = mild_compile_error;
     th->top_self = self;
     th->top_wrapper = wrapper;
 

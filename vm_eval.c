@@ -1284,7 +1284,6 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_
     rb_env_t *env = NULL;
     rb_block_t block, *base_block;
     volatile int parse_in_eval;
-    volatile int mild_compile_error;
     volatile VALUE file;
     volatile int line;
 
@@ -1292,7 +1291,6 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_
     line = lineno;
 
     parse_in_eval = th->parse_in_eval;
-    mild_compile_error = th->mild_compile_error;
     TH_PUSH_TAG(th);
     if ((state = TH_EXEC_TAG()) == 0) {
 	rb_cref_t *cref = cref_arg;
@@ -1343,9 +1341,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_
 
 	/* make eval iseq */
 	th->parse_in_eval++;
-	th->mild_compile_error++;
 	iseq = rb_iseq_compile_with_option(src, fname, absolute_path, INT2FIX(line), base_block, Qnil);
-	th->mild_compile_error--;
 	th->parse_in_eval--;
 
 	if (!cref && base_block->iseq) {
@@ -1373,7 +1369,6 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_
 	result = vm_exec(th);
     }
     TH_POP_TAG();
-    th->mild_compile_error = mild_compile_error;
     th->parse_in_eval = parse_in_eval;
 
     if (state) {

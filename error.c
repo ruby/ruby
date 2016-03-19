@@ -94,88 +94,53 @@ compile_snprintf(rb_encoding *enc, const char *pre, const char *file, int line, 
     return str;
 }
 
-static void
-compile_err_append(VALUE mesg)
+VALUE
+rb_compile_err_append(VALUE buffer, VALUE mesg)
 {
     rb_thread_t *th = GET_THREAD();
-    VALUE err = th->errinfo;
     rb_block_t *prev_base_block = th->base_block;
     th->base_block = 0;
     /* base_block should be zero while normal Ruby execution */
     /* after this line, any Ruby code *can* run */
 
-    if (th->mild_compile_error) {
-	if (RTEST(err)) {
-	    VALUE str = rb_obj_as_string(err);
-
-	    rb_str_cat2(str, "\n");
-	    rb_str_append(str, mesg);
-	    mesg = str;
-	}
-	err = rb_exc_new3(rb_eSyntaxError, mesg);
-	th->errinfo = err;
-    }
-    else {
-	if (!RTEST(err)) {
-	    err = rb_exc_new2(rb_eSyntaxError, "compile error");
-	    th->errinfo = err;
-	}
+    if (!buffer) {
 	rb_str_cat2(mesg, "\n");
 	rb_write_error_str(mesg);
+    }
+    else if (NIL_P(buffer)) {
+	buffer = mesg;
+    }
+    else {
+	rb_str_cat2(buffer, "\n");
+	rb_str_append(buffer, mesg);
     }
 
     /* returned to the parser world */
     th->base_block = prev_base_block;
+    return buffer;
 }
 
 void
 rb_compile_error_with_enc(const char *file, int line, void *enc, const char *fmt, ...)
 {
-    va_list args;
-    VALUE str;
-
-    va_start(args, fmt);
-    str = compile_snprintf(enc, NULL, file, line, fmt, args);
-    va_end(args);
-    compile_err_append(str);
 }
 
 void
 rb_compile_error(const char *file, int line, const char *fmt, ...)
 {
-    va_list args;
-    VALUE str;
-
-    va_start(args, fmt);
-    str = compile_snprintf(NULL, NULL, file, line, fmt, args);
-    va_end(args);
-    compile_err_append(str);
 }
 
-void
-rb_compile_error_str(VALUE file, int line, void *enc, const char *fmt, ...)
+VALUE
+rb_error_vsprintf(VALUE file, int line, void *enc, const char *fmt, va_list args)
 {
-    va_list args;
-    VALUE str;
-
-    va_start(args, fmt);
-    str = compile_snprintf(enc, NULL,
-			   NIL_P(file) ? NULL : RSTRING_PTR(file), line,
-			   fmt, args);
-    va_end(args);
-    compile_err_append(str);
+    return compile_snprintf(enc, NULL,
+			    NIL_P(file) ? NULL : RSTRING_PTR(file), line,
+			    fmt, args);
 }
 
 void
 rb_compile_error_append(const char *fmt, ...)
 {
-    va_list args;
-    VALUE str;
-
-    va_start(args, fmt);
-    str = rb_vsprintf(fmt, args);
-    va_end(args);
-    compile_err_append(str);
 }
 
 static void

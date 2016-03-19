@@ -1,3 +1,16 @@
+Sat Mar 19 14:46:18 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* iseq.c (rb_iseq_compile_with_option): make the parser in mild
+	  error.
+
+	* load.c (rb_load_internal0): ditto.
+
+	* parse.y (yycompile0): return the error message within the error
+	  to be raised.  [Feature #11951]
+
+	* parse.y (parser_compile_error): accumulate error messages in the
+	  error_buffer.
+
 Sat Mar 19 03:57:13 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* time.c (LOCALTIME): organize #ifdefs.

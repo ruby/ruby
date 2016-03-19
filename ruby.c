@@ -1948,6 +1948,14 @@ rb_load_file_str(VALUE fname_v)
     return load_file(rb_parser_new(), fname_v, 0, cmdline_options_init(&opt));
 }
 
+void *
+rb_parser_load_file(VALUE parser, VALUE fname_v)
+{
+    struct cmdline_options opt;
+
+    return load_file(parser, fname_v, 0, cmdline_options_init(&opt));
+}
+
 /*
  *  call-seq:
  *     Process.argv0  -> frozen_string

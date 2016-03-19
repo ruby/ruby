@@ -312,6 +312,7 @@ struct parser_params {
 
     NODE *eval_tree_begin;
     NODE *eval_tree;
+    VALUE error_buffer;
     VALUE debug_lines;
     VALUE coverage;
 #else
@@ -740,7 +741,6 @@ static ID id_warn, id_warning;
 # define WARNING_ARGS_L(l, fmt,n) WARNING_ARGS(fmt,n)
 # define WARNING_CALL rb_funcall
 static void ripper_compile_error(struct parser_params*, const char *fmt, ...);
-# define rb_compile_error ripper_compile_error
 # define compile_error ripper_compile_error
 # define PARSER_ARG parser,
 #else
@@ -753,9 +753,9 @@ static void ripper_compile_error(struct parser_params*, const char *fmt, ...);
 # define WARNING_ARGS(fmt,n) WARN_ARGS(fmt,n)
 # define WARNING_ARGS_L(l,fmt,n) WARN_ARGS_L(l,fmt,n)
 # define WARNING_CALL rb_compile_warning
-# define rb_compile_error rb_compile_error_str
-# define compile_error (parser->error_p = 1),rb_compile_error_str
-# define PARSER_ARG ruby_sourcefile_string, ruby_sourceline, (void *)current_enc,
+static void parser_compile_error(struct parser_params*, const char *fmt, ...);
+# define compile_error parser_compile_error
+# define PARSER_ARG parser,
 #endif
 
 /* Older versions of Yacc set YYMAXDEPTH to a very low value by default (150,
@@ -5559,6 +5559,9 @@ yycompile0(VALUE arg)
     lex_p = lex_pbeg = lex_pend = 0;
     lex_lastline = lex_nextline = 0;
     if (parser->error_p) {
+	VALUE mesg = parser->error_buffer;
+	if (!mesg) mesg = rb_fstring_cstr("compile error");
+	rb_set_errinfo(rb_exc_new_str(rb_eSyntaxError, mesg));
 	return 0;
     }
     tree = ruby_eval_tree;
@@ -10792,6 +10795,8 @@ parser_initialize(struct parser_params *parser)
     parser->delayed = Qnil;
     parser->result = Qnil;
     parser->parsing_thread = Qnil;
+#else
+    parser->error_buffer = Qfalse;
 #endif
     parser->debug_buffer = Qnil;
     parser->enc = rb_utf8_encoding();
@@ -10818,6 +10823,7 @@ parser_mark(void *ptr)
     rb_gc_mark((VALUE)ruby_eval_tree);
     rb_gc_mark(ruby_debug_lines);
     rb_gc_mark(parser->compile_option);
+    rb_gc_mark(parser->error_buffer);
 #else
     rb_gc_mark(parser->delayed);
     rb_gc_mark(parser->value);
@@ -10900,6 +10906,16 @@ rb_parser_new(void)
 					 &parser_data_type, p);
     parser_initialize(p);
     return parser;
+}
+
+VALUE
+rb_parser_mild_error(VALUE vparser)
+{
+    struct parser_params *parser;
+
+    TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, parser);
+    parser->error_buffer = Qnil;
+    return vparser;
 }
 #endif
 
@@ -11068,6 +11084,23 @@ rb_parser_printf(struct parser_params *parser, const char *fmt, ...)
 	rb_io_write(rb_stdout, mesg);
 	parser->debug_buffer = Qnil;
     }
+}
+
+extern VALUE rb_error_vsprintf(VALUE, int, void *, const char *, va_list);
+extern VALUE rb_compile_err_append(VALUE buffer, VALUE mesg);
+
+static void
+parser_compile_error(struct parser_params *parser, const char *fmt, ...)
+{
+    VALUE str;
+    va_list ap;
+
+    parser->error_p = 1;
+    va_start(ap, fmt);
+    str = rb_error_vsprintf(ruby_sourcefile_string, ruby_sourceline,
+			    (void *)current_enc, fmt, ap);
+    va_end(ap);
+    parser->error_buffer = rb_compile_err_append(parser->error_buffer, str);
 }
 #endif
 

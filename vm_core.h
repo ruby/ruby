@@ -750,12 +750,6 @@ typedef struct rb_thread_struct {
      */
     int parse_in_eval;
 
-    /*! Thread-local state of compiling context.
-     *
-     * If non-zero, the parser does not automatically print error messages to
-     * stderr. */
-    int mild_compile_error;
-
     /* storage */
     st_table *local_storage;
     VALUE local_storage_recursive_hash;

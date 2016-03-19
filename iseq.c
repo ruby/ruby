@@ -627,11 +627,13 @@ rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE absolute_path, VALUE li
     const INITIALIZED VALUE label = parent ?
 	parent->body->location.label :
 	rb_fstring_cstr("<compiled>");
+    VALUE parser = rb_parser_new();
 
+    rb_parser_mild_error(parser);
     th->base_block = base_block;
     TH_PUSH_TAG(th);
     if ((state = EXEC_TAG()) == 0) {
-	NODE *node = (*parse)(rb_parser_new(), file, src, ln);
+	NODE *node = (*parse)(parser, file, src, ln);
 	if (node) { /* TODO: check err */
 	    iseq = rb_iseq_new_with_opt(node, label, file, absolute_path, line,
 					parent, type, &option);

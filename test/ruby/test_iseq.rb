@@ -214,4 +214,25 @@ class TestISeq < Test::Unit::TestCase
       at_exit { assert_equal([:n, :x], Segfault.new.segfault.sort) }
     end;
   end
+
+  def test_syntax_error_message
+    feature11951 = '[Feature #11951]'
+
+    src, line = <<-'end;', __LINE__+1
+      def x@;end
+      def y@;end
+    end;
+    e1 = e2 = nil
+    m1 = EnvUtil.verbose_warning do
+      e1 = assert_raise(SyntaxError) do
+        eval(src, nil, __FILE__, line)
+      end
+    end
+    m2 = EnvUtil.verbose_warning do
+      e2 = assert_raise(SyntaxError) do
+        ISeq.new(src, __FILE__, __FILE__, line)
+      end
+    end
+    assert_equal([m1, e1.message], [m2, e2.message], feature11951)
+  end
 end
