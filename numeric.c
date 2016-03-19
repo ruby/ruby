@@ -3425,7 +3425,7 @@ fix_cmp(VALUE x, VALUE y)
 	return INT2FIX(-1);
     }
     else if (RB_TYPE_P(y, T_BIGNUM)) {
-	return rb_big_cmp(rb_int2big(FIX2LONG(x)), y);
+	return rb_big_cmp(y, x);
     }
     else if (RB_TYPE_P(y, T_FLOAT)) {
 	return rb_integer_float_cmp(x, y);
