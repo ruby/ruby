@@ -1,3 +1,16 @@
+Sat Mar 19 18:21:00 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* bignum.c (Bignum#<=>): remove it because they are unified with
+	  Integer#<=>.
+
+	* numeric.c (Integer#<=>, Fixnum#<=>): move <=> method from Fixnum to
+	  Integer.
+
+	* numeric.c (int_cmp): add this method for Integer#<=>.
+
+	* test/-ext-/integer/test_my_integer.rb (test_my_integer_cmp): add a
+	  test to examine Integer#<=> for unknown subclasses.
+
 Sat Mar 19 14:46:18 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* iseq.c (rb_iseq_compile_with_option): make the parser in mild

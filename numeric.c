@@ -3416,18 +3416,6 @@ fix_equal(VALUE x, VALUE y)
     }
 }
 
-/*
- *  call-seq:
- *     fix <=> numeric  ->  -1, 0, +1 or nil
- *
- *  Comparison---Returns +-1+, +0+, ++1+ or +nil+ depending on whether +fix+ is
- *  less than, equal to, or greater than +numeric+.
- *
- *  This is the basis for the tests in the Comparable module.
- *
- *  +nil+ is returned if the two values are incomparable.
- */
-
 static VALUE
 fix_cmp(VALUE x, VALUE y)
 {
@@ -3440,10 +3428,37 @@ fix_cmp(VALUE x, VALUE y)
 	return rb_big_cmp(rb_int2big(FIX2LONG(x)), y);
     }
     else if (RB_TYPE_P(y, T_FLOAT)) {
-        return rb_integer_float_cmp(x, y);
+	return rb_integer_float_cmp(x, y);
     }
     else {
 	return rb_num_coerce_cmp(x, y, id_cmp);
+    }
+    return rb_num_coerce_cmp(x, y, id_cmp);
+}
+
+/*
+ *  call-seq:
+ *     int <=> numeric  ->  -1, 0, +1 or nil
+ *
+ *  Comparison---Returns +-1+, +0+, ++1+ or +nil+ depending on whether +fix+ is
+ *  less than, equal to, or greater than +numeric+.
+ *
+ *  This is the basis for the tests in the Comparable module.
+ *
+ *  +nil+ is returned if the two values are incomparable.
+ */
+
+static VALUE
+int_cmp(VALUE x, VALUE y)
+{
+    if (FIXNUM_P(x)) {
+	return fix_cmp(x, y);
+    }
+    else if (RB_TYPE_P(x, T_BIGNUM)) {
+	return rb_big_cmp(x, y);
+    }
+    else {
+	rb_raise(rb_eNotImpError, "need to define `<=>' in %s", rb_obj_classname(x));
     }
 }
 
@@ -4228,6 +4243,7 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, "ceil", int_to_i, 0);
     rb_define_method(rb_cInteger, "truncate", int_to_i, 0);
     rb_define_method(rb_cInteger, "round", int_round, -1);
+    rb_define_method(rb_cInteger, "<=>", int_cmp, 1);
 
     rb_cFixnum = rb_define_class("Fixnum", rb_cInteger);
 
@@ -4248,7 +4264,6 @@ Init_Numeric(void)
 
     rb_define_method(rb_cFixnum, "==", fix_equal, 1);
     rb_define_method(rb_cFixnum, "===", fix_equal, 1);
-    rb_define_method(rb_cFixnum, "<=>", fix_cmp, 1);
     rb_define_method(rb_cFixnum, ">",  fix_gt, 1);
     rb_define_method(rb_cFixnum, ">=", fix_ge, 1);
     rb_define_method(rb_cFixnum, "<",  fix_lt, 1);

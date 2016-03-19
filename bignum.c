@@ -7011,7 +7011,6 @@ Init_Bignum(void)
     rb_define_method(rb_cBignum, ">>", rb_big_rshift, 1);
     rb_define_method(rb_cBignum, "[]", rb_big_aref, 1);
 
-    rb_define_method(rb_cBignum, "<=>", rb_big_cmp, 1);
     rb_define_method(rb_cBignum, "==", rb_big_eq, 1);
     rb_define_method(rb_cBignum, ">", big_gt, 1);
     rb_define_method(rb_cBignum, ">=", big_ge, 1);
