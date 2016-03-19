@@ -5288,21 +5288,18 @@ rb_integer_float_eq(VALUE x, VALUE y)
 VALUE
 rb_big_cmp(VALUE x, VALUE y)
 {
-    int cmp;
-
     if (FIXNUM_P(y)) {
-        x = bignorm(x);
+	x = bigfixize(x);
         if (FIXNUM_P(x)) {
-            if (FIX2LONG(x) > FIX2LONG(y)) return INT2FIX(1);
             if (FIX2LONG(x) < FIX2LONG(y)) return INT2FIX(-1);
-            return INT2FIX(0);
-        }
-        else {
-            if (BIGNUM_NEGATIVE_P(x)) return INT2FIX(-1);
-            return INT2FIX(1);
+            return INT2FIX(FIX2LONG(x) > FIX2LONG(y));
         }
     }
     else if (RB_BIGNUM_TYPE_P(y)) {
+	if (BIGNUM_SIGN(x) == BIGNUM_SIGN(y)) {
+	    int cmp = bary_cmp(BDIGITS(x), BIGNUM_LEN(x), BDIGITS(y), BIGNUM_LEN(y));
+	    return INT2FIX(BIGNUM_SIGN(x) ? cmp : -cmp);
+	}
     }
     else if (RB_FLOAT_TYPE_P(y)) {
         return rb_integer_float_cmp(x, y);
@@ -5310,15 +5307,7 @@ rb_big_cmp(VALUE x, VALUE y)
     else {
 	return rb_num_coerce_cmp(x, y, rb_intern("<=>"));
     }
-
-    if (BIGNUM_SIGN(x) > BIGNUM_SIGN(y)) return INT2FIX(1);
-    if (BIGNUM_SIGN(x) < BIGNUM_SIGN(y)) return INT2FIX(-1);
-
-    cmp = bary_cmp(BDIGITS(x), BIGNUM_LEN(x), BDIGITS(y), BIGNUM_LEN(y));
-    if (BIGNUM_SIGN(x))
-        return INT2FIX(cmp);
-    else
-        return INT2FIX(-cmp);
+    return INT2FIX(BIGNUM_SIGN(x) ? 1 : -1);
 }
 
 enum big_op_t {
@@ -5434,8 +5423,7 @@ VALUE
 rb_big_eq(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
-	if (bignorm(x) == y) return Qtrue;
-	y = rb_int2big(FIX2LONG(y));
+	return bignorm(x) == y ? Qtrue : Qfalse;
     }
     else if (RB_BIGNUM_TYPE_P(y)) {
     }

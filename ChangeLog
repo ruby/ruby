@@ -1,3 +1,10 @@
+Sun Mar 20 04:46:02 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* bignum.c (rb_big_cmp): reduce the code.
+
+	* bignum.c (rb_big_eq): If normalized bignum is still bignum,
+	  it must be larger than fixnum.
+
 Sat Mar 20 00:58:00 2016  Kenta Murata  <mrkn@mrkn.jp>
 
 	* include/ruby/intern.h (rb_big_odd_p, rb_big_even_p): move to
