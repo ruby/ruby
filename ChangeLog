@@ -58,7 +58,7 @@ Fri Mar 18 23:41:00 2016  Kenta Murata  <mrkn@mrkn.jp>
 	* numeric.c (Integer#to_f, Fixnum#to_f): move to_f method from Fixnum
 	  to Integer.
 
-	* ext/-test-/integer/my_integer.rb: define helper class for testing
+	* ext/-test-/integer/my_integer.c: define helper class for testing
 	  to_f method for a subclass of Integer.
 
 	* ext/-test-/integer/extconf.rb: ditto.
