@@ -1,3 +1,10 @@
+Sat Mar 20 00:58:00 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* include/ruby/intern.h (rb_big_odd_p, rb_big_even_p): move to
+	  internal.h so that they are exported only for ruby itself.
+
+	* internal.h (rb_big_odd_p, rb_big_even_p): ditto.
+
 Sat Mar 19 21:56:23 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/lib/test/unit.rb (Test::Unit::StatusLine#failed): defer
