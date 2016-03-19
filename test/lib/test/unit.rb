@@ -649,6 +649,7 @@ module Test
       def succeed; del_status_line; end
 
       def failed(s)
+        return if s and @options[:verbose]
         sep = "\n"
         @report_count ||= 0
         report.each do |msg|

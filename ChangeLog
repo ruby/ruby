@@ -1,3 +1,9 @@
+Sat Mar 19 21:56:23 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/lib/test/unit.rb (Test::Unit::StatusLine#failed): defer
+	  failed messages until the end in verbose mode, to get rid of
+	  interleaving failures with progress messages.
+
 Sat Mar 19 21:53:35 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (fix_cmp): invert the result as the comarison is
