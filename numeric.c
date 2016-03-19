@@ -3799,7 +3799,7 @@ int_to_f(VALUE num)
 	val = rb_big2dbl(num);
     }
     else {
-	rb_raise(rb_eTypeError, "Unknown subclass for to_f: %s", rb_obj_classname(num));
+	rb_raise(rb_eNotImpError, "Unknown subclass for to_f: %s", rb_obj_classname(num));
     }
 
     return DBL2NUM(val);

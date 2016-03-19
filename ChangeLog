@@ -1,3 +1,11 @@
+Sat Mar 19 18:32:00 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* numeric.c (int_to_f): raise NotImplementedError when a receiver
+	  class is unknown.
+
+	* test/-ext-/integer/test_my_integer.rb (test_my_integer_to_f): modify
+	  a test for the above change.
+
 Sat Mar 19 18:21:00 2016  Kenta Murata  <mrkn@mrkn.jp>
 
 	* bignum.c (Bignum#<=>): remove it because they are unified with

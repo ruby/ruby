@@ -4,7 +4,7 @@ require "-test-/integer"
 
 class TestIntegerExt < Test::Unit::TestCase
   def test_my_integer_to_f
-    assert_raise(TypeError) do
+    assert_raise(NotImplementedError) do
       Bug::Integer::MyInteger.new.to_f
     end
 
