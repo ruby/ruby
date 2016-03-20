@@ -5291,8 +5291,11 @@ rb_big_cmp(VALUE x, VALUE y)
     if (FIXNUM_P(y)) {
 	x = bigfixize(x);
         if (FIXNUM_P(x)) {
-            if (FIX2LONG(x) < FIX2LONG(y)) return INT2FIX(-1);
-            return INT2FIX(FIX2LONG(x) > FIX2LONG(y));
+	    /* SIGNED_VALUE and Fixnum have same sign-bits, same
+	     * order */
+	    SIGNED_VALUE sx = (SIGNED_VALUE)x, sy = (SIGNED_VALUE)y;
+	    if (sx < sy) return INT2FIX(-1);
+	    return INT2FIX(sx > sy);
         }
     }
     else if (RB_BIGNUM_TYPE_P(y)) {
