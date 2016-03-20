@@ -95,7 +95,7 @@ static VALUE
 mul(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x) && FIXNUM_P(y)) {
-	rb_fix_mul_fix(x, y);
+	return rb_fix_mul_fix(x, y);
     }
     if (RB_TYPE_P(x, T_BIGNUM))
         return rb_big_mul(x, y);
