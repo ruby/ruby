@@ -75,9 +75,7 @@ static VALUE
 add(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x) && FIXNUM_P(y)) {
-        long l = FIX2LONG(x) + FIX2LONG(y);
-        if (FIXABLE(l)) return LONG2FIX(l);
-        return LONG2NUM(l);
+        return LONG2NUM(FIX2LONG(x) + FIX2LONG(y));
     }
     if (RB_TYPE_P(x, T_BIGNUM)) return rb_big_plus(x, y);
     return rb_funcall(x, '+', 1, y);
@@ -87,9 +85,7 @@ static VALUE
 sub(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x) && FIXNUM_P(y)) {
-        long l = FIX2LONG(x) - FIX2LONG(y);
-        if (FIXABLE(l)) return LONG2FIX(l);
-        return LONG2NUM(l);
+        return LONG2NUM(FIX2LONG(x) - FIX2LONG(y));
     }
     if (RB_TYPE_P(x, T_BIGNUM)) return rb_big_minus(x, y);
     return rb_funcall(x, '-', 1, y);
@@ -144,10 +140,7 @@ mul(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x) && FIXNUM_P(y)) {
 #if HAVE_LONG_LONG && SIZEOF_LONG * 2 <= SIZEOF_LONG_LONG
-        LONG_LONG ll = (LONG_LONG)FIX2LONG(x) * FIX2LONG(y);
-        if (FIXABLE(ll))
-            return LONG2FIX(ll);
-        return LL2NUM(ll);
+        return LL2NUM((LONG_LONG)FIX2LONG(x) * FIX2LONG(y));
 #else
 	long z;
 	if (long_mul(FIX2LONG(x), FIX2LONG(y), &z))

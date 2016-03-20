@@ -1,3 +1,11 @@
+Sun Mar 20 18:44:52 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* time.c (add): remove FIXABLE() which is in LONG2NUM().
+
+	* time.c (sub): ditto.
+
+	* time.c (mul): ditto.
+
 Sun Mar 20 04:46:02 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* bignum.c (rb_big_cmp): reduce the code.
