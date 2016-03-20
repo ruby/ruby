@@ -3085,32 +3085,7 @@ static VALUE
 fix_mul(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
-#ifdef __HP_cc
-/* avoids an optimization bug of HP aC++/ANSI C B3910B A.06.05 [Jul 25 2005] */
-	volatile
-#endif
-	long a, b;
-#if SIZEOF_LONG * 2 <= SIZEOF_LONG_LONG
-	LONG_LONG d;
-#else
-	VALUE r;
-#endif
-
-	a = FIX2LONG(x);
-	b = FIX2LONG(y);
-
-#if SIZEOF_LONG * 2 <= SIZEOF_LONG_LONG
-	d = (LONG_LONG)a * b;
-	if (FIXABLE(d)) return LONG2FIX(d);
-	return rb_ll2inum(d);
-#else
-	if (a == 0) return x;
-        if (MUL_OVERFLOW_FIXNUM_P(a, b))
-	    r = rb_big_mul(rb_int2big(a), rb_int2big(b));
-        else
-            r = LONG2FIX(a * b);
-	return r;
-#endif
+	return rb_fix_mul_fix(x, y);
     }
     else if (RB_TYPE_P(y, T_BIGNUM)) {
 	return rb_big_mul(y, x);

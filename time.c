@@ -91,61 +91,11 @@ sub(VALUE x, VALUE y)
     return rb_funcall(x, '-', 1, y);
 }
 
-#if !(HAVE_LONG_LONG && SIZEOF_LONG * 2 <= SIZEOF_LONG_LONG)
-static int
-long_mul(long x, long y, long *z)
-{
-    unsigned long a, b, c;
-    int s;
-    if (x == 0 || y == 0) {
-	*z = 0;
-	return 1;
-    }
-    if (x < 0) {
-	s = -1;
-	a = (unsigned long)-x;
-    }
-    else {
-	s = 1;
-	a = (unsigned long)x;
-    }
-    if (y < 0) {
-        s = -s;
-	b = (unsigned long)-y;
-    }
-    else {
-	b = (unsigned long)y;
-    }
-    if (a <= ULONG_MAX / b) {
-        c = a * b;
-	if (s < 0) {
-	    if (c <= (unsigned long)LONG_MAX + 1) {
-		*z = -(long)c;
-		return 1;
-	    }
-	}
-	else {
-	    if (c <= (unsigned long)LONG_MAX) {
-		*z = (long)c;
-		return 1;
-	    }
-	}
-    }
-    return 0;
-}
-#endif
-
 static VALUE
 mul(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x) && FIXNUM_P(y)) {
-#if HAVE_LONG_LONG && SIZEOF_LONG * 2 <= SIZEOF_LONG_LONG
-        return LL2NUM((LONG_LONG)FIX2LONG(x) * FIX2LONG(y));
-#else
-	long z;
-	if (long_mul(FIX2LONG(x), FIX2LONG(y), &z))
-	    return LONG2NUM(z);
-#endif
+	rb_fix_mul_fix(x, y);
     }
     if (RB_TYPE_P(x, T_BIGNUM))
         return rb_big_mul(x, y);

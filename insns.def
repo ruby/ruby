@@ -1487,25 +1487,7 @@ opt_mult
 {
     if (FIXNUM_2_P(recv, obj) &&
 	BASIC_OP_UNREDEFINED_P(BOP_MULT, FIXNUM_REDEFINED_OP_FLAG)) {
-	long a = FIX2LONG(recv);
-#ifdef HAVE_INT128_T
-	VALUE rb_int128t2big(int128_t n);
-	int128_t r = (int128_t)a * (int128_t)FIX2LONG(obj);
-	if (RB_FIXABLE(r)) {
-		val = LONG2FIX((long)r);
-	}
-	else {
-		val = rb_int128t2big(r);
-	}
-#else
-	long b = FIX2LONG(obj);
-	if (MUL_OVERFLOW_FIXNUM_P(a, b)) {
-		val = rb_big_mul(rb_int2big(a), rb_int2big(b));
-	}
-	else {
-		val = LONG2FIX(a * b);
-	}
-#endif
+	val = rb_fix_mul_fix(recv, obj);
     }
     else if (FLONUM_2_P(recv, obj) &&
 	     BASIC_OP_UNREDEFINED_P(BOP_MULT, FLOAT_REDEFINED_OP_FLAG)) {

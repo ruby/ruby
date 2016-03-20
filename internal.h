@@ -266,6 +266,34 @@ nlz_int128(uint128_t x)
 }
 #endif
 
+#if HAVE_LONG_LONG && SIZEOF_LONG * 2 <= SIZEOF_LONG_LONG
+# define DLONG LONG_LONG
+# define DL2NUM(x) LL2NUM(x)
+#elif defined(HAVE_INT128_T)
+# define DLONG int128_t
+# define DL2NUM(x) (RB_FIXABLE(x) ? LONG2FIX(x) : rb_int128t2big(x))
+#endif
+
+VALUE rb_int128t2big(int128_t n);
+
+/* arguments must be Fixnum */
+static inline VALUE
+rb_fix_mul_fix(VALUE x, VALUE y)
+{
+    long lx = FIX2LONG(x);
+    long ly = FIX2LONG(y);
+#ifdef DLONG
+    return DL2NUM((DLONG)lx * (DLONG)ly);
+#else
+    if (MUL_OVERFLOW_FIXNUM_P(a, b)) {
+	return rb_big_mul(rb_int2big(a), rb_int2big(b));
+    }
+    else {
+	return LONG2FIX(a * b);
+    }
+#endif
+}
+
 /*
  * This behaves different from C99 for negative arguments.
  * Note that div may overflow fixnum.
