@@ -146,6 +146,10 @@ static void
 divmodv(VALUE n, VALUE d, VALUE *q, VALUE *r)
 {
     VALUE tmp, ary;
+    if (FIXNUM_P(d)) {
+	if (FIX2LONG(d) == 0) rb_num_zerodiv();
+	if (FIXNUM_P(n)) return rb_fix_divmod_fix(n, d, q, r);
+    }
     tmp = rb_funcall(n, id_divmod, 1, d);
     ary = rb_check_array_type(tmp);
     if (NIL_P(ary)) {
@@ -432,24 +436,16 @@ wquo(wideval_t wx, wideval_t wy)
         }
     }
 #endif
-    x = w2v(wx);
-    y = w2v(wy);
-    ret = rb_funcall(x, id_quo, 1, y);
-    if (RB_TYPE_P(ret, T_RATIONAL) &&
-        RRATIONAL(ret)->den == INT2FIX(1)) {
-        ret = RRATIONAL(ret)->num;
-    }
-    return v2w(ret);
+    return v2w(quo(w2v(wx), w2v(wy)));
 }
 
 #define wmulquo(x,y,z) ((WIDEVAL_GET(y) == WIDEVAL_GET(z)) ? (x) : wquo(wmul((x),(y)),(z)))
 #define wmulquoll(x,y,z) (((y) == (z)) ? (x) : wquo(wmul((x),WINT2WV(y)),WINT2WV(z)))
 
-static void
-wdivmod(wideval_t wn, wideval_t wd, wideval_t *wq, wideval_t *wr)
-{
-    VALUE tmp, ary;
 #if WIDEVALUE_IS_WIDER
+static int
+wdivmod0(wideval_t wn, wideval_t wd, wideval_t *wq, wideval_t *wr)
+{
     if (FIXWV_P(wn) && FIXWV_P(wd)) {
         wideint_t n, d, q, r;
         d = FIXWV2WINT(wd);
@@ -457,61 +453,44 @@ wdivmod(wideval_t wn, wideval_t wd, wideval_t *wq, wideval_t *wr)
         if (d == 1) {
             *wq = wn;
             *wr = WINT2FIXWV(0);
-            return;
+            return 1;
         }
         if (d == -1) {
             wideint_t xneg = -FIXWV2WINT(wn);
             *wq = WINT2WV(xneg);
             *wr = WINT2FIXWV(0);
-            return;
+            return 1;
         }
         n = FIXWV2WINT(wn);
         if (n == 0) {
             *wq = WINT2FIXWV(0);
             *wr = WINT2FIXWV(0);
-            return;
+            return 1;
         }
-        if (d < 0) {
-            if (n < 0) {
-                q = ((-n) / (-d));
-                r = ((-n) % (-d));
-                if (r != 0) {
-                    q -= 1;
-                    r += d;
-                }
-            }
-            else { /* 0 < n */
-                q = -(n / (-d));
-                r = -(n % (-d));
-            }
-        }
-        else { /* 0 < d */
-            if (n < 0) {
-                q = -((-n) / d);
-                r = -((-n) % d);
-                if (r != 0) {
-                    q -= 1;
-                    r += d;
-                }
-            }
-            else { /* 0 < n */
-                q = n / d;
-                r = n % d;
-            }
+        q = n / d;
+        r = n % d;
+        if (d > 0 ? r < 0 : r > 0) {
+            q -= 1;
+            r += d;
         }
         *wq = WINT2FIXWV(q);
         *wr = WINT2FIXWV(r);
-        return;
+        return 1;
     }
+    return 0;
+}
 #endif
-    tmp = rb_funcall(w2v(wn), id_divmod, 1, w2v(wd));
-    ary = rb_check_array_type(tmp);
-    if (NIL_P(ary)) {
-	rb_raise(rb_eTypeError, "unexpected divmod result: into %"PRIsVALUE,
-		 rb_obj_class(tmp));
-    }
-    *wq = v2w(rb_ary_entry(ary, 0));
-    *wr = v2w(rb_ary_entry(ary, 1));
+
+static void
+wdivmod(wideval_t wn, wideval_t wd, wideval_t *wq, wideval_t *wr)
+{
+    VALUE vq, vr;
+#if WIDEVALUE_IS_WIDER
+    if (wdivmod0(wn, wd, wq, wr)) return;
+#endif
+    divmodv(w2v(wn), w2v(wd), &vq, &vr);
+    *wq = v2w(vq);
+    *wr = v2w(vr);
 }
 
 static void
@@ -528,17 +507,21 @@ wmuldivmod(wideval_t wx, wideval_t wy, wideval_t wz, wideval_t *wq, wideval_t *w
 static wideval_t
 wdiv(wideval_t wx, wideval_t wy)
 {
-    wideval_t q, r;
-    wdivmod(wx, wy, &q, &r);
-    return q;
+#if WIDEVALUE_IS_WIDER
+    wideval_t q;
+    if (wdivmod0(wn, wd, &q, NULL)) return q;
+#endif
+    return v2w(div(wx, wy));
 }
 
 static wideval_t
 wmod(wideval_t wx, wideval_t wy)
 {
-    wideval_t q, r;
-    wdivmod(wx, wy, &q, &r);
-    return r;
+#if WIDEVALUE_IS_WIDER
+    wideval_t r;
+    if (wdivmod0(wn, wd, NULL, &r)) return r;
+#endif
+    return v2w(mod(wx, wy));
 }
 
 static VALUE

@@ -1,3 +1,20 @@
+Tue Mar 22 03:10:09 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* time.c (divmodv): add the case both arguments are Fixnum.
+
+	* time.c (wquo): use quo which has Fixnum optimization.
+
+	* time.c (wdivmod0): added for WIDEVALUE_IS_WIDER.
+
+	* time.c (wdivmod): use wdivmod0 and divmodv.
+	  divmodv has Fixnum optimization.
+
+	* time.c (wdiv): use wdivmod0 and div to avoid the use of divmodv which
+	  calls id_quo whose return value is array.
+
+	* time.c (wmod): use wdivmod0 and mod to avoid the use of divmodv which
+	  calls id_quo whose return value is array.
+
 Mon Mar 21 22:32:50 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* internal.h (rb_fix_divmod_fix): like r54213, use FIX2NUM only if
