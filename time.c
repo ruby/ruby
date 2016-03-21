@@ -403,7 +403,6 @@ wi_mul(wideint_t x, wideint_t y, wideint_t *z)
 static wideval_t
 wmul(wideval_t wx, wideval_t wy)
 {
-    VALUE x, z;
 #if WIDEVALUE_IS_WIDER
     if (FIXWV_P(wx) && FIXWV_P(wy)) {
 	wideint_t z;
@@ -423,7 +422,6 @@ wmul(wideval_t wx, wideval_t wy)
 static wideval_t
 wquo(wideval_t wx, wideval_t wy)
 {
-    VALUE x, y, ret;
 #if WIDEVALUE_IS_WIDER
     if (FIXWV_P(wx) && FIXWV_P(wy)) {
         wideint_t a, b, c;
@@ -509,7 +507,7 @@ wdiv(wideval_t wx, wideval_t wy)
 {
 #if WIDEVALUE_IS_WIDER
     wideval_t q;
-    if (wdivmod0(wn, wd, &q, NULL)) return q;
+    if (wdivmod0(wx, wy, &q, NULL)) return q;
 #endif
     return v2w(div(wx, wy));
 }
@@ -519,7 +517,7 @@ wmod(wideval_t wx, wideval_t wy)
 {
 #if WIDEVALUE_IS_WIDER
     wideval_t r;
-    if (wdivmod0(wn, wd, NULL, &r)) return r;
+    if (wdivmod0(wx, wy, NULL, &r)) return r;
 #endif
     return v2w(mod(wx, wy));
 }
