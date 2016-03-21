@@ -203,6 +203,7 @@ divmodv(VALUE n, VALUE d, VALUE *q, VALUE *r)
 #define POSFIXWVABLE(wi) ((wi) < FIXWV_MAX+1)
 #define NEGFIXWVABLE(wi) ((wi) >= FIXWV_MIN)
 #define FIXWV_P(w) FIXWINT_P(WIDEVAL_GET(w))
+#define MUL_OVERFLOW_FIXWV_P(a, b) MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, FIXWV_MIN, FIXWV_MAX)
 
 /* #define STRUCT_WIDEVAL */
 #ifdef STRUCT_WIDEVAL
@@ -358,65 +359,17 @@ wsub(wideval_t wx, wideval_t wy)
     return v2w(rb_funcall(x, '-', 1, w2v(wy)));
 }
 
-static int
-wi_mul(wideint_t x, wideint_t y, wideint_t *z)
-{
-    uwideint_t a, b, c;
-    int s;
-    if (x == 0 || y == 0) {
-	*z = 0;
-	return 1;
-    }
-    if (x < 0) {
-	s = -1;
-	a = (uwideint_t)-x;
-    }
-    else {
-	s = 1;
-	a = (uwideint_t)x;
-    }
-    if (y < 0) {
-        s = -s;
-	b = (uwideint_t)-y;
-    }
-    else {
-	b = (uwideint_t)y;
-    }
-    if (a <= UWIDEINT_MAX / b) {
-        c = a * b;
-	if (s < 0) {
-	    if (c <= (uwideint_t)WIDEINT_MAX + 1) {
-		*z = -(wideint_t)c;
-		return 1;
-	    }
-	}
-	else {
-	    if (c <= (uwideint_t)WIDEINT_MAX) {
-		*z = (wideint_t)c;
-		return 1;
-	    }
-	}
-    }
-    return 0;
-}
-
 static wideval_t
 wmul(wideval_t wx, wideval_t wy)
 {
 #if WIDEVALUE_IS_WIDER
     if (FIXWV_P(wx) && FIXWV_P(wy)) {
 	wideint_t z;
-	if (wi_mul(FIXWV2WINT(wx), FIXWV2WINT(wy), &z))
-	    return WINT2WV(z);
+	if (MUL_OVERFLOW_FIXWV_P(FIXWV2WINT(wx), FIXWV2WINT(wy))
+	    return WINT2WV(FIXWV2WINT(wx) * FIXWV2WINT(wy));
     }
 #endif
-    x = w2v(wx);
-    if (RB_TYPE_P(x, T_BIGNUM)) return v2w(rb_big_mul(x, w2v(wy)));
-    z = rb_funcall(x, '*', 1, w2v(wy));
-    if (RB_TYPE_P(z, T_RATIONAL) && RRATIONAL(z)->den == INT2FIX(1)) {
-        z = RRATIONAL(z)->num;
-    }
-    return v2w(z);
+    return v2w(mul(w2v(wx), w2v(wy)));
 }
 
 static wideval_t
@@ -582,28 +535,12 @@ num_exact(VALUE v)
 static wideval_t
 rb_time_magnify(wideval_t w)
 {
-    if (FIXWV_P(w)) {
-	wideint_t z;
-	if (wi_mul(FIXWV2WINT(w), TIME_SCALE, &z))
-	    return WINT2WV(z);
-    }
     return wmul(w, WINT2FIXWV(TIME_SCALE));
 }
 
 static wideval_t
 rb_time_unmagnify(wideval_t w)
 {
-#if WIDEVALUE_IS_WIDER
-    if (FIXWV_P(w)) {
-        wideint_t a, b, c;
-        a = FIXWV2WINT(w);
-        b = TIME_SCALE;
-        c = a / b;
-        if (c * b == a) {
-            return WINT2FIXWV(c);
-        }
-    }
-#endif
     return wquo(w, WINT2FIXWV(TIME_SCALE));
 }
 
