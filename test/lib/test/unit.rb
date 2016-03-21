@@ -281,6 +281,7 @@ module Test
         return unless @options[:parallel]
         return if @interrupt
         warn e if e
+        real_file = worker.real_file and warn "running file: #{real_file}"
         @need_quit = true
         warn ""
         warn "Some worker was crashed. It seems ruby interpreter's bug"
