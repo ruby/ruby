@@ -284,11 +284,11 @@ rb_fix_mul_fix(VALUE x, VALUE y)
 #ifdef DLONG
     return DL2NUM((DLONG)lx * (DLONG)ly);
 #else
-    if (MUL_OVERFLOW_FIXNUM_P(x, y)) {
-	return rb_big_mul(rb_int2big(x), rb_int2big(y));
+    if (MUL_OVERFLOW_FIXNUM_P(lx, ly)) {
+	return rb_big_mul(rb_int2big(lx), rb_int2big(ly));
     }
     else {
-	return LONG2FIX(x * y);
+	return LONG2FIX(lx * ly);
     }
 #endif
 }

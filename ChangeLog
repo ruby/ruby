@@ -1,3 +1,8 @@
+Mon Mar 21 22:09:24 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* internal.h (rb_fix_mul_fix): multiply converted values, not
+	  object VALUEs.
+
 Mon Mar 21 20:18:29 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (TEST_EXCLUDES, EXCLUDE_TESTFRAMEWORK): use full spell
