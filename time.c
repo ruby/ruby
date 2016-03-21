@@ -107,10 +107,12 @@ mul(VALUE x, VALUE y)
 static VALUE
 mod(VALUE x, VALUE y)
 {
-    switch (TYPE(x)) {
-      case T_BIGNUM: return rb_big_modulo(x, y);
-      default: return rb_funcall(x, '%', 1, y);
+    if (FIXNUM_P(y)) {
+	if (FIX2LONG(y) == 0) rb_num_zerodiv();
+	if (FIXNUM_P(x)) return LONG2FIX(rb_mod(FIX2LONG(x), FIX2LONG(y)));
     }
+    if (RB_TYPE_P(x, T_BIGNUM)) return rb_big_modulo(x, y);
+    return rb_funcall(x, '%', 1, y);
 }
 
 #define neg(x) (sub(INT2FIX(0), (x)))
@@ -124,9 +126,10 @@ quo(VALUE x, VALUE y)
         a = FIX2LONG(x);
         b = FIX2LONG(y);
         if (b == 0) rb_num_zerodiv();
+        if (a == FIXNUM_MIN && b == -1) LONG2NUM(-a);
         c = a / b;
-        if (c * b == a) {
-            return LONG2NUM(c);
+        if (a % b == 0) {
+            return LONG2FIX(c);
         }
     }
     ret = rb_funcall(x, id_quo, 1, y);

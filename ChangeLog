@@ -1,3 +1,10 @@
+Mon Mar 21 22:15:11 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* time.c (mod): Add Fixnum case.
+
+	* time.c (quo): c can be Fixnum except a == FIXNUM_MIN && b == -1.
+	  Such case can be optimized out because quo()'s argument is constant.
+
 Mon Mar 21 22:09:24 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* internal.h (rb_fix_mul_fix): multiply converted values, not
