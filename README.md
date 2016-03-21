@@ -1,5 +1,5 @@
 [![Build Status](https://travis-ci.org/ruby/ruby.svg)](https://travis-ci.org/ruby/ruby)
-[![Build status](https://ci.appveyor.com/api/projects/status/0sy8rrxut4o0k960/branch/trunk?svg=true)](https://ci.appveyor.com/project/ruby/ruby/branch/trunk)
+[![Build status](https://ci.appveyor.com/api/projects/status/0sy8rrxut4o0k960/branch/trunk?svg=true)](https://ci.appveyor.com/project/ruby/ruby/branch/trunk/)
 
 # What's Ruby
 
@@ -20,7 +20,7 @@ extensible.
 *   Dynamic Loading of Object Files (on some architectures)
 *   Highly Portable (works on many Unix-like/POSIX compatible platforms as
     well as Windows, Mac OS X, BeOS, etc.) cf.
-    http://bugs.ruby-lang.org/projects/ruby-trunk/wiki/SupportedPlatforms
+    http://bugs.ruby-lang.org/projects/ruby-trunk/wiki/SupportedPlatforms/
 
 
 ## How to get Ruby
@@ -147,12 +147,12 @@ See the file [COPYING](COPYING).
 ## Feedback
 
 Questions about the Ruby language can be asked on the Ruby-Talk mailing list
-(http://www.ruby-lang.org/en/community/mailing-lists) or on websites like
-(http://stackoverflow.com).
+(http://www.ruby-lang.org/en/community/mailing-lists/) or on websites like
+(http://stackoverflow.com/).
 
-Bug reports should be filed at http://bugs.ruby-lang.org. Read [HowToReport] for more information.
+Bug reports should be filed at http://bugs.ruby-lang.org/. Read [HowToReport] for more information.
 
-[HowToReport]: https://bugs.ruby-lang.org/projects/ruby/wiki/HowToReport
+[HowToReport]: https://bugs.ruby-lang.org/projects/ruby/wiki/HowToReport/
 
 ##Contributing
 
