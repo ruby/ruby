@@ -128,7 +128,7 @@ quo(VALUE x, VALUE y)
         if (b == 0) rb_num_zerodiv();
         if (a == FIXNUM_MIN && b == -1) LONG2NUM(-a);
         c = a / b;
-        if (a % b == 0) {
+        if (c * b == a) {
             return LONG2FIX(c);
         }
     }
