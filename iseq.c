@@ -627,7 +627,7 @@ rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE absolute_path, VALUE li
     const INITIALIZED VALUE label = parent ?
 	parent->body->location.label :
 	rb_fstring_cstr("<compiled>");
-    VALUE parser = rb_parser_new();
+    const INITIALIZED VALUE parser = rb_parser_new();
 
     rb_parser_mild_error(parser);
     th->base_block = base_block;
