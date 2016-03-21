@@ -1523,9 +1523,8 @@ opt_div
 {
     if (FIXNUM_2_P(recv, obj) &&
 	BASIC_OP_UNREDEFINED_P(BOP_DIV, FIXNUM_REDEFINED_OP_FLAG)) {
-	long y = FIX2LONG(obj);
-	if (y == 0) goto INSN_LABEL(normal_dispatch);
-	val = LONG2NUM(rb_div(FIX2LONG(recv), y));
+	if (FIX2LONG(obj) == 0) goto INSN_LABEL(normal_dispatch);
+	val = rb_fix_div_fix(recv, obj);
     }
     else if (FLONUM_2_P(recv, obj) &&
 	     BASIC_OP_UNREDEFINED_P(BOP_DIV, FLOAT_REDEFINED_OP_FLAG)) {
@@ -1561,9 +1560,8 @@ opt_mod
 {
     if (FIXNUM_2_P(recv, obj) &&
 	BASIC_OP_UNREDEFINED_P(BOP_MOD, FIXNUM_REDEFINED_OP_FLAG )) {
-	long y = FIX2LONG(obj);
-	if (y == 0) goto INSN_LABEL(normal_dispatch);
-	val = LONG2FIX(rb_mod(FIX2LONG(recv), y));
+	if (FIX2LONG(obj) == 0) goto INSN_LABEL(normal_dispatch);
+	val = rb_fix_mod_fix(recv, obj);
     }
     else if (FLONUM_2_P(recv, obj) &&
 	     BASIC_OP_UNREDEFINED_P(BOP_MOD, FLOAT_REDEFINED_OP_FLAG)) {

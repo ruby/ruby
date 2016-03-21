@@ -1,3 +1,9 @@
+Mon Mar 21 22:32:50 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* internal.h (rb_fix_divmod_fix): like r54213, use FIX2NUM only if
+	  x == FIXNUM_MIN && y == -1. This must be a rare case and it is
+	  expected compiler to handle well.
+
 Mon Mar 21 22:15:11 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* time.c (mod): Add Fixnum case.

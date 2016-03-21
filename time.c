@@ -109,7 +109,7 @@ mod(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
 	if (FIX2LONG(y) == 0) rb_num_zerodiv();
-	if (FIXNUM_P(x)) return LONG2FIX(rb_mod(FIX2LONG(x), FIX2LONG(y)));
+	if (FIXNUM_P(x)) return rb_fix_mod_fix(x, y);
     }
     if (RB_TYPE_P(x, T_BIGNUM)) return rb_big_modulo(x, y);
     return rb_funcall(x, '%', 1, y);

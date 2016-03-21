@@ -3135,7 +3135,7 @@ fix_divide(VALUE x, VALUE y, ID op)
 {
     if (FIXNUM_P(y)) {
 	if (FIX2LONG(y) == 0) rb_num_zerodiv();
-	return LONG2NUM(rb_div(FIX2LONG(x), FIX2LONG(y)));
+	return rb_fix_div_fix(x, y);
     }
     else if (RB_TYPE_P(y, T_BIGNUM)) {
 	x = rb_int2big(FIX2LONG(x));
@@ -3207,7 +3207,7 @@ fix_mod(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
 	if (FIX2LONG(y) == 0) rb_num_zerodiv();
-	return LONG2FIX(rb_mod(FIX2LONG(x), FIX2LONG(y)));
+	return rb_fix_mod_fix(x, y);
     }
     else if (RB_TYPE_P(y, T_BIGNUM)) {
 	x = rb_int2big(FIX2LONG(x));
@@ -3231,10 +3231,10 @@ static VALUE
 fix_divmod(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
-	long div, mod;
+	VALUE div, mod;
 	if (FIX2LONG(y) == 0) rb_num_zerodiv();
-	rb_divmod(FIX2LONG(x), FIX2LONG(y), &div, &mod);
-	return rb_assoc_new(LONG2NUM(div), LONG2FIX(mod));
+	rb_fix_divmod_fix(x, y, &div, &mod);
+	return rb_assoc_new(div, mod);
     }
     else if (RB_TYPE_P(y, T_BIGNUM)) {
 	x = rb_int2big(FIX2LONG(x));
