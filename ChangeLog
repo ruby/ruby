@@ -1,3 +1,9 @@
+Mon Mar 21 19:09:31 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (enc_succ_alnum_char): try to skip an invalid character
+	  gap between GREEK CAPITAL RHO and SIGMA.
+	  [ruby-core:74478] [Bug #12204]
+
 Mon Mar 21 18:55:49 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* node.c (rb_gc_mark_node): NODE_MATCH2 can have nd_args, u3,
