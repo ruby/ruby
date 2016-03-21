@@ -1026,6 +1026,7 @@ rb_gc_mark_node(NODE *obj)
       case NODE_RESBODY:
       case NODE_CLASS:
       case NODE_BLOCK_PASS:
+      case NODE_MATCH2:
 	rb_gc_mark(RNODE(obj)->u2.value);
 	/* fall through */
       case NODE_BLOCK:	/* 1,3 */
@@ -1056,7 +1057,6 @@ rb_gc_mark_node(NODE *obj)
       case NODE_DOT3:
       case NODE_FLIP2:
       case NODE_FLIP3:
-      case NODE_MATCH2:
       case NODE_MATCH3:
       case NODE_OP_ASGN_OR:
       case NODE_OP_ASGN_AND:
