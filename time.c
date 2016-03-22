@@ -461,8 +461,8 @@ static wideval_t
 wdiv(wideval_t wx, wideval_t wy)
 {
 #if WIDEVALUE_IS_WIDER
-    wideval_t q;
-    if (wdivmod0(wx, wy, &q, NULL)) return q;
+    wideval_t q, dmy;
+    if (wdivmod0(wx, wy, &q, &dmy)) return q;
 #endif
     return v2w(div(w2v(wx), w2v(wy)));
 }
@@ -471,8 +471,8 @@ static wideval_t
 wmod(wideval_t wx, wideval_t wy)
 {
 #if WIDEVALUE_IS_WIDER
-    wideval_t r;
-    if (wdivmod0(wx, wy, NULL, &r)) return r;
+    wideval_t r, dmy;
+    if (wdivmod0(wx, wy, &dmy, &r)) return r;
 #endif
     return v2w(mod(w2v(wx), w2v(wy)));
 }
