@@ -1174,19 +1174,11 @@ long_toobig(int size)
 	     STRINGIZE(SIZEOF_LONG)", given %d)", size);
 }
 
-#undef SIGN_EXTEND_CHAR
-#if __STDC__
-# define SIGN_EXTEND_CHAR(c) ((signed char)(c))
-#else  /* not __STDC__ */
-/* As in Harbison and Steele.  */
-# define SIGN_EXTEND_CHAR(c) ((((unsigned char)(c)) ^ 128) - 128)
-#endif
-
 static long
 r_long(struct load_arg *arg)
 {
     register long x;
-    int c = SIGN_EXTEND_CHAR(r_byte(arg));
+    int c = (signed char)r_byte(arg);
     long i;
 
     if (c == 0) return 0;
