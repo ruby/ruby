@@ -367,7 +367,7 @@ wmul(wideval_t wx, wideval_t wy)
 {
 #if WIDEVALUE_IS_WIDER
     if (FIXWV_P(wx) && FIXWV_P(wy)) {
-	if (MUL_OVERFLOW_FIXWV_P(FIXWV2WINT(wx), FIXWV2WINT(wy)))
+	if (!MUL_OVERFLOW_FIXWV_P(FIXWV2WINT(wx), FIXWV2WINT(wy)))
 	    return WINT2WV(FIXWV2WINT(wx) * FIXWV2WINT(wy));
     }
 #endif
