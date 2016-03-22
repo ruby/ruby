@@ -1,3 +1,10 @@
+Tue Mar 22 10:11:01 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/lib/test/unit.rb (Test::Unit::StatusLine#failed): print
+	  failed messages only if replacing mode, otherwise defer them
+	  until the end, to get rid of interleaving failures with progress
+	  messages.  refix r54195.
+
 Tue Mar 22 03:45:03 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* time.c (MUL_OVERFLOW_FIXWV_P): defined for FIXWV.

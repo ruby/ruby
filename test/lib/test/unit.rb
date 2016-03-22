@@ -650,7 +650,7 @@ module Test
       def succeed; del_status_line; end
 
       def failed(s)
-        return if s and @options[:verbose]
+        return if s and @options[:job_status] != :replace
         sep = "\n"
         @report_count ||= 0
         report.each do |msg|
