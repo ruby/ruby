@@ -390,39 +390,60 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_indentation_check
-    Tempfile.create(["test_ruby_test_rubyoption", ".rb"]) {|t|
-      t.puts "begin"
-      t.puts " end"
-      t.flush
-      err = ["#{t.path}:2: warning: mismatched indentations at 'end' with 'begin' at 1"]
-      assert_in_out_err(["-w", t.path], "", [], err)
-      assert_in_out_err(["-wr", t.path, "-e", ""], "", [], err)
+    all_assertions do |a|
+      Tempfile.create(["test_ruby_test_rubyoption", ".rb"]) do |t|
+        [
+          "begin", "if false", "for _ in []", "while false",
+          "def foo", "class X", "module M",
+        ].each do
+          |b, e = 'end'|
+          src = ["#{b}\n", " #{e}\n"]
+          k = b[/\A\S+/]
 
-      t.rewind
-      t.puts "# -*- warn-indent: false -*-"
-      t.puts "begin"
-      t.puts " end"
-      t.flush
-      assert_in_out_err(["-w", t.path], "", [], [], '[ruby-core:25442]')
+          a.for("no directives with #{b}") do
+            err = ["#{t.path}:2: warning: mismatched indentations at '#{e}' with '#{k}' at 1"]
+            t.rewind
+            t.truncate(0)
+            t.puts src
+            t.flush
+            assert_in_out_err(["-w", t.path], "", [], err)
+            assert_in_out_err(["-wr", t.path, "-e", ""], "", [], err)
+          end
 
-      err = ["#{t.path}:4: warning: mismatched indentations at 'end' with 'begin' at 3"]
-      t.rewind
-      t.puts "# -*- warn-indent: false -*-"
-      t.puts "# -*- warn-indent: true -*-"
-      t.puts "begin"
-      t.puts " end"
-      t.flush
-      assert_in_out_err(["-w", t.path], "", [], err, '[ruby-core:25442]')
+          a.for("false directive with #{b}") do
+            t.rewind
+            t.truncate(0)
+            t.puts "# -*- warn-indent: false -*-"
+            t.puts src
+            t.flush
+            assert_in_out_err(["-w", t.path], "", [], [], '[ruby-core:25442]')
+          end
 
-      err = ["#{t.path}:4: warning: mismatched indentations at 'end' with 'begin' at 2"]
-      t.rewind
-      t.puts "# -*- warn-indent: true -*-"
-      t.puts "begin"
-      t.puts "# -*- warn-indent: false -*-"
-      t.puts " end"
-      t.flush
-      assert_in_out_err(["-w", t.path], "", [], [], '[ruby-core:25442]')
-    }
+          a.for("false and true directives with #{b}") do
+            err = ["#{t.path}:4: warning: mismatched indentations at '#{e}' with '#{k}' at 3"]
+            t.rewind
+            t.truncate(0)
+            t.puts "# -*- warn-indent: false -*-"
+            t.puts "# -*- warn-indent: true -*-"
+            t.puts src
+            t.flush
+            assert_in_out_err(["-w", t.path], "", [], err, '[ruby-core:25442]')
+          end
+
+          a.for("false directives after #{b}") do
+            err = ["#{t.path}:4: warning: mismatched indentations at '#{e}' with '#{k}' at 2"]
+            t.rewind
+            t.truncate(0)
+            t.puts "# -*- warn-indent: true -*-"
+            t.puts src[0]
+            t.puts "# -*- warn-indent: false -*-"
+            t.puts src[1]
+            t.flush
+            assert_in_out_err(["-w", t.path], "", [], [], '[ruby-core:25442]')
+          end
+        end
+      end
+    end
   end
 
   def test_notfound
