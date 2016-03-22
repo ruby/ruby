@@ -246,7 +246,7 @@ class CaseMapping
         if item.code == item.title
           flags += '|IT'
         end
-        
+
       end
       unless item.lower.nil? or item.lower==from or item.lower==to
         specials << item.lower
