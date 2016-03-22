@@ -148,7 +148,10 @@ divmodv(VALUE n, VALUE d, VALUE *q, VALUE *r)
     VALUE tmp, ary;
     if (FIXNUM_P(d)) {
 	if (FIX2LONG(d) == 0) rb_num_zerodiv();
-	if (FIXNUM_P(n)) return rb_fix_divmod_fix(n, d, q, r);
+	if (FIXNUM_P(n)) {
+	    rb_fix_divmod_fix(n, d, q, r);
+	    return;
+	}
     }
     tmp = rb_funcall(n, id_divmod, 1, d);
     ary = rb_check_array_type(tmp);
