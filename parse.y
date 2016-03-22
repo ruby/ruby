@@ -767,10 +767,10 @@ static void parser_compile_error(struct parser_params*, const char *fmt, ...);
 #endif
 #endif
 
-static void token_info_push(struct parser_params*, const char *token, size_t len);
-static void token_info_pop(struct parser_params*, const char *token, size_t len);
-#define token_info_push(token) token_info_push(parser, (token), rb_strlen_lit(token))
-#define token_info_pop(token) token_info_pop(parser, (token), rb_strlen_lit(token))
+static void token_info_push_gen(struct parser_params*, const char *token, size_t len);
+static void token_info_pop_gen(struct parser_params*, const char *token, size_t len);
+#define token_info_push(token) token_info_push_gen(parser, (token), rb_strlen_lit(token))
+#define token_info_pop(token) token_info_pop_gen(parser, (token), rb_strlen_lit(token))
 %}
 
 %pure-parser
@@ -3587,9 +3587,10 @@ f_larglist	: '(' f_args opt_bv_decl ')'
 
 lambda_body	: tLAMBEG compstmt '}'
 		    {
+			token_info_pop("}");
 			$$ = $2;
 		    }
-		| keyword_do_LAMBDA compstmt keyword_end
+		| keyword_do_LAMBDA compstmt k_end
 		    {
 			$$ = $2;
 		    }
@@ -5372,9 +5373,8 @@ token_info_has_nonspaces(struct parser_params *parser, const char *pend)
     return 0;
 }
 
-#undef token_info_push
 static void
-token_info_push(struct parser_params *parser, const char *token, size_t len)
+token_info_push_gen(struct parser_params *parser, const char *token, size_t len)
 {
     token_info *ptinfo;
     const char *t = lex_p - len;
@@ -5390,9 +5390,8 @@ token_info_push(struct parser_params *parser, const char *token, size_t len)
     parser->token_info = ptinfo;
 }
 
-#undef token_info_pop
 static void
-token_info_pop(struct parser_params *parser, const char *token, size_t len)
+token_info_pop_gen(struct parser_params *parser, const char *token, size_t len)
 {
     int linenum;
     token_info *ptinfo = parser->token_info;
@@ -8527,6 +8526,7 @@ parser_yylex(struct parser_params *parser)
 	}
 	if (c == '>') {
 	    SET_LEX_STATE(EXPR_ENDFN);
+	    token_info_push("->");
 	    return tLAMBDA;
 	}
 	if (IS_BEG() || (IS_SPCARG(c) && arg_ambiguous('-'))) {

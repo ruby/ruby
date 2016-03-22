@@ -395,6 +395,7 @@ class TestRubyOptions < Test::Unit::TestCase
         [
           "begin", "if false", "for _ in []", "while false",
           "def foo", "class X", "module M",
+          ["-> do", "end"], ["-> {", "}"],
         ].each do
           |b, e = 'end'|
           src = ["#{b}\n", " #{e}\n"]

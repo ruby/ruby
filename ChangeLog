@@ -1,3 +1,8 @@
+Tue Mar 22 14:18:59 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (lambda_body, parser_yylex): warn mismatched indentation
+	  of lambda block.
+
 Tue Mar 22 11:36:49 2016  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* time.c (wmul): wrong condition.
