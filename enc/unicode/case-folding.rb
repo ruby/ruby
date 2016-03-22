@@ -190,7 +190,7 @@ class CaseFolding
 end
 
 class MapItem
-  attr_accessor :upper, :lower, :title
+  attr_accessor :upper, :lower, :title, :code
 
   def initialize(code, upper, lower, title)
     @code = code
@@ -242,15 +242,19 @@ class CaseMapping
       specials = []
       unless item.upper == item.title
         specials << item.title
-        flags += "|ST"
+        flags += '|ST'
+        if item.code == item.title
+          flags += '|IT'
+        end
+        
       end
       unless item.lower.nil? or item.lower==from or item.lower==to
         specials << item.lower
-        flags += "|SL"
+        flags += '|SL'
       end
       unless item.upper.nil? or item.upper==from or item.upper==to
         specials << item.upper
-        flags += "|SU"
+        flags += '|SU'
       end
       if specials.first
         flags += "|I(#{@specials_length})"

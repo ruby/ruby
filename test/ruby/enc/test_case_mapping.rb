@@ -78,6 +78,12 @@ class TestCaseMappingPreliminary < Test::Unit::TestCase
     assert_equal                'ᎠᎡᎢᎣᎤᎥᎦᎧᎨᎩ', "\uab70\uab71\uab72\uab73\uab74\uab75\uab76\uab77\uab78\uab79".downcase(:fold)
   end
 
+  def test_titlecase
+    check_downcase_properties   'ǳ ǆ ǉ ǌ', 'ǲ ǅ ǈ ǋ', :lithuanian
+    check_upcase_properties     'Ǳ Ǆ Ǉ Ǌ', 'ǲ ǅ ǈ ǋ', :lithuanian
+    check_capitalize_properties 'ǲ', 'Ǳ', :lithuanian
+  end
+
   def test_ascii_option
     check_downcase_properties   'yukihiro matsumoto (matz)', 'Yukihiro MATSUMOTO (MATZ)', :ascii
     check_upcase_properties     'YUKIHIRO MATSUMOTO (MATZ)', 'yukihiro matsumoto (matz)', :ascii

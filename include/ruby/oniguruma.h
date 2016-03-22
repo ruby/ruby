@@ -152,6 +152,7 @@ ONIG_EXTERN OnigCaseFoldType OnigDefaultCaseFoldFlag;
 #define ONIGENC_CASE_FOLD_TURKISH_AZERI         (1<<20) /* needs mapping specific to Turkic languages; better not change original value! */
 #define ONIGENC_CASE_FOLD_LITHUANIAN            (1<<21) /* needs Lithuanian-specific mapping */
 #define ONIGENC_CASE_ASCII_ONLY                 (1<<22) /* only modify ASCII range */
+#define ONIGENC_CASE_IS_TITLECASE               (1<<23) /* character itself is already titlecase */
 #define INTERNAL_ONIGENC_CASE_FOLD_MULTI_CHAR   (1<<30) /* better not change original value! */
 
 #define ONIGENC_CASE_FOLD_MIN      INTERNAL_ONIGENC_CASE_FOLD_MULTI_CHAR

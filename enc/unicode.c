@@ -158,6 +158,7 @@ code3_equal(const OnigCodePoint *x, const OnigCodePoint *y)
 #define ST ONIGENC_CASE_TITLECASE
 #define SU ONIGENC_CASE_UP_SPECIAL
 #define SL ONIGENC_CASE_DOWN_SPECIAL
+#define IT ONIGENC_CASE_IS_TITLECASE
 #define I(n) OnigSpecialIndexEncode(n)
 #define L(n) SpecialsLengthEncode(n)
 
@@ -169,6 +170,7 @@ code3_equal(const OnigCodePoint *x, const OnigCodePoint *y)
 #undef ST
 #undef SU
 #undef SL
+#undef IT
 #undef I
 #undef L
 
@@ -718,8 +720,11 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
 			OnigCodePoint *SpecialsStart = CaseMappingSpecials + OnigSpecialIndexDecode(folded->n);
 
 			if (OnigCaseFoldFlags(folded->n)&ONIGENC_CASE_TITLECASE) {
-			    if (flags&ONIGENC_CASE_TITLECASE)
+			    if (flags&ONIGENC_CASE_TITLECASE) {
+				if (OnigCaseFoldFlags(folded->n)&ONIGENC_CASE_IS_TITLECASE)
+				    flags ^= ONIGENC_CASE_MODIFIED;
 				goto SpecialsCopy;
+			    }
 			    else
 				SpecialsStart += SpecialsLengthExtract(*SpecialsStart);
 			}
