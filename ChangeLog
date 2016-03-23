@@ -1,3 +1,8 @@
+Wed Mar 23 10:39:38 2016  Koichi ITO  <koic.ito@gmail.com>
+
+	* variable.c: Added documentation about order of `Module#constants`
+	  [ci skip][Bug #12121][ruby-dev:49505][fix GH-1301]
+
 Tue Mar 22 21:08:30 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* include/ruby/oniguruma.h: Additional flag for characters that are titlecase.
