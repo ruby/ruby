@@ -1089,10 +1089,8 @@ The ri pager can be set with the 'RI_PAGER' environment variable or the
 
       return if name.nil? or name.empty?
 
-      name = expand_name name.strip
-
       begin
-        display_name name
+        display_name expand_name(name.strip)
       rescue NotFoundError => e
         puts e.message
       end

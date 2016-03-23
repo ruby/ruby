@@ -1,3 +1,9 @@
+Wed Mar 23 14:23:54 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/rdoc/ri/driver.rb (interactive): rescue NotFoundError raised in
+	  expand_name. (display_name rescues NotFoundError by itself,
+	  the original logic looks buggy...)
+
 Wed Mar 23 11:44:53 2016  cremno  <cremno@mail.ru>
 
 	* marshal.c (r_long): cast to `signed char`, which is used
