@@ -1,3 +1,16 @@
+Wed Mar 23 20:56:59 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* strftime.c (rb_strftime_with_timespec): append formatted results
+	  to the given string with expanding, and also deal with NUL chars.
+
+	* strftime.c (rb_strftime, rb_strftime_timespec): return formatted
+	  string, not the length put in the given buffer.
+
+	* time.c (rb_strftime_alloc): no longer needs to retry with
+	  reallocating buffers.
+
+	* time.c (time_strftime): no longer needs to split by NUL chars.
+
 Wed Mar 23 14:23:54 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/rdoc/ri/driver.rb (interactive): rescue NotFoundError raised in

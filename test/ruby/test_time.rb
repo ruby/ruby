@@ -810,8 +810,7 @@ class TestTime < Test::Unit::TestCase
   end
 
   def test_strftime_too_wide
-    bug4457 = '[ruby-dev:43285]'
-    assert_raise(Errno::ERANGE, bug4457) {Time.now.strftime('%8192z')}
+    assert_equal(8192, Time.now.strftime('%8192z').size)
   end
 
   def test_strfimte_zoneoffset

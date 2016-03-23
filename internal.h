@@ -1214,10 +1214,10 @@ int rb_sigaltstack_size(void);
 
 /* strftime.c */
 #ifdef RUBY_ENCODING_H
-size_t rb_strftime_timespec(char *s, size_t maxsize, const char *format, rb_encoding *enc,
-	const struct vtm *vtm, struct timespec *ts, int gmt);
-size_t rb_strftime(char *s, size_t maxsize, const char *format, rb_encoding *enc,
-            const struct vtm *vtm, VALUE timev, int gmt);
+VALUE rb_strftime_timespec(const char *format, size_t format_len, rb_encoding *enc,
+			   const struct vtm *vtm, struct timespec *ts, int gmt);
+VALUE rb_strftime(const char *format, size_t format_len, rb_encoding *enc,
+		  const struct vtm *vtm, VALUE timev, int gmt);
 #endif
 
 /* string.c */

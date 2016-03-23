@@ -2254,6 +2254,7 @@ strftime.$(OBJEXT): {$(VPATH)}config.h
 strftime.$(OBJEXT): {$(VPATH)}defines.h
 strftime.$(OBJEXT): {$(VPATH)}encoding.h
 strftime.$(OBJEXT): {$(VPATH)}intern.h
+strftime.$(OBJEXT): {$(VPATH)}internal.h
 strftime.$(OBJEXT): {$(VPATH)}missing.h
 strftime.$(OBJEXT): {$(VPATH)}oniguruma.h
 strftime.$(OBJEXT): {$(VPATH)}st.h

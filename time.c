@@ -3536,7 +3536,8 @@ time_get_tm(VALUE time, struct time_object *tobj)
     return time_localtime(time);
 }
 
-static VALUE strftimev(const char *fmt, VALUE time, rb_encoding *enc);
+static VALUE strftime_cstr(const char *fmt, size_t len, VALUE time, rb_encoding *enc);
+#define strftimev(fmt, time, enc) strftime_cstr((fmt), rb_strlen_lit(fmt), (time), (enc))
 
 /*
  *  call-seq:
@@ -4202,67 +4203,34 @@ time_to_a(VALUE time)
 		    time_zone(time));
 }
 
-#define SMALLBUF 100
-static size_t
-rb_strftime_alloc(char **buf, VALUE formatv, const char *format, rb_encoding *enc,
+static VALUE
+rb_strftime_alloc(const char *format, size_t format_len, rb_encoding *enc,
                   struct vtm *vtm, wideval_t timew, int gmt)
 {
-    size_t size, len, flen;
     VALUE timev = Qnil;
     struct timespec ts;
 
     if (!timew2timespec_exact(timew, &ts))
-        timev = w2v(rb_time_unmagnify(timew));
+	timev = w2v(rb_time_unmagnify(timew));
 
-    (*buf)[0] = '\0';
-    flen = strlen(format);
-    if (flen == 0) {
-	return 0;
+    if (NIL_P(timev)) {
+        return rb_strftime_timespec(format, format_len, enc, vtm, &ts, gmt);
     }
-    errno = 0;
-    if (timev == Qnil)
-        len = rb_strftime_timespec(*buf, SMALLBUF, format, enc, vtm, &ts, gmt);
-    else
-        len = rb_strftime(*buf, SMALLBUF, format, enc, vtm, timev, gmt);
-    if (len != 0 || (**buf == '\0' && errno != ERANGE)) return len;
-    for (size=1024; ; size*=2) {
-	*buf = xmalloc(size);
-	(*buf)[0] = '\0';
-        if (timev == Qnil)
-            len = rb_strftime_timespec(*buf, size, format, enc, vtm, &ts, gmt);
-        else
-            len = rb_strftime(*buf, size, format, enc, vtm, timev, gmt);
-	/*
-	 * buflen can be zero EITHER because there's not enough
-	 * room in the string, or because the control command
-	 * goes to the empty string. Make a reasonable guess that
-	 * if the buffer is 1024 times bigger than the length of the
-	 * format string, it's not failing for lack of room.
-	 */
-	if (len > 0) break;
-	xfree(*buf);
-	if (size >= 1024 * flen) {
-	    if (!NIL_P(formatv)) rb_sys_fail_str(formatv);
-	    rb_sys_fail(format);
-	    break;
-	}
+    else {
+        return rb_strftime(format, format_len, enc, vtm, timev, gmt);
     }
-    return len;
 }
 
 static VALUE
-strftimev(const char *fmt, VALUE time, rb_encoding *enc)
+strftime_cstr(const char *fmt, size_t len, VALUE time, rb_encoding *enc)
 {
     struct time_object *tobj;
-    char buffer[SMALLBUF], *buf = buffer;
-    long len;
     VALUE str;
 
     GetTimeval(time, tobj);
     MAKE_TM(time, tobj);
-    len = rb_strftime_alloc(&buf, Qnil, fmt, enc, &tobj->vtm, tobj->timew, TIME_UTC_P(tobj));
-    str = rb_enc_str_new(buf, len, enc);
-    if (buf != buffer) xfree(buf);
+    str = rb_strftime_alloc(fmt, len, enc, &tobj->vtm, tobj->timew, TIME_UTC_P(tobj));
+    if (!str) rb_raise(rb_eArgError, "invalid format: %s", fmt);
     return str;
 }
 
@@ -4457,11 +4425,9 @@ static VALUE
 time_strftime(VALUE time, VALUE format)
 {
     struct time_object *tobj;
-    char buffer[SMALLBUF], *buf = buffer;
     const char *fmt;
     long len;
     rb_encoding *enc;
-    VALUE str;
 
     GetTimeval(time, tobj);
     MAKE_TM(time, tobj);
@@ -4475,33 +4441,14 @@ time_strftime(VALUE time, VALUE format)
     enc = rb_enc_get(format);
     if (len == 0) {
 	rb_warning("strftime called with empty format string");
-    }
-    else if (fmt[len] || memchr(fmt, '\0', len)) {
-	/* Ruby string may contain \0's. */
-	const char *p = fmt, *pe = fmt + len;
-
-	str = rb_str_new(0, 0);
-	while (p < pe) {
-	    len = rb_strftime_alloc(&buf, format, p, enc,
-				    &tobj->vtm, tobj->timew, TIME_UTC_P(tobj));
-	    rb_str_cat(str, buf, len);
-	    p += strlen(p);
-	    if (buf != buffer) {
-		xfree(buf);
-		buf = buffer;
-	    }
-	    for (fmt = p; p < pe && !*p; ++p);
-	    if (p > fmt) rb_str_cat(str, fmt, p - fmt);
-	}
-	return str;
+	return rb_enc_str_new(0, 0, enc);
     }
     else {
-	len = rb_strftime_alloc(&buf, format, RSTRING_PTR(format), enc,
-				&tobj->vtm, tobj->timew, TIME_UTC_P(tobj));
+	VALUE str = rb_strftime_alloc(fmt, len, enc, &tobj->vtm, tobj->timew,
+				      TIME_UTC_P(tobj));
+	if (!str) rb_raise(rb_eArgError, "invalid format: %"PRIsVALUE, format);
+	return str;
     }
-    str = rb_enc_str_new(buf, len, enc);
-    if (buf != buffer) xfree(buf);
-    return str;
 }
 
 /* :nodoc: */
