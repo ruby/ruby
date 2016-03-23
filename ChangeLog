@@ -1,3 +1,10 @@
+Wed Mar 23 11:44:53 2016  cremno  <cremno@mail.ru>
+
+	* marshal.c (r_long): cast to `signed char`, which is used
+	  already, instead of SIGN_EXTEND_CHAR.
+
+	* parse.y: SIGN_EXTEND_CHAR is no longer used.  [Fix GH-1302]
+
 Wed Mar 23 11:38:47 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* cygwin/GNUmakefile.in (MSYS2_ARG_CONV_EXCL_PARAM):
