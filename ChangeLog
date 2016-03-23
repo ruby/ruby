@@ -1,3 +1,7 @@
+Wed Mar 23 21:48:00 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* enum.c (ary_inject_op): put subtract operation out of if-clause.
+
 Wed Mar 23 21:38:00 2016  Kenta Murata  <mrkn@mrkn.jp>
 
 	* enum.c (ary_inject_op): Use Kahan's compensated summation algorithm

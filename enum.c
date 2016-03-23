@@ -688,17 +688,18 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
           sum_float:
             c = 0.0;
             while (1) {
-                double y, t;
+                double x, y, t;
                 e = RARRAY_AREF(ary, i);
                 if (RB_FLOAT_TYPE_P(e))
-                    y = RFLOAT_VALUE(e) - c;
+                    x = RFLOAT_VALUE(e);
                 else if (FIXNUM_P(e))
-                    y = FIX2LONG(e) - c;
+                    x = FIX2LONG(e);
                 else if (RB_TYPE_P(e, T_BIGNUM))
-                    y = rb_big2dbl(e) - c;
+                    x = rb_big2dbl(e);
                 else
                     break;
 
+                y = x - c;
                 t = f + y;
                 c = (t - f) - y;
                 f = t;
