@@ -625,265 +625,285 @@ class TestTime < Test::Unit::TestCase
     assert_equal(t.to_a, Time.at(946684800).to_a)
   end
 
+  def assert_strftime(pat, t, fmt, msg = nil)
+    case pat
+    when String
+      a = :assert_equal
+    when Class, Module
+      a = :assert_kind_of
+    else
+      a = :assert_match
+    end
+    __send__(a, pat, t.strftime(fmt), msg)
+    __send__(a, pat, "%(#{fmt})T" % t, msg)
+    __send__(a, pat, sprintf("%(#{fmt})T", t), msg)
+    __send__(a, pat, "%2$(#{fmt})T" % [nil, t], msg)
+    __send__(a, pat, sprintf("%2$(#{fmt})T", nil, t), msg)
+  end
+
   def test_strftime
     t2000 = get_t2000
     t = Time.at(946684800).getlocal
-    assert_equal("Sat", t2000.strftime("%a"))
-    assert_equal("Saturday", t2000.strftime("%A"))
-    assert_equal("Jan", t2000.strftime("%b"))
-    assert_equal("January", t2000.strftime("%B"))
-    assert_kind_of(String, t2000.strftime("%c"))
-    assert_equal("01", t2000.strftime("%d"))
-    assert_equal("00", t2000.strftime("%H"))
-    assert_equal("12", t2000.strftime("%I"))
-    assert_equal("001", t2000.strftime("%j"))
-    assert_equal("01", t2000.strftime("%m"))
-    assert_equal("00", t2000.strftime("%M"))
-    assert_equal("AM", t2000.strftime("%p"))
-    assert_equal("00", t2000.strftime("%S"))
-    assert_equal("00", t2000.strftime("%U"))
-    assert_equal("00", t2000.strftime("%W"))
-    assert_equal("6", t2000.strftime("%w"))
-    assert_equal("01/01/00", t2000.strftime("%x"))
-    assert_equal("00:00:00", t2000.strftime("%X"))
-    assert_equal("00", t2000.strftime("%y"))
-    assert_equal("2000", t2000.strftime("%Y"))
-    assert_equal("UTC", t2000.strftime("%Z"))
-    assert_equal("%", t2000.strftime("%%"))
-    assert_equal("0", t2000.strftime("%-S"))
+    assert_strftime("Sat", t2000, "%a")
+    assert_strftime("Saturday", t2000, "%A")
+    assert_strftime("Jan", t2000, "%b")
+    assert_strftime("January", t2000, "%B")
+    assert_strftime(String, t2000, "%c")
+    assert_strftime("01", t2000, "%d")
+    assert_strftime("00", t2000, "%H")
+    assert_strftime("12", t2000, "%I")
+    assert_strftime("001", t2000, "%j")
+    assert_strftime("01", t2000, "%m")
+    assert_strftime("00", t2000, "%M")
+    assert_strftime("AM", t2000, "%p")
+    assert_strftime("00", t2000, "%S")
+    assert_strftime("00", t2000, "%U")
+    assert_strftime("00", t2000, "%W")
+    assert_strftime("6", t2000, "%w")
+    assert_strftime("01/01/00", t2000, "%x")
+    assert_strftime("00:00:00", t2000, "%X")
+    assert_strftime("00", t2000, "%y")
+    assert_strftime("2000", t2000, "%Y")
+    assert_strftime("UTC", t2000, "%Z")
+    assert_strftime("%", t2000, "%%")
+    assert_strftime("0", t2000, "%-S")
 
-    assert_equal("", t2000.strftime(""))
-    assert_equal("foo\0bar\x0000\x0000\x0000", t2000.strftime("foo\0bar\0%H\0%M\0%S"))
-    assert_equal("foo" * 1000, t2000.strftime("foo" * 1000))
+    assert_strftime("", t2000, "")
+    assert_strftime("foo\0bar\x0000\x0000\x0000", t2000, "foo\0bar\0%H\0%M\0%S")
+    assert_strftime("foo" * 1000, t2000, "foo" * 1000)
 
     t = Time.mktime(2000, 1, 1)
-    assert_equal("Sat", t.strftime("%a"))
+    assert_strftime("Sat", t, "%a")
+  end
+
+  def test_printf_T_invalid
+    assert_raise_with_message(TypeError, /expected time/) {"%(%a)T" % nil}
   end
 
   def test_strftime_subsec
     t = Time.at(946684800, 123456.789)
-    assert_equal("123", t.strftime("%3N"))
-    assert_equal("123456", t.strftime("%6N"))
-    assert_equal("123456789", t.strftime("%9N"))
-    assert_equal("1234567890", t.strftime("%10N"))
-    assert_equal("123456789", t.strftime("%0N"))
+    assert_strftime("123", t, "%3N")
+    assert_strftime("123456", t, "%6N")
+    assert_strftime("123456789", t, "%9N")
+    assert_strftime("1234567890", t, "%10N")
+    assert_strftime("123456789", t, "%0N")
   end
 
   def test_strftime_sec
     t = get_t2000.getlocal
-    assert_equal("000", t.strftime("%3S"))
+    assert_strftime("000", t, "%3S")
   end
 
   def test_strftime_seconds_from_epoch
     t = Time.at(946684800, 123456.789)
-    assert_equal("946684800", t.strftime("%s"))
-    assert_equal("946684800", t.utc.strftime("%s"))
+    assert_strftime("946684800", t, "%s")
+    assert_strftime("946684800", t.utc, "%s")
   end
 
   def test_strftime_zone
     t = Time.mktime(2001, 10, 1)
-    assert_equal("2001-10-01", t.strftime("%F"))
-    assert_equal(Encoding::UTF_8, t.strftime("\u3042%Z").encoding)
-    assert_equal(true, t.strftime("\u3042%Z").valid_encoding?)
+    assert_strftime("2001-10-01", t, "%F")
+    assert_strftime(/\A\u3042/, t, "\u3042%Z")
   end
 
   def test_strftime_flags
     t = Time.mktime(2001, 10, 1, 2, 0, 0)
-    assert_equal("01", t.strftime("%d"))
-    assert_equal("01", t.strftime("%0d"))
-    assert_equal(" 1", t.strftime("%_d"))
-    assert_equal(" 1", t.strftime("%e"))
-    assert_equal("01", t.strftime("%0e"))
-    assert_equal(" 1", t.strftime("%_e"))
-    assert_equal("AM", t.strftime("%p"))
-    assert_equal("am", t.strftime("%#p"))
-    assert_equal("am", t.strftime("%P"))
-    assert_equal("AM", t.strftime("%#P"))
-    assert_equal("02", t.strftime("%H"))
-    assert_equal("02", t.strftime("%0H"))
-    assert_equal(" 2", t.strftime("%_H"))
-    assert_equal("02", t.strftime("%I"))
-    assert_equal("02", t.strftime("%0I"))
-    assert_equal(" 2", t.strftime("%_I"))
-    assert_equal(" 2", t.strftime("%k"))
-    assert_equal("02", t.strftime("%0k"))
-    assert_equal(" 2", t.strftime("%_k"))
-    assert_equal(" 2", t.strftime("%l"))
-    assert_equal("02", t.strftime("%0l"))
-    assert_equal(" 2", t.strftime("%_l"))
+    assert_strftime("01", t, "%d")
+    assert_strftime("01", t, "%0d")
+    assert_strftime(" 1", t, "%_d")
+    assert_strftime(" 1", t, "%e")
+    assert_strftime("01", t, "%0e")
+    assert_strftime(" 1", t, "%_e")
+    assert_strftime("AM", t, "%p")
+    assert_strftime("am", t, "%#p")
+    assert_strftime("am", t, "%P")
+    assert_strftime("AM", t, "%#P")
+    assert_strftime("02", t, "%H")
+    assert_strftime("02", t, "%0H")
+    assert_strftime(" 2", t, "%_H")
+    assert_strftime("02", t, "%I")
+    assert_strftime("02", t, "%0I")
+    assert_strftime(" 2", t, "%_I")
+    assert_strftime(" 2", t, "%k")
+    assert_strftime("02", t, "%0k")
+    assert_strftime(" 2", t, "%_k")
+    assert_strftime(" 2", t, "%l")
+    assert_strftime("02", t, "%0l")
+    assert_strftime(" 2", t, "%_l")
     t = Time.mktime(2001, 10, 1, 14, 0, 0)
-    assert_equal("PM", t.strftime("%p"))
-    assert_equal("pm", t.strftime("%#p"))
-    assert_equal("pm", t.strftime("%P"))
-    assert_equal("PM", t.strftime("%#P"))
-    assert_equal("14", t.strftime("%H"))
-    assert_equal("14", t.strftime("%0H"))
-    assert_equal("14", t.strftime("%_H"))
-    assert_equal("02", t.strftime("%I"))
-    assert_equal("02", t.strftime("%0I"))
-    assert_equal(" 2", t.strftime("%_I"))
-    assert_equal("14", t.strftime("%k"))
-    assert_equal("14", t.strftime("%0k"))
-    assert_equal("14", t.strftime("%_k"))
-    assert_equal(" 2", t.strftime("%l"))
-    assert_equal("02", t.strftime("%0l"))
-    assert_equal(" 2", t.strftime("%_l"))
+    assert_strftime("PM", t, "%p")
+    assert_strftime("pm", t, "%#p")
+    assert_strftime("pm", t, "%P")
+    assert_strftime("PM", t, "%#P")
+    assert_strftime("14", t, "%H")
+    assert_strftime("14", t, "%0H")
+    assert_strftime("14", t, "%_H")
+    assert_strftime("02", t, "%I")
+    assert_strftime("02", t, "%0I")
+    assert_strftime(" 2", t, "%_I")
+    assert_strftime("14", t, "%k")
+    assert_strftime("14", t, "%0k")
+    assert_strftime("14", t, "%_k")
+    assert_strftime(" 2", t, "%l")
+    assert_strftime("02", t, "%0l")
+    assert_strftime(" 2", t, "%_l")
   end
 
   def test_strftime_invalid_flags
     t = Time.mktime(2001, 10, 1, 2, 0, 0)
-    assert_equal("%4^p", t.strftime("%4^p"), 'prec after flag')
+    assert_strftime("%4^p", t, "%4^p", 'prec after flag')
   end
 
   def test_strftime_year
     t = Time.utc(1,1,4)
-    assert_equal("0001", t.strftime("%Y"))
-    assert_equal("0001", t.strftime("%G"))
+    assert_strftime("0001", t, "%Y")
+    assert_strftime("0001", t, "%G")
 
     t = Time.utc(0,1,4)
-    assert_equal("0000", t.strftime("%Y"))
-    assert_equal("0000", t.strftime("%G"))
+    assert_strftime("0000", t, "%Y")
+    assert_strftime("0000", t, "%G")
 
     t = Time.utc(-1,1,4)
-    assert_equal("-0001", t.strftime("%Y"))
-    assert_equal("-0001", t.strftime("%G"))
+    assert_strftime("-0001", t, "%Y")
+    assert_strftime("-0001", t, "%G")
   end
 
   def test_strftime_weeknum
     # [ruby-dev:37155]
     t = Time.mktime(1970, 1, 18)
-    assert_equal("0", t.strftime("%w"))
-    assert_equal("7", t.strftime("%u"))
+    assert_strftime("0", t, "%w")
+    assert_strftime("7", t, "%u")
   end
 
   def test_strftime_ctrlchar
     # [ruby-dev:37160]
     t2000 = get_t2000
-    assert_equal("\t", t2000.strftime("%t"))
-    assert_equal("\t", t2000.strftime("%0t"))
-    assert_equal("\t", t2000.strftime("%1t"))
-    assert_equal("  \t", t2000.strftime("%3t"))
-    assert_equal("00\t", t2000.strftime("%03t"))
-    assert_equal("\n", t2000.strftime("%n"))
-    assert_equal("\n", t2000.strftime("%0n"))
-    assert_equal("\n", t2000.strftime("%1n"))
-    assert_equal("  \n", t2000.strftime("%3n"))
-    assert_equal("00\n", t2000.strftime("%03n"))
+    assert_strftime("\t", t2000, "%t")
+    assert_strftime("\t", t2000, "%0t")
+    assert_strftime("\t", t2000, "%1t")
+    assert_strftime("  \t", t2000, "%3t")
+    assert_strftime("00\t", t2000, "%03t")
+    assert_strftime("\n", t2000, "%n")
+    assert_strftime("\n", t2000, "%0n")
+    assert_strftime("\n", t2000, "%1n")
+    assert_strftime("  \n", t2000, "%3n")
+    assert_strftime("00\n", t2000, "%03n")
   end
 
   def test_strftime_weekflags
     # [ruby-dev:37162]
     t2000 = get_t2000
-    assert_equal("SAT", t2000.strftime("%#a"))
-    assert_equal("SATURDAY", t2000.strftime("%#A"))
-    assert_equal("JAN", t2000.strftime("%#b"))
-    assert_equal("JANUARY", t2000.strftime("%#B"))
-    assert_equal("JAN", t2000.strftime("%#h"))
-    assert_equal("FRIDAY", Time.local(2008,1,4).strftime("%#A"))
+    assert_strftime("SAT", t2000, "%#a")
+    assert_strftime("SATURDAY", t2000, "%#A")
+    assert_strftime("JAN", t2000, "%#b")
+    assert_strftime("JANUARY", t2000, "%#B")
+    assert_strftime("JAN", t2000, "%#h")
+    assert_strftime("FRIDAY", Time.local(2008,1,4), "%#A")
   end
 
   def test_strftime_rational
     t = Time.utc(2000,3,14, 6,53,"58.979323846".to_r) # Pi Day
-    assert_equal("03/14/2000  6:53:58.97932384600000000000000000000",
-                 t.strftime("%m/%d/%Y %l:%M:%S.%29N"))
-    assert_equal("03/14/2000  6:53:58.9793238460",
-                 t.strftime("%m/%d/%Y %l:%M:%S.%10N"))
-    assert_equal("03/14/2000  6:53:58.979323846",
-                 t.strftime("%m/%d/%Y %l:%M:%S.%9N"))
-    assert_equal("03/14/2000  6:53:58.97932384",
-                 t.strftime("%m/%d/%Y %l:%M:%S.%8N"))
+    assert_strftime("03/14/2000  6:53:58.97932384600000000000000000000",
+                    t, "%m/%d/%Y %l:%M:%S.%29N")
+    assert_strftime("03/14/2000  6:53:58.9793238460",
+                    t, "%m/%d/%Y %l:%M:%S.%10N")
+    assert_strftime("03/14/2000  6:53:58.979323846",
+                    t, "%m/%d/%Y %l:%M:%S.%9N")
+    assert_strftime("03/14/2000  6:53:58.97932384",
+                    t, "%m/%d/%Y %l:%M:%S.%8N")
 
     t = Time.utc(1592,3,14, 6,53,"58.97932384626433832795028841971".to_r) # Pi Day
-    assert_equal("03/14/1592  6:53:58.97932384626433832795028841971",
-                 t.strftime("%m/%d/%Y %l:%M:%S.%29N"))
-    assert_equal("03/14/1592  6:53:58.9793238462",
-                 t.strftime("%m/%d/%Y %l:%M:%S.%10N"))
-    assert_equal("03/14/1592  6:53:58.979323846",
-                 t.strftime("%m/%d/%Y %l:%M:%S.%9N"))
-    assert_equal("03/14/1592  6:53:58.97932384",
-                 t.strftime("%m/%d/%Y %l:%M:%S.%8N"))
+    assert_strftime("03/14/1592  6:53:58.97932384626433832795028841971",
+                    t, "%m/%d/%Y %l:%M:%S.%29N")
+    assert_strftime("03/14/1592  6:53:58.9793238462",
+                    t, "%m/%d/%Y %l:%M:%S.%10N")
+    assert_strftime("03/14/1592  6:53:58.979323846",
+                    t, "%m/%d/%Y %l:%M:%S.%9N")
+    assert_strftime("03/14/1592  6:53:58.97932384",
+                    t, "%m/%d/%Y %l:%M:%S.%8N")
   end
 
   def test_strftime_far_future
     # [ruby-core:33985]
-    assert_equal("3000000000", Time.at(3000000000).strftime('%s'))
+    assert_strftime("3000000000", Time.at(3000000000), '%s')
   end
 
   def test_strftime_too_wide
     bug4457 = '[ruby-dev:43285]'
     assert_raise(Errno::ERANGE, bug4457) {Time.now.strftime('%8192z')}
+    assert_raise(Errno::ERANGE, bug4457) {'%(%8192z)T' % Time.now}
   end
 
   def test_strfimte_zoneoffset
     t2000 = get_t2000
     t = t2000.getlocal("+09:00:00")
-    assert_equal("+0900", t.strftime("%z"))
-    assert_equal("+09:00", t.strftime("%:z"))
-    assert_equal("+09:00:00", t.strftime("%::z"))
-    assert_equal("+09", t.strftime("%:::z"))
+    assert_strftime("+0900", t, "%z")
+    assert_strftime("+09:00", t, "%:z")
+    assert_strftime("+09:00:00", t, "%::z")
+    assert_strftime("+09", t, "%:::z")
 
     t = t2000.getlocal("+09:00:01")
-    assert_equal("+0900", t.strftime("%z"))
-    assert_equal("+09:00", t.strftime("%:z"))
-    assert_equal("+09:00:01", t.strftime("%::z"))
-    assert_equal("+09:00:01", t.strftime("%:::z"))
+    assert_strftime("+0900", t, "%z")
+    assert_strftime("+09:00", t, "%:z")
+    assert_strftime("+09:00:01", t, "%::z")
+    assert_strftime("+09:00:01", t, "%:::z")
   end
 
   def test_strftime_padding
     bug4458 = '[ruby-dev:43287]'
     t2000 = get_t2000
     t = t2000.getlocal("+09:00")
-    assert_equal("+0900", t.strftime("%z"))
-    assert_equal("+09:00", t.strftime("%:z"))
-    assert_equal("      +900", t.strftime("%_10z"), bug4458)
-    assert_equal("+000000900", t.strftime("%10z"), bug4458)
-    assert_equal("     +9:00", t.strftime("%_10:z"), bug4458)
-    assert_equal("+000009:00", t.strftime("%10:z"), bug4458)
-    assert_equal("  +9:00:00", t.strftime("%_10::z"), bug4458)
-    assert_equal("+009:00:00", t.strftime("%10::z"), bug4458)
-    assert_equal("+000000009", t.strftime("%10:::z"))
+    assert_strftime("+0900", t, "%z")
+    assert_strftime("+09:00", t, "%:z")
+    assert_strftime("      +900", t, "%_10z", bug4458)
+    assert_strftime("+000000900", t, "%10z", bug4458)
+    assert_strftime("     +9:00", t, "%_10:z", bug4458)
+    assert_strftime("+000009:00", t, "%10:z", bug4458)
+    assert_strftime("  +9:00:00", t, "%_10::z", bug4458)
+    assert_strftime("+009:00:00", t, "%10::z", bug4458)
+    assert_strftime("+000000009", t, "%10:::z")
     t = t2000.getlocal("-05:00")
-    assert_equal("-0500", t.strftime("%z"))
-    assert_equal("-05:00", t.strftime("%:z"))
-    assert_equal("      -500", t.strftime("%_10z"), bug4458)
-    assert_equal("-000000500", t.strftime("%10z"), bug4458)
-    assert_equal("     -5:00", t.strftime("%_10:z"), bug4458)
-    assert_equal("-000005:00", t.strftime("%10:z"), bug4458)
-    assert_equal("  -5:00:00", t.strftime("%_10::z"), bug4458)
-    assert_equal("-005:00:00", t.strftime("%10::z"), bug4458)
-    assert_equal("-000000005", t.strftime("%10:::z"))
+    assert_strftime("-0500", t, "%z")
+    assert_strftime("-05:00", t, "%:z")
+    assert_strftime("      -500", t, "%_10z", bug4458)
+    assert_strftime("-000000500", t, "%10z", bug4458)
+    assert_strftime("     -5:00", t, "%_10:z", bug4458)
+    assert_strftime("-000005:00", t, "%10:z", bug4458)
+    assert_strftime("  -5:00:00", t, "%_10::z", bug4458)
+    assert_strftime("-005:00:00", t, "%10::z", bug4458)
+    assert_strftime("-000000005", t, "%10:::z")
 
     bug6323 = '[ruby-core:44447]'
     t = t2000.getlocal("+00:36")
-    assert_equal("      +036", t.strftime("%_10z"), bug6323)
-    assert_equal("+000000036", t.strftime("%10z"), bug6323)
-    assert_equal("     +0:36", t.strftime("%_10:z"), bug6323)
-    assert_equal("+000000:36", t.strftime("%10:z"), bug6323)
-    assert_equal("  +0:36:00", t.strftime("%_10::z"), bug6323)
-    assert_equal("+000:36:00", t.strftime("%10::z"), bug6323)
-    assert_equal("+000000:36", t.strftime("%10:::z"))
+    assert_strftime("      +036", t, "%_10z", bug6323)
+    assert_strftime("+000000036", t, "%10z", bug6323)
+    assert_strftime("     +0:36", t, "%_10:z", bug6323)
+    assert_strftime("+000000:36", t, "%10:z", bug6323)
+    assert_strftime("  +0:36:00", t, "%_10::z", bug6323)
+    assert_strftime("+000:36:00", t, "%10::z", bug6323)
+    assert_strftime("+000000:36", t, "%10:::z")
     t = t2000.getlocal("-00:55")
-    assert_equal("      -055", t.strftime("%_10z"), bug6323)
-    assert_equal("-000000055", t.strftime("%10z"), bug6323)
-    assert_equal("     -0:55", t.strftime("%_10:z"), bug6323)
-    assert_equal("-000000:55", t.strftime("%10:z"), bug6323)
-    assert_equal("  -0:55:00", t.strftime("%_10::z"), bug6323)
-    assert_equal("-000:55:00", t.strftime("%10::z"), bug6323)
-    assert_equal("-000000:55", t.strftime("%10:::z"))
+    assert_strftime("      -055", t, "%_10z", bug6323)
+    assert_strftime("-000000055", t, "%10z", bug6323)
+    assert_strftime("     -0:55", t, "%_10:z", bug6323)
+    assert_strftime("-000000:55", t, "%10:z", bug6323)
+    assert_strftime("  -0:55:00", t, "%_10::z", bug6323)
+    assert_strftime("-000:55:00", t, "%10::z", bug6323)
+    assert_strftime("-000000:55", t, "%10:::z")
   end
 
   def test_strftime_invalid_modifier
     t2000 = get_t2000
     t = t2000.getlocal("+09:00")
-    assert_equal("%:y", t.strftime("%:y"), 'invalid conversion after : modifier')
-    assert_equal("%:0z", t.strftime("%:0z"), 'flag after : modifier')
-    assert_equal("%:10z", t.strftime("%:10z"), 'prec after : modifier')
-    assert_equal("%Ob", t.strftime("%Ob"), 'invalid conversion after locale modifier')
-    assert_equal("%Eb", t.strftime("%Eb"), 'invalid conversion after locale modifier')
-    assert_equal("%O0y", t.strftime("%O0y"), 'flag after locale modifier')
-    assert_equal("%E0y", t.strftime("%E0y"), 'flag after locale modifier')
-    assert_equal("%O10y", t.strftime("%O10y"), 'prec after locale modifier')
-    assert_equal("%E10y", t.strftime("%E10y"), 'prec after locale modifier')
+    assert_strftime("%:y", t, "%:y", 'invalid conversion after : modifier')
+    assert_strftime("%:0z", t, "%:0z", 'flag after : modifier')
+    assert_strftime("%:10z", t, "%:10z", 'prec after : modifier')
+    assert_strftime("%Ob", t, "%Ob", 'invalid conversion after locale modifier')
+    assert_strftime("%Eb", t, "%Eb", 'invalid conversion after locale modifier')
+    assert_strftime("%O0y", t, "%O0y", 'flag after locale modifier')
+    assert_strftime("%E0y", t, "%E0y", 'flag after locale modifier')
+    assert_strftime("%O10y", t, "%O10y", 'prec after locale modifier')
+    assert_strftime("%E10y", t, "%E10y", 'prec after locale modifier')
   end
 
   def test_delegate

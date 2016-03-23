@@ -1213,6 +1213,7 @@ int rb_get_next_signal(void);
 int rb_sigaltstack_size(void);
 
 /* strftime.c */
+VALUE rb_time_strftime(VALUE time, VALUE format);
 #ifdef RUBY_ENCODING_H
 size_t rb_strftime_timespec(char *s, size_t maxsize, const char *format, rb_encoding *enc,
 	const struct vtm *vtm, struct timespec *ts, int gmt);

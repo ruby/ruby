@@ -4453,8 +4453,8 @@ strftimev(const char *fmt, VALUE time, rb_encoding *enc)
  *
  */
 
-static VALUE
-time_strftime(VALUE time, VALUE format)
+VALUE
+rb_time_strftime(VALUE time, VALUE format)
 {
     struct time_object *tobj;
     char buffer[SMALLBUF], *buf = buffer;
@@ -4930,7 +4930,7 @@ Init_Time(void)
     rb_define_method(rb_cTime, "nsec", time_nsec, 0);
     rb_define_method(rb_cTime, "subsec", time_subsec, 0);
 
-    rb_define_method(rb_cTime, "strftime", time_strftime, 1);
+    rb_define_method(rb_cTime, "strftime", rb_time_strftime, 1);
 
     /* methods for marshaling */
     rb_define_private_method(rb_cTime, "_dump", time_dump, -1);
