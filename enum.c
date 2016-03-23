@@ -634,7 +634,7 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
     ID id;
     VALUE v, e;
     long i, n;
-    double f;
+    double f, c;
 
     if (RARRAY_LEN(ary) == 0)
         return init == Qundef ? Qnil : init;
@@ -686,16 +686,23 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
                  rb_method_basic_definition_p(rb_cFloat, idPLUS)) {
             f = RFLOAT_VALUE(v);
           sum_float:
+            c = 0.0;
             while (1) {
+                double y, t;
                 e = RARRAY_AREF(ary, i);
                 if (RB_FLOAT_TYPE_P(e))
-                    f += RFLOAT_VALUE(e);
+                    y = RFLOAT_VALUE(e) - c;
                 else if (FIXNUM_P(e))
-                    f += FIX2LONG(e);
+                    y = FIX2LONG(e) - c;
                 else if (RB_TYPE_P(e, T_BIGNUM))
-                    f += rb_big2dbl(e);
+                    y = rb_big2dbl(e) - c;
                 else
                     break;
+
+                t = f + y;
+                c = (t - f) - y;
+                f = t;
+
                 i++;
                 if (RARRAY_LEN(ary) <= i)
                     return DBL2NUM(f);

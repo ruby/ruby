@@ -1,3 +1,8 @@
+Wed Mar 23 21:38:00 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* enum.c (ary_inject_op): Use Kahan's compensated summation algorithm
+	  for summing up float values.
+
 Wed Mar 23 20:56:59 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* strftime.c (rb_strftime_with_timespec): append formatted results

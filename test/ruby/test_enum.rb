@@ -217,6 +217,13 @@ class TestEnumerable < Test::Unit::TestCase
     assert_float_equal(10.0, [3.0, 5].inject(2.0, :+))
     assert_float_equal((FIXNUM_MAX+1).to_f, [0.0, FIXNUM_MAX+1].inject(:+))
     assert_equal(2.0+3.0i, [2.0, 3.0i].inject(:+))
+
+    large_number = 100000000
+    small_number = 1e-9
+    until (large_number + small_number) == large_number
+      small_number /= 10
+    end
+    assert_equal(large_number+(small_number*10), [large_number, *[small_number]*10].inject(:+))
   end
 
   def test_inject_array_plus_redefined
