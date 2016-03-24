@@ -730,6 +730,13 @@ class TestTime < Test::Unit::TestCase
     assert_equal(" 2", t.strftime("%l"))
     assert_equal("02", t.strftime("%0l"))
     assert_equal(" 2", t.strftime("%_l"))
+    assert_equal("MON", t.strftime("%^a"))
+    assert_equal("OCT", t.strftime("%^b"))
+
+    t = get_t2000
+    assert_equal("UTC", t.strftime("%^Z"))
+    assert_equal("utc", t.strftime("%#Z"))
+    assert_equal("SAT JAN  1 00:00:00 2000", t.strftime("%^c"))
   end
 
   def test_strftime_invalid_flags

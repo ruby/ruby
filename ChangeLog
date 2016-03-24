@@ -1,3 +1,8 @@
+Thu Mar 24 14:20:21 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* strftime.c (STRFTIME): deal with case conversion flags for
+	  recursive formats.
+
 Thu Mar 24 12:43:26 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/date/date_core.c (dt_lite_iso8601): strftimev() always

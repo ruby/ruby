@@ -157,6 +157,9 @@ max(int a, int b)
 
 /* strftime --- produce formatted time */
 
+enum {LEFT, CHCASE, LOWER, UPPER};
+#define BIT_OF(n) (1U<<(n))
+
 static char *
 resize_buffer(VALUE ftime, char *s, const char **start, const char **endp,
 	      ptrdiff_t n)
@@ -169,6 +172,27 @@ resize_buffer(VALUE ftime, char *s, const char **start, const char **endp,
 	*endp = s + nlen;
 	*start = s;
 	return s += len;
+}
+
+static char *
+case_conv(char *s, ptrdiff_t i, int flags)
+{
+	switch (flags & (BIT_OF(UPPER)|BIT_OF(LOWER))) {
+	case BIT_OF(UPPER):
+		do {
+			if (ISLOWER(*s)) *s = TOUPPER(*s);
+		} while (s++, --i);
+		break;
+	case BIT_OF(LOWER):
+		do {
+			if (ISUPPER(*s)) *s = TOLOWER(*s);
+		} while (s++, --i);
+		break;
+	default:
+		s += i;
+		break;
+	}
+	return s;
 }
 
 /*
@@ -195,8 +219,6 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 	long y;
 	int precision, flags, colons;
 	char padding;
-	enum {LEFT, CHCASE, LOWER, UPPER};
-#define BIT_OF(n) (1U<<(n))
 #ifdef MAILHEADER_EXT
 	int sign;
 #endif
@@ -269,6 +291,7 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 			i = RSTRING_LEN(ftime) - len; \
 			endp = (start = s) + rb_str_capacity(ftime); \
 			s += len; \
+			if (i > 0) case_conv(s, i, flags); \
 			if (precision > i) {\
 				NEEDS(precision); \
 				memmove(s + precision - i, s, i);\
@@ -834,21 +857,7 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 		if (i) {
 			FILL_PADDING(i);
 			memcpy(s, tp, i);
-			switch (flags & (BIT_OF(UPPER)|BIT_OF(LOWER))) {
-			case BIT_OF(UPPER):
-				do {
-					if (ISLOWER(*s)) *s = TOUPPER(*s);
-				} while (s++, --i);
-				break;
-			case BIT_OF(LOWER):
-				do {
-					if (ISUPPER(*s)) *s = TOLOWER(*s);
-				} while (s++, --i);
-				break;
-			default:
-				s += i;
-				break;
-			}
+			s = case_conv(s, i, flags);
 		}
 	}
 	if (format != format_end) {
