@@ -283,11 +283,11 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 			(padding == '0' || (!padding && (def_pad) == '0')) ? \
 			rb_strlen_lit("%*"fmt)+1 : 0])
 #define FMT_PRECISION(def_prec) \
-		((flags & BIT_OF(LEFT)) ? (precision = 1) : \
-		 (precision <= 0) ? (precision = (def_prec)) : (precision))
+		((flags & BIT_OF(LEFT)) ? (1) : \
+		 (precision <= 0) ? (def_prec) : (precision))
 #define FMT(def_pad, def_prec, fmt, val) \
 		do { \
-			FMT_PRECISION(def_prec); \
+			precision = FMT_PRECISION(def_prec); \
 			len = s - start; \
 			NEEDS(precision); \
 			rb_str_set_len(ftime, len); \
@@ -324,7 +324,7 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
                         } \
                         else { \
 				const char *fmts = FMT_PADDING(fmt, def_pad); \
-				FMT_PRECISION(def_prec); \
+				precision = FMT_PRECISION(def_prec); \
 				tmp = format_value(fmts, tmp, precision); \
 				rb_str_append(ftime, tmp); \
 				RSTRING_GETMEM(ftime, s, len); \
