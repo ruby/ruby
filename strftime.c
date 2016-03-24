@@ -195,6 +195,17 @@ case_conv(char *s, ptrdiff_t i, int flags)
 	return s;
 }
 
+static VALUE
+format_value(const char *fmt, VALUE val, int precision)
+{
+	struct RString fmtv;
+	VALUE str = rb_setup_fake_str(&fmtv, fmt, strlen(fmt), 0);
+	VALUE args[2];
+	args[0] = INT2FIX(precision);
+	args[1] = val;
+	return rb_str_format(2, args, str);
+}
+
 /*
  * enc is the encoding of the format. It is used as the encoding of resulted
  * string, but the name of the month and weekday are always US-ASCII. So it
@@ -267,15 +278,20 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 		NEEDS(i); \
 	} \
 } while (0);
+#define FMT_PADDING(fmt, def_pad) \
+		(&"%*"fmt"\0""%0*"fmt[\
+			(padding == '0' || (!padding && (def_pad) == '0')) ? \
+			rb_strlen_lit("%*"fmt)+1 : 0])
+#define FMT_PRECISION(def_prec) \
+		((flags & BIT_OF(LEFT)) ? (precision = 1) : \
+		 (precision <= 0) ? (precision = (def_prec)) : (precision))
 #define FMT(def_pad, def_prec, fmt, val) \
 		do { \
-			if (precision <= 0) precision = (def_prec); \
-			if (flags & BIT_OF(LEFT)) precision = 1; \
+			precision = FMT_PRECISION(def_prec); \
 			len = s - start; \
 			NEEDS(precision); \
 			rb_str_set_len(ftime, len); \
-			rb_str_catf(ftime, \
-				    ((padding == '0' || (!padding && (def_pad) == '0')) ? "%0*"fmt : "%*"fmt), \
+			rb_str_catf(ftime, FMT_PADDING(fmt, def_pad), \
 				    precision, (val)); \
 			RSTRING_GETMEM(ftime, s, len); \
 			endp = (start = s) + rb_str_capacity(ftime); \
@@ -307,20 +323,13 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
                                 FMT((def_pad), (def_prec), "l"fmt, FIX2LONG(tmp)); \
                         } \
                         else { \
-                                VALUE args[2], result; \
-                                size_t l; \
-                                if (precision <= 0) precision = (def_prec); \
-                                if (flags & BIT_OF(LEFT)) precision = 1; \
-                                args[0] = INT2FIX(precision); \
-                                args[1] = (val); \
-                                if (padding == '0' || (!padding && (def_pad) == '0')) \
-                                        result = rb_str_format(2, args, rb_str_new2("%0*"fmt)); \
-                                else \
-                                        result = rb_str_format(2, args, rb_str_new2("%*"fmt)); \
-                                l = strlcpy(s, StringValueCStr(result), endp-s); \
-                                if ((size_t)(endp-s) <= l) \
-                                        goto err; \
-                                s += l; \
+				const char *fmts = FMT_PADDING(fmt, def_pad); \
+				precision = FMT_PRECISION(def_prec); \
+				tmp = format_value(fmts, tmp, precision); \
+				rb_str_append(ftime, tmp); \
+				RSTRING_GETMEM(ftime, s, len); \
+				endp = (start = s) + rb_str_capacity(ftime); \
+				s += len; \
                         } \
                 } while (0)
 

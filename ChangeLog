@@ -1,3 +1,11 @@
+Thu Mar 24 17:44:02 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* strftime.c (FMT_PADDING): extract format for padding.
+
+	* strftime.c (FMT_PRECISION): extract precision formula.
+
+	* strftime.c (FMTV): append formatted string to expand the result.
+
 Thu Mar 24 14:20:21 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* strftime.c (STRFTIME): deal with case conversion flags for
