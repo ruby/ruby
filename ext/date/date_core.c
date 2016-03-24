@@ -8350,8 +8350,8 @@ dt_lite_iso8601(int argc, VALUE *argv, VALUE self)
     if (argc >= 1)
 	n = NUM2LONG(argv[0]);
 
-    return f_add(strftimev("%Y-%m-%d", self, set_tmx),
-		 iso8601_timediv(self, n));
+    return rb_str_append(strftimev("%Y-%m-%d", self, set_tmx),
+			 iso8601_timediv(self, n));
 }
 
 /*

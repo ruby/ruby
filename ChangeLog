@@ -1,4 +1,7 @@
-Thu Mar 24 12:43:05 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Mar 24 12:43:26 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/date/date_core.c (dt_lite_iso8601): strftimev() always
+	  returns a String, so append them directly.
 
 	* ext/date/date_core.c (d_lite_jisx0301, iso8601_timediv),
 	  (dt_lite_jisx0301): format by the format string in local buffer
