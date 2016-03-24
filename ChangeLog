@@ -1,3 +1,9 @@
+Thu Mar 24 11:43:32 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* strftime.c (rb_strftime_with_timespec): remove unnecessary
+	  check, as `s` equals to `endp` when recursed STRFTIME resized
+	  the capacity same as the size.
+
 Wed Mar 23 21:48:00 2016  Kenta Murata  <mrkn@mrkn.jp>
 
 	* enum.c (ary_inject_op): put subtract operation out of if-clause.

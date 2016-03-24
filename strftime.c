@@ -851,7 +851,7 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 			}
 		}
 	}
-	if (s >= endp || format != format_end) {
+	if (format != format_end) {
 		return 0;
 	}
 	len = s - start;
