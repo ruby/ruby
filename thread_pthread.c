@@ -693,17 +693,31 @@ reserve_stack(volatile char *limit, size_t size)
 	const volatile char *end = buf + sizeof(buf);
 	limit += size;
 	if (limit > end) {
-	    size = limit - end;
-	    limit = alloca(size);
-	    limit[stack_check_margin+size-1] = 0;
+	    /* |<-bottom (=limit(a))                                     top->|
+	     * | .. |<-buf 256B |<-end                          | stack check |
+	     * |  256B  |              =size=                   | margin (4KB)|
+	     * |              =size=         limit(b)->|  256B  |             |
+	     * |                |       alloca(sz)     |        |             |
+	     * | .. |<-buf      |<-limit(c)    [sz-1]->0>       |             |
+	     */
+	    size_t sz = limit - end;
+	    limit = alloca(sz);
+	    limit[sz-1] = 0;
 	}
     }
     else {
 	limit -= size;
 	if (buf > limit) {
-	    limit = alloca(buf - limit);
-	    limit[0] = 0; /* ensure alloca is called */
-	    limit -= stack_check_margin;
+	    /* |<-top (=limit(a))                                     bottom->|
+	     * | .. | 256B buf->|                               | stack check |
+	     * |  256B  |              =size=                   | margin (4KB)|
+	     * |              =size=         limit(b)->|  256B  |             |
+	     * |                |       alloca(sz)     |        |             |
+	     * | .. |      buf->|           limit(c)-><0>       |             |
+	     */
+	    size_t sz = buf - limit;
+	    limit = alloca(sz);
+	    limit[0] = 0;
 	}
     }
 }
