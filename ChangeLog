@@ -1,3 +1,9 @@
+Thu Mar 24 20:39:58 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/socket/option.c (inspect_tcpi_msec): more accurate condition
+	  for TCPI msec member inspection function.
+	  [ruby-core:74388] [Bug #12185]
+
 Thu Mar 10 00:22:25 2016  Naotoshi Seo  <sonots@gmail.com>
 
 	* lib/logger.rb: Remove block from Logger.add as it's not needed
