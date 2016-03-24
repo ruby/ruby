@@ -4,6 +4,7 @@
 
 #include "ruby.h"
 #include "ruby/encoding.h"
+#include "ruby/util.h"
 #include <math.h>
 #include <time.h>
 #if defined(HAVE_SYS_TIME_H)
@@ -6880,6 +6881,7 @@ strftimev(const char *fmt, VALUE self,
 
     (*func)(self, &tmx);
     len = date_strftime_alloc(&buf, fmt, &tmx);
+    RB_GC_GUARD(self);
     str = rb_usascii_str_new(buf, len);
     if (buf != buffer) xfree(buf);
     return str;
@@ -6953,30 +6955,40 @@ d_lite_httpdate(VALUE self)
     return strftimev("%a, %d %b %Y %T GMT", dup, set_tmx);
 }
 
-static VALUE
-jisx0301_date(VALUE jd, VALUE y)
-{
-    VALUE a[2];
+enum {
+    DECIMAL_SIZE_OF_LONG = DECIMAL_SIZE_OF_BITS(CHAR_BIT*sizeof(long)),
+    JISX0301_DATE_SIZE = DECIMAL_SIZE_OF_LONG+8
+};
 
-    if (f_lt_p(jd, INT2FIX(2405160)))
-	return rb_usascii_str_new2("%Y-%m-%d");
-    if (f_lt_p(jd, INT2FIX(2419614))) {
-	a[0] = rb_usascii_str_new2("M%02d" ".%%m.%%d");
-	a[1] = f_sub(y, INT2FIX(1867));
+static const char *
+jisx0301_date_format(char *fmt, size_t size, VALUE jd, VALUE y)
+{
+    if (FIXNUM_P(jd)) {
+	long d = FIX2INT(jd);
+	long s;
+	char c;
+	if (d < 2405160)
+	    return "%Y-%m-%d";
+	if (d < 2419614) {
+	    c = 'M';
+	    s = 1867;
+	}
+	else if (d < 2424875) {
+	    c = 'T';
+	    s = 1911;
+	}
+	else if (d < 2447535) {
+	    c = 'S';
+	    s = 1925;
+	}
+	else {
+	    c = 'H';
+	    s = 1988;
+	}
+	snprintf(fmt, size, "%c%02ld" ".%%m.%%d", c, FIX2INT(y) - s);
+	return fmt;
     }
-    else if (f_lt_p(jd, INT2FIX(2424875))) {
-	a[0] = rb_usascii_str_new2("T%02d" ".%%m.%%d");
-	a[1] = f_sub(y, INT2FIX(1911));
-    }
-    else if (f_lt_p(jd, INT2FIX(2447535))) {
-	a[0] = rb_usascii_str_new2("S%02d" ".%%m.%%d");
-	a[1] = f_sub(y, INT2FIX(1925));
-    }
-    else {
-	a[0] = rb_usascii_str_new2("H%02d" ".%%m.%%d");
-	a[1] = f_sub(y, INT2FIX(1988));
-    }
-    return rb_f_sprintf(2, a);
+    return "%Y-%m-%d";
 }
 
 /*
@@ -6990,12 +7002,14 @@ jisx0301_date(VALUE jd, VALUE y)
 static VALUE
 d_lite_jisx0301(VALUE self)
 {
-    VALUE s;
+    char fmtbuf[JISX0301_DATE_SIZE];
+    const char *fmt;
 
     get_d1(self);
-    s = jisx0301_date(m_real_local_jd(dat),
-		      m_real_year(dat));
-    return strftimev(RSTRING_PTR(s), self, set_tmx);
+    fmt = jisx0301_date_format(fmtbuf, sizeof(fmtbuf),
+			       m_real_local_jd(dat),
+			       m_real_year(dat));
+    return strftimev(fmt, self, set_tmx);
 }
 
 #ifndef NDEBUG
@@ -8301,26 +8315,19 @@ dt_lite_strftime(int argc, VALUE *argv, VALUE self)
 }
 
 static VALUE
-iso8601_timediv(VALUE self, VALUE n)
+iso8601_timediv(VALUE self, long n)
 {
-    VALUE fmt;
+    static const char timefmt[] = "T%H:%M:%S";
+    static const char zone[] = "%:z";
+    char fmt[sizeof(timefmt) + sizeof(zone) + rb_strlen_lit(".%N") +
+	     DECIMAL_SIZE_OF_LONG];
+    char *p = fmt;
 
-    n = to_integer(n);
-    fmt = rb_usascii_str_new2("T%H:%M:%S");
-    if (f_gt_p(n, INT2FIX(0))) {
-	VALUE argv[3];
-
-	get_d1(self);
-
-	argv[0] = rb_usascii_str_new2(".%0*d");
-	argv[1] = n;
-	argv[2] = f_round(f_quo(m_sf_in_sec(dat),
-				f_quo(INT2FIX(1),
-				      f_expt(INT2FIX(10), n))));
-	rb_str_append(fmt, rb_f_sprintf(3, argv));
-    }
-    rb_str_append(fmt, rb_usascii_str_new2("%:z"));
-    return strftimev(RSTRING_PTR(fmt), self, set_tmx);
+    memcpy(p, timefmt, sizeof(timefmt)-1);
+    p += sizeof(timefmt)-1;
+    if (n > 0) p += snprintf(p, fmt+sizeof(fmt)-p, ".%%%ldN", n);
+    memcpy(p, zone, sizeof(zone));
+    return strftimev(fmt, self, set_tmx);
 }
 
 /*
@@ -8337,12 +8344,11 @@ iso8601_timediv(VALUE self, VALUE n)
 static VALUE
 dt_lite_iso8601(int argc, VALUE *argv, VALUE self)
 {
-    VALUE n;
+    long n = 0;
 
-    rb_scan_args(argc, argv, "01", &n);
-
-    if (argc < 1)
-	n = INT2FIX(0);
+    rb_check_arity(argc, 0, 1);
+    if (argc >= 1)
+	n = NUM2LONG(argv[0]);
 
     return f_add(strftimev("%Y-%m-%d", self, set_tmx),
 		 iso8601_timediv(self, n));
@@ -8377,18 +8383,15 @@ dt_lite_rfc3339(int argc, VALUE *argv, VALUE self)
 static VALUE
 dt_lite_jisx0301(int argc, VALUE *argv, VALUE self)
 {
-    VALUE n, s;
+    long n = 0;
 
-    rb_scan_args(argc, argv, "01", &n);
-
-    if (argc < 1)
-	n = INT2FIX(0);
+    rb_check_arity(argc, 0, 1);
+    if (argc >= 1)
+	n = NUM2LONG(argv[0]);
 
     {
 	get_d1(self);
-	s = jisx0301_date(m_real_local_jd(dat),
-			  m_real_year(dat));
-	return rb_str_append(strftimev(RSTRING_PTR(s), self, set_tmx),
+	return rb_str_append(d_lite_jisx0301(self),
 			     iso8601_timediv(self, n));
     }
 }
