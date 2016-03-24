@@ -1,3 +1,13 @@
+Thu Mar 24 22:38:18 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* strftime.c (FMT, FMTV): remove recursive-assignments to get rid
+	  of undefined behavior.  [ruby-core:74532] [Bug #12213]
+
+Thu Mar 24 22:38:05 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* strftime.c (FMT, FMTV): remove recursive-assignments to get rid
+	  of undefined behavior.  [ruby-core:74532] [Bug #12213]
+
 Thu Mar 24 17:44:02 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* strftime.c (FMT_PADDING): extract format for padding.

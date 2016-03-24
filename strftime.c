@@ -287,7 +287,7 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 		 (precision <= 0) ? (precision = (def_prec)) : (precision))
 #define FMT(def_pad, def_prec, fmt, val) \
 		do { \
-			precision = FMT_PRECISION(def_prec); \
+			FMT_PRECISION(def_prec); \
 			len = s - start; \
 			NEEDS(precision); \
 			rb_str_set_len(ftime, len); \
@@ -324,7 +324,7 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
                         } \
                         else { \
 				const char *fmts = FMT_PADDING(fmt, def_pad); \
-				precision = FMT_PRECISION(def_prec); \
+				FMT_PRECISION(def_prec); \
 				tmp = format_value(fmts, tmp, precision); \
 				rb_str_append(ftime, tmp); \
 				RSTRING_GETMEM(ftime, s, len); \
