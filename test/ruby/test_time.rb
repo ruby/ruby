@@ -680,6 +680,12 @@ class TestTime < Test::Unit::TestCase
     t = Time.at(946684800, 123456.789)
     assert_equal("946684800", t.strftime("%s"))
     assert_equal("946684800", t.utc.strftime("%s"))
+
+    t = Time.at(10000000000000000000000)
+    assert_equal("<<10000000000000000000000>>", t.strftime("<<%s>>"))
+    assert_equal("<<010000000000000000000000>>", t.strftime("<<%24s>>"))
+    assert_equal("<<010000000000000000000000>>", t.strftime("<<%024s>>"))
+    assert_equal("<< 10000000000000000000000>>", t.strftime("<<%_24s>>"))
   end
 
   def test_strftime_zone
@@ -759,6 +765,9 @@ class TestTime < Test::Unit::TestCase
 
     t = Time.utc(10000000000000000000000,1,1)
     assert_equal("<<10000000000000000000000>>", t.strftime("<<%Y>>"))
+    assert_equal("<<010000000000000000000000>>", t.strftime("<<%24Y>>"))
+    assert_equal("<<010000000000000000000000>>", t.strftime("<<%024Y>>"))
+    assert_equal("<< 10000000000000000000000>>", t.strftime("<<%_24Y>>"))
   end
 
   def test_strftime_weeknum

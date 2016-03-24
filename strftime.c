@@ -196,14 +196,11 @@ case_conv(char *s, ptrdiff_t i, int flags)
 }
 
 static VALUE
-format_value(const char *fmt, VALUE val, int precision)
+format_value(VALUE val, int base)
 {
-	struct RString fmtv;
-	VALUE str = rb_setup_fake_str(&fmtv, fmt, strlen(fmt), 0);
-	VALUE args[2];
-	args[0] = INT2FIX(precision);
-	args[1] = val;
-	return rb_str_format(2, args, str);
+	if (!RB_TYPE_P(val, T_BIGNUM))
+		val = rb_Integer(val);
+	return rb_big2str(val, base);
 }
 
 /*
@@ -323,9 +320,14 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
                                 FMT((def_pad), (def_prec), "l"fmt, FIX2LONG(tmp)); \
                         } \
                         else { \
-				const char *fmts = FMT_PADDING(fmt, def_pad); \
+				const int base = ((fmt[0] == 'x') ? 16 : \
+						  (fmt[0] == 'o') ? 8 : \
+						  10); \
 				precision = FMT_PRECISION(def_prec); \
-				tmp = format_value(fmts, tmp, precision); \
+				if (!padding) padding = (def_pad); \
+				tmp = format_value(tmp, base); \
+				i = RSTRING_LEN(tmp); \
+				FILL_PADDING(i); \
 				rb_str_set_len(ftime, s-start); \
 				rb_str_append(ftime, tmp); \
 				RSTRING_GETMEM(ftime, s, len); \
