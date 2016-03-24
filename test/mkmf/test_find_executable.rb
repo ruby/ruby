@@ -47,5 +47,12 @@ class TestMkmf
         assert_nil(result)
       end
     end
+
+    if /mingw|mswin/ =~ RUBY_PLATFORM
+      def test_quoted_path_on_windows
+        ENV["PATH"] = %["#{@tmpdir}"]
+        test_find_executable
+      end
+    end
   end
 end

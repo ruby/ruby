@@ -1,3 +1,11 @@
+Fri Mar 25 01:10:42 2016  Sebastian Schuberth  <sschuberth@gmail.com>
+
+	* lib/mkmf.rb (find_executable0): On Windows, it is actually valid
+	  to surround individual PATH directory entries with double
+	  quotes. Remove these before joining the path as otherwise the
+	  literal quotes would become part of the path, resulting in the
+	  executable not to be found.  [Fix GH-1305]
+
 Thu Mar 24 22:38:18 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* strftime.c (FMT, FMTV): remove recursive-assignments to get rid

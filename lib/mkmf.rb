@@ -1551,6 +1551,7 @@ SRC
     end
     file = nil
     path.each do |dir|
+      dir.sub!(/\A"(.*)"\z/m, '\1') if $mswin or $mingw
       return file if executable_file.call(file = File.join(dir, bin))
       if exts
         exts.each {|ext| executable_file.call(ext = file + ext) and return ext}
