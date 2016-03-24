@@ -8389,11 +8389,8 @@ dt_lite_jisx0301(int argc, VALUE *argv, VALUE self)
     if (argc >= 1)
 	n = NUM2LONG(argv[0]);
 
-    {
-	get_d1(self);
-	return rb_str_append(d_lite_jisx0301(self),
-			     iso8601_timediv(self, n));
-    }
+    return rb_str_append(d_lite_jisx0301(self),
+			 iso8601_timediv(self, n));
 }
 
 /* conversions */
