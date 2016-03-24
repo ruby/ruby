@@ -326,6 +326,7 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 				const char *fmts = FMT_PADDING(fmt, def_pad); \
 				precision = FMT_PRECISION(def_prec); \
 				tmp = format_value(fmts, tmp, precision); \
+				rb_str_set_len(ftime, s-start); \
 				rb_str_append(ftime, tmp); \
 				RSTRING_GETMEM(ftime, s, len); \
 				endp = (start = s) + rb_str_capacity(ftime); \

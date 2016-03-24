@@ -758,7 +758,7 @@ class TestTime < Test::Unit::TestCase
     assert_equal("-0001", t.strftime("%G"))
 
     t = Time.utc(10000000000000000000000,1,1)
-    assert_equal("10000000000000000000000", t.strftime("%Y"))
+    assert_equal("<<10000000000000000000000>>", t.strftime("<<%Y>>"))
   end
 
   def test_strftime_weeknum
