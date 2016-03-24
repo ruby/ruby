@@ -6430,54 +6430,40 @@ d_lite_to_s(VALUE self)
 
 #ifndef NDEBUG
 static VALUE
-mk_inspect_flags(union DateData *x)
+mk_inspect_raw(union DateData *x, VALUE klass)
 {
-    return rb_enc_sprintf(rb_usascii_encoding(),
-			  "%c%c%c%c%c",
-			  (x->flags & COMPLEX_DAT) ? 'C' : 'S',
-			  (x->flags & HAVE_JD)     ? 'j' : '-',
-			  (x->flags & HAVE_DF)     ? 'd' : '-',
-			  (x->flags & HAVE_CIVIL)  ? 'c' : '-',
-			  (x->flags & HAVE_TIME)   ? 't' : '-');
-}
+    char flags[5];
 
-static VALUE
-mk_inspect_raw(union DateData *x, const char *klass)
-{
+    flags[0] = (x->flags & COMPLEX_DAT) ? 'C' : 'S';
+    flags[1] = (x->flags & HAVE_JD)     ? 'j' : '-';
+    flags[2] = (x->flags & HAVE_DF)     ? 'd' : '-';
+    flags[3] = (x->flags & HAVE_CIVIL)  ? 'c' : '-';
+    flags[4] = (x->flags & HAVE_TIME)   ? 't' : '-';
+    flags[5] = '\0';
+
     if (simple_dat_p(x)) {
-	VALUE nth, flags;
-
-	RB_GC_GUARD(nth) = f_inspect(x->s.nth);
-	RB_GC_GUARD(flags) = mk_inspect_flags(x);
-
 	return rb_enc_sprintf(rb_usascii_encoding(),
-			      "#<%s: "
-			      "(%sth,%dj),+0s,%.0fj; "
+			      "#<%"PRIsVALUE": "
+			      "(%+"PRIsVALUE"th,%dj),+0s,%.0fj; "
 			      "%dy%dm%dd; %s>",
-			      klass ? klass : "?",
-			      RSTRING_PTR(nth), x->s.jd, x->s.sg,
+			      klass,
+			      x->s.nth, x->s.jd, x->s.sg,
 #ifndef USE_PACK
 			      x->s.year, x->s.mon, x->s.mday,
 #else
 			      x->s.year,
 			      EX_MON(x->s.pc), EX_MDAY(x->s.pc),
 #endif
-			      RSTRING_PTR(flags));
+			      flags);
     }
     else {
-	VALUE nth, sf, flags;
-
-	RB_GC_GUARD(nth) = f_inspect(x->c.nth);
-	RB_GC_GUARD(sf) = f_inspect(x->c.sf);
-	RB_GC_GUARD(flags) = mk_inspect_flags(x);
-
 	return rb_enc_sprintf(rb_usascii_encoding(),
-			      "#<%s: "
-			      "(%sth,%dj,%ds,%sn),%+ds,%.0fj; "
+			      "#<%"PRIsVALUE": "
+			      "(%+"PRIsVALUE"th,%dj,%ds,%+"PRIsVALUE"n),"
+			      "%+ds,%.0fj; "
 			      "%dy%dm%dd %dh%dm%ds; %s>",
-			      klass ? klass : "?",
-			      RSTRING_PTR(nth), x->c.jd, x->c.df,
-			      RSTRING_PTR(sf),
+			      klass,
+			      x->c.nth, x->c.jd, x->c.df, x->c.sf,
 			      x->c.of, x->c.sg,
 #ifndef USE_PACK
 			      x->c.year, x->c.mon, x->c.mday,
@@ -6488,7 +6474,7 @@ mk_inspect_raw(union DateData *x, const char *klass)
 			      EX_HOUR(x->c.pc), EX_MIN(x->c.pc),
 			      EX_SEC(x->c.pc),
 #endif
-			      RSTRING_PTR(flags));
+			      flags);
     }
 }
 
@@ -6496,23 +6482,18 @@ static VALUE
 d_lite_inspect_raw(VALUE self)
 {
     get_d1(self);
-    return mk_inspect_raw(dat, rb_obj_classname(self));
+    return mk_inspect_raw(dat, rb_obj_class(self));
 }
 #endif
 
 static VALUE
-mk_inspect(union DateData *x, const char *klass, const char *to_s)
+mk_inspect(union DateData *x, VALUE klass, VALUE to_s)
 {
-    VALUE jd, sf;
-
-    RB_GC_GUARD(jd) = f_inspect(m_real_jd(x));
-    RB_GC_GUARD(sf) = f_inspect(m_sf(x));
-
     return rb_enc_sprintf(rb_usascii_encoding(),
-			  "#<%s: %s ((%sj,%ds,%sn),%+ds,%.0fj)>",
-			  klass ? klass : "?",
-			  to_s ? to_s : "?",
-			  RSTRING_PTR(jd), m_df(x), RSTRING_PTR(sf),
+			  "#<%"PRIsVALUE": %"PRIsVALUE" "
+			  "((%+"PRIsVALUE"j,%ds,%+"PRIsVALUE"n),%+ds,%.0fj)>",
+			  klass, to_s,
+			  m_real_jd(x), m_df(x), m_sf(x),
 			  m_of(x), m_sg(x));
 }
 
@@ -6531,12 +6512,7 @@ static VALUE
 d_lite_inspect(VALUE self)
 {
     get_d1(self);
-    {
-	VALUE to_s;
-
-	RB_GC_GUARD(to_s) = f_to_s(self);
-	return mk_inspect(dat, rb_obj_classname(self), RSTRING_PTR(to_s));
-    }
+    return mk_inspect(dat, rb_obj_class(self), self);
 }
 
 #include <errno.h>

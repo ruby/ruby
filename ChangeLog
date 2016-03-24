@@ -1,3 +1,8 @@
+Thu Mar 24 12:42:36 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/date/date_core.c (mk_inspect_raw, mk_inspect): inspect by
+	  "%+"PRIsVALUE, to prevent intermediate strings from GC.
+
 Thu Mar 24 11:43:32 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* strftime.c (rb_strftime_with_timespec): remove unnecessary
