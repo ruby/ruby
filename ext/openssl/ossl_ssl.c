@@ -544,7 +544,7 @@ ssl_renegotiation_cb(const SSL *ssl)
     (void) rb_funcall(cb, rb_intern("call"), 1, ssl_obj);
 }
 
-#ifdef HAVE_OPENSSL_NPN_NEGOTIATED
+#if defined(HAVE_SSL_CTX_SET_NEXT_PROTO_SELECT_CB) || defined(HAVE_SSL_CTX_SET_ALPN_SELECT_CB)
 static VALUE
 ssl_npn_encode_protocol_i(VALUE cur, VALUE encoded)
 {
@@ -566,18 +566,6 @@ ssl_encode_npn_protocols(VALUE protocols)
     rb_iterate(rb_each, protocols, ssl_npn_encode_protocol_i, encoded);
     StringValueCStr(encoded);
     return encoded;
-}
-
-static int
-ssl_npn_advertise_cb(SSL *ssl, const unsigned char **out, unsigned int *outlen, void *arg)
-{
-    VALUE sslctx_obj = (VALUE) arg;
-    VALUE protocols = rb_iv_get(sslctx_obj, "@_protocols");
-
-    *out = (const unsigned char *) RSTRING_PTR(protocols);
-    *outlen = RSTRING_LENINT(protocols);
-
-    return SSL_TLSEXT_ERR_OK;
 }
 
 static int
@@ -609,6 +597,19 @@ ssl_npn_select_cb_common(VALUE cb, const unsigned char **out, unsigned char *out
     return SSL_TLSEXT_ERR_OK;
 }
 
+#ifdef HAVE_SSL_CTX_SET_NEXT_PROTO_SELECT_CB
+static int
+ssl_npn_advertise_cb(SSL *ssl, const unsigned char **out, unsigned int *outlen, void *arg)
+{
+    VALUE sslctx_obj = (VALUE) arg;
+    VALUE protocols = rb_iv_get(sslctx_obj, "@_protocols");
+
+    *out = (const unsigned char *) RSTRING_PTR(protocols);
+    *outlen = RSTRING_LENINT(protocols);
+
+    return SSL_TLSEXT_ERR_OK;
+}
+
 static int
 ssl_npn_select_cb(SSL *s, unsigned char **out, unsigned char *outlen, const unsigned char *in, unsigned int inlen, void *arg)
 {
@@ -619,6 +620,7 @@ ssl_npn_select_cb(SSL *s, unsigned char **out, unsigned char *outlen, const unsi
 
     return ssl_npn_select_cb_common(cb, (const unsigned char **)out, outlen, in, inlen);
 }
+#endif
 
 #ifdef HAVE_SSL_CTX_SET_ALPN_SELECT_CB
 static int
@@ -632,8 +634,7 @@ ssl_alpn_select_cb(SSL *ssl, const unsigned char **out, unsigned char *outlen, c
     return ssl_npn_select_cb_common(cb, out, outlen, in, inlen);
 }
 #endif
-
-#endif
+#endif /* HAVE_SSL_CTX_SET_NEXT_PROTO_SELECT_CB || HAVE_SSL_CTX_SET_ALPN_SELECT_CB */
 
 /* This function may serve as the entry point to support further
  * callbacks. */
@@ -793,7 +794,7 @@ ossl_sslctx_setup(VALUE self)
     val = ossl_sslctx_get_verify_dep(self);
     if(!NIL_P(val)) SSL_CTX_set_verify_depth(ctx, NUM2INT(val));
 
-#ifdef HAVE_OPENSSL_NPN_NEGOTIATED
+#ifdef HAVE_SSL_CTX_SET_NEXT_PROTO_SELECT_CB
     val = rb_iv_get(self, "@npn_protocols");
     if (!NIL_P(val)) {
 	rb_iv_set(self, "@_protocols", ssl_encode_npn_protocols(val));
@@ -1861,7 +1862,7 @@ ossl_ssl_get_client_ca_list(VALUE self)
     return ossl_x509name_sk2ary(ca);
 }
 
-# ifdef HAVE_OPENSSL_NPN_NEGOTIATED
+# ifdef HAVE_SSL_CTX_SET_NEXT_PROTO_SELECT_CB
 /*
  * call-seq:
  *    ssl.npn_protocol => String
@@ -2132,7 +2133,7 @@ Init_ossl_ssl(void)
      *   end
      */
     rb_attr(cSSLContext, rb_intern("renegotiation_cb"), 1, 1, Qfalse);
-#ifdef HAVE_OPENSSL_NPN_NEGOTIATED
+#ifdef HAVE_SSL_CTX_SET_NEXT_PROTO_SELECT_CB
     /*
      * An Enumerable of Strings. Each String represents a protocol to be
      * advertised as the list of supported protocols for Next Protocol
@@ -2307,7 +2308,7 @@ Init_ossl_ssl(void)
 # ifdef HAVE_SSL_CTX_SET_ALPN_SELECT_CB
     rb_define_method(cSSLSocket, "alpn_protocol", ossl_ssl_alpn_protocol, 0);
 # endif
-# ifdef HAVE_OPENSSL_NPN_NEGOTIATED
+# ifdef HAVE_SSL_CTX_SET_NEXT_PROTO_SELECT_CB
     rb_define_method(cSSLSocket, "npn_protocol", ossl_ssl_npn_protocol, 0);
 # endif
 #endif

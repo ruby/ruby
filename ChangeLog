@@ -1,3 +1,14 @@
+Fri Mar 25 13:38:11 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* ext/openssl/extconf.rb: check SSL_CTX_set_next_proto_select_cb
+	  function rather than OPENSSL_NPN_NEGOTIATED macro. it exists
+	  even if it is disabled by OpenSSL configuration.
+	  [ruby-core:74384] [Bug #12182]
+
+	* ext/openssl/ossl_ssl.c: update #ifdef(s) as above.
+
+	* test/openssl/test_ssl.rb: skip NPN tests if NPN is disabled.
+
 Fri Mar 25 11:08:37 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/uri/http.rb (URI::HTTP#initialize): [DOC] fix example,

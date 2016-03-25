@@ -1064,7 +1064,9 @@ if OpenSSL::OPENSSL_VERSION_NUMBER >= 0x10002000
   end
 end
 
-if OpenSSL::OPENSSL_VERSION_NUMBER > 0x10001000
+if OpenSSL::OPENSSL_VERSION_NUMBER > 0x10001000 &&
+	OpenSSL::SSL::SSLContext.method_defined?(:npn_select_cb)
+  # NPN may be disabled by OpenSSL configure option
 
   def test_npn_protocol_selection_ary
     advertised = ["http/1.1", "spdy/2"]
