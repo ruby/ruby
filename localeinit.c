@@ -89,7 +89,7 @@ enc_find_index(const char *name)
 }
 
 int
-rb_locale_charmap_index(VALUE klass)
+rb_locale_charmap_index(void)
 {
     return (int)locale_charmap(enc_find_index);
 }
