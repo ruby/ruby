@@ -1,6 +1,7 @@
 Sat Mar 26 06:34:24 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* localeinit.c (rb_locale_charmap_index): fix prototype. [Bug #12118]
+	  patched by Andreas Schwab [ruby-core:74579]
 
 Fri Mar 25 16:40:48 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
