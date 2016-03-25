@@ -1,3 +1,9 @@
+Fri Mar 25 18:26:40 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (num_step_scan_args): comparison String with Numeric
+	  should raise TypeError. it is an invalid type, but not a
+	  mismatch the number of arguments.  [ruby-core:62430] [Bug #9810]
+
 Fri Mar 25 18:24:04 2016  Victor Nawothnig  <Victor.Nawothnig@gmail.com>
 
 	* parse.y (parse_numvar): NTH_REF must be less than a half of
