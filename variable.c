@@ -2058,6 +2058,9 @@ rb_const_list(void *data)
  *  modules (example at start of section), unless the <i>inherit</i>
  *  parameter is set to <code>false</code>.
  *
+ *  The implementation makes no guarantees about the order in which the
+ *  constants are yielded.
+ *
  *    IO.constants.include?(:SYNC)        #=> true
  *    IO.constants(false).include?(:SYNC) #=> false
  *

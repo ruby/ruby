@@ -1,3 +1,8 @@
+Fri Mar 25 18:42:46 2016  Koichi ITO  <koic.ito@gmail.com>
+
+	* variable.c: Added documentation about order of `Module#constants`
+	  [ci skip][Bug #12121][ruby-dev:49505][fix GH-1301]
+
 Fri Mar 25 18:41:14 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (enc_succ_alnum_char): try to skip an invalid character
