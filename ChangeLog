@@ -1,3 +1,9 @@
+Fri Mar 25 17:28:13 2016  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* thread_pthread.c (getstack): __pi_stacksize returned by
+	  pthread_getthrds_np() is wrong on AIX. Use
+	  __pi_stackend - __pi_stackaddr instead.
+
 Fri Mar 25 17:21:51 2016  Alex Boyd  <alex@opengroove.org>
 
 	* lib/irb.rb: avoid to needless truncation when using back_trace_limit option.
