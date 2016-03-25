@@ -1,7 +1,13 @@
+Fri Mar 25 18:34:20 2016  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* ext/tk/lib/tkextlib/tcllib/toolbar.rb: fix method name typo.
+	  [ruby-core:72511] [Bug #11891] The patch provided by Akira Matsuda.
+
+
 Fri Mar 25 18:33:34 2016  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* ext/tk/lib/tkextlib/blt/tree.rb: fix method name typo.
-	[ruby-core:72510] [Bug #11890] The patch provided by Akira Matsuda.
+	  [ruby-core:72510] [Bug #11890] The patch provided by Akira Matsuda.
 
 
 Fri Mar 25 18:32:44 2016  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
