@@ -321,8 +321,8 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
         end
       end
     ensure
-      stop_pipe_r.close if !stop_pipe_r.closed?
-      stop_pipe_w.close if !stop_pipe_w.closed?
+      stop_pipe_r.close if stop_pipe_r && !stop_pipe_r.closed?
+      stop_pipe_w.close if stop_pipe_w && !stop_pipe_w.closed?
       assert_join_threads(threads)
     end
 
