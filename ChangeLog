@@ -1,3 +1,9 @@
+Fri Mar 25 17:33:52 2016  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* test/socket/test_addrinfo.rb (test_ipv6_address_predicates):
+	  IN6_IS_ADDR_V4COMPAT and IN6_IS_ADDR_V4MAPPED are broken
+	  on AIX, so skip related tests.
+
 Fri Mar 25 17:32:34 2016  Rei Odaira  <Rei.Odaira@gmail.com>
 
 	* test/gdbm/test_gdbm.rb (TestGDBM#test_s_open_lock): skip
