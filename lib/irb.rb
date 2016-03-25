@@ -526,7 +526,7 @@ module IRB
             print messages.join("\n"), "\n"
             unless lasts.empty?
               printf "... %d levels...\n", levels if levels > 0
-              print lasts.join("\n")
+              print lasts.join("\n"), "\n"
             end
             print "Maybe IRB bug!\n" if irb_bug
           end
