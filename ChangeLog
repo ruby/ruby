@@ -1,3 +1,8 @@
+Fri Mar 25 18:36:04 2016  Eric Wong  <e@80x24.org>
+
+	* ext/openssl/ossl_ssl.c (ossl_sslctx_setup): document as MT-unsafe
+	  [ruby-core:73803] [Bug #12069]
+
 Fri Mar 25 18:35:08 2016  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* ext/tk/lib/tkextlib/tcllib/tablelist_tile.rb: fix method name typo.
