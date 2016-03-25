@@ -1,3 +1,24 @@
+Fri Mar 25 17:15:19 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/iso_8859_2.c, enc/windows_1250.c: separate Windows-1250
+	  from ISO-8859-2 to fix 0x80..0x9e range (from Kimihito Matsui)
+
+Fri Mar 25 17:15:19 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/windows_1252.c: separate from ISO-8859-1 to fix 0x80..0x9e
+	  range.  [ruby-core:64049] [Bug #10097]
+
+Fri Mar 25 17:15:19 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/iso_8859_13.c: Added three missing lower/upper-case
+	  character pairs (from Kimihito Matsui)
+
+Fri Mar 25 17:15:19 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/iso_8859_4.c: Added missing lower/upper-case character
+	  pair (U+014A and U+014B, LATIN CAPITAL/SMALL LETTER ENG)
+	  (from Kimihito Matsui)
+
 Fri Mar 25 16:53:41 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_scrub): the result should be infected by the
