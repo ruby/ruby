@@ -1,3 +1,29 @@
+Fri Mar 25 17:52:46 2016  Tanaka Akira  <akr@fsij.org>
+
+	* test/openssl/utils.rb (start_server, server_loop): Use a
+	  pipe to stop server instead of shutdown/close a listening socket.
+
+Fri Mar 25 17:52:46 2016  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/envutil.rb (assert_join_threads): New assertion to
+	  join multiple threads without exceptions.
+
+Fri Mar 25 17:52:46 2016  Tanaka Akira  <akr@fsij.org>
+
+	* ext/openssl/lib/openssl/ssl.rb (SSLServer#accept): Close a socket
+	  if any exception occur. 
+
+Fri Mar 25 17:52:46 2016  Tanaka Akira  <akr@fsij.org>
+
+	* ext/openssl/ossl_ssl.c (ossl_ssl_close): Fix sync_close to work
+	  when SSL is not started.
+	  This fix the fd leak by test_https_proxy_authentication in
+	  test/net/http/test_https_proxy.rb.
+
+Fri Mar 25 17:52:46 2016  Tanaka Akira  <akr@fsij.org>
+
+	* test/openssl: Join threads.
+
 Fri Mar 25 17:47:06 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* insns.def (opt_mod): show its method name on ZeroDivisionError.

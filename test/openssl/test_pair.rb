@@ -83,16 +83,20 @@ end
 module OpenSSL::TestEOF1M
   def open_file(content)
     s1, s2 = ssl_pair
-    Thread.new { s2 << content; s2.close }
+    th = Thread.new { s2 << content; s2.close }
     yield s1
+  ensure
+    th.join
   end
 end
 
 module OpenSSL::TestEOF2M
   def open_file(content)
     s1, s2 = ssl_pair
-    Thread.new { s1 << content; s1.close }
+    th = Thread.new { s1 << content; s1.close }
     yield s2
+  ensure
+    th.join
   end
 end
 
@@ -312,6 +316,7 @@ module OpenSSL::TestPairM
     s1.print "a\ndef"
     assert_equal("a\n", s2.gets)
   ensure
+    th.join
     s1.close if s1 && !s1.closed?
     s2.close if s2 && !s2.closed?
     serv.close if serv && !serv.closed?

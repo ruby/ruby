@@ -434,6 +434,36 @@ eom
         AssertFile
       end
 
+      # threads should respond to shift method.
+      # Array and Queue can be used.
+      def assert_join_threads(threads, message = nil)
+        errs = []
+        values = []
+        while th = threads.shift
+          begin
+            values << th.value
+          rescue Exception
+            errs << $!
+          end
+        end
+        if !errs.empty?
+          msg = errs.map {|err|
+            err.backtrace.map.with_index {|line, i|
+              if i == 0
+                "#{line}: #{err.message} (#{err.class})"
+              else
+                "\tfrom #{line}"
+              end
+            }.join("\n")
+          }.join("\n---\n")
+          if message
+            msg = "#{message}\n#{msg}"
+          end
+          raise MiniTest::Assertion, msg
+        end
+        values
+      end
+
       class << (AssertFile = Struct.new(:failure_message).new)
         include Assertions
         def assert_file_predicate(predicate, *args)
