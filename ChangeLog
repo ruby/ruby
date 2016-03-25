@@ -1,3 +1,9 @@
+Fri Mar 25 18:35:08 2016  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* ext/tk/lib/tkextlib/tcllib/tablelist_tile.rb: fix method name typo.
+	  [ruby-core:72513] [Bug #11893] The patch provided by Akira Matsuda.
+
+
 Fri Mar 25 18:34:20 2016  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* ext/tk/lib/tkextlib/tcllib/toolbar.rb: fix method name typo.
