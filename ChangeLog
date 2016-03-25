@@ -1,3 +1,9 @@
+Fri Mar 25 17:32:34 2016  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* test/gdbm/test_gdbm.rb (TestGDBM#test_s_open_lock): skip
+	  this test on AIX. The issue is the same as on Solaris.
+	  [ruby-dev:47631]
+
 Fri Mar 25 17:28:13 2016  Rei Odaira  <Rei.Odaira@gmail.com>
 
 	* thread_pthread.c (getstack): __pi_stacksize returned by
