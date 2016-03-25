@@ -1,3 +1,10 @@
+Fri Mar 25 17:35:06 2016  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* test/zlib/test_zlib.rb (test_adler32_combine, test_crc32_combine):
+	  Skip two tests on AIX because zconf.h in zlib does not correctly
+	  recognize _LARGE_FILES in AIX. The problem was already reported
+	  to zlib, and skip these tests until it is fixed.
+
 Fri Mar 25 17:33:52 2016  Rei Odaira  <Rei.Odaira@gmail.com>
 
 	* test/socket/test_addrinfo.rb (test_ipv6_address_predicates):
