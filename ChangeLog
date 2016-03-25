@@ -1,3 +1,22 @@
+Fri Mar 25 16:53:41 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_scrub): the result should be infected by the
+	  original string.
+
+Fri Mar 25 16:53:41 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* transcode.c (rb_econv_substr_append, econv_primitive_convert):
+	  the result should be infected by the original string.
+
+Fri Mar 25 16:53:41 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h: add raw FL macros, which assume always the
+	  argument object is not a special constant.
+
+	* internal.h (STR_EMBED_P, STR_SHARED_P): valid only for T_STRING.
+
+	* string.c: deal with taint flags directly across String instances.
+
 Thu Feb 25 20:03:32 2016  Naotoshi Seo  <sonots@gmail.com>
 
 	* lib/logger.rb: Remove block from Logger.add as it's not needed

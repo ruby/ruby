@@ -1167,19 +1167,27 @@ struct RBignum {
 #define FL_ABLE(x) (!SPECIAL_CONST_P(x) && BUILTIN_TYPE(x) != T_NODE)
 #define FL_TEST_RAW(x,f) (RBASIC(x)->flags&(f))
 #define FL_TEST(x,f) (FL_ABLE(x)?FL_TEST_RAW((x),(f)):0)
+#define FL_ANY_RAW(x,f) FL_TEST_RAW((x),(f))
 #define FL_ANY(x,f) FL_TEST((x),(f))
+#define FL_ALL_RAW(x,f) (FL_TEST_RAW((x),(f)) == (f))
 #define FL_ALL(x,f) (FL_TEST((x),(f)) == (f))
-#define FL_SET(x,f) do {if (FL_ABLE(x)) RBASIC(x)->flags |= (f);} while (0)
-#define FL_UNSET(x,f) do {if (FL_ABLE(x)) RBASIC(x)->flags &= ~(f);} while (0)
-#define FL_REVERSE(x,f) do {if (FL_ABLE(x)) RBASIC(x)->flags ^= (f);} while (0)
+#define FL_SET_RAW(x,f) (RBASIC(x)->flags |= (f))
+#define FL_SET(x,f) (FL_ABLE(x) ? FL_SET_RAW(x, f) : 0)
+#define FL_UNSET_RAW(x,f) (RBASIC(x)->flags &= ~(f))
+#define FL_UNSET(x,f) (FL_ABLE(x) ? FL_UNSET_RAW(x, f) : 0)
+#define FL_REVERSE_RAW(x,f) (RBASIC(x)->flags ^= (f))
+#define FL_REVERSE(x,f) (FL_ABLE(x) ? FL_REVERSE_RAW(x, f) : 0)
 
+#define OBJ_TAINTED_RAW(x) FL_TEST_RAW(x, FL_TAINT)
 #define OBJ_TAINTED(x) (!!FL_TEST((x), FL_TAINT))
+#define OBJ_TAINT_RAW(x) FL_SET_RAW(x, FL_TAINT)
 #define OBJ_TAINT(x) FL_SET((x), FL_TAINT)
 #define OBJ_UNTRUSTED(x) OBJ_TAINTED(x)
 #define OBJ_UNTRUST(x) OBJ_TAINT(x)
+#define OBJ_INFECT_RAW(x,s) FL_SET_RAW(x, OBJ_TAINTED_RAW(s))
 #define OBJ_INFECT(x,s) do { \
   if (FL_ABLE(x) && FL_ABLE(s)) \
-    RBASIC(x)->flags |= RBASIC(s)->flags & FL_TAINT; \
+    FL_SET_RAW(x, OBJ_TAINTED_RAW(s)); \
 } while (0)
 
 #define OBJ_FROZEN(x) (!!(FL_ABLE(x)?(RBASIC(x)->flags&(FL_FREEZE)):(FIXNUM_P(x)||FLONUM_P(x)||SYMBOL_P(x))))
