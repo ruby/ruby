@@ -1,3 +1,12 @@
+Fri Mar 25 18:18:29 2016  Eric Hodel  <drbrain@segment7.net>
+
+	* marshal.c (r_object0):  raise ArgumentError when linking to undefined
+	  object.
+
+Fri Mar 25 18:18:29 2016  Eric Hodel  <drbrain@segment7.net>
+
+	* marshal.c (r_object0): Fix Marshal crash for corrupt extended object.
+
 Fri Mar 25 18:07:48 2016  Yutaka Kanemoto  <kanemoto@ruby-lang.org>
 
 	* cont.c (rb_fiber_struct): keep context.uc_stack.ss_sp and context.uc_stack.ss_size
