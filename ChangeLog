@@ -1,3 +1,10 @@
+Fri Mar 25 18:32:44 2016  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* ext/tk/lib/tk/menubar.rb: fix a typo in font name. [ruby-core:72505]
+	  [Bug #11886] The patch provided by Akira Matsuda.
+
+	* ext/tk/sample/*.rb: ditto.
+
 Fri Mar 25 18:30:55 2016  Anthony Dmitriyev  <antstorm@gmail.com>
 
 	* net/ftp.rb: add NullSocket#closed? to fix closing not opened

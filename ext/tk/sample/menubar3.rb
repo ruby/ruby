@@ -62,7 +62,7 @@ menubar = TkMenubar.new(nil, menu_spec,
                         'tearoff'=>false,
                         'foreground'=>'grey40',
                         'activeforeground'=>'red',
-                        'font'=>'Helvetia 12 bold')
+                        'font'=>'Helvetica 12 bold')
 menubar.pack('side'=>'left', 'fill'=>'y')
 
 TkText.new(:wrap=>'word').pack.insert('1.0', 'This sample script generates "Menu Sidebar".
