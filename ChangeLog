@@ -1,3 +1,8 @@
+Fri Mar 25 11:08:37 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/uri/http.rb (URI::HTTP#initialize): [DOC] fix example,
+	  missing mandatory arguments.  [ruby-core:74540] [Bug #12215]
+
 Fri Mar 25 01:50:58 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* thread_pthread.c (reserve_stack): fix reserving position where
