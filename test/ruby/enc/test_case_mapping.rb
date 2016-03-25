@@ -80,8 +80,17 @@ class TestCaseMappingPreliminary < Test::Unit::TestCase
 
   def test_titlecase
     check_downcase_properties   'ǳ ǆ ǉ ǌ', 'ǲ ǅ ǈ ǋ', :lithuanian
+    check_downcase_properties   'ǳ ǆ ǉ ǌ', 'Ǳ Ǆ Ǉ Ǌ', :lithuanian
     check_upcase_properties     'Ǳ Ǆ Ǉ Ǌ', 'ǲ ǅ ǈ ǋ', :lithuanian
+    # check_upcase_properties     'Ǳ Ǆ Ǉ Ǌ', 'ǳ ǆ ǉ ǌ', :lithuanian
     check_capitalize_properties 'ǲ', 'Ǳ', :lithuanian
+    check_capitalize_properties 'ǅ', 'Ǆ', :lithuanian
+    check_capitalize_properties 'ǈ', 'Ǉ', :lithuanian
+    check_capitalize_properties 'ǋ', 'Ǌ', :lithuanian
+    # check_capitalize_properties 'ǲ', 'ǳ', :lithuanian
+    # check_capitalize_properties 'ǅ', 'ǆ', :lithuanian
+    # check_capitalize_properties 'ǈ', 'ǉ', :lithuanian
+    # check_capitalize_properties 'ǋ', 'ǌ', :lithuanian
   end
 
   def test_ascii_option

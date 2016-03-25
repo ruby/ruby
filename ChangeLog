@@ -1,3 +1,8 @@
+Fri Mar 25 16:40:48 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* test/ruby/enc/test_case_mapping.rb: Additional tests title case;
+	  some not yet activated.
+
 Fri Mar 25 13:38:11 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* ext/openssl/extconf.rb: check SSL_CTX_set_next_proto_select_cb
