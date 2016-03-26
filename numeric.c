@@ -3022,7 +3022,12 @@ int_to_s(int argc, VALUE *argv, VALUE x)
 	rb_scan_args(argc, argv, "01", &b);
 	base = NUM2INT(b);
     }
+    return rb_int2str(x, base);
+}
 
+VALUE
+rb_int2str(VALUE x, int base)
+{
     if (FIXNUM_P(x)) {
 	return rb_fix2str(x, base);
     }

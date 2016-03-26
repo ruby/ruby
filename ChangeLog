@@ -1,4 +1,7 @@
-Sat Mar 26 10:54:49 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Mar 26 10:55:12 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (rb_int2str): conversion function to String for
+	  generic Integer.
 
 	* numeric.c (rb_int_round): rounding function for generic
 	  Integers.
