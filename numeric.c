@@ -106,6 +106,7 @@ round(double x)
 static VALUE fix_uminus(VALUE num);
 static VALUE fix_mul(VALUE x, VALUE y);
 static VALUE int_pow(long x, unsigned long y);
+static VALUE int_cmp(VALUE x, VALUE y);
 
 static ID id_coerce, id_div, id_divmod;
 #define id_to_i idTo_i
@@ -176,6 +177,32 @@ compare_with_zero(VALUE num, ID mid)
 #define FIXNUM_POSITIVE_P(num) ((SIGNED_VALUE)(num) > (SIGNED_VALUE)INT2FIX(0))
 #define FIXNUM_NEGATIVE_P(num) ((SIGNED_VALUE)(num) < 0)
 #define FIXNUM_ZERO_P(num) ((num) == INT2FIX(0))
+
+#if 0
+static inline int
+int_pos_p(VALUE num)
+{
+    if (FIXNUM_P(num)) {
+	return FIXNUM_NEGATIVE_P(num);
+    }
+    else if (RB_TYPE_P(num, T_BIGNUM)) {
+	return BIGNUM_NEGATIVE_P(num);
+    }
+    return Qnil;
+}
+#endif
+
+static inline int
+int_neg_p(VALUE num)
+{
+    if (FIXNUM_P(num)) {
+	return FIXNUM_NEGATIVE_P(num);
+    }
+    else if (RB_TYPE_P(num, T_BIGNUM)) {
+	return BIGNUM_NEGATIVE_P(num);
+    }
+    return Qnil;
+}
 
 static inline int
 positive_int_p(VALUE num)
@@ -1743,12 +1770,11 @@ flo_ceil(VALUE num)
 /*
  * Assumes num is an Integer, ndigits <= 0
  */
-static VALUE
-int_round_0(VALUE num, int ndigits)
+VALUE
+rb_int_round(VALUE num, int ndigits)
 {
     VALUE n, f, h, r;
     long bytes;
-    ID op;
     /* If 10**N / 2 > num, then return 0 */
     /* We have log_256(10) > 0.415241 and log_256(1/2) = -0.125, so */
     bytes = FIXNUM_P(num) ? sizeof(long) : rb_funcall(num, idSize, 0);
@@ -1769,12 +1795,12 @@ int_round_0(VALUE num, int ndigits)
 	/* then int_pow overflow */
 	return INT2FIX(0);
     }
-    h = rb_funcall(f, '/', 1, INT2FIX(2));
-    r = rb_funcall(num, '%', 1, f);
-    n = rb_funcall(num, '-', 1, r);
-    op = negative_int_p(num) ? idLE : '<';
-    if (!RTEST(rb_funcall(r, op, 1, h))) {
-	n = rb_funcall(n, '+', 1, f);
+    h = rb_int_idiv(f, INT2FIX(2));
+    r = rb_int_modulo(num, f);
+    n = rb_int_minus(num, r);
+    r = int_cmp(r, h);
+    if (FIXNUM_POSITIVE_P(r) || (FIXNUM_ZERO_P(r) && !int_neg_p(num))) {
+	n = rb_int_plus(n, f);
     }
     return n;
 }
@@ -1826,7 +1852,7 @@ flo_round(int argc, VALUE *argv, VALUE num)
 	ndigits = NUM2INT(nd);
     }
     if (ndigits < 0) {
-	return int_round_0(flo_truncate(num), ndigits);
+	return rb_int_round(flo_truncate(num), ndigits);
     }
     number  = RFLOAT_VALUE(num);
     if (ndigits == 0) {
@@ -4123,7 +4149,7 @@ int_round(int argc, VALUE* argv, VALUE num)
     if (ndigits == 0) {
 	return num;
     }
-    return int_round_0(num, ndigits);
+    return rb_int_round(num, ndigits);
 }
 
 /*
