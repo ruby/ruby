@@ -2926,6 +2926,18 @@ fix_uminus(VALUE num)
 }
 
 VALUE
+rb_int_uminus(VALUE num)
+{
+    if (FIXNUM_P(num)) {
+	return fix_uminus(num);
+    }
+    else if (RB_TYPE_P(num, T_BIGNUM)) {
+	return rb_big_uminus(num);
+    }
+    return rb_funcall(num, idUMinus, 0, 0);
+}
+
+VALUE
 rb_fix2str(VALUE x, int base)
 {
     char buf[SIZEOF_VALUE*CHAR_BIT + 1], *const e = buf + sizeof buf, *b = e;
@@ -3038,6 +3050,18 @@ rb_fix_plus(VALUE x, VALUE y)
     return fix_plus(x, y);
 }
 
+VALUE
+rb_int_plus(VALUE x, VALUE y)
+{
+    if (FIXNUM_P(x)) {
+	return fix_plus(x, y);
+    }
+    else if (RB_TYPE_P(x, T_BIGNUM)) {
+	return rb_big_plus(x, y);
+    }
+    return rb_num_coerce_bin(x, y, '+');
+}
+
 /*
  * call-seq:
  *   fix - numeric  ->  numeric_result
@@ -3072,6 +3096,19 @@ fix_minus(VALUE x, VALUE y)
     }
 }
 
+VALUE
+rb_int_minus(VALUE x, VALUE y)
+{
+    if (FIXNUM_P(x)) {
+	return fix_minus(x, y);
+    }
+    else if (RB_TYPE_P(x, T_BIGNUM)) {
+	return rb_big_minus(x, y);
+    }
+    return rb_num_coerce_bin(x, y, '-');
+}
+
+
 #define SQRT_LONG_MAX ((SIGNED_VALUE)1<<((SIZEOF_LONG*CHAR_BIT-1)/2))
 /*tests if N*N would overflow*/
 #define FIT_SQRT_LONG(n) (((n)<SQRT_LONG_MAX)&&((n)>=-SQRT_LONG_MAX))
@@ -3104,6 +3141,18 @@ fix_mul(VALUE x, VALUE y)
     else {
 	return rb_num_coerce_bin(x, y, '*');
     }
+}
+
+VALUE
+rb_int_mul(VALUE x, VALUE y)
+{
+    if (FIXNUM_P(x)) {
+	return fix_mul(x, y);
+    }
+    else if (RB_TYPE_P(x, T_BIGNUM)) {
+	return rb_big_mul(x, y);
+    }
+    return rb_num_coerce_bin(x, y, '*');
 }
 
 /*
@@ -3196,6 +3245,18 @@ fix_idiv(VALUE x, VALUE y)
     return fix_divide(x, y, id_div);
 }
 
+VALUE
+rb_int_idiv(VALUE x, VALUE y)
+{
+    if (FIXNUM_P(x)) {
+	return fix_idiv(x, y);
+    }
+    else if (RB_TYPE_P(x, T_BIGNUM)) {
+	return rb_big_idiv(x, y);
+    }
+    return num_div(x, y);
+}
+
 /*
  *  call-seq:
  *    fix % other        ->  real
@@ -3223,6 +3284,18 @@ fix_mod(VALUE x, VALUE y)
     else {
 	return rb_num_coerce_bin(x, y, '%');
     }
+}
+
+VALUE
+rb_int_modulo(VALUE x, VALUE y)
+{
+    if (FIXNUM_P(x)) {
+	return fix_mod(x, y);
+    }
+    else if (RB_TYPE_P(x, T_BIGNUM)) {
+	return rb_big_modulo(x, y);
+    }
+    return num_modulo(x, y);
 }
 
 /*

@@ -1,4 +1,7 @@
-Sat Mar 26 10:51:58 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Mar 26 10:54:14 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (rb_int_{uminus,plus,minus,mul,idiv,modulo}): basic
+	  arithmetic functions for generic Integers.
 
 	* numeric.c (FIXNUM_{POSITIVE,NEGATIVE,ZERO}_P): predict macros
 	  only for Fixnum.

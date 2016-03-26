@@ -1007,6 +1007,12 @@ double ruby_float_mod(double x, double y);
 int rb_num_negative_p(VALUE);
 VALUE rb_int_succ(VALUE num);
 VALUE rb_int_pred(VALUE num);
+VALUE rb_int_uminus(VALUE num);
+VALUE rb_int_plus(VALUE x, VALUE y);
+VALUE rb_int_minus(VALUE x, VALUE y);
+VALUE rb_int_mul(VALUE x, VALUE y);
+VALUE rb_int_idiv(VALUE x, VALUE y);
+VALUE rb_int_modulo(VALUE x, VALUE y);
 VALUE rb_dbl_hash(double d);
 VALUE rb_fix_plus(VALUE x, VALUE y);
 
