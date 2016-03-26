@@ -173,6 +173,10 @@ compare_with_zero(VALUE num, ID mid)
     return r;
 }
 
+#define FIXNUM_POSITIVE_P(num) ((SIGNED_VALUE)(num) > (SIGNED_VALUE)INT2FIX(0))
+#define FIXNUM_NEGATIVE_P(num) ((SIGNED_VALUE)(num) < 0)
+#define FIXNUM_ZERO_P(num) ((num) == INT2FIX(0))
+
 static inline int
 positive_int_p(VALUE num)
 {
@@ -180,7 +184,7 @@ positive_int_p(VALUE num)
 
     if (FIXNUM_P(num)) {
 	if (method_basic_p(rb_cFixnum))
-	    return (SIGNED_VALUE)num > 0;
+	    return FIXNUM_POSITIVE_P(num);
     }
     else if (RB_TYPE_P(num, T_BIGNUM)) {
 	if (method_basic_p(rb_cBignum))
@@ -196,7 +200,7 @@ negative_int_p(VALUE num)
 
     if (FIXNUM_P(num)) {
 	if (method_basic_p(rb_cFixnum))
-	    return (SIGNED_VALUE)num < 0;
+	    return FIXNUM_NEGATIVE_P(num);
     }
     else if (RB_TYPE_P(num, T_BIGNUM)) {
 	if (method_basic_p(rb_cBignum))
