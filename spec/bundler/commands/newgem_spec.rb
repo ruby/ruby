@@ -274,6 +274,12 @@ RSpec.describe "bundle gem" do
         to match(/mygemserver\.com/)
     end
 
+    it "sets a minimum ruby version" do
+      bundler_gemspec = Bundler::GemHelper.new(File.expand_path("../..", __dir__)).gemspec
+
+      expect(bundler_gemspec.required_ruby_version).to eq(generated_gemspec.required_ruby_version)
+    end
+
     it "requires the version file" do
       expect(bundled_app("test_gem/lib/test_gem.rb").read).to match(%r{require "test_gem/version"})
     end
