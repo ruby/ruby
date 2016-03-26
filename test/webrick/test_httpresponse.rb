@@ -146,5 +146,15 @@ module WEBrick
       }
       assert_equal 0, logger.messages.length
     end
+
+    def test_set_error
+      status = 400
+      message = 'missing attribute'
+      @res.status = status
+      error = WEBrick::HTTPStatus[status].new(message)
+      body = @res.set_error(error)
+      assert_match(/#{@res.reason_phrase}/, body)
+      assert_match(/#{message}/, body)
+    end
   end
 end

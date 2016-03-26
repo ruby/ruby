@@ -352,6 +352,14 @@ module WEBrick
         host, port = @config[:ServerName], @config[:Port]
       end
 
+      error_body(backtrace, ex, host, port)
+    end
+
+    private
+
+    # :stopdoc:
+
+    def error_body(backtrace, ex, host, port)
       @body = ''
       @body << <<-_end_of_html_
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0//EN">
@@ -380,10 +388,6 @@ module WEBrick
 </HTML>
       _end_of_html_
     end
-
-    private
-
-    # :stopdoc:
 
     def send_body_io(socket)
       begin
