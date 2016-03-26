@@ -330,13 +330,13 @@ static compile_error_func
 prepare_compile_error(rb_iseq_t *iseq)
 {
     VALUE err_info = ISEQ_COMPILE_DATA(iseq)->err_info;
-    if (compile_debug) return rb_compile_bug_str;
+    if (compile_debug) return &rb_compile_bug_str;
     if (NIL_P(err_info)) {
 	err_info = rb_exc_new_cstr(rb_eSyntaxError, "");
 	RB_OBJ_WRITE(iseq, &ISEQ_COMPILE_DATA(iseq)->err_info, err_info);
     }
     rb_set_errinfo(err_info);
-    return append_compile_error;
+    return &append_compile_error;
 }
 
 #define COMPILE_ERROR prepare_compile_error(iseq)
