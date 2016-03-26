@@ -165,26 +165,36 @@ class TestInteger < Test::Unit::TestCase
     end
   end
 
+  def assert_int_equal(expected, result, mesg = nil)
+    assert_kind_of(Integer, result, mesg)
+    assert_equal(expected, result, mesg)
+  end
+
+  def assert_float_equal(expected, result, mesg = nil)
+    assert_kind_of(Float, result, mesg)
+    assert_equal(expected, result, mesg)
+  end
+
   def test_round
-    assert_equal(11111, 11111.round)
-    assert_equal(Fixnum, 11111.round.class)
-    assert_equal(11111, 11111.round(0))
-    assert_equal(Fixnum, 11111.round(0).class)
+    assert_int_equal(11111, 11111.round)
+    assert_int_equal(11111, 11111.round(0))
 
-    assert_equal(11111.0, 11111.round(1))
-    assert_equal(Float, 11111.round(1).class)
-    assert_equal(11111.0, 11111.round(2))
-    assert_equal(Float, 11111.round(2).class)
+    assert_float_equal(11111.0, 11111.round(1))
+    assert_float_equal(11111.0, 11111.round(2))
 
-    assert_equal(11110, 11111.round(-1))
-    assert_equal(Fixnum, 11111.round(-1).class)
-    assert_equal(11100, 11111.round(-2))
-    assert_equal(Fixnum, 11111.round(-2).class)
+    assert_int_equal(11110, 11111.round(-1))
+    assert_int_equal(11100, 11111.round(-2))
+    assert_int_equal(+200, +249.round(-2))
+    assert_int_equal(+300, +250.round(-2))
+    assert_int_equal(-200, -249.round(-2))
+    assert_int_equal(-300, -250.round(-2))
+    assert_int_equal(+30 * 10**70, (+25 * 10**70).round(-71))
+    assert_int_equal(-30 * 10**70, (-25 * 10**70).round(-71))
+    assert_int_equal(+20 * 10**70, (+25 * 10**70 - 1).round(-71))
+    assert_int_equal(-20 * 10**70, (-25 * 10**70 + 1).round(-71))
 
-    assert_equal(1111_1111_1111_1111_1111_1111_1111_1110, 1111_1111_1111_1111_1111_1111_1111_1111.round(-1))
-    assert_equal(Bignum, 1111_1111_1111_1111_1111_1111_1111_1111.round(-1).class)
-    assert_equal(-1111_1111_1111_1111_1111_1111_1111_1110, (-1111_1111_1111_1111_1111_1111_1111_1111).round(-1))
-    assert_equal(Bignum, (-1111_1111_1111_1111_1111_1111_1111_1111).round(-1).class)
+    assert_int_equal(1111_1111_1111_1111_1111_1111_1111_1110, 1111_1111_1111_1111_1111_1111_1111_1111.round(-1))
+    assert_int_equal(-1111_1111_1111_1111_1111_1111_1111_1110, (-1111_1111_1111_1111_1111_1111_1111_1111).round(-1))
   end
 
   def test_bitwise_and_with_integer_mimic_object
