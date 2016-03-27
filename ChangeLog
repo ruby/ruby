@@ -1,3 +1,9 @@
+Mon Mar 28 08:18:51 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* sprintf.c (rb_str_format): fix buffer overflow, length must be
+	  greater than precision.  reported by William Bowling <will AT
+	  wbowling.info>.
+
 Sun Mar 27 12:13:37 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sprintf.c (rb_str_format): convert Rational to floating point
