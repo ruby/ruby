@@ -1,3 +1,9 @@
+Sun Mar 27 12:13:37 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* sprintf.c (rb_str_format): convert Rational to floating point
+	  format by using gereric Integer functions, not by methods which
+	  can be overwritten.
+
 Sat Mar 26 10:55:12 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (rb_int2str): conversion function to String for
