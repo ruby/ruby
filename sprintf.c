@@ -65,12 +65,20 @@ sign_bits(int base, const char *p)
 
 #define PUSH(s, l) do { \
     CHECK(l);\
+    PUSH_(s, l);\
+} while (0)
+
+#define PUSH_(s, l) do { \
     memcpy(&buf[blen], (s), (l));\
     blen += (l);\
 } while (0)
 
 #define FILL(c, l) do { \
     CHECK(l);\
+    FILL_(c, l);\
+} while (0)
+
+#define FILL_(c, l) do { \
     memset(&buf[blen], (c), (l));\
     blen += (l);\
 } while (0)
@@ -1034,8 +1042,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	    {
 		VALUE val = GETARG(), num, den;
 		int sign = (flags&FPLUS) ? 1 : 0, zero = 0;
-		long len, done = blen;
-		int prefix = 0;
+		long len, fill;
 		if (FIXNUM_P(val) || RB_TYPE_P(val, T_BIGNUM)) {
 		    den = INT2FIX(1);
 		    num = val;
@@ -1074,15 +1081,20 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		if (sign || (flags&FSPACE)) ++len;
 		if (prec > 0) ++len; /* period */
 		CHECK(len > width ? len : width);
+		fill = width > len ? width - len : 0;
+		if (fill && !(flags&FMINUS) && !(flags&FZERO)) {
+		    FILL_(' ', fill);
+		}
 		if (sign || (flags&FSPACE)) {
 		    buf[blen++] = sign > 0 ? '+' : sign < 0 ? '-' : ' ';
-		    prefix++;
+		}
+		if (fill && !(flags&FMINUS) && (flags&FZERO)) {
+		    FILL_('0', fill);
 		}
 		len = RSTRING_LEN(val) + zero;
 		t = RSTRING_PTR(val);
 		if (len > prec) {
-		    memcpy(&buf[blen], t, len - prec);
-		    blen += len - prec;
+		    PUSH_(t, len - prec);
 		}
 		else {
 		    buf[blen++] = '0';
@@ -1091,31 +1103,17 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		    buf[blen++] = '.';
 		}
 		if (zero) {
-		    FILL('0', zero);
+		    FILL_('0', zero);
 		}
 		else if (prec > len) {
-		    FILL('0', prec - len);
-		    memcpy(&buf[blen], t, len);
-		    blen += len;
+		    FILL_('0', prec - len);
+		    PUSH_(t, len);
 		}
 		else if (prec > 0) {
-		    memcpy(&buf[blen], t + len - prec, prec);
-		    blen += prec;
+		    PUSH_(t + len - prec, prec);
 		}
-		if ((flags & FWIDTH) && width > (done = blen - done)) {
-		    int fill = ' ';
-		    long shifting = 0;
-		    if (!(flags&FMINUS)) {
-			shifting = done;
-			if (flags&FZERO) {
-			    shifting -= prefix;
-			    fill = '0';
-			}
-			blen -= shifting;
-			memmove(&buf[blen + width - done], &buf[blen], shifting);
-		    }
-		    FILL(fill, width - done);
-		    blen += shifting;
+		if (fill && (flags&FMINUS)) {
+		    FILL_(' ', fill);
 		}
 		RB_GC_GUARD(val);
 		break;
