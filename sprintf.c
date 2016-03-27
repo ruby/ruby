@@ -1034,7 +1034,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	    {
 		VALUE val = GETARG(), num, den;
 		int sign = (flags&FPLUS) ? 1 : 0, zero = 0;
-		long len, done = 0;
+		long len, done = blen;
 		int prefix = 0;
 		if (FIXNUM_P(val) || RB_TYPE_P(val, T_BIGNUM)) {
 		    den = INT2FIX(1);
@@ -1077,39 +1077,32 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		if (sign || (flags&FSPACE)) {
 		    buf[blen++] = sign > 0 ? '+' : sign < 0 ? '-' : ' ';
 		    prefix++;
-		    done++;
 		}
 		len = RSTRING_LEN(val) + zero;
 		t = RSTRING_PTR(val);
 		if (len > prec) {
 		    memcpy(&buf[blen], t, len - prec);
 		    blen += len - prec;
-		    done += len - prec;
 		}
 		else {
 		    buf[blen++] = '0';
-		    done++;
 		}
 		if (prec > 0) {
 		    buf[blen++] = '.';
-		    done++;
 		}
 		if (zero) {
 		    FILL('0', zero);
-		    done += zero;
 		}
 		else if (prec > len) {
 		    FILL('0', prec - len);
 		    memcpy(&buf[blen], t, len);
 		    blen += len;
-		    done += prec;
 		}
 		else if (prec > 0) {
 		    memcpy(&buf[blen], t + len - prec, prec);
 		    blen += prec;
-		    done += prec;
 		}
-		if ((flags & FWIDTH) && width > done) {
+		if ((flags & FWIDTH) && width > (done = blen - done)) {
 		    int fill = ' ';
 		    long shifting = 0;
 		    if (!(flags&FMINUS)) {
