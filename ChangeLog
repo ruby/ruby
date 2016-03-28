@@ -1,3 +1,7 @@
+Mon Mar 28 11:49:21 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode.c: Adding comments. [ci skip]
+
 Mon Mar 28 11:30:23 2016  Shinichi Maeshima  <netwillnet@gmail.com>
 
 	* lib/rubygems.rb: Fix `Gem.find_spec_for_exe` picks oldest gem.

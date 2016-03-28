@@ -710,22 +710,22 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
 	    else if (code==DOTLESS_i && (flags&ONIGENC_CASE_UPCASE)) {
 		code = 'I'; MODIFIED;
 	    }
-	    else if ((folded = onigenc_unicode_fold_lookup(code)) != 0) {
+	    else if ((folded = onigenc_unicode_fold_lookup(code)) != 0) { /* data about character found in CaseFold_11_Table */
 		if (flags&OnigCaseFoldFlags(folded->n)) {
 		    const OnigCodePoint *next;
 		    int count;
 
 		    MODIFIED;
-		    if (flags&OnigCaseFoldFlags(folded->n)&ONIGENC_CASE_SPECIALS) {
+		    if (flags&OnigCaseFoldFlags(folded->n)&ONIGENC_CASE_SPECIALS) { /* special */
 			OnigCodePoint *SpecialsStart = CaseMappingSpecials + OnigSpecialIndexDecode(folded->n);
 
-			if (OnigCaseFoldFlags(folded->n)&ONIGENC_CASE_TITLECASE) {
-			    if (flags&ONIGENC_CASE_TITLECASE) {
-				if (OnigCaseFoldFlags(folded->n)&ONIGENC_CASE_IS_TITLECASE)
+			if (OnigCaseFoldFlags(folded->n)&ONIGENC_CASE_TITLECASE) { /* Titlecase available */
+			    if (flags&ONIGENC_CASE_TITLECASE) { /* titlecase needed */
+				if (OnigCaseFoldFlags(folded->n)&ONIGENC_CASE_IS_TITLECASE) /* alread titlecase */
 				    flags ^= ONIGENC_CASE_MODIFIED;
 				goto SpecialsCopy;
 			    }
-			    else
+			    else /* Titlecase not needed */
 				SpecialsStart += SpecialsLengthExtract(*SpecialsStart);
 			}
 			if (OnigCaseFoldFlags(folded->n)&ONIGENC_CASE_DOWN_SPECIAL) {
@@ -756,7 +756,7 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
 		    }
 		}
 	    }
-	    else if ((folded = onigenc_unicode_unfold1_lookup(code)) != 0) {
+	    else if ((folded = onigenc_unicode_unfold1_lookup(code)) != 0) {  /* data about character found in CaseUnfold_11_Table */
 		if (flags&OnigCaseFoldFlags(folded->n)) {
 		    int count = OnigCodePointCount(folded->n);
 		    const OnigCodePoint *next = folded->code;
