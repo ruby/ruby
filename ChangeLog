@@ -1,3 +1,8 @@
+Tue Mar 29 01:02:49 2016  Koichi ITO  <koic.ito@gmail.com>
+
+	* variable.c: Added documentation about order of `Module#constants`
+	  [ci skip][Bug #12121][ruby-dev:49505][fix GH-1301]
+
 Tue Mar 29 00:56:10 2016  Rei Odaira  <Rei.Odaira@gmail.com>
 
 	* test/ruby/test_process.rb (test_execopts_gid): Skip a test
