@@ -542,7 +542,14 @@ class TestSocketAddrinfo < Test::Unit::TestCase
 	    # MacOS X returns IPv4 address for ::ffff:1.2.3.4 and ::1.2.3.4.
             # Solaris returns IPv4 address for ::ffff:1.2.3.4.
 	    ai = ipv6(addr)
-	    assert(ai.ipv4? || ai.send(meth), "ai=#{addr_exp}; ai.ipv4? || .#{meth}")
+            begin
+	      assert(ai.ipv4? || ai.send(meth), "ai=#{addr_exp}; ai.ipv4? || .#{meth}")
+            rescue Minitest::Assertion
+              if /aix/ =~ RUBY_PLATFORM
+                skip "Known bug in IN6_IS_ADDR_V4COMPAT and IN6_IS_ADDR_V4MAPPED on AIX"
+              end
+              raise $!
+            end
 	  else
 	    assert(ipv6(addr).send(meth), "#{addr_exp}.#{meth}")
             assert_equal(addr, ipv6(addr).ip_address)
