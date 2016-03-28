@@ -183,10 +183,10 @@ static inline int
 int_pos_p(VALUE num)
 {
     if (FIXNUM_P(num)) {
-	return FIXNUM_NEGATIVE_P(num);
+	return FIXNUM_POSITIVE_P(num);
     }
     else if (RB_TYPE_P(num, T_BIGNUM)) {
-	return BIGNUM_NEGATIVE_P(num);
+	return BIGNUM_POSITIVE_P(num);
     }
     return Qnil;
 }

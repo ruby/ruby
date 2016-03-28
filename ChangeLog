@@ -1,3 +1,7 @@
+Mon Mar 28 21:24:02 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* numeric.c (int_pos_p): fix typos.
+
 Mon Mar 28 14:54:49 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/unicode.c: Refactoring in preparation for data reduction for
