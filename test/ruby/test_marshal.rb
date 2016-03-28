@@ -653,4 +653,22 @@ class TestMarshal < Test::Unit::TestCase
     obj = [str, str]
     assert_equal(['X', 'X'], Marshal.load(Marshal.dump(obj), ->(v) { v == str ? v.upcase : v }))
   end
+
+  def test_marshal_load_extended_class_crash
+    crash = "\x04\be:\x0F\x00omparableo:\vObject\x00"
+
+    opt = %w[--disable=gems]
+    assert_ruby_status(opt, "Marshal.load(#{crash.dump})")
+  end
+
+  def test_marshal_load_r_prepare_reference_crash
+    crash = "\x04\bI/\x05\x00\x06:\x06E{\x06@\x05T"
+
+    opt = %w[--disable=gems]
+    assert_separately(opt, <<-RUBY)
+      assert_raise_with_message(ArgumentError, /bad link/) do
+        Marshal.load(#{crash.dump})
+      end
+    RUBY
+  end
 end
