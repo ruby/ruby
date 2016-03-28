@@ -1,3 +1,8 @@
+Tue Mar 29 01:20:37 2016  Eric Wong  <e@80x24.org>
+
+	* ext/openssl/ossl_ssl.c (ossl_sslctx_setup): document as MT-unsafe
+	  [ruby-core:73803] [Bug #12069]
+
 Tue Mar 29 01:07:36 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* insns.def (opt_mod): show its method name on ZeroDivisionError.

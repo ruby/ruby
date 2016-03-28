@@ -685,8 +685,8 @@ ssl_info_cb(const SSL *ssl, int where, int val)
  *    ctx.setup => nil # thereafter
  *
  * This method is called automatically when a new SSLSocket is created.
- * Normally you do not need to call this method (unless you are writing an
- * extension in C).
+ * However, it is not thread-safe and must be called before creating
+ * SSLSocket objects in a multi-threaded program.
  */
 static VALUE
 ossl_sslctx_setup(VALUE self)
