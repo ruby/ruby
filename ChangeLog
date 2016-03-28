@@ -1,3 +1,7 @@
+Mon Mar 28 14:36:36 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode.c: Minor refactoring for I WITH DOT ABOVE.
+
 Mon Mar 28 14:26:24 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/unicode.c: Removed code now covered by data from table.

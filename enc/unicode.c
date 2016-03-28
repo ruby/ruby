@@ -696,10 +696,9 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
 	    if (code==I_WITH_DOT_ABOVE) {
 		if (flags&ONIGENC_CASE_DOWNCASE) {
 		    MODIFIED;
-		    if (flags&ONIGENC_CASE_FOLD_TURKISH_AZERI)
-			code = 'i';
-		    else { /* make dot above explicit */
-			to += ONIGENC_CODE_TO_MBC(enc, 'i', to);
+		    code = 'i';
+		    if (!(flags&ONIGENC_CASE_FOLD_TURKISH_AZERI)) { /* make dot above explicit */
+			to += ONIGENC_CODE_TO_MBC(enc, code, to);
 			code = DOT_ABOVE;
 		    }
 		}
