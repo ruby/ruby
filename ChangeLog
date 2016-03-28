@@ -1,3 +1,10 @@
+Mon Mar 28 23:56:17 2016  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* ext/tk/lib/tk/menubar.rb: fix a typo in font name. [ruby-core:72505]
+	  [Bug #11886] The patch provided by Akira Matsuda.
+
+	* ext/tk/sample/*.rb: ditto.
+
 Mon Mar 28 23:20:12 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/fiddle/test_handle.rb (test_NEXT): use -test-/dln/empty
