@@ -1,3 +1,9 @@
+Tue Mar 29 01:56:24 2016  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* lib/rubygems/installer.rb: merge partially r49511.
+	  cherry picking https://github.com/rubygems/rubygems/commit/f9232680
+	  [Bug #12066]
+
 Tue Mar 29 01:41:10 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (enc_succ_alnum_char): try to skip an invalid character
