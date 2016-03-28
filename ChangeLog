@@ -1,3 +1,8 @@
+Tue Mar 29 00:06:58 2016  Alex Boyd  <alex@opengroove.org>
+
+	* lib/irb.rb: avoid to needless truncation when using back_trace_limit option.
+	  [fix GH-1205][ruby-core:72773][Bug #11969]
+
 Tue Mar 29 00:00:27 2016  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* ext/tk/lib/tkextlib/tcllib/tablelist_tile.rb: fix method name typo.
