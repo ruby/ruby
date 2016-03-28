@@ -1,3 +1,7 @@
+Mon Mar 28 14:26:24 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode.c: Removed code now covered by data from table.
+
 Mon Mar 28 11:49:21 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/unicode.c: Adding comments. [ci skip]

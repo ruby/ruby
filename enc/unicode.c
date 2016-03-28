@@ -704,12 +704,6 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
 		    }
 		}
 	    }
-	    /* the following special case for  DOTLESS i -> I
-	     * can be removed once we rely on data,
-	     * because the mapping is always the same */
-	    else if (code==DOTLESS_i && (flags&ONIGENC_CASE_UPCASE)) {
-		code = 'I'; MODIFIED;
-	    }
 	    else if ((folded = onigenc_unicode_fold_lookup(code)) != 0) { /* data about character found in CaseFold_11_Table */
 		if (flags&OnigCaseFoldFlags(folded->n)) {
 		    const OnigCodePoint *next;
