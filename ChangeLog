@@ -111,7 +111,7 @@ Wed Mar  9 04:15:20 2016  Eric Wong  <e@80x24.org>
 	* test/stringio/test_stringio.rb (test_binmode): new test
 	  [ruby-core:72699] [Bug #11945]
 
-Wed Mar  9 03:53:37 2016  Tadashi Saito  <tadashi_saito@dwango.co.jp>
+Wed Mar  9 03:53:37 2016  Tadashi Saito  <tad.a.digger@gmail.com>
 
 	* compile.c, cont.c, doc, man: fix common misspelling.
 	  [ruby-core:72466] [Bug #11870]
