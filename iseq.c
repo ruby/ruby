@@ -638,23 +638,11 @@ rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE absolute_path, VALUE li
 	rb_exc_raise(th->errinfo);
     }
     else {
-	int state;
 	INITIALIZED VALUE label = parent ?
 	    parent->body->location.label :
 	    rb_fstring_cstr("<compiled>");
-	rb_block_t **volatile const base_block_ptr = &th->base_block;
-	rb_block_t *volatile const prev_base_block = th->base_block;
-
-	th->base_block = base_block;
-	TH_PUSH_TAG(th);
-	if ((state = EXEC_TAG()) == 0) {
-	    iseq = rb_iseq_new_with_opt(node, label, file, absolute_path, line,
-					parent, type, &option);
-	}
-	TH_POP_TAG();
-	*base_block_ptr = prev_base_block;
-
-	if (state) JUMP_TAG(state);
+	iseq = rb_iseq_new_with_opt(node, label, file, absolute_path, line,
+				    parent, type, &option);
     }
 
     return iseq;

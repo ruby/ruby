@@ -698,8 +698,6 @@ typedef struct rb_thread_struct {
     VALUE top_wrapper;
 
     /* eval env */
-    rb_block_t *base_block;
-
     VALUE *root_lep;
     VALUE root_svar;
 

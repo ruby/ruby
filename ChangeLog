@@ -1,3 +1,11 @@
+Tue Mar 29 06:40:53 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (rb_compile_err_append): rb_thread_t::base_block is no
+	  longer used.
+
+	* iseq.c (rb_iseq_compile_with_option): ditto, no protection is
+	  needed.
+
 Tue Mar 29 06:39:22 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (struct parser_params): move parse_in_eval flag from

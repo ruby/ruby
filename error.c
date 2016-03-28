@@ -97,12 +97,6 @@ compile_snprintf(rb_encoding *enc, const char *pre, const char *file, int line, 
 VALUE
 rb_compile_err_append(VALUE buffer, VALUE mesg)
 {
-    rb_thread_t *th = GET_THREAD();
-    rb_block_t *prev_base_block = th->base_block;
-    th->base_block = 0;
-    /* base_block should be zero while normal Ruby execution */
-    /* after this line, any Ruby code *can* run */
-
     if (!buffer) {
 	rb_str_cat2(mesg, "\n");
 	rb_write_error_str(mesg);
@@ -115,8 +109,6 @@ rb_compile_err_append(VALUE buffer, VALUE mesg)
 	rb_str_append(buffer, mesg);
     }
 
-    /* returned to the parser world */
-    th->base_block = prev_base_block;
     return buffer;
 }
 

@@ -243,7 +243,6 @@ ruby_exec_internal(void *n)
     TH_PUSH_TAG(th);
     if ((state = EXEC_TAG()) == 0) {
 	SAVE_ROOT_JMPBUF(th, {
-	    th->base_block = 0;
 	    rb_iseq_eval_main(iseq);
 	});
     }
