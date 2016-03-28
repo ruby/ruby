@@ -1,3 +1,10 @@
+Mon Mar 28 11:30:23 2016  Shinichi Maeshima  <netwillnet@gmail.com>
+
+	* lib/rubygems.rb: Fix `Gem.find_spec_for_exe` picks oldest gem.
+	  https://github.com/travis-ci/travis-ci/issues/5798
+	  https://github.com/rubygems/rubygems/pull/1566
+	* test/rubygems/test_gem.rb: ditto.
+
 Mon Mar 28 11:26:31 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/rubygems.rb, lib/rubygems/*, test/rubygems/*: Update rubygems-2.6.2.

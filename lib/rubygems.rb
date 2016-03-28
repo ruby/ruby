@@ -254,7 +254,7 @@ module Gem
       spec.executables.include? exec_name
     } if exec_name
 
-    unless spec = specs.last
+    unless spec = specs.first
       msg = "can't find gem #{name} (#{requirements}) with executable #{exec_name}"
       raise Gem::GemNotFoundException, msg
     end
