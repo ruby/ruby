@@ -712,12 +712,15 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
 		    if (flags&OnigCaseFoldFlags(folded->n)&ONIGENC_CASE_SPECIALS) { /* special */
 			OnigCodePoint *SpecialsStart = CaseMappingSpecials + OnigSpecialIndexDecode(folded->n);
 
-			if (OnigCaseFoldFlags(folded->n)&ONIGENC_CASE_TITLECASE) { /* Titlecase available */
-			    if (flags&ONIGENC_CASE_TITLECASE) { /* titlecase needed */
-				if (OnigCaseFoldFlags(folded->n)&ONIGENC_CASE_IS_TITLECASE) /* alread titlecase */
-				    flags ^= ONIGENC_CASE_MODIFIED;
+			if ((OnigCaseFoldFlags(folded->n)&ONIGENC_CASE_TITLECASE)          /* titlecase available,  */
+			    && (flags&ONIGENC_CASE_TITLECASE)                              /* AND titlecase needed, */
+			    && (OnigCaseFoldFlags(folded->n)&ONIGENC_CASE_IS_TITLECASE)) { /* BUT alread titlecase  */
+			    flags ^= ONIGENC_CASE_MODIFIED;
+			    goto SpecialsCopy;
+			}
+			else if (OnigCaseFoldFlags(folded->n)&ONIGENC_CASE_TITLECASE) { /* Titlecase available */
+			    if (flags&ONIGENC_CASE_TITLECASE) /* titlecase needed, but not yet titlecase */
 				goto SpecialsCopy;
-			    }
 			    else /* Titlecase not needed */
 				SpecialsStart += SpecialsLengthExtract(*SpecialsStart);
 			}
