@@ -1905,10 +1905,10 @@ catch_i(VALUE tag, VALUE data)
  *
  *     catch(1) { 123 }            # => 123
  *
- *  If +throw(tag2, val)+ is called, Ruby searches up its stack for a +catch+
- *  block whose +tag+ has the same +object_id+ as _tag2_. When found, the block
- *  stops executing and returns _val_ (or +nil+ if no second argument was given
- *  to +throw+).
+ *  If <code>throw(tag2, val)</code> is called, Ruby searches up its stack for
+ *  a +catch+ block whose +tag+ has the same +object_id+ as _tag2_. When found,
+ *  the block stops executing and returns _val_ (or +nil+ if no second argument
+ *  was given to +throw+).
  *
  *     catch(1) { throw(1, 456) }  # => 456
  *     catch(1) { throw(1) }       # => nil

@@ -1,3 +1,9 @@
+Tue Mar 29 02:04:18 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (rb_f_catch): [DOC] fix malformed RDoc syntax, "+...+"
+	  cannot enclose non-identifier characters.
+	  a patch by Sebastian S in [ruby-core:74278].  [Bug#12170]
+
 Tue Mar 29 02:02:53 2016  Rei Odaira  <Rei.Odaira@gmail.com>
 
 	* test/-ext-/float/test_nextafter.rb: In AIX,
