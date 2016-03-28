@@ -48,7 +48,7 @@ if ARGV.first
   end
 end
 
-load Gem.bin_path('a', 'executable', version)
+load Gem.activate_bin_path('a', 'executable', version)
     EOF
 
     wrapper = @installer.app_script_text 'executable'
@@ -779,6 +779,55 @@ gem 'other', version
     end
 
     assert_match(/ran executable/, e.message)
+  end
+
+  def test_conflicting_binstubs
+    Dir.mkdir util_inst_bindir
+    util_clear_gems
+
+    # build old version that has a bin file
+    util_setup_gem do |spec|
+      File.open File.join('bin', 'executable'), 'w' do |f|
+        f.puts "require 'code'"
+      end
+      File.open File.join('lib', 'code.rb'), 'w' do |f|
+        f.puts 'raise "I have an executable"'
+      end
+    end
+
+    @installer.wrappers = true
+    build_rake_in do
+      use_ui @ui do
+        @newspec = @installer.install
+      end
+    end
+
+    old_bin_file = File.join @installer.bin_dir, 'executable'
+
+    # build new version that doesn't have a bin file
+    util_setup_gem do |spec|
+      FileUtils.rm File.join('bin', 'executable')
+      spec.files.delete File.join('bin', 'executable')
+      spec.executables.delete 'executable'
+      spec.version = @spec.version.bump
+      File.open File.join('lib', 'code.rb'), 'w' do |f|
+        f.puts 'raise "I do not have an executable"'
+      end
+    end
+
+    build_rake_in do
+      use_ui @ui do
+        @newspec = @installer.install
+      end
+    end
+
+    e = assert_raises RuntimeError do
+      instance_eval File.read(old_bin_file)
+    end
+
+    # We expect the bin stub to activate the version that actually contains
+    # the binstub.
+    assert_match('I have an executable', e.message)
   end
 
   def test_install_creates_binstub_that_understand_version

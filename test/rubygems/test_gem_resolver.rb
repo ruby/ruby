@@ -695,6 +695,18 @@ class TestGemResolver < Gem::TestCase
     assert_equal [a1, a1_p1], selected
   end
 
+  def test_search_for_local_platform_partial_string_match
+    a1    = util_spec 'a', 1
+    a1_p1 = util_spec 'a', 1 do |s| s.platform = Gem::Platform.local.os end
+    a1_p2 = util_spec 'a', 1 do |s| s.platform = 'unknown'              end
+
+    s = set(a1_p1, a1_p2, a1)
+    d = [make_dep('a')]
+    r = Gem::Resolver.new(d, s)
+
+    assert_resolves_to [a1_p1], r
+  end
+
   def test_raises_and_explains_when_platform_prevents_install
     a1 = util_spec "a", "1" do |s|
       s.platform = Gem::Platform.new %w[c p 1]

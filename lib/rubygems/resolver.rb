@@ -193,7 +193,7 @@ class Gem::Resolver
     conflict = e.conflicts.values.first
     raise Gem::DependencyResolutionError, Conflict.new(conflict.requirement_trees.first.first, conflict.existing, conflict.requirement)
   ensure
-    @output.close if @output and !debug?
+    @output.close if defined?(@output) and !debug?
   end
 
   ##
@@ -233,7 +233,7 @@ class Gem::Resolver
       exc.errors = @set.errors
       raise exc
     end
-    possibles.sort_by { |s| [s.source, s.version, s.platform.to_s == Gem::Platform.local.to_s ? 1 : 0] }.
+    possibles.sort_by { |s| [s.source, s.version, Gem::Platform.local =~ s.platform ? 1 : 0] }.
       map { |s| ActivationRequest.new s, dependency, [] }
   end
 

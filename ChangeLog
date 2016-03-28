@@ -1,3 +1,9 @@
+Mon Mar 28 11:26:31 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/rubygems.rb, lib/rubygems/*, test/rubygems/*: Update rubygems-2.6.2.
+	  Please see entries of 2.6.2 on
+	  https://github.com/rubygems/rubygems/blob/master/History.txt
+
 Mon Mar 28 11:02:31 2016  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* lib/rubygems/test_case.rb: Fix test on Windows for inconsistent temp path.

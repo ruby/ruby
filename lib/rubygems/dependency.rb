@@ -286,7 +286,9 @@ class Gem::Dependency
       }
     end
 
-    matches.sort_by { |s| s.sort_obj } # HACK: shouldn't be needed
+    # `stubs_for` returns oldest first, but `matching_specs` is supposed to
+    # return newest first, so just reverse the list
+    matches.reverse
   end
 
   ##
@@ -302,14 +304,13 @@ class Gem::Dependency
     # TODO: check Gem.activated_spec[self.name] in case matches falls outside
 
     if matches.empty? then
-      specs = Gem::Specification.find_all { |s|
-                s.name == name
-              }.map { |x| x.full_name }
+      specs = Gem::Specification.stubs_for name
 
       if specs.empty?
-        total = Gem::Specification.to_a.size
+        total = Gem::Specification.stubs.size
         msg   = "Could not find '#{name}' (#{requirement}) among #{total} total gem(s)\n".dup
       else
+        specs = specs.map(&:full_name)
         msg   = "Could not find '#{name}' (#{requirement}) - did find: [#{specs.join ','}]\n".dup
       end
       msg << "Checked in 'GEM_PATH=#{Gem.path.join(File::PATH_SEPARATOR)}', execute `gem env` for more information"
@@ -334,6 +335,6 @@ class Gem::Dependency
 
     matches.delete_if { |spec| spec.nil? || spec.version.prerelease? } unless prerelease?
 
-    matches.last
+    matches.first
   end
 end

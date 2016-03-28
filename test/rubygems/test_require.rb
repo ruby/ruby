@@ -319,4 +319,32 @@ class TestGemRequire < Gem::TestCase
   def unresolved_names
     Gem::Specification.unresolved_deps.values.map(&:to_s).sort
   end
+
+  def test_try_activate_error_unlocks_require_monitor
+    silence_warnings do
+      class << ::Gem
+        alias old_try_activate try_activate
+        def try_activate(*); raise 'raised from try_activate'; end
+      end
+    end
+
+    require 'does_not_exist_for_try_activate_test'
+  rescue RuntimeError => e
+    assert_match(/raised from try_activate/, e.message)
+    assert Kernel::RUBYGEMS_ACTIVATION_MONITOR.try_enter, "require monitor was not unlocked when try_activate raised"
+  ensure
+    silence_warnings do
+      class << ::Gem
+        alias try_activate old_try_activate
+      end
+    end
+    Kernel::RUBYGEMS_ACTIVATION_MONITOR.exit
+  end
+
+  def silence_warnings
+    old_verbose, $VERBOSE = $VERBOSE, false
+    yield
+  ensure
+    $VERBOSE = old_verbose
+  end
 end

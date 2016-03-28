@@ -216,7 +216,8 @@ class Gem::Installer
       existing = io.read.slice(%r{
           ^(
             gem \s |
-            load \s Gem\.bin_path\(
+            load \s Gem\.bin_path\( |
+            load \s Gem\.activate_bin_path\(
           )
           (['"])(.*?)(\2),
         }x, 3)
@@ -719,7 +720,7 @@ if ARGV.first
   end
 end
 
-load Gem.bin_path('#{spec.name}', '#{bin_file_name}', version)
+load Gem.activate_bin_path('#{spec.name}', '#{bin_file_name}', version)
 TEXT
   end
 

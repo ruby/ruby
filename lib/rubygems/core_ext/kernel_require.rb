@@ -121,13 +121,16 @@ module Kernel
   rescue LoadError => load_error
     RUBYGEMS_ACTIVATION_MONITOR.enter
 
-    if load_error.message.start_with?("Could not find") or
-        (load_error.message.end_with?(path) and Gem.try_activate(path)) then
-      RUBYGEMS_ACTIVATION_MONITOR.exit
-      return gem_original_require(path)
-    else
+    begin
+      if load_error.message.start_with?("Could not find") or
+          (load_error.message.end_with?(path) and Gem.try_activate(path)) then
+        require_again = true
+      end
+    ensure
       RUBYGEMS_ACTIVATION_MONITOR.exit
     end
+
+    return gem_original_require(path) if require_again
 
     raise load_error
   end

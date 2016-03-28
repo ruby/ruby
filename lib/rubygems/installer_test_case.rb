@@ -170,6 +170,8 @@ class Gem::InstallerTestCase < Gem::TestCase
         EOF
       end
 
+      yield @spec if block_given?
+
       use_ui ui do
         FileUtils.rm_f @gem
 

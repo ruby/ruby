@@ -10,7 +10,7 @@ require 'rbconfig'
 require 'thread'
 
 module Gem
-  VERSION = '2.6.1'
+  VERSION = '2.6.2'
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -174,14 +174,6 @@ module Gem
   @pre_reset_hooks      ||= []
   @post_reset_hooks     ||= []
 
-  def self.env_requirement(gem_name)
-    @env_requirements_by_name ||= {}
-    @env_requirements_by_name[gem_name] ||= begin
-      req = ENV["GEM_REQUIREMENT_#{gem_name.upcase}"] || '>= 0'.freeze
-      Gem::Requirement.create(req)
-    end
-  end
-
   ##
   # Try to activate a gem containing +path+. Returns true if
   # activation succeeded or wasn't needed because it was already
@@ -243,11 +235,15 @@ module Gem
     requirements = Gem::Requirement.default if
       requirements.empty?
 
+    find_spec_for_exe(name, exec_name, requirements).bin_file exec_name
+  end
+
+  def self.find_spec_for_exe name, exec_name, requirements
     dep = Gem::Dependency.new name, requirements
 
     loaded = Gem.loaded_specs[name]
 
-    return loaded.bin_file exec_name if loaded && dep.matches_spec?(loaded)
+    return loaded if loaded && dep.matches_spec?(loaded)
 
     specs = dep.matching_specs(true)
 
@@ -263,6 +259,24 @@ module Gem
       raise Gem::GemNotFoundException, msg
     end
 
+    spec
+  end
+  private_class_method :find_spec_for_exe
+
+  ##
+  # Find the full path to the executable for gem +name+.  If the +exec_name+
+  # is not given, the gem's default_executable is chosen, otherwise the
+  # specified executable's path is returned.  +requirements+ allows
+  # you to specify specific gem versions.
+  #
+  # A side effect of this method is that it will activate the gem that
+  # contains the executable.
+  #
+  # This method should *only* be used in bin stub files.
+
+  def self.activate_bin_path name, exec_name, requirement # :nodoc:
+    spec = find_spec_for_exe name, exec_name, [requirement]
+    Gem::LOADED_SPECS_MUTEX.synchronize { spec.activate }
     spec.bin_file exec_name
   end
 
@@ -848,6 +862,15 @@ An Array was passed in from #{caller[3]}
   def self.ruby_api_version
     @ruby_api_version ||= RbConfig::CONFIG['ruby_version'].dup
   end
+
+  def self.env_requirement(gem_name)
+    @env_requirements_by_name ||= {}
+    @env_requirements_by_name[gem_name] ||= begin
+      req = ENV["GEM_REQUIREMENT_#{gem_name.upcase}"] || '>= 0'.freeze
+      Gem::Requirement.create(req)
+    end
+  end
+  post_reset { @env_requirements_by_name = {} }
 
   ##
   # Returns the latest release-version specification for the gem +name+.
