@@ -1,3 +1,9 @@
+Mon Mar 28 11:02:31 2016  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* lib/rubygems/test_case.rb: Fix test on Windows for inconsistent temp path.
+	  https://github.com/rubygems/rubygems/pull/1554
+	  [Bug #12193][ruby-core:74431]
+
 Mon Mar 28 08:19:49 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sprintf.c (rb_str_format): refactor floating point format of
