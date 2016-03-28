@@ -1,3 +1,8 @@
+Tue Mar 29 02:08:40 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* signal.c: should also clear ruby_disable_gc.
+	  [Bug #11692]
+
 Tue Mar 29 02:04:18 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_eval.c (rb_f_catch): [DOC] fix malformed RDoc syntax, "+...+"
