@@ -1,3 +1,10 @@
+Tue Mar 29 00:56:10 2016  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* test/ruby/test_process.rb (test_execopts_gid): Skip a test
+	  that is known to fail on AIX. AIX allows setgid to
+	  a supplementary group, but Ruby does not allow the "-e"
+	  option when setgid'ed, so the test does not work as intended.
+
 Tue Mar 29 00:53:26 2016  Rei Odaira  <Rei.Odaira@gmail.com>
 
 	* test/socket/test_addrinfo.rb (test_ipv6_address_predicates):
