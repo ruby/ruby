@@ -23,6 +23,14 @@ class FTPTest < Test::Unit::TestCase
     end
   end
 
+  def test_closed_when_not_connected
+    ftp = Net::FTP.new
+    assert_equal(true, ftp.closed?)
+    assert_nothing_raised(Net::FTPConnectionError) do
+      ftp.close
+    end
+  end
+
   def test_connect_fail
     server = create_ftp_server { |sock|
       sock.print("421 Service not available, closing control connection.\r\n")

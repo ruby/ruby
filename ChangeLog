@@ -1,3 +1,8 @@
+Tue Mar 29 01:05:28 2016  Anthony Dmitriyev  <antstorm@gmail.com>
+
+	* net/ftp.rb: add NullSocket#closed? to fix closing not opened
+	  connection.  [Fix GH-1232]
+
 Tue Mar 29 01:02:49 2016  Koichi ITO  <koic.ito@gmail.com>
 
 	* variable.c: Added documentation about order of `Module#constants`
