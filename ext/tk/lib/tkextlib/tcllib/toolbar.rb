@@ -56,7 +56,7 @@ class Tk::Tcllib::Widget::ToolbarItem < TkObject
     }
   end
 
-  def initaialize(parent, *args)
+  def initialize(parent, *args)
     @parent = @t = parent
     @tpath = parent.path
 
