@@ -1,3 +1,10 @@
+Tue Mar 29 02:02:53 2016  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* test/-ext-/float/test_nextafter.rb: In AIX,
+	  nextafter(+0.0,-0.0)=+0.0, and nextafter(-0.0,+0.0)=-0.0,
+	  but they should return -0.0 and +0.0, respectively. This is
+	  a known bug in nextafter(3) on AIX, so skip related tests.
+
 Tue Mar 29 01:56:24 2016  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* lib/rubygems/installer.rb: merge partially r49511.
