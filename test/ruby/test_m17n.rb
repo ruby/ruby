@@ -1632,4 +1632,9 @@ class TestM17N < Test::Unit::TestCase
     assert_match(escape_plain, 0x5b.chr(::Encoding::UTF_8), bug10670)
     assert_match(escape_plain, 0x5b.chr, bug10670)
   end
+
+  def test_greek_capital_gap
+    bug12204 = '[ruby-core:74478] [Bug #12204] GREEK CAPITAL RHO and SIGMA'
+    assert_equal("\u03A3", "\u03A1".succ, bug12204)
+  end
 end
