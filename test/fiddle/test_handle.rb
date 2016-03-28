@@ -53,9 +53,9 @@ module Fiddle
         assert_equal Fiddle::Handle.sym('dlopen'), Fiddle::Handle['dlopen']
       rescue
         # NetBSD
-        require 'objspace'
-        refute_nil Fiddle::Handle.sym('Init_objspace')
-        assert_equal Fiddle::Handle.sym('Init_objspace'), Fiddle::Handle['Init_objspace']
+        require '-test-/dln/empty'
+        refute_nil Fiddle::Handle.sym('Init_empty')
+        assert_equal Fiddle::Handle.sym('Init_empty'), Fiddle::Handle['Init_empty']
       end
     end
 
@@ -182,9 +182,9 @@ module Fiddle
         # interface, below, should be used, since getpid() is a function and not a
         # data object.)
         # --- FreeBSD 8.0 dlsym(3)
-        require 'objspace'
+        require '-test-/dln/empty'
         handle = Handle::NEXT
-        refute_nil handle['Init_objspace']
+        refute_nil handle['Init_empty']
       end
     end unless /mswin|mingw/ =~ RUBY_PLATFORM
 

@@ -1,3 +1,9 @@
+Mon Mar 28 23:20:12 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/fiddle/test_handle.rb (test_NEXT): use -test-/dln/empty
+	  which is always a shared object and is not used by others.
+	  [ruby-dev:48629] [Bug #10384]
+
 Mon Mar 28 23:15:54 2016  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ruby.h: undef HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P
