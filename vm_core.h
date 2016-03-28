@@ -742,14 +742,6 @@ typedef struct rb_thread_struct {
     struct rb_vm_tag *tag;
     struct rb_vm_protect_tag *protect_tag;
 
-    /*! Thread-local state of evaluation context.
-     *
-     *  If negative, this thread is evaluating the main program.
-     *  If positive, this thread is evaluating a program under Kernel::eval
-     *  family.
-     */
-    int parse_in_eval;
-
     /* storage */
     st_table *local_storage;
     VALUE local_storage_recursive_hash;
@@ -820,7 +812,7 @@ RUBY_SYMBOL_EXPORT_BEGIN
 /* node -> iseq */
 rb_iseq_t *rb_iseq_new(NODE*, VALUE, VALUE, VALUE, const rb_iseq_t *parent, enum iseq_type);
 rb_iseq_t *rb_iseq_new_top(NODE *node, VALUE name, VALUE path, VALUE absolute_path, const rb_iseq_t *parent);
-rb_iseq_t *rb_iseq_new_main(NODE *node, VALUE path, VALUE absolute_path);
+rb_iseq_t *rb_iseq_new_main(NODE *node, VALUE path, VALUE absolute_path, const rb_iseq_t *parent);
 rb_iseq_t *rb_iseq_new_with_bopt(NODE*, VALUE, VALUE, VALUE, VALUE, VALUE, enum iseq_type, VALUE);
 rb_iseq_t *rb_iseq_new_with_opt(NODE*, VALUE, VALUE, VALUE, VALUE, const rb_iseq_t *parent, enum iseq_type, const rb_compile_option_t*);
 

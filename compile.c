@@ -6764,12 +6764,11 @@ rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc, VALUE locals, VALUE params,
 /* for parser */
 
 int
-rb_dvar_defined(ID id)
+rb_dvar_defined(ID id, const rb_block_t *base_block)
 {
-    rb_thread_t *th = GET_THREAD();
     const rb_iseq_t *iseq;
 
-    if (th->base_block && (iseq = th->base_block->iseq)) {
+    if (base_block && (iseq = base_block->iseq)) {
 	while (iseq->body->type == ISEQ_TYPE_BLOCK ||
 	       iseq->body->type == ISEQ_TYPE_RESCUE ||
 	       iseq->body->type == ISEQ_TYPE_ENSURE ||
@@ -6790,14 +6789,13 @@ rb_dvar_defined(ID id)
 }
 
 int
-rb_local_defined(ID id)
+rb_local_defined(ID id, const rb_block_t *base_block)
 {
-    rb_thread_t *th = GET_THREAD();
     const rb_iseq_t *iseq;
 
-    if (th->base_block && th->base_block->iseq) {
+    if (base_block && base_block->iseq) {
 	unsigned int i;
-	iseq = th->base_block->iseq->body->local_iseq;
+	iseq = base_block->iseq->body->local_iseq;
 
 	for (i=0; i<iseq->body->local_table_size; i++) {
 	    if (iseq->body->local_table[i] == id) {
@@ -6806,18 +6804,6 @@ rb_local_defined(ID id)
 	}
     }
     return 0;
-}
-
-int
-rb_parse_in_eval(void)
-{
-    return GET_THREAD()->parse_in_eval > 0;
-}
-
-int
-rb_parse_in_main(void)
-{
-    return GET_THREAD()->parse_in_eval < 0;
 }
 
 static int

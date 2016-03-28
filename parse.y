@@ -228,6 +228,7 @@ vtable_included(const struct vtable * tbl, ID id)
     return 0;
 }
 
+typedef struct rb_block_struct rb_block_t;
 
 typedef struct token_info {
     const char *token;
@@ -295,7 +296,7 @@ struct parser_params {
     unsigned int yydebug: 1;
     unsigned int has_shebang: 1;
     unsigned int in_defined: 1;
-    unsigned int compile_for_eval: 1;
+    unsigned int in_main: 1;
     unsigned int in_kwarg: 1;
     unsigned int in_single: 1;
     unsigned int in_def: 1;
@@ -315,6 +316,7 @@ struct parser_params {
     VALUE error_buffer;
     VALUE debug_lines;
     VALUE coverage;
+    const rb_block_t *base_block;
 #else
     /* Ripper only */
 
@@ -353,7 +355,7 @@ static int parser_yyerror(struct parser_params*, const char*);
 #define brace_nest		(parser->lex.brace_nest)
 #define in_single		(parser->in_single)
 #define in_def			(parser->in_def)
-#define compile_for_eval	(parser->compile_for_eval)
+#define in_main 		(parser->in_main)
 #define in_defined		(parser->in_defined)
 #define tokenbuf		(parser->tokenbuf)
 #define tokidx			(parser->tokidx)
@@ -381,7 +383,9 @@ static int parser_yyerror(struct parser_params*, const char*);
 #define current_arg		(parser->cur_arg)
 #define yydebug 		(parser->yydebug)
 #ifdef RIPPER
+#define compile_for_eval	(0)
 #else
+#define compile_for_eval	(parser->base_block != 0 && !in_main)
 #define ruby_eval_tree		(parser->eval_tree)
 #define ruby_eval_tree_begin	(parser->eval_tree_begin)
 #define ruby_debug_lines	(parser->debug_lines)
@@ -530,8 +534,8 @@ ripper_is_node_yylval(VALUE n)
 
 #define value_expr(node) ((void)(node))
 #define remove_begin(node) (node)
-#define rb_dvar_defined(id) 0
-#define rb_local_defined(id) 0
+#define rb_dvar_defined(id, base) 0
+#define rb_local_defined(id, base) 0
 static ID ripper_get_id(VALUE);
 #define get_id(id) ripper_get_id(id)
 static VALUE ripper_get_value(VALUE);
@@ -945,7 +949,7 @@ static void token_info_pop_gen(struct parser_params*, const char *token, size_t 
 program		:  {
 			SET_LEX_STATE(EXPR_BEG);
 		    /*%%%*/
-			local_push(compile_for_eval || rb_parse_in_main());
+			local_push(compile_for_eval || in_main);
 		    /*%
 			local_push(0);
 		    %*/
@@ -5540,7 +5544,6 @@ yycompile0(VALUE arg)
 #endif
     ruby_debug_lines = 0;
     ruby_coverage = 0;
-    compile_for_eval = 0;
 
     lex_strterm = 0;
     lex_p = lex_pbeg = lex_pend = 0;
@@ -5636,7 +5639,6 @@ parser_compile_string(VALUE vparser, VALUE fname, VALUE s, int line)
     lex_gets_ptr = 0;
     lex_input = rb_str_new_frozen(s);
     lex_pbeg = lex_p = lex_pend = 0;
-    compile_for_eval = !!rb_parse_in_eval();
 
     node = yycompile(parser, fname, line);
     RB_GC_GUARD(vparser); /* prohibit tail call optimization */
@@ -5710,7 +5712,6 @@ rb_parser_compile_file_path(VALUE vparser, VALUE fname, VALUE file, int start)
     lex_gets = lex_io_gets;
     lex_input = file;
     lex_pbeg = lex_p = lex_pend = 0;
-    compile_for_eval = !!rb_parse_in_eval();
 
     node = yycompile(parser, fname, start);
     RB_GC_GUARD(vparser); /* prohibit tail call optimization */
@@ -10428,7 +10429,7 @@ local_id_gen(struct parser_params *parser, ID id)
     }
 
     if (vars && vars->prev == DVARS_INHERIT) {
-	return rb_local_defined(id);
+	return rb_local_defined(id, parser->base_block);
     }
     else if (vtable_included(args, id)) {
 	return 1;
@@ -10525,7 +10526,7 @@ dvar_defined_gen(struct parser_params *parser, ID id, int get)
     }
 
     if (vars == DVARS_INHERIT) {
-        return rb_dvar_defined(id);
+        return rb_dvar_defined(id, parser->base_block);
     }
 
     return 0;
@@ -10897,12 +10898,14 @@ rb_parser_new(void)
 }
 
 VALUE
-rb_parser_mild_error(VALUE vparser)
+rb_parser_set_context(VALUE vparser, const rb_block_t *base, int main)
 {
     struct parser_params *parser;
 
     TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, parser);
-    parser->error_buffer = Qnil;
+    parser->error_buffer = main ? Qfalse : Qnil;
+    parser->base_block = base;
+    in_main = main;
     return vparser;
 }
 #endif

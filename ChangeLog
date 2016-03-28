@@ -1,3 +1,16 @@
+Tue Mar 29 06:39:22 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (struct parser_params): move parse_in_eval flag from
+	  rb_thread_t.
+
+	* parse.y (rb_parser_set_context): set parsing context, not only
+	  mild error flag.
+
+	* iseq.c (rb_iseq_compile_with_option): the parser now refers no
+	  thread local states to be restored.
+
+	* vm_eval.c (eval_string_with_cref): ditto.
+
 Mon Mar 28 21:24:02 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* numeric.c (int_pos_p): fix typos.

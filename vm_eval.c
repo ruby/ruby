@@ -1274,6 +1274,23 @@ rb_each(VALUE obj)
 }
 
 static VALUE
+adjust_backtrace_in_eval(rb_thread_t *th, VALUE errinfo)
+{
+    VALUE errat = rb_get_backtrace(errinfo);
+    VALUE mesg = rb_attr_get(errinfo, id_mesg);
+    if (RB_TYPE_P(errat, T_ARRAY)) {
+	VALUE bt2 = rb_vm_backtrace_str_ary(th, 0, 0);
+	if (RARRAY_LEN(bt2) > 0) {
+	    if (RB_TYPE_P(mesg, T_STRING) && !RSTRING_LEN(mesg)) {
+		rb_ivar_set(errinfo, id_mesg, RARRAY_AREF(errat, 0));
+	    }
+	    RARRAY_ASET(errat, 0, RARRAY_AREF(bt2, 0));
+	}
+    }
+    return errinfo;
+}
+
+static VALUE
 eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_arg,
 		      VALUE filename, int lineno)
 {
@@ -1283,16 +1300,13 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_
     rb_thread_t *th = GET_THREAD();
     rb_env_t *env = NULL;
     rb_block_t block, *base_block;
-    volatile int parse_in_eval;
     volatile VALUE file;
     volatile int line;
 
     file = filename ? filename : rb_source_location(&lineno);
     line = lineno;
 
-    parse_in_eval = th->parse_in_eval;
-    TH_PUSH_TAG(th);
-    if ((state = TH_EXEC_TAG()) == 0) {
+    {
 	rb_cref_t *cref = cref_arg;
 	rb_binding_t *bind = 0;
 	const rb_iseq_t *iseq;
@@ -1340,9 +1354,11 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_
 	    absolute_path = rb_fstring(absolute_path);
 
 	/* make eval iseq */
-	th->parse_in_eval++;
 	iseq = rb_iseq_compile_with_option(src, fname, absolute_path, INT2FIX(line), base_block, Qnil);
-	th->parse_in_eval--;
+
+	if (!iseq) {
+	    rb_exc_raise(adjust_backtrace_in_eval(th, th->errinfo));
+	}
 
 	if (!cref && base_block->iseq) {
 	    if (NIL_P(scope)) {
@@ -1364,37 +1380,22 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_
 	if (bind && iseq->body->local_table_size > 0) {
 	    bind->env = vm_make_env_object(th, th->cfp);
 	}
+    }
 
+    if (file != Qundef) {
 	/* kick */
+	return vm_exec(th);
+    }
+
+    TH_PUSH_TAG(th);
+    if ((state = TH_EXEC_TAG()) == 0) {
 	result = vm_exec(th);
     }
     TH_POP_TAG();
-    th->parse_in_eval = parse_in_eval;
 
     if (state) {
 	if (state == TAG_RAISE) {
-	    VALUE errinfo = th->errinfo;
-	    if (file == Qundef) {
-		VALUE mesg, errat, bt2;
-
-		errat = rb_get_backtrace(errinfo);
-		mesg = rb_attr_get(errinfo, id_mesg);
-		if (!NIL_P(errat) && RB_TYPE_P(errat, T_ARRAY) &&
-		    (bt2 = rb_vm_backtrace_str_ary(th, 0, 0), RARRAY_LEN(bt2) > 0)) {
-		    if (!NIL_P(mesg) && RB_TYPE_P(mesg, T_STRING) && !RSTRING_LEN(mesg)) {
-			if (OBJ_FROZEN(mesg)) {
-			    VALUE m = rb_str_cat(rb_str_dup(RARRAY_AREF(errat, 0)), ": ", 2);
-			    rb_ivar_set(errinfo, id_mesg, rb_str_append(m, mesg));
-			}
-			else {
-			    rb_str_update(mesg, 0, 0, rb_str_new2(": "));
-			    rb_str_update(mesg, 0, 0, RARRAY_AREF(errat, 0));
-			}
-		    }
-		    RARRAY_ASET(errat, 0, RARRAY_AREF(bt2, 0));
-		}
-	    }
-	    rb_exc_raise(errinfo);
+	    adjust_backtrace_in_eval(th, th->errinfo);
 	}
 	JUMP_TAG(state);
     }

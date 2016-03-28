@@ -808,10 +808,9 @@ int rb_class_has_methods(VALUE c);
 VALUE rb_invcmp(VALUE, VALUE);
 
 /* compile.c */
-int rb_dvar_defined(ID);
-int rb_local_defined(ID);
-int rb_parse_in_eval(void);
-int rb_parse_in_main(void);
+struct rb_block_struct;
+int rb_dvar_defined(ID, const struct rb_block_struct *);
+int rb_local_defined(ID, const struct rb_block_struct *);
 const char * rb_insns_name(int i);
 VALUE rb_insns_name_array(void);
 
@@ -1118,7 +1117,7 @@ struct RBasicRaw {
 #endif
 VALUE rb_parser_get_yydebug(VALUE);
 VALUE rb_parser_set_yydebug(VALUE, VALUE);
-VALUE rb_parser_mild_error(VALUE parser);
+VALUE rb_parser_set_context(VALUE, const struct rb_block_struct *, int);
 void *rb_parser_load_file(VALUE parser, VALUE name);
 int rb_is_const_name(VALUE name);
 int rb_is_class_name(VALUE name);

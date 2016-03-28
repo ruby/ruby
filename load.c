@@ -610,7 +610,7 @@ rb_load_internal0(rb_thread_t *th, VALUE fname, int wrap)
 	}
 	else {
 	    VALUE parser = rb_parser_new();
-	    rb_parser_mild_error(parser);
+	    rb_parser_set_context(parser, NULL, TRUE);
 	    node = (NODE *)rb_parser_load_file(parser, fname);
 	    iseq = rb_iseq_new_top(node, rb_str_new2("<top (required)>"), fname, rb_realpath_internal(Qnil, fname, 1), NULL);
 	}

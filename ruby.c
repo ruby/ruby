@@ -598,10 +598,7 @@ require_libraries(VALUE *req_list)
     VALUE list = *req_list;
     VALUE self = rb_vm_top_self();
     ID require;
-    rb_thread_t *th = GET_THREAD();
     rb_encoding *extenc = rb_default_external_encoding();
-    int prev_parse_in_eval = th->parse_in_eval;
-    th->parse_in_eval = 0;
 
     CONST_ID(require, "require");
     while (list && RARRAY_LEN(list) > 0) {
@@ -612,19 +609,15 @@ require_libraries(VALUE *req_list)
 	rb_funcall2(self, require, 1, &feature);
     }
     *req_list = 0;
-
-    th->parse_in_eval = prev_parse_in_eval;
 }
 
-static rb_env_t*
-toplevel_context(VALUE toplevel_binding)
+static rb_block_t*
+toplevel_context(rb_binding_t *bind)
 {
     rb_env_t *env;
-    rb_binding_t *bind;
 
-    GetBindingPtr(toplevel_binding, bind);
     GetEnvPtr(bind->env, env);
-    return env;
+    return &env->block;
 }
 
 static void
@@ -1422,8 +1415,8 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
     const char *s;
     char fbuf[MAXPATHLEN];
     int i = (int)proc_options(argc, argv, opt, 0);
-    rb_thread_t *th = GET_THREAD();
-    VALUE toplevel_binding = Qundef;
+    rb_binding_t *toplevel_binding;
+    rb_block_t *base_block;
 
     argc -= i;
     argv += i;
@@ -1570,16 +1563,10 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
     ruby_set_argv(argc, argv);
     process_sflag(&opt->sflag);
 
-    toplevel_binding = rb_const_get(rb_cObject, rb_intern("TOPLEVEL_BINDING"));
-
-#define PREPARE_PARSE_MAIN(expr) do { \
-    rb_env_t *env = toplevel_context(toplevel_binding); \
-    th->parse_in_eval--; \
-    th->base_block = &env->block; \
-    expr; \
-    th->parse_in_eval++; \
-    th->base_block = 0; \
-} while (0)
+    GetBindingPtr(rb_const_get(rb_cObject, rb_intern("TOPLEVEL_BINDING")),
+		  toplevel_binding);
+    /* need to acquire env from toplevel_binding each time, since it
+     * may update after eval() */
 
     if (opt->e_script) {
 	VALUE progname = rb_progname;
@@ -1597,18 +1584,18 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 	}
         ruby_set_script_name(progname);
 
-	PREPARE_PARSE_MAIN({
-	    tree = rb_parser_compile_string(parser, opt->script, opt->e_script, 1);
-	});
+	base_block = toplevel_context(toplevel_binding);
+	rb_parser_set_context(parser, base_block, TRUE);
+	tree = rb_parser_compile_string(parser, opt->script, opt->e_script, 1);
     }
     else {
 	if (opt->script[0] == '-' && !opt->script[1]) {
 	    forbid_setid("program input from stdin");
 	}
 
-	PREPARE_PARSE_MAIN({
-	    tree = load_file(parser, opt->script_name, 1, opt);
-	});
+	base_block = toplevel_context(toplevel_binding);
+	rb_parser_set_context(parser, base_block, TRUE);
+	tree = load_file(parser, opt->script_name, 1, opt);
     }
     ruby_set_script_name(opt->script_name);
     if (opt->dump & DUMP_BIT(yydebug)) return Qtrue;
@@ -1657,13 +1644,14 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 	return Qtrue;
     }
 
-    PREPARE_PARSE_MAIN({
+    {
 	VALUE path = Qnil;
 	if (!opt->e_script && strcmp(opt->script, "-")) {
 	    path = rb_realpath_internal(Qnil, opt->script_name, 1);
 	}
-	iseq = rb_iseq_new_main(tree, opt->script_name, path);
-    });
+	base_block = toplevel_context(toplevel_binding);
+	iseq = rb_iseq_new_main(tree, opt->script_name, path, base_block->iseq);
+    }
 
     if (opt->dump & DUMP_BIT(insns)) {
 	rb_io_write(rb_stdout, rb_iseq_disasm((const rb_iseq_t *)iseq));

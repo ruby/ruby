@@ -442,10 +442,8 @@ rb_iseq_new_top(NODE *node, VALUE name, VALUE path, VALUE absolute_path, const r
 }
 
 rb_iseq_t *
-rb_iseq_new_main(NODE *node, VALUE path, VALUE absolute_path)
+rb_iseq_new_main(NODE *node, VALUE path, VALUE absolute_path, const rb_iseq_t *parent)
 {
-    rb_thread_t *th = GET_THREAD();
-    const rb_iseq_t *parent = th->base_block->iseq;
     return rb_iseq_new_with_opt(node, rb_fstring_cstr("<main>"),
 				path, absolute_path, INT2FIX(0),
 				parent, ISEQ_TYPE_MAIN, &COMPILE_OPTION_DEFAULT);
@@ -605,9 +603,7 @@ rb_iseq_load(VALUE data, VALUE parent, VALUE opt)
 rb_iseq_t *
 rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE absolute_path, VALUE line, rb_block_t *base_block, VALUE opt)
 {
-    int state;
     rb_thread_t *th = GET_THREAD();
-    rb_block_t *prev_base_block = th->base_block;
     rb_iseq_t *iseq = NULL;
     const rb_iseq_t *const parent = base_block ? base_block->iseq : NULL;
     rb_compile_option_t option;
@@ -617,36 +613,49 @@ rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE absolute_path, VALUE li
 #else
 # define INITIALIZED /* volatile */
 #endif
-    /* safe results first */
-    const INITIALIZED int ln = (make_compile_option(&option, opt), NUM2INT(line));
-    NODE *(*const INITIALIZED parse)(VALUE vparser, VALUE fname, VALUE file, int start) =
-	(StringValueCStr(file), RB_TYPE_P(src, T_FILE)) ?
-	rb_parser_compile_file_path :
-	(StringValue(src), rb_parser_compile_string_path);
-    /* should never fail usually */
-    const INITIALIZED VALUE label = parent ?
-	parent->body->location.label :
-	rb_fstring_cstr("<compiled>");
-    const INITIALIZED VALUE parser = rb_parser_new();
+    NODE *(*parse)(VALUE vparser, VALUE fname, VALUE file, int start);
+    int ln;
+    NODE *INITIALIZED node;
 
-    rb_parser_mild_error(parser);
-    th->base_block = base_block;
-    TH_PUSH_TAG(th);
-    if ((state = EXEC_TAG()) == 0) {
-	NODE *node = (*parse)(parser, file, src, ln);
-	if (node) { /* TODO: check err */
+    /* safe results first */
+    make_compile_option(&option, opt);
+    ln = NUM2INT(line);
+    StringValueCStr(file);
+    if (RB_TYPE_P(src, T_FILE)) {
+	parse = rb_parser_compile_file_path;
+    }
+    else {
+	parse = rb_parser_compile_string_path;
+	StringValue(src);
+    }
+    {
+	const VALUE parser = rb_parser_new();
+	rb_parser_set_context(parser, base_block, FALSE);
+	node = (*parse)(parser, file, src, ln);
+    }
+
+    if (!node) {
+	rb_exc_raise(th->errinfo);
+    }
+    else {
+	int state;
+	INITIALIZED VALUE label = parent ?
+	    parent->body->location.label :
+	    rb_fstring_cstr("<compiled>");
+	rb_block_t **volatile const base_block_ptr = &th->base_block;
+	rb_block_t *volatile const prev_base_block = th->base_block;
+
+	th->base_block = base_block;
+	TH_PUSH_TAG(th);
+	if ((state = EXEC_TAG()) == 0) {
 	    iseq = rb_iseq_new_with_opt(node, label, file, absolute_path, line,
 					parent, type, &option);
 	}
-    }
-    TH_POP_TAG();
+	TH_POP_TAG();
+	*base_block_ptr = prev_base_block;
 
-    th->base_block = prev_base_block;
-
-    if (state) {
-	JUMP_TAG(state);
+	if (state) JUMP_TAG(state);
     }
-    if (!iseq) rb_exc_raise(th->errinfo);
 
     return iseq;
 }
