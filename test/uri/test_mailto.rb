@@ -104,6 +104,9 @@ class TestMailTo < Test::Unit::TestCase
     # mailto:javascript:alert()
     bad << ["javascript:alert()", []]
 
+    # mailto:/example.com/    ; WRONG, not a mail address
+    bad << ["/example.com/", []]
+
     # '=' which is in hname or hvalue is wrong.
     bad << ["foo@example.jp?subject=1+1=2", []]
 

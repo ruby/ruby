@@ -1,3 +1,10 @@
+Tue Mar 29 02:22:35 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* lib/uri/mailto.rb: raising URI::InvalidComponentError instead
+	  of failing with undefined method `split' for nil:NilClass for
+	  mailto: URIs without opaque part. [Bug #10738]
+	* test/uri/testuri.rb: Test for above
+
 Tue Mar 29 02:08:40 2016  Koichi Sasada  <ko1@atdot.net>
 
 	* signal.c: should also clear ruby_disable_gc.

@@ -135,6 +135,10 @@ module URI
       @to = nil
       @headers = []
 
+      unless @opaque
+        raise InvalidComponentError,
+          "missing opaque part for mailto URL"
+      end
       to, header = @opaque.split('?', 2)
       # allow semicolon as a addr-spec separator
       # http://support.microsoft.com/kb/820868
