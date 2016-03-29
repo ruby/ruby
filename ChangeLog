@@ -1,3 +1,10 @@
+Tue Mar 29 17:03:28 2016  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* test/-ext-/float/test_nextafter.rb: In AIX,
+	  nextafter(+0.0,-0.0)=+0.0, and nextafter(-0.0,+0.0)=-0.0,
+	  but they should return -0.0 and +0.0, respectively. This is
+	  a known bug in nextafter(3) on AIX, so skip related tests.
+
 Tue Mar 29 16:54:14 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (enc_succ_alnum_char): try to skip an invalid character
