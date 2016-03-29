@@ -1,3 +1,8 @@
+Wed Mar 30 01:00:30 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (proc_binding): proc from symbol can not make a binding.
+	  [ruby-core:74100] [Bug #12137]
+
 Wed Mar 30 00:54:38 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/win32.h (O_SHARE_DELETE): change to fit Fixnum
