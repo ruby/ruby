@@ -1,3 +1,11 @@
+Wed Mar 30 00:52:47 2016  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* test/net/imap/test_imap.rb (test_idle_timeout): Because of the
+	  timeout specified in "imap.idle(0.2)", there is no gurantee that
+	  the server thread has done all the work before the client thread
+	  performs the assertions. It depends on the thread scheduling.
+	  Add checks to avoid false positives (on AIX, particularly).
+
 Wed Mar 30 00:41:42 2016  Rei Odaira  <Rei.Odaira@gmail.com>
 
 	* test/socket/test_socket.rb (test_udp_recvmsg_truncation):
