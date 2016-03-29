@@ -1,3 +1,9 @@
+Tue Mar 29 15:04:42 2016  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* ext/tk/lib/tkextlib/blt/tree.rb: fix method name typo.
+	[ruby-core:72510] [Bug #11890] The patch provided by Akira Matsuda.
+
+
 Tue Mar 29 15:04:19 2016  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* ext/tk/lib/tk/menubar.rb: fix a typo in font name. [ruby-core:72505]
