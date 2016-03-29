@@ -1,3 +1,15 @@
+Wed Mar 30 01:32:14 2016  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* test/-ext-/time/test_new.rb (test_timespec_new): change a gmtoff
+	  test to a better one that does not depend on whether the current
+	  time is in summer time or not.
+
+Wed Mar 30 01:32:14 2016  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* test/-ext-/time/test_new.rb (test_timespec_new): Time#gmtoff values
+	  are the same only when both or neither of the Time objects are in
+	  summer time (daylight-saving time).
+
 Wed Mar 30 01:30:54 2016  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	* lib/rubygems/test_case.rb: Fix test on Windows for inconsistent temp path.
