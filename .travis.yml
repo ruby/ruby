@@ -18,66 +18,57 @@
 
 # Language specification.
 language: c
+sudo: false
 
 # Compilers.  Several  compilers are  provided in Travis,  so we try  them all.
 # The value set here is visible via $CC environment variable.
 compiler:
   - gcc
-  - clang
 
 os:
   - linux
-  - osx
 
 # Dependencies.  Some  header files are missing  in a Travis' worker  VM, so we
 # have  to install  them.  The  "1.9.1" here  is OK.   It is  the  most adopted
 # version string  for Debian/Ubuntu, and  no dependencies have been  changed so
 # far since the 1.9.1 release.
 before_install:
-  - "if [[ $TRAVIS_OS_NAME = 'linux' ]]; then sudo apt-get -qq update; fi"
-  # Travis ships an outdated, broken version of libssl by default
-  - "if [[ $TRAVIS_OS_NAME = 'linux' ]]; then sudo apt-get -qq --only-upgrade install '^libssl.*'; fi"
-  - "if [[ $TRAVIS_OS_NAME = 'linux' ]]; then sudo apt-get -qq install $CC; fi" # upgrade if any
-  - "if [[ $TRAVIS_OS_NAME = 'linux' ]]; then JOBS='-j'; fi"
-  - "if [[ $TRAVIS_OS_NAME = 'osx' ]]; then brew install autoconf openssl; fi"
-  - "if [[ $TRAVIS_OS_NAME = 'osx' ]]; then OPENSSL_FLAG=\"--with-openssl-dir=`brew --prefix openssl`\"; fi"
-  - "if [[ $TRAVIS_OS_NAME = 'osx' && $CC = 'gcc' ]]; then CC='gcc-4.9'; fi"
-install: "if [[ $TRAVIS_OS_NAME = 'linux' ]]; then sudo apt-get -qq build-dep ruby1.9.1 2>/dev/null; fi"
+  - "CONFIG_FLAG="
+  - "JOBS='-j 4'"
 
 # Script is where the test runs.  Note  we just do "make test", not other tests
 # like  test-all, test-rubyspec.   This is  because  they take  too much  time,
 # enough for Travis to shut down the VM as being stalled.
 before_script:
-  - "if [[ $TRAVIS_OS_NAME = 'osx' ]]; then rm -f ~/Library/Logs/DiagnosticReports/ruby_*.crash; fi"
   - "uname -a"
   - "uname -r"
   - "rm -fr .ext autom4te.cache"
-  - "make -f common.mk BASERUBY=ruby srcdir=. update-config_files"
+  - "echo $TERM"
+  - "make -f common.mk BASERUBY=ruby MAKEDIRS='mkdir -p' srcdir=. update-config_files"
   - "autoconf"
   - "mkdir config_1st config_2nd"
-  - "./configure -C --disable-install-doc --disable-install-rdoc --with-gcc=$CC $OPENSSL_FLAG"
+  - "./configure -C --disable-install-doc --with-gcc=$CC $CONFIG_FLAG"
   - "cp -pr config.status .ext/include config_1st"
   - "make reconfig"
   - "cp -pr config.status .ext/include config_2nd"
-  - "diff -ru config_1st config_2nd || true"
-  - "make -s $JOBS encs"
-  - "make -s $JOBS exts"
+  - "diff -ru config_1st config_2nd"
+  - "make after-update BASERUBY=ruby"
+  - "make -s $JOBS"
   - "make update-rubyspec"
 script:
-  - "make test"
-  - "make test-all TESTS='-q -j2'"
-  - "make test-rubyspec"
-after_failure:
-  - "if [[ $TRAVIS_OS_NAME = 'osx' ]]; then find ~/Library/Logs/DiagnosticReports -type f -name ruby_\\*.crash -ls -execdir cat {} \\; -delete; fi"
+  - "make test TESTOPTS=--color=never"
+  - "make test-all TESTOPTS='-q -j3 --color=never --job-status=normal'"
+  - "make test-rubyspec MSPECOPT=-fm"
 
 # Branch matrix.  Not all branches are Travis-ready so we limit branches here.
 branches:
   only:
     - trunk
-    - ruby_1_9_3
-    - ruby_2_0_0
     - ruby_2_1
     - ruby_2_2
+    - ruby_2_3
+    - /^feature\//
+    - /^bug\//
 
 # We want to be notified when something happens.
 notifications:
@@ -86,7 +77,7 @@ notifications:
       - "irc.freenode.org#ruby-core"
       - "irc.freenode.org#ruby-ja"
     on_success: change # [always|never|change] # default: always
-    on_failure: change # [always|never|change] # default: always
+    on_failure: always # [always|never|change] # default: always
     template:
       - "%{message} by @%{author}: See %{build_url}"
 

@@ -152,7 +152,7 @@ COMPILE_PRELUDE = $(srcdir)/tool/generic_erb.rb $(srcdir)/template/prelude.c.tmp
 
 all: showflags main docs
 
-main: showflags $(ENCSTATIC:static=lib)encs exts
+main: showflags exts $(ENCSTATIC:static=lib)encs
 	@$(NULLCMD)
 
 .PHONY: showflags

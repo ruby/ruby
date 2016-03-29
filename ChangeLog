@@ -1,3 +1,26 @@
+Wed Mar 30 06:04:18 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* .travis.yml: removed commented-out code.
+
+Wed Mar 30 06:04:18 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* .travis.yml: removed osx code. follow up with r53517
+
+Wed Mar 30 06:04:18 2016  Aaron Patterson <tenderlove@ruby-lang.org>
+
+	* .travis.yml: update libssl before running tests. 
+	  Thanks to Chris Sinjakli <chris@sinjakli.co.uk> for figuring out the
+	  travis settings!
+
+Wed Mar 30 06:04:18 2016  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* .travis.yml: removed Ruby 1.9.3 build on Travis CI
+
+Wed Mar 30 06:04:18 2016  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+
+	* .travis.yml: Remove redundant configuration option.
+	  [fix GH-809] Patch by @gxworld
+
 Wed Mar 30 05:15:04 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* ext/openssl/extconf.rb: check SSL_CTX_set_next_proto_select_cb
