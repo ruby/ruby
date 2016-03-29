@@ -74,7 +74,7 @@ class TestCaseMappingPreliminary < Test::Unit::TestCase
     check_downcase_properties   "\uab70\uab71\uab72\uab73\uab74\uab75\uab76\uab77\uab78\uab79", 'ᎠᎡᎢᎣᎤᎥᎦᎧᎨᎩ', :lithuanian
     check_upcase_properties     'ᎠᎡᎢᎣᎤᎥᎦᎧᎨᎩ', "\uab70\uab71\uab72\uab73\uab74\uab75\uab76\uab77\uab78\uab79", :lithuanian
     check_capitalize_suffixes   "\uab70\uab71\uab72\uab73\uab74\uab75\uab76\uab77\uab78\uab79", 'ᎠᎡᎢᎣᎤᎥᎦᎧᎨᎩ'
-    assert_equal                'ᎠᎡᎢᎣᎤᎥᎦᎧᎨᎩ', 'ᎠᎡᎢᎣᎤᎥᎦᎧᎨᎩ', :fold
+    assert_equal                'ᎠᎡᎢᎣᎤᎥᎦᎧᎨᎩ', 'ᎠᎡᎢᎣᎤᎥᎦᎧᎨᎩ'.downcase(:fold)
     assert_equal                'ᎠᎡᎢᎣᎤᎥᎦᎧᎨᎩ', "\uab70\uab71\uab72\uab73\uab74\uab75\uab76\uab77\uab78\uab79".downcase(:fold)
   end
 
@@ -82,15 +82,15 @@ class TestCaseMappingPreliminary < Test::Unit::TestCase
     check_downcase_properties   'ǳ ǆ ǉ ǌ', 'ǲ ǅ ǈ ǋ', :lithuanian
     check_downcase_properties   'ǳ ǆ ǉ ǌ', 'Ǳ Ǆ Ǉ Ǌ', :lithuanian
     check_upcase_properties     'Ǳ Ǆ Ǉ Ǌ', 'ǲ ǅ ǈ ǋ', :lithuanian
-    # check_upcase_properties     'Ǳ Ǆ Ǉ Ǌ', 'ǳ ǆ ǉ ǌ', :lithuanian
+    check_upcase_properties     'Ǳ Ǆ Ǉ Ǌ', 'ǳ ǆ ǉ ǌ', :lithuanian
     check_capitalize_properties 'ǲ', 'Ǳ', :lithuanian
     check_capitalize_properties 'ǅ', 'Ǆ', :lithuanian
     check_capitalize_properties 'ǈ', 'Ǉ', :lithuanian
     check_capitalize_properties 'ǋ', 'Ǌ', :lithuanian
-    # check_capitalize_properties 'ǲ', 'ǳ', :lithuanian
-    # check_capitalize_properties 'ǅ', 'ǆ', :lithuanian
-    # check_capitalize_properties 'ǈ', 'ǉ', :lithuanian
-    # check_capitalize_properties 'ǋ', 'ǌ', :lithuanian
+    check_capitalize_properties 'ǲ', 'ǳ', :lithuanian
+    check_capitalize_properties 'ǅ', 'ǆ', :lithuanian
+    check_capitalize_properties 'ǈ', 'ǉ', :lithuanian
+    check_capitalize_properties 'ǋ', 'ǌ', :lithuanian
   end
 
   def test_ascii_option
@@ -114,6 +114,11 @@ class TestCaseMappingPreliminary < Test::Unit::TestCase
     check_downcase_properties   'yukihiro matsumoto (matz)', 'Yukihiro MATSUMOTO (MATZ)', :turkic
     check_upcase_properties     'YUKİHİRO MATSUMOTO (MATZ)', 'Yukihiro Matsumoto (matz)', :turkic
     check_downcase_properties   "yuki\u0307hi\u0307ro matsumoto (matz)", 'YUKİHİRO MATSUMOTO (MATZ)', :lithuanian
+  end
+
+  def test_greek
+    check_downcase_properties   'αβγδεζηθικλμνξοπρστυφχψω', 'ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ', :lithuanian
+    check_upcase_properties     'ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ', 'αβγδεζηθικλμνξοπρστυφχψω', :lithuanian
   end
 
   def no_longer_a_test_buffer_allocations

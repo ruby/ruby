@@ -230,37 +230,60 @@ class CaseMapping
   def flags(from, type, to)
     # types: CaseFold_11, CaseUnfold_11, CaseUnfold_12, CaseUnfold_13
     flags = ""
-    flags += '|F' if type=='CaseFold_11'
     from = Array(from).map {|i| "%04X" % i}.join(" ")
     to   = Array(to).map {|i| "%04X" % i}.join(" ")
-    to = to.split(/ /).first  if type=='CaseUnfold_11'
     item = @mappings[from]
-    if item
-      flags += '|U'  if to==item.upper
-      flags += '|D'  if to==item.lower
-      specials_index = nil
-      specials = []
-      unless item.upper == item.title
-        if item.code == item.title
-          flags += '|IT'
-        else
-          flags += '|ST'
-          specials << item.title
+    specials_index = nil
+    specials = []
+    case type
+    when 'CaseFold_11'
+      flags += '|F'
+      if item
+        flags += '|U'  if to==item.upper
+        flags += '|D'  if to==item.lower
+        unless item.upper == item.title
+          if item.code == item.title
+            flags += '|IT'
+          else
+            flags += '|ST'
+            specials << item.title
+          end
+        end
+        unless item.lower.nil? or item.lower==from or item.lower==to
+          specials << item.lower
+          flags += '|SL'
+        end
+        unless item.upper.nil? or item.upper==from or item.upper==to
+          specials << item.upper
+          flags += '|SU'
         end
       end
-      unless item.lower.nil? or item.lower==from or item.lower==to
-        specials << item.lower
-        flags += '|SL'
+    when 'CaseUnfold_11'
+      to = to.split(/ /)
+      if item
+        case to.first
+        when item.upper  then  flags += '|U'
+        when item.lower  then  flags += '|D'
+        else
+          unless from=='03B9' or from=='03BC'
+            warn 'Unpredicted case 0; check data or adjust program (enc/unicode/case_folding.rb).'
+          end
+        end
+        unless item.upper == item.title
+          if item.code == item.title
+            warn 'Unpredicted case 1; check data or adjust program (enc/unicode/case_folding.rb).'
+          elsif item.title==to[1]
+            flags += '|ST'
+          else
+            warn 'Unpredicted case 2; check data or adjust program (enc/unicode/case_folding.rb).'
+          end
+        end
       end
-      unless item.upper.nil? or item.upper==from or item.upper==to
-        specials << item.upper
-        flags += '|SU'
-      end
-      if specials.first
-        flags += "|I(#{@specials_length})"
-        @specials_length += specials.map { |s| s.split(/ /).length }.reduce(:+)
-        @specials << specials
-      end
+    end
+    unless specials.empty?
+      flags += "|I(#{@specials_length})"
+      @specials_length += specials.map { |s| s.split(/ /).length }.reduce(:+)
+      @specials << specials
     end
     flags
   end

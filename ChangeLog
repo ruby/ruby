@@ -1,3 +1,13 @@
+Tue Mar 29 16:53:44 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode/case-folding.rb, casefold.h: Tweaked handling of 6
+	  special cases in CaseUnfold_11_Table.
+
+	* enc/unicode.c: Adjustments for above.
+
+	* test/ruby/enc/test_case_mapping.rb: Tests for the above: Some tests in
+	  test_titlecase activated; test_greek added. A test in test_cherokee fixed.
+
 Tue Mar 29 13:31:00 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/unicode.c: Cleaned up some comments.
