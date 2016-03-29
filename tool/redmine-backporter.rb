@@ -406,7 +406,7 @@ eom
 
   "rel" => proc{|args|
     # this feature requires custom redmine which allows add_related_issue API
-    raise CommandSyntaxError unless /\A(\d+)\z/ =~ args
+    raise CommandSyntaxError unless /\Ar?(\d+)\z/ =~ args
     unless @issue
       puts "ticket not selected"
       next
@@ -420,9 +420,10 @@ eom
         res.value
       rescue
         $stderr.puts "deployed redmine doesn't have https://github.com/ruby/bugs.ruby-lang.org/commit/01fbba60d68cb916ddbccc8a8710e68c5217171d\nask naruse or hsbt"
-        return
+        raise
       end
       puts res.body
+      @changesets << rev
       class << @changesets
         remove_method(:validated) rescue nil
       end

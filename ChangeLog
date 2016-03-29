@@ -1,3 +1,12 @@
+Wed Mar 30 01:54:30 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* tool/redmine-backporter.rb: add given revision to current changests
+	  on associating the revision to the related ticket.
+
+Wed Mar 30 01:53:17 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* tool/merger.rb: update revision.h before merge.
+
 Tue Mar 29 19:33:54 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* addr2line.c: define toupper for its use. fix r54391.
