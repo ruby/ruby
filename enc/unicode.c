@@ -666,7 +666,6 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
     to_end -= CASE_MAPPING_SLACK;
     flags |= (flags&(ONIGENC_CASE_UPCASE|ONIGENC_CASE_DOWNCASE))<<ONIGENC_CASE_SPECIAL_OFFSET;
 
-    /* hopelessly preliminary implementation, just dealing with ASCII and Turkic */
     while (*pp<end && to<=to_end) {
 	code = ONIGENC_MBC_TO_CODE(enc, *pp, end);
 	*pp += enclen(enc, *pp, end);
@@ -704,9 +703,9 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
 		}
 	    }
 	    else if ((folded = onigenc_unicode_fold_lookup(code)) != 0) { /* data about character found in CaseFold_11_Table */
-		if ((flags&ONIGENC_CASE_TITLECASE)                                 /* titlecase needed, */
-		    && (OnigCaseFoldFlags(folded->n)&ONIGENC_CASE_IS_TITLECASE)) { /* BUT alread titlecase  */
-		    /* already titlecase, no changes needed */
+		if ((flags&ONIGENC_CASE_TITLECASE)                                 /* Titlecase needed, */
+		    && (OnigCaseFoldFlags(folded->n)&ONIGENC_CASE_IS_TITLECASE)) { /* but alread Titlecase  */
+		    /* already Titlecase, no changes needed */
 		}
 		else if (flags&OnigCaseFoldFlags(folded->n)) { /* needs and data availability match */
 		    const OnigCodePoint *next;
@@ -716,8 +715,8 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
 		    if (flags&OnigCaseFoldFlags(folded->n)&ONIGENC_CASE_SPECIALS) { /* special */
 			OnigCodePoint *SpecialsStart = CaseMappingSpecials + OnigSpecialIndexDecode(folded->n);
 
-			if (OnigCaseFoldFlags(folded->n)&ONIGENC_CASE_TITLECASE) { /* titlecase available */
-			    if (flags&ONIGENC_CASE_TITLECASE) /* titlecase needed, but not yet titlecase */
+			if (OnigCaseFoldFlags(folded->n)&ONIGENC_CASE_TITLECASE) { /* Titlecase available */
+			    if (flags&ONIGENC_CASE_TITLECASE) /* Titlecase needed, but not yet Titlecase */
 				goto SpecialsCopy;
 			    else /* Titlecase not needed */
 				SpecialsStart += SpecialsLengthExtract(*SpecialsStart);
@@ -726,7 +725,7 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
 			    if (!(flags&ONIGENC_CASE_DOWN_SPECIAL))
 				SpecialsStart += SpecialsLengthExtract(*SpecialsStart);
 			}
-			/* if we pass here, we know we use special upcasing, and are at the right position */
+			/* here, we know we use ONIGENC_CASE_UP_SPECIAL, and the position is right */
 		      SpecialsCopy:
 		        count = SpecialsLengthExtract(*SpecialsStart);
 			next = SpecialsStart;

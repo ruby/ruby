@@ -1,3 +1,7 @@
+Tue Mar 29 13:31:00 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode.c: Cleaned up some comments.
+
 Tue Mar 29 13:24:56 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/unicode/case-folding.rb, casefold.h: Removing data for idempotent
