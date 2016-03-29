@@ -36,6 +36,12 @@ class Test_StringCStr < Test::Unit::TestCase
     end
   end
 
+  def test_rb_str_new_frozen_embed
+    str = Bug::String.cstr_noembed("rbconfig.rb")
+    str = Bug::String.rb_str_new_frozen(str)
+    assert_equal true, Bug::String.cstr_embedded?(str)
+  end
+
   WCHARS = [Encoding::UTF_16BE, Encoding::UTF_16LE, Encoding::UTF_32BE, Encoding::UTF_32LE]
 
   def test_wchar_embed

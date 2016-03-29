@@ -1,3 +1,8 @@
+Wed Mar 30 01:25:46 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (str_new_frozen): if the given string is embeddedable
+	  but not embedded, embed a new copied string. [Bug #11946]
+
 Wed Mar 30 01:23:57 2016  Marcus Stollsteimer  <sto.mar@web.de>
 
 	* doc/extension.ja.rdoc: Fix RDoc markup in doc/extension*.rdoc.
