@@ -930,7 +930,12 @@ inspect_tcpi_usec(VALUE ret, const char *prefix, uint32_t t)
     rb_str_catf(ret, "%s%u.%06us", prefix, t / 1000000, t % 1000000);
 }
 
-#if defined(__linux__) || defined(__sun)
+#if !defined __FreeBSD__ && ( \
+    defined HAVE_STRUCT_TCP_INFO_TCPI_LAST_DATA_SENT || \
+    defined HAVE_STRUCT_TCP_INFO_TCPI_LAST_DATA_RECV || \
+    defined HAVE_STRUCT_TCP_INFO_TCPI_LAST_ACK_SENT  || \
+    defined HAVE_STRUCT_TCP_INFO_TCPI_LAST_ACK_RECV  || \
+    0)
 static void
 inspect_tcpi_msec(VALUE ret, const char *prefix, uint32_t t)
 {
