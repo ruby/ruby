@@ -1,3 +1,8 @@
+Tue Mar 29 16:29:44 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* insns.def (opt_mod): show its method name on ZeroDivisionError.
+	  [Bug #12158]
+
 Tue Mar 29 16:25:27 2016  Anthony Dmitriyev  <antstorm@gmail.com>
 
 	* net/ftp.rb: add NullSocket#closed? to fix closing not opened
