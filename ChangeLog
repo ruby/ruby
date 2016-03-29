@@ -1,3 +1,9 @@
+Tue Mar 29 12:45:18 2016  Laurent Arnoud  <laurent@spkdev.net>
+
+	* lib/webrick/httpresponse.rb: Move error_body to method. It allow to
+	  override the body more easily. [fix GH-1307]
+	* test/webrick/test_httpresponse.rb: ditto.
+
 Tue Mar 29 06:40:53 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (rb_compile_err_append): rb_thread_t::base_block is no
