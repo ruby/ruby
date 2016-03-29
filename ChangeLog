@@ -1,3 +1,8 @@
+Tue Mar 29 23:36:49 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb: add cygwin case, nothing excluded.
+	  [ruby-core:73806] [Bug#12071]
+
 Tue Mar 29 23:10:47 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* iseq.c (rb_iseq_mark): mark parent iseq to prevent dynamically
