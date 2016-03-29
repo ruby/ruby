@@ -1,3 +1,10 @@
+Tue Mar 29 14:35:06 2016  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/xmlrpc/client.rb: Support SSL options in async methods of
+	  XMLRPC::Client.
+	  [Bug #11489]
+	  Reported by Aleksandar Kostadinov. Thanks!!!
+
 Tue Mar 29 14:22:57 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* marshal.c (r_object0): honor Marshal.load post proc
