@@ -1,3 +1,8 @@
+Tue Mar 29 23:10:47 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* iseq.c (rb_iseq_mark): mark parent iseq to prevent dynamically
+	  generated iseq by eval from GC.  [ruby-core:72620] [Bug #11928]
+
 Tue Mar 29 22:56:44 2016  Eric Wong  <e@80x24.org>
 
 	* lib/resolv.rb (Resolv::IPv6.create): avoid modifying frozen

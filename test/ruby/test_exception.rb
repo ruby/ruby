@@ -701,6 +701,12 @@ end.join
     assert_equal(%i[a b c d e f g], e.local_variables.sort)
   end
 
+  def test_name_error_info_parent_iseq_mark
+    assert_separately(['-', File.join(__dir__, 'bug-11928.rb')], <<-'end;')
+      -> {require ARGV[0]}.call
+    end;
+  end
+
   def test_output_string_encoding
     # "\x82\xa0" in cp932 is "\u3042" (Japanese hiragana 'a')
     # change $stderr to force calling rb_io_write() instead of fwrite()

@@ -185,4 +185,31 @@ class TestISeq < Test::Unit::TestCase
     labels = body.select {|op, arg| op == :branchnil}.map {|op, arg| arg}
     assert_equal(1, labels.uniq.size)
   end
+
+  def test_parent_iseq_mark
+    assert_separately([], <<-'end;')
+      ->{
+        ->{
+          ->{
+            eval <<-EOS
+              class Segfault
+                define_method :segfault do
+                  x = nil
+                  GC.disable
+                  1000.times do |n|
+                    n.times do
+                      x = (foo rescue $!).local_variables
+                    end
+                    GC.start
+                  end
+                  x
+                end
+              end
+            EOS
+          }.call
+        }.call
+      }.call
+      at_exit { assert_equal([:n, :x], Segfault.new.segfault.sort) }
+    end;
+  end
 end
