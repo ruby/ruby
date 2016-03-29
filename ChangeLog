@@ -1,3 +1,8 @@
+Tue Mar 29 21:03:40 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* symbol.h (is_attrset_id): ASET is an attrset ID.  fix
+	  unexpected safe call instead of an ordinary ASET.
+
 Tue Mar 29 21:01:07 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* doc/syntax/calling_methods.rdoc: fix old operator for safe navigation
