@@ -1,3 +1,8 @@
+Wed Mar 30 05:13:25 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/uri/http.rb (URI::HTTP#initialize): [DOC] fix example,
+	  missing mandatory arguments.  [ruby-core:74540] [Bug #12215]
+
 Tue Mar 29 02:22:35 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* lib/uri/mailto.rb: raising URI::InvalidComponentError instead
