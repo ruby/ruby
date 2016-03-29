@@ -16,7 +16,7 @@ unless defined? Tk::Tcllib::Tablelist_usingTile
   Tk::Tcllib::Tablelist_usingTile = true
 end
 
-requrie 'tkextlib/tcllib/tablelist_core'
+require 'tkextlib/tcllib/tablelist_core'
 
 module Tk
   module Tcllib
