@@ -71,6 +71,11 @@
 # of these properties compared to using a Hash or a Struct.
 #
 class OpenStruct
+  # :nodoc:
+  class << self
+    alias allocate new
+  end
+
   #
   # Creates a new OpenStruct object.  By default, the resulting OpenStruct
   # object will have no attributes.

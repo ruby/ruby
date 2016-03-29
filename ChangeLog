@@ -1,3 +1,9 @@
+Tue Mar 29 17:54:17 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/ostruct.rb (OpenStruct): make respond_to? working on
+	  just-allocated objects for workaround of Psych.
+	  [ruby-core:72501] [Bug #11884]
+
 Tue Mar 29 17:04:35 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_eval.c (rb_f_catch): [DOC] fix malformed RDoc syntax, "+...+"

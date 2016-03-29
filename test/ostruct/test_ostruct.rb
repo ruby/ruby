@@ -23,6 +23,10 @@ class TC_OpenStruct < Test::Unit::TestCase
     assert_respond_to(o, :a=)
   end
 
+  def test_respond_to_allocated
+    assert_not_respond_to(OpenStruct.allocate, :a)
+  end
+
   def test_equality
     o1 = OpenStruct.new
     o2 = OpenStruct.new
