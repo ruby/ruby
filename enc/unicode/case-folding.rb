@@ -241,12 +241,12 @@ class CaseMapping
       specials_index = nil
       specials = []
       unless item.upper == item.title
-        specials << item.title
-        flags += '|ST'
         if item.code == item.title
           flags += '|IT'
+        else
+          flags += '|ST'
+          specials << item.title
         end
-
       end
       unless item.lower.nil? or item.lower==from or item.lower==to
         specials << item.lower

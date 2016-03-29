@@ -704,7 +704,11 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
 		}
 	    }
 	    else if ((folded = onigenc_unicode_fold_lookup(code)) != 0) { /* data about character found in CaseFold_11_Table */
-		if (flags&OnigCaseFoldFlags(folded->n)) {
+		if ((flags&ONIGENC_CASE_TITLECASE)                                 /* titlecase needed, */
+		    && (OnigCaseFoldFlags(folded->n)&ONIGENC_CASE_IS_TITLECASE)) { /* BUT alread titlecase  */
+		    /* already titlecase, no changes needed */
+		}
+		else if (flags&OnigCaseFoldFlags(folded->n)) { /* needs and data availability match */
 		    const OnigCodePoint *next;
 		    int count;
 
@@ -712,13 +716,7 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
 		    if (flags&OnigCaseFoldFlags(folded->n)&ONIGENC_CASE_SPECIALS) { /* special */
 			OnigCodePoint *SpecialsStart = CaseMappingSpecials + OnigSpecialIndexDecode(folded->n);
 
-			if ((OnigCaseFoldFlags(folded->n)&ONIGENC_CASE_TITLECASE)          /* titlecase available,  */
-			    && (flags&ONIGENC_CASE_TITLECASE)                              /* AND titlecase needed, */
-			    && (OnigCaseFoldFlags(folded->n)&ONIGENC_CASE_IS_TITLECASE)) { /* BUT alread titlecase  */
-			    flags ^= ONIGENC_CASE_MODIFIED;
-			    goto SpecialsCopy;
-			}
-			else if (OnigCaseFoldFlags(folded->n)&ONIGENC_CASE_TITLECASE) { /* Titlecase available */
+			if (OnigCaseFoldFlags(folded->n)&ONIGENC_CASE_TITLECASE) { /* titlecase available */
 			    if (flags&ONIGENC_CASE_TITLECASE) /* titlecase needed, but not yet titlecase */
 				goto SpecialsCopy;
 			    else /* Titlecase not needed */

@@ -1,3 +1,10 @@
+Tue Mar 29 13:24:56 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode/case-folding.rb, casefold.h: Removing data for idempotent
+	  titlecasing.
+
+	* enc/unicode.c: Adjust code to data removal.
+
 Tue Mar 29 12:45:18 2016  Laurent Arnoud  <laurent@spkdev.net>
 
 	* lib/webrick/httpresponse.rb: Move error_body to method. It allow to
