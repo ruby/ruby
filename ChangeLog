@@ -1,3 +1,8 @@
+Tue Mar 29 14:53:58 2016  Naotoshi Seo  <sonots@gmail.com>
+
+	* lib/logger.rb: Remove block from Logger.add as it's not needed
+	  patch provided by Daniel Lobato Garcia [fix GH-1240] [Bug #12054]
+
 Tue Mar 29 14:52:20 2016  Zachary Scott  <zzak@ruby-lang.org>
 
 	* re.c: Remove deprecated kcode argument from Regexp.new and compile
