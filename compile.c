@@ -8223,7 +8223,7 @@ ibf_load_setup(struct ibf_load *load, VALUE loader_obj, VALUE str)
 	rb_raise(rb_eRuntimeError, "broken binary format");
     }
     if (strncmp(load->header->magic, "YARB", 4) != 0) {
-	rb_raise(rb_eRuntimeError, "unkown binary format");
+	rb_raise(rb_eRuntimeError, "unknown binary format");
     }
     if (load->header->major_version != ISEQ_MAJOR_VERSION ||
 	load->header->minor_version != ISEQ_MINOR_VERSION) {

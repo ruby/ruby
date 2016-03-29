@@ -68,7 +68,7 @@ xdata.zip(ydata){|x, y|
                   :foreground=>'red4', :anchor=>:center, :yoffset=>-5)
 }
 
-# Display an auxillary y-axis for percentages.
+# Display an auxiliary y-axis for percentages.
 b.axis_configure('y2', :hide=>false, :min=>0.0, :max=>100.0,
                  :title=>'Percentage')
 

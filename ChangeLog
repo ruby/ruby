@@ -1,3 +1,8 @@
+Tue Mar 29 13:41:03 2016  Tadashi Saito  <tadashi_saito@dwango.co.jp>
+
+	* compile.c, cont.c, doc, man: fix common misspelling.
+	  [ruby-core:72466] [Bug #11870]
+
 Tue Mar 29 13:31:34 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (regexp): set_yylval_num sets u1, should use nd_tag
@@ -64,8 +69,8 @@ Thu Dec 24 17:25:42 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Thu Dec 24 16:17:47 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* common.mk (fake.rb): $(arch)-fake.rb must depend miniruby because
-	  it may depend miniruby.
+	* common.mk (fake.rb): $(arch)-fake.rb must depend on miniruby because
+	  it may depend on miniruby.
 
 Thu Dec 24 16:13:05 2015  NARUSE, Yui  <naruse@ruby-lang.org>
 
@@ -2802,7 +2807,7 @@ Wed Nov  4 15:40:45 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 Wed Nov  4 15:39:32 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
-	* hash.c: use correct grammer. Patch by @tveastman
+	* hash.c: use correct grammar. Patch by @tveastman
 	  [fix GH-1079][ci skip]
 
 Wed Nov  4 11:38:23 2015  Jake Worth  <jakeworth82@gmail.com>
@@ -9652,8 +9657,8 @@ Tue Mar 25 06:55:43 2015  Kazuki Tanaka  <gogotanaka@ruby-lang.org>
 
 Tue Mar 24 22:23:33 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
-	* doc/extention.rdoc: move from toplevel document and added extname.
-	* doc/extention.ja.rdoc: ditto.
+	* doc/extension.rdoc: move from toplevel document and added extname.
+	* doc/extension.ja.rdoc: ditto.
 
 Tue Mar 24 22:06:58 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 
@@ -11458,8 +11463,8 @@ Tue Jan 20 02:54:11 2015  Zachary Scott  <e@zzak.io>
 
 Mon Jan 19 22:08:26 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* class.c (include_modules_at): allow prepend each modules upto
-	  once for each classes.  [EXPERIMENTAL]
+	* class.c (include_modules_at): allow to prepend each module up to
+	  once for each classe.  [EXPERIMENTAL]
 
 Sun Jan 18 18:32:20 2015  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
 

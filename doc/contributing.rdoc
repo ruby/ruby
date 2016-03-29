@@ -459,7 +459,7 @@ tracker. Alternatively you can submit a pull request, but for the best chances
 to receive feedback add it is recommended you add it to redmine.
 
 Since git is a distributed system, you are welcome to host your git repository
-on any {publically accessible hosting
+on any {publicly accessible hosting
 site}[https://git.wiki.kernel.org/index.php/GitHosting], including {hosting your
 own}[https://www.kernel.org/pub/software/scm/git/docs/user-manual.html#public-repositories]
 You may use the {'git format-patch'}[http://git-scm.com/docs/git-format-patch]
