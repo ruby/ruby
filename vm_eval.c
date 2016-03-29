@@ -478,8 +478,10 @@ rb_check_funcall_with_hook(VALUE recv, ID mid, int argc, const VALUE *argv,
     rb_thread_t *th = GET_THREAD();
     int respond = check_funcall_respond_to(th, klass, recv, mid);
 
-    if (!respond)
+    if (!respond) {
+	(*hook)(FALSE, recv, mid, argc, argv, arg);
 	return Qundef;
+    }
 
     me = rb_search_method_entry(recv, mid);
     if (!check_funcall_callable(th, me)) {

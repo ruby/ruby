@@ -1316,6 +1316,15 @@ class TestHash < Test::Unit::TestCase
     assert_equal({dug: [:foo, :bar]}, h.dig(:d, :foo, :bar))
   end
 
+  def test_dig_with_respond_to
+    bug12030 = '[ruby-core:73556] [Bug #12030]'
+    o = Object.new
+    def o.respond_to?(*args)
+      super
+    end
+    assert_raise(TypeError) {{foo: o}.dig(:foo, :foo)}
+  end
+
   def test_cmp
     h1 = {a:1, b:2}
     h2 = {a:1, b:2, c:3}

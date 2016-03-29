@@ -1,3 +1,9 @@
+Tue Mar 29 22:26:55 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (rb_check_funcall_with_hook): also should call the
+	  given hook before returning Qundef when overridden respond_to?
+	  method returned false.  [ruby-core:73556] [Bug #12030]
+
 Tue Mar 29 22:08:36 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* compile.c (iseq_peephole_optimize): don't apply tailcall
