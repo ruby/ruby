@@ -704,7 +704,7 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
 	    }
 	    else if ((folded = onigenc_unicode_fold_lookup(code)) != 0) { /* data about character found in CaseFold_11_Table */
 		if ((flags&ONIGENC_CASE_TITLECASE)                                 /* Titlecase needed, */
-		    && (OnigCaseFoldFlags(folded->n)&ONIGENC_CASE_IS_TITLECASE)) { /* but alread Titlecase  */
+		    && (OnigCaseFoldFlags(folded->n)&ONIGENC_CASE_IS_TITLECASE)) { /* but already Titlecase  */
 		    /* already Titlecase, no changes needed */
 		}
 		else if (flags&OnigCaseFoldFlags(folded->n)) { /* needs and data availability match */
