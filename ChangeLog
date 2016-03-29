@@ -1,3 +1,8 @@
+Wed Mar 30 01:56:06 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/nkf/nkf-utf8/nkf.c: Merge upstream 4f3edf80a0.
+	  patched by Anton Sivakov [Bug #12201] [Bug #12202]
+
 Wed Mar 30 01:54:30 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* tool/redmine-backporter.rb: add given revision to current changests
