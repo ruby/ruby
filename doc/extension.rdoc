@@ -147,7 +147,7 @@ FIXNUM ::
 
   left shift 1 bit, and turn on LSB.
 
-Other pointer values::
+Other pointer values ::
 
   cast to VALUE.
 
@@ -309,11 +309,11 @@ rb_ary_aref(argc, VALUE *argv, VALUE ary) ::
 
 rb_ary_entry(VALUE ary, long offset) ::
 
-  ary[offset]
+  \ary[offset]
 
 rb_ary_store(VALUE ary, long offset, VALUE obj) ::
 
-  ary[offset] = obj
+  \ary[offset] = obj
 
 rb_ary_subseq(VALUE ary, long beg, long len) ::
 
@@ -323,6 +323,8 @@ rb_ary_push(VALUE ary, VALUE val) ::
 rb_ary_pop(VALUE ary) ::
 rb_ary_shift(VALUE ary) ::
 rb_ary_unshift(VALUE ary, VALUE val) ::
+
+  ary.push, ary.pop, ary.shift, ary.unshift
 
 rb_ary_cat(VALUE ary, const VALUE *ptr, long len) ::
 
@@ -335,9 +337,9 @@ rb_ary_cat(VALUE ary, const VALUE *ptr, long len) ::
 You can add new features (classes, methods, etc.) to the Ruby
 interpreter.  Ruby provides APIs for defining the following things:
 
-* Classes, Modules
-* Methods, Singleton Methods
-* Constants
+- Classes, Modules
+- Methods, Singleton Methods
+- Constants
 
 === Class and Module Definition
 
@@ -565,14 +567,14 @@ See also Constant Definition above.
 As stated in section 1.3,
 the following Ruby constants can be referred from C.
 
-  Qtrue
-  Qfalse
+Qtrue ::
+Qfalse ::
 
-Boolean values.  Qfalse is false in C also (i.e. 0).
+  Boolean values.  Qfalse is false in C also (i.e. 0).
 
-  Qnil
+Qnil ::
 
-Ruby nil in C scope.
+  Ruby nil in C scope.
 
 == Global Variables Shared Between C and Ruby
 
@@ -605,7 +607,6 @@ The prototypes of the getter and setter functions are as follows:
   VALUE (*getter)(ID id, VALUE *var);
   void (*setter)(VALUE val, ID id, VALUE *var);
 
-
 Also you can define a Ruby global variable without a corresponding C
 variable.  The value of the variable will be set/get only by hooks.
 
@@ -617,7 +618,6 @@ The prototypes of the getter and setter functions are as follows:
   VALUE (*getter)(ID id);
   void (*setter)(VALUE val, ID id);
 
-
 == Encapsulate C Data into a Ruby Object
 
 Sometimes you need to expose your struct in the C world as a Ruby
@@ -626,11 +626,14 @@ In a situation like this, making use of the TypedData_XXX macro
 family, the pointer to the struct and the Ruby object can be mutually
 converted.
 
-# The old (non-Typed) Data_XXX macro family has been deprecated.
-# In the future version of Ruby, it is possible old macros will not
-# work.
+--
+The old (non-Typed) Data_XXX macro family has been deprecated.
+In the future version of Ruby, it is possible old macros will not
+work.
+++
 
 === C struct to Ruby object
+
 You can convert sval, a pointer to your struct, into a Ruby object
 with the next macro.
 
@@ -675,7 +678,9 @@ dmark is a function to mark Ruby objects referred from your struct.
 It must mark all references from your struct with rb_gc_mark or
 its family if your struct keeps such references.
 
-# Note that it is recommended to avoid such a reference.
+--
+Note that it is recommended to avoid such a reference.
+++
 
 dfree is a function to free the pointer allocation.
 If this is -1, the pointer will be just freed.
@@ -717,7 +722,6 @@ RUBY_TYPED_WB_PROTECTED ::
   More about write barriers can be found in "Generational GC" in
   Appendix D.
 
-
 You can allocate and wrap the structure in one step.
 
   TypedData_Make_Struct(klass, type, data_type, sval)
@@ -730,7 +734,6 @@ the structure, which is also allocated.  This macro works like:
 Arguments klass and data_type work like their counterparts in
 TypedData_Wrap_Struct().  A pointer to the allocated structure will
 be assigned to sval, which should be a pointer of the type specified.
-
 
 === Ruby object to C struct
 
@@ -864,7 +867,6 @@ arguments.  The third argument is a string that specifies how to
 capture method arguments and assign them to the following VALUE
 references.
 
-
 The following is an example of a method that takes arguments by Ruby's
 array:
 
@@ -877,7 +879,7 @@ array:
 The first argument is the receiver, the second one is the Ruby array
 which contains the arguments to the method.
 
-*Notice*: GC should know about global variables which refer to Ruby's objects,
+<b>Notice</b>: GC should know about global variables which refer to Ruby's objects,
 but are not exported to the Ruby world.  You need to protect them by
 
   void rb_global_variable(VALUE *var)
@@ -1097,7 +1099,6 @@ enc/trans/* :: codepoint mapping tables
   golf_prelude.rb     : goruby specific libraries.
     -> golf_prelude.c : automatically generated
 
-
 = Appendix B. Ruby Extension API Reference
 
 == Types
@@ -1110,13 +1111,16 @@ VALUE ::
 
 == Variables and Constants
 
-Qnil::
+Qnil ::
+
   nil object
 
-Qtrue::
+Qtrue ::
+
   true object (default true value)
 
-Qfalse::
+Qfalse ::
+
   false object
 
 == C Pointer Wrapping
@@ -1230,15 +1234,15 @@ RSTRING_PTR(str) ::
 
 StringValue(value) ::
 
-  Object with #to_str -> String
+  Object with \#to_str -> String
 
 StringValuePtr(value) ::
 
-  Object with #to_str -> pointer to String data
+  Object with \#to_str -> pointer to String data
 
 StringValueCStr(value) ::
 
-  Object with #to_str -> pointer to String data without NUL bytes
+  Object with \#to_str -> pointer to String data without NUL bytes
   It is guaranteed that the result data is NUL-terminated
 
 rb_str_new2(s) ::
@@ -1308,11 +1312,10 @@ void rb_define_hooked_variable(const char *name, VALUE *var, VALUE (*getter)(), 
 
     void setter(VALUE val, ID id, VALUE *var)
 
+void rb_global_variable(VALUE *var) ::
+
   GC requires C global variables which hold Ruby values to be marked.
-
-void rb_global_variable(VALUE *var)
-
-  Tells GC to protect these variables.
+  rb_global_variable tells GC to protect these variables.
 
 == Constant Definition
 
@@ -1398,7 +1401,7 @@ rb_scan_args(int argc, VALUE *argv, const char *fmt, ...) ::
   The number of given arguments, excluding an option hash or iterator
   block, is returned.
 
-int rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optional, VALUE *values)
+int rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optional, VALUE *values) ::
 
   Retrieves argument VALUEs bound to keywords, which directed by +table+
   into +values+, deleting retrieved entries from +keyword_hash+ along
@@ -1417,7 +1420,7 @@ int rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optiona
   around a non-keyword C function.
   ref: https://bugs.ruby-lang.org/issues/11339
 
-VALUE rb_extract_keywords(VALUE *original_hash)
+VALUE rb_extract_keywords(VALUE *original_hash) ::
 
   Extracts pairs whose key is a symbol into a new hash from a hash
   object referred by +original_hash+.  If the original hash contains
@@ -1486,7 +1489,7 @@ VALUE rb_block_call(VALUE recv, ID mid, int argc, VALUE * argv, VALUE (*func) (A
   whereas yielded values can be gotten via argc/argv of the third/fourth
   arguments.
 
-[OBSOLETE] VALUE rb_iterate(VALUE (*func1)(), void *arg1, VALUE (*func2)(), void *arg2) ::
+\[OBSOLETE] VALUE rb_iterate(VALUE (*func1)(), void *arg1, VALUE (*func2)(), void *arg2) ::
 
   Calls the function func1, supplying func2 as the block.  func1 will be
   called with the argument arg1.  func2 receives the value from yield as
@@ -1600,34 +1603,33 @@ void ruby_script(char *name) ::
 
 == Hooks for the Interpreter Events
 
-  void rb_add_event_hook(rb_event_hook_func_t func, rb_event_flag_t events,
-                         VALUE data)
+void rb_add_event_hook(rb_event_hook_func_t func, rb_event_flag_t events, VALUE data) ::
 
-Adds a hook function for the specified interpreter events.
-events should be OR'ed value of:
+  Adds a hook function for the specified interpreter events.
+  events should be OR'ed value of:
 
-  RUBY_EVENT_LINE
-  RUBY_EVENT_CLASS
-  RUBY_EVENT_END
-  RUBY_EVENT_CALL
-  RUBY_EVENT_RETURN
-  RUBY_EVENT_C_CALL
-  RUBY_EVENT_C_RETURN
-  RUBY_EVENT_RAISE
-  RUBY_EVENT_ALL
+    RUBY_EVENT_LINE
+    RUBY_EVENT_CLASS
+    RUBY_EVENT_END
+    RUBY_EVENT_CALL
+    RUBY_EVENT_RETURN
+    RUBY_EVENT_C_CALL
+    RUBY_EVENT_C_RETURN
+    RUBY_EVENT_RAISE
+    RUBY_EVENT_ALL
 
-The definition of rb_event_hook_func_t is below:
+  The definition of rb_event_hook_func_t is below:
 
-  typedef void (*rb_event_hook_func_t)(rb_event_t event, VALUE data,
-                                       VALUE self, ID id, VALUE klass)
+    typedef void (*rb_event_hook_func_t)(rb_event_t event, VALUE data,
+                                         VALUE self, ID id, VALUE klass)
 
-The third argument `data' to rb_add_event_hook() is passed to the hook
-function as the second argument, which was the pointer to the current
-NODE in 1.8.  See RB_EVENT_HOOKS_HAVE_CALLBACK_DATA below.
+  The third argument `data' to rb_add_event_hook() is passed to the hook
+  function as the second argument, which was the pointer to the current
+  NODE in 1.8.  See RB_EVENT_HOOKS_HAVE_CALLBACK_DATA below.
 
-  int rb_remove_event_hook(rb_event_hook_func_t func)
+int rb_remove_event_hook(rb_event_hook_func_t func) ::
 
-Removes the specified hook function.
+  Removes the specified hook function.
 
 == Macros for Compatibility
 
@@ -1656,7 +1658,7 @@ HAVE_RB_IO_T ::
 USE_SYMBOL_AS_METHOD_NAME ::
 
   Means that Symbols will be returned as method names, e.g.,
-  Module#methods, #singleton_methods and so on.
+  Module#methods, \#singleton_methods and so on.
 
 HAVE_RUBY_*_H ::
 
@@ -1730,13 +1732,13 @@ If you support T_DATA objects, you may consider using write barriers.
 
 Inserting write barriers into T_DATA objects only works with the
 following type objects: (a) long-lived objects, (b) when a huge number
-of objects are generated and (c) container-type objects that have
+of objects are generated and \(c) container-type objects that have
 references to other objects. If your extension provides such a type of
 T_DATA objects, consider inserting write barriers.
 
 (a): short-lived objects don't become old generation objects.
 (b): only a few oldgen objects don't have performance impact.
-(c): only a few references don't have performance impact.
+\(c): only a few references don't have performance impact.
 
 Inserting write barriers is a very difficult hack, it is easy to
 introduce critical bugs. And inserting write barriers has several areas
@@ -1760,7 +1762,7 @@ anymore.
 
 === Insert write barriers
 
-[AGAIN] Inserting write barriers is a very difficult hack, and it is
+\[AGAIN] Inserting write barriers is a very difficult hack, and it is
 easy to introduce critical bugs. And inserting write barriers has
 several areas of overhead. Basically we don't recommend you insert write
 barriers. Please carefully consider the risks.
@@ -1812,12 +1814,12 @@ GC invocation from prematurely freeing it.
 Using the RB_GC_GUARD macro is preferable to using the "volatile"
 keyword in C.  RB_GC_GUARD has the following advantages:
 
-1) the intent of the macro use is clear
+1. the intent of the macro use is clear
 
-2) RB_GC_GUARD only affects its call site, "volatile" generates some
+2. RB_GC_GUARD only affects its call site, "volatile" generates some
    extra code every time the variable is used, hurting optimization.
 
-3) "volatile" implementations may be buggy/inconsistent in some
+3. "volatile" implementations may be buggy/inconsistent in some
    compilers and architectures. RB_GC_GUARD is customizable for broken
    systems/compilers without those without negatively affecting other
    systems.

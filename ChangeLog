@@ -1,3 +1,9 @@
+Wed Mar 30 01:23:57 2016  Marcus Stollsteimer  <sto.mar@web.de>
+
+	* doc/extension.ja.rdoc: Fix RDoc markup in doc/extension*.rdoc.
+	  [ci skip][Bug #12143][ruby-core:74143]
+	* doc/extension.rdoc: ditto.
+
 Wed Mar 30 01:00:30 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (proc_binding): proc from symbol can not make a binding.
