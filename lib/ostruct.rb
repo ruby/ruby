@@ -168,13 +168,18 @@ class OpenStruct
   #
   def new_ostruct_member(name)
     name = name.to_sym
-    unless respond_to?(name)
+    unless singleton_class.method_defined?(name)
       define_singleton_method(name) { @table[name] }
       define_singleton_method("#{name}=") { |x| modifiable[name] = x }
     end
     name
   end
   protected :new_ostruct_member
+
+  def freeze
+    @table.each_key {|key| new_ostruct_member(key)}
+    super
+  end
 
   def respond_to_missing?(mid, include_private = false)
     mname = mid.to_s.chomp("=").to_sym

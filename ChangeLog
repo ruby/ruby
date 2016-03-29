@@ -1,3 +1,14 @@
+Tue Mar 29 18:49:54 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/ostruct.rb (freeze): define deferred accessors before
+	  freezing to get rid of an error when just reading frozen
+	  OpenStruct.
+
+Tue Mar 29 18:49:54 2016  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/ostruct.rb: Fix new_ostruct_member to correctly avoid
+	  redefinition [#11901]
+
 Tue Mar 29 17:54:17 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/ostruct.rb (OpenStruct): make respond_to? working on
