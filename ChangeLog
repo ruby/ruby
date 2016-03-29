@@ -1,3 +1,8 @@
+Tue Mar 29 21:01:07 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* doc/syntax/calling_methods.rdoc: fix old operator for safe navigation
+	  operator. [ci skip][fix GH-1182] Patch by @dougo
+
 Tue Mar 29 18:49:54 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/ostruct.rb (freeze): define deferred accessors before
