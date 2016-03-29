@@ -1,3 +1,8 @@
+Tue Mar 29 21:07:30 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* thread_pthread.c (reserve_stack): fix reserving position where
+	  the stack growing bottom to top. [Bug #12118]
+
 Fri Mar 25 18:42:46 2016  Koichi ITO  <koic.ito@gmail.com>
 
 	* variable.c: Added documentation about order of `Module#constants`
