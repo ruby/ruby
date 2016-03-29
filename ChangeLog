@@ -1,3 +1,9 @@
+Tue Mar 29 16:45:58 2016  Victor Nawothnig  <Victor.Nawothnig@gmail.com>
+
+	* parse.y (parse_numvar): NTH_REF must be less than a half of
+	  INT_MAX, as it is left-shifted to be ORed with back-ref flag.
+	  [ruby-core:74444] [Bug#12192] [Fix GH-1296]
+
 Tue Mar 29 16:44:54 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enc/trans/JIS: update Unicode's notice. [Bug #11844]
