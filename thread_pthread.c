@@ -1423,8 +1423,6 @@ setup_communication_pipe(void)
 	return e;
     }
 
-    /* validate pipe on this process */
-    timer_thread_pipe.owner_process = getpid();
     return 0;
 }
 
@@ -1632,6 +1630,9 @@ rb_thread_create_timer_thread(void)
 #endif
 	    return;
 	}
+
+	/* validate pipe on this process */
+	timer_thread_pipe.owner_process = getpid();
 	timer_thread.created = 1;
 #ifdef HAVE_PTHREAD_ATTR_INIT
 	pthread_attr_destroy(&attr);
