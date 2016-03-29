@@ -1,3 +1,12 @@
+Tue Mar 29 16:41:27 2016  Eric Hodel  <drbrain@segment7.net>
+
+	* marshal.c (r_object0):  raise ArgumentError when linking to undefined
+	  object.
+
+Tue Mar 29 16:41:27 2016  Eric Hodel  <drbrain@segment7.net>
+
+	* marshal.c (r_object0): Fix Marshal crash for corrupt extended object.
+
 Tue Mar 29 16:40:48 2016  Eric Wong  <e@80x24.org>
 
 	* ext/openssl/ossl_ssl.c (ossl_sslctx_setup): document as MT-unsafe
