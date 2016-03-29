@@ -1,3 +1,11 @@
+Tue Mar 29 14:18:26 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* .travis.yml: removed commented-out code.
+
+Tue Mar 29 14:18:26 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* .travis.yml: removed osx code. follow up with r53517
+
 Tue Mar 29 14:12:22 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/socket/option.c (sockopt_bool): relax boolean size to be one

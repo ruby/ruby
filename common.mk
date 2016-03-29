@@ -166,7 +166,7 @@ SHOWFLAGS = showflags
 
 all: $(SHOWFLAGS) main docs
 
-main: $(SHOWFLAGS) $(ENCSTATIC:static=lib)encs exts
+main: $(SHOWFLAGS) exts $(ENCSTATIC:static=lib)encs
 	@$(NULLCMD)
 
 .PHONY: showflags
