@@ -1,3 +1,9 @@
+Wed Mar 30 00:41:42 2016  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* test/socket/test_socket.rb (test_udp_recvmsg_truncation):
+	  AIX does not set the MSG_TRUNC flag for a message partially read
+	  by recvmsg(2) with the MSG_PEEK flag set.
+
 Wed Mar 30 00:00:47 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* doc/extension.rdoc, doc/extension.ja.rdoc: add editor local
