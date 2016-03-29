@@ -2091,37 +2091,36 @@ int rb_remove_event_hook(rb_event_hook_func_t func);
 
 /* locale insensitive functions */
 
-#define rb_isascii(c) ((unsigned long)(c) < 128)
-int rb_isalnum(int c);
-int rb_isalpha(int c);
-int rb_isblank(int c);
-int rb_iscntrl(int c);
-int rb_isdigit(int c);
-int rb_isgraph(int c);
-int rb_islower(int c);
-int rb_isprint(int c);
-int rb_ispunct(int c);
-int rb_isspace(int c);
-int rb_isupper(int c);
-int rb_isxdigit(int c);
-int rb_tolower(int c);
-int rb_toupper(int c);
+static inline int rb_isascii(int c){ return '\0' <= c && c <= '\x7f'; }
+static inline int rb_isupper(int c){ return 'A' <= c && c <= 'Z'; }
+static inline int rb_islower(int c){ return 'a' <= c && c <= 'z'; }
+static inline int rb_isalpha(int c){ return rb_isupper(c) || rb_islower(c); }
+static inline int rb_isdigit(int c){ return '0' <= c && c <= '9'; }
+static inline int rb_isalnum(int c){ return rb_isalpha(c) || rb_isdigit(c); }
+static inline int rb_isxdigit(int c){ return rb_isdigit(c) || ('A' <= c && c <= 'F') || ('a' <= c && c <= 'f'); }
+static inline int rb_isblank(int c){ return c == ' ' || c == '\t'; }
+static inline int rb_isspace(int c){ return c == ' ' || ('\t' <= c && c <= '\r'); }
+static inline int rb_iscntrl(int c){ return ('\0' <= c && c < ' ') || c == '\x7f'; }
+static inline int rb_isprint(int c){ return ' ' <= c && c <= '\x7e'; }
+static inline int rb_ispunct(int c){ return !rb_isalnum(c); }
+static inline int rb_isgraph(int c){ return '!' <= c && c <= '\x7e'; }
+static inline int rb_tolower(int c) { return rb_isupper(c) ? (c|0x20) : c; }
+static inline int rb_toupper(int c) { return rb_islower(c) ? (c&0x5f) : c; }
 
 #ifndef ISPRINT
-#define ISASCII(c) rb_isascii((unsigned char)(c))
-#undef ISPRINT
-#define ISPRINT(c) rb_isprint((unsigned char)(c))
-#define ISGRAPH(c) rb_isgraph((unsigned char)(c))
-#define ISSPACE(c) rb_isspace((unsigned char)(c))
-#define ISUPPER(c) rb_isupper((unsigned char)(c))
-#define ISLOWER(c) rb_islower((unsigned char)(c))
-#define ISALNUM(c) rb_isalnum((unsigned char)(c))
-#define ISALPHA(c) rb_isalpha((unsigned char)(c))
-#define ISDIGIT(c) rb_isdigit((unsigned char)(c))
-#define ISXDIGIT(c) rb_isxdigit((unsigned char)(c))
+#define ISASCII(c) rb_isascii(c)
+#define ISPRINT(c) rb_isprint(c)
+#define ISGRAPH(c) rb_isgraph(c)
+#define ISSPACE(c) rb_isspace(c)
+#define ISUPPER(c) rb_isupper(c)
+#define ISLOWER(c) rb_islower(c)
+#define ISALNUM(c) rb_isalnum(c)
+#define ISALPHA(c) rb_isalpha(c)
+#define ISDIGIT(c) rb_isdigit(c)
+#define ISXDIGIT(c) rb_isxdigit(c)
 #endif
-#define TOUPPER(c) rb_toupper((unsigned char)(c))
-#define TOLOWER(c) rb_tolower((unsigned char)(c))
+#define TOUPPER(c) rb_toupper(c)
+#define TOLOWER(c) rb_tolower(c)
 
 int st_locale_insensitive_strcasecmp(const char *s1, const char *s2);
 int st_locale_insensitive_strncasecmp(const char *s1, const char *s2, size_t n);

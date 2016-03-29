@@ -1,3 +1,13 @@
+Tue Mar 29 19:23:46 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* include/ruby/ruby.h (rb_isupper, rb_islower, rb_isalpha, rb_isdigit,
+	  rb_isalnum, rb_isxdigit, rb_isblank, rb_isspace, rb_isblank,
+	  rb_iscntrl, rb_isprint, rb_ispunct, rb_isgraph,
+	  rb_tolower, rb_toupper): use inline function to avoid function call.
+
+	* include/ruby/ruby.h (rb_isascii): use inline function to clarify
+	  the logic.
+
 Tue Mar 29 18:56:55 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* tool/redmine-backporter.rb (backport): show merger.rb's path.

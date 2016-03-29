@@ -1959,34 +1959,6 @@ Init_Encoding(void)
 
 /* locale insensitive ctype functions */
 
-#define ctype_test(c, ctype) \
-    (rb_isascii(c) && ONIGENC_IS_ASCII_CODE_CTYPE((c), (ctype)))
-
-int rb_isalnum(int c) { return ctype_test(c, ONIGENC_CTYPE_ALNUM); }
-int rb_isalpha(int c) { return ctype_test(c, ONIGENC_CTYPE_ALPHA); }
-int rb_isblank(int c) { return ctype_test(c, ONIGENC_CTYPE_BLANK); }
-int rb_iscntrl(int c) { return ctype_test(c, ONIGENC_CTYPE_CNTRL); }
-int rb_isdigit(int c) { return ctype_test(c, ONIGENC_CTYPE_DIGIT); }
-int rb_isgraph(int c) { return ctype_test(c, ONIGENC_CTYPE_GRAPH); }
-int rb_islower(int c) { return ctype_test(c, ONIGENC_CTYPE_LOWER); }
-int rb_isprint(int c) { return ctype_test(c, ONIGENC_CTYPE_PRINT); }
-int rb_ispunct(int c) { return ctype_test(c, ONIGENC_CTYPE_PUNCT); }
-int rb_isspace(int c) { return ctype_test(c, ONIGENC_CTYPE_SPACE); }
-int rb_isupper(int c) { return ctype_test(c, ONIGENC_CTYPE_UPPER); }
-int rb_isxdigit(int c) { return ctype_test(c, ONIGENC_CTYPE_XDIGIT); }
-
-int
-rb_tolower(int c)
-{
-    return rb_isascii(c) ? ONIGENC_ASCII_CODE_TO_LOWER_CASE(c) : c;
-}
-
-int
-rb_toupper(int c)
-{
-    return rb_isascii(c) ? ONIGENC_ASCII_CODE_TO_UPPER_CASE(c) : c;
-}
-
 void
 rb_enc_foreach_name(int (*func)(st_data_t name, st_data_t idx, st_data_t arg), st_data_t arg)
 {
