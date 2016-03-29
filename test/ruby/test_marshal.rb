@@ -712,4 +712,10 @@ class TestMarshal < Test::Unit::TestCase
     assert_predicate(status, :success?)
     assert_equal(expected, out)
   end
+
+  def test_marshal_honor_post_proc_value_for_link
+    str = 'x' # for link
+    obj = [str, str]
+    assert_equal(['X', 'X'], Marshal.load(Marshal.dump(obj), ->(v) { v == str ? v.upcase : v }))
+  end
 end
