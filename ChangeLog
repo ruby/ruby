@@ -1,3 +1,8 @@
+Wed Mar 30 06:11:36 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* thread_pthread.c (reserve_stack): fix reserving position where
+	  the stack growing bottom to top. [Bug #12118]
+
 Wed Mar 30 06:04:18 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* .travis.yml: removed commented-out code.
