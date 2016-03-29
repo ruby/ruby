@@ -62,6 +62,7 @@ module URI
       return super(tmp)
     end
 
+=begin
     #
     # == Description
     #
@@ -74,8 +75,8 @@ module URI
     #
     # Example:
     #
-    #     uri = URI::HTTP.new('http', nil, "www.example.com", nil, "/path",
-    #       "query", 'fragment')
+    #     uri = URI::HTTP.new("http", nil, "www.example.com", nil, nil,
+    #                         "/path", nil, "query", "fragment")
     #
     #
     # See also URI::Generic.new
@@ -83,6 +84,7 @@ module URI
     def initialize(*arg)
       super(*arg)
     end
+=end
 
     #
     # == Description
