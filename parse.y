@@ -6210,6 +6210,32 @@ simple_re_meta(int c)
 }
 
 static int
+parser_update_heredoc_indent(struct parser_params *parser, int c)
+{
+    if (heredoc_line_indent == -1) {
+	if (c == '\n') heredoc_line_indent = 0;
+    }
+    else {
+	if (c == ' ') {
+	    heredoc_line_indent++;
+	    return TRUE;
+	}
+	else if (c == '\t') {
+	    int w = (heredoc_line_indent / TAB_WIDTH) + 1;
+	    heredoc_line_indent = w * TAB_WIDTH;
+	    return TRUE;
+	}
+	else if (c != '\n') {
+	    if (heredoc_indent > heredoc_line_indent) {
+		heredoc_indent = heredoc_line_indent;
+	    }
+	    heredoc_line_indent = -1;
+	}
+    }
+    return FALSE;
+}
+
+static int
 parser_tokadd_string(struct parser_params *parser,
 		     int func, int term, int paren, long *nest,
 		     rb_encoding **encp)
@@ -6239,24 +6265,7 @@ parser_tokadd_string(struct parser_params *parser,
 
     while ((c = nextc()) != -1) {
 	if (heredoc_indent > 0) {
-	    if (heredoc_line_indent == -1) {
-		if (c == '\n') heredoc_line_indent = 0;
-	    }
-	    else {
-		if (c == ' ') {
-		    heredoc_line_indent++;
-		}
-		else if (c == '\t') {
-		    int w = (heredoc_line_indent / TAB_WIDTH) + 1;
-		    heredoc_line_indent = w * TAB_WIDTH;
-		}
-		else if (c != '\n') {
-		    if (heredoc_indent > heredoc_line_indent) {
-			heredoc_indent = heredoc_line_indent;
-		    }
-		    heredoc_line_indent = -1;
-		}
-	    }
+	    parser_update_heredoc_indent(parser, c);
 	}
 
 	if (paren && c == paren) {
@@ -6876,6 +6885,14 @@ parser_here_document(struct parser_params *parser, NODE *here)
 		    --pend;
 		}
 	    }
+
+	    if (heredoc_indent > 0) {
+		long i = 0;
+		while (p + i < pend && parser_update_heredoc_indent(parser, p[i]))
+		    i++;
+		heredoc_line_indent = 0;
+	    }
+
 	    if (str)
 		rb_str_cat(str, p, pend - p);
 	    else

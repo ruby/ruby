@@ -1,3 +1,9 @@
+Tue Mar 29 21:18:09 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_here_document): update indent for each line in
+	  indented here document with single-quotes.
+	  [ruby-core:72479] [Bug #11871]
+
 Tue Mar 29 21:03:40 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* symbol.h (is_attrset_id): ASET is an attrset ID.  fix
