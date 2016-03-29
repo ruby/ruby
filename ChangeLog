@@ -1,3 +1,10 @@
+Wed Mar 30 06:37:56 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/extlibs.rb (do_patch): let "patch" command change the
+	  working directory and open the patch file there, instead of
+	  spawn options, so that proper error message will be shown by the
+	  command not just "chdir" or "open".
+
 Wed Mar 30 06:11:36 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* thread_pthread.c (reserve_stack): fix reserving position where

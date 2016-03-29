@@ -70,7 +70,7 @@ def do_patch(dest, patch, args)
     $stdout.puts "applying #{patch} under #{dest}"
     $stdout.flush
   end
-  Process.wait(Process.spawn("patch", *args, in: File.join(dest, patch), chdir: dest))
+  Process.wait(Process.spawn("patch", "-d", dest, "-i", patch, *args))
   $?.success? or raise "failed to patch #{patch}"
 end
 
