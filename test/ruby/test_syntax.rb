@@ -2,6 +2,14 @@
 require 'test/unit'
 
 class TestSyntax < Test::Unit::TestCase
+  using Module.new {
+    refine(Object) do
+      def `(s) #`
+        s
+      end
+    end
+  }
+
   def assert_syntax_files(test)
     srcdir = File.expand_path("../../..", __FILE__)
     srcdir = File.join(srcdir, test)
@@ -493,10 +501,13 @@ e"
   end
 
   def assert_dedented_heredoc(expect, result, mesg = "")
-    %w[eos "eos" 'eos'].each do |eos|
-      assert_equal(eval("<<-#{eos}\n#{expect}eos\n"),
-                   eval("<<~#{eos}\n#{result}eos\n"),
-                   message(mesg) {"with #{eos}"})
+    all_assertions(mesg) do |a|
+      %w[eos "eos" 'eos' `eos`].each do |eos|
+        a.for(eos) do
+          assert_equal(eval("<<-#{eos}\n#{expect}eos\n"),
+                       eval("<<~#{eos}\n#{result}eos\n"))
+        end
+      end
     end
   end
 
@@ -578,6 +589,19 @@ e"
     expect = '#{mesg} a'"\n" \
              ' zy'"\n"
     assert_dedented_heredoc(expect, result)
+  end
+
+  def test_dedented_heredoc_with_concatenation
+    bug11990 = '[ruby-core:72857] [Bug #11990] concatenated string should not be dedented'
+    %w[eos "eos" 'eos'].each do |eos|
+      assert_equal("x\n  y",
+                   eval("<<~#{eos} '  y'\n  x\neos\n"),
+                   "#{bug11990} with #{eos}")
+    end
+    %w[eos "eos" 'eos' `eos`].each do |eos|
+      _, expect = eval("[<<~#{eos}, '  x']\n""  y\n""eos\n")
+      assert_equal('  x', expect, bug11990)
+    end
   end
 
   def test_lineno_after_heredoc
