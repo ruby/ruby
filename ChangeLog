@@ -1,3 +1,9 @@
+Tue Mar 29 16:54:14 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (enc_succ_alnum_char): try to skip an invalid character
+	  gap between GREEK CAPITAL RHO and SIGMA.
+	  [ruby-core:74478] [Bug #12204]
+
 Tue Mar 29 16:45:58 2016  Victor Nawothnig  <Victor.Nawothnig@gmail.com>
 
 	* parse.y (parse_numvar): NTH_REF must be less than a half of

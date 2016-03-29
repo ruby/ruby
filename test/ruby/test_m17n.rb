@@ -1682,4 +1682,9 @@ class TestM17N < Test::Unit::TestCase
         end
     assert_equal(e("[\"\xB4\xC1\xBB\xFA\"]"), s, bug11787)
   end
+
+  def test_greek_capital_gap
+    bug12204 = '[ruby-core:74478] [Bug #12204] GREEK CAPITAL RHO and SIGMA'
+    assert_equal("\u03A3", "\u03A1".succ, bug12204)
+  end
 end
