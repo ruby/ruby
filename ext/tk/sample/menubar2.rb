@@ -45,12 +45,12 @@ mbar = Tk.root.add_menubar(menu_spec,
                            'tearoff'=>'false',
                            'foreground'=>'grey40',
                            'activeforeground'=>'red',
-                           'font'=>'Helvetia 12 bold')
+                           'font'=>'Helvetica 12 bold')
 # This (default configure options) is NOT same the following.
 #
 #  mbar = Tk.root.add_menubar(menu_spec)
 #  mbar.configure('foreground'=>'grey40', 'activeforeground'=>'red',
-#                 'font'=>'Helvetia 12 bold')
+#                 'font'=>'Helvetica 12 bold')
 
 TkText.new(:wrap=>'word').pack.insert('1.0', 'Please read the sample source, and check how to override default configure options of menu entries on a menu_spec.')
 

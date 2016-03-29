@@ -77,7 +77,7 @@
 #                        'tearoff'=>false,
 #                        'foreground'=>'grey40',
 #                        'activeforeground'=>'red',
-#                        'font'=>'Helvetia 12 bold')
+#                        'font'=>'Helvetica 12 bold')
 # menubar.pack('side'=>'top', 'fill'=>'x')
 
 # See tk/menuspce.rb about the format of the menu_spec

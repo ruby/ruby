@@ -44,7 +44,7 @@ menubar = TkMenubar.new(nil, menu_spec,
                        'tearoff'=>false,
                        'foreground'=>'grey40',
                        'activeforeground'=>'red',
-                       'font'=>'Helvetia 12 bold')
+                       'font'=>'Helvetica 12 bold')
 menubar.pack('side'=>'top', 'fill'=>'x')
 
 TkText.new(:wrap=>'word').pack.insert('1.0', 'Please read the sample source, and check how to override default configure options of menu entries on a menu_spec. Maybe, on windows, this menubar does not work properly about keyboard shortcuts. Then, please use "menu" option of root/toplevel widget (see sample/menubar2.rb).')

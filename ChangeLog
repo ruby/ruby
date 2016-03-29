@@ -1,3 +1,10 @@
+Tue Mar 29 15:04:19 2016  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* ext/tk/lib/tk/menubar.rb: fix a typo in font name. [ruby-core:72505]
+	  [Bug #11886] The patch provided by Akira Matsuda.
+
+	* ext/tk/sample/*.rb: ditto.
+
 Tue Mar 29 15:03:03 2016  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ruby.h: undef HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P
