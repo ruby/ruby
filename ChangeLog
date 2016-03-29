@@ -1,3 +1,18 @@
+Tue Mar 29 18:56:55 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* tool/redmine-backporter.rb (backport): show merger.rb's path.
+
+	* tool/redmine-backporter.rb (show): show current issue again if no
+	  ticket number is given.
+
+	* tool/redmine-backporter.rb (rel): show error message if current
+	  bugs.ruby-lang.org doesn't support the API.
+
+Tue Mar 29 18:54:34 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* tool/merger.rb: support to backport header as backport identifier.
+	  Now you can specify by 'merge revision(s) 49254: [Backport #10738]'.
+
 Tue Mar 29 16:53:44 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/unicode/case-folding.rb, casefold.h: Tweaked handling of 6
