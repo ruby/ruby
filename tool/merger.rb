@@ -168,11 +168,15 @@ when nil, "-h", "--help"
 else
   system 'svn up'
 
-  if /--ticket=(.*)/ =~ ARGV[0]
-    tickets = $1.split(/,/).map{|num| " [Backport ##{num}]"}
+  case ARGV[0]
+  when /--ticket=(.*)/
+    tickets = $1.split(/,/).map{|num| " [Backport ##{num}]"}.join
     ARGV.shift
+  when /merge revision\(s\) ([\d,\-]+):( \[.*)/
+    tickets = $2
+    ARGV[0] = $1
   else
-    tickets = []
+    tickets = ''
   end
 
   q = $repos + (ARGV[1] || default_merge_branch)
@@ -237,7 +241,7 @@ else
 
   version_up
   f = Tempfile.new 'merger.rb'
-  f.printf "merge revision(s) %s:%s\n", revstr, tickets.join
+  f.printf "merge revision(s) %s:%s\n", revstr, tickets
   f.write log_svn
   f.flush
   f.close
