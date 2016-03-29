@@ -49,10 +49,6 @@ class TestBundledCA < Gem::TestCase
     assert_https('rubygems.org')
   end
 
-  def test_accessing_cloudfront
-    assert_https('d2chzxaqi4y7f8.cloudfront.net')
-  end
-
   def test_accessing_fastly
     assert_https('rubygems.global.ssl.fastly.net')
   end
