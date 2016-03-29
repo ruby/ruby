@@ -110,7 +110,7 @@ Tue Mar 29 13:50:30 2016  Eric Wong  <e@80x24.org>
 	* test/ruby/test_io.rb (test_readpartial_bad_args): new
 	  [Bug #11885]
 
-Tue Mar 29 13:41:03 2016  Tadashi Saito  <tadashi_saito@dwango.co.jp>
+Tue Mar 29 13:41:03 2016  Tadashi Saito  <tad.a.digger@gmail.com>
 
 	* compile.c, cont.c, doc, man: fix common misspelling.
 	  [ruby-core:72466] [Bug #11870]
