@@ -1,3 +1,8 @@
+Tue Mar 29 13:26:15 2016  Joseph Tibbertsma  <josephtibbertsma@gmail.com>
+
+	* gc.c (RVALUE_PAGE_WB_UNPROTECTED): fix a typo of argument name.
+	  [Fix GH-1221]
+
 Thu Jan 21 16:39:55 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* Makefile.in (update-rubyspec): fix r53208 like r53451.
