@@ -167,6 +167,8 @@ when nil, "-h", "--help"
   exit
 else
   system 'svn up'
+  system 'ruby tool/file2lastrev.rb --revision.h . > revision.tmp'
+  system 'tool/ifchange "--timestamp=.revision.time" "revision.h" "revision.tmp"'
 
   case ARGV[0]
   when /--ticket=(.*)/
