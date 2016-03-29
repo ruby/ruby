@@ -2027,7 +2027,7 @@ rb_glob(const char *path, void (*func)(const char *, VALUE, void *), VALUE arg)
 static void
 push_pattern(const char *path, VALUE ary, void *enc)
 {
-#ifdef __APPLE__
+#if defined _WIN32 || defined __APPLE__
     VALUE name = rb_utf8_str_new_cstr(path);
     rb_encoding *eenc = rb_default_internal_encoding();
     OBJ_TAINT(name);
@@ -2148,7 +2148,7 @@ push_glob(VALUE ary, VALUE str, int flags)
     struct push_glob_args args;
     rb_encoding *enc = rb_enc_get(str);
 
-#ifdef __APPLE__
+#if defined _WIN32 || defined __APPLE__
     str = rb_str_encode_ospath(str);
 #endif
     if (rb_enc_to_index(enc) == ENCINDEX_US_ASCII)
@@ -2160,7 +2160,7 @@ push_glob(VALUE ary, VALUE str, int flags)
     args.glob.value = ary;
     args.glob.enc = enc;
     args.flags = flags;
-#ifdef __APPLE__
+#if defined _WIN32 || defined __APPLE__
     enc = rb_utf8_encoding();
 #endif
 

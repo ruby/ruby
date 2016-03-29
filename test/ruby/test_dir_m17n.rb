@@ -365,10 +365,24 @@ class TestDir_M17N < Test::Unit::TestCase
 
   def test_glob_encoding
     with_tmpdir do
-      %W"file_one.ext file_two.ext".each {|f| open(f, "w") {}}
+      list = %W"file_one.ext file_two.ext \u{6587 4ef6}1.txt \u{6587 4ef6}2.txt"
+      list.each {|f| open(f, "w") {}}
       a = "file_one*".force_encoding Encoding::IBM437
       b = "file_two*".force_encoding Encoding::EUC_JP
       assert_equal([a, b].map(&:encoding), Dir[a, b].map(&:encoding))
+      dir = "\u{76EE 5F551}"
+      Dir.mkdir(dir)
+      list << dir
+      bug12081 = '[ruby-core:73868] [Bug #12081]'
+      a = "*".force_encoding("us-ascii")
+      result = Dir[a].map {|n|
+        if n.encoding == Encoding::ASCII_8BIT
+          n.force_encoding(Encoding::UTF_8)
+        else
+          n.encode(Encoding::UTF_8)
+        end
+      }
+      assert_equal(list, result.sort!, bug12081)
     end
   end
 

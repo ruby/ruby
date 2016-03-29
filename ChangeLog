@@ -1,3 +1,9 @@
+Tue Mar 29 23:45:24 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (push_pattern, push_glob): deal with read paths as UTF-8
+	  to stat later, on Windows as well as OS X.
+	  [ruby-core:73868] [Bug #12081]
+
 Tue Mar 29 23:36:49 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb: add cygwin case, nothing excluded.
