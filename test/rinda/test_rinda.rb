@@ -625,10 +625,17 @@ class TestRingServer < Test::Unit::TestCase
   def test_make_socket_ipv4_multicast
     v4mc = @rs.make_socket('239.0.0.1')
 
-    if Socket.const_defined?(:SO_REUSEPORT) then
-      assert(v4mc.getsockopt(:SOCKET, :SO_REUSEPORT).bool)
-    else
-      assert(v4mc.getsockopt(:SOCKET, :SO_REUSEADDR).bool)
+    begin
+      if Socket.const_defined?(:SO_REUSEPORT) then
+        assert(v4mc.getsockopt(:SOCKET, :SO_REUSEPORT).bool)
+      else
+        assert(v4mc.getsockopt(:SOCKET, :SO_REUSEADDR).bool)
+      end
+    rescue TypeError
+      if /aix/ =~ RUBY_PLATFORM
+        skip "Known bug in getsockopt(2) on AIX"
+      end
+      raise $!
     end
 
     assert_equal('0.0.0.0', v4mc.local_address.ip_address)
@@ -660,10 +667,17 @@ class TestRingServer < Test::Unit::TestCase
     @rs = Rinda::RingServer.new(@ts, [['239.0.0.1', '0.0.0.0']], @port)
     v4mc = @rs.instance_variable_get('@sockets').first
 
-    if Socket.const_defined?(:SO_REUSEPORT) then
-      assert(v4mc.getsockopt(:SOCKET, :SO_REUSEPORT).bool)
-    else
-      assert(v4mc.getsockopt(:SOCKET, :SO_REUSEADDR).bool)
+    begin
+      if Socket.const_defined?(:SO_REUSEPORT) then
+        assert(v4mc.getsockopt(:SOCKET, :SO_REUSEPORT).bool)
+      else
+        assert(v4mc.getsockopt(:SOCKET, :SO_REUSEADDR).bool)
+      end
+    rescue TypeError
+      if /aix/ =~ RUBY_PLATFORM
+        skip "Known bug in getsockopt(2) on AIX"
+      end
+      raise $!
     end
 
     assert_equal('0.0.0.0', v4mc.local_address.ip_address)
@@ -755,6 +769,11 @@ class TestRingFinger < Test::Unit::TestCase
     v4 = @rf.make_socket('127.0.0.1')
 
     assert(v4.getsockopt(:SOL_SOCKET, :SO_BROADCAST).bool)
+  rescue TypeError
+    if /aix/ =~ RUBY_PLATFORM
+      skip "Known bug in getsockopt(2) on AIX"
+    end
+    raise $!
   ensure
     v4.close if v4
   end

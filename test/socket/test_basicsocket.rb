@@ -16,20 +16,28 @@ class TestSocket_BasicSocket < Test::Unit::TestCase
 
   def test_getsockopt
     inet_stream do |s|
-      n = s.getsockopt(Socket::SOL_SOCKET, Socket::SO_TYPE)
-      assert_equal([Socket::SOCK_STREAM].pack("i"), n.data)
+      begin
+        n = s.getsockopt(Socket::SOL_SOCKET, Socket::SO_TYPE)
+        assert_equal([Socket::SOCK_STREAM].pack("i"), n.data)
 
-      n = s.getsockopt("SOL_SOCKET", "SO_TYPE")
-      assert_equal([Socket::SOCK_STREAM].pack("i"), n.data)
+        n = s.getsockopt("SOL_SOCKET", "SO_TYPE")
+        assert_equal([Socket::SOCK_STREAM].pack("i"), n.data)
 
-      n = s.getsockopt(:SOL_SOCKET, :SO_TYPE)
-      assert_equal([Socket::SOCK_STREAM].pack("i"), n.data)
+        n = s.getsockopt(:SOL_SOCKET, :SO_TYPE)
+        assert_equal([Socket::SOCK_STREAM].pack("i"), n.data)
 
-      n = s.getsockopt(:SOCKET, :TYPE)
-      assert_equal([Socket::SOCK_STREAM].pack("i"), n.data)
+        n = s.getsockopt(:SOCKET, :TYPE)
+        assert_equal([Socket::SOCK_STREAM].pack("i"), n.data)
 
-      n = s.getsockopt(Socket::SOL_SOCKET, Socket::SO_ERROR)
-      assert_equal([0].pack("i"), n.data)
+        n = s.getsockopt(Socket::SOL_SOCKET, Socket::SO_ERROR)
+        assert_equal([0].pack("i"), n.data)
+      rescue Minitest::Assertion
+        s.close
+        if /aix/ =~ RUBY_PLATFORM
+          skip "Known bug in getsockopt(2) on AIX"
+        end
+        raise $!
+      end
 
       val = Object.new
       class << val; self end.send(:define_method, :to_int) {
