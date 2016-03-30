@@ -185,7 +185,9 @@ static void
 stat_col(void)
 {
     char fname[10+sizeof(long)*3];
-    FILE *f = fopen((snprintf(fname, sizeof(fname), "/tmp/col%ld", (long)getpid()), fname), "w");
+    FILE *f;
+    if (!collision.total) return;
+    f = fopen((snprintf(fname, sizeof(fname), "/tmp/col%ld", (long)getpid()), fname), "w");
     fprintf(f, "collision: %d / %d (%6.2f)\n", collision.all, collision.total,
 	    ((double)collision.all / (collision.total)) * 100);
     fprintf(f, "num: %d, str: %d, strcase: %d\n", collision.num, collision.str, collision.strcase);
@@ -338,6 +340,7 @@ count_collision(const struct st_hash_type *type)
 }
 #define COLLISION (collision_check ? count_collision(table->type) : (void)0)
 #define FOUND_ENTRY (collision_check ? collision.total++ : (void)0)
+#define collision_check 0
 #else
 #define COLLISION
 #define FOUND_ENTRY
@@ -378,8 +381,6 @@ find_packed_index(const st_table *table, st_index_t hash_val, st_data_t key)
 {
     return find_packed_index_from(table, hash_val, key, 0);
 }
-
-#define collision_check 0
 
 int
 st_lookup(st_table *table, register st_data_t key, st_data_t *value)
@@ -436,9 +437,6 @@ st_get_key(st_table *table, register st_data_t key, st_data_t *result)
 	return 1;
     }
 }
-
-#undef collision_check
-#define collision_check 1
 
 static inline st_table_entry *
 new_entry(st_table * table, st_data_t key, st_data_t value,
