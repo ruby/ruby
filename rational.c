@@ -395,13 +395,10 @@ f_lcm(VALUE x, VALUE y)
 }
 
 #define get_dat1(x) \
-    struct RRational *dat;\
-    dat = ((struct RRational *)(x))
+    struct RRational *dat = RRATIONAL(x)
 
 #define get_dat2(x,y) \
-    struct RRational *adat, *bdat;\
-    adat = ((struct RRational *)(x));\
-    bdat = ((struct RRational *)(y))
+    struct RRational *adat = RRATIONAL(x), *bdat = RRATIONAL(y)
 
 #define RRATIONAL_SET_NUM(rat, n) RB_OBJ_WRITE((rat), &((struct RRational *)(rat))->num,(n))
 #define RRATIONAL_SET_DEN(rat, d) RB_OBJ_WRITE((rat), &((struct RRational *)(rat))->den,(d))
