@@ -1,3 +1,8 @@
+Wed Mar 30 18:45:26 2016  Kimura Wataru  <kimuraw@i.nifty.jp>
+
+	* test/ruby/test_io.rb: handled rlimit value same as r52277
+	  [Bug #11852][ruby-dev:49446]
+
 Tue Mar 29 21:10:10 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* ext/openssl/extconf.rb: check SSL_CTX_set_next_proto_select_cb
