@@ -171,6 +171,10 @@ class TestSprintf < Test::Unit::TestCase
     assert_equal("x"*10+"     1.0", sprintf("x"*10+"%8.1f", 1r))
   end
 
+  def test_rational_precision
+    assert_match(/\A0\.\d{600}\z/, sprintf("%.600f", 600**~60))
+  end
+
   def test_hash
     options = {:capture=>/\d+/}
     assert_equal("with options {:capture=>/\\d+/}", sprintf("with options %p" % options))
