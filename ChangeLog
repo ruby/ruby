@@ -1,3 +1,8 @@
+Thu Mar 31 03:41:02 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/nkf/nkf-utf8/nkf.c: Merge upstream 69f7e74dde.
+	  fix indent.
+
 Wed Mar 30 16:33:19 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* extension.rdoc, extension.ja.rdoc: [DOC] Fix some errors.

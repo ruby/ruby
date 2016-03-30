@@ -5710,9 +5710,9 @@ module_connection(void)
     if (nkf_enc_unicode_p(output_encoding))
 	output_mode = UTF_8;
 
-	if (x0201_f == NKF_UNSPECIFIED) {
-		x0201_f = X0201_DEFAULT;
-	}
+    if (x0201_f == NKF_UNSPECIFIED) {
+	x0201_f = X0201_DEFAULT;
+    }
 
     /* replace continuation module, from output side */
 
