@@ -11274,7 +11274,7 @@ ripper_id2sym(ID id)
     const char *name;
     char buf[8];
 
-    if (ISASCII(id)) {
+    if (id == (ID)(signed char)id) {
         buf[0] = (char)id;
         buf[1] = '\0';
         return ID2SYM(rb_intern2(buf, 1));
