@@ -1,3 +1,11 @@
+Wed Mar 30 16:33:19 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* extension.rdoc, extension.ja.rdoc: [DOC] Fix some errors.
+	  Renamed files, wrong method names or argument types; the example
+	  GetDBM macro is now updated to the current version of the actual
+	  code.  patch by Marcus Stollsteimer in [ruby-core:74690].
+	  [Bug #12228]
+
 Wed Mar 30 09:46:01 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/open-uri.rb: Use `userinfo` for authenticated proxy.

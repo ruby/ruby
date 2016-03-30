@@ -642,14 +642,14 @@ with the next macro.
 TypedData_Wrap_Struct() returns a created Ruby object as a VALUE.
 
 The klass argument is the class for the object.
-data_type is a pointer to a const ruby_data_type_t which describes
+data_type is a pointer to a const rb_data_type_t which describes
 how Ruby should manage the struct.
 
 It is recommended that klass derives from a special class called
 Data (rb_cData) but not from Object or other ordinal classes.
 If it doesn't, you have to call rb_undef_alloc_func(klass).
 
-ruby_data_type_t is defined like this.  Let's take a look at each
+rb_data_type_t is defined like this.  Let's take a look at each
 member of the struct.
 
   struct rb_data_type_struct {
@@ -825,9 +825,9 @@ To retrieve the dbmdata structure from a Ruby object, we define the
 following macro:
 
   #define GetDBM(obj, dbmp) do {\
-      TypedData_Get_Struct(obj, struct dbmdata, &dbm_type, dbmp);\
+      TypedData_Get_Struct((obj), struct dbmdata, &dbm_type, (dbmp));\
       if ((dbmp) == 0) closed_dbm();\
-      if (dbmp->di_dbm == 0) closed_dbm();\
+      if ((dbmp)->di_dbm == 0) closed_dbm();\
   } while (0)
 
 This sort of complicated macro does the retrieving and close checking
@@ -1289,7 +1289,7 @@ void rb_define_readonly_variable(const char *name, VALUE *var) ::
   Defines a read-only global variable.  Works just like
   rb_define_variable(), except the defined variable is read-only.
 
-void rb_define_virtual_variable(const char *name, VALUE (*getter)(), VALUE (*setter)()) ::
+void rb_define_virtual_variable(const char *name, VALUE (*getter)(), void (*setter)()) ::
 
   Defines a virtual variable, whose behavior is defined by a pair of C
   functions.  The getter function is called when the variable is
@@ -1301,7 +1301,7 @@ void rb_define_virtual_variable(const char *name, VALUE (*getter)(), VALUE (*set
 
   The getter function must return the value for the access.
 
-void rb_define_hooked_variable(const char *name, VALUE *var, VALUE (*getter)(), VALUE (*setter)()) ::
+void rb_define_hooked_variable(const char *name, VALUE *var, VALUE (*getter)(), void (*setter)()) ::
 
   Defines hooked variable.  It's a virtual variable with a C variable.
   The getter is called as
@@ -1327,7 +1327,7 @@ void rb_define_global_const(const char *name, VALUE val) ::
 
   Defines a global constant.  This is just the same as
 
-    rb_define_const(cKernal, name, val)
+    rb_define_const(rb_cObject, name, val)
 
 == Method Definition
 
@@ -1461,7 +1461,7 @@ char *rb_class2name(VALUE klass) ::
 
   Returns the name of the class.
 
-int rb_respond_to(VALUE object, ID id) ::
+int rb_respond_to(VALUE obj, ID id) ::
 
   Returns true if the object responds to the message specified by id.
 
@@ -1489,7 +1489,7 @@ VALUE rb_block_call(VALUE recv, ID mid, int argc, VALUE * argv, VALUE (*func) (A
   whereas yielded values can be gotten via argc/argv of the third/fourth
   arguments.
 
-\[OBSOLETE] VALUE rb_iterate(VALUE (*func1)(), void *arg1, VALUE (*func2)(), void *arg2) ::
+\[OBSOLETE] VALUE rb_iterate(VALUE (*func1)(), VALUE arg1, VALUE (*func2)(), VALUE arg2) ::
 
   Calls the function func1, supplying func2 as the block.  func1 will be
   called with the argument arg1.  func2 receives the value from yield as
