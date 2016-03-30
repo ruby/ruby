@@ -372,6 +372,42 @@ class TestOpenURI < Test::Unit::TestCase
     }
   end
 
+  def test_authenticated_proxy_http_basic_authentication_success
+    with_http {|srv, dr, url|
+      proxy_log = StringIO.new(''.dup)
+      proxy_logger = WEBrick::Log.new(proxy_log, WEBrick::BasicLog::WARN)
+      proxy_auth_log = ''.dup
+      proxy = WEBrick::HTTPProxyServer.new({
+        :ServerType => Thread,
+        :Logger => proxy_logger,
+        :AccessLog => [[NullLog, ""]],
+        :ProxyAuthProc => lambda {|req, res|
+          proxy_auth_log << req.request_line
+          if req["Proxy-Authorization"] != "Basic #{['user:pass'].pack('m').chomp}"
+            raise WEBrick::HTTPStatus::ProxyAuthenticationRequired
+          end
+        },
+        :BindAddress => '127.0.0.1',
+        :Port => 0})
+      _, proxy_port, _, proxy_host = proxy.listeners[0].addr
+      proxy_url = "http://user:pass@#{proxy_host}:#{proxy_port}/"
+      begin
+        th = proxy.start
+        srv.mount_proc("/proxy", lambda { |req, res| res.body = "proxy" } )
+        open("#{url}/proxy", :proxy => proxy_url) {|f|
+          assert_equal("200", f.status[0])
+          assert_equal("proxy", f.read)
+        }
+        assert_match(/#{Regexp.quote url}/, proxy_auth_log); proxy_auth_log.clear
+        assert_equal("", proxy_auth_log); proxy_auth_log.clear
+      ensure
+        proxy.shutdown
+        th.join
+      end
+      assert_equal("", proxy_log.string)
+    }
+  end
+
   def test_redirect
     with_http {|srv, dr, url|
       srv.mount_proc("/r1/") {|req, res| res.status = 301; res["location"] = "#{url}/r2"; res.body = "r1" }

@@ -270,6 +270,9 @@ module OpenURI
     if URI::HTTP === target
       # HTTP or HTTPS
       if proxy
+        unless proxy_user && proxy_pass
+          proxy_user, proxy_pass = proxy_uri.userinfo.split(':') if proxy_uri.userinfo
+        end
         if proxy_user && proxy_pass
           klass = Net::HTTP::Proxy(proxy_uri.hostname, proxy_uri.port, proxy_user, proxy_pass)
         else
