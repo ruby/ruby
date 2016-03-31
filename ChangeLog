@@ -1,3 +1,7 @@
+Thu Mar 31 19:16:16 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: need to set initial value of GC_HEAP_FREE_SLOTS_GOAL_RATIO.
+
 Thu Mar 31 17:50:27 2016  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: change additional allocation policy.
