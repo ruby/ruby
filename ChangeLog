@@ -1,3 +1,38 @@
+Thu Mar 31 16:49:36 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: simplify allocate/free detecting logic at the end of marking.
+
+	  Before this change, heap_pages_min_slots are calculated at the
+	  beggining sweeping phase. And this value is used at the end of
+	  *next* marking phase.
+
+	  To simplify it, we use this value at the end of this marking phase.
+	  It means that we don't need to store this value as global state.
+
+	  Also heap_pages_max_slots is calculated at the begging of sweeping
+	  phase and used at the end of sweeping phase.
+	  To simplify this logic, we introduced new global value
+	  heap_pages_freeable_pages it means extra pages count we can free.
+	  gc_sweep_step() checks this value and moves empty pages to tomb_heap
+	  not more than this value.
+
+	  Because of this fix, heap_pages_swept_slots is no longer needed.
+
+	* gc.c (rb_objspace_t::heap_pages): restruct the objspace global
+	  status.
+
+	  remove the following fileds
+	    * swept_slots (and heap_pages_swept_slots)
+	    * min_free_slots (and heap_pages_min_free_slots)
+	    * max_free_slots (and heap_pages_max_free_slots)
+	  And add the following filed.
+	    * freeable_pages (and heap_pages_freeable_pages)
+
+	* gc.c (heap_pages_free_unused_pages): unlink tomb heap pages
+	  because tomb heap should have only freeable pages.
+
+	* gc.c (heap_extend_pages): add parameters for future extension.
+
 Thu Mar 31 16:43:02 2016  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: add GC parameters to configure the following values:
