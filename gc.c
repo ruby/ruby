@@ -5383,8 +5383,8 @@ gc_marks_finish(rb_objspace_t *objspace)
 	/* check free_min */
 	if (min_free_slots < gc_params.heap_free_slots) min_free_slots = gc_params.heap_free_slots;
 
-	if (sweep_slots < min_free_slots) {
 #if USE_RGENGC
+	if (sweep_slots < min_free_slots) {
 	    if (!full_marking) {
 		if (objspace->profile.count - objspace->rgengc.last_major_gc < RVALUE_OLD_AGE) {
 		    full_marking = TRUE;
@@ -5426,11 +5426,12 @@ gc_marks_finish(rb_objspace_t *objspace)
 		  objspace->rgengc.need_major_gc ? "major" : "minor");
 
 #else /* USE_RGENGC */
+	if (sweep_slots < min_free_slots) {
 	    gc_report(1, objspace, "gc_marks_finish: heap_set_increment!!\n");
 	    heap_set_increment(objspace, heap_extend_pages(objspace, sweep_slot, total_slot));
 	    heap_increment(objspace, heap);
-#endif
 	}
+#endif
     }
 
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_END_MARK, 0);

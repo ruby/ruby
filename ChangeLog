@@ -1,3 +1,7 @@
+Thu Mar 31 17:48:25 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_marks_finish): fix syntax error.
+
 Thu Mar 31 16:49:36 2016  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: simplify allocate/free detecting logic at the end of marking.

@@ -663,7 +663,7 @@ vm_get_ev_const(rb_thread_t *th, VALUE orig_klass, ID id, int is_defined)
 	/* in current lexical scope */
 	const rb_cref_t *root_cref = rb_vm_get_cref(th->cfp->ep);
 	const rb_cref_t *cref;
-	VALUE klass = orig_klass;
+	VALUE klass = Qnil;
 
 	while (root_cref && CREF_PUSHED_BY_EVAL(root_cref)) {
 	    root_cref = CREF_NEXT(root_cref);
