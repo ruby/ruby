@@ -1,3 +1,30 @@
+Thu Mar 31 17:50:27 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: change additional allocation policy.
+
+	  Introduce new environement variable
+	  GC_HEAP_FREE_SLOTS_GOAL_RATIO (goal_ratio) to calculate the ratio
+	  of additional memory.
+
+	  Before this change, we add pages with the following formula
+	  (when free_slots < total_pages * RUBY_GC_HEAP_FREE_SLOTS_MIN_RATIO):
+	    next_pages = total_pages * RUBY_GC_HEAP_GROWTH_FACTOR
+
+	  This addition can allocate too much.
+
+	  With this change, we increase pages to satisfy the following formula:
+	    next_free_slots = next_total_slots * goal_ratio
+	  where
+	    next_free_slots = free_slots + adding_slots
+	    next_total_slots = total_slots + adding_slots.
+
+	  If you want to prepare many free slots, increase this ratio.
+
+	  If this variable is 0, then simply multiply
+	  RUBY_GC_HEAP_GROWTH_FACTOR.
+
+	* gc.c (get_envparam_double): enable to accept 0.
+
 Thu Mar 31 17:48:25 2016  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_marks_finish): fix syntax error.

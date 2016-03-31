@@ -118,10 +118,13 @@ rb_gc_guarded_ptr_val(volatile VALUE *ptr, VALUE val)
 #endif
 
 #ifndef GC_HEAP_FREE_SLOTS_MIN_RATIO
-#define GC_HEAP_FREE_SLOTS_MIN_RATIO 0.3
+#define GC_HEAP_FREE_SLOTS_MIN_RATIO  0.30
+#endif
+#ifndef GC_HEAP_FREE_SLOTS_GOAL_RATIO
+#define GC_HEAP_FREE_SLOTS_GOAL_RATIO 0.40
 #endif
 #ifndef GC_HEAP_FREE_SLOTS_MAX_RATIO
-#define GC_HEAP_FREE_SLOTS_MAX_RATIO 0.8
+#define GC_HEAP_FREE_SLOTS_MAX_RATIO  0.80
 #endif
 
 #ifndef GC_MALLOC_LIMIT_MIN
@@ -164,6 +167,7 @@ typedef struct {
     size_t growth_max_slots;
 
     double heap_free_slots_min_ratio;
+    double heap_free_slots_goal_ratio;
     double heap_free_slots_max_ratio;
     double oldobject_limit_factor;
 
@@ -1603,15 +1607,34 @@ heap_add_pages(rb_objspace_t *objspace, rb_heap_t *heap, size_t add)
 static size_t
 heap_extend_pages(rb_objspace_t *objspace, size_t free_slots, size_t total_slots)
 {
-    size_t used = heap_allocated_pages - heap_tomb->total_pages;
-    size_t next_used_limit = (size_t)(used * gc_params.growth_factor);
+    double goal_ratio = gc_params.heap_free_slots_goal_ratio;
+    size_t used = heap_allocated_pages + heap_allocatable_pages;
+    size_t next_used;
 
-    if (gc_params.growth_max_slots > 0) {
-	size_t max_used_limit = (size_t)(used + gc_params.growth_max_slots/HEAP_PAGE_OBJ_LIMIT);
-	if (next_used_limit > max_used_limit) next_used_limit = max_used_limit;
+    if (goal_ratio == 0.0) {
+	next_used = (size_t)(used * gc_params.growth_factor);
+    }
+    else {
+	/* Find `f' where free_slots = f * total_slots * goal_ratio
+	 * => f = (total_slots - free_slots) / ((1 - goal_ratio) * total_slots)
+	 */
+	double f = (double)(total_slots - free_slots) / ((1 - goal_ratio) * total_slots);
+
+	if (f > gc_params.growth_factor) f = gc_params.growth_factor;
+	if (f < 1.0) f = 1.1;
+
+	next_used = (size_t)(f * used);
+
+	if (0) fprintf(stderr, "free_slots(%8ld)/total_slots(%8ld)=%1.2f, G(%1.2f), f(%1.2f), used(%8ld) => next_used(%8ld)\n",
+		       free_slots, total_slots, free_slots/(double)total_slots, goal_ratio, f, used, next_used);
     }
 
-    return next_used_limit - used;
+    if (gc_params.growth_max_slots > 0) {
+	size_t max_used = (size_t)(used + gc_params.growth_max_slots/HEAP_PAGE_OBJ_LIMIT);
+	if (next_used > max_used) next_used = max_used;
+    }
+
+    return next_used - used;
 }
 
 static void
@@ -5424,7 +5447,6 @@ gc_marks_finish(rb_objspace_t *objspace)
 	gc_report(1, objspace, "gc_marks_finish (marks %d objects, old %d objects, total %d slots, sweep %d slots, increment: %d, next GC: %s)\n",
 		  (int)objspace->marked_slots, (int)objspace->rgengc.old_objects, (int)heap->total_slots, (int)sweep_slots, (int)heap_allocatable_pages,
 		  objspace->rgengc.need_major_gc ? "major" : "minor");
-
 #else /* USE_RGENGC */
 	if (sweep_slots < min_free_slots) {
 	    gc_report(1, objspace, "gc_marks_finish: heap_set_increment!!\n");
@@ -7299,7 +7321,7 @@ get_envparam_double(const char *name, double *default_value, double lower_bound)
 	    if (RTEST(ruby_verbose)) fprintf(stderr, "invalid string for %s: %s\n", name, ptr);
 	    return 0;
 	}
-	if (val > lower_bound) {
+	if (val >= lower_bound) {
 	    if (RTEST(ruby_verbose)) fprintf(stderr, "%s=%f (default value: %f)\n", name, val, *default_value);
 	    *default_value = val;
 	    return 1;
@@ -7339,6 +7361,11 @@ gc_set_initial_pages(void)
  * * RUBY_GC_HEAP_FREE_SLOTS_MIN_RATIO (new from 2.4)
  *   - Allocate additional pages when the number of free slots is
  *     lower than the value (total_slots * (this ratio)).
+ * * RUBY_GC_HEAP_FREE_SLOTS_GOAL_RATIO (new from 2.4)
+ *   - Allocate slots to satisfy this formula:
+ *       free_slots = total_slots * goal_ratio
+ *   - In other words, prepare (total_slots * goal_ratio) free slots.
+ *   - if this value is 0.0, then use RUBY_GC_HEAP_GROWTH_FACTOR directly.
  * * RUBY_GC_HEAP_FREE_SLOTS_MAX_RATIO (new from 2.4)
  *   - Allow to free pages when the number of free slots is
  *     greater than the value (total_slots * (this ratio)).
@@ -7385,6 +7412,7 @@ ruby_gc_set_params(int safe_level)
     get_envparam_double("RUBY_GC_HEAP_GROWTH_FACTOR", &gc_params.growth_factor, 1.0);
     get_envparam_size  ("RUBY_GC_HEAP_GROWTH_MAX_SLOTS", &gc_params.growth_max_slots, 0);
     get_envparam_double("RUBY_GC_HEAP_FREE_SLOTS_MIN_RATIO", &gc_params.heap_free_slots_min_ratio, 0.1);
+    get_envparam_double("RUBY_GC_HEAP_FREE_SLOTS_GOAL_RATIO", &gc_params.heap_free_slots_goal_ratio, 0.0);
     get_envparam_double("RUBY_GC_HEAP_FREE_SLOTS_MAX_RATIO", &gc_params.heap_free_slots_max_ratio, 0.9);
     get_envparam_double("RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR", &gc_params.oldobject_limit_factor, 0.0);
 
