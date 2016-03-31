@@ -1,3 +1,8 @@
+Thu Mar 31 11:18:19 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/date/date_core.c (Init_date_core): [DOC] fix misplaced doc
+	  of DateTime.  [ruby-core:74729] [Bug #12233]
+
 Thu Mar 31 03:41:02 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf-utf8/nkf.c: Merge upstream 69f7e74dde.
