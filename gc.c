@@ -3367,9 +3367,7 @@ gc_setup_mark_bits(struct heap_page *page)
 #endif
 }
 
-/* TRUE : has empty slots                                             */
-/* FALSE: no empty slots (or move to tomb heap because no live slots) */
-static inline void
+static inline int
 gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_page)
 {
     int i;
@@ -3458,6 +3456,8 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
     }
 
     gc_report(2, objspace, "page_sweep: end.\n");
+
+    return freed_slots + empty_slots;
 }
 
 /* allocate additional minimum page to work */
@@ -3577,7 +3577,7 @@ gc_sweep_finish(rb_objspace_t *objspace)
 static int
 gc_sweep_step(rb_objspace_t *objspace, rb_heap_t *heap)
 {
-    struct heap_page *sweep_page = heap->sweep_pages, *next;
+    struct heap_page *sweep_page = heap->sweep_pages;
     int unlink_limit = 3;
 #if GC_ENABLE_INCREMENTAL_MARK
     int need_pool = will_be_incremental_marking(objspace) ? TRUE : FALSE;
@@ -3594,17 +3594,17 @@ gc_sweep_step(rb_objspace_t *objspace, rb_heap_t *heap)
 #endif
 
     while (sweep_page) {
-	heap->sweep_pages = next = sweep_page->next;
-	gc_page_sweep(objspace, heap, sweep_page);
+	struct heap_page *next_sweep_page = heap->sweep_pages = sweep_page->next;
+	int free_slots = gc_page_sweep(objspace, heap, sweep_page);
 
-	if (sweep_page->final_slots + sweep_page->free_slots == sweep_page->total_slots &&
+	if (sweep_page->final_slots + free_slots == sweep_page->total_slots &&
 	    unlink_limit > 0) {
 	    unlink_limit--;
 	    /* there are no living objects -> move this page to tomb heap */
 	    heap_unlink_page(objspace, heap, sweep_page);
 	    heap_add_page(objspace, heap_tomb, sweep_page);
 	}
-	else if (sweep_page->free_slots > 0) {
+	else if (free_slots > 0) {
 #if GC_ENABLE_INCREMENTAL_MARK
 	    if (need_pool) {
 		if (heap_add_poolpage(objspace, heap, sweep_page)) {
@@ -3624,7 +3624,7 @@ gc_sweep_step(rb_objspace_t *objspace, rb_heap_t *heap)
 	    sweep_page->free_next = NULL;
 	}
 
-	sweep_page = next;
+	sweep_page = next_sweep_page;
     }
 
     if (heap->sweep_pages == NULL) {

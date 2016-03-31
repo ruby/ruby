@@ -1,3 +1,12 @@
+Thu Mar 31 15:48:18 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_page_sweep): return free slots count.
+
+	* gc.c (gc_sweep_step): use returned free slots count.
+
+	* gc.c (gc_sweep_step): change variable name `next'
+	  to `next_sweep_page'.
+
 Thu Mar 31 11:33:49 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/date/date_core.c (d_lite_strftime, dt_lite_strftime): [DOC]
