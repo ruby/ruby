@@ -1,3 +1,9 @@
+Fri Apr  1 04:50:44 2016  Eric Wong  <e@80x24.org>
+
+	* ext/openssl/ossl_ssl.c (ossl_sslctx_s_alloc):
+	  enable SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER by default
+	  [Bug #12126]
+
 Fri Apr  1 01:13:55 2016  Benoit Daloze  <eregontp@gmail.com>
 
 	* thread.c (update_coverage): Do not track coverage in loaded files

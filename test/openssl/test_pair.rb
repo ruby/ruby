@@ -280,6 +280,35 @@ module OpenSSL::TestPairM
     }
   end
 
+  def test_write_nonblock_retry
+    ssl_pair {|s1, s2|
+      # fill up a socket so we hit EAGAIN
+      written = String.new
+      n = 0
+      buf = 'a' * 11
+      case ret = s1.write_nonblock(buf, exception: false)
+      when :wait_readable then break
+      when :wait_writable then break
+      when Integer
+        written << buf
+        n += ret
+        exp = buf.bytesize
+        if ret != exp
+          buf = buf.byteslice(ret, exp - ret)
+        end
+      end while true
+      assert_kind_of Symbol, ret
+
+      # make more space for subsequent write:
+      readed = s2.read(n)
+      assert_equal written, readed
+
+      # this fails if SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER is missing:
+      buf2 = Marshal.load(Marshal.dump(buf))
+      assert_kind_of Integer, s1.write_nonblock(buf2, exception: false)
+    }
+  end
+
   def tcp_pair
     host = "127.0.0.1"
     serv = TCPServer.new(host, 0)
