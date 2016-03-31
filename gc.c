@@ -162,13 +162,19 @@ typedef struct {
     size_t heap_free_slots;
     double growth_factor;
     size_t growth_max_slots;
+
+    double heap_free_slots_min_ratio;
+    double heap_free_slots_max_ratio;
     double oldobject_limit_factor;
+
     size_t malloc_limit_min;
     size_t malloc_limit_max;
     double malloc_limit_growth_factor;
+
     size_t oldmalloc_limit_min;
     size_t oldmalloc_limit_max;
     double oldmalloc_limit_growth_factor;
+
     VALUE gc_stress;
 } ruby_gc_params_t;
 
@@ -177,13 +183,19 @@ static ruby_gc_params_t gc_params = {
     GC_HEAP_FREE_SLOTS,
     GC_HEAP_GROWTH_FACTOR,
     GC_HEAP_GROWTH_MAX_SLOTS,
+
+    GC_HEAP_FREE_SLOTS_MIN_RATIO,
+    GC_HEAP_FREE_SLOTS_MAX_RATIO,
     GC_HEAP_OLDOBJECT_LIMIT_FACTOR,
+
     GC_MALLOC_LIMIT_MIN,
     GC_MALLOC_LIMIT_MAX,
     GC_MALLOC_LIMIT_GROWTH_FACTOR,
+
     GC_OLDMALLOC_LIMIT_MIN,
     GC_OLDMALLOC_LIMIT_MAX,
     GC_OLDMALLOC_LIMIT_GROWTH_FACTOR,
+
     FALSE,
 };
 
@@ -3534,11 +3546,11 @@ gc_sweep_start(rb_objspace_t *objspace)
     heap_pages_swept_slots = heap_allocatable_pages * HEAP_PAGE_OBJ_LIMIT;
     total_limit_slot = objspace_available_slots(objspace);
 
-    heap_pages_min_free_slots = (size_t)(total_limit_slot * GC_HEAP_FREE_SLOTS_MIN_RATIO);
+    heap_pages_min_free_slots = (size_t)(total_limit_slot * gc_params.heap_free_slots_min_ratio);
     if (heap_pages_min_free_slots < gc_params.heap_free_slots) {
 	heap_pages_min_free_slots = gc_params.heap_free_slots;
     }
-    heap_pages_max_free_slots = (size_t)(total_limit_slot * GC_HEAP_FREE_SLOTS_MAX_RATIO);
+    heap_pages_max_free_slots = (size_t)(total_limit_slot * gc_params.heap_free_slots_max_ratio);
     if (heap_pages_max_free_slots < gc_params.heap_init_slots) {
 	heap_pages_max_free_slots = gc_params.heap_init_slots;
     }
@@ -7332,6 +7344,12 @@ gc_set_initial_pages(void)
  *   - (next slots number) = (current slots number) * (this factor)
  * * RUBY_GC_HEAP_GROWTH_MAX_SLOTS (new from 2.1)
  *   - Allocation rate is limited to this number of slots.
+ * * RUBY_GC_HEAP_FREE_SLOTS_MIN_RATIO (new from 2.4)
+ *   - Allocate additional pages when the number of free slots is
+ *     lower than the value (total_slots * (this ratio)).
+ * * RUBY_GC_HEAP_FREE_SLOTS_MAX_RATIO (new from 2.4)
+ *   - Allow to free pages when the number of free slots is
+ *     greater than the value (total_slots * (this ratio)).
  * * RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR (new from 2.1.1)
  *   - Do full GC when the number of old objects is more than R * N
  *     where R is this factor and
@@ -7374,6 +7392,8 @@ ruby_gc_set_params(int safe_level)
 
     get_envparam_double("RUBY_GC_HEAP_GROWTH_FACTOR", &gc_params.growth_factor, 1.0);
     get_envparam_size  ("RUBY_GC_HEAP_GROWTH_MAX_SLOTS", &gc_params.growth_max_slots, 0);
+    get_envparam_double("RUBY_GC_HEAP_FREE_SLOTS_MIN_RATIO", &gc_params.heap_free_slots_min_ratio, 0.1);
+    get_envparam_double("RUBY_GC_HEAP_FREE_SLOTS_MAX_RATIO", &gc_params.heap_free_slots_max_ratio, 0.9);
     get_envparam_double("RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR", &gc_params.oldobject_limit_factor, 0.0);
 
     get_envparam_size  ("RUBY_GC_MALLOC_LIMIT", &gc_params.malloc_limit_min, 0);
