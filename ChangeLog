@@ -1,3 +1,8 @@
+Thu Mar 31 11:33:49 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/date/date_core.c (d_lite_strftime, dt_lite_strftime): [DOC]
+	  fix indent not to be a big sole verbatim.
+
 Thu Mar 31 11:18:19 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/date/date_core.c (Init_date_core): [DOC] fix misplaced doc

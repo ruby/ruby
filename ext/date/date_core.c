@@ -6691,32 +6691,32 @@ date_strftime_internal(int argc, VALUE *argv, VALUE self,
  * call-seq:
  *    d.strftime([format='%F'])  ->  string
  *
- *  Formats date according to the directives in the given format
- *  string.
- *  The directives begins with a percent (%) character.
- *  Any text not listed as a directive will be passed through to the
- *  output string.
+ * Formats date according to the directives in the given format
+ * string.
+ * The directives begins with a percent (%) character.
+ * Any text not listed as a directive will be passed through to the
+ * output string.
  *
- *  The directive consists of a percent (%) character,
- *  zero or more flags, optional minimum field width,
- *  optional modifier and a conversion specifier
- *  as follows.
+ * The directive consists of a percent (%) character,
+ * zero or more flags, optional minimum field width,
+ * optional modifier and a conversion specifier
+ * as follows.
  *
  *    %<flags><width><modifier><conversion>
  *
- *  Flags:
+ * Flags:
  *    -  don't pad a numerical output.
  *    _  use spaces for padding.
  *    0  use zeros for padding.
  *    ^  upcase the result string.
  *    #  change case.
  *
- *  The minimum field width specifies the minimum width.
+ * The minimum field width specifies the minimum width.
  *
- *  The modifiers are "E", "O", ":", "::" and ":::".
- *  "E" and "O" are ignored.  No effect to result currently.
+ * The modifiers are "E", "O", ":", "::" and ":::".
+ * "E" and "O" are ignored.  No effect to result currently.
  *
- *  Format directives:
+ * Format directives:
  *
  *    Date (Year, Month, Day):
  *      %Y - Year with century (can be negative, 4 digits at least)
@@ -6809,23 +6809,23 @@ date_strftime_internal(int argc, VALUE *argv, VALUE self,
  *      %T - 24-hour time (%H:%M:%S)
  *      %+ - date(1) (%a %b %e %H:%M:%S %Z %Y)
  *
- *  This method is similar to strftime() function defined in ISO C and POSIX.
- *  Several directives (%a, %A, %b, %B, %c, %p, %r, %x, %X, %E*, %O* and %Z)
- *  are locale dependent in the function.
- *  However this method is locale independent.
- *  So, the result may differ even if a same format string is used in other
- *  systems such as C.
- *  It is good practice to avoid %x and %X because there are corresponding
- *  locale independent representations, %D and %T.
+ * This method is similar to strftime() function defined in ISO C and POSIX.
+ * Several directives (%a, %A, %b, %B, %c, %p, %r, %x, %X, %E*, %O* and %Z)
+ * are locale dependent in the function.
+ * However this method is locale independent.
+ * So, the result may differ even if a same format string is used in other
+ * systems such as C.
+ * It is good practice to avoid %x and %X because there are corresponding
+ * locale independent representations, %D and %T.
  *
- *  Examples:
+ * Examples:
  *
  *    d = DateTime.new(2007,11,19,8,37,48,"-06:00")
  *				#=> #<DateTime: 2007-11-19T08:37:48-0600 ...>
  *    d.strftime("Printed on %m/%d/%Y")   #=> "Printed on 11/19/2007"
  *    d.strftime("at %I:%M%p")            #=> "at 08:37AM"
  *
- *  Various ISO 8601 formats:
+ * Various ISO 8601 formats:
  *    %Y%m%d           => 20071119                  Calendar date (basic)
  *    %F               => 2007-11-19                Calendar date (extended)
  *    %Y-%m            => 2007-11                   Calendar date, reduced accuracy, specific month
@@ -8134,20 +8134,20 @@ dt_lite_to_s(VALUE self)
  * call-seq:
  *    dt.strftime([format='%FT%T%:z'])  ->  string
  *
- *  Formats date according to the directives in the given format
- *  string.
- *  The directives begins with a percent (%) character.
- *  Any text not listed as a directive will be passed through to the
- *  output string.
+ * Formats date according to the directives in the given format
+ * string.
+ * The directives begins with a percent (%) character.
+ * Any text not listed as a directive will be passed through to the
+ * output string.
  *
- *  The directive consists of a percent (%) character,
- *  zero or more flags, optional minimum field width,
- *  optional modifier and a conversion specifier
- *  as follows.
+ * The directive consists of a percent (%) character,
+ * zero or more flags, optional minimum field width,
+ * optional modifier and a conversion specifier
+ * as follows.
  *
  *    %<flags><width><modifier><conversion>
  *
- *  Flags:
+ * Flags:
  *    -  don't pad a numerical output.
  *    _  use spaces for padding.
  *    0  use zeros for padding.
@@ -8155,12 +8155,12 @@ dt_lite_to_s(VALUE self)
  *    #  change case.
  *    :  use colons for %z.
  *
- *  The minimum field width specifies the minimum width.
+ * The minimum field width specifies the minimum width.
  *
- *  The modifier is "E" and "O".
- *  They are ignored.
+ * The modifier is "E" and "O".
+ * They are ignored.
  *
- *  Format directives:
+ * Format directives:
  *
  *    Date (Year, Month, Day):
  *      %Y - Year with century (can be negative, 4 digits at least)
@@ -8253,23 +8253,23 @@ dt_lite_to_s(VALUE self)
  *      %T - 24-hour time (%H:%M:%S)
  *      %+ - date(1) (%a %b %e %H:%M:%S %Z %Y)
  *
- *  This method is similar to strftime() function defined in ISO C and POSIX.
- *  Several directives (%a, %A, %b, %B, %c, %p, %r, %x, %X, %E*, %O* and %Z)
- *  are locale dependent in the function.
- *  However this method is locale independent.
- *  So, the result may differ even if a same format string is used in other
- *  systems such as C.
- *  It is good practice to avoid %x and %X because there are corresponding
- *  locale independent representations, %D and %T.
+ * This method is similar to strftime() function defined in ISO C and POSIX.
+ * Several directives (%a, %A, %b, %B, %c, %p, %r, %x, %X, %E*, %O* and %Z)
+ * are locale dependent in the function.
+ * However this method is locale independent.
+ * So, the result may differ even if a same format string is used in other
+ * systems such as C.
+ * It is good practice to avoid %x and %X because there are corresponding
+ * locale independent representations, %D and %T.
  *
- *  Examples:
+ * Examples:
  *
  *    d = DateTime.new(2007,11,19,8,37,48,"-06:00")
  *				#=> #<DateTime: 2007-11-19T08:37:48-0600 ...>
  *    d.strftime("Printed on %m/%d/%Y")   #=> "Printed on 11/19/2007"
  *    d.strftime("at %I:%M%p")            #=> "at 08:37AM"
  *
- *  Various ISO 8601 formats:
+ * Various ISO 8601 formats:
  *    %Y%m%d           => 20071119                  Calendar date (basic)
  *    %F               => 2007-11-19                Calendar date (extended)
  *    %Y-%m            => 2007-11                   Calendar date, reduced accuracy, specific month
