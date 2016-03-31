@@ -270,13 +270,10 @@ k_complex_p(VALUE x)
 #define k_exact_zero_p(x) (k_exact_p(x) && f_zero_p(x))
 
 #define get_dat1(x) \
-    struct RComplex *dat;\
-    dat = ((struct RComplex *)(x))
+    struct RComplex *dat = RCOMPLEX(x)
 
 #define get_dat2(x,y) \
-    struct RComplex *adat, *bdat;\
-    adat = ((struct RComplex *)(x));\
-    bdat = ((struct RComplex *)(y))
+    struct RComplex *adat = RCOMPLEX(x), *bdat = RCOMPLEX(y)
 
 inline static VALUE
 nucomp_s_new_internal(VALUE klass, VALUE real, VALUE imag)
