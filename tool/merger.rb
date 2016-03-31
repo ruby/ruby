@@ -47,7 +47,7 @@ def version
   open 'version.h', 'rb' do |f|
     f.each_line do |l|
       case l
-      when /^#define RUBY_VERSION "(\d)\.(\d)\.(\d)"$/
+      when /^#define RUBY_VERSION "(\d+)\.(\d+)\.(\d+)"$/
         v = $~.captures
       when /^#define RUBY_PATCHLEVEL (-?\d+)$/
         p = $1
