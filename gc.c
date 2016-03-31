@@ -5068,9 +5068,13 @@ gc_verify_heap_page(rb_objspace_t *objspace, struct heap_page *page, VALUE obj)
     unsigned int has_remembered_shady = FALSE;
     unsigned int has_remembered_old = FALSE;
     int rememberd_old_objects = 0;
+    int free_objects = 0;
+    int zombie_objects = 0;
 
     for (i=0; i<page->total_slots; i++) {
 	VALUE obj = (VALUE)&page->start[i];
+	if (RBASIC(obj) == 0) free_objects++;
+	if (BUILTIN_TYPE(obj) == T_ZOMBIE) zombie_objects++;
 	if (RVALUE_PAGE_UNCOLLECTIBLE(page, obj) && RVALUE_PAGE_WB_UNPROTECTED(page, obj)) has_remembered_shady = TRUE;
 	if (RVALUE_PAGE_MARKING(page, obj)) {
 	    has_remembered_old = TRUE;
@@ -5080,7 +5084,7 @@ gc_verify_heap_page(rb_objspace_t *objspace, struct heap_page *page, VALUE obj)
 
     if (!is_incremental_marking(objspace) &&
 	page->flags.has_remembered_objects == FALSE && has_remembered_old == TRUE) {
-
+	
 	for (i=0; i<page->total_slots; i++) {
 	    VALUE obj = (VALUE)&page->start[i];
 	    if (RVALUE_PAGE_MARKING(page, obj)) {
@@ -5096,6 +5100,16 @@ gc_verify_heap_page(rb_objspace_t *objspace, struct heap_page *page, VALUE obj)
 	       page, obj ? obj_info(obj) : "");
     }
 
+    if (0) {
+	/* free_slots may not equal to free_objects */
+	if (page->free_slots != free_objects) {
+	    rb_bug("page %p's free_slots should be %d, but %d\n", page, (int)page->free_slots, free_objects);
+	}
+    }
+    if (page->final_slots != zombie_objects) {
+	rb_bug("page %p's final_slots should be %d, but %d\n", page, (int)page->final_slots, zombie_objects);
+    }
+
     return rememberd_old_objects;
 #else
     return 0;
@@ -5103,17 +5117,26 @@ gc_verify_heap_page(rb_objspace_t *objspace, struct heap_page *page, VALUE obj)
 }
 
 static int
-gc_verify_heap_pages(rb_objspace_t *objspace)
+gc_verify_heap_pages_(rb_objspace_t *objspace, struct heap_page *page)
 {
     int rememberd_old_objects = 0;
-    struct heap_page *page = heap_eden->pages;
 
     while (page) {
-	if (page->flags.has_remembered_objects == FALSE)
-	  rememberd_old_objects += gc_verify_heap_page(objspace, page, Qfalse);
+	if (page->flags.has_remembered_objects == FALSE) {
+	    rememberd_old_objects += gc_verify_heap_page(objspace, page, Qfalse);
+	}
 	page = page->next;
     }
 
+    return rememberd_old_objects;
+}
+
+static int
+gc_verify_heap_pages(rb_objspace_t *objspace)
+{
+    int rememberd_old_objects = 0;
+    rememberd_old_objects = gc_verify_heap_pages_(objspace, heap_eden->pages);
+    rememberd_old_objects = gc_verify_heap_pages_(objspace, heap_tomb->pages);
     return rememberd_old_objects;
 }
 

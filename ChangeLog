@@ -1,3 +1,9 @@
+Thu Mar 31 15:59:17 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_verify_heap_page): check the number of zombies.
+
+	* gc.c (gc_verify_heap_pages): check also tomb heap.
+
 Thu Mar 31 15:48:18 2016  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_page_sweep): return free slots count.
