@@ -5084,7 +5084,7 @@ gc_verify_heap_page(rb_objspace_t *objspace, struct heap_page *page, VALUE obj)
 
     if (!is_incremental_marking(objspace) &&
 	page->flags.has_remembered_objects == FALSE && has_remembered_old == TRUE) {
-	
+
 	for (i=0; i<page->total_slots; i++) {
 	    VALUE obj = (VALUE)&page->start[i];
 	    if (RVALUE_PAGE_MARKING(page, obj)) {
