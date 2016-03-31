@@ -1,4 +1,4 @@
-#define RUBY_VERSION "2.1.9"
+#define RUBY_VERSION "2.1.10"
 #define RUBY_RELEASE_DATE "2016-04-01"
 #define RUBY_PATCHLEVEL 491
 
