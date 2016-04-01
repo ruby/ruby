@@ -139,7 +139,7 @@ code3_equal(const OnigCodePoint *x, const OnigCodePoint *y)
 
 /* macros related to ONIGENC_CASE flags */
 /* defined here because not used in other files */
-#define ONIGENC_CASE_SPECIALS       (ONIGENC_CASE_TITLECASE|ONIGENC_CASE_UP_SPECIAL|ONIGENC_CASE_DOWN_SPECIAL)
+#define ONIGENC_CASE_SPECIALS       (ONIGENC_CASE_TITLECASE|ONIGENC_CASE_IS_TITLECASE|ONIGENC_CASE_UP_SPECIAL|ONIGENC_CASE_DOWN_SPECIAL)
 
 /* macros for length in CaseMappingSpecials array in enc/unicode/casefold.h */
 #define SpecialsLengthOffset 25  /* needs to be higher than the 22 bits used for Unicode codepoints */
@@ -715,6 +715,13 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
 		    if (flags&OnigCaseFoldFlags(folded->n)&ONIGENC_CASE_SPECIALS) { /* special */
 			OnigCodePoint *SpecialsStart = CaseMappingSpecials + OnigSpecialIndexDecode(folded->n);
 
+			if (OnigCaseFoldFlags(folded->n)&ONIGENC_CASE_IS_TITLECASE) { /* swapCASE available */
+			    if ((flags&(ONIGENC_CASE_UPCASE|ONIGENC_CASE_DOWNCASE))
+				    == (ONIGENC_CASE_UPCASE|ONIGENC_CASE_DOWNCASE)) /* swapCASE needed */
+			        goto SpecialsCopy;
+			    else /* swapCASE not needed */
+			        SpecialsStart += SpecialsLengthExtract(*SpecialsStart);
+			}
 			if (OnigCaseFoldFlags(folded->n)&ONIGENC_CASE_TITLECASE) { /* Titlecase available */
 			    if (flags&ONIGENC_CASE_TITLECASE) /* Titlecase needed, but not yet Titlecase */
 				goto SpecialsCopy;

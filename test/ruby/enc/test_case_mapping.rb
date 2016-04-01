@@ -93,6 +93,19 @@ class TestCaseMappingPreliminary < Test::Unit::TestCase
     check_capitalize_properties 'ǋ', 'ǌ', :lithuanian
   end
 
+  def test_swapcase
+    assert_equal                'dZ', 'ǲ'.swapcase(:lithuanian)
+    assert_equal                'dŽ', 'ǅ'.swapcase(:lithuanian)
+    assert_equal                'lJ', 'ǈ'.swapcase(:lithuanian)
+    assert_equal                'nJ', 'ǋ'.swapcase(:lithuanian)
+    assert_equal                'ἀΙ', 'ᾈ'.swapcase(:lithuanian)
+    assert_equal                'ἣΙ', 'ᾛ'.swapcase(:lithuanian)
+    assert_equal                'ὧΙ', 'ᾯ'.swapcase(:lithuanian)
+    assert_equal                'αΙ', 'ᾼ'.swapcase(:lithuanian)
+    assert_equal                'ηΙ', 'ῌ'.swapcase(:lithuanian)
+    assert_equal                'ωΙ', 'ῼ'.swapcase(:lithuanian)
+  end
+
   def test_ascii_option
     check_downcase_properties   'yukihiro matsumoto (matz)', 'Yukihiro MATSUMOTO (MATZ)', :ascii
     check_upcase_properties     'YUKIHIRO MATSUMOTO (MATZ)', 'yukihiro matsumoto (matz)', :ascii

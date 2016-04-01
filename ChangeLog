@@ -1,3 +1,16 @@
+Fri Apr  1 20:58:33 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode/case-folding.rb, casefold.h: Data generation to implement
+	  swapcase functionality for titlecase characters. Swapcase isn't defined
+	  by Unicode, because the purpose/usage of swapcase is unclear anyway.
+	  The implementation follows a proposal from Nobu, swaping the case of
+	  each component of a titlecase character individually.
+	  This means that the titlecase characters have to be decomposed.
+
+	* enc/unicode.c: Code using the above data.
+
+	* test/ruby/enc/test_case_mapping.rb: Tests for the above.
+
 Fri Apr  1 14:55:28 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* configure.in (AC_CONFIG_FILES): $srcdir/.git can be a file pointing

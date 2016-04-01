@@ -244,6 +244,15 @@ class CaseMapping
         unless item.upper == item.title
           if item.code == item.title
             flags += '|IT'
+            swap = case item.code
+            when '01C5' then '0064 017D'
+            when '01C8' then '006C 004A'
+            when '01CB' then '006E 004A'
+            when '01F2' then '0064 005A'
+            else # Greek
+              to.split(' ').first + ' 0399'
+            end
+            specials << swap
           else
             flags += '|ST'
             specials << item.title
