@@ -46,9 +46,9 @@ Thu Mar 31 17:50:27 2016  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: change additional allocation policy.
 
-	  Introduce new environement variable
-	  GC_HEAP_FREE_SLOTS_GOAL_RATIO (goal_ratio) to calculate the ratio
-	  of additional memory.
+	  Introduce new environment variable
+	  RUBY_GC_HEAP_FREE_SLOTS_GOAL_RATIO (goal_ratio) to calculate the
+	  ratio of additional memory.
 
 	  Before this change, we add pages with the following formula
 	  (when free_slots < total_pages * RUBY_GC_HEAP_FREE_SLOTS_MIN_RATIO):
@@ -96,7 +96,7 @@ Thu Mar 31 16:49:36 2016  Koichi Sasada  <ko1@atdot.net>
 	* gc.c (rb_objspace_t::heap_pages): restruct the objspace global
 	  status.
 
-	  remove the following fileds
+	  remove the following fields
 	    * swept_slots (and heap_pages_swept_slots)
 	    * min_free_slots (and heap_pages_min_free_slots)
 	    * max_free_slots (and heap_pages_max_free_slots)
@@ -115,7 +115,7 @@ Thu Mar 31 16:43:02 2016  Koichi Sasada  <ko1@atdot.net>
 	    allocate additional pages when free slots is lower than
 	    the value (total_slots * (this ratio)).
 	  * RUBY_GC_HEAP_FREE_SLOTS_MAX_RATIO:
-	    allow to free pages when free slots is greater thatn
+	    allow to free pages when free slots is greater than
 	    the value (total_slots * (this ratio)).
 
 	  Before this change, these values are hard coded.
@@ -176,7 +176,7 @@ Wed Mar 30 01:56:06 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 Wed Mar 30 01:54:30 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* tool/redmine-backporter.rb: add given revision to current changests
+	* tool/redmine-backporter.rb: add given revision to current changesets
 	  on associating the revision to the related ticket.
 
 Wed Mar 30 01:53:17 2016  NARUSE, Yui  <naruse@ruby-lang.org>
