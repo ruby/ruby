@@ -1,3 +1,17 @@
+Fri Apr  1 14:55:28 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* configure.in (AC_CONFIG_FILES): $srcdir/.git can be a file pointing
+	  the real git_dir, such as when the git working tree is a "linked
+	  working tree" (a working tree created by git-worktree). So use
+	  git-rev-parse --git-dir to check if $srcdir is the top-level of a git
+	  repository, not just checking if the $srcdir/.git directory does exist
+	  or not.  [ruby-core:74759] [Bug #12239]
+
+	* tool/change_maker.rb: use tool/vcs.rb to detect VCS. This used to have
+	  its own VCS detection code, while we have tool/vcs.rb.
+
+	* tool/vcs.rb (detect): remove code duplication
+
 Fri Apr  1 04:50:44 2016  Eric Wong  <e@80x24.org>
 
 	* ext/openssl/ossl_ssl.c (ossl_sslctx_s_alloc):

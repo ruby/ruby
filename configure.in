@@ -4464,10 +4464,12 @@ AC_CONFIG_FILES(Makefile, [
 	    :
 	elif svn info "$srcdir" > /dev/null 2>&1; then
 	    VCS='svn'
-	elif test -d "$srcdir/.git/svn"; then
-	    VCS='git svn'
-	elif test -d "$srcdir/.git"; then
-	    VCS='git'
+	elif git_dir=`git --work-tree="$srcdir" --git-dir="$srcdir/.git" rev-parse --git-dir 2>/dev/null`; then
+	    if test -d "$git_dir/svn"; then
+		VCS='git svn'
+	    else
+		VCS='git'
+	    fi
 	else
 	    VCS='echo cannot'
 	fi
