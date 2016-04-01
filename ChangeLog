@@ -1,3 +1,9 @@
+Sat Apr  2 02:07:29 2016  Seiei Miyagi  <hanachin@gmail.com>
+
+	* ext/ripper/lib/ripper/lexer.rb (on_heredoc_dedent): Fix
+	  Ripper.lex error in dedenting squiggly heredoc.  heredoc tree is
+	  also an array of Elem in the outer tree.  [Fix GH-1234]
+
 Wed Mar 30 02:28:13 2016  Eric Wong  <e@80x24.org>
 
 	* thread_pthread.c (setup_communication_pipe): delay setting owner

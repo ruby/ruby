@@ -103,6 +103,12 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                   [[5, 0], :on_imaginary, "5.6ri"],
                  ],
                  Ripper.lex("1r\n2i\n3ri\n4.2r\n5.6ri")
+     assert_equal [[[1, 0], :on_heredoc_beg, "<<~EOS"],
+                   [[1, 6], :on_nl, "\n"],
+                   [[2, 2], :on_tstring_content, "heredoc\n"],
+                   [[3, 0], :on_heredoc_end, "EOS"]
+                 ],
+                 Ripper.lex("<<~EOS\n  heredoc\nEOS")
   end
 
   def test_location
