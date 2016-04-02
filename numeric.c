@@ -1842,14 +1842,13 @@ flo_truncate(VALUE num);
 static VALUE
 flo_round(int argc, VALUE *argv, VALUE num)
 {
-    VALUE nd;
     double number, f;
     int ndigits = 0;
     int binexp;
     enum {float_dig = DBL_DIG+2};
 
-    if (argc > 0 && rb_scan_args(argc, argv, "01", &nd) == 1) {
-	ndigits = NUM2INT(nd);
+    if (rb_check_arity(argc, 0, 1)) {
+	ndigits = NUM2INT(argv[0]);
     }
     if (ndigits < 0) {
 	return rb_int_round(flo_truncate(num), ndigits);
@@ -3015,13 +3014,10 @@ int_to_s(int argc, VALUE *argv, VALUE x)
 {
     int base;
 
-    if (argc == 0) base = 10;
-    else {
-	VALUE b;
-
-	rb_scan_args(argc, argv, "01", &b);
-	base = NUM2INT(b);
-    }
+    if (rb_check_arity(argc, 0, 1))
+	base = NUM2INT(argv[0]);
+    else
+	base = 10;
     return rb_int2str(x, base);
 }
 
@@ -4142,12 +4138,10 @@ int_dotimes(VALUE num)
 static VALUE
 int_round(int argc, VALUE* argv, VALUE num)
 {
-    VALUE n;
     int ndigits;
 
-    if (argc == 0) return num;
-    rb_scan_args(argc, argv, "1", &n);
-    ndigits = NUM2INT(n);
+    if (!rb_check_arity(argc, 0, 1)) return num;
+    ndigits = NUM2INT(argv[0]);
     if (ndigits > 0) {
 	return rb_Float(num);
     }
