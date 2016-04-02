@@ -155,6 +155,8 @@ class Prime
     end
   end
 
+  alias_method :include?, :prime?
+
   # Re-composes a prime factorization and returns the product.
   #
   # == Parameters

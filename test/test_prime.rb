@@ -124,6 +124,10 @@ class TestPrime < Test::Unit::TestCase
     assert_raise(ArgumentError) { Prime.prime?(1.2) }
   end
 
+  def test_prime_include_alias
+    assert_equal(false, Prime.include?(4))
+  end
+
   class TestInteger < Test::Unit::TestCase
     def test_prime_division
       pd = PRIMES.inject(&:*).prime_division
