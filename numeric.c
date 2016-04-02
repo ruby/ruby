@@ -105,8 +105,11 @@ round(double x)
 
 static VALUE fix_uminus(VALUE num);
 static VALUE fix_mul(VALUE x, VALUE y);
+static VALUE fix_lshift(long, unsigned long);
+static VALUE fix_rshift(long, unsigned long);
 static VALUE int_pow(long x, unsigned long y);
 static VALUE int_cmp(VALUE x, VALUE y);
+static VALUE flo_truncate(VALUE num);
 
 static ID id_coerce, id_div, id_divmod;
 #define id_to_i idTo_i
@@ -1805,8 +1808,6 @@ rb_int_round(VALUE num, int ndigits)
     return n;
 }
 
-static VALUE
-flo_truncate(VALUE num);
 
 /*
  *  call-seq:
@@ -3752,9 +3753,6 @@ fix_xor(VALUE x, VALUE y)
     bit_coerce(&x, &y);
     return rb_funcall(x, '^', 1, y);
 }
-
-static VALUE fix_lshift(long, unsigned long);
-static VALUE fix_rshift(long, unsigned long);
 
 /*
  * call-seq:
