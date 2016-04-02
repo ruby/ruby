@@ -1,3 +1,7 @@
+Sat Apr  2 15:24:18 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/intern.h (rb_check_arity): returns argc.
+
 Fri Apr  1 20:58:33 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/unicode/case-folding.rb, casefold.h: Data generation to implement

@@ -294,11 +294,12 @@ VALUE rb_check_funcall(VALUE, ID, int, const VALUE*);
 
 NORETURN(void rb_error_arity(int, int, int));
 #define rb_check_arity rb_check_arity /* for ifdef */
-static inline void
+static inline int
 rb_check_arity(int argc, int min, int max)
 {
     if ((argc < min) || (max != UNLIMITED_ARGUMENTS && argc > max))
 	rb_error_arity(argc, min, max);
+    return argc;
 }
 
 #if defined(NFDBITS) && defined(HAVE_RB_FD_INIT)
