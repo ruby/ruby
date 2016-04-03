@@ -1,3 +1,9 @@
+Mon Apr  4 00:31:51 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (compile_massign_lhs): when index ends with splat,
+	  append rhs value to it like POSTARG, since VM_CALL_ARGS_SPLAT
+	  splats the last argument only.  [ruby-core:72777] [Bug #11970]
+
 Sat Apr  2 02:07:29 2016  Seiei Miyagi  <hanachin@gmail.com>
 
 	* ext/ripper/lib/ripper/lexer.rb (on_heredoc_dedent): Fix
