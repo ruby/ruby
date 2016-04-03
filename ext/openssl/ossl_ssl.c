@@ -1914,6 +1914,25 @@ ossl_ssl_alpn_protocol(VALUE self)
 # endif
 #endif /* !defined(OPENSSL_NO_SOCK) */
 
+#if OPENSSL_VERSION_NUMBER >= 0x10002000L
+/*
+ * call-seq:
+ *    ssl.tmp_key => PKey or nil
+ *
+ * Returns the ephemeral key used in case of forward secrecy cipher
+ */
+static VALUE
+ossl_ssl_tmp_key(VALUE self)
+{
+       SSL *ssl;
+       EVP_PKEY *key;
+       ossl_ssl_data_get_struct(self, ssl);
+       if (!SSL_get_server_tmp_key(ssl, &key))
+               return Qnil;
+       return ossl_pkey_new(key);
+}
+#endif
+
 void
 Init_ossl_ssl(void)
 {
@@ -2306,6 +2325,9 @@ Init_ossl_ssl(void)
     rb_define_method(cSSLSocket, "session=",    ossl_ssl_set_session, 1);
     rb_define_method(cSSLSocket, "verify_result", ossl_ssl_get_verify_result, 0);
     rb_define_method(cSSLSocket, "client_ca", ossl_ssl_get_client_ca_list, 0);
+#if OPENSSL_VERSION_NUMBER >= 0x10002000L
+    rb_define_method(cSSLSocket, "tmp_key", ossl_ssl_tmp_key, 0);
+#endif
 # ifdef HAVE_SSL_CTX_SET_ALPN_SELECT_CB
     rb_define_method(cSSLSocket, "alpn_protocol", ossl_ssl_alpn_protocol, 0);
 # endif
