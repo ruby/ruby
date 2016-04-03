@@ -1,3 +1,14 @@
+Sun Apr  3 09:34:29 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (flodivmod): round division if it is a finite number
+	  and module is required.
+
+	* numeric.c (dbl2ival): do not round here.
+
+	* numeric.c (flo_ceil): use dbl2ival.
+
+	* numeric.c (flo_round): round explicitly.
+
 Sat Apr  2 15:24:18 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/intern.h (rb_check_arity): returns argc.

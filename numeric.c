@@ -1008,8 +1008,10 @@ flodivmod(double x, double y, double *divp, double *modp)
     }
     if (isinf(x) && !isinf(y))
 	div = x;
-    else
+    else {
 	div = (x - mod) / y;
+	if (modp && divp) div = round(div);
+    }
     if (y*mod < 0) {
 	mod += y;
 	div -= 1.0;
@@ -1066,7 +1068,6 @@ flo_mod(VALUE x, VALUE y)
 static VALUE
 dbl2ival(double d)
 {
-    d = round(d);
     if (FIXABLE(d)) {
 	return LONG2FIX((long)d);
     }
@@ -1761,13 +1762,7 @@ static VALUE
 flo_ceil(VALUE num)
 {
     double f = ceil(RFLOAT_VALUE(num));
-    long val;
-
-    if (!FIXABLE(f)) {
-	return rb_dbl2big(f);
-    }
-    val = (long)f;
-    return LONG2FIX(val);
+    return dbl2ival(f);
 }
 
 /*
@@ -1856,7 +1851,7 @@ flo_round(int argc, VALUE *argv, VALUE num)
     }
     number  = RFLOAT_VALUE(num);
     if (ndigits == 0) {
-	return dbl2ival(number);
+	return dbl2ival(round(number));
     }
     frexp(number, &binexp);
 
