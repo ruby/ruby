@@ -226,6 +226,15 @@ class Logger
 
   # Logging severity.
   module Severity
+    # Hash with all logger levels
+    LEVELS = {
+      'debug' => DEBUG,
+      'info'  => INFO,
+      'warn'  => WARN,
+      'error' => ERROR,
+      'fatal' => FATAL
+    }.freeze
+
     # Low-level information, mostly for developers.
     DEBUG = 0
     # Generic (useful) information about system operation.
@@ -248,24 +257,10 @@ class Logger
   #
   # +severity+:: The Severity of the log message.
   def level=(severity)
-    if severity.is_a?(Integer)
-      @level = severity
+    @level = if severity.is_a?(Integer)
+      severity
     else
-      _severity = severity.to_s.downcase
-      case _severity
-      when 'debug'.freeze
-        @level = DEBUG
-      when 'info'.freeze
-        @level = INFO
-      when 'warn'.freeze
-        @level = WARN
-      when 'error'.freeze
-        @level = ERROR
-      when 'fatal'.freeze
-        @level = FATAL
-      when 'unknown'.freeze
-        @level = UNKNOWN
-      else
+      LEVELS.fetch(severity.to_s.downcase) do
         raise ArgumentError, "invalid log level: #{severity}"
       end
     end
@@ -335,9 +330,10 @@ class Logger
   #   +STDOUT+, +STDERR+, or an open file).
   # +shift_age+::
   #   Number of old log files to keep, *or* frequency of rotation (+daily+,
-  #   +weekly+ or +monthly+).
+  #   +weekly+ or +monthly+). Default value is 0.
   # +shift_size+::
-  #   Maximum logfile size (only applies when +shift_age+ is a number).
+  #   Maximum logfile size (only applies when +shift_age+ is a number). Default
+  #   value is equal 1Mb.
   #
   # === Description
   #
@@ -350,8 +346,8 @@ class Logger
     @formatter = nil
     @logdev = nil
     if logdev
-      @logdev = LogDevice.new(logdev, :shift_age => shift_age,
-        :shift_size => shift_size)
+      @logdev = LogDevice.new(logdev, shift_age: shift_age,
+        shift_size: shift_size)
     end
   end
 
@@ -364,7 +360,7 @@ class Logger
   #
   # +logdev+::
   #   The log device.  This is a filename (String) or IO object (typically
-  #   +STDOUT+, +STDERR+, or an open file).
+  #   +STDOUT+, +STDERR+, or an open file). Default - nil.
   #
   # === Description
   #
@@ -418,9 +414,9 @@ class Logger
   #
   def add(severity, message = nil, progname = nil)
     severity ||= UNKNOWN
-    if @logdev.nil? or severity < @level
-      return true
-    end
+
+    return true if @logdev.nil? or severity < @level
+
     progname ||= @progname
     if message.nil?
       if block_given?
@@ -430,6 +426,7 @@ class Logger
         progname = @progname
       end
     end
+
     @logdev.write(
       format_message(format_severity(severity), Time.now, progname, message))
     true
@@ -441,9 +438,7 @@ class Logger
   # device exists, return +nil+.
   #
   def <<(msg)
-    unless @logdev.nil?
-      @logdev.write(msg)
-    end
+    @logdev.write(msg) unless @logdev.nil?
   end
 
   #
@@ -785,7 +780,7 @@ private
         end
       end
       @dev.close rescue nil
-      File.rename("#{@filename}", "#{@filename}.0")
+      File.rename(@filename.to_s, "#{@filename}.0")
       @dev = create_logfile(@filename)
       return true
     end
@@ -804,7 +799,7 @@ private
         end
       end
       @dev.close rescue nil
-      File.rename("#{@filename}", age_file)
+      File.rename(@filename.to_s, age_file)
       @dev = create_logfile(@filename)
       return true
     end
