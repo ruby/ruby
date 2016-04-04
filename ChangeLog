@@ -1,3 +1,11 @@
+Tue Apr  5 00:06:44 2016  Aeris  <aeris@imirhil.fr>
+
+	* ext/openssl/ossl_ssl.c (ossl_ssl_tmp_key): Access to ephemeral
+	  TLS session key in case of forward secrecy cipher.  Only
+	  available since OpenSSL 1.0.2.  [Fix GH-1318]
+
+	* ext/openssl/extconf.rb: Check for SSL_get_server_tmp_key.
+
 Mon Apr  4 23:37:05 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_core.h (rb_vm_struct): make at_exit a single linked list but

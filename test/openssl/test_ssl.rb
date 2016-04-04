@@ -1169,6 +1169,29 @@ end
     }
   end
 
+  def test_get_ephemeral_key
+    return unless OpenSSL::SSL::SSLSocket.method_defined?(:tmp_key)
+    ciphers = {
+        'ECDHE-RSA-AES128-SHA' => OpenSSL::PKey::EC,
+        'DHE-RSA-AES128-SHA' => OpenSSL::PKey::DH,
+        'AES128-SHA' => nil
+    }
+    conf_proc = Proc.new { |ctx| ctx.ciphers = 'ALL' }
+    start_server(OpenSSL::SSL::VERIFY_NONE, true, :ctx_proc => conf_proc) do |server, port|
+      ciphers.each do |cipher, ephemeral|
+        ctx = OpenSSL::SSL::SSLContext.new
+        ctx.ciphers = cipher
+        server_connect(port, ctx) do |ssl|
+          if ephemeral
+            assert_equal(ephemeral, ssl.tmp_key.class)
+          else
+            assert_nil(ssl.tmp_key)
+          end
+        end
+      end
+    end
+  end
+
   private
 
   def start_server_version(version, ctx_proc=nil, server_proc=nil, &blk)
