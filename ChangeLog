@@ -1,3 +1,19 @@
+Mon Apr  4 17:36:52 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (get_envparam_double): take an upper_bound.
+
+	  And also take an accept_zero flag which allow to accept zero
+	  even if lower_bound is set.
+
+	* gc.c (ruby_gc_set_params): fix parameters.
+
+	  RUBY_GC_HEAP_FREE_SLOTS_MAX_RATIO set 0.9 as *lower_bound*, so that
+	  it should be upper_bound.
+	  Set RUBY_GC_HEAP_FREE_SLOTS_MIN_RATIO as lower bound.
+
+	  Also set lower/upper bound of RUBY_GC_HEAP_FREE_SLOTS_GOAL_RATIO to
+	  RUBY_GC_HEAP_FREE_SLOTS_MIN/MAX_RATIO.
+
 Mon Apr  4 16:41:32 2016  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (Init_VM): should pass tokens.
