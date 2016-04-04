@@ -111,6 +111,7 @@ have_func("TLSv1_2_server_method")
 have_func("TLSv1_2_client_method")
 have_func("SSL_CTX_set_alpn_select_cb")
 have_func("SSL_CTX_set_next_proto_select_cb")
+have_macro("SSL_get_server_tmp_key", ['openssl/ssl.h']) && $defs.push("-DHAVE_SSL_GET_SERVER_TMP_KEY")
 unless have_func("SSL_set_tlsext_host_name", ['openssl/ssl.h'])
   have_macro("SSL_set_tlsext_host_name", ['openssl/ssl.h']) && $defs.push("-DHAVE_SSL_SET_TLSEXT_HOST_NAME")
 end

@@ -277,6 +277,7 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
         ctx.cert = @svr_cert
         ctx.key = @svr_key
         ctx.tmp_dh_callback = proc { OpenSSL::TestUtils::TEST_KEY_DH1024 }
+        ctx.tmp_ecdh_callback = proc { OpenSSL::TestUtils::TEST_KEY_EC_P256V1 }
         ctx.verify_mode = verify_mode
         ctx_proc.call(ctx) if ctx_proc
 
