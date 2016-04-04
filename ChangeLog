@@ -1,3 +1,7 @@
+Mon Apr  4 16:41:32 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (Init_VM): should pass tokens.
+
 Sun Apr  3 09:34:29 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (flodivmod): round division if it is a finite number

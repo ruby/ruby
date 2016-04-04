@@ -2852,10 +2852,10 @@ Init_VM(void)
 #if VM_COLLECT_USAGE_DETAILS
     /* ::RubyVM::USAGE_ANALYSIS_* */
 #define define_usage_analysis_hash(name) /* shut up rdoc -C */ \
-    rb_define_const(rb_cRubyVM, "USAGE_ANALYSIS_"#name, rb_hash_new())
-    define_usage_analysis_hash("INSN");
-    define_usage_analysis_hash("REGS");
-    define_usage_analysis_hash("INSN_BIGRAM");
+    rb_define_const(rb_cRubyVM, "USAGE_ANALYSIS_" #name, rb_hash_new())
+    define_usage_analysis_hash(INSN);
+    define_usage_analysis_hash(REGS);
+    define_usage_analysis_hash(INSN_BIGRAM);
 
     rb_define_singleton_method(rb_cRubyVM, "USAGE_ANALYSIS_INSN_STOP", usage_analysis_insn_stop, 0);
     rb_define_singleton_method(rb_cRubyVM, "USAGE_ANALYSIS_OPERAND_STOP", usage_analysis_operand_stop, 0);
