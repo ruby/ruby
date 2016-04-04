@@ -118,13 +118,13 @@ rb_gc_guarded_ptr_val(volatile VALUE *ptr, VALUE val)
 #endif
 
 #ifndef GC_HEAP_FREE_SLOTS_MIN_RATIO
-#define GC_HEAP_FREE_SLOTS_MIN_RATIO  0.30
+#define GC_HEAP_FREE_SLOTS_MIN_RATIO  0.20
 #endif
 #ifndef GC_HEAP_FREE_SLOTS_GOAL_RATIO
 #define GC_HEAP_FREE_SLOTS_GOAL_RATIO 0.40
 #endif
 #ifndef GC_HEAP_FREE_SLOTS_MAX_RATIO
-#define GC_HEAP_FREE_SLOTS_MAX_RATIO  0.80
+#define GC_HEAP_FREE_SLOTS_MAX_RATIO  0.65
 #endif
 
 #ifndef GC_MALLOC_LIMIT_MIN

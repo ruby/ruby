@@ -1,3 +1,20 @@
+Mon Apr  4 17:43:45 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: change deafult value of 
+	  RUBY_GC_HEAP_FREE_SLOTS_MIN_RATIO 0.3 -> 0.2
+	  RUBY_GC_HEAP_FREE_SLOTS_MAX_RATIO 0.8 -> 0.65
+
+	  These values are same as Ruby 2.0.0.
+
+	  This change cause GC counts.
+	  However, generational GC reduced each (minor) GC time and
+	  increase memory locality. So that not so big impact on my
+	  benchmarking results.
+	  (surprizingly, this fix speed up programs on some cases)
+
+	  You can change these values by environment variables
+	  if you feel wrong.
+
 Mon Apr  4 17:36:52 2016  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (get_envparam_double): take an upper_bound.
