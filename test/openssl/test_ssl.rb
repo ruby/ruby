@@ -1183,7 +1183,7 @@ end
         ctx.ciphers = cipher
         server_connect(port, ctx) do |ssl|
           if ephemeral
-            assert_equal(ephemeral, ssl.tmp_key.class)
+            assert_instance_of(ephemeral, ssl.tmp_key)
           else
             assert_nil(ssl.tmp_key)
           end
