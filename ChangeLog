@@ -1,3 +1,10 @@
+Mon Apr  4 23:37:05 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_core.h (rb_vm_struct): make at_exit a single linked list but
+	  not RArray, not to mark the registered functions by the write
+	  barrier.  based on the patches by Evan Phoenix.
+	  [ruby-core:73908] [Bug #12095]
+
 Mon Apr  4 17:43:45 2016  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: change deafult value of
