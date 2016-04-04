@@ -1,6 +1,6 @@
 Mon Apr  4 17:43:45 2016  Koichi Sasada  <ko1@atdot.net>
 
-	* gc.c: change deafult value of 
+	* gc.c: change deafult value of
 	  RUBY_GC_HEAP_FREE_SLOTS_MIN_RATIO 0.3 -> 0.2
 	  RUBY_GC_HEAP_FREE_SLOTS_MAX_RATIO 0.8 -> 0.65
 
