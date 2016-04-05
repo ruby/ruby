@@ -1,3 +1,9 @@
+Wed Apr  6 00:33:45 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rubygems/security.rb (DIGEST_ALGORITHM, KEY_ALGORITHM):
+	  should check same name as the used constants.
+	  [ruby-core:72674] [Bug #11940]
+
 Mon Apr  4 00:31:51 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (compile_massign_lhs): when index ends with splat,
