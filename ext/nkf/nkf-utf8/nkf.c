@@ -5436,7 +5436,7 @@ mime_putc(nkf_char c)
 		mimeout_state.buf[mimeout_state.count++] = (char)c;
 		if (mimeout_state.count>MIMEOUT_BUF_LENGTH) {
 		    eof_mime();
-		    for (j=0;i<mimeout_state.count;j++) {
+		    for (j=0;j<mimeout_state.count;j++) {
 			(*o_mputc)(mimeout_state.buf[j]);
 			base64_count++;
 		    }
