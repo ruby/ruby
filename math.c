@@ -750,6 +750,22 @@ ruby_tgamma(const double d)
 #define tgamma(d) ruby_tgamma(d)
 #endif
 
+#if defined __MINGW32__ || defined __APPLE__
+static inline double
+ruby_lgamma_r(const double d, int *sign)
+{
+    const double g = lgamma_r(d, sign);
+    if (isinf(g)) {
+	if (d == 0.0 && signbit(d)) {
+	    *sign = -1;
+	    return INFINITY;
+	}
+    }
+    return g;
+}
+#define lgamma_r(d, sign) ruby_lgamma_r(d, sign)
+#endif
+
 /*
  * call-seq:
  *    Math.gamma(x)  -> Float

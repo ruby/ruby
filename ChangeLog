@@ -1,4 +1,6 @@
-Wed Apr  6 00:52:00 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Apr  6 00:53:31 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* math.c (ruby_lgamma_r): fix lgamma(-0.0) on mingw and OSX.
 
 	* math.c (ruby_tgamma): fix tgamma(-0.0) on mingw.
 	  [ruby-core:74817] [Bug #12249]
