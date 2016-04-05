@@ -2677,13 +2677,24 @@ rb_str_append(VALUE str, VALUE str2)
 }
 
 VALUE
-rb_str_append_literal(VALUE str, VALUE str2)
+rb_str_concat_literals(size_t num, const VALUE *strary)
 {
-    int encidx = rb_enc_get_index(str2);
-    rb_str_buf_append(str, str2);
-    if (encidx != ENCINDEX_US_ASCII) {
-	if (rb_enc_get_index(str) == ENCINDEX_US_ASCII)
-	    rb_enc_associate_index(str, encidx);
+    VALUE str;
+    size_t i;
+
+    if (!num) return rb_str_new(0, 0);
+    str = rb_str_resurrect(strary[0]);
+    for (i = 1; i < num; ++i) {
+	const VALUE v = strary[i];
+	int encidx = ENCODING_GET(v);
+
+	rb_enc_cr_str_buf_cat(str, RSTRING_PTR(v), RSTRING_LEN(v),
+			      encidx, ENC_CODERANGE(v), NULL);
+	OBJ_INFECT_RAW(str, v);
+	if (encidx != ENCINDEX_US_ASCII) {
+	    if (ENCODING_GET_INLINED(str) == ENCINDEX_US_ASCII)
+		rb_enc_set_index(str, encidx);
+	}
     }
     return str;
 }

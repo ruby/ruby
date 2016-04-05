@@ -365,13 +365,7 @@ concatstrings
 (...)
 (VALUE val) // inc += 1 - num;
 {
-    rb_num_t i = num - 1;
-
-    val = rb_str_resurrect(TOPN(i));
-    while (i-- > 0) {
-	const VALUE v = TOPN(i);
-	rb_str_append_literal(val, v);
-    }
+    val = rb_str_concat_literals(num, &TOPN(num-1));
     POPN(num);
 }
 
