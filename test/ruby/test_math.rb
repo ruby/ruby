@@ -255,6 +255,10 @@ class TestMath < Test::Unit::TestCase
     end
 
     assert_raise(Math::DomainError) { Math.gamma(-Float::INFINITY) }
+    x = Math.gamma(-0.0)
+    mesg = "Math.gamma(-0.0) should be -INF"
+    assert_infinity(x, mesg)
+    assert_predicate(x, :negative?, mesg)
   end
 
   def test_lgamma

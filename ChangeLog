@@ -1,3 +1,8 @@
+Wed Apr  6 00:52:00 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* math.c (ruby_tgamma): fix tgamma(-0.0) on mingw.
+	  [ruby-core:74817] [Bug #12249]
+
 Tue Apr  5 14:50:28 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf-utf8/nkf.c (mime_putc): fix typo.
