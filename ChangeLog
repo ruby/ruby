@@ -1,3 +1,9 @@
+Thu Apr  7 01:07:02 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* sprintf.c (rb_str_format): fix buffer overflow, length must be
+	  greater than precision.  reported by William Bowling <will AT
+	  wbowling.info>.
+
 Wed Apr  6 00:33:45 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rubygems/security.rb (DIGEST_ALGORITHM, KEY_ALGORITHM):
