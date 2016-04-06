@@ -2516,8 +2516,11 @@ int
 main(int argc, char **argv)
 {
     int sign;
+    double x = lgamma_r(-0.0, &sign);
 
-    if (lgamma_r(-0.0, &sign) >= 0) return EXIT_FAILURE;
+    /* should be [+inf, -1] */
+    if (x <= 0) return EXIT_FAILURE;
+    if (!isinf(x)) return EXIT_FAILURE;
     if (sign != -1) return EXIT_FAILURE;
     return EXIT_SUCCESS;
 }
