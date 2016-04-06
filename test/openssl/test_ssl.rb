@@ -1171,9 +1171,10 @@ end
 
   def test_get_ephemeral_key
     return unless OpenSSL::SSL::SSLSocket.method_defined?(:tmp_key)
+    pkey = OpenSSL::PKey
     ciphers = {
-        'ECDHE-RSA-AES128-SHA' => OpenSSL::PKey::EC,
-        'DHE-RSA-AES128-SHA' => OpenSSL::PKey::DH,
+        'ECDHE-RSA-AES128-SHA' => (pkey::EC if defined?(pkey::EC)),
+        'DHE-RSA-AES128-SHA' => (pkey::DH if defined?(pkey::DH)),
         'AES128-SHA' => nil
     }
     conf_proc = Proc.new { |ctx| ctx.ciphers = 'ALL' }
