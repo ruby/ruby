@@ -750,7 +750,7 @@ ruby_tgamma(const double d)
 #define tgamma(d) ruby_tgamma(d)
 #endif
 
-#if defined __APPLE__
+#if defined LGAMMA_R_M0_FIX
 static inline double
 ruby_lgamma_r(const double d, int *sign)
 {

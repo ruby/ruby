@@ -1,3 +1,10 @@
+Wed Apr  6 14:13:28 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (rb_cv_lgamma_r_m0): check if lgamma_r(-0.0)
+	  returns negative infinity.  [Bug #12249]
+
+	* math.c (ruby_lgamma_r): define by the configured result.
+
 Wed Apr  6 10:56:15 2016  Anton Davydov  <antondavydov.o@gmail.com>
 
 	* lib/logger.rb (Logger#level=): remove unnecessary local
