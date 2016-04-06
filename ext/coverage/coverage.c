@@ -11,8 +11,6 @@
 #include "ruby.h"
 #include "vm_core.h"
 
-static VALUE rb_coverages = Qundef;
-
 /*
  * call-seq:
  *    Coverage.start  => nil
@@ -22,23 +20,13 @@ static VALUE rb_coverages = Qundef;
 static VALUE
 rb_coverage_start(VALUE klass)
 {
-    if (!RTEST(rb_get_coverages())) {
-	if (rb_coverages == Qundef) {
-	    rb_coverages = rb_hash_new();
-	    rb_obj_hide(rb_coverages);
-	}
-	rb_set_coverages(rb_coverages);
+    VALUE coverages = rb_get_coverages();
+    if (!RTEST(coverages)) {
+	coverages = rb_hash_new();
+	rb_obj_hide(coverages);
+	rb_set_coverages(coverages);
     }
     return Qnil;
-}
-
-/* Make coverage arrays empty so old covered files are no longer tracked. */
-static int
-coverage_clear_result_i(st_data_t key, st_data_t val, st_data_t h)
-{
-    VALUE coverage = (VALUE)val;
-    rb_ary_clear(coverage);
-    return ST_CONTINUE;
 }
 
 static int
@@ -83,8 +71,6 @@ static VALUE
 rb_coverage_result(VALUE klass)
 {
     VALUE ncoverages = rb_coverage_peek_result(klass);
-    VALUE coverages = rb_get_coverages();
-    st_foreach(RHASH_TBL(coverages), coverage_clear_result_i, ncoverages);
     rb_reset_coverages();
     return ncoverages;
 }
@@ -129,5 +115,4 @@ Init_coverage(void)
     rb_define_module_function(rb_mCoverage, "start", rb_coverage_start, 0);
     rb_define_module_function(rb_mCoverage, "result", rb_coverage_result, 0);
     rb_define_module_function(rb_mCoverage, "peek_result", rb_coverage_peek_result, 0);
-    rb_gc_register_address(&rb_coverages);
 }

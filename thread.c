@@ -4800,9 +4800,20 @@ rb_set_coverages(VALUE coverages)
     rb_add_event_hook(update_coverage, RUBY_EVENT_COVERAGE, Qnil);
 }
 
+/* Make coverage arrays empty so old covered files are no longer tracked. */
+static int
+reset_coverage_i(st_data_t key, st_data_t val, st_data_t dummy)
+{
+    VALUE coverage = (VALUE)val;
+    rb_ary_clear(coverage);
+    return ST_CONTINUE;
+}
+
 void
 rb_reset_coverages(void)
 {
+    VALUE coverages = rb_get_coverages();
+    st_foreach(rb_hash_tbl_raw(coverages), reset_coverage_i, 0);
     GET_VM()->coverages = Qfalse;
     rb_remove_event_hook(update_coverage);
 }

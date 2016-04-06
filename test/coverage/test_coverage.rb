@@ -63,28 +63,27 @@ class TestCoverage < Test::Unit::TestCase
 
         File.open("test2.rb", "w") do |f|
           f.puts <<-EOS
-            def coverage_test_method2
-              :ok
-              :ok
-            end
+            1 + 2
           EOS
         end
 
         Coverage.start
         require tmp + '/test.rb'
-        assert_equal 3, Coverage.result[tmp + '/test.rb'].size
+        cov = { "#{tmp}/test.rb" => [1, 0, nil] }
+        assert_equal cov, Coverage.result
 
         # Restart coverage but '/test.rb' is required before restart,
         # so coverage is not recorded.
         Coverage.start
         coverage_test_method
-        assert_equal 0, Coverage.result[tmp + '/test.rb'].size
+        assert_equal({}, Coverage.result)
 
         # Restart coverage and '/test2.rb' is required after restart,
         # so coverage is recorded.
         Coverage.start
         require tmp + '/test2.rb'
-        assert_equal 4, Coverage.result[tmp + '/test2.rb'].size
+        cov = { "#{tmp}/test2.rb" => [1] }
+        assert_equal cov, Coverage.result
       }
     }
   ensure

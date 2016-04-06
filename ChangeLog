@@ -1,3 +1,15 @@
+Fri Apr  1 01:26:00 2016  Benoit Daloze  <eregontp@gmail.com>
+
+	* ext/coverage/coverage.c: Fully reset coverage to not persist global state.
+	  It was returning old file coverages as empty arrays to the user.
+	  [ruby-core:74596] [Bug #12220]
+
+	* ext/coverage/coverage.c (rb_coverages): remove unused static state.
+
+	* thread.c: Moved and renamed coverage_clear_result_i to reset_coverage_i.
+
+	* test/coverage/test_coverage.rb: improve precision of tests.
+
 Wed Apr  6 22:41:31 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (rb_cv_lgamma_r_m0): fix the condition for
