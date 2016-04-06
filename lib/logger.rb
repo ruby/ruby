@@ -251,8 +251,7 @@ class Logger
     if severity.is_a?(Integer)
       @level = severity
     else
-      _severity = severity.to_s.downcase
-      case _severity
+      case severity.to_s.downcase
       when 'debug'.freeze
         @level = DEBUG
       when 'info'.freeze
@@ -335,9 +334,10 @@ class Logger
   #   +STDOUT+, +STDERR+, or an open file).
   # +shift_age+::
   #   Number of old log files to keep, *or* frequency of rotation (+daily+,
-  #   +weekly+ or +monthly+).
+  #   +weekly+ or +monthly+). Default value is 0.
   # +shift_size+::
-  #   Maximum logfile size (only applies when +shift_age+ is a number).
+  #   Maximum logfile size (only applies when +shift_age+ is a number). Default
+  #   value is 1MiB.
   #
   # === Description
   #
@@ -364,7 +364,8 @@ class Logger
   #
   # +logdev+::
   #   The log device.  This is a filename (String) or IO object (typically
-  #   +STDOUT+, +STDERR+, or an open file).
+  #   +STDOUT+, +STDERR+, or an open file).  reopen the same filename if
+  #   it is +nil+, do nothing for IO.  Default is +nil+.
   #
   # === Description
   #
