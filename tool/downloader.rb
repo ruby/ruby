@@ -57,7 +57,7 @@ class Downloader
     def self.download(name, dir = nil, since = true, options = {})
       require 'rubygems'
       require 'rubygems/package'
-      options[:ssl_ca_cert] = Dir.glob(File.expand_path("../lib/rubygems/ssl_certs/*.pem", File.dirname(__FILE__)))
+      options[:ssl_ca_cert] = Dir.glob(File.expand_path("../lib/rubygems/ssl_certs/**/*.pem", File.dirname(__FILE__)))
       file = under(dir, name)
       super("https://rubygems.org/downloads/#{name}", file, nil, since, options) or
         return false
