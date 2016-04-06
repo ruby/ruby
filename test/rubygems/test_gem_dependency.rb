@@ -331,7 +331,7 @@ class TestGemDependency < Gem::TestCase
 
     dep = Gem::Dependency.new "a", "= 2.0"
 
-    e = assert_raises Gem::LoadError do
+    e = assert_raises Gem::MissingSpecVersionError do
       dep.to_specs
     end
 
@@ -350,7 +350,7 @@ class TestGemDependency < Gem::TestCase
 
     dep = Gem::Dependency.new "b", "= 2.0"
 
-    e = assert_raises Gem::LoadError do
+    e = assert_raises Gem::MissingSpecError do
       dep.to_specs
     end
 

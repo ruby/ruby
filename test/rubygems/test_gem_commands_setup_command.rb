@@ -14,16 +14,16 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     @cmd.options[:prefix] = @install_dir
 
     FileUtils.mkdir_p 'bin'
-    FileUtils.mkdir_p 'lib/rubygems/ssl_certs'
+    FileUtils.mkdir_p 'lib/rubygems/ssl_certs/rubygems.org'
 
     open 'bin/gem',                   'w' do |io| io.puts '# gem'          end
     open 'lib/rubygems.rb',           'w' do |io| io.puts '# rubygems.rb'  end
     open 'lib/rubygems/test_case.rb', 'w' do |io| io.puts '# test_case.rb' end
-    open 'lib/rubygems/ssl_certs/foo.pem', 'w' do |io| io.puts 'PEM'       end
+    open 'lib/rubygems/ssl_certs/rubygems.org/foo.pem', 'w' do |io| io.puts 'PEM'       end
   end
 
   def test_pem_files_in
-    assert_equal %w[rubygems/ssl_certs/foo.pem],
+    assert_equal %w[rubygems/ssl_certs/rubygems.org/foo.pem],
                  @cmd.pem_files_in('lib').sort
   end
 
@@ -39,7 +39,7 @@ class TestGemCommandsSetupCommand < Gem::TestCase
       @cmd.install_lib dir
 
       assert_path_exists File.join(dir, 'rubygems.rb')
-      assert_path_exists File.join(dir, 'rubygems/ssl_certs/foo.pem')
+      assert_path_exists File.join(dir, 'rubygems/ssl_certs/rubygems.org/foo.pem')
     end
   end
 

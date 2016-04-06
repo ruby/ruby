@@ -537,6 +537,26 @@ a (2 universal-darwin, 1 ruby x86-linux)
     assert_equal '', @ui.error
   end
 
+  def test_execute_show_default_gems
+    spec_fetcher { |fetcher| fetcher.spec 'a', 2 }
+
+    a1 = new_default_spec 'a', 1
+    install_default_specs a1
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    expected = <<-EOF
+
+*** LOCAL GEMS ***
+
+a (2, default: 1)
+EOF
+
+    assert_equal expected, @ui.output
+  end
+
   def test_execute_default_details
     spec_fetcher do |fetcher|
       fetcher.spec 'a', 2

@@ -180,6 +180,52 @@ module Gem::InstallUpdateOptions
       options[:post_install_message] = value
     end
 
+    add_option(:"Install/Update", '-g', '--file [FILE]',
+               'Read from a gem dependencies API file and',
+               'install the listed gems') do |v,o|
+      v = Gem::GEM_DEP_FILES.find do |file|
+        File.exist? file
+      end unless v
+
+      unless v then
+        message = v ? v : "(tried #{Gem::GEM_DEP_FILES.join ', '})"
+
+        raise OptionParser::InvalidArgument,
+                "cannot find gem dependencies file #{message}"
+      end
+
+      options[:gemdeps] = v
+    end
+
+    add_option(:"Install/Update", '--without GROUPS', Array,
+               'Omit the named groups (comma separated)',
+               'when installing from a gem dependencies',
+               'file') do |v,o|
+      options[:without_groups].concat v.map { |without| without.intern }
+    end
+
+    add_option(:"Install/Update", '--default',
+               'Add the gem\'s full specification to',
+               'specifications/default and extract only its bin') do |v,o|
+      options[:install_as_default] = v
+    end
+
+    add_option(:"Install/Update", '--explain',
+               'Rather than install the gems, indicate which would',
+               'be installed') do |v,o|
+      options[:explain] = v
+    end
+
+    add_option(:"Install/Update", '--[no-]lock',
+               'Create a lock file (when used with -g/--file)') do |v,o|
+      options[:lock] = v
+    end
+
+    add_option(:"Install/Update", '--[no-]suggestions',
+               'Suggest alternates when gems are not found') do |v,o|
+      options[:suggest_alternate] = v
+    end
+
   end
 
   ##

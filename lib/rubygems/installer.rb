@@ -231,7 +231,7 @@ class Gem::Installer
     question = "#{spec.name}'s executable \"#{filename}\" conflicts with ".dup
 
     if ruby_executable then
-      question << existing
+      question << (existing || 'an unknown executable')
 
       return if ask_yes_no "#{question}\nOverwrite the executable?", false
 

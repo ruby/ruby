@@ -849,7 +849,7 @@ class Gem::Specification < Gem::BasicSpecification
       pattern = "#{name}-*.gemspec"
       stubs = default_stubs(pattern) + installed_stubs(dirs, pattern)
       stubs = uniq_by(stubs) { |stub| stub.full_name }.group_by(&:name)
-      stubs.each_value { |v| sort_by!(v) { |i| i.version } }
+      stubs.each_value { |v| _resort!(v) }
 
       @@stubs_by_name.merge! stubs
       @@stubs_by_name[name] ||= EMPTY
@@ -1074,7 +1074,7 @@ class Gem::Specification < Gem::BasicSpecification
   def self.find_in_unresolved_tree path
     specs = unresolved_deps.values.map { |dep| dep.to_specs }.flatten
 
-    specs.reverse_each do |spec|
+    specs.each do |spec|
       spec.traverse do |from_spec, dep, to_spec, trail|
         if to_spec.has_conflicts? || to_spec.conficts_when_loaded_with?(trail)
           :next
@@ -2613,7 +2613,7 @@ class Gem::Specification < Gem::BasicSpecification
     begin
       dependencies.each do |dep|
         next unless dep.runtime?
-        dep.to_specs.reverse_each do |dep_spec|
+        dep.to_specs.each do |dep_spec|
           next if visited.has_key?(dep_spec)
           visited[dep_spec] = true
           trail.push(dep_spec)

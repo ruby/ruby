@@ -19,7 +19,12 @@ class TestGemCommandsOwnerCommand < Gem::TestCase
     response = <<EOF
 ---
 - email: user1@example.com
+  id: 1
+  handle: user1
 - email: user2@example.com
+- id: 3
+  handle: user3
+- id: 4
 EOF
 
     @fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners.yaml"] = [response, 200, 'OK']
@@ -34,6 +39,8 @@ EOF
     assert_match %r{Owners for gem: freewill}, @ui.output
     assert_match %r{- user1@example.com}, @ui.output
     assert_match %r{- user2@example.com}, @ui.output
+    assert_match %r{- user3}, @ui.output
+    assert_match %r{- 4}, @ui.output
   end
 
   def test_show_owners_setting_up_host_through_env_var

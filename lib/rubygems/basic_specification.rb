@@ -306,6 +306,8 @@ class Gem::BasicSpecification
     raise NotImplementedError
   end
 
+  def this; self; end
+
   private
 
   def have_extensions?; !extensions.empty?; end
@@ -323,5 +325,4 @@ class Gem::BasicSpecification
       false
     end
   end
-
 end

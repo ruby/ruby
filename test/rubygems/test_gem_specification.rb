@@ -100,6 +100,17 @@ end
     load 'rubygems/syck_hack.rb'
   end
 
+  def test_self_find_active_stub_by_path
+    spec = new_spec('a', '1', nil, 'lib/foo.rb')
+    spec.activated = true
+
+    # There used to be a bug (introduced in a9c1aaf) when Gem::Specification
+    # objects are present in the @stubs collection. This test verifies that
+    # this scenario works correctly.
+    Gem::Specification.all = [spec]
+    Gem::Specification.find_active_stub_by_path('foo')
+  end
+
   def test_self_activate
     foo = util_spec 'foo', '1'
 
@@ -3373,7 +3384,7 @@ end
     assert Gem::Specification.find_by_name "a", "1"
     assert Gem::Specification.find_by_name "a", ">1"
 
-    assert_raises Gem::LoadError do
+    assert_raises Gem::MissingSpecError do
       Gem::Specification.find_by_name "monkeys"
     end
   end
@@ -3387,7 +3398,7 @@ end
 
     assert Gem::Specification.find_by_name "b"
 
-    assert_raises Gem::LoadError do
+    assert_raises Gem::MissingSpecVersionError do
       Gem::Specification.find_by_name "b", "1"
     end
 

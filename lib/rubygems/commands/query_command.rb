@@ -247,7 +247,7 @@ is too hard to use.
     spec_summary     entry, spec
   end
 
-  def entry_versions entry, name_tuples, platforms
+  def entry_versions entry, name_tuples, platforms, specs
     return unless options[:versions]
 
     list =
@@ -256,7 +256,16 @@ is too hard to use.
       else
         platforms.sort.reverse.map do |version, pls|
           if pls == [Gem::Platform::RUBY] then
-            version
+            if options[:domain] == :remote || specs.all? { |spec| spec.is_a? Gem::Source }
+              version
+            else
+              spec = specs.select { |spec| spec.version == version }
+              if spec.first.default_gem?
+                "default: #{version}"
+              else
+                version
+              end
+            end
           else
             ruby = pls.delete Gem::Platform::RUBY
             platform_list = [ruby, *pls.sort].compact
@@ -277,7 +286,7 @@ is too hard to use.
 
     entry = [name_tuples.first.name]
 
-    entry_versions entry, name_tuples, platforms
+    entry_versions entry, name_tuples, platforms, specs
     entry_details  entry, detail_tuple, specs, platforms
 
     entry.join

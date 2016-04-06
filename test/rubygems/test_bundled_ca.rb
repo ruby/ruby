@@ -17,7 +17,7 @@ if ENV["TRAVIS"] || ENV["TEST_SSL"]
       store = OpenSSL::X509::Store.new
 
       ssl_cert_glob =
-        File.expand_path '../../../lib/rubygems/ssl_certs/*.pem', THIS_FILE
+        File.expand_path '../../../lib/rubygems/ssl_certs/*/*.pem', THIS_FILE
 
       Dir[ssl_cert_glob].each do |ssl_cert|
         store.add_file ssl_cert
@@ -53,6 +53,10 @@ if ENV["TRAVIS"] || ENV["TEST_SSL"]
 
     def test_accessing_fastly
       assert_https('rubygems.global.ssl.fastly.net')
+    end
+
+    def test_accessing_new_index
+      assert_https('fastly.rubygems.org')
     end
 
   end

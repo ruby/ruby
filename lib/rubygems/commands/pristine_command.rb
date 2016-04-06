@@ -92,8 +92,8 @@ extensions will be restored.
                 spec.extensions and not spec.extensions.empty?
               end
             else
-              get_all_gem_names.map do |gem_name|
-                Gem::Specification.find_all_by_name gem_name, options[:version]
+              get_all_gem_names.sort.map do |gem_name|
+                Gem::Specification.find_all_by_name(gem_name, options[:version]).reverse
               end.flatten
             end
 

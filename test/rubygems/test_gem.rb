@@ -973,6 +973,19 @@ class TestGem < Gem::TestCase
     assert Gem.try_activate('b'), 'try_activate should still return true'
   end
 
+  def test_spec_order_is_consistent
+    b1 = util_spec 'b', '1.0'
+    b2 = util_spec 'b', '2.0'
+    b3 = util_spec 'b', '3.0'
+
+    install_specs b1, b2, b3
+
+    specs1 = Gem::Specification.stubs.find_all { |s| s.name == 'b' }
+    Gem::Specification.reset
+    specs2 = Gem::Specification.stubs_for('b')
+    assert_equal specs1.map(&:version), specs2.map(&:version)
+  end
+
   def test_self_try_activate_missing_dep
     b = util_spec 'b', '1.0'
     a = util_spec 'a', '1.0', 'b' => '>= 1.0'
@@ -986,7 +999,7 @@ class TestGem < Gem::TestCase
       io.puts '# a_file.rb'
     end
 
-    e = assert_raises Gem::LoadError do
+    e = assert_raises Gem::MissingSpecError do
       Gem.try_activate 'a_file'
     end
 
@@ -1006,7 +1019,7 @@ class TestGem < Gem::TestCase
       io.puts '# a_file.rb'
     end
 
-    e = assert_raises Gem::LoadError do
+    e = assert_raises Gem::MissingSpecError do
       Gem.try_activate 'a_file'
     end
 
@@ -1070,7 +1083,7 @@ class TestGem < Gem::TestCase
                     'GEM_PATH' => [Gem.paths.home, 'foo'] }
     end
     assert_equal [Gem.paths.home, 'foo'], Gem.paths.path
-    assert_match(/Array values in the parameter are deprecated. Please use a String or nil/, stderr)
+    assert_match(/Array values in the parameter to `Gem.paths=` are deprecated.\nPlease use a String or nil/m, stderr)
     assert_equal '', stdout
   end
 
