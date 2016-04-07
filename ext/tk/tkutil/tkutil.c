@@ -1284,11 +1284,13 @@ cbsubst_initialize(argc, argv, self)
 
     inf = cbsubst_get_ptr(rb_obj_class(self));
 
-    idx = 0;
-    for(iv_idx = 0; iv_idx < CBSUBST_TBL_MAX; iv_idx++) {
-      if ( inf->ivar[iv_idx] == (ID) 0 ) continue;
-      rb_ivar_set(self, inf->ivar[iv_idx], argv[idx++]);
-      if (idx >= argc) break;
+    if (argc > 0) {
+	idx = 0;
+	for (iv_idx = 0; iv_idx < CBSUBST_TBL_MAX; iv_idx++) {
+	    if (inf->ivar[iv_idx] == (ID)0) continue;
+	    rb_ivar_set(self, inf->ivar[iv_idx], argv[idx++]);
+	    if (idx >= argc) break;
+	}
     }
 
     return self;

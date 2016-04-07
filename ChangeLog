@@ -1,3 +1,8 @@
+Thu Apr  7 11:24:14 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/tk/tkutil/tkutil.c (cbsubst_initialize): fix out-of-bound
+	  access when no arguments given.  `p Tk::Event.new` crashed.
+
 Fri Apr  1 01:26:00 2016  Benoit Daloze  <eregontp@gmail.com>
 
 	* ext/coverage/coverage.c: Fully reset coverage to not persist global state.
