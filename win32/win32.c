@@ -63,6 +63,7 @@
 DWORD WINAPI GetFinalPathNameByHandleW(HANDLE, LPWSTR, DWORD, DWORD);
 #endif
 
+static int w32_wopen(const WCHAR *file, int oflag, int perm);
 static int w32_stati64(const char *path, struct stati64 *st, UINT cp);
 static int w32_lstati64(const char *path, struct stati64 *st, UINT cp);
 static char *w32_getenv(const char *name, UINT cp);
@@ -5980,7 +5981,7 @@ rb_w32_uopen(const char *file, int oflag, ...)
 
     if (!(wfile = utf8_to_wstr(file, NULL)))
 	return -1;
-    ret = rb_w32_wopen(wfile, oflag, pmode);
+    ret = w32_wopen(wfile, oflag, pmode);
     free(wfile);
     return ret;
 }
@@ -5998,8 +5999,6 @@ check_if_wdir(const WCHAR *wfile)
     errno = EISDIR;
     return TRUE;
 }
-
-static int w32_wopen(const WCHAR *file, int oflag, int perm);
 
 /* License: Ruby's */
 int
