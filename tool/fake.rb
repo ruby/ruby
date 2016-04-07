@@ -54,9 +54,11 @@ prehook = proc do |extmk|
   mkconfig = RbConfig::MAKEFILE_CONFIG
   mkconfig["builddir"] = config["builddir"] = builddir
   mkconfig["top_srcdir"] = $top_srcdir if $top_srcdir
+  mkconfig["extout"] ||= $extout
   config["top_srcdir"] = File.expand_path($top_srcdir ||= top_srcdir)
   config["rubyhdrdir"] = join[$top_srcdir, "include"]
   config["rubyarchhdrdir"] = join[builddir, config["EXTOUT"], "include", config["arch"]]
+  config["extout"] ||= join[$topdir, ".ext"]
   mkconfig["libdirname"] = "builddir"
   trace_var(:$ruby, posthook)
   untrace_var(:$extmk, prehook)
