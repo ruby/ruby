@@ -1,3 +1,8 @@
+Thu Apr  7 19:04:03 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* doc/regexp.rdoc (comments): [DOC] terminators cannot appear in
+	  comments.  [ruby-core:74838] [Bug #12256]
+
 Thu Apr  7 11:24:14 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/tk/tkutil/tkutil.c (cbsubst_initialize): fix out-of-bound
