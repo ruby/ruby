@@ -1181,7 +1181,12 @@ end
     start_server(OpenSSL::SSL::VERIFY_NONE, true, :ctx_proc => conf_proc) do |server, port|
       ciphers.each do |cipher, ephemeral|
         ctx = OpenSSL::SSL::SSLContext.new
-        ctx.ciphers = cipher
+        begin
+          ctx.ciphers = cipher
+        rescue OpenSSL::SSL::SSLError => e
+          next if /no cipher match/ =~ e.message
+          raise
+        end
         server_connect(port, ctx) do |ssl|
           if ephemeral
             assert_instance_of(ephemeral, ssl.tmp_key)
