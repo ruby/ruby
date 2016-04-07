@@ -1245,6 +1245,9 @@ rb_w32_check_imported(HMODULE ext, HMODULE mine)
 void*
 dln_load(const char *file)
 {
+#if (defined _WIN32 || defined USE_DLN_DLOPEN) && defined RUBY_EXPORT
+    static const char incompatible[] = "incompatible library version";
+#endif
 #if !defined(_AIX) && !defined(NeXT)
     const char *error = 0;
 #define DLN_ERROR() (error = dln_strerror(), strcpy(ALLOCA_N(char, strlen(error) + 1), error))
@@ -1278,7 +1281,7 @@ dln_load(const char *file)
 #if defined _WIN32 && defined RUBY_EXPORT
     if (!rb_w32_check_imported(handle, rb_libruby_handle())) {
 	FreeLibrary(handle);
-	error = "incompatible library version";
+	error = incompatible;
 	goto failed;
     }
 #endif
@@ -1327,7 +1330,6 @@ dln_load(const char *file)
 	}
 # if defined RUBY_EXPORT
 	{
-	    static const char incompatible[] = "incompatible library version";
 	    void *ex = dlsym(handle, EXTERNAL_PREFIX"ruby_xmalloc");
 	    if (ex && ex != ruby_xmalloc) {
 
