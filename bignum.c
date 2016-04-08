@@ -3685,6 +3685,20 @@ rb_integer_unpack(const void *words, size_t numwords, size_t wordsize, size_t na
 
 #define conv_digit(c) (ruby_digit36_to_number_table[(unsigned char)(c)])
 
+NORETURN(static inline void invalid_radix(int base));
+
+static inline int
+valid_radix_p(int base)
+{
+    return (1 < base && base <= 36);
+}
+
+static inline void
+invalid_radix(int base)
+{
+    rb_raise(rb_eArgError, "invalid radix %d", base);
+}
+
 static void
 str2big_scan_digits(const char *s, const char *str, int base, int badcheck, size_t *num_digits_p, size_t *len_p)
 {
@@ -4040,8 +4054,8 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
 	    str += 2;
 	}
     }
-    if (base < 2 || 36 < base) {
-        rb_raise(rb_eArgError, "invalid radix %d", base);
+    if (!valid_radix_p(base)) {
+        invalid_radix(base);
     }
     if (*str == '0') {		/* squeeze preceding 0s */
 	int us = 0;
@@ -4165,8 +4179,8 @@ rb_str2big_poweroftwo(VALUE arg, int base, int badcheck)
     size_t len;
     VALUE z;
 
-    if (base < 2 || 36 < base || !POW2_P(base)) {
-        rb_raise(rb_eArgError, "invalid radix %d", base);
+    if (!valid_radix_p(base) || !POW2_P(base)) {
+        invalid_radix(base);
     }
 
     rb_must_asciicompat(arg);
@@ -4201,8 +4215,8 @@ rb_str2big_normal(VALUE arg, int base, int badcheck)
     int digits_per_bdigits_dbl;
     size_t num_bdigits;
 
-    if (base < 2 || 36 < base) {
-        rb_raise(rb_eArgError, "invalid radix %d", base);
+    if (!valid_radix_p(base)) {
+        invalid_radix(base);
     }
 
     rb_must_asciicompat(arg);
@@ -4240,8 +4254,8 @@ rb_str2big_karatsuba(VALUE arg, int base, int badcheck)
     int digits_per_bdigits_dbl;
     size_t num_bdigits;
 
-    if (base < 2 || 36 < base) {
-        rb_raise(rb_eArgError, "invalid radix %d", base);
+    if (!valid_radix_p(base)) {
+        invalid_radix(base);
     }
 
     rb_must_asciicompat(arg);
@@ -4280,8 +4294,8 @@ rb_str2big_gmp(VALUE arg, int base, int badcheck)
     int digits_per_bdigits_dbl;
     size_t num_bdigits;
 
-    if (base < 2 || 36 < base) {
-        rb_raise(rb_eArgError, "invalid radix %d", base);
+    if (!valid_radix_p(base)) {
+        invalid_radix(base);
     }
 
     rb_must_asciicompat(arg);
@@ -4813,8 +4827,8 @@ big2str_generic(VALUE x, int base)
 	return rb_usascii_str_new2("0");
     }
 
-    if (base < 2 || 36 < base)
-	rb_raise(rb_eArgError, "invalid radix %d", base);
+    if (!valid_radix_p(base))
+	invalid_radix(base);
 
     if (xn >= LONG_MAX/BITSPERDIG) {
         rb_raise(rb_eRangeError, "bignum too big to convert into `string'");
@@ -4939,8 +4953,8 @@ rb_big2str1(VALUE x, int base)
 	return rb_usascii_str_new2("0");
     }
 
-    if (base < 2 || 36 < base)
-	rb_raise(rb_eArgError, "invalid radix %d", base);
+    if (!valid_radix_p(base))
+	invalid_radix(base);
 
     if (xn >= LONG_MAX/BITSPERDIG) {
         rb_raise(rb_eRangeError, "bignum too big to convert into `string'");
