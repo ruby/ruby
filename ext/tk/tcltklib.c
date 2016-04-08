@@ -3636,11 +3636,7 @@ ip_ruby_cmd(clientData, interp, argc, argv)
         s = rb_tainted_str_new2(str);
 #endif
         DUMP2("arg:%s",str);
-#ifndef HAVE_STRUCT_RARRAY_LEN
         rb_ary_push(args, s);
-#else
-        RARRAY(args)->ptr[RARRAY(args)->len++] = s;
-#endif
     }
 
     if (old_gc == Qfalse) rb_gc_enable();

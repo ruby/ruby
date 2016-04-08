@@ -1804,12 +1804,6 @@ print("check functions.")
 end
 print("\n") # progress
 
-print("check struct members.")
-have_struct_member("struct RArray", "ptr", "ruby.h")
-print(".") # progress
-have_struct_member("struct RArray", "len", "ruby.h")
-print("\n") # progress
-
 # check libraries
 unless is_win32?
   print("check libraries.")
