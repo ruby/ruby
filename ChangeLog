@@ -1,3 +1,15 @@
+Sat Apr  9 02:05:10 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (rb_cstr_parse_inum): [EXPERIMENTAL] new function to
+	  parse integer in C-string with length.  the name and the
+	  arguments may be changed in the future.
+
+	* bignum.c (rb_str_to_inum): preserve encoding of the argument in
+	  error messages, and no longer needs to copy non-terminated
+	  strings.
+
+	* bignum.c (rb_str2big_{poweroftwo,normal,karatsuba,gmp}): ditto.
+
 Thu Apr  7 19:04:03 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* doc/regexp.rdoc (comments): [DOC] terminators cannot appear in

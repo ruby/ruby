@@ -3686,6 +3686,7 @@ rb_integer_unpack(const void *words, size_t numwords, size_t wordsize, size_t na
 #define conv_digit(c) (ruby_digit36_to_number_table[(unsigned char)(c)])
 
 NORETURN(static inline void invalid_radix(int base));
+NORETURN(static inline void invalid_integer(VALUE s));
 
 static inline int
 valid_radix_p(int base)
@@ -3699,15 +3700,28 @@ invalid_radix(int base)
     rb_raise(rb_eArgError, "invalid radix %d", base);
 }
 
-static void
-str2big_scan_digits(const char *s, const char *str, int base, int badcheck, size_t *num_digits_p, size_t *len_p)
+static inline void
+invalid_integer(VALUE s)
+{
+    rb_raise(rb_eArgError, "invalid value for Integer(): %+"PRIsVALUE, s);
+}
+
+static int
+str2big_scan_digits(const char *s, const char *str, int base, int badcheck, size_t *num_digits_p, ssize_t *len_p)
 {
     char nondigit = 0;
     size_t num_digits = 0;
     const char *digits_start = str;
     const char *digits_end = str;
+    ssize_t len = *len_p;
 
     int c;
+
+    if (!len) {
+	*num_digits_p = 0;
+	*len_p = 0;
+	return TRUE;
+    }
 
     if (badcheck && *str == '_') goto bad;
 
@@ -3718,27 +3732,32 @@ str2big_scan_digits(const char *s, const char *str, int base, int badcheck, size
 		break;
 	    }
 	    nondigit = (char) c;
-	    continue;
 	}
-	else if ((c = conv_digit(c)) < 0) {
+	else if ((c = conv_digit(c)) < 0 || c >= base) {
 	    break;
 	}
-	if (c >= base) break;
-	nondigit = 0;
-        num_digits++;
-        digits_end = str;
+	else {
+	    nondigit = 0;
+	    num_digits++;
+	    digits_end = str;
+	}
+	if (len > 0 && !--len) break;
     }
-    if (badcheck) {
+    if (badcheck && nondigit) goto bad;
+    if (badcheck && len) {
 	str--;
-	if (s+1 < str && str[-1] == '_') goto bad;
-	while (*str && ISSPACE(*str)) str++;
-	if (*str) {
+	while (*str && ISSPACE(*str)) {
+	    str++;
+	    if (len > 0 && !--len) break;
+	}
+	if (len && *str) {
 	  bad:
-	    rb_invalid_str(s, "Integer()");
+	    return FALSE;
 	}
     }
     *num_digits_p = num_digits;
     *len_p = digits_end - digits_start;
+    return TRUE;
 }
 
 static VALUE
@@ -3972,56 +3991,92 @@ str2big_gmp(
 VALUE
 rb_cstr_to_inum(const char *str, int base, int badcheck)
 {
-    const char *s = str;
+    char *end;
+    VALUE ret = rb_cstr_parse_inum(str, -1, (badcheck ? NULL : &end), base);
+    if (NIL_P(ret)) {
+	if (badcheck) rb_invalid_str(str, "Integer()");
+	ret = INT2FIX(0);
+    }
+    return ret;
+}
+
+/*
+ * Parse +str+ as Ruby Integer, i.e., underscores, 0d and 0b prefixes.
+ *
+ * str:  pointer to the string to be parsed.
+ *       should be NUL-terminated if +len+ is negative.
+ * len:  length of +str+ if >= 0.  if +len+ is negative, +str+ should
+ *       be NUL-terminated.
+ * endp: if non-NULL, the address after parsed part is stored.  if
+ *       NULL, Qnil is returned when +str+ is not valid as an Integer.
+ * base: see +rb_cstr_to_inum+
+ */
+
+VALUE
+rb_cstr_parse_inum(const char *str, ssize_t len, char **endp, int base)
+{
+    const char *const s = str;
     char sign = 1;
     int c;
     VALUE z;
 
-    int bits_per_digit;
+    unsigned long val;
+    int ov;
 
     const char *digits_start, *digits_end;
     size_t num_digits;
     size_t num_bdigits;
-    size_t len;
+    const ssize_t len0 = len;
+    const int badcheck = !endp;
+
+#define ADV(n) do {\
+	if (len > 0 && len <= (n)) goto bad; \
+	str += (n); \
+	len -= (n); \
+    } while (0)
+#define ASSERT_LEN() do {\
+	assert(len != 0); \
+	if (len0 >= 0) assert(s + len0 == str + len); \
+    } while (0)
 
     if (!str) {
-	if (badcheck) {
-          bad:
-            rb_invalid_str(s, "Integer()");
-        }
-	return INT2FIX(0);
+      bad:
+	if (endp) *endp = (char *)str;
+	return Qnil;
     }
-    while (ISSPACE(*str)) str++;
+    if (len) {
+	while (ISSPACE(*str)) ADV(1);
 
-    if (str[0] == '+') {
-	str++;
-    }
-    else if (str[0] == '-') {
-	str++;
-	sign = 0;
-    }
-    if (str[0] == '+' || str[0] == '-') {
-	if (badcheck) goto bad;
-	return INT2FIX(0);
+	if (str[0] == '+') {
+	    ADV(1);
+	}
+	else if (str[0] == '-') {
+	    ADV(1);
+	    sign = 0;
+	}
+	ASSERT_LEN();
+	if (str[0] == '+' || str[0] == '-') {
+	    goto bad;
+	}
     }
     if (base <= 0) {
-	if (str[0] == '0') {
+	if (str[0] == '0' && len > 1) {
 	    switch (str[1]) {
 	      case 'x': case 'X':
 		base = 16;
-                str += 2;
+		ADV(2);
 		break;
 	      case 'b': case 'B':
 		base = 2;
-                str += 2;
+		ADV(2);
 		break;
 	      case 'o': case 'O':
 		base = 8;
-                str += 2;
+		ADV(2);
 		break;
 	      case 'd': case 'D':
 		base = 10;
-                str += 2;
+		ADV(2);
 		break;
 	      default:
 		base = 8;
@@ -4034,31 +4089,36 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
 	    base = 10;
 	}
     }
+    else if (len == 1) {
+	/* no prefix */
+    }
     else if (base == 2) {
 	if (str[0] == '0' && (str[1] == 'b'||str[1] == 'B')) {
-	    str += 2;
+	    ADV(2);
 	}
     }
     else if (base == 8) {
 	if (str[0] == '0' && (str[1] == 'o'||str[1] == 'O')) {
-	    str += 2;
+	    ADV(2);
 	}
     }
     else if (base == 10) {
 	if (str[0] == '0' && (str[1] == 'd'||str[1] == 'D')) {
-	    str += 2;
+	    ADV(2);
 	}
     }
     else if (base == 16) {
 	if (str[0] == '0' && (str[1] == 'x'||str[1] == 'X')) {
-	    str += 2;
+	    ADV(2);
 	}
     }
     if (!valid_radix_p(base)) {
         invalid_radix(base);
     }
-    if (*str == '0') {		/* squeeze preceding 0s */
+    if (!len) goto bad;
+    if (*str == '0' && len != 1) { /* squeeze preceding 0s */
 	int us = 0;
+	const char *end = len < 0 ? NULL : str + len;
 	while ((c = *++str) == '0' || c == '_') {
 	    if (c == '_') {
 		if (++us >= 2)
@@ -4067,26 +4127,29 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
 	    else {
 		us = 0;
 	    }
+	    if (str == end) break;
 	}
-	if (!(c = *str) || ISSPACE(c)) --str;
+	if (!c || ISSPACE(c)) --str;
+	if (end) len = end - str;
+	ASSERT_LEN();
     }
     c = *str;
     c = conv_digit(c);
     if (c < 0 || c >= base) {
-	if (badcheck) goto bad;
-	return INT2FIX(0);
+	goto bad;
     }
 
-    bits_per_digit = bit_length(base-1);
-    if (bits_per_digit * strlen(str) <= sizeof(long) * CHAR_BIT) {
-        char *end;
-	unsigned long val = STRTOUL(str, &end, base);
-
-	if (str < end && *end == '_') goto bigparse;
+    val = ruby_scan_digits(str, len, base, &num_digits, &ov);
+    if (!ov) {
+	const char *end = &str[num_digits];
+	if (num_digits > 0 && *end == '_') goto bigparse;
+	if (endp) *endp = (char *)end;
 	if (badcheck) {
-	    if (end == str) goto bad; /* no number */
-	    while (*end && ISSPACE(*end)) end++;
-	    if (*end) goto bad;	      /* trailing garbage */
+	    if (num_digits == 0) return Qnil; /* no number */
+	    while (len < 0 ? *end : end < str + len) {
+		if (!ISSPACE(*end)) return Qnil; /* trailing garbage */
+		end++;
+	    }
 	}
 
 	if (POSFIXABLE(val)) {
@@ -4105,12 +4168,13 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
 
   bigparse:
     digits_start = str;
-    str2big_scan_digits(s, str, base, badcheck, &num_digits, &len);
+    if (!str2big_scan_digits(s, str, base, badcheck, &num_digits, &len))
+	goto bad;
     digits_end = digits_start + len;
 
     if (POW2_P(base)) {
         z = str2big_poweroftwo(sign, digits_start, digits_end, num_digits,
-                bits_per_digit);
+			       bit_length(base-1));
     }
     else {
         int digits_per_bdigits_dbl;
@@ -4140,32 +4204,19 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
 VALUE
 rb_str_to_inum(VALUE str, int base, int badcheck)
 {
-    char *s;
-    long len;
-    VALUE v = 0;
     VALUE ret;
+    const char *s;
+    long len;
+    char *end;
 
     StringValue(str);
     rb_must_asciicompat(str);
-    if (badcheck) {
-	s = StringValueCStr(str);
+    RSTRING_GETMEM(str, s, len);
+    ret = rb_cstr_parse_inum(s, len, (badcheck ? NULL : &end), base);
+    if (NIL_P(ret)) {
+	if (badcheck) invalid_integer(str);
+	ret = INT2FIX(0);
     }
-    else {
-	s = RSTRING_PTR(str);
-    }
-    if (s) {
-	len = RSTRING_LEN(str);
-	if (s[len]) {		/* no sentinel somehow */
-	    char *p = ALLOCV(v, len+1);
-
-	    MEMCPY(p, s, char, len);
-	    p[len] = '\0';
-	    s = p;
-	}
-    }
-    ret = rb_cstr_to_inum(s, base, badcheck);
-    if (v)
-	ALLOCV_END(v);
     return ret;
 }
 
@@ -4176,7 +4227,7 @@ rb_str2big_poweroftwo(VALUE arg, int base, int badcheck)
     const char *s, *str;
     const char *digits_start, *digits_end;
     size_t num_digits;
-    size_t len;
+    ssize_t len;
     VALUE z;
 
     if (!valid_radix_p(base) || !POW2_P(base)) {
@@ -4185,13 +4236,16 @@ rb_str2big_poweroftwo(VALUE arg, int base, int badcheck)
 
     rb_must_asciicompat(arg);
     s = str = StringValueCStr(arg);
+    len = RSTRING_LEN(arg);
     if (*str == '-') {
+	len--;
         str++;
         positive_p = 0;
     }
 
     digits_start = str;
-    str2big_scan_digits(s, str, base, badcheck, &num_digits, &len);
+    if (!str2big_scan_digits(s, str, base, badcheck, &num_digits, &len))
+	invalid_integer(arg);
     digits_end = digits_start + len;
 
     z = str2big_poweroftwo(positive_p, digits_start, digits_end, num_digits,
@@ -4209,7 +4263,7 @@ rb_str2big_normal(VALUE arg, int base, int badcheck)
     const char *s, *str;
     const char *digits_start, *digits_end;
     size_t num_digits;
-    size_t len;
+    ssize_t len;
     VALUE z;
 
     int digits_per_bdigits_dbl;
@@ -4220,14 +4274,17 @@ rb_str2big_normal(VALUE arg, int base, int badcheck)
     }
 
     rb_must_asciicompat(arg);
-    s = str = StringValueCStr(arg);
-    if (*str == '-') {
+    s = str = StringValuePtr(arg);
+    len = RSTRING_LEN(arg);
+    if (len > 0 && *str == '-') {
+	len--;
         str++;
         positive_p = 0;
     }
 
     digits_start = str;
-    str2big_scan_digits(s, str, base, badcheck, &num_digits, &len);
+    if (!str2big_scan_digits(s, str, base, badcheck, &num_digits, &len))
+	invalid_integer(arg);
     digits_end = digits_start + len;
 
     maxpow_in_bdigit_dbl(base, &digits_per_bdigits_dbl);
@@ -4248,7 +4305,7 @@ rb_str2big_karatsuba(VALUE arg, int base, int badcheck)
     const char *s, *str;
     const char *digits_start, *digits_end;
     size_t num_digits;
-    size_t len;
+    ssize_t len;
     VALUE z;
 
     int digits_per_bdigits_dbl;
@@ -4259,14 +4316,17 @@ rb_str2big_karatsuba(VALUE arg, int base, int badcheck)
     }
 
     rb_must_asciicompat(arg);
-    s = str = StringValueCStr(arg);
-    if (*str == '-') {
+    s = str = StringValuePtr(arg);
+    len = RSTRING_LEN(arg);
+    if (len > 0 && *str == '-') {
+	len--;
         str++;
         positive_p = 0;
     }
 
     digits_start = str;
-    str2big_scan_digits(s, str, base, badcheck, &num_digits, &len);
+    if (!str2big_scan_digits(s, str, base, badcheck, &num_digits, &len))
+	invalid_integer(arg);
     digits_end = digits_start + len;
 
     maxpow_in_bdigit_dbl(base, &digits_per_bdigits_dbl);
@@ -4288,7 +4348,7 @@ rb_str2big_gmp(VALUE arg, int base, int badcheck)
     const char *s, *str;
     const char *digits_start, *digits_end;
     size_t num_digits;
-    size_t len;
+    ssize_t len;
     VALUE z;
 
     int digits_per_bdigits_dbl;
@@ -4299,14 +4359,17 @@ rb_str2big_gmp(VALUE arg, int base, int badcheck)
     }
 
     rb_must_asciicompat(arg);
-    s = str = StringValueCStr(arg);
-    if (*str == '-') {
+    s = str = StringValuePtr(arg);
+    len = RSTRING_LEN(arg);
+    if (len > 0 && *str == '-') {
+	len--;
         str++;
         positive_p = 0;
     }
 
     digits_start = str;
-    str2big_scan_digits(s, str, base, badcheck, &num_digits, &len);
+    if (!str2big_scan_digits(s, str, base, badcheck, &num_digits, &len))
+	invalid_integer(arg);
     digits_end = digits_start + len;
 
     maxpow_in_bdigit_dbl(base, &digits_per_bdigits_dbl);

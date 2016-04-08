@@ -98,6 +98,8 @@ class TestInteger < Test::Unit::TestCase
     assert_raise(Encoding::CompatibilityError, bug6192) {Integer("0".encode("utf-32be"))}
     assert_raise(Encoding::CompatibilityError, bug6192) {Integer("0".encode("utf-32le"))}
     assert_raise(Encoding::CompatibilityError, bug6192) {Integer("0".encode("iso-2022-jp"))}
+
+    assert_raise_with_message(ArgumentError, /\u{1f4a1}/) {Integer("\u{1f4a1}")}
   end
 
   def test_int_p
