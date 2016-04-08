@@ -127,6 +127,15 @@ def maybe_64bit?
   /64|universal|s390x/ =~ RUBY_PLATFORM
 end
 
+if defined?(Logging.quiet) and Logging.quiet
+  def progress(s)
+    print(s)
+  end
+else
+  def progress(s)
+  end
+end
+
 def check_tcltk_version(version)
   return [nil, nil] unless version.kind_of? String
 
@@ -757,7 +766,7 @@ def search_tclConfig(*paths) # libdir list or [tcl-libdir|file, tk-libdir|file]
       dir.strip.chomp('/')
     end
   }.each{|dir|
-    print("."); progress_flag = true # progress
+    progress("."); progress_flag = true
     # print("check #{dir} ==>");
     if dir.kind_of? Array
       tcldir, tkdir = dir
@@ -1182,7 +1191,7 @@ def find_tcl(tcllib, stubs, version, *opt_paths)
     end
   }
 
-  print("\n") # progress
+  progress("\n")
   [false, nil, nil, nil]
 end
 
@@ -1321,7 +1330,7 @@ def find_tk(tklib, stubs, version, *opt_paths)
     end
   }
 
-  print("\n") # progress
+  progress("\n")
   [false, nil, nil, nil]
 end
 
@@ -1402,7 +1411,7 @@ def find_tcltk_header(tclver, tkver)
     else
       major = minor = nil
     end
-    print(".") # progress
+    progress(".")
     if major && minor
       # version check on tcl.h
       version_check = proc {|code|
@@ -1445,7 +1454,7 @@ def find_tcltk_header(tclver, tkver)
         version_check = nil
       end
       have_tcl_h = paths.find{|path|
-        print(".") # progress
+        progress(".")
         inc_opt = " -I#{path.quote}"
         if try_header("tcl", inc_opt, &version_check)
           ($INCFLAGS ||= "") << inc_opt
@@ -1469,7 +1478,7 @@ def find_tcltk_header(tclver, tkver)
     else
       major = minor = nil
     end
-    print(".") # progress
+    progress(".")
     if major && minor
       # version check on tk.h
       version_check = proc {|code|
@@ -1512,7 +1521,7 @@ def find_tcltk_header(tclver, tkver)
         version_check = nil
       end
       have_tk_h = paths.find{|path|
-        print(".") # progress
+        progress(".")
         inc_opt = " -I#{path.quote}"
         if try_header(%w'tcl.h tk.h', inc_opt, &version_check)
           ($INCFLAGS ||= "") << inc_opt
@@ -1800,21 +1809,21 @@ print("check functions.")
  ruby_enc_find_basename
 ".each do |func|
   have_func(func, "ruby.h")
-  print(".") # progress
+  progress(".")
 end
-print("\n") # progress
+progress("\n")
 
 # check libraries
 unless is_win32?
   print("check libraries.")
   have_library("nsl", "t_open")
-  print(".") # progress
+  progress(".")
   have_library("socket", "socket")
-  print(".") # progress
+  progress(".")
   have_library("dl", "dlopen")
-  print(".") # progress
+  progress(".")
   have_library("m", "log", "math.h")
-  print("\n") # progress
+  progress("\n")
 end
 $CPPFLAGS ||= ""
 $CPPFLAGS += ' -D_WIN32' if /cygwin/ =~ RUBY_PLATFORM
