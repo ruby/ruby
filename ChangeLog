@@ -1,3 +1,8 @@
+Sat Apr  9 10:03:12 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* load.c (rb_f_load): raise with the original path name before
+	  encoding conversion.
+
 Sat Apr  9 02:05:10 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bignum.c (rb_cstr_parse_inum): [EXPERIMENTAL] new function to

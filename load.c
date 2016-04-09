@@ -698,13 +698,16 @@ static VALUE
 rb_f_load(int argc, VALUE *argv)
 {
     VALUE fname, wrap, path, orig_fname;
+    int safe;
 
     rb_scan_args(argc, argv, "11", &fname, &wrap);
 
     RUBY_DTRACE_HOOK(LOAD_ENTRY, StringValuePtr(fname));
 
-    orig_fname = FilePathValue(fname);
-    fname = rb_str_encode_ospath(orig_fname);
+    safe = rb_safe_level();
+    orig_fname = rb_get_path_check_to_string(fname, safe);
+    fname = rb_get_path_check_convert(fname, orig_fname, safe);
+    fname = rb_str_encode_ospath(fname);
     path = rb_find_file(fname);
     if (!path) {
 	if (!rb_file_load_ok(RSTRING_PTR(fname)))
