@@ -430,11 +430,9 @@ end.join
     bug3237 = '[ruby-core:29948]'
     str = "\u2600"
     id = :"\u2604"
-    EnvUtil.with_default_external(Encoding::UTF_8) do
-      msg = "undefined method `#{id}' for #{str.inspect}:String"
-      assert_raise_with_message(NoMethodError, msg, bug3237) do
-        str.__send__(id)
-      end
+    msg = "undefined method `#{id}' for \"#{str}\":String"
+    assert_raise_with_message(NoMethodError, msg, bug3237) do
+      str.__send__(id)
     end
   end
 

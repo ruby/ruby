@@ -258,7 +258,7 @@ class TestModule < Test::Unit::TestCase
       "\u3042",
       "Name?",
     ].each do |name, msg|
-      expected = "wrong constant name %s" % quote(name)
+      expected = "wrong constant name %s" % name
       msg = "#{msg}#{': ' if msg}wrong constant name #{name.dump}"
       assert_raise_with_message(NameError, expected, "#{msg} to #{m}") do
         yield name
@@ -709,9 +709,7 @@ class TestModule < Test::Unit::TestCase
     assert_raise(NameError) { c1.const_set("X\u{3042}".encode("utf-32be"), :foo) }
     assert_raise(NameError) { c1.const_set("X\u{3042}".encode("utf-32le"), :foo) }
     cx = EnvUtil.labeled_class("X\u{3042}")
-    EnvUtil.with_default_external(Encoding::UTF_8) {
-      assert_raise_with_message(TypeError, /X\u{3042}/) { c1.const_set(cx, :foo) }
-    }
+    assert_raise_with_message(TypeError, /X\u{3042}/) { c1.const_set(cx, :foo) }
   end
 
   def test_const_get_invalid_name
@@ -1967,10 +1965,7 @@ class TestModule < Test::Unit::TestCase
 
     name = "@\u{5909 6570}"
     assert_warning(/instance variable #{name} not initialized/) do
-      val = EnvUtil.with_default_external(Encoding::UTF_8) {
-        a.instance_eval(name)
-      }
-      assert_nil(val)
+      assert_nil(a.instance_eval(name))
     end
   end
 

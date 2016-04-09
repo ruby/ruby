@@ -123,21 +123,17 @@ module Test_Symbol
     end
 
     def test_check_id_invalid_type
-      EnvUtil.with_default_external(Encoding::UTF_8) do
-        cx = EnvUtil.labeled_class("X\u{1f431}")
-        assert_raise_with_message(TypeError, /X\u{1F431}/) {
-          Bug::Symbol.pinneddown?(cx)
-        }
-      end
+      cx = EnvUtil.labeled_class("X\u{1f431}")
+      assert_raise_with_message(TypeError, /X\u{1F431}/) {
+        Bug::Symbol.pinneddown?(cx)
+      }
     end
 
     def test_check_symbol_invalid_type
-      EnvUtil.with_default_external(Encoding::UTF_8) do
-        cx = EnvUtil.labeled_class("X\u{1f431}")
-        assert_raise_with_message(TypeError, /X\u{1F431}/) {
-          Bug::Symbol.find(cx)
-        }
-      end
+      cx = EnvUtil.labeled_class("X\u{1f431}")
+      assert_raise_with_message(TypeError, /X\u{1F431}/) {
+        Bug::Symbol.find(cx)
+      }
     end
   end
 end

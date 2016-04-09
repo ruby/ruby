@@ -790,9 +790,7 @@ EXPECTED
       [].pack("\x7f")
     }
     assert_warning(/\A(.* in '\u{3042}'\n)+\z/) {
-      EnvUtil.with_default_external(Encoding::UTF_8) {
-        [].pack("\u{3042}")
-      }
+      [].pack("\u{3042}")
     }
   end
 

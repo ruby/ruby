@@ -586,9 +586,7 @@ class TestRegexp < Test::Unit::TestCase
     key = "\u{3042}"
     [Encoding::UTF_8, Encoding::Shift_JIS, Encoding::EUC_JP].each do |enc|
       idx = key.encode(enc)
-      EnvUtil.with_default_external(enc) do
-        assert_raise_with_message(IndexError, /#{idx}/, bug10877) {$~[idx]}
-      end
+      assert_raise_with_message(IndexError, /#{idx}/, bug10877) {$~[idx]}
     end
   end
 

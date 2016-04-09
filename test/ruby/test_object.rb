@@ -387,19 +387,15 @@ class TestObject < Test::Unit::TestCase
 
     m = "\u{30e1 30bd 30c3 30c9}"
     c = Class.new
-    EnvUtil.with_default_external(Encoding::UTF_8) do
-      assert_raise_with_message(NameError, /#{m}/) do
-        c.class_eval {remove_method m}
-      end
+    assert_raise_with_message(NameError, /#{m}/) do
+      c.class_eval {remove_method m}
     end
     c = Class.new {
       define_method(m) {}
       remove_method(m)
     }
-    EnvUtil.with_default_external(Encoding::UTF_8) do
-      assert_raise_with_message(NameError, /#{m}/) do
-        c.class_eval {remove_method m}
-      end
+    assert_raise_with_message(NameError, /#{m}/) do
+      c.class_eval {remove_method m}
     end
   end
 

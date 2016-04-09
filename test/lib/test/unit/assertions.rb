@@ -131,14 +131,20 @@ module Test
           raise TypeError, "Expected #{expected.inspect} to be a kind of String or Regexp, not #{expected.class}"
         end
 
-        ex = assert_raise(exception, msg || proc {"Exception(#{exception}) with message matches to #{expected.inspect}"}) {yield}
+        ex = m = nil
+        EnvUtil.with_default_internal(expected.encoding) do
+          ex = assert_raise(exception, msg || proc {"Exception(#{exception}) with message matches to #{expected.inspect}"}) do
+            yield
+          end
+          m = ex.message
+        end
         msg = message(msg, "") {"Expected Exception(#{exception}) was raised, but the message doesn't match"}
 
         if assert == :assert_equal
-          assert_equal(expected, ex.message, msg)
+          assert_equal(expected, m, msg)
         else
-          msg = message(msg) { "Expected #{mu_pp expected} to match #{mu_pp ex.message}" }
-          assert expected =~ ex.message, msg
+          msg = message(msg) { "Expected #{mu_pp expected} to match #{mu_pp m}" }
+          assert expected =~ m, msg
           block.binding.eval("proc{|_|$~=_}").call($~)
         end
         ex
@@ -626,7 +632,11 @@ eom
       end
 
       def assert_warning(pat, msg = nil)
-        stderr = EnvUtil.verbose_warning { yield }
+        stderr = EnvUtil.verbose_warning {
+          EnvUtil.with_default_internal(pat.encoding) {
+            yield
+          }
+        }
         msg = message(msg) {diff pat, stderr}
         assert(pat === stderr, msg)
       end
