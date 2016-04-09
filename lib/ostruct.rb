@@ -71,8 +71,7 @@
 # of these properties compared to using a Hash or a Struct.
 #
 class OpenStruct
-  # :nodoc:
-  class << self
+  class << self # :nodoc:
     alias allocate new
   end
 
