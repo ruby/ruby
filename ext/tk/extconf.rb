@@ -131,8 +131,13 @@ if defined?(Logging.quiet) and Logging.quiet
   def progress(s)
     print(s)
   end
+  def newline
+  end
 else
   def progress(s)
+  end
+  def newline
+    puts
   end
 end
 
@@ -1342,7 +1347,7 @@ def find_tcltk_library(tcllib, tklib, stubs, tclversion, tkversion,
     st,path,lib,libs,*inc = find_tcl(tcllib, stubs, tclversion, *tcl_opt_paths)
   end
   unless st
-    puts("Warning:: cannot find Tcl library. tcltklib will not be compiled (tcltklib is disabled on your Ruby. That is, Ruby/Tk will not work). Please check configure options.")
+    puts("\n""Warning:: cannot find Tcl library. tcltklib will not be compiled (tcltklib is disabled on your Ruby. That is, Ruby/Tk will not work). Please check configure options.")
     return false
   else
     ($LIBPATH ||= []; $LIBPATH |= [path]) if path
@@ -1358,7 +1363,7 @@ def find_tcltk_library(tcllib, tklib, stubs, tclversion, tkversion,
     st,path,lib,libs,*inc = find_tk(tklib, stubs, tkversion, *tk_opt_paths)
   end
   unless st
-    puts("Warning:: cannot find Tk library. tcltklib will not be compiled (tcltklib is disabled on your Ruby. That is, Ruby/Tk will not work). Please check configure options.")
+    puts("\n""Warning:: cannot find Tk library. tcltklib will not be compiled (tcltklib is disabled on your Ruby. That is, Ruby/Tk will not work). Please check configure options.")
     return false
   else
     ($LIBPATH ||= []; $LIBPATH |= [path]) if path
@@ -1404,7 +1409,8 @@ def find_tcltk_header(tclver, tkver)
     # already checked existence of tcl headers based on tclConfig.sh
     have_tcl_h = true
   else
-    print "\nSearch tcl.h"
+    print "Search tcl.h"
+    newline
     if enable_config("tcl-h-ver-check", true) &&
         tclver && tclver =~ /^\D*(\d)\.?(\d)/
       major = $1; minor = $2
@@ -1464,6 +1470,7 @@ def find_tcltk_header(tclver, tkver)
         end
       }
     end
+    progress("\n")
   end
 
   # tk.h
@@ -1471,7 +1478,8 @@ def find_tcltk_header(tclver, tkver)
     # already checked existence of tk headers based on tkConfig.sh
     have_tk_h = true
   else
-    print "\nSearch tk.h"
+    print "Search tk.h"
+    newline
     if enable_config("tk-h-ver-check", true) &&
         tkver && tkver =~ /^\D*(\d)\.?(\d)/
       major = $1; minor = $2
@@ -1531,6 +1539,7 @@ def find_tcltk_header(tclver, tkver)
         end
       }
     end
+    progress("\n")
   end
 
   puts "Can't find \"tcl.h\"." unless have_tcl_h
@@ -1591,7 +1600,7 @@ def find_X11(*opt_paths)
   defaults.compact.each{|path| paths.concat(Dir.glob(path.strip.chomp('/'), File::FNM_CASEFOLD))}
   st = find_library("X11", "XOpenDisplay", *paths)
   unless st
-    puts("Warning:: cannot find X11 library. tcltklib will not be compiled (tcltklib is disabled on your Ruby. That is, Ruby/Tk will not work). Please check configure options. If your Tcl/Tk don't require X11, please try --without-X11.")
+    puts("\n""Warning:: cannot find X11 library. tcltklib will not be compiled (tcltklib is disabled on your Ruby. That is, Ruby/Tk will not work). Please check configure options. If your Tcl/Tk don't require X11, please try --without-X11.")
   end
   st
 end
@@ -1656,9 +1665,9 @@ def pthread_check()
 
   if TclConfig_Info['config_file_path']
     if tcl_enable_thread == true
-      puts("Warning: definition of tclConfig.sh is ignored, because --enable-tcl-thread option is given.")
+      puts("\n""Warning: definition of tclConfig.sh is ignored, because --enable-tcl-thread option is given.")
     elsif tcl_enable_thread == false
-      puts("Warning: definition of tclConfig.sh is ignored, because --disable-tcl-thread option is given.")
+      puts("\n""Warning: definition of tclConfig.sh is ignored, because --disable-tcl-thread option is given.")
     else
       # tcl-thread is unknown and tclConfig.sh is given
       if TclConfig_Info['TCL_THREADS']
@@ -1674,9 +1683,9 @@ def pthread_check()
       if tcl_enable_thread == nil
         # cannot find definition
         if tcl_major_ver
-          puts("Warning: '#{TclConfig_Info['config_file_path']}' doesn't include TCL_THREADS definition.")
+          puts("\n""Warning: '#{TclConfig_Info['config_file_path']}' doesn't include TCL_THREADS definition.")
         else
-          puts("Warning: '#{TclConfig_Info['config_file_path']}' may not be a tclConfig file.")
+          puts("\n""Warning: '#{TclConfig_Info['config_file_path']}' may not be a tclConfig file.")
         end
         #tclConfig = false
       end
