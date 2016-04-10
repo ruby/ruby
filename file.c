@@ -3828,7 +3828,6 @@ rb_realpath_internal(VALUE basedir, VALUE path, int strict)
     char *ptr, *prefixptr = NULL, *pend;
     long len;
 
-    FilePathValue(path);
     unresolved_path = rb_str_dup_frozen(path);
 
     if (!NIL_P(basedir)) {
@@ -3915,6 +3914,7 @@ rb_file_s_realpath(int argc, VALUE *argv, VALUE klass)
 {
     VALUE path, basedir;
     rb_scan_args(argc, argv, "11", &path, &basedir);
+    FilePathValue(path);
     return rb_realpath_internal(basedir, path, 1);
 }
 
@@ -3935,6 +3935,7 @@ rb_file_s_realdirpath(int argc, VALUE *argv, VALUE klass)
 {
     VALUE path, basedir;
     rb_scan_args(argc, argv, "11", &path, &basedir);
+    FilePathValue(path);
     return rb_realpath_internal(basedir, path, 0);
 }
 

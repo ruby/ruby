@@ -1,3 +1,10 @@
+Sun Apr 10 17:47:42 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_realpath_internal): no argument conversions since
+	  this internal function does not need to_path and encoding
+	  conversions, not to be affected by the default internal
+	  encoding.
+
 Sat Apr  9 10:03:12 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* load.c (rb_f_load): raise with the original path name before
