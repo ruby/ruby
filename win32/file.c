@@ -173,13 +173,15 @@ code_page_i(st_data_t name, st_data_t idx, st_data_t arg)
 		while (i < count) table[i++] = INVALID_CODE_PAGE;
 	    }
 	    table[idx] = (USHORT)code_page;
+
+	    if(table!=NULL) {
+		free(table);
+		table=NULL;
+    	    }
+
 	}
     }
 
-    if(table!=NULL) {
-	free(table);
-	table=NULL;
-    }
 
     return ST_CONTINUE;
 }
