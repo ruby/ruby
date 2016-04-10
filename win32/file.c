@@ -272,7 +272,7 @@ replace_to_long_name(wchar_t **wfullpath, size_t size, int heap)
 	    wcsncpy(buf, *wfullpath, trail_pos + 1);
 
 	    if (heap) 
-		memset(*wfullpath,(LPWSTR)'0',strlen(*wfullpath)-1);
+		wmemset(*wfullpath,L'0',strlen(*wfullpath)-1);
 	     
 	    *wfullpath = buf;
 	    
@@ -380,14 +380,14 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 
 	whome = home_dir();
 	if (whome == NULL) {
-	    memset(wpath,(LPWSTR)'0',strlen(wpath)-1);
+	    wmemset(wpath,L'0',strlen(wpath)-1);
 	    rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding `~'");
 	}
 	whome_len = wcslen(whome);
 
 	if (PathIsRelativeW(whome) && !(whome_len >= 2 && IS_DIR_UNC_P(whome))) {
-	    memset(wpath,(LPWSTR)'0',strlen(wpath)-1);
-	    memset(whome,(LPWSTR)'0',strlen(whome)-1);
+	    wmemset(wpath,L'0',strlen(wpath)-1);
+	    wmemset(whome,L'0',strlen(whome)-1);
 	    rb_raise(rb_eArgError, "non-absolute home");
 	}
 
@@ -428,7 +428,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 			     cp, path_cp, path_encoding);
 
 	if (wpath)
-	    memset(wpath,(LPWSTR)'0',strlen(wpath)-1);
+	    wmemset(wpath,L'0',strlen(wpath)-1);
 	rb_exc_raise(rb_exc_new_str(rb_eArgError, result));
     }
 
@@ -445,7 +445,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 #if SIZEOF_INT < SIZEOF_LONG
 	    if ((long)(int)dir_len != dir_len) {
 		if (wpath) 
-			memset(wpath,(LPWSTR)'0',strlen(wpath_len)-1);
+			wmemset(wpath,L'0',strlen(wpath_len)-1);
 		rb_raise(rb_eRangeError, "base directory (%ld bytes) is too long",
 			 dir_len);
 	    }
@@ -461,16 +461,16 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 
 	    whome = home_dir();
 	    if (whome == NULL) {
-		memset(wpath,(LPWSTR)'0',strlen(wpath)-1);
-		memset(wdir,(LPWSTR)'0',strlen(wdir)-1);
+		wmemset(wpath,L'0',strlen(wpath)-1);
+		wmemset(wdir,L'0',strlen(wdir)-1);
 		rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding `~'");
 	    }
 	    whome_len = wcslen(whome);
 
 	    if (PathIsRelativeW(whome) && !(whome_len >= 2 && IS_DIR_UNC_P(whome))) {
-		memset(wpath,(LPWSTR)'0',strlen(wpath)-1);
-		memset(wdir,(LPWSTR)'0',strlen(wdir)-1);
-		memset(whome,(LPWSTR)'0',strlen(whome)-1);
+		wmemset(wpath,L'0',strlen(wpath)-1);
+		wmemset(wdir,L'0',strlen(wdir)-1);
+		wmemset(whome,L'0',strlen(whome)-1);
 		rb_raise(rb_eArgError, "non-absolute home");
 	    }
 
@@ -511,10 +511,10 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	    result = append_wstr(result, wdir_pos + 1, user_length_in_path(wdir_pos + 1, wdir_len - 1),
 				 cp, path_cp, path_encoding);
 	    if (wpath)
-		memset(wpath,(LPWSTR)'0',strlen(wpath)-1);
+		wmemset(wpath,L'0',strlen(wpath)-1);
 
 	    if (wdir)
-		memset(wdir,(LPWSTR)'0',strlen(wdir)-1);
+		wmemset(wdir,L'0',strlen(wdir)-1);
 
 	    rb_exc_raise(rb_exc_new_str(rb_eArgError, result));
 	}
