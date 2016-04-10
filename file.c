@@ -336,7 +336,7 @@ ignored_char_p(const char *p, const char *e, rb_encoding *enc)
 
 #define apply2args(n) (rb_check_arity(argc, n, UNLIMITED_ARGUMENTS), argc-=n)
 
-static long
+static VALUE
 apply2files(void (*func)(const char *, VALUE, void *), int argc, VALUE *argv, void *arg)
 {
     long i;
@@ -350,7 +350,7 @@ apply2files(void (*func)(const char *, VALUE, void *), int argc, VALUE *argv, vo
 	(*func)(s, path, arg);
     }
 
-    return argc;
+    return LONG2FIX(argc);
 }
 
 /*
@@ -2295,13 +2295,11 @@ static VALUE
 rb_file_s_chmod(int argc, VALUE *argv)
 {
     int mode;
-    long n;
 
     apply2args(1);
     mode = NUM2INT(*argv++);
 
-    n = apply2files(chmod_internal, argc, argv, &mode);
-    return LONG2FIX(n);
+    return apply2files(chmod_internal, argc, argv, &mode);
 }
 
 /*
@@ -2369,13 +2367,12 @@ lchmod_internal(const char *path, VALUE pathv, void *mode)
 static VALUE
 rb_file_s_lchmod(int argc, VALUE *argv)
 {
-    long mode, n;
+    long mode;
 
     apply2args(1);
     mode = NUM2INT(*argv++);
 
-    n = apply2files(lchmod_internal, argc, argv, (void *)(long)mode);
-    return LONG2FIX(n);
+    return apply2files(lchmod_internal, argc, argv, (void *)(long)mode);
 }
 #else
 #define rb_file_s_lchmod rb_f_notimplement
@@ -2431,14 +2428,12 @@ static VALUE
 rb_file_s_chown(int argc, VALUE *argv)
 {
     struct chown_args arg;
-    long n;
 
     apply2args(2);
     arg.owner = to_uid(*argv++);
     arg.group = to_gid(*argv++);
 
-    n = apply2files(chown_internal, argc, argv, &arg);
-    return LONG2FIX(n);
+    return apply2files(chown_internal, argc, argv, &arg);
 }
 
 /*
@@ -2506,14 +2501,12 @@ static VALUE
 rb_file_s_lchown(int argc, VALUE *argv)
 {
     struct chown_args arg;
-    long n;
 
     apply2args(2);
     arg.owner = to_uid(*argv++);
     arg.group = to_gid(*argv++);
 
-    n = apply2files(lchown_internal, argc, argv, &arg);
-    return LONG2FIX(n);
+    return apply2files(lchown_internal, argc, argv, &arg);
 }
 #else
 #define rb_file_s_lchown rb_f_notimplement
@@ -2638,7 +2631,6 @@ rb_file_s_utime(int argc, VALUE *argv)
 {
     struct utime_args args;
     struct timespec tss[2], *tsp = NULL;
-    long n;
 
     apply2args(2);
     args.atime = *argv++;
@@ -2654,8 +2646,7 @@ rb_file_s_utime(int argc, VALUE *argv)
     }
     args.tsp = tsp;
 
-    n = apply2files(utime_internal, argc, argv, &args);
-    return LONG2FIX(n);
+    return apply2files(utime_internal, argc, argv, &args);
 }
 
 #ifdef RUBY_FUNCTION_NAME_STRING
@@ -2822,10 +2813,7 @@ unlink_internal(const char *path, VALUE pathv, void *arg)
 static VALUE
 rb_file_s_unlink(int argc, VALUE *argv, VALUE klass)
 {
-    long n;
-
-    n = apply2files(unlink_internal, argc, argv, 0);
-    return LONG2FIX(n);
+    return apply2files(unlink_internal, argc, argv, 0);
 }
 
 /*
