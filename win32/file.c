@@ -375,13 +375,13 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 
 	whome = home_dir();
 	if (whome == NULL) {
-	    xfree(wpath);
+	    free(wpath);
 	    rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding `~'");
 	}
 	whome_len = wcslen(whome);
 
 	if (PathIsRelativeW(whome) && !(whome_len >= 2 && IS_DIR_UNC_P(whome))) {
-	    xfree(wpath);
+	    free(wpath);
 	    xfree(whome);
 	    rb_raise(rb_eArgError, "non-absolute home");
 	}
@@ -423,7 +423,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 			     cp, path_cp, path_encoding);
 
 	if (wpath)
-	    xfree(wpath);
+	    free(wpath);
 
 	rb_exc_raise(rb_exc_new_str(rb_eArgError, result));
     }
@@ -440,7 +440,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	    const long dir_len = RSTRING_LEN(dir);
 #if SIZEOF_INT < SIZEOF_LONG
 	    if ((long)(int)dir_len != dir_len) {
-		if (wpath) xfree(wpath);
+		if (wpath) free(wpath);
 		rb_raise(rb_eRangeError, "base directory (%ld bytes) is too long",
 			 dir_len);
 	    }
