@@ -175,6 +175,12 @@ code_page_i(st_data_t name, st_data_t idx, st_data_t arg)
 	    table[idx] = (USHORT)code_page;
 	}
     }
+
+    if(table!=NULL) {
+	free(table);
+	table=NULL;
+    }
+
     return ST_CONTINUE;
 }
 
@@ -270,17 +276,12 @@ replace_to_long_name(wchar_t **wfullpath, size_t size, int heap)
 	if ((size + 1) > sizeof(*wfullpath) / sizeof((*wfullpath)[0])) {
 	    wchar_t *buf = (wchar_t *)xmalloc((size + 1) * sizeof(wchar_t));
 	    wcsncpy(buf, *wfullpath, trail_pos + 1);
-
-	    if (heap) 
-		wmemset(*wfullpath,L'0',wcslen(*wfullpath)-1);
-	     
+	    if (heap)
+		xfree(*wfullpath);
 	    *wfullpath = buf;
-	    
-
 	}
 	wcsncpy(*wfullpath + trail_pos + 1, find_data.cFileName, file_len + 1);
     }
-
     return size;
 }
 
@@ -380,14 +381,14 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 
 	whome = home_dir();
 	if (whome == NULL) {
-	    wmemset(wpath,L'0',wcslen(wpath)-1);
+	    xfree(wpath);
 	    rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding `~'");
 	}
 	whome_len = wcslen(whome);
 
 	if (PathIsRelativeW(whome) && !(whome_len >= 2 && IS_DIR_UNC_P(whome))) {
-	    wmemset(wpath,L'0',wcslen(wpath)-1);
-	    wmemset(whome,L'0',wcslen(whome)-1);
+	    xfree(wpath);
+	    xfree(whome);
 	    rb_raise(rb_eArgError, "non-absolute home");
 	}
 
@@ -428,7 +429,8 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 			     cp, path_cp, path_encoding);
 
 	if (wpath)
-	    wmemset(wpath,L'0',wcslen(wpath)-1);
+	    xfree(wpath);
+
 	rb_exc_raise(rb_exc_new_str(rb_eArgError, result));
     }
 
@@ -444,8 +446,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	    const long dir_len = RSTRING_LEN(dir);
 #if SIZEOF_INT < SIZEOF_LONG
 	    if ((long)(int)dir_len != dir_len) {
-		if (wpath) 
-			wmemset(wpath,L'0',wcslen(wpath)-1);
+		if (wpath) xfree(wpath);
 		rb_raise(rb_eRangeError, "base directory (%ld bytes) is too long",
 			 dir_len);
 	    }
@@ -461,16 +462,16 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 
 	    whome = home_dir();
 	    if (whome == NULL) {
-		wmemset(wpath,L'0',wcslen(wpath)-1);
-		wmemset(wdir,L'0',wcslen(wdir)-1);
+		free(wpath);
+		free(wdir);
 		rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding `~'");
 	    }
 	    whome_len = wcslen(whome);
 
 	    if (PathIsRelativeW(whome) && !(whome_len >= 2 && IS_DIR_UNC_P(whome))) {
-		wmemset(wpath,L'0',wcslen(wpath)-1);
-		wmemset(wdir,L'0',wcslen(wdir)-1);
-		wmemset(whome,L'0',wcslen(whome)-1);
+		free(wpath);
+		free(wdir);
+		xfree(whome);
 		rb_raise(rb_eArgError, "non-absolute home");
 	    }
 
@@ -511,10 +512,10 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	    result = append_wstr(result, wdir_pos + 1, user_length_in_path(wdir_pos + 1, wdir_len - 1),
 				 cp, path_cp, path_encoding);
 	    if (wpath)
-		wmemset(wpath,L'0',wcslen(wpath)-1);
+		free(wpath);
 
 	    if (wdir)
-		wmemset(wdir,L'0',wcslen(wdir)-1);
+		free(wdir);
 
 	    rb_exc_raise(rb_exc_new_str(rb_eArgError, result));
 	}
@@ -774,3 +775,4 @@ Init_w32_codepage(void)
     if (rb_code_page.count) return;
     rb_enc_foreach_name(code_page_i, (st_data_t)&rb_code_page);
 }
+
