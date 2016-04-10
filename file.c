@@ -334,21 +334,23 @@ ignored_char_p(const char *p, const char *e, rb_encoding *enc)
 }
 #endif
 
+#define apply2args(n) (rb_check_arity(argc, n, UNLIMITED_ARGUMENTS), argc-=n)
+
 static long
-apply2files(void (*func)(const char *, VALUE, void *), VALUE vargs, void *arg)
+apply2files(void (*func)(const char *, VALUE, void *), int argc, VALUE *argv, void *arg)
 {
     long i;
     volatile VALUE path;
 
-    for (i=0; i<RARRAY_LEN(vargs); i++) {
+    for (i=0; i<argc; i++) {
 	const char *s;
-	path = rb_get_path(RARRAY_AREF(vargs, i));
+	path = rb_get_path(argv[i]);
 	path = rb_str_encode_ospath(path);
 	s = RSTRING_PTR(path);
 	(*func)(s, path, arg);
     }
 
-    return RARRAY_LEN(vargs);
+    return argc;
 }
 
 /*
@@ -2292,15 +2294,13 @@ chmod_internal(const char *path, VALUE pathv, void *mode)
 static VALUE
 rb_file_s_chmod(int argc, VALUE *argv)
 {
-    VALUE vmode;
-    VALUE rest;
     int mode;
     long n;
 
-    rb_scan_args(argc, argv, "1*", &vmode, &rest);
-    mode = NUM2INT(vmode);
+    apply2args(1);
+    mode = NUM2INT(*argv++);
 
-    n = apply2files(chmod_internal, rest, &mode);
+    n = apply2files(chmod_internal, argc, argv, &mode);
     return LONG2FIX(n);
 }
 
@@ -2369,14 +2369,12 @@ lchmod_internal(const char *path, VALUE pathv, void *mode)
 static VALUE
 rb_file_s_lchmod(int argc, VALUE *argv)
 {
-    VALUE vmode;
-    VALUE rest;
     long mode, n;
 
-    rb_scan_args(argc, argv, "1*", &vmode, &rest);
-    mode = NUM2INT(vmode);
+    apply2args(1);
+    mode = NUM2INT(*argv++);
 
-    n = apply2files(lchmod_internal, rest, (void *)(long)mode);
+    n = apply2files(lchmod_internal, argc, argv, (void *)(long)mode);
     return LONG2FIX(n);
 }
 #else
@@ -2432,15 +2430,14 @@ chown_internal(const char *path, VALUE pathv, void *arg)
 static VALUE
 rb_file_s_chown(int argc, VALUE *argv)
 {
-    VALUE o, g, rest;
     struct chown_args arg;
     long n;
 
-    rb_scan_args(argc, argv, "2*", &o, &g, &rest);
-    arg.owner = to_uid(o);
-    arg.group = to_gid(g);
+    apply2args(2);
+    arg.owner = to_uid(*argv++);
+    arg.group = to_gid(*argv++);
 
-    n = apply2files(chown_internal, rest, &arg);
+    n = apply2files(chown_internal, argc, argv, &arg);
     return LONG2FIX(n);
 }
 
@@ -2508,15 +2505,14 @@ lchown_internal(const char *path, VALUE pathv, void *arg)
 static VALUE
 rb_file_s_lchown(int argc, VALUE *argv)
 {
-    VALUE o, g, rest;
     struct chown_args arg;
     long n;
 
-    rb_scan_args(argc, argv, "2*", &o, &g, &rest);
-    arg.owner = to_uid(o);
-    arg.group = to_gid(g);
+    apply2args(2);
+    arg.owner = to_uid(*argv++);
+    arg.group = to_gid(*argv++);
 
-    n = apply2files(lchown_internal, rest, &arg);
+    n = apply2files(lchown_internal, argc, argv, &arg);
     return LONG2FIX(n);
 }
 #else
@@ -2640,12 +2636,13 @@ utime_internal(const char *path, VALUE pathv, void *arg)
 static VALUE
 rb_file_s_utime(int argc, VALUE *argv)
 {
-    VALUE rest;
     struct utime_args args;
     struct timespec tss[2], *tsp = NULL;
     long n;
 
-    rb_scan_args(argc, argv, "2*", &args.atime, &args.mtime, &rest);
+    apply2args(2);
+    args.atime = *argv++;
+    args.mtime = *argv++;
 
     if (!NIL_P(args.atime) || !NIL_P(args.mtime)) {
 	tsp = tss;
@@ -2657,7 +2654,7 @@ rb_file_s_utime(int argc, VALUE *argv)
     }
     args.tsp = tsp;
 
-    n = apply2files(utime_internal, rest, &args);
+    n = apply2files(utime_internal, argc, argv, &args);
     return LONG2FIX(n);
 }
 
@@ -2823,11 +2820,11 @@ unlink_internal(const char *path, VALUE pathv, void *arg)
  */
 
 static VALUE
-rb_file_s_unlink(VALUE klass, VALUE args)
+rb_file_s_unlink(int argc, VALUE *argv, VALUE klass)
 {
     long n;
 
-    n = apply2files(unlink_internal, args, 0);
+    n = apply2files(unlink_internal, argc, argv, 0);
     return LONG2FIX(n);
 }
 
@@ -5947,8 +5944,8 @@ Init_File(void)
     rb_define_singleton_method(rb_cFile, "symlink", rb_file_s_symlink, 2);
     rb_define_singleton_method(rb_cFile, "readlink", rb_file_s_readlink, 1);
 
-    rb_define_singleton_method(rb_cFile, "unlink", rb_file_s_unlink, -2);
-    rb_define_singleton_method(rb_cFile, "delete", rb_file_s_unlink, -2);
+    rb_define_singleton_method(rb_cFile, "unlink", rb_file_s_unlink, -1);
+    rb_define_singleton_method(rb_cFile, "delete", rb_file_s_unlink, -1);
     rb_define_singleton_method(rb_cFile, "rename", rb_file_s_rename, 2);
     rb_define_singleton_method(rb_cFile, "umask", rb_file_s_umask, -1);
     rb_define_singleton_method(rb_cFile, "truncate", rb_file_s_truncate, 2);
