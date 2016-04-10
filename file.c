@@ -3644,14 +3644,8 @@ rb_file_expand_path_fast(VALUE fname, VALUE dname)
 VALUE
 rb_file_s_expand_path(int argc, const VALUE *argv)
 {
-    VALUE fname, dname;
-
-    if (argc == 1) {
-	return rb_file_expand_path(argv[0], Qnil);
-    }
-    rb_scan_args(argc, argv, "11", &fname, &dname);
-
-    return rb_file_expand_path(fname, dname);
+    rb_check_arity(argc, 1, 2);
+    return rb_file_expand_path(argv[0], argc > 1 ? argv[1] : Qnil);
 }
 
 VALUE
@@ -3677,14 +3671,8 @@ rb_file_absolute_path(VALUE fname, VALUE dname)
 VALUE
 rb_file_s_absolute_path(int argc, const VALUE *argv)
 {
-    VALUE fname, dname;
-
-    if (argc == 1) {
-	return rb_file_absolute_path(argv[0], Qnil);
-    }
-    rb_scan_args(argc, argv, "11", &fname, &dname);
-
-    return rb_file_absolute_path(fname, dname);
+    rb_check_arity(argc, 1, 2);
+    return rb_file_absolute_path(argv[0], argc > 1 ? argv[1] : Qnil);
 }
 
 static void
@@ -3897,8 +3885,8 @@ rb_realpath_internal(VALUE basedir, VALUE path, int strict)
 static VALUE
 rb_file_s_realpath(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE path, basedir;
-    rb_scan_args(argc, argv, "11", &path, &basedir);
+    VALUE basedir = (rb_check_arity(argc, 1, 2) > 1) ? argv[1] : Qnil;
+    VALUE path = argv[0];
     FilePathValue(path);
     return rb_realpath_internal(basedir, path, 1);
 }
@@ -3918,8 +3906,8 @@ rb_file_s_realpath(int argc, VALUE *argv, VALUE klass)
 static VALUE
 rb_file_s_realdirpath(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE path, basedir;
-    rb_scan_args(argc, argv, "11", &path, &basedir);
+    VALUE basedir = (rb_check_arity(argc, 1, 2) > 1) ? argv[1] : Qnil;
+    VALUE path = argv[0];
     FilePathValue(path);
     return rb_realpath_internal(basedir, path, 0);
 }
@@ -4048,10 +4036,13 @@ rb_file_s_basename(int argc, VALUE *argv)
     long f, n;
     rb_encoding *enc;
 
-    if (rb_scan_args(argc, argv, "11", &fname, &fext) == 2) {
+    fext = Qnil;
+    if (rb_check_arity(argc, 1, 2) == 2) {
+	fext = argv[1];
 	StringValue(fext);
 	enc = check_path_encoding(fext);
     }
+    fname = argv[0];
     FilePathStringValue(fname);
     if (NIL_P(fext) || !(enc = rb_enc_compatible(fname, fext))) {
 	enc = rb_enc_get(fname);
