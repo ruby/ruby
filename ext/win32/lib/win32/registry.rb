@@ -333,11 +333,11 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
       end
 
       def DeleteValue(hkey, name)
-        check RegDeleteValue.call(hkey, make_wstr(name))
+        check RegDeleteValueW.call(hkey, make_wstr(name))
       end
 
       def DeleteKey(hkey, name)
-        check RegDeleteKey.call(hkey, make_wstr(name))
+        check RegDeleteKeyW.call(hkey, make_wstr(name))
       end
 
       def FlushKey(hkey)

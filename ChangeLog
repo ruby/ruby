@@ -1,3 +1,8 @@
+Sun Apr 10 20:54:16 2016  Joe Swatosh  <joe.swatosh@gmail.com>
+
+	* ext/win32/lib/win32/registry.rb (DeleteValue, DeleteKey): fix
+	  API names.  [ruby-core:74863] [Bug #12264]
+
 Sun Apr 10 17:47:42 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_realpath_internal): no argument conversions since
