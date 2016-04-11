@@ -74,7 +74,7 @@ class TestIterator < Test::Unit::TestCase
   def test_break
     done = true
     loop{
-      break
+      break if true
       done = false			# should not reach here
     }
     assert(done)
@@ -84,7 +84,7 @@ class TestIterator < Test::Unit::TestCase
     loop {
       break if done
       done = true
-      next
+      next if true
       bad = true			# should not reach here
     }
     assert(!bad)
@@ -94,7 +94,7 @@ class TestIterator < Test::Unit::TestCase
     loop {
       break if done
       done = true
-      redo
+      redo if true
       bad = true			# should not reach here
     }
     assert(!bad)
