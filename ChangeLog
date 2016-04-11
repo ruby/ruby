@@ -268,7 +268,7 @@ Thu Mar 31 16:49:36 2016  Koichi Sasada  <ko1@atdot.net>
 	* gc.c: simplify allocate/free detecting logic at the end of marking.
 
 	  Before this change, heap_pages_min_slots are calculated at the
-	  beggining sweeping phase. And this value is used at the end of
+	  beginning sweeping phase. And this value is used at the end of
 	  *next* marking phase.
 
 	  To simplify it, we use this value at the end of this marking phase.
@@ -493,7 +493,7 @@ Mon Mar 28 11:02:31 2016  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 Mon Mar 28 08:19:49 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sprintf.c (rb_str_format): refactor floating point format of
-	  Rational by using gereric Integer functions.
+	  Rational by using generic Integer functions.
 
 	* sprintf.c (rb_str_format): fix buffer overflow, length must be
 	  greater than precision.  reported by William Bowling <will AT
@@ -502,7 +502,7 @@ Mon Mar 28 08:19:49 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Sun Mar 27 12:13:37 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sprintf.c (rb_str_format): convert Rational to floating point
-	  format by using gereric Integer functions, not by methods which
+	  format by using generic Integer functions, not by methods which
 	  can be overwritten.
 
 Sat Mar 26 10:55:12 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
