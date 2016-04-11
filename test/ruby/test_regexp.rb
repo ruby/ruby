@@ -111,8 +111,10 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal('#<MatchData "&amp; y" foo:"amp" foo:"y">',
       /&(?<foo>.*?); (?<foo>y)/.match("aaa &amp; yyy").inspect)
 
-    /(?<id>[A-Za-z_]+)/ =~ "!abc"
-    assert_equal("abc", Regexp.last_match(:id))
+    /(?<_id>[A-Za-z_]+)/ =~ "!abc"
+    assert_not_nil(Regexp.last_match)
+    assert_equal("abc", Regexp.last_match(1))
+    assert_equal("abc", Regexp.last_match(:_id))
 
     /a/ =~ "b" # doesn't match.
     assert_equal(nil, Regexp.last_match)
