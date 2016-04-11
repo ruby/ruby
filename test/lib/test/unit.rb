@@ -887,7 +887,7 @@ module Test
               nil
             else
               instance ||= new({})
-              instance.instance_eval(src)
+              instance.instance_eval(src, path)
             end
           end
           instance
