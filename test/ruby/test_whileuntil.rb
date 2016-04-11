@@ -61,7 +61,7 @@ class TestWhileuntil < Test::Unit::TestCase
 
       tmp = open(tmpfilename, "r")
       while line = tmp.gets()
-        break if 3
+        break if $. == 3
         assert_no_match(/vt100/, line)
         assert_no_match(/Amiga/, line)
         assert_no_match(/paper/, line)
