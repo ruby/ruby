@@ -432,7 +432,6 @@ class TestRubyOptions < Test::Unit::TestCase
           end
 
           a.for("false directives after #{b}") do
-            err = ["#{t.path}:4: warning: mismatched indentations at '#{e}' with '#{k}' at 2"]
             t.rewind
             t.truncate(0)
             t.puts "# -*- warn-indent: true -*-"
