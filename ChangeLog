@@ -1,3 +1,8 @@
+Mon Apr 11 20:18:43 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_backtrace.c (frame2klass): filter only for imemo_ment.
+	  T_IMEMO/imemo_iseq can be passed here.
+
 Mon Apr 11 17:43:04 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (iseq_optimize): disable tail call optimization in

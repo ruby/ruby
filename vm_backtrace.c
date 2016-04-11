@@ -1344,12 +1344,12 @@ frame2klass(VALUE frame)
 
     if (RB_TYPE_P(frame, T_IMEMO)) {
 	const rb_callable_method_entry_t *cme = (rb_callable_method_entry_t *)frame;
-	VM_ASSERT(imemo_type(frame) == imemo_ment);
-	return cme->defined_class;
+
+	if (imemo_type(frame) == imemo_ment) {
+	    return cme->defined_class;
+	}
     }
-    else {
-	return Qnil;
-    }
+    return Qnil;
 }
 
 VALUE
