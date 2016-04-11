@@ -29,7 +29,7 @@ class TestCoverage < Test::Unit::TestCase
       Dir.chdir(tmp) {
         File.open("test.rb", "w") do |f|
           f.puts <<-EOS
-            def coverage_test_method
+            def TestCoverage.coverage_test_snapshot
               :ok
             end
           EOS
@@ -38,7 +38,7 @@ class TestCoverage < Test::Unit::TestCase
         Coverage.start
         require tmp + '/test.rb'
         cov = Coverage.peek_result[tmp + '/test.rb']
-        coverage_test_method
+        TestCoverage.coverage_test_snapshot
         cov2 = Coverage.peek_result[tmp + '/test.rb']
         assert_equal cov[1] + 1, cov2[1]
         assert_equal cov2, Coverage.result[tmp + '/test.rb']
@@ -55,7 +55,7 @@ class TestCoverage < Test::Unit::TestCase
       Dir.chdir(tmp) {
         File.open("test.rb", "w") do |f|
           f.puts <<-EOS
-            def coverage_test_method
+            def TestCoverage.coverage_test_restarting
               :ok
             end
           EOS
@@ -63,7 +63,7 @@ class TestCoverage < Test::Unit::TestCase
 
         File.open("test2.rb", "w") do |f|
           f.puts <<-EOS
-            1 + 2
+            itself
           EOS
         end
 
@@ -75,7 +75,7 @@ class TestCoverage < Test::Unit::TestCase
         # Restart coverage but '/test.rb' is required before restart,
         # so coverage is not recorded.
         Coverage.start
-        coverage_test_method
+        TestCoverage.coverage_test_restarting
         assert_equal({}, Coverage.result)
 
         # Restart coverage and '/test2.rb' is required after restart,
