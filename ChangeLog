@@ -1,3 +1,9 @@
+Mon Apr 11 17:43:04 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_optimize): disable tail call optimization in
+	  rescued, rescue, and ensure blocks.
+	  [ruby-core:73871] [Bug #12082]
+
 Mon Apr 11 06:54:39 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (apply2files): apply to a VALUE vector instead of a

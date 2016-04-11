@@ -295,6 +295,30 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_equal(:ok, yield_result)
   end
 
+  def do_raise
+    raise "should be rescued"
+  end
+
+  def errinfo
+    $!
+  end
+
+  def test_tailcall_inhibited_by_rescue
+    bug12082 = '[ruby-core:73871] [Bug #12082]'
+
+    tailcall(<<-'end;')
+      def to_be_rescued
+        return do_raise
+        1 + 2
+      rescue
+        errinfo
+      end
+    end;
+    result = to_be_rescued
+    assert_instance_of(RuntimeError, result, bug12082)
+    assert_equal("should be rescued", result.message, bug12082)
+  end
+
   class Bug10557
     def [](_)
       block_given?
