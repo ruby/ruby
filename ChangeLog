@@ -1,3 +1,8 @@
+Tue Apr 12 11:51:18 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (new_label_body): initialize bit fields, since
+	  compile_data_alloc does not clear the memory.  [Bug #12082]
+
 Mon Apr 11 20:18:43 2016  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_backtrace.c (frame2klass): filter only for imemo_ment.
