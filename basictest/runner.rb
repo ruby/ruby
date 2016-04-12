@@ -17,7 +17,7 @@ $stderr.reopen($stdout)
 error = ''
 
 srcdir = File.expand_path('..', File.dirname(__FILE__))
-`#{ruby} #{opt} #{srcdir}/basictest/test.rb #{ARGV.join(' ')}`.each_line do |line|
+`#{ruby} #{opt} -W1 #{srcdir}/basictest/test.rb #{ARGV.join(' ')}`.each_line do |line|
   if line =~ /^end of test/
     print "\ntest succeeded\n"
     exit true
