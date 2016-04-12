@@ -1,3 +1,8 @@
+Tue Apr 12 20:40:35 2016  Kaneko Yuichiro  <spiketeika@gmail.com>
+
+	* ext/date/date_core.c (time_to_time): should preserve timezone
+	  info.  [ruby-core:74889] [Bug #12271]
+
 Tue Apr 12 11:51:18 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (new_label_body): initialize bit fields, since

@@ -8406,12 +8406,12 @@ dt_lite_jisx0301(int argc, VALUE *argv, VALUE self)
  * call-seq:
  *    t.to_time  ->  time
  *
- * Returns a copy of self as local mode.
+ * Returns self.
  */
 static VALUE
 time_to_time(VALUE self)
 {
-    return f_getlocal(self);
+    return self;
 }
 
 /*
