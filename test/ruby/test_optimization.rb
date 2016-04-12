@@ -30,6 +30,10 @@ class TestRubyOptimization < Test::Unit::TestCase
     end;
   end
 
+  def disasm(name)
+    RubyVM::InstructionSequence.of(method(name)).disasm
+  end
+
   def test_fixnum_plus
     a, b = 1, 2
     assert_equal 3, a + b
@@ -262,7 +266,7 @@ class TestRubyOptimization < Test::Unit::TestCase
         fact_helper(n, 1)
       end
     EOF
-    assert_equal(9131, fact(3000).to_s.size, bug4082)
+    assert_equal(9131, fact(3000).to_s.size, message(bug4082) {disasm(:fact_helper)})
   end
 
   def test_tailcall_with_block
@@ -279,7 +283,7 @@ class TestRubyOptimization < Test::Unit::TestCase
         }
       end
     EOF
-    assert_equal(123, delay { 123 }.call, bug6901)
+    assert_equal(123, delay { 123 }.call, message(bug6901) {disasm(:delay)})
   end
 
   def just_yield
@@ -292,7 +296,7 @@ class TestRubyOptimization < Test::Unit::TestCase
         just_yield {:ok}
       end
     EOF
-    assert_equal(:ok, yield_result)
+    assert_equal(:ok, yield_result, message {disasm(:yield_result)})
   end
 
   def do_raise
@@ -314,7 +318,9 @@ class TestRubyOptimization < Test::Unit::TestCase
         errinfo
       end
     end;
-    result = to_be_rescued
+    result = assert_nothing_raised(RuntimeError, message(bug12082) {disasm(:to_be_rescued)}) {
+      to_be_rescued
+    }
     assert_instance_of(RuntimeError, result, bug12082)
     assert_equal("should be rescued", result.message, bug12082)
   end
