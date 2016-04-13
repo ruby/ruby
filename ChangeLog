@@ -1,3 +1,8 @@
+Wed Apr 13 14:36:24 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (assign_in_cond): allow multiple assignment in
+	  conditional expression.  [Feature #10617]
+
 Wed Apr 13 14:11:59 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bignum.c (rb_big_size): add wrapper function of BIGSIZE and

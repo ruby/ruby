@@ -781,7 +781,7 @@ x = __ENCODING__
   end
 
   def test_assign_in_conditional
-    assert_raise(SyntaxError) do
+    assert_nothing_raised do
       eval <<-END, nil, __FILE__, __LINE__+1
         (x, y = 1, 2) ? 1 : 2
       END

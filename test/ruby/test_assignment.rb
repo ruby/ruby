@@ -552,6 +552,11 @@ class TestAssignment < Test::Unit::TestCase
     a, b = Base::A, Base::B
     assert_equal [3,4], [a,b]
   end
+
+  def test_massign_in_cond
+    result = eval("if (a, b = MyObj.new); [a, b]; end", nil, __FILE__, __LINE__)
+    assert_equal [[1,2],[3,4]], result
+  end
 end
 
 require_relative 'sentence'

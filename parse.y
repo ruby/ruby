@@ -9785,9 +9785,6 @@ assign_in_cond(struct parser_params *parser, NODE *node)
 {
     switch (nd_type(node)) {
       case NODE_MASGN:
-	yyerror("multiple assignment in conditional");
-	return 1;
-
       case NODE_LASGN:
       case NODE_DASGN:
       case NODE_DASGN_CURR:

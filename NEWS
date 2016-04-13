@@ -14,6 +14,9 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 === Language changes
 
+* Multiple assignment in conditional expression is now allowed.
+  [Feature #10617]
+
 === Core classes updates (outstanding ones only)
 
 * Array
