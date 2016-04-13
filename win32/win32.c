@@ -5920,23 +5920,21 @@ rb_w32_getppid(void)
     static query_func *pNtQueryInformationProcess = NULL;
     rb_pid_t ppid = 0;
 
-    if (rb_w32_osver() >= 5) {
-	if (!pNtQueryInformationProcess)
-	    pNtQueryInformationProcess = (query_func *)get_proc_address("ntdll.dll", "NtQueryInformationProcess", NULL);
-	if (pNtQueryInformationProcess) {
-	    struct {
-		long ExitStatus;
-		void* PebBaseAddress;
-		uintptr_t AffinityMask;
-		uintptr_t BasePriority;
-		uintptr_t UniqueProcessId;
-		uintptr_t ParentProcessId;
-	    } pbi;
-	    ULONG len;
-	    long ret = pNtQueryInformationProcess(GetCurrentProcess(), 0, &pbi, sizeof(pbi), &len);
-	    if (!ret) {
-		ppid = pbi.ParentProcessId;
-	    }
+    if (!pNtQueryInformationProcess)
+	pNtQueryInformationProcess = (query_func *)get_proc_address("ntdll.dll", "NtQueryInformationProcess", NULL);
+    if (pNtQueryInformationProcess) {
+	struct {
+	    long ExitStatus;
+	    void* PebBaseAddress;
+	    uintptr_t AffinityMask;
+	    uintptr_t BasePriority;
+	    uintptr_t UniqueProcessId;
+	    uintptr_t ParentProcessId;
+	} pbi;
+	ULONG len;
+	long ret = pNtQueryInformationProcess(GetCurrentProcess(), 0, &pbi, sizeof(pbi), &len);
+	if (!ret) {
+	    ppid = pbi.ParentProcessId;
 	}
     }
 
