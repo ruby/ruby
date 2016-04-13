@@ -4766,25 +4766,12 @@ reparse_symlink(const WCHAR *path, rb_w32_reparse_buffer_t *rp, size_t size)
     DWORD ret;
     int e = 0;
 
-    typedef BOOL (WINAPI *device_io_control_func)(HANDLE, DWORD, LPVOID,
-						  DWORD, LPVOID, DWORD,
-						  LPDWORD, LPOVERLAPPED);
-    static device_io_control_func device_io_control = (device_io_control_func)-1;
-
-    if (device_io_control == (device_io_control_func)-1) {
-	device_io_control = (device_io_control_func)
-	    get_proc_address("kernel32", "DeviceIoControl", NULL);
-    }
-    if (!device_io_control) {
-	return ENOSYS;
-    }
-
     f = open_special(path, 0, FILE_FLAG_OPEN_REPARSE_POINT);
     if (f == INVALID_HANDLE_VALUE) {
 	return GetLastError();
     }
 
-    if (!device_io_control(f, FSCTL_GET_REPARSE_POINT, NULL, 0,
+    if (!DeviceIoControl(f, FSCTL_GET_REPARSE_POINT, NULL, 0,
 			   rp, size, &ret, NULL)) {
 	e = GetLastError();
     }
