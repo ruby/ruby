@@ -110,6 +110,7 @@ static VALUE fix_rshift(long, unsigned long);
 static VALUE int_pow(long x, unsigned long y);
 static VALUE int_cmp(VALUE x, VALUE y);
 static VALUE flo_truncate(VALUE num);
+static int float_invariant_round(double number, int ndigits, VALUE *num);
 
 static ID id_coerce, id_div, id_divmod;
 #define id_to_i idTo_i
@@ -1840,8 +1841,6 @@ flo_round(int argc, VALUE *argv, VALUE num)
 {
     double number, f;
     int ndigits = 0;
-    int binexp;
-    enum {float_dig = DBL_DIG+2};
 
     if (rb_check_arity(argc, 0, 1)) {
 	ndigits = NUM2INT(argv[0]);
@@ -1853,6 +1852,17 @@ flo_round(int argc, VALUE *argv, VALUE num)
     if (ndigits == 0) {
 	return dbl2ival(round(number));
     }
+    if (float_invariant_round(number, ndigits, &num)) return num;
+    f = pow(10, ndigits);
+    return DBL2NUM(round(number * f) / f);
+}
+
+static int
+float_invariant_round(double number, int ndigits, VALUE *num)
+{
+    enum {float_dig = DBL_DIG+2};
+    int binexp;
+
     frexp(number, &binexp);
 
 /* Let `exp` be such that `number` is written as:"0.#{digits}e#{exp}",
@@ -1874,13 +1884,13 @@ flo_round(int argc, VALUE *argv, VALUE num)
 */
     if (isinf(number) || isnan(number) ||
 	(ndigits >= float_dig - (binexp > 0 ? binexp / 4 : binexp / 3 - 1))) {
-	return num;
+	return TRUE;
     }
     if (ndigits < - (binexp > 0 ? binexp / 3 + 1 : binexp / 4)) {
-	return DBL2NUM(0);
+	*num = DBL2NUM(0);
+	return TRUE;
     }
-    f = pow(10, ndigits);
-    return DBL2NUM(round(number * f) / f);
+    return FALSE;
 }
 
 /*
