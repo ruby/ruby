@@ -111,6 +111,7 @@ static VALUE int_pow(long x, unsigned long y);
 static VALUE int_cmp(VALUE x, VALUE y);
 static int int_round_zero_p(VALUE num, int ndigits);
 VALUE rb_int_floor(VALUE num, int ndigits);
+VALUE rb_int_ceil(VALUE num, int ndigits);
 static VALUE flo_truncate(VALUE num);
 static int float_invariant_round(double number, int ndigits, VALUE *num);
 
@@ -1842,6 +1843,30 @@ rb_int_floor(VALUE num, int ndigits)
 	return INT2FIX(0);
     }
     return rb_int_minus(num, rb_int_modulo(num, f));
+}
+
+VALUE
+rb_int_ceil(VALUE num, int ndigits)
+{
+    VALUE f;
+
+    if (int_round_zero_p(num, ndigits))
+	return INT2FIX(0);
+    f = int_pow(10, -ndigits);
+    if (FIXNUM_P(num) && FIXNUM_P(f)) {
+	SIGNED_VALUE x = FIX2LONG(num), y = FIX2LONG(f);
+	int neg = x < 0;
+	if (neg) x = -x;
+	else x += y - 1;
+	x = (x / y) * y;
+	if (neg) x = -x;
+	return LONG2NUM(x);
+    }
+    if (RB_TYPE_P(f, T_FLOAT)) {
+	/* then int_pow overflow */
+	return INT2FIX(0);
+    }
+    return rb_int_plus(num, rb_int_minus(f, rb_int_modulo(num, f)));
 }
 
 /*
@@ -4225,6 +4250,37 @@ int_floor(int argc, VALUE* argv, VALUE num)
 }
 
 /*
+ *  call-seq:
+ *     int.ceil([ndigits])  ->  integer or float
+ *
+ *  Returns the smallest number than or equal to +int+ in decimal
+ *  digits (default 0 digits).
+ *
+ *  Precision may be negative.  Returns a floating point number when +ndigits+
+ *  is positive, +self+ for zero, and ceil up for negative.
+ *
+ *     1.ceil        #=> 1
+ *     1.ceil(2)     #=> 1.0
+ *     15.ceil(-1)   #=> 20
+ */
+
+static VALUE
+int_ceil(int argc, VALUE* argv, VALUE num)
+{
+    int ndigits;
+
+    if (!rb_check_arity(argc, 0, 1)) return num;
+    ndigits = NUM2INT(argv[0]);
+    if (ndigits > 0) {
+	return rb_Float(num);
+    }
+    if (ndigits == 0) {
+	return num;
+    }
+    return rb_int_ceil(num, ndigits);
+}
+
+/*
  *  Document-class: ZeroDivisionError
  *
  *  Raised when attempting to divide an integer by 0.
@@ -4395,7 +4451,7 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, "to_int", int_to_i, 0);
     rb_define_method(rb_cInteger, "to_f", int_to_f, 0);
     rb_define_method(rb_cInteger, "floor", int_floor, -1);
-    rb_define_method(rb_cInteger, "ceil", int_to_i, 0);
+    rb_define_method(rb_cInteger, "ceil", int_ceil, -1);
     rb_define_method(rb_cInteger, "truncate", int_to_i, 0);
     rb_define_method(rb_cInteger, "round", int_round, -1);
     rb_define_method(rb_cInteger, "<=>", int_cmp, 1);

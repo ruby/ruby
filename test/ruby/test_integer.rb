@@ -224,6 +224,31 @@ class TestInteger < Test::Unit::TestCase
     assert_int_equal(-1111_1111_1111_1111_1111_1111_1111_1120, (-1111_1111_1111_1111_1111_1111_1111_1111).floor(-1))
   end
 
+  def test_ceil
+    assert_int_equal(11111, 11111.ceil)
+    assert_int_equal(11111, 11111.ceil(0))
+
+    assert_float_equal(11111.0, 11111.ceil(1))
+    assert_float_equal(11111.0, 11111.ceil(2))
+
+    assert_int_equal(11110, 11110.ceil(-1))
+    assert_int_equal(11120, 11119.ceil(-1))
+    assert_int_equal(11200, 11101.ceil(-2))
+    assert_int_equal(11200, 11200.ceil(-2))
+    assert_int_equal(100000, 11111.ceil(-5))
+    assert_int_equal(300, 299.ceil(-2))
+    assert_int_equal(300, 300.ceil(-2))
+    assert_int_equal(-200, -299.ceil(-2))
+    assert_int_equal(-300, -300.ceil(-2))
+    assert_int_equal(+30 * 10**70, (+25 * 10**70).ceil(-71))
+    assert_int_equal(-20 * 10**70, (-25 * 10**70).ceil(-71))
+    assert_int_equal(+30 * 10**70, (+25 * 10**70 - 1).ceil(-71))
+    assert_int_equal(-20 * 10**70, (-25 * 10**70 + 1).ceil(-71))
+
+    assert_int_equal(1111_1111_1111_1111_1111_1111_1111_1120, 1111_1111_1111_1111_1111_1111_1111_1111.ceil(-1))
+    assert_int_equal(-1111_1111_1111_1111_1111_1111_1111_1110, (-1111_1111_1111_1111_1111_1111_1111_1111).ceil(-1))
+  end
+
   def test_bitwise_and_with_integer_mimic_object
     def (obj = Object.new).to_int
       10
