@@ -1,3 +1,13 @@
+Wed Apr 13 22:51:38 2016  Tanaka Akira  <akr@fsij.org>
+
+	* array.c (rb_ary_sum): Array#sum is implemented.
+	  Kahan's compensated summation algorithm for precise sum of float
+	  numbers is moved from ary_inject_op in enum.c.
+
+	* enum.c (ary_inject_op): Don't specialize for float numbers.
+
+	  [ruby-core:74569] [Feature#12217] proposed by mrkn.
+
 Wed Apr 13 15:56:35 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (flo_ceil): add an optional parameter, digits, as

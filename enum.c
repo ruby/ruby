@@ -634,7 +634,6 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
     ID id;
     VALUE v, e;
     long i, n;
-    double f, c;
 
     if (RARRAY_LEN(ary) == 0)
         return init == Qundef ? Qnil : init;
@@ -656,7 +655,7 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
              rb_method_basic_definition_p(rb_cFixnum, idPLUS) &&
              rb_method_basic_definition_p(rb_cBignum, idPLUS)) {
             n = 0;
-            while (1) {
+            for (; i < RARRAY_LEN(ary); i++) {
                 e = RARRAY_AREF(ary, i);
                 if (FIXNUM_P(e)) {
                     n += FIX2LONG(e); /* should not overflow long type */
@@ -668,49 +667,18 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
                 else if (RB_TYPE_P(e, T_BIGNUM))
                     v = rb_big_plus(e, v);
                 else
-                    break;
-                i++;
-                if (RARRAY_LEN(ary) <= i)
-                    return n == 0 ? v : rb_fix_plus(LONG2FIX(n), v);
+                    goto not_integer;
             }
-            if (n != 0) {
+            if (n != 0)
                 v = rb_fix_plus(LONG2FIX(n), v);
-            }
-            if (RB_FLOAT_TYPE_P(e) &&
-                rb_method_basic_definition_p(rb_cFloat, idPLUS)) {
-                f = NUM2DBL(v);
-                goto sum_float;
-            }
-        }
-        else if (RB_FLOAT_TYPE_P(v) &&
-                 rb_method_basic_definition_p(rb_cFloat, idPLUS)) {
-            f = RFLOAT_VALUE(v);
-          sum_float:
-            c = 0.0;
-            while (1) {
-                double x, y, t;
-                e = RARRAY_AREF(ary, i);
-                if (RB_FLOAT_TYPE_P(e))
-                    x = RFLOAT_VALUE(e);
-                else if (FIXNUM_P(e))
-                    x = FIX2LONG(e);
-                else if (RB_TYPE_P(e, T_BIGNUM))
-                    x = rb_big2dbl(e);
-                else
-                    break;
+            return v;
 
-                y = x - c;
-                t = f + y;
-                c = (t - f) - y;
-                f = t;
-
-                i++;
-                if (RARRAY_LEN(ary) <= i)
-                    return DBL2NUM(f);
-            }
+          not_integer:
+            if (n != 0)
+                v = rb_fix_plus(LONG2FIX(n), v);
         }
     }
-    for (; i<RARRAY_LEN(ary); i++) {
+    for (; i < RARRAY_LEN(ary); i++) {
         v = rb_funcall(v, id, 1, RARRAY_AREF(ary, i));
     }
     return v;

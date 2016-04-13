@@ -5651,6 +5651,92 @@ rb_ary_dig(int argc, VALUE *argv, VALUE self)
 }
 
 /*
+ * call-seq:
+ *   ary.sum                 -> number
+ *
+ * Returns the sum of elements.
+ * For example, [e1, e2, e3].sum returns 0 + e1 + e2 + e3.
+ *
+ * If <i>ary</i> is empty, it returns 0.
+ *
+ * [].sum                       #=> 0
+ * [1, 2, 3].sum                #=> 6
+ * [3, 5.5].sum                 #=> 8.5
+ *
+ * This method may not respect method redefinition of "+" methods
+ * such as Fixnum#+.
+ *
+ */
+
+VALUE
+rb_ary_sum(VALUE ary)
+{
+    VALUE v, e;
+    long i, n;
+
+    if (RARRAY_LEN(ary) == 0)
+        return LONG2FIX(0);
+
+    v = LONG2FIX(0);
+
+    n = 0;
+    for (i = 0; i < RARRAY_LEN(ary); i++) {
+        e = RARRAY_AREF(ary, i);
+        if (FIXNUM_P(e)) {
+            n += FIX2LONG(e); /* should not overflow long type */
+            if (!FIXABLE(n)) {
+                v = rb_big_plus(LONG2NUM(n), v);
+                n = 0;
+            }
+        }
+        else if (RB_TYPE_P(e, T_BIGNUM))
+            v = rb_big_plus(e, v);
+        else
+            goto not_integer;
+    }
+    if (n != 0)
+        v = rb_fix_plus(LONG2FIX(n), v);
+    return v;
+
+  not_integer:
+    if (n != 0)
+        v = rb_fix_plus(LONG2FIX(n), v);
+
+    if (RB_FLOAT_TYPE_P(e)) {
+        /* Kahan's compensated summation algorithm */
+        double f, c;
+        f = NUM2DBL(v);
+        c = 0.0;
+        for (; i < RARRAY_LEN(ary); i++) {
+            double x, y, t;
+            e = RARRAY_AREF(ary, i);
+            if (RB_FLOAT_TYPE_P(e))
+                x = RFLOAT_VALUE(e);
+            else if (FIXNUM_P(e))
+                x = FIX2LONG(e);
+            else if (RB_TYPE_P(e, T_BIGNUM))
+                x = rb_big2dbl(e);
+            else
+                goto not_float;
+
+            y = x - c;
+            t = f + y;
+            c = (t - f) - y;
+            f = t;
+        }
+        return DBL2NUM(f);
+
+      not_float:
+        v = DBL2NUM(f);
+    }
+
+    for (; i < RARRAY_LEN(ary); i++) {
+        v = rb_funcall(v, idPLUS, 1, RARRAY_AREF(ary, i));
+    }
+    return v;
+}
+
+/*
  *  Arrays are ordered, integer-indexed collections of any object.
  *
  *  Array indexing starts at 0, as in C or Java.  A negative index is assumed
@@ -6005,6 +6091,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "bsearch_index", rb_ary_bsearch_index, 0);
     rb_define_method(rb_cArray, "any?", rb_ary_any_p, 0);
     rb_define_method(rb_cArray, "dig", rb_ary_dig, -1);
+    rb_define_method(rb_cArray, "sum", rb_ary_sum, 0);
 
     id_cmp = rb_intern("<=>");
     id_random = rb_intern("random");
