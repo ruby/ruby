@@ -580,16 +580,10 @@ init_env(void)
 #undef set_env_val
 }
 
-
-typedef BOOL (WINAPI *cancel_io_t)(HANDLE);
-static cancel_io_t cancel_io = NULL;
-
 /* License: Ruby's */
 static void
 init_func(void)
 {
-    if (!cancel_io)
-	cancel_io = (cancel_io_t)get_proc_address("kernel32", "CancelIo", NULL);
 }
 
 static void init_stdhandle(void);
@@ -2397,7 +2391,7 @@ static int is_console(SOCKET);
 int
 rb_w32_io_cancelable_p(int fd)
 {
-    return cancel_io != NULL && (is_socket(TO_SOCKET(fd)) || !is_console(TO_SOCKET(fd)));
+    return is_socket(TO_SOCKET(fd)) || !is_console(TO_SOCKET(fd));
 }
 
 /* License: Ruby's */
@@ -3285,7 +3279,7 @@ finish_overlapped_socket(BOOL input, SOCKET s, WSAOVERLAPPED *wol, int result, D
 	  case WAIT_OBJECT_0 + 1:
 	    /* interrupted */
 	    *len = -1;
-	    cancel_io((HANDLE)s);
+	    CancelIo((HANDLE)s);
 	    break;
 	}
     }
@@ -3319,7 +3313,7 @@ overlapped_socket_io(BOOL input, int fd, char *buf, int len, int flags,
 
     s = TO_SOCKET(fd);
     socklist_lookup(s, &mode);
-    if (!cancel_io || (GET_FLAGS(mode) & O_NONBLOCK)) {
+    if (GET_FLAGS(mode) & O_NONBLOCK) {
 	RUBY_CRITICAL({
 	    if (input) {
 		if (addr && addrlen)
@@ -3470,7 +3464,7 @@ recvmsg(int fd, struct msghdr *msg, int flags)
     wsamsg.dwFlags |= flags;
 
     socklist_lookup(s, &mode);
-    if (!cancel_io || (GET_FLAGS(mode) & O_NONBLOCK)) {
+    if (GET_FLAGS(mode) & O_NONBLOCK) {
 	RUBY_CRITICAL({
 	    if ((ret = pWSARecvMsg(s, &wsamsg, &len, NULL, NULL)) == SOCKET_ERROR) {
 		errno = map_errno(WSAGetLastError());
@@ -3527,7 +3521,7 @@ sendmsg(int fd, const struct msghdr *msg, int flags)
     msghdr_to_wsamsg(msg, &wsamsg);
 
     socklist_lookup(s, &mode);
-    if (!cancel_io || (GET_FLAGS(mode) & O_NONBLOCK)) {
+    if (GET_FLAGS(mode) & O_NONBLOCK) {
 	RUBY_CRITICAL({
 	    if ((ret = pWSASendMsg(s, &wsamsg, flags, &len, NULL, NULL)) == SOCKET_ERROR) {
 		errno = map_errno(WSAGetLastError());
@@ -6220,10 +6214,6 @@ rb_w32_pipe(int fds[2])
     int fdRead, fdWrite;
     int ret;
 
-    /* if doesn't have CancelIo, use default pipe function */
-    if (!cancel_io)
-	return _pipe(fds, 65536L, _O_NOINHERIT);
-
     memcpy(name, prefix, width_of_prefix);
     snprintf(name + width_of_prefix, width_of_ids, "%.*"PRI_PIDT_PREFIX"x-%.*lx",
 	     width_of_pid, rb_w32_getpid(), width_of_serial, serial++);
@@ -6794,15 +6784,12 @@ rb_w32_read(int fd, void *buf, size_t size)
 	len = size;
     size -= len;
 
-    /* if have cancel_io, use Overlapped I/O */
-    if (cancel_io) {
-	if (setup_overlapped(&ol, fd, FALSE)) {
-	    rb_acrt_lowio_unlock_fh(fd);
-	    return -1;
-	}
-
-	pol = &ol;
+    if (setup_overlapped(&ol, fd, FALSE)) {
+	rb_acrt_lowio_unlock_fh(fd);
+	return -1;
     }
+
+    pol = &ol;
 
     if (!ReadFile((HANDLE)_osfhnd(fd), buf, len, &read, pol)) {
 	err = GetLastError();
@@ -6840,7 +6827,7 @@ rb_w32_read(int fd, void *buf, size_t size)
 		else
 		    errno = map_errno(GetLastError());
 		CloseHandle(ol.hEvent);
-		cancel_io((HANDLE)_osfhnd(fd));
+		CancelIo((HANDLE)_osfhnd(fd));
 		rb_acrt_lowio_unlock_fh(fd);
 		return -1;
 	    }
@@ -6853,7 +6840,7 @@ rb_w32_read(int fd, void *buf, size_t size)
 		    ret = -1;
 		}
 		CloseHandle(ol.hEvent);
-		cancel_io((HANDLE)_osfhnd(fd));
+		CancelIo((HANDLE)_osfhnd(fd));
 		rb_acrt_lowio_unlock_fh(fd);
 		return ret;
 	    }
@@ -6924,15 +6911,12 @@ rb_w32_write(int fd, const void *buf, size_t size)
     size -= len;
   retry2:
 
-    /* if have cancel_io, use Overlapped I/O */
-    if (cancel_io) {
-	if (setup_overlapped(&ol, fd, TRUE)) {
-	    rb_acrt_lowio_unlock_fh(fd);
-	    return -1;
-	}
-
-	pol = &ol;
+    if (setup_overlapped(&ol, fd, TRUE)) {
+	rb_acrt_lowio_unlock_fh(fd);
+	return -1;
     }
+
+    pol = &ol;
 
     if (!WriteFile((HANDLE)_osfhnd(fd), buf, len, &written, pol)) {
 	err = GetLastError();
@@ -6955,7 +6939,7 @@ rb_w32_write(int fd, const void *buf, size_t size)
 		else
 		    errno = map_errno(GetLastError());
 		CloseHandle(ol.hEvent);
-		cancel_io((HANDLE)_osfhnd(fd));
+		CancelIo((HANDLE)_osfhnd(fd));
 		rb_acrt_lowio_unlock_fh(fd);
 		return -1;
 	    }
@@ -6964,7 +6948,7 @@ rb_w32_write(int fd, const void *buf, size_t size)
 				     TRUE)) {
 		errno = map_errno(GetLastError());
 		CloseHandle(ol.hEvent);
-		cancel_io((HANDLE)_osfhnd(fd));
+		CancelIo((HANDLE)_osfhnd(fd));
 		rb_acrt_lowio_unlock_fh(fd);
 		return -1;
 	    }
