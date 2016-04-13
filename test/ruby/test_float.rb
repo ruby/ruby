@@ -466,6 +466,27 @@ class TestFloat < Test::Unit::TestCase
     assert_equal(0.99, 0.998.floor(prec))
   end
 
+  def test_ceil_with_precision
+    assert_equal(1.200, 1.111.ceil(1))
+    assert_equal(1.120, 1.111.ceil(2))
+    assert_equal(11120, 11111.1.ceil(-1))
+    assert_equal(11200, 11111.1.ceil(-2))
+    assert_equal(100000, 11111.1.ceil(-5))
+
+    assert_equal(2*10**300, 1.1e300.ceil(-300))
+    assert_equal(-10**300, -1.1e300.ceil(-300))
+    assert_equal(2.0e-300, 1.1e-300.ceil(300))
+    assert_equal(-1.0e-300, -1.1e-300.ceil(300))
+
+    assert_equal(42.0, 42.0.ceil(308))
+    assert_equal(1.0e307, 1.0e307.ceil(2))
+
+    assert_raise(TypeError) {1.0.ceil("4")}
+    assert_raise(TypeError) {1.0.ceil(nil)}
+    def (prec = Object.new).to_int; 2; end
+    assert_equal(0.99, 0.981.ceil(prec))
+  end
+
   VS = [
     18446744073709551617.0,
     18446744073709551616.0,

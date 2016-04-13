@@ -1786,21 +1786,53 @@ flo_floor(int argc, VALUE *argv, VALUE num)
 
 /*
  *  call-seq:
- *     float.ceil  ->  integer
+ *     float.ceil([ndigits])  ->  integer or float
  *
- *  Returns the smallest Integer greater than or equal to +float+.
+ *  Returns the smallest number greater than or equal to +float+ in decimal
+ *  digits (default 0 digits).
+ *
+ *  Precision may be negative.  Returns a floating point number when +ndigits+
+ *  is positive, +self+ for zero, and ceil up for negative.
  *
  *     1.2.ceil      #=> 2
  *     2.0.ceil      #=> 2
  *     (-1.2).ceil   #=> -1
  *     (-2.0).ceil   #=> -2
+ *     1.234567.ceil(2)  #=> 1.24
+ *     1.234567.ceil(3)  #=> 1.235
+ *     1.234567.ceil(4)  #=> 1.2346
+ *     1.234567.ceil(5)  #=> 1.23457
+ *
+ *     34567.89.ceil(-5) #=> 100000
+ *     34567.89.ceil(-4) #=> 40000
+ *     34567.89.ceil(-3) #=> 35000
+ *     34567.89.ceil(-2) #=> 34600
+ *     34567.89.ceil(-1) #=> 34570
+ *     34567.89.ceil(0)  #=> 34568
+ *     34567.89.ceil(1)  #=> 34567.9
+ *     34567.89.ceil(2)  #=> 34567.89
+ *     34567.89.ceil(3)  #=> 34567.89
  */
 
 static VALUE
-flo_ceil(VALUE num)
+flo_ceil(int argc, VALUE *argv, VALUE num)
 {
-    double f = ceil(RFLOAT_VALUE(num));
-    return dbl2ival(f);
+    double number, f;
+    int ndigits = 0;
+
+    if (rb_check_arity(argc, 0, 1)) {
+       ndigits = NUM2INT(argv[0]);
+    }
+    number = RFLOAT_VALUE(num);
+    if (ndigits < 0) {
+	return rb_int_ceil(dbl2ival(ceil(number)), ndigits);
+    }
+    if (ndigits == 0) {
+	return dbl2ival(ceil(number));
+    }
+    if (float_invariant_round(number, ndigits, &num)) return num;
+    f = pow(10, ndigits);
+    return DBL2NUM(ceil(number * f) / f);
 }
 
 static int
@@ -2085,7 +2117,7 @@ num_floor(VALUE num)
 static VALUE
 num_ceil(VALUE num)
 {
-    return flo_ceil(rb_Float(num));
+    return flo_ceil(0, 0, rb_Float(num));
 }
 
 /*
@@ -4658,7 +4690,7 @@ Init_Numeric(void)
     rb_define_method(rb_cFloat, "to_i", flo_truncate, 0);
     rb_define_method(rb_cFloat, "to_int", flo_truncate, 0);
     rb_define_method(rb_cFloat, "floor", flo_floor, -1);
-    rb_define_method(rb_cFloat, "ceil", flo_ceil, 0);
+    rb_define_method(rb_cFloat, "ceil", flo_ceil, -1);
     rb_define_method(rb_cFloat, "round", flo_round, -1);
     rb_define_method(rb_cFloat, "truncate", flo_truncate, 0);
 

@@ -1,4 +1,7 @@
-Wed Apr 13 15:54:36 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Apr 13 15:56:35 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (flo_ceil): add an optional parameter, digits, as
+	  well as Float#round.  [Feature #12245]
 
 	* numeric.c (flo_floor): add an optional parameter, digits, as
 	  well as Integer#floor.  [Feature #12245]
