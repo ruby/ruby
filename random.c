@@ -84,11 +84,6 @@ The original copyright notice follows.
 #endif
 
 #ifdef _WIN32
-# if !defined(_WIN32_WINNT) || _WIN32_WINNT < 0x0400
-#  undef _WIN32_WINNT
-#  define _WIN32_WINNT 0x400
-#  undef __WINCRYPT_H__
-# endif
 #include <windows.h>
 #include <wincrypt.h>
 #endif
