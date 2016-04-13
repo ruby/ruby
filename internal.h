@@ -780,6 +780,7 @@ VALUE rb_big_uminus(VALUE x);
 VALUE rb_big_hash(VALUE);
 VALUE rb_big_odd_p(VALUE);
 VALUE rb_big_even_p(VALUE);
+size_t rb_big_size(VALUE);
 VALUE rb_integer_float_cmp(VALUE x, VALUE y);
 VALUE rb_integer_float_eq(VALUE x, VALUE y);
 VALUE rb_cstr_parse_inum(const char *str, ssize_t len, char **endp, int base);

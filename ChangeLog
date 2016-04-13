@@ -1,3 +1,12 @@
+Wed Apr 13 14:11:59 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (rb_big_size): add wrapper function of BIGSIZE and
+	  rename the method funtion with _m suffix.
+
+	* numeric.c (int_round_zero_p): extracted from rb_int_round.
+	  optimize for Bignum, and convert VALUE returned by Numeric#size
+	  to long.
+
 Wed Apr 13 12:00:08 2016  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_basicinstructions.rb: add a test to check access

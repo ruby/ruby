@@ -109,6 +109,7 @@ static VALUE fix_lshift(long, unsigned long);
 static VALUE fix_rshift(long, unsigned long);
 static VALUE int_pow(long x, unsigned long y);
 static VALUE int_cmp(VALUE x, VALUE y);
+static int int_round_zero_p(VALUE num, int ndigits);
 static VALUE flo_truncate(VALUE num);
 static int float_invariant_round(double number, int ndigits, VALUE *num);
 
@@ -1766,6 +1767,24 @@ flo_ceil(VALUE num)
     return dbl2ival(f);
 }
 
+static int
+int_round_zero_p(VALUE num, int ndigits)
+{
+    long bytes;
+    /* If 10**N / 2 > num, then return 0 */
+    /* We have log_256(10) > 0.415241 and log_256(1/2) = -0.125, so */
+    if (FIXNUM_P(num)) {
+	bytes = sizeof(long);
+    }
+    else if (RB_TYPE_P(num, T_BIGNUM)) {
+	bytes = rb_big_size(num);
+    }
+    else {
+	bytes = NUM2LONG(rb_funcall(num, idSize, 0));
+    }
+    return (-0.415241 * ndigits - 0.125 > bytes);
+}
+
 /*
  * Assumes num is an Integer, ndigits <= 0
  */
@@ -1773,11 +1792,8 @@ VALUE
 rb_int_round(VALUE num, int ndigits)
 {
     VALUE n, f, h, r;
-    long bytes;
-    /* If 10**N / 2 > num, then return 0 */
-    /* We have log_256(10) > 0.415241 and log_256(1/2) = -0.125, so */
-    bytes = FIXNUM_P(num) ? sizeof(long) : rb_funcall(num, idSize, 0);
-    if (-0.415241 * ndigits - 0.125 > bytes ) {
+
+    if (int_round_zero_p(num, ndigits)) {
 	return INT2FIX(0);
     }
 

@@ -6906,6 +6906,12 @@ rb_big_abs(VALUE x)
     return x;
 }
 
+size_t
+rb_big_size(VALUE big)
+{
+    return BIGSIZE(big);
+}
+
 /*
  *  call-seq:
  *     big.size -> integer
@@ -6919,9 +6925,9 @@ rb_big_abs(VALUE x)
  */
 
 static VALUE
-rb_big_size(VALUE big)
+rb_big_size_m(VALUE big)
 {
-    return SIZET2NUM(BIGSIZE(big));
+    return SIZET2NUM(rb_big_size(big));
 }
 
 /*
@@ -7087,7 +7093,7 @@ Init_Bignum(void)
     rb_define_method(rb_cBignum, "===", rb_big_eq, 1);
     rb_define_method(rb_cBignum, "abs", rb_big_abs, 0);
     rb_define_method(rb_cBignum, "magnitude", rb_big_abs, 0);
-    rb_define_method(rb_cBignum, "size", rb_big_size, 0);
+    rb_define_method(rb_cBignum, "size", rb_big_size_m, 0);
     rb_define_method(rb_cBignum, "bit_length", rb_big_bit_length, 0);
 
 #ifdef USE_GMP
