@@ -25,6 +25,8 @@ with all sufficient information, see the ChangeLog file or Redmine
     Enumerable#max and call max to an Array, your redefinition will be
     now ignored.  You should also redefine Array#max.
 
+  * Array#sum  [Feature #12217]
+
 * Dir
 
   * Dir.empty?.  [Feature #10121]
