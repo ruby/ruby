@@ -6737,7 +6737,7 @@ rb_w32_read(int fd, void *buf, size_t size)
     DWORD err;
     size_t len;
     size_t ret;
-    OVERLAPPED ol, *pol = NULL;
+    OVERLAPPED ol;
     BOOL isconsole;
     BOOL islineinput = FALSE;
     int start = 0;
@@ -6789,9 +6789,7 @@ rb_w32_read(int fd, void *buf, size_t size)
 	return -1;
     }
 
-    pol = &ol;
-
-    if (!ReadFile((HANDLE)_osfhnd(fd), buf, len, &read, pol)) {
+    if (!ReadFile((HANDLE)_osfhnd(fd), buf, len, &read, &ol)) {
 	err = GetLastError();
 	if (err == ERROR_NO_DATA && (_osfile(fd) & FPIPE)) {
 	    DWORD state;
@@ -6805,7 +6803,7 @@ rb_w32_read(int fd, void *buf, size_t size)
 	    return -1;
 	}
 	else if (err != ERROR_IO_PENDING) {
-	    if (pol) CloseHandle(ol.hEvent);
+	    CloseHandle(ol.hEvent);
 	    if (err == ERROR_ACCESS_DENIED)
 		errno = EBADF;
 	    else if (err == ERROR_BROKEN_PIPE || err == ERROR_HANDLE_EOF) {
@@ -6819,31 +6817,29 @@ rb_w32_read(int fd, void *buf, size_t size)
 	    return -1;
 	}
 
-	if (pol) {
-	    wait = rb_w32_wait_events_blocking(&ol.hEvent, 1, INFINITE);
-	    if (wait != WAIT_OBJECT_0) {
-		if (wait == WAIT_OBJECT_0 + 1)
-		    errno = EINTR;
-		else
-		    errno = map_errno(GetLastError());
-		CloseHandle(ol.hEvent);
-		CancelIo((HANDLE)_osfhnd(fd));
-		rb_acrt_lowio_unlock_fh(fd);
-		return -1;
-	    }
+	wait = rb_w32_wait_events_blocking(&ol.hEvent, 1, INFINITE);
+	if (wait != WAIT_OBJECT_0) {
+	    if (wait == WAIT_OBJECT_0 + 1)
+		errno = EINTR;
+	    else
+		errno = map_errno(GetLastError());
+	    CloseHandle(ol.hEvent);
+	    CancelIo((HANDLE)_osfhnd(fd));
+	    rb_acrt_lowio_unlock_fh(fd);
+	    return -1;
+	}
 
-	    if (!GetOverlappedResult((HANDLE)_osfhnd(fd), &ol, &read, TRUE) &&
-		(err = GetLastError()) != ERROR_HANDLE_EOF) {
-		int ret = 0;
-		if (err != ERROR_BROKEN_PIPE) {
-		    errno = map_errno(err);
-		    ret = -1;
-		}
-		CloseHandle(ol.hEvent);
-		CancelIo((HANDLE)_osfhnd(fd));
-		rb_acrt_lowio_unlock_fh(fd);
-		return ret;
+	if (!GetOverlappedResult((HANDLE)_osfhnd(fd), &ol, &read, TRUE) &&
+	    (err = GetLastError()) != ERROR_HANDLE_EOF) {
+	    int ret = 0;
+	    if (err != ERROR_BROKEN_PIPE) {
+		errno = map_errno(err);
+		ret = -1;
 	    }
+	    CloseHandle(ol.hEvent);
+	    CancelIo((HANDLE)_osfhnd(fd));
+	    rb_acrt_lowio_unlock_fh(fd);
+	    return ret;
 	}
     }
     else {
@@ -6851,9 +6847,7 @@ rb_w32_read(int fd, void *buf, size_t size)
 	errno = map_errno(err);
     }
 
-    if (pol) {
-	finish_overlapped(&ol, fd, read);
-    }
+    finish_overlapped(&ol, fd, read);
 
     ret += read;
     if (read >= len) {
@@ -6882,7 +6876,7 @@ rb_w32_write(int fd, const void *buf, size_t size)
     DWORD err;
     size_t len;
     size_t ret;
-    OVERLAPPED ol, *pol = NULL;
+    OVERLAPPED ol;
 
     if (is_socket(sock))
 	return rb_w32_send(fd, buf, size, 0);
@@ -6916,12 +6910,10 @@ rb_w32_write(int fd, const void *buf, size_t size)
 	return -1;
     }
 
-    pol = &ol;
-
-    if (!WriteFile((HANDLE)_osfhnd(fd), buf, len, &written, pol)) {
+    if (!WriteFile((HANDLE)_osfhnd(fd), buf, len, &written, &ol)) {
 	err = GetLastError();
 	if (err != ERROR_IO_PENDING) {
-	    if (pol) CloseHandle(ol.hEvent);
+	    CloseHandle(ol.hEvent);
 	    if (err == ERROR_ACCESS_DENIED)
 		errno = EBADF;
 	    else
@@ -6931,33 +6923,28 @@ rb_w32_write(int fd, const void *buf, size_t size)
 	    return -1;
 	}
 
-	if (pol) {
-	    wait = rb_w32_wait_events_blocking(&ol.hEvent, 1, INFINITE);
-	    if (wait != WAIT_OBJECT_0) {
-		if (wait == WAIT_OBJECT_0 + 1)
-		    errno = EINTR;
-		else
-		    errno = map_errno(GetLastError());
-		CloseHandle(ol.hEvent);
-		CancelIo((HANDLE)_osfhnd(fd));
-		rb_acrt_lowio_unlock_fh(fd);
-		return -1;
-	    }
-
-	    if (!GetOverlappedResult((HANDLE)_osfhnd(fd), &ol, &written,
-				     TRUE)) {
+	wait = rb_w32_wait_events_blocking(&ol.hEvent, 1, INFINITE);
+	if (wait != WAIT_OBJECT_0) {
+	    if (wait == WAIT_OBJECT_0 + 1)
+		errno = EINTR;
+	    else
 		errno = map_errno(GetLastError());
-		CloseHandle(ol.hEvent);
-		CancelIo((HANDLE)_osfhnd(fd));
-		rb_acrt_lowio_unlock_fh(fd);
-		return -1;
-	    }
+	    CloseHandle(ol.hEvent);
+	    CancelIo((HANDLE)_osfhnd(fd));
+	    rb_acrt_lowio_unlock_fh(fd);
+	    return -1;
+	}
+
+	if (!GetOverlappedResult((HANDLE)_osfhnd(fd), &ol, &written, TRUE)) {
+	    errno = map_errno(GetLastError());
+	    CloseHandle(ol.hEvent);
+	    CancelIo((HANDLE)_osfhnd(fd));
+	    rb_acrt_lowio_unlock_fh(fd);
+	    return -1;
 	}
     }
 
-    if (pol) {
-	finish_overlapped(&ol, fd, written);
-    }
+    finish_overlapped(&ol, fd, written);
 
     ret += written;
     if (written == len) {
