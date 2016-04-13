@@ -1,3 +1,8 @@
+Wed Apr 13 15:47:53 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (int_floor): add an optional parameter, digits, as
+	  well as Integer#round.
+
 Wed Apr 13 14:47:47 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (Init_File): add alias File.empty? to File.zero?.
