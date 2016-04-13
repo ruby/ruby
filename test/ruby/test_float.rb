@@ -444,6 +444,28 @@ class TestFloat < Test::Unit::TestCase
     assert_equal(1.0, 0.998.round(prec))
   end
 
+  def test_floor_with_precision
+    assert_equal(1.100, 1.111.floor(1))
+    assert_equal(1.110, 1.111.floor(2))
+    assert_equal(11110, 11119.9.floor(-1))
+    assert_equal(11100, 11100.0.floor(-2))
+    assert_equal(11100, 11199.9.floor(-2))
+    assert_equal(0, 11111.1.floor(-5))
+
+    assert_equal(10**300, 1.1e300.floor(-300))
+    assert_equal(-2*10**300, -1.1e300.floor(-300))
+    assert_equal(1.0e-300, 1.1e-300.floor(300))
+    assert_equal(-2.0e-300, -1.1e-300.floor(300))
+
+    assert_equal(42.0, 42.0.floor(308))
+    assert_equal(1.0e307, 1.0e307.floor(2))
+
+    assert_raise(TypeError) {1.0.floor("4")}
+    assert_raise(TypeError) {1.0.floor(nil)}
+    def (prec = Object.new).to_int; 2; end
+    assert_equal(0.99, 0.998.floor(prec))
+  end
+
   VS = [
     18446744073709551617.0,
     18446744073709551616.0,
