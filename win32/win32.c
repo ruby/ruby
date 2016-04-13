@@ -4685,21 +4685,7 @@ kill(int pid, int sig)
 static int
 wlink(const WCHAR *from, const WCHAR *to)
 {
-    typedef BOOL (WINAPI link_func)(LPCWSTR, LPCWSTR, LPSECURITY_ATTRIBUTES);
-    static link_func *pCreateHardLinkW = NULL;
-    static int myerrno = 0;
-
-    if (!pCreateHardLinkW && !myerrno) {
-	pCreateHardLinkW = (link_func *)get_proc_address("kernel32", "CreateHardLinkW", NULL);
-	if (!pCreateHardLinkW)
-	    myerrno = ENOSYS;
-    }
-    if (!pCreateHardLinkW) {
-	errno = myerrno;
-	return -1;
-    }
-
-    if (!pCreateHardLinkW(to, from, NULL)) {
+    if (!CreateHardLinkW(to, from, NULL)) {
 	errno = map_errno(GetLastError());
 	return -1;
     }
