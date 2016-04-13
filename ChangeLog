@@ -1,3 +1,8 @@
+Wed Apr 13 14:47:47 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (Init_File): add alias File.empty? to File.zero?.
+	  [Feature #9969]
+
 Wed Apr 13 14:36:24 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (assign_in_cond): allow multiple assignment in

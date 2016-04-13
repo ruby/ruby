@@ -399,6 +399,13 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_file.not_zero?(nofile)
   end
 
+  def test_empty_p
+    assert_nothing_raised { File.empty?(@dir) }
+    assert_file.not_empty?(regular_file)
+    assert_file.empty?(zerofile)
+    assert_file.not_empty?(nofile)
+  end
+
   def test_size_p
     assert_nothing_raised { File.size?(@dir) }
     assert_equal(3, File.size?(regular_file))

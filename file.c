@@ -5886,6 +5886,7 @@ Init_File(void)
     define_filetest_function("executable_real?", rb_file_executable_real_p, 1);
     define_filetest_function("file?", rb_file_file_p, 1);
     define_filetest_function("zero?", rb_file_zero_p, 1);
+    define_filetest_function("empty?", rb_file_zero_p, 1);
     define_filetest_function("size?", rb_file_size_p, 1);
     define_filetest_function("size", rb_file_s_size, 1);
     define_filetest_function("owned?", rb_file_owned_p, 1);
