@@ -698,4 +698,26 @@ class TestBasicInstructions < Test::Unit::TestCase
     assert_equal [], [*a]
     assert_equal [1], [1, *a]
   end
+
+  def test_special_const_instance_variables
+    assert_separately(%w(-W0), <<-INPUT, timeout: 60)
+    module M
+      def get
+        # we can not set instance variables on special const objects.
+        # However, we can access instance variables with default value (nil).
+        @ivar
+      end
+    end
+    class Fixnum; include M; end
+    class Float; include M; end
+    class Symbol; include M; end
+    class FalseClass; include M; end
+    class TrueClass; include M; end
+    class NilClass; include M; end
+
+    [123, 1.2, :sym, false, true, nil].each{|obj|
+      assert_equal(nil, obj.get)
+    }
+    INPUT
+  end
 end

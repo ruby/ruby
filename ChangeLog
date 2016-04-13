@@ -1,3 +1,12 @@
+Wed Apr 13 12:00:08 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/test_basicinstructions.rb: add a test to check access
+	  instance variables on special const objects.
+
+	  All of such objects are frozen, so that we can not set instance
+	  variables for them. But we can read instance variables and return
+	  default value (nil).
+
 Tue Apr 12 20:40:35 2016  Kaneko Yuichiro  <spiketeika@gmail.com>
 
 	* ext/date/date_core.c (time_to_time): should preserve timezone
