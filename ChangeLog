@@ -1,3 +1,8 @@
+Thu Apr 14 19:02:41 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/irb/ext/save-history.rb: suppress warning: method redefined;
+	  discarding old save_history=.
+
 Thu Apr 14 14:58:14 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/tk/tkutil/tkutil.c (tk_hash_kv): the third argument can be
