@@ -1,3 +1,9 @@
+Thu Apr 14 14:58:14 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/tk/tkutil/tkutil.c (tk_hash_kv): the third argument can be
+	  nil not only an Array.  reported by @windwiny at
+	  https://github.com/ruby/ruby/commit/cdaa94e#commitcomment-17096618
+
 Thu Apr 14 14:28:55 2016  cremno phobia  <cremno@mail.ru>
 
 	* cont.c (fiber_initialize_machine_stack_context): fix wrong
