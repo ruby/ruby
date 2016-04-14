@@ -5667,8 +5667,12 @@ rb_ary_dig(int argc, VALUE *argv, VALUE self)
  *   [].sum(0.0)                        #=> 0.0
  *   [1, 2, 3].sum                      #=> 6
  *   [3, 5.5].sum                       #=> 8.5
- *   [2.5, 3.0].sum(0.0) {|v| v * v }   #=> 15.25
+ *   [2.5, 3.0].sum(0.0) {|e| e * e }   #=> 15.25
  *   [Object.new].sum                   #=> TypeError
+ *
+ * The (arithmetic) mean value of an array can be obtained* as follows.
+ *
+ *   mean = ary.sum(0.0) / ary.length
  *
  * This method may not respect method redefinition of "+" methods
  * such as Fixnum#+.
