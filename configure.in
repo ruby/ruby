@@ -1161,6 +1161,7 @@ main()
 		LIBS="$LIBS" # m lib is include in root
 		],
 [cygwin*], [	ac_cv_header_langinfo_h=yes
+		RUBY_APPEND_OPTIONS(CPPFLAGS, -D_XOPEN_SOURCE -D_GNU_SOURCE)
 		AC_CHECK_FUNCS(cygwin_conv_path)
 		AC_LIBOBJ([langinfo])
 		],
