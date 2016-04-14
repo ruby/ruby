@@ -978,18 +978,17 @@ rb_waitpid(rb_pid_t pid, int *st, int flags)
 static VALUE
 proc_wait(int argc, VALUE *argv)
 {
-    VALUE vpid, vflags;
     rb_pid_t pid;
     int flags, status;
 
     flags = 0;
-    if (argc == 0) {
+    if (rb_check_arity(argc, 0, 2) == 0) {
 	pid = -1;
     }
     else {
-	rb_scan_args(argc, argv, "02", &vpid, &vflags);
-	pid = NUM2PIDT(vpid);
-	if (argc == 2 && !NIL_P(vflags)) {
+	VALUE vflags;
+	pid = NUM2PIDT(argv[0]);
+	if (argc == 2 && !NIL_P(vflags = argv[1])) {
 	    flags = NUM2UINT(vflags);
 	}
     }
@@ -3760,11 +3759,10 @@ exit_status_code(VALUE status)
 static VALUE
 rb_f_exit_bang(int argc, VALUE *argv, VALUE obj)
 {
-    VALUE status;
     int istatus;
 
-    if (argc > 0 && rb_scan_args(argc, argv, "01", &status) == 1) {
-	istatus = exit_status_code(status);
+    if (rb_check_arity(argc, 0, 1) == 1) {
+	istatus = exit_status_code(argv[0]);
     }
     else {
 	istatus = EXIT_FAILURE;
@@ -3832,11 +3830,10 @@ rb_exit(int status)
 VALUE
 rb_f_exit(int argc, const VALUE *argv)
 {
-    VALUE status;
     int istatus;
 
-    if (argc > 0 && rb_scan_args(argc, argv, "01", &status) == 1) {
-	istatus = exit_status_code(status);
+    if (rb_check_arity(argc, 0, 1) == 1) {
+	istatus = exit_status_code(argv[0]);
     }
     else {
 	istatus = EXIT_SUCCESS;
@@ -4515,14 +4512,12 @@ static VALUE
 proc_getsid(int argc, VALUE *argv)
 {
     rb_pid_t sid;
-    VALUE pid;
+    rb_pid_t pid = 0;
 
-    rb_scan_args(argc, argv, "01", &pid);
+    if (rb_check_arity(argc, 0, 1) == 1 && !NIL_P(argv[0]))
+	pid = NUM2PIDT(argv[0]);
 
-    if (NIL_P(pid))
-	pid = INT2FIX(0);
-
-    sid = getsid(NUM2PIDT(pid));
+    sid = getsid(pid);
     if (sid < 0) rb_sys_fail(0);
     return PIDT2NUM(sid);
 }
@@ -4949,8 +4944,10 @@ proc_setrlimit(int argc, VALUE *argv, VALUE obj)
     VALUE resource, rlim_cur, rlim_max;
     struct rlimit rlim;
 
-    rb_scan_args(argc, argv, "21", &resource, &rlim_cur, &rlim_max);
-    if (rlim_max == Qnil)
+    rb_check_arity(argc, 2, 3);
+    resource = argv[0];
+    rlim_cur = argv[1];
+    if (argc < 3 || NIL_P(rlim_max = argv[2]))
         rlim_max = rlim_cur;
 
     rlim.rlim_cur = rlimit_resource_value(rlim_cur);
@@ -5985,13 +5982,15 @@ static int rb_daemon(int nochdir, int noclose);
 static VALUE
 proc_daemon(int argc, VALUE *argv)
 {
-    VALUE nochdir, noclose;
-    int n;
+    int n, nochdir = FALSE, noclose = FALSE;
 
-    rb_scan_args(argc, argv, "02", &nochdir, &noclose);
+    switch (rb_check_arity(argc, 0, 2)) {
+      case 2: noclose = RTEST(argv[1]);
+      case 1: nochdir = RTEST(argv[0]);
+    }
 
     prefork();
-    n = rb_daemon(RTEST(nochdir), RTEST(noclose));
+    n = rb_daemon(nochdir, noclose);
     if (n < 0) rb_sys_fail("daemon");
     return INT2FIX(n);
 }
@@ -7221,7 +7220,6 @@ get_mach_timebase_info(void)
 VALUE
 rb_clock_gettime(int argc, VALUE *argv)
 {
-    VALUE clk_id, unit;
     int ret;
 
     struct timetick tt;
@@ -7230,7 +7228,8 @@ rb_clock_gettime(int argc, VALUE *argv)
     int num_numerators = 0;
     int num_denominators = 0;
 
-    rb_scan_args(argc, argv, "11", &clk_id, &unit);
+    VALUE unit = (rb_check_arity(argc, 1, 2) == 2) ? argv[1] : Qnil;
+    VALUE clk_id = argv[0];
 
     if (SYMBOL_P(clk_id)) {
         /*
@@ -7416,15 +7415,14 @@ rb_clock_gettime(int argc, VALUE *argv)
 VALUE
 rb_clock_getres(int argc, VALUE *argv)
 {
-    VALUE clk_id, unit;
-
     struct timetick tt;
     timetick_int_t numerators[2];
     timetick_int_t denominators[2];
     int num_numerators = 0;
     int num_denominators = 0;
 
-    rb_scan_args(argc, argv, "11", &clk_id, &unit);
+    VALUE unit = (rb_check_arity(argc, 1, 2) == 2) ? argv[1] : Qnil;
+    VALUE clk_id = argv[0];
 
     if (SYMBOL_P(clk_id)) {
 #ifdef RUBY_GETTIMEOFDAY_BASED_CLOCK_REALTIME
