@@ -5652,37 +5652,49 @@ rb_ary_dig(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *   ary.sum                 -> number
+ *   ary.sum(init=0)                    -> number
+ *   ary.sum(init=0) {|e| expr }        -> number
  *
  * Returns the sum of elements.
- * For example, [e1, e2, e3].sum returns 0 + e1 + e2 + e3.
+ * For example, [e1, e2, e3].sum returns init + e1 + e2 + e3.
  *
- * If <i>ary</i> is empty, it returns 0.
+ * If a block is given, the block is applied to each element
+ * before addtion.
  *
- *   [].sum                     #=> 0
- *   [1, 2, 3].sum              #=> 6
- *   [3, 5.5].sum               #=> 8.5
- *   [Object.new].sum           #=> TypeError
+ * If <i>ary</i> is empty, it returns <i>init</i>.
+ *
+ *   [].sum                             #=> 0
+ *   [].sum(0.0)                        #=> 0.0
+ *   [1, 2, 3].sum                      #=> 6
+ *   [3, 5.5].sum                       #=> 8.5
+ *   [2.5, 3.0].sum(0.0) {|v| v * v }   #=> 15.25
+ *   [Object.new].sum                   #=> TypeError
  *
  * This method may not respect method redefinition of "+" methods
  * such as Fixnum#+.
  *
  */
 
-VALUE
-rb_ary_sum(VALUE ary)
+static VALUE
+rb_ary_sum(int argc, VALUE *argv, VALUE ary)
 {
-    VALUE v, e;
+    VALUE e, v;
     long i, n;
+    int block_given;
+
+    if (rb_scan_args(argc, argv, "01", &v) == 0)
+        v = LONG2FIX(0);
+
+    block_given = rb_block_given_p();
 
     if (RARRAY_LEN(ary) == 0)
-        return LONG2FIX(0);
-
-    v = LONG2FIX(0);
+        return v;
 
     n = 0;
     for (i = 0; i < RARRAY_LEN(ary); i++) {
         e = RARRAY_AREF(ary, i);
+        if (block_given)
+            e = rb_yield(e);
         if (FIXNUM_P(e)) {
             n += FIX2LONG(e); /* should not overflow long type */
             if (!FIXABLE(n)) {
@@ -5711,6 +5723,8 @@ rb_ary_sum(VALUE ary)
         for (; i < RARRAY_LEN(ary); i++) {
             double x, y, t;
             e = RARRAY_AREF(ary, i);
+            if (block_given)
+                e = rb_yield(e);
             if (RB_FLOAT_TYPE_P(e))
                 x = RFLOAT_VALUE(e);
             else if (FIXNUM_P(e))
@@ -5732,7 +5746,10 @@ rb_ary_sum(VALUE ary)
     }
 
     for (; i < RARRAY_LEN(ary); i++) {
-        v = rb_funcall(v, idPLUS, 1, RARRAY_AREF(ary, i));
+        e = RARRAY_AREF(ary, i);
+        if (block_given)
+            e = rb_yield(e);
+        v = rb_funcall(v, idPLUS, 1, e);
     }
     return v;
 }
@@ -6092,7 +6109,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "bsearch_index", rb_ary_bsearch_index, 0);
     rb_define_method(rb_cArray, "any?", rb_ary_any_p, 0);
     rb_define_method(rb_cArray, "dig", rb_ary_dig, -1);
-    rb_define_method(rb_cArray, "sum", rb_ary_sum, 0);
+    rb_define_method(rb_cArray, "sum", rb_ary_sum, -1);
 
     id_cmp = rb_intern("<=>");
     id_random = rb_intern("random");

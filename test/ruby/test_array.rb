@@ -2714,34 +2714,42 @@ class TestArray < Test::Unit::TestCase
   FIXNUM_MIN = -(1 << (8 * RbConfig::SIZEOF['long'] - 2))
   FIXNUM_MAX = (1 << (8 * RbConfig::SIZEOF['long'] - 2)) - 1
 
+  def assert_int_equal(e, v, msg=nil)
+    assert_kind_of(Integer, v, msg)
+    assert_equal(e, v, msg)
+  end
+
   def assert_float_equal(e, v, msg=nil)
     assert_equal(Float, v.class, msg)
     assert_equal(e, v, msg)
   end
 
   def test_sum
-    assert_equal(0, [].sum)
-    assert_equal(3, [3].sum)
-    assert_equal(8, [3, 5].sum)
-    assert_equal(15, [3, 5, 7].sum)
+    assert_int_equal(0, [].sum)
+    assert_float_equal(0.0, [].sum(0.0))
+    assert_int_equal(3, [3].sum)
+    assert_int_equal(8, [3, 5].sum)
+    assert_int_equal(15, [3, 5, 7].sum)
     assert_float_equal(15.0, [3, 5, 7.0].sum)
-    assert_equal(2*FIXNUM_MAX, Array.new(2, FIXNUM_MAX).sum)
-    assert_equal(2*(FIXNUM_MAX+1), Array.new(2, FIXNUM_MAX+1).sum)
-    assert_equal(10*FIXNUM_MAX, Array.new(10, FIXNUM_MAX).sum)
-    assert_equal(0, ([FIXNUM_MAX, 1, -FIXNUM_MAX, -1]*10).sum)
-    assert_equal(FIXNUM_MAX*10, ([FIXNUM_MAX+1, -1]*10).sum)
-    assert_equal(2*FIXNUM_MIN, Array.new(2, FIXNUM_MIN).sum)
-    assert_equal((FIXNUM_MAX+1).to_f, [FIXNUM_MAX, 1, 0.0].sum)
+    assert_int_equal(2*FIXNUM_MAX, Array.new(2, FIXNUM_MAX).sum)
+    assert_int_equal(2*(FIXNUM_MAX+1), Array.new(2, FIXNUM_MAX+1).sum)
+    assert_int_equal(10*FIXNUM_MAX, Array.new(10, FIXNUM_MAX).sum)
+    assert_int_equal(0, ([FIXNUM_MAX, 1, -FIXNUM_MAX, -1]*10).sum)
+    assert_int_equal(FIXNUM_MAX*10, ([FIXNUM_MAX+1, -1]*10).sum)
+    assert_int_equal(2*FIXNUM_MIN, Array.new(2, FIXNUM_MIN).sum)
+    assert_float_equal((FIXNUM_MAX+1).to_f, [FIXNUM_MAX, 1, 0.0].sum)
     assert_float_equal(8.0, [3.0, 5].sum)
     assert_float_equal((FIXNUM_MAX+1).to_f, [0.0, FIXNUM_MAX+1].sum)
     assert_equal(2.0+3.0i, [2.0, 3.0i].sum)
+    assert_int_equal(13, [1, 2].sum(10))
+    assert_int_equal(16, [1, 2].sum(10) {|v| v * 2 })
 
     large_number = 100000000
     small_number = 1e-9
     until (large_number + small_number) == large_number
       small_number /= 10
     end
-    assert_equal(large_number+(small_number*10), [large_number, *[small_number]*10].sum)
+    assert_float_equal(large_number+(small_number*10), [large_number, *[small_number]*10].sum)
   end
 
   private

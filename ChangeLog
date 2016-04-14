@@ -1,3 +1,8 @@
+Thu Apr 14 21:46:36 2016  Tanaka Akira  <akr@fsij.org>
+
+	* array.c (rb_ary_sum): Support the optional argument, init, and
+	  block.
+
 Thu Apr 14 19:02:41 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/irb/ext/save-history.rb: suppress warning: method redefined;
