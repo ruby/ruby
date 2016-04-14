@@ -2726,7 +2726,6 @@ class TestArray < Test::Unit::TestCase
 
   def test_sum
     assert_int_equal(0, [].sum)
-    assert_float_equal(0.0, [].sum(0.0))
     assert_int_equal(3, [3].sum)
     assert_int_equal(8, [3, 5].sum)
     assert_int_equal(15, [3, 5, 7].sum)
@@ -2737,10 +2736,17 @@ class TestArray < Test::Unit::TestCase
     assert_int_equal(0, ([FIXNUM_MAX, 1, -FIXNUM_MAX, -1]*10).sum)
     assert_int_equal(FIXNUM_MAX*10, ([FIXNUM_MAX+1, -1]*10).sum)
     assert_int_equal(2*FIXNUM_MIN, Array.new(2, FIXNUM_MIN).sum)
+
+    assert_float_equal(0.0, [].sum(0.0))
+    assert_float_equal(3.0, [3].sum(0.0))
+    assert_float_equal(3.5, [3].sum(0.5))
+    assert_float_equal(8.5, [3.5, 5].sum)
+    assert_float_equal(10.5, [2, 8.5].sum)
     assert_float_equal((FIXNUM_MAX+1).to_f, [FIXNUM_MAX, 1, 0.0].sum)
-    assert_float_equal(8.0, [3.0, 5].sum)
     assert_float_equal((FIXNUM_MAX+1).to_f, [0.0, FIXNUM_MAX+1].sum)
+
     assert_equal(2.0+3.0i, [2.0, 3.0i].sum)
+
     assert_int_equal(13, [1, 2].sum(10))
     assert_int_equal(16, [1, 2].sum(10) {|v| v * 2 })
 
