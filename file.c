@@ -124,7 +124,7 @@ VALUE rb_cFile;
 VALUE rb_mFileTest;
 VALUE rb_cStat;
 
-#define insecure_obj_p(obj, level) ((level) >= 4 || ((level) > 0 && OBJ_TAINTED(obj)))
+#define insecure_obj_p(obj, level) ((level) > 0 && OBJ_TAINTED(obj))
 
 static VALUE
 file_path_convert(VALUE name)

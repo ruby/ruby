@@ -27,7 +27,7 @@ static struct code_page_table {
 #define INVALID_CODE_PAGE 51932
 #define PATH_BUFFER_SIZE MAX_PATH * 2
 
-#define insecure_obj_p(obj, level) ((level) >= 4 || ((level) > 0 && OBJ_TAINTED(obj)))
+#define insecure_obj_p(obj, level) ((level) > 0 && OBJ_TAINTED(obj))
 
 /* defined in win32/win32.c */
 #define system_code_page rb_w32_filecp
