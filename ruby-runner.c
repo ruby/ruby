@@ -3,9 +3,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#define BUILDDIR "@abs_top_builddir@"
-#define LIBPATHENV "@LIBPATHENV@"
-#define PATH_SEP '@PATH_SEPARATOR@'
+#include "ruby-runner.h"
 
 #define STRINGIZE(expr) STRINGIZE0(expr)
 #define STRINGIZE0(expr) #expr

@@ -103,7 +103,7 @@ y.tab.c
 /rubicon
 /ruby
 /ruby-runner
-/ruby-runner.c
+/ruby-runner.h
 /ruby-man.rd.gz
 /sizes.c
 /test.rb

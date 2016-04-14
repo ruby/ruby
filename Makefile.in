@@ -254,11 +254,11 @@ ruby_pc = @ruby_pc@
 $(ruby_pc):
 		@./config.status --file=$@:$(srcdir)/template/ruby.pc.in
 
-ruby-runner.c: template/ruby-runner.c.in
+ruby-runner.h: template/ruby-runner.h.in
 		@./config.status --file=$@:$(srcdir)/template/$(@F).in
 
-ruby-runner$(EXEEXT): ruby-runner.c
-	$(Q) $(PURIFY) $(CC) $(CFLAGS) $(CPPFLAGS) -DRUBY_INSTALL_NAME=$(RUBY_INSTALL_NAME) $(LDFLAGS) $(LIBS) $(OUTFLAG)$@ ruby-runner.c
+ruby-runner$(EXEEXT): ruby-runner.c ruby-runner.h
+	$(Q) $(PURIFY) $(CC) $(CFLAGS) $(CPPFLAGS) -DRUBY_INSTALL_NAME=$(RUBY_INSTALL_NAME) $(LDFLAGS) $(LIBS) $(OUTFLAG)$@ $<
 
 $(RBCONFIG): $(PREP)
 
