@@ -1,3 +1,15 @@
+Thu Apr 14 14:28:55 2016  cremno phobia  <cremno@mail.ru>
+
+	* cont.c (fiber_initialize_machine_stack_context): fix wrong
+	  _MSC_VER check, should be decimal but not hexadecimal.
+	  [ruby-core:74936] [Bug #12279]
+
+Thu Apr 14 13:47:52 2016  cremno phobia  <cremno@mail.ru>
+
+	* cont.c (fiber_initialize_machine_stack_context): fix wrong
+	  _MSC_VER check, should be decimal but not hexadecimal.
+	  [ruby-core:74936] [Bug #12279]
+
 Wed Apr 13 22:51:38 2016  Tanaka Akira  <akr@fsij.org>
 
 	* array.c (rb_ary_sum): Array#sum is implemented.
