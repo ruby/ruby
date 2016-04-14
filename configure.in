@@ -1087,12 +1087,12 @@ main()
     return 0;
 }
 ],
-	            rb_cv_broken_crypt=no,
-	            rb_cv_broken_crypt=yes,
-	            rb_cv_broken_crypt=yes)])
-                if test "$rb_cv_broken_crypt" = yes; then
-                  AC_DEFINE(BROKEN_CRYPT, 1)
-                fi
+		    rb_cv_broken_crypt=no,
+		    rb_cv_broken_crypt=yes,
+		    rb_cv_broken_crypt=yes)])
+		if test "$rb_cv_broken_crypt" = yes; then
+		  AC_DEFINE(BROKEN_CRYPT, 1)
+		fi
 		AC_CHECK_PROGS(codesign, codesign)
 		if test -n "$codesign"; then
 		    POSTLINK="test -z '\$(RUBY_CODESIGN)' || $codesign -s '\$(RUBY_CODESIGN)' -f \$@"
