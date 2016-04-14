@@ -2744,6 +2744,8 @@ class TestArray < Test::Unit::TestCase
     assert_int_equal(13, [1, 2].sum(10))
     assert_int_equal(16, [1, 2].sum(10) {|v| v * 2 })
 
+    assert_raise(TypeError) { [Object.new].sum }
+
     large_number = 100000000
     small_number = 1e-9
     until (large_number + small_number) == large_number
