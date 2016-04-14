@@ -5659,9 +5659,10 @@ rb_ary_dig(int argc, VALUE *argv, VALUE self)
  *
  * If <i>ary</i> is empty, it returns 0.
  *
- * [].sum                       #=> 0
- * [1, 2, 3].sum                #=> 6
- * [3, 5.5].sum                 #=> 8.5
+ *   [].sum                     #=> 0
+ *   [1, 2, 3].sum              #=> 6
+ *   [3, 5.5].sum               #=> 8.5
+ *   [Object.new].sum           #=> TypeError
  *
  * This method may not respect method redefinition of "+" methods
  * such as Fixnum#+.
