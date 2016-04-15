@@ -68,9 +68,15 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * Add an into option. [Feature #11191]
 
-=== Stdlib compatibility issues (excluding feature bug fixes)
+=== Compatibility issues (excluding feature bug fixes)
 
-=== Built-in global variables compatibility issues
+* Array#sum is implemented.  Ruby itself has no compatibility problem
+  because Ruby didn't have sum method for arrays before Ruby 2.4.
+  However many third party gems, activesupport, facets, simple_stats, etc,
+  defines sum method.  These implementations are mostly compatible but
+  there are subtle differences.
+  Ruby's sum method should be mostly compatible but it is impossible to
+  be perfectly compatible with all of them.
 
 === C API updates
 
