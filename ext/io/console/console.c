@@ -14,6 +14,9 @@
 #ifdef HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h>
 #endif
+#ifndef RARRAY_CONST_PTR
+# define RARRAY_CONST_PTR(ary) RARRAY_PTR(ary)
+#endif
 
 #if defined HAVE_TERMIOS_H
 # include <termios.h>
