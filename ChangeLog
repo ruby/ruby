@@ -1,3 +1,11 @@
+Fri Apr 15 22:31:00 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* array.c (rb_ary_sum): apply the precision compensated algorithm
+	  for an array in which Rational and Float values are mixed.
+
+	* test/ruby/test_array.rb (test_sum): add assertions for the above
+	  change.
+
 Fri Apr 15 22:30:01 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (rb_thread_setname): defer setting native thread name

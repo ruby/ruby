@@ -5722,6 +5722,8 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
     if (RB_FLOAT_TYPE_P(e)) {
         /* Kahan's compensated summation algorithm */
         double f, c;
+
+      float_value:
         f = NUM2DBL(v);
         c = 0.0;
         for (; i < RARRAY_LEN(ary); i++) {
@@ -5735,6 +5737,8 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
                 x = FIX2LONG(e);
             else if (RB_TYPE_P(e, T_BIGNUM))
                 x = rb_big2dbl(e);
+            else if (RB_TYPE_P(e, T_RATIONAL))
+                x = rb_num2dbl(e);
             else
                 goto not_float;
 
@@ -5747,6 +5751,20 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
 
       not_float:
         v = DBL2NUM(f);
+    }
+
+    if (RB_TYPE_P(e, T_RATIONAL)) {
+        for (; i < RARRAY_LEN(ary); i++) {
+            e = RARRAY_AREF(ary, i);
+            if (block_given)
+                e = rb_yield(e);
+            if (RB_FLOAT_TYPE_P(e)) {
+                v = rb_to_float(v);
+                goto float_value;
+            }
+            v = rb_funcall(v, idPLUS, 1, e);
+        }
+        return v;
     }
 
     for (; i < RARRAY_LEN(ary); i++) {

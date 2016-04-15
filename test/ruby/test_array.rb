@@ -2774,6 +2774,8 @@ class TestArray < Test::Unit::TestCase
       small_number /= 10
     end
     assert_float_equal(large_number+(small_number*10), [large_number, *[small_number]*10].sum)
+    assert_float_equal(large_number+(small_number*10), [large_number/1r, *[small_number]*10].sum)
+    assert_float_equal(large_number+(small_number*11), [small_number, large_number/1r, *[small_number]*10].sum)
   end
 
   private
