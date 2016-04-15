@@ -2761,6 +2761,8 @@ class TestArray < Test::Unit::TestCase
     assert_float_equal((FIXNUM_MAX+1).to_f, [FIXNUM_MAX, 1, 0.0].sum)
     assert_float_equal((FIXNUM_MAX+1).to_f, [0.0, FIXNUM_MAX+1].sum)
 
+    assert_rational_equal(5/6r, [1/2r, 1/3r].sum)
+
     assert_equal(2.0+3.0i, [2.0, 3.0i].sum)
 
     assert_int_equal(13, [1, 2].sum(10))

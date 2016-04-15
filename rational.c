@@ -741,8 +741,8 @@ f_addsub(VALUE self, VALUE anum, VALUE aden, VALUE bnum, VALUE bden, int k)
  *    Rational(9, 8)  + 4                #=> (41/8)
  *    Rational(20, 9) + 9.8              #=> 12.022222222222222
  */
-static VALUE
-nurat_add(VALUE self, VALUE other)
+VALUE
+rb_rational_add(VALUE self, VALUE other)
 {
     if (RB_TYPE_P(other, T_FIXNUM) || RB_TYPE_P(other, T_BIGNUM)) {
 	{
@@ -2538,7 +2538,7 @@ Init_Rational(void)
     rb_define_method(rb_cRational, "numerator", nurat_numerator, 0);
     rb_define_method(rb_cRational, "denominator", nurat_denominator, 0);
 
-    rb_define_method(rb_cRational, "+", nurat_add, 1);
+    rb_define_method(rb_cRational, "+", rb_rational_add, 1);
     rb_define_method(rb_cRational, "-", nurat_sub, 1);
     rb_define_method(rb_cRational, "*", nurat_mul, 1);
     rb_define_method(rb_cRational, "/", nurat_div, 1);
