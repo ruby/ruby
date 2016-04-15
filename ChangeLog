@@ -1,3 +1,11 @@
+Fri Apr 15 10:07:11 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/io/console/console.c (console_key_pressed_p): raise the same
+	  exception, "unknown virtual key code", for names with nul chars.
+	  though console_win32_vk() considers the length and can deal with
+	  nul chars, rb_sprintf() raised at PRIsVALUE previously, so quote
+	  it if it is unprintable.
+
 Fri Apr 15 09:02:58 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/io/console/console.c (rb_sym2str): fallback definition for

@@ -340,6 +340,21 @@ defined?(IO.console) and TestIO_Console.class_eval do
   end
 end
 
+defined?(IO.console) and IO.console and IO.console.respond_to?(:pressed?) and
+  TestIO_Console.class_eval do
+  def test_pressed_valid
+    assert_include([true, false], IO.console.pressed?("HOME"))
+    assert_include([true, false], IO.console.pressed?(:"HOME"))
+  end
+
+  def test_pressed_invalid
+    e = assert_raise(ArgumentError) do
+      IO.console.pressed?("HOME\0")
+    end
+    assert_match(/unknown virtual key code/, e.message)
+  end
+end
+
 TestIO_Console.class_eval do
   def test_stringio_getch
     assert_separately %w"--disable=gems -rstringio -rio/console", %q{
