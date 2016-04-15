@@ -20,6 +20,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 === Core classes updates (outstanding ones only)
 
 * Array
+
   * Array#max and Array#min.  [Feature #12172]
     This may cause a tiny incompatibility: if you redefine
     Enumerable#max and call max to an Array, your redefinition will be
@@ -34,6 +35,16 @@ with all sufficient information, see the ChangeLog file or Redmine
 * File
 
   * File.empty?.  [Feature #9969]
+
+* Float
+
+  * Float#ceil and Float#floor now take an optional digits, as well as
+    Float#round.  [Feature #12245]
+
+* Integer
+
+  * Integer#ceil and Integer#floor now take an optional digits, as well
+    as Integer#round.  [Feature #12245]
 
 * String
 
@@ -50,9 +61,11 @@ with all sufficient information, see the ChangeLog file or Redmine
 === Stdlib updates (outstanding ones only)
 
 * CSV
+
   * Add a liberal_parsing option. [Feature #11839]
 
 * optparse
+
   * Add an into option. [Feature #11191]
 
 === Stdlib compatibility issues (excluding feature bug fixes)
