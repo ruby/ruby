@@ -1,3 +1,7 @@
+Sat Apr 16 01:03:32 2016  Tanaka Akira  <akr@fsij.org>
+
+	* array.c (rb_ary_sum): Fix SEGV by [1/2r, 1].sum.
+
 Fri Apr 15 23:52:00 2016  Kenta Murata  <mrkn@mrkn.jp>
 
 	* rational.c (rb_rational_plus): rename from rb_rational_add
