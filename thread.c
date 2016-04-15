@@ -711,17 +711,7 @@ thread_create_core(VALUE thval, VALUE args, VALUE (*fn)(ANYARGS))
     return thval;
 }
 
-static rb_thread_t *
-get_initialized_threadptr(VALUE thread, VALUE klass)
-{
-    rb_thread_t *th;
-    GetThreadPtr(thread, th);
-    if (!th->first_args) {
-	rb_raise(rb_eThreadError, "uninitialized thread - check `%"PRIsVALUE"#initialize'",
-		 klass);
-    }
-    return th;
-}
+#define threadptr_initialized(th) ((th)->first_args != 0)
 
 /*
  * call-seq:
@@ -746,13 +736,18 @@ get_initialized_threadptr(VALUE thread, VALUE klass)
 static VALUE
 thread_s_new(int argc, VALUE *argv, VALUE klass)
 {
+    rb_thread_t *th;
     VALUE thread = rb_thread_alloc(klass);
 
     if (GET_VM()->main_thread->status == THREAD_KILLED)
 	rb_raise(rb_eThreadError, "can't alloc thread");
 
     rb_obj_call_init(thread, argc, argv);
-    get_initialized_threadptr(thread, klass);
+    GetThreadPtr(thread, th);
+    if (!threadptr_initialized(th)) {
+	rb_raise(rb_eThreadError, "uninitialized thread - check `%"PRIsVALUE"#initialize'",
+		 klass);
+    }
     return thread;
 }
 
@@ -2797,7 +2792,8 @@ rb_thread_setname(VALUE thread, VALUE name)
 #ifdef SET_ANOTHER_THREAD_NAME
     const char *s = "";
 #endif
-    rb_thread_t *th = get_initialized_threadptr(thread, RBASIC_CLASS(thread));
+    rb_thread_t *th;
+    GetThreadPtr(thread, th);
     if (!NIL_P(name)) {
 	rb_encoding *enc;
 	StringValueCStr(name);
@@ -2813,7 +2809,9 @@ rb_thread_setname(VALUE thread, VALUE name)
     }
     th->name = name;
 #if defined(SET_ANOTHER_THREAD_NAME)
-    SET_ANOTHER_THREAD_NAME(th->thread_id, s);
+    if (threadptr_initialized(th)) {
+	SET_ANOTHER_THREAD_NAME(th->thread_id, s);
+    }
 #endif
     return name;
 }
@@ -2836,7 +2834,7 @@ rb_thread_inspect(VALUE thread)
     GetThreadPtr(thread, th);
     status = thread_status_name(th);
     str = rb_sprintf("#<%"PRIsVALUE":%p", cname, (void *)thread);
-    if (RTEST(th->name)) {
+    if (!NIL_P(th->name)) {
 	rb_str_catf(str, "@%"PRIsVALUE, th->name);
     }
     if (!th->first_func && th->first_proc) {
