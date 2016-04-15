@@ -1,3 +1,8 @@
+Fri Apr 15 09:02:58 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/io/console/console.c (rb_sym2str): fallback definition for
+	  older ruby.  [ruby-core:74953] [Bug #12284]
+
 Thu Apr 14 21:46:36 2016  Tanaka Akira  <akr@fsij.org>
 
 	* array.c (rb_ary_sum): Support the optional argument, init, and

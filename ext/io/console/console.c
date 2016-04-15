@@ -103,6 +103,10 @@ rb_f_send(int argc, VALUE *argv, VALUE recv)
 }
 #endif
 
+#ifndef HAVE_RB_SYM2STR
+# define rb_sym2str(sym) rb_id2str(SYM2ID(sym))
+#endif
+
 typedef struct {
     int vmin;
     int vtime;
