@@ -1098,4 +1098,10 @@ q.pop
     t.kill
     t.join
   end
+
+  def test_thread_setname_uninitialized
+    bug12290 = '[ruby-core:74963] [Bug #12290]'
+    c = Class.new(Thread) {def initialize() self.name = "foo" end}
+    assert_raise(ThreadError, bug12290) {c.new {}}
+  end
 end

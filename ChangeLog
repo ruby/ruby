@@ -1,3 +1,11 @@
+Fri Apr 15 21:12:23 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (get_initialized_threadptr): extract ensuring that the
+	  thread is initialized.
+
+	* thread.c (rb_thread_setname): thread must be initialized to set
+	  the name.  [ruby-core:74963] [Bug #12290]
+
 Fri Apr 15 20:27:16 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/irb/ext/save-history.rb: Fix NoMethodError when method is not defined.
