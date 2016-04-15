@@ -927,19 +927,19 @@ OPTS =
 # for example,
 #  $ make benchmark COMPARE_RUBY="ruby-trunk" OPTS="-e ruby-2.2.2"
 # This command compares trunk and built-ruby and 2.2.2
-benchmark: $(PROGRAM) PHONY
+benchmark: miniruby$(EXEEXT) PHONY
 	$(BASERUBY) $(srcdir)/benchmark/driver.rb -v \
-	            --executables="$(COMPARE_RUBY); built-ruby::$(RUNRUBY)" \
+	            --executables="$(COMPARE_RUBY) -I../../ruby/lib -I. -I.ext/common --disable-gem; built-ruby::$(MINIRUBY) --disable-gem" \
 	            --pattern='bm_' --directory=$(srcdir)/benchmark $(OPTS)
 
-benchmark-each: $(PROGRAM) PHONY
+benchmark-each: miniruby$(EXEEXT) PHONY
 	$(BASERUBY) $(srcdir)/benchmark/driver.rb -v \
-	            --executables="$(COMPARE_RUBY); built-ruby::$(RUNRUBY)" \
+	            --executables="$(COMPARE_RUBY) -I../../ruby/lib -I. -I.ext/common --disable-gem; built-ruby::$(MINIRUBY) --disable-gem" \
 	            --pattern=$(ITEM) --directory=$(srcdir)/benchmark $(OPTS)
 
-tbench: $(PROGRAM) PHONY
+tbench: miniruby$(EXEEXT) PHONY
 	$(BASERUBY) $(srcdir)/benchmark/driver.rb -v \
-	            --executables="$(COMPARE_RUBY); built-ruby::$(RUNRUBY)" \
+	            --executables="$(COMPARE_RUBY) -I../../ruby/lib -I. -I.ext/common --disable-gem; built-ruby::$(MINIRUBY) --disable-gem" \
 	            --pattern='bmx_' --directory=$(srcdir)/benchmark $(OPTS)
 
 run.gdb:

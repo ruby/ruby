@@ -1,3 +1,7 @@
+Fri Apr 15 15:38:58 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* common.mk (benchmark): order options for built-ruby and compare-ruby.
+
 Fri Apr 15 14:14:00 2016  Kenta Murata  <mrkn@mrkn.jp>
 
 	* test/ruby/test_array.rb (test_sum): add assertions for Rational and
