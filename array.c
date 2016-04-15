@@ -5762,7 +5762,7 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
                 v = rb_to_float(v);
                 goto float_value;
             }
-            v = rb_rational_add(e, v);
+            v = rb_rational_plus(e, v);
         }
         return v;
     }
