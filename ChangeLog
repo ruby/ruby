@@ -1,3 +1,11 @@
+Fri Apr 15 14:52:06 2016  Elliot Winkler  <elliot.winkler@gmail.com>
+
+	* lib/forwardable.rb (def_instance_delegator) fix delegating to
+	  'args' and 'block', clashing with local variables in generated
+	  methods.  [ruby-core:72579] [Bug #11916]
+
+	* lib/forwardable.rb (def_single_delegator): ditto.
+
 Fri Apr 15 14:27:48 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/irb/ext/save-history.rb: suppress warning: method redefined;
