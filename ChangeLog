@@ -1,3 +1,8 @@
+Fri Apr 15 14:14:00 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* test/ruby/test_array.rb (test_sum): add assertions for Rational and
+	  Complex numbers.
+
 Fri Apr 15 10:07:11 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/io/console/console.c (console_key_pressed_p): raise the same

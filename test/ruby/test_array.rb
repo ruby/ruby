@@ -2714,14 +2714,25 @@ class TestArray < Test::Unit::TestCase
   FIXNUM_MIN = -(1 << (8 * RbConfig::SIZEOF['long'] - 2))
   FIXNUM_MAX = (1 << (8 * RbConfig::SIZEOF['long'] - 2)) - 1
 
-  def assert_int_equal(e, v, msg=nil)
-    assert_kind_of(Integer, v, msg)
+  def assert_typed_equal(e, v, cls, msg=nil)
+    assert_kind_of(cls, v, msg)
     assert_equal(e, v, msg)
   end
 
+  def assert_int_equal(e, v, msg=nil)
+    assert_typed_equal(e, v, Integer, msg)
+  end
+
+  def assert_rational_equal(e, v, msg=nil)
+    assert_typed_equal(e, v, Rational, msg)
+  end
+
   def assert_float_equal(e, v, msg=nil)
-    assert_equal(Float, v.class, msg)
-    assert_equal(e, v, msg)
+    assert_typed_equal(e, v, Float, msg)
+  end
+
+  def assert_complex_equal(e, v, msg=nil)
+    assert_typed_equal(e, v, Complex, msg)
   end
 
   def test_sum
@@ -2729,7 +2740,12 @@ class TestArray < Test::Unit::TestCase
     assert_int_equal(3, [3].sum)
     assert_int_equal(8, [3, 5].sum)
     assert_int_equal(15, [3, 5, 7].sum)
+    assert_rational_equal(8r, [3, 5r].sum)
     assert_float_equal(15.0, [3, 5, 7.0].sum)
+    assert_float_equal(15.0, [3, 5r, 7.0].sum)
+    assert_complex_equal(8r + 1i, [3, 5r, 1i].sum)
+    assert_complex_equal(15.0 + 1i, [3, 5r, 7.0, 1i].sum)
+
     assert_int_equal(2*FIXNUM_MAX, Array.new(2, FIXNUM_MAX).sum)
     assert_int_equal(2*(FIXNUM_MAX+1), Array.new(2, FIXNUM_MAX+1).sum)
     assert_int_equal(10*FIXNUM_MAX, Array.new(10, FIXNUM_MAX).sum)
