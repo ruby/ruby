@@ -1,3 +1,7 @@
+Sat Apr 16 01:33:27 2016  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* tool/redmine-backporter.rb: sort revisions.
+
 Sat Apr 16 01:16:02 2016  Tanaka Akira  <akr@fsij.org>
 
 	* array.c (rb_ary_sum): Don't yield same element twice.

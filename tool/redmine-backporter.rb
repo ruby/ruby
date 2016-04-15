@@ -316,7 +316,7 @@ def backport_command_string
     end
     @changesets.define_singleton_method(:validated){true}
   end
-  " #{merger_path} --ticket=#{@issue} #{@changesets.join(',')}"
+  " #{merger_path} --ticket=#{@issue} #{@changesets.sort.join(',')}"
 end
 
 def status_char(obj)
