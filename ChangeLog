@@ -1,3 +1,8 @@
+Sat Apr 16 01:16:02 2016  Tanaka Akira  <akr@fsij.org>
+
+	* array.c (rb_ary_sum): Don't yield same element twice.
+	  Found by nagachika.
+
 Sat Apr 16 01:03:32 2016  Tanaka Akira  <akr@fsij.org>
 
 	* array.c (rb_ary_sum): Fix SEGV by [1/2r, 1].sum.

@@ -5736,12 +5736,14 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
 
         f = NUM2DBL(v);
         c = 0.0;
+        goto has_float_value;
         for (; i < RARRAY_LEN(ary); i++) {
             double x, y, t;
             e = RARRAY_AREF(ary, i);
             if (block_given)
                 e = rb_yield(e);
             if (RB_FLOAT_TYPE_P(e))
+              has_float_value:
                 x = RFLOAT_VALUE(e);
             else if (FIXNUM_P(e))
                 x = FIX2LONG(e);
@@ -5763,10 +5765,12 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
         v = DBL2NUM(f);
     }
 
+    goto has_some_value;
     for (; i < RARRAY_LEN(ary); i++) {
         e = RARRAY_AREF(ary, i);
         if (block_given)
             e = rb_yield(e);
+      has_some_value:
         v = rb_funcall(v, idPLUS, 1, e);
     }
     return v;

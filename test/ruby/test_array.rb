@@ -1,6 +1,7 @@
 # coding: US-ASCII
 # frozen_string_literal: false
 require 'test/unit'
+require "delegate"
 require "rbconfig/sizeof"
 
 class TestArray < Test::Unit::TestCase
@@ -2768,6 +2769,12 @@ class TestArray < Test::Unit::TestCase
 
     assert_int_equal(13, [1, 2].sum(10))
     assert_int_equal(16, [1, 2].sum(10) {|v| v * 2 })
+
+    yielded = []
+    three = SimpleDelegator.new(3)
+    ary = [1, 2.0, three]
+    assert_float_equal(12.0, ary.sum {|x| yielded << x; x * 2 })
+    assert_equal(ary, yielded)
 
     assert_raise(TypeError) { [Object.new].sum }
 
