@@ -1,3 +1,7 @@
+Fri Apr 15 21:10:00 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/irb/ext/save-history.rb: Fix NoMethodError when method is not defined.
+
 Fri Apr 15 14:52:06 2016  Elliot Winkler  <elliot.winkler@gmail.com>
 
 	* lib/forwardable.rb (def_instance_delegator) fix delegating to
