@@ -1505,8 +1505,11 @@ native_set_thread_name(rb_thread_t *th)
 {
 #ifdef SET_CURRENT_THREAD_NAME
     if (!th->first_func && th->first_proc) {
-	VALUE loc = rb_proc_location(th->first_proc);
-	if (!NIL_P(loc)) {
+	VALUE loc;
+	if (!NIL_P(loc = th->name)) {
+	    SET_CURRENT_THREAD_NAME(RSTRING_PTR(loc));
+	}
+	else if (!NIL_P(loc = rb_proc_location(th->first_proc))) {
 	    const VALUE *ptr = RARRAY_CONST_PTR(loc); /* [ String, Fixnum ] */
 	    char *name, *p;
 	    char buf[16];
