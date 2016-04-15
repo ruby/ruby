@@ -718,13 +718,12 @@ console_key_pressed_p(VALUE io, VALUE k)
     }
     else {
 	const struct vktable *t;
+	const char *kn;
 	if (SYMBOL_P(k)) {
 	    k = rb_sym2str(k);
 	}
-	else {
-	    StringValueCStr(k);
-	}
-	t = console_win32_vk(RSTRING_PTR(k), RSTRING_LEN(k));
+	kn = StringValueCStr(k);
+	t = console_win32_vk(kn, RSTRING_LEN(k));
 	if (!t || (vk = (short)t->vk) == -1) {
 	    rb_raise(rb_eArgError, "unknown virtual key code: %"PRIsVALUE, k);
 	}
