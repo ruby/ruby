@@ -7,6 +7,9 @@ rescue LoadError
 end
 
 class TestIO_Console < Test::Unit::TestCase
+end
+
+defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
   Bug6116 = '[ruby-dev:45309]'
 
   def test_raw
@@ -294,9 +297,9 @@ class TestIO_Console < Test::Unit::TestCase
     w.close if w
     Process.wait(pid) if pid
   end
-end if defined?(PTY) and defined?(IO::console)
+end
 
-class TestIO_Console < Test::Unit::TestCase
+defined?(IO.console) and TestIO_Console.class_eval do
   case
   when Process.respond_to?(:daemon)
     noctty = [EnvUtil.rubybin, "-e", "Process.daemon(true)"]
@@ -335,9 +338,9 @@ class TestIO_Console < Test::Unit::TestCase
       t2.close!
     end
   end
-end if defined?(IO.console)
+end
 
-class TestIO_Console < Test::Unit::TestCase
+TestIO_Console.class_eval do
   def test_stringio_getch
     assert_separately %w"--disable=gems -rstringio -rio/console", %q{
       assert_operator(StringIO, :method_defined?, :getch)
