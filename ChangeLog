@@ -1,4 +1,7 @@
-Sat Apr 16 09:59:40 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Apr 16 10:00:11 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* struct.c (struct_make_members_list, rb_struct_s_def): member
+	  names should be unique. [ruby-core:74971] [Bug #12291]
 
 	* struct.c (struct_make_members_list): extract making member name
 	  list from char* va_list, with creating symbols without
