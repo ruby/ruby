@@ -1,3 +1,8 @@
+Sun Apr 17 04:20:40 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (setup_exception): set the cause only if it is explicitly
+	  given or not set yet.  [Bug #12068]
+
 Sat Apr 16 00:56:45 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (rb_thread_setname): defer setting native thread name

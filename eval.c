@@ -25,6 +25,7 @@ VALUE rb_eLocalJumpError;
 VALUE rb_eSysStackError;
 
 ID ruby_static_id_signo, ruby_static_id_status;
+static ID id_cause;
 #define id_signo ruby_static_id_signo
 #define id_status ruby_static_id_status
 
@@ -442,9 +443,6 @@ static VALUE get_thread_errinfo(rb_thread_t *th);
 static VALUE
 exc_setup_cause(VALUE exc, VALUE cause)
 {
-    ID id_cause;
-    CONST_ID(id_cause, "cause");
-
 #if SUPPORT_JOKE
     if (NIL_P(cause)) {
 	ID id_true_cause;
@@ -488,10 +486,15 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 	mesg = rb_exc_new(rb_eRuntimeError, 0, 0);
 	nocause = 0;
     }
-    if (cause == Qundef) {
-	cause = nocause ? Qnil : get_thread_errinfo(th);
+    if (cause != Qundef) {
+	exc_setup_cause(mesg, cause);
     }
-    exc_setup_cause(mesg, cause);
+    else if (nocause) {
+	exc_setup_cause(mesg, Qnil);
+    }
+    else if (!rb_ivar_defined(mesg, id_cause)) {
+	exc_setup_cause(mesg, get_thread_errinfo(th));
+    }
 
     file = rb_source_loc(&line);
     if (file && !NIL_P(mesg)) {
@@ -1652,4 +1655,5 @@ Init_eval(void)
 
     id_signo = rb_intern_const("signo");
     id_status = rb_intern_const("status");
+    id_cause = rb_intern_const("cause");
 }
