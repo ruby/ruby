@@ -8399,8 +8399,6 @@ dt_lite_jisx0301(int argc, VALUE *argv, VALUE self)
 #define f_subsec(x) rb_funcall(x, rb_intern("subsec"), 0)
 #define f_utc_offset(x) rb_funcall(x, rb_intern("utc_offset"), 0)
 #define f_local3(x,y,m,d) rb_funcall(x, rb_intern("local"), 3, y, m, d)
-#define f_utc6(x,y,m,d,h,min,s) rb_funcall(x, rb_intern("utc"), 6,\
-					   y, m, d, h, min, s)
 
 /*
  * call-seq:

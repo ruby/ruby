@@ -1,3 +1,8 @@
+Sat Apr 16 14:15:24 2016  Yuichiro Kaneko  <yui-knk@ruby-lang.org>
+
+	* ext/date/date_core.c : remove not used f_utc6 macro.
+	  After r54169 f_utc6 macro is not used.
+
 Sat Apr 16 10:00:11 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* struct.c (struct_make_members_list, rb_struct_s_def): member
