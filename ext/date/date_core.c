@@ -8395,7 +8395,6 @@ dt_lite_jisx0301(int argc, VALUE *argv, VALUE self)
 
 /* conversions */
 
-#define f_getlocal(x) rb_funcall(x, rb_intern("getlocal"), 0)
 #define f_subsec(x) rb_funcall(x, rb_intern("subsec"), 0)
 #define f_utc_offset(x) rb_funcall(x, rb_intern("utc_offset"), 0)
 #define f_local3(x,y,m,d) rb_funcall(x, rb_intern("local"), 3, y, m, d)

@@ -1,3 +1,8 @@
+Sat Apr 16 14:26:49 2016  Yuichiro Kaneko  <yui-knk@ruby-lang.org>
+
+	* ext/date/date_core.c : remove not used f_getlocal macro.
+	  After r54553 f_getlocal macro is not used.
+
 Sat Apr 16 14:15:24 2016  Yuichiro Kaneko  <yui-knk@ruby-lang.org>
 
 	* ext/date/date_core.c : remove not used f_utc6 macro.
