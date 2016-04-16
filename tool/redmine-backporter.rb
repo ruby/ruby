@@ -411,7 +411,7 @@ eom
       puts "ticket not selected"
       next
     end
-    rev = $1.to_i
+    rev = $1
     uri = URI("#{REDMINE_BASE}/projects/ruby-trunk/repository/revisions/#{rev}/issues.json")
     Net::HTTP.start(uri.host, uri.port, http_options) do |http|
       res = http.post(uri.path, "issue_id=#@issue",

@@ -1,3 +1,7 @@
+Sun Apr 17 04:18:56 2016  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* tool/redmine-backporter.rb: revisions are strings.
+
 Sat Apr 16 14:26:49 2016  Yuichiro Kaneko  <yui-knk@ruby-lang.org>
 
 	* ext/date/date_core.c : remove not used f_getlocal macro.
