@@ -360,6 +360,13 @@ WARN
     assert_valid_syntax("{label: <<~DOC\n""DOC\n""}", bug11849)
   end
 
+  def test_cmdarg_kwarg_lvar_clashing_method
+    bug12073 = '[ruby-core:73816] [Bug#12073]'
+    a = 1
+    assert_valid_syntax("a b: 1")
+    assert_valid_syntax("a = 1; a b: 1", bug12073)
+  end
+
   def test_duplicated_arg
     assert_syntax_error("def foo(a, a) end", /duplicated argument name/)
     assert_nothing_raised { def foo(_, _) end }

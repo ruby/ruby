@@ -7823,16 +7823,14 @@ tokadd_ident(struct parser_params *parser, int c)
     return 0;
 }
 
-static void
+static ID
 tokenize_ident(struct parser_params *parser, const enum lex_state_e last_state)
 {
     ID ident = TOK_INTERN();
 
     set_yylval_name(ident);
-    if (!IS_lex_state_for(last_state, EXPR_DOT|EXPR_FNAME) &&
-	is_local_id(ident) && lvar_defined(ident)) {
-	SET_LEX_STATE(EXPR_END);
-    }
+
+    return ident;
 }
 
 static int
@@ -8003,6 +8001,7 @@ parse_ident(struct parser_params *parser, int c, int cmd_state)
     int result = 0;
     int mb = ENC_CODERANGE_7BIT;
     const enum lex_state_e last_state = lex_state;
+    ID ident;
 
     do {
 	if (!ISASCII(c)) mb = ENC_CODERANGE_UNKNOWN;
@@ -8102,7 +8101,12 @@ parse_ident(struct parser_params *parser, int c, int cmd_state)
 	SET_LEX_STATE(EXPR_END);
     }
 
-    tokenize_ident(parser, last_state);
+    ident = tokenize_ident(parser, last_state);
+    if (!IS_lex_state_for(last_state, EXPR_DOT|EXPR_FNAME) &&
+	(result == tIDENTIFIER) && /* not EXPR_FNAME, not attrasgn */
+	lvar_defined(ident)) {
+	SET_LEX_STATE(EXPR_END|EXPR_LABEL);
+    }
     return result;
 }
 

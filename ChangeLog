@@ -1,3 +1,9 @@
+Sun Apr 17 04:30:13 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parse_ident): allow keyword arguments just after a
+	  method where the same name local variable is defined.
+	  [ruby-core:73816] [Bug#12073]
+
 Sun Apr 17 04:20:40 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (setup_exception): set the cause only if it is explicitly
