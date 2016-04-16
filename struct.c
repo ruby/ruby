@@ -331,6 +331,20 @@ rb_struct_alloc_noinit(VALUE klass)
 }
 
 static VALUE
+struct_make_members_list(va_list ar)
+{
+    char *mem;
+    VALUE ary = rb_ary_tmp_new(0);
+
+    while ((mem = va_arg(ar, char*)) != 0) {
+	VALUE sym = rb_sym_intern_ascii_cstr(mem);
+	rb_ary_push(ary, sym);
+    }
+    OBJ_FREEZE_RAW(ary);
+    return ary;
+}
+
+static VALUE
 struct_define_without_accessor(VALUE outer, const char *class_name, VALUE super, rb_alloc_func_t alloc, VALUE members)
 {
     VALUE klass;
@@ -364,15 +378,10 @@ rb_struct_define_without_accessor_under(VALUE outer, const char *class_name, VAL
 {
     va_list ar;
     VALUE members;
-    char *name;
 
-    members = rb_ary_tmp_new(0);
     va_start(ar, alloc);
-    while ((name = va_arg(ar, char*)) != NULL) {
-        rb_ary_push(members, ID2SYM(rb_intern(name)));
-    }
+    members = struct_make_members_list(ar);
     va_end(ar);
-    OBJ_FREEZE_RAW(members);
 
     return struct_define_without_accessor(outer, class_name, super, alloc, members);
 }
@@ -382,15 +391,10 @@ rb_struct_define_without_accessor(const char *class_name, VALUE super, rb_alloc_
 {
     va_list ar;
     VALUE members;
-    char *name;
 
-    members = rb_ary_tmp_new(0);
     va_start(ar, alloc);
-    while ((name = va_arg(ar, char*)) != NULL) {
-        rb_ary_push(members, ID2SYM(rb_intern(name)));
-    }
+    members = struct_make_members_list(ar);
     va_end(ar);
-    OBJ_FREEZE_RAW(members);
 
     return struct_define_without_accessor(0, class_name, super, alloc, members);
 }
@@ -400,17 +404,10 @@ rb_struct_define(const char *name, ...)
 {
     va_list ar;
     VALUE st, ary;
-    char *mem;
-
-    ary = rb_ary_tmp_new(0);
 
     va_start(ar, name);
-    while ((mem = va_arg(ar, char*)) != 0) {
-	ID slot = rb_intern(mem);
-	rb_ary_push(ary, ID2SYM(slot));
-    }
+    ary = struct_make_members_list(ar);
     va_end(ar);
-    OBJ_FREEZE_RAW(ary);
 
     if (!name) st = anonymous_struct(rb_cStruct);
     else st = new_struct(rb_str_new2(name), rb_cStruct);
@@ -422,17 +419,10 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
 {
     va_list ar;
     VALUE ary;
-    char *mem;
-
-    ary = rb_ary_tmp_new(0);
 
     va_start(ar, name);
-    while ((mem = va_arg(ar, char*)) != 0) {
-	ID slot = rb_intern(mem);
-	rb_ary_push(ary, ID2SYM(slot));
-    }
+    ary = struct_make_members_list(ar);
     va_end(ar);
-    OBJ_FREEZE_RAW(ary);
 
     return setup_struct(rb_define_class_under(outer, name, rb_cStruct), ary);
 }

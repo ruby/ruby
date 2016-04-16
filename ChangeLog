@@ -1,3 +1,9 @@
+Sat Apr 16 09:59:40 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* struct.c (struct_make_members_list): extract making member name
+	  list from char* va_list, with creating symbols without
+	  intermediate IDs.
+
 Sat Apr 16 01:33:27 2016  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* tool/redmine-backporter.rb: sort revisions.
