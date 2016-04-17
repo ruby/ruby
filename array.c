@@ -5659,7 +5659,7 @@ rb_ary_dig(int argc, VALUE *argv, VALUE self)
  * For example, [e1, e2, e3].sum returns init + e1 + e2 + e3.
  *
  * If a block is given, the block is applied to each element
- * before addtion.
+ * before addition.
  *
  * If <i>ary</i> is empty, it returns <i>init</i>.
  *
@@ -5670,7 +5670,7 @@ rb_ary_dig(int argc, VALUE *argv, VALUE self)
  *   [2.5, 3.0].sum(0.0) {|e| e * e }   #=> 15.25
  *   [Object.new].sum                   #=> TypeError
  *
- * The (arithmetic) mean value of an array can be obtained* as follows.
+ * The (arithmetic) mean value of an array can be obtained as follows.
  *
  *   mean = ary.sum(0.0) / ary.length
  *
