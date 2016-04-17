@@ -442,14 +442,6 @@ rb_async_bug_errno(const char *mesg, int errno_arg)
 }
 
 void
-rb_compile_bug(const char *file, int line, const char *fmt, ...)
-{
-    report_bug(file, line, fmt, NULL);
-
-    abort();
-}
-
-void
 rb_compile_bug_str(VALUE file, int line, const char *fmt, ...)
 {
     report_bug(RSTRING_PTR(file), line, fmt, NULL);

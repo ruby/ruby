@@ -850,7 +850,6 @@ VALUE rb_nmin_run(VALUE obj, VALUE num, int by, int rev, int ary);
 extern VALUE rb_eEAGAIN;
 extern VALUE rb_eEWOULDBLOCK;
 extern VALUE rb_eEINPROGRESS;
-NORETURN(PRINTF_ARGS(void rb_compile_bug(const char*, int, const char*, ...), 3, 4));
 NORETURN(PRINTF_ARGS(void rb_compile_bug_str(VALUE file, int line, const char *fmt, ...), 3, 4));
 PRINTF_ARGS(void rb_compile_error_str(VALUE file, int line, void *enc, const char *fmt, ...), 4, 5);
 VALUE rb_check_backtrace(VALUE);
