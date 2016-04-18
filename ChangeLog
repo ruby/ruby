@@ -1,3 +1,9 @@
+Mon Apr 18 16:07:01 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_peephole_optimize): should not replace the
+	  current target INSN, not to follow the replaced dangling link in
+	  the caller.  [ruby-core:74993] [Bug #11816]
+
 Mon Apr 18 12:56:31 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (flo_truncate): add an optional parameter, digits, as

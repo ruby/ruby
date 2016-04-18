@@ -424,4 +424,9 @@ class TestRubyOptimization < Test::Unit::TestCase
              end
     assert_nil result, '[ruby-dev:49423] [Bug #11804]'
   end
+
+  def test_nil_safe_conditional_assign
+    bug11816 = '[ruby-core:74993] [Bug #11816]'
+    assert_ruby_status([], 'nil&.foo &&= false', bug11816)
+  end
 end

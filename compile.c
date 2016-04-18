@@ -852,6 +852,7 @@ INSERT_ELEM_PREV(LINK_ELEMENT *elem1, LINK_ELEMENT *elem2)
     }
 }
 
+#if 0
 /*
  * elemX, elem1, elemY => elemX, elem2, elemY
  */
@@ -867,6 +868,7 @@ REPLACE_ELEM(LINK_ELEMENT *elem1, LINK_ELEMENT *elem2)
 	elem1->next->prev = elem2;
     }
 }
+#endif
 
 static void
 REMOVE_ELEM(LINK_ELEMENT *elem)
@@ -2056,15 +2058,13 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	     * LABEL:
 	     *  leave
 	     */
-	    INSN *eiobj = new_insn_core(iseq, iobj->line_no, BIN(leave),
-					diobj->operand_size, diobj->operands);
 	    INSN *popiobj = new_insn_core(iseq, iobj->line_no,
 					  BIN(pop), 0, 0);
 	    /* replace */
 	    unref_destination(iobj, 0);
-	    REPLACE_ELEM((LINK_ELEMENT *)iobj, (LINK_ELEMENT *)eiobj);
-	    INSERT_ELEM_NEXT((LINK_ELEMENT *)eiobj, (LINK_ELEMENT *)popiobj);
-	    iobj = eiobj;
+	    iobj->insn_id = BIN(leave);
+	    iobj->operand_size = 0;
+	    INSERT_ELEM_NEXT(&iobj->link, &popiobj->link);
 	    goto again;
 	}
 	/*
