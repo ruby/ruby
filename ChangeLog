@@ -1,3 +1,8 @@
+Mon Apr 18 12:55:31 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (int_truncate): add an optional parameter, digits, as
+	  well as Integer#round.  [Feature #12245]
+
 Sun Apr 17 04:18:56 2016  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* tool/redmine-backporter.rb: revisions are strings.

@@ -43,8 +43,8 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * Integer
 
-  * Integer#ceil and Integer#floor now take an optional digits, as well
-    as Integer#round.  [Feature #12245]
+  * Integer#ceil, Integer#floor, and Integer#truncate now take an optional
+    digits, as well as Integer#round.  [Feature #12245]
 
 * String
 

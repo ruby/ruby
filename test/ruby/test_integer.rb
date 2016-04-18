@@ -249,6 +249,31 @@ class TestInteger < Test::Unit::TestCase
     assert_int_equal(-1111_1111_1111_1111_1111_1111_1111_1110, (-1111_1111_1111_1111_1111_1111_1111_1111).ceil(-1))
   end
 
+  def test_truncate
+    assert_int_equal(11111, 11111.truncate)
+    assert_int_equal(11111, 11111.truncate(0))
+
+    assert_float_equal(11111.0, 11111.truncate(1))
+    assert_float_equal(11111.0, 11111.truncate(2))
+
+    assert_int_equal(11110, 11110.truncate(-1))
+    assert_int_equal(11110, 11119.truncate(-1))
+    assert_int_equal(11100, 11100.truncate(-2))
+    assert_int_equal(11100, 11199.truncate(-2))
+    assert_int_equal(0, 11111.truncate(-5))
+    assert_int_equal(+200, +299.truncate(-2))
+    assert_int_equal(+300, +300.truncate(-2))
+    assert_int_equal(-200, -299.truncate(-2))
+    assert_int_equal(-300, -300.truncate(-2))
+    assert_int_equal(+20 * 10**70, (+25 * 10**70).truncate(-71))
+    assert_int_equal(-20 * 10**70, (-25 * 10**70).truncate(-71))
+    assert_int_equal(+20 * 10**70, (+25 * 10**70 - 1).truncate(-71))
+    assert_int_equal(-20 * 10**70, (-25 * 10**70 + 1).truncate(-71))
+
+    assert_int_equal(1111_1111_1111_1111_1111_1111_1111_1110, 1111_1111_1111_1111_1111_1111_1111_1111.truncate(-1))
+    assert_int_equal(-1111_1111_1111_1111_1111_1111_1111_1110, (-1111_1111_1111_1111_1111_1111_1111_1111).truncate(-1))
+  end
+
   def test_bitwise_and_with_integer_mimic_object
     def (obj = Object.new).to_int
       10
