@@ -9170,67 +9170,6 @@ Init_date_core(void)
      *     d += 1			#=> #<Date: 2001-02-04 ...>
      *     d.strftime('%a %d %b %Y')	#=> "Sun 04 Feb 2001"
      *
-     *
-     * == DateTime
-     *
-     * A subclass of Date that easily handles date, hour, minute, second and
-     * offset.
-     *
-     * DateTime does not consider any leap seconds, does not track
-     * any summer time rules.
-     *
-     * DateTime object is created with DateTime::new, DateTime::jd,
-     * DateTime::ordinal, DateTime::commercial, DateTime::parse,
-     * DateTime::strptime, DateTime::now, Time#to_datetime or etc.
-     *
-     *     require 'date'
-     *
-     *     DateTime.new(2001,2,3,4,5,6)
-     *				#=> #<DateTime: 2001-02-03T04:05:06+00:00 ...>
-     *
-     * The last element of day, hour, minute or second can be
-     * fractional number. The fractional number's precision is assumed
-     * at most nanosecond.
-     *
-     *     DateTime.new(2001,2,3.5)
-     *				#=> #<DateTime: 2001-02-03T12:00:00+00:00 ...>
-     *
-     * An optional argument the offset indicates the difference
-     * between the local time and UTC. For example, Rational(3,24)
-     * represents ahead of 3 hours of UTC, Rational(-5,24) represents
-     * behind of 5 hours of UTC. The offset should be -1 to +1, and
-     * its precision is assumed at most second. The default value is
-     * zero(equals to UTC).
-     *
-     *     DateTime.new(2001,2,3,4,5,6,Rational(3,24))
-     *				#=> #<DateTime: 2001-02-03T04:05:06+03:00 ...>
-     *
-     * also accepts string form.
-     *
-     *     DateTime.new(2001,2,3,4,5,6,'+03:00')
-     *				#=> #<DateTime: 2001-02-03T04:05:06+03:00 ...>
-     *
-     * An optional argument the day of calendar reform (start) denotes
-     * a Julian day number, which should be 2298874 to 2426355 or
-     * -/+oo.  The default value is Date::ITALY (2299161=1582-10-15).
-     *
-     * DateTime object has various methods. See each reference.
-     *
-     *     d = DateTime.parse('3rd Feb 2001 04:05:06+03:30')
-     *				#=> #<DateTime: 2001-02-03T04:05:06+03:30 ...>
-     *     d.hour		#=> 4
-     *     d.min		#=> 5
-     *     d.sec		#=> 6
-     *     d.offset		#=> (7/48)
-     *     d.zone		#=> "+03:30"
-     *     d += Rational('1.5')
-     *				#=> #<DateTime: 2001-02-04%16:05:06+03:30 ...>
-     *     d = d.new_offset('+09:00')
-     *				#=> #<DateTime: 2001-02-04%21:35:06+09:00 ...>
-     *     d.strftime('%I:%M:%S %p')
-     *				#=> "09:35:06 PM"
-     *     d > DateTime.new(1999)
-     *				#=> true
      */
     cDate = rb_define_class("Date", rb_cObject);
 
@@ -9480,6 +9419,67 @@ Init_date_core(void)
 
     /*
 	:markup: Markdown
+
+	## DateTime
+
+	A subclass of Date that easily handles date, hour, minute, second and
+	offset.
+
+	DateTime does not consider any leap seconds, does not track
+	any summer time rules.
+
+	DateTime object is created with DateTime::new, DateTime::jd,
+	DateTime::ordinal, DateTime::commercial, DateTime::parse,
+	DateTime::strptime, DateTime::now, Time#to_datetime or etc.
+
+	    require 'date'
+
+	    DateTime.new(2001,2,3,4,5,6)
+				#=> #<DateTime: 2001-02-03T04:05:06+00:00 ...>
+
+	The last element of day, hour, minute or second can be
+	fractional number. The fractional number's precision is assumed
+	at most nanosecond.
+
+	    DateTime.new(2001,2,3.5)
+				#=> #<DateTime: 2001-02-03T12:00:00+00:00 ...>
+
+	An optional argument the offset indicates the difference
+	between the local time and UTC. For example, `Rational(3,24)`
+	represents ahead of 3 hours of UTC, `Rational(-5,24)` represents
+	behind of 5 hours of UTC. The offset should be -1 to +1, and
+	its precision is assumed at most second. The default value is
+	zero(equals to UTC).
+
+	    DateTime.new(2001,2,3,4,5,6,Rational(3,24))
+				#=> #<DateTime: 2001-02-03T04:05:06+03:00 ...>
+
+	also accepts string form.
+
+	    DateTime.new(2001,2,3,4,5,6,'+03:00')
+				#=> #<DateTime: 2001-02-03T04:05:06+03:00 ...>
+
+	An optional argument the day of calendar reform (start) denotes
+	a Julian day number, which should be 2298874 to 2426355 or
+	-/+oo.  The default value is `Date::ITALY` (2299161=1582-10-15).
+
+	DateTime object has various methods. See each reference.
+
+	    d = DateTime.parse('3rd Feb 2001 04:05:06+03:30')
+				#=> #<DateTime: 2001-02-03T04:05:06+03:30 ...>
+	    d.hour		#=> 4
+	    d.min		#=> 5
+	    d.sec		#=> 6
+	    d.offset		#=> (7/48)
+	    d.zone		#=> "+03:30"
+	    d += Rational('1.5')
+				#=> #<DateTime: 2001-02-04%16:05:06+03:30 ...>
+	    d = d.new_offset('+09:00')
+				#=> #<DateTime: 2001-02-04%21:35:06+09:00 ...>
+	    d.strftime('%I:%M:%S %p')
+				#=> "09:35:06 PM"
+	    d > DateTime.new(1999)
+				#=> true
 
 	### When should you use DateTime and when should you use Time?
 
