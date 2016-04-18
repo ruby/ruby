@@ -80,7 +80,7 @@ err_position_0(char *buf, long len, const char *file, int line)
 }
 
 static VALUE
-compile_snprintf(rb_encoding *enc, const char *pre, const char *file, int line, const char *fmt, va_list args)
+compile_vsprintf(rb_encoding *enc, const char *pre, const char *file, int line, const char *fmt, va_list args)
 {
     VALUE str = rb_enc_str_new(0, 0, enc);
 
@@ -125,7 +125,7 @@ rb_compile_error(const char *file, int line, const char *fmt, ...)
 VALUE
 rb_error_vsprintf(VALUE file, int line, void *enc, const char *fmt, va_list args)
 {
-    return compile_snprintf(enc, NULL,
+    return compile_vsprintf(enc, NULL,
 			    NIL_P(file) ? NULL : RSTRING_PTR(file), line,
 			    fmt, args);
 }
@@ -140,7 +140,7 @@ compile_warn_print(const char *file, int line, const char *fmt, va_list args)
 {
     VALUE str;
 
-    str = compile_snprintf(NULL, "warning: ", file, line, fmt, args);
+    str = compile_vsprintf(NULL, "warning: ", file, line, fmt, args);
     rb_str_cat2(str, "\n");
     rb_write_error_str(str);
 }
