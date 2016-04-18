@@ -184,6 +184,12 @@ require 'monitor'
 #
 #      # :debug < :info < :warn < :error < :fatal < :unknown
 #
+# 4. Constructor
+#
+#      Logger.new(logdev, level: Logger::INFO)
+#      Logger.new(logdev, level: :info)
+#      Logger.new(logdev, level: 'INFO')
+#
 # == Format
 #
 # Log messages are rendered in the output stream in a certain format by
@@ -200,12 +206,22 @@ require 'monitor'
 #   logger.datetime_format = '%Y-%m-%d %H:%M:%S'
 #         # e.g. "2004-01-03 00:54:26"
 #
+# or via the constructor.
+#
+#   Logger.new(logdev, datetime_format: '%Y-%m-%d %H:%M:%S')
+#
 # Or, you may change the overall format via the #formatter= method.
 #
 #   logger.formatter = proc do |severity, datetime, progname, msg|
 #     "#{datetime}: #{msg}\n"
 #   end
 #   # e.g. "2005-09-22 08:51:08 +0900: hello world"
+#
+# or via the constructor.
+#
+#   Logger.new(logdev, formatter: proc {|severity, datetime, progname, msg|
+#     "#{datetime}: #{msg}\n"
+#   })
 #
 class Logger
   VERSION = "1.2.7"
@@ -326,6 +342,10 @@ class Logger
   # :call-seq:
   #   Logger.new(logdev, shift_age = 7, shift_size = 1048576)
   #   Logger.new(logdev, shift_age = 'weekly')
+  #   Logger.new(logdev, level: :info)
+  #   Logger.new(logdev, progname: 'progname')
+  #   Logger.new(logdev, formatter: formatter)
+  #   Logger.new(logdev, datetime_format: '%Y-%m-%d %H:%M:%S')
   #
   # === Args
   #
@@ -338,16 +358,26 @@ class Logger
   # +shift_size+::
   #   Maximum logfile size (only applies when +shift_age+ is a number). Default
   #   value is 1MiB.
+  # +level+::
+  #   Logging severity threshold. Default values is Logger::DEBUG.
+  # +progname+::
+  #   Program name to include in log messages. Default value is nil.
+  # +formatter+::
+  #   Logging formatter. Default values is an instance of Logger::Formatter.
+  # +datetime_format+::
+  #   Date and time format. Default value is '%Y-%m-%d %H:%M:%S'.
   #
   # === Description
   #
   # Create an instance.
   #
-  def initialize(logdev, shift_age = 0, shift_size = 1048576)
-    @progname = nil
-    @level = DEBUG
+  def initialize(logdev, shift_age = 0, shift_size = 1048576, level: DEBUG,
+                 progname: nil, formatter: nil, datetime_format: nil)
+    self.level = level
+    self.progname = progname
     @default_formatter = Formatter.new
-    @formatter = nil
+    self.datetime_format = datetime_format
+    self.formatter = formatter
     @logdev = nil
     if logdev
       @logdev = LogDevice.new(logdev, :shift_age => shift_age,
