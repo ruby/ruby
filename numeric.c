@@ -2817,7 +2817,7 @@ rb_num2ull(VALUE val)
  *
  *  As +int+ is already an Integer, all these methods simply return the receiver.
  *
- *  Synonyms are #to_int, #floor, #ceil, #truncate.
+ *  Synonyms are #to_int, #truncate.
  */
 
 static VALUE
