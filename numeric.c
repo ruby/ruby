@@ -2127,7 +2127,7 @@ flo_negative_p(VALUE num)
 
 /*
  *  call-seq:
- *     num.floor  ->  integer
+ *     num.floor([ndigits])  ->  integer or float
  *
  *  Returns the largest integer less than or equal to +num+.
  *
@@ -2139,15 +2139,15 @@ flo_negative_p(VALUE num)
  */
 
 static VALUE
-num_floor(VALUE num)
+num_floor(int argc, VALUE *argv, VALUE num)
 {
-    return flo_floor(0, 0, rb_Float(num));
+    return flo_floor(argc, argv, rb_Float(num));
 }
 
 
 /*
  *  call-seq:
- *     num.ceil  ->  integer
+ *     num.ceil([ndigits])  ->  integer or float
  *
  *  Returns the smallest possible Integer that is greater than or equal to
  *  +num+.
@@ -2162,9 +2162,9 @@ num_floor(VALUE num)
  */
 
 static VALUE
-num_ceil(VALUE num)
+num_ceil(int argc, VALUE *argv, VALUE num)
 {
-    return flo_ceil(0, 0, rb_Float(num));
+    return flo_ceil(argc, argv, rb_Float(num));
 }
 
 /*
@@ -2188,7 +2188,7 @@ num_round(int argc, VALUE* argv, VALUE num)
 
 /*
  *  call-seq:
- *     num.truncate  ->  integer
+ *     num.truncate([ndigits])  ->  integer or float
  *
  *  Returns +num+ truncated to an Integer.
  *
@@ -2197,9 +2197,9 @@ num_round(int argc, VALUE* argv, VALUE num)
  */
 
 static VALUE
-num_truncate(VALUE num)
+num_truncate(int argc, VALUE *argv, VALUE num)
 {
-    return flo_truncate(0, 0, rb_Float(num));
+    return flo_truncate(argc, argv, rb_Float(num));
 }
 
 static double
@@ -4566,10 +4566,10 @@ Init_Numeric(void)
     rb_define_method(rb_cNumeric, "zero?", num_zero_p, 0);
     rb_define_method(rb_cNumeric, "nonzero?", num_nonzero_p, 0);
 
-    rb_define_method(rb_cNumeric, "floor", num_floor, 0);
-    rb_define_method(rb_cNumeric, "ceil", num_ceil, 0);
+    rb_define_method(rb_cNumeric, "floor", num_floor, -1);
+    rb_define_method(rb_cNumeric, "ceil", num_ceil, -1);
     rb_define_method(rb_cNumeric, "round", num_round, -1);
-    rb_define_method(rb_cNumeric, "truncate", num_truncate, 0);
+    rb_define_method(rb_cNumeric, "truncate", num_truncate, -1);
     rb_define_method(rb_cNumeric, "step", num_step, -1);
     rb_define_method(rb_cNumeric, "positive?", num_positive_p, 0);
     rb_define_method(rb_cNumeric, "negative?", num_negative_p, 0);
