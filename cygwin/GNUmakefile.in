@@ -88,6 +88,13 @@ $(OBJS) $(MAINOBJ): win32.h
 
 dir.$(OBJEXT) win32/win32.$(OBJEXT): win32/dir.h
 file.$(OBJEXT) win32/win32.$(OBJEXT): win32/file.h
+
+MSYS2_ARG_CONV_EXCL_PARAM = --exclude=;--name=
+
+yes-test-ruby:	 export MSYS2_ARG_CONV_EXCL=$(MSYS2_ARG_CONV_EXCL_PARAM)
+yes-test-all:	 export MSYS2_ARG_CONV_EXCL=$(MSYS2_ARG_CONV_EXCL_PARAM)
+yes-test-almost: export MSYS2_ARG_CONV_EXCL=$(MSYS2_ARG_CONV_EXCL_PARAM)
+
 endif
 
 $(LIBRUBY_SO): $(RUBYDEF)

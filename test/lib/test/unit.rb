@@ -87,7 +87,7 @@ module Test
         end
 
         opts.on '-n', '--name PATTERN', "Filter test method names on pattern: /REGEXP/ or STRING" do |a|
-          options[:filter] = a
+          (options[:filter] ||= []) << a
         end
 
         opts.on '--test-order=random|alpha|sorted', [:random, :alpha, :sorted] do |a|
@@ -96,6 +96,30 @@ module Test
       end
 
       def non_options(files, options)
+        filter = options[:filter]
+        if filter
+          pos_pat = /\A\/(.*)\/\z/
+          neg_pat = /\A!\/(.*)\/\z/
+          negative, positive = filter.partition {|s| neg_pat =~ s}
+          if positive.empty?
+            filter = nil
+          elsif negative.empty? and positive.size == 1 and pos_pat !~ positive[0]
+            filter = positive[0]
+          else
+            filter = Regexp.union(*positive.map! {|s| s[pos_pat, 1] || "\\A#{Regexp.quote(s)}\\z"})
+          end
+          unless negative.empty?
+            negative = Regexp.union(*negative.map! {|s| s[neg_pat, 1]})
+            filter = /\A(?!.*#{negative})#{filter}/
+          end
+          if Regexp === filter
+            # bypass conversion in minitest
+            def filter.=~(other)    # :nodoc:
+              super unless Regexp === other
+            end
+          end
+          options[:filter] = filter
+        end
         true
       end
     end
@@ -589,9 +613,7 @@ module Test
           @verbose = !options[:parallel]
           @output = Output.new(self)
         end
-        if /\A\/(.*)\/\z/ =~ (filter = options[:filter])
-          filter = Regexp.new($1)
-        end
+        filter = options[:filter]
         type = "#{type}_methods"
         total = if filter
                   suites.inject(0) {|n, suite| n + suite.send(type).grep(filter).size}

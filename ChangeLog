@@ -1,3 +1,28 @@
+Mon Apr 18 13:48:05 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* cygwin/GNUmakefile.in (MSYS2_ARG_CONV_EXCL_PARAM):
+	  * add missing parentheses and remove double quotes.
+	  * rename to get rid of recursive references.
+	  * as --excludes-dir option is for a path name, its argument
+	    should be converted.
+	  [ruby-dev:49526] [Bug #12199]
+
+Mon Apr 18 13:48:05 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (TEST_EXCLUDES, EXCLUDE_TESTFRAMEWORK): use full spell
+	  long option.
+
+	* cygwin/GNUmakefile.in (MSYS2_ARG_CONV_EXCL): suppress path name
+	  conversions by msys2.  [ruby-dev:49525] [Bug #12199]
+
+Mon Apr 18 13:48:05 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/lib/test/unit.rb (Options#non_options): make regexp name
+	  options prefixed with "!" negative filters.
+
+	* common.mk (TEST_EXCLUDES): use negative filter to exclude memory
+	  leak tests.  -x option excludes test files, not test methods.
+
 Sun Apr 17 04:30:13 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parse_ident): allow keyword arguments just after a
