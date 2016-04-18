@@ -295,10 +295,12 @@ class TestLogDevice < Test::Unit::TestCase
 
   def test_shifting_period_suffix
     # shift_age other than 'daily', 'weekly', and 'monthly' means 'everytime'
-    {
-      "%Y%m%d" => Logger.new(@filename, 'now', 1048576), # default
-      "%Y-%m-%d" => Logger.new(@filename, 'now', 1048576, shift_period_suffix: '%Y-%m-%d')
-    }.each do |format, logger|
+    ['%Y%m%d', '%Y-%m-%d', '%Y'].each do |format|
+      if format == '%Y%m%d' # default
+        logger = Logger.new(@filename, 'now', 1048576)
+      else # config
+        logger = Logger.new(@filename, 'now', 1048576, shift_period_suffix: format)
+      end
       begin
         yyyymmdd = Time.now.strftime(format)
         filename1 = @filename + ".#{yyyymmdd}"
