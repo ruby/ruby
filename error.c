@@ -135,58 +135,53 @@ rb_compile_error_append(const char *fmt, ...)
 {
 }
 
-static void
-compile_warn_print(const char *file, int line, const char *fmt, va_list args)
+static VALUE
+warn_vsprintf(rb_encoding *enc, const char *file, int line, const char *fmt, va_list args)
 {
     VALUE str;
 
-    str = compile_vsprintf(NULL, "warning: ", file, line, fmt, args);
-    rb_str_cat2(str, "\n");
-    rb_write_error_str(str);
+    str = compile_vsprintf(enc, "warning: ", file, line, fmt, args);
+    return rb_str_cat2(str, "\n");
 }
 
 void
 rb_compile_warn(const char *file, int line, const char *fmt, ...)
 {
+    VALUE str;
     va_list args;
 
     if (NIL_P(ruby_verbose)) return;
 
     va_start(args, fmt);
-    compile_warn_print(file, line, fmt, args);
+    str = warn_vsprintf(NULL, file, line, fmt, args);
     va_end(args);
+    rb_write_error_str(str);
 }
 
 /* rb_compile_warning() reports only in verbose mode */
 void
 rb_compile_warning(const char *file, int line, const char *fmt, ...)
 {
+    VALUE str;
     va_list args;
 
     if (!RTEST(ruby_verbose)) return;
 
     va_start(args, fmt);
-    compile_warn_print(file, line, fmt, args);
+    str = warn_vsprintf(NULL, file, line, fmt, args);
     va_end(args);
+    rb_write_error_str(str);
 }
 
 static VALUE
 warning_string(rb_encoding *enc, const char *fmt, va_list args)
 {
-    VALUE str = rb_enc_str_new(0, 0, enc);
     int line;
     VALUE file = rb_source_location(&line);
 
-    if (!NIL_P(file)) {
-	str = rb_str_append(str, file);
-	if (line) rb_str_catf(str, ":%d", line);
-	rb_str_cat2(str, ": ");
-    }
-
-    rb_str_cat2(str, "warning: ");
-    rb_str_vcatf(str, fmt, args);
-    rb_str_cat2(str, "\n");
-    return str;
+    return warn_vsprintf(enc,
+			 NIL_P(file) ? NULL : RSTRING_PTR(file), line,
+			 fmt, args);
 }
 
 void
