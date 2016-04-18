@@ -1,3 +1,12 @@
+Mon Apr 18 18:05:29 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* struct.c (struct_make_members_list, rb_struct_s_def): member
+	  names should be unique. [ruby-core:74971] [Bug #12291]
+
+	* struct.c (struct_make_members_list): extract making member name
+	  list from char* va_list, with creating symbols without
+	  intermediate IDs.
+
 Mon Apr 18 17:54:40 2016  Joe Swatosh  <joe.swatosh@gmail.com>
 
 	* ext/win32/lib/win32/registry.rb (DeleteValue, DeleteKey): fix

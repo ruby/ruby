@@ -331,6 +331,27 @@ rb_struct_alloc_noinit(VALUE klass)
 }
 
 static VALUE
+struct_make_members_list(va_list ar)
+{
+    char *mem;
+    VALUE ary, list = rb_ident_hash_new();
+    st_table *tbl = RHASH_TBL(list);
+
+    RBASIC_CLEAR_CLASS(list);
+    while ((mem = va_arg(ar, char*)) != 0) {
+	VALUE sym = rb_sym_intern_ascii_cstr(mem);
+	if (st_insert(tbl, sym, Qtrue)) {
+	    rb_raise(rb_eArgError, "duplicate member: %s", mem);
+	}
+    }
+    ary = rb_hash_keys(list);
+    st_clear(tbl);
+    RBASIC_CLEAR_CLASS(ary);
+    OBJ_FREEZE_RAW(ary);
+    return ary;
+}
+
+static VALUE
 struct_define_without_accessor(VALUE outer, const char *class_name, VALUE super, rb_alloc_func_t alloc, VALUE members)
 {
     VALUE klass;
@@ -364,15 +385,10 @@ rb_struct_define_without_accessor_under(VALUE outer, const char *class_name, VAL
 {
     va_list ar;
     VALUE members;
-    char *name;
 
-    members = rb_ary_tmp_new(0);
     va_start(ar, alloc);
-    while ((name = va_arg(ar, char*)) != NULL) {
-        rb_ary_push(members, ID2SYM(rb_intern(name)));
-    }
+    members = struct_make_members_list(ar);
     va_end(ar);
-    OBJ_FREEZE_RAW(members);
 
     return struct_define_without_accessor(outer, class_name, super, alloc, members);
 }
@@ -382,15 +398,10 @@ rb_struct_define_without_accessor(const char *class_name, VALUE super, rb_alloc_
 {
     va_list ar;
     VALUE members;
-    char *name;
 
-    members = rb_ary_tmp_new(0);
     va_start(ar, alloc);
-    while ((name = va_arg(ar, char*)) != NULL) {
-        rb_ary_push(members, ID2SYM(rb_intern(name)));
-    }
+    members = struct_make_members_list(ar);
     va_end(ar);
-    OBJ_FREEZE_RAW(members);
 
     return struct_define_without_accessor(0, class_name, super, alloc, members);
 }
@@ -400,17 +411,10 @@ rb_struct_define(const char *name, ...)
 {
     va_list ar;
     VALUE st, ary;
-    char *mem;
-
-    ary = rb_ary_tmp_new(0);
 
     va_start(ar, name);
-    while ((mem = va_arg(ar, char*)) != 0) {
-	ID slot = rb_intern(mem);
-	rb_ary_push(ary, ID2SYM(slot));
-    }
+    ary = struct_make_members_list(ar);
     va_end(ar);
-    OBJ_FREEZE_RAW(ary);
 
     if (!name) st = anonymous_struct(rb_cStruct);
     else st = new_struct(rb_str_new2(name), rb_cStruct);
@@ -422,17 +426,10 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
 {
     va_list ar;
     VALUE ary;
-    char *mem;
-
-    ary = rb_ary_tmp_new(0);
 
     va_start(ar, name);
-    while ((mem = va_arg(ar, char*)) != 0) {
-	ID slot = rb_intern(mem);
-	rb_ary_push(ary, ID2SYM(slot));
-    }
+    ary = struct_make_members_list(ar);
     va_end(ar);
-    OBJ_FREEZE_RAW(ary);
 
     return setup_struct(rb_define_class_under(outer, name, rb_cStruct), ary);
 }
@@ -492,7 +489,7 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
     VALUE name, rest;
     long i;
     VALUE st;
-    ID id;
+    st_table *tbl;
 
     rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
     name = argv[0];
@@ -503,12 +500,18 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
 	--argc;
 	++argv;
     }
-    rest = rb_ary_tmp_new(argc);
+    rest = rb_ident_hash_new();
+    RBASIC_CLEAR_CLASS(rest);
+    tbl = RHASH_TBL(rest);
     for (i=0; i<argc; i++) {
-	id = rb_to_id(argv[i]);
-	RARRAY_ASET(rest, i, ID2SYM(id));
-	rb_ary_set_len(rest, i+1);
+	VALUE mem = rb_to_symbol(argv[i]);
+	if (st_insert(tbl, mem, Qtrue)) {
+	    rb_raise(rb_eArgError, "duplicate member: %"PRIsVALUE, mem);
+	}
     }
+    rest = rb_hash_keys(rest);
+    st_clear(tbl);
+    RBASIC_CLEAR_CLASS(rest);
     OBJ_FREEZE_RAW(rest);
     if (NIL_P(name)) {
 	st = anonymous_struct(klass);
