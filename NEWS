@@ -38,8 +38,8 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * Float
 
-  * Float#ceil and Float#floor now take an optional digits, as well as
-    Float#round.  [Feature #12245]
+  * Float#ceil, Float#floor, and Float#truncate now take an optional
+    digits, as well as Float#round.  [Feature #12245]
 
 * Integer
 

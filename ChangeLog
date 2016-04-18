@@ -1,4 +1,7 @@
-Mon Apr 18 12:55:31 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Apr 18 12:56:31 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (flo_truncate): add an optional parameter, digits, as
+	  well as Float#round.  [Feature #12245]
 
 	* numeric.c (int_truncate): add an optional parameter, digits, as
 	  well as Integer#round.  [Feature #12245]

@@ -501,6 +501,32 @@ class TestFloat < Test::Unit::TestCase
     assert_equal(0.99, 0.981.ceil(prec))
   end
 
+  def test_truncate_with_precision
+    assert_equal(1.100, 1.111.truncate(1))
+    assert_equal(1.110, 1.111.truncate(2))
+    assert_equal(11110, 11119.9.truncate(-1))
+    assert_equal(11100, 11100.0.truncate(-2))
+    assert_equal(11100, 11199.9.truncate(-2))
+    assert_equal(-1.100, -1.111.truncate(1))
+    assert_equal(-1.110, -1.111.truncate(2))
+    assert_equal(-11110, -11111.1.truncate(-1))
+    assert_equal(-11100, -11111.1.truncate(-2))
+    assert_equal(0, 11111.1.truncate(-5))
+
+    assert_equal(10**300, 1.1e300.truncate(-300))
+    assert_equal(-10**300, -1.1e300.truncate(-300))
+    assert_equal(1.0e-300, 1.1e-300.truncate(300))
+    assert_equal(-1.0e-300, -1.1e-300.truncate(300))
+
+    assert_equal(42.0, 42.0.truncate(308))
+    assert_equal(1.0e307, 1.0e307.truncate(2))
+
+    assert_raise(TypeError) {1.0.truncate("4")}
+    assert_raise(TypeError) {1.0.truncate(nil)}
+    def (prec = Object.new).to_int; 2; end
+    assert_equal(0.99, 0.998.truncate(prec))
+  end
+
   VS = [
     18446744073709551617.0,
     18446744073709551616.0,

@@ -112,7 +112,7 @@ static VALUE int_cmp(VALUE x, VALUE y);
 static int int_round_zero_p(VALUE num, int ndigits);
 VALUE rb_int_floor(VALUE num, int ndigits);
 VALUE rb_int_ceil(VALUE num, int ndigits);
-static VALUE flo_truncate(VALUE num);
+static VALUE flo_to_i(VALUE num);
 static int float_invariant_round(double number, int ndigits, VALUE *num);
 
 static ID id_coerce, id_div, id_divmod;
@@ -1767,7 +1767,7 @@ flo_floor(int argc, VALUE *argv, VALUE num)
 	ndigits = NUM2INT(argv[0]);
     }
     if (ndigits < 0) {
-	return rb_int_floor(flo_truncate(num), ndigits);
+	return rb_int_floor(flo_to_i(num), ndigits);
     }
     number = RFLOAT_VALUE(num);
     if (ndigits > 0) {
@@ -2006,7 +2006,7 @@ flo_round(int argc, VALUE *argv, VALUE num)
 	ndigits = NUM2INT(argv[0]);
     }
     if (ndigits < 0) {
-	return rb_int_round(flo_truncate(num), ndigits);
+	return rb_int_round(flo_to_i(num), ndigits);
     }
     number  = RFLOAT_VALUE(num);
     if (ndigits == 0) {
@@ -2057,15 +2057,14 @@ float_invariant_round(double number, int ndigits, VALUE *num)
  *  call-seq:
  *     float.to_i      ->  integer
  *     float.to_int    ->  integer
- *     float.truncate  ->  integer
  *
  *  Returns the +float+ truncated to an Integer.
  *
- *  Synonyms are #to_i, #to_int, and #truncate.
+ *  Synonyms are #to_i and #to_int
  */
 
 static VALUE
-flo_truncate(VALUE num)
+flo_to_i(VALUE num)
 {
     double f = RFLOAT_VALUE(num);
     long val;
@@ -2078,6 +2077,24 @@ flo_truncate(VALUE num)
     }
     val = (long)f;
     return LONG2FIX(val);
+}
+
+/*
+ *  call-seq:
+ *     float.truncate([ndigits])  ->  integer or float
+ *
+ *  Truncates +float+ to a given precision in decimal digits (default 0 digits).
+ *
+ *  Precision may be negative.  Returns a floating point number when +ndigits+
+ *  is more than zero.
+ */
+static VALUE
+flo_truncate(int argc, VALUE *argv, VALUE num)
+{
+    if (signbit(RFLOAT_VALUE(num)))
+	return flo_ceil(argc, argv, num);
+    else
+	return flo_floor(argc, argv, num);
 }
 
 /*
@@ -2182,7 +2199,7 @@ num_round(int argc, VALUE* argv, VALUE num)
 static VALUE
 num_truncate(VALUE num)
 {
-    return flo_truncate(rb_Float(num));
+    return flo_truncate(0, 0, rb_Float(num));
 }
 
 static double
@@ -4748,12 +4765,12 @@ Init_Numeric(void)
     rb_define_method(rb_cFloat, "magnitude", flo_abs, 0);
     rb_define_method(rb_cFloat, "zero?", flo_zero_p, 0);
 
-    rb_define_method(rb_cFloat, "to_i", flo_truncate, 0);
-    rb_define_method(rb_cFloat, "to_int", flo_truncate, 0);
+    rb_define_method(rb_cFloat, "to_i", flo_to_i, 0);
+    rb_define_method(rb_cFloat, "to_int", flo_to_i, 0);
     rb_define_method(rb_cFloat, "floor", flo_floor, -1);
     rb_define_method(rb_cFloat, "ceil", flo_ceil, -1);
     rb_define_method(rb_cFloat, "round", flo_round, -1);
-    rb_define_method(rb_cFloat, "truncate", flo_truncate, 0);
+    rb_define_method(rb_cFloat, "truncate", flo_truncate, -1);
 
     rb_define_method(rb_cFloat, "nan?",      flo_is_nan_p, 0);
     rb_define_method(rb_cFloat, "infinite?", flo_is_infinite_p, 0);
