@@ -734,14 +734,36 @@ math_erfc(VALUE obj, VALUE x)
     return DBL2NUM(erfc(Get_Double(x)));
 }
 
-#ifdef __MINGW32__
+#if defined __MINGW32__
 static inline double
-mingw_tgamma(const double d)
+ruby_tgamma(const double d)
 {
     const double g = tgamma(d);
-    return (isnan(g) && !signbit(d)) ? INFINITY : g;
+    if (isinf(g)) {
+	if (d == 0.0 && signbit(d)) return -INFINITY;
+    }
+    if (isnan(g)) {
+	if (!signbit(d)) return INFINITY;
+    }
+    return g;
 }
-#define tgamma(d) mingw_tgamma(d)
+#define tgamma(d) ruby_tgamma(d)
+#endif
+
+#if defined LGAMMA_R_M0_FIX
+static inline double
+ruby_lgamma_r(const double d, int *sign)
+{
+    const double g = lgamma_r(d, sign);
+    if (isinf(g)) {
+	if (d == 0.0 && signbit(d)) {
+	    *sign = -1;
+	    return INFINITY;
+	}
+    }
+    return g;
+}
+#define lgamma_r(d, sign) ruby_lgamma_r(d, sign)
 #endif
 
 /*
