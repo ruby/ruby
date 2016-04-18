@@ -366,13 +366,17 @@ class Logger
   #   Logging formatter. Default values is an instance of Logger::Formatter.
   # +datetime_format+::
   #   Date and time format. Default value is '%Y-%m-%d %H:%M:%S'.
+  # +shift_period_suffix+::
+  #   The log file suffix format for +daily+, +weekly+ or +monthly+ rotation.
+  #   Default is '%Y%m%d'.
   #
   # === Description
   #
   # Create an instance.
   #
   def initialize(logdev, shift_age = 0, shift_size = 1048576, level: DEBUG,
-                 progname: nil, formatter: nil, datetime_format: nil)
+                 progname: nil, formatter: nil, datetime_format: nil,
+                 shift_period_suffix: '%Y%m%d')
     self.level = level
     self.progname = progname
     @default_formatter = Formatter.new
@@ -381,7 +385,8 @@ class Logger
     @logdev = nil
     if logdev
       @logdev = LogDevice.new(logdev, :shift_age => shift_age,
-        :shift_size => shift_size)
+        :shift_size => shift_size,
+        :shift_period_suffix => shift_period_suffix)
     end
   end
 
@@ -660,13 +665,14 @@ private
     attr_reader :filename
     include MonitorMixin
 
-    def initialize(log = nil, shift_age: nil, shift_size: nil)
-      @dev = @filename = @shift_age = @shift_size = nil
+    def initialize(log = nil, shift_age: nil, shift_size: nil, shift_period_suffix: nil)
+      @dev = @filename = @shift_age = @shift_size = @shift_period_suffix = nil
       mon_initialize
       set_dev(log)
       if @filename
         @shift_age = shift_age || 7
         @shift_size = shift_size || 1048576
+        @shift_period_suffix = shift_period_suffix || '%Y%m%d'
         @next_rotate_time = next_rotate_time(Time.now, @shift_age) unless @shift_age.is_a?(Integer)
       end
     end
@@ -822,15 +828,15 @@ private
     end
 
     def shift_log_period(period_end)
-      postfix = period_end.strftime("%Y%m%d") # YYYYMMDD
-      age_file = "#{@filename}.#{postfix}"
+      suffix = period_end.strftime(@shift_period_suffix)
+      age_file = "#{@filename}.#{suffix}"
       if FileTest.exist?(age_file)
         # try to avoid filename crash caused by Timestamp change.
         idx = 0
         # .99 can be overridden; avoid too much file search with 'loop do'
         while idx < 100
           idx += 1
-          age_file = "#{@filename}.#{postfix}.#{idx}"
+          age_file = "#{@filename}.#{suffix}.#{idx}"
           break unless FileTest.exist?(age_file)
         end
       end
