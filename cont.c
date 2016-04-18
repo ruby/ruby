@@ -657,7 +657,7 @@ fiber_initialize_machine_stack_context(rb_fiber_t *fib, size_t size)
     rb_thread_t *sth = &fib->cont.saved_thread;
 
 #ifdef _WIN32
-# if defined(_MSC_VER) && _MSC_VER <= 0x1200
+# if defined(_MSC_VER) && _MSC_VER <= 1200
 #   define CreateFiberEx(cs, stacksize, flags, entry, param) \
     CreateFiber((stacksize), (entry), (param))
 # endif

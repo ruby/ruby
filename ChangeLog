@@ -1,3 +1,15 @@
+Mon Apr 18 17:18:25 2016  cremno phobia  <cremno@mail.ru>
+
+	* cont.c (fiber_initialize_machine_stack_context): fix wrong
+	  _MSC_VER check, should be decimal but not hexadecimal.
+	  [ruby-core:74936] [Bug #12279]
+
+Mon Apr 18 17:18:25 2016  cremno phobia  <cremno@mail.ru>
+
+	* cont.c (fiber_initialize_machine_stack_context): fix wrong
+	  _MSC_VER check, should be decimal but not hexadecimal.
+	  [ruby-core:74936] [Bug #12279]
+
 Mon Apr 18 17:08:10 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_core.h (rb_vm_struct): make at_exit a single linked list but
