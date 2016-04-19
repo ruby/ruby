@@ -1,3 +1,10 @@
+Tue Apr 19 13:18:12 2016  Naotoshi Seo  <sonots@gmail.com>
+
+	* lib/time.rb: revert r54167 because it would break
+	  backward compatibilities, and it is documented that
+	  Time.parse does not take into account time zone
+	  abbreations other than ones described in RFC 822
+
 Tue Apr 19 13:12:03 2016  Naotoshi Seo  <sonots@gmail.com>
 
 	* ChangeLog: Fix dates of previous commits
