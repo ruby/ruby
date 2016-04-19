@@ -1,3 +1,11 @@
+Tue Apr 19 13:46:19 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (append_compile_error, compile_bug): pass iseq and get
+	  error info and file from it, not by the thread error info.
+
+	* error.c (rb_report_bug_valist): take va_list instead of variadic
+	  arguments, and just report the bug but not abort.
+
 Tue Apr 19 13:18:12 2016  Naotoshi Seo  <sonots@gmail.com>
 
 	* lib/time.rb: revert r54167 because it would break

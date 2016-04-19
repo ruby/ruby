@@ -308,7 +308,7 @@ bug_report_file(const char *file, int line)
 }
 
 static void
-bug_report_begin(FILE *out, const char *fmt, va_list args)
+bug_report_begin_valist(FILE *out, const char *fmt, va_list args)
 {
     char buf[REPORT_BUG_BUFSIZ];
 
@@ -322,7 +322,7 @@ bug_report_begin(FILE *out, const char *fmt, va_list args)
 #define bug_report_begin(out, fmt) do { \
     va_list args; \
     va_start(args, fmt); \
-    bug_report_begin(out, fmt, args); \
+    bug_report_begin_valist(out, fmt, args); \
     va_end(args); \
 } while (0)
 
@@ -344,6 +344,15 @@ bug_report_end(FILE *out)
     FILE *out = bug_report_file(file, line); \
     if (out) { \
 	bug_report_begin(out, fmt); \
+	rb_vm_bugreport(ctx); \
+	bug_report_end(out); \
+    } \
+} while (0) \
+
+#define report_bug_valist(file, line, fmt, ctx, args) do { \
+    FILE *out = bug_report_file(file, line); \
+    if (out) { \
+	bug_report_begin_valist(out, fmt, args); \
 	rb_vm_bugreport(ctx); \
 	bug_report_end(out); \
     } \
@@ -437,11 +446,9 @@ rb_async_bug_errno(const char *mesg, int errno_arg)
 }
 
 void
-rb_compile_bug_str(VALUE file, int line, const char *fmt, ...)
+rb_report_bug_valist(VALUE file, int line, const char *fmt, va_list args)
 {
-    report_bug(RSTRING_PTR(file), line, fmt, NULL);
-
-    abort();
+    report_bug_valist(RSTRING_PTR(file), line, fmt, NULL, args);
 }
 
 void
