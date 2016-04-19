@@ -80,10 +80,9 @@ err_position_0(char *buf, long len, const char *file, int line)
 }
 
 static VALUE
-compile_vsprintf(rb_encoding *enc, const char *pre, const char *file, int line, const char *fmt, va_list args)
+err_vcatf(VALUE str, const char *pre, const char *file, int line,
+	  const char *fmt, va_list args)
 {
-    VALUE str = rb_enc_str_new(0, 0, enc);
-
     if (file) {
 	rb_str_cat2(str, file);
 	if (line) rb_str_catf(str, ":%d", line);
@@ -95,21 +94,25 @@ compile_vsprintf(rb_encoding *enc, const char *pre, const char *file, int line, 
 }
 
 VALUE
-rb_compile_err_append(VALUE buffer, VALUE mesg)
+rb_syntax_error_append(VALUE exc, VALUE file, int line, int column,
+		       rb_encoding *enc, const char *fmt, va_list args)
 {
-    if (!buffer) {
+    const char *fn = NIL_P(file) ? NULL : RSTRING_PTR(file);
+    if (!exc) {
+	VALUE mesg = rb_enc_str_new(0, 0, enc);
+	err_vcatf(mesg, NULL, fn, line, fmt, args);
 	rb_str_cat2(mesg, "\n");
 	rb_write_error_str(mesg);
     }
-    else if (NIL_P(buffer)) {
-	buffer = mesg;
+    else if (NIL_P(exc)) {
+	VALUE mesg = rb_enc_str_new(0, 0, enc);
+	exc = err_vcatf(mesg, NULL, fn, line, fmt, args);
     }
     else {
-	rb_str_cat2(buffer, "\n");
-	rb_str_append(buffer, mesg);
+	err_vcatf(exc, "\n", fn, line, fmt, args);
     }
 
-    return buffer;
+    return exc;
 }
 
 void
@@ -122,14 +125,6 @@ rb_compile_error(const char *file, int line, const char *fmt, ...)
 {
 }
 
-VALUE
-rb_error_vsprintf(VALUE file, int line, void *enc, const char *fmt, va_list args)
-{
-    return compile_vsprintf(enc, NULL,
-			    NIL_P(file) ? NULL : RSTRING_PTR(file), line,
-			    fmt, args);
-}
-
 void
 rb_compile_error_append(const char *fmt, ...)
 {
@@ -138,9 +133,9 @@ rb_compile_error_append(const char *fmt, ...)
 static VALUE
 warn_vsprintf(rb_encoding *enc, const char *file, int line, const char *fmt, va_list args)
 {
-    VALUE str;
+    VALUE str = rb_enc_str_new(0, 0, enc);
 
-    str = compile_vsprintf(enc, "warning: ", file, line, fmt, args);
+    err_vcatf(str, "warning: ", file, line, fmt, args);
     return rb_str_cat2(str, "\n");
 }
 

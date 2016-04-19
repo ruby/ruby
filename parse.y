@@ -11074,21 +11074,22 @@ rb_parser_printf(struct parser_params *parser, const char *fmt, ...)
     }
 }
 
-extern VALUE rb_error_vsprintf(VALUE, int, void *, const char *, va_list);
-extern VALUE rb_compile_err_append(VALUE buffer, VALUE mesg);
+extern VALUE rb_syntax_error_append(VALUE exc, VALUE file, int line, int column, rb_encoding *enc, const char *fmt, va_list args);
 
 static void
 parser_compile_error(struct parser_params *parser, const char *fmt, ...)
 {
-    VALUE str;
     va_list ap;
 
     parser->error_p = 1;
     va_start(ap, fmt);
-    str = rb_error_vsprintf(ruby_sourcefile_string, ruby_sourceline,
-			    (void *)current_enc, fmt, ap);
+    parser->error_buffer =
+	rb_syntax_error_append(parser->error_buffer,
+			       ruby_sourcefile_string,
+			       ruby_sourceline,
+			       rb_long2int(lex_p - lex_pbeg),
+			       current_enc, fmt, ap);
     va_end(ap);
-    parser->error_buffer = rb_compile_err_append(parser->error_buffer, str);
 }
 #endif
 

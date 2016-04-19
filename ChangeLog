@@ -1,3 +1,13 @@
+Tue Apr 19 17:42:47 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (err_vcatf): rename, and separate appending message from
+	  creating a string buffer.
+
+	* error.c (rb_syntax_error_append): merge rb_error_vsprintf and
+	  rb_compile_err_append.
+
+	* parse.y (parser_compile_error): use rb_syntax_error_append.
+
 Tue Apr 19 13:46:19 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (append_compile_error, compile_bug): pass iseq and get
