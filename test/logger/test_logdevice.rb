@@ -44,8 +44,8 @@ class TestLogDevice < Test::Unit::TestCase
     #
     logdev = d(@filename)
     begin
-      assert(File.exist?(@filename))
-      assert(logdev.dev.sync)
+      assert_file.exist?(@filename)
+      assert_predicate(logdev.dev, :sync)
       assert_equal(@filename, logdev.filename)
       logdev.write('hello')
     ensure
@@ -94,9 +94,9 @@ class TestLogDevice < Test::Unit::TestCase
     logdev = d(w)
     logdev.write("msg2\n\n")
     IO.select([r], nil, nil, 0.1)
-    assert(!w.closed?)
+    assert_not_predicate(w, :closed?)
     logdev.close
-    assert(w.closed?)
+    assert_predicate(w, :closed?)
     r.close
   end
 
@@ -105,7 +105,7 @@ class TestLogDevice < Test::Unit::TestCase
     old_dev = logdev.dev
     logdev.reopen
     assert_equal(STDERR, logdev.dev)
-    assert(!old_dev.closed?)
+    assert_not_predicate(old_dev, :closed?)
   end
 
   def test_reopen_io_by_io
@@ -113,7 +113,7 @@ class TestLogDevice < Test::Unit::TestCase
     old_dev = logdev.dev
     logdev.reopen(STDOUT)
     assert_equal(STDOUT, logdev.dev)
-    assert(!old_dev.closed?)
+    assert_not_predicate(old_dev, :closed?)
   end
 
   def test_reopen_io_by_file
@@ -121,9 +121,9 @@ class TestLogDevice < Test::Unit::TestCase
     old_dev = logdev.dev
     logdev.reopen(@filename)
     begin
-      assert(File.exist?(@filename))
+      assert_file.exist?(@filename)
       assert_equal(@filename, logdev.filename)
-      assert(!old_dev.closed?)
+      assert_not_predicate(old_dev, :closed?)
     ensure
       logdev.close
     end
@@ -135,9 +135,9 @@ class TestLogDevice < Test::Unit::TestCase
 
     logdev.reopen
     begin
-      assert(File.exist?(@filename))
+      assert_file.exist?(@filename)
       assert_equal(@filename, logdev.filename)
-      assert(old_dev.closed?)
+      assert_predicate(old_dev, :closed?)
     ensure
       logdev.close
     end
@@ -149,7 +149,7 @@ class TestLogDevice < Test::Unit::TestCase
     logdev.reopen(STDOUT)
     assert_equal(STDOUT, logdev.dev)
     assert_nil(logdev.filename)
-    assert(old_dev.closed?)
+    assert_predicate(old_dev, :closed?)
   end
 
   def test_reopen_file_by_file
@@ -163,9 +163,9 @@ class TestLogDevice < Test::Unit::TestCase
 
     logdev.reopen(filename2)
     begin
-      assert(File.exist?(filename2))
+      assert_file.exist?(filename2)
       assert_equal(filename2, logdev.filename)
-      assert(old_dev.closed?)
+      assert_predicate(old_dev, :closed?)
     ensure
       logdev.close
       tempfile2.close(true)
@@ -186,21 +186,21 @@ class TestLogDevice < Test::Unit::TestCase
     File.unlink(logfile2) if File.exist?(logfile2)
     logger = Logger.new(logfile, 4, 100)
     logger.error("0" * 15)
-    assert(File.exist?(logfile))
-    assert(!File.exist?(logfile0))
+    assert_file.exist?(logfile)
+    assert_file.not_exist?(logfile0)
     logger.error("0" * 15)
-    assert(File.exist?(logfile0))
-    assert(!File.exist?(logfile1))
+    assert_file.exist?(logfile0)
+    assert_file.not_exist?(logfile1)
     logger.error("0" * 15)
-    assert(File.exist?(logfile1))
-    assert(!File.exist?(logfile2))
+    assert_file.exist?(logfile1)
+    assert_file.not_exist?(logfile2)
     logger.error("0" * 15)
-    assert(File.exist?(logfile2))
-    assert(!File.exist?(logfile3))
+    assert_file.exist?(logfile2)
+    assert_file.not_exist?(logfile3)
     logger.error("0" * 15)
-    assert(!File.exist?(logfile3))
+    assert_file.not_exist?(logfile3)
     logger.error("0" * 15)
-    assert(!File.exist?(logfile3))
+    assert_file.not_exist?(logfile3)
     logger.close
     File.unlink(logfile)
     File.unlink(logfile0)
@@ -216,29 +216,29 @@ class TestLogDevice < Test::Unit::TestCase
     tmpfile.close(true)
     logger = Logger.new(logfile, 4, 150)
     logger.error("0" * 15)
-    assert(File.exist?(logfile))
-    assert(!File.exist?(logfile0))
+    assert_file.exist?(logfile)
+    assert_file.not_exist?(logfile0)
     logger.error("0" * 15)
-    assert(!File.exist?(logfile0))
+    assert_file.not_exist?(logfile0)
     logger.error("0" * 15)
-    assert(File.exist?(logfile0))
-    assert(!File.exist?(logfile1))
+    assert_file.exist?(logfile0)
+    assert_file.not_exist?(logfile1)
     logger.error("0" * 15)
-    assert(!File.exist?(logfile1))
+    assert_file.not_exist?(logfile1)
     logger.error("0" * 15)
-    assert(File.exist?(logfile1))
-    assert(!File.exist?(logfile2))
+    assert_file.exist?(logfile1)
+    assert_file.not_exist?(logfile2)
     logger.error("0" * 15)
-    assert(!File.exist?(logfile2))
+    assert_file.not_exist?(logfile2)
     logger.error("0" * 15)
-    assert(File.exist?(logfile2))
-    assert(!File.exist?(logfile3))
+    assert_file.exist?(logfile2)
+    assert_file.not_exist?(logfile3)
     logger.error("0" * 15)
-    assert(!File.exist?(logfile3))
+    assert_file.not_exist?(logfile3)
     logger.error("0" * 15)
-    assert(!File.exist?(logfile3))
+    assert_file.not_exist?(logfile3)
     logger.error("0" * 15)
-    assert(!File.exist?(logfile3))
+    assert_file.not_exist?(logfile3)
     logger.close
     File.unlink(logfile)
     File.unlink(logfile0)
@@ -266,25 +266,25 @@ class TestLogDevice < Test::Unit::TestCase
     filename3 = @filename + ".#{yyyymmdd}.2"
     begin
       logger = Logger.new(@filename, 'now')
-      assert(File.exist?(@filename))
-      assert(!File.exist?(filename1))
-      assert(!File.exist?(filename2))
-      assert(!File.exist?(filename3))
+      assert_file.exist?(@filename)
+      assert_file.not_exist?(filename1)
+      assert_file.not_exist?(filename2)
+      assert_file.not_exist?(filename3)
       logger.info("0" * 15)
-      assert(File.exist?(@filename))
-      assert(File.exist?(filename1))
-      assert(!File.exist?(filename2))
-      assert(!File.exist?(filename3))
+      assert_file.exist?(@filename)
+      assert_file.exist?(filename1)
+      assert_file.not_exist?(filename2)
+      assert_file.not_exist?(filename3)
       logger.warn("0" * 15)
-      assert(File.exist?(@filename))
-      assert(File.exist?(filename1))
-      assert(File.exist?(filename2))
-      assert(!File.exist?(filename3))
+      assert_file.exist?(@filename)
+      assert_file.exist?(filename1)
+      assert_file.exist?(filename2)
+      assert_file.not_exist?(filename3)
       logger.error("0" * 15)
-      assert(File.exist?(@filename))
-      assert(File.exist?(filename1))
-      assert(File.exist?(filename2))
-      assert(File.exist?(filename3))
+      assert_file.exist?(@filename)
+      assert_file.exist?(filename1)
+      assert_file.exist?(filename2)
+      assert_file.exist?(filename3)
     ensure
       logger.close if logger
       [filename1, filename2, filename3].each do |filename|
@@ -310,10 +310,10 @@ class TestLogDevice < Test::Unit::TestCase
         logger.info("0" * 15)
         logger.info("0" * 15)
         logger.info("0" * 15)
-        assert(File.exist?(@filename))
-        assert(File.exist?(filename1))
-        assert(File.exist?(filename2))
-        assert(File.exist?(filename3))
+        assert_file.exist?(@filename)
+        assert_file.exist?(filename1)
+        assert_file.exist?(filename2)
+        assert_file.exist?(filename3)
       ensure
         logger.close if logger
         [filename1, filename2, filename3].each do |filename|
