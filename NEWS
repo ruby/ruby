@@ -64,6 +64,12 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * Add a liberal_parsing option. [Feature #11839]
 
+* Logger
+
+	* Allow specifying logger parameters in constructor such
+	  as level, progname, datetime_format, formatter. [Feature #12224]
+	* Add shift_period_suffix option. [Feature #10772]
+
 * optparse
 
   * Add an into option. [Feature #11191]

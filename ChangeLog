@@ -1,3 +1,17 @@
+Thu Mar 19 12:45:03 2016  Naotoshi Seo  <sonots@gmail.com>
+
+	* ChangeLog: Add decriptions for logger updates
+	* NEWS: Add descriptions for logger updates
+
+Mon Apr 19 12:45:02 2016  Naotoshi Seo  <sonots@gmail.com>
+
+	* lib/logger.rb: Add shift_period_suffix option
+
+Mon Apr 19 12:45:01 2016  Naotoshi Seo  <sonots@gmail.com>
+
+	* lib/logger.rb: Allow specifying logger parameters in constructor
+	  such as level, progname, datetime_format, formatter.
+
 Mon Apr 18 16:07:01 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (iseq_peephole_optimize): should not replace the
