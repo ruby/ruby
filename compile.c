@@ -319,11 +319,16 @@ append_compile_error(rb_iseq_t *iseq, int line, const char *fmt, ...)
 {
     VALUE err_info = ISEQ_COMPILE_DATA(iseq)->err_info;
     VALUE file = iseq->body->location.path;
+    VALUE err = err_info;
     va_list args;
 
     va_start(args, fmt);
-    rb_syntax_error_append(err_info, file, line, -1, NULL, fmt, args);
+    err = rb_syntax_error_append(err, file, line, -1, NULL, fmt, args);
     va_end(args);
+    if (NIL_P(err_info)) {
+	RB_OBJ_WRITE(iseq, &ISEQ_COMPILE_DATA(iseq)->err_info, err);
+	rb_set_errinfo(err);
+    }
 }
 
 static void
@@ -341,13 +346,7 @@ NOINLINE(static compile_error_func prepare_compile_error(rb_iseq_t *iseq));
 static compile_error_func
 prepare_compile_error(rb_iseq_t *iseq)
 {
-    VALUE err_info = ISEQ_COMPILE_DATA(iseq)->err_info;
     if (compile_debug) return &compile_bug;
-    if (NIL_P(err_info)) {
-	err_info = rb_exc_new_cstr(rb_eSyntaxError, "");
-	RB_OBJ_WRITE(iseq, &ISEQ_COMPILE_DATA(iseq)->err_info, err_info);
-    }
-    rb_set_errinfo(err_info);
     return &append_compile_error;
 }
 
