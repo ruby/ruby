@@ -1,3 +1,12 @@
+Wed Apr 20 17:33:31 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/cgi/escape/escape.c (cgiesc_unescape): define unescape
+	  method instead of _unescape, and should pass the optional
+	  argument to the super method.
+
+	* lib/cgi/util.rb (CGI::Util#_unescape): remove intermediate
+	  method.
+
 Wed Apr 20 15:52:28 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (syntax_error_initialize): move the default message,

@@ -118,6 +118,23 @@ class CGIUtilTest < Test::Unit::TestCase
     end
   end
 
+  Encoding.list.each do |enc|
+    next unless enc.ascii_compatible?
+    begin
+      escaped = "%25+%2B"
+      unescaped = "% +".encode(enc)
+    rescue Encoding::ConverterNotFoundError
+      next
+    else
+      define_method("test_cgi_escape:#{enc.name}") do
+        assert_equal(escaped, CGI::escape(unescaped))
+      end
+      define_method("test_cgi_unescape:#{enc.name}") do
+        assert_equal(unescaped, CGI::unescape(escaped, enc))
+      end
+    end
+  end
+
   def test_cgi_unescapeHTML_uppercasecharacter
     assert_equal("\xE3\x81\x82\xE3\x81\x84\xE3\x81\x86", CGI::unescapeHTML("&#x3042;&#x3044;&#X3046;"))
   end

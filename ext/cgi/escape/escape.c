@@ -369,17 +369,34 @@ cgiesc_escape(VALUE self, VALUE str)
     }
 }
 
-/* :nodoc: */
 static VALUE
-cgiesc_unescape(VALUE self, VALUE str, VALUE enc)
+accept_charset(int argc, VALUE *argv, VALUE self)
 {
+    if (argc > 0)
+	return argv[0];
+    return rb_cvar_get(CLASS_OF(self), rb_intern("@@accept_charset"));
+}
+
+/*
+ *  call-seq:
+ *     CGI.unescape(string, encoding=@@accept_charset) -> string
+ *
+ *  Returns URL-unescaped string.
+ *
+ */
+static VALUE
+cgiesc_unescape(int argc, VALUE *argv, VALUE self)
+{
+    VALUE str = (rb_check_arity(argc, 1, 2), argv[0]);
+
     StringValue(str);
 
     if (rb_enc_str_asciicompat_p(str)) {
+	VALUE enc = accept_charset(argc-1, argv+1, self);
 	return optimized_unescape(str, enc);
     }
     else {
-	return rb_call_super(1, &str);
+	return rb_call_super(argc, argv);
     }
 }
 
@@ -392,7 +409,7 @@ Init_escape(void)
     rb_define_method(rb_mEscape, "escapeHTML", cgiesc_escape_html, 1);
     rb_define_method(rb_mEscape, "unescapeHTML", cgiesc_unescape_html, 1);
     rb_define_method(rb_mEscape, "escape", cgiesc_escape, 1);
-    rb_define_private_method(rb_mEscape, "_unescape", cgiesc_unescape, 2);
+    rb_define_method(rb_mEscape, "unescape", cgiesc_unescape, -1);
     rb_prepend_module(rb_mUtil, rb_mEscape);
     rb_extend_object(rb_cCGI, rb_mEscape);
 }
