@@ -495,6 +495,7 @@ EOT
           catch {|tag| eval(code, binding, fname, line)}
         end
         assert_match(error, e.message, mesg)
+        e
       ensure
         $VERBOSE = verbose
       end
