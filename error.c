@@ -104,12 +104,18 @@ rb_syntax_error_append(VALUE exc, VALUE file, int line, int column,
 	rb_str_cat2(mesg, "\n");
 	rb_write_error_str(mesg);
     }
-    else if (NIL_P(exc)) {
-	VALUE mesg = rb_enc_str_new(0, 0, enc);
-	exc = err_vcatf(mesg, NULL, fn, line, fmt, args);
-    }
     else {
-	err_vcatf(exc, "\n", fn, line, fmt, args);
+	VALUE mesg;
+	const char *pre = NULL;
+	if (NIL_P(exc)) {
+	    mesg = rb_enc_str_new(0, 0, enc);
+	    exc = rb_class_new_instance(1, &mesg, rb_eSyntaxError);
+	}
+	else {
+	    mesg = rb_attr_get(exc, idMesg);
+	    pre = "\n";
+	}
+	err_vcatf(mesg, pre, fn, line, fmt, args);
     }
 
     return exc;

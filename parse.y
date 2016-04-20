@@ -5550,8 +5550,11 @@ yycompile0(VALUE arg)
     lex_lastline = lex_nextline = 0;
     if (parser->error_p) {
 	VALUE mesg = parser->error_buffer;
-	if (!mesg) mesg = rb_fstring_cstr("compile error");
-	rb_set_errinfo(rb_exc_new_str(rb_eSyntaxError, mesg));
+	if (!mesg) {
+	    mesg = rb_fstring_cstr("compile error");
+	    mesg = rb_exc_new_str(rb_eSyntaxError, mesg);
+	}
+	rb_set_errinfo(mesg);
 	return 0;
     }
     tree = ruby_eval_tree;
@@ -11073,8 +11076,6 @@ rb_parser_printf(struct parser_params *parser, const char *fmt, ...)
 	parser->debug_buffer = Qnil;
     }
 }
-
-extern VALUE rb_syntax_error_append(VALUE exc, VALUE file, int line, int column, rb_encoding *enc, const char *fmt, va_list args);
 
 static void
 parser_compile_error(struct parser_params *parser, const char *fmt, ...)

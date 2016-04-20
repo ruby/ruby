@@ -318,18 +318,11 @@ static void
 append_compile_error(rb_iseq_t *iseq, int line, const char *fmt, ...)
 {
     VALUE err_info = ISEQ_COMPILE_DATA(iseq)->err_info;
-    VALUE str = rb_attr_get(err_info, idMesg);
     VALUE file = iseq->body->location.path;
     va_list args;
 
-    if (RSTRING_LEN(str)) rb_str_cat2(str, "\n");
-    if (file) {
-	rb_str_concat(str, file);
-	if (line) rb_str_catf(str, ":%d", line);
-	rb_str_cat2(str, ": ");
-    }
     va_start(args, fmt);
-    rb_str_vcatf(str, fmt, args);
+    rb_syntax_error_append(err_info, file, line, -1, NULL, fmt, args);
     va_end(args);
 }
 

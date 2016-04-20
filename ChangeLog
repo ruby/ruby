@@ -1,3 +1,14 @@
+Wed Apr 20 10:25:53 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (append_compile_error): use rb_syntax_error_append.
+
+	* error.c (rb_syntax_error_append): append messages into a
+	  SyntaxError exception instance.
+
+	* parse.y (yycompile0): make new SyntaxError instance in main
+	  mode, otherwize error_buffer should be a SyntaxError if error
+	  has occurred.
+
 Tue Apr 19 17:42:47 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (err_vcatf): rename, and separate appending message from

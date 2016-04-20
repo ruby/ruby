@@ -852,6 +852,7 @@ extern VALUE rb_eEWOULDBLOCK;
 extern VALUE rb_eEINPROGRESS;
 void rb_report_bug_valist(VALUE file, int line, const char *fmt, va_list args);
 PRINTF_ARGS(void rb_compile_error_str(VALUE file, int line, void *enc, const char *fmt, ...), 4, 5);
+VALUE rb_syntax_error_append(VALUE, VALUE, int, int, rb_encoding*, const char*, va_list);
 VALUE rb_check_backtrace(VALUE);
 NORETURN(void rb_async_bug_errno(const char *,int));
 const char *rb_builtin_type_name(int t);
