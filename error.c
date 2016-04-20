@@ -1362,6 +1362,25 @@ rb_invalid_str(const char *str, const char *type)
 }
 
 /*
+ * call-seq:
+ *   SyntaxError.new([msg])  -> syntax_error
+ *
+ * Construct a SyntaxError exception.
+ */
+
+static VALUE
+syntax_error_initialize(int argc, VALUE *argv, VALUE self)
+{
+    VALUE mesg;
+    if (argc == 0) {
+	mesg = rb_fstring_cstr("compile error");
+	argc = 1;
+	argv = &mesg;
+    }
+    return rb_call_super(argc, argv);
+}
+
+/*
  *  Document-module: Errno
  *
  *  Ruby exception objects are subclasses of <code>Exception</code>.
@@ -1960,6 +1979,7 @@ Init_Exception(void)
 
     rb_eScriptError = rb_define_class("ScriptError", rb_eException);
     rb_eSyntaxError = rb_define_class("SyntaxError", rb_eScriptError);
+    rb_define_method(rb_eSyntaxError, "initialize", syntax_error_initialize, -1);
 
     rb_eLoadError   = rb_define_class("LoadError", rb_eScriptError);
     /* the path failed to load */

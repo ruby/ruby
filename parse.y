@@ -5551,8 +5551,7 @@ yycompile0(VALUE arg)
     if (parser->error_p) {
 	VALUE mesg = parser->error_buffer;
 	if (!mesg) {
-	    mesg = rb_fstring_cstr("compile error");
-	    mesg = rb_exc_new_str(rb_eSyntaxError, mesg);
+	    mesg = rb_class_new_instance(0, 0, rb_eSyntaxError);
 	}
 	rb_set_errinfo(mesg);
 	return 0;
