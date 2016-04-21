@@ -1611,7 +1611,7 @@ NORETURN(void ruby_malloc_size_overflow(size_t, size_t));
 static inline size_t
 ruby_xmalloc2_size(const size_t count, const size_t elsize)
 {
-    if (count > SIZE_MAX / elsize) {
+    if (count > SSIZE_MAX / elsize) {
 	ruby_malloc_size_overflow(count, elsize);
     }
     return count * elsize;

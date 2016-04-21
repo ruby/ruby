@@ -7739,9 +7739,6 @@ objspace_malloc_increase(rb_objspace_t *objspace, void *mem, size_t new_size, si
 static inline size_t
 objspace_malloc_prepare(rb_objspace_t *objspace, size_t size)
 {
-    if ((ssize_t)size < 0) {
-	negative_size_allocation_error("negative allocation size (or too big)");
-    }
     if (size == 0) size = 1;
 
 #if CALC_EXACT_MALLOC_SIZE
@@ -7771,8 +7768,11 @@ objspace_malloc_fixup(rb_objspace_t *objspace, void *mem, size_t size)
 	} \
     } while (0)
 
+/* this shouldn't be called directly.
+ * objspace_xmalloc and objspace_xmalloc2 checks allocation size.
+ */
 static void *
-objspace_xmalloc(rb_objspace_t *objspace, size_t size)
+objspace_xmalloc0(rb_objspace_t *objspace, size_t size)
 {
     void *mem;
 
@@ -7784,13 +7784,25 @@ objspace_xmalloc(rb_objspace_t *objspace, size_t size)
 }
 
 static void *
+objspace_xmalloc(rb_objspace_t *objspace, size_t size)
+{
+    if ((ssize_t)size < 0) {
+	negative_size_allocation_error("too large allocation size");
+    }
+    return objspace_xmalloc0(objspace, size);
+}
+
+#define xmalloc2_size ruby_xmalloc2_size
+static void *
+objspace_xmalloc2(rb_objspace_t *objspace, size_t n, size_t size)
+{
+    return objspace_xmalloc0(&rb_objspace, xmalloc2_size(n, size));
+}
+
+static void *
 objspace_xrealloc(rb_objspace_t *objspace, void *ptr, size_t new_size, size_t old_size)
 {
     void *mem;
-
-    if ((ssize_t)new_size < 0) {
-	negative_size_allocation_error("negative re-allocation size");
-    }
 
     if (!ptr) return objspace_xmalloc(objspace, new_size);
 
@@ -7852,12 +7864,10 @@ ruby_malloc_size_overflow(size_t count, size_t elsize)
 	     count, elsize);
 }
 
-#define xmalloc2_size ruby_xmalloc2_size
-
 void *
 ruby_xmalloc2(size_t n, size_t size)
 {
-    return objspace_xmalloc(&rb_objspace, xmalloc2_size(n, size));
+    return objspace_xmalloc2(&rb_objspace, n, size);
 }
 
 static void *

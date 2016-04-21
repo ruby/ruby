@@ -1,3 +1,24 @@
+Thu Apr 21 01:44:19 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* gc.c (objspace_malloc_prepare): remove size check because it is
+	  used by objspace_xmalloc and objspace_xcalloc.
+	  objspace_xmalloc introduces its own check in this commit.
+	  objspace_xcalloc checks with xmalloc2_size (ruby_xmalloc2_size).
+
+	* gc.c (objspace_xmalloc0): common xmalloc function.
+
+	* gc.c (objspace_xmalloc): introduce its own size check.
+
+	* gc.c (objspace_xmalloc2): separated from ruby_xmalloc2 to clarify
+	  the layer who has the responsibility to check the size.
+
+	* gc.c (objspace_xrealloc): remove duplicated size check.
+
+	* gc.c (ruby_xmalloc2): use objspace_xmalloc2.
+
+	* include/ruby/ruby.h (ruby_xmalloc2_size): follow the size limit
+	  as SSIZE_MAX. Note that ISO C says size_t is unsigned integer.
+
 Thu Apr 21 12:14:04 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: check if succeeded in creating config.h.
