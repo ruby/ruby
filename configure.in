@@ -760,7 +760,7 @@ RUBY_WERROR_FLAG([
 	cp ../confdefs.h . &&
 	echo '<?xml?><plist><dict><key>CFBundleIdentifier</key><string></string></dict></plist>' > Info.plist &&
 	:
-    } || AC_MSG_ERROR([faild to make temporary directory])
+    } || AC_MSG_ERROR([failed to make temporary directory])
     AC_TRY_LINK([], [],
 	[AC_MSG_RESULT(yes)],
 	[
@@ -4461,7 +4461,7 @@ guard=INCLUDE_RUBY_CONFIG_H
 (
   if test "x$CONFIGURE_TTY" = xyes; then color=--color; else color=; fi
   exec ${srcdir}/tool/ifchange $color "${config_h}" -
-) || AC_MSG_ERROR([faild to create ${config_h}])
+) || AC_MSG_ERROR([failed to create ${config_h}])
 tr -d '\015' < largefile.h > confdefs.h
 rm largefile.h
 
