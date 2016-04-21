@@ -31,7 +31,7 @@ Wed Apr 20 10:25:53 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  SyntaxError exception instance.
 
 	* parse.y (yycompile0): make new SyntaxError instance in main
-	  mode, otherwize error_buffer should be a SyntaxError if error
+	  mode, otherwise error_buffer should be a SyntaxError if error
 	  has occurred.
 
 Tue Apr 19 17:42:47 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -65,7 +65,7 @@ Tue Apr 19 13:12:03 2016  Naotoshi Seo  <sonots@gmail.com>
 
 Tue Apr 19 12:45:03 2016  Naotoshi Seo  <sonots@gmail.com>
 
-	* ChangeLog: Add decriptions for logger updates
+	* ChangeLog: Add descriptions for logger updates
 	* NEWS: Add descriptions for logger updates
 
 Tue Apr 19 12:45:02 2016  Naotoshi Seo  <sonots@gmail.com>
