@@ -9,15 +9,16 @@ class MSpecScript
       f.read[/^\s*srcdir\s*=\s*(.+)/i] and srcdir = $1
     }
   end
+  srcdir = File.expand_path(srcdir)
   config = RbConfig::CONFIG
 
   # The default implementation to run the specs.
   set :target, File.join(builddir, "miniruby#{config['exeext']}")
   set :prefix, File.expand_path('rubyspec', File.dirname(__FILE__))
   set :flags, %W[
-    -I#{File.expand_path srcdir}/lib
-    -I#{File.expand_path srcdir}
-    -I#{File.expand_path srcdir}/#{config['EXTOUT']}/common
-    #{File.expand_path srcdir}/tool/runruby.rb --archdir=#{Dir.pwd} --extout=#{config['EXTOUT']}
+    -I#{srcdir}/lib
+    -I#{srcdir}
+    -I#{srcdir}/#{config['EXTOUT']}/common
+    #{srcdir}/tool/runruby.rb --archdir=#{Dir.pwd} --extout=#{config['EXTOUT']}
   ]
 end
