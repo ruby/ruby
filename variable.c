@@ -2495,12 +2495,25 @@ MJIT_FUNC_EXPORTED void
 rb_const_warn_if_deprecated(const rb_const_entry_t *ce, VALUE klass, ID id)
 {
     if (RB_CONST_DEPRECATED_P(ce)) {
-	if (klass == rb_cObject) {
-	    rb_warn("constant ::%"PRIsVALUE" is deprecated", QUOTE_ID(id));
+	if ((ce)->flag & CONST_DEPRECATED_MESG) {
+	    VALUE mesg = ((rb_deprecated_const_entry_t *)ce)->message;
+	    if (klass == rb_cObject) {
+		rb_warn("constant ::% "PRIsVALUE" is deprecated %"PRIsVALUE,
+			rb_id2str(id), mesg);
+	    }
+	    else {
+		rb_warn("constant %"PRIsVALUE"::% "PRIsVALUE" is deprecated %"PRIsVALUE,
+			rb_class_name(klass), rb_id2str(id), mesg);
+	    }
 	}
 	else {
-	    rb_warn("constant %"PRIsVALUE"::%"PRIsVALUE" is deprecated",
-		    rb_class_name(klass), QUOTE_ID(id));
+	    if (klass == rb_cObject) {
+		rb_warn("constant ::% "PRIsVALUE" is deprecated", rb_id2str(id));
+	    }
+	    else {
+		rb_warn("constant %"PRIsVALUE"::% "PRIsVALUE" is deprecated",
+			rb_class_name(klass), rb_id2str(id));
+	    }
 	}
     }
 }
@@ -3095,6 +3108,40 @@ rb_mod_public_constant(int argc, const VALUE *argv, VALUE obj)
     return obj;
 }
 
+struct deprecate_const_args {
+    VALUE mod;
+    VALUE failed;
+    long count;
+};
+
+static int
+deprecate_const_i(VALUE key, VALUE val, VALUE arg)
+{
+    struct deprecate_const_args *argp = (struct deprecate_const_args *)arg;
+    ID id = rb_check_id(&key);
+    VALUE mod = argp->mod;
+    rb_const_entry_t *ce;
+
+    if (!id) {
+	argp->failed = key;
+	return ST_STOP;
+    }
+    StringValue(val);
+    if (!(ce = rb_const_lookup(mod, id))) {
+	argp->failed = ID2SYM(id);
+	return ST_STOP;
+    }
+    if (!(ce->flag & CONST_DEPRECATED_MESG)) {
+	ce = ruby_sized_xrealloc(ce, sizeof(rb_deprecated_const_entry_t),
+				 sizeof(rb_const_entry_t));
+	rb_id_table_insert(RCLASS_CONST_TBL(mod), id, (VALUE)ce);
+    }
+    ce->flag |= CONST_DEPRECATED|CONST_DEPRECATED_MESG;
+    RB_OBJ_WRITE(mod, &((rb_deprecated_const_entry_t *)ce)->message, val);
+    argp->count++;
+    return ST_CONTINUE;
+}
+
 /*
  *  call-seq:
  *     mod.deprecate_constant(symbol, ...)    => mod
@@ -3105,7 +3152,31 @@ rb_mod_public_constant(int argc, const VALUE *argv, VALUE obj)
 VALUE
 rb_mod_deprecate_constant(int argc, const VALUE *argv, VALUE obj)
 {
-    set_const_visibility(obj, argc, argv, CONST_DEPRECATED, CONST_DEPRECATED);
+    if (argc == 1 && RB_TYPE_P(argv[0], T_HASH)) {
+	VALUE hash = argv[0];
+	rb_frozen_class_p(obj);
+	if (RHASH_EMPTY_P(hash)) {
+	    rb_warning("%"PRIsVALUE" with no argument is just ignored",
+		       QUOTE_ID(rb_frame_callee()));
+	}
+	else {
+	    struct deprecate_const_args args;
+	    args.mod = obj;
+	    args.failed = 0;
+	    args.count = 0;
+	    rb_hash_foreach(hash, deprecate_const_i, (VALUE)&args);
+	    if (args.count > 0) {
+		rb_clear_constant_cache();
+	    }
+	    if (args.failed) {
+		rb_name_err_raise("constant %2$s::%1$s not defined",
+				  obj, args.failed);
+	    }
+	}
+    }
+    else {
+	set_const_visibility(obj, argc, argv, CONST_DEPRECATED, CONST_DEPRECATED);
+    }
     return obj;
 }
 

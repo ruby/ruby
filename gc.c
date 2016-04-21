@@ -4599,6 +4599,9 @@ mark_const_entry_i(VALUE value, void *data)
 
     gc_mark(objspace, ce->value);
     gc_mark(objspace, ce->file);
+    if (ce->flag & CONST_DEPRECATED_MESG) {
+	gc_mark(objspace, ((const rb_deprecated_const_entry_t *)ce)->message);
+    }
     return ID_TABLE_CONTINUE;
 }
 
