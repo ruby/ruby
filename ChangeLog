@@ -1,3 +1,9 @@
+Fri Apr 22 04:54:40 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* include/ruby/ruby.h (LIKELY): moved from internal.h.
+
+	* include/ruby/ruby.h (UNLIKELY): ditto.
+
 Thu Apr 21 01:44:19 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* gc.c (objspace_malloc_prepare): remove size check because it is

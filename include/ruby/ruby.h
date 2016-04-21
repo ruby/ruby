@@ -62,6 +62,15 @@ extern "C" {
 # define UNREACHABLE ((void)0)	/* unreachable */
 #endif
 
+/* likely */
+#if __GNUC__ >= 3
+#define LIKELY(x)   (__builtin_expect(!!(x), 1))
+#define UNLIKELY(x) (__builtin_expect(!!(x), 0))
+#else /* __GNUC__ >= 3 */
+#define LIKELY(x)   (x)
+#define UNLIKELY(x) (x)
+#endif /* __GNUC__ >= 3 */
+
 #ifdef __GNUC__
 #define PRINTF_ARGS(decl, string_index, first_to_check) \
   decl __attribute__((format(printf, string_index, first_to_check)))
