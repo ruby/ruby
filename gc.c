@@ -7850,6 +7850,12 @@ objspace_xfree(rb_objspace_t *objspace, void *ptr, size_t old_size)
     objspace_malloc_increase(objspace, ptr, 0, old_size, MEMOP_TYPE_FREE);
 }
 
+static void *
+ruby_xmalloc0(size_t size)
+{
+    return objspace_xmalloc0(&rb_objspace, size);
+}
+
 void *
 ruby_xmalloc(size_t size)
 {
@@ -7972,22 +7978,29 @@ ruby_mimfree(void *ptr)
 }
 
 void *
-rb_alloc_tmp_buffer(volatile VALUE *store, long len)
+rb_alloc_tmp_buffer_with_count(volatile VALUE *store, size_t size, size_t cnt)
 {
     NODE *s;
-    long cnt;
     void *ptr;
+
+    s = rb_node_newnode(NODE_ALLOCA, 0, 0, 0);
+    ptr = ruby_xmalloc0(size);
+    s->u1.value = (VALUE)ptr;
+    s->u3.cnt = cnt;
+    *store = (VALUE)s;
+    return ptr;
+}
+
+void *
+rb_alloc_tmp_buffer(volatile VALUE *store, long len)
+{
+    long cnt;
 
     if (len < 0 || (cnt = (long)roomof(len, sizeof(VALUE))) < 0) {
 	rb_raise(rb_eArgError, "negative buffer size (or size too big)");
     }
 
-    s = rb_node_newnode(NODE_ALLOCA, 0, 0, 0);
-    ptr = ruby_xmalloc(cnt * sizeof(VALUE));
-    s->u1.value = (VALUE)ptr;
-    s->u3.cnt = cnt;
-    *store = (VALUE)s;
-    return ptr;
+    return rb_alloc_tmp_buffer_with_count(store, len, cnt);
 }
 
 void

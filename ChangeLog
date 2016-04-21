@@ -1,3 +1,13 @@
+Fri Apr 22 04:57:01 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* gc.c (rb_alloc_tmp_buffer_with_count): added like xmalloc2 to
+	  avoid duplicated check of size.
+
+	* gc.c (ruby_xmalloc2): added to keep separate layers.
+
+	* include/ruby/ruby.h (rb_alloc_tmp_buffer2): added to check
+	  the size more statically.
+
 Fri Apr 22 04:54:40 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* include/ruby/ruby.h (LIKELY): moved from internal.h.

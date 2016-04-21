@@ -1615,6 +1615,7 @@ rb_num2char_inline(VALUE x)
 #define ALLOCA_N(type,n) ((type*)alloca(sizeof(type)*(n)))
 
 void *rb_alloc_tmp_buffer(volatile VALUE *store, long len) RUBY_ATTR_ALLOC_SIZE((2));
+void *rb_alloc_tmp_buffer_with_count(volatile VALUE *store, size_t len,size_t count) RUBY_ATTR_ALLOC_SIZE((2,3));
 void rb_free_tmp_buffer(volatile VALUE *store);
 NORETURN(void ruby_malloc_size_overflow(size_t, size_t));
 static inline size_t
@@ -1625,21 +1626,38 @@ ruby_xmalloc2_size(const size_t count, const size_t elsize)
     }
     return count * elsize;
 }
+static inline void *
+rb_alloc_tmp_buffer2(volatile VALUE *store, long count, size_t elsize)
+{
+    size_t cnt = (size_t)count;
+    if (elsize % sizeof(VALUE) == 0) {
+	if (UNLIKELY(cnt > LONG_MAX / sizeof(VALUE))) {
+	    ruby_malloc_size_overflow(cnt, elsize);
+	}
+    }
+    else {
+	if (UNLIKELY(cnt > (LONG_MAX - sizeof(VALUE)) / elsize)) {
+	    ruby_malloc_size_overflow(count, elsize);
+	}
+	cnt = (cnt * elsize + sizeof(VALUE) - 1) / sizeof(VALUE);
+    }
+    return rb_alloc_tmp_buffer_with_count(store, cnt * sizeof(VALUE), cnt);
+}
 /* allocates _n_ bytes temporary buffer and stores VALUE including it
  * in _v_.  _n_ may be evaluated twice. */
 #ifdef C_ALLOCA
 # define RB_ALLOCV(v, n) rb_alloc_tmp_buffer(&(v), (n))
 # define RB_ALLOCV_N(type, v, n) \
-    ((type*)RB_ALLOCV((v), ruby_xmalloc2_size((n), sizeof(type))))
+     rb_alloc_tmp_buffer2(&(v), (n), sizeof(type))))
 #else
 # define RUBY_ALLOCV_LIMIT 1024
 # define RB_ALLOCV(v, n) ((n) < RUBY_ALLOCV_LIMIT ? \
 		       (RB_GC_GUARD(v) = 0, alloca(n)) : \
 		       rb_alloc_tmp_buffer(&(v), (n)))
 # define RB_ALLOCV_N(type, v, n) \
-    ((type*)(ruby_xmalloc2_size((n), sizeof(type)) < RUBY_ALLOCV_LIMIT ? \
+    ((type*)(((size_t)(n) < RUBY_ALLOCV_LIMIT / sizeof(type)) ? \
 	     (RB_GC_GUARD(v) = 0, alloca((n) * sizeof(type))) : \
-	     rb_alloc_tmp_buffer(&(v), (n) * sizeof(type))))
+	     rb_alloc_tmp_buffer2(&(v), (n), sizeof(type))))
 #endif
 #define RB_ALLOCV_END(v) rb_free_tmp_buffer(&(v))
 
