@@ -1,3 +1,11 @@
+Thu Apr 21 12:14:04 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: check if succeeded in creating config.h.
+
+	* tool/ifchange: ignore failures when TEST_COLORS unmatched. just
+	  use the default value if expected name is not contained in it.
+	  [ruby-core:75046] [Bug #12303]
+
 Wed Apr 20 17:33:31 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/cgi/escape/escape.c (cgiesc_unescape): define unescape
