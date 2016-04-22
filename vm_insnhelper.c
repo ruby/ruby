@@ -781,11 +781,11 @@ vm_getivar(VALUE obj, ID id, IC ic, struct rb_call_cache *cc, int is_attr)
     if (RB_TYPE_P(obj, T_OBJECT)) {
 	VALUE val = Qundef;
 	VALUE klass = RBASIC(obj)->klass;
-	const long len = ROBJECT_NUMIV(obj);
+	const uint32_t len = ROBJECT_NUMIV(obj);
 	const VALUE *const ptr = ROBJECT_IVPTR(obj);
 
 	if (LIKELY(is_attr ? cc->aux.index > 0 : ic->ic_serial == RCLASS_SERIAL(klass))) {
-	    long index = !is_attr ? (long)ic->ic_value.index : (long)(cc->aux.index - 1);
+	    st_index_t index = !is_attr ? ic->ic_value.index : (cc->aux.index - 1);
 
 	    if (index < len) {
 		val = ptr[index];
@@ -797,7 +797,7 @@ vm_getivar(VALUE obj, ID id, IC ic, struct rb_call_cache *cc, int is_attr)
 
 	    if (iv_index_tbl) {
 		if (st_lookup(iv_index_tbl, id, &index)) {
-		    if ((long)index < len) {
+		    if (index < len) {
 			val = ptr[index];
 		    }
 		    if (!is_attr) {
@@ -837,11 +837,10 @@ vm_setivar(VALUE obj, ID id, VALUE val, IC ic, struct rb_call_cache *cc, int is_
 	if (LIKELY(
 	    (!is_attr && ic->ic_serial == RCLASS_SERIAL(klass)) ||
 	    (is_attr && cc->aux.index > 0))) {
-	    long index = !is_attr ? (long)ic->ic_value.index : (long)cc->aux.index-1;
-	    long len = ROBJECT_NUMIV(obj);
 	    VALUE *ptr = ROBJECT_IVPTR(obj);
+	    index = !is_attr ? ic->ic_value.index : cc->aux.index-1;
 
-	    if (index < len) {
+	    if (index < ROBJECT_NUMIV(obj)) {
 		RB_OBJ_WRITE(obj, &ptr[index], val);
 		return val; /* inline cache hit */
 	    }

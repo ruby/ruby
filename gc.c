@@ -4494,7 +4494,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 
       case T_OBJECT:
         {
-            long i, len = ROBJECT_NUMIV(obj);
+            uint32_t i, len = ROBJECT_NUMIV(obj);
 	    VALUE *ptr = ROBJECT_IVPTR(obj);
             for (i  = 0; i < len; i++) {
 		gc_mark(objspace, *ptr++);

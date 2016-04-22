@@ -30,7 +30,7 @@ static st_table *generic_iv_tbl_compat;
 
 /* per-object */
 struct gen_ivtbl {
-    long numiv; /* only uses 32-bits */
+    uint32_t numiv;
     VALUE ivptr[1]; /* flexible array */
 };
 
@@ -949,7 +949,7 @@ gen_ivar_compat_tbl_i(st_data_t id, st_data_t index, st_data_t arg)
 {
     struct gen_ivar_compat_tbl *a = (struct gen_ivar_compat_tbl *)arg;
 
-    if ((long)index < a->ivtbl->numiv) {
+    if (index < a->ivtbl->numiv) {
 	VALUE val = a->ivtbl->ivptr[index];
 	if (val != Qundef) {
 	    st_add_direct(a->tbl, id, (st_data_t)val);
@@ -1012,7 +1012,7 @@ generic_ivar_delete(VALUE obj, ID id, VALUE undef)
 	st_data_t index;
 
 	if (st_lookup(iv_index_tbl, (st_data_t)id, &index)) {
-	    if ((long)index < ivtbl->numiv) {
+	    if (index < ivtbl->numiv) {
 		VALUE ret = ivtbl->ivptr[index];
 
 		ivtbl->ivptr[index] = Qundef;
@@ -1033,7 +1033,7 @@ generic_ivar_get(VALUE obj, ID id, VALUE undef)
 	st_data_t index;
 
 	if (st_lookup(iv_index_tbl, (st_data_t)id, &index)) {
-	    if ((long)index < ivtbl->numiv) {
+	    if (index < ivtbl->numiv) {
 		VALUE ret = ivtbl->ivptr[index];
 
 		return ret == Qundef ? undef : ret;
@@ -1050,9 +1050,9 @@ gen_ivtbl_bytes(size_t n)
 }
 
 static struct gen_ivtbl *
-gen_ivtbl_resize(struct gen_ivtbl *old, long n)
+gen_ivtbl_resize(struct gen_ivtbl *old, uint32_t n)
 {
-    long len = old ? old->numiv : 0;
+    uint32_t len = old ? old->numiv : 0;
     struct gen_ivtbl *ivtbl = xrealloc(old, gen_ivtbl_bytes(n));
 
     ivtbl->numiv = n;
@@ -1076,10 +1076,10 @@ gen_ivtbl_dup(const struct gen_ivtbl *orig)
 }
 #endif
 
-static long
+static uint32_t
 iv_index_tbl_newsize(struct ivar_update *ivup)
 {
-    long newsize = (ivup->index+1) + (ivup->index+1)/4; /* (index+1)*1.25 */
+    uint32_t newsize = (ivup->index+1) + (ivup->index+1)/4; /* (index+1)*1.25 */
 
     if (!ivup->iv_extended &&
         ivup->u.iv_index_tbl->num_entries < (st_index_t)newsize) {
@@ -1093,13 +1093,13 @@ generic_ivar_update(st_data_t *k, st_data_t *v, st_data_t u, int existing)
 {
     VALUE obj = (VALUE)*k;
     struct ivar_update *ivup = (struct ivar_update *)u;
-    long newsize;
+    uint32_t newsize;
     int ret = ST_CONTINUE;
     struct gen_ivtbl *ivtbl;
 
     if (existing) {
 	ivtbl = (struct gen_ivtbl *)*v;
-	if ((long)ivup->index >= ivtbl->numiv) {
+	if (ivup->index >= ivtbl->numiv) {
 	    goto resize;
 	}
 	ret = ST_STOP;
@@ -1127,7 +1127,7 @@ generic_ivar_defined(VALUE obj, ID id)
     if (!st_lookup(iv_index_tbl, (st_data_t)id, &index)) return Qfalse;
     if (!gen_ivtbl_get(obj, &ivtbl)) return Qfalse;
 
-    if (((long)index < ivtbl->numiv) && (ivtbl->ivptr[index] != Qundef))
+    if ((index < ivtbl->numiv) && (ivtbl->ivptr[index] != Qundef))
 	return Qtrue;
 
     return Qfalse;
@@ -1145,7 +1145,7 @@ generic_ivar_remove(VALUE obj, ID id, VALUE *valp)
     if (!st_lookup(iv_index_tbl, key, &index)) return 0;
     if (!gen_ivtbl_get(obj, &ivtbl)) return 0;
 
-    if ((long)index < ivtbl->numiv) {
+    if (index < ivtbl->numiv) {
 	if (ivtbl->ivptr[index] != Qundef) {
 	    *valp = ivtbl->ivptr[index];
 	    ivtbl->ivptr[index] = Qundef;
@@ -1158,7 +1158,7 @@ generic_ivar_remove(VALUE obj, ID id, VALUE *valp)
 static void
 gen_ivtbl_mark(const struct gen_ivtbl *ivtbl)
 {
-    long i;
+    uint32_t i;
 
     for (i = 0; i < ivtbl->numiv; i++) {
 	rb_gc_mark(ivtbl->ivptr[i]);
@@ -1205,7 +1205,7 @@ rb_generic_ivar_memsize(VALUE obj)
 static size_t
 gen_ivtbl_count(const struct gen_ivtbl *ivtbl)
 {
-    long i;
+    uint32_t i;
     size_t n = 0;
 
     for (i = 0; i < ivtbl->numiv; i++) {
@@ -1222,7 +1222,7 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
 {
     VALUE val, *ptr;
     struct st_table *iv_index_tbl;
-    long len;
+    uint32_t len;
     st_data_t index;
 
     if (SPECIAL_CONST_P(obj)) return undef;
@@ -1233,7 +1233,7 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
         iv_index_tbl = ROBJECT_IV_INDEX_TBL(obj);
         if (!iv_index_tbl) break;
         if (!st_lookup(iv_index_tbl, (st_data_t)id, &index)) break;
-        if (len <= (long)index) break;
+        if (len <= index) break;
         val = ptr[index];
         if (val != Qundef)
             return val;
@@ -1276,7 +1276,7 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
 {
     VALUE val, *ptr;
     struct st_table *iv_index_tbl;
-    long len;
+    uint32_t len;
     st_data_t index;
 
     rb_check_frozen(obj);
@@ -1287,7 +1287,7 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
         iv_index_tbl = ROBJECT_IV_INDEX_TBL(obj);
         if (!iv_index_tbl) break;
         if (!st_lookup(iv_index_tbl, (st_data_t)id, &index)) break;
-        if (len <= (long)index) break;
+        if (len <= index) break;
         val = ptr[index];
         ptr[index] = Qundef;
         if (val != Qundef)
@@ -1360,7 +1360,7 @@ VALUE
 rb_ivar_set(VALUE obj, ID id, VALUE val)
 {
     struct ivar_update ivup;
-    long i, len;
+    uint32_t i, len;
 
     rb_check_frozen(obj);
 
@@ -1370,7 +1370,7 @@ rb_ivar_set(VALUE obj, ID id, VALUE val)
         ivup.u.iv_index_tbl = iv_index_tbl_make(obj);
         iv_index_tbl_extend(&ivup, id);
         len = ROBJECT_NUMIV(obj);
-        if (len <= (long)ivup.index) {
+        if (len <= ivup.index) {
             VALUE *ptr = ROBJECT_IVPTR(obj);
             if (ivup.index < ROBJECT_EMBED_LEN_MAX) {
                 RBASIC(obj)->flags |= ROBJECT_EMBED;
@@ -1426,7 +1426,7 @@ rb_ivar_defined(VALUE obj, ID id)
         iv_index_tbl = ROBJECT_IV_INDEX_TBL(obj);
         if (!iv_index_tbl) break;
         if (!st_lookup(iv_index_tbl, (st_data_t)id, &index)) break;
-        if (ROBJECT_NUMIV(obj) <= (long)index) break;
+        if (ROBJECT_NUMIV(obj) <= index) break;
         val = ROBJECT_IVPTR(obj)[index];
         if (val != Qundef)
             return Qtrue;
@@ -1454,8 +1454,8 @@ static int
 obj_ivar_i(st_data_t key, st_data_t index, st_data_t arg)
 {
     struct obj_ivar_tag *data = (struct obj_ivar_tag *)arg;
-    if ((long)index < ROBJECT_NUMIV(data->obj)) {
-        VALUE val = ROBJECT_IVPTR(data->obj)[(long)index];
+    if (index < ROBJECT_NUMIV(data->obj)) {
+        VALUE val = ROBJECT_IVPTR(data->obj)[index];
         if (val != Qundef) {
             return (data->func)((ID)key, val, data->arg);
         }
@@ -1491,7 +1491,7 @@ gen_ivar_each_i(st_data_t key, st_data_t index, st_data_t data)
 {
     struct gen_ivar_tag *arg = (struct gen_ivar_tag *)data;
 
-    if ((long)index < arg->ivtbl->numiv) {
+    if (index < arg->ivtbl->numiv) {
         VALUE val = arg->ivtbl->ivptr[index];
         if (val != Qundef) {
             return (arg->func)((ID)key, val, arg->arg);
@@ -1530,9 +1530,8 @@ gen_ivar_copy(ID id, VALUE val, st_data_t arg)
     ivup.iv_extended = 0;
     ivup.u.iv_index_tbl = c->iv_index_tbl;
     iv_index_tbl_extend(&ivup, id);
-    if ((long)ivup.index >= c->ivtbl->numiv) {
-	size_t newsize = iv_index_tbl_newsize(&ivup);
-
+    if (ivup.index >= c->ivtbl->numiv) {
+	uint32_t newsize = iv_index_tbl_newsize(&ivup);
 	c->ivtbl = gen_ivtbl_resize(c->ivtbl, newsize);
     }
     c->ivtbl->ivptr[ivup.index] = val;
@@ -1559,7 +1558,7 @@ rb_copy_generic_ivar(VALUE clone, VALUE obj)
     }
     if (gen_ivtbl_get(obj, &ivtbl)) {
 	struct givar_copy c;
-	long i;
+	uint32_t i;
 
 	if (gen_ivtbl_count(ivtbl) == 0)
 	    goto clear;
@@ -1746,7 +1745,7 @@ rb_obj_remove_instance_variable(VALUE obj, VALUE name)
         iv_index_tbl = ROBJECT_IV_INDEX_TBL(obj);
         if (!iv_index_tbl) break;
         if (!st_lookup(iv_index_tbl, (st_data_t)id, &index)) break;
-        if (ROBJECT_NUMIV(obj) <= (long)index) break;
+        if (ROBJECT_NUMIV(obj) <= index) break;
         val = ROBJECT_IVPTR(obj)[index];
         if (val != Qundef) {
             ROBJECT_IVPTR(obj)[index] = Qundef;

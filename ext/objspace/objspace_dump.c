@@ -272,7 +272,7 @@ dump_object(VALUE obj, struct dump_config *dc)
 	break;
 
       case T_OBJECT:
-	dump_append(dc, ", \"ivars\":%ld", ROBJECT_NUMIV(obj));
+	dump_append(dc, ", \"ivars\":%u", ROBJECT_NUMIV(obj));
 	break;
 
       case T_FILE:

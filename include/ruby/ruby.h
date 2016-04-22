@@ -909,7 +909,7 @@ struct RObject {
     struct RBasic basic;
     union {
 	struct {
-	    long numiv; /* only uses 32-bits */
+	    uint32_t numiv;
 	    VALUE *ivptr;
             void *iv_index_tbl; /* shortcut for RCLASS_IV_INDEX_TBL(rb_obj_class(obj)) */
 	} heap;

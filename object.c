@@ -268,7 +268,7 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
 	RBASIC(dest)->flags |= ROBJECT_EMBED;
     }
     else {
-	long len = ROBJECT(obj)->as.heap.numiv;
+	uint32_t len = ROBJECT(obj)->as.heap.numiv;
 	VALUE *ptr = 0;
 	if (len > 0) {
 	    ptr = ALLOC_N(VALUE, len);

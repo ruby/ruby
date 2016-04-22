@@ -1,3 +1,8 @@
+Fri Apr 22 18:44:32 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* variable.c: use uint32_t instead of long to avoid confusion about
+	  the type of ivtbl->numiv.
+
 Fri Apr 22 15:09:27 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval_jump.c (exec_end_procs_chain): restore previous error info
