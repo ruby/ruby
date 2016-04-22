@@ -94,10 +94,11 @@ rb_mark_end_proc(void)
 }
 
 static void
-exec_end_procs_chain(struct end_proc_data *volatile *procs)
+exec_end_procs_chain(struct end_proc_data *volatile *procs, VALUE *errp)
 {
     struct end_proc_data volatile endproc;
     struct end_proc_data *link;
+    VALUE errinfo = *errp;
 
     while ((link = *procs) != 0) {
 	*procs = link->next;
@@ -105,6 +106,7 @@ exec_end_procs_chain(struct end_proc_data *volatile *procs)
 	xfree(link);
 	rb_set_safe_level_force(endproc.safe);
 	(*endproc.func) (endproc.data);
+	*errp = errinfo;
     }
 }
 
@@ -119,8 +121,8 @@ rb_exec_end_proc(void)
     TH_PUSH_TAG(th);
     if ((status = EXEC_TAG()) == 0) {
       again:
-	exec_end_procs_chain(&ephemeral_end_procs);
-	exec_end_procs_chain(&end_procs);
+	exec_end_procs_chain(&ephemeral_end_procs, &th->errinfo);
+	exec_end_procs_chain(&end_procs, &th->errinfo);
     }
     else {
 	VAR_INITIALIZED(th);
