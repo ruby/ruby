@@ -1,3 +1,8 @@
+Fri Apr 22 14:34:27 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (setup_exception): set the cause only if it is explicitly
+	  given or not set yet.  [Bug #12068]
+
 Fri Apr 22 14:13:28 2016  sorah (Shota Fukumori)  <her@sorah.jp>
 
 	* lib/forwardable.rb: Convert given accessors to String.

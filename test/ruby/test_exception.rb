@@ -618,6 +618,41 @@ end.join
     assert_not_same(e, e.cause, "#{msg}: should not be recursive")
   end
 
+  def test_cause_raised_in_rescue
+    e = assert_raise_with_message(RuntimeError, 'b') {
+      begin
+        raise 'a'
+      rescue => a
+        begin
+          raise 'b'
+        rescue => b
+          begin
+            raise 'c'
+          rescue
+            raise b
+          end
+        end
+      end
+    }
+    assert_equal('a', e.cause.message, 'cause should not be overwritten by reraise')
+  end
+
+  def test_cause_at_raised
+    e = assert_raise_with_message(RuntimeError, 'b') {
+      begin
+        raise 'a'
+      rescue => a
+        b = RuntimeError.new('b')
+        begin
+          raise 'c'
+        rescue
+          raise b
+        end
+      end
+    }
+    assert_equal('c', e.cause.message, 'cause should be the exception at raised')
+  end
+
   def test_raise_with_cause
     msg = "[Feature #8257]"
     cause = ArgumentError.new("foobar")
@@ -630,6 +665,25 @@ end.join
     assert_raise_with_message(ArgumentError, /with no arguments/) do
       raise cause: cause
     end
+  end
+
+  def test_raise_with_cause_in_rescue
+    e = assert_raise_with_message(RuntimeError, 'b') {
+      begin
+        raise 'a'
+      rescue => a
+        begin
+          raise 'b'
+        rescue => b
+          begin
+            raise 'c'
+          rescue
+            raise b, cause: ArgumentError.new('d')
+          end
+        end
+      end
+    }
+    assert_equal('d', e.cause.message, 'cause option should be honored always')
   end
 
   def test_unknown_option

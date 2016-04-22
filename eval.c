@@ -24,6 +24,8 @@ NORETURN(void rb_raise_jump(VALUE, VALUE));
 VALUE rb_eLocalJumpError;
 VALUE rb_eSysStackError;
 
+static ID id_cause;
+
 #define exception_error GET_VM()->special_exceptions[ruby_error_reenter]
 
 #include "eval_error.c"
@@ -450,9 +452,6 @@ static VALUE get_thread_errinfo(rb_thread_t *th);
 static VALUE
 exc_setup_cause(VALUE exc, VALUE cause)
 {
-    ID id_cause;
-    CONST_ID(id_cause, "cause");
-
 #if SUPPORT_JOKE
     if (NIL_P(cause)) {
 	ID id_true_cause;
@@ -496,10 +495,15 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 	mesg = rb_exc_new(rb_eRuntimeError, 0, 0);
 	nocause = 0;
     }
-    if (cause == Qundef) {
-	cause = nocause ? Qnil : get_thread_errinfo(th);
+    if (cause != Qundef) {
+	exc_setup_cause(mesg, cause);
     }
-    exc_setup_cause(mesg, cause);
+    else if (nocause) {
+	exc_setup_cause(mesg, Qnil);
+    }
+    else if (!rb_ivar_defined(mesg, id_cause)) {
+	exc_setup_cause(mesg, get_thread_errinfo(th));
+    }
 
     file = rb_sourcefile();
     if (file) line = rb_sourceline();
@@ -1710,4 +1714,6 @@ Init_eval(void)
     rb_define_global_function("untrace_var", rb_f_untrace_var, -1);	/* in variable.c */
 
     rb_vm_register_special_exception(ruby_error_reenter, rb_eFatal, "exception reentered");
+
+    id_cause = rb_intern_const("cause");
 }
