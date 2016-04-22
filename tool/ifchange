@@ -40,7 +40,7 @@ target="$1"
 temp="$2"
 if [ "$temp" = - ]; then
     temp="tmpdata$$.tmp~"
-    cat > "$temp" || exit $?
+    cat > "$temp"
     trap 'rm -f "$temp"' 0
 fi
 
@@ -50,8 +50,8 @@ if [ "$color" = always -o \( "$color" = auto -a -t 1 \) ]; then
     case "`tput smso 2>/dev/null`" in
 	"$msg_begin"*m)
 	    if [ ${TEST_COLORS:+set} ]; then
-		msg_unchanged=`expr ":$TEST_COLORS:" : ".*:pass=\([^:]*\):"`
-		msg_updated=`expr ":$TEST_COLORS:" : ".*:fail=\([^:]*\):"`
+		msg_unchanged=`expr ":$TEST_COLORS:" : ".*:pass=\([^:]*\):"` || :
+		msg_updated=`expr ":$TEST_COLORS:" : ".*:fail=\([^:]*\):"` || :
 	    fi
 	    msg_unchanged="${msg_begin}${msg_unchanged:-32;1}m"
 	    msg_updated="${msg_begin}${msg_updated:-31;1}m"

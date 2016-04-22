@@ -1,3 +1,11 @@
+Sat Apr 23 00:02:09 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: check if succeeded in creating config.h.
+
+	* tool/ifchange: ignore failures when TEST_COLORS unmatched. just
+	  use the default value if expected name is not contained in it.
+	  [ruby-core:75046] [Bug #12303]
+
 Fri Apr 22 23:47:05 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* doc/regexp.rdoc (comments): [DOC] terminators cannot appear in
