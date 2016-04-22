@@ -1,3 +1,8 @@
+Fri Apr 22 10:43:19 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* file.c, win32/file.c: Removed obsoleted safe level checks.
+	  [fix GH-1327] Patch by @cremno
+
 Fri Apr 22 10:01:48 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* benchmark/bm_so_meteor_contest.rb: fix a typo.
