@@ -1,3 +1,8 @@
+Fri Apr 22 10:01:48 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* benchmark/bm_so_meteor_contest.rb: fix a typo.
+	  [fix GH-1330][ci skip] Patch by @sachin21
+
 Fri Apr 22 04:57:01 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* gc.c (rb_alloc_tmp_buffer_with_count): added like xmalloc2 to
