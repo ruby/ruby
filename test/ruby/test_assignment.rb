@@ -757,4 +757,12 @@ class TestAssignmentGen < Test::Unit::TestCase
     o = bug9448.new
     assert_equal("ok", o['current'] = "ok")
   end
+
+  def test_massign_aref_lhs_splat
+    bug11970 = '[ruby-core:72777] [Bug #11970]'
+    h = {}
+    k = [:key]
+    h[*k], = ["ok", "ng"]
+    assert_equal("ok", h[:key], bug11970)
+  end
 end

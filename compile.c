@@ -187,9 +187,18 @@ r_value(VALUE value)
 #define ADD_INSN(seq, line, insn) \
   ADD_ELEM((seq), (LINK_ELEMENT *) new_insn_body(iseq, (line), BIN(insn), 0))
 
+/* insert an instruction before prev */
+#define INSERT_BEFORE_INSN(prev, line, insn) \
+  INSERT_ELEM_PREV(&(prev)->link, (LINK_ELEMENT *) new_insn_body(iseq, (line), BIN(insn), 0))
+
 /* add an instruction with some operands (1, 2, 3, 5) */
 #define ADD_INSN1(seq, line, insn, op1) \
   ADD_ELEM((seq), (LINK_ELEMENT *) \
+           new_insn_body(iseq, (line), BIN(insn), 1, (VALUE)(op1)))
+
+/* insert an instruction with some operands (1, 2, 3, 5) before prev */
+#define INSERT_BEFORE_INSN1(prev, line, insn, op1) \
+  INSERT_ELEM_PREV(&(prev)->link, (LINK_ELEMENT *) \
            new_insn_body(iseq, (line), BIN(insn), 1, (VALUE)(op1)))
 
 /* add an instruction with label operand (alias of ADD_INSN1) */
@@ -737,6 +746,20 @@ compile_data_alloc_adjust(rb_iseq_t *iseq)
 }
 
 /*
+ * elem1, elemX => elemX, elem2, elem1
+ */
+static void
+INSERT_ELEM_PREV(LINK_ELEMENT *elem1, LINK_ELEMENT *elem2)
+{
+    elem2->prev = elem1->prev;
+    elem2->next = elem1;
+    elem1->prev = elem2;
+    if (elem2->prev) {
+	elem2->prev->next = elem2;
+    }
+}
+
+/*
  * elem1, elemX => elem1, elem2, elemX
  */
 static void
@@ -779,6 +802,12 @@ static LINK_ELEMENT *
 FIRST_ELEMENT(LINK_ANCHOR *anchor)
 {
     return anchor->anchor.next;
+}
+
+static LINK_ELEMENT *
+LAST_ELEMENT(LINK_ANCHOR *anchor)
+{
+    return anchor->last;
 }
 
 static LINK_ELEMENT *
@@ -2663,19 +2692,22 @@ compile_massign_lhs(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE *node)
 	INSN *iobj;
 	rb_call_info_t *ci;
 	VALUE dupidx;
+	int line = nd_line(node);
 
 	COMPILE_POPED(ret, "masgn lhs (NODE_ATTRASGN)", node);
 
-	POP_ELEMENT(ret);        /* pop pop insn */
-	iobj = (INSN *)POP_ELEMENT(ret); /* pop send insn */
+	iobj = (INSN *)get_prev_insn((INSN *)LAST_ELEMENT(ret)); /* send insn */
 	ci = (rb_call_info_t *)iobj->operands[0];
-	ci->orig_argc += 1; ci->argc = ci->orig_argc;
+	ci->orig_argc += 1;
 	dupidx = INT2FIX(ci->orig_argc);
 
-	ADD_INSN1(ret, nd_line(node), topn, dupidx);
-	ADD_ELEM(ret, (LINK_ELEMENT *)iobj);
-	ADD_INSN(ret, nd_line(node), pop);	/* result */
-	ADD_INSN(ret, nd_line(node), pop);	/* rhs    */
+	INSERT_BEFORE_INSN1(iobj, line, topn, dupidx);
+	if (ci->flag & VM_CALL_ARGS_SPLAT) {
+	    --ci->orig_argc;
+	    INSERT_BEFORE_INSN1(iobj, line, newarray, INT2FIX(1));
+	    INSERT_BEFORE_INSN(iobj, line, concatarray);
+	}
+	ADD_INSN(ret, line, pop);	/* result */
 	break;
       }
       case NODE_MASGN: {

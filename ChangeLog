@@ -1,3 +1,9 @@
+Fri Apr 22 13:41:38 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (compile_massign_lhs): when index ends with splat,
+	  append rhs value to it like POSTARG, since VM_CALL_ARGS_SPLAT
+	  splats the last argument only.  [ruby-core:72777] [Bug #11970]
+
 Thu Mar 31 05:06:02 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sprintf.c (rb_str_format): fix buffer overflow, length must be
