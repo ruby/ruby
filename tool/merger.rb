@@ -5,6 +5,7 @@ exec "${RUBY-ruby}" "-x" "$0" "$@" && [ ] if false
 # This needs ruby 1.9 and subversion.
 # run this in a repository to commit.
 
+require 'fileutils'
 require 'tempfile'
 
 $repos = 'svn+ssh://svn@ci.ruby-lang.org/ruby/'
@@ -169,6 +170,7 @@ else
   system 'svn up'
   system 'ruby tool/file2lastrev.rb --revision.h . > revision.tmp'
   system 'tool/ifchange "--timestamp=.revision.time" "revision.h" "revision.tmp"'
+  FileUtils.rm('revision.tmp')
 
   case ARGV[0]
   when /--ticket=(.*)/
