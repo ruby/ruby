@@ -210,6 +210,23 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_equal true, MyObj.new == nil
   end
 
+  def self.tailcall(klass, src, file = nil, path = nil, line = nil)
+    unless file
+      loc, = caller_locations(1, 1)
+      file = loc.path
+      line ||= loc.lineno
+    end
+    RubyVM::InstructionSequence.new("proc {|_|_.class_eval {#{src}}}",
+                                    file, (path || file), line,
+                                    tailcall_optimization: true,
+                                    trace_instruction: false)
+      .eval[klass]
+  end
+
+  def tailcall(*args)
+    self.class.tailcall(singleton_class, *args)
+  end
+
   def test_tailcall
     bug4082 = '[ruby-core:33289]'
 
@@ -253,6 +270,30 @@ class TestRubyOptimization < Test::Unit::TestCase
   end
     EOF
     assert_equal(123, delay { 123 }.call, bug6901)
+  end
+
+  def do_raise
+    raise "should be rescued"
+  end
+
+  def errinfo
+    $!
+  end
+
+  def test_tailcall_inhibited_by_rescue
+    bug12082 = '[ruby-core:73871] [Bug #12082]'
+
+    tailcall(<<-'end;')
+      def to_be_rescued
+        return do_raise
+        1 + 2
+      rescue
+        errinfo
+      end
+    end;
+    result = to_be_rescued
+    assert_instance_of(RuntimeError, result, bug12082)
+    assert_equal("should be rescued", result.message, bug12082)
   end
 
   class Bug10557

@@ -1,3 +1,14 @@
+Fri Apr 22 18:36:15 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (new_label_body): initialize bit fields, since
+	  compile_data_alloc does not clear the memory.  [Bug #12082]
+
+Fri Apr 22 18:36:15 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_optimize): disable tail call optimization in
+	  rescued, rescue, and ensure blocks.
+	  [ruby-core:73871] [Bug #12082]
+
 Fri Apr 22 18:34:31 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* doc/regexp.rdoc (comments): [DOC] terminators cannot appear in
