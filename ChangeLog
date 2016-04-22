@@ -1,3 +1,8 @@
+Fri Apr 22 20:34:04 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* time.c (time_asctime): [DOC] add ctime example, not only
+	  asctime.  [ruby-core:75126] [Bug #12310]
+
 Fri Apr 22 18:44:32 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* variable.c: use uint32_t instead of long to avoid confusion about

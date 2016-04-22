@@ -3547,6 +3547,7 @@ static VALUE strftime_cstr(const char *fmt, size_t len, VALUE time, rb_encoding 
  *  Returns a canonical string representation of _time_.
  *
  *     Time.now.asctime   #=> "Wed Apr  9 08:56:03 2003"
+ *     Time.now.ctime     #=> "Wed Apr  9 08:56:03 2003"
  */
 
 static VALUE
