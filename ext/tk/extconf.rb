@@ -127,7 +127,7 @@ def maybe_64bit?
   /64|universal|s390x/ =~ RUBY_PLATFORM
 end
 
-if defined?(Logging.quiet) and Logging.quiet
+if defined?(Logging.quiet) and Logging.quiet and /--jobserver-fds=/ !~ ENV["MAKEFLAGS"]
   def progress(s)
     print(s)
   end
