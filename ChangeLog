@@ -1,3 +1,8 @@
+Fri Apr 22 11:27:03 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/net/http.rb: Improve documentation for SSL requests via GET method.
+	  [fix GH-1325][ci skip] Patch by @jsyeo
+
 Fri Apr 22 10:51:13 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/webrick/ssl.rb: Support to add SSLCiphers option.

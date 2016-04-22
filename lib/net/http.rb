@@ -260,15 +260,20 @@ module Net   #:nodoc:
   #
   #   uri = URI('https://secure.example.com/some_path?query=string')
   #
-  #   Net::HTTP.start(uri.host, uri.port,
-  #     :use_ssl => uri.scheme == 'https') do |http|
+  #   Net::HTTP.start(uri.host, uri.port, :use_ssl => true) do |http|
   #     request = Net::HTTP::Get.new uri
-  #
   #     response = http.request request # Net::HTTPResponse object
   #   end
   #
+  # Or if you simply want to make a GET request, you may pass in an URI
+  # object that has a HTTPS URL. Net::HTTP automatically turn on TLS
+  # verification if the URI object has a 'https' URI scheme.
+  #
+  #   uri = URI('https://example.com/')
+  #   Net::HTTP.get(uri) # => String
+  #
   # In previous versions of Ruby you would need to require 'net/https' to use
-  # HTTPS.  This is no longer true.
+  # HTTPS. This is no longer true.
   #
   # === Proxies
   #
