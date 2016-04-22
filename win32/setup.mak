@@ -44,6 +44,9 @@ ia64-mswin64: -prologue64- -ia64- -epilogue-
 MAKE = nmake
 srcdir = $(srcdir:\=/)
 prefix = $(prefix:\=/)
+!if defined(libdir_basename)
+libdir_basename = $(libdir_basename)
+!endif
 EXTSTATIC = $(EXTSTATIC)
 !if defined(RDOCTARGET)
 RDOCTARGET = $(RDOCTARGET)

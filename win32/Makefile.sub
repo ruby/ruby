@@ -151,8 +151,11 @@ prefix = /usr
 !if !defined(exec_prefix)
 exec_prefix = $(prefix)
 !endif
+!if !defined(libdir_basename)
+libdir_basename = lib
+!endif
 !if !defined(libdir)
-libdir = $(exec_prefix)/lib
+libdir = $(exec_prefix)/$(libdir_basename)
 !endif
 !if !defined(datadir)
 datadir = $(prefix)/share
@@ -794,7 +797,7 @@ s,@datadir@,$${prefix}/share,;t t
 s,@sysconfdir@,$${prefix}/etc,;t t
 s,@sharedstatedir@,/etc,;t t
 s,@localstatedir@,/var,;t t
-s,@libdir@,$${exec_prefix}/lib,;t t
+s,@libdir@,$${exec_prefix}/$(libdir_basename),;t t
 s,@includedir@,$${prefix}/include,;t t
 s,@oldincludedir@,/usr/include,;t t
 s,@infodir@,$${datadir}/info,;t t
