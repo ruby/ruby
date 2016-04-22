@@ -1,3 +1,12 @@
+Fri Apr 22 18:30:50 2016  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* extension.rdoc, extension.ja.rdoc: [DOC] Fix some errors.
+	  Renamed files, wrong method names or argument types; the example
+	  GetDBM macro is now updated to the current version of the actual
+	  code.
+	  patches are derived from Marcus Stollsteimer in [ruby-core:74690].
+	  [Bug #12228]
+
 Fri Apr 22 18:22:15 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf-utf8/nkf.c (mime_putc): fix typo.
