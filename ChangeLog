@@ -1,3 +1,8 @@
+Fri Apr 22 18:19:32 2016  Naotoshi Seo  <sonots@gmail.com>
+
+	* ext/date/date_core.c (datetime_to_time): preserve timezone info
+	  [Bug #12189] [Fix GH-1295]
+
 Fri Apr 22 18:16:51 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/securerandom.rb (gen_random): to avoid blocking on Windows.
