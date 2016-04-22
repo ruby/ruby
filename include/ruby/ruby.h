@@ -1618,13 +1618,23 @@ void *rb_alloc_tmp_buffer(volatile VALUE *store, long len) RUBY_ATTR_ALLOC_SIZE(
 void *rb_alloc_tmp_buffer_with_count(volatile VALUE *store, size_t len,size_t count) RUBY_ATTR_ALLOC_SIZE((2,3));
 void rb_free_tmp_buffer(volatile VALUE *store);
 NORETURN(void ruby_malloc_size_overflow(size_t, size_t));
-static inline size_t
-ruby_xmalloc2_size(const size_t count, const size_t elsize)
+#if HAVE_LONG_LONG && SIZEOF_SIZE_T * 2 <= SIZEOF_LONG_LONG
+# define DSIZE_T unsigned LONG_LONG
+#elif defined(HAVE_INT128_T)
+# define DSIZE_T uint128_t
+#endif
+static inline int
+rb_mul_size_overflow(size_t a, size_t b, size_t max, size_t *c)
 {
-    if (count > SSIZE_MAX / elsize) {
-	ruby_malloc_size_overflow(count, elsize);
-    }
-    return count * elsize;
+#ifdef DSIZE_T
+    DSIZE_T c2 = (DSIZE_T)a * (DSIZE_T)b;
+    if (UNLIKELY(c2 > max)) return 1;
+    *c = (size_t)c2;
+#else
+    if (b != 0 && UNLIKELY(a > max / b)) return 1;
+    *c = a * b;
+#endif
+    return 0;
 }
 static inline void *
 rb_alloc_tmp_buffer2(volatile VALUE *store, long count, size_t elsize)
@@ -1636,10 +1646,11 @@ rb_alloc_tmp_buffer2(volatile VALUE *store, long count, size_t elsize)
 	}
     }
     else {
-	if (UNLIKELY(cnt > (LONG_MAX - sizeof(VALUE)) / elsize)) {
-	    ruby_malloc_size_overflow(count, elsize);
+	size_t size, max = LONG_MAX - sizeof(VALUE) + 1;
+	if (UNLIKELY(rb_mul_size_overflow(count, elsize, max, &size))) {
+	    ruby_malloc_size_overflow(cnt, elsize);
 	}
-	cnt = (cnt * elsize + sizeof(VALUE) - 1) / sizeof(VALUE);
+	cnt = (size + sizeof(VALUE) - 1) / sizeof(VALUE);
     }
     return rb_alloc_tmp_buffer_with_count(store, cnt * sizeof(VALUE), cnt);
 }

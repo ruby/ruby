@@ -7792,7 +7792,16 @@ objspace_xmalloc(rb_objspace_t *objspace, size_t size)
     return objspace_xmalloc0(objspace, size);
 }
 
-#define xmalloc2_size ruby_xmalloc2_size
+static inline size_t
+xmalloc2_size(const size_t count, const size_t elsize)
+{
+    size_t ret;
+    if (rb_mul_size_overflow(count, elsize, SSIZE_MAX, &ret)) {
+	ruby_malloc_size_overflow(count, elsize);
+    }
+    return ret;
+}
+
 static void *
 objspace_xmalloc2(rb_objspace_t *objspace, size_t n, size_t size)
 {

@@ -1,3 +1,13 @@
+Fri Apr 22 20:18:40 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* include/ruby/ruby.h (rb_mul_size_overflow): added to handle
+	  mul overflow efficiently.
+
+	* include/ruby/ruby.h (rb_alloc_tmp_buffer2): use rb_mul_size_overflow
+	  and avoid division where it can define DSIZE_T.
+
+	* gc.c (xmalloc2_size): moved from ruby.h and use rb_mul_size_overflow.
+
 Fri Apr 22 20:34:04 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* time.c (time_asctime): [DOC] add ctime example, not only
