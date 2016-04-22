@@ -275,7 +275,7 @@ rb_utf8_str_new_cstr(const char *ptr) ::
 
   エンコーディングがUTF-8のRubyの文字列を生成する.
 
-rb_usascii_str_new_literal(const char *ptr) ::
+rb_utf8_str_new_literal(const char *ptr) ::
 
   Cのリテラル文字列からエンコーディングがUTF-8のRubyの文字列を生成する．
 
@@ -889,7 +889,7 @@ Dataオブジェクトからdbmstruct構造体のポインタを取り出すた�
 に以下のマクロを使っています．
 
   #define GetDBM(obj, dbmp) do {\
-      TypedData_Get_Struct(obj, struct dbmdata, &dbm_type, dbmp);\
+      TypedData_Get_Struct((obj), struct dbmdata, &dbm_type, (dbmp));\
       if ((dbmp) == 0) closed_dbm();\
       if ((dbmp)->di_dbm == 0) closed_dbm();\
   } while (0)
@@ -1069,7 +1069,7 @@ variable.c :: 変数と定数
 
 parse.y       :: 字句解析器と構文定義
 parse.c       :: 自動生成
-keywords      :: 予約語
+defs/keywords :: 予約語
 lex.c         :: 自動生成
 
 == Rubyの評価器 (通称YARV)
@@ -1091,12 +1091,12 @@ lex.c         :: 自動生成
   vm_insnhelper.c
   vm_method.c
 
-  opt_insns_unif.def  : 命令融合
-  opt_operand.def     : 最適化のための定義
+  defs/opt_insns_unif.def  : 命令融合
+  defs/opt_operand.def     : 最適化のための定義
 
-    -> insn*.inc      : 自動生成
-    -> opt*.inc       : 自動生成
-    -> vm.inc         : 自動生成
+    -> insn*.inc           : 自動生成
+    -> opt*.inc            : 自動生成
+    -> vm.inc              : 自動生成
 
 == 正規表現エンジン (鬼車)
 
