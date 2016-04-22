@@ -1,3 +1,10 @@
+Fri Apr 22 15:08:27 2016  Benoit Daloze  <eregontp@gmail.com>
+
+	* thread.c (update_coverage): Do not track coverage in loaded files
+	  after Coverage.result. Avoids out-of-bounds access. [Bug #12237]
+
+	* ext/coverage/coverage.c (coverage_clear_result_i): document.
+
 Fri Apr 22 14:56:46 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/date/date_core.c (Init_date_core): [DOC] fix misplaced doc

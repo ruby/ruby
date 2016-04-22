@@ -5181,7 +5181,7 @@ update_coverage(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klas
     if (coverage && RBASIC(coverage)->klass == 0) {
 	long line = rb_sourceline() - 1;
 	long count;
-	if (RARRAY_AREF(coverage, line) == Qnil) {
+	if (line >= RARRAY_LEN(coverage)) { /* no longer tracked */
 	    return;
 	}
 	count = FIX2LONG(RARRAY_AREF(coverage, line)) + 1;

@@ -32,6 +32,7 @@ rb_coverage_start(VALUE klass)
     return Qnil;
 }
 
+/* Make coverage arrays empty so old covered files are no longer tracked. */
 static int
 coverage_result_i(st_data_t key, st_data_t val, st_data_t h)
 {
