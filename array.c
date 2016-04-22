@@ -5674,7 +5674,19 @@ rb_ary_dig(int argc, VALUE *argv, VALUE self)
  *
  *   mean = ary.sum(0.0) / ary.length
  *
- * This method may not respect method redefinition of "+" methods
+ * This method can be used for non-numeric objects by
+ * explicit <i>init</i> argument.
+ *
+ *   ["a", "b", "c"].sum("")            #=> "abc"
+ *   [[1], [[2]], [3]].sum([])          #=> [1, [2], 3]
+ *
+ * However, Array#join and Array#flatten is faster than Array#sum.
+ *
+ *   ["a", "b", "c"].join               #=> "abc"
+ *   [[1], [[2]], [3]].flatten(1)       #=> [1, [2], 3]
+ *
+ *
+ * Array#sum method may not respect method redefinition of "+" methods
  * such as Fixnum#+.
  *
  */
