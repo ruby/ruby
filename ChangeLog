@@ -1,3 +1,9 @@
+Sat Apr 23 01:00:03 2016  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* configure.in: don't use the system-provided round(3) on AIX.
+	  In AIX, round(0.49999999999999994) returns 1.0.
+	  Use round() in numeric.c instead.
+
 Fri Apr 22 21:00:44 2016  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/test_time_tz.rb: Tests depends on Europe/Moscow removed
