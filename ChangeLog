@@ -1,3 +1,13 @@
+Fri Apr 22 18:22:15 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/nkf/nkf-utf8/nkf.c (mime_putc): fix typo.
+	  [Bug #12202] [ruby-core:74802]
+
+Fri Apr 22 18:22:15 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/nkf/nkf-utf8/nkf.c: Merge upstream 4f3edf80a0.
+	  patched by Anton Sivakov [Bug #12201] [Bug #12202]
+
 Fri Apr 22 18:19:32 2016  Naotoshi Seo  <sonots@gmail.com>
 
 	* ext/date/date_core.c (datetime_to_time): preserve timezone info

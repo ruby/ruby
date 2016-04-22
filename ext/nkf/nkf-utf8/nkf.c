@@ -3833,8 +3833,8 @@ fold_conv(nkf_char c2, nkf_char c1)
 	    f_prev = c1;
 	    f_line = 0;
 	    fold_state =  CR;
-	} else if ((f_prev == c1 && !fold_preserve_f)
-		   || (f_prev == LF && fold_preserve_f)
+	} else if ((f_prev == c1)
+		   || (f_prev == LF)
 		  ) {        /* duplicate newline */
 	    if (f_line) {
 		f_line = 0;
@@ -5435,8 +5435,8 @@ mime_putc(nkf_char c)
 		mimeout_state.buf[mimeout_state.count++] = (char)c;
 		if (mimeout_state.count>MIMEOUT_BUF_LENGTH) {
 		    eof_mime();
-		    for (i=0;i<mimeout_state.count;i++) {
-			(*o_mputc)(mimeout_state.buf[i]);
+		    for (j=0;j<mimeout_state.count;j++) {
+			(*o_mputc)(mimeout_state.buf[j]);
 			base64_count++;
 		    }
 		    mimeout_state.count = 0;
