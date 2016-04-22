@@ -1,3 +1,8 @@
+Fri Apr 22 10:51:13 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/webrick/ssl.rb: Support to add SSLCiphers option.
+	  [fix GH-1321] Patch by @rhadoo
+
 Fri Apr 22 10:43:19 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* file.c, win32/file.c: Removed obsoleted safe level checks.

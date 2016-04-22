@@ -52,6 +52,8 @@ module WEBrick
     #   Maximum session lifetime
     # :SSLOptions           ::
     #   Various SSL options
+    # :SSLCiphers           ::
+    #   Ciphers to be used
     # :SSLStartImmediately  ::
     #   Immediately start SSL upon connection?  Defaults to true
     # :SSLCertName          ::
@@ -76,6 +78,7 @@ module WEBrick
       :SSLVerifyCallback    => nil,   # custom verification
       :SSLTimeout           => nil,
       :SSLOptions           => nil,
+      :SSLCiphers           => nil,
       :SSLStartImmediately  => true,
       # Must specify if you use auto generated certificate.
       :SSLCertName          => nil,
@@ -191,6 +194,7 @@ module WEBrick
       ctx.verify_callback = config[:SSLVerifyCallback]
       ctx.timeout = config[:SSLTimeout]
       ctx.options = config[:SSLOptions]
+      ctx.ciphers = config[:SSLCiphers]
       ctx
     end
   end
