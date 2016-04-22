@@ -300,7 +300,7 @@ def show_last_journal(http, uri)
 end
 
 def merger_path
-  File.expand_path('../merger.rb', __FILE__)
+  RUBY_PLATFORM =~ /mswin|mingw/ ? 'merger' : File.expand_path('../merger.rb', __FILE__)
 end
 
 def backport_command_string
