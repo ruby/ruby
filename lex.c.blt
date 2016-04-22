@@ -156,7 +156,7 @@ rb_reserved_word (str, len)
 #line 30 "defs/keywords"
       {"for", {keyword_for, keyword_for}, EXPR_VALUE},
 #line 46 "defs/keywords"
-      {"undef", {keyword_undef, keyword_undef}, EXPR_FNAME},
+      {"undef", {keyword_undef, keyword_undef}, EXPR_FNAME|EXPR_FITEM},
 #line 37 "defs/keywords"
       {"or", {keyword_or, keyword_or}, EXPR_VALUE},
 #line 32 "defs/keywords"
@@ -188,7 +188,7 @@ rb_reserved_word (str, len)
 #line 15 "defs/keywords"
       {"END", {keyword_END, keyword_END}, EXPR_END},
 #line 16 "defs/keywords"
-      {"alias", {keyword_alias, keyword_alias}, EXPR_FNAME},
+      {"alias", {keyword_alias, keyword_alias}, EXPR_FNAME|EXPR_FITEM},
 #line 14 "defs/keywords"
       {"BEGIN", {keyword_BEGIN, keyword_BEGIN}, EXPR_END},
 #line 23 "defs/keywords"

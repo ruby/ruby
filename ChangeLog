@@ -1,3 +1,10 @@
+Fri Apr 22 16:00:50 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* defs/keywords (alias, undef): symbol literals are allowed.
+
+	* parse.y (parse_percent): should parse symbol literals for alias
+	  and undef.  [ruby-dev:47681] [Bug #8851]
+
 Fri Apr 22 15:47:58 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* struct.c (struct_make_members_list): extract making member name

@@ -61,6 +61,7 @@ enum lex_state_bits {
     EXPR_CLASS_bit,		/* immediate after `class', no here document. */
     EXPR_LABEL_bit,		/* flag bit, label is allowed. */
     EXPR_LABELED_bit,		/* flag bit, just after a label. */
+    EXPR_FITEM_bit,		/* symbol literal as FNAME. */
     EXPR_MAX_STATE
 };
 /* examine combinations */
@@ -78,6 +79,7 @@ enum lex_state_e {
     DEF_EXPR(CLASS),
     DEF_EXPR(LABEL),
     DEF_EXPR(LABELED),
+    DEF_EXPR(FITEM),
     EXPR_VALUE = EXPR_BEG,
     EXPR_BEG_ANY  =  (EXPR_BEG | EXPR_MID | EXPR_CLASS),
     EXPR_ARG_ANY  =  (EXPR_ARG | EXPR_CMDARG),
@@ -1098,7 +1100,7 @@ stmt_or_begin	: stmt
 		    %*/
 		    }
 
-stmt		: keyword_alias fitem {lex_state = EXPR_FNAME;} fitem
+stmt		: keyword_alias fitem {lex_state = EXPR_FNAME|EXPR_FITEM;} fitem
 		    {
 		    /*%%%*/
 			$$ = NEW_ALIAS($2, $4);
@@ -1934,7 +1936,7 @@ undef_list	: fitem
 			$$ = rb_ary_new3(1, $1);
 		    %*/
 		    }
-		| undef_list ',' {lex_state = EXPR_FNAME;} fitem
+		| undef_list ',' {lex_state = EXPR_FNAME|EXPR_FITEM;} fitem
 		    {
 		    /*%%%*/
 			$$ = block_append($1, NEW_UNDEF($4));
@@ -7556,7 +7558,7 @@ parse_percent(struct parser_params *parser, const int space_seen, const enum lex
 
 	  case 's':
 	    lex_strterm = NEW_STRTERM(str_ssym, term, paren);
-	    lex_state = EXPR_FNAME;
+	    lex_state = EXPR_FNAME|EXPR_FITEM;
 	    return tSYMBEG;
 
 	  default:
@@ -7569,7 +7571,7 @@ parse_percent(struct parser_params *parser, const int space_seen, const enum lex
 	lex_state = EXPR_BEG;
 	return tOP_ASGN;
     }
-    if (IS_SPCARG(c)) {
+    if (IS_SPCARG(c) || (IS_lex_state(EXPR_FITEM) && c == 's')) {
 	goto quotation;
     }
     lex_state = IS_AFTER_OPERATOR() ? EXPR_ARG : EXPR_BEG;

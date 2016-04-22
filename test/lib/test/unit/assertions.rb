@@ -442,6 +442,42 @@ EOT
         assert(failed.empty?, message(m) {failed.pretty_inspect})
       end
 
+      class AllFailures
+        attr_reader :failures
+
+        def initialize
+          @count = 0
+          @failures = {}
+        end
+
+        def for(key)
+          @count += 1
+          yield
+        rescue Exception => e
+          @failures[key] = [@count, e]
+        end
+
+        def message
+          i = 0
+          total = @count.to_s
+          fmt = "%#{total.size}d"
+          @failures.map {|k, (n, v)|
+            "\n#{i+=1}. [#{fmt%n}/#{total}] Assertion for #{k.inspect}\n#{v.message.b.gsub(/^/, '   | ')}"
+          }.join("\n")
+        end
+
+        def pass?
+          @failures.empty?
+        end
+      end
+
+      def all_assertions(msg = nil)
+        all = AllFailures.new
+        yield all
+      ensure
+        assert(all.pass?, message(msg) {all.message.chomp(".")})
+      end
+
       def build_message(head, template=nil, *arguments) #:nodoc:
         template &&= template.chomp
         template.gsub(/\G((?:[^\\]|\\.)*?)(\\)?\?/) { $1 + ($2 ? "?" : mu_pp(arguments.shift)) }
