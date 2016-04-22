@@ -177,6 +177,11 @@ module Forwardable
   #   q.push 23  #=> NoMethodError
   #
   def def_instance_delegator(accessor, method, ali = method)
+    accessor = accessor.to_s
+    if method_defined?(accessor) || private_method_defined?(accessor)
+      accessor = "#{accessor}()"
+    end
+
     line_no = __LINE__; str = %{
       def #{ali}(*args, &block)
         begin
@@ -269,7 +274,12 @@ module SingleForwardable
   # the method of the same name in _accessor_).  If _new_name_ is
   # provided, it is used as the name for the delegate method.
   def def_single_delegator(accessor, method, ali = method)
-    str = %{
+    accessor = accessor.to_s
+    if method_defined?(accessor) || private_method_defined?(accessor)
+      accessor = "#{accessor}()"
+    end
+
+    line_no = __LINE__; str = %{
       def #{ali}(*args, &block)
         begin
           #{accessor}.__send__(:#{method}, *args, &block)
@@ -280,7 +290,7 @@ module SingleForwardable
       end
     }
 
-    instance_eval(str, __FILE__, __LINE__)
+    instance_eval(str, __FILE__, line_no)
   end
 
   alias delegate single_delegate

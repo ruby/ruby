@@ -1,3 +1,27 @@
+Fri Apr 22 14:13:28 2016  sorah (Shota Fukumori)  <her@sorah.jp>
+
+	* lib/forwardable.rb: Convert given accessors to String.
+
+	  r53381 changed to accept only Symbol or String for accessors, but
+	  there are several rubygems that pass classes (e.g. Array,
+	  Hash, ...) as accessors. Prior r53381, it was accepted because Class#to_s
+	  returns its class name. After r53381 given accessors are checked
+	  with define_method, but it accepts only Symbol or String, otherwise
+	  raises TypeError.
+
+	      def_delegator Foo, :some_method
+
+	  This change is to revert unexpected incompatibility. But this behavior
+	  may change in the future.
+
+Fri Apr 22 14:13:28 2016  Elliot Winkler  <elliot.winkler@gmail.com>
+
+	* lib/forwardable.rb (def_instance_delegator) fix delegating to
+	  'args' and 'block', clashing with local variables in generated
+	  methods.  [ruby-core:72579] [Bug #11916]
+
+	* lib/forwardable.rb (def_single_delegator): ditto.
+
 Fri Apr 22 13:41:38 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (compile_massign_lhs): when index ends with splat,
