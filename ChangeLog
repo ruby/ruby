@@ -1,3 +1,9 @@
+Fri Apr 22 15:47:58 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* struct.c (struct_make_members_list): extract making member name
+	  list from char* va_list, with creating symbols without
+	  intermediate IDs.
+
 Fri Apr 22 15:19:01 2016  Joe Swatosh  <joe.swatosh@gmail.com>
 
 	* ext/win32/lib/win32/registry.rb (DeleteValue, DeleteKey): fix

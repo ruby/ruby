@@ -353,6 +353,13 @@ module TestStruct
     assert_equal "[Bug #9353]", x.send(:a=, "[Bug #9353]")
   end
 
+  def test_new_dupilicate
+    bug12291 = '[ruby-core:74971] [Bug #12291]'
+    assert_raise_with_message(ArgumentError, /duplicate member/, bug12291) {
+      @Struct.new(:a, :a)
+    }
+  end
+
   class TopStruct < Test::Unit::TestCase
     include TestStruct
 
