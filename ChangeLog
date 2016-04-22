@@ -1,3 +1,10 @@
+Fri Apr 22 16:37:14 2016  multisnow  <infinity.blick.winkel@gmail.com>
+
+	* ext/openssl/extconf.rb: check RAND_edg to support libressl.
+
+	* ext/openssl/ossl_rand.c (ossl_rand_egd): define only if RAND_edg
+	  is available.  [Fix GH-829]
+
 Fri Apr 22 16:24:00 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (rb_cv_lgamma_r_m0): fix the condition for
