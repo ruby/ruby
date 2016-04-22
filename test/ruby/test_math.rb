@@ -239,6 +239,10 @@ class TestMath < Test::Unit::TestCase
     end
 
     assert_raise(Math::DomainError) { Math.gamma(-Float::INFINITY) }
+    x = Math.gamma(-0.0)
+    mesg = "Math.gamma(-0.0) should be -INF"
+    assert_infinity(x, mesg)
+    assert_operator(x, :<, 0, mesg)
   end
 
   def test_lgamma
@@ -281,6 +285,11 @@ class TestMath < Test::Unit::TestCase
     assert_equal(s, 1)
 
     assert_raise(Math::DomainError) { Math.lgamma(-Float::INFINITY) }
+    x, sign = Math.lgamma(-0.0)
+    mesg = "Math.lgamma(-0.0) should be [INF, -1]"
+    assert_infinity(x, mesg)
+    assert_operator(x, :>, 0, mesg)
+    assert_equal(-1, sign, mesg)
   end
 
   def test_cbrt
