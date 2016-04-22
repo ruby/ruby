@@ -1,3 +1,8 @@
+Sat Apr 23 00:25:26 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* miniinit.c (Init_enc): add some common aliases of built-in
+	  encodings.  [ruby-core:72481] [Bug #11872]
+
 Sat Apr 23 00:13:50 2016  sorah (Shota Fukumori)  <her@sorah.jp>
 
 	* lib/forwardable.rb: Convert given accessors to String.
