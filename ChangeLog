@@ -1,3 +1,10 @@
+Fri Apr 22 21:00:44 2016  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/test_time_tz.rb: Tests depends on Europe/Moscow removed
+	  to avoid test failures due to the tzdata change.
+	  https://github.com/eggert/tz/commit/8ee11a301cf173afb0c76e0315b9f9ec8ebb9d95
+	  Found by naruse.
+
 Fri Apr 22 20:18:40 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* include/ruby/ruby.h (rb_mul_size_overflow): added to handle
