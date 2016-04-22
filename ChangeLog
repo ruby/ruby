@@ -1425,7 +1425,7 @@ Thu Mar 17 11:51:48 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 	  RAND_poll in crypto/rand/rand_win.c) may be blocked at
 	  NetStatisticsGet.
 	  https://wiki.openssl.org/index.php/Random_Numbers#Windows_Issues
-	  Instead of this, use Random.raw_seed directory (whose implementation
+	  Instead of this, use Random.raw_seed directly (whose implementation
 	  CryptGenRandom is one of the source of
 	  entropy of RAND_poll on Windows).
 	  https://wiki.openssl.org/index.php/Random_Numbers
