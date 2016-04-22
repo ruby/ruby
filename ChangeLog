@@ -1,3 +1,8 @@
+Fri Apr 22 14:56:46 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/date/date_core.c (Init_date_core): [DOC] fix misplaced doc
+	  of DateTime.  [ruby-core:74729] [Bug #12233]
+
 Fri Apr 22 14:48:09 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parse_ident): allow keyword arguments just after a
