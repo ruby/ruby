@@ -1,3 +1,8 @@
+Fri Apr 22 23:47:05 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* doc/regexp.rdoc (comments): [DOC] terminators cannot appear in
+	  comments.  [ruby-core:74838] [Bug #12256]
+
 Fri Apr 22 23:44:07 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* extension.rdoc, extension.ja.rdoc: [DOC] Fix some errors.

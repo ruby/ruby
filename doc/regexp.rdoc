@@ -568,6 +568,9 @@ Comments can be included in a non-<tt>x</tt> pattern with the
 <tt>(?#</tt><i>comment</i><tt>)</tt> construct, where <i>comment</i> is
 arbitrary text ignored by the regexp engine.
 
+Comments in regexp literals cannot include unescaped terminator
+characters.
+
 == Encoding
 
 Regular expressions are assumed to use the source encoding. This can be
