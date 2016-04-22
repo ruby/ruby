@@ -1,3 +1,19 @@
+Sat Apr 23 00:13:50 2016  sorah (Shota Fukumori)  <her@sorah.jp>
+
+	* lib/forwardable.rb: Convert given accessors to String.
+
+	  r53381 changed to accept only Symbol or String for accessors, but
+	  there are several rubygems that pass classes (e.g. Array,
+	  Hash, ...) as accessors. Prior r53381, it was accepted because Class#to_s
+	  returns its class name. After r53381 given accessors are checked
+	  with define_method, but it accepts only Symbol or String, otherwise
+	  raises TypeError.
+
+	      def_delegator Foo, :some_method
+
+	  This change is to revert unexpected incompatibility. But this behavior
+	  may change in the future.
+
 Sat Apr 23 00:02:09 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: check if succeeded in creating config.h.
