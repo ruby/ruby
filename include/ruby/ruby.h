@@ -1628,10 +1628,10 @@ rb_mul_size_overflow(size_t a, size_t b, size_t max, size_t *c)
 {
 #ifdef DSIZE_T
     DSIZE_T c2 = (DSIZE_T)a * (DSIZE_T)b;
-    if (RB_UNLIKELY(c2 > max)) return 1;
+    if (c2 > max) return 1;
     *c = (size_t)c2;
 #else
-    if (b != 0 && RB_UNLIKELY(a > max / b)) return 1;
+    if (b != 0 && a > max / b) return 1;
     *c = a * b;
 #endif
     return 0;
