@@ -1,3 +1,23 @@
+Sat Apr 23 18:01:21 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_getivar): specify inline instead of static inline.
+	  vm_getivar is called by vm_call_ivar and vm_getinstancevariable.
+	  At least with GCC 4.8 and 5.3 on Linux, they are inlining it into
+	  vm_call_ivar but not vm_getinstancevariable.
+	  By `inline`, they correctly inline it and gains performance.
+
+	  Speedup ratio: compare with the result of `ruby 2.4.0dev (2016-04-23
+	  trunk 54727) [x86_64-linux]' (greater is better)
+	  name    built-ruby
+	  loop_whileloop       1.001
+	  vm1_ivar*            1.189
+	  vm1_ivar_set*        1.024
+
+	  Note tha `inline`'s meaning is different between old GCC
+	  and C99. Old GCC's inline means C99's extern inline.
+	  https://gcc.gnu.org/onlinedocs/gcc/Inline.html
+	  Since Ruby specify -std=iso9899:1999, it works like C99.
+
 Sat Apr 23 16:11:39 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* include/ruby/ruby.h (rb_mul_size_overflow): use UNLIKELY
