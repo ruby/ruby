@@ -163,35 +163,34 @@ ruby_cleanup(volatile int ex)
     rb_thread_t *th = GET_THREAD();
     int nerr;
     volatile int sysex = EXIT_SUCCESS;
+    volatile int step = 0;
 
     rb_threadptr_interrupt(th);
     rb_threadptr_check_signal(th);
     TH_PUSH_TAG(th);
     if ((state = EXEC_TAG()) == 0) {
 	SAVE_ROOT_JMPBUF(th, { RUBY_VM_CHECK_INTS(th); });
-    }
-    TH_POP_TAG();
 
-    errs[1] = th->errinfo;
-    th->safe_level = 0;
-    ruby_init_stack(&errs[STACK_UPPER(errs, 0, 1)]);
+      step_0: step++;
+	errs[1] = th->errinfo;
+	th->safe_level = 0;
+	ruby_init_stack(&errs[STACK_UPPER(errs, 0, 1)]);
 
-    TH_PUSH_TAG(th);
-    if ((state = EXEC_TAG()) == 0) {
 	SAVE_ROOT_JMPBUF(th, ruby_finalize_0());
-    }
-    TH_POP_TAG();
 
-    /* protect from Thread#raise */
-    th->status = THREAD_KILLED;
+      step_1: step++;
+	/* protect from Thread#raise */
+	th->status = THREAD_KILLED;
 
-    errs[0] = th->errinfo;
-    TH_PUSH_TAG(th);
-    if ((state = EXEC_TAG()) == 0) {
+	errs[0] = th->errinfo;
 	SAVE_ROOT_JMPBUF(th, rb_thread_terminate_all());
     }
-    else if (ex == 0) {
-	ex = state;
+    else {
+	switch (step) {
+	  case 0: goto step_0;
+	  case 1: goto step_1;
+	}
+	if (ex == 0) ex = state;
     }
     th->errinfo = errs[1];
     sysex = error_handle(ex);
