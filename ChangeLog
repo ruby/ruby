@@ -1,3 +1,35 @@
+Sun Apr 24 04:21:27 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* vm_insnhelper.c (INLINE): define as `inline` when it is optimized.
+	  define as `static inline` when it is not optimized to keep
+	  the symbol generated.
+
+	* vm_insnhelper.c (vm_getivar): use `INLINE` to force inline
+	  so that a compiler inlines it into vm_getinstancevariable
+	  and optimizes out is_attr and related branches.
+
+	* vm_insnhelper.c (vm_getivar): use `inline` to recommend inline.
+	  Without this vm1_ivar_set is degraded.
+
+	  benchmark results:
+	  minimum results in each 5 measurements.
+	  Execution time (sec)
+	  name    ruby 2.4.0dev (2016-04-23 trunk 54727) [x86_64-linux]   ruby 2.4.0dev (2016-04-23 trunk 54733) [x86_64-linux]       built-ruby
+	  loop_whileloop 0.641                                                   0.642 0.646
+	  vm1_ivar* 1.002                                                   0.999 0.831
+	  vm1_ivar_set* 0.369                                                   1.106 0.362
+
+	  Speedup ratio: compare with the result of `ruby 2.4.0dev (2016-04-23
+	  trunk 54727) [x86_64-linux]' (greater is better)
+	  name    ruby 2.4.0dev (2016-04-23 trunk 54733) [x86_64-linux]
+	  built-ruby
+	  loop_whileloop
+	  0.998        0.991
+	  vm1_ivar*
+	  1.003        1.205
+	  vm1_ivar_set*
+	  0.334        1.018
+
 Sat Apr 23 18:01:21 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_getivar): specify inline instead of static inline.

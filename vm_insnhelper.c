@@ -18,8 +18,11 @@
 
 /* control stack frame */
 
-#ifndef INLINE
+#undef INLINE
+#ifdef __OPTIMIZE__
 #define INLINE inline
+#else
+#define INLINE static inline
 #endif
 
 static rb_control_frame_t *vm_get_ruby_level_caller_cfp(const rb_thread_t *th, const rb_control_frame_t *cfp);
@@ -774,7 +777,7 @@ vm_search_const_defined_class(const VALUE cbase, ID id)
 #define USE_IC_FOR_IVAR 1
 #endif
 
-static VALUE
+INLINE VALUE
 vm_getivar(VALUE obj, ID id, IC ic, struct rb_call_cache *cc, int is_attr)
 {
 #if USE_IC_FOR_IVAR
@@ -824,7 +827,7 @@ vm_getivar(VALUE obj, ID id, IC ic, struct rb_call_cache *cc, int is_attr)
     return rb_ivar_get(obj, id);
 }
 
-static VALUE
+static inline VALUE
 vm_setivar(VALUE obj, ID id, VALUE val, IC ic, struct rb_call_cache *cc, int is_attr)
 {
 #if USE_IC_FOR_IVAR
