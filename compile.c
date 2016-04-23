@@ -311,6 +311,10 @@ r_value(VALUE value)
 #define INSN_OF(insn) \
   (((INSN*)(insn))->insn_id)
 
+#define IS_INSN(link) ((link)->type == ISEQ_ELEMENT_INSN)
+#define IS_LABEL(link) ((link)->type == ISEQ_ELEMENT_LABEL)
+#define IS_ADJUST(link) ((link)->type == ISEQ_ELEMENT_ADJUST)
+
 /* error */
 typedef void (*compile_error_func)(rb_iseq_t *, int, const char *, ...);
 
@@ -1923,7 +1927,7 @@ get_destination_insn(INSN *iobj)
 
     list = lobj->link.next;
     while (list) {
-	if (list->type == ISEQ_ELEMENT_INSN || list->type == ISEQ_ELEMENT_ADJUST) {
+	if (IS_INSN(list) || IS_ADJUST(list)) {
 	    break;
 	}
 	list = list->next;
@@ -1937,7 +1941,7 @@ get_next_insn(INSN *iobj)
     LINK_ELEMENT *list = iobj->link.next;
 
     while (list) {
-	if (list->type == ISEQ_ELEMENT_INSN || list->type == ISEQ_ELEMENT_ADJUST) {
+	if (IS_INSN(list) || IS_ADJUST(list)) {
 	    return list;
 	}
 	list = list->next;
@@ -1951,7 +1955,7 @@ get_prev_insn(INSN *iobj)
     LINK_ELEMENT *list = iobj->link.prev;
 
     while (list) {
-	if (list->type == ISEQ_ELEMENT_INSN || list->type == ISEQ_ELEMENT_ADJUST) {
+	if (IS_INSN(list) || IS_ADJUST(list)) {
 	    return list;
 	}
 	list = list->prev;
@@ -1984,7 +1988,7 @@ remove_unreachable_chunk(rb_iseq_t *iseq, LINK_ELEMENT *i)
 {
     int removed = 0;
     while (i) {
-	if (i->type == ISEQ_ELEMENT_INSN) {
+	if (IS_INSN(i)) {
 	    struct rb_iseq_constant_body *body = iseq->body;
 	    VALUE insn = INSN_OF(i);
 	    int pos, len = insn_len(insn);
@@ -2002,7 +2006,7 @@ remove_unreachable_chunk(rb_iseq_t *iseq, LINK_ELEMENT *i)
 		}
 	    }
 	}
-	else if (i->type == ISEQ_ELEMENT_LABEL) {
+	else if (IS_LABEL(i)) {
 	    if (((LABEL *)i)->refcnt > 0) break;
 	}
 	else break;
@@ -2118,7 +2122,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	INSN *pobj = (INSN *)iobj->link.prev;
 	int prev_dup = 0;
 	if (pobj) {
-	    if (pobj->link.type != ISEQ_ELEMENT_INSN)
+	    if (!IS_INSN(&pobj->link))
 		pobj = 0;
 	    else if (pobj->insn_id == BIN(dup))
 		prev_dup = 1;
@@ -2175,7 +2179,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 		 *
 		 */
 		int cond;
-		if (prev_dup && pobj->link.prev->type == ISEQ_ELEMENT_INSN) {
+		if (prev_dup && IS_INSN(pobj->link.prev)) {
 		    pobj = (INSN *)pobj->link.prev;
 		}
 		if (pobj->insn_id == BIN(putobject)) {
@@ -2216,7 +2220,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	 *  # do nothing
 	 */
 	LINK_ELEMENT *prev = iobj->link.prev;
-	if (prev->type == ISEQ_ELEMENT_INSN) {
+	if (IS_INSN(prev)) {
 	    enum ruby_vminsn_type previ = ((INSN *)prev)->insn_id;
 	    if (previ == BIN(putobject) || previ == BIN(putnil) ||
 		previ == BIN(putself) || previ == BIN(putstring)) {
@@ -2244,7 +2248,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	if (iobj->link.next) {
 	    LINK_ELEMENT *next = iobj->link.next;
 	    do {
-		if (next->type != ISEQ_ELEMENT_INSN) {
+		if (!IS_INSN(next)) {
 		    next = next->next;
 		    continue;
 		}
@@ -2300,7 +2304,7 @@ static int
 iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
 {
     if (iobj->insn_id == BIN(newarray) && iobj->link.next &&
-	iobj->link.next->type == ISEQ_ELEMENT_INSN) {
+	IS_INSN(iobj->link.next)) {
 	/*
 	 *   [a, b, ...].max/min -> a, b, c, opt_newarray_max/min
 	 */
@@ -2401,7 +2405,7 @@ iseq_optimize(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
     list = FIRST_ELEMENT(anchor);
 
     while (list) {
-	if (list->type == ISEQ_ELEMENT_INSN) {
+	if (IS_INSN(list)) {
 	    if (do_peepholeopt) {
 		iseq_peephole_optimize(iseq, list, tailcallopt);
 	    }
@@ -2412,7 +2416,7 @@ iseq_optimize(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 		insn_operands_unification((INSN *)list);
 	    }
 	}
-	if (list->type == ISEQ_ELEMENT_LABEL) {
+	if (IS_LABEL(list)) {
 	    switch (((LABEL *)list)->rescued) {
 	      case LABEL_RESCUE_BEG:
 		rescue_level++;
@@ -2480,7 +2484,7 @@ iseq_insns_unification(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 
     list = FIRST_ELEMENT(anchor);
     while (list) {
-	if (list->type == ISEQ_ELEMENT_INSN) {
+	if (IS_INSN(list)) {
 	    iobj = (INSN *)list;
 	    id = iobj->insn_id;
 	    if (unified_insns_data[id] != 0) {
@@ -2489,7 +2493,7 @@ iseq_insns_unification(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 		    const int *unified = entry[j];
 		    LINK_ELEMENT *li = list->next;
 		    for (k = 2; k < unified[1]; k++) {
-			if (li->type != ISEQ_ELEMENT_INSN ||
+			if (!IS_INSN(li) ||
 			    ((INSN *)li)->insn_id != unified[k]) {
 			    goto miss;
 			}
@@ -3224,7 +3228,7 @@ compile_massign(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE *node, int poped)
 	}
 	else if (!lhs_splat) {
 	    INSN *last = (INSN*)ret->last;
-	    if (last->link.type == ISEQ_ELEMENT_INSN &&
+	    if (IS_INSN(&last->link) &&
 		last->insn_id == BIN(newarray) &&
 		last->operand_size == 1) {
 		int rlen = FIX2INT(OPERAND_AT(last, 0));
