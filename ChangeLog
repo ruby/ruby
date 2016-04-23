@@ -1,3 +1,8 @@
+Sat Apr 23 13:27:25 2016  Yuichiro Kaneko  <yui-knk@ruby-lang.org>
+
+	* NEWS: Add descriptions for Time#to_time updates.
+	  [Bug #12271]
+
 Sat Apr 23 13:21:24 2016  Yuichiro Kaneko  <yui-knk@ruby-lang.org>
 
 	* NEWS: Add descriptions for DateTime#to_time updates.

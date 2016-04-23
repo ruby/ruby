@@ -86,6 +86,10 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 === Stdlib compatibility issues (excluding feature bug fixes)
 
+* Time
+
+  * Time#to_time now preserves timezone.  [Bug #12271]
+
 * DateTime
 
   * DateTime#to_time now preserves timezone.  [Bug #12189]
