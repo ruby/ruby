@@ -314,6 +314,7 @@ r_value(VALUE value)
 #define IS_INSN(link) ((link)->type == ISEQ_ELEMENT_INSN)
 #define IS_LABEL(link) ((link)->type == ISEQ_ELEMENT_LABEL)
 #define IS_ADJUST(link) ((link)->type == ISEQ_ELEMENT_ADJUST)
+#define IS_INSN_ID(iobj, insn) (INSN_OF(iobj) == BIN(insn))
 
 /* error */
 typedef void (*compile_error_func)(rb_iseq_t *, int, const char *, ...);
@@ -2022,7 +2023,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 {
     INSN *iobj = (INSN *)list;
   again:
-    if (iobj->insn_id == BIN(jump)) {
+    if (IS_INSN_ID(iobj, jump)) {
 	INSN *niobj, *diobj, *piobj;
 	/*
 	 *  useless jump elimination:
@@ -2047,13 +2048,13 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	    unref_destination(iobj, 0);
 	    REMOVE_ELEM(&iobj->link);
 	}
-	else if (iobj != diobj && diobj->insn_id == BIN(jump) &&
+	else if (iobj != diobj && IS_INSN_ID(diobj, jump) &&
 		 OPERAND_AT(iobj, 0) != OPERAND_AT(diobj, 0)) {
 	    replace_destination(iobj, diobj);
 	    remove_unreachable_chunk(iseq, iobj->link.next);
 	    goto again;
 	}
-	else if (diobj->insn_id == BIN(leave)) {
+	else if (IS_INSN_ID(diobj, leave)) {
 	    /*
 	     *  jump LABEL
 	     *  ...
@@ -2089,10 +2090,10 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	 * L2:
 	 */
 	else if ((piobj = (INSN *)get_prev_insn(iobj)) != 0 &&
-		 (piobj->insn_id == BIN(branchif) ||
-		  piobj->insn_id == BIN(branchunless))) {
+		 (IS_INSN_ID(piobj, branchif) ||
+		  IS_INSN_ID(piobj, branchunless))) {
 	    if (niobj == (INSN *)get_destination_insn(piobj)) {
-		piobj->insn_id = (piobj->insn_id == BIN(branchif))
+		piobj->insn_id = (IS_INSN_ID(piobj, branchif))
 		  ? BIN(branchunless) : BIN(branchif);
 		replace_destination(piobj, iobj);
 		REMOVE_ELEM(&iobj->link);
@@ -2103,13 +2104,13 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	}
     }
 
-    if (iobj->insn_id == BIN(leave)) {
+    if (IS_INSN_ID(iobj, leave)) {
 	remove_unreachable_chunk(iseq, iobj->link.next);
     }
 
-    if (iobj->insn_id == BIN(branchif) ||
-	iobj->insn_id == BIN(branchnil) ||
-	iobj->insn_id == BIN(branchunless)) {
+    if (IS_INSN_ID(iobj, branchif) ||
+	IS_INSN_ID(iobj, branchnil) ||
+	IS_INSN_ID(iobj, branchunless)) {
 	/*
 	 *   if L1
 	 *   ...
@@ -2124,15 +2125,15 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	if (pobj) {
 	    if (!IS_INSN(&pobj->link))
 		pobj = 0;
-	    else if (pobj->insn_id == BIN(dup))
+	    else if (IS_INSN_ID(pobj, dup))
 		prev_dup = 1;
 	}
 
 	for (;;) {
-	    if (nobj->insn_id == BIN(jump)) {
+	    if (IS_INSN_ID(nobj, jump)) {
 		replace_destination(iobj, nobj);
 	    }
-	    else if (prev_dup && nobj->insn_id == BIN(dup) &&
+	    else if (prev_dup && IS_INSN_ID(nobj, dup) &&
 		     !!(nobj = (INSN *)nobj->link.next) &&
 		     /* basic blocks, with no labels in the middle */
 		     nobj->insn_id == iobj->insn_id) {
@@ -2182,18 +2183,18 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 		if (prev_dup && IS_INSN(pobj->link.prev)) {
 		    pobj = (INSN *)pobj->link.prev;
 		}
-		if (pobj->insn_id == BIN(putobject)) {
-		    cond = (iobj->insn_id == BIN(branchif) ?
+		if (IS_INSN_ID(pobj, putobject)) {
+		    cond = (IS_INSN_ID(iobj, branchif) ?
 			    OPERAND_AT(pobj, 0) != Qfalse :
-			    iobj->insn_id == BIN(branchunless) ?
+			    IS_INSN_ID(iobj, branchunless) ?
 			    OPERAND_AT(pobj, 0) == Qfalse :
 			    FALSE);
 		}
-		else if (pobj->insn_id == BIN(putstring)) {
-		    cond = iobj->insn_id == BIN(branchif);
+		else if (IS_INSN_ID(pobj, putstring)) {
+		    cond = IS_INSN_ID(iobj, branchif);
 		}
-		else if (pobj->insn_id == BIN(putnil)) {
-		    cond = iobj->insn_id != BIN(branchif);
+		else if (IS_INSN_ID(pobj, putnil)) {
+		    cond = !IS_INSN_ID(iobj, branchif);
 		}
 		else break;
 		REMOVE_ELEM(iobj->link.prev);
@@ -2212,7 +2213,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	}
     }
 
-    if (iobj->insn_id == BIN(pop)) {
+    if (IS_INSN_ID(iobj, pop)) {
 	/*
 	 *  putself / putnil / putobject obj / putstring "..."
 	 *  pop
@@ -2233,10 +2234,10 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
     }
 
     if (do_tailcallopt &&
-	(iobj->insn_id == BIN(send) ||
-	 iobj->insn_id == BIN(opt_aref_with) ||
-	 iobj->insn_id == BIN(opt_aset_with) ||
-	 iobj->insn_id == BIN(invokesuper))) {
+	(IS_INSN_ID(iobj, send) ||
+	 IS_INSN_ID(iobj, opt_aref_with) ||
+	 IS_INSN_ID(iobj, opt_aset_with) ||
+	 IS_INSN_ID(iobj, invokesuper))) {
 	/*
 	 *  send ...
 	 *  leave
@@ -2268,7 +2269,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 
 	if (piobj) {
 	    struct rb_call_info *ci = (struct rb_call_info *)piobj->operands[0];
-	    if (piobj->insn_id == BIN(send) || piobj->insn_id == BIN(invokesuper)) {
+	    if (IS_INSN_ID(piobj, send) || IS_INSN_ID(piobj, invokesuper)) {
 		if (piobj->operands[2] == 0) { /* no blockiseq */
 		    ci->flag |= VM_CALL_TAILCALL;
 		}
@@ -2303,13 +2304,13 @@ insn_set_specialized_instruction(rb_iseq_t *iseq, INSN *iobj, int insn_id)
 static int
 iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
 {
-    if (iobj->insn_id == BIN(newarray) && iobj->link.next &&
+    if (IS_INSN_ID(iobj, newarray) && iobj->link.next &&
 	IS_INSN(iobj->link.next)) {
 	/*
 	 *   [a, b, ...].max/min -> a, b, c, opt_newarray_max/min
 	 */
 	INSN *niobj = (INSN *)iobj->link.next;
-	if (niobj->insn_id == BIN(send)) {
+	if (IS_INSN_ID(niobj, send)) {
 	    struct rb_call_info *ci = (struct rb_call_info *)OPERAND_AT(niobj, 0);
 	    if ((ci->flag & VM_CALL_ARGS_SIMPLE) && ci->orig_argc == 0) {
 		switch (ci->mid) {
@@ -2326,7 +2327,7 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
 	}
     }
 
-    if (iobj->insn_id == BIN(send)) {
+    if (IS_INSN_ID(iobj, send)) {
 	struct rb_call_info *ci = (struct rb_call_info *)OPERAND_AT(iobj, 0);
 	const rb_iseq_t *blockiseq = (rb_iseq_t *)OPERAND_AT(iobj, 2);
 
@@ -3229,7 +3230,7 @@ compile_massign(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE *node, int poped)
 	else if (!lhs_splat) {
 	    INSN *last = (INSN*)ret->last;
 	    if (IS_INSN(&last->link) &&
-		last->insn_id == BIN(newarray) &&
+		IS_INSN_ID(last, newarray) &&
 		last->operand_size == 1) {
 		int rlen = FIX2INT(OPERAND_AT(last, 0));
 		/* special case: assign to aset or attrset */
