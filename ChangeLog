@@ -1,3 +1,9 @@
+Sat Apr 23 16:10:02 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* include/ruby/ruby.h (RB_LIKELY): use prefix in ruby.h.
+
+	* intern.h (LIKELY): define with RB_LIKELY.
+
 Sat Apr 23 13:27:25 2016  Yuichiro Kaneko  <yui-knk@ruby-lang.org>
 
 	* NEWS: Add descriptions for Time#to_time updates.

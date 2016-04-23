@@ -53,7 +53,7 @@ extern "C" {
 #endif
 #ifndef ASSUME
 # ifdef UNREACHABLE
-#   define ASSUME(x) (LIKELY(!!(x)) ? (void)0 : UNREACHABLE)
+#   define ASSUME(x) (RB_LIKELY(!!(x)) ? (void)0 : UNREACHABLE)
 # else
 #   define ASSUME(x) ((void)(x))
 # endif
@@ -64,11 +64,11 @@ extern "C" {
 
 /* likely */
 #if __GNUC__ >= 3
-#define LIKELY(x)   (__builtin_expect(!!(x), 1))
-#define UNLIKELY(x) (__builtin_expect(!!(x), 0))
+#define RB_LIKELY(x)   (__builtin_expect(!!(x), 1))
+#define RB_UNLIKELY(x) (__builtin_expect(!!(x), 0))
 #else /* __GNUC__ >= 3 */
-#define LIKELY(x)   (x)
-#define UNLIKELY(x) (x)
+#define RB_LIKELY(x)   (x)
+#define RB_UNLIKELY(x) (x)
 #endif /* __GNUC__ >= 3 */
 
 #ifdef __GNUC__
@@ -1628,10 +1628,10 @@ rb_mul_size_overflow(size_t a, size_t b, size_t max, size_t *c)
 {
 #ifdef DSIZE_T
     DSIZE_T c2 = (DSIZE_T)a * (DSIZE_T)b;
-    if (UNLIKELY(c2 > max)) return 1;
+    if (RB_UNLIKELY(c2 > max)) return 1;
     *c = (size_t)c2;
 #else
-    if (b != 0 && UNLIKELY(a > max / b)) return 1;
+    if (b != 0 && RB_UNLIKELY(a > max / b)) return 1;
     *c = a * b;
 #endif
     return 0;
@@ -1641,13 +1641,13 @@ rb_alloc_tmp_buffer2(volatile VALUE *store, long count, size_t elsize)
 {
     size_t cnt = (size_t)count;
     if (elsize % sizeof(VALUE) == 0) {
-	if (UNLIKELY(cnt > LONG_MAX / sizeof(VALUE))) {
+	if (RB_UNLIKELY(cnt > LONG_MAX / sizeof(VALUE))) {
 	    ruby_malloc_size_overflow(cnt, elsize);
 	}
     }
     else {
 	size_t size, max = LONG_MAX - sizeof(VALUE) + 1;
-	if (UNLIKELY(rb_mul_size_overflow(count, elsize, max, &size))) {
+	if (RB_UNLIKELY(rb_mul_size_overflow(count, elsize, max, &size))) {
 	    ruby_malloc_size_overflow(cnt, elsize);
 	}
 	cnt = (size + sizeof(VALUE) - 1) / sizeof(VALUE);

@@ -23,6 +23,9 @@ extern "C" {
 #endif
 #endif
 
+#define LIKELY(x) RB_LIKELY(x)
+#define UNLIKELY(x) RB_UNLIKELY(x)
+
 #ifndef __has_attribute
 # define __has_attribute(x) 0
 #endif
