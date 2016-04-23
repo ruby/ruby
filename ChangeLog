@@ -1,3 +1,9 @@
+Sat Apr 23 11:21:27 2016  Marcus Stollsteimer  <sto.mar@web.de>
+
+	* ext/date/date_core.c (Init_date_core): [DOC] Convert DateTime
+	  documentation to RDoc from Markdown.
+	  [ruby-core:75136] [Bug #12311]
+
 Sat Apr 23 09:03:35 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c: cygwin does not use w32_cmdvector, command line can be
