@@ -87,10 +87,9 @@ set_backtrace(VALUE info, VALUE bt)
 }
 
 static void
-error_print(void)
+error_print(rb_thread_t *th)
 {
     volatile VALUE errat = Qundef;
-    rb_thread_t *th = GET_THREAD();
     VALUE errinfo = th->errinfo;
     int raised_flag = th->raised_flag;
     volatile VALUE eclass = Qundef, e = Qundef;
@@ -200,7 +199,7 @@ error_print(void)
 void
 ruby_error_print(void)
 {
-    error_print();
+    error_print(GET_THREAD());
 }
 
 #define undef_mesg_for(v, k) rb_fstring_cstr("undefined"v" method `%1$s' for "k" `%2$s'")
@@ -301,7 +300,7 @@ error_handle(int ex)
 	warn_print("unexpected throw\n");
 	break;
       case TAG_RAISE: {
-	VALUE errinfo = GET_THREAD()->errinfo;
+	VALUE errinfo = th->errinfo;
 	if (rb_obj_is_kind_of(errinfo, rb_eSystemExit)) {
 	    status = sysexit_status(errinfo);
 	}
@@ -310,12 +309,12 @@ error_handle(int ex)
 	    /* no message when exiting by signal */
 	}
 	else {
-	    error_print();
+	    error_print(th);
 	}
 	break;
       }
       case TAG_FATAL:
-	error_print();
+	error_print(th);
 	break;
       default:
 	unknown_longjmp_status(ex);
