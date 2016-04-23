@@ -13,7 +13,7 @@ Sat Apr 23 18:01:21 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 	  vm1_ivar*            1.189
 	  vm1_ivar_set*        1.024
 
-	  Note tha `inline`'s meaning is different between old GCC
+	  Note the `inline`'s meaning is different between old GCC
 	  and C99. Old GCC's inline means C99's extern inline.
 	  https://gcc.gnu.org/onlinedocs/gcc/Inline.html
 	  Since Ruby specify -std=iso9899:1999, it works like C99.
