@@ -1231,6 +1231,9 @@ main()
 		ac_cv_func_isinf=yes
 		ac_cv_func_isnan=yes
 		],
+[aix*],[
+		ac_cv_func_round=no
+		],
 [nacl], [
   LIBS="-lm $LIBS"
   if test "${nacl_cv_build_variant}" = "newlib"; then
@@ -2338,7 +2341,7 @@ AC_CHECK_FUNCS(ppoll)
 AC_CHECK_FUNCS(pread)
 AC_CHECK_FUNCS(qsort_r)
 AC_CHECK_FUNCS(readlink)
-AS_CASE(["$target_os"],[aix*],[ac_cv_func_round=no],[AC_CHECK_FUNCS(round)])
+AC_CHECK_FUNCS(round)
 AC_CHECK_FUNCS(sched_getaffinity)
 AC_CHECK_FUNCS(seekdir)
 AC_CHECK_FUNCS(select_large_fdset)
