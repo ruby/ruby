@@ -84,6 +84,12 @@ with all sufficient information, see the ChangeLog file or Redmine
   Ruby's sum method should be mostly compatible but it is impossible to
   be perfectly compatible with all of them.
 
+=== Stdlib compatibility issues (excluding feature bug fixes)
+
+* DateTime
+
+  * DateTime#to_time now preserves timezone.  [Bug #12189]
+
 === C API updates
 
 * ruby_show_version() will no longer exits the process, if
