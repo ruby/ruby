@@ -2279,6 +2279,17 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	    }
 	}
     }
+
+    #define IS_TRACE_LINE(insn) \
+	(IS_INSN_ID(insn, trace) && \
+	 OPERAND_AT(insn, 0) == INT2FIX(RUBY_EVENT_LINE))
+    if (IS_TRACE_LINE(iobj) && iobj->link.prev && IS_INSN(iobj->link.prev)) {
+	INSN *piobj = (INSN *)iobj->link.prev;
+	if (IS_TRACE_LINE(piobj)) {
+	    REMOVE_ELEM(iobj->link.prev);
+	}
+    }
+
     return COMPILE_OK;
 }
 
