@@ -1,3 +1,8 @@
+Sat Apr 23 09:03:35 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c: cygwin does not use w32_cmdvector, command line can be
+	  other than UTF-8.  [ruby-dev:49519] [Bug #12184]
+
 Sat Apr 23 01:00:03 2016  Rei Odaira  <Rei.Odaira@gmail.com>
 
 	* configure.in: don't use the system-provided round(3) on AIX.
