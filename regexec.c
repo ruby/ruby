@@ -1372,7 +1372,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 #define NEXT sprev = sbegin; JUMP
 #define JUMP goto *oplabels[*p++]
 
-  static void  *oplabels[] = {
+  static const void *oplabels[] = {
     &&L_OP_FINISH,               /* matching process terminator (no more alternative) */
     &&L_OP_END,                  /* pattern code terminator (success end) */
 
