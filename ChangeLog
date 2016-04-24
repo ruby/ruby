@@ -1,3 +1,7 @@
+Sun Apr 24 23:29:16 2016  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* configure.in: add missing -lm for AIX.
+
 Sun Apr 24 18:33:58 2016  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* vm_insnhelper.c (INLINE): disable r54738 if __NO_INLINE__ is defined.
