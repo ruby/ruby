@@ -623,7 +623,7 @@ extconf: $(PREP)
 	$(Q) $(MAKEDIRS) "$(EXTCONFDIR)"
 	$(RUNRUBY) -C "$(EXTCONFDIR)" $(EXTCONF) $(EXTCONFARGS)
 
-$(RBCONFIG): $(srcdir)/tool/mkconfig.rb config.status $(srcdir)/version.h
+$(RBCONFIG): $(srcdir)/tool/mkconfig.rb config.status $(srcdir)/version.h $(PREP)
 	$(Q)$(BOOTSTRAPRUBY) $(srcdir)/tool/mkconfig.rb -timestamp=$@ \
 		-cross_compiling=$(CROSS_COMPILING) \
 		-arch=$(arch) -version=$(RUBY_PROGRAM_VERSION) \
@@ -748,9 +748,11 @@ $(NEWLINE_C): $(srcdir)/enc/trans/newline.trans $(srcdir)/tool/transcode-tblgen.
 	$(Q) $(BASERUBY) "$(srcdir)/tool/transcode-tblgen.rb" -vo $@ $(srcdir)/enc/trans/newline.trans
 enc/trans/newline.$(OBJEXT): $(NEWLINE_C)
 
-verconf.h: $(srcdir)/template/verconf.h.tmpl $(srcdir)/tool/generic_erb.rb
+VERCONF_H = ./.time.verconf.h
+
+$(VERCONF_H): $(srcdir)/template/verconf.h.tmpl $(srcdir)/tool/generic_erb.rb $(PREP)
 	$(ECHO) creating $@
-	$(Q) $(BOOTSTRAPRUBY) "$(srcdir)/tool/generic_erb.rb" -o $@ $(srcdir)/template/verconf.h.tmpl
+	$(Q) $(BOOTSTRAPRUBY) "$(srcdir)/tool/generic_erb.rb" -c -t -o verconf.h $(srcdir)/template/verconf.h.tmpl
 
 ruby-glommed.$(OBJEXT): $(OBJS)
 
