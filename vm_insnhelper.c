@@ -19,7 +19,7 @@
 /* control stack frame */
 
 #undef INLINE
-#if defined __GNUC__ && !defined __NO_INLINE__
+#if defined __GNUC__ && !defined __NO_INLINE__ && !defined __clang__
 #define INLINE inline
 #else
 #define INLINE static inline
