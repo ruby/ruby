@@ -2378,7 +2378,7 @@ set_pioinfo_extra(void)
     HMODULE mod = GetModuleHandle("ucrtbase.dll");
     char *p = (char*)GetProcAddress(mod, "_isatty");
     char *pend = p + 100;
-    /* _osfile(fh) & FDEV /*0x40*/
+    /* _osfile(fh) & FDEV */
 #if _WIN64
     int32_t rel;
     char *rip;
