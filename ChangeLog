@@ -1,3 +1,8 @@
+Sun Apr 24 09:32:12 2016  Yuichiro Kaneko  <yui-knk@ruby-lang.org>
+
+	* test/ruby/test_array.rb: Add test cases for Array#sum with
+	  non-numeric objects.
+
 Sun Apr 24 04:21:27 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* vm_insnhelper.c (INLINE): define as `inline` when it is optimized.
