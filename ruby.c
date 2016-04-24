@@ -1413,10 +1413,7 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
     NODE *tree = 0;
     VALUE parser;
     const rb_iseq_t *iseq;
-    rb_encoding *enc, *lenc, *ienc = 0;
-#if UTF8_PATH
-    rb_encoding *uenc;
-#endif
+    rb_encoding *enc, *lenc;
     const char *s;
     char fbuf[MAXPATHLEN];
     int i = (int)proc_options(argc, argv, opt, 0);
@@ -1528,7 +1525,6 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 	enc = rb_enc_from_index(opt->intern.enc.index);
 	rb_enc_set_default_internal(rb_enc_from_encoding(enc));
 	opt->intern.enc.index = -1;
-	ienc = enc;
     }
     rb_enc_associate(opt->script_name, lenc);
     rb_obj_freeze(opt->script_name);
@@ -1563,8 +1559,7 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 #undef SET_COMPILE_OPTION
     }
 #if UTF8_PATH
-    uenc = rb_utf8_encoding();
-    opt->script_name = str_conv_enc(opt->script_name, uenc, lenc);
+    opt->script_name = str_conv_enc(opt->script_name, rb_utf8_encoding(), lenc);
     opt->script = RSTRING_PTR(opt->script_name);
 #endif
     ruby_set_argv(argc, argv);
@@ -1582,13 +1577,8 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 	    eenc = rb_enc_from_index(opt->src.enc.index);
 	}
 	else {
-	    eenc = ienc ? ienc : lenc;
+	    eenc = lenc;
 	}
-#if UTF8_PATH
-	if (eenc != uenc)
-	    opt->e_script = str_conv_enc(opt->e_script, uenc, eenc);
-	else
-#endif
 	rb_enc_associate(opt->e_script, eenc);
 	if (!(opt->dump & ~DUMP_BIT(version_v))) {
 	    ruby_set_script_name(opt->script_name);
