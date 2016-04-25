@@ -1,3 +1,9 @@
+Mon Apr 25 11:17:50 2016  Marcus Stollsteimer  <sto.mar@web.de>
+
+	* encoding.c: Fix return value of `Encoding::ISO8859_1.name`
+	  [Bug #12313][ruby-core:75147][ci skip]
+	* ext/bigdecimal/bigdecimal.c: Fix code sample of `BigDecimal.new`
+
 Sun Apr 24 23:29:16 2016  Rei Odaira  <Rei.Odaira@gmail.com>
 
 	* configure.in: add missing -lm for AIX.

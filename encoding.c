@@ -1718,7 +1718,7 @@ rb_enc_aliases(VALUE klass)
  * optionally, aliases:
  *
  *   Encoding::ISO_8859_1.name
- *   #=> #<Encoding:ISO-8859-1>
+ *   #=> "ISO-8859-1"
  *
  *   Encoding::ISO_8859_1.names
  *   #=> ["ISO-8859-1", "ISO8859-1"]
