@@ -33,7 +33,7 @@
  */
 
 #ifndef ID_TABLE_IMPL
-#define ID_TABLE_IMPL 34
+#define ID_TABLE_IMPL 36
 #endif
 
 #if ID_TABLE_IMPL == 0
@@ -176,6 +176,21 @@
 #define ID_TABLE_USE_CALC_VALUES 1
 #define ID_TABLE_USE_LIST_SORTED 1
 #define ID_TABLE_USE_LIST_SORTED_LINEAR_SMALL_RANGE 1
+
+#define ID_TABLE_USE_SMALL_HASH 1
+
+#elif ID_TABLE_IMPL == 36
+#define ID_TABLE_NAME mix
+#define ID_TABLE_IMPL_TYPE struct mix_id_table
+
+#define ID_TABLE_USE_MIX 1
+#define ID_TABLE_USE_MIX_LIST_MAX_CAPA 512
+
+#define ID_TABLE_USE_ID_SERIAL 1
+
+#define ID_TABLE_USE_LIST 1
+#define ID_TABLE_USE_CALC_VALUES 1
+#define ID_TABLE_USE_LIST_SORTED 1
 
 #define ID_TABLE_USE_SMALL_HASH 1
 
@@ -536,6 +551,37 @@ tbl_assert(struct list_id_table *tbl)
 }
 
 #if ID_TABLE_USE_LIST_SORTED
+#ifdef __SSE2__
+#include <emmintrin.h>
+
+extern inline int
+list_ids_bsearch(const id_key_t *keys, id_key_t key, int num)
+{
+    __m128i v = _mm_set_epi32(key-1, key-1, key-1, key-1);
+    __m128i const *p0 = (__m128i const *)keys;
+    __m128i const *p = (__m128i const *)keys;
+    __m128i const *e = (__m128i const *)(keys+num);
+    if (UNLIKELY(key == 0)) {
+	return num > 0 && keys[0] == 0;
+    }
+    //fprintf(stderr,"%d: start[%d] %p %p; ",__LINE__, num,p,e);
+    for (; p < e; p+=2) {
+	__m128i x = _mm_loadu_si128(p);
+	__m128i y = _mm_loadu_si128(p+1);
+	__m128i a = _mm_cmplt_epi32(v, x);
+	__m128i b = _mm_cmplt_epi32(v, y);
+	int mask = (_mm_movemask_epi8(b)<<16)|_mm_movemask_epi8(a);
+	//fprintf(stderr,"%d: %d:%04x; ",__LINE__,i,mask);
+	if (mask) {
+	    int i = (p - p0) * 4 + (ntz_int32(mask)>>2);
+	    //fprintf(stderr,"%d: found?[%d/%d] %08x %x IN [%x %x %x %x] %d %d\n",__LINE__,i,num,mask, key, keys[i], keys[i+1],keys[i+2],keys[i+3],ffs(mask),__builtin_ctz(mask));
+	    return (i < num && keys[i] == key) ? i : -i-1;
+	}
+    }
+    //fprintf(stderr,"%d:[%d] not found\n",__LINE__,num);
+    return -1-num;
+}
+#else
 static int
 list_ids_bsearch(const id_key_t *keys, id_key_t key, int num)
 {
@@ -583,6 +629,7 @@ list_ids_bsearch(const id_key_t *keys, id_key_t key, int num)
     assert(min == p);
     return -p-1;
 }
+#endif
 #endif /* ID_TABLE_USE_LIST_SORTED */
 
 static int
