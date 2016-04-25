@@ -1,11 +1,10 @@
 # frozen_string_literal: false
 last_is_void = false
 ARGF.each do |line|
-  if line.strip.empty?
-    #puts() unless last_is_void
+  case line
+  when /\A\s*\z/, /\A\#/
+    puts unless last_is_void
     last_is_void = true
-  elsif /\A\#/ === line
-    ;
   else
     print line
     last_is_void = false
