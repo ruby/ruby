@@ -1,3 +1,11 @@
+Mon Apr 25 14:39:11 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/rbconfig/sizeof/extconf.rb: just check the existence of each
+	  types, to reduce configuration time, especially cross-compiling.
+
+	* template/sizes.c.tmpl: calculate sizes of checked types at
+	  compilation time.
+
 Mon Apr 25 11:27:27 2016  Marcus Stollsteimer  <sto.mar@web.de>
 
 	* doc/extension.rdoc: Improvements to english grammers.

@@ -6,13 +6,25 @@ class String
     strip.upcase.tr_s("^A-Z0-9_*", "_").tr_s("*", "P")
   end
 end
+headers = Hash.new {[]}
+sizes = {}
 types = ARGF.grep(/^\s*RUBY_CHECK_SIZEOF\((\w[^\[\],#]*)[^#]*\)|
                    ^\s*RUBY_DEFINT\((\w[^\[\],#]*)[^#]*\)|
-                   ^\s*check_sizeof\('(.+?)'/x) {$+}
+                   ^\s*have_type\('(.+?)'(?:,\s*%w\[(.+)\])?\)/x) do
+  sizes[type = $3] = true
+  hdrs = $4 and hdrs.split.each {|h| headers[h] <<= type}
+  type || $+
+end
 conditions = {
   "long long" => 'defined(HAVE_TRUE_LONG_LONG)',
 }
 %>
+% headers.each do |h, type|
+#if <%= type.map {|t| "defined(HAVE_TYPE_#{t.tr_cpp})"}.join(' || ') %>
+# include <<%= h %>>
+#endif
+
+% end
 void
 Init_sizeof(void)
 {
@@ -20,8 +32,15 @@ Init_sizeof(void)
     rb_define_const(rb_define_module("RbConfig"), "SIZEOF", s);
 
 #define DEFINE(type, size) rb_hash_aset(s, rb_str_new_cstr(#type), INT2FIX(SIZEOF_##size))
+#define DEFINE_SIZE(type) rb_hash_aset(s, rb_str_new_cstr(#type), INT2FIX(sizeof(type)))
 
 % types.each do |type|
+%   if sizes[type]
+#ifdef HAVE_TYPE_<%= type.tr_cpp %>
+    DEFINE_SIZE(<%= type %>);
+#endif
+%     next
+%   end
 %   cond = conditions[type]
 #if SIZEOF_<%= type.tr_cpp %> != 0<%= " && #{cond}" if cond %>
     DEFINE(<%= type %>, <%= type.tr_cpp %>);
