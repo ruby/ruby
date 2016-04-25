@@ -627,7 +627,7 @@ void Init_ext(void)\n{\n#$extinit}
     ['SETUP', $setup],
     ['EXTLIBS', $extlibs.join(' ')], ['EXTLDFLAGS', $extflags]
   ].map {|n, v|
-    "#{n}=#{v}" if v and !(v = v.strip).empty?
+    "#{n}=#{v}" if v &&= v[/\S(?:.*\S)?/]
   }.compact
   puts(*conf)
   $stdout.flush
