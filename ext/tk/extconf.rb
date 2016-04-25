@@ -371,7 +371,7 @@ def collect_tcltk_defs(tcl_defs_str, tk_defs_str)
   end
 
   if tcl_defs_str
-    tcl_defs = tcl_defs_str.split(/ ?-D/).map{|s|
+    tcl_defs = tcl_defs_str.split(/(?:\A|\s)\s*-D/).map{|s|
       s =~ /^([^=]+)(.*)$/
       [$1, $2]
     }
@@ -380,7 +380,7 @@ def collect_tcltk_defs(tcl_defs_str, tk_defs_str)
   end
 
   if tk_defs_str
-    tk_defs = tk_defs_str.split(/ ?-D/).map{|s|
+    tk_defs = tk_defs_str.split(/(?:\A|\s)\s*-D/).map{|s|
       s =~ /^([^=]+)(.*)$/
       [$1, $2]
     }
@@ -396,7 +396,7 @@ def collect_tcltk_defs(tcl_defs_str, tk_defs_str)
           vtcl != vtk )
   }
 
-  defs.map{|ary| s = ary.join(''); (s.strip.empty?)? "": "-D" << s}
+  defs.map{|ary| /\S/ =~ (s = ary.join('')) and "-D" << s.strip}.compact
 end
 
 def parse_tclConfig(file)
@@ -1609,9 +1609,8 @@ def search_X_libraries
   use_tkConfig = false
   if TkConfig_Info['config_file_path']
     # use definitions on tkConfig.sh
-    if (TkConfig_Info['TK_XINCLUDES'] &&
-        !TkConfig_Info['TK_XINCLUDES'].strip.empty?) ||
-        (TkConfig_Info['TK_XLIBSW'] && !TkConfig_Info['TK_XLIBSW'].strip.empty?)
+    if (/\S/ =~ TkConfig_Info['TK_XINCLUDES'] ||
+        /\S/ =~ TkConfig_Info['TK_XLIBSW'])
       use_tkConfig = true
       #use_X = true && with_config("X11", ! is_win32?)
       use_X = with_config("X11", true)
@@ -1624,8 +1623,7 @@ def search_X_libraries
     use_X = with_config("X11", !(is_win32? || TkLib_Config["tcltk-framework"]))
   end
 
-  if TkConfig_Info['TK_XINCLUDES'] &&
-      !TkConfig_Info['TK_XINCLUDES'].strip.empty?
+  if /\S/ =~ TkConfig_Info['TK_XINCLUDES']
     ($INCFLAGS ||= "") << " " << TkConfig_Info['TK_XINCLUDES'].strip
   end
 
@@ -1636,7 +1634,7 @@ def search_X_libraries
     unless find_X11(x11_ldir2, x11_ldir)
       puts("Can't find X11 libraries. ")
       if use_tkConfig &&
-          TkConfig_Info['TK_XLIBSW'] && !TkConfig_Info['TK_XLIBSW'].strip.empty?
+          /\S/ =~ TkConfig_Info['TK_XLIBSW']
         puts("But, try to use TK_XLIBSW information (believe tkConfig.sh).")
         ($libs ||= "") << " " << TkConfig_Info['TK_XLIBSW'] << " "
       else
@@ -1919,9 +1917,8 @@ TkLib_Config["space-on-tk-libpath"] =
 
 # enable Tcl/Tk stubs?
 =begin
-if TclConfig_Info['TCL_STUB_LIB_SPEC'] && TkConfig_Info['TK_STUB_LIB_SPEC'] &&
-    !TclConfig_Info['TCL_STUB_LIB_SPEC'].strip.empty? &&
-    !TkConfig_Info['TK_STUB_LIB_SPEC'].strip.empty?
+if /\S/ =~ TclConfig_Info['TCL_STUB_LIB_SPEC'] &&
+   /\S/ =~ TkConfig_Info['TK_STUB_LIB_SPEC']
   stubs = true
   unless (st = enable_config("tcltk-stubs")).nil?
     stubs &&= st
@@ -2027,16 +2024,14 @@ if TkLib_Config["tcltk-framework"]
     libs << ' ' << TclConfig_Info['TCL_LIBS']
     if stubs
       if TkLib_Config["tcl-build-dir"] &&
-          TclConfig_Info['TCL_BUILD_STUB_LIB_SPEC'] &&
-          !TclConfig_Info['TCL_BUILD_STUB_LIB_SPEC'].strip.empty?
+          /\S/ =~ TclConfig_Info['TCL_BUILD_STUB_LIB_SPEC']
         libs << ' ' << TclConfig_Info['TCL_BUILD_STUB_LIB_SPEC']
       else
         libs << ' ' << TclConfig_Info['TCL_STUB_LIB_SPEC']
       end
     else
       if TkLib_Config["tcl-build-dir"] &&
-          TclConfig_Info['TCL_BUILD_LIB_SPEC'] &&
-          !TclConfig_Info['TCL_BUILD_LIB_SPEC'].strip.empty?
+          /\S/ =~ TclConfig_Info['TCL_BUILD_LIB_SPEC']
         libs << ' ' << TclConfig_Info['TCL_BUILD_LIB_SPEC']
       else
         libs << ' ' << TclConfig_Info['TCL_LIB_SPEC']
@@ -2052,16 +2047,14 @@ if TkLib_Config["tcltk-framework"]
     libs << ' ' << TkConfig_Info['TK_LIBS']
     if stubs
       if TkLib_Config["tk-build-dir"] &&
-          TclConfig_Info['TK_BUILD_STUB_LIB_SPEC'] &&
-          !TclConfig_Info['TK_BUILD_STUB_LIB_SPEC'].strip.empty?
+          /\S/ =~ TclConfig_Info['TK_BUILD_STUB_LIB_SPEC']
         libs << ' ' << TkConfig_Info['TK_BUILD_STUB_LIB_SPEC']
       else
         libs << ' ' << TkConfig_Info['TK_STUB_LIB_SPEC']
       end
     else
       if TkLib_Config["tk-build-dir"] &&
-          TclConfig_Info['TK_BUILD_LIB_SPEC'] &&
-          !TclConfig_Info['TK_BUILD_LIB_SPEC'].strip.empty?
+          /\S/ =~ TclConfig_Info['TK_BUILD_LIB_SPEC']
         libs << ' ' << TkConfig_Info['TK_BUILD_LIB_SPEC']
       else
         libs << ' ' << TkConfig_Info['TK_LIB_SPEC']
