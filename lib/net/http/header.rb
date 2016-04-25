@@ -436,21 +436,17 @@ module Net::HTTPHeader
   private :basic_encode
 
   def connection_close?
-    tokens(@header['connection']).include?('close') or
-    tokens(@header['proxy-connection']).include?('close')
+    token = /(?:\A|,)\s*close\s*(?:\z|,)/i
+    @header['connection']&.grep(token) {return true}
+    @header['proxy-connection']&.grep(token) {return true}
+    false
   end
 
   def connection_keep_alive?
-    tokens(@header['connection']).include?('keep-alive') or
-    tokens(@header['proxy-connection']).include?('keep-alive')
+    token = /(?:\A|,)\s*keep-alive\s*(?:\z|,)/i
+    @header['connection']&.grep(token) {return true}
+    @header['proxy-connection']&.grep(token) {return true}
+    false
   end
-
-  def tokens(vals)
-    return [] unless vals
-    vals.map {|v| v.split(',') }.flatten\
-        .reject {|str| str.strip.empty? }\
-        .map {|tok| tok.strip.downcase }
-  end
-  private :tokens
 
 end
