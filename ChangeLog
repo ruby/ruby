@@ -1,3 +1,8 @@
+Tue Apr 26 13:16:41 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval_jump.c (exec_end_procs_chain): restore previous error info
+	  for each end procs.  [ruby-core:75038] [Bug #12302]
+
 Fri Apr 22 18:36:15 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (new_label_body): initialize bit fields, since
