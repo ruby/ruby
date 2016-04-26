@@ -420,7 +420,7 @@ eom
         res.value
       rescue
         $stderr.puts "deployed redmine doesn't have https://github.com/ruby/bugs.ruby-lang.org/commit/01fbba60d68cb916ddbccc8a8710e68c5217171d\nask naruse or hsbt"
-        raise
+        next
       end
       puts res.body
       @changesets << rev
