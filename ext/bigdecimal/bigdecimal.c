@@ -1079,7 +1079,7 @@ BigDecimal_comp(VALUE self, VALUE r)
  *
  * Values may be coerced to perform the comparison:
  *
- * BigDecimal.new('1.0') == 1.0  -> true
+ *   BigDecimal.new('1.0') == 1.0  #=> true
  */
 static VALUE
 BigDecimal_eq(VALUE self, VALUE r)
