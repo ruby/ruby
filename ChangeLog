@@ -63,7 +63,7 @@ Mon Apr 25 14:39:11 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Mon Apr 25 11:27:27 2016  Marcus Stollsteimer  <sto.mar@web.de>
 
-	* doc/extension.rdoc: Improvements to english grammers.
+	* doc/extension.rdoc: Improvements to english grammars.
 	  [Bug #12246][ruby-core:74792][ci skip]
 
 Mon Apr 25 11:17:50 2016  Marcus Stollsteimer  <sto.mar@web.de>
