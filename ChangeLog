@@ -1,3 +1,9 @@
+Tue Apr 26 23:35:23 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (process_options): convert -e script to the encoding
+	  given by a command line option on Windows.  assume it is the
+	  expected encoding.  [ruby-dev:49461] [Bug #11900]
+
 Tue Apr 26 21:11:02 2016  Tanaka Akira  <akr@fsij.org>
 
 	* numeric.c (rb_int_lshift): {Fixnum,Bignum}#<< is unified into
