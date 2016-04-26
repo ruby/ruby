@@ -6748,14 +6748,6 @@ rb_big_lshift(VALUE x, VALUE y)
     }
 }
 
-
-/*
- * call-seq:
- *     big >> numeric   ->  integer
- *
- * Shifts big right _numeric_ positions (left if _numeric_ is negative).
- */
-
 VALUE
 rb_big_rshift(VALUE x, VALUE y)
 {
@@ -7022,7 +7014,6 @@ Init_Bignum(void)
     rb_define_method(rb_cBignum, "^", rb_big_xor, 1);
     rb_define_method(rb_cBignum, "~", rb_big_neg, 0);
     rb_define_method(rb_cBignum, "<<", rb_big_lshift, 1);
-    rb_define_method(rb_cBignum, ">>", rb_big_rshift, 1);
     rb_define_method(rb_cBignum, "[]", rb_big_aref, 1);
 
     rb_define_method(rb_cBignum, "==", rb_big_eq, 1);
