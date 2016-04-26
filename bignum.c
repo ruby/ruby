@@ -6886,17 +6886,7 @@ rb_big_coerce(VALUE x, VALUE y)
     return rb_assoc_new(y, x);
 }
 
-/*
- *  call-seq:
- *     big.abs -> aBignum
- *     big.magnitude -> aBignum
- *
- *  Returns the absolute value of <i>big</i>.
- *
- *     -1234567890987654321.abs   #=> 1234567890987654321
- */
-
-static VALUE
+VALUE
 rb_big_abs(VALUE x)
 {
     if (BIGNUM_NEGATIVE_P(x)) {
@@ -7091,8 +7081,6 @@ Init_Bignum(void)
     rb_define_method(rb_cBignum, "<", big_lt, 1);
     rb_define_method(rb_cBignum, "<=", big_le, 1);
     rb_define_method(rb_cBignum, "===", rb_big_eq, 1);
-    rb_define_method(rb_cBignum, "abs", rb_big_abs, 0);
-    rb_define_method(rb_cBignum, "magnitude", rb_big_abs, 0);
     rb_define_method(rb_cBignum, "size", rb_big_size_m, 0);
     rb_define_method(rb_cBignum, "bit_length", rb_big_bit_length, 0);
 

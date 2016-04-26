@@ -4069,18 +4069,6 @@ int_to_f(VALUE num)
     return DBL2NUM(val);
 }
 
-/*
- *  call-seq:
- *     fix.abs        ->  integer
- *     fix.magnitude  ->  integer
- *
- *  Returns the absolute value of +fix+.
- *
- *     -12345.abs   #=> 12345
- *     12345.abs    #=> 12345
- *
- */
-
 static VALUE
 fix_abs(VALUE fix)
 {
@@ -4091,7 +4079,30 @@ fix_abs(VALUE fix)
     return LONG2NUM(i);
 }
 
+/*
+ *  call-seq:
+ *     int.abs        ->  integer
+ *     int.magnitude  ->  integer
+ *
+ *  Returns the absolute value of +int+.
+ *
+ *     -12345.abs   #=> 12345
+ *     12345.abs    #=> 12345
+ *     -1234567890987654321.abs   #=> 1234567890987654321
+ *
+ */
 
+static VALUE
+int_abs(VALUE num)
+{
+    if (FIXNUM_P(num)) {
+	return fix_abs(num);
+    }
+    else if (RB_TYPE_P(num, T_BIGNUM)) {
+	return rb_big_abs(num);
+    }
+    return Qnil;
+}
 
 /*
  *  call-seq:
@@ -4614,8 +4625,8 @@ Init_Numeric(void)
     rb_define_method(rb_cFixnum, "fdiv", fix_fdiv, 1);
     rb_define_method(rb_cFixnum, "**", fix_pow, 1);
 
-    rb_define_method(rb_cFixnum, "abs", fix_abs, 0);
-    rb_define_method(rb_cFixnum, "magnitude", fix_abs, 0);
+    rb_define_method(rb_cInteger, "abs", int_abs, 0);
+    rb_define_method(rb_cInteger, "magnitude", int_abs, 0);
 
     rb_define_method(rb_cFixnum, "==", fix_equal, 1);
     rb_define_method(rb_cFixnum, "===", fix_equal, 1);
