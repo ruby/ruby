@@ -1,11 +1,20 @@
+Tue Apr 26 20:09:08 2016  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (rb_int_bit_length): {Fixnum,Bignum}#bit_length is
+	  unified into Integer.
+
+	* bignum.c (rb_big_bit_length): Don't define Bignum#bit_length.
+
+	* internal.h (rb_big_bit_length): Declared.
+
 Tue Apr 26 19:56:16 2016  Tanaka Akira  <akr@fsij.org>
 
 	* numeric.c (int_abs): Integer#{abs,magnitude} moved from
 	  Fixnum and Bignum.
 
-	* internal.h (rb_big_abs): Declared.
-
 	* bignum.c (rb_big_abs): Don't define Bignum#{abs,magnitude}.
+
+	* internal.h (rb_big_abs): Declared.
 
 Mon Apr 25 14:39:11 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

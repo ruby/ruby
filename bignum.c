@@ -6920,45 +6920,7 @@ rb_big_size_m(VALUE big)
     return SIZET2NUM(rb_big_size(big));
 }
 
-/*
- *  call-seq:
- *     int.bit_length -> integer
- *
- *  Returns the number of bits of the value of <i>int</i>.
- *
- *  "the number of bits" means that
- *  the bit position of the highest bit which is different to the sign bit.
- *  (The bit position of the bit 2**n is n+1.)
- *  If there is no such bit (zero or minus one), zero is returned.
- *
- *  I.e. This method returns ceil(log2(int < 0 ? -int : int+1)).
- *
- *     (-2**10000-1).bit_length  #=> 10001
- *     (-2**10000).bit_length    #=> 10000
- *     (-2**10000+1).bit_length  #=> 10000
- *
- *     (-2**1000-1).bit_length   #=> 1001
- *     (-2**1000).bit_length     #=> 1000
- *     (-2**1000+1).bit_length   #=> 1000
- *
- *     (2**1000-1).bit_length    #=> 1000
- *     (2**1000).bit_length      #=> 1001
- *     (2**1000+1).bit_length    #=> 1001
- *
- *     (2**10000-1).bit_length   #=> 10000
- *     (2**10000).bit_length     #=> 10001
- *     (2**10000+1).bit_length   #=> 10001
- *
- *  This method can be used to detect overflow in Array#pack as follows.
- *
- *     if n.bit_length < 32
- *       [n].pack("l") # no overflow
- *     else
- *       raise "overflow"
- *     end
- */
-
-static VALUE
+VALUE
 rb_big_bit_length(VALUE big)
 {
     int nlz_bits;

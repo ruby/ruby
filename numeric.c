@@ -4121,6 +4121,15 @@ fix_size(VALUE fix)
     return INT2FIX(sizeof(long));
 }
 
+static VALUE
+rb_fix_bit_length(VALUE fix)
+{
+    long v = FIX2LONG(fix);
+    if (v < 0)
+        v = ~v;
+    return LONG2FIX(bit_length(v));
+}
+
 /*
  *  call-seq:
  *     int.bit_length -> integer
@@ -4133,7 +4142,14 @@ fix_size(VALUE fix)
  *  If there is no such bit (zero or minus one), zero is returned.
  *
  *  I.e. This method returns ceil(log2(int < 0 ? -int : int+1)).
- *
+
+
+ *     (-2**10000-1).bit_length  #=> 10001
+ *     (-2**10000).bit_length    #=> 10000
+ *     (-2**10000+1).bit_length  #=> 10000
+ *     (-2**1000-1).bit_length   #=> 1001
+ *     (-2**1000).bit_length     #=> 1000
+ *     (-2**1000+1).bit_length   #=> 1000
  *     (-2**12-1).bit_length     #=> 13
  *     (-2**12).bit_length       #=> 12
  *     (-2**12+1).bit_length     #=> 12
@@ -4149,6 +4165,12 @@ fix_size(VALUE fix)
  *     (2**12-1).bit_length      #=> 12
  *     (2**12).bit_length        #=> 13
  *     (2**12+1).bit_length      #=> 13
+ *     (2**1000-1).bit_length    #=> 1000
+ *     (2**1000).bit_length      #=> 1001
+ *     (2**1000+1).bit_length    #=> 1001
+ *     (2**10000-1).bit_length   #=> 10000
+ *     (2**10000).bit_length     #=> 10001
+ *     (2**10000+1).bit_length   #=> 10001
  *
  *  This method can be used to detect overflow in Array#pack as follows.
  *
@@ -4160,12 +4182,15 @@ fix_size(VALUE fix)
  */
 
 static VALUE
-rb_fix_bit_length(VALUE fix)
+rb_int_bit_length(VALUE num)
 {
-    long v = FIX2LONG(fix);
-    if (v < 0)
-        v = ~v;
-    return LONG2FIX(bit_length(v));
+    if (FIXNUM_P(num)) {
+	return rb_fix_bit_length(num);
+    }
+    else if (RB_TYPE_P(num, T_BIGNUM)) {
+	return rb_big_bit_length(num);
+    }
+    return Qnil;
 }
 
 static VALUE
@@ -4645,7 +4670,7 @@ Init_Numeric(void)
     rb_define_method(rb_cFixnum, ">>", rb_fix_rshift, 1);
 
     rb_define_method(rb_cFixnum, "size", fix_size, 0);
-    rb_define_method(rb_cFixnum, "bit_length", rb_fix_bit_length, 0);
+    rb_define_method(rb_cInteger, "bit_length", rb_int_bit_length, 0);
     rb_define_method(rb_cFixnum, "succ", fix_succ, 0);
 
     rb_cFloat  = rb_define_class("Float", rb_cNumeric);
