@@ -1131,6 +1131,9 @@ main()
 		ac_cv_func_isinf=yes
 		ac_cv_func_isnan=yes
 		],
+[aix*],[	LIBS="-lm $LIBS"
+		ac_cv_func_round=no
+		],
 [nacl], [
   LIBS="-lm $LIBS"
   if test "${nacl_cv_build_variant}" = "newlib"; then
