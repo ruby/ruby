@@ -7044,7 +7044,6 @@ Init_Bignum(void)
     rb_define_method(rb_cBignum, "<=", big_le, 1);
     rb_define_method(rb_cBignum, "===", rb_big_eq, 1);
     rb_define_method(rb_cBignum, "size", rb_big_size_m, 0);
-    rb_define_method(rb_cBignum, "bit_length", rb_big_bit_length, 0);
 
 #ifdef USE_GMP
     /* The version of loaded GMP. */
