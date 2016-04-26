@@ -7013,7 +7013,6 @@ Init_Bignum(void)
     rb_define_method(rb_cBignum, "|", rb_big_or, 1);
     rb_define_method(rb_cBignum, "^", rb_big_xor, 1);
     rb_define_method(rb_cBignum, "~", rb_big_neg, 0);
-    rb_define_method(rb_cBignum, "<<", rb_big_lshift, 1);
     rb_define_method(rb_cBignum, "[]", rb_big_aref, 1);
 
     rb_define_method(rb_cBignum, "==", rb_big_eq, 1);

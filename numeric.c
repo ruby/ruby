@@ -3936,13 +3936,6 @@ fix_xor(VALUE x, VALUE y)
     return rb_funcall(x, '^', 1, y);
 }
 
-/*
- * call-seq:
- *   fix << count  ->  integer
- *
- * Shifts +fix+ left +count+ positions, or right if +count+ is negative.
- */
-
 static VALUE
 rb_fix_lshift(VALUE x, VALUE y)
 {
@@ -3966,6 +3959,25 @@ fix_lshift(long val, unsigned long width)
     }
     val = val << width;
     return LONG2NUM(val);
+}
+
+/*
+ * call-seq:
+ *   fix << count  ->  integer
+ *
+ * Shifts +fix+ left +count+ positions, or right if +count+ is negative.
+ */
+
+static VALUE
+rb_int_lshift(VALUE x, VALUE y)
+{
+    if (FIXNUM_P(x)) {
+	return rb_fix_lshift(x, y);
+    }
+    else if (RB_TYPE_P(x, T_BIGNUM)) {
+	return rb_big_lshift(x, y);
+    }
+    return Qnil;
 }
 
 static VALUE
@@ -4693,7 +4705,7 @@ Init_Numeric(void)
     rb_define_method(rb_cFixnum, "^", fix_xor, 1);
     rb_define_method(rb_cFixnum, "[]", fix_aref, 1);
 
-    rb_define_method(rb_cFixnum, "<<", rb_fix_lshift, 1);
+    rb_define_method(rb_cInteger, "<<", rb_int_lshift, 1);
     rb_define_method(rb_cInteger, ">>", rb_int_rshift, 1);
 
     rb_define_method(rb_cInteger, "size", int_size, 0);

@@ -1,3 +1,12 @@
+Tue Apr 26 21:11:02 2016  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (rb_int_lshift): {Fixnum,Bignum}#<< is unified into
+	  Integer.
+
+	* bignum.c (rb_big_lshift): Don't define Bignum#<<.
+
+	* internal.h (rb_big_lshift): Declared.
+
 Tue Apr 26 20:59:40 2016  Tanaka Akira  <akr@fsij.org>
 
 	* numeric.c (rb_int_rshift): {Fixnum,Bignum}#>> is unified into
