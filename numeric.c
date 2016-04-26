@@ -4104,21 +4104,36 @@ int_abs(VALUE num)
     return Qnil;
 }
 
+static VALUE
+fix_size(VALUE fix)
+{
+    return INT2FIX(sizeof(long));
+}
+
 /*
  *  call-seq:
- *     fix.size  ->  fixnum
+ *     int.size  ->  int
  *
  *  Returns the number of bytes in the machine representation of +fix+.
  *
  *     1.size            #=> 4
  *     -1.size           #=> 4
  *     2147483647.size   #=> 4
+ *     (256**10 - 1).size   #=> 12
+ *     (256**20 - 1).size   #=> 20
+ *     (256**40 - 1).size   #=> 40
  */
 
 static VALUE
-fix_size(VALUE fix)
+int_size(VALUE num)
 {
-    return INT2FIX(sizeof(long));
+    if (FIXNUM_P(num)) {
+	return fix_size(num);
+    }
+    else if (RB_TYPE_P(num, T_BIGNUM)) {
+	return rb_big_size_m(num);
+    }
+    return Qnil;
 }
 
 static VALUE
@@ -4669,7 +4684,7 @@ Init_Numeric(void)
     rb_define_method(rb_cFixnum, "<<", rb_fix_lshift, 1);
     rb_define_method(rb_cFixnum, ">>", rb_fix_rshift, 1);
 
-    rb_define_method(rb_cFixnum, "size", fix_size, 0);
+    rb_define_method(rb_cInteger, "size", int_size, 0);
     rb_define_method(rb_cInteger, "bit_length", rb_int_bit_length, 0);
     rb_define_method(rb_cFixnum, "succ", fix_succ, 0);
 

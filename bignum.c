@@ -6902,19 +6902,7 @@ rb_big_size(VALUE big)
     return BIGSIZE(big);
 }
 
-/*
- *  call-seq:
- *     big.size -> integer
- *
- *  Returns the number of bytes in the machine representation of
- *  <i>big</i>.
- *
- *     (256**10 - 1).size   #=> 12
- *     (256**20 - 1).size   #=> 20
- *     (256**40 - 1).size   #=> 40
- */
-
-static VALUE
+VALUE
 rb_big_size_m(VALUE big)
 {
     return SIZET2NUM(rb_big_size(big));
@@ -7043,7 +7031,6 @@ Init_Bignum(void)
     rb_define_method(rb_cBignum, "<", big_lt, 1);
     rb_define_method(rb_cBignum, "<=", big_le, 1);
     rb_define_method(rb_cBignum, "===", rb_big_eq, 1);
-    rb_define_method(rb_cBignum, "size", rb_big_size_m, 0);
 
 #ifdef USE_GMP
     /* The version of loaded GMP. */
