@@ -6711,13 +6711,6 @@ rb_big_xor(VALUE x, VALUE y)
     return bignorm(z);
 }
 
-/*
- * call-seq:
- *     big << numeric   ->  integer
- *
- * Shifts big left _numeric_ positions (right if _numeric_ is negative).
- */
-
 VALUE
 rb_big_lshift(VALUE x, VALUE y)
 {

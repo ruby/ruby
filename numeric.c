@@ -3963,9 +3963,9 @@ fix_lshift(long val, unsigned long width)
 
 /*
  * call-seq:
- *   fix << count  ->  integer
+ *   int << count  ->  integer
  *
- * Shifts +fix+ left +count+ positions, or right if +count+ is negative.
+ * Shifts +int+ left +count+ positions, or right if +count+ is negative.
  */
 
 static VALUE
