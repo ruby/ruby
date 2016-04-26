@@ -1,3 +1,8 @@
+Tue Apr 26 13:18:59 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c: cygwin does not use w32_cmdvector, command line can be
+	  other than UTF-8.  [ruby-dev:49519] [Bug #12184]
+
 Tue Apr 26 13:16:41 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval_jump.c (exec_end_procs_chain): restore previous error info

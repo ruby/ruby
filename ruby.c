@@ -338,7 +338,9 @@ translit_char_bin(char *p, int from, int to)
 	p++;
     }
 }
+#endif
 
+#ifdef _WIN32
 # define UTF8_PATH 1
 #endif
 

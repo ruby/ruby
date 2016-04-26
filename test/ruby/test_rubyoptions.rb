@@ -698,7 +698,8 @@ class TestRubyOptions < Test::Unit::TestCase
     end
   end
 
-  if /mswin|mingw/ =~ RUBY_PLATFORM
+  case RUBY_PLATFORM
+  when /mswin|mingw/
     def test_command_line_glob_nonascii
       bug10555 = '[ruby-dev:48752] [Bug #10555]'
       name = "\u{3042}.txt"
@@ -728,9 +729,7 @@ class TestRubyOptions < Test::Unit::TestCase
         assert_in_out_err(["-e", "", "test/*"], "", [], [], bug10941)
       end
     end
-  end
 
-  if /mswin|mingw/ =~ RUBY_PLATFORM
     Ougai = %W[\u{68ee}O\u{5916}.txt \u{68ee 9d0e 5916}.txt \u{68ee 9dd7 5916}.txt]
     def test_command_line_glob_noncodepage
       with_tmpchdir do |dir|
@@ -739,6 +738,14 @@ class TestRubyOptions < Test::Unit::TestCase
         ougai = Ougai.map {|f| f.encode("locale", replace: "?")}
         assert_in_out_err(["-e", "puts ARGV", "*.txt"], "", ougai)
       end
+    end
+  when /cygwin/
+    def test_command_line_non_ascii
+      assert_separately([{"LC_ALL"=>"ja_JP.SJIS"}, "-", "\u{3042}".encode("SJIS")], <<-"end;")
+        bug12184 = '[ruby-dev:49519] [Bug #12184]'
+        a = ARGV[0]
+        assert_equal([Encoding::SJIS, 130, 160], [a.encoding, *a.bytes], bug12184)
+      end;
     end
   end
 
