@@ -3003,6 +3003,19 @@ rb_int_pred(VALUE num)
 
 #define int_pred rb_int_pred
 
+/*
+ *  Document-method: Integer#chr
+ *  call-seq:
+ *     int.chr([encoding])  ->  string
+ *
+ *  Returns a string containing the character represented by the +int+'s value
+ *  according to +encoding+.
+ *
+ *     65.chr    #=> "A"
+ *     230.chr   #=> "\346"
+ *     255.chr(Encoding::UTF_8)   #=> "\303\277"
+ */
+
 VALUE
 rb_enc_uint_chr(unsigned int code, rb_encoding *enc)
 {
@@ -3024,18 +3037,6 @@ rb_enc_uint_chr(unsigned int code, rb_encoding *enc)
     }
     return str;
 }
-
-/*
- *  call-seq:
- *     int.chr([encoding])  ->  string
- *
- *  Returns a string containing the character represented by the +int+'s value
- *  according to +encoding+.
- *
- *     65.chr    #=> "A"
- *     230.chr   #=> "\346"
- *     255.chr(Encoding::UTF_8)   #=> "\303\277"
- */
 
 static VALUE
 int_chr(int argc, VALUE *argv, VALUE num)
@@ -3145,6 +3146,24 @@ rb_int_uminus(VALUE num)
     return rb_funcall(num, idUMinus, 0, 0);
 }
 
+/*
+ *  Document-method: Integer#to_s
+ *  call-seq:
+ *     int.to_s(base=10)  ->  string
+ *
+ *  Returns a string containing the representation of +int+ radix +base+
+ *  (between 2 and 36).
+ *
+ *     12345.to_s       #=> "12345"
+ *     12345.to_s(2)    #=> "11000000111001"
+ *     12345.to_s(8)    #=> "30071"
+ *     12345.to_s(10)   #=> "12345"
+ *     12345.to_s(16)   #=> "3039"
+ *     12345.to_s(36)   #=> "9ix"
+ *     78546939656932.to_s(36)  #=> "rubyrules"
+ *
+ */
+
 VALUE
 rb_fix2str(VALUE x, int base)
 {
@@ -3176,22 +3195,6 @@ rb_fix2str(VALUE x, int base)
     return rb_usascii_str_new(b, e - b);
 }
 
-/*
- *  call-seq:
- *     int.to_s(base=10)  ->  string
- *
- *  Returns a string containing the representation of +int+ radix +base+
- *  (between 2 and 36).
- *
- *     12345.to_s       #=> "12345"
- *     12345.to_s(2)    #=> "11000000111001"
- *     12345.to_s(8)    #=> "30071"
- *     12345.to_s(10)   #=> "12345"
- *     12345.to_s(16)   #=> "3039"
- *     12345.to_s(36)   #=> "9ix"
- *     78546939656932.to_s(36)  #=> "rubyrules"
- *
- */
 static VALUE
 int_to_s(int argc, VALUE *argv, VALUE x)
 {
@@ -3543,6 +3546,19 @@ fix_divmod(VALUE x, VALUE y)
     }
 }
 
+/*
+ *  Document-method: Fixnum#**
+ *  call-seq:
+ *    fix ** numeric  ->  numeric_result
+ *
+ *  Raises +fix+ to the power of +numeric+, which may be negative or
+ *  fractional.
+ *
+ *    2 ** 3      #=> 8
+ *    2 ** -1     #=> (1/2)
+ *    2 ** 0.5    #=> 1.4142135623731
+ */
+
 static VALUE
 int_pow(long x, unsigned long y)
 {
@@ -3583,18 +3599,6 @@ rb_int_positive_pow(long x, unsigned long y)
 {
     return int_pow(x, y);
 }
-
-/*
- *  call-seq:
- *    fix ** numeric  ->  numeric_result
- *
- *  Raises +fix+ to the power of +numeric+, which may be negative or
- *  fractional.
- *
- *    2 ** 3      #=> 8
- *    2 ** -1     #=> (1/2)
- *    2 ** 0.5    #=> 1.4142135623731
- */
 
 static VALUE
 fix_pow(VALUE x, VALUE y)
@@ -3678,6 +3682,19 @@ fix_equal(VALUE x, VALUE y)
     }
 }
 
+/*
+ *  Document-method: Integer#<=>
+ *  call-seq:
+ *     int <=> numeric  ->  -1, 0, +1 or nil
+ *
+ *  Comparison---Returns +-1+, +0+, ++1+ or +nil+ depending on whether +fix+ is
+ *  less than, equal to, or greater than +numeric+.
+ *
+ *  This is the basis for the tests in the Comparable module.
+ *
+ *  +nil+ is returned if the two values are incomparable.
+ */
+
 static VALUE
 fix_cmp(VALUE x, VALUE y)
 {
@@ -3702,18 +3719,6 @@ fix_cmp(VALUE x, VALUE y)
     }
     return rb_num_coerce_cmp(x, y, id_cmp);
 }
-
-/*
- *  call-seq:
- *     int <=> numeric  ->  -1, 0, +1 or nil
- *
- *  Comparison---Returns +-1+, +0+, ++1+ or +nil+ depending on whether +fix+ is
- *  less than, equal to, or greater than +numeric+.
- *
- *  This is the basis for the tests in the Comparable module.
- *
- *  +nil+ is returned if the two values are incomparable.
- */
 
 static VALUE
 int_cmp(VALUE x, VALUE y)
@@ -3936,6 +3941,14 @@ fix_xor(VALUE x, VALUE y)
     return rb_funcall(x, '^', 1, y);
 }
 
+/*
+ * Document-method: Integer#<<
+ * call-seq:
+ *   int << count  ->  integer
+ *
+ * Shifts +int+ left +count+ positions, or right if +count+ is negative.
+ */
+
 static VALUE
 rb_fix_lshift(VALUE x, VALUE y)
 {
@@ -3961,13 +3974,6 @@ fix_lshift(long val, unsigned long width)
     return LONG2NUM(val);
 }
 
-/*
- * call-seq:
- *   int << count  ->  integer
- *
- * Shifts +int+ left +count+ positions, or right if +count+ is negative.
- */
-
 static VALUE
 rb_int_lshift(VALUE x, VALUE y)
 {
@@ -3979,6 +3985,14 @@ rb_int_lshift(VALUE x, VALUE y)
     }
     return Qnil;
 }
+
+/*
+ * Document-method: Integer#>>
+ * call-seq:
+ *   int >> count  ->  integer
+ *
+ * Shifts +int+ right +count+ positions, or left if +count+ is negative.
+ */
 
 static VALUE
 rb_fix_rshift(VALUE x, VALUE y)
@@ -4006,13 +4020,6 @@ fix_rshift(long val, unsigned long i)
     return LONG2FIX(val);
 }
 
-/*
- * call-seq:
- *   int >> count  ->  integer
- *
- * Shifts +int+ right +count+ positions, or left if +count+ is negative.
- */
-
 static VALUE
 rb_int_rshift(VALUE x, VALUE y)
 {
@@ -4024,6 +4031,27 @@ rb_int_rshift(VALUE x, VALUE y)
     }
     return Qnil;
 }
+
+/*
+ *  Document-method: Integer#[]
+ *  call-seq:
+ *     fix[n]  ->  0, 1
+ *
+ *  Bit Reference---Returns the +n+th bit in the binary representation of
+ *  +fix+, where <code>fix[0]</code> is the least significant bit.
+ *
+ *  For example:
+ *
+ *     a = 0b11001100101010
+ *     30.downto(0) do |n| print a[n] end
+ *     #=> 0000000000000000011001100101010
+ *
+ *     a = 9**15
+ *     50.downto(0) do |n|
+ *       print a[n]
+ *     end
+ *     #=> 000101110110100000111000011110010100111100010111001
+ */
 
 static VALUE
 fix_aref(VALUE fix, VALUE idx)
@@ -4051,26 +4079,6 @@ fix_aref(VALUE fix, VALUE idx)
 	return INT2FIX(1);
     return INT2FIX(0);
 }
-
-/*
- *  call-seq:
- *     fix[n]  ->  0, 1
- *
- *  Bit Reference---Returns the +n+th bit in the binary representation of
- *  +fix+, where <code>fix[0]</code> is the least significant bit.
- *
- *  For example:
- *
- *     a = 0b11001100101010
- *     30.downto(0) do |n| print a[n] end
- *     #=> 0000000000000000011001100101010
- *
- *     a = 9**15
- *     50.downto(0) do |n|
- *       print a[n]
- *     end
- *     #=> 000101110110100000111000011110010100111100010111001
- */
 
 static VALUE
 int_aref(VALUE num, VALUE idx)
@@ -4111,17 +4119,9 @@ int_to_f(VALUE num)
     return DBL2NUM(val);
 }
 
-static VALUE
-fix_abs(VALUE fix)
-{
-    long i = FIX2LONG(fix);
-
-    if (i < 0) i = -i;
-
-    return LONG2NUM(i);
-}
-
 /*
+ *  Document-method: Integer#abs
+ *  Document-method: Integer#magnitude
  *  call-seq:
  *     int.abs        ->  integer
  *     int.magnitude  ->  integer
@@ -4135,6 +4135,16 @@ fix_abs(VALUE fix)
  */
 
 static VALUE
+fix_abs(VALUE fix)
+{
+    long i = FIX2LONG(fix);
+
+    if (i < 0) i = -i;
+
+    return LONG2NUM(i);
+}
+
+static VALUE
 int_abs(VALUE num)
 {
     if (FIXNUM_P(num)) {
@@ -4146,13 +4156,8 @@ int_abs(VALUE num)
     return Qnil;
 }
 
-static VALUE
-fix_size(VALUE fix)
-{
-    return INT2FIX(sizeof(long));
-}
-
 /*
+ *  Document-method: Integer#size
  *  call-seq:
  *     int.size  ->  int
  *
@@ -4167,6 +4172,12 @@ fix_size(VALUE fix)
  */
 
 static VALUE
+fix_size(VALUE fix)
+{
+    return INT2FIX(sizeof(long));
+}
+
+static VALUE
 int_size(VALUE num)
 {
     if (FIXNUM_P(num)) {
@@ -4178,16 +4189,8 @@ int_size(VALUE num)
     return Qnil;
 }
 
-static VALUE
-rb_fix_bit_length(VALUE fix)
-{
-    long v = FIX2LONG(fix);
-    if (v < 0)
-        v = ~v;
-    return LONG2FIX(bit_length(v));
-}
-
 /*
+ *  Document-method: Integer#bit_length
  *  call-seq:
  *     int.bit_length -> integer
  *
@@ -4199,8 +4202,7 @@ rb_fix_bit_length(VALUE fix)
  *  If there is no such bit (zero or minus one), zero is returned.
  *
  *  I.e. This method returns ceil(log2(int < 0 ? -int : int+1)).
-
-
+ *
  *     (-2**10000-1).bit_length  #=> 10001
  *     (-2**10000).bit_length    #=> 10000
  *     (-2**10000+1).bit_length  #=> 10000
@@ -4239,6 +4241,15 @@ rb_fix_bit_length(VALUE fix)
  */
 
 static VALUE
+rb_fix_bit_length(VALUE fix)
+{
+    long v = FIX2LONG(fix);
+    if (v < 0)
+        v = ~v;
+    return LONG2FIX(bit_length(v));
+}
+
+static VALUE
 rb_int_bit_length(VALUE num)
 {
     if (FIXNUM_P(num)) {
@@ -4250,13 +4261,8 @@ rb_int_bit_length(VALUE num)
     return Qnil;
 }
 
-static VALUE
-int_upto_size(VALUE from, VALUE args, VALUE eobj)
-{
-    return ruby_num_interval_step_size(from, RARRAY_AREF(args, 0), INT2FIX(1), FALSE);
-}
-
 /*
+ *  Document-method: Integer#upto
  *  call-seq:
  *     int.upto(limit) {|i| block }  ->  self
  *     int.upto(limit)               ->  an_enumerator
@@ -4271,6 +4277,12 @@ int_upto_size(VALUE from, VALUE args, VALUE eobj)
  *     5.upto(10) { |i| print i, " " }
  *     #=> 5 6 7 8 9 10
  */
+
+static VALUE
+int_upto_size(VALUE from, VALUE args, VALUE eobj)
+{
+    return ruby_num_interval_step_size(from, RARRAY_AREF(args, 0), INT2FIX(1), FALSE);
+}
 
 static VALUE
 int_upto(VALUE from, VALUE to)
@@ -4296,13 +4308,8 @@ int_upto(VALUE from, VALUE to)
     return from;
 }
 
-static VALUE
-int_downto_size(VALUE from, VALUE args, VALUE eobj)
-{
-    return ruby_num_interval_step_size(from, RARRAY_AREF(args, 0), INT2FIX(-1), FALSE);
-}
-
 /*
+ *  Document-method: Integer#downto
  *  call-seq:
  *     int.downto(limit) {|i| block }  ->  self
  *     int.downto(limit)               ->  an_enumerator
@@ -4316,6 +4323,12 @@ int_downto_size(VALUE from, VALUE args, VALUE eobj)
  *     print "  Liftoff!\n"
  *     #=> "5.. 4.. 3.. 2.. 1..   Liftoff!"
  */
+
+static VALUE
+int_downto_size(VALUE from, VALUE args, VALUE eobj)
+{
+    return ruby_num_interval_step_size(from, RARRAY_AREF(args, 0), INT2FIX(-1), FALSE);
+}
 
 static VALUE
 int_downto(VALUE from, VALUE to)
@@ -4341,19 +4354,8 @@ int_downto(VALUE from, VALUE to)
     return from;
 }
 
-static VALUE
-int_dotimes_size(VALUE num, VALUE args, VALUE eobj)
-{
-    if (FIXNUM_P(num)) {
-	if (NUM2LONG(num) <= 0) return INT2FIX(0);
-    }
-    else {
-	if (RTEST(rb_funcall(num, '<', 1, INT2FIX(0)))) return INT2FIX(0);
-    }
-    return num;
-}
-
 /*
+ *  Document-method: Integer#times
  *  call-seq:
  *     int.times {|i| block }  ->  self
  *     int.times               ->  an_enumerator
@@ -4368,6 +4370,18 @@ int_dotimes_size(VALUE num, VALUE args, VALUE eobj)
  *     end
  *     #=> 0 1 2 3 4
  */
+
+static VALUE
+int_dotimes_size(VALUE num, VALUE args, VALUE eobj)
+{
+    if (FIXNUM_P(num)) {
+	if (NUM2LONG(num) <= 0) return INT2FIX(0);
+    }
+    else {
+	if (RTEST(rb_funcall(num, '<', 1, INT2FIX(0)))) return INT2FIX(0);
+    }
+    return num;
+}
 
 static VALUE
 int_dotimes(VALUE num)
