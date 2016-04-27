@@ -83,9 +83,7 @@ rb_class_clear_method_cache(VALUE klass, VALUE arg)
 void
 rb_clear_cache(void)
 {
-    rb_warning("rb_clear_cache() is deprecated.");
-    INC_GLOBAL_METHOD_STATE();
-    INC_GLOBAL_CONSTANT_STATE();
+    ONLY_FOR_INTERNAL_USE("rb_clear_cache()");
 }
 
 void

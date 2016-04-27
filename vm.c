@@ -459,8 +459,7 @@ rb_vm_rewind_cfp(rb_thread_t *th, rb_control_frame_t *cfp)
 void
 rb_frame_pop(void)
 {
-    rb_thread_t *th = GET_THREAD();
-    vm_pop_frame(th);
+    ONLY_FOR_INTERNAL_USE("rb_frame_pop()");
 }
 
 /* at exit */

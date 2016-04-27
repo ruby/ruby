@@ -865,6 +865,8 @@ VALUE rb_name_err_new(VALUE mesg, VALUE recv, VALUE method);
     rb_exc_raise(rb_name_err_new(mesg, recv, name))
 #define rb_name_err_raise(mesg, recv, name) \
     rb_name_err_raise_str(rb_fstring_cstr(mesg), (recv), (name))
+NORETURN(void ruby_only_for_internal_use(const char *));
+#define ONLY_FOR_INTERNAL_USE(func) ruby_only_for_internal_use(func)
 
 /* eval.c */
 VALUE rb_refinement_module_get_refined_class(VALUE module);

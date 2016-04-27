@@ -220,15 +220,13 @@ str_associated(VALUE str)
 void
 rb_str_associate(VALUE str, VALUE add)
 {
-    rb_warn("rb_str_associate() is only for internal use and deprecated; do not use");
-    str_associate(str, add);
+    ONLY_FOR_INTERNAL_USE("rb_str_associate()");
 }
 
 VALUE
 rb_str_associated(VALUE str)
 {
-    rb_warn("rb_str_associated() is only for internal use and deprecated; do not use");
-    return str_associated(str);
+    ONLY_FOR_INTERNAL_USE("rb_str_associated()");
 }
 
 /*
