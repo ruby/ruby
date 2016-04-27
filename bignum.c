@@ -6771,26 +6771,7 @@ rb_big_rshift(VALUE x, VALUE y)
     }
 }
 
-/*
- *  call-seq:
- *     big[n] -> 0, 1
- *
- *  Bit Reference---Returns the <em>n</em>th bit in the (assumed) binary
- *  representation of <i>big</i>, where <i>big</i>[0] is the least
- *  significant bit.
- *
- *     a = 9**15
- *     50.downto(0) do |n|
- *       print a[n]
- *     end
- *
- *  <em>produces:</em>
- *
- *     000101110110100000111000011110010100111100010111001
- *
- */
-
-static VALUE
+VALUE
 rb_big_aref(VALUE x, VALUE y)
 {
     BDIGIT *xds;
@@ -7006,7 +6987,6 @@ Init_Bignum(void)
     rb_define_method(rb_cBignum, "|", rb_big_or, 1);
     rb_define_method(rb_cBignum, "^", rb_big_xor, 1);
     rb_define_method(rb_cBignum, "~", rb_big_neg, 0);
-    rb_define_method(rb_cBignum, "[]", rb_big_aref, 1);
 
     rb_define_method(rb_cBignum, "==", rb_big_eq, 1);
     rb_define_method(rb_cBignum, ">", big_gt, 1);

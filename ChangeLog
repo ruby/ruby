@@ -1,3 +1,12 @@
+Wed Apr 27 20:53:59 2016  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (int_aref): {Fixnum,Bignum}#[] is unified into
+	  Integer.
+
+	* bignum.c (rb_big_aref): Don't define Bignum#<<.
+
+	* internal.h (rb_big_aref): Declared.
+
 Wed Apr 27 16:10:35 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* tool/instruction.rb: fix to follow current implementation.
@@ -31,16 +40,12 @@ Tue Apr 26 21:11:02 2016  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_big_lshift): Don't define Bignum#<<.
 
-	* internal.h (rb_big_lshift): Declared.
-
 Tue Apr 26 20:59:40 2016  Tanaka Akira  <akr@fsij.org>
 
 	* numeric.c (rb_int_rshift): {Fixnum,Bignum}#>> is unified into
 	  Integer.
 
 	* bignum.c (rb_big_rshift): Don't define Bignum#>>.
-
-	* internal.h (rb_big_rshift): Declared.
 
 Tue Apr 26 20:46:16 2016  Tanaka Akira  <akr@fsij.org>
 

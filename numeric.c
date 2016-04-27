@@ -4025,20 +4025,6 @@ rb_int_rshift(VALUE x, VALUE y)
     return Qnil;
 }
 
-/*
- *  call-seq:
- *     fix[n]  ->  0, 1
- *
- *  Bit Reference---Returns the +n+th bit in the binary representation of
- *  +fix+, where <code>fix[0]</code> is the least significant bit.
- *
- *  For example:
- *
- *     a = 0b11001100101010
- *     30.downto(0) do |n| print a[n] end
- *     #=> 0000000000000000011001100101010
- */
-
 static VALUE
 fix_aref(VALUE fix, VALUE idx)
 {
@@ -4064,6 +4050,38 @@ fix_aref(VALUE fix, VALUE idx)
     if (val & (1L<<i))
 	return INT2FIX(1);
     return INT2FIX(0);
+}
+
+/*
+ *  call-seq:
+ *     fix[n]  ->  0, 1
+ *
+ *  Bit Reference---Returns the +n+th bit in the binary representation of
+ *  +fix+, where <code>fix[0]</code> is the least significant bit.
+ *
+ *  For example:
+ *
+ *     a = 0b11001100101010
+ *     30.downto(0) do |n| print a[n] end
+ *     #=> 0000000000000000011001100101010
+ *
+ *     a = 9**15
+ *     50.downto(0) do |n|
+ *       print a[n]
+ *     end
+ *     #=> 000101110110100000111000011110010100111100010111001
+ */
+
+static VALUE
+int_aref(VALUE num, VALUE idx)
+{
+    if (FIXNUM_P(num)) {
+	return fix_aref(num, idx);
+    }
+    else if (RB_TYPE_P(num, T_BIGNUM)) {
+	return rb_big_aref(num, idx);
+    }
+    return Qnil;
 }
 
 /*
@@ -4703,7 +4721,7 @@ Init_Numeric(void)
     rb_define_method(rb_cFixnum, "&", fix_and, 1);
     rb_define_method(rb_cFixnum, "|", fix_or,  1);
     rb_define_method(rb_cFixnum, "^", fix_xor, 1);
-    rb_define_method(rb_cFixnum, "[]", fix_aref, 1);
+    rb_define_method(rb_cInteger, "[]", int_aref, 1);
 
     rb_define_method(rb_cInteger, "<<", rb_int_lshift, 1);
     rb_define_method(rb_cInteger, ">>", rb_int_rshift, 1);

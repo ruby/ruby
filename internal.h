@@ -781,6 +781,7 @@ size_t rb_big_size(VALUE);
 VALUE rb_integer_float_cmp(VALUE x, VALUE y);
 VALUE rb_integer_float_eq(VALUE x, VALUE y);
 VALUE rb_cstr_parse_inum(const char *str, ssize_t len, char **endp, int base);
+VALUE rb_big_aref(VALUE x, VALUE y);
 VALUE rb_big_abs(VALUE x);
 VALUE rb_big_size_m(VALUE big);
 VALUE rb_big_bit_length(VALUE big);
