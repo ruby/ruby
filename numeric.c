@@ -3122,6 +3122,7 @@ int_ord(VALUE num)
 
 
 /*
+ * Document-method: Fixnum#-@
  * call-seq:
  *   -fix  ->  integer
  *
@@ -3221,6 +3222,7 @@ rb_int2str(VALUE x, int base)
 }
 
 /*
+ * Document-method: Fixnum#+
  * call-seq:
  *   fix + numeric  ->  numeric_result
  *
@@ -3276,6 +3278,7 @@ rb_int_plus(VALUE x, VALUE y)
 }
 
 /*
+ * Document-method: Fixnum#-
  * call-seq:
  *   fix - numeric  ->  numeric_result
  *
@@ -3327,6 +3330,7 @@ rb_int_minus(VALUE x, VALUE y)
 #define FIT_SQRT_LONG(n) (((n)<SQRT_LONG_MAX)&&((n)>=-SQRT_LONG_MAX))
 
 /*
+ * Document-method: Fixnum#*
  * call-seq:
  *   fix * numeric  ->  numeric_result
  *
@@ -3369,6 +3373,7 @@ rb_int_mul(VALUE x, VALUE y)
 }
 
 /*
+ *  Document-method: Fixnum#fdiv
  *  call-seq:
  *     fix.fdiv(numeric)  ->  float
  *
@@ -3431,6 +3436,7 @@ fix_divide(VALUE x, VALUE y, ID op)
 }
 
 /*
+ * Document-method: Fixnum#/
  * call-seq:
  *   fix / numeric  ->  numeric_result
  *
@@ -3445,6 +3451,7 @@ fix_div(VALUE x, VALUE y)
 }
 
 /*
+ * Document-method: Fixnum#div
  * call-seq:
  *   fix.div(numeric)  ->  integer
  *
@@ -3471,6 +3478,8 @@ rb_int_idiv(VALUE x, VALUE y)
 }
 
 /*
+ *  Document-method: Fixnum#%
+ *  Document-method: Fixnum#modulo
  *  call-seq:
  *    fix % other        ->  real
  *    fix.modulo(other)  ->  real
@@ -3512,6 +3521,7 @@ rb_int_modulo(VALUE x, VALUE y)
 }
 
 /*
+ *  Document-method: Fixnum#divmod
  *  call-seq:
  *     fix.divmod(numeric)  ->  array
  *
@@ -3657,6 +3667,7 @@ fix_pow(VALUE x, VALUE y)
 }
 
 /*
+ * Document-method: Fixnum#==
  * call-seq:
  *   fix == other  ->  true or false
  *
@@ -3735,6 +3746,7 @@ int_cmp(VALUE x, VALUE y)
 }
 
 /*
+ * Document-method: Fixnum#>
  * call-seq:
  *   fix > real  ->  true or false
  *
@@ -3760,6 +3772,7 @@ fix_gt(VALUE x, VALUE y)
 }
 
 /*
+ * Document-method: Fixnum#>=
  * call-seq:
  *   fix >= real  ->  true or false
  *
@@ -3787,6 +3800,7 @@ fix_ge(VALUE x, VALUE y)
 }
 
 /*
+ * Document-method: Fixnum#<
  * call-seq:
  *   fix < real  ->  true or false
  *
@@ -3812,6 +3826,7 @@ fix_lt(VALUE x, VALUE y)
 }
 
 /*
+ * Document-method: Fixnum#<=
  * call-seq:
  *   fix <= real  ->  true or false
  *
@@ -3839,6 +3854,7 @@ fix_le(VALUE x, VALUE y)
 }
 
 /*
+ * Document-method: Fixnum#~
  * call-seq:
  *   ~fix  ->  integer
  *
@@ -3873,6 +3889,7 @@ rb_num_coerce_bit(VALUE x, VALUE y, ID func)
 }
 
 /*
+ * Document-method: Fixnum#&
  * call-seq:
  *   fix & integer  ->  integer_result
  *
@@ -3896,6 +3913,7 @@ fix_and(VALUE x, VALUE y)
 }
 
 /*
+ * Document-method: Fixnum#|
  * call-seq:
  *   fix | integer  ->  integer_result
  *
@@ -3919,6 +3937,7 @@ fix_or(VALUE x, VALUE y)
 }
 
 /*
+ * Document-method: Fixnum#^
  * call-seq:
  *   fix ^ integer  ->  integer_result
  *
@@ -4093,6 +4112,7 @@ int_aref(VALUE num, VALUE idx)
 }
 
 /*
+ *  Document-method: Integer#to_f
  *  call-seq:
  *     int.to_f  ->  float
  *
@@ -4409,6 +4429,7 @@ int_dotimes(VALUE num)
 }
 
 /*
+ *  Document-method: Integer#round
  *  call-seq:
  *     int.round([ndigits])  ->  integer or float
  *
@@ -4439,6 +4460,7 @@ int_round(int argc, VALUE* argv, VALUE num)
 }
 
 /*
+ *  Document-method: Integer#floor
  *  call-seq:
  *     int.floor([ndigits])  ->  integer or float
  *
@@ -4470,6 +4492,7 @@ int_floor(int argc, VALUE* argv, VALUE num)
 }
 
 /*
+ *  Document-method: Integer#ceil
  *  call-seq:
  *     int.ceil([ndigits])  ->  integer or float
  *
@@ -4501,6 +4524,7 @@ int_ceil(int argc, VALUE* argv, VALUE num)
 }
 
 /*
+ *  Document-method: Integer#truncate
  *  call-seq:
  *     int.truncate([ndigits])  ->  integer or float
  *
