@@ -2503,7 +2503,7 @@ main(int argc, char **argv)
 AS_IF([test "x$rb_cv_atan2_inf_c99" = xyes], [AC_DEFINE(ATAN2_INF_C99)])
 
 AS_IF([test "x$ac_cv_func_lgamma_r" = xyes], [
-    AC_CACHE_CHECK(whether lgamma_r handles -0.0, rb_cv_lgamma_r_m0, [
+    AC_CACHE_CHECK(whether lgamma_r handles +0.0 and -0.0, rb_cv_lgamma_r_pm0, [
 	AC_TRY_RUN([
 @%:@include <math.h>
 @%:@ifdef HAVE_UNISTD_H
@@ -2519,22 +2519,28 @@ AS_IF([test "x$ac_cv_func_lgamma_r" = xyes], [
 int
 main(int argc, char **argv)
 {
-    int sign;
+    int sign = 0;
     double x = lgamma_r(-0.0, &sign);
 
     /* should be [+inf, -1] */
     if (x <= 0) return EXIT_FAILURE;
     if (!isinf(x)) return EXIT_FAILURE;
     if (sign != -1) return EXIT_FAILURE;
+
+    /* should be [+inf, 1] */
+    x = lgamma_r(+0.0, &sign);
+    if (x <= 0) return EXIT_FAILURE;
+    if (!isinf(x)) return EXIT_FAILURE;
+    if (sign != 1) return EXIT_FAILURE;
     return EXIT_SUCCESS;
 }
 ],
-	[rb_cv_lgamma_r_m0=yes],
-	[rb_cv_lgamma_r_m0=no],
-	[rb_cv_lgamma_r_m0=yes]
+	[rb_cv_lgamma_r_pm0=yes],
+	[rb_cv_lgamma_r_pm0=no],
+	[rb_cv_lgamma_r_pm0=yes]
 	)
     ])
-    AS_IF([test "x$rb_cv_lgamma_r_m0" = xno], [AC_DEFINE(LGAMMA_R_M0_FIX)])
+    AS_IF([test "x$rb_cv_lgamma_r_pm0" = xno], [AC_DEFINE(LGAMMA_R_PM0_FIX)])
 ])
 
 # Some platform need -lrt for clock_gettime, but the other don't.

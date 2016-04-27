@@ -1,3 +1,11 @@
+Thu Apr 28 04:49:07 2016  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* configure.in (rb_cv_lgamma_r_pm0): check if lgamma_r(+0.0)
+	  returns positive infinity, in addition to lgamma_r(-0.0).
+	  AIX returns an incorrect result of negative infinity.
+
+	* math.c (ruby_lgamma_r): handle +0.0, in addition to -0.0.
+
 Thu Apr 28 01:11:14 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* time.c: define _DEFAULT_SOURCE because glibc 2.20 depracates
