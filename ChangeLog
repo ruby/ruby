@@ -1,3 +1,9 @@
+Thu Apr 28 01:11:14 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* time.c: define _DEFAULT_SOURCE because glibc 2.20 depracates
+	  _BSD_SOURCE.
+	  https://sourceware.org/glibc/wiki/Release/2.20
+
 Thu Apr 28 00:27:55 2016  Tanaka Akira  <akr@fsij.org>
 
 	* numeric.c (int_xor): {Fixnum,Bignum}#^ is unified into

@@ -2649,10 +2649,9 @@ fi
 AC_STRUCT_TIMEZONE
 AC_CACHE_CHECK(for struct tm.tm_gmtoff, rb_cv_member_struct_tm_tm_gmtoff,
   [AC_TRY_COMPILE([
-   @%:@include <time.h>
-@%:@ifndef _BSD_SOURCE
-@%:@define _BSD_SOURCE 1
-@%:@endif
+@%:@define _BSD_SOURCE
+@%:@define _DEFAULT_SOURCE
+@%:@include <time.h>
    ],
     [struct tm t; t.tm_gmtoff = 3600;],
   [rb_cv_member_struct_tm_tm_gmtoff=yes],

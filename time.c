@@ -9,6 +9,7 @@
 
 **********************************************************************/
 
+#define _DEFAULT_SOURCE
 #define _BSD_SOURCE
 #include "internal.h"
 #include <sys/types.h>
