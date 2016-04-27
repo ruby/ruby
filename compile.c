@@ -929,6 +929,8 @@ new_label_body(rb_iseq_t *iseq, long line)
     labelobj->label_no = iseq->compile_data->label_no++;
     labelobj->sc_state = 0;
     labelobj->sp = -1;
+    labelobj->set = 0;
+    labelobj->rescued = LABEL_RESCUE_NONE;
     return labelobj;
 }
 
