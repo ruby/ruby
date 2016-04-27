@@ -6656,12 +6656,6 @@ bigxor_int(VALUE x, long xn, BDIGIT hibitsx, long y)
     RB_GC_GUARD(x);
     return bignorm(z);
 }
-/*
- * call-seq:
- *     big ^ numeric   ->  integer
- *
- * Performs bitwise +exclusive or+ between _big_ and _numeric_.
- */
 
 VALUE
 rb_big_xor(VALUE x, VALUE y)
@@ -6985,7 +6979,6 @@ Init_Bignum(void)
     rb_define_method(rb_cBignum, "**", rb_big_pow, 1);
     rb_define_method(rb_cBignum, "&", rb_big_and, 1);
     rb_define_method(rb_cBignum, "|", rb_big_or, 1);
-    rb_define_method(rb_cBignum, "^", rb_big_xor, 1);
     rb_define_method(rb_cBignum, "~", rb_big_neg, 0);
 
     rb_define_method(rb_cBignum, "==", rb_big_eq, 1);

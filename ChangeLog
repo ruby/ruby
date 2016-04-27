@@ -1,3 +1,10 @@
+Thu Apr 28 00:27:55 2016  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (int_xor): {Fixnum,Bignum}#^ is unified into
+	  Integer.
+
+	* bignum.c (rb_big_xor): Don't define Bignum#^.
+
 Wed Apr 27 20:53:59 2016  Tanaka Akira  <akr@fsij.org>
 
 	* numeric.c (int_aref): {Fixnum,Bignum}#[] is unified into
