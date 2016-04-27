@@ -241,6 +241,19 @@ strio_s_open(int argc, VALUE *argv, VALUE klass)
     return rb_ensure(rb_yield, obj, strio_finalize, obj);
 }
 
+/* :nodoc: */
+static VALUE
+strio_s_new(int argc, VALUE *argv, VALUE klass)
+{
+    if (rb_block_given_p()) {
+	VALUE cname = rb_obj_as_string(klass);
+
+	rb_warn("%"PRIsVALUE"::new() does not take block; use %"PRIsVALUE"::open() instead",
+		cname, cname);
+    }
+    return rb_class_new_instance(argc, argv, klass);
+}
+
 /*
  * Returns +false+.  Just for compatibility to IO.
  */
@@ -1523,6 +1536,7 @@ Init_stringio(void)
 
     rb_include_module(StringIO, rb_mEnumerable);
     rb_define_alloc_func(StringIO, strio_s_allocate);
+    rb_define_singleton_method(StringIO, "new", strio_s_new, -1);
     rb_define_singleton_method(StringIO, "open", strio_s_open, -1);
     rb_define_method(StringIO, "initialize", strio_initialize, -1);
     rb_define_method(StringIO, "initialize_copy", strio_copy, 1);

@@ -1,3 +1,8 @@
+Wed Apr 27 15:47:54 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_s_new): warn if a block is given,
+	  as well as IO.new.
+
 Wed Apr 27 14:29:47 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (ruby_only_for_internal_use): raise fatal error when

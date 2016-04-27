@@ -674,4 +674,10 @@ class TestStringIO < Test::Unit::TestCase
     bug_11945 = '[ruby-core:72699] [Bug #11945]'
     assert_equal Encoding::ASCII_8BIT, s.external_encoding, bug_11945
   end
+
+  def test_new_block_warning
+    assert_warn(/does not take block/) do
+      StringIO.new {}
+    end
+  end
 end
