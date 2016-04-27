@@ -8,12 +8,10 @@ __END__
 putobject putobject
 putobject putstring
 putobject setlocal
-putobject setdynamic
 
 putstring putstring
 putstring putobject
 putstring setlocal
-putstring setdynamic
 
 # putnil end
 
