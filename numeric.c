@@ -4035,10 +4035,10 @@ rb_int_rshift(VALUE x, VALUE y)
 /*
  *  Document-method: Integer#[]
  *  call-seq:
- *     fix[n]  ->  0, 1
+ *     int[n]  ->  0, 1
  *
  *  Bit Reference---Returns the +n+th bit in the binary representation of
- *  +fix+, where <code>fix[0]</code> is the least significant bit.
+ *  +int+, where <code>int[0]</code> is the least significant bit.
  *
  *  For example:
  *
