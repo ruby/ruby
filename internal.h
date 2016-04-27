@@ -292,7 +292,8 @@ rb_fix_mul_fix(VALUE x, VALUE y)
  * Note that div may overflow fixnum.
  */
 static inline void
-rb_fix_divmod_fix(VALUE a, VALUE b, VALUE *divp, VALUE *modp) {
+rb_fix_divmod_fix(VALUE a, VALUE b, VALUE *divp, VALUE *modp)
+{
     /* assume / and % comply C99.
      * ldiv(3) won't be inlined by GCC and clang.
      * I expect / and % are compiled as single idiv.
@@ -319,7 +320,8 @@ rb_fix_divmod_fix(VALUE a, VALUE b, VALUE *divp, VALUE *modp) {
  * This behaves different from C99 for negative arguments.
  */
 static inline VALUE
-rb_fix_div_fix(VALUE x, VALUE y) {
+rb_fix_div_fix(VALUE x, VALUE y)
+{
     VALUE div;
     rb_fix_divmod_fix(x, y, &div, NULL);
     return div;
@@ -329,7 +331,8 @@ rb_fix_div_fix(VALUE x, VALUE y) {
  * This behaves different from C99 for negative arguments.
  */
 static inline VALUE
-rb_fix_mod_fix(VALUE x, VALUE y) {
+rb_fix_mod_fix(VALUE x, VALUE y)
+{
     VALUE mod;
     rb_fix_divmod_fix(x, y, NULL, &mod);
     return mod;
