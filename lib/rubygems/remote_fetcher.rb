@@ -27,7 +27,13 @@ class Gem::RemoteFetcher
 
     def initialize(message, uri)
       super message
-      @uri = uri
+      begin
+        uri = URI(uri)
+        uri.password = 'REDACTED' if uri.password
+        @uri = uri.to_s
+      rescue URI::InvalidURIError, ArgumentError
+        @uri = uri
+      end
     end
 
     def to_s # :nodoc:

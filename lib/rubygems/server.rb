@@ -34,7 +34,7 @@ class Gem::Server
   include ERB::Util
   include Gem::UserInteraction
 
-  SEARCH = <<-SEARCH
+  SEARCH = <<-ERB
       <form class="headerSearch" name="headerSearchForm" method="get" action="/rdoc">
         <div id="search" style="float:right">
           <label for="q">Filter/Search</label>
@@ -42,9 +42,9 @@ class Gem::Server
           <button type="submit" style="display:none"></button>
         </div>
       </form>
-  SEARCH
+  ERB
 
-  DOC_TEMPLATE = <<-'DOC_TEMPLATE'
+  DOC_TEMPLATE = <<-'ERB'
   <?xml version="1.0" encoding="iso-8859-1"?>
   <!DOCTYPE html
        PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
@@ -68,35 +68,33 @@ class Gem::Server
         <h1>Summary</h1>
   <p>There are <%=values["gem_count"]%> gems installed:</p>
   <p>
-  <%= values["specs"].map { |v| "<a href=\"##{v["name"]}\">#{v["name"]}</a>" }.join ', ' %>.
+  <%= values["specs"].map { |v| "<a href\"##{u v["name"]}\">#{h v["name"]}</a>" }.join ', ' %>.
   <h1>Gems</h1>
 
   <dl>
   <% values["specs"].each do |spec| %>
     <dt>
     <% if spec["first_name_entry"] then %>
-      <a name="<%=spec["name"]%>"></a>
+      <a name="<%=h spec["name"]%>"></a>
     <% end %>
 
-    <b><%=spec["name"]%> <%=spec["version"]%></b>
+    <b><%=h spec["name"]%> <%=h spec["version"]%></b>
 
-    <% if spec["ri_installed"] then %>
-      <a href="<%=spec["doc_path"]%>">[rdoc]</a>
-    <% elsif spec["rdoc_installed"] then %>
-      <a href="<%=spec["doc_path"]%>">[rdoc]</a>
+    <% if spec["ri_installed"] || spec["rdoc_installed"] then %>
+      <a href="<%=u spec["doc_path"]%>">[rdoc]</a>
     <% else %>
       <span title="rdoc not installed">[rdoc]</span>
     <% end %>
 
     <% if spec["homepage"] then %>
-      <a href="<%=spec["homepage"]%>" title="<%=spec["homepage"]%>">[www]</a>
+      <a href="<%=u spec["homepage"]%>" title="<%=h spec["homepage"]%>">[www]</a>
     <% else %>
       <span title="no homepage available">[www]</span>
     <% end %>
 
     <% if spec["has_deps"] then %>
      - depends on
-      <%= spec["dependencies"].map { |v| "<a href=\"##{v["name"]}\">#{v["name"]}</a>" }.join ', ' %>.
+      <%= spec["dependencies"].map { |v| "<a href=\"##{u v["name"]}>#{h v["name"]}</a>" }.join ', ' %>.
     <% end %>
     </dt>
     <dd>
@@ -110,7 +108,7 @@ class Gem::Server
           Executables are
       <%end%>
 
-      <%= spec["executables"].map { |v| "<span class=\"context-item-name\">#{v["executable"]}</span>"}.join ', ' %>.
+      <%= spec["executables"].map { |v| "<span class=\"context-item-name\">#{h v["executable"]}</span>"}.join ', ' %>.
 
     <%end%>
     <br/>
@@ -127,10 +125,10 @@ class Gem::Server
   </div>
   </body>
   </html>
-  DOC_TEMPLATE
+  ERB
 
   # CSS is copy & paste from rdoc-style.css, RDoc V1.0.1 - 20041108
-  RDOC_CSS = <<-RDOC_CSS
+  RDOC_CSS = <<-CSS
 body {
     font-family: Verdana,Arial,Helvetica,sans-serif;
     font-size:   90%;
@@ -338,9 +336,9 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
 .ruby-comment { color: #b22222; font-weight: bold; background: transparent; }
 .ruby-regexp  { color: #ffa07a; background: transparent; }
 .ruby-value   { color: #7fffd4; background: transparent; }
-  RDOC_CSS
+  CSS
 
-  RDOC_NO_DOCUMENTATION = <<-'NO_DOC'
+  RDOC_NO_DOCUMENTATION = <<-'ERB'
 <?xml version="1.0" encoding="iso-8859-1"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
           "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -372,9 +370,9 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
     </div>
   </body>
 </html>
-  NO_DOC
+  ERB
 
-  RDOC_SEARCH_TEMPLATE = <<-'RDOC_SEARCH'
+  RDOC_SEARCH_TEMPLATE = <<-'ERB'
 <?xml version="1.0" encoding="iso-8859-1"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
           "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -401,10 +399,10 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
           <% doc_items.each do |doc_item| %>
             <dt>
               <b><%=doc_item[:name]%></b>
-              <a href="<%=doc_item[:url]%>">[rdoc]</a>
+              <a href="<%=u doc_item[:url]%>">[rdoc]</a>
             </dt>
             <dd>
-              <%=doc_item[:summary]%>
+              <%=h doc_item[:summary]%>
               <br/>
               <br/>
             </dd>
@@ -423,7 +421,7 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
     </div>
   </body>
 </html>
-  RDOC_SEARCH
+  ERB
 
   def self.run(options)
     new(options[:gemdir], options[:port], options[:daemon],
@@ -459,9 +457,9 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
 
   def doc_root gem_name
     if have_rdoc_4_plus? then
-      "/doc_root/#{gem_name}/"
+      "/doc_root/#{u gem_name}/"
     else
-      "/doc_root/#{gem_name}/rdoc/index.html"
+      "/doc_root/#{u gem_name}/rdoc/index.html"
     end
   end
 

@@ -16,5 +16,13 @@ class TestGemSourceFetchProblem < Gem::TestCase
     assert_equal 'test', e.message
   end
 
+  def test_password_redacted
+    source = Gem::Source.new 'https://username:secret@gemsource.com'
+    error  = RuntimeError.new 'test'
+
+    sf = Gem::SourceFetchProblem.new source, error
+
+    refute_match sf.wordy, 'secret'
+  end
 end
 

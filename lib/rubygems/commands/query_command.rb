@@ -259,7 +259,7 @@ is too hard to use.
             if options[:domain] == :remote || specs.all? { |spec| spec.is_a? Gem::Source }
               version
             else
-              spec = specs.select { |spec| spec.version == version }
+              spec = specs.select { |s| s.version == version }
               if spec.first.default_gem?
                 "default: #{version}"
               else

@@ -1,3 +1,9 @@
+Thu Apr 28 09:33:03 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/rubygems.rb, lib/rubygems/*, test/rubygems/*: Update rubygems-2.6.4.
+	  Please see entries of 2.6.4 on
+	  https://github.com/rubygems/rubygems/blob/master/History.txt
+
 Thu Apr 28 04:49:07 2016  Rei Odaira  <Rei.Odaira@gmail.com>
 
 	* configure.in (rb_cv_lgamma_r_pm0): check if lgamma_r(+0.0)

@@ -2,6 +2,20 @@
 require 'rubygems/installer_test_case'
 
 class TestGemInstaller < Gem::InstallerTestCase
+  @@symlink_supported = nil
+
+  def symlink_supported?
+    if @@symlink_supported.nil?
+      begin
+        File.symlink("", "")
+      rescue Errno::ENOENT, Errno::EEXIST
+        @@symlink_supported = true
+      rescue NotImplementedError, SystemCallError
+        @@symlink_supported = false
+      end
+    end
+    @@symlink_supported
+  end
 
   def setup
     super
@@ -552,7 +566,7 @@ gem 'other', version
   end
 
   def test_generate_bin_symlink_update_older
-    return if win_platform? #Windows FS do not support symlinks
+    return if !symlink_supported?
 
     @installer.wrappers = false
     util_make_exec
@@ -588,7 +602,7 @@ gem 'other', version
   end
 
   def test_generate_bin_symlink_update_remove_wrapper
-    return if win_platform? #Windows FS do not support symlinks
+    return if !symlink_supported?
 
     @installer.wrappers = true
     util_make_exec
@@ -639,7 +653,12 @@ gem 'other', version
     installed_exec = File.join(util_inst_bindir, 'executable')
     assert_path_exists installed_exec
 
-    assert_match(/Unable to use symlinks on Windows, installing wrapper/i,
+    if symlink_supported?
+      assert_send([File, :symlink?, installed_exec])
+      return
+    end
+
+    assert_match(/Unable to use symlinks, installing wrapper/i,
                  @ui.error)
 
     wrapper = File.read installed_exec
@@ -651,7 +670,7 @@ gem 'other', version
   end
 
   def test_generate_bin_uses_default_shebang
-    return if win_platform? #Windows FS do not support symlinks
+    return if !symlink_supported?
 
     @installer.wrappers = true
     util_make_exec

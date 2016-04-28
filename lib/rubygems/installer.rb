@@ -509,12 +509,6 @@ class Gem::Installer
   # the symlink if the gem being installed has a newer version.
 
   def generate_bin_symlink(filename, bindir)
-    if Gem.win_platform? then
-      alert_warning "Unable to use symlinks on Windows, installing wrapper"
-      generate_bin_script filename, bindir
-      return
-    end
-
     src = File.join gem_dir, spec.bindir, filename
     dst = File.join bindir, formatted_program_filename(filename)
 
@@ -528,6 +522,9 @@ class Gem::Installer
     end
 
     FileUtils.symlink src, dst, :verbose => Gem.configuration.really_verbose
+  rescue NotImplementedError, SystemCallError
+    alert_warning "Unable to use symlinks, installing wrapper"
+    generate_bin_script filename, bindir
   end
 
   ##

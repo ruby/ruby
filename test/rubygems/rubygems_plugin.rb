@@ -6,6 +6,10 @@ require 'rubygems/command_manager'
 #
 # DO NOT include code like this in your rubygems_plugin.rb
 
+module Gem::Commands
+  remove_const(:InterruptCommand) if defined?(InterruptCommand)
+end
+
 class Gem::Commands::InterruptCommand < Gem::Command
 
   def initialize
