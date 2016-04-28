@@ -1384,7 +1384,7 @@ rb_reg_prepare_enc(VALUE re, VALUE str, int warn)
 
     rb_reg_check(re);
     enc = rb_enc_get(str);
-    if (!rb_enc_str_asciicompat_p(str)) {
+    if (!rb_enc_asciicompat(enc)) {
         if (RREGEXP_PTR(re)->enc != enc) {
 	    reg_enc_error(re, str);
 	}
@@ -3408,7 +3408,7 @@ rb_reg_s_union(VALUE self, VALUE args0)
                 rb_encoding *enc;
                 StringValue(e);
                 enc = rb_enc_get(e);
-                if (!rb_enc_str_asciicompat_p(e)) {
+                if (!rb_enc_asciicompat(enc)) {
                     if (!has_ascii_incompat)
                         has_ascii_incompat = enc;
                     else if (has_ascii_incompat != enc)

@@ -1,3 +1,8 @@
+Thu Apr 28 16:52:05 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* re.c (rb_reg_prepare_enc): use rb_enc_asciicompat(enc) instead of
+	  rb_enc_str_asciicompat_p(str) to avoid useless rb_enc_get(str) call.
+
 Thu Apr 28 16:33:41 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb: [DOC] fix example code.  base on the code by
