@@ -2291,12 +2291,11 @@ rb_hash_update_block_callback(st_data_t *key, st_data_t *value, struct update_ar
     if (existing) {
 	newvalue = rb_yield_values(3, (VALUE)*key, (VALUE)*value, newvalue);
 	arg->old_value = *value;
-	arg->new_value = newvalue;
     }
     else {
 	arg->new_key = *key;
-	arg->new_value = newvalue;
     }
+    arg->new_value = newvalue;
     *value = newvalue;
     return ST_CONTINUE;
 }
@@ -2362,12 +2361,11 @@ rb_hash_update_func_callback(st_data_t *key, st_data_t *value, struct update_arg
     if (existing) {
 	newvalue = (*uf_arg->func)((VALUE)*key, (VALUE)*value, newvalue);
 	arg->old_value = *value;
-	arg->new_value = newvalue;
     }
     else {
 	arg->new_key = *key;
-	arg->new_value = newvalue;
     }
+    arg->new_value = newvalue;
     *value = newvalue;
     return ST_CONTINUE;
 }
