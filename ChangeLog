@@ -1,3 +1,8 @@
+Thu Apr 28 16:33:41 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb: [DOC] fix example code.  base on the code by
+	  Semyon Gaivoronskiy in [ruby-core:75224].  [Bug #12323]
+
 Thu Apr 28 09:33:03 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/rubygems.rb, lib/rubygems/*, test/rubygems/*: Update rubygems-2.6.4.
