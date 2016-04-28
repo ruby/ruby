@@ -214,7 +214,7 @@ code_page(rb_encoding *enc)
   We try to avoid to call FindFirstFileW() since it takes long time.
 */
 static inline size_t
-replace_to_long_name(wchar_t **wfullpath, size_t size, int heap)
+replace_to_long_name(wchar_t **wfullpath, size_t size, size_t buffer_size)
 {
     WIN32_FIND_DATAW find_data;
     HANDLE find_handle;
@@ -259,13 +259,14 @@ replace_to_long_name(wchar_t **wfullpath, size_t size, int heap)
     if (find_handle != INVALID_HANDLE_VALUE) {
 	size_t trail_pos = pos - *wfullpath + IS_DIR_SEPARATOR_P(*pos);
 	size_t file_len = wcslen(find_data.cFileName);
+	size_t oldsize = size;
 
 	FindClose(find_handle);
 	size = trail_pos + file_len;
-	if ((size + 1) > sizeof(*wfullpath) / sizeof((*wfullpath)[0])) {
+	if (size > (buffer_size ? buffer_size-1 : oldsize)) {
 	    wchar_t *buf = (wchar_t *)xmalloc((size + 1) * sizeof(wchar_t));
 	    wcsncpy(buf, *wfullpath, trail_pos);
-	    if (heap)
+	    if (!buffer_size)
 		xfree(*wfullpath);
 	    *wfullpath = buf;
 	}
@@ -616,8 +617,10 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     size = remove_invalid_alternative_data(wfullpath, size);
 
     /* Replace the trailing path to long name */
-    if (long_name)
-	size = replace_to_long_name(&wfullpath, size, (wfullpath != wfullpath_buffer));
+    if (long_name) {
+	size_t bufsize = wfullpath == wfullpath_buffer ? PATH_BUFFER_SIZE : 0;
+	size = replace_to_long_name(&wfullpath, size, bufsize);
+    }
 
     /* sanitize backslashes with forwardslashes */
     replace_wchar(wfullpath, L'\\', L'/');
