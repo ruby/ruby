@@ -257,24 +257,19 @@ replace_to_long_name(wchar_t **wfullpath, size_t size, int heap)
 
     find_handle = FindFirstFileW(*wfullpath, &find_data);
     if (find_handle != INVALID_HANDLE_VALUE) {
-	size_t trail_pos = wcslen(*wfullpath);
+	size_t trail_pos = pos - *wfullpath + IS_DIR_SEPARATOR_P(*pos);
 	size_t file_len = wcslen(find_data.cFileName);
 
 	FindClose(find_handle);
-	while (trail_pos > 0) {
-	    if (IS_DIR_SEPARATOR_P((*wfullpath)[trail_pos]))
-		break;
-	    trail_pos--;
-	}
-	size = trail_pos + 1 + file_len;
+	size = trail_pos + file_len;
 	if ((size + 1) > sizeof(*wfullpath) / sizeof((*wfullpath)[0])) {
 	    wchar_t *buf = (wchar_t *)xmalloc((size + 1) * sizeof(wchar_t));
-	    wcsncpy(buf, *wfullpath, trail_pos + 1);
+	    wcsncpy(buf, *wfullpath, trail_pos);
 	    if (heap)
 		xfree(*wfullpath);
 	    *wfullpath = buf;
 	}
-	wcsncpy(*wfullpath + trail_pos + 1, find_data.cFileName, file_len + 1);
+	wcsncpy(*wfullpath + trail_pos, find_data.cFileName, file_len + 1);
     }
     return size;
 }
