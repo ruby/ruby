@@ -169,13 +169,6 @@ class TestTimeTZ < Test::Unit::TestCase
     }
   end if has_lisbon_tz
 
-  def test_europe_moscow
-    with_tz(tz="Europe/Moscow") {
-      assert_time_constructor(tz, "1992-03-29 00:00:00 +0400", :local, [1992,3,28,23,0,0])
-      assert_time_constructor(tz, "1992-03-29 00:59:59 +0400", :local, [1992,3,28,23,59,59])
-    }
-  end
-
   def test_pacific_kiritimati
     with_tz(tz="Pacific/Kiritimati") {
       assert_time_constructor(tz, "1994-12-31 23:59:59 -1000", :local, [1994,12,31,23,59,59])
@@ -355,12 +348,6 @@ Europe/London  Sun Aug 10 00:59:59 1947 UTC = Sun Aug 10 02:59:59 1947 BDST isds
 Europe/London  Sun Aug 10 01:00:00 1947 UTC = Sun Aug 10 02:00:00 1947 BST isdst=1 gmtoff=3600
 Europe/London  Sun Nov  2 01:59:59 1947 UTC = Sun Nov  2 02:59:59 1947 BST isdst=1 gmtoff=3600
 Europe/London  Sun Nov  2 02:00:00 1947 UTC = Sun Nov  2 02:00:00 1947 GMT isdst=0 gmtoff=0
-Europe/Moscow  Sat Jan 18 23:59:59 1992 UTC = Sun Jan 19 01:59:59 1992 MSK isdst=0 gmtoff=7200
-Europe/Moscow  Sun Jan 19 00:00:00 1992 UTC = Sun Jan 19 03:00:00 1992 MSK isdst=0 gmtoff=10800
-Europe/Moscow  Sat Mar 28 19:59:59 1992 UTC = Sat Mar 28 22:59:59 1992 MSK isdst=0 gmtoff=10800
-Europe/Moscow  Sat Mar 28 20:00:00 1992 UTC = Sun Mar 29 00:00:00 1992 MSD isdst=1 gmtoff=14400
-Europe/Moscow  Sat Sep 26 18:59:59 1992 UTC = Sat Sep 26 22:59:59 1992 MSD isdst=1 gmtoff=14400
-Europe/Moscow  Sat Sep 26 19:00:00 1992 UTC = Sat Sep 26 22:00:00 1992 MSK isdst=0 gmtoff=10800
 Pacific/Kiritimati  Sun Jan  1 09:59:59 1995 UTC = Sat Dec 31 23:59:59 1994 LINT isdst=0 gmtoff=-36000
 Pacific/Kiritimati  Sun Jan  1 10:00:00 1995 UTC = Mon Jan  2 00:00:00 1995 LINT isdst=0 gmtoff=50400
 End
