@@ -210,7 +210,7 @@ Zachary Scott (zzak)
 [ext/io/console]
   Nobuyuki Nakada (nobu)
 [ext/io/nonblock]
-  _unmaintained_
+  Nobuyuki Nakada (nobu)
 [ext/io/wait]
   Nobuyuki Nakada (nobu)
 [ext/json]
