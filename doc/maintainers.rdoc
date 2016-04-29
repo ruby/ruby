@@ -46,8 +46,6 @@ Zachary Scott (zzak)
   _unmaintained_
 [lib/cgi.rb, lib/cgi/*]
   Takeyuki Fujioka (xibbar)
-[lib/complex.rb]
-  moved into core
 [lib/cmath.rb]
   _unmaintained_
 [lib/csv.rb]
@@ -68,26 +66,16 @@ Zachary Scott (zzak)
   _unmaintained_
 [lib/find.rb]
   Kazuki Tsujimoto (ktsj)
-[lib/finalize.rb]
-  _deprecated_
 [lib/forwardable.rb]
   Keiju ISHITSUKA (keiju)
-[lib/ftools.rb]
-  _deprecated_
-[lib/generator.rb]
-  moved into core
 [lib/getoptlong.rb]
   _unmaintained_
-[lib/getopts.rb]
-  _deprecated_
 [lib/gserver.rb]
   James Edward Gray II (jeg2)
 [lib/ipaddr.rb]
   Akinori MUSHA (knu)
 [lib/irb.rb, lib/irb/*]
   Keiju ISHITSUKA (keiju)
-[lib/jcode.rb]
-  _deprecated_
 [lib/logger.rb]
   Naotoshi Seo (sonots)
 [lib/mathn.rb]
@@ -122,14 +110,8 @@ Zachary Scott (zzak)
   Nobuyuki Nakada (nobu)
 [lib/ostruct.rb]
   Marc-Andre Lafortune (marcandre)
-[lib/parsearg.rb]
-  _deprecated_
-[lib/parsedate.rb]
-  _deprecated_
 [lib/pathname.rb]
   Tanaka Akira (akr)
-[lib/ping.rb]
-  _deprecated_
 [lib/pp.rb]
   Tanaka Akira (akr)
 [lib/prettyprint.rb]
@@ -146,12 +128,8 @@ Zachary Scott (zzak)
   Aaron Patterson (tenderlove)
 [lib/rake/*]
   Eric Hodel (drbrain)
-[lib/rational.rb]
-  moved into core
 [lib/rdoc/*]
   Eric Hodel (drbrain)
-[lib/readbytes.rb]
-  _deprecated_
 [lib/resolv-replace.rb]
   Tanaka Akira (akr)
 [lib/resolv.rb]
@@ -164,8 +142,6 @@ Zachary Scott (zzak)
   Kouhei Sutou (kou)
 [lib/rubygems.rb, lib/ubygems.rb, lib/rubygems/*]
   Eric Hodel (drbrain)
-[lib/rubyunit.rb, lib/runit/*]
-  _deprecated_
 [lib/scanf.rb]
   David A. Black (dblack)
 [lib/set.rb]
@@ -178,8 +154,6 @@ Zachary Scott (zzak)
   Akinori MUSHA (knu)
 [lib/singleton.rb]
   Yukihiro Matsumoto (matz)
-[lib/{soap|wsdl|xsd}/*]
-  _deprecated_
 [lib/sync.rb]
   Keiju ISHITSUKA (keiju)
 [lib/tempfile.rb]
@@ -231,8 +205,6 @@ Zachary Scott (zzak)
   Aaron Patterson (tenderlove)
 [ext/dl/win32]
   NAKAMURA Usaku (usa)
-[ext/enumerator]
-  moved into core
 [ext/etc]
   _unmaintained_
 [ext/fcntl]
@@ -282,8 +254,6 @@ Zachary Scott (zzak)
   _unmaintained_
 [ext/syslog]
   Akinori MUSHA (knu)
-[ext/tcltklib]
-  _deprecated_
 [ext/tk]
   Hidetoshi NAGAI (nagai)
 [ext/win32ole]
