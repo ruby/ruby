@@ -5280,7 +5280,6 @@ stati64_set_inode_handle(HANDLE h, struct stati64 *st)
 }
 
 #undef fstat
-extern int fstat(int, struct stat *);
 /* License: Ruby's */
 int
 rb_w32_fstat(int fd, struct stat *st)
