@@ -41,21 +41,17 @@ Zachary Scott (zzak)
 [lib/abbrev.rb]
   Akinori MUSHA (knu)
 [lib/base64.rb]
-  * 1.8: _unmaintained_
-  * 1.9: Yusuke Endoh (mame)
+  Yusuke Endoh (mame)
 [lib/benchmark.rb]
   _unmaintained_
 [lib/cgi.rb, lib/cgi/*]
   Takeyuki Fujioka (xibbar)
 [lib/complex.rb]
-  * 1.8: _unmaintained_
-  * 1.9: moved into core
+  moved into core
 [lib/cmath.rb]
-  * 1.8: 1.9 feature
-  * 1.9: _unmaintained_
+  _unmaintained_
 [lib/csv.rb]
-  * 1.8: Hiroshi Nakamura (nahi)
-  * 1.9: James Edward Gray II (jeg2)
+  James Edward Gray II (jeg2)
 [lib/date.rb, lib/date/*]
   Tadayoshi Funaba (tadf)
 [lib/drb.rb, lib/drb/*]
@@ -73,21 +69,17 @@ Zachary Scott (zzak)
 [lib/find.rb]
   Kazuki Tsujimoto (ktsj)
 [lib/finalize.rb]
-  * 1.8: _unmaintained_
-  * 1.9: _deprecated_
+  _deprecated_
 [lib/forwardable.rb]
   Keiju ISHITSUKA (keiju)
 [lib/ftools.rb]
-  * 1.8: _unmaintained_
-  * 1.9: _deprecated_
+  _deprecated_
 [lib/generator.rb]
-  * 1.8: Akinori MUSHA (knu)
-  * 1.9: moved into core
+  moved into core
 [lib/getoptlong.rb]
   _unmaintained_
 [lib/getopts.rb]
-  * 1.8: Akinori MUSHA (knu)
-  * 1.9: _deprecated_
+  _deprecated_
 [lib/gserver.rb]
   James Edward Gray II (jeg2)
 [lib/ipaddr.rb]
@@ -95,8 +87,7 @@ Zachary Scott (zzak)
 [lib/irb.rb, lib/irb/*]
   Keiju ISHITSUKA (keiju)
 [lib/jcode.rb]
-  * 1.8: _unmaintained_
-  * 1.9: _deprecated_
+  _deprecated_
 [lib/logger.rb]
   Naotoshi Seo (sonots)
 [lib/mathn.rb]
@@ -104,8 +95,7 @@ Zachary Scott (zzak)
 [lib/matrix.rb]
   Marc-Andre Lafortune (marcandre)
 [lib/minitest/*]
-  * 1.8: 1.9 feature
-  * 1.9: Ryan Davis (ryan)
+  Ryan Davis (ryan)
 [lib/mkmf.rb]
   _unmaintained_
 [lib/monitor.rb]
@@ -133,16 +123,13 @@ Zachary Scott (zzak)
 [lib/ostruct.rb]
   Marc-Andre Lafortune (marcandre)
 [lib/parsearg.rb]
-  * 1.8: _unmaintained_
-  * 1.9: _deprecated_
+  _deprecated_
 [lib/parsedate.rb]
-  * 1.8: Tadayoshi Funaba (tadf)
-  * 1.9: _deprecated_
+  _deprecated_
 [lib/pathname.rb]
   Tanaka Akira (akr)
 [lib/ping.rb]
-  * 1.8: _unmaintained_
-  * 1.9: _deprecated_
+  _deprecated_
 [lib/pp.rb]
   Tanaka Akira (akr)
 [lib/prettyprint.rb]
@@ -160,13 +147,11 @@ Zachary Scott (zzak)
 [lib/rake/*]
   Eric Hodel (drbrain)
 [lib/rational.rb]
-  * 1.8: _unmaintained_
-  * 1.9: moved into core
+  moved into core
 [lib/rdoc/*]
   Eric Hodel (drbrain)
 [lib/readbytes.rb]
-  * 1.8: _unmaintained_
-  * 1.9: _deprecated_
+  _deprecated_
 [lib/resolv-replace.rb]
   Tanaka Akira (akr)
 [lib/resolv.rb]
@@ -178,11 +163,9 @@ Zachary Scott (zzak)
 [lib/rss/*]
   Kouhei Sutou (kou)
 [lib/rubygems.rb, lib/ubygems.rb, lib/rubygems/*]
-  * 1.8: 1.9 feature
-  * 1.9: Eric Hodel (drbrain)
+  Eric Hodel (drbrain)
 [lib/rubyunit.rb, lib/runit/*]
-  * 1.8: _unmaintained_
-  * 1.9: _deprecated_
+  _deprecated_
 [lib/scanf.rb]
   David A. Black (dblack)
 [lib/set.rb]
@@ -196,8 +179,7 @@ Zachary Scott (zzak)
 [lib/singleton.rb]
   Yukihiro Matsumoto (matz)
 [lib/{soap|wsdl|xsd}/*]
-  * 1.8: Hiroshi Nakamura (nahi)
-  * 1.9: _deprecated_
+  _deprecated_
 [lib/sync.rb]
   Keiju ISHITSUKA (keiju)
 [lib/tempfile.rb]
@@ -234,13 +216,11 @@ Zachary Scott (zzak)
 == Extension Maintainers
 
 [ext/Win32API]
-  * 1.8: _unmaintained_
-  * 1.9: merged into dl
+  merged into dl
 [ext/bigdecimal]
   Kenta Murata (mrkn)
 [ext/continuation]
-  * 1.8: 1.9 feature
-  * 1.9: Koichi Sasada (ko1)
+  Koichi Sasada (ko1)
 [ext/coverage]
   Yusuke Endoh (mame)
 [ext/dbm]
@@ -252,15 +232,13 @@ Zachary Scott (zzak)
 [ext/dl/win32]
   NAKAMURA Usaku (usa)
 [ext/enumerator]
-  * 1.8: Akinori MUSHA (knu)
-  * 1.9: moved into core
+  moved into core
 [ext/etc]
   _unmaintained_
 [ext/fcntl]
   _unmaintained_
 [ext/fiber]
-  * 1.8: 1.9 feature
-  * 1.9: Koichi Sasada (ko1)
+  Koichi Sasada (ko1)
 [ext/fiddle]
   Aaron Patterson (tenderlove)
 [ext/gdbm]
@@ -272,11 +250,9 @@ Zachary Scott (zzak)
 [ext/json]
   NARUSE, Yui (naruse)
 [ext/mathn/complex]
-  * 1.8: 1.9 feature
-  * 1.9: Keiju ISHITSUKA (keiju)
+  Keiju ISHITSUKA (keiju)
 [ext/mathn/rational]
-  * 1.8: 1.9 feature
-  * 1.9: Keiju ISHITSUKA (keiju)
+  Keiju ISHITSUKA (keiju)
 [ext/nkf]
   NARUSE, Yui (narse)
 [ext/objspace]
@@ -306,9 +282,6 @@ Zachary Scott (zzak)
   _unmaintained_
 [ext/syslog]
   Akinori MUSHA (knu)
-[ext/thread]
-  * 1.8: _unmaintained_
-  * 1.9: 1.8 feature
 [ext/tcltklib]
   _deprecated_
 [ext/tk]
@@ -317,4 +290,3 @@ Zachary Scott (zzak)
   Masaki Suketa (suke)
 [ext/zlib]
   _unmaintained_
-

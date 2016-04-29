@@ -1,3 +1,8 @@
+Fri Apr 29 19:48:45 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* doc/maintainers.rdoc: Removed Ruby 1.8 entries. It's not necessary to
+	  Ruby 2.4 or later.
+
 Thu Apr 28 17:03:17 2016  Nicholas Maccharoli  <nmaccharoli@gmail.com>
 
 	* hash.c (rb_hash_update_{block,func}_callback): dry up hash
