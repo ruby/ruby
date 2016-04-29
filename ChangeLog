@@ -1,3 +1,7 @@
+Fri Apr 29 21:03:10 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* gems/bundled_gems: Update latest gems, test-unit-3.1.8 and rake-11.1.2.
+
 Fri Apr 29 20:43:02 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* doc/maintainers.rdoc: Update latest maintainers list on Ruby 2.4

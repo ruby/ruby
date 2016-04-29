@@ -1,6 +1,6 @@
 power_assert 0.2.7
-test-unit 3.1.7
+test-unit 3.1.8
 minitest 5.8.4
-rake 10.5.0
+rake 11.1.2
 net-telnet 0.1.1
 did_you_mean 1.0.0
