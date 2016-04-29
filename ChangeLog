@@ -1,3 +1,7 @@
+Fri Apr 29 20:43:02 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* doc/maintainers.rdoc: Update latest maintainers list on Ruby 2.4
+
 Fri Apr 29 19:52:45 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* doc/maintainers.rdoc: Removed deprecated entries. These are already deleted.

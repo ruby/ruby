@@ -70,8 +70,6 @@ Zachary Scott (zzak)
   Keiju ISHITSUKA (keiju)
 [lib/getoptlong.rb]
   _unmaintained_
-[lib/gserver.rb]
-  James Edward Gray II (jeg2)
 [lib/ipaddr.rb]
   Akinori MUSHA (knu)
 [lib/irb.rb, lib/irb/*]
@@ -82,8 +80,6 @@ Zachary Scott (zzak)
   Keiju ISHITSUKA (keiju)
 [lib/matrix.rb]
   Marc-Andre Lafortune (marcandre)
-[lib/minitest/*]
-  Ryan Davis (ryan)
 [lib/mkmf.rb]
   _unmaintained_
 [lib/monitor.rb]
@@ -98,6 +94,8 @@ Zachary Scott (zzak)
   NARUSE, Yui (naruse)
 [lib/net/pop.rb]
   _unmaintained_
+[lib/net/protocol.rb]
+  _unmaintained_
 [lib/net/smtp.rb]
   _unmaintained_
 [lib/observer.rb]
@@ -110,8 +108,6 @@ Zachary Scott (zzak)
   Nobuyuki Nakada (nobu)
 [lib/ostruct.rb]
   Marc-Andre Lafortune (marcandre)
-[lib/pathname.rb]
-  Tanaka Akira (akr)
 [lib/pp.rb]
   Tanaka Akira (akr)
 [lib/prettyprint.rb]
@@ -126,9 +122,9 @@ Zachary Scott (zzak)
   _unmaintained_
 [lib/racc/*]
   Aaron Patterson (tenderlove)
-[lib/rake/*]
-  Eric Hodel (drbrain)
-[lib/rdoc/*]
+[lib/rbconfig/*]
+  _unmaintained_
+[lib/rdoc.rb, lib/rdoc/*]
   Eric Hodel (drbrain)
 [lib/resolv-replace.rb]
   Tanaka Akira (akr)
@@ -138,7 +134,7 @@ Zachary Scott (zzak)
   Kouhei Sutou (kou)
 [lib/rinda/*]
   Masatoshi SEKI (seki)
-[lib/rss/*]
+[lib/rss.rb, lib/rss/*]
   Kouhei Sutou (kou)
 [lib/rubygems.rb, lib/ubygems.rb, lib/rubygems/*]
   Eric Hodel (drbrain)
@@ -158,11 +154,7 @@ Zachary Scott (zzak)
   Keiju ISHITSUKA (keiju)
 [lib/tempfile.rb]
   _unmaintained_
-[lib/test/*]
-  Shota Fukumori (sorah)
 [lib/tmpdir.rb]
-  _unmaintained_
-[lib/thread.rb]
   _unmaintained_
 [lib/thwait.rb]
   Keiju ISHITSUKA (keiju)
@@ -176,35 +168,35 @@ Zachary Scott (zzak)
   Tanaka Akira (akr)
 [lib/un.rb]
   WATANABE Hirofumi (eban)
+[lib/unicord_normalize.rb, lib/unicord_normalize/*]
+  Martin J. Dürst
 [lib/uri.rb, lib/uri/*]
   YAMADA, Akira (akira)
 [lib/weakref.rb]
   _unmaintained_
 [lib/webrick.rb, lib/webrick/*]
   Hiroshi Nakamura (nahi)
-[lib/xmlrpc/*]
+[lib/xmlrpc.rb, lib/xmlrpc/*]
   Kouhei Sutou (kou)
 [lib/yaml.rb, lib/yaml/*]
   Aaron Patterson (tenderlove)
 
 == Extension Maintainers
 
-[ext/Win32API]
-  merged into dl
 [ext/bigdecimal]
   Kenta Murata (mrkn)
+[ext/cgi]
+  Nobuyoshi Nakada (nobu)
 [ext/continuation]
   Koichi Sasada (ko1)
 [ext/coverage]
   Yusuke Endoh (mame)
+[ext/date]
+  _unmaintained_
 [ext/dbm]
   _unmaintained_
 [ext/digest, ext/digest/*]
   Akinori MUSHA (knu)
-[ext/dl]
-  Aaron Patterson (tenderlove)
-[ext/dl/win32]
-  NAKAMURA Usaku (usa)
 [ext/etc]
   _unmaintained_
 [ext/fcntl]
@@ -215,8 +207,10 @@ Zachary Scott (zzak)
   Aaron Patterson (tenderlove)
 [ext/gdbm]
   Yukihiro Matsumoto (matz)
-[ext/iconv]
+[ext/io/console]
   Nobuyuki Nakada (nobu)
+[ext/io/nonblock]
+  _unmaintained_
 [ext/io/wait]
   Nobuyuki Nakada (nobu)
 [ext/json]
@@ -231,6 +225,8 @@ Zachary Scott (zzak)
   _unmaintained_
 [ext/openssl]
   Martin Boßlet (emboss)
+[ext/pathname]
+  Tanaka Akira (akr)
 [ext/psych]
   Aaron Patterson (tenderlove)
 [ext/pty]
@@ -250,12 +246,14 @@ Zachary Scott (zzak)
   Nobuyuki Nakada (nobu)
 [ext/strscan]
   _unmaintained_
-[ext/syck]
-  _unmaintained_
 [ext/syslog]
   Akinori MUSHA (knu)
+[ext/thread]
+  _unmaintained_
 [ext/tk]
   Hidetoshi NAGAI (nagai)
+[ext/win32]
+  _unmaintained_
 [ext/win32ole]
   Masaki Suketa (suke)
 [ext/zlib]
