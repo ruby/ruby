@@ -253,7 +253,7 @@ Zachary Scott (zzak)
 [ext/tk]
   Hidetoshi NAGAI (nagai)
 [ext/win32]
-  _unmaintained_
+  NAKAMURA Usaku (usa)
 [ext/win32ole]
   Masaki Suketa (suke)
 [ext/zlib]
