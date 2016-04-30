@@ -1,3 +1,10 @@
+Sat Apr 30 14:42:20 2016  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (rb_int_idiv): {Fixnum,Bignum}#div is unified into
+	  Integer.
+
+	* bignum.c (rb_big_idiv): Don't define Bignum#div.
+
 Sat Apr 30 14:25:55 2016  Tanaka Akira  <akr@fsij.org>
 
 	* numeric.c (rb_int_modulo): {Fixnum,Bignum}#modulo is unified into

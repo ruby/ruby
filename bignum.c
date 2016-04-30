@@ -6113,13 +6113,6 @@ rb_big_div(VALUE x, VALUE y)
     return rb_big_divide(x, y, '/');
 }
 
-/*
- *  call-seq:
- *     big.div(other)  -> integer
- *
- * Performs integer division: returns integer value.
- */
-
 VALUE
 rb_big_idiv(VALUE x, VALUE y)
 {
@@ -6903,7 +6896,6 @@ Init_Bignum(void)
     rb_define_method(rb_cBignum, "*", rb_big_mul, 1);
     rb_define_method(rb_cBignum, "/", rb_big_div, 1);
     rb_define_method(rb_cBignum, "%", rb_big_modulo, 1);
-    rb_define_method(rb_cBignum, "div", rb_big_idiv, 1);
     rb_define_method(rb_cBignum, "remainder", rb_big_remainder, 1);
 
     rb_define_method(rb_cBignum, "==", rb_big_eq, 1);

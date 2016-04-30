@@ -3466,11 +3466,11 @@ fix_div(VALUE x, VALUE y)
 }
 
 /*
- * Document-method: Fixnum#div
+ * Document-method: Integer#div
  * call-seq:
- *   fix.div(numeric)  ->  integer
+ *   int.div(numeric)  ->  integer
  *
- * Performs integer division: returns integer result of dividing +fix+ by
+ * Performs integer division: returns integer result of dividing +int+ by
  * +numeric+.
  */
 
@@ -4839,7 +4839,7 @@ Init_Numeric(void)
     rb_define_method(rb_cFixnum, "-", fix_minus, 1);
     rb_define_method(rb_cFixnum, "*", fix_mul, 1);
     rb_define_method(rb_cFixnum, "/", fix_div, 1);
-    rb_define_method(rb_cFixnum, "div", fix_idiv, 1);
+    rb_define_method(rb_cInteger, "div", rb_int_idiv, 1);
     rb_define_method(rb_cFixnum, "%", fix_mod, 1);
     rb_define_method(rb_cInteger, "modulo", rb_int_modulo, 1);
     rb_define_method(rb_cInteger, "divmod", int_divmod, 1);
