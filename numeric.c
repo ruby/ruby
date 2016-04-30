@@ -3809,7 +3809,7 @@ int_equal(VALUE x, VALUE y)
  *  call-seq:
  *     int <=> numeric  ->  -1, 0, +1 or nil
  *
- *  Comparison---Returns +-1+, +0+, ++1+ or +nil+ depending on whether +fix+ is
+ *  Comparison---Returns +-1+, +0+, ++1+ or +nil+ depending on whether +int+ is
  *  less than, equal to, or greater than +numeric+.
  *
  *  This is the basis for the tests in the Comparable module.

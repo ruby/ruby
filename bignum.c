@@ -5350,18 +5350,6 @@ rb_integer_float_eq(VALUE x, VALUE y)
     return rb_big_eq(x, y);
 }
 
-/*
- *  call-seq:
- *     big <=> numeric   -> -1, 0, +1 or nil
- *
- *  Comparison---Returns -1, 0, or +1 depending on whether +big+ is
- *  less than, equal to, or greater than +numeric+. This is the
- *  basis for the tests in Comparable.
- *
- *  +nil+ is returned if the two values are incomparable.
- *
- */
-
 VALUE
 rb_big_cmp(VALUE x, VALUE y)
 {
@@ -6756,13 +6744,6 @@ rb_big_bit_length(VALUE big)
             INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
 }
 
-/*
- *  call-seq:
- *     big.odd? -> true or false
- *
- *  Returns <code>true</code> if <i>big</i> is an odd number.
- */
-
 VALUE
 rb_big_odd_p(VALUE num)
 {
@@ -6771,13 +6752,6 @@ rb_big_odd_p(VALUE num)
     }
     return Qfalse;
 }
-
-/*
- *  call-seq:
- *     big.even? -> true or false
- *
- *  Returns <code>true</code> if <i>big</i> is an even number.
- */
 
 VALUE
 rb_big_even_p(VALUE num)
