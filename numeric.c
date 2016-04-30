@@ -4869,7 +4869,7 @@ Init_Numeric(void)
 
     rb_cFixnum = rb_define_class("Fixnum", rb_cInteger);
 
-    rb_define_method(rb_cFixnum, "-@", rb_int_uminus, 0);
+    rb_define_method(rb_cInteger, "-@", rb_int_uminus, 0);
     rb_define_method(rb_cFixnum, "+", fix_plus, 1);
     rb_define_method(rb_cFixnum, "-", fix_minus, 1);
     rb_define_method(rb_cFixnum, "*", fix_mul, 1);
