@@ -1304,12 +1304,8 @@ Init_thread_sync(void)
     rb_define_method(rb_cConditionVariable, "signal", rb_condvar_signal, 0);
     rb_define_method(rb_cConditionVariable, "broadcast", rb_condvar_broadcast, 0);
 
-#define ALIAS_GLOBAL_CONST(name) do {	              \
-	ID id = rb_intern_const(#name);	              \
-	if (!rb_const_defined_at(rb_cObject, id)) {   \
-	    rb_const_set(rb_cObject, id, rb_c##name); \
-	}                                             \
-    } while (0)
+#define ALIAS_GLOBAL_CONST(name) \
+    rb_define_const(rb_cObject, #name, rb_c##name)
 
     ALIAS_GLOBAL_CONST(Mutex);
     ALIAS_GLOBAL_CONST(Queue);
