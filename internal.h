@@ -261,6 +261,15 @@ nlz_int128(uint128_t x)
 #endif
 
 static inline int
+nlz_intptr(uintptr_t x) {
+#if SIZEOF_VOIDP == 8
+    return nlz_long_long(x);
+#elif SIZEOF_VOIDP == 4
+    return nlz_int(x);
+#endif
+}
+
+static inline int
 rb_popcount32(uint32_t x) {
     x = (x & 0x55555555) + (x >> 1 & 0x55555555);
     x = (x & 0x33333333) + (x >> 2 & 0x33333333);

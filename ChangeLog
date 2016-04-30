@@ -1,3 +1,9 @@
+Sun May  1 07:30:44 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (search_nonascii): use nlz on big endian environments.
+
+	* internal.h (nlz_intpr): defined.
+
 Sun May  1 00:03:30 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in (__builtin_ctz): check.
