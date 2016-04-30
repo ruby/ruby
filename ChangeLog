@@ -1,3 +1,9 @@
+Sat Apr 30 21:11:08 2016  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (rb_int_plus): Define Integer#+.
+
+	* bignum.c (rb_big_plus): Don't define Bignum#+.
+
 Sat Apr 30 21:01:20 2016  Tanaka Akira  <akr@fsij.org>
 
 	* numeric.c (rb_int_minus): Define Integer#-.

@@ -5767,13 +5767,6 @@ bigadd(VALUE x, VALUE y, int sign)
     return z;
 }
 
-/*
- *  call-seq:
- *     big + other  -> Numeric
- *
- *  Adds big and other, returning the result.
- */
-
 VALUE
 rb_big_plus(VALUE x, VALUE y)
 {
@@ -6828,7 +6821,6 @@ Init_Bignum(void)
     rb_cBignum = rb_define_class("Bignum", rb_cInteger);
 
     rb_define_method(rb_cBignum, "coerce", rb_big_coerce, 1);
-    rb_define_method(rb_cBignum, "+", rb_big_plus, 1);
     rb_define_method(rb_cBignum, "/", rb_big_div, 1);
 
     rb_define_method(rb_cBignum, "===", rb_big_eq, 1);
