@@ -176,7 +176,7 @@ Sat Apr 30 12:07:42 2016  Tanaka Akira  <akr@fsij.org>
 	* numeric.c (int_and): {Fixnum,Bignum}#& is unified into
 	  Integer.
 
-	* bignum.c (rb_big_and): Don't define Bignum#|.
+	* bignum.c (rb_big_and): Don't define Bignum#&.
 
 Sat Apr 30 11:56:15 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
