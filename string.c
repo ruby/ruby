@@ -455,19 +455,19 @@ search_nonascii(const char *p, const char *e)
 	p = (const char *)s;
     }
 
-    switch ((e - p) % SIZEOF_VOIDP) {
+    switch (e - p) {
+      default: UNREACHABLE;
 #if SIZEOF_VOIDP > 4
-      case 7: if (*p&0x80) return p; p++;
-      case 6: if (*p&0x80) return p; p++;
-      case 5: if (*p&0x80) return p; p++;
-      case 4: if (*p&0x80) return p; p++;
+      case 7: if (e[-7]&0x80) return e-7;
+      case 6: if (e[-6]&0x80) return e-6;
+      case 5: if (e[-5]&0x80) return e-5;
+      case 4: if (e[-4]&0x80) return e-4;
 #endif
-      case 3: if (*p&0x80) return p; p++;
-      case 2: if (*p&0x80) return p; p++;
-      case 1: if (*p&0x80) return p;
+      case 3: if (e[-3]&0x80) return e-3;
+      case 2: if (e[-2]&0x80) return e-2;
+      case 1: if (e[-1]&0x80) return e-1;
+      case 0: return NULL;
     }
-
-    return NULL;
 }
 
 static int
