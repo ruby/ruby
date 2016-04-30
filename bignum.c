@@ -5432,16 +5432,8 @@ big_op(VALUE x, VALUE y, enum big_op_t op)
     return Qundef;
 }
 
-/*
- * call-seq:
- *   big > real  ->  true or false
- *
- * Returns <code>true</code> if the value of <code>big</code> is
- * greater than that of <code>real</code>.
- */
-
-static VALUE
-big_gt(VALUE x, VALUE y)
+VALUE
+rb_big_gt(VALUE x, VALUE y)
 {
     return big_op(x, y, big_op_gt);
 }
@@ -6857,7 +6849,6 @@ Init_Bignum(void)
     rb_define_method(rb_cBignum, "%", rb_big_modulo, 1);
 
     rb_define_method(rb_cBignum, "==", rb_big_eq, 1);
-    rb_define_method(rb_cBignum, ">", big_gt, 1);
     rb_define_method(rb_cBignum, "===", rb_big_eq, 1);
 
 #ifdef USE_GMP
