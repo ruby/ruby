@@ -6556,13 +6556,6 @@ bigor_int(VALUE x, long xn, BDIGIT hibitsx, long y)
     return bignorm(z);
 }
 
-/*
- * call-seq:
- *     big | numeric   ->  integer
- *
- * Performs bitwise +or+ between _big_ and _numeric_.
- */
-
 VALUE
 rb_big_or(VALUE x, VALUE y)
 {
@@ -6978,7 +6971,6 @@ Init_Bignum(void)
     rb_define_method(rb_cBignum, "fdiv", rb_big_fdiv, 1);
     rb_define_method(rb_cBignum, "**", rb_big_pow, 1);
     rb_define_method(rb_cBignum, "&", rb_big_and, 1);
-    rb_define_method(rb_cBignum, "|", rb_big_or, 1);
     rb_define_method(rb_cBignum, "~", rb_big_neg, 0);
 
     rb_define_method(rb_cBignum, "==", rb_big_eq, 1);

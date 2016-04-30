@@ -1,3 +1,10 @@
+Sat Apr 30 11:53:48 2016  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (int_or): {Fixnum,Bignum}#| is unified into
+	  Integer.
+
+	* bignum.c (rb_big_or): Don't define Bignum#|.
+
 Sat Apr 30 11:18:47 2016  Yuichiro Kaneko  <yui-knk@ruby-lang.org>
 
 	* vm_trace.c: Fix typos. [ci skip]

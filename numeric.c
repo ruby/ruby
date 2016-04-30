@@ -3913,9 +3913,9 @@ fix_and(VALUE x, VALUE y)
 }
 
 /*
- * Document-method: Fixnum#|
+ * Document-method: Integer#|
  * call-seq:
- *   fix | integer  ->  integer_result
+ *   integer | integer  ->  integer_result
  *
  * Bitwise OR.
  */
@@ -3934,6 +3934,18 @@ fix_or(VALUE x, VALUE y)
 
     bit_coerce(&x, &y);
     return rb_funcall(x, '|', 1, y);
+}
+
+static VALUE
+int_or(VALUE x, VALUE y)
+{
+    if (FIXNUM_P(x)) {
+	return fix_or(x, y);
+    }
+    else if (RB_TYPE_P(x, T_BIGNUM)) {
+	return rb_big_or(x, y);
+    }
+    return Qnil;
 }
 
 /*
@@ -4769,7 +4781,7 @@ Init_Numeric(void)
 
     rb_define_method(rb_cFixnum, "~", fix_rev, 0);
     rb_define_method(rb_cFixnum, "&", fix_and, 1);
-    rb_define_method(rb_cFixnum, "|", fix_or,  1);
+    rb_define_method(rb_cInteger, "|", int_or,  1);
     rb_define_method(rb_cInteger, "^", int_xor, 1);
     rb_define_method(rb_cInteger, "[]", int_aref, 1);
 
