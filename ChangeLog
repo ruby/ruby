@@ -1,3 +1,10 @@
+Sat Apr 30 12:25:43 2016  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (rb_int_pow): {Fixnum,Bignum}#** is unified into
+	  Integer.
+
+	* bignum.c (rb_big_pow): Don't define Bignum#**.
+
 Sat Apr 30 12:28:59 2016  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (rb_big_comp): Renamed from rb_big_neg.

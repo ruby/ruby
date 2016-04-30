@@ -3557,16 +3557,22 @@ fix_divmod(VALUE x, VALUE y)
 }
 
 /*
- *  Document-method: Fixnum#**
+ *  Document-method: Integer#**
  *  call-seq:
- *    fix ** numeric  ->  numeric_result
+ *    integer ** numeric  ->  numeric_result
  *
- *  Raises +fix+ to the power of +numeric+, which may be negative or
+ *  Raises +integer+ to the power of +numeric+, which may be negative or
  *  fractional.
+ *  The result may be a Fixnum, Bignum, or Float
  *
  *    2 ** 3      #=> 8
  *    2 ** -1     #=> (1/2)
  *    2 ** 0.5    #=> 1.4142135623731
+ *
+ *    123456789 ** 2      #=> 15241578750190521
+ *    123456789 ** 1.2    #=> 5126464716.09932
+ *    123456789 ** -2     #=> 6.5610001194102e-17
+ *
  */
 
 static VALUE
@@ -3664,6 +3670,18 @@ fix_pow(VALUE x, VALUE y)
     else {
 	return rb_num_coerce_bin(x, y, idPow);
     }
+}
+
+static VALUE
+rb_int_pow(VALUE x, VALUE y)
+{
+    if (FIXNUM_P(x)) {
+	return fix_pow(x, y);
+    }
+    else if (RB_TYPE_P(x, T_BIGNUM)) {
+	return rb_big_pow(x, y);
+    }
+    return Qnil;
 }
 
 /*
@@ -4799,7 +4817,7 @@ Init_Numeric(void)
     rb_define_method(rb_cFixnum, "modulo", fix_mod, 1);
     rb_define_method(rb_cFixnum, "divmod", fix_divmod, 1);
     rb_define_method(rb_cFixnum, "fdiv", fix_fdiv, 1);
-    rb_define_method(rb_cFixnum, "**", fix_pow, 1);
+    rb_define_method(rb_cInteger, "**", rb_int_pow, 1);
 
     rb_define_method(rb_cInteger, "abs", int_abs, 0);
     rb_define_method(rb_cInteger, "magnitude", int_abs, 0);
