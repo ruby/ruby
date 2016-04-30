@@ -94,6 +94,12 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * DateTime#to_time now preserves timezone.  [Bug #12189]
 
+* thread
+
+  * the extension library is removed.  Till 2.0 it was a pure ruby script
+    "thread.rb", which has precedence over "thread.so", and has been provided
+    in $LOADED_FEATURES since 2.1.
+
 === C API updates
 
 * ruby_show_version() will no longer exits the process, if

@@ -40,7 +40,6 @@
 #stringio
 #strscan
 #syslog
-#thread
 #tk
 #tk/tkutil
 #win32

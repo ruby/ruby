@@ -248,8 +248,6 @@ Zachary Scott (zzak)
   _unmaintained_
 [ext/syslog]
   Akinori MUSHA (knu)
-[ext/thread]
-  _unmaintained_
 [ext/tk]
   Hidetoshi NAGAI (nagai)
 [ext/win32]

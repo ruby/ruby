@@ -1,3 +1,8 @@
+Sat Apr 30 11:56:15 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/thread: removed dummy extension library.  thread_sync.c
+	  provides "thread.rb" already.
+
 Sat Apr 30 11:53:48 2016  Tanaka Akira  <akr@fsij.org>
 
 	* numeric.c (int_or): {Fixnum,Bignum}#| is unified into
