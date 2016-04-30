@@ -3852,11 +3852,12 @@ fix_gt(VALUE x, VALUE y)
 }
 
 /*
+ * Document-method: Integer#>=
  * Document-method: Fixnum#>=
  * call-seq:
- *   fix >= real  ->  true or false
+ *   int >= real  ->  true or false
  *
- * Returns +true+ if the value of +fix+ is greater than or equal to that of
+ * Returns +true+ if the value of +int+ is greater than or equal to that of
  * +real+.
  */
 
@@ -3877,6 +3878,18 @@ fix_ge(VALUE x, VALUE y)
     else {
 	return rb_num_coerce_relop(x, y, idGE);
     }
+}
+
+static VALUE
+int_ge(VALUE x, VALUE y)
+{
+    if (FIXNUM_P(x)) {
+	return fix_ge(x, y);
+    }
+    else if (RB_TYPE_P(x, T_BIGNUM)) {
+	return rb_big_ge(x, y);
+    }
+    return Qnil;
 }
 
 /*
@@ -4911,6 +4924,7 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, "abs", int_abs, 0);
     rb_define_method(rb_cInteger, "magnitude", int_abs, 0);
 
+    rb_define_method(rb_cInteger, ">=", int_ge, 1);
     rb_define_method(rb_cInteger, "<", int_lt, 1);
     rb_define_method(rb_cInteger, "<=", int_le, 1);
 

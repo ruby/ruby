@@ -1,3 +1,12 @@
+Sat Apr 30 19:24:40 2016  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (int_ge): Define Integer#>=.
+
+	* bignum.c (rb_big_ge): Don't define Bignum#>=.
+	  Renamed from big_ge.
+
+	* internal.h (rb_big_ge): Declared.
+
 Sat Apr 30 19:20:40 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* doc/standard_library.rdoc: Remove obsoleted classes and modules.
