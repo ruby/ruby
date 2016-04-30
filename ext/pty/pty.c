@@ -9,7 +9,9 @@
 #include	<sys/file.h>
 #include	<fcntl.h>
 #include	<errno.h>
+#ifdef HAVE_PWD_H
 #include	<pwd.h>
+#endif
 #ifdef HAVE_SYS_IOCTL_H
 #include	<sys/ioctl.h>
 #endif
@@ -157,7 +159,6 @@ establishShell(int argc, VALUE *argv, struct pty_info *info,
     int 		master, slave, status = 0;
     rb_pid_t		pid;
     char		*p, *getenv();
-    struct passwd	*pwent;
     VALUE		v;
     struct child_info   carg;
     char		errbuf[32];
@@ -169,11 +170,16 @@ establishShell(int argc, VALUE *argv, struct pty_info *info,
 	    shellname = p;
 	}
 	else {
-	    pwent = getpwuid(getuid());
+#if defined HAVE_PWD_H
+	    const char *username = getenv("USER");
+	    struct passwd *pwent = getpwnam(username ? username : getlogin());
 	    if (pwent && pwent->pw_shell)
 		shellname = pwent->pw_shell;
 	    else
 		shellname = "/bin/sh";
+#else
+	    shellname = "/bin/sh";
+#endif
 	}
 	v = rb_str_new2(shellname);
 	argc = 1;

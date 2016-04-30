@@ -1,3 +1,9 @@
+Sat Apr 30 10:09:04 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/pty/pty.c (establishShell): honor USER environment variable
+	  and login name over uid, one pid can be shared by some login
+	  names.
+
 Fri Apr 29 22:40:28 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* doc/maintainers.rdoc (ext/io/nonblock): still maintained, as

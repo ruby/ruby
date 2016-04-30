@@ -9,6 +9,7 @@ if /mswin|mingw|bccwin|nacl/ !~ RUBY_PLATFORM
   have_header("libutil.h")
   have_header("util.h") # OpenBSD openpty
   have_header("pty.h")
+  have_header("pwd.h")
   have_library("util", "openpty")
   if have_func("posix_openpt") or
       have_func("openpty") or
