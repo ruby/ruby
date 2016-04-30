@@ -1,3 +1,11 @@
+Sat Apr 30 16:58:18 2016  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (int_remainder): Define Integer#remainder.
+
+	* bignum.c (rb_big_remainder): Don't define Bignum#remainder.
+
+	* internal.h (rb_big_remainder): Declared.
+
 Sat Apr 30 15:29:24 2016  Tanaka Akira  <akr@fsij.org>
 
 	* numeric.c (rb_int_uminus): {Fixnum,Bignum}#-@ is unified into

@@ -786,6 +786,7 @@ VALUE rb_big_aref(VALUE x, VALUE y);
 VALUE rb_big_abs(VALUE x);
 VALUE rb_big_size_m(VALUE big);
 VALUE rb_big_bit_length(VALUE big);
+VALUE rb_big_remainder(VALUE x, VALUE y);
 
 /* class.c */
 VALUE rb_class_boot(VALUE);

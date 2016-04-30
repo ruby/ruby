@@ -6128,16 +6128,7 @@ rb_big_modulo(VALUE x, VALUE y)
     return bignorm(z);
 }
 
-/*
- *  call-seq:
- *     big.remainder(numeric)    -> number
- *
- *  Returns the remainder after dividing <i>big</i> by <i>numeric</i>.
- *
- *     -1234567890987654321.remainder(13731)      #=> -6966
- *     -1234567890987654321.remainder(13731.24)   #=> -9906.22531493148
- */
-static VALUE
+VALUE
 rb_big_remainder(VALUE x, VALUE y)
 {
     VALUE z;
@@ -6888,7 +6879,6 @@ Init_Bignum(void)
     rb_define_method(rb_cBignum, "*", rb_big_mul, 1);
     rb_define_method(rb_cBignum, "/", rb_big_div, 1);
     rb_define_method(rb_cBignum, "%", rb_big_modulo, 1);
-    rb_define_method(rb_cBignum, "remainder", rb_big_remainder, 1);
 
     rb_define_method(rb_cBignum, "==", rb_big_eq, 1);
     rb_define_method(rb_cBignum, ">", big_gt, 1);

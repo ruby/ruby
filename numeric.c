@@ -3537,6 +3537,40 @@ rb_int_modulo(VALUE x, VALUE y)
 }
 
 /*
+ *  call-seq:
+ *     int.remainder(numeric)  ->  real
+ *
+ *
+ *  Returns the remainder after dividing <i>big</i> by <i>numeric</i> as:
+ *
+ *    x.remainder(y) means x-y*(x/y).truncate
+ *
+ *  Examples
+ *
+ *    5.remainder(3)    #=> 2
+ *    -5.remainder(3)   #=> -2
+ *    5.remainder(-3)   #=> 2
+ *    -5.remainder(-3)  #=> -2
+ *
+ *    -1234567890987654321.remainder(13731)      #=> -6966
+ *    -1234567890987654321.remainder(13731.24)   #=> -9906.22531493148
+ *
+ *  See Numeric#divmod.
+ */
+
+VALUE
+int_remainder(VALUE x, VALUE y)
+{
+    if (FIXNUM_P(x)) {
+	return num_remainder(x, y);
+    }
+    else if (RB_TYPE_P(x, T_BIGNUM)) {
+	return rb_big_remainder(x, y);
+    }
+    return Qnil;
+}
+
+/*
  *  Document-method: Integer#divmod
  *  call-seq:
  *     integer.divmod(numeric)  ->  array
@@ -4843,6 +4877,7 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, "div", rb_int_idiv, 1);
     rb_define_method(rb_cFixnum, "%", fix_mod, 1);
     rb_define_method(rb_cInteger, "modulo", rb_int_modulo, 1);
+    rb_define_method(rb_cInteger, "remainder", int_remainder, 1);
     rb_define_method(rb_cInteger, "divmod", int_divmod, 1);
     rb_define_method(rb_cInteger, "fdiv", int_fdiv, 1);
     rb_define_method(rb_cInteger, "**", rb_int_pow, 1);
