@@ -1,3 +1,9 @@
+Sat Apr 30 20:30:44 2016  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (rb_int_modulo): Define Integer#%.
+
+	* bignum.c (rb_big_modulo): Don't define Bignum#%.
+
 Sat Apr 30 20:17:08 2016  Tanaka Akira  <akr@fsij.org>
 
 	* numeric.c (int_equal): Define Integer#==.
