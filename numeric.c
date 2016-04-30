@@ -3331,9 +3331,10 @@ rb_int_minus(VALUE x, VALUE y)
 #define FIT_SQRT_LONG(n) (((n)<SQRT_LONG_MAX)&&((n)>=-SQRT_LONG_MAX))
 
 /*
+ * Document-method: Integer#*
  * Document-method: Fixnum#*
  * call-seq:
- *   fix * numeric  ->  numeric_result
+ *   int * numeric  ->  numeric_result
  *
  * Performs multiplication: the class of the resulting object depends on the
  * class of +numeric+ and on the magnitude of the result. It may return a
@@ -4940,6 +4941,7 @@ Init_Numeric(void)
     rb_define_method(rb_cFixnum, "+", fix_plus, 1);
     rb_define_method(rb_cFixnum, "-", fix_minus, 1);
     rb_define_method(rb_cFixnum, "*", fix_mul, 1);
+    rb_define_method(rb_cInteger, "*", rb_int_mul, 1);
     rb_define_method(rb_cFixnum, "/", fix_div, 1);
     rb_define_method(rb_cInteger, "div", rb_int_idiv, 1);
     rb_define_method(rb_cFixnum, "%", fix_mod, 1);
