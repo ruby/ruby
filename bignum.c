@@ -6848,7 +6848,6 @@ Init_Bignum(void)
     rb_define_method(rb_cBignum, "/", rb_big_div, 1);
     rb_define_method(rb_cBignum, "%", rb_big_modulo, 1);
 
-    rb_define_method(rb_cBignum, "==", rb_big_eq, 1);
     rb_define_method(rb_cBignum, "===", rb_big_eq, 1);
 
 #ifdef USE_GMP

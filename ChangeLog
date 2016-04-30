@@ -1,3 +1,9 @@
+Sat Apr 30 20:17:08 2016  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (int_equal): Define Integer#==.
+
+	* bignum.c (rb_big_eq): Don't define Bignum#==.
+
 Sat Apr 30 19:41:15 2016  Tanaka Akira  <akr@fsij.org>
 
 	* numeric.c (int_gt): Define Integer#>.

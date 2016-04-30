@@ -3747,11 +3747,14 @@ rb_int_pow(VALUE x, VALUE y)
 }
 
 /*
+ * Document-method: Integer#==
  * Document-method: Fixnum#==
  * call-seq:
- *   fix == other  ->  true or false
+ *   int == other  ->  true or false
  *
- * Return +true+ if +fix+ equals +other+ numerically.
+ * Return +true+ if +int+ equals +other+ numerically.
+ * Contrast this with <code>Integer#eql?</code>, which
+ * requires <i>other</i> to be a <code>Integer</code>.
  *
  *   1 == 2      #=> false
  *   1 == 1.0    #=> true
@@ -3771,6 +3774,18 @@ fix_equal(VALUE x, VALUE y)
     else {
 	return num_equal(x, y);
     }
+}
+
+static VALUE
+int_equal(VALUE x, VALUE y)
+{
+    if (FIXNUM_P(x)) {
+	return fix_equal(x, y);
+    }
+    else if (RB_TYPE_P(x, T_BIGNUM)) {
+	return rb_big_eq(x, y);
+    }
+    return Qnil;
 }
 
 /*
@@ -4937,6 +4952,7 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, "abs", int_abs, 0);
     rb_define_method(rb_cInteger, "magnitude", int_abs, 0);
 
+    rb_define_method(rb_cInteger, "==", int_equal, 1);
     rb_define_method(rb_cInteger, ">", int_gt, 1);
     rb_define_method(rb_cInteger, ">=", int_ge, 1);
     rb_define_method(rb_cInteger, "<", int_lt, 1);
