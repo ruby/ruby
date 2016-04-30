@@ -427,32 +427,46 @@ search_nonascii(const char *p, const char *e)
 #elif SIZEOF_VOIDP == 4
 # define NONASCII_MASK 0x80808080UL
 #endif
-#ifdef NONASCII_MASK
-    if ((int)SIZEOF_VOIDP * 2 < e - p) {
-        const uintptr_t *s, *t;
-        const uintptr_t lowbits = SIZEOF_VOIDP - 1;
-        s = (const uintptr_t*)(~lowbits & ((uintptr_t)p + lowbits));
-        while (p < (const char *)s) {
-            if (!ISASCII(*p))
-                return p;
-            p++;
-        }
-        t = (const uintptr_t*)(~lowbits & (uintptr_t)e);
-        while (s < t) {
-            if (*s & NONASCII_MASK) {
-                t = s;
-                break;
-            }
-            s++;
-        }
-        p = (const char *)t;
+
+#if !UNALIGNED_WORD_ACCESS
+    if (e - p > SIZEOF_VOIDP) {
+	switch (8 - (uintptr_t)p % 8) {
+#if SIZEOF_VOIDP > 4
+	  case 7: if (*p&0x80) return p; p++;
+	  case 6: if (*p&0x80) return p; p++;
+	  case 5: if (*p&0x80) return p; p++;
+	  case 4: if (*p&0x80) return p; p++;
+#endif
+	  case 3: if (*p&0x80) return p; p++;
+	  case 2: if (*p&0x80) return p; p++;
+	  case 1: if (*p&0x80) return p; p++;
+	}
     }
 #endif
-    while (p < e) {
-        if (!ISASCII(*p))
-            return p;
-        p++;
+
+    {
+	const uintptr_t *s = (const uintptr_t *)p;
+	const uintptr_t *t = (const uintptr_t *)(e - (SIZEOF_VOIDP-1));
+	for (;s < t; s++) {
+	    if (*s & NONASCII_MASK) {
+		return (const char *)s + (ntz_intptr(*s&NONASCII_MASK)>>3);
+	    }
+	}
+	p = (const char *)s;
     }
+
+    switch ((e - p) % SIZEOF_VOIDP) {
+#if SIZEOF_VOIDP > 4
+      case 7: if (*p&0x80) return p; p++;
+      case 6: if (*p&0x80) return p; p++;
+      case 5: if (*p&0x80) return p; p++;
+      case 4: if (*p&0x80) return p; p++;
+#endif
+      case 3: if (*p&0x80) return p; p++;
+      case 2: if (*p&0x80) return p; p++;
+      case 1: if (*p&0x80) return p;
+    }
+
     return NULL;
 }
 

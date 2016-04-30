@@ -260,6 +260,52 @@ nlz_int128(uint128_t x)
 }
 #endif
 
+static inline int
+rb_popcount32(uint32_t x) {
+    x = (x & 0x55555555) + (x >> 1 & 0x55555555);
+    x = (x & 0x33333333) + (x >> 2 & 0x33333333);
+    x = (x & 0x0f0f0f0f) + (x >> 4 & 0x0f0f0f0f);
+    x = (x & 0x001f001f) + (x >> 8 & 0x001f001f);
+    return (x & 0x0000003f) + (x >>16 & 0x0000003f);
+}
+
+static inline int
+rb_popcount64(uint64_t x) {
+    x = (x & 0x5555555555555555) + (x >> 1 & 0x5555555555555555);
+    x = (x & 0x3333333333333333) + (x >> 2 & 0x3333333333333333);
+    x = (x & 0x0707070707070707) + (x >> 4 & 0x0707070707070707);
+    x = (x & 0x001f001f001f001f) + (x >> 8 & 0x001f001f001f001f);
+    x = (x & 0x0000003f0000003f) + (x >>16 & 0x0000003f0000003f);
+    return (x & 0x7f) + (x >>32 & 0x7f);
+}
+
+static inline int
+ntz_int32(uint32_t x) {
+#ifdef HAVE_BUILTIN___BUILTIN_CTZ
+    return __builtin_ctz(x);
+#else
+    return rb_popcount32((~x) & (x-1));
+#endif
+}
+
+static inline int
+ntz_int64(uint64_t x) {
+#ifdef HAVE_BUILTIN___BUILTIN_CTZLL
+    return __builtin_ctzll(x);
+#else
+    return rb_popcount64((~x) & (x-1));
+#endif
+}
+
+static inline int
+ntz_intptr(uintptr_t x) {
+#if SIZEOF_VOIDP == 8
+    return ntz_int64(x);
+#elif SIZEOF_VOIDP == 4
+    return ntz_int32(x);
+#endif
+}
+
 #if HAVE_LONG_LONG && SIZEOF_LONG * 2 <= SIZEOF_LONG_LONG
 # define DLONG LONG_LONG
 # define DL2NUM(x) LL2NUM(x)

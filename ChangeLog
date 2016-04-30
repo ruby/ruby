@@ -1,3 +1,25 @@
+Sun May  1 00:03:30 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in (__builtin_ctz): check.
+
+	* configure.in (__builtin_ctzll): check.
+
+	* internal.h (rb_popcount32): defined for ntz_int32.
+	  it can use __builtin_popcount but this function is not used on
+	  GCC environment because it uses __builtin_ctz.
+	  When another function uses this, using __builtin_popcount
+	  should be re-considered.
+
+	* internal.h (rb_popcount64): ditto.
+
+	* internal.h (ntz_int32): defined for ntz_intptr.
+
+	* internal.h (ntz_int64): defined for ntz_intptr.
+
+	* internal.h (ntz_intptr): defined as ntz for uintptr_t.
+
+	* string.c (search_nonascii): unroll and use ntz.
+
 Sat Apr 30 21:54:13 2016  Tanaka Akira  <akr@fsij.org>
 
 	* numeric.c (Init_Numeric): Gather Fixnum method definitions.
