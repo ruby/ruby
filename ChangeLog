@@ -1,3 +1,7 @@
+Sat Apr 30 11:18:47 2016  Yuichiro Kaneko  <yui-knk@ruby-lang.org>
+
+	* vm_trace.c: Fix typos. [ci skip]
+
 Sat Apr 30 10:09:04 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/pty/pty.c (establishShell): honor USER environment variable

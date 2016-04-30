@@ -453,8 +453,8 @@ static void call_trace_func(rb_event_flag_t, VALUE data, VALUE self, ID id, VALU
  *  +c-call+:: call a C-language routine
  *  +c-return+:: return from a C-language routine
  *  +call+:: call a Ruby method
- *  +class+:: start a class or module definition),
- *  +end+:: finish a class or module definition),
+ *  +class+:: start a class or module definition
+ *  +end+:: finish a class or module definition
  *  +line+:: execute code on a new line
  *  +raise+:: raise an exception
  *  +return+:: return from a Ruby method
