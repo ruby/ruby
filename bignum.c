@@ -5547,7 +5547,7 @@ rb_big_uminus(VALUE x)
 }
 
 VALUE
-rb_big_neg(VALUE x)
+rb_big_comp(VALUE x)
 {
     VALUE z = rb_big_clone(x);
     BDIGIT *ds = BDIGITS(z);

@@ -3870,7 +3870,7 @@ fix_le(VALUE x, VALUE y)
  */
 
 static VALUE
-fix_rev(VALUE num)
+fix_comp(VALUE num)
 {
     return ~num | FIXNUM_FLAG;
 }
@@ -3879,10 +3879,10 @@ static VALUE
 int_comp(VALUE num)
 {
     if (FIXNUM_P(num)) {
-	return fix_rev(num);
+	return fix_comp(num);
     }
     else if (RB_TYPE_P(num, T_BIGNUM)) {
-	return rb_big_neg(num);
+	return rb_big_comp(num);
     }
     return Qnil;
 }
