@@ -6038,15 +6038,6 @@ rb_big_divide(VALUE x, VALUE y, ID op)
     return bignorm(z);
 }
 
-/*
- *  call-seq:
- *     big / other     -> Numeric
- *
- * Performs division: the class of the resulting object depends on
- * the class of <code>numeric</code> and on the magnitude of the
- * result.
- */
-
 VALUE
 rb_big_div(VALUE x, VALUE y)
 {
@@ -6821,7 +6812,6 @@ Init_Bignum(void)
     rb_cBignum = rb_define_class("Bignum", rb_cInteger);
 
     rb_define_method(rb_cBignum, "coerce", rb_big_coerce, 1);
-    rb_define_method(rb_cBignum, "/", rb_big_div, 1);
 
     rb_define_method(rb_cBignum, "===", rb_big_eq, 1);
 

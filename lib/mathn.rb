@@ -79,7 +79,7 @@ end
 #
 #   (2**72) / ((2**70) * 3)  # => 4/3
 
-class Bignum
+class Integer
   remove_method :/
 
   ##

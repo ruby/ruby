@@ -3421,9 +3421,10 @@ int_fdiv(VALUE x, VALUE y)
 }
 
 /*
+ * Document-method: Integer#/
  * Document-method: Fixnum#/
  * call-seq:
- *   fix / numeric  ->  numeric_result
+ *   int / numeric  ->  numeric_result
  *
  * Performs division: the class of the resulting object depends on the class of
  * +numeric+ and on the magnitude of the result. It may return a Bignum.
@@ -3467,6 +3468,18 @@ static VALUE
 fix_div(VALUE x, VALUE y)
 {
     return fix_divide(x, y, '/');
+}
+
+VALUE
+rb_int_div(VALUE x, VALUE y)
+{
+    if (FIXNUM_P(x)) {
+	return fix_div(x, y);
+    }
+    else if (RB_TYPE_P(x, T_BIGNUM)) {
+	return rb_big_div(x, y);
+    }
+    return Qnil;
 }
 
 /*
@@ -4947,6 +4960,7 @@ Init_Numeric(void)
     rb_define_method(rb_cFixnum, "*", fix_mul, 1);
     rb_define_method(rb_cInteger, "*", rb_int_mul, 1);
     rb_define_method(rb_cFixnum, "/", fix_div, 1);
+    rb_define_method(rb_cInteger, "/", rb_int_div, 1);
     rb_define_method(rb_cInteger, "div", rb_int_idiv, 1);
     rb_define_method(rb_cFixnum, "%", fix_mod, 1);
     rb_define_method(rb_cInteger, "%", rb_int_modulo, 1);

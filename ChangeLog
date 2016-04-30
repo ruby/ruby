@@ -1,3 +1,11 @@
+Sat Apr 30 21:28:14 2016  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (rb_int_div): Define Integer#/.
+
+	* bignum.c (rb_big_div): Don't define Bignum#/.
+
+	* lib/mathn.rb (Integer#/): Replace Integer#/ instead of Bignum#/.
+
 Sat Apr 30 21:11:08 2016  Tanaka Akira  <akr@fsij.org>
 
 	* numeric.c (rb_int_plus): Define Integer#+.
