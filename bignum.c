@@ -6890,6 +6890,7 @@ Init_Bignum(void)
 #ifdef USE_GMP
     /* The version of loaded GMP. */
     rb_define_const(rb_cBignum, "GMP_VERSION", rb_sprintf("GMP %s", gmp_version));
+    rb_define_const(rb_cInteger, "GMP_VERSION", rb_sprintf("GMP %s", gmp_version));
 #endif
 
     power_cache_init();

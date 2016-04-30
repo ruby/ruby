@@ -1,3 +1,7 @@
+Sat Apr 30 18:11:44 2016  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (Init_Bignum): Define Integer#GMP_VERSION.
+
 Sat Apr 30 16:58:18 2016  Tanaka Akira  <akr@fsij.org>
 
 	* numeric.c (int_remainder): Define Integer#remainder.
