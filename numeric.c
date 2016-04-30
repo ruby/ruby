@@ -3122,11 +3122,12 @@ int_ord(VALUE num)
 
 
 /*
- * Document-method: Fixnum#-@
+ * Document-method: Integer#-@
  * call-seq:
- *   -fix  ->  integer
+ *   -int  ->  integer
  *
- * Negates +fix+, which may return a Bignum.
+ * Negates +int+.
+ * (returns an integer whose value is 0-int)
  */
 
 static VALUE
@@ -4834,7 +4835,7 @@ Init_Numeric(void)
 
     rb_cFixnum = rb_define_class("Fixnum", rb_cInteger);
 
-    rb_define_method(rb_cFixnum, "-@", fix_uminus, 0);
+    rb_define_method(rb_cFixnum, "-@", rb_int_uminus, 0);
     rb_define_method(rb_cFixnum, "+", fix_plus, 1);
     rb_define_method(rb_cFixnum, "-", fix_minus, 1);
     rb_define_method(rb_cFixnum, "*", fix_mul, 1);

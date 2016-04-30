@@ -5529,13 +5529,6 @@ rb_big_eql(VALUE x, VALUE y)
     return Qtrue;
 }
 
-/*
- * call-seq:
- *    -big   ->  integer
- *
- * Unary minus (returns an integer whose value is 0-big)
- */
-
 VALUE
 rb_big_uminus(VALUE x)
 {
@@ -6890,7 +6883,6 @@ Init_Bignum(void)
     rb_cBignum = rb_define_class("Bignum", rb_cInteger);
 
     rb_define_method(rb_cBignum, "coerce", rb_big_coerce, 1);
-    rb_define_method(rb_cBignum, "-@", rb_big_uminus, 0);
     rb_define_method(rb_cBignum, "+", rb_big_plus, 1);
     rb_define_method(rb_cBignum, "-", rb_big_minus, 1);
     rb_define_method(rb_cBignum, "*", rb_big_mul, 1);
