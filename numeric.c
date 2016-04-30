@@ -3536,11 +3536,11 @@ rb_int_modulo(VALUE x, VALUE y)
 }
 
 /*
- *  Document-method: Fixnum#divmod
+ *  Document-method: Integer#divmod
  *  call-seq:
- *     fix.divmod(numeric)  ->  array
+ *     integer.divmod(numeric)  ->  array
  *
- *  See Numeric#divmod.
+ *  See <code>Numeric#divmod</code>.
  */
 static VALUE
 fix_divmod(VALUE x, VALUE y)
@@ -3569,6 +3569,18 @@ fix_divmod(VALUE x, VALUE y)
     else {
 	return rb_num_coerce_bin(x, y, id_divmod);
     }
+}
+
+static VALUE
+int_divmod(VALUE x, VALUE y)
+{
+    if (FIXNUM_P(x)) {
+	return fix_divmod(x, y);
+    }
+    else if (RB_TYPE_P(x, T_BIGNUM)) {
+	return rb_big_divmod(x, y);
+    }
+    return Qnil;
 }
 
 /*
@@ -4830,7 +4842,7 @@ Init_Numeric(void)
     rb_define_method(rb_cFixnum, "div", fix_idiv, 1);
     rb_define_method(rb_cFixnum, "%", fix_mod, 1);
     rb_define_method(rb_cFixnum, "modulo", fix_mod, 1);
-    rb_define_method(rb_cFixnum, "divmod", fix_divmod, 1);
+    rb_define_method(rb_cInteger, "divmod", int_divmod, 1);
     rb_define_method(rb_cInteger, "fdiv", int_fdiv, 1);
     rb_define_method(rb_cInteger, "**", rb_int_pow, 1);
 

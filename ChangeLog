@@ -1,3 +1,10 @@
+Sat Apr 30 14:04:30 2016  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (int_divmod): {Fixnum,Bignum}#divmod is unified into
+	  Integer.
+
+	* bignum.c (rb_big_divmod): Don't define Bignum#divmod.
+
 Sat Apr 30 13:20:00 2016  Tanaka Akira  <akr@fsij.org>
 
 	* numeric.c (int_fdiv): {Fixnum,Bignum}#fdiv is unified into

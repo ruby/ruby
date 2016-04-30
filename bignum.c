@@ -6176,13 +6176,6 @@ rb_big_remainder(VALUE x, VALUE y)
     return bignorm(z);
 }
 
-/*
- *  call-seq:
- *     big.divmod(numeric)   -> array
- *
- *  See <code>Numeric#divmod</code>.
- *
- */
 VALUE
 rb_big_divmod(VALUE x, VALUE y)
 {
@@ -6920,7 +6913,6 @@ Init_Bignum(void)
     rb_define_method(rb_cBignum, "/", rb_big_div, 1);
     rb_define_method(rb_cBignum, "%", rb_big_modulo, 1);
     rb_define_method(rb_cBignum, "div", rb_big_idiv, 1);
-    rb_define_method(rb_cBignum, "divmod", rb_big_divmod, 1);
     rb_define_method(rb_cBignum, "modulo", rb_big_modulo, 1);
     rb_define_method(rb_cBignum, "remainder", rb_big_remainder, 1);
 
