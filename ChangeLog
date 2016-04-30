@@ -1,3 +1,7 @@
+Sat Apr 30 19:20:40 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* doc/standard_library.rdoc: Remove obsoleted classes and modules.
+
 Sat Apr 30 19:09:23 2016  Tanaka Akira  <akr@fsij.org>
 
 	* numeric.c (int_lt): Define Integer#<.

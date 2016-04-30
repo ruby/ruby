@@ -38,7 +38,6 @@ Net::HTTP:: HTTP client api for Ruby
 Net::IMAP:: Ruby client api for Internet Message Access Protocol
 Net::POP3:: Ruby client library for POP3
 Net::SMTP:: Simple Mail Transfer Protocol client library for Ruby
-Net::Telnet:: Telnet client library for Ruby
 Observable:: Provides a mechanism for publish/subscribe pattern in Ruby
 OpenURI:: An easy-to-use wrapper for Net::HTTP, Net::HTTPS and Net::FTP
 Open3:: Provides access to stdin, stdout and stderr when running other programs
@@ -52,7 +51,6 @@ Profiler__:: Provides a way to profile your Ruby application
 PStore:: Implements a file based persistence mechanism based on a Hash
 Queue:: Synchronized communication between threads, provided by thread.rb
 Racc:: A LALR(1) parser generator written in Ruby.
-Rake:: Ruby build program with capabilities similar to make
 RbConfig:: Information of your configure and build of Ruby
 RDoc:: Produces HTML and command-line documentation for Ruby
 resolv-replace.rb:: Replace Socket DNS with Resolv
@@ -109,7 +107,6 @@ Socket:: Access underlying OS socket implementations
 StringIO:: Pseudo I/O on String objects
 StringScanner:: Provides lexical scanning operations on a String
 Syslog:: Ruby interface for the POSIX system logging facility
-Thread:: Provides support classes for threaded programs
 Tk:: Provides a framework for building a Graphical User Interface (GUI)
 WIN32OLE:: Provides an interface for OLE Automation in Ruby
 Zlib:: Ruby interface for the zlib compression/decompression library
