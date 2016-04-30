@@ -3854,17 +3854,37 @@ fix_le(VALUE x, VALUE y)
 }
 
 /*
- * Document-method: Fixnum#~
+ * Document-method: Integer#~
  * call-seq:
- *   ~fix  ->  integer
+ *   ~integer  ->  integer
  *
  * One's complement: returns a number where each bit is flipped.
+ *
+ * Inverts the bits in a integer. As Integers are conceptually infinite
+ * length, the result acts as if it had an infinite number of one
+ * bits to the left. In hex representations, this is displayed
+ * as two periods to the left of the digits.
+ *
+ *   sprintf("%X", ~0x1122334455)    #=> "..FEEDDCCBBAA"
+ *
  */
 
 static VALUE
 fix_rev(VALUE num)
 {
     return ~num | FIXNUM_FLAG;
+}
+
+static VALUE
+int_comp(VALUE num)
+{
+    if (FIXNUM_P(num)) {
+	return fix_rev(num);
+    }
+    else if (RB_TYPE_P(num, T_BIGNUM)) {
+	return rb_big_neg(num);
+    }
+    return Qnil;
 }
 
 static int
@@ -4791,7 +4811,7 @@ Init_Numeric(void)
     rb_define_method(rb_cFixnum, "<",  fix_lt, 1);
     rb_define_method(rb_cFixnum, "<=", fix_le, 1);
 
-    rb_define_method(rb_cFixnum, "~", fix_rev, 0);
+    rb_define_method(rb_cInteger, "~", int_comp, 0);
     rb_define_method(rb_cInteger, "&", int_and, 1);
     rb_define_method(rb_cInteger, "|", int_or,  1);
     rb_define_method(rb_cInteger, "^", int_xor, 1);

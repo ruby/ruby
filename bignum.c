@@ -5546,19 +5546,7 @@ rb_big_uminus(VALUE x)
     return bignorm(z);
 }
 
-/*
- * call-seq:
- *     ~big  ->  integer
- *
- * Inverts the bits in big. As Bignums are conceptually infinite
- * length, the result acts as if it had an infinite number of one
- * bits to the left. In hex representations, this is displayed
- * as two periods to the left of the digits.
- *
- *   sprintf("%X", ~0x1122334455)    #=> "..FEEDDCCBBAA"
- */
-
-static VALUE
+VALUE
 rb_big_neg(VALUE x)
 {
     VALUE z = rb_big_clone(x);
@@ -6963,7 +6951,6 @@ Init_Bignum(void)
     rb_define_method(rb_cBignum, "remainder", rb_big_remainder, 1);
     rb_define_method(rb_cBignum, "fdiv", rb_big_fdiv, 1);
     rb_define_method(rb_cBignum, "**", rb_big_pow, 1);
-    rb_define_method(rb_cBignum, "~", rb_big_neg, 0);
 
     rb_define_method(rb_cBignum, "==", rb_big_eq, 1);
     rb_define_method(rb_cBignum, ">", big_gt, 1);
