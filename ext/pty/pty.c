@@ -164,7 +164,7 @@ establishShell(int argc, VALUE *argv, struct pty_info *info,
     char		errbuf[32];
 
     if (argc == 0) {
-	const char *shellname;
+	const char *shellname = "/bin/sh";
 
 	if ((p = getenv("SHELL")) != NULL) {
 	    shellname = p;
@@ -175,10 +175,6 @@ establishShell(int argc, VALUE *argv, struct pty_info *info,
 	    struct passwd *pwent = getpwnam(username ? username : getlogin());
 	    if (pwent && pwent->pw_shell)
 		shellname = pwent->pw_shell;
-	    else
-		shellname = "/bin/sh";
-#else
-	    shellname = "/bin/sh";
 #endif
 	}
 	v = rb_str_new2(shellname);
