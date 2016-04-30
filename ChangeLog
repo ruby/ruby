@@ -1,3 +1,7 @@
+Sat Apr 30 21:54:13 2016  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (Init_Numeric): Gather Fixnum method definitions.
+
 Sat Apr 30 21:28:14 2016  Tanaka Akira  <akr@fsij.org>
 
 	* numeric.c (rb_int_div): Define Integer#/.

@@ -4950,19 +4950,12 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, "round", int_round, -1);
     rb_define_method(rb_cInteger, "<=>", int_cmp, 1);
 
-    rb_cFixnum = rb_define_class("Fixnum", rb_cInteger);
-
     rb_define_method(rb_cInteger, "-@", rb_int_uminus, 0);
-    rb_define_method(rb_cFixnum, "+", fix_plus, 1);
     rb_define_method(rb_cInteger, "+", rb_int_plus, 1);
-    rb_define_method(rb_cFixnum, "-", fix_minus, 1);
     rb_define_method(rb_cInteger, "-", rb_int_minus, 1);
-    rb_define_method(rb_cFixnum, "*", fix_mul, 1);
     rb_define_method(rb_cInteger, "*", rb_int_mul, 1);
-    rb_define_method(rb_cFixnum, "/", fix_div, 1);
     rb_define_method(rb_cInteger, "/", rb_int_div, 1);
     rb_define_method(rb_cInteger, "div", rb_int_idiv, 1);
-    rb_define_method(rb_cFixnum, "%", fix_mod, 1);
     rb_define_method(rb_cInteger, "%", rb_int_modulo, 1);
     rb_define_method(rb_cInteger, "modulo", rb_int_modulo, 1);
     rb_define_method(rb_cInteger, "remainder", int_remainder, 1);
@@ -4979,13 +4972,6 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, "<", int_lt, 1);
     rb_define_method(rb_cInteger, "<=", int_le, 1);
 
-    rb_define_method(rb_cFixnum, "==", fix_equal, 1);
-    rb_define_method(rb_cFixnum, "===", fix_equal, 1);
-    rb_define_method(rb_cFixnum, ">",  fix_gt, 1);
-    rb_define_method(rb_cFixnum, ">=", fix_ge, 1);
-    rb_define_method(rb_cFixnum, "<",  fix_lt, 1);
-    rb_define_method(rb_cFixnum, "<=", fix_le, 1);
-
     rb_define_method(rb_cInteger, "~", int_comp, 0);
     rb_define_method(rb_cInteger, "&", int_and, 1);
     rb_define_method(rb_cInteger, "|", int_or,  1);
@@ -4997,6 +4983,22 @@ Init_Numeric(void)
 
     rb_define_method(rb_cInteger, "size", int_size, 0);
     rb_define_method(rb_cInteger, "bit_length", rb_int_bit_length, 0);
+
+    rb_cFixnum = rb_define_class("Fixnum", rb_cInteger);
+
+    rb_define_method(rb_cFixnum, "+", fix_plus, 1);
+    rb_define_method(rb_cFixnum, "-", fix_minus, 1);
+    rb_define_method(rb_cFixnum, "*", fix_mul, 1);
+    rb_define_method(rb_cFixnum, "/", fix_div, 1);
+    rb_define_method(rb_cFixnum, "%", fix_mod, 1);
+
+    rb_define_method(rb_cFixnum, "==", fix_equal, 1);
+    rb_define_method(rb_cFixnum, "===", fix_equal, 1);
+    rb_define_method(rb_cFixnum, ">",  fix_gt, 1);
+    rb_define_method(rb_cFixnum, ">=", fix_ge, 1);
+    rb_define_method(rb_cFixnum, "<",  fix_lt, 1);
+    rb_define_method(rb_cFixnum, "<=", fix_le, 1);
+
     rb_define_method(rb_cFixnum, "succ", fix_succ, 0);
 
     rb_cFloat  = rb_define_class("Float", rb_cNumeric);
