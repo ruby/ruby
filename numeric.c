@@ -3416,6 +3416,15 @@ int_fdiv(VALUE x, VALUE y)
     return Qnil;
 }
 
+/*
+ * Document-method: Fixnum#/
+ * call-seq:
+ *   fix / numeric  ->  numeric_result
+ *
+ * Performs division: the class of the resulting object depends on the class of
+ * +numeric+ and on the magnitude of the result. It may return a Bignum.
+ */
+
 static VALUE
 fix_divide(VALUE x, VALUE y, ID op)
 {
@@ -3449,15 +3458,6 @@ fix_divide(VALUE x, VALUE y, ID op)
 	return rb_num_coerce_bin(x, y, op);
     }
 }
-
-/*
- * Document-method: Fixnum#/
- * call-seq:
- *   fix / numeric  ->  numeric_result
- *
- * Performs division: the class of the resulting object depends on the class of
- * +numeric+ and on the magnitude of the result. It may return a Bignum.
- */
 
 static VALUE
 fix_div(VALUE x, VALUE y)
