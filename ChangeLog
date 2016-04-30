@@ -1,3 +1,12 @@
+Sat Apr 30 18:44:05 2016  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (int_le): Define Integer#<=.
+
+	* bignum.c (rb_big_le): Don't define Bignum#<=.
+	  Renamed from big_le.
+
+	* internal.h (rb_big_le): Declared.
+
 Sat Apr 30 18:11:44 2016  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (Init_Bignum): Define Integer#GMP_VERSION.
