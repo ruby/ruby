@@ -6254,19 +6254,6 @@ big_fdiv_float(VALUE x, VALUE y)
     return big_fdiv(x, y, i - DBL_MANT_DIG);
 }
 
-/*
- *  call-seq:
-  *     big.fdiv(numeric) -> float
- *
- *  Returns the floating point result of dividing <i>big</i> by
- *  <i>numeric</i>.
- *
- *     -1234567890987654321.fdiv(13731)      #=> -89910996357705.5
- *     -1234567890987654321.fdiv(13731.24)   #=> -89909424858035.7
- *
- */
-
-
 VALUE
 rb_big_fdiv(VALUE x, VALUE y)
 {
@@ -6936,7 +6923,6 @@ Init_Bignum(void)
     rb_define_method(rb_cBignum, "divmod", rb_big_divmod, 1);
     rb_define_method(rb_cBignum, "modulo", rb_big_modulo, 1);
     rb_define_method(rb_cBignum, "remainder", rb_big_remainder, 1);
-    rb_define_method(rb_cBignum, "fdiv", rb_big_fdiv, 1);
 
     rb_define_method(rb_cBignum, "==", rb_big_eq, 1);
     rb_define_method(rb_cBignum, ">", big_gt, 1);

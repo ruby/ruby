@@ -3373,14 +3373,17 @@ rb_int_mul(VALUE x, VALUE y)
 }
 
 /*
- *  Document-method: Fixnum#fdiv
+ *  Document-method: Integer#fdiv
  *  call-seq:
- *     fix.fdiv(numeric)  ->  float
+ *     integer.fdiv(numeric)  ->  float
  *
  *  Returns the floating point result of dividing +fix+ by +numeric+.
  *
  *     654321.fdiv(13731)      #=> 47.6528293642124
  *     654321.fdiv(13731.24)   #=> 47.6519964693647
+ *
+ *     -1234567890987654321.fdiv(13731)      #=> -89910996357705.5
+ *     -1234567890987654321.fdiv(13731.24)   #=> -89909424858035.7
  *
  */
 
@@ -3399,6 +3402,18 @@ fix_fdiv(VALUE x, VALUE y)
     else {
 	return rb_num_coerce_bin(x, y, rb_intern("fdiv"));
     }
+}
+
+static VALUE
+int_fdiv(VALUE x, VALUE y)
+{
+    if (FIXNUM_P(x)) {
+	return fix_fdiv(x, y);
+    }
+    else if (RB_TYPE_P(x, T_BIGNUM)) {
+	return rb_big_fdiv(x, y);
+    }
+    return Qnil;
 }
 
 static VALUE
@@ -4816,7 +4831,7 @@ Init_Numeric(void)
     rb_define_method(rb_cFixnum, "%", fix_mod, 1);
     rb_define_method(rb_cFixnum, "modulo", fix_mod, 1);
     rb_define_method(rb_cFixnum, "divmod", fix_divmod, 1);
-    rb_define_method(rb_cFixnum, "fdiv", fix_fdiv, 1);
+    rb_define_method(rb_cInteger, "fdiv", int_fdiv, 1);
     rb_define_method(rb_cInteger, "**", rb_int_pow, 1);
 
     rb_define_method(rb_cInteger, "abs", int_abs, 0);
