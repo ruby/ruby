@@ -3279,9 +3279,10 @@ rb_int_plus(VALUE x, VALUE y)
 }
 
 /*
+ * Document-method: Integer#-
  * Document-method: Fixnum#-
  * call-seq:
- *   fix - numeric  ->  numeric_result
+ *   int - numeric  ->  numeric_result
  *
  * Performs subtraction: the class of the resulting object depends on the class
  * of +numeric+ and on the magnitude of the result. It may return a Bignum.
@@ -4940,6 +4941,7 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, "-@", rb_int_uminus, 0);
     rb_define_method(rb_cFixnum, "+", fix_plus, 1);
     rb_define_method(rb_cFixnum, "-", fix_minus, 1);
+    rb_define_method(rb_cInteger, "-", rb_int_minus, 1);
     rb_define_method(rb_cFixnum, "*", fix_mul, 1);
     rb_define_method(rb_cInteger, "*", rb_int_mul, 1);
     rb_define_method(rb_cFixnum, "/", fix_div, 1);
