@@ -5460,16 +5460,8 @@ big_ge(VALUE x, VALUE y)
     return big_op(x, y, big_op_ge);
 }
 
-/*
- * call-seq:
- *   big < real  ->  true or false
- *
- * Returns <code>true</code> if the value of <code>big</code> is
- * less than that of <code>real</code>.
- */
-
-static VALUE
-big_lt(VALUE x, VALUE y)
+VALUE
+rb_big_lt(VALUE x, VALUE y)
 {
     return big_op(x, y, big_op_lt);
 }
@@ -6875,7 +6867,6 @@ Init_Bignum(void)
     rb_define_method(rb_cBignum, "==", rb_big_eq, 1);
     rb_define_method(rb_cBignum, ">", big_gt, 1);
     rb_define_method(rb_cBignum, ">=", big_ge, 1);
-    rb_define_method(rb_cBignum, "<", big_lt, 1);
     rb_define_method(rb_cBignum, "===", rb_big_eq, 1);
 
 #ifdef USE_GMP
