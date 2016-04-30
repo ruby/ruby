@@ -211,6 +211,7 @@ establishShell(int argc, VALUE *argv, struct pty_info *info,
     RB_GC_GUARD(carg.execarg_obj);
 }
 
+#if defined(HAVE_POSIX_OPENPT) || defined(HAVE_OPENPTY) || defined(HAVE_PTSNAME)
 static int
 no_mesg(char *slavedevice, int nomesg)
 {
@@ -219,6 +220,7 @@ no_mesg(char *slavedevice, int nomesg)
     else
         return 0;
 }
+#endif
 
 static int
 get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, int fail)
@@ -365,13 +367,13 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
 #else
     /* BSD */
     int	 masterfd = -1, slavefd = -1;
-    const char *const *p;
+    int  i;
     char MasterName[DEVICELEN];
 
 #if defined(__hpux)
     static const char MasterDevice[] = "/dev/ptym/pty%s";
     static const char SlaveDevice[] =  "/dev/pty/tty%s";
-    static const char *const deviceNo[] = {
+    static const char deviceNo[][3] = {
     "p0","p1","p2","p3","p4","p5","p6","p7",
     "p8","p9","pa","pb","pc","pd","pe","pf",
     "q0","q1","q2","q3","q4","q5","q6","q7",
@@ -388,12 +390,11 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     "v8","v9","va","vb","vc","vd","ve","vf",
     "w0","w1","w2","w3","w4","w5","w6","w7",
     "w8","w9","wa","wb","wc","wd","we","wf",
-    0
     };
 #elif defined(_IBMESA)  /* AIX/ESA */
     static const char MasterDevice[] = "/dev/ptyp%s";
     static const char SlaveDevice[] = "/dev/ttyp%s";
-    static const char *const deviceNo[] = {
+    static const char deviceNo[][3] = {
     "00","01","02","03","04","05","06","07","08","09","0a","0b","0c","0d","0e","0f",
     "10","11","12","13","14","15","16","17","18","19","1a","1b","1c","1d","1e","1f",
     "20","21","22","23","24","25","26","27","28","29","2a","2b","2c","2d","2e","2f",
@@ -410,12 +411,11 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     "d0","d1","d2","d3","d4","d5","d6","d7","d8","d9","da","db","dc","dd","de","df",
     "e0","e1","e2","e3","e4","e5","e6","e7","e8","e9","ea","eb","ec","ed","ee","ef",
     "f0","f1","f2","f3","f4","f5","f6","f7","f8","f9","fa","fb","fc","fd","fe","ff",
-    0
     };
 #else /* 4.2BSD */
     static const char MasterDevice[] = "/dev/pty%s";
     static const char SlaveDevice[] = "/dev/tty%s";
-    static const char *const deviceNo[] = {
+    static const char deviceNo[][3] = {
     "p0","p1","p2","p3","p4","p5","p6","p7",
     "p8","p9","pa","pb","pc","pd","pe","pf",
     "q0","q1","q2","q3","q4","q5","q6","q7",
@@ -424,15 +424,15 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     "r8","r9","ra","rb","rc","rd","re","rf",
     "s0","s1","s2","s3","s4","s5","s6","s7",
     "s8","s9","sa","sb","sc","sd","se","sf",
-    0
     };
 #endif
-    for (p = deviceNo; *p != NULL; p++) {
-	snprintf(MasterName, sizeof MasterName, MasterDevice, *p);
+    for (i = 0; i < numberof(deviceNo); i++) {
+	const char *const devno = deviceNo[i];
+	snprintf(MasterName, sizeof MasterName, MasterDevice, devno);
 	if ((masterfd = rb_cloexec_open(MasterName,O_RDWR,0)) >= 0) {
             rb_update_max_fd(masterfd);
 	    *master = masterfd;
-	    snprintf(SlaveName, DEVICELEN, SlaveDevice, *p);
+	    snprintf(SlaveName, DEVICELEN, SlaveDevice, devno);
 	    if ((slavefd = rb_cloexec_open(SlaveName,O_RDWR,0)) >= 0) {
                 rb_update_max_fd(slavefd);
 		*slave = slavefd;
@@ -674,9 +674,17 @@ pty_check(int argc, VALUE *argv, VALUE self)
     VALUE pid, exc;
     rb_pid_t cpid;
     int status;
+    const int flag =
+#ifdef WNOHANG
+	WNOHANG|
+#endif
+#ifdef WUNTRACED
+	WUNTRACED|
+#endif
+	0;
 
     rb_scan_args(argc, argv, "11", &pid, &exc);
-    cpid = rb_waitpid(NUM2PIDT(pid), &status, WNOHANG|WUNTRACED);
+    cpid = rb_waitpid(NUM2PIDT(pid), &status, flag);
     if (cpid == -1 || cpid == 0) return Qnil;
 
     if (!RTEST(exc)) return rb_last_status_get();
