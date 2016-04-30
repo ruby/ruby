@@ -6126,15 +6126,6 @@ rb_big_idiv(VALUE x, VALUE y)
     return rb_big_divide(x, y, rb_intern("div"));
 }
 
-/*
- *  call-seq:
- *     big % other         -> Numeric
- *     big.modulo(other)   -> Numeric
- *
- *  Returns big modulo other. See Numeric.divmod for more
- *  information.
- */
-
 VALUE
 rb_big_modulo(VALUE x, VALUE y)
 {
@@ -6913,7 +6904,6 @@ Init_Bignum(void)
     rb_define_method(rb_cBignum, "/", rb_big_div, 1);
     rb_define_method(rb_cBignum, "%", rb_big_modulo, 1);
     rb_define_method(rb_cBignum, "div", rb_big_idiv, 1);
-    rb_define_method(rb_cBignum, "modulo", rb_big_modulo, 1);
     rb_define_method(rb_cBignum, "remainder", rb_big_remainder, 1);
 
     rb_define_method(rb_cBignum, "==", rb_big_eq, 1);

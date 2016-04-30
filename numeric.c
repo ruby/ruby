@@ -3494,7 +3494,7 @@ rb_int_idiv(VALUE x, VALUE y)
 
 /*
  *  Document-method: Fixnum#%
- *  Document-method: Fixnum#modulo
+ *  Document-method: Integer#modulo
  *  call-seq:
  *    fix % other        ->  real
  *    fix.modulo(other)  ->  real
@@ -4841,7 +4841,7 @@ Init_Numeric(void)
     rb_define_method(rb_cFixnum, "/", fix_div, 1);
     rb_define_method(rb_cFixnum, "div", fix_idiv, 1);
     rb_define_method(rb_cFixnum, "%", fix_mod, 1);
-    rb_define_method(rb_cFixnum, "modulo", fix_mod, 1);
+    rb_define_method(rb_cInteger, "modulo", rb_int_modulo, 1);
     rb_define_method(rb_cInteger, "divmod", int_divmod, 1);
     rb_define_method(rb_cInteger, "fdiv", int_fdiv, 1);
     rb_define_method(rb_cInteger, "**", rb_int_pow, 1);
