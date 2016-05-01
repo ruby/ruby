@@ -81,7 +81,7 @@ recalc_remove_ruby_vm_event_flags(rb_event_flag_t events)
     ruby_vm_event_flags = 0;
 
     for (i=0; i<MAX_EVENT_NUM; i++) {
-	if (events & (1 << i)) {
+	if (events & ((rb_event_flag_t)1 << i)) {
 	    ruby_event_flag_count[i]--;
 	}
 	ruby_vm_event_flags |= ruby_event_flag_count[i] ? (1<<i) : 0;

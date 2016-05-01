@@ -1,3 +1,8 @@
+Mon May  2 00:41:53 2016  Tanaka Akira  <akr@fsij.org>
+
+	* vm_trace.c (recalc_remove_ruby_vm_event_flags): Add a cast to
+	  avoid signed integer overflow.
+
 Mon May  2 00:06:04 2016  Tanaka Akira  <akr@fsij.org>
 
 	* test/lib/envutil.rb: Define Integer::{FIXNUM_MIN,FIXNUM_MAX}.
