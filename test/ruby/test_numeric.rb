@@ -252,8 +252,7 @@ class TestNumeric < Test::Unit::TestCase
   end
 
   def test_step
-    i, bignum = 32, 1 << 30
-    bignum <<= (i <<= 1) - 32 until bignum.is_a?(Bignum)
+    bignum = Integer::FIXNUM_MAX + 1
     assert_raise(ArgumentError) { 1.step(10, 1, 0) { } }
     assert_raise(ArgumentError) { 1.step(10, 1, 0).size }
     assert_raise(ArgumentError) { 1.step(10, 0) { } }

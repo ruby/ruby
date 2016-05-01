@@ -1,3 +1,7 @@
+Mon May  2 01:27:59 2016  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/test_numeric.rb (test_step): Use Integer::FIXNUM_MAX.
+
 Mon May  2 01:15:01 2016  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/test_module.rb (test_name): Use Integer instead of Fixnum.
