@@ -273,7 +273,7 @@ if defined? GDBM
         num += 1 if i == 0
         assert_equal(num, @gdbm.size)
 
-        # Fixnum
+        # Integer
         assert_equal('200', @gdbm['100'] = '200')
         assert_equal('200', @gdbm['100'])
 

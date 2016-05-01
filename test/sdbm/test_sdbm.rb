@@ -171,7 +171,7 @@ class TestSDBM < Test::Unit::TestCase
       num += 1 if i == 0
       assert_equal(num, @sdbm.size)
 
-      # Fixnum
+      # Integer
       assert_equal('200', @sdbm['100'] = '200')
       assert_equal('200', @sdbm['100'])
 
