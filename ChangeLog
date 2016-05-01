@@ -1,3 +1,14 @@
+Mon May  2 01:00:04 2016  Tanaka Akira  <akr@fsij.org>
+
+	* test/lib/test/unit/assertions.rb (assert_fixnum): Defined.
+	  (assert_bignum): Defined.
+
+	* test/ruby/test_bignum.rb: Use assert_bignum.
+
+	* test/ruby/test_integer_comb.rb: Use assert_fixnum and assert_bignum.
+
+	* test/ruby/test_optimization.rb: Ditto.
+
 Mon May  2 00:41:53 2016  Tanaka Akira  <akr@fsij.org>
 
 	* vm_trace.c (recalc_remove_ruby_vm_event_flags): Add a cast to

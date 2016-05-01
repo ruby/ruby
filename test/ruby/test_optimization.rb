@@ -25,8 +25,8 @@ class TestRubyOptimization < Test::Unit::TestCase
   def test_fixnum_plus
     a, b = 1, 2
     assert_equal 3, a + b
-    assert_instance_of Fixnum, FIXNUM_MAX
-    assert_instance_of Bignum, FIXNUM_MAX + 1
+    assert_fixnum FIXNUM_MAX
+    assert_bignum FIXNUM_MAX + 1
 
     assert_equal 21, 10 + 11
     assert_redefine_method('Fixnum', '+', 'assert_equal 11, 10 + 11')
@@ -34,8 +34,8 @@ class TestRubyOptimization < Test::Unit::TestCase
 
   def test_fixnum_minus
     assert_equal 5, 8 - 3
-    assert_instance_of Fixnum, FIXNUM_MIN
-    assert_instance_of Bignum, FIXNUM_MIN - 1
+    assert_fixnum FIXNUM_MIN
+    assert_bignum FIXNUM_MIN - 1
 
     assert_equal 5, 8 - 3
     assert_redefine_method('Fixnum', '-', 'assert_equal 3, 8 - 3')

@@ -114,17 +114,17 @@ class TestIntegerComb < Test::Unit::TestCase
   FIXNUM_MAX = Integer::FIXNUM_MAX
 
   def test_fixnum_range
-    assert_instance_of(Bignum, FIXNUM_MIN-1)
-    assert_instance_of(Fixnum, FIXNUM_MIN)
-    assert_instance_of(Fixnum, FIXNUM_MAX)
-    assert_instance_of(Bignum, FIXNUM_MAX+1)
+    assert_bignum(FIXNUM_MIN-1)
+    assert_fixnum(FIXNUM_MIN)
+    assert_fixnum(FIXNUM_MAX)
+    assert_bignum(FIXNUM_MAX+1)
   end
 
   def check_class(n)
     if FIXNUM_MIN <= n && n <= FIXNUM_MAX
-      assert_instance_of(Fixnum, n)
+      assert_fixnum(n)
     else
-      assert_instance_of(Bignum, n)
+      assert_bignum(n)
     end
   end
 

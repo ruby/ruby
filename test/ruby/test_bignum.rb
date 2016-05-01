@@ -51,18 +51,18 @@ class TestBignum < Test::Unit::TestCase
   end
 
   def test_prepare
-    assert_instance_of(Bignum, @big)
-    assert_instance_of(Bignum, T_ZERO)
-    assert_instance_of(Bignum, T_ONE)
-    assert_instance_of(Bignum, T_MONE)
-    assert_instance_of(Bignum, T31)
-    assert_instance_of(Bignum, T31P)
-    assert_instance_of(Bignum, T32)
-    assert_instance_of(Bignum, T32P)
-    assert_instance_of(Bignum, T64)
-    assert_instance_of(Bignum, T64P)
-    assert_instance_of(Bignum, T1024)
-    assert_instance_of(Bignum, T1024P)
+    assert_bignum(@big)
+    assert_bignum(T_ZERO)
+    assert_bignum(T_ONE)
+    assert_bignum(T_MONE)
+    assert_bignum(T31)
+    assert_bignum(T31P)
+    assert_bignum(T32)
+    assert_bignum(T32P)
+    assert_bignum(T64)
+    assert_bignum(T64P)
+    assert_bignum(T1024)
+    assert_bignum(T1024P)
   end
 
   def test_bignum
@@ -469,7 +469,7 @@ class TestBignum < Test::Unit::TestCase
     assert_raise(TypeError, ArgumentError) { T32**"foo" }
 
     feature3429 = '[ruby-core:30735]'
-    assert_instance_of(Bignum, (2 ** 7830457), feature3429)
+    assert_bignum((2 ** 7830457), feature3429)
   end
 
   def test_and
