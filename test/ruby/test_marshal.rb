@@ -622,8 +622,7 @@ class TestMarshal < Test::Unit::TestCase
 
   def test_untainted_numeric
     bug8945 = '[ruby-core:57346] [Bug #8945] Numerics never be tainted'
-    b = 1 << 32
-    b *= b until Bignum === b
+    b = Integer::FIXNUM_MAX + 1
     tainted = [0, 1.0, 1.72723e-77, b].select do |x|
       Marshal.load(Marshal.dump(x).taint).tainted?
     end

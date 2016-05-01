@@ -1,3 +1,17 @@
+Mon May  2 00:06:04 2016  Tanaka Akira  <akr@fsij.org>
+
+	* test/lib/envutil.rb: Define Integer::{FIXNUM_MIN,FIXNUM_MAX}.
+
+	* test/ruby/test_bignum.rb: Use Integer::{FIXNUM_MIN,FIXNUM_MAX}.
+
+	* test/ruby/test_bignum.rb: Ditto.
+
+	* test/ruby/test_integer_comb.rb: Ditto.
+
+	* test/ruby/test_marshal.rb: Ditto.
+
+	* test/ruby/test_optimization.rb: Ditto.
+
 Sun May  1 23:59:59 2016  Kenta Murata  <mrkn@mrkn.jp>
 
 	* array.c (rb_ary_sum): fix for mathn

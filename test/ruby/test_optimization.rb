@@ -3,20 +3,8 @@ require 'test/unit'
 require 'objspace'
 
 class TestRubyOptimization < Test::Unit::TestCase
-
-  BIGNUM_POS_MIN_32 = 1073741824      # 2 ** 30
-  if BIGNUM_POS_MIN_32.kind_of?(Fixnum)
-    FIXNUM_MAX = 4611686018427387903  # 2 ** 62 - 1
-  else
-    FIXNUM_MAX = 1073741823           # 2 ** 30 - 1
-  end
-
-  BIGNUM_NEG_MAX_32 = -1073741825     # -2 ** 30 - 1
-  if BIGNUM_NEG_MAX_32.kind_of?(Fixnum)
-    FIXNUM_MIN = -4611686018427387904 # -2 ** 62
-  else
-    FIXNUM_MIN = -1073741824          # -2 ** 30
-  end
+  FIXNUM_MAX = Integer::FIXNUM_MAX
+  FIXNUM_MIN = Integer::FIXNUM_MIN
 
   def assert_redefine_method(klass, method, code, msg = nil)
     assert_separately([], <<-"end;")#    do

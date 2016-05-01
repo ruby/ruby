@@ -2,16 +2,13 @@
 require 'test/unit'
 
 class TestBignum < Test::Unit::TestCase
-  b = 2**64
-  b *= b until Bignum === b
+  FIXNUM_MIN = Integer::FIXNUM_MIN
+  FIXNUM_MAX = Integer::FIXNUM_MAX
 
-  f = b
-  while Bignum === f-1
-    f >>= 1
-  end
-  BIGNUM_MIN = f
-  FIXNUM_MAX = f-1
+  BIGNUM_MIN = FIXNUM_MAX + 1
+  b = BIGNUM_MIN
 
+  f = BIGNUM_MIN
   n = 0
   until f == 0
     f >>= 1

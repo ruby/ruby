@@ -2,7 +2,6 @@
 require 'test/unit'
 EnvUtil.suppress_warning {require 'continuation'}
 require 'stringio'
-require "rbconfig/sizeof"
 
 class TestEnumerable < Test::Unit::TestCase
   def setup
@@ -185,8 +184,8 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal(nil, @empty.inject() {9})
   end
 
-  FIXNUM_MIN = -(1 << (8 * RbConfig::SIZEOF['long'] - 2))
-  FIXNUM_MAX = (1 << (8 * RbConfig::SIZEOF['long'] - 2)) - 1
+  FIXNUM_MIN = Integer::FIXNUM_MIN
+  FIXNUM_MAX = Integer::FIXNUM_MAX
 
   def test_inject_array_mul
     assert_equal(nil, [].inject(:*))

@@ -110,12 +110,8 @@ class TestIntegerComb < Test::Unit::TestCase
   #VS.concat VS.find_all {|v| Fixnum === v }.map {|v| 0x4000000000000000.coerce(v)[0] }
   #VS.sort! {|a, b| a.abs <=> b.abs }
 
-  min = -1
-  min *= 2 while min.class == Fixnum
-  FIXNUM_MIN = min/2
-  max = 1
-  max *= 2 while (max-1).class == Fixnum
-  FIXNUM_MAX = max/2-1
+  FIXNUM_MIN = Integer::FIXNUM_MIN
+  FIXNUM_MAX = Integer::FIXNUM_MAX
 
   def test_fixnum_range
     assert_instance_of(Bignum, FIXNUM_MIN-1)
