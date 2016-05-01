@@ -519,7 +519,7 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_name
-    assert_equal("Fixnum", Fixnum.name)
+    assert_equal("Integer", Integer.name)
     assert_equal("TestModule::Mixin",  Mixin.name)
     assert_equal("TestModule::User",   User.name)
   end

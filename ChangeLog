@@ -1,3 +1,7 @@
+Mon May  2 01:15:01 2016  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/test_module.rb (test_name): Use Integer instead of Fixnum.
+
 Mon May  2 01:00:04 2016  Tanaka Akira  <akr@fsij.org>
 
 	* test/lib/test/unit/assertions.rb (assert_fixnum): Defined.
