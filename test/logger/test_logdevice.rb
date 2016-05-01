@@ -309,7 +309,6 @@ class TestLogDevice < Test::Unit::TestCase
         logger.info("0" * 15)
         logger.info("0" * 15)
         logger.info("0" * 15)
-        logger.info("0" * 15)
         assert_file.exist?(@filename)
         assert_file.exist?(filename1)
         assert_file.exist?(filename2)
