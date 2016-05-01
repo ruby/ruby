@@ -54,13 +54,7 @@
 #     define FIBER_USE_NATIVE 1
 #   endif
 # elif defined(_WIN32)
-#   if _WIN32_WINNT >= 0x0400
-/* only when _WIN32_WINNT >= 0x0400 on Windows because Fiber APIs are
- * supported only such building (and running) environments.
- * [ruby-dev:41192]
- */
-#     define FIBER_USE_NATIVE 1
-#   endif
+#  define FIBER_USE_NATIVE 1
 # endif
 #endif
 #if !defined(FIBER_USE_NATIVE)
