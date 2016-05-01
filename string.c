@@ -429,22 +429,27 @@ search_nonascii(const char *p, const char *e)
 #endif
 
 #if !UNALIGNED_WORD_ACCESS
-    if (e - p > SIZEOF_VOIDP) {
-	switch (8 - (uintptr_t)p % 8) {
+    if (e - p >= SIZEOF_VOIDP) {
+	if ((uintptr_t)p % SIZEOF_VOIDP) {
+	    int l = SIZEOF_VOIDP - (uintptr_t)p % SIZEOF_VOIDP;
+	    p += l;
+	    switch (l) {
+	      default: UNREACHABLE;
 #if SIZEOF_VOIDP > 4
-	  case 7: if (*p&0x80) return p; p++;
-	  case 6: if (*p&0x80) return p; p++;
-	  case 5: if (*p&0x80) return p; p++;
-	  case 4: if (*p&0x80) return p; p++;
+	      case 7: if (p[-7]&0x80) return p-7;
+	      case 6: if (p[-6]&0x80) return p-6;
+	      case 5: if (p[-5]&0x80) return p-5;
+	      case 4: if (p[-4]&0x80) return p-4;
 #endif
-	  case 3: if (*p&0x80) return p; p++;
-	  case 2: if (*p&0x80) return p; p++;
-	  case 1: if (*p&0x80) return p; p++;
+	      case 3: if (p[-3]&0x80) return p-3;
+	      case 2: if (p[-2]&0x80) return p-2;
+	      case 1: if (p[-1]&0x80) return p-1;
+	      case 0: break;
+	    }
 	}
-    }
-#endif
-
+#else
     {
+#endif
 	const uintptr_t *s = (const uintptr_t *)p;
 	const uintptr_t *t = (const uintptr_t *)(e - (SIZEOF_VOIDP-1));
 	for (;s < t; s++) {
