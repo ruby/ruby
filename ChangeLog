@@ -203,7 +203,7 @@ Sat Apr 30 11:18:47 2016  Yuichiro Kaneko  <yui-knk@ruby-lang.org>
 Sat Apr 30 10:09:04 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/pty/pty.c (establishShell): honor USER environment variable
-	  and login name over uid, one pid can be shared by some login
+	  and login name over uid, one uid can be shared by some login
 	  names.
 
 Fri Apr 29 22:40:28 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
