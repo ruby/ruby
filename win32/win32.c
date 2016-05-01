@@ -580,18 +580,6 @@ init_env(void)
 #undef set_env_val
 }
 
-
-typedef BOOL (WINAPI *cancel_io_t)(HANDLE);
-static cancel_io_t cancel_io = NULL;
-
-/* License: Ruby's */
-static void
-init_func(void)
-{
-    if (!cancel_io)
-	cancel_io = (cancel_io_t)get_proc_address("kernel32", "CancelIo", NULL);
-}
-
 static void init_stdhandle(void);
 
 #if RUBY_MSVCRT_VERSION >= 80
@@ -789,8 +777,6 @@ rb_w32_sysinit(int *argc, char ***argv)
     tzset();
 
     init_env();
-
-    init_func();
 
     init_stdhandle();
 
@@ -2452,7 +2438,7 @@ static int is_console(SOCKET);
 int
 rb_w32_io_cancelable_p(int fd)
 {
-    return cancel_io != NULL && (is_socket(TO_SOCKET(fd)) || !is_console(TO_SOCKET(fd)));
+    return is_socket(TO_SOCKET(fd)) || !is_console(TO_SOCKET(fd));
 }
 
 /* License: Ruby's */
@@ -3340,7 +3326,7 @@ finish_overlapped_socket(BOOL input, SOCKET s, WSAOVERLAPPED *wol, int result, D
 	  case WAIT_OBJECT_0 + 1:
 	    /* interrupted */
 	    *len = -1;
-	    cancel_io((HANDLE)s);
+	    CancelIo((HANDLE)s);
 	    break;
 	}
     }
@@ -3374,7 +3360,7 @@ overlapped_socket_io(BOOL input, int fd, char *buf, int len, int flags,
 
     s = TO_SOCKET(fd);
     socklist_lookup(s, &mode);
-    if (!cancel_io || (GET_FLAGS(mode) & O_NONBLOCK)) {
+    if (GET_FLAGS(mode) & O_NONBLOCK) {
 	RUBY_CRITICAL({
 	    if (input) {
 		if (addr && addrlen)
@@ -3525,7 +3511,7 @@ recvmsg(int fd, struct msghdr *msg, int flags)
     wsamsg.dwFlags |= flags;
 
     socklist_lookup(s, &mode);
-    if (!cancel_io || (GET_FLAGS(mode) & O_NONBLOCK)) {
+    if (GET_FLAGS(mode) & O_NONBLOCK) {
 	RUBY_CRITICAL({
 	    if ((ret = pWSARecvMsg(s, &wsamsg, &len, NULL, NULL)) == SOCKET_ERROR) {
 		errno = map_errno(WSAGetLastError());
@@ -3582,7 +3568,7 @@ sendmsg(int fd, const struct msghdr *msg, int flags)
     msghdr_to_wsamsg(msg, &wsamsg);
 
     socklist_lookup(s, &mode);
-    if (!cancel_io || (GET_FLAGS(mode) & O_NONBLOCK)) {
+    if (GET_FLAGS(mode) & O_NONBLOCK) {
 	RUBY_CRITICAL({
 	    if ((ret = pWSASendMsg(s, &wsamsg, flags, &len, NULL, NULL)) == SOCKET_ERROR) {
 		errno = map_errno(WSAGetLastError());
@@ -4740,21 +4726,7 @@ kill(int pid, int sig)
 static int
 wlink(const WCHAR *from, const WCHAR *to)
 {
-    typedef BOOL (WINAPI link_func)(LPCWSTR, LPCWSTR, LPSECURITY_ATTRIBUTES);
-    static link_func *pCreateHardLinkW = NULL;
-    static int myerrno = 0;
-
-    if (!pCreateHardLinkW && !myerrno) {
-	pCreateHardLinkW = (link_func *)get_proc_address("kernel32", "CreateHardLinkW", NULL);
-	if (!pCreateHardLinkW)
-	    myerrno = ENOSYS;
-    }
-    if (!pCreateHardLinkW) {
-	errno = myerrno;
-	return -1;
-    }
-
-    if (!pCreateHardLinkW(to, from, NULL)) {
+    if (!CreateHardLinkW(to, from, NULL)) {
 	errno = map_errno(GetLastError());
 	return -1;
     }
@@ -4821,25 +4793,12 @@ reparse_symlink(const WCHAR *path, rb_w32_reparse_buffer_t *rp, size_t size)
     DWORD ret;
     int e = 0;
 
-    typedef BOOL (WINAPI *device_io_control_func)(HANDLE, DWORD, LPVOID,
-						  DWORD, LPVOID, DWORD,
-						  LPDWORD, LPOVERLAPPED);
-    static device_io_control_func device_io_control = (device_io_control_func)-1;
-
-    if (device_io_control == (device_io_control_func)-1) {
-	device_io_control = (device_io_control_func)
-	    get_proc_address("kernel32", "DeviceIoControl", NULL);
-    }
-    if (!device_io_control) {
-	return ENOSYS;
-    }
-
     f = open_special(path, 0, FILE_FLAG_OPEN_REPARSE_POINT);
     if (f == INVALID_HANDLE_VALUE) {
 	return GetLastError();
     }
 
-    if (!device_io_control(f, FSCTL_GET_REPARSE_POINT, NULL, 0,
+    if (!DeviceIoControl(f, FSCTL_GET_REPARSE_POINT, NULL, 0,
 			   rp, size, &ret, NULL)) {
 	e = GetLastError();
     }
@@ -5974,23 +5933,21 @@ rb_w32_getppid(void)
     static query_func *pNtQueryInformationProcess = NULL;
     rb_pid_t ppid = 0;
 
-    if (rb_w32_osver() >= 5) {
-	if (!pNtQueryInformationProcess)
-	    pNtQueryInformationProcess = (query_func *)get_proc_address("ntdll.dll", "NtQueryInformationProcess", NULL);
-	if (pNtQueryInformationProcess) {
-	    struct {
-		long ExitStatus;
-		void* PebBaseAddress;
-		uintptr_t AffinityMask;
-		uintptr_t BasePriority;
-		uintptr_t UniqueProcessId;
-		uintptr_t ParentProcessId;
-	    } pbi;
-	    ULONG len;
-	    long ret = pNtQueryInformationProcess(GetCurrentProcess(), 0, &pbi, sizeof(pbi), &len);
-	    if (!ret) {
-		ppid = pbi.ParentProcessId;
-	    }
+    if (!pNtQueryInformationProcess)
+	pNtQueryInformationProcess = (query_func *)get_proc_address("ntdll.dll", "NtQueryInformationProcess", NULL);
+    if (pNtQueryInformationProcess) {
+	struct {
+	    long ExitStatus;
+	    void* PebBaseAddress;
+	    uintptr_t AffinityMask;
+	    uintptr_t BasePriority;
+	    uintptr_t UniqueProcessId;
+	    uintptr_t ParentProcessId;
+	} pbi;
+	ULONG len;
+	long ret = pNtQueryInformationProcess(GetCurrentProcess(), 0, &pbi, sizeof(pbi), &len);
+	if (!ret) {
+	    ppid = pbi.ParentProcessId;
 	}
     }
 
@@ -6302,10 +6259,6 @@ rb_w32_pipe(int fds[2])
     HANDLE hRead, hWrite, h;
     int fdRead, fdWrite;
     int ret;
-
-    /* if doesn't have CancelIo, use default pipe function */
-    if (!cancel_io)
-	return _pipe(fds, 65536L, _O_NOINHERIT);
 
     memcpy(name, prefix, width_of_prefix);
     snprintf(name + width_of_prefix, width_of_ids, "%.*"PRI_PIDT_PREFIX"x-%.*lx",
@@ -6830,7 +6783,7 @@ rb_w32_read(int fd, void *buf, size_t size)
     DWORD err;
     size_t len;
     size_t ret;
-    OVERLAPPED ol, *pol = NULL;
+    OVERLAPPED ol;
     BOOL isconsole;
     BOOL islineinput = FALSE;
     int start = 0;
@@ -6877,17 +6830,12 @@ rb_w32_read(int fd, void *buf, size_t size)
 	len = size;
     size -= len;
 
-    /* if have cancel_io, use Overlapped I/O */
-    if (cancel_io) {
-	if (setup_overlapped(&ol, fd, FALSE)) {
-	    rb_acrt_lowio_unlock_fh(fd);
-	    return -1;
-	}
-
-	pol = &ol;
+    if (setup_overlapped(&ol, fd, FALSE)) {
+	rb_acrt_lowio_unlock_fh(fd);
+	return -1;
     }
 
-    if (!ReadFile((HANDLE)_osfhnd(fd), buf, len, &read, pol)) {
+    if (!ReadFile((HANDLE)_osfhnd(fd), buf, len, &read, &ol)) {
 	err = GetLastError();
 	if (err == ERROR_NO_DATA && (_osfile(fd) & FPIPE)) {
 	    DWORD state;
@@ -6901,7 +6849,7 @@ rb_w32_read(int fd, void *buf, size_t size)
 	    return -1;
 	}
 	else if (err != ERROR_IO_PENDING) {
-	    if (pol) CloseHandle(ol.hEvent);
+	    CloseHandle(ol.hEvent);
 	    if (err == ERROR_ACCESS_DENIED)
 		errno = EBADF;
 	    else if (err == ERROR_BROKEN_PIPE || err == ERROR_HANDLE_EOF) {
@@ -6915,31 +6863,29 @@ rb_w32_read(int fd, void *buf, size_t size)
 	    return -1;
 	}
 
-	if (pol) {
-	    wait = rb_w32_wait_events_blocking(&ol.hEvent, 1, INFINITE);
-	    if (wait != WAIT_OBJECT_0) {
-		if (wait == WAIT_OBJECT_0 + 1)
-		    errno = EINTR;
-		else
-		    errno = map_errno(GetLastError());
-		CloseHandle(ol.hEvent);
-		cancel_io((HANDLE)_osfhnd(fd));
-		rb_acrt_lowio_unlock_fh(fd);
-		return -1;
-	    }
+	wait = rb_w32_wait_events_blocking(&ol.hEvent, 1, INFINITE);
+	if (wait != WAIT_OBJECT_0) {
+	    if (wait == WAIT_OBJECT_0 + 1)
+		errno = EINTR;
+	    else
+		errno = map_errno(GetLastError());
+	    CloseHandle(ol.hEvent);
+	    CancelIo((HANDLE)_osfhnd(fd));
+	    rb_acrt_lowio_unlock_fh(fd);
+	    return -1;
+	}
 
-	    if (!GetOverlappedResult((HANDLE)_osfhnd(fd), &ol, &read, TRUE) &&
-		(err = GetLastError()) != ERROR_HANDLE_EOF) {
-		int ret = 0;
-		if (err != ERROR_BROKEN_PIPE) {
-		    errno = map_errno(err);
-		    ret = -1;
-		}
-		CloseHandle(ol.hEvent);
-		cancel_io((HANDLE)_osfhnd(fd));
-		rb_acrt_lowio_unlock_fh(fd);
-		return ret;
+	if (!GetOverlappedResult((HANDLE)_osfhnd(fd), &ol, &read, TRUE) &&
+	    (err = GetLastError()) != ERROR_HANDLE_EOF) {
+	    int ret = 0;
+	    if (err != ERROR_BROKEN_PIPE) {
+		errno = map_errno(err);
+		ret = -1;
 	    }
+	    CloseHandle(ol.hEvent);
+	    CancelIo((HANDLE)_osfhnd(fd));
+	    rb_acrt_lowio_unlock_fh(fd);
+	    return ret;
 	}
     }
     else {
@@ -6947,9 +6893,7 @@ rb_w32_read(int fd, void *buf, size_t size)
 	errno = map_errno(err);
     }
 
-    if (pol) {
-	finish_overlapped(&ol, fd, read);
-    }
+    finish_overlapped(&ol, fd, read);
 
     ret += read;
     if (read >= len) {
@@ -6978,7 +6922,7 @@ rb_w32_write(int fd, const void *buf, size_t size)
     DWORD err;
     size_t len;
     size_t ret;
-    OVERLAPPED ol, *pol = NULL;
+    OVERLAPPED ol;
 
     if (is_socket(sock))
 	return rb_w32_send(fd, buf, size, 0);
@@ -7007,20 +6951,15 @@ rb_w32_write(int fd, const void *buf, size_t size)
     size -= len;
   retry2:
 
-    /* if have cancel_io, use Overlapped I/O */
-    if (cancel_io) {
-	if (setup_overlapped(&ol, fd, TRUE)) {
-	    rb_acrt_lowio_unlock_fh(fd);
-	    return -1;
-	}
-
-	pol = &ol;
+    if (setup_overlapped(&ol, fd, TRUE)) {
+	rb_acrt_lowio_unlock_fh(fd);
+	return -1;
     }
 
-    if (!WriteFile((HANDLE)_osfhnd(fd), buf, len, &written, pol)) {
+    if (!WriteFile((HANDLE)_osfhnd(fd), buf, len, &written, &ol)) {
 	err = GetLastError();
 	if (err != ERROR_IO_PENDING) {
-	    if (pol) CloseHandle(ol.hEvent);
+	    CloseHandle(ol.hEvent);
 	    if (err == ERROR_ACCESS_DENIED)
 		errno = EBADF;
 	    else
@@ -7030,33 +6969,28 @@ rb_w32_write(int fd, const void *buf, size_t size)
 	    return -1;
 	}
 
-	if (pol) {
-	    wait = rb_w32_wait_events_blocking(&ol.hEvent, 1, INFINITE);
-	    if (wait != WAIT_OBJECT_0) {
-		if (wait == WAIT_OBJECT_0 + 1)
-		    errno = EINTR;
-		else
-		    errno = map_errno(GetLastError());
-		CloseHandle(ol.hEvent);
-		cancel_io((HANDLE)_osfhnd(fd));
-		rb_acrt_lowio_unlock_fh(fd);
-		return -1;
-	    }
-
-	    if (!GetOverlappedResult((HANDLE)_osfhnd(fd), &ol, &written,
-				     TRUE)) {
+	wait = rb_w32_wait_events_blocking(&ol.hEvent, 1, INFINITE);
+	if (wait != WAIT_OBJECT_0) {
+	    if (wait == WAIT_OBJECT_0 + 1)
+		errno = EINTR;
+	    else
 		errno = map_errno(GetLastError());
-		CloseHandle(ol.hEvent);
-		cancel_io((HANDLE)_osfhnd(fd));
-		rb_acrt_lowio_unlock_fh(fd);
-		return -1;
-	    }
+	    CloseHandle(ol.hEvent);
+	    CancelIo((HANDLE)_osfhnd(fd));
+	    rb_acrt_lowio_unlock_fh(fd);
+	    return -1;
+	}
+
+	if (!GetOverlappedResult((HANDLE)_osfhnd(fd), &ol, &written, TRUE)) {
+	    errno = map_errno(GetLastError());
+	    CloseHandle(ol.hEvent);
+	    CancelIo((HANDLE)_osfhnd(fd));
+	    rb_acrt_lowio_unlock_fh(fd);
+	    return -1;
 	}
     }
 
-    if (pol) {
-	finish_overlapped(&ol, fd, written);
-    }
+    finish_overlapped(&ol, fd, written);
 
     ret += written;
     if (written == len) {

@@ -3161,7 +3161,7 @@ getenvsize(const WCHAR* p)
 static size_t
 getenvblocksize(void)
 {
-    return (rb_w32_osver() >= 5) ? 32767 : 5120;
+    return 32767;
 }
 #endif
 
