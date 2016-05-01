@@ -5732,15 +5732,29 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
     }
     if (n != 0)
         v = rb_fix_plus(LONG2FIX(n), v);
-    if (r != Qundef)
-        v = rb_rational_plus(r, v);
+    if (r != Qundef) {
+        /* r can be a Integer when mathn is loaded */
+        if (FIXNUM_P(r))
+            v = rb_fix_plus(r, v);
+        else if (RB_TYPE_P(r, T_BIGNUM))
+            v = rb_big_plus(r, v);
+        else
+            v = rb_rational_plus(r, v);
+    }
     return v;
 
   not_exact:
     if (n != 0)
         v = rb_fix_plus(LONG2FIX(n), v);
-    if (r != Qundef)
-        v = rb_rational_plus(r, v);
+    if (r != Qundef) {
+        /* r can be a Integer when mathn is loaded */
+        if (FIXNUM_P(r))
+            v = rb_fix_plus(r, v);
+        else if (RB_TYPE_P(r, T_BIGNUM))
+            v = rb_big_plus(r, v);
+        else
+            v = rb_rational_plus(r, v);
+    }
 
     if (RB_FLOAT_TYPE_P(e)) {
         /* Kahan's compensated summation algorithm */

@@ -1,3 +1,9 @@
+Sun May  1 23:59:59 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* array.c (rb_ary_sum): fix for mathn
+
+	* test/ruby/test_array.rb (test_sum): ditto.
+
 Sun May  1 23:51:54 2016  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/lib/test/unit.rb (Options#non_options): fixed wrong regexp.
