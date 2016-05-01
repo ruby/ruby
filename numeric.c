@@ -2935,6 +2935,10 @@ int_even_p(VALUE num)
 }
 
 /*
+ *  Document-method: Integer#succ
+ *  Document-method: Integer#next
+ *  Document-method: Fixnum#succ
+ *  Document-method: Fixnum#next
  *  call-seq:
  *     int.next  ->  integer
  *     int.succ  ->  integer
@@ -2943,6 +2947,8 @@ int_even_p(VALUE num)
  *
  *     1.next      #=> 2
  *     (-1).next   #=> 0
+ *     1.succ      #=> 2
+ *     (-1).succ   #=> 0
  */
 
 static VALUE
@@ -2951,17 +2957,6 @@ fix_succ(VALUE num)
     long i = FIX2LONG(num) + 1;
     return LONG2NUM(i);
 }
-
-/*
- *  call-seq:
- *     int.next  ->  integer
- *     int.succ  ->  integer
- *
- *  Returns the Integer equal to +int+ + 1, same as Fixnum#next.
- *
- *     1.next      #=> 2
- *     (-1).next   #=> 0
- */
 
 VALUE
 rb_int_succ(VALUE num)
