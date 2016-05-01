@@ -422,6 +422,7 @@ VALUE rb_fs;
 static inline const char *
 search_nonascii(const char *p, const char *e)
 {
+    const uintptr_t *s, *t;
 #if SIZEOF_VOIDP == 8
 # define NONASCII_MASK 0x8080808080808080ULL
 #elif SIZEOF_VOIDP == 4
@@ -450,8 +451,8 @@ search_nonascii(const char *p, const char *e)
 #else
     {
 #endif
-	const uintptr_t *s = (const uintptr_t *)p;
-	const uintptr_t *t = (const uintptr_t *)(e - (SIZEOF_VOIDP-1));
+	s = (const uintptr_t *)p;
+	t = (const uintptr_t *)(e - (SIZEOF_VOIDP-1));
 	for (;s < t; s++) {
 	    if (*s & NONASCII_MASK) {
 #ifdef WORDS_BIGENDIAN
