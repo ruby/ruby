@@ -110,7 +110,7 @@ module Test
           end
           unless negative.empty?
             negative = Regexp.union(*negative.map! {|s| s[neg_pat, 1]})
-            filter = /\A(?!.*#{negative})#{filter}/
+            filter = /\A(?=.*#{filter})(?!.*#{negative})/
           end
           if Regexp === filter
             # bypass conversion in minitest
