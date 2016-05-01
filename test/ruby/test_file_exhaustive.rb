@@ -184,7 +184,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def assert_integer_or_nil(n)
-    msg = ->{"#{n.inspect} is neither Fixnum nor nil."}
+    msg = ->{"#{n.inspect} is neither Integer nor nil."}
     if n
       assert_kind_of(Integer, n, msg)
     else
