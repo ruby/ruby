@@ -449,10 +449,10 @@ search_nonascii(const char *p, const char *e)
 	const uintptr_t *t = (const uintptr_t *)(e - (SIZEOF_VOIDP-1));
 	for (;s < t; s++) {
 	    if (*s & NONASCII_MASK) {
-#if BYTE_ORDER == LITTLE_ENDIAN
-		return (const char *)s + (ntz_intptr(*s&NONASCII_MASK)>>3);
-#else
+#ifdef WORDS_BIGENDIAN
 		return (const char *)s + (nlz_intptr(*s&NONASCII_MASK)>>3);
+#else
+		return (const char *)s + (ntz_intptr(*s&NONASCII_MASK)>>3);
 #endif
 	    }
 	}
