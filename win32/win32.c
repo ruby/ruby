@@ -59,10 +59,6 @@
 # define CharNextExA(cp, p, flags) CharNextExA((WORD)(cp), (p), (flags))
 #endif
 
-#if _WIN32_WINNT < 0x0600
-DWORD WINAPI GetFinalPathNameByHandleW(HANDLE, LPWSTR, DWORD, DWORD);
-#endif
-
 static int w32_wopen(const WCHAR *file, int oflag, int perm);
 static int w32_stati64(const char *path, struct stati64 *st, UINT cp);
 static int w32_lstati64(const char *path, struct stati64 *st, UINT cp);
@@ -474,18 +470,6 @@ get_proc_address(const char *module, const char *func, HANDLE *mh)
 }
 
 /* License: Ruby's */
-static UINT
-get_system_directory(WCHAR *path, UINT len)
-{
-    typedef UINT WINAPI wgetdir_func(WCHAR*, UINT);
-    FARPROC ptr =
-	get_proc_address("kernel32", "GetSystemWindowsDirectoryW", NULL);
-    if (ptr)
-	return (*(wgetdir_func *)ptr)(path, len);
-    return GetWindowsDirectoryW(path, len);
-}
-
-/* License: Ruby's */
 VALUE
 rb_w32_special_folder(int type)
 {
@@ -504,7 +488,7 @@ rb_w32_system_tmpdir(WCHAR *path, UINT len)
     WCHAR *p;
 
     if (!get_special_folder(CSIDL_LOCAL_APPDATA, path)) {
-	if (get_system_directory(path, len)) return 0;
+	if (GetSystemWindowsDirectoryW(path, len)) return 0;
     }
     p = translate_wchar(path, L'\\', L'/');
     if (*(p - 1) != L'/') *p++ = L'/';
@@ -2361,8 +2345,7 @@ set_pioinfo_extra(void)
 {
 #if RUBY_MSVCRT_VERSION >= 140
     /* get __pioinfo addr with _isatty */
-    HMODULE mod = GetModuleHandle("ucrtbase.dll");
-    char *p = (char*)GetProcAddress(mod, "_isatty");
+    char *p = (char*)get_proc_address("ucrtbase.dll", "_isatty", NULL);
     char *pend = p + 100;
     /* _osfile(fh) & FDEV */
 #if _WIN64
