@@ -238,13 +238,13 @@ k_numeric_p(VALUE x)
 inline static VALUE
 k_fixnum_p(VALUE x)
 {
-    return f_kind_of_p(x, rb_cFixnum);
+    return FIXNUM_P(x);
 }
 
 inline static VALUE
 k_bignum_p(VALUE x)
 {
-    return f_kind_of_p(x, rb_cBignum);
+    return RB_TYPE_P(x, T_BIGNUM);
 }
 
 inline static VALUE

@@ -1,3 +1,9 @@
+Mon May  2 06:58:38 2016  Tanaka Akira  <akr@fsij.org>
+
+	* complex.c: Don't refer rb_cFixnum and rb_cBignum.
+	  (k_fixnum_p): Use FIXNUM_P.
+	  (k_bignum_p): Use RB_TYPE_P.
+
 Mon May  2 01:27:59 2016  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/test_numeric.rb (test_step): Use Integer::FIXNUM_MAX.
