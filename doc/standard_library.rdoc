@@ -96,7 +96,7 @@ IO:: Extensions for Ruby IO class, including #wait and ::console
 JSON:: Implements Javascript Object Notation for Ruby
 NKF:: Ruby extension for Network Kanji Filter
 objspace:: Extends ObjectSpace module to add methods for internal statistics
-OpenSSL:: Provides SSL, TSL and general purpose cryptography for Ruby
+OpenSSL:: Provides SSL, TLS and general purpose cryptography for Ruby
 Pathname:: Representation of the name of a file or directory on the filesystem
 Psych:: A YAML parser and emitter for Ruby
 PTY:: Creates and manages pseudo terminals
