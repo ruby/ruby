@@ -3502,8 +3502,12 @@ disable_child_handler_fork_child(struct child_handler_disabler_state *old, char 
     for (sig = 1; sig < NSIG; sig++) {
         int reset = 0;
 #ifdef SIGPIPE
-        if (sig == SIGPIPE)
+        if (sig == SIGPIPE) {
             reset = 1;
+#ifndef POSIX_SIGNAL
+            handler = SIG_DFL;
+#endif
+	}
 #endif
         if (!reset) {
 #ifdef POSIX_SIGNAL
