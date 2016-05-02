@@ -446,13 +446,13 @@ class TestRefinement < Test::Unit::TestCase
 
   module Inspect
     module M
-      Fixnum = refine(Fixnum) {}
+      Integer = refine(Integer) {}
     end
   end
 
   def test_inspect
-    assert_equal("#<refinement:Fixnum@TestRefinement::Inspect::M>",
-                 Inspect::M::Fixnum.inspect)
+    assert_equal("#<refinement:Integer@TestRefinement::Inspect::M>",
+                 Inspect::M::Integer.inspect)
   end
 
   def test_using_method_cache

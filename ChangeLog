@@ -1,3 +1,8 @@
+Mon May  2 12:34:52 2016  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/test_refinement.rb (test_inspect): Use Integer instead of
+	  Fixnum.
+
 Mon May  2 06:58:38 2016  Tanaka Akira  <akr@fsij.org>
 
 	* complex.c: Don't refer rb_cFixnum and rb_cBignum.
