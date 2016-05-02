@@ -339,7 +339,7 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_file.not_readable?(utf8_file)
     File.chmod(0600, utf8_file)
     assert_file.readable?(utf8_file)
-    
+
     assert_file.not_readable?(nofile)
   end if POSIX
 
