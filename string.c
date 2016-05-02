@@ -429,8 +429,8 @@ search_nonascii(const char *p, const char *e)
 # define NONASCII_MASK 0x80808080UL
 #endif
 
+    if (UNALIGNED_WORD_ACCESS || e - p >= SIZEOF_VOIDP) {
 #if !UNALIGNED_WORD_ACCESS
-    if (e - p >= SIZEOF_VOIDP) {
 	if ((uintptr_t)p % SIZEOF_VOIDP) {
 	    int l = SIZEOF_VOIDP - (uintptr_t)p % SIZEOF_VOIDP;
 	    p += l;
@@ -448,8 +448,6 @@ search_nonascii(const char *p, const char *e)
 	      case 0: break;
 	    }
 	}
-#else
-    {
 #endif
 	s = (const uintptr_t *)p;
 	t = (const uintptr_t *)(e - (SIZEOF_VOIDP-1));
