@@ -3506,12 +3506,13 @@ rb_int_idiv(VALUE x, VALUE y)
 
 /*
  *  Document-method: Fixnum#%
+ *  Document-method: Integer#%
  *  Document-method: Integer#modulo
  *  call-seq:
- *    fix % other        ->  real
- *    fix.modulo(other)  ->  real
+ *    int % other        ->  real
+ *    int.modulo(other)  ->  real
  *
- *  Returns +fix+ modulo +other+.
+ *  Returns +int+ modulo +other+.
  *
  *  See Numeric#divmod for more information.
  */
