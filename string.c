@@ -2728,7 +2728,7 @@ rb_str_concat_literals(size_t num, const VALUE *strary)
  *     str << obj           -> str
  *     str.concat(obj)      -> str
  *
- *  Append---Concatenates the given object to <i>str</i>. If the object is a
+ *  Append---Concatenates the given object to <i>str</i>. If the object is an
  *  <code>Integer</code>, it is considered as a codepoint, and is converted
  *  to a character before concatenation.
  *
