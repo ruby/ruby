@@ -1023,6 +1023,8 @@ class TestFileExhaustive < Test::Unit::TestCase
 
   def test_dirname
     assert_equal(@dir, File.dirname(regular_file))
+    assert_equal(File.dirname(@dir), File.dirname(regular_file, 2))
+    assert_equal(rootdir, File.dirname(regular_file, regular_file.count('/')))
     assert_equal(".", File.dirname(""))
     assert_incompatible_encoding {|d| File.dirname(d)}
     if File::ALT_SEPARATOR == '\\'
