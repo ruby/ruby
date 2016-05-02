@@ -1,3 +1,15 @@
+Mon May  2 20:59:21 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* re.c (str_coderange): to avoid function call when the string already
+	  has coderange information.
+
+	* re.c (rb_reg_prepare_enc): add shortcut path when the regexp has
+	  the same encoding of given string.
+
+	* re.c (rb_reg_prepare_re): avoid duplicated allocation of
+	  onig_errmsg_buffer.
+
+
 Mon May  2 12:34:52 2016  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/test_refinement.rb (test_inspect): Use Integer instead of

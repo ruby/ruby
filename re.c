@@ -1370,11 +1370,21 @@ reg_enc_error(VALUE re, VALUE str)
 	     rb_enc_name(rb_enc_get(str)));
 }
 
+static inline int
+str_coderange(VALUE str)
+{
+    int cr = ENC_CODERANGE(str);
+    if (cr == ENC_CODERANGE_UNKNOWN) {
+	cr = rb_enc_str_coderange(str);
+    }
+    return cr;
+}
+
 static rb_encoding*
 rb_reg_prepare_enc(VALUE re, VALUE str, int warn)
 {
     rb_encoding *enc = 0;
-    int cr = rb_enc_str_coderange(str);
+    int cr = str_coderange(str);
 
     if (cr == ENC_CODERANGE_BROKEN) {
         rb_raise(rb_eArgError,
@@ -1384,25 +1394,23 @@ rb_reg_prepare_enc(VALUE re, VALUE str, int warn)
 
     rb_reg_check(re);
     enc = rb_enc_get(str);
-    if (!rb_enc_asciicompat(enc)) {
-        if (RREGEXP_PTR(re)->enc != enc) {
-	    reg_enc_error(re, str);
-	}
+    if (RREGEXP_PTR(re)->enc == enc) {
+    }
+    else if (cr == ENC_CODERANGE_7BIT &&
+	    RREGEXP_PTR(re)->enc == rb_usascii_encoding()) {
+	enc = RREGEXP_PTR(re)->enc;
+    }
+    else if (!rb_enc_asciicompat(enc)) {
+	reg_enc_error(re, str);
     }
     else if (rb_reg_fixed_encoding_p(re)) {
-        if (RREGEXP_PTR(re)->enc != enc &&
-	    (!rb_enc_asciicompat(RREGEXP_PTR(re)->enc) ||
+        if ((!rb_enc_asciicompat(RREGEXP_PTR(re)->enc) ||
 	     cr != ENC_CODERANGE_7BIT)) {
 	    reg_enc_error(re, str);
 	}
 	enc = RREGEXP_PTR(re)->enc;
     }
-    else if (cr == ENC_CODERANGE_7BIT &&
-	    (RREGEXP_PTR(re)->enc == rb_usascii_encoding()
-	     )) {
-	enc = RREGEXP_PTR(re)->enc;
-    }
-    if (warn && (RBASIC(re)->flags & REG_ENCODING_NONE) &&
+    else if (warn && (RBASIC(re)->flags & REG_ENCODING_NONE) &&
 	enc != rb_ascii8bit_encoding() &&
 	cr != ENC_CODERANGE_7BIT) {
 	rb_warn("regexp match /.../n against to %s string",
@@ -1412,10 +1420,9 @@ rb_reg_prepare_enc(VALUE re, VALUE str, int warn)
 }
 
 regex_t *
-rb_reg_prepare_re(VALUE re, VALUE str)
+rb_reg_prepare_re0(VALUE re, VALUE str, onig_errmsg_buffer err)
 {
     regex_t *reg = RREGEXP_PTR(re);
-    onig_errmsg_buffer err = "";
     int r;
     OnigErrorInfo einfo;
     const char *pattern;
@@ -1448,6 +1455,13 @@ rb_reg_prepare_re(VALUE re, VALUE str)
 
     RB_GC_GUARD(unescaped);
     return reg;
+}
+
+regex_t *
+rb_reg_prepare_re(VALUE re, VALUE str)
+{
+    onig_errmsg_buffer err = "";
+    return rb_reg_prepare_re0(re, str, err);
 }
 
 long
@@ -1491,13 +1505,14 @@ rb_reg_search0(VALUE re, VALUE str, long pos, int reverse, int set_backref_str)
     char *range = RSTRING_PTR(str);
     regex_t *reg;
     int tmpreg;
+    onig_errmsg_buffer err = "";
 
     if (pos > RSTRING_LEN(str) || pos < 0) {
 	rb_backref_set(Qnil);
 	return -1;
     }
 
-    reg = rb_reg_prepare_re(re, str);
+    reg = rb_reg_prepare_re0(re, str, err);
     tmpreg = reg != RREGEXP_PTR(re);
     if (!tmpreg) RREGEXP(re)->usecnt++;
 
@@ -1540,7 +1555,6 @@ rb_reg_search0(VALUE re, VALUE str, long pos, int reverse, int set_backref_str)
 	    return result;
 	}
 	else {
-	    onig_errmsg_buffer err = "";
 	    onig_error_code_to_str((UChar*)err, (int)result);
 	    rb_reg_raise(RREGEXP_SRC_PTR(re), RREGEXP_SRC_LEN(re), err, re);
 	}
@@ -2558,7 +2572,7 @@ rb_reg_preprocess_dregexp(VALUE ary, int options)
 	src_enc = rb_enc_get(str);
 	if (options & ARG_ENCODING_NONE &&
 		src_enc != ascii8bit) {
-	    if (rb_enc_str_coderange(str) != ENC_CODERANGE_7BIT)
+	    if (str_coderange(str) != ENC_CODERANGE_7BIT)
 		rb_raise(rb_eRegexpError, "/.../n has a non escaped non ASCII character in non ASCII-8BIT script");
 	    else
 		src_enc = ascii8bit;
@@ -2669,7 +2683,7 @@ rb_reg_initialize_str(VALUE obj, VALUE str, int options, onig_errmsg_buffer err,
     if (options & ARG_ENCODING_NONE) {
         rb_encoding *ascii8bit = rb_ascii8bit_encoding();
         if (enc != ascii8bit) {
-            if (rb_enc_str_coderange(str) != ENC_CODERANGE_7BIT) {
+            if (str_coderange(str) != ENC_CODERANGE_7BIT) {
                 errcpy(err, "/.../n has a non escaped non ASCII character in non ASCII-8BIT script");
                 return -1;
             }
