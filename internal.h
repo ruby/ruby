@@ -271,21 +271,38 @@ nlz_intptr(uintptr_t x) {
 
 static inline int
 rb_popcount32(uint32_t x) {
+#ifdef HAVE_BUILTIN___BUILTIN_POPCOUNT
+    return __builtin_popcount(x);
+#else
     x = (x & 0x55555555) + (x >> 1 & 0x55555555);
     x = (x & 0x33333333) + (x >> 2 & 0x33333333);
     x = (x & 0x0f0f0f0f) + (x >> 4 & 0x0f0f0f0f);
     x = (x & 0x001f001f) + (x >> 8 & 0x001f001f);
     return (x & 0x0000003f) + (x >>16 & 0x0000003f);
+#endif
 }
 
 static inline int
 rb_popcount64(uint64_t x) {
+#ifdef HAVE_BUILTIN___BUILTIN_POPCOUNT
+    return __builtin_popcountll(x);
+#else
     x = (x & 0x5555555555555555) + (x >> 1 & 0x5555555555555555);
     x = (x & 0x3333333333333333) + (x >> 2 & 0x3333333333333333);
     x = (x & 0x0707070707070707) + (x >> 4 & 0x0707070707070707);
     x = (x & 0x001f001f001f001f) + (x >> 8 & 0x001f001f001f001f);
     x = (x & 0x0000003f0000003f) + (x >>16 & 0x0000003f0000003f);
     return (x & 0x7f) + (x >>32 & 0x7f);
+#endif
+}
+
+static inline int
+rb_popcount_intptr(uintptr_t x) {
+#if SIZEOF_VOIDP == 8
+    return rb_popcount64(x);
+#elif SIZEOF_VOIDP == 4
+    return rb_popcount32(x);
+#endif
 }
 
 static inline int

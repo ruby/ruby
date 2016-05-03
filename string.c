@@ -1476,17 +1476,21 @@ count_utf8_lead_bytes_with_word(const uintptr_t *s)
     uintptr_t d = *s;
 
     /* Transform so that bit0 indicates whether we have a UTF-8 leading byte or not. */
-    d |= ~(d>>1);
-    d >>= 6;
+    d = (d>>6) | (~d>>7);
     d &= NONASCII_MASK >> 7;
 
     /* Gather all bytes. */
+#if defined(HAVE_BUILTIN___BUILTIN_POPCOUNT) && defined(__POPCNT__)
+    /* use only if it can use POPCNT */
+    return rb_popcount_intptr(d);
+#else
     d += (d>>8);
     d += (d>>16);
-#if SIZEOF_VOIDP == 8
+# if SIZEOF_VOIDP == 8
     d += (d>>32);
-#endif
+# endif
     return (d&0xF);
+#endif
 }
 #endif
 
