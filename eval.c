@@ -605,7 +605,7 @@ rb_interrupt(void)
 enum {raise_opt_cause, raise_max_opt};
 
 static int
-extract_raise_opts(int argc, VALUE *argv, VALUE *opts)
+extract_raise_opts(int argc, const VALUE *argv, VALUE *opts)
 {
     int i;
     if (argc > 0) {
