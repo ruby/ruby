@@ -1414,7 +1414,7 @@ rb_complex_set_real(VALUE cmp, VALUE r)
 VALUE
 rb_complex_set_imag(VALUE cmp, VALUE i)
 {
-    RCOMPLEX_SET_REAL(cmp, i);
+    RCOMPLEX_SET_IMAG(cmp, i);
     return cmp;
 }
 
