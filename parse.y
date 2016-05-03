@@ -9955,7 +9955,7 @@ new_if_gen(struct parser_params *parser, NODE *cc, NODE *left, NODE *right)
 {
     if (!cc) return right;
     cc = cond0(parser, cc);
-    return NEW_IF(cc, left, right);
+    return newline_node(NEW_IF(cc, left, right));
 }
 
 static NODE*

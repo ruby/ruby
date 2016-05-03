@@ -1,3 +1,8 @@
+Tue May  3 14:19:18 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (new_if_gen): set newline flag to NODE_IF to trace all
+	  if/elsif statements.  [ruby-core:67720] [Bug #10763]
+
 Tue May  3 05:35:54 2016  Eric Wong  <e@80x24.org>
 
 	* process.c (disable_child_handler_fork_child):
