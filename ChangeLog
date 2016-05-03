@@ -1,3 +1,8 @@
+Tue May  3 23:25:48 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* numeric.c: [DOC] Update result of 123456789 ** -2.
+	  [ruby-dev:49606] [Bug #12339]
+
 Tue May  3 23:13:16 2016  Yuichiro Kaneko  <yui-knk@ruby-lang.org>
 
 	* internal.h (RCOMPLEX_SET_IMAG): undef RCOMPLEX_SET_IMAG
