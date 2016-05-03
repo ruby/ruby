@@ -1,3 +1,8 @@
+Tue May  3 22:19:55 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in (warnflags): use -std=gnu99 instead of
+	  -std=iso9899:1999. [Feature #12336]
+
 Tue May  3 22:10:09 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (count_utf8_lead_bytes_with_word): Use __builtin_popcount

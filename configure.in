@@ -916,7 +916,7 @@ if test "$GCC" = yes; then
     ],
     [
       # ANSI (no XCFLAGS because this is C only)
-	for ansi_options in -std=iso9899:1999 "-ansi -std=iso9899:199409"; do
+	for ansi_options in -std=gnu99; do
 	    RUBY_TRY_CFLAGS(${ansi_options}, [
 		RUBY_APPEND_OPTIONS(warnflags, ${ansi_options})
 		RUBY_APPEND_OPTIONS(strict_warnflags, ${ansi_options})
