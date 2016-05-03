@@ -1,3 +1,8 @@
+Tue May  3 23:13:16 2016  Yuichiro Kaneko  <yui-knk@ruby-lang.org>
+
+	* internal.h (RCOMPLEX_SET_IMAG): undef RCOMPLEX_SET_IMAG
+	  instead of duplicated undef RCOMPLEX_SET_REAL.
+
 Tue May  3 22:55:07 2016  Yuichiro Kaneko  <yui-knk@ruby-lang.org>
 
 	* complex.c (rb_complex_set_imag): Fix to properly set imag
