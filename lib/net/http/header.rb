@@ -101,7 +101,7 @@ module Net::HTTPHeader
   #     response.header.each_header {|key,value| puts "#{key} = #{value}" }
   #
   def each_header   #:yield: +key+, +value+
-    block_given? or return enum_for(__method__)
+    block_given? or return enum_for(__method__) { @header.size }
     @header.each do |k,va|
       yield k, va.join(', ')
     end
@@ -112,7 +112,7 @@ module Net::HTTPHeader
   # Iterates through the header names in the header, passing
   # each header name to the code block.
   def each_name(&block)   #:yield: +key+
-    block_given? or return enum_for(__method__)
+    block_given? or return enum_for(__method__) { @header.size }
     @header.each_key(&block)
   end
 
@@ -125,7 +125,7 @@ module Net::HTTPHeader
   # capitalization may not match that used by the remote HTTP
   # server in its response.
   def each_capitalized_name  #:yield: +key+
-    block_given? or return enum_for(__method__)
+    block_given? or return enum_for(__method__) { @header.size }
     @header.each_key do |k|
       yield capitalize(k)
     end
@@ -134,7 +134,7 @@ module Net::HTTPHeader
   # Iterates through header values, passing each value to the
   # code block.
   def each_value   #:yield: +value+
-    block_given? or return enum_for(__method__)
+    block_given? or return enum_for(__method__) { @header.size }
     @header.each_value do |va|
       yield va.join(', ')
     end
@@ -165,7 +165,7 @@ module Net::HTTPHeader
   # capitalization may not match that used by the remote HTTP
   # server in its response.
   def each_capitalized
-    block_given? or return enum_for(__method__)
+    block_given? or return enum_for(__method__) { @header.size }
     @header.each do |k,v|
       yield capitalize(k), v.join(', ')
     end
