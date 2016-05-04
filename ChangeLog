@@ -1,3 +1,10 @@
+Wed May  4 17:53:15 2016  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* lib/set.rb (Set#{delete_if,keep_if,collect!,reject!,select!,classify,divide},
+	  SortedSet#{delete_if,keep_if}): Return sized enumerators.
+
+	* test/test_set.rb: add test for above.
+
 Tue May  3 23:25:48 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* numeric.c: [DOC] Update result of 123456789 ** -2.
