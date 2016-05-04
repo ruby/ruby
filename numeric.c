@@ -3924,7 +3924,7 @@ fix_pow(VALUE x, VALUE y)
     }
 }
 
-static VALUE
+VALUE
 rb_int_pow(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x)) {
