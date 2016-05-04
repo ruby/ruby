@@ -96,6 +96,8 @@ module Net::HTTPHeader
   # Iterates through the header names and values, passing in the name
   # and value to the code block supplied.
   #
+  # Returns an enumerator if no block is given.
+  #
   # Example:
   #
   #     response.header.each_header {|key,value| puts "#{key} = #{value}" }
@@ -111,6 +113,8 @@ module Net::HTTPHeader
 
   # Iterates through the header names in the header, passing
   # each header name to the code block.
+  #
+  # Returns an enumerator if no block is given.
   def each_name(&block)   #:yield: +key+
     block_given? or return enum_for(__method__) { @header.size }
     @header.each_key(&block)
@@ -124,6 +128,8 @@ module Net::HTTPHeader
   # Note that header names are capitalized systematically;
   # capitalization may not match that used by the remote HTTP
   # server in its response.
+  #
+  # Returns an enumerator if no block is given.
   def each_capitalized_name  #:yield: +key+
     block_given? or return enum_for(__method__) { @header.size }
     @header.each_key do |k|
@@ -133,6 +139,8 @@ module Net::HTTPHeader
 
   # Iterates through header values, passing each value to the
   # code block.
+  #
+  # Returns an enumerator if no block is given.
   def each_value   #:yield: +value+
     block_given? or return enum_for(__method__) { @header.size }
     @header.each_value do |va|
@@ -164,6 +172,8 @@ module Net::HTTPHeader
   # Note that header names are capitalized systematically;
   # capitalization may not match that used by the remote HTTP
   # server in its response.
+  #
+  # Returns an enumerator if no block is given.
   def each_capitalized
     block_given? or return enum_for(__method__) { @header.size }
     @header.each do |k,v|
