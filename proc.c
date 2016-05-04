@@ -1961,39 +1961,53 @@ method_callable_method_entry(const struct METHOD *data)
     return (const rb_callable_method_entry_t *)data->me;
 }
 
+static inline VALUE
+call_method_data(rb_thread_t *th, const struct METHOD *data,
+		 int argc, const VALUE *argv, VALUE pass_procval)
+{
+    th->passed_block = passed_block(pass_procval);
+    return rb_vm_call(th, data->recv, data->me->called_id, argc, argv,
+		      method_callable_method_entry(data));
+}
+
+static VALUE
+call_method_data_safe(rb_thread_t *th, const struct METHOD *data,
+		      int argc, const VALUE *argv, VALUE pass_procval,
+		      int safe)
+{
+    VALUE result = Qnil;	/* OK */
+    int state;
+
+    TH_PUSH_TAG(th);
+    if ((state = TH_EXEC_TAG()) == 0) {
+	result = call_method_data(th, data, argc, argv, pass_procval);
+    }
+    TH_POP_TAG();
+    rb_set_safe_level_force(safe);
+    if (state)
+	JUMP_TAG(state);
+    return result;
+}
+
 VALUE
 rb_method_call_with_block(int argc, const VALUE *argv, VALUE method, VALUE pass_procval)
 {
-    VALUE result = Qnil;	/* OK */
-    struct METHOD *data;
-    int state;
-    volatile int safe = -1;
+    const struct METHOD *data;
+    rb_thread_t *const th = GET_THREAD();
 
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
     if (data->recv == Qundef) {
 	rb_raise(rb_eTypeError, "can't call unbound method; bind first");
     }
-    PUSH_TAG();
     if (OBJ_TAINTED(method)) {
 	const int safe_level_to_run = RUBY_SAFE_LEVEL_MAX;
-	safe = rb_safe_level();
+	int safe = rb_safe_level();
 	if (safe < safe_level_to_run) {
 	    rb_set_safe_level_force(safe_level_to_run);
+	    return call_method_data_safe(th, data, argc, argv, pass_procval, safe);
 	}
     }
-    if ((state = EXEC_TAG()) == 0) {
-	rb_thread_t *th = GET_THREAD();
-
-	th->passed_block = passed_block(pass_procval);
-	VAR_INITIALIZED(data);
-	result = rb_vm_call(th, data->recv, data->me->called_id, argc, argv, method_callable_method_entry(data));
-    }
-    POP_TAG();
-    if (safe >= 0)
-	rb_set_safe_level_force(safe);
-    if (state)
-	JUMP_TAG(state);
-    return result;
+    return call_method_data(th, data, argc, argv, pass_procval);
 }
 
 /**********************************************************************
