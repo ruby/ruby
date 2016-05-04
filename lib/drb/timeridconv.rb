@@ -62,6 +62,14 @@ module DRb
         end
       end
 
+      def shutdown_keeper
+        return unless @keeper
+
+        @keeper.kill
+        Thread.pass while @keeper.alive?
+        @keeper = nil
+      end
+
       private
       def alternate
         synchronize do
@@ -95,6 +103,10 @@ module DRb
 
     def to_id(obj) # :nodoc:
       return @holder.add(obj)
+    end
+
+    def shutdown
+      @holder.shutdown_keeper
     end
   end
 end
