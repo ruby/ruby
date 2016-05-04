@@ -1,3 +1,14 @@
+Wed May  4 23:13:58 2016  Yuichiro Kaneko  <yui-knk@ruby-lang.org>
+
+	* numeric.c (fix_plus): Remove rb_nucomp_add prototype
+	  declaration.
+
+	* numeric.c (fix_mul): Remove rb_nucomp_mul prototype
+	  declaration.
+
+	* internal.h (rb_nucomp_add, rb_nucomp_mul): add prototype
+	  declarations.
+
 Wed May  4 18:38:00 2016  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* lib/net/http/header.rb (Net::HTTPHeader#{each_header,each_name,

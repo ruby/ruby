@@ -895,6 +895,10 @@ int rb_local_defined(ID, const struct rb_block_struct *);
 const char * rb_insns_name(int i);
 VALUE rb_insns_name_array(void);
 
+/* complex.c */
+VALUE rb_nucomp_add(VALUE, VALUE);
+VALUE rb_nucomp_mul(VALUE, VALUE);
+
 /* cont.c */
 VALUE rb_obj_is_fiber(VALUE);
 void rb_fiber_reset_root_local_storage(VALUE);
