@@ -1949,7 +1949,7 @@ rb_method_call(int argc, const VALUE *argv, VALUE method)
 }
 
 static const rb_callable_method_entry_t *
-method_callable_method_entry(struct METHOD *data)
+method_callable_method_entry(const struct METHOD *data)
 {
     if (data->me->defined_class == 0) rb_bug("method_callable_method_entry: not callable.");
     return (const rb_callable_method_entry_t *)data->me;
