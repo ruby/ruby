@@ -335,7 +335,8 @@ class Set
   end
 
   # Deletes every element of the set for which block evaluates to
-  # true, and returns self.
+  # true, and returns self. Returns an enumerator if no block is
+  # given.
   def delete_if
     block_given? or return enum_for(__method__) { size }
     # @hash.delete_if should be faster, but using it breaks the order
@@ -345,7 +346,8 @@ class Set
   end
 
   # Deletes every element of the set for which block evaluates to
-  # false, and returns self.
+  # false, and returns self. Returns an enumerator if no block is
+  # given.
   def keep_if
     block_given? or return enum_for(__method__) { size }
     # @hash.keep_if should be faster, but using it breaks the order of
@@ -355,6 +357,7 @@ class Set
   end
 
   # Replaces the elements with ones returned by collect().
+  # Returns an enumerator if no block is given.
   def collect!
     block_given? or return enum_for(__method__) { size }
     replace(self.class.new(self) { |o| yield(o) })
@@ -362,7 +365,7 @@ class Set
   alias map! collect!
 
   # Equivalent to Set#delete_if, but returns nil if no changes were
-  # made.
+  # made. Returns an enumerator if no block is given.
   def reject!(&block)
     block or return enum_for(__method__) { size }
     n = size
@@ -371,7 +374,7 @@ class Set
   end
 
   # Equivalent to Set#keep_if, but returns nil if no changes were
-  # made.
+  # made. Returns an enumerator if no block is given.
   def select!(&block)
     block or return enum_for(__method__) { size }
     n = size
@@ -467,6 +470,8 @@ class Set
   #   p hash    # => {2000=>#<Set: {"a.rb", "b.rb"}>,
   #             #     2001=>#<Set: {"c.rb", "d.rb", "e.rb"}>,
   #             #     2002=>#<Set: {"f.rb"}>}
+  #
+  # Returns an enumerator if no block is given.
   def classify # :yields: o
     block_given? or return enum_for(__method__) { size }
 
@@ -495,6 +500,8 @@ class Set
   #             #            #<Set: {11, 9, 10}>,
   #             #            #<Set: {3, 4}>,
   #             #            #<Set: {6}>}>
+  #
+  # Returns an enumerator if no block is given.
   def divide(&func)
     func or return enum_for(__method__) { size }
 
