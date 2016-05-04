@@ -805,6 +805,17 @@ check_argc(long argc)
 #define check_argc(argc) (argc)
 #endif
 
+static rb_block_t *
+passed_block(VALUE pass_procval)
+{
+    if (!NIL_P(pass_procval)) {
+	rb_proc_t *pass_proc;
+	GetProcPtr(pass_procval, pass_proc);
+	return &pass_proc->block;
+    }
+    return 0;
+}
+
 VALUE
 rb_proc_call(VALUE self, VALUE args)
 {
@@ -825,12 +836,7 @@ rb_proc_call_with_block(VALUE self, int argc, const VALUE *argv, VALUE pass_proc
     rb_block_t *block = 0;
     GetProcPtr(self, proc);
 
-    if (!NIL_P(pass_procval)) {
-	rb_proc_t *pass_proc;
-	GetProcPtr(pass_procval, pass_proc);
-	block = &pass_proc->block;
-    }
-
+    block = passed_block(pass_procval);
     vret = rb_vm_invoke_proc(GET_THREAD(), proc, argc, argv, block);
     RB_GC_GUARD(self);
     RB_GC_GUARD(pass_procval);
@@ -1977,15 +1983,8 @@ rb_method_call_with_block(int argc, const VALUE *argv, VALUE method, VALUE pass_
     }
     if ((state = EXEC_TAG()) == 0) {
 	rb_thread_t *th = GET_THREAD();
-	rb_block_t *block = 0;
 
-	if (!NIL_P(pass_procval)) {
-	    rb_proc_t *pass_proc;
-	    GetProcPtr(pass_procval, pass_proc);
-	    block = &pass_proc->block;
-	}
-
-	th->passed_block = block;
+	th->passed_block = passed_block(pass_procval);
 	VAR_INITIALIZED(data);
 	result = rb_vm_call(th, data->recv, data->me->called_id, argc, argv, method_callable_method_entry(data));
     }
