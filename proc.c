@@ -18,6 +18,12 @@
  * versions */
 #define PROC_NEW_REQUIRES_BLOCK 0
 
+#if !defined(__GNUC__) || __GNUC__ < 5
+# define NO_CLOBBERED(v) (*(volatile VALUE *)&(v))
+#else
+# define NO_CLOBBERED(v) (v)
+#endif
+
 const rb_cref_t *rb_vm_cref_in_context(VALUE self, VALUE cbase);
 
 struct METHOD {
@@ -1980,7 +1986,9 @@ call_method_data_safe(rb_thread_t *th, const struct METHOD *data,
 
     TH_PUSH_TAG(th);
     if ((state = TH_EXEC_TAG()) == 0) {
-	result = call_method_data(th, data, argc, argv, pass_procval);
+	/* result is used only if state == 0, no exceptions is caught. */
+	/* otherwise it doesn't matter even if clobbered. */
+	NO_CLOBBERED(result) = call_method_data(th, data, argc, argv, pass_procval);
     }
     TH_POP_TAG();
     rb_set_safe_level_force(safe);
