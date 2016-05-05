@@ -1,3 +1,8 @@
+Thu May  5 14:41:05 2016  Yuichiro Kaneko  <yui-knk@ruby-lang.org>
+
+	* string.c (rb_str_sub): Fix a special match variable name.
+	  [ci skip]
+
 Thu May  5 12:22:17 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_eval.c (rb_eval_cmd, rb_catch_obj): use TH_JUMP_TAG with the
