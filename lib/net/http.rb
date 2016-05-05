@@ -697,7 +697,12 @@ module Net   #:nodoc:
     attr_accessor :cert_store
 
     # Sets the available ciphers.  See OpenSSL::SSL::SSLContext#ciphers=
-    attr_accessor :ciphers
+    attr_writer :ciphers
+
+    # Gets the available ciphers.  See OpenSSL::SSL::SSLContext#ciphers
+    def ciphers
+      @ciphers ||= OpenSSL::SSL::SSLContext::DEFAULT_PARAMS[:ciphers]
+    end
 
     # Sets an OpenSSL::PKey::RSA or OpenSSL::PKey::DSA object.
     # (This method is appeared in Michal Rokos's OpenSSL extension.)
@@ -707,7 +712,12 @@ module Net   #:nodoc:
     attr_accessor :ssl_timeout
 
     # Sets the SSL version.  See OpenSSL::SSL::SSLContext#ssl_version=
-    attr_accessor :ssl_version
+    attr_writer :ssl_version
+
+    # Gets the SSL version.  See OpenSSL::SSL::SSLContext#ssl_version
+    def ssl_version
+      @ssl_version ||= OpenSSL::SSL::SSLContext::DEFAULT_PARAMS[:ssl_version]
+    end
 
     # Sets the verify callback for the server certification verification.
     attr_accessor :verify_callback
@@ -719,7 +729,13 @@ module Net   #:nodoc:
     # SSL/TLS session.
     #
     # OpenSSL::SSL::VERIFY_NONE or OpenSSL::SSL::VERIFY_PEER are acceptable.
-    attr_accessor :verify_mode
+    attr_writer :verify_mode
+
+    # Gets the flags for server the certification verification at beginning of
+    # SSL/TLS session. See OpenSSL:SSL::SSLContext#verify_mode
+    def verify_mode
+      @verify_mode ||= OpenSSL::SSL::SSLContext::DEFAULT_PARAMS[:verify_mode]
+    end
 
     # Returns the X.509 certificates the server presented.
     def peer_cert
