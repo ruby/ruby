@@ -104,8 +104,8 @@ enum {MT_MAX_STATE = N};
 
 struct MT {
     /* assume int is enough to store 32bits */
-    unsigned int state[N]; /* the array for the state vector  */
-    unsigned int *next;
+    uint32_t state[N]; /* the array for the state vector  */
+    uint32_t *next;
     int left;
 };
 
@@ -135,7 +135,7 @@ init_genrand(struct MT *mt, unsigned int s)
 /* key_length is its length */
 /* slight change for C++, 2004/2/26 */
 static void
-init_by_array(struct MT *mt, unsigned int init_key[], int key_length)
+init_by_array(struct MT *mt, uint32_t init_key[], int key_length)
 {
     int i, j, k;
     init_genrand(mt, 19650218U);
@@ -163,7 +163,7 @@ init_by_array(struct MT *mt, unsigned int init_key[], int key_length)
 static void
 next_state(struct MT *mt)
 {
-    unsigned int *p = mt->state;
+    uint32_t *p = mt->state;
     int j;
 
     mt->left = N;
@@ -391,7 +391,7 @@ rand_init(struct MT *mt, VALUE vseed)
 
     len = rb_absint_numwords(seed, 32, NULL);
     if (len > numberof(buf0))
-        buf = ALLOC_N(unsigned int, len);
+        buf = ALLOC_N(uint32_t, len);
     sign = rb_integer_pack(seed, buf, len, sizeof(uint32_t), 0,
         INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
     if (sign < 0)
