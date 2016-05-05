@@ -2533,12 +2533,9 @@ bmcall(VALUE args, VALUE method, int argc, VALUE *argv, VALUE passed_proc)
     VALUE ret;
 
     if (CLASS_OF(args) != rb_cArray) {
-	args = rb_ary_new3(1, args);
-	argc = 1;
+	return rb_method_call_with_block(1, &args, method, passed_proc);
     }
-    else {
-	argc = check_argc(RARRAY_LEN(args));
-    }
+    argc = check_argc(RARRAY_LEN(args));
     ret = rb_method_call_with_block(argc, RARRAY_PTR(args), method, passed_proc);
     RB_GC_GUARD(a) = args;
     return ret;
