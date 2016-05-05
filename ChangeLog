@@ -1,3 +1,9 @@
+Fri May  6 08:16:26 2016  David Silva  <david.silva@digital.cabinet-office.gov.uk>
+
+	* enum.c (enum_find): [DOC] add more examples to the documentation
+	  of Enumerable#detect, to show that it equals to Enumerable#find.
+	  [Fix GH-1340]
+
 Thu May  5 18:08:31 2016  Yuichiro Kaneko  <yui-knk@ruby-lang.org>
 
 	* test/ruby/test_complexrational.rb: Remove duplicated raise.
