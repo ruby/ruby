@@ -1519,6 +1519,7 @@ end
 #
 # Vector functions:
 # * #inner_product(v)
+# * #cross_product(v)
 # * #collect
 # * #magnitude
 # * #map
@@ -1755,6 +1756,17 @@ class Vector
       p += v1 * v2.conj
     }
     p
+  end
+
+  #
+  # Returns the cross product of this vector whit the other.
+  #   Vector[1.0, 0.0, 0.0].cross_product Vector[0.0, 1.0, 0.0]   => Vector[0.0, 0.0, 1.0]
+  #
+  def cross_product(v)
+    Vector.Raise ErrDimensionMismatch if size != v.size && v.size != 3
+    Vector[ v[1]*@elements[2] - v[2]*@elements[1],
+            v[2]*@elements[0] - v[0]*@elements[2],
+            v[0]*@elements[1] - v[1]*@elements[0] ]
   end
 
   #
