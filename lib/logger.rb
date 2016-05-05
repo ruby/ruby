@@ -111,11 +111,12 @@ require 'monitor'
 #
 #      logger = Logger.new('foo.log', 10, 1024000)
 #
-# 5. Create a logger which ages logfile daily/weekly/monthly.
+# 5. Create a logger which ages logfile daily/weekly/monthly.  Leave old log
+#    files for the last 90 (or forever by default) days.
 #
 #      logger = Logger.new('foo.log', 'daily')
 #      logger = Logger.new('foo.log', 'weekly')
-#      logger = Logger.new('foo.log', 'monthly')
+#      logger = Logger.new('foo.log', 'monthly', 90)
 #
 # === How to log a message
 #
@@ -288,6 +289,7 @@ class Logger
   #
   #   Logger.new(name, shift_age = 7, shift_size = 1048576)
   #   Logger.new(name, shift_age = 'weekly')
+  #   Logger.new(name, shift_age = 'days', shift_size = 30)
   #
   # === Args
   #
@@ -299,12 +301,15 @@ class Logger
   #   +weekly+ or +monthly+).
   # +shift_size+::
   #   Maximum logfile size (only applies when +shift_age+ is a number).
+  #   _or_
+  #   Number of days to keep old log files (only applies when +shift_age+ is not a number).
   #
   # === Description
   #
   # Create an instance.
   #
-  def initialize(logdev, shift_age = 0, shift_size = 1048576)
+  def initialize(logdev, shift_age = 0, shift_size = nil)
+    shift_size ||= 1048576 if shift_age.is_a?(Integer)
     @progname = nil
     @level = DEBUG
     @default_formatter = Formatter.new
@@ -550,7 +555,7 @@ private
         @dev.sync = true
         @filename = log
         @shift_age = opt[:shift_age] || 7
-        @shift_size = opt[:shift_size] || 1048576
+        @shift_size = opt[:shift_size] || @shift_age.is_a?(Integer) ? 1048576 : nil
       end
     end
 
@@ -613,15 +618,18 @@ private
     def check_shift_log
       if @shift_age.is_a?(Integer)
         # Note: always returns false if '0'.
-        if @filename && (@shift_age > 0) && (@dev.stat.size > @shift_size)
+        return unless @shift_age > 0
+        stat = @dev.stat
+        reinit_logdev if stat.ctime > stat.mtime
+        if @filename && (stat.size > @shift_size)
           shift_log_age
         end
       else
         now = Time.now
         period_end = previous_period_end(now)
-        if @dev.stat.mtime <= period_end
-          shift_log_period(period_end)
-        end
+        stat = @dev.stat
+        reinit_logdev if stat.ctime > period_end
+        shift_log_period(period_end) if stat.mtime <= period_end
       end
     end
 
@@ -631,9 +639,9 @@ private
           File.rename("#{@filename}.#{i}", "#{@filename}.#{i+1}")
         end
       end
-      @dev.close rescue nil
-      File.rename("#{@filename}", "#{@filename}.0")
-      @dev = create_logfile(@filename)
+      reinit_logdev do
+        File.rename("#{@filename}", "#{@filename}.0")
+      end
       return true
     end
 
@@ -650,10 +658,25 @@ private
           break unless FileTest.exist?(age_file)
         end
       end
-      @dev.close rescue nil
-      File.rename("#{@filename}", age_file)
-      @dev = create_logfile(@filename)
+      reinit_logdev do
+        File.rename("#{@filename}", age_file)
+      end
+      clear_age_log_files!(period_end) rescue nil if @shift_size
       return true
+    end
+
+    def reinit_logdev
+      @dev.close rescue nil
+      yield if block_given?
+      @dev = open_logfile(@filename)
+    end
+
+    def clear_age_log_files!(period_end)
+      keep_period = period_end - @shift_size.days
+      age_files = Dir.glob("#{@filename}.*").select do |f|
+        File.mtime(f) < keep_period
+      end
+      File.unlink(*age_files)
     end
 
     def previous_period_end(now)
@@ -766,7 +789,8 @@ private
     # Sets the log device for this application.  See <tt>Logger.new</tt> for
     # an explanation of the arguments.
     #
-    def set_log(logdev, shift_age = 0, shift_size = 1024000)
+    def set_log(logdev, shift_age = 0, shift_size = nil)
+      shift_size ||= 1024000 if shift_age.is_a?(Integer)
       @log = Logger.new(logdev, shift_age, shift_size)
       @log.progname = @appname
       @log.level = @level
