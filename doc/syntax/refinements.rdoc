@@ -44,7 +44,7 @@ Activate the refinement with #using:
 
   x = C.new
 
-  c.foo # prints "C#foo in M"
+  x.foo # prints "C#foo in M"
 
 == Scope
 
