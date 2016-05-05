@@ -477,7 +477,7 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 
     if (NIL_P(mesg)) {
 	mesg = th->errinfo;
-	if (INTERNAL_EXCEPTION_P(mesg)) JUMP_TAG(TAG_FATAL);
+	if (INTERNAL_EXCEPTION_P(mesg)) TH_JUMP_TAG(th, TAG_FATAL);
 	nocause = 1;
     }
     if (NIL_P(mesg)) {
@@ -551,14 +551,14 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 	}
 	else if (status) {
 	    rb_threadptr_reset_raised(th);
-	    JUMP_TAG(status);
+	    TH_JUMP_TAG(th, status);
 	}
     }
 
     if (rb_threadptr_set_raised(th)) {
 	th->errinfo = exception_error;
 	rb_threadptr_reset_raised(th);
-	JUMP_TAG(TAG_FATAL);
+	TH_JUMP_TAG(th, TAG_FATAL);
     }
 
     if (tag != TAG_FATAL) {
@@ -573,7 +573,7 @@ rb_longjmp(int tag, volatile VALUE mesg, VALUE cause)
     rb_thread_t *th = GET_THREAD();
     setup_exception(th, tag, mesg, cause);
     rb_thread_raised_clear(th);
-    JUMP_TAG(tag);
+    TH_JUMP_TAG(th, tag);
 }
 
 static VALUE make_exception(int argc, const VALUE *argv, int isstr);
@@ -743,7 +743,7 @@ rb_raise_jump(VALUE mesg, VALUE cause)
     setup_exception(th, TAG_RAISE, mesg, cause);
 
     rb_thread_raised_clear(th);
-    JUMP_TAG(TAG_RAISE);
+    TH_JUMP_TAG(th, TAG_RAISE);
 }
 
 void
@@ -837,7 +837,7 @@ rb_rescue2(VALUE (* b_proc) (ANYARGS), VALUE data1,
     }
     TH_POP_TAG();
     if (state)
-	JUMP_TAG(state);
+	TH_JUMP_TAG(th, state);
 
     return result;
 }
@@ -905,7 +905,7 @@ rb_ensure(VALUE (*b_proc)(ANYARGS), VALUE data1, VALUE (*e_proc)(ANYARGS), VALUE
     (*ensure_list.entry.e_proc)(ensure_list.entry.data2);
     th->errinfo = errinfo;
     if (state)
-	JUMP_TAG(state);
+	TH_JUMP_TAG(th, state);
     return result;
 }
 

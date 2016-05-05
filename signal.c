@@ -980,7 +980,7 @@ signal_exec(VALUE cmd, int safe, int sig)
 
     if (state) {
 	/* XXX: should be replaced with rb_threadptr_pending_interrupt_enque() */
-	JUMP_TAG(state);
+	TH_JUMP_TAG(cur_th, state);
     }
 }
 

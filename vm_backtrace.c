@@ -1191,7 +1191,7 @@ rb_debug_inspector_open(rb_debug_inspector_func_t func, void *data)
     /* invalidate bindings? */
 
     if (state) {
-	JUMP_TAG(state);
+	TH_JUMP_TAG(th, state);
     }
 
     return result;

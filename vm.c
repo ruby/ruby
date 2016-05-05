@@ -1047,7 +1047,7 @@ vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc, VALUE self,
     th->safe_level = stored_safe;
 
     if (state) {
-	JUMP_TAG(state);
+	TH_JUMP_TAG(th, state);
     }
     return val;
 }
@@ -1859,7 +1859,7 @@ vm_exec(rb_thread_t *th)
 		vm_pop_frame(th);
 		th->errinfo = (VALUE)err;
 		TH_TMPPOP_TAG();
-		JUMP_TAG(state);
+		TH_JUMP_TAG(th, state);
 	    }
 	    else {
 		th->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp);

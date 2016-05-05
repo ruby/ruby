@@ -1397,7 +1397,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_
 	if (state == TAG_RAISE) {
 	    adjust_backtrace_in_eval(th, th->errinfo);
 	}
-	JUMP_TAG(state);
+	TH_JUMP_TAG(th, state);
     }
     return result;
 }
@@ -1543,7 +1543,7 @@ rb_eval_string_wrap(const char *str, int *state)
 	*state = status;
     }
     else if (status) {
-	JUMP_TAG(status);
+	TH_JUMP_TAG(th, status);
     }
     return val;
 }
@@ -1554,35 +1554,36 @@ rb_eval_cmd(VALUE cmd, VALUE arg, int level)
     int state;
     volatile VALUE val = Qnil;		/* OK */
     volatile int safe = rb_safe_level();
+    rb_thread_t *th = GET_THREAD();
 
     if (OBJ_TAINTED(cmd)) {
 	level = RUBY_SAFE_LEVEL_MAX;
     }
 
     if (!RB_TYPE_P(cmd, T_STRING)) {
-	PUSH_TAG();
+	TH_PUSH_TAG(th);
 	rb_set_safe_level_force(level);
-	if ((state = EXEC_TAG()) == 0) {
+	if ((state = TH_EXEC_TAG()) == 0) {
 	    val = rb_funcall2(cmd, idCall, RARRAY_LENINT(arg),
 			      RARRAY_CONST_PTR(arg));
 	}
-	POP_TAG();
+	TH_POP_TAG();
 
 	rb_set_safe_level_force(safe);
 
 	if (state)
-	    JUMP_TAG(state);
+	    TH_JUMP_TAG(th, state);
 	return val;
     }
 
-    PUSH_TAG();
-    if ((state = EXEC_TAG()) == 0) {
+    TH_PUSH_TAG(th);
+    if ((state = TH_EXEC_TAG()) == 0) {
 	val = eval_string(rb_vm_top_self(), cmd, Qnil, 0, 0);
     }
-    POP_TAG();
+    TH_POP_TAG();
 
     rb_set_safe_level_force(safe);
-    if (state) JUMP_TAG(state);
+    if (state) TH_JUMP_TAG(th, state);
     return val;
 }
 
@@ -1910,7 +1911,7 @@ rb_throw_obj(VALUE tag, VALUE value)
     }
 
     th->errinfo = (VALUE)THROW_DATA_NEW(tag, NULL, TAG_THROW);
-    JUMP_TAG(TAG_THROW);
+    TH_JUMP_TAG(th, TAG_THROW);
 }
 
 void
@@ -1997,24 +1998,32 @@ rb_catch(const char *tag, VALUE (*func)(), VALUE data)
     return rb_catch_obj(vtag, func, data);
 }
 
+static VALUE vm_catch_protect(VALUE, rb_block_call_func *, VALUE, int *, rb_thread_t *);
+
 VALUE
 rb_catch_obj(VALUE t, VALUE (*func)(), VALUE data)
 {
     int state;
-    VALUE val = rb_catch_protect(t, (rb_block_call_func *)func, data, &state);
+    rb_thread_t *th = GET_THREAD();
+    VALUE val = vm_catch_protect(t, (rb_block_call_func *)func, data, &state, th);
     if (state)
-	JUMP_TAG(state);
+	TH_JUMP_TAG(th, state);
     return val;
 }
 
 VALUE
 rb_catch_protect(VALUE t, rb_block_call_func *func, VALUE data, int *stateptr)
 {
+    return vm_catch_protect(t, func, data, stateptr, GET_THREAD());
+}
+
+static VALUE
+vm_catch_protect(VALUE tag, rb_block_call_func *func, VALUE data,
+		 int *stateptr, rb_thread_t *th)
+{
     int state;
-    volatile VALUE val = Qnil;		/* OK */
-    rb_thread_t *th = GET_THREAD();
+    VALUE val = Qnil;		/* OK */
     rb_control_frame_t *saved_cfp = th->cfp;
-    volatile VALUE tag = t;
 
     TH_PUSH_TAG(th);
 

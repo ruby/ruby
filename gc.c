@@ -7572,7 +7572,7 @@ rb_memerror(void)
     if (rb_thread_raised_p(th, RAISED_NOMEMORY)) {
 	rb_thread_raised_clear(th);
 	GET_THREAD()->errinfo = nomem_error;
-	JUMP_TAG(TAG_RAISE);
+	TH_JUMP_TAG(th, TAG_RAISE);
     }
     rb_thread_raised_set(th, RAISED_NOMEMORY);
     rb_exc_raise(nomem_error);

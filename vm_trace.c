@@ -416,7 +416,7 @@ rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg)
     if (!tracing) th->vm->trace_running--;
 
     if (state) {
-	JUMP_TAG(state);
+	TH_JUMP_TAG(th, state);
     }
 
     th->state = outer_state;

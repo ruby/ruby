@@ -646,7 +646,7 @@ rb_load_internal(VALUE fname, int wrap)
     int state = rb_load_internal0(curr_th, fname, wrap);
     if (state) {
 	if (state == TAG_RAISE) rb_exc_raise(curr_th->errinfo);
-	JUMP_TAG(state);
+	TH_JUMP_TAG(curr_th, state);
     }
 }
 

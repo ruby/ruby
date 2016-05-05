@@ -1985,7 +1985,7 @@ call_method_data_safe(rb_thread_t *th, const struct METHOD *data,
     TH_POP_TAG();
     rb_set_safe_level_force(safe);
     if (state)
-	JUMP_TAG(state);
+	TH_JUMP_TAG(th, state);
     return result;
 }
 

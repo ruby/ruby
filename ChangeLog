@@ -1,3 +1,9 @@
+Thu May  5 12:22:17 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (rb_eval_cmd, rb_catch_obj): use TH_JUMP_TAG with the
+	  same rb_thread_t used for TH_PUSH_TAG, instead of JUMP_TAG with
+	  the current thread global variable.
+
 Thu May  5 10:49:33 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* random.c (fill_random_bytes_syscall): use arc4random_buf if

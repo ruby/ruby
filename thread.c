@@ -1422,7 +1422,7 @@ rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd)
     th->waiting_fd = -1;
 
     if (state) {
-	JUMP_TAG(state);
+	TH_JUMP_TAG(th, state);
     }
     /* TODO: check func() */
     RUBY_VM_CHECK_INTS_BLOCKING(th);
@@ -1853,7 +1853,7 @@ rb_thread_s_handle_interrupt(VALUE self, VALUE mask_arg)
     RUBY_VM_CHECK_INTS(th);
 
     if (state) {
-	JUMP_TAG(state);
+	TH_JUMP_TAG(th, state);
     }
 
     return r;
