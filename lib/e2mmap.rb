@@ -48,7 +48,7 @@
 #   Foo.Fail ExistingExceptionClass, arg...
 #
 #
-fail "Use Ruby 1.1" if VERSION < "1.1"
+fail "Use Ruby 1.1" if RUBY_VERSION < "1.1"
 
 module Exception2MessageMapper
   @RCS_ID='-$Id: e2mmap.rb,v 1.10 1999/02/17 12:33:17 keiju Exp keiju $-'
