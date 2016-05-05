@@ -1,3 +1,10 @@
+Fri May  6 02:28:31 2016  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (ole_vstr2wc, ole_variant2val): fix blank
+	  string conversion.
+	  [Bug #11880]
+	  Thanks Akio Tajima for the patch!
+
 Fri May  6 02:24:13 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* bignum.c: [DOC] Update result of 123456789 ** -2.
