@@ -1,3 +1,7 @@
+Thu May  5 18:08:31 2016  Yuichiro Kaneko  <yui-knk@ruby-lang.org>
+
+	* test/ruby/test_complexrational.rb: Remove duplicated raise.
+
 Thu May  5 14:41:05 2016  Yuichiro Kaneko  <yui-knk@ruby-lang.org>
 
 	* string.c (rb_str_sub): Fix a special match variable name.
