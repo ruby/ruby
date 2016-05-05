@@ -125,6 +125,7 @@ module TestNetHTTP_version_1_1_methods
     start {|http|
       _test_post__base http
       _test_post__file http
+      _test_post__no_data http
     }
   end
 
@@ -144,6 +145,14 @@ module TestNetHTTP_version_1_1_methods
     f = StringIO.new
     http.post('/', data, nil, f)
     assert_equal data, f.string
+  end
+
+  def _test_post__no_data(http)
+    unless self.is_a?(TestNetHTTP_v1_2_chunked)
+      data = nil
+      res = http.post('/', data)
+      assert_not_equal '411', res.code
+    end
   end
 
   def test_s_post_form
