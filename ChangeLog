@@ -1,3 +1,8 @@
+Fri May  6 02:30:32 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb: [DOC] fix example code.  base on the code by
+	  Semyon Gaivoronskiy in [ruby-core:75224].  [Bug #12323]
+
 Fri May  6 02:28:31 2016  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_vstr2wc, ole_variant2val): fix blank
