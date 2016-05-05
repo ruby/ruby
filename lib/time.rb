@@ -401,6 +401,11 @@ class Time
       else
         year = d[:year]
         year = yield(year) if year && block_given?
+        if d[:wnum1] || d[:wnum0]
+          date = Date.strptime(date, format)
+          d[:mon]  ||= date.mon
+          d[:mday] ||= date.mday
+        end
         make_time(year, d[:mon], d[:mday], d[:hour], d[:min], d[:sec], d[:sec_fraction], d[:zone], now)
       end
     end
