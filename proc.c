@@ -2529,16 +2529,7 @@ mlambda(VALUE method)
 static VALUE
 bmcall(VALUE args, VALUE method, int argc, VALUE *argv, VALUE passed_proc)
 {
-    volatile VALUE a;
-    VALUE ret;
-
-    if (CLASS_OF(args) != rb_cArray) {
-	return rb_method_call_with_block(1, &args, method, passed_proc);
-    }
-    argc = check_argc(RARRAY_LEN(args));
-    ret = rb_method_call_with_block(argc, RARRAY_PTR(args), method, passed_proc);
-    RB_GC_GUARD(a) = args;
-    return ret;
+    return rb_method_call_with_block(argc, argv, method, passed_proc);
 }
 
 VALUE
