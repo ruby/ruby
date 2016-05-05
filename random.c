@@ -480,7 +480,10 @@ fill_random_bytes_urandom(void *seed, size_t size)
 # define fill_random_bytes_urandom(seed, size) -1
 #endif
 
-#if defined(_WIN32)
+#if 0
+#elif defined(HAVE_ARC4RANDOM_BUF)
+#define fill_random_bytes_syscall(buf, size, unused) (arc4random_buf(buf, size), 0)
+#elif defined(_WIN32)
 static void
 release_crypt(void *p)
 {

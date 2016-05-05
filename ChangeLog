@@ -1,3 +1,8 @@
+Thu May  5 10:49:33 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* random.c (fill_random_bytes_syscall): use arc4random_buf if
+	  available.
+
 Wed May  4 23:13:58 2016  Yuichiro Kaneko  <yui-knk@ruby-lang.org>
 
 	* numeric.c (fix_plus): Remove rb_nucomp_add prototype
