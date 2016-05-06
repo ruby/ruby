@@ -380,14 +380,13 @@ random_alloc(VALUE klass)
 }
 
 static VALUE
-rand_init(struct MT *mt, VALUE vseed)
+rand_init(struct MT *mt, VALUE seed)
 {
-    volatile VALUE seed;
     uint32_t buf0[SIZEOF_LONG / SIZEOF_INT32 * 4], *buf = buf0;
     size_t len;
     int sign;
 
-    seed = rb_to_int(vseed);
+    seed = rb_to_int(seed);
 
     len = rb_absint_numwords(seed, 32, NULL);
     if (len > numberof(buf0))
