@@ -1170,7 +1170,7 @@ rand_range(VALUE obj, rb_random_t* rnd, VALUE range)
 
     if ((v = vmax = range_values(range, &beg, &end, &excl)) == Qfalse)
 	return Qfalse;
-    if (!RB_TYPE_P(vmax, T_FLOAT) && (v = rb_check_to_integer(vmax, "to_int"), !NIL_P(v))) {
+    if (!RB_TYPE_P(vmax, T_FLOAT) && (v = rb_check_to_int(vmax), !NIL_P(v))) {
 	long max;
 	vmax = v;
 	v = Qnil;
@@ -1293,7 +1293,7 @@ rand_random(int argc, VALUE *argv, VALUE obj, rb_random_t *rnd)
     if (NIL_P(vmax)) {
 	v = Qnil;
     }
-    else if (!RB_TYPE_P(vmax, T_FLOAT) && (v = rb_check_to_integer(vmax, "to_int"), !NIL_P(v))) {
+    else if (!RB_TYPE_P(vmax, T_FLOAT) && (v = rb_check_to_int(vmax), !NIL_P(v))) {
 	v = rand_int(obj, rnd, v, 1);
     }
     else if (v = rb_check_to_float(vmax), !NIL_P(v)) {
