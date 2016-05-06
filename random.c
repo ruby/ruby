@@ -481,7 +481,12 @@ fill_random_bytes_urandom(void *seed, size_t size)
 
 #if 0
 #elif defined(HAVE_ARC4RANDOM_BUF)
-#define fill_random_bytes_syscall(buf, size, unused) (arc4random_buf(buf, size), 0)
+static int
+fill_random_bytes_syscall(void *buf, size_t size, int unused)
+{
+    arc4random_buf(buf, size);
+    return 0;
+}
 #elif defined(_WIN32)
 static void
 release_crypt(void *p)
