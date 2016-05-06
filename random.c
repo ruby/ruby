@@ -1455,9 +1455,10 @@ random_s_rand(int argc, VALUE *argv, VALUE obj)
 #include "siphash.c"
 
 static st_index_t hashseed;
+typedef uint8_t sipseed_keys_t[16];
 static union {
-    uint8_t key[16];
-    uint32_t u32[(16 * sizeof(uint8_t) - 1) / sizeof(uint32_t)];
+    sipseed_keys_t key;
+    uint32_t u32[type_roomof(sipseed_keys_t, uint32_t)];
 } sipseed;
 
 static void
