@@ -1544,13 +1544,10 @@ Init_Random_default(void)
 {
     rb_random_t *r = &default_rand;
     struct MT *mt = &r->mt;
-    VALUE v;
+    VALUE v = TypedData_Wrap_Struct(rb_cRandom, &random_data_type, r);
 
-    r->seed = init_randomseed(mt);
-    rb_global_variable(&r->seed);
-
-    v = TypedData_Wrap_Struct(rb_cRandom, &random_data_type, r);
     rb_gc_register_mark_object(v);
+    r->seed = init_randomseed(mt);
 
     return v;
 }
