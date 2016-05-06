@@ -641,6 +641,31 @@ random_raw_seed(VALUE self, VALUE size)
     return buf;
 }
 
+#ifndef fill_random_bytes_syscall
+/*
+ * call-seq: Random.gen_random(size) -> string
+ *
+ * Returns a raw random string, using platform providing features,
+ * without /dev/urandom device. If the features are not available,
+ * raises NotImplementedError.
+ *
+ *   Random.gen_random(8)  #=> "\x78\x41\xBA\xAF\x7D\xEA\xD8\xEA"
+ *
+ */
+static VALUE
+random_gen_random(VALUE self, VALUE size)
+{
+    long n = NUM2ULONG(size);
+    VALUE buf = rb_str_new(0, n);
+    if (n == 0) return buf;
+    if (fill_random_bytes_syscall(RSTRING_PTR(buf), n, FALSE))
+	rb_raise(rb_eNotImpError, "No random device");
+    return buf;
+}
+#else
+# define random_gen_random rb_f_notimplement
+#endif
+
 /*
  * call-seq: prng.seed -> integer
  *
@@ -1601,11 +1626,13 @@ InitVM_Random(void)
     rb_define_singleton_method(rb_cRandom, "rand", random_s_rand, -1);
     rb_define_singleton_method(rb_cRandom, "new_seed", random_seed, 0);
     rb_define_singleton_method(rb_cRandom, "raw_seed", random_raw_seed, 1);
+    rb_define_singleton_method(rb_cRandom, "gen_random", random_gen_random, 1);
     rb_define_private_method(CLASS_OF(rb_cRandom), "state", random_s_state, 0);
     rb_define_private_method(CLASS_OF(rb_cRandom), "left", random_s_left, 0);
 
     {
 	VALUE m = rb_define_module_under(rb_cRandom, "Formatter");
+	rb_extend_object(rb_cRandom, m);
 	rb_include_module(rb_cRandom, m);
 	rb_define_method(m, "random_number", rand_random_number, -1);
     }

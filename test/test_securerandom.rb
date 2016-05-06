@@ -184,4 +184,12 @@ end
   def assert_in_range(range, result, mesg = nil)
     assert(range.cover?(result), message(mesg) {"Expected #{result} to be in #{range}"})
   end
+
+  if Random.respond_to?(:random_bytes)
+    class TestSysRandom < self
+      def setup
+        @it = Random
+      end
+    end
+  end
 end
