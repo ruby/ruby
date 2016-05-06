@@ -426,12 +426,12 @@ random_init(int argc, VALUE *argv, VALUE obj)
     VALUE vseed;
     rb_random_t *rnd = get_rnd(obj);
 
-    if (argc == 0) {
+    if (rb_check_arity(argc, 0, 1) == 0) {
 	rb_check_frozen(obj);
 	vseed = random_seed();
     }
     else {
-	rb_scan_args(argc, argv, "01", &vseed);
+	vseed = argv[0];
 	rb_check_copyable(obj, vseed);
     }
     rnd->seed = rand_init(&rnd->mt, vseed);
@@ -793,11 +793,11 @@ rb_f_srand(int argc, VALUE *argv, VALUE obj)
     VALUE seed, old;
     rb_random_t *r = &default_rand;
 
-    if (argc == 0) {
+    if (rb_check_arity(argc, 0, 1) == 0) {
 	seed = random_seed();
     }
     else {
-	rb_scan_args(argc, argv, "01", &seed);
+	seed = argv[0];
     }
     old = r->seed;
     r->seed = rand_init(&r->mt, seed);
@@ -1407,8 +1407,8 @@ rb_f_rand(int argc, VALUE *argv, VALUE obj)
     VALUE v, vmax, r;
     rb_random_t *rnd = rand_start(&default_rand);
 
-    if (argc == 0) goto zero_arg;
-    rb_scan_args(argc, argv, "01", &vmax);
+    if (rb_check_arity(argc, 0, 1) == 0) goto zero_arg;
+    vmax = argv[0];
     if (NIL_P(vmax)) goto zero_arg;
     if ((v = rand_range(Qnil, rnd, vmax)) != Qfalse) {
 	return v;
