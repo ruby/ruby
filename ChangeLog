@@ -1,3 +1,9 @@
+Sat May  7 07:58:02 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (rb_exec_getargs): honor the expected argument types
+	  over the conversion method.  the basic language functionality
+	  should be robust.  [ruby-core:75388] [Bug #12355]
+
 Fri May  6 08:16:26 2016  David Silva  <david.silva@digital.cabinet-office.gov.uk>
 
 	* enum.c (enum_find): [DOC] add more examples to the documentation
