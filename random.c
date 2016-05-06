@@ -1281,45 +1281,29 @@ static VALUE
 rand_random(int argc, VALUE *argv, VALUE obj, rb_random_t *rnd)
 {
     VALUE vmax, v;
-    double max = 0.0;
 
-    if (argc == 0) {
-	goto float_rand;
-    }
-    else {
-	rb_check_arity(argc, 0, 1);
+    if (rb_check_arity(argc, 0, 1) == 0) {
+	return rb_float_new(random_real(obj, rnd, TRUE));
     }
     vmax = argv[0];
-    if (NIL_P(vmax)) {
-	v = Qnil;
+    if (NIL_P(vmax)) return Qnil;
+    if (!RB_TYPE_P(vmax, T_FLOAT)) {
+	v = rb_check_to_int(vmax);
+	if (!NIL_P(v)) return rand_int(obj, rnd, v, 1);
     }
-    else if (!RB_TYPE_P(vmax, T_FLOAT) && (v = rb_check_to_int(vmax), !NIL_P(v))) {
-	v = rand_int(obj, rnd, v, 1);
-    }
-    else if (v = rb_check_to_float(vmax), !NIL_P(v)) {
-	max = float_value(v);
+    v = rb_check_to_float(vmax);
+    if (!NIL_P(v)) {
+	const double max = float_value(v);
 	if (max < 0.0) {
-	    v = Qnil;
+	    return Qnil;
 	}
 	else {
-	    uint32_t a, b;
-	    double r;
-
-	  float_rand:
-	    a = random_int32(obj, rnd);
-	    b = random_int32(obj, rnd);
-	    r = int_pair_to_real_exclusive(a, b);
-	    if (max > 0.0) r *= max;;
-	    v = rb_float_new(r);
+	    double r = random_real(obj, rnd, TRUE);
+	    if (max > 0.0) r *= max;
+	    return rb_float_new(r);
 	}
     }
-    else if ((v = rand_range(obj, rnd, vmax)) != Qfalse) {
-	/* nothing to do */
-    }
-    else {
-	return Qfalse;
-    }
-    return v;
+    return rand_range(obj, rnd, vmax);
 }
 
 static VALUE
@@ -1404,21 +1388,19 @@ random_equal(VALUE self, VALUE other)
 static VALUE
 rb_f_rand(int argc, VALUE *argv, VALUE obj)
 {
-    VALUE v, vmax, r;
+    VALUE vmax;
     rb_random_t *rnd = rand_start(&default_rand);
 
-    if (rb_check_arity(argc, 0, 1) == 0) goto zero_arg;
-    vmax = argv[0];
-    if (NIL_P(vmax)) goto zero_arg;
-    if ((v = rand_range(Qnil, rnd, vmax)) != Qfalse) {
-	return v;
+    if (rb_check_arity(argc, 0, 1) && !NIL_P(vmax = argv[0])) {
+	VALUE v = rand_range(Qnil, rnd, vmax);
+	if (v != Qfalse) return v;
+	vmax = rb_to_int(vmax);
+	if (vmax != INT2FIX(0)) {
+	    v = rand_int(Qnil, rnd, vmax, 0);
+	    if (!NIL_P(v)) return v;
+	}
     }
-    vmax = rb_to_int(vmax);
-    if (vmax == INT2FIX(0) || NIL_P(r = rand_int(Qnil, rnd, vmax, 0))) {
-      zero_arg:
-	return DBL2NUM(genrand_real(&rnd->mt));
-    }
-    return r;
+    return DBL2NUM(genrand_real(&rnd->mt));
 }
 
 /*
