@@ -279,41 +279,23 @@ rb_genrand_real(void)
 static double
 int_pair_to_real_inclusive(uint32_t a, uint32_t b)
 {
-    VALUE x;
-    VALUE m;
-    uint32_t xary[2], mary[2];
     double r;
-
-    /* (a << 32) | b */
-    xary[0] = a;
-    xary[1] = b;
-    x = rb_integer_unpack(xary, 2, sizeof(uint32_t), 0,
-        INTEGER_PACK_MSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER|
-        INTEGER_PACK_FORCE_BIGNUM);
-
-    /* (1 << 53) | 1 */
-    mary[0] = 0x00200000;
-    mary[1] = 0x00000001;
-    m = rb_integer_unpack(mary, 2, sizeof(uint32_t), 0,
-        INTEGER_PACK_MSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER|
-        INTEGER_PACK_FORCE_BIGNUM);
-
-    x = rb_big_mul(x, m);
-    if (FIXNUM_P(x)) {
-#if CHAR_BIT * SIZEOF_LONG > 64
-	r = (double)(FIX2ULONG(x) >> 64);
+    enum {dig = 53};
+    enum {dig_u = dig-32, dig_r64 = 64-dig, bmask = ~(~0u<<(dig_r64))};
+#if defined HAVE_UINT128_T
+    const uint128_t m = ((uint128_t)1 << dig) | 1;
+    uint128_t x = ((uint128_t)a << 32) | b;
+    r = (double)(uint64_t)((x * m) >> 64);
+#elif defined HAVE_UINT64_T
+    uint64_t x = ((uint64_t)a << dig_u) +
+	(((uint64_t)b + (a >> dig_u)) >> dig_r64);
+    r = (double)x;
 #else
-	return 0.0;
+    /* shift then add to get rid of overflow */
+    b = (b >> dig_r64) + (((a >> dig_u) + (b & bmask)) >> dig_r64);
+    r = (double)a * (1 << dig_u) + b;
 #endif
-    }
-    else {
-        uint32_t uary[4];
-        rb_integer_pack(x, uary, numberof(uary), sizeof(uint32_t), 0,
-                INTEGER_PACK_MSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
-        /* r = x >> 64 */
-        r = (double)uary[0] * (0x10000 * (double)0x10000) + (double)uary[1];
-    }
-    return ldexp(r, -53);
+    return ldexp(r, -dig);
 }
 
 VALUE rb_cRandom;

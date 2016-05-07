@@ -1,3 +1,8 @@
+Sat May  7 16:22:13 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* random.c (int_pair_to_real_inclusive): optimize to multiply
+	  without Bignum.
+
 Sat May  7 07:58:02 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (rb_exec_getargs): honor the expected argument types
