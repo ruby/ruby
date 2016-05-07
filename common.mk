@@ -10385,6 +10385,7 @@ random.$(OBJEXT): {$(VPATH)}mt19937.c
 random.$(OBJEXT): {$(VPATH)}onigmo.h
 random.$(OBJEXT): {$(VPATH)}oniguruma.h
 random.$(OBJEXT): {$(VPATH)}random.c
+random.$(OBJEXT): {$(VPATH)}random.h
 random.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 random.$(OBJEXT): {$(VPATH)}siphash.c
 random.$(OBJEXT): {$(VPATH)}siphash.h

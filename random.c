@@ -62,6 +62,7 @@
 #include "internal/random.h"
 #include "internal/sanitizers.h"
 #include "ruby_atomic.h"
+#include "ruby/random.h"
 
 typedef int int_must_be_32bit_at_least[sizeof(int) * CHAR_BIT < 32 ? -1 : 1];
 
@@ -113,44 +114,57 @@ genrand_real2(struct MT *mt)
 #undef M
 
 typedef struct {
-    VALUE seed;
+    rb_random_t base;
     struct MT mt;
-} rb_random_t;
+} rb_random_mt_t;
 
 #define DEFAULT_SEED_CNT 4
 
-static rb_random_t default_rand;
+static rb_random_mt_t default_rand;
 
-static VALUE rand_init(struct MT *mt, VALUE vseed);
+static VALUE rand_init(const rb_random_interface_t *, rb_random_t *, VALUE);
 static VALUE random_seed(VALUE);
+static void fill_random_seed(uint32_t *seed, size_t cnt);
+static VALUE make_seed_value(uint32_t *ptr, size_t len);
 
-static rb_random_t *
-rand_start(rb_random_t *r)
+RB_RANDOM_INTERFACE_DECLARE(rand_mt)
+static const rb_random_interface_t random_mt_if = {
+    DEFAULT_SEED_CNT * 32,
+    RB_RANDOM_INTERFACE_DEFINE(rand_mt)
+};
+
+static rb_random_mt_t *
+rand_mt_start(rb_random_mt_t *r)
 {
-    struct MT *mt = &r->mt;
-    if (!genrand_initialized(mt)) {
-        r->seed = rand_init(mt, random_seed(Qundef));
+    if (!genrand_initialized(&r->mt)) {
+	r->base.seed = rand_init(&random_mt_if, &r->base, random_seed(Qundef));
     }
     return r;
 }
 
-static struct MT *
+static rb_random_t *
+rand_start(rb_random_mt_t *r)
+{
+    return &rand_mt_start(r)->base;
+}
+
+static rb_random_mt_t *
 default_mt(void)
 {
-    return &rand_start(&default_rand)->mt;
+    return rand_mt_start(&default_rand);
 }
 
 unsigned int
 rb_genrand_int32(void)
 {
-    struct MT *mt = default_mt();
+    struct MT *mt = &default_mt()->mt;
     return genrand_int32(mt);
 }
 
 double
 rb_genrand_real(void)
 {
-    struct MT *mt = default_mt();
+    struct MT *mt = &default_mt()->mt;
     return genrand_real(mt);
 }
 
@@ -185,18 +199,15 @@ static ID id_rand, id_bytes;
 NORETURN(static void domain_error(void));
 
 /* :nodoc: */
-static void
+#define random_mark rb_random_mark
+
+void
 random_mark(void *ptr)
 {
     rb_gc_mark(((rb_random_t *)ptr)->seed);
 }
 
-static void
-random_free(void *ptr)
-{
-    if (ptr != &default_rand)
-	xfree(ptr);
-}
+#define random_free RUBY_TYPED_DEFAULT_FREE
 
 static size_t
 random_memsize(const void *ptr)
@@ -204,8 +215,8 @@ random_memsize(const void *ptr)
     return sizeof(rb_random_t);
 }
 
-static const rb_data_type_t random_mt_type = {
-    "random/MT",
+const rb_data_type_t rb_random_data_type = {
+    "random",
     {
 	random_mark,
 	random_free,
@@ -214,12 +225,49 @@ static const rb_data_type_t random_mt_type = {
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
+#define random_mt_mark rb_random_mark
+
+static void
+random_mt_free(void *ptr)
+{
+    if (ptr != &default_rand)
+	xfree(ptr);
+}
+
+static size_t
+random_mt_memsize(const void *ptr)
+{
+    return sizeof(rb_random_mt_t);
+}
+
+static const rb_data_type_t random_mt_type = {
+    "random/MT",
+    {
+	random_mt_mark,
+	random_mt_free,
+	random_mt_memsize,
+    },
+    &rb_random_data_type,
+    (void *)&random_mt_if,
+    RUBY_TYPED_FREE_IMMEDIATELY
+};
+
 static rb_random_t *
 get_rnd(VALUE obj)
 {
     rb_random_t *ptr;
-    TypedData_Get_Struct(obj, rb_random_t, &random_mt_type, ptr);
-    return rand_start(ptr);
+    TypedData_Get_Struct(obj, rb_random_t, &rb_random_data_type, ptr);
+    if (RTYPEDDATA_TYPE(obj) == &random_mt_type)
+        return rand_start((rb_random_mt_t *)ptr);
+    return ptr;
+}
+
+static rb_random_mt_t *
+get_rnd_mt(VALUE obj)
+{
+    rb_random_mt_t *ptr;
+    TypedData_Get_Struct(obj, rb_random_mt_t, &random_mt_type, ptr);
+    return ptr;
 }
 
 static rb_random_t *
@@ -228,30 +276,61 @@ try_get_rnd(VALUE obj)
     if (obj == rb_cRandom) {
 	return rand_start(&default_rand);
     }
-    if (!rb_typeddata_is_kind_of(obj, &random_mt_type)) return NULL;
-    return rand_start(DATA_PTR(obj));
+    if (!rb_typeddata_is_kind_of(obj, &rb_random_data_type)) return NULL;
+    if (RTYPEDDATA_TYPE(obj) == &random_mt_type)
+        return rand_start(DATA_PTR(obj));
+    rb_random_t *rnd = DATA_PTR(obj);
+    if (!rnd) {
+        rb_raise(rb_eArgError, "uninitialized random: %s",
+                 RTYPEDDATA_TYPE(obj)->wrap_struct_name);
+    }
+    return rnd;
+}
+
+static const rb_random_interface_t *
+try_rand_if(VALUE obj, rb_random_t *rnd)
+{
+    if (rnd == &default_rand.base) {
+	return &random_mt_if;
+    }
+    return rb_rand_if(obj);
 }
 
 /* :nodoc: */
 static VALUE
 random_alloc(VALUE klass)
 {
-    rb_random_t *rnd;
-    VALUE obj = TypedData_Make_Struct(klass, rb_random_t, &random_mt_type, rnd);
-    rnd->seed = INT2FIX(0);
+    rb_random_mt_t *rnd;
+    VALUE obj = TypedData_Make_Struct(klass, rb_random_mt_t, &random_mt_type, rnd);
+    rnd->base.seed = INT2FIX(0);
     return obj;
 }
 
 static VALUE
-rand_init(struct MT *mt, VALUE seed)
+rand_init_default(const rb_random_interface_t *rng, rb_random_t *rnd)
 {
-    uint32_t buf0[SIZEOF_LONG / SIZEOF_INT32 * 4], *buf = buf0;
+    VALUE seed, buf0 = 0;
+    size_t len = roomof(rng->default_seed_bits, 32);
+    uint32_t *buf = ALLOCV_N(uint32_t, buf0, len+1);
+
+    fill_random_seed(buf, len);
+    rng->init(rnd, buf, len);
+    seed = make_seed_value(buf, len);
+    explicit_bzero(buf, len * sizeof(*buf));
+    ALLOCV_END(buf0);
+    return seed;
+}
+
+static VALUE
+rand_init(const rb_random_interface_t *rng, rb_random_t *rnd, VALUE seed)
+{
+    uint32_t *buf;
+    VALUE buf0 = 0;
     size_t len;
     int sign;
 
     len = rb_absint_numwords(seed, 32, NULL);
-    if (len > numberof(buf0))
-        buf = ALLOC_N(uint32_t, len);
+    buf = ALLOCV_N(uint32_t, buf0, len);
     sign = rb_integer_pack(seed, buf, len, sizeof(uint32_t), 0,
         INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
     if (sign < 0)
@@ -260,16 +339,13 @@ rand_init(struct MT *mt, VALUE seed)
         buf[0] = 0;
         len = 1;
     }
-    if (len <= 1) {
-        init_genrand(mt, buf[0]);
-    }
-    else {
+    if (len > 1) {
         if (sign != 2 && buf[len-1] == 1) /* remove leading-zero-guard */
             len--;
-        init_by_array(mt, buf, (int)len);
     }
+    rng->init(rnd, buf, len);
     explicit_bzero(buf, len * sizeof(*buf));
-    if (buf != buf0) xfree(buf);
+    ALLOCV_END(buf0);
     return seed;
 }
 
@@ -285,19 +361,21 @@ rand_init(struct MT *mt, VALUE seed)
 static VALUE
 random_init(int argc, VALUE *argv, VALUE obj)
 {
-    VALUE vseed;
-    rb_random_t *rnd = get_rnd(obj);
+    rb_random_t *rnd = try_get_rnd(obj);
+    const rb_random_interface_t *rng = rb_rand_if(obj);
 
-    if (rb_check_arity(argc, 0, 1) == 0) {
-	rb_check_frozen(obj);
-        vseed = random_seed(obj);
+    if (!rng) {
+        rb_raise(rb_eTypeError, "undefined random interface: %s",
+                 RTYPEDDATA_TYPE(obj)->wrap_struct_name);
+    }
+    argc = rb_check_arity(argc, 0, 1);
+    rb_check_frozen(obj);
+    if (argc == 0) {
+        rnd->seed = rand_init_default(rng, rnd);
     }
     else {
-	vseed = argv[0];
-	rb_check_copyable(obj, vseed);
-	vseed = rb_to_int(vseed);
+        rnd->seed = rand_init(rng, rnd, rb_to_int(argv[0]));
     }
-    rnd->seed = rand_init(&rnd->mt, vseed);
     return obj;
 }
 
@@ -588,15 +666,15 @@ random_get_seed(VALUE obj)
 
 /* :nodoc: */
 static VALUE
-random_copy(VALUE obj, VALUE orig)
+rand_mt_copy(VALUE obj, VALUE orig)
 {
-    rb_random_t *rnd1, *rnd2;
+    rb_random_mt_t *rnd1, *rnd2;
     struct MT *mt;
 
     if (!OBJ_INIT_COPY(obj, orig)) return obj;
 
-    rnd1 = get_rnd(obj);
-    rnd2 = get_rnd(orig);
+    rnd1 = get_rnd_mt(obj);
+    rnd2 = get_rnd_mt(orig);
     mt = &rnd1->mt;
 
     *rnd1 = *rnd2;
@@ -614,9 +692,9 @@ mt_state(const struct MT *mt)
 
 /* :nodoc: */
 static VALUE
-random_state(VALUE obj)
+rand_mt_state(VALUE obj)
 {
-    rb_random_t *rnd = get_rnd(obj);
+    rb_random_mt_t *rnd = get_rnd_mt(obj);
     return mt_state(&rnd->mt);
 }
 
@@ -629,9 +707,9 @@ random_s_state(VALUE klass)
 
 /* :nodoc: */
 static VALUE
-random_left(VALUE obj)
+rand_mt_left(VALUE obj)
 {
-    rb_random_t *rnd = get_rnd(obj);
+    rb_random_mt_t *rnd = get_rnd_mt(obj);
     return INT2FIX(rnd->mt.left);
 }
 
@@ -644,23 +722,23 @@ random_s_left(VALUE klass)
 
 /* :nodoc: */
 static VALUE
-random_dump(VALUE obj)
+rand_mt_dump(VALUE obj)
 {
-    rb_random_t *rnd = get_rnd(obj);
+    rb_random_mt_t *rnd = rb_check_typeddata(obj, &random_mt_type);
     VALUE dump = rb_ary_new2(3);
 
     rb_ary_push(dump, mt_state(&rnd->mt));
     rb_ary_push(dump, INT2FIX(rnd->mt.left));
-    rb_ary_push(dump, rnd->seed);
+    rb_ary_push(dump, rnd->base.seed);
 
     return dump;
 }
 
 /* :nodoc: */
 static VALUE
-random_load(VALUE obj, VALUE dump)
+rand_mt_load(VALUE obj, VALUE dump)
 {
-    rb_random_t *rnd = get_rnd(obj);
+    rb_random_mt_t *rnd = rb_check_typeddata(obj, &random_mt_type);
     struct MT *mt = &rnd->mt;
     VALUE state, left = INT2FIX(1), seed = INT2FIX(0);
     unsigned long x;
@@ -687,9 +765,34 @@ random_load(VALUE obj, VALUE dump)
     }
     mt->left = (unsigned int)x;
     mt->next = mt->state + numberof(mt->state) - x + 1;
-    rnd->seed = rb_to_int(seed);
+    rnd->base.seed = rb_to_int(seed);
 
     return obj;
+}
+
+static void
+rand_mt_init(rb_random_t *rnd, const uint32_t *buf, size_t len)
+{
+    struct MT *mt = &((rb_random_mt_t *)rnd)->mt;
+    if (len <= 1) {
+        init_genrand(mt, buf[0]);
+    }
+    else {
+        init_by_array(mt, buf, (int)len);
+    }
+}
+
+static unsigned int
+rand_mt_get_int32(rb_random_t *rnd)
+{
+    struct MT *mt = &((rb_random_mt_t *)rnd)->mt;
+    return genrand_int32(mt);
+}
+
+static void
+rand_mt_get_bytes(rb_random_t *rnd, void *ptr, size_t n)
+{
+    rb_rand_bytes_int32(rand_mt_get_int32, rnd, ptr, n);
 }
 
 /*
@@ -719,7 +822,7 @@ static VALUE
 rb_f_srand(int argc, VALUE *argv, VALUE obj)
 {
     VALUE seed, old;
-    rb_random_t *r = &default_rand;
+    rb_random_mt_t *r = &default_rand;
 
     if (rb_check_arity(argc, 0, 1) == 0) {
         seed = random_seed(obj);
@@ -727,8 +830,9 @@ rb_f_srand(int argc, VALUE *argv, VALUE obj)
     else {
 	seed = rb_to_int(argv[0]);
     }
-    old = r->seed;
-    r->seed = rand_init(&r->mt, seed);
+    old = r->base.seed;
+    rand_init(&random_mt_if, &r->base, seed);
+    r->base.seed = seed;
 
     return old;
 }
@@ -748,7 +852,7 @@ make_mask(unsigned long x)
 }
 
 static unsigned long
-limited_rand(struct MT *mt, unsigned long limit)
+limited_rand(const rb_random_interface_t *rng, rb_random_t *rnd, unsigned long limit)
 {
     /* mt must be initialized */
     unsigned long val, mask;
@@ -763,7 +867,7 @@ limited_rand(struct MT *mt, unsigned long limit)
         val = 0;
         for (i = SIZEOF_LONG/SIZEOF_INT32-1; 0 <= i; i--) {
             if ((mask >> (i * 32)) & 0xffffffff) {
-                val |= (unsigned long)genrand_int32(mt) << (i * 32);
+                val |= (unsigned long)rng->get_int32(rnd) << (i * 32);
                 val &= mask;
                 if (limit < val)
                     goto retry;
@@ -774,13 +878,13 @@ limited_rand(struct MT *mt, unsigned long limit)
 #endif
 
     do {
-        val = genrand_int32(mt) & mask;
+        val = rng->get_int32(rnd) & mask;
     } while (limit < val);
     return val;
 }
 
 static VALUE
-limited_big_rand(struct MT *mt, VALUE limit)
+limited_big_rand(const rb_random_interface_t *rng, rb_random_t *rnd, VALUE limit)
 {
     /* mt must be initialized */
 
@@ -804,22 +908,19 @@ limited_big_rand(struct MT *mt, VALUE limit)
     mask = 0;
     boundary = 1;
     for (i = len-1; 0 <= i; i--) {
-	uint32_t rnd;
+        uint32_t r = 0;
         uint32_t lim = lim_array[i];
         mask = mask ? 0xffffffff : (uint32_t)make_mask(lim);
         if (mask) {
-            rnd = genrand_int32(mt) & mask;
+            r = rng->get_int32(rnd) & mask;
             if (boundary) {
-                if (lim < rnd)
+                if (lim < r)
                     goto retry;
-                if (rnd < lim)
+                if (r < lim)
                     boundary = 0;
             }
         }
-        else {
-            rnd = 0;
-        }
-        rnd_array[i] = rnd;
+        rnd_array[i] = r;
     }
     val = rb_integer_unpack(rnd_array, len, sizeof(uint32_t), 0,
         INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
@@ -837,7 +938,8 @@ limited_big_rand(struct MT *mt, VALUE limit)
 unsigned long
 rb_genrand_ulong_limited(unsigned long limit)
 {
-    return limited_rand(default_mt(), limit);
+    rb_random_mt_t *mt = default_mt();
+    return limited_rand(&random_mt_if, &mt->base, limit);
 }
 
 static VALUE
@@ -857,9 +959,9 @@ obj_random_bytes(VALUE obj, void *p, long n)
 }
 
 static unsigned int
-random_int32(rb_random_t *rnd)
+random_int32(const rb_random_interface_t *rng, rb_random_t *rnd)
 {
-    return genrand_int32(&rnd->mt);
+    return rng->get_int32(rnd);
 }
 
 unsigned int
@@ -871,7 +973,7 @@ rb_random_int32(VALUE obj)
 	obj_random_bytes(obj, &x, sizeof(x));
 	return (unsigned int)x;
     }
-    return random_int32(rnd);
+    return random_int32(try_rand_if(obj, rnd), rnd);
 }
 
 static double
@@ -886,8 +988,9 @@ random_real(VALUE obj, rb_random_t *rnd, int excl)
 	b = x[1];
     }
     else {
-	a = random_int32(rnd);
-	b = random_int32(rnd);
+        const rb_random_interface_t *rng = try_rand_if(obj, rnd);
+        a = random_int32(rng, rnd);
+        b = random_int32(rng, rnd);
     }
     if (excl) {
 	return int_pair_to_real_exclusive(a, b);
@@ -912,7 +1015,7 @@ rb_random_real(VALUE obj)
 	}
 	return d;
     }
-    return genrand_real(&rnd->mt);
+    return random_real(obj, rnd, TRUE);
 }
 
 static inline VALUE
@@ -954,7 +1057,7 @@ random_ulong_limited(VALUE obj, rb_random_t *rnd, unsigned long limit)
 	} while (limit < val);
 	return val;
     }
-    return limited_rand(&rnd->mt, limit);
+    return limited_rand(try_rand_if(obj, rnd), rnd, limit);
 }
 
 unsigned long
@@ -973,7 +1076,7 @@ rb_random_ulong_limited(VALUE obj, unsigned long limit)
 	}
 	return r;
     }
-    return limited_rand(&rnd->mt, limit);
+    return limited_rand(try_rand_if(obj, rnd), rnd, limit);
 }
 
 static VALUE
@@ -1002,10 +1105,20 @@ random_ulong_limited_big(VALUE obj, rb_random_t *rnd, VALUE vmax)
 	ALLOCV_END(vtmp);
 	return v;
     }
-    return limited_big_rand(&rnd->mt, vmax);
+    return limited_big_rand(try_rand_if(obj, rnd), rnd, vmax);
 }
 
-static VALUE genrand_bytes(rb_random_t *rnd, long n);
+static VALUE
+rand_bytes(const rb_random_interface_t *rng, rb_random_t *rnd, long n)
+{
+    VALUE bytes;
+    char *ptr;
+
+    bytes = rb_str_new(0, n);
+    ptr = RSTRING_PTR(bytes);
+    rb_rand_bytes_int32(rng->get_int32, rnd, ptr, n);
+    return bytes;
+}
 
 /*
  * call-seq: prng.bytes(size) -> string
@@ -1018,20 +1131,18 @@ static VALUE genrand_bytes(rb_random_t *rnd, long n);
 static VALUE
 random_bytes(VALUE obj, VALUE len)
 {
-    return genrand_bytes(get_rnd(obj), NUM2LONG(rb_to_int(len)));
+    rb_random_t *rnd = try_get_rnd(obj);
+    return rand_bytes(rb_rand_if(obj), rnd, NUM2LONG(rb_to_int(len)));
 }
 
-static VALUE
-genrand_bytes(rb_random_t *rnd, long n)
+void
+rb_rand_bytes_int32(rb_random_get_int32_func *get_int32,
+                    rb_random_t *rnd, void *p, size_t n)
 {
-    VALUE bytes;
-    char *ptr;
+    char *ptr = p;
     unsigned int r, i;
-
-    bytes = rb_str_new(0, n);
-    ptr = RSTRING_PTR(bytes);
     for (; n >= SIZEOF_INT32; n -= SIZEOF_INT32) {
-	r = genrand_int32(&rnd->mt);
+        r = get_int32(rnd);
 	i = SIZEOF_INT32;
 	do {
 	    *ptr++ = (char)r;
@@ -1039,13 +1150,12 @@ genrand_bytes(rb_random_t *rnd, long n)
         } while (--i);
     }
     if (n > 0) {
-	r = genrand_int32(&rnd->mt);
+        r = get_int32(rnd);
 	do {
 	    *ptr++ = (char)r;
 	    r >>= CHAR_BIT;
 	} while (--n);
     }
-    return bytes;
 }
 
 VALUE
@@ -1055,7 +1165,7 @@ rb_random_bytes(VALUE obj, long n)
     if (!rnd) {
 	return obj_random_bytes(obj, NULL, n);
     }
-    return genrand_bytes(rnd, n);
+    return rand_bytes(try_rand_if(obj, rnd), rnd, n);
 }
 
 /*
@@ -1068,7 +1178,7 @@ static VALUE
 random_s_bytes(VALUE obj, VALUE len)
 {
     rb_random_t *rnd = rand_start(&default_rand);
-    return genrand_bytes(rnd, NUM2LONG(rb_to_int(len)));
+    return rand_bytes(&random_mt_if, rnd, NUM2LONG(rb_to_int(len)));
 }
 
 static VALUE
@@ -1268,7 +1378,7 @@ static VALUE rand_random(int argc, VALUE *argv, VALUE obj, rb_random_t *rnd);
 static VALUE
 random_rand(int argc, VALUE *argv, VALUE obj)
 {
-    VALUE v = rand_random(argc, argv, obj, get_rnd(obj));
+    VALUE v = rand_random(argc, argv, obj, try_get_rnd(obj));
     check_random_number(v, argv);
     return v;
 }
@@ -1347,16 +1457,16 @@ rand_random_number(int argc, VALUE *argv, VALUE obj)
  *   prng1 == prng2 # => true
  */
 static VALUE
-random_equal(VALUE self, VALUE other)
+rand_mt_equal(VALUE self, VALUE other)
 {
-    rb_random_t *r1, *r2;
+    rb_random_mt_t *r1, *r2;
     if (rb_obj_class(self) != rb_obj_class(other)) return Qfalse;
-    r1 = get_rnd(self);
-    r2 = get_rnd(other);
+    r1 = get_rnd_mt(self);
+    r2 = get_rnd_mt(other);
     if (memcmp(r1->mt.state, r2->mt.state, sizeof(r1->mt.state))) return Qfalse;
     if ((r1->mt.next - r1->mt.state) != (r2->mt.next - r2->mt.state)) return Qfalse;
     if (r1->mt.left != r2->mt.left) return Qfalse;
-    return rb_equal(r1->seed, r2->seed);
+    return rb_equal(r1->base.seed, r2->base.seed);
 }
 
 /*
@@ -1397,15 +1507,15 @@ rb_f_rand(int argc, VALUE *argv, VALUE obj)
     rb_random_t *rnd = rand_start(&default_rand);
 
     if (rb_check_arity(argc, 0, 1) && !NIL_P(vmax = argv[0])) {
-	VALUE v = rand_range(Qnil, rnd, vmax);
+        VALUE v = rand_range(obj, rnd, vmax);
 	if (v != Qfalse) return v;
 	vmax = rb_to_int(vmax);
 	if (vmax != INT2FIX(0)) {
-	    v = rand_int(Qnil, rnd, vmax, 0);
+            v = rand_int(obj, rnd, vmax, 0);
 	    if (!NIL_P(v)) return v;
 	}
     }
-    return DBL2NUM(genrand_real(&rnd->mt));
+    return DBL2NUM(random_real(obj, rnd, TRUE));
 }
 
 /*
@@ -1506,14 +1616,14 @@ Init_RandomSeedCore(void)
 static VALUE
 Init_Random_default(VALUE klass)
 {
-    rb_random_t *r = &default_rand;
+    rb_random_mt_t *r = &default_rand;
     struct MT *mt = &r->mt;
     VALUE v = TypedData_Wrap_Struct(klass, &random_mt_type, r);
 
     rb_gc_register_mark_object(v);
     with_random_seed(DEFAULT_SEED_CNT, 1) {
         init_by_array(mt, seedbuf, DEFAULT_SEED_CNT);
-        r->seed = make_seed_value(seedbuf, DEFAULT_SEED_CNT);
+        r->base.seed = make_seed_value(seedbuf, DEFAULT_SEED_CNT);
     }
 
     return v;
@@ -1522,9 +1632,9 @@ Init_Random_default(VALUE klass)
 void
 rb_reset_random_seed(void)
 {
-    rb_random_t *r = &default_rand;
+    rb_random_mt_t *r = &default_rand;
     uninit_genrand(&r->mt);
-    r->seed = INT2FIX(0);
+    r->base.seed = INT2FIX(0);
 }
 
 /*
@@ -1569,13 +1679,13 @@ InitVM_Random(void)
     rb_define_method(base, "initialize", random_init, -1);
     rb_define_method(base, "rand", random_rand, -1);
     rb_define_method(base, "bytes", random_bytes, 1);
-    rb_define_method(rb_cRandom, "seed", random_get_seed, 0);
-    rb_define_method(rb_cRandom, "initialize_copy", random_copy, 1);
-    rb_define_private_method(rb_cRandom, "marshal_dump", random_dump, 0);
-    rb_define_private_method(rb_cRandom, "marshal_load", random_load, 1);
-    rb_define_private_method(rb_cRandom, "state", random_state, 0);
-    rb_define_private_method(rb_cRandom, "left", random_left, 0);
-    rb_define_method(rb_cRandom, "==", random_equal, 1);
+    rb_define_method(base, "seed", random_get_seed, 0);
+    rb_define_method(rb_cRandom, "initialize_copy", rand_mt_copy, 1);
+    rb_define_private_method(rb_cRandom, "marshal_dump", rand_mt_dump, 0);
+    rb_define_private_method(rb_cRandom, "marshal_load", rand_mt_load, 1);
+    rb_define_private_method(rb_cRandom, "state", rand_mt_state, 0);
+    rb_define_private_method(rb_cRandom, "left", rand_mt_left, 0);
+    rb_define_method(rb_cRandom, "==", rand_mt_equal, 1);
 
     {
 	/* Direct access to Ruby's Pseudorandom number generator (PRNG). */
