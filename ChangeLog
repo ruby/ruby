@@ -1,3 +1,7 @@
+Sat May  7 21:55:12 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* test/webrick/test_ssl_server.rb: Added basic test for `webrick/ssl`
+
 Sat May  7 16:22:13 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* random.c (int_pair_to_real_inclusive): optimize to multiply
