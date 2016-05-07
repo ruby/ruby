@@ -2013,6 +2013,7 @@ random.$(OBJEXT): {$(VPATH)}io.h
 random.$(OBJEXT): {$(VPATH)}missing.h
 random.$(OBJEXT): {$(VPATH)}oniguruma.h
 random.$(OBJEXT): {$(VPATH)}random.c
+random.$(OBJEXT): {$(VPATH)}random.h
 random.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 random.$(OBJEXT): {$(VPATH)}siphash.c
 random.$(OBJEXT): {$(VPATH)}siphash.h
