@@ -918,32 +918,47 @@ rb_genrand_ulong_limited(unsigned long limit)
 }
 
 static unsigned int
-random_int32(VALUE obj, rb_random_t *rnd)
+obj_random_int32(VALUE obj)
 {
-    if (!rnd) {
 #if SIZEOF_LONG * CHAR_BIT > 32
-	VALUE lim = ULONG2NUM(0x100000000UL);
+    VALUE lim = ULONG2NUM(0x100000000UL);
 #elif defined HAVE_LONG_LONG
-	VALUE lim = ULL2NUM((LONG_LONG)0xffffffff+1);
+    VALUE lim = ULL2NUM((LONG_LONG)0xffffffff+1);
 #else
-	VALUE lim = rb_big_plus(ULONG2NUM(0xffffffff), INT2FIX(1));
+    VALUE lim = rb_big_plus(ULONG2NUM(0xffffffff), INT2FIX(1));
 #endif
-	return (unsigned int)NUM2ULONG(rb_funcall2(obj, id_rand, 1, &lim));
-    }
+    return (unsigned int)NUM2ULONG(rb_funcall2(obj, id_rand, 1, &lim));
+}
+
+static unsigned int
+random_int32(rb_random_t *rnd)
+{
     return genrand_int32(&rnd->mt);
 }
 
 unsigned int
 rb_random_int32(VALUE obj)
 {
-    return random_int32(obj, try_get_rnd(obj));
+    rb_random_t *rnd = try_get_rnd(obj);
+    if (!rnd) {
+	return obj_random_int32(obj);
+    }
+    return random_int32(rnd);
 }
 
 static double
 random_real(VALUE obj, rb_random_t *rnd, int excl)
 {
-    uint32_t a = random_int32(obj, rnd);
-    uint32_t b = random_int32(obj, rnd);
+    uint32_t a, b;
+
+    if (!rnd) {
+	a = obj_random_int32(obj);
+	b = obj_random_int32(obj);
+    }
+    else {
+	a = random_int32(rnd);
+	b = random_int32(rnd);
+    }
     if (excl) {
 	return int_pair_to_real_exclusive(a, b);
     }
