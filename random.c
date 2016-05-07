@@ -987,7 +987,6 @@ static unsigned long
 random_ulong_limited(VALUE obj, rb_random_t *rnd, unsigned long limit)
 {
     if (!rnd) {
-	extern int rb_num_negative_p(VALUE);
 	VALUE lim = ulong_to_num_plus_1(limit);
 	VALUE v = rb_to_int(rb_funcall2(obj, id_rand, 1, &lim));
 	unsigned long r = NUM2ULONG(v);
@@ -1006,7 +1005,6 @@ static VALUE
 random_ulong_limited_big(VALUE obj, rb_random_t *rnd, VALUE vmax)
 {
     if (!rnd) {
-	extern int rb_num_negative_p(VALUE);
 	VALUE lim = rb_big_plus(vmax, INT2FIX(1));
 	VALUE v = rb_to_int(rb_funcall2(obj, id_rand, 1, &lim));
 	if (rb_num_negative_p(v)) {
