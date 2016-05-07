@@ -108,7 +108,8 @@ module WEBrick
       cert = OpenSSL::X509::Certificate.new
       cert.version = 2
       cert.serial = 1
-      name = OpenSSL::X509::Name.new(cn)
+      name = (cn.kind_of? String) ? OpenSSL::X509::Name.parse(cn)
+                                  : OpenSSL::X509::Name.new(cn)
       cert.subject = name
       cert.issuer = name
       cert.not_before = Time.now

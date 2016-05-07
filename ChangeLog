@@ -1,3 +1,10 @@
+Sat May  7 22:22:37 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/webrick/ssl.rb: Accept string value for SSLCertName. It is used
+	  to invoke ssl server with command line.
+	  [fix GH-1329] Patch by @kerlin
+	* test/webrick/test_ssl_server.rb: Added test for GH-1329
+
 Sat May  7 21:55:12 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* test/webrick/test_ssl_server.rb: Added basic test for `webrick/ssl`
