@@ -1,10 +1,10 @@
 Sun May  8 21:01:14 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* ext/openssl/extconf.rb: asume it doesn't have SSLv2 related
+	* ext/openssl/extconf.rb: assume it doesn't have SSLv2 related
 	  functions when OPENSSL_NO_SSL2 is defined.
 	  Usually openssl's header and the library (libssl) have the same
 	  set of functions, but on some environment the library has functions
-	  whose headers doesn't declare. (openssl/opensslconf.h and libsso.so
+	  whose headers doesn't declare. (openssl/opensslconf.h and libssl.so
 	  aren't be synchronized)
 	  To detect such case explicitly check feature macro and remove
 	  related functions.
