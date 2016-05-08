@@ -22,6 +22,46 @@ extern "C" {
 #include RUBY_EXTCONF_H
 #endif
 
+/* function attributes */
+#ifndef CONSTFUNC
+# define CONSTFUNC(x) x
+#endif
+#ifndef PUREFUNC
+# define PUREFUNC(x) x
+#endif
+#define NORETURN_STYLE_NEW 1
+#ifndef NORETURN
+# define NORETURN(x) x
+#endif
+#ifndef DEPRECATED
+# define DEPRECATED(x) x
+#endif
+#ifndef DEPRECATED_BY
+# define DEPRECATED_BY(n,x) DEPRECATED(x)
+#endif
+#ifndef DEPRECATED_TYPE
+# define DEPRECATED_TYPE(mesg, decl) decl
+#endif
+#ifndef NOINLINE
+# define NOINLINE(x) x
+#endif
+
+/* likely */
+#if __GNUC__ >= 3
+#define RB_LIKELY(x)   (__builtin_expect(!!(x), 1))
+#define RB_UNLIKELY(x) (__builtin_expect(!!(x), 0))
+#else /* __GNUC__ >= 3 */
+#define RB_LIKELY(x)   (x)
+#define RB_UNLIKELY(x) (x)
+#endif /* __GNUC__ >= 3 */
+
+#ifdef __GNUC__
+#define PRINTF_ARGS(decl, string_index, first_to_check) \
+  decl __attribute__((format(printf, string_index, first_to_check)))
+#else
+#define PRINTF_ARGS(decl, string_index, first_to_check) decl
+#endif
+
 /* AC_INCLUDES_DEFAULT */
 #include <stdio.h>
 #ifdef HAVE_SYS_TYPES_H
