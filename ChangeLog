@@ -1,3 +1,14 @@
+Mon May  9 02:39:16 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in: check function attirbute const and pure,
+	  and define CONSTFUNC and PUREFUNC if available.
+	  Note that I don't add those options as default because
+	  it still shows many false-positive (it seems not to consider
+	  longjmp).
+
+	* vm_eval.c (stack_check): get rb_thread_t* as an argument
+	  to avoid duplicate call of GET_THREAD().
+
 Sun May  8 21:01:14 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/openssl/extconf.rb: assume it doesn't have SSLv2 related

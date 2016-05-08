@@ -303,10 +303,8 @@ rb_current_receiver(void)
 }
 
 static inline void
-stack_check(void)
+stack_check(rb_thread_t *th)
 {
-    rb_thread_t *th = GET_THREAD();
-
     if (!rb_thread_raised_p(th, RAISED_STACKOVERFLOW) && ruby_stack_check()) {
 	rb_thread_raised_set(th, RAISED_STACKOVERFLOW);
 	rb_exc_raise(sysstack_error);
@@ -342,7 +340,7 @@ rb_call0(VALUE recv, ID mid, int argc, const VALUE *argv,
     if (call_status != MISSING_NONE) {
 	return method_missing(recv, mid, argc, argv, call_status);
     }
-    stack_check();
+    stack_check(th);
     return vm_call0(th, recv, mid, argc, argv, me);
 }
 
@@ -460,7 +458,7 @@ rb_check_funcall_default(VALUE recv, ID mid, int argc, const VALUE *argv, VALUE 
 	return check_funcall_missing(th, klass, recv, mid, argc, argv,
 				     respond, def);
     }
-    stack_check();
+    stack_check(th);
     return vm_call0(th, recv, mid, argc, argv, me);
 }
 
@@ -485,7 +483,7 @@ rb_check_funcall_with_hook(VALUE recv, ID mid, int argc, const VALUE *argv,
 	(*hook)(ret != Qundef, recv, mid, argc, argv, arg);
 	return ret;
     }
-    stack_check();
+    stack_check(th);
     (*hook)(TRUE, recv, mid, argc, argv, arg);
     return vm_call0(th, recv, mid, argc, argv, me);
 }
@@ -718,7 +716,7 @@ raise_method_missing(rb_thread_t *th, int argc, const VALUE *argv, VALUE obj,
 		 rb_obj_class(argv[0]));
     }
 
-    stack_check();
+    stack_check(th);
 
     if (last_call_status & MISSING_PRIVATE) {
 	format = rb_fstring_cstr("private method `%s' called for %s%s%s");

@@ -6921,6 +6921,7 @@ typedef long timetick_int_t;
 #define TIMETICK_INT2NUM(v) LONG2NUM(v)
 #endif
 
+CONSTFUNC(static timetick_int_t gcd_timetick_int(timetick_int_t, timetick_int_t));
 static timetick_int_t
 gcd_timetick_int(timetick_int_t a, timetick_int_t b)
 {

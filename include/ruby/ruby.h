@@ -624,7 +624,7 @@ int rb_safe_level(void);
 void rb_set_safe_level(int);
 #if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 4))
 int ruby_safe_level_2_error(void) __attribute__((error("$SAFE=2 to 4 are obsolete")));
-int ruby_safe_level_2_warning(void) __attribute__((warning("$SAFE=2 to 4 are obsolete")));
+int ruby_safe_level_2_warning(void) __attribute__((const,warning("$SAFE=2 to 4 are obsolete")));
 # ifdef RUBY_EXPORT
 #   define ruby_safe_level_2_warning() ruby_safe_level_2_error()
 # endif
@@ -650,7 +650,7 @@ int ruby_safe_level_2_warning(void) __attribute__((warning("$SAFE=2 to 4 are obs
 #define rb_set_safe_level(level) rb_set_safe_level(RUBY_SAFE_LEVEL_CHECK(level, error))
 #endif
 void rb_set_safe_level_force(int);
-void rb_secure_update(VALUE);
+CONSTFUNC(void rb_secure_update(VALUE));
 NORETURN(void rb_insecure_operation(void));
 
 VALUE rb_errinfo(void);
@@ -952,7 +952,7 @@ enum {
     RMODULE_ENUM_END
 };
 
-double rb_float_value(VALUE);
+PUREFUNC(double rb_float_value(VALUE));
 VALUE rb_float_new(double);
 VALUE rb_float_new_in_heap(double);
 

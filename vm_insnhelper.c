@@ -374,6 +374,7 @@ vm_getspecial(rb_thread_t *th, VALUE *lep, rb_num_t key, rb_num_t type)
     return val;
 }
 
+PUREFUNC(static rb_callable_method_entry_t *check_method_entry(VALUE obj, int can_be_svar));
 static rb_callable_method_entry_t *
 check_method_entry(VALUE obj, int can_be_svar)
 {
@@ -425,6 +426,9 @@ method_entry_cref(rb_callable_method_entry_t *me)
     }
 }
 
+#if VM_CHECK_MODE == 0
+PUREFUNC(static rb_cref_t *check_cref(VALUE, int));
+#endif
 static rb_cref_t *
 check_cref(VALUE obj, int can_be_svar)
 {
@@ -1925,6 +1929,7 @@ find_refinement(VALUE refinements, VALUE klass)
     return rb_hash_lookup(refinements, klass);
 }
 
+PUREFUNC(static rb_control_frame_t * current_method_entry(rb_thread_t *th, rb_control_frame_t *cfp));
 static rb_control_frame_t *
 current_method_entry(rb_thread_t *th, rb_control_frame_t *cfp)
 {

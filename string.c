@@ -233,8 +233,6 @@ static int fstring_cmp(VALUE a, VALUE b);
 
 static VALUE register_fstring(VALUE str);
 
-st_table *rb_vm_fstring_table(void);
-
 const struct st_hash_type rb_fstring_hash_type = {
     fstring_cmp,
     rb_str_hash,

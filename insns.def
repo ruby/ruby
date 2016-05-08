@@ -2088,8 +2088,6 @@ opt_not
 (VALUE recv)
 (VALUE val)
 {
-    extern VALUE rb_obj_not(VALUE obj);
-
     vm_search_method(ci, cc, recv);
 
     if (check_cfunc(cc->me, rb_obj_not)) {

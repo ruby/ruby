@@ -892,7 +892,7 @@ VALUE rb_invcmp(VALUE, VALUE);
 struct rb_block_struct;
 int rb_dvar_defined(ID, const struct rb_block_struct *);
 int rb_local_defined(ID, const struct rb_block_struct *);
-const char * rb_insns_name(int i);
+CONSTFUNC(const char * rb_insns_name(int i));
 VALUE rb_insns_name_array(void);
 
 /* complex.c */
@@ -913,7 +913,7 @@ void Init_ext(void);
 
 /* encoding.c */
 ID rb_id_encoding(void);
-void rb_gc_mark_encodings(void);
+CONSTFUNC(void rb_gc_mark_encodings(void));
 rb_encoding *rb_enc_get_from_index(int index);
 rb_encoding *rb_enc_check_str(VALUE str1, VALUE str2);
 int rb_encdb_replicate(const char *alias, const char *orig);
@@ -923,7 +923,7 @@ void rb_encdb_declare(const char *name);
 void rb_enc_set_base(const char *name, const char *orig);
 int rb_enc_set_dummy(int index);
 void rb_encdb_set_unicode(int index);
-int rb_data_is_encoding(VALUE obj);
+PUREFUNC(int rb_data_is_encoding(VALUE obj));
 
 /* enum.c */
 VALUE rb_f_send(int argc, VALUE *argv, VALUE recv);
@@ -1180,7 +1180,8 @@ rb_float_new_inline(double d)
 
 /* object.c */
 void rb_obj_copy_ivar(VALUE dest, VALUE obj);
-VALUE rb_obj_equal(VALUE obj1, VALUE obj2);
+CONSTFUNC(VALUE rb_obj_equal(VALUE obj1, VALUE obj2));
+CONSTFUNC(VALUE rb_obj_not(VALUE obj));
 VALUE rb_class_search_ancestor(VALUE klass, VALUE super);
 NORETURN(void rb_undefined_alloc(VALUE klass));
 double rb_num_to_dbl(VALUE val);
@@ -1214,14 +1215,14 @@ int rb_is_attrset_name(VALUE name);
 int rb_is_local_name(VALUE name);
 int rb_is_method_name(VALUE name);
 int rb_is_junk_name(VALUE name);
-int rb_is_const_sym(VALUE sym);
-int rb_is_class_sym(VALUE sym);
-int rb_is_global_sym(VALUE sym);
-int rb_is_instance_sym(VALUE sym);
-int rb_is_attrset_sym(VALUE sym);
-int rb_is_local_sym(VALUE sym);
-int rb_is_method_sym(VALUE sym);
-int rb_is_junk_sym(VALUE sym);
+PUREFUNC(int rb_is_const_sym(VALUE sym));
+PUREFUNC(int rb_is_class_sym(VALUE sym));
+PUREFUNC(int rb_is_global_sym(VALUE sym));
+PUREFUNC(int rb_is_instance_sym(VALUE sym));
+PUREFUNC(int rb_is_attrset_sym(VALUE sym));
+PUREFUNC(int rb_is_local_sym(VALUE sym));
+PUREFUNC(int rb_is_method_sym(VALUE sym));
+PUREFUNC(int rb_is_junk_sym(VALUE sym));
 ID rb_make_internal_id(void);
 void rb_gc_free_dsymbol(VALUE);
 ID rb_id_attrget(ID id);
@@ -1451,7 +1452,7 @@ VALUE rb_obj_is_thread(VALUE obj);
 void rb_vm_mark(void *ptr);
 void Init_BareVM(void);
 void Init_vm_objects(void);
-VALUE rb_vm_top_self(void);
+PUREFUNC(VALUE rb_vm_top_self(void););
 void rb_thread_recycle_stack_release(VALUE *);
 void rb_vm_change_state(void);
 void rb_vm_inc_const_missing_count(void);
@@ -1465,6 +1466,8 @@ int rb_vm_add_root_module(ID id, VALUE module);
 void rb_vm_check_redefinition_by_prepend(VALUE klass);
 VALUE rb_yield_refine_block(VALUE refinement, VALUE refinements);
 VALUE ruby_vm_sysstack_error_copy(void);
+PUREFUNC(st_table *rb_vm_fstring_table(void));
+
 
 /* vm_dump.c */
 void rb_print_backtrace(void);

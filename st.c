@@ -1683,6 +1683,7 @@ st_locale_insensitive_strncasecmp(const char *s1, const char *s2, size_t n)
     return 0;
 }
 
+PUREFUNC(static st_index_t strcasehash(st_data_t));
 static st_index_t
 strcasehash(st_data_t arg)
 {

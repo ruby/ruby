@@ -25,6 +25,7 @@
 
 VALUE rb_str_concat_literals(size_t, const VALUE*);
 
+PUREFUNC(static inline VALUE *VM_EP_LEP(VALUE *));
 static inline VALUE *
 VM_EP_LEP(VALUE *ep)
 {
@@ -60,6 +61,7 @@ rb_vm_ep_local_ep(VALUE *ep)
     return VM_EP_LEP(ep);
 }
 
+PUREFUNC(static inline VALUE *VM_CF_LEP(const rb_control_frame_t * const cfp));
 static inline VALUE *
 VM_CF_LEP(const rb_control_frame_t * const cfp)
 {
@@ -72,6 +74,7 @@ VM_CF_PREV_EP(const rb_control_frame_t * const cfp)
     return VM_EP_PREV_EP(cfp->ep);
 }
 
+PUREFUNC(static inline rb_block_t *VM_CF_BLOCK_PTR(const rb_control_frame_t * const cfp));
 static inline rb_block_t *
 VM_CF_BLOCK_PTR(const rb_control_frame_t * const cfp)
 {

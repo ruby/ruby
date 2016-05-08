@@ -254,9 +254,9 @@ NORETURN(DEPRECATED(PRINTF_ARGS(void rb_compile_error_with_enc(const char*, int,
 NORETURN(DEPRECATED(PRINTF_ARGS(void rb_compile_error_append(const char*, ...), 1, 2)));
 NORETURN(void rb_error_frozen(const char*));
 NORETURN(void rb_error_frozen_object(VALUE));
-void rb_error_untrusted(VALUE);
+CONSTFUNC(void rb_error_untrusted(VALUE));
 void rb_check_frozen(VALUE);
-void rb_check_trusted(VALUE);
+CONSTFUNC(void rb_check_trusted(VALUE));
 #define rb_check_frozen_internal(obj) do { \
 	VALUE frozen_obj = (obj); \
 	if (OBJ_FROZEN(frozen_obj)) { \
@@ -293,7 +293,6 @@ const char *rb_sourcefile(void);
 VALUE rb_check_funcall(VALUE, ID, int, const VALUE*);
 
 NORETURN(void rb_error_arity(int, int, int));
-#define rb_check_arity rb_check_arity /* for ifdef */
 static inline int
 rb_check_arity(int argc, int min, int max)
 {
@@ -301,6 +300,7 @@ rb_check_arity(int argc, int min, int max)
 	rb_error_arity(argc, min, max);
     return argc;
 }
+#define rb_check_arity rb_check_arity /* for ifdef */
 
 #if defined(NFDBITS) && defined(HAVE_RB_FD_INIT)
 typedef struct {
@@ -482,7 +482,7 @@ VALUE rb_str_encode_ospath(VALUE);
 int rb_is_absolute_path(const char *);
 /* gc.c */
 NORETURN(void rb_memerror(void));
-int rb_during_gc(void);
+PUREFUNC(int rb_during_gc(void););
 void rb_gc_mark_locations(const VALUE*, const VALUE*);
 void rb_mark_tbl(struct st_table*);
 void rb_mark_set(struct st_table*);
@@ -580,7 +580,7 @@ VALUE rb_num_coerce_relop(VALUE, VALUE, ID);
 VALUE rb_num_coerce_bit(VALUE, VALUE, ID);
 VALUE rb_num2fix(VALUE);
 VALUE rb_fix2str(VALUE, int);
-VALUE rb_dbl_cmp(double, double);
+CONSTFUNC(VALUE rb_dbl_cmp(double, double));
 /* object.c */
 int rb_eql(VALUE, VALUE);
 VALUE rb_any_to_s(VALUE);
@@ -592,17 +592,17 @@ VALUE rb_obj_clone(VALUE);
 VALUE rb_obj_dup(VALUE);
 VALUE rb_obj_init_copy(VALUE,VALUE);
 VALUE rb_obj_taint(VALUE);
-VALUE rb_obj_tainted(VALUE);
+PUREFUNC(VALUE rb_obj_tainted(VALUE));
 VALUE rb_obj_untaint(VALUE);
 VALUE rb_obj_untrust(VALUE);
-VALUE rb_obj_untrusted(VALUE);
+PUREFUNC(VALUE rb_obj_untrusted(VALUE));
 VALUE rb_obj_trust(VALUE);
 VALUE rb_obj_freeze(VALUE);
-VALUE rb_obj_frozen_p(VALUE);
+PUREFUNC(VALUE rb_obj_frozen_p(VALUE));
 VALUE rb_obj_id(VALUE);
 VALUE rb_obj_class(VALUE);
-VALUE rb_class_real(VALUE);
-VALUE rb_class_inherited_p(VALUE, VALUE);
+PUREFUNC(VALUE rb_class_real(VALUE));
+PUREFUNC(VALUE rb_class_inherited_p(VALUE, VALUE));
 VALUE rb_class_superclass(VALUE);
 VALUE rb_class_get_superclass(VALUE);
 VALUE rb_convert_type(VALUE,int,const char*,const char*);
@@ -621,13 +621,13 @@ double rb_cstr_to_dbl(const char*, int);
 double rb_str_to_dbl(VALUE, int);
 /* parse.y */
 ID rb_id_attrset(ID);
-int rb_is_const_id(ID);
-int rb_is_global_id(ID);
-int rb_is_instance_id(ID);
-int rb_is_attrset_id(ID);
-int rb_is_class_id(ID);
-int rb_is_local_id(ID);
-int rb_is_junk_id(ID);
+CONSTFUNC(int rb_is_const_id(ID));
+CONSTFUNC(int rb_is_global_id(ID));
+CONSTFUNC(int rb_is_instance_id(ID));
+CONSTFUNC(int rb_is_attrset_id(ID));
+CONSTFUNC(int rb_is_class_id(ID));
+CONSTFUNC(int rb_is_local_id(ID));
+CONSTFUNC(int rb_is_junk_id(ID));
 int rb_symname_p(const char*);
 int rb_sym_interned_p(VALUE);
 VALUE rb_backref_get(void);
@@ -784,7 +784,7 @@ VALUE rb_sym_to_s(VALUE);
 long rb_str_strlen(VALUE);
 VALUE rb_str_length(VALUE);
 long rb_str_offset(VALUE, long);
-size_t rb_str_capacity(VALUE);
+PUREFUNC(size_t rb_str_capacity(VALUE););
 VALUE rb_str_ellipsize(VALUE, long);
 VALUE rb_str_scrub(VALUE, VALUE);
 /* symbol.c */

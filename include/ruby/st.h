@@ -131,18 +131,18 @@ void st_free_table(st_table *);
 void st_cleanup_safe(st_table *, st_data_t);
 void st_clear(st_table *);
 st_table *st_copy(st_table *);
-int st_numcmp(st_data_t, st_data_t);
-st_index_t st_numhash(st_data_t);
-int st_locale_insensitive_strcasecmp(const char *s1, const char *s2);
-int st_locale_insensitive_strncasecmp(const char *s1, const char *s2, size_t n);
+CONSTFUNC(int st_numcmp(st_data_t, st_data_t));
+CONSTFUNC(st_index_t st_numhash(st_data_t));
+PUREFUNC(int st_locale_insensitive_strcasecmp(const char *s1, const char *s2));
+PUREFUNC(int st_locale_insensitive_strncasecmp(const char *s1, const char *s2, size_t n));
 #define st_strcasecmp st_locale_insensitive_strcasecmp
 #define st_strncasecmp st_locale_insensitive_strncasecmp
-size_t st_memsize(const st_table *);
-st_index_t st_hash(const void *ptr, size_t len, st_index_t h);
-st_index_t st_hash_uint32(st_index_t h, uint32_t i);
-st_index_t st_hash_uint(st_index_t h, st_index_t i);
-st_index_t st_hash_end(st_index_t h);
-st_index_t st_hash_start(st_index_t h);
+PUREFUNC(size_t st_memsize(const st_table *));
+PUREFUNC(st_index_t st_hash(const void *ptr, size_t len, st_index_t h));
+CONSTFUNC(st_index_t st_hash_uint32(st_index_t h, uint32_t i));
+CONSTFUNC(st_index_t st_hash_uint(st_index_t h, st_index_t i));
+CONSTFUNC(st_index_t st_hash_end(st_index_t h));
+CONSTFUNC(st_index_t st_hash_start(st_index_t h));
 #define st_hash_start(h) ((st_index_t)(h))
 
 RUBY_SYMBOL_EXPORT_END

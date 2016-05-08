@@ -2033,6 +2033,7 @@ rb_objspace_data_type_name(VALUE obj)
     }
 }
 
+PUREFUNC(static inline int is_pointer_to_heap(rb_objspace_t *objspace, void *ptr);)
 static inline int
 is_pointer_to_heap(rb_objspace_t *objspace, void *ptr)
 {
@@ -2900,6 +2901,7 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
     ATOMIC_SET(finalizing, 0);
 }
 
+PUREFUNC(static inline int is_id_value(rb_objspace_t *objspace, VALUE ptr));
 static inline int
 is_id_value(rb_objspace_t *objspace, VALUE ptr)
 {

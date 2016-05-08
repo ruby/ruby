@@ -130,7 +130,7 @@ FILE *rb_io_stdio_file(rb_io_t *fptr);
 FILE *rb_fdopen(int, const char*);
 int rb_io_modestr_fmode(const char *modestr);
 int rb_io_modestr_oflags(const char *modestr);
-int rb_io_oflags_fmode(int oflags);
+CONSTFUNC(int rb_io_oflags_fmode(int oflags));
 void rb_io_check_writable(rb_io_t*);
 void rb_io_check_readable(rb_io_t*);
 void rb_io_check_char_readable(rb_io_t *fptr);
