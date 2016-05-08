@@ -249,9 +249,9 @@ PRINTF_ARGS(NORETURN(void rb_loaderror_with_path(VALUE path, const char*, ...)),
 PRINTF_ARGS(NORETURN(void rb_name_error(ID, const char*, ...)), 2, 3);
 PRINTF_ARGS(NORETURN(void rb_name_error_str(VALUE, const char*, ...)), 2, 3);
 NORETURN(void rb_invalid_str(const char*, const char*));
-DEPRECATED(PRINTF_ARGS(void rb_compile_error(const char*, int, const char*, ...), 3, 4));
-DEPRECATED(PRINTF_ARGS(void rb_compile_error_with_enc(const char*, int, void *, const char*, ...), 4, 5));
-DEPRECATED(PRINTF_ARGS(void rb_compile_error_append(const char*, ...), 1, 2));
+NORETURN(DEPRECATED(PRINTF_ARGS(void rb_compile_error(const char*, int, const char*, ...), 3, 4)));
+NORETURN(DEPRECATED(PRINTF_ARGS(void rb_compile_error_with_enc(const char*, int, void *, const char*, ...), 4, 5)));
+NORETURN(DEPRECATED(PRINTF_ARGS(void rb_compile_error_append(const char*, ...), 1, 2)));
 NORETURN(void rb_error_frozen(const char*));
 NORETURN(void rb_error_frozen_object(VALUE));
 void rb_error_untrusted(VALUE);
@@ -367,12 +367,12 @@ typedef fd_set rb_fdset_t;
 
 NORETURN(void rb_exc_raise(VALUE));
 NORETURN(void rb_exc_fatal(VALUE));
-VALUE rb_f_exit(int, const VALUE*);
-VALUE rb_f_abort(int, const VALUE*);
+NORETURN(VALUE rb_f_exit(int, const VALUE*));
+NORETURN(VALUE rb_f_abort(int, const VALUE*));
 void rb_remove_method(VALUE, const char*);
 void rb_remove_method_id(VALUE, ID);
-DEPRECATED(static inline void rb_disable_super(void));
-DEPRECATED(static inline void rb_enable_super(void));
+NORETURN(DEPRECATED(static inline void rb_disable_super(void)));
+NORETURN(DEPRECATED(static inline void rb_enable_super(void)));
 static inline void rb_disable_super(void)
 {
     /* obsolete - no use */
@@ -388,7 +388,7 @@ typedef VALUE (*rb_alloc_func_t)(VALUE);
 void rb_define_alloc_func(VALUE, rb_alloc_func_t);
 void rb_undef_alloc_func(VALUE);
 rb_alloc_func_t rb_get_alloc_func(VALUE);
-DEPRECATED(void rb_clear_cache(void));
+NORETURN(DEPRECATED(void rb_clear_cache(void)));
 void rb_clear_constant_cache(void);
 void rb_clear_method_cache_by_class(VALUE);
 void rb_alias(VALUE, ID, ID);
@@ -398,12 +398,12 @@ int rb_method_basic_definition_p(VALUE, ID);
 VALUE rb_eval_cmd(VALUE, VALUE, int);
 int rb_obj_respond_to(VALUE, ID, int);
 int rb_respond_to(VALUE, ID);
-VALUE rb_f_notimplement(int argc, const VALUE *argv, VALUE obj);
+NORETURN(VALUE rb_f_notimplement(int argc, const VALUE *argv, VALUE obj));
 #if !defined(RUBY_EXPORT) && defined(_WIN32)
 RUBY_EXTERN VALUE (*const rb_f_notimplement_)(int, const VALUE *, VALUE);
 #define rb_f_notimplement (*rb_f_notimplement_)
 #endif
-void rb_interrupt(void);
+NORETURN(void rb_interrupt(void));
 VALUE rb_apply(VALUE, ID, VALUE);
 void rb_backtrace(void);
 ID rb_frame_this_func(void);
@@ -638,7 +638,7 @@ void rb_lastline_set(VALUE);
 void rb_last_status_set(int status, rb_pid_t pid);
 VALUE rb_last_status_get(void);
 int rb_proc_exec(const char*);
-VALUE rb_f_exec(int, const VALUE*);
+NORETURN(VALUE rb_f_exec(int, const VALUE*));
 rb_pid_t rb_waitpid(rb_pid_t pid, int *status, int flags);
 void rb_syswait(rb_pid_t pid);
 rb_pid_t rb_spawn(int, const VALUE*);
@@ -776,8 +776,8 @@ VALUE rb_str_replace(VALUE, VALUE);
 VALUE rb_str_inspect(VALUE);
 VALUE rb_str_dump(VALUE);
 VALUE rb_str_split(VALUE, const char*);
-DEPRECATED(void rb_str_associate(VALUE, VALUE));
-DEPRECATED(VALUE rb_str_associated(VALUE));
+NORETURN(DEPRECATED(void rb_str_associate(VALUE, VALUE)));
+NORETURN(DEPRECATED(VALUE rb_str_associated(VALUE)));
 void rb_str_setter(VALUE, ID, VALUE*);
 VALUE rb_str_intern(VALUE);
 VALUE rb_sym_to_s(VALUE);
@@ -965,7 +965,7 @@ VALUE rb_const_get_at(VALUE, ID);
 VALUE rb_const_get_from(VALUE, ID);
 void rb_const_set(VALUE, ID, VALUE);
 VALUE rb_const_remove(VALUE, ID);
-VALUE rb_mod_const_missing(VALUE,VALUE);
+NORETURN(VALUE rb_mod_const_missing(VALUE,VALUE));
 VALUE rb_cvar_defined(VALUE, ID);
 void rb_cvar_set(VALUE, ID, VALUE);
 VALUE rb_cvar_get(VALUE, ID);
@@ -983,7 +983,7 @@ VALUE rb_make_backtrace(void);
 VALUE rb_make_exception(int, const VALUE*);
 
 /* deprecated */
-DEPRECATED(void rb_frame_pop(void));
+NORETURN(DEPRECATED(void rb_frame_pop(void)));
 
 
 RUBY_SYMBOL_EXPORT_END

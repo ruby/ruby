@@ -2684,7 +2684,8 @@ rb_fix2int(VALUE val)
 }
 #endif
 
-void
+NORETURN(static void rb_out_of_short(SIGNED_VALUE num));
+static void
 rb_out_of_short(SIGNED_VALUE num)
 {
     rb_raise(rb_eRangeError, "integer %"PRIdVALUE " too %s to convert to `short'",

@@ -2584,7 +2584,7 @@ rb_f_exec(int argc, const VALUE *argv)
     rb_exec_fail(eargp, err, errmsg);
     RB_GC_GUARD(execarg_obj);
     rb_syserr_fail_str(err, fail_str);
-    return Qnil;		/* dummy */
+    UNREACHABLE;
 }
 
 #define ERRMSG(str) do { if (errmsg && 0 < errmsg_buflen) strlcpy(errmsg, (str), errmsg_buflen); } while (0)

@@ -2117,6 +2117,7 @@ rb_threadptr_signal_exit(rb_thread_t *th)
 #define USE_SIGALTSTACK
 #endif
 
+NORETURN(void ruby_thread_stack_overflow(rb_thread_t *th));
 void
 ruby_thread_stack_overflow(rb_thread_t *th)
 {

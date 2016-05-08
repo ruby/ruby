@@ -1715,7 +1715,7 @@ VALUE rb_gvar_var_getter(ID id, void *data, struct rb_global_variable *gvar);
 void  rb_gvar_var_setter(VALUE val, ID id, void *data, struct rb_global_variable *gvar);
 void  rb_gvar_var_marker(VALUE *var);
 
-void  rb_gvar_readonly_setter(VALUE val, ID id, void *data, struct rb_global_variable *gvar);
+NORETURN(void  rb_gvar_readonly_setter(VALUE val, ID id, void *data, struct rb_global_variable *gvar));
 
 void rb_define_variable(const char*,VALUE*);
 void rb_define_virtual_variable(const char*,VALUE(*)(ANYARGS),void(*)(ANYARGS));

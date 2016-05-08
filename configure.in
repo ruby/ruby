@@ -835,6 +835,7 @@ if test "$GCC:${warnflags+set}:no" = yes::no; then
 		 -Werror=division-by-zero \
 		 -Werror=deprecated-declarations \
 		 -Wno-packed-bitfield-compat \
+		 -Wsuggest-attribute=noreturn \
 		 $extra_warning \
 		 ; do
 	if test "$particular_werror_flags" != yes; then
