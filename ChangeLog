@@ -1,3 +1,8 @@
+Sun May  8 08:19:16 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in: add -Werror=implicit-int to avoid missing type of
+	  function declaration.
+
 Sat May  7 22:22:37 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/webrick/ssl.rb: Accept string value for SSLCertName. It is used

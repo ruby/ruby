@@ -826,6 +826,7 @@ if test "$GCC:${warnflags+set}:no" = yes::no; then
 		 -Wno-constant-logical-operand \
 		 -Wno-self-assign \
 		 -Wunused-variable \
+		 -Werror=implicit-int \
 		 -Werror=pointer-arith \
 		 -Werror=write-strings \
 		 -Werror=declaration-after-statement \
