@@ -36,6 +36,12 @@ extern "C" {
 #include "defines.h"
 
 #define NORETURN_STYLE_NEW 1
+#ifndef CONSTFUNC
+# define CONSTFUNC(x) x
+#endif
+#ifndef PUREFUNC
+# define PUREFUNC(x) x
+#endif
 #ifndef NORETURN
 # define NORETURN(x) x
 #endif
