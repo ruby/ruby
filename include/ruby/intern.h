@@ -371,8 +371,8 @@ NORETURN(VALUE rb_f_exit(int, const VALUE*));
 NORETURN(VALUE rb_f_abort(int, const VALUE*));
 void rb_remove_method(VALUE, const char*);
 void rb_remove_method_id(VALUE, ID);
-NORETURN(DEPRECATED(static inline void rb_disable_super(void)));
-NORETURN(DEPRECATED(static inline void rb_enable_super(void)));
+DEPRECATED(static inline void rb_disable_super(void));
+DEPRECATED(static inline void rb_enable_super(void));
 static inline void rb_disable_super(void)
 {
     /* obsolete - no use */
