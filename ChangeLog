@@ -1,3 +1,7 @@
+Sun May  8 08:51:38 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in: add -Wsuggest-attribute=format and suppress warnings.
+
 Sun May  8 08:31:03 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in: add -Wsuggest-attribute=noreturn and suppress warnings.

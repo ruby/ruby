@@ -33,6 +33,7 @@ struct dump_config {
     size_t cur_obj_references;
 };
 
+PRINTF_ARGS(static void dump_append(struct dump_config *, const char *, ...), 2, 3);
 static void
 dump_append(struct dump_config *dc, const char *format, ...)
 {
