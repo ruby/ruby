@@ -199,7 +199,10 @@ end
     assert(range.cover?(result), message(mesg) {"Expected #{result} to be in #{range}"})
   end
 
-  if Random.respond_to?(:random_bytes)
+  begin
+    Random.random_bytes
+  rescue NotImplementedError
+  else
     class TestSysRandom < self
       def setup
         @it = Random
