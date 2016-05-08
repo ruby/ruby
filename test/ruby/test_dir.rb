@@ -295,6 +295,10 @@ class TestDir < Test::Unit::TestCase
     assert_nothing_raised(ArgumentError) {
       assert_equal(@nodir, Dir.home)
       assert_equal(@nodir, Dir.home(""))
+      if user = ENV["USER"]
+        ENV["HOME"] = env_home
+        assert_equal(File.expand_path(env_home), Dir.home(user))
+      end
     }
     %W[no:such:user \u{7559 5b88}:\u{756a}].each do |user|
       assert_raise_with_message(ArgumentError, /#{user}/) {Dir.home(user)}

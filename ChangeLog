@@ -1,3 +1,10 @@
+Sun May  8 18:51:33 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_home_dir_of): return the default home path if the
+	  user name is the current user name, on platforms where struct
+	  pwd is not supported.  a temporary measure against
+	  [Bug #12226].
+
 Sun May  8 08:51:38 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in: add -Wsuggest-attribute=format and suppress warnings.
