@@ -748,12 +748,12 @@ ruby_getcwd(void)
 #ifdef MALLOC
 extern void *MALLOC(size_t);
 #else
-#define MALLOC malloc
+#define MALLOC xmalloc
 #endif
 #ifdef FREE
 extern void FREE(void*);
 #else
-#define FREE free
+#define FREE xfree
 #endif
 
 #ifndef Omit_Private_Memory

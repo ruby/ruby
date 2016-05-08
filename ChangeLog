@@ -1,3 +1,14 @@
+Mon May  9 02:51:51 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* gc.c (rb_gc_unprotect_logging): throw rb_memerror when it cannot
+	  allocate memory. This is pointed out by Facebook's Infer.
+
+	* gc.c (gc_prof_setup_new_record): ditto.
+
+	* regparse.c (parse_regexp): ditto.
+
+	* util.c (MALLOC): use xmalloc and xfree like above.
+
 Mon May  9 02:39:16 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in: check function attirbute const and pure,

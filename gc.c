@@ -5962,6 +5962,7 @@ rb_gc_unprotect_logging(void *objptr, const char *filename, int line)
 	}
 	else {
 	    ptr = (char *)malloc(strlen(buff) + 1);
+	    if (!ptr) rb_memerror();
 	    strcpy(ptr, buff);
 	}
 	st_insert(rgengc_unprotect_logging_table, (st_data_t)ptr, cnt);
@@ -8523,8 +8524,11 @@ gc_prof_setup_new_record(rb_objspace_t *objspace, int reason)
 	    objspace->profile.records = malloc(sizeof(gc_profile_record) * objspace->profile.size);
 	}
 	if (index >= objspace->profile.size) {
+	    void *ptr;
 	    objspace->profile.size += 1000;
-	    objspace->profile.records = realloc(objspace->profile.records, sizeof(gc_profile_record) * objspace->profile.size);
+	    ptr = realloc(objspace->profile.records, sizeof(gc_profile_record) * objspace->profile.size);
+	    if (!ptr) rb_memerror();
+	    objspace->profile.records = ptr;
 	}
 	if (!objspace->profile.records) {
 	    rb_bug("gc_profile malloc or realloc miss");
