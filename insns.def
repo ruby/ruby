@@ -2088,7 +2088,7 @@ opt_not
 (VALUE recv)
 (VALUE val)
 {
-    extern VALUE rb_obj_not(VALUE obj);
+    extern VALUE rb_obj_not(int argc, VALUE *argv, VALUE obj);
 
     vm_search_method(ci, cc, recv);
 

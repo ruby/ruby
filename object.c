@@ -179,13 +179,34 @@ VALUE rb_obj_hash(VALUE obj);
 /*
  *  call-seq:
  *     !obj    -> true or false
+ *     obj.!([symbol, args...])     -> true or false
+ *     obj.not([symbol, args...])   -> true or false
  *
- *  Boolean negate.
+ *  Invokes the method identified by _symbol_, passing it any
+ *  arguments specified and the given block, and returns boolean
+ *  negate of the result.
+ *
+ *     [].not(:empty?)    # => false
+ *     [nil].not(:empty?) # => true
+ *
+ *  If no arguments but a block is given, yields +self+ and returns
+ *  boolean negate of the result.
+ *
+ *     1.not {|x| x.odd?} # => false
+ *
+ *  If no arguments neither block is given, just returns boolean
+ *  negate of +self+, same as built-in operator +!+ and +not+.
  */
 
 VALUE
-rb_obj_not(VALUE obj)
+rb_obj_not(int argc, VALUE *argv, VALUE obj)
 {
+    if (argc) {
+	obj = rb_f_send(argc, argv, obj);
+    }
+    else if (rb_block_given_p()) {
+	obj = rb_yield(obj);
+    }
     return RTEST(obj) ? Qfalse : Qtrue;
 }
 
@@ -3385,7 +3406,7 @@ InitVM_Object(void)
     rb_define_alloc_func(rb_cBasicObject, rb_class_allocate_instance);
     rb_define_method(rb_cBasicObject, "==", rb_obj_equal, 1);
     rb_define_method(rb_cBasicObject, "equal?", rb_obj_equal, 1);
-    rb_define_method(rb_cBasicObject, "!", rb_obj_not, 0);
+    rb_define_method(rb_cBasicObject, "!", rb_obj_not, -1);
     rb_define_method(rb_cBasicObject, "!=", rb_obj_not_equal, 1);
 
     rb_define_private_method(rb_cBasicObject, "singleton_method_added", rb_obj_dummy, 1);
@@ -3416,6 +3437,7 @@ InitVM_Object(void)
 
     rb_define_method(rb_mKernel, "nil?", rb_false, 0);
     rb_define_method(rb_mKernel, "===", rb_equal, 1);
+    rb_define_method(rb_mKernel, "not", rb_obj_not, -1);
     rb_define_method(rb_mKernel, "=~", rb_obj_match, 1);
     rb_define_method(rb_mKernel, "!~", rb_obj_not_match, 1);
     rb_define_method(rb_mKernel, "eql?", rb_obj_equal, 1);
