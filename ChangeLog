@@ -1,3 +1,14 @@
+Sun May  8 21:01:14 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/openssl/extconf.rb: asume it doesn't have SSLv2 related
+	  functions when OPENSSL_NO_SSL2 is defined.
+	  Usually openssl's header and the library (libssl) have the same
+	  set of functions, but on some environment the library has functions
+	  whose headers doesn't declare. (openssl/opensslconf.h and libsso.so
+	  aren't be synchronized)
+	  To detect such case explicitly check feature macro and remove
+	  related functions.
+
 Sun May  8 18:51:33 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_home_dir_of): return the default home path if the
