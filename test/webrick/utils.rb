@@ -37,12 +37,13 @@ module TestWEBrick
     log_ary = []
     access_log_ary = []
     log = proc { "webrick log start:\n" + (log_ary+access_log_ary).join.gsub(/^/, "  ").chomp + "\nwebrick log end" }
-    server = klass.new({
+    config = ({
       :BindAddress => "127.0.0.1", :Port => 0,
       :ServerType => Thread,
       :Logger => WEBrick::Log.new(log_ary, WEBrick::BasicLog::WARN),
       :AccessLog => [[access_log_ary, ""]]
     }.update(config))
+    server = capture_io {break klass.new(config)}
     server_thread = server.start
     server_thread2 = Thread.new {
       server_thread.join
