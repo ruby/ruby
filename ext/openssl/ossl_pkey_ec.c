@@ -419,8 +419,14 @@ static VALUE ossl_ec_key_set_public_key(VALUE self, VALUE public_key)
 {
     EC_KEY *ec;
     EC_POINT *point = NULL;
+    VALUE group;
 
     Require_EC_KEY(self, ec);
+
+    group = rb_funcall(self, rb_intern("group"), 0);
+    if (NIL_P(group)) ossl_raise(eECError, "There is no group set");
+
+
     if (!NIL_P(public_key))
         SafeRequire_EC_POINT(public_key, point);
 
@@ -1620,6 +1626,7 @@ void Init_ossl_ec(void)
     rb_define_method(cEC, "public_key", ossl_ec_key_get_public_key, 0);
     rb_define_method(cEC, "public_key=", ossl_ec_key_set_public_key, 1);
     rb_define_method(cEC, "private_key?", ossl_ec_key_is_private_key, 0);
+    rb_define_alias(cEC, "private?", "private_key?");
     rb_define_method(cEC, "public_key?", ossl_ec_key_is_public_key, 0);
 /*  rb_define_method(cEC, "", ossl_ec_key_get_, 0);
     rb_define_method(cEC, "=", ossl_ec_key_set_ 1);
