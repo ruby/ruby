@@ -43,7 +43,7 @@ Mon May  9 02:51:51 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 Mon May  9 02:39:16 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* configure.in: check function attirbute const and pure,
+	* configure.in: check function attribute const and pure,
 	  and define CONSTFUNC and PUREFUNC if available.
 	  Note that I don't add those options as default because
 	  it still shows many false-positive (it seems not to consider
