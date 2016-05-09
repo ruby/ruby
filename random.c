@@ -368,8 +368,6 @@ rand_init(struct MT *mt, VALUE seed)
     size_t len;
     int sign;
 
-    seed = rb_to_int(seed);
-
     len = rb_absint_numwords(seed, 32, NULL);
     if (len > numberof(buf0))
         buf = ALLOC_N(uint32_t, len);
@@ -415,6 +413,7 @@ random_init(int argc, VALUE *argv, VALUE obj)
     else {
 	vseed = argv[0];
 	rb_check_copyable(obj, vseed);
+	vseed = rb_to_int(vseed);
     }
     rnd->seed = rand_init(&rnd->mt, vseed);
     return obj;
@@ -784,7 +783,7 @@ rb_f_srand(int argc, VALUE *argv, VALUE obj)
 	seed = random_seed();
     }
     else {
-	seed = argv[0];
+	seed = rb_to_int(argv[0]);
     }
     old = r->seed;
     r->seed = rand_init(&r->mt, seed);
