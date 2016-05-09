@@ -97,12 +97,16 @@ have_func("OBJ_NAME_do_all_sorted")
 have_func("SSL_SESSION_get_id")
 have_func("SSL_SESSION_cmp")
 have_func("OPENSSL_cleanse")
-have_func("SSLv2_method")
-have_func("SSLv2_server_method")
-have_func("SSLv2_client_method")
-have_func("SSLv3_method")
-have_func("SSLv3_server_method")
-have_func("SSLv3_client_method")
+unless have_macro("OPENSSL_NO_SSL2","openssl/opensslconf.h")
+  have_func("SSLv2_method")
+  have_func("SSLv2_server_method")
+  have_func("SSLv2_client_method")
+end
+unless have_macro("OPENSSL_NO_SSL3_METHOD","openssl/opensslconf.h")
+  have_func("SSLv3_method")
+  have_func("SSLv3_server_method")
+  have_func("SSLv3_client_method")
+end
 have_func("TLSv1_1_method")
 have_func("TLSv1_1_server_method")
 have_func("TLSv1_1_client_method")
@@ -152,8 +156,6 @@ have_struct_member("EVP_CIPHER_CTX", "engine", "openssl/evp.h")
 have_struct_member("X509_ATTRIBUTE", "single", "openssl/x509.h")
 have_macro("OPENSSL_FIPS", ['openssl/opensslconf.h']) && $defs.push("-DHAVE_OPENSSL_FIPS")
 have_macro("EVP_CTRL_GCM_GET_TAG", ['openssl/evp.h']) && $defs.push("-DHAVE_AUTHENTICATED_ENCRYPTION")
-have_macro("OPENSSL_NO_SSL2","openssl/opensslconf.h") && $defs.reject!{|x|/HAVE_SSLV2_/===x}
-have_macro("OPENSSL_NO_SSL3_METHOD","openssl/opensslconf.h") && $defs.reject!{|x|/HAVE_SSLV3_/===x}
 
 Logging::message "=== Checking done. ===\n"
 
