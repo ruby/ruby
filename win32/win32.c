@@ -90,13 +90,6 @@ static char *w32_getenv(const char *name, UINT cp);
 #undef dup2
 #undef strdup
 
-#if RUBY_MSVCRT_VERSION >= 140
-# define _filbuf _fgetc_nolock
-# define _flsbuf _fputc_nolock
-#endif
-#define enough_to_get(n) (--(n) >= 0)
-#define enough_to_put(n) (--(n) >= 0)
-
 #ifdef WIN32_DEBUG
 #define Debug(something) something
 #else
