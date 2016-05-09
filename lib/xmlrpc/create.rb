@@ -207,6 +207,9 @@ module XMLRPC # :nodoc:
           raise "Wrong value #{param}. Not allowed!" unless param.finite?
           @writer.tag("double", param.to_s)
 
+        when BigDecimal
+          @writer.tag("double", param.to_s("F"))
+
         when Struct
           h = param.members.collect do |key|
             value = param[key]
