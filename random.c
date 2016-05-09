@@ -135,7 +135,7 @@ init_genrand(struct MT *mt, unsigned int s)
 /* key_length is its length */
 /* slight change for C++, 2004/2/26 */
 static void
-init_by_array(struct MT *mt, uint32_t init_key[], int key_length)
+init_by_array(struct MT *mt, const uint32_t init_key[], int key_length)
 {
     int i, j, k;
     init_genrand(mt, 19650218U);
