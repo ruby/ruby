@@ -3942,9 +3942,8 @@ clear_coverage(void)
 }
 
 static void
-rb_thread_atfork_internal(void (*atfork)(rb_thread_t *, const rb_thread_t *))
+rb_thread_atfork_internal(rb_thread_t *th, void (*atfork)(rb_thread_t *, const rb_thread_t *))
 {
-    rb_thread_t *th = GET_THREAD();
     rb_thread_t *i = 0;
     rb_vm_t *vm = th->vm;
     vm->main_thread = th;
@@ -3973,8 +3972,9 @@ terminate_atfork_i(rb_thread_t *th, const rb_thread_t *current_th)
 void
 rb_thread_atfork(void)
 {
-    rb_thread_atfork_internal(terminate_atfork_i);
-    GET_THREAD()->join_list = NULL;
+    rb_thread_t *th = GET_THREAD();
+    rb_thread_atfork_internal(th, terminate_atfork_i);
+    th->join_list = NULL;
 
     /* We don't want reproduce CVE-2003-0900. */
     rb_reset_random_seed();
@@ -3991,7 +3991,8 @@ terminate_atfork_before_exec_i(rb_thread_t *th, const rb_thread_t *current_th)
 void
 rb_thread_atfork_before_exec(void)
 {
-    rb_thread_atfork_internal(terminate_atfork_before_exec_i);
+    rb_thread_t *th = GET_THREAD();
+    rb_thread_atfork_internal(th, terminate_atfork_before_exec_i);
 }
 #else
 void

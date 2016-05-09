@@ -1,3 +1,9 @@
+Mon May  9 10:51:59 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (rb_thread_atfork_internal): move th to an argument.
+
+	* thread.c (rb_thread_atfork): do not repeat GET_THREAD().
+
 Mon May  9 10:46:36 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (rb_thread_atfork, rb_thread_atfork_before_exec): do
