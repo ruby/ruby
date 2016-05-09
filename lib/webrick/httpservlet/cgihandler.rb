@@ -27,7 +27,7 @@ module WEBrick
 
     class CGIHandler < AbstractServlet
       Ruby = RbConfig.ruby # :nodoc:
-      CGIRunner = "\"#{Ruby}\" \"#{WEBrick::Config::LIBDIR}/httpservlet/cgi_runner.rb\"" # :nodoc:
+      CGIRunner = [Ruby, "#{WEBrick::Config::LIBDIR}/httpservlet/cgi_runner.rb"] # :nodoc:
 
       ##
       # Creates a new CGI script servlet for the script at +name+
@@ -36,7 +36,16 @@ module WEBrick
         super(server, name)
         @script_filename = name
         @tempdir = server[:TempDir]
-        @cgicmd = "#{CGIRunner} #{server[:CGIInterpreter]}"
+        @cgicmd = CGIRunner
+        interpreter = server[:CGIInterpreter]
+        if interpreter
+          case interpreter
+          when String
+            require 'shellwords'
+            interpreter = interpreter.shellsplit
+          end
+          @cgicmd += interpreter
+        end
       end
 
       # :stopdoc:
