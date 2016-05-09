@@ -14,9 +14,11 @@ typedef struct rb_mutex_struct {
     int allow_trap;
 } rb_mutex_t;
 
+#if defined(HAVE_WORKING_FORK)
 static void rb_mutex_abandon_all(rb_mutex_t *mutexes);
 static void rb_mutex_abandon_keeping_mutexes(rb_thread_t *th);
 static void rb_mutex_abandon_locking_mutex(rb_thread_t *th);
+#endif
 static const char* rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t volatile *th);
 
 /*
@@ -378,6 +380,7 @@ rb_mutex_unlock(VALUE self)
     return self;
 }
 
+#if defined(HAVE_WORKING_FORK)
 static void
 rb_mutex_abandon_keeping_mutexes(rb_thread_t *th)
 {
@@ -412,6 +415,7 @@ rb_mutex_abandon_all(rb_mutex_t *mutexes)
 	mutex->next_mutex = 0;
     }
 }
+#endif
 
 static VALUE
 rb_mutex_sleep_forever(VALUE time)

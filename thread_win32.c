@@ -113,13 +113,6 @@ gvl_yield(rb_vm_t *vm, rb_thread_t *th)
   gvl_acquire(vm, th);
 }
 
-
-static void
-gvl_atfork(rb_vm_t *vm)
-{
-    rb_bug("gvl_atfork() is called on win32");
-}
-
 static void
 gvl_init(rb_vm_t *vm)
 {

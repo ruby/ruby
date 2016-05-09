@@ -3917,6 +3917,7 @@ rb_thread_start_timer_thread(void)
     rb_thread_create_timer_thread();
 }
 
+#if defined(HAVE_WORKING_FORK)
 static int
 clear_coverage_i(st_data_t key, st_data_t val, st_data_t dummy)
 {
@@ -3992,6 +3993,17 @@ rb_thread_atfork_before_exec(void)
 {
     rb_thread_atfork_internal(terminate_atfork_before_exec_i);
 }
+#else
+void
+rb_thread_atfork(void)
+{
+}
+
+void
+rb_thread_atfork_before_exec(void)
+{
+}
+#endif
 
 struct thgroup {
     int enclosed;

@@ -1,3 +1,17 @@
+Mon May  9 10:46:36 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (rb_thread_atfork, rb_thread_atfork_before_exec): do
+	  nothing unless working fork is available.
+
+	* thread_sync.c (rb_mutex_abandon_all): define only if working
+	  fork is available.
+
+	* thread_sync.c (rb_mutex_abandon_keeping_mutexes): ditto.
+
+	* thread_sync.c (rb_mutex_abandon_locking_mutex): ditto.
+
+	* thread_win32.c (gvl_init): never used.
+
 Mon May  9 07:18:06 2016  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* include/ruby/{defines,ruby}.h: need to define function attributes
