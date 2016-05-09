@@ -1346,11 +1346,10 @@ random_equal(VALUE self, VALUE other)
     if (rb_obj_class(self) != rb_obj_class(other)) return Qfalse;
     r1 = get_rnd(self);
     r2 = get_rnd(other);
-    if (!RTEST(rb_funcall2(r1->seed, rb_intern("=="), 1, &r2->seed))) return Qfalse;
     if (memcmp(r1->mt.state, r2->mt.state, sizeof(r1->mt.state))) return Qfalse;
     if ((r1->mt.next - r1->mt.state) != (r2->mt.next - r2->mt.state)) return Qfalse;
     if (r1->mt.left != r2->mt.left) return Qfalse;
-    return Qtrue;
+    return rb_equal(r1->seed, r2->seed);
 }
 
 /*
