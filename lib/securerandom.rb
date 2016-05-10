@@ -75,6 +75,10 @@ module SecureRandom
       ret
     end
   end
+
+  class << self
+    alias bytes gen_random
+  end
 end
 
 module Random::Formatter

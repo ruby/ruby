@@ -898,17 +898,20 @@ rb_genrand_ulong_limited(unsigned long limit)
     return limited_rand(default_mt(), limit);
 }
 
-static unsigned int
-obj_random_int32(VALUE obj)
+static VALUE
+obj_random_bytes(VALUE obj, void *p, long n)
 {
-#if SIZEOF_LONG * CHAR_BIT > 32
-    VALUE lim = ULONG2NUM(0x100000000UL);
-#elif defined HAVE_LONG_LONG
-    VALUE lim = ULL2NUM((LONG_LONG)0xffffffff+1);
-#else
-    VALUE lim = rb_big_plus(ULONG2NUM(0xffffffff), INT2FIX(1));
-#endif
-    return (unsigned int)NUM2ULONG(rb_funcall2(obj, id_rand, 1, &lim));
+    VALUE len = LONG2NUM(n);
+    VALUE v = rb_funcallv_public(obj, id_bytes, 1, &len);
+    long l;
+    Check_Type(v, T_STRING);
+    l = RSTRING_LEN(v);
+    if (l < n)
+	rb_raise(rb_eRangeError, "random data too short %ld", l);
+    else if (l > n)
+	rb_raise(rb_eRangeError, "random data too long %ld", l);
+    if (p) memcpy(p, RSTRING_PTR(v), n);
+    return v;
 }
 
 static unsigned int
@@ -922,7 +925,9 @@ rb_random_int32(VALUE obj)
 {
     rb_random_t *rnd = try_get_rnd(obj);
     if (!rnd) {
-	return obj_random_int32(obj);
+	uint32_t x;
+	obj_random_bytes(obj, &x, sizeof(x));
+	return (unsigned int)x;
     }
     return random_int32(rnd);
 }
@@ -933,8 +938,10 @@ random_real(VALUE obj, rb_random_t *rnd, int excl)
     uint32_t a, b;
 
     if (!rnd) {
-	a = obj_random_int32(obj);
-	b = obj_random_int32(obj);
+	uint32_t x[2] = {0, 0};
+	obj_random_bytes(obj, x, sizeof(x));
+	a = x[0];
+	b = x[1];
     }
     else {
 	a = random_int32(rnd);
@@ -982,6 +989,22 @@ ulong_to_num_plus_1(unsigned long n)
 static unsigned long
 random_ulong_limited(VALUE obj, rb_random_t *rnd, unsigned long limit)
 {
+    if (!limit) return 0;
+    if (!rnd) {
+	unsigned long val, mask = make_mask(limit);
+	do {
+	    obj_random_bytes(obj, &val, sizeof(unsigned long));
+	    val &= mask;
+	} while (limit < val);
+	return val;
+    }
+    return limited_rand(&rnd->mt, limit);
+}
+
+unsigned long
+rb_random_ulong_limited(VALUE obj, unsigned long limit)
+{
+    rb_random_t *rnd = try_get_rnd(obj);
     if (!rnd) {
 	VALUE lim = ulong_to_num_plus_1(limit);
 	VALUE v = rb_to_int(rb_funcall2(obj, id_rand, 1, &lim));
@@ -1001,23 +1024,29 @@ static VALUE
 random_ulong_limited_big(VALUE obj, rb_random_t *rnd, VALUE vmax)
 {
     if (!rnd) {
-	VALUE lim = rb_big_plus(vmax, INT2FIX(1));
-	VALUE v = rb_to_int(rb_funcall2(obj, id_rand, 1, &lim));
-	if (rb_num_negative_p(v)) {
-	    rb_raise(rb_eRangeError, "random number too small %"PRIsVALUE, v);
+	VALUE v, vtmp;
+	size_t i, nlz, len = rb_absint_numwords(vmax, 32, &nlz);
+	uint32_t *tmp = ALLOCV_N(uint32_t, vtmp, len * 2);
+	uint32_t mask = (uint32_t)~0 >> nlz;
+	uint32_t *lim_array = tmp;
+	uint32_t *rnd_array = tmp + len;
+	int flag = INTEGER_PACK_MSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER;
+	rb_integer_pack(vmax, lim_array, len, sizeof(uint32_t), 0, flag);
+
+      retry:
+	obj_random_bytes(obj, rnd_array, len * sizeof(uint32_t));
+	rnd_array[0] &= mask;
+	for (i = 0; i < len; ++i) {
+	    if (lim_array[i] < rnd_array[i])
+		goto retry;
+	    if (rnd_array[i] < lim_array[i])
+		break;
 	}
-	if (FIX2LONG(rb_big_cmp(vmax, v)) < 0) {
-	    rb_raise(rb_eRangeError, "random number too big %"PRIsVALUE, v);
-	}
+	v = rb_integer_unpack(rnd_array, len, sizeof(uint32_t), 0, flag);
+	ALLOCV_END(vtmp);
 	return v;
     }
     return limited_big_rand(&rnd->mt, vmax);
-}
-
-unsigned long
-rb_random_ulong_limited(VALUE obj, unsigned long limit)
-{
-    return random_ulong_limited(obj, try_get_rnd(obj), limit);
 }
 
 static VALUE genrand_bytes(rb_random_t *rnd, long n);
@@ -1068,8 +1097,7 @@ rb_random_bytes(VALUE obj, long n)
 {
     rb_random_t *rnd = try_get_rnd(obj);
     if (!rnd) {
-	VALUE len = LONG2NUM(n);
-	return rb_funcall2(obj, id_bytes, 1, &len);
+	return obj_random_bytes(obj, NULL, n);
     }
     return genrand_bytes(rnd, n);
 }
@@ -1601,6 +1629,7 @@ InitVM_Random(void)
 	VALUE m = rb_define_module_under(rb_cRandom, "Formatter");
 	rb_include_module(rb_cRandom, m);
 	rb_define_method(m, "random_number", rand_random_number, -1);
+	rb_define_method(m, "rand", rand_random_number, -1);
     }
 }
 

@@ -526,6 +526,17 @@ END
     assert_equal(2, gen.limit, bug7935)
   end
 
+  def test_random_ulong_limited_no_rand
+    c = Class.new do
+      undef rand
+      def bytes(n)
+        "\0"*n
+      end
+    end
+    gen = c.new.extend(Random::Formatter)
+    assert_equal(1, [1, 2].sample(random: gen))
+  end
+
   def test_default_seed
     assert_separately([], <<-End)
       seed = Random::DEFAULT::seed

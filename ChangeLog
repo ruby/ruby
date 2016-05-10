@@ -1,3 +1,8 @@
+Tue May 10 14:57:09 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* random.c (obj_random_bytes): base on bytes method instead of
+	  rand method, not to call toplevel rand method.
+
 Tue May 10 13:07:28 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in (-fexcess-precision=standard): before r54895 -std=c99
