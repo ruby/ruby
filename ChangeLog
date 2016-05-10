@@ -1,3 +1,11 @@
+Tue May 10 21:05:45 2016  Benoit Daloze  <eregontp@gmail.com>
+
+	* insns.def (defineclass): Also raise an error when redeclaring the
+	  superclass of a class as Object and it has another superclass.
+	  [Bug #12367] [ruby-core:75446]
+
+	* test/ruby/test_class.rb: test for above.
+
 Tue May 10 14:57:09 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* random.c (obj_random_bytes): base on bytes method instead of
