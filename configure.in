@@ -967,7 +967,7 @@ if test "$GCC" = yes; then
     ])
 
     # disable fast-math
-    for oflag in -fno-fast-math -fp-model\ precise; do
+    for oflag in -fno-fast-math -fexcess-precision=standard -fp-model\ precise; do
 	RUBY_TRY_CFLAGS($oflag, [RUBY_APPEND_OPTION(optflags, $oflag)])
     done
 fi

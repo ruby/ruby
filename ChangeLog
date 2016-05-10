@@ -1,3 +1,10 @@
+Tue May 10 13:07:28 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in (-fexcess-precision=standard): before r54895 -std=c99
+	  is specified and it implied -fexcess-precision=standard.
+	  Now with -std=gnu99, it should be explicitly specified.
+	  https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html
+
 Mon May  9 10:51:59 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (rb_thread_atfork_internal): move th to an argument.
