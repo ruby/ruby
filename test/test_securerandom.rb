@@ -207,6 +207,8 @@ end
       def setup
         @it = Random
       end
+
+      undef test_s_random_number_not_default
     end
   end
 end
