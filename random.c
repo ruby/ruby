@@ -991,9 +991,21 @@ random_ulong_limited(VALUE obj, rb_random_t *rnd, unsigned long limit)
 {
     if (!limit) return 0;
     if (!rnd) {
-	unsigned long val, mask = make_mask(limit);
+	const int w = sizeof(limit) * CHAR_BIT - nlz_long(limit);
+	const int n = w > 32 ? sizeof(unsigned long) : sizeof(uint32_t);
+	const unsigned long mask = ~(~0UL << w);
+	const unsigned long full = ~(~0UL << n * CHAR_BIT);
+	unsigned long val, bits = 0, rest = 0;
 	do {
-	    obj_random_bytes(obj, &val, sizeof(unsigned long));
+	    if (mask & ~rest) {
+		union {uint32_t u32; unsigned long ul;} buf;
+		obj_random_bytes(obj, &buf, n);
+		rest = full;
+		bits = (n == sizeof(uint32_t)) ? buf.u32 : buf.ul;
+	    }
+	    val = bits;
+	    bits >>= w;
+	    rest >>= w;
 	    val &= mask;
 	} while (limit < val);
 	return val;
