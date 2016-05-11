@@ -1,3 +1,8 @@
+Wed May 11 17:18:53 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* util.c (ruby_qsort): use qsort_s if available, for Microsoft
+	  Visual Studio 2005 (msvcr80.dll) and mingw.
+
 Wed May 11 10:33:26 2016  Marcus Stollsteimer  <sto.mar@web.de>
 
 	* COPYING: Remove trailing-whitespaces.

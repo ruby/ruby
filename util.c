@@ -191,6 +191,11 @@ ruby_strtoul(const char *str, char **endptr, int base)
 #   define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
 #endif
 
+#if !defined HAVE_BSD_QSORT_R && defined HAVE_QSORT_S
+# define qsort_r(base, nel, size, arg, cmp) qsort_s(base, nel, size, cmp, arg)
+# define cmp_bsd_qsort cmp_ms_qsort
+# define HAVE_BSD_QSORT_R 1
+#endif
 #if defined HAVE_BSD_QSORT_R
 typedef int (cmpfunc_t)(const void*, const void*, void*);
 
