@@ -1,3 +1,16 @@
+Wed May 11 21:30:07 2016  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* compile.c (iseq_compile_each): share InlineCache during same
+	  instance variable accesses. Reducing memory consumption,
+	  rasing cache hit rate and rasing branch prediction hit rate
+	  are expected. A part of [Bug #12274].
+
+	* iseq.h (struct iseq_compile_data): introduce instance
+	  variable IC table for sharing.
+
+	* iseq.c (prepare_iseq_build, compile_data_free):
+	  construct/destruct above table.
+
 Wed May 11 17:18:53 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* util.c (ruby_qsort): use qsort_s if available, for Microsoft

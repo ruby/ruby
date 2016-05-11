@@ -58,6 +58,8 @@ compile_data_free(struct iseq_compile_data *compile_data)
 	    ruby_xfree(cur);
 	    cur = next;
 	}
+	st_free_table(compile_data->ivar_cache_table);
+
 	ruby_xfree(compile_data);
     }
 }
@@ -297,6 +299,8 @@ prepare_iseq_build(rb_iseq_t *iseq,
       INITIAL_ISEQ_COMPILE_DATA_STORAGE_BUFF_SIZE;
     ISEQ_COMPILE_DATA(iseq)->option = option;
     ISEQ_COMPILE_DATA(iseq)->last_coverable_line = -1;
+
+    ISEQ_COMPILE_DATA(iseq)->ivar_cache_table = st_init_numtable();
 
     if (option->coverage_enabled) {
 	VALUE coverages = rb_get_coverages();
