@@ -1623,15 +1623,11 @@ class TestMiniTestUnitTestCase < MiniTest::Unit::TestCase
       def test_test1; assert "does not matter" end
       def test_test2; assert "does not matter" end
       def test_test3; assert "does not matter" end
+      @test_order = [1, 0, 2]
+      def self.rand(n) @test_order.shift; end
     end
 
-    srand 42
-    expected = case
-               when maglev? then
-                 %w(test_test2 test_test3 test_test1)
-               else
-                 %w(test_test2 test_test1 test_test3)
-               end
+    expected = %w(test_test2 test_test1 test_test3)
     assert_equal expected, sample_test_case.test_methods
   end
 
