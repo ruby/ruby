@@ -1,3 +1,8 @@
+Wed May 11 10:33:26 2016  Marcus Stollsteimer  <sto.mar@web.de>
+
+	* ChangeLog: Remove trailing-whitespaces.
+	  [ci skip][fix GH-1348]
+
 Tue May 10 21:05:45 2016  Benoit Daloze  <eregontp@gmail.com>
 
 	* insns.def (defineclass): Also raise an error when redeclaring the
