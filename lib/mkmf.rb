@@ -748,6 +748,8 @@ int main() {printf("%"PRI_CONFTEST_PREFIX"#{neg ? 'd' : 'u'}\\n", conftest_const
       decltype = proc {|x|"const volatile void *#{x}"}
     when /\)$/
       call = func
+    when nil
+      call = ""
     else
       call = "#{func}()"
       decltype = proc {|x| "void ((*#{x})())"}
@@ -956,7 +958,10 @@ SRC
             break noun = noun.send(meth, *args)
           end
         end
-        msg << " #{pre} #{noun}" unless noun.empty?
+        unless noun.empty?
+          msg << " #{pre} " unless msg.empty?
+          msg << noun
+        end
       end
       msg
     end
@@ -987,9 +992,8 @@ SRC
   # <code>--with-FOOlib</code> configuration option.
   #
   def have_library(lib, func = nil, headers = nil, opt = "", &b)
-    func = "main" if !func or func.empty?
     lib = with_config(lib+'lib', lib)
-    checking_for checking_message(func.funcall_style, LIBARG%lib, opt) do
+    checking_for checking_message(func && func.funcall_style, LIBARG%lib, opt) do
       if COMMON_LIBS.include?(lib)
         true
       else
@@ -1013,10 +1017,9 @@ SRC
   # library paths searched and linked against.
   #
   def find_library(lib, func, *paths, &b)
-    func = "main" if !func or func.empty?
     lib = with_config(lib+'lib', lib)
     paths = paths.collect {|path| path.split(File::PATH_SEPARATOR)}.flatten
-    checking_for checking_message(func.funcall_style, LIBARG%lib) do
+    checking_for checking_message(func && func.funcall_style, LIBARG%lib) do
       libpath = $LIBPATH
       libs = append_library($libs, lib)
       begin
