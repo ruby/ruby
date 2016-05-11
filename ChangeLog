@@ -1,3 +1,8 @@
+Wed May 11 23:59:47 2016  Masaya Tarui  <tarui@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_getivar): describe fast-path explicit
+	  (compiler frindly). [Bug #12274].
+
 Wed May 11 21:30:07 2016  Masaya Tarui  <tarui@ruby-lang.org>
 
 	* compile.c (iseq_compile_each): share InlineCache during same

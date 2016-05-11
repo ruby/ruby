@@ -785,18 +785,20 @@ INLINE VALUE
 vm_getivar(VALUE obj, ID id, IC ic, struct rb_call_cache *cc, int is_attr)
 {
 #if USE_IC_FOR_IVAR
-    if (RB_TYPE_P(obj, T_OBJECT)) {
+    if (LIKELY(RB_TYPE_P(obj, T_OBJECT))) {
 	VALUE val = Qundef;
-	VALUE klass = RBASIC(obj)->klass;
-	const uint32_t len = ROBJECT_NUMIV(obj);
-	const VALUE *const ptr = ROBJECT_IVPTR(obj);
-
-	if (LIKELY(is_attr ? cc->aux.index > 0 : ic->ic_serial == RCLASS_SERIAL(klass))) {
+	if (LIKELY(is_attr ? cc->aux.index > 0 : ic->ic_serial == RCLASS_SERIAL(RBASIC(obj)->klass))) {
 	    st_index_t index = !is_attr ? ic->ic_value.index : (cc->aux.index - 1);
-
-	    if (index < len) {
-		val = ptr[index];
+	    if (LIKELY(index < ROBJECT_NUMIV(obj))) {
+		val = ROBJECT_IVPTR(obj)[index];
 	    }
+	  undef_check:
+	    if (UNLIKELY(val == Qundef)) {
+		if (!is_attr && RTEST(ruby_verbose))
+		    rb_warning("instance variable %"PRIsVALUE" not initialized", QUOTE_ID(id));
+		val = Qnil;
+	    }
+	    return val;
 	}
 	else {
 	    st_data_t index;
@@ -804,26 +806,20 @@ vm_getivar(VALUE obj, ID id, IC ic, struct rb_call_cache *cc, int is_attr)
 
 	    if (iv_index_tbl) {
 		if (st_lookup(iv_index_tbl, id, &index)) {
-		    if (index < len) {
-			val = ptr[index];
+		    if (index < ROBJECT_NUMIV(obj)) {
+			val = ROBJECT_IVPTR(obj)[index];
 		    }
 		    if (!is_attr) {
 			ic->ic_value.index = index;
-			ic->ic_serial = RCLASS_SERIAL(klass);
+			ic->ic_serial = RCLASS_SERIAL(RBASIC(obj)->klass);
 		    }
 		    else { /* call_info */
 			cc->aux.index = (int)index + 1;
 		    }
 		}
 	    }
+	    goto undef_check;
 	}
-
-	if (UNLIKELY(val == Qundef)) {
-	    if (!is_attr && RTEST(ruby_verbose))
-		rb_warning("instance variable %"PRIsVALUE" not initialized", QUOTE_ID(id));
-	    val = Qnil;
-	}
-	return val;
     }
 #endif	/* USE_IC_FOR_IVAR */
     if (is_attr)
@@ -837,7 +833,7 @@ vm_setivar(VALUE obj, ID id, VALUE val, IC ic, struct rb_call_cache *cc, int is_
 #if USE_IC_FOR_IVAR
     rb_check_frozen(obj);
 
-    if (RB_TYPE_P(obj, T_OBJECT)) {
+    if (LIKELY(RB_TYPE_P(obj, T_OBJECT))) {
 	VALUE klass = RBASIC(obj)->klass;
 	st_data_t index;
 
@@ -874,13 +870,13 @@ vm_setivar(VALUE obj, ID id, VALUE val, IC ic, struct rb_call_cache *cc, int is_
     return rb_ivar_set(obj, id, val);
 }
 
-static VALUE
+static inline VALUE
 vm_getinstancevariable(VALUE obj, ID id, IC ic)
 {
     return vm_getivar(obj, id, ic, 0, 0);
 }
 
-static void
+static inline void
 vm_setinstancevariable(VALUE obj, ID id, VALUE val, IC ic)
 {
     vm_setivar(obj, id, val, ic, 0, 0);
