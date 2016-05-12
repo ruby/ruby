@@ -160,7 +160,7 @@ RUBY_SYMBOL_EXPORT_BEGIN
 #define xfree ruby_xfree
 
 #if GCC_VERSION_SINCE(4,3,0)
-# deine RUBY_ATTR_ALLOC_SIZE(params) __attribute__ ((__alloc_size__ params))
+# define RUBY_ATTR_ALLOC_SIZE(params) __attribute__ ((alloc_size params))
 #else
 # define RUBY_ATTR_ALLOC_SIZE(params)
 #endif
