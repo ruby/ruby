@@ -1554,14 +1554,21 @@ rb_reset_random_seed(void)
 void
 InitVM_Random(void)
 {
+    VALUE base;
+    ID id_base = rb_intern_const("Base");
+
     rb_define_global_function("srand", rb_f_srand, -1);
     rb_define_global_function("rand", rb_f_rand, -1);
 
-    rb_cRandom = rb_define_class("Random", rb_cObject);
+    base = rb_define_class_id(id_base, rb_cObject);
+    rb_undef_alloc_func(base);
+    rb_cRandom = rb_define_class("Random", base);
+    rb_const_set(rb_cRandom, id_base, base);
+    rb_set_class_path(base, rb_cRandom, "Base");
     rb_define_alloc_func(rb_cRandom, random_alloc);
-    rb_define_method(rb_cRandom, "initialize", random_init, -1);
-    rb_define_method(rb_cRandom, "rand", random_rand, -1);
-    rb_define_method(rb_cRandom, "bytes", random_bytes, 1);
+    rb_define_method(base, "initialize", random_init, -1);
+    rb_define_method(base, "rand", random_rand, -1);
+    rb_define_method(base, "bytes", random_bytes, 1);
     rb_define_method(rb_cRandom, "seed", random_get_seed, 0);
     rb_define_method(rb_cRandom, "initialize_copy", random_copy, 1);
     rb_define_private_method(rb_cRandom, "marshal_dump", random_dump, 0);
@@ -1589,8 +1596,8 @@ InitVM_Random(void)
     {
 	/* Format raw random number as Random does */
 	VALUE m = rb_define_module_under(rb_cRandom, "Formatter");
-	rb_include_module(rb_cRandom, m);
-	rb_extend_object(rb_cRandom, m);
+	rb_include_module(base, m);
+	rb_extend_object(base, m);
 	rb_define_method(m, "random_number", rand_random_number, -1);
 	rb_define_method(m, "rand", rand_random_number, -1);
     }
