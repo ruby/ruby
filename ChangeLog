@@ -1,3 +1,9 @@
+Fri May 13 03:11:20 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in (__builtin_constant_p): check.
+
+	* interna.h: Use HAVE_BUILTIN___BUILTIN_CONSTANT_P
+
 Fri May 13 03:10:39 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configurein: use alternative keyword

@@ -145,7 +145,7 @@ VALUE rb_str_export_to_enc(VALUE, rb_encoding *);
 VALUE rb_str_conv_enc(VALUE str, rb_encoding *from, rb_encoding *to);
 VALUE rb_str_conv_enc_opts(VALUE str, rb_encoding *from, rb_encoding *to, int ecflags, VALUE ecopts);
 
-#if defined(__GNUC__) && !defined(__PCC__)
+#ifdef HAVE_BUILTIN___BUILTIN_CONSTANT_P
 #define rb_enc_str_new(str, len, enc) __extension__ ( \
 {					       \
     (__builtin_constant_p(str) && __builtin_constant_p(len)) ? \

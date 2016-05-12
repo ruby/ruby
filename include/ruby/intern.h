@@ -790,7 +790,7 @@ VALUE rb_str_scrub(VALUE, VALUE);
 /* symbol.c */
 VALUE rb_sym_all_symbols(void);
 
-#if defined(__GNUC__) && !defined(__PCC__)
+#ifdef HAVE_BUILTIN___BUILTIN_CONSTANT_P
 #define rb_str_new(str, len) __extension__ (	\
 {						\
     (__builtin_constant_p(str) && __builtin_constant_p(len)) ? \

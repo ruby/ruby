@@ -3,7 +3,7 @@
  * included by eval.c
  */
 
-#if defined(__GNUC__) && !defined(__PCC__)
+#ifdef HAVE_BUILTIN___BUILTIN_CONSTANT_P
 #define warn_print(x) __extension__ (	\
 {						\
     (__builtin_constant_p(x)) ? 		\
