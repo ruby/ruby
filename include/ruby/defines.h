@@ -46,12 +46,14 @@ extern "C" {
 # define NOINLINE(x) x
 #endif
 
+#ifndef GCC_VERSION_SINCE
 #define GCC_VERSION_SINCE(major, minor, patchlevel) \
   (defined(__GNUC__) && !defined(__INTEL_COMPILER) && !defined(__clang__) && \
    ((__GNUC__ > (major)) ||  \
     ((__GNUC__ == (major) && \
       (__GNUC_MINOR__ > (minor)) || \
       (__GNUC_MINOR__ == (minor) && __GNUC_PATCHLEVEL__ >= (patchlevel))))))
+#endif
 
 /* likely */
 #if __GNUC__ >= 3
