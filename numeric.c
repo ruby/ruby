@@ -16,10 +16,6 @@
 #include <math.h>
 #include <stdio.h>
 
-#if defined(__FreeBSD__) && __FreeBSD__ < 4
-#include <floatingpoint.h>
-#endif
-
 #ifdef HAVE_FLOAT_H
 #include <float.h>
 #endif
@@ -4871,10 +4867,7 @@ Init_Numeric(void)
 #undef rb_intern
 #define rb_intern(str) rb_intern_const(str)
 
-#if defined(__FreeBSD__) && __FreeBSD__ < 4
-    /* allow divide by zero -- Inf */
-    fpsetmask(fpgetmask() & ~(FP_X_DZ|FP_X_INV|FP_X_OFL));
-#elif defined(_UNICOSMP)
+#ifdef _UNICOSMP
     /* Turn off floating point exceptions for divide by zero, etc. */
     _set_Creg(0, 0);
 #endif

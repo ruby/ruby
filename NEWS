@@ -108,6 +108,8 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 === Supported platform changes
 
+* FreeBSD < 4 is no longer supported
+
 === Implementation improvements
 
 * In some condition, `[x, y].max` and `[x, y].min` are optimized
