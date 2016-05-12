@@ -256,7 +256,7 @@ def extmake(target)
         Logging::message(error.to_s) if error
         Logging::message("Failed to configure #{target}. It will not be installed.\n")
       end
-      return [target, error]
+      return [conf, error]
     end
     args = sysquote($mflags)
     unless $destdir.to_s.empty? or $mflags.defined?("DESTDIR")
@@ -745,7 +745,16 @@ if $configure_only and $command_output
     unless fails.empty?
       mf.puts %Q<\t@echo "*** Following extensions failed to configure:">
       fails.each do |d, e|
-        mf.puts %Q<\t@echo "    #{d}#{e && %Q(: #{e})}">
+        if e && e.respond_to?(:backtrace_locations)
+          n = e.backtrace_locations[0].lineno
+        else
+          n = 0
+        end
+        d = "#{d}:#{n}:"
+        if e
+          d << " " << e.message
+        end
+        mf.puts %Q<\t@echo "#{d}">
       end
       mf.puts %Q<\t@echo "*** Fix the problems, then remove these directories and try again if you want.">
     end
